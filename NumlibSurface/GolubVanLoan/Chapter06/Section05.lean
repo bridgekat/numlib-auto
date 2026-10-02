@@ -81,8 +81,7 @@ namespace GolubVanLoan.Chapter06
 theorem equation_6_5_1 {n : ℕ} {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQR A Q R)
     (u v : Fin n → ℝ) : A + vecMulVec u v = Q * (R + vecMulVec (Qᵀ *ᵥ u) v) := by
   have hQ : Q * Qᵀ = 1 := by
-    have := mem_unitaryGroup_iff.1 h.mem_unitaryGroup
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+    exact (mem_orthogonalGroup_iff _ ℝ).1 h.mem_unitaryGroup
   rw [Matrix.mul_add, h.mul_eq, mul_vecMulVec, mulVec_mulVec, hQ, one_mulVec]
 
 /-- **(6.5.2).** "Suppose rotations `J_{n−1}, …, J₂, J₁` are computed such that
@@ -100,8 +99,8 @@ theorem equation_6_5_2 {n : ℕ} {R : Matrix (Fin n) (Fin n) ℝ} (hR : R.IsUppe
     change j < i
     rw [Fin.lt_def]
     omega)
-  rw [hP, List.range_eq_range']
-  exact prod_planeEmbed_mul_apply_eq_zero hT G 0 (n - 1) (Or.inl hil)
+  rw [hP, List.range_eq_range', prod_map_range'_eq_prodFwd]
+  exact prodFwd_adjacentEmbed_mul_apply_eq_zero hT G 0 (n - 1) (Or.inl hil)
 
 /-- **(6.5.3).** "Consequently, `(J₁ᵀ ⋯ J_{n−1}ᵀ)(R + wvᵀ) = H ± ‖w‖₂ e₁vᵀ = H₁` is also upper
 Hessenberg": if the sweep `P` of (6.5.2) maps `w` to `ρ e₁` (the book's `ρ = ±‖w‖₂`), then
@@ -501,28 +500,15 @@ theorem choleskyDowndate_spec {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hG :
         (isJOrthogonal_hyperbolicRotation (hne k) (ε := Sum.elim (fun _ => 1) fun _ => -1)
           rfl rfl hcs)
         (by rw [hyperbolicRotation_transpose (hne k)]; exact e')).symm
-  have hpre : ∀ t (ht : t ≤ n),
-      Inv t (((List.finRange n).take t).foldl F (fromRows Gᵀ (replicateRow Unit z))) := by
-    intro t
-    induction t with
-    | zero =>
-      intro _
-      exact ⟨Gᵀ, z, rfl, hG.isUpperTriangular, hG.diag_pos,
-        fun _ h => absurd h (Nat.not_lt_zero _), by rw [hGG]⟩
-    | succ t ih =>
-      intro ht
-      have htake : (List.finRange n).take (t + 1) =
-          (List.finRange n).take t ++ [⟨t, by omega⟩] := by
-        rw [List.take_add_one, List.getElem?_eq_getElem (by rw [List.length_finRange]; omega)]
-        simp
-      rw [htake, List.foldl_append, List.foldl_cons, List.foldl_nil]
-      exact hstep t (by omega) _ (ih (by omega))
+  have hpre := List.foldl_finRange_induction Inv (f := F)
+    (init := fromRows Gᵀ (replicateRow Unit z))
+    ⟨Gᵀ, z, rfl, hG.isUpperTriangular, hG.diag_pos, fun _ h => absurd h (Nat.not_lt_zero _),
+      by rw [hGG]⟩ fun k S hS => hstep k k.isLt S hS
   have hrun : Id.run (choleskyDowndate pure G z) =
       ((List.finRange n).foldl F (fromRows Gᵀ (replicateRow Unit z))).toRows₁ᵀ := by
     change (Id.run ((List.finRange n).foldlM _ (fromRows Gᵀ (replicateRow Unit z)))).toRows₁ᵀ = _
     rw [choleskyDowndate_fold_run]
-  obtain ⟨R, z', hS, hRt, hRd, hz', hGr⟩ := hpre n le_rfl
-  rw [List.take_of_length_le (by simp)] at hS
+  obtain ⟨R, z', hS, hRt, hRd, hz', hGr⟩ := hpre
   have hz0 : z' = 0 := funext fun j => hz' j j.isLt
   subst hz0
   rw [vecMulVec_zero, sub_zero] at hGr
@@ -982,32 +968,19 @@ theorem choleskyUpdate_spec {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hG : I
     rw [hS₀, of_apply, Fin.lastCases_castSucc]
   have hS₀l : S₀ (Fin.last n) = z := funext fun j => by
     rw [hS₀, of_apply, Fin.lastCases_last]
-  have hpre : ∀ t (ht : t ≤ n), Inv t (((List.finRange n).take t).foldl cholUpdStep S₀) := by
-    intro t
-    induction t with
-    | zero =>
-      intro _
-      refine ⟨fun i j hji => ?_, fun i => ?_, fun _ h => absurd h (Nat.not_lt_zero _), ?_⟩
-      · simp only [List.take_zero, List.foldl_nil, hS₀c]
-        exact hG.isUpperTriangular hji
-      · simp only [List.take_zero, List.foldl_nil, hS₀c]
-        exact (hG.diag_pos i).ne'
-      · simp only [List.take_zero, List.foldl_nil]
-        rw [transpose_mul_self_castSucc, hS₀l]
-        congr 1
-        rw [← conjTranspose_eq_transpose_of_trivial (S₀.submatrix Fin.castSucc id),
-          ← hG.conjTranspose_mul_self]
-        congr 1 <;> ext i j <;> simp [hS₀c]
-    | succ t ih =>
-      intro ht
-      have htake : (List.finRange n).take (t + 1) =
-          (List.finRange n).take t ++ [⟨t, by omega⟩] := by
-        rw [List.take_add_one, List.getElem?_eq_getElem (by rw [List.length_finRange]; omega)]
-        simp
-      rw [htake, List.foldl_append, List.foldl_cons, List.foldl_nil]
-      exact hstep t (by omega) _ (ih (by omega))
-  obtain ⟨hU, hd, hy, hgram⟩ := hpre n le_rfl
-  rw [List.take_of_length_le (by simp)] at hU hd hy hgram
+  have h0 : Inv 0 S₀ := by
+    refine ⟨fun i j hji => ?_, fun i => ?_, fun _ h => absurd h (Nat.not_lt_zero _), ?_⟩
+    · rw [hS₀c]
+      exact hG.isUpperTriangular hji
+    · rw [hS₀c]
+      exact (hG.diag_pos i).ne'
+    · rw [transpose_mul_self_castSucc, hS₀l]
+      congr 1
+      rw [← conjTranspose_eq_transpose_of_trivial (S₀.submatrix Fin.castSucc id),
+        ← hG.conjTranspose_mul_self]
+      congr 1 <;> ext i j <;> simp [hS₀c]
+  obtain ⟨hU, hd, hy, hgram⟩ := List.foldl_finRange_induction Inv (f := cholUpdStep) h0
+    fun k S hS => hstep k k.isLt S hS
   set S := (List.finRange n).foldl cholUpdStep S₀ with hS
   have hy0 : S (Fin.last n) = 0 := funext fun j => hy j j.isLt
   rw [transpose_mul_self_castSucc, hy0, vecMulVec_zero, add_zero] at hgram

@@ -1,7 +1,7 @@
 namespace = "GolubVanLoan.Chapter04"
 
 [[node]]
-id = "vandermonde"
+id = "vandermondeCols"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, §4.6, Definition'
 

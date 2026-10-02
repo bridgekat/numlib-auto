@@ -18,8 +18,9 @@ Algorithm 6.2.2), the augmented system (6.2.10), the GSVD ((6.2.11)–(6.2.12)) 
 Real matrices, 0-based, vectors of least-squares statements in `EuclideanSpace ℝ (Fin n)` acting
 through `Matrix.toEuclideanLin`; the book's parameter `λ` is written `μ`. The LSQI problem
 `min ‖Ax − b‖₂` subject to `‖Bx − d‖₂ ≤ α` is the backbone's `Matrix.IsLSQISolution A b B d α`, the
-sphere problem (6.2.1) its instance `IsLSQISolution A b α` at `B = I`, `d = 0`; the LSE problem is
-`Matrix.IsLSESolution A b B d`. An SVD is a factorization `Matrix.IsSVD A U σ V`; its sums run over
+sphere problem (6.2.1) its instance `IsSphereLSQISolution A b α` at `B = I`, `d = 0`; the LSE
+problem is `Matrix.IsLSESolution A b B d`. An SVD is a factorization `Matrix.IsSVD A U σ V`; its
+sums run over
 `i < min(m, n)`, the terms with `σ_i = 0` (those past the rank) vanishing. A GSVD is
 `Matrix.IsGSVD A B U₁ U₂ X α β` in Theorem 6.1.1's block order.
 
@@ -63,15 +64,15 @@ variable {m n : ℕ}
 /-- **§6.2.1, the LSQI problem (6.2.1).** "Given `A ∈ ℝ^{m×n}`, `b ∈ ℝ^m`, and a positive
 `α ∈ ℝ`, we consider the problem `min_{‖x‖₂ ≤ α} ‖Ax − b‖₂`": the sphere case `B = I`, `d = 0` of
 the backbone's `Matrix.IsLSQISolution`. -/
-def IsLSQISolution (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) (α : ℝ)
+def IsSphereLSQISolution (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) (α : ℝ)
     (x : EuclideanSpace ℝ (Fin n)) : Prop :=
   Matrix.IsLSQISolution A b (1 : Matrix (Fin n) (Fin n) ℝ) 0 α x
 
 /-- **§6.2.1.** "If the unconstrained minimum norm solution `x_LS` satisfies `‖x_LS‖₂ ≤ α`, then it
 obviously solves (6.2.1)." -/
 theorem isLSQISolution_pinv (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) {α : ℝ}
-    (h : ‖toEuclideanLin A.pinv b‖ ≤ α) : IsLSQISolution A b α (toEuclideanLin A.pinv b) := by
-  unfold IsLSQISolution
+    (h : ‖toEuclideanLin A.pinv b‖ ≤ α) : IsSphereLSQISolution A b α (toEuclideanLin A.pinv b) := by
+  unfold IsSphereLSQISolution
   exact isLSQISolution_of_isLeastSquaresSolution (isLeastSquaresSolution_pinv A b)
     (by rw [toEuclideanLin_one_apply, sub_zero]; exact h)
 
@@ -91,19 +92,19 @@ theorem equation_6_2_3 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin
     ‖toEuclideanLin A.pinv b‖ ^ 2 = ∑ i : Fin (min m n),
       (Uᵀ (Fin.castLE (min_le_left m n) i) ⬝ᵥ WithLp.ofLp b / σ i) ^ 2 := by
   refine ⟨?_, ?_⟩
-  · rw [pinv_mulVec_eq_sum_of_isSVD h b]
+  · rw [toEuclideanLin_pinv_eq_sum_of_isSVD h b]
     refine sum_congr rfl fun i _ => ?_
     rw [smul_smul, inner_toLp_eq_dotProduct, RCLike.ofReal_real_eq_id, id_eq, inv_mul_eq_div]
-  · rw [norm_sq_pinv_mulVec_eq_sum_of_isSVD h b]
+  · rw [norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD h b]
     refine sum_congr rfl fun i _ => ?_
     rw [inner_toLp_eq_dotProduct, div_pow, div_pow, Real.norm_eq_abs, sq_abs]
 
 /-- **§6.2.1.** "Otherwise, `‖x_LS‖₂² = ∑ (u_iᵀb/σ_i)² > α²`, and it follows that the solution to
 (6.2.1) is on the boundary of the constraint sphere": if `α² < ‖x_LS‖₂²`, every
 solution has `‖x‖₂ = α`. -/
-theorem IsLSQISolution.norm_eq {A : Matrix (Fin m) (Fin n) ℝ} {b : EuclideanSpace ℝ (Fin m)}
+theorem IsSphereLSQISolution.norm_eq {A : Matrix (Fin m) (Fin n) ℝ} {b : EuclideanSpace ℝ (Fin m)}
     {α : ℝ} {x : EuclideanSpace ℝ (Fin n)}
-    (hLS : α ^ 2 < ‖toEuclideanLin A.pinv b‖ ^ 2) (h : IsLSQISolution A b α x) : ‖x‖ = α :=
+    (hLS : α ^ 2 < ‖toEuclideanLin A.pinv b‖ ^ 2) (h : IsSphereLSQISolution A b α x) : ‖x‖ = α :=
   Matrix.IsLSQISolution.norm_eq_of_lt (lt_of_pow_lt_pow_left₀ 2 (norm_nonneg _) hLS)
     (show Matrix.IsLSQISolution A b (1 : Matrix (Fin n) (Fin n) ℝ) 0 α x from h)
 
@@ -125,7 +126,7 @@ theorem secular_existsUnique {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m
     StrictAntiOn (fun μ => ‖toEuclideanLin (A.tikhonov μ) b‖ ^ 2 - α ^ 2) (Set.Ioi 0) ∧
     ∃! μ, 0 < μ ∧ ‖toEuclideanLin (A.tikhonov μ) b‖ ^ 2 - α ^ 2 = 0 := by
   refine ⟨fun μ hμ => ?_, ?_, ?_⟩
-  · rw [norm_sq_tikhonov_mulVec_eq_sum_of_isSVD h hμ b]
+  · rw [norm_sq_toEuclideanLin_tikhonov_eq_sum_of_isSVD h hμ b]
     congr 1
     refine sum_congr rfl fun i _ => ?_
     rw [inner_toLp_eq_dotProduct, Real.norm_eq_abs, sq_mul_abs_div]
@@ -140,11 +141,11 @@ theorem secular_existsUnique {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m
       rw [this, norm_zero] at hα
       linarith
     intro μ hμ ν hν hμν
-    have := strictAntiOn_norm_tikhonov_mulVec A hb hμ hν hμν
+    have := strictAntiOn_norm_toEuclideanLin_tikhonov A hb hμ hν hμν
     simp only at this ⊢
     have h0 := norm_nonneg (toEuclideanLin (A.tikhonov ν) b)
     nlinarith
-  · obtain ⟨μ, ⟨hμ, hμα⟩, huniq⟩ := existsUnique_norm_tikhonov_mulVec_eq hα0 hα
+  · obtain ⟨μ, ⟨hμ, hμα⟩, huniq⟩ := existsUnique_norm_toEuclideanLin_tikhonov_eq hα0 hα
     refine ⟨μ, ⟨hμ, by rw [hμα, sub_self]⟩, fun ν ⟨hν, hνα⟩ => huniq ν ⟨hν, ?_⟩⟩
     have h2 : ‖toEuclideanLin (A.tikhonov ν) b‖ ^ 2 = α ^ 2 := by linarith
     exact (pow_left_inj₀ (norm_nonneg _) hα0.le two_ne_zero).1 h2
@@ -159,17 +160,17 @@ theorem equation_6_2_4 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin
       ‖toEuclideanLin A (toEuclideanLin A.pinv b) - b‖ ^ 2 +
         ∑ i ∈ univ.filter (fun i : Fin (min m n) => σ i ≠ 0),
           (μ * (Uᵀ (Fin.castLE (min_le_left m n) i) ⬝ᵥ WithLp.ofLp b) / (σ i ^ 2 + μ)) ^ 2 := by
-  rw [norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD h hμ b]
+  rw [norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD h hμ b]
   congr 1
   refine sum_congr rfl fun i _ => ?_
   rw [inner_toLp_eq_dotProduct, Real.norm_eq_abs, sq_mul_abs_div]
 
 /-- **§6.2.1.** "It follows that `x(λ₊)` solves (6.2.1)": if `λ > 0` and `‖x(λ)‖₂ = α`, then `x(λ)`
 solves the LSQI problem. -/
-theorem isLSQISolution_tikhonov {A : Matrix (Fin m) (Fin n) ℝ} {b : EuclideanSpace ℝ (Fin m)}
+theorem isSphereLSQISolution_tikhonov {A : Matrix (Fin m) (Fin n) ℝ} {b : EuclideanSpace ℝ (Fin m)}
     {μ : ℝ} (hμ : 0 < μ) {α : ℝ} (hn : ‖toEuclideanLin (A.tikhonov μ) b‖ = α) :
-    IsLSQISolution A b α (toEuclideanLin (A.tikhonov μ) b) := by
-  unfold IsLSQISolution
+    IsSphereLSQISolution A b α (toEuclideanLin (A.tikhonov μ) b) := by
+  unfold IsSphereLSQISolution
   exact Matrix.isLSQISolution_tikhonov hμ hn
 
 section Programs
@@ -224,31 +225,16 @@ noncomputable def algorithm_6_2_1
 
 end Programs
 
-/-- A left fold of additions is the sum of the list. -/
-private theorem foldl_add_eq {ι β : Type*} [AddCommMonoid β] (g : ι → β) (l : List ι) (a : β) :
-    l.foldl (fun s i => s + g i) a = a + (l.map g).sum := by
-  induction l generalizing a with
-  | nil => simp
-  | cons i l ih => rw [List.foldl_cons, ih, List.map_cons, List.sum_cons, add_assoc]
-
 /-- A sum over the filtered indices of `Fin k`, when the dropped terms vanish, is the full sum. -/
-private theorem sum_map_filter_finRange {k : ℕ} {β : Type*} [AddCommMonoid β] (p : Fin k → Prop)
+private theorem sum_map_filter_finRange' {k : ℕ} {β : Type*} [AddCommMonoid β] (p : Fin k → Prop)
     [DecidablePred p] (g : Fin k → β) (hg : ∀ i, ¬ p i → g i = 0) :
     (((List.finRange k).filter fun i => decide (p i)).map g).sum = ∑ i, g i := by
-  have key : ∀ l : List (Fin k), ((l.filter fun i => decide (p i)).map g).sum = (l.map g).sum := by
-    intro l
-    induction l with
-    | nil => simp
-    | cons i l ih =>
-      by_cases hi : p i
-      · simp [hi, ih]
-      · simp [hi, ih, hg i hi]
-  rw [key, Fin.sum_univ_def]
+  rw [List.sum_map_filter_finRange, Finset.sum_filter_of_ne fun i _ h => not_not.1 (mt (hg i) h)]
 
 /-- **Algorithm 6.2.1 is correct in exact arithmetic**: for `α > 0`, an `svd` subroutine returning
 SVDs and a `root` subroutine returning the positive root of a function that has exactly one, the
 output solves the LSQI problem (6.2.1). The first branch is `x(λ₊)` (`equation_6_1_14`,
-`secular_existsUnique`, `isLSQISolution_tikhonov`), the second `x_LS` (`equation_6_2_3`,
+`secular_existsUnique`, `isSphereLSQISolution_tikhonov`), the second `x_LS` (`equation_6_2_3`,
 `isLSQISolution_pinv`). -/
 theorem algorithm_6_2_1_spec
     (svd : Matrix (Fin m) (Fin n) ℝ →
@@ -258,7 +244,7 @@ theorem algorithm_6_2_1_spec
     (hroot : ∀ f : ℝ → ℝ, (∃! t, 0 < t ∧ f t = 0) →
       0 < Id.run (root f) ∧ f (Id.run (root f)) = 0)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {α : ℝ} (hα : 0 < α) :
-    IsLSQISolution A (WithLp.toLp 2 b) α
+    IsSphereLSQISolution A (WithLp.toLp 2 b) α
       (WithLp.toLp 2 (Id.run (algorithm_6_2_1 pure svd root A b α))) := by
   have hs := hsvd A
   have h112 : ∀ (c : ℝ) (v x : Fin n → ℝ),
@@ -280,10 +266,11 @@ theorem algorithm_6_2_1_spec
       (∀ i : Fin (min m n), σ i = 0 → g i = 0) →
         ∀ a, I.foldl (fun s i => s + g i) a = a + ∑ i, g i :=
     fun g hg a => by
-      rw [foldl_add_eq, hI, sum_map_filter_finRange _ g fun i hi => hg i (not_not.1 hi)]
+      rw [List.foldl_add_eq_add_sum_map, hI,
+        sum_map_filter_finRange' _ g fun i hi => hg i (not_not.1 hi)]
   have hlist : ∀ g : Fin (min m n) → ℝ, (∀ i : Fin (min m n), σ i = 0 → g i = 0) →
       (I.map g).sum = ∑ i, g i := fun g hg => by
-    rw [hI, sum_map_filter_finRange _ g fun i hi => hg i (not_not.1 hi)]
+    rw [hI, sum_map_filter_finRange' _ g fun i hi => hg i (not_not.1 hi)]
   rw [hsum _ (fun i hi => by simp [hi]), zero_add]
   have hs2 : ∑ i : Fin (min m n), (Uᵀ *ᵥ b) (Fin.castLE (min_le_left m n) i) / σ i *
       ((Uᵀ *ᵥ b) (Fin.castLE (min_le_left m n) i) / σ i) =
@@ -300,7 +287,7 @@ theorem algorithm_6_2_1_spec
     obtain ⟨hf1, -, hf3⟩ := secular_existsUnique hs hα hαLS
     suffices key : ∀ F : ℝ → ℝ, (∀ t, 0 < t →
         F t = ‖toEuclideanLin (A.tikhonov t) (WithLp.toLp 2 b)‖ ^ 2 - α ^ 2) →
-        IsLSQISolution A (WithLp.toLp 2 b) α (WithLp.toLp 2 (List.foldl
+        IsSphereLSQISolution A (WithLp.toLp 2 b) α (WithLp.toLp 2 (List.foldl
           (fun x (i : Fin (min m n)) =>
           x + (σ i * (Uᵀ *ᵥ b) (Fin.castLE (min_le_left m n) i) /
             (σ i * σ i + Id.run (root F))) • fun j => V j (Fin.castLE (min_le_right m n) i))
@@ -324,7 +311,7 @@ theorem algorithm_6_2_1_spec
       rw [WithLp.toLp_smul, inner_toLp_eq_dotProduct, WithLp.ofLp_toLp, sq]
       rfl
     rw [hx]
-    refine isLSQISolution_tikhonov hlam ?_
+    refine isSphereLSQISolution_tikhonov hlam ?_
     have h2 := hF _ hlam
     rw [hflam] at h2
     exact (pow_left_inj₀ (norm_nonneg _) hα.le two_ne_zero).1 (by linarith)
@@ -357,8 +344,8 @@ theorem equation_6_2_6 {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ} {B 
       Matrix.IsLSQISolution (rectDiagonal α') (toEuclideanLin U₁ᵀ b)
         (shiftedRectDiagonal ((fromRows A B).rank - m₂) β') (toEuclideanLin U₂ᵀ d) α
         (toEuclideanLin X⁻¹ x) := by
-  have e₁ := h.star_mul_mul_left
-  have e₂ := h.star_mul_mul_right
+  have e₁ := h.star_mul_mul₁
+  have e₂ := h.star_mul_mul₂
   simp only [RCLike.ofReal_real_eq_id, id_eq] at e₁ e₂
   rw [isLSQISolution_iff_of_isGSVD h, e₁, e₂, star_eq_conjTranspose, star_eq_conjTranspose,
     conjTranspose_eq_transpose_of_trivial, conjTranspose_eq_transpose_of_trivial]
@@ -481,20 +468,20 @@ forward substitution (Algorithm 3.1.1) on `R(1:m₂, 1:m₂)ᵀ`; `AQ` is chapte
 residual `b − A(:, 1:m₂)y` and the two products forming `x` are gaxpys (Algorithm 1.1.3, the
 negation being exact); "Find `z`" names no method and is the parameter `ls`. Here `m₁ = m`,
 `n₁ = n`, `m₂ = p`, and `hpn : p ≤ n`. -/
-noncomputable def algorithm_6_2_2 {p : ℕ} (hpn : p ≤ n)
-    (ls : Matrix (Fin m) (Fin (n - p)) ℝ → (Fin m → ℝ) → M (Fin (n - p) → ℝ))
-    (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin p) (Fin n) ℝ) (b : Fin m → ℝ)
-    (d : Fin p → ℝ) : M (Fin n → ℝ) := do
+noncomputable def algorithm_6_2_2 {m₂ : ℕ} (hpn : m₂ ≤ n)
+    (ls : Matrix (Fin m) (Fin (n - m₂)) ℝ → (Fin m → ℝ) → M (Fin (n - m₂) → ℝ))
+    (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin m₂) (Fin n) ℝ) (b : Fin m → ℝ)
+    (d : Fin m₂ → ℝ) : M (Fin n → ℝ) := do
   let Aβ ← Chapter05.algorithm_5_2_1 rnd Bᵀ
   let Q ← Chapter05.forwardAccumulation rnd (Chapter05.storedReflectors Aβ.1 Aβ.2)
   let R := Chapter05.upperPart Aβ.1
   let y ← Chapter03.algorithm_3_1_1 rnd (R.firstRows hpn)ᵀ d
   let AQ ← Chapter01.algorithm_1_1_5 rnd A Q 0
   let c ← Chapter01.algorithm_1_1_3 rnd (-AQ.firstColumns hpn) y b
-  let z ← ls (AQ.submatrix id (Fin.cast (Nat.add_sub_cancel' hpn) ∘ Fin.natAdd p)) c
+  let z ← ls (AQ.submatrix id (Fin.cast (Nat.add_sub_cancel' hpn) ∘ Fin.natAdd m₂)) c
   let x₁ ← Chapter01.algorithm_1_1_3 rnd (Q.firstColumns hpn) y 0
   Chapter01.algorithm_1_1_3 rnd (Q.submatrix id (Fin.cast (Nat.add_sub_cancel' hpn) ∘
-    Fin.natAdd p)) z x₁
+    Fin.natAdd m₂)) z x₁
 
 end Programs
 
@@ -503,11 +490,11 @@ end Programs
 Householder QR of `Bᵀ` with the returned `β` is a QR factorization unconditionally
 (`Chapter05.algorithm_5_2_1_spec`, `Chapter05.forwardAccumulation_spec`), `R(1:m₂, 1:m₂)` has a
 nonzero diagonal because `Bᵀ` has full column rank, and the rest is `isLSESolution_qr`. -/
-theorem algorithm_6_2_2_spec {p : ℕ} (hpn : p ≤ n)
-    (ls : Matrix (Fin m) (Fin (n - p)) ℝ → (Fin m → ℝ) → Id (Fin (n - p) → ℝ))
+theorem algorithm_6_2_2_spec {m₂ : ℕ} (hpn : m₂ ≤ n)
+    (ls : Matrix (Fin m) (Fin (n - m₂)) ℝ → (Fin m → ℝ) → Id (Fin (n - m₂) → ℝ))
     (hls : ∀ C c, IsLeastSquaresSolution C (WithLp.toLp 2 c) (WithLp.toLp 2 (Id.run (ls C c))))
-    {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix (Fin p) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
-    (hB : LinearIndependent ℝ B) (b : Fin m → ℝ) (d : Fin p → ℝ) :
+    {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix (Fin m₂) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
+    (hB : LinearIndependent ℝ B) (b : Fin m → ℝ) (d : Fin m₂ → ℝ) :
     IsLSESolution A (WithLp.toLp 2 b) B (WithLp.toLp 2 d)
         (WithLp.toLp 2 (Id.run (algorithm_6_2_2 pure hpn ls A B b d))) ∧
       ∀ x, IsLSESolution A (WithLp.toLp 2 b) B (WithLp.toLp 2 d) x →
@@ -529,7 +516,7 @@ theorem algorithm_6_2_2_spec {p : ℕ} (hpn : p ≤ n)
   set Aβ := Id.run (Chapter05.algorithm_5_2_1 pure Bᵀ) with hAβ
   set Q := Chapter05.factoredQ Aβ.2 Aβ.1 with hQ
   set R := Chapter05.upperPart Aβ.1 with hR
-  set e : Fin (n - p) → Fin n := Fin.cast (Nat.add_sub_cancel' hpn) ∘ Fin.natAdd p with he
+  set e : Fin (n - m₂) → Fin n := Fin.cast (Nat.add_sub_cancel' hpn) ∘ Fin.natAdd m₂ with he
   have hBT : LinearIndependent ℝ (Bᵀ)ᵀ := by rwa [transpose_transpose]
   -- the triangular solve
   set R₁ := R.firstRows hpn with hR₁
@@ -683,11 +670,17 @@ theorem equation_6_2_14 {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
 
 /-- **§6.2.6.** "This shows that `x(λ) → x` as `λ → ∞`", for `B` of full row rank, `m₁ ≥ n₁`,
 `null(A) ∩ null(B) = {0}` and `x` the LSE solution. -/
-theorem tendsto_penaltyLSE {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
+theorem tendsto_penaltyLSE_solution {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
     {B : Matrix (Fin m₂) (Fin n) ℝ} (hnm : n ≤ m₁) (hB : LinearIndependent ℝ B)
     (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥)
     {b : EuclideanSpace ℝ (Fin m₁)} {d : EuclideanSpace ℝ (Fin m₂)} {x : EuclideanSpace ℝ (Fin n)}
     (hx : IsLSESolution A b B d x) : Tendsto (penaltyLSE A B b d) atTop (𝓝 x) :=
   Matrix.tendsto_penaltyLSE hnm hB hAB hx
+
+@[deprecated (since := "2026-09-30")] alias IsLSQISolution := IsSphereLSQISolution
+@[deprecated (since := "2026-09-30")] alias IsLSQISolution.norm_eq := IsSphereLSQISolution.norm_eq
+@[deprecated (since := "2026-09-30")]
+alias isLSQISolution_tikhonov := isSphereLSQISolution_tikhonov
+@[deprecated (since := "2026-09-30")] alias tendsto_penaltyLSE := tendsto_penaltyLSE_solution
 
 end GolubVanLoan.Chapter06

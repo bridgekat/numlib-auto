@@ -4,6 +4,7 @@ import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Numlib.Analysis.Matrix.Function.Basic
 import Numlib.Analysis.Matrix.Function.Triangular
 import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Analytic
+import Numlib.Conditioning.Problem
 import Numlib.LinearAlgebra.Matrix.Sylvester
 
 /-!
@@ -39,7 +40,9 @@ index `b : Fin n → Fin p`. Algorithm 9.1.1 follows the algorithm conventions o
 `Matrix.BlockTriangular.pfc_sylvester`); for the Sylvester equations of §9.1.5, the injectivity
 half of chapter 7's Lemma 7.1.5 over any finite index types,
 `Matrix.eq_zero_of_mul_sub_mul_eq_zero` (`Numlib/LinearAlgebra/Matrix/Sylvester`), applied on the
-blocks' index types.
+blocks' index types; for the relative condition number of §9.1.6,
+`Conditioning.scaledRelCondNumber` and its first-order formula
+`Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt` (`Numlib/Conditioning/Problem`).
 
 ## Not formalized
 
@@ -76,7 +79,7 @@ private theorem pfc_affine (a b : ℂ) (A : Matrix (Fin n) (Fin n) ℂ) :
     Algebra.algebraMap_eq_smul_one, smul_mul_assoc, one_mul] at h
   exact h
 
-/-! ### The Jordan-based definition -/
+/-! ### §9.1.1 The Jordan-based definition -/
 
 /-- The rational examples of the chapter introduction and §9.1: `p(A) = I + A` for
 `p(z) = 1 + z`; `r(A) = (I - A/2)⁻¹ (I + A/2)` for `r(z) = (1 - z/2)⁻¹ (1 + z/2)`, `2 ∉ λ(A)`; and
@@ -150,7 +153,7 @@ theorem equation_9_1_4 (f : ℂ → ℂ) (m : ℕ) (μ : ℂ) (i j : Fin m) :
       if i ≤ j then iteratedDeriv ((j : ℕ) - i) f μ / ((j : ℕ) - i)! else 0 :=
   Matrix.pfc_jordanBlock_apply f m μ i j
 
-/-! ### The Taylor series representation -/
+/-! ### §9.1.2 The Taylor series representation -/
 
 /-- The coefficients of a power series of `f` at `z₀` are its Taylor coefficients (9.1.5). -/
 private theorem coeff_eq_taylor {f : ℂ → ℂ} {p : FormalMultilinearSeries ℂ ℂ ℂ} {z₀ : ℂ}
@@ -307,7 +310,7 @@ theorem equation_9_1_8 (f : ℂ → ℂ) {X : Matrix (Fin n) (Fin n) ℂ} (hX : 
   have h := Matrix.pfc_conj ((Matrix.isUnit_nonsing_inv_iff).mpr hX) f A
   rwa [Matrix.nonsing_inv_nonsing_inv X hdet] at h
 
-/-! ### The eigenvector approach -/
+/-! ### §9.1.3 The eigenvector approach -/
 
 /-- **Corollary 9.1.3** with (9.1.9): if `A = X · diag(λ₁, …, λ_n) · X⁻¹` then
 `f(A) = X · diag(f(λ₁), …, f(λ_n)) · X⁻¹` — for every `f`: a diagonalizable matrix needs only
@@ -317,7 +320,7 @@ theorem corollary_9_1_3 (f : ℂ → ℂ) {A X : Matrix (Fin n) (Fin n) ℂ} (hX
     pfc f A = X * Matrix.diagonal (f ∘ d) * X⁻¹ := by
   rw [hA, Matrix.pfc_conj hX, Matrix.pfc_diagonal]
 
-/-! ### The Schur decomposition approach -/
+/-! ### §9.1.4 The Schur decomposition approach -/
 
 /-- **Theorem 9.1.4** with (9.1.10): for upper triangular `T` with `λ_i = t_ii` and
 `F = f(T)`: `f_ij = 0` for `i > j`, `f_ii = f(λ_i)`, and for `i < j`
@@ -581,7 +584,7 @@ theorem algorithm_9_1_1_spec (f : ℂ → ℂ) {T : Matrix (Fin n) (Fin n) ℂ}
   rw [hrun]
   exact hfold _ [] F₀ (List.nil_append _) (fun a b h => hF₀ a b (h.resolve_right (by simp))) a b
 
-/-! ### A block Schur–Parlett approach -/
+/-! ### §9.1.5 A block Schur–Parlett approach -/
 
 /-- §9.1.5: for block upper triangular `T` (`T.BlockTriangular b`, `b : Fin n → Fin p` the block
 index), the conformal blocks of `F = f(T)` satisfy `F_ij = 0` for `i > j` and
@@ -644,136 +647,26 @@ theorem equation_9_1_12_unique {p : ℕ} {b : Fin n → Fin p} {T : Matrix (Fin 
   · rintro rfl
     exact h12
 
-/-! ### Sensitivity of matrix functions -/
+/-! ### §9.1.6 Sensitivity of matrix functions -/
 
 section Condition
 
 /-- **The relative condition number of a matrix function** (§9.1.6):
 `cond_rel(f, A) = lim_{ε → 0} sup_{‖E‖ ≤ ε‖A‖} ‖f(A + E) - f(A)‖ / (ε ‖f(A)‖)`, for a map
-`F : V → V` of a normed space (for `f(A)`: `F = pfc f` on `ℂ^{n×n}` with a chosen norm). The
-book's `lim` is made total as a `limsup` over `ε → 0⁺`, in `ℝ≥0∞`. -/
-noncomputable def condRel {V : Type*} [NormedAddCommGroup V] (F : V → V) (A : V) : ℝ≥0∞ :=
-  limsup (fun ε : ℝ => ⨆ (E : V) (_ : ‖E‖ ≤ ε * ‖A‖),
-    ‖F (A + E) - F A‖ₑ / (ENNReal.ofReal ε * ‖F A‖ₑ)) (𝓝[>] 0)
+`F : V → V` of a normed space (for `f(A)`: `F = pfc f` on `ℂ^{n×n}` with a chosen norm). It is
+the backbone's `Conditioning.scaledRelCondNumber F A` (the book's `lim` made total as a `limsup`
+over `ε → 0⁺`, in `ℝ≥0∞`). -/
+noncomputable abbrev condRel {V : Type*} [NormedAddCommGroup V] (F : V → V) (A : V) : ℝ≥0∞ :=
+  Conditioning.scaledRelCondNumber F A
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- The remainder of a Fréchet derivative is eventually small on the balls `‖E‖ ≤ ε ‖A‖`. -/
-private theorem eventually_norm_remainder_le {F : V → V} {L : V →L[𝕜] V} {A : V}
-    (hF : HasFDerivAt F L A) {c : ℝ} (hc : 0 < c) :
-    ∀ᶠ ε in 𝓝[>] (0 : ℝ), ∀ E : V, ‖E‖ ≤ ε * ‖A‖ → ‖F (A + E) - F A - L E‖ ≤ c * ‖E‖ := by
-  have h := (hasFDerivAt_iff_isLittleO_nhds_zero.mp hF).def hc
-  obtain ⟨ρ, hρ, hball⟩ := Metric.eventually_nhds_iff.mp h
-  have hA' : 0 < ‖A‖ + 1 := by positivity
-  filter_upwards [Ioo_mem_nhdsGT (show (0 : ℝ) < ρ / (‖A‖ + 1) by positivity)] with ε hε E hE
-  refine hball ?_
-  rw [dist_zero_right]
-  calc ‖E‖ ≤ ε * ‖A‖ := hE
-    _ ≤ ε * (‖A‖ + 1) := mul_le_mul_of_nonneg_left (by linarith) hε.1.le
-    _ < ρ := (lt_div_iff₀ hA').mp hε.2
-
-/-- The upper half of `condRel_eq_of_hasFDerivAt`. -/
-private theorem eventually_condRel_le {F : V → V} {L : V →L[𝕜] V} {A : V}
-    (hF : HasFDerivAt F L A) (hFA : F A ≠ 0) {c : ℝ} (hc : 0 < c) :
-    ∀ᶠ ε in 𝓝[>] (0 : ℝ), (⨆ (E : V) (_ : ‖E‖ ≤ ε * ‖A‖),
-      ‖F (A + E) - F A‖ₑ / (ENNReal.ofReal ε * ‖F A‖ₑ)) ≤
-        ENNReal.ofReal ((‖L‖ + c) * ‖A‖ / ‖F A‖) := by
-  filter_upwards [eventually_norm_remainder_le hF hc, self_mem_nhdsWithin] with ε hR hε
-  have hε0 : 0 < ε := hε
-  have hφ : 0 < ‖F A‖ := norm_pos_iff.mpr hFA
-  refine iSup₂_le fun E hE => ENNReal.div_le_of_le_mul ?_
-  rw [← ofReal_norm, ← ofReal_norm, ← ENNReal.ofReal_mul hε0.le,
-    ← ENNReal.ofReal_mul (by positivity)]
-  refine ENNReal.ofReal_le_ofReal ?_
-  calc ‖F (A + E) - F A‖ = ‖L E + (F (A + E) - F A - L E)‖ := by congr 1; abel
-    _ ≤ ‖L E‖ + ‖F (A + E) - F A - L E‖ := norm_add_le _ _
-    _ ≤ ‖L‖ * ‖E‖ + c * ‖E‖ := add_le_add (L.le_opNorm E) (hR E hE)
-    _ = (‖L‖ + c) * ‖E‖ := by ring
-    _ ≤ (‖L‖ + c) * (ε * ‖A‖) := by gcongr
-    _ = (‖L‖ + c) * ‖A‖ / ‖F A‖ * (ε * ‖F A‖) := by field_simp
-
-/-- The lower half of `condRel_eq_of_hasFDerivAt`. -/
-private theorem eventually_le_condRel {F : V → V} {L : V →L[𝕜] V} {A : V}
-    (hF : HasFDerivAt F L A) (hFA : F A ≠ 0) {c : ℝ} (hc : 0 < c) :
-    ∀ᶠ ε in 𝓝[>] (0 : ℝ), ENNReal.ofReal ((‖L‖ - c) * ‖A‖ / ‖F A‖) ≤
-      ⨆ (E : V) (_ : ‖E‖ ≤ ε * ‖A‖), ‖F (A + E) - F A‖ₑ / (ENNReal.ofReal ε * ‖F A‖ₑ) := by
-  have hφ : 0 < ‖F A‖ := norm_pos_iff.mpr hFA
-  rcases le_or_gt ‖L‖ c with hLc | hLc
-  · refine Eventually.of_forall fun ε => ?_
-    rw [ENNReal.ofReal_of_nonpos (div_nonpos_of_nonpos_of_nonneg
-      (mul_nonpos_of_nonpos_of_nonneg (by linarith) (norm_nonneg _)) (norm_nonneg _))]
-    exact zero_le
-  obtain ⟨x, hx1, hx⟩ := L.exists_lt_apply_of_lt_opNorm (show ‖L‖ - c / 2 < ‖L‖ by linarith)
-  filter_upwards [eventually_norm_remainder_le hF (half_pos hc), self_mem_nhdsWithin]
-    with ε hR hε
-  have hε0 : 0 < ε := hε
-  have hεA : 0 ≤ ε * ‖A‖ := by positivity
-  set E : V := ((ε * ‖A‖ : ℝ) : 𝕜) • x with hEdef
-  have hEn : ‖E‖ = ε * ‖A‖ * ‖x‖ := by
-    rw [hEdef, norm_smul, RCLike.norm_ofReal, abs_of_nonneg hεA]
-  have hE : ‖E‖ ≤ ε * ‖A‖ := by
-    rw [hEn]
-    exact mul_le_of_le_one_right hεA hx1.le
-  have hLE : ‖L E‖ = ε * ‖A‖ * ‖L x‖ := by
-    rw [hEdef, map_smul, norm_smul, RCLike.norm_ofReal, abs_of_nonneg hεA]
-  have hsub : ‖L E‖ ≤ ‖F (A + E) - F A‖ + ‖F (A + E) - F A - L E‖ := by
-    calc ‖L E‖ = ‖(F (A + E) - F A) - (F (A + E) - F A - L E)‖ := by congr 1; abel
-      _ ≤ _ := norm_sub_le _ _
-  have h3 : ε * ‖A‖ * (‖L‖ - c / 2) ≤ ε * ‖A‖ * ‖L x‖ := mul_le_mul_of_nonneg_left hx.le hεA
-  have h4 : c / 2 * ‖E‖ ≤ c / 2 * (ε * ‖A‖) := mul_le_mul_of_nonneg_left hE (by positivity)
-  have hmain : (‖L‖ - c) * ‖A‖ / ‖F A‖ * (ε * ‖F A‖) ≤ ‖F (A + E) - F A‖ := by
-    have : (‖L‖ - c) * ‖A‖ / ‖F A‖ * (ε * ‖F A‖) = ε * ‖A‖ * (‖L‖ - c) := by
-      field_simp
-    rw [this]
-    nlinarith [hR E hE]
-  refine le_iSup₂_of_le E hE ?_
-  have hden0 : ENNReal.ofReal ε * ‖F A‖ₑ ≠ 0 :=
-    mul_ne_zero (ENNReal.ofReal_pos.mpr hε0).ne' (enorm_ne_zero.mpr hFA)
-  have hdent : ENNReal.ofReal ε * ‖F A‖ₑ ≠ ⊤ :=
-    ENNReal.mul_ne_top ENNReal.ofReal_ne_top enorm_ne_top
-  rw [ENNReal.le_div_iff_mul_le (Or.inl hden0) (Or.inl hdent), ← ofReal_norm, ← ofReal_norm,
-    ← ENNReal.ofReal_mul hε0.le,
-    ← ENNReal.ofReal_mul (div_nonneg (mul_nonneg (by linarith) (norm_nonneg _)) hφ.le)]
-  exact ENNReal.ofReal_le_ofReal hmain
-
 /-- §9.1.6, "essentially a normalized Fréchet derivative", made precise: if `F` has Fréchet
-derivative `L` at `A ≠ 0` and `F(A) ≠ 0`, then `cond_rel(F, A) = ‖L‖ ‖A‖ / ‖F(A)‖`. -/
+derivative `L` at `A ≠ 0` and `F(A) ≠ 0`, then `cond_rel(F, A) = ‖L‖ ‖A‖ / ‖F(A)‖`
+(`Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt`). -/
 theorem condRel_eq_of_hasFDerivAt {F : V → V} {L : V →L[𝕜] V} {A : V} (hF : HasFDerivAt F L A)
-    (hA : A ≠ 0) (hFA : F A ≠ 0) : condRel F A = ‖L‖ₑ * ‖A‖ₑ / ‖F A‖ₑ := by
-  have hφ : 0 < ‖F A‖ := norm_pos_iff.mpr hFA
-  have ha : 0 < ‖A‖ := norm_pos_iff.mpr hA
-  have hC : ‖L‖ₑ * ‖A‖ₑ / ‖F A‖ₑ = ENNReal.ofReal (‖L‖ * ‖A‖ / ‖F A‖) := by
-    rw [ENNReal.ofReal_div_of_pos hφ, ENNReal.ofReal_mul (norm_nonneg _), ofReal_norm,
-      ofReal_norm, ofReal_norm]
-  rw [hC]
-  refine Tendsto.limsup_eq (tendsto_order.2 ⟨fun b hb => ?_, fun b hb => ?_⟩)
-  · have hbt : b ≠ ⊤ := ne_top_of_lt hb
-    have hb' : b.toReal < ‖L‖ * ‖A‖ / ‖F A‖ := (ENNReal.lt_ofReal_iff_toReal_lt hbt).mp hb
-    have hc : 0 < (‖L‖ * ‖A‖ / ‖F A‖ - b.toReal) * ‖F A‖ / (2 * ‖A‖) :=
-      div_pos (mul_pos (sub_pos.mpr hb') hφ) (by positivity)
-    filter_upwards [eventually_le_condRel hF hFA hc] with ε hε
-    refine lt_of_lt_of_le ?_ hε
-    rw [ENNReal.lt_ofReal_iff_toReal_lt hbt]
-    have : (‖L‖ - (‖L‖ * ‖A‖ / ‖F A‖ - b.toReal) * ‖F A‖ / (2 * ‖A‖)) * ‖A‖ / ‖F A‖ =
-        ‖L‖ * ‖A‖ / ‖F A‖ - (‖L‖ * ‖A‖ / ‖F A‖ - b.toReal) / 2 := by
-      field_simp
-    rw [this]
-    linarith
-  · by_cases hbt : b = ⊤
-    · filter_upwards [eventually_condRel_le hF hFA one_pos] with ε hε
-      exact lt_of_le_of_lt hε (hbt ▸ ENNReal.ofReal_lt_top)
-    · have hb' : ‖L‖ * ‖A‖ / ‖F A‖ < b.toReal :=
-        (ENNReal.ofReal_lt_iff_lt_toReal (by positivity) hbt).mp hb
-      have hc : 0 < (b.toReal - ‖L‖ * ‖A‖ / ‖F A‖) * ‖F A‖ / (2 * ‖A‖) :=
-        div_pos (mul_pos (sub_pos.mpr hb') hφ) (by positivity)
-      filter_upwards [eventually_condRel_le hF hFA hc] with ε hε
-      refine lt_of_le_of_lt hε ?_
-      rw [ENNReal.ofReal_lt_iff_lt_toReal (by positivity) hbt]
-      have : (‖L‖ + (b.toReal - ‖L‖ * ‖A‖ / ‖F A‖) * ‖F A‖ / (2 * ‖A‖)) * ‖A‖ / ‖F A‖ =
-          ‖L‖ * ‖A‖ / ‖F A‖ + (b.toReal - ‖L‖ * ‖A‖ / ‖F A‖) / 2 := by
-        field_simp
-      rw [this]
-      linarith
+    (hA : A ≠ 0) (hFA : F A ≠ 0) : condRel F A = ‖L‖ₑ * ‖A‖ₑ / ‖F A‖ₑ :=
+  Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt hF hA hFA
 
 end Condition
 

@@ -47,7 +47,7 @@ id = "principalAngle_mono"
 source = 'Golub–Van Loan, Matrix Computations, §6.4.3'
 
 [[node]]
-id = "cosPrincipalAngle_le_one"
+id = "singularValues_transpose_mul_eq_cosPrincipalAngle"
 source = 'Golub–Van Loan, Matrix Computations, §6.4.3'
 
 [[node]]
@@ -73,11 +73,6 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 6.4.2'
 [[node]]
 id = "procrustes_solution_of_isPolarDecomposition"
 source = 'Golub–Van Loan, Matrix Computations, §6.4.1'
-
-[[node]]
-id = "nonzeroCount"
-deps = []
-source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.4.2'
 
 [[node]]
 id = "range_trailingColumns_eq_ker"

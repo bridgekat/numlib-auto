@@ -4,6 +4,7 @@ import Numlib.LinearAlgebra.Matrix.Procrustes
 import NumlibSurface.GolubVanLoan.Chapter01.Section01
 import NumlibSurface.GolubVanLoan.Chapter02.Section05
 import NumlibSurface.GolubVanLoan.Chapter05.Section02
+import NumlibSurface.GolubVanLoan.Chapter05.Section04
 import NumlibSurface.GolubVanLoan.Chapter06.Section03
 
 /-!
@@ -30,8 +31,8 @@ Algorithms 6.4.1–6.4.3 follow the algorithm conventions of `NumlibSurface/Golu
 matrix products are chapter 1's `algorithm_1_1_5` (every product and sum through the rounding hook
 `rnd`), and "Compute the SVD" is a monadic parameter `svd` (the book's SVD algorithm is chapter
 8's), whose specification the exact-arithmetic theorems assume. The ranks "`r = rank(A)`",
-"`q = rank(C)`" of Algorithm 6.4.2 are the numbers of nonzero computed singular values, a
-comparison on the values the program holds, and its column ranges are `trailingColumns` (§6.3).
+"`q = rank(C)`" of Algorithm 6.4.2 are the numbers of nonzero computed singular values, a comparison
+on the values the program holds, and its column ranges are `trailingColumns` (§6.3).
 The thin QR factorizations of Algorithm 6.4.3 are chapter 5's Householder QR
 (`Chapter05.algorithm_5_2_1`) with the orthogonal factor accumulated forward from the returned
 reflector data (`Chapter05.forwardAccumulation`, `Chapter05.storedReflectors`), of which the first
@@ -210,58 +211,33 @@ theorem theorem_6_4_1 {n t q : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix
 
 section NullSpaces
 
-/-- The number of nonzero values among `σ 0, …, σ (k − 1)`: the book's "`r = rank(A)`" read off a
-computed diagonal of singular values. -/
-noncomputable def nonzeroCount (σ : ℕ → ℝ) (k : ℕ) : ℕ :=
-  open Classical in ((Finset.range k).filter fun i => σ i ≠ 0).card
-
 /-- For sorted nonnegative values, the nonzero ones among the first `k` are exactly the first
-`nonzeroCount σ k`. -/
-theorem ne_zero_iff_lt_nonzeroCount {σ : ℕ → ℝ} (hσ : Antitone σ) (h0 : ∀ i, 0 ≤ σ i) {k i : ℕ}
-    (hi : i < k) : σ i ≠ 0 ↔ i < nonzeroCount σ k := by
-  classical
-  unfold nonzeroCount
+`Chapter05.deltaRank k 0 σ`: chapter 5's numerical rank (5.4.5) at `δ = 0` is the book's
+"`r = rank(A)`" read off a computed diagonal of singular values (§5.4.1). -/
+private theorem ne_zero_iff_lt_deltaRank {σ : ℕ → ℝ} (hσ : Antitone σ) (h0 : ∀ i, 0 ≤ σ i)
+    {k i : ℕ} (hi : i < k) : σ i ≠ 0 ↔ i < Chapter05.deltaRank k 0 σ := by
+  obtain ⟨-, h1, h2⟩ := Chapter05.deltaRank_spec (n := k) (δ := 0) hσ
   constructor
   · intro h
-    have hpos : 0 < σ i := lt_of_le_of_ne (h0 i) (Ne.symm h)
-    have hsub : Finset.range (i + 1) ⊆ (Finset.range k).filter fun j => σ j ≠ 0 := by
-      intro j hj
-      rw [Finset.mem_range] at hj
-      rw [Finset.mem_filter, Finset.mem_range]
-      exact ⟨by omega, (lt_of_lt_of_le hpos (hσ (by omega : j ≤ i))).ne'⟩
-    have := Finset.card_le_card hsub
-    rw [Finset.card_range] at this
-    omega
-  · intro h hz
-    have hsub : ((Finset.range k).filter fun j => σ j ≠ 0) ⊆ Finset.range i := by
-      intro j hj
-      rw [Finset.mem_filter, Finset.mem_range] at hj
-      rw [Finset.mem_range]
-      by_contra hji
-      exact hj.2 (le_antisymm (hz ▸ hσ (by omega : i ≤ j)) (h0 j))
-    have := Finset.card_le_card hsub
-    rw [Finset.card_range] at this
-    omega
-
-/-- `nonzeroCount σ k ≤ k`. -/
-theorem nonzeroCount_le (σ : ℕ → ℝ) (k : ℕ) : nonzeroCount σ k ≤ k := by
-  classical
-  unfold nonzeroCount
-  exact (Finset.card_filter_le _ _).trans (Finset.card_range k).le
+    by_contra hle
+    exact h (le_antisymm (h2 i (not_lt.1 hle) hi) (h0 i))
+  · intro h
+    exact (h1 i h).ne'
 
 /-- **The null space from an SVD**: if `U_Aᵀ A V_A = diag(σ_i)` and `r` is the number of nonzero
 `σ_i`, the trailing columns `V_A(:, r+1:n)` span `null(A)`. -/
 theorem range_trailingColumns_eq_ker {n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ}
     (h : IsSVD A U σ V) :
-    LinearMap.range (trailingColumns V (nonzeroCount σ (min m n))).mulVecLin =
+    LinearMap.range (trailingColumns V (Chapter05.deltaRank (min m n) 0 σ)).mulVecLin =
       LinearMap.ker A.mulVecLin := by
-  have hr := nonzeroCount_le σ (min m n)
-  have hset : ∀ j : Fin n, (m ≤ (j : ℕ) ∨ σ j = 0) ↔ nonzeroCount σ (min m n) ≤ j := by
+  have hr := (Chapter05.deltaRank_spec (n := min m n) (δ := 0) h.antitone).1
+  have hset : ∀ j : Fin n,
+      (m ≤ (j : ℕ) ∨ σ j = 0) ↔ Chapter05.deltaRank (min m n) 0 σ ≤ j := by
     intro j
     have hjn := j.isLt
     by_cases hj : (j : ℕ) < min m n
-    · have hiff := ne_zero_iff_lt_nonzeroCount h.antitone h.nonneg hj
+    · have hiff := ne_zero_iff_lt_deltaRank h.antitone h.nonneg hj
       constructor
       · rintro (hm | hz)
         · exact absurd hj (by have := min_le_left m n; omega)
@@ -283,14 +259,15 @@ theorem range_trailingColumns_eq_ker {n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
   ext w
   constructor
   · rintro ⟨j, rfl⟩
-    refine ⟨⟨nonzeroCount σ (min m n) + j, by have := j.isLt; omega⟩,
+    refine ⟨⟨Chapter05.deltaRank (min m n) 0 σ + j, by have := j.isLt; omega⟩,
       (hset _).2 (by simp), ?_⟩
     rfl
   · rintro ⟨j, hj, rfl⟩
     have hle := (hset j).1 hj
-    refine ⟨⟨j - nonzeroCount σ (min m n), by have := j.isLt; omega⟩, ?_⟩
+    refine ⟨⟨j - Chapter05.deltaRank (min m n) 0 σ, by have := j.isLt; omega⟩, ?_⟩
     funext k
-    change V k ⟨nonzeroCount σ (min m n) + (↑j - nonzeroCount σ (min m n)), _⟩ = V k j
+    change V k ⟨Chapter05.deltaRank (min m n) 0 σ + (↑j - Chapter05.deltaRank (min m n) 0 σ), _⟩ =
+      V k j
     congr 1
     exact Fin.ext (by rw [Fin.val_mk]; omega)
 
@@ -332,8 +309,8 @@ else
 end
 ```"
 The two SVDs are the parameters `svdA`, `svdC` (the latter for each column count), the ranks the
-numbers of nonzero computed singular values (`nonzeroCount`), the products chapter 1's
-`algorithm_1_1_5`. -/
+numbers of nonzero computed singular values (`Chapter05.deltaRank` at `δ = 0`), the products chapter
+1's `algorithm_1_1_5`. -/
 noncomputable def algorithm_6_4_2 {n : ℕ}
     (svdA : Matrix (Fin m) (Fin n) ℝ →
       M (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin n) (Fin n) ℝ))
@@ -342,11 +319,11 @@ noncomputable def algorithm_6_4_2 {n : ℕ}
     (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin p) (Fin n) ℝ) :
     M (Σ s : ℕ, Matrix (Fin n) (Fin s) ℝ) := do
   let SA ← svdA A
-  let r := nonzeroCount SA.2.1 (min m n)
+  let r := Chapter05.deltaRank (min m n) 0 SA.2.1
   if r < n then
     let C ← Chapter01.algorithm_1_1_5 rnd B (trailingColumns SA.2.2 r) 0
     let SC ← svdC (n - r) C
-    let q := nonzeroCount SC.2.1 (min p (n - r))
+    let q := Chapter05.deltaRank (min p (n - r)) 0 SC.2.1
     if q < n - r then
       let Y ← Chapter01.algorithm_1_1_5 rnd (trailingColumns SA.2.2 r)
         (trailingColumns SC.2.2 q) 0
@@ -384,7 +361,7 @@ theorem algorithm_6_4_2_spec {n : ℕ}
   have hsA := hA A
   simp only [algorithm_6_4_2, Id.run_bind] at hY
   generalize Id.run (svdA A) = SA at hY hsA
-  generalize hr : nonzeroCount SA.2.1 (min m n) = r at hY
+  generalize hr : Chapter05.deltaRank (min m n) 0 SA.2.1 = r at hY
   have hZ := trailingColumns_transpose_mul_self hsA.mem_unitaryGroup_right r
   have hZA := range_trailingColumns_eq_ker hsA
   rw [hr] at hZA
@@ -392,7 +369,7 @@ theorem algorithm_6_4_2_spec {n : ℕ}
   · simp only [Id.run_bind, Chapter01.algorithm_1_1_5_spec, zero_add] at hY
     have hsC := hC (n - r) (B * trailingColumns SA.2.2 r)
     generalize Id.run (svdC (n - r) (B * trailingColumns SA.2.2 r)) = SC at hY hsC
-    generalize hq : nonzeroCount SC.2.1 (min p (n - r)) = q at hY
+    generalize hq : Chapter05.deltaRank (min p (n - r)) 0 SC.2.1 = q at hY
     have hW := trailingColumns_transpose_mul_self hsC.mem_unitaryGroup_right q
     have hWB := range_trailingColumns_eq_ker hsC
     rw [hq] at hWB
@@ -457,27 +434,11 @@ section Matrices
 variable {q : ℕ}
 
 open scoped Matrix.Norms.L2Operator in
-/-- A matrix with orthonormal columns has 2-norm at most `1`. -/
-private theorem l2_opNorm_le_one_of_transpose_mul_self {n : ℕ} {Q : Matrix (Fin m) (Fin n) ℝ}
-    (hQ : Qᵀ * Q = 1) : ‖Q‖ ≤ 1 := by
-  have h1 : ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ = ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ *
-      ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ := by
-    have := l2_opNorm_conjTranspose_mul_self (1 : Matrix (Fin n) (Fin n) ℝ)
-    rwa [conjTranspose_one, Matrix.one_mul] at this
-  have h2 : ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ ≤ 1 := by
-    rcases eq_or_ne ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ 0 with h0 | h0
-    · rw [h0]; exact zero_le_one
-    · exact le_of_eq (by field_simp at h1; linarith)
-  have h3 : ‖Q‖ * ‖Q‖ ≤ 1 := by
-    rw [← l2_opNorm_conjTranspose_mul_self, conjTranspose_eq_transpose_of_trivial, hQ]
-    exact h2
-  nlinarith [norm_nonneg Q]
-
-open scoped Matrix.Norms.L2Operator in
 /-- **§6.4.3, the singular values of `Q_AᵀQ_B`.** With `A = Q_AR_A`, `B = Q_BR_B` thin QR
 factorizations (`Q_A`, `Q_B` with orthonormal columns): "Since `‖Q_AᵀQ_B‖₂ ≤ 1`, all the singular
 values are between 0 and 1 and we may write `σ_i = cos(θ_i)`." -/
-theorem cosPrincipalAngle_le_one {QA : Matrix (Fin m) (Fin p) ℝ} {QB : Matrix (Fin m) (Fin q) ℝ}
+theorem singularValues_transpose_mul_eq_cosPrincipalAngle {QA : Matrix (Fin m) (Fin p) ℝ}
+    {QB : Matrix (Fin m) (Fin q) ℝ}
     (hA : QAᵀ * QA = 1) (hB : QBᵀ * QB = 1) :
     ‖QAᵀ * QB‖ ≤ 1 ∧ ∀ i : ℕ,
       (LinearMap.range (toEuclideanLin QA)).cosPrincipalAngle
@@ -491,8 +452,8 @@ theorem cosPrincipalAngle_le_one {QA : Matrix (Fin m) (Fin p) ℝ} {QB : Matrix 
   · calc ‖QAᵀ * QB‖ ≤ ‖QAᵀ‖ * ‖QB‖ := l2_opNorm_mul _ _
       _ ≤ 1 * 1 := by
           rw [← conjTranspose_eq_transpose_of_trivial, l2_opNorm_conjTranspose]
-          exact mul_le_mul (l2_opNorm_le_one_of_transpose_mul_self hA)
-            (l2_opNorm_le_one_of_transpose_mul_self hB) (norm_nonneg _) zero_le_one
+          exact mul_le_mul (l2_opNorm_le_one_of_conjTranspose_mul_self_eq_one hA')
+            (l2_opNorm_le_one_of_conjTranspose_mul_self_eq_one hB') (norm_nonneg _) zero_le_one
       _ = 1 := one_mul 1
   · have e := Submodule.cosPrincipalAngle_eq_singularValues hA' hB' i
     rw [conjTranspose_eq_transpose_of_trivial] at e
@@ -613,7 +574,8 @@ private theorem range_toEuclideanLin_firstColumns {k : ℕ} {N : Matrix (Fin m) 
 
 /-- **The SVD step of Algorithm 6.4.3**: for `Q_A`, `Q_B` with orthonormal columns and an SVD
 `Q_AᵀQ_B = YΣZᵀ`, the diagonal of `Σ` is the list of cosines of the principal angles between the
-ranges, and the columns of `Q_A Y(:, 1:q)`, `Q_B Z` are principal vectors. -/
+ranges, and the columns of `Q_A Y(:, 1:q)`, `Q_B Z` are principal vectors: the backbone's
+`Submodule.cosPrincipalAngle_eq_of_isSVD` and `Submodule.isPrincipalVectors_of_isSVD`. -/
 theorem isPrincipalVectors_of_isSVD {QA : Matrix (Fin m) (Fin p) ℝ}
     {QB : Matrix (Fin m) (Fin q) ℝ} (hA : QAᵀ * QA = 1) (hB : QBᵀ * QB = 1) (hqp : q ≤ p)
     {F G : Submodule ℝ (EuclideanSpace ℝ (Fin m))} (hF : LinearMap.range (toEuclideanLin QA) = F)
@@ -627,76 +589,9 @@ theorem isPrincipalVectors_of_isSVD {QA : Matrix (Fin m) (Fin p) ℝ}
   subst hF hG
   have hA' : QAᴴ * QA = 1 := by rwa [conjTranspose_eq_transpose_of_trivial]
   have hB' : QBᴴ * QB = 1 := by rwa [conjTranspose_eq_transpose_of_trivial]
-  have hcos : ∀ k < q, σ k = (LinearMap.range (toEuclideanLin QA)).cosPrincipalAngle
-      (LinearMap.range (toEuclideanLin QB)) k := fun k hk => by
-    rw [Submodule.cosPrincipalAngle_eq_singularValues hA' hB',
-      conjTranspose_eq_transpose_of_trivial,
-      h.singularValues_eq (by omega) hk]
-  have hYY : Yᵀ * Y = 1 := by
-    have := mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_left
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  have hZZ : Zᵀ * Z = 1 := by
-    have := mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_right
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  have hcol : ∀ {k l : ℕ} (N : Matrix (Fin m) (Fin k) ℝ) (N' : Matrix (Fin k) (Fin l) ℝ)
-      (j : Fin l),
-      (WithLp.toLp 2 ((N * N').col j) : EuclideanSpace ℝ (Fin m)) =
-        toEuclideanLin N (WithLp.toLp 2 (N'.col j)) := fun N N' j => by
-    rw [toEuclideanLin_toLp]
-    congr 1
-  refine ⟨hcos, ⟨?_, ?_, ?_, ?_, ?_, ?_⟩⟩
-  · have hinj : Function.Injective (toEuclideanLin QB) := fun x y hxy => by
-      have := congrArg (toEuclideanLin QBᵀ) hxy
-      rwa [← toEuclideanLin_mul_apply, ← toEuclideanLin_mul_apply, hB, toEuclideanLin_one,
-        LinearMap.id_apply, LinearMap.id_apply] at this
-    rw [LinearMap.finrank_range_of_inj hinj, finrank_euclideanSpace_fin]
-  · refine orthonormal_toLp_col ?_
-    have hY₁ : (firstColumns Y hqp)ᵀ * firstColumns Y hqp = 1 := by
-      rw [firstColumns, transpose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id, hYY]
-      exact submatrix_one _ (Fin.castLE_injective hqp)
-    rw [transpose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc QAᵀ, hA, Matrix.one_mul, hY₁]
-  · refine orthonormal_toLp_col ?_
-    rw [transpose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc QBᵀ, hB, Matrix.one_mul, hZZ]
-  · intro k
-    rw [hcol]
-    exact ⟨_, rfl⟩
-  · intro k
-    rw [hcol]
-    exact ⟨_, rfl⟩
-  · intro j
-    have hP : ∀ x, (LinearMap.range (toEuclideanLin QA)).starProjection x =
-        toEuclideanLin (QA * QAᵀ) x := fun x => by
-      rw [← conjTranspose_eq_transpose_of_trivial,
-        toEuclideanLin_mul_conjTranspose_eq_starProjection hA']
-      rfl
-    rw [← hcos j j.isLt, hP, hcol, hcol, ← toEuclideanLin_mul_apply, toEuclideanLin_toLp,
-      toEuclideanLin_toLp]
-    have hC := h.eq_mul_mul_star
-    simp only [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
-      RCLike.ofReal_real_eq_id, id_eq] at hC
-    have hZj : Zᵀ *ᵥ Z.col j = Pi.single j 1 := by
-      funext i
-      have := congrFun (congrFun hZZ i) j
-      rw [mul_apply] at this
-      rw [Pi.single_apply, ← one_apply, ← this]
-      rfl
-    have hSig : (rectDiagonal σ : Matrix (Fin p) (Fin q) ℝ) *ᵥ Pi.single j 1 =
-        σ j • Pi.single (Fin.castLE hqp j) 1 := by
-      rw [mulVec_single_one]
-      funext i
-      simp only [col_apply, rectDiagonal_apply, Pi.smul_apply, Pi.single_apply, smul_eq_mul]
-      by_cases hij : (i : ℕ) = j
-      · have : i = Fin.castLE hqp j := Fin.ext hij
-        rw [ite_eq_left hij, ite_eq_left this, hij, mul_one]
-      · have : i ≠ Fin.castLE hqp j := fun e => hij (by rw [e]; rfl)
-        rw [ite_eq_right hij, ite_eq_right this, mul_zero]
-    have e : (QA * QAᵀ * QB) *ᵥ Z.col j = σ j • (QA *ᵥ (firstColumns Y hqp).col j) := by
-      rw [Matrix.mul_assoc, hC]
-      simp only [← mulVec_mulVec]
-      rw [hZj, hSig, mulVec_smul, mulVec_smul, mulVec_single_one]
-      rfl
-    rw [e, WithLp.toLp_smul]
-    rfl
+  have h' : IsSVD (QAᴴ * QB) Y σ Z := by rwa [conjTranspose_eq_transpose_of_trivial]
+  exact ⟨fun k hk => (Submodule.cosPrincipalAngle_eq_of_isSVD hA' hB' h' (by omega) hk).symm,
+    Submodule.isPrincipalVectors_of_isSVD hA' hB' hqp h'⟩
 
 /-- **Algorithm 6.4.3 is correct in exact arithmetic**: for `A`, `B` with linearly independent
 columns (`q ≤ p ≤ m`; the Householder QR factorizations of chapter 5 need no further hypothesis)
@@ -768,5 +663,8 @@ theorem theorem_6_4_2 {q : ℕ} {A : Matrix (Fin m) (Fin p) ℝ} {B : Matrix (Fi
   congr 1
   refine Set.image_congr fun i hi => ?_
   exact hfg.eq_of_cosPrincipalAngle_eq_one ((hs i).2 hi)
+
+@[deprecated (since := "2026-09-30")]
+alias cosPrincipalAngle_le_one := singularValues_transpose_mul_eq_cosPrincipalAngle
 
 end GolubVanLoan.Chapter06

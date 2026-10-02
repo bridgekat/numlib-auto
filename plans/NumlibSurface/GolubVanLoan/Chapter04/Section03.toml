@@ -81,3 +81,7 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 4.3.3'
 [[node]]
 id = "rank_inv_offDiag_eq"
 source = 'Golub–Van Loan, Matrix Computations, §4.3.8, Display'
+
+[[node]]
+id = "algorithm_4_3_4_spec_abs_le_one"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.4'

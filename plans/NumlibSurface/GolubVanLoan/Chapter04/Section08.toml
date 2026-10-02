@@ -164,22 +164,6 @@ id = "isUnit_fourierMatrix"
 source = 'Golub–Van Loan, Matrix Computations, §4.8.1, Display'
 
 [[node]]
-id = "mulVecAccum"
-source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.1'
-
-[[node]]
-id = "mulVecAccum_pure"
-source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.1'
-
-[[node]]
-id = "mulMatAccum"
-source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.2'
-
-[[node]]
-id = "mulMatAccum_pure"
-source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.2'
-
-[[node]]
 id = "fivePointRhs"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, §4.8.4, Display'
@@ -196,3 +180,16 @@ source = 'Golub–Van Loan, Matrix Computations, §4.8.4, Display'
 id = "altSignVecReal"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, §4.8.5, Display'
+
+[[node]]
+id = "transformCols"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.2'
+
+[[node]]
+id = "transformCols_id"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.2'
+
+[[node]]
+id = "algorithm_4_8_1_fft_spec"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.1'

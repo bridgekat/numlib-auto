@@ -13,8 +13,8 @@ Algorithms 4.6.1 (`Vᵀ a = f`) and 4.6.2 (`V z = b`) with their exact specifica
 
 The book indexes from `0` in this section, and so does this file: nodes `x : Fin (n + 1) → ℝ`,
 distinct (`Function.Injective x`). The book's `V(x₀, …, x_n)`, whose *columns* are the powers of
-the nodes, is `vandermonde x = (Matrix.vandermonde x)ᵀ` (Mathlib's rows are the nodes). The book's
-elementary bidiagonal `L_k(α)` and diagonal `D_k` are the backbone's
+the nodes, is `vandermondeCols x = (Matrix.vandermonde x)ᵀ` (Mathlib's rows are the nodes). The
+book's elementary bidiagonal `L_k(α)` and diagonal `D_k` are the backbone's
 `BjorckPereyra.lowerBidiag n k α` and `BjorckPereyra.diffScale x k`; its
 `Uᵀ = D_{n−1}⁻¹ L_{n−1}(1) ⋯ D_0⁻¹ L_0(1)` and `Lᵀ = L_0(x_0)ᵀ ⋯ L_{n−1}(x_{n−1})ᵀ` are
 `BjorckPereyra.upperFactorT x` and `BjorckPereyra.lowerFactorT x`.
@@ -49,12 +49,15 @@ variable {n : ℕ}
 /-- **§4.6, the Vandermonde matrix.** "A matrix `V ∈ ℝ^{(n+1)×(n+1)}` of the form
 `V = V(x₀, …, x_n) = [1 1 ⋯ 1; x₀ x₁ ⋯ x_n; ⋮; x₀ⁿ x₁ⁿ ⋯ x_nⁿ]` is said to be a Vandermonde
 matrix": entry `(i, j)` is `x_j ^ i`, the transpose of Mathlib's `Matrix.vandermonde x`. -/
-def vandermonde (x : Fin (n + 1) → ℝ) : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ :=
+def vandermondeCols (x : Fin (n + 1) → ℝ) : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ :=
   (Matrix.vandermonde x)ᵀ
 
 /-- The entries of `V(x₀, …, x_n)`: `V i j = x_j ^ i`. -/
-theorem vandermonde_apply (x : Fin (n + 1) → ℝ) (i j : Fin (n + 1)) :
-    vandermonde x i j = x j ^ (i : ℕ) := rfl
+theorem vandermondeCols_apply (x : Fin (n + 1) → ℝ) (i j : Fin (n + 1)) :
+    vandermondeCols x i j = x j ^ (i : ℕ) := rfl
+
+@[deprecated (since := "2026-09-30")] alias vandermonde := vandermondeCols
+@[deprecated (since := "2026-09-30")] alias vandermonde_apply := vandermondeCols_apply
 
 /-- **§4.6.** "Note that the discrete Fourier transform matrix (§1.4.1) is a very special complex
 Vandermonde matrix": `F_n = (ω_n^{kj})` is the Vandermonde matrix of the nodes `ω_n^k`,
@@ -71,15 +74,15 @@ theorem dft_eq_vandermonde (n : ℕ) :
 if `Vᵀ a = f` and `p(x) = ∑_{j=0}^{n} a_j x^j`, then `p(x_i) = f_i` for `i = 0:n`" (and
 conversely). -/
 theorem equation_4_6_1 (x a f : Fin (n + 1) → ℝ) :
-    (vandermonde x)ᵀ *ᵥ a = f ↔ ∀ i, (∑ j, C (a j) * X ^ (j : ℕ)).eval (x i) = f i := by
-  rw [vandermonde, transpose_transpose, funext_iff]
+    (vandermondeCols x)ᵀ *ᵥ a = f ↔ ∀ i, (∑ j, C (a j) * X ^ (j : ℕ)).eval (x i) = f i := by
+  rw [vandermondeCols, transpose_transpose, funext_iff]
   simp only [Matrix.vandermonde_mulVec_eq_eval]
 
 /-- **§4.6.1.** "Consequently, `V` is nonsingular as long as the `x_i` are distinct" — and only
 then. -/
 theorem vandermonde_isUnit_iff (x : Fin (n + 1) → ℝ) :
-    IsUnit (vandermonde x) ↔ Function.Injective x := by
-  rw [isUnit_iff_isUnit_det, vandermonde, det_transpose, isUnit_iff_ne_zero,
+    IsUnit (vandermondeCols x) ↔ Function.Injective x := by
+  rw [isUnit_iff_isUnit_det, vandermondeCols, det_transpose, isUnit_iff_ne_zero,
     Matrix.det_vandermonde_ne_zero_iff]
 
 /-- **(4.6.2).** "The first step in computing the `a_j` of (4.6.1) is to calculate the Newton
@@ -109,13 +112,14 @@ theorem vandermonde_inv_factorization {x : Fin (n + 1) → ℝ} (hx : Function.I
       DividedDifference.newtonOn (Iic k) x g) ∧
     (∀ c : Fin (n + 1) → ℝ, ∑ j, C ((BjorckPereyra.lowerFactorT x *ᵥ c) j) * X ^ (j : ℕ) =
       ∑ k : Fin (n + 1), C (c k) * ∏ i ∈ range k, (X - C (x i))) ∧
-    (vandermonde x)⁻¹ᵀ = BjorckPereyra.lowerFactorT x * BjorckPereyra.upperFactorT x ∧
-    (vandermonde x)⁻¹ = (BjorckPereyra.upperFactorT x)ᵀ * (BjorckPereyra.lowerFactorT x)ᵀ := by
+    (vandermondeCols x)⁻¹ᵀ = BjorckPereyra.lowerFactorT x * BjorckPereyra.upperFactorT x ∧
+    (vandermondeCols x)⁻¹ = (BjorckPereyra.upperFactorT x)ᵀ * (BjorckPereyra.lowerFactorT x)ᵀ := by
   refine ⟨fun g k => BjorckPereyra.upperFactorT_mulVec_eq_newtonOn hx g k,
     fun c => BjorckPereyra.lowerFactorT_mulVec_newtonCoeff x c, ?_, ?_⟩
-  · rw [vandermonde, ← transpose_nonsing_inv, transpose_transpose,
+  · rw [vandermondeCols, ← transpose_nonsing_inv, transpose_transpose,
       BjorckPereyra.inv_vandermonde_eq hx]
-  · rw [vandermonde, ← transpose_nonsing_inv, BjorckPereyra.inv_vandermonde_eq hx, transpose_mul]
+  · rw [vandermondeCols, ← transpose_nonsing_inv, BjorckPereyra.inv_vandermonde_eq hx,
+      transpose_mul]
 
 /-! ### Algorithms 4.6.1 and 4.6.2 -/
 
@@ -373,7 +377,7 @@ Vandermonde system `V(x₀, …, x_n)ᵀ a = f`. The first sweep computes `Uᵀ 
 that; `V⁻ᵀ = Lᵀ Uᵀ` (`vandermonde_inv_factorization`). -/
 theorem algorithm_4_6_1_spec {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (f : Fin (n + 1) → ℝ) :
-    (vandermonde x)ᵀ *ᵥ Id.run (algorithm_4_6_1 pure x f) = f := by
+    (vandermondeCols x)ᵀ *ᵥ Id.run (algorithm_4_6_1 pure x f) = f := by
   rw [algorithm_4_6_1_id]
   simp only [sweep_divDiff hx, sweep_transpose_lowerBidiag]
   simp only [node_castSucc x]
@@ -485,7 +489,7 @@ private theorem algorithm_4_6_2_id (x b : Fin (n + 1) → ℝ) :
 (`vandermonde_inv_factorization`). -/
 theorem algorithm_4_6_2_spec {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (b : Fin (n + 1) → ℝ) :
-    vandermonde x *ᵥ Id.run (algorithm_4_6_2 pure x b) = b := by
+    vandermondeCols x *ᵥ Id.run (algorithm_4_6_2 pure x b) = b := by
   have hsub : (fun (b : Fin (n + 1) → ℝ) (i : Fin n) =>
       Function.update b i.castSucc (b i.castSucc - b i.succ)) =
       fun b i => Function.update b i.castSucc (b i.castSucc - b i.succ * 1) := by

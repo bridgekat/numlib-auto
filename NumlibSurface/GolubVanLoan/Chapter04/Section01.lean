@@ -21,12 +21,18 @@ over `ℝ`); the margin `δ` of (4.1.3) is a hypothesis. The book's `A = L D L�
 `Matrix.IsLDM A L D L`, and "`A(1:k, 1:k)` nonsingular for `k = 1:n−1`" is
 `∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)` (the orders `0, …, n − 1`).
 
+Reading: the hypothesis of Algorithm 4.1.1, "`A` … has an LU factorization", is read as that of
+Theorem 4.1.3, nonsingular leading principal submatrices of orders `1, …, n − 1`; this is stronger
+than the existence of an LU factorization (a singular `A` may have one), and it is the hypothesis
+under which the book's derivation of the algorithm divides by the pivots `d_j`, `j < n`.
+
 Algorithm 4.1.1 follows the algorithm conventions of `NumlibSurface/GolubVanLoan`: every product
 and difference passes through the rounding hook `rnd`, and the book's inner products
 `A(j, 1:j−1) · v(1:j−1)` and `A(j+1:n, 1:j−1) · v(1:j−1)` are running differences from the entry of
-`A` (`runningDiff`), the operation order of the backbone relation `FloatingPoint.RoundsLDL`. The
-packed output holds `L` strictly below the diagonal and `D` on it; its unit lower factor is
-chapter 3's `Chapter03.packedL F = 1 + F.strictLower` and its diagonal factor
+`A` (the backbone's `FloatingPoint.runningDiff`), the operation order of the backbone relation
+`FloatingPoint.RoundsLDL`. The packed output holds `L` strictly below the diagonal and `D` on it;
+its unit lower factor is chapter 3's `Chapter03.packedL F = 1 + F.strictLower` and its diagonal
+factor
 `Matrix.diagonal F.diag`. The solve stage of (4.1.4) (`solveLDLT`) calls chapter 3's
 column-oriented substitutions, Algorithms 3.1.3 and 3.1.4, with a rounded division by the pivots in
 between.
@@ -85,7 +91,7 @@ theorem theorem_4_1_2 {A : Matrix (Fin n) (Fin n) ℝ} {δ : ℝ} (hδ : 0 < δ)
   · rw [Real.iSup_of_isEmpty]
     positivity
   refine ciSup_le fun j => ?_
-  have hx := IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec (A := A) hA'
+  have hx := mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin (A := A) hA'
     (A⁻¹ *ᵥ Pi.single j 1)
   rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).1 hu), one_mulVec] at hx
   have h1 : ∑ i, |(Pi.single j (1 : ℝ) : Fin n → ℝ) i| = 1 := by
@@ -127,13 +133,6 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The running difference** `c − ∑_{k ∈ o} a_k b_k` in saxpy order: `t ← fl(t − fl(a_k b_k))`
-for `k` along the list `o`, starting from `t = c` (the book's `A(j, j) − A(j, 1:j−1) · v(1:j−1)`
-read from the entry of `A`, the order of the backbone relations `FloatingPoint.RoundsLU`,
-`RoundsLDL`, `RoundsCholeskyDiv`). -/
-def runningDiff {ι : Type} (o : List ι) (a b : ι → ℝ) (c : ℝ) : M ℝ :=
-  o.foldlM (fun (t : ℝ) (k : ι) => do let p ← rnd (a k * b k); rnd (t - p)) c
-
 /-- **Algorithm 4.1.1 (LDLT).** "If `A ∈ ℝⁿˣⁿ` is symmetric and has an LU factorization, then this
 algorithm computes a unit lower triangular matrix `L` and a diagonal matrix
 `D = diag(d₁, …, d_n)` so `A = L D Lᵀ`. The entry `a_ij` is overwritten with `ℓ_ij` if `i > j` and
@@ -163,53 +162,6 @@ noncomputable def algorithm_4_1_1 (A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (
 
 end Programs
 
-/-- `t` is an **admissible running difference** `c − ∑_{k ∈ o} a_k b_k`: there are admissible
-roundings `p k` of the products `a_k b_k` such that `t` is an admissible running sum from `c` of
-the `−p k` in the order of `o` — the entry relation of the backbone's `RoundsLU`, `RoundsLDL`,
-`RoundsCholeskyDiv`. -/
-def IsRunningDiff (fp : RoundingModel ℝ) {ι : Type} (o : List ι) (a b : ι → ℝ) (c t : ℝ) : Prop :=
-  ∃ p : ι → ℝ, (∀ k ∈ o, fp.Rounds (a k * b k) (p k)) ∧
-    RoundsSumFrom fp c (o.map fun k => -p k) t
-
-/-- An admissible running difference only reads the factors `a k`, `b k` for `k` in the list. -/
-theorem IsRunningDiff.congr {fp : RoundingModel ℝ} {ι : Type} {o : List ι} {a a' b b' : ι → ℝ}
-    {c t : ℝ} (h : IsRunningDiff fp o a b c t) (ha : ∀ k ∈ o, a' k = a k)
-    (hb : ∀ k ∈ o, b' k = b k) : IsRunningDiff fp o a' b' c t := by
-  obtain ⟨p, hp, hs⟩ := h
-  exact ⟨p, fun k hk => by rw [ha k hk, hb k hk]; exact hp k hk, hs⟩
-
-/-- The run set of a running difference over a duplicate-free list is the set of admissible
-running differences. -/
-theorem mem_run_runningDiff_iff {fp : RoundingModel ℝ} {ι : Type} {o : List ι} (ho : o.Nodup)
-    (a b : ι → ℝ) (c t : ℝ) :
-    t ∈ (runningDiff fp.round o a b c).run ↔ IsRunningDiff fp o a b c t := by
-  classical
-  unfold runningDiff IsRunningDiff
-  induction o generalizing c with
-  | nil =>
-    simp only [List.foldlM_nil, SetM.mem_run_pure, List.not_mem_nil, IsEmpty.forall_iff,
-      implies_true, List.map_nil, true_and, exists_const]
-    exact ⟨fun h => by subst h; exact .nil _, fun h => by cases h; rfl⟩
-  | cons a₀ o ih =>
-    rcases List.nodup_cons.1 ho with ⟨ha, ho'⟩
-    simp only [List.foldlM_cons, SetM.mem_run_bind, RoundingModel.mem_run_round, ih ho']
-    constructor
-    · rintro ⟨c', ⟨p₀, hp₀, hc'⟩, p, hp, hsum⟩
-      refine ⟨Function.update p a₀ p₀, fun k hk => ?_, ?_⟩
-      · rcases List.mem_cons.1 hk with rfl | hk
-        · rwa [Function.update_self]
-        · rw [Function.update_of_ne fun e : k = a₀ => ha (e ▸ hk)]
-          exact hp k hk
-      · rw [List.map_cons, Function.update_self]
-        have hmap : (o.map fun k => -Function.update p a₀ p₀ k) = o.map fun k => -p k :=
-          List.map_congr_left fun k hk => by
-            rw [Function.update_of_ne fun e : k = a₀ => ha (e ▸ hk)]
-        rw [hmap]
-        exact .cons (by rwa [← sub_eq_add_neg]) hsum
-    · rintro ⟨p, hp, (_ | ⟨hc', hsum⟩)⟩
-      exact ⟨_, ⟨p a₀, hp a₀ List.mem_cons_self, by rwa [sub_eq_add_neg]⟩, p,
-        fun k hk => hp k (List.mem_cons_of_mem _ hk), hsum⟩
-
 /-- **A loop writing one entry of column `j` per row.** Over a duplicate-free list of rows, a loop
 whose step `i` replaces the entry `(i, j)` by a result of `h i` applied to the current row `i` has
 as results the matrices whose rows off the list are unchanged and whose row `i` on the list is the
@@ -228,48 +180,40 @@ theorem mem_run_foldlM_updateRow_iff {m k : ℕ} {l : List (Fin m)} (hl : l.Nodu
   simp only [bind_assoc, pure_bind, SetM.mem_run_bind, SetM.mem_run_pure] at key
   exact key
 
-/-- The exact running difference is `c − ∑_{k ∈ o} a_k b_k`. -/
-theorem runningDiff_id {ι : Type} (o : List ι) (a b : ι → ℝ) (c : ℝ) :
-    Id.run (runningDiff (M := Id) pure o a b c) = c - (o.map fun k => a k * b k).sum := by
-  unfold runningDiff
-  induction o generalizing c with
-  | nil => simp
-  | cons k o ih =>
-    simp only [List.foldlM_cons, pure_bind] at ih ⊢
-    rw [ih, List.map_cons, List.sum_cons]
-    ring
+/-- The indices below `j`, in increasing order: the order of the book's inner products
+`A(j, 1:j−1) · v(1:j−1)` in the factorizations of this chapter. -/
+abbrev below (j : Fin n) : List (Fin n) := (List.finRange n).filter (· < j)
+
+theorem mem_below {j k : Fin n} : k ∈ below j ↔ k < j := by simp [below]
+
+theorem nodup_below (j : Fin n) : (below j).Nodup := (List.nodup_finRange n).filter _
 
 section Bridge
 
 variable (fp : RoundingModel ℝ)
 
-/-- The indices below `j`, in increasing order. -/
-private abbrev lt (j : Fin n) : List (Fin n) := (List.finRange n).filter (· < j)
-
-private theorem mem_lt {j k : Fin n} : k ∈ lt j ↔ k < j := by simp [lt]
-
-private theorem nodup_lt (j : Fin n) : (lt j).Nodup := (List.nodup_finRange n).filter _
 
 /-- Column `j` of the packed state `S` is a finished column of Algorithm 4.1.1: with the rounded
 products `v k = fl(ℓ_jk d_k)`, the pivot is the running difference of `a_jj` and the entries below
 it are the rounded quotients of the running differences of `a_ij` by the pivot. -/
 private def ColDone (A S : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) : Prop :=
-  ∃ v : Fin n → ℝ, (∀ k ∈ lt j, fp.Rounds (S j k * S k k) (v k)) ∧
-    IsRunningDiff fp (lt j) (S j) v (A j j) (S j j) ∧
-    ∀ i, j < i → ∃ t, IsRunningDiff fp (lt j) (S i) v (A i j) t ∧ fp.Rounds (t / S j j) (S i j)
+  ∃ v : Fin n → ℝ, (∀ k ∈ below j, fp.Rounds (S j k * S k k) (v k)) ∧
+    RoundsRunningDiff fp (below j) (S j) v (A j j) (S j j) ∧
+    ∀ i, j < i → ∃ t, RoundsRunningDiff fp (below j) (S i) v (A i j) t ∧
+      fp.Rounds (t / S j j) (S i j)
 
 /-- A finished column stays finished when the state changes only in columns to its right. -/
 private theorem ColDone.congr {A S S' : Matrix (Fin n) (Fin n) ℝ} {j : Fin n}
     (h : ColDone fp A S j) (hS : ∀ i k, k ≤ j → S' i k = S i k) : ColDone fp A S' j := by
   obtain ⟨v, hv, hd, hcol⟩ := h
   refine ⟨v, fun k hk => ?_, ?_, fun i hi => ?_⟩
-  · have hkj := le_of_lt (mem_lt.1 hk)
+  · have hkj := le_of_lt (mem_below.1 hk)
     rw [hS j k hkj, hS k k hkj]
     exact hv k hk
   · rw [hS j j le_rfl]
-    exact hd.congr (fun k hk => hS j k (le_of_lt (mem_lt.1 hk))) fun _ _ => rfl
+    exact hd.congr (fun k hk => hS j k (le_of_lt (mem_below.1 hk))) fun _ _ => rfl
   · obtain ⟨t, ht, hl⟩ := hcol i hi
-    refine ⟨t, ht.congr (fun k hk => hS i k (le_of_lt (mem_lt.1 hk))) fun _ _ => rfl, ?_⟩
+    refine ⟨t, ht.congr (fun k hk => hS i k (le_of_lt (mem_below.1 hk))) fun _ _ => rfl, ?_⟩
     rw [hS i j le_rfl, hS j j le_rfl]
     exact hl
 
@@ -282,13 +226,13 @@ private def Inv (A : Matrix (Fin n) (Fin n) ℝ) (c : ℕ) (S : Matrix (Fin n) (
 private theorem inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) (S : Matrix (Fin n) (Fin n) ℝ)
     (hS : Inv fp A j S) (S' : Matrix (Fin n) (Fin n) ℝ)
     (hS' : S' ∈ ((do
-      let v ← (lt j).foldlM (fun (v : Fin n → ℝ) (i : Fin n) => do
+      let v ← (below j).foldlM (fun (v : Fin n → ℝ) (i : Fin n) => do
         let p ← fp.round (S j i * S i i)
         pure (Function.update v i p)) 0
-      let d ← runningDiff fp.round (lt j) (S j) v (S j j)
+      let d ← runningDiff fp.round (below j) (S j) v (S j j)
       ((List.finRange n).filter (j < ·)).foldlM
         (fun (B : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) => do
-          let t ← runningDiff fp.round (lt j) (B i) v (B i j)
+          let t ← runningDiff fp.round (below j) (B i) v (B i j)
           let l ← fp.round (t / d)
           pure (B.updateRow i (Function.update (B i) j l)))
         (S.updateRow j (Function.update (S j) j d))) : SetM _).run) :
@@ -297,17 +241,18 @@ private theorem inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) (S : Matri
   simp only [SetM.mem_run_bind] at hS'
   obtain ⟨v, hv, d, hd, hS'⟩ := hS'
   -- the products `v`
-  have hv' : ∀ k ∈ lt j, fp.Rounds (S j k * S k k) (v k) := by
+  have hv' : ∀ k ∈ below j, fp.Rounds (S j k * S k k) (v k) := by
     have := (SetM.mem_run_foldlM_update_of_nodup
-      (fun (i : Fin n) (_ : ℝ) (_ : Fin n → ℝ) => fp.round (S j i * S i i)) (lt j) (nodup_lt j)
+      (fun (i : Fin n) (_ : ℝ) (_ : Fin n → ℝ) => fp.round (S j i * S i i)) (below j)
+      (nodup_below j)
       (fun _ _ _ _ _ _ => rfl) 0 v).1 hv
     exact fun k hk => this.2 k hk
-  have hd' : IsRunningDiff fp (lt j) (S j) v (S j j) d :=
-    (mem_run_runningDiff_iff (nodup_lt j) _ _ _ _).1 hd
+  have hd' : RoundsRunningDiff fp (below j) (S j) v (S j j) d :=
+    (mem_run_runningDiff_iff (nodup_below j)).1 hd
   -- the column loop writes row `i > j` of the matrix once
   set S₁ := S.updateRow j (Function.update (S j) j d) with hS₁
   have hcol := (mem_run_foldlM_updateRow_iff ((List.nodup_finRange n).filter _) j
-    (fun i r => do let t ← runningDiff fp.round (lt j) r v (r j); fp.round (t / d)) S₁ S').1
+    (fun i r => do let t ← runningDiff fp.round (below j) r v (r j); fp.round (t / d)) S₁ S').1
     (by simpa only [bind_assoc] using hS')
   obtain ⟨hout, hin⟩ := hcol
   have hmemgt : ∀ i, i ∈ (List.finRange n).filter (j < ·) ↔ j < i := fun i => by simp
@@ -340,20 +285,20 @@ private theorem inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) (S : Matri
       have hdiag : S' j' j' = d := by rw [hrowj, Function.update_self]
       have hSjj : S j' j' = A j' j' := hA j' j' le_rfl
       refine ⟨v, fun k hk => ?_, ?_, fun i hi => ?_⟩
-      · have hk' := ne_of_lt (mem_lt.1 hk)
+      · have hk' := ne_of_lt (mem_below.1 hk)
         rw [hother j' k hk', hother k k hk']
         exact hv' k hk
       · rw [hdiag, ← hSjj]
-        exact hd'.congr (fun k hk => hother j' k (ne_of_lt (mem_lt.1 hk))) fun _ _ => rfl
+        exact hd'.congr (fun k hk => hother j' k (ne_of_lt (mem_below.1 hk))) fun _ _ => rfl
       · obtain ⟨l, hx, hr⟩ := hin i ((hmemgt i).2 hi)
         simp only [SetM.mem_run_bind, RoundingModel.mem_run_round] at hx
         obtain ⟨t, ht, hl⟩ := hx
         have hS₁i : S₁ i = S i := by rw [hS₁, updateRow_ne (ne_of_gt hi)]
         rw [hS₁i] at ht hr
         refine ⟨t, ?_, ?_⟩
-        · have ht' := (mem_run_runningDiff_iff (nodup_lt j') _ _ _ _).1 ht
+        · have ht' := (mem_run_runningDiff_iff (nodup_below j')).1 ht
           rw [hA i j' le_rfl] at ht'
-          exact ht'.congr (fun k hk => hother i k (ne_of_lt (mem_lt.1 hk))) fun _ _ => rfl
+          exact ht'.congr (fun k hk => hother i k (ne_of_lt (mem_below.1 hk))) fun _ _ => rfl
         · rw [hdiag, hr, Function.update_self]
           exact hl
 
@@ -376,17 +321,17 @@ theorem algorithm_4_1_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
   · exact Chapter03.packedL_apply_self F i
   · intro j k hkj
     rw [hL j k hkj, diagonal_apply_eq, diag_apply]
-    exact hv j k (mem_lt.2 hkj)
+    exact hv j k (mem_below.2 hkj)
   · intro j
     obtain ⟨p, hp, hs⟩ := hd j
-    refine ⟨lt j, nodup_lt j, fun k => mem_lt, p, fun k hk => ?_, ?_⟩
-    · rw [hL j k (mem_lt.1 hk)]
+    refine ⟨below j, nodup_below j, fun k => mem_below, p, fun k hk => ?_, ?_⟩
+    · rw [hL j k (mem_below.1 hk)]
       exact hp k hk
     · rwa [diagonal_apply_eq, diag_apply]
   · intro i j hji
     obtain ⟨t, ⟨p, hp, hs⟩, hl⟩ := hcol j i hji
-    refine ⟨lt j, t, nodup_lt j, fun k => mem_lt, ⟨p, fun k hk => ?_, hs⟩, ?_⟩
-    · rw [hL i k (lt_trans (mem_lt.1 hk) hji)]
+    refine ⟨below j, t, nodup_below j, fun k => mem_below, ⟨p, fun k hk => ?_, hs⟩, ?_⟩
+    · rw [hL i k (lt_trans (mem_below.1 hk) hji)]
       exact hp k hk
     · rw [diagonal_apply_eq, diag_apply, hL i j hji]
       exact hl
@@ -473,7 +418,8 @@ private theorem roundsLDL_exact_diag_ne_zero {A L D : Matrix (Fin n) (Fin n) ℝ
 `k = 1:n−1`, the exact run computes the `L D Lᵀ` factorization of Theorem 4.1.3, with `L` the unit
 lower triangle `Chapter03.packedL F` of the packed output `F` and `D` its diagonal. Read off the
 bridge at the exact model (convention 11), once the pivots used as divisors are known to be
-nonzero. -/
+nonzero. Reading: the book's "has an LU factorization" is strengthened to the hypothesis of
+Theorem 4.1.3 (see the module doc). -/
 theorem algorithm_4_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hs : A.IsSymm)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
     IsLDM A (Chapter03.packedL (Id.run (algorithm_4_1_1 pure A)))

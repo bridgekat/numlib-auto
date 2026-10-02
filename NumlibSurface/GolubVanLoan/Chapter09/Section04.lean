@@ -59,7 +59,7 @@ namespace GolubVanLoan.Chapter09
 
 variable {n : ℕ}
 
-/-! ### The matrix sign function -/
+/-! ### §9.4.1 The matrix sign function -/
 
 /-- §9.4.1: if `X⁻¹ A X = [J₁ 0; 0 J₂]` with the eigenvalues of `J₁` (of size `m₁`) in the open
 left half plane and those of `J₂` (of size `m₂`) in the open right half plane, then
@@ -290,7 +290,7 @@ theorem equation_9_4_5 (S : Matrix (Fin n) (Fin n) ℂ) :
   congr 1
   noncomm_ring
 
-/-! ### The matrix square root -/
+/-! ### §9.4.2 The matrix square root -/
 
 /-- §9.4.2's definition: `F` is **the principal square root** of `A` if (a) `F² = A` and (b) every
 eigenvalue of `F` has positive real part. -/
@@ -305,15 +305,25 @@ theorem principalSqrt_existsUnique {A : Matrix (Fin n) (Fin n) ℂ}
   ⟨Matrix.existsUnique_sq_eq_of_re_pos hA,
     ⟨(Matrix.principalSqrt_sq hA).1, (Matrix.principalSqrt_sq hA).2.2⟩⟩
 
+open scoped Matrix.Norms.L2Operator in
 /-- **(9.4.7)** and §9.4.2: Newton's square-root iteration `X₀ = A`,
 `X_{k+1} = (X_k + X_k⁻¹ A)/2` satisfies `X_k = A^{1/2} S_k`, `S_k` the Newton sign iterates of
-`A^{1/2}`, and converges to `A^{1/2}` when no eigenvalue of `A` lies on `(-∞, 0]`. -/
+`A^{1/2}`, and converges to `A^{1/2}` when no eigenvalue of `A` lies on `(-∞, 0]`; "global
+convergence and local quadratic convergence follow from what we know about (9.4.1)": the `S_k`
+converge quadratically, `‖S_{k+1} - S‖₂ ≤ ½ ‖S_k⁻¹‖₂ ‖S_k - S‖₂²` with `S = sign(A^{1/2})`. -/
 theorem newtonSqrt_tendsto {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : spectrum ℂ A ⊆ Complex.slitPlane) :
     (∀ k, Matrix.newtonSqrtIterate A k =
       Matrix.principalSqrt A * Matrix.newtonSignIterate (Matrix.principalSqrt A) k) ∧
-    Tendsto (Matrix.newtonSqrtIterate A) atTop (𝓝 (Matrix.principalSqrt A)) :=
-  ⟨Matrix.newtonSqrtIterate_eq_mul_newtonSignIterate hA, Matrix.tendsto_newtonSqrtIterate hA⟩
+    Tendsto (Matrix.newtonSqrtIterate A) atTop (𝓝 (Matrix.principalSqrt A)) ∧
+    ∀ k, ‖Matrix.newtonSignIterate (Matrix.principalSqrt A) (k + 1) -
+        Matrix.matrixSign (Matrix.principalSqrt A)‖ ≤
+      2⁻¹ * ‖(Matrix.newtonSignIterate (Matrix.principalSqrt A) k)⁻¹‖ *
+        ‖Matrix.newtonSignIterate (Matrix.principalSqrt A) k -
+          Matrix.matrixSign (Matrix.principalSqrt A)‖ ^ 2 :=
+  ⟨Matrix.newtonSqrtIterate_eq_mul_newtonSignIterate hA, Matrix.tendsto_newtonSqrtIterate hA,
+    (newtonSign_tendsto fun μ hμ =>
+      ((principalSqrt_existsUnique hA).2.2 μ hμ).ne').2⟩
 
 /-- **(9.4.8)**: the Newton sign iterates `S̃_k` of `Ã = [0 A; I 0]` have the form
 `[0 X_k; Y_k 0]`, with `X₀ = A`, `Y₀ = I`, `X_{k+1} = (X_k + Y_k⁻¹)/2`,
@@ -384,96 +394,6 @@ theorem sign_block_sqrt {A : Matrix (Fin n) (Fin n) ℂ} (hA : spectrum ℂ A �
       Matrix.fromBlocks 0 (Matrix.principalSqrt A) (Matrix.principalSqrt A)⁻¹ 0 :=
   ⟨Matrix.tendsto_denmanBeavers_fst hA, Matrix.tendsto_denmanBeavers_snd hA,
     Matrix.matrixSign_fromBlocks_zero_one hA⟩
-
-/-! ### The matrix logarithm -/
-
-/-- §9.4.4: if the real eigenvalues of `A ∈ ℝ^{n×n}` are all positive, there is a unique real `X`
-with `e^X = A` and `λ(X) ⊆ {z : -π < Im z < π}`: the principal logarithm `log(A)`. -/
-theorem realLog_existsUnique {A : Matrix (Fin n) (Fin n) ℝ}
-    (hA : ∀ μ ∈ spectrum ℂ (A.map Complex.ofReal), μ.im = 0 → 0 < μ.re) :
-    ∃! X : Matrix (Fin n) (Fin n) ℝ, NormedSpace.exp X = A ∧
-      ∀ μ ∈ spectrum ℂ (X.map Complex.ofReal), |μ.im| < Real.pi := by
-  refine Matrix.existsUnique_real_exp_eq fun μ hμ => ?_
-  rw [Complex.mem_slitPlane_iff]
-  by_cases h : μ.im = 0
-  · exact Or.inl (hA μ hμ h)
-  · exact Or.inr h
-
-open scoped Matrix.Norms.L2Operator in
-/-- §9.4.4, the Maclaurin approximant `M_q(A) = ∑_{k=1}^{q} (-1)^{k+1} (A - I)ᵏ/k`: if
-`ρ(A - I) < 1` (every eigenvalue within `1` of `1`), then `M_q(A) → log(A)`, and `log(A)` is
-Mathlib's series logarithm (in the spectral norm). -/
-theorem log_maclaurin {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, ‖μ - 1‖ < 1) :
-    HasSum (fun k : ℕ => ((-1) ^ k / (k + 1) : ℂ) • (A - 1) ^ (k + 1)) (Matrix.principalLog A) ∧
-    Matrix.principalLog A = NormedSpace.log A :=
-  ⟨Matrix.hasSum_principalLog hA,
-    pfc_log_eq_normedSpace_log (Algebra.IsIntegral.isIntegral A) hA⟩
-
-/-- §9.4.4, the Gregory approximant
-`G_q(A) = -2 ∑_{k=0}^{q} ((I - A)(I + A)⁻¹)^{2k+1}/(2k + 1)`: if every eigenvalue of `A` has
-positive real part, then `G_q(A) → log(A)`. -/
-theorem log_gregory {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, 0 < μ.re) :
-    HasSum (fun k : ℕ => (-2 / (2 * k + 1) : ℂ) • ((1 - A) * (1 + A)⁻¹) ^ (2 * k + 1))
-      (Matrix.principalLog A) :=
-  Matrix.hasSum_principalLog_gregory hA
-
-/-- §9.4.4: `r₃₃(x) = N(x)/D(x)` with `D(x) = 60 + 90x + 36x² + 3x³` and
-`N(x) = 60x + 60x² + 11x³` (the book writes them at `x = A - I`) is the `(3,3)` Padé approximant
-of `log(1 + x)`: `D(0) ≠ 0` and `r₃₃(x) - log(1 + x) = O(x⁷)` as `x → 0`. -/
-theorem logPade33 :
-    (60 + 90 * 0 + 36 * 0 ^ 2 + 3 * 0 ^ 3 : ℂ) ≠ 0 ∧
-    (fun x : ℂ => (60 * x + 60 * x ^ 2 + 11 * x ^ 3) / (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3) -
-      Complex.log (1 + x)) =O[𝓝 0] fun x => x ^ 7 := by
-  refine ⟨by norm_num, ?_⟩
-  set D : ℂ → ℂ := fun x => 60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3
-  set P : ℂ → ℂ := fun x => -171 / 20 - 27 / 5 * x - 1 / 2 * x ^ 2
-  set R : ℂ → ℂ := fun x => Complex.log (1 + x) - Complex.logTaylor 7 x
-  have hD : Continuous D := by fun_prop
-  have hD0 : D 0 = 60 := by simp [D]
-  have hDne : ∀ᶠ x in 𝓝 (0 : ℂ), D x ≠ 0 :=
-    hD.continuousAt.eventually_ne (by rw [hD0]; norm_num)
-  -- the polynomial part: `D T₆ - N = x⁷ P`
-  have hpoly : ∀ x : ℂ, D x * Complex.logTaylor 7 x - (60 * x + 60 * x ^ 2 + 11 * x ^ 3) =
-      x ^ 7 * P x := fun x => by
-    simp only [D, P, Complex.logTaylor, Finset.sum_range_succ, Finset.sum_range_zero]
-    push_cast
-    ring
-  -- the remainder is `O(x⁷)`
-  have hR : R =O[𝓝 0] fun x => x ^ 7 := by
-    refine IsBigO.of_bound 2 ?_
-    filter_upwards [Metric.ball_mem_nhds (0 : ℂ) (by norm_num : (0 : ℝ) < 1 / 2)] with x hx
-    rw [Metric.mem_ball, dist_zero_right] at hx
-    have hb := Complex.norm_log_sub_logTaylor_le 6 (hx.trans (by norm_num))
-    have h1 : (1 - ‖x‖)⁻¹ ≤ 2 := by
-      rw [inv_le_comm₀ (by linarith) (by norm_num)]
-      linarith
-    calc ‖R x‖ ≤ ‖x‖ ^ 7 * (1 - ‖x‖)⁻¹ / (6 + 1) := hb
-      _ ≤ ‖x‖ ^ 7 * 2 / 1 := by gcongr; norm_num
-      _ = 2 * ‖x ^ 7‖ := by rw [norm_pow]; ring
-  have hinvD : (fun x => (D x)⁻¹) =O[𝓝 0] fun _ => (1 : ℂ) :=
-    ((hD.continuousAt.inv₀ (by rw [hD0]; norm_num)).tendsto).isBigO_one ℂ
-  have hPb : P =O[𝓝 0] fun _ => (1 : ℂ) :=
-    ((show Continuous P by fun_prop).continuousAt.tendsto).isBigO_one ℂ
-  have hmain : (fun x => -(x ^ 7 * P x) * (D x)⁻¹ - R x) =O[𝓝 0] fun x => x ^ 7 := by
-    refine IsBigO.sub ?_ hR
-    have := ((isBigO_refl (fun x : ℂ => x ^ 7) (𝓝 0)).mul hPb).mul hinvD
-    simpa only [mul_one, neg_mul] using this.neg_left
-  refine hmain.congr' ?_ EventuallyEq.rfl
-  filter_upwards [hDne] with x hx
-  have hx' : (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3 : ℂ) ≠ 0 := hx
-  have hDD : (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3 : ℂ) *
-      (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3)⁻¹ = 1 := mul_inv_cancel₀ hx'
-  rw [← hpoly x]
-  simp only [R, D]
-  rw [div_eq_mul_inv]
-  linear_combination (-Complex.logTaylor 7 x) * hDD
-
-/-- §9.4.4, inverse scaling and squaring: with `A₀ = A` and `A_k = A_{k-1}^{1/2}`,
-`log(A) = 2^k log(A_k)` for every `k`, when no eigenvalue of `A` lies on `(-∞, 0]`. -/
-theorem log_inverse_scaling {A : Matrix (Fin n) (Fin n) ℂ}
-    (hA : spectrum ℂ A ⊆ Complex.slitPlane) (k : ℕ) :
-    Matrix.principalLog A = (2 ^ k : ℂ) • Matrix.principalLog (Matrix.principalSqrt^[k] A) :=
-  Matrix.principalLog_eq_two_pow_smul hA k
 
 /-! ### §9.4.3 The polar decomposition -/
 
@@ -656,10 +576,116 @@ open scoped Matrix.Norms.Frobenius in
 (the two smallest). "Nonsingular" is strengthened to `det A · det Ã > 0`, without which the bound
 is false (see the errata above); Li and Sun's own hypothesis `‖A − Ã‖₂ < σ_n(A) + σ_n(Ã)` implies
 it. The backbone `Matrix.frobenius_norm_polar_sub_le`. -/
-theorem liSun {A Ã U Ũ P P' : Matrix (Fin n) (Fin n) ℝ} (h : Matrix.IsPolarDecomposition A U P)
+theorem li_sun {A Ã U Ũ P P' : Matrix (Fin n) (Fin n) ℝ} (h : Matrix.IsPolarDecomposition A U P)
     (h' : Matrix.IsPolarDecomposition Ã Ũ P') (hdet : 0 < A.det * Ã.det) :
     ‖U - Ũ‖ ≤ 4 * ‖A - Ã‖ / (A.sortedSingularValues (n - 2) + A.sortedSingularValues (n - 1) +
       Ã.sortedSingularValues (n - 2) + Ã.sortedSingularValues (n - 1)) :=
   Matrix.frobenius_norm_polar_sub_le h h' hdet
+
+@[deprecated (since := "2026-09-30")] alias liSun := li_sun
+
+/-! ### §9.4.4 The matrix logarithm -/
+
+/-- §9.4.4: if the real eigenvalues of `A ∈ ℝ^{n×n}` are all positive, there is a unique real `X`
+with `e^X = A` and `λ(X) ⊆ {z : -π < Im z < π}`: the principal logarithm `log(A)`; and it is the
+complex principal logarithm `Matrix.principalLog` of the later nodes, `X = log(A)` read in
+`ℂ^{n×n}`. -/
+theorem realLog_existsUnique {A : Matrix (Fin n) (Fin n) ℝ}
+    (hA : ∀ μ ∈ spectrum ℂ (A.map Complex.ofReal), μ.im = 0 → 0 < μ.re) :
+    (∃! X : Matrix (Fin n) (Fin n) ℝ, NormedSpace.exp X = A ∧
+      ∀ μ ∈ spectrum ℂ (X.map Complex.ofReal), |μ.im| < Real.pi) ∧
+    ∀ X : Matrix (Fin n) (Fin n) ℝ, NormedSpace.exp X = A →
+      (∀ μ ∈ spectrum ℂ (X.map Complex.ofReal), |μ.im| < Real.pi) →
+        X.map Complex.ofReal = Matrix.principalLog (A.map Complex.ofReal) := by
+  have hB : spectrum ℂ (A.map Complex.ofReal) ⊆ Complex.slitPlane := fun μ hμ => by
+    rw [Complex.mem_slitPlane_iff]
+    by_cases h : μ.im = 0
+    · exact Or.inl (hA μ hμ h)
+    · exact Or.inr h
+  refine ⟨Matrix.existsUnique_real_exp_eq hB, fun X hX hXs => ?_⟩
+  obtain ⟨L, -, hLuniq⟩ := Matrix.existsUnique_exp_eq_of_abs_im_lt hB
+  have hexp : NormedSpace.exp (X.map Complex.ofReal) = A.map Complex.ofReal := by
+    rw [← hX]
+    exact (Matrix.complexify_exp X).symm
+  rw [hLuniq _ ⟨hexp, hXs⟩, ← hLuniq _ (Matrix.exp_principalLog hB)]
+
+open scoped Matrix.Norms.L2Operator in
+/-- §9.4.4, the Maclaurin approximant `M_q(A) = ∑_{k=1}^{q} (-1)^{k+1} (A - I)ᵏ/k`: if
+`ρ(A - I) < 1` (every eigenvalue within `1` of `1`), then `M_q(A) → log(A)`, and `log(A)` is
+Mathlib's series logarithm (in the spectral norm). -/
+theorem log_maclaurin {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, ‖μ - 1‖ < 1) :
+    HasSum (fun k : ℕ => ((-1) ^ k / (k + 1) : ℂ) • (A - 1) ^ (k + 1)) (Matrix.principalLog A) ∧
+    Matrix.principalLog A = NormedSpace.log A :=
+  ⟨Matrix.hasSum_principalLog hA,
+    pfc_log_eq_normedSpace_log (Algebra.IsIntegral.isIntegral A) hA⟩
+
+/-- §9.4.4, the Gregory approximant
+`G_q(A) = -2 ∑_{k=0}^{q} ((I - A)(I + A)⁻¹)^{2k+1}/(2k + 1)`: if every eigenvalue of `A` has
+positive real part, then `G_q(A) → log(A)`. -/
+theorem log_gregory {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, 0 < μ.re) :
+    HasSum (fun k : ℕ => (-2 / (2 * k + 1) : ℂ) • ((1 - A) * (1 + A)⁻¹) ^ (2 * k + 1))
+      (Matrix.principalLog A) :=
+  Matrix.hasSum_principalLog_gregory hA
+
+/-- §9.4.4: `r₃₃(x) = N(x)/D(x)` with `D(x) = 60 + 90x + 36x² + 3x³` and
+`N(x) = 60x + 60x² + 11x³` (the book writes them at `x = A - I`) is the `(3,3)` Padé approximant
+of `log(1 + x)`: `D` does not vanish near `x = 0` (so `r₃₃` is defined there) and
+`r₃₃(x) - log(1 + x) = O(x⁷)` as `x → 0`. -/
+theorem log_pade_33 :
+    (∀ᶠ x in 𝓝 (0 : ℂ), (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3 : ℂ) ≠ 0) ∧
+    (fun x : ℂ => (60 * x + 60 * x ^ 2 + 11 * x ^ 3) / (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3) -
+      Complex.log (1 + x)) =O[𝓝 0] fun x => x ^ 7 := by
+  set D : ℂ → ℂ := fun x => 60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3
+  set P : ℂ → ℂ := fun x => -171 / 20 - 27 / 5 * x - 1 / 2 * x ^ 2
+  set R : ℂ → ℂ := fun x => Complex.log (1 + x) - Complex.logTaylor 7 x
+  have hD : Continuous D := by fun_prop
+  have hD0 : D 0 = 60 := by simp [D]
+  have hDne : ∀ᶠ x in 𝓝 (0 : ℂ), D x ≠ 0 :=
+    hD.continuousAt.eventually_ne (by rw [hD0]; norm_num)
+  refine ⟨hDne, ?_⟩
+  -- the polynomial part: `D T₆ - N = x⁷ P`
+  have hpoly : ∀ x : ℂ, D x * Complex.logTaylor 7 x - (60 * x + 60 * x ^ 2 + 11 * x ^ 3) =
+      x ^ 7 * P x := fun x => by
+    simp only [D, P, Complex.logTaylor, Finset.sum_range_succ, Finset.sum_range_zero]
+    push_cast
+    ring
+  -- the remainder is `O(x⁷)`
+  have hR : R =O[𝓝 0] fun x => x ^ 7 := by
+    refine IsBigO.of_bound 2 ?_
+    filter_upwards [Metric.ball_mem_nhds (0 : ℂ) (by norm_num : (0 : ℝ) < 1 / 2)] with x hx
+    rw [Metric.mem_ball, dist_zero_right] at hx
+    have hb := Complex.norm_log_sub_logTaylor_le 6 (hx.trans (by norm_num))
+    have h1 : (1 - ‖x‖)⁻¹ ≤ 2 := by
+      rw [inv_le_comm₀ (by linarith) (by norm_num)]
+      linarith
+    calc ‖R x‖ ≤ ‖x‖ ^ 7 * (1 - ‖x‖)⁻¹ / (6 + 1) := hb
+      _ ≤ ‖x‖ ^ 7 * 2 / 1 := by gcongr; norm_num
+      _ = 2 * ‖x ^ 7‖ := by rw [norm_pow]; ring
+  have hinvD : (fun x => (D x)⁻¹) =O[𝓝 0] fun _ => (1 : ℂ) :=
+    ((hD.continuousAt.inv₀ (by rw [hD0]; norm_num)).tendsto).isBigO_one ℂ
+  have hPb : P =O[𝓝 0] fun _ => (1 : ℂ) :=
+    ((show Continuous P by fun_prop).continuousAt.tendsto).isBigO_one ℂ
+  have hmain : (fun x => -(x ^ 7 * P x) * (D x)⁻¹ - R x) =O[𝓝 0] fun x => x ^ 7 := by
+    refine IsBigO.sub ?_ hR
+    have := ((isBigO_refl (fun x : ℂ => x ^ 7) (𝓝 0)).mul hPb).mul hinvD
+    simpa only [mul_one, neg_mul] using this.neg_left
+  refine hmain.congr' ?_ EventuallyEq.rfl
+  filter_upwards [hDne] with x hx
+  have hx' : (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3 : ℂ) ≠ 0 := hx
+  have hDD : (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3 : ℂ) *
+      (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3)⁻¹ = 1 := mul_inv_cancel₀ hx'
+  rw [← hpoly x]
+  simp only [R, D]
+  rw [div_eq_mul_inv]
+  linear_combination (-Complex.logTaylor 7 x) * hDD
+
+@[deprecated (since := "2026-09-30")] alias logPade33 := log_pade_33
+
+/-- §9.4.4, inverse scaling and squaring: with `A₀ = A` and `A_k = A_{k-1}^{1/2}`,
+`log(A) = 2^k log(A_k)` for every `k`, when no eigenvalue of `A` lies on `(-∞, 0]`. -/
+theorem log_inverse_scaling {A : Matrix (Fin n) (Fin n) ℂ}
+    (hA : spectrum ℂ A ⊆ Complex.slitPlane) (k : ℕ) :
+    Matrix.principalLog A = (2 ^ k : ℂ) • Matrix.principalLog (Matrix.principalSqrt^[k] A) :=
+  Matrix.principalLog_eq_two_pow_smul hA k
 
 end GolubVanLoan.Chapter09

@@ -57,3 +57,7 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.3.1'
 id = "trailingColumns"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, §6.3.2, Definition'
+
+[[node]]
+id = "trailingColumns_eq_lastColumns"
+source = 'Golub–Van Loan, Matrix Computations, §6.3.2, Display'

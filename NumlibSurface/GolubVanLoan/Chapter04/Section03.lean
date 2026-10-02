@@ -771,13 +771,17 @@ end Programs
 /-- The loop invariant of Algorithm 4.3.4 after `c` passes: on and above the diagonal and in the
 columns from `c` on, the state is the matrix of stage `c` of Gaussian elimination with partial
 pivoting; the stored multipliers of the passes before `c` are bounded by one; the recorded
-interchanges are those of partial pivoting. -/
+interchanges are those of partial pivoting; the stored multipliers are those of partial pivoting
+(`Matrix.elimMultipliers` of the interchanged stage matrix). -/
 private def HessInv (H : Matrix (Fin n) (Fin n) ℝ) (c : ℕ)
     (s : Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) : Prop :=
   (∀ i j : Fin n, (c ≤ (j : ℕ) ∨ i ≤ j) → s.1 i j = (gemPivotStage H partialPivotRow c).1 i j) ∧
   (∀ (k : Fin n) (hk : (k : ℕ) + 1 < n), (k : ℕ) < c → |s.1 ⟨k + 1, hk⟩ k| ≤ 1) ∧
   (∀ (k : Fin n) (hk : (k : ℕ) + 1 < n), (k : ℕ) < c →
-    (s.2 k = 1 ↔ partialPivotRow (gemPivotStage H partialPivotRow k).1 k = ⟨k + 1, hk⟩))
+    (s.2 k = 1 ↔ partialPivotRow (gemPivotStage H partialPivotRow k).1 k = ⟨k + 1, hk⟩)) ∧
+  (∀ (k : Fin n) (hk : (k : ℕ) + 1 < n), (k : ℕ) < c →
+    s.1 ⟨k + 1, hk⟩ k = elimMultipliers ((gemPivotStage H partialPivotRow k).1.submatrix
+      (gemPivotSwap H partialPivotRow k k.isLt) id) k ⟨k + 1, hk⟩ k)
 
 /-- Stage `k + 1` of partial pivoting at a pivot index `k : Fin n`. -/
 private theorem gemPivotStage_succ_fin (H : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
@@ -792,8 +796,8 @@ private theorem hessInv_step {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
     (k : Fin n) (s : Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) (hs : HessInv H k s) :
     HessInv H (k + 1) (Id.run (hessenbergLUStep pure s k)) := by
   obtain ⟨S, piv⟩ := s
-  obtain ⟨hS, hmul, hpiv⟩ := hs
-  simp only at hS hmul hpiv
+  obtain ⟨hS, hmul, hpiv, hτs⟩ := hs
+  simp only at hS hmul hpiv hτs
   set G := (gemPivotStage H partialPivotRow k).1 with hG
   have hG' := gemPivotStage_succ_fin H k
   rw [← hG] at hG'
@@ -814,11 +818,13 @@ private theorem hessInv_step {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
       ext i j
       rw [hG', hrk, Equiv.swap_self, Equiv.coe_refl, submatrix_id_id,
         elimStep_apply_of_not_lt _ fun h => by have := Fin.lt_def.1 h; omega]
-    refine ⟨fun i j hij => ?_, fun k' hk' hlt => ?_, fun k' hk' hlt => ?_⟩
+    refine ⟨fun i j hij => ?_, fun k' hk' hlt => ?_, fun k' hk' hlt => ?_,
+      fun k' hk' hlt => ?_⟩
     · rw [hGk]
       exact hS i j (hij.imp (fun h => by have := j.isLt; omega) id)
     · exact hmul k' hk' (by omega)
     · exact hpiv k' hk' (by omega)
+    · exact hτs k' hk' (by omega)
   rw [dite_eq_left hk]
   set k₁ : Fin n := ⟨k + 1, hk⟩ with hk₁
   have hkk₁ : k < k₁ := Fin.lt_def.2 (by simp [hk₁])
@@ -935,7 +941,8 @@ private theorem hessInv_step {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
       (fun j y => y j - s₁.1 k₁ k / s₁.1 k k * s₁.1 k j) (fun j _ y y' _ hyj => by rw [hyj])]
     set τ := s₁.1 k₁ k / s₁.1 k k with hτ
     have hmem : ∀ j, j ∈ (List.finRange n).filter (k < ·) ↔ k < j := fun j => by simp
-    refine ⟨fun i j hij => ?_, fun k' hk' hlt => ?_, fun k' hk' hlt => ?_⟩
+    refine ⟨fun i j hij => ?_, fun k' hk' hlt => ?_, fun k' hk' hlt => ?_,
+      fun k' hk' hlt => ?_⟩
     · rw [hG'apply]
       by_cases hik₁ : i = k₁
       · subst hik₁
@@ -973,11 +980,23 @@ private theorem hessInv_step {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
         subst k'
         rw [Function.update_self, ← hr]
         by_cases h : r = k₁ <;> simp [h, hk₁]
+    · rcases Nat.lt_succ_iff_lt_or_eq.1 hlt with hlt | heq
+      · simp only [updateRow_ne (hmulk k' hk' hlt)]
+        rw [hlow₁ _ _ (Fin.lt_def.2 hlt)]
+        exact hτs k' hk' hlt
+      · have hk'k : k' = k := Fin.ext heq
+        subst k'
+        rw [show (⟨(k : ℕ) + 1, hk'⟩ : Fin n) = k₁ from rfl]
+        dsimp only
+        rw [updateRow_self, Function.update_self, hτ, hS₁ k₁ k (Or.inl le_rfl),
+          hS₁ k k (Or.inl le_rfl), elimMultipliers_apply, ite_eq_left ⟨hkk₁, rfl⟩, div_eq_mul_inv]
+        rfl
   · rw [ite_eq_right hp]
     simp only [Id.run_pure]
     push Not at hp
     have hMkk : Mx k k = 0 := by rw [← hS₁ _ _ (Or.inl le_rfl), hp]
-    refine ⟨fun i j hij => ?_, fun k' hk' hlt => ?_, fun k' hk' hlt => ?_⟩
+    refine ⟨fun i j hij => ?_, fun k' hk' hlt => ?_, fun k' hk' hlt => ?_,
+      fun k' hk' hlt => ?_⟩
     · rw [hG'apply, hMkk, _root_.inv_zero, hS₁ i j (hij.imp (fun h => by omega) id)]
       simp
     · rcases Nat.lt_succ_iff_lt_or_eq.1 hlt with hlt | heq
@@ -996,12 +1015,35 @@ private theorem hessInv_step {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
         subst k'
         rw [Function.update_self, ← hr]
         by_cases h : r = k₁ <;> simp [h, hk₁]
+    · rcases Nat.lt_succ_iff_lt_or_eq.1 hlt with hlt | heq
+      · rw [hlow₁ _ _ (Fin.lt_def.2 hlt)]
+        exact hτs k' hk' hlt
+      · have hk'k : k' = k := Fin.ext heq
+        subst k'
+        rw [show (⟨(k : ℕ) + 1, hk'⟩ : Fin n) = k₁ from rfl, hS₁ _ _ (Or.inl le_rfl)]
+        rw [hMkk, abs_zero] at hMk
+        rw [abs_nonpos_iff.1 hMk, elimMultipliers_apply, ite_eq_left ⟨hkk₁, rfl⟩]
+        change (0 : ℝ) = Mx k₁ k * (Mx k k)⁻¹
+        rw [hMkk, _root_.inv_zero, mul_zero]
+
+/-- The invariant of Algorithm 4.3.4 after its `n` passes. -/
+private theorem hessInv_run {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg) :
+    HessInv H n (Id.run (algorithm_4_3_4 pure H)) := by
+  have key := List.foldl_finRange_induction (f := fun s k => Id.run (hessenbergLUStep pure s k))
+    (init := (H, 0))
+    (HessInv H) ⟨fun _ _ _ => rfl, fun _ _ h => absurd h (Nat.not_lt_zero _),
+      fun _ _ h => absurd h (Nat.not_lt_zero _), fun _ _ h => absurd h (Nat.not_lt_zero _)⟩
+    (fun k s hs => hessInv_step hH k s hs)
+  rw [algorithm_4_3_4, List.idRun_foldlM]
+  exact key
 
 /-- **Exact correctness of Algorithm 4.3.4**: for an upper Hessenberg `H`, with `(F, piv)` the
 exact run, the upper triangle of `F` is the upper factor `U` of Gaussian elimination with partial
 pivoting (`Matrix.gemPivotStage H Matrix.partialPivotRow n`), `piv(k) = 1` exactly when partial
-pivoting interchanges the rows `k` and `k + 1` at stage `k`, and the stored multipliers
-`F(k+1, k)` are bounded by unity. -/
+pivoting interchanges the rows `k` and `k + 1` at stage `k`, and the subdiagonal entry
+`F(k+1, k)` is the multiplier `τ = −[M_k]_{k+1,k}` of stage `k` (the entry `(k+1, k)` of
+`Matrix.elimMultipliers` of the interchanged stage-`k` matrix; `0` when the pivot vanishes). The
+bound `|F(k+1, k)| ≤ 1` is `algorithm_4_3_4_spec_abs_le_one`. -/
 theorem algorithm_4_3_4_spec {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg) :
     (∀ i j : Fin n, i ≤ j →
       (Id.run (algorithm_4_3_4 pure H)).1 i j = (gemPivotStage H partialPivotRow n).1 i j) ∧
@@ -1009,15 +1051,20 @@ theorem algorithm_4_3_4_spec {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
       ((Id.run (algorithm_4_3_4 pure H)).2 k = 1 ↔
         partialPivotRow (gemPivotStage H partialPivotRow k).1 k = ⟨k + 1, hk⟩)) ∧
     ∀ (k : Fin n) (hk : (k : ℕ) + 1 < n),
-      |(Id.run (algorithm_4_3_4 pure H)).1 ⟨k + 1, hk⟩ k| ≤ 1 := by
-  have key := List.foldl_finRange_induction (f := fun s k => Id.run (hessenbergLUStep pure s k))
-    (init := (H, 0))
-    (HessInv H) ⟨fun _ _ _ => rfl, fun _ _ h => absurd h (Nat.not_lt_zero _),
-      fun _ _ h => absurd h (Nat.not_lt_zero _)⟩ (fun k s hs => hessInv_step hH k s hs)
-  rw [algorithm_4_3_4, List.idRun_foldlM]
-  obtain ⟨h1, h2, h3⟩ := key
+      (Id.run (algorithm_4_3_4 pure H)).1 ⟨k + 1, hk⟩ k =
+        elimMultipliers ((gemPivotStage H partialPivotRow k).1.submatrix
+          (gemPivotSwap H partialPivotRow k k.isLt) id) k ⟨k + 1, hk⟩ k := by
+  obtain ⟨h1, -, h3, h4⟩ := hessInv_run hH
   exact ⟨fun i j hij => h1 i j (Or.inr hij), fun k hk => h3 k hk k.isLt,
-    fun k hk => h2 k hk k.isLt⟩
+    fun k hk => h4 k hk k.isLt⟩
+
+/-- **The multipliers of Algorithm 4.3.4 are bounded by unity**: "each `M_k` is a Gauss
+transformation whose entries are bounded by unity", i.e. `|F(k+1, k)| ≤ 1` for the exact run
+`(F, piv)` on an upper Hessenberg `H`. -/
+theorem algorithm_4_3_4_spec_abs_le_one {H : Matrix (Fin n) (Fin n) ℝ}
+    (hH : H.IsUpperHessenberg) (k : Fin n) (hk : (k : ℕ) + 1 < n) :
+    |(Id.run (algorithm_4_3_4 pure H)).1 ⟨k + 1, hk⟩ k| ≤ 1 := by
+  exact (hessInv_run hH).2.1 k hk k.isLt
 
 /-! ### §4.3.5 Band Cholesky -/
 
@@ -1305,7 +1352,10 @@ and `A(1:k, 1:k)` is nonsingular for `k = 1:n−1` ("assuming it exists"), the e
 the LU factorization: `L = Chapter03.packedL F` and `U = Chapter03.packedU F`. The band loops
 perform exactly the operations of Gaussian elimination on the entries that can be nonzero: by the
 band structure of its stages (`gemStage_band`), the skipped multipliers and updates are zero; the
-result is the multiplier matrix `Matrix.gemLower A` and the last stage `Matrix.gemStage A n`. -/
+result is the multiplier matrix `Matrix.gemLower A` and the last stage `Matrix.gemStage A n`.
+Reading: "assuming it exists" is read as the nonsingularity of the leading principal submatrices
+used as pivots, which is stronger than the existence of an LU factorization; with erratum 5 it is
+the hypothesis under which Gaussian elimination without pivoting runs to completion. -/
 theorem algorithm_4_3_1_spec {p q : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hp : A.HasLowerBandwidth p) (hq : A.HasUpperBandwidth q)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :

@@ -9,7 +9,7 @@ id = "equation_9_3_1"
 source = 'Golub–Van Loan, Matrix Computations, Equation (9.3.1)'
 
 [[node]]
-id = "molerVanLoan"
+id = "moler_van_loan"
 source = 'Golub–Van Loan, Matrix Computations, §9.3.1'
 
 [[node]]
@@ -83,4 +83,26 @@ source = 'Golub–Van Loan, Matrix Computations, §9.3.4'
 
 [[node]]
 id = "updateEntriesM"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
+
+[[node]]
+id = "scalingSquaring"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
+
+[[node]]
+id = "scalingSquaring_spec"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
+
+[[node]]
+id = "scalingSquaring_spec_backward"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
+
+[[node]]
+id = "algorithm_9_3_1_corrected"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
+
+[[node]]
+id = "algorithm_9_3_1_corrected_spec_backward"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'

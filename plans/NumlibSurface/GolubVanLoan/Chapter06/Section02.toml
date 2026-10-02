@@ -1,7 +1,7 @@
 namespace = "GolubVanLoan.Chapter06"
 
 [[node]]
-id = "IsLSQISolution"
+id = "IsSphereLSQISolution"
 source = 'Golub–Van Loan, Matrix Computations, §6.2.1, Definition'
 
 [[node]]
@@ -13,7 +13,7 @@ id = "equation_6_2_3"
 source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.3)'
 
 [[node]]
-id = "IsLSQISolution.norm_eq"
+id = "IsSphereLSQISolution.norm_eq"
 source = 'Golub–Van Loan, Matrix Computations, §6.2.1'
 
 [[node]]
@@ -25,7 +25,7 @@ id = "equation_6_2_4"
 source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.4)'
 
 [[node]]
-id = "isLSQISolution_tikhonov"
+id = "isSphereLSQISolution_tikhonov"
 source = 'Golub–Van Loan, Matrix Computations, §6.2.1'
 
 [[node]]
@@ -93,5 +93,5 @@ id = "equation_6_2_14"
 source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.14)'
 
 [[node]]
-id = "tendsto_penaltyLSE"
+id = "tendsto_penaltyLSE_solution"
 source = 'Golub–Van Loan, Matrix Computations, §6.2.6'

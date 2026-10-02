@@ -35,9 +35,11 @@ keyword; diagonals are named `ν`, `μ`, `Λ`. Indices are 0-based: the book's `
 
 Algorithms 4.8.1 and 4.8.2 follow the algorithm conventions of `NumlibSurface/GolubVanLoan`: every
 product, sum and quotient passes through the hook `rnd`; the book's fast transforms ("use an FFT")
-are any evaluation of the matrix–vector products, written here as row-by-row dot products
-(`mulVecAccum`, `mulMatAccum`). Only the exact semantics is stated (the book gives no rounding
-analysis); Algorithm 4.8.1 is complex, `rnd : ℂ → M ℂ`.
+are program parameters computing the transforms — for Algorithm 4.8.1 any FFT, in particular
+chapter 1's Algorithm 1.4.1 for `n = 2^t` (`algorithm_4_8_1_fft_spec`), for Algorithm 4.8.2 the
+abstract `V⁻¹ ·`, `W⁻¹ ·`, `V ·`, `W ·` — whose specification is a hypothesis of the spec theorem
+(convention 5). Only the exact semantics is stated (the book gives no rounding analysis);
+Algorithm 4.8.1 is complex, `rnd : ℂ → M ℂ`.
 
 ## Sources
 
@@ -178,21 +180,12 @@ section Programs
 
 variable {M : Type → Type} [Monad M]
 
-/-- **The matrix–vector product with a rounding hook**: `y = A x`, row by row, each entry an inner
-product from `0` (`FloatingPoint.dotAccum`, Algorithm 1.1.1): the evaluation of the transforms
-`F_n x`, `F̄_n x`, `V x`, `V⁻¹ x` of §4.8 in the programs of this section. -/
-def mulVecAccum {K : Type} [NonUnitalNonAssocSemiring K] {m n : ℕ} (rnd : K → M K)
-    (A : Matrix (Fin m) (Fin n) K) (x : Fin n → K) : M (Fin m → K) :=
-  (List.finRange m).foldlM (fun (y : Fin m → K) (i : Fin m) => do
-    let c ← dotAccum rnd (List.finRange n) (A i) x 0
-    pure (Function.update y i c)) 0
-
-/-- **The matrix product with a rounding hook**: `C = A X`, column by column by `mulVecAccum`. -/
-def mulMatAccum {K : Type} [NonUnitalNonAssocSemiring K] {m k p : ℕ} (rnd : K → M K)
-    (A : Matrix (Fin m) (Fin k) K) (X : Matrix (Fin k) (Fin p) K) :
-    M (Matrix (Fin m) (Fin p) K) := do
+/-- **A vector program applied to every column**: `X(:, j) ← f(X(:, j))` for `j = 1:p`. The
+abstract transforms `V⁻¹ ·`, `W⁻¹ ·`, `V ·`, `W ·` of Algorithm 4.8.2 act on matrices this way. -/
+def transformCols {K : Type} [Zero K] {m p : ℕ} (f : (Fin m → K) → M (Fin m → K))
+    (X : Matrix (Fin m) (Fin p) K) : M (Matrix (Fin m) (Fin p) K) := do
   let cols ← (List.finRange p).foldlM (fun (C : Fin p → Fin m → K) (j : Fin p) => do
-    let c ← mulVecAccum rnd A (fun i => X i j)
+    let c ← f (fun i => X i j)
     pure (Function.update C j c)) 0
   pure (of fun i j => cols j i)
 
@@ -204,60 +197,57 @@ w = c./d
 Use an FFT to compute u = F_n w.
 x = u/n
 ```
-The transforms are evaluated by `mulVecAccum` (any evaluation of `F̄_n ·` has the same exact
-result; for `n = 2^t` chapter 1's FFT `GolubVanLoan.Chapter01.algorithm_1_4_1` is one). -/
-noncomputable def algorithm_4_8_1 (rnd : ℂ → M ℂ) {n : ℕ} (z y : Fin n → ℂ) : M (Fin n → ℂ) := do
-  let c ← mulVecAccum rnd ((fourierMatrix n).map star) y
-  let d ← mulVecAccum rnd ((fourierMatrix n).map star) z
+The FFT is the program parameter `fft`, a computation of `x ↦ F_n x` (for `n = 2^t` chapter 1's
+Algorithm 1.4.1, `algorithm_4_8_1_fft_spec`); `F̄_n y` is computed as `conj(F_n conj(y))`
+(conjugation is exact, convention 1). -/
+noncomputable def algorithm_4_8_1 (rnd : ℂ → M ℂ) {n : ℕ} (fft : (Fin n → ℂ) → M (Fin n → ℂ))
+    (z y : Fin n → ℂ) : M (Fin n → ℂ) := do
+  let c ← fft fun i => star (y i)
+  let d ← fft fun i => star (z i)
   let w ← (List.finRange n).foldlM (fun (w : Fin n → ℂ) (i : Fin n) => do
-    let q ← rnd (c i / d i)
+    let q ← rnd (star (c i) / star (d i))
     pure (Function.update w i q)) 0
-  let u ← mulVecAccum rnd (fourierMatrix n) w
+  let u ← fft w
   (List.finRange n).foldlM (fun (x : Fin n → ℂ) (i : Fin n) => do
     let q ← rnd (u i / n)
     pure (Function.update x i q)) 0
 
 end Programs
 
-/-- With the hook `pure`, `mulVecAccum` is the exact product `A x`. -/
-theorem mulVecAccum_pure {M : Type → Type} [Monad M] [LawfulMonad M] {K : Type}
-    [NonUnitalNonAssocSemiring K] {m n : ℕ} (A : Matrix (Fin m) (Fin n) K) (x : Fin n → K) :
-    mulVecAccum (M := M) pure A x = pure (A *ᵥ x) := by
-  unfold mulVecAccum
-  simp only [dotAccum_pure, pure_bind, List.foldlM_pure]
-  congr 1
-  funext i
-  rw [foldl_update_finRange_apply, zero_add, mulVec, dotProduct,
-    Fin.sum_univ_def]
-
-/-- With the hook `pure`, `mulMatAccum` is the exact product `A X`. -/
-theorem mulMatAccum_pure {M : Type → Type} [Monad M] [LawfulMonad M] {K : Type}
-    [NonUnitalNonAssocSemiring K] {m k p : ℕ} (A : Matrix (Fin m) (Fin k) K)
-    (X : Matrix (Fin k) (Fin p) K) : mulMatAccum (M := M) pure A X = pure (A * X) := by
-  unfold mulMatAccum
-  simp only [mulVecAccum_pure, pure_bind, List.foldlM_pure]
-  congr 1
+/-- **The exact semantics of `transformCols`**: if the program `f` computes `x ↦ A x`, then
+`transformCols f X` computes `A X`. -/
+theorem transformCols_id {K : Type} [NonUnitalNonAssocSemiring K] {m p : ℕ}
+    {f : (Fin m → K) → Id (Fin m → K)} {A : Matrix (Fin m) (Fin m) K}
+    (hf : ∀ x, Id.run (f x) = A *ᵥ x) (X : Matrix (Fin m) (Fin p) K) :
+    Id.run (transformCols f X) = A * X := by
   ext i j
-  rw [of_apply, foldl_update_finRange_apply, mul_apply, mulVec,
-    dotProduct]
+  simp only [transformCols, Id.run_bind, Id.run_pure, List.idRun_foldlM, of_apply]
+  rw [foldl_update_finRange_apply, hf]
+  rfl
+
+/-- `F̄_n y = conj(F_n conj(y))`. -/
+private theorem map_star_mulVec_eq_star {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (y : Fin n → ℂ)
+    (i : Fin n) : (A.map star *ᵥ y) i = star ((A *ᵥ fun j => star (y j)) i) := by
+  simp only [mulVec, dotProduct, map_apply, star_sum, star_mul', star_star]
 
 /-- **Exact correctness of Algorithm 4.8.1**: if `C(z)` is nonsingular (`n ≥ 1`), the exact run
 solves `C(z) x = y`. By Theorem 4.8.2, `C(z) F_n = F_n diag(d)` with `d = F̄_n z`, whose entries
 are nonzero because `C(z)` is nonsingular; then `C(z) (F_n (c ./ d)/n) = F_n F̄_n y / n = y`. -/
 theorem algorithm_4_8_1_spec {n : ℕ} [NeZero n] {z : Fin n → ℂ} (hC : IsUnit (circulant z))
-    (y : Fin n → ℂ) : circulant z *ᵥ Id.run (algorithm_4_8_1 pure z y) = y := by
+    {fft : (Fin n → ℂ) → Id (Fin n → ℂ)} (hfft : ∀ x, Id.run (fft x) = fourierMatrix n *ᵥ x)
+    (y : Fin n → ℂ) : circulant z *ᵥ Id.run (algorithm_4_8_1 pure fft z y) = y := by
   have hn : (n : ℂ) ≠ 0 := Nat.cast_ne_zero.2 (NeZero.ne n)
   -- the exact run
-  have hrun : Id.run (algorithm_4_8_1 pure z y) =
+  have hrun : Id.run (algorithm_4_8_1 pure fft z y) =
       (n : ℂ)⁻¹ • (fourierMatrix n *ᵥ fun i =>
         ((fourierMatrix n).map star *ᵥ y) i / ((fourierMatrix n).map star *ᵥ z) i) := by
-    simp only [algorithm_4_8_1, mulVecAccum_pure, pure_bind, List.foldlM_pure, Id.run_pure]
+    simp only [algorithm_4_8_1, Id.run_bind, Id.run_pure, pure_bind, List.foldlM_pure, hfft]
     funext i
     rw [foldl_update_finRange_apply, Pi.smul_apply, smul_eq_mul,
       div_eq_inv_mul]
     congr 2
     funext k
-    rw [foldl_update_finRange_apply]
+    rw [foldl_update_finRange_apply, map_star_mulVec_eq_star, map_star_mulVec_eq_star]
   have hFc : fourierMatrix n *ᵥ ((fourierMatrix n).map star *ᵥ y) = (n : ℂ) • y := by
     rw [mulVec_mulVec, map_star_fourierMatrix, fourierMatrix, conjTranspose_dft_mul_dft,
       smul_mulVec, one_mulVec]
@@ -282,6 +272,13 @@ theorem algorithm_4_8_1_spec {n : ℕ} [NeZero n] {z : Fin n → ℂ} (hC : IsUn
     rw [mulVec_diagonal, mul_div_cancel₀ _ (hdne i)]
   rw [mulVec_smul, mulVec_mulVec, hCF, ← mulVec_mulVec, hw, hFc, smul_smul,
     inv_mul_cancel₀ hn, one_smul]
+
+/-- **Algorithm 4.8.1 with chapter 1's FFT**: for `n = 2^t`, Algorithm 4.8.1 with the radix-2 FFT
+`GolubVanLoan.Chapter01.algorithm_1_4_1` solves `C(z) x = y` in exact arithmetic. -/
+theorem algorithm_4_8_1_fft_spec (t : ℕ) {z : Fin (2 ^ t) → ℂ} (hC : IsUnit (circulant z))
+    (y : Fin (2 ^ t) → ℂ) :
+    circulant z *ᵥ Id.run (algorithm_4_8_1 pure (algorithm_1_4_1 pure t) z y) = y :=
+  algorithm_4_8_1_spec hC (algorithm_1_4_1_spec t) y
 
 /-! ### §4.8.3 The discretized Poisson equation in one dimension -/
 
@@ -531,43 +528,51 @@ B̃ = (W⁻¹ (V⁻¹ B)ᵀ)ᵀ where B = reshape(b, n₁, n₂)
 for i = 1:n₁, for j = 1:n₂: ũ_ij = b̃_ij / (λ_i + μ_j)
 u = reshape(U, n₁n₂, 1) where U = (W (V Ũ)ᵀ)ᵀ
 ```
-The fast transforms are given as the matrices `V⁻¹`, `W⁻¹`, `V`, `W` (inputs `Vinv`, `Winv`, `V`,
-`W`) applied by rounded products (`mulMatAccum`); `b` is indexed as `vec B`. -/
+The fast transforms "`V⁻¹ ·`, `W⁻¹ ·`, `V ·`, `W ·`" are program parameters (`applyVinv`,
+`applyWinv`, `applyV`, `applyW`: computations of `x ↦ V⁻¹x`, …, the "fast eigenvalue
+decompositions"), applied column by column (`transformCols`); `b` is indexed as `vec B`. -/
 noncomputable def algorithm_4_8_2 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n₁ n₂ : ℕ}
-    (Vinv V : Matrix (Fin n₁) (Fin n₁) ℝ) (Winv W : Matrix (Fin n₂) (Fin n₂) ℝ)
+    (applyVinv applyV : (Fin n₁ → ℝ) → M (Fin n₁ → ℝ))
+    (applyWinv applyW : (Fin n₂ → ℝ) → M (Fin n₂ → ℝ))
     (ν : Fin n₁ → ℝ) (μ : Fin n₂ → ℝ) (b : Fin n₂ × Fin n₁ → ℝ) : M (Fin n₂ × Fin n₁ → ℝ) := do
-  let Y ← mulMatAccum rnd Vinv (of fun i j => b (j, i))
-  let Z ← mulMatAccum rnd Winv Yᵀ
+  let Y ← transformCols applyVinv (of fun i j => b (j, i))
+  let Z ← transformCols applyWinv Yᵀ
   let Ut ← (List.finRange n₁).foldlM (fun (U : Fin n₁ → Fin n₂ → ℝ) (i : Fin n₁) => do
     let r ← (List.finRange n₂).foldlM (fun (r : Fin n₂ → ℝ) (j : Fin n₂) => do
       let s ← rnd (ν i + μ j)
       let q ← rnd (Z j i / s)
       pure (Function.update r j q)) 0
     pure (Function.update U i r)) 0
-  let P ← mulMatAccum rnd V (of Ut)
-  let Q ← mulMatAccum rnd W Pᵀ
+  let P ← transformCols applyV (of Ut)
+  let Q ← transformCols applyW Pᵀ
   pure (vec Qᵀ)
 
 /-- **Exact correctness of Algorithm 4.8.2**: if `V⁻¹ A₁ V = diag(λ)`, `W⁻¹ A₂ W = diag(μ)`, the
-transform inputs are the true inverses and `A = I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}` is nonsingular, the
-exact run solves `A u = b`: it computes `U = V Ũ Wᵀ` with `ũ_ij = b̃_ij / (λ_i + μ_j)`,
+transform programs compute `x ↦ V⁻¹x`, `V x`, `W⁻¹x`, `W x`, and
+`A = I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}` is nonsingular, the exact run solves `A u = b`: it computes
+`U = V Ũ Wᵀ` with `ũ_ij = b̃_ij / (λ_i + μ_j)`,
 `B̃ = V⁻¹ B W⁻ᵀ`, the solution of `FastPoisson.kroneckerSum_mulVec_vec_eq_iff`. -/
 theorem algorithm_4_8_2_spec {n₁ n₂ : ℕ} {A₁ V : Matrix (Fin n₁) (Fin n₁) ℝ}
     {A₂ W : Matrix (Fin n₂) (Fin n₂) ℝ} (hV : IsUnit V) (hW : IsUnit W) {ν : Fin n₁ → ℝ}
     {μ : Fin n₂ → ℝ} (hA₁ : V⁻¹ * A₁ * V = diagonal ν) (hA₂ : W⁻¹ * A₂ * W = diagonal μ)
     (hA : IsUnit ((1 : Matrix (Fin n₂) (Fin n₂) ℝ) ⊗ₖ A₁ +
       A₂ ⊗ₖ (1 : Matrix (Fin n₁) (Fin n₁) ℝ)))
+    {applyVinv applyV : (Fin n₁ → ℝ) → Id (Fin n₁ → ℝ)}
+    {applyWinv applyW : (Fin n₂ → ℝ) → Id (Fin n₂ → ℝ)}
+    (hVinv : ∀ x, Id.run (applyVinv x) = V⁻¹ *ᵥ x) (hV' : ∀ x, Id.run (applyV x) = V *ᵥ x)
+    (hWinv : ∀ x, Id.run (applyWinv x) = W⁻¹ *ᵥ x) (hW' : ∀ x, Id.run (applyW x) = W *ᵥ x)
     (b : Fin n₂ × Fin n₁ → ℝ) :
     ((1 : Matrix (Fin n₂) (Fin n₂) ℝ) ⊗ₖ A₁ + A₂ ⊗ₖ (1 : Matrix (Fin n₁) (Fin n₁) ℝ)) *ᵥ
-      Id.run (algorithm_4_8_2 pure V⁻¹ V W⁻¹ W ν μ b) = b := by
+      Id.run (algorithm_4_8_2 pure applyVinv applyV applyWinv applyW ν μ b) = b := by
   rw [one_kronecker_add_kronecker_one] at hA ⊢
   have hνμ := add_ne_zero_of_isUnit_kroneckerSum hV hW hA₁ hA₂ hA
   set B : Matrix (Fin n₁) (Fin n₂) ℝ := of fun i j => b (j, i) with hB
   have hBt : (W⁻¹ * (V⁻¹ * B)ᵀ)ᵀ = V⁻¹ * B * W⁻¹ᵀ := by
     rw [transpose_mul, transpose_transpose]
-  have hrun : Id.run (algorithm_4_8_2 pure V⁻¹ V W⁻¹ W ν μ b) =
+  have hrun : Id.run (algorithm_4_8_2 pure applyVinv applyV applyWinv applyW ν μ b) =
       vec (V * (of fun i j => (V⁻¹ * B * W⁻¹ᵀ) i j / (ν i + μ j)) * Wᵀ) := by
-    simp only [algorithm_4_8_2, mulMatAccum_pure, pure_bind, List.foldlM_pure, Id.run_pure]
+    simp only [algorithm_4_8_2, Id.run_bind, Id.run_pure, pure_bind, List.foldlM_pure,
+      transformCols_id hVinv, transformCols_id hV', transformCols_id hWinv, transformCols_id hW']
     congr 1
     rw [transpose_mul, transpose_transpose]
     congr 2
@@ -1038,7 +1043,7 @@ theorem nn_eigen {m : ℕ} (hm : 0 < m) :
       if (j : ℕ) = 0 ∨ (j : ℕ) = m then (2 : ℝ) else 1) := by
     refine (isUnit_dct1 hm).mul (isUnit_diagonal.2 (Pi.isUnit_iff.2 fun j => ?_))
     split_ifs <;> norm_num
-  refine ⟨secondDifferenceNN_mulVec_dct1_col hm, fun k j => ?_, hu,
+  refine ⟨secondDifferenceNN_mulVec_cosAngleVec_mul_pi_div hm, fun k j => ?_, hu,
     inv_mul_mul_eq_diagonal hu (secondDifferenceNN_mul_dct1_mul_diagonal hm)⟩
   rw [dct1_mul_diagonal_apply, cosAngleVec_apply]
   congr 1

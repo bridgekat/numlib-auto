@@ -35,6 +35,13 @@ root and logarithm of a matrix and the polar decomposition; in the namespace
   9.2.2 and 9.3.1 are real and compute every matrix product by chapter 1's `algorithm_1_1_5`. The
   book analyses no algorithm of this chapter's rounding errors rigorously, so there are no `SetM`
   theorems.
+* Exception: the Newton iterations (9.4.1), (9.4.7) and (9.4.11) are not programs but the
+  backbone's exact recursions `Matrix.newtonSignIterate`, `Matrix.newtonSqrtIterate`,
+  `Matrix.newtonPolarIterate` (no rounding hook, no fuel): the book uses them as mathematical
+  sequences whose limits and rates it analyses, not as algorithms with a stopping rule. Their
+  content is stated by `newtonSign_isUnit`/`newtonSign_tendsto` ((9.4.1)–(9.4.4)),
+  `newtonSqrt_tendsto` ((9.4.7)) and `equation_9_4_12`/`newtonPolar_tendsto` ((9.4.11)–(9.4.12));
+  no node carries the names `equation_9_4_1`, `equation_9_4_7`, `equation_9_4_11`.
 
 ## Backbone correspondence
 
@@ -43,7 +50,8 @@ root and logarithm of a matrix and the polar decomposition; in the namespace
 `Numlib/Analysis/Matrix/Function/{Basic,Triangular,CFC,Exp,Pade,Sign,Sqrt,Log}`;
 `Numlib/Analysis/Calculus/{HermiteInterpolation,HermiteGenocchi}` (divided differences and the
 bound (9.2.1)); `Numlib/Analysis/Normed/Algebra/{Exponential,Logarithm,SpectralRadius}` (the
-Fréchet derivative of the exponential, `ν(A, t)`, the resolvent bound, the spectral abscissa).
+Fréchet derivative of the exponential, `ν(A, t)`, the resolvent bound, the spectral abscissa);
+`Numlib/Conditioning/Problem` (`Conditioning.scaledRelCondNumber`, the book's `cond_rel`).
 
 ## Not formalized
 
@@ -68,10 +76,11 @@ Corrected in the statements: (9.1.8) with `X`, `X⁻¹` exchanged; the sign of t
 series (§9.1.2); Theorem 9.2.1's `max` over `1 ≤ i ≤ p` (read `q`); the missing `A⁴` in (9.2.7);
 Theorem 9.2.2's `δ_r` needs `Ω` bounded; (9.2.4) applies a real mean-value remainder to complex
 entries; the scaling exponent of Algorithm 9.3.1 (`j = 1 + ⌊log₂ ‖A‖_∞⌋` only gives
-`‖A/2^j‖_∞ < 1`, not `≤ 1/2`); (9.3.2)'s `e^{α t M_S(t)}` for `e^{αt} M_S(t)`; §9.3.2's "equality
-for all `t` iff `A` normal" is false in the "only if" direction; (9.3.6) cites "(7.8.8)" for
-(7.9.8); §9.4.1's "Theorem 9.1.1" and `S² = S` (read `S² = I`); the principal square root needs no
-eigenvalue on `(-∞, 0]`; the body of (9.4.11), lost in the source, is reconstructed from (9.4.12).
+`‖A/2^j‖_∞ < 1`, not `≤ 1/2`; corrected in `algorithm_9_3_1_corrected`); (9.3.2)'s `e^{α t M_S(t)}`
+for `e^{αt} M_S(t)`; §9.3.2's "equality for all `t` iff `A` normal" is false in the "only if"
+direction; (9.3.6) cites "(7.8.8)" for (7.9.8); §9.4.1's "Theorem 9.1.1" and `S² = S` (read
+`S² = I`); the principal square root needs no eigenvalue on `(-∞, 0]`; the body of (9.4.11),
+lost in the source, is reconstructed from (9.4.12).
 
 ## The outline
 

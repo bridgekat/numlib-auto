@@ -69,3 +69,7 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.20)'
 [[node]]
 id = "equation_4_4_21"
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.21)'
+
+[[node]]
+id = "exists_nonsingular_pivot"
+source = 'Golub–Van Loan, Matrix Computations, §4.4.3, Display'

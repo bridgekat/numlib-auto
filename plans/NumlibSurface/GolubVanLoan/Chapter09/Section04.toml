@@ -87,7 +87,7 @@ id = "sign_block_polar"
 source = 'Golub–Van Loan, Matrix Computations, §9.4.3, display'
 
 [[node]]
-id = "liSun"
+id = "li_sun"
 source = 'Golub–Van Loan, Matrix Computations, §9.4.3'
 
 [[node]]
@@ -103,7 +103,7 @@ id = "log_gregory"
 source = 'Golub–Van Loan, Matrix Computations, §9.4.4, display'
 
 [[node]]
-id = "logPade33"
+id = "log_pade_33"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, §9.4.4, display'
 

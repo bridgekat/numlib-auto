@@ -27,3 +27,21 @@ source = 'Golub–Van Loan, Matrix Computations, §4.5.3, Display'
 [[node]]
 id = "equation_4_5_14"
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.14)'
+
+[[node]]
+id = "blockTridiagonalLU"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.4)'
+
+[[node]]
+id = "equation_4_5_4"
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.4)'
+
+[[node]]
+id = "blockTridiagonalSolve"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.5)'
+
+[[node]]
+id = "equation_4_5_5"
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.5)'

@@ -82,12 +82,18 @@ private theorem tlsWeighted_one_one {k : Type*} [Fintype k] [DecidableEq k]
 
 /-- **§6.3, a TLS problem without a solution.** "(6.3.2) may fail to have a solution altogether.
 For example, if `A = [1 0; 0 0; 0 0]`, `b = [1; 1; 1]`, `E_ε = [0 0; 0 ε; 0 ε]`, then for all
-`ε > 0`, `b ∈ ran(A + E_ε)`. However, there is no smallest value of `‖[E, r]‖_F` for which
-`b + r ∈ ran(A + E)`." A minimizer would have `‖[E | r]‖_F ≤ ‖[E_ε | 0]‖_F = √2 ε` for every
+`ε > 0`, `b ∈ ran(A + E_ε)` (the first conjunct). However, there is no smallest value of `‖[E,
+r]‖_F` for which `b + r ∈ ran(A + E)`." A minimizer would have `‖[E | r]‖_F ≤ ‖[E_ε | 0]‖_F = √2 ε`
+for every
 `ε > 0`, so `[E | r] = 0`, and then `b ∈ ran(A)`, which it is not. -/
 theorem tls_not_exists_example :
+    (∀ ε : ℝ, 0 < ε → ∃ x : Fin 2 → ℝ,
+      (!![(1 : ℝ), 0; 0, 0; 0, 0] + ε • !![(0 : ℝ), 0; 0, 1; 0, 1]) *ᵥ x = ![1, 1, 1]) ∧
     ¬ ∃ (E : Matrix (Fin 3) (Fin 2) ℝ) (r : Matrix (Fin 3) Unit ℝ),
       IsTLSPerturbation 1 1 !![(1 : ℝ), 0; 0, 0; 0, 0] (replicateCol Unit ![1, 1, 1]) E r := by
+  refine ⟨fun ε hε => ⟨![1, 1 / ε], ?_⟩, ?_⟩
+  · ext i
+    fin_cases i <;> simp [mulVec, dotProduct, Fin.sum_univ_two] <;> field_simp
   rintro ⟨E, R, hP⟩
   set E₁ : Matrix (Fin 3) (Fin 2) ℝ := !![0, 0; 0, 1; 0, 1] with hE₁
   have hfeas : ∀ ε : ℝ, 0 < ε →
@@ -271,8 +277,7 @@ theorem tls_tauNorm {k : ℕ} [NeZero k] {V : Matrix (Fin (n + k)) (Fin (n + k))
       simp only [Matrix.mul_neg, Matrix.neg_mul, Matrix.mul_assoc]
     rw [e, nonsing_inv_mul _ hd₁, nonsing_inv_mul _ hd₂, Matrix.one_mul, Matrix.mul_one, norm_neg]
   · have hVV : Vᵀ * V = 1 := by
-      have := mem_unitaryGroup_iff'.1 hV
-      rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+      exact (mem_orthogonalGroup_iff' _ ℝ).1 hV
     have hblk : V₁₂ᴴ * V₁₂ + V₂₂ᴴ * V₂₂ = 1 := by
       ext i j
       have h := congrFun (congrFun hVV (Fin.natAdd n i)) (Fin.natAdd n j)
@@ -310,149 +315,56 @@ def trailingColumns {l n : ℕ} (V : Matrix (Fin l) (Fin n) ℝ) (r : ℕ) :
     Matrix (Fin l) (Fin (n - r)) ℝ :=
   V.submatrix id fun j => ⟨r + j, by omega⟩
 
+/-- The trailing columns are the backbone's `Matrix.lastColumns` (the last `n − r` columns), read
+with the book's offset `r`. -/
+theorem trailingColumns_eq_lastColumns {l n : ℕ} (V : Matrix (Fin l) (Fin n) ℝ) {r : ℕ}
+    (hr : r ≤ n) : trailingColumns V r = lastColumns V (Nat.sub_le n r) :=
+  (lastColumns_eq_submatrix V _ fun j => by simp only; omega).symm
+
 /-- The trailing columns of an orthogonal matrix are orthonormal. -/
 theorem trailingColumns_transpose_mul_self {n : ℕ} {V : Matrix (Fin n) (Fin n) ℝ}
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) (r : ℕ) :
     (trailingColumns V r)ᵀ * trailingColumns V r = 1 := by
   have hVV : Vᵀ * V = 1 := by
-    have := mem_unitaryGroup_iff'.1 hV
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+    exact (mem_orthogonalGroup_iff' _ ℝ).1 hV
   rw [trailingColumns, transpose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id, hVV]
   exact submatrix_one _ fun a b hab => Fin.ext (by simpa using congrArg Fin.val hab)
 
-/-- A matrix with orthonormal columns preserves dot products with itself. -/
-private theorem dotProduct_mulVec_self_of_transpose_mul_self {k l : ℕ}
-    {W : Matrix (Fin k) (Fin l) ℝ} (hW : Wᵀ * W = 1) (y : Fin l → ℝ) :
-    (W *ᵥ y) ⬝ᵥ (W *ᵥ y) = y ⬝ᵥ y := by
-  rw [dotProduct_mulVec, ← mulVec_transpose, mulVec_mulVec, hW, one_mulVec, dotProduct_comm]
-
-/-- **`‖C w‖²` in singular coordinates**: for an SVD `UᵀCV = Σ` of a tall `C` (`k ≤ m` columns),
-`‖C w‖₂² = ∑_j σ_j² ((Vᵀw)_j)²`. -/
-private theorem mulVec_dotProduct_self_eq_of_isSVD {k : ℕ} {C : Matrix (Fin m) (Fin k) ℝ}
-    {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin k) (Fin k) ℝ}
-    (h : IsSVD C U σ V) (hkm : k ≤ m) (w : Fin k → ℝ) :
-    (C *ᵥ w) ⬝ᵥ (C *ᵥ w) = ∑ j : Fin k, σ j ^ 2 * (Vᵀ *ᵥ w) j ^ 2 := by
-  have hC := h.eq_mul_mul_star
-  simp only [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
-    RCLike.ofReal_real_eq_id, id_eq] at hC
-  have hUU : Uᵀ * U = 1 := by
-    have := mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_left
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  rw [hC, ← mulVec_mulVec, ← mulVec_mulVec, dotProduct_mulVec_self_of_transpose_mul_self hUU,
-    dotProduct_mulVec, ← mulVec_transpose, mulVec_mulVec, ← conjTranspose_eq_transpose_of_trivial,
-    conjTranspose_rectDiagonal_mul_self, dotProduct]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [mulVec_diagonal, ite_eq_left (lt_of_lt_of_le j.isLt hkm), star_trivial]
-  ring
-
-/-- **The least singular value of a tall matrix** is the last diagonal entry of any SVD. -/
-private theorem iInf_colSingularValues_eq_of_isSVD {C : Matrix (Fin m) (Fin (n + 1)) ℝ}
-    {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
-    (h : IsSVD C U σ V) (hmn : n < m) : ⨅ i, C.colSingularValues i = σ n := by
-  rw [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin, Nat.add_sub_cancel,
-    h.singularValues_eq hmn (Nat.lt_succ_self n)]
-
-/-- **The minimizers of `‖Cw‖` on the unit sphere** (the first half): if `σ_j = σ_n` for
-`j ≥ r`, every `w` whose `V`-coordinates vanish below `r` has `‖Cw‖ = σ_n ‖w‖`. -/
-private theorem mulVec_dotProduct_self_of_coord_eq_zero {C : Matrix (Fin m) (Fin (n + 1)) ℝ}
-    {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
-    (h : IsSVD C U σ V) (hmn : n < m) {r : ℕ} (heq : ∀ j : Fin (n + 1), r ≤ j → σ j = σ n)
-    {w : Fin (n + 1) → ℝ} (hw : ∀ j : Fin (n + 1), (j : ℕ) < r → (Vᵀ *ᵥ w) j = 0) :
-    (C *ᵥ w) ⬝ᵥ (C *ᵥ w) = σ n ^ 2 * (w ⬝ᵥ w) := by
-  have hVV : Vᵀᵀ * Vᵀ = 1 := by
-    rw [transpose_transpose]
-    have := mem_unitaryGroup_iff.1 h.mem_unitaryGroup_right
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  rw [mulVec_dotProduct_self_eq_of_isSVD h hmn,
-    ← dotProduct_mulVec_self_of_transpose_mul_self hVV w,
-    dotProduct, Finset.mul_sum]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  by_cases hj : (j : ℕ) < r
-  · rw [hw j hj]
-    ring
-  · rw [heq j (not_lt.1 hj)]
-    ring
-
-/-- **The minimizers of `‖Cw‖` on the unit sphere** (the second half): if `σ_j > σ_n` for `j < r`,
-then `‖Cw‖ = σ_n ‖w‖` forces the `V`-coordinates of `w` below `r` to vanish. -/
-private theorem coord_eq_zero_of_mulVec_dotProduct_self {C : Matrix (Fin m) (Fin (n + 1)) ℝ}
-    {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
-    (h : IsSVD C U σ V) (hmn : n < m) {r : ℕ} (hgap : ∀ j < r, σ n < σ j)
-    {w : Fin (n + 1) → ℝ} (hw : (C *ᵥ w) ⬝ᵥ (C *ᵥ w) = σ n ^ 2 * (w ⬝ᵥ w)) :
-    ∀ j : Fin (n + 1), (j : ℕ) < r → (Vᵀ *ᵥ w) j = 0 := by
-  have hVV : Vᵀᵀ * Vᵀ = 1 := by
-    rw [transpose_transpose]
-    have := mem_unitaryGroup_iff.1 h.mem_unitaryGroup_right
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  rw [mulVec_dotProduct_self_eq_of_isSVD h hmn,
-    ← dotProduct_mulVec_self_of_transpose_mul_self hVV w,
-    dotProduct, Finset.mul_sum, ← sub_eq_zero, ← Finset.sum_sub_distrib] at hw
-  have hnn : ∀ j : Fin (n + 1),
-      0 ≤ σ j ^ 2 * (Vᵀ *ᵥ w) j ^ 2 - σ n ^ 2 * ((Vᵀ *ᵥ w) j * (Vᵀ *ᵥ w) j) := by
-    intro j
-    have h1 : σ n ≤ σ j := h.antitone (Nat.le_of_lt_succ j.isLt)
-    have h0 := h.nonneg n
-    have : σ n ^ 2 ≤ σ j ^ 2 := pow_le_pow_left₀ h0 h1 2
-    nlinarith [sq_nonneg ((Vᵀ *ᵥ w) j)]
-  intro j hj
-  have hz := (Finset.sum_eq_zero_iff_of_nonneg fun j _ => hnn j).1 hw j (Finset.mem_univ j)
-  have hlt : σ n ^ 2 < σ j ^ 2 := pow_lt_pow_left₀ (hgap j hj) (h.nonneg n) two_ne_zero
-  have : ((Vᵀ *ᵥ w) j) ^ 2 * (σ j ^ 2 - σ n ^ 2) = 0 := by linarith
-  rcases mul_eq_zero.1 this with h2 | h2
-  · exact pow_eq_zero_iff two_ne_zero |>.1 h2
-  · linarith
-
-/-- A vector whose `V`-coordinates vanish below `r` is a combination of the trailing columns of
-`V`, with the same length. -/
-private theorem exists_eq_trailingColumns_mulVec {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
-    (hV : V ∈ orthogonalGroup (Fin (n + 1)) ℝ) {r : ℕ} {w : Fin (n + 1) → ℝ}
-    (hw : ∀ j : Fin (n + 1), (j : ℕ) < r → (Vᵀ *ᵥ w) j = 0) :
-    ∃ y : Fin (n + 1 - r) → ℝ, w = trailingColumns V r *ᵥ y ∧ y ⬝ᵥ y = w ⬝ᵥ w := by
-  have hVV : V * Vᵀ = 1 := by
-    have := mem_unitaryGroup_iff.1 hV
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  set c := Vᵀ *ᵥ w with hc
-  have hwc : w = V *ᵥ c := by rw [hc, mulVec_mulVec, hVV, one_mulVec]
-  set f : Fin (n + 1 - r) → Fin (n + 1) := fun k => ⟨r + k, by omega⟩ with hf
-  have hfinj : Function.Injective f := fun a b hab =>
-    Fin.ext (by simpa [hf] using congrArg Fin.val hab)
-  have hout : ∀ j, j ∉ Set.range f → c j = 0 := by
-    intro j hj
-    by_contra hne
-    have : r ≤ (j : ℕ) := by
-      by_contra hlt
-      exact hne (hw j (not_le.1 hlt))
-    refine hj ⟨⟨j - r, by omega⟩, Fin.ext ?_⟩
-    simp only [hf]
-    omega
-  refine ⟨c ∘ f, ?_, ?_⟩
-  · rw [hwc]
+/-- The span of the trailing columns `v_r, …, v_n` of `V` (rows of `Vᵀ`) consists of the vectors
+`V(:, r:n) y`. -/
+private theorem mem_span_iff_exists_trailingColumns_mulVec
+    {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
+    {r : ℕ} (x : EuclideanSpace ℝ (Fin (n + 1))) :
+    x ∈ Submodule.span ℝ ((fun j => (WithLp.toLp 2 (Vᵀ j) : EuclideanSpace ℝ (Fin (n + 1)))) ''
+        {j | r ≤ (j : ℕ)}) ↔
+      ∃ y, trailingColumns V r *ᵥ y = WithLp.ofLp x := by
+  have hset : ((fun j => (WithLp.toLp 2 (Vᵀ j) : EuclideanSpace ℝ (Fin (n + 1)))) ''
+      {j | r ≤ (j : ℕ)}) = Set.range fun k : Fin (n + 1 - r) =>
+        (WithLp.toLp 2 (Vᵀ ⟨r + k, by omega⟩) : EuclideanSpace ℝ (Fin (n + 1))) := by
+    ext v
+    constructor
+    · rintro ⟨j, hj, rfl⟩
+      have hj' : r ≤ (j : ℕ) := hj
+      have := j.isLt
+      refine ⟨⟨j - r, by omega⟩, ?_⟩
+      dsimp only
+      congr 2
+      exact Fin.ext (by simp only; omega)
+    · rintro ⟨k, rfl⟩
+      exact ⟨_, show r ≤ r + (k : ℕ) by omega, rfl⟩
+  rw [hset, Submodule.mem_span_range_iff_exists_fun]
+  constructor
+  · rintro ⟨c, hc⟩
+    refine ⟨c, ?_⟩
+    rw [← hc]
     funext i
-    simp only [mulVec, dotProduct, trailingColumns, submatrix_apply, id, Function.comp]
-    exact (Fintype.sum_of_injective f hfinj _ _ (fun j hj => by rw [hout j hj, mul_zero])
-      (fun k => rfl)).symm
-  · have hVt : Vᵀᵀ * Vᵀ = 1 := by rwa [transpose_transpose]
-    rw [← dotProduct_mulVec_self_of_transpose_mul_self hVt w, ← hc, dotProduct, dotProduct]
-    exact Fintype.sum_of_injective f hfinj _ _ (fun j hj => by rw [hout j hj, mul_zero])
-      (fun k => rfl)
-
-/-- The trailing columns' combinations have vanishing `V`-coordinates below `r`. -/
-private theorem coord_trailingColumns_mulVec {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
-    (hV : V ∈ orthogonalGroup (Fin (n + 1)) ℝ) (r : ℕ) (y : Fin (n + 1 - r) → ℝ) :
-    ∀ j : Fin (n + 1), (j : ℕ) < r → (Vᵀ *ᵥ (trailingColumns V r *ᵥ y)) j = 0 := by
-  have hVV : Vᵀ * V = 1 := by
-    have := mem_unitaryGroup_iff'.1 hV
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  intro j hj
-  rw [mulVec_mulVec, trailingColumns, ← submatrix_id_id Vᵀ, ← submatrix_mul _ _ _ _ _
-    Function.bijective_id, hVV]
-  simp only [mulVec, dotProduct, submatrix_apply]
-  refine Finset.sum_eq_zero fun k _ => ?_
-  rw [one_apply_ne, zero_mul]
-  intro e
-  have := congrArg Fin.val e
-  simp at this
-  omega
+    simp [trailingColumns, mulVec, dotProduct, mul_comm]
+  · rintro ⟨y, hy⟩
+    refine ⟨y, ?_⟩
+    have hx' : x = WithLp.toLp 2 (trailingColumns V r *ᵥ y) := by rw [hy, WithLp.toLp_ofLp]
+    rw [hx']
+    ext i
+    simp [trailingColumns, mulVec, dotProduct, mul_comm]
 
 /-- The book's column order of `[A | b]`: `Fin (n + 1) ≃ Fin n ⊕ Unit`, the last index going to the
 right-hand side. -/
@@ -506,7 +418,9 @@ theorem iInf_singularValues_tlsWeighted_eq (hmn : n < m) {d : Fin m → ℝ} {t 
     {A : Matrix (Fin m) (Fin n) ℝ} {b : Fin m → ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} (hC : IsSVD (tlsMatrix d t A b) U σ V) :
     ⨅ i, (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).colSingularValues i = σ n := by
-  rw [← iInf_colSingularValues_eq_of_isSVD hC hmn, iInf_colSingularValues_eq_iInf_norm,
+  have h0 := hC.iInf_colSingularValues_eq (Nat.succ_pos n) hmn
+  rw [Nat.add_sub_cancel] at h0
+  rw [← h0, iInf_colSingularValues_eq_iInf_norm,
     iInf_colSingularValues_eq_iInf_norm]
   set e := finSuccEquivSumUnit n
   let E : {x : EuclideanSpace ℝ (Fin (n + 1)) // ‖x‖ = 1} ≃
@@ -565,94 +479,75 @@ theorem tls_single (hmn : n < m) {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {t 
               ⟨n - r, by omega⟩) := by
   set e := finSuccEquivSumUnit n with he
   set Vt := trailingColumns V r with hVt
-  set W := Vt * Q with hWdef
-  set l : Fin (n + 1 - r) := ⟨n - r, by omega⟩ with hl
+  set W : Matrix (Fin n ⊕ Unit) (Fin (n + 1 - r)) ℝ := Vt.submatrix e.symm id with hWdef
   have hV := hC.mem_unitaryGroup_right
-  have hQQ : Q * Qᵀ = 1 := by
-    have := mem_unitaryGroup_iff.1 hQ
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  have hQQ' : Qᵀ * Q = 1 := by
-    have := mem_unitaryGroup_iff'.1 hQ
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  have heqall : ∀ j : Fin (n + 1), r ≤ (j : ℕ) → σ j = σ n := fun j hj =>
-    le_antisymm (heq ▸ hC.antitone hj) (hC.antitone (Nat.le_of_lt_succ j.isLt))
-  have hinf := iInf_singularValues_tlsWeighted_eq hmn hC
   have ht' := tlsWeights_ne_zero ht
-  -- (a)
-  have ha : ∀ y : Fin (n + 1 - r) → ℝ, y ⬝ᵥ y = 1 →
-      |(Vt *ᵥ y) (Fin.last n)| ≤ |W (Fin.last n) l| := by
-    intro y hy
-    have hVtW : Vt = W * Qᵀ := by rw [hWdef, Matrix.mul_assoc, hQQ, Matrix.mul_one]
-    set u := Qᵀ *ᵥ y with hu
-    have hu1 : u ⬝ᵥ u = 1 := by
-      rw [hu, dotProduct_mulVec_self_of_transpose_mul_self (by rwa [transpose_transpose]), hy]
-    have hlast : (Vt *ᵥ y) (Fin.last n) = W (Fin.last n) l * u l := by
-      rw [hVtW, ← mulVec_mulVec, ← hu, mulVec, dotProduct, Finset.sum_eq_single l]
-      · intro j _ hj
-        rw [hW j (by have := j.isLt; have : (j : ℕ) ≠ n - r := fun h => hj (Fin.ext h); omega),
-          zero_mul]
-      · simp
-    have hul : u l ^ 2 ≤ 1 := by
-      rw [← hu1, dotProduct]
-      have := Finset.single_le_sum (f := fun k => u k * u k) (fun k _ => mul_self_nonneg (u k))
-        (Finset.mem_univ l)
-      simpa [sq] using this
-    rw [hlast, abs_mul]
-    have : |u l| ≤ 1 := by
-      rw [← sq_le_one_iff_abs_le_one]
-      exact hul
-    exact mul_le_of_le_one_right (abs_nonneg _) this
-  refine ⟨ha, fun hα => ?_, fun hα => ?_⟩
-  · -- (b)
-    refine not_isTLSSolution_of_forall_last_eq_zero hd ht' fun w' hw' hmin => ?_
-    set w : Fin (n + 1) → ℝ := w' ∘ e with hw
-    have hw'w : w' = w ∘ e.symm := by
-      funext x
-      simp [hw]
-    have hw1 : w ⬝ᵥ w = 1 := by
-      rw [dotProduct_self_eq_norm_sq, ← norm_toLp_comp_equiv e, ← hw'w, hw', one_pow]
-    have hCw : (tlsMatrix d t A b *ᵥ w) ⬝ᵥ (tlsMatrix d t A b *ᵥ w) = σ n ^ 2 * (w ⬝ᵥ w) := by
-      rw [hw1, mul_one, dotProduct_self_eq_norm_sq, tlsMatrix_mulVec, ← hw'w, hmin, hinf]
-    obtain ⟨y, hwy, hy⟩ := exists_eq_trailingColumns_mulVec hV
-      (coord_eq_zero_of_mulVec_dotProduct_self hC hmn hgap hCw)
-    have h2 := ha y (hy.trans hw1)
-    rw [hVt, ← hwy, hα, abs_zero] at h2
-    rw [hw'w]
-    exact abs_nonpos_iff.1 h2
-  · -- (c)
-    set w : Fin (n + 1) → ℝ := fun i => W i l with hw
-    have hwV : w = Vt *ᵥ Q.col l := by
+  have hinf := iInf_singularValues_tlsWeighted_eq hmn hC
+  -- the columns of `W` are orthonormal
+  have hWW : Wᴴ * W = 1 := by
+    rw [conjTranspose_eq_transpose_of_trivial, hWdef, transpose_submatrix,
+      submatrix_mul_equiv _ _ _ e.symm, trailingColumns_transpose_mul_self hV r, submatrix_id_id]
+  -- the minimizers of `‖C w‖ / ‖w‖` are the range of `W`
+  have hmin : ∀ w : EuclideanSpace ℝ (Fin n ⊕ Unit),
+      ‖toEuclideanLin (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)) w‖ =
+          (⨅ j, (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).colSingularValues j) *
+            ‖w‖ ↔ w ∈ LinearMap.range (toEuclideanLin W) := by
+    intro w
+    set x : EuclideanSpace ℝ (Fin (n + 1)) := WithLp.toLp 2 (WithLp.ofLp w ∘ e) with hx
+    have hCx : toEuclideanLin (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)) w =
+        toEuclideanLin (tlsMatrix d t A b) x := by
+      rw [toEuclideanLin_apply, toEuclideanLin_apply, hx, tlsMatrix_mulVec]
+      congr 2
+      funext j
+      simp only [Function.comp_apply, he, Equiv.apply_symm_apply]
+    have hnx : ‖w‖ = ‖x‖ := by
+      rw [hx, show WithLp.ofLp w ∘ e = WithLp.ofLp w ∘ e.symm.symm from rfl,
+        norm_toLp_comp_equiv, WithLp.toLp_ofLp]
+    have hspan := hC.norm_toEuclideanLin_eq_iff_mem_span (r := r) (by omega)
+      (by simpa using hgap) (by simpa using heq) x
+    simp only [Nat.add_sub_cancel] at hspan
+    rw [hCx, hnx, hinf, hspan, mem_span_iff_exists_trailingColumns_mulVec, LinearMap.mem_range]
+    constructor
+    · rintro ⟨y, hy⟩
+      refine ⟨WithLp.toLp 2 y, ?_⟩
+      rw [toEuclideanLin_apply]
+      apply (WithLp.equiv 2 _).injective
       funext i
-      rfl
-    have hw1 : w ⬝ᵥ w = 1 := by
-      rw [hwV,
-        dotProduct_mulVec_self_of_transpose_mul_self (trailingColumns_transpose_mul_self hV r)]
-      have := congrFun (congrFun hQQ' l) l
-      rw [mul_apply, one_apply_eq] at this
-      rw [← this]
-      rfl
-    have hCw : (tlsMatrix d t A b *ᵥ w) ⬝ᵥ (tlsMatrix d t A b *ᵥ w) = σ n ^ 2 * (w ⬝ᵥ w) :=
-      mulVec_dotProduct_self_of_coord_eq_zero hC hmn heqall (by
-        rw [hwV]; exact coord_trailingColumns_mulVec hV r _)
-    rw [hw1, mul_one] at hCw
-    have hunit : ‖(WithLp.toLp 2 (w ∘ e.symm) : EuclideanSpace ℝ (Fin n ⊕ Unit))‖ = 1 := by
-      rw [norm_toLp_comp_equiv]
-      refine (sq_eq_sq₀ (norm_nonneg _) zero_le_one).1 ?_
-      rw [← dotProduct_self_eq_norm_sq, hw1, one_pow]
-    have hmin : ‖(WithLp.toLp 2 (tlsWeighted d (tlsWeights t) A (replicateCol Unit b) *ᵥ
-        (w ∘ e.symm)) : EuclideanSpace ℝ (Fin m))‖ =
-          ⨅ i, (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).colSingularValues i := by
-      rw [hinf, ← tlsMatrix_mulVec]
-      refine (sq_eq_sq₀ (norm_nonneg _) (hC.nonneg n)).1 ?_
-      rw [← dotProduct_self_eq_norm_sq, hCw]
-    obtain ⟨E, R, hP, hsol, hER⟩ := isTLSSolution_of_mem_smallest hd ht' hunit hmin hα
+      have := congrFun hy (e.symm i)
+      simp only [hx, Function.comp_apply, Equiv.apply_symm_apply] at this
+      exact this
+    · rintro ⟨y, hy⟩
+      refine ⟨WithLp.ofLp y, ?_⟩
+      rw [hx, WithLp.ofLp_toLp, ← hy, toEuclideanLin_apply, WithLp.ofLp_toLp]
+      funext j
+      change _ = (Vt *ᵥ WithLp.ofLp y) (e.symm (e j))
+      rw [Equiv.symm_apply_apply]
+  -- the zero pattern of `W Q`
+  have hz : ∀ j, j ≠ (⟨n - r, by omega⟩ : Fin (n + 1 - r)) → (W * Q) (Sum.inr ()) j = 0 := by
+    intro j hj
+    exact hW j (by
+      have := j.isLt
+      have : (j : ℕ) ≠ n - r := fun h => hj (Fin.ext h)
+      omega)
+  obtain ⟨ha, hb, hc⟩ := tls_single_rhs (A := A) (b := b) hd ht' hWW hmin hQ hz
+  refine ⟨fun y hy => ?_, hb, fun hα => ?_⟩
+  · -- (a)
+    have hy1 : ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin (n + 1 - r)))‖ = 1 := by
+      have h2 : ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin (n + 1 - r)))‖ ^ 2 = 1 := by
+        rw [← dotProduct_self_eq_norm_sq, hy]
+      exact (pow_eq_one_iff_of_nonneg (norm_nonneg _) two_ne_zero).1 h2
+    have := ha _ hy1
+    rw [Real.norm_eq_abs, Real.norm_eq_abs] at this
+    exact this
+  · -- (c)
+    obtain ⟨E, R, hP, hsol, hER⟩ := hc hα
     refine ⟨E, R, hP, ?_, ?_⟩
     · convert hsol using 4
-      simp only [Function.comp_apply, tlsWeights, Sum.elim_inl, Sum.elim_inr,
-        RCLike.ofReal_real_eq_id, id_eq]
+      simp only [tlsWeights, Sum.elim_inl, Sum.elim_inr, RCLike.ofReal_real_eq_id, id_eq]
       rfl
     · rw [hER]
-      congr 2
+      rfl
+
 /-- The entries of `C = D[A | b]T`: `c_ij = d_i a_ij t_j`, with `a_{i,n+1} = b_i`. -/
 theorem tlsMatrix_apply (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) (i : Fin m) (j : Fin (n + 1)) :
@@ -849,8 +744,7 @@ private theorem householder_tail {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} {r
     rw [hPdef, Matrix.sub_apply, one_apply_ne hne, Matrix.smul_apply, vecMulVec_apply, hv l hlr]
     simp
   have hPP : Pᵀ * P = 1 := by
-    have := mem_unitaryGroup_iff'.1 hP
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+    exact (mem_orthogonalGroup_iff' _ ℝ).1 hP
   refine ⟨?_, fun i k => ?_⟩
   · rw [mem_orthogonalGroup_iff']
     ext k k'

@@ -58,7 +58,7 @@ namespace GolubVanLoan.Chapter09
 
 variable {n : ℕ}
 
-/-! ### A Jordan analysis -/
+/-! ### §9.2.1 A Jordan analysis -/
 
 section Jordan
 
@@ -85,7 +85,7 @@ theorem theorem_9_2_1 {q : ℕ} (e : Fin q → ℕ) (μ : Fin q → ℂ) (σ : (
 
 end Jordan
 
-/-! ### A Schur analysis -/
+/-! ### §9.2.2 A Schur analysis -/
 
 /-- **(9.2.1)**: if `Ω` is convex (and compact, so that the supremum is finite) and `h` is analytic
 on a neighbourhood of `Ω`, then for nodes `λ_{s₀}, …, λ_{s_r} ∈ Ω`, repeated or not,
@@ -138,8 +138,6 @@ theorem equation_9_2_2 {N : Matrix (Fin n) (Fin n) ℂ} (hN : ∀ i j, j ≤ i �
     · rw [hN' i k hki, zero_mul]
     · rw [(hup.pow r) (show id j < id k from lt_of_le_of_lt hji' hik), mul_zero]
 
-/-! ### Taylor approximants -/
-
 section Schur
 
 open scoped Matrix Matrix.Norms.Frobenius
@@ -167,6 +165,8 @@ theorem theorem_9_2_2 {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ Matrix.unit
   rw [iteratedDeriv_sub ((hf z hz).contDiffAt) ((hg z hz).contDiffAt)]
 
 end Schur
+
+/-! ### §9.2.3 Taylor approximants -/
 
 section Taylor
 
@@ -231,7 +231,7 @@ theorem double_angle (A : Matrix (Fin n) (Fin n) ℂ) :
     rw [hcomp _ hsin, hf, pfc_const_smul, pfc_mul hI hs (fun μ _ => hsin.contDiffAt.of_le le_top)
       (fun μ _ => hcos.contDiffAt.of_le le_top)]
 
-/-! ### Evaluating matrix polynomials -/
+/-! ### §9.2.4 Evaluating matrix polynomials -/
 
 section Programs
 
@@ -401,7 +401,7 @@ theorem equation_9_2_5 {K R : Type*} [CommSemiring K] [Semiring R] [Algebra K R]
   rw [Finset.sum_range_succ, h1, ite_eq_right (lt_irrefl r), hmul]
   conv_rhs => rw [show q + 1 = s * r + (q - s * r + 1) by omega, Finset.sum_range_add, hblock]
 
-/-! ### Computing powers of a matrix -/
+/-! ### §9.2.5 Computing powers of a matrix -/
 
 /-- The bits below the lowest set bit vanish, and the lowest set bit is set. -/
 private theorem mod_two_pow_succ_lowestSetBit {s : ℕ} (hs : s ≠ 0) :
@@ -487,9 +487,7 @@ theorem algorithm_9_2_2_spec (A : Matrix (Fin n) (Fin n) ℝ) {s : ℕ} (hs : 1 
   simp only
   rw [show q + (t - q) + 1 = t + 1 by omega, hst]
 
-/-! ### The Cauchy integral formulation -/
-
-/-! ### Integrating matrix functions -/
+/-! ### §9.2.6 Integrating matrix functions -/
 
 /-- The composite Simpson weights `w_0, …, w_m = 1, 4, 2, 4, …, 2, 4, 1` of (9.2.6), `m = 2N`,
 regrouped by panels: `∑_{k=0}^{2N} w_k g_k = ∑_{j<N} (g_{2j} + 4 g_{2j+1} + g_{2j+2})`. -/
@@ -578,6 +576,8 @@ theorem equation_9_2_7 (A : Matrix (Fin n) (Fin n) ℂ) {f : ℂ → ℂ} {a b h
     _ = n * h ^ 4 * (b - a) / 180 * S := by ring
 
 end Simpson
+
+/-! ### §9.2.7 The Cauchy integral formulation -/
 
 section Cauchy
 

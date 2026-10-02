@@ -600,22 +600,26 @@ permutation matrix and `s = 1` or `2`. If `A` is nonzero, then it is always poss
 these quantities so that `E` is nonsingular, thereby enabling us to write
 `P₁ A P₁ᵀ = [I_s 0; C E⁻¹ I_{n−s}] [E 0; 0 B − C E⁻¹ Cᵀ] [I_s E⁻¹ Cᵀ; 0 I_{n−s}]`."
 The factorization holds for any nonsingular pivot block `E` (symmetry is not needed), with the
-reduced matrix `Ã = B − C E⁻¹ Cᵀ` of (4.4.15); and a nonzero symmetric `A` has a nonsingular
-principal pivot of order one (a nonzero diagonal entry) or two (a pair `i ≠ j` with nonzero
-principal minor), the book's P4.4.1. -/
+reduced matrix `Ã = B − C E⁻¹ Cᵀ` of (4.4.15). The existence of a nonsingular pivot is
+`exists_nonsingular_pivot`. -/
 theorem equation_4_4_15 {s m : ℕ} {E : Matrix (Fin s) (Fin s) ℝ} (hE : IsUnit E)
     (C : Matrix (Fin m) (Fin s) ℝ) (B : Matrix (Fin m) (Fin m) ℝ) :
-    (fromBlocks E Cᵀ C B =
+    fromBlocks E Cᵀ C B =
       fromBlocks 1 0 (C * E⁻¹) 1 * fromBlocks E 0 0 (B - C * E⁻¹ * Cᵀ) *
-        fromBlocks 1 (E⁻¹ * Cᵀ) 0 1) ∧
-    ∀ {A : Matrix (Fin n) (Fin n) ℝ}, A.IsSymm → A ≠ 0 →
-      (∃ i, A i i ≠ 0) ∨ ∃ i j, i ≠ j ∧ A i i * A j j - A i j * A j i ≠ 0 := by
-  refine ⟨?_, fun hA hA0 => exists_principal_pivot_ne_zero hA hA0⟩
+        fromBlocks 1 (E⁻¹ * Cᵀ) 0 1 := by
   have hinv : E * E⁻¹ = 1 := mul_nonsing_inv E ((isUnit_iff_isUnit_det E).1 hE)
   have hinv' : E⁻¹ * E = 1 := nonsing_inv_mul E ((isUnit_iff_isUnit_det E).1 hE)
   simp only [fromBlocks_multiply, Matrix.one_mul, Matrix.mul_one, Matrix.mul_zero,
     Matrix.zero_mul, add_zero, zero_add, ← Matrix.mul_assoc, hinv]
   rw [Matrix.mul_assoc C E⁻¹ E, hinv', Matrix.mul_one, add_sub_cancel]
+
+/-- **§4.4.3, the choice of the pivot in (4.4.15).** "If `A` is nonzero, then it is always possible
+to choose these quantities so that `E` is nonsingular": a nonzero symmetric `A` has a nonsingular
+principal pivot of order one (a nonzero diagonal entry) or two (a pair `i ≠ j` with nonzero
+principal minor), the book's P4.4.1. -/
+theorem exists_nonsingular_pivot {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hA0 : A ≠ 0) :
+    (∃ i, A i i ≠ 0) ∨ ∃ i j, i ≠ j ∧ A i i * A j j - A i j * A j i ≠ 0 :=
+  exists_principal_pivot_ne_zero hA hA0
 
 /-- **(4.4.16).** In the Bunch–Parlett strategy with `μ₀ = max |a_ij|` and `μ₁ = max |a_ii|`, "it is
 easy to verify from (4.4.15) that if `s = 1`, then `|ã_ij| ≤ (1 + α⁻¹) μ₀`": the `1 × 1` pivot

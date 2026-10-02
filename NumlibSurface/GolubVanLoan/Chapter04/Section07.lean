@@ -23,8 +23,13 @@ and the book's vector `r = (r₁, …, r_k)` is `fun i : Fin k => r (i + 1)` (0-
 The algorithms follow the algorithm conventions of `NumlibSurface/GolubVanLoan`: every `+ − × /`
 passes through the rounding hook `rnd`, negation and copies are exact, loops are `List.foldlM`. The
 growing vectors of Algorithms 4.7.1–4.7.3 are held as `ℕ`-indexed state (`y(1:k)` in the entries
-`0, …, k − 1`), the shape of the backbone recurrences, and the output is read back on `Fin n`; the
-book's inner products `r(k:−1:1)ᵀ y(1:k)` are the backbone accumulation `FloatingPoint.dotAccum`.
+`0, …, k − 1`), the shape of the backbone recurrences, and the output is read back on `Fin n`.
+Every scalar update of the form "`c ± (inner product)`" — Durbin's and Levinson's `α`, Levinson's
+`μ`, Trench's `γ` — is read literally: the inner product is accumulated from `0` by the backbone's
+`FloatingPoint.dotAccum`, then combined with `c` by one rounded `±`. The bisection (4.7.11) is the
+program `durbinBisection` (a `while` loop with `fuel` and a `done` flag), whose index `m(μ)` is
+`durbinIndex`: the passes of Algorithm 4.7.1 (`durbinStep`) on the rounded entries of
+`T_μ = (T − μI)/(1 − μ)`, stopped at the first nonpositive `β`.
 
 ## Sources
 
@@ -49,29 +54,31 @@ variable {n : ℕ}
 /-! ### §4.7.1 Persymmetry -/
 
 /-- **§4.7.1, persymmetry.** `B ∈ ℝⁿˣⁿ` is *persymmetric* if `ℰ_n B ℰ_n = Bᵀ`. -/
-def IsPersymmetric (B : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+def IsPersymmetricExchange (B : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   exchange n * B * exchange n = Bᵀ
 
 /-- The book's persymmetry is the backbone's entrywise `Matrix.IsPersymmetric`
 (`b_{rev j, rev i} = b_ij`). -/
 theorem isPersymmetric_iff {B : Matrix (Fin n) (Fin n) ℝ} :
-    IsPersymmetric B ↔ B.IsPersymmetric :=
+    IsPersymmetricExchange B ↔ B.IsPersymmetric :=
   isPersymmetric_iff_exchange_mul_mul_exchange.symm
 
+@[deprecated (since := "2026-09-30")] alias IsPersymmetric := IsPersymmetricExchange
+
 /-- §4.7.1: "If `B` is persymmetric, then `ℰ_n B` is symmetric." -/
-theorem isSymm_exchange_mul {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsPersymmetric B) :
+theorem isSymm_exchange_mul {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsPersymmetricExchange B) :
     (exchange n * B).IsSymm :=
   (isPersymmetric_iff.1 hB).isSymm_exchange_mul
 
 /-- §4.7.1: "the inverse of a persymmetric matrix is also persymmetric",
 `ℰ_n B⁻¹ ℰ_n = (ℰ_n B ℰ_n)⁻¹ = (Bᵀ)⁻¹ = (B⁻¹)ᵀ` (with Mathlib's inverse, singular `B` included). -/
-theorem isPersymmetric_inv {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsPersymmetric B) :
-    IsPersymmetric B⁻¹ :=
+theorem isPersymmetric_inv {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsPersymmetricExchange B) :
+    IsPersymmetricExchange B⁻¹ :=
   isPersymmetric_iff.2 (isPersymmetric_iff.1 hB).inv
 
 /-- §4.7.1: "the inverse of a nonsingular Toeplitz matrix is persymmetric". -/
 theorem isPersymmetric_inv_of_isToeplitz {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsToeplitz) :
-    IsPersymmetric A⁻¹ :=
+    IsPersymmetricExchange A⁻¹ :=
   isPersymmetric_inv (isPersymmetric_iff.2 hA.isPersymmetric)
 
 /-! ### §4.7.3 The Yule–Walker equations -/
@@ -145,7 +152,7 @@ theorem durbin_denominator_pos {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {y : F
   have hsym : ∀ j, ∑ i, u i * symmToeplitz k r i j = (symmToeplitz k r *ᵥ u) j := fun j => by
     simp only [mulVec, dotProduct]
     refine Finset.sum_congr rfl fun i _ => ?_
-    rw [mul_comm, (symmToeplitz_isSymm k r).apply j i]
+    rw [mul_comm, (isSymm_symmToeplitz k r).apply j i]
   refine ⟨?_, fun hT => ?_⟩
   · rw [hrow]
     have h1 : (fromBlocks 1 (replicateCol (Fin 1) u) 0 1)ᵀ *
@@ -211,6 +218,30 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
+/-- **One pass of Algorithm 4.7.1**, the book's `k = p + 1`, on the state `(y, α, β)`:
+```
+β = (1 − α²) β
+α = −(r(k+1) + r(k:−1:1)ᵀ y(1:k)) / β
+z(1:k) = y(1:k) + α y(k:−1:1)
+y(1:k+1) = [z(1:k); α]
+```
+with `β` updated as `fl(fl(1 − fl(α²)) β)` and the inner product accumulated from `0`
+(`FloatingPoint.dotAccum`) before one rounded addition of `r(k+1)`. It is also the pass of the
+index `m(λ)` of (4.7.11) (`durbinIndex`). -/
+noncomputable def durbinStep (r : ℕ → ℝ) (st : (ℕ → ℝ) × ℝ × ℝ) (p : ℕ) :
+    M ((ℕ → ℝ) × ℝ × ℝ) := do
+  let a ← rnd (st.2.1 * st.2.1)
+  let c ← rnd (1 - a)
+  let β ← rnd (c * st.2.2)
+  let s ← dotAccum rnd (List.range (p + 1)) (fun j => r (p + 1 - j)) st.1 0
+  let s' ← rnd (r (p + 2) + s)
+  let α ← rnd (-s' / β)
+  let z ← (List.range (p + 1)).foldlM (fun (z : ℕ → ℝ) (i : ℕ) => do
+      let q ← rnd (α * st.1 (p - i))
+      let zi ← rnd (st.1 i + q)
+      pure (Function.update z i zi)) st.1
+  pure (Function.update z (p + 1) α, α, β)
+
 /-- **Algorithm 4.7.1 (Durbin).** "Given real numbers `r₀, r₁, …, r_n` with `r₀ = 1` such that
 `T = (r_{|i−j|}) ∈ ℝⁿˣⁿ` is positive definite, the following algorithm computes `y ∈ ℝⁿ` such that
 `T y = −[r₁, …, r_n]ᵀ`":
@@ -225,19 +256,10 @@ end
 ```
 Pass `p` of the loop is the book's `k = p + 1`; the state `(y, α, β)` holds `y(1:k)` in the entries
 `0, …, k − 1` of `y : ℕ → ℝ`. The update of `β` is `fl(fl(1 − fl(α²)) β)` and the inner product
-`r(k:−1:1)ᵀ y(1:k)` is accumulated onto `r(k+1)` (`FloatingPoint.dotAccum`). -/
+`r(k:−1:1)ᵀ y(1:k)` is accumulated from `0` (`FloatingPoint.dotAccum`) and then added to `r(k+1)`
+with one rounding; one pass is `durbinStep`. -/
 noncomputable def algorithm_4_7_1 (n : ℕ) (r : ℕ → ℝ) : M (Fin n → ℝ) := do
-  let st ← (List.range (n - 1)).foldlM (fun (st : (ℕ → ℝ) × ℝ × ℝ) (p : ℕ) => do
-      let a ← rnd (st.2.1 * st.2.1)
-      let c ← rnd (1 - a)
-      let β ← rnd (c * st.2.2)
-      let s ← dotAccum rnd (List.range (p + 1)) (fun j => r (p + 1 - j)) st.1 (r (p + 2))
-      let α ← rnd (-s / β)
-      let z ← (List.range (p + 1)).foldlM (fun (z : ℕ → ℝ) (i : ℕ) => do
-          let q ← rnd (α * st.1 (p - i))
-          let zi ← rnd (st.1 i + q)
-          pure (Function.update z i zi)) st.1
-      pure (Function.update z (p + 1) α, α, β))
+  let st ← (List.range (n - 1)).foldlM (fun st p => durbinStep rnd r st p)
     (Function.update 0 0 (-r 1), -r 1, 1)
   pure fun i => st.1 i
 
@@ -269,17 +291,23 @@ private theorem sum_map_range (f : ℕ → ℝ) (m : ℕ) :
 private noncomputable def durbinExactStep (r : ℕ → ℝ) (st : (ℕ → ℝ) × ℝ × ℝ) (p : ℕ) :
     (ℕ → ℝ) × ℝ × ℝ :=
   let β := (1 - st.2.1 * st.2.1) * st.2.2
-  let α := -(r (p + 2) + ((List.range (p + 1)).map fun j => r (p + 1 - j) * st.1 j).sum) / β
+  let α := -(r (p + 2) + (0 + ((List.range (p + 1)).map fun j => r (p + 1 - j) * st.1 j).sum)) / β
   (Function.update ((List.range (p + 1)).foldl
     (fun (z : ℕ → ℝ) (i : ℕ) => Function.update z i (st.1 i + α * st.1 (p - i))) st.1)
     (p + 1) α, α, β)
+
+/-- The exact semantics of one pass of Algorithm 4.7.1. -/
+private theorem durbinStep_id (r : ℕ → ℝ) (st : (ℕ → ℝ) × ℝ × ℝ) (p : ℕ) :
+    Id.run (durbinStep pure r st p) = durbinExactStep r st p := by
+  simp only [durbinStep, dotAccum_pure, pure_bind, List.foldlM_pure]
+  rfl
 
 /-- The exact semantics of Algorithm 4.7.1 is a fold of its exact passes. -/
 private theorem algorithm_4_7_1_id (n : ℕ) (r : ℕ → ℝ) :
     Id.run (algorithm_4_7_1 pure n r) =
       fun i : Fin n => ((List.range (n - 1)).foldl (durbinExactStep r)
         (Function.update 0 0 (-r 1), -r 1, 1)).1 i := by
-  simp only [algorithm_4_7_1, dotAccum_pure, pure_bind, List.foldlM_pure]
+  simp only [algorithm_4_7_1, Id.run_bind, List.idRun_foldlM, durbinStep_id]
   rfl
 
 /-- After `p` exact passes, the state of Algorithm 4.7.1 is `(y^{(p+1)}, α_p, β_p)`. -/
@@ -304,10 +332,10 @@ private theorem durbin_foldl {r : ℕ → ℝ} (p : ℕ) (hβ : ∀ j < p, Durbi
         Durbin.beta r (p + 1) := by
       rw [Durbin.beta_succ (hβ p (by omega))]
       ring
-    have ha : -(r (p + 2) + ((List.range (p + 1)).map fun j =>
-        r (p + 1 - j) * Durbin.sol r (p + 1) j).sum) / Durbin.beta r (p + 1) =
+    have ha : -(r (p + 2) + (0 + ((List.range (p + 1)).map fun j =>
+        r (p + 1 - j) * Durbin.sol r (p + 1) j).sum)) / Durbin.beta r (p + 1) =
         Durbin.alpha r (p + 1) := by
-      rw [sum_map_range]
+      rw [zero_add, sum_map_range]
       rfl
     rw [hb, ha, foldl_range_update]
     refine Prod.ext ?_ rfl
@@ -373,8 +401,8 @@ end
 ```
 Pass `p` is the book's `k = p + 1`; the state `(x, y, α, β)` holds `x(1:k)`, `y(1:k)` in the
 entries `0, …, k − 1` of `ℕ`-indexed vectors, as in `algorithm_4_7_1`. The inner product
-`r(1:k)ᵀ x(k:−1:1)` is accumulated from `0` and then subtracted from `b(k+1)`; the one in `α` is
-accumulated onto `r(k+1)` (`FloatingPoint.dotAccum`). -/
+`r(1:k)ᵀ x(k:−1:1)` is accumulated from `0` (`FloatingPoint.dotAccum`) and then subtracted from
+`b(k+1)` with one rounding; the one in `α` is accumulated from `0` and then added to `r(k+1)`. -/
 noncomputable def algorithm_4_7_2 (n : ℕ) (r : ℕ → ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let bv : ℕ → ℝ := fun j => if h : j < n then b ⟨j, h⟩ else 0
   let st ← (List.range (n - 1)).foldlM
@@ -391,8 +419,9 @@ noncomputable def algorithm_4_7_2 (n : ℕ) (r : ℕ → ℝ) (b : Fin n → ℝ
           pure (Function.update v i vi)) st.1
       if p + 1 < n - 1 then do
         let t ← dotAccum rnd (List.range (p + 1)) (fun j => r (j + 1))
-          (fun j => st.2.1 (p - j)) (r (p + 2))
-        let α ← rnd (-t / β)
+          (fun j => st.2.1 (p - j)) 0
+        let t' ← rnd (r (p + 2) + t)
+        let α ← rnd (-t' / β)
         let z ← (List.range (p + 1)).foldlM (fun (z : ℕ → ℝ) (i : ℕ) => do
             let q ← rnd (α * st.2.1 (p - i))
             let zi ← rnd (st.2.1 i + q)
@@ -413,8 +442,8 @@ private noncomputable def levinsonExactStep (n : ℕ) (r bv : ℕ → ℝ)
   let v := (List.range (p + 1)).foldl
     (fun (v : ℕ → ℝ) (i : ℕ) => Function.update v i (st.1 i + μ * st.2.1 (p - i))) st.1
   if p + 1 < n - 1 then
-    let α := -(r (p + 2) + ((List.range (p + 1)).map
-      fun j => r (j + 1) * st.2.1 (p - j)).sum) / β
+    let α := -(r (p + 2) + (0 + ((List.range (p + 1)).map
+      fun j => r (j + 1) * st.2.1 (p - j)).sum)) / β
     (Function.update v (p + 1) μ, Function.update ((List.range (p + 1)).foldl
       (fun (z : ℕ → ℝ) (i : ℕ) => Function.update z i (st.2.1 i + α * st.2.1 (p - i))) st.2.1)
       (p + 1) α, α, β)
@@ -529,11 +558,11 @@ private theorem levinson_foldl {n : ℕ} {r bv : ℕ → ℝ} (hβ : ∀ j < n, 
     simp only [List.foldl_cons, List.foldl_nil, levinsonExactStep]
     rw [hμ]
     split_ifs with hlt
-    · have hα : -(r (p + 2) + ((List.range (p + 1)).map
-          fun j => r (j + 1) * Durbin.sol r (p + 1) (p - j)).sum) /
+    · have hα : -(r (p + 2) + (0 + ((List.range (p + 1)).map
+          fun j => r (j + 1) * Durbin.sol r (p + 1) (p - j)).sum)) /
             ((1 - Durbin.alpha r p * Durbin.alpha r p) * Durbin.beta r p) =
           Durbin.alpha r (p + 1) := by
-        rw [hb, sum_map_range, sum_range_succ_reflect]
+        rw [hb, zero_add, sum_map_range, sum_range_succ_reflect]
         rfl
       rw [hα]
       exact ⟨hx, hb, fun _ => ⟨durbin_sol_update r p, rfl⟩⟩
@@ -781,7 +810,7 @@ theorem algorithm_4_7_3_spec {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplit
     Id.run (algorithm_4_7_3 pure n r) i j = (symmToeplitz n r)⁻¹ i j := by
   obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by have := i.isLt; omega⟩
   have hβ : ∀ j < m + 1, Durbin.beta r j ≠ 0 := fun j hj => (Durbin.beta_pos hr hT j hj).ne'
-  have hP : (symmToeplitz (m + 1) r)⁻¹.IsPersymmetric := (symmToeplitz_isPersymmetric _ r).inv
+  have hP : (symmToeplitz (m + 1) r)⁻¹.IsPersymmetric := (isPersymmetric_symmToeplitz _ r).inv
   have hc := Trench.inv_symmToeplitz_last hr hβ
   set G := (symmToeplitz (m + 1) r)⁻¹ with hG
   -- the exact quantities of the algorithm
@@ -876,7 +905,7 @@ theorem equation_4_7_6_lower {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
     max (1 / ∏ j ∈ range m, (1 - Durbin.alpha r j ^ 2))
         (1 / ∏ j ∈ range m, (1 - Durbin.alpha r j)) ≤
       lpOpNorm 1 (symmToeplitz (m + 1) r)⁻¹ :=
-  Durbin.inv_beta_le_lpOpNorm_one_inv hr hT
+  Durbin.max_inv_prod_le_lpOpNorm_one_inv hr hT
 
 /-- **(4.7.6), right-hand side** (Cybenko's bound), for `n = m + 1`:
 `‖T_n⁻¹‖₁ ≤ ∏_{j=1}^{n−1} (1 + |α_j|)/(1 − |α_j|)`, Cybenko's `α_j` being
@@ -981,7 +1010,7 @@ theorem secular_deriv {m : ℕ} {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) 
         (-2 * r ⬝ᵥ ((B - t • 1)⁻¹ ^ 3 *ᵥ r)) t ∧
       -2 * r ⬝ᵥ ((B - t • 1)⁻¹ ^ 3 *ᵥ r) ≤ 0 := by
   obtain ⟨h1, h2⟩ := hasDerivAt_borderedSecularFunction (r := r) hB fun i => (ht i).ne'
-  obtain ⟨h3, h4⟩ := borderedSecularFunction_deriv_nonpos (r := r) hB ht
+  obtain ⟨h3, h4⟩ := neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos (r := r) hB ht
   exact ⟨h1, h3, h2, h4⟩
 
 open Filter Topology in
@@ -1116,14 +1145,14 @@ private theorem le_bisectionIndex_iff_posDef {n : ℕ} {r : ℕ → ℝ} (hr : r
   rw [le_bisectionIndex_iff hj, posDef_sub_smul_one_iff hr ht,
     Durbin.posDef_symmToeplitz_iff (by simp [shiftedToeplitzSeq])]
 
-/-- **(4.7.11), the bisection for a starting value.** For `T = T_n` symmetric Toeplitz with unit
-diagonal (`n ≥ 1`), `B = T_{n−1}` its leading (equivalently, by persymmetry, trailing) block, and
-`λ < 1`: `m(λ) ≥ n − 1` iff `B − λI` is positive definite; `m(λ) = n − 1` iff `B − λI` is
-positive definite and `T − λI` is not — "if `m(λ⁽⁰⁾) = n − 1` then `B − λ⁽⁰⁾I` is positive
+/-- **§4.7.7, the index `m(λ)` read off the shifted matrices.** For `T = T_n` symmetric Toeplitz
+with unit diagonal (`n ≥ 1`), `B = T_{n−1}` its leading (equivalently, by persymmetry, trailing)
+block, and `λ < 1`: `m(λ) ≥ n − 1` iff `B − λI` is positive definite; `m(λ) = n − 1` iff `B − λI`
+is positive definite and `T − λI` is not — "if `m(λ⁽⁰⁾) = n − 1` then `B − λ⁽⁰⁾I` is positive
 definite and `T − λ⁽⁰⁾I` is not, thereby establishing (4.7.9)", i.e.
-`λ_min(T) ≤ λ⁽⁰⁾ < λ_min(B)`; and `m` is antitone in `λ`, so the loop keeps
+`λ_min(T) ≤ λ⁽⁰⁾ < λ_min(B)`; and `m` is antitone in `λ`, so the loop (4.7.11) keeps
 `m(R) ≤ n − 1 ≤ m(L)` (the book prints the reverse, `m(L) ≤ n − 1 ≤ m(R)`). -/
-theorem equation_4_7_11 {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 1 ≤ n) {t : ℝ} (ht : t < 1) :
+theorem bisectionIndex_spec {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 1 ≤ n) {t : ℝ} (ht : t < 1) :
     (n - 1 ≤ bisectionIndex n r t ↔
       (symmToeplitz (n - 1) r - t • (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)).PosDef) ∧
     (bisectionIndex n r t = n - 1 ↔
@@ -1202,6 +1231,285 @@ theorem lambdaMin_bracket {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 3 ≤
       Matrix.cons_val_zero, Matrix.cons_val_one] at hq
     have hts : t * (s * s) = t := by rw [hss, mul_one]
     nlinarith [hsr, hss, hts]
+
+/-! ### (4.7.11): the bisection for a starting value -/
+
+section Programs
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- **The index `m(λ)` of (4.7.11), computed**: "If [the Durbin] algorithm is applied to
+`T_λ = (T − λI)/(1 − λ)` … let `m(λ)` be the index of the first nonpositive `β`." The entries
+`r_j/(1 − λ)` of `T_λ`, `j = 1:n`, are rounded once each (`fl(r_j / fl(1 − λ))`); then the passes
+of Algorithm 4.7.1 (`durbinStep`) run on them, and the first pass `p` whose `β_{p+1}` is
+nonpositive records the index `p + 1` and stops the loop (the state holds `n` while no `β` has
+been nonpositive; `β₀ = 1`). -/
+noncomputable def durbinIndex (n : ℕ) (r : ℕ → ℝ) (t : ℝ) : M ℕ := do
+  let c ← rnd (1 - t)
+  let ρ ← (List.range n).foldlM (fun (ρ : ℕ → ℝ) (j : ℕ) => do
+      let q ← rnd (r (j + 1) / c)
+      pure (Function.update ρ (j + 1) q)) (Function.update 0 0 1)
+  let st ← (List.range (n - 1)).foldlM (fun (st : ((ℕ → ℝ) × ℝ × ℝ) × ℕ) (p : ℕ) =>
+      if st.2 < n then pure st else do
+        let s ← durbinStep rnd ρ st.1 p
+        pure (s, if s.2.2 ≤ 0 then p + 1 else n))
+    ((Function.update 0 0 (-ρ 1), -ρ 1, 1), n)
+  pure st.2
+
+/-- **(4.7.11), the bisection for a starting value `λ⁽⁰⁾`**:
+```
+L = 0; R = 1 − |r₁|; μ = (L + R)/2
+while m(μ) ≠ n − 1
+    if m(μ) < n − 1
+        R = μ
+    else
+        L = μ
+    end
+    μ = (L + R)/2
+end
+λ⁽⁰⁾ = μ
+```
+The `while` loop runs on the state `(L, R, μ, done)` for at most `fuel` passes (convention 3);
+`m(μ)` is `durbinIndex` (computed once per pass), and `λ⁽⁰⁾` is the component `μ` of the returned
+state. -/
+noncomputable def durbinBisection (n : ℕ) (r : ℕ → ℝ) (fuel : ℕ) : M (ℝ × ℝ × ℝ × Bool) := do
+  let R ← rnd (1 - |r 1|)
+  let s ← rnd (0 + R)
+  let μ ← rnd (s / 2)
+  (List.range fuel).foldlM (fun (st : ℝ × ℝ × ℝ × Bool) (_ : ℕ) =>
+      if st.2.2.2 then pure st else do
+        let m ← durbinIndex rnd n r st.2.2.1
+        if m = n - 1 then pure (st.1, st.2.1, st.2.2.1, true) else do
+          let L := if m < n - 1 then st.1 else st.2.2.1
+          let R := if m < n - 1 then st.2.2.1 else st.2.1
+          let s ← rnd (L + R)
+          let μ ← rnd (s / 2)
+          pure (L, R, μ, false))
+    (0, R, μ, false)
+
+end Programs
+
+/-- A loop writing the entries `j + 1`, `j < m`, of a vector by values fixed in advance. -/
+private theorem foldl_range_update_succ (g : ℕ → ℝ) (m : ℕ) (y : ℕ → ℝ) :
+    (List.range m).foldl (fun (z : ℕ → ℝ) (j : ℕ) => Function.update z (j + 1) (g (j + 1))) y =
+      fun i => if 1 ≤ i ∧ i ≤ m then g i else y i := by
+  induction m with
+  | zero =>
+    funext i
+    simp only [List.range_zero, List.foldl_nil]
+    rw [ite_eq_right (by omega)]
+  | succ m ih =>
+    rw [List.range_succ, List.foldl_append, ih]
+    funext i
+    simp only [List.foldl_cons, List.foldl_nil, Function.update_apply]
+    by_cases h : i = m + 1
+    · simp [h]
+    · rw [ite_eq_right h]
+      by_cases h' : 1 ≤ i ∧ i ≤ m
+      · rw [ite_eq_left h', ite_eq_left (by omega)]
+      · rw [ite_eq_right h', ite_eq_right (by omega)]
+
+/-- Durbin's recurrence up to order `k` reads only `r₁, …, r_k`. -/
+private theorem durbin_sol_congr {ρ ρ' : ℕ → ℝ} :
+    ∀ k, (∀ j, 1 ≤ j → j ≤ k → ρ j = ρ' j) → Durbin.sol ρ k = Durbin.sol ρ' k
+  | 0, _ => rfl
+  | k + 1, h => by
+    have ih := durbin_sol_congr k fun j hj hjk => h j hj (by omega)
+    have hb : Durbin.betaOf ρ k (Durbin.sol ρ k) = Durbin.betaOf ρ' k (Durbin.sol ρ' k) := by
+      simp only [Durbin.betaOf, ih]
+      exact congrArg _ (Finset.sum_congr rfl fun i hi => by
+        rw [h (i + 1) (by omega) (by have := Finset.mem_range.1 hi; omega)])
+    have ha : Durbin.alphaOf ρ k (Durbin.sol ρ k) = Durbin.alphaOf ρ' k (Durbin.sol ρ' k) := by
+      unfold Durbin.alphaOf
+      rw [hb, h (k + 1) (by omega) le_rfl, ih]
+      congr 2
+      exact congrArg _ (Finset.sum_congr rfl fun i hi => by
+        have := Finset.mem_range.1 hi
+        rw [h (k - i) (by omega) (by omega)])
+    rw [ih] at ha
+    funext i
+    simp only [Durbin.sol, ih, ha]
+
+/-- Durbin's `β_k` reads only `r₁, …, r_k`. -/
+private theorem durbin_beta_congr {ρ ρ' : ℕ → ℝ} {k : ℕ} (h : ∀ j, 1 ≤ j → j ≤ k → ρ j = ρ' j) :
+    Durbin.beta ρ k = Durbin.beta ρ' k := by
+  unfold Durbin.beta Durbin.betaOf
+  rw [durbin_sol_congr k h]
+  exact congrArg _ (Finset.sum_congr rfl fun i hi => by
+    rw [h (i + 1) (by omega) (by have := Finset.mem_range.1 hi; omega)])
+
+/-- One exact pass of Durbin's algorithm advances `(y^{(p+1)}, α_p, β_p)` to
+`(y^{(p+2)}, α_{p+1}, β_{p+1})` while the `β_j`, `j ≤ p`, are nonzero. -/
+private theorem durbinExactStep_sol {r : ℕ → ℝ} {p : ℕ} (hβ : ∀ j < p + 1, Durbin.beta r j ≠ 0) :
+    durbinExactStep r (Durbin.sol r (p + 1), Durbin.alpha r p, Durbin.beta r p) p =
+      (Durbin.sol r (p + 2), Durbin.alpha r (p + 1), Durbin.beta r (p + 1)) := by
+  have h := durbin_foldl (r := r) (p + 1) hβ
+  rw [List.range_succ, List.foldl_append, durbin_foldl p fun j hj => hβ j (by omega)] at h
+  simpa using h
+
+/-- **The exact `m(λ)`**: the exact run of `durbinIndex` is the index `bisectionIndex n r λ`, for
+every `λ`. -/
+theorem durbinIndex_spec (n : ℕ) (r : ℕ → ℝ) (t : ℝ) :
+    Id.run (durbinIndex pure n r t) = bisectionIndex n r t := by
+  obtain ⟨ρ, hρ⟩ : ∃ ρ : ℕ → ℝ,
+      ρ = fun i => if 1 ≤ i ∧ i ≤ n then r i / (1 - t) else Function.update (0 : ℕ → ℝ) 0 1 i :=
+    ⟨_, rfl⟩
+  obtain ⟨F, hF⟩ : ∃ F : ((ℕ → ℝ) × ℝ × ℝ) × ℕ → ℕ → Id (((ℕ → ℝ) × ℝ × ℝ) × ℕ),
+      F = (fun st p => if st.2 < n then pure st else do
+        let s ← durbinStep (M := Id) pure ρ st.1 p
+        pure (s, if s.2.2 ≤ 0 then p + 1 else n)) := ⟨_, rfl⟩
+  obtain ⟨I₀, hI₀⟩ : ∃ I₀ : ((ℕ → ℝ) × ℝ × ℝ) × ℕ,
+      I₀ = ((Function.update (0 : ℕ → ℝ) 0 (-ρ 1), -ρ 1, (1 : ℝ)), n) := ⟨_, rfl⟩
+  have hrun : Id.run (durbinIndex pure n r t) =
+      (Id.run ((List.range (n - 1)).foldlM F I₀)).2 := by
+    have hρfold : Id.run ((List.range n).foldlM (fun (ρ : ℕ → ℝ) (j : ℕ) => do
+        let q ← (pure (r (j + 1) / (1 - t)) : Id ℝ)
+        pure (Function.update ρ (j + 1) q)) (Function.update 0 0 1)) = ρ := by
+      rw [List.idRun_foldlM, hρ]
+      exact foldl_range_update_succ (fun j => r j / (1 - t)) n _
+    rw [hF, hI₀, ← hρfold]
+    rfl
+  have hρ' : ∀ j, 1 ≤ j → j ≤ n → ρ j = shiftedToeplitzSeq r t j := fun j h1 h2 => by
+    rw [hρ]
+    dsimp only
+    rw [ite_eq_left ⟨h1, h2⟩, shiftedToeplitzSeq, ite_eq_right (by omega)]
+  have hβ : ∀ k, k < n → Durbin.beta ρ k = Durbin.beta (shiftedToeplitzSeq r t) k :=
+    fun k hk => durbin_beta_congr fun j h1 h2 => hρ' j h1 (by omega)
+  -- the invariant of the pass loop
+  let Inv : ℕ → ((ℕ → ℝ) × ℝ × ℝ) × ℕ → Prop := fun q st =>
+    (st.2 = n ∧ (∀ k ≤ q, 0 < Durbin.beta ρ k) ∧
+        st.1 = (Durbin.sol ρ (q + 1), Durbin.alpha ρ q, Durbin.beta ρ q)) ∨
+      (st.2 < n ∧ (∀ k < st.2, 0 < Durbin.beta ρ k) ∧ Durbin.beta ρ st.2 ≤ 0)
+  have h0 : Inv 0 I₀ := by
+    rw [hI₀]
+    refine Or.inl ⟨rfl, fun k hk => ?_, ?_⟩
+    · rw [Nat.le_zero.1 hk, Durbin.beta_zero]
+      exact one_pos
+    · exact (durbin_foldl (r := ρ) 0 fun j hj => absurd hj (Nat.not_lt_zero _))
+  have key := List.idRun_foldlM_induction' (List.range (n - 1)) Inv h0 (f := F)
+    fun q hq st hst => by
+      have hq' : q < n - 1 := by simpa using hq
+      rw [hF]
+      simp only [List.getElem_range]
+      rcases hst with ⟨hn, hpos, hst⟩ | ⟨hlt, hpos, hle⟩
+      · rw [ite_eq_right (show ¬ st.2 < n by omega), Id.run_bind, durbinStep_id, hst,
+          durbinExactStep_sol fun j hj => (hpos j (by omega)).ne']
+        by_cases hb : Durbin.beta ρ (q + 1) ≤ 0
+        · rw [ite_eq_left hb]
+          exact Or.inr ⟨show q + 1 < n by omega,
+            fun k (hk : k < q + 1) => hpos k (by omega), hb⟩
+        · rw [ite_eq_right hb]
+          refine Or.inl ⟨rfl, fun k hk => ?_, rfl⟩
+          rcases Nat.lt_or_eq_of_le hk with hk | rfl
+          · exact hpos k (by omega)
+          · exact not_le.1 hb
+      · rw [ite_eq_left hlt]
+        exact Or.inr ⟨hlt, hpos, hle⟩
+  rw [List.length_range] at key
+  rw [hrun]
+  generalize Id.run ((List.range (n - 1)).foldlM F I₀) = S at key ⊢
+  rcases key with ⟨hn, hpos, -⟩ | ⟨hlt, hpos, hle⟩
+  · rw [hn]
+    refine le_antisymm ?_ (bisectionIndex_le n r t)
+    rcases Nat.eq_zero_or_pos n with h | h
+    · rw [h]
+      exact Nat.zero_le _
+    · exact (le_bisectionIndex_iff le_rfl).2 fun k hk => by
+        rw [← hβ k hk]
+        exact hpos k (by omega)
+  · refine le_antisymm ((le_bisectionIndex_iff hlt.le).2 fun k hk => ?_) ?_
+    · rw [← hβ k (by omega)]
+      exact hpos k hk
+    · by_contra hgt
+      have := ((le_bisectionIndex_iff (Nat.succ_le_of_lt hlt)).1
+        (Nat.succ_le_of_lt (not_le.1 hgt))) S.2
+        (Nat.lt_succ_self _)
+      rw [← hβ S.2 hlt] at this
+      exact absurd hle (not_le.2 this)
+
+/-- **(4.7.11), exact correctness of the bisection.** For a symmetric positive definite Toeplitz
+`T = T_n` with unit diagonal (`n ≥ 3`) and `B = T_{n−1}`, after any number of passes the exact
+run `(L, R, μ, done)` of `durbinBisection` keeps the bracket of the loop: `L < R`,
+`n − 1 ≤ m(L)` (equivalently `B − LI` is positive definite) and `B − RI` not positive definite
+(for `R < 1` this is `m(R) < n − 1`; the book prints `m(L) ≤ n − 1 ≤ m(R)`, the reverse); and on
+exit (`done`) the returned `λ⁽⁰⁾ = μ` has `m(μ) = n − 1` and satisfies (4.7.9): `B − μI` is
+positive definite and `T − μI` is not, i.e. `λ_min(T) ≤ λ⁽⁰⁾ < λ_min(B)`. That some finite fuel
+suffices (the bracket halves) is not stated. -/
+theorem equation_4_7_11 {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 3 ≤ n)
+    (hT : (symmToeplitz n r).PosDef) (fuel : ℕ) :
+    (Id.run (durbinBisection pure n r fuel)).1 < (Id.run (durbinBisection pure n r fuel)).2.1 ∧
+      n - 1 ≤ bisectionIndex n r (Id.run (durbinBisection pure n r fuel)).1 ∧
+      ¬(symmToeplitz (n - 1) r - (Id.run (durbinBisection pure n r fuel)).2.1 •
+        (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)).PosDef ∧
+      ((Id.run (durbinBisection pure n r fuel)).2.2.2 = true →
+        bisectionIndex n r (Id.run (durbinBisection pure n r fuel)).2.2.1 = n - 1 ∧
+        (symmToeplitz (n - 1) r - (Id.run (durbinBisection pure n r fuel)).2.2.1 •
+          (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)).PosDef ∧
+        ¬(symmToeplitz n r - (Id.run (durbinBisection pure n r fuel)).2.2.1 •
+          (1 : Matrix (Fin n) (Fin n) ℝ)).PosDef) := by
+  obtain ⟨hb1, hb2, hb3⟩ := lambdaMin_bracket hr hn hT
+  obtain ⟨F, hF⟩ : ∃ F : ℝ × ℝ × ℝ × Bool → ℕ → Id (ℝ × ℝ × ℝ × Bool),
+      F = (fun st _ => if st.2.2.2 then pure st else do
+        let m ← durbinIndex (M := Id) pure n r st.2.2.1
+        if m = n - 1 then pure (st.1, st.2.1, st.2.2.1, true) else do
+          let L := if m < n - 1 then st.1 else st.2.2.1
+          let R := if m < n - 1 then st.2.2.1 else st.2.1
+          let s ← (pure (L + R) : Id ℝ)
+          let μ ← (pure (s / 2) : Id ℝ)
+          pure (L, R, μ, false)) := ⟨_, rfl⟩
+  have hrun : Id.run (durbinBisection pure n r fuel) =
+      Id.run ((List.range fuel).foldlM F (0, 1 - |r 1|, (0 + (1 - |r 1|)) / 2, false)) := by
+    rw [hF]
+    rfl
+  rw [hrun]
+  -- the invariant of the loop
+  let Inv : ℕ → ℝ × ℝ × ℝ × Bool → Prop := fun _ st =>
+    st.1 < st.2.1 ∧ st.2.1 ≤ 1 ∧
+      (symmToeplitz (n - 1) r - st.1 • (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)).PosDef ∧
+      ¬(symmToeplitz (n - 1) r - st.2.1 • (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)).PosDef ∧
+      (st.2.2.2 = false → st.2.2.1 = (st.1 + st.2.1) / 2) ∧
+      (st.2.2.2 = true → bisectionIndex n r st.2.2.1 = n - 1 ∧
+        (symmToeplitz (n - 1) r - st.2.2.1 • (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)).PosDef ∧
+        ¬(symmToeplitz n r - st.2.2.1 • (1 : Matrix (Fin n) (Fin n) ℝ)).PosDef)
+  have hB0 : (symmToeplitz (n - 1) r - (0 : ℝ) •
+      (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)).PosDef := hb2 0 (hb1 0 le_rfl)
+  have hR0 : 0 < 1 - |r 1| := hb3 0 hB0
+  have h0 : Inv 0 (0, 1 - |r 1|, (0 + (1 - |r 1|)) / 2, false) :=
+    ⟨hR0, by linarith [abs_nonneg (r 1)], hB0, fun h => lt_irrefl _ (hb3 _ h),
+      fun _ => rfl, fun h => absurd h (by simp)⟩
+  have key := List.idRun_foldlM_induction' (List.range fuel) Inv h0 (f := F) fun q _ st hst => by
+    obtain ⟨L, R, μ, done⟩ := st
+    obtain ⟨hLR, hR1, hL, hR, hμ, hdone⟩ := hst
+    rw [hF]
+    cases done with
+    | true => exact ⟨hLR, hR1, hL, hR, hμ, hdone⟩
+    | false =>
+      have hμ' : μ = (L + R) / 2 := hμ rfl
+      have hμ1 : μ < 1 := by rw [hμ']; linarith
+      obtain ⟨hs1, hs2, -⟩ := bisectionIndex_spec hr (by omega : 1 ≤ n) hμ1
+      simp only [Bool.false_eq_true, ↓reduceIte, Id.run_bind, durbinIndex_spec]
+      by_cases hm : bisectionIndex n r μ = n - 1
+      · rw [ite_eq_left hm]
+        exact ⟨hLR, hR1, hL, hR, fun h => absurd h (by simp), fun _ => ⟨hm, hs2.1 hm⟩⟩
+      · rw [ite_eq_right hm]
+        by_cases hlt : bisectionIndex n r μ < n - 1
+        · simp only [ite_eq_left hlt, Id.run_pure, Id.run_bind]
+          refine (show L < μ ∧ μ ≤ 1 ∧ _ ∧ _ ∧ _ ∧ _ from ?_)
+          exact ⟨by rw [hμ']; linarith, hμ1.le, hL, fun h => by have := hs1.2 h; omega,
+            fun _ => rfl, fun h => absurd h (by simp)⟩
+        · simp only [ite_eq_right hlt, Id.run_pure, Id.run_bind]
+          refine (show μ < R ∧ R ≤ 1 ∧ _ ∧ _ ∧ _ ∧ _ from ?_)
+          exact ⟨by rw [hμ']; linarith, hR1, hs1.1 (by omega), hR, fun _ => rfl,
+            fun h => absurd h (by simp)⟩
+  rw [List.length_range] at key
+  generalize Id.run ((List.range fuel).foldlM F (0, 1 - |r 1|, (0 + (1 - |r 1|)) / 2, false)) = S
+    at key ⊢
+  obtain ⟨hLR, -, hL, hR, -, hdone⟩ := key
+  refine ⟨hLR, ?_, hR, hdone⟩
+  have hL1 : S.1 < 1 := by
+    have := hb3 _ hL
+    linarith [abs_nonneg (r 1)]
+  exact (bisectionIndex_spec hr (by omega : 1 ≤ n) hL1).1.2 hL
 
 /-! ### §4.7.8 Unsymmetric Toeplitz systems -/
 

@@ -1,11 +1,14 @@
 import Numlib.Direct.CyclicReduction
+import NumlibSurface.GolubVanLoan.Chapter01.Section01
+import NumlibSurface.GolubVanLoan.Chapter03.Section04
 
 /-!
 # Golub–Van Loan §4.5: block tridiagonal systems
 
 Surface file for [golub2013matrix] §4.5: the block LU factorization (4.5.3) with its recurrence
-(4.5.4), block diagonal dominance (4.5.6) and its consequences (4.5.7)–(4.5.8), one step of block
-cyclic reduction and its back substitution (§4.5.3), and the block scaling (4.5.13)→(4.5.14) of the
+(4.5.4) and the block substitutions (4.5.5) as programs, block diagonal dominance (4.5.6) and its
+consequences (4.5.7)–(4.5.8), one step of block cyclic reduction and its back substitution (§4.5.3),
+and the block scaling (4.5.13)→(4.5.14) of the
 SPIKE framework. The section has no numbered theorem and no numbered algorithm.
 
 ## Conventions
@@ -22,12 +25,19 @@ of a block is `Matrix.lpOpNorm 1`. The constant-block system (4.5.9) is the back
 `CyclicReduction.constBlockTridiagonal D F`, which is `Matrix.blockTridiagonal` applied to the
 flattened vector (`CyclicReduction.constBlockTridiagonal_eq_blockTridiagonal_mulVec`).
 
+The algorithm-shaped displays (4.5.4) and (4.5.5) are the programs `blockTridiagonalLU` and
+`blockTridiagonalSolve` (the algorithm conventions of `NumlibSurface/GolubVanLoan`), with exact
+specifications `equation_4_5_4` (the backbone recurrence) and `equation_4_5_5` (the block system
+is solved). Their block solves call chapter 3's Gaussian elimination with partial pivoting
+(`Chapter03.solveMultipleRHS`, `Chapter03.solveGEPP`) and their block products chapter 1's
+Algorithms 1.1.3 and 1.1.5, as the book suggests.
+
 ## Sources
 
 Backbone `Numlib/LinearAlgebra/Matrix/BlockTridiagonal` (the recurrence, the factorization, block
-dominance) and `Numlib/Direct/CyclicReduction`. The block substitution (4.5.5), the flop count of
-cyclic reduction, Buneman's stabilization and the rest of the SPIKE framework (whose displays
-(4.5.11)–(4.5.12) and the refined blockings were lost in conversion) are not formalized.
+dominance) and `Numlib/Direct/CyclicReduction`. The flop count of cyclic reduction, Buneman's
+stabilization and the rest of the SPIKE framework (whose displays (4.5.11)–(4.5.12) and the refined
+blockings were lost in conversion) are not formalized.
 
 ## Readings and errata
 
@@ -60,6 +70,210 @@ theorem equation_4_5_3 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
   refine ⟨?_, fun i hi => tridiagonalLUMultiplier_mul_tridiagonalLUPivot E D F (hU i hi)⟩
   simp only [blockTridiagonal, ← compRingEquiv_apply, ← map_mul]
   rw [tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot E D F hU]
+
+/-! ### (4.5.4)–(4.5.5): the block programs -/
+
+section Programs
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- **(4.5.4), the block LU recurrence as a program**:
+```
+U_1 = D_1
+for i = 2:N
+    Solve L_{i−1} U_{i−1} = E_{i−1} for L_{i−1}.
+    U_i = D_i − L_{i−1} F_{i−1}
+end
+```
+0-based, on the state `(L, U)` of `ℕ`-indexed block families. "Each `U_i` must be factored since
+linear systems involving these submatrices are solved. This could be done using Gaussian
+elimination with pivoting": the solve `L U = E` is the transposed system `Uᵀ Lᵀ = Eᵀ` by chapter
+3's multiple right-hand side procedure (3.4.12) (`Chapter03.solveMultipleRHS`, Gaussian
+elimination with partial pivoting; transposition is a copy), and `D_i − L F` is chapter 1's
+Algorithm 1.1.5 on `C = D_i`, `A = −L` (negation is exact). -/
+noncomputable def blockTridiagonalLU (N : ℕ) (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ) :
+    M ((ℕ → Matrix (Fin q) (Fin q) ℝ) × (ℕ → Matrix (Fin q) (Fin q) ℝ)) :=
+  (List.range N).foldlM
+    (fun (st : (ℕ → Matrix (Fin q) (Fin q) ℝ) × (ℕ → Matrix (Fin q) (Fin q) ℝ)) (i : ℕ) => do
+      let X ← Chapter03.solveMultipleRHS rnd (st.2 i)ᵀ (E i)ᵀ
+      let U ← Chapter01.algorithm_1_1_5 rnd (-Xᵀ) (F i) (D (i + 1))
+      pure (Function.update st.1 i Xᵀ, Function.update st.2 (i + 1) U))
+    (0, Function.update 0 0 (D 0))
+
+/-- **(4.5.5), block forward elimination and block back substitution** with the factors `L_i`,
+`U_i` of (4.5.3) and the superdiagonal blocks `F_i`:
+```
+y_1 = b_1
+for i = 2:N
+    y_i = b_i − L_{i−1} y_{i−1}
+end
+Solve U_N x_N = y_N for x_N
+for i = N−1:−1:1
+    Solve U_i x_i = y_i − F_i x_{i+1} for x_i
+end
+```
+0-based, with `ℕ`-indexed block vectors (`y` overwrites `b`). The block gaxpys are chapter 1's
+Algorithm 1.1.3 with `A = −L_{i−1}`, `−F_i` (negation is exact), and the solves are Gaussian
+elimination with partial pivoting followed by the triangular solves (`Chapter03.solveGEPP`). -/
+noncomputable def blockTridiagonalSolve (N : ℕ) (L U F : ℕ → Matrix (Fin q) (Fin q) ℝ)
+    (b : ℕ → Fin q → ℝ) : M (ℕ → Fin q → ℝ) := do
+  let y ← (List.range N).foldlM (fun (y : ℕ → Fin q → ℝ) (i : ℕ) => do
+      let v ← Chapter01.algorithm_1_1_3 rnd (-L i) (y i) (y (i + 1))
+      pure (Function.update y (i + 1) v)) b
+  let xN ← Chapter03.solveGEPP rnd (U N) (y N)
+  (List.range N).reverse.foldlM (fun (x : ℕ → Fin q → ℝ) (i : ℕ) => do
+      let c ← Chapter01.algorithm_1_1_3 rnd (-F i) (x (i + 1)) (y i)
+      let xi ← Chapter03.solveGEPP rnd (U i) c
+      pure (Function.update x i xi)) (Function.update 0 N xN)
+
+end Programs
+
+/-- **Exact correctness of (4.5.4)**: if the pivots `U_0, …, U_{N−1}` used by the solves are
+nonsingular, the exact run computes the multipliers `L_i = tridiagonalLUMultiplier E D F i`
+(`i < N`) and the pivots `U_i = tridiagonalLUPivot E D F i` (`i ≤ N`) of the backbone recurrence,
+hence the factorization (4.5.3) (`equation_4_5_3`). -/
+theorem equation_4_5_4 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
+    (hU : ∀ i < N, IsUnit (tridiagonalLUPivot E D F i)) :
+    (∀ i < N, (Id.run (blockTridiagonalLU pure N E D F)).1 i = tridiagonalLUMultiplier E D F i) ∧
+      ∀ i ≤ N, (Id.run (blockTridiagonalLU pure N E D F)).2 i = tridiagonalLUPivot E D F i := by
+  have key := List.idRun_foldlM_induction' (List.range N)
+    (fun k (st : (ℕ → Matrix (Fin q) (Fin q) ℝ) × (ℕ → Matrix (Fin q) (Fin q) ℝ)) =>
+      (∀ i < k, st.1 i = tridiagonalLUMultiplier E D F i) ∧
+        ∀ i ≤ k, st.2 i = tridiagonalLUPivot E D F i)
+    (init := (0, Function.update 0 0 (D 0)))
+    ⟨fun i hi => absurd hi (Nat.not_lt_zero _), fun i hi => by
+      rw [Nat.le_zero.1 hi]
+      simp⟩
+    (f := fun (st : (ℕ → Matrix (Fin q) (Fin q) ℝ) × (ℕ → Matrix (Fin q) (Fin q) ℝ)) (i : ℕ) =>
+      (do
+        let X ← Chapter03.solveMultipleRHS (M := Id) pure (st.2 i)ᵀ (E i)ᵀ
+        let U ← Chapter01.algorithm_1_1_5 (M := Id) pure (-Xᵀ) (F i) (D (i + 1))
+        pure (Function.update st.1 i Xᵀ, Function.update st.2 (i + 1) U) : Id _))
+    fun k hk st ⟨hL, hUk⟩ => by
+      rw [List.length_range] at hk
+      simp only [List.getElem_range, Id.run_bind, Id.run_pure, Chapter01.algorithm_1_1_5_spec]
+      have hpiv := hUk k le_rfl
+      have hu : IsUnit (st.2 k) := by rw [hpiv]; exact hU k hk
+      have hX := (Chapter03.equation_3_4_12 ((isUnit_transpose _).2 hu) (E k)ᵀ).1
+      set X := Id.run (Chapter03.solveMultipleRHS pure (st.2 k)ᵀ (E k)ᵀ)
+      have hXt : Xᵀ = tridiagonalLUMultiplier E D F k := by
+        have h1 : Xᵀ * st.2 k = E k := by
+          simpa only [transpose_mul, transpose_transpose] using congrArg transpose hX
+        rw [tridiagonalLUMultiplier, ← hpiv, ← h1, Matrix.mul_assoc,
+          ← nonsing_inv_eq_ringInverse, mul_nonsing_inv _
+            ((isUnit_iff_isUnit_det _).1 hu), Matrix.mul_one]
+      refine ⟨fun i hi => ?_, fun i hi => ?_⟩
+      · rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | rfl
+        · rw [Function.update_of_ne (by omega)]
+          exact hL i hi
+        · rw [Function.update_self, hXt]
+      · rcases Nat.lt_or_eq_of_le hi with hi | rfl
+        · rw [Function.update_of_ne (by omega)]
+          exact hUk i (by omega)
+        · rw [Function.update_self, hXt, tridiagonalLUPivot_succ, neg_mul, ← sub_eq_add_neg]
+  rw [List.length_range] at key
+  exact key
+
+/-- The exact block forward elimination of (4.5.5): `y_0 = b_0`, `y_{i+1} = b_{i+1} − L_i y_i`. -/
+private noncomputable def blockForwardSeq (L : ℕ → Matrix (Fin q) (Fin q) ℝ)
+    (b : ℕ → Fin q → ℝ) : ℕ → Fin q → ℝ
+  | 0 => b 0
+  | i + 1 => b (i + 1) - L i *ᵥ blockForwardSeq L b i
+
+/-- **Exact correctness of (4.5.5)**: with the exact factors of (4.5.4) — the multipliers
+`L_i = tridiagonalLUMultiplier E D F i` and the pivots `U_i = tridiagonalLUPivot E D F i`, all
+nonsingular — the exact run of the block substitutions solves the block tridiagonal system (4.5.1),
+`E_{i−1} x_{i−1} + D_i x_i + F_i x_{i+1} = b_i` for `i = 0:N` (a missing neighbour omitted). -/
+theorem equation_4_5_5 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
+    (hU : ∀ i ≤ N, IsUnit (tridiagonalLUPivot E D F i)) (b : ℕ → Fin q → ℝ) (i : ℕ)
+    (hi : i ≤ N) :
+    (if 0 < i then E (i - 1) *ᵥ
+        Id.run (blockTridiagonalSolve pure N (tridiagonalLUMultiplier E D F)
+          (tridiagonalLUPivot E D F) F b) (i - 1) else 0) +
+      D i *ᵥ Id.run (blockTridiagonalSolve pure N (tridiagonalLUMultiplier E D F)
+          (tridiagonalLUPivot E D F) F b) i +
+      (if i < N then F i *ᵥ
+        Id.run (blockTridiagonalSolve pure N (tridiagonalLUMultiplier E D F)
+          (tridiagonalLUPivot E D F) F b) (i + 1) else 0) = b i := by
+  set L := tridiagonalLUMultiplier E D F with hL
+  set U := tridiagonalLUPivot E D F with hU'
+  -- the forward elimination
+  obtain ⟨g, hg⟩ : ∃ g : (ℕ → Fin q → ℝ) → ℕ → Id (ℕ → Fin q → ℝ), g = (fun y i => do
+      let v ← Chapter01.algorithm_1_1_3 (M := Id) pure (-L i) (y i) (y (i + 1))
+      pure (Function.update y (i + 1) v)) := ⟨_, rfl⟩
+  obtain ⟨yf, hyf⟩ : ∃ yf, yf = Id.run ((List.range N).foldlM g b) := ⟨_, rfl⟩
+  have hfwd := List.idRun_foldlM_induction' (List.range N)
+    (fun k (y : ℕ → Fin q → ℝ) => (∀ j ≤ k, y j = blockForwardSeq L b j) ∧ ∀ j, k < j → y j = b j)
+    (init := b) ⟨fun j hj => by rw [Nat.le_zero.1 hj]; rfl, fun _ _ => rfl⟩ (f := g)
+    fun k hk y ⟨h1, h2⟩ => by
+      rw [hg]
+      simp only [List.getElem_range, Id.run_bind, Id.run_pure, Chapter01.algorithm_1_1_3_spec]
+      refine ⟨fun j hj => ?_, fun j hj => ?_⟩
+      · rcases Nat.lt_or_eq_of_le hj with hj | rfl
+        · rw [Function.update_of_ne (by omega)]
+          exact h1 j (by omega)
+        · rw [Function.update_self, h1 k le_rfl, h2 (k + 1) (by omega), neg_mulVec,
+            ← sub_eq_add_neg]
+          rfl
+      · rw [Function.update_of_ne (by omega)]
+        exact h2 j (by omega)
+  rw [List.length_range, ← hyf] at hfwd
+  -- the back substitution
+  obtain ⟨h, hh⟩ : ∃ h : (ℕ → Fin q → ℝ) → ℕ → Id (ℕ → Fin q → ℝ), h = (fun x i => do
+      let c ← Chapter01.algorithm_1_1_3 (M := Id) pure (-F i) (x (i + 1)) (yf i)
+      let xi ← Chapter03.solveGEPP (M := Id) pure (U i) c
+      pure (Function.update x i xi)) := ⟨_, rfl⟩
+  obtain ⟨x₀, hx₀⟩ : ∃ x₀ : ℕ → Fin q → ℝ,
+      x₀ = Function.update (0 : ℕ → Fin q → ℝ) N (Id.run (Chapter03.solveGEPP pure (U N) (yf N))) :=
+    ⟨_, rfl⟩
+  have hrun : Id.run (blockTridiagonalSolve pure N L U F b) =
+      Id.run ((List.range N).reverse.foldlM h x₀) := by
+    rw [hh, hx₀, hyf, hg]
+    rfl
+  have hback := List.idRun_foldlM_induction' (List.range N).reverse
+    (fun k (x : ℕ → Fin q → ℝ) => ∀ j, N - k ≤ j → j ≤ N →
+      U j *ᵥ x j + (if j < N then F j *ᵥ x (j + 1) else 0) = yf j)
+    (init := x₀) (fun j hj hjN => by
+      have hj : j = N := by omega
+      subst hj
+      rw [hx₀, ite_eq_right (lt_irrefl _), add_zero, Function.update_self]
+      exact Chapter03.solvePLU_spec (hU _ le_rfl) _) (f := h)
+    fun k hk x hx => by
+      rw [List.length_reverse, List.length_range] at hk
+      have hidx : (List.range N).reverse[k]'(by simpa using hk) = N - 1 - k := by
+        rw [List.getElem_reverse, List.getElem_range, List.length_range]
+      rw [hidx, hh]
+      simp only [Id.run_bind, Id.run_pure, Chapter01.algorithm_1_1_3_spec]
+      intro j hj hjN
+      rcases Nat.lt_or_eq_of_le hj with hj | hj
+      · rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
+        exact hx j (by omega) hjN
+      · obtain rfl : j = N - 1 - k := by omega
+        rw [Function.update_self, Function.update_of_ne (by omega), ite_eq_left (by omega),
+          Chapter03.solvePLU_spec (hU _ (by omega)), neg_mulVec]
+        abel
+  rw [List.length_reverse, List.length_range, ← hrun] at hback
+  set x := Id.run (blockTridiagonalSolve pure N L U F b) with hx
+  have hB : ∀ j ≤ N, U j *ᵥ x j + (if j < N then F j *ᵥ x (j + 1) else 0) =
+      blockForwardSeq L b j := fun j hj => by
+    rw [hback j (by omega) hj, hfwd.1 j hj]
+  rcases Nat.eq_zero_or_pos i with rfl | hi0
+  · rw [ite_eq_right (lt_irrefl 0), zero_add]
+    exact hB 0 hi
+  · obtain ⟨j, rfl⟩ : ∃ j, i = j + 1 := ⟨i - 1, by omega⟩
+    have hEj : E j = L j * U j := (tridiagonalLUMultiplier_mul_tridiagonalLUPivot E D F
+      (hU j (by omega))).symm
+    have hDj : D (j + 1) = U (j + 1) + L j * F j := by
+      rw [hU', tridiagonalLUPivot_succ]
+      abel
+    have hBj := hB j (by omega)
+    rw [ite_eq_left (by omega : j < N)] at hBj
+    have h2 := hB (j + 1) hi
+    simp only [blockForwardSeq] at h2
+    rw [← hBj, mulVec_add, eq_sub_iff_add_eq] at h2
+    rw [ite_eq_left hi0, Nat.add_sub_cancel, hEj, hDj, add_mulVec, ← mulVec_mulVec, ← mulVec_mulVec,
+      ← h2]
+    abel
 
 /-! ### §4.5.2 Block diagonal dominance -/
 
@@ -130,7 +344,7 @@ theorem cyclicReduction_back {D F : Matrix (Fin q) (Fin q) ℝ} {M : ℕ}
     {x b : Fin (2 * M + 1) → Fin q → ℝ} (h : constBlockTridiagonal D F x = b) (j : Fin (M + 1)) :
     D *ᵥ x ⟨2 * j, by omega⟩ =
       b ⟨2 * j, by omega⟩ - F *ᵥ (extend x (2 * (j : ℕ) - 1) + extend x (2 * (j : ℕ) + 1)) :=
-  constBlockTridiagonal_odd_eq h j
+  constBlockTridiagonal_even_eq h j
 
 /-! ### §4.5.4 The SPIKE framework -/
 

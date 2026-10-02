@@ -1,7 +1,7 @@
 namespace = "GolubVanLoan.Chapter04"
 
 [[node]]
-id = "IsPersymmetric"
+id = "IsPersymmetricExchange"
 source = 'Golub–Van Loan, Matrix Computations, §4.7.1, Definition'
 
 [[node]]
@@ -128,4 +128,27 @@ source = 'Golub–Van Loan, Matrix Computations, §4.7.7, Display'
 
 [[node]]
 id = "bisectionIndex"
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.11)'
+
+[[node]]
+id = "durbinStep"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.7.1'
+
+[[node]]
+id = "bisectionIndex_spec"
+source = 'Golub–Van Loan, Matrix Computations, §4.7.7, Display'
+
+[[node]]
+id = "durbinIndex"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.11)'
+
+[[node]]
+id = "durbinIndex_spec"
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.11)'
+
+[[node]]
+id = "durbinBisection"
+deps = []
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.11)'

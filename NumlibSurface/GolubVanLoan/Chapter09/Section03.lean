@@ -16,7 +16,9 @@ import NumlibSurface.GolubVanLoan.Chapter09.Section02
 
 Surface file for [golub2013matrix] §9.3: the Padé approximants of the exponential and the
 remainder (9.3.1), the Moler–Van Loan backward error of scaling and squaring, Algorithm 9.3.1
-(scaling and squaring) with its exact semantics and the book's backward-error claim, the even/odd
+(scaling and squaring, `scalingSquaring` with exponent offset `1`) with its exact semantics and the
+book's backward-error claim, the corrected variant `algorithm_9_3_1_corrected` (offset `2`) whose
+backward-error claim holds unconditionally, the even/odd
 evaluation of `N_qq`, `D_qq`; the ODE characterization and the perturbation theory of `e^{At}`
 (the variation-of-constants identity, (9.3.2) with the spectral abscissa (9.3.3), the relative
 bound, Van Loan's condition number `ν(A, t)`), normal matrices ((9.3.4)), the `2 × 2` example
@@ -59,7 +61,7 @@ suggest").
 nonnegative `t` if and only if the matrix `A` is normal" is false in the "only if" direction
 (`expCondNumber_eq_iff_counterexample`); (9.3.6) cites "(7.8.8)" for (7.9.8); Algorithm 9.3.1's
 `j = max{0, 1 + ⌊log₂ ‖A‖_∞⌋}` only guarantees `‖A/2^j‖_∞ < 1`, not the `≤ 1/2` that the
-Moler–Van Loan bound needs (`2 + ⌊log₂ ‖A‖_∞⌋` does).
+Moler–Van Loan bound needs (`2 + ⌊log₂ ‖A‖_∞⌋` does: `algorithm_9_3_1_corrected`).
 -/
 
 open Polynomial Finset NormedSpace
@@ -69,7 +71,7 @@ namespace GolubVanLoan.Chapter09
 
 variable {n : ℕ}
 
-/-! ### A Padé approximation method -/
+/-! ### §9.3.1 A Padé approximation method -/
 
 /-- **The Padé functions** of §9.3.1: `R_pq(z) = D_pq(z)⁻¹ N_pq(z)` with
 `N_pq(z) = ∑_{k=0}^{p} (p+q-k)! p! / ((p+q)! k! (p-k)!) zᵏ` and
@@ -109,7 +111,7 @@ theorem equation_9_3_1 (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ)
 `F_pq = (R_pq(A/2^j))^{2^j} = e^{A+E}` for some `E` with `AE = EA` and
 `‖E‖_∞ ≤ ε(p, q) ‖A‖_∞`, `ε(p, q) = 2^{3-(p+q)} p! q!/((p+q)! (p+q+1)!)`; and consequently
 `‖e^A - F_pq‖_∞ / ‖e^A‖_∞ ≤ ε(p, q) ‖A‖_∞ e^{ε(p, q) ‖A‖_∞}`. -/
-theorem molerVanLoan [NeZero n] (p q j : ℕ) {A : Matrix (Fin n) (Fin n) ℝ}
+theorem moler_van_loan [NeZero n] (p q j : ℕ) {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : ‖A‖ / 2 ^ j ≤ 1 / 2) :
     (∃ E : Matrix (Fin n) (Fin n) ℝ,
       Pade.expApprox ℝ p q ((2⁻¹ : ℝ) ^ j • A) ^ 2 ^ j = exp (A + E) ∧ A * E = E * A ∧
@@ -125,6 +127,9 @@ theorem molerVanLoan [NeZero n] (p q j : ℕ) {A : Matrix (Fin n) (Fin n) ℝ}
   · have hpos : 0 < ‖exp A‖ := norm_pos_iff.mpr (Matrix.isUnit_exp A).ne_zero
     rw [div_le_iff₀ hpos]
     exact Pade.norm_exp_sub_expApprox_pow_le p q j hA'
+
+
+@[deprecated (since := "2026-09-30")] alias molerVanLoan := moler_van_loan
 
 end Infinity
 
@@ -187,6 +192,29 @@ def updateEntriesM (g : Fin n → Fin n → ℝ → M ℝ) (C : Matrix (Fin n) (
       pure (Function.update r l b)) (C i)
     pure (C.updateRow i r)) C
 
+/-- **Scaling and squaring with exponent offset `o`**: the loop of Algorithm 9.3.1 with
+`j = max{0, o + ⌊log₂ ‖A‖_∞⌋}`. The book prints `o = 1` (`algorithm_9_3_1`); `o = 2` is the
+corrected choice (`algorithm_9_3_1_corrected`), for which the claimed backward error holds. -/
+noncomputable def scalingSquaring (o : ℤ) (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
+    M (Matrix (Fin n) (Fin n) ℝ) := do
+  let s ← (List.finRange n).foldlM (fun (s : Fin n → ℝ) i => do
+    let t ← (List.finRange n).foldlM (fun c l => rnd (c + |A i l|)) 0
+    pure (Function.update s i t)) 0
+  let j : ℕ := (o + Int.log 2 (⨆ i, s i)).toNat
+  let B ← updateEntriesM (fun i l _ => rnd (A i l / 2 ^ j)) A
+  let q : ℕ := sInf {q : ℕ | Pade.errorBound q q ≤ δ}
+  let st ← (List.range q).foldlM (fun (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ ×
+      Matrix (Fin n) (Fin n) ℝ × ℝ) k₀ => do
+    let t ← rnd (st.2.2.2 * ((q - (k₀ + 1) + 1 : ℕ) : ℝ))
+    let c ← rnd (t / (((2 * q - (k₀ + 1) + 1) * (k₀ + 1) : ℕ) : ℝ))
+    let X ← Chapter01.algorithm_1_1_5 rnd B st.2.2.1 0
+    let N ← updateEntriesM (fun i l x => do let p ← rnd (c * X i l); rnd (x + p)) st.2.1
+    let D ← updateEntriesM (fun i l x => do
+      let p ← rnd ((-1) ^ (k₀ + 1) * c * X i l); rnd (x + p)) st.1
+    pure (D, N, X, c)) (1, 1, 1, 1)
+  let F ← Chapter03.solveMultipleRHS rnd st.1 st.2.1
+  (List.range j).foldlM (fun F _ => Chapter01.algorithm_1_1_5 rnd F F 0) F
+
 /-- **Algorithm 9.3.1 (Scaling and Squaring).** "Given `δ > 0` and `A ∈ ℝ^{n×n}`, the following
 algorithm computes `F = e^{A+E}` where `‖E‖_∞ ≤ δ ‖A‖_∞`":
 ```
@@ -208,26 +236,16 @@ are exact discrete choices on computed values (`q = sInf {q | ε(q, q) ≤ δ}`,
 none); the integer factors of
 the `c` update are exact; `X = AX` and `F = F²` are Algorithm 1.1.5 from `C = 0`; the solve is
 chapter 3's Gaussian elimination with partial pivoting for the multiple right-hand side `N`
-(`GolubVanLoan.Chapter03.solveMultipleRHS`). -/
+(`GolubVanLoan.Chapter03.solveMultipleRHS`). It is `scalingSquaring` with the printed offset `1`. -/
 noncomputable def algorithm_9_3_1 (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
-    M (Matrix (Fin n) (Fin n) ℝ) := do
-  let s ← (List.finRange n).foldlM (fun (s : Fin n → ℝ) i => do
-    let t ← (List.finRange n).foldlM (fun c l => rnd (c + |A i l|)) 0
-    pure (Function.update s i t)) 0
-  let j : ℕ := (1 + Int.log 2 (⨆ i, s i)).toNat
-  let B ← updateEntriesM (fun i l _ => rnd (A i l / 2 ^ j)) A
-  let q : ℕ := sInf {q : ℕ | Pade.errorBound q q ≤ δ}
-  let st ← (List.range q).foldlM (fun (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ ×
-      Matrix (Fin n) (Fin n) ℝ × ℝ) k₀ => do
-    let t ← rnd (st.2.2.2 * ((q - (k₀ + 1) + 1 : ℕ) : ℝ))
-    let c ← rnd (t / (((2 * q - (k₀ + 1) + 1) * (k₀ + 1) : ℕ) : ℝ))
-    let X ← Chapter01.algorithm_1_1_5 rnd B st.2.2.1 0
-    let N ← updateEntriesM (fun i l x => do let p ← rnd (c * X i l); rnd (x + p)) st.2.1
-    let D ← updateEntriesM (fun i l x => do
-      let p ← rnd ((-1) ^ (k₀ + 1) * c * X i l); rnd (x + p)) st.1
-    pure (D, N, X, c)) (1, 1, 1, 1)
-  let F ← Chapter03.solveMultipleRHS rnd st.1 st.2.1
-  (List.range j).foldlM (fun F _ => Chapter01.algorithm_1_1_5 rnd F F 0) F
+    M (Matrix (Fin n) (Fin n) ℝ) :=
+  scalingSquaring rnd 1 δ A
+
+/-- **Algorithm 9.3.1 with the corrected scaling exponent** `j = max{0, 2 + ⌊log₂ ‖A‖_∞⌋}`, which
+guarantees `‖A‖_∞/2^j < 1/2` (erratum to the printed `1 + ⌊log₂ ‖A‖_∞⌋`). -/
+noncomputable def algorithm_9_3_1_corrected (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
+    M (Matrix (Fin n) (Fin n) ℝ) :=
+  scalingSquaring rnd 2 δ A
 
 end Programs
 
@@ -338,18 +356,17 @@ private theorem aeval_padeNum_denom (B : Matrix (Fin n) (Fin n) ℝ) (q : ℕ) :
   have hkq : k ≤ q := Nat.lt_succ_iff.mp (Finset.mem_range.mp hk)
   rw [Pade.coeff_expDen, Pade.coeff_expNum, ite_eq_left hkq, ite_eq_left hkq]
 
-/-- **Exact semantics of Algorithm 9.3.1.** With `ν = max_i ∑_l |a_il|` (`= ‖A‖_∞`),
-`j = max{0, 1 + ⌊log₂ ν⌋}` (for `A = 0` the program's `Int.log` gives `j = 1`, which does not
-change the result) and `q` the smallest integer with `ε(q, q) ≤ δ`, as the algorithm computes
-them: if `D_qq(A/2^j)` is nonsingular, the algorithm returns `R_qq(A/2^j)^{2^j}`. The loop
-computes `c_k = (2q-k)! q!/((2q)! k! (q-k)!)` (the recurrence `c_k = c_{k-1} (q-k+1)/((2q-k+1)k)`),
-so `N = N_qq(A/2^j)` and `D = D_qq(A/2^j)` (`pade_def`); the solve returns `D⁻¹ N` (chapter 3's
-(3.4.12)); the squarings give the `2^j`-th power. -/
-theorem algorithm_9_3_1_spec (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
-    (hj : j = (1 + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
+/-- **Exact semantics of scaling and squaring** with exponent offset `o`: with
+`ν = max_i ∑_l |a_il|` (`= ‖A‖_∞`), `j = max{0, o + ⌊log₂ ν⌋}` and `q` the smallest integer with
+`ε(q, q) ≤ δ`, as the program computes them: if `D_qq(A/2^j)` is nonsingular, it returns
+`R_qq(A/2^j)^{2^j}`. The loop computes `c_k = (2q-k)! q!/((2q)! k! (q-k)!)` (the recurrence
+`c_k = c_{k-1} (q-k+1)/((2q-k+1)k)`), so `N = N_qq(A/2^j)` and `D = D_qq(A/2^j)` (`pade_def`);
+the solve returns `D⁻¹ N` (chapter 3's (3.4.12)); the squarings give the `2^j`-th power. -/
+theorem scalingSquaring_spec (o : ℤ) (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
+    (hj : j = (o + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
     (hq : q = sInf {q : ℕ | Pade.errorBound q q ≤ δ})
     (hD : IsUnit (aeval ((2⁻¹ : ℝ) ^ j • A) (Pade.expDen ℝ q q))) :
-    Id.run (algorithm_9_3_1 pure δ A) = Pade.expApprox ℝ q q ((2⁻¹ : ℝ) ^ j • A) ^ 2 ^ j := by
+    Id.run (scalingSquaring pure o δ A) = Pade.expApprox ℝ q q ((2⁻¹ : ℝ) ^ j • A) ^ 2 ^ j := by
   have hs : Id.run ((List.finRange n).foldlM (fun (s : Fin n → ℝ) i => do
       let t ← (List.finRange n).foldlM (fun c l => (pure (c + |A i l|) : Id ℝ)) 0
       pure (Function.update s i t)) 0) = fun i => ∑ l, |A i l| := by
@@ -375,41 +392,103 @@ theorem algorithm_9_3_1_spec (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : 
       (aeval B (Pade.expNum ℝ q q))) with hX
     rw [(pade_def q q).2.2.1 B, ← h, ← Matrix.mul_assoc, Matrix.nonsing_inv_mul _ hDd,
       Matrix.one_mul]
-  rw [algorithm_9_3_1, Id.run_bind, hs]
+  rw [scalingSquaring, Id.run_bind, hs]
   dsimp only
   rw [← hj, Id.run_bind, hB]
   rw [← hq, Id.run_bind, hloop]
   rw [← hNum, ← hDen, Id.run_bind, hsolve, squaring_id]
 
+/-- **Exact semantics of Algorithm 9.3.1.** With `ν = max_i ∑_l |a_il|` (`= ‖A‖_∞`),
+`j = max{0, 1 + ⌊log₂ ν⌋}` (for `A = 0` the program's `Int.log` gives `j = 1`, which does not
+change the result) and `q` the smallest integer with `ε(q, q) ≤ δ`, as the algorithm computes
+them: if `D_qq(A/2^j)` is nonsingular, the algorithm returns `R_qq(A/2^j)^{2^j}`
+(`scalingSquaring_spec`). -/
+theorem algorithm_9_3_1_spec (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
+    (hj : j = (1 + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
+    (hq : q = sInf {q : ℕ | Pade.errorBound q q ≤ δ})
+    (hD : IsUnit (aeval ((2⁻¹ : ℝ) ^ j • A) (Pade.expDen ℝ q q))) :
+    Id.run (algorithm_9_3_1 pure δ A) = Pade.expApprox ℝ q q ((2⁻¹ : ℝ) ^ j • A) ^ 2 ^ j :=
+  scalingSquaring_spec 1 δ A hj hq hD
+
 section Infinity
 
 open scoped Matrix.Norms.Operator
 
-/-- **Algorithm 9.3.1's claim**, "computes `F = e^{A+E}` where `‖E‖_∞ ≤ δ ‖A‖_∞`", in exact
-arithmetic, when the scaling achieves `‖A‖_∞/2^j ≤ 1/2`: then `D_qq(A/2^j)` is nonsingular
+/-- **The backward error of scaling and squaring** with exponent offset `o`, in exact arithmetic,
+whenever the scaling achieves `‖A‖_∞/2^j ≤ 1/2`: then `D_qq(A/2^j)` is nonsingular
 (`‖A/2^j‖_∞ < log 2`, `Pade.isUnit_aeval_expDen`), and the Moler–Van Loan bound with
-`ε(q, q) ≤ δ` gives `E` with `AE = EA`. As printed, `j = max{0, 1 + ⌊log₂ ‖A‖_∞⌋}` only gives
-`‖A‖_∞/2^j < 1` (`‖A‖_∞ = 3`: `j = 2`, ratio `3/4`), so the hypothesis is stated; it holds for
-`j = max{0, 2 + ⌊log₂ ‖A‖_∞⌋}` (erratum). `q` exists for every `δ > 0`; the hypothesis `hδ` says
-so directly. -/
+`ε(q, q) ≤ δ` gives `F = e^{A+E}` with `AE = EA` and `‖E‖_∞ ≤ δ ‖A‖_∞`. -/
+theorem scalingSquaring_spec_backward [NeZero n] (o : ℤ) {δ : ℝ}
+    (hδ : ∃ q, Pade.errorBound q q ≤ δ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
+    (hj : j = (o + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
+    (hq : q = sInf {q : ℕ | Pade.errorBound q q ≤ δ}) (hA : ‖A‖ / 2 ^ j ≤ 1 / 2) :
+    ∃ E : Matrix (Fin n) (Fin n) ℝ,
+      Id.run (scalingSquaring pure o δ A) = exp (A + E) ∧ A * E = E * A ∧ ‖E‖ ≤ δ * ‖A‖ := by
+  have hsmall : ‖(2⁻¹ : ℝ) ^ j • A‖ < Real.log 2 := by
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (by positivity), inv_pow, ← div_eq_inv_mul]
+    linarith [Real.log_two_gt_d9]
+  have hD := (Pade.isUnit_aeval_expDen (𝕂 := ℝ) q q hsmall).1
+  obtain ⟨⟨E, hE, hc, hEn⟩, -⟩ := moler_van_loan q q j hA
+  have hqδ : Pade.errorBound q q ≤ δ := hq ▸ Nat.sInf_mem hδ
+  refine ⟨E, (scalingSquaring_spec o δ A hj hq hD).trans hE, hc, hEn.trans ?_⟩
+  exact mul_le_mul_of_nonneg_right hqδ (norm_nonneg A)
+
+/-- **Algorithm 9.3.1's claim**, "computes `F = e^{A+E}` where `‖E‖_∞ ≤ δ ‖A‖_∞`", in exact
+arithmetic, under the hypothesis `‖A‖_∞/2^j ≤ 1/2` that the printed scaling does not deliver.
+With `ν = ‖A‖_∞` and the printed `j = max{0, 1 + ⌊log₂ ν⌋}` the hypothesis is narrow: for
+`ν ≤ 1/2` it holds with `j = 0`, i.e. when no scaling happens at all; for `ν ∈ (1/2, 1)` it
+fails (`j = 0`, ratio `ν`); for `ν ≥ 1` the ratio `ν/2^j` lies in `[1/2, 1)` and equals `1/2`
+only when `ν` is a power of two (`ν = 3`: `j = 2`, ratio `3/4`). So where scaling actually
+happens the bound is (almost) never delivered; the corrected exponent
+`j = max{0, 2 + ⌊log₂ ν⌋}` always delivers it (`algorithm_9_3_1_corrected_spec_backward`, erratum).
+`q` exists for every `δ > 0`; the hypothesis `hδ` says so directly. -/
 theorem algorithm_9_3_1_spec_backward [NeZero n] {δ : ℝ} (hδ : ∃ q, Pade.errorBound q q ≤ δ)
     (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
     (hj : j = (1 + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
     (hq : q = sInf {q : ℕ | Pade.errorBound q q ≤ δ}) (hA : ‖A‖ / 2 ^ j ≤ 1 / 2) :
     ∃ E : Matrix (Fin n) (Fin n) ℝ,
-      Id.run (algorithm_9_3_1 pure δ A) = exp (A + E) ∧ A * E = E * A ∧ ‖E‖ ≤ δ * ‖A‖ := by
-  have hsmall : ‖(2⁻¹ : ℝ) ^ j • A‖ < Real.log 2 := by
-    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (by positivity), inv_pow, ← div_eq_inv_mul]
-    linarith [Real.log_two_gt_d9]
-  have hD := (Pade.isUnit_aeval_expDen (𝕂 := ℝ) q q hsmall).1
-  obtain ⟨⟨E, hE, hc, hEn⟩, -⟩ := molerVanLoan q q j hA
-  have hqδ : Pade.errorBound q q ≤ δ := hq ▸ Nat.sInf_mem hδ
-  refine ⟨E, (algorithm_9_3_1_spec δ A hj hq hD).trans hE, hc, hEn.trans ?_⟩
-  exact mul_le_mul_of_nonneg_right hqδ (norm_nonneg A)
+      Id.run (algorithm_9_3_1 pure δ A) = exp (A + E) ∧ A * E = E * A ∧ ‖E‖ ≤ δ * ‖A‖ :=
+  scalingSquaring_spec_backward 1 hδ A hj hq hA
+
+/-- `‖A‖_∞` is the largest absolute row sum. -/
+private theorem norm_eq_iSup_sum_abs [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) :
+    ‖A‖ = ⨆ i, ∑ l, |A i l| := by
+  rw [Matrix.linfty_opNorm_def, Finset.sup_univ_eq_ciSup, NNReal.coe_iSup]
+  simp [Real.norm_eq_abs]
+
+/-- The corrected exponent `j = max{0, 2 + ⌊log₂ ν⌋}` scales any `ν ≥ 0` below `1/2`. -/
+private theorem div_two_pow_corrected_le {ν : ℝ} (hν : 0 ≤ ν) :
+    ν / 2 ^ (2 + Int.log 2 ν).toNat ≤ 1 / 2 := by
+  rcases hν.eq_or_lt with rfl | hν
+  · simp
+  have hlt : ν < (2 : ℝ) ^ (Int.log 2 ν + 1) := Int.lt_zpow_succ_log_self (by norm_num) ν
+  have hpos : (0 : ℝ) < 2 ^ (2 + Int.log 2 ν).toNat := by positivity
+  rw [div_le_iff₀ hpos]
+  have hcast : ((2 : ℝ) ^ (2 + Int.log 2 ν).toNat) = (2 : ℝ) ^ ((2 + Int.log 2 ν).toNat : ℤ) :=
+    (zpow_natCast _ _).symm
+  rw [hcast]
+  have hmono : (2 : ℝ) ^ (2 + Int.log 2 ν) ≤ 2 ^ ((2 + Int.log 2 ν).toNat : ℤ) :=
+    zpow_le_zpow_right₀ (by norm_num) (Int.self_le_toNat _)
+  have heq : (2 : ℝ) ^ (2 + Int.log 2 ν) = 2 * 2 ^ (Int.log 2 ν + 1) := by
+    rw [show 2 + Int.log 2 ν = 1 + (Int.log 2 ν + 1) by ring, zpow_add₀ (by norm_num), zpow_one]
+  nlinarith
+
+/-- **Algorithm 9.3.1 with the corrected exponent delivers its claim**: in exact arithmetic,
+`algorithm_9_3_1_corrected` (`j = max{0, 2 + ⌊log₂ ‖A‖_∞⌋}`) computes `F = e^{A+E}` with `AE = EA`
+and `‖E‖_∞ ≤ δ ‖A‖_∞`, with no hypothesis on `A`. -/
+theorem algorithm_9_3_1_corrected_spec_backward [NeZero n] {δ : ℝ}
+    (hδ : ∃ q, Pade.errorBound q q ≤ δ) (A : Matrix (Fin n) (Fin n) ℝ) :
+    ∃ E : Matrix (Fin n) (Fin n) ℝ,
+      Id.run (algorithm_9_3_1_corrected pure δ A) = exp (A + E) ∧ A * E = E * A ∧
+        ‖E‖ ≤ δ * ‖A‖ := by
+  refine scalingSquaring_spec_backward 2 hδ A rfl rfl ?_
+  rw [norm_eq_iSup_sum_abs]
+  exact div_two_pow_corrected_le
+    (Real.iSup_nonneg fun i => Finset.sum_nonneg fun l _ => abs_nonneg _)
 
 end Infinity
 
-/-! ### Perturbation theory -/
+/-! ### §9.3.2 Perturbation theory -/
 
 section Two
 
@@ -622,7 +701,47 @@ theorem expCondNumber_eq_iff_counterexample :
 
 end Counterexample
 
-/-! ### Some stability issues -/
+/-! ### §9.3.3 Pseudospectra and transient growth -/
+
+section Pseudospectra
+
+open scoped Matrix.Norms.L2Operator
+open Filter Topology
+
+/-- **(9.3.6)**: for every `ε > 0`, `sup_{t > 0} ‖e^{At}‖₂ ≥ α_ε(A)/ε`, with chapter 7's
+`ε`-pseudospectral abscissa `α_ε(A) = sup_{z ∈ Λ_ε(A)} Re z` ((7.9.8), which the book cites as
+"(7.8.8)"), for `A ∈ ℂ^{n×n}`, `n ≥ 1`. Stated without the `sup`: every bound `M` of `‖e^{At}‖₂`
+over `t > 0` has `α_ε(A) ≤ ε M`. The abscissa is attained at some `z ∈ Λ_ε(A)`; if `Re z > 0`
+then `z ∉ λ(A)` and `1/ε ≤ ‖(zI - A)⁻¹‖₂ ≤ M / Re z` ((7.9.6) and the Laplace-transform bound
+`norm_resolvent_le_of_norm_exp_smul_le`, which needs the bound at `t = 0` too, by continuity). -/
+theorem equation_9_3_6 [NeZero n] {ε : ℝ} (hε : 0 < ε) (A : Matrix (Fin n) (Fin n) ℂ) {M : ℝ}
+    (hM : ∀ t : ℝ, 0 < t → ‖exp (t • A)‖ ≤ M) :
+    Chapter07.pseudospectralAbscissa ε A ≤ ε * M := by
+  have hM0 : ∀ t : ℝ, 0 ≤ t → ‖exp (t • A)‖ ≤ M := by
+    intro t ht
+    rcases ht.eq_or_lt with rfl | ht
+    · have hsm : Continuous fun t : ℝ => t • A := continuous_id.smul continuous_const
+      have hc : ContinuousAt (fun t : ℝ => ‖exp (t • A)‖) 0 :=
+        (((NormedSpace.exp_analytic (𝕂 := ℂ) ((0 : ℝ) • A)).continuousAt).comp
+          (f := fun t : ℝ => t • A) hsm.continuousAt).norm
+      exact le_of_tendsto (hc.tendsto.mono_left nhdsWithin_le_nhds)
+        (eventually_nhdsWithin_of_forall (s := Set.Ioi 0) fun t ht => hM t ht)
+    · exact hM t ht
+  have hMnn : 0 ≤ M := (norm_nonneg _).trans (hM0 0 le_rfl)
+  obtain ⟨z, hz, hre⟩ := (Chapter07.pseudospectralAbscissa_spec hε.le A).2.2.1
+  rw [← hre]
+  rcases le_or_gt z.re 0 with hz0 | hz0
+  · exact hz0.trans (mul_nonneg hε.le hMnn)
+  · obtain ⟨hns, hres⟩ := norm_resolvent_le_of_norm_exp_smul_le hM0 hz0
+    have h1 := ((Chapter07.equation_7_9_6 hε A z).1 hz).resolve_left hns
+    rw [Algebra.algebraMap_eq_smul_one, ← Matrix.nonsing_inv_eq_ringInverse] at hres
+    have h2 : 1 / ε ≤ M / z.re := h1.trans hres
+    rw [div_le_div_iff₀ hε hz0] at h2
+    linarith
+
+end Pseudospectra
+
+/-! ### §9.3.4 Some stability issues -/
 
 section Two
 
@@ -667,45 +786,5 @@ theorem normal_squaring [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStar
   rw [← coe_nnnorm, h2, NNReal.coe_pow, coe_nnnorm]
 
 end Two
-
-/-! ### Pseudospectra and transient growth -/
-
-section Pseudospectra
-
-open scoped Matrix.Norms.L2Operator
-open Filter Topology
-
-/-- **(9.3.6)**: for every `ε > 0`, `sup_{t > 0} ‖e^{At}‖₂ ≥ α_ε(A)/ε`, with chapter 7's
-`ε`-pseudospectral abscissa `α_ε(A) = sup_{z ∈ Λ_ε(A)} Re z` ((7.9.8), which the book cites as
-"(7.8.8)"), for `A ∈ ℂ^{n×n}`, `n ≥ 1`. Stated without the `sup`: every bound `M` of `‖e^{At}‖₂`
-over `t > 0` has `α_ε(A) ≤ ε M`. The abscissa is attained at some `z ∈ Λ_ε(A)`; if `Re z > 0`
-then `z ∉ λ(A)` and `1/ε ≤ ‖(zI - A)⁻¹‖₂ ≤ M / Re z` ((7.9.6) and the Laplace-transform bound
-`norm_resolvent_le_of_norm_exp_smul_le`, which needs the bound at `t = 0` too, by continuity). -/
-theorem equation_9_3_6 [NeZero n] {ε : ℝ} (hε : 0 < ε) (A : Matrix (Fin n) (Fin n) ℂ) {M : ℝ}
-    (hM : ∀ t : ℝ, 0 < t → ‖exp (t • A)‖ ≤ M) :
-    Chapter07.pseudospectralAbscissa ε A ≤ ε * M := by
-  have hM0 : ∀ t : ℝ, 0 ≤ t → ‖exp (t • A)‖ ≤ M := by
-    intro t ht
-    rcases ht.eq_or_lt with rfl | ht
-    · have hsm : Continuous fun t : ℝ => t • A := continuous_id.smul continuous_const
-      have hc : ContinuousAt (fun t : ℝ => ‖exp (t • A)‖) 0 :=
-        (((NormedSpace.exp_analytic (𝕂 := ℂ) ((0 : ℝ) • A)).continuousAt).comp
-          (f := fun t : ℝ => t • A) hsm.continuousAt).norm
-      exact le_of_tendsto (hc.tendsto.mono_left nhdsWithin_le_nhds)
-        (eventually_nhdsWithin_of_forall (s := Set.Ioi 0) fun t ht => hM t ht)
-    · exact hM t ht
-  have hMnn : 0 ≤ M := (norm_nonneg _).trans (hM0 0 le_rfl)
-  obtain ⟨z, hz, hre⟩ := (Chapter07.pseudospectralAbscissa_spec hε.le A).2.2.1
-  rw [← hre]
-  rcases le_or_gt z.re 0 with hz0 | hz0
-  · exact hz0.trans (mul_nonneg hε.le hMnn)
-  · obtain ⟨hns, hres⟩ := norm_resolvent_le_of_norm_exp_smul_le hM0 hz0
-    have h1 := ((Chapter07.equation_7_9_6 hε A z).1 hz).resolve_left hns
-    rw [Algebra.algebraMap_eq_smul_one, ← Matrix.nonsing_inv_eq_ringInverse] at hres
-    have h2 : 1 / ε ≤ M / z.re := h1.trans hres
-    rw [div_le_div_iff₀ hε hz0] at h2
-    linarith
-
-end Pseudospectra
 
 end GolubVanLoan.Chapter09

@@ -282,8 +282,7 @@ theorem equation_6_1_10 {k q : ℕ} {Z : Matrix (Fin (n + q)) (Fin (n + q)) ℝ}
   have hZZ : Z.submatrix id (Fin.castAdd q) * (Z.submatrix id (Fin.castAdd q))ᵀ +
       Z.submatrix id (Fin.natAdd n) * (Z.submatrix id (Fin.natAdd n))ᵀ = 1 := by
     have h1 : Z * Zᵀ = 1 := by
-      have := mem_unitaryGroup_iff.1 hZ
-      rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+      exact (mem_orthogonalGroup_iff _ ℝ).1 hZ
     rw [← h1]
     ext i j
     simp only [Matrix.add_apply, mul_apply, submatrix_apply, transpose_apply, id,
@@ -352,7 +351,7 @@ theorem equation_6_1_12 (A : Matrix (Fin m) (Fin n) ℝ) {μ : ℝ} (hμ : 0 < �
     ((∀ y, ‖toEuclideanLin A x - b‖ ^ 2 + μ * ‖x‖ ^ 2 ≤
         ‖toEuclideanLin A y - b‖ ^ 2 + μ * ‖y‖ ^ 2) ↔
       x = toEuclideanLin (A.tikhonov μ) b) := by
-  have h2 := (tikhonov_mulVec_eq_iff_isMinOn A hμ b x).symm
+  have h2 := ((eq_toEuclideanLin_tikhonov_iff_isMinOn A hμ b x).trans isMinOn_univ_iff).symm
   refine ⟨?_, h2⟩
   rw [h2, ← tikhonov_unique A μ hμ b x]
   have e : toEuclideanLin (Aᵀ * A + μ • (1 : Matrix (Fin n) (Fin n) ℝ)) x =
@@ -371,7 +370,7 @@ theorem equation_6_1_14 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
     toEuclideanLin (A.tikhonov μ) b = ∑ i : Fin (min m n),
       (σ i * inner ℝ (WithLp.toLp 2 (Uᵀ (Fin.castLE (min_le_left m n) i))) b / (σ i ^ 2 + μ)) •
         (WithLp.toLp 2 (Vᵀ (Fin.castLE (min_le_right m n) i)) : EuclideanSpace ℝ (Fin n)) := by
-  rw [tikhonov_mulVec_eq_sum_of_isSVD h hμ b]
+  rw [toEuclideanLin_tikhonov_eq_sum_of_isSVD h hμ b]
   refine sum_congr rfl fun i _ => ?_
   rw [smul_smul, RCLike.ofReal_real_eq_id, id_eq, mul_div_right_comm]
 
@@ -391,9 +390,9 @@ theorem norm_ridge_antitoneOn (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpa
     AntitoneOn (fun μ => ‖toEuclideanLin (A.tikhonov μ) b‖) (Set.Ioi 0) ∧
       (toEuclideanLin Aᵀ b ≠ 0 →
         StrictAntiOn (fun μ => ‖toEuclideanLin (A.tikhonov μ) b‖) (Set.Ioi 0)) := by
-  refine ⟨antitoneOn_norm_tikhonov_mulVec A b, fun hb => ?_⟩
+  refine ⟨antitoneOn_norm_toEuclideanLin_tikhonov A b, fun hb => ?_⟩
   rw [← conjTranspose_eq_transpose_of_trivial] at hb
-  exact strictAntiOn_norm_tikhonov_mulVec A hb
+  exact strictAntiOn_norm_toEuclideanLin_tikhonov A hb
 
 /-- **§6.1.4, (6.1.15).** "Let `x_k(λ)` solve `min ‖D_k(Ax − b)‖₂² + λ‖x‖₂²`", with
 `D_k = I − e_ke_kᵀ = diag(1, …, 1, 0, 1, …, 1)` (the `k`-th equation deleted): the ridge solution of
@@ -414,8 +413,9 @@ theorem ridgeDeleted_spec (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {
         ‖toEuclideanLin (diagonal (Function.update (1 : Fin m → ℝ) k 0) * A) y -
             WithLp.toLp 2 (diagonal (Function.update (1 : Fin m → ℝ) k 0) *ᵥ b)‖ ^ 2 +
           μ * ‖y‖ ^ 2 :=
-  tikhonov_mulVec_eq_iff_isMinOn (diagonal (Function.update (1 : Fin m → ℝ) k 0) * A) hμ
-    (WithLp.toLp 2 (diagonal (Function.update (1 : Fin m → ℝ) k 0) *ᵥ b)) x
+  (eq_toEuclideanLin_tikhonov_iff_isMinOn (diagonal (Function.update (1 : Fin m → ℝ) k 0) * A) hμ
+    (WithLp.toLp 2 (diagonal (Function.update (1 : Fin m → ℝ) k 0) *ᵥ b)) x).trans
+    isMinOn_univ_iff
 
 /-- **(6.1.16).** "Assuming that `λ > 0`, an algebraic manipulation shows that
 `x_k(λ) = x(λ) + ((a_kᵀx(λ) − b_k)/(1 − z_kᵀa_k)) z_k` where `z_k = (AᵀA + λI)⁻¹a_k` and
@@ -599,9 +599,9 @@ theorem equation_6_1_21 (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin n) (Fi
   · have h := posDef_gram_add_smul_gram_iff A B hμ
     simp only [conjTranspose_eq_transpose_of_trivial, RCLike.ofReal_real_eq_id, id_eq] at h
     exact h
-  · have h := generalFormTikhonov_mulVec_eq_iff_isMinOn A B hμ hAB b x
+  · have h := eq_toEuclideanLin_generalFormTikhonov_iff A B hμ hAB b x
     simp only [conjTranspose_eq_transpose_of_trivial, RCLike.ofReal_real_eq_id, id_eq] at h
-    exact h.2.symm.trans h.1
+    exact (isMinOn_univ_iff.symm.trans h.2.symm).trans h.1
 
 /-! ### §6.1.6 The generalized singular value decomposition -/
 
@@ -623,13 +623,13 @@ theorem theorem_6_1_1 {m₁ m₂ n₁ : ℕ} (hmn : n₁ ≤ m₁) (A : Matrix (
       (∀ i < (fromRows A B).rank - m₂, α i = 1 ∧ β i = 0) ∧
       ∀ i, (fromRows A B).rank ≤ i → α i = 0 ∧ β i = 0 := by
   obtain ⟨U₁, U₂, X, α, β, h⟩ := exists_isGSVD hmn A B
-  refine ⟨U₁, U₂, X, α, β, h.mem_unitaryGroup_left, h.mem_unitaryGroup_right, h.isUnit, ?_, ?_,
-    h.of_lt_p, h.of_le_r⟩
-  · have e := h.star_mul_mul_left
+  refine ⟨U₁, U₂, X, α, β, h.mem_unitaryGroup_left₁, h.mem_unitaryGroup_left₂, h.isUnit, ?_, ?_,
+    h.eq_one_and_eq_zero_of_lt, h.eq_zero_and_eq_zero_of_rank_le⟩
+  · have e := h.star_mul_mul₁
     simp only [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
       RCLike.ofReal_real_eq_id, id_eq] at e
     exact e
-  · have e := h.star_mul_mul_right
+  · have e := h.star_mul_mul₂
     simp only [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
       RCLike.ofReal_real_eq_id, id_eq] at e
     exact e
@@ -647,7 +647,8 @@ a GSVD of `(A, I)`, every `β_i` (`i < n₁`) is positive and `U₁ᵀAU₂ = di
 theorem gsvd_one {m₁ n₁ : ℕ} {A : Matrix (Fin m₁) (Fin n₁) ℝ} {U₁ : Matrix (Fin m₁) (Fin m₁) ℝ}
     {U₂ X : Matrix (Fin n₁) (Fin n₁) ℝ} {α β : ℕ → ℝ} (h : IsGSVD A 1 U₁ U₂ X α β) :
     (∀ i < n₁, 0 < β i) ∧ U₁ᵀ * A * U₂ = rectDiagonal fun i => α i / β i := by
-  obtain ⟨-, -, hβ, e⟩ := h.svd_of_eq_one
+  have hβ := h.pos_of_eq_one
+  have e := h.star_mul_mul_eq_of_eq_one
   simp only [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
     RCLike.ofReal_real_eq_id, id_eq] at e
   exact ⟨hβ, e⟩
@@ -690,7 +691,7 @@ theorem equation_6_1_26 {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix (Fin n) (Fi
       LinearMap.ker_eq_bot.2 (mulVec_injective_iff_isUnit.2 hB)
     have hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥ := by
       rw [hker, inf_bot_eq]
-    refine (generalFormTikhonov_mulVec_eq_iff_isMinOn A B hμ hAB b x).2.1 ?_
+    refine isMinOn_univ_iff.1 ((eq_toEuclideanLin_generalFormTikhonov_iff A B hμ hAB b x).2.1 ?_)
     have e := generalFormTikhonov_mulVec_eq_sum_of_isGSVD hB h hnm hμ (WithLp.ofLp b)
     simp only [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
       RCLike.ofReal_real_eq_id, id_eq] at e

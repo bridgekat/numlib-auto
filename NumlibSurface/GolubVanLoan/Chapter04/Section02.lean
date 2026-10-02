@@ -31,7 +31,7 @@ of `Matrix.IsCholesky`). `‖·‖₂` is the scoped `Matrix.Norms.L2Operator` n
 
 Algorithm 4.2.1 follows the algorithm conventions of `NumlibSurface/GolubVanLoan`: the gaxpy
 `A(j:n, j) − A(j:n, 1:j−1) · A(j, 1:j−1)ᵀ` is a running difference from the entry of `A`
-(chapter 4's `runningDiff`), the square root is `Real.sqrt` followed by one rounding, and the
+(`FloatingPoint.runningDiff`), the square root is `Real.sqrt` followed by one rounding, and the
 whole column, diagonal included, is divided by the rounded square root, so the computed diagonal
 is `fl(t / fl(√t))` — the operation order of the backbone relation
 `FloatingPoint.RoundsCholeskyDiv`. The triangular solves call chapter 3's column-oriented
@@ -417,20 +417,14 @@ section Bridge
 
 variable (fp : RoundingModel ℝ)
 
-/-- The indices below `j`, in increasing order. -/
-private abbrev below (j : Fin n) : List (Fin n) := (List.finRange n).filter (· < j)
-
-private theorem mem_below {j k : Fin n} : k ∈ below j ↔ k < j := by simp [below]
-
-private theorem nodup_below (j : Fin n) : (below j).Nodup := (List.nodup_finRange n).filter _
-
 /-- Column `j` of the state `S` is a finished column of Algorithm 4.2.1: the pivot `t` is the
 running difference of `a_jj` and the products `g_jk g_jk`, `sh` a rounding of `√t`, and the entries
 on and below the diagonal are the rounded quotients by `sh` of the running differences. -/
 private def CholDone (A S : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) : Prop :=
-  ∃ t sh : ℝ, IsRunningDiff fp (below j) (S j) (S j) (A j j) t ∧ fp.Rounds (Real.sqrt t) sh ∧
+  ∃ t sh : ℝ, RoundsRunningDiff fp (below j) (S j) (S j) (A j j) t ∧ fp.Rounds (Real.sqrt t) sh ∧
     fp.Rounds (t / sh) (S j j) ∧
-    ∀ i, j < i → ∃ r, IsRunningDiff fp (below j) (S i) (S j) (A i j) r ∧ fp.Rounds (r / sh) (S i j)
+    ∀ i, j < i → ∃ r, RoundsRunningDiff fp (below j) (S i) (S j) (A i j) r ∧
+      fp.Rounds (r / sh) (S i j)
 
 private theorem CholDone.congr {A S S' : Matrix (Fin n) (Fin n) ℝ} {j : Fin n}
     (h : CholDone fp A S j) (hS : ∀ i k, k ≤ j → S' i k = S i k) : CholDone fp A S' j := by
@@ -479,14 +473,14 @@ private theorem cholInv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
       rw [hx, Function.update_of_ne hk, hBo i k hk]
     · rw [hC1 i fun h => hi ((hmem i).1 h), hBo i k hk]
   -- column `j`, on and below the diagonal
-  have hcol : ∀ i, j ≤ i → ∃ t, IsRunningDiff fp (below j) (S' i) (S' j) (A i j) t ∧
+  have hcol : ∀ i, j ≤ i → ∃ t, RoundsRunningDiff fp (below j) (S' i) (S' j) (A i j) t ∧
       B i j = t ∧ fp.Rounds (t / s) (S' i j) := by
     intro i hi
     obtain ⟨t, ht, hx⟩ := hB2 i ((hmem i).2 hi)
     obtain ⟨g, hg, hy⟩ := hC2 i ((hmem i).2 hi)
     have hBij : B i j = t := by rw [hx, Function.update_self]
     refine ⟨t, ?_, hBij, ?_⟩
-    · have ht' := (mem_run_runningDiff_iff (nodup_below j) _ _ _ _).1 ht
+    · have ht' := (mem_run_runningDiff_iff (nodup_below j)).1 ht
       rw [hA i j le_rfl] at ht'
       exact ht'.congr (fun k hk => hSo i k (ne_of_lt (mem_below.1 hk)))
         (fun k hk => hSo j k (ne_of_lt (mem_below.1 hk)))
@@ -556,12 +550,6 @@ theorem algorithm_4_2_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
       exact hp k hk
     · rw [hG i j hji.le]; exact hl
 
-/-- The run set of a running difference is nonempty in a total model. -/
-private theorem runningDiff_run_nonempty {fp : RoundingModel ℝ} (hfp : fp.IsTotal) {ι : Type}
-    (o : List ι) (a b : ι → ℝ) (c : ℝ) : (runningDiff fp.round o a b c).run.Nonempty :=
-  SetM.run_foldlM_nonempty (fun _ _ _ => SetM.run_bind_nonempty
-    (RoundingModel.run_round_nonempty hfp _) fun _ _ => RoundingModel.run_round_nonempty hfp _) c
-
 /-- **Nonemptiness** (review M8): over a total model the run set of Algorithm 4.2.1 is nonempty, for
 every input, so `algorithm_4_2_1_rounds` and the stability statements built on it are not
 vacuous. -/
@@ -582,14 +570,6 @@ private theorem algorithm_4_2_1_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
   rw [RoundingModel.round_exact]
   simp only [algorithm_4_2_1, runningDiff, pure_bind, List.foldlM_pure, SetM.mem_run_pure]
   rfl
-
-/-- An admissible running difference in the exact model is the exact difference. -/
-theorem IsRunningDiff.eq_of_exact {ι : Type} [DecidableEq ι] {o : List ι} (ho : o.Nodup)
-    {a b : ι → ℝ} {c t : ℝ} (h : IsRunningDiff (RoundingModel.exact ℝ) o a b c t) :
-    t = c - ∑ k ∈ o.toFinset, a k * b k := by
-  obtain ⟨p, hp, hs⟩ := h
-  rw [(roundsSumFrom_exact_map_neg_iff ho).1 hs]
-  exact congrArg _ (Finset.sum_congr rfl fun k hk => hp k (List.mem_toFinset.1 hk))
 
 /-- **The exact semantics of Algorithm 4.2.1 is the backbone's Cholesky recurrence**, for every
 input: the lower triangle of the exact run is `Matrix.cholesky A` (off the positive definite cone

@@ -37,16 +37,20 @@ namespace `GolubVanLoan.Chapter04`. This module imports the sections.
   "symmetric positive definite" is Mathlib's `Matrix.PosDef`.
 * **Structured matrices.** Toeplitz `Matrix.toeplitz r` and `Matrix.IsToeplitz`; symmetric Toeplitz
   with unit diagonal `T_k = Matrix.symmToeplitz k r`, `r 0 = 1`; the exchange matrix
-  `ℰ_n = Matrix.exchange n`; the downshift `𝒟_n = Matrix.downshift n`; the book's
-  `V(x₀, …, x_n)` is `(Matrix.vandermonde x)ᵀ`; the DFT matrix `F_n` is chapter 1's `fourierMatrix`
-  (`= (Matrix.dft n)ᴴ`); block tridiagonal matrices are `Matrix.blockTridiagonal`; the
+  `ℰ_n = Matrix.exchange n` (persymmetry `ℰ B ℰ = Bᵀ` is `IsPersymmetricExchange`, bridged to
+  the entrywise `Matrix.IsPersymmetric`); the downshift `𝒟_n = Matrix.downshift n`; the book's
+  `V(x₀, …, x_n)` is `vandermondeCols x = (Matrix.vandermonde x)ᵀ`; the DFT matrix `F_n` is chapter
+  1's `fourierMatrix` (`= (Matrix.dft n)ᴴ`); block tridiagonal matrices are
+  `Matrix.blockTridiagonal`; the
   second-difference matrices are `Matrix.symmTridiagonalToeplitz n (-1) 2` and
   `Matrix.secondDifferenceDN/NN/Periodic n`; the DST/DCT matrices `Matrix.dst1`, `Matrix.dst2`,
-  `Matrix.dct1`, `Matrix.dct2`; the equilibrium matrix `[C B; Bᵀ 0]` is `Matrix.saddleMatrix C B 0`.
+  `Matrix.dct1`; the equilibrium matrix `[C B; Bᵀ 0]` is written `fromBlocks C B Bᵀ 0`, which is
+  the backbone's `Matrix.saddleMatrix C B 0` (`fromBlocks_transpose_zero_eq_saddleMatrix`).
 * **Algorithms** follow the numbered algorithm conventions of `NumlibSurface.GolubVanLoan`. The
   matrix–vector products inside a column update are running differences from the entry of `A`
-  (`runningDiff`, §4.1), the operation order of the backbone relations `FloatingPoint.RoundsLDL` and
-  `FloatingPoint.RoundsCholeskyDiv`. The exact meaning is `Id.run (algorithm_4_M_K pure …)`;
+  (the backbone's `FloatingPoint.runningDiff`), the operation order of the backbone relations
+  `FloatingPoint.RoundsLDL` and `FloatingPoint.RoundsCholeskyDiv`. The exact meaning is `Id.run
+  (algorithm_4_M_K pure …)`;
   `algorithm_4_M_K_spec` states it meets the backbone specification; where the book analyses
   rounding errors ((4.1.4) and §4.2.6) the bridge `algorithm_4_M_K_rounds` says every run in the
   relational model satisfies the backbone relation. The packed unit lower factor of a packed output
@@ -60,6 +64,7 @@ illustrations; quoted results without derivation (Wilkinson's completion criteri
 rank threshold, the stability of Bunch's method and of pivoted Aasen, the Bunch–Kaufman strategy,
 Vavasis's method, Buneman's cyclic reduction, Cybenko's `≈` estimates, the `O(log n)` Newton count,
 lookahead, banded inverses, SPIKE beyond (4.5.14), band `L D Lᵀ`, confluent Vandermonde systems);
-displays that write out an algorithm step; displays that are definitions; Problems (except as
+displays that write out an algorithm step (the complete algorithm-shaped displays (4.4.14),
+(4.5.4), (4.5.5) and (4.7.11) are programs); displays that are definitions; Problems (except as
 helpers).
 -/
