@@ -1,0 +1,14 @@
+namespace = "Matrix"
+
+[[node]]
+id = "frobenius_norm_sq_eq_sum_sq"
+
+[[node]]
+id = "frobenius_norm_sq_eq_trace"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.18)"
+
+[[node]]  # moved by a2
+id = "frobenius_norm_sq_eq_sum_norm_sq_col"
+
+[[node]]  # moved by a2
+id = "frobenius_norm_sq_eq_sum_norm_sq_row"

@@ -231,7 +231,7 @@ theorem bordered_solve {r : ℕ → K} (hr : r 0 = 1) {y x b : Fin k → K} (b' 
     sum_congr rfl fun i _ => by have := i.isLt; congr 2; omega
   rw [symmToeplitz_eq_toeplitz] at hx ⊢
   refine toeplitz_bordered_solve (by simpa using hr) b' ?_ hx μ ?_
-  · rw [← symmToeplitz_eq_toeplitz k r, (symmToeplitz_isSymm k r).eq, hy]
+  · rw [← symmToeplitz_eq_toeplitz k r, (isSymm_symmToeplitz k r).eq, hy]
     funext l
     congr 2
   · rw [e1, e2]
@@ -272,6 +272,35 @@ def beta (r : ℕ → K) (k : ℕ) : K := betaOf r k (sol r k)
 /-- The reflection coefficients `α_k = −(r_{k+1} + rᵀ ℰ_k y^{(k)}) / β_k` of Durbin's
 recurrence. -/
 def alpha (r : ℕ → K) (k : ℕ) : K := alphaOf r k (sol r k)
+
+/-- Durbin's recurrence up to order `k` reads only `r₁, …, r_k`. -/
+theorem sol_congr {r r' : ℕ → K} :
+    ∀ k, (∀ j, 1 ≤ j → j ≤ k → r j = r' j) → sol r k = sol r' k
+  | 0, _ => rfl
+  | k + 1, h => by
+    have ih := sol_congr k fun j hj hjk => h j hj (by omega)
+    have hb : betaOf r k (sol r k) = betaOf r' k (sol r' k) := by
+      simp only [betaOf, ih]
+      exact congrArg _ (Finset.sum_congr rfl fun i hi => by
+        rw [h (i + 1) (by omega) (by have := Finset.mem_range.1 hi; omega)])
+    have ha : alphaOf r k (sol r k) = alphaOf r' k (sol r' k) := by
+      unfold alphaOf
+      rw [hb, h (k + 1) (by omega) le_rfl, ih]
+      congr 2
+      exact congrArg _ (Finset.sum_congr rfl fun i hi => by
+        have := Finset.mem_range.1 hi
+        rw [h (k - i) (by omega) (by omega)])
+    rw [ih] at ha
+    funext i
+    simp only [sol, ih, ha]
+
+/-- Durbin's `β_k` reads only `r₁, …, r_k`. -/
+theorem beta_congr {r r' : ℕ → K} {k : ℕ} (h : ∀ j, 1 ≤ j → j ≤ k → r j = r' j) :
+    beta r k = beta r' k := by
+  unfold beta betaOf
+  rw [sol_congr k h]
+  exact congrArg _ (Finset.sum_congr rfl fun i hi => by
+    rw [h (i + 1) (by omega) (by have := Finset.mem_range.1 hi; omega)])
 
 variable (r : ℕ → K)
 
@@ -500,7 +529,7 @@ theorem transpose_mul_mul_eq_diagonal (hr : r 0 = 1) {n : ℕ}
     · rw [ite_eq_right h, revSol_of_lt (by have := Fin.val_injective.ne h; omega), zero_mul]
   have hsymm : ((unitUpper r n)ᵀ * symmToeplitz n r * unitUpper r n)ᵀ =
       (unitUpper r n)ᵀ * symmToeplitz n r * unitUpper r n := by
-    rw [transpose_mul, transpose_mul, transpose_transpose, (symmToeplitz_isSymm n r).eq,
+    rw [transpose_mul, transpose_mul, transpose_transpose, (isSymm_symmToeplitz n r).eq,
       Matrix.mul_assoc]
   ext l k
   rw [diagonal_apply]
@@ -781,7 +810,7 @@ theorem inv_symmToeplitz_eq (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 1, beta 
   have hBsymm : ∀ i j, (symmToeplitz (m + 1) r)⁻¹ i j = (symmToeplitz (m + 1) r)⁻¹ j i := by
     intro i j
     have : ((symmToeplitz (m + 1) r)⁻¹)ᵀ = (symmToeplitz (m + 1) r)⁻¹ := by
-      rw [transpose_nonsing_inv, (symmToeplitz_isSymm (m + 1) r).eq]
+      rw [transpose_nonsing_inv, (isSymm_symmToeplitz (m + 1) r).eq]
     exact congrFun (congrFun this j) i
   have hlast : ∀ j : Fin m,
       (symmToeplitz (m + 1) r)⁻¹ (Fin.last m) (Fin.castSucc j) = lastCol r m j := by
@@ -852,7 +881,7 @@ theorem inv_symmToeplitz_apply_succ (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 
     intro a b
     have := congrFun (congrFun h a) b
     simpa [vecMulVec_apply] using this
-  rw [e, e, (symmToeplitz_isPersymmetric m r).inv i j, div_eq_mul_inv]
+  rw [e, e, (isPersymmetric_symmToeplitz m r).inv i j, div_eq_mul_inv]
   ring
 
 end Trench

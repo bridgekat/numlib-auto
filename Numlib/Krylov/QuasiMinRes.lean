@@ -1,4 +1,5 @@
 import Mathlib.Algebra.Order.Chebyshev
+import Numlib.Analysis.InnerProductSpace.Orthonormal
 import Numlib.Krylov.Hessenberg
 
 /-!
@@ -157,16 +158,8 @@ def IsQuasiMinResidualIterate (z : ℕ → E) (h : ℕ → ℕ → 𝕜) (β : �
 private theorem norm_sum_smul_eq_of_orthonormal {ι : Type*} [Fintype ι] {v : ι → E}
     (hv : Orthonormal 𝕜 v) (c : ι → 𝕜) :
     ‖∑ i, c i • v i‖ = ‖(WithLp.toLp 2 c : EuclideanSpace 𝕜 ι)‖ := by
-  have hK : ((‖∑ i, c i • v i‖ : ℝ) : 𝕜) ^ 2 = ((∑ i, ‖c i‖ ^ 2 : ℝ) : 𝕜) := by
-    rw [← inner_self_eq_norm_sq_to_K, sum_inner]
-    push_cast
-    refine Finset.sum_congr rfl fun i _ => ?_
-    rw [inner_smul_left, hv.inner_right_fintype c i, RCLike.conj_mul]
-  have hsq : ‖∑ i, c i • v i‖ ^ 2 = ∑ i, ‖c i‖ ^ 2 := by exact_mod_cast hK
-  have hrhs : ‖(WithLp.toLp 2 c : EuclideanSpace 𝕜 ι)‖ ^ 2 = ∑ i, ‖c i‖ ^ 2 :=
-    EuclideanSpace.norm_sq_eq _
-  rw [← Real.sqrt_sq (norm_nonneg (∑ i, c i • v i)),
-    ← Real.sqrt_sq (norm_nonneg (WithLp.toLp 2 c : EuclideanSpace 𝕜 ι)), hsq, hrhs]
+  refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+  rw [hv.norm_sum_smul_sq, EuclideanSpace.norm_sq_eq]
 
 /-- Cauchy–Schwarz: a combination of vectors of norm at most `1` obeys `‖∑ w_i v_i‖ ≤ √n ‖w‖₂`
 ([saad2003iterative], (6.51) and (7.83): `‖V_{m+1}‖₂ ≤ √(m+1)` for unit basis vectors). This is the

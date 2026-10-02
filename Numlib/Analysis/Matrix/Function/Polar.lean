@@ -24,7 +24,7 @@ matrices of [golub2013matrix] §9.4.3:
   Sylvester bound `Matrix.frobenius_norm_le_of_mul_add_mul_eq`;
 * `Matrix.frobenius_norm_polar_sub_le`: the real Li–Sun bound
   `‖U − Ũ‖_F ≤ 4 ‖A − Ã‖_F / (σ_{n-1} + σ_n + σ̃_{n-1} + σ̃_n)` (the two smallest singular values
-  of each) when `det A · det Ã > 0`, from the pairing inequality `Matrix.trace_mul_one_sub_ge`
+  of each) when `det A · det Ã > 0`, from the pairing inequality `Matrix.le_trace_mul_one_sub`
   for a rotation `W`: `tr(P (1 - W)) ≥ (σ_{n-1} + σ_n)/2 · tr(1 - W)`;
 * `Matrix.matrixSign_hermitianDilation`: the sign of the Jordan–Wielandt matrix `[0 A; Aᴴ 0]` of a
   nonsingular `A = U P` is `[0 U; Uᴴ 0]`.
@@ -153,7 +153,7 @@ private theorem inv_conj_diagonal {V : Matrix n n 𝕜} (hV : V ∈ unitaryGroup
     (hd : ∀ i, d i ≠ 0) :
     (V * diagonal (fun i => ((d i : ℝ) : 𝕜)) * Vᴴ)⁻¹
       = V * diagonal (fun i => (((d i)⁻¹ : ℝ) : 𝕜)) * Vᴴ := by
-  have hVV : Vᴴ * V = 1 := by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.1 hV
+  have hVV : Vᴴ * V = 1 := conjTranspose_mul_self_of_mem_unitaryGroup hV
   refine inv_eq_left_inv ?_
   calc V * diagonal (fun i => (((d i)⁻¹ : ℝ) : 𝕜)) * Vᴴ *
         (V * diagonal (fun i => ((d i : ℝ) : 𝕜)) * Vᴴ)
@@ -164,7 +164,7 @@ private theorem inv_conj_diagonal {V : Matrix n n 𝕜} (hV : V ∈ unitaryGroup
           show (fun i => (((d i)⁻¹ : ℝ) : 𝕜) * ((d i : ℝ) : 𝕜)) = fun _ => 1 from
             funext fun i => by rw [← RCLike.ofReal_mul, inv_mul_cancel₀ (hd i),
               RCLike.ofReal_one], diagonal_one, Matrix.mul_one]
-    _ = 1 := by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff.1 hV
+    _ = 1 := mul_conjTranspose_self_of_mem_unitaryGroup hV
 
 /-- **Newton's polar iteration on a positive definite matrix, diagonalized**: if
 `P = V diag(s) Vᴴ` with `V` unitary and `s > 0`, then `P_k = V diag(r_k(s_i)) Vᴴ` with the scalar
@@ -412,7 +412,7 @@ theorem IsPolarDecomposition.posSemidef_sub_iInf_colSingularValues {A U P : Matr
   have hP := h.isHermitian
   set V := (hP.eigenvectorUnitary : Matrix n n 𝕜)
   have hV : V ∈ unitaryGroup n 𝕜 := hP.eigenvectorUnitary.2
-  have hVV : V * Vᴴ = 1 := by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff.1 hV
+  have hVV : V * Vᴴ = 1 := mul_conjTranspose_self_of_mem_unitaryGroup hV
   have hspec : P = V * diagonal (fun i => ((hP.eigenvalues i : ℝ) : 𝕜)) * Vᴴ :=
     hP.eq_conj_diagonal
   have hc : ∀ i, c ≤ hP.eigenvalues i := by
@@ -467,7 +467,7 @@ open scoped Matrix.Norms.Frobenius
 
 omit [Fintype n] in
 /-- A symmetric matrix bounded below by `b` off a unit vector `u` and by `a ≤ b` along it is
-symmetric: the hypothesis shape of `Matrix.trace_mul_one_sub_ge`. -/
+symmetric: the hypothesis shape of `Matrix.le_trace_mul_one_sub`. -/
 private theorem transpose_eq_of_posSemidef_pair {P : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ}
     (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef) : Pᵀ = P := by
   have h := hP.isHermitian.eq
@@ -477,7 +477,7 @@ private theorem transpose_eq_of_posSemidef_pair {P : Matrix n n ℝ} {u : n → 
 
 /-- **A real Sylvester equation for `1 - W` with `W` a rotation** (the step behind the real
 Li–Sun bound): if `P X + X Q = R` with `X = 1 - W`, `Wᵀ W = 1`, `det W = 1`, and `P`, `Q` bounded
-below as in `Matrix.trace_mul_one_sub_ge` by `a ≤ b` and `a' ≤ b'`, then
+below as in `Matrix.le_trace_mul_one_sub` by `a ≤ b` and `a' ≤ b'`, then
 `‖X‖_F ≤ 2 ‖R‖_F / (a + b + a' + b')`. Since `X Xᵀ = Xᵀ X = X + Xᵀ`,
 `tr(Xᵀ R) = 2 tr(P X) + 2 tr(Q X) ≥ (a + b + a' + b') tr X = (a + b + a' + b')/2 · ‖X‖_F²`. -/
 theorem frobenius_norm_one_sub_le_of_mul_add_mul_eq {P Q W R : Matrix n n ℝ} {u v : n → ℝ}
@@ -509,8 +509,10 @@ theorem frobenius_norm_one_sub_le_of_mul_add_mul_eq {P Q W R : Matrix n n ℝ} {
       ← Matrix.mul_assoc, hXX, trace_mul_comm (X + Xᵀ), Matrix.mul_add, Matrix.mul_add, trace_add,
       trace_add, hsymm P hPt, hsymm Q hQt]
     ring
-  have h1 := trace_mul_one_sub_ge hab hu hP hW hdet
-  have h2 := trace_mul_one_sub_ge hab' hv hQ hW hdet
+  have hSO : W ∈ specialOrthogonalGroup n ℝ :=
+    mem_specialOrthogonalGroup_iff.2 ⟨(mem_orthogonalGroup_iff' n ℝ).2 hW, hdet⟩
+  have h1 := le_trace_mul_one_sub hab hu hP hSO
+  have h2 := le_trace_mul_one_sub hab' hv hQ hSO
   have h3 := re_trace_conjTranspose_mul_le X R
   rw [conjTranspose_eq_transpose_of_trivial, RCLike.re_to_real] at h3
   rw [le_div_iff₀ hs]
@@ -522,7 +524,7 @@ theorem frobenius_norm_one_sub_le_of_mul_add_mul_eq {P Q W R : Matrix n n ℝ} {
 
 /-- **The real Li–Sun bound, in Loewner form**: if `A = U P` and `Ã = Ũ P'` are real polar
 decompositions with `det A · det Ã > 0` and `P`, `P'` are bounded below as in
-`Matrix.trace_mul_one_sub_ge` by `a ≤ b` and `a' ≤ b'` (for instance the two smallest singular
+`Matrix.le_trace_mul_one_sub` by `a ≤ b` and `a' ≤ b'` (for instance the two smallest singular
 values of `A` and of `Ã`), then `‖U - Ũ‖_F ≤ 4 ‖A - Ã‖_F / (a + b + a' + b')`. The determinant
 condition makes `W = Uᵀ Ũ` a rotation, and `1 - W = Uᵀ (U - Ũ)` solves the Sylvester equation of
 `Matrix.frobenius_norm_one_sub_le_of_mul_add_mul_eq`. -/
@@ -551,8 +553,8 @@ theorem IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos {A Ã U Ũ P P
       push Not at hneg
       nlinarith [mul_nonneg hP0 hP0']
     have hsq : (U.det * Ũ.det) ^ 2 = 1 := by
-      rw [mul_pow, det_sq_eq_one_of_transpose_mul_self hUU,
-        det_sq_eq_one_of_transpose_mul_self hUU', one_mul]
+      rw [mul_pow, det_sq_eq_one_of_mem_orthogonalGroup ((mem_orthogonalGroup_iff' n ℝ).2 hUU),
+        det_sq_eq_one_of_mem_orthogonalGroup ((mem_orthogonalGroup_iff' n ℝ).2 hUU'), one_mul]
     rw [hWdef, det_mul, det_transpose]
     nlinarith
   have hXW : Uᴴ * (U - Ũ) = 1 - W := by
@@ -633,7 +635,7 @@ The determinant condition cannot be dropped: `A = diag(1, ε)`, `Ã = diag(1, -�
 `‖U - Ũ‖_F = 2` and `‖A - Ã‖_F = 2ε`. Li and Sun assume `‖A - Ã‖₂ < σ_{m-1}(A) + σ_{m-1}(Ã)`, which
 keeps the segment from `A` to `Ã` nonsingular and so implies it. The proof
 (`Matrix.IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos`) is not Li and Sun's: with
-`W = Uᵀ Ũ` a rotation, the pairing inequality `Matrix.trace_mul_one_sub_ge` replaces their
+`W = Uᵀ Ũ` a rotation, the pairing inequality `Matrix.le_trace_mul_one_sub` replaces their
 eigenvalue pairing. -/
 theorem frobenius_norm_polar_sub_le {m : ℕ} {A Ã U Ũ P P' : Matrix (Fin m) (Fin m) ℝ}
     (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P')

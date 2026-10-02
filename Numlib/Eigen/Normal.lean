@@ -657,8 +657,9 @@ theorem conjTranspose_toMatrix_mul_mul_toMatrix_eq_diagonal
 /-- **The spectral theorem for normal matrices**: a square matrix over an algebraically closed field
 is normal exactly when it is unitarily similar to a diagonal matrix.  The forward direction
 assembles the orthonormal eigenbasis `LinearMap.IsStarNormal.eigenvectorBasis` into the
-change-of-basis matrix; the converse is a computation with diagonal matrices, which commute with
-their conjugate transposes.  This is the counterpart of `Matrix.IsHermitian.spectral_theorem` for
+change-of-basis matrix; conversely a diagonal matrix commutes with its conjugate transpose, and
+conjugation by a unitary is a `⋆`-automorphism (`Unitary.conjStarAlgAut`), which preserves
+normality.  This is the counterpart of `Matrix.IsHermitian.spectral_theorem` for
 normal rather than Hermitian matrices ([saad2003iterative], Thm 1.14). -/
 theorem IsStarNormal.spectral_theorem [IsAlgClosed 𝕜] {A : Matrix n n 𝕜} :
     IsStarNormal A ↔
@@ -669,34 +670,18 @@ theorem IsStarNormal.spectral_theorem [IsAlgClosed 𝕜] {A : Matrix n n 𝕜} :
     exact ⟨_, (EuclideanSpace.basisFun n 𝕜).toMatrix_orthonormalBasis_mem_unitary c, d,
       conjTranspose_toMatrix_mul_mul_toMatrix_eq_diagonal c hcd⟩
   · rintro ⟨U, hUmem, d, hd⟩
-    have hstar : star U * U = 1 := (Unitary.mem_iff.1 hUmem).1
-    have hstar' : U * star U = 1 := (Unitary.mem_iff.1 hUmem).2
-    have hA : A = U * Matrix.diagonal d * Uᴴ := by
+    have hdiag : IsStarNormal (Matrix.diagonal d) := ⟨by
+      rw [Matrix.star_eq_conjTranspose, Matrix.diagonal_conjTranspose, Commute, SemiconjBy,
+        Matrix.diagonal_mul_diagonal, Matrix.diagonal_mul_diagonal]
+      exact congrArg Matrix.diagonal (funext fun i => mul_comm _ _)⟩
+    -- `A = U diag(d) Uᴴ` is the image of a normal matrix under a `⋆`-automorphism
+    have hA : A = Unitary.conjStarAlgAut 𝕜 (Matrix n n 𝕜) ⟨U, hUmem⟩ (Matrix.diagonal d) := by
+      change A = U * Matrix.diagonal d * star U
       rw [← hd, ← Matrix.star_eq_conjTranspose]
-      calc A = U * star U * A * (U * star U) := by
-            rw [hstar', Matrix.one_mul, Matrix.mul_one]
-        _ = U * (star U * A * U) * star U := by simp only [Matrix.mul_assoc]
-    have hAH : Aᴴ = U * Matrix.diagonal (star d) * Uᴴ := by
-      rw [hA, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
-        Matrix.conjTranspose_conjTranspose, Matrix.diagonal_conjTranspose, Matrix.mul_assoc]
-    have hdiag : Matrix.diagonal (star d) * Matrix.diagonal d =
-        Matrix.diagonal d * Matrix.diagonal (star d) := by
-      rw [Matrix.diagonal_mul_diagonal, Matrix.diagonal_mul_diagonal]
-      exact congrArg Matrix.diagonal (funext fun i => mul_comm _ _)
-    have key : ∀ X Y : Matrix n n 𝕜, U * X * Uᴴ * (U * Y * Uᴴ) = U * (X * Y) * Uᴴ := by
-      intro X Y
-      rw [← Matrix.star_eq_conjTranspose]
-      simp only [Matrix.mul_assoc]
-      rw [← Matrix.mul_assoc (star U) U, hstar, Matrix.one_mul]
-    refine ⟨?_⟩
-    rw [Matrix.star_eq_conjTranspose]
-    calc Aᴴ * A
-        = U * Matrix.diagonal (star d) * Uᴴ * (U * Matrix.diagonal d * Uᴴ) := by
-          rw [← hAH, ← hA]
-      _ = U * (Matrix.diagonal (star d) * Matrix.diagonal d) * Uᴴ := key _ _
-      _ = U * (Matrix.diagonal d * Matrix.diagonal (star d)) * Uᴴ := by rw [hdiag]
-      _ = U * Matrix.diagonal d * Uᴴ * (U * Matrix.diagonal (star d) * Uᴴ) := (key _ _).symm
-      _ = A * Aᴴ := by rw [← hAH, ← hA]
+      simp only [← Matrix.mul_assoc, (Unitary.mem_iff.1 hUmem).2, Matrix.one_mul]
+      rw [Matrix.mul_assoc, (Unitary.mem_iff.1 hUmem).2, Matrix.mul_one]
+    rw [hA]
+    exact hdiag.map _
 
 /-- An orthonormal basis of joint eigenvectors of the operators `toEuclideanLin A` and
 `toEuclideanLin B` gives a simultaneous unitary diagonalization of `A` and `B`. -/

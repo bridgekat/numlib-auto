@@ -11,6 +11,7 @@ import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 
 /-!
 # Matrices as operators on `EuclideanSpace`
@@ -27,7 +28,9 @@ module cannot depend on.)
 
 Everything that makes sense for a rectangular matrix is stated for one, over arbitrary `Fintype`
 index types: composition `toEuclideanLin (A * B) = toEuclideanLin A ∘ₗ toEuclideanLin B` and its
-applied form, the adjoint identities `⟪Aᴴ y, x⟫ = ⟪y, A x⟫` and `⟪x, Aᴴ y⟫ = ⟪A x, y⟫`, and the
+applied form, the adjoint identities `⟪Aᴴ y, x⟫ = ⟪y, A x⟫` and `⟪x, Aᴴ y⟫ = ⟪A x, y⟫` (with their
+real forms for `Aᵀ`, `Matrix.toEuclideanLin_transpose_inner_left` and `_right`, and the real inner
+product of coordinate vectors `EuclideanSpace.inner_toLp_toLp_real`), and the
 coordinate identifications `WithLp.ofLp (toEuclideanLin A x) = A *ᵥ WithLp.ofLp x` and
 `toEuclideanLin A (WithLp.toLp 2 v) = WithLp.toLp 2 (A *ᵥ v)`, which are `rfl` but are what `rw`
 needs to move between the operator picture and `Matrix.mulVec`.
@@ -62,6 +65,12 @@ transported to the operator picture:
   (`Matrix.toEuclideanCLM_injective`), because `StarAlgEquiv.injective` speaks about the underlying
   ring equivalence and leaves a goal phrased in `toRingEquiv`.
 -/
+
+/-- The real inner product of two coordinate vectors is their dot product: Mathlib's
+`EuclideanSpace.inner_toLp_toLp` with the trivial star dropped and the factors in order. -/
+theorem EuclideanSpace.inner_toLp_toLp_real {ι : Type*} [Fintype ι] (u v : ι → ℝ) :
+    inner ℝ (WithLp.toLp 2 u : EuclideanSpace ℝ ι) (WithLp.toLp 2 v) = u ⬝ᵥ v := by
+  rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
 
 namespace Matrix
 
@@ -127,6 +136,27 @@ theorem toEuclideanLin_conjTranspose_inner_right {m : Type*} [Fintype m] [Decida
     (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
     inner 𝕜 x (toEuclideanLin Aᴴ y) = inner 𝕜 (toEuclideanLin A x) y := by
   rw [toEuclideanLin_conjTranspose, LinearMap.adjoint_inner_right]
+
+/-- Over a field with trivial star (`ℝ`), the adjoint of `toEuclideanLin A` is `toEuclideanLin Aᵀ`,
+for rectangular matrices too: `Matrix.toEuclideanLin_conjTranspose` with `Aᴴ = Aᵀ`. -/
+theorem toEuclideanLin_transpose_eq_adjoint [TrivialStar 𝕜] {m : Type*} [Fintype m]
+    [DecidableEq m] (A : Matrix m n 𝕜) :
+    toEuclideanLin Aᵀ = LinearMap.adjoint (toEuclideanLin A) := by
+  rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose]
+
+/-- `⟪Aᵀ y, x⟫ = ⟪y, A x⟫` over a field with trivial star: the real form of
+`Matrix.toEuclideanLin_conjTranspose_inner_left`. -/
+theorem toEuclideanLin_transpose_inner_left [TrivialStar 𝕜] {m : Type*} [Fintype m]
+    [DecidableEq m] (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
+    inner 𝕜 (toEuclideanLin Aᵀ y) x = inner 𝕜 y (toEuclideanLin A x) := by
+  rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_inner_left]
+
+/-- `⟪x, Aᵀ y⟫ = ⟪A x, y⟫` over a field with trivial star: the real form of
+`Matrix.toEuclideanLin_conjTranspose_inner_right`. -/
+theorem toEuclideanLin_transpose_inner_right [TrivialStar 𝕜] {m : Type*} [Fintype m]
+    [DecidableEq m] (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
+    inner 𝕜 x (toEuclideanLin Aᵀ y) = inner 𝕜 (toEuclideanLin A x) y := by
+  rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_inner_right]
 
 /-- A symmetric matrix over a field with trivial star — a real symmetric matrix, in practice —
 acts as a symmetric operator on `EuclideanSpace`. This is the direction of Mathlib's
@@ -343,7 +373,7 @@ theorem spectrum_conjTranspose_mul_mul {A : Matrix n n 𝕜} (hU : U ∈ Matrix.
     spectrum 𝕜 (Uᴴ * A * U) = spectrum 𝕜 A := by
   have hu : IsUnit U := isUnit_of_mem_unitaryGroup hU
   have hinv : U⁻¹ = Uᴴ :=
-    inv_eq_left_inv (by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.mp hU)
+    inv_eq_left_inv (conjTranspose_mul_self_of_mem_unitaryGroup hU)
   have h := spectrum.units_conjugate' (R := 𝕜) (a := A) (u := hu.unit)
   rwa [coe_units_inv, IsUnit.unit_spec, hinv] at h
 

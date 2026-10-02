@@ -1,8 +1,15 @@
+/-
+Upstreaming candidate: general material with no numerical-analysis-specific content, written
+to Mathlib conventions with a view to contributing it to Mathlib.
+Natural home: `Mathlib.Analysis.InnerProductSpace.Rayleigh`.
+Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
+-/
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.Analysis.InnerProductSpace.Trace
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
+import Numlib.Analysis.InnerProductSpace.Spectrum
 import Numlib.Analysis.Matrix.ToEuclideanLin
 
 /-!
@@ -1037,7 +1044,8 @@ theorem eigenvalues_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) (hn : Module
     linarith
 
 /-- **The sorted eigenvalues are those of any orthonormal eigenbasis**: if `b` is an orthonormal
-basis with `T (b i) = λ i • b i` and `λ` is antitone, then `hT.eigenvalues hn = λ`. Mathlib's
+basis with `T (b i) = λ i • b i` and `λ` is antitone, then `hT.eigenvalues hn = λ`
+(`LinearMap.IsSymmetric.eigenvalues_eq_of_antitone` on the diagonal matrix of `T` in `b`). Mathlib's
 `eigenvectorBasis` is one choice of `b`; the textbook statements over an arbitrary Schur
 decomposition go through this. -/
 theorem eigenvalues_eq_of_apply_eq_ofReal_smul {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric)
@@ -1054,12 +1062,7 @@ theorem eigenvalues_eq_of_apply_eq_ofReal_smul {T : E →ₗ[𝕜] E} (hT : T.Is
     rw [← charpoly_toMatrix _ b.toBasis, htoM, Matrix.charpoly_diagonal,
       Polynomial.roots_prod _ _ (by simp [Finset.prod_ne_zero_iff, Polynomial.X_sub_C_ne_zero])]
     simp
-  rw [← List.ofFn_inj, ← hT.sort_roots_charpoly_eq_eigenvalues hn, hroots]
-  simp_rw [Fin.univ_val_map, Multiset.map_coe, List.map_ofFn, Function.comp_def, RCLike.ofReal_re,
-    Multiset.coe_sort]
-  apply List.mergeSort_of_pairwise
-  simp_rw [decide_eq_true_eq, ← List.sortedGE_iff_pairwise]
-  exact hlam.sortedGE_ofFn
+  exact hT.eigenvalues_eq_of_antitone hn hlam hroots
 
 /-- **A simple extreme eigenvalue of `-T` has the same eigenvector line as its partner for `T`**:
 if the `i.rev`-th eigenvalue of `T` is simple, the `i`-th eigenvector of `-T` is a nonzero multiple

@@ -198,6 +198,13 @@ the subspace, so `rw` on the second argument needs this. -/
 theorem gap_congr {L' : Submodule 𝕜 E} [L'.HasOrthogonalProjection] (h : L = L') :
     K.gap L = K.gap L' := by subst h; rfl
 
+variable {K L} in
+/-- `Submodule.gap_congr` in both arguments: two names for each of the subspaces give the same gap,
+across the orthogonal-projection instances. -/
+theorem gap_congr₂ {K' L' : Submodule 𝕜 E} [K'.HasOrthogonalProjection]
+    [L'.HasOrthogonalProjection] (hK : K = K') (hL : L = L') : K.gap L = K'.gap L' := by
+  subst hK hL; rfl
+
 /-- **The projection onto `K` is small on `Lᗮ` as soon as `K` is close to `L`.** If every vector of
 `K` is within a relative distance `a` of `L`, then `P_K` shrinks every vector orthogonal to `L` by
 the same factor.
@@ -669,31 +676,3 @@ theorem gap_graph [FiniteDimensional 𝕜 K] (X : K →L[𝕜] Kᗮ) :
 end Graph
 
 end Submodule
-
-/-- **The ℓ¹ conditioning constant of a finite linearly independent family**: the coordinates of a
-vector in the span are bounded by a fixed multiple of its norm.
-
-The constant depends on the family and not only on its cardinality, and it is what measures how far
-from orthonormal the family is. It comes from `LinearMap.exists_antilipschitzWith`, the injective
-linear map here being `c ↦ ∑ c j • x j` on the finite-dimensional space `ι → 𝕜`; no finite
-dimensionality of the ambient space is needed. -/
-theorem LinearIndependent.exists_forall_sum_norm_le {𝕜 F ι : Type*} [RCLike 𝕜]
-    [NormedAddCommGroup F] [NormedSpace 𝕜 F] [Fintype ι] {x : ι → F}
-    (hx : LinearIndependent 𝕜 x) :
-    ∃ κ : ℝ, 0 < κ ∧ ∀ c : ι → 𝕜, ∑ j, ‖c j‖ ≤ κ * ‖∑ j, c j • x j‖ := by
-  have hker : LinearMap.ker (Fintype.linearCombination 𝕜 x) = ⊥ := by
-    rw [LinearMap.ker_eq_bot']
-    intro c hc
-    funext j
-    exact Fintype.linearIndependent_iff.1 hx c
-      (by simpa [Fintype.linearCombination_apply] using hc) j
-  obtain ⟨K, hK, hanti⟩ := (Fintype.linearCombination 𝕜 x).exists_antilipschitzWith hker
-  refine ⟨Fintype.card ι * K + 1, by positivity, fun c => ?_⟩
-  have hc : ‖c‖ ≤ K * ‖∑ j, c j • x j‖ := by
-    simpa [Fintype.linearCombination_apply] using ZeroHomClass.bound_of_antilipschitz _ hanti c
-  calc ∑ j, ‖c j‖ ≤ ∑ _j : ι, ‖c‖ := Finset.sum_le_sum fun j _ => norm_le_pi_norm c j
-    _ = Fintype.card ι * ‖c‖ := by simp [Finset.sum_const, nsmul_eq_mul]
-    _ ≤ Fintype.card ι * (K * ‖∑ j, c j • x j‖) := by gcongr
-    _ ≤ (Fintype.card ι * K + 1) * ‖∑ j, c j • x j‖ := by
-        rw [← mul_assoc]
-        nlinarith [norm_nonneg (∑ j, c j • x j)]

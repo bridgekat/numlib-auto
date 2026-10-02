@@ -1,6 +1,7 @@
 import Numlib.Analysis.InnerProductSpace.Orthonormal
 import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.Analysis.Normed.Operator.LinearIsometry
 import Numlib.LinearAlgebra.Matrix.LeastSquares
 
 /-!
@@ -354,11 +355,6 @@ theorem finrank_inf_orthogonal_singleton_add_one (K : Submodule 𝕜 E) [FiniteD
   have h := finrank_add_inf_finrank_orthogonal ((span_singleton_le_iff_mem w K).2 hw)
   rw [finrank_span_singleton hw0, inf_comm] at h
   omega
-
-/-- The subspace inclusion `K ≤ L` as a linear isometry. -/
-def inclusionₗᵢ {K L : Submodule 𝕜 E} (h : K ≤ L) : K →ₗᵢ[𝕜] L where
-  toLinearMap := Submodule.inclusion h
-  norm_map' _ := rfl
 
 namespace IsRecursivePrincipalVectors
 

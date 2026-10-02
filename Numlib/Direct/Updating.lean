@@ -15,9 +15,9 @@ The backbone states *what* the updates compute, not how: each update is an exist
 saying that there are rotations in prescribed planes — the structural content that makes the
 update cost `O(n²)` — whose product carries the old factorization to the new one. The step-by-step
 procedures of §6.5 are surface definitions, proved correct against the two general sweep lemmas
-of `Numlib/LinearAlgebra/Matrix/QR`: `Matrix.prod_planeEmbed_mul_apply_eq_zero` ((6.5.2), bottom-up
-embeddings keep an upper trapezoidal matrix Hessenberg) and
-`Matrix.upperTrapezoidal_of_adjacentRotations` (a top-down zeroing sweep triangularizes a
+of `Numlib/LinearAlgebra/Matrix/QR`: `Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero` ((6.5.2),
+bottom-up embeddings keep an upper trapezoidal matrix Hessenberg) and
+`Matrix.hasLowerBandwidthRect_zero_of_adjacentRotations` (a top-down zeroing sweep triangularizes a
 Hessenberg matrix). The adjacent embeddings `Matrix.adjacentEmbed` are in
 `Numlib/LinearAlgebra/Matrix/PlaneRotation` and the block diagonal `Matrix.consDiag a Q` of §6.5.3
 in `Numlib/LinearAlgebra/Matrix/Block`.
@@ -84,6 +84,12 @@ noncomputable def adjacentRotationProd (a n : ℕ) (c s : ℕ → ℝ) : Matrix 
   ((List.range' a n).map fun j => adjacentEmbed j !![c j, -s j; s j, c j]).prod
 
 variable {a n : ℕ} {c s : ℕ → ℝ}
+
+/-- A sweep is the forward product `Matrix.prodFwd` of its embedded rotations. -/
+theorem adjacentRotationProd_eq_prodFwd :
+    (adjacentRotationProd a n c s : Matrix (Fin M) (Fin M) ℝ) =
+      prodFwd (fun k => adjacentEmbed (a + k) !![c (a + k), -s (a + k); s (a + k), c (a + k)]) n :=
+  prod_map_range'_eq_prodFwd _ a n
 
 /-- The empty sweep is the identity. -/
 @[simp]
@@ -207,7 +213,7 @@ already triangular in its first `a` columns, there are angles `c j ^ 2 + s j ^ 2
 the sweep `J = G_a ⋯ G_{L−1}` of rotations in the planes `(j, j + 1)`, `L = min N (M − 1)`, makes
 `Jᵀ H` upper trapezoidal (`J` is orthogonal, `Matrix.adjacentRotationProd_mem_orthogonalGroup`).
 Each `G_j` is the Givens pair of the current entries `(j, j)`, `(j + 1, j)`; the rest is
-`Matrix.upperTrapezoidal_of_adjacentRotations`. -/
+`Matrix.hasLowerBandwidthRect_zero_of_adjacentRotations`. -/
 theorem exists_rotations_triangularize_of_hessenberg {H : Matrix (Fin M) (Fin N) ℝ}
     (hH : H.HasLowerBandwidthRect 1) {a : ℕ}
     (ha : ∀ (i : Fin M) (l : Fin N), (l : ℕ) < i → (l : ℕ) < a → H i l = 0) :
@@ -255,7 +261,7 @@ theorem exists_rotations_triangularize_of_hessenberg {H : Matrix (Fin M) (Fin N)
         · exact hz t' ht' i l hi hl
         · exact absurd ⟨by have := i.isLt; omega, by have := l.isLt; omega⟩ hb
   obtain ⟨c, s, hcs, hz⟩ := key (min N (M - 1) - a)
-  exact ⟨c, s, hcs, upperTrapezoidal_of_adjacentRotations hH ha
+  exact ⟨c, s, hcs, hasLowerBandwidthRect_zero_of_adjacentRotations hH ha
     (fun j => !![c j, s j; -s j, c j]) (fun t => (adjacentRotationProd a t c s)ᵀ * H)
     (by simp) (fun t _ => transpose_adjacentRotationProd_succ_mul a t c s H)
     (fun t ht i l hi hl => hz t (by omega) i l hi hl)⟩
@@ -275,7 +281,7 @@ planes `(k, k + 1)`: `J = J_{n−2} ⋯ J_0` (the transpose of
 with `Jᵀ (Qᵀ u)` a multiple of `e₀`, and `G = G_0 ⋯ G_{n−2}`, such that
 `A + u vᵀ = (Q J G) (Gᵀ Jᵀ (R + (Qᵀ u) vᵀ))` is a full QR factorization. By (6.5.1)
 `A + u vᵀ = Q (R + w vᵀ)`, `w = Qᵀ u`; `Jᵀ R` is upper Hessenberg
-(`Matrix.prod_planeEmbed_mul_apply_eq_zero`) and `Jᵀ w vᵀ` lives in row `0`, so
+(`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`) and `Jᵀ w vᵀ` lives in row `0`, so
 `H₁ = Jᵀ (R + w vᵀ)` is upper Hessenberg (6.5.3), and `G` triangularizes it
 (`Matrix.exists_rotations_triangularize_of_hessenberg`). -/
 theorem exists_isQR_rankOne_update {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQR A Q R)
@@ -295,7 +301,8 @@ theorem exists_isQR_rankOne_update {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQ
     intro i l hil
     rw [Matrix.mul_add, add_apply, mul_vecMulVec, vecMulVec_apply, hz' i (by omega), zero_mul,
       add_zero]
-    exact prod_planeEmbed_mul_apply_eq_zero h.hasLowerBandwidthRect
+    rw [adjacentRotationProd_eq_prodFwd]
+    exact prodFwd_adjacentEmbed_mul_apply_eq_zero h.hasLowerBandwidthRect
       (fun j => !![c j, -s j; s j, c j]) 0 (n - 1) (Or.inl hil)
   obtain ⟨c', s', hcs', hT⟩ := exists_rotations_triangularize_of_hessenberg hH (a := 0)
     (fun _ _ _ h => absurd h (Nat.not_lt_zero _))
@@ -409,7 +416,7 @@ planes `(j, j + 1)`, `k ≤ j < m − 1`, applied bottom-up
 (`P = adjacentRotationProd k (m − 1 − k) c s`, the book's `Jᵀ`), zeroing the spike of `Qᵀ Ã`
 below row `k`, with `Ã = (Q Pᵀ) (P Qᵀ Ã)` a full QR factorization. The rotations mix rows `≥ k`
 only, where the other columns of `Qᵀ Ã` vanish or are upper Hessenberg, so no fill-in occurs
-(`Matrix.prod_planeEmbed_mul_apply_eq_zero`). -/
+(`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`). -/
 theorem IsQR.exists_insertColumn {A : Matrix (Fin m) (Fin n) ℝ} {Q R} (h : IsQR A Q R)
     (z : Fin m → ℝ) (k : Fin (n + 1)) :
     ∃ c s : ℕ → ℝ, (∀ j, c j ^ 2 + s j ^ 2 = 1) ∧
@@ -436,7 +443,8 @@ theorem IsQR.exists_insertColumn {A : Matrix (Fin m) (Fin n) ℝ} {Q R} (h : IsQ
     · rw [Fin.insertNth_apply_same]
       exact hz i (by omega) (by have := i.isLt; omega)
     · rw [Fin.insertNth_apply_succAbove]
-      refine prod_planeEmbed_mul_apply_eq_zero h.hasLowerBandwidthRect
+      rw [adjacentRotationProd_eq_prodFwd]
+      refine prodFwd_adjacentEmbed_mul_apply_eq_zero h.hasLowerBandwidthRect
         (fun j => !![c j, -s j; s j, c j]) k (m - 1 - k) ?_
       rcases lt_or_ge (j : ℕ) k with hjk | hjk
       · rw [val_succAbove_of_lt hjk] at hij
@@ -550,8 +558,8 @@ theorem IsQR.exists_insertRow {A : Matrix (Fin m) (Fin n) ℝ} {Q R} (h : IsQR A
 `(j, j + 1)` (`Gᵀ = adjacentRotationProd 0 m c s`, zeroing the first row `q` of `Q` bottom-up,
 `Gᵀ q = a e₀`) such that `Q G = diag(a, Q₁)` with `a = ±1`, `Gᵀ R = [vᵀ; R₁]`, and
 `A₁ = Q₁ R₁` is a full QR factorization of `A` with its first row deleted. `Gᵀ R` is upper
-Hessenberg (`Matrix.prod_planeEmbed_mul_apply_eq_zero`), so `R₁` is upper trapezoidal; the first
-row of the orthogonal `Q G` is `a e₀ᵀ`, which forces its first column to be `a e₀`. -/
+Hessenberg (`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`), so `R₁` is upper trapezoidal; the
+first row of the orthogonal `Q G` is `a e₀ᵀ`, which forces its first column to be `a e₀`. -/
 theorem IsQR.exists_deleteFirstRow {A : Matrix (Fin (m + 1)) (Fin n) ℝ} {Q R} (h : IsQR A Q R) :
     ∃ (c s : ℕ → ℝ) (a : ℝ) (Q₁ : Matrix (Fin m) (Fin m) ℝ) (v : Fin n → ℝ)
       (R₁ : Matrix (Fin m) (Fin n) ℝ), (∀ j, c j ^ 2 + s j ^ 2 = 1) ∧ a ^ 2 = 1 ∧
@@ -593,8 +601,9 @@ theorem IsQR.exists_deleteFirstRow {A : Matrix (Fin (m + 1)) (Fin n) ℝ} {Q R} 
     ext i j
     simpa [conjTranspose_eq_transpose_of_trivial] using congrFun (congrFun this i.succ) j.succ
   set H := adjacentRotationProd 0 m c s * R with hHdef
-  have hH : H.HasLowerBandwidthRect 1 := fun i l hil =>
-    prod_planeEmbed_mul_apply_eq_zero h.hasLowerBandwidthRect
+  have hH : H.HasLowerBandwidthRect 1 := fun i l hil => by
+    rw [hHdef, adjacentRotationProd_eq_prodFwd]
+    exact prodFwd_adjacentEmbed_mul_apply_eq_zero h.hasLowerBandwidthRect
       (fun j => !![c j, -s j; s j, c j]) 0 m (Or.inl hil)
   have hHcons : H = of (Fin.cons (H 0) (H.submatrix Fin.succ id)) := by
     ext i j
@@ -725,12 +734,12 @@ theorem fromRows_rotate_step {R : Matrix n n α} (hR : R.IsUpperTriangular) {z :
   set M := planeEmbed (Sum.inl k) (Sum.inr ()) G * fromRows R (replicateRow Unit z) with hM
   have hinl : ∀ i j, M (Sum.inl i) j =
       if i = k then G 0 0 * R k j + G 0 1 * z j else R i j := fun i j => by
-    rw [hM, planeEmbed_mul_apply_rect G hne]
+    rw [hM, planeEmbed_mul_apply G hne]
     by_cases hik : i = k
     · subst hik; simp
     · simp [hik]
   have hinr : ∀ j, M (Sum.inr ()) j = G 1 0 * R k j + G 1 1 * z j := fun j => by
-    rw [hM, planeEmbed_mul_apply_rect G hne]
+    rw [hM, planeEmbed_mul_apply G hne]
     simp
   refine ⟨M.toRows₁, fun j => M (Sum.inr ()) j, ?_, fun i j hji => ?_, fun j hj => ?_,
     fun i hik => funext fun j => ?_, fun j => ?_, hinr⟩
@@ -898,8 +907,7 @@ positive diagonal, `z` vanishes before `k`, and `Rᵀ R − z zᵀ` is positive 
 theorem sq_lt_sq_of_posDef_transpose_mul_self_sub {n : Type*} [Fintype n] [LinearOrder n]
     {R : Matrix n n ℝ} (hR : R.IsUpperTriangular) (hd : ∀ i, 0 < R i i) {z : n → ℝ} {k : n}
     (hz : ∀ j < k, z j = 0) (hP : (Rᵀ * R - vecMulVec z z).PosDef) : z k ^ 2 < R k k ^ 2 := by
-  have hU : IsUnit R.det := (isUnit_iff_isUnit_det R).1
-    ((isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hR).2 fun i => (hd i).ne')
+  have hU : IsUnit R.det := hR.isUnit_det_of_diag_ne_zero fun i => (hd i).ne'
   have hT := hR.inv
   set x : n → ℝ := fun j => R⁻¹ j k with hx
   have hRx : R *ᵥ x = Pi.single k 1 := by

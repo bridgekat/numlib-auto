@@ -1497,20 +1497,6 @@ theorem bauer_fike_lpOpNorm (p : ENNReal) [Fact (1 ≤ p)] (X : Matrix n n ℂ) 
   calc ‖μ - d i₀‖ ≤ lpOpNorm p X⁻¹ * lpOpNorm p E * lpOpNorm p X := h3
     _ = condNumberLp p X * lpOpNorm p E := by rw [condNumberLp]; ring
 
-/-- Unitary conjugation preserves the spectrum. -/
-private theorem spectrum_star_mul_mul {Q : Matrix n n 𝕜} (hQ : Q ∈ unitaryGroup n 𝕜)
-    (M : Matrix n n 𝕜) : spectrum 𝕜 (star Q * M * Q) = spectrum 𝕜 M := by
-  have hQ' : star Q * Q = 1 := mem_unitaryGroup_iff'.mp hQ
-  have hdet : star Q.det * Q.det = 1 := by
-    have := congrArg det hQ'
-    rwa [det_mul, det_one, star_eq_conjTranspose, det_conjTranspose] at this
-  ext μ
-  simp only [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det]
-  have : μ • (1 : Matrix n n 𝕜) - star Q * M * Q = star Q * (μ • 1 - M) * Q := by
-    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, hQ']
-  rw [this, det_mul, det_mul, star_eq_conjTranspose, det_conjTranspose, mul_comm (star Q.det),
-    mul_assoc, hdet, mul_one]
-
 section Schur
 
 open scoped Matrix.Norms.L2Operator
@@ -1615,7 +1601,8 @@ theorem exists_norm_sub_le_of_schur {A : Matrix n n ℂ} {Q : Matrix n n ℂ}
   -- move the perturbation to the Schur basis
   set E' := star Q * E * Q with hE'
   have hμ' : μ ∈ spectrum ℂ (B + E') := by
-    rw [← hQA, hE', ← Matrix.add_mul, ← Matrix.mul_add, spectrum_star_mul_mul hQ]
+    rw [← hQA, hE', ← Matrix.add_mul, ← Matrix.mul_add, star_eq_conjTranspose,
+      spectrum_conjTranspose_mul_mul hQ]
     exact hμ
   have hE'n : ‖E'‖ = ‖E‖ := l2_opNorm_unitary_mul_mul_unitary (Unitary.star_mem hQ) E hQ
   have hstep := one_le_norm_mul_of_mem_spectrum_add hμ' hμB

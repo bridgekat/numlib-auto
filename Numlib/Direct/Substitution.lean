@@ -224,7 +224,7 @@ theorem mulVec_forwardSubst (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0)
 substitution computes. -/
 theorem forwardSubst_eq_of_mulVec_eq (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0) {x : n → K}
     (hx : L *ᵥ x = b) : forwardSubst L b = x :=
-  mulVec_injective_iff_isUnit.2 ((isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular hL).2 hd)
+  mulVec_injective_iff_isUnit.2 (hL.isUnit_iff.2 hd)
     (by rw [mulVec_forwardSubst b hL hd, hx])
 
 end Forward
@@ -286,7 +286,7 @@ theorem mulVec_backSubst (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) :
 substitution computes. -/
 theorem backSubst_eq_of_mulVec_eq (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) {x : n → K}
     (hx : U *ᵥ x = b) : backSubst U b = x :=
-  mulVec_injective_iff_isUnit.2 ((isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).2 hd)
+  mulVec_injective_iff_isUnit.2 (hU.isUnit_iff.2 hd)
     (by rw [mulVec_backSubst b hU hd, hx])
 
 end Backward
@@ -344,8 +344,7 @@ variable {U : Matrix n n K}
 solutions of the systems `U v_i = e_i`. -/
 theorem inv_col_eq_backSubst (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) (i : n) :
     (fun r => U⁻¹ r i) = backSubst U (Pi.single i 1) := by
-  have hUd : IsUnit U.det :=
-    (isUnit_iff_isUnit_det U).1 ((isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).2 hd)
+  have hUd : IsUnit U.det := hU.isUnit_det_of_diag_ne_zero hd
   refine (backSubst_eq_of_mulVec_eq _ hU hd ?_).symm
   have : (fun r => U⁻¹ r i) = U⁻¹ *ᵥ Pi.single i 1 := (mulVec_single_one _ _).symm
   rw [this, mulVec_mulVec, mul_nonsing_inv U hUd, one_mulVec]
@@ -356,8 +355,7 @@ of `U⁻¹` is found from a leading-block system. Reading `U U⁻¹ = 1` on the 
 cross term vanishes because `U⁻¹` is upper triangular. -/
 theorem inv_toBlock_le_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     (k : n) : (U.toBlock (· ≤ k) (· ≤ k))⁻¹ = U⁻¹.toBlock (· ≤ k) (· ≤ k) := by
-  have hUd : IsUnit U.det :=
-    (isUnit_iff_isUnit_det U).1 ((isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).2 hd)
+  have hUd : IsUnit U.det := hU.isUnit_det_of_diag_ne_zero hd
   refine inv_eq_right_inv ?_
   have hz : U⁻¹.toBlock (fun i => ¬i ≤ k) (fun i => i ≤ k) = 0 :=
     hU.inv.not_toBlock_eq_zero (b := id) (p := (· ≤ k)) fun _ _ hi hji => hji.trans hi
@@ -369,8 +367,7 @@ theorem inv_toBlock_le_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀
 `(U⁻¹)_kk = 1 / u_kk`, the first line of [quarteroni2000numerical] (3.28). -/
 theorem inv_apply_self_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     (k : n) : U⁻¹ k k = (U k k)⁻¹ := by
-  have hUd : IsUnit U.det :=
-    (isUnit_iff_isUnit_det U).1 ((isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).2 hd)
+  have hUd : IsUnit U.det := hU.isUnit_det_of_diag_ne_zero hd
   have h := congrFun (congrFun (mul_nonsing_inv U hUd) k) k
   rw [hU.mul_apply_self hU.inv, one_apply_eq] at h
   exact eq_inv_of_mul_eq_one_right h
@@ -385,8 +382,7 @@ theorem inv_apply_of_isUpperTriangular_of_lt (hU : U.IsUpperTriangular) {i k : n
 theorem diag_mul_inv_apply_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     {i k : n} (hik : i < k) :
     U i i * U⁻¹ i k = -∑ j ∈ univ.filter (fun j => i < j ∧ j ≤ k), U i j * U⁻¹ j k := by
-  have hUd : IsUnit U.det :=
-    (isUnit_iff_isUnit_det U).1 ((isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).2 hd)
+  have hUd : IsUnit U.det := hU.isUnit_det_of_diag_ne_zero hd
   have h := congrFun (congrFun (mul_nonsing_inv U hUd) i) k
   rw [mul_apply, one_apply_ne hik.ne,
     ← Finset.sum_filter_of_ne (p := fun j => i ≤ j ∧ j ≤ k) fun j _ hj => ?_,

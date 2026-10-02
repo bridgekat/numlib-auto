@@ -57,7 +57,8 @@ Results, entrywise, over an ordered field `K`:
   substitution program is read off its rounding bridge;
 * `FloatingPoint.roundsForwardSubst_of_mem_run_colSubst`: the column-oriented loop of
   [golub2013matrix] Algorithm 3.1.3, over any linear order, lands in `RoundsForwardSubst` in every
-  run of the relational model.
+  run of the relational model; `FloatingPoint.roundsUnitForwardSubst_of_mem_run_unitColSubst` is
+  the unit lower triangular loop, which does not divide, landing in `RoundsUnitForwardSubst`.
 
 The entry relation of every row is the running difference `FloatingPoint.RoundsRunningDiff` of
 `Numlib/FloatingPoint/InnerProduct` (its program is `FloatingPoint.runningDiff`), and the number of
@@ -502,7 +503,7 @@ theorem abs_sub_apply_le_of_mulVec_eq_of_abs_le {U ΔU : Matrix n n K} (hU : U.I
     {γ : K} (hγ : 0 ≤ γ) (hΔ : ∀ i j, |ΔU i j| ≤ γ * |U i j|) {i : n} {c : K}
     (hc : ∀ j, i ≤ j → |xhat j| ≤ c) :
     |x i - xhat i| ≤ γ * c * ∑ j, (U⁻¹.abs * U.abs) i j := by
-  have hUu : IsUnit U := (Matrix.isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).2 hd
+  have hUu : IsUnit U := hU.isUnit_iff.2 hd
   have h := abs_sub_le_of_mulVec_eq_of_abs_le hUu hx hxhat hΔ i
   simp only [Pi.abs_apply, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, Matrix.mulVec,
     dotProduct] at h
@@ -671,7 +672,9 @@ The loop "for `j` in increasing order, `b(j) = b(j)/L(j,j)`, then `b(i) = b(i) -
 every `i > j`" ([golub2013matrix] Algorithm 3.1.3, over any linear order: Algorithm 3.1.4 is its
 instance on the dual order) computes, in every run of the relational model, a
 `FloatingPoint.RoundsForwardSubst`: row `i` receives its subtractions over `j < i` one at a time,
-each from the finished `x̂ j`, which is a running difference in the order of the outer loop. -/
+each from the finished `x̂ j`, which is a running difference in the order of the outer loop. The
+same loop without the division, for a unit lower triangular `L`, computes a
+`FloatingPoint.RoundsUnitForwardSubst` (`roundsUnitForwardSubst_of_mem_run_unitColSubst`). -/
 
 namespace FloatingPoint
 
@@ -828,6 +831,141 @@ theorem roundsForwardSubst_of_mem_run_colSubst (fp : RoundingModel K) (L : Matri
     exact ⟨[], List.nodup_nil, fun j => by simp [hall j], fun _ => 0, by simp, .nil _⟩
   have := colInv_foldlM fp L b c hc hcm l b x hl (fun _ _ k _ => hall k) h0 hx
   exact fun i => this.1 i (by simp)
+
+/-- **Unit lower triangular forward substitution in floating-point arithmetic.**
+`RoundsUnitForwardSubst m L b x̂` says that every `x̂ i` is an admissible running difference of
+`b i` and the rounded products `L i j x̂ j`, `j < i`, in some order: `RoundsForwardSubst` without
+the division by the unit diagonal, which a unit triangular solve inside a factorization does not
+perform ([golub2013matrix] §3.1.7). The diagonal of `L` is not read. -/
+def RoundsUnitForwardSubst (fp : RoundingModel K) (L : Matrix ι ι K) (b xhat : ι → K) : Prop :=
+  ∀ i, ∃ o : List ι, o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
+    RoundsRunningDiff fp o (L i) xhat (b i) (xhat i)
+
+/-- The loop invariant of the unit column-oriented forward substitution: every row `i` holds the
+running difference of `b i` over the finished indices below it (those not in the remaining list
+`l`). -/
+private def UnitColInv (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K) (l : List ι)
+    (s : ι → K) : Prop :=
+  ∀ i, ∃ o : List ι, o.Nodup ∧ (∀ k, k ∈ o ↔ k < i ∧ k ∉ l) ∧
+    RoundsRunningDiff fp o (L i) s (b i) (s i)
+
+omit [DecidableEq ι] in
+/-- One step of the outer loop of the unit solve keeps the invariant. -/
+private theorem unitColInv_step (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K) (j : ι)
+    (c : List ι) (hcm : ∀ i, i ∈ c ↔ j < i) (l : List ι)
+    (hsort : (j :: l).Pairwise (· < ·)) (hup : ∀ i ∈ j :: l, ∀ k, i ≤ k → k ∈ j :: l)
+    (s : ι → K) (hs : UnitColInv fp L b (j :: l) s) (s₂ : ι → K)
+    (h₂ : (∀ i, i ∉ c → s₂ i = s i) ∧
+      ∀ i ∈ c, ∃ p, fp.Rounds (s j * L i j) p ∧ fp.Rounds (s i - p) (s₂ i)) :
+    UnitColInv fp L b l s₂ := by
+  have hlt : ∀ k, k ∉ j :: l ↔ k < j := by
+    intro k
+    constructor
+    · intro hk
+      by_contra h
+      exact hk (hup j List.mem_cons_self k (not_lt.1 h))
+    · intro hk hmem
+      rcases List.mem_cons.1 hmem with rfl | hmem
+      · exact lt_irrefl _ hk
+      · exact lt_asymm hk (List.rel_of_pairwise_cons hsort hmem)
+  have hjl : j ∉ l := fun h => lt_irrefl _ (List.rel_of_pairwise_cons hsort h)
+  have hle : ∀ k, k ≤ j → s₂ k = s k := fun k hk => h₂.1 k (by rw [hcm]; exact not_lt.2 hk)
+  intro i
+  obtain ⟨o, hnd, ho, hrd⟩ := hs i
+  by_cases hij : i ≤ j
+  · refine ⟨o, hnd, fun k => ?_, ?_⟩
+    · rw [ho k]
+      constructor
+      · rintro ⟨hki, hk⟩
+        exact ⟨hki, fun h => hk (List.mem_cons_of_mem _ h)⟩
+      · rintro ⟨hki, hk⟩
+        refine ⟨hki, fun h => ?_⟩
+        rcases List.mem_cons.1 h with rfl | h
+        · exact lt_irrefl _ (lt_of_lt_of_le hki hij)
+        · exact hk h
+    · rw [hle i hij]
+      exact hrd.congr (fun _ _ => rfl) fun k hk =>
+        hle k (le_of_lt (lt_of_lt_of_le ((ho k).1 hk).1 hij))
+  · have hji : j < i := lt_of_not_ge hij
+    obtain ⟨q, hq, hq'⟩ := h₂.2 i ((hcm i).2 hji)
+    have hjo : j ∉ o := fun h => ((ho j).1 h).2 List.mem_cons_self
+    refine ⟨o ++ [j], hnd.append (List.nodup_singleton _) (List.disjoint_singleton.2 hjo),
+      fun k => ?_, ?_⟩
+    · rw [List.mem_append, ho k, List.mem_singleton]
+      constructor
+      · rintro (⟨hki, hk⟩ | rfl)
+        · exact ⟨hki, fun h => hk (List.mem_cons_of_mem _ h)⟩
+        · exact ⟨hji, hjl⟩
+      · rintro ⟨hki, hk⟩
+        by_cases hkj : k = j
+        · exact Or.inr hkj
+        · exact Or.inl ⟨hki, fun h => by
+            rcases List.mem_cons.1 h with h | h
+            · exact hkj h
+            · exact hk h⟩
+    · refine (hrd.congr (b' := s₂) (fun _ _ => rfl) fun k hk =>
+        hle k (le_of_lt ((hlt k).1 ((ho k).1 hk).2))).append_singleton hjo ?_ hq'
+      rw [hle j le_rfl, mul_comm]
+      exact hq
+
+/-- The outer loop of the unit solve, by induction on the remaining list. -/
+private theorem unitColInv_foldlM (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K)
+    (c : ι → List ι) (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) :
+    ∀ (l : List ι) (s s' : ι → K), l.Pairwise (· < ·) →
+    (∀ i ∈ l, ∀ k, i ≤ k → k ∈ l) → UnitColInv fp L b l s →
+    s' ∈ (l.foldlM (fun (b : ι → K) j =>
+      (c j).foldlM (fun (b : ι → K) i => do
+          let p ← fp.round (b j * L i j)
+          let bi ← fp.round (b i - p)
+          pure (Function.update b i bi)) b) s).run →
+    UnitColInv fp L b [] s' := by
+  intro l
+  induction l with
+  | nil =>
+    intro s s' _ _ hs h
+    rw [List.foldlM_nil, SetM.mem_run_pure] at h
+    exact h ▸ hs
+  | cons j l ih =>
+    intro s s' hsort hup hs h
+    simp only [List.foldlM_cons] at h
+    rw [SetM.mem_run_bind] at h
+    obtain ⟨s₂, h₂, h⟩ := h
+    have key := SetM.mem_run_foldlM_update_of_nodup
+      (fun a v (z : ι → K) => fp.round (z j * L a j) >>= fun p => fp.round (v - p)) (c j) (hc j)
+      (fun a _ v z z' hz => by rw [hz j fun h => lt_irrefl j ((hcm j j).1 h)]) s s₂
+    simp only [bind_assoc] at key
+    obtain ⟨hout, hin⟩ := key.1 h₂
+    have hin' : ∀ i ∈ c j, ∃ p, fp.Rounds (s j * L i j) p ∧ fp.Rounds (s i - p) (s₂ i) :=
+      fun i hi => by
+        obtain ⟨p, hp, hq⟩ := SetM.mem_run_bind.1 (hin i hi)
+        exact ⟨p, hp, hq⟩
+    refine ih s₂ s' (List.pairwise_cons.1 hsort).2 (fun i hi k hik => ?_)
+      (unitColInv_step fp L b j (c j) (hcm j) l hsort hup s hs s₂ ⟨hout, hin'⟩) h
+    rcases List.mem_cons.1 (hup i (List.mem_cons_of_mem _ hi) k hik) with rfl | hk
+    · exact absurd (lt_of_lt_of_le (List.rel_of_pairwise_cons hsort hi) hik) (lt_irrefl _)
+    · exact hk
+
+/-- **Unit column-oriented forward substitution, over any linear order**: the loop "for `j` in
+increasing order, `b(i) = b(i) - b(j) L(i,j)` for every `i > j`" — the loop of
+`FloatingPoint.roundsForwardSubst_of_mem_run_colSubst` without the division by the unit diagonal —
+computes, in every run of the relational model, an admissible unit forward substitution
+`FloatingPoint.RoundsUnitForwardSubst` ([golub2013matrix] §3.1.7, the solves with `L₁₁` of the
+block LU Algorithms 3.2.3–3.2.4). -/
+theorem roundsUnitForwardSubst_of_mem_run_unitColSubst (fp : RoundingModel K)
+    (L : Matrix ι ι K) {l : List ι} (hl : l.Pairwise (· < ·)) (hall : ∀ i, i ∈ l)
+    (c : ι → List ι) (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) (b x : ι → K)
+    (hx : x ∈ (l.foldlM (fun (b : ι → K) j =>
+      (c j).foldlM (fun (b : ι → K) i => do
+          let p ← fp.round (b j * L i j)
+          let bi ← fp.round (b i - p)
+          pure (Function.update b i bi)) b) b).run) :
+    RoundsUnitForwardSubst fp L b x := by
+  have h0 : UnitColInv fp L b l b := fun i =>
+    ⟨[], List.nodup_nil, fun k => by simp [hall k], fun _ => 0, by simp, .nil _⟩
+  intro i
+  obtain ⟨o, hnd, ho, hrd⟩ :=
+    unitColInv_foldlM fp L b c hc hcm l b x hl (fun _ _ k _ => hall k) h0 hx i
+  exact ⟨o, hnd, fun k => by simp [ho k], hrd⟩
 
 end ColSubst
 

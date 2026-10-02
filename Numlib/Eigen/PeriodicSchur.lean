@@ -148,9 +148,6 @@ private theorem extendFamily_last {𝕜 : Type*} [RCLike 𝕜] {p : ℕ}
     (A : Fin (p + 1) → Matrix (Fin n) (Fin n) 𝕜) : extendFamily A p = A (Fin.last p) := by
   rw [extendFamily, dite_eq_left (by omega)]; rfl
 
-private theorem star_eq_transpose_real (M : Matrix (Fin n) (Fin n) ℝ) : star M = Mᵀ := by
-  rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
-
 /-- [golub2013matrix] (7.8.5), nonsingular factors: for `A : Fin (p+1) → Matrix (Fin n) (Fin n) ℝ`
 with `A i` nonsingular for `i < p` there are orthogonal `U : Fin (p+1) → Matrix (Fin n) (Fin n) ℝ`
 with `(U (i+1))ᵀ A i U i` upper triangular for `i < p` and `(U 0)ᵀ A p U p` upper Hessenberg
@@ -170,9 +167,9 @@ theorem exists_orthogonal_periodicHessenberg_of_isUnit {p : ℕ}
     (by rwa [star_eq_conjTranspose])
   refine ⟨fun i => U i, fun i => hUu i, fun i => ?_, ?_⟩
   · have h := hT i i.2
-    rw [star_eq_transpose_real, extendFamily_castSucc] at h
+    rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, extendFamily_castSucc] at h
     simpa using h
-  · rw [star_eq_transpose_real, extendFamily_last] at hlast
+  · rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, extendFamily_last] at hlast
     simpa using hlast
 
 /-- **The complex periodic Schur decomposition, nonsingular factors** (Bojanczyk, Golub and Van
@@ -243,34 +240,6 @@ private theorem exists_perturbed_family {p : ℕ} (A : Fin (p + 1) → Matrix (F
     · simp only [hi, ite_false]
       exact tendsto_const_nhds
 
-/-- An entry of `Vᴴ M W` that vanishes along convergent sequences `V_k → V`, `M_k → M`,
-`W_k → W` vanishes in the limit. -/
-private theorem entry_eq_zero_of_tendsto {V W M : ℕ → Matrix (Fin n) (Fin n) 𝕜}
-    {V₀ W₀ M₀ : Matrix (Fin n) (Fin n) 𝕜} (hV : Tendsto V atTop (𝓝 V₀))
-    (hW : Tendsto W atTop (𝓝 W₀)) (hM : Tendsto M atTop (𝓝 M₀)) (r c : Fin n)
-    (hz : ∀ k, (star (V k) * M k * W k) r c = 0) : (star V₀ * M₀ * W₀) r c = 0 := by
-  have h := ((hV.star.mul hM).mul hW)
-  have ht : Tendsto (fun k => (star (V k) * M k * W k) r c) atTop
-      (𝓝 ((star V₀ * M₀ * W₀) r c)) :=
-    ((continuous_id.matrix_elem r c).tendsto _).comp h
-  simp only [hz] at ht
-  exact tendsto_nhds_unique ht tendsto_const_nhds
-
-/-- A convergent subsequence of a sequence of unitary families. -/
-private theorem exists_tendsto_subseq_unitary {p : ℕ}
-    {U : ℕ → Fin (p + 1) → Matrix (Fin n) (Fin n) 𝕜}
-    (hU : ∀ k i, U k i ∈ unitaryGroup (Fin n) 𝕜) :
-    ∃ U₀ : Fin (p + 1) → Matrix (Fin n) (Fin n) 𝕜, (∀ i, U₀ i ∈ unitaryGroup (Fin n) 𝕜) ∧
-      ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ i, Tendsto (fun k => U (φ k) i) atTop (𝓝 (U₀ i)) := by
-  set s := Set.pi Set.univ fun _ : Fin (p + 1) =>
-    ((unitaryGroup (Fin n) 𝕜 : Submonoid _) : Set (Matrix (Fin n) (Fin n) 𝕜))
-  have hs : IsCompact s := isCompact_univ_pi fun _ => isCompact_unitaryGroup
-  have : SecondCountableTopology (Matrix (Fin n) (Fin n) 𝕜) :=
-    inferInstanceAs (SecondCountableTopology (Fin n → Fin n → 𝕜))
-  obtain ⟨U₀, hUs, φ, hφ, hlim⟩ := hs.tendsto_subseq (x := U)
-    (fun k => Set.mem_univ_pi.2 fun i => hU k i)
-  exact ⟨U₀, fun i => (Set.mem_univ_pi.1 hUs) i, φ, hφ, fun i => tendsto_pi_nhds.1 hlim i⟩
-
 end Limits
 
 /-- [golub2013matrix] (7.8.5) for arbitrary factors (the book describes the computation, QR
@@ -288,18 +257,20 @@ theorem exists_orthogonal_periodicHessenberg {p : ℕ}
   obtain ⟨Ak, hAku, -, hAkt⟩ := exists_perturbed_family A
   choose Uk hUk hTk hHk using fun k =>
     exists_orthogonal_periodicHessenberg_of_isUnit (Ak k) (hAku k)
-  obtain ⟨U, hU, φ, hφ, hlim⟩ := exists_tendsto_subseq_unitary (𝕜 := ℝ) hUk
+  obtain ⟨U, hU, φ, hφ, hlim⟩ := exists_tendsto_subseq_of_mem_unitaryGroup (𝕜 := ℝ) hUk
   refine ⟨U, hU, fun i r c hrc => ?_, fun r c hrc => ?_⟩
-  · have h := entry_eq_zero_of_tendsto (hlim i.succ) (hlim i.castSucc)
-      ((hAkt i.castSucc).comp hφ.tendsto_atTop) r c fun k => by
+  · have h := star_mul_mul_apply_eq_zero_of_tendsto (i := r) (j := c)
+      (hlim i.succ) ((hAkt i.castSucc).comp hφ.tendsto_atTop)
+      (hlim i.castSucc) fun k => by
         have := hTk (φ k) i hrc
-        rwa [← star_eq_transpose_real] at this
-    rwa [star_eq_transpose_real] at h
-  · have h := entry_eq_zero_of_tendsto (hlim 0) (hlim (Fin.last p))
-      ((hAkt (Fin.last p)).comp hφ.tendsto_atTop) r c fun k => by
+        rwa [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose] at this
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
+  · have h := star_mul_mul_apply_eq_zero_of_tendsto (i := r) (j := c)
+      (hlim 0) ((hAkt (Fin.last p)).comp hφ.tendsto_atTop)
+      (hlim (Fin.last p)) fun k => by
         have := hHk (φ k) r c hrc
-        rwa [← star_eq_transpose_real] at this
-    rwa [star_eq_transpose_real] at h
+        rwa [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose] at this
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
 
 /-- **The complex periodic Schur decomposition** (Bojanczyk, Golub and Van Dooren 1992; the complex
 analogue of [golub2013matrix] (7.8.6)): for any family `A : Fin (p+1) → Matrix (Fin n) (Fin n) 𝕜`
@@ -316,11 +287,12 @@ theorem exists_unitary_periodicSchur {𝕜 : Type*} [RCLike 𝕜] [IsAlgClosed �
       ∀ i : Fin (p + 1), (star (U (i + 1)) * A i * U i).IsUpperTriangular := by
   obtain ⟨Ak, hAku, -, hAkt⟩ := exists_perturbed_family A
   choose Uk hUk hTk using fun k => exists_unitary_periodicSchur_of_isUnit (Ak k) (hAku k)
-  obtain ⟨U, hU, φ, hφ, hlim⟩ := exists_tendsto_subseq_unitary hUk
+  obtain ⟨U, hU, φ, hφ, hlim⟩ := exists_tendsto_subseq_of_mem_unitaryGroup hUk
   refine ⟨U, hU, fun i => ?_⟩
   intro r c hrc
-  exact entry_eq_zero_of_tendsto (hlim (i + 1)) (hlim i)
-    ((hAkt i).comp hφ.tendsto_atTop) r c fun k => hTk (φ k) i hrc
+  exact star_mul_mul_apply_eq_zero_of_tendsto (i := r) (j := c)
+    (hlim (i + 1)) ((hAkt i).comp hφ.tendsto_atTop)
+    (hlim i) fun k => hTk (φ k) i hrc
 
 /-- [golub2013matrix] (7.8.6), nonsingular factors: as
 `Matrix.exists_orthogonal_periodicHessenberg_of_isUnit` with `(U 0)ᵀ A p U p` upper
@@ -339,12 +311,12 @@ theorem exists_orthogonal_periodicRealSchur_of_isUnit {p : ℕ}
   obtain ⟨U, -, hUu, hT, hlast⟩ := exists_periodic_of_isUnit (𝕜 := ℝ) IsQuasiUpperTriangular
     (fun S T hS hT => hS.mul_isUpperTriangular hT) p (extendFamily A)
     (fun i hi => by simpa [extendFamily_castSucc A ⟨i, hi⟩] using hA ⟨i, hi⟩) U₀ hU₀
-    (by rwa [star_eq_transpose_real])
+    (by rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial])
   refine ⟨fun i => U i, fun i => hUu i, fun i => ?_, ?_⟩
   · have h := hT i i.2
-    rw [star_eq_transpose_real, extendFamily_castSucc] at h
+    rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, extendFamily_castSucc] at h
     simpa using h
-  · rw [star_eq_transpose_real, extendFamily_last] at hlast
+  · rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, extendFamily_last] at hlast
     simpa using hlast
 
 /-- [golub2013matrix] (7.8.6) for arbitrary factors, **the periodic real Schur form** (quoted by the
@@ -366,15 +338,9 @@ theorem exists_orthogonal_periodicRealSchur {p : ℕ}
     (hAku k)
   choose q hmono hcard htri using hQk
   -- infinitely many `k` share the relation `q_k j < q_k i`
-  obtain ⟨R, hR⟩ := Finite.exists_infinite_fiber
+  obtain ⟨R, φ, hφmono, hφmem⟩ := Finite.exists_strictMono_forall_eq
     (fun k => fun i j : Fin n => decide (q k j < q k i))
-  have hS : (Set.ofPred fun k => (fun i j : Fin n => decide (q k j < q k i)) = R).Infinite := by
-    rw [← Set.infinite_coe_iff]
-    exact hR
-  set φ := Nat.nth fun k => (fun i j : Fin n => decide (q k j < q k i)) = R with hφ
-  have hφmono : StrictMono φ := Nat.nth_strictMono hS
-  have hφmem : ∀ k, (fun i j : Fin n => decide (q (φ k) j < q (φ k) i)) = R :=
-    Nat.nth_mem_of_infinite hS
+  replace hφmem : ∀ k, (fun i j : Fin n => decide (q (φ k) j < q (φ k) i)) = R := hφmem
   have hrel : ∀ k i j, q (φ k) j < q (φ k) i ↔ q (φ 0) j < q (φ 0) i := by
     intro k i j
     have h1 := congrFun (congrFun (hφmem k) i) j
@@ -382,24 +348,26 @@ theorem exists_orthogonal_periodicRealSchur {p : ℕ}
     rw [← decide_eq_true_iff (p := q (φ k) j < q (φ k) i), ← decide_eq_true_iff
       (p := q (φ 0) j < q (φ 0) i), h1, h2]
   -- a convergent subsequence
-  obtain ⟨U, hU, ψ, hψ, hlim⟩ := exists_tendsto_subseq_unitary (𝕜 := ℝ)
+  obtain ⟨U, hU, ψ, hψ, hlim⟩ := exists_tendsto_subseq_of_mem_unitaryGroup (𝕜 := ℝ)
     (U := fun k => Uk (φ k)) fun k i => hUk (φ k) i
   have hχ : Tendsto (fun k => φ (ψ k)) atTop atTop := (hφmono.comp hψ).tendsto_atTop
   refine ⟨U, hU, fun i => ?_, ⟨q (φ 0), hmono _, hcard _, ?_⟩⟩
   · intro r c hrc
-    have h := entry_eq_zero_of_tendsto (hlim i.succ) (hlim i.castSucc)
-      ((hAkt i.castSucc).comp hχ) r c fun k => by
+    have h := star_mul_mul_apply_eq_zero_of_tendsto (i := r) (j := c)
+      (hlim i.succ) ((hAkt i.castSucc).comp hχ)
+      (hlim i.castSucc) fun k => by
         have := hTk (φ (ψ k)) i hrc
-        rw [← star_eq_transpose_real] at this
+        rw [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose] at this
         exact this
-    rwa [star_eq_transpose_real] at h
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
   · intro r c hrc
-    have h := entry_eq_zero_of_tendsto (hlim 0) (hlim (Fin.last p))
-      ((hAkt (Fin.last p)).comp hχ) r c fun k => by
+    have h := star_mul_mul_apply_eq_zero_of_tendsto (i := r) (j := c)
+      (hlim 0) ((hAkt (Fin.last p)).comp hχ)
+      (hlim (Fin.last p)) fun k => by
         have := htri (φ (ψ k)) ((hrel (ψ k) r c).2 hrc)
-        rw [← star_eq_transpose_real] at this
+        rw [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose] at this
         exact this
-    rwa [star_eq_transpose_real] at h
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
 
 /-! ### The block-cyclic matrix -/
 

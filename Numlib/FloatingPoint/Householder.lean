@@ -202,7 +202,7 @@ theorem frobenius_norm_le_of_forall_row_le {A B : Matrix ι κ ℝ} {c : ℝ} (h
     (h : ∀ i, ‖(toLp 2 (A.row i) : EuclideanSpace ℝ κ)‖ ≤
       c * ‖(toLp 2 (B.row i) : EuclideanSpace ℝ κ)‖) : ‖A‖ ≤ c * ‖B‖ := by
   refine le_of_sq_le_sq ?_ (by positivity)
-  rw [mul_pow, frobenius_norm_sq_eq_sum_norm_toLp_row_sq, frobenius_norm_sq_eq_sum_norm_toLp_row_sq,
+  rw [mul_pow, frobenius_norm_sq_eq_sum_norm_sq_row, frobenius_norm_sq_eq_sum_norm_sq_row,
     Finset.mul_sum]
   refine Finset.sum_le_sum fun i _ => ?_
   rw [← mul_pow]
@@ -2761,8 +2761,7 @@ theorem frobenius_norm_sub_le_of_forall_roundsForwardSubst_col {m : RoundingMode
     (h : ∀ j, RoundsForwardSubst m T (A.col j) (Y.col j)) :
     ‖Y - T⁻¹ * A‖ ≤ gamma m.u (Fintype.card n) * ‖T⁻¹‖ * ‖T‖ * ‖Y‖ := by
   have hγ := gamma_nonneg m.u_nonneg hcard
-  have hTu : IsUnit T.det :=
-    (isUnit_iff_isUnit_det T).1 ((isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular hT).2 hd)
+  have hTu : IsUnit T.det := hT.isUnit_det_of_diag_ne_zero hd
   refine frobenius_norm_le_of_forall_col_le (by positivity) fun j => ?_
   obtain ⟨ΔT, hΔ, hTy⟩ := exists_roundsForwardSubst_eq hu hcard hT hd (h j)
   have hΔn : ‖ΔT‖ ≤ gamma m.u (Fintype.card n) * ‖T‖ := frobenius_norm_le_of_forall_abs_le hγ hΔ

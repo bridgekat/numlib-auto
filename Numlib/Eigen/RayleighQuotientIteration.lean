@@ -786,10 +786,11 @@ theorem toEuclideanLin_transpose_toEuclideanLin_apply (hQ : Q ∈ Matrix.orthogo
   rw [← toEuclideanLin_mul_apply, transpose_mul_of_mem_orthogonalGroup hQ,
     toEuclideanLin_one_apply]
 
-/-- `⟪Qᵀ y, w⟫ = ⟪y, Q w⟫`: the real form of `Matrix.toEuclideanLin_conjTranspose_inner_left`. -/
+/-- `⟪Qᵀ y, w⟫ = ⟪y, Q w⟫`: `Matrix.toEuclideanLin_transpose_inner_left` for a square real
+matrix. -/
 theorem inner_toEuclideanLin_transpose_left (Q : Matrix n n ℝ) (y w : EuclideanSpace ℝ n) :
-    inner ℝ (toEuclideanLin Qᵀ y) w = inner ℝ y (toEuclideanLin Q w) := by
-  rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_inner_left]
+    inner ℝ (toEuclideanLin Qᵀ y) w = inner ℝ y (toEuclideanLin Q w) :=
+  toEuclideanLin_transpose_inner_left Q w y
 
 /-- A matrix conjugated by an orthogonal `Q`, applied to `Qᵀ v`: `(Qᵀ B Q) (Qᵀ v) = Qᵀ (B v)`. -/
 theorem toEuclideanLin_transpose_mul_mul_apply_transpose (hQ : Q ∈ Matrix.orthogonalGroup n ℝ)

@@ -556,8 +556,10 @@ theorem spai_reduced_ls {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {I J : Finset
     IsMinOn (fun σ : J → ℝ => ‖WithLp.toLp 2 ((A.submatrix (Subtype.val : I → Fin n)
         (Subtype.val : J → Fin n)) *ᵥ σ - fun i : I => (Pi.single k 1 : Fin n → ℝ) i)‖) Set.univ τ ↔
       IsMinOn (fun x => ‖WithLp.toLp 2 (A *ᵥ x - Pi.single k 1)‖) {x | ∀ j ∉ J, x j = 0}
-        fun j => if h : j ∈ J then τ ⟨j, h⟩ else 0 :=
-  Preconditioner.isMinOn_submatrix_iff hI
+        fun j => if h : j ∈ J then τ ⟨j, h⟩ else 0 := by
+  convert Preconditioner.isMinOn_submatrix_iff hI using 2
+  funext j
+  by_cases h : j ∈ J <;> simp [h, Function.extend_val_apply]
 
 /-! ### §11.5.6: polynomial preconditioners -/
 

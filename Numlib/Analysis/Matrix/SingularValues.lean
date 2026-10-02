@@ -873,6 +873,132 @@ alias iInf_colSingularValues_sub_le := abs_iInf_colSingularValues_sub_le
 
 end Blocks
 
+/-! ### Stability of full rank
+
+A positive least stretch `σ_min(A) = ⨅ i, A.colSingularValues i` is the same as linearly
+independent columns, and by Weyl's bound it survives a perturbation smaller than itself; the row
+statements are those for `Aᴴ`. -/
+
+section Stability
+
+variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
+
+open scoped Matrix.Norms.L2Operator
+
+/-- **A positive least stretch makes the columns independent**: if `σ_min(A) > 0` then
+`A x = 0` forces `x = 0`. -/
+theorem linearIndependent_transpose_of_iInf_colSingularValues_pos {A : Matrix m n 𝕜}
+    (h : 0 < ⨅ i, A.colSingularValues i) : LinearIndependent 𝕜 Aᵀ := by
+  rcases isEmpty_or_nonempty n with hn | hn
+  · rw [Real.iInf_of_isEmpty] at h
+    exact absurd h (lt_irrefl 0)
+  refine mulVec_injective_iff.1 fun v w hvw => ?_
+  have h1 := A.iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 (v - w))
+  rw [toEuclideanLin_toLp, mulVec_sub, hvw, sub_self, WithLp.toLp_zero, norm_zero] at h1
+  have h2 : ‖(WithLp.toLp 2 (v - w) : EuclideanSpace 𝕜 n)‖ = 0 :=
+    le_antisymm (nonpos_of_mul_nonpos_right h1 h) (norm_nonneg _)
+  have h3 := congrArg WithLp.ofLp (norm_eq_zero.1 h2)
+  simpa [sub_eq_zero] using h3
+
+/-- **Linearly independent columns give a positive least stretch**: `σ_min(A) > 0`, the converse
+of `Matrix.linearIndependent_transpose_of_iInf_colSingularValues_pos`. -/
+theorem iInf_colSingularValues_pos_of_linearIndependent [Nonempty n] {A : Matrix m n 𝕜}
+    (hA : LinearIndependent 𝕜 Aᵀ) : 0 < ⨅ i, A.colSingularValues i := by
+  obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_colSingularValues
+  rw [← hx]
+  refine norm_pos_iff.2 fun h0 => ?_
+  have h1 : A *ᵥ WithLp.ofLp x = A *ᵥ 0 := by
+    rw [mulVec_zero]
+    exact congrArg WithLp.ofLp h0
+  have h2 := mulVec_injective_iff.2 hA h1
+  have hx0 : x = 0 := by
+    ext i
+    simpa using congrFun h2 i
+  rw [hx0, norm_zero] at hx1
+  exact zero_ne_one hx1
+
+/-- **Weyl stability of the least stretch** ([golub2013matrix] Corollary 2.4.4):
+`σ_min(A) - ‖δA‖₂ ≤ σ_min(A + δA)`. -/
+theorem sub_l2_opNorm_le_iInf_colSingularValues_add [Nonempty n] (A δA : Matrix m n 𝕜) :
+    (⨅ i, A.colSingularValues i) - ‖δA‖ ≤ ⨅ i, (A + δA).colSingularValues i := by
+  have h := abs_iInf_colSingularValues_sub_le (A + δA) A
+  rw [add_sub_cancel_left] at h
+  linarith [neg_abs_le ((⨅ i, (A + δA).colSingularValues i) - ⨅ i, A.colSingularValues i)]
+
+/-- A perturbation smaller than the least stretch cannot happen without columns: `‖δA‖ < σ_min(A)`
+forces `n` to be nonempty, since `σ_min` of a matrix without columns is `0`. -/
+theorem nonempty_of_l2_opNorm_lt_iInf_colSingularValues {A δA : Matrix m n 𝕜}
+    (h : ‖δA‖ < ⨅ i, A.colSingularValues i) : Nonempty n := by
+  by_contra hn
+  rw [not_nonempty_iff] at hn
+  rw [Real.iInf_of_isEmpty] at h
+  exact absurd h (not_lt.2 (norm_nonneg _))
+
+/-- **A small perturbation keeps the columns independent**: `‖δA‖₂ < σ_min(A)` implies that
+`A + δA` has linearly independent columns ([golub2013matrix] Theorem 2.5.2's use in the proof of
+Theorem 5.3.1). -/
+theorem linearIndependent_transpose_add_of_l2_opNorm_lt {A δA : Matrix m n 𝕜}
+    (h : ‖δA‖ < ⨅ i, A.colSingularValues i) : LinearIndependent 𝕜 (A + δA)ᵀ := by
+  have := nonempty_of_l2_opNorm_lt_iInf_colSingularValues h
+  exact linearIndependent_transpose_of_iInf_colSingularValues_pos
+    ((sub_pos.2 h).trans_le (sub_l2_opNorm_le_iInf_colSingularValues_add A δA))
+
+/-- **Independent columns survive along a line**: if `A` has linearly independent columns, so has
+`A + t E` for every `t` near `0`. -/
+theorem eventually_linearIndependent_transpose_add_smul {m n : Type*} [Finite m] [Finite n]
+    {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 Aᵀ) (E : Matrix m n 𝕜) :
+    ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E)ᵀ := by
+  classical
+  have := Fintype.ofFinite m
+  have := Fintype.ofFinite n
+  rcases isEmpty_or_nonempty n with hn | hn
+  · exact Filter.Eventually.of_forall fun _ => linearIndependent_empty_type
+  have hlim : Filter.Tendsto (fun t : 𝕜 => ‖t • E‖) (nhds 0) (nhds 0) := by
+    have := ((continuous_id.smul (continuous_const (y := E))).norm).tendsto (0 : 𝕜)
+    simpa using this
+  filter_upwards [hlim.eventually_lt_const (iInf_colSingularValues_pos_of_linearIndependent hA)]
+    with t ht
+  exact linearIndependent_transpose_add_of_l2_opNorm_lt ht
+
+variable [DecidableEq m]
+
+/-- A small perturbation keeps the rows independent: `‖δA‖₂ < σ_min(Aᴴ)` implies that `A + δA` has
+linearly independent rows. The column statement for `Aᴴ`, through `star (y ᵥ* M) = Mᴴ *ᵥ star y`. -/
+theorem linearIndependent_add_of_l2_opNorm_lt {A δA : Matrix m n 𝕜}
+    (h : ‖δA‖ < ⨅ i, Aᴴ.colSingularValues i) : LinearIndependent 𝕜 (A + δA) := by
+  have h' : ‖δAᴴ‖ < ⨅ i, Aᴴ.colSingularValues i := by rwa [l2_opNorm_conjTranspose]
+  have hc := linearIndependent_transpose_add_of_l2_opNorm_lt h'
+  rw [← conjTranspose_add] at hc
+  refine vecMul_injective_iff.1 fun v w hvw => ?_
+  have h1 := congrArg star hvw
+  rw [star_vecMul, star_vecMul] at h1
+  exact star_injective (mulVec_injective_iff.2 hc h1)
+
+/-- **Independent rows survive along a line**: if `A` has linearly independent rows, so has
+`A + t E` for every `t` near `0`; the dual of
+`Matrix.eventually_linearIndependent_transpose_add_smul`. -/
+theorem eventually_linearIndependent_add_smul {m n : Type*} [Finite m] [Finite n]
+    {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 A) (E : Matrix m n 𝕜) :
+    ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E) := by
+  classical
+  have := Fintype.ofFinite m
+  have := Fintype.ofFinite n
+  rcases isEmpty_or_nonempty m with hm | hm
+  · exact Filter.Eventually.of_forall fun _ => linearIndependent_empty_type
+  have hc : LinearIndependent 𝕜 Aᴴᵀ := by
+    refine mulVec_injective_iff.1 fun v w hvw => ?_
+    have e : ∀ u, Aᴴ *ᵥ u = star (star u ᵥ* A) := fun u => by rw [star_vecMul, star_star]
+    rw [e, e] at hvw
+    exact star_injective (vecMul_injective_iff.2 hA (star_injective hvw))
+  have hlim : Filter.Tendsto (fun t : 𝕜 => ‖t • E‖) (nhds 0) (nhds 0) := by
+    have := ((continuous_id.smul (continuous_const (y := E))).norm).tendsto (0 : 𝕜)
+    simpa using this
+  filter_upwards [hlim.eventually_lt_const (iInf_colSingularValues_pos_of_linearIndependent hc)]
+    with t ht
+  exact linearIndependent_add_of_l2_opNorm_lt ht
+
+end Stability
+
 /-! ### Stacked isometries and the distance between subspaces -/
 
 section Stacked
@@ -1583,8 +1709,7 @@ theorem eq_svdTruncation_of_frobenius_norm_sub_sq_le (h : IsSVD C U σ V) {r : �
     rw [ite_eq_left (lt_of_lt_of_le (lt_min him hin) hmr)]
   obtain ⟨P, hPdef⟩ : ∃ P, P = Ĉ.pinv * Ĉ := ⟨_, rfl⟩
   set v : Fin n → EuclideanSpace 𝕜 (Fin n) := fun i => WithLp.toLp 2 (Vᵀ i) with hv
-  have hV : Vᴴ * V = 1 := by
-    rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_right
+  have hV : Vᴴ * V = 1 := conjTranspose_mul_self_of_mem_unitaryGroup h.mem_unitaryGroup_right
   have hvo : Orthonormal 𝕜 v := orthonormal_toLp_transpose_of_conjTranspose_mul_self_eq_one hV
   have hPs : IsStarProjection P := by rw [hPdef]; exact isStarProjection_pinv_mul Ĉ
   have hPH : Pᴴ = P := hPs.isSelfAdjoint.star_eq

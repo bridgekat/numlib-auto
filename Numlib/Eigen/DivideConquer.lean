@@ -836,7 +836,7 @@ real symmetric and `α` a zero of the bordered secular function `f` below the sp
 iterates `λ⁽ᵏ⁺¹⁾ = λ⁽ᵏ⁾ - f(λ⁽ᵏ⁾) / f'(λ⁽ᵏ⁾)` satisfy `α ≤ λ⁽ᵏ⁺¹⁾ ≤ λ⁽ᵏ⁾` and tend to `α`. Below
 the spectrum of `B`, `f' ≤ -1` and `f'' ≤ 0`
 (`Matrix.neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos`), so `f` is decreasing and
-concave there and `Newton.tendsto_iterate_scalarStep_of_concaveOn` applies. -/
+concave there and `Newton.tendsto_iterate_scalarStep_of_antitoneOn_deriv` applies. -/
 theorem tendsto_newton_borderedSecularFunction {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {α x₀ : ℝ} (hα : borderedSecularFunction r B α = 0) (hαx : α ≤ x₀)
     (hx₀ : ∀ i, x₀ < hB.eigenvalues i) :
@@ -868,7 +868,7 @@ theorem tendsto_newton_borderedSecularFunction {r : Fin m → ℝ} {B : Matrix (
       fun x hx => ?_
     rw [(hd x (interior_subset hx)).2.2.1.deriv]
     exact (hd x (interior_subset hx)).2.2.2
-  exact Newton.tendsto_iterate_scalarStep_of_concaveOn hαx (fun x hx => (hd x hx).1)
+  exact Newton.tendsto_iterate_scalarStep_of_antitoneOn_deriv hαx (fun x hx => (hd x hx).1)
     (fun x hx => (hd x hx).2.1.trans_lt (by norm_num)) hanti hα
 
 end Bordered

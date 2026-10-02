@@ -98,12 +98,12 @@ Gram–Schmidt orthonormalizes from left to right and so has to know what "earli
 for `Fin n`.
 
 `Numlib.LinearAlgebra.Matrix.QR` already has the QR factorization, as the *existence* statement
-`Matrix.exists_qr` together with its uniqueness `Matrix.qr_unique`; an existence statement cannot be
-iterated, so the algorithm needs the factorization as a function of the matrix, which is what
-`Matrix.qrQ` and `Matrix.qrR` are.  They are the same factorization: both take `Q` to be the
-Gram–Schmidt orthonormalization of the columns, and `Matrix.qr_unique` identifies them with any
-other factorization of positive diagonal, a product of Householder reflectors included.  What is not
-there and is proved here is the reverse reading,
+`Matrix.exists_qr` together with its uniqueness `Matrix.IsThinQR.unique`; an existence statement
+cannot be iterated, so the algorithm needs the factorization as a function of the matrix, which is
+what `Matrix.qrQ` and `Matrix.qrR` are.  They are the same factorization: both take `Q` to be the
+Gram–Schmidt orthonormalization of the columns, and `Matrix.IsThinQR.unique` identifies them with
+any other factorization of positive diagonal, a product of Householder reflectors included.  What
+is not there and is proved here is the reverse reading,
 `Matrix.euclideanCol_eq_gramSchmidtNormed_of_eq_mul`: it is about the *columns* rather than the
 factors, and it is the columns that orthogonal iteration speaks of.
 
@@ -691,7 +691,7 @@ theorem IsShiftedQrStep.unique_of_isUnit {μ : 𝕜} {H H₁ H₂ : Matrix n n �
     rw [hUdef, ← Matrix.mul_assoc, (mem_unitaryGroup_iff).1 hQ₁, Matrix.one_mul]
   have hR₂' : R₂ = star U * R₁ := by rw [← hUR₂, ← Matrix.mul_assoc, hUU, Matrix.one_mul]
   refine ⟨fun i => U i i, fun i => ?_, ?_⟩
-  · refine RCLike.norm_eq_one_of_star_mul_self_eq_one ?_
+  · refine CStarRing.norm_of_mem_unitary (Unitary.mem_iff_star_mul_self.2 ?_)
     have := congrFun (congrFun hUU i) i
     rw [hUd, star_eq_conjTranspose, diagonal_conjTranspose, diagonal_mul_diagonal,
       diagonal_apply_eq, one_apply_eq] at this
@@ -1307,14 +1307,14 @@ theorem conjTranspose_qrQ_mul_self (A : Matrix n n 𝕜) : (qrQ A)ᴴ * qrQ A = 
 
 /-- An upper triangular matrix with a positive diagonal is its own triangular factor, with the
 identity as unitary factor: `qrQ A = 1` and `qrR A = A`, by the uniqueness of the QR
-factorization (`Matrix.qr_unique`). -/
+factorization (`Matrix.IsThinQR.unique`). -/
 theorem qrQ_eq_one_of_isUpperTriangular {N : ℕ} {A : Matrix (Fin N) (Fin N) 𝕜}
     (hA : A.IsUpperTriangular) (hd : ∀ j, 0 < A j j) : qrQ A = 1 ∧ qrR A = A := by
   have hdet : IsUnit A.det := by
     rw [det_of_isUpperTriangular hA]
     exact isUnit_iff_ne_zero.mpr (Finset.prod_ne_zero_iff.2 fun j _ => (hd j).ne')
-  exact qr_unique (qrQ_mul_qrR A).symm (Matrix.one_mul A).symm (conjTranspose_qrQ_mul_self A)
-    (by simp) (isUpperTriangular_qrR A) hA (qrR_diag_pos hdet) hd
+  exact IsThinQR.unique ⟨qrQ_mul_qrR A, conjTranspose_qrQ_mul_self A, isUpperTriangular_qrR A⟩
+    ⟨Matrix.one_mul A, by simp, hA⟩ (qrR_diag_pos hdet) hd
 
 set_option linter.unusedDecidableInType false in
 /-- The triangular factor read off the QR decomposition: `R = Qᴴ A`. -/
@@ -1842,7 +1842,7 @@ a complex shift `a` that is not an eigenvalue, the two canonical complex steps w
 `ā` give the real orthogonal similarity by the orthogonal factor of
 `M = H² − 2 re(a) H + |a|² I`. By the product identity the two steps give the factorization
 `(U₁ U₂)(R₂ R₁) = (H − a)(H − ā) = M` with positive diagonal, and so does the complexified
-`qrQ M * qrR M`; `Matrix.qr_unique` identifies them. -/
+`qrQ M * qrR M`; `Matrix.IsThinQR.unique` identifies them. -/
 theorem doubleShiftQrStep_map_ofReal (H : Matrix (Fin N) (Fin N) ℝ) {a : ℂ}
     (ha : a ∉ spectrum ℂ H.complexify) :
     doubleShiftQrStep H.complexify a =
@@ -1911,8 +1911,8 @@ theorem doubleShiftQrStep_map_ofReal (H : Matrix (Fin N) (Fin N) ℝ) {a : ℂ}
   have hposM : ∀ j, 0 < ((qrR M).complexify).diag j := fun j => by
     rw [diag_apply, complexify_apply]
     exact Complex.zero_lt_real.2 (qrR_diag_pos hMdet j)
-  obtain ⟨hU, -⟩ := qr_unique hprod.symm (by rw [← complexify_mul, qrQ_mul_qrR]) hUU hQM htri
-    htriM hpos hposM
+  obtain ⟨hU, -⟩ := IsThinQR.unique ⟨hprod, hUU, htri⟩
+    ⟨by rw [← complexify_mul, qrQ_mul_qrR], hQM, htriM⟩ hpos hposM
   rw [doubleShiftQrStep_eq_conj, ← hU₁, ← hU₂, hU, ← complexify_conjTranspose, ← complexify_mul,
     ← complexify_mul, conjTranspose_eq_transpose_of_trivial]
 

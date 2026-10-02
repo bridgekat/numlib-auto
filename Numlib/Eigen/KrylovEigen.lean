@@ -194,7 +194,8 @@ theorem OrthonormalBasis.norm_aeval_apply_le_of_forall_repr {ι : Type*} [Fintyp
     (p : 𝕜[X]) {M : ℝ} (hM : 0 ≤ M) {x : E} (hp : ∀ j, b.repr x j ≠ 0 → ‖p.eval (μ j)‖ ≤ M) :
     ‖aeval A p x‖ ≤ M * ‖x‖ := by
   have key : ‖aeval A p x‖ ^ 2 ≤ (M * ‖x‖) ^ 2 := by
-    rw [← b.sum_sq_norm_repr (aeval A p x), mul_pow, ← b.sum_sq_norm_repr x, Finset.mul_sum]
+    rw [← b.repr.norm_map (aeval A p x), EuclideanSpace.norm_sq_eq, mul_pow, ← b.repr.norm_map x,
+      EuclideanSpace.norm_sq_eq (b.repr x), Finset.mul_sum]
     refine Finset.sum_le_sum fun j _ => ?_
     rw [b.repr_aeval_apply_of_apply_eq_smul hb, norm_mul, mul_pow]
     rcases eq_or_ne (b.repr x j) 0 with hz | hz
@@ -715,7 +716,7 @@ theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc (hA : A.IsSymmetri
   -- the part of `v` orthogonal to the eigenvector
   set w := v - (inner 𝕜 (b i') v : 𝕜) • b i' with hw
   have hwnorm : ∑ j ∈ Finset.Ioi i', ‖b.repr v j‖ ^ 2 ≤ ‖w‖ ^ 2 := by
-    rw [← b.sum_sq_norm_repr w]
+    rw [← b.repr.norm_map w, EuclideanSpace.norm_sq_eq]
     refine le_trans (le_of_eq (Finset.sum_congr rfl fun j hj => ?_))
       (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun _ _ _ => by positivity)
     rw [hw, OrthonormalBasis.repr_apply_apply, OrthonormalBasis.repr_apply_apply, inner_sub_right,
@@ -727,7 +728,7 @@ theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc (hA : A.IsSymmetri
     (fun j hj => (hmem j (Finset.mem_Ioi.1 hj)).1)
     (fun j hj => hqb _ (hmem j (Finset.mem_Ioi.1 hj)))
   have hDge : ‖(inner 𝕜 (b i') v : 𝕜)‖ ^ 2 ≤ ‖x‖ ^ 2 := by
-    rw [← b.sum_sq_norm_repr x, ← hcv, ← hxi]
+    rw [← b.repr.norm_map x, EuclideanSpace.norm_sq_eq, ← hcv, ← hxi]
     exact Finset.single_le_sum (f := fun j => ‖b.repr x j‖ ^ 2) (fun _ _ => sq_nonneg _)
       (Finset.mem_univ i')
   have hcpos : (0 : ℝ) < ‖(inner 𝕜 (b i') v : 𝕜)‖ ^ 2 := by
@@ -1228,7 +1229,7 @@ private theorem sub_le_eigenvalues_compression_of_poly {p : ℕ} (v : Fin p → 
     exact norm_le_zero_iff.1 h
   -- the denominator
   have hden : ‖P yE‖ ^ 2 ≤ ‖x‖ ^ 2 := by
-    rw [hPy, ← b.sum_sq_norm_repr x]
+    rw [hPy, ← b.repr.norm_map x, EuclideanSpace.norm_sq_eq (b.repr x)]
     refine Finset.sum_le_sum fun j _ => ?_
     split_ifs with hj
     · rw [hrepr, norm_mul, RCLike.norm_ofReal, mul_pow]

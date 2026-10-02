@@ -63,6 +63,8 @@ degree of exactness, the discrete inner product of a rule and the Gauss remainde
   `Quadrature.not_isExactOnMeasure_two_mul_add_two` the impossibility of degree `2n + 2`.
   `Quadrature.isExactOnMeasure_iff_isExactOn` bridges to the functional level, and
   `Quadrature.isExactOnMeasure_map_affine` transports a rule along an affine change of interval.
+  `Quadrature.mem_Icc_of_isExactOnMeasure`: a node carrying a positive weight of a rule exact to
+  high enough degree lies in the interval carrying the weight.
 * `Quadrature.interpolate_eq_sum_discreteInner_smul`: for a rule exact to degree `2n - 1` the
   interpolant at its `n + 1` nodes is the discrete truncation `∑ (f, p_k)_n / (p_k, p_k)_n · p_k`
   of the orthogonal expansion — the discrete Chebyshev and Legendre transforms are its instances.
@@ -964,6 +966,54 @@ theorem tendsto_of_isExactOnMeasure [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ
   rfl
 
 end
+
+/-- **Nodes of an exact rule lie in the support interval.** Let `μ` be carried by `[a, b]` with
+every polynomial integrable, `(w, x)` a rule exact to degree `d`, and `P` a polynomial of degree
+`< d`, nonnegative on `[a, b]`, vanishing at every node but `x j`, with `w_j P(x_j) > 0`. Then
+`x j ∈ [a, b]`: otherwise `∫ (x_j − t) P dμ` (or `∫ (t − x_j) P dμ`) would be both `0` (the rule)
+and `≥ dist(x_j, [a, b]) ∫ P dμ > 0`. -/
+theorem mem_Icc_of_isExactOnMeasure {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
+    (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) {d : ℕ} {w x : Fin n → ℝ}
+    (hexact : IsExactOnMeasure μ w x d) {P : ℝ[X]} (hPdeg : P.natDegree + 1 ≤ d)
+    (hPnonneg : ∀ t ∈ Set.Icc a b, 0 ≤ P.eval t) {j : Fin n}
+    (hPzero : ∀ i, i ≠ j → P.eval (x i) = 0) (hpos : 0 < w j * P.eval (x j)) :
+    x j ∈ Set.Icc a b := by
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]
+    exact hsupp
+  have hdeg : ∀ Q : ℝ[X], Q.natDegree ≤ 1 → (Q * P).degree ≤ d := fun Q hQ =>
+    degree_le_of_natDegree_le ((natDegree_mul_le).trans (by omega))
+  have hsum : ∀ Q : ℝ[X], Q.natDegree ≤ 1 → Q.eval (x j) = 0 →
+      ∫ t, (Q * P).eval t ∂μ = 0 := fun Q hQ hQj => by
+    rw [← hexact _ (hdeg Q hQ)]
+    refine Finset.sum_eq_zero fun i _ => ?_
+    by_cases hij : i = j
+    · rw [hij, eval_mul, hQj, zero_mul, mul_zero]
+    · rw [eval_mul, hPzero i hij, mul_zero, mul_zero]
+  have hP : ∫ t, P.eval t ∂μ = w j * P.eval (x j) := by
+    rw [← hexact P (degree_le_of_natDegree_le (by omega))]
+    refine Finset.sum_eq_single j (fun i _ hij => by rw [hPzero i hij, mul_zero]) (by simp)
+  constructor
+  · by_contra hlt
+    push Not at hlt
+    have h0 := hsum (X - C (x j)) (by rw [natDegree_X_sub_C]) (by simp)
+    have hle : ∫ t, (a - x j) * P.eval t ∂μ ≤ ∫ t, ((X - C (x j)) * P).eval t ∂μ := by
+      refine integral_mono_ae ((hint P).const_mul _) (hint _) ?_
+      filter_upwards [hae] with t ht
+      simp only [eval_mul, eval_sub, eval_X, eval_C]
+      exact mul_le_mul_of_nonneg_right (by linarith [ht.1]) (hPnonneg t ht)
+    rw [h0, integral_const_mul, hP] at hle
+    nlinarith
+  · by_contra hlt
+    push Not at hlt
+    have h0 := hsum (C (x j) - X) (by rw [← neg_sub, natDegree_neg, natDegree_X_sub_C]) (by simp)
+    have hle : ∫ t, (x j - b) * P.eval t ∂μ ≤ ∫ t, ((C (x j) - X) * P).eval t ∂μ := by
+      refine integral_mono_ae ((hint P).const_mul _) (hint _) ?_
+      filter_upwards [hae] with t ht
+      simp only [eval_mul, eval_sub, eval_X, eval_C]
+      exact mul_le_mul_of_nonneg_right (by linarith [ht.2]) (hPnonneg t ht)
+    rw [h0, integral_const_mul, hP] at hle
+    nlinarith
 
 end ExactnessMeasure
 

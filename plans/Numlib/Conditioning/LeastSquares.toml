@@ -26,18 +26,3 @@ id = "hasDerivAt_minNorm_line"
 
 [[node]]  # added by sv2
 id = "leastSquares_residual_sub_eq"
-
-[[node]]  # added by sv2
-id = "linearIndependent_transpose_of_iInf_colSingularValues_pos"
-
-[[node]]  # added by sv2
-id = "iInf_colSingularValues_pos_of_linearIndependent"
-
-[[node]]  # added by sv2
-id = "sub_l2_opNorm_le_iInf_colSingularValues_add"
-
-[[node]]  # added by sv2
-id = "linearIndependent_transpose_add_of_l2_opNorm_lt"
-
-[[node]]  # added by sv2
-id = "linearIndependent_add_of_l2_opNorm_lt"

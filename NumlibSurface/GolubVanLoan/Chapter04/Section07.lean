@@ -1309,35 +1309,6 @@ private theorem foldl_range_update_succ (g : ℕ → ℝ) (m : ℕ) (y : ℕ →
       · rw [ite_eq_left h', ite_eq_left (by omega)]
       · rw [ite_eq_right h', ite_eq_right (by omega)]
 
-/-- Durbin's recurrence up to order `k` reads only `r₁, …, r_k`. -/
-private theorem durbin_sol_congr {ρ ρ' : ℕ → ℝ} :
-    ∀ k, (∀ j, 1 ≤ j → j ≤ k → ρ j = ρ' j) → Durbin.sol ρ k = Durbin.sol ρ' k
-  | 0, _ => rfl
-  | k + 1, h => by
-    have ih := durbin_sol_congr k fun j hj hjk => h j hj (by omega)
-    have hb : Durbin.betaOf ρ k (Durbin.sol ρ k) = Durbin.betaOf ρ' k (Durbin.sol ρ' k) := by
-      simp only [Durbin.betaOf, ih]
-      exact congrArg _ (Finset.sum_congr rfl fun i hi => by
-        rw [h (i + 1) (by omega) (by have := Finset.mem_range.1 hi; omega)])
-    have ha : Durbin.alphaOf ρ k (Durbin.sol ρ k) = Durbin.alphaOf ρ' k (Durbin.sol ρ' k) := by
-      unfold Durbin.alphaOf
-      rw [hb, h (k + 1) (by omega) le_rfl, ih]
-      congr 2
-      exact congrArg _ (Finset.sum_congr rfl fun i hi => by
-        have := Finset.mem_range.1 hi
-        rw [h (k - i) (by omega) (by omega)])
-    rw [ih] at ha
-    funext i
-    simp only [Durbin.sol, ih, ha]
-
-/-- Durbin's `β_k` reads only `r₁, …, r_k`. -/
-private theorem durbin_beta_congr {ρ ρ' : ℕ → ℝ} {k : ℕ} (h : ∀ j, 1 ≤ j → j ≤ k → ρ j = ρ' j) :
-    Durbin.beta ρ k = Durbin.beta ρ' k := by
-  unfold Durbin.beta Durbin.betaOf
-  rw [durbin_sol_congr k h]
-  exact congrArg _ (Finset.sum_congr rfl fun i hi => by
-    rw [h (i + 1) (by omega) (by have := Finset.mem_range.1 hi; omega)])
-
 /-- One exact pass of Durbin's algorithm advances `(y^{(p+1)}, α_p, β_p)` to
 `(y^{(p+2)}, α_{p+1}, β_{p+1})` while the `β_j`, `j ≤ p`, are nonzero. -/
 private theorem durbinExactStep_sol {r : ℕ → ℝ} {p : ℕ} (hβ : ∀ j < p + 1, Durbin.beta r j ≠ 0) :
@@ -1374,7 +1345,7 @@ theorem durbinIndex_spec (n : ℕ) (r : ℕ → ℝ) (t : ℝ) :
     dsimp only
     rw [ite_eq_left ⟨h1, h2⟩, shiftedToeplitzSeq, ite_eq_right (by omega)]
   have hβ : ∀ k, k < n → Durbin.beta ρ k = Durbin.beta (shiftedToeplitzSeq r t) k :=
-    fun k hk => durbin_beta_congr fun j h1 h2 => hρ' j h1 (by omega)
+    fun k hk => Durbin.beta_congr fun j h1 h2 => hρ' j h1 (by omega)
   -- the invariant of the pass loop
   let Inv : ℕ → ((ℕ → ℝ) × ℝ × ℝ) × ℕ → Prop := fun q st =>
     (st.2 = n ∧ (∀ k ≤ q, 0 < Durbin.beta ρ k) ∧

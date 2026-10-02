@@ -5,6 +5,7 @@ import Mathlib.LinearAlgebra.Projection
 import Numlib.LinearAlgebra.Eigenspace.Spectral
 import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.Normed.Module.BestApprox
+import Numlib.Analysis.Normed.Module.FiniteDimension
 import Numlib.Eigen.MinMax
 
 /-!

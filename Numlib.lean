@@ -1,4 +1,5 @@
 import Numlib.Algebra.LinearRecurrence
+import Numlib.Algebra.Polynomial.AevalApply
 import Numlib.Algebra.Polynomial.Commute
 import Numlib.Analysis.Calculus.AddTorsor.AffineMap
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
@@ -198,6 +199,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.OrthonormalBasis
 import Numlib.Analysis.InnerProductSpace.SingularValues
 import Numlib.Analysis.InnerProductSpace.Spectrum
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
+import Numlib.Analysis.Matrix.Frobenius
 import Numlib.Analysis.Matrix.Function.Approximation
 import Numlib.Analysis.Matrix.Function.Basic
 import Numlib.Analysis.Matrix.Function.CFC
@@ -230,6 +232,7 @@ import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Analysis.Normed.Module.Complemented
 import Numlib.Analysis.Normed.Module.DualSeparable
 import Numlib.Analysis.Normed.Module.FiniteCodim
+import Numlib.Analysis.Normed.Module.FiniteDimension
 import Numlib.Analysis.Normed.Module.MilmanPettis
 import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.Analysis.Normed.Module.Quotient
@@ -245,6 +248,7 @@ import Numlib.Analysis.Normed.Operator.CollectivelyCompact
 import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Operator.Compact.Banach
 import Numlib.Analysis.Normed.Operator.Embedding
+import Numlib.Analysis.Normed.Operator.LinearIsometry
 import Numlib.Analysis.Normed.Operator.Multilinear
 import Numlib.Analysis.Normed.Operator.QuadraticEquation
 import Numlib.Analysis.Normed.Operator.Riesz

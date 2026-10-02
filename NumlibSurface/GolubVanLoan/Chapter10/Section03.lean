@@ -460,10 +460,7 @@ private structure HLInv (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ) 
 private theorem arnoldi_w_eq_smul (T : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n))
     (q : EuclideanSpace ℝ (Fin n)) (t : ℕ) :
     Arnoldi.w T q t = ‖Arnoldi.w T q t‖ • Arnoldi.vec T q (t + 1) := by
-  by_cases h : Arnoldi.w T q t = 0
-  · simp [h]
-  · rw [Arnoldi.vec_succ_eq, smul_smul]
-    simp [h]
+  simpa using Arnoldi.w_eq_norm_smul_vec T q t
 
 /-- The Arnoldi residual `w_t` is orthogonal to the vectors `v_i`, `i ≤ t`. -/
 private theorem vec_dotProduct_w (T : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n))

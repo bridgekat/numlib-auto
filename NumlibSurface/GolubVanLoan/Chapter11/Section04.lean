@@ -99,13 +99,13 @@ variable {n : ℕ}
 /-- The transpose of a real matrix acts as the adjoint of the matrix on `EuclideanSpace`. -/
 private theorem inner_toEuclideanLin_transpose (A : Matrix (Fin n) (Fin n) ℝ)
     (x y : EuclideanSpace ℝ (Fin n)) :
-    inner ℝ (toEuclideanLin A x) y = inner ℝ x (toEuclideanLin Aᵀ y) := by
-  rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_inner_right]
+    inner ℝ (toEuclideanLin A x) y = inner ℝ x (toEuclideanLin Aᵀ y) :=
+  (toEuclideanLin_transpose_inner_right A x y).symm
 
 /-- The real inner product of two transported vectors is their dot product. -/
 private theorem inner_toLp (u v : Fin n → ℝ) :
-    inner ℝ (WithLp.toLp 2 u : EuclideanSpace ℝ (Fin n)) (WithLp.toLp 2 v) = u ⬝ᵥ v := by
-  rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
+    inner ℝ (WithLp.toLp 2 u : EuclideanSpace ℝ (Fin n)) (WithLp.toLp 2 v) = u ⬝ᵥ v :=
+  EuclideanSpace.inner_toLp_toLp_real u v
 
 /-- Complex conjugation on `ℝ` is the identity. -/
 private theorem starRingEnd_real : starRingEnd ℝ = RingHom.id ℝ :=
@@ -131,8 +131,8 @@ private theorem foldlM_range_transport {σ τ : Type*} (step : σ → Id σ) (g 
 adjoint, for rectangular matrices. -/
 private theorem inner_toEuclideanLin_transpose' {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
     (x : EuclideanSpace ℝ (Fin n)) (y : EuclideanSpace ℝ (Fin m)) :
-    inner ℝ (toEuclideanLin A x) y = inner ℝ x (toEuclideanLin Aᵀ y) := by
-  rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_inner_right]
+    inner ℝ (toEuclideanLin A x) y = inner ℝ x (toEuclideanLin Aᵀ y) :=
+  (toEuclideanLin_transpose_inner_right A x y).symm
 
 /-- A real matrix mapped by `algebraMap ℝ ℝ` is itself. -/
 private theorem map_algebraMap_real {k l : ℕ} (M : Matrix (Fin k) (Fin l) ℝ) :
@@ -1354,33 +1354,7 @@ sequences satisfy the modified Gram–Schmidt recurrence from `v/‖v‖`). -/
 private theorem vec_smul_of_pos (T : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n))
     (v : EuclideanSpace ℝ (Fin n)) {c : ℝ} (hc : 0 < c) :
     Arnoldi.vec T (c • v) = Arnoldi.vec T v := by
-  refine Arnoldi.eq_vec_of_modifiedGramSchmidt T v ?_ fun j => ?_
-  · rw [← Arnoldi.mgsVec_eq_vec, Arnoldi.mgsVec_zero]
-    simp only [RCLike.ofReal_real_eq_id, id_eq]
-    rw [norm_smul, Real.norm_of_nonneg hc.le, smul_smul]
-    rcases eq_or_ne ‖v‖ 0 with h | h
-    · simp [h]
-    · rw [mul_inv, mul_comm c⁻¹, mul_assoc, inv_mul_cancel₀ hc.ne', mul_one]
-  · rw [← Arnoldi.mgsVec_eq_vec]
-    exact Arnoldi.mgsVec_succ T (c • v) j
-
-/-- Rescaling the starting vector by a nonzero number does not change the grade. -/
-private theorem grade_smul_of_ne_zero
-    (T : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n))
-    (v : EuclideanSpace ℝ (Fin n)) {c : ℝ} (hc : c ≠ 0) : grade T (c • v) = grade T v := by
-  have h : ∀ (d : ℝ) (w : EuclideanSpace ℝ (Fin n)), fullSubspace T (d • w) ≤ fullSubspace T w := by
-    intro d w
-    rw [fullSubspace, Submodule.span_le]
-    rintro _ ⟨i, rfl⟩
-    change (T ^ i) (d • w) ∈ _
-    rw [LinearMap.map_smul]
-    exact Submodule.smul_mem _ d (Submodule.subset_span ⟨i, rfl⟩)
-  have heq : fullSubspace T (c • v) = fullSubspace T v := by
-    refine le_antisymm (h c v) ?_
-    have := h c⁻¹ (c • v)
-    rwa [smul_smul, inv_mul_cancel₀ hc, one_smul] at this
-  unfold grade
-  rw [heq]
+  simpa using Arnoldi.vec_smul_of_pos T v hc
 
 /-- A sum over `Fin p` whose terms vanish from index `k` on is the sum over its first `k`
 indices. -/
@@ -1453,7 +1427,7 @@ private theorem gmres_arnoldi_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)}
       rw [hq]; exact vec_smul_of_pos _ _ (inv_pos.2 hβpos)
     have hgr : grade (toEuclideanLin B) (WithLp.toLp 2 (β₀⁻¹ • z₀)) =
         grade (toEuclideanLin B) (WithLp.toLp 2 z₀) := by
-      rw [hq]; exact grade_smul_of_ne_zero _ _ (inv_ne_zero h0)
+      rw [hq]; exact grade_smul _ _ (inv_ne_zero h0)
     refine ⟨by rw [hk, hgr], fun j hj => ?_⟩
     obtain ⟨h1, h2⟩ := hvec j hj
     refine ⟨by rw [h1, WithLp.toLp_ofLp, hvs], fun i hi => ?_⟩
@@ -1773,14 +1747,6 @@ theorem minResidual_eq_iInf_poly (A : Matrix (Fin n) (Fin n) ℝ) {b x₀ x : Eu
 
 /-! ### §11.4.5: the unsymmetric Lanczos family -/
 
-/-- `𝒦(A, c • v, k) = 𝒦(A, v, k)` for `c ≠ 0`. -/
-private theorem subspace_smul_eq {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-    (T : E →ₗ[ℝ] E) (v : E) {c : ℝ} (hc : c ≠ 0) (k : ℕ) :
-    Krylov.subspace T (c • v) k = Krylov.subspace T v k := by
-  refine le_antisymm (subspace_smul _ _ _ _) ?_
-  calc Krylov.subspace T v k = Krylov.subspace T (c⁻¹ • c • v) k := by rw [inv_smul_smul₀ hc]
-    _ ≤ _ := subspace_smul _ _ _ _
-
 /-- **(11.4.12)–(11.4.13), two-sided Lanczos.** "Suppose we complete `k` steps of (10.5.11) with
 `q₁ = r₀/β₀` … and `r₀ᵀr̃₀ ≠ 0`. This means we have the partial factorizations
 `AQ_k = Q_kT_k + r_ke_kᵀ`, `Q̃_kᵀr_k = 0`, `AᵀQ̃_k = Q̃_kT_kᵀ + r̃_ke_kᵀ`, `Q_kᵀr̃_k = 0` where
@@ -1825,8 +1791,8 @@ theorem equation_11_4_12 (A : Matrix (Fin n) (Fin n) ℝ) {r₀ rt₀ q₁ qt₁
   · rw [BiLanczos.inner_dualVec_vec h hi.le le_rfl, ite_eq_right hi.ne]
   · obtain ⟨m, rfl⟩ : ∃ m, k = m + 1 := ⟨k - 1, by omega⟩
     exact BiLanczos.inner_dualVec_apply_vec h (by omega) (by omega)
-  · rw [BiLanczos.span_vec h, hr, subspace_smul_eq _ _ hβ]
-  · rw [BiLanczos.span_dualVec h, hrt, subspace_smul_eq _ _ hγ]
+  · rw [BiLanczos.span_vec h, hr, subspace_smul_of_ne_zero _ _ hβ]
+  · rw [BiLanczos.span_dualVec h, hrt, subspace_smul_of_ne_zero _ _ hγ]
 
 /-- **(11.4.13).** The dual relation of the two-sided Lanczos process: column `j < k` of
 `AᵀQ̃_k = Q̃_kT_kᵀ + r̃_ke_kᵀ` (the three-term recurrence of the dual vectors, the entries of `T_kᵀ`

@@ -4,8 +4,7 @@
 # `Matrix.IsHermitian.star_dotProduct_cfc_mulVec` and `.aeval_apply_self` are general matrix facts
 # that would belong in
 # `Numlib/Analysis/Matrix/…` /
-# `Numlib/LinearAlgebra/Matrix/…`, and `Quadrature.mem_Icc_of_isExactOnMeasure` belongs in
-# `Numlib/Approximation/Quadrature`; they are tracked here, where they live.
+# `Numlib/LinearAlgebra/Matrix/…`; they are tracked here, where they live.
 
 [[node]]
 id = "Matrix.IsHermitian.star_dotProduct_cfc_mulVec"
@@ -48,9 +47,6 @@ id = "Lanczos.radau_moment_eq"
 
 [[node]]
 id = "Lanczos.radau_quadrature"
-
-[[node]]
-id = "Quadrature.mem_Icc_of_isExactOnMeasure"
 
 [[node]]
 id = "Krylov.integrable_spectralMeasure"

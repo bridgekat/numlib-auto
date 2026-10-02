@@ -168,13 +168,6 @@ id = "l2_opNorm_unitary_mul_mul_unitary_le"
 id = "frobenius_norm_unitary_mul_mul_unitary"
 
 [[node]]
-id = "frobenius_norm_sq_eq_sum_sq"
-
-[[node]]
-id = "frobenius_norm_sq_eq_trace"
-source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.18)"
-
-[[node]]
 id = "frobenius_norm_sq_eq_sum_sq_colSingularValues"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 16"
 
@@ -378,12 +371,6 @@ id = "frobenius_norm_mul_sub_mul_sq"
 
 [[node]]  # moved by a2
 id = "frobenius_norm_le_of_forall_abs_le"
-
-[[node]]  # moved by a2
-id = "frobenius_norm_sq_eq_sum_norm_sq_col"
-
-[[node]]  # moved by a2
-id = "frobenius_norm_sq_eq_sum_norm_sq_row"
 
 [[node]]  # moved by a2
 id = "re_trace_conjTranspose_mul_le"

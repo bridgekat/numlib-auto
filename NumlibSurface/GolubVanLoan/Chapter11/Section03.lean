@@ -113,8 +113,8 @@ section Helpers
 
 /-- The real Euclidean inner product of two coordinate vectors is their dot product. -/
 private theorem inner_toLp (u v : Fin n → ℝ) :
-    ⟪(WithLp.toLp 2 u : 𝔼 n), WithLp.toLp 2 v⟫ = u ⬝ᵥ v := by
-  rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
+    ⟪(WithLp.toLp 2 u : 𝔼 n), WithLp.toLp 2 v⟫ = u ⬝ᵥ v :=
+  EuclideanSpace.inner_toLp_toLp_real u v
 
 /-- `√(uᵀu) = ‖u‖₂`. -/
 private theorem sqrt_dotProduct_self (u : Fin n → ℝ) :
@@ -1031,32 +1031,7 @@ sequences satisfy the modified Gram–Schmidt recurrence from `v/‖v‖`
 (`Arnoldi.eq_vec_of_modifiedGramSchmidt`). -/
 private theorem arnoldi_vec_smul_of_pos (T : 𝔼 n →ₗ[ℝ] 𝔼 n) (v : 𝔼 n) {c : ℝ} (hc : 0 < c) :
     Arnoldi.vec T (c • v) = Arnoldi.vec T v := by
-  refine Arnoldi.eq_vec_of_modifiedGramSchmidt T v ?_ fun j => ?_
-  · rw [← Arnoldi.mgsVec_eq_vec, Arnoldi.mgsVec_zero]
-    simp only [RCLike.ofReal_real_eq_id, id_eq]
-    rw [norm_smul, Real.norm_of_nonneg hc.le, smul_smul]
-    rcases eq_or_ne ‖v‖ 0 with h | h
-    · simp [h]
-    · rw [mul_inv, mul_comm c⁻¹, mul_assoc, inv_mul_cancel₀ hc.ne', mul_one]
-  · rw [← Arnoldi.mgsVec_eq_vec]
-    exact Arnoldi.mgsVec_succ T (c • v) j
-
-/-- Rescaling the starting vector by a nonzero number does not change the grade. -/
-private theorem grade_smul_of_ne_zero (T : 𝔼 n →ₗ[ℝ] 𝔼 n) (v : 𝔼 n) {c : ℝ} (hc : c ≠ 0) :
-    Krylov.grade T (c • v) = Krylov.grade T v := by
-  have h : ∀ (d : ℝ) (w : 𝔼 n), Krylov.fullSubspace T (d • w) ≤ Krylov.fullSubspace T w := by
-    intro d w
-    rw [Krylov.fullSubspace, Submodule.span_le]
-    rintro _ ⟨i, rfl⟩
-    change (T ^ i) (d • w) ∈ _
-    rw [LinearMap.map_smul]
-    exact Submodule.smul_mem _ d (Submodule.subset_span ⟨i, rfl⟩)
-  have heq : Krylov.fullSubspace T (c • v) = Krylov.fullSubspace T v := by
-    refine le_antisymm (h c v) ?_
-    have := h c⁻¹ (c • v)
-    rwa [smul_smul, inv_mul_cancel₀ hc, one_smul] at this
-  unfold Krylov.grade
-  rw [heq]
+  simpa using Arnoldi.vec_smul_of_pos T v hc
 
 /-- The Lanczos state after the exact run of (11.3.14), in backbone terms: `k = min(fuel, grade)`
 steps, the Lanczos vectors and coefficients of `r₀`, and the exit test. -/
@@ -1119,7 +1094,7 @@ private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA 
       rw [hq]; exact arnoldi_vec_smul_of_pos (toEuclideanLin A) _ (inv_pos.2 hβpos)
     have hgr : Krylov.grade (toEuclideanLin A) (WithLp.toLp 2 q₁) =
         Krylov.grade (toEuclideanLin A) (cgR A b x₀) := by
-      rw [hq]; exact grade_smul_of_ne_zero (toEuclideanLin A) _ (inv_ne_zero h0)
+      rw [hq]; exact Krylov.grade_smul (toEuclideanLin A) _ (inv_ne_zero h0)
     have hal : ∀ j, Lanczos.alpha (toEuclideanLin A) (WithLp.toLp 2 q₁) j =
         Lanczos.alpha (toEuclideanLin A) (cgR A b x₀) j :=
       fun j => by simp only [Lanczos.alpha, Arnoldi.coeff, hvs]
@@ -2611,8 +2586,8 @@ section NormalEquations
 
 /-- The adjoint relation of `Cᵀ` and `C` on Euclidean spaces: `⟪Cᵀu, v⟫ = ⟪u, Cv⟫`. -/
 private theorem inner_transpose_apply {p q : ℕ} (C : Matrix (Fin p) (Fin q) ℝ) (u : 𝔼 p)
-    (v : 𝔼 q) : ⟪toEuclideanLin Cᵀ u, v⟫ = ⟪u, toEuclideanLin C v⟫ := by
-  rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_inner_left]
+    (v : 𝔼 q) : ⟪toEuclideanLin Cᵀ u, v⟫ = ⟪u, toEuclideanLin C v⟫ :=
+  toEuclideanLin_transpose_inner_left C v u
 
 /-- **§11.3.9**, the two identities: for `A ∈ ℝ^{m×n}`,
 "`φ_{AᵀA}(x) = ½ xᵀ(AᵀA)x − xᵀ(Aᵀb) = ½‖Ax − b‖²₂ − ½ bᵀb`"; and for nonsingular square `B`

@@ -420,7 +420,9 @@ theorem l2_opNorm_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
     simp only [hYdef, ← Matrix.mul_assoc, hΔ', Matrix.one_mul]
     rw [Matrix.mul_assoc, hΔ', Matrix.mul_one]
   have hAk : A ^ (k + 1) = Q * (Δi * Y ^ (k + 1) * Δ) * star Q := by
-    rw [hA, conj_pow_of_mul_eq_one hQQ', hTY, conj_pow_of_mul_eq_one hΔ]
+    rw [hA, hTY]
+    exact (Units.conj_pow ⟨Q, star Q, hQQ, hQQ'⟩ (Δi * Y * Δ) (k + 1)).trans
+      (congrArg (Q * · * star Q) (Units.conj_pow ⟨Δi, Δ, hΔ', hΔ⟩ Y (k + 1)))
   rw [hAk, lpOpNorm_two_unitary_conj hQ]
   have hYn : lpOpNorm 2 Y ≤ (⨆ i, ‖T i i‖) + ‖strictUpper T‖ / (1 + μ) := by
     rw [hY]
@@ -500,8 +502,10 @@ theorem l2_opNorm_inv_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
     rw [hA, hTY, Matrix.mul_inv_rev, Matrix.mul_inv_rev, Matrix.mul_inv_rev,
       Matrix.mul_inv_rev, hsQinv, hQinv, hΔinv, hΔiinv]
     simp only [Matrix.mul_assoc]
-  rw [hAinv, conj_pow_of_mul_eq_one hQQ', lpOpNorm_two_unitary_conj hQ,
-    conj_pow_of_mul_eq_one hΔ]
+  have hAk : (Q * (Δi * Y⁻¹ * Δ) * star Q) ^ (k + 1) = Q * (Δi * Y⁻¹ ^ (k + 1) * Δ) * star Q :=
+    (Units.conj_pow ⟨Q, star Q, hQQ, hQQ'⟩ (Δi * Y⁻¹ * Δ) (k + 1)).trans
+      (congrArg (Q * · * star Q) (Units.conj_pow ⟨Δi, Δ, hΔ', hΔ⟩ Y⁻¹ (k + 1)))
+  rw [hAinv, hAk, lpOpNorm_two_unitary_conj hQ]
   calc lpOpNorm 2 (Δi * Y⁻¹ ^ (k + 1) * Δ)
       ≤ lpOpNorm 2 Δi * lpOpNorm 2 (Y⁻¹ ^ (k + 1)) * lpOpNorm 2 Δ :=
         (lpOpNorm_mul_le 2 _ _).trans (mul_le_mul_of_nonneg_right (lpOpNorm_mul_le 2 _ _)
@@ -1422,24 +1426,11 @@ private theorem gap_subspaceIterate_le_of_blocks {T₁₁ : Matrix (Fin r) (Fin 
           norm_toEuclideanLin_le_lpOpNorm _ _
       _ = lpOpNorm 2 (T₁₁⁻¹ ^ k) * ‖(B ^ k) u‖ := by rw [hBu, norm_blk_zero_right]
   have hc0 : 0 ≤ 1 + lpOpNorm 2 X := by linarith [lpOpNorm_nonneg 2 X]
-  have key : ∀ (K K' : Submodule ℂ (EuclideanSpace ℂ (Fin r ⊕ Fin s)))
-      [K.HasOrthogonalProjection] [K'.HasOrthogonalProjection], K = K' → K.gap S = K'.gap S := by
-    intro K K' _ _ h
-    subst h
-    rfl
-  have hgW : Wᗮ.gap S = D'.gap S := key _ _ hWD'
+  have hgW : Wᗮ.gap S = D'.gap S := Submodule.gap_congr₂ hWD' rfl
   have h0' : Wᗮ.gap S < 1 := by rw [hgW]; exact h0
   refine (Krylov.gap_subspaceIterate_le_of_isCompl hDinv hWinv hDW (hdim.trans hfinD.symm) h0' k
     hc0 (lpOpNorm_nonneg 2 _) (lpOpNorm_nonneg 2 _) hc hβ hγ).trans (le_of_eq ?_)
   rw [hgW]
-
-/-- Congruence for the gap, across the orthogonal-projection instances. -/
-private theorem gap_congr' {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
-    {K K' L L' : Submodule ℂ E} [K.HasOrthogonalProjection] [K'.HasOrthogonalProjection]
-    [L.HasOrthogonalProjection] [L'.HasOrthogonalProjection] (hK : K = K') (hL : L = L') :
-    K.gap L = K'.gap L' := by
-  subst hK hL
-  rfl
 
 /-- **Orthogonal iteration converges to the dominant invariant subspace** ([golub2013matrix]
 Theorem 7.3.1, corrected). Let `Q` be unitary with `Qᴴ A Q` reindexed along `e` equal to the block
@@ -1591,16 +1582,19 @@ theorem gap_subspaceIterate_le_of_schur {n r : ℕ} {A Q : Matrix (Fin n) (Fin n
       (LinearMap.range (toEuclideanLin (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
         (0 : Matrix (Fin (n - r)) (Fin r) ℂ)))).gap
         (Krylov.subspaceIterate (toEuclideanLin M) S k) := by
-    exact (gap_congr' (hrange _) hiter).trans (Submodule.gap_map_linearIsometryEquiv Φ _ _)
+    exact (Submodule.gap_congr₂ (hrange _) hiter).trans
+      (Submodule.gap_map_linearIsometryEquiv Φ _ _)
   have hgap2 : (LinearMap.range (toEuclideanLin (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
       (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix e id))).gap S₀ =
       (LinearMap.range (toEuclideanLin (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
         (0 : Matrix (Fin (n - r)) (Fin r) ℂ)))).gap S := by
-    exact (gap_congr' (hrange _) hSmap.symm).trans (Submodule.gap_map_linearIsometryEquiv Φ _ _)
+    exact (Submodule.gap_congr₂ (hrange _) hSmap.symm).trans
+      (Submodule.gap_map_linearIsometryEquiv Φ _ _)
   have hgap3 : (LinearMap.range (toEuclideanLin
       (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)).submatrix e id))).gap S₀ =
       (LinearMap.range (toEuclideanLin (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)))).gap S := by
-    exact (gap_congr' (hrange _) hSmap.symm).trans (Submodule.gap_map_linearIsometryEquiv Φ _ _)
+    exact (Submodule.gap_congr₂ (hrange _) hSmap.symm).trans
+      (Submodule.gap_map_linearIsometryEquiv Φ _ _)
   rw [hgap1, hgap2, hgap3]
   rw [hgap3] at h0
   refine (gap_subspaceIterate_le_of_blocks hT₁₁u hX hdimS h0 k).trans ?_

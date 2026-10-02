@@ -117,3 +117,18 @@ source = "Golub–Van Loan, Matrix Computations, §5.5.3"
 
 [[node]]  # moved by a2
 id = "frobenius_norm_pinv_sub_le"
+
+[[node]]
+id = "linearIndependent_transpose_of_iInf_colSingularValues_pos"
+
+[[node]]
+id = "iInf_colSingularValues_pos_of_linearIndependent"
+
+[[node]]
+id = "sub_l2_opNorm_le_iInf_colSingularValues_add"
+
+[[node]]
+id = "linearIndependent_transpose_add_of_l2_opNorm_lt"
+
+[[node]]
+id = "linearIndependent_add_of_l2_opNorm_lt"

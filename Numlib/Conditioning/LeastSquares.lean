@@ -26,7 +26,8 @@ solution of a system with linearly independent rows ([golub2013matrix] §5.3.6 T
   and (5.6.2) of `t ↦ (A + tE)⁺ (b + tf)` that the book's first-order proofs use, over `ℝ`; along
   the line the columns (rows) stay independent
   (`Matrix.eventually_linearIndependent_transpose_add_smul`,
-  `Matrix.eventually_linearIndependent_add_smul`).
+  `Matrix.eventually_linearIndependent_add_smul`, with the other stability facts of full rank in
+  `Numlib.Analysis.Matrix.SingularValues`).
 
 ## Implementation notes
 
@@ -36,10 +37,10 @@ pseudoinverse and of the inverse Gram matrix of `Â`
 (`Matrix.l2_opNorm_pinv_eq_inv_iInf_colSingularValues`,
 `Matrix.l2_opNorm_inv_conjTranspose_mul_self`),
 together with Weyl's bound
-`σ_min(A + δA) ≥ σ_min(A) - ‖δA‖₂` (`Matrix.iInf_colSingularValues_sub_le`), which also shows that
-`A + δA` keeps independent columns. `σ_min` is the column-indexed `⨅ i, A.colSingularValues i`, the
-least stretch of `A`. Vectors live in `EuclideanSpace`, matrices act through
-`Matrix.toEuclideanLin`, and matrix norms are the scoped `Matrix.Norms.L2Operator` ones.
+`σ_min(A + δA) ≥ σ_min(A) - ‖δA‖₂` (`Matrix.sub_l2_opNorm_le_iInf_colSingularValues_add`), which
+also shows that `A + δA` keeps independent columns. `σ_min` is the column-indexed
+`⨅ i, A.colSingularValues i`, the least stretch of `A`. Vectors live in `EuclideanSpace`, matrices
+act through `Matrix.toEuclideanLin`, and matrix norms are the scoped `Matrix.Norms.L2Operator` ones.
 
 ## References
 
@@ -54,89 +55,6 @@ namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
   [DecidableEq n]
-
-/-! ### Stability of full column rank -/
-
-section Stability
-
-omit [DecidableEq m]
-
-/-- **A positive least stretch makes the columns independent**: if `σ_min(A) > 0` then
-`A x = 0` forces `x = 0`. -/
-theorem linearIndependent_transpose_of_iInf_colSingularValues_pos {A : Matrix m n 𝕜}
-    (h : 0 < ⨅ i, A.colSingularValues i) : LinearIndependent 𝕜 Aᵀ := by
-  rcases isEmpty_or_nonempty n with hn | hn
-  · rw [Real.iInf_of_isEmpty] at h
-    exact absurd h (lt_irrefl 0)
-  refine mulVec_injective_iff.1 fun v w hvw => ?_
-  have h1 := A.iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 (v - w))
-  rw [toEuclideanLin_toLp, mulVec_sub, hvw, sub_self, WithLp.toLp_zero, norm_zero] at h1
-  have h2 : ‖(WithLp.toLp 2 (v - w) : EuclideanSpace 𝕜 n)‖ = 0 :=
-    le_antisymm (nonpos_of_mul_nonpos_right h1 h) (norm_nonneg _)
-  have h3 := congrArg WithLp.ofLp (norm_eq_zero.1 h2)
-  simpa [sub_eq_zero] using h3
-
-/-- **Linearly independent columns give a positive least stretch**: `σ_min(A) > 0`, the converse
-of `Matrix.linearIndependent_transpose_of_iInf_colSingularValues_pos`. -/
-theorem iInf_colSingularValues_pos_of_linearIndependent [Nonempty n] {A : Matrix m n 𝕜}
-    (hA : LinearIndependent 𝕜 Aᵀ) : 0 < ⨅ i, A.colSingularValues i := by
-  obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_colSingularValues
-  rw [← hx]
-  refine norm_pos_iff.2 fun h0 => ?_
-  have h1 : A *ᵥ WithLp.ofLp x = A *ᵥ 0 := by
-    rw [mulVec_zero]
-    exact congrArg WithLp.ofLp h0
-  have h2 := mulVec_injective_iff.2 hA h1
-  have hx0 : x = 0 := by
-    ext i
-    simpa using congrFun h2 i
-  rw [hx0, norm_zero] at hx1
-  exact zero_ne_one hx1
-
-/-- **Weyl stability of the least stretch** ([golub2013matrix] Corollary 2.4.4):
-`σ_min(A) - ‖δA‖₂ ≤ σ_min(A + δA)`. -/
-theorem sub_l2_opNorm_le_iInf_colSingularValues_add [Nonempty n] (A δA : Matrix m n 𝕜) :
-    (⨅ i, A.colSingularValues i) - ‖δA‖ ≤ ⨅ i, (A + δA).colSingularValues i := by
-  have h := iInf_colSingularValues_sub_le (A + δA) A
-  rw [add_sub_cancel_left] at h
-  linarith [neg_abs_le ((⨅ i, (A + δA).colSingularValues i) - ⨅ i, A.colSingularValues i)]
-
-/-- A perturbation smaller than the least stretch cannot happen without columns: `‖δA‖ < σ_min(A)`
-forces `n` to be nonempty, since `σ_min` of a matrix without columns is `0`. -/
-theorem nonempty_of_l2_opNorm_lt_iInf_colSingularValues {A δA : Matrix m n 𝕜}
-    (h : ‖δA‖ < ⨅ i, A.colSingularValues i) : Nonempty n := by
-  by_contra hn
-  rw [not_nonempty_iff] at hn
-  rw [Real.iInf_of_isEmpty] at h
-  exact absurd h (not_lt.2 (norm_nonneg _))
-
-/-- **A small perturbation keeps the columns independent**: `‖δA‖₂ < σ_min(A)` implies that
-`A + δA` has linearly independent columns ([golub2013matrix] Theorem 2.5.2's use in the proof of
-Theorem 5.3.1). -/
-theorem linearIndependent_transpose_add_of_l2_opNorm_lt {A δA : Matrix m n 𝕜}
-    (h : ‖δA‖ < ⨅ i, A.colSingularValues i) : LinearIndependent 𝕜 (A + δA)ᵀ := by
-  have := nonempty_of_l2_opNorm_lt_iInf_colSingularValues h
-  exact linearIndependent_transpose_of_iInf_colSingularValues_pos
-    ((sub_pos.2 h).trans_le (sub_l2_opNorm_le_iInf_colSingularValues_add A δA))
-
-/-- **Independent columns survive along a line**: if `A` has linearly independent columns, so has
-`A + t E` for every `t` near `0`. -/
-theorem eventually_linearIndependent_transpose_add_smul {m n : Type*} [Finite m] [Finite n]
-    {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 Aᵀ) (E : Matrix m n 𝕜) :
-    ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E)ᵀ := by
-  classical
-  have := Fintype.ofFinite m
-  have := Fintype.ofFinite n
-  rcases isEmpty_or_nonempty n with hn | hn
-  · exact Filter.Eventually.of_forall fun _ => linearIndependent_empty_type
-  have hlim : Filter.Tendsto (fun t : 𝕜 => ‖t • E‖) (nhds 0) (nhds 0) := by
-    have := ((continuous_id.smul (continuous_const (y := E))).norm).tendsto (0 : 𝕜)
-    simpa using this
-  filter_upwards [hlim.eventually_lt_const (iInf_colSingularValues_pos_of_linearIndependent hA)]
-    with t ht
-  exact linearIndependent_transpose_add_of_l2_opNorm_lt ht
-
-end Stability
 
 /-! ### The full-rank least-squares problem -/
 
@@ -358,41 +276,6 @@ end FullColumnRank
 section FullRowRank
 
 variable {A δA : Matrix m n 𝕜} {b δb : EuclideanSpace 𝕜 m} {x x' : EuclideanSpace 𝕜 n}
-
-/-- A small perturbation keeps the rows independent: `‖δA‖₂ < σ_min(Aᴴ)` implies that `A + δA` has
-linearly independent rows. The column statement for `Aᴴ`, through `star (y ᵥ* M) = Mᴴ *ᵥ star y`. -/
-theorem linearIndependent_add_of_l2_opNorm_lt
-    (h : ‖δA‖ < ⨅ i, Aᴴ.colSingularValues i) : LinearIndependent 𝕜 (A + δA) := by
-  have h' : ‖δAᴴ‖ < ⨅ i, Aᴴ.colSingularValues i := by rwa [l2_opNorm_conjTranspose]
-  have hc := linearIndependent_transpose_add_of_l2_opNorm_lt h'
-  rw [← conjTranspose_add] at hc
-  refine vecMul_injective_iff.1 fun v w hvw => ?_
-  have h1 := congrArg star hvw
-  rw [star_vecMul, star_vecMul] at h1
-  exact star_injective (mulVec_injective_iff.2 hc h1)
-
-/-- **Independent rows survive along a line**: if `A` has linearly independent rows, so has
-`A + t E` for every `t` near `0`; the dual of
-`Matrix.eventually_linearIndependent_transpose_add_smul`. -/
-theorem eventually_linearIndependent_add_smul {m n : Type*} [Finite m] [Finite n]
-    {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 A) (E : Matrix m n 𝕜) :
-    ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E) := by
-  classical
-  have := Fintype.ofFinite m
-  have := Fintype.ofFinite n
-  rcases isEmpty_or_nonempty m with hm | hm
-  · exact Filter.Eventually.of_forall fun _ => linearIndependent_empty_type
-  have hc : LinearIndependent 𝕜 Aᴴᵀ := by
-    refine mulVec_injective_iff.1 fun v w hvw => ?_
-    have e : ∀ u, Aᴴ *ᵥ u = star (star u ᵥ* A) := fun u => by rw [star_vecMul, star_star]
-    rw [e, e] at hvw
-    exact star_injective (vecMul_injective_iff.2 hA (star_injective hvw))
-  have hlim : Filter.Tendsto (fun t : 𝕜 => ‖t • E‖) (nhds 0) (nhds 0) := by
-    have := ((continuous_id.smul (continuous_const (y := E))).norm).tendsto (0 : 𝕜)
-    simpa using this
-  filter_upwards [hlim.eventually_lt_const (iInf_colSingularValues_pos_of_linearIndependent hc)]
-    with t ht
-  exact linearIndependent_add_of_l2_opNorm_lt ht
 
 open scoped ComplexOrder in
 /-- For linearly independent rows the pseudoinverse is a right inverse, `A A⁺ = 1`: the dual of

@@ -8,6 +8,7 @@ import Mathlib.Analysis.Fourier.RiemannLebesgueLemma
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
+import Numlib.Analysis.SpecialFunctions.Trigonometric.CosSum
 
 /-!
 # The Dirichlet kernel and pointwise convergence of Fourier series
@@ -105,23 +106,17 @@ theorem abs_dirichletKernel_le (n : ℕ) (t : ℝ) : |dirichletKernel n t| ≤ (
   have h1 : |(1 : ℝ) / 2| = 1 / 2 := by norm_num
   linarith
 
-/-- The telescoping identity behind the closed form of the Dirichlet kernel. -/
+/-- The telescoping identity behind the closed form of the Dirichlet kernel, Lagrange's
+trigonometric identity `Real.two_mul_sin_half_mul_sum_range_cos`. -/
 theorem two_mul_sin_half_mul_dirichletKernel (n : ℕ) (t : ℝ) :
     2 * Real.sin (t / 2) * dirichletKernel n t = Real.sin ((n + 1 / 2) * t) := by
-  induction n with
-  | zero =>
-    rw [dirichletKernel_zero, show (((0 : ℕ) : ℝ) + 1 / 2) * t = t / 2 by push_cast; ring]
-    ring
-  | succ n ih =>
-    have hstep : 2 * Real.sin (t / 2) * Real.cos (((n : ℝ) + 1) * t)
-        = Real.sin (((n : ℝ) + 1 + 1 / 2) * t) - Real.sin (((n : ℝ) + 1 / 2) * t) := by
-      rw [show ((n : ℝ) + 1 + 1 / 2) * t = t / 2 + ((n : ℝ) + 1) * t by ring, Real.sin_add,
-        show ((n : ℝ) + 1 / 2) * t = ((n : ℝ) + 1) * t - t / 2 by ring, Real.sin_sub]
-      ring
-    rw [dirichletKernel_succ, mul_add, ih]
-    push_cast
-    rw [hstep]
-    ring
+  have hs : ∑ j ∈ Finset.Icc 1 n, Real.cos (j * t) =
+      ∑ k ∈ Finset.range n, Real.cos ((k + 1) * t) := by
+    rw [← Finset.Ico_add_one_right_eq_Icc, Finset.sum_Ico_eq_sum_range, Nat.add_sub_cancel]
+    exact Finset.sum_congr rfl fun k _ => by push_cast; ring_nf
+  rw [dirichletKernel_apply, hs, mul_add, Real.two_mul_sin_half_mul_sum_range_cos,
+    show ((n : ℝ) + 1 / 2) * t = (2 * n + 1) * (t / 2) by ring]
+  ring
 
 /-- The closed form of the Dirichlet kernel ([han2009theoretical], (3.7.8)). The hypothesis `sin (t
 / 2) ≠ 0` says exactly that `t` is not an integer multiple of `2 π`. -/

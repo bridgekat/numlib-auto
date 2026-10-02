@@ -72,6 +72,3 @@ id = "Submodule.norm_starProjection_sub_apply_sq_eq_add"
 
 [[node]]
 id = "Submodule.sinAngle_le_gap"
-
-[[node]]
-id = "LinearIndependent.exists_forall_sum_norm_le"

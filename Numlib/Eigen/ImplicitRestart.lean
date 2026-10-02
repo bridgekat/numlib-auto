@@ -15,7 +15,7 @@ kept apart because the first is pure algebra:
   accumulated factor `V = V_0 ⋯ V_{p−1}` is unitary with `H_p = Vᴴ H_0 V`, has lower bandwidth `p`
   when the `V_i` are Hessenberg, and carries the filter polynomial in its first column;
 * **what the chain does to an Arnoldi decomposition**: the change of basis
-  `Matrix.IsKrylovDecomposition.mul_unitary` ((10.5.9)) followed by the truncation
+  `Matrix.IsKrylovDecomposition.mul_of_conjTranspose_mul_self` ((10.5.9)) followed by the truncation
   `Matrix.IsKrylovDecomposition.leading` to the leading `j + 1` columns
   (`Matrix.IsArnoldiDecomposition.implicitRestart`), whose first column is the filtered starting
   vector (`Matrix.IsArnoldiDecomposition.implicitRestart_first`).
@@ -68,7 +68,7 @@ theorem implicitRestart {j p : ℕ} {Q : Matrix n (Fin (j + p + 1)) 𝕜}
         ((List.range p).map V).prod (Fin.last (j + p)) ⟨j, by omega⟩ • r) := by
   set W := ((List.range p).map V).prod with hW
   obtain ⟨hWu, hHp⟩ := hc.conjTranspose_mul_mul hV
-  have hK := h.toIsKrylovDecomposition.mul_unitary ((mem_unitaryGroup_iff').1 hWu)
+  have hK := h.toIsKrylovDecomposition.mul_of_conjTranspose_mul_self ((mem_unitaryGroup_iff').1 hWu)
   rw [← h0, ← star_eq_conjTranspose, ← hHp, single_one_vecMul] at hK
   have hHess : (Hs p).IsUpperHessenberg :=
     hc.isUpperHessenberg (h0 ▸ h.isUpperHessenberg) hR hVH p le_rfl
@@ -156,11 +156,11 @@ theorem krylovSchur {k : ℕ} {Q : Matrix n (Fin (k + 1)) 𝕜}
         IsArnoldiDecomposition A ((Q * U).submatrix id (Fin.castLE j.isLt) * Z)
           (star Z * (star U * H * U).submatrix (Fin.castLE j.isLt) (Fin.castLE j.isLt) * Z)
           (star τ • r) := by
-  have hK := h.toIsKrylovDecomposition.mul_unitary ((mem_unitaryGroup_iff').1 hU)
+  have hK := h.toIsKrylovDecomposition.mul_of_conjTranspose_mul_self ((mem_unitaryGroup_iff').1 hU)
   rw [single_one_vecMul] at hK
   have ha := hK.leading_of_apply_eq_zero j hT
   refine ⟨ha, fun Z hZ τ hZH hZu => ?_⟩
-  have hK' := ha.mul_unitary ((mem_unitaryGroup_iff').1 hZ)
+  have hK' := ha.mul_of_conjTranspose_mul_self ((mem_unitaryGroup_iff').1 hZ)
   have hrow : (U.row (Fin.last k) ∘ Fin.castLE j.isLt) ᵥ* Z = Pi.single (Fin.last j) (star τ) := by
     have := congrArg star hZu
     rw [star_mulVec, star_star, ← star_eq_conjTranspose, star_star, ← Pi.single_star] at this

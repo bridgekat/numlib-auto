@@ -203,20 +203,24 @@ private theorem norm_sq_mulVec_sub_eq {A : Matrix n n 𝕜} {c : n → 𝕜} {I 
   · refine Finset.sum_congr rfl fun i hi => ?_
     rw [PiLp.toLp_apply, Pi.sub_apply, hout i (Finset.mem_compl.mp hi), zero_sub, norm_neg]
 
+omit [DecidableEq n] in
 /-- **Reduced least squares** ([golub2013matrix] §11.5.5, [saad2003iterative] §10.5.2): let `J` be
 the allowed support of a column and `I` a set of rows containing every row `i` with `A i j ≠ 0` for
 some `j ∈ J`. Then `τ` minimizes the small problem `‖A(I, J) τ - c(I)‖₂` exactly when its extension
-by zero minimizes `‖A x - c‖₂` over the vectors `x` supported in `J`: the two objectives differ by
-the constant `‖c(Iᶜ)‖₂²`. -/
+by zero (`Function.extend Subtype.val τ 0`) minimizes `‖A x - c‖₂` over the vectors `x` supported in
+`J`: the two objectives differ by the constant `‖c(Iᶜ)‖₂²`. -/
 theorem isMinOn_submatrix_iff {A : Matrix n n 𝕜} {c : n → 𝕜} {I J : Finset n}
     (hI : ∀ i, ∀ j ∈ J, A i j ≠ 0 → i ∈ I) {τ : J → 𝕜} :
     IsMinOn (fun σ : J → 𝕜 => ‖WithLp.toLp 2 (A.submatrix ((↑) : I → n) ((↑) : J → n) *ᵥ σ -
         fun i : I => c i)‖) Set.univ τ ↔
       IsMinOn (fun x : n → 𝕜 => ‖WithLp.toLp 2 (A *ᵥ x - c)‖) {x | ∀ j ∉ J, x j = 0}
-        (fun j => if h : j ∈ J then τ ⟨j, h⟩ else 0) := by
-  set ext : (J → 𝕜) → n → 𝕜 := fun σ j => if h : j ∈ J then σ ⟨j, h⟩ else 0 with hext
-  have hsupp : ∀ σ, ∀ j ∉ J, ext σ j = 0 := fun σ j hj => by simp [hext, hj]
-  have hres : ∀ σ, (fun j : J => ext σ j) = σ := fun σ => funext fun j => by simp [hext]
+        (Function.extend Subtype.val τ 0) := by
+  classical
+  set ext : (J → 𝕜) → n → 𝕜 := fun σ => Function.extend Subtype.val σ 0 with hext
+  have hsupp : ∀ σ, ∀ j ∉ J, ext σ j = 0 := fun σ j hj => by
+    simp only [hext, Function.extend_val_apply' (p := (· ∈ J)) hj, Pi.zero_apply]
+  have hres : ∀ σ, (fun j : J => ext σ j) = σ := fun σ => funext fun j => by
+    simp only [hext, Function.extend_val_apply (p := (· ∈ J)) j.2]
   simp only [isMinOn_iff, Set.mem_univ, Set.mem_ofPred_eq, forall_const]
   constructor
   · intro h x hx

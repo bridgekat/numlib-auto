@@ -389,6 +389,14 @@ theorem vec_succ_eq (j : ℕ) : vec A b (j + 1) = (‖w A b j‖⁻¹ : 𝕜) �
     exact congrArg (· • gs A b (j + 1))
       (inv_mul_inv_cancel (𝕜 := 𝕜) _ _ (norm_ne_zero_iff.2 h0)).symm
 
+/-- `w_j = ‖w_j‖ v_{j+1}` ([saad2003iterative], Alg 6.1, line 7 read backwards), also on
+breakdown, where both sides vanish. -/
+theorem w_eq_norm_smul_vec (j : ℕ) : w A b j = (‖w A b j‖ : 𝕜) • vec A b (j + 1) := by
+  rw [vec_succ_eq, smul_smul]
+  rcases eq_or_ne (w A b j) 0 with h | h
+  · rw [h, smul_zero]
+  · rw [mul_inv_cancel₀ (RCLike.ofReal_ne_zero.2 (norm_ne_zero_iff.2 h)), one_smul]
+
 private theorem w_eq_zero_iff (j : ℕ) : w A b j = 0 ↔ vec A b (j + 1) = 0 := by
   rw [vec_succ_eq]
   refine ⟨fun h => by rw [h, smul_zero], fun h => ?_⟩
@@ -649,6 +657,22 @@ theorem eq_vec_of_modifiedGramSchmidt {q : ℕ → E} (h0 : q 0 = (‖b‖⁻¹ 
 ([saad2003iterative] §6.3.2, [golub2013matrix] §10.5.1). -/
 theorem mgsVec_eq_vec : mgsVec A b = vec A b :=
   eq_vec_of_modifiedGramSchmidt A b (mgsVec_zero A b) (mgsVec_succ A b)
+
+/-- **Rescaling the starting vector by a positive number does not change the Arnoldi vectors**:
+both sequences satisfy the modified Gram–Schmidt recurrence from `b / ‖b‖`
+(`Arnoldi.eq_vec_of_modifiedGramSchmidt`). -/
+theorem vec_smul_of_pos {c : ℝ} (hc : 0 < c) : vec A ((c : 𝕜) • b) = vec A b := by
+  refine eq_vec_of_modifiedGramSchmidt A b ?_ fun j => ?_
+  · rw [← mgsVec_eq_vec, mgsVec_zero, smul_smul, norm_smul, RCLike.norm_ofReal, abs_of_pos hc]
+    rcases eq_or_ne b 0 with rfl | hb
+    · simp
+    · have hb' : (‖b‖ : 𝕜) ≠ 0 := RCLike.ofReal_ne_zero.2 (norm_ne_zero_iff.2 hb)
+      have hc' : (c : 𝕜) ≠ 0 := RCLike.ofReal_ne_zero.2 hc.ne'
+      congr 1
+      push_cast
+      field_simp
+  · rw [← mgsVec_eq_vec]
+    exact mgsVec_succ A ((c : 𝕜) • b) j
 
 /-- The coefficients of the modified Gram–Schmidt loop are the Arnoldi coefficients: `h i j` is also
 the inner product of `v_i` with `A v_j` after the components along `v_0, …, v_{i-1}` have been
