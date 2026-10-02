@@ -54,8 +54,9 @@ proof.
   `Matrix.posDef_kroneckerSum`: quadratic-form bounds add, with no eigenvalue named.
 * `Matrix.kroneckerSum_mulVec_vec`: on `vec X`, the Kronecker sum is the Sylvester operator
   `X ↦ B X + X Aᵀ`.
-* `Matrix.kroneckerSum_hasBandwidth`: in the positional layout `Fin (n₂ * n₁)`, `A₂ ⊕ₖ A₁` with `A₂`
-  tridiagonal has bandwidth `n₁` (the five-point structure).
+* `Matrix.kroneckerSum_hasBandwidth`: in the positional layout `Fin (n₂ * n₁)`
+  (`Matrix.kroneckerSumFin`, `= A₂ ⊗ 1 + 1 ⊗ A₁` by `Matrix.kroneckerSumFin_eq`), `A₂ ⊕ₖ A₁` with
+  `A₂` tridiagonal has bandwidth `n₁` (the five-point structure).
 
 ## Notation
 
@@ -168,18 +169,31 @@ section Band
 
 variable {n₁ n₂ : ℕ}
 
+/-- The Kronecker sum in the positional layout `Fin (n₂ * n₁)` of `Matrix.kroneckerFin`: the block
+`(j, j')` of `kroneckerSumFin A₂ A₁` is `A₂ j j' • 1 + δ_{jj'} A₁`. -/
+def kroneckerSumFin (A₂ : Matrix (Fin n₂) (Fin n₂) R) (A₁ : Matrix (Fin n₁) (Fin n₁) R) :
+    Matrix (Fin (n₂ * n₁)) (Fin (n₂ * n₁)) R :=
+  (A₂ ⊕ₖ A₁).submatrix finProdFinEquiv.symm finProdFinEquiv.symm
+
+/-- The positional Kronecker sum is `A₂ ⊗ 1 + 1 ⊗ A₁` in the positional layout. -/
+theorem kroneckerSumFin_eq (A₂ : Matrix (Fin n₂) (Fin n₂) R) (A₁ : Matrix (Fin n₁) (Fin n₁) R) :
+    kroneckerSumFin A₂ A₁ = kroneckerFin A₂ 1 + kroneckerFin 1 A₁ := by
+  rw [kroneckerSumFin, kroneckerSum_def, kroneckerFin, kroneckerFin]
+  rfl
+
 /-- In the positional layout `Fin (n₂ * n₁)`, the Kronecker sum `A₂ ⊕ₖ A₁` of an `A₂` of lower
 bandwidth `1` with any `A₁` has lower bandwidth `n₁`: a block of `A₁` is `n₁ × n₁`, and `A₂` couples
 only neighbouring blocks. -/
 theorem kroneckerSum_hasLowerBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
     (A₁ : Matrix (Fin n₁) (Fin n₁) R) (h₂ : A₂.HasLowerBandwidth 1) :
-    ((A₂ ⊕ₖ A₁).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).HasLowerBandwidth n₁ := by
+    (kroneckerSumFin A₂ A₁).HasLowerBandwidth n₁ := by
   rw [hasLowerBandwidth_iff_fin] at h₂ ⊢
   intro I J hIJ
   obtain ⟨⟨j, i⟩, rfl⟩ := finProdFinEquiv.surjective I
   obtain ⟨⟨j', i'⟩, rfl⟩ := finProdFinEquiv.surjective J
   simp only [finProdFinEquiv_apply_val] at hIJ
-  rw [submatrix_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply, kroneckerSum_apply]
+  rw [kroneckerSumFin, submatrix_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply,
+    kroneckerSum_apply]
   have hi := i.is_lt
   have hjj : (j : ℕ) ≠ j' := by
     intro h
@@ -197,8 +211,9 @@ theorem kroneckerSum_hasLowerBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
 /-- The upper-bandwidth twin of `Matrix.kroneckerSum_hasLowerBandwidth`, by transposition. -/
 theorem kroneckerSum_hasUpperBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
     (A₁ : Matrix (Fin n₁) (Fin n₁) R) (h₂ : A₂.HasUpperBandwidth 1) :
-    ((A₂ ⊕ₖ A₁).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).HasUpperBandwidth n₁ := by
-  rw [hasUpperBandwidth_iff_transpose, transpose_submatrix, transpose_kroneckerSum]
+    (kroneckerSumFin A₂ A₁).HasUpperBandwidth n₁ := by
+  rw [hasUpperBandwidth_iff_transpose, kroneckerSumFin, transpose_submatrix,
+    transpose_kroneckerSum]
   exact kroneckerSum_hasLowerBandwidth A₁ᵀ (hasUpperBandwidth_iff_transpose.1 h₂)
 
 /-- The five-point structure ([golub2013matrix] §4.8.4): in the positional layout, the Kronecker sum
@@ -206,8 +221,7 @@ theorem kroneckerSum_hasUpperBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
 "bandwidth `n₁ + 1`" counts the diagonal). -/
 theorem kroneckerSum_hasBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
     (A₁ : Matrix (Fin n₁) (Fin n₁) R) (h₂ : A₂.IsTridiagonal) :
-    ((A₂ ⊕ₖ A₁).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).HasLowerBandwidth n₁ ∧
-      ((A₂ ⊕ₖ A₁).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).HasUpperBandwidth n₁ :=
+    (kroneckerSumFin A₂ A₁).HasLowerBandwidth n₁ ∧ (kroneckerSumFin A₂ A₁).HasUpperBandwidth n₁ :=
   ⟨kroneckerSum_hasLowerBandwidth A₁ (isTridiagonal_iff_hasBandwidth_one.1 h₂).1,
     kroneckerSum_hasUpperBandwidth A₁ (isTridiagonal_iff_hasBandwidth_one.1 h₂).2⟩
 

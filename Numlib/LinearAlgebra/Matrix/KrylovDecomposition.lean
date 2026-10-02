@@ -30,7 +30,8 @@ with residual `h_{j+1,j} q_{j+1}`; the Arnoldi process produces one at every ste
 ## Main results
 
 * `Matrix.IsKrylovDecomposition.conjTranspose_mul_mul`: `B = Qᴴ A Q`.
-* `Matrix.IsKrylovDecomposition.mul_unitary`: a change of basis `Q ↦ Q U`, `B ↦ Uᴴ B U`
+* `Matrix.IsKrylovDecomposition.mul_of_conjTranspose_mul_self`:
+  a change of basis `Q ↦ Q U`, `B ↦ Uᴴ B U`
   ([golub2013matrix] (10.5.9), §10.5.4).
 * `Matrix.IsKrylovDecomposition.leading`: truncation to the leading `j + 1` columns, the residual
   collecting what the discarded columns contributed to column `j` — the one lemma behind implicit
@@ -122,9 +123,9 @@ theorem conjTranspose_mul_mul (h : IsKrylovDecomposition A Q B r b) : Qᴴ * A *
   rw [Matrix.mul_assoc, h.mul_eq, Matrix.mul_add, ← Matrix.mul_assoc, h.conjTranspose_mul_self,
     Matrix.one_mul, mul_vecMulVec, h.conjTranspose_mulVec, zero_vecMulVec, add_zero]
 
-/-- **Change of basis** ([golub2013matrix] (10.5.9) and §10.5.4): for a unitary `U`,
-`A (Q U) = (Q U) (Uᴴ B U) + r (Uᵀ b)ᵀ` is again a Krylov decomposition. -/
-theorem mul_unitary (h : IsKrylovDecomposition A Q B r b) {U : Matrix m m 𝕜}
+/-- **Change of basis** ([golub2013matrix] (10.5.9) and §10.5.4): for a unitary `U`
+(`Uᴴ U = 1`), `A (Q U) = (Q U) (Uᴴ B U) + r (Uᵀ b)ᵀ` is again a Krylov decomposition. -/
+theorem mul_of_conjTranspose_mul_self (h : IsKrylovDecomposition A Q B r b) {U : Matrix m m 𝕜}
     (hU : Uᴴ * U = 1) : IsKrylovDecomposition A (Q * U) (Uᴴ * B * U) r (b ᵥ* U) where
   conjTranspose_mul_self := by
     rw [conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Qᴴ, h.conjTranspose_mul_self,
@@ -208,6 +209,8 @@ theorem leading_of_apply_eq_zero {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matr
       sum_eq_zero fun i hi => by rw [hB i _ ha (mem_Ioi.1 hi), mul_zero]
     rw [hcol, sum_fin_eq_sum_castLE_add_sum_Ioi j (fun i => Q x i * B i (Fin.castLE j.isLt a)), hz,
       add_zero]
+
+@[deprecated (since := "2026-09-30")] alias mul_unitary := mul_of_conjTranspose_mul_self
 
 end IsKrylovDecomposition
 
@@ -530,11 +533,6 @@ theorem implicitQ_of_apply_eq_zero (hQ : Q ∈ unitaryGroup (Fin (N + 1)) 𝕜)
 
 variable {A Q V : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
 
-/-- For real matrices `star` is the transpose. -/
-private theorem star_eq_transpose_real (M : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
-    star M = Mᵀ :=
-  conjTranspose_eq_transpose_of_trivial M
-
 /-- The implicit Q theorem for real orthogonal matrices, unreduced case: `V = Q D` and
 `Vᵀ A V = D (Qᵀ A Q) D` with `D = diag(±1)`, `d 0 = 1`. -/
 theorem implicitQ_real (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ)
@@ -542,13 +540,13 @@ theorem implicitQ_real (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ)
     (hG : (Vᵀ * A * V).IsUpperHessenberg) (h0 : V.col 0 = Q.col 0) :
     ∃ d : Fin (N + 1) → ℝ, (∀ i, d i = 1 ∨ d i = -1) ∧ d 0 = 1 ∧ V = Q * diagonal d ∧
       Vᵀ * A * V = diagonal d * (Qᵀ * A * Q) * diagonal d := by
-  rw [← star_eq_transpose_real] at hH hG
+  rw [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose] at hH hG
   obtain ⟨d, hd1, hd0, hVQ, hGH⟩ := implicitQ hQ hV hH hG h0
   refine ⟨d, fun i => ?_, hd0, hVQ, ?_⟩
   · have := hd1 i
     rwa [Real.norm_eq_abs, abs_eq zero_le_one] at this
-  · rw [← star_eq_transpose_real, ← star_eq_transpose_real, hGH, star_eq_transpose_real,
-      diagonal_transpose]
+  · simp only [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose, hGH]
+    rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, diagonal_transpose]
 
 /-- [golub2013matrix] **Theorem 7.4.2**, as the book states it, for real orthogonal `Q`, `V`: the
 columns `i ≤ k` of `V` are `± ` those of `Q`, `|g_{i+1,i}| = |h_{i+1,i}|` for `i < k`, and
@@ -563,8 +561,7 @@ theorem implicitQ_of_apply_eq_zero_real (hQ : Q ∈ orthogonalGroup (Fin (N + 1)
         |(Vᵀ * A * V) i.succ i.castSucc| = |(Qᵀ * A * Q) i.succ i.castSucc|) ∧
       (∀ i : Fin N, (i : ℕ) = k → (Qᵀ * A * Q) i.succ i.castSucc = 0 →
         (Vᵀ * A * V) i.succ i.castSucc = 0) := by
-  rw [← star_eq_transpose_real] at hH hG hsub ⊢
-  rw [← star_eq_transpose_real]
+  simp only [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose] at hH hG hsub ⊢
   obtain ⟨ha, hb, hc⟩ := implicitQ_of_apply_eq_zero hQ hV hH hG h0 hk hsub
   refine ⟨fun i hi => ?_, fun i hi => ?_, hc⟩
   · obtain ⟨c, hc1, hVc⟩ := ha i hi

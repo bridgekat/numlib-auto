@@ -296,20 +296,9 @@ theorem exists_orthonormal_cols_norm_sub_le (X : Matrix n r 𝕜)
   rw [lpOpNorm_two] at hX
   refine ⟨Q, h.conjTranspose_mul_self, ?_, ?_⟩
   · have hG : IsUnit (Xᴴ * X) := by
-      refine mulVec_injective_iff_isUnit.1 fun v w hvw => ?_
-      rw [← sub_eq_zero]
-      set x : EuclideanSpace 𝕜 r := WithLp.toLp 2 (v - w)
-      have hx : toEuclideanLin (Xᴴ * X) x = 0 := by
-        rw [toEuclideanLin_toLp, mulVec_sub, hvw, sub_self, WithLp.toLp_zero]
-      have hle := norm_toEuclideanLin_apply_le (Xᴴ * X - 1) x
-      rw [toEuclideanLin_sub_apply, hx, toEuclideanLin_one_apply, zero_sub, norm_neg] at hle
-      have hn : ‖x‖ = 0 := by
-        by_contra hne
-        have hpos := lt_of_le_of_ne (norm_nonneg _) (Ne.symm hne)
-        have : ‖x‖ ≤ τ * ‖x‖ := hle.trans (mul_le_mul_of_nonneg_right hX hpos.le)
-        nlinarith
-      rw [norm_eq_zero] at hn
-      exact (WithLp.toLp_eq_zero 2).1 hn
+      -- the Neumann series in the normed ring of `‖·‖₂`
+      have h1 : ‖1 - Xᴴ * X‖ < 1 := by rw [norm_sub_rev]; exact hX.trans_lt hτ
+      simpa using (Units.oneSub _ h1).isUnit
     have hP := (isUnit_iff_isUnit_det P).1 (h.isUnit_of_isUnit_conjTranspose_mul_self hG)
     have hQX : Q = X * P⁻¹ := by
       rw [h.eq_mul, Matrix.mul_assoc, mul_nonsing_inv _ hP, Matrix.mul_one]

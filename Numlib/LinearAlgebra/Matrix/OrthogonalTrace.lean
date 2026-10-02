@@ -7,23 +7,24 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.Algebra.Order.Star.Real
-import Mathlib.LinearAlgebra.Matrix.SchurComplement
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
+import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
-# Trace inequalities for unitary and real orthogonal matrices
+# Trace inequalities for unitary and orthogonal matrices
 
 * `Matrix.re_trace_mul_le_trace_of_posSemidef`: a unitary factor does not increase the real trace
   of a positive semidefinite matrix, `re tr(W P) ≤ re tr P`.
 
-Facts about a real matrix `O` with `Oᵀ O = 1`:
+Facts about a real orthogonal matrix `O ∈ O(n)`:
 
-* `Matrix.det_sq_eq_one_of_transpose_mul_self`: `(det O)² = 1`.
+* `Matrix.det_sq_eq_one_of_mem_orthogonalGroup`: `(det O)² = 1`, over any commutative ring.
 * `Matrix.PosSemidef.trace_mul_le_trace`: the real case of the first item, `tr(R O) ≤ tr R`.
 * `Matrix.trace_le_card_sub_two_of_det_eq_neg_one`: an improper orthogonal matrix
   (`det O = -1`) has `tr O ≤ n - 2`.
-* `Matrix.trace_mul_one_sub_ge`: for a rotation `W` and a symmetric `P ⪰ b (1 - u uᵀ) + a u uᵀ`
-  (`u` a unit vector, `a ≤ b`), `tr(P (1 - W)) ≥ (a + b)/2 · tr(1 - W)`.
+* `Matrix.le_trace_mul_one_sub`: for a rotation `W ∈ SO(n)` and a symmetric
+  `P ⪰ b (1 - u uᵀ) + a u uᵀ` (`u` a unit vector, `a ≤ b`),
+  `(a + b)/2 · tr(1 - W) ≤ tr(P (1 - W))`.
 
 They are the trace estimates behind the orthogonal Procrustes problem
 (`Numlib/LinearAlgebra/Matrix/Procrustes`) and the real Li–Sun perturbation bound for the
@@ -36,12 +37,18 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The determinant of a real orthogonal matrix is `±1`: its square is `1`. -/
-theorem det_sq_eq_one_of_transpose_mul_self {O : Matrix n n ℝ} (hO : Oᵀ * O = 1) :
-    O.det ^ 2 = 1 := by
-  have := congrArg det hO
+/-- The determinant of an orthogonal matrix is `±1`: its square is `1`. -/
+theorem det_sq_eq_one_of_mem_orthogonalGroup {R : Type*} [CommRing R] {O : Matrix n n R}
+    (hO : O ∈ orthogonalGroup n R) : O.det ^ 2 = 1 := by
+  have := congrArg det ((mem_orthogonalGroup_iff' n R).1 hO)
   rw [det_mul, det_transpose, det_one] at this
   rw [sq]; exact this
+
+/-- The determinant of a real matrix with `Oᵀ O = 1` is `±1`: its square is `1`. -/
+@[deprecated det_sq_eq_one_of_mem_orthogonalGroup +typeChanged (since := "2026-09-30")]
+theorem det_sq_eq_one_of_transpose_mul_self {O : Matrix n n ℝ} (hO : Oᵀ * O = 1) :
+    O.det ^ 2 = 1 :=
+  det_sq_eq_one_of_mem_orthogonalGroup ((mem_orthogonalGroup_iff' n ℝ).2 hO)
 
 /-- **A unitary factor does not increase the real trace of a positive semidefinite matrix**:
 `re tr(W P) ≤ re tr P` for `W` unitary and `P ⪰ 0` — the step "`tr(ZΣ) = ∑ z_ii σ_i ≤ ∑ σ_i`" of
@@ -81,16 +88,16 @@ theorem re_trace_mul_le_trace_of_posSemidef {𝕜 : Type*} [RCLike 𝕜] {W : Ma
 /-- The trace of a positive semidefinite matrix is not increased by an orthogonal factor:
 `tr(R O) ≤ tr R`, the real case of `Matrix.re_trace_mul_le_trace_of_posSemidef`. -/
 theorem PosSemidef.trace_mul_le_trace {R O : Matrix n n ℝ} (hR : R.PosSemidef)
-    (hO : Oᵀ * O = 1) : trace (R * O) ≤ trace R := by
-  have h := re_trace_mul_le_trace_of_posSemidef ((mem_orthogonalGroup_iff' n ℝ).2 hO) hR
+    (hO : O ∈ orthogonalGroup n ℝ) : trace (R * O) ≤ trace R := by
+  have h := re_trace_mul_le_trace_of_posSemidef hO hR
   rwa [RCLike.re_to_real, RCLike.re_to_real, trace_mul_comm] at h
 
 /-- An improper orthogonal matrix has trace at most `n - 2`: `-1` is an eigenvalue
 (`det(O + 1) = det O det(1 + Oᵀ) = -det(O + 1)`), and on the orthogonal complement of its
 eigenvector the trace is at most the dimension (`Matrix.PosSemidef.trace_mul_le_trace`). -/
-theorem trace_le_card_sub_two_of_det_eq_neg_one {O : Matrix n n ℝ} (hO : Oᵀ * O = 1)
-    (hdet : O.det = -1) : trace O ≤ Fintype.card n - 2 := by
-  have hO' : O * Oᵀ = 1 := mul_eq_one_comm.1 hO
+theorem trace_le_card_sub_two_of_det_eq_neg_one {O : Matrix n n ℝ}
+    (hO : O ∈ orthogonalGroup n ℝ) (hdet : O.det = -1) : trace O ≤ Fintype.card n - 2 := by
+  have hO' : O * Oᵀ = 1 := (mem_orthogonalGroup_iff n ℝ).1 hO
   have hdet0 : (O + 1).det = 0 := by
     have e : O + 1 = O * (O + 1)ᵀ := by
       rw [transpose_add, transpose_one, Matrix.mul_add, hO', Matrix.mul_one, add_comm]
@@ -127,35 +134,27 @@ theorem trace_le_card_sub_two_of_det_eq_neg_one {O : Matrix n n ℝ} (hO : Oᵀ 
   rw [htPr, htPrO] at h1
   linarith
 
-/-- **The pairing inequality** behind the real Li–Sun bound: if `W` is a rotation (`Wᵀ W = 1`,
-`det W = 1`) and the symmetric `P` satisfies `P ⪰ b (1 - u uᵀ) + a u uᵀ` for a unit vector `u` and
-`a ≤ b` (for instance `a`, `b` the two smallest eigenvalues of `P`), then
-`tr(P (1 - W)) ≥ (a + b)/2 · tr(1 - W)`. Write `P - (a + b)/2 = R₀ + (b - a)/2 · H` with `R₀ ⪰ 0`
-and the reflection `H = 1 - 2 u uᵀ`: `tr(R₀ (1 - W)) ≥ 0` because `W` is orthogonal
-(`Matrix.PosSemidef.trace_mul_le_trace`), and `tr(H (1 - W)) = n - 2 - tr(H W) ≥ 0` because `H W`
-is an improper orthogonal matrix (`Matrix.trace_le_card_sub_two_of_det_eq_neg_one`). -/
-theorem trace_mul_one_sub_ge {P W : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ} (hab : a ≤ b)
+/-- **The pairing inequality** behind the real Li–Sun bound: if `W` is a rotation (`W ∈ SO(n)`)
+and the symmetric `P` satisfies `P ⪰ b (1 - u uᵀ) + a u uᵀ` for a unit vector `u` and `a ≤ b`
+(for instance `a`, `b` the two smallest eigenvalues of `P`), then
+`(a + b)/2 · tr(1 - W) ≤ tr(P (1 - W))`. Write `P - (a + b)/2 = R₀ + (b - a)/2 · H` with `R₀ ⪰ 0`
+and the reflection `H = 1 - 2 u uᵀ` (`Matrix.householder u`, of determinant `-1`):
+`tr(R₀ (1 - W)) ≥ 0` because `W` is orthogonal (`Matrix.PosSemidef.trace_mul_le_trace`), and
+`tr(H (1 - W)) = n - 2 - tr(H W) ≥ 0` because `H W` is an improper orthogonal matrix
+(`Matrix.trace_le_card_sub_two_of_det_eq_neg_one`). -/
+theorem le_trace_mul_one_sub {P W : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ} (hab : a ≤ b)
     (hu : u ⬝ᵥ u = 1) (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef)
-    (hW : Wᵀ * W = 1) (hdet : W.det = 1) :
+    (hW : W ∈ specialOrthogonalGroup n ℝ) :
     (a + b) / 2 * trace (1 - W) ≤ trace (P * (1 - W)) := by
+  obtain ⟨hWO, hdet⟩ := mem_specialOrthogonalGroup_iff.1 hW
   set R₀ := P - b • 1 + (b - a) • vecMulVec u u with hR₀
-  set H := 1 - (2 : ℝ) • vecMulVec u u with hH
-  have hHt : Hᵀ = H := by
-    rw [hH, transpose_sub, transpose_one, transpose_smul, transpose_vecMulVec]
-  have hHH : Hᵀ * H = 1 := by
-    rw [hHt, hH, Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_one,
-      Matrix.one_mul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, vecMulVec_mul_vecMulVec, hu,
-      one_smul]
-    module
-  have hdetH : H.det = -1 := by
-    have e : H = 1 + replicateCol Unit (-(2 : ℝ) • u) * replicateRow Unit u := by
-      rw [hH, ← vecMulVec_eq, smul_vecMulVec, neg_smul, sub_eq_add_neg]
-    rw [e, det_one_add_replicateCol_mul_replicateRow, dotProduct_smul, dotProduct_comm, hu]
-    norm_num
-  have hHW : (H * W)ᵀ * (H * W) = 1 := by
-    rw [transpose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Hᵀ, hHH, Matrix.one_mul, hW]
-  have h1 : trace (R₀ * W) ≤ trace R₀ := hP.trace_mul_le_trace hW
-  have h2 := trace_le_card_sub_two_of_det_eq_neg_one hHW (by rw [det_mul, hdetH, hdet]; ring)
+  have hu' : star u ⬝ᵥ u = 1 := by rwa [star_trivial]
+  set H := householder u with hH
+  have hHO : H ∈ orthogonalGroup n ℝ := householder_mem_unitaryGroup hu'
+  have hH' : H = 1 - (2 : ℝ) • vecMulVec u u := by rw [hH, householder, star_trivial]
+  have h1 : trace (R₀ * W) ≤ trace R₀ := hP.trace_mul_le_trace hWO
+  have h2 := trace_le_card_sub_two_of_det_eq_neg_one (mul_mem hHO hWO)
+    (by rw [det_mul, det_householder hu', hdet]; ring)
   have htu : trace (vecMulVec u u) = 1 := by rw [trace_vecMulVec, hu]
   have hPe : P = R₀ + b • 1 - (b - a) • vecMulVec u u := by rw [hR₀]; abel
   have e1 : trace (P * (1 - W)) = (trace R₀ - trace (R₀ * W)) + b * trace (1 - W)
@@ -165,11 +164,20 @@ theorem trace_mul_one_sub_ge {P W : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ} 
       Matrix.mul_one, trace_add, trace_sub, trace_smul, smul_eq_mul]
     ring
   have e2 : trace (H * W) = trace W - 2 * trace (vecMulVec u u * W) := by
-    rw [hH, Matrix.sub_mul, Matrix.one_mul, trace_sub, Matrix.smul_mul, trace_smul, smul_eq_mul]
+    rw [hH', Matrix.sub_mul, Matrix.one_mul, trace_sub, Matrix.smul_mul, trace_smul, smul_eq_mul]
   have e3 : trace (1 - W) = Fintype.card n - trace W := by rw [trace_sub, trace_one]
   rw [e1, e3, htu]
   rw [e2] at h2
   nlinarith [mul_nonneg (sub_nonneg.2 hab)
     (show 0 ≤ (Fintype.card n - trace W) - 2 * (1 - trace (vecMulVec u u * W)) by linarith)]
+
+/-- The pairing inequality with the hypotheses unbundled. -/
+@[deprecated le_trace_mul_one_sub +typeChanged (since := "2026-09-30")]
+theorem trace_mul_one_sub_ge {P W : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hu : u ⬝ᵥ u = 1) (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef)
+    (hW : Wᵀ * W = 1) (hdet : W.det = 1) :
+    (a + b) / 2 * trace (1 - W) ≤ trace (P * (1 - W)) :=
+  le_trace_mul_one_sub hab hu hP
+    (mem_specialOrthogonalGroup_iff.2 ⟨(mem_orthogonalGroup_iff' n ℝ).2 hW, hdet⟩)
 
 end Matrix

@@ -1,9 +1,3 @@
-/-
-Upstreaming candidate: general material with no numerical-analysis-specific content, written
-to Mathlib conventions with a view to contributing it to Mathlib.
-Natural home: beside `Mathlib.LinearAlgebra.Matrix.Kronecker`.
-Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
--/
 import Numlib.Analysis.Matrix.SingularValues
 import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.HermitianPart
@@ -310,7 +304,8 @@ open scoped Matrix.Norms.Frobenius
 variable {n : Type*} [Fintype n]
 
 /-- The squared Frobenius norm of a real matrix is the sum of the squared entries. -/
-private theorem frobenius_norm_sq_real (A : Matrix n n ℝ) : ‖A‖ ^ 2 = ∑ i, ∑ j, A i j ^ 2 := by
+private theorem frobenius_norm_sq_real {p q : Type*} [Fintype p] [Fintype q] (A : Matrix p q ℝ) :
+    ‖A‖ ^ 2 = ∑ i, ∑ j, A i j ^ 2 := by
   rw [frobenius_norm_sq_eq_sum_sq]
   simp only [Real.norm_eq_abs, sq_abs]
 

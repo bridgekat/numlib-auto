@@ -58,7 +58,7 @@ Cholesky to `Numlib/LinearAlgebra/Matrix/Cholesky`.
 * `Matrix.IsLU.det_leadingPrincipalSubmatrix`, `Matrix.IsLU.det_eq_prod_diag`,
   `Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor`: the leading principal minors are the
   products of the pivots, and the pivots are ratios of consecutive minors ((3.39)).
-* `Matrix.exists_isRectLU_of_forall_isUnit`: a rectangular matrix whose leading blocks of order
+* `Matrix.exists_isRectLU_of_forall_det_ne_zero`: a rectangular matrix whose leading blocks of order
   at most `min M N` are nonsingular has a rectangular LU factorization, by bordering with zeros to
   a square matrix and the block LU factorization along the labelling `i ↦ min i (min M N)`.
 * `Matrix.existsUnique_isLDM` (Theorem 3.5, [golub2013matrix] Theorem 4.1.3, with the *strict*
@@ -1011,21 +1011,25 @@ since the index types differ (the rectangular band vocabulary of
 structure IsRectLU [Semiring R] (A : Matrix (Fin M) (Fin N) R) (L : Matrix (Fin M) (Fin P) R)
     (U : Matrix (Fin P) (Fin N) R) : Prop where
   /-- The lower factor is lower trapezoidal: `L i j = 0` for `i < j`. -/
-  lower : L.HasUpperBandwidthRect 0
+  hasUpperBandwidthRect : L.HasUpperBandwidthRect 0
   /-- The lower factor has ones on its diagonal. -/
-  lower_apply_self : ∀ (i : Fin M) (j : Fin P), (i : ℕ) = j → L i j = 1
+  apply_eq_one : ∀ (i : Fin M) (j : Fin P), (i : ℕ) = j → L i j = 1
   /-- The upper factor is upper trapezoidal: `U i j = 0` for `j < i`. -/
-  upper : U.HasLowerBandwidthRect 0
+  hasLowerBandwidthRect : U.HasLowerBandwidthRect 0
   /-- The factors multiply to `A`. -/
   mul_eq : L * U = A
+
+@[deprecated (since := "2026-09-30")] alias IsRectLU.lower := IsRectLU.hasUpperBandwidthRect
+@[deprecated (since := "2026-09-30")] alias IsRectLU.lower_apply_self := IsRectLU.apply_eq_one
+@[deprecated (since := "2026-09-30")] alias IsRectLU.upper := IsRectLU.hasLowerBandwidthRect
 
 /-- On a square `Fin N` the rectangular LU factorization is the LU factorization. -/
 theorem isRectLU_iff_isLU [Semiring R] {A L U : Matrix (Fin N) (Fin N) R} :
     IsRectLU A L U ↔ IsLU A L U := by
   constructor
   · intro h
-    refine ⟨⟨fun i j hij => h.lower i j ?_, fun i => h.lower_apply_self i i rfl⟩,
-      fun i j hij => h.upper i j ?_, h.mul_eq⟩
+    refine ⟨⟨fun i j hij => h.hasUpperBandwidthRect i j ?_, fun i => h.apply_eq_one i i rfl⟩,
+      fun i j hij => h.hasLowerBandwidthRect i j ?_, h.mul_eq⟩
     · rw [add_zero]; exact OrderDual.toDual_lt_toDual.1 hij
     · rw [add_zero]; exact hij
   · intro h
@@ -1034,6 +1038,32 @@ theorem isRectLU_iff_isLU [Semiring R] {A L U : Matrix (Fin N) (Fin N) R} :
     · rw [add_zero] at hij; exact OrderDual.toDual_lt_toDual.2 hij
     · rw [Fin.ext hij, h.isUnitLowerTriangular.diag_eq_one]
     · rw [add_zero] at hij; exact hij
+
+/-- **Cutting a square factorization to a rectangular one**: if `L U = S` on `Fin K`, the leading
+`M × N` block of `S` is `A`, the leading `M × P` block of `L` is unit lower trapezoidal, the
+leading `P × N` block of `U` is upper trapezoidal, and the inner indices from `P` on contribute
+nothing to the leading block, then the cut factors are a rectangular LU factorization of `A`. The
+common last step of the existence proofs that pad `A` to a square. -/
+theorem isRectLU_submatrix_of_mul_eq [Semiring R] {K : ℕ} {A : Matrix (Fin M) (Fin N) R}
+    {S L U : Matrix (Fin K) (Fin K) R} (hLU : L * U = S) (hM : M ≤ K) (hN : N ≤ K) (hP : P ≤ K)
+    (hA : ∀ i j, S (Fin.castLE hM i) (Fin.castLE hN j) = A i j)
+    (hL : ∀ (i : Fin M) (j : Fin P), (i : ℕ) < j → L (Fin.castLE hM i) (Fin.castLE hP j) = 0)
+    (hLd : ∀ (i : Fin M) (j : Fin P), (i : ℕ) = j → L (Fin.castLE hM i) (Fin.castLE hP j) = 1)
+    (hU : ∀ (i : Fin P) (j : Fin N), (j : ℕ) < i → U (Fin.castLE hP i) (Fin.castLE hN j) = 0)
+    (hout : ∀ (i : Fin M) (j : Fin N) (r : Fin K), P ≤ (r : ℕ) →
+      L (Fin.castLE hM i) r * U r (Fin.castLE hN j) = 0) :
+    IsRectLU A (L.submatrix (Fin.castLE hM) (Fin.castLE hP))
+      (U.submatrix (Fin.castLE hP) (Fin.castLE hN)) where
+  hasUpperBandwidthRect i j hij := hL i j (by simpa using hij)
+  apply_eq_one := hLd
+  hasLowerBandwidthRect i j hij := hU i j (by simpa using hij)
+  mul_eq := by
+    ext i j
+    rw [← hA, ← hLU, mul_apply, mul_apply]
+    refine Fintype.sum_of_injective (Fin.castLE hP) (Fin.castLE_injective hP) _ _
+      (fun r hr => hout i j r ?_) fun r => rfl
+    by_contra hcon
+    exact hr ⟨⟨r, by omega⟩, rfl⟩
 
 /-- The bordered square matrix of the rectangular existence proof: `A` in the leading `M × N`
 corner of a `max M N` square, zero elsewhere. -/
@@ -1050,7 +1080,7 @@ order at most `min M N` is nonsingular, `A` has a rectangular LU factorization w
 factorization along the labelling `i ↦ min i (min M N)` (singletons, then one trailing block),
 whose strict leading blocks are the leading blocks of `A`; the leading `M × P` part of the lower
 factor and `P × N` part of the upper factor are the rectangular factors. -/
-theorem exists_isRectLU_of_forall_isUnit {A : Matrix (Fin M) (Fin N) K}
+theorem exists_isRectLU_of_forall_det_ne_zero {A : Matrix (Fin M) (Fin N) K}
     (hA : ∀ k (hk : k + 1 ≤ min M N),
       (A.submatrix (Fin.castLE (hk.trans (min_le_left _ _)))
         (Fin.castLE (hk.trans (min_le_right _ _)))).det ≠ 0) :
@@ -1080,28 +1110,25 @@ theorem exists_isRectLU_of_forall_isUnit {A : Matrix (Fin M) (Fin N) K}
     rw [dite_eq_left_of_eq_true (eq_true ⟨by omega, by omega⟩)]
     rfl
   obtain ⟨L, U, h⟩ := exists_isBlockLU_of_forall_isUnit hblock
-  refine ⟨of fun i j => L ⟨i, by omega⟩ ⟨j, by omega⟩, of fun i j => U ⟨i, by omega⟩ ⟨j, by omega⟩,
-    ⟨fun i j hij => ?_, fun i j hij => ?_, fun i j hij => ?_, ?_⟩⟩
+  refine ⟨_, _, isRectLU_submatrix_of_mul_eq h.mul_eq (le_max_left M N) (le_max_right M N)
+    ((min_le_left M N).trans (le_max_left M N)) (fun i j => ?_) (fun i j hij => ?_)
+    (fun i j hij => ?_) (fun i j hij => ?_) (fun i j r hr => ?_)⟩
+  · rw [rectBorder, dite_eq_left_of_eq_true (eq_true ⟨i.2, j.2⟩)]
+    rfl
   · exact h.isBlockUnitLowerTriangular.blockTriangular (by
-      simp only [Function.comp_apply, OrderDual.toDual_lt_toDual, b]; omega)
+      simp only [Function.comp_apply, OrderDual.toDual_lt_toDual, b, Fin.val_castLE]; omega)
   · change L ⟨i, _⟩ ⟨j, _⟩ = 1
     rw [show (⟨j, _⟩ : Fin (max M N)) = ⟨i, by omega⟩ from Fin.ext hij.symm]
     exact (h.isBlockUnitLowerTriangular.apply_eq_one_of_eq _ _ rfl).trans (one_apply_eq _)
-  · exact h.blockTriangular (by simp only [b]; omega)
-  · ext i j
-    have := congrFun (congrFun h.mul_eq ⟨i, by omega⟩) ⟨j, by omega⟩
-    rw [rectBorder, dite_eq_left_of_eq_true (eq_true ⟨i.2, j.2⟩), mul_apply] at this
-    simp only [mul_apply, of_apply]
-    rw [← this]
-    refine Fintype.sum_of_injective (fun r : Fin p => (⟨r, by omega⟩ : Fin (max M N)))
-      (fun r s hrs => Fin.ext (Fin.mk.inj_iff.1 hrs)) _ _ (fun r hr => ?_) (fun r => rfl)
-    have hrp : p ≤ (r : ℕ) := by
-      by_contra hcon
-      exact hr ⟨⟨r, by omega⟩, rfl⟩
-    by_cases hi : (i : ℕ) < p
+  · exact h.blockTriangular (by simp only [b, Fin.val_castLE]; omega)
+  · by_cases hi : (i : ℕ) < p
     · rw [h.isBlockUnitLowerTriangular.blockTriangular (by
-        simp only [Function.comp_apply, OrderDual.toDual_lt_toDual, b]; omega), zero_mul]
-    · rw [h.blockTriangular (by simp only [b]; omega), mul_zero]
+        simp only [Function.comp_apply, OrderDual.toDual_lt_toDual, b, Fin.val_castLE]; omega),
+        zero_mul]
+    · rw [h.blockTriangular (by simp only [b, Fin.val_castLE]; omega), mul_zero]
+
+@[deprecated (since := "2026-09-30")]
+alias exists_isRectLU_of_forall_isUnit := exists_isRectLU_of_forall_det_ne_zero
 
 end RectLU
 

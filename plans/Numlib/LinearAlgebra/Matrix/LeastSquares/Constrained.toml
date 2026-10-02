@@ -21,7 +21,7 @@ id = "IsLSQISolution.norm_eq_of_lt"
 id = "isLSQISolution_tikhonov"
 
 [[node]]
-id = "existsUnique_norm_tikhonov_mulVec_eq"
+id = "existsUnique_norm_toEuclideanLin_tikhonov_eq"
 
 [[node]]
 id = "isLSQISolution_iff_of_isGSVD"
@@ -59,9 +59,6 @@ id = "tendsto_penaltyLSE"
 
 [[node]]
 id = "IsLSESolution.eq_of_ker_inf_ker_eq_bot"
-
-[[node]]
-id = "continuousOn_norm_tikhonov_mulVec"
 
 [[node]]
 id = "augmentedLSE_mulVec"

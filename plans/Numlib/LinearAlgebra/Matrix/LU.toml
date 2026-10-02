@@ -193,7 +193,7 @@ id = "IsRectLU"
 id = "isRectLU_iff_isLU"
 
 [[node]]
-id = "exists_isRectLU_of_forall_isUnit"
+id = "exists_isRectLU_of_forall_det_ne_zero"
 
 [[node]]
 id = "lowerBidiagonalOf"

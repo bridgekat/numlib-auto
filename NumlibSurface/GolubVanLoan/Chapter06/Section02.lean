@@ -438,9 +438,12 @@ theorem isLSESolution_qr {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
             z) ∧
       (LinearIndependent ℝ Aᵀ → ∃! x, IsLSESolution A b B d x) := by
   have hQR' : IsQR Bᴴ Q R := by rwa [conjTranspose_eq_transpose_of_trivial]
+  have hL : Q.lastColumns (Nat.sub_le n m₂) =
+      Q.submatrix id (Fin.cast (Nat.add_sub_cancel' hpn) ∘ Fin.natAdd m₂) :=
+    lastColumns_eq_submatrix Q _ fun j => by simp; omega
   have hsol := isLSESolution_of_isQR hpn hB hQR' (by
-    rwa [conjTranspose_eq_transpose_of_trivial])
-  rw [conjTranspose_eq_transpose_of_trivial] at hsol
+    rw [hL]; rwa [conjTranspose_eq_transpose_of_trivial])
+  rw [conjTranspose_eq_transpose_of_trivial, hL] at hsol
   refine ⟨hsol, fun hA => ⟨_, hsol, fun x' hx' => hsol.eq_of_ker_inf_ker_eq_bot hx' ?_⟩⟩
   have hker : LinearMap.ker A.mulVecLin = ⊥ :=
     LinearMap.ker_eq_bot.2 (mulVec_injective_of_linearIndependent_transpose hA)

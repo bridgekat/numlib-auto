@@ -792,7 +792,7 @@ private theorem householderLSLoop_rounding {fp : RoundingModel ℝ} (hfp : fp.Is
     householderLSStep_rounding hfp (K := 18 * m + 31) hu st.1 k (lt_of_lt_of_le k.isLt hnm) h2
       h3 (hO k) hβ0 y hy'
   set Q := prodRev (dataReflector v β) ((k : ℕ) + 1) with hQ
-  have hQO : Q ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup hO _
+  have hQO : Q ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup fun k _ => hO k
   set e := y' - dataReflector v β k *ᵥ y with he
   refine ⟨db + Qᵀ *ᵥ e, ?_, ?_⟩
   · calc y' = dataReflector v β k *ᵥ y + e := by rw [he]; abel
@@ -806,7 +806,8 @@ private theorem householderLSLoop_rounding {fp : RoundingModel ℝ} (hfp : fp.Is
       exact hstep
     have h2 : ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ ≤
         (1 + ε) ^ (k : ℕ) * ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ := by
-      rw [hy, norm_toLp_mulVec_of_mem_orthogonalGroup (prodRev_mem_orthogonalGroup hO _),
+      rw [hy, norm_toLp_mulVec_of_mem_orthogonalGroup
+        (prodRev_mem_orthogonalGroup fun k _ => hO k),
         WithLp.toLp_add]
       refine (norm_add_le _ _).trans ?_
       linarith
@@ -864,7 +865,7 @@ theorem equation_5_3_6 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n
     have := gamma_nonneg hu0 (hlt (3 * (18 * m + 31) + m + 3) (by omega))
     positivity
   set W := prodRev (dataReflector v β) n with hWdef
-  have hWO : W ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup hO n
+  have hWO : W ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup (r := n) fun k _ => hO k
   have hWtO : Wᵀ ∈ orthogonalGroup (Fin m) ℝ := transpose_mem_unitaryGroup_iff.2 hWO
   set T := (upperPart st.1).firstRows hnm with hT
   have hTu : T.IsUpperTriangular := fun i j hij => by

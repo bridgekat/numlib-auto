@@ -104,10 +104,10 @@ source = "Golub–Van Loan, Matrix Computations, Algorithm 5.6.2"
 id = "toEuclideanLin_mul_conjTranspose_eq_starProjection"
 
 [[node]]  # staged by ch05; moved from SVD (it uses LeastSquares' pinv lemmas)
-id = "pinv_isMinOn_frobenius"
+id = "isMinOn_norm_mul_sub_one_pinv"
 
 [[node]]  # staged by ch12 as `Tensor.isMinOn_norm_sub_mul_transpose_iff`; moved and generalized (review L3)
-id = "isMinOn_norm_sub_mul_transpose_iff"
+id = "isMinOn_norm_sub_mul_conjTranspose_iff"
 
 [[node]]  # added by ls1
 id = "finrank_range_toEuclideanLin"

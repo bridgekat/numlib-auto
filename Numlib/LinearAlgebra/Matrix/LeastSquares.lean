@@ -1,10 +1,3 @@
-/-
-Upstreaming candidate: general material with no numerical-analysis-specific content, written
-to Mathlib conventions with a view to contributing it to Mathlib.
-Natural home: `Mathlib.Analysis.InnerProductSpace.LeastSquares`, beside the pseudoinverse of
-`Numlib/LinearAlgebra/Matrix/SVD`.
-Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
--/
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.LinearAlgebra.Matrix.Block
 import Numlib.Analysis.Matrix.OperatorNorm
@@ -56,7 +49,7 @@ that the pseudoinverse results there apply verbatim ([quarteroni2000numerical] �
   (`Matrix.IsQR.range_orthogonal_eq_span_lastColumns`, [golub2013matrix] Theorem 5.2.2); a matrix
   with orthonormal columns projects onto its range
   (`Matrix.toEuclideanLin_mul_conjTranspose_eq_starProjection`).
-* `Matrix.isMinOn_norm_sub_mul_transpose_iff`: least squares with a matrix unknown on the left,
+* `Matrix.isMinOn_norm_sub_mul_conjTranspose_iff`: least squares with a matrix unknown on the left,
   `F ↦ ‖A - F Kᴴ‖_F`, row by row ([golub2013matrix] (12.5.16)–(12.5.20)).
 
 The children refine the problem: `LeastSquares/Weighted` (row and column weights, the augmented
@@ -336,8 +329,8 @@ variable {o : Type*} [Fintype o] [LinearOrder o] [DecidableEq m]
 
 /-- **[quarteroni2000numerical] Theorem 3.8, (3.75)**: through any reduced QR factorization
 `A = Q̃ R̃` with `Q̃ᴴ Q̃ = 1` and `R̃` upper triangular with nowhere-zero diagonal (in particular
-the one of `Matrix.exists_qr`), `x = R̃⁻¹ Q̃ᴴ b` is a least-squares solution of `A x = b`: it solves
-the normal equations, `Aᴴ A x = R̃ᴴ Q̃ᴴ Q̃ R̃ R̃⁻¹ Q̃ᴴ b = R̃ᴴ Q̃ᴴ b = Aᴴ b`. -/
+the one of `Matrix.exists_isThinQR`), `x = R̃⁻¹ Q̃ᴴ b` is a least-squares solution of `A x = b`: it
+solves the normal equations, `Aᴴ A x = R̃ᴴ Q̃ᴴ Q̃ R̃ R̃⁻¹ Q̃ᴴ b = R̃ᴴ Q̃ᴴ b = Aᴴ b`. -/
 theorem isLeastSquaresSolution_of_qr {A Q : Matrix m o 𝕜} {R : Matrix o o 𝕜} (hA : A = Q * R)
     (hQ : Qᴴ * Q = 1) (hR : R.IsUpperTriangular) (hd : ∀ i, R i i ≠ 0) (b : EuclideanSpace 𝕜 m) :
     IsLeastSquaresSolution A b (toEuclideanLin (R⁻¹ * Qᴴ) b) := by
@@ -542,38 +535,43 @@ variable {M N : ℕ} {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin 
   {R : Matrix (Fin M) (Fin N) 𝕜}
 
 /-- **`ran(A)⊥` is spanned by the trailing columns of `Q`** ([golub2013matrix] Theorem 5.2.2): for
-a full QR factorization of `A` with independent columns, the columns `q_i`, `i ≥ N`, are
-orthogonal to the range (`Aᴴ q_i = Rᴴ e_i = 0`), and they are `M - N` independent vectors in a
-complement of dimension `M - N`. -/
+a full QR factorization of `A` with independent columns, the last `M - N` columns `q_i`
+(`Matrix.lastColumns`) are orthogonal to the range (`Aᴴ q_i = Rᴴ e_i = 0`), and they are `M - N`
+orthonormal vectors in a complement of dimension `M - N`. -/
 theorem IsQR.range_orthogonal_eq_span_lastColumns (h : IsQR A Q R) (hNM : N ≤ M)
     (hA : LinearIndependent 𝕜 Aᵀ) :
     (LinearMap.range (toEuclideanLin A))ᗮ
-      = Submodule.span 𝕜 (Set.range fun i : {i : Fin M // N ≤ (i : ℕ)} =>
-          (WithLp.toLp 2 (Qᵀ i) : EuclideanSpace 𝕜 (Fin M))) := by
+      = Submodule.span 𝕜 (Set.range fun j : Fin (M - N) =>
+          (WithLp.toLp 2 ((lastColumns Q (Nat.sub_le M N))ᵀ j) : EuclideanSpace 𝕜 (Fin M))) := by
   have hQ : Qᴴ * Q = 1 := by
     rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.1 h.mem_unitaryGroup
   have hq := orthonormal_toLp_transpose_of_conjTranspose_mul_self_eq_one hQ
-  set T := Submodule.span 𝕜 (Set.range fun i : {i : Fin M // N ≤ (i : ℕ)} =>
-    (WithLp.toLp 2 (Qᵀ i) : EuclideanSpace 𝕜 (Fin M))) with hT
+  set e : Fin (M - N) → Fin M := fun j => ⟨M - (M - N) + j, by omega⟩ with he
+  have he_inj : Function.Injective e := fun a b hab => by
+    have := congrArg Fin.val hab
+    simp only [he] at this
+    exact Fin.ext (by omega)
+  set T := Submodule.span 𝕜 (Set.range fun j : Fin (M - N) =>
+    (WithLp.toLp 2 ((lastColumns Q (Nat.sub_le M N))ᵀ j) : EuclideanSpace 𝕜 (Fin M))) with hT
   have hle : T ≤ (LinearMap.range (toEuclideanLin A))ᗮ := by
     rw [hT, Submodule.span_le]
-    rintro _ ⟨i, rfl⟩
+    rintro _ ⟨j, rfl⟩
     rw [SetLike.mem_coe, Submodule.mem_orthogonal]
     rintro _ ⟨x, rfl⟩
-    have hzero : toEuclideanLin Aᴴ (WithLp.toLp 2 (Qᵀ i)) = 0 := by
+    have hzero : toEuclideanLin Aᴴ (WithLp.toLp 2 (Qᵀ (e j))) = 0 := by
       rw [← h.mul_eq, conjTranspose_mul, toEuclideanLin_mul_apply]
-      have hsingle : toEuclideanLin Qᴴ (WithLp.toLp 2 (Qᵀ (i : Fin M)))
-          = WithLp.toLp 2 (Pi.single (i : Fin M) 1) := by
+      have hsingle : toEuclideanLin Qᴴ (WithLp.toLp 2 (Qᵀ (e j)))
+          = WithLp.toLp 2 (Pi.single (e j) 1) := by
         rw [toEuclideanLin_toLp]
         congr 1
-        have : Qᵀ (i : Fin M) = Q *ᵥ Pi.single (i : Fin M) 1 := by
+        have : Qᵀ (e j) = Q *ᵥ Pi.single (e j) 1 := by
           rw [mulVec_single_one]; rfl
         rw [this, mulVec_mulVec, hQ, one_mulVec]
       rw [hsingle, toEuclideanLin_toLp]
-      ext j
-      have hR := h.apply_eq_zero_of_le i.2 j
+      ext l
+      have hR := h.apply_eq_zero_of_le (show N ≤ (e j : ℕ) by simp only [he]; omega) l
       simp [hR]
-    change inner 𝕜 (toEuclideanLin A x) (WithLp.toLp 2 (Qᵀ i) : EuclideanSpace 𝕜 (Fin M)) = 0
+    change inner 𝕜 (toEuclideanLin A x) (WithLp.toLp 2 (Qᵀ (e j)) : EuclideanSpace 𝕜 (Fin M)) = 0
     rw [← inner_conj_symm, ← toEuclideanLin_conjTranspose_inner_left, hzero, inner_zero_left,
       map_zero]
   have hrank : A.rank = N := by
@@ -584,20 +582,13 @@ theorem IsQR.range_orthogonal_eq_span_lastColumns (h : IsQR A Q R) (hNM : N ≤ 
     rw [finrank_range_toEuclideanLin, hrank, finrank_euclideanSpace_fin] at this
     omega
   have h2 : Module.finrank 𝕜 T = M - N := by
-    rw [hT, show (fun i : {i : Fin M // N ≤ (i : ℕ)} =>
-        (WithLp.toLp 2 (Qᵀ i) : EuclideanSpace 𝕜 (Fin M)))
-        = (fun j => (WithLp.toLp 2 (Qᵀ j) : EuclideanSpace 𝕜 (Fin M))) ∘ Subtype.val from rfl,
-      finrank_span_eq_card (hq.comp _ Subtype.val_injective).linearIndependent,
-      Fintype.card_subtype]
-    have := Fin.card_filter_val_lt (n := M) (m := N)
-    have hc := Finset.card_filter_add_card_filter_not (s := Finset.univ)
-      (p := fun i : Fin M => (i : ℕ) < N)
-    simp only [Finset.card_univ, Fintype.card_fin, not_lt] at hc
-    omega
+    rw [hT, show (fun j : Fin (M - N) => (WithLp.toLp 2 ((lastColumns Q (Nat.sub_le M N))ᵀ j) :
+        EuclideanSpace 𝕜 (Fin M)))
+        = (fun i => (WithLp.toLp 2 (Qᵀ i) : EuclideanSpace 𝕜 (Fin M))) ∘ e from rfl,
+      finrank_span_eq_card (hq.comp _ he_inj).linearIndependent, Fintype.card_fin]
   exact (Submodule.eq_of_le_of_finrank_eq hle (h2.trans h1.symm)).symm
 
 end RangeComplement
-
 
 /-! ### Matrix least-squares problems -/
 
@@ -614,8 +605,8 @@ Frobenius norm** ([golub2013matrix] (5.5.3), where `X` is `n × m`): `‖A A⁺ 
 for every `X`, and among the minimizers `A⁺` is the unique one of least Frobenius norm. Column
 `j` of `X` is a least-squares problem with right-hand side `e_j`, whose minimal-norm solution is
 `A⁺ e_j`. -/
-theorem pinv_isMinOn_frobenius (A : Matrix m n 𝕜) :
-    (∀ X : Matrix n m 𝕜, ‖A * A.pinv - 1‖ ≤ ‖A * X - 1‖) ∧
+theorem isMinOn_norm_mul_sub_one_pinv (A : Matrix m n 𝕜) :
+    IsMinOn (fun X : Matrix n m 𝕜 => ‖A * X - 1‖) Set.univ A.pinv ∧
       ∀ X : Matrix n m 𝕜, ‖A * X - 1‖ = ‖A * A.pinv - 1‖ →
         ‖A.pinv‖ ≤ ‖X‖ ∧ (‖X‖ = ‖A.pinv‖ → X = A.pinv) := by
   set e : m → EuclideanSpace 𝕜 m := fun j => EuclideanSpace.single j 1 with he
@@ -643,7 +634,7 @@ theorem pinv_isMinOn_frobenius (A : Matrix m n 𝕜) :
     refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
     rw [hsq, hsq]
     exact Finset.sum_le_sum fun j _ => hterm X j
-  refine ⟨hmin, fun X hX => ?_⟩
+  refine ⟨isMinOn_univ_iff.2 hmin, fun X hX => ?_⟩
   -- every column of a minimizer is a least-squares solution
   have hls : ∀ j, IsLeastSquaresSolution A (e j) (WithLp.toLp 2 fun i => X i j) := by
     have heq : ∑ j, ‖toEuclideanLin A (WithLp.toLp 2 fun i => A.pinv i j) - e j‖ ^ 2
@@ -687,6 +678,14 @@ theorem pinv_isMinOn_frobenius (A : Matrix m n 𝕜) :
     rw [← hpinv] at h
     simpa using h
 
+/-- The matrix least-squares problem `min_X ‖A X - I‖_F`, with the minimizer unbundled. -/
+@[deprecated isMinOn_norm_mul_sub_one_pinv +typeChanged (since := "2026-09-30")]
+theorem pinv_isMinOn_frobenius (A : Matrix m n 𝕜) :
+    (∀ X : Matrix n m 𝕜, ‖A * A.pinv - 1‖ ≤ ‖A * X - 1‖) ∧
+      ∀ X : Matrix n m 𝕜, ‖A * X - 1‖ = ‖A * A.pinv - 1‖ →
+        ‖A.pinv‖ ≤ ‖X‖ ∧ (‖X‖ = ‖A.pinv‖ → X = A.pinv) :=
+  ⟨isMinOn_univ_iff.1 (isMinOn_norm_mul_sub_one_pinv A).1, (isMinOn_norm_mul_sub_one_pinv A).2⟩
+
 end Frobenius
 
 section MatrixUnknown
@@ -725,10 +724,11 @@ omit [DecidableEq n] [DecidableEq r] in
 `F (Kᴴ K) = A K`. Row by row, `‖A - F Kᴴ‖_F² = ∑_i ‖K̄ f_i - a_i‖²` with `K̄ = K.map star`, and each
 row is an ordinary least-squares problem (`Matrix.isLeastSquaresSolution_iff_normalEquations`);
 a row that is not optimal can be replaced alone. -/
-theorem isMinOn_norm_sub_mul_transpose_iff (A : Matrix m r 𝕜)
+theorem isMinOn_norm_sub_mul_conjTranspose_iff (A : Matrix m r 𝕜)
     (K : Matrix r n 𝕜) (F : Matrix m n 𝕜) :
-    (∀ G : Matrix m n 𝕜, ‖A - F * Kᴴ‖ ≤ ‖A - G * Kᴴ‖) ↔ F * (Kᴴ * K) = A * K := by
+    IsMinOn (fun G : Matrix m n 𝕜 => ‖A - G * Kᴴ‖) Set.univ F ↔ F * (Kᴴ * K) = A * K := by
   classical
+  rw [isMinOn_univ_iff]
   set Kb : Matrix r n 𝕜 := K.map star with hKb
   have hrow : ∀ i, IsLeastSquaresSolution Kb (WithLp.toLp 2 (A i)) (WithLp.toLp 2 (F i)) ↔
       (F * (Kᴴ * K)) i = (A * K) i := by
@@ -771,6 +771,14 @@ theorem isMinOn_norm_sub_mul_transpose_iff (A : Matrix m r 𝕜)
     refine Finset.sum_le_sum fun i _ => ?_
     exact pow_le_pow_left₀ (norm_nonneg _) (((hrow i).2 (congrFun h i)) _) 2
 
+omit [DecidableEq n] [DecidableEq r] in
+/-- Least squares with a matrix unknown on the left, with the minimizer unbundled. -/
+@[deprecated isMinOn_norm_sub_mul_conjTranspose_iff +typeChanged (since := "2026-09-30")]
+theorem isMinOn_norm_sub_mul_transpose_iff (A : Matrix m r 𝕜)
+    (K : Matrix r n 𝕜) (F : Matrix m n 𝕜) :
+    (∀ G : Matrix m n 𝕜, ‖A - F * Kᴴ‖ ≤ ‖A - G * Kᴴ‖) ↔ F * (Kᴴ * K) = A * K :=
+  isMinOn_univ_iff.symm.trans (isMinOn_norm_sub_mul_conjTranspose_iff A K F)
+
 omit [DecidableEq n] [DecidableEq r] [Fintype m] in
 /-- **The matrix least-squares problem `min_F ‖A - F Kᴴ‖_F` has a solution**: row `i` of `F` is
 `K̄⁺ a_i`, the pseudoinverse solution of its row problem. -/
@@ -780,7 +788,7 @@ theorem exists_mul_conjTranspose_mul_self_eq [Finite m] (A : Matrix m r 𝕜)
   cases nonempty_fintype m
   refine ⟨Matrix.of fun i => WithLp.ofLp (toEuclideanLin (K.map star).pinv
     (WithLp.toLp 2 (A i))), ?_⟩
-  refine (isMinOn_norm_sub_mul_transpose_iff A K _).1 fun G => ?_
+  refine (isMinOn_norm_sub_mul_conjTranspose_iff A K _).1 (isMinOn_univ_iff.2 fun G => ?_)
   refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
   rw [norm_sub_mul_conjTranspose_sq A K, norm_sub_mul_conjTranspose_sq A K]
   refine Finset.sum_le_sum fun i _ => pow_le_pow_left₀ (norm_nonneg _) ?_ 2
@@ -820,6 +828,5 @@ theorem pinv_eq_of_isThinQR_conjTranspose {A : Matrix (Fin N) m 𝕜} {Q : Matri
   · rw [hBA, IsHermitian, conjTranspose_mul, conjTranspose_conjTranspose]
 
 end ThinQR
-
 
 end Matrix

@@ -52,10 +52,9 @@ makes it annihilate the `k`-th entry of `x` when `|x k| < |x j|` — and nothing
 ## Main results
 
 * `Matrix.planeEmbed_mul_apply`, `Matrix.mul_planeEmbed_apply`, `Matrix.planeEmbed_mulVec_apply`:
-  multiplying by an embedding on the left combines the rows `j`, `k`, on the right the columns
-  `j`, `k`; every other entry is left alone.
-* `Matrix.planeEmbed_mul_apply_rect`: the same for a rectangular right factor;
-  `Matrix.commute_planeEmbed_planeEmbed`: embeddings in disjoint planes commute.
+  multiplying (a possibly rectangular matrix) by an embedding on the left combines the rows `j`,
+  `k`, on the right the columns `j`, `k`; every other entry is left alone.
+* `Matrix.commute_planeEmbed_planeEmbed`: embeddings in disjoint planes commute.
 * `Matrix.planeEmbed_mul_planeEmbed`, `Matrix.planeEmbed_transpose`,
   `Matrix.planeEmbed_conjTranspose`, `Matrix.det_planeEmbed`,
   `Matrix.planeEmbed_mem_unitaryGroup_iff`: the embedding is a multiplicative,
@@ -223,8 +222,8 @@ private theorem sum_mul_planeEmbed (hjk : j ≠ k) (f : n → R) (q : n) :
     simp [planeEmbed_apply_of_ne_right G _ hqj hqk, mul_ite, Finset.sum_ite_eq']
 
 /-- Left multiplication by an embedded `2 × 2` matrix combines the rows `j` and `k` and leaves
-the other rows alone ([quarteroni2000numerical] Program 34). -/
-theorem planeEmbed_mul_apply (hjk : j ≠ k) (M : Matrix n n R) (p q : n) :
+the other rows alone ([quarteroni2000numerical] Program 34). The right factor may be rectangular. -/
+theorem planeEmbed_mul_apply {m : Type*} (hjk : j ≠ k) (M : Matrix n m R) (p : n) (q : m) :
     (planeEmbed j k G * M) p q =
       if p = j then G 0 0 * M j q + G 0 1 * M k q
       else if p = k then G 1 0 * M j q + G 1 1 * M k q
@@ -233,8 +232,9 @@ theorem planeEmbed_mul_apply (hjk : j ≠ k) (M : Matrix n n R) (p q : n) :
   exact sum_planeEmbed_mul G hjk (fun r => M r q) p
 
 /-- Right multiplication by an embedded `2 × 2` matrix combines the columns `j` and `k` and
-leaves the other columns alone ([quarteroni2000numerical] Program 35). -/
-theorem mul_planeEmbed_apply (hjk : j ≠ k) (M : Matrix n n R) (p q : n) :
+leaves the other columns alone ([quarteroni2000numerical] Program 35). The left factor may be
+rectangular. -/
+theorem mul_planeEmbed_apply {m : Type*} (hjk : j ≠ k) (M : Matrix m n R) (p : m) (q : n) :
     (M * planeEmbed j k G) p q =
       if q = j then M p j * G 0 0 + M p k * G 1 0
       else if q = k then M p j * G 0 1 + M p k * G 1 1
@@ -255,14 +255,7 @@ theorem planeEmbed_mulVec_apply_of_ne (hjk : j ≠ k) (x : n → R) {p : n} (hpj
     (hpk : p ≠ k) : (planeEmbed j k G *ᵥ x) p = x p := by
   rw [planeEmbed_mulVec_apply G hjk, ite_eq_right hpj, ite_eq_right hpk]
 
-/-- Left multiplication of a rectangular matrix by a plane embedding combines the rows `j` and
-`k`: the rectangular form of `Matrix.planeEmbed_mul_apply`. -/
-theorem planeEmbed_mul_apply_rect {m : Type*} (hjk : j ≠ k) (X : Matrix n m R) (p : n) (q : m) :
-    (planeEmbed j k G * X) p q =
-      if p = j then G 0 0 * X j q + G 0 1 * X k q
-      else if p = k then G 1 0 * X j q + G 1 1 * X k q
-      else X p q :=
-  planeEmbed_mulVec_apply G hjk (fun r => X r q) p
+@[deprecated (since := "2026-09-30")] alias planeEmbed_mul_apply_rect := planeEmbed_mul_apply
 
 /-- A row vector against an embedded `2 × 2` matrix, the transpose of
 `Matrix.planeEmbed_mulVec_apply`. -/

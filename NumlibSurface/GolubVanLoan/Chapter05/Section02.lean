@@ -96,10 +96,24 @@ theorem theorem_5_2_2 {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin 
       Submodule.span ℝ (Set.range (Q.firstColumns hnm)ᵀ) = Submodule.span ℝ (Set.range Aᵀ) ∧
       (toEuclideanLin A).rangeᗮ =
         Submodule.span ℝ (Set.range fun i : {i : Fin m // n ≤ i} => toLp 2 (Qᵀ i)) ∧
-      Q.firstColumns hnm * R.firstRows hnm = A :=
-  ⟨fun _ hk => (equation_5_2_1 h hA hnm hk).1, (equation_5_2_1 h hA hnm le_rfl).2,
-    h.span_firstColumns_eq hnm hA, h.range_orthogonal_eq_span_lastColumns hnm hA,
-    (equation_5_2_2 h hnm).1⟩
+      Q.firstColumns hnm * R.firstRows hnm = A := by
+  have hset : (Set.range fun j : Fin (m - n) =>
+      toLp 2 ((Q.lastColumns (Nat.sub_le m n))ᵀ j)) =
+        Set.range fun i : {i : Fin m // n ≤ i} => toLp 2 (Qᵀ i) := by
+    ext v
+    constructor
+    · rintro ⟨j, rfl⟩
+      exact ⟨⟨⟨m - (m - n) + j, by omega⟩, show n ≤ m - (m - n) + (j : ℕ) by omega⟩, rfl⟩
+    · rintro ⟨⟨i, hi⟩, rfl⟩
+      refine ⟨⟨i - n, by omega⟩, congrArg (toLp 2) (funext fun r => ?_)⟩
+      simp only [transpose_apply, lastColumns_apply]
+      congr 1
+      ext
+      simp only
+      omega
+  exact ⟨fun _ hk => (equation_5_2_1 h hA hnm hk).1, (equation_5_2_1 h hA hnm le_rfl).2,
+    h.span_firstColumns_eq hnm hA, (h.range_orthogonal_eq_span_lastColumns hnm hA).trans
+      (congrArg _ hset), (equation_5_2_2 h hnm).1⟩
 
 /-- **Theorem 5.2.3 (Thin QR Factorization)**: for full-column-rank `A ∈ ℝ^{m×n}` the thin QR
 factorization `A = Q₁ R₁` with orthonormal columns and `R₁` upper triangular with positive
@@ -713,9 +727,9 @@ theorem algorithm_5_2_1_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIdemp
       · exact hwO
       · exact hO j
     have hW : prodRev (dataReflector v' β') k = prodRev (dataReflector v β) k :=
-      Matrix.prodRev_congr fun j hj => by rw [hrefl, ite_eq_right (show ¬ j = (k : ℕ) by omega)]
+      prodRev_congr fun j hj => by rw [hrefl, ite_eq_right (show ¬ j = (k : ℕ) by omega)]
     set W := prodRev (dataReflector v' β') ((k : ℕ) + 1) with hWdef
-    have hWO : W ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup hO' _
+    have hWO : W ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup fun k _ => hO' k
     have hWk : W = (1 - γ • vecMulVec w w) * prodRev (dataReflector v β) k := by
       rw [hWdef, prodRev_succ, hW, hrefl, ite_eq_left rfl]
     set R := householderQRPartialR k c.1 with hR
@@ -753,7 +767,8 @@ theorem algorithm_5_2_1_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIdemp
       have hnR : ‖(toLp 2 (R.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
           ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖ +
             ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ := by
-        rw [hRcol, norm_toLp_mulVec_of_mem_orthogonalGroup (prodRev_mem_orthogonalGroup hO _)]
+        rw [hRcol, norm_toLp_mulVec_of_mem_orthogonalGroup
+          (prodRev_mem_orthogonalGroup fun k _ => hO k)]
         have : (A + E).col q = A.col q + E.col q := by ext i; rfl
         rw [this, toLp_add]
         exact norm_add_le _ _
@@ -799,7 +814,7 @@ theorem algorithm_5_2_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent
         ((1 + 3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) ^ n - 1) *
           ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖ := by
   obtain ⟨v, β, E, hO, -, hE, hEb⟩ := algorithm_5_2_1_rounding_data hfp hnm hu A h
-  have hW := prodRev_mem_orthogonalGroup hO n
+  have hW := prodRev_mem_orthogonalGroup (r := n) fun k _ => hO k
   refine ⟨(prodRev (dataReflector v β) n)ᵀ, transpose_mem_unitaryGroup_iff.2 hW, E, ?_, hEb⟩
   rw [hE, ← Matrix.mul_assoc, (mem_orthogonalGroup_iff' _ _).1 hW, Matrix.one_mul]
 

@@ -3,6 +3,7 @@ Upstreaming candidate: general material with no numerical-analysis-specific cont
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.InnerProductSpace` beside the least-squares material.
 -/
+import Mathlib.Analysis.Convex.Extrema
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized
 import Numlib.LinearAlgebra.Matrix.QR
 
@@ -29,8 +30,8 @@ Least squares with a quadratic inequality constraint (LSQI, `min ‖Ax − b‖`
   (`Matrix.isLSQISolution_of_isLeastSquaresSolution`); otherwise every solution lies on the sphere
   (`Matrix.IsLSQISolution.norm_eq_of_lt`), the ridge solution of norm `α` solves it
   (`Matrix.isLSQISolution_tikhonov`), and the secular equation `‖x(λ)‖ = α` has exactly one
-  positive root (`Matrix.existsUnique_norm_tikhonov_mulVec_eq`). No Lagrange multiplier appears:
-  `‖Ay − b‖² + λ‖y‖² ≥ ‖Ax(λ) − b‖² + λα²` does the work.
+  positive root (`Matrix.existsUnique_norm_toEuclideanLin_tikhonov_eq`). No Lagrange multiplier
+  appears: `‖Ay − b‖² + λ‖y‖² ≥ ‖Ax(λ) − b‖² + λα²` does the work.
 * LSE: through the QR factorization of `Bᴴ` (`Matrix.isLSESolution_of_isQR`, the derivation of
   Algorithm 6.2.2), existence and uniqueness (`Matrix.existsUnique_isLSESolution`), the augmented
   system (`Matrix.isLSESolution_of_augmented`, `Matrix.isUnit_augmentedLSE`), the GSVD
@@ -168,39 +169,25 @@ private theorem norm_one_sub_zero (y : EuclideanSpace 𝕜 n) :
 
 omit [DecidableEq m] in
 /-- A local minimizer of `‖Ay − b‖` in the interior of the ball is a global one: the objective is
-convex, so it cannot decrease along a segment leaving `x`. -/
+convex (`IsMinOn.of_isLocalMin_of_convex_univ`). -/
 private theorem isLeastSquaresSolution_of_forall_norm_le {α : ℝ} (hx : ‖x‖ < α)
     (h : ∀ y : EuclideanSpace 𝕜 n, ‖y‖ ≤ α → ‖toEuclideanLin A x - b‖ ≤ ‖toEuclideanLin A y - b‖) :
     IsLeastSquaresSolution A b x := by
-  intro y
-  set s : ℝ := (α - ‖x‖) / (‖y - x‖ + 1) with hs
-  have hs0 : 0 < s := div_pos (by linarith) (by positivity)
-  set t : ℝ := min 1 s with ht
-  have ht0 : 0 < t := lt_min one_pos hs0
-  have ht1 : t ≤ 1 := min_le_left _ _
-  have hts : t * ‖y - x‖ ≤ α - ‖x‖ := by
-    calc t * ‖y - x‖ ≤ s * ‖y - x‖ := mul_le_mul_of_nonneg_right (min_le_right _ _)
-          (norm_nonneg _)
-      _ ≤ s * (‖y - x‖ + 1) := mul_le_mul_of_nonneg_left (by linarith) hs0.le
-      _ = α - ‖x‖ := by rw [hs, div_mul_cancel₀ _ (by positivity)]
-  set z : EuclideanSpace 𝕜 n := x + (t : 𝕜) • (y - x) with hz
-  have hzn : ‖z‖ ≤ α := by
-    calc ‖z‖ ≤ ‖x‖ + ‖(t : 𝕜) • (y - x)‖ := norm_add_le _ _
-      _ = ‖x‖ + t * ‖y - x‖ := by rw [norm_smul, RCLike.norm_ofReal, abs_of_pos ht0]
-      _ ≤ α := by linarith
-  have hAz : toEuclideanLin A z - b
-      = ((1 - t : ℝ) : 𝕜) • (toEuclideanLin A x - b) + (t : 𝕜) • (toEuclideanLin A y - b) := by
-    rw [hz, map_add, map_smul, map_sub]
-    push_cast
-    module
-  have hle := h z hzn
-  rw [hAz] at hle
-  have htri := norm_add_le (((1 - t : ℝ) : 𝕜) • (toEuclideanLin A x - b))
-    ((t : 𝕜) • (toEuclideanLin A y - b))
-  rw [norm_smul, norm_smul, RCLike.norm_ofReal, RCLike.norm_ofReal, abs_of_nonneg (by linarith),
-    abs_of_pos ht0] at htri
-  have : t * ‖toEuclideanLin A x - b‖ ≤ t * ‖toEuclideanLin A y - b‖ := by nlinarith
-  exact le_of_mul_le_mul_left this ht0
+  have hconv : ConvexOn ℝ Set.univ fun y : EuclideanSpace 𝕜 n => ‖toEuclideanLin A y - b‖ := by
+    refine ⟨convex_univ, fun y _ z _ s t hs ht hst => ?_⟩
+    have e : toEuclideanLin A (s • y + t • z) - b
+        = s • (toEuclideanLin A y - b) + t • (toEuclideanLin A z - b) := by
+      rw [map_add, LinearMap.map_smul_of_tower, LinearMap.map_smul_of_tower, smul_sub, smul_sub]
+      nth_rw 1 [← one_smul ℝ b, ← hst, add_smul]
+      abel
+    refine (e ▸ norm_add_le _ _).trans (le_of_eq ?_)
+    rw [norm_smul, norm_smul, Real.norm_of_nonneg hs, Real.norm_of_nonneg ht, smul_eq_mul,
+      smul_eq_mul]
+  have hloc : IsLocalMin (fun y : EuclideanSpace 𝕜 n => ‖toEuclideanLin A y - b‖) x :=
+    Filter.eventually_of_mem (Metric.ball_mem_nhds x (sub_pos.2 hx)) fun y hy => h y (by
+      rw [Metric.mem_ball, dist_eq_norm] at hy
+      linarith [norm_sub_norm_le y x])
+  exact IsMinOn.of_isLocalMin_of_convex_univ hloc hconv
 
 /-- **The LSQI solution lies on the sphere** ([golub2013matrix] (6.2.3), "it follows that the
 solution to (6.2.1) is on the boundary of the constraint sphere"): if `α < ‖A⁺ b‖` then every
@@ -217,72 +204,47 @@ theorem IsLSQISolution.norm_eq_of_lt {α : ℝ} (hα : α < ‖toEuclideanLin A.
 
 /-- **A ridge solution of norm `α` solves the sphere problem** ([golub2013matrix] §6.2.1, "It
 follows that `x(λ₊)` solves (6.2.1)"): for feasible `y`,
-`‖Ay − b‖² ≥ ‖Ax − b‖² + λ(α² − ‖y‖²) ≥ ‖Ax − b‖²` (`Matrix.tikhonov_mulVec_eq_iff_isMinOn`) —
+`‖Ay − b‖² ≥ ‖Ax − b‖² + λ(α² − ‖y‖²) ≥ ‖Ax − b‖²`
+(`Matrix.eq_toEuclideanLin_tikhonov_iff_isMinOn`) —
 the sufficiency half of the Lagrange conditions, without the multiplier theorem. -/
 theorem isLSQISolution_tikhonov {μ : ℝ} (hμ : 0 < μ) {α : ℝ}
     (hn : ‖toEuclideanLin (A.tikhonov μ) b‖ = α) :
     IsLSQISolution A b (1 : Matrix n n 𝕜) 0 α (toEuclideanLin (A.tikhonov μ) b) := by
   refine ⟨by rw [norm_one_sub_zero, hn], fun y hy => ?_⟩
   rw [norm_one_sub_zero] at hy
-  have hmin := (A.tikhonov_mulVec_eq_iff_isMinOn hμ b _).1 rfl y
+  have hmin := isMinOn_univ_iff.1 ((A.eq_toEuclideanLin_tikhonov_iff_isMinOn hμ b _).1 rfl) y
   rw [hn] at hmin
   have hy2 : ‖y‖ ^ 2 ≤ α ^ 2 := pow_le_pow_left₀ (norm_nonneg _) hy 2
   refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
   nlinarith
 
-/-- `α ↦ ‖x(α)‖` is continuous on `(0, ∞)`: its square is a finite sum of continuous terms
-(`Matrix.norm_sq_toEuclideanLin_tikhonov_apply`). -/
-theorem continuousOn_norm_tikhonov_mulVec (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
-    ContinuousOn (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) (Set.Ioi 0) := by
-  have hsq : ContinuousOn (fun α : ℝ => ∑ i,
-      ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin Aᴴ b) : 𝕜)‖ ^ 2
-        / (α + A.colSingularValues i ^ 2) ^ 2) (Set.Ioi 0) := by
-    refine continuousOn_finsetSum _ fun i _ => ?_
-    refine continuousOn_const.div ((continuousOn_id.add continuousOn_const).pow 2) fun α hα => ?_
-    have : (0 : ℝ) < α := hα
-    positivity
-  refine (Real.continuous_sqrt.comp_continuousOn hsq).congr fun α hα => ?_
-  have : (0 : ℝ) < α := hα
-  simp only [Function.comp_apply]
-  rw [← norm_sq_toEuclideanLin_tikhonov_apply A this, Real.sqrt_sq (norm_nonneg _)]
-
 /-- **The secular equation has a unique positive root** ([golub2013matrix] §6.2.1: "`f(0) > 0` …
 `f'(λ) < 0` for `λ ≥ 0` … `f` has a unique positive root `λ₊`"): for `0 < α < ‖A⁺ b‖` there is
-exactly one `λ > 0` with `‖x(λ)‖ = α`. Existence by the intermediate value theorem between the
-limits `‖A⁺ b‖` at `0⁺` and `0` at `∞`; uniqueness by strict monotonicity. -/
-theorem existsUnique_norm_tikhonov_mulVec_eq {α : ℝ} (hα0 : 0 < α)
+exactly one `λ > 0` with `‖x(λ)‖ = α`. The norm decreases strictly and continuously from `‖A⁺ b‖`
+at `0⁺` to `0` at `∞` (`existsUnique_pos_eq_of_strictAntiOn_Ioi`). -/
+theorem existsUnique_norm_toEuclideanLin_tikhonov_eq {α : ℝ} (hα0 : 0 < α)
     (hα : α < ‖toEuclideanLin A.pinv b‖) :
     ∃! μ : ℝ, 0 < μ ∧ ‖toEuclideanLin (A.tikhonov μ) b‖ = α := by
-  set f : ℝ → ℝ := fun μ => ‖toEuclideanLin (A.tikhonov μ) b‖ with hf
-  -- the limit at `0⁺`
-  have h0 : Tendsto f (𝓝[>] 0) (𝓝 ‖toEuclideanLin A.pinv b‖) := by
+  have h0 : Tendsto (fun μ => ‖toEuclideanLin (A.tikhonov μ) b‖) (𝓝[>] 0)
+      (𝓝 ‖toEuclideanLin A.pinv b‖) := by
     have hc : Continuous fun M : Matrix n m 𝕜 => ‖toEuclideanLin M b‖ := by
       have : Continuous fun M : Matrix n m 𝕜 => toEuclideanLin M b :=
         (LinearMap.continuous_of_finiteDimensional
           (LinearMap.applyₗ (R := 𝕜) b ∘ₗ (toEuclideanLin (m := n) (n := m)).toLinearMap))
       exact continuous_norm.comp this
     exact (hc.tendsto _).comp A.tendsto_tikhonov_pinv
-  obtain ⟨μ₁, hμ₁, hfμ₁⟩ : ∃ μ₁, 0 < μ₁ ∧ α < f μ₁ := by
-    have := (h0.eventually (lt_mem_nhds hα)).and self_mem_nhdsWithin
-    obtain ⟨μ, hμ, hμ0⟩ := this.exists
-    exact ⟨μ, hμ0, hμ⟩
-  obtain ⟨μ₂, hμ₂, hfμ₂⟩ : ∃ μ₂, μ₁ < μ₂ ∧ f μ₂ < α := by
-    have := ((A.tendsto_norm_tikhonov_mulVec_atTop b).eventually (gt_mem_nhds hα0)).and
-      (eventually_gt_atTop μ₁)
-    obtain ⟨μ, hμ, hμ1⟩ := this.exists
-    exact ⟨μ, hμ1, hμ⟩
-  have hcont : ContinuousOn f (Set.Icc μ₁ μ₂) :=
-    (continuousOn_norm_tikhonov_mulVec A b).mono fun μ hμ => lt_of_lt_of_le hμ₁ hμ.1
-  obtain ⟨μ, hμ, hfμ⟩ := intermediate_value_Icc' hμ₂.le hcont ⟨hfμ₂.le, hfμ₁.le⟩
   have hAb : toEuclideanLin Aᴴ b ≠ 0 := by
     intro h
     have : toEuclideanLin A.pinv b = 0 := by
       rw [pinv_def, toEuclideanLin_mul_apply, h, map_zero]
     rw [this, norm_zero] at hα
     linarith
-  refine ⟨μ, ⟨lt_of_lt_of_le hμ₁ hμ.1, hfμ⟩, fun ν hν => ?_⟩
-  exact (A.strictAntiOn_norm_tikhonov_mulVec hAb).injOn hν.1 (lt_of_lt_of_le hμ₁ hμ.1)
-    (hν.2.trans hfμ.symm)
+  exact existsUnique_pos_eq_of_strictAntiOn_Ioi (A.strictAntiOn_norm_toEuclideanLin_tikhonov hAb)
+    (continuousOn_norm_toEuclideanLin_tikhonov A b) h0
+    (A.tendsto_norm_toEuclideanLin_tikhonov_atTop b) hα0 hα
+
+@[deprecated (since := "2026-09-30")]
+alias existsUnique_norm_tikhonov_mulVec_eq := existsUnique_norm_toEuclideanLin_tikhonov_eq
 
 end Sphere
 
@@ -445,13 +407,6 @@ section QR
 
 variable {m : Type*} [Fintype m] [DecidableEq m] {p n : ℕ}
 
-/-- A sum over `Fin n` split at `p ≤ n` into the first `p` and the last `n − p` indices. -/
-private theorem sum_fin_split {M : Type*} [AddCommMonoid M] (hpn : p ≤ n) (f : Fin n → M) :
-    ∑ k, f k = ∑ i : Fin p, f (Fin.castLE hpn i)
-      + ∑ j : Fin (n - p), f (Fin.cast (Nat.add_sub_cancel' hpn) (Fin.natAdd p j)) := by
-  rw [← (finCongr (Nat.add_sub_cancel' hpn)).sum_comp, Fin.sum_univ_add]
-  rfl
-
 omit [DecidableEq m] in
 /-- **LSE through the QR factorization of `Bᴴ`** ([golub2013matrix] §6.2.3, the derivation of
 Algorithm 6.2.2): let `B` have independent rows, `Bᴴ = Q R` a QR factorization, `Q = [Q₁ Q₂]` split
@@ -463,24 +418,19 @@ theorem isLSESolution_of_isQR {A : Matrix m (Fin n) 𝕜} {b : EuclideanSpace �
     {B : Matrix (Fin p) (Fin n) 𝕜} {d : EuclideanSpace 𝕜 (Fin p)} (hpn : p ≤ n)
     (hB : LinearIndependent 𝕜 B) {Q : Matrix (Fin n) (Fin n) 𝕜} {R : Matrix (Fin n) (Fin p) 𝕜}
     (h : IsQR Bᴴ Q R) {z : EuclideanSpace 𝕜 (Fin (n - p))}
-    (hz : IsLeastSquaresSolution
-      (A * Q.submatrix id (Fin.cast (Nat.add_sub_cancel' hpn) ∘ Fin.natAdd p))
+    (hz : IsLeastSquaresSolution (A * Q.lastColumns (Nat.sub_le n p))
       (b - toEuclideanLin (A * Q.firstColumns hpn) (toEuclideanLin ((R.firstRows hpn)ᴴ)⁻¹ d)) z) :
     IsLSESolution A b B d
       (toEuclideanLin (Q.firstColumns hpn) (toEuclideanLin ((R.firstRows hpn)ᴴ)⁻¹ d)
-        + toEuclideanLin (Q.submatrix id (Fin.cast (Nat.add_sub_cancel' hpn) ∘ Fin.natAdd p))
-          z) := by
+        + toEuclideanLin (Q.lastColumns (Nat.sub_le n p)) z) := by
   classical
-  set e : Fin (n - p) → Fin n := Fin.cast (Nat.add_sub_cancel' hpn) ∘ Fin.natAdd p with he
   set Q₁ := Q.firstColumns hpn with hQ₁
-  set Q₂ := Q.submatrix id e with hQ₂
+  set Q₂ := Q.lastColumns (Nat.sub_le n p) with hQ₂
   set R₁ := R.firstRows hpn with hR₁
   set y := toEuclideanLin (R₁ᴴ)⁻¹ d with hy
   set c := b - toEuclideanLin (A * Q₁) y with hc
   have hQQ : Qᴴ * Q = 1 := by
     rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.1 h.mem_unitaryGroup
-  have hQQ' : Q * Qᴴ = 1 := by
-    rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff.1 h.mem_unitaryGroup
   have hBQ : B * Q = Rᴴ := by
     have hB' : B = Rᴴ * Qᴴ := by rw [← conjTranspose_mul, h.mul_eq, conjTranspose_conjTranspose]
     rw [hB', Matrix.mul_assoc, hQQ, Matrix.mul_one]
@@ -492,16 +442,13 @@ theorem isLSESolution_of_isQR {A : Matrix m (Fin n) 𝕜} {b : EuclideanSpace �
     exact this
   have hBQ₂ : B * Q₂ = 0 := by
     ext i j
-    have := congrFun (congrFun hBQ i) (e j)
+    have := congrFun (congrFun hBQ i) ⟨n - (n - p) + j, by omega⟩
     simp only [mul_apply, conjTranspose_apply] at this
-    simp only [hQ₂, mul_apply, submatrix_apply, id, zero_apply]
-    rw [this, h.apply_eq_zero (e j) i (by simp [he]; omega), star_zero]
-  have hsplit : Q₁ * Q₁ᴴ + Q₂ * Q₂ᴴ = 1 := by
-    ext i j
-    have := congrFun (congrFun hQQ' i) j
-    rw [mul_apply, sum_fin_split hpn] at this
-    rw [add_apply, mul_apply, mul_apply, ← this]
-    rfl
+    simp only [hQ₂, mul_apply, lastColumns_apply, zero_apply]
+    rw [this, h.apply_eq_zero _ i (by simp only; omega), star_zero]
+  have hsplit : Q₁ * Q₁ᴴ + Q₂ * Q₂ᴴ = 1 :=
+    firstColumns_mul_conjTranspose_add_lastColumns_mul_conjTranspose h.mem_unitaryGroup hpn
+      (Nat.sub_le n p) (by omega)
   have hR₁u : IsUnit (R₁ᴴ).det := by
     have hBc : LinearIndependent 𝕜 (Bᴴ)ᵀ := by
       refine mulVec_injective_iff.1 fun v w hvw => ?_
@@ -610,48 +557,11 @@ variable {m₁ p n : ℕ} {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (Fin 
   {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin p) (Fin p) 𝕜}
   {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
 
-/-- With `B` of full row rank and `ker A ⊓ ker B = ⊥`, the GSVD has `r = n`, so `p_GSVD = n − p`,
-and the sines `β_j`, `n − p ≤ j < n`, are nonzero (a zero one would make a row of
-`D_B = U₂ᴴ B X` vanish). -/
-private theorem IsGSVD.rank_eq_and_ne_zero (h : IsGSVD A B U₁ U₂ X α β)
-    (hB : LinearIndependent 𝕜 B)
-    (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥) :
-    (fromRows A B).rank = n ∧ p ≤ n ∧ ∀ j : Fin n, n - p ≤ (j : ℕ) → β j ≠ 0 := by
-  classical
-  have hrn : (fromRows A B).rank = n := by
-    have := LinearMap.finrank_range_add_finrank_ker (fromRows A B).mulVecLin
-    rw [Module.finrank_fin_fun, ← ker_inf_ker_eq_ker_fromRows, hAB, finrank_bot] at this
-    change (fromRows A B).rank + 0 = n at this
-    omega
-  have hpn : p ≤ n := by
-    have := hB.fintype_card_le_finrank
-    rwa [Fintype.card_fin, Module.finrank_fin_fun] at this
-  refine ⟨hrn, hpn, fun j hj hβ => ?_⟩
-  have hDB := h.star_mul_mul_right
-  rw [hrn] at hDB
-  -- the row `j − (n − p)` of `D_B` vanishes
-  set k : Fin p := ⟨j - (n - p), by have := j.isLt; omega⟩
-  have hrow : Pi.single k 1 ᵥ* (star U₂ * B * X) = 0 ᵥ* (star U₂ * B * X) := by
-    rw [hDB, zero_vecMul]
-    ext l
-    rw [single_one_vecMul, Pi.zero_apply]
-    change shiftedRectDiagonal (n - p) (fun i => ((β i : ℝ) : 𝕜)) k l = 0
-    rw [shiftedRectDiagonal_apply]
-    split_ifs with hl
-    · have : l = j := Fin.ext (by simp only [k] at hl; omega)
-      rw [this, hβ, RCLike.ofReal_zero]
-    · rfl
-  have hinj : Function.Injective (star U₂ * B * X).vecMul := by
-    intro u v huv
-    have hU : Function.Injective (star U₂).vecMul :=
-      vecMul_injective_iff_isUnit.2 (isUnit_of_mem_unitaryGroup (Unitary.star_mem
-        h.mem_unitaryGroup_right))
-    have hX : Function.Injective X.vecMul := vecMul_injective_iff_isUnit.2 h.isUnit
-    have hBi : Function.Injective B.vecMul := vecMul_injective_iff.2 hB
-    simp only [← vecMul_vecMul] at huv
-    exact hU (hBi (hX huv))
-  have := congrFun (hinj hrow) k
-  simp at this
+/-- `∑ yᵢ xᵢ = X y` over the columns `xᵢ` of `X` (`Matrix.mulVec_eq_sum`). -/
+private theorem sum_smul_col_eq_mulVec {n : ℕ} (X : Matrix (Fin n) (Fin n) 𝕜) (y : Fin n → 𝕜) :
+    ∑ i, y i • X.col i = X *ᵥ y := by
+  simp only [mulVec_eq_sum, op_smul_eq_smul]
+  rfl
 
 /-- **LSE through the GSVD** ([golub2013matrix] (6.2.12), restated in Theorem 6.1.1's block
 order): if `B` has full row rank, `ker A ⊓ ker B = ⊥` and `U₁ᴴ A X = D_A`, `U₂ᴴ B X = D_B` is a
@@ -673,11 +583,7 @@ theorem isLSESolution_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm : n 
   set bt := toEuclideanLin (star U₁) b with hbt
   set dt := toEuclideanLin (star U₂) d with hdt
   set y : Fin n → 𝕜 := lseGSVDCoeff hnm bt dt β with hy
-  have hx : (∑ i : Fin n, y i • X.col i) = X *ᵥ y := by
-    ext k
-    simp only [Finset.sum_apply, Pi.smul_apply, col_apply, smul_eq_mul, mulVec, dotProduct]
-    exact Finset.sum_congr rfl fun i _ => mul_comm _ _
-  rw [hx, ← toEuclideanLin_toLp, ← isLSQISolution_zero_iff,
+  rw [sum_smul_col_eq_mulVec, ← toEuclideanLin_toLp, ← isLSQISolution_zero_iff,
     ← isLSQISolution_unitary_mul_mul_iff h.mem_unitaryGroup_left h.mem_unitaryGroup_right
       h.isUnit, isLSQISolution_zero_iff, h.star_mul_mul_left, h.star_mul_mul_right, hrn]
   have hpure : ∀ i : Fin n, (i : ℕ) < n - p → α i = 1 := fun i hi =>
@@ -729,13 +635,6 @@ theorem isLSESolution_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm : n 
   · rw [rectDiagonal_mulVec_of_le _ _ _ (not_lt.1 hin),
       rectDiagonal_mulVec_of_le _ _ _ (not_lt.1 hin)]
 
-/-- `∑ yᵢ xᵢ = X y` over the columns `xᵢ` of `X`. -/
-private theorem sum_smul_col_eq_mulVec {n : ℕ} (X : Matrix (Fin n) (Fin n) 𝕜) (y : Fin n → 𝕜) :
-    ∑ i, y i • X.col i = X *ᵥ y := by
-  ext k
-  simp only [Finset.sum_apply, Pi.smul_apply, col_apply, smul_eq_mul, mulVec, dotProduct]
-  exact Finset.sum_congr rfl fun i _ => mul_comm _ _
-
 /-- **The method of weighting** ([golub2013matrix] §6.2.6): the solution
 `(AᴴA + λBᴴB)⁻¹(Aᴴb + λBᴴd)` of the stacked least-squares problem (6.2.13),
 `min ‖Ax − b‖² + λ‖Bx − d‖²` (`Matrix.isLeastSquaresSolution_fromRows_iff`). -/
@@ -776,33 +675,13 @@ theorem penaltyLSE_sub_eq_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm 
   set dt := toEuclideanLin (star U₂) d with hdt
   have hpure : ∀ i : Fin n, (i : ℕ) < n - p → α i = 1 ∧ β i = 0 := fun i hi =>
     h.of_lt_p i (by rw [hrn]; exact hi)
-  have hd0 : ∀ i : Fin n, α i ^ 2 + μ * β i ^ 2 ≠ 0 := by
-    intro i
-    by_cases hi : (i : ℕ) < n - p
-    · rw [(hpure i hi).1, (hpure i hi).2]; norm_num
-    · have h2 : 0 < β i ^ 2 :=
-        lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (hβ i (by omega))))
-      exact (add_pos_of_nonneg_of_pos (sq_nonneg _) (mul_pos hμ h2)).ne'
-  have hXA : Xᴴ * Aᴴ
-      = (rectDiagonal fun i => ((α i : ℝ) : 𝕜) : Matrix (Fin n) (Fin m₁) 𝕜) * star U₁ := by
-    have hAX : A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) := by
-      rw [← h.star_mul_mul_left, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
-        mem_unitaryGroup_iff.1 h.mem_unitaryGroup_left, Matrix.one_mul]
-    rw [← conjTranspose_mul, hAX, conjTranspose_mul, conjTranspose_rectDiagonal,
-      star_eq_conjTranspose]
-    congr 2
-    funext i
-    simp
-  have hXB : Xᴴ * Bᴴ = (shiftedRectDiagonal (n - p) fun i => ((β i : ℝ) : 𝕜) :
-      Matrix (Fin p) (Fin n) 𝕜)ᴴ * star U₂ := by
-    have hDB := h.star_mul_mul_right
-    rw [hrn] at hDB
-    have hBX : B * X = U₂ * shiftedRectDiagonal (n - p) fun i => ((β i : ℝ) : 𝕜) := by
-      rw [← hDB, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
-        mem_unitaryGroup_iff.1 h.mem_unitaryGroup_right, Matrix.one_mul]
-    rw [← conjTranspose_mul, hBX, conjTranspose_mul, star_eq_conjTranspose]
+  have hd0 : ∀ i : Fin n, α i ^ 2 + μ * β i ^ 2 ≠ 0 := fun i =>
+    h.sq_add_smul_sq_ne_zero hμ (by rw [hrn]; exact i.isLt)
+  have hXB := h.conjTranspose_mul_conjTranspose_right
+  rw [hrn] at hXB
   rw [penaltyLSE, h.inv_gram_add_smul_gram_eq hnm μ hd0, toEuclideanLin_mul_apply,
-    toEuclideanLin_mul_apply, map_add, map_smul, ← toEuclideanLin_mul_apply Xᴴ, hXA,
+    toEuclideanLin_mul_apply, map_add, map_smul, ← toEuclideanLin_mul_apply Xᴴ,
+    h.conjTranspose_mul_conjTranspose_left,
     ← toEuclideanLin_mul_apply Xᴴ, hXB, toEuclideanLin_mul_apply, toEuclideanLin_mul_apply,
     sum_smul_col_eq_mulVec, sum_smul_col_eq_mulVec, toEuclideanLin_apply, ← WithLp.toLp_sub,
     ← mulVec_sub]

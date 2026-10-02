@@ -1,9 +1,3 @@
-/-
-Upstreaming candidate: general material with no numerical-analysis-specific content, written
-to Mathlib conventions with a view to contributing it to Mathlib.
-Natural home: `Mathlib.LinearAlgebra.Matrix.Kronecker`, `Mathlib.Analysis.Matrix`.
-Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
--/
 import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.Kronecker
@@ -65,11 +59,12 @@ end Frobenius
 
 /-! ### Singular values -/
 
-/-- The characteristic polynomial of a conjugate `star U * M * U` by a unitary `U` is that of
-`M`. -/
-private theorem charpoly_star_mul_mul {n : Type*} [Fintype n] [DecidableEq n] {U : Matrix n n 𝕜}
-    (hU : U ∈ unitaryGroup n 𝕜) (M : Matrix n n 𝕜) : (star U * M * U).charpoly = M.charpoly := by
-  rw [charpoly_mul_comm, ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hU, Matrix.one_mul]
+/-- The roots of `∏ (X - a_i)` are the `a_i` (`Polynomial.roots_multiset_prod_X_sub_C`). -/
+private theorem roots_prod_X_sub_C_univ {K : Type*} [Field K] {ι : Type*} [Fintype ι]
+    (a : ι → K) : (∏ i, (X - C (a i))).roots = Multiset.map a Finset.univ.val := by
+  rw [Finset.prod_eq_multiset_prod]
+  have := roots_multiset_prod_X_sub_C (Multiset.map a Finset.univ.val)
+  rwa [Multiset.map_map] at this
 
 /-- The Kronecker product of the right singular unitaries diagonalizes `(B ⊗ C)ᴴ (B ⊗ C)`. -/
 private theorem conjTranspose_kronecker_mul_self_eq [DecidableEq n₁] [DecidableEq n₂]
@@ -100,15 +95,15 @@ theorem colSingularValues_kronecker [DecidableEq n₁] [DecidableEq n₂] (B : M
       C.rightSingularUnitary_mem_unitaryGroup)
   have hchar : ((B ⊗ₖ C)ᴴ * (B ⊗ₖ C)).charpoly = (diagonal fun q => ((d q : ℝ) : 𝕜)).charpoly := by
     rw [conjTranspose_kronecker_mul_self_eq]
-    have := charpoly_star_mul_mul hU (diagonal fun q => ((d q : ℝ) : 𝕜))
-    rwa [star_star] at this
+    have := (IsUnitarilySimilar.isSimilar
+      (⟨_, hU, rfl⟩ : IsUnitarilySimilar (diagonal fun q => ((d q : ℝ) : 𝕜)) _)).charpoly_eq
+    rwa [star_star, eq_comm] at this
   have hmult : Multiset.map hG.eigenvalues Finset.univ.val = Multiset.map d Finset.univ.val := by
     have h1 := hG.roots_charpoly_eq_eigenvalues
     have h2 : (diagonal fun q => ((d q : ℝ) : 𝕜)).charpoly.roots
         = Multiset.map (RCLike.ofReal ∘ d) Finset.univ.val := by
-      rw [charpoly_diagonal, roots_prod]
-      · simp
-      · simp [Finset.prod_ne_zero_iff, X_sub_C_ne_zero]
+      rw [charpoly_diagonal, roots_prod_X_sub_C_univ]
+      rfl
     rw [hchar, h2] at h1
     have h3 := congrArg (Multiset.map RCLike.re) h1
     simpa [Multiset.map_map, Function.comp_def] using h3.symm
@@ -122,14 +117,12 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- The spectral norm of a matrix with a nonempty column type is one of its singular values. -/
+/-- The spectral norm of a matrix with a nonempty column type is one of its singular values
+(`Matrix.l2_opNorm_eq_iSup_colSingularValues`). -/
 private theorem exists_l2_opNorm_eq_colSingularValues {p q : Type*} [Fintype p] [Fintype q]
     [DecidableEq q] [Nonempty q] (A : Matrix p q 𝕜) : ∃ i, ‖A‖ = A.colSingularValues i := by
   obtain ⟨i, hi⟩ := exists_eq_ciSup_of_finite (f := A.colSingularValues)
-  refine ⟨i, le_antisymm ?_ (colSingularValues_le_l2_opNorm A i)⟩
-  rw [hi]
-  exact l2_opNorm_le_of_forall_norm_toEuclideanLin_le A (hi ▸ A.colSingularValues_nonneg i)
-    (A.norm_toEuclideanLin_le_iSup_colSingularValues)
+  exact ⟨i, (l2_opNorm_eq_iSup_colSingularValues A).trans hi.symm⟩
 
 /-- `‖B ⊗ C‖₂ = ‖B‖₂ ‖C‖₂` ([golub2013matrix] §12.3.1): the largest singular value of `B ⊗ C` is
 the product of the largest singular values of the factors. -/
@@ -164,28 +157,6 @@ theorem l2_opNorm_kronecker [DecidableEq n₁] [DecidableEq n₂] (B : Matrix m�
 
 end L2
 
-/-! ### Eigenvalues -/
-
-/-- Two families with the same multiset of values have the same product under any function. -/
-private theorem prod_comp_eq_of_map_eq {ι α M : Type*} [Fintype ι] [CommMonoid M] {a b : ι → α}
-    (h : Multiset.map a Finset.univ.val = Multiset.map b Finset.univ.val) (g : α → M) :
-    ∏ i, g (a i) = ∏ i, g (b i) := by
-  have e : ∀ c : ι → α, Multiset.map (fun i => g (c i)) Finset.univ.val
-      = (Multiset.map c Finset.univ.val).map g := fun c => (Multiset.map_map g c _).symm
-  rw [Finset.prod_eq_multiset_prod, Finset.prod_eq_multiset_prod, e a, e b, h]
-
-/-- The roots of a split polynomial `∏ (X - a_i)` are the `a_i`. -/
-private theorem map_univ_eq_of_prod_eq {ι : Type*} [Fintype ι] {a b : ι → 𝕜}
-    (h : ∏ i, (X - C (a i)) = ∏ i, (X - C (b i))) :
-    Multiset.map a Finset.univ.val = Multiset.map b Finset.univ.val := by
-  have key : ∀ c : ι → 𝕜, (∏ i, (X - C (c i))).roots = Multiset.map c Finset.univ.val := by
-    intro c
-    rw [roots_prod]
-    · simp
-    · simp [Finset.prod_ne_zero_iff, X_sub_C_ne_zero]
-  rw [← key a, ← key b, h]
-
-
 /-! ### Triangular factors in positional layout -/
 
 section Triangular
@@ -205,18 +176,14 @@ theorem IsUpperTriangular.kroneckerFin [MulZeroClass R] {B : Matrix (Fin m₁) (
   · rw [hB h₁, zero_mul]
   · rw [hC h₂, mul_zero]
 
-/-- The Kronecker product of lower triangular matrices is lower triangular in positional layout. -/
+/-- The Kronecker product of lower triangular matrices is lower triangular in positional layout:
+the transpose of `Matrix.IsUpperTriangular.kroneckerFin`. -/
 theorem IsLowerTriangular.kroneckerFin [MulZeroClass R] {B : Matrix (Fin m₁) (Fin m₁) R}
     {C : Matrix (Fin m₂) (Fin m₂) R} (hB : B.IsLowerTriangular) (hC : C.IsLowerTriangular) :
     (kroneckerFin B C).IsLowerTriangular := by
-  intro i j h
-  obtain ⟨⟨i₁, i₂⟩, rfl⟩ := finProdFinEquiv.surjective i
-  obtain ⟨⟨j₁, j₂⟩, rfl⟩ := finProdFinEquiv.surjective j
-  rw [kroneckerFin_apply]
-  rcases finProdFinEquiv_lt_finProdFinEquiv_iff.1
-      (show finProdFinEquiv (i₁, i₂) < finProdFinEquiv (j₁, j₂) from h) with h₁ | ⟨h₁, h₂⟩
-  · rw [hB (show OrderDual.toDual j₁ < OrderDual.toDual i₁ from h₁), zero_mul]
-  · rw [hC (show OrderDual.toDual j₂ < OrderDual.toDual i₂ from h₂), mul_zero]
+  have h := hB.transpose_isUpperTriangular.kroneckerFin hC.transpose_isUpperTriangular
+  rw [← transpose_kroneckerFin] at h
+  exact fun _ _ hij => h (OrderDual.toDual_lt_toDual.1 hij)
 
 /-- The Kronecker product of unit lower triangular matrices is unit lower triangular in positional
 layout. -/
@@ -254,7 +221,17 @@ theorem IsCholesky.kroneckerFin {B H_B : Matrix (Fin m₁) (Fin m₁) 𝕜}
 
 end Triangular
 
+/-! ### Eigenvalues -/
+
 section Charpoly
+
+/-- Two families with the same multiset of values have the same product under any function. -/
+private theorem prod_comp_eq_of_map_eq {ι α M : Type*} [Fintype ι] [CommMonoid M] {a b : ι → α}
+    (h : Multiset.map a Finset.univ.val = Multiset.map b Finset.univ.val) (g : α → M) :
+    ∏ i, g (a i) = ∏ i, g (b i) := by
+  have e : ∀ c : ι → α, Multiset.map (fun i => g (c i)) Finset.univ.val
+      = (Multiset.map c Finset.univ.val).map g := fun c => (Multiset.map_map g c _).symm
+  rw [Finset.prod_eq_multiset_prod, Finset.prod_eq_multiset_prod, e a, e b, h]
 
 variable [IsAlgClosed 𝕜]
 
@@ -275,11 +252,15 @@ private theorem charpoly_kronecker_fin {a b : ℕ} (A : Matrix (Fin a) (Fin a) �
   have hK := charpoly_of_isUpperTriangular (kroneckerFin T S) (hPt.kroneckerFin hQt)
   unfold kroneckerFin at hK
   have hTS : (A ⊗ₖ B).charpoly = ∏ p : Fin a × Fin b, (X - C (T p.1 p.1 * S p.2 p.2)) := by
-    rw [← charpoly_star_mul_mul hPQ, hconj, ← charpoly_reindex finProdFinEquiv, reindex_apply,
+    rw [(IsUnitarilySimilar.isSimilar (⟨_, hPQ, rfl⟩ :
+      IsUnitarilySimilar (A ⊗ₖ B) _)).charpoly_eq, hconj, ← charpoly_reindex finProdFinEquiv,
+      reindex_apply,
       hK]
     exact Fintype.prod_equiv finProdFinEquiv.symm _ _ fun _ => rfl
-  have hT := map_univ_eq_of_prod_eq (hPc.symm.trans hA)
-  have hS := map_univ_eq_of_prod_eq (hQc.symm.trans hB)
+  have hT := (roots_prod_X_sub_C_univ _).symm.trans
+    ((congrArg roots (hPc.symm.trans hA)).trans (roots_prod_X_sub_C_univ _))
+  have hS := (roots_prod_X_sub_C_univ _).symm.trans
+    ((congrArg roots (hQc.symm.trans hB)).trans (roots_prod_X_sub_C_univ _))
   rw [hTS, Fintype.prod_prod_type]
   calc ∏ i, ∏ j, (X - C (T i i * S j j)) = ∏ i, ∏ j, (X - C (T i i * γ j)) :=
         Finset.prod_congr rfl fun i _ => prod_comp_eq_of_map_eq hS fun s => X - C (T i i * s)

@@ -21,15 +21,8 @@ id = "exists_unitary_mul_upperTriangular"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (1.27)-(1.28)"
 
 [[node]]
-id = "exists_qr"
+id = "IsThinQR.linearIndependent"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (1.19)"
-
-[[node]]
-id = "linearIndependent_of_qr"
-source = "Saad, Iterative Methods for Sparse Linear Systems, (1.19)"
-
-[[node]]
-id = "qr_unique"
 
 [[node]]
 id = "householder_mul_eq_sub_vecMulVec"
@@ -263,12 +256,13 @@ id = "IsThinQR"
 
 [[node]]
 id = "exists_isThinQR"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (1.19)"
 
 [[node]]
 id = "IsThinQR.unique"
 
 [[node]]
-id = "prod_one_sub_vecMulVec_of_orthonormal"
+id = "prodFwd_one_sub_vecMulVec_of_orthogonal"
 
 [[node]]
 id = "conj_one_sub_smul_vecMulVec_eq_sub"
@@ -304,9 +298,6 @@ id = "IsQR.conjTranspose_firstColumns_mul_self"
 id = "IsQR.isUpperTriangular_firstRows"
 
 [[node]]
-id = "IsQR.reduced"
-
-[[node]]
 id = "IsQR.isUnit_firstRows_of_linearIndependent"
 
 [[node]]
@@ -331,10 +322,19 @@ id = "exists_mem_unitaryGroup_mulVec_single_eq"
 id = "one_sub_smul_vecMulVec_mem_orthogonalGroup"
 
 [[node]]
-id = "prod_planeEmbed_mul_apply_eq_zero"
+id = "prodFwd_adjacentEmbed_mul_apply_eq_zero"
 
 [[node]]
-id = "upperTrapezoidal_of_adjacentRotations"
+id = "hasLowerBandwidthRect_zero_of_adjacentRotations"
 
 [[node]]
-id = "hasLowerBandwidthRect_prod_adjacentEmbed_mul"
+id = "hasLowerBandwidthRect_prodFwd_adjacentEmbed_mul"
+
+[[node]]  # g5 (review2 rk2-4): the trailing block dual to `firstColumns`
+id = "lastColumns"
+
+[[node]]  # g5 (review2 rk2-4)
+id = "lastRows"
+
+[[node]]  # g5 (review2 rk2-4): `Q₁ Q₁ᴴ + Q₂ Q₂ᴴ = 1`
+id = "firstColumns_mul_conjTranspose_add_lastColumns_mul_conjTranspose"

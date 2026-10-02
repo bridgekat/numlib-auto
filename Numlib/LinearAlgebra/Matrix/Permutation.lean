@@ -45,7 +45,7 @@ commutation of the Kronecker product, displacement structure.
   `Matrix.exchange_mul_mul_exchange_eq_submatrix`.
 * `Matrix.downshift_eq_circulant`, `Matrix.downshift_pow`, `Matrix.downshift_pow_card`.
 * `Matrix.perfectShuffle_mulVec`, `Matrix.transpose_perfectShuffle`,
-  `Matrix.perfectShuffle_mul_transpose`.
+  `Matrix.perfectShuffle_mul_transpose`, `Matrix.transpose_mul_perfectShuffle`.
 * `Matrix.cyclicShift_one`, `Matrix.cyclicShift_pow_card`.
 
 ## References
@@ -67,18 +67,18 @@ section Basic
 
 variable [Zero R] [One R]
 
-/-- The exchange matrix `ℰ_n`, with ones on the antidiagonal: `ℰ_n x` is `x` turned upside down. -/
+/-- The exchange matrix `ℰ_n`, with ones on the antidiagonal: `ℰ_n x` is `x` turned upside down.
+It is the permutation matrix of the reversal `Fin.revPerm`. -/
 def exchange (n : ℕ) : Matrix (Fin n) (Fin n) R :=
-  of fun i j => if j = Fin.rev i then 1 else 0
-
-/-- The entries of the exchange matrix: ones on the antidiagonal. -/
-theorem exchange_apply (n : ℕ) (i j : Fin n) :
-    (exchange n : Matrix (Fin n) (Fin n) R) i j = if j = Fin.rev i then 1 else 0 := rfl
+  (Fin.revPerm : Perm (Fin n)).permMatrix R
 
 /-- The exchange matrix is the permutation matrix of the reversal `Fin.revPerm`. -/
 theorem exchange_eq_permMatrix (n : ℕ) :
-    (exchange n : Matrix (Fin n) (Fin n) R) = (Fin.revPerm : Perm (Fin n)).permMatrix R := by
-  ext i j
+    (exchange n : Matrix (Fin n) (Fin n) R) = (Fin.revPerm : Perm (Fin n)).permMatrix R := rfl
+
+/-- The entries of the exchange matrix: ones on the antidiagonal. -/
+theorem exchange_apply (n : ℕ) (i j : Fin n) :
+    (exchange n : Matrix (Fin n) (Fin n) R) i j = if j = Fin.rev i then 1 else 0 := by
   simp [exchange, PEquiv.toMatrix_apply, eq_comm]
 
 /-- The exchange matrix is symmetric. -/
@@ -259,8 +259,8 @@ theorem perfectShuffle_mulVec_apply (p r : ℕ) (x : Fin (p * r) → R) (b : Fin
     (perfectShuffle p r *ᵥ x) (finProdFinEquiv (a, b)) = x (finProdFinEquiv (b, a)) := by
   rw [perfectShuffle_mulVec, Function.comp_apply, finPerfectShuffle_symm, finPerfectShuffle_apply]
 
-/-- The perfect shuffle is orthogonal: `Π_{p,r} Π_{p,r}ᵀ = I` and `Π_{p,r}ᵀ Π_{p,r} = I`. -/
-theorem perfectShuffle_mul_transpose (p r : ℕ) :
+/-- Both orthogonality identities of the perfect shuffle at once. -/
+private theorem perfectShuffle_orthogonal (p r : ℕ) :
     (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R) *
         (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R)ᵀ = 1 ∧
       (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R)ᵀ *
@@ -271,6 +271,18 @@ theorem perfectShuffle_mul_transpose (p r : ℕ) :
     Equiv.symm_trans_self, Equiv.self_trans_symm, Equiv.toPEquiv_refl, Equiv.toPEquiv_refl,
     PEquiv.toMatrix_refl, PEquiv.toMatrix_refl]
   exact ⟨rfl, rfl⟩
+
+/-- The perfect shuffle is orthogonal: `Π_{p,r} Π_{p,r}ᵀ = I`. -/
+theorem perfectShuffle_mul_transpose (p r : ℕ) :
+    (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R) *
+        (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R)ᵀ = 1 :=
+  (perfectShuffle_orthogonal p r).1
+
+/-- The perfect shuffle is orthogonal: `Π_{p,r}ᵀ Π_{p,r} = I`. -/
+theorem transpose_mul_perfectShuffle (p r : ℕ) :
+    (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R)ᵀ *
+        (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R) = 1 :=
+  (perfectShuffle_orthogonal p r).2
 
 end PerfectShuffle
 
@@ -397,6 +409,17 @@ theorem mul_cyclicShift_apply_of_lt {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin 
   · intro l _ hl
     have hl' : (l : ℕ) ≠ j + 1 := fun h' => hl (Fin.ext h')
     rw [cyclicShift_apply, ite_eq_right hl', ite_eq_right (by omega), mul_zero]
+  · simp
+
+/-- `(A Z_φᵀ)_ij = A_{i, j−1}` right of the first column. -/
+theorem mul_transpose_cyclicShift_apply_of_pos {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin n) R)
+    (i : Fin n) {j : Fin n} (hj : 0 < (j : ℕ)) :
+    (A * (cyclicShift n φ)ᵀ) i j = A i ⟨j - 1, by omega⟩ := by
+  rw [mul_apply, Finset.sum_eq_single ⟨j - 1, by omega⟩]
+  · rw [transpose_apply, cyclicShift_apply, ite_eq_left (by simp only; omega), mul_one]
+  · intro l _ hl
+    have hl' : (j : ℕ) ≠ l + 1 := fun h' => hl (Fin.ext (by simp only; omega))
+    rw [transpose_apply, cyclicShift_apply, ite_eq_right hl', ite_eq_right (by omega), mul_zero]
   · simp
 
 /-- `(Z_φᵀ A)_ij = A_{i+1, j}` above the last row. -/

@@ -3,7 +3,7 @@ Upstreaming candidate: general material with no numerical-analysis-specific cont
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.Matrix`, beside the polar decomposition.
 -/
-import Numlib.LinearAlgebra.Matrix.OrthogonalGroup
+import Numlib.LinearAlgebra.Matrix.OrthogonalTrace
 import Numlib.LinearAlgebra.Matrix.Polar
 
 /-!

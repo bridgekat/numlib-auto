@@ -1,10 +1,10 @@
 namespace = "Matrix"
 
 [[node]]
-id = "prodRev"
+id = "_root_.prodRev"
 
 [[node]]
-id = "prodFwd"
+id = "_root_.prodFwd"
 
 [[node]]
 id = "prodRev_mem_orthogonalGroup"
@@ -19,7 +19,7 @@ id = "prodRev_mem_unitaryGroup"
 id = "prodFwd_mem_unitaryGroup"
 
 [[node]]  # added by lo2: products of disjointly supported factors
-id = "prodFwd_eq_one_add_sum_sub_one"
+id = "_root_.prodFwd_eq_one_add_sum_sub_one"
 
 [[node]]  # added by lo2
-id = "commute_of_sub_one_mul_sub_one"
+id = "_root_.commute_of_sub_one_mul_sub_one"

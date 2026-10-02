@@ -88,14 +88,14 @@ id = "Matrix.IsStieltjes.of_entrywiseLE"
 id = "Matrix.IsStieltjes.submatrix"
 
 [[node]]
-id = "Matrix.IsMMatrix.isMMatrix_schurComplementSingle"
+id = "Matrix.IsMMatrix.schurComplementSingle"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.1"
 
 [[node]]
 id = "Matrix.IsStieltjes.schurComplementSingle"
 
 [[node]]
-id = "Matrix.IsStieltjes.isStieltjes_sub_drop"
+id = "Matrix.IsStieltjes.sub_drop"
 source = 'Golub–Van Loan, Matrix Computations, Theorem 11.5.2'
 
 [[node]]

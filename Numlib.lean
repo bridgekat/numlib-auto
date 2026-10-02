@@ -527,7 +527,7 @@ import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.Order
-import Numlib.LinearAlgebra.Matrix.OrthogonalGroup
+import Numlib.LinearAlgebra.Matrix.OrthogonalTrace
 import Numlib.LinearAlgebra.Matrix.Permutation
 import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 import Numlib.LinearAlgebra.Matrix.PlaneRotation

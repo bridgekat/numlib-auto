@@ -1,7 +1,7 @@
 import Numlib.Analysis.Matrix.Function.CFC
 import Numlib.Analysis.Matrix.Function.Sign
 import Numlib.Analysis.Matrix.SingularValues
-import Numlib.LinearAlgebra.Matrix.OrthogonalGroup
+import Numlib.LinearAlgebra.Matrix.OrthogonalTrace
 import Numlib.LinearAlgebra.Matrix.Polar
 
 /-!

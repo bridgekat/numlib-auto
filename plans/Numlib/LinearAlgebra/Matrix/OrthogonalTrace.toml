@@ -5,7 +5,7 @@ id = "Matrix.PosSemidef.trace_mul_le_trace"
 id = "Matrix.trace_le_card_sub_two_of_det_eq_neg_one"
 
 [[node]]
-id = "Matrix.trace_mul_one_sub_ge"
+id = "Matrix.le_trace_mul_one_sub"
 
 [[node]]
 id = "Matrix.re_trace_mul_le_trace_of_posSemidef"

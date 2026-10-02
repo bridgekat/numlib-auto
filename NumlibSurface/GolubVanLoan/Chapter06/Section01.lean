@@ -266,7 +266,8 @@ theorem equation_6_1_9 {q : ℕ} {A : Matrix (Fin (n + q)) (Fin n) ℝ}
           Z.submatrix id (Fin.natAdd n)) u) :
     IsGeneralizedLeastSquaresSolution A B b x
       (toEuclideanLin (Z.submatrix id (Fin.natAdd n)) u) := by
-  simp only [← conjTranspose_eq_transpose_of_trivial] at hZ₁ hZ₂ hu hx
+  simp only [← conjTranspose_eq_transpose_of_trivial, ← lastColumns_eq_submatrix_natAdd]
+    at hZ₁ hZ₂ hu hx ⊢
   exact isGeneralizedLeastSquaresSolution_of_paige hQR hZ hS hZ₁ hZ₂ hu hx
 
 /-- **(6.1.10), the simplification.** "`R₁x = Q₁ᵀb − (Q₁ᵀBZ₁Z₁ᵀ + Q₁ᵀBZ₂Z₂ᵀ)v = Q₁ᵀb − Q₁ᵀBZ₂u`"

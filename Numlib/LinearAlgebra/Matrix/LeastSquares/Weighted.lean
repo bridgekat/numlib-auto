@@ -42,6 +42,9 @@ derivative in a weight, which are over `ℝ`.
   solution of the weighted problem ([golub2013matrix] (6.1.1)–(6.1.2)).
 * `Matrix.weightedLeastSquaresOp_mulVec_sub_pinv_mulVec`: weighted minus unweighted solution
   ([golub2013matrix] (6.1.3)).
+* `Matrix.conjTranspose_mul_diagonal_update_mul`, `Matrix.conjTranspose_mul_diagonal_update_mulVec`:
+  changing one row weight is a rank-one update of the weighted normal equations; deleting a row is
+  the weight `0` (`Matrix.tikhonov_deleteRow_eq` in `LeastSquares/Regularized`).
 * `Matrix.hasDerivAt_weightedResidual`, `Matrix.antitoneOn_abs_weightedResidual`: the derivative
   of a residual in its own weight, and the monotone decrease of that residual
   ([golub2013matrix] (6.1.4)).
@@ -170,11 +173,6 @@ theorem posDef_conjTranspose_mul_diagonal_mul [Finite n] (hA : LinearIndependent
   cases nonempty_fintype n
   exact (PosDef.diagonal hu).conjTranspose_mul_mul_same (mulVec_injective_iff.2 hA)
 
-omit [Fintype m] [Fintype n] [DecidableEq n] in
-/-- The diagonal matrix of a sum of weights. -/
-private theorem diagonal_add_eq (u v : m → ℝ) : diagonal (u + v) = diagonal u + diagonal v :=
-  (diagonal_add u v).symm
-
 omit [Fintype m] in
 /-- A single changed weight as an additive correction. -/
 private theorem update_eq_add_single (w : m → ℝ) (k : m) (t : ℝ) :
@@ -197,25 +195,27 @@ private theorem conjTranspose_mul_diagonal_single_mul (A : Matrix m n ℝ) (k : 
     simp [mul_diagonal, hx]
   · simp
 
-omit [DecidableEq n] in
-/-- Changing one weight changes the weighted Gram matrix by a rank-one term:
-`Aᵀ diag(w[k ↦ t]) A y = Aᵀ diag(w) A y + (t - w_k) (a_kᵀ y) a_k`. -/
-private theorem gram_update_mulVec (A : Matrix m n ℝ) (w : m → ℝ) (k : m) (t : ℝ) (y : n → ℝ) :
-    (Aᴴ * diagonal (Function.update w k t) * A) *ᵥ y
-      = (Aᴴ * diagonal w * A) *ᵥ y + ((t - w k) * (A k ⬝ᵥ y)) • A k := by
-  rw [update_eq_add_single, diagonal_add_eq,
-    Matrix.mul_add, Matrix.add_mul, add_mulVec,
-    conjTranspose_mul_diagonal_single_mul, smul_mulVec, vecMulVec_mulVec, op_smul_eq_smul,
-    smul_smul]
+omit [Fintype n] [DecidableEq n] in
+/-- **Changing one row weight is a rank-one update of the weighted Gram matrix**:
+`Aᵀ diag(w[k ↦ t]) A = Aᵀ diag(w) A + (t - w_k) a_k a_kᵀ`, with `a_kᵀ = A k` the `k`-th row.
+Deleting row `k` is the case `w = 1`, `t = 0`: `Aᵀ D_k A = Aᵀ A - a_k a_kᵀ`. -/
+theorem conjTranspose_mul_diagonal_update_mul (A : Matrix m n ℝ) (w : m → ℝ) (k : m) (t : ℝ) :
+    Aᴴ * diagonal (Function.update w k t) * A =
+      Aᴴ * diagonal w * A + (t - w k) • vecMulVec (A k) (A k) := by
+  have hd : diagonal (w + Pi.single k (t - w k)) = diagonal w + diagonal (Pi.single k (t - w k)) :=
+    (diagonal_add _ _).symm
+  rw [update_eq_add_single, hd, Matrix.mul_add, Matrix.add_mul,
+    conjTranspose_mul_diagonal_single_mul]
 
 omit [Fintype n] [DecidableEq n] in
-/-- Changing one weight changes the weighted right-hand side by a multiple of the row:
+/-- **Changing one row weight changes the weighted right-hand side by a multiple of the row**:
 `Aᵀ diag(w[k ↦ t]) b = Aᵀ diag(w) b + (t - w_k) b_k a_k`. -/
-private theorem rhs_update_mulVec (A : Matrix m n ℝ) (w : m → ℝ) (k : m) (t : ℝ) (b : m → ℝ) :
-    (Aᴴ * diagonal (Function.update w k t)) *ᵥ b
+theorem conjTranspose_mul_diagonal_update_mulVec (A : Matrix m n ℝ) (w : m → ℝ) (k : m) (t : ℝ)
+    (b : m → ℝ) : (Aᴴ * diagonal (Function.update w k t)) *ᵥ b
       = (Aᴴ * diagonal w) *ᵥ b + ((t - w k) * b k) • A k := by
-  rw [update_eq_add_single, diagonal_add_eq,
-    Matrix.mul_add, add_mulVec]
+  have hd : diagonal (w + Pi.single k (t - w k)) = diagonal w + diagonal (Pi.single k (t - w k)) :=
+    (diagonal_add _ _).symm
+  rw [update_eq_add_single, hd, Matrix.mul_add, add_mulVec]
   congr 1
   ext j
   rw [mulVec, dotProduct, Finset.sum_eq_single k]
@@ -251,7 +251,8 @@ theorem weightedResidual_update_mul {w : m → ℝ} {k : m} {t : ℝ}
       = (Aᴴ * diagonal (Function.update w k t)) *ᵥ b := by
     rw [hy_def, weightedLeastSquaresOp_diagonal_mulVec, mulVec_mulVec, mul_nonsing_inv _ hdMt,
       one_mulVec]
-  rw [gram_update_mulVec, rhs_update_mulVec] at hy
+  rw [conjTranspose_mul_diagonal_update_mul, add_mulVec, smul_mulVec, vecMulVec_mulVec,
+    op_smul_eq_smul, smul_smul, conjTranspose_mul_diagonal_update_mulVec] at hy
   have h3 := congrArg (fun v => A k ⬝ᵥ ((Aᴴ * diagonal w * A)⁻¹ *ᵥ v)) hy
   simp only [mulVec_add, mulVec_smul, mulVec_mulVec, nonsing_inv_mul _ hdM, one_mulVec,
     dotProduct_add, dotProduct_smul, smul_eq_mul, ← hx] at h3
@@ -401,39 +402,12 @@ section Paige
 
 variable {p q : ℕ}
 
-/-- A product split along the first `p` and the last `q` indices of `Fin (p + q)`. -/
-private theorem mul_eq_add_submatrix {l l' : Type*} (X : Matrix l (Fin (p + q)) 𝕜)
-    (Y : Matrix (Fin (p + q)) l' 𝕜) :
-    X * Y = X.submatrix id (Fin.castAdd q) * Y.submatrix (Fin.castAdd q) id
-      + X.submatrix id (Fin.natAdd p) * Y.submatrix (Fin.natAdd p) id := by
-  ext i j
-  simp only [mul_apply, add_apply, submatrix_apply, id, Fin.sum_univ_add]
-
-/-- The column blocks of a unitary matrix resolve the identity: `U₁ U₁ᴴ + U₂ U₂ᴴ = 1`. -/
-private theorem submatrix_mul_conjTranspose_add {X : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜}
-    (hX : X ∈ unitaryGroup (Fin (p + q)) 𝕜) :
-    X.submatrix id (Fin.castAdd q) * (X.submatrix id (Fin.castAdd q))ᴴ
-      + X.submatrix id (Fin.natAdd p) * (X.submatrix id (Fin.natAdd p))ᴴ = 1 := by
-  rw [← mem_unitaryGroup_iff.1 hX, star_eq_conjTranspose, mul_eq_add_submatrix X Xᴴ,
-    conjTranspose_submatrix, conjTranspose_submatrix]
-
-/-- The trailing block of the identity against the leading one vanishes. -/
-private theorem one_submatrix_natAdd_castAdd :
-    (1 : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜).submatrix (Fin.natAdd p) (Fin.castAdd q) = 0 := by
-  ext i j
-  rw [submatrix_apply, one_apply_ne, zero_apply]
-  intro h
-  have := congrArg Fin.val h
-  simp only [Fin.val_natAdd, Fin.val_castAdd] at this
-  have := j.isLt
-  omega
-
 /-- **Paige's method for the generalized least-squares problem** ([golub2013matrix]
 (6.1.9)–(6.1.10)): let `A = Q R` be a full QR factorization of `A ∈ 𝕜^{(p+q) × p}`, with
-`Q = [Q₁ Q₂]` split `p | q` and `R₁` the leading `p × p` block of `R`; let `Z = [Z₁ Z₂]` (split
-`p | q`) be unitary with
-`Q₂ᴴ B Z = [0 S]`, `S` nonsingular. If `S u = Q₂ᴴ b` and `R₁ x = Q₁ᴴ b - Q₁ᴴ B Z₂ u`, then
-`(x, Z₂ u)` solves the generalized problem `min ‖v‖` subject to `b = A x + B v`.
+`Q = [Q₁ Q₂]` split `p | q` (`Matrix.firstColumns`, `Matrix.lastColumns`) and `R₁` the leading
+`p × p` block of `R`; let `Z = [Z₁ Z₂]` (split `p | q`) be unitary with `Q₂ᴴ B Z = [0 S]`, `S`
+nonsingular. If `S u = Q₂ᴴ b` and `R₁ x = Q₁ᴴ b - Q₁ᴴ B Z₂ u`, then `(x, Z₂ u)` solves the
+generalized problem `min ‖v‖` subject to `b = A x + B v`.
 
 The book computes `Z` from an RQ factorization, so that `S` is upper triangular, and assumes `B`
 nonsingular and `A` of full column rank to make `S` and `R₁` nonsingular; the statement uses only
@@ -444,43 +418,42 @@ theorem isGeneralizedLeastSquaresSolution_of_paige {A : Matrix (Fin (p + q)) (Fi
     {Q : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜} {R : Matrix (Fin (p + q)) (Fin p) 𝕜}
     (hQR : IsQR A Q R) {B Z : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜}
     (hZ : Z ∈ unitaryGroup (Fin (p + q)) 𝕜) {S : Matrix (Fin q) (Fin q) 𝕜} (hS : IsUnit S)
-    (hZ₁ : (Q.submatrix id (Fin.natAdd p))ᴴ * B * Z.submatrix id (Fin.castAdd q) = 0)
-    (hZ₂ : (Q.submatrix id (Fin.natAdd p))ᴴ * B * Z.submatrix id (Fin.natAdd p) = S)
+    (hZ₁ : (lastColumns Q (Nat.le_add_left q p))ᴴ * B * firstColumns Z (Nat.le_add_right p q) = 0)
+    (hZ₂ : (lastColumns Q (Nat.le_add_left q p))ᴴ * B * lastColumns Z (Nat.le_add_left q p) = S)
     {b : EuclideanSpace 𝕜 (Fin (p + q))} {u : EuclideanSpace 𝕜 (Fin q)}
     {x : EuclideanSpace 𝕜 (Fin p)}
-    (hu : toEuclideanLin S u = toEuclideanLin (Q.submatrix id (Fin.natAdd p))ᴴ b)
+    (hu : toEuclideanLin S u = toEuclideanLin (lastColumns Q (Nat.le_add_left q p))ᴴ b)
     (hx : toEuclideanLin (firstRows R (Nat.le_add_right p q)) x =
       toEuclideanLin (firstColumns Q (Nat.le_add_right p q))ᴴ b -
         toEuclideanLin ((firstColumns Q (Nat.le_add_right p q))ᴴ * B *
-          Z.submatrix id (Fin.natAdd p)) u) :
+          lastColumns Z (Nat.le_add_left q p)) u) :
     IsGeneralizedLeastSquaresSolution A B b x
-      (toEuclideanLin (Z.submatrix id (Fin.natAdd p)) u) := by
+      (toEuclideanLin (lastColumns Z (Nat.le_add_left q p)) u) := by
+  have hp : p ≤ p + q := Nat.le_add_right p q
+  have hq : q ≤ p + q := Nat.le_add_left q p
   have hQ := hQR.mem_unitaryGroup
-  set Q₁ := firstColumns Q (Nat.le_add_right p q) with hQ₁
-  set Q₂ := Q.submatrix id (Fin.natAdd p) with hQ₂
-  set Z₁ := Z.submatrix id (Fin.castAdd q) with hZ₁def
-  set Z₂ := Z.submatrix id (Fin.natAdd p) with hZ₂def
-  set R₁ := firstRows R (Nat.le_add_right p q) with hR₁
-  have hQ₁' : Q₁ = Q.submatrix id (Fin.castAdd q) := rfl
-  have hA : A = Q₁ * R₁ := (hQR.firstColumns_mul_firstRows (Nat.le_add_right p q)).symm
-  have hQ₁Q₁ : Q₁ᴴ * Q₁ = 1 := hQR.conjTranspose_firstColumns_mul_self (Nat.le_add_right p q)
-  have hQ₂Q₁ : Q₂ᴴ * Q₁ = 0 := by
-    rw [hQ₁', hQ₂, conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup hQ,
-      one_submatrix_natAdd_castAdd]
+  have hQQ : Qᴴ * Q = 1 := by
+    rw [← star_eq_conjTranspose]; exact Unitary.star_mul_self_of_mem hQ
+  set Q₁ := firstColumns Q hp with hQ₁
+  set Q₂ := lastColumns Q hq with hQ₂
+  set Z₁ := firstColumns Z hp with hZ₁def
+  set Z₂ := lastColumns Z hq with hZ₂def
+  set R₁ := firstRows R hp with hR₁
+  have hA : A = Q₁ * R₁ := (hQR.firstColumns_mul_firstRows hp).symm
+  have hQ₁Q₁ : Q₁ᴴ * Q₁ = 1 := hQR.conjTranspose_firstColumns_mul_self hp
+  have hQ₂Q₁ : Q₂ᴴ * Q₁ = 0 := conjTranspose_lastColumns_mul_firstColumns hQQ hp hq le_rfl
   have hQ₁A : Q₁ᴴ * A = R₁ := by rw [hA, ← Matrix.mul_assoc, hQ₁Q₁, Matrix.one_mul]
   have hQ₂A : Q₂ᴴ * A = 0 := by rw [hA, ← Matrix.mul_assoc, hQ₂Q₁, Matrix.zero_mul]
-  have hZ₂Z₂ : Z₂ᴴ * Z₂ = 1 := by
-    rw [hZ₂def, conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup hZ]
-    exact submatrix_one _ (fun a b hab => by simpa [Fin.ext_iff] using hab)
+  have hZ₂Z₂ : Z₂ᴴ * Z₂ = 1 := conjTranspose_lastColumns_mul_lastColumns
+    (by rw [← star_eq_conjTranspose]; exact Unitary.star_mul_self_of_mem hZ) hq
   -- the resolutions of the identity by the column blocks
   have hsplit : ∀ {X : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜}, X ∈ unitaryGroup (Fin (p + q)) 𝕜 →
-      ∀ w, w = toEuclideanLin (X.submatrix id (Fin.castAdd q))
-          (toEuclideanLin (X.submatrix id (Fin.castAdd q))ᴴ w)
-        + toEuclideanLin (X.submatrix id (Fin.natAdd p))
-          (toEuclideanLin (X.submatrix id (Fin.natAdd p))ᴴ w) := by
+      ∀ w, w = toEuclideanLin (firstColumns X hp) (toEuclideanLin (firstColumns X hp)ᴴ w)
+        + toEuclideanLin (lastColumns X hq) (toEuclideanLin (lastColumns X hq)ᴴ w) := by
     intro X hX w
     rw [← toEuclideanLin_mul_apply, ← toEuclideanLin_mul_apply, ← LinearMap.add_apply, ← map_add,
-      submatrix_mul_conjTranspose_add hX, toEuclideanLin_one_apply]
+      firstColumns_mul_conjTranspose_add_lastColumns_mul_conjTranspose hX hp hq rfl,
+      toEuclideanLin_one_apply]
   refine ⟨?_, fun x' v' h' => ?_⟩
   · -- feasibility, block by block
     set y := toEuclideanLin A x + toEuclideanLin B (toEuclideanLin Z₂ u) with hy
@@ -520,7 +493,8 @@ theorem isGeneralizedLeastSquaresSolution_of_paige {A : Matrix (Fin (p + q)) (Fi
       have hZs : Zᴴ ∈ unitaryGroup (Fin (p + q)) 𝕜 := by
         rw [← star_eq_conjTranspose]
         exact Unitary.star_mem hZ
-      rw [← norm_toEuclideanLin_apply_of_mem_unitaryGroup hZs v']
+      rw [← norm_toEuclideanLin_apply_of_mem_unitaryGroup hZs v', hZ₂def,
+        lastColumns_eq_submatrix_natAdd]
       refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
       rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq, Fin.sum_univ_add]
       exact le_add_of_nonneg_left (Finset.sum_nonneg fun _ _ => sq_nonneg _)

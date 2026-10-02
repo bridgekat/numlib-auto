@@ -50,7 +50,7 @@ id = "norm_sub_sq_add_mul_norm_sq_eq_of_gram_add_smul_gram"
 id = "norm_sq_toEuclideanLin_tikhonov_apply"
 
 [[node]]  # added by ls1: split off antitoneOn_norm_tikhonov_mulVec (the strict half, needed by LeastSquares/Constrained)
-id = "strictAntiOn_norm_tikhonov_mulVec"
+id = "strictAntiOn_norm_toEuclideanLin_tikhonov"
 source = "Golub–Van Loan, Matrix Computations, §6.2.1"
 
 [[node]]  # added by ls1: the matrix identity behind the SVD expansions
@@ -58,7 +58,7 @@ id = "IsSVD.tikhonov_eq"
 source = "Golub–Van Loan, Matrix Computations, (6.1.14)"
 
 [[node]]  # added by ls1: split off norm_sq_pinv_mulVec_eq_sum_of_isSVD (the expansion half)
-id = "pinv_mulVec_eq_sum_of_isSVD"
+id = "toEuclideanLin_pinv_eq_sum_of_isSVD"
 source = "Golub–Van Loan, Matrix Computations, (6.2.3)"
 
 [[node]]  # added by ls1: the residual of V D Uᴴ b in the coordinates of U
@@ -77,28 +77,28 @@ id = "norm_fromRows_sub_sq"
 id = "isLeastSquaresSolution_fromRows_iff"
 
 [[node]]
-id = "tikhonov_mulVec_eq_iff_isMinOn"
+id = "eq_toEuclideanLin_tikhonov_iff_isMinOn"
 
 [[node]]
-id = "tikhonov_mulVec_eq_sum_of_isSVD"
+id = "toEuclideanLin_tikhonov_eq_sum_of_isSVD"
 
 [[node]]
-id = "norm_sq_tikhonov_mulVec_eq_sum_of_isSVD"
+id = "norm_sq_toEuclideanLin_tikhonov_eq_sum_of_isSVD"
 
 [[node]]
-id = "norm_sq_pinv_mulVec_eq_sum_of_isSVD"
+id = "norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD"
 
 [[node]]
-id = "norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD"
+id = "norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD"
 
 [[node]]
 id = "tendsto_tikhonov_pinv"
 
 [[node]]
-id = "antitoneOn_norm_tikhonov_mulVec"
+id = "antitoneOn_norm_toEuclideanLin_tikhonov"
 
 [[node]]
-id = "tendsto_norm_tikhonov_mulVec_atTop"
+id = "tendsto_norm_toEuclideanLin_tikhonov_atTop"
 
 [[node]]
 id = "one_sub_dotProduct_inv_gram_pos"
@@ -119,10 +119,13 @@ id = "generalFormTikhonov"
 id = "generalFormTikhonov_one"
 
 [[node]]
-id = "generalFormTikhonov_mulVec_eq_iff_isMinOn"
+id = "eq_toEuclideanLin_generalFormTikhonov_iff"
 
 [[node]]
 id = "generalFormTikhonov_mulVec_eq_sum_of_isGSVD"
 
 [[node]]  # staged by ch05; moved from SVD (it uses this module's expansion)
 id = "norm_sub_sq_pinv_eq_sum_of_isSVD"
+
+[[node]]  # moved from LeastSquares/Constrained (review2 rk2-9)
+id = "continuousOn_norm_toEuclideanLin_tikhonov"

@@ -16,6 +16,7 @@ import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.PlaneRotation
+import Numlib.LinearAlgebra.Matrix.Products
 
 /-!
 # Householder reflectors and the QR factorization
@@ -27,12 +28,12 @@ property is that one reflector annihilates every entry of a vector but one
 any matrix by a product of reflectors (`Matrix.exists_unitary_mul_upperTriangular`).
 
 The same factorization is reached from the other end by orthonormalizing the columns:
-`Matrix.exists_qr` factors a matrix with linearly independent columns as `X = Q R` with `Qᴴ Q = 1`
-and `R` upper triangular of positive diagonal, taking `Q` to be
-`InnerProductSpace.gramSchmidtNormed` of the columns and `R i j = ⟪Q i, X j⟫`.  The two routes meet
-at `Matrix.qr_unique`: the factorization with a positive diagonal is unique, so a product of
-reflectors, classical Gram–Schmidt and modified Gram–Schmidt all compute the same `Q` and the same
-`R`.
+`Matrix.exists_isThinQR` factors a matrix with linearly independent columns as a thin QR
+factorization `A = Q R` (`Matrix.IsThinQR`: `Qᴴ Q = 1`, `R` upper triangular) with a positive
+diagonal, taking `Q` to be `InnerProductSpace.gramSchmidtNormed` of the columns and
+`R i j = ⟪Q i, A j⟫`.  The two routes meet at `Matrix.IsThinQR.unique`: the factorization with a
+positive diagonal is unique, so a product of reflectors, classical Gram–Schmidt and modified
+Gram–Schmidt all compute the same `Q` and the same `R`.
 
 The second half of the file is the Householder and Givens machinery of the eigenvalue algorithms
 of [quarteroni2000numerical] §5.6 and §5.8: the **tail reflector** `Matrix.householderTail x p`,
@@ -61,17 +62,21 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
 * `Matrix.hessenbergReduce`, `Matrix.hessenbergQ`: the Householder reduction to Hessenberg form
   and its unitary matrix, built from `Matrix.hessenbergStep`.
 * `Matrix.hessenbergGivensQR`: the Givens `QR` factorization of a real Hessenberg matrix.
-* `Matrix.IsQR A Q R`: the full QR factorization `A = Q R` of an `M × N` matrix, `Q` unitary and `R`
-  upper trapezoidal ([quarteroni2000numerical] Definition 3.1); `Matrix.firstColumns`,
-  `Matrix.firstRows`: the reduced factors `Q̃ = Q(1:m, 1:n)`, `R̃ = R(1:n, 1:n)` of (3.48).
 * `Matrix.IsThinQR A Q R`: the thin factorization `A = Q R`, `Qᴴ Q = 1`, `R` upper triangular
-  ([golub2013matrix] (5.2.2)); `Matrix.IsPivotedQR A Q R σ`: QR with column pivoting,
-  `A Π = Q R`.
+  ([golub2013matrix] (5.2.2)).
+* `Matrix.IsQR A Q R`: the full QR factorization `A = Q R` of an `M × N` matrix, `Q` unitary and `R`
+  upper trapezoidal ([quarteroni2000numerical] Definition 3.1); `Matrix.IsPivotedQR A Q R σ`: QR
+  with column pivoting, `A Π = Q R`.
+* `Matrix.firstColumns`, `Matrix.lastColumns`, `Matrix.firstRows`, `Matrix.lastRows`: the leading
+  `N` and trailing `K` columns and rows of a matrix, the blocks `Q₁ = Q(1:m, 1:n)`,
+  `Q₂ = Q(1:m, n+1:m)` and `R̃ = R(1:n, 1:n)` of a QR factorization ([quarteroni2000numerical]
+  (3.48), [golub2013matrix] (5.2.2)).
 
 ## Main results
 
 * `Matrix.householder_mulVec_eq_smul_single`: one reflector annihilates every entry of a vector but
-  one; `Matrix.householder_tail_mulVec` is the same for the tail of a vector.
+  one; `Matrix.householder_tail_mulVec` is the same for the tail of a vector;
+  `Matrix.det_householder`, `Matrix.det_reflector`: a reflector has determinant `-1`.
 * `Matrix.reflector_mulVec_eq_of_sq`: the reflector of `x + α eᵢ`, `ᾱ α = ‖x‖²`, `ᾱ xᵢ` real,
   sends `x` to `-α eᵢ` — the defining property with either sign ([golub2013matrix] (5.1.2));
   `Matrix.reflector_eq_householder`, `Matrix.reflector_mem_unitaryGroup`.
@@ -81,33 +86,38 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
   a reflector is a rank-one update.
 * `Matrix.exists_unitary_mul_upperTriangular`: a product of reflectors triangularizes any matrix;
   `Matrix.exists_unitary_mul_isUpperTriangular` is its form on any finite linear order.
-* `Matrix.exists_qr`: the Gram–Schmidt factorization `X = Q R` of a matrix with linearly independent
-  columns, and its converse `Matrix.linearIndependent_of_qr`.
-* `Matrix.qr_unique`: the factorization with a positive diagonal is unique, so all three
+* `Matrix.exists_isThinQR`: the Gram–Schmidt factorization of a matrix with linearly independent
+  columns ([golub2013matrix] Theorem 5.2.3), and `Matrix.IsThinQR.linearIndependent_iff_isUnit`:
+  the columns are independent exactly when `R` is nonsingular.
+* `Matrix.IsThinQR.unique`: the factorization with a positive diagonal is unique, so all three
   constructions compute the same pair.
-* `Matrix.exists_isQR`, `Matrix.IsQR.reduced`: the full QR factorization exists, from the
+* `Matrix.firstColumns_mul_firstRows_add_lastColumns_mul_lastRows`: a product in block form;
+  `Matrix.firstColumns_mul_conjTranspose_add_lastColumns_mul_conjTranspose`: the column blocks of
+  a unitary matrix resolve the identity, `Q₁ Q₁ᴴ + Q₂ Q₂ᴴ = 1`, and they are orthonormal
+  (`Matrix.conjTranspose_lastColumns_mul_firstColumns`).
+* `Matrix.exists_isQR`, `Matrix.IsQR.isThinQR`: the full QR factorization exists, from the
   Householder triangularization, and yields the reduced factorization `A = Q̃ R̃`,
   `Q̃ᴴ Q̃ = 1`, `R̃` upper triangular ([quarteroni2000numerical] Property 3.3), whose columns
   span the column space of `A` when `A` has full column rank
   (`Matrix.IsQR.span_firstColumns_eq`). Uniqueness, which Property 3.3 also claims, holds only
-  with a normalization of the diagonal of `R̃` (`Matrix.qr_unique`).
+  with a normalization of the diagonal of `R̃` (`Matrix.IsThinQR.unique`).
 * `Matrix.exists_mem_unitaryGroup_mulVec_single_eq`: every unit vector is a column of a unitary
   matrix, a multiple of a reflector.
 * `Matrix.IsQR.conjTranspose_mul_eq`, `Matrix.isQR_conjTranspose_mul`: `R = Qᴴ A`, and a unitary
   `Q` with `Qᴴ A` upper trapezoidal gives a full QR factorization.
-* `Matrix.exists_isThinQR`, `Matrix.IsThinQR.unique`, `Matrix.IsQR.isThinQR`: the thin
-  factorization ([golub2013matrix] Theorem 5.2.3); `Matrix.IsQR.span_col_prefix_eq`: the leading
-  columns of `A` and `Q` span the same spaces ((5.2.1)).
-* `Matrix.prod_one_sub_vecMulVec_of_orthonormal`: the product of the deflations
+* `Matrix.IsQR.span_col_prefix_eq`: the leading columns of `A` and `Q` span the same spaces
+  ([golub2013matrix] (5.2.1)).
+* `Matrix.prodFwd_one_sub_vecMulVec_of_orthogonal`: the product of the deflations
   `1 - qᵢ qᵢᴴ` of pairwise orthogonal vectors is `1 - ∑ qᵢ qᵢᴴ`, the identity behind modified
   Gram–Schmidt ([golub2013matrix] §5.2.8).
 * `Matrix.hessenbergReduce_eq_conj`, `Matrix.isUpperHessenberg_hessenbergReduce`,
   `Matrix.exists_unitary_conj_isUpperHessenberg`: the Householder reduction is a unitary
   similarity to upper Hessenberg form, tridiagonal for Hermitian input
   (`Matrix.isTridiagonal_hessenbergReduce_of_isHermitian`).
-* `Matrix.upperTrapezoidal_of_adjacentRotations`, `Matrix.prod_planeEmbed_mul_apply_eq_zero`: a
-  sweep of zeroing embeddings in the adjacent planes `(j, j + 1)` triangularizes a (rectangular)
-  Hessenberg matrix, and a product of such embeddings in increasing order is Hessenberg; hence
+* `Matrix.hasLowerBandwidthRect_zero_of_adjacentRotations`,
+  `Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`: a sweep of zeroing embeddings in the adjacent
+  planes `(j, j + 1)` triangularizes a (rectangular) Hessenberg matrix, and a product of such
+  embeddings in increasing order (a `prodFwd`) is Hessenberg; hence
   `Matrix.hessenbergGivensQR_spec`: the Givens factorization of a Hessenberg matrix is a `QR`
   factorization with a Hessenberg `Q`.
 * `Matrix.norm_det_le_prod_sqrt_sum_norm_sq`: **Hadamard's determinant inequality**, a corollary
@@ -218,6 +228,15 @@ theorem householder_mem_unitaryGroup {w : n → 𝕜} (hw : star w ⬝ᵥ w = 1)
   rw [mem_unitaryGroup_iff']
   have hs : (star (householder w) : Matrix n n 𝕜) = householder w := isHermitian_householder w
   rw [hs, householder_mul_self hw]
+
+/-- **A Householder reflector has determinant `-1`**: it is `1 + u vᵀ` with
+`vᵀ u = -2 wᴴ w = -2` (`Matrix.det_one_add_replicateCol_mul_replicateRow`). -/
+theorem det_householder {w : n → 𝕜} (hw : star w ⬝ᵥ w = 1) : (householder w).det = -1 := by
+  have e : householder w =
+      1 + replicateCol Unit (-(2 : 𝕜) • w) * replicateRow Unit (star w) := by
+    rw [householder, ← vecMulVec_eq, smul_vecMulVec, neg_smul, sub_eq_add_neg]
+  rw [e, det_one_add_replicateCol_mul_replicateRow, dotProduct_smul, hw]
+  norm_num
 
 /-- The reflector built from an unnormalized axis `v` sends `x` to `x - (2 ⟪v, x⟫ / ⟪v, v⟫) v`. -/
 private theorem householder_normalize_mulVec {v : n → 𝕜} (hv : v ≠ 0) (x : n → 𝕜) :
@@ -408,6 +427,11 @@ theorem reflector_eq_householder {v : n → 𝕜} (hv : v ≠ 0) :
     smul_smul, smul_smul, RCLike.star_def, RCLike.conj_inv, RCLike.conj_ofReal]
   congr 2
   field_simp
+
+/-- The reflector of a nonzero axis has determinant `-1`. -/
+theorem det_reflector {v : n → 𝕜} (hv : v ≠ 0) : (reflector v).det = -1 := by
+  rw [reflector_eq_householder hv]
+  exact det_householder (star_dotProduct_normalize_self hv)
 
 /-- A reflector is Hermitian. -/
 theorem isHermitian_reflector (v : n → 𝕜) : (reflector v).IsHermitian := by
@@ -912,13 +936,57 @@ theorem norm_householder_householderTail_mulVec_apply_self (h : p < N) :
 
 end Tail
 
-/-! ### Uniqueness of the QR factorization -/
+/-! ### The thin QR factorization -/
 
-section Unique
+section ThinQR
 
 open scoped ComplexOrder
 
-variable {M : ℕ}
+variable {m : Type*} [Fintype m] {N : ℕ}
+
+/-- **The thin (reduced) QR factorization** ([golub2013matrix] (5.2.2), Theorem 5.2.3): `A = Q R`
+with `A : Matrix m (Fin N) 𝕜`, `Q : Matrix m (Fin N) 𝕜` of orthonormal columns (`Qᴴ Q = 1`) and
+`R` upper triangular `N × N`. No sign condition: uniqueness (`Matrix.IsThinQR.unique`) asks for a
+positive diagonal. The specification of classical and modified Gram–Schmidt; the full
+factorization `Matrix.IsQR` gives one (`Matrix.IsQR.isThinQR`). -/
+structure IsThinQR (A : Matrix m (Fin N) 𝕜) (Q : Matrix m (Fin N) 𝕜)
+    (R : Matrix (Fin N) (Fin N) 𝕜) : Prop where
+  /-- The factors multiply to `A`. -/
+  mul_eq : Q * R = A
+  /-- The columns of `Q` are orthonormal. -/
+  conjTranspose_mul_self : Qᴴ * Q = 1
+  /-- The triangular factor is upper triangular. -/
+  isUpperTriangular : R.IsUpperTriangular
+
+variable {A Q : Matrix m (Fin N) 𝕜} {R : Matrix (Fin N) (Fin N) 𝕜}
+
+/-- The triangular factor of a thin QR factorization is `Qᴴ A`. -/
+theorem IsThinQR.conjTranspose_mul_eq (h : IsThinQR A Q R) : Qᴴ * A = R := by
+  rw [← h.mul_eq, ← Matrix.mul_assoc, h.conjTranspose_mul_self, Matrix.one_mul]
+
+/-- A thin QR factorization of a matrix of full column rank has a nonsingular triangular factor:
+`A = Q R` injective forces `R` injective. -/
+theorem IsThinQR.isUnit_of_linearIndependent (h : IsThinQR A Q R) (hA : LinearIndependent 𝕜 Aᵀ) :
+    IsUnit R := by
+  rw [← mulVec_injective_iff_isUnit]
+  intro x y hxy
+  apply mulVec_injective_iff.2 hA
+  rw [← h.mul_eq, ← mulVec_mulVec, ← mulVec_mulVec, hxy]
+
+/-- A thin QR factorization with a nonsingular triangular factor has linearly independent
+columns: `R = Qᴴ A`, so `A x = A y` forces `R x = R y`. -/
+theorem IsThinQR.linearIndependent (h : IsThinQR A Q R) (hR : IsUnit R) :
+    LinearIndependent 𝕜 Aᵀ := by
+  refine mulVec_injective_iff.1 fun x y hxy => ?_
+  apply mulVec_injective_iff_isUnit.2 hR
+  rw [← h.conjTranspose_mul_eq, ← mulVec_mulVec, ← mulVec_mulVec]
+  exact congrArg _ hxy
+
+/-- The columns of `A` are linearly independent exactly when the triangular factor of a thin QR
+factorization of `A` is nonsingular. -/
+theorem IsThinQR.linearIndependent_iff_isUnit (h : IsThinQR A Q R) :
+    LinearIndependent 𝕜 Aᵀ ↔ IsUnit R :=
+  ⟨h.isUnit_of_linearIndependent, h.linearIndependent⟩
 
 /-- In the `RCLike` order a positive scalar is the cast of a positive real. -/
 private theorem pos_iff_exists_ofReal {z : 𝕜} : 0 < z ↔ ∃ r : ℝ, 0 < r ∧ z = (r : 𝕜) := by
@@ -936,8 +1004,8 @@ private theorem pos_mul_inv {a b : 𝕜} (ha : 0 < a) (hb : 0 < b) : 0 < b * a�
   rw [RCLike.ofReal_mul, RCLike.ofReal_inv]
 
 /-- The diagonal of a product of upper triangular matrices is the product of the diagonals. -/
-private theorem upperTriangular_mul_diag {A B : Matrix (Fin M) (Fin M) 𝕜}
-    (hA : A.IsUpperTriangular) (hB : B.IsUpperTriangular) (j : Fin M) :
+private theorem upperTriangular_mul_diag {A B : Matrix (Fin N) (Fin N) 𝕜}
+    (hA : A.IsUpperTriangular) (hB : B.IsUpperTriangular) (j : Fin N) :
     (A * B) j j = A j j * B j j := by
   rw [mul_apply]
   refine Finset.sum_eq_single j (fun r _ hr => ?_) fun h => absurd (Finset.mem_univ j) h
@@ -948,20 +1016,20 @@ private theorem upperTriangular_mul_diag {A B : Matrix (Fin M) (Fin M) 𝕜}
 /-- A unitary upper triangular matrix with positive diagonal is the identity.  This is the
 flag-uniqueness argument of `Numlib.Analysis.InnerProductSpace.GramSchmidt` at matrix level, and it
 is what makes the QR factorization with a positive diagonal unique. -/
-private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin M) (Fin M) 𝕜}
+private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin N) (Fin N) 𝕜}
     (hS : S.IsUpperTriangular) (hu : Sᴴ * S = 1) (hd : ∀ j, 0 < S j j) : S = 1 := by
-  have key : ∀ m : ℕ, ∀ j : Fin M, (j : ℕ) = m →
-      ∀ i : Fin M, S i j = if i = j then 1 else 0 := by
+  have key : ∀ m : ℕ, ∀ j : Fin N, (j : ℕ) = m →
+      ∀ i : Fin N, S i j = if i = j then 1 else 0 := by
     intro m
     induction m using Nat.strong_induction_on with
     | _ m ih =>
       intro j hjm
-      have habove : ∀ i : Fin M, (i : ℕ) < (j : ℕ) → S i j = 0 := by
+      have habove : ∀ i : Fin N, (i : ℕ) < (j : ℕ) → S i j = 0 := by
         intro i hi
         have h1 : (Sᴴ * S) i j = 0 := by
           rw [hu, one_apply, ite_eq_right fun h => by rw [h] at hi; omega]
         rw [mul_apply] at h1
-        have h2 : ∀ r : Fin M, Sᴴ i r * S r j = if r = i then S i j else 0 := by
+        have h2 : ∀ r : Fin N, Sᴴ i r * S r j = if r = i then S i j else 0 := by
           intro r
           rw [conjTranspose_apply, ih (i : ℕ) (by omega) i rfl r]
           by_cases hr : r = i
@@ -970,7 +1038,7 @@ private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin M) (Fin 
         rw [Finset.sum_congr rfl fun r _ => h2 r,
           Finset.sum_ite_eq' Finset.univ i fun _ => S i j] at h1
         simpa using h1
-      have hcol : ∀ r : Fin M, r ≠ j → S r j = 0 := by
+      have hcol : ∀ r : Fin N, r ≠ j → S r j = 0 := by
         intro r hr
         rcases lt_or_gt_of_ne hr with h | h
         · exact habove r h
@@ -978,7 +1046,7 @@ private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin M) (Fin 
       have hdiag : star (S j j) * S j j = 1 := by
         have h1 : (Sᴴ * S) j j = 1 := by rw [hu, one_apply, ite_eq_left rfl]
         rw [mul_apply] at h1
-        have h2 : ∀ r : Fin M, Sᴴ j r * S r j = if r = j then star (S j j) * S j j else 0 := by
+        have h2 : ∀ r : Fin N, Sᴴ j r * S r j = if r = j then star (S j j) * S j j else 0 := by
           intro r
           rw [conjTranspose_apply]
           by_cases hr : r = j
@@ -1004,30 +1072,29 @@ private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin M) (Fin 
   ext i j
   rw [key (j : ℕ) j rfl i, one_apply]
 
-/-- Uniqueness of the QR factorization with a positive diagonal: this is what identifies the
-reflector product of `Matrix.exists_unitary_mul_upperTriangular` with the Gram–Schmidt factorization
-of `Matrix.exists_qr`, and either of them with the modified Gram–Schmidt one, with no need to
-compare the constructions. -/
-theorem qr_unique {N : ℕ} {X Q₁ Q₂ : Matrix (Fin N) (Fin M) 𝕜}
-    {R₁ R₂ : Matrix (Fin M) (Fin M) 𝕜} (hX₁ : X = Q₁ * R₁) (hX₂ : X = Q₂ * R₂)
-    (hQ₁ : Q₁ᴴ * Q₁ = 1) (hQ₂ : Q₂ᴴ * Q₂ = 1)
-    (hR₁ : R₁.IsUpperTriangular) (hR₂ : R₂.IsUpperTriangular)
-    (hd₁ : ∀ j, 0 < R₁.diag j) (hd₂ : ∀ j, 0 < R₂.diag j) :
-    Q₁ = Q₂ ∧ R₁ = R₂ := by
-  have hd₁' : ∀ j, 0 < R₁ j j := hd₁
-  have hd₂' : ∀ j, 0 < R₂ j j := hd₂
+/-- **Uniqueness of the thin QR factorization** with a positive diagonal ([golub2013matrix]
+Theorem 5.2.3): this is what identifies the reflector product of
+`Matrix.exists_unitary_mul_upperTriangular` with the Gram–Schmidt factorization of
+`Matrix.exists_isThinQR`, and either of them with the modified Gram–Schmidt one, with no need to
+compare the constructions. Both give `Aᴴ A = R₁ᴴ R₁ = R₂ᴴ R₂`, so `R₂ R₁⁻¹` is unitary, upper
+triangular and of positive diagonal, hence the identity. -/
+theorem IsThinQR.unique {A Q₁ Q₂ : Matrix m (Fin N) 𝕜} {R₁ R₂ : Matrix (Fin N) (Fin N) 𝕜}
+    (h₁ : IsThinQR A Q₁ R₁) (h₂ : IsThinQR A Q₂ R₂) (hd₁ : ∀ j, 0 < R₁ j j)
+    (hd₂ : ∀ j, 0 < R₂ j j) : Q₁ = Q₂ ∧ R₁ = R₂ := by
+  obtain ⟨hX₁, hQ₁, hR₁⟩ := h₁
+  obtain ⟨hX₂, hQ₂, hR₂⟩ := h₂
   have hdet : IsUnit R₁.det := by
     rw [det_of_isUpperTriangular hR₁, isUnit_iff_ne_zero]
-    exact Finset.prod_ne_zero_iff.2 fun j _ => (hd₁' j).ne'
+    exact Finset.prod_ne_zero_iff.2 fun j _ => (hd₁ j).ne'
   have : Invertible R₁ := invertibleOfIsUnitDet R₁ hdet
   have hRR : R₁ᴴ * R₁ = R₂ᴴ * R₂ := by
-    have h1 : Xᴴ * X = R₁ᴴ * R₁ := by
-      rw [hX₁, conjTranspose_mul]
+    have h1 : Aᴴ * A = R₁ᴴ * R₁ := by
+      rw [← hX₁, conjTranspose_mul]
       calc R₁ᴴ * Q₁ᴴ * (Q₁ * R₁) = R₁ᴴ * (Q₁ᴴ * Q₁ * R₁) := by
             rw [Matrix.mul_assoc, Matrix.mul_assoc]
         _ = R₁ᴴ * R₁ := by rw [hQ₁, Matrix.one_mul]
-    have h2 : Xᴴ * X = R₂ᴴ * R₂ := by
-      rw [hX₂, conjTranspose_mul]
+    have h2 : Aᴴ * A = R₂ᴴ * R₂ := by
+      rw [← hX₂, conjTranspose_mul]
       calc R₂ᴴ * Q₂ᴴ * (Q₂ * R₂) = R₂ᴴ * (Q₂ᴴ * Q₂ * R₂) := by
             rw [Matrix.mul_assoc, Matrix.mul_assoc]
         _ = R₂ᴴ * R₂ := by rw [hQ₂, Matrix.one_mul]
@@ -1039,11 +1106,11 @@ theorem qr_unique {N : ℕ} {X Q₁ Q₂ : Matrix (Fin N) (Fin M) 𝕜}
     have h1 : R₁ j j * (R₁⁻¹) j j = 1 := by
       rw [← upperTriangular_mul_diag hR₁ hinvUT j, mul_nonsing_inv R₁ hdet, one_apply_eq]
     calc (R₁⁻¹) j j = (R₁ j j)⁻¹ * (R₁ j j * (R₁⁻¹) j j) := by
-          rw [← mul_assoc, inv_mul_cancel₀ (hd₁' j).ne', one_mul]
+          rw [← mul_assoc, inv_mul_cancel₀ (hd₁ j).ne', one_mul]
       _ = (R₁ j j)⁻¹ := by rw [h1, mul_one]
   have hSd : ∀ j, 0 < (R₂ * R₁⁻¹) j j := fun j => by
     rw [upperTriangular_mul_diag hR₂ hinvUT j, hinvdiag j]
-    exact pos_mul_inv (hd₁' j) (hd₂' j)
+    exact pos_mul_inv (hd₁ j) (hd₂ j)
   have hSu : (R₂ * R₁⁻¹)ᴴ * (R₂ * R₁⁻¹) = 1 := by
     have h : (R₂ * R₁⁻¹)ᴴ * (R₂ * R₁⁻¹) = (R₁⁻¹)ᴴ * (R₂ᴴ * R₂ * R₁⁻¹) := by
       rw [conjTranspose_mul]; noncomm_ring
@@ -1058,11 +1125,21 @@ theorem qr_unique {N : ℕ} {X Q₁ Q₂ : Matrix (Fin N) (Fin M) 𝕜}
   refine ⟨?_, hR.symm⟩
   calc Q₁ = Q₁ * (R₁ * R₁⁻¹) := by rw [mul_nonsing_inv R₁ hdet, Matrix.mul_one]
     _ = Q₁ * R₁ * R₁⁻¹ := (Matrix.mul_assoc _ _ _).symm
-    _ = Q₂ * R₂ * R₁⁻¹ := by rw [← hX₁, hX₂]
+    _ = Q₂ * R₂ * R₁⁻¹ := by rw [hX₁, hX₂]
     _ = Q₂ * (R₂ * R₁⁻¹) := Matrix.mul_assoc _ _ _
     _ = Q₂ := by rw [hS1, Matrix.mul_one]
 
-end Unique
+/-- Uniqueness of the QR factorization with a positive diagonal, with the hypotheses unbundled. -/
+@[deprecated IsThinQR.unique +typeChanged (since := "2026-09-30")]
+theorem qr_unique {M N : ℕ} {X Q₁ Q₂ : Matrix (Fin N) (Fin M) 𝕜}
+    {R₁ R₂ : Matrix (Fin M) (Fin M) 𝕜} (hX₁ : X = Q₁ * R₁) (hX₂ : X = Q₂ * R₂)
+    (hQ₁ : Q₁ᴴ * Q₁ = 1) (hQ₂ : Q₂ᴴ * Q₂ = 1)
+    (hR₁ : R₁.IsUpperTriangular) (hR₂ : R₂.IsUpperTriangular)
+    (hd₁ : ∀ j, 0 < R₁.diag j) (hd₂ : ∀ j, 0 < R₂.diag j) :
+    Q₁ = Q₂ ∧ R₁ = R₂ :=
+  IsThinQR.unique ⟨hX₁.symm, hQ₁, hR₁⟩ ⟨hX₂.symm, hQ₂, hR₂⟩ hd₁ hd₂
+
+end ThinQR
 
 /-! ### The Gram–Schmidt factorization -/
 
@@ -1093,37 +1170,39 @@ private theorem inner_gramSchmidtNormed_self (f : ι → E) (j : ι) :
   · simp [h]
   · rw [sq, ← mul_assoc, inv_mul_cancel₀ h, one_mul]
 
-/-- [saad2003iterative] (1.19): a matrix whose columns are linearly independent factors as `X = Q R`
-with orthonormal columns in `Q` and `R` upper triangular of positive diagonal.  The factors are the
-Gram–Schmidt orthonormalization of the columns and the matrix `R i j = ⟪Q i, X j⟫` of the
-coefficients, which is [saad2003iterative] Algorithm 1.1; Algorithm 1.2 (modified Gram–Schmidt)
-computes the same pair, by `Matrix.qr_unique`. -/
-theorem exists_qr {N M : ℕ} (X : Matrix (Fin N) (Fin M) 𝕜) (hX : LinearIndependent 𝕜 Xᵀ) :
-    ∃ (Q : Matrix (Fin N) (Fin M) 𝕜) (R : Matrix (Fin M) (Fin M) 𝕜),
-      X = Q * R ∧ Qᴴ * Q = 1 ∧ R.IsUpperTriangular ∧ ∀ j, 0 < R.diag j := by
-  set f : Fin M → EuclideanSpace 𝕜 (Fin N) := fun j => WithLp.toLp 2 (Xᵀ j) with hf_def
+variable {m : Type*} [Fintype m] {N : ℕ}
+
+/-- **Existence of the thin QR factorization** with a positive diagonal, for linearly independent
+columns ([saad2003iterative] (1.19), [golub2013matrix] Theorem 5.2.3): `A = Q R` with orthonormal
+columns in `Q` and `R` upper triangular of positive diagonal. The factors are the Gram–Schmidt
+orthonormalization of the columns and the matrix `R i j = ⟪Q i, A j⟫` of the coefficients, which is
+[saad2003iterative] Algorithm 1.1; Algorithm 1.2 (modified Gram–Schmidt) computes the same pair,
+by `Matrix.IsThinQR.unique`. -/
+theorem exists_isThinQR (A : Matrix m (Fin N) 𝕜) (hA : LinearIndependent 𝕜 Aᵀ) :
+    ∃ Q R, IsThinQR A Q R ∧ ∀ j, 0 < R j j := by
+  set f : Fin N → EuclideanSpace 𝕜 m := fun j => WithLp.toLp 2 (Aᵀ j) with hf_def
   have hf : LinearIndependent 𝕜 f := by
     refine Fintype.linearIndependent_iff.2 fun g hg i => ?_
-    refine Fintype.linearIndependent_iff.1 hX g ?_ i
+    refine Fintype.linearIndependent_iff.1 hA g ?_ i
     funext r
-    have h0 := congrArg (fun z : EuclideanSpace 𝕜 (Fin N) => WithLp.ofLp z r) hg
+    have h0 := congrArg (fun z : EuclideanSpace 𝕜 m => WithLp.ofLp z r) hg
     simpa [hf_def] using h0
-  have hgne : ∀ j : Fin M, gramSchmidt 𝕜 f j ≠ 0 := fun j => gramSchmidt_ne_zero j hf
-  have hnne : ∀ j : Fin M, ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) ≠ 0 := fun j => by
+  have hgne : ∀ j : Fin N, gramSchmidt 𝕜 f j ≠ 0 := fun j => gramSchmidt_ne_zero j hf
+  have hnne : ∀ j : Fin N, ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) ≠ 0 := fun j => by
     simpa using norm_ne_zero_iff.2 (hgne j)
   have hon : Orthonormal 𝕜 (gramSchmidtNormed 𝕜 f) := gramSchmidtNormed_orthonormal hf
-  have htri : ∀ i j : Fin M, j < i → inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) = 0 := by
+  have htri : ∀ i j : Fin N, j < i → inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) = 0 := by
     intro i j hji
     rw [gramSchmidtNormed, inner_smul_left, gramSchmidt_inv_triangular 𝕜 f hji, mul_zero]
-  have hexp : ∀ j : Fin M, f j = ∑ i : Fin M,
+  have hexp : ∀ j : Fin N, f j = ∑ i : Fin N,
       inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) • gramSchmidtNormed 𝕜 f i := by
     intro j
-    have hsum : ∑ i : Fin M, inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) • gramSchmidtNormed 𝕜 f i
+    have hsum : ∑ i : Fin N, inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) • gramSchmidtNormed 𝕜 f i
         = ∑ i ∈ Finset.Iic j,
             inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) • gramSchmidtNormed 𝕜 f i := by
       refine (Finset.sum_subset (Finset.subset_univ _) fun i _ hi => ?_).symm
       rw [htri i j (by simpa using hi), zero_smul]
-    have hterm : ∀ i : Fin M,
+    have hterm : ∀ i : Fin N,
         inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) • gramSchmidtNormed 𝕜 f i
           = (inner 𝕜 (gramSchmidt 𝕜 f i) (f j) / ((‖gramSchmidt 𝕜 f i‖ : 𝕜)) ^ 2)
             • gramSchmidt 𝕜 f i := by
@@ -1143,16 +1222,16 @@ theorem exists_qr {N M : ℕ} (X : Matrix (Fin N) (Fin M) 𝕜) (hX : LinearInde
               • gramSchmidt 𝕜 f i from Finset.sum_congr rfl fun i _ => hterm i]
     exact gramSchmidt_def'' 𝕜 f j
   refine ⟨Matrix.of fun r j => WithLp.ofLp (gramSchmidtNormed 𝕜 f j) r,
-    Matrix.of fun i j => inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j), ?_, ?_, ?_, ?_⟩
+    Matrix.of fun i j => inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j), ⟨?_, ?_, ?_⟩, ?_⟩
   · ext r j
-    have h : X r j = ∑ i : Fin M, inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j)
+    have h : A r j = ∑ i : Fin N, inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j)
         * WithLp.ofLp (gramSchmidtNormed 𝕜 f i) r := by
-      have h0 := congrArg (fun z : EuclideanSpace 𝕜 (Fin N) => WithLp.ofLp z r) (hexp j)
+      have h0 := congrArg (fun z : EuclideanSpace 𝕜 m => WithLp.ofLp z r) (hexp j)
       simpa [hf_def] using h0
     rw [mul_apply, h]
     exact Finset.sum_congr rfl fun i _ => by rw [Matrix.of_apply, Matrix.of_apply, mul_comm]
   · ext i j
-    have h : ∑ r : Fin N, starRingEnd 𝕜 (WithLp.ofLp (gramSchmidtNormed 𝕜 f i) r)
+    have h : ∑ r : m, starRingEnd 𝕜 (WithLp.ofLp (gramSchmidtNormed 𝕜 f i) r)
           * WithLp.ofLp (gramSchmidtNormed 𝕜 f j) r
         = inner 𝕜 (gramSchmidtNormed 𝕜 f i) (gramSchmidtNormed 𝕜 f j) := by
       rw [EuclideanSpace.inner_eq_star_dotProduct, dotProduct]
@@ -1163,35 +1242,199 @@ theorem exists_qr {N M : ℕ} (X : Matrix (Fin N) (Fin M) 𝕜) (hX : LinearInde
   · intro i j hji
     exact htri i j hji
   · intro j
-    rw [diag_apply, Matrix.of_apply, inner_gramSchmidtNormed_self]
+    rw [Matrix.of_apply, inner_gramSchmidtNormed_self]
     exact pos_iff_exists_ofReal.2 ⟨‖gramSchmidt 𝕜 f j‖, norm_pos_iff.2 (hgne j), rfl⟩
 
-/-- The converse of `Matrix.exists_qr`: a factorization with orthonormal columns and an invertible
-upper triangular factor forces the columns of `X` to be linearly independent. -/
+/-- The Gram–Schmidt factorization `X = Q R` of a matrix with linearly independent columns, with
+the conclusion unbundled. -/
+@[deprecated exists_isThinQR +typeChanged (since := "2026-09-30")]
+theorem exists_qr {N M : ℕ} (X : Matrix (Fin N) (Fin M) 𝕜) (hX : LinearIndependent 𝕜 Xᵀ) :
+    ∃ (Q : Matrix (Fin N) (Fin M) 𝕜) (R : Matrix (Fin M) (Fin M) 𝕜),
+      X = Q * R ∧ Qᴴ * Q = 1 ∧ R.IsUpperTriangular ∧ ∀ j, 0 < R.diag j := by
+  obtain ⟨Q, R, h, hd⟩ := exists_isThinQR X hX
+  exact ⟨Q, R, h.mul_eq.symm, h.conjTranspose_mul_self, h.isUpperTriangular, hd⟩
+
+/-- The converse of the Gram–Schmidt factorization, with the hypotheses unbundled. -/
+@[deprecated IsThinQR.linearIndependent +typeChanged (since := "2026-09-30")]
 theorem linearIndependent_of_qr {N M : ℕ} {X Q : Matrix (Fin N) (Fin M) 𝕜}
     {R : Matrix (Fin M) (Fin M) 𝕜} (hX : X = Q * R) (hQ : Qᴴ * Q = 1)
-    (hR : R.IsUpperTriangular) (hd : ∀ j, 0 < R.diag j) : LinearIndependent 𝕜 Xᵀ := by
-  have hd' : ∀ j, 0 < R j j := hd
-  have hdet : IsUnit R.det := by
-    rw [det_of_isUpperTriangular hR, isUnit_iff_ne_zero]
-    exact Finset.prod_ne_zero_iff.2 fun j _ => (hd' j).ne'
-  refine Fintype.linearIndependent_iff.2 fun c hc => ?_
-  have hXc : X *ᵥ c = 0 := by
-    funext r
-    have h0 := congrFun hc r
-    simpa [mulVec, dotProduct, mul_comm] using h0
-  have hQRc : Q *ᵥ (R *ᵥ c) = 0 := by
-    rw [mulVec_mulVec, ← hX, hXc]
-  have hRc : R *ᵥ c = 0 := by
-    have h1 : Qᴴ *ᵥ (Q *ᵥ (R *ᵥ c)) = R *ᵥ c := by
-      rw [mulVec_mulVec, hQ, one_mulVec]
-    rw [hQRc, mulVec_zero] at h1
-    exact h1.symm
-  have h2 : c = 0 := by
-    rw [← nonsing_inv_mulVec_mulVec ((isUnit_iff_isUnit_det R).2 hdet) c, hRc, mulVec_zero]
-  exact fun i => congrFun h2 i
+    (hR : R.IsUpperTriangular) (hd : ∀ j, 0 < R.diag j) : LinearIndependent 𝕜 Xᵀ :=
+  IsThinQR.linearIndependent ⟨hX.symm, hQ, hR⟩ (by
+    rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hR, isUnit_iff_ne_zero]
+    exact Finset.prod_ne_zero_iff.2 fun j _ => (hd j).ne')
 
 end GramSchmidt
+
+/-! ### Leading and trailing blocks of columns and rows -/
+
+section Blocks
+
+variable {α : Type*} {m' n' : Type*} {M N K : ℕ}
+
+/-- The first `N` columns of a matrix with `M ≥ N` columns, the `Q̃ = Q(1:m, 1:n)` of
+[quarteroni2000numerical] (3.48) and the `Q₁` of [golub2013matrix] (5.2.2). -/
+def firstColumns (Q : Matrix m' (Fin M) α) (h : N ≤ M) : Matrix m' (Fin N) α :=
+  Q.submatrix id (Fin.castLE h)
+
+/-- The first `N` rows of a matrix with `M ≥ N` rows, the `R̃ = R(1:n, 1:n)` of
+[quarteroni2000numerical] (3.48). -/
+def firstRows (R : Matrix (Fin M) n' α) (h : N ≤ M) : Matrix (Fin N) n' α :=
+  R.submatrix (Fin.castLE h) id
+
+/-- The last `K` columns of a matrix with `M ≥ K` columns, the `Q₂ = Q(1:m, n+1:m)` of
+[golub2013matrix] (5.2.2) for `K = M - N`: with `Matrix.firstColumns` the two blocks of a split
+`M = N + K` of the columns. -/
+def lastColumns (Q : Matrix m' (Fin M) α) (h : K ≤ M) : Matrix m' (Fin K) α :=
+  Q.submatrix id fun j => ⟨M - K + j, by omega⟩
+
+/-- The last `K` rows of a matrix with `M ≥ K` rows. -/
+def lastRows (R : Matrix (Fin M) n' α) (h : K ≤ M) : Matrix (Fin K) n' α :=
+  R.submatrix (fun i => ⟨M - K + i, by omega⟩) id
+
+/-- The entries of the first columns. -/
+@[simp]
+theorem firstColumns_apply (Q : Matrix m' (Fin M) α) (h : N ≤ M) (i : m') (j : Fin N) :
+    firstColumns Q h i j = Q i (Fin.castLE h j) := rfl
+
+/-- The entries of the first rows. -/
+@[simp]
+theorem firstRows_apply (R : Matrix (Fin M) n' α) (h : N ≤ M) (i : Fin N) (j : n') :
+    firstRows R h i j = R (Fin.castLE h i) j := rfl
+
+/-- The entries of the last columns. -/
+@[simp]
+theorem lastColumns_apply (Q : Matrix m' (Fin M) α) (h : K ≤ M) (i : m') (j : Fin K) :
+    lastColumns Q h i j = Q i ⟨M - K + j, by omega⟩ := rfl
+
+/-- The entries of the last rows. -/
+@[simp]
+theorem lastRows_apply (R : Matrix (Fin M) n' α) (h : K ≤ M) (i : Fin K) (j : n') :
+    lastRows R h i j = R ⟨M - K + i, by omega⟩ j := rfl
+
+/-- `Matrix.lastColumns` through any indexing `e` of the last `K` columns. -/
+theorem lastColumns_eq_submatrix (Q : Matrix m' (Fin M) α) (h : K ≤ M) {e : Fin K → Fin M}
+    (he : ∀ j, (e j : ℕ) = M - K + j) : lastColumns Q h = Q.submatrix id e := by
+  ext i j
+  simp only [lastColumns_apply, submatrix_apply, id]
+  congr 1
+  exact Fin.ext (he j).symm
+
+/-- The last `K` of `N + K` columns are the columns `N + j`. -/
+theorem lastColumns_eq_submatrix_natAdd (Q : Matrix m' (Fin (N + K)) α) :
+    lastColumns Q (Nat.le_add_left K N) = Q.submatrix id (Fin.natAdd N) :=
+  lastColumns_eq_submatrix Q _ fun j => by simp
+
+/-- The last `K` of `N + K` rows are the rows `N + i`. -/
+theorem lastRows_eq_submatrix_natAdd (R : Matrix (Fin (N + K)) n' α) :
+    lastRows R (Nat.le_add_left K N) = R.submatrix (Fin.natAdd N) id := by
+  ext i j
+  simp only [lastRows_apply, submatrix_apply, id]
+  congr 1
+  ext
+  simp
+
+/-- The first columns of `Q` are the first rows of `Qᵀ`, transposed. -/
+theorem transpose_firstColumns (Q : Matrix m' (Fin M) α) (h : N ≤ M) :
+    (firstColumns Q h)ᵀ = firstRows Qᵀ h := rfl
+
+/-- The last columns of `Q` are the last rows of `Qᵀ`, transposed. -/
+theorem transpose_lastColumns (Q : Matrix m' (Fin M) α) (h : K ≤ M) :
+    (lastColumns Q h)ᵀ = lastRows Qᵀ h := rfl
+
+/-- The first rows of `R` are the first columns of `Rᵀ`, transposed. -/
+theorem transpose_firstRows (R : Matrix (Fin M) n' α) (h : N ≤ M) :
+    (firstRows R h)ᵀ = firstColumns Rᵀ h := rfl
+
+/-- The last rows of `R` are the last columns of `Rᵀ`, transposed. -/
+theorem transpose_lastRows (R : Matrix (Fin M) n' α) (h : K ≤ M) :
+    (lastRows R h)ᵀ = lastColumns Rᵀ h := rfl
+
+section Star
+
+variable [Star α]
+
+/-- The conjugate transpose of the first columns is the first rows of the conjugate transpose. -/
+theorem conjTranspose_firstColumns (Q : Matrix m' (Fin M) α) (h : N ≤ M) :
+    (firstColumns Q h)ᴴ = firstRows Qᴴ h := rfl
+
+/-- The conjugate transpose of the last columns is the last rows of the conjugate transpose. -/
+theorem conjTranspose_lastColumns (Q : Matrix m' (Fin M) α) (h : K ≤ M) :
+    (lastColumns Q h)ᴴ = lastRows Qᴴ h := rfl
+
+/-- The conjugate transpose of the first rows is the first columns of the conjugate transpose. -/
+theorem conjTranspose_firstRows (R : Matrix (Fin M) n' α) (h : N ≤ M) :
+    (firstRows R h)ᴴ = firstColumns Rᴴ h := rfl
+
+/-- The conjugate transpose of the last rows is the last columns of the conjugate transpose. -/
+theorem conjTranspose_lastRows (R : Matrix (Fin M) n' α) (h : K ≤ M) :
+    (lastRows R h)ᴴ = lastColumns Rᴴ h := rfl
+
+end Star
+
+/-- **A product in block form**: splitting the inner index `M = N + K` into its first `N` and
+last `K` values, `X Y = X(:, 1:N) Y(1:N, :) + X(:, N+1:M) Y(N+1:M, :)`. -/
+theorem firstColumns_mul_firstRows_add_lastColumns_mul_lastRows [NonUnitalNonAssocSemiring α]
+    (X : Matrix m' (Fin M) α) (Y : Matrix (Fin M) n' α) (hN : N ≤ M) (hK : K ≤ M)
+    (hNK : N + K = M) :
+    firstColumns X hN * firstRows Y hN + lastColumns X hK * lastRows Y hK = X * Y := by
+  subst hNK
+  ext i j
+  have e : ∀ k : Fin K, (⟨N + K - K + k, by omega⟩ : Fin (N + K)) = Fin.natAdd N k :=
+    fun k => Fin.ext (by simp)
+  simp only [add_apply, mul_apply, Fin.sum_univ_add, firstColumns_apply, firstRows_apply,
+    lastColumns_apply, lastRows_apply, e]
+  rfl
+
+variable [Fintype m'] {Q : Matrix m' (Fin M) 𝕜}
+
+/-- The leading columns of a matrix with orthonormal columns are orthonormal. -/
+theorem conjTranspose_firstColumns_mul_firstColumns (hQ : Qᴴ * Q = 1) (h : N ≤ M) :
+    (firstColumns Q h)ᴴ * firstColumns Q h = 1 := by
+  ext i j
+  have := congrFun (congrFun hQ (Fin.castLE h i)) (Fin.castLE h j)
+  simp only [mul_apply, conjTranspose_apply] at this
+  simp only [mul_apply, conjTranspose_apply, firstColumns_apply, this, one_apply, Fin.castLE_inj]
+
+/-- The trailing columns of a matrix with orthonormal columns are orthonormal. -/
+theorem conjTranspose_lastColumns_mul_lastColumns (hQ : Qᴴ * Q = 1) (h : K ≤ M) :
+    (lastColumns Q h)ᴴ * lastColumns Q h = 1 := by
+  ext i j
+  have := congrFun (congrFun hQ ⟨M - K + i, by omega⟩) ⟨M - K + j, by omega⟩
+  simp only [mul_apply, conjTranspose_apply] at this
+  simp only [mul_apply, conjTranspose_apply, lastColumns_apply, this, one_apply, Fin.mk.injEq,
+    Nat.add_left_cancel_iff, Fin.val_inj]
+
+/-- Disjoint leading and trailing columns of a matrix with orthonormal columns are orthogonal to
+each other. -/
+theorem conjTranspose_lastColumns_mul_firstColumns (hQ : Qᴴ * Q = 1) (hN : N ≤ M) (hK : K ≤ M)
+    (hNK : N + K ≤ M) : (lastColumns Q hK)ᴴ * firstColumns Q hN = 0 := by
+  ext a b
+  have := congrFun (congrFun hQ ⟨M - K + a, by omega⟩) (Fin.castLE hN b)
+  rw [one_apply_ne fun he => by
+    have := congrArg Fin.val he
+    simp only [Fin.val_castLE] at this
+    omega] at this
+  simpa only [mul_apply, conjTranspose_apply, lastColumns_apply, firstColumns_apply, zero_apply]
+    using this
+
+/-- Disjoint leading and trailing columns of a matrix with orthonormal columns are orthogonal to
+each other. -/
+theorem conjTranspose_firstColumns_mul_lastColumns (hQ : Qᴴ * Q = 1) (hN : N ≤ M) (hK : K ≤ M)
+    (hNK : N + K ≤ M) : (firstColumns Q hN)ᴴ * lastColumns Q hK = 0 := by
+  have := congrArg conjTranspose (conjTranspose_lastColumns_mul_firstColumns hQ hN hK hNK)
+  rwa [conjTranspose_mul, conjTranspose_conjTranspose, conjTranspose_zero] at this
+
+/-- **The column blocks of a unitary matrix resolve the identity**: for `M = N + K`,
+`Q₁ Q₁ᴴ + Q₂ Q₂ᴴ = 1` with `Q₁` the first `N` and `Q₂` the last `K` columns of `Q`. -/
+theorem firstColumns_mul_conjTranspose_add_lastColumns_mul_conjTranspose
+    {Q : Matrix (Fin M) (Fin M) 𝕜} (hQ : Q ∈ unitaryGroup (Fin M) 𝕜) (hN : N ≤ M) (hK : K ≤ M)
+    (hNK : N + K = M) :
+    firstColumns Q hN * (firstColumns Q hN)ᴴ + lastColumns Q hK * (lastColumns Q hK)ᴴ = 1 := by
+  rw [conjTranspose_firstColumns, conjTranspose_lastColumns,
+    firstColumns_mul_firstRows_add_lastColumns_mul_lastRows Q Qᴴ hN hK hNK,
+    ← star_eq_conjTranspose, Unitary.mul_star_self_of_mem hQ]
+
+end Blocks
 
 /-! ### The full QR factorization and its reduced form -/
 
@@ -1206,8 +1449,8 @@ structure IsQR (A : Matrix (Fin M) (Fin N) 𝕜) (Q : Matrix (Fin M) (Fin M) �
     (R : Matrix (Fin M) (Fin N) 𝕜) : Prop where
   /-- The orthogonal factor is unitary. -/
   mem_unitaryGroup : Q ∈ Matrix.unitaryGroup (Fin M) 𝕜
-  /-- The triangular factor vanishes below the diagonal. -/
-  apply_eq_zero : ∀ (i : Fin M) (j : Fin N), (j : ℕ) < i → R i j = 0
+  /-- The triangular factor is upper trapezoidal: it vanishes below the diagonal. -/
+  hasLowerBandwidthRect : R.HasLowerBandwidthRect 0
   /-- The factors multiply to `A`. -/
   mul_eq : Q * R = A
 
@@ -1215,70 +1458,58 @@ structure IsQR (A : Matrix (Fin M) (Fin N) 𝕜) (Q : Matrix (Fin M) (Fin M) �
 (`Matrix.exists_unitary_mul_upperTriangular`): `P A = R` with `P` unitary, so `A = Pᴴ R`. -/
 theorem exists_isQR (A : Matrix (Fin M) (Fin N) 𝕜) : ∃ Q R, IsQR A Q R := by
   obtain ⟨P, hP, hPA⟩ := exists_unitary_mul_upperTriangular A
-  refine ⟨star P, P * A, Unitary.star_mem hP, hPA, ?_⟩
+  refine ⟨star P, P * A, Unitary.star_mem hP, fun i j hij => hPA i j (by simpa using hij), ?_⟩
   rw [← Matrix.mul_assoc, Unitary.star_mul_self_of_mem hP, Matrix.one_mul]
-
-variable {α : Type*} {m' n' : Type*}
-
-/-- The first `N` columns of a matrix with `M ≥ N` columns, the `Q̃ = Q(1:m, 1:n)` of
-[quarteroni2000numerical] (3.48). -/
-def firstColumns (Q : Matrix m' (Fin M) α) (h : N ≤ M) : Matrix m' (Fin N) α :=
-  Q.submatrix id (Fin.castLE h)
-
-/-- The first `N` rows of a matrix with `M ≥ N` rows, the `R̃ = R(1:n, 1:n)` of
-[quarteroni2000numerical] (3.48). -/
-def firstRows (R : Matrix (Fin M) n' α) (h : N ≤ M) : Matrix (Fin N) n' α :=
-  R.submatrix (Fin.castLE h) id
-
-/-- The entries of the first columns. -/
-@[simp]
-theorem firstColumns_apply (Q : Matrix m' (Fin M) α) (h : N ≤ M) (i : m') (j : Fin N) :
-    firstColumns Q h i j = Q i (Fin.castLE h j) := rfl
-
-/-- The entries of the first rows. -/
-@[simp]
-theorem firstRows_apply (R : Matrix (Fin M) n' α) (h : N ≤ M) (i : Fin N) (j : n') :
-    firstRows R h i j = R (Fin.castLE h i) j := rfl
 
 variable {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
 variable {R : Matrix (Fin M) (Fin N) 𝕜}
+
+/-- The triangular factor vanishes below the diagonal. -/
+theorem IsQR.apply_eq_zero (h : IsQR A Q R) (i : Fin M) (j : Fin N) (hij : (j : ℕ) < i) :
+    R i j = 0 :=
+  h.hasLowerBandwidthRect i j (by simpa using hij)
 
 /-- The rows of the trapezoidal factor from the `N`-th on vanish. -/
 theorem IsQR.apply_eq_zero_of_le (h : IsQR A Q R) {i : Fin M} (hi : N ≤ i) (j : Fin N) :
     R i j = 0 :=
   h.apply_eq_zero i j (j.2.trans_le hi)
 
+/-- The trailing rows of the trapezoidal factor vanish. -/
+theorem IsQR.lastRows_eq_zero (h : IsQR A Q R) (hNM : N ≤ M) :
+    lastRows R (Nat.sub_le M N) = 0 := by
+  ext i j
+  exact h.apply_eq_zero_of_le (show N ≤ M - (M - N) + (i : ℕ) by omega) j
+
 /-- The product of the reduced factors is `A`: the trailing rows of `R` are zero, so only the
 first `N` columns of `Q` contribute ([quarteroni2000numerical] (3.47)). -/
 theorem IsQR.firstColumns_mul_firstRows (h : IsQR A Q R) (hNM : N ≤ M) :
     firstColumns Q hNM * firstRows R hNM = A := by
-  rw [← h.mul_eq]
-  ext i j
-  simp only [mul_apply, firstColumns_apply, firstRows_apply]
-  refine Finset.sum_bij_ne_zero (fun k _ _ => Fin.castLE hNM k) (fun _ _ _ => Finset.mem_univ _)
-    (fun _ _ _ _ _ _ hk => Fin.castLE_injective hNM hk) (fun k _ hk => ?_) fun _ _ _ => rfl
-  by_cases hkN : (k : ℕ) < N
-  · exact ⟨⟨k, hkN⟩, Finset.mem_univ _, by simpa using hk, Fin.ext rfl⟩
-  · exact absurd (by rw [h.apply_eq_zero_of_le (not_lt.1 hkN), mul_zero]) hk
+  rw [← h.mul_eq, ← firstColumns_mul_firstRows_add_lastColumns_mul_lastRows Q R hNM
+    (Nat.sub_le M N) (by omega), h.lastRows_eq_zero hNM, Matrix.mul_zero, add_zero]
 
 /-- The reduced orthogonal factor has orthonormal columns: `Q̃ᴴ Q̃ = 1`, being a block of
 `Qᴴ Q = 1`. -/
 theorem IsQR.conjTranspose_firstColumns_mul_self (h : IsQR A Q R) (hNM : N ≤ M) :
-    (firstColumns Q hNM)ᴴ * firstColumns Q hNM = 1 := by
-  have hQ : star Q * Q = 1 := Unitary.star_mul_self_of_mem h.mem_unitaryGroup
-  ext i j
-  have := congrFun (congrFun hQ (Fin.castLE hNM i)) (Fin.castLE hNM j)
-  simp only [mul_apply, star_apply] at this
-  simp only [mul_apply, conjTranspose_apply, firstColumns_apply, this, one_apply, Fin.castLE_inj]
+    (firstColumns Q hNM)ᴴ * firstColumns Q hNM = 1 :=
+  conjTranspose_firstColumns_mul_firstColumns
+    (by rw [← star_eq_conjTranspose]; exact Unitary.star_mul_self_of_mem h.mem_unitaryGroup) hNM
 
 /-- The reduced triangular factor is upper triangular. -/
 theorem IsQR.isUpperTriangular_firstRows (h : IsQR A Q R) (hNM : N ≤ M) :
     (firstRows R hNM).IsUpperTriangular := fun _ _ hij =>
   h.apply_eq_zero _ _ hij
 
-/-- **The reduced QR factorization**, [quarteroni2000numerical] Property 3.3 and (3.47)–(3.48):
-from a full factorization `A = Q R`, `N ≤ M`, the first `N` columns `Q̃` of `Q` and the first `N`
-rows `R̃` of `R` satisfy `A = Q̃ R̃`, `Q̃ᴴ Q̃ = 1` and `R̃` upper triangular. -/
+/-- **The reduced QR factorization**, [quarteroni2000numerical] Property 3.3 and (3.47)–(3.48),
+[golub2013matrix] (5.2.2): from a full factorization `A = Q R`, `N ≤ M`, the first `N` columns `Q̃`
+of `Q` and the first `N` rows `R̃` of `R` are a thin factorization: `A = Q̃ R̃`, `Q̃ᴴ Q̃ = 1` and
+`R̃` upper triangular. -/
+theorem IsQR.isThinQR (h : IsQR A Q R) (hNM : N ≤ M) :
+    IsThinQR A (firstColumns Q hNM) (firstRows R hNM) :=
+  ⟨h.firstColumns_mul_firstRows hNM, h.conjTranspose_firstColumns_mul_self hNM,
+    h.isUpperTriangular_firstRows hNM⟩
+
+/-- The reduced QR factorization, as a conjunction. -/
+@[deprecated IsQR.isThinQR +typeChanged (since := "2026-09-30")]
 theorem IsQR.reduced (h : IsQR A Q R) (hNM : N ≤ M) :
     firstColumns Q hNM * firstRows R hNM = A ∧
       (firstColumns Q hNM)ᴴ * firstColumns Q hNM = 1 ∧ (firstRows R hNM).IsUpperTriangular :=
@@ -1288,13 +1519,8 @@ theorem IsQR.reduced (h : IsQR A Q R) (hNM : N ≤ M) :
 /-- For `A` of full column rank the reduced triangular factor is nonsingular: `A = Q̃ R̃` is
 injective on vectors, hence so is `R̃`. -/
 theorem IsQR.isUnit_firstRows_of_linearIndependent (h : IsQR A Q R) (hNM : N ≤ M)
-    (hA : LinearIndependent 𝕜 Aᵀ) : IsUnit (firstRows R hNM) := by
-  rw [← mulVec_injective_iff_isUnit]
-  have hinj : Function.Injective A.mulVec := mulVec_injective_iff.2 hA
-  rw [← h.firstColumns_mul_firstRows hNM] at hinj
-  intro x y hxy
-  apply hinj
-  simp only [← mulVec_mulVec, hxy]
+    (hA : LinearIndependent 𝕜 Aᵀ) : IsUnit (firstRows R hNM) :=
+  (h.isThinQR hNM).isUnit_of_linearIndependent hA
 
 /-- The diagonal of the reduced triangular factor is nowhere zero when `A` has full column rank. -/
 theorem IsQR.firstRows_diag_ne_zero_of_linearIndependent (h : IsQR A Q R) (hNM : N ≤ M)
@@ -1318,82 +1544,19 @@ theorem IsQR.conjTranspose_mul_eq (h : IsQR A Q R) : Qᴴ * A = R := by
   rw [← h.mul_eq, ← Matrix.mul_assoc, ← star_eq_conjTranspose,
     Unitary.star_mul_self_of_mem h.mem_unitaryGroup, Matrix.one_mul]
 
-/-- The triangular factor of a full QR factorization is upper trapezoidal. -/
-theorem IsQR.hasLowerBandwidthRect (h : IsQR A Q R) : R.HasLowerBandwidthRect 0 :=
-  fun i j hij => h.apply_eq_zero i j (by simpa using hij)
-
 /-- A unitary `Q` with `Qᴴ A` upper trapezoidal gives the full QR factorization `A = Q (Qᴴ A)`. -/
 theorem isQR_conjTranspose_mul (hQ : Q ∈ unitaryGroup (Fin M) 𝕜)
-    (hR : (Qᴴ * A).HasLowerBandwidthRect 0) : IsQR A Q (Qᴴ * A) where
-  mem_unitaryGroup := hQ
-  apply_eq_zero i j hij := hR i j (by simpa using hij)
-  mul_eq := by
+    (hR : (Qᴴ * A).HasLowerBandwidthRect 0) : IsQR A Q (Qᴴ * A) :=
+  ⟨hQ, hR, by
     rw [← Matrix.mul_assoc, ← star_eq_conjTranspose, Unitary.mul_star_self_of_mem hQ,
-      Matrix.one_mul]
-
-end FullQR
-
-/-! ### The thin and the pivoted QR factorizations -/
-
-section ThinQR
-
-variable {m : Type*} [Fintype m] {M N : ℕ}
-
-/-- **The thin (reduced) QR factorization** ([golub2013matrix] (5.2.2), Theorem 5.2.3): `A = Q R`
-with `A : Matrix m (Fin N) 𝕜`, `Q : Matrix m (Fin N) 𝕜` of orthonormal columns (`Qᴴ Q = 1`) and
-`R` upper triangular `N × N`. No sign condition: uniqueness (`Matrix.IsThinQR.unique`) asks for a
-positive diagonal. The specification of classical and modified Gram–Schmidt; the full
-factorization `Matrix.IsQR` gives one (`Matrix.IsQR.isThinQR`). -/
-structure IsThinQR (A : Matrix m (Fin N) 𝕜) (Q : Matrix m (Fin N) 𝕜)
-    (R : Matrix (Fin N) (Fin N) 𝕜) : Prop where
-  /-- The factors multiply to `A`. -/
-  mul_eq : Q * R = A
-  /-- The columns of `Q` are orthonormal. -/
-  conjTranspose_mul_self : Qᴴ * Q = 1
-  /-- The triangular factor is upper triangular. -/
-  isUpperTriangular : R.IsUpperTriangular
-
-/-- A thin QR factorization of a matrix of full column rank has a nonsingular triangular factor:
-`A = Q R` injective forces `R` injective. -/
-theorem IsThinQR.isUnit_of_linearIndependent {A Q : Matrix m (Fin N) 𝕜}
-    {R : Matrix (Fin N) (Fin N) 𝕜} (h : IsThinQR A Q R) (hA : LinearIndependent 𝕜 Aᵀ) :
-    IsUnit R := by
-  rw [← mulVec_injective_iff_isUnit]
-  intro x y hxy
-  apply mulVec_injective_iff.2 hA
-  rw [← h.mul_eq, ← mulVec_mulVec, ← mulVec_mulVec, hxy]
-
-open scoped ComplexOrder in
-/-- **Existence of the thin QR factorization** with a positive diagonal, for linearly independent
-columns: `Matrix.exists_qr` repackaged. -/
-theorem exists_isThinQR (A : Matrix (Fin M) (Fin N) 𝕜) (hA : LinearIndependent 𝕜 Aᵀ) :
-    ∃ Q R, IsThinQR A Q R ∧ ∀ j, 0 < R j j := by
-  obtain ⟨Q, R, hX, hQ, hR, hd⟩ := exists_qr A hA
-  exact ⟨Q, R, ⟨hX.symm, hQ, hR⟩, hd⟩
-
-open scoped ComplexOrder in
-/-- **Uniqueness of the thin QR factorization** with a positive diagonal ([golub2013matrix]
-Theorem 5.2.3): `Matrix.qr_unique` repackaged. -/
-theorem IsThinQR.unique {A Q₁ Q₂ : Matrix (Fin M) (Fin N) 𝕜} {R₁ R₂ : Matrix (Fin N) (Fin N) 𝕜}
-    (h₁ : IsThinQR A Q₁ R₁) (h₂ : IsThinQR A Q₂ R₂) (hd₁ : ∀ j, 0 < R₁ j j)
-    (hd₂ : ∀ j, 0 < R₂ j j) : Q₁ = Q₂ ∧ R₁ = R₂ :=
-  qr_unique h₁.mul_eq.symm h₂.mul_eq.symm h₁.conjTranspose_mul_self h₂.conjTranspose_mul_self
-    h₁.isUpperTriangular h₂.isUpperTriangular hd₁ hd₂
-
-/-- The reduced factors of a full QR factorization form a thin one (`Matrix.IsQR.reduced`
-repackaged). -/
-theorem IsQR.isThinQR {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
-    {R : Matrix (Fin M) (Fin N) 𝕜} (h : IsQR A Q R) (hNM : N ≤ M) :
-    IsThinQR A (firstColumns Q hNM) (firstRows R hNM) :=
-  ⟨(h.reduced hNM).1, (h.reduced hNM).2.1, (h.reduced hNM).2.2⟩
+      Matrix.one_mul]⟩
 
 /-- **The leading columns of `A` and `Q` span the same spaces** ([golub2013matrix] (5.2.1)): if
 `A = Q R` is a full QR factorization of `A` with linearly independent columns, then for every
 `k ≤ N` the first `k` columns of `A` and of `Q` span the same subspace, and the diagonal entries
 of `R` are nonzero. The inclusion is `a_j = ∑_{i ≤ j} r_ij q_i` ((5.2.3)); equality is the
 dimension count. -/
-theorem IsQR.span_col_prefix_eq {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
-    {R : Matrix (Fin M) (Fin N) 𝕜} (h : IsQR A Q R) (hA : LinearIndependent 𝕜 Aᵀ) (hNM : N ≤ M)
+theorem IsQR.span_col_prefix_eq (h : IsQR A Q R) (hA : LinearIndependent 𝕜 Aᵀ) (hNM : N ≤ M)
     {k : ℕ} (hk : k ≤ N) :
     Submodule.span 𝕜 (Set.range fun j : Fin k => A.col (Fin.castLE hk j)) =
         Submodule.span 𝕜 (Set.range fun i : Fin k => Q.col (Fin.castLE (hk.trans hNM) i)) ∧
@@ -1430,7 +1593,7 @@ structure IsPivotedQR (A : Matrix (Fin M) (Fin N) 𝕜) (Q : Matrix (Fin M) (Fin
   /-- The column-permuted matrix has the full QR factorization `Q R`. -/
   isQR : IsQR (A.submatrix id σ) Q R
 
-end ThinQR
+end FullQR
 
 /-! ### The projector of modified Gram–Schmidt -/
 
@@ -1439,32 +1602,22 @@ section GramSchmidtProjector
 variable {R : Type*} [CommRing R] [StarRing R]
 
 /-- **The projector identity behind modified Gram–Schmidt** ([golub2013matrix] §5.2.8): for
-pairwise orthogonal vectors `q i` (`q iᴴ q j = 0` for `i ≠ j`), the product of the deflations
-`1 - q i q iᴴ` is `1 - ∑ i, q i q iᴴ`, since the cross terms vanish. So the successive deflations
-of modified Gram–Schmidt compute, in exact arithmetic, the vectors `a - ∑ i (q iᴴ a) q i` of
-classical Gram–Schmidt. -/
-theorem prod_one_sub_vecMulVec_of_orthonormal :
-    ∀ {k : ℕ} (q : Fin k → n → R), (∀ i j, i ≠ j → star (q i) ⬝ᵥ q j = 0) →
-      (List.ofFn fun i => 1 - vecMulVec (q i) (star (q i))).prod =
-        1 - ∑ i, vecMulVec (q i) (star (q i))
-  | 0, q, _ => by simp
-  | k + 1, q, hq => by
-    rw [List.ofFn_succ, List.prod_cons,
-      prod_one_sub_vecMulVec_of_orthonormal (fun i => q i.succ)
-        (fun i j hij => hq _ _ (fun h => hij (Fin.succ_injective _ h))),
-      Fin.sum_univ_succ]
-    have h0 : vecMulVec (q 0) (star (q 0)) * ∑ i : Fin k, vecMulVec (q i.succ) (star (q i.succ))
-        = 0 := by
-      rw [Finset.mul_sum]
-      refine Finset.sum_eq_zero fun i _ => ?_
-      rw [vecMulVec_mul_vecMulVec, hq 0 i.succ (Fin.succ_ne_zero i).symm, zero_smul,
-        vecMulVec_zero]
-    have e : ∀ P S : Matrix n n R, (1 - P) * (1 - S) = 1 - (P + S) + P * S := fun P S => by
-      noncomm_ring
-    rw [e, h0, add_zero]
+pairwise orthogonal vectors `q i` (`q iᴴ q j = 0` for `i < j < k`), the product of the deflations
+`1 - q i q iᴴ` is `1 - ∑ i, q i q iᴴ`, since the cross terms vanish
+(`prodFwd_eq_one_add_sum_sub_one`). So the successive deflations of modified Gram–Schmidt compute,
+in exact arithmetic, the vectors `a - ∑ i (q iᴴ a) q i` of classical Gram–Schmidt. -/
+theorem prodFwd_one_sub_vecMulVec_of_orthogonal (q : ℕ → n → R) {k : ℕ}
+    (hq : ∀ i j, i < j → j < k → star (q i) ⬝ᵥ q j = 0) :
+    prodFwd (fun i => 1 - vecMulVec (q i) (star (q i))) k =
+      1 - ∑ i ∈ Finset.range k, vecMulVec (q i) (star (q i)) := by
+  have h : ∀ i j, i < j → j < k → (1 - vecMulVec (q i) (star (q i)) - 1) *
+      (1 - vecMulVec (q j) (star (q j)) - 1) = 0 := fun i j hij hj => by
+    rw [sub_sub_cancel_left, sub_sub_cancel_left, neg_mul_neg, vecMulVec_mul_vecMulVec,
+      hq i j hij hj, zero_smul, vecMulVec_zero]
+  rw [prodFwd_eq_one_add_sum_sub_one h]
+  simp only [sub_sub_cancel_left, Finset.sum_neg_distrib, ← sub_eq_add_neg]
 
 end GramSchmidtProjector
-
 
 /-! ### Reduction to Hessenberg form by Householder reflectors -/
 
@@ -1728,30 +1881,43 @@ makes `P T` vanish at `(i, l)` whenever `l + 1 < i` — `P T` is upper Hessenber
 `l < i` and `l < b`: the columns before the first plane stay triangular. The invariant, by
 induction on `n` from the left: the rows `b`, `b + 1` of `E_{b+1} ⋯ T` both vanish before
 column `b`, so mixing them creates nothing there. -/
+theorem prodFwd_adjacentEmbed_mul_apply_eq_zero [Semiring α] {T : Matrix (Fin M) (Fin N) α}
+    (hT : T.HasLowerBandwidthRect 0) (G : ℕ → Matrix (Fin 2) (Fin 2) α) (b n : ℕ) {i : Fin M}
+    {l : Fin N} (h : (l : ℕ) + 1 < i ∨ (l : ℕ) < i ∧ (l : ℕ) < b) :
+    (prodFwd (fun k => (adjacentEmbed (b + k) (G (b + k)) : Matrix (Fin M) (Fin M) α)) n * T)
+      i l = 0 := by
+  induction n generalizing b i with
+  | zero => simpa using hT i l (by omega)
+  | succ n ih =>
+    have ih' : ∀ i : Fin M, ((l : ℕ) + 1 < i ∨ (l : ℕ) < i ∧ (l : ℕ) < b + 1) →
+        (prodFwd (fun k => (adjacentEmbed (b + (k + 1)) (G (b + (k + 1))) :
+          Matrix (Fin M) (Fin M) α)) n * T) i l = 0 := fun i h => by
+      simpa only [Nat.add_assoc, Nat.add_comm 1] using ih (b + 1) h
+    rw [prodFwd_succ', Matrix.mul_assoc]
+    by_cases hi : (i : ℕ) = b ∨ (i : ℕ) = b + 1
+    · exact adjacentEmbed_mul_apply_eq_zero b (G b) _ (fun r hr => ih' r (by omega)) hi
+    · exact (adjacentEmbed_mul_apply_of_ne b (G b) _ (by omega) (by omega) l).trans
+        (ih' i (by omega))
+
+/-- The list-product form of `Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`. -/
+@[deprecated prodFwd_adjacentEmbed_mul_apply_eq_zero +typeChanged (since := "2026-09-30")]
 theorem prod_planeEmbed_mul_apply_eq_zero [Semiring α] {T : Matrix (Fin M) (Fin N) α}
     (hT : T.HasLowerBandwidthRect 0) (G : ℕ → Matrix (Fin 2) (Fin 2) α) (b n : ℕ) {i : Fin M}
     {l : Fin N} (h : (l : ℕ) + 1 < i ∨ (l : ℕ) < i ∧ (l : ℕ) < b) :
     (((List.range' b n).map fun j =>
       (adjacentEmbed j (G j) : Matrix (Fin M) (Fin M) α)).prod * T) i l = 0 := by
-  induction n generalizing b i with
-  | zero => simpa using hT i l (by omega)
-  | succ n ih =>
-    rw [List.range'_succ, List.map_cons, List.prod_cons, Matrix.mul_assoc]
-    by_cases hi : (i : ℕ) = b ∨ (i : ℕ) = b + 1
-    · exact adjacentEmbed_mul_apply_eq_zero b (G b) _
-        (fun r hr => ih (b + 1) (by omega)) hi
-    · rw [adjacentEmbed_mul_apply_of_ne b (G b) _ (by omega) (by omega)]
-      exact ih (b + 1) (by omega)
+  rw [prod_map_range'_eq_prodFwd]
+  exact prodFwd_adjacentEmbed_mul_apply_eq_zero hT G b n h
 
 /-- **The square case of (6.5.2)**: a product of embeddings in the planes `(0, 1), (1, 2), …` in
 increasing order, times an upper trapezoidal matrix, is upper Hessenberg. -/
-theorem hasLowerBandwidthRect_prod_adjacentEmbed_mul [Semiring α] {T : Matrix (Fin M) (Fin N) α}
-    (hT : T.HasLowerBandwidthRect 0) (G : ℕ → Matrix (Fin 2) (Fin 2) α) (n : ℕ) :
-    (((List.range n).map fun j =>
-      (adjacentEmbed j (G j) : Matrix (Fin M) (Fin M) α)).prod * T).HasLowerBandwidthRect 1 :=
+theorem hasLowerBandwidthRect_prodFwd_adjacentEmbed_mul [Semiring α]
+    {T : Matrix (Fin M) (Fin N) α} (hT : T.HasLowerBandwidthRect 0)
+    (G : ℕ → Matrix (Fin 2) (Fin 2) α) (n : ℕ) :
+    (prodFwd (fun j => (adjacentEmbed j (G j) : Matrix (Fin M) (Fin M) α)) n *
+      T).HasLowerBandwidthRect 1 :=
   fun _ _ h => by
-    rw [List.range_eq_range']
-    exact prod_planeEmbed_mul_apply_eq_zero hT G 0 n (Or.inl h)
+    simpa only [Nat.zero_add] using prodFwd_adjacentEmbed_mul_apply_eq_zero hT G 0 n (Or.inl h)
 
 /-- **Any zeroing sweep triangularizes a Hessenberg matrix** ([golub2013matrix] §6.5.1–6.5.3,
 "we compute Givens rotations … `G_{n−1}ᵀ ⋯ G_1ᵀ H₁ = R₁`"). Let `H : Matrix (Fin M) (Fin N) α`
@@ -1762,7 +1928,7 @@ be upper Hessenberg and already triangular in its first `a` columns, and let a s
 for `a + t < L := min N (M − 1)`. Then `Hs (L − a)` is upper trapezoidal. The zeroing is a
 hypothesis and not a choice of `(c, s)`, so any Givens routine instantiates the lemma; the
 rectangular, parameterized form of the invariant behind `Matrix.hessenbergGivensQR_spec`. -/
-theorem upperTrapezoidal_of_adjacentRotations [NonAssocSemiring α]
+theorem hasLowerBandwidthRect_zero_of_adjacentRotations [NonAssocSemiring α]
     {H : Matrix (Fin M) (Fin N) α} (hH : H.HasLowerBandwidthRect 1) {a : ℕ}
     (ha : ∀ (i : Fin M) (l : Fin N), (l : ℕ) < i → (l : ℕ) < a → H i l = 0)
     (G : ℕ → Matrix (Fin 2) (Fin 2) α) (Hs : ℕ → Matrix (Fin M) (Fin N) α) (h0 : Hs 0 = H)
@@ -1804,6 +1970,9 @@ theorem upperTrapezoidal_of_adjacentRotations [NonAssocSemiring α]
   have hi := i.isLt
   have hl := l.isLt
   exact (key _ le_rfl).2 i l (by omega) (by omega)
+
+@[deprecated (since := "2026-09-30")]
+alias upperTrapezoidal_of_adjacentRotations := hasLowerBandwidthRect_zero_of_adjacentRotations
 
 end AdjacentSweep
 
@@ -1900,24 +2069,22 @@ private theorem adjacentEmbed_givensBlock_mem_orthogonalGroup (H : Matrix (Fin N
 (5.47)–(5.48), §5.6.3): for `H` upper Hessenberg, the pair `(Q, R) = hessenbergGivensQR H` has `Q`
 orthogonal, `R` upper triangular, `H = Q R`, and `Q` itself upper Hessenberg. The fold is a sweep
 of rotations in the adjacent planes `(j, j + 1)`, each zeroing the entry `(j + 1, j)`, so `R` is
-triangular by `Matrix.upperTrapezoidal_of_adjacentRotations` and `Q`, a product of adjacent
-rotations in increasing order, is Hessenberg by
-`Matrix.hasLowerBandwidthRect_prod_adjacentEmbed_mul`. -/
+triangular by `Matrix.hasLowerBandwidthRect_zero_of_adjacentRotations` and `Q`, a product of
+adjacent rotations in increasing order, is Hessenberg by
+`Matrix.hasLowerBandwidthRect_prodFwd_adjacentEmbed_mul`. -/
 theorem hessenbergGivensQR_spec {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessenberg) :
     (hessenbergGivensQR H).1 ∈ Matrix.orthogonalGroup (Fin N) ℝ ∧
       (hessenbergGivensQR H).2.IsUpperTriangular ∧
       H = (hessenbergGivensQR H).1 * (hessenbergGivensQR H).2 ∧
       (hessenbergGivensQR H).1.IsUpperHessenberg := by
   have hQ : ∀ j, (hessenbergGivensIter H j).1 =
-      ((List.range j).map fun t => (adjacentEmbed t (givensBlock H t) :
-        Matrix (Fin N) (Fin N) ℝ)).prod := by
+      prodFwd (fun t => (adjacentEmbed t (givensBlock H t) : Matrix (Fin N) (Fin N) ℝ)) j := by
     intro j
     induction j with
     | zero => rfl
     | succ j ih =>
       simp only [hessenbergGivensIter_succ]
-      rw [ih, List.range_succ, List.map_append, List.prod_append, List.map_singleton,
-        List.prod_singleton]
+      rw [ih, prodFwd_succ]
   have hmul : ∀ j, (hessenbergGivensIter H j).1 * (hessenbergGivensIter H j).2 = H := by
     intro j
     induction j with
@@ -1930,10 +2097,8 @@ theorem hessenbergGivensQR_spec {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpper
         Matrix.one_mul, ih]
   refine ⟨?_, ?_, (hmul _).symm, ?_⟩
   · rw [hessenbergGivensQR, hQ]
-    refine Submonoid.list_prod_mem _ fun M hM => ?_
-    obtain ⟨t, -, rfl⟩ := List.mem_map.1 hM
-    exact adjacentEmbed_givensBlock_mem_orthogonalGroup H t
-  · have key := upperTrapezoidal_of_adjacentRotations
+    exact prodFwd_mem_orthogonalGroup fun t _ => adjacentEmbed_givensBlock_mem_orthogonalGroup H t
+  · have key := hasLowerBandwidthRect_zero_of_adjacentRotations
       (fun i l h => isUpperHessenberg_iff_fin.1 hH i l h) (a := 0)
       (fun _ _ _ h => absurd h (Nat.not_lt_zero _)) (fun t => (givensBlock H t)ᵀ)
       (fun t => (hessenbergGivensIter H t).2) rfl
@@ -1949,7 +2114,7 @@ theorem hessenbergGivensQR_spec {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpper
         exact (givensPair_fst_mul_add_snd_mul _ _).2)
     rw [show min N (N - 1) - 0 = N - 1 by omega] at key
     exact fun i l hli => key i l (by simpa using hli)
-  · have hQH := hasLowerBandwidthRect_prod_adjacentEmbed_mul
+  · have hQH := hasLowerBandwidthRect_prodFwd_adjacentEmbed_mul
       (T := (1 : Matrix (Fin N) (Fin N) ℝ))
       (fun i l h => one_apply_ne (Fin.ne_of_val_ne (by omega))) (givensBlock H) (N - 1)
     rw [Matrix.mul_one, ← hQ] at hQH

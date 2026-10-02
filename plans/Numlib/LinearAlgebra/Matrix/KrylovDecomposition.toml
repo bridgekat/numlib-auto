@@ -19,7 +19,7 @@ id = "IsKrylovDecomposition.apply_eq_star_col_dotProduct"
 id = "IsKrylovDecomposition.conjTranspose_mul_mul"
 
 [[node]]
-id = "IsKrylovDecomposition.mul_unitary"
+id = "IsKrylovDecomposition.mul_of_conjTranspose_mul_self"
 
 [[node]]
 id = "IsKrylovDecomposition.leading"

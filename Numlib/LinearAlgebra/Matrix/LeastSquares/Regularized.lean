@@ -1,13 +1,7 @@
-/-
-Upstreaming candidate: general material with no numerical-analysis-specific content, written
-to Mathlib conventions with a view to contributing it to Mathlib.
-Natural home: `Mathlib.Analysis.InnerProductSpace.LeastSquares`, beside the pseudoinverse.
-Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
--/
 import Mathlib.Algebra.Order.Star.Real
 import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Numlib.LinearAlgebra.Matrix.GSVD
-import Numlib.LinearAlgebra.Matrix.LeastSquares
+import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 
 /-!
 # Regularized least squares
@@ -27,29 +21,38 @@ Tikhonov regularization of a least-squares problem `A x ≈ b`, for `A : Matrix 
 
 * `Matrix.norm_sub_sq_add_mul_norm_sq_eq_of_gram_add_smul_gram`: the exact expansion of the
   penalized functional around a solution of the regularized normal equations, behind every
-  characterization here; `Matrix.tikhonov_unique`, `Matrix.tikhonov_mulVec_eq_iff_isMinOn`,
-  `Matrix.generalFormTikhonov_mulVec_eq_iff_isMinOn` ([kress1998numerical] Theorem 5.7,
+  characterization here; `Matrix.tikhonov_unique`,
+  `Matrix.eq_toEuclideanLin_generalFormTikhonov_iff` and its `B = 1` case
+  `Matrix.eq_toEuclideanLin_tikhonov_iff_isMinOn` ([kress1998numerical] Theorem 5.7,
   [golub2013matrix] (6.1.12), (6.1.21)); `Matrix.posDef_gram_add_smul_gram_iff`: the general form
   is well posed exactly when `ker A ⊓ ker B = ⊥`.
 * The discrepancy principle `Matrix.exists_discrepancy_tikhonov` and its regularity
   `Matrix.tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq` ([kress1998numerical] Theorem 5.10).
 * `Matrix.tendsto_tikhonov_pinv`: `x(α) → A⁺ b` as `α → 0⁺`;
-  `Matrix.antitoneOn_norm_tikhonov_mulVec`,
-  `Matrix.strictAntiOn_norm_tikhonov_mulVec` and `Matrix.tendsto_norm_tikhonov_mulVec_atTop`: the
-  solution norm decreases from `‖A⁺ b‖` to `0` ([golub2013matrix] §6.1.4, §6.2.1).
+  `Matrix.antitoneOn_norm_toEuclideanLin_tikhonov`,
+  `Matrix.strictAntiOn_norm_toEuclideanLin_tikhonov`,
+  `Matrix.continuousOn_norm_toEuclideanLin_tikhonov` and
+  `Matrix.tendsto_norm_toEuclideanLin_tikhonov_atTop`: the solution norm decreases continuously
+  from `‖A⁺ b‖` to `0` ([golub2013matrix] §6.1.4, §6.2.1). The unique-root arguments go through
+  `existsUnique_pos_eq_of_strictMonoOn_Ioi`: a continuous strictly monotone function on `(0, ∞)`
+  takes every value between its two limits exactly once.
 * `Matrix.norm_fromRows_sub_sq`, `Matrix.isLeastSquaresSolution_fromRows_iff`: a penalized problem
   is the least-squares problem of the stacked matrix ([golub2013matrix] (6.1.11), (6.1.20)).
 * Expansions in an arbitrary singular value decomposition `Matrix.IsSVD A U σ V`:
-  `Matrix.tikhonov_mulVec_eq_sum_of_isSVD` ((6.1.14)), `Matrix.pinv_mulVec_eq_sum_of_isSVD`,
-  the norms `Matrix.norm_sq_tikhonov_mulVec_eq_sum_of_isSVD`,
-  `Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD` ((6.2.3)) and the residuals
-  `Matrix.norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD` ((6.2.4)),
+  `Matrix.toEuclideanLin_tikhonov_eq_sum_of_isSVD` ((6.1.14)),
+  `Matrix.toEuclideanLin_pinv_eq_sum_of_isSVD`,
+  the norms `Matrix.norm_sq_toEuclideanLin_tikhonov_eq_sum_of_isSVD`,
+  `Matrix.norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD` ((6.2.3)) and the residuals
+  `Matrix.norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD` ((6.2.4)),
   `Matrix.norm_sub_sq_pinv_eq_sum_of_isSVD` ((5.3.3)).
 * `Matrix.generalFormTikhonov_mulVec_eq_sum_of_isGSVD`: the general form diagonalized by a
-  generalized SVD `Matrix.IsGSVD` ((6.1.26)).
+  generalized SVD `Matrix.IsGSVD` ((6.1.26)), with the GSVD facts shared with
+  `LeastSquares/Constrained`: `Matrix.IsGSVD.conjTranspose_mul_conjTranspose_left`,
+  `Matrix.IsGSVD.sq_add_smul_sq_ne_zero`, `Matrix.IsGSVD.rank_eq_and_ne_zero`.
 * Leave-one-out cross-validation over `ℝ`: `Matrix.tikhonov_deleteRow_eq` and
   `Matrix.tikhonov_deleteRow_residual_eq` ([golub2013matrix] (6.1.16)–(6.1.17)), with the positive
-  denominator `Matrix.one_sub_dotProduct_inv_gram_pos`.
+  denominator `Matrix.one_sub_dotProduct_inv_gram_pos`; deleting a row is the weight update
+  `Matrix.conjTranspose_mul_diagonal_update_mul` of `LeastSquares/Weighted` at weight `0`.
 
 ## Implementation notes
 
@@ -66,7 +69,42 @@ not "the" SVD. The cross-validation formulas are real because they are statistic
 
 open Module Filter Topology
 
+/-! ### A strictly monotone function between two limits takes every value once -/
+
+/-- **A continuous strictly increasing function on `(0, ∞)` with limits `a` at `0⁺` and `b` at
+`∞` takes every value strictly between `a` and `b` exactly once**: by the intermediate value
+theorem between a point below and a point above the value, and injectivity. -/
+theorem existsUnique_pos_eq_of_strictMonoOn_Ioi {f : ℝ → ℝ} {a b c : ℝ}
+    (hf : StrictMonoOn f (Set.Ioi 0)) (hc : ContinuousOn f (Set.Ioi 0))
+    (h0 : Tendsto f (𝓝[>] 0) (𝓝 a)) (htop : Tendsto f atTop (𝓝 b)) (hac : a < c)
+    (hcb : c < b) : ∃! t, 0 < t ∧ f t = c := by
+  obtain ⟨t₁, ht₁, hft₁⟩ : ∃ t₁, 0 < t₁ ∧ f t₁ < c := by
+    obtain ⟨t, ht, ht0⟩ := ((h0.eventually (gt_mem_nhds hac)).and self_mem_nhdsWithin).exists
+    exact ⟨t, ht0, ht⟩
+  obtain ⟨t₂, ht₂, hft₂⟩ : ∃ t₂, t₁ < t₂ ∧ c < f t₂ := by
+    obtain ⟨t, ht, ht1⟩ :=
+      ((htop.eventually (lt_mem_nhds hcb)).and (eventually_gt_atTop t₁)).exists
+    exact ⟨t, ht1, ht⟩
+  obtain ⟨t, ht, hft⟩ := intermediate_value_Icc ht₂.le
+    (hc.mono fun s hs => lt_of_lt_of_le ht₁ hs.1) ⟨hft₁.le, hft₂.le⟩
+  exact ⟨t, ⟨lt_of_lt_of_le ht₁ ht.1, hft⟩, fun s hs =>
+    hf.injOn hs.1 (lt_of_lt_of_le ht₁ ht.1) (hs.2.trans hft.symm)⟩
+
+/-- **A continuous strictly decreasing function on `(0, ∞)` with limits `a` at `0⁺` and `b` at
+`∞` takes every value strictly between `b` and `a` exactly once**
+(`existsUnique_pos_eq_of_strictMonoOn_Ioi` for `-f`). -/
+theorem existsUnique_pos_eq_of_strictAntiOn_Ioi {f : ℝ → ℝ} {a b c : ℝ}
+    (hf : StrictAntiOn f (Set.Ioi 0)) (hc : ContinuousOn f (Set.Ioi 0))
+    (h0 : Tendsto f (𝓝[>] 0) (𝓝 a)) (htop : Tendsto f atTop (𝓝 b)) (hbc : b < c)
+    (hca : c < a) : ∃! t, 0 < t ∧ f t = c := by
+  have h := existsUnique_pos_eq_of_strictMonoOn_Ioi (f := fun t => -f t)
+    (fun x hx y hy hxy => neg_lt_neg (hf hx hy hxy)) hc.neg h0.neg htop.neg (neg_lt_neg hca)
+    (neg_lt_neg hbc)
+  simpa only [neg_inj] using h
+
 namespace Matrix
+
+section IndexTypes
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*} [Fintype m] [Fintype n] [Fintype p]
   [DecidableEq n]
@@ -509,28 +547,19 @@ theorem exists_discrepancy_tikhonov (yδ : EuclideanSpace 𝕜 m) {δ : ℝ}
       (x := ‖toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ‖ ^ 2)).add hsum
     rw [hParseval] at hadd
     simpa [add_comm] using hadd
-  obtain ⟨M, hM0, hMF⟩ : ∃ M : ℝ, 0 ≤ M ∧ δ ^ 2 ≤ F M := by
-    have hδ2 : δ ^ 2 < ‖yδ‖ ^ 2 := by nlinarith [hδ0, hhigh]
-    have hev := (hlim.eventually (eventually_gt_nhds hδ2)).and
-      (Filter.eventually_ge_atTop (0 : ℝ))
-    obtain ⟨M, hM1, hM2⟩ := hev.exists
-    exact ⟨M, hM2, hM1.le⟩
   have hF0lt : F 0 < δ ^ 2 := by
     rw [hF0]
     nlinarith [hd, norm_nonneg (toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ), hδ0]
-  obtain ⟨a, ha, hFa⟩ : ∃ a ∈ Set.Icc (0 : ℝ) M, F a = δ ^ 2 :=
-    intermediate_value_Icc hM0 (hcont.mono Set.Icc_subset_Ici_self) ⟨hF0lt.le, hMF⟩
-  have ha0 : 0 < a := by
-    rcases ha.1.lt_or_eq with h | h
-    · exact h
-    · exfalso; rw [← h] at hFa; linarith
+  have hδ2 : δ ^ 2 < ‖yδ‖ ^ 2 := by nlinarith [hδ0, hhigh]
+  have h0 : Tendsto F (𝓝[>] 0) (𝓝 (F 0)) :=
+    ((hcont 0 (Set.mem_Ici.2 le_rfl)).mono Set.Ioi_subset_Ici_self).tendsto
+  obtain ⟨a, ⟨ha0, hFa⟩, huniq⟩ := existsUnique_pos_eq_of_strictMonoOn_Ioi
+    (hmono.mono Set.Ioi_subset_Ici_self) (hcont.mono Set.Ioi_subset_Ici_self) h0 hlim hF0lt hδ2
   have hres : ‖toEuclideanLin A (toEuclideanLin (A.tikhonov a) yδ) - yδ‖ = δ := by
     have h := hFeq a ha0
     rw [hFa] at h
     exact (pow_left_inj₀ (norm_nonneg _) hδ0.le two_ne_zero).1 h
-  refine ⟨a, ⟨ha0, hres⟩, fun b hb => ?_⟩
-  have hFb : F b = δ ^ 2 := by rw [← hFeq b hb.1, hb.2]
-  exact hmono.injOn (Set.mem_Ici.2 hb.1.le) (Set.mem_Ici.2 ha0.le) (hFb.trans hFa.symm)
+  exact ⟨a, ⟨ha0, hres⟩, fun b hb => huniq b ⟨hb.1, by rw [← hFeq b hb.1, hb.2]⟩⟩
 
 /-- **The discrepancy principle is regular**: if the data error tends to `0`, the regularized
 solutions chosen by the discrepancy principle converge to the least-squares solution `A⁺ y` of the
@@ -608,7 +637,7 @@ theorem norm_sq_toEuclideanLin_tikhonov_apply (A : Matrix m n 𝕜) {α : ℝ} (
 
 /-- **The ridge solution shrinks as `α` grows** ([golub2013matrix] §6.1.4): `α ↦ ‖x(α)‖` is
 antitone on `(0, ∞)`, each term of `Matrix.norm_sq_toEuclideanLin_tikhonov_apply` being so. -/
-theorem antitoneOn_norm_tikhonov_mulVec (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
+theorem antitoneOn_norm_toEuclideanLin_tikhonov (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
     AntitoneOn (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) (Set.Ioi 0) := by
   intro α hα β hβ hαβ
   simp only [Set.mem_Ioi] at hα hβ
@@ -619,7 +648,7 @@ theorem antitoneOn_norm_tikhonov_mulVec (A : Matrix m n 𝕜) (b : EuclideanSpac
 
 /-- **Strictly, unless `Aᴴ b = 0`** ([golub2013matrix] §6.2.1, "`f'(λ) < 0`"): some coefficient
 `⟪w_i, Aᴴ b⟫` is then nonzero, and its term decreases strictly. -/
-theorem strictAntiOn_norm_tikhonov_mulVec (A : Matrix m n 𝕜) {b : EuclideanSpace 𝕜 m}
+theorem strictAntiOn_norm_toEuclideanLin_tikhonov (A : Matrix m n 𝕜) {b : EuclideanSpace 𝕜 m}
     (hb : toEuclideanLin Aᴴ b ≠ 0) :
     StrictAntiOn (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) (Set.Ioi 0) := by
   intro α hα β hβ hαβ
@@ -637,9 +666,25 @@ theorem strictAntiOn_norm_tikhonov_mulVec (A : Matrix m n 𝕜) {b : EuclideanSp
   exact div_lt_div_of_pos_left hi₀ (by positivity)
     (pow_lt_pow_left₀ (by linarith) (by positivity) two_ne_zero)
 
+/-- `α ↦ ‖x(α)‖` is continuous on `(0, ∞)`: its square is a finite sum of continuous terms
+(`Matrix.norm_sq_toEuclideanLin_tikhonov_apply`). -/
+theorem continuousOn_norm_toEuclideanLin_tikhonov (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
+    ContinuousOn (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) (Set.Ioi 0) := by
+  have hsq : ContinuousOn (fun α : ℝ => ∑ i,
+      ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin Aᴴ b) : 𝕜)‖ ^ 2
+        / (α + A.colSingularValues i ^ 2) ^ 2) (Set.Ioi 0) := by
+    refine continuousOn_finsetSum _ fun i _ => ?_
+    refine continuousOn_const.div ((continuousOn_id.add continuousOn_const).pow 2) fun α hα => ?_
+    have : (0 : ℝ) < α := hα
+    positivity
+  refine (Real.continuous_sqrt.comp_continuousOn hsq).congr fun α hα => ?_
+  have : (0 : ℝ) < α := hα
+  simp only [Function.comp_apply]
+  rw [← norm_sq_toEuclideanLin_tikhonov_apply A this, Real.sqrt_sq (norm_nonneg _)]
+
 /-- **The ridge solution vanishes as `α → ∞`** ([golub2013matrix] §6.2.1): each term of
 `Matrix.norm_sq_toEuclideanLin_tikhonov_apply` has a denominator tending to `∞`. -/
-theorem tendsto_norm_tikhonov_mulVec_atTop (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
+theorem tendsto_norm_toEuclideanLin_tikhonov_atTop (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
     Tendsto (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) atTop (𝓝 0) := by
   have hsq : Tendsto (fun α : ℝ => ∑ i,
       ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin Aᴴ b) : 𝕜)‖ ^ 2
@@ -654,6 +699,15 @@ theorem tendsto_norm_tikhonov_mulVec_atTop (A : Matrix m n 𝕜) (b : EuclideanS
   refine hsqrt.congr' ?_
   filter_upwards [eventually_gt_atTop 0] with α hα
   rw [← norm_sq_toEuclideanLin_tikhonov_apply A hα, Real.sqrt_sq (norm_nonneg _)]
+
+@[deprecated (since := "2026-09-30")]
+alias continuousOn_norm_tikhonov_mulVec := continuousOn_norm_toEuclideanLin_tikhonov
+@[deprecated (since := "2026-09-30")]
+alias antitoneOn_norm_tikhonov_mulVec := antitoneOn_norm_toEuclideanLin_tikhonov
+@[deprecated (since := "2026-09-30")]
+alias strictAntiOn_norm_tikhonov_mulVec := strictAntiOn_norm_toEuclideanLin_tikhonov
+@[deprecated (since := "2026-09-30")]
+alias tendsto_norm_tikhonov_mulVec_atTop := tendsto_norm_toEuclideanLin_tikhonov_atTop
 
 omit [DecidableEq m] in
 /-- **Ridge regression tends to the minimal-norm least-squares solution** ([golub2013matrix]
@@ -766,34 +820,6 @@ section GeneralForm
 
 variable [DecidableEq m]
 
-/-- **Ridge regression** ([golub2013matrix] (6.1.11)–(6.1.12)): for `0 < α`, `x(α) = A.tikhonov α b`
-is the unique minimizer of `‖A x - b‖² + α ‖x‖²`. -/
-theorem tikhonov_mulVec_eq_iff_isMinOn (A : Matrix m n 𝕜) {α : ℝ} (hα : 0 < α)
-    (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
-    x = toEuclideanLin (A.tikhonov α) b ↔
-      ∀ y, ‖toEuclideanLin A x - b‖ ^ 2 + α * ‖x‖ ^ 2
-        ≤ ‖toEuclideanLin A y - b‖ ^ 2 + α * ‖y‖ ^ 2 := by
-  set z := toEuclideanLin (A.tikhonov α) b with hzdef
-  have hz : toEuclideanLin (Aᴴ * A + (α : 𝕜) • ((1 : Matrix n n 𝕜)ᴴ * 1)) z
-      = toEuclideanLin Aᴴ b := by
-    have h := (A.tikhonov_unique α hα b z).2 rfl
-    rw [conjTranspose_one, Matrix.mul_one, add_comm]
-    rw [← h, ← toEuclideanLin_smul_one_add_gram]
-  have key := fun y => norm_sub_sq_add_mul_norm_sq_eq_of_gram_add_smul_gram A 1 α b hz y
-  simp only [toEuclideanLin_one_apply] at key
-  constructor
-  · rintro rfl y
-    rw [key y]
-    have := norm_nonneg (toEuclideanLin A (y - z))
-    nlinarith [sq_nonneg ‖toEuclideanLin A (y - z)‖, sq_nonneg ‖y - z‖]
-  · intro h
-    have h1 := h z
-    rw [key x] at h1
-    have h2 : α * ‖x - z‖ ^ 2 ≤ 0 := by nlinarith [sq_nonneg ‖toEuclideanLin A (x - z)‖]
-    have h3 : ‖x - z‖ ^ 2 = 0 :=
-      le_antisymm (nonpos_of_mul_nonpos_right (by linarith) hα) (sq_nonneg _)
-    rwa [pow_eq_zero_iff two_ne_zero, norm_eq_zero, sub_eq_zero] at h3
-
 omit [DecidableEq n] [DecidableEq m] in
 open scoped ComplexOrder in
 /-- **General-form Tikhonov is well posed iff the kernels meet trivially** ([golub2013matrix]
@@ -858,14 +884,14 @@ open scoped ComplexOrder in
 /-- **General-form Tikhonov: normal equations and minimizer** ([golub2013matrix]
 (6.1.20)–(6.1.21)): for `0 < α` and `ker A ⊓ ker B = ⊥`, `x = generalFormTikhonov A B α b` iff
 `(Aᴴ A + α Bᴴ B) x = Aᴴ b`, iff `x` minimizes `‖A x - b‖² + α ‖B x‖²`. -/
-theorem generalFormTikhonov_mulVec_eq_iff_isMinOn (A : Matrix m n 𝕜) (B : Matrix p n 𝕜)
+theorem eq_toEuclideanLin_generalFormTikhonov_iff (A : Matrix m n 𝕜) (B : Matrix p n 𝕜)
     {α : ℝ} (hα : 0 < α) (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥)
     (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
     (x = toEuclideanLin (generalFormTikhonov A B α) b ↔
       toEuclideanLin (Aᴴ * A + (α : 𝕜) • (Bᴴ * B)) x = toEuclideanLin Aᴴ b) ∧
     (x = toEuclideanLin (generalFormTikhonov A B α) b ↔
-      ∀ y, ‖toEuclideanLin A x - b‖ ^ 2 + α * ‖toEuclideanLin B x‖ ^ 2
-        ≤ ‖toEuclideanLin A y - b‖ ^ 2 + α * ‖toEuclideanLin B y‖ ^ 2) := by
+      IsMinOn (fun y => ‖toEuclideanLin A y - b‖ ^ 2 + α * ‖toEuclideanLin B y‖ ^ 2)
+        Set.univ x) := by
   have hM := ((posDef_gram_add_smul_gram_iff A B hα).2 hAB).isUnit
   have hne : ∀ v : EuclideanSpace 𝕜 n, v ≠ 0 →
       0 < ‖toEuclideanLin A v‖ ^ 2 + α * ‖toEuclideanLin B v‖ ^ 2 := by
@@ -896,6 +922,7 @@ theorem generalFormTikhonov_mulVec_eq_iff_isMinOn (A : Matrix m n 𝕜) (B : Mat
       rw [generalFormTikhonov, toEuclideanLin_mul_apply, ← h,
         toEuclideanLin_nonsing_inv_mul_apply hM]
   refine ⟨h1 x, ?_⟩
+  rw [isMinOn_univ_iff]
   set z := toEuclideanLin (generalFormTikhonov A B α) b with hzdef
   have hz := (h1 z).1 rfl
   have key := fun y => norm_sub_sq_add_mul_norm_sq_eq_of_gram_add_smul_gram A B α b hz y
@@ -910,9 +937,48 @@ theorem generalFormTikhonov_mulVec_eq_iff_isMinOn (A : Matrix m n 𝕜) (B : Mat
     have := hne (x - z) (sub_ne_zero.2 hxz)
     linarith
 
+open scoped ComplexOrder in
+/-- General-form Tikhonov, with the minimizer unbundled. -/
+@[deprecated eq_toEuclideanLin_generalFormTikhonov_iff +typeChanged (since := "2026-09-30")]
+theorem generalFormTikhonov_mulVec_eq_iff_isMinOn (A : Matrix m n 𝕜) (B : Matrix p n 𝕜)
+    {α : ℝ} (hα : 0 < α) (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥)
+    (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
+    (x = toEuclideanLin (generalFormTikhonov A B α) b ↔
+      toEuclideanLin (Aᴴ * A + (α : 𝕜) • (Bᴴ * B)) x = toEuclideanLin Aᴴ b) ∧
+    (x = toEuclideanLin (generalFormTikhonov A B α) b ↔
+      ∀ y, ‖toEuclideanLin A x - b‖ ^ 2 + α * ‖toEuclideanLin B x‖ ^ 2
+        ≤ ‖toEuclideanLin A y - b‖ ^ 2 + α * ‖toEuclideanLin B y‖ ^ 2) := by
+  obtain ⟨h1, h2⟩ := eq_toEuclideanLin_generalFormTikhonov_iff A B hα hAB b x
+  exact ⟨h1, h2.trans isMinOn_univ_iff⟩
+
+/-- **Ridge regression** ([golub2013matrix] (6.1.11)–(6.1.12)): for `0 < α`, `x(α) = A.tikhonov α b`
+is the unique minimizer of `‖A x - b‖² + α ‖x‖²` — the general form at `B = 1`
+(`Matrix.generalFormTikhonov_one`), where `ker B = ⊥`. -/
+theorem eq_toEuclideanLin_tikhonov_iff_isMinOn (A : Matrix m n 𝕜) {α : ℝ} (hα : 0 < α)
+    (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
+    x = toEuclideanLin (A.tikhonov α) b ↔
+      IsMinOn (fun y => ‖toEuclideanLin A y - b‖ ^ 2 + α * ‖y‖ ^ 2) Set.univ x := by
+  have hker : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker (1 : Matrix n n 𝕜).mulVecLin = ⊥ :=
+    eq_bot_iff.2 fun v hv => by
+      have := (Submodule.mem_inf.1 hv).2
+      rw [LinearMap.mem_ker, mulVecLin_apply, one_mulVec] at this
+      rw [this]
+      exact Submodule.zero_mem _
+  simpa only [generalFormTikhonov_one, toEuclideanLin_one_apply] using
+    (eq_toEuclideanLin_generalFormTikhonov_iff A 1 hα hker b x).2
+
+/-- Ridge regression, with the minimizer unbundled. -/
+@[deprecated eq_toEuclideanLin_tikhonov_iff_isMinOn +typeChanged (since := "2026-09-30")]
+theorem tikhonov_mulVec_eq_iff_isMinOn (A : Matrix m n 𝕜) {α : ℝ} (hα : 0 < α)
+    (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
+    x = toEuclideanLin (A.tikhonov α) b ↔
+      ∀ y, ‖toEuclideanLin A x - b‖ ^ 2 + α * ‖x‖ ^ 2
+        ≤ ‖toEuclideanLin A y - b‖ ^ 2 + α * ‖y‖ ^ 2 :=
+  (eq_toEuclideanLin_tikhonov_iff_isMinOn A hα b x).trans isMinOn_univ_iff
+
 end GeneralForm
 
-
+/-! ### Leave-one-out cross-validation -/
 
 section DeleteRow
 
@@ -934,15 +1000,6 @@ theorem posDef_transpose_mul_self_add_smul_one [Finite n] (A : Matrix m n ℝ) {
     simpa [conjTranspose_eq_transpose_of_trivial] using posSemidef_conjTranspose_mul_self A
   exact PosDef.posSemidef_add h (PosDef.one.smul hα)
 
-/-- `M⁻¹ (M v) = v` and `M (M⁻¹ v) = v` for a positive definite real `M`. -/
-private theorem PosDef.inv_mulVec_mulVec {M : Matrix n n ℝ} (hM : M.PosDef) (v : n → ℝ) :
-    M⁻¹ *ᵥ (M *ᵥ v) = v := by
-  rw [mulVec_mulVec, nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hM.isUnit), one_mulVec]
-
-private theorem PosDef.mulVec_inv_mulVec {M : Matrix n n ℝ} (hM : M.PosDef) (v : n → ℝ) :
-    M *ᵥ (M⁻¹ *ᵥ v) = v := by
-  rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hM.isUnit), one_mulVec]
-
 omit [DecidableEq m] in
 /-- **The leave-one-out denominator is positive** ([golub2013matrix] (6.1.16)–(6.1.17)):
 `a_kᵀ (Aᵀ A + α I)⁻¹ a_k < 1` for `α > 0`. With `z = (Aᵀ A + α I)⁻¹ a_k` and `t = a_kᵀ z`,
@@ -952,7 +1009,7 @@ theorem one_sub_dotProduct_inv_gram_pos (A : Matrix m n ℝ) {α : ℝ} (hα : 0
   set M := Aᵀ * A + α • (1 : Matrix n n ℝ) with hM
   have hMpd := posDef_transpose_mul_self_add_smul_one A hα
   set z := M⁻¹ *ᵥ A k with hz
-  have hMz : M *ᵥ z = A k := hMpd.mulVec_inv_mulVec _
+  have hMz : M *ᵥ z = A k := mulVec_nonsing_inv_mulVec hMpd.isUnit _
   set t := A k ⬝ᵥ z with ht
   have hquad : t = (A *ᵥ z) ⬝ᵥ (A *ᵥ z) + α * (z ⬝ᵥ z) := by
     rw [ht, ← hMz, dotProduct_comm, hM, add_mulVec, dotProduct_add, ← mulVec_mulVec,
@@ -974,55 +1031,42 @@ theorem one_sub_dotProduct_inv_gram_pos (A : Matrix m n ℝ) {α : ℝ} (hα : 0
     nlinarith [mul_pos hα hpos]
 
 omit [Fintype n] [DecidableEq n] in
-/-- Deleting row `k`: `(D A)ᵀ (D A) = Aᵀ A - a_k a_kᵀ`. -/
+/-- Deleting row `k` is the weight `0` on it: `(D_k A)ᵀ (D_k A) = Aᵀ A - a_k a_kᵀ`
+(`Matrix.conjTranspose_mul_diagonal_update_mul` at `w = 1`, `t = 0`). -/
 private theorem transpose_mul_diagonal_mul_self (A : Matrix m n ℝ) (k : m) :
     (diagonal (Function.update (1 : m → ℝ) k 0) * A)ᵀ *
         (diagonal (Function.update (1 : m → ℝ) k 0) * A)
       = Aᵀ * A - vecMulVec (A k) (A k) := by
-  set d := Function.update (1 : m → ℝ) k 0 with hd
-  have hdd : (fun i => d i * d i) = d := by
+  have hdd : (fun i => Function.update (1 : m → ℝ) k 0 i * Function.update (1 : m → ℝ) k 0 i)
+      = Function.update (1 : m → ℝ) k 0 := by
     funext i
     by_cases h : i = k
-    · simp [hd, h]
-    · simp [hd, h]
-  rw [transpose_mul, diagonal_transpose, Matrix.mul_assoc, ← Matrix.mul_assoc (diagonal d),
-    diagonal_mul_diagonal, hdd]
-  ext p q
-  have hterm : ∀ i, Aᵀ p i * (diagonal d * A) i q
-      = A i p * A i q - if i = k then A i p * A i q else 0 := by
-    intro i
-    rw [diagonal_mul, transpose_apply]
-    by_cases h : i = k
-    · simp [hd, h]
-    · simp [hd, h]
-  rw [sub_apply, vecMulVec_apply, mul_apply, mul_apply, Finset.sum_congr rfl fun i _ => hterm i,
-    Finset.sum_sub_distrib, Finset.sum_ite_eq', ite_eq_left (Finset.mem_univ k)]
-  simp only [transpose_apply]
+    · simp [h]
+    · simp [h]
+  have h := conjTranspose_mul_diagonal_update_mul A 1 k 0
+  rw [show diagonal (1 : m → ℝ) = 1 from diagonal_one, Matrix.mul_one, Pi.one_apply, zero_sub,
+    neg_one_smul, ← sub_eq_add_neg, conjTranspose_eq_transpose_of_trivial] at h
+  rw [transpose_mul, diagonal_transpose, Matrix.mul_assoc, ← Matrix.mul_assoc (diagonal _),
+    diagonal_mul_diagonal, hdd, ← Matrix.mul_assoc, h]
 
 omit [Fintype n] [DecidableEq n] in
-/-- Deleting row `k` on the right-hand side: `(D A)ᵀ (D b) = Aᵀ b - b_k a_k`. -/
+/-- Deleting row `k` on the right-hand side: `(D_k A)ᵀ (D_k b) = Aᵀ b - b_k a_k`
+(`Matrix.conjTranspose_mul_diagonal_update_mulVec` at `w = 1`, `t = 0`). -/
 private theorem transpose_mulVec_diagonal_mulVec (A : Matrix m n ℝ) (b : m → ℝ) (k : m) :
     (diagonal (Function.update (1 : m → ℝ) k 0) * A)ᵀ *ᵥ
         (diagonal (Function.update (1 : m → ℝ) k 0) *ᵥ b)
       = Aᵀ *ᵥ b - b k • A k := by
-  set d := Function.update (1 : m → ℝ) k 0 with hd
-  have hdd : (fun i => d i * d i) = d := by
+  have hdd : (fun i => Function.update (1 : m → ℝ) k 0 i * Function.update (1 : m → ℝ) k 0 i)
+      = Function.update (1 : m → ℝ) k 0 := by
     funext i
     by_cases h : i = k
-    · simp [hd, h]
-    · simp [hd, h]
-  have hDb : diagonal d *ᵥ b = b - Pi.single k (b k) := by
-    funext i
-    rw [mulVec_diagonal, Pi.sub_apply]
-    by_cases h : i = k
-    · subst h; simp [hd]
-    · simp [hd, h]
-  rw [transpose_mul, diagonal_transpose, ← mulVec_mulVec,
-    mulVec_mulVec _ (diagonal d) (diagonal d),
-    diagonal_mul_diagonal, hdd, hDb, mulVec_sub]
-  congr 1
-  funext p
-  simp [mulVec, dotProduct, Pi.single_apply, transpose_apply, mul_comm]
+    · simp [h]
+    · simp [h]
+  have h := conjTranspose_mul_diagonal_update_mulVec A 1 k 0 b
+  rw [show diagonal (1 : m → ℝ) = 1 from diagonal_one, Matrix.mul_one, Pi.one_apply, zero_sub,
+    neg_one_mul, neg_smul, ← sub_eq_add_neg, conjTranspose_eq_transpose_of_trivial] at h
+  rw [transpose_mul, diagonal_transpose, mulVec_mulVec, Matrix.mul_assoc, diagonal_mul_diagonal,
+    hdd, h]
 
 /-- **Ridge regression with one equation deleted** ([golub2013matrix] (6.1.16)): with
 `D_k = diag(1, …, 0, …, 1)` deleting equation `k`, `z_k = (Aᵀ A + α I)⁻¹ a_k` and `x = x(α)`,
@@ -1046,8 +1090,8 @@ theorem tikhonov_deleteRow_eq (A : Matrix m n ℝ) (b : m → ℝ) {α : ℝ} (h
   set x := A.tikhonov α *ᵥ b with hx
   have hMx : M *ᵥ x = Aᵀ *ᵥ b := by
     rw [hx, tikhonov_eq_real, ← mulVec_mulVec]
-    exact PosDef.mulVec_inv_mulVec hMpd _
-  have hMz : M *ᵥ z = A k := PosDef.mulVec_inv_mulVec hMpd _
+    exact mulVec_nonsing_inv_mulVec hMpd.isUnit _
+  have hMz : M *ᵥ z = A k := mulVec_nonsing_inv_mulVec hMpd.isUnit _
   have ht : 0 < 1 - z ⬝ᵥ A k := by
     rw [dotProduct_comm]; exact one_sub_dotProduct_inv_gram_pos A hα k
   set c := (A k ⬝ᵥ x - b k) / (1 - z ⬝ᵥ A k) with hc
@@ -1058,7 +1102,7 @@ theorem tikhonov_deleteRow_eq (A : Matrix m n ℝ) (b : m → ℝ) {α : ℝ} (h
       dotProduct_comm (A k) z]
     linear_combination (norm := module) hc' • A k
   rw [tikhonov_eq_real, ← mulVec_mulVec, hD, transpose_mulVec_diagonal_mulVec, ← hD, hMk, ← key,
-    PosDef.inv_mulVec_mulVec hMkpd]
+    nonsing_inv_mulVec_mulVec hMkpd.isUnit]
 
 /-- **The leave-one-out residual** ([golub2013matrix] (6.1.17)): with the ridge hat matrix
 `H = A (Aᵀ A + α I)⁻¹ Aᵀ`, the residual of equation `k` at the solution without it is
@@ -1092,9 +1136,7 @@ theorem tikhonov_deleteRow_residual_eq (A : Matrix m n ℝ) (b : m → ℝ) {α 
 
 end DeleteRow
 
-end Matrix
-
-namespace Matrix
+end IndexTypes
 
 /-! ### Expansions in a singular value decomposition -/
 
@@ -1156,7 +1198,7 @@ theorem IsSVD.tikhonov_eq (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α) :
 
 /-- **Ridge regression in singular vectors** ([golub2013matrix] (6.1.14)):
 `x(α) = ∑_{i < min m n} σ_i ⟪u_i, b⟫/(σ_i² + α) v_i`; the terms with `σ_i = 0` vanish. -/
-theorem tikhonov_mulVec_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α)
+theorem toEuclideanLin_tikhonov_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α)
     (b : EuclideanSpace 𝕜 (Fin m)) :
     toEuclideanLin (A.tikhonov α) b
       = ∑ i : Fin (min m n), ((σ i / (σ i ^ 2 + α) : ℝ) : 𝕜) • inner 𝕜
@@ -1166,7 +1208,7 @@ theorem tikhonov_mulVec_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0
 
 /-- **The secular function** ([golub2013matrix] §6.2.1):
 `‖x(α)‖² = ∑_{i < min m n} (σ_i |⟪u_i, b⟫|/(σ_i² + α))²`. -/
-theorem norm_sq_tikhonov_mulVec_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α)
+theorem norm_sq_toEuclideanLin_tikhonov_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α)
     (b : EuclideanSpace 𝕜 (Fin m)) :
     ‖toEuclideanLin (A.tikhonov α) b‖ ^ 2
       = ∑ i : Fin (min m n), (σ i * ‖inner 𝕜
@@ -1181,7 +1223,7 @@ theorem norm_sq_tikhonov_mulVec_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} 
 
 /-- **The minimal-norm least-squares solution in singular vectors** ([golub2013matrix] (6.2.3),
 (5.3.2)): `A⁺ b = ∑_{i < min m n} σ_i⁻¹ ⟪u_i, b⟫ v_i`. -/
-theorem pinv_mulVec_eq_sum_of_isSVD (h : IsSVD A U σ V) (b : EuclideanSpace 𝕜 (Fin m)) :
+theorem toEuclideanLin_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V) (b : EuclideanSpace 𝕜 (Fin m)) :
     toEuclideanLin A.pinv b
       = ∑ i : Fin (min m n), ((σ i : 𝕜))⁻¹ • inner 𝕜
           (WithLp.toLp 2 (Uᵀ (Fin.castLE (min_le_left m n) i)) : EuclideanSpace 𝕜 (Fin m)) b •
@@ -1191,7 +1233,7 @@ theorem pinv_mulVec_eq_sum_of_isSVD (h : IsSVD A U σ V) (b : EuclideanSpace �
 /-- **The norm of the minimal-norm least-squares solution** ([golub2013matrix] (6.2.3)):
 `‖A⁺ b‖² = ∑_{i < min m n} (|⟪u_i, b⟫|/σ_i)²`, Lean's `x/0 = 0` dropping the terms beyond the
 rank. -/
-theorem norm_sq_pinv_mulVec_eq_sum_of_isSVD (h : IsSVD A U σ V)
+theorem norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V)
     (b : EuclideanSpace 𝕜 (Fin m)) :
     ‖toEuclideanLin A.pinv b‖ ^ 2
       = ∑ i : Fin (min m n), (‖inner 𝕜
@@ -1239,7 +1281,7 @@ theorem IsSVD.norm_sq_toEuclideanLin_sub (h : IsSVD A U σ V) (τ : ℕ → 𝕜
 
 /-- **The ridge residual** ([golub2013matrix] (6.2.4)): `‖A x(α) - b‖²` is the least-squares
 residual `‖A A⁺ b - b‖²` plus `∑_{σ_i ≠ 0} (α |⟪u_i, b⟫|/(σ_i² + α))²`. -/
-theorem norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α)
+theorem norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α)
     (b : EuclideanSpace 𝕜 (Fin m)) :
     ‖toEuclideanLin A (toEuclideanLin (A.tikhonov α) b) - b‖ ^ 2
       = ‖toEuclideanLin A (toEuclideanLin A.pinv b) - b‖ ^ 2
@@ -1309,13 +1351,114 @@ theorem norm_sub_sq_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V) (b : EuclideanSpac
     rw [ite_eq_left hin, mul_inv_cancel₀ (by exact_mod_cast hσ), sub_self, norm_zero]
     ring
 
+@[deprecated (since := "2026-09-30")]
+alias tikhonov_mulVec_eq_sum_of_isSVD := toEuclideanLin_tikhonov_eq_sum_of_isSVD
+@[deprecated (since := "2026-09-30")]
+alias norm_sq_tikhonov_mulVec_eq_sum_of_isSVD := norm_sq_toEuclideanLin_tikhonov_eq_sum_of_isSVD
+@[deprecated (since := "2026-09-30")]
+alias pinv_mulVec_eq_sum_of_isSVD := toEuclideanLin_pinv_eq_sum_of_isSVD
+@[deprecated (since := "2026-09-30")]
+alias norm_sq_pinv_mulVec_eq_sum_of_isSVD := norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD
+@[deprecated (since := "2026-09-30")]
+alias norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD :=
+  norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD
+
 end IsSVD
 
 /-! ### General-form Tikhonov in GSVD coordinates -/
 
 section IsGSVD
 
-variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
+variable {𝕜 : Type*} [RCLike 𝕜]
+
+section Facts
+
+variable {m₁ m₂ n : ℕ} {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (Fin m₂) (Fin n) 𝕜}
+  {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
+  {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
+
+/-- The `A`-half of a GSVD, conjugate-transposed: `Xᴴ Aᴴ = D_Aᴴ U₁ᴴ`, with `D_A` real. -/
+theorem IsGSVD.conjTranspose_mul_conjTranspose_left (h : IsGSVD A B U₁ U₂ X α β) :
+    Xᴴ * Aᴴ = (rectDiagonal fun i => ((α i : ℝ) : 𝕜) : Matrix (Fin n) (Fin m₁) 𝕜) * star U₁ := by
+  have hAX : A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) := by
+    rw [← h.star_mul_mul_left, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      mem_unitaryGroup_iff.1 h.mem_unitaryGroup_left, Matrix.one_mul]
+  rw [← conjTranspose_mul, hAX, conjTranspose_mul, conjTranspose_rectDiagonal,
+    star_eq_conjTranspose]
+  congr 2
+  funext i
+  simp
+
+/-- The `B`-half of a GSVD, conjugate-transposed: `Xᴴ Bᴴ = D_Bᴴ U₂ᴴ`. -/
+theorem IsGSVD.conjTranspose_mul_conjTranspose_right (h : IsGSVD A B U₁ U₂ X α β) :
+    Xᴴ * Bᴴ = (shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) :
+      Matrix (Fin m₂) (Fin n) 𝕜)ᴴ * star U₂ := by
+  have hBX : B * X =
+      U₂ * shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) := by
+    rw [← h.star_mul_mul_right, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      mem_unitaryGroup_iff.1 h.mem_unitaryGroup_right, Matrix.one_mul]
+  rw [← conjTranspose_mul, hBX, conjTranspose_mul, star_eq_conjTranspose]
+
+/-- Below the rank, the weighted sum `α_i² + μ β_i²` of a GSVD pair is nonzero for `μ > 0`: the
+pair is `(1, 0)` or a cosine–sine pair. -/
+theorem IsGSVD.sq_add_smul_sq_ne_zero (h : IsGSVD A B U₁ U₂ X α β) {μ : ℝ} (hμ : 0 < μ)
+    {i : ℕ} (hi : i < (fromRows A B).rank) : α i ^ 2 + μ * β i ^ 2 ≠ 0 := by
+  by_cases hp : i < (fromRows A B).rank - m₂
+  · rw [(h.of_lt_p i hp).1, (h.of_lt_p i hp).2]
+    norm_num
+  · have hs := h.sq_add_sq i (not_lt.1 hp) hi
+    intro h0
+    have hb : μ * β i ^ 2 = 0 := by
+      nlinarith [sq_nonneg (α i), mul_nonneg hμ.le (sq_nonneg (β i))]
+    have hb' : β i ^ 2 = 0 := (mul_eq_zero.1 hb).resolve_left hμ.ne'
+    nlinarith [sq_nonneg (α i)]
+
+/-- With `B` of full row rank and `ker A ⊓ ker B = ⊥`, the GSVD has `r = n`, so `p_GSVD = n − m₂`,
+and the sines `β_j`, `n − m₂ ≤ j < n`, are nonzero (a zero one would make a row of
+`D_B = U₂ᴴ B X` vanish). -/
+theorem IsGSVD.rank_eq_and_ne_zero (h : IsGSVD A B U₁ U₂ X α β)
+    (hB : LinearIndependent 𝕜 B)
+    (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥) :
+    (fromRows A B).rank = n ∧ m₂ ≤ n ∧ ∀ j : Fin n, n - m₂ ≤ (j : ℕ) → β j ≠ 0 := by
+  classical
+  have hrn : (fromRows A B).rank = n := by
+    have := LinearMap.finrank_range_add_finrank_ker (fromRows A B).mulVecLin
+    rw [Module.finrank_fin_fun, ← ker_inf_ker_eq_ker_fromRows, hAB, finrank_bot] at this
+    change (fromRows A B).rank + 0 = n at this
+    omega
+  have hpn : m₂ ≤ n := by
+    have := hB.fintype_card_le_finrank
+    rwa [Fintype.card_fin, Module.finrank_fin_fun] at this
+  refine ⟨hrn, hpn, fun j hj hβ => ?_⟩
+  have hDB := h.star_mul_mul_right
+  rw [hrn] at hDB
+  -- the row `j − (n − m₂)` of `D_B` vanishes
+  set k : Fin m₂ := ⟨j - (n - m₂), by have := j.isLt; omega⟩
+  have hrow : Pi.single k 1 ᵥ* (star U₂ * B * X) = 0 ᵥ* (star U₂ * B * X) := by
+    rw [hDB, zero_vecMul]
+    ext l
+    rw [single_one_vecMul, Pi.zero_apply]
+    change shiftedRectDiagonal (n - m₂) (fun i => ((β i : ℝ) : 𝕜)) k l = 0
+    rw [shiftedRectDiagonal_apply]
+    split_ifs with hl
+    · have : l = j := Fin.ext (by simp only [k] at hl; omega)
+      rw [this, hβ, RCLike.ofReal_zero]
+    · rfl
+  have hinj : Function.Injective (star U₂ * B * X).vecMul := by
+    intro u v huv
+    have hU : Function.Injective (star U₂).vecMul :=
+      vecMul_injective_iff_isUnit.2 (isUnit_of_mem_unitaryGroup (Unitary.star_mem
+        h.mem_unitaryGroup_right))
+    have hX : Function.Injective X.vecMul := vecMul_injective_iff_isUnit.2 h.isUnit
+    have hBi : Function.Injective B.vecMul := vecMul_injective_iff.2 hB
+    simp only [← vecMul_vecMul] at huv
+    exact hU (hBi (hX huv))
+  have := congrFun (hinj hrow) k
+  simp at this
+
+end Facts
+
+variable {m n : ℕ}
 
 /-- **General-form Tikhonov diagonalized by the GSVD** ([golub2013matrix] (6.1.26) and the display
 before it): for a square invertible `B`, a GSVD `U₁ᴴ A X = D_A`, `U₂ᴴ B X = D_B` (then `p = 0`,
@@ -1332,34 +1475,15 @@ theorem generalFormTikhonov_mulVec_eq_sum_of_isGSVD {A : Matrix (Fin m) (Fin n) 
       (((α k / (α k ^ 2 + μ * β k ^ 2) : ℝ) : 𝕜) * (star U₁ *ᵥ b) (Fin.castLE hnm k)) •
         X.col k := by
   classical
-  have hr : (fromRows A B).rank - n = 0 := by
-    have := rank_le_card_width (fromRows A B)
-    rw [Fintype.card_fin] at this
-    omega
-  have hDB : star U₂ * B * X = diagonal fun k : Fin n => ((β k : ℝ) : 𝕜) := by
-    rw [h.star_mul_mul_right, hr, shiftedRectDiagonal_zero, rectDiagonal_eq_diagonal]
-  have hβ : ∀ k : Fin n, β k ≠ 0 := by
-    have hu : IsUnit (star U₂ * B * X) :=
-      ((isUnit_of_mem_unitaryGroup (Unitary.star_mem h.mem_unitaryGroup_right)).mul hB).mul
-        h.isUnit
-    rw [hDB, isUnit_iff_isUnit_det, det_diagonal] at hu
-    intro k hk
-    exact hu.ne_zero (Finset.prod_eq_zero (Finset.mem_univ k) (by rw [hk, RCLike.ofReal_zero]))
-  have hd0 : ∀ k : Fin n, α k ^ 2 + μ * β k ^ 2 ≠ 0 := fun k => by
-    have h2 : 0 < β k ^ 2 := lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (hβ k)))
-    exact (add_pos_of_nonneg_of_pos (sq_nonneg _) (mul_pos hμ h2)).ne'
-  have hXA : Xᴴ * Aᴴ
-      = (rectDiagonal fun i => ((α i : ℝ) : 𝕜) : Matrix (Fin n) (Fin m) 𝕜) * star U₁ := by
-    have hAX : A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) := by
-      rw [← h.star_mul_mul_left, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
-        mem_unitaryGroup_iff.1 h.mem_unitaryGroup_left, Matrix.one_mul]
-    rw [← conjTranspose_mul, hAX, conjTranspose_mul, conjTranspose_rectDiagonal,
-      star_eq_conjTranspose]
-    congr 2
-    funext i
-    simp
+  have hker : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥ := by
+    rw [(LinearMap.ker_eq_bot (f := B.mulVecLin)).2 (mulVec_injective_iff_isUnit.2 hB),
+      inf_bot_eq]
+  obtain ⟨hrn, -, -⟩ := h.rank_eq_and_ne_zero (linearIndependent_rows_of_isUnit hB) hker
+  have hd0 : ∀ k : Fin n, α k ^ 2 + μ * β k ^ 2 ≠ 0 := fun k =>
+    h.sq_add_smul_sq_ne_zero hμ (by rw [hrn]; exact k.isLt)
   rw [generalFormTikhonov, h.inv_gram_add_smul_gram_eq hnm μ hd0, Matrix.mul_assoc,
-    Matrix.mul_assoc, hXA, ← mulVec_mulVec, ← mulVec_mulVec, ← mulVec_mulVec]
+    Matrix.mul_assoc, h.conjTranspose_mul_conjTranspose_left, ← mulVec_mulVec, ← mulVec_mulVec,
+    ← mulVec_mulVec]
   ext i
   simp only [mulVec, dotProduct, Finset.sum_apply, Pi.smul_apply, smul_eq_mul, col_apply]
   refine Finset.sum_congr rfl fun k _ => ?_

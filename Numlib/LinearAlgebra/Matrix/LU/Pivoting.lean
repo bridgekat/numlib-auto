@@ -82,8 +82,9 @@ could not be checked against its source. Nothing in the corpus consumes it, so i
 * `Matrix.gemStage_permMatrix_mul_eq_submatrix_gemPivotStage`: the stages of Gaussian elimination
   on `P A` are the pivoted stages with their rows permuted by the *later* interchanges; hence
   `Matrix.gemPivotStage_permMatrix_mul_isLU`, the factorization `P A = L U` computed by the
-  recurrence, and `Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one`, the bound on the
-  multipliers of partial pivoting.
+  recurrence, and `Matrix.gemPivotStage_norm_gemLower_le_one`, the bound on the multipliers of
+  any partial-pivoting strategy (`Matrix.IsPartialPivot`), with its `Matrix.partialPivotRow`
+  case `Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one`.
 * `Matrix.growthFactor_le_two_pow`, `Matrix.growthFactor_eq_one_of_posDef`,
   `Matrix.growthFactor_le_two_of_isColDiagDominant`, `Matrix.growthFactor_le_two_of_isTridiagonal`,
   `Matrix.growthFactor_le_card_of_isUpperHessenberg`,
@@ -91,7 +92,7 @@ could not be checked against its source. Nothing in the corpus consumes it, so i
 * `Matrix.gemStage_submatrix_eq_submatrix_gemFullPivotStage`: the two-sided analogue for complete
   pivoting, whence `Matrix.hasDominantPivots_submatrix_gemFullPivotStage`, the stage dominance
   that complete pivoting buys.
-* `Matrix.gemPivotStage_partialPivotRow_permMatrix_mul_isLU`,
+* `Matrix.gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot`,
   `Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU`: partial pivoting factors
   `P A = L U` and rook (hence complete) pivoting factors `P A Q = L U` with bounded multipliers
   and a dominant diagonal of `U`, for *every* matrix: a zero pivot comes with a zero column
@@ -381,6 +382,12 @@ such a strategy produces are run by `Matrix.gemPivotStage`. The column counterpa
 `Matrix.IsCompletePivot`. -/
 def IsPartialPivot (piv : Matrix n n 𝕜 → n → n) : Prop :=
   ∀ (M : Matrix n n 𝕜) (k : n), k ≤ piv M k ∧ ∀ r, k ≤ r → ‖M r k‖ ≤ ‖M (piv M k) k‖
+
+/-- Under a partial-pivoting strategy a zero pivot comes with a zero column below it. -/
+theorem IsPartialPivot.apply_eq_zero {piv : Matrix n n 𝕜 → n → n} (hpiv : IsPartialPivot piv)
+    {M : Matrix n n 𝕜} {k : n} (h : M (piv M k) k = 0) {r : n} (hr : k ≤ r) : M r k = 0 := by
+  have := (hpiv M k).2 r hr
+  rwa [h, norm_zero, norm_le_zero_iff] at this
 
 variable [Fintype n]
 
@@ -698,36 +705,40 @@ theorem gemPivotStage_permMatrix_mul_isLU (hpiv : ∀ M k, k ≤ piv M k)
   rw [gemStage_permMatrix_mul_apply_self A piv hpiv hm]
   exact hnz m hm hmN
 
-/-- **The multipliers of partial pivoting are bounded by one**: every entry of the unit lower
-factor `L` of `P A = L U` produced by `gemPivotStage A partialPivotRow` has norm at most `1`,
-because `l_ij` is `a^{(j)}_{r j} / a^{(j)}_{r_j j}` for some row `r ≥ j`, and the pivot row `r_j`
-maximizes the modulus in the column. -/
-theorem gemPivotStage_partialPivotRow_norm_gemLower_le_one {𝕜 : Type*} [NormedField 𝕜]
+/-- **The multipliers of partial pivoting are bounded by one**: for any partial-pivoting
+strategy `piv`, every entry of the unit lower factor `L` of `P A = L U` produced by
+`gemPivotStage A piv` has norm at most `1`, because `l_ij` is `a^{(j)}_{r j} / a^{(j)}_{r_j j}`
+for some row `r ≥ j`, and the pivot row `r_j` maximizes the modulus in the column. -/
+theorem gemPivotStage_norm_gemLower_le_one {𝕜 : Type*} [NormedField 𝕜]
+    {piv : Matrix (Fin N) (Fin N) 𝕜 → Fin N → Fin N} (hpiv : IsPartialPivot piv)
     (A : Matrix (Fin N) (Fin N) 𝕜) (i j : Fin N) :
-    ‖gemLower ((gemPivotStage A partialPivotRow N).2.permMatrix 𝕜 * A) i j‖ ≤ 1 := by
-  have hpiv : ∀ (M : Matrix (Fin N) (Fin N) 𝕜) k, k ≤ partialPivotRow M k := fun M k =>
-    le_partialPivotRow M k
+    ‖gemLower ((gemPivotStage A piv N).2.permMatrix 𝕜 * A) i j‖ ≤ 1 := by
+  have hle : ∀ (M : Matrix (Fin N) (Fin N) 𝕜) k, k ≤ piv M k := fun M k => (hpiv M k).1
   simp only [gemLower, of_apply]
   split_ifs with hij hij'
-  · set M := (gemPivotStage A partialPivotRow j).1
-    set ρ := (gemPivotStage A partialPivotRow j).2⁻¹ * (gemPivotStage A partialPivotRow N).2
-    have hden : gemStage ((gemPivotStage A partialPivotRow N).2.permMatrix 𝕜 * A) j j j =
-        M (partialPivotRow M j) j :=
-      gemStage_permMatrix_mul_apply_self A partialPivotRow hpiv j.2
-    have hnum : gemStage ((gemPivotStage A partialPivotRow N).2.permMatrix 𝕜 * A) j i j =
-        M (ρ i) j := by
-      rw [gemStage_permMatrix_mul_eq_submatrix_gemPivotStage A partialPivotRow hpiv j,
-        submatrix_apply]
+  · set M := (gemPivotStage A piv j).1
+    set ρ := (gemPivotStage A piv j).2⁻¹ * (gemPivotStage A piv N).2
+    have hden : gemStage ((gemPivotStage A piv N).2.permMatrix 𝕜 * A) j j j = M (piv M j) j :=
+      gemStage_permMatrix_mul_apply_self A piv hle j.2
+    have hnum : gemStage ((gemPivotStage A piv N).2.permMatrix 𝕜 * A) j i j = M (ρ i) j := by
+      rw [gemStage_permMatrix_mul_eq_submatrix_gemPivotStage A piv hle j, submatrix_apply]
       rfl
     rw [norm_div, hnum, hden]
-    rcases eq_or_ne (M (partialPivotRow M j) j) 0 with h0 | h0
+    rcases eq_or_ne (M (piv M j) j) 0 with h0 | h0
     · rw [h0, norm_zero, div_zero]
       exact zero_le_one
     · rw [div_le_one (norm_pos_iff.2 h0)]
-      exact norm_apply_le_partialPivotRow M j (Fin.le_def.2
-        (le_gemPivotStage_snd_inv_mul_apply A partialPivotRow hpiv j.2.le (Fin.le_def.1 hij.le)))
+      exact (hpiv M j).2 _ (Fin.le_def.2
+        (le_gemPivotStage_snd_inv_mul_apply A piv hle j.2.le (Fin.le_def.1 hij.le)))
   · simp
   · simp
+
+/-- The multipliers of `Matrix.partialPivotRow` are bounded by one
+(`Matrix.gemPivotStage_norm_gemLower_le_one`). -/
+theorem gemPivotStage_partialPivotRow_norm_gemLower_le_one {𝕜 : Type*} [NormedField 𝕜]
+    (A : Matrix (Fin N) (Fin N) 𝕜) (i j : Fin N) :
+    ‖gemLower ((gemPivotStage A partialPivotRow N).2.permMatrix 𝕜 * A) i j‖ ≤ 1 :=
+  gemPivotStage_norm_gemLower_le_one isPartialPivot_partialPivotRow A i j
 
 end Stages
 
@@ -778,24 +789,32 @@ theorem isLU_gemLower_gemStage'
 
 /-- **Gaussian elimination with partial pivoting always factors** ([golub2013matrix] §3.4.3,
 "Algorithm 3.4.1 always runs to completion. If `A(k:n,k) = 0` in step `k`, then `M_k = I_n`";
-[quarteroni2000numerical] §3.5): for every square matrix over a normed field,
-`P A = L U` with `P` the accumulated interchanges of `gemPivotStage A partialPivotRow`, `U` its last
-stage and `L` the multipliers of elimination without pivoting on `P A` —
-`Matrix.gemPivotStage_permMatrix_mul_isLU` with no hypothesis on the pivots: a zero pivot of
-partial pivoting comes with a zero column. -/
+[quarteroni2000numerical] §3.5): for every square matrix over a normed field and every
+partial-pivoting strategy `piv`, `P A = L U` with `P` the accumulated interchanges of
+`gemPivotStage A piv`, `U` its last stage and `L` the multipliers of elimination without pivoting
+on `P A` — `Matrix.gemPivotStage_permMatrix_mul_isLU` with no hypothesis on the pivots: a zero
+pivot of partial pivoting comes with a zero column (`Matrix.IsPartialPivot.apply_eq_zero`). The
+counterpart of the rook form `Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU`. -/
+theorem gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot {𝕜 : Type*} [NormedField 𝕜]
+    {piv : Matrix (Fin N) (Fin N) 𝕜 → Fin N → Fin N} (hpiv : IsPartialPivot piv)
+    (A : Matrix (Fin N) (Fin N) 𝕜) :
+    IsLU ((gemPivotStage A piv N).2.permMatrix 𝕜 * A)
+      (gemLower ((gemPivotStage A piv N).2.permMatrix 𝕜 * A)) (gemPivotStage A piv N).1 := by
+  have hle : ∀ (M : Matrix (Fin N) (Fin N) 𝕜) k, k ≤ piv M k := fun M k => (hpiv M k).1
+  rw [← gemStage_permMatrix_mul_card A piv hle]
+  refine isLU_gemLower_gemStage' _ fun m hm i hi h0 => ?_
+  rw [gemStage_permMatrix_mul_apply_self A piv hle hm] at h0
+  rw [gemStage_permMatrix_mul_eq_submatrix_gemPivotStage A piv hle m, submatrix_apply]
+  exact hpiv.apply_eq_zero h0 (Fin.le_def.2
+    (le_gemPivotStage_snd_inv_mul_apply A piv hle hm.le hi.le))
+
+/-- `Matrix.gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot` for `Matrix.partialPivotRow`. -/
 theorem gemPivotStage_partialPivotRow_permMatrix_mul_isLU {𝕜 : Type*} [NormedField 𝕜]
     (A : Matrix (Fin N) (Fin N) 𝕜) :
     IsLU ((gemPivotStage A partialPivotRow N).2.permMatrix 𝕜 * A)
       (gemLower ((gemPivotStage A partialPivotRow N).2.permMatrix 𝕜 * A))
-      (gemPivotStage A partialPivotRow N).1 := by
-  have hpiv : ∀ (M : Matrix (Fin N) (Fin N) 𝕜) k, k ≤ partialPivotRow M k := fun M k =>
-    le_partialPivotRow M k
-  rw [← gemStage_permMatrix_mul_card A partialPivotRow hpiv]
-  refine isLU_gemLower_gemStage' _ fun m hm i hi h0 => ?_
-  rw [gemStage_permMatrix_mul_apply_self A partialPivotRow hpiv hm] at h0
-  rw [gemStage_permMatrix_mul_eq_submatrix_gemPivotStage A partialPivotRow hpiv m, submatrix_apply]
-  exact apply_eq_zero_of_partialPivotRow_eq_zero _ _ h0 (Fin.le_def.2
-    (le_gemPivotStage_snd_inv_mul_apply A partialPivotRow hpiv hm.le hi.le))
+      (gemPivotStage A partialPivotRow N).1 :=
+  gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot isPartialPivot_partialPivotRow A
 
 end ZeroPivot
 
@@ -1108,34 +1127,34 @@ theorem det_eq_zero_of_apply_eq_zero_of_lt {n : Type*} [LinearOrder n] [Fintype 
 variable {N : ℕ} {𝕜 : Type*} [NormedField 𝕜]
 
 /-- **A nonsingular matrix has nonzero pivots under partial pivoting**: if `A` is a unit, the
-pivot chosen at every stage of `gemPivotStage A partialPivotRow` is nonzero. Otherwise the
-pivot column of some stage vanishes from the diagonal downwards, so the corresponding stage of
-Gaussian elimination on `P A` is singular (`Matrix.det_eq_zero_of_apply_eq_zero_of_lt`), while
-every stage has the determinant of `P A = ± det A`. -/
-theorem gemPivotStage_partialPivotRow_pivot_ne_zero_of_isUnit (A : Matrix (Fin N) (Fin N) 𝕜)
+pivot chosen at every stage of `gemPivotStage A piv` is nonzero, for any partial-pivoting strategy
+`piv`. Otherwise the pivot column of some stage vanishes from the diagonal downwards, so the
+corresponding stage of Gaussian elimination on `P A` is singular
+(`Matrix.det_eq_zero_of_apply_eq_zero_of_lt`), while every stage has the determinant of
+`P A = ± det A`. -/
+theorem gemPivotStage_pivot_ne_zero_of_isUnit {piv : Matrix (Fin N) (Fin N) 𝕜 → Fin N → Fin N}
+    (hpiv' : IsPartialPivot piv) (A : Matrix (Fin N) (Fin N) 𝕜)
     (hA : IsUnit A) (k : ℕ) (hk : k < N) :
-    (gemPivotStage A partialPivotRow k).1
-      (partialPivotRow (gemPivotStage A partialPivotRow k).1 ⟨k, hk⟩) ⟨k, hk⟩ ≠ 0 := by
-  have hpiv : ∀ (M : Matrix (Fin N) (Fin N) 𝕜) k, k ≤ partialPivotRow M k := fun M k =>
-    le_partialPivotRow M k
-  set B := (gemPivotStage A partialPivotRow N).2.permMatrix 𝕜 * A with hB
+    (gemPivotStage A piv k).1 (piv (gemPivotStage A piv k).1 ⟨k, hk⟩) ⟨k, hk⟩ ≠ 0 := by
+  have hpiv : ∀ (M : Matrix (Fin N) (Fin N) 𝕜) k, k ≤ piv M k := fun M k => (hpiv' M k).1
+  set B := (gemPivotStage A piv N).2.permMatrix 𝕜 * A with hB
   have hdetB : B.det ≠ 0 := by
     rw [hB, det_mul, det_permutation]
     refine mul_ne_zero ?_ (isUnit_iff_ne_zero.1 ((isUnit_iff_isUnit_det A).1 hA))
-    rcases Int.units_eq_one_or (Equiv.Perm.sign (gemPivotStage A partialPivotRow N).2)
+    rcases Int.units_eq_one_or (Equiv.Perm.sign (gemPivotStage A piv N).2)
       with h | h <;> simp [h]
   induction k using Nat.strong_induction_on with
   | _ k ih =>
   intro h0
   have hprev : ∀ m (hm : m < N), m < k → m + 1 < N → gemStage B m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0 :=
     fun m hm hmk _ => by
-      rw [hB, gemStage_permMatrix_mul_apply_self A partialPivotRow hpiv hm]
+      rw [hB, gemStage_permMatrix_mul_apply_self A piv hpiv hm]
       exact ih m hmk hm
   have hz : ∀ i : Fin N, k ≤ (i : ℕ) → gemStage B k i ⟨k, hk⟩ = 0 := fun i hi => by
-    rw [hB, gemStage_permMatrix_mul_eq_submatrix_gemPivotStage A partialPivotRow hpiv k,
+    rw [hB, gemStage_permMatrix_mul_eq_submatrix_gemPivotStage A piv hpiv k,
       submatrix_apply]
-    exact apply_eq_zero_of_partialPivotRow_eq_zero _ _ h0 (Fin.le_def.2
-      (le_gemPivotStage_snd_inv_mul_apply A partialPivotRow hpiv hk.le hi))
+    exact hpiv'.apply_eq_zero h0 (Fin.le_def.2
+      (le_gemPivotStage_snd_inv_mul_apply A piv hpiv hk.le hi))
   have hdet : (gemStage B k).det = 0 :=
     det_eq_zero_of_apply_eq_zero_of_lt _ ⟨k, hk⟩
       (fun i j hj hji => gemStage_apply_eq_zero_of_lt B hprev (Fin.lt_def.1 hj) hji)
@@ -1144,6 +1163,13 @@ theorem gemPivotStage_partialPivotRow_pivot_ne_zero_of_isUnit (A : Matrix (Fin N
   rw [← this, det_mul, (isUnitLowerTriangular_gemLowerStage B k).det_eq_one, one_mul, hdet]
     at hdetB
   exact hdetB rfl
+
+/-- `Matrix.gemPivotStage_pivot_ne_zero_of_isUnit` for `Matrix.partialPivotRow`. -/
+theorem gemPivotStage_partialPivotRow_pivot_ne_zero_of_isUnit (A : Matrix (Fin N) (Fin N) 𝕜)
+    (hA : IsUnit A) (k : ℕ) (hk : k < N) :
+    (gemPivotStage A partialPivotRow k).1
+      (partialPivotRow (gemPivotStage A partialPivotRow k).1 ⟨k, hk⟩) ⟨k, hk⟩ ≠ 0 :=
+  gemPivotStage_pivot_ne_zero_of_isUnit isPartialPivot_partialPivotRow A hA k hk
 
 /-- **The factors of `P A = L U` are those of Gaussian elimination without pivoting applied to
 `P A`** ([quarteroni2000numerical] §3.5, the sentence before Program 9): if `P A = L U` and the
@@ -1331,26 +1357,20 @@ theorem exists_permMatrix_mul_isRectLU {m r : ℕ} (W : Matrix (Fin m) (Fin r) �
       IsRectLU (σ.permMatrix 𝕜 * W) L U ∧ ∀ i j, ‖L i j‖ ≤ 1 := by
   obtain ⟨σ, L, U, h, hL⟩ := exists_permMatrix_mul_isLU
     (of fun i (j : Fin m) => if hj : (j : ℕ) < r then W i ⟨j, hj⟩ else 0)
-  refine ⟨σ, of fun i j => L i ⟨j, by omega⟩, of fun i j => U ⟨i, by omega⟩ ⟨j, by omega⟩,
-    ⟨fun i j hij => ?_, fun i j hij => ?_, fun i j hij => ?_, ?_⟩, fun i j => hL _ _⟩
+  refine ⟨σ, _, _, isRectLU_submatrix_of_mul_eq h.mul_eq le_rfl hrm hrm (fun i j => ?_)
+    (fun i j hij => ?_) (fun i j hij => ?_) (fun i j hij => ?_) (fun i j s hs => ?_),
+    fun i j => hL _ _⟩
+  · rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul, PEquiv.toMatrix_toPEquiv_mul]
+    simp only [submatrix_apply, id, of_apply, Fin.val_castLE, Fin.is_lt, ↓reduceDIte]
+    rfl
   · exact h.isUnitLowerTriangular.isLowerTriangular
       (OrderDual.toDual_lt_toDual.2 (Fin.lt_def.2 (by simpa using hij)))
   · change L i ⟨j, _⟩ = 1
     rw [show (⟨j, _⟩ : Fin m) = i from Fin.ext hij.symm]
     exact h.isUnitLowerTriangular.diag_eq_one i
   · exact h.isUpperTriangular (Fin.lt_def.2 (by simpa using hij))
-  · ext i j
-    have := congrFun (congrFun h.mul_eq i) ⟨j, by omega⟩
-    rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul, submatrix_apply, id, of_apply,
-      dite_eq_left_of_eq_true (eq_true j.2)] at this
-    rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul, submatrix_apply, id, ← this]
-    simp only [mul_apply, of_apply]
-    refine Fintype.sum_of_injective (fun s : Fin r => (⟨s, by omega⟩ : Fin m))
-      (fun s t hst => Fin.ext (Fin.mk.inj_iff.1 hst)) _ _ (fun s hs => ?_) (fun s => rfl)
-    have hsr : r ≤ (s : ℕ) := by
-      by_contra hcon
-      exact hs ⟨⟨s, by omega⟩, rfl⟩
-    rw [h.isUpperTriangular (Fin.lt_def.2 (by change (j : ℕ) < (s : ℕ); omega)), mul_zero]
+  · exact mul_eq_zero_of_right _ (h.isUpperTriangular (show Fin.castLE hrm j < s from
+      Fin.lt_def.2 (show (j : ℕ) < (s : ℕ) by omega)))
 
 end RookStages
 

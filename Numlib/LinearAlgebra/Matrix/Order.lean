@@ -283,8 +283,9 @@ section CommRing
 variable [CommRing α] [LinearOrder α] [IsStrictOrderedRing α] {p q : Type*} [Fintype p]
 
 /-- **The error of a product of perturbed factors**: if `|X| ≤ P`, `|ΔX| ≤ a P`, `|Y| ≤ Q` and
-`|ΔY| ≤ b Q` entrywise, `a, b ≥ 0`, then `|(X + ΔX) (Y + ΔY) - X Y| ≤ ((1 + a) (1 + b) - 1) P Q`,
-from `(X + ΔX) (Y + ΔY) - X Y = X ΔY + ΔX Y + ΔX ΔY`. -/
+`|ΔY| ≤ b Q` entrywise, with `a ≥ 0` (no sign is needed on `b`), then
+`|(X + ΔX) (Y + ΔY) - X Y| ≤ ((1 + a) (1 + b) - 1) P Q`, from
+`(X + ΔX) (Y + ΔY) - X Y = X ΔY + ΔX Y + ΔX ΔY`. -/
 theorem abs_add_mul_add_sub_mul_entrywiseLE {X ΔX P : Matrix l p α} {Y ΔY Q : Matrix p q α}
     {a b : α} (ha : 0 ≤ a) (hX : X.abs ≤ₑ P) (hΔX : ΔX.abs ≤ₑ a • P) (hY : Y.abs ≤ₑ Q)
     (hΔY : ΔY.abs ≤ₑ b • Q) :

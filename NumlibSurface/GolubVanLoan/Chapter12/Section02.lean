@@ -564,13 +564,13 @@ theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u 
       exact hut ((mul_eq_zero.1 hcs2).resolve_left hc)
     rw [hstep]
     refine ⟨by omega, ?_, ?_, mul_ne_zero (neg_ne_zero.2 hs0) hft, fun k hk hk' => ?_⟩
-    · rw [show N - (a : ℕ) = (N - ((a : ℕ) + 1)) + 1 by omega, Matrix.prodFwd_succ',
+    · rw [show N - (a : ℕ) = (N - ((a : ℕ) + 1)) + 1 by omega, prodFwd_succ',
         Matrix.mul_assoc]
       have htail : prodFwd (fun k => givensFactor N (rotBlock (Function.update st.c a cs.1)
           (Function.update st.s a (-cs.2))) ((a : ℕ) + (k + 1))) (N - ((a : ℕ) + 1)) =
           prodFwd (fun k => givensFactor N (rotBlock st.c st.s) ((a : ℕ) + 1 + k))
             (N - ((a : ℕ) + 1)) := by
-        refine Matrix.prodFwd_congr fun k _ => ?_
+        refine prodFwd_congr fun k _ => ?_
         rw [show (a : ℕ) + (k + 1) = (a : ℕ) + 1 + k by omega]
         refine givensFactor_congr ?_
         have hne : (a : ℕ) + 1 + k ≠ (a : ℕ) := by omega
@@ -613,7 +613,8 @@ theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u 
   rw [hrun]
   generalize (List.finRange N).reverse.foldl
     (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k)) st₀ = st at hprod hcs ⊢
-  refine ⟨prodFwd_mem_orthogonalGroup (fun k => ?_) N, ?_, fun k hk => (hcs k (Nat.zero_le _) hk).2⟩
+  refine ⟨prodFwd_mem_orthogonalGroup (r := N) (fun k _ => ?_), ?_,
+    fun k hk => (hcs k (Nat.zero_le _) hk).2⟩
   · by_cases hk : k < N
     · rw [givensFactor, dite_eq_left_of_eq_true (eq_true hk)]
       have h := planeRotation_mem_orthogonalGroup (j := (⟨k, by omega⟩ : Fin (N + 1)))

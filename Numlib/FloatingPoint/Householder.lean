@@ -1055,7 +1055,8 @@ theorem exists_eq_prodRev_mulVec_add {P : ℕ → Matrix ι ι ℝ}
   | zero => exact ⟨0, by simp, by simp⟩
   | succ r ih =>
     obtain ⟨dx, hxr, hdx⟩ := ih fun k hk => hx k (by omega)
-    obtain ⟨dx', h1, h2⟩ := exists_eq_mulVec_add_of_step (hP r) (prodRev_mem_orthogonalGroup hP r)
+    obtain ⟨dx', h1, h2⟩ := exists_eq_mulVec_add_of_step (hP r)
+      (prodRev_mem_orthogonalGroup (r := r) fun k _ => hP k)
       hε hxr hdx (hx r (Nat.lt_succ_self r))
     exact ⟨dx', by rw [prodRev_succ]; exact h1, h2⟩
 
@@ -1078,7 +1079,7 @@ theorem exists_eq_mulVec_add_of_forall_step {x : ℕ → ι → ℝ} {ε : ℝ} 
     · exact ⟨1, one_mem _, fun h => absurd h hk⟩
   choose P hP hb using h'
   obtain ⟨dx, hdx, hdxn⟩ := exists_eq_prodRev_mulVec_add hP hε r hb
-  exact ⟨prodRev P r, prodRev_mem_orthogonalGroup hP r, dx, hdx, hdxn⟩
+  exact ⟨prodRev P r, prodRev_mem_orthogonalGroup (r := r) fun k _ => hP k, dx, hdx, hdxn⟩
 
 /-- **[higham2002accuracy] Lemma 19.3, vector form with the constant `r γ̃`**: under
 `r ε < 1`, `‖Δx‖₂ ≤ (r ε / (1 - r ε)) ‖x_0‖₂`. -/
@@ -1178,7 +1179,7 @@ theorem exists_eq_mul_add_of_forall_step {A : ℕ → Matrix ι κ ℝ} {ε : �
     · exact ⟨1, one_mem _, fun h => absurd h hk⟩
   choose P hP hb using h'
   obtain ⟨ΔA, hΔ, hΔn⟩ := exists_eq_prodRev_mul_add hP hε r hb
-  exact ⟨prodRev P r, prodRev_mem_orthogonalGroup hP r, ΔA, hΔ, hΔn⟩
+  exact ⟨prodRev P r, prodRev_mem_orthogonalGroup (r := r) fun k _ => hP k, ΔA, hΔ, hΔn⟩
 
 
 /-- Orthogonal equivalence preserves the Frobenius norm. -/
@@ -1215,8 +1216,8 @@ theorem exists_eq_prodRev_mul_add_mul_prodFwd_rect {L : ℕ → Matrix ι ι ℝ
   | zero => exact ⟨0, by simp, by simp⟩
   | succ r ih =>
     obtain ⟨E, hAr, hE⟩ := ih fun k hk => hA k (by omega)
-    have hLr := prodRev_mem_orthogonalGroup hL (r + 1)
-    have hRr := prodFwd_mem_orthogonalGroup hR (r + 1)
+    have hLr := prodRev_mem_orthogonalGroup (r := r + 1) fun k _ => hL k
+    have hRr := prodFwd_mem_orthogonalGroup (r := r + 1) fun k _ => hR k
     set F := A (r + 1) - L r * A r * R r with hF
     have hA0 : 0 ≤ ‖A 0‖ := norm_nonneg _
     have hpow : 0 ≤ (1 + ε) ^ r := by positivity
@@ -1241,8 +1242,9 @@ theorem exists_eq_prodRev_mul_add_mul_prodFwd_rect {L : ℕ → Matrix ι ι ℝ
           (transpose_mem_unitaryGroup_iff.2 hRr)]
         exact hA r (Nat.lt_succ_self r)
       have h2 : ‖A r‖ ≤ (1 + ε) ^ r * ‖A 0‖ := by
-        rw [hAr, frobenius_norm_orthogonal_mul_mul_orthogonal (prodRev_mem_orthogonalGroup hL r)
-          _ (prodFwd_mem_orthogonalGroup hR r)]
+        rw [hAr, frobenius_norm_orthogonal_mul_mul_orthogonal
+          (prodRev_mem_orthogonalGroup (r := r) fun k _ => hL k)
+          _ (prodFwd_mem_orthogonalGroup (r := r) fun k _ => hR k)]
         refine (norm_add_le _ _).trans ?_
         linarith
       refine (norm_add_le _ _).trans ?_
@@ -1298,7 +1300,7 @@ theorem exists_eq_transpose_mul_add_mul_of_forall_step {A : ℕ → Matrix ι ι
     · exact ⟨1, one_mem _, by simp, fun h => absurd h hk⟩
   choose P hP hPs hb using h'
   obtain ⟨E, hE, hEn⟩ := exists_eq_transpose_mul_add_mul_prodFwd hP hPs hε r hb
-  exact ⟨prodFwd P r, prodFwd_mem_orthogonalGroup hP r, E, hE, hEn⟩
+  exact ⟨prodFwd P r, prodFwd_mem_orthogonalGroup (r := r) fun k _ => hP k, E, hE, hEn⟩
 
 /-- **A two-sided step from its two sweeps**: if `P` is orthogonal, every column of `C` is within
 `ε` (relative, Euclidean) of the column of `P A`, and every row of `B` within `ε` of the row of
