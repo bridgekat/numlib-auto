@@ -5,6 +5,8 @@ Natural home: `Mathlib.Analysis.Fourier.ZMod`, beside the discrete Fourier trans
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Numlib.Analysis.Fourier.DFT
+import Numlib.Analysis.SpecialFunctions.Trigonometric.CosSum
+import Numlib.Data.Matrix.Mul
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 
 /-!
@@ -506,22 +508,6 @@ theorem isUnit_dct1 (hm : 0 < m) : IsUnit (dct1 m) := by
   refine isUnit_det_of_right_inverse (B := ((m : ℝ) / 2)⁻¹ • dct1 m) ?_
   rw [Matrix.mul_smul, dct1_mul_self hm, smul_smul, inv_mul_cancel₀ hm', one_smul]
 
-/-- `∑_{k<M} cos ((k + 1) φ)` telescoped: `2 sin (φ / 2) ∑_{k<M} cos ((k + 1) φ) =
-sin ((2 M + 1) φ / 2) − sin (φ / 2)`. -/
-private theorem two_sin_half_mul_sum_cos (φ : ℝ) (M : ℕ) :
-    2 * Real.sin (φ / 2) * ∑ k ∈ range M, Real.cos (((k : ℝ) + 1) * φ)
-      = Real.sin ((2 * (M : ℝ) + 1) * (φ / 2)) - Real.sin (φ / 2) := by
-  induction M with
-  | zero => simp
-  | succ M ih =>
-    rw [Finset.sum_range_succ, mul_add, ih]
-    have h1 : (2 * ((M + 1 : ℕ) : ℝ) + 1) * (φ / 2) = ((M : ℝ) + 1) * φ + φ / 2 := by
-      push_cast
-      ring
-    have h2 : (2 * (M : ℝ) + 1) * (φ / 2) = ((M : ℝ) + 1) * φ - φ / 2 := by ring
-    rw [h1, h2, Real.sin_add, Real.sin_sub]
-    ring
-
 /-- `∑_{k<n} cos ((k + 1) a π / n) = ((−1)^a − 1) / 2` for `0 < a < 2 n`. -/
 private theorem sum_cos_succ_mul_nat {a : ℕ} (ha0 : 0 < a) (ha : a < 2 * n) :
     ∑ k ∈ range n, Real.cos (((k : ℝ) + 1) * ((a : ℝ) * π / n)) = ((-1) ^ a - 1) / 2 := by
@@ -532,7 +518,7 @@ private theorem sum_cos_succ_mul_nat {a : ℕ} (ha0 : 0 < a) (ha : a < 2 * n) :
     refine (Real.sin_pos_of_pos_of_lt_pi (by positivity) ?_).ne'
     rw [div_div, div_lt_iff₀ (by positivity)]
     nlinarith [Real.pi_pos]
-  have h := two_sin_half_mul_sum_cos ((a : ℝ) * π / n) n
+  have h := Real.two_mul_sin_half_mul_sum_range_cos ((a : ℝ) * π / n) n
   rw [show (2 * (n : ℝ) + 1) * ((a : ℝ) * π / n / 2) = (a : ℝ) * π + (a : ℝ) * π / n / 2 by
     field_simp, Real.sin_add, Real.sin_nat_mul_pi, Real.cos_nat_mul_pi] at h
   apply mul_left_cancel₀ (mul_ne_zero two_ne_zero hs)
@@ -664,13 +650,10 @@ theorem dct2_mul_cornerTridiagonal_one_one_mul_inv (n : ℕ) :
       = diagonal fun k : Fin n => 2 * Real.cos ((k : ℕ) * π / n) := by
   have hrow : dct2 n * cornerTridiagonal n 1 1
       = (diagonal fun k : Fin n => 2 * Real.cos ((k : ℕ) * π / n)) * dct2 n := by
-    ext k l
-    rw [diagonal_mul, mul_apply, dct2_apply]
-    have h := congrFun (cornerTridiagonal_one_one_mulVec_cosineIIVec k) l
-    rw [Pi.smul_apply, smul_eq_mul, mulVec, dotProduct] at h
-    rw [← h]
-    refine Finset.sum_congr rfl fun j _ => ?_
-    rw [dct2_apply, mul_comm, (cornerTridiagonal_isSymm n 1 1).apply l j]
+    refine (diagonal_mul_eq_mul_of_forall_vecMul_row fun k => ?_).symm
+    rw [show (dct2 n).row k = cosineIIVec n k from funext (dct2_apply k),
+      ← (cornerTridiagonal_isSymm n 1 1).eq, vecMul_transpose]
+    exact cornerTridiagonal_one_one_mulVec_cosineIIVec k
   rw [hrow, Matrix.mul_assoc,
     mul_nonsing_inv (dct2 n) ((isUnit_iff_isUnit_det _).mp (isUnit_dct2 n)), Matrix.mul_one]
 
@@ -698,12 +681,8 @@ theorem secondDifferenceDN_mulVec_dst2_col (hn : 2 ≤ n) (j : Fin n) :
 `𝒯^{(DN)}_n DST2(n) = DST2(n) diag (4 sin² ((2 j + 1) π / (4 n)))`. -/
 theorem secondDifferenceDN_mul_dst2 (hn : 2 ≤ n) :
     secondDifferenceDN n * dst2 n
-      = dst2 n * diagonal fun j : Fin n => 4 * Real.sin ((2 * (j : ℕ) + 1) * π / (4 * n)) ^ 2 := by
-  ext k j
-  rw [mul_diagonal, mul_apply, mul_comm]
-  have h := congrFun (secondDifferenceDN_mulVec_dst2_col hn j) k
-  rw [Pi.smul_apply, smul_eq_mul, mulVec, dotProduct] at h
-  exact h
+      = dst2 n * diagonal fun j : Fin n => 4 * Real.sin ((2 * (j : ℕ) + 1) * π / (4 * n)) ^ 2 :=
+  mul_eq_mul_diagonal_of_forall_mulVec_col (secondDifferenceDN_mulVec_dst2_col hn)
 
 /-- **The Dirichlet–Neumann second difference, diagonalized** ([golub2013matrix] §4.8.6):
 `DST2(n)⁻¹ 𝒯^{(DN)}_n DST2(n) = diag (4 sin² ((2 j + 1) π / (4 n)))`. -/
@@ -717,7 +696,7 @@ theorem inv_dst2_mul_secondDifferenceDN_mul_dst2 (hn : 2 ≤ n) :
 vector at `θ_j = j π / m` is an eigenvector of `𝒯^{(NN)}_{m+1}` with eigenvalue
 `4 sin² (j π / (2 m))`; the residual `cos ((m + 1) θ_j) − cos ((m − 1) θ_j) =
 −2 sin (m θ_j) sin θ_j` of (4.8.19) vanishes because `m θ_j = j π`. -/
-theorem secondDifferenceNN_mulVec_dct1_col (hm : 0 < m) (j : Fin (m + 1)) :
+theorem secondDifferenceNN_mulVec_cosAngleVec_mul_pi_div (hm : 0 < m) (j : Fin (m + 1)) :
     secondDifferenceNN (m + 1) *ᵥ cosAngleVec (m + 1) ((j : ℕ) * π / m)
       = (4 * Real.sin ((j : ℕ) * π / (2 * m)) ^ 2) • cosAngleVec (m + 1) ((j : ℕ) * π / m) := by
   have hm' : (m : ℝ) ≠ 0 := by positivity
@@ -732,6 +711,9 @@ theorem secondDifferenceNN_mulVec_dct1_col (hm : 0 < m) (j : Fin (m + 1)) :
     ring
   rw [secondDifferenceNN_mulVec_cosAngleVec (by omega), hres, zero_smul, add_zero,
     show θ / 2 = (j : ℕ) * π / (2 * m) by rw [hθ]; field_simp]
+
+@[deprecated (since := "2026-09-30")]
+alias secondDifferenceNN_mulVec_dct1_col := secondDifferenceNN_mulVec_cosAngleVec_mul_pi_div
 
 /-- The columns of `DCT(m + 1) · diag (2, 1, …, 1, 2)` (the book's `V^{(NN)}_{m+1}`) are the cosine
 vectors at `θ_j = j π / m`. -/
@@ -750,11 +732,10 @@ theorem secondDifferenceNN_mul_dct1_mul_diagonal (hm : 0 < m) :
         * (dct1 m * diagonal fun j : Fin (m + 1) => if (j : ℕ) = 0 ∨ (j : ℕ) = m then 2 else 1)
       = (dct1 m * diagonal fun j : Fin (m + 1) => if (j : ℕ) = 0 ∨ (j : ℕ) = m then 2 else 1)
         * diagonal fun j : Fin (m + 1) => 4 * Real.sin ((j : ℕ) * π / (2 * m)) ^ 2 := by
-  ext k j
-  rw [mul_diagonal, mul_apply, dct1_mul_diagonal_apply, mul_comm]
-  have h := congrFun (secondDifferenceNN_mulVec_dct1_col hm j) k
-  rw [Pi.smul_apply, smul_eq_mul, mulVec, dotProduct] at h
-  rw [← h]
-  exact Finset.sum_congr rfl fun i _ => by rw [dct1_mul_diagonal_apply]
+  refine mul_eq_mul_diagonal_of_forall_mulVec_col fun j => ?_
+  rw [show (dct1 m * diagonal fun j : Fin (m + 1) => if (j : ℕ) = 0 ∨ (j : ℕ) = m then (2 : ℝ)
+      else 1).col j = cosAngleVec (m + 1) ((j : ℕ) * π / m) from
+    funext fun k => dct1_mul_diagonal_apply k j]
+  exact secondDifferenceNN_mulVec_cosAngleVec_mul_pi_div hm j
 
 end Matrix

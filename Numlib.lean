@@ -196,6 +196,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.InnerProductSpace.Projection.OrthonormalBasis
 import Numlib.Analysis.InnerProductSpace.SingularValues
+import Numlib.Analysis.InnerProductSpace.Spectrum
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.Analysis.Matrix.Function.Approximation
 import Numlib.Analysis.Matrix.Function.Basic
@@ -338,6 +339,7 @@ import Numlib.Analysis.SpecialFunctions.Log
 import Numlib.Analysis.SpecialFunctions.Pow.Deriv
 import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Analysis.SpecialFunctions.Tribonacci
+import Numlib.Analysis.SpecialFunctions.Trigonometric.CosSum
 import Numlib.Analysis.Wavelet.ContinuousTransform
 import Numlib.Analysis.Wavelet.Daubechies
 import Numlib.Analysis.Wavelet.Haar

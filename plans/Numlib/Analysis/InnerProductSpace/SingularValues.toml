@@ -60,6 +60,3 @@ id = "LinearMap.norm_apply_eigenvectorBasis_adjoint_comp_self"
 
 [[node]]
 id = "LinearMap.singularValues_of_finrank_codomain_le"
-
-[[node]]
-id = "LinearMap.IsSymmetric.eigenvalues_eq_of_antitone"

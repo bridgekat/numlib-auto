@@ -16,10 +16,13 @@ Three ways of cutting `Fin` into a head and a tail, each the form some matrix ar
 * `finSumFinEquiv_symm_cases`: an index of `Fin (s + m)` comes from the left summand of
   `Fin s ⊕ Fin m` when it is below `s`, and from the right one, shifted by `s`, otherwise — the case
   split behind every computation with `fromBlocks` reindexed along `finSumFinEquiv`.
-* `Matrix.sum_fin_eq_sum_castLE_add_sum_Ioi`: a sum over `Fin k` is the sum over the leading
+* `Fin.sum_eq_sum_castLE_add_sum_Ioi`: a sum over `Fin k` is the sum over the leading
   `j + 1` indices, read through `Fin.castLE`, plus the sum over the indices after `j`.
 * `Fin.sum_castLE_eq_sum_ite`: a sum over `Fin k` read through `Fin.castLE` into `Fin a` is the sum
   over `Fin a` of the terms below `k`.
+
+The two sum lemmas are the additive forms of `Fin.prod_eq_prod_castLE_mul_prod_Ioi` and
+`Fin.prod_castLE_eq_prod_ite`.
 -/
 
 open Finset
@@ -37,39 +40,46 @@ theorem finSumFinEquiv_symm_cases {s m : ℕ} (i : Fin (s + m)) :
     rw [finSumFinEquiv_apply_right]
     exact Fin.ext (by simp; omega)
 
-/-- Splitting a sum over `Fin k` at `j`: the leading `j + 1` indices, read through `Fin.castLE`,
-and the indices after `j`. -/
-theorem Matrix.sum_fin_eq_sum_castLE_add_sum_Ioi {M : Type*} [AddCommMonoid M] {k : ℕ}
+/-- Splitting a product over `Fin k` at `j`: the leading `j + 1` indices, read through
+`Fin.castLE`, and the indices after `j`. -/
+@[to_additive /-- Splitting a sum over `Fin k` at `j`: the leading `j + 1` indices, read through
+`Fin.castLE`, and the indices after `j`. -/]
+theorem Fin.prod_eq_prod_castLE_mul_prod_Ioi {M : Type*} [CommMonoid M] {k : ℕ}
     (j : Fin k) (g : Fin k → M) :
-    ∑ i, g i = ∑ a : Fin (j + 1), g (Fin.castLE j.isLt a) + ∑ i ∈ Ioi j, g i := by
-  rw [← sum_filter_add_sum_filter_not univ (· ≤ j)]
+    ∏ i, g i = (∏ a : Fin (j + 1), g (Fin.castLE j.isLt a)) * ∏ i ∈ Ioi j, g i := by
+  rw [← prod_filter_mul_prod_filter_not univ (· ≤ j)]
   congr 1
-  · refine (sum_bij (fun a _ => Fin.castLE j.isLt a) (fun a _ => ?_)
+  · refine (prod_bij (fun a _ => Fin.castLE j.isLt a) (fun a _ => ?_)
       (fun a _ b _ hab => Fin.castLE_injective _ hab) (fun i hi => ?_) (fun _ _ => rfl)).symm
     · simp only [mem_filter, mem_univ, true_and, Fin.le_def, Fin.val_castLE]
       have := a.isLt
       omega
     · simp only [mem_filter, mem_univ, true_and, Fin.le_def] at hi
       exact ⟨⟨i, by omega⟩, mem_univ _, Fin.ext (by simp)⟩
-  · refine sum_congr ?_ fun _ _ => rfl
+  · refine prod_congr ?_ fun _ _ => rfl
     ext i
     simp
 
-/-- A sum over `Fin k`, read through `Fin.castLE` into `Fin a` for `k ≤ a`, is the sum over `Fin a`
-of the terms below `k`: the reindexing between `Fin (min m n)` and the indices of a rectangular
-diagonal. -/
-theorem Fin.sum_castLE_eq_sum_ite {M : Type*} [AddCommMonoid M] {k a : ℕ} (hk : k ≤ a)
+@[deprecated (since := "2026-09-30")]
+alias Matrix.sum_fin_eq_sum_castLE_add_sum_Ioi := Fin.sum_eq_sum_castLE_add_sum_Ioi
+
+/-- A product over `Fin k`, read through `Fin.castLE` into `Fin a` for `k ≤ a`, is the product over
+`Fin a` of the terms below `k`. -/
+@[to_additive /-- A sum over `Fin k`, read through `Fin.castLE` into `Fin a` for `k ≤ a`, is the sum
+over `Fin a` of the terms below `k`: the reindexing between `Fin (min m n)` and the indices of a
+rectangular diagonal. -/]
+theorem Fin.prod_castLE_eq_prod_ite {M : Type*} [CommMonoid M] {k a : ℕ} (hk : k ≤ a)
     (g : Fin a → M) :
-    ∑ i : Fin k, g (Fin.castLE hk i) = ∑ i : Fin a, if (i : ℕ) < k then g i else 0 := by
+    ∏ i : Fin k, g (Fin.castLE hk i) = ∏ i : Fin a, if (i : ℕ) < k then g i else 1 := by
   classical
-  set g' : ℕ → M := fun j => if h : j < a then g ⟨j, h⟩ else 0 with hg'
+  set g' : ℕ → M := fun j => if h : j < a then g ⟨j, h⟩ else 1 with hg'
   have h1 : ∀ i : Fin k, g (Fin.castLE hk i) = g' i := fun i => by
     simp [hg', Fin.castLE, lt_of_lt_of_le i.isLt hk]
-  have h2 : ∀ i : Fin a, (if (i : ℕ) < k then g i else 0) = if (i : ℕ) < k then g' i else 0 :=
+  have h2 : ∀ i : Fin a, (if (i : ℕ) < k then g i else 1) = if (i : ℕ) < k then g' i else 1 :=
     fun i => by simp [hg', i.isLt]
   simp_rw [h1, h2]
-  rw [Fin.sum_univ_eq_sum_range (fun i => g' i) k,
-    Fin.sum_univ_eq_sum_range (fun i => if i < k then g' i else 0) a, ← Finset.sum_filter]
+  rw [Fin.prod_univ_eq_prod_range (fun i => g' i) k,
+    Fin.prod_univ_eq_prod_range (fun i => if i < k then g' i else 1) a, ← Finset.prod_filter]
   congr 1
   ext j
   simp only [Finset.mem_range, Finset.mem_filter]

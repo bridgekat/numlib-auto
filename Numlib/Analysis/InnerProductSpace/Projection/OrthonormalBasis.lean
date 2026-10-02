@@ -25,8 +25,10 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-- Parseval's identity in the coordinates of an orthonormal basis:
 `∑ i, ‖b.repr x i‖² = ‖x‖²`. -/
+@[deprecated "use `OrthonormalBasis.sum_sq_norm_inner_right` and `repr_apply_apply`"
+  (since := "2026-09-30")]
 theorem sum_sq_norm_repr (x : E) : ∑ i, ‖b.repr x i‖ ^ 2 = ‖x‖ ^ 2 := by
-  rw [← b.repr.norm_map x, EuclideanSpace.norm_sq_eq]
+  simpa only [b.repr_apply_apply] using b.sum_sq_norm_inner_right x
 
 variable [FiniteDimensional 𝕜 E] (s : Set ι) [DecidablePred (· ∈ s)]
 
@@ -53,18 +55,18 @@ theorem repr_starProjection_span_image (x : E) (j : ι) :
 theorem norm_sq_starProjection_span_image (x : E) :
     ‖(Submodule.span 𝕜 (b '' s)).starProjection x‖ ^ 2 =
       ∑ j, if j ∈ s then ‖b.repr x j‖ ^ 2 else 0 := by
-  rw [← b.sum_sq_norm_repr]
+  rw [← b.sum_sq_norm_inner_right]
   refine Finset.sum_congr rfl fun j _ => ?_
-  rw [repr_starProjection_span_image b s]
+  rw [← b.repr_apply_apply, repr_starProjection_span_image b s]
   split_ifs <;> simp
 
 /-- `‖x - P x‖² = ∑_{j ∉ s} |x_j|²` for the orthogonal projection `P` onto `span (b '' s)`. -/
 theorem norm_sq_sub_starProjection_span_image (x : E) :
     ‖x - (Submodule.span 𝕜 (b '' s)).starProjection x‖ ^ 2 =
       ∑ j, if j ∈ s then 0 else ‖b.repr x j‖ ^ 2 := by
-  rw [← b.sum_sq_norm_repr]
+  rw [← b.sum_sq_norm_inner_right]
   refine Finset.sum_congr rfl fun j _ => ?_
-  rw [map_sub, PiLp.sub_apply, repr_starProjection_span_image b s]
+  rw [← b.repr_apply_apply, map_sub, PiLp.sub_apply, repr_starProjection_span_image b s]
   split_ifs <;> simp
 
 end OrthonormalBasis

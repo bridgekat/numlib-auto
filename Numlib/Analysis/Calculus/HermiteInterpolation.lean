@@ -37,9 +37,10 @@ nontrivially normed field.
 
 ## Implementation notes
 
-Placed at the Golub–Van Loan review out of `Numlib/Approximation/Hermite`: `taylorJet` needs
-`iteratedDeriv`, and the primary functional calculus must not import the numerical `Approximation`
-layer. The real, `Fin`-indexed Hermite interpolation of that module is the instance
+The module sits in `Analysis/Calculus` rather than beside the numerical Hermite interpolation of
+`Numlib/Approximation/Hermite`: `taylorJet` needs `iteratedDeriv`, and the primary functional
+calculus, which consumes it, must not import the numerical `Approximation` layer. The real,
+`Fin`-indexed Hermite interpolation of that module is the instance
 `Hermite.interpolate_eq_interpolateJet`, and its classical divided difference is the instance
 `DividedDifference.newtonOn_eq_divDiff` (`Numlib/Approximation/NewtonForm`).
 -/

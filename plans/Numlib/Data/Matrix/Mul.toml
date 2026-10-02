@@ -1,0 +1,7 @@
+namespace = "Matrix"
+
+[[node]]
+id = "mul_eq_mul_diagonal_of_forall_mulVec_col"
+
+[[node]]
+id = "diagonal_mul_eq_mul_of_forall_vecMul_row"

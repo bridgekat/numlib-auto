@@ -8,6 +8,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.InnerProductSpace.ProdL2
 import Mathlib.Analysis.InnerProductSpace.SingularValues
 import Mathlib.Analysis.InnerProductSpace.Spectrum
+import Numlib.Analysis.InnerProductSpace.Spectrum
 import Numlib.Eigen.MinMax
 
 /-!
@@ -43,8 +44,6 @@ module supplies them ([golub2013matrix] §2.4, §8.6.1–8.6.2).
 * `LinearMap.hermitianDilation`: the **Hermitian dilation** (Jordan–Wielandt operator)
   `(x, y) ↦ (A† y, A x)` on `WithLp 2 (E × F)`, and its sorted spectrum
   `LinearMap.eigenvalues_hermitianDilation`: `σ_0, …, σ_{p-1}, 0, …, 0, -σ_{p-1}, …, -σ_0`.
-* `LinearMap.IsSymmetric.eigenvalues_eq_of_antitone`: the sorted eigenvalues of a symmetric
-  operator are determined by its characteristic polynomial.
 
 ## Implementation notes
 
@@ -73,22 +72,6 @@ open Module
 namespace LinearMap
 
 variable {𝕜 : Type*} [RCLike 𝕜]
-
-/-- **The sorted eigenvalues of a symmetric operator are determined by its characteristic
-polynomial**: if the roots of `T.charpoly` are the values of an antitone `d : Fin n → ℝ`, then
-`hT.eigenvalues hn = d`. This is `LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues` read
-backwards. -/
-theorem IsSymmetric.eigenvalues_eq_of_antitone {E : Type*}
-    [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E] {T : E →ₗ[𝕜] E}
-    (hT : T.IsSymmetric) {n : ℕ} (hn : finrank 𝕜 E = n) {d : Fin n → ℝ} (hd : Antitone d)
-    (hroots : T.charpoly.roots = Multiset.map (RCLike.ofReal ∘ d) Finset.univ.val) :
-    hT.eigenvalues hn = d := by
-  rw [← List.ofFn_inj, ← hT.sort_roots_charpoly_eq_eigenvalues hn, hroots]
-  simp_rw [Fin.univ_val_map, Multiset.map_coe, List.map_ofFn, Function.comp_def, RCLike.ofReal_re,
-    Multiset.coe_sort]
-  apply List.mergeSort_of_pairwise
-  simp_rw [decide_eq_true_eq, ← List.sortedGE_iff_pairwise]
-  exact hd.sortedGE_ofFn
 
 /-- The dimension of the image of a subspace under an injective linear map is the dimension of
 the subspace: the `finrank` form of `Submodule.equivMapOfInjective`. -/

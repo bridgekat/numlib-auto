@@ -4,6 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Topology.Instances.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.RCLike.Lemmas
 import Mathlib.LinearAlgebra.UnitaryGroup
 import Mathlib.Topology.Algebra.Star.Unitary
@@ -35,21 +36,13 @@ theorem isClosed_unitaryGroup :
     IsClosed ((unitaryGroup n 𝕜 : Submonoid _) : Set (Matrix n n 𝕜)) :=
   isClosed_unitary
 
-/-- The entries of a unitary matrix have norm at most `1`: the columns are unit vectors. -/
+/-- The entries of a unitary matrix have norm at most `1`: the columns are unit vectors.
+
+This is Mathlib's `entry_norm_bound_of_unitary`, restated under a name that follows the naming
+convention (`norm_apply_le_one_of_mem_…`); upstreaming it amounts to proposing that rename. -/
 theorem norm_apply_le_one_of_mem_unitaryGroup {U : Matrix n n 𝕜} (hU : U ∈ unitaryGroup n 𝕜)
-    (i j : n) : ‖U i j‖ ≤ 1 := by
-  have h := congrFun (congrFun (mem_unitaryGroup_iff'.1 hU) j) j
-  rw [mul_apply, one_apply_eq] at h
-  simp only [star_apply, RCLike.star_def] at h
-  have hsum : ∑ k, ‖U k j‖ ^ 2 = 1 := by
-    have : ((∑ k, ‖U k j‖ ^ 2 : ℝ) : 𝕜) = 1 := by
-      push_cast
-      rw [← h]
-      exact Finset.sum_congr rfl fun k _ => (RCLike.conj_mul _).symm
-    exact_mod_cast this
-  have hsq : ‖U i j‖ ^ 2 ≤ 1 := hsum ▸
-    Finset.single_le_sum (f := fun k => ‖U k j‖ ^ 2) (fun k _ => sq_nonneg _) (Finset.mem_univ i)
-  nlinarith [norm_nonneg (U i j)]
+    (i j : n) : ‖U i j‖ ≤ 1 :=
+  entry_norm_bound_of_unitary hU i j
 
 /-- **The unitary group is compact**, over `ℝ` or `ℂ`: closed, and contained in the product of
 closed unit balls, one for each entry. `Matrix.isCompact_orthogonalGroup` is its real case. -/

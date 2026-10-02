@@ -5,6 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.Circulant`, with the discrete Fourie
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Numlib.Analysis.Fourier.DFT
+import Numlib.Data.Matrix.Mul
 import Numlib.LinearAlgebra.Matrix.Toeplitz
 
 /-!
@@ -119,17 +120,6 @@ theorem circulant_mulVec_dft_col (z : Fin n → ℂ) (k : Fin n) :
   exact congrArg _ (Complex.conj_conj _)
 
 /-! ### The diagonalization -/
-
-/-- A matrix whose action on each column of `V` is multiplication by `γ k` satisfies
-`A V = V diag (γ)`. -/
-theorem mul_eq_mul_diagonal_of_forall_mulVec_col {R ι : Type*} [CommSemiring R] [Fintype ι]
-    [DecidableEq ι] {A V : Matrix ι ι R} {γ : ι → R}
-    (h : ∀ k, A *ᵥ (fun j => V j k) = γ k • fun j => V j k) : A * V = V * diagonal γ := by
-  ext j k
-  have hk := congrFun (h k) j
-  rw [Pi.smul_apply, smul_eq_mul] at hk
-  rw [mul_diagonal, mul_comm (V j k), ← hk]
-  rfl
 
 /-- `C(z) F_n = F_n diag (F̄_n z)`, column by column from `circulant_mulVec_conj_dft_col`. -/
 theorem circulant_mul_conjTranspose_dft (z : Fin n → ℂ) :

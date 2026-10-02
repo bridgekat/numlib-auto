@@ -19,9 +19,6 @@ id = "dft_apply_sub"
 id = "circulant_mulVec_dft_col"
 
 [[node]]
-id = "mul_eq_mul_diagonal_of_forall_mulVec_col"
-
-[[node]]
 id = "circulant_mul_conjTranspose_dft"
 
 [[node]]

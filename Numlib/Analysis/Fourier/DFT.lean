@@ -25,9 +25,10 @@ formula `ZMod.dft_dft`. This file adds the matrix `F_n` as `Matrix.dft`, the bri
 `Matrix.conjTranspose_dft_mul_dft` with the inversion formula that follows from it, and the radix-2
 identity `Matrix.dft_radix_two` on which the fast Fourier transform rests.
 
-The radix-2 identity is the only statement here that Mathlib does not already contain in some form.
-It says that a transform of length `2 n` is assembled from the two transforms of length `n` of the
-even- and odd-indexed halves of the input, at the cost of one multiplication per output entry: with
+Mathlib contains the orthogonality and inversion in the `ZMod.dft` form; the radix-2 identity, and
+the real-form entries and index symmetries below, it does not. The radix-2 identity says that a
+transform of length `2 n` is assembled from the two transforms of length `n` of the even- and
+odd-indexed halves of the input, at the cost of one multiplication per output entry: with
 `E` and `O` those two transforms and `ω = exp (2 π i / (2 n))`,
 
 `ŷ k = E k + ω⁻ᵏ * O k` and `ŷ (k + n) = E k - ω⁻ᵏ * O k` for `k < n`.

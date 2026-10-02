@@ -1,3 +1,10 @@
+/-
+Upstreaming candidate: general material with no numerical-analysis-specific content, written
+to Mathlib conventions with a view to contributing it to Mathlib.
+Natural home: `Mathlib.LinearAlgebra.Lagrange`, or a sibling file (Mathlib's `Polynomial.hermite` is
+the unrelated probabilists' Hermite polynomial, so the namespace would need renaming there).
+Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
+-/
 import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 
@@ -38,9 +45,7 @@ coefficients as its multiplicity. This is the companion of Mathlib's `Lagrange` 
 The consumers are the jets and divided differences of functions of
 `Numlib/Analysis/Calculus/HermiteInterpolation` (`Hermite.taylorJet`, `Hermite.divDiff`), the
 primary functional calculus of `Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus`, and the
-real Hermite interpolation of `Numlib/Approximation/Hermite`. Upstreaming candidate: natural home
-`Mathlib/LinearAlgebra/Lagrange` or a sibling file (Mathlib's `Polynomial.hermite` is the unrelated
-probabilists' Hermite polynomial, so the namespace would need renaming there).
+real Hermite interpolation of `Numlib/Approximation/Hermite`.
 -/
 
 open Polynomial

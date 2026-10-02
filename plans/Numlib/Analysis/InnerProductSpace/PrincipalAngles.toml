@@ -60,3 +60,11 @@ id = "Submodule.cosPrincipalAngle_span_singleton_zero"
 
 [[node]]
 id = "Submodule.principalAngle_span_singleton_zero"
+
+[[node]]
+id = "Submodule.cosPrincipalAngle_eq_of_isSVD"
+source = "[golub2013matrix] Algorithm 6.4.3"
+
+[[node]]
+id = "Submodule.isPrincipalVectors_of_isSVD"
+source = "[golub2013matrix] Algorithm 6.4.3"

@@ -1,6 +1,7 @@
 import Numlib.Analysis.InnerProductSpace.Orthonormal
 import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearAlgebra.Matrix.LeastSquares
 
 /-!
 # Principal angles between subspaces
@@ -37,6 +38,9 @@ dimension the gap `‖P_F - P_G‖` is the sine of the largest angle.
   ([golub2013matrix] Theorem 6.4.2).
 * `Submodule.cosPrincipalAngle_eq_singularValues`: the matrix bridge — for matrices `Q_A`, `Q_B`
   with orthonormal columns, the cosines are the singular values of `Q_Aᴴ Q_B`.
+* `Submodule.cosPrincipalAngle_eq_of_isSVD`, `Submodule.isPrincipalVectors_of_isSVD`: from any SVD
+  `Q_Aᴴ Q_B = Y Σ Zᴴ`, the diagonal of `Σ` lists the cosines and the columns of `Q_A Y(:, 1:q)`,
+  `Q_B Z` are principal vectors (the SVD step of [golub2013matrix] Algorithm 6.4.3).
 * `Submodule.gap_eq_sin_principalAngle`: `dist(F, G) = sin θ_max` for equal dimensions.
 * `Submodule.cosPrincipalAngle_span_singleton_zero`: the angle with a line is the angle of
   `Submodule.cosAngle`.
@@ -314,6 +318,16 @@ namespace IsRecursivePrincipalVectors
 
 variable {F G} {q : ℕ} {f g : Fin q → E}
 
+omit [FiniteDimensional 𝕜 F] [FiniteDimensional 𝕜 G] in
+/-- The left vectors are nonzero. -/
+theorem ne_zero_left (hfg : F.IsRecursivePrincipalVectors G f g) (k : Fin q) : f k ≠ 0 :=
+  norm_ne_zero_iff.1 (by rw [hfg.norm_left k]; exact one_ne_zero)
+
+omit [FiniteDimensional 𝕜 F] [FiniteDimensional 𝕜 G] in
+/-- The right vectors are nonzero. -/
+theorem ne_zero_right (hfg : F.IsRecursivePrincipalVectors G f g) (k : Fin q) : g k ≠ 0 :=
+  norm_ne_zero_iff.1 (by rw [hfg.norm_right k]; exact one_ne_zero)
+
 /-- The first stage of the recursion: `re ⟪f 0, g 0⟫ = cos θ₁`, the unconstrained maximum. -/
 theorem re_inner_zero (hfg : F.IsRecursivePrincipalVectors G f g)
     (h : finrank 𝕜 G ≤ finrank 𝕜 F) (hq : 0 < q) :
@@ -332,27 +346,14 @@ theorem re_inner_zero (hfg : F.IsRecursivePrincipalVectors G f g)
 
 end IsRecursivePrincipalVectors
 
-/-- Removing a unit vector of a finite-dimensional subspace lowers its dimension by one. -/
+/-- Removing a nonzero vector of a finite-dimensional subspace lowers its dimension by one: the
+case `K₁ = 𝕜 ∙ w` of Mathlib's `Submodule.finrank_add_inf_finrank_orthogonal`. -/
 theorem finrank_inf_orthogonal_singleton_add_one (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K]
-    {w : E} (hw : w ∈ K) (hw1 : ‖w‖ = 1) :
+    {w : E} (hw : w ∈ K) (hw0 : w ≠ 0) :
     finrank 𝕜 (K ⊓ (𝕜 ∙ w)ᗮ : Submodule 𝕜 E) + 1 = finrank 𝕜 K := by
-  have hw0 : w ≠ 0 := norm_ne_zero_iff.1 (by rw [hw1]; norm_num)
-  have hsup : K ⊓ (𝕜 ∙ w)ᗮ ⊔ (𝕜 ∙ w) = K := by
-    refine le_antisymm (sup_le inf_le_left ((span_singleton_le_iff_mem _ _).2 hw)) fun x hx => ?_
-    refine Submodule.mem_sup.2 ⟨x - inner 𝕜 w x • w, ⟨K.sub_mem hx (K.smul_mem _ hw), ?_⟩,
-      inner 𝕜 w x • w, Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self w), by abel⟩
-    refine (mem_orthogonal_singleton_iff_inner_right).2 ?_
-    rw [inner_sub_right, inner_smul_right,
-      inner_self_eq_norm_sq_to_K, hw1]
-    simp
-  have hinf : K ⊓ (𝕜 ∙ w)ᗮ ⊓ (𝕜 ∙ w) = ⊥ :=
-    eq_bot_iff.2 fun x hx => by
-      have := (𝕜 ∙ w).inf_orthogonal_eq_bot
-      rw [← this]
-      exact ⟨hx.2, hx.1.2⟩
-  have h := Submodule.finrank_sup_add_finrank_inf_eq (K ⊓ (𝕜 ∙ w)ᗮ) (𝕜 ∙ w)
-  rw [hsup, hinf, finrank_bot, add_zero, finrank_span_singleton hw0] at h
-  exact h.symm
+  have h := finrank_add_inf_finrank_orthogonal ((span_singleton_le_iff_mem w K).2 hw)
+  rw [finrank_span_singleton hw0, inf_comm] at h
+  omega
 
 /-- The subspace inclusion `K ≤ L` as a linear isometry. -/
 def inclusionₗᵢ {K L : Submodule 𝕜 E} (h : K ≤ L) : K →ₗᵢ[𝕜] L where
@@ -370,7 +371,7 @@ theorem tail (hfg : F.IsRecursivePrincipalVectors G f g) :
     (F ⊓ (𝕜 ∙ f 0)ᗮ).IsRecursivePrincipalVectors (G ⊓ (𝕜 ∙ g 0)ᗮ) (f ∘ Fin.succ)
       (g ∘ Fin.succ) where
   finrank_eq := by
-    have := finrank_inf_orthogonal_singleton_add_one G (hfg.mem_right 0) (hfg.norm_right 0)
+    have := finrank_inf_orthogonal_singleton_add_one G (hfg.mem_right 0) (hfg.ne_zero_right 0)
     rw [hfg.finrank_eq] at this
     omega
   mem_left k := ⟨hfg.mem_left _, (mem_orthogonal_singleton_iff_inner_right).2
@@ -431,7 +432,7 @@ theorem cosPrincipalAngle_tail (hfg : F.IsRecursivePrincipalVectors G f g)
     rw [coe_orthogonalProjectionRestrict_apply, coe_orthogonalProjectionRestrict_apply]
     exact hproj x x.2
   have hr : finrank 𝕜 G' + 1 = finrank 𝕜 G :=
-    finrank_inf_orthogonal_singleton_add_one G (hfg.mem_right 0) (hfg.norm_right 0)
+    finrank_inf_orthogonal_singleton_add_one G (hfg.mem_right 0) (hfg.ne_zero_right 0)
   have hTv : T ⟨g 0, hfg.mem_right 0⟩ = (T.singularValues 0 : 𝕜) • ⟨f 0, hfg.mem_left 0⟩ :=
     Subtype.ext (by rw [coe_orthogonalProjectionRestrict_apply, Submodule.coe_smul]; exact hFg)
   have hTu : LinearMap.adjoint T ⟨f 0, hfg.mem_left 0⟩ =
@@ -459,8 +460,8 @@ private theorem re_inner_eq_cosPrincipalAngle_aux (k : ℕ) :
   | succ k ih =>
     intro F G _ _ q f g h hfg hk
     obtain ⟨q, rfl⟩ : ∃ q', q = q' + 1 := ⟨q - 1, by omega⟩
-    have hF := finrank_inf_orthogonal_singleton_add_one F (hfg.mem_left 0) (hfg.norm_left 0)
-    have hG := finrank_inf_orthogonal_singleton_add_one G (hfg.mem_right 0) (hfg.norm_right 0)
+    have hF := finrank_inf_orthogonal_singleton_add_one F (hfg.mem_left 0) (hfg.ne_zero_left 0)
+    have hG := finrank_inf_orthogonal_singleton_add_one G (hfg.mem_right 0) (hfg.ne_zero_right 0)
     have := ih (F ⊓ (𝕜 ∙ f 0)ᗮ) (G ⊓ (𝕜 ∙ g 0)ᗮ) q (f ∘ Fin.succ) (g ∘ Fin.succ) (by omega)
       hfg.tail (by omega)
     rw [hfg.cosPrincipalAngle_tail h] at this
@@ -551,5 +552,83 @@ theorem cosPrincipalAngle_eq_singularValues {m p q : Type*} [Fintype m]
   rw [key] at h1
   rw [cosPrincipalAngle, ← h1, ← h2]
   rfl
+
+open Matrix in
+/-- **The cosines from any SVD** ([golub2013matrix] §6.4.3, Algorithm 6.4.3): if the columns of
+`Q_A` and `Q_B` are orthonormal and `Q_Aᴴ Q_B = Y Σ Zᴴ` is an SVD, then `σ_k = cos θ_{k+1}` for
+`k < min p q`: the diagonal of every SVD is the sorted singular values
+(`Matrix.IsSVD.singularValues_eq`), which are the cosines
+(`Submodule.cosPrincipalAngle_eq_singularValues`). -/
+theorem cosPrincipalAngle_eq_of_isSVD {m : Type*} [Fintype m] {p q : ℕ}
+    {QA : Matrix m (Fin p) 𝕜} {QB : Matrix m (Fin q) 𝕜} (hA : QAᴴ * QA = 1) (hB : QBᴴ * QB = 1)
+    {Y : Matrix (Fin p) (Fin p) 𝕜} {σ : ℕ → ℝ} {Z : Matrix (Fin q) (Fin q) 𝕜}
+    (h : IsSVD (QAᴴ * QB) Y σ Z) {k : ℕ} (hkp : k < p) (hkq : k < q) :
+    (LinearMap.range (toEuclideanLin QA)).cosPrincipalAngle
+      (LinearMap.range (toEuclideanLin QB)) k = σ k := by
+  rw [cosPrincipalAngle_eq_singularValues hA hB, h.singularValues_eq hkp hkq]
+
+open Matrix in
+/-- **Principal vectors from any SVD** ([golub2013matrix] §6.4.3, Algorithm 6.4.3): if the columns
+of `Q_A` and `Q_B` are orthonormal, `q ≤ p`, and `Q_Aᴴ Q_B = Y Σ Zᴴ` is an SVD, then the columns of
+`Q_A Y(:, 1:q)` and `Q_B Z` are principal vectors of `(ran Q_A, ran Q_B)`. The projection onto
+`ran Q_A` is `Q_A Q_Aᴴ`, so `P (Q_B z_j) = Q_A Y Σ Zᴴ z_j = σ_j Q_A y_j`, and
+`σ_j = cos θ_{j+1}` (`Submodule.cosPrincipalAngle_eq_of_isSVD`). -/
+theorem isPrincipalVectors_of_isSVD {m : Type*} [Fintype m] {p q : ℕ}
+    {QA : Matrix m (Fin p) 𝕜} {QB : Matrix m (Fin q) 𝕜} (hA : QAᴴ * QA = 1) (hB : QBᴴ * QB = 1)
+    (hqp : q ≤ p) {Y : Matrix (Fin p) (Fin p) 𝕜} {σ : ℕ → ℝ} {Z : Matrix (Fin q) (Fin q) 𝕜}
+    (h : IsSVD (QAᴴ * QB) Y σ Z) :
+    (LinearMap.range (toEuclideanLin QA)).IsPrincipalVectors (LinearMap.range (toEuclideanLin QB))
+      (fun k => WithLp.toLp 2 ((QA * firstColumns Y hqp).col k))
+      (fun k => WithLp.toLp 2 ((QB * Z).col k)) := by
+  classical
+  have hYY : Yᴴ * Y = 1 := mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_left
+  have hZZ : Zᴴ * Z = 1 := mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_right
+  have hcol : ∀ {k l : ℕ} (N : Matrix m (Fin k) 𝕜) (N' : Matrix (Fin k) (Fin l) 𝕜) (j : Fin l),
+      (WithLp.toLp 2 ((N * N').col j) : EuclideanSpace 𝕜 m) =
+        toEuclideanLin N (WithLp.toLp 2 (N'.col j)) := fun N N' j => by
+    rw [toEuclideanLin_toLp]
+    congr 1
+  refine ⟨?_, ?_, ?_, fun k => ?_, fun k => ?_, fun j => ?_⟩
+  · rw [finrank_range_of_conjTranspose_mul_self_eq_one hB, Fintype.card_fin]
+  · refine conjTranspose_mul_self_eq_one_iff_orthonormal.1 ?_
+    have hY₁ : (firstColumns Y hqp)ᴴ * firstColumns Y hqp = 1 := by
+      rw [firstColumns, conjTranspose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id,
+        hYY]
+      exact submatrix_one _ (Fin.castLE_injective hqp)
+    rw [conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc QAᴴ, hA, Matrix.one_mul, hY₁]
+  · refine conjTranspose_mul_self_eq_one_iff_orthonormal.1 ?_
+    rw [conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc QBᴴ, hB, Matrix.one_mul, hZZ]
+  · rw [hcol]
+    exact ⟨_, rfl⟩
+  · rw [hcol]
+    exact ⟨_, rfl⟩
+  have hP : ∀ x, (LinearMap.range (toEuclideanLin QA)).starProjection x =
+      toEuclideanLin (QA * QAᴴ) x := fun x => by
+    rw [toEuclideanLin_mul_conjTranspose_eq_starProjection hA]
+    rfl
+  rw [cosPrincipalAngle_eq_of_isSVD hA hB h (j.2.trans_le hqp) j.2, hP, hcol, hcol,
+    ← toEuclideanLin_mul_apply, toEuclideanLin_toLp, toEuclideanLin_toLp]
+  have hZj : Zᴴ *ᵥ Z.col j = Pi.single j 1 := by
+    funext i
+    have := congrFun (congrFun hZZ i) j
+    rw [mul_apply] at this
+    rw [Pi.single_apply, ← one_apply, ← this]
+    rfl
+  have hSig : (rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin p) (Fin q) 𝕜) *ᵥ
+      Pi.single j 1 = (σ j : 𝕜) • Pi.single (Fin.castLE hqp j) 1 := by
+    rw [mulVec_single_one]
+    funext i
+    simp only [col_apply, rectDiagonal_apply, Pi.smul_apply, Pi.single_apply, smul_eq_mul]
+    by_cases hij : (i : ℕ) = j
+    · have : i = Fin.castLE hqp j := Fin.ext hij
+      rw [ite_eq_left hij, ite_eq_left this, hij, mul_one]
+    · have : i ≠ Fin.castLE hqp j := fun e => hij (by rw [e]; rfl)
+      rw [ite_eq_right hij, ite_eq_right this, mul_zero]
+  have e : (QA * QAᴴ * QB) *ᵥ Z.col j = (σ j : 𝕜) • (QA *ᵥ (firstColumns Y hqp).col j) := by
+    rw [Matrix.mul_assoc, h.eq_mul_mul_star, star_eq_conjTranspose]
+    simp only [← mulVec_mulVec]
+    rw [hZj, hSig, mulVec_smul, mulVec_smul, mulVec_single_one]
+    rfl
+  rw [e, WithLp.toLp_smul]
 
 end Submodule

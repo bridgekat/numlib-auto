@@ -14,11 +14,12 @@ import Numlib.Analysis.Calculus.IteratedDeriv.Lemmas
 /-!
 # The segment average of the derivative
 
-For `f` differentiable on a convex set `U` of `𝕜 = ℝ` or `ℂ` and `a ∈ U`, the **segment average**
+For `f : 𝕜 → F` differentiable on a convex set `U` of `𝕜 = ℝ` or `ℂ`, with values in a normed
+space `F` over `𝕜`, and `a ∈ U`, the **segment average**
 
   `g z = ∫₀¹ f'(a + t (z - a)) dt`
 
-satisfies `f z = f a + (z - a) g z` on `U` (`eq_add_mul_integral_comp_segment`): it is the
+satisfies `f z = f a + (z - a) • g z` on `U` (`eq_add_smul_integral_comp_segment`): it is the
 difference quotient `(f z - f a) / (z - a)` extended by `f'(a)` at `a`. Differentiating under the
 integral sign, on an open convex set where `f` is `C^{n+1}` the average is `C^n`, with
 `g⁽ᵏ⁾(z) = ∫₀¹ tᵏ f⁽ᵏ⁺¹⁾(a + t (z - a)) dt` (`iteratedDeriv_integral_deriv_comp_segment`,
@@ -33,19 +34,26 @@ divided differences (`Numlib/Analysis/Calculus/HermiteGenocchi`).
 open Set Filter Topology MeasureTheory intervalIntegral
 open scoped ContDiff Interval
 
-variable {𝕜 : Type*} [RCLike 𝕜] {U : Set 𝕜} {a z : 𝕜}
+variable {𝕜 : Type*} [RCLike 𝕜] {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+  [NormedSpace ℝ F] [IsScalarTower ℝ 𝕜 F] {U : Set 𝕜} {a z : 𝕜}
 
-/-- A function continuous on a convex set is continuous along the segments in it. -/
-theorem ContinuousOn.comp_segment {φ : 𝕜 → 𝕜} (hφ : ContinuousOn φ U) (hU : Convex ℝ U)
-    (ha : a ∈ U) (hz : z ∈ U) (k : ℕ) :
+omit [NormedSpace 𝕜 F] [IsScalarTower ℝ 𝕜 F] in
+/-- A function continuous on a convex set is continuous along the segments in it, also with the
+weight `tᵏ`. -/
+theorem ContinuousOn.pow_smul_comp_segment {φ : 𝕜 → F} (hφ : ContinuousOn φ U)
+    (hU : Convex ℝ U) (ha : a ∈ U) (hz : z ∈ U) (k : ℕ) :
     ContinuousOn (fun t : ℝ => t ^ k • φ (a + t • (z - a))) (Icc 0 1) :=
   (continuous_pow k).continuousOn.smul
     (hφ.comp (by fun_prop) fun _ ht => hU.add_smul_sub_mem ha hz ht)
 
+@[deprecated (since := "2026-09-30")]
+alias ContinuousOn.comp_segment := ContinuousOn.pow_smul_comp_segment
+
+omit [NormedSpace 𝕜 F] [NormedSpace ℝ F] [IsScalarTower ℝ 𝕜 F] in
 /-- Around a point `z` of an open convex set `U`, the segments from `a ∈ U` to the points of a
 closed ball about `z` sweep out a compact subset of `U`, on which a function continuous on `U` is
 bounded. -/
-private theorem exists_bound_comp_segment {φ : 𝕜 → 𝕜} (hU : IsOpen U) (hUc : Convex ℝ U)
+private theorem exists_bound_comp_segment {φ : 𝕜 → F} (hU : IsOpen U) (hUc : Convex ℝ U)
     (hφ : ContinuousOn φ U) (ha : a ∈ U) (hz : z ∈ U) :
     ∃ ε > 0, ∃ C, ∀ t ∈ Icc (0 : ℝ) 1, ∀ w ∈ Metric.ball z ε, ‖φ (a + t • (w - a))‖ ≤ C := by
   obtain ⟨ε, hε, hεU⟩ := Metric.isOpen_iff.mp hU z hz
@@ -60,17 +68,19 @@ private theorem exists_bound_comp_segment {φ : 𝕜 → 𝕜} (hU : IsOpen U) (
   exact ⟨ε / 2, half_pos hε, C, fun t ht w hw =>
     hC _ ⟨(t, w), ⟨ht, Metric.ball_subset_closedBall hw⟩, rfl⟩⟩
 
+omit [NormedSpace 𝕜 F] [IsScalarTower ℝ 𝕜 F] in
 /-- The weighted segment averages are measurable on `(0, 1]`. -/
-private theorem aestronglyMeasurable_comp_segment {φ : 𝕜 → 𝕜} (hUc : Convex ℝ U)
+private theorem aestronglyMeasurable_comp_segment {φ : 𝕜 → F} (hUc : Convex ℝ U)
     (hφ : ContinuousOn φ U) (ha : a ∈ U) (hw : z ∈ U) (k : ℕ) :
     AEStronglyMeasurable (fun t : ℝ => t ^ k • φ (a + t • (z - a))) (volume.restrict (Ι 0 1)) := by
   rw [uIoc_of_le zero_le_one]
-  exact ((hφ.comp_segment hUc ha hw k).mono Ioc_subset_Icc_self).aestronglyMeasurable
+  exact ((hφ.pow_smul_comp_segment hUc ha hw k).mono Ioc_subset_Icc_self).aestronglyMeasurable
     measurableSet_Ioc
 
+omit [NormedSpace 𝕜 F] [IsScalarTower ℝ 𝕜 F] in
 /-- **Continuity of the weighted segment average.** If `φ` is continuous on an open convex set
 `U`, then `w ↦ ∫₀¹ tᵏ φ(a + t(w - a)) dt` is continuous on `U`. -/
-theorem continuousOn_integral_pow_smul_comp_segment {φ : 𝕜 → 𝕜} (hU : IsOpen U)
+theorem continuousOn_integral_pow_smul_comp_segment {φ : 𝕜 → F} (hU : IsOpen U)
     (hUc : Convex ℝ U) (hφ : ContinuousOn φ U) (ha : a ∈ U) (k : ℕ) :
     ContinuousOn (fun w => ∫ t in (0 : ℝ)..1, t ^ k • φ (a + t • (w - a))) U := by
   intro z hz
@@ -95,7 +105,7 @@ theorem continuousOn_integral_pow_smul_comp_segment {φ : 𝕜 → 𝕜} (hU : I
 /-- **Differentiation under the integral along segments.** If `φ` has derivative `φ'` on an open
 convex set `U`, with `φ'` continuous there, then `w ↦ ∫₀¹ tᵏ φ(a + t(w - a)) dt` has derivative
 `∫₀¹ tᵏ⁺¹ φ'(a + t(z - a)) dt` at every `z ∈ U`. -/
-theorem hasDerivAt_integral_pow_smul_comp_segment {φ φ' : 𝕜 → 𝕜} (hU : IsOpen U)
+theorem hasDerivAt_integral_pow_smul_comp_segment {φ φ' : 𝕜 → F} (hU : IsOpen U)
     (hUc : Convex ℝ U) (hφ : ∀ w ∈ U, HasDerivAt φ (φ' w) w) (hφ' : ContinuousOn φ' U)
     (ha : a ∈ U) (hz : z ∈ U) (k : ℕ) :
     HasDerivAt (fun w => ∫ t in (0 : ℝ)..1, t ^ k • φ (a + t • (w - a)))
@@ -110,7 +120,7 @@ theorem hasDerivAt_integral_pow_smul_comp_segment {φ φ' : 𝕜 → 𝕜} (hU :
     (Metric.ball_mem_nhds z (lt_min hε hε'))
     (eventually_of_mem (hU.mem_nhds hz) fun w hw =>
       aestronglyMeasurable_comp_segment hUc hφc ha hw k)
-    ((hφc.comp_segment hUc ha hz k).intervalIntegrable_of_Icc zero_le_one)
+    ((hφc.pow_smul_comp_segment hUc ha hz k).intervalIntegrable_of_Icc zero_le_one)
     (aestronglyMeasurable_comp_segment hUc hφ' ha hz (k + 1)) (ae_of_all _ fun t ht w hw => ?_)
     intervalIntegrable_const (ae_of_all _ fun t ht w hw => ?_)).2
   · rw [h01] at ht
@@ -122,29 +132,36 @@ theorem hasDerivAt_integral_pow_smul_comp_segment {φ φ' : 𝕜 → 𝕜} (hU :
     have hpt : a + t • (w - a) ∈ U := hUc.add_smul_sub_mem ha hwU (Ioc_subset_Icc_self ht)
     have hin : HasDerivAt (fun w => a + t • (w - a)) (t • (1 : 𝕜)) w :=
       (((hasDerivAt_id w).sub_const a).const_smul t).const_add a
-    refine (((hφ _ hpt).comp w hin).const_smul (t ^ k)).congr_deriv ?_
-    rw [mul_smul_comm, mul_one, smul_smul, pow_succ]
+    refine (((hφ _ hpt).scomp w hin).const_smul (t ^ k)).congr_deriv ?_
+    rw [smul_one_smul, smul_smul, pow_succ]
 
 /-- **The segment average**: if `f` has derivative `f'` on a convex set `U`, with `f'`
-continuous there, then `f z = f a + (z - a) ∫₀¹ f'(a + t(z - a)) dt` for `a, z ∈ U`. -/
-theorem eq_add_mul_integral_comp_segment {f f' : 𝕜 → 𝕜} (hU : Convex ℝ U)
+continuous there, then `f z = f a + (z - a) • ∫₀¹ f'(a + t(z - a)) dt` for `a, z ∈ U`. -/
+theorem eq_add_smul_integral_comp_segment [CompleteSpace F] {f f' : 𝕜 → F} (hU : Convex ℝ U)
     (hf : ∀ w ∈ U, HasDerivAt f (f' w) w) (hf' : ContinuousOn f' U) (ha : a ∈ U) (hz : z ∈ U) :
-    f z = f a + (z - a) * ∫ t in (0 : ℝ)..1, f' (a + t • (z - a)) := by
+    f z = f a + (z - a) • ∫ t in (0 : ℝ)..1, f' (a + t • (z - a)) := by
   have hderiv : ∀ t ∈ uIcc (0 : ℝ) 1,
-      HasDerivAt (fun t : ℝ => f (a + t • (z - a))) ((z - a) * f' (a + t • (z - a))) t := by
+      HasDerivAt (fun t : ℝ => f (a + t • (z - a))) ((z - a) • f' (a + t • (z - a))) t := by
     intro t ht
     rw [uIcc_of_le zero_le_one] at ht
     exact ((hf _ (hU.add_smul_sub_mem ha hz ht)).scomp t
-      (((hasDerivAt_id t).smul_const (z - a)).const_add a)).congr_deriv (by simp [smul_eq_mul])
-  have hint : IntervalIntegrable (fun t : ℝ => (z - a) * f' (a + t • (z - a))) volume 0 1 :=
-    (((hf'.comp_segment hU ha hz 0).const_smul (z - a)).intervalIntegrable_of_Icc
-      zero_le_one).congr fun t _ => by simp [smul_eq_mul]
-  rw [← intervalIntegral.integral_const_mul, integral_eq_sub_of_hasDerivAt hderiv hint]
+      (((hasDerivAt_id t).smul_const (z - a)).const_add a)).congr_deriv (by simp)
+  have hint : IntervalIntegrable (fun t : ℝ => (z - a) • f' (a + t • (z - a))) volume 0 1 :=
+    (((hf'.pow_smul_comp_segment hU ha hz 0).const_smul (z - a)).intervalIntegrable_of_Icc
+      zero_le_one).congr fun t _ => by simp
+  rw [← intervalIntegral.integral_smul, integral_eq_sub_of_hasDerivAt hderiv hint]
   simp
+
+/-- **The segment average** of a scalar function: `f z = f a + (z - a) ∫₀¹ f'(a + t(z - a)) dt`,
+the case `F = 𝕜` of `eq_add_smul_integral_comp_segment`. -/
+theorem eq_add_mul_integral_comp_segment {f f' : 𝕜 → 𝕜} (hU : Convex ℝ U)
+    (hf : ∀ w ∈ U, HasDerivAt f (f' w) w) (hf' : ContinuousOn f' U) (ha : a ∈ U) (hz : z ∈ U) :
+    f z = f a + (z - a) * ∫ t in (0 : ℝ)..1, f' (a + t • (z - a)) :=
+  eq_add_smul_integral_comp_segment hU hf hf' ha hz
 
 /-- The derivatives `f⁽ᵏ⁺¹⁾` of a function `C^{k+2}` on an open convex set `U` make the segment
 averages `w ↦ ∫₀¹ tᵏ f⁽ᵏ⁺¹⁾(a + t(w - a)) dt` a chain, each the derivative of the previous. -/
-theorem hasDerivAt_integral_pow_smul_iteratedDeriv_comp_segment {f : 𝕜 → 𝕜} {n : WithTop ℕ∞}
+theorem hasDerivAt_integral_pow_smul_iteratedDeriv_comp_segment {f : 𝕜 → F} {n : WithTop ℕ∞}
     (hU : IsOpen U) (hUc : Convex ℝ U) (hf : ContDiffOn 𝕜 n f U) (ha : a ∈ U) (hz : z ∈ U)
     {k : ℕ} (hk : (k + 2 : ℕ) ≤ n) :
     HasDerivAt (fun w => ∫ t in (0 : ℝ)..1, t ^ k • iteratedDeriv (k + 1) f (a + t • (w - a)))
@@ -156,7 +173,7 @@ theorem hasDerivAt_integral_pow_smul_iteratedDeriv_comp_segment {f : 𝕜 → �
 
 /-- **The derivatives of the segment average**: if `f` is `C^{k+1}` on an open convex set `U`,
 then `g z = ∫₀¹ f'(a + t(z - a)) dt` has `g⁽ᵏ⁾(z) = ∫₀¹ tᵏ f⁽ᵏ⁺¹⁾(a + t(z - a)) dt` on `U`. -/
-theorem iteratedDeriv_integral_deriv_comp_segment {f : 𝕜 → 𝕜} {n : WithTop ℕ∞} (hU : IsOpen U)
+theorem iteratedDeriv_integral_deriv_comp_segment {f : 𝕜 → F} {n : WithTop ℕ∞} (hU : IsOpen U)
     (hUc : Convex ℝ U) (hf : ContDiffOn 𝕜 n f U) (ha : a ∈ U) {k : ℕ} (hk : (k + 1 : ℕ) ≤ n) :
     EqOn (iteratedDeriv k fun w => ∫ t in (0 : ℝ)..1, deriv f (a + t • (w - a)))
       (fun w => ∫ t in (0 : ℝ)..1, t ^ k • iteratedDeriv (k + 1) f (a + t • (w - a))) U := by
@@ -170,7 +187,7 @@ theorem iteratedDeriv_integral_deriv_comp_segment {f : 𝕜 → 𝕜} {n : WithT
 
 /-- The segment average of a function `C^{n+1}` on an open convex set is `C^n` there, for a finite
 `n`. -/
-private theorem contDiffOn_integral_deriv_comp_segment_nat {f : 𝕜 → 𝕜} (hU : IsOpen U)
+private theorem contDiffOn_integral_deriv_comp_segment_nat {f : 𝕜 → F} (hU : IsOpen U)
     (hUc : Convex ℝ U) {n : ℕ} (hf : ContDiffOn 𝕜 (n + 1 : ℕ) f U) (ha : a ∈ U) :
     ContDiffOn 𝕜 n (fun w => ∫ t in (0 : ℝ)..1, deriv f (a + t • (w - a))) U := by
   have h := (contDiffOn_of_hasDerivAt_chain (n := n)
@@ -183,7 +200,7 @@ private theorem contDiffOn_integral_deriv_comp_segment_nat {f : 𝕜 → 𝕜} (
 
 /-- **The segment average of a `C^{n+1}` function is `C^n`**: if `f` is `C^{n+1}` on an open
 convex set `U` (`n = ∞` allowed), then `w ↦ ∫₀¹ f'(a + t(w - a)) dt` is `C^n` there. -/
-theorem contDiffOn_integral_deriv_comp_segment {f : 𝕜 → 𝕜} (hU : IsOpen U) (hUc : Convex ℝ U)
+theorem contDiffOn_integral_deriv_comp_segment {f : 𝕜 → F} (hU : IsOpen U) (hUc : Convex ℝ U)
     {n : ℕ∞} (hf : ContDiffOn 𝕜 (n + 1 : ℕ∞) f U) (ha : a ∈ U) :
     ContDiffOn 𝕜 n (fun w => ∫ t in (0 : ℝ)..1, deriv f (a + t • (w - a))) U := by
   refine contDiffOn_iff_forall_nat_le.2 fun m hm => ?_
@@ -191,9 +208,10 @@ theorem contDiffOn_integral_deriv_comp_segment {f : 𝕜 → 𝕜} (hU : IsOpen 
   have hm' : (m : ℕ∞) + 1 ≤ n + 1 := by gcongr
   exact_mod_cast hm'
 
+omit [NormedSpace 𝕜 F] [IsScalarTower ℝ 𝕜 F] in
 /-- The weighted segment average of `φ` is bounded by `M / (k + 1)` when `‖φ‖ ≤ M` on the
 segment. -/
-theorem norm_integral_pow_smul_comp_segment_le {φ : 𝕜 → 𝕜} {M : ℝ} (k : ℕ)
+theorem norm_integral_pow_smul_comp_segment_le {φ : 𝕜 → F} {M : ℝ} (k : ℕ)
     (hM : ∀ t ∈ Icc (0 : ℝ) 1, ‖φ (a + t • (z - a))‖ ≤ M) :
     ‖∫ t in (0 : ℝ)..1, t ^ k • φ (a + t • (z - a))‖ ≤ M / (k + 1) := by
   calc ‖∫ t in (0 : ℝ)..1, t ^ k • φ (a + t • (z - a))‖

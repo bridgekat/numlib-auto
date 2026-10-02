@@ -43,7 +43,7 @@ id = "dct1_mul_self"
 id = "secondDifferenceDN_mulVec_dst2_col"
 
 [[node]]
-id = "secondDifferenceNN_mulVec_dct1_col"
+id = "secondDifferenceNN_mulVec_cosAngleVec_mul_pi_div"
 
 [[node]]
 id = "transpose_dst2_mul_dst2"

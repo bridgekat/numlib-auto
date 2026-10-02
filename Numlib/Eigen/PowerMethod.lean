@@ -1104,7 +1104,8 @@ theorem gap_subspaceIterate_le {ι : Type*} [Finite ι] {M : Submodule 𝕜 E}
   obtain ⟨κ, hκ, hκb⟩ := hxli.exists_forall_sum_norm_le
   have main : ∀ k, κ * (max C 0 * (r / ρ) ^ k) ≤ 1 / 2 →
       M.gap (subspaceIterate A S k) ≤ 3 * (κ * (max C 0 * (r / ρ) ^ k)) := fun k hk =>
-    Submodule.gap_le_of_forall_norm_sub_le M _ hM (hspan k) hκ.le (by positivity) hκb (hwx k) hk
+    (Submodule.gap_le_of_forall_norm_sub_le M _ hM (hspan k) hκ.le (by positivity) hκb (hwx k)
+      hk).trans (mul_le_mul_of_nonneg_right (by norm_num) (by positivity))
   have htriv : ∀ k, M.gap (subspaceIterate A S k) ≤ 1 := fun k => M.gap_le_one _
   rcases eq_or_lt_of_le hr with hr0 | hrpos
   · refine ⟨3 * κ * max C 0 + 1, fun k => ?_⟩
