@@ -1,8 +1,5 @@
 [[node]]
-id = "Module.End.invtSubmodule_eq_iSup_maxGenEigenspace"
-
-[[node]]
-id = "Matrix.span_cols_eq_iSup_maxGenEigenspace_of_conj"
+id = "Matrix.span_cols_eq_spectralSubspace_of_conj"
 
 [[node]]
 id = "Matrix.frobenius_norm_diagonal_mul_mul_inv_le"
@@ -32,10 +29,6 @@ id = "Matrix.gap_subspaceIterate_le_of_schur"
 
 [[node]]
 id = "LinearMap.IsSymmetric.gap_subspaceIterate_le"
-
-[[node]]
-id = "Module.End.invtSubmodule_le_iSup_maxGenEigenspace"
-deps = []
 
 [[node]]
 id = "Submodule.exists_eq_graph_of_gap_lt_one"

@@ -155,8 +155,8 @@ private theorem star_eq_transpose_real (M : Matrix (Fin n) (Fin n) ℝ) : star M
 with `A i` nonsingular for `i < p` there are orthogonal `U : Fin (p+1) → Matrix (Fin n) (Fin n) ℝ`
 with `(U (i+1))ᵀ A i U i` upper triangular for `i < p` and `(U 0)ᵀ A p U p` upper Hessenberg
 ("Hessenberg–triangular–triangular"): a Hessenberg reduction `U 0` of the product
-`A p ⋯ A 0` (`Matrix.exists_unitary_conj_isUpperHessenberg`), then successive QR factorizations
-(`Matrix.exists_periodic_of_isUnit`). -/
+`A p ⋯ A 0` (`Matrix.exists_unitary_conj_isUpperHessenberg`), then successive QR
+factorizations. -/
 theorem exists_orthogonal_periodicHessenberg_of_isUnit {p : ℕ}
     (A : Fin (p + 1) → Matrix (Fin n) (Fin n) ℝ) (hA : ∀ i : Fin p, IsUnit (A i.castSucc)) :
     ∃ U : Fin (p + 1) → Matrix (Fin n) (Fin n) ℝ, (∀ i, U i ∈ orthogonalGroup (Fin n) ℝ) ∧
@@ -199,85 +199,6 @@ theorem exists_unitary_periodicSchur_of_isUnit {𝕜 : Type*} [RCLike 𝕜] [IsA
     have h := hT i i.2
     rw [extendFamily_castSucc] at h
     simpa [Fin.coeSucc_eq_succ] using h
-
-/-- An entry that vanishes along a convergent sequence of matrices vanishes in the limit. -/
-private theorem apply_eq_zero_of_tendsto {m : Type*} {M : ℕ → Matrix m m ℝ} {L : Matrix m m ℝ}
-    (h : Tendsto M atTop (𝓝 L)) (r s : m) (hz : ∀ k, M k r s = 0) : L r s = 0 := by
-  have ht : Tendsto (fun k => M k r s) atTop (𝓝 (L r s)) :=
-    ((continuous_id.matrix_elem r s).tendsto L).comp h
-  simp only [hz] at ht
-  exact tendsto_nhds_unique ht tendsto_const_nhds
-
-/-- [golub2013matrix] (7.8.5) for arbitrary factors (the book describes the computation, QR
-factorizations and Givens bulge chasing, without proof): the conclusion of
-`Matrix.exists_orthogonal_periodicHessenberg_of_isUnit` without any nonsingularity. The factors
-`A i + t I` (`i < p`) are nonsingular for small `t > 0`
-(`Matrix.exists_forall_isUnit_det_add_smul_one`); a subsequence of the orthogonal families for
-`t → 0` converges (`Matrix.isCompact_orthogonalGroup`), and triangular and Hessenberg shapes are
-closed conditions. -/
-theorem exists_orthogonal_periodicHessenberg {p : ℕ}
-    (A : Fin (p + 1) → Matrix (Fin n) (Fin n) ℝ) :
-    ∃ U : Fin (p + 1) → Matrix (Fin n) (Fin n) ℝ, (∀ i, U i ∈ orthogonalGroup (Fin n) ℝ) ∧
-      (∀ i : Fin p, ((U i.succ)ᵀ * A i.castSucc * U i.castSucc).IsUpperTriangular) ∧
-      ((U 0)ᵀ * A (Fin.last p) * U (Fin.last p)).IsUpperHessenberg := by
-  -- a common threshold of nonsingularity
-  choose δ hδ hδu using fun i : Fin p => exists_forall_isUnit_det_add_smul_one (A i.castSucc)
-  set δ₀ := (insert 1 (Finset.univ.image δ)).min' (Finset.insert_nonempty _ _) with hδ₀
-  have hδ₀pos : 0 < δ₀ := by
-    rw [hδ₀, Finset.lt_min'_iff]
-    intro y hy
-    rcases Finset.mem_insert.1 hy with rfl | hy
-    · exact one_pos
-    · obtain ⟨i, -, rfl⟩ := Finset.mem_image.1 hy; exact hδ i
-  have hδ₀le : ∀ i, δ₀ ≤ δ i := fun i =>
-    Finset.min'_le _ _ (Finset.mem_insert_of_mem (Finset.mem_image_of_mem _ (Finset.mem_univ i)))
-  set t : ℕ → ℝ := fun k => δ₀ / (k + 2) with ht
-  have ht0 : ∀ k, 0 < t k := fun k => by positivity
-  have htδ : ∀ k, t k < δ₀ := fun k => by
-    rw [ht, div_lt_iff₀ (by positivity)]; nlinarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)]
-  have htlim : Tendsto t atTop (𝓝 0) := by
-    have h := tendsto_const_nhds (x := δ₀).div_atTop
-      (tendsto_natCast_atTop_atTop.atTop_add (tendsto_const_nhds (x := (2 : ℝ))))
-    simpa [ht] using h
-  set Ak : ℕ → Fin (p + 1) → Matrix (Fin n) (Fin n) ℝ :=
-    fun k i => if (i : ℕ) < p then A i + t k • 1 else A i with hAk
-  have hAkc : ∀ k (i : Fin p), Ak k i.castSucc = A i.castSucc + t k • 1 := fun k i => by
-    simp [hAk]
-  have hAkl : ∀ k, Ak k (Fin.last p) = A (Fin.last p) := fun k => by simp [hAk]
-  choose Uk hUk hTk hHk using fun k => exists_orthogonal_periodicHessenberg_of_isUnit (Ak k)
-    (fun i => by
-      rw [hAkc, isUnit_iff_isUnit_det]
-      exact hδu i (t k) (ht0 k) ((htδ k).trans_le (hδ₀le i)))
-  -- compactness
-  set s := Set.pi Set.univ fun _ : Fin (p + 1) =>
-    ((orthogonalGroup (Fin n) ℝ : Submonoid _) : Set (Matrix (Fin n) (Fin n) ℝ))
-  have hs : IsCompact s := isCompact_univ_pi fun _ => isCompact_orthogonalGroup
-  have : SecondCountableTopology (Matrix (Fin n) (Fin n) ℝ) :=
-    inferInstanceAs (SecondCountableTopology (Fin n → Fin n → ℝ))
-  obtain ⟨U, hUs, φ, hφ, hlim⟩ := hs.tendsto_subseq (x := Uk)
-    (fun k => Set.mem_univ_pi.2 fun i => hUk k i)
-  have hlimi : ∀ i, Tendsto (fun k => Uk (φ k) i) atTop (𝓝 (U i)) := fun i =>
-    tendsto_pi_nhds.1 hlim i
-  have htφ : Tendsto (fun k => t (φ k)) atTop (𝓝 0) := htlim.comp hφ.tendsto_atTop
-  have hAlim : ∀ i : Fin p, Tendsto (fun k => A i.castSucc + t (φ k) • (1 : Matrix _ _ ℝ)) atTop
-      (𝓝 (A i.castSucc)) := fun i => by
-    simpa using tendsto_const_nhds.add (htφ.smul_const (1 : Matrix (Fin n) (Fin n) ℝ))
-  have htr : ∀ {V W : ℕ → Matrix (Fin n) (Fin n) ℝ} {V₀ W₀ : Matrix (Fin n) (Fin n) ℝ},
-      Tendsto V atTop (𝓝 V₀) → Tendsto W atTop (𝓝 W₀) → ∀ {C : ℕ → Matrix (Fin n) (Fin n) ℝ}
-      {C₀}, Tendsto C atTop (𝓝 C₀) → Tendsto (fun k => (V k)ᵀ * C k * W k) atTop
-        (𝓝 (V₀ᵀ * C₀ * W₀)) := fun hV hW _ _ hC =>
-    (((continuous_id.matrix_transpose.tendsto _).comp hV).mul hC).mul hW
-  refine ⟨U, fun i => (Set.mem_univ_pi.1 hUs) i, fun i => ?_, ?_⟩
-  · intro r c hrc
-    refine apply_eq_zero_of_tendsto (htr (hlimi i.succ) (hlimi i.castSucc) (hAlim i)) r c
-      fun k => ?_
-    have := hTk (φ k) i hrc
-    rwa [hAkc] at this
-  · intro r c hrc
-    refine apply_eq_zero_of_tendsto (htr (hlimi 0) (hlimi (Fin.last p))
-      (tendsto_const_nhds (x := A (Fin.last p)))) r c fun k => ?_
-    have := hHk (φ k) r c hrc
-    rwa [hAkl] at this
 
 /-! ### Limits of perturbed families -/
 
@@ -351,6 +272,34 @@ private theorem exists_tendsto_subseq_unitary {p : ℕ}
   exact ⟨U₀, fun i => (Set.mem_univ_pi.1 hUs) i, φ, hφ, fun i => tendsto_pi_nhds.1 hlim i⟩
 
 end Limits
+
+/-- [golub2013matrix] (7.8.5) for arbitrary factors (the book describes the computation, QR
+factorizations and Givens bulge chasing, without proof): the conclusion of
+`Matrix.exists_orthogonal_periodicHessenberg_of_isUnit` without any nonsingularity. The factors
+`A i + t I` (`i < p`) are nonsingular for small `t > 0`
+(`Matrix.exists_forall_isUnit_det_add_smul_one`); a subsequence of the orthogonal families for
+`t → 0` converges (`Matrix.isCompact_orthogonalGroup`), and triangular and Hessenberg shapes are
+closed conditions. -/
+theorem exists_orthogonal_periodicHessenberg {p : ℕ}
+    (A : Fin (p + 1) → Matrix (Fin n) (Fin n) ℝ) :
+    ∃ U : Fin (p + 1) → Matrix (Fin n) (Fin n) ℝ, (∀ i, U i ∈ orthogonalGroup (Fin n) ℝ) ∧
+      (∀ i : Fin p, ((U i.succ)ᵀ * A i.castSucc * U i.castSucc).IsUpperTriangular) ∧
+      ((U 0)ᵀ * A (Fin.last p) * U (Fin.last p)).IsUpperHessenberg := by
+  obtain ⟨Ak, hAku, -, hAkt⟩ := exists_perturbed_family A
+  choose Uk hUk hTk hHk using fun k =>
+    exists_orthogonal_periodicHessenberg_of_isUnit (Ak k) (hAku k)
+  obtain ⟨U, hU, φ, hφ, hlim⟩ := exists_tendsto_subseq_unitary (𝕜 := ℝ) hUk
+  refine ⟨U, hU, fun i r c hrc => ?_, fun r c hrc => ?_⟩
+  · have h := entry_eq_zero_of_tendsto (hlim i.succ) (hlim i.castSucc)
+      ((hAkt i.castSucc).comp hφ.tendsto_atTop) r c fun k => by
+        have := hTk (φ k) i hrc
+        rwa [← star_eq_transpose_real] at this
+    rwa [star_eq_transpose_real] at h
+  · have h := entry_eq_zero_of_tendsto (hlim 0) (hlim (Fin.last p))
+      ((hAkt (Fin.last p)).comp hφ.tendsto_atTop) r c fun k => by
+        have := hHk (φ k) r c hrc
+        rwa [← star_eq_transpose_real] at this
+    rwa [star_eq_transpose_real] at h
 
 /-- **The complex periodic Schur decomposition** (Bojanczyk, Golub and Van Dooren 1992; the complex
 analogue of [golub2013matrix] (7.8.6)): for any family `A : Fin (p+1) → Matrix (Fin n) (Fin n) 𝕜`

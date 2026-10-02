@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Mathlib.LinearAlgebra.QuadraticForm.Signature
 import Numlib.Data.Finset.Card
 import Numlib.Eigen.MinMax
+import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.LU
 
 /-!
@@ -291,14 +292,7 @@ the entries up to order (the roots of the characteristic polynomial `∏ (X - d 
 `Matrix.IsHermitian.roots_charpoly_eq_eigenvalues`). -/
 theorem inertia_diagonal (d : n → ℝ) (hD : (diagonal fun i => (d i : 𝕜)).IsHermitian) :
     hD.inertia = (#{i | d i < 0}, #{i | d i = 0}, #{i | 0 < d i}) := by
-  have h1 := hD.roots_charpoly_eq_eigenvalues
-  have h2 : (diagonal fun i => (d i : 𝕜)).charpoly.roots =
-      Multiset.map (RCLike.ofReal ∘ d) Finset.univ.val := by
-    rw [charpoly_diagonal, Polynomial.roots_prod]
-    · simp
-    · simp [Finset.prod_ne_zero_iff, Polynomial.X_sub_C_ne_zero]
-  rw [h1, ← Multiset.map_map, ← Multiset.map_map] at h2
-  have hm := Multiset.map_injective RCLike.ofReal_injective h2
+  have hm := hD.map_eigenvalues_diagonal
   have hc : ∀ (p : ℝ → Prop) [DecidablePred p], #{i | p (hD.eigenvalues i)} = #{i | p (d i)} := by
     intro p _
     have := congrArg (Multiset.countP p) hm

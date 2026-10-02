@@ -35,9 +35,6 @@ id = "Krylov.exists_norm_eq_one_tendsto_smul_powerIterate"
 id = "Krylov.tendsto_norm_sub_smul_powerIterate"
 
 [[node]]
-id = "Krylov.isCompl_iSup_maxGenEigenspace"
-
-[[node]]
 id = "Krylov.isCompl_maxGenEigenspace"
 
 [[node]]
@@ -48,21 +45,6 @@ id = "Krylov.eq_of_add_eq_add_mem_maxGenEigenspace"
 
 [[node]]
 id = "Krylov.maxGenEigenspace_eq_eigenspace_of_finrank_eq_one"
-
-[[node]]
-id = "Krylov.spectralProjector"
-
-[[node]]
-id = "Krylov.ker_spectralProjector"
-
-[[node]]
-id = "Krylov.range_spectralProjector"
-
-[[node]]
-id = "Krylov.injOn_spectralProjector_iff"
-
-[[node]]
-id = "Krylov.existsUnique_mem_spectralProjector_eq"
 
 [[node]]
 id = "Krylov.exists_eq_add_tendsto"
@@ -141,9 +123,6 @@ id = "Krylov.powerIterate_eq_smul"
 
 [[node]]
 id = "Krylov.inverseIterate_eq_powerIterate"
-
-[[node]]
-id = "Krylov.spectralProjector_apply_of_mem"
 
 [[node]]
 id = "LinearEquiv.conj_ringInverse"

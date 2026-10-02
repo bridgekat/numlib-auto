@@ -25,7 +25,7 @@ id = "IsHamiltonian.transpose_mul_J_eq"
 id = "IsSkewHamiltonian"
 
 [[node]]  # staged by ch07
-id = "isSkewHamiltonian_iff_fromBlocks"
+id = "isSkewHamiltonian_fromBlocks_iff"
 
 [[node]]  # staged by ch07
 id = "IsSkewHamiltonian.conj_symplectic"
@@ -35,3 +35,12 @@ id = "IsHamiltonian.isSkewHamiltonian_mul_self"
 
 [[node]]  # staged by ch07
 id = "mem_orthogonalGroup_symplecticGroup_iff"
+
+[[node]]
+id = "isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule"
+
+[[node]]
+id = "orthoSymplecticGroup"
+
+[[node]]
+id = "IsHamiltonian.transpose_mul_mul_of_mem_orthoSymplecticGroup"

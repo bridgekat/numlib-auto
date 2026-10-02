@@ -28,13 +28,13 @@ symplectic matrices); this module is the eigenvalue theory on top.
   `Matrix.IsHamiltonian.neg_mem_spectrum`; the eigenvalues of a symplectic matrix pair as
   `λ ↔ λ⁻¹` (`Matrix.inv_mem_spectrum_of_mem_symplecticGroup`). Spectra of real matrices are those
   of the complexifications.
-* Orthogonal symplectic transformations: `diag(P, P)` for orthogonal `P`
-  (`Matrix.fromBlocks_diagonal_mem_symplecticGroup`), plane rotations in the coordinates `inl i`,
-  `inr i` (`Matrix.planeRotation_inl_inr_mem_symplecticGroup`), and the
+* Orthogonal symplectic transformations (`Matrix.orthoSymplecticGroup`): `diag(P, P)` for
+  orthogonal `P` (`Matrix.fromBlocks_diagonal_mem_orthoSymplecticGroup`), plane rotations in the
+  coordinates `inl i`, `inr i` (`Matrix.planeRotation_inl_inr_mem_orthoSymplecticGroup`), and the
   Householder–Givens–Householder reduction of a vector to a multiple of the first coordinate vector
   (`Matrix.exists_orthogonalSymplectic_mulVec_eq`).
-* **The stable invariant subspace is Lagrangian**
-  (`Matrix.IsHamiltonian.isLagrangian_stable_invariant`):
+* **The stable invariant subspace is isotropic**
+  (`Matrix.IsHamiltonian.isotropic_of_mul_eq_mul_of_stable`):
   if `M X₀ = X₀ T₁` with `T₁` stable, then `X₀ᵀ J X₀ = 0`, because `W = X₀ᵀ J X₀` solves a
   Sylvester equation `T₁ᵀ W + W T₁ = 0` whose coefficients have spectra in opposite half-planes.
   This is the key lemma of the real Hamiltonian–Schur form (7.8.1), proved in the invariant-subspace
@@ -48,7 +48,8 @@ symplectic matrices); this module is the eigenvalue theory on top.
   (7.8.1)): without eigenvalues on the imaginary axis, `Qᵀ M Q = [[T, R], [0, -Tᵀ]]` with `Q`
   orthogonal symplectic and `T` quasi upper triangular with stable eigenvalues. The real stable
   invariant subspace has dimension `n`: the complexified stable and unstable spectral subspaces are
-  complementary (`Krylov.isCompl_iSup_maxGenEigenspace`) and conjugation-closed, so their real
+  complementary (`Module.End.isCompl_spectralSubspace`) and conjugation-closed
+  (`Matrix.star_mem_spectralSubspace_complexify`), so their real
   points span `ℝ^{2n}`, and each is isotropic (the Lagrangian lemma, applied to `M` and to `-M`), so
   neither exceeds `n`. An orthonormal basis `[Q₁; -Q₂]` completes to `[[Q₁, Q₂], [-Q₂, Q₁]]`, and
   the real Schur form of the stable block (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`),
@@ -176,9 +177,8 @@ theorem inv_mem_spectrum_of_mem_symplecticGroup {S : Matrix (l ⊕ l) (l ⊕ l) 
 
 /-- [golub2013matrix] §7.8.1: `diag(P, P)` for an orthogonal `P` is orthogonal symplectic (in
 particular for a Householder reflector). -/
-theorem fromBlocks_diagonal_mem_symplecticGroup {P : Matrix l l ℝ}
-    (hP : P ∈ orthogonalGroup l ℝ) :
-    fromBlocks P 0 0 P ∈ orthogonalGroup (l ⊕ l) ℝ ∧ fromBlocks P 0 0 P ∈ symplecticGroup l ℝ := by
+theorem fromBlocks_diagonal_mem_orthoSymplecticGroup {P : Matrix l l ℝ}
+    (hP : P ∈ orthogonalGroup l ℝ) : fromBlocks P 0 0 P ∈ orthoSymplecticGroup l ℝ := by
   have hP' := (mem_orthogonalGroup_iff' l ℝ).1 hP
   have hO : fromBlocks P 0 0 P ∈ orthogonalGroup (l ⊕ l) ℝ := by
     rw [mem_orthogonalGroup_iff', fromBlocks_transpose, fromBlocks_multiply]
@@ -186,12 +186,15 @@ theorem fromBlocks_diagonal_mem_symplecticGroup {P : Matrix l l ℝ}
   refine ⟨hO, (mem_symplecticGroup_iff_commute_J_of_mem_orthogonalGroup hO).2 ?_⟩
   exact (commute_J_iff).2 ⟨P, 0, by simp⟩
 
+@[deprecated (since := "2026-09-30")]
+alias fromBlocks_diagonal_mem_symplecticGroup := fromBlocks_diagonal_mem_orthoSymplecticGroup
+
 /-- [golub2013matrix] §7.8.1: a plane rotation in the coordinates `inl i`, `inr i` ("a Givens
 rotation that involves planes `i` and `i + n`") is orthogonal symplectic: it has the block form
 `fromBlocks Q₁ Q₂ (-Q₂) Q₁`, hence commutes with `J`. -/
-theorem planeRotation_inl_inr_mem_symplecticGroup (i : l) {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) :
-    planeRotation (Sum.inl i) (Sum.inr i) c s ∈ orthogonalGroup (l ⊕ l) ℝ ∧
-      planeRotation (Sum.inl i) (Sum.inr i) c s ∈ symplecticGroup l ℝ := by
+theorem planeRotation_inl_inr_mem_orthoSymplecticGroup (i : l) {c s : ℝ}
+    (hcs : c ^ 2 + s ^ 2 = 1) :
+    planeRotation (Sum.inl i) (Sum.inr i) c s ∈ orthoSymplecticGroup l ℝ := by
   have hne : (Sum.inl i : l ⊕ l) ≠ Sum.inr i := Sum.inl_ne_inr
   have hO := planeRotation_mem_orthogonalGroup hne hcs
   refine ⟨hO, (mem_symplecticGroup_iff_commute_J_of_mem_orthogonalGroup hO).2 ?_⟩
@@ -199,13 +202,18 @@ theorem planeRotation_inl_inr_mem_symplecticGroup (i : l) {c s : ℝ} (hcs : c ^
   ext (a | a) (b | b) <;> by_cases ha : a = i <;> by_cases hb : b = i <;>
     simp [planeRotation_apply hne, one_apply, ha, hb, @eq_comm _ i]
 
-/-- **The stable invariant subspace of a Hamiltonian matrix is Lagrangian** (the key lemma of the
+@[deprecated (since := "2026-09-30")]
+alias planeRotation_inl_inr_mem_symplecticGroup := planeRotation_inl_inr_mem_orthoSymplecticGroup
+
+/-- **The stable invariant subspace of a Hamiltonian matrix is isotropic** (the key lemma of the
 real Hamiltonian–Schur form, [golub2013matrix] §7.8.1; Paige–Van Loan 1981): if `M` is
 Hamiltonian, `M X₀ = X₀ T₁` and every eigenvalue of `T₁` has negative real part, then
-`X₀ᵀ J X₀ = 0`. `W = X₀ᵀ J X₀` satisfies `T₁ᵀ W + W T₁ = 0` (`J M = -Mᵀ J`), and the Sylvester
-operator of `T₁ᵀ` and `-T₁` is injective because their spectra lie in opposite open
-half-planes. (No independence of the columns of `X₀` is needed.) -/
-theorem IsHamiltonian.isLagrangian_stable_invariant {k : Type*} [Fintype k] [DecidableEq k]
+`X₀ᵀ J X₀ = 0`. With `n` independent columns this makes the column space Lagrangian, which is
+how `Matrix.exists_orthogonalSymplectic_hamiltonianSchur` uses it. `W = X₀ᵀ J X₀` satisfies
+`T₁ᵀ W + W T₁ = 0` (`J M = -Mᵀ J`), and the Sylvester operator of `T₁ᵀ` and `-T₁` is injective
+because their spectra lie in opposite open half-planes. (No independence of the columns of `X₀` is
+needed.) -/
+theorem IsHamiltonian.isotropic_of_mul_eq_mul_of_stable {k : Type*} [Fintype k] [DecidableEq k]
     {M : Matrix (l ⊕ l) (l ⊕ l) ℝ} (hM : M.IsHamiltonian) {X₀ : Matrix (l ⊕ l) k ℝ}
     {T₁ : Matrix k k ℝ} (hMX : M * X₀ = X₀ * T₁)
     (hT : ∀ μ ∈ spectrum ℂ T₁.complexify, μ.re < 0) : X₀ᵀ * J l ℝ * X₀ = 0 := by
@@ -227,6 +235,9 @@ theorem IsHamiltonian.isLagrangian_stable_invariant {k : Type*} [Fintype k] [Dec
     rw [Complex.neg_re] at h4
     linarith
   exact sylvesterMap_injective_of_isCoprime hcop (hsyl.trans (map_zero _).symm)
+
+@[deprecated (since := "2026-09-30")]
+alias IsHamiltonian.isLagrangian_stable_invariant := IsHamiltonian.isotropic_of_mul_eq_mul_of_stable
 
 /-- **The algebraic Riccati equation from the Hamiltonian–Schur form** ([golub2013matrix]
 (7.8.2)): let `M = fromBlocks A F G (-Aᵀ)` and `Q = fromBlocks Q₁ Q₂ (-Q₂) Q₁` orthogonal with
@@ -298,42 +309,26 @@ private theorem exists_orthogonal_mulVec_eq_smul_single (v : l → ℝ) (i : l) 
   exact ⟨_, householder_householderVec_mem_unitaryGroup hv i, _,
     householder_mulVec_eq_smul_single hv i⟩
 
-/-- Orthogonal symplectic matrices are closed under products. -/
-private theorem mul_mem_orthoSymp {P Q : Matrix (l ⊕ l) (l ⊕ l) ℝ}
-    (hP : P ∈ orthogonalGroup (l ⊕ l) ℝ ∧ P ∈ symplecticGroup l ℝ)
-    (hQ : Q ∈ orthogonalGroup (l ⊕ l) ℝ ∧ Q ∈ symplecticGroup l ℝ) :
-    P * Q ∈ orthogonalGroup (l ⊕ l) ℝ ∧ P * Q ∈ symplecticGroup l ℝ :=
-  ⟨mul_mem hP.1 hQ.1, mul_mem hP.2 hQ.2⟩
-
-/-- The transpose of an orthogonal symplectic matrix is orthogonal symplectic. -/
-private theorem transpose_mem_orthoSymp {P : Matrix (l ⊕ l) (l ⊕ l) ℝ}
-    (hP : P ∈ orthogonalGroup (l ⊕ l) ℝ ∧ P ∈ symplecticGroup l ℝ) :
-    Pᵀ ∈ orthogonalGroup (l ⊕ l) ℝ ∧ Pᵀ ∈ symplecticGroup l ℝ := by
-  refine ⟨?_, SymplecticGroup.transpose_mem hP.2⟩
-  have := Unitary.star_mem hP.1
-  rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-
 /-- **Any vector is carried to a multiple of a coordinate vector by an orthogonal symplectic
 matrix** ([golub2013matrix] §7.8.1, the Householder–Givens–Householder reduction): for
 `x : l ⊕ l → ℝ` and any `i₀ : l` there is an orthogonal symplectic `Q` with
 `Qᵀ x = ‖x‖₂ e_{inl i₀}`. `diag(P₁, P₁)` reduces the bottom half to a multiple of `e_{i₀}`, a plane
-rotation in the coordinates `inl i₀`, `inr i₀` (`Matrix.planeRotation_inl_inr_mem_symplecticGroup`)
-moves it to the top, `diag(P₂, P₂)` reduces the top half, and `diag(±1, ±1)` fixes the sign; the
-norm is preserved. -/
+rotation in the coordinates `inl i₀`, `inr i₀`
+(`Matrix.planeRotation_inl_inr_mem_orthoSymplecticGroup`) moves it to the top, `diag(P₂, P₂)`
+reduces the top half, and `diag(±1, ±1)` fixes the sign; the norm is preserved. -/
 theorem exists_orthogonalSymplectic_mulVec_eq (x : l ⊕ l → ℝ) (i₀ : l) :
-    ∃ Q : Matrix (l ⊕ l) (l ⊕ l) ℝ, Q ∈ orthogonalGroup (l ⊕ l) ℝ ∧ Q ∈ symplecticGroup l ℝ ∧
-      Qᵀ *ᵥ x = ‖WithLp.toLp 2 x‖ • Pi.single (Sum.inl i₀) 1 := by
+    ∃ Q ∈ orthoSymplecticGroup l ℝ, Qᵀ *ᵥ x = ‖WithLp.toLp 2 x‖ • Pi.single (Sum.inl i₀) 1 := by
   -- step 1: the bottom half
   obtain ⟨P₁, hP₁, β, hβ⟩ := exists_orthogonal_mulVec_eq_smul_single (x ∘ Sum.inr) i₀
   set D₁ := fromBlocks P₁ 0 0 P₁
-  have hD₁ := fromBlocks_diagonal_mem_symplecticGroup hP₁
+  have hD₁ := fromBlocks_diagonal_mem_orthoSymplecticGroup hP₁
   set y := D₁ *ᵥ x with hy
   have hy1 : y ∘ Sum.inr = β • Pi.single i₀ 1 := by
     rw [hy, fromBlocks_mulVec]; simp [hβ]
   -- step 2: the rotation
   have hne : (Sum.inl i₀ : l ⊕ l) ≠ Sum.inr i₀ := Sum.inl_ne_inr
   obtain ⟨hGk, -, hGq⟩ := transpose_planeRotation_givensPair_mulVec hne y
-  have hG := planeRotation_inl_inr_mem_symplecticGroup i₀
+  have hG := planeRotation_inl_inr_mem_orthoSymplecticGroup i₀
     (givensPair_sq_add_sq (y (Sum.inl i₀)) (y (Sum.inr i₀)))
   set G := planeRotation (Sum.inl i₀) (Sum.inr i₀) (givensPair (y (Sum.inl i₀)) (y (Sum.inr i₀))).1
     (givensPair (y (Sum.inl i₀)) (y (Sum.inr i₀))).2
@@ -351,17 +346,19 @@ theorem exists_orthogonalSymplectic_mulVec_eq (x : l ⊕ l → ℝ) (i₀ : l) :
   -- step 3: the top half
   obtain ⟨P₂, hP₂, γ, hγ⟩ := exists_orthogonal_mulVec_eq_smul_single (z ∘ Sum.inl) i₀
   set D₂ := fromBlocks P₂ 0 0 P₂
-  have hD₂ := fromBlocks_diagonal_mem_symplecticGroup hP₂
+  have hD₂ := fromBlocks_diagonal_mem_orthoSymplecticGroup hP₂
   have hw : D₂ *ᵥ z = γ • Pi.single (Sum.inl i₀) 1 := by
     rw [fromBlocks_mulVec, hz2, hγ]
     ext (j | j) <;> simp [Pi.single_apply]
   -- the composite and its norm
   set Q₀ := D₂ * Gᵀ * D₁
-  have hQ₀ := mul_mem_orthoSymp (mul_mem_orthoSymp hD₂ (transpose_mem_orthoSymp hG)) hD₁
+  have hQ₀ : Q₀ ∈ orthoSymplecticGroup l ℝ :=
+    mul_mem (mul_mem hD₂ (OrthoSymplecticGroup.transpose_mem hG)) hD₁
   have hQx : Q₀ *ᵥ x = γ • Pi.single (Sum.inl i₀) 1 := by
     rw [← hw, hz, hy, mulVec_mulVec, mulVec_mulVec]
   have hnorm : ‖WithLp.toLp 2 x‖ = |γ| := by
-    have h1 := norm_toEuclideanLin_apply_of_mem_unitaryGroup hQ₀.1 (WithLp.toLp 2 x)
+    have hO : Q₀ ∈ orthogonalGroup (l ⊕ l) ℝ := OrthoSymplecticGroup.mem_orthogonalGroup hQ₀
+    have h1 := norm_toEuclideanLin_apply_of_mem_unitaryGroup hO (WithLp.toLp 2 x)
     rw [toEuclideanLin_apply, WithLp.ofLp_toLp, hQx] at h1
     rw [← h1, EuclideanSpace.norm_eq]
     simp [Pi.single_apply, Real.sqrt_sq_eq_abs]
@@ -375,9 +372,9 @@ theorem exists_orthogonalSymplectic_mulVec_eq (x : l ⊕ l → ℝ) (i₀ : l) :
   have hP₃ : σ • (1 : Matrix l l ℝ) ∈ orthogonalGroup l ℝ := by
     rw [mem_orthogonalGroup_iff', transpose_smul, transpose_one, smul_mul_smul_comm,
       Matrix.one_mul, ← sq, hσ, one_smul]
-  have hD₃ := fromBlocks_diagonal_mem_symplecticGroup hP₃
-  refine ⟨(fromBlocks (σ • 1) 0 0 (σ • 1) * Q₀)ᵀ, (transpose_mem_orthoSymp
-    (mul_mem_orthoSymp hD₃ hQ₀)).1, (transpose_mem_orthoSymp (mul_mem_orthoSymp hD₃ hQ₀)).2, ?_⟩
+  have hD₃ := fromBlocks_diagonal_mem_orthoSymplecticGroup hP₃
+  refine ⟨(fromBlocks (σ • 1) 0 0 (σ • 1) * Q₀)ᵀ,
+    OrthoSymplecticGroup.transpose_mem (mul_mem hD₃ hQ₀), ?_⟩
   have hD3e : fromBlocks (σ • (1 : Matrix l l ℝ)) 0 0 (σ • 1) *ᵥ
       (Pi.single (Sum.inl i₀) (1 : ℝ) : l ⊕ l → ℝ) =
       σ • (Pi.single (Sum.inl i₀) 1 : l ⊕ l → ℝ) := by
@@ -395,17 +392,13 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 /-- The complexification of a real vector. -/
 private def cplx (x : ι → ℝ) : ι → ℂ := fun i => (x i : ℂ)
 
-/-- The sum of the generalized eigenspaces of a real matrix (acting on `ℂ^ι`) for the eigenvalues
-satisfying `P`. -/
-private noncomputable def specSub (M : Matrix ι ι ℝ) (P : ℂ → Prop) : Submodule ℂ (ι → ℂ) :=
-  ⨆ μ, ⨆ _ : P μ, Module.End.maxGenEigenspace (toLin' M.complexify) μ
+/-- The spectral subspace of a real matrix acting on `ℂ^ι`, for the eigenvalues satisfying `P`. -/
+private noncomputable abbrev specSub (M : Matrix ι ι ℝ) (P : ℂ → Prop) : Submodule ℂ (ι → ℂ) :=
+  Module.End.spectralSubspace (toLin' M.complexify) P
 
-private theorem isCompl_specSub (M : Matrix ι ι ℝ) (P : ℂ → Prop) :
-    IsCompl (specSub M P) (specSub M fun μ => ¬ P μ) :=
-  Krylov.isCompl_iSup_maxGenEigenspace _ P
-
-/-- Complex conjugation of the generalized eigenspaces of a real matrix. -/
-private theorem star_mem_maxGenEigenspace {M : Matrix ι ι ℝ} {μ : ℂ} {v : ι → ℂ}
+/-- **Complex conjugation of the generalized eigenspaces of a real matrix**: `v` is a generalized
+eigenvector of `M` for `μ` iff `v̄` is one for `μ̄`. -/
+theorem star_mem_maxGenEigenspace_complexify {M : Matrix ι ι ℝ} {μ : ℂ} {v : ι → ℂ}
     (hv : v ∈ Module.End.maxGenEigenspace (toLin' M.complexify) μ) :
     star v ∈ Module.End.maxGenEigenspace (toLin' M.complexify) (star μ) := by
   obtain ⟨k, hk⟩ := (Module.End.mem_maxGenEigenspace _ _ _).1 hv
@@ -425,9 +418,12 @@ private theorem star_mem_maxGenEigenspace {M : Matrix ι ι ℝ} {μ : ℂ} {v :
       rw [pow_succ', Module.End.mul_apply, ih, hstep, pow_succ', Module.End.mul_apply]
   rw [hpow, hk, star_zero]
 
-/-- A conjugation-closed predicate gives a conjugation-closed subspace. -/
-private theorem star_mem_specSub {M : Matrix ι ι ℝ} {P : ℂ → Prop}
-    (hP : ∀ μ, P μ → P (star μ)) {v : ι → ℂ} (hv : v ∈ specSub M P) : star v ∈ specSub M P := by
+/-- **The spectral subspace of a real matrix for a conjugation-closed set of eigenvalues is
+conjugation-closed.** -/
+theorem star_mem_spectralSubspace_complexify {M : Matrix ι ι ℝ} {P : ℂ → Prop}
+    (hP : ∀ μ, P μ → P (star μ)) {v : ι → ℂ}
+    (hv : v ∈ Module.End.spectralSubspace (toLin' M.complexify) P) :
+    star v ∈ Module.End.spectralSubspace (toLin' M.complexify) P := by
   set S : Submodule ℂ (ι → ℂ) :=
     { carrier := {w | star w ∈ specSub M P}
       add_mem' := fun ha hb => by simpa [star_add] using add_mem ha hb
@@ -436,30 +432,25 @@ private theorem star_mem_specSub {M : Matrix ι ι ℝ} {P : ℂ → Prop}
         simpa [star_smul] using Submodule.smul_mem _ (star c) hw }
   have hle : specSub M P ≤ S := by
     refine iSup₂_le fun μ hμ w hw => ?_
-    exact Submodule.mem_iSup_of_mem (star μ) (Submodule.mem_iSup_of_mem (hP μ hμ)
-      (star_mem_maxGenEigenspace hw))
+    exact Module.End.maxGenEigenspace_le_spectralSubspace (hP μ hμ)
+      (star_mem_maxGenEigenspace_complexify hw)
   exact hle hv
 
 /-- The spectral subspaces are invariant. -/
 private theorem mulVec_mem_specSub {M : Matrix ι ι ℝ} {P : ℂ → Prop} {v : ι → ℂ}
     (hv : v ∈ specSub M P) : M.complexify *ᵥ v ∈ specSub M P := by
-  set f := toLin' M.complexify
-  have hle : specSub M P ≤ (specSub M P).comap f := by
-    refine iSup₂_le fun μ hμ w hw => ?_
-    exact Submodule.mem_iSup_of_mem μ (Submodule.mem_iSup_of_mem hμ
-      (Module.End.mapsTo_maxGenEigenspace_of_comm (Commute.refl f) μ hw))
-  simpa [f] using hle hv
+  simpa using Module.End.apply_mem_spectralSubspace hv
 
 /-- A real vector splits into real parts of the two complementary spectral subspaces, when both
 predicates are conjugation-closed. -/
 private theorem exists_real_split (M : Matrix ι ι ℝ) {P : ℂ → Prop}
     (hP : ∀ μ, P μ ↔ P (star μ)) (x : ι → ℝ) :
     ∃ u w : ι → ℝ, x = u + w ∧ cplx u ∈ specSub M P ∧ cplx w ∈ specSub M fun μ => ¬ P μ := by
-  have hc := isCompl_specSub M P
+  have hc := Module.End.isCompl_spectralSubspace (toLin' M.complexify) P
   obtain ⟨a, ha, b, hb, hab⟩ := Submodule.mem_sup.1
     (hc.codisjoint.eq_top ▸ Submodule.mem_top : cplx x ∈ specSub M P ⊔ _)
-  have hsa := star_mem_specSub (fun μ h => (hP μ).1 h) ha
-  have hsb := star_mem_specSub (fun μ h => (hP μ).not.1 h) hb
+  have hsa := star_mem_spectralSubspace_complexify (fun μ h => (hP μ).1 h) ha
+  have hsb := star_mem_spectralSubspace_complexify (fun μ h => (hP μ).not.1 h) hb
   have hsx : star (cplx x) = cplx x := by ext i; simp [cplx]
   have hab' : star a + star b = cplx x := by rw [← star_add, hab, hsx]
   -- uniqueness of the decomposition
@@ -494,8 +485,8 @@ private def cplxLin : (ι → ℝ) →ₗ[ℝ] (ι → ℂ) where
 
 omit [DecidableEq ι] in
 private theorem cplx_mulVec (M : Matrix ι ι ℝ) (x : ι → ℝ) :
-    cplx (M *ᵥ x) = M.complexify *ᵥ cplx x := by
-  ext i; simp [cplx, complexify, mulVec, dotProduct]
+    cplx (M *ᵥ x) = M.complexify *ᵥ cplx x :=
+  (complexify_mulVec_ofReal M x).symm
 
 omit [DecidableEq ι] in
 /-- An invariant real subspace has a matrix of orthonormal columns spanning it, on which the
@@ -585,7 +576,8 @@ private theorem re_neg_of_cols {M : Matrix ι ι ℝ} {d : ℕ} {X₀ : Matrix �
     refine Module.End.eigenspace_le_maxGenEigenspace ?_
     rw [Module.End.mem_eigenspace_iff, toLin'_apply]
     exact hy
-  have := (isCompl_specSub M fun μ => μ.re < 0).disjoint.le_bot ⟨hymem, hyu⟩
+  have := (Module.End.isCompl_spectralSubspace (toLin' M.complexify)
+    fun μ => μ.re < 0).disjoint.le_bot ⟨hymem, hyu⟩
   exact hy0 ((Submodule.mem_bot ℂ).1 this)
 
 end StableSubspace
@@ -644,8 +636,8 @@ private theorem specSub_unstable_le (M : Matrix ι ι ℝ)
     rwa [toLin'_apply] at this
   obtain ⟨k, hk⟩ := (Module.End.mem_maxGenEigenspace _ _ _).1 hv
   have hneg : (-μ).re < 0 := by rw [Complex.neg_re]; linarith
-  refine Submodule.mem_iSup_of_mem (-μ) (Submodule.mem_iSup_of_mem hneg ?_)
-  refine (Module.End.mem_maxGenEigenspace _ _ _).2 ⟨k, ?_⟩
+  refine Module.End.maxGenEigenspace_le_spectralSubspace (A := toLin' (-M).complexify)
+    (p := fun μ => μ.re < 0) hneg ((Module.End.mem_maxGenEigenspace _ _ _).2 ⟨k, ?_⟩)
   have hneg : toLin' (-M).complexify - (-μ) • (1 : Module.End ℂ (ι → ℂ)) =
       -(toLin' M.complexify - μ • 1) := by
     rw [complexify_neg, map_neg, neg_smul]
@@ -683,7 +675,7 @@ private theorem exists_stable_lagrangian {M : Matrix (Fin n ⊕ Fin n) (Fin n �
     intro N hN X hinv hsub
     obtain ⟨X₀, h1, hMX, hcol⟩ := exists_orthonormal_cols N X hinv rfl
     have hst := re_neg_of_cols h1 hMX fun j => hsub _ (hcol j)
-    have hlag := hN.isLagrangian_stable_invariant hMX hst
+    have hlag := hN.isotropic_of_mul_eq_mul_of_stable hMX hst
     have := card_le_of_isotropic h1 hlag
     simpa using this
   have hs : Module.finrank ℝ Xs ≤ n :=
@@ -704,14 +696,14 @@ private theorem exists_stable_lagrangian {M : Matrix (Fin n ⊕ Fin n) (Fin n �
   obtain ⟨X₀, h1, hMX, hcol⟩ := exists_orthonormal_cols M Xs
     (fun x hx => mulVec_mem_realSub hx) hd
   have hst := re_neg_of_cols h1 hMX fun j => hcol j
-  exact ⟨X₀, h1, hM.isLagrangian_stable_invariant hMX hst, hMX, hst⟩
+  exact ⟨X₀, h1, hM.isotropic_of_mul_eq_mul_of_stable hMX hst, hMX, hst⟩
 
 /-- **The real Hamiltonian–Schur decomposition** ([golub2013matrix] (7.8.1); Paige and Van Loan
 1981): a real Hamiltonian `M` with no eigenvalue on the imaginary axis has an orthogonal symplectic
 `Q` with `Qᵀ M Q = fromBlocks T R 0 (-Tᵀ)`, `T` upper quasi-triangular, and the eigenvalues of `T`
 are stable (negative real part). Route: the real stable invariant subspace has dimension `n`
 (its complexification and that of the unstable one are complementary, and both are isotropic —
-`Matrix.IsHamiltonian.isLagrangian_stable_invariant` — so neither exceeds `n`); an orthonormal
+`Matrix.IsHamiltonian.isotropic_of_mul_eq_mul_of_stable` — so neither exceeds `n`); an orthonormal
 basis `[Q₁; -Q₂]` of it completes to the orthogonal symplectic `fromBlocks Q₁ Q₂ (-Q₂) Q₁`, which
 makes `M` block upper triangular with Hamiltonian structure; the real Schur form `U` of the leading
 block (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`), applied as `diag(U, U)`,
@@ -719,10 +711,9 @@ finishes. -/
 theorem exists_orthogonalSymplectic_hamiltonianSchur
     {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian)
     (hre : ∀ μ ∈ spectrum ℂ M.complexify, μ.re ≠ 0) :
-    ∃ Q : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, Q ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
-      Q ∈ symplecticGroup (Fin n) ℝ ∧ ∃ T R : Matrix (Fin n) (Fin n) ℝ,
-        Qᵀ * M * Q = fromBlocks T R 0 (-Tᵀ) ∧ T.IsQuasiUpperTriangular ∧
-          ∀ μ ∈ spectrum ℂ T.complexify, μ.re < 0 := by
+    ∃ Q ∈ orthoSymplecticGroup (Fin n) ℝ, ∃ T R : Matrix (Fin n) (Fin n) ℝ,
+      Qᵀ * M * Q = fromBlocks T R 0 (-Tᵀ) ∧ T.IsQuasiUpperTriangular ∧
+        ∀ μ ∈ spectrum ℂ T.complexify, μ.re < 0 := by
   obtain ⟨X₀, h1, hlag, hMX, hst⟩ := exists_stable_lagrangian hM hre
   set T₁ := X₀ᵀ * M * X₀
   set Q₁ : Matrix (Fin n) (Fin n) ℝ := Matrix.toRows₁ X₀
@@ -742,8 +733,9 @@ theorem exists_orthogonalSymplectic_hamiltonianSchur
     rw [IsSymm, transpose_mul, transpose_transpose]
     exact h.symm
   set Q := fromBlocks Q₁ Q₂ (-Q₂) Q₁
-  obtain ⟨hQo, hQs⟩ := mem_orthogonalGroup_symplecticGroup_iff.2 ⟨Q₁, Q₂, rfl, hsymm, hsum⟩
-  have hQQ : Qᵀ * Q = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hQo
+  have hQ : Q ∈ orthoSymplecticGroup (Fin n) ℝ :=
+    mem_orthoSymplecticGroup_iff_fromBlocks.2 ⟨Q₁, Q₂, rfl, hsymm, hsum⟩
+  have hQQ : Qᵀ * Q = 1 := OrthoSymplecticGroup.transpose_mul_self hQ
   have hQe : Q * fromRows (1 : Matrix (Fin n) (Fin n) ℝ) 0 = X₀ := by
     rw [hX, fromBlocks_mul_fromRows]; simp
   -- the block structure of `Qᵀ M Q`
@@ -757,10 +749,7 @@ theorem exists_orthogonalSymplectic_hamiltonianSchur
     have h := hS1
     rw [hSb, fromBlocks_mul_fromRows] at h
     simpa using fromRows_inj h
-  have hQinv : Q⁻¹ = Qᵀ := inv_eq_left_inv hQQ
-  have hSH : S.IsHamiltonian := by
-    have := hM.conj_symplectic hQs
-    rwa [hQinv] at this
+  have hSH : S.IsHamiltonian := hM.transpose_mul_mul_of_mem_orthoSymplecticGroup hQ
   obtain ⟨R, hR⟩ : ∃ R, R = S.toBlocks₁₂ := ⟨_, rfl⟩
   have hS : S = fromBlocks T₁ R 0 (-T₁ᵀ) := by
     rw [hR]
@@ -771,10 +760,9 @@ theorem exists_orthogonalSymplectic_hamiltonianSchur
   obtain ⟨U, hU, hUT⟩ := exists_orthogonal_conj_isQuasiUpperTriangular T₁
   have hUU : Uᵀ * U = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hU
   have hUU' : U * Uᵀ = 1 := (mem_orthogonalGroup_iff _ ℝ).1 hU
-  have hD := fromBlocks_diagonal_mem_symplecticGroup hU
+  have hD := fromBlocks_diagonal_mem_orthoSymplecticGroup hU
   set D := fromBlocks U 0 0 U
-  refine ⟨Q * D, mul_mem hQo hD.1, mul_mem hQs hD.2, Uᵀ * T₁ * U,
-    Uᵀ * R * U, ?_, hUT, ?_⟩
+  refine ⟨Q * D, mul_mem hQ hD, Uᵀ * T₁ * U, Uᵀ * R * U, ?_, hUT, ?_⟩
   · have key : (Q * D)ᵀ * M * (Q * D) = Dᵀ * S * D := by
       rw [transpose_mul]; simp only [S, Matrix.mul_assoc]
     rw [key, hS, fromBlocks_transpose, fromBlocks_multiply, fromBlocks_multiply]
@@ -865,18 +853,12 @@ private theorem J_eq_submatrix_headTail :
   ext (i | i) (j | j) <;> cases i using Fin.cases <;> cases j using Fin.cases <;>
     simp [J, headTail, one_apply, Fin.succ_ne_zero, (Fin.succ_ne_zero _).symm]
 
-/-- The transpose of an orthogonal symplectic matrix is its inverse. -/
-private theorem transpose_mul_self_of_orthoSymp {P : Matrix (l ⊕ l) (l ⊕ l) ℝ}
-    (hP : P ∈ orthogonalGroup (l ⊕ l) ℝ ∧ P ∈ symplecticGroup l ℝ) : Pᵀ * P = 1 :=
-  (mem_orthogonalGroup_iff' _ ℝ).1 hP.1
-
 private theorem liftOS_mem {V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ}
-    (hV : V ∈ orthogonalGroup (Fin m ⊕ Fin m) ℝ ∧ V ∈ symplecticGroup (Fin m) ℝ) :
-    liftOS V ∈ orthogonalGroup (Fin (m + 1) ⊕ Fin (m + 1)) ℝ ∧
-      liftOS V ∈ symplecticGroup (Fin (m + 1)) ℝ := by
+    (hV : V ∈ orthoSymplecticGroup (Fin m) ℝ) :
+    liftOS V ∈ orthoSymplecticGroup (Fin (m + 1)) ℝ := by
   refine ⟨(mem_orthogonalGroup_iff' _ ℝ).2 ?_, SymplecticGroup.mem_iff.2 ?_⟩
-  · rw [liftOS_transpose, ← liftOS_mul, transpose_mul_self_of_orthoSymp hV, liftOS_one]
-  · have hVJ := SymplecticGroup.mem_iff.1 hV.2
+  · rw [liftOS_transpose, ← liftOS_mul, OrthoSymplecticGroup.transpose_mul_self hV, liftOS_one]
+  · have hVJ := SymplecticGroup.mem_iff.1 (OrthoSymplecticGroup.mem_symplecticGroup hV)
     rw [liftOS_transpose, J_eq_submatrix_headTail, liftOS, liftOS, submatrix_mul_equiv,
       submatrix_mul_equiv, fromBlocks_multiply, fromBlocks_multiply]
     simp [hVJ]
@@ -939,8 +921,8 @@ private theorem isHam_submatrix_trail
       (K.toBlocks₂₁.submatrix Fin.succ Fin.succ) (K.toBlocks₂₂.submatrix Fin.succ Fin.succ) := by
     ext (i | i) (j | j) <;> rfl
   rw [← fromBlocks_toBlocks K, isHamiltonian_fromBlocks_iff,
-    isSkewHamiltonian_iff_fromBlocks] at hK
-  rw [hsub, isHamiltonian_fromBlocks_iff, isSkewHamiltonian_iff_fromBlocks]
+    isSkewHamiltonian_fromBlocks_iff] at hK
+  rw [hsub, isHamiltonian_fromBlocks_iff, isSkewHamiltonian_fromBlocks_iff]
   rcases hK with ⟨h1, h2, h3⟩ | ⟨h1, h2, h3⟩
   · left
     refine ⟨?_, by rw [transpose_submatrix, h2], by rw [transpose_submatrix, h3]⟩
@@ -952,18 +934,11 @@ private theorem isHam_submatrix_trail
     rfl
 
 /-- Orthogonal symplectic similarity preserves the two structures. -/
-private theorem isHam_conj {P K : Matrix (l ⊕ l) (l ⊕ l) ℝ}
-    (hP : P ∈ orthogonalGroup (l ⊕ l) ℝ ∧ P ∈ symplecticGroup l ℝ)
+private theorem isHam_conj {P K : Matrix (l ⊕ l) (l ⊕ l) ℝ} (hP : P ∈ orthoSymplecticGroup l ℝ)
     (hK : K.IsHamiltonian ∨ K.IsSkewHamiltonian) :
-    (Pᵀ * K * P).IsHamiltonian ∨ (Pᵀ * K * P).IsSkewHamiltonian := by
-  have hinv : P⁻¹ = Pᵀ := inv_eq_left_inv (transpose_mul_self_of_orthoSymp hP)
-  rcases hK with hK | hK
-  · left
-    have := hK.conj_symplectic hP.2
-    rwa [hinv] at this
-  · right
-    have := hK.conj_symplectic hP.2
-    rwa [hinv] at this
+    (Pᵀ * K * P).IsHamiltonian ∨ (Pᵀ * K * P).IsSkewHamiltonian :=
+  hK.imp (·.transpose_mul_mul_of_mem_orthoSymplecticGroup hP)
+    (·.transpose_mul_mul_of_mem_orthoSymplecticGroup hP)
 
 /-- The `(2,1)` block of a Hamiltonian or skew-Hamiltonian matrix is symmetric or skew-symmetric,
 so its zero pattern is symmetric. -/
@@ -971,7 +946,7 @@ private theorem apply_inr_inl_eq_zero {K : Matrix (l ⊕ l) (l ⊕ l) ℝ}
     (hK : K.IsHamiltonian ∨ K.IsSkewHamiltonian) {i j : l} (h : K (Sum.inr j) (Sum.inl i) = 0) :
     K (Sum.inr i) (Sum.inl j) = 0 := by
   rw [← fromBlocks_toBlocks K, isHamiltonian_fromBlocks_iff,
-    isSkewHamiltonian_iff_fromBlocks] at hK
+    isSkewHamiltonian_fromBlocks_iff] at hK
   rcases hK with ⟨-, hF, -⟩ | ⟨-, hF, -⟩
   · have := congrFun (congrFun hF j) i
     simp only [transpose_apply, toBlocks₂₁, of_apply] at this
@@ -992,10 +967,9 @@ private theorem exists_liftOS_isCondensed : ∀ (m : ℕ)
     (M : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ),
     M.IsHamiltonian ∨ M.IsSkewHamiltonian →
       ∃ V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ,
-        (V ∈ orthogonalGroup (Fin m ⊕ Fin m) ℝ ∧ V ∈ symplecticGroup (Fin m) ℝ) ∧
-          IsCondensed ((liftOS V)ᵀ * M * liftOS V)
+        V ∈ orthoSymplecticGroup (Fin m) ℝ ∧ IsCondensed ((liftOS V)ᵀ * M * liftOS V)
   | 0, M, _ => by
-    refine ⟨1, ⟨one_mem _, one_mem _⟩, fun i j h => ?_, fun i j h => ?_⟩
+    refine ⟨1, one_mem _, fun i j h => ?_, fun i j h => ?_⟩
     · have := i.isLt; omega
     · have := i.isLt
       have := j.isLt
@@ -1003,9 +977,9 @@ private theorem exists_liftOS_isCondensed : ∀ (m : ℕ)
   | m + 1, M, hM => by
     -- reduce the trailing part of the first column
     set x : Fin (m + 1) ⊕ Fin (m + 1) → ℝ := fun b => M (trail (m + 1) b) (Sum.inl 0)
-    obtain ⟨Q, hQo, hQs, hQx⟩ := exists_orthogonalSymplectic_mulVec_eq x 0
+    obtain ⟨Q, hQ, hQx⟩ := exists_orthogonalSymplectic_mulVec_eq x 0
     set M₁ := (liftOS Q)ᵀ * M * liftOS Q
-    have hM₁ := isHam_conj (liftOS_mem ⟨hQo, hQs⟩) hM
+    have hM₁ := isHam_conj (liftOS_mem hQ) hM
     have hcol₁ : (fun b => M₁ (trail (m + 1) b) (Sum.inl 0))
         = ‖WithLp.toLp 2 x‖ • Pi.single (Sum.inl 0) 1 := by
       funext b
@@ -1014,7 +988,7 @@ private theorem exists_liftOS_isCondensed : ∀ (m : ℕ)
     obtain ⟨W, hW, hcond⟩ :=
       exists_liftOS_isCondensed m (M₁.submatrix (trail (m + 1)) (trail (m + 1)))
         (isHam_submatrix_trail hM₁)
-    refine ⟨Q * liftOS W, mul_mem_orthoSymp ⟨hQo, hQs⟩ (liftOS_mem hW), ?_⟩
+    refine ⟨Q * liftOS W, mul_mem hQ (liftOS_mem hW), ?_⟩
     have hN : (liftOS (Q * liftOS W))ᵀ * M * liftOS (Q * liftOS W)
         = (liftOS (liftOS W))ᵀ * M₁ * liftOS (liftOS W) := by
       rw [liftOS_mul, transpose_mul]
@@ -1073,16 +1047,14 @@ the trailing coordinates `inl j`, `inr j`, `j > k`, which fixes the earlier colu
 the `(2,1)` block above its diagonal come from its (skew-)symmetry. -/
 theorem exists_orthogonalSymplectic_condensed {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hM : M.IsHamiltonian ∨ M.IsSkewHamiltonian) :
-    ∃ U : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, U ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
-      U ∈ symplecticGroup (Fin n) ℝ ∧ (Uᵀ * M * U).toBlocks₁₁.IsUpperHessenberg ∧
-        (Uᵀ * M * U).toBlocks₂₁.IsDiag := by
+    ∃ U ∈ orthoSymplecticGroup (Fin n) ℝ, (Uᵀ * M * U).toBlocks₁₁.IsUpperHessenberg ∧
+      (Uᵀ * M * U).toBlocks₂₁.IsDiag := by
   cases n with
   | zero =>
-    exact ⟨1, one_mem _, one_mem _, fun i => i.elim0, fun i => i.elim0⟩
+    exact ⟨1, one_mem _, fun i => i.elim0, fun i => i.elim0⟩
   | succ m =>
     obtain ⟨V, hV, h1, h2⟩ := exists_liftOS_isCondensed m M hM
-    refine ⟨liftOS V, (liftOS_mem hV).1, (liftOS_mem hV).2, fun i j ⟨k, hjk, hki⟩ => ?_,
-      fun i j hij => h2 i j hij⟩
+    refine ⟨liftOS V, liftOS_mem hV, fun i j ⟨k, hjk, hki⟩ => ?_, fun i j hij => h2 i j hij⟩
     exact h1 i j (by rw [Fin.lt_def] at hjk hki; omega)
 
 /-- **The Paige–Van Loan form** ([golub2013matrix] (7.8.3)): a real Hamiltonian `M` has an
@@ -1090,16 +1062,12 @@ orthogonal symplectic `U₀` with `U₀ᵀ M U₀ = [H R; D -Hᵀ]`, `H` upper H
 diagonal. -/
 theorem IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan
     {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian) :
-    ∃ U₀ : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, U₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
-      U₀ ∈ symplecticGroup (Fin n) ℝ ∧ ∃ H R D : Matrix (Fin n) (Fin n) ℝ,
-        U₀ᵀ * M * U₀ = fromBlocks H R D (-Hᵀ) ∧ H.IsUpperHessenberg ∧ D.IsDiag := by
-  obtain ⟨U, hUo, hUs, hH, hD⟩ := exists_orthogonalSymplectic_condensed (Or.inl hM)
-  have hN : (Uᵀ * M * U).IsHamiltonian := by
-    have hinv : U⁻¹ = Uᵀ := inv_eq_left_inv ((mem_orthogonalGroup_iff' _ ℝ).1 hUo)
-    have := hM.conj_symplectic hUs
-    rwa [hinv] at this
+    ∃ U₀ ∈ orthoSymplecticGroup (Fin n) ℝ, ∃ H R D : Matrix (Fin n) (Fin n) ℝ,
+      U₀ᵀ * M * U₀ = fromBlocks H R D (-Hᵀ) ∧ H.IsUpperHessenberg ∧ D.IsDiag := by
+  obtain ⟨U, hU, hH, hD⟩ := exists_orthogonalSymplectic_condensed (Or.inl hM)
+  have hN := hM.transpose_mul_mul_of_mem_orthoSymplecticGroup hU
   rw [← fromBlocks_toBlocks (Uᵀ * M * U), isHamiltonian_fromBlocks_iff] at hN
-  refine ⟨U, hUo, hUs, (Uᵀ * M * U).toBlocks₁₁, (Uᵀ * M * U).toBlocks₁₂,
+  refine ⟨U, hU, (Uᵀ * M * U).toBlocks₁₁, (Uᵀ * M * U).toBlocks₁₂,
     (Uᵀ * M * U).toBlocks₂₁, ?_, hH, hD⟩
   conv_lhs => rw [← fromBlocks_toBlocks (Uᵀ * M * U), hN.1]
 
@@ -1109,15 +1077,11 @@ skew-Hamiltonian `N` (for instance the square of a Hamiltonian matrix) has an or
 condensed form is skew-symmetric, hence zero. -/
 theorem IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg
     {N : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hN : N.IsSkewHamiltonian) :
-    ∃ V₀ : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, V₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
-      V₀ ∈ symplecticGroup (Fin n) ℝ ∧ ∃ H R : Matrix (Fin n) (Fin n) ℝ,
-        V₀ᵀ * N * V₀ = fromBlocks H R 0 Hᵀ ∧ H.IsUpperHessenberg := by
-  obtain ⟨V, hVo, hVs, hH, hD⟩ := exists_orthogonalSymplectic_condensed (Or.inr hN)
-  have hS : (Vᵀ * N * V).IsSkewHamiltonian := by
-    have hinv : V⁻¹ = Vᵀ := inv_eq_left_inv ((mem_orthogonalGroup_iff' _ ℝ).1 hVo)
-    have := hN.conj_symplectic hVs
-    rwa [hinv] at this
-  rw [← fromBlocks_toBlocks (Vᵀ * N * V), isSkewHamiltonian_iff_fromBlocks] at hS
+    ∃ V₀ ∈ orthoSymplecticGroup (Fin n) ℝ, ∃ H R : Matrix (Fin n) (Fin n) ℝ,
+      V₀ᵀ * N * V₀ = fromBlocks H R 0 Hᵀ ∧ H.IsUpperHessenberg := by
+  obtain ⟨V, hV, hH, hD⟩ := exists_orthogonalSymplectic_condensed (Or.inr hN)
+  have hS := hN.transpose_mul_mul_of_mem_orthoSymplecticGroup hV
+  rw [← fromBlocks_toBlocks (Vᵀ * N * V), isSkewHamiltonian_fromBlocks_iff] at hS
   have h0 : (Vᵀ * N * V).toBlocks₂₁ = 0 := by
     ext i j
     by_cases hij : i = j
@@ -1127,7 +1091,7 @@ theorem IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg
       simp only [zero_apply]
       linarith
     · exact hD hij
-  refine ⟨V, hVo, hVs, (Vᵀ * N * V).toBlocks₁₁, (Vᵀ * N * V).toBlocks₁₂, ?_, hH⟩
+  refine ⟨V, hV, (Vᵀ * N * V).toBlocks₁₁, (Vᵀ * N * V).toBlocks₁₂, ?_, hH⟩
   conv_lhs => rw [← fromBlocks_toBlocks (Vᵀ * N * V), hS.1, h0]
 
 /-- **The real skew-Hamiltonian Schur form** ([golub2013matrix] §7.8.1, after (7.8.4)): a real
@@ -1137,14 +1101,12 @@ quasi-triangular: `Q = V₀ diag(U, U)` with `V₀` from
 `H`. -/
 theorem IsSkewHamiltonian.exists_orthogonalSymplectic_schur
     {N : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hN : N.IsSkewHamiltonian) :
-    ∃ Q : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, Q ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
-      Q ∈ symplecticGroup (Fin n) ℝ ∧ ∃ T R : Matrix (Fin n) (Fin n) ℝ,
-        Qᵀ * N * Q = fromBlocks T R 0 Tᵀ ∧ T.IsQuasiUpperTriangular := by
-  obtain ⟨V₀, hVo, hVs, H, R, hHR, -⟩ := hN.exists_orthogonalSymplectic_hessenberg
+    ∃ Q ∈ orthoSymplecticGroup (Fin n) ℝ, ∃ T R : Matrix (Fin n) (Fin n) ℝ,
+      Qᵀ * N * Q = fromBlocks T R 0 Tᵀ ∧ T.IsQuasiUpperTriangular := by
+  obtain ⟨V₀, hV, H, R, hHR, -⟩ := hN.exists_orthogonalSymplectic_hessenberg
   obtain ⟨U, hU, hUT⟩ := exists_orthogonal_conj_isQuasiUpperTriangular H
-  have hD := fromBlocks_diagonal_mem_symplecticGroup hU
-  refine ⟨V₀ * fromBlocks U 0 0 U, mul_mem hVo hD.1, mul_mem hVs hD.2, Uᵀ * H * U,
-    Uᵀ * R * U, ?_, hUT⟩
+  refine ⟨V₀ * fromBlocks U 0 0 U, mul_mem hV (fromBlocks_diagonal_mem_orthoSymplecticGroup hU),
+    Uᵀ * H * U, Uᵀ * R * U, ?_, hUT⟩
   have key : (V₀ * fromBlocks U 0 0 U)ᵀ * N * (V₀ * fromBlocks U 0 0 U)
       = (fromBlocks U 0 0 U)ᵀ * (V₀ᵀ * N * V₀) * fromBlocks U 0 0 U := by
     rw [transpose_mul]

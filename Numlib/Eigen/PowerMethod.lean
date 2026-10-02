@@ -2,6 +2,7 @@ import Mathlib.Analysis.RCLike.Basic
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Projection
+import Numlib.LinearAlgebra.Eigenspace.Spectral
 import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Eigen.MinMax
@@ -152,14 +153,14 @@ graph transport it shares with the nonsymmetric Theorem 7.3.1.
 ## The spectral projector of a set of eigenvalues
 
 The projector `P` onto the invariant subspace of the selected eigenvalues is what turns the starting
-subspace `S₀` into the data the bound needs. `Krylov.isCompl_iSup_maxGenEigenspace` splits `V` as `M
+subspace `S₀` into the data the bound needs. `Module.End.isCompl_spectralSubspace` splits `V` as `M
 ⊕ W`, the supremum of the generalized eigenspaces whose eigenvalue satisfies `p` against the
-supremum of the rest, and `Krylov.spectralProjector` is the resulting *oblique* projector,
+supremum of the rest, and `Module.End.spectralProjector` is the resulting *oblique* projector,
 `Submodule.projection` of that decomposition; `Submodule.starProjection` is the wrong object here,
 the splitting being non-orthogonal unless `A` is normal. Its kernel is `W`, so the book's hypothesis
 that the vectors `P x_i` are linearly independent is `Disjoint S₀ W`
-(`Krylov.injOn_spectralProjector_iff`), and with `finrank S₀ = finrank M` every `u ∈ M` is `P s` for
-exactly one `s ∈ S₀` (`Krylov.existsUnique_mem_spectralProjector_eq`).
+(`Module.End.injOn_spectralProjector_iff`), and with `finrank S₀ = finrank M` every `u ∈ M` is
+`P s` for exactly one `s ∈ S₀` (`Module.End.existsUnique_mem_spectralProjector_eq`).
 -/
 
 open Filter Topology
@@ -352,10 +353,10 @@ theorem exists_norm_pow_apply_le_of_mem_maxGenEigenspace {μ : 𝕜} {w : E} {r 
 /-- Geometric decay on a supremum of maximal generalized eigenspaces: the rate `r` only has to beat
 the eigenvalues that actually occur. -/
 theorem exists_norm_pow_apply_le_of_mem_iSup {p : 𝕜 → Prop} {w : E} {r : ℝ}
-    (hw : w ∈ ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ)
+    (hw : w ∈ A.spectralSubspace p)
     (hr : ∀ μ, p μ → A.HasEigenvalue μ → ‖μ‖ < r) :
     ∃ C : ℝ, ∀ k, ‖(A ^ k) w‖ ≤ C * r ^ k := by
-  have key : (⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ) ≤ geomBounded A r := by
+  have key : A.spectralSubspace p ≤ geomBounded A r := by
     refine iSup₂_le fun μ hμ => ?_
     rcases eq_or_ne (A.maxGenEigenspace μ) ⊥ with h | h
     · rw [h]; exact bot_le
@@ -415,10 +416,10 @@ private theorem mem_tendstoZero_of_mem_maxGenEigenspace {l μ : 𝕜} {x : E}
 analytic input to the convergence theorem, and it holds under the strict dominance `‖μ‖ < ‖λ‖` with
 no uniform gap. -/
 theorem tendsto_inv_pow_smul_pow_apply_of_mem_iSup {l : 𝕜} {w : E} (hl : l ≠ 0)
-    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) :
     Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) w) atTop (𝓝 0) := by
-  have key : (⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ) ≤ tendstoZero A l := by
+  have key : A.spectralSubspace (· ≠ l) ≤ tendstoZero A l := by
     refine iSup₂_le fun μ hμ => ?_
     rcases eq_or_ne (A.maxGenEigenspace μ) ⊥ with h | h
     · rw [h]; exact bot_le
@@ -458,7 +459,7 @@ The limit `u` is the component of `x₀` in the `λ`-generalized eigenspace, so 
 that `λ^{-k} A^k x₀` converges to the spectral projection of `x₀`; the splitting is unique by
 `Krylov.eq_of_add_eq_add_mem_maxGenEigenspace`. -/
 theorem powerIterate_tendsto {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
-    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) x₀) atTop (𝓝 u) := by
   subst hx₀
@@ -470,7 +471,7 @@ theorem powerIterate_tendsto {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
 /-- The geometric rate: for every `r` above the moduli of the subdominant eigenvalues, the error of
 `λ^{-k} A^k x₀` is `O((r/‖λ‖)^k)`. -/
 theorem exists_norm_inv_pow_smul_pow_apply_sub_le {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
-    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hr : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < r) (hx₀ : x₀ = u + w) :
     ∃ C : ℝ, ∀ k, ‖(l ^ k)⁻¹ • (A ^ k) x₀ - u‖ ≤ C * (r / ‖l‖) ^ k := by
   obtain ⟨C, hC⟩ := exists_norm_pow_apply_le_of_mem_iSup hw hr
@@ -490,7 +491,7 @@ private theorem norm_ofReal_norm_div_pow (hl : l ≠ 0) (k : ℕ) :
 /-- Convergence of the normalized power iterate, after dividing out the unimodular factor
 `(λ/‖λ‖)^k`: the limit is the normalized eigenvector `‖u‖⁻¹ • u`. -/
 theorem tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
-    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => (((‖l‖ : 𝕜) / l) ^ k) • powerIterate A x₀ k) atTop
       (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) := by
@@ -518,7 +519,7 @@ theorem tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
 normalized eigenvector. `Krylov.tendsto_smul_powerIterate` is the same statement with the sequence
 named. -/
 theorem exists_norm_eq_one_tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
-    (hu0 : u ≠ 0) (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hu0 : u ≠ 0) (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
     ∃ c : ℕ → 𝕜, (∀ k, ‖c k‖ = 1) ∧
       Tendsto (fun k => c k • powerIterate A x₀ k) atTop (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) :=
@@ -528,7 +529,7 @@ theorem exists_norm_eq_one_tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (
 /-- The phase-free statement: the eigenvalue residual of the normalized power iterate tends to zero,
 so `x_k` becomes an approximate eigenvector for `λ`. -/
 theorem tendsto_norm_sub_smul_powerIterate {x₀ : E} (hA : Continuous A) (hl : l ≠ 0)
-    (hu : A u = l • u) (hu0 : u ≠ 0) (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hu : A u = l • u) (hu0 : u ≠ 0) (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => ‖A (powerIterate A x₀ k) - l • powerIterate A x₀ k‖) atTop (𝓝 0) := by
   have hres : Continuous fun v : E => A v - l • v := hA.sub (continuous_const_smul l)
@@ -552,37 +553,22 @@ section Splitting
 
 variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
 
-/-- **The spectral splitting of a set of eigenvalues.** The span of the generalized eigenspaces
-whose eigenvalue satisfies `p` and the span of all the others are complementary.
-
-This is the source of the spectral projector `Krylov.spectralProjector` onto the first summand: it
-is `Submodule.projection` applied to this decomposition, which is an *oblique* projector, not an
-orthogonal one, unless `B` is normal. Disjointness is the independence of the generalized
-eigenspaces, split along the two halves of `p`; codisjointness is `iSup_split` together with the
-fact that over an algebraically closed field in finite dimension the generalized eigenspaces span.
--/
-theorem isCompl_iSup_maxGenEigenspace [IsAlgClosed K] [FiniteDimensional K V]
-    (B : Module.End K V) (p : K → Prop) :
-    IsCompl (⨆ μ, ⨆ _ : p μ, B.maxGenEigenspace μ)
-      (⨆ μ, ⨆ _ : ¬ p μ, B.maxGenEigenspace μ) where
-  disjoint := (B.independent_maxGenEigenspace).disjoint_biSup_biSup
-    (s := {μ | p μ}) (t := {μ | ¬ p μ}) (Set.disjoint_left.mpr fun _ ha ha' => ha' ha)
-  codisjoint := by
-    rw [codisjoint_iff, ← iSup_split (B.maxGenEigenspace) p, B.iSup_maxGenEigenspace_eq_top]
+@[deprecated Module.End.isCompl_spectralSubspace (since := "2026-09-30")]
+alias isCompl_iSup_maxGenEigenspace := Module.End.isCompl_spectralSubspace
 
 /-- The `l`-generalized eigenspace and the span of the other generalized eigenspaces are
-complementary: the one-eigenvalue case of `Krylov.isCompl_iSup_maxGenEigenspace`, which is what the
+complementary: the one-eigenvalue case of `Module.End.isCompl_spectralSubspace`, which is what the
 power method's splitting `x₀ = u + w` uses. -/
 theorem isCompl_maxGenEigenspace [IsAlgClosed K] [FiniteDimensional K V] (B : Module.End K V)
-    (l : K) : IsCompl (B.maxGenEigenspace l) (⨆ μ, ⨆ _ : μ ≠ l, B.maxGenEigenspace μ) := by
-  have h := isCompl_iSup_maxGenEigenspace B (· = l)
-  rwa [iSup_iSup_eq_left] at h
+    (l : K) : IsCompl (B.maxGenEigenspace l) (B.spectralSubspace (· ≠ l)) := by
+  have h := B.isCompl_spectralSubspace (· = l)
+  rwa [Module.End.spectralSubspace_eq] at h
 
 /-- The generalized-eigenspace splitting `x = u + w` with `u` in the `l`-generalized eigenspace and
 `w` in the span of the others. -/
 theorem exists_eq_add_mem_maxGenEigenspace [IsAlgClosed K] [FiniteDimensional K V]
     (B : Module.End K V) (l : K) (x : V) :
-    ∃ u ∈ B.maxGenEigenspace l, ∃ w ∈ ⨆ μ, ⨆ _ : μ ≠ l, B.maxGenEigenspace μ, x = u + w := by
+    ∃ u ∈ B.maxGenEigenspace l, ∃ w ∈ B.spectralSubspace (· ≠ l), x = u + w := by
   have htop := codisjoint_iff.mp (isCompl_maxGenEigenspace B l).codisjoint
   obtain ⟨u, hu, w, hw, huw⟩ := Submodule.mem_sup.mp (htop.ge (Submodule.mem_top (x := x)))
   exact ⟨u, hu, w, hw, huw.symm⟩
@@ -591,11 +577,12 @@ theorem exists_eq_add_mem_maxGenEigenspace [IsAlgClosed K] [FiniteDimensional K 
 function of `x₀` alone — the spectral projection of `x₀` onto the `l`-generalized eigenspace. -/
 theorem eq_of_add_eq_add_mem_maxGenEigenspace {B : Module.End K V} {l : K} {u u' w w' : V}
     (hu : u ∈ B.maxGenEigenspace l) (hu' : u' ∈ B.maxGenEigenspace l)
-    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, B.maxGenEigenspace μ)
-    (hw' : w' ∈ ⨆ μ, ⨆ _ : μ ≠ l, B.maxGenEigenspace μ) (h : u + w = u' + w') :
+    (hw : w ∈ B.spectralSubspace (· ≠ l))
+    (hw' : w' ∈ B.spectralSubspace (· ≠ l)) (h : u + w = u' + w') :
     u = u' ∧ w = w' := by
-  have hdisj := B.independent_maxGenEigenspace l
-  have hmem : u - u' ∈ B.maxGenEigenspace l ⊓ ⨆ μ, ⨆ _ : μ ≠ l, B.maxGenEigenspace μ := by
+  have hdisj : Disjoint (B.maxGenEigenspace l) (B.spectralSubspace (· ≠ l)) :=
+    B.independent_maxGenEigenspace l
+  have hmem : u - u' ∈ B.maxGenEigenspace l ⊓ B.spectralSubspace (· ≠ l) := by
     refine ⟨sub_mem hu hu', ?_⟩
     have : u - u' = w' - w := by linear_combination (norm := module) h
     rw [this]
@@ -620,121 +607,41 @@ theorem maxGenEigenspace_eq_eigenspace_of_finrank_eq_one {B : Module.End K V} {l
   rw [h]
   exact Submodule.one_le_finrank_iff.mpr (Module.End.hasEigenvalue_iff.mp hev)
 
-/-! ### The spectral projector of a set of eigenvalues
+/-! The spectral projector moved to `Numlib/LinearAlgebra/Eigenspace/Spectral`. -/
 
-The projector along the splitting above, together with the two facts a subspace-iteration bound
-needs about it: which vectors it kills, and when it is injective on a starting subspace. -/
+@[deprecated Module.End.spectralProjector (since := "2026-09-30")]
+alias spectralProjector := Module.End.spectralProjector
 
-section SpectralProjector
+@[deprecated Module.End.spectralProjector_apply_mem (since := "2026-09-30")]
+alias spectralProjector_apply_mem := Module.End.spectralProjector_apply_mem
 
-variable [IsAlgClosed K] [FiniteDimensional K V]
+@[deprecated Module.End.sub_spectralProjector_mem (since := "2026-09-30")]
+alias sub_spectralProjector_mem := Module.End.sub_spectralProjector_mem
 
-/-- **The spectral projector** of the set of eigenvalues picked out by `p`: the projection onto `⨆
-μ, ⨆ _ : p μ, B.maxGenEigenspace μ` along the span of the remaining generalized eigenspaces.
+@[deprecated Module.End.spectralProjector_apply_of_mem (since := "2026-09-30")]
+alias spectralProjector_apply_of_mem := Module.End.spectralProjector_apply_of_mem
 
-It is *oblique* — `Submodule.starProjection` is a different map unless `B` is normal — and it is the
-`P` of the subspace-iteration bound of [saad2011numerical], Thm 5.2, where `p` selects the `m`
-dominant eigenvalues. Taking `p` to be `(· = l)` recovers the projector onto a single generalized
-eigenspace. -/
-noncomputable def spectralProjector (B : Module.End K V) (p : K → Prop) : Module.End K V :=
-  Submodule.projection _ _ (isCompl_iSup_maxGenEigenspace B p)
+@[deprecated Module.End.spectralProjector_apply_eq_zero_iff (since := "2026-09-30")]
+alias spectralProjector_apply_eq_zero_iff := Module.End.spectralProjector_apply_eq_zero_iff
 
-variable {B : Module.End K V} {p : K → Prop}
+@[deprecated Module.End.ker_spectralProjector (since := "2026-09-30")]
+alias ker_spectralProjector := Module.End.ker_spectralProjector
 
-/-- The projector lands in the invariant subspace of the selected eigenvalues. -/
-@[simp]
-theorem spectralProjector_apply_mem (x : V) :
-    spectralProjector B p x ∈ ⨆ μ, ⨆ _ : p μ, B.maxGenEigenspace μ :=
-  Submodule.projection_apply_mem _ _
+@[deprecated Module.End.range_spectralProjector (since := "2026-09-30")]
+alias range_spectralProjector := Module.End.range_spectralProjector
 
-/-- The complementary part of `x` lies in the invariant subspace of the discarded eigenvalues. This
-is the step that feeds `Krylov.exists_norm_pow_apply_le_of_mem_iSup`. -/
-theorem sub_spectralProjector_mem (x : V) :
-    x - spectralProjector B p x ∈ ⨆ μ, ⨆ _ : ¬ p μ, B.maxGenEigenspace μ :=
-  Submodule.sub_projection_mem _ _
+@[deprecated Module.End.isIdempotentElem_spectralProjector (since := "2026-09-30")]
+alias isIdempotentElem_spectralProjector := Module.End.isIdempotentElem_spectralProjector
 
-/-- The projector fixes the invariant subspace it projects onto. -/
-theorem spectralProjector_apply_of_mem {x : V}
-    (hx : x ∈ ⨆ μ, ⨆ _ : p μ, B.maxGenEigenspace μ) : spectralProjector B p x = x :=
-  Submodule.projection_apply_of_mem_left _ hx
+@[deprecated Module.End.spectralProjector_add_of_mem (since := "2026-09-30")]
+alias spectralProjector_add_of_mem := Module.End.spectralProjector_add_of_mem
 
-/-- The projector kills exactly the invariant subspace of the discarded eigenvalues. -/
-@[simp]
-theorem spectralProjector_apply_eq_zero_iff {x : V} :
-    spectralProjector B p x = 0 ↔ x ∈ ⨆ μ, ⨆ _ : ¬ p μ, B.maxGenEigenspace μ :=
-  Submodule.projection_apply_eq_zero_iff _
+@[deprecated Module.End.injOn_spectralProjector_iff (since := "2026-09-30")]
+alias injOn_spectralProjector_iff := Module.End.injOn_spectralProjector_iff
 
-/-- The kernel of the spectral projector is the invariant subspace of the discarded eigenvalues. -/
-theorem ker_spectralProjector :
-    LinearMap.ker (spectralProjector B p) = ⨆ μ, ⨆ _ : ¬ p μ, B.maxGenEigenspace μ :=
-  Submodule.ker_projection _
+@[deprecated Module.End.existsUnique_mem_spectralProjector_eq (since := "2026-09-30")]
+alias existsUnique_mem_spectralProjector_eq := Module.End.existsUnique_mem_spectralProjector_eq
 
-/-- The range of the spectral projector is the invariant subspace of the selected eigenvalues. -/
-theorem range_spectralProjector :
-    LinearMap.range (spectralProjector B p) = ⨆ μ, ⨆ _ : p μ, B.maxGenEigenspace μ :=
-  Submodule.range_projection _
-
-/-- A projector is idempotent. -/
-theorem isIdempotentElem_spectralProjector : IsIdempotentElem (spectralProjector B p) :=
-  Submodule.isIdempotentElem_projection _
-
-/-- The projector reads off the first summand of the spectral splitting. -/
-theorem spectralProjector_add_of_mem {u w : V}
-    (hu : u ∈ ⨆ μ, ⨆ _ : p μ, B.maxGenEigenspace μ)
-    (hw : w ∈ ⨆ μ, ⨆ _ : ¬ p μ, B.maxGenEigenspace μ) :
-    spectralProjector B p (u + w) = u := by
-  rw [map_add, spectralProjector_apply_of_mem hu, spectralProjector_apply_eq_zero_iff.mpr hw,
-    add_zero]
-
-/-- The spectral projector is injective on a subspace exactly when that subspace meets the invariant
-subspace of the discarded eigenvalues only in `0`. [saad2011numerical], Thm 5.2 states its
-hypothesis as the linear independence of the images `P x₁, …, P x_m` of a spanning family of `S`,
-which is this disjointness. -/
-theorem injOn_spectralProjector_iff {S : Submodule K V} :
-    Set.InjOn (spectralProjector B p) S ↔
-      Disjoint S (⨆ μ, ⨆ _ : ¬ p μ, B.maxGenEigenspace μ) := by
-  refine ⟨fun h => disjoint_iff_inf_le.mpr fun x hx => ?_, fun h => ?_⟩
-  · have h0 : spectralProjector B p x = 0 := spectralProjector_apply_eq_zero_iff.mpr hx.2
-    simpa using h hx.1 (Submodule.zero_mem S) (by simpa using h0)
-  · refine LinearMap.injOn_of_disjoint_ker (le_refl (S : Set V)) ?_
-    rwa [ker_spectralProjector]
-
-/-- **The starting subspace has a unique preimage for each dominant vector.** If the spectral
-projector is injective on `S` and `S` has the dimension of the invariant subspace it projects onto,
-then every `u` of that invariant subspace is `P s` for exactly one `s ∈ S`.
-
-Injectivity makes `P` a bijection from `S` onto its image by rank–nullity, and the equality of
-dimensions promotes the image to the whole invariant subspace. This is the first half of the
-conclusion of [saad2011numerical], Thm 5.2, and the vector `s` it produces is the one the bound's
-constant is measured against. -/
-theorem existsUnique_mem_spectralProjector_eq {S : Submodule K V}
-    (hdisj : Disjoint S (⨆ μ, ⨆ _ : ¬ p μ, B.maxGenEigenspace μ))
-    (hrank : Module.finrank K S = Module.finrank K ↥(⨆ μ, ⨆ _ : p μ, B.maxGenEigenspace μ))
-    {u : V} (hu : u ∈ ⨆ μ, ⨆ _ : p μ, B.maxGenEigenspace μ) :
-    ∃! s : V, s ∈ S ∧ spectralProjector B p s = u := by
-  have hinj : Set.InjOn (spectralProjector B p) S := injOn_spectralProjector_iff.mpr hdisj
-  have hker : LinearMap.ker (spectralProjector B p ∘ₗ S.subtype) = ⊥ := by
-    rw [LinearMap.ker_eq_bot']
-    rintro ⟨x, hx⟩ hx0
-    simpa using hinj hx (Submodule.zero_mem S) (by simpa using hx0)
-  have hrange : LinearMap.range (spectralProjector B p ∘ₗ S.subtype) =
-      S.map (spectralProjector B p) := by
-    rw [LinearMap.range_comp, Submodule.range_subtype]
-  have hfin : Module.finrank K ↥(S.map (spectralProjector B p)) = Module.finrank K S := by
-    have h := (spectralProjector B p ∘ₗ S.subtype).finrank_range_add_finrank_ker
-    rw [hker, hrange] at h
-    simpa using h
-  have hle : S.map (spectralProjector B p) ≤ ⨆ μ, ⨆ _ : p μ, B.maxGenEigenspace μ := by
-    rw [← range_spectralProjector (B := B) (p := p)]
-    exact LinearMap.map_le_range
-  have heq : S.map (spectralProjector B p) = ⨆ μ, ⨆ _ : p μ, B.maxGenEigenspace μ :=
-    Submodule.eq_of_le_of_finrank_le hle (by rw [hfin, hrank])
-  obtain ⟨s, hs, hsu⟩ := Submodule.mem_map.mp (heq.ge hu)
-  refine ⟨s, ⟨hs, hsu⟩, ?_⟩
-  rintro y ⟨hy, hyu⟩
-  exact hinj hy hs (by rw [hyu, hsu])
-
-end SpectralProjector
 
 end Splitting
 
@@ -746,7 +653,7 @@ component `u` is nonzero, and the exceptional set is the hyperplane `u = 0`. -/
 theorem exists_eq_add_tendsto [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] (hl : l ≠ 0)
     (hss : A.maxGenEigenspace l = A.eigenspace l)
     (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (x₀ : E) :
-    ∃ u w, A u = l • u ∧ w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ ∧ x₀ = u + w ∧
+    ∃ u w, A u = l • u ∧ w ∈ A.spectralSubspace (· ≠ l) ∧ x₀ = u + w ∧
       Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) x₀) atTop (𝓝 u) := by
   obtain ⟨u, hu, w, hw, huw⟩ := exists_eq_add_mem_maxGenEigenspace A l x₀
   rw [hss, Module.End.mem_eigenspace_iff] at hu
@@ -879,7 +786,7 @@ shifting worth its cost, since the dominance hypothesis here is about *distances
 not about moduli. -/
 theorem tendsto_smul_inverseIterate {l : 𝕜} {u w x₀ : E}
     (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (hu : A u = l • u) (hu0 : u ≠ 0)
-    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖l - σ‖ < ‖μ - σ‖) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => (((l - σ) / (‖l - σ‖ : 𝕜)) ^ k) • inverseIterate A σ x₀ k) atTop
       (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) := by
@@ -892,7 +799,7 @@ theorem tendsto_smul_inverseIterate {l : 𝕜} {u w x₀ : E}
   have hl' : (l - σ)⁻¹ ≠ 0 := inv_ne_zero hlσ0
   have hu' : B u = (l - σ)⁻¹ • u := inverse_apply_eq_smul hσ hlσ hu
   have hw' : w ∈ ⨆ ν, ⨆ _ : ν ≠ (l - σ)⁻¹, B.maxGenEigenspace ν := by
-    refine (iSup₂_le fun μ hμ => ?_ : (⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ) ≤ _) hw
+    refine (iSup₂_le fun μ hμ => ?_ : A.spectralSubspace (· ≠ l) ≤ _) hw
     rcases eq_or_ne μ σ with rfl | hμσ
     · rw [maxGenEigenspace_eq_bot_of_isUnit hσ]; exact bot_le
     · refine le_trans (maxGenEigenspace_le_maxGenEigenspace_inverse hσ hμσ) ?_
@@ -1008,14 +915,14 @@ The bound is informative exactly when `r < ‖λ‖`, that is when the selected 
 the power method makes, a constant `C` in exchange for an exponent whose base does not move. -/
 theorem exists_norm_sub_starProjection_subspaceIterate_le [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E]
     {p : 𝕜 → Prop} {u : E} {l : 𝕜} {r : ℝ}
-    (hdisj : Disjoint S (⨆ μ, ⨆ _ : ¬ p μ, A.maxGenEigenspace μ))
-    (hrank : Module.finrank 𝕜 S = Module.finrank 𝕜 ↥(⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ))
-    (hl : l ≠ 0) (hu : A u = l • u) (hmem : u ∈ ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ)
+    (hdisj : Disjoint S (A.spectralSubspace fun μ => ¬ p μ))
+    (hrank : Module.finrank 𝕜 S = Module.finrank 𝕜 (A.spectralSubspace p))
+    (hl : l ≠ 0) (hu : A u = l • u) (hmem : u ∈ A.spectralSubspace p)
     (hr : ∀ μ, ¬ p μ → A.HasEigenvalue μ → ‖μ‖ < r) :
     ∃ C : ℝ, ∀ k, ‖u - (subspaceIterate A S k).starProjection u‖ ≤ C * (r / ‖l‖) ^ k := by
-  obtain ⟨s, ⟨hs, hsu⟩, -⟩ := existsUnique_mem_spectralProjector_eq hdisj hrank hmem
-  have hw : s - u ∈ ⨆ μ, ⨆ _ : ¬ p μ, A.maxGenEigenspace μ := by
-    rw [← hsu]; exact sub_spectralProjector_mem s
+  obtain ⟨s, ⟨hs, hsu⟩, -⟩ := Module.End.existsUnique_mem_spectralProjector_eq hdisj hrank hmem
+  have hw : s - u ∈ A.spectralSubspace fun μ => ¬ p μ := by
+    rw [← hsu]; exact Module.End.sub_spectralProjector_mem s
   obtain ⟨C, hC⟩ := exists_norm_pow_apply_le_of_mem_iSup hw hr
   exact ⟨C, fun k => norm_sub_starProjection_subspaceIterate_le hl hu hs hC k⟩
 
@@ -1023,9 +930,9 @@ theorem exists_norm_sub_starProjection_subspaceIterate_le [IsAlgClosed 𝕜] [Fi
 ‖λ‖` the orthogonal projections of `u` onto `A^k S` converge to `u`. -/
 theorem tendsto_starProjection_subspaceIterate [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E]
     {p : 𝕜 → Prop} {u : E} {l : 𝕜} {r : ℝ}
-    (hdisj : Disjoint S (⨆ μ, ⨆ _ : ¬ p μ, A.maxGenEigenspace μ))
-    (hrank : Module.finrank 𝕜 S = Module.finrank 𝕜 ↥(⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ))
-    (hl : l ≠ 0) (hu : A u = l • u) (hmem : u ∈ ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ)
+    (hdisj : Disjoint S (A.spectralSubspace fun μ => ¬ p μ))
+    (hrank : Module.finrank 𝕜 S = Module.finrank 𝕜 (A.spectralSubspace p))
+    (hl : l ≠ 0) (hu : A u = l • u) (hmem : u ∈ A.spectralSubspace p)
     (hr0 : 0 ≤ r) (hrl : r < ‖l‖) (hr : ∀ μ, ¬ p μ → A.HasEigenvalue μ → ‖μ‖ < r) :
     Tendsto (fun k => (subspaceIterate A S k).starProjection u) atTop (𝓝 u) := by
   obtain ⟨C, hC⟩ := exists_norm_sub_starProjection_subspaceIterate_le hdisj hrank hl hu hmem hr
@@ -1151,30 +1058,31 @@ is data rather than a conclusion because nothing else in this file constructs a 
 supremum of eigenspaces.
 
 Everything else is supplied by the spectral projector:
-`Krylov.existsUnique_mem_spectralProjector_eq` produces the preimages `s j ∈ S` of the `x j`, a
+`Module.End.existsUnique_mem_spectralProjector_eq` produces the preimages `s j ∈ S` of the `x j`, a
 dimension count promotes them to a spanning family
 of `S`, and `Krylov.exists_norm_pow_apply_le_of_mem_iSup` bounds the orbit of each discrepancy
 `s j - x j`, which lies in the discarded invariant subspace. -/
 theorem exists_gap_subspaceIterate_le [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] {p : 𝕜 → Prop}
     {ι : Type*} [Finite ι] {x : ι → E} {l : ι → 𝕜} {r ρ : ℝ}
-    (hdisj : Disjoint S (⨆ μ, ⨆ _ : ¬ p μ, A.maxGenEigenspace μ))
-    (hrank : Module.finrank 𝕜 S = Module.finrank 𝕜 ↥(⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ))
+    (hdisj : Disjoint S (A.spectralSubspace fun μ => ¬ p μ))
+    (hrank : Module.finrank 𝕜 S = Module.finrank 𝕜 (A.spectralSubspace p))
     (hxli : LinearIndependent 𝕜 x)
-    (hM : (⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ) = Submodule.span 𝕜 (Set.range x))
+    (hM : A.spectralSubspace p = Submodule.span 𝕜 (Set.range x))
     (heig : ∀ j, A (x j) = l j • x j) (hρ : 0 < ρ) (hlρ : ∀ j, ρ ≤ ‖l j‖)
     (hr : 0 ≤ r) (hrρ : r < ρ) (hspec : ∀ μ, ¬ p μ → A.HasEigenvalue μ → ‖μ‖ < r) :
-    ∃ D : ℝ, ∀ k, (⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ).gap (subspaceIterate A S k)
+    ∃ D : ℝ, ∀ k, (A.spectralSubspace p).gap (subspaceIterate A S k)
       ≤ D * (r / ρ) ^ k := by
   cases nonempty_fintype ι
-  have hxM : ∀ j, x j ∈ (⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ) := fun j => by
+  have hxM : ∀ j, x j ∈ A.spectralSubspace p := fun j => by
     rw [hM]; exact Submodule.subset_span ⟨j, rfl⟩
-  choose s hs using fun j => (existsUnique_mem_spectralProjector_eq hdisj hrank (hxM j)).exists
+  choose s hs using fun j =>
+    (Module.End.existsUnique_mem_spectralProjector_eq hdisj hrank (hxM j)).exists
   have hsS : ∀ j, s j ∈ S := fun j => (hs j).1
-  have hsP : ∀ j, spectralProjector A p (s j) = x j := fun j => (hs j).2
+  have hsP : ∀ j, A.spectralProjector p (s j) = x j := fun j => (hs j).2
   have hsli : LinearIndependent 𝕜 s := by
-    have hcomp : LinearIndependent 𝕜 fun j => spectralProjector A p (s j) := by
+    have hcomp : LinearIndependent 𝕜 fun j => A.spectralProjector p (s j) := by
       simpa only [hsP] using hxli
-    exact hcomp.of_comp (spectralProjector A p)
+    exact hcomp.of_comp (A.spectralProjector p)
   have hcard : Module.finrank 𝕜 ↥(Submodule.span 𝕜 (Set.range s)) = Fintype.card ι :=
     finrank_span_eq_card hsli
   have hSspan : S = Submodule.span 𝕜 (Set.range s) := by
@@ -1185,7 +1093,7 @@ theorem exists_gap_subspaceIterate_le [IsAlgClosed 𝕜] [FiniteDimensional 𝕜
     intro j
     refine exists_norm_pow_apply_le_of_mem_iSup ?_ hspec
     rw [← hsP j]
-    exact sub_spectralProjector_mem (s j)
+    exact Module.End.sub_spectralProjector_mem (s j)
   choose Cf hCf using hC
   refine gap_subspaceIterate_le hxli hM hSspan heig (fun j => ?_) hρ hlρ hr hrρ
     (C := ∑ j, max (Cf j) 0) (fun j k => ?_)
@@ -1422,7 +1330,7 @@ theorem tendsto_inner_apply_of_tendsto_smul {A : Module.End 𝕜 E} (hA : Contin
 `Krylov.tendsto_smul_powerIterate`, `⟪q k, A (q k)⟫ → l` for the normalized iterates `q k`. -/
 theorem tendsto_inner_powerIterate {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜} {u w x₀ : E}
     (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
-    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => (inner 𝕜 (powerIterate A x₀ k) (A (powerIterate A x₀ k)) : 𝕜)) atTop
       (𝓝 l) := by
@@ -1443,7 +1351,7 @@ hypothesis quantifies only over the eigenvalues whose generalized eigenvectors o
 is the form for a starting vector with no component along the dominant eigenvectors. -/
 theorem tendsto_smul_powerIterate_of_mem_iSup {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜}
     {u w x₀ : E} {p : 𝕜 → Prop} (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
-    (hw : w ∈ ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ) {r : ℝ} (hr0 : 0 ≤ r) (hrl : r < ‖l‖)
+    (hw : w ∈ A.spectralSubspace p) {r : ℝ} (hr0 : 0 ≤ r) (hrl : r < ‖l‖)
     (hdom : ∀ μ, p μ → A.HasEigenvalue μ → ‖μ‖ < r) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => ((‖l‖ : 𝕜) / l) ^ k • powerIterate A x₀ k) atTop
         (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) ∧
@@ -1495,7 +1403,7 @@ theorem tendsto_smul_powerIterate_of_mem_iSup {A : Module.End 𝕜 E} (hA : Cont
 normalized inverse iterates converge to `l`. -/
 theorem tendsto_inner_inverseIterate {A : Module.End 𝕜 E} (hA : Continuous A) {σ l : 𝕜}
     {u w x₀ : E} (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (hu : A u = l • u) (hu0 : u ≠ 0)
-    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖l - σ‖ < ‖μ - σ‖) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => (inner 𝕜 (inverseIterate A σ x₀ k) (A (inverseIterate A σ x₀ k)) : 𝕜))
       atTop (𝓝 l) := by
@@ -1564,7 +1472,7 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜
 
 /-- Normalizing a vector at most doubles its distance to a unit vector:
 `‖‖v‖⁻¹ v - u‖ ≤ 2 ‖v - u‖` for `‖u‖ = 1` (with `‖0‖⁻¹ 0 = 0`). -/
-theorem norm_inv_norm_smul_sub_le {u v : E} (hu : ‖u‖ = 1) :
+theorem _root_.norm_inv_norm_smul_sub_le {u v : E} (hu : ‖u‖ = 1) :
     ‖((‖v‖⁻¹ : ℝ) : 𝕜) • v - u‖ ≤ 2 * ‖v - u‖ := by
   have h1 : ‖((‖v‖⁻¹ : ℝ) : 𝕜) • v - v‖ ≤ ‖v - u‖ := by
     rcases eq_or_ne v 0 with rfl | hv
@@ -1579,6 +1487,9 @@ theorem norm_inv_norm_smul_sub_le {u v : E} (hu : ‖u‖ = 1) :
   calc ‖((‖v‖⁻¹ : ℝ) : 𝕜) • v - u‖ ≤ ‖((‖v‖⁻¹ : ℝ) : 𝕜) • v - v‖ + ‖v - u‖ :=
         norm_sub_le_norm_sub_add_norm_sub _ _ _
     _ ≤ 2 * ‖v - u‖ := by linarith
+
+@[deprecated _root_.norm_inv_norm_smul_sub_le (since := "2026-09-30")]
+alias norm_inv_norm_smul_sub_le := _root_.norm_inv_norm_smul_sub_le
 
 /-- The unimodular rephasing of the power iterate: with `a = α i₀ l i₀^k ≠ 0` and
 `A^k x₀ = a v`, the iterate times `‖a‖ / a` is the normalization `‖v‖⁻¹ v` of `v`. -/
@@ -1598,7 +1509,7 @@ theorem smul_powerIterate_eq_of_eq_smul {A : Module.End 𝕜 E} {x₀ v : E} {a 
 hypotheses of `Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis`, the power iterate
 rephased by the unimodular `c_k = ‖α i₀ l i₀^k‖ / (α i₀ l i₀^k)` is within
 `2 (∑_{i ≠ i₀} ‖α i / α i₀‖) (ρ / ‖l i₀‖)^k` of the unit eigenvector `x i₀`. Normalizing costs
-the factor `2` (`Krylov.norm_inv_norm_smul_sub_le`). -/
+the factor `2` (`norm_inv_norm_smul_sub_le`). -/
 theorem norm_smul_powerIterate_sub_le_of_eigenbasis {ι : Type*} [Fintype ι] [DecidableEq ι]
     {A : Module.End 𝕜 E} {x : ι → E} {l : ι → 𝕜} (hx : ∀ i, A (x i) = l i • x i)
     (hx1 : ∀ i, ‖x i‖ = 1) {i₀ : ι} (hl₀ : l i₀ ≠ 0) {ρ : ℝ} (hρ : ∀ i, i ≠ i₀ → ‖l i‖ ≤ ρ)
@@ -1610,7 +1521,7 @@ theorem norm_smul_powerIterate_sub_le_of_eigenbasis {ι : Type*} [Fintype ι] [D
   have hAv : (A ^ k) x₀ = (α i₀ * l i₀ ^ k) • v := by
     rw [hv, smul_smul, mul_inv_cancel₀ hne, one_smul]
   rw [smul_powerIterate_eq_of_eq_smul hne hAv, mul_assoc]
-  refine (norm_inv_norm_smul_sub_le (hx1 i₀)).trans ?_
+  refine (_root_.norm_inv_norm_smul_sub_le (hx1 i₀)).trans ?_
   gcongr
   exact norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis hx hx1 hl₀ hρ hα hx₀ k
 
@@ -1623,7 +1534,7 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 /-- The angle between the line through a unit vector `u` and a unit vector `q` is at most the
 distance from `u` to any unimodular multiple of `q`: `P_{𝕜u}` is the best approximation from the
 line, and `c⁻¹ u` lies on it. -/
-theorem sinAngle_span_singleton_le_norm_smul_sub {u q : E} (hq : ‖q‖ = 1) {c : 𝕜}
+theorem _root_.Submodule.sinAngle_span_singleton_le_norm_smul_sub {u q : E} (hq : ‖q‖ = 1) {c : 𝕜}
     (hc : ‖c‖ = 1) : (𝕜 ∙ u).sinAngle q ≤ ‖c • q - u‖ := by
   have hc0 : c ≠ 0 := norm_ne_zero_iff.1 (by rw [hc]; exact one_ne_zero)
   have hmem : c⁻¹ • u ∈ (𝕜 ∙ u) := Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self u)
@@ -1635,6 +1546,9 @@ theorem sinAngle_span_singleton_le_norm_smul_sub {u q : E} (hq : ‖q‖ = 1) {c
   rw [hq, mul_one] at hs
   rw [hs]
   exact h.trans heq.le
+
+@[deprecated Submodule.sinAngle_span_singleton_le_norm_smul_sub (since := "2026-09-30")]
+alias sinAngle_span_singleton_le_norm_smul_sub := Submodule.sinAngle_span_singleton_le_norm_smul_sub
 
 /-- The eigendirection rate of the power method with an eigenbasis ([golub2013matrix] §7.3.1,
 `dist(span{q^(k)}, span{x₁}) = O(|λ₂/λ₁|^k)`): under the hypotheses of
@@ -1665,7 +1579,7 @@ theorem exists_norm_sub_smul_powerIterate_le_of_eigenbasis {ι : Type*} [Fintype
   have hne : α i₀ * l i₀ ^ k ≠ 0 := mul_ne_zero hα (pow_ne_zero k hl₀)
   have hc : ‖((‖α i₀ * l i₀ ^ k‖ : 𝕜) / (α i₀ * l i₀ ^ k))‖ = 1 := by
     rw [norm_div, RCLike.norm_ofReal, abs_norm, div_self (norm_ne_zero_iff.2 hne)]
-  exact (sinAngle_span_singleton_le_norm_smul_sub (norm_powerIterate_of_ne_zero A x₀ k h0)
+  exact (Submodule.sinAngle_span_singleton_le_norm_smul_sub (norm_powerIterate_of_ne_zero A x₀ k h0)
     hc).trans h
 
 /-- [golub2013matrix] (7.3.5), rigorous: with the hypotheses of
@@ -1729,32 +1643,11 @@ theorem exists_norm_inner_powerIterate_sub_le_of_eigenbasis {ι : Type*} [Fintyp
 
 variable {ι : Type*} [Fintype ι] {A : Module.End 𝕜 E}
 
-/-- In an orthonormal eigenbasis the `i`-th coordinate of `A^k w` is `l i ^ k` times that of
-`w`. -/
-theorem inner_pow_apply_of_eigenbasis (v : OrthonormalBasis ι 𝕜 E) {l : ι → 𝕜}
-    (hv : ∀ i, A (v i) = l i • v i) (k : ℕ) (w : E) (i : ι) :
-    (inner 𝕜 (v i) ((A ^ k) w) : 𝕜) = l i ^ k * inner 𝕜 (v i) w := by
-  have hpow : ∀ j, (A ^ k) (v j) = l j ^ k • v j := fun j => by
-    induction k with
-    | zero => simp
-    | succ k ih => rw [pow_succ', Module.End.mul_apply, ih, map_smul, hv, smul_smul, ← pow_succ]
-  have hw : (A ^ k) w = ∑ j, (inner 𝕜 (v j) w * l j ^ k) • v j := by
-    conv_lhs => rw [← v.sum_repr' w]
-    rw [map_sum]
-    refine Finset.sum_congr rfl fun j _ => ?_
-    rw [map_smul, hpow, smul_smul]
-  rw [hw, v.orthonormal.inner_right_fintype, mul_comm]
+@[deprecated OrthonormalBasis.inner_pow_apply_of_apply_eq_smul (since := "2026-09-30")]
+alias inner_pow_apply_of_eigenbasis := OrthonormalBasis.inner_pow_apply_of_apply_eq_smul
 
-/-- An operator with an orthonormal eigenbasis and real eigenvalues is symmetric. -/
-theorem isSymmetric_of_eigenbasis (v : OrthonormalBasis ι 𝕜 E) {l : ι → ℝ}
-    (hv : ∀ i, A (v i) = (l i : 𝕜) • v i) : A.IsSymmetric := by
-  intro x y
-  have h1 := inner_pow_apply_of_eigenbasis v hv 1
-  simp only [pow_one] at h1
-  rw [← v.sum_inner_mul_inner (A x) y, ← v.sum_inner_mul_inner x (A y)]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [h1, ← inner_conj_symm (A x), h1, map_mul, RCLike.conj_ofReal, inner_conj_symm]
-  ring
+@[deprecated OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul (since := "2026-09-30")]
+alias isSymmetric_of_eigenbasis := OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul
 
 /-- The angle bound of the power method ([golub2013matrix] Theorem 8.2.1, (8.2.4)): let `v` be
 an orthonormal basis of `E` with `A (v i) = l i • v i`, a distinguished `i₀` with `l i₀ ≠ 0` and
@@ -1778,7 +1671,7 @@ theorem sinAngle_powerIterate_le_of_eigenbasis (v : OrthonormalBasis ι 𝕜 E) 
   have hl0 : 0 < ‖l i₀‖ := norm_pos_iff.2 hl₀
   set y := (A ^ k) x₀ with hy
   have hyi : ∀ i, (inner 𝕜 (v i) y : 𝕜) = l i ^ k * a i := fun i =>
-    inner_pow_apply_of_eigenbasis v hv k x₀ i
+    v.inner_pow_apply_of_apply_eq_smul hv k x₀ i
   have hpars : ∑ i, ‖a i‖ ^ 2 = 1 := by rw [ha, v.sum_sq_norm_inner_right, hx₀, one_pow]
   have hrest : ∑ i ∈ Finset.univ.erase i₀, ‖a i‖ ^ 2 = 1 - c ^ 2 := by
     rw [← hpars, ← Finset.add_sum_erase _ _ (Finset.mem_univ i₀)]; ring
@@ -1858,9 +1751,10 @@ theorem sinAngle_powerIterate_le_of_eigenbasis (v : OrthonormalBasis ι 𝕜 E) 
 
 /-- The Rayleigh-quotient bound of the power method ([golub2013matrix] Theorem 8.2.1, (8.2.5))
 with the book's constant: let `v` be an orthonormal basis of `E` with `A (v i) = l i • v i` and
-`l i` real (so `A` is symmetric, `Krylov.isSymmetric_of_eigenbasis`), `l i₀ ≠ 0`, `|l i| ≤ ρ` and
-`|l i₀ - l i| ≤ δ` for `i ≠ i₀`, and a unit `x₀` with `c := ‖⟪v i₀, x₀⟫‖ ≠ 0`. Then
-`|l i₀ - re ⟪q_k, A q_k⟫| ≤ δ ((1 - c²)/c²) (ρ / |l i₀|)^(2k)` for `q_k = powerIterate A x₀ k`.
+`l i` real (so `A` is symmetric, `OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul`),
+`l i₀ ≠ 0`, `|l i| ≤ ρ` and `|l i₀ - l i| ≤ δ` for `i ≠ i₀`, and a unit `x₀` with
+`c := ‖⟪v i₀, x₀⟫‖ ≠ 0`. Then `|l i₀ - re ⟪q_k, A q_k⟫| ≤ δ ((1 - c²)/c²) (ρ / |l i₀|)^(2k)`
+for `q_k = powerIterate A x₀ k`.
 The book's `max_{i ≠ i₀} |λ_{i₀} - λ_i|` is the least admissible `δ`; the spread of the spectrum
 (`LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`) is another. In eigencoordinates
 `ν_k = ∑ l_i^{2k+1} |a_i|² / ∑ l_i^{2k} |a_i|²`, so `l_{i₀} - ν_k = ∑_{i ≠ i₀} (l_{i₀} - l_i)
@@ -1873,7 +1767,7 @@ theorem abs_sub_rayleigh_powerIterate_le_of_eigenbasis (v : OrthonormalBasis ι 
       ≤ δ * ((1 - ‖(inner 𝕜 (v i₀) x₀ : 𝕜)‖ ^ 2) / ‖(inner 𝕜 (v i₀) x₀ : 𝕜)‖ ^ 2)
         * (ρ / |l i₀|) ^ (2 * k) := by
   classical
-  have hA := isSymmetric_of_eigenbasis v hv
+  have hA := v.isSymmetric_of_apply_eq_ofReal_smul hv
   set wgt : ι → ℝ := fun i => ‖(inner 𝕜 (v i) x₀ : 𝕜)‖ ^ 2 with hwgt
   have hw0 : ∀ i, 0 ≤ wgt i := fun i => sq_nonneg _
   have hwpos : 0 < wgt i₀ := pow_pos (norm_pos_iff.mpr hc) 2
@@ -1882,7 +1776,7 @@ theorem abs_sub_rayleigh_powerIterate_le_of_eigenbasis (v : OrthonormalBasis ι 
     rw [← hsum, ← Finset.add_sum_erase _ _ (Finset.mem_univ i₀)]; ring
   set y := (A ^ k) x₀ with hy
   have hyi : ∀ i, (inner 𝕜 (v i) y : 𝕜) = (l i : 𝕜) ^ k * inner 𝕜 (v i) x₀ := fun i =>
-    inner_pow_apply_of_eigenbasis v hv k x₀ i
+    v.inner_pow_apply_of_apply_eq_smul hv k x₀ i
   set D := ∑ i, l i ^ (2 * k) * wgt i with hD
   set N := ∑ i, l i ^ (2 * k + 1) * wgt i with hN
   have hrepr : ∀ i, ‖(inner 𝕜 (v i) y : 𝕜)‖ ^ 2 = l i ^ (2 * k) * wgt i := fun i => by
@@ -1894,7 +1788,7 @@ theorem abs_sub_rayleigh_powerIterate_le_of_eigenbasis (v : OrthonormalBasis ι 
   have hform : RCLike.re (inner 𝕜 (A y) y) = N := by
     rw [← v.sum_inner_mul_inner (A y) y, map_sum, hN]
     refine Finset.sum_congr rfl fun i _ => ?_
-    have h1 := inner_pow_apply_of_eigenbasis v hv 1 y i
+    have h1 := v.inner_pow_apply_of_apply_eq_smul hv 1 y i
     simp only [pow_one] at h1
     rw [← inner_conj_symm (A y), h1, map_mul (starRingEnd 𝕜), RCLike.conj_ofReal, mul_assoc,
       RCLike.conj_mul, ← RCLike.ofReal_pow, ← RCLike.ofReal_mul, RCLike.ofReal_re, hrepr i]

@@ -51,6 +51,11 @@ norm bound and a Chebyshev min–max.
   10.3.2) for the compression to a block Krylov subspace, with `tan φ_p` the tangent of the
   largest principal angle between the starting block and the leading `p` eigenvectors.
 
+The eigenvector estimates hold for *any* orthonormal eigenbasis `b` with sorted eigenvalues `λ`
+(`A (b j) = λ j • b j`, `Antitone λ`), as in the textbooks' "any Schur decomposition"; the
+`…_eigenvectorBasis` corollaries specialize to Mathlib's
+`LinearMap.IsSymmetric.eigenvectorBasis`.
+
 * `Arnoldi.norm_sub_starProjection_le_iInf`: the same variational idea without symmetry.  For a
   diagonalizable `A` with unit eigenvectors `u_k` and `v = ∑ α_k u_k`, the distance from `u_i` to
   `𝒦_m(A, v)` is bounded by a minimum over the same polynomials, now weighted by the expansion
@@ -180,6 +185,25 @@ theorem Polynomial.aeval_apply_of_apply_eq_smul {A : E →ₗ[𝕜] E} {u : E} {
       have hmon : aeval A (monomial k a) u = a • (A ^ k) u := by simp [aeval_monomial]
       rw [hmon, hpow, smul_smul, eval_monomial]
 
+/-- A polynomial in `A` is bounded by the values of the polynomial at those eigenvalues of an
+orthonormal eigenbasis whose eigenvector actually occurs in `x`: if `‖p(μ j)‖ ≤ M` whenever
+`⟪b j, x⟫ ≠ 0`, then `‖p(A) x‖ ≤ M ‖x‖`. This refinement of the spectral bound is what lets a
+competitor polynomial be chosen with roots at the eigenvalues that the vector misses. -/
+theorem OrthonormalBasis.norm_aeval_apply_le_of_forall_repr {ι : Type*} [Fintype ι]
+    (b : OrthonormalBasis ι 𝕜 E) {A : E →ₗ[𝕜] E} {μ : ι → 𝕜} (hb : ∀ i, A (b i) = μ i • b i)
+    (p : 𝕜[X]) {M : ℝ} (hM : 0 ≤ M) {x : E} (hp : ∀ j, b.repr x j ≠ 0 → ‖p.eval (μ j)‖ ≤ M) :
+    ‖aeval A p x‖ ≤ M * ‖x‖ := by
+  have key : ‖aeval A p x‖ ^ 2 ≤ (M * ‖x‖) ^ 2 := by
+    rw [← b.sum_sq_norm_repr (aeval A p x), mul_pow, ← b.sum_sq_norm_repr x, Finset.mul_sum]
+    refine Finset.sum_le_sum fun j _ => ?_
+    rw [b.repr_aeval_apply_of_apply_eq_smul hb, norm_mul, mul_pow]
+    rcases eq_or_ne (b.repr x j) 0 with hz | hz
+    · rw [hz]
+      simp
+    · gcongr
+      exact hp j hz
+  nlinarith [norm_nonneg (aeval A p x), mul_nonneg hM (norm_nonneg x)]
+
 namespace LinearMap.IsSymmetric
 
 variable {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
@@ -208,24 +232,14 @@ variable {n : ℕ} [FiniteDimensional 𝕜 E] (hn : Module.finrank 𝕜 E = n)
 include hn
 
 /-- A polynomial in a symmetric operator is bounded by the values of the polynomial at those
-eigenvalues whose eigenvector actually occurs in `x`.  This refinement of
-`LinearMap.IsSymmetric.norm_aeval_apply_le` is what lets a competitor polynomial be chosen with
-roots at the eigenvalues that the vector misses. -/
+eigenvalues whose eigenvector actually occurs in `x`:
+`OrthonormalBasis.norm_aeval_apply_le_of_forall_repr` for Mathlib's eigenbasis. -/
 theorem norm_aeval_apply_le_of_forall_repr (p : 𝕜[X]) {M : ℝ} (hM : 0 ≤ M) {x : E}
     (hp : ∀ j : Fin n, (hA.eigenvectorBasis hn).repr x j ≠ 0 →
       ‖p.eval (hA.eigenvalues hn j : 𝕜)‖ ≤ M) :
-    ‖aeval A p x‖ ≤ M * ‖x‖ := by
-  have key : ‖aeval A p x‖ ^ 2 ≤ (M * ‖x‖) ^ 2 := by
-    rw [hA.norm_sq_eq_sum_norm_repr_sq hn (aeval A p x), mul_pow,
-      hA.norm_sq_eq_sum_norm_repr_sq hn x, Finset.mul_sum]
-    refine Finset.sum_le_sum fun j _ => ?_
-    rw [hA.repr_aeval_apply hn, norm_mul, mul_pow]
-    rcases eq_or_ne ((hA.eigenvectorBasis hn).repr x j) 0 with hz | hz
-    · rw [hz]
-      simp
-    · gcongr
-      exact hp j hz
-  nlinarith [norm_nonneg (aeval A p x), mul_nonneg hM (norm_nonneg x)]
+    ‖aeval A p x‖ ≤ M * ‖x‖ :=
+  (hA.eigenvectorBasis hn).norm_aeval_apply_le_of_forall_repr (hA.apply_eigenvectorBasis hn) p hM
+    hp
 
 end LinearMap.IsSymmetric
 
@@ -483,7 +497,14 @@ theorem tan_angle_eq_iInf_mul (m : ℕ) :
 
 end Lemma
 
-/-! ### From a polynomial estimate to an angle bound -/
+/-! ### From a polynomial estimate to an angle bound
+
+The statements below take any orthonormal eigenbasis `b` of `A`, `A (b j) = λ j • b j`, with real
+eigenvalues `λ` (sorted decreasingly where the statement needs it), rather than Mathlib's choice
+`LinearMap.IsSymmetric.eigenvectorBasis`: at a multiple eigenvalue the eigenvector `u_i = b i` is
+not unique, and the textbook statements quantify over every Schur decomposition. Such an `A` is
+symmetric (`OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul`), and its sorted eigenvalues are
+`λ` (`LinearMap.IsSymmetric.eigenvalues_eq_of_apply_eq_ofReal_smul`). -/
 
 section Eigenbasis
 
@@ -492,9 +513,14 @@ private theorem eval_map_ofReal (p : ℝ[X]) (t : ℝ) :
     (p.map (algebraMap ℝ 𝕜)).eval ((t : ℝ) : 𝕜) = ((p.eval t : ℝ) : 𝕜) := by
   rw [← RCLike.algebraMap_eq_ofReal, eval_map, eval₂_at_apply, RCLike.algebraMap_eq_ofReal]
 
-variable {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ} (hA : A.IsSymmetric)
-  (hn : Module.finrank 𝕜 E = n)
-include hA hn
+variable {A : E →ₗ[𝕜] E} {n : ℕ} (b : OrthonormalBasis (Fin n) 𝕜 E)
+  {lam : Fin n → ℝ} (hb : ∀ j, A (b j) = (lam j : 𝕜) • b j)
+include hb
+
+/-- In the eigenbasis, a real polynomial `q` in `A` acts on coordinates by `q(λ)`. -/
+theorem repr_aeval_map_apply (q : ℝ[X]) (x : E) (j : Fin n) :
+    b.repr (aeval A (q.map (algebraMap ℝ 𝕜)) x) j = ((q.eval (lam j) : ℝ) : 𝕜) * b.repr x j := by
+  rw [b.repr_aeval_apply_of_apply_eq_smul hb, eval_map_ofReal]
 
 /-- **Every competitor polynomial gives an angle bound.**  If a real polynomial `p` of degree below
 `m` takes the value `1` at the `i`-th eigenvalue and is bounded by `M` at all the others, then `tan
@@ -504,32 +530,27 @@ This is the half of the Krylov eigenvector estimate that does not depend on whic
 chosen: the whole content of Chebyshev bounds such as `Lanczos.tan_angle_le` is the choice of `p`
 and the estimate of `M`. -/
 theorem tan_angle_le_of_forall_abs_eval_le (i : Fin n) {v : E}
-    (hv : (inner 𝕜 (hA.eigenvectorBasis hn i) v : 𝕜) ≠ 0) {m : ℕ} (p : ℝ[X])
-    (hdeg : p.degree < m) (hp : p.eval (hA.eigenvalues hn i) = 1) {M : ℝ} (hM : 0 ≤ M)
-    (hbnd : ∀ j : Fin n, j ≠ i → |p.eval (hA.eigenvalues hn j)| ≤ M) :
-    (Krylov.subspace A v m).tanAngle (hA.eigenvectorBasis hn i) ≤
-      M * (𝕜 ∙ v).tanAngle (hA.eigenvectorBasis hn i) := by
-  have hu : ‖hA.eigenvectorBasis hn i‖ = 1 := (hA.eigenvectorBasis hn).norm_eq_one i
-  have hAu : A (hA.eigenvectorBasis hn i) =
-      ((hA.eigenvalues hn i : ℝ) : 𝕜) • hA.eigenvectorBasis hn i :=
-    hA.apply_eigenvectorBasis hn i
+    (hv : (inner 𝕜 (b i) v : 𝕜) ≠ 0) {m : ℕ} (p : ℝ[X])
+    (hdeg : p.degree < m) (hp : p.eval (lam i) = 1) {M : ℝ} (hM : 0 ≤ M)
+    (hbnd : ∀ j : Fin n, j ≠ i → |p.eval (lam j)| ≤ M) :
+    (Krylov.subspace A v m).tanAngle (b i) ≤ M * (𝕜 ∙ v).tanAngle (b i) := by
+  have hu : ‖b i‖ = 1 := b.norm_eq_one i
   have hdeg' : (p.map (algebraMap ℝ 𝕜)).degree < (m : ℕ) := lt_of_le_of_lt degree_map_le hdeg
-  have hp' : (p.map (algebraMap ℝ 𝕜)).eval ((hA.eigenvalues hn i : ℝ) : 𝕜) = 1 := by
+  have hp' : (p.map (algebraMap ℝ 𝕜)).eval ((lam i : ℝ) : 𝕜) = 1 := by
     rw [eval_map_ofReal, hp, RCLike.ofReal_one]
-  have hwi : (hA.eigenvectorBasis hn).repr
-      (v - (inner 𝕜 (hA.eigenvectorBasis hn i) v : 𝕜) • hA.eigenvectorBasis hn i) i = 0 := by
+  have hwi : b.repr (v - (inner 𝕜 (b i) v : 𝕜) • b i) i = 0 := by
     rw [OrthonormalBasis.repr_apply_apply, inner_sub_right, inner_smul_right,
       inner_self_eq_norm_sq_to_K, hu]
     simp
-  have hbnd' : ∀ j : Fin n, (hA.eigenvectorBasis hn).repr
-      (v - (inner 𝕜 (hA.eigenvectorBasis hn i) v : 𝕜) • hA.eigenvectorBasis hn i) j ≠ 0 →
-      ‖(p.map (algebraMap ℝ 𝕜)).eval ((hA.eigenvalues hn j : ℝ) : 𝕜)‖ ≤ M := by
+  have hbnd' : ∀ j : Fin n, b.repr (v - (inner 𝕜 (b i) v : 𝕜) • b i) j ≠ 0 →
+      ‖(p.map (algebraMap ℝ 𝕜)).eval ((lam j : ℝ) : 𝕜)‖ ≤ M := by
     intro j hj
     rw [eval_map_ofReal, RCLike.norm_ofReal]
     refine hbnd j fun hji => hj ?_
     rw [hji, hwi]
-  have h1 := tan_angle_le_norm_aeval_div hA hu hAu hv (p.map (algebraMap ℝ 𝕜)) hdeg' hp'
-  have h2 := hA.norm_aeval_apply_le_of_forall_repr hn (p.map (algebraMap ℝ 𝕜)) hM hbnd'
+  have h1 := tan_angle_le_norm_aeval_div (b.isSymmetric_of_apply_eq_ofReal_smul hb) hu (hb i) hv
+    (p.map (algebraMap ℝ 𝕜)) hdeg' hp'
+  have h2 := b.norm_aeval_apply_le_of_forall_repr hb (p.map (algebraMap ℝ 𝕜)) hM hbnd'
   refine h1.trans ?_
   rw [Submodule.tanAngle_span_singleton hu v, ← mul_div_assoc]
   exact div_le_div_of_nonneg_right h2 (norm_nonneg _)
@@ -551,29 +572,23 @@ The competitor is the product of the polynomial with roots at the `i` eigenvalue
 which removes them from the problem at the cost of the factor `κ`, with the Chebyshev polynomial of
 `[lo, hi]` normalized to `1` at `λ_i`, which is the minimax choice for what remains. -/
 theorem tan_angle_le_of_mem_Icc (i : Fin n) {v : E}
-    (hv : (inner 𝕜 (hA.eigenvectorBasis hn i) v : 𝕜) ≠ 0) {lo hi : ℝ} (hlohi : lo < hi)
-    (hhi : hi < hA.eigenvalues hn i)
-    (hmem : ∀ j : Fin n, i < j → hA.eigenvalues hn j ∈ Set.Icc lo hi)
-    (hsep : ∀ j : Fin n, j < i → hA.eigenvalues hn i < hA.eigenvalues hn j)
+    (hv : (inner 𝕜 (b i) v : 𝕜) ≠ 0) {lo hi : ℝ} (hlohi : lo < hi) (hhi : hi < lam i)
+    (hmem : ∀ j : Fin n, i < j → lam j ∈ Set.Icc lo hi)
+    (hsep : ∀ j : Fin n, j < i → lam i < lam j)
     {m k : ℕ} (hm : (i : ℕ) + k < m) :
-    (Krylov.subspace A v m).tanAngle (hA.eigenvectorBasis hn i) ≤
-      (∏ j ∈ Finset.Iio i,
-          (hA.eigenvalues hn j - lo) / (hA.eigenvalues hn j - hA.eigenvalues hn i)) /
-        (T ℝ k).eval
-          ((2 * hA.eigenvalues hn i - hi - lo) / (hi - lo)) *
-        (𝕜 ∙ v).tanAngle (hA.eigenvectorBasis hn i) := by
-  have hsep' : ∀ j ∈ Finset.Iio i, hA.eigenvalues hn i < hA.eigenvalues hn j := fun j hj =>
-    hsep j (Finset.mem_Iio.1 hj)
-  have hT : (1 : ℝ) ≤ (T ℝ k).eval ((2 * hA.eigenvalues hn i - hi - lo) / (hi - lo)) :=
+    (Krylov.subspace A v m).tanAngle (b i) ≤
+      (∏ j ∈ Finset.Iio i, (lam j - lo) / (lam j - lam i)) /
+        (T ℝ k).eval ((2 * lam i - hi - lo) / (hi - lo)) * (𝕜 ∙ v).tanAngle (b i) := by
+  have hsep' : ∀ j ∈ Finset.Iio i, lam i < lam j := fun j hj => hsep j (Finset.mem_Iio.1 hj)
+  have hT : (1 : ℝ) ≤ (T ℝ k).eval ((2 * lam i - hi - lo) / (hi - lo)) :=
     one_le_eval_T (by rw [le_div_iff₀ (by linarith : (0 : ℝ) < hi - lo)]; linarith) k
-  have hM : (0 : ℝ) ≤ (∏ j ∈ Finset.Iio i,
-      (hA.eigenvalues hn j - lo) / (hA.eigenvalues hn j - hA.eigenvalues hn i)) /
-      (T ℝ k).eval ((2 * hA.eigenvalues hn i - hi - lo) / (hi - lo)) :=
+  have hM : (0 : ℝ) ≤ (∏ j ∈ Finset.Iio i, (lam j - lo) / (lam j - lam i)) /
+      (T ℝ k).eval ((2 * lam i - hi - lo) / (hi - lo)) :=
     div_nonneg (Finset.prod_nonneg fun j hj =>
       div_nonneg (by linarith [hsep' j hj]) (by linarith [hsep' j hj])) (by linarith)
-  obtain ⟨q, hqdeg, hq1, hqz, hqb⟩ := exists_deflated_chebyshev (Finset.Iio i)
-    (hA.eigenvalues hn) (hA.eigenvalues hn i) hsep' hlohi hhi k
-  refine tan_angle_le_of_forall_abs_eval_le hA hn i hv q ?_ hq1 hM ?_
+  obtain ⟨q, hqdeg, hq1, hqz, hqb⟩ := exists_deflated_chebyshev (Finset.Iio i) lam (lam i) hsep'
+    hlohi hhi k
+  refine tan_angle_le_of_forall_abs_eval_le b hb i hv q ?_ hq1 hM ?_
   · refine lt_of_le_of_lt hqdeg ?_
     rw [Nat.cast_lt, Fin.card_Iio]
     omega
@@ -583,8 +598,39 @@ theorem tan_angle_le_of_mem_Icc (i : Fin n) {v : E}
       exact hM
     · exact hqb _ (hmem j hji)
 
-
 /-! ### The Kaniel–Paige–[saad2011numerical] bound on the Ritz values -/
+
+/-- The numerator estimate shared by the single-vector and block Kaniel–Paige–Saad bounds: for a
+real polynomial `q` bounded by `M` at the eigenvalues `λ_j`, `j ∈ s`, where `λ_j ≥ lo`, and a
+threshold `c` such that outside `s` either `λ_j ≥ c` or `y` has no `j`-th component,
+`c ‖q(A) y‖² - re ⟪A q(A) y, q(A) y⟫ ≤ (c - lo) M² ∑_{j ∈ s} ‖⟪b j, y⟫‖²`. -/
+theorem mul_norm_sq_aeval_sub_re_inner_le (q : ℝ[X]) (y : E) {c lo M : ℝ} (hclo : lo ≤ c)
+    (s : Finset (Fin n)) (hs : ∀ j ∉ s, c ≤ lam j ∨ b.repr y j = 0) (hlo : ∀ j ∈ s, lo ≤ lam j)
+    (hqM : ∀ j ∈ s, |q.eval (lam j)| ≤ M) :
+    c * ‖aeval A (q.map (algebraMap ℝ 𝕜)) y‖ ^ 2 -
+        RCLike.re (inner 𝕜 (A (aeval A (q.map (algebraMap ℝ 𝕜)) y))
+          (aeval A (q.map (algebraMap ℝ 𝕜)) y)) ≤
+      (c - lo) * M ^ 2 * ∑ j ∈ s, ‖b.repr y j‖ ^ 2 := by
+  refine (b.mul_norm_sq_sub_re_inner_le_sum hb c _ fun j hj => (hs j hj).imp_right fun h => by
+    rw [repr_aeval_map_apply b hb, h, mul_zero]).trans ?_
+  rw [Finset.mul_sum]
+  refine Finset.sum_le_sum fun j hj => ?_
+  rw [repr_aeval_map_apply b hb, norm_mul, RCLike.norm_ofReal, mul_pow]
+  rcases le_or_gt c (lam j) with hcj | hcj
+  · have h1 : (c - lam j) * (|q.eval (lam j)| ^ 2 * ‖b.repr y j‖ ^ 2) ≤ 0 :=
+      mul_nonpos_of_nonpos_of_nonneg (by linarith) (by positivity)
+    have h2 : 0 ≤ (c - lo) * M ^ 2 * ‖b.repr y j‖ ^ 2 :=
+      mul_nonneg (mul_nonneg (sub_nonneg.2 hclo) (sq_nonneg M)) (sq_nonneg _)
+    linarith
+  · have hq : |q.eval (lam j)| ^ 2 ≤ M ^ 2 := pow_le_pow_left₀ (abs_nonneg _) (hqM j hj) 2
+    calc (c - lam j) * (|q.eval (lam j)| ^ 2 * ‖b.repr y j‖ ^ 2)
+        ≤ (c - lo) * (M ^ 2 * ‖b.repr y j‖ ^ 2) :=
+          mul_le_mul (by linarith [hlo j hj]) (mul_le_mul_of_nonneg_right hq (by positivity))
+            (by positivity) (by linarith [hlo j hj])
+      _ = (c - lo) * M ^ 2 * ‖b.repr y j‖ ^ 2 := by ring
+
+variable (hlam : Antitone lam)
+include hlam
 
 /-- **The Kaniel–Paige–[saad2011numerical] bound**, upper half, in the form that takes the enclosing
 interval as data.  Write `λ` for the eigenvalues of a symmetric `A` in decreasing order and `θ` for
@@ -605,186 +651,100 @@ eigenvalues.
 
 Both `λ_{i'} - lo` and, in the intended application, `λ_1 - λ_n` bound the spread that turns the
 angle into an eigenvalue error; the form here is the sharper one. -/
-theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc {v : E} {m : ℕ}
+theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc (hA : A.IsSymmetric) {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' : Fin n)
-    (hv : (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) ≠ 0) {lo hi : ℝ} (hlohi : lo < hi)
-    (hhi : hi < hA.eigenvalues hn i')
-    (hmem : ∀ j : Fin n, i' < j → hA.eigenvalues hn j ∈ Set.Icc lo hi)
-    (hθ : ∀ j : Fin m, j < i → hA.eigenvalues hn i' <
-      (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j)
+    (hv : (inner 𝕜 (b i') v : 𝕜) ≠ 0) {lo hi : ℝ} (hlohi : lo < hi) (hhi : hi < lam i')
+    (hmem : ∀ j : Fin n, i' < j → lam j ∈ Set.Icc lo hi)
+    (hθ : ∀ j : Fin m, j < i →
+      lam i' < (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j)
     {k : ℕ} (hk : (i : ℕ) + k < m) :
-    hA.eigenvalues hn i' -
-        (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm i ≤
-      (hA.eigenvalues hn i' - lo) *
+    lam i' - (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm i ≤
+      (lam i' - lo) *
         ((∏ j ∈ Finset.Iio i,
             ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j - lo) /
               ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j -
-                hA.eigenvalues hn i')) /
-            (T ℝ k).eval ((2 * hA.eigenvalues hn i' - hi - lo) / (hi - lo)) *
-          (𝕜 ∙ v).tanAngle (hA.eigenvectorBasis hn i')) ^ 2 := by
-  have hvK : v ∈ Krylov.subspace A v m := Krylov.self_mem_subspace A v i.pos
-  have hu : ‖hA.eigenvectorBasis hn i'‖ = 1 := (hA.eigenvectorBasis hn).norm_eq_one i'
+                lam i')) /
+            (T ℝ k).eval ((2 * lam i' - hi - lo) / (hi - lo)) *
+          (𝕜 ∙ v).tanAngle (b i')) ^ 2 := by
+  set K := Krylov.subspace A v m with hK
+  set hC := compression.isSymmetric A K hA with hCdef
+  have hvK : v ∈ K := Krylov.self_mem_subspace A v i.pos
+  have hu : ‖b i'‖ = 1 := b.norm_eq_one i'
   obtain ⟨q, hqdeg, hq1, hqz, hqb⟩ := exists_deflated_chebyshev (Finset.Iio i)
-    ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm)
-    (hA.eigenvalues hn i') (fun j hj => hθ j (Finset.mem_Iio.1 hj)) hlohi hhi k
-  set M : ℝ := (∏ j ∈ Finset.Iio i,
-      ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j - lo) /
-        ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j -
-          hA.eigenvalues hn i')) /
-    (T ℝ k).eval ((2 * hA.eigenvalues hn i' - hi - lo) / (hi - lo)) with hMdef
+    (hC.eigenvalues hm) (lam i') (fun j hj => hθ j (Finset.mem_Iio.1 hj)) hlohi hhi k
+  set M : ℝ := (∏ j ∈ Finset.Iio i, (hC.eigenvalues hm j - lo) / (hC.eigenvalues hm j - lam i')) /
+    (T ℝ k).eval ((2 * lam i' - hi - lo) / (hi - lo)) with hMdef
   have hM0 : (0 : ℝ) ≤ M := le_trans (abs_nonneg _) (hqb lo ⟨le_rfl, hlohi.le⟩)
   -- the competitor vector and its eigenbasis coordinates
-  have hqq : (q.map (algebraMap ℝ 𝕜)).degree < (m : ℕ) := by
+  set qc : 𝕜[X] := q.map (algebraMap ℝ 𝕜) with hqc
+  set x := aeval A qc v with hx
+  have hqq : qc.degree < (m : ℕ) := by
     refine lt_of_le_of_lt degree_map_le (lt_of_le_of_lt hqdeg ?_)
     rw [Nat.cast_lt, Fin.card_Iio]
     omega
-  have hxK : aeval A (q.map (algebraMap ℝ 𝕜)) v ∈ Krylov.subspace A v m :=
-    Krylov.aeval_apply_mem_subspace A v hqq
-  have hrepr : ∀ j : Fin n,
-      (hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j =
-        ((q.eval (hA.eigenvalues hn j) : ℝ) : 𝕜) * (hA.eigenvectorBasis hn).repr v j := fun j => by
-    rw [hA.repr_aeval_apply hn, eval_map_ofReal]
-  have hcv : (hA.eigenvectorBasis hn).repr v i' = (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) :=
-    OrthonormalBasis.repr_apply_apply _ _ _
-  have hxi : (hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) i' =
-      (hA.eigenvectorBasis hn).repr v i' := by
-    rw [hrepr, hq1, RCLike.ofReal_one, one_mul]
-  have hx0 : aeval A (q.map (algebraMap ℝ 𝕜)) v ≠ 0 := by
+  have hxK : x ∈ K := Krylov.aeval_apply_mem_subspace A v hqq
+  have hcv : b.repr v i' = (inner 𝕜 (b i') v : 𝕜) := OrthonormalBasis.repr_apply_apply _ _ _
+  have hxi : b.repr x i' = b.repr v i' := by
+    rw [hx, hqc, repr_aeval_map_apply b hb, hq1, RCLike.ofReal_one, one_mul]
+  -- orthogonality to the first `i` Ritz vectors
+  have hqne : qc ≠ 0 := by
+    intro h0
+    have h1 : ((q.eval (lam i') : ℝ) : 𝕜) = 0 := by
+      rw [← eval_map_ofReal q (lam i'), ← hqc, h0, eval_zero]
+    rw [hq1] at h1
+    simp at h1
+  have hnd : qc.natDegree < m := (Polynomial.natDegree_lt_iff_degree_lt hqne).2 hqq
+  have hy : (⟨x, hxK⟩ : K) = aeval (compression A K) qc ⟨v, hvK⟩ :=
+    Subtype.ext (compression.aeval_apply_of_forall_pow_mem A K qc (x := ⟨v, hvK⟩)
+      (fun l hl => Krylov.pow_apply_mem_subspace A v (lt_of_le_of_lt hl hnd))).symm
+  have horth : ∀ j : Fin m, j < i →
+      (inner 𝕜 (hC.eigenvectorBasis hm j) (⟨x, hxK⟩ : K) : 𝕜) = 0 := by
+    intro j hj
+    rw [← OrthonormalBasis.repr_apply_apply, hy, hC.repr_aeval_apply hm, hqc, eval_map_ofReal,
+      hqz j (Finset.mem_Iio.2 hj), RCLike.ofReal_zero, zero_mul]
+  -- Courant–Fischer for the compression
+  have hx0 : x ≠ 0 := by
     intro h0
     refine hv ?_
     rw [← hcv, ← hxi, h0]
     simp
-  -- orthogonality to the first `i` Ritz vectors
-  have hqne : q.map (algebraMap ℝ 𝕜) ≠ 0 := by
-    intro h0
-    have h1 : ((q.eval (hA.eigenvalues hn i') : ℝ) : 𝕜) = 0 := by
-      rw [← eval_map_ofReal q (hA.eigenvalues hn i'), h0, eval_zero]
-    rw [hq1] at h1
-    simp at h1
-  have hnd : (q.map (algebraMap ℝ 𝕜)).natDegree < m :=
-    (Polynomial.natDegree_lt_iff_degree_lt hqne).2 hqq
-  have hy : (⟨aeval A (q.map (algebraMap ℝ 𝕜)) v, hxK⟩ : Krylov.subspace A v m) =
-      aeval (compression A (Krylov.subspace A v m)) (q.map (algebraMap ℝ 𝕜)) ⟨v, hvK⟩ :=
-    Subtype.ext (compression.aeval_apply_of_forall_pow_mem A (Krylov.subspace A v m)
-      (q.map (algebraMap ℝ 𝕜)) (x := ⟨v, hvK⟩)
-      (fun l hl => Krylov.pow_apply_mem_subspace A v (lt_of_le_of_lt hl hnd))).symm
-  have horth : ∀ j : Fin m, j < i → (inner 𝕜
-      ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvectorBasis hm j)
-      (⟨aeval A (q.map (algebraMap ℝ 𝕜)) v, hxK⟩ : Krylov.subspace A v m) : 𝕜) = 0 := by
-    intro j hj
-    rw [← OrthonormalBasis.repr_apply_apply, hy,
-      (compression.isSymmetric A (Krylov.subspace A v m) hA).repr_aeval_apply hm,
-      eval_map_ofReal, hqz j (Finset.mem_Iio.2 hj), RCLike.ofReal_zero, zero_mul]
-  -- Courant–Fischer for the compression
-  have hrq : (compression A (Krylov.subspace A v m)).rayleighQuotient
-      (⟨aeval A (q.map (algebraMap ℝ 𝕜)) v, hxK⟩ : Krylov.subspace A v m) =
-      A.rayleighQuotient (aeval A (q.map (algebraMap ℝ 𝕜)) v) :=
-    Krylov.rayleighQuotient_compression A _ _
-  have hle : A.rayleighQuotient (aeval A (q.map (algebraMap ℝ 𝕜)) v) ≤
-      (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm i :=
-    ((compression.isSymmetric A (Krylov.subspace A v m) hA).isGreatest_rayleighQuotient_orthogonal
-      hm i).2 ⟨_, fun h0 => hx0 (Submodule.coe_eq_zero.2 h0), horth, hrq⟩
-  -- the numerator, in eigenbasis coordinates
-  have hnum := hA.mul_norm_sq_sub_re_inner_eq_sum hn (hA.eigenvalues hn i')
-    (aeval A (q.map (algebraMap ℝ 𝕜)) v)
+  have hle : A.rayleighQuotient x ≤ hC.eigenvalues hm i :=
+    (hC.isGreatest_rayleighQuotient_orthogonal hm i).2
+      ⟨_, fun h0 => hx0 (Submodule.coe_eq_zero.2 h0), horth,
+        Krylov.rayleighQuotient_compression A _ _⟩
   -- the part of `v` orthogonal to the eigenvector
-  have hwrepr : ∀ j : Fin n, j ≠ i' →
-      (hA.eigenvectorBasis hn).repr
-          (v - (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) • hA.eigenvectorBasis hn i') j =
-        (hA.eigenvectorBasis hn).repr v j := by
-    intro j hj
-    rw [OrthonormalBasis.repr_apply_apply, OrthonormalBasis.repr_apply_apply, inner_sub_right,
-      inner_smul_right, (hA.eigenvectorBasis hn).inner_eq_zero hj, mul_zero, sub_zero]
-  have hwnorm : ∑ j ∈ Finset.Ioi i', ‖(hA.eigenvectorBasis hn).repr v j‖ ^ 2 ≤
-      ‖v - (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) • hA.eigenvectorBasis hn i'‖ ^ 2 := by
-    rw [hA.norm_sq_eq_sum_norm_repr_sq hn]
+  set w := v - (inner 𝕜 (b i') v : 𝕜) • b i' with hw
+  have hwnorm : ∑ j ∈ Finset.Ioi i', ‖b.repr v j‖ ^ 2 ≤ ‖w‖ ^ 2 := by
+    rw [← b.sum_sq_norm_repr w]
     refine le_trans (le_of_eq (Finset.sum_congr rfl fun j hj => ?_))
       (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun _ _ _ => by positivity)
-    rw [hwrepr j (ne_of_gt (Finset.mem_Ioi.1 hj))]
-  -- the numerator estimate
-  have hN : hA.eigenvalues hn i' * ‖aeval A (q.map (algebraMap ℝ 𝕜)) v‖ ^ 2 -
-      RCLike.re (inner 𝕜 (A (aeval A (q.map (algebraMap ℝ 𝕜)) v))
-        (aeval A (q.map (algebraMap ℝ 𝕜)) v)) ≤
-      (hA.eigenvalues hn i' - lo) * (M ^ 2 *
-        ‖v - (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) • hA.eigenvectorBasis hn i'‖ ^ 2) := by
-    rw [hnum, ← Finset.sum_add_sum_compl (Finset.Ioi i')]
-    have hcompl : ∑ j ∈ (Finset.Ioi i')ᶜ, (hA.eigenvalues hn i' - hA.eigenvalues hn j) *
-        ‖(hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j‖ ^ 2 ≤ 0 := by
-      refine Finset.sum_nonpos fun j hj => ?_
-      have hji : j ≤ i' := not_lt.1 (by simpa using Finset.mem_compl.1 hj)
-      have := hA.eigenvalues_antitone hn hji
-      nlinarith [sq_nonneg ‖(hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j‖]
-    have hIoi : ∑ j ∈ Finset.Ioi i', (hA.eigenvalues hn i' - hA.eigenvalues hn j) *
-        ‖(hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j‖ ^ 2 ≤
-        (hA.eigenvalues hn i' - lo) * (M ^ 2 *
-          ‖v - (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) • hA.eigenvectorBasis hn i'‖ ^ 2) := by
-      have hbound : ∀ j ∈ Finset.Ioi i',
-          (hA.eigenvalues hn i' - hA.eigenvalues hn j) *
-            ‖(hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j‖ ^ 2 ≤
-          (hA.eigenvalues hn i' - lo) * (M ^ 2 * ‖(hA.eigenvectorBasis hn).repr v j‖ ^ 2) := by
-        intro j hj
-        have hj' := hmem j (Finset.mem_Ioi.1 hj)
-        have h1 : ‖(hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j‖ ≤
-            M * ‖(hA.eigenvectorBasis hn).repr v j‖ := by
-          rw [hrepr, norm_mul, RCLike.norm_ofReal]
-          exact mul_le_mul_of_nonneg_right (hqb _ hj') (norm_nonneg _)
-        have h2 : ‖(hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j‖ ^ 2 ≤
-            M ^ 2 * ‖(hA.eigenvectorBasis hn).repr v j‖ ^ 2 := by
-          calc ‖(hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j‖ ^ 2
-              ≤ (M * ‖(hA.eigenvectorBasis hn).repr v j‖) ^ 2 := by
-                gcongr
-            _ = M ^ 2 * ‖(hA.eigenvectorBasis hn).repr v j‖ ^ 2 := by ring
-        refine mul_le_mul ?_ h2 (sq_nonneg _) (by linarith)
-        linarith [hj'.1]
-      refine le_trans (Finset.sum_le_sum hbound) ?_
-      rw [← Finset.mul_sum, ← Finset.mul_sum]
-      exact mul_le_mul_of_nonneg_left
-        (mul_le_mul_of_nonneg_left hwnorm (sq_nonneg M)) (by linarith)
-    linarith
-  -- the denominator
-  have hDge : ‖(inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜)‖ ^ 2 ≤
-      ‖aeval A (q.map (algebraMap ℝ 𝕜)) v‖ ^ 2 := by
-    rw [hA.norm_sq_eq_sum_norm_repr_sq hn, ← hcv, ← hxi]
-    exact Finset.single_le_sum (f := fun j =>
-      ‖(hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j‖ ^ 2)
-      (fun _ _ => sq_nonneg _) (Finset.mem_univ i')
-  have hcpos : (0 : ℝ) < ‖(inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜)‖ ^ 2 := by
+    rw [hw, OrthonormalBasis.repr_apply_apply, OrthonormalBasis.repr_apply_apply, inner_sub_right,
+      inner_smul_right, b.inner_eq_zero (ne_of_gt (Finset.mem_Ioi.1 hj)), mul_zero, sub_zero]
+  -- the numerator and the denominator
+  have hN := mul_norm_sq_aeval_sub_re_inner_le b hb q v (c := lam i') (lo := lo) (M := M)
+    (lt_trans hlohi hhi).le (Finset.Ioi i')
+    (fun j hj => Or.inl (hlam (not_lt.1 (by simpa using hj))))
+    (fun j hj => (hmem j (Finset.mem_Ioi.1 hj)).1)
+    (fun j hj => hqb _ (hmem j (Finset.mem_Ioi.1 hj)))
+  have hDge : ‖(inner 𝕜 (b i') v : 𝕜)‖ ^ 2 ≤ ‖x‖ ^ 2 := by
+    rw [← b.sum_sq_norm_repr x, ← hcv, ← hxi]
+    exact Finset.single_le_sum (f := fun j => ‖b.repr x j‖ ^ 2) (fun _ _ => sq_nonneg _)
+      (Finset.mem_univ i')
+  have hcpos : (0 : ℝ) < ‖(inner 𝕜 (b i') v : 𝕜)‖ ^ 2 := by
     have := norm_pos_iff.2 hv
     positivity
-  have hDpos : (0 : ℝ) < ‖aeval A (q.map (algebraMap ℝ 𝕜)) v‖ ^ 2 := lt_of_lt_of_le hcpos hDge
-  -- assemble
+  have hlo : lo < lam i' := lt_trans hlohi hhi
+  have hCD : (lam i' - lo) * M ^ 2 * ∑ j ∈ Finset.Ioi i', ‖b.repr v j‖ ^ 2 ≤
+      (lam i' - lo) * (M * (‖w‖ / ‖(inner 𝕜 (b i') v : 𝕜)‖)) ^ 2 *
+        ‖(inner 𝕜 (b i') v : 𝕜)‖ ^ 2 := by
+    have hne : ‖(inner 𝕜 (b i') v : 𝕜)‖ ≠ 0 := norm_ne_zero_iff.2 hv
+    calc (lam i' - lo) * M ^ 2 * ∑ j ∈ Finset.Ioi i', ‖b.repr v j‖ ^ 2
+        ≤ (lam i' - lo) * M ^ 2 * ‖w‖ ^ 2 :=
+          mul_le_mul_of_nonneg_left hwnorm (mul_nonneg (sub_pos.2 hlo).le (sq_nonneg M))
+      _ = _ := by field_simp
+  have hgoal := A.sub_rayleighQuotient_le_of_le
+    (mul_nonneg (sub_pos.2 hlo).le (sq_nonneg _)) hcpos hDge (hN.trans hCD)
   rw [Submodule.tanAngle_span_singleton hu v]
-  have hgoal : hA.eigenvalues hn i' -
-      A.rayleighQuotient (aeval A (q.map (algebraMap ℝ 𝕜)) v) ≤
-      (hA.eigenvalues hn i' - lo) *
-        (M * (‖v - (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) • hA.eigenvectorBasis hn i'‖ /
-          ‖(inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜)‖)) ^ 2 := by
-    have hC : (0 : ℝ) ≤ (hA.eigenvalues hn i' - lo) * (M ^ 2 *
-        ‖v - (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) • hA.eigenvectorBasis hn i'‖ ^ 2) := by
-      have : lo < hA.eigenvalues hn i' := lt_trans hlohi hhi
-      positivity
-    have hsplit : hA.eigenvalues hn i' -
-        A.rayleighQuotient (aeval A (q.map (algebraMap ℝ 𝕜)) v) =
-        (hA.eigenvalues hn i' * ‖aeval A (q.map (algebraMap ℝ 𝕜)) v‖ ^ 2 -
-          RCLike.re (inner 𝕜 (A (aeval A (q.map (algebraMap ℝ 𝕜)) v))
-            (aeval A (q.map (algebraMap ℝ 𝕜)) v))) /
-          ‖aeval A (q.map (algebraMap ℝ 𝕜)) v‖ ^ 2 := by
-      rw [LinearMap.rayleighQuotient, sub_div, mul_div_assoc, div_self hDpos.ne', mul_one]
-    have hrhs : (hA.eigenvalues hn i' - lo) *
-        (M * (‖v - (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) • hA.eigenvectorBasis hn i'‖ /
-          ‖(inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜)‖)) ^ 2 =
-        ((hA.eigenvalues hn i' - lo) * (M ^ 2 *
-          ‖v - (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) • hA.eigenvectorBasis hn i'‖ ^ 2)) /
-          ‖(inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜)‖ ^ 2 := by
-      field_simp
-    rw [hsplit, hrhs]
-    rcases le_or_gt (hA.eigenvalues hn i' * ‖aeval A (q.map (algebraMap ℝ 𝕜)) v‖ ^ 2 -
-      RCLike.re (inner 𝕜 (A (aeval A (q.map (algebraMap ℝ 𝕜)) v))
-        (aeval A (q.map (algebraMap ℝ 𝕜)) v))) 0 with hsign | hsign
-    · exact le_trans (div_nonpos_of_nonpos_of_nonneg hsign (le_of_lt hDpos))
-        (div_nonneg hC (le_of_lt hcpos))
-    · refine le_trans (div_le_div_of_nonneg_left hsign.le hcpos hDge) ?_
-      exact div_le_div_of_nonneg_right hN hcpos.le
   linarith
 
 /-! ### The bounds in the form the numerical analysis literature states them
@@ -808,28 +768,22 @@ is `Lanczos.tan_angle_le_of_mem_Icc` with the interval `[λ_n, λ_{i+1}]`, which
 containing the eigenvalues after the `i`-th. -/
 theorem tan_angle_le (i iS last : Fin n) (hiS : (i : ℕ) + 1 = (iS : ℕ))
     (hlast : ∀ j : Fin n, j ≤ last) {v : E}
-    (hv : (inner 𝕜 (hA.eigenvectorBasis hn i) v : 𝕜) ≠ 0)
-    (hgap : hA.eigenvalues hn iS < hA.eigenvalues hn i)
-    (hspread : hA.eigenvalues hn last < hA.eigenvalues hn iS)
-    (hsep : ∀ j : Fin n, j < i → hA.eigenvalues hn i < hA.eigenvalues hn j)
+    (hv : (inner 𝕜 (b i) v : 𝕜) ≠ 0)
+    (hgap : lam iS < lam i) (hspread : lam last < lam iS)
+    (hsep : ∀ j : Fin n, j < i → lam i < lam j)
     {m k : ℕ} (hm : (i : ℕ) + k < m) :
-    (Krylov.subspace A v m).tanAngle (hA.eigenvectorBasis hn i) ≤
-      (∏ j ∈ Finset.Iio i, (hA.eigenvalues hn j - hA.eigenvalues hn last) /
-          (hA.eigenvalues hn j - hA.eigenvalues hn i)) *
-        (𝕜 ∙ v).tanAngle (hA.eigenvectorBasis hn i) /
-        (T ℝ k).eval (1 + 2 * ((hA.eigenvalues hn i - hA.eigenvalues hn iS) /
-          (hA.eigenvalues hn iS - hA.eigenvalues hn last))) := by
-  have harg : 1 + 2 * ((hA.eigenvalues hn i - hA.eigenvalues hn iS) /
-      (hA.eigenvalues hn iS - hA.eigenvalues hn last)) =
-      (2 * hA.eigenvalues hn i - hA.eigenvalues hn iS - hA.eigenvalues hn last) /
-        (hA.eigenvalues hn iS - hA.eigenvalues hn last) := by
-    have hne : hA.eigenvalues hn iS - hA.eigenvalues hn last ≠ 0 := by linarith
+    (Krylov.subspace A v m).tanAngle (b i) ≤
+      (∏ j ∈ Finset.Iio i, (lam j - lam last) / (lam j - lam i)) * (𝕜 ∙ v).tanAngle (b i) /
+        (T ℝ k).eval (1 + 2 * ((lam i - lam iS) / (lam iS - lam last))) := by
+  have harg : 1 + 2 * ((lam i - lam iS) / (lam iS - lam last)) =
+      (2 * lam i - lam iS - lam last) / (lam iS - lam last) := by
+    have hne : lam iS - lam last ≠ 0 := by linarith
     field_simp
     ring
   rw [harg, ← div_mul_eq_mul_div]
-  refine tan_angle_le_of_mem_Icc hA hn i hv hspread hgap (fun j hj => ⟨?_, ?_⟩) hsep hm
-  · exact hA.eigenvalues_antitone hn (hlast j)
-  · refine hA.eigenvalues_antitone hn ?_
+  refine tan_angle_le_of_mem_Icc b hb i hv hspread hgap (fun j hj => ⟨?_, ?_⟩) hsep hm
+  · exact hlam (hlast j)
+  · refine hlam ?_
     have h1 := Fin.lt_def.1 hj
     rw [Fin.le_def, ← hiS]
     omega
@@ -849,49 +803,43 @@ alone that has nothing to do with the Krylov structure.
 
 This is `Lanczos.eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc` with the interval `[λ_n,
 λ_{i+1}]`, weakened from the sharper spread `λ_i - λ_n` to `λ_1 - λ_n`. -/
-theorem eigenvalues_sub_eigenvalues_compression_le {v : E} {m : ℕ}
+theorem eigenvalues_sub_eigenvalues_compression_le [FiniteDimensional 𝕜 E] (hA : A.IsSymmetric)
+    {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
     (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : ∀ j : Fin n, first ≤ j)
-    (hlast : ∀ j : Fin n, j ≤ last)
-    (hv : (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) ≠ 0)
-    (hgap : hA.eigenvalues hn iS < hA.eigenvalues hn i')
-    (hspread : hA.eigenvalues hn last < hA.eigenvalues hn iS)
-    (hθ : ∀ j : Fin m, j < i → hA.eigenvalues hn i' <
-      (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j)
+    (hlast : ∀ j : Fin n, j ≤ last) (hv : (inner 𝕜 (b i') v : 𝕜) ≠ 0)
+    (hgap : lam iS < lam i') (hspread : lam last < lam iS)
+    (hθ : ∀ j : Fin m, j < i →
+      lam i' < (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j)
     {k : ℕ} (hk : (i : ℕ) + k < m) :
-    hA.eigenvalues hn i' -
-        (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm i ≤
-      (hA.eigenvalues hn first - hA.eigenvalues hn last) *
+    lam i' - (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm i ≤
+      (lam first - lam last) *
         ((∏ j ∈ Finset.Iio i,
-            ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j -
-                hA.eigenvalues hn last) /
-              ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j -
-                hA.eigenvalues hn i')) *
-            (𝕜 ∙ v).tanAngle (hA.eigenvectorBasis hn i') /
-          (T ℝ k).eval (1 + 2 * ((hA.eigenvalues hn i' - hA.eigenvalues hn iS) /
-            (hA.eigenvalues hn iS - hA.eigenvalues hn last)))) ^ 2 := by
-  have harg : 1 + 2 * ((hA.eigenvalues hn i' - hA.eigenvalues hn iS) /
-      (hA.eigenvalues hn iS - hA.eigenvalues hn last)) =
-      (2 * hA.eigenvalues hn i' - hA.eigenvalues hn iS - hA.eigenvalues hn last) /
-        (hA.eigenvalues hn iS - hA.eigenvalues hn last) := by
-    have hne : hA.eigenvalues hn iS - hA.eigenvalues hn last ≠ 0 := by linarith
+            ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j - lam last) /
+              ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j - lam i')) *
+            (𝕜 ∙ v).tanAngle (b i') /
+          (T ℝ k).eval (1 + 2 * ((lam i' - lam iS) / (lam iS - lam last)))) ^ 2 := by
+  have harg : 1 + 2 * ((lam i' - lam iS) / (lam iS - lam last)) =
+      (2 * lam i' - lam iS - lam last) / (lam iS - lam last) := by
+    have hne : lam iS - lam last ≠ 0 := by linarith
     field_simp
     ring
   rw [harg, ← div_mul_eq_mul_div]
-  refine le_trans (eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc hA hn hm i i' hv hspread
-    hgap (fun j hj => ⟨?_, ?_⟩) hθ hk) ?_
-  · exact hA.eigenvalues_antitone hn (hlast j)
-  · refine hA.eigenvalues_antitone hn ?_
+  refine le_trans (eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc b hb hlam hA hm i i' hv
+    hspread hgap (fun j hj => ⟨?_, ?_⟩) hθ hk) ?_
+  · exact hlam (hlast j)
+  · refine hlam ?_
     have h1 := Fin.lt_def.1 hj
     rw [Fin.le_def, ← hiS]
     omega
   · refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
-    have h1 := hA.eigenvalues_antitone hn (hfirst i')
+    have h1 := hlam (hfirst i')
     linarith
 
-/-- **The Kaniel–Paige–[saad2011numerical] theorem.**  With `λ` the eigenvalues of a symmetric `A`
-in decreasing order and `θ` the eigenvalues of its compression to the Krylov subspace `𝒦_m(A, v)` —
-the Ritz values — again in decreasing order,
+/-- **The Kaniel–Paige–[saad2011numerical] theorem.**  Let `A` be symmetric with an orthonormal
+eigenbasis `u_1, …, u_n` whose eigenvalues `λ_1 ≥ ⋯ ≥ λ_n` decrease — any such basis, as in a Schur
+decomposition `Zᵀ A Z = diag(λ)` — and `θ` the eigenvalues of its compression to the Krylov subspace
+`𝒦_m(A, v)` — the Ritz values — in decreasing order. Then
 
 `0 ≤ λ_i - θ_i ≤ (λ_1 - λ_n) (κ_i tan θ(u_i, v) / T_k(1 + 2 γ_i))²`
 
@@ -903,8 +851,41 @@ the spectrum below the sought eigenvalue.
 The lower bound is Cauchy interlacing, `LinearMap.IsSymmetric.eigenvalues_compression_le`, which has
 nothing to do with the Krylov structure; the upper bound is
 `Lanczos.eigenvalues_sub_eigenvalues_compression_le`.  The hypothesis `hm` is that `𝒦_m(A, v)`
-really has dimension `m`, that is, that the Lanczos process has not yet broken down. -/
-theorem kaniel_paige_saad {v : E} {m : ℕ}
+really has dimension `m`, that is, that the Lanczos process has not yet broken down.
+`Lanczos.kaniel_paige_saad_eigenvectorBasis` is the special case of Mathlib's eigenbasis. -/
+theorem kaniel_paige_saad [FiniteDimensional 𝕜 E] (hA : A.IsSymmetric) {v : E} {m : ℕ}
+    (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
+    (hii : (i : ℕ) = (i' : ℕ)) (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : ∀ j : Fin n, first ≤ j)
+    (hlast : ∀ j : Fin n, j ≤ last) (hv : (inner 𝕜 (b i') v : 𝕜) ≠ 0)
+    (hgap : lam iS < lam i') (hspread : lam last < lam iS)
+    (hθ : ∀ j : Fin m, j < i →
+      lam i' < (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j)
+    {k : ℕ} (hk : (i : ℕ) + k < m) :
+    lam i' - (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm i ∈
+      Set.Icc 0 ((lam first - lam last) *
+        ((∏ j ∈ Finset.Iio i,
+            ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j - lam last) /
+              ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j - lam i')) *
+            (𝕜 ∙ v).tanAngle (b i') /
+          (T ℝ k).eval (1 + 2 * ((lam i' - lam iS) / (lam iS - lam last)))) ^ 2) := by
+  have hn : Module.finrank 𝕜 E = n := by
+    rw [Module.finrank_eq_card_basis b.toBasis, Fintype.card_fin]
+  have hmn : m ≤ n := by
+    rw [← hm, ← hn]
+    exact Submodule.finrank_le _
+  refine ⟨?_, eigenvalues_sub_eigenvalues_compression_le b hb hlam hA hm i i' iS first last hiS
+    hfirst hlast hv hgap hspread hθ hk⟩
+  have h := hA.eigenvalues_compression_le (Krylov.subspace A v m) hn hm hmn i
+  rw [show Fin.castLE hmn i = i' from Fin.ext (by simpa using hii),
+    hA.eigenvalues_eq_of_apply_eq_ofReal_smul hn b hb hlam] at h
+  linarith
+
+end Eigenbasis
+
+/-- **The Kaniel–Paige–[saad2011numerical] theorem for Mathlib's eigenbasis**:
+`Lanczos.kaniel_paige_saad` with `u_i = hA.eigenvectorBasis hn i` and `λ = hA.eigenvalues hn`. -/
+theorem kaniel_paige_saad_eigenvectorBasis {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ}
+    (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
     (hii : (i : ℕ) = (i' : ℕ)) (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : ∀ j : Fin n, first ≤ j)
     (hlast : ∀ j : Fin n, j ≤ last)
@@ -924,17 +905,9 @@ theorem kaniel_paige_saad {v : E} {m : ℕ}
                 hA.eigenvalues hn i')) *
             (𝕜 ∙ v).tanAngle (hA.eigenvectorBasis hn i') /
           (T ℝ k).eval (1 + 2 * ((hA.eigenvalues hn i' - hA.eigenvalues hn iS) /
-            (hA.eigenvalues hn iS - hA.eigenvalues hn last)))) ^ 2) := by
-  have hmn : m ≤ n := by
-    rw [← hm, ← hn]
-    exact Submodule.finrank_le _
-  refine ⟨?_, eigenvalues_sub_eigenvalues_compression_le hA hn hm i i' iS first last hiS hfirst
-    hlast hv hgap hspread hθ hk⟩
-  have h := hA.eigenvalues_compression_le (Krylov.subspace A v m) hn hm hmn i
-  rw [show Fin.castLE hmn i = i' from Fin.ext (by simpa using hii)] at h
-  linarith
-
-end Eigenbasis
+            (hA.eigenvalues hn iS - hA.eigenvalues hn last)))) ^ 2) :=
+  kaniel_paige_saad _ (hA.apply_eigenvectorBasis hn) (hA.eigenvalues_antitone hn) hA hm i i' iS
+    first last hii hiS hfirst hlast hv hgap hspread hθ hk
 
 end Lanczos
 
@@ -1156,9 +1129,12 @@ end Lanczos
 
 namespace BlockLanczos
 
-variable {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ} (hA : A.IsSymmetric)
-  (hn : Module.finrank 𝕜 E = n)
-include hA hn
+section Eigenbasis
+
+variable {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ} (b : OrthonormalBasis (Fin n) 𝕜 E)
+  {lam : Fin n → ℝ} (hb : ∀ j, A (b j) = (lam j : 𝕜) • b j) (hlam : Antitone lam)
+  (hA : A.IsSymmetric)
+include hb hlam hA
 
 /-- The block Kaniel–Paige–Saad bound for one competitor polynomial `q` of degree below `k`: if
 `|q| ≥ 1` at the eigenvalues `λ_0, …, λ_{i'}` and `|q| ≤ M` at the eigenvalues from `λ_p` on, then
@@ -1168,19 +1144,17 @@ and with no eigencomponent between `i'` and `p`. -/
 private theorem sub_le_eigenvalues_compression_of_poly {p : ℕ} (v : Fin p → E)
     (hv : LinearIndependent 𝕜 v) {t : ℝ}
     (ht : ∀ x ∈ Submodule.span 𝕜 (Set.range v),
-      ‖x - (Submodule.span 𝕜 (hA.eigenvectorBasis hn '' {j | (j : ℕ) < p})).starProjection x‖ ≤
-        t * ‖(Submodule.span 𝕜 (hA.eigenvectorBasis hn '' {j | (j : ℕ) < p})).starProjection x‖)
+      ‖x - (Submodule.span 𝕜 (b '' {j | (j : ℕ) < p})).starProjection x‖ ≤
+        t * ‖(Submodule.span 𝕜 (b '' {j | (j : ℕ) < p})).starProjection x‖)
     {k d : ℕ} (hd : Module.finrank 𝕜 (Krylov.blockSubspace A v k) = d) (i : Fin d)
     (i' first last : Fin n) (hii : (i : ℕ) = i') (hip : (i' : ℕ) < p)
     (hfirst : ∀ j : Fin n, first ≤ j) (hlast : ∀ j : Fin n, j ≤ last)
     (q : ℝ[X]) (hq : q.degree < k) {M : ℝ}
-    (hqM : ∀ j : Fin n, p ≤ (j : ℕ) → |q.eval (hA.eigenvalues hn j)| ≤ M)
-    (hq1 : ∀ j : Fin n, (j : ℕ) ≤ i' → 1 ≤ |q.eval (hA.eigenvalues hn j)|) :
-    hA.eigenvalues hn i' - (hA.eigenvalues hn first - hA.eigenvalues hn last) * (M * t) ^ 2 ≤
+    (hqM : ∀ j : Fin n, p ≤ (j : ℕ) → |q.eval (lam j)| ≤ M)
+    (hq1 : ∀ j : Fin n, (j : ℕ) ≤ i' → 1 ≤ |q.eval (lam j)|) :
+    lam i' - (lam first - lam last) * (M * t) ^ 2 ≤
       (compression.isSymmetric A (Krylov.blockSubspace A v k) hA).eigenvalues hd i := by
   classical
-  set b := hA.eigenvectorBasis hn with hb
-  set lam := hA.eigenvalues hn with hlam
   set W := Krylov.blockSubspace A v k with hW
   set hC := compression.isSymmetric A W hA with hCdef
   set V := Submodule.span 𝕜 (Set.range v) with hV
@@ -1236,8 +1210,8 @@ private theorem sub_le_eigenvalues_compression_of_poly {p : ℕ} (v : Fin p → 
   have hyE0 : yE ≠ 0 := fun h => hy0 (Subtype.ext h)
   set x : E := aeval A qc yE with hx
   have hxW : x ∈ W := hmemW yE y.2
-  have hrepr : ∀ j : Fin n, b.repr x j = ((q.eval (lam j) : ℝ) : 𝕜) * b.repr yE j := fun j => by
-    rw [hx, hb, hqc, hA.repr_aeval_apply hn, Lanczos.eval_map_ofReal]
+  have hrepr : ∀ j : Fin n, b.repr x j = ((q.eval (lam j) : ℝ) : 𝕜) * b.repr yE j := fun j =>
+    Lanczos.repr_aeval_map_apply b hb q yE j
   have hzero : ∀ j : Fin n, (i' : ℕ) < j → (j : ℕ) < p → b.repr yE j = 0 := fun j h1 h2 => by
     rw [OrthonormalBasis.repr_apply_apply]
     exact horth2 j (Finset.mem_filter.2 ⟨Finset.mem_univ _, h1, h2⟩)
@@ -1266,78 +1240,55 @@ private theorem sub_le_eigenvalues_compression_of_poly {p : ℕ} (v : Fin p → 
         simp
     · positivity
   -- the numerator
-  have hnum := hA.mul_norm_sq_sub_re_inner_eq_sum hn (lam i') x
-  have hspread : 0 ≤ lam first - lam last := by
-    have := hA.eigenvalues_antitone hn (hfirst last)
-    linarith
+  set s : Finset (Fin n) := Finset.univ.filter fun j : Fin n => p ≤ (j : ℕ) with hs
+  have hspread : lam i' - lam last ≤ lam first - lam last := by
+    linarith [hlam (hfirst i')]
   have hN : lam i' * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (A x) x) ≤
       (lam first - lam last) * (M * t) ^ 2 * ‖P yE‖ ^ 2 := by
-    rw [hnum]
-    have hterm : ∀ j : Fin n, (lam i' - lam j) * ‖b.repr x j‖ ^ 2 ≤
-        (lam first - lam last) * M ^ 2 *
-          (if j ∈ {j : Fin n | (j : ℕ) < p} then 0 else ‖b.repr yE j‖ ^ 2) := by
-      intro j
-      rw [hrepr, norm_mul, RCLike.norm_ofReal, mul_pow]
-      by_cases h1 : (j : ℕ) ≤ i'
-      · have hlj : lam i' ≤ lam j := hA.eigenvalues_antitone hn (Fin.le_def.2 h1)
-        have hrhs : 0 ≤ (lam first - lam last) * M ^ 2 *
-            (if j ∈ {j : Fin n | (j : ℕ) < p} then 0 else ‖b.repr yE j‖ ^ 2) := by
-          split_ifs <;> positivity
-        have : (lam i' - lam j) * (|q.eval (lam j)| ^ 2 * ‖b.repr yE j‖ ^ 2) ≤ 0 :=
-          mul_nonpos_of_nonpos_of_nonneg (by linarith) (by positivity)
-        linarith
-      · by_cases h2 : (j : ℕ) < p
-        · rw [hzero j (by omega) h2]
-          have : j ∈ {j : Fin n | (j : ℕ) < p} := h2
-          simp [this]
-        · have : j ∉ {j : Fin n | (j : ℕ) < p} := h2
-          rw [ite_eq_right this]
-          have hij : lam j ≤ lam i' := hA.eigenvalues_antitone hn (Fin.le_def.2 (by omega))
-          have hfj : lam j ≤ lam first := hA.eigenvalues_antitone hn (hfirst j)
-          have hlj : lam last ≤ lam j := hA.eigenvalues_antitone hn (hlast j)
-          have hfi : lam i' ≤ lam first := hA.eigenvalues_antitone hn (hfirst i')
-          have hqj : |q.eval (lam j)| ^ 2 ≤ M ^ 2 :=
-            pow_le_pow_left₀ (abs_nonneg _) (hqM j (by omega)) 2
-          have h0 : 0 ≤ lam i' - lam j := by linarith
-          calc (lam i' - lam j) * (|q.eval (lam j)| ^ 2 * ‖b.repr yE j‖ ^ 2)
-              ≤ (lam first - lam last) * (M ^ 2 * ‖b.repr yE j‖ ^ 2) :=
-                mul_le_mul (by linarith) (mul_le_mul_of_nonneg_right hqj (by positivity))
-                  (by positivity) hspread
-            _ = (lam first - lam last) * M ^ 2 * ‖b.repr yE j‖ ^ 2 := by ring
-    refine (Finset.sum_le_sum fun j _ => hterm j).trans ?_
-    rw [← Finset.mul_sum, ← hQy]
-    calc (lam first - lam last) * M ^ 2 * ‖yE - P yE‖ ^ 2
-        ≤ (lam first - lam last) * M ^ 2 * (t ^ 2 * ‖P yE‖ ^ 2) :=
-          mul_le_mul_of_nonneg_left hty (by positivity)
+    have h := Lanczos.mul_norm_sq_aeval_sub_re_inner_le b hb q yE (c := lam i') (lo := lam last)
+      (M := M) (hlam (hlast i')) s
+      (fun j hj => by
+        have hjp : (j : ℕ) < p := by simpa [hs] using hj
+        by_cases h1 : (j : ℕ) ≤ i'
+        · exact Or.inl (hlam (Fin.le_def.2 h1))
+        · exact Or.inr (hzero j (by omega) hjp))
+      (fun j _ => hlam (hlast j))
+      (fun j hj => hqM j (by simpa [hs] using hj))
+    have hsum : ∑ j ∈ s, ‖b.repr yE j‖ ^ 2 = ‖yE - P yE‖ ^ 2 := by
+      rw [hQy, Finset.sum_filter]
+      refine Finset.sum_congr rfl fun j _ => ?_
+      by_cases hj : (j : ℕ) < p
+      · simp [hj, not_le.2 hj]
+      · simp [hj, not_lt.1 hj]
+    rw [hsum] at h
+    refine h.trans ?_
+    have hM2 : 0 ≤ M ^ 2 := sq_nonneg M
+    calc (lam i' - lam last) * M ^ 2 * ‖yE - P yE‖ ^ 2
+        ≤ (lam first - lam last) * M ^ 2 * (t ^ 2 * ‖P yE‖ ^ 2) := by
+          refine mul_le_mul (mul_le_mul_of_nonneg_right hspread hM2) hty (by positivity) ?_
+          exact mul_nonneg (by linarith [hlam (hlast i')]) hM2
       _ = (lam first - lam last) * (M * t) ^ 2 * ‖P yE‖ ^ 2 := by ring
   -- the competitor is admissible for the Courant–Fischer characterization of `μ_i`
-  have hxpos : 0 < ‖x‖ ^ 2 := lt_of_lt_of_le hPpos hden
-  have hx0 : x ≠ 0 := fun h => by rw [h, norm_zero] at hxpos; simp at hxpos
-  have hle : A.rayleighQuotient x ≤ hC.eigenvalues hd i := by
-    refine (hC.isGreatest_rayleighQuotient_orthogonal hd i).2
-      ⟨⟨x, hxW⟩, fun h0 => hx0 (congrArg Subtype.val h0), fun j hj => ?_,
+  have hx0 : x ≠ 0 := fun h => by
+    have := hPpos.trans_le hden
+    rw [h, norm_zero] at this
+    simp at this
+  have hle : A.rayleighQuotient x ≤ hC.eigenvalues hd i :=
+    (hC.isGreatest_rayleighQuotient_orthogonal hd i).2
+      ⟨⟨x, hxW⟩, fun h0 => hx0 (congrArg Subtype.val h0), fun j hj => horth1 ⟨j, hj⟩,
         Krylov.rayleighQuotient_compression A W ⟨x, hxW⟩⟩
-    have h := horth1 ⟨j, hj⟩
-    exact h
-  -- assemble
-  have hsplit : lam i' - A.rayleighQuotient x =
-      (lam i' * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (A x) x)) / ‖x‖ ^ 2 := by
-    rw [LinearMap.rayleighQuotient, sub_div, mul_div_assoc, div_self hxpos.ne', mul_one]
-  have hC0 : 0 ≤ (lam first - lam last) * (M * t) ^ 2 := by positivity
-  have hbound : lam i' - A.rayleighQuotient x ≤ (lam first - lam last) * (M * t) ^ 2 := by
-    rw [hsplit, div_le_iff₀ hxpos]
-    calc lam i' * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (A x) x)
-        ≤ (lam first - lam last) * (M * t) ^ 2 * ‖P yE‖ ^ 2 := hN
-      _ ≤ (lam first - lam last) * (M * t) ^ 2 * ‖x‖ ^ 2 :=
-          mul_le_mul_of_nonneg_left hden hC0
+  have hbound := A.sub_rayleighQuotient_le_of_le
+    (mul_nonneg (by linarith [hlam (hfirst last)]) (sq_nonneg (M * t))) hPpos hden hN
   linarith
 
 /-- **The block Kaniel–Paige–Saad theorem** (Underwood; [golub2013matrix] Theorem 10.3.2): let `A`
-be symmetric with eigenvalues `λ_0 ≥ ⋯ ≥ λ_{n-1}` and eigenvectors `z_j`, `v` a linearly independent
-starting block of `p` vectors, and `μ_0 ≥ ⋯` the eigenvalues of the compression of `A` to the block
-Krylov subspace `𝒦_{k+1}(A, v) = span {A^j v_l : j ≤ k}`. If every `x` in the span of the block
-satisfies `‖x - P x‖ ≤ t ‖P x‖` for the projection `P` onto `span {z_0, …, z_{p-1}}` — `t` is
-`tan φ_p`, the tangent of the largest principal angle between the two spaces — then for `i < p`
+be symmetric with an orthonormal eigenbasis `z_0, …, z_{n-1}` whose eigenvalues
+`λ_0 ≥ ⋯ ≥ λ_{n-1}` decrease — any such basis, as in a Schur decomposition `Zᵀ A Z = diag(λ)` — `v`
+a linearly independent starting block of `p` vectors, and `μ_0 ≥ ⋯` the eigenvalues of the
+compression of `A` to the block Krylov subspace `𝒦_{k+1}(A, v) = span {A^j v_l : j ≤ k}`. If every
+`x` in the span of the block satisfies `‖x - P x‖ ≤ t ‖P x‖` for the projection `P` onto
+`span {z_0, …, z_{p-1}}` — `t` is `tan φ_p`, the tangent of the largest principal angle between the
+two spaces — then for `i < p`
 
 `λ_i - (λ_0 - λ_{n-1}) (t / T_k(1 + 2 ρ_i))² ≤ μ_i ≤ λ_i`, `ρ_i = (λ_i - λ_p)/(λ_p - λ_{n-1})`,
 
@@ -1349,31 +1300,33 @@ zero), `T_k(1) = 1`, and the bound still holds with the constant competitor.
 The upper bound is Cauchy interlacing. The lower bound is Courant–Fischer for the compression with
 the competitor `c(A) y`, `c` the Chebyshev polynomial of `[λ_{n-1}, λ_p]` normalized at `λ_i` and
 `y` in the span of the block, chosen by a dimension count orthogonal to the first `i` Ritz vectors
-and without eigencomponents strictly between `i` and `p`. -/
+and without eigencomponents strictly between `i` and `p`.
+`BlockLanczos.kaniel_paige_saad_eigenvectorBasis` is the special case of Mathlib's eigenbasis. -/
 theorem kaniel_paige_saad {p : ℕ} (v : Fin p → E) (hv : LinearIndependent 𝕜 v) {t : ℝ}
     (ht : ∀ x ∈ Submodule.span 𝕜 (Set.range v),
-      ‖x - (Submodule.span 𝕜 (hA.eigenvectorBasis hn '' {j | (j : ℕ) < p})).starProjection x‖ ≤
-        t * ‖(Submodule.span 𝕜 (hA.eigenvectorBasis hn '' {j | (j : ℕ) < p})).starProjection x‖)
+      ‖x - (Submodule.span 𝕜 (b '' {j | (j : ℕ) < p})).starProjection x‖ ≤
+        t * ‖(Submodule.span 𝕜 (b '' {j | (j : ℕ) < p})).starProjection x‖)
     {k d : ℕ} (hd : Module.finrank 𝕜 (Krylov.blockSubspace A v (k + 1)) = d) (i : Fin d)
     (i' iP first last : Fin n) (hii : (i : ℕ) = i') (hiP : (i' : ℕ) < iP) (hP : (iP : ℕ) = p)
     (hfirst : ∀ j : Fin n, first ≤ j) (hlast : ∀ j : Fin n, j ≤ last) :
-    hA.eigenvalues hn i' - (hA.eigenvalues hn first - hA.eigenvalues hn last) *
-        (t / (T ℝ k).eval (1 + 2 * ((hA.eigenvalues hn i' - hA.eigenvalues hn iP) /
-          (hA.eigenvalues hn iP - hA.eigenvalues hn last)))) ^ 2 ≤
+    lam i' - (lam first - lam last) *
+        (t / (T ℝ k).eval (1 + 2 * ((lam i' - lam iP) / (lam iP - lam last)))) ^ 2 ≤
         (compression.isSymmetric A (Krylov.blockSubspace A v (k + 1)) hA).eigenvalues hd i ∧
       (compression.isSymmetric A (Krylov.blockSubspace A v (k + 1)) hA).eigenvalues hd i ≤
-        hA.eigenvalues hn i' := by
-  set lam := hA.eigenvalues hn with hlam
+        lam i' := by
+  have hn : Module.finrank 𝕜 E = n := by
+    rw [Module.finrank_eq_card_basis b.toBasis, Fintype.card_fin]
   have hdn : d ≤ n := by
     rw [← hd, ← hn]
     exact Submodule.finrank_le _
   refine ⟨?_, ?_⟩
   swap
   · have h := hA.eigenvalues_compression_le (Krylov.blockSubspace A v (k + 1)) hn hd hdn i
-    rwa [show Fin.castLE hdn i = i' from Fin.ext (by simpa using hii)] at h
+    rwa [show Fin.castLE hdn i = i' from Fin.ext (by simpa using hii),
+      hA.eigenvalues_eq_of_apply_eq_ofReal_smul hn b hb hlam] at h
   have hip : (i' : ℕ) < p := hP ▸ hiP
-  have hPi : lam iP ≤ lam i' := hA.eigenvalues_antitone hn hiP.le
-  have hlP : lam last ≤ lam iP := hA.eigenvalues_antitone hn (hlast iP)
+  have hPi : lam iP ≤ lam i' := hlam hiP.le
+  have hlP : lam last ≤ lam iP := hlam (hlast iP)
   set γ := 1 + 2 * ((lam i' - lam iP) / (lam iP - lam last)) with hγ
   by_cases hgen : lam last < lam iP ∧ lam iP < lam i'
   · obtain ⟨h1, h2⟩ := hgen
@@ -1410,12 +1363,12 @@ theorem kaniel_paige_saad {p : ℕ} (v : Fin p → E) (hv : LinearIndependent �
         simpa using Nat.mul_le_mul (le_refl k) hlin
       have := (natDegree_C_mul_le ((T ℝ k).eval γ)⁻¹ _).trans hcomp
       exact_mod_cast Nat.lt_succ_of_le this
-    have hmain := sub_le_eigenvalues_compression_of_poly hA hn v hv ht hd i i' first last hii hip
-      hfirst hlast q hqdeg (M := ((T ℝ k).eval γ)⁻¹)
+    have hmain := sub_le_eigenvalues_compression_of_poly b hb hlam hA v hv ht hd i i' first last
+      hii hip hfirst hlast q hqdeg (M := ((T ℝ k).eval γ)⁻¹)
       (fun j hj => by
         have hjP : iP ≤ j := Fin.le_def.2 (by omega)
-        have hl : lam last ≤ lam j := hA.eigenvalues_antitone hn (hlast j)
-        have hu : lam j ≤ lam iP := hA.eigenvalues_antitone hn hjP
+        have hl : lam last ≤ lam j := hlam (hlast j)
+        have hu : lam j ≤ lam iP := hlam hjP
         have habs : |a * lam j + c| ≤ 1 := by
           rw [haff, abs_le, le_div_iff₀ hden, div_le_iff₀ hden]
           constructor <;> linarith
@@ -1425,7 +1378,7 @@ theorem kaniel_paige_saad {p : ℕ} (v : Fin p → E) (hv : LinearIndependent �
               mul_le_mul_of_nonneg_left this (inv_nonneg.2 (by linarith))
           _ = ((T ℝ k).eval γ)⁻¹ := mul_one _)
       (fun j hj => by
-        have hij : lam i' ≤ lam j := hA.eigenvalues_antitone hn (Fin.le_def.2 hj)
+        have hij : lam i' ≤ lam j := hlam (Fin.le_def.2 hj)
         have harg : γ ≤ a * lam j + c := by
           rw [← haγ]
           have : 0 < a := div_pos two_pos hden
@@ -1441,11 +1394,34 @@ theorem kaniel_paige_saad {p : ℕ} (v : Fin p → E) (hv : LinearIndependent �
       · rw [h, sub_self, div_zero]; ring
       · have : lam iP = lam i' := le_antisymm hPi (not_lt.1 fun h' => hgen ⟨h, h'⟩)
         rw [this, sub_self, zero_div]; ring
-    have hmain := sub_le_eigenvalues_compression_of_poly hA hn v hv ht hd i i' first last hii hip
-      hfirst hlast 1 (by rw [degree_one]; exact_mod_cast Nat.succ_pos k) (M := 1)
+    have hmain := sub_le_eigenvalues_compression_of_poly b hb hlam hA v hv ht hd i i' first last
+      hii hip hfirst hlast 1 (by rw [degree_one]; exact_mod_cast Nat.succ_pos k) (M := 1)
       (fun j _ => by simp) (fun j _ => by simp)
     rw [hγ1, T_eval_one, div_one]
     simpa using hmain
+
+end Eigenbasis
+
+/-- **The block Kaniel–Paige–Saad theorem for Mathlib's eigenbasis**:
+`BlockLanczos.kaniel_paige_saad` with `z_j = hA.eigenvectorBasis hn j` and
+`λ = hA.eigenvalues hn`. -/
+theorem kaniel_paige_saad_eigenvectorBasis {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ}
+    (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) {p : ℕ} (v : Fin p → E)
+    (hv : LinearIndependent 𝕜 v) {t : ℝ}
+    (ht : ∀ x ∈ Submodule.span 𝕜 (Set.range v),
+      ‖x - (Submodule.span 𝕜 (hA.eigenvectorBasis hn '' {j | (j : ℕ) < p})).starProjection x‖ ≤
+        t * ‖(Submodule.span 𝕜 (hA.eigenvectorBasis hn '' {j | (j : ℕ) < p})).starProjection x‖)
+    {k d : ℕ} (hd : Module.finrank 𝕜 (Krylov.blockSubspace A v (k + 1)) = d) (i : Fin d)
+    (i' iP first last : Fin n) (hii : (i : ℕ) = i') (hiP : (i' : ℕ) < iP) (hP : (iP : ℕ) = p)
+    (hfirst : ∀ j : Fin n, first ≤ j) (hlast : ∀ j : Fin n, j ≤ last) :
+    hA.eigenvalues hn i' - (hA.eigenvalues hn first - hA.eigenvalues hn last) *
+        (t / (T ℝ k).eval (1 + 2 * ((hA.eigenvalues hn i' - hA.eigenvalues hn iP) /
+          (hA.eigenvalues hn iP - hA.eigenvalues hn last)))) ^ 2 ≤
+        (compression.isSymmetric A (Krylov.blockSubspace A v (k + 1)) hA).eigenvalues hd i ∧
+      (compression.isSymmetric A (Krylov.blockSubspace A v (k + 1)) hA).eigenvalues hd i ≤
+        hA.eigenvalues hn i' :=
+  kaniel_paige_saad _ (hA.apply_eigenvectorBasis hn) (hA.eigenvalues_antitone hn) hA v hv ht hd i
+    i' iP first last hii hiP hP hfirst hlast
 
 end BlockLanczos
 

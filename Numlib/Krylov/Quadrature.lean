@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Matrix.HermitianFunctionalCalculus
 import Mathlib.LinearAlgebra.Lagrange
 import Numlib.Approximation.Quadrature
+import Numlib.Eigen.Sturm
 import Numlib.Krylov.OrthogonalPolynomials
 
 /-!
@@ -37,9 +38,9 @@ the measure and the exactness of the `m`-point Gauss rule of the compression
   `Quadrature.exists_error_eq_of_hermite` and of `Quadrature.gauss_le_integral_le_gaussRadau`. The
   hypotheses of those need the nodes distinct and inside the interval carrying the spectrum: the
   first because `T_m` and `T̃` are unreduced (an eigenvector of an unreduced tridiagonal matrix has
-  a nonzero first component, `Matrix.IsTridiagonal.apply_zero_ne_zero_of_mulVec_eq`), the second
-  because a rule exact to high enough degree with positive weights has its nodes in the support
-  interval (`Quadrature.mem_Icc_of_isExactOnMeasure`).
+  a nonzero first component, `Matrix.IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm`),
+  the second because a rule exact to high enough degree with positive weights has its nodes in the
+  support interval (`Quadrature.mem_Icc_of_isExactOnMeasure`).
 
 Indices: `m` is the number of Lanczos steps; `Module.finrank 𝕜 (Krylov.subspace A v m) = m` is the
 condition that the process has not broken down before step `m`.
@@ -134,16 +135,6 @@ theorem aeval_apply_self (hT : T.IsHermitian) (p : ℝ[X]) (i : n) :
       hT.eigenvectorBasis j i := by
     simp [star_trivial]
   rw [hs, Real.norm_eq_abs, sq_abs]
-
-/-- A point of the spectrum of a real symmetric matrix is one of its eigenvalues. -/
-theorem exists_eigenvalues_eq_of_mem_spectrum (hT : T.IsHermitian) {a : ℝ}
-    (ha : a ∈ spectrum ℝ T) : ∃ j, hT.eigenvalues j = a := by
-  rw [mem_spectrum_iff_isRoot_charpoly, hT.charpoly_eq, IsRoot, eval_prod,
-    prod_eq_zero_iff] at ha
-  obtain ⟨j, -, hj⟩ := ha
-  refine ⟨j, ?_⟩
-  simp only [eval_sub, eval_X, eval_C, RCLike.ofReal_real_eq_id, id] at hj
-  linarith
 
 end Matrix.IsHermitian
 
@@ -390,8 +381,10 @@ theorem radau_quadrature [FiniteDimensional 𝕜 E] {n : ℕ} (hA : A.IsSymmetri
       ∫ x, f.eval x ∂(spectralMeasure hA hn v) =
         ‖v‖ ^ 2 * ∑ j, ((radauTridiag_isHermitian A v m a).eigenvectorBasis j 0) ^ 2 *
           f.eval ((radauTridiag_isHermitian A v m a).eigenvalues j) := by
-  refine ⟨Matrix.IsHermitian.exists_eigenvalues_eq_of_mem_spectrum _
-    (radauTridiag_hasEigenvalue A v m a ha), ?_⟩
+  refine ⟨by
+    have h := radauTridiag_hasEigenvalue A v m a ha
+    rw [(radauTridiag_isHermitian A v m a).spectrum_real_eq_range_eigenvalues] at h
+    exact h, ?_⟩
   have hmom : aeval (radauTridiag A v m a) f 0 0 = aeval (tridiag A v (m + 1)) f 0 0 := by
     rw [aeval_eq_sum_range, aeval_eq_sum_range, Matrix.sum_apply, Matrix.sum_apply]
     refine sum_congr rfl fun k hk => ?_
@@ -405,84 +398,6 @@ theorem radau_quadrature [FiniteDimensional 𝕜 E] {n : ℕ} (hA : A.IsSymmetri
 
 end Lanczos
 
-/-! ### Eigenvectors of unreduced tridiagonal matrices -/
-
-namespace Matrix
-
-variable {n : ℕ} {M : Matrix (Fin n) (Fin n) ℝ}
-
-/-- An eigenvector of an unreduced tridiagonal matrix (nonzero superdiagonal) has a nonzero first
-component: row `k` of `M s = θ s` determines `s_{k+1}` from `s_0, …, s_k`. -/
-theorem IsTridiagonal.apply_zero_ne_zero_of_mulVec_eq (hM : M.IsTridiagonal)
-    (hsup : ∀ (i : ℕ) (h : i + 1 < n), M ⟨i, by omega⟩ ⟨i + 1, h⟩ ≠ 0) {θ : ℝ}
-    {s : Fin n → ℝ} (hs : M *ᵥ s = θ • s) (hs0 : s ≠ 0) (h0 : 0 < n) : s ⟨0, h0⟩ ≠ 0 := by
-  intro hz
-  apply hs0
-  have key : ∀ k (hk : k < n), s ⟨k, hk⟩ = 0 := by
-    intro k
-    induction k using Nat.strong_induction_on with
-    | _ k ih =>
-      intro hk
-      cases k with
-      | zero => exact hz
-      | succ k =>
-        have hrow := congrFun hs ⟨k, by omega⟩
-        change ∑ l, M ⟨k, by omega⟩ l * s l = θ * s ⟨k, by omega⟩ at hrow
-        rw [ih k (by omega) (by omega), mul_zero, sum_eq_single ⟨k + 1, hk⟩] at hrow
-        · exact (mul_eq_zero.1 hrow).resolve_left (hsup k hk)
-        · intro l _ hl
-          by_cases hlk : (l : ℕ) ≤ k
-          · have := ih l (by omega) l.isLt
-            rw [Fin.eta] at this
-            rw [this, mul_zero]
-          · have hl' : k + 1 < (l : ℕ) := by
-              have : (l : ℕ) ≠ k + 1 := fun h => hl (Fin.ext h)
-              omega
-            rw [hM ⟨k, by omega⟩ l (Or.inr ⟨⟨k + 1, hk⟩, Fin.lt_def.2 (by simp),
-              Fin.lt_def.2 (by simpa using hl')⟩), zero_mul]
-        · simp
-  funext i
-  exact key i i.isLt
-
-/-- The eigenvalues of an unreduced real symmetric tridiagonal matrix are simple: Mathlib's
-`Matrix.IsHermitian.eigenvalues` is injective. Two orthonormal eigenvectors for one eigenvalue would
-combine into an eigenvector with first component `0`. -/
-theorem IsHermitian.eigenvalues_injective_of_isTridiagonal (hT : M.IsHermitian)
-    (hM : M.IsTridiagonal) (hsup : ∀ (i : ℕ) (h : i + 1 < n), M ⟨i, by omega⟩ ⟨i + 1, h⟩ ≠ 0) :
-    Function.Injective hT.eigenvalues := by
-  intro i j hij
-  by_contra hne
-  have h0 : 0 < n := Fin.pos i
-  set e := hT.eigenvectorBasis
-  have hvec : ∀ k, M *ᵥ ⇑(e k) = hT.eigenvalues k • ⇑(e k) := hT.mulVec_eigenvectorBasis
-  have hne0 : ∀ k, (⇑(e k) : Fin n → ℝ) ≠ 0 := fun k h => by
-    have h1 : ‖e k‖ = 1 := e.orthonormal.1 k
-    have h2 : e k = 0 := WithLp.ofLp_injective 2 (by simpa using h)
-    rw [h2, norm_zero] at h1
-    exact zero_ne_one h1
-  have hfirst : ∀ k, (e k) ⟨0, h0⟩ ≠ 0 := fun k =>
-    hM.apply_zero_ne_zero_of_mulVec_eq hsup (hvec k) (hne0 k) h0
-  set u : EuclideanSpace ℝ (Fin n) := (e j) ⟨0, h0⟩ • e i - (e i) ⟨0, h0⟩ • e j
-  have hu : (⇑u : Fin n → ℝ) = (e j) ⟨0, h0⟩ • ⇑(e i) - (e i) ⟨0, h0⟩ • ⇑(e j) := rfl
-  have huv : M *ᵥ ⇑u = hT.eigenvalues i • ⇑u := by
-    rw [hu, mulVec_sub, mulVec_smul, mulVec_smul, hvec, hvec, ← hij, smul_sub, smul_comm _
-      (hT.eigenvalues i), smul_comm (e i ⟨0, h0⟩) (hT.eigenvalues i)]
-  have hu0 : (⇑u : Fin n → ℝ) = 0 := by
-    by_contra h
-    refine hM.apply_zero_ne_zero_of_mulVec_eq hsup huv h h0 ?_
-    rw [hu]
-    simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul]
-    ring
-  have hu' : u = 0 := WithLp.ofLp_injective 2 (by simpa using hu0)
-  have hinner : inner ℝ (e i) u = (e j) ⟨0, h0⟩ := by
-    rw [inner_sub_right, real_inner_smul_right, real_inner_smul_right,
-      e.orthonormal.2 hne, real_inner_self_eq_norm_sq, e.orthonormal.1 i]
-    ring
-  rw [hu', inner_zero_right] at hinner
-  exact hfirst j hinner.symm
-
-end Matrix
-
 /-! ### Where the nodes of an exact rule lie -/
 
 namespace Quadrature
@@ -493,8 +408,7 @@ open OrthogonalPolynomial
 every polynomial integrable, `(w, x)` a rule exact to degree `d`, and `P` a polynomial of degree
 `< d`, nonnegative on `[a, b]`, vanishing at every node but `x j`, with `w_j P(x_j) > 0`. Then
 `x j ∈ [a, b]`: otherwise `∫ (x_j − t) P dμ` (or `∫ (t − x_j) P dμ`) would be both `0` (the rule)
-and `≥ dist(x_j, [a, b]) ∫ P dμ > 0`. (A measure-level fact; it belongs in
-`Numlib/Approximation/Quadrature`.) -/
+and `≥ dist(x_j, [a, b]) ∫ P dμ > 0`. -/
 theorem mem_Icc_of_isExactOnMeasure {μ : Measure ℝ} {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) {n d : ℕ} {w x : Fin n → ℝ}
     (hexact : IsExactOnMeasure μ w x d) {P : ℝ[X]} (hPdeg : P.natDegree + 1 ≤ d)
@@ -589,6 +503,15 @@ private theorem tridiag_succ_ne_zero {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
   dsimp only at h0
   omega
 
+/-- The Lanczos matrix is unreduced below the grade. -/
+private theorem tridiag_isUnreducedUpperHessenberg {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E)
+    [FiniteDimensional 𝕜 (fullSubspace A v)] {k : ℕ} (hk : k ≤ grade A v) :
+    (tridiag A v k).IsUnreducedUpperHessenberg :=
+  Matrix.isUnreducedUpperHessenberg_iff_fin.2 ⟨(tridiag_isTridiagonal A v k).isUpperHessenberg,
+    fun i h => by
+      rw [(tridiag_isSymm A v k).apply ⟨i, by omega⟩ ⟨i + 1, h⟩]
+      exact tridiag_succ_ne_zero hA v hk i h⟩
+
 /-- The Gauss–Radau matrix is tridiagonal. -/
 theorem radauTridiag_isTridiagonal (A : E →ₗ[𝕜] E) (v : E) (m : ℕ) (a : ℝ) :
     (radauTridiag A v m a).IsTridiagonal := by
@@ -628,9 +551,9 @@ private theorem gauss_rule (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
   set hT := tridiag_isHermitian A v m
   have hmg := le_grade_of_finrank hmk
   have hv := ne_zero_of_finrank hm hmk
+  have hU := tridiag_isUnreducedUpperHessenberg hA v hmg
   have hinj : Function.Injective hT.eigenvalues :=
-    hT.eigenvalues_injective_of_isTridiagonal (tridiag_isTridiagonal A v m)
-      (tridiag_succ_ne_zero hA v hmg)
+    hT.eigenvalues_injective_of_isUnreducedUpperHessenberg hU
   have hexact : IsExactOnMeasure (spectralMeasure hA hn v)
       (fun j => ‖v‖ ^ 2 * (hT.eigenvectorBasis j ⟨0, hm⟩) ^ 2) hT.eigenvalues (2 * m - 1) := by
     intro p hp
@@ -644,8 +567,8 @@ private theorem gauss_rule (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
   refine ⟨hinj, fun j => ?_, hexact⟩
   have hw : ∀ i, 0 < ‖v‖ ^ 2 * (hT.eigenvectorBasis i ⟨0, hm⟩) ^ 2 := fun i => by
     have h1 : (hT.eigenvectorBasis i) ⟨0, hm⟩ ≠ 0 :=
-      (tridiag_isTridiagonal A v m).apply_zero_ne_zero_of_mulVec_eq (tridiag_succ_ne_zero hA v hmg)
-        (hT.mulVec_eigenvectorBasis i) (fun h => by
+      hU.apply_zero_ne_zero_of_isSymm (tridiag_isSymm A v m) (hT.mulVec_eigenvectorBasis i)
+        (fun h => by
           have h2 := hT.eigenvectorBasis.orthonormal.1 i
           rw [show hT.eigenvectorBasis i = 0 from WithLp.ofLp_injective 2 (by simpa using h),
             norm_zero] at h2
@@ -694,21 +617,26 @@ private theorem radau_rule (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
       simp at this
       omega]
     exact tridiag_succ_ne_zero hA v hmg i h
-  have hinj : Function.Injective θ :=
-    hR.eigenvalues_injective_of_isTridiagonal (radauTridiag_isTridiagonal A v m a) hsup
+  have hRS : (radauTridiag A v m a).IsSymm := Matrix.isHermitian_iff_isSymm.1 hR
+  have hU : (radauTridiag A v m a).IsUnreducedUpperHessenberg :=
+    Matrix.isUnreducedUpperHessenberg_iff_fin.2
+      ⟨(radauTridiag_isTridiagonal A v m a).isUpperHessenberg, fun i h => by
+        rw [hRS.apply ⟨i, by omega⟩ ⟨i + 1, h⟩]
+        exact hsup i h⟩
+  have hinj : Function.Injective θ := hR.eigenvalues_injective_of_isUnreducedUpperHessenberg hU
   have hexact : IsExactOnMeasure (spectralMeasure hA hn v)
       (fun j => ‖v‖ ^ 2 * (hR.eigenvectorBasis j 0) ^ 2) θ (2 * m) := by
     intro p hp
     rw [(radau_quadrature A v m a hA hn hmk ha (natDegree_le_of_degree_le hp)).2, mul_sum]
     exact sum_congr rfl fun j _ => by ring
-  obtain ⟨i₀, hi₀⟩ := Matrix.IsHermitian.exists_eigenvalues_eq_of_mem_spectrum hR
-    (radauTridiag_hasEigenvalue A v m a ha)
+  have hspec := radauTridiag_hasEigenvalue A v m a ha
+  rw [hR.spectrum_real_eq_range_eigenvalues] at hspec
+  obtain ⟨i₀, hi₀⟩ := hspec
   change θ i₀ = a at hi₀
   have hw : ∀ i, 0 < ‖v‖ ^ 2 * (hR.eigenvectorBasis i 0) ^ 2 := fun i => by
     have h1 : (hR.eigenvectorBasis i) 0 ≠ 0 := by
       rw [zero_eq_mk]
-      exact (radauTridiag_isTridiagonal A v m a).apply_zero_ne_zero_of_mulVec_eq hsup
-        (hR.mulVec_eigenvectorBasis i) (fun h => by
+      exact hU.apply_zero_ne_zero_of_isSymm hRS (hR.mulVec_eigenvectorBasis i) (fun h => by
           have h2 := hR.eigenvectorBasis.orthonormal.1 i
           rw [show hR.eigenvectorBasis i = 0 from WithLp.ofLp_injective 2 (by simpa using h),
             norm_zero] at h2

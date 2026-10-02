@@ -138,10 +138,8 @@ private theorem exists_norm_eq_one_apply_eq_smul
     (hz : Module.End.HasEigenvalue (A : E →ₗ[𝕜] E) z) : ∃ w : E, ‖w‖ = 1 ∧ A w = z • w := by
   obtain ⟨w, hw, hw0⟩ := hz.exists_hasEigenvector
   have hval : A w = z • w := by simpa using Module.End.mem_eigenspace_iff.1 hw
-  have hn : ‖w‖ ≠ 0 := norm_ne_zero_iff.2 hw0
   refine ⟨(‖w‖ : 𝕜)⁻¹ • w, ?_, ?_⟩
-  · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg w),
-      inv_mul_cancel₀ hn]
+  · exact norm_smul_inv_norm hw0
   · rw [map_smul, smul_comm z, hval]
 
 /-- Every eigenvalue lies in every pseudospectrum of positive radius: an exact eigenvector has
@@ -169,8 +167,7 @@ theorem iInf_norm_sub_smul_mul_norm_le (A : E →L[𝕜] E) (z : 𝕜) (x : E) :
   rcases eq_or_ne x 0 with rfl | hx
   · simp
   have hn : 0 < ‖x‖ := norm_pos_iff.mpr hx
-  have hu : ‖((‖x‖⁻¹ : ℝ) : 𝕜) • x‖ = 1 := by
-    rw [norm_smul, RCLike.norm_ofReal, abs_of_pos (inv_pos.mpr hn), inv_mul_cancel₀ hn.ne']
+  have hu : ‖((‖x‖⁻¹ : ℝ) : 𝕜) • x‖ = 1 := by rw [RCLike.ofReal_inv]; exact norm_smul_inv_norm hx
   have h := ciInf_le (bddBelow_range_norm_sub_smul A z) ⟨_, hu⟩
   simp only [map_smul, smul_comm z, ← smul_sub, norm_smul, RCLike.norm_ofReal,
     abs_of_pos (inv_pos.mpr hn)] at h
@@ -296,9 +293,7 @@ theorem exists_norm_sub_smul_eq_iInf [Nontrivial E] (A : E →L[𝕜] E) (z : �
   have hc : Continuous fun w : E => ‖A w - z • w‖ :=
     (A.continuous.sub (continuous_const.smul continuous_id)).norm
   obtain ⟨x, hx⟩ := exists_ne (0 : E)
-  have hn : 0 < ‖x‖ := norm_pos_iff.mpr hx
-  have hw₀ : ‖((‖x‖⁻¹ : ℝ) : 𝕜) • x‖ = 1 := by
-    rw [norm_smul, RCLike.norm_ofReal, abs_of_pos (inv_pos.mpr hn), inv_mul_cancel₀ hn.ne']
+  have hw₀ : ‖((‖x‖⁻¹ : ℝ) : 𝕜) • x‖ = 1 := by rw [RCLike.ofReal_inv]; exact norm_smul_inv_norm hx
   obtain ⟨w, hw, hmin⟩ := (isCompact_sphere (0 : E) 1).exists_isMinOn
     ⟨_, mem_sphere_zero_iff_norm.mpr hw₀⟩ hc.continuousOn
   rw [mem_sphere_zero_iff_norm] at hw
@@ -585,8 +580,7 @@ variable [NormedSpace 𝕜 E] {ε : ℝ} {A : E →L[𝕜] E} {z : 𝕜}
 theorem mul_norm_lt_norm_sub_smul_of_notMem (hz : z ∉ closedPseudospectrum ε A) {x : E}
     (hx : x ≠ 0) : ε * ‖x‖ < ‖A x - z • x‖ := by
   have hn : 0 < ‖x‖ := norm_pos_iff.mpr hx
-  have hu : ‖((‖x‖⁻¹ : ℝ) : 𝕜) • x‖ = 1 := by
-    rw [norm_smul, RCLike.norm_ofReal, abs_of_pos (inv_pos.mpr hn), inv_mul_cancel₀ hn.ne']
+  have hu : ‖((‖x‖⁻¹ : ℝ) : 𝕜) • x‖ = 1 := by rw [RCLike.ofReal_inv]; exact norm_smul_inv_norm hx
   have h : ε < ‖A (((‖x‖⁻¹ : ℝ) : 𝕜) • x) - z • ((‖x‖⁻¹ : ℝ) : 𝕜) • x‖ :=
     not_le.mp fun h => hz ⟨_, hu, h⟩
   rw [map_smul, smul_comm z, ← smul_sub, norm_smul, RCLike.norm_ofReal,
@@ -629,7 +623,7 @@ theorem closedPseudospectrum_units_conj_subset (u : (E →L[𝕜] E)ˣ) (A : E �
   have hres : A (X w) - z • X w = X ((Y * A * X) w - z • w) := by
     simp only [mul_apply_eq_comp, map_sub, map_smul, hXY]
   refine ⟨((‖X w‖⁻¹ : ℝ) : 𝕜) • X w, ?_, ?_⟩
-  · rw [norm_smul, RCLike.norm_ofReal, abs_of_pos (inv_pos.mpr hXw0), inv_mul_cancel₀ hXw0.ne']
+  · rw [RCLike.ofReal_inv]; exact norm_smul_inv_norm (norm_pos_iff.1 hXw0)
   rw [map_smul, smul_comm z, ← smul_sub, norm_smul, RCLike.norm_ofReal,
     abs_of_pos (inv_pos.mpr hXw0), hres]
   have hinv : ‖X w‖⁻¹ ≤ ‖Y‖ := by
@@ -775,8 +769,7 @@ theorem mem_closedPseudospectrum_of_hasEigenvalue_add {A B : E →L[ℂ] E} {z :
   have hval : A w + B w = z • w := by simpa using Module.End.mem_eigenspace_iff.1 hw
   have hn : ‖w‖ ≠ 0 := norm_ne_zero_iff.2 hw0
   refine ⟨((‖w‖⁻¹ : ℝ) : ℂ) • w, ?_, ?_⟩
-  · rw [norm_smul, Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (inv_nonneg.2
-      (norm_nonneg w)), inv_mul_cancel₀ hn]
+  · rw [Complex.ofReal_inv]; exact norm_smul_inv_norm hw0
   · have : A (((‖w‖⁻¹ : ℝ) : ℂ) • w) - z • ((‖w‖⁻¹ : ℝ) : ℂ) • w =
         ((‖w‖⁻¹ : ℝ) : ℂ) • -B w := by
       rw [map_smul, smul_comm z, ← smul_sub, ← hval]; congr 1; abel

@@ -1,10 +1,8 @@
 # The module doc of `Numlib.Krylov.Quadrature` is the group description (quadratic forms as
 # integrals against the spectral measure, the Golub–Welsch form of the Gauss rule, Gauss–Radau
 # through the modified Lanczos matrix, the remainders and the two-sided bound).
-# `Matrix.IsHermitian.star_dotProduct_cfc_mulVec`, `.aeval_apply_self`,
-# `.exists_eigenvalues_eq_of_mem_spectrum`, `.eigenvalues_injective_of_isTridiagonal`,
-# and `Matrix.IsTridiagonal.apply_zero_ne_zero_of_mulVec_eq` are general matrix facts that would
-# belong in
+# `Matrix.IsHermitian.star_dotProduct_cfc_mulVec` and `.aeval_apply_self` are general matrix facts
+# that would belong in
 # `Numlib/Analysis/Matrix/…` /
 # `Numlib/LinearAlgebra/Matrix/…`, and `Quadrature.mem_Icc_of_isExactOnMeasure` belongs in
 # `Numlib/Approximation/Quadrature`; they are tracked here, where they live.
@@ -20,9 +18,6 @@ id = "Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure"
 
 [[node]]
 id = "Matrix.IsHermitian.aeval_apply_self"
-
-[[node]]
-id = "Matrix.IsHermitian.exists_eigenvalues_eq_of_mem_spectrum"
 
 [[node]]
 id = "Lanczos.tridiag_isHermitian"
@@ -53,12 +48,6 @@ id = "Lanczos.radau_moment_eq"
 
 [[node]]
 id = "Lanczos.radau_quadrature"
-
-[[node]]
-id = "Matrix.IsTridiagonal.apply_zero_ne_zero_of_mulVec_eq"
-
-[[node]]
-id = "Matrix.IsHermitian.eigenvalues_injective_of_isTridiagonal"
 
 [[node]]
 id = "Quadrature.mem_Icc_of_isExactOnMeasure"

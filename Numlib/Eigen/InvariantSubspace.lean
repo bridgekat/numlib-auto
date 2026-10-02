@@ -16,11 +16,12 @@ subspace (orthogonal) iteration to the dominant one with explicit constants.
 ## Main results
 
 * **Uniqueness.** An `A`-invariant subspace on which `A` has only eigenvalues from a set `Λ`, of the
-  dimension of `⨆_{μ ∈ Λ} maxGenEigenspace A μ` (the total algebraic multiplicity of `Λ`), *is* that
-  subspace (`Module.End.invtSubmodule_eq_iSup_maxGenEigenspace`). That is the precise sense of
+  dimension of the spectral subspace `⨆_{μ ∈ Λ} maxGenEigenspace A μ` (the total algebraic
+  multiplicity of `Λ`), *is* that subspace (`Module.End.invtSubmodule_eq_spectralSubspace`, in
+  `Numlib/LinearAlgebra/Eigenspace/Spectral`). That is the precise sense of
   [golub2013matrix]'s "the unique invariant subspace associated with the eigenvalues λ₁, …, λ_r"
   (§7.3.2, the dominant invariant subspace `D_r(A)`, and §7.6.2, the first `p` Schur vectors when
-  `λ(T₁₁) ∩ λ(T₂₂) = ∅`); the matrix form is `Matrix.span_cols_eq_iSup_maxGenEigenspace_of_conj`.
+  `λ(T₁₁) ∩ λ(T₂₂) = ∅`); the matrix form is `Matrix.span_cols_eq_spectralSubspace_of_conj`.
 * **Powers from a Schur form** ([golub2013matrix] Lemma 7.3.2): with `Qᴴ A Q = D + N`,
   `‖A^k‖₂ ≤ (1+μ)^{n-1} (max |t_ii| + ‖N‖_F/(1+μ))^k` (`Matrix.l2_opNorm_pow_le_of_schur`) and the
   inverse-power bound (`Matrix.l2_opNorm_inv_pow_le_of_schur`); the diagonal scaling
@@ -76,45 +77,11 @@ constant.
 
 namespace Module.End
 
-variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
+@[deprecated invtSubmodule_le_spectralSubspace (since := "2026-09-30")]
+alias invtSubmodule_le_iSup_maxGenEigenspace := invtSubmodule_le_spectralSubspace
 
-/-- An invariant subspace on which every eigenvalue lies in `Λ` is contained in the sum of the
-generalized eigenspaces of `Λ`: over an algebraically closed field, `S` is the sum of the
-generalized eigenspaces of `A|_S` (`Module.End.iSup_maxGenEigenspace_eq_top`), each inside the
-corresponding one of `A`, and those of eigenvalues outside `Λ` vanish. -/
-theorem invtSubmodule_le_iSup_maxGenEigenspace [IsAlgClosed K] [FiniteDimensional K V]
-    {A : Module.End K V} {Λ : Set K} {S : Submodule K V} (hS : S ∈ A.invtSubmodule)
-    (hΛ : ∀ μ ∉ Λ, ∀ x ∈ S, A x = μ • x → x = 0) :
-    S ≤ ⨆ μ ∈ Λ, A.maxGenEigenspace μ := by
-  have hS' : ∀ x ∈ S, A x ∈ S := (A.mem_invtSubmodule_iff_forall_mem_of_mem).1 hS
-  have hall : ⨆ μ, A.genEigenspace μ ⊤ = ⊤ := iSup_maxGenEigenspace_eq_top A
-  calc S = S ⊓ ⨆ μ, A.genEigenspace μ ⊤ := by rw [hall, inf_top_eq]
-    _ = ⨆ μ, S ⊓ A.genEigenspace μ ⊤ := Submodule.inf_iSup_genEigenspace hS' ⊤
-    _ ≤ ⨆ μ ∈ Λ, A.maxGenEigenspace μ := iSup_le fun μ => ?_
-  by_cases hμ : μ ∈ Λ
-  · exact inf_le_right.trans (le_iSup₂_of_le μ hμ le_rfl)
-  rw [Submodule.inf_genEigenspace A S hS']
-  have h0 : Module.End.genEigenspace (A.restrict hS') μ ⊤ = ⊥ := by
-    by_contra h
-    have h1 : Module.End.HasUnifEigenvalue (A.restrict hS') μ ⊤ := h
-    rw [hasUnifEigenvalue_iff_hasUnifEigenvalue_one (by simp)] at h1
-    obtain ⟨x, hx⟩ := HasEigenvalue.exists_hasEigenvector h1
-    have hAx : A x = μ • (x : V) := by
-      simpa using congrArg Subtype.val hx.apply_eq_smul
-    exact hx.2 (Subtype.ext (hΛ μ hμ x x.2 hAx))
-  rw [h0, Submodule.map_bot]
-  exact bot_le
-
-/-- **Uniqueness of the invariant subspace of a spectral set** ([golub2013matrix] §7.3.2, §7.6.2):
-over an algebraically closed field, an `A`-invariant subspace `S` on which every eigenvalue of `A`
-lies in `Λ` (`A x = μ x`, `x ∈ S`, `μ ∉ Λ` force `x = 0`) and whose dimension is that of
-`⨆ μ ∈ Λ, maxGenEigenspace A μ` (the sum of the algebraic multiplicities) *is* that subspace. -/
-theorem invtSubmodule_eq_iSup_maxGenEigenspace [IsAlgClosed K] [FiniteDimensional K V]
-    {A : Module.End K V} {Λ : Set K} {S : Submodule K V} (hS : S ∈ A.invtSubmodule)
-    (hΛ : ∀ μ ∉ Λ, ∀ x ∈ S, A x = μ • x → x = 0)
-    (hdim : Module.finrank K S = Module.finrank K ↥(⨆ μ ∈ Λ, A.maxGenEigenspace μ)) :
-    S = ⨆ μ ∈ Λ, A.maxGenEigenspace μ :=
-  Submodule.eq_of_le_of_finrank_eq (invtSubmodule_le_iSup_maxGenEigenspace hS hΛ) hdim
+@[deprecated invtSubmodule_eq_spectralSubspace (since := "2026-09-30")]
+alias invtSubmodule_eq_iSup_maxGenEigenspace := invtSubmodule_eq_spectralSubspace
 
 end Module.End
 
@@ -144,16 +111,17 @@ theorem mulVec_comp_symm_of_reindex_eq_fromBlocks {T : Matrix n n K} (e : n ≃ 
 §7.6.2, "the first `p` columns of `Q` span the unique invariant subspace associated with
 `λ(T₁₁)`"; and the dominant invariant subspace `D_r(A)` of §7.3.2): if `Q` is invertible and
 `(Q⁻¹ A Q).reindex e e = fromBlocks T₁₁ T₁₂ 0 T₂₂` with `λ(T₁₁) ∩ λ(T₂₂) = ∅`, then the span of the
-columns `Q.col (e.symm (inl i))` is `⨆ μ ∈ λ(T₁₁), maxGenEigenspace A μ`. The span is invariant
-with eigenvalues in `λ(T₁₁)` (`Module.End.invtSubmodule_le_iSup_maxGenEigenspace`); conversely the
+columns `Q.col (e.symm (inl i))` is the spectral subspace `⨆ μ ∈ λ(T₁₁), maxGenEigenspace A μ`. The
+span is invariant with eigenvalues in `λ(T₁₁)` (`Module.End.invtSubmodule_le_spectralSubspace`);
+conversely the
 trailing coordinates `π x = (Q⁻¹ x)(e.symm (inr ·))` intertwine `A` with `T₂₂`, so on a generalized
 eigenvector for `μ ∉ λ(T₂₂)` they vanish, and `ker π` is the span. -/
-theorem span_cols_eq_iSup_maxGenEigenspace_of_conj [IsAlgClosed K] {A Q : Matrix n n K}
+theorem span_cols_eq_spectralSubspace_of_conj [IsAlgClosed K] {A Q : Matrix n n K}
     (hQ : IsUnit Q) (e : n ≃ p ⊕ q) {T₁₁ : Matrix p p K} {T₁₂ : Matrix p q K}
     {T₂₂ : Matrix q q K} (hT : (Q⁻¹ * A * Q).reindex e e = fromBlocks T₁₁ T₁₂ 0 T₂₂)
     (hdisj : Disjoint (spectrum K T₁₁) (spectrum K T₂₂)) :
     Submodule.span K (Set.range fun i : p => Q.col (e.symm (Sum.inl i))) =
-      ⨆ μ ∈ spectrum K T₁₁, Module.End.maxGenEigenspace (toLin' A) μ := by
+      Module.End.spectralSubspace (toLin' A) (· ∈ spectrum K T₁₁) := by
   set T := Q⁻¹ * A * Q with hTdef
   have hQd : IsUnit Q.det := (isUnit_iff_isUnit_det Q).1 hQ
   have hQQ : Q * Q⁻¹ = 1 := mul_nonsing_inv Q hQd
@@ -211,7 +179,7 @@ theorem span_cols_eq_iSup_maxGenEigenspace_of_conj [IsAlgClosed K] {A Q : Matrix
       refine ⟨T₁₁ *ᵥ c, ?_⟩
       simp only [hL, LinearMap.coe_mk, AddHom.coe_mk, toLin'_apply]
       rw [mulVec_mulVec, hAQ, ← mulVec_mulVec, hTw]
-    refine Module.End.invtSubmodule_le_iSup_maxGenEigenspace hinv fun μ hμ x hx hAx => ?_
+    refine Module.End.invtSubmodule_le_spectralSubspace hinv fun μ hμ x hx hAx => ?_
     obtain ⟨c, rfl⟩ := hx
     simp only [hL, LinearMap.coe_mk, AddHom.coe_mk, toLin'_apply] at hAx ⊢
     rw [mulVec_mulVec, hAQ, ← mulVec_mulVec, hTw, ← mulVec_smul] at hAx
@@ -280,6 +248,9 @@ theorem span_cols_eq_iSup_maxGenEigenspace_of_conj [IsAlgClosed K] {A Q : Matrix
         simp only [hπ, Function.comp_apply, Pi.zero_apply] at this
         rw [Sum.elim_inr, Pi.zero_apply, ← this, ← hj, Equiv.symm_apply_apply]
     rw [hwx, mulVec_mulVec, hQQ, one_mulVec]
+
+@[deprecated (since := "2026-09-30")]
+alias span_cols_eq_iSup_maxGenEigenspace_of_conj := span_cols_eq_spectralSubspace_of_conj
 
 end Block
 
@@ -744,7 +715,8 @@ on `K` (`A₁ = A|_K`), `A₂ = A|_W`, and `X : K →ₗ[𝕜] W`. The graph `{u
 `A^k` onto the graph of `A₂^k X A₁^{-k}`: `A^k (u + X u) = A₁^k u + A₂^k X u`, and `u ↦ A₁^k u` is a
 bijection of `K`. Pure algebra: no complement, inner product or dimension is used. -/
 theorem subspaceIterate_graph {A : Module.End 𝕜 E} {K W : Submodule 𝕜 E}
-    (hK : ∀ x ∈ K, A x ∈ K) (hW : ∀ x ∈ W, A x ∈ W) (hA₁ : Function.Bijective (A.restrict hK))
+    (hK : K ∈ A.invtSubmodule) (hW : W ∈ A.invtSubmodule)
+    (hA₁ : Function.Bijective (A.restrict hK))
     (X : K →ₗ[𝕜] W) (k : ℕ) :
     subspaceIterate A (LinearMap.range (K.subtype + W.subtype ∘ₗ X)) k =
       LinearMap.range (K.subtype + W.subtype ∘ₗ (((A.restrict hW) ^ k) ∘ₗ X ∘ₗ
@@ -795,11 +767,12 @@ some `X : D → Dᗮ` with `‖X‖ = d₀ / √(1 - d₀²)` (`Submodule.exists
 `Submodule.norm_eq_gap_graph_div`), `A^k S` is the graph of `A₂^k X A₁^{-k}`
 (`Krylov.subspaceIterate_graph`), and `gap ≤ ‖X_k‖` (`Submodule.gap_graph`). -/
 theorem gap_subspaceIterate_le_of_invariant (hA : A.IsSymmetric) {D S : Submodule 𝕜 E}
-    (hD : ∀ x ∈ D, A x ∈ D) {ρ r : ℝ} (hρ : 0 < ρ) (hr : 0 ≤ r)
+    (hD : D ∈ Module.End.invtSubmodule A) {ρ r : ℝ} (hρ : 0 < ρ) (hr : 0 ≤ r)
     (hlow : ∀ u ∈ D, ρ * ‖u‖ ≤ ‖A u‖) (hup : ∀ w ∈ Dᗮ, ‖A w‖ ≤ r * ‖w‖)
     (hdim : Module.finrank 𝕜 S = Module.finrank 𝕜 D) (h0 : D.gap S < 1) (k : ℕ) :
     D.gap (Krylov.subspaceIterate A S k) ≤
       (r / ρ) ^ k * (D.gap S / Real.sqrt (1 - D.gap S ^ 2)) := by
+  replace hD : ∀ x ∈ D, A x ∈ D := fun x hx => hD hx
   have hDo : ∀ x ∈ Dᗮ, A x ∈ Dᗮ := fun x hx => by
     rw [Submodule.mem_orthogonal] at hx ⊢
     intro u hu
@@ -909,7 +882,7 @@ theorem gap_subspaceIterate_le (hA : A.IsSymmetric) {ι : Type*} [Fintype ι]
         Real.sqrt (1 - (Submodule.span 𝕜 (v '' J)).gap S ^ 2)) := by
   classical
   set D := Submodule.span 𝕜 (v '' J) with hDdef
-  have h1 := Krylov.inner_pow_apply_of_eigenbasis v hv 1
+  have h1 := v.inner_pow_apply_of_apply_eq_smul hv 1
   simp only [pow_one] at h1
   -- coordinates vanish off `J` on `D`, on `J` on `Dᗮ`
   have hDc : ∀ u ∈ D, ∀ i ∉ J, (inner 𝕜 (v i) u : 𝕜) = 0 := by
@@ -992,7 +965,7 @@ Write `s₀ ∈ S` as `u₀ + ω₀` along `D ⊕ W`. Then `P_{Wᗮ} s₀ = P_{W
 one-sided `‖P_{Dᗮ} P_{A^k S}‖` (`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`). No graph
 representation and no CS decomposition are needed. -/
 theorem gap_subspaceIterate_le_of_isCompl {A : E →ₗ[𝕜] E} {D W S : Submodule 𝕜 E}
-    (hD : ∀ x ∈ D, A x ∈ D) (hW : ∀ x ∈ W, A x ∈ W) (hDW : IsCompl D W)
+    (hD : D ∈ Module.End.invtSubmodule A) (hW : W ∈ Module.End.invtSubmodule A) (hDW : IsCompl D W)
     (hdim : Module.finrank 𝕜 S = Module.finrank 𝕜 D) (h0 : Wᗮ.gap S < 1) (k : ℕ)
     {c β γ : ℝ} (hc0 : 0 ≤ c) (hβ0 : 0 ≤ β) (hγ0 : 0 ≤ γ)
     (hc : ∀ x, ‖Submodule.projection (p := D) (q := W) hDW x‖ ≤ c * ‖x‖)

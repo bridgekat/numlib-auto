@@ -241,8 +241,9 @@ theorem property_5_12 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 �
       div_one, Real.norm_eq_abs]
   have htan : Real.tan φ₁ = (ℝ ∙ q₁).tanAngle (u ⟨0, by omega⟩) := Submodule.tan_angle _ hu0
   rw [lanczosEigenvalues_eq hA q₁ hm]
-  have hkps := Lanczos.kaniel_paige_saad hA' finrank_euclideanSpace_fin hm ⟨0, hm0⟩ ⟨0, by omega⟩
-    ⟨1, by omega⟩ ⟨0, by omega⟩ ⟨n - 1, by omega⟩ rfl rfl
+  have hkps :=
+    Lanczos.kaniel_paige_saad_eigenvectorBasis hA' finrank_euclideanSpace_fin hm ⟨0, hm0⟩
+    ⟨0, by omega⟩ ⟨1, by omega⟩ ⟨0, by omega⟩ ⟨n - 1, by omega⟩ rfl rfl
     (fun j => Fin.le_iff_val_le_val.mpr (Nat.zero_le _))
     (fun j => Fin.le_iff_val_le_val.mpr (by simp; omega))
     (by rwa [real_inner_comm]) hgap hspread
@@ -326,7 +327,7 @@ theorem property_5_12_min {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn :
   -- the Krylov subspace and the compression
   have hmneg : Module.finrank ℝ (Krylov.subspace (-T) q₁ m) = m := by
     rw [Krylov.subspace_neg]; exact hm
-  have hkps := Lanczos.kaniel_paige_saad hT.neg hnE hmneg ⟨0, hm0⟩ i0 i1 i0 il
+  have hkps := Lanczos.kaniel_paige_saad_eigenvectorBasis hT.neg hnE hmneg ⟨0, hm0⟩ i0 i1 i0 il
     rfl (by simp [hi0, hi1]) (fun j => Fin.le_def.2 (Nat.zero_le _))
     (fun j => Fin.le_def.2 (by simp only [hil]; omega))
     (by rw [hcw, real_inner_smul_left]

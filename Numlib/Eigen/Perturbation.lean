@@ -63,7 +63,7 @@ The `ε`-pseudospectra, open (`ContinuousLinearMap.pseudospectrum`) and closed
 
 `Matrix.one_le_norm_mul_of_mem_spectrum_add` (and its `p`-norm twin) is the resolvent step shared
 by the eigenvalue perturbation bounds of [golub2013matrix] §7.2: an eigenvalue `μ` of `A + E` that
-is not one of `A` has `‖(μ I - A)⁻¹ E‖ ≥ 1`. `Matrix.infDist_spectrum_le_of_schur` is
+is not one of `A` has `‖(μ I - A)⁻¹ E‖ ≥ 1`. `Matrix.exists_norm_sub_le_of_schur` is
 [golub2013matrix] Theorem 7.2.3, the Henrici-type bound for a matrix that need not be
 diagonalizable: from a Schur form `Qᴴ A Q = D + N`, the distance from `μ` to the diagonal of `D` is
 at most `max θ θ^{1/p}`, `θ = ‖E‖₂ ∑_{k<p} ‖N‖₂^k`, where `p` is the nilpotency index of the
@@ -1315,7 +1315,7 @@ is the step shared by every resolvent-based perturbation bound ([golub2013matrix
 Lemma 2.3.3): if `μ` is an eigenvalue of `A + E` but not of `A`, then `‖(μ - A)⁻¹ E‖ ≥ 1`, since
 otherwise
 `μ - A - E = (μ - A)(1 - (μ - A)⁻¹ E)` would be invertible by the Neumann series.
-`Matrix.infDist_spectrum_le_of_schur` is [golub2013matrix] Theorem 7.2.3, a Henrici-type bound for
+`Matrix.exists_norm_sub_le_of_schur` is [golub2013matrix] Theorem 7.2.3, a Henrici-type bound for
 a matrix that need not be diagonalizable: with a Schur form `Qᴴ A Q = D + N`, the resolvent of
 `D + N` is a finite Neumann series in `(μ - D)⁻¹ N`, whose length is the nilpotency index of the
 entrywise absolute value `|N|`.
@@ -1546,7 +1546,7 @@ finite Neumann series `∑_{k<p} ((μ - D)⁻¹ N)^k (μ - D)⁻¹` (the entrywi
 `|((μ - D)⁻¹ N)^p| ≤ δ^{-p} |N|^p = 0`), so `‖(μ - A)⁻¹‖₂ ≤ ∑_{k<p} ‖N‖₂^k / δ^{k+1}` and
 `1 ≤ ‖(μ - A)⁻¹‖₂ ‖E‖₂` gives `δ ≤ θ` if `δ ≥ 1` and `δ^p ≤ θ` if `δ < 1`. The book's
 hypothesis that `N` be strictly upper triangular is not needed. -/
-theorem infDist_spectrum_le_of_schur {A : Matrix n n ℂ} {Q : Matrix n n ℂ}
+theorem exists_norm_sub_le_of_schur {A : Matrix n n ℂ} {Q : Matrix n n ℂ}
     (hQ : Q ∈ unitaryGroup n ℂ) {d : n → ℂ} {N : Matrix n n ℂ}
     (hQA : star Q * A * Q = diagonal d + N) {p : ℕ} (hp : 1 ≤ p) (hN : (N.map (‖·‖)) ^ p = 0)
     (E : Matrix n n ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ (A + E)) :
@@ -1670,6 +1670,9 @@ theorem infDist_spectrum_le_of_schur {A : Matrix n n ℂ} {Q : Matrix n n ℂ}
     calc δ = (δ ^ p) ^ (1 / p : ℝ) := by
           rw [← Real.rpow_natCast, ← Real.rpow_mul hδ.le, mul_one_div_cancel hp0, Real.rpow_one]
       _ ≤ θ ^ (1 / p : ℝ) := by gcongr
+
+@[deprecated (since := "2026-09-30")]
+alias infDist_spectrum_le_of_schur := exists_norm_sub_le_of_schur
 
 end Schur
 

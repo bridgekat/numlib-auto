@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.Data.Fin.Tuple.Sort
 import Numlib.Eigen.InverseEigenvalue
+import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.PlaneRotation
 import Numlib.Nonlinear.ScalarNewton
 
@@ -28,7 +29,8 @@ Setting: `d : n → ℝ`, `ρ : ℝ`, `z : n → 𝕜` over `[RCLike 𝕜]`, and
   the same hypotheses the real eigenvalues of `M` are the zeros of the secular function, and
   `Matrix.hasEigenvector_diagonal_add_rankOne_resolvent` (Theorem 8.4.3(c)): the eigenvectors are
   the multiples of `(D - λ)⁻¹ z`.
-* `Matrix.hasDerivAt_secularFunction`, `Matrix.secularFunction_strictMonoOn`: the secular function
+* `Matrix.hasDerivAt_secularFunction`, `Matrix.secularFunction_strictMonoOn` (and its `ρ < 0` twin
+  `Matrix.secularFunction_strictAntiOn`): the secular function
   is monotone between its poles.
 * `Matrix.eigenvalues₀_diagonal_add_rankOne_strictInterlace` ([golub2013matrix] Theorem 8.4.3(b)):
   for strictly decreasing `d` the eigenvalues of `M` strictly interlace the `d i`,
@@ -120,6 +122,17 @@ theorem secularFunction_strictMonoOn (d : n → ℝ) {ρ : ℝ} (hρ : 0 < ρ) (
   refine mul_pos hρ (Finset.sum_pos' (fun i _ => by positivity) ⟨j, Finset.mem_univ _, ?_⟩)
   exact div_pos (pow_pos (norm_pos_iff.mpr hj) 2)
     (lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (hne j))))
+
+/-- **The secular function is strictly decreasing between consecutive poles** for `ρ < 0` (and
+some `z i ≠ 0`): the twin of `Matrix.secularFunction_strictMonoOn`, since
+`f_ρ = 2 - f_{-ρ}`. -/
+theorem secularFunction_strictAntiOn (d : n → ℝ) {ρ : ℝ} (hρ : ρ < 0) (z : n → 𝕜)
+    (hz : ∃ i, z i ≠ 0) {a b : ℝ} (hab : ∀ i, d i ∉ Set.Ioo a b) :
+    StrictAntiOn (secularFunction d ρ z) (Set.Ioo a b) := by
+  intro x hx y hy hxy
+  have h := secularFunction_strictMonoOn d (neg_pos.2 hρ) z hz hab hx hy hxy
+  simp only [secularFunction, neg_mul] at h ⊢
+  linarith
 
 variable [DecidableEq n] {d : n → ℝ} {ρ : ℝ} {z : n → 𝕜}
 
@@ -276,10 +289,7 @@ theorem IsHermitian.sortedEigenvalues_diagonal {d : Fin N → ℝ} (hd : Antiton
     (hD : (diagonal fun i => (d i : 𝕜)).IsHermitian) : hD.sortedEigenvalues = d := by
   have h1 := hD.roots_charpoly_eq_sortedEigenvalues
   have h2 : (diagonal fun i => (d i : 𝕜)).charpoly.roots =
-      Multiset.map (RCLike.ofReal ∘ d) Finset.univ.val := by
-    rw [charpoly_diagonal, Polynomial.roots_prod]
-    · simp
-    · simp [Finset.prod_ne_zero_iff, Polynomial.X_sub_C_ne_zero]
+      Multiset.map (RCLike.ofReal ∘ d) Finset.univ.val := roots_charpoly_diagonal _
   rw [h1, ← Multiset.map_map, ← Multiset.map_map] at h2
   have hm := Multiset.map_injective RCLike.ofReal_injective h2
   rw [Fin.univ_val_map, Fin.univ_val_map] at hm
@@ -290,14 +300,11 @@ theorem IsHermitian.sortedEigenvalues_diagonal {d : Fin N → ℝ} (hd : Antiton
 theorem IsHermitian.exists_mulVec_eq_sortedEigenvalues_smul {M : Matrix (Fin N) (Fin N) 𝕜}
     (hM : M.IsHermitian) (k : Fin N) :
     ∃ v : Fin N → 𝕜, v ≠ 0 ∧ M *ᵥ v = (hM.sortedEigenvalues k : 𝕜) • v := by
-  have hT := isSymmetric_toEuclideanLin_iff.mpr hM
-  set b := hT.eigenvectorBasis finrank_euclideanSpace (Fin.cast (Fintype.card_fin N).symm k)
-  refine ⟨WithLp.ofLp b, fun h0 => ?_, ?_⟩
-  · have hb := (hT.eigenvectorBasis finrank_euclideanSpace).orthonormal.ne_zero
-      (Fin.cast (Fintype.card_fin N).symm k)
-    exact hb ((WithLp.ofLp_eq_zero 2).mp h0)
-  · rw [← ofLp_toEuclideanLin, hT.apply_eigenvectorBasis, WithLp.ofLp_smul]
-    rfl
+  obtain ⟨U, hU, -, hcol⟩ := hM.exists_unitary_conj_eq_diagonal_sortedEigenvalues
+  refine ⟨U.col k, fun h0 => ?_, hcol k⟩
+  have h1 : ∀ i, U i k = 0 := fun i => congrFun h0 i
+  have h2 := congrFun (congrFun (mem_unitaryGroup_iff'.1 hU) k) k
+  simp [Matrix.mul_apply, h1] at h2
 
 /-- The quadratic form of the rank-one matrix `c z zᴴ` (`c` real):
 `re ⟪c z zᴴ x, x⟫ = c |zᴴ x|²`. -/
@@ -738,12 +745,8 @@ theorem borderedSecularFunction_eq_secularFunction_sub {r : Fin m → ℝ}
 /-- An orthogonal eigenbasis of a real symmetric matrix, with Mathlib's eigenvalues. -/
 private theorem IsHermitian.exists_orthogonal_transpose_mul_mul_eq {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) :
-    ∃ Q ∈ orthogonalGroup (Fin m) ℝ, Qᵀ * B * Q = diagonal hB.eigenvalues := by
-  have hU := hB.conjStarAlgAut_star_eigenvectorUnitary
-  rw [Unitary.conjStarAlgAut_apply, Unitary.coe_star, star_star] at hU
-  refine ⟨hB.eigenvectorUnitary, hB.eigenvectorUnitary.2, ?_⟩
-  rw [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose, hU]
-  simp [RCLike.ofReal_real_eq_id]
+    ∃ Q ∈ orthogonalGroup (Fin m) ℝ, Qᵀ * B * Q = diagonal hB.eigenvalues :=
+  ⟨hB.eigenvectorUnitary, hB.eigenvectorUnitary.2, hB.transpose_eigenvectorUnitary_mul_mul⟩
 
 /-- **The derivatives of the bordered secular function** ([golub2013matrix] §4.7.7): for a real
 symmetric `B` and `λ` not an eigenvalue of `B`, `f'(λ) = -1 - ‖(B - λ)⁻¹ r‖²` and
@@ -804,7 +807,8 @@ theorem hasDerivAt_borderedSecularFunction {r : Fin m → ℝ} {B : Matrix (Fin 
 is below every eigenvalue of the symmetric `B`, then `f'(λ) = -1 - ‖(B - λ)⁻¹ r‖² ≤ -1` and
 `f''(λ) = -2 rᵀ (B - λ)⁻³ r ≤ 0`; so `f` is strictly decreasing and concave there, which is what
 makes the Newton iteration (4.7.10) converge monotonically. -/
-theorem borderedSecularFunction_deriv_nonpos {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
+theorem neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos {r : Fin m → ℝ}
+    {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i) :
     -1 - ((B - t • 1)⁻¹ *ᵥ r) ⬝ᵥ ((B - t • 1)⁻¹ *ᵥ r) ≤ -1 ∧
       -2 * (r ⬝ᵥ ((B - t • 1)⁻¹ ^ 3 *ᵥ r)) ≤ 0 := by
@@ -819,6 +823,10 @@ theorem borderedSecularFunction_deriv_nonpos {r : Fin m → ℝ} {B : Matrix (Fi
       Finset.sum_nonneg fun i _ => div_nonneg (sq_nonneg _) (pow_nonneg (by linarith [ht i]) 3)
     linarith
 
+@[deprecated (since := "2026-09-30")]
+alias borderedSecularFunction_deriv_nonpos :=
+  neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos
+
 open Filter Topology Set in
 /-- **Newton's method for the smallest eigenvalue of a bordered matrix converges monotonically
 from the right** ([golub2013matrix] (4.7.9)–(4.7.10), Cybenko and Van Loan 1986): let `B` be
@@ -827,8 +835,8 @@ real symmetric and `α` a zero of the bordered secular function `f` below the sp
 (`Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq`). If `α ≤ λ⁽⁰⁾ < λ_min(B)`, the Newton
 iterates `λ⁽ᵏ⁺¹⁾ = λ⁽ᵏ⁾ - f(λ⁽ᵏ⁾) / f'(λ⁽ᵏ⁾)` satisfy `α ≤ λ⁽ᵏ⁺¹⁾ ≤ λ⁽ᵏ⁾` and tend to `α`. Below
 the spectrum of `B`, `f' ≤ -1` and `f'' ≤ 0`
-(`Matrix.borderedSecularFunction_deriv_nonpos`), so `f` is decreasing and concave there and
-`Newton.tendsto_iterate_scalarStep_of_concaveOn` applies. -/
+(`Matrix.neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos`), so `f` is decreasing and
+concave there and `Newton.tendsto_iterate_scalarStep_of_concaveOn` applies. -/
 theorem tendsto_newton_borderedSecularFunction {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {α x₀ : ℝ} (hα : borderedSecularFunction r B α = 0) (hαx : α ≤ x₀)
     (hx₀ : ∀ i, x₀ < hB.eigenvalues i) :
@@ -850,7 +858,8 @@ theorem tendsto_newton_borderedSecularFunction {r : Fin m → ℝ} {B : Matrix (
         -2 * (r ⬝ᵥ ((B - x • 1)⁻¹ ^ 3 *ᵥ r)) ≤ 0 := fun x hx => by
     obtain ⟨h1, h2⟩ := hasDerivAt_borderedSecularFunction (r := r) hB fun i =>
       (hlt x hx i).ne'
-    obtain ⟨n1, n2⟩ := borderedSecularFunction_deriv_nonpos (r := r) hB (hlt x hx)
+    obtain ⟨n1, n2⟩ := neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos (r := r) hB
+      (hlt x hx)
     exact ⟨h1.differentiableAt.hasDerivAt, h1.deriv ▸ n1, h2, n2⟩
   have hanti : AntitoneOn (deriv (borderedSecularFunction r B)) (Icc α x₀) := by
     refine antitoneOn_of_deriv_nonpos (convex_Icc α x₀)

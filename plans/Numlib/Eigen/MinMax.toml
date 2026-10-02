@@ -119,7 +119,7 @@ id = "LinearMap.IsSymmetric.eigenvalues_neg"
 id = "LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg"
 
 [[node]]  # staged by ch08
-id = "Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_eigenvalues₀"
+id = "Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_sortedEigenvalues"
 
 [[node]]  # staged by ch08
 id = "Matrix.IsHermitian.trace_eq_sum_eigenvalues₀"
@@ -153,3 +153,6 @@ id = "LinearMap.IsSymmetric.re_trace_comp_le_sum_eigenvalues_mul"
 
 [[node]]  # added by eig1: Hoffman–Wielandt at the operator level
 id = "LinearMap.IsSymmetric.sum_sq_eigenvalues_sub_le"
+
+[[node]]
+id = "LinearMap.IsSymmetric.eigenvalues_eq_of_apply_eq_ofReal_smul"

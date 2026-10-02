@@ -52,6 +52,18 @@ theorem eigenpairResidual_eq_zero_iff (x : E) (μ : 𝕜) :
     A.eigenpairResidual ℓ (x, μ) = 0 ↔ A x = μ • x ∧ ℓ x = 1 := by
   simp [eigenpairResidual, Prod.ext_iff, sub_eq_zero]
 
+/-- The derivative of the eigen-residual `(x, μ) ↦ A x − μ x`, the first component of both
+eigenpair residuals: `(δx, δμ) ↦ A δx − μ δx − δμ x`. -/
+theorem hasFDerivAt_apply_sub_smul (x : E) (μ : 𝕜) :
+    HasFDerivAt (fun p : E × 𝕜 => A p.1 - p.2 • p.1)
+      ((A - μ • ContinuousLinearMap.id 𝕜 E).comp (ContinuousLinearMap.fst 𝕜 E 𝕜) -
+        (ContinuousLinearMap.snd 𝕜 E 𝕜).smulRight x) (x, μ) := by
+  have hA := (A.comp (ContinuousLinearMap.fst 𝕜 E 𝕜)).hasFDerivAt (x := (x, μ))
+  have hs := (hasFDerivAt_snd (𝕜 := 𝕜) (p := (x, μ))).smul
+    (hasFDerivAt_fst (𝕜 := 𝕜) (p := (x, μ)))
+  refine (hA.sub hs).congr_fderiv ?_
+  ext p <;> simp
+
 /-- **The Jacobian of the eigenpair residual** ([golub2013matrix] (10.6.5): "precisely the Jacobian
 system that arises if Newton's method is used"): at `(x, μ)` the derivative is the bordered operator
 `(δx, δμ) ↦ (A δx − μ δx − δμ x, ℓ δx)`. -/
@@ -60,18 +72,10 @@ theorem hasFDerivAt_eigenpairResidual (x : E) (μ : 𝕜) :
       (((A - μ • ContinuousLinearMap.id 𝕜 E).comp (ContinuousLinearMap.fst 𝕜 E 𝕜) -
           (ContinuousLinearMap.snd 𝕜 E 𝕜).smulRight x).prod
         (ℓ.comp (ContinuousLinearMap.fst 𝕜 E 𝕜))) (x, μ) := by
-  have h1 : HasFDerivAt (fun p : E × 𝕜 => A p.1 - p.2 • p.1)
-      ((A - μ • ContinuousLinearMap.id 𝕜 E).comp (ContinuousLinearMap.fst 𝕜 E 𝕜) -
-        (ContinuousLinearMap.snd 𝕜 E 𝕜).smulRight x) (x, μ) := by
-    have hA := (A.comp (ContinuousLinearMap.fst 𝕜 E 𝕜)).hasFDerivAt (x := (x, μ))
-    have hs := (hasFDerivAt_snd (𝕜 := 𝕜) (p := (x, μ))).smul
-      (hasFDerivAt_fst (𝕜 := 𝕜) (p := (x, μ)))
-    refine (hA.sub hs).congr_fderiv ?_
-    ext p <;> simp
   have h2 : HasFDerivAt (fun p : E × 𝕜 => ℓ p.1 - 1) (ℓ.comp (ContinuousLinearMap.fst 𝕜 E 𝕜))
       (x, μ) :=
     (ℓ.comp (ContinuousLinearMap.fst 𝕜 E 𝕜)).hasFDerivAt.sub_const 1
-  exact h1.prodMk h2
+  exact (A.hasFDerivAt_apply_sub_smul x μ).prodMk h2
 
 end Linear
 
@@ -100,14 +104,6 @@ theorem hasFDerivAt_eigenpairResidualSphere (x : E) (μ : ℝ) :
       (((A - μ • ContinuousLinearMap.id ℝ E).comp (ContinuousLinearMap.fst ℝ E ℝ) -
           (ContinuousLinearMap.snd ℝ E ℝ).smulRight x).prod
         ((innerSL ℝ x).comp (ContinuousLinearMap.fst ℝ E ℝ))) (x, μ) := by
-  have h1 : HasFDerivAt (fun p : E × ℝ => A p.1 - p.2 • p.1)
-      ((A - μ • ContinuousLinearMap.id ℝ E).comp (ContinuousLinearMap.fst ℝ E ℝ) -
-        (ContinuousLinearMap.snd ℝ E ℝ).smulRight x) (x, μ) := by
-    have hA := (A.comp (ContinuousLinearMap.fst ℝ E ℝ)).hasFDerivAt (x := (x, μ))
-    have hs := (hasFDerivAt_snd (𝕜 := ℝ) (p := (x, μ))).smul
-      (hasFDerivAt_fst (𝕜 := ℝ) (p := (x, μ)))
-    refine (hA.sub hs).congr_fderiv ?_
-    ext p <;> simp
   have h2 : HasFDerivAt (fun p : E × ℝ => (‖p.1‖ ^ 2 - 1) / 2)
       ((innerSL ℝ x).comp (ContinuousLinearMap.fst ℝ E ℝ)) (x, μ) := by
     have hn := (((hasFDerivAt_fst (𝕜 := ℝ) (p := (x, μ))).norm_sq).sub_const 1).const_smul
@@ -120,7 +116,7 @@ theorem hasFDerivAt_eigenpairResidualSphere (x : E) (μ : ℝ) :
     rw [hf]
     refine hn.congr_fderiv ?_
     ext p <;> simp
-  exact h1.prodMk h2
+  exact (A.hasFDerivAt_apply_sub_smul x μ).prodMk h2
 
 end Sphere
 

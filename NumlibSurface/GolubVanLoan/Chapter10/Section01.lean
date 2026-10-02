@@ -745,7 +745,7 @@ theorem theorem_10_1_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 
     exact hT.eigenvalues_compression_le (Krylov.subspace T q₁ k) hnE hk hkn ⟨0, by omega⟩
   refine ⟨hcos, hup, ?_⟩
   by_cases hnd : lam ⟨1, by omega⟩ < lam ⟨0, by omega⟩ ∧ lam ⟨n - 1, by omega⟩ < lam ⟨1, by omega⟩
-  · have hkps := Lanczos.kaniel_paige_saad hT hnE hk ⟨0, by omega⟩ ⟨0, by omega⟩
+  · have hkps := Lanczos.kaniel_paige_saad_eigenvectorBasis hT hnE hk ⟨0, by omega⟩ ⟨0, by omega⟩
       ⟨1, by omega⟩ ⟨0, by omega⟩ ⟨n - 1, by omega⟩ rfl rfl
       (fun j => Fin.le_iff_val_le_val.mpr (Nat.zero_le _))
       (fun j => Fin.le_iff_val_le_val.mpr (by simp; omega))
@@ -840,7 +840,8 @@ theorem theorem_10_1_4 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     Lanczos.ritzValues_eq_eigenvalues_compression q₁ hT hk
   have htan : Real.tan φ = (ℝ ∙ q₁).tanAngle (z ⟨i, by omega⟩) :=
     Submodule.tan_angle _ (hT.eigenvectorBasis_ne_zero hnE _)
-  have hkps := Lanczos.kaniel_paige_saad hT hnE hk i ⟨i, by omega⟩ ⟨i + 1, hin⟩ ⟨0, by omega⟩
+  have hkps :=
+    Lanczos.kaniel_paige_saad_eigenvectorBasis hT hnE hk i ⟨i, by omega⟩ ⟨i + 1, hin⟩ ⟨0, by omega⟩
     ⟨n - 1, by omega⟩ rfl rfl (fun j => Fin.le_iff_val_le_val.mpr (Nat.zero_le _))
     (fun j => Fin.le_iff_val_le_val.mpr (by simp; omega)) (by rwa [real_inner_comm]) hgap hspread
     (fun j hj => by rw [← hθc]; exact hθ j hj) (k := k - 1 - i) (by omega)
@@ -924,7 +925,8 @@ theorem corollary_10_1_3 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 
     rw [hrev0] at hcw
     have hkneg : Module.finrank ℝ (Krylov.subspace (-T) q₁ k) = k := by
       rw [Krylov.subspace_neg]; exact hk
-    have hkps := Lanczos.kaniel_paige_saad hT.neg hnE hkneg ⟨0, by omega⟩ i0 i1 i0 il
+    have hkps :=
+      Lanczos.kaniel_paige_saad_eigenvectorBasis hT.neg hnE hkneg ⟨0, by omega⟩ i0 i1 i0 il
       rfl (by simp [hi0, hi1]) (fun j => Fin.le_def.2 (Nat.zero_le _))
       (fun j => Fin.le_def.2 (by simp only [hil]; omega))
       (by rw [hcw, real_inner_smul_left]

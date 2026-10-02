@@ -782,6 +782,40 @@ theorem IsStarNormal.eq_sum_smul_vecMulVec [IsAlgClosed 𝕜] {A : Matrix n n �
   rw [← star_eq_conjTranspose] at hd
   exact ⟨U, hU, d, hd, eq_sum_smul_vecMulVec_of_conj_eq_diagonal hU hd⟩
 
+/-! ### The Hermitian spectral decomposition -/
+
+/-- **The spectral decomposition of a Hermitian matrix**, unfolded: `Uᴴ A U = diag(λ)` for the
+eigenvector unitary `U` (Mathlib's `Matrix.IsHermitian.conjStarAlgAut_star_eigenvectorUnitary`
+without the algebra automorphism). -/
+theorem IsHermitian.star_eigenvectorUnitary_mul_mul {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    star (hA.eigenvectorUnitary : Matrix n n 𝕜) * A * (hA.eigenvectorUnitary : Matrix n n 𝕜) =
+      diagonal (RCLike.ofReal ∘ hA.eigenvalues) := by
+  simpa [Unitary.conjStarAlgAut_apply] using hA.conjStarAlgAut_star_eigenvectorUnitary
+
+/-- The real form of `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`: `Qᵀ A Q = diag(λ)`. -/
+theorem IsHermitian.transpose_eigenvectorUnitary_mul_mul {A : Matrix n n ℝ} (hA : A.IsHermitian) :
+    (hA.eigenvectorUnitary : Matrix n n ℝ)ᵀ * A * (hA.eigenvectorUnitary : Matrix n n ℝ) =
+      diagonal hA.eigenvalues := by
+  have h := hA.star_eigenvectorUnitary_mul_mul
+  rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, RCLike.ofReal_real_eq_id,
+    Function.id_comp] at h
+
+/-- The roots of the characteristic polynomial of a diagonal matrix are its diagonal entries. -/
+theorem roots_charpoly_diagonal {R : Type*} [CommRing R] [IsDomain R] (d : n → R) :
+    (diagonal d).charpoly.roots = Multiset.map d Finset.univ.val := by
+  rw [charpoly_diagonal, Polynomial.roots_prod]
+  · simp
+  · simp [Finset.prod_ne_zero_iff, Polynomial.X_sub_C_ne_zero]
+
+/-- The eigenvalues of a real diagonal matrix are its entries, up to order. -/
+theorem IsHermitian.map_eigenvalues_diagonal {d : n → ℝ}
+    (hD : (diagonal fun i => (d i : 𝕜)).IsHermitian) :
+    Multiset.map hD.eigenvalues Finset.univ.val = Multiset.map d Finset.univ.val := by
+  have h := hD.roots_charpoly_eq_eigenvalues
+  rw [roots_charpoly_diagonal] at h
+  refine Multiset.map_injective (RCLike.ofReal_injective (K := 𝕜)) ?_
+  simpa only [Multiset.map_map, Function.comp_def] using h.symm
+
 /-! ### Hermitian matrices as sums of rank-one projectors -/
 
 /-- **The spectral decomposition of a Hermitian matrix** as a sum of rank-one projectors onto its
@@ -790,11 +824,9 @@ counterpart of `Matrix.IsStarNormal.eq_sum_smul_vecMulVec`, with Mathlib's eigen
 `Matrix.IsHermitian.eigenvectorBasis` and real eigenvalues `Matrix.IsHermitian.eigenvalues`. -/
 theorem IsHermitian.eq_sum_smul_vecMulVec {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     A = ∑ l, (hA.eigenvalues l : 𝕜) •
-      vecMulVec ⇑(hA.eigenvectorBasis l) (star ⇑(hA.eigenvectorBasis l)) := by
-  have hd : star (hA.eigenvectorUnitary : Matrix n n 𝕜) * A * (hA.eigenvectorUnitary : Matrix n n 𝕜)
-      = diagonal (RCLike.ofReal ∘ hA.eigenvalues) := by
-    simpa [Unitary.conjStarAlgAut_apply] using hA.conjStarAlgAut_star_eigenvectorUnitary
-  exact eq_sum_smul_vecMulVec_of_conj_eq_diagonal hA.eigenvectorUnitary.2 hd
+      vecMulVec ⇑(hA.eigenvectorBasis l) (star ⇑(hA.eigenvectorBasis l)) :=
+  eq_sum_smul_vecMulVec_of_conj_eq_diagonal hA.eigenvectorUnitary.2
+    hA.star_eigenvectorUnitary_mul_mul
 
 /-- The eigenvectors of a Hermitian matrix are unit vectors: `q_lᴴ q_l = 1`. -/
 theorem IsHermitian.star_dotProduct_eigenvectorBasis_self {A : Matrix n n 𝕜} (hA : A.IsHermitian)

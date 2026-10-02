@@ -44,13 +44,13 @@ norm is the largest `|μ - l|⁻¹`; the spectrum is finite, so the largest is a
 
 Everything here rests on the splitting `Krylov.isCompl_maxGenEigenspace` of
 `Numlib/Eigen/PowerMethod`, which is why this module sits above that one rather than beside
-`Numlib/Eigen/Perturbation`: the projector is the *oblique* `Krylov.spectralProjector`, not an
+`Numlib/Eigen/Perturbation`: the projector is the *oblique* `Module.End.spectralProjector`, not an
 orthogonal one, so no inner product is used and the ambient space is only a normed space.
 `IsAlgClosed 𝕜` and `FiniteDimensional 𝕜 E` are what make the generalized eigenspaces span and the
 restricted `A - l` surjective from injective; both are the hypotheses of the splitting.
 
 The condition number of a normal operator is evaluated in a section of its own, which reintroduces
-`E` with an inner product; no identification of `Krylov.spectralProjector` with
+`E` with an inner product; no identification of `Module.End.spectralProjector` with
 `Submodule.starProjection` is needed for it, only that the projector kills the complementary
 invariant subspace.
 
@@ -69,20 +69,10 @@ variable [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] (A : Module.End 𝕜 E) (
 omit [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] in
 /-- The invariant subspace complementary to the generalized eigenspace of `l` is invariant under
 `A - l`, since it is invariant under `A`. -/
-theorem mapsTo_sub_smul_one : ∀ w ∈ (⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ),
-    (A - l • (1 : Module.End 𝕜 E)) w ∈ ⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ := by
-  have key : (⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ) ≤
-      Submodule.comap (A - l • (1 : Module.End 𝕜 E))
-        (⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ) := by
-    refine iSup₂_le fun μ hμ v hv => ?_
-    have hmem : ∀ y ∈ A.maxGenEigenspace μ, y ∈ (⨆ ν, ⨆ _ : ¬ ν = l, A.maxGenEigenspace ν) :=
-      fun y hy => Submodule.mem_iSup_of_mem μ (Submodule.mem_iSup_of_mem hμ hy)
-    simp only [Submodule.mem_comap, LinearMap.sub_apply, LinearMap.smul_apply,
-      Module.End.one_apply]
-    exact Submodule.sub_mem _
-      (hmem _ (A.mapsTo_maxGenEigenspace_of_comm (Commute.refl A) μ hv))
-      (Submodule.smul_mem _ _ (hmem _ hv))
-  exact fun w hw => key hw
+theorem mapsTo_sub_smul_one : ∀ w ∈ A.spectralSubspace (· ≠ l),
+    (A - l • (1 : Module.End 𝕜 E)) w ∈ A.spectralSubspace (· ≠ l) := fun w hw => by
+  simp only [LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply]
+  exact Submodule.sub_mem _ (apply_mem_spectralSubspace hw) (Submodule.smul_mem _ _ hw)
 
 /-- **`A - l` is injective on the complementary invariant subspace.** A vector killed by `A - l` is
 an eigenvector for `l`, hence lies in the generalized eigenspace of `l`, which meets the complement
@@ -95,7 +85,7 @@ theorem injective_restrict_sub_smul_one :
   have heig : w ∈ A.eigenspace l := by
     rw [Module.End.mem_eigenspace_iff]
     simpa using sub_eq_zero.1 h1
-  have hmem : w ∈ (A.maxGenEigenspace l) ⊓ (⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ) :=
+  have hmem : w ∈ (A.maxGenEigenspace l) ⊓ A.spectralSubspace (· ≠ l) :=
     ⟨Module.End.eigenspace_le_maxGenEigenspace heig, hw⟩
   simpa using (disjoint_iff_inf_le.1 (Krylov.isCompl_maxGenEigenspace A l).disjoint) hmem
 
@@ -103,8 +93,7 @@ theorem injective_restrict_sub_smul_one :
 eigenspace of `l`: injective by `Module.End.injective_restrict_sub_smul_one`, hence bijective in
 finite dimension. Its inverse is [saad2011numerical]'s reduced resolvent `S(l)`. -/
 noncomputable def reducedResolventEquiv :
-    ↥(⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ) ≃ₗ[𝕜]
-      ↥(⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ) :=
+    A.spectralSubspace (· ≠ l) ≃ₗ[𝕜] A.spectralSubspace (· ≠ l) :=
   LinearEquiv.ofBijective ((A - l • (1 : Module.End 𝕜 E)).restrict (mapsTo_sub_smul_one A l))
     ⟨injective_restrict_sub_smul_one A l,
       LinearMap.injective_iff_surjective.1 (injective_restrict_sub_smul_one A l)⟩
@@ -112,9 +101,8 @@ noncomputable def reducedResolventEquiv :
 /-- The complementary part of any vector lies in the invariant subspace the reduced resolvent acts
 on. -/
 theorem sub_spectralProjector_mem_iSup (x : E) :
-    (1 - Krylov.spectralProjector A (· = l)) x ∈
-      ⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ := by
-  simpa using Krylov.sub_spectralProjector_mem (B := A) (p := (· = l)) x
+    (1 - A.spectralProjector (· = l)) x ∈ A.spectralSubspace (· ≠ l) :=
+  sub_spectralProjector_mem (A := A) (p := (· = l)) x
 
 /-- **The reduced resolvent of `A` at `l`, extended by zero** ([saad2011numerical], §3.3.2): the
 operator `S(l) (1 - P)` sending `x` to the unique `y` of the invariant subspace complementary to
@@ -125,29 +113,29 @@ what [saad2011numerical]'s Definition 3.2 and his first-order eigenvector expans
 use. `Module.End.reducedResolvent_apply_sub_smul` is his (3.40), the identity that characterizes
 it. -/
 noncomputable def reducedResolvent : E →ₗ[𝕜] E :=
-  (⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ).subtype ∘ₗ
+  (A.spectralSubspace (· ≠ l)).subtype ∘ₗ
     ((reducedResolventEquiv A l).symm.toLinearMap ∘ₗ
-      LinearMap.codRestrict _ (1 - Krylov.spectralProjector A (· = l))
+      LinearMap.codRestrict _ (1 - A.spectralProjector (· = l))
         (sub_spectralProjector_mem_iSup A l))
 
 theorem reducedResolvent_apply (x : E) :
     reducedResolvent A l x =
       ((reducedResolventEquiv A l).symm
-        ⟨(1 - Krylov.spectralProjector A (· = l)) x, sub_spectralProjector_mem_iSup A l x⟩ : E) :=
+        ⟨(1 - A.spectralProjector (· = l)) x, sub_spectralProjector_mem_iSup A l x⟩ : E) :=
   rfl
 
 /-- The reduced resolvent lands in the invariant subspace it inverts `A - l` on. -/
 theorem reducedResolvent_apply_mem (x : E) :
-    reducedResolvent A l x ∈ ⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ :=
+    reducedResolvent A l x ∈ A.spectralSubspace (· ≠ l) :=
   ((reducedResolventEquiv A l).symm
     ⟨_, sub_spectralProjector_mem_iSup A l x⟩ :
-      ↥(⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ)).2
+      A.spectralSubspace (· ≠ l)).2
 
 /-- The spectral projector of a single eigenvalue lands in its generalized eigenspace. -/
 theorem spectralProjector_apply_mem_maxGenEigenspace (x : E) :
-    Krylov.spectralProjector A (· = l) x ∈ A.maxGenEigenspace l := by
-  have h := Krylov.spectralProjector_apply_mem (B := A) (p := (· = l)) x
-  rwa [iSup_iSup_eq_left] at h
+    A.spectralProjector (· = l) x ∈ A.maxGenEigenspace l := by
+  have h := spectralProjector_apply_mem (A := A) (p := (· = l)) x
+  rwa [spectralSubspace_eq] at h
 
 omit [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] in
 /-- The generalized eigenspace of `l` is invariant under `A - l`. -/
@@ -159,10 +147,9 @@ theorem sub_smul_one_apply_mem_maxGenEigenspace {y : E} (hy : y ∈ A.maxGenEige
 
 /-- The spectral projector of `l` fixes the generalized eigenspace of `l`. -/
 theorem spectralProjector_apply_of_mem_maxGenEigenspace {y : E} (hy : y ∈ A.maxGenEigenspace l) :
-    Krylov.spectralProjector A (· = l) y = y := by
-  refine Krylov.spectralProjector_apply_of_mem ?_
-  rw [iSup_iSup_eq_left]
-  exact hy
+    A.spectralProjector (· = l) y = y := by
+  refine spectralProjector_apply_of_mem ?_
+  rwa [spectralSubspace_eq]
 
 /-- **The defining identity of the reduced resolvent** ([saad2011numerical], (3.40)): `S(l) (1 - P)
 (A - l) x = (1 - P) x` for every `x`.
@@ -172,17 +159,17 @@ image of the first and fixes the image of the second, leaving `(A - l) (x - P x)
 inverse of `A - l` on the complement returns `x - P x`. -/
 theorem reducedResolvent_apply_sub_smul (x : E) :
     reducedResolvent A l ((A - l • (1 : Module.End 𝕜 E)) x)
-      = x - Krylov.spectralProjector A (· = l) x := by
-  set P := Krylov.spectralProjector A (· = l) with hP
+      = x - A.spectralProjector (· = l) x := by
+  set P := A.spectralProjector (· = l) with hP
   set T := A - l • (1 : Module.End 𝕜 E) with hT
-  have hw : x - P x ∈ ⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ :=
-    Krylov.sub_spectralProjector_mem (B := A) (p := (· = l)) x
+  have hw : x - P x ∈ A.spectralSubspace (· ≠ l) :=
+    sub_spectralProjector_mem (A := A) (p := (· = l)) x
   have hTPx : T (P x) ∈ A.maxGenEigenspace l :=
     sub_smul_one_apply_mem_maxGenEigenspace A l (spectralProjector_apply_mem_maxGenEigenspace A l x)
   have hkey : (1 - P) (T x) = T (x - P x) := by
     have h1 : P (T (P x)) = T (P x) := spectralProjector_apply_of_mem_maxGenEigenspace A l hTPx
     have h2 : P (T (x - P x)) = 0 :=
-      Krylov.spectralProjector_apply_eq_zero_iff.2 (mapsTo_sub_smul_one A l _ hw)
+      spectralProjector_apply_eq_zero_iff.2 (mapsTo_sub_smul_one A l _ hw)
     have h3 : T x = T (P x) + T (x - P x) := by rw [← map_add]; congr 1; abel
     simp only [LinearMap.sub_apply, Module.End.one_apply]
     rw [h3, map_add, h1, h2]
@@ -190,7 +177,7 @@ theorem reducedResolvent_apply_sub_smul (x : E) :
   have hval : ((reducedResolventEquiv A l) ⟨x - P x, hw⟩ : E) = T (x - P x) := rfl
   rw [reducedResolvent_apply]
   have hmk : (⟨(1 - P) (T x), sub_spectralProjector_mem_iSup A l (T x)⟩ :
-      ↥(⨆ μ, ⨆ _ : ¬ μ = l, A.maxGenEigenspace μ)) =
+      A.spectralSubspace (· ≠ l)) =
         (reducedResolventEquiv A l) ⟨x - P x, hw⟩ :=
     Subtype.ext (hkey.trans hval.symm)
   rw [hmk, LinearEquiv.symm_apply_apply]
@@ -200,7 +187,7 @@ itself is singular. -/
 @[simp]
 theorem reducedResolvent_apply_of_mem_maxGenEigenspace {y : E} (hy : y ∈ A.maxGenEigenspace l) :
     reducedResolvent A l y = 0 := by
-  have h : (1 - Krylov.spectralProjector A (· = l)) y = 0 := by
+  have h : (1 - A.spectralProjector (· = l)) y = 0 := by
     simp [spectralProjector_apply_of_mem_maxGenEigenspace A l hy]
   rw [reducedResolvent_apply]
   simp only [h]
@@ -241,15 +228,15 @@ theorem reducedResolvent_apply_of_mem_eigenspace {μ : 𝕜} (hμ : μ ≠ l) {x
     (hx : x ∈ A.eigenspace μ) : reducedResolvent A l x = (μ - l)⁻¹ • x := by
   have hμl : μ - l ≠ 0 := sub_ne_zero.2 hμ
   have hAx : A x = μ • x := Module.End.mem_eigenspace_iff.1 hx
-  have hmem : (μ - l)⁻¹ • x ∈ ⨆ ν, ⨆ _ : ¬ ν = l, A.maxGenEigenspace ν :=
-    Submodule.mem_iSup_of_mem μ (Submodule.mem_iSup_of_mem hμ
-      (Submodule.smul_mem _ _ (Module.End.eigenspace_le_maxGenEigenspace hx)))
+  have hmem : (μ - l)⁻¹ • x ∈ A.spectralSubspace (· ≠ l) :=
+    maxGenEigenspace_le_spectralSubspace (A := A) (p := (· ≠ l)) hμ
+      (Submodule.smul_mem _ _ (Module.End.eigenspace_le_maxGenEigenspace hx))
   have hAy : (A - l • (1 : Module.End 𝕜 E)) ((μ - l)⁻¹ • x) = x := by
     have hstep : (A - l • (1 : Module.End 𝕜 E)) x = (μ - l) • x := by
       simp [hAx, sub_smul]
     rw [map_smul, hstep, smul_smul, inv_mul_cancel₀ hμl, one_smul]
-  have hP : Krylov.spectralProjector A (· = l) ((μ - l)⁻¹ • x) = 0 :=
-    Krylov.spectralProjector_apply_eq_zero_iff.2 hmem
+  have hP : A.spectralProjector (· = l) ((μ - l)⁻¹ • x) = 0 :=
+    spectralProjector_apply_eq_zero_iff.2 hmem
   have h := reducedResolvent_apply_sub_smul A l ((μ - l)⁻¹ • x)
   rwa [hAy, hP, sub_zero] at h
 
@@ -410,9 +397,9 @@ generalized eigenspace of `l`. -/
 theorem deriv_eigenvector_perturbation {A B : Module.End 𝕜 E} {u : 𝕜 → E} {mu : 𝕜 → 𝕜} {u' : E}
     {mu' l : 𝕜} (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
     (heig : ∀ t, A (u t) + t • B (u t) = mu t • u t) (hlam : mu 0 = l)
-    (hnorm : ∀ t, Krylov.spectralProjector A (· = l) (u t) = u 0) :
+    (hnorm : ∀ t, A.spectralProjector (· = l) (u t) = u 0) :
     u' = -(reducedResolvent A l (B (u 0))) := by
-  set P := Krylov.spectralProjector A (· = l) with hP
+  set P := A.spectralProjector (· = l) with hP
   have hA : HasDerivAt (fun t : 𝕜 => A (u t)) (A u') 0 := by
     simpa [Function.comp_def] using
       (LinearMap.toContinuousLinearMap A).hasFDerivAt.comp_hasDerivAt (0 : 𝕜) hu
@@ -463,7 +450,7 @@ gap. -/
 theorem norm_deriv_eigenvector_perturbation_le {A B : E →L[𝕜] E} {u : 𝕜 → E} {mu : 𝕜 → 𝕜}
     {u' : E} {mu' l : 𝕜} (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
     (heig : ∀ t, A (u t) + t • B (u t) = mu t • u t) (hlam : mu 0 = l)
-    (hnorm : ∀ t, Krylov.spectralProjector (A : E →ₗ[𝕜] E) (· = l) (u t) = u 0) :
+    (hnorm : ∀ t, Module.End.spectralProjector (A : E →ₗ[𝕜] E) (· = l) (u t) = u 0) :
     ‖u'‖ ≤ eigenvectorCondNumber (A : E →ₗ[𝕜] E) l * ‖B‖ * ‖u 0‖ := by
   rw [deriv_eigenvector_perturbation (A := (A : E →ₗ[𝕜] E)) (B := (B : E →ₗ[𝕜] E)) hu hmu heig
     hlam hnorm, norm_neg]
@@ -486,7 +473,7 @@ omit [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] in
 `μ ≠ l`: testing `(A - μ)^k z = 0` against `w` multiplies `⟪w, z⟫` by `(l - μ)^k ≠ 0`. -/
 theorem inner_eq_zero_of_mem_iSup_maxGenEigenspace {w : E}
     (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y) {z : E}
-    (hz : z ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ) : (inner 𝕜 w z : 𝕜) = 0 := by
+    (hz : z ∈ A.spectralSubspace (· ≠ l)) : (inner 𝕜 w z : 𝕜) = 0 := by
   have hpow : ∀ (μ : 𝕜) (k : ℕ) (y : E),
       (inner 𝕜 w (((A - μ • (1 : Module.End 𝕜 E)) ^ k) y) : 𝕜) = (l - μ) ^ k * inner 𝕜 w y := by
     intro μ k
@@ -497,7 +484,7 @@ theorem inner_eq_zero_of_mem_iSup_maxGenEigenspace {w : E}
       rw [pow_succ, Module.End.mul_apply, ih, LinearMap.sub_apply, LinearMap.smul_apply,
         Module.End.one_apply, inner_sub_right, inner_smul_right, hw, pow_succ]
       ring
-  have hle : (⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ) ≤ (𝕜 ∙ w)ᗮ := by
+  have hle : A.spectralSubspace (· ≠ l) ≤ (𝕜 ∙ w)ᗮ := by
     refine iSup₂_le fun μ hμ z hz => ?_
     rw [Submodule.mem_orthogonal_singleton_iff_inner_right]
     obtain ⟨k, hk⟩ := (Module.End.mem_maxGenEigenspace A μ z).mp hz
@@ -516,15 +503,15 @@ projector normalization `P (v t) = u` of `Module.End.deriv_eigenvector_perturbat
 theorem spectralProjector_apply_of_finrank_eq_one {u w : E} (hAu : A u = l • u) (hu : u ≠ 0)
     (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y) (hw0 : w ≠ 0)
     (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace A l) = 1) (x : E) :
-    Krylov.spectralProjector A (· = l) x = ((inner 𝕜 w x : 𝕜) / inner 𝕜 w u) • u := by
+    A.spectralProjector (· = l) x = ((inner 𝕜 w x : 𝕜) / inner 𝕜 w u) • u := by
   have hne := inner_ne_zero_of_finrank_maxGenEigenspace_eq_one hAu hu hw hw0 hsimple
-  have hPx : Krylov.spectralProjector A (· = l) x ∈ 𝕜 ∙ u := by
+  have hPx : A.spectralProjector (· = l) x ∈ 𝕜 ∙ u := by
     rw [← maxGenEigenspace_eq_span_singleton_of_finrank_eq_one hAu hu hsimple]
     exact spectralProjector_apply_mem_maxGenEigenspace A l x
   obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hPx
   have hwx : (inner 𝕜 w x : 𝕜) = c * inner 𝕜 w u := by
     have h0 := inner_eq_zero_of_mem_iSup_maxGenEigenspace hw
-      (Krylov.sub_spectralProjector_mem (B := A) (p := (· = l)) x)
+      (sub_spectralProjector_mem (A := A) (p := (· = l)) x)
     rw [inner_sub_right, sub_eq_zero, ← hc, inner_smul_right] at h0
     exact h0
   rw [← hc, hwx, mul_div_assoc, div_self hne, mul_one]

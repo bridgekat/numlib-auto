@@ -1605,7 +1605,8 @@ theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n
       nlinarith
     exact (pow_le_pow_iff_left₀ he0 (mul_nonneg (by rw [Real.tan_arccos]; positivity) ha0)
       two_ne_zero).1 hsq
-  have hkps := BlockLanczos.kaniel_paige_saad hT hnE v hvon.linearIndependent ht (k := k) hd
+  have hkps :=
+    BlockLanczos.kaniel_paige_saad_eigenvectorBasis hT hnE v hvon.linearIndependent ht (k := k) hd
     ⟨i, lt_of_lt_of_le i.isLt (Nat.le_mul_of_pos_left p (Nat.succ_pos k))⟩ (Fin.castLE hpn i)
     ⟨p, hpn'⟩ ⟨0, by omega⟩ ⟨n - 1, by omega⟩ rfl i.isLt rfl
     (fun j => Fin.le_def.2 (Nat.zero_le _)) (fun j => Fin.le_def.2 (by simp; omega))

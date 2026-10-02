@@ -53,4 +53,4 @@ id = "Matrix.secularFunction_strictMonoOn"
 id = "Matrix.dotProduct_inv_sub_smul_one_pow_mulVec"
 
 [[node]]  # added by eig1: the sign facts f' ≤ -1, f'' ≤ 0 below the spectrum of B, split from hasDerivAt
-id = "Matrix.borderedSecularFunction_deriv_nonpos"
+id = "Matrix.neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos"

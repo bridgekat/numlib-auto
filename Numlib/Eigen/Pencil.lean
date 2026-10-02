@@ -3,6 +3,7 @@ import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Matrix.Polynomial
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
+import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.PosDef
 import Numlib.LinearAlgebra.Matrix.QR
@@ -589,9 +590,8 @@ theorem exists_simultaneous_diagonalization {A B : Matrix n n 𝕜} (hA : A.IsHe
     rw [star_eq_conjTranspose]
     exact isHermitian_conjTranspose_mul_mul W hA
   set V : Matrix n n 𝕜 := (hC.eigenvectorUnitary : Matrix n n 𝕜) with hVdef
-  have hV : star V * (star W * A * W) * V = diagonal (RCLike.ofReal ∘ hC.eigenvalues) := by
-    have := hC.conjStarAlgAut_star_eigenvectorUnitary
-    rwa [Unitary.conjStarAlgAut_apply, Unitary.coe_star, star_star] at this
+  have hV : star V * (star W * A * W) * V = diagonal (RCLike.ofReal ∘ hC.eigenvalues) :=
+    hC.star_eigenvectorUnitary_mul_mul
   have hM : IsUnit (W * V) := hW.mul Unitary.isUnit_coe
   have h1 : star (W * V) * B * (W * V) = 1 := by
     rw [star_mul, show star V * star W * B * (W * V) = star V * (star W * B * W) * V by
@@ -654,8 +654,8 @@ def IsDeflatingSubspace (A B : Matrix n n K) (S : Submodule K (n → K)) : Prop 
 
 /-- A deflating subspace of `A - λ I` is an invariant subspace of `A`. -/
 theorem isDeflatingSubspace_one_iff {A : Matrix n n K} {S : Submodule K (n → K)} :
-    IsDeflatingSubspace A 1 S ↔ S.map A.mulVecLin ≤ S := by
-  rw [IsDeflatingSubspace, mulVecLin_one, Submodule.map_id]
+    IsDeflatingSubspace A 1 S ↔ S ∈ Module.End.invtSubmodule A.mulVecLin := by
+  rw [IsDeflatingSubspace, mulVecLin_one, Submodule.map_id, Module.End.mem_invtSubmodule_iff_map_le]
   constructor
   · intro h
     have heq : S.map A.mulVecLin ⊔ S = S :=

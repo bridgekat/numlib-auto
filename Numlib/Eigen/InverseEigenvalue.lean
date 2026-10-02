@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.LinearAlgebra.Lagrange
 import Numlib.Eigen.MinMax
+import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
@@ -211,9 +212,7 @@ theorem inv_sub_apply_eq_sum {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix
     (A - (c : 𝕜) • 1)⁻¹ j k = ∑ i, (hA.eigenvectorUnitary : Matrix n n 𝕜) j i *
       star ((hA.eigenvectorUnitary : Matrix n n 𝕜) k i) / ((hA.eigenvalues i : 𝕜) - c) := by
   refine inv_sub_smul_one_apply_eq_sum hA.eigenvectorUnitary.2 ?_ (fun i h => hc i ?_) j k
-  · have := hA.conjStarAlgAut_star_eigenvectorUnitary
-    rw [Unitary.conjStarAlgAut_apply, Unitary.coe_star, star_star] at this
-    exact this
+  · exact hA.star_eigenvectorUnitary_mul_mul
   · exact_mod_cast h
 
 /-- **The eigenvector–eigenvalue identity** ([golub2013matrix] (8.4.12) read in reverse; Denton,

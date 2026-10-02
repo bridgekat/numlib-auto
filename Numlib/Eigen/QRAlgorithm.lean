@@ -1869,10 +1869,8 @@ theorem doubleShiftQrStep_map_ofReal (H : Matrix (Fin N) (Fin N) ℝ) {a : ℂ}
   have hU₂R₂ : U₂ * R₂ = shiftedQrStep a H.complexify - starRingEnd ℂ a • 1 := qrQ_mul_qrR _
   -- the two steps multiply out to `M`
   have hMc : M.complexify = (H.complexify - a • 1) * (H.complexify - starRingEnd ℂ a • 1) := by
-    have h1 : Matrix.complexify (1 : Matrix (Fin N) (Fin N) ℝ) = 1 := by
-      ext i j; by_cases hij : i = j <;> simp [complexify_apply, one_apply, hij]
     rw [hMdef, complexify_add, complexify_sub, complexify_mul, complexify_smul, complexify_smul,
-      h1]
+      complexify_one]
     have h2 : ((2 * a.re : ℝ) : ℂ) = a + starRingEnd ℂ a := (Complex.add_conj a).symm
     have h3 : ((Complex.normSq a : ℝ) : ℂ) = a * starRingEnd ℂ a := (Complex.mul_conj a).symm
     rw [h2, h3]
@@ -1896,13 +1894,11 @@ theorem doubleShiftQrStep_map_ofReal (H : Matrix (Fin N) (Fin N) ℝ) {a : ℂ}
   have hMdet : IsUnit M.det := by
     have hc : IsUnit (M.complexify).det := by
       rw [hMc, det_mul]; exact hdet₁.mul hdetc
-    have : (M.complexify).det = (M.det : ℂ) := (Complex.ofRealHom.map_det M).symm
-    rw [this, isUnit_iff_ne_zero, Complex.ofReal_ne_zero] at hc
+    rw [det_complexify, isUnit_iff_ne_zero, Complex.ofReal_ne_zero] at hc
     exact isUnit_iff_ne_zero.2 hc
   -- two factorizations with positive diagonal
   have hQM : (qrQ M).complexify ᴴ * (qrQ M).complexify = 1 := by
-    rw [← complexify_conjTranspose, ← complexify_mul, conjTranspose_qrQ_mul_self]
-    ext i j; by_cases hij : i = j <;> simp [complexify_apply, one_apply, hij]
+    rw [← complexify_conjTranspose, ← complexify_mul, conjTranspose_qrQ_mul_self, complexify_one]
   have hUU : (U₁ * U₂)ᴴ * (U₁ * U₂) = 1 := by
     rw [conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc U₁ᴴ, hU₁u, Matrix.one_mul,
       conjTranspose_qrQ_mul_self]

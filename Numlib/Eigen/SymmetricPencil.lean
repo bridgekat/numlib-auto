@@ -149,6 +149,42 @@ private theorem rayleighQuotient_toEuclideanLin_conj {A B W : Matrix n n 𝕜}
       toEuclideanLin_apply, WithLp.ofLp_toLp, dotProduct_comm]
   · rw [@norm_sq_eq_re_inner 𝕜, EuclideanSpace.inner_eq_star_dotProduct, dotProduct_comm]
 
+omit [DecidableEq n] in
+/-- The sets of Courant–Fischer bounds are transported by a linear equivalence: if `g (Φ y) = f y`,
+the bounds `R c (g x)` holding on the nonzero vectors of some `d`-dimensional subspace of `V'` are
+those holding for `f` on some `d`-dimensional subspace of `V`. -/
+private theorem setOf_exists_submodule_eq {V V' : Type*} [AddCommGroup V] [Module 𝕜 V]
+    [AddCommGroup V'] [Module 𝕜 V'] (Φ : V ≃ₗ[𝕜] V') {f : V → ℝ} {g : V' → ℝ}
+    (hfg : ∀ y, g (Φ y) = f y) (d : ℕ) (R : ℝ → ℝ → Prop) :
+    {c : ℝ | ∃ S : Submodule 𝕜 V', Module.finrank 𝕜 S = d ∧ ∀ x ∈ S, x ≠ 0 → R c (g x)} =
+      {c : ℝ | ∃ S : Submodule 𝕜 V, Module.finrank 𝕜 S = d ∧ ∀ y ∈ S, y ≠ 0 → R c (f y)} := by
+  ext c
+  constructor
+  · rintro ⟨S, hS, hSc⟩
+    refine ⟨S.map (Φ.symm : V' →ₗ[𝕜] V), by rw [LinearEquiv.finrank_map_eq, hS], ?_⟩
+    rintro _ ⟨x, hx, rfl⟩ hx0
+    have hx0' : x ≠ 0 := fun h => hx0 (by simp [h])
+    have := hSc x hx hx0'
+    rwa [← Φ.apply_symm_apply x, hfg] at this
+  · rintro ⟨S, hS, hSc⟩
+    refine ⟨S.map (Φ : V →ₗ[𝕜] V'), by rw [LinearEquiv.finrank_map_eq, hS], ?_⟩
+    rintro _ ⟨y, hy, rfl⟩ hy0
+    have hy0' : y ≠ 0 := fun h => hy0 (by simp [h])
+    rw [LinearEquiv.coe_coe, hfg]
+    exact hSc y hy hy0'
+
+/-- The substitution `x = W y` behind both Courant–Fischer forms for a pencil: with `Wᴴ B W = 1`,
+`Φ y = W y` carries the Rayleigh quotient of `Wᴴ A W` to the pencil quotient
+`re (xᴴ A x) / re (xᴴ B x)`. -/
+private theorem exists_linearEquiv_rayleighQuotient_eq {A B : Matrix n n 𝕜} (hB : B.PosDef) :
+    ∃ Φ : EuclideanSpace 𝕜 n ≃ₗ[𝕜] (n → 𝕜), ∀ y,
+      RCLike.re (star (Φ y) ⬝ᵥ A *ᵥ Φ y) / RCLike.re (star (Φ y) ⬝ᵥ B *ᵥ Φ y) =
+        (toEuclideanLin (star hB.exists_isUnit_conj_eq_one.choose * A *
+          hB.exists_isUnit_conj_eq_one.choose)).rayleighQuotient y := by
+  obtain ⟨hWu, hW⟩ := hB.exists_isUnit_conj_eq_one.choose_spec
+  refine ⟨(WithLp.linearEquiv 2 𝕜 (n → 𝕜)).trans (toLinearEquiv' _ hWu.invertible), fun y => ?_⟩
+  exact (rayleighQuotient_toEuclideanLin_conj hW y).symm
+
 /-- **Courant–Fischer for a symmetric-definite pencil** ([golub2013matrix] §8.7.1): the `i`-th
 sorted pencil eigenvalue is the greatest `c` such that some `(i+1)`-dimensional subspace has
 `c ≤ re (xᴴ A x) / re (xᴴ B x)` at all its nonzero vectors. Substitute `x = W y` (`Wᴴ B W = 1`,
@@ -160,35 +196,10 @@ theorem isGreatest_pencilEigenvalues {A B : Matrix n n 𝕜} (hA : A.IsHermitian
       ∀ x ∈ S, x ≠ 0 →
         c ≤ RCLike.re (star x ⬝ᵥ A *ᵥ x) / RCLike.re (star x ⬝ᵥ B *ᵥ x)}
       (pencilEigenvalues hA hB i) := by
-  obtain ⟨hWu, hW⟩ := hB.exists_isUnit_conj_eq_one.choose_spec
-  set W := hB.exists_isUnit_conj_eq_one.choose
-  have hC := isHermitian_star_mul_mul hA W
-  have hT := isSymmetric_toEuclideanLin_iff.mpr hC
-  have hG := hT.isGreatest_eigenvalues finrank_euclideanSpace i
-  -- the correspondence of subspaces
-  set Φ : EuclideanSpace 𝕜 n ≃ₗ[𝕜] (n → 𝕜) :=
-    (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).trans (toLinearEquiv' W hWu.invertible)
-  have hΦ : ∀ y, Φ y = W *ᵥ WithLp.ofLp y := fun y => rfl
-  have hrq : ∀ y, (toEuclideanLin (star W * A * W)).rayleighQuotient y =
-      RCLike.re (star (Φ y) ⬝ᵥ A *ᵥ Φ y) / RCLike.re (star (Φ y) ⬝ᵥ B *ᵥ Φ y) := fun y => by
-    rw [hΦ]; exact rayleighQuotient_toEuclideanLin_conj hW y
-  have hval : pencilEigenvalues hA hB i = hT.eigenvalues finrank_euclideanSpace i := rfl
-  rw [hval]
-  refine ⟨?_, ?_⟩
-  · obtain ⟨S, hS, hSc⟩ := hG.1
-    refine ⟨S.map (Φ : EuclideanSpace 𝕜 n →ₗ[𝕜] (n → 𝕜)), ?_, ?_⟩
-    · rw [LinearEquiv.finrank_map_eq, hS]
-    · rintro _ ⟨y, hy, rfl⟩ hy0
-      have hy0' : y ≠ 0 := fun h => hy0 (by simp [h])
-      rw [LinearEquiv.coe_coe, ← hrq]
-      exact hSc y hy hy0'
-  · rintro c ⟨S, hS, hSc⟩
-    refine hG.2 ⟨S.map (Φ.symm : (n → 𝕜) →ₗ[𝕜] EuclideanSpace 𝕜 n), ?_, ?_⟩
-    · rw [LinearEquiv.finrank_map_eq, hS]
-    · rintro _ ⟨x, hx, rfl⟩ hx0
-      have hx0' : x ≠ 0 := fun h => hx0 (by simp [h])
-      rw [hrq]
-      simpa using hSc x hx hx0'
+  obtain ⟨Φ, hΦ⟩ := exists_linearEquiv_rayleighQuotient_eq (A := A) hB
+  rw [setOf_exists_submodule_eq Φ hΦ _ (· ≤ ·)]
+  exact (isSymmetric_toEuclideanLin_iff.mpr (isHermitian_star_mul_mul hA _)).isGreatest_eigenvalues
+    finrank_euclideanSpace i
 
 /-- **The min–max twin of `Matrix.isGreatest_pencilEigenvalues`**: the `i`-th sorted pencil
 eigenvalue is the least `c` such that some `(card n - i)`-dimensional subspace has
@@ -199,34 +210,10 @@ theorem isLeast_pencilEigenvalues {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (
       ∀ x ∈ S, x ≠ 0 →
         RCLike.re (star x ⬝ᵥ A *ᵥ x) / RCLike.re (star x ⬝ᵥ B *ᵥ x) ≤ c}
       (pencilEigenvalues hA hB i) := by
-  obtain ⟨hWu, hW⟩ := hB.exists_isUnit_conj_eq_one.choose_spec
-  set W := hB.exists_isUnit_conj_eq_one.choose
-  have hC := isHermitian_star_mul_mul hA W
-  have hT := isSymmetric_toEuclideanLin_iff.mpr hC
-  have hG := hT.isLeast_eigenvalues finrank_euclideanSpace i
-  set Φ : EuclideanSpace 𝕜 n ≃ₗ[𝕜] (n → 𝕜) :=
-    (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).trans (toLinearEquiv' W hWu.invertible)
-  have hΦ : ∀ y, Φ y = W *ᵥ WithLp.ofLp y := fun y => rfl
-  have hrq : ∀ y, (toEuclideanLin (star W * A * W)).rayleighQuotient y =
-      RCLike.re (star (Φ y) ⬝ᵥ A *ᵥ Φ y) / RCLike.re (star (Φ y) ⬝ᵥ B *ᵥ Φ y) := fun y => by
-    rw [hΦ]; exact rayleighQuotient_toEuclideanLin_conj hW y
-  have hval : pencilEigenvalues hA hB i = hT.eigenvalues finrank_euclideanSpace i := rfl
-  rw [hval]
-  refine ⟨?_, ?_⟩
-  · obtain ⟨S, hS, hSc⟩ := hG.1
-    refine ⟨S.map (Φ : EuclideanSpace 𝕜 n →ₗ[𝕜] (n → 𝕜)), ?_, ?_⟩
-    · rw [LinearEquiv.finrank_map_eq, hS]
-    · rintro _ ⟨y, hy, rfl⟩ hy0
-      have hy0' : y ≠ 0 := fun h => hy0 (by simp [h])
-      rw [LinearEquiv.coe_coe, ← hrq]
-      exact hSc y hy hy0'
-  · rintro c ⟨S, hS, hSc⟩
-    refine hG.2 ⟨S.map (Φ.symm : (n → 𝕜) →ₗ[𝕜] EuclideanSpace 𝕜 n), ?_, ?_⟩
-    · rw [LinearEquiv.finrank_map_eq, hS]
-    · rintro _ ⟨x, hx, rfl⟩ hx0
-      have hx0' : x ≠ 0 := fun h => hx0 (by simp [h])
-      rw [hrq]
-      simpa using hSc x hx hx0'
+  obtain ⟨Φ, hΦ⟩ := exists_linearEquiv_rayleighQuotient_eq (A := A) hB
+  rw [setOf_exists_submodule_eq Φ hΦ _ fun c r => r ≤ c]
+  exact (isSymmetric_toEuclideanLin_iff.mpr (isHermitian_star_mul_mul hA _)).isLeast_eigenvalues
+    finrank_euclideanSpace i
 
 omit [DecidableEq n] in
 /-- The real part `re (xᴴ M x)` of the quadratic form of a matrix at a vector of `EuclideanSpace`:
@@ -281,8 +268,10 @@ theorem crawfordNumber_le_norm_mul (A B : Matrix n n 𝕜) (x : EuclideanSpace �
   have hn : 0 < ‖x‖ := norm_pos_iff.2 hx
   set u : EuclideanSpace 𝕜 n := ((‖x‖⁻¹ : ℝ) : 𝕜) • x
   have hu : u ∈ Metric.sphere (0 : EuclideanSpace 𝕜 n) 1 := by
-    rw [mem_sphere_zero_iff_norm, norm_smul, RCLike.norm_ofReal, abs_inv, abs_norm,
-      inv_mul_cancel₀ hn.ne']
+    rw [mem_sphere_zero_iff_norm]
+    change ‖((‖x‖⁻¹ : ℝ) : 𝕜) • x‖ = 1
+    rw [RCLike.ofReal_inv]
+    exact norm_smul_inv_norm hx
   have hle : crawfordNumber A B ≤ Real.sqrt (reQuadForm A u ^ 2 + reQuadForm B u ^ 2) := by
     unfold crawfordNumber
     exact ciInf_le (f := fun y : Metric.sphere (0 : EuclideanSpace 𝕜 n) 1 =>
@@ -649,9 +638,7 @@ theorem exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le {C D : Matrix n n �
   set V : Matrix n n 𝕜 := (hCh.eigenvectorUnitary : Matrix n n 𝕜) with hVdef
   set d := hCh.eigenvalues with hd
   have hd0 : ∀ i, 0 ≤ d i := hC.eigenvalues_nonneg
-  have hV : star V * C * V = diagonal (fun i => (d i : 𝕜)) := by
-    have := hCh.conjStarAlgAut_star_eigenvectorUnitary
-    rwa [Unitary.conjStarAlgAut_apply, Unitary.coe_star, star_star] at this
+  have hV : star V * C * V = diagonal (fun i => (d i : 𝕜)) := hCh.star_eigenvectorUnitary_mul_mul
   have hVu : V ∈ unitaryGroup n 𝕜 := hCh.eigenvectorUnitary.2
   set w : n → ℝ := fun i => if 0 < d i then (Real.sqrt (d i))⁻¹ else 1 with hw
   have hw0 : ∀ i, w i ≠ 0 := fun i => by

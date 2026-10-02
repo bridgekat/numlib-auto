@@ -1,0 +1,34 @@
+namespace = "Module.End"
+
+[[node]]
+id = "spectralSubspace"
+
+[[node]]
+id = "spectralSubspace_mem_invtSubmodule"
+
+[[node]]
+id = "isCompl_spectralSubspace"
+
+[[node]]
+id = "invtSubmodule_le_spectralSubspace"
+
+[[node]]
+id = "invtSubmodule_eq_spectralSubspace"
+
+[[node]]
+id = "spectralProjector"
+
+[[node]]
+id = "spectralProjector_apply_of_mem"
+
+[[node]]
+id = "ker_spectralProjector"
+
+[[node]]
+id = "range_spectralProjector"
+
+[[node]]
+id = "injOn_spectralProjector_iff"
+
+[[node]]
+id = "existsUnique_mem_spectralProjector_eq"

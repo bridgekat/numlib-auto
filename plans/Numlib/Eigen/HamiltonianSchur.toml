@@ -9,17 +9,17 @@ id = "Matrix.inv_mem_spectrum_of_mem_symplecticGroup"
 deps = []
 
 [[node]]
-id = "Matrix.fromBlocks_diagonal_mem_symplecticGroup"
+id = "Matrix.fromBlocks_diagonal_mem_orthoSymplecticGroup"
 deps = []
 
 [[node]]
-id = "Matrix.planeRotation_inl_inr_mem_symplecticGroup"
+id = "Matrix.planeRotation_inl_inr_mem_orthoSymplecticGroup"
 
 [[node]]
 id = "Matrix.exists_orthogonalSymplectic_mulVec_eq"
 
 [[node]]
-id = "Matrix.IsHamiltonian.isLagrangian_stable_invariant"
+id = "Matrix.IsHamiltonian.isotropic_of_mul_eq_mul_of_stable"
 
 [[node]]
 id = "Matrix.exists_orthogonalSymplectic_hamiltonianSchur"

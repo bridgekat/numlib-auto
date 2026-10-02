@@ -64,13 +64,17 @@ i`.
   decreasingly and indexed by `Fin n` (Mathlib's `eigenvalues₀` reindexed), with Cauchy interlacing
   for the leading principal submatrix,
   `Matrix.IsHermitian.sortedEigenvalues_submatrix_castSucc_interlace`, and the sorted spectral
-  decomposition `Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_eigenvalues₀`
+  decomposition `Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_sortedEigenvalues`
   (`Uᴴ A U = diag(λ_1 ≥ ⋯ ≥ λ_n)`, [golub2013matrix] Theorem 8.1.1).
 * `ContinuousLinearMap.hasGradientAt_rayleighQuotient`: the gradient of the Rayleigh quotient,
   `∇r(x) = 2 (T x - r(x) x) / ‖x‖²` ([golub2013matrix] (10.1.1)); hence
   `LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff`, the stationary points of the
   Rayleigh quotient are exactly the eigenvectors ([golub2013matrix] (12.5.23)). Mathlib has only
   the extremal case, `IsSelfAdjoint.hasEigenvector_of_isLocalExtrOn`.
+* `LinearMap.IsSymmetric.eigenvalues_eq_of_apply_eq_ofReal_smul`: the sorted eigenvalues are those
+  of *any* orthonormal eigenbasis with decreasing eigenvalues, so statements about an arbitrary
+  Schur decomposition reduce to `hT.eigenvalues`; the coordinate identities in such a basis are the
+  `OrthonormalBasis.…_of_apply_eq_smul` lemmas.
 * `LinearMap.IsSymmetric.eigenvalues_neg`: the eigenvalues of `-T` are the negatives of those of
   `T` in reversed order, which is the reduction that turns any statement about a largest eigenvalue
   into the matching statement about a smallest one; `exists_smul_eigenvectorBasis_neg` transports
@@ -155,6 +159,19 @@ theorem rayleighQuotient_neg (T : E →ₗ[𝕜] E) (x : E) :
 theorem IsSymmetric.neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) : (-T).IsSymmetric := fun x y => by
   simp only [LinearMap.neg_apply, inner_neg_left, inner_neg_right, hT x y]
 
+/-- An eigenvalue bound through the Rayleigh quotient: if `c ‖x‖² - re ⟪T x, x⟫ ≤ C D` for some
+`0 < D ≤ ‖x‖²` and `0 ≤ C`, then `c - T.rayleighQuotient x ≤ C`. -/
+theorem sub_rayleighQuotient_le_of_le (T : E →ₗ[𝕜] E) {x : E} {c C D : ℝ} (hC : 0 ≤ C)
+    (hD : 0 < D) (hDx : D ≤ ‖x‖ ^ 2)
+    (h : c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) ≤ C * D) :
+    c - T.rayleighQuotient x ≤ C := by
+  have hx : 0 < ‖x‖ ^ 2 := hD.trans_le hDx
+  have hsplit : c - T.rayleighQuotient x =
+      (c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x)) / ‖x‖ ^ 2 := by
+    rw [rayleighQuotient, sub_div, mul_div_assoc, div_self hx.ne', mul_one]
+  rw [hsplit, div_le_iff₀ hx]
+  exact h.trans (mul_le_mul_of_nonneg_left hDx hC)
+
 end LinearMap
 
 /-- The Rayleigh quotient of a continuous linear map is the Rayleigh quotient of the underlying
@@ -162,6 +179,112 @@ linear map. -/
 theorem ContinuousLinearMap.rayleighQuotient_eq_toLinearMap (T : E →L[𝕜] E) (x : E) :
     T.rayleighQuotient x = (T : E →ₗ[𝕜] E).rayleighQuotient x :=
   rfl
+
+/-! ### An orthonormal eigenbasis
+
+Statements about an arbitrary orthonormal basis `b` of eigenvectors of `T`, `T (b i) = μ i • b i`.
+Mathlib's `LinearMap.IsSymmetric.eigenvectorBasis` is one such basis, and the lemmas about it below
+are these ones specialized; a textbook statement over an arbitrary Schur decomposition uses these
+directly. -/
+
+namespace OrthonormalBasis
+
+variable {ι : Type*} [Fintype ι] (b : OrthonormalBasis ι 𝕜 E) {T : E →ₗ[𝕜] E}
+
+section Eigenbasis
+
+variable {μ : ι → 𝕜} (hb : ∀ i, T (b i) = μ i • b i)
+include hb
+
+/-- In an orthonormal eigenbasis, `T` acts on coordinates by its eigenvalues. -/
+theorem repr_apply_of_apply_eq_smul (x : E) (i : ι) : b.repr (T x) i = μ i * b.repr x i := by
+  classical
+  conv_lhs => rw [← b.sum_repr x]
+  simp [map_sum, hb, smul_smul, Pi.single_apply, mul_comm]
+
+/-- In an orthonormal eigenbasis, `T ^ k` acts on coordinates by the `k`-th powers of the
+eigenvalues. -/
+theorem repr_pow_apply_of_apply_eq_smul (k : ℕ) (x : E) (i : ι) :
+    b.repr ((T ^ k) x) i = μ i ^ k * b.repr x i := by
+  induction k generalizing x with
+  | zero => simp
+  | succ k ih =>
+      rw [pow_succ, Module.End.mul_apply, ih, b.repr_apply_of_apply_eq_smul hb]
+      ring
+
+/-- The inner-product form of `OrthonormalBasis.repr_pow_apply_of_apply_eq_smul`:
+`⟪b i, T^k x⟫ = μ i ^ k ⟪b i, x⟫`. -/
+theorem inner_pow_apply_of_apply_eq_smul (k : ℕ) (x : E) (i : ι) :
+    (inner 𝕜 (b i) ((T ^ k) x) : 𝕜) = μ i ^ k * inner 𝕜 (b i) x := by
+  simpa only [OrthonormalBasis.repr_apply_apply] using b.repr_pow_apply_of_apply_eq_smul hb k x i
+
+/-- In an orthonormal eigenbasis, `p(T)` acts on coordinates by the values of `p` at the
+eigenvalues. -/
+theorem repr_aeval_apply_of_apply_eq_smul (p : Polynomial 𝕜) (x : E) (i : ι) :
+    b.repr (Polynomial.aeval T p x) i = p.eval (μ i) * b.repr x i := by
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq => simp [hp, hq, add_mul]
+  | monomial k c =>
+      have hmon : Polynomial.aeval T (Polynomial.monomial k c) x = c • (T ^ k) x := by
+        simp [Polynomial.aeval_monomial]
+      rw [hmon, map_smul, PiLp.smul_apply, smul_eq_mul, b.repr_pow_apply_of_apply_eq_smul hb,
+        Polynomial.eval_monomial]
+      ring
+
+end Eigenbasis
+
+section RealEigenbasis
+
+variable {lam : ι → ℝ} (hb : ∀ i, T (b i) = (lam i : 𝕜) • b i)
+include hb
+
+/-- An operator with an orthonormal eigenbasis and real eigenvalues is symmetric. -/
+theorem isSymmetric_of_apply_eq_ofReal_smul : T.IsSymmetric := by
+  intro x y
+  rw [← b.sum_inner_mul_inner (T x) y, ← b.sum_inner_mul_inner x (T y)]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  have h1 := b.repr_apply_of_apply_eq_smul hb
+  simp only [OrthonormalBasis.repr_apply_apply] at h1
+  rw [h1, ← inner_conj_symm (T x), h1, map_mul, RCLike.conj_ofReal, inner_conj_symm]
+  ring
+
+/-- The quadratic form of `T` in the coordinates of an orthonormal eigenbasis. -/
+theorem re_inner_apply_self_eq_sum (x : E) :
+    RCLike.re (inner 𝕜 (T x) x) = ∑ i, lam i * ‖b.repr x i‖ ^ 2 := by
+  rw [← b.sum_inner_mul_inner (T x) x, map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [b.isSymmetric_of_apply_eq_ofReal_smul hb x (b i), hb, inner_smul_right,
+    ← inner_conj_symm x (b i), mul_assoc, RCLike.conj_mul, OrthonormalBasis.repr_apply_apply]
+  simp
+
+/-- The quadratic form of the shift `c - T` in the coordinates of an orthonormal eigenbasis:
+`c ‖x‖² - re ⟪T x, x⟫ = ∑ i, (c - λ i) ‖⟪b i, x⟫‖²`. -/
+theorem mul_norm_sq_sub_re_inner_eq_sum (c : ℝ) (x : E) :
+    c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) = ∑ i, (c - lam i) * ‖b.repr x i‖ ^ 2 := by
+  have hx : ‖x‖ ^ 2 = ∑ i, ‖b.repr x i‖ ^ 2 := by
+    simpa only [OrthonormalBasis.repr_apply_apply] using (b.sum_sq_norm_inner_right x).symm
+  rw [hx, b.re_inner_apply_self_eq_sum hb, Finset.mul_sum,
+    ← Finset.sum_sub_distrib]
+  exact Finset.sum_congr rfl fun i _ => by ring
+
+/-- The estimate behind every eigenvalue-minus-Rayleigh-quotient bound: the coordinates at the
+eigenvalues `≥ c`, and the vanishing ones, contribute nonpositively to `c ‖x‖² - re ⟪T x, x⟫`, so
+only those in a set `s` containing all the others remain. -/
+theorem mul_norm_sq_sub_re_inner_le_sum (c : ℝ) (x : E) {s : Finset ι}
+    (hs : ∀ i ∉ s, c ≤ lam i ∨ b.repr x i = 0) :
+    c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) ≤ ∑ i ∈ s, (c - lam i) * ‖b.repr x i‖ ^ 2 := by
+  classical
+  rw [b.mul_norm_sq_sub_re_inner_eq_sum hb, ← Finset.sum_add_sum_compl s]
+  have : ∑ i ∈ sᶜ, (c - lam i) * ‖b.repr x i‖ ^ 2 ≤ 0 := by
+    refine Finset.sum_nonpos fun i hi => ?_
+    rcases hs i (Finset.mem_compl.1 hi) with h | h
+    · exact mul_nonpos_of_nonpos_of_nonneg (by linarith) (by positivity)
+    · simp [h]
+  linarith
+
+end RealEigenbasis
+
+end OrthonormalBasis
 
 namespace LinearMap.IsSymmetric
 
@@ -183,23 +306,16 @@ theorem norm_sq_eq_sum_norm_repr_sq (x : E) :
 /-- The quadratic form of a symmetric operator, in the coordinates of its eigenvector basis. -/
 theorem re_inner_apply_self_eq_sum (x : E) :
     RCLike.re (inner 𝕜 (T x) x) =
-      ∑ i, hT.eigenvalues hn i * ‖(hT.eigenvectorBasis hn).repr x i‖ ^ 2 := by
-  rw [← (hT.eigenvectorBasis hn).sum_inner_mul_inner (T x) x, map_sum]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [hT x (hT.eigenvectorBasis hn i), hT.apply_eigenvectorBasis hn, inner_smul_right,
-    ← inner_conj_symm x (hT.eigenvectorBasis hn i), mul_assoc, RCLike.conj_mul,
-    OrthonormalBasis.repr_apply_apply]
-  simp
+      ∑ i, hT.eigenvalues hn i * ‖(hT.eigenvectorBasis hn).repr x i‖ ^ 2 :=
+  (hT.eigenvectorBasis hn).re_inner_apply_self_eq_sum (hT.apply_eigenvectorBasis hn) x
 
 /-- The quadratic form of the shift `c - T` in the eigenvector basis: `c ‖x‖² - re ⟪T x, x⟫ = ∑ i,
 (c - λ i) ‖⟪v i, x⟫‖²`.  This is the form in which an eigenvalue minus a Rayleigh quotient is
 estimated, one eigenbasis coordinate at a time. -/
 theorem mul_norm_sq_sub_re_inner_eq_sum (c : ℝ) (x : E) :
     c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) =
-      ∑ i, (c - hT.eigenvalues hn i) * ‖(hT.eigenvectorBasis hn).repr x i‖ ^ 2 := by
-  rw [hT.norm_sq_eq_sum_norm_repr_sq hn, hT.re_inner_apply_self_eq_sum hn, Finset.mul_sum,
-    ← Finset.sum_sub_distrib]
-  exact Finset.sum_congr rfl fun i _ => by ring
+      ∑ i, (c - hT.eigenvalues hn i) * ‖(hT.eigenvectorBasis hn).repr x i‖ ^ 2 :=
+  (hT.eigenvectorBasis hn).mul_norm_sq_sub_re_inner_eq_sum (hT.apply_eigenvectorBasis hn) c x
 
 /-- The vectors of an eigenvector basis are nonzero, being unit vectors. -/
 theorem eigenvectorBasis_ne_zero (i : Fin n) : hT.eigenvectorBasis hn i ≠ 0 :=
@@ -920,6 +1036,31 @@ theorem eigenvalues_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) (hn : Module
     have := (hT.isLeast_eigenvalues hn i.rev).2 hmem
     linarith
 
+/-- **The sorted eigenvalues are those of any orthonormal eigenbasis**: if `b` is an orthonormal
+basis with `T (b i) = λ i • b i` and `λ` is antitone, then `hT.eigenvalues hn = λ`. Mathlib's
+`eigenvectorBasis` is one choice of `b`; the textbook statements over an arbitrary Schur
+decomposition go through this. -/
+theorem eigenvalues_eq_of_apply_eq_ofReal_smul {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric)
+    (hn : Module.finrank 𝕜 E = n) (b : OrthonormalBasis (Fin n) 𝕜 E) {lam : Fin n → ℝ}
+    (hb : ∀ i, T (b i) = (lam i : 𝕜) • b i) (hlam : Antitone lam) : hT.eigenvalues hn = lam := by
+  classical
+  have htoM : T.toMatrix b.toBasis b.toBasis = Matrix.diagonal (RCLike.ofReal ∘ lam) := by
+    ext i j
+    by_cases h : i = j
+    · subst h
+      simp [toMatrix_apply, hb, RCLike.real_smul_eq_coe_mul]
+    · simp [toMatrix_apply, hb, h]
+  have hroots : T.charpoly.roots = Multiset.map (RCLike.ofReal ∘ lam) Finset.univ.val := by
+    rw [← charpoly_toMatrix _ b.toBasis, htoM, Matrix.charpoly_diagonal,
+      Polynomial.roots_prod _ _ (by simp [Finset.prod_ne_zero_iff, Polynomial.X_sub_C_ne_zero])]
+    simp
+  rw [← List.ofFn_inj, ← hT.sort_roots_charpoly_eq_eigenvalues hn, hroots]
+  simp_rw [Fin.univ_val_map, Multiset.map_coe, List.map_ofFn, Function.comp_def, RCLike.ofReal_re,
+    Multiset.coe_sort]
+  apply List.mergeSort_of_pairwise
+  simp_rw [decide_eq_true_eq, ← List.sortedGE_iff_pairwise]
+  exact hlam.sortedGE_ofFn
+
 /-- **A simple extreme eigenvalue of `-T` has the same eigenvector line as its partner for `T`**:
 if the `i.rev`-th eigenvalue of `T` is simple, the `i`-th eigenvector of `-T` is a nonzero multiple
 of the `i.rev`-th eigenvector of `T`. Expanding the eigenvector of `-T` in the eigenbasis of `T`,
@@ -1119,9 +1260,8 @@ theorem sortedEigenvalues_submatrix_castSucc_interlace {A : Matrix (Fin (n + 1))
 decreasingly sorted eigenvalues, `Uᴴ A U = diag(λ_1, …, λ_n)`, the `k`-th column of `U` being an
 eigenvector for `λ_k`. The columns are the eigenvector basis of `toEuclideanLin A`, which Mathlib
 sorts; Mathlib's `Matrix.IsHermitian.spectral_theorem` is the unsorted form. At `𝕜 = ℝ`,
-`unitaryGroup = orthogonalGroup`. The name records that the diagonal is `eigenvalues₀`, reindexed
-to `Fin N` as `sortedEigenvalues`. -/
-theorem exists_unitary_conj_eq_diagonal_eigenvalues₀ {A : Matrix (Fin n) (Fin n) 𝕜}
+`unitaryGroup = orthogonalGroup`. -/
+theorem exists_unitary_conj_eq_diagonal_sortedEigenvalues {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : A.IsHermitian) :
     ∃ U ∈ Matrix.unitaryGroup (Fin n) 𝕜,
       star U * A * U = Matrix.diagonal (fun k => (hA.sortedEigenvalues k : 𝕜)) ∧
@@ -1149,6 +1289,10 @@ theorem exists_unitary_conj_eq_diagonal_eigenvalues₀ {A : Matrix (Fin n) (Fin 
   refine ⟨U, hU, ?_, hcol⟩
   rw [Matrix.mul_assoc, hAU, ← Matrix.mul_assoc, (Matrix.mem_unitaryGroup_iff').mp hU,
     Matrix.one_mul]
+
+@[deprecated (since := "2026-09-30")]
+alias exists_unitary_conj_eq_diagonal_eigenvalues₀ :=
+  exists_unitary_conj_eq_diagonal_sortedEigenvalues
 
 end Matrix.IsHermitian
 

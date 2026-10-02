@@ -1,8 +1,3 @@
-# Planned additions (GVL review): the module doc of `Numlib.Eigen.Sturm` is the group description; when the
-# node staged below is formalized, add to it: "unreduced" here (`∀ j, j + 1 < n → b j ≠ 0`, the finite
-# range since the refactor task R24) is the tridiagonal case of `Matrix.IsUnreducedUpperHessenberg`
-# (`Numlib/LinearAlgebra/Matrix/UnreducedHessenberg`), by
-# `Matrix.isUnreducedUpperHessenberg_symmTridiagonalOf_iff`.
 [[node]]
 id = "Matrix.symmTridiagonalOf"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
@@ -218,3 +213,12 @@ id = "Sturm.signChanges_gershgorin"
 
 [[node]]
 id = "Matrix.isUnreducedUpperHessenberg_symmTridiagonalOf_iff"
+
+[[node]]
+id = "Sturm.IsUnreduced"
+
+[[node]]
+id = "Matrix.IsHermitian.eigenvalues_injective_of_isUnreducedUpperHessenberg"
+
+[[node]]
+id = "Matrix.IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm"

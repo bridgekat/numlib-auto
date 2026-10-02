@@ -485,6 +485,7 @@ import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
 import Numlib.Krylov.ToEuclideanLin
 import Numlib.Krylov.TransposeFree
+import Numlib.LinearAlgebra.Eigenspace.Spectral
 import Numlib.LinearAlgebra.Matrix.Aeval
 import Numlib.LinearAlgebra.Matrix.Assembly
 import Numlib.LinearAlgebra.Matrix.Band

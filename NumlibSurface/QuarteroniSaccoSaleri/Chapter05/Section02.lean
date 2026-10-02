@@ -314,7 +314,7 @@ theorem property_5_5 {A E : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) {la
   have hw' : ∀ z, inner ℂ x ((A' : EuclideanSpace ℂ (Fin n) →ₗ[ℂ] EuclideanSpace ℂ (Fin n)) z) =
       (lam : ℂ) * inner ℂ x z := fun z => by
     rw [hA'lin]; exact inner_toEuclideanLin_eq_of_conjTranspose_eq hAy z
-  have hP : ∀ t, Krylov.spectralProjector
+  have hP : ∀ t, Module.End.spectralProjector
       (A' : EuclideanSpace ℂ (Fin n) →ₗ[ℂ] EuclideanSpace ℂ (Fin n)) (· = (lam : ℂ)) (v t) = v 0 :=
     fun t => by
       rw [Module.End.spectralProjector_apply_of_finrank_eq_one hAx' hx0 hw' hx0 hsimple', hnorm,

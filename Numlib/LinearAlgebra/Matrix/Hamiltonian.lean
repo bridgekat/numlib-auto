@@ -32,16 +32,19 @@ under `J ↦ -J`.
 
 ## Main definitions
 
-* `Matrix.IsHamiltonian`, `Matrix.IsSkewHamiltonian`.
+* `Matrix.IsHamiltonian`, `Matrix.IsSkewHamiltonian`, `Matrix.orthoSymplecticGroup`.
 
 ## Main statements
 
 * `Matrix.isHamiltonian_iff_isSymm_J_mul`, `Matrix.isHamiltonian_iff_mem_sp`,
-  `Matrix.isHamiltonian_fromBlocks_iff`, and the skew-Hamiltonian twins.
+  `Matrix.isHamiltonian_fromBlocks_iff`, and the skew-Hamiltonian twins
+  (`Matrix.isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule`: the `J`-self-adjoint matrices).
 * `Matrix.IsHamiltonian.conj_symplectic`, `Matrix.IsSkewHamiltonian.conj_symplectic`.
 * `Matrix.IsHamiltonian.transpose_mul_J_eq`: `Mᵀ = J M J`, so `Mᵀ` is similar to `-M`.
 * `Matrix.mem_orthogonalGroup_symplecticGroup_iff`: the block form of orthogonal symplectic
-  matrices.
+  matrices, which form the submonoid `Matrix.orthoSymplecticGroup`; orthogonal symplectic
+  similarity `Qᵀ M Q` preserves both structures
+  (`Matrix.IsHamiltonian.transpose_mul_mul_of_mem_orthoSymplecticGroup`).
 
 ## References
 
@@ -193,9 +196,17 @@ theorem isSkewHamiltonian_iff_transpose_J_mul {N : Matrix (l ⊕ l) (l ⊕ l) R}
   rw [isSkewHamiltonian_iff_J_mul_eq, transpose_mul, J_transpose, Matrix.mul_neg, neg_inj,
     eq_comm]
 
+/-- The skew-Hamiltonian matrices are the `J`-self-adjoint matrices `Nᵀ J = J N`, Mathlib's
+`selfAdjointMatricesSubmodule (J l R)`. The twin of `Matrix.isHamiltonian_iff_mem_sp`. -/
+theorem isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule {N : Matrix (l ⊕ l) (l ⊕ l) R} :
+    N.IsSkewHamiltonian ↔ N ∈ selfAdjointMatricesSubmodule (J l R) := by
+  rw [isSkewHamiltonian_iff_J_mul_eq, mem_selfAdjointMatricesSubmodule, Matrix.IsSelfAdjoint,
+    Matrix.IsAdjointPair]
+  exact eq_comm
+
 /-- The block form ([golub2013matrix] Figure 7.8.1): `[A G; F H]` is skew-Hamiltonian iff `H = Aᵀ`
 and `F`, `G` are skew-symmetric. -/
-theorem isSkewHamiltonian_iff_fromBlocks {A G F H : Matrix l l R} :
+theorem isSkewHamiltonian_fromBlocks_iff {A G F H : Matrix l l R} :
     (fromBlocks A G F H).IsSkewHamiltonian ↔ H = Aᵀ ∧ Fᵀ = -F ∧ Gᵀ = -G := by
   rw [isSkewHamiltonian_iff_transpose_J_mul, J, fromBlocks_multiply, fromBlocks_transpose,
     fromBlocks_neg, fromBlocks_inj]
@@ -207,9 +218,37 @@ theorem isSkewHamiltonian_iff_fromBlocks {A G F H : Matrix l l R} :
   · rintro ⟨rfl, hF, hG⟩
     exact ⟨by rw [hF, neg_neg], rfl, transpose_transpose A, hG⟩
 
+@[deprecated (since := "2026-09-30")]
+alias isSkewHamiltonian_iff_fromBlocks := isSkewHamiltonian_fromBlocks_iff
+
+/-- The zero matrix is skew-Hamiltonian. -/
+theorem isSkewHamiltonian_zero : (0 : Matrix (l ⊕ l) (l ⊕ l) R).IsSkewHamiltonian :=
+  isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule.2 (zero_mem _)
+
+/-- The identity matrix is skew-Hamiltonian. -/
+theorem isSkewHamiltonian_one : (1 : Matrix (l ⊕ l) (l ⊕ l) R).IsSkewHamiltonian := by
+  rw [isSkewHamiltonian_iff_J_mul_eq, transpose_one, Matrix.mul_one, Matrix.one_mul]
+
 namespace IsSkewHamiltonian
 
-variable {N : Matrix (l ⊕ l) (l ⊕ l) R}
+variable {M N : Matrix (l ⊕ l) (l ⊕ l) R}
+
+/-- A sum of skew-Hamiltonian matrices is skew-Hamiltonian. -/
+theorem add (hM : M.IsSkewHamiltonian) (hN : N.IsSkewHamiltonian) :
+    (M + N).IsSkewHamiltonian :=
+  isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule.2
+    (add_mem (isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule.1 hM)
+      (isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule.1 hN))
+
+/-- The negative of a skew-Hamiltonian matrix is skew-Hamiltonian. -/
+theorem neg (hN : N.IsSkewHamiltonian) : (-N).IsSkewHamiltonian :=
+  isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule.2
+    (neg_mem (isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule.1 hN))
+
+/-- A scalar multiple of a skew-Hamiltonian matrix is skew-Hamiltonian. -/
+theorem smul (hN : N.IsSkewHamiltonian) (c : R) : (c • N).IsSkewHamiltonian :=
+  isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule.2
+    (SMulMemClass.smul_mem c (isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule.1 hN))
 
 /-- Symplectic similarity preserves skew-Hamiltonian structure: `J S⁻¹ N S = Sᵀ (J N) S` is a
 congruence of the skew-symmetric `J N`. -/
@@ -289,5 +328,67 @@ theorem mem_orthogonalGroup_symplecticGroup_iff {Q : Matrix (l ⊕ l) (l ⊕ l) 
     have hO := fromBlocks_mem_orthogonalGroup_iff.2 h
     exact ⟨hO, (mem_symplecticGroup_iff_commute_J_of_mem_orthogonalGroup hO).2
       (commute_J_iff.2 ⟨Q₁, Q₂, rfl⟩)⟩
+
+/-! ### The orthogonal symplectic group -/
+
+variable (l R) in
+/-- The *orthogonal symplectic* matrices `O(2n) ∩ Sp(2n)` ([golub2013matrix] §7.8.1), the
+transformations of the structure-preserving Hamiltonian eigenvalue algorithms. -/
+def orthoSymplecticGroup : Submonoid (Matrix (l ⊕ l) (l ⊕ l) R) :=
+  orthogonalGroup (l ⊕ l) R ⊓ symplecticGroup l R
+
+/-- Membership in `Matrix.orthoSymplecticGroup` is membership in both groups. -/
+theorem mem_orthoSymplecticGroup_iff {Q : Matrix (l ⊕ l) (l ⊕ l) R} :
+    Q ∈ orthoSymplecticGroup l R ↔ Q ∈ orthogonalGroup (l ⊕ l) R ∧ Q ∈ symplecticGroup l R :=
+  Iff.rfl
+
+namespace OrthoSymplecticGroup
+
+variable {Q : Matrix (l ⊕ l) (l ⊕ l) R} (hQ : Q ∈ orthoSymplecticGroup l R)
+include hQ
+
+/-- An orthogonal symplectic matrix is orthogonal. -/
+theorem mem_orthogonalGroup : Q ∈ orthogonalGroup (l ⊕ l) R := hQ.1
+
+/-- An orthogonal symplectic matrix is symplectic. -/
+theorem mem_symplecticGroup : Q ∈ symplecticGroup l R := hQ.2
+
+/-- `Qᵀ Q = 1`. -/
+theorem transpose_mul_self : Qᵀ * Q = 1 := (mem_orthogonalGroup_iff' (l ⊕ l) R).1 hQ.1
+
+/-- `Q Qᵀ = 1`. -/
+theorem mul_transpose_self : Q * Qᵀ = 1 := (mem_orthogonalGroup_iff (l ⊕ l) R).1 hQ.1
+
+/-- The inverse of an orthogonal symplectic matrix is its transpose. -/
+theorem inv_eq_transpose : Q⁻¹ = Qᵀ := inv_eq_left_inv (transpose_mul_self hQ)
+
+/-- The transpose of an orthogonal symplectic matrix is orthogonal symplectic. -/
+theorem transpose_mem : Qᵀ ∈ orthoSymplecticGroup l R :=
+  ⟨(mem_orthogonalGroup_iff (l ⊕ l) R).2 (by rw [transpose_transpose, transpose_mul_self hQ]),
+    SymplecticGroup.transpose_mem hQ.2⟩
+
+end OrthoSymplecticGroup
+
+/-- Orthogonal symplectic similarity `Qᵀ M Q` preserves Hamiltonian structure. -/
+theorem IsHamiltonian.transpose_mul_mul_of_mem_orthoSymplecticGroup
+    {M Q : Matrix (l ⊕ l) (l ⊕ l) R} (hM : M.IsHamiltonian)
+    (hQ : Q ∈ orthoSymplecticGroup l R) : (Qᵀ * M * Q).IsHamiltonian := by
+  rw [← OrthoSymplecticGroup.inv_eq_transpose hQ]
+  exact hM.conj_symplectic hQ.2
+
+/-- Orthogonal symplectic similarity `Qᵀ N Q` preserves skew-Hamiltonian structure. -/
+theorem IsSkewHamiltonian.transpose_mul_mul_of_mem_orthoSymplecticGroup
+    {N Q : Matrix (l ⊕ l) (l ⊕ l) R} (hN : N.IsSkewHamiltonian)
+    (hQ : Q ∈ orthoSymplecticGroup l R) : (Qᵀ * N * Q).IsSkewHamiltonian := by
+  rw [← OrthoSymplecticGroup.inv_eq_transpose hQ]
+  exact hN.conj_symplectic hQ.2
+
+/-- The block form of the orthogonal symplectic matrices,
+`Matrix.mem_orthogonalGroup_symplecticGroup_iff` for `Matrix.orthoSymplecticGroup`. -/
+theorem mem_orthoSymplecticGroup_iff_fromBlocks {Q : Matrix (l ⊕ l) (l ⊕ l) R} :
+    Q ∈ orthoSymplecticGroup l R ↔
+      ∃ Q₁ Q₂ : Matrix l l R, Q = fromBlocks Q₁ Q₂ (-Q₂) Q₁ ∧
+        (Q₁ᵀ * Q₂).IsSymm ∧ Q₁ᵀ * Q₁ + Q₂ᵀ * Q₂ = 1 :=
+  mem_orthogonalGroup_symplecticGroup_iff
 
 end Matrix

@@ -140,8 +140,9 @@ theorem symplectic_householder_givens :
         Q ∈ symplecticGroup (Fin n) ℝ ∧
         Qᵀ *ᵥ x = ‖WithLp.toLp 2 x‖ • Pi.single (Sum.inl i₀) 1 :=
   ⟨fun _ hP => fromBlocks_diagonal_mem_symplecticGroup hP,
-    fun i _ _ hcs => planeRotation_inl_inr_mem_symplecticGroup i hcs,
-    exists_orthogonalSymplectic_mulVec_eq⟩
+    fun i _ _ hcs => planeRotation_inl_inr_mem_symplecticGroup i hcs, fun x i₀ => by
+      obtain ⟨Q, ⟨hQo, hQs⟩, hQ⟩ := exists_orthogonalSymplectic_mulVec_eq x i₀
+      exact ⟨Q, hQo, hQs, hQ⟩⟩
 
 /-- **§7.8.1, the deflation step displayed before (7.8.1).** If `M` is Hamiltonian, `M x = λ x`
 with `λ` real, and `Q₁` is orthogonal symplectic with `Q₁ᵀ x = e₁` (so `‖x‖₂ = 1`), then
@@ -210,7 +211,7 @@ theorem equation_7_8_1 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM 
       fromBlocks Q₁ Q₂ (-Q₂) Q₁ ∈ symplecticGroup (Fin n) ℝ ∧
       (fromBlocks Q₁ Q₂ (-Q₂) Q₁)ᵀ * M * fromBlocks Q₁ Q₂ (-Q₂) Q₁ = fromBlocks T R 0 (-Tᵀ) ∧
       T.IsQuasiUpperTriangular ∧ ∀ μ ∈ spectrum ℂ T.complexify, μ.re < 0 := by
-  obtain ⟨Q, hQo, hQs, T, R, hQM, hT, hst⟩ := exists_orthogonalSymplectic_hamiltonianSchur hM hre
+  obtain ⟨Q, ⟨hQo, hQs⟩, T, R, hQM, hT, hst⟩ := exists_orthogonalSymplectic_hamiltonianSchur hM hre
   obtain ⟨Q₁, Q₂, rfl, -, -⟩ := (figure_7_8_1_orthogonalSymplectic hQo).2.1 hQs
   exact ⟨Q₁, Q₂, T, R, hQo, hQs, hQM, hT, hst⟩
 
@@ -246,7 +247,7 @@ theorem equation_7_8_3 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM 
     ∃ U₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ, U₀ ∈ symplecticGroup (Fin n) ℝ ∧
       ∃ H R D : Matrix (Fin n) (Fin n) ℝ,
         U₀ᵀ * M * U₀ = fromBlocks H R D (-Hᵀ) ∧ H.IsUpperHessenberg ∧ D.IsDiag := by
-  obtain ⟨U₀, hUo, hUs, H, R, D, h, hH, hD⟩ := hM.exists_orthogonalSymplectic_paigeVanLoan
+  obtain ⟨U₀, ⟨hUo, hUs⟩, H, R, D, h, hH, hD⟩ := hM.exists_orthogonalSymplectic_paigeVanLoan
   exact ⟨U₀, hUo, hUs, H, R, D, h, hH, hD⟩
 
 /-- **(7.8.4)**: for Hamiltonian `M` there is an orthogonal symplectic `V₀` with
@@ -258,7 +259,7 @@ theorem equation_7_8_4 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM 
     ∃ V₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ, V₀ ∈ symplecticGroup (Fin n) ℝ ∧
       ∃ H R : Matrix (Fin n) (Fin n) ℝ,
         V₀ᵀ * (M * M) * V₀ = fromBlocks H R 0 Hᵀ ∧ H.IsUpperHessenberg := by
-  obtain ⟨V₀, hVo, hVs, H, R, h, hH⟩ :=
+  obtain ⟨V₀, ⟨hVo, hVs⟩, H, R, h, hH⟩ :=
     (hamiltonian_sq_skewHamiltonian hM).exists_orthogonalSymplectic_hessenberg
   exact ⟨V₀, hVo, hVs, H, R, h, hH⟩
 
@@ -284,7 +285,7 @@ theorem skewHamiltonian_schur {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) �
     rw [key, hHR, fromBlocks_transpose, fromBlocks_multiply, fromBlocks_multiply]
     simp only [transpose_zero, Matrix.zero_mul, Matrix.mul_zero, add_zero, zero_add,
       transpose_mul, transpose_transpose, Matrix.mul_assoc]
-  · obtain ⟨Q, hQo, hQs, T, R, h, hT⟩ :=
+  · obtain ⟨Q, ⟨hQo, hQs⟩, T, R, h, hT⟩ :=
       (hamiltonian_sq_skewHamiltonian hM).exists_orthogonalSymplectic_schur
     exact ⟨Q, hQo, hQs, T, R, h, hT⟩
 
