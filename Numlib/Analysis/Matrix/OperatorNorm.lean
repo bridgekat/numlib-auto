@@ -88,17 +88,19 @@ bundled on demand as `Matrix.inducedSeminorm` (rectangular) or `Matrix.inducedAl
   unitary invariance `Matrix.l2_opNorm_unitary_mul_mul_unitary` and
   `Matrix.frobenius_norm_unitary_mul_mul_unitary`, `Matrix.condNumber_l2_of_mem_unitaryGroup`,
   `Matrix.condNumber_l2_unitary_mul`, the invariance under a factor with orthonormal columns
-  `Matrix.l2_opNorm_mul_of_conjTranspose_mul_self_eq_one` and its adjoint form, and
+  `Matrix.l2_opNorm_mul_of_conjTranspose_mul_self_eq_one` and its adjoint form, the norm of such a
+  factor `Matrix.l2_opNorm_le_one_of_conjTranspose_mul_self_eq_one`, the orthogonal projectors
+  `Matrix.lpOpNorm_two_le_one_of_isStarProjection`, and
   `Matrix.PosDef.condNumber_l2_eq_div_eigenvalues`
   (`κ₂ = λ_max / λ_min`, their (3.5)).
 * The Frobenius norm: `Matrix.frobenius_norm_sq_eq_trace` (their (1.18)), the row and column
-  forms `Matrix.frobenius_norm_sq_eq_sum_norm_toLp_row_sq` and
+  forms `Matrix.frobenius_norm_sq_eq_sum_norm_sq_row` and
   `Matrix.frobenius_norm_sq_eq_sum_norm_sq_col`, the block forms
   `Matrix.frobenius_norm_fromBlocks_sq` and `Matrix.frobenius_norm_fromRows_sq`, Pythagoras
   `Matrix.frobenius_norm_add_sq_of_trace_eq_zero`, Cauchy–Schwarz
   `Matrix.re_trace_conjTranspose_mul_le`, the isometric factors
   `Matrix.frobenius_norm_mul_of_conjTranspose_mul_self_eq_one`, the mixed products
-  `Matrix.frobenius_norm_mul_le_norm_toEuclideanLin_mul` (`‖X Y‖_F ≤ ‖X‖₂ ‖Y‖_F`),
+  `Matrix.frobenius_norm_mul_le_lpOpNorm_two_mul` (`‖X Y‖_F ≤ ‖X‖₂ ‖Y‖_F`),
   `Matrix.frobenius_norm_submatrix_le`, `Matrix.frobenius_norm_vecMulVec`,
   `Matrix.norm_entry_le_frobenius_norm`,
   `Matrix.frobenius_norm_mulVec_le` (their Example 1.7), `Matrix.frobenius_norm_one`,
@@ -323,14 +325,9 @@ theorem lpOpNorm_submatrix_le {m' n' : Type*} [Fintype m'] [Fintype n'] [Decidab
     (A : Matrix m n 𝕜) {f : m' → m} (hf : Function.Injective f) {g : n' → n}
     (hg : Function.Injective g) : lpOpNorm p (A.submatrix f g) ≤ lpOpNorm p A := by
   refine ContinuousLinearMap.opNorm_le_bound _ (lpOpNorm_nonneg p A) fun x => ?_
-  rw [lpCLM_apply, submatrix_mulVec_eq_comp_mulVec_extend A f hg]
-  calc ‖(WithLp.toLp p ((A *ᵥ Function.extend g (WithLp.ofLp x) 0) ∘ f)
-        : PiLp p fun _ : m' => 𝕜)‖
-      ≤ ‖lpCLM p A (WithLp.toLp p (Function.extend g (WithLp.ofLp x) 0))‖ :=
-        PiLp.norm_toLp_comp_le p hf _
-    _ ≤ lpOpNorm p A * ‖(WithLp.toLp p (Function.extend g (WithLp.ofLp x) 0)
-          : PiLp p fun _ : n => 𝕜)‖ := (lpCLM p A).le_opNorm _
-    _ = lpOpNorm p A * ‖x‖ := by rw [PiLp.norm_toLp_extend p hg]
+  rw [lpCLM_apply]
+  exact norm_toLp_submatrix_mulVec_le p hf hg (C := lpOpNorm p A)
+    (fun y => (lpCLM p A).le_opNorm (WithLp.toLp p y)) (WithLp.ofLp x)
 
 end Submatrix
 
@@ -424,15 +421,13 @@ section Square
 
 variable [DecidableEq n]
 
-/-- Conjugation commutes with powers: `(P X P')ᵏ⁺¹ = P Xᵏ⁺¹ P'` when `P' P = 1`. -/
+/-- Conjugation commutes with powers: `(P X P')ᵏ⁺¹ = P Xᵏ⁺¹ P'` when `P' P = 1`; Mathlib's
+`Units.conj_pow` for the unit `⟨P, P'⟩`, which covers `k = 0` as well. -/
+@[deprecated "use Mathlib's `Units.conj_pow` for the unit `⟨P, P', _, h⟩`"
+  (since := "2026-09-30")]
 theorem conj_pow_of_mul_eq_one {P P' X : Matrix n n 𝕜} (h : P' * P = 1) (k : ℕ) :
-    (P * X * P') ^ (k + 1) = P * X ^ (k + 1) * P' := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    rw [pow_succ, ih, pow_succ X (k + 1)]
-    simp only [Matrix.mul_assoc]
-    rw [← Matrix.mul_assoc P' P, h, Matrix.one_mul]
+    (P * X * P') ^ (k + 1) = P * X ^ (k + 1) * P' :=
+  Units.conj_pow ⟨P, P', mul_eq_one_comm.1 h, h⟩ X (k + 1)
 
 /-- The condition number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` in the induced `p`-norm (Saad, *Iterative
 Methods for Sparse Linear Systems*, §1.13.2; Quarteroni–Sacco–Saleri, *Numerical Mathematics*,
@@ -570,7 +565,6 @@ theorem bddAbove_range_inducedNorm [Finite m] (hp : ∀ x, p x = 0 → x = 0) (A
     _ ≤ Cq * (‖A‖ * ‖x‖) := by gcongr; exact linfty_opNorm_mulVec A x
     _ ≤ Cq * (‖A‖ * c⁻¹) := by gcongr
     _ = Cq * ‖A‖ * c⁻¹ := by ring
-
 
 variable {q p}
 
@@ -1334,6 +1328,21 @@ theorem l2_opNorm_mul_conjTranspose_of_conjTranspose_mul_self_eq_one [DecidableE
   rw [← l2_opNorm_conjTranspose, conjTranspose_mul, conjTranspose_conjTranspose,
     l2_opNorm_mul_of_conjTranspose_mul_self_eq_one hW, l2_opNorm_conjTranspose]
 
+/-- **A matrix with orthonormal columns has spectral norm at most `1`**: `Wᴴ W = 1 → ‖W‖₂ ≤ 1`,
+the rectangular twin of `Matrix.l2_opNorm_of_mem_unitaryGroup` (with equality as soon as `W` has
+a column, `Matrix.l2_opNorm_of_conjTranspose_mul_self_eq_one`). -/
+theorem l2_opNorm_le_one_of_conjTranspose_mul_self_eq_one [DecidableEq l] {W : Matrix m l 𝕜}
+    (hW : Wᴴ * W = 1) : ‖W‖ ≤ 1 :=
+  l2_opNorm_le_of_forall_norm_toEuclideanLin_le W zero_le_one fun x => by
+    rw [norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hW, one_mul]
+
+/-- **A matrix with orthonormal columns has spectral norm `1`**: `Wᴴ W = 1 → ‖W‖₂ = 1` when `W`
+has at least one column. -/
+theorem l2_opNorm_of_conjTranspose_mul_self_eq_one [DecidableEq l] [Nonempty l]
+    {W : Matrix m l 𝕜} (hW : Wᴴ * W = 1) : ‖W‖ = 1 := by
+  have h := l2_opNorm_mul_of_conjTranspose_mul_self_eq_one hW (1 : Matrix l l 𝕜)
+  rwa [Matrix.mul_one, l2_opNorm_of_mem_unitaryGroup (one_mem _)] at h
+
 /-- Every entry is bounded by the spectral norm: `‖A i j‖ ≤ ‖A‖₂`, the lower half of the first
 estimate of [quarteroni2000numerical] §1.11 after Theorem 1.2. -/
 theorem norm_entry_le_l2_opNorm (A : Matrix m n 𝕜) (i : m) (j : n) :
@@ -1364,6 +1373,18 @@ theorem lpOpNorm_two_mul_conjTranspose_self [DecidableEq m] (A : Matrix m n 𝕜
   have h := l2_opNorm_conjTranspose_mul_self Aᴴ
   rw [conjTranspose_conjTranspose] at h
   rw [h, l2_opNorm_conjTranspose, sq]
+
+/-- The induced `2`-norm of `Aᴴ` is that of `A`, for a rectangular `A`. -/
+theorem lpOpNorm_two_conjTranspose [DecidableEq m] (A : Matrix m n 𝕜) :
+    lpOpNorm 2 Aᴴ = lpOpNorm 2 A := by
+  rw [lpOpNorm_two, lpOpNorm_two, l2_opNorm_conjTranspose]
+
+/-- **An orthogonal projector has spectral norm at most `1`**: a Hermitian idempotent `N = Nᴴ = N²`
+has `‖N‖₂ ≤ 1`, Mathlib's `IsStarProjection.norm_le` in the C⋆-algebra `Matrix n n 𝕜`. -/
+theorem lpOpNorm_two_le_one_of_isStarProjection {N : Matrix n n 𝕜} (hN : IsStarProjection N) :
+    lpOpNorm 2 N ≤ 1 := by
+  rw [lpOpNorm_two]
+  exact IsStarProjection.norm_le N hN
 
 /-- **Theorem 1.2, (1.21), first equality** ([quarteroni2000numerical]): `‖A‖₂² = ρ(Aᴴ A)` for
 `A : Matrix m n ℂ`. In the C⋆-algebra `Matrix n n ℂ`, `ρ(Aᴴ A) = ‖Aᴴ A‖₂` because `Aᴴ A` is
@@ -1413,14 +1434,18 @@ theorem l2_opNorm_eq_spectralRadius_of_isStarNormal (A : Matrix n n ℂ)
 
 /-- For a skew-symmetric real `S` (a normal matrix, whose eigenvalues `±iμ` are imaginary), the
 spectral radius of the complexification is the spectral norm, `ρ(S) = ‖S‖₂`. -/
-theorem complexSpectralRadius_toReal_of_skew {S : Matrix n n ℝ} (hS : Sᵀ = -S) :
-    (complexSpectralRadius S).toReal = lpOpNorm 2 S := by
+theorem complexSpectralRadius_toReal_eq_lpOpNorm_two_of_transpose_eq_neg {S : Matrix n n ℝ}
+    (hS : Sᵀ = -S) : (complexSpectralRadius S).toReal = lpOpNorm 2 S := by
   have hstar : star (complexify S) = -complexify S := by
     rw [star_eq_conjTranspose, ← complexify_conjTranspose, conjTranspose_eq_transpose_of_trivial,
       hS, complexify_neg]
   have : IsStarNormal (complexify S) := ⟨by rw [hstar]; exact (Commute.refl _).neg_left⟩
   rw [complexSpectralRadius, ← l2_opNorm_eq_spectralRadius_of_isStarNormal,
     l2_opNNNorm_complexify, ENNReal.coe_toReal, coe_nnnorm, lpOpNorm_two]
+
+@[deprecated (since := "2026-09-30")]
+alias complexSpectralRadius_toReal_of_skew :=
+  complexSpectralRadius_toReal_eq_lpOpNorm_two_of_transpose_eq_neg
 
 /-- **A normal matrix has the smallest spectral norm among all the induced `p`-norms**:
 `‖A‖₂ ≤ ‖A‖_r` for every `r ≥ 1`, since `‖A‖₂ = ρ(A)` and `ρ(A) ≤ ‖A‖_r` by consistency.
@@ -1474,11 +1499,14 @@ theorem frobenius_norm_sq_eq_sum_norm_sq_col (A : Matrix m n 𝕜) :
   rw [frobenius_norm_sq_eq_sum_sq, Finset.sum_comm]
   exact Finset.sum_congr rfl fun j _ => by simp [EuclideanSpace.norm_sq_eq]
 
-/-- The squared Frobenius norm is the sum of the squared Euclidean norms of the rows. -/
-theorem frobenius_norm_sq_eq_sum_norm_toLp_row_sq (A : Matrix m n 𝕜) :
+/-- The Frobenius norm squared is the sum of the squared Euclidean norms of the rows. -/
+theorem frobenius_norm_sq_eq_sum_norm_sq_row (A : Matrix m n 𝕜) :
     ‖A‖ ^ 2 = ∑ i, ‖(WithLp.toLp 2 (A i) : EuclideanSpace 𝕜 n)‖ ^ 2 := by
   rw [frobenius_norm_sq_eq_sum_sq]
   exact Finset.sum_congr rfl fun i _ => by rw [EuclideanSpace.norm_sq_eq]
+
+@[deprecated (since := "2026-09-30")]
+alias frobenius_norm_sq_eq_sum_norm_toLp_row_sq := frobenius_norm_sq_eq_sum_norm_sq_row
 
 /-- **Cauchy–Schwarz for the Frobenius pairing**: `re tr(Yᴴ X) ≤ ‖Y‖_F ‖X‖_F`. The pairing is the
 inner product of `PiLp 2 (fun _ : m => EuclideanSpace 𝕜 n)`, whose norm is the Frobenius norm. -/
@@ -1600,6 +1628,19 @@ theorem frobenius_norm_le_fromRows {a b c : Type*} [Fintype a] [Fintype b] [Fint
   constructor <;>
     refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_ <;>
     rw [h] <;> linarith [sq_nonneg ‖P‖, sq_nonneg ‖Q‖]
+
+/-- Swapping the two column blocks of a matrix preserves the Frobenius norm. -/
+theorem frobenius_norm_fromCols_comm {a b c : Type*} [Fintype a] [Fintype b] [Fintype c]
+    (P : Matrix c a 𝕜) (Q : Matrix c b 𝕜) : ‖fromCols Q P‖ = ‖fromCols P Q‖ := by
+  refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+  rw [frobenius_norm_fromCols_sq, frobenius_norm_fromCols_sq, add_comm]
+
+/-- Each column block of a matrix has at most its Frobenius norm. -/
+theorem frobenius_norm_le_fromCols {a b c : Type*} [Fintype a] [Fintype b] [Fintype c]
+    (P : Matrix c a 𝕜) (Q : Matrix c b 𝕜) : ‖P‖ ≤ ‖fromCols P Q‖ ∧ ‖Q‖ ≤ ‖fromCols P Q‖ := by
+  rw [← frobenius_norm_transpose (fromCols P Q), transpose_fromCols, ← frobenius_norm_transpose P,
+    ← frobenius_norm_transpose Q]
+  exact frobenius_norm_le_fromRows Pᵀ Qᵀ
 
 /-- The diagonal blocks of a block matrix have at most its Frobenius norm, and the two
 off-diagonal blocks together have at most its squared Frobenius norm. -/
@@ -1739,61 +1780,39 @@ theorem l2_opNorm_le_sqrt_card_mul_of_forall_norm_le [DecidableEq n] (A : Matrix
 
 /-! #### Products of a Frobenius and a spectral norm
 
-The spectral norms are written as operator norms of `toEuclideanLin`, which is `‖·‖` under the
-scoped instance `Matrix.Norms.L2Operator` (`Matrix.l2_opNorm_def`), since the Frobenius instance is
-the one in scope here. -/
+The spectral norms are written `lpOpNorm 2`, which is `‖·‖` under the scoped instance
+`Matrix.Norms.L2Operator` (`Matrix.lpOpNorm_two`), since the Frobenius instance is the one in scope
+here. -/
 
 /-- **`‖X Y‖_F ≤ ‖X‖₂ ‖Y‖_F`**: the Frobenius norm of a product is at most the spectral norm of the
 left factor times the Frobenius norm of the right one, column by column. -/
-theorem frobenius_norm_mul_le_norm_toEuclideanLin_mul [DecidableEq n] {o : Type*} [Fintype o]
-    (X : Matrix m n 𝕜) (Y : Matrix n o 𝕜) :
-    ‖X * Y‖ ≤ ‖LinearMap.toContinuousLinearMap (toEuclideanLin X)‖ * ‖Y‖ := by
+theorem frobenius_norm_mul_le_lpOpNorm_two_mul [DecidableEq n] {o : Type*} [Fintype o]
+    (X : Matrix m n 𝕜) (Y : Matrix n o 𝕜) : ‖X * Y‖ ≤ lpOpNorm 2 X * ‖Y‖ := by
   classical
-  set c := ‖LinearMap.toContinuousLinearMap (toEuclideanLin X)‖ with hc
+  set c := lpOpNorm 2 X with hc
   have hcol : ∀ j : o, ∑ i, ‖(X * Y) i j‖ ^ 2 ≤ c ^ 2 * ∑ k, ‖Y k j‖ ^ 2 := by
     intro j
-    have h1 := (LinearMap.toContinuousLinearMap (toEuclideanLin X)).le_opNorm
-      (WithLp.toLp 2 (fun k => Y k j) : EuclideanSpace 𝕜 n)
+    have h1 : ‖lpCLM 2 X (WithLp.toLp 2 fun k => Y k j)‖
+        ≤ c * ‖(WithLp.toLp 2 fun k => Y k j : EuclideanSpace 𝕜 n)‖ :=
+      (lpCLM 2 X).le_opNorm _
     have h2 := pow_le_pow_left₀ (norm_nonneg _) h1 2
-    rw [mul_pow, EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq] at h2
-    simpa [toEuclideanLin_toLp, mulVec, dotProduct, mul_apply] using h2
+    rw [mul_pow, lpCLM_apply, EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq] at h2
+    simpa [mulVec, dotProduct, mul_apply] using h2
   have hsq : ‖X * Y‖ ^ 2 ≤ (c * ‖Y‖) ^ 2 := by
     rw [mul_pow, frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq, Finset.sum_comm,
       Finset.sum_comm (f := fun k j => ‖Y k j‖ ^ 2), Finset.mul_sum]
     exact Finset.sum_le_sum fun j _ => hcol j
-  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 hsq
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _)
+    (mul_nonneg (lpOpNorm_nonneg 2 X) (norm_nonneg _)) two_ne_zero).1 hsq
 
-/-- The spectral norm of `Xᴴ` is that of `X`, in the `toEuclideanLin` form. -/
-theorem norm_toEuclideanLin_conjTranspose [DecidableEq m] [DecidableEq n] (X : Matrix m n 𝕜) :
-    ‖LinearMap.toContinuousLinearMap (toEuclideanLin Xᴴ)‖
-      = ‖LinearMap.toContinuousLinearMap (toEuclideanLin X)‖ := by
-  open scoped Matrix.Norms.L2Operator in exact l2_opNorm_conjTranspose X
-
-/-- **`‖X Y‖_F ≤ ‖X‖_F ‖Y‖₂`**, the dual of `Matrix.frobenius_norm_mul_le_norm_toEuclideanLin_mul`
+/-- **`‖X Y‖_F ≤ ‖X‖_F ‖Y‖₂`**, the dual of `Matrix.frobenius_norm_mul_le_lpOpNorm_two_mul`
 through the conjugate transpose. -/
-theorem frobenius_norm_mul_le_mul_norm_toEuclideanLin {o : Type*} [Fintype o] [DecidableEq o]
-    (X : Matrix m n 𝕜) (Y : Matrix n o 𝕜) :
-    ‖X * Y‖ ≤ ‖X‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin Y)‖ := by
+theorem frobenius_norm_mul_le_mul_lpOpNorm_two {o : Type*} [Fintype o] [DecidableEq o]
+    (X : Matrix m n 𝕜) (Y : Matrix n o 𝕜) : ‖X * Y‖ ≤ ‖X‖ * lpOpNorm 2 Y := by
   classical
   rw [← frobenius_norm_conjTranspose (X * Y), conjTranspose_mul, mul_comm,
-    ← frobenius_norm_conjTranspose X, ← norm_toEuclideanLin_conjTranspose Y]
-  exact frobenius_norm_mul_le_norm_toEuclideanLin_mul Yᴴ Xᴴ
-
-/-- A Hermitian idempotent matrix (an orthogonal projector) has spectral norm at most `1`. -/
-theorem norm_toEuclideanLin_le_one_of_isHermitian [DecidableEq n] {N : Matrix n n 𝕜}
-    (hN : N.IsHermitian) (hNN : N * N = N) :
-    ‖LinearMap.toContinuousLinearMap (toEuclideanLin N)‖ ≤ 1 := by
-  refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun x => ?_
-  rw [LinearMap.coe_toContinuousLinearMap', one_mul]
-  have hin : (inner 𝕜 (toEuclideanLin N x) (toEuclideanLin N x) : 𝕜)
-      = inner 𝕜 x (toEuclideanLin N x) := by
-    rw [← toEuclideanLin_conjTranspose_inner_right, hN.eq, ← toEuclideanLin_mul_apply, hNN]
-  rw [inner_self_eq_norm_sq_to_K] at hin
-  have h1 : ‖toEuclideanLin N x‖ ^ 2 ≤ ‖x‖ * ‖toEuclideanLin N x‖ := by
-    have h2 := norm_inner_le_norm (𝕜 := 𝕜) x (toEuclideanLin N x)
-    rw [← hin] at h2
-    simpa [norm_pow] using h2
-  nlinarith [norm_nonneg x, norm_nonneg (toEuclideanLin N x)]
+    ← frobenius_norm_conjTranspose X, ← lpOpNorm_two_conjTranspose Y]
+  exact frobenius_norm_mul_le_lpOpNorm_two_mul Yᴴ Xᴴ
 
 /-! #### Real matrices: outer products and the projection off a line -/
 
@@ -2091,11 +2110,10 @@ theorem linfty_opNorm_le_of_abs_le_smul_submatrix {m' : Type*} [Fintype m'] {E :
     _ ≤ γ * ‖B‖ := mul_le_mul_of_nonneg_left (sum_abs_apply_le_linfty_opNorm B (e i)) hγ
 
 /-- A matrix whose entries are bounded by `c` has `‖B‖_∞ ≤ n c`, `n` the number of columns. -/
-theorem linfty_opNorm_le_card_mul_of_abs_le {B : Matrix m n ℝ} {c : ℝ} (h : ∀ i j, |B i j| ≤ c)
-    (hc : 0 ≤ c) : ‖B‖ ≤ Fintype.card n * c :=
+theorem linfty_opNorm_le_card_mul_of_abs_le {B : Matrix m n ℝ} {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ i j, |B i j| ≤ c) : ‖B‖ ≤ Fintype.card n * c :=
   linfty_opNorm_le_of_forall_sum_le (by positivity) fun i =>
     (Finset.sum_le_sum fun j _ => h i j).trans (by simp)
-
 
 end EntrywiseLE
 
@@ -2115,15 +2133,23 @@ theorem abs_apply_le_frobenius_norm (B : Matrix m n ℝ) (i : m) (j : n) : |B i 
 theorem frobenius_norm_abs (A : Matrix m n ℝ) : ‖A.abs‖ = ‖A‖ :=
   frobenius_norm_map_eq A _ fun a => by simp
 
+/-- **The Frobenius norm is monotone in the moduli of the entries**: `‖A i j‖ ≤ ‖B i j‖` for all
+`i, j` gives `‖A‖_F ≤ ‖B‖_F`, the entries of `A` and `B` lying in any two normed groups (a complex
+matrix bounded entrywise by a real one, say). -/
+theorem frobenius_norm_le_of_forall_norm_le {α β : Type*} [SeminormedAddCommGroup α]
+    [SeminormedAddCommGroup β] {A : Matrix m n α} {B : Matrix m n β}
+    (h : ∀ i j, ‖A i j‖ ≤ ‖B i j‖) : ‖A‖ ≤ ‖B‖ := by
+  rw [frobenius_norm_def, frobenius_norm_def]
+  gcongr with i _ j _
+  exact h i j
+
 /-- **The Frobenius norm is monotone in the entrywise absolute values**:
 `|A| ≤ₑ |B| → ‖A‖_F ≤ ‖B‖_F`, the Frobenius form of `Matrix.linfty_opNorm_le_of_abs_entrywiseLE`. -/
 theorem frobenius_norm_le_of_abs_entrywiseLE {A B : Matrix m n ℝ} (h : A.abs ≤ₑ B.abs) :
-    ‖A‖ ≤ ‖B‖ := by
-  refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
-  rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
-  refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
-  rw [Real.norm_eq_abs, Real.norm_eq_abs]
-  exact pow_le_pow_left₀ (abs_nonneg _) (h i j) 2
+    ‖A‖ ≤ ‖B‖ :=
+  frobenius_norm_le_of_forall_norm_le fun i j => by
+    rw [Real.norm_eq_abs, Real.norm_eq_abs]
+    exact h i j
 
 /-- An entrywise bound `|A i j| ≤ c |B i j|` gives `‖A‖_F ≤ c ‖B‖_F`. -/
 theorem frobenius_norm_le_of_forall_abs_le {A B : Matrix m n ℝ} {c : ℝ} (hc : 0 ≤ c)

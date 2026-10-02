@@ -155,9 +155,7 @@ theorem hasSum_pfc [TopologicalSpace A] [IsTopologicalRing A] [ContinuousSMul �
   simp_rw [hterm]
   rw [pfc_eq_sum_spectralIdempotent ha hs]
   refine hasSum_sum fun l hl => hasSum_sum fun j _ => ?_
-  have hl' : l ∈ spectrum 𝕜 a := by
-    rw [spectrum.mem_iff_isRoot_minpoly ha]
-    exact (mem_roots (minpoly.ne_zero ha)).mp (Multiset.mem_toFinset.mp hl)
+  have hl' : l ∈ spectrum 𝕜 a := spectrum.mem_of_mem_roots_minpoly (Multiset.mem_toFinset.mp hl)
   exact (hf.hasSum_taylorJet (hσ hl') j).smul_const _
 
 /-- The partial-sum form of `hasSum_pfc`. -/
@@ -295,9 +293,8 @@ theorem hasDerivAt_pfc_smul {a : A} (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜
     {f : 𝕜 → 𝕜} {t : 𝕜} (hf : ∀ μ ∈ spectrum 𝕜 a, AnalyticAt 𝕜 f (t * μ)) :
     HasDerivAt (fun s : 𝕜 => pfc f (s • a)) (a * pfc (deriv f) (t • a)) t := by
   classical
-  have hroot : ∀ l ∈ (minpoly 𝕜 a).roots.toFinset, l ∈ spectrum 𝕜 a := fun l hl => by
-    rw [spectrum.mem_iff_isRoot_minpoly ha]
-    exact (mem_roots (minpoly.ne_zero ha)).mp (Multiset.mem_toFinset.mp hl)
+  have hroot : ∀ l ∈ (minpoly 𝕜 a).roots.toFinset, l ∈ spectrum 𝕜 a := fun l hl =>
+    spectrum.mem_of_mem_roots_minpoly (Multiset.mem_toFinset.mp hl)
   rw [show (fun s : 𝕜 => pfc f (s • a)) = fun s => ∑ l ∈ (minpoly 𝕜 a).roots.toFinset,
       ∑ j ∈ Finset.range ((minpoly 𝕜 a).rootMultiplicity l),
         (s ^ j * taylorJet f (s * l) j) •

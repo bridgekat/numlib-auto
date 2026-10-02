@@ -17,7 +17,8 @@ Newton's iteration (9.4.7) `X_{k+1} = (X_k + X_k⁻¹ A)/2` is the sign iteratio
 (`Matrix.newtonSqrtIterate_eq_mul_newtonSignIterate`), whence convergence. The Denman–Beavers
 iteration (9.4.8) is the sign iteration of the block matrix `[0 A; I 0]`
 (`Matrix.newtonSignIterate_fromBlocks`), whose sign is `[0 A^{1/2}; A^{-1/2} 0]`
-(`Matrix.matrixSign_fromBlocks_zero_one`).
+(`Matrix.matrixSign_fromBlocks_zero_one`), whence `X_k → A^{1/2}` and `Y_k → A^{-1/2}`
+(`Matrix.tendsto_denmanBeavers_fst`, `Matrix.tendsto_denmanBeavers_snd`).
 -/
 
 open Polynomial Filter Topology Complex
@@ -36,7 +37,7 @@ private theorem contDiffAt_sqrt {z : ℂ} (hz : z ∈ slitPlane) : ContDiffAt �
   (analyticAt_id.cpow analyticAt_const hz).contDiffAt
 
 /-- The principal square root of a point of the slit plane has positive real part. -/
-private theorem re_sqrt_pos {z : ℂ} (hz : z ∈ slitPlane) : 0 < (Complex.sqrt z).re := by
+theorem _root_.Complex.re_sqrt_pos {z : ℂ} (hz : z ∈ slitPlane) : 0 < (Complex.sqrt z).re := by
   rw [Complex.sqrt, cpow_inv_two_re]
   refine Real.sqrt_pos.mpr (half_pos ?_)
   rcases mem_slitPlane_iff.mp hz with h | h
@@ -44,10 +45,10 @@ private theorem re_sqrt_pos {z : ℂ} (hz : z ∈ slitPlane) : 0 < (Complex.sqrt
   · have := Complex.abs_re_lt_norm.mpr h
     linarith [neg_abs_le z.re]
 
-private theorem mem_slitPlane_of_mem_roots {A : Matrix n n ℂ}
-    (hA : spectrum ℂ A ⊆ slitPlane) {μ : ℂ} (hμ : μ ∈ (minpoly ℂ A).roots) : μ ∈ slitPlane := by
-  have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
-  exact hA ((spectrum.mem_iff_isRoot_minpoly hI).mpr ((mem_roots (minpoly.ne_zero hI)).mp hμ))
+/-- The principal square root maps the slit plane into itself (into the right half-plane). -/
+theorem _root_.Complex.sqrt_mem_slitPlane {z : ℂ} (hz : z ∈ slitPlane) :
+    Complex.sqrt z ∈ slitPlane :=
+  mem_slitPlane_iff.mpr (Or.inl (Complex.re_sqrt_pos hz))
 
 /-- **The principal square root is a square root** ([golub2013matrix] §9.4.2): with no eigenvalue
 on `(-∞, 0]`, `(A^{1/2})² = A`, `A^{1/2}` commutes with `A`, and its eigenvalues have positive real
@@ -58,7 +59,7 @@ theorem principalSqrt_sq {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
   refine ⟨?_, commute_pfc A _, ?_⟩
   · have h := pfc_comp hI (IsAlgClosed.splits _) (f := Complex.sqrt) (g := fun w => w ^ 2)
-      (fun μ hμ => (contDiffAt_sqrt (mem_slitPlane_of_mem_roots hA hμ)).of_le le_top)
+      (fun μ hμ => (contDiffAt_sqrt (hA (spectrum.mem_of_mem_roots_minpoly hμ))).of_le le_top)
       (fun μ _ => (contDiff_id.pow 2).contDiffAt)
     rw [pfc_pow (Algebra.IsIntegral.isIntegral _) (IsAlgClosed.splits _)] at h
     rw [principalSqrt, ← h]
@@ -68,7 +69,7 @@ theorem principalSqrt_sq {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane
     rw [hsq, pfc_id hI (IsAlgClosed.splits _)]
   · rw [principalSqrt, spectrum_pfc hI (IsAlgClosed.splits _)]
     rintro _ ⟨μ, hμ, rfl⟩
-    exact re_sqrt_pos (hA hμ)
+    exact Complex.re_sqrt_pos (hA hμ)
 
 /-- **Existence and uniqueness of the principal square root** ([golub2013matrix] §9.4.2): with no
 eigenvalue on `(-∞, 0]`, `A^{1/2}` is the only square root of `A` with eigenvalues in the open right
@@ -92,7 +93,7 @@ theorem existsUnique_sq_eq_of_re_pos {A : Matrix n n ℂ} (hA : spectrum ℂ A �
       have : μ ^ 2 ∈ spectrum ℂ A := by
         rw [← hF, ← pfc_pow hFI (IsAlgClosed.splits _), spectrum_pfc hFI (IsAlgClosed.splits _)]
         exact ⟨μ, hμ, rfl⟩
-      exact (mem_roots (minpoly.ne_zero hI)).mpr ((spectrum.mem_iff_isRoot_minpoly hI).mp this)
+      exact (spectrum.mem_iff_mem_roots_minpoly hI).1 this
     rw [eval_comp, eval_pow, eval_X, Hermite.eval_interpolateJet_taylorJet hμ2, Complex.sqrt,
       sq_cpow_two_inv (hFre μ hμ)]
   have hunit : IsUnit (F + principalSqrt A) := by
@@ -279,34 +280,42 @@ theorem denmanBeavers_fst_eq_mul_snd {A : Matrix n n ℂ} (hA : spectrum ℂ A �
         (2 : ℂ)⁻¹ • (newtonSqrtIterate A k + (newtonSqrtIterate A k)⁻¹ * A)
       rw [← h2, hinv, mul_assoc, nonsing_inv_mul _ hAdet, mul_one]
 
-/-- **The sign of `[0 A; I 0]`** ([golub2013matrix] §9.4.2): with no eigenvalue of `A` on
-`(-∞, 0]`, `sign([0 A; I 0]) = [0 A^{1/2}; A^{-1/2} 0]`, and the Denman–Beavers iterates converge,
-`X_k → A^{1/2}`, `Y_k → A^{-1/2}`. -/
-theorem matrixSign_fromBlocks_zero_one {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
-    Tendsto (fun k => (denmanBeavers A k).1) atTop (𝓝 (principalSqrt A)) ∧
-      Tendsto (fun k => (denmanBeavers A k).2) atTop (𝓝 (principalSqrt A)⁻¹) ∧
-      matrixSign (fromBlocks 0 A 1 0) = fromBlocks 0 (principalSqrt A) (principalSqrt A)⁻¹ 0 := by
+/-- **The Denman–Beavers iteration converges to the square root** ([golub2013matrix] §9.4.2):
+with no eigenvalue of `A` on `(-∞, 0]`, `X_k → A^{1/2}`. -/
+theorem tendsto_denmanBeavers_fst {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
+    Tendsto (fun k => (denmanBeavers A k).1) atTop (𝓝 (principalSqrt A)) :=
+  (tendsto_newtonSqrtIterate hA).congr fun k => ((denmanBeavers_fst_eq_mul_snd hA k).2).symm
+
+/-- **The Denman–Beavers iteration converges to the inverse square root** ([golub2013matrix]
+§9.4.2): with no eigenvalue of `A` on `(-∞, 0]`, `Y_k → A^{-1/2}`. -/
+theorem tendsto_denmanBeavers_snd {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
+    Tendsto (fun k => (denmanBeavers A k).2) atTop (𝓝 (principalSqrt A)⁻¹) := by
   obtain ⟨hsq, -, -⟩ := principalSqrt_sq hA
   have hAu : IsUnit A := by
     rw [← spectrum.zero_notMem_iff ℂ]
     intro h0
     simpa using hA h0
   have hAdet := (isUnit_iff_isUnit_det A).mp hAu
-  have hX : Tendsto (fun k => (denmanBeavers A k).1) atTop (𝓝 (principalSqrt A)) :=
-    (tendsto_newtonSqrtIterate hA).congr fun k => ((denmanBeavers_fst_eq_mul_snd hA k).2).symm
-  have hY : Tendsto (fun k => (denmanBeavers A k).2) atTop (𝓝 (principalSqrt A)⁻¹) := by
-    have h := hX.const_mul A⁻¹
-    have hR : A⁻¹ * principalSqrt A = (principalSqrt A)⁻¹ := by
-      generalize principalSqrt A = R at hsq ⊢
-      subst hsq
-      have hRdet : IsUnit R.det := by
-        have := (isUnit_iff_isUnit_det _).mp hAu
-        rwa [det_pow, isUnit_pow_iff two_ne_zero] at this
-      rw [sq, mul_inv_rev, Matrix.mul_assoc, nonsing_inv_mul _ hRdet, Matrix.mul_one]
-    rw [hR] at h
-    refine h.congr fun k => ?_
-    rw [(denmanBeavers_fst_eq_mul_snd hA k).1, ← mul_assoc, nonsing_inv_mul _ hAdet, one_mul]
-  refine ⟨hX, hY, ?_⟩
+  have h := (tendsto_denmanBeavers_fst hA).const_mul A⁻¹
+  have hR : A⁻¹ * principalSqrt A = (principalSqrt A)⁻¹ := by
+    generalize principalSqrt A = R at hsq ⊢
+    subst hsq
+    have hRdet : IsUnit R.det := by
+      have := (isUnit_iff_isUnit_det _).mp hAu
+      rwa [det_pow, isUnit_pow_iff two_ne_zero] at this
+    rw [sq, mul_inv_rev, Matrix.mul_assoc, nonsing_inv_mul _ hRdet, Matrix.mul_one]
+  rw [hR] at h
+  refine h.congr fun k => ?_
+  rw [(denmanBeavers_fst_eq_mul_snd hA k).1, ← mul_assoc, nonsing_inv_mul _ hAdet, one_mul]
+
+/-- **The sign of `[0 A; I 0]`** ([golub2013matrix] §9.4.2): with no eigenvalue of `A` on
+`(-∞, 0]`, `sign([0 A; I 0]) = [0 A^{1/2}; A^{-1/2} 0]`, the limit of the Newton sign iteration,
+whose iterates are the Denman–Beavers pairs (`Matrix.tendsto_denmanBeavers_fst`,
+`Matrix.tendsto_denmanBeavers_snd`). -/
+theorem matrixSign_fromBlocks_zero_one {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
+    matrixSign (fromBlocks 0 A 1 0) = fromBlocks 0 (principalSqrt A) (principalSqrt A)⁻¹ 0 := by
+  have hX := tendsto_denmanBeavers_fst hA
+  have hY := tendsto_denmanBeavers_snd hA
   have hS := tendsto_newtonSignIterate (re_ne_zero_of_mem_spectrum_fromBlocks hA)
   have hS' : Tendsto (fun k => newtonSignIterate (fromBlocks 0 A 1 0) k) atTop
       (𝓝 (fromBlocks 0 (principalSqrt A) (principalSqrt A)⁻¹ 0)) := by

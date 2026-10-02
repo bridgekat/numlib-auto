@@ -26,4 +26,12 @@ id = "Matrix.newtonSignIterate_fromBlocks"
 id = "Matrix.denmanBeavers_fst_eq_mul_snd"
 
 [[node]]
+id = "Matrix.tendsto_denmanBeavers_fst"
+source = "Golub–Van Loan, Matrix Computations, §9.4.2"
+
+[[node]]
+id = "Matrix.tendsto_denmanBeavers_snd"
+source = "Golub–Van Loan, Matrix Computations, §9.4.2"
+
+[[node]]
 id = "Matrix.matrixSign_fromBlocks_zero_one"

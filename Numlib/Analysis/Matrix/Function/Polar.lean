@@ -192,12 +192,11 @@ private theorem newtonPolarIterate_conj_diagonal {V : Matrix n n 𝕜} (hV : V �
     push_cast
     ring
 
-/-- A positive definite matrix in its spectral form `V diag(σ) Vᴴ`. -/
-private theorem PosDef.eq_conj_diagonal {P : Matrix n n 𝕜} (hP : P.PosDef) :
-    P = (hP.isHermitian.eigenvectorUnitary : Matrix n n 𝕜)
-      * diagonal (fun i => ((hP.isHermitian.eigenvalues i : ℝ) : 𝕜))
-      * (hP.isHermitian.eigenvectorUnitary : Matrix n n 𝕜)ᴴ := by
-  conv_lhs => rw [hP.isHermitian.spectral_theorem]
+/-- A Hermitian matrix in its spectral form `V diag(λ) Vᴴ`. -/
+private theorem IsHermitian.eq_conj_diagonal {P : Matrix n n 𝕜} (hP : P.IsHermitian) :
+    P = (hP.eigenvectorUnitary : Matrix n n 𝕜) * diagonal (fun i => ((hP.eigenvalues i : ℝ) : 𝕜))
+      * (hP.eigenvectorUnitary : Matrix n n 𝕜)ᴴ := by
+  conv_lhs => rw [hP.spectral_theorem]
   rw [Unitary.conjStarAlgAut_apply, star_eq_conjTranspose]
   rfl
 
@@ -205,7 +204,7 @@ private theorem PosDef.eq_conj_diagonal {P : Matrix n n 𝕜} (hP : P.PosDef) :
 theorem PosDef.newtonPolarIterate {P : Matrix n n 𝕜} (hP : P.PosDef) (k : ℕ) :
     (newtonPolarIterate P k).PosDef := by
   have hV := hP.isHermitian.eigenvectorUnitary.2
-  rw [hP.eq_conj_diagonal, newtonPolarIterate_conj_diagonal hV hP.eigenvalues_pos]
+  rw [hP.isHermitian.eq_conj_diagonal, newtonPolarIterate_conj_diagonal hV hP.eigenvalues_pos]
   have hD : (diagonal fun i => ((newtonScalar (hP.isHermitian.eigenvalues i) k : ℝ) : 𝕜)).PosDef :=
     posDef_diagonal_iff.2 fun i => RCLike.ofReal_pos.2 (newtonScalar_pos (hP.eigenvalues_pos i) k)
   have hinj : Function.Injective
@@ -287,7 +286,7 @@ theorem tendsto_newtonPolarIterate (hA : IsUnit A) (h : IsPolarDecomposition A U
   have hs : ∀ i, 0 < s i := hP.eigenvalues_pos
   have hform : ∀ k, newtonPolarIterate A k
       = U * (V * diagonal (fun i => ((newtonScalar (s i) k : ℝ) : 𝕜)) * Vᴴ) := fun k => by
-    rw [(newtonPolarIterate_eq hA h k).1, hP.eq_conj_diagonal,
+    rw [(newtonPolarIterate_eq hA h k).1, hP.isHermitian.eq_conj_diagonal,
       newtonPolarIterate_conj_diagonal hV hs]
   have hlim : Tendsto (fun k => fun i => ((newtonScalar (s i) k : ℝ) : 𝕜)) atTop
       (𝓝 fun _ => (1 : 𝕜)) := by
@@ -414,10 +413,8 @@ theorem IsPolarDecomposition.posSemidef_sub_iInf_colSingularValues {A U P : Matr
   set V := (hP.eigenvectorUnitary : Matrix n n 𝕜)
   have hV : V ∈ unitaryGroup n 𝕜 := hP.eigenvectorUnitary.2
   have hVV : V * Vᴴ = 1 := by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff.1 hV
-  have hspec : P = V * diagonal (fun i => ((hP.eigenvalues i : ℝ) : 𝕜)) * Vᴴ := by
-    conv_lhs => rw [hP.spectral_theorem]
-    rw [Unitary.conjStarAlgAut_apply, star_eq_conjTranspose]
-    rfl
+  have hspec : P = V * diagonal (fun i => ((hP.eigenvalues i : ℝ) : 𝕜)) * Vᴴ :=
+    hP.eq_conj_diagonal
   have hc : ∀ i, c ≤ hP.eigenvalues i := by
     intro i
     have : Nonempty n := ⟨i⟩

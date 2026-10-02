@@ -20,6 +20,9 @@ The principal logarithm ([golub2013matrix] §9.4.4; Higham, *Functions of Matric
   when every eigenvalue lies in the unit disk around `1`.
 * `Matrix.principalLog_principalSqrt`, `Matrix.principalLog_eq_two_pow_smul`: the inverse
   scaling-and-squaring identity `log A = 2^k log A^{1/2^k}`.
+* `Matrix.existsUnique_exp_eq_of_abs_im_lt`, `Matrix.existsUnique_real_exp_eq`: the principal
+  logarithm is the only logarithm with eigenvalues in the strip, and it is real for a real matrix
+  (read in `ℂ` through `Matrix.complexify`, with `Matrix.complexify_exp`).
 
 The Banach-algebra facts about Mathlib's series logarithm `NormedSpace.log` (`exp (log x) = x` for
 `‖x - 1‖ < 1`) are `Numlib/Analysis/Normed/Algebra/Logarithm`; the agreement of the two logarithms
@@ -36,17 +39,10 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 noncomputable def principalLog (A : Matrix n n ℂ) : Matrix n n ℂ :=
   pfc Complex.log A
 
-private theorem mem_slitPlane_of_mem_roots' {A : Matrix n n ℂ}
-    (hA : spectrum ℂ A ⊆ slitPlane) {μ : ℂ} (hμ : μ ∈ (minpoly ℂ A).roots) : μ ∈ slitPlane := by
-  have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
-  exact hA ((spectrum.mem_iff_isRoot_minpoly hI).mpr ((mem_roots (minpoly.ne_zero hI)).mp hμ))
-
 /-- Functions agreeing on the slit plane agree at a matrix with spectrum in it. -/
 private theorem pfc_congr_of_slitPlane {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane)
-    {f g : ℂ → ℂ} (h : ∀ z ∈ slitPlane, f z = g z) : pfc f A = pfc g A := by
-  refine pfc_congr fun μ hμ j _ => Filter.EventuallyEq.iteratedDeriv_eq j ?_
-  filter_upwards [isOpen_slitPlane.mem_nhds (mem_slitPlane_of_mem_roots' hA hμ)] with z hz
-  exact h z hz
+    {f g : ℂ → ℂ} (h : ∀ z ∈ slitPlane, f z = g z) : pfc f A = pfc g A :=
+  pfc_congr_of_eqOn isOpen_slitPlane hA h
 
 /-- **The principal logarithm is a logarithm** ([golub2013matrix] §9.4.4): with no eigenvalue on
 `(-∞, 0]`, `e^{log A} = A`, and every eigenvalue of `log A` has `|Im μ| < π`. -/
@@ -56,7 +52,7 @@ theorem exp_principalLog {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane
   refine ⟨?_, ?_⟩
   · rw [← pfc_exp_eq_normedSpace_exp (Algebra.IsIntegral.isIntegral _), principalLog,
       ← pfc_comp hI (IsAlgClosed.splits _)
-        (fun μ hμ => (analyticAt_clog (mem_slitPlane_of_mem_roots' hA hμ)).contDiffAt)
+        (fun μ hμ => (analyticAt_clog (hA (spectrum.mem_of_mem_roots_minpoly hμ))).contDiffAt)
         (fun μ _ => Complex.contDiff_exp.contDiffAt),
       pfc_congr_of_slitPlane hA (f := Complex.exp ∘ Complex.log) (g := fun z => z)
         fun z hz => Complex.exp_log (slitPlane_ne_zero hz),
@@ -97,7 +93,7 @@ private theorem eq_zero_of_exp_eq_one {N : Matrix n n ℂ} (hN : spectrum ℂ N 
   have hI : IsIntegral ℂ N := Algebra.IsIntegral.isIntegral _
   have hs := IsAlgClosed.splits (minpoly ℂ N)
   have hroot : ∀ μ ∈ (minpoly ℂ N).roots, μ = 0 := fun μ hμ =>
-    hN ((spectrum.mem_iff_isRoot_minpoly hI).mpr ((mem_roots (minpoly.ne_zero hI)).mp hμ))
+    hN (spectrum.mem_of_mem_roots_minpoly hμ)
   have hg : ∀ μ ∈ (minpoly ℂ N).roots,
       ContDiffAt ℂ ((minpoly ℂ N).rootMultiplicity μ - 1 : ℕ) (dslope Complex.exp 0) μ :=
     fun μ hμ => by rw [hroot μ hμ]; exact contDiffAt_dslope_exp.of_le le_top
@@ -142,11 +138,9 @@ theorem existsUnique_exp_eq_of_abs_im_lt {A : Matrix n n ℂ} (hA : spectrum ℂ
     rw [← hX, ← pfc_exp_eq_normedSpace_exp hXI, spectrum_pfc hXI (IsAlgClosed.splits _)]
     exact ⟨μ, hμ, rfl⟩
   have hq : ∀ μ ∈ spectrum ℂ X, q.eval μ = μ := fun μ hμ => by
-    have hμ' : μ ∈ (minpoly ℂ X).roots :=
-      (mem_roots (minpoly.ne_zero hXI)).mpr ((spectrum.mem_iff_isRoot_minpoly hXI).mp hμ)
+    have hμ' : μ ∈ (minpoly ℂ X).roots := (spectrum.mem_iff_mem_roots_minpoly hXI).1 hμ
     have he : Complex.exp μ ∈ (minpoly ℂ A).roots :=
-      (mem_roots (minpoly.ne_zero hI)).mpr ((spectrum.mem_iff_isRoot_minpoly hI).mp
-        (hspecX μ hμ))
+      (spectrum.mem_iff_mem_roots_minpoly hI).1 (hspecX μ hμ)
     have him := abs_lt.mp (hXs μ hμ)
     rw [eval_comp, Hermite.eval_interpolateJet_taylorJet hμ',
       Hermite.eval_interpolateJet_taylorJet he, Complex.log_exp him.1 him.2.le]
@@ -169,51 +163,47 @@ theorem existsUnique_exp_eq_of_abs_im_lt {A : Matrix n n ℂ} (hA : spectrum ℂ
   have := eq_zero_of_exp_eq_one hNs hexpN
   exact (sub_eq_zero.mp this)
 
+/-- **Complexification commutes with the exponential**: `complexify (e^X) = e^{complexify X}` for a
+real square matrix `X`, the exponential series being mapped term by term. -/
+theorem complexify_exp (X : Matrix n n ℝ) :
+    complexify (NormedSpace.exp X) = NormedSpace.exp (complexify X) := by
+  have hL : Function.LeftInverse (fun M : Matrix n n ℂ => M.map Complex.re)
+      (Complex.ofRealHom.mapMatrix : Matrix n n ℝ →+* Matrix n n ℂ) := fun M => by
+    ext i j
+    simp
+  have h := Function.LeftInverse.map_tsum (L := SummationFilter.unconditional ℕ)
+    (fun k : ℕ => ((k.factorial : ℚ)⁻¹) • X ^ k)
+    (g := (Complex.ofRealHom.mapMatrix : Matrix n n ℝ →+* Matrix n n ℂ))
+    (continuous_id.matrix_map Complex.continuous_ofReal)
+    (continuous_id.matrix_map Complex.continuous_re) hL
+  rw [NormedSpace.exp_eq_tsum_rat, NormedSpace.exp_eq_tsum_rat]
+  change Complex.ofRealHom.mapMatrix _ = _
+  rw [h]
+  congr 1
+  funext k
+  rw [map_rat_smul, map_pow]
+  rfl
+
 /-- **Real logarithms** ([golub2013matrix] §9.4.4): if every real eigenvalue of a real matrix `B` is
 positive (no eigenvalue on `(-∞, 0]`), then `B` has a unique real logarithm with eigenvalues in the
 strip `|Im z| < π`, the complex principal logarithm being real. -/
 theorem existsUnique_real_exp_eq {B : Matrix n n ℝ}
-    (hB : spectrum ℂ (B.map Complex.ofReal) ⊆ slitPlane) :
+    (hB : spectrum ℂ (complexify B) ⊆ slitPlane) :
     ∃! X : Matrix n n ℝ, NormedSpace.exp X = B ∧
-      ∀ μ ∈ spectrum ℂ (X.map Complex.ofReal), |μ.im| < Real.pi := by
-  have hmap : ∀ X : Matrix n n ℝ,
-      (NormedSpace.exp X).map Complex.ofReal = NormedSpace.exp (X.map Complex.ofReal) := by
-    intro X
-    have hL : Function.LeftInverse (fun M : Matrix n n ℂ => M.map Complex.re)
-        (Complex.ofRealHom.mapMatrix : Matrix n n ℝ →+* Matrix n n ℂ) := fun M => by
-      ext i j
-      simp
-    have h := Function.LeftInverse.map_tsum (L := SummationFilter.unconditional ℕ)
-      (fun k : ℕ => ((k.factorial : ℚ)⁻¹) • X ^ k)
-      (g := (Complex.ofRealHom.mapMatrix : Matrix n n ℝ →+* Matrix n n ℂ))
-      (continuous_id.matrix_map Complex.continuous_ofReal)
-      (continuous_id.matrix_map Complex.continuous_re) hL
-    rw [NormedSpace.exp_eq_tsum_rat, NormedSpace.exp_eq_tsum_rat]
-    change Complex.ofRealHom.mapMatrix _ = _
-    rw [h]
-    congr 1
-    funext k
-    rw [map_rat_smul, map_pow]
-    rfl
-  have hinj : Function.Injective fun X : Matrix n n ℝ => X.map Complex.ofReal :=
-    fun X Y h => by
-      ext i j
-      exact Complex.ofReal_injective (congrFun (congrFun h i) j)
+      ∀ μ ∈ spectrum ℂ (complexify X), |μ.im| < Real.pi := by
   obtain ⟨L, ⟨hLexp, hLs⟩, hLuniq⟩ := existsUnique_exp_eq_of_abs_im_lt hB
   -- the principal logarithm is real
-  obtain ⟨C, hC⟩ := pfc_map_ofReal_of_conj (f := Complex.log) B fun μ hμ => by
+  obtain ⟨C, hC⟩ := pfc_complexify_of_conj (f := Complex.log) B fun μ hμ => by
     filter_upwards [isOpen_slitPlane.mem_nhds (hB hμ)] with z hz
     simp only [Function.comp_apply]
     rw [Complex.log_conj _ (slitPlane_arg_ne_pi hz), Complex.conj_conj]
-  have hLC : principalLog (B.map Complex.ofReal) = C.map Complex.ofReal := hC
+  have hLC : principalLog (complexify B) = complexify C := hC
   obtain ⟨hexp, hs⟩ := exp_principalLog hB
-  refine ⟨C, ⟨hinj ?_, ?_⟩, fun X ⟨hX, hXs⟩ => hinj ?_⟩
-  · simp only
-    rw [hmap, ← hLC, hexp]
+  refine ⟨C, ⟨complexify_injective ?_, ?_⟩, fun X ⟨hX, hXs⟩ => complexify_injective ?_⟩
+  · rw [complexify_exp, ← hLC, hexp]
   · rw [← hLC]
     exact hs
-  · simp only
-    have h1 := hLuniq _ ⟨by rw [← hmap, hX], hXs⟩
+  · have h1 := hLuniq _ ⟨by rw [← complexify_exp, hX], hXs⟩
     have h2 := hLuniq _ ⟨hexp, hs⟩
     rw [h1, ← h2, hLC]
 
@@ -316,7 +306,7 @@ theorem hasSum_principalLog_gregory {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectr
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
   have hs := IsAlgClosed.splits (minpoly ℂ A)
   have hroot : ∀ μ ∈ (minpoly ℂ A).roots, 0 < μ.re := fun μ hμ =>
-    hA μ ((spectrum.mem_iff_isRoot_minpoly hI).mpr ((mem_roots (minpoly.ne_zero hI)).mp hμ))
+    hA μ (spectrum.mem_of_mem_roots_minpoly hμ)
   have h1z : ∀ μ : ℂ, 0 < μ.re → 1 + μ ≠ 0 := fun μ hμ h => by
     have := congrArg Complex.re h
     simp at this
@@ -357,10 +347,8 @@ theorem hasSum_principalLog_gregory {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectr
   have h := hasSum_pfc hasFPowerSeriesOnBall_gregoryFun hCI (IsAlgClosed.splits _) hσ
   have hcomp : pfc gregoryFun (pfc c A) = principalLog A := by
     rw [← pfc_comp hI hs (fun μ hμ => (hc μ hμ).of_le le_top) fun μ hμ => ?_]
-    · refine pfc_congr fun μ hμ j _ => Filter.EventuallyEq.iteratedDeriv_eq j ?_
-      have hopen : IsOpen {z : ℂ | 0 < z.re} := isOpen_lt continuous_const Complex.continuous_re
-      filter_upwards [hopen.mem_nhds (hroot μ hμ)] with z hz
-      exact gregoryFun_cayley hz
+    · exact pfc_congr_of_eqOn (isOpen_lt continuous_const Complex.continuous_re) hA
+        fun z hz => gregoryFun_cayley hz
     · have hmem : c μ ∈ Metric.eball (0 : ℂ) 1 := by
         rw [Metric.mem_eball, edist_dist, dist_zero_right, ENNReal.ofReal_lt_one]
         exact hnorm μ (hroot μ hμ)
@@ -384,18 +372,13 @@ theorem hasSum_principalLog_gregory {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectr
 theorem principalLog_principalSqrt {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     principalLog (principalSqrt A) = (2⁻¹ : ℂ) • principalLog A := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
-  have hsq : ∀ z ∈ slitPlane, Complex.sqrt z ∈ slitPlane := fun z hz => by
-    refine mem_slitPlane_iff.mpr (Or.inl ?_)
-    rw [Complex.sqrt, cpow_inv_two_re]
-    refine Real.sqrt_pos.mpr (half_pos ?_)
-    rcases mem_slitPlane_iff.mp hz with h | h
-    · linarith [norm_nonneg z]
-    · have := Complex.abs_re_lt_norm.mpr h
-      linarith [neg_abs_le z.re]
+  have hsq : ∀ z ∈ slitPlane, Complex.sqrt z ∈ slitPlane := fun _ hz =>
+    Complex.sqrt_mem_slitPlane hz
   rw [principalLog, principalSqrt, ← pfc_comp (f := Complex.sqrt) (g := Complex.log) hI
       (IsAlgClosed.splits _) (fun μ hμ => (analyticAt_id.cpow analyticAt_const
-        (mem_slitPlane_of_mem_roots' hA hμ)).contDiffAt)
-      (fun μ hμ => (analyticAt_clog (hsq μ (mem_slitPlane_of_mem_roots' hA hμ))).contDiffAt),
+        (hA (spectrum.mem_of_mem_roots_minpoly hμ))).contDiffAt)
+      (fun μ hμ =>
+        (analyticAt_clog (hsq μ (hA (spectrum.mem_of_mem_roots_minpoly hμ)))).contDiffAt),
     principalLog, ← pfc_const_smul]
   refine pfc_congr_of_slitPlane hA fun z hz => ?_
   have hz0 := slitPlane_ne_zero hz

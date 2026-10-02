@@ -12,6 +12,7 @@ import Numlib.Algebra.Polynomial.Commute
 import Numlib.Analysis.SpecialFunctions.Integrals.Beta
 import Numlib.Analysis.Calculus.HermiteInterpolation
 import Numlib.Analysis.Normed.Algebra.Logarithm
+import Numlib.Analysis.Normed.Ring.Inverse
 
 /-!
 # Padé approximants of the exponential
@@ -65,24 +66,12 @@ theorem coeff_expNum (p q k : ℕ) :
   rw [Finset.sum_ite_eq]
   simp only [Finset.mem_range, Nat.lt_succ_iff]
 
-/-- Coefficients of `q(-X)`. -/
-private theorem coeff_comp_neg_X (f : K[X]) (k : ℕ) :
-    (f.comp (-X)).coeff k = (-1) ^ k * f.coeff k := by
-  induction f using Polynomial.induction_on' with
-  | add f g hf hg => simp [add_comp, hf, hg, mul_add]
-  | monomial m c =>
-    rw [← C_mul_X_pow_eq_monomial, mul_comp, C_comp, X_pow_comp, neg_pow, ← C_1, ← C_neg,
-      ← C_pow, ← mul_assoc, ← C_mul, coeff_C_mul_X_pow, coeff_C_mul_X_pow]
-    split_ifs with h
-    · subst h
-      ring
-    · simp
-
 /-- The coefficients of the Padé denominator. -/
 theorem coeff_expDen (p q k : ℕ) :
     (expDen K p q).coeff k = if k ≤ q then (-1) ^ k *
       (((p + q - k)! * q ! : ℕ) / ((p + q)! * k ! * (q - k)! : ℕ) : K) else 0 := by
-  rw [expDen, coeff_comp_neg_X, coeff_expNum, add_comm q p]
+  rw [expDen, show (-X : K[X]) = C (-1) * X by simp, comp_C_mul_X_coeff,
+    mul_comm _ ((-1 : K) ^ k), coeff_expNum, add_comm q p]
   split_ifs <;> simp
 
 private theorem natCast_factorial_ne_zero [CharZero K] (m : ℕ) : ((m ! : ℕ) : K) ≠ 0 :=
@@ -127,17 +116,24 @@ noncomputable def errorBound (p q : ℕ) : ℝ :=
 
 /-! ### The denominator is invertible for small arguments -/
 
-/-- The coefficients of `D_pq` are bounded by those of the exponential series:
-`(p + q - k)! q! ≤ (p + q)! (q - k)!`. -/
-theorem factorial_ratio_le_one (p q k : ℕ) (hk : k ≤ q) :
-    (((p + q - k)! * q ! : ℕ) : ℝ) ≤ ((p + q)! * (q - k)! : ℕ) := by
+/-- The factorial inequality behind the bound on the coefficients of `D_pq`:
+`(p + q - k)! q! ≤ (p + q)! (q - k)!` for `k ≤ q`, since `q!/(q - k)! ≤ (p + q)!/(p + q - k)!`
+(the falling factorials `q^(k) ≤ (p + q)^(k)`). -/
+theorem _root_.Nat.factorial_add_sub_mul_factorial_le (p q k : ℕ) (hk : k ≤ q) :
+    (p + q - k)! * q ! ≤ (p + q)! * (q - k)! := by
   have h1 := Nat.factorial_mul_descFactorial (show k ≤ q from hk)
   have h2 := Nat.factorial_mul_descFactorial (show k ≤ p + q by omega)
   have h3 : q.descFactorial k ≤ (p + q).descFactorial k := Nat.descFactorial_le k (by omega)
-  exact_mod_cast (by
-    calc (p + q - k)! * q ! = (p + q - k)! * ((q - k)! * q.descFactorial k) := by rw [h1]
-      _ ≤ (p + q - k)! * ((q - k)! * (p + q).descFactorial k) := by gcongr
-      _ = (p + q)! * (q - k)! := by rw [← h2]; ring)
+  calc (p + q - k)! * q ! = (p + q - k)! * ((q - k)! * q.descFactorial k) := by rw [h1]
+    _ ≤ (p + q - k)! * ((q - k)! * (p + q).descFactorial k) := by gcongr
+    _ = (p + q)! * (q - k)! := by rw [← h2]; ring
+
+/-- The coefficients of `D_pq` are bounded by those of the exponential series. -/
+@[deprecated "use `Nat.factorial_add_sub_mul_factorial_le` (stated in `ℕ`)"
+  (since := "2026-09-30")]
+theorem factorial_ratio_le_one (p q k : ℕ) (hk : k ≤ q) :
+    (((p + q - k)! * q ! : ℕ) : ℝ) ≤ ((p + q)! * (q - k)! : ℕ) := by
+  exact_mod_cast Nat.factorial_add_sub_mul_factorial_le p q k hk
 
 section Norm
 
@@ -150,7 +146,8 @@ theorem norm_coeff_expDen_le (p q k : ℕ) : ‖(expDen 𝕂 p q).coeff k‖ ≤
   split_ifs with hk
   · rw [norm_mul, norm_pow, norm_neg, norm_one, one_pow, one_mul, norm_div, RCLike.norm_natCast,
       RCLike.norm_natCast, div_le_div_iff₀ (by positivity) (by positivity), one_mul]
-    have h := factorial_ratio_le_one p q k hk
+    have h : (((p + q - k)! * q ! : ℕ) : ℝ) ≤ ((p + q)! * (q - k)! : ℕ) := by
+      exact_mod_cast Nat.factorial_add_sub_mul_factorial_le p q k hk
     have hk0 : (0 : ℝ) ≤ (k ! : ℕ) := by positivity
     push_cast at h ⊢
     calc ((p + q - k)! * q ! : ℝ) * k ! ≤ ((p + q)! * (q - k)!) * k ! :=
@@ -410,9 +407,7 @@ theorem exp_eq_expApprox_add (p q : ℕ) (a : 𝔸) (hD : IsUnit (aeval a (expDe
   obtain ⟨u, hu⟩ := hD
   have hinv : Ring.inverse D * D = 1 := by rw [← hu, Ring.inverse_unit, Units.inv_mul]
   have hcomm : Commute (a ^ (p + q + 1)) (Ring.inverse D) := by
-    rw [← hu, Ring.inverse_unit]
-    refine Commute.units_inv_right ?_
-    rw [hu]
+    refine Commute.ringInverse_right ?_
     have : Commute (aeval a (X ^ (p + q + 1) : ℝ[X])) (aeval a (expDen ℝ p q)) := by
       rw [Commute, SemiconjBy, ← map_mul, ← map_mul, mul_comm]
     simpa using this
@@ -547,13 +542,6 @@ private theorem mvl_scalar (p q : ℕ) (hpq : 1 ≤ p + q) {x y β : ℝ} (hx0 :
 
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸] [NormOneClass 𝔸] [CompleteSpace 𝔸]
 
-omit [NormedAlgebra ℝ 𝔸] [NormOneClass 𝔸] [CompleteSpace 𝔸] in
-private theorem commute_ring_inverse {x D : 𝔸} (hD : IsUnit D) (h : Commute x D) :
-    Commute x (Ring.inverse D) := by
-  obtain ⟨u, rfl⟩ := hD
-  rw [Ring.inverse_unit]
-  exact h.units_inv_right
-
 /-- The core of the Moler–Van Loan bound for `‖a‖ ≤ 1/2`, given a bound `β` on the inverse Padé
 denominator: `R_pq(a) = e^{a + e}` with `e` commuting with `a` and `‖e‖ ≤ ε(p, q) ‖a‖`. -/
 private theorem exists_expApprox_eq_exp_add_of_norm_inverse_le (p q : ℕ) (hpq : 1 ≤ p + q)
@@ -570,7 +558,7 @@ private theorem exists_expApprox_eq_exp_add_of_norm_inverse_le (p q : ℕ) (hpq 
   set P := a ^ (p + q + 1)
   have hrem : exp a = expApprox ℝ p q a + c • (P * Dinv * I) := exp_eq_expApprox_add p q a hD
   have hcF : Commute F a := ((Commute.refl a).neg_left).exp_left
-  have hcFD : Commute F Dinv := commute_ring_inverse hD (hcF.aeval_right _)
+  have hcFD : Commute F Dinv := (hcF.aeval_right _).ringInverse_right
   have hcFP : Commute F P := hcF.pow_right _
   have hFE : F * exp a = 1 := by
     rw [← exp_add_of_commute_real ((Commute.refl a).neg_left), neg_add_cancel, exp_zero]
@@ -646,8 +634,8 @@ private theorem exists_expApprox_eq_exp_add_of_norm_inverse_le (p q : ℕ) (hpq 
     simp only [mul_smul_comm, smul_mul_assoc]
     rw [((((Commute.refl a).smul_right u).neg_right).exp_right).eq]
   have hcah : Commute a h :=
-    (((((Commute.refl a).pow_right _).mul_right (commute_ring_inverse hD
-      ((Commute.refl a).aeval_right _))).mul_right hcaJ).smul_right c).neg_right
+    (((((Commute.refl a).pow_right _).mul_right
+      ((Commute.refl a).aeval_right _).ringInverse_right).mul_right hcaJ).smul_right c).neg_right
   have hce : Commute a e' := ((Commute.one_right a).add_right hcah).log_right
   refine ⟨e', hce, hnorm.trans hlog, ?_⟩
   calc expApprox ℝ p q a = exp a * (F * expApprox ℝ p q a) := by rw [← mul_assoc, hEF, one_mul]

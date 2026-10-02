@@ -159,13 +159,13 @@ equation for `F_kl` given the blocks nearer the diagonal. -/
 theorem BlockTriangular.pfc_sylvester [Finite α] [LocallyFiniteOrder α] {𝕜 : Type*}
     [NontriviallyNormedField 𝕜] {T : Matrix n n 𝕜} (hT : T.BlockTriangular b) (f : 𝕜 → 𝕜)
     {k l : α} (hkl : k < l) :
-    let F := _root_.pfc f T
-    let blk := fun (M : Matrix n n 𝕜) (p q : α) => M.toBlock (b · = p) (b · = q)
-    blk F k l * blk T l l - blk T k k * blk F k l =
-      blk T k l * blk F l l - blk F k k * blk T k l +
-        ∑ r ∈ Ioo k l, (blk T k r * blk F r l - blk F k r * blk T r l) := by
-  intro F blk
-  have hF : F.BlockTriangular b := hT.pfc f
+    (_root_.pfc f T).toBlock (b · = k) (b · = l) * T.toBlock (b · = l) (b · = l) -
+        T.toBlock (b · = k) (b · = k) * (_root_.pfc f T).toBlock (b · = k) (b · = l) =
+      T.toBlock (b · = k) (b · = l) * (_root_.pfc f T).toBlock (b · = l) (b · = l) -
+          (_root_.pfc f T).toBlock (b · = k) (b · = k) * T.toBlock (b · = k) (b · = l) +
+        ∑ r ∈ Ioo k l, (T.toBlock (b · = k) (b · = r) * (_root_.pfc f T).toBlock (b · = r) (b · = l)
+          - (_root_.pfc f T).toBlock (b · = k) (b · = r) * T.toBlock (b · = r) (b · = l)) := by
+  have hF : (_root_.pfc f T).BlockTriangular b := hT.pfc f
   have h := congrArg (fun M => M.toBlock (b · = k) (b · = l)) (commute_pfc T f).eq
   rw [hT.toBlock_mul_eq_sum_Icc hF, hF.toBlock_mul_eq_sum_Icc hT, Icc_eq_cons_Ioc hkl.le,
     sum_cons, sum_cons, Ioc_eq_cons_Ioo hkl, sum_cons, sum_cons] at h

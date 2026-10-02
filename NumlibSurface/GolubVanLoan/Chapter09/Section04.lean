@@ -382,7 +382,8 @@ theorem sign_block_sqrt {A : Matrix (Fin n) (Fin n) ℂ} (hA : spectrum ℂ A �
     Tendsto (fun k => (Matrix.denmanBeavers A k).2) atTop (𝓝 (Matrix.principalSqrt A)⁻¹) ∧
     Matrix.matrixSign (Matrix.fromBlocks 0 A 1 0) =
       Matrix.fromBlocks 0 (Matrix.principalSqrt A) (Matrix.principalSqrt A)⁻¹ 0 :=
-  Matrix.matrixSign_fromBlocks_zero_one hA
+  ⟨Matrix.tendsto_denmanBeavers_fst hA, Matrix.tendsto_denmanBeavers_snd hA,
+    Matrix.matrixSign_fromBlocks_zero_one hA⟩
 
 /-! ### The matrix logarithm -/
 

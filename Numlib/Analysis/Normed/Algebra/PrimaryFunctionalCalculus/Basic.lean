@@ -30,6 +30,10 @@ The Jordan-form, power-series and Cauchy-integral definitions of `f(A)` are theo
 * `pfc_eq_aeval_of_isJetInterpolant`: the characterization every other result goes through — any
   polynomial interpolating the jets of `f` on any multiset whose nodal polynomial the minimal
   polynomial divides computes `pfc f a`.
+* `pfc_congr`, `pfc_congr_of_eventuallyEq`, `pfc_congr_of_eqOn`: `pfc f a` depends only on the jets
+  of `f` at the eigenvalues, hence only on `f` near the spectrum.
+* `spectrum.mem_iff_isRoot_minpoly`, `spectrum.mem_iff_mem_roots_minpoly`: the spectrum of an
+  integral element is the set of roots of its minimal polynomial.
 * `pfc_polynomial`, `pfc_const`, `pfc_id`, `pfc_pow`: polynomials are evaluated at `a`.
 * `pfc_add`, `pfc_const_smul`, `pfc_mul`, `pfc_inv`: `pfc · a` is an algebra homomorphism on
   functions smooth enough at the eigenvalues.
@@ -95,6 +99,22 @@ theorem spectrum.mem_iff_isRoot_minpoly {a : A} (ha : IsIntegral K a) {μ : K} :
     have hdeg := natDegree_le_of_dvd hdvd hq0'
     rw [hq, natDegree_mul (X_sub_C_ne_zero μ) hq0', natDegree_X_sub_C] at hdeg
     omega
+
+/-- **The spectrum of an integral element is the multiset of roots of its minimal polynomial**, in
+the membership form the `pfc` lemmas quantify over. -/
+theorem spectrum.mem_iff_mem_roots_minpoly {a : A} (ha : IsIntegral K a) {μ : K} :
+    μ ∈ spectrum K a ↔ μ ∈ (minpoly K a).roots := by
+  rw [spectrum.mem_iff_isRoot_minpoly ha, mem_roots (minpoly.ne_zero ha)]
+
+/-- A root of the minimal polynomial is in the spectrum, with no integrality hypothesis (the
+minimal polynomial of a non-integral element is `0`, which has no roots). -/
+theorem spectrum.mem_of_mem_roots_minpoly {a : A} {μ : K} (hμ : μ ∈ (minpoly K a).roots) :
+    μ ∈ spectrum K a := by
+  have ha : IsIntegral K a := by
+    by_contra h
+    rw [minpoly.eq_zero h, roots_zero] at hμ
+    exact Multiset.notMem_zero μ hμ
+  exact (spectrum.mem_iff_mem_roots_minpoly ha).2 hμ
 
 end Spectrum
 
@@ -180,6 +200,20 @@ theorem pfc_congr {f g : 𝕜 → 𝕜}
   rw [pfc_def, pfc_def, interpolateJet_congr fun x hx j hj => ?_]
   rw [count_roots] at hj
   rw [taylorJet, taylorJet, h x hx j hj]
+
+/-- **`pfc f a` depends only on `f` near the spectrum**: if `f = g` near every eigenvalue, then
+`pfc f a = pfc g a`. -/
+theorem pfc_congr_of_eventuallyEq {f g : 𝕜 → 𝕜} (h : ∀ μ ∈ spectrum 𝕜 a, f =ᶠ[nhds μ] g) :
+    pfc f a = pfc g a :=
+  pfc_congr fun μ hμ j _ =>
+    (h μ (spectrum.mem_of_mem_roots_minpoly hμ)).iteratedDeriv_eq j
+
+/-- **`pfc f a` depends only on `f` on a neighbourhood of the spectrum**: if `f = g` on an open set
+`U` containing the spectrum, then `pfc f a = pfc g a`. -/
+theorem pfc_congr_of_eqOn {f g : 𝕜 → 𝕜} {U : Set 𝕜} (hU : IsOpen U) (hσ : spectrum 𝕜 a ⊆ U)
+    (h : Set.EqOn f g U) : pfc f a = pfc g a :=
+  pfc_congr_of_eventuallyEq fun _ hμ =>
+    Filter.eventuallyEq_of_mem (hU.mem_nhds (hσ hμ)) h
 
 /-- **Polynomials**: `pfc (p.eval ·) a = p(a)`. -/
 theorem pfc_polynomial [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits)
@@ -295,7 +329,7 @@ theorem pfc_mul_pfc_eq_one [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpo
     (hfg : ∀ μ ∈ (minpoly 𝕜 a).roots, (f * g) =ᶠ[nhds μ] fun _ => 1) :
     pfc f a * pfc g a = 1 := by
   rw [← pfc_mul ha hs hf hg, pfc_congr (g := fun _ => (1 : 𝕜))
-    fun μ hμ j _ => Filter.EventuallyEq.iteratedDeriv_eq j (hfg μ hμ), pfc_const ha hs, map_one]
+    fun μ hμ j _ => (hfg μ hμ).iteratedDeriv_eq j, pfc_const ha hs, map_one]
 
 /-- **Inverses**: if `f` is `C^{m_λ - 1}` and nonvanishing at every eigenvalue `λ`, then `f(a)` is
 invertible with inverse `(1/f)(a)` ([golub2013matrix] §9.1's rational functions). -/
@@ -320,8 +354,8 @@ theorem pfc_inv_id [CharZero 𝕜] [CompleteSpace 𝕜] (ha : IsIntegral 𝕜 a)
     pfc (fun z : 𝕜 => z⁻¹) a = Ring.inverse a := by
   have h := (pfc_inv ha hs (f := fun z : 𝕜 => z) (fun μ _ => contDiffAt_id) fun μ hμ hμ0 => h0 ?_).2
   · rwa [pfc_id ha hs] at h
-  · rw [spectrum.mem_iff_isRoot_minpoly ha, ← hμ0]
-    exact (mem_roots (minpoly.ne_zero ha)).mp hμ
+  · rw [← hμ0]
+    exact spectrum.mem_of_mem_roots_minpoly hμ
 
 end Algebraic
 
@@ -543,21 +577,6 @@ theorem pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq (ha : IsIntegral 𝕜
   · simp [taylorJet, Filter.EventuallyEq.iteratedDeriv_eq 0 (h l hl')]
   · simp [taylorJet, Filter.EventuallyEq.iteratedDeriv_eq j (h l hl'), iteratedDeriv_const, hj]
 
-
-omit [DecidableEq 𝕜] in
-/-- Coefficients of `q(sX)`. -/
-private theorem coeff_comp_C_mul_X (q : 𝕜[X]) (s : 𝕜) (j : ℕ) :
-    (q.comp (C s * X)).coeff j = s ^ j * q.coeff j := by
-  induction q using Polynomial.induction_on' with
-  | add p q hp hq => simp [add_comp, hp, hq, mul_add]
-  | monomial n c =>
-    rw [← C_mul_X_pow_eq_monomial, mul_comp, C_comp, X_pow_comp, mul_pow, ← C_pow, ← mul_assoc,
-      ← C_mul, coeff_C_mul_X_pow, coeff_C_mul_X_pow]
-    split_ifs with h
-    · subst h
-      ring
-    · simp
-
 omit [DecidableEq 𝕜] in
 private theorem taylor_comp_C_mul_X (q : 𝕜[X]) (s l : 𝕜) :
     taylor l (q.comp (C s * X)) = (taylor (s * l) q).comp (C s * X) := by
@@ -596,7 +615,7 @@ theorem pfc_smul (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) (s : �
   rw [pfc_eq_aeval_of_isJetInterpolant hdvd hP, aeval_smul_eq_aeval_comp]
   refine aeval_eq_sum_spectralIdempotent ha hs (isJetInterpolant_iff_coeff_taylor.mpr ?_)
   intro l hl j hj
-  rw [taylor_comp_C_mul_X, coeff_comp_C_mul_X]
+  rw [taylor_comp_C_mul_X, comp_C_mul_X_coeff, mul_comm _ (s ^ j)]
   congr 1
   refine isJetInterpolant_iff_coeff_taylor.mp hP (s * l) (Multiset.mem_map_of_mem _ hl) j
     (lt_of_lt_of_le hj ?_)
@@ -612,8 +631,8 @@ theorem spectrum_pfc {a : A} (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Spl
     (f : 𝕜 → 𝕜) : spectrum 𝕜 (pfc f a) = f '' spectrum 𝕜 a := by
   classical
   set P := interpolateJet (minpoly 𝕜 a).roots (taylorJet f)
-  have hmem : ∀ l, l ∈ spectrum 𝕜 a ↔ l ∈ (minpoly 𝕜 a).roots := fun l => by
-    rw [spectrum.mem_iff_isRoot_minpoly ha, mem_roots (minpoly.ne_zero ha)]
+  have hmem : ∀ l, l ∈ spectrum 𝕜 a ↔ l ∈ (minpoly 𝕜 a).roots := fun l =>
+    spectrum.mem_iff_mem_roots_minpoly ha
   have hPeval : ∀ l ∈ (minpoly 𝕜 a).roots, P.eval l = f l := fun l hl => by
     have := isJetInterpolant_iff_coeff_taylor.mp (isJetInterpolant_interpolateJet _ (taylorJet f))
       l hl 0 (Multiset.count_pos.mpr hl)

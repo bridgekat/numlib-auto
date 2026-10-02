@@ -246,12 +246,11 @@ section PinvPerturbation
 open scoped Matrix.Norms.Frobenius
 
 /-- **§5.5.3, the perturbation of the pseudoinverse** (Wedin 1973, Stewart 1975):
-`‖(A + δA)⁺ - A⁺‖_F ≤ 2 ‖δA‖_F max{‖A⁺‖₂², ‖(A + δA)⁺‖₂²}`, the spectral norms written as operator
-norms of `toEuclideanLin`. -/
+`‖(A + δA)⁺ - A⁺‖_F ≤ 2 ‖δA‖_F max{‖A⁺‖₂², ‖(A + δA)⁺‖₂²}`, the spectral norms written
+`lpOpNorm 2`. -/
 theorem pinv_perturbation (A δA : Matrix (Fin m) (Fin n) ℝ) :
     ‖(A + δA).pinv - A.pinv‖ ≤ 2 * ‖δA‖ *
-      max (‖LinearMap.toContinuousLinearMap (toEuclideanLin A.pinv)‖ ^ 2)
-        (‖LinearMap.toContinuousLinearMap (toEuclideanLin (A + δA).pinv)‖ ^ 2) :=
+      max (lpOpNorm 2 A.pinv ^ 2) (lpOpNorm 2 (A + δA).pinv ^ 2) :=
   frobenius_norm_pinv_sub_le A δA
 
 end PinvPerturbation
@@ -643,7 +642,8 @@ theorem theorem_5_5_2 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin 
   have hinv : 0 < ‖((V.submatrix π id).submatrix (Fin.castLE hrN) (Fin.castLE hrN))⁻¹‖ :=
     norm_pos_iff.2 ((isUnit_nonsing_inv_iff.2 hV).ne_zero)
   refine ⟨(div_le_iff₀ hinv).2 (by rwa [mul_comm]), ?_⟩
-  have := sortedSingularValues_submatrix_le A ((Fin.castLEEmb hrN).trans π.toEmbedding) (r - 1)
+  have := sortedSingularValues_submatrix_le A Function.injective_id
+    ((Fin.castLEEmb hrN).trans π.toEmbedding).injective (r - 1)
   exact this
 
 /-- **§5.5.7, QR with column pivoting of `V(:, 1:r̃)ᵀ`**: for `V` orthogonal and `r̃ ≤ n`, let

@@ -167,7 +167,8 @@ theorem corollary_2_4_5 (A : Matrix (Fin m) (Fin n) ℝ) (hmn : n < m) (hn : 1 �
     simp [hÃ]
   refine ⟨?_, ?_⟩
   · calc sigmaMax A = (Ã.submatrix id Fin.castSucc).sortedSingularValues 0 := by rw [hsub]; rfl
-      _ ≤ Ã.sortedSingularValues 0 := sortedSingularValues_submatrix_le Ã Fin.castSuccEmb 0
+      _ ≤ Ã.sortedSingularValues 0 := sortedSingularValues_submatrix_le Ã Function.injective_id
+        (Fin.castSucc_injective _) 0
   · have hne : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
     obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_colSingularValues
     have hmin1 : min m n - 1 = Fintype.card (Fin n) - 1 := by

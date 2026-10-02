@@ -452,7 +452,8 @@ theorem equation_9_3_2 [NeZero n] {A Q : Matrix (Fin n) (Fin n) ℂ}
     (ht : 0 ≤ t) :
     ‖exp (t • A)‖ ≤ Real.exp (spectralAbscissa A * t) * ∑ k ∈ range n,
       ‖t • (star Q * A * Q - Matrix.diagonal fun i => (star Q * A * Q) i i)‖ ^ k / k ! := by
-  simpa only [Fintype.card_fin] using Matrix.l2_opNorm_exp_smul_le_of_schur hQ hT ht
+  simpa only [Matrix.schurExpFactor, Fintype.card_fin] using
+    Matrix.l2_opNorm_exp_smul_le_of_schur hQ hT ht
 
 /-- §9.3.2, "with a little manipulation": for `t ≥ 0`,
 `‖e^{(A+E)t} - e^{At}‖₂ / ‖e^{At}‖₂ ≤ t ‖E‖₂ M_S(t)² exp(t M_S(t) ‖E‖₂)`. -/
@@ -464,7 +465,7 @@ theorem exp_perturbation_schur [NeZero n] {A Q : Matrix (Fin n) (Fin n) ℂ}
     ‖exp (t • (A + E)) - exp (t • A)‖ / ‖exp (t • A)‖ ≤
       t * ‖E‖ * MS t ^ 2 * Real.exp (t * MS t * ‖E‖) := by
   have h := Matrix.l2_opNorm_exp_smul_add_sub_le hQ hT E ht
-  simp only [Fintype.card_fin] at h
+  simp only [Matrix.schurExpFactor, Fintype.card_fin] at h
   exact h
 
 /-- §9.3.2: `M_S(t) = 1` for all `t > 0` if and only if `A` is normal (its Schur form is then

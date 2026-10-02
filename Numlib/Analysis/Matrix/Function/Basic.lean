@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Basic
 import Numlib.LinearAlgebra.Matrix.Aeval
+import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Jordan
 
 /-!
@@ -23,9 +24,11 @@ the transpose, and realness on real matrices read in `ℂ`.
 * `Matrix.pfc_jordanBlock`, `Matrix.pfc_jordanBlock_apply`: a Jordan block ((9.1.4)–(9.1.6)).
 * `Matrix.pfc_conj_jordanForm`: the Jordan-form expression (9.1.3), a theorem here.
 * `Matrix.pfc_transpose`: `f(Aᵀ) = f(A)ᵀ`.
-* `Matrix.pfc_map_conj`, `Matrix.pfc_map_ofReal_of_conj`: `f(Ā) = (f̄(A))‾` for
-  `f̄ = conj ∘ f ∘ conj`, hence `f(A)` is real for a real `A` when `f` commutes with conjugation
-  near the spectrum.
+* `Matrix.IsUpperTriangular.spectrum_eq`: the eigenvalues of a triangular matrix are its diagonal
+  entries.
+* `Matrix.pfc_map_conj`, `Matrix.pfc_complexify_of_conj`: `f(Ā) = (f̄(A))‾` for
+  `f̄ = conj ∘ f ∘ conj`, hence `f(A)` is real for a real `A` (read in `ℂ` through
+  `Matrix.complexify`) when `f` commutes with conjugation near the spectrum.
 
 ## Implementation notes
 
@@ -204,6 +207,18 @@ theorem pfc_transpose (f : 𝕜 → 𝕜) (A : Matrix n n 𝕜) : pfc f Aᵀ = (
   classical
   rw [pfc_def, pfc_def, minpoly_transpose, aeval_transpose]
 
+/-! ### Triangular matrices -/
+
+/-- **The spectrum of an upper triangular matrix is the set of its diagonal entries**, over any
+field: `charpoly T = ∏ᵢ (X - Tᵢᵢ)`. -/
+theorem IsUpperTriangular.spectrum_eq {K : Type*} [Field K] [LinearOrder n] {T : Matrix n n K}
+    (hT : T.IsUpperTriangular) : spectrum K T = Set.range fun i => T i i := by
+  ext μ
+  rw [mem_spectrum_iff_isRoot_charpoly, charpoly_of_isUpperTriangular T hT, IsRoot, eval_prod,
+    Finset.prod_eq_zero_iff]
+  simp only [Finset.mem_univ, true_and, eval_sub, eval_X, eval_C, sub_eq_zero, Set.mem_range]
+  exact exists_congr fun i => eq_comm
+
 /-! ### Complex conjugation and real matrices -/
 
 section Conj
@@ -238,26 +253,26 @@ theorem pfc_map_conj (f : ℂ → ℂ) (A : Matrix n n ℂ) :
 /-- **Real matrices** ([golub2013matrix] §9.1): if `A` is real and `f` commutes with conjugation
 near every eigenvalue (e.g. `exp`, `sin`, `cos`, and `Complex.log` or `z ^ (1/2)` when no eigenvalue
 lies on `(-∞, 0]`), then `f(A)` is real. -/
-theorem pfc_map_ofReal_of_conj {f : ℂ → ℂ} (B : Matrix n n ℝ)
-    (hf : ∀ μ ∈ spectrum ℂ (B.map Complex.ofReal), (conj ∘ f ∘ conj) =ᶠ[nhds μ] f) :
-    ∃ C : Matrix n n ℝ, pfc f (B.map Complex.ofReal) = C.map Complex.ofReal := by
-  set A := B.map Complex.ofReal
-  have hA : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
+theorem pfc_complexify_of_conj {f : ℂ → ℂ} (B : Matrix n n ℝ)
+    (hf : ∀ μ ∈ spectrum ℂ (complexify B), (conj ∘ f ∘ conj) =ᶠ[nhds μ] f) :
+    ∃ C : Matrix n n ℝ, pfc f (complexify B) = complexify C := by
+  set A := complexify B
   have hconj : A.map conj = A := by
     ext i j
     simp [A]
   have h1 : pfc f A = (pfc (conj ∘ f ∘ conj) A).map conj := by rw [← pfc_map_conj, hconj]
-  have h2 : pfc (conj ∘ f ∘ conj) A = pfc f A := pfc_congr fun μ hμ j _ =>
-    (hf μ ((spectrum.mem_iff_isRoot_minpoly hA).mpr
-      ((Polynomial.mem_roots (minpoly.ne_zero hA)).mp hμ))).iteratedDeriv_eq j
+  have h2 : pfc (conj ∘ f ∘ conj) A = pfc f A := pfc_congr_of_eventuallyEq hf
   have hfix : (pfc f A).map conj = pfc f A := by
     rw [h2] at h1
     exact h1.symm
   refine ⟨(pfc f A).map Complex.re, ?_⟩
   ext i j
   have h := congrFun (congrFun hfix i) j
-  simp only [map_apply] at h ⊢
+  simp only [map_apply] at h
+  rw [complexify_apply, map_apply]
   exact (Complex.conj_eq_iff_re.mp h).symm
+
+@[deprecated (since := "2026-09-30")] alias pfc_map_ofReal_of_conj := pfc_complexify_of_conj
 
 end Conj
 

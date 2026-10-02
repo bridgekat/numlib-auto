@@ -2,6 +2,7 @@ import Mathlib.Analysis.CStarAlgebra.Matrix
 import Numlib.Analysis.Matrix.Function.Basic
 import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Analytic
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.Normed.Ring.Inverse
 
 /-!
 # The matrix sign function and Newton's iteration
@@ -51,10 +52,7 @@ theorem half_smul_add_inverse_sub_eq_of_commute {s S : R} (hs : IsUnit s) (hS : 
     (hc : Commute s S) :
     (2 : K)⁻¹ • (s + Ring.inverse s) - S = (2 : K)⁻¹ • (Ring.inverse s * (s - S) ^ 2) := by
   have h1 : Ring.inverse s * s = 1 := Ring.inverse_mul_cancel s hs
-  have hcS : Commute (Ring.inverse s) S := by
-    obtain ⟨u, rfl⟩ := hs
-    rw [Ring.inverse_unit]
-    exact hc.units_inv_left
+  have hcS : Commute (Ring.inverse s) S := hc.ringInverse_left
   have key : Ring.inverse s * (s - S) ^ 2 = s + Ring.inverse s - (2 : K) • S := by
     have e1 : Ring.inverse s * (s - S) ^ 2 = Ring.inverse s * s * s - Ring.inverse s * s * S -
         Ring.inverse s * S * s + Ring.inverse s * (S * S) := by
@@ -93,13 +91,6 @@ meaningful when no eigenvalue of `A` is purely imaginary. -/
 noncomputable def matrixSign (A : Matrix n n ℂ) : Matrix n n ℂ :=
   pfc (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) A
 
-/-- The roots of the minimal polynomial are the eigenvalues. -/
-private theorem mem_spectrum_of_mem_roots {A : Matrix n n ℂ} {μ : ℂ}
-    (hμ : μ ∈ (minpoly ℂ A).roots) : μ ∈ spectrum ℂ A := by
-  have hA : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
-  rw [spectrum.mem_iff_isRoot_minpoly hA]
-  exact (mem_roots (minpoly.ne_zero hA)).mp hμ
-
 /-- A function that is locally constant off the imaginary axis is smooth there. -/
 private theorem contDiffAt_of_eventuallyEq_const {f : ℂ → ℂ} {μ c : ℂ} (h : f =ᶠ[𝓝 μ] fun _ => c)
     (k : WithTop ℕ∞) : ContDiffAt ℂ k f μ :=
@@ -115,7 +106,7 @@ theorem matrixSign_eq_sum (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
   classical
   rw [matrixSign, pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq
     (Algebra.IsIntegral.isIntegral _) (IsAlgClosed.splits _)
-    (fun μ hμ => Complex.sign_re_eventuallyEq (hA μ (mem_spectrum_of_mem_roots hμ)))]
+    (fun μ hμ => Complex.sign_re_eventuallyEq (hA μ (spectrum.mem_of_mem_roots_minpoly hμ)))]
   rw [← Finset.sum_filter_add_sum_filter_not _ (fun μ : ℂ => 0 < μ.re), sub_eq_add_neg,
     ← Finset.sum_neg_distrib]
   congr 1
@@ -123,7 +114,7 @@ theorem matrixSign_eq_sum (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
     rw [sign_pos (Finset.mem_filter.mp hμ).2, SignType.coe_one, one_smul]
   · rw [Finset.sum_filter, Finset.sum_filter]
     refine Finset.sum_congr rfl fun μ hμ => ?_
-    have hne := hA μ (mem_spectrum_of_mem_roots (Multiset.mem_toFinset.mp hμ))
+    have hne := hA μ (spectrum.mem_of_mem_roots_minpoly (Multiset.mem_toFinset.mp hμ))
     rcases lt_or_gt_of_ne hne with h | h
     · rw [ite_eq_left (not_lt.mpr h.le), ite_eq_left h, sign_neg h, SignType.coe_neg_one,
         neg_one_smul]
@@ -132,14 +123,14 @@ theorem matrixSign_eq_sum (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
 /-- `sign(A)² = 1` ([golub2013matrix] §9.4.1). -/
 theorem matrixSign_sq (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) : matrixSign A ^ 2 = 1 := by
   have hev := fun μ (hμ : μ ∈ (minpoly ℂ A).roots) =>
-    Complex.sign_re_eventuallyEq (hA μ (mem_spectrum_of_mem_roots hμ))
+    Complex.sign_re_eventuallyEq (hA μ (spectrum.mem_of_mem_roots_minpoly hμ))
   rw [sq, matrixSign]
   refine pfc_mul_pfc_eq_one (Algebra.IsIntegral.isIntegral _) (IsAlgClosed.splits _)
     (fun μ hμ => contDiffAt_of_eventuallyEq_const (hev μ hμ) _)
     (fun μ hμ => contDiffAt_of_eventuallyEq_const (hev μ hμ) _) fun μ hμ => ?_
   filter_upwards [hev μ hμ] with z hz
   simp only [Pi.mul_apply, hz]
-  rcases lt_or_gt_of_ne (hA μ (mem_spectrum_of_mem_roots hμ)) with h | h
+  rcases lt_or_gt_of_ne (hA μ (spectrum.mem_of_mem_roots_minpoly hμ)) with h | h
   · simp [sign_neg h]
   · simp [sign_pos h]
 
@@ -166,7 +157,7 @@ theorem spectrum_matrixSign_subset (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
 theorem isUnit_add_matrixSign (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) : IsUnit (A + matrixSign A) := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
   have hev := fun μ (hμ : μ ∈ (minpoly ℂ A).roots) =>
-    Complex.sign_re_eventuallyEq (hA μ (mem_spectrum_of_mem_roots hμ))
+    Complex.sign_re_eventuallyEq (hA μ (spectrum.mem_of_mem_roots_minpoly hμ))
   have h : A + matrixSign A = pfc (fun z => z + ((SignType.sign z.re : SignType) : ℂ)) A := by
     rw [show (fun z : ℂ => z + ((SignType.sign z.re : SignType) : ℂ)) =
         (fun z => z) + fun z => ((SignType.sign z.re : SignType) : ℂ) from rfl,
@@ -191,10 +182,9 @@ variable {l m : Type*} [Fintype l] [DecidableEq l] [Fintype m] [DecidableEq m]
 /-- A function constant near every eigenvalue of `B` takes that value at `B`. -/
 private theorem pfc_eq_algebraMap_of_eventuallyEq {k : Type*} [Fintype k] [DecidableEq k]
     {B : Matrix k k ℂ} {f : ℂ → ℂ} {c : ℂ} (h : ∀ μ ∈ spectrum ℂ B, f =ᶠ[𝓝 μ] fun _ => c) :
-    pfc f B = algebraMap ℂ _ c := by
-  have hB : IsIntegral ℂ B := Algebra.IsIntegral.isIntegral _
-  rw [pfc_congr (g := fun _ => c) fun μ hμ j _ =>
-    (h μ (mem_spectrum_of_mem_roots hμ)).iteratedDeriv_eq j, pfc_const hB (IsAlgClosed.splits _)]
+    pfc f B = algebraMap ℂ _ c :=
+  (pfc_congr_of_eventuallyEq h).trans
+    (pfc_const (Algebra.IsIntegral.isIntegral _) (IsAlgClosed.splits _) c)
 
 /-- **The Jordan-ordered form of the sign** ([golub2013matrix] §9.4.1): if
 `X⁻¹ A X = diag(J₁, J₂)` with the eigenvalues of `J₁` in the open left half-plane and those of `J₂`
@@ -354,11 +344,8 @@ private theorem signFun_ne_zero (k : ℕ) {z : ℂ} (hz : z.re ≠ 0) : signFun 
 
 /-- Functions agreeing off the imaginary axis agree at a matrix without imaginary eigenvalues. -/
 private theorem pfc_congr_of_re_ne_zero {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
-    {f g : ℂ → ℂ} (h : ∀ z : ℂ, z.re ≠ 0 → f z = g z) : pfc f A = pfc g A := by
-  refine pfc_congr fun μ hμ j _ => Filter.EventuallyEq.iteratedDeriv_eq j ?_
-  have hopen : IsOpen {z : ℂ | z.re ≠ 0} := isOpen_ne_fun Complex.continuous_re continuous_const
-  filter_upwards [hopen.mem_nhds (hA μ (mem_spectrum_of_mem_roots hμ))] with z hz
-  exact h z hz
+    {f g : ℂ → ℂ} (h : ∀ z : ℂ, z.re ≠ 0 → f z = g z) : pfc f A = pfc g A :=
+  pfc_congr_of_eqOn (isOpen_ne_fun Complex.continuous_re continuous_const) hA h
 
 /-- Each Newton iterate is a rational function of `A`. -/
 private theorem newtonSignIterate_eq_pfc {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
@@ -366,9 +353,9 @@ private theorem newtonSignIterate_eq_pfc {A : Matrix n n ℂ} (hA : ∀ μ ∈ s
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
   have hsmooth : ∀ k, ∀ μ ∈ (minpoly ℂ A).roots,
       ContDiffAt ℂ ((minpoly ℂ A).rootMultiplicity μ - 1 : ℕ) (signFun k) μ := fun k μ hμ =>
-    (signFun_spec k (hA μ (mem_spectrum_of_mem_roots hμ))).1.of_le le_top
+    (signFun_spec k (hA μ (spectrum.mem_of_mem_roots_minpoly hμ))).1.of_le le_top
   have hne : ∀ k, ∀ μ ∈ (minpoly ℂ A).roots, signFun k μ ≠ 0 := fun k μ hμ =>
-    signFun_ne_zero k (hA μ (mem_spectrum_of_mem_roots hμ))
+    signFun_ne_zero k (hA μ (spectrum.mem_of_mem_roots_minpoly hμ))
   induction k with
   | zero => exact (pfc_id hI (IsAlgClosed.splits _)).symm
   | succ k ih =>
@@ -399,10 +386,10 @@ theorem matrixSign_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spect
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
   rw [newtonSignIterate_eq_pfc hA, matrixSign, matrixSign,
     ← pfc_comp hI (IsAlgClosed.splits _) (fun μ hμ =>
-      (signFun_spec k (hA μ (mem_spectrum_of_mem_roots hμ))).1.of_le le_top) fun μ hμ =>
+      (signFun_spec k (hA μ (spectrum.mem_of_mem_roots_minpoly hμ))).1.of_le le_top) fun μ hμ =>
       contDiffAt_of_eventuallyEq_const
         (Complex.sign_re_eventuallyEq
-          (signFun_re_ne_zero k (hA μ (mem_spectrum_of_mem_roots hμ)))) _]
+          (signFun_re_ne_zero k (hA μ (spectrum.mem_of_mem_roots_minpoly hμ)))) _]
   refine pfc_congr_of_re_ne_zero hA fun z hz => ?_
   have := signFun_spec k hz
   rcases lt_or_gt_of_ne hz with h | h
@@ -521,7 +508,7 @@ theorem tendsto_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
   have hs := IsAlgClosed.splits (minpoly ℂ A)
   have hsp : ∀ μ ∈ (minpoly ℂ A).roots, μ.re ≠ 0 := fun μ hμ =>
-    hA μ (mem_spectrum_of_mem_roots hμ)
+    hA μ (spectrum.mem_of_mem_roots_minpoly hμ)
   set G := pfc contraction A
   set S := matrixSign A
   have hGpow : ∀ N : ℕ, pfc (fun z => contraction z ^ N) A = G ^ N := fun N => by

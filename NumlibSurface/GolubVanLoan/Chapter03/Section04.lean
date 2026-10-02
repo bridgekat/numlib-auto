@@ -1643,8 +1643,8 @@ theorem equation_3_4_7 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
   obtain ⟨E, hAx, hE⟩ := equation_3_4_6 hu hn A b out hout hpiv x hx
   have hγ : 0 ≤ gamma fp.u (3 * n) := gamma_nonneg fp.u_nonneg hn
   have hL : ‖packedL out.1‖ ≤ n * (1 + fp.u) := by
-    have h := linfty_opNorm_le_card_mul_of_abs_le
-      (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2 (by linarith [fp.u_nonneg])
+    have h := linfty_opNorm_le_card_mul_of_abs_le (by linarith [fp.u_nonneg])
+      (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2
     rwa [Fintype.card_fin] at h
   refine ⟨E, hAx, (linfty_opNorm_le_of_equation_3_4_6 hγ hE).trans ?_⟩
   calc gamma fp.u (3 * n) * (‖packedL out.1‖ * ‖packedU out.1‖)
@@ -1665,11 +1665,11 @@ theorem equation_3_4_9 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
   obtain ⟨E, hAx, hE⟩ := equation_3_4_6 hu hn A b out hout hpiv x hx
   have hγ : 0 ≤ gamma fp.u (3 * n) := gamma_nonneg fp.u_nonneg hn
   have hL : ‖packedL out.1‖ ≤ n * (1 + fp.u) := by
-    have h := linfty_opNorm_le_card_mul_of_abs_le
-      (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2 (by linarith [fp.u_nonneg])
+    have h := linfty_opNorm_le_card_mul_of_abs_le (by linarith [fp.u_nonneg])
+      (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2
     rwa [Fintype.card_fin] at h
   have hU' : ‖packedU out.1‖ ≤ n * (ρ * ‖A‖) := by
-    have h := linfty_opNorm_le_card_mul_of_abs_le hU (mul_nonneg hρ (norm_nonneg _))
+    have h := linfty_opNorm_le_card_mul_of_abs_le (mul_nonneg hρ (norm_nonneg _)) hU
     rwa [Fintype.card_fin] at h
   refine ⟨E, hAx, (linfty_opNorm_le_of_equation_3_4_6 hγ hE).trans ?_⟩
   calc gamma fp.u (3 * n) * (‖packedL out.1‖ * ‖packedU out.1‖)

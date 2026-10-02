@@ -1220,7 +1220,8 @@ theorem norm_residual_subset_sub_le (h : IsSVD A U σ V) (π : Equiv.Perm (Fin N
         (⟨fun i => π (Fin.castLE hrN i), π.injective.comp (Fin.castLE_injective hrN)⟩ :
           Fin r ↪ Fin N) := rfl
     rw [hsub, ← sortedSingularValues_zero_eq_l2_opNorm]
-    refine (sortedSingularValues_submatrix_le _ _ 0).trans ?_
+    refine (sortedSingularValues_submatrix_le _ Function.injective_id
+      (Function.Embedding.injective _) 0).trans ?_
     rw [sortedSingularValues_zero_eq_l2_opNorm, hPA, l2_opNorm_sub_svdTruncation h]
   have hgap : K.gap L ≤ A.sortedSingularValues r / sB := by
     rw [Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq K L hfin]

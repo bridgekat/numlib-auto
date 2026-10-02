@@ -316,6 +316,14 @@ end Holder
 
 end PiLp
 
+/-- The squared `ℓ²` norm of a vector on a sum type is the sum of the squared norms of its two
+parts. -/
+theorem EuclideanSpace.norm_toLp_sumElim_sq {𝕜 : Type*} [RCLike 𝕜] {m₁ m₂ : Type*} [Fintype m₁]
+    [Fintype m₂] (u : m₁ → 𝕜) (w : m₂ → 𝕜) :
+    ‖(toLp 2 (Sum.elim u w) : EuclideanSpace 𝕜 (m₁ ⊕ m₂))‖ ^ 2
+      = ‖(toLp 2 u : EuclideanSpace 𝕜 m₁)‖ ^ 2 + ‖(toLp 2 w : EuclideanSpace 𝕜 m₂)‖ ^ 2 := by
+  simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_sum_type, Sum.elim_inl, Sum.elim_inr]
+
 /-- A unit vector of `ℝ^n` has a nonzero coordinate. -/
 theorem EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one {n : ℕ}
     {v : EuclideanSpace ℝ (Fin n)} (hv : ‖v‖ = 1) : ∃ i : Fin n, v i ≠ 0 := by

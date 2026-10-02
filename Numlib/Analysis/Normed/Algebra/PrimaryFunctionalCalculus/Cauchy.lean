@@ -181,9 +181,8 @@ theorem pfc_eq_circleIntegral {a : A} (ha : IsIntegral ℂ a) {f : ℂ → ℂ} 
     pfc f a = (2 * π * I)⁻¹ • ∮ z in C(c, R), f z • Ring.inverse (algebraMap ℂ A z - a) := by
   classical
   have hs := IsAlgClosed.splits (minpoly ℂ a)
-  have hball : ∀ l ∈ (minpoly ℂ a).roots.toFinset, l ∈ ball c R := fun l hl => hσ (by
-    rw [spectrum.mem_iff_isRoot_minpoly ha]
-    exact (mem_roots (minpoly.ne_zero ha)).mp (Multiset.mem_toFinset.mp hl))
+  have hball : ∀ l ∈ (minpoly ℂ a).roots.toFinset, l ∈ ball c R := fun l hl =>
+    hσ (spectrum.mem_of_mem_roots_minpoly (Multiset.mem_toFinset.mp hl))
   rcases subsingleton_or_nontrivial A with hA | hA
   · exact Subsingleton.elim _ _
   have hR : 0 ≤ R := by

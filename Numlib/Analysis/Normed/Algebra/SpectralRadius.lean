@@ -300,6 +300,8 @@ matrices of positive size, the spectrum is nonempty and compact and the supremum
 noncomputable def spectralAbscissa (a : B) : ℝ :=
   sSup ((fun z : ℂ => z.re) '' spectrum ℂ a)
 
+/-- The real parts of a bounded spectrum are bounded above, so that `spectralAbscissa` is a
+genuine supremum. -/
 theorem bddAbove_re_spectrum {a : B} (hb : Bornology.IsBounded (spectrum ℂ a)) :
     BddAbove ((fun z : ℂ => z.re) '' spectrum ℂ a) := by
   obtain ⟨C, hC⟩ := isBounded_iff_forall_norm_le.mp hb

@@ -57,17 +57,6 @@ theorem l2_opNorm_pfc_jordanBlock_le {𝕜 : Type*} [RCLike 𝕜] (h : 𝕜 → 
         exact hM0
   rwa [lpOpNorm_two, Fintype.card_fin, Real.sqrt_mul_self (Nat.cast_nonneg _)] at this
 
-/-- The spectral norm is invariant under a simultaneous permutation of rows and columns. -/
-private theorem l2_opNorm_reindex {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
-    [DecidableEq m] [DecidableEq n] (σ : m ≃ n) (B : Matrix m m 𝕜) :
-    ‖reindex σ σ B‖ = ‖B‖ := by
-  refine le_antisymm ?_ ?_
-  · rw [← lpOpNorm_two, ← lpOpNorm_two, reindex_apply]
-    exact lpOpNorm_submatrix_le _ _ σ.symm.injective σ.symm.injective
-  · have h := lpOpNorm_submatrix_le (p := 2) (reindex σ σ B) σ.injective σ.injective
-    rwa [lpOpNorm_two, lpOpNorm_two, reindex_apply, submatrix_submatrix, Equiv.symm_comp_self,
-      submatrix_id_id] at h
-
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
 /-- The eigenvalue of a nonempty Jordan block of a Jordan form of `A` lies in the spectrum of
@@ -103,7 +92,7 @@ theorem l2_opNorm_pfc_sub_le_of_conj_jordanForm {ι : Type*} [Finite ι] [Decida
   have := Fintype.ofFinite ι
   have hint : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral A
   have hroot : ∀ z ∈ (minpoly ℂ A).roots, z ∈ spectrum ℂ A := fun z hz =>
-    (spectrum.mem_iff_isRoot_minpoly hint).2 (Polynomial.isRoot_of_mem_roots hz)
+    spectrum.mem_of_mem_roots_minpoly hz
   rw [← pfc_sub (fun z hz => (hf z (hroot z hz)).contDiffAt)
     (fun z hz => (hg z (hroot z hz)).contDiffAt), pfc_conj_jordanForm σ hP h]
   have hblock : ‖blockDiagonal' fun i => pfc (f - g) (jordanBlock (e i) (μ i))‖ ≤ M := by
@@ -127,12 +116,11 @@ theorem l2_opNorm_pfc_sub_le_of_conj_jordanForm {ι : Type*} [Finite ι] [Decida
           ‖P⁻¹‖ :=
         (l2_opNorm_mul _ _).trans (mul_le_mul_of_nonneg_right (l2_opNorm_mul _ _) (norm_nonneg _))
     _ ≤ ‖P‖ * M * ‖P⁻¹‖ := by
-        rw [l2_opNorm_reindex]
+        rw [reindex_apply, l2_opNorm_submatrix_equiv]
         gcongr
     _ = ‖P‖ * ‖P⁻¹‖ * M := by ring
 
 end Jordan
-
 
 section SchurAux
 
@@ -146,7 +134,7 @@ private theorem pfc_sub_eq_unitary_conj {A Q : Matrix (Fin N) (Fin N) ℂ}
     pfc f A - pfc g A = Q * pfc (f - g) (star Q * A * Q) * star Q := by
   have hint : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral A
   have hroot : ∀ z ∈ (minpoly ℂ A).roots, z ∈ Ω := fun z hz =>
-    hAΩ ((spectrum.mem_iff_isRoot_minpoly hint).2 (Polynomial.isRoot_of_mem_roots hz))
+    hAΩ (spectrum.mem_of_mem_roots_minpoly hz)
   have hQi : Q⁻¹ = star Q := inv_eq_left_inv (mem_unitaryGroup_iff'.1 hQ)
   have hA : A = Q * (star Q * A * Q) * Q⁻¹ := by
     rw [hQi, ← Matrix.mul_assoc, ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hQ,
@@ -182,14 +170,6 @@ private theorem norm_pathProd_path [LocallyFiniteOrder n] {T : Matrix n n ℂ} {
       Finset.mem_Ioo.2 ⟨ha x hx, (Finset.mem_Ioo.1 (hs (Finset.mem_insert_of_mem hx))).2⟩
     rw [pathProd_path_insert _ hsa, pathProd_path_insert _ hsa, norm_mul, hU i a ha'.1,
       ih ha'.2 hsa]
-
-/-- The diagonal entries of an upper triangular matrix are eigenvalues. -/
-private theorem IsUpperTriangular.apply_self_mem_spectrum [Fintype n] {T : Matrix n n ℂ}
-    (hT : T.IsUpperTriangular) (k : n) : T k k ∈ spectrum ℂ T := by
-  classical
-  refine mem_spectrum_of_isRoot_charpoly ?_
-  rw [IsRoot, charpoly_of_isUpperTriangular T hT, eval_prod]
-  exact Finset.prod_eq_zero (Finset.mem_univ k) (by simp)
 
 variable {N : ℕ}
 
@@ -283,15 +263,6 @@ private theorem norm_pfc_apply_le {T : Matrix (Fin N) (Fin N) ℂ} (hT : T.IsUpp
   · rw [(BlockTriangular.pfc hT h) hij, norm_zero]
     exact Finset.sum_nonneg fun r _ => hterm r
 
-/-- The Frobenius norm is monotone in the moduli of the entries. -/
-private theorem frobenius_norm_le_of_forall_norm_le {H : Matrix (Fin N) (Fin N) ℂ}
-    {E : Matrix (Fin N) (Fin N) ℝ} (h : ∀ i j, ‖H i j‖ ≤ E i j) : ‖H‖ ≤ ‖E‖ := by
-  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
-  rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
-  refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
-  exact pow_le_pow_left₀ (norm_nonneg _)
-    ((h i j).trans ((le_abs_self _).trans_eq (Real.norm_eq_abs _).symm)) 2
-
 /-- The Frobenius form of the entrywise Schur bound, for an upper triangular `T`. -/
 private theorem frobenius_norm_pfc_le {T : Matrix (Fin N) (Fin N) ℂ} (hT : T.IsUpperTriangular)
     {Ω : Set ℂ} (hΩ : Convex ℝ Ω) (hTΩ : ∀ k, T k k ∈ Ω) {h : ℂ → ℂ} (hh : AnalyticOnNhd ℂ h Ω)
@@ -305,7 +276,8 @@ private theorem frobenius_norm_pfc_le {T : Matrix (Fin N) (Fin N) ℂ} (hT : T.I
     rw [Matrix.sum_apply]
     simp only [smul_apply, smul_eq_mul]
     rfl
-  refine (frobenius_norm_le_of_forall_norm_le hE).trans
+  refine (frobenius_norm_le_of_forall_norm_le fun i j =>
+      (hE i j).trans (Real.le_norm_self _)).trans
     ((norm_sum_le _ _).trans (Finset.sum_le_sum fun r hr => ?_))
   have hN : 0 < N := lt_of_le_of_lt (Nat.zero_le r) (Finset.mem_range.1 hr)
   have hδ0 := (norm_nonneg _).trans (hδ r _ (hTΩ ⟨0, hN⟩))
@@ -333,7 +305,8 @@ theorem frobenius_norm_pfc_sub_le {A Q : Matrix (Fin N) (Fin N) ℂ}
   have hspec : spectrum ℂ (star Q * A * Q) = spectrum ℂ A := by
     rw [star_eq_conjTranspose, spectrum_conjTranspose_mul_mul hQ]
   have hTΩ : ∀ k, (star Q * A * Q) k k ∈ Ω := fun k => by
-    have := IsUpperTriangular.apply_self_mem_spectrum hT k
+    have : (star Q * A * Q) k k ∈ spectrum ℂ (star Q * A * Q) :=
+      hT.spectrum_eq ▸ Set.mem_range_self k
     rw [hspec] at this
     exact hAΩ this
   have hpfc := pfc_sub_eq_unitary_conj hQ hAΩ hf hg
@@ -368,15 +341,6 @@ section Simpson
 
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℂ 𝔸] [FiniteDimensional ℂ 𝔸]
 
-/-- The iterated derivatives of a function analytic at a point are analytic there. -/
-private theorem analyticAt_iterate_deriv {f : ℂ → ℂ} {z : ℂ} (hf : AnalyticAt ℂ f z) (k : ℕ) :
-    AnalyticAt ℂ (deriv^[k] f) z := by
-  induction k with
-  | zero => exact hf
-  | succ k ih =>
-    rw [Function.iterate_succ_apply']
-    exact ih.deriv
-
 /-- **The composite Simpson rule for `∫ f(tA) dt`** ([golub2013matrix] §9.2.6, (9.2.7), corrected):
 for `A` in a finite-dimensional complete normed `ℂ`-algebra (matrices with the scoped `ℓ²`
 norm), `f` analytic at `t μ` for every `t ∈ [a, b]` and every eigenvalue `μ` of `A`, and the
@@ -399,7 +363,7 @@ theorem norm_integral_pfc_smul_sub_simpsonSum_le (A : 𝔸) {f : ℂ → ℂ} {a
   have hG : ∀ k, ∀ t ∈ Set.Icc a b, HasDerivAt (G k) (G (k + 1) t) t := by
     intro k t ht
     have h1 := hasDerivAt_pfc_smul ha hs (f := deriv^[k] f) (t := (t : ℂ))
-      fun μ hμ => analyticAt_iterate_deriv (hf t ht μ hμ) k
+      fun μ hμ => (hf t ht μ hμ).iterated_deriv k
     have h2 := (h1.scomp t Complex.ofRealCLM.hasDerivAt).const_mul (A ^ k)
     convert h2 using 1
     · rfl

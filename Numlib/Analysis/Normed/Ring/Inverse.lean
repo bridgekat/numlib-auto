@@ -20,9 +20,12 @@ estimates for the inverse of a small perturbation of an invertible element, and 
 The one-sided forms `NormedRing.isUnit_add_of_norm_inverse_mul_lt_one` and
 `NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one` measure the perturbation by
 `r = ‖a⁻¹ t‖ ≤ ‖a⁻¹‖ ‖t‖` instead ([golub2013matrix] Theorem 2.3.4), and give
-`‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)`; `NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub` is
-the contrapositive used for eigenvalue perturbation (`‖a⁻¹ b‖ ≥ 1` when `a - b` is singular). They,
-and `NormedRing.norm_inverse_one_sub_sub_one_le`, need neither `‖1‖ = 1` nor completeness beyond
+`‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)`, with the right twins
+`NormedRing.isUnit_add_of_norm_mul_inverse_lt_one` and
+`NormedRing.norm_inverse_add_sub_le_of_norm_mul_inverse_lt_one` for `r = ‖t a⁻¹‖`;
+`NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub` is the contrapositive used for eigenvalue
+perturbation (`‖a⁻¹ b‖ ≥ 1` when `a - b` is singular). They, and
+`NormedRing.norm_inverse_one_sub_sub_one_le`, need neither `‖1‖ = 1` nor completeness beyond
 summable geometric series.
 -/
 
@@ -180,7 +183,71 @@ theorem norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one (ha : IsUnit a)
         gcongr; exact norm_mul_le _ _
     _ = ‖t‖ * ‖Ring.inverse a‖ ^ 2 := by ring
 
+omit [HasSummableGeomSeries R] in
+/-- The factorization `a + t = (1 + t a⁻¹) a`, written with `1 - (-(t a⁻¹))`. -/
+private theorem add_eq_one_sub_mul (ha : IsUnit a) : a + t = (1 - -(t * Ring.inverse a)) * a := by
+  rw [sub_neg_eq_add, add_mul, one_mul, mul_assoc, Ring.inverse_mul_cancel _ ha, mul_one]
+
+/-- **Perturbation of a unit, the right one-sided form**: if `a` is a unit and `‖t a⁻¹‖ < 1`, then
+`a + t` is a unit, since `a + t = (1 + t a⁻¹) a`; the twin of
+`NormedRing.isUnit_add_of_norm_inverse_mul_lt_one`. -/
+theorem isUnit_add_of_norm_mul_inverse_lt_one (ha : IsUnit a) (h : ‖t * Ring.inverse a‖ < 1) :
+    IsUnit (a + t) := by
+  rw [add_eq_one_sub_mul ha]
+  exact (isUnit_one_sub_of_norm_lt_one (by rwa [norm_neg])).mul ha
+
+/-- `(a + t)⁻¹ = a⁻¹ (1 + t a⁻¹)⁻¹` when `a` is a unit and `‖t a⁻¹‖ < 1`. -/
+private theorem inverse_add_eq_mul' (ha : IsUnit a) (h : ‖t * Ring.inverse a‖ < 1) :
+    Ring.inverse (a + t) = Ring.inverse a * Ring.inverse (1 - -(t * Ring.inverse a)) := by
+  obtain ⟨u, rfl⟩ := ha
+  obtain ⟨v, hv⟩ := isUnit_one_sub_of_norm_lt_one (x := -(t * Ring.inverse (u : R)))
+    (by rwa [norm_neg])
+  rw [add_eq_one_sub_mul u.isUnit, ← hv, ← Units.val_mul, Ring.inverse_unit, Ring.inverse_unit,
+    Ring.inverse_unit, mul_inv_rev, Units.val_mul]
+
+/-- **Perturbation of the inverse, the right one-sided form**: if `a` is a unit and
+`r = ‖t a⁻¹‖ < 1`, then `‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)` and
+`‖(a + t)⁻¹ - a⁻¹‖ ≤ ‖t‖ ‖a⁻¹‖² / (1 - r)`; the twin of
+`NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one`, through
+`(a + t)⁻¹ - a⁻¹ = a⁻¹ ((1 + t a⁻¹)⁻¹ - 1)`. -/
+theorem norm_inverse_add_sub_le_of_norm_mul_inverse_lt_one (ha : IsUnit a)
+    (h : ‖t * Ring.inverse a‖ < 1) :
+    ‖Ring.inverse (a + t) - Ring.inverse a‖
+        ≤ ‖t * Ring.inverse a‖ * ‖Ring.inverse a‖ / (1 - ‖t * Ring.inverse a‖) ∧
+      ‖Ring.inverse (a + t) - Ring.inverse a‖
+        ≤ ‖t‖ * ‖Ring.inverse a‖ ^ 2 / (1 - ‖t * Ring.inverse a‖) := by
+  have hr : 0 < 1 - ‖t * Ring.inverse a‖ := by linarith
+  have h₁ : ‖Ring.inverse (a + t) - Ring.inverse a‖
+      ≤ ‖t * Ring.inverse a‖ * ‖Ring.inverse a‖ / (1 - ‖t * Ring.inverse a‖) := by
+    have hn : ‖-(t * Ring.inverse a)‖ < 1 := by rwa [norm_neg]
+    rw [inverse_add_eq_mul' ha h, ← mul_sub_one]
+    refine (norm_mul_le _ _).trans ?_
+    have := norm_inverse_one_sub_sub_one_le hn
+    rw [norm_neg] at this
+    rw [mul_div_right_comm, mul_comm (‖t * Ring.inverse a‖ / (1 - ‖t * Ring.inverse a‖))]
+    exact mul_le_mul_of_nonneg_left this (norm_nonneg _)
+  refine ⟨h₁, h₁.trans (div_le_div_of_nonneg_right ?_ hr.le)⟩
+  calc ‖t * Ring.inverse a‖ * ‖Ring.inverse a‖ ≤ ‖t‖ * ‖Ring.inverse a‖ * ‖Ring.inverse a‖ := by
+        gcongr; exact norm_mul_le _ _
+    _ = ‖t‖ * ‖Ring.inverse a‖ ^ 2 := by ring
+
 end OneSided
+
+/-- `Ring.inverse` preserves commutation: if `a` commutes with `b`, it commutes with `b⁻¹` (with
+Mathlib's junk value `0` when `b` is not a unit). -/
+theorem _root_.Commute.ringInverse_right {M₀ : Type*} [MonoidWithZero M₀] {a b : M₀}
+    (h : Commute a b) : Commute a (Ring.inverse b) := by
+  by_cases hb : IsUnit b
+  · obtain ⟨u, rfl⟩ := hb
+    rw [Ring.inverse_unit]
+    exact h.units_inv_right
+  · rw [Ring.inverse_non_unit b hb]
+    exact Commute.zero_right a
+
+/-- `Ring.inverse` preserves commutation, on the left. -/
+theorem _root_.Commute.ringInverse_left {M₀ : Type*} [MonoidWithZero M₀] {a b : M₀}
+    (h : Commute a b) : Commute (Ring.inverse a) b :=
+  (h.symm.ringInverse_right).symm
 
 end NormedRing
 

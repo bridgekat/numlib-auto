@@ -40,8 +40,9 @@ reverse bound, so no diagonalization is needed.
 * `Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`: the spectral norm of a real
   symmetric matrix is its spectral radius.
 * `Matrix.l2_opNorm_submatrix_le`: a submatrix, for injective row and column selections, has the
-  smaller spectral norm, through `Matrix.submatrix_mulVec_eq_comp_mulVec_extend` and the `ℓ^p`
-  facts `PiLp.norm_toLp_comp_le`, `PiLp.norm_toLp_extend`; the induced `p`-norm version is
+  smaller spectral norm, through `Matrix.norm_toLp_submatrix_mulVec_le` (selecting rows and
+  columns preserves any `ℓ^p` operator bound, from `Matrix.submatrix_mulVec_eq_comp_mulVec_extend`
+  and `PiLp.norm_toLp_comp_le`, `PiLp.norm_toLp_extend`); the induced `p`-norm version is
   `Matrix.lpOpNorm_submatrix_le` in `Numlib/Analysis/Matrix/OperatorNorm`; with an equivalence on
   both sides the norm is unchanged (`Matrix.l2_opNorm_submatrix_equiv`).
 * `Matrix.l2_opNorm_vecMulVec`: the spectral norm of a rank-one matrix `u wᵀ` is `‖u‖₂ ‖w‖₂`;
@@ -50,7 +51,7 @@ reverse bound, so no diagonalization is needed.
   form.
 * `Matrix.l2_opNorm_fromBlocks_le`: Kahan's bound on the spectral norm of a `2 × 2` block matrix
   by the norms of its blocks, the largest eigenvalue of `[μ γ; γ δ]` ([golub2013matrix]
-  Lemma 10.3.1), with its Hermitian-shaped case `Matrix.l2_opNorm_fromBlocks_le_of_isHermitian`.
+  Lemma 10.3.1), with its Hermitian-shaped case `Matrix.l2_opNorm_fromBlocks_conjTranspose_le`.
 -/
 
 open scoped Matrix.Norms.L2Operator
@@ -216,25 +217,37 @@ theorem norm_toEuclideanCLM_le_of_isSymmetricBoundedBy {A : Matrix n n ℝ} {M :
 
 section Submatrix
 
+omit [DecidableEq n] in
+/-- **Selecting rows and columns preserves an `ℓ^p` operator bound**: if `‖B y‖_p ≤ C ‖y‖_p` for
+every `y`, then `‖B[f, g] x‖_p ≤ C ‖x‖_p` for injective row and column selections `f`, `g`. Apply
+`B` to `x` extended by zero along `g` (`PiLp.norm_toLp_extend`) and drop the coordinates outside
+the range of `f` (`PiLp.norm_toLp_comp_le`). The engine of `Matrix.l2_opNorm_submatrix_le` and of
+its induced `p`-norm version `Matrix.lpOpNorm_submatrix_le`. -/
+theorem norm_toLp_submatrix_mulVec_le (p : ENNReal) [Fact (1 ≤ p)] {m m' n' : Type*} [Fintype m]
+    [Fintype m'] [Fintype n'] {B : Matrix m n 𝕜} {f : m' → m}
+    (hf : Function.Injective f) {g : n' → n} (hg : Function.Injective g) {C : ℝ}
+    (hB : ∀ y : n → 𝕜, ‖(WithLp.toLp p (B *ᵥ y) : PiLp p fun _ : m => 𝕜)‖
+      ≤ C * ‖(WithLp.toLp p y : PiLp p fun _ : n => 𝕜)‖) (x : n' → 𝕜) :
+    ‖(WithLp.toLp p (B.submatrix f g *ᵥ x) : PiLp p fun _ : m' => 𝕜)‖
+      ≤ C * ‖(WithLp.toLp p x : PiLp p fun _ : n' => 𝕜)‖ := by
+  classical
+  rw [submatrix_mulVec_eq_comp_mulVec_extend B f hg]
+  calc ‖(WithLp.toLp p ((B *ᵥ Function.extend g x 0) ∘ f) : PiLp p fun _ : m' => 𝕜)‖
+      ≤ ‖(WithLp.toLp p (B *ᵥ Function.extend g x 0) : PiLp p fun _ : m => 𝕜)‖ :=
+        PiLp.norm_toLp_comp_le p hf _
+    _ ≤ C * ‖(WithLp.toLp p (Function.extend g x 0) : PiLp p fun _ : n => 𝕜)‖ := hB _
+    _ = C * ‖(WithLp.toLp p x : PiLp p fun _ : n' => 𝕜)‖ := by rw [PiLp.norm_toLp_extend p hg]
+
 /-- **A submatrix has a smaller spectral norm**, for injective row and column selections:
-`‖A.submatrix f g‖₂ ≤ ‖A‖₂` ([golub2013matrix] (2.3.13) at `p = 2`). Apply `A` to the vector
-extended by zero along `g` (`PiLp.norm_toLp_extend`) and drop the coordinates outside the range
-of `f` (`PiLp.norm_toLp_comp_le`). -/
+`‖A.submatrix f g‖₂ ≤ ‖A‖₂` ([golub2013matrix] (2.3.13) at `p = 2`), by
+`Matrix.norm_toLp_submatrix_mulVec_le`. -/
 theorem l2_opNorm_submatrix_le {m m' n' : Type*} [Fintype m] [Fintype m'] [Fintype n']
     [DecidableEq n'] (B : Matrix m n 𝕜) {f : m' → m} (hf : Function.Injective f) {g : n' → n}
     (hg : Function.Injective g) : ‖B.submatrix f g‖ ≤ ‖B‖ := by
   rw [l2_opNorm_def]
-  refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun x => ?_
-  have key : ‖(WithLp.toLp 2 (B.submatrix f g *ᵥ WithLp.ofLp x) : EuclideanSpace 𝕜 m')‖
-      ≤ ‖B‖ * ‖x‖ := by
-    rw [submatrix_mulVec_eq_comp_mulVec_extend B f hg]
-    calc ‖(WithLp.toLp 2 ((B *ᵥ Function.extend g (WithLp.ofLp x) 0) ∘ f) : EuclideanSpace 𝕜 m')‖
-        ≤ ‖(WithLp.toLp 2 (B *ᵥ Function.extend g (WithLp.ofLp x) 0) : EuclideanSpace 𝕜 m)‖ :=
-          PiLp.norm_toLp_comp_le 2 hf _
-      _ ≤ ‖B‖ * ‖(WithLp.toLp 2 (Function.extend g (WithLp.ofLp x) 0) : EuclideanSpace 𝕜 n)‖ :=
-          l2_opNorm_mulVec B (WithLp.toLp 2 (Function.extend g (WithLp.ofLp x) 0))
-      _ = ‖B‖ * ‖x‖ := by rw [PiLp.norm_toLp_extend 2 hg]
-  exact key
+  exact ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun x =>
+    norm_toLp_submatrix_mulVec_le 2 hf hg (C := ‖B‖)
+      (fun y => l2_opNorm_mulVec B (WithLp.toLp 2 y)) (WithLp.ofLp x)
 
 /-- Reindexing does not change the spectral norm. -/
 theorem l2_opNorm_submatrix_equiv {m m' n' : Type*} [Fintype m] [Fintype m'] [Fintype n']
@@ -359,15 +372,8 @@ private theorem sq_add_sq_le_of_blockBound {μ γ δ a b : ℝ} (hμ : 0 ≤ μ)
       + 2 * (μ + δ) * a * b * hPR
   nlinarith [mul_nonneg (add_nonneg hμ hδ) (sq_nonneg (P * a - R * b))]
 
-/-- The squared `ℓ²` norm of a vector on a sum type is the sum of the squared norms of its two
-parts. -/
-theorem norm_toLp_sumElim_sq {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂] (u : m₁ → 𝕜)
-    (w : m₂ → 𝕜) :
-    ‖(WithLp.toLp 2 (Sum.elim u w) : EuclideanSpace 𝕜 (m₁ ⊕ m₂))‖ ^ 2
-      = ‖(WithLp.toLp 2 u : EuclideanSpace 𝕜 m₁)‖ ^ 2
-        + ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 m₂)‖ ^ 2 := by
-  simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_sum_type, Sum.elim_inl,
-    Sum.elim_inr]
+@[deprecated (since := "2026-09-30")]
+alias norm_toLp_sumElim_sq := EuclideanSpace.norm_toLp_sumElim_sq
 
 /-- **The spectral norm of a `2 × 2` block matrix from the norms of its blocks**: if `‖E‖₂ ≤ μ`,
 `‖C‖₂ ≤ γ`, `‖C'‖₂ ≤ γ` and `‖D‖₂ ≤ δ`, then `‖[E C; C' D]‖₂ ≤ λ`, the largest eigenvalue
@@ -391,7 +397,7 @@ theorem l2_opNorm_fromBlocks_le {m₁ m₂ n₁ n₂ : Type*} [Fintype m₁] [Fi
     funext i; cases i <;> rfl
   have hnz : ‖z‖ ^ 2 = ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n₁)‖ ^ 2
       + ‖(WithLp.toLp 2 y : EuclideanSpace 𝕜 n₂)‖ ^ 2 := by
-    rw [← norm_toLp_sumElim_sq, ← hz, WithLp.toLp_ofLp]
+    rw [← EuclideanSpace.norm_toLp_sumElim_sq, ← hz, WithLp.toLp_ofLp]
   -- the two block rows
   have h1 : ‖(WithLp.toLp 2 (E *ᵥ x + C *ᵥ y) : EuclideanSpace 𝕜 m₁)‖
       ≤ μ * ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n₁)‖
@@ -414,7 +420,7 @@ theorem l2_opNorm_fromBlocks_le {m₁ m₂ n₁ n₂ : Type*} [Fintype m₁] [Fi
   have hMz : ‖(WithLp.toLp 2 (fromBlocks E C C' D *ᵥ WithLp.ofLp z)
       : EuclideanSpace 𝕜 (m₁ ⊕ m₂))‖ ^ 2
       ≤ ((μ + δ + √((μ - δ) ^ 2 + 4 * γ ^ 2)) / 2 * ‖z‖) ^ 2 := by
-    rw [hz, fromBlocks_mulVec, norm_toLp_sumElim_sq, mul_pow, hnz]
+    rw [hz, fromBlocks_mulVec, EuclideanSpace.norm_toLp_sumElim_sq, mul_pow, hnz]
     refine le_trans ?_ (sq_add_sq_le_of_blockBound hμ hγ hδ)
     exact add_le_add (pow_le_pow_left₀ (norm_nonneg _) h1 2)
       (pow_le_pow_left₀ (norm_nonneg _) h2 2)
@@ -425,12 +431,15 @@ theorem l2_opNorm_fromBlocks_le {m₁ m₂ n₁ n₂ : Type*} [Fintype m₁] [Fi
 `‖M‖₂ ≤ (μ + δ + √((μ - δ)² + 4γ²)) / 2`. The case `C' = Cᴴ` of
 `Matrix.l2_opNorm_fromBlocks_le`, since `‖Cᴴ‖₂ = ‖C‖₂`; the Hermitian-ness of `E` and `D` is not
 needed. -/
-theorem l2_opNorm_fromBlocks_le_of_isHermitian {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂]
+theorem l2_opNorm_fromBlocks_conjTranspose_le {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂]
     [DecidableEq m₁] [DecidableEq m₂] {E : Matrix m₁ m₁ 𝕜} {C : Matrix m₁ m₂ 𝕜}
     {D : Matrix m₂ m₂ 𝕜}
     {μ γ δ : ℝ} (hE : ‖E‖ ≤ μ) (hC : ‖C‖ ≤ γ) (hD : ‖D‖ ≤ δ) :
     ‖fromBlocks E C Cᴴ D‖ ≤ (μ + δ + √((μ - δ) ^ 2 + 4 * γ ^ 2)) / 2 :=
   l2_opNorm_fromBlocks_le hE hC (by rwa [l2_opNorm_conjTranspose]) hD
+
+@[deprecated (since := "2026-09-30")]
+alias l2_opNorm_fromBlocks_le_of_isHermitian := l2_opNorm_fromBlocks_conjTranspose_le
 
 end Blocks
 
