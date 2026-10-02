@@ -85,3 +85,11 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (7.7.5)'
 id = "equation_7_7_6"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.7.6)'
+
+[[node]]
+id = "algorithm_7_7_2_window"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.2'
+
+[[node]]
+id = "qzPass_isQZPass"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.3'

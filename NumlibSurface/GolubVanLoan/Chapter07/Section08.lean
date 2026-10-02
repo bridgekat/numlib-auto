@@ -18,8 +18,12 @@ Hessenberg form.
 
 Real matrices on `Fin n ⊕ Fin n` (the book's `2n × 2n` with `n × n` blocks, `Matrix.fromBlocks`).
 The book's `J = [0 I; -I 0]` is `-Matrix.J (Fin n) ℝ` (Mathlib's `J = [0 -I; I 0]`); every structure
-here is invariant under `J ↦ -J`, and — as chapter 1 decided for §1.3.10 — the surface uses
-Mathlib's `J` throughout. Hamiltonian is the backbone's `Matrix.IsHamiltonian`, skew-Hamiltonian
+here is invariant under `J ↦ -J`, so this section states everything with Mathlib's `J` (chapter 1
+instead states §1.3.10 with the book's `GolubVanLoan.Chapter01.bookJ` and proves the two forms
+equivalent). The Hamiltonian and symplectic rows of Figure 7.8.1 are chapter 1's
+`GolubVanLoan.Chapter01.isHamiltonian_iff` and `GolubVanLoan.Chapter01.symplectic_blocks`; this
+section adds the skew-Hamiltonian row (`figure_7_8_1_skewHamiltonian`). Hamiltonian is the
+backbone's `Matrix.IsHamiltonian`, skew-Hamiltonian
 `Matrix.IsSkewHamiltonian`, symplectic Mathlib's `Matrix.symplecticGroup (Fin n) ℝ`. The complex
 eigenvalues of a real matrix are those of `Matrix.complexify`. The product problem uses
 `A₁, A₂, A₃` as the book does, `A = A₃ A₂ A₁`; the backbone indexes them by `Fin 3`.
@@ -44,7 +48,7 @@ variable {n : ℕ}
 theorem figure_7_8_1_skewHamiltonian (A G F H : Matrix (Fin n) (Fin n) ℝ) :
     (J (Fin n) ℝ * fromBlocks A G F H)ᵀ = -(J (Fin n) ℝ * fromBlocks A G F H) ↔
       H = Aᵀ ∧ Fᵀ = -F ∧ Gᵀ = -G := by
-  rw [← isSkewHamiltonian_iff_transpose_J_mul, isSkewHamiltonian_iff_fromBlocks]
+  rw [← isSkewHamiltonian_iff_transpose_J_mul, isSkewHamiltonian_fromBlocks_iff]
 
 /-- **Figure 7.8.1, orthogonal symplectic row**: an orthogonal `Q` is symplectic iff `J Q = Q J` iff
 `Q = [Q₁ Q₂; -Q₂ Q₁]`, and then `Q₁ᵀ Q₂` is symmetric and `I = Q₁ᵀ Q₁ + Q₂ᵀ Q₂`. -/
@@ -139,8 +143,8 @@ theorem symplectic_householder_givens :
       ∃ Q : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, Q ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
         Q ∈ symplecticGroup (Fin n) ℝ ∧
         Qᵀ *ᵥ x = ‖WithLp.toLp 2 x‖ • Pi.single (Sum.inl i₀) 1 :=
-  ⟨fun _ hP => fromBlocks_diagonal_mem_symplecticGroup hP,
-    fun i _ _ hcs => planeRotation_inl_inr_mem_symplecticGroup i hcs, fun x i₀ => by
+  ⟨fun _ hP => fromBlocks_diagonal_mem_orthoSymplecticGroup hP,
+    fun i _ _ hcs => planeRotation_inl_inr_mem_orthoSymplecticGroup i hcs, fun x i₀ => by
       obtain ⟨Q, ⟨hQo, hQs⟩, hQ⟩ := exists_orthogonalSymplectic_mulVec_eq x i₀
       exact ⟨Q, hQo, hQs, hQ⟩⟩
 
@@ -236,8 +240,7 @@ theorem equation_7_8_2 {A F G T R Q₁ Q₂ : Matrix (Fin n) (Fin n) ℝ}
       Matrix.mul_assoc, Matrix.mul_assoc,
       nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hQ₁), Matrix.mul_one, ← Matrix.mul_assoc,
       nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hQ₁), Matrix.one_mul]
-  ext μ
-  simp only [Matrix.mem_spectrum_iff_isRoot_charpoly, hsim.charpoly_eq]
+  exact IsSimilar.spectrum_eq hsim
 
 /-- **(7.8.3), the Paige–Van Loan form**: "If `M` is Hamiltonian, then it is easy to compute an
 orthogonal symplectic `U₀` such that `U₀ᵀ M U₀ = [H R; D -Hᵀ]` where `H` is upper Hessenberg and

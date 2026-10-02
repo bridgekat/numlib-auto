@@ -1,4 +1,5 @@
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
+import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Eigen.Normal
 import Numlib.Eigen.NumericalRange
 import Numlib.LinearAlgebra.Matrix.Jordan
@@ -53,14 +54,6 @@ variable {n : ℕ}
 
 /-! ### §7.1.1 Eigenvalues and invariant subspaces -/
 
-/-- The spectrum of a complex matrix is finite: it is the root set of the characteristic
-polynomial. -/
-private theorem spectrum_finite (A : Matrix (Fin n) (Fin n) ℂ) : (spectrum ℂ A).Finite := by
-  have h : spectrum ℂ A = {z | A.charpoly.IsRoot z} := by
-    ext z; exact Matrix.mem_spectrum_iff_isRoot_charpoly
-  rw [h]
-  exact Polynomial.finite_setOfPred_isRoot A.charpoly_monic.ne_zero
-
 /-- The spectrum of a complex matrix of positive size is nonempty. -/
 private theorem spectrum_nonempty [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
     (spectrum ℂ A).Nonempty := by
@@ -96,14 +89,21 @@ theorem spectralRadius_eq (A : Matrix (Fin n) (Fin n) ℂ) :
   simp only [ENNReal.coe_toReal, coe_nnnorm]
 
 /-- **(7.1.2), the spectral abscissa** `α(A) = max_{λ ∈ λ(A)} Re(λ)`, as a supremum; it is attained
-for `n ≥ 1` (`spectralAbscissa_mem`). -/
+for `n ≥ 1` (`spectralAbscissa_mem`). It is the backbone's `spectralAbscissa` of `A` in the
+algebra of matrices (`spectralAbscissa_eq`). -/
 noncomputable def spectralAbscissa (A : Matrix (Fin n) (Fin n) ℂ) : ℝ :=
   sSup (Complex.re '' spectrum ℂ A)
 
-/-- The spectral abscissa (7.1.2) is a maximum: some eigenvalue has real part `α(A)`. -/
+/-- The spectral abscissa (7.1.2) is the backbone's `spectralAbscissa`. -/
+theorem spectralAbscissa_eq (A : Matrix (Fin n) (Fin n) ℂ) :
+    spectralAbscissa A = _root_.spectralAbscissa A := rfl
+
+/-- The spectral abscissa (7.1.2) is a maximum: some eigenvalue has real part `α(A)`
+(`exists_mem_spectrum_re_eq_spectralAbscissa`). -/
 theorem spectralAbscissa_mem [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ μ ∈ spectrum ℂ A, μ.re = spectralAbscissa A :=
-  ((spectrum_nonempty A).image _).csSup_mem ((spectrum_finite A).image _)
+  exists_mem_spectrum_re_eq_spectralAbscissa (Matrix.finite_spectrum A).isCompact
+    (spectrum_nonempty A)
 
 /-- **(7.1.4), the numerical range** (field of values) `W(A) = {xᴴ A x : ‖x‖₂ = 1}`. Its agreement
 with the backbone's operator numerical range, defined by Rayleigh quotients of nonzero vectors, is
@@ -174,6 +174,13 @@ private theorem eq_zero_of_mulVec_eq_zero {m k : ℕ} {X : Matrix (Fin m) (Fin k
   rw [h] at hmem
   exact (Submodule.mem_bot ℂ).1 hmem
 
+/-- **Similar matrices have the same spectrum** (via `Matrix.IsSimilar.charpoly_eq`; the chapter's
+one copy of this fact, used in §7.1, §7.2 and §7.8). -/
+theorem IsSimilar.spectrum_eq {m : ℕ} {B C : Matrix (Fin m) (Fin m) ℂ}
+    (h : IsSimilar B C) : spectrum ℂ B = spectrum ℂ C := by
+  ext μ
+  simp only [Matrix.mem_spectrum_iff_isRoot_charpoly, h.charpoly_eq]
+
 /-- **§7.1.1, invariant subspaces from `A X = X B`**, for `X ∈ ℂ^{n×k}`, `B ∈ ℂ^{k×k}`: `ran(X)` is
 invariant for `A`; `B y = λ y ⇒ A (X y) = λ (X y)`; if `X` has full column rank then
 `λ(B) ⊆ λ(A)`; and a similarity `B = X⁻¹ A X` with `X` square and nonsingular preserves the
@@ -195,9 +202,7 @@ theorem spectrum_subset_of_mul_eq_mul {k : ℕ} {A : Matrix (Fin n) (Fin n) ℂ}
   · obtain ⟨y, hy0, hy⟩ := (Matrix.mem_spectrum_iff_exists_mulVec_eq_smul B μ).1 hμ
     exact (Matrix.mem_spectrum_iff_exists_mulVec_eq_smul A μ).2
       ⟨X *ᵥ y, fun h0 => hy0 (eq_zero_of_mulVec_eq_zero hX h0), hb y μ hy⟩
-  · have hsim : IsSimilar A (Y⁻¹ * A * Y) := ⟨Y, hY, rfl⟩
-    ext μ
-    simp only [Matrix.mem_spectrum_iff_isRoot_charpoly, hsim.charpoly_eq]
+  · exact (IsSimilar.spectrum_eq ⟨Y, hY, rfl⟩).symm
 
 /-! ### §7.1.2 Decoupling -/
 
@@ -215,12 +220,6 @@ theorem lemma_7_1_1 {p q : ℕ} (T₁₁ : Matrix (Fin p) (Fin p) ℂ) (T₁₂ 
     Polynomial.eval_mul, mul_eq_zero]
 
 /-! ### §7.1.3 Basic unitary decompositions -/
-
-/-- Similar matrices have the same spectrum. -/
-private theorem IsSimilar.spectrum_eq {m : ℕ} {B C : Matrix (Fin m) (Fin m) ℂ}
-    (h : IsSimilar B C) : spectrum ℂ B = spectrum ℂ C := by
-  ext μ
-  simp only [Matrix.mem_spectrum_iff_isRoot_charpoly, h.charpoly_eq]
 
 /-- **Lemma 7.1.2.** If `A X = X B` with `rank(X) = p` (7.1.5), then a unitary `Q` puts `A` in block
 upper triangular form `Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` (7.1.6) with `λ(T₁₁) = λ(A) ∩ λ(B)`. -/

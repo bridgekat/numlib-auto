@@ -63,3 +63,7 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.2'
 [[node]]
 id = "algorithm_7_5_1_window"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.1'
+
+[[node]]
+id = "qrPass_isQRPass"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.2'

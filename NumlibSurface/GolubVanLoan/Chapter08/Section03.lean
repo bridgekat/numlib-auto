@@ -39,7 +39,9 @@ chapter 7's Krylov-matrix and implicit-Q theorems.
 
 The Wilkinson shift (8.3.3) needs `sign(0) = 1`. The "preservation of form" fact of §8.3.3 holds
 for every QR factorization only when `T` is nonsingular (for singular `T` the orthogonal factor is
-not unique: `T = 0 = Q · 0`); the node assumes it.
+not unique: `T = 0 = Q · 0`); the node assumes it. The program (8.3.2) is `explicitShiftedQR`,
+with its exact semantics `equation_8_3_2`; (8.3.6) defines the process `IsRitzAcceleration`,
+and the §8.3.7 statement about it keeps the content name `ritzAcceleration_residual`.
 
 ## Not formalized
 
@@ -61,8 +63,7 @@ theorem equation_8_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, (Qᵀ * A * Q).IsSymm ∧ (Qᵀ * A * Q).IsTridiagonal ∧
       ∀ h : 0 < n, Q *ᵥ Pi.single ⟨0, h⟩ 1 = Pi.single ⟨0, h⟩ 1 := by
   have hsymm : ∀ Q : Matrix (Fin n) (Fin n) ℝ, (Qᵀ * A * Q).IsSymm := fun Q => by
-    simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
-      (isHermitian_conjTranspose_mul_mul Q (isHermitian_iff_isSymm.2 hA))
+    exact hA.transpose_mul_mul Q
   rcases n with _ | M
   · exact ⟨1, one_mem _, hsymm 1, fun i j _ => Fin.elim0 i, fun h => absurd h (lt_irrefl 0)⟩
   · refine ⟨hessenbergQ A, hessenbergQ_mem_orthogonalGroup A, hsymm _, ?_, fun h => ?_⟩
@@ -737,8 +738,7 @@ private def TridiagonalizeInv (A : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
 private theorem tridiagonalizeInv_run {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     TridiagonalizeInv A (n - 2) (Id.run (algorithm_8_3_1 pure A)) := by
   have hsymm : ∀ Q : Matrix (Fin n) (Fin n) ℝ, (Qᵀ * A * Q).IsSymm := fun Q => by
-    simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
-      (isHermitian_conjTranspose_mul_mul Q (isHermitian_iff_isSymm.2 hA))
+    exact hA.transpose_mul_mul Q
   refine List.idRun_foldlM_finRange_induction (TridiagonalizeInv A)
     ⟨by simp [bandClean_zero], rfl, fun k hk => absurd hk (Nat.not_lt_zero _),
       fun q hq => absurd hq List.not_mem_nil⟩ ?_
@@ -795,8 +795,7 @@ theorem algorithm_8_3_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     fun h => Chapter05.householderProduct_mulVec_single fun q hq => ?_, ?_, ?_, hband, hlen, hsupp⟩
   · obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hq
     exact hsupp k hk _ (Nat.zero_le _)
-  · simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
-      (isHermitian_conjTranspose_mul_mul Q (isHermitian_iff_isSymm.2 hA))
+  · exact hA.transpose_mul_mul Q
   · rw [← hband]
     exact isTridiagonal_tridiagonalPart _
 
@@ -925,18 +924,17 @@ theorem qr_tridiagonal_preservation {T Q R : Matrix (Fin n) (Fin n) ℝ} (hTs : 
   have hRQ : R * Q = Qᵀ * T * Q := by rw [hQR, ← Matrix.mul_assoc, hQQ, Matrix.one_mul]
   have hsym : (R * Q).IsSymm := by
     rw [hRQ]
-    simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
-      (isHermitian_conjTranspose_mul_mul Q (isHermitian_iff_isSymm.2 hTs))
+    exact hTs.transpose_mul_mul Q
   have hRQH : (R * Q).IsUpperHessenberg := hR.mul_isUpperHessenberg hQH
   refine ⟨isUpperHessenberg_iff_hasLowerBandwidth_one.1 hQH, ?_, hRQ, hsym,
     hRQH.isTridiagonal_of_isSymm hsym⟩
   -- `R = Qᵀ T`, a product of upper bandwidths `1` and `1`
   have hRe : R = Qᵀ * T := by rw [hQR, ← Matrix.mul_assoc, hQQ, Matrix.one_mul]
   have hQt : Qᵀ.HasUpperBandwidth 1 := by
-    rw [hasUpperBandwidth_iff_transpose, transpose_transpose]
+    rw [← hasLowerBandwidth_transpose_iff, transpose_transpose]
     exact isUpperHessenberg_iff_hasLowerBandwidth_one.1 hQH
   have hTu : T.HasUpperBandwidth 1 := by
-    rw [hasUpperBandwidth_iff_transpose, hTs.eq]
+    rw [← hasLowerBandwidth_transpose_iff, hTs.eq]
     exact isUpperHessenberg_iff_hasLowerBandwidth_one.1 hT.isUpperHessenberg
   rw [hRe]
   exact hQt.mul hTu
@@ -1032,8 +1030,7 @@ theorem perfect_shift {N : ℕ} {T : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (hT
       rw [hRe, Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one, Matrix.sub_mul, Matrix.smul_mul,
         hQQ, sub_add_cancel]
     rw [e]
-    simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
-      (isHermitian_conjTranspose_mul_mul Q (isHermitian_iff_isSymm.2 hTs))
+    exact hTs.transpose_mul_mul Q
   rw [← hsym.apply]
   by_cases hi : i = Fin.last N
   · subst hi
@@ -1109,9 +1106,10 @@ noncomputable def explicitShiftedQR (shift : Matrix (Fin n) (Fin n) ℝ → ℝ)
   | 0 => T₀
   | k + 1 => shiftedQrStep (shift (explicitShiftedQR shift T₀ k)) (explicitShiftedQR shift T₀ k)
 
-/-- Each iterate of (8.3.2) is orthogonally similar to `T₀`; for symmetric `T₀` it is symmetric,
-and for symmetric tridiagonal `T₀` with every shifted matrix nonsingular it stays tridiagonal. -/
-theorem explicitShiftedQR_spec (shift : Matrix (Fin n) (Fin n) ℝ → ℝ)
+/-- Each iterate of (8.3.2) is orthogonally similar to `T₀`, and for symmetric `T₀` it is
+symmetric. (That one step keeps a symmetric tridiagonal matrix tridiagonal, when the shifted matrix
+is nonsingular, is `shifted_qr_tridiagonal`.) -/
+theorem equation_8_3_2 (shift : Matrix (Fin n) (Fin n) ℝ → ℝ)
     {T₀ : Matrix (Fin n) (Fin n) ℝ} (hT₀ : T₀.IsSymm) (k : ℕ) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, explicitShiftedQR shift T₀ k = Qᵀ * T₀ * Q ∧
       (explicitShiftedQR shift T₀ k).IsSymm := by
@@ -1131,8 +1129,10 @@ theorem explicitShiftedQR_spec (shift : Matrix (Fin n) (Fin n) ℝ → ℝ)
     · rw [hstep, hk, transpose_mul]
       simp only [Matrix.mul_assoc]
     · rw [hstep]
-      simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
-        (isHermitian_conjTranspose_mul_mul U (isHermitian_iff_isSymm.2 hs))
+      exact hs.transpose_mul_mul U
+
+
+@[deprecated (since := "2026-09-30")] alias explicitShiftedQR_spec := equation_8_3_2
 
 /-! ### §8.3.5 Implicit shift version -/
 
@@ -1359,14 +1359,6 @@ section ImplicitQR
 
 open Chapter07 (francisWindow blockConj IsBlockSupported)
 
-/-- **The Hoare rule of a list loop in `Id`**, with the invariant indexed by the step count:
-`List.idRun_foldlM_induction` with the step quantified over natural indices. -/
-theorem idRun_foldlM_induction {α β : Type} {f : β → α → Id β} (l : List α) (I : ℕ → β → Prop)
-    (a : β) (h0 : I 0 a)
-    (hs : ∀ (k : ℕ) (hk : k < l.length) (c : β), I k c → I (k + 1) (Id.run (f c l[k]))) :
-    I l.length (Id.run (l.foldlM f a)) :=
-  List.idRun_foldlM_induction I h0 fun i c hc => hs i i.2 c hc
-
 /-- A Givens rotation in two window indices acts on the window. -/
 private theorem isBlockSupported_givensRotation {p m : ℕ} {a b : Fin n}
     (ha : p ≤ (a : ℕ) ∧ (a : ℕ) < m) (hb : p ≤ (b : ℕ) ∧ (b : ℕ) < m) (hab : a ≠ b) (c s : ℝ) :
@@ -1392,8 +1384,7 @@ private theorem isBlockSupported_givensRotation {p m : ℕ} {a b : Fin n}
 private theorem isSymm_blockConj {p m : ℕ} {X : Matrix (Fin n) (Fin n) ℝ} (hX : X.IsSymm)
     (Z : Matrix (Fin n) (Fin n) ℝ) : (blockConj p m Z X).IsSymm := by
   have hZ : (Zᵀ * X * Z).IsSymm := by
-    simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
-      (isHermitian_conjTranspose_mul_mul Z (isHermitian_iff_isSymm.2 hX))
+    exact hX.transpose_mul_mul Z
   ext i j
   simp only [transpose_apply, Chapter07.blockConj, of_apply]
   by_cases h : (p ≤ (i : ℕ) ∧ (i : ℕ) < m) ∧ (p ≤ (j : ℕ) ∧ (j : ℕ) < m)
@@ -1563,11 +1554,10 @@ private theorem chaseInv_run {p m : ℕ} (hm : m ≤ n) (hpm : p + 2 ≤ m)
   have hval : ∀ k (hk : k < w.length), (w[k] : ℕ) = p + k := Chapter07.val_getElem_francisWindow hm
   have hzlen : (w.zip w.tail).length = m - p - 1 := by simp [hlen]
   rw [← hzlen]
-  refine idRun_foldlM_induction _ _ _ ⟨1, one_mem _, Chapter07.isBlockSupported_one p m, ?_,
+  refine List.idRun_foldlM_induction' _ _ (init := (T, Q, none))
+    ⟨1, one_mem _, Chapter07.isBlockSupported_one p m, by ext i j; simp [Chapter07.blockConj],
     (Matrix.mul_one Q).symm, hTs, isChased_zero_of_isTridiagonal hT, rfl, fun _ => rfl,
     fun h => absurd h (by omega)⟩ ?_
-  · ext i j
-    simp [Chapter07.blockConj]
   intro j hj ⟨X, Qa, prev⟩ ⟨Z, hZo, hZb, hX, hQa, hXs, hXc, hprev, hZ1, hcol⟩
   simp only at hX hQa hXs hXc hprev
   rw [hzlen] at hj
@@ -2048,49 +2038,45 @@ open scoped Matrix.Norms.Frobenius
 private def couplingPart (D : Matrix (Fin n) (Fin n) ℝ) (a : Fin n) : Matrix (Fin n) (Fin n) ℝ :=
   of fun r s => if (r : ℕ) = a + 1 ∧ s = a ∨ r = a ∧ (s : ℕ) = a + 1 then D r s else 0
 
-private theorem norm_toLp_single_one' (c : Fin n) :
-    ‖(WithLp.toLp 2 (Pi.single c (1 : ℝ)) : EuclideanSpace ℝ (Fin n))‖ = 1 := by
-  have h : ‖(WithLp.toLp 2 (Pi.single c (1 : ℝ)) : EuclideanSpace ℝ (Fin n))‖ ^ 2 = 1 ^ 2 := by
-    rw [← dotProduct_self_eq_norm_sq]
-    simp
-  exact (pow_left_inj₀ (norm_nonneg _) zero_le_one two_ne_zero).1 h
+/-- The Frobenius norm of a matrix supported on two positions. -/
+private theorem frobenius_norm_sq_of_pair {X : Matrix (Fin n) (Fin n) ℝ} {p₁ p₂ : Fin n × Fin n}
+    (hp : p₁ ≠ p₂) (hX : ∀ x : Fin n × Fin n, x ≠ p₁ → x ≠ p₂ → X x.1 x.2 = 0) :
+    ‖X‖ ^ 2 = X p₁.1 p₁.2 ^ 2 + X p₂.1 p₂.2 ^ 2 := by
+  rw [frobenius_norm_sq_eq_sum_sq, ← Fintype.sum_prod_type']
+  have hsub : ∑ x : Fin n × Fin n, ‖X x.1 x.2‖ ^ 2 =
+      ∑ x ∈ ({p₁, p₂} : Finset (Fin n × Fin n)), ‖X x.1 x.2‖ ^ 2 := by
+    refine (Finset.sum_subset (Finset.subset_univ _) fun x _ hx => ?_).symm
+    simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hx
+    rw [hX x hx.1 hx.2, norm_zero, sq, mul_zero]
+  rw [hsub, Finset.sum_pair hp, Real.norm_eq_abs, Real.norm_eq_abs, sq_abs, sq_abs]
 
-/-- The coupling part of a symmetric matrix has norm at most `2 |d_{a+1,a}|`. -/
-private theorem norm_couplingPart_le {D : Matrix (Fin n) (Fin n) ℝ} (hD : D.IsSymm) (a : Fin n)
-    (h : (a : ℕ) + 1 < n) : ‖couplingPart D a‖ ≤ 2 * |D ⟨a + 1, h⟩ a| := by
+/-- Two entries of a matrix at different positions: `x² + y² ≤ ‖X‖_F²`. -/
+private theorem sq_add_sq_le_frobenius_norm_sq (X : Matrix (Fin n) (Fin n) ℝ)
+    {p₁ p₂ : Fin n × Fin n} (hp : p₁ ≠ p₂) : X p₁.1 p₁.2 ^ 2 + X p₂.1 p₂.2 ^ 2 ≤ ‖X‖ ^ 2 := by
+  rw [frobenius_norm_sq_eq_sum_sq, ← Fintype.sum_prod_type']
+  have := Finset.sum_le_univ_sum_of_nonneg (s := ({p₁, p₂} : Finset (Fin n × Fin n)))
+    (f := fun x : Fin n × Fin n => ‖X x.1 x.2‖ ^ 2) fun _ => by positivity
+  rw [Finset.sum_pair hp] at this
+  simpa only [Real.norm_eq_abs, sq_abs] using this
+
+/-- The coupling part of a symmetric matrix has norm `√2 |d_{a+1,a}|` (two entries). -/
+private theorem norm_couplingPart_eq {D : Matrix (Fin n) (Fin n) ℝ} (hD : D.IsSymm) (a : Fin n)
+    (h : (a : ℕ) + 1 < n) : ‖couplingPart D a‖ = √2 * |D ⟨a + 1, h⟩ a| := by
   set b : Fin n := ⟨a + 1, h⟩ with hb
   have hba : b ≠ a := fun e => by rw [Fin.ext_iff] at e; simp [b] at e
-  have e : couplingPart D a = D b a • (vecMulVec (Pi.single b 1) (Pi.single a 1) +
-      vecMulVec (Pi.single a 1) (Pi.single b 1)) := by
-    ext r s
-    have hr : (r : ℕ) = a + 1 ↔ r = b := by simp [b, Fin.ext_iff]
-    have hs : (s : ℕ) = a + 1 ↔ s = b := by simp [b, Fin.ext_iff]
-    simp only [couplingPart, of_apply, hr, hs, Matrix.smul_apply, Matrix.add_apply,
-      vecMulVec_apply, Pi.single_apply, smul_eq_mul]
-    by_cases h1 : r = b ∧ s = a
-    · obtain ⟨rfl, rfl⟩ := h1
-      simp [hba]
-    · by_cases h2 : r = a ∧ s = b
-      · obtain ⟨rfl, rfl⟩ := h2
-        simp [hba, Ne.symm hba, hD.apply]
-      · rw [ite_eq_right (not_or.2 ⟨h1, h2⟩)]
-        have p1 : (if r = b then (1 : ℝ) else 0) * (if s = a then 1 else 0) = 0 := by
-          by_cases hrb : r = b
-          · rw [ite_eq_right (fun h' => h1 ⟨hrb, h'⟩), mul_zero]
-          · rw [ite_eq_right hrb, zero_mul]
-        have p2 : (if r = a then (1 : ℝ) else 0) * (if s = b then 1 else 0) = 0 := by
-          by_cases hra : r = a
-          · rw [ite_eq_right (fun h' => h2 ⟨hra, h'⟩), mul_zero]
-          · rw [ite_eq_right hra, zero_mul]
-        rw [p1, p2, add_zero, mul_zero]
-  rw [e, norm_smul, Real.norm_eq_abs]
-  have e1 := frobenius_norm_vecMulVec_le (Pi.single b (1 : ℝ)) (Pi.single a 1)
-  have e2 := frobenius_norm_vecMulVec_le (Pi.single a (1 : ℝ)) (Pi.single b 1)
-  rw [norm_toLp_single_one', norm_toLp_single_one', mul_one] at e1 e2
-  have := norm_add_le (vecMulVec (Pi.single b (1 : ℝ)) (Pi.single a 1))
-    (vecMulVec (Pi.single a (1 : ℝ)) (Pi.single b 1))
-  have := abs_nonneg (D b a)
-  nlinarith
+  have hsq := frobenius_norm_sq_of_pair (X := couplingPart D a) (p₁ := (b, a)) (p₂ := (a, b))
+    (fun e => hba (Prod.ext_iff.1 e).1) fun x h1 h2 => by
+      simp only [couplingPart, of_apply]
+      refine ite_eq_right fun hx => ?_
+      rcases hx with ⟨h3, h4⟩ | ⟨h3, h4⟩
+      · exact h1 (Prod.ext (Fin.ext h3) h4)
+      · exact h2 (Prod.ext h3 (Fin.ext h4))
+  have e1 : couplingPart D a b a = D b a := by simp [couplingPart, b]
+  have e2 : couplingPart D a a b = D a b := by simp [couplingPart, b]
+  simp only at hsq
+  rw [e1, e2, hD.apply b a] at hsq
+  rw [← Real.sqrt_sq (norm_nonneg _), hsq, show D b a ^ 2 + D b a ^ 2 = 2 * D b a ^ 2 by ring,
+    Real.sqrt_mul (by norm_num), Real.sqrt_sq_eq_abs]
 
 open Classical in
 /-- The couplings the deflation of Algorithm 8.3.3 newly sets to zero. -/
@@ -2207,21 +2193,37 @@ private theorem sub_deflated_eq_sum {tol : ℝ} {D : Matrix (Fin n) (Fin n) ℝ}
     · rw [ite_eq_left (hmem.2 ⟨hs, hz⟩)]
   · rw [ite_eq_right hs, sub_self, ite_eq_right (fun h' => hs (hmem.1 h').1)]
 
-/-- **The deflation perturbation**: `‖D - deflated D‖_F ≤ 4 tol ‖D‖_F` per new zero. -/
+/-- **The deflation perturbation**: `‖D - deflated D‖_F ≤ 2 tol ‖D‖_F` per new zero: a coupling
+`b` with `|b| ≤ tol (|x| + |y|)` costs `√2 |b| ≤ √2 tol √2 √(x² + y²) ≤ 2 tol ‖D‖_F`. -/
 private theorem norm_sub_deflated_le {tol : ℝ} (htol : 0 ≤ tol) {D : Matrix (Fin n) (Fin n) ℝ}
     (hD : D.IsSymm) :
-    ‖D - deflated tol D‖ ≤ (newZeros tol D).card * (4 * tol * ‖D‖) := by
+    ‖D - deflated tol D‖ ≤ (newZeros tol D).card * (2 * tol * ‖D‖) := by
   rw [sub_deflated_eq_sum hD]
   refine (norm_sum_le _ _).trans ?_
   rw [← nsmul_eq_mul]
   refine Finset.sum_le_card_nsmul _ _ _ fun a ha => ?_
   simp only [newZeros, Finset.mem_filter, Finset.mem_univ, true_and] at ha
   obtain ⟨⟨h, hsm⟩, -⟩ := ha
-  refine (norm_couplingPart_le hD a h).trans ?_
-  have h1 := abs_apply_le_frobenius_norm D a a
-  have h2 := abs_apply_le_frobenius_norm D ⟨a + 1, h⟩ ⟨a + 1, h⟩
   have hsm' : |D ⟨a + 1, h⟩ a| ≤ tol * (|D a a| + |D ⟨a + 1, h⟩ ⟨a + 1, h⟩|) := hsm
-  nlinarith
+  have hdiag := sq_add_sq_le_frobenius_norm_sq D (p₁ := (a, a))
+    (p₂ := (⟨a + 1, h⟩, ⟨a + 1, h⟩)) fun e => by
+      have := congrArg (fun x => (x.1 : ℕ)) e
+      simp at this
+  simp only at hdiag
+  have hxy : |D a a| + |D ⟨a + 1, h⟩ ⟨a + 1, h⟩| ≤ √2 * ‖D‖ := by
+    have h1 : (|D a a| + |D ⟨a + 1, h⟩ ⟨a + 1, h⟩|) ^ 2 ≤ 2 * ‖D‖ ^ 2 := by
+      nlinarith [sq_nonneg (|D a a| - |D ⟨a + 1, h⟩ ⟨a + 1, h⟩|), sq_abs (D a a),
+        sq_abs (D ⟨a + 1, h⟩ ⟨a + 1, h⟩)]
+    have h2 := Real.abs_le_sqrt h1
+    rwa [abs_of_nonneg (by positivity), Real.sqrt_mul (by norm_num),
+      Real.sqrt_sq (norm_nonneg _)] at h2
+  calc ‖couplingPart D a‖ = √2 * |D ⟨a + 1, h⟩ a| := norm_couplingPart_eq hD a h
+    _ ≤ √2 * (tol * (√2 * ‖D‖)) := by
+        gcongr
+        exact hsm'.trans (mul_le_mul_of_nonneg_left hxy htol)
+    _ = 2 * tol * ‖D‖ := by
+        rw [show √2 * (tol * (√2 * ‖D‖)) = (√2 * √2) * tol * ‖D‖ by ring,
+          Real.mul_self_sqrt (by norm_num)]
 
 end Frobenius
 
@@ -2263,7 +2265,7 @@ private def SymmetricQRInv (A : Matrix (Fin n) (Fin n) ℝ) (tol κ : ℝ)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) : Prop :=
   st.2.1 ∈ orthogonalGroup (Fin n) ℝ ∧ st.1.IsSymm ∧ st.1.IsTridiagonal ∧
     (∃ F : Matrix (Fin n) (Fin n) ℝ, Fᵀ = F ∧ st.2.1ᵀ * (A + F) * st.2.1 = st.1 ∧
-      (4 * tol * (‖A‖ + κ * (n - 1 : ℕ)) ≤ κ → ‖F‖ ≤ κ * (zeroCouplings st.1).card)) ∧
+      (2 * tol * (‖A‖ + κ * (n - 1 : ℕ)) ≤ κ → ‖F‖ ≤ κ * (zeroCouplings st.1).card)) ∧
     (st.2.2 = true → ∀ i j, i ≠ j → st.1 i j = 0)
 
 /-- **One pass of Algorithm 8.3.3 keeps the invariant.** -/
@@ -2298,7 +2300,7 @@ private theorem symmetricQRPass_inv {A : Matrix (Fin n) (Fin n) ℝ} {tol κ : �
     simp only [← Matrix.mul_assoc, hQQ, Matrix.one_mul]
     rw [Matrix.mul_assoc, (mem_orthogonalGroup_iff' _ ℝ).1 hQ, Matrix.mul_one]
     abel
-  have hF₁n : 4 * tol * (‖A‖ + κ * (n - 1 : ℕ)) ≤ κ → ‖F₁‖ ≤ κ * (zeroCouplings D₁).card := by
+  have hF₁n : 2 * tol * (‖A‖ + κ * (n - 1 : ℕ)) ≤ κ → ‖F₁‖ ≤ κ * (zeroCouplings D₁).card := by
     intro hκ
     have hFb := hFn hκ
     have hz := card_zeroCouplings_le D
@@ -2312,7 +2314,7 @@ private theorem symmetricQRPass_inv {A : Matrix (Fin n) (Fin n) ℝ} {tol κ : �
     have he := norm_sub_deflated_le htol hDs (tol := tol)
     rw [zeroCouplings_deflated, Nat.cast_add]
     calc ‖F₁‖ ≤ ‖F‖ + ‖Q * (D - D₁) * Qᵀ‖ := norm_sub_le _ _
-      _ ≤ κ * (zeroCouplings D).card + (newZeros tol D).card * (4 * tol * ‖D‖) := by
+      _ ≤ κ * (zeroCouplings D).card + (newZeros tol D).card * (2 * tol * ‖D‖) := by
           rw [hconj]; exact add_le_add hFb he
       _ ≤ κ * (zeroCouplings D).card + (newZeros tol D).card * κ := by
           gcongr
@@ -2424,14 +2426,42 @@ private theorem symmetricQRPass_inv {A : Matrix (Fin n) (Fin n) ℝ} {tol κ : �
       simp only [Matrix.mul_assoc]
     · exact (hF₁n hκ).trans (mul_le_mul_of_nonneg_left (by exact_mod_cast hzero) hκ0)
 
+/-- **The deflation bound of Algorithms 8.3.3 and 8.6.2**: if each pass perturbs by at most
+`a tol ‖·‖` per new zero, the zeros never exceed `N`, and a perturbation `F` is bounded by
+`κ · #zeros` as soon as `κ` dominates `a tol (‖A‖ + κ N)`, then for `c = a N tol < 1` the fixed
+point `κ = a tol ‖A‖ / (1 - c)` gives `F ≤ c ‖A‖ / (1 - c)`. -/
+theorem deflation_bound {a tol nA F : ℝ} {N z : ℕ} (ha : 0 ≤ a) (htol : 0 ≤ tol) (hnA : 0 ≤ nA)
+    (hc : a * N * tol < 1) (hz : z ≤ N)
+    (hF : a * tol * (nA + a * tol * nA / (1 - a * N * tol) * N) ≤
+        a * tol * nA / (1 - a * N * tol) → F ≤ a * tol * nA / (1 - a * N * tol) * z) :
+    F ≤ a * N * tol * nA / (1 - a * N * tol) := by
+  have h1c : 0 < 1 - a * N * tol := by linarith
+  have hκ0 : 0 ≤ a * tol * nA / (1 - a * N * tol) := div_nonneg (by positivity) h1c.le
+  have hne : 1 - a * N * tol ≠ 0 := h1c.ne'
+  have hκeq : a * tol * (nA + a * tol * nA / (1 - a * N * tol) * N) =
+      a * tol * nA / (1 - a * N * tol) := by
+    rw [eq_div_iff hne, show a * tol * (nA + a * tol * nA / (1 - a * N * tol) * N) *
+        (1 - a * N * tol) = a * tol * nA * (1 - a * N * tol) +
+          a * tol * (a * tol * nA) * N * ((1 - a * N * tol) / (1 - a * N * tol)) by ring,
+      div_self hne]
+    ring
+  calc F ≤ a * tol * nA / (1 - a * N * tol) * z := hF hκeq.le
+    _ ≤ a * tol * nA / (1 - a * N * tol) * N :=
+        mul_le_mul_of_nonneg_left (by exact_mod_cast hz) hκ0
+    _ = _ := by
+        rw [div_mul_eq_mul_div]
+        congr 1
+        ring
+
 /-- **Exact semantics of Algorithm 8.3.3** (the symmetric QR algorithm, "an approximate symmetric
 Schur decomposition `QᵀAQ = D`"): for symmetric `A`, `0 ≤ tol` and any `fuel`, the exact run
 `(D, Q, done)` has `Q` orthogonal, `D` symmetric tridiagonal, and `D = Qᵀ (A + E) Q` for a
 symmetric `E` (the deflations `d_{i+1,i} := 0`, carried back to `A`), with
-`‖E‖_F ≤ c tol ‖A‖_F / (1 - c tol)` for `c = 4 (n - 1)` whenever `c tol < 1`; and if the loop
+`‖E‖_F ≤ c tol ‖A‖_F / (1 - c tol)` for `c = 2 (n - 1)` whenever `c tol < 1`; and if the loop
 stopped on its test (`done`, `q = n`) within the fuel, `D` is diagonal. Each deflation zeroes a
 coupling `|d_{i+1,i}| ≤ tol (|d_ii| + |d_{i+1,i+1}|)` of the current `D`, of Frobenius norm
-`≤ 4 tol ‖D‖_F ≤ 4 tol (‖A‖_F + ‖E‖_F)`, and a zeroed coupling stays zero, so there are at most
+`√2 |d_{i+1,i}| ≤ 2 tol ‖D‖_F ≤ 2 tol (‖A‖_F + ‖E‖_F)`, and a zeroed coupling stays zero, so there
+are at most
 `n - 1` of them. The forward form `QᵀAQ = D + E` with `E` supported on the deflated positions is
 false: a later rotation on a window `[p, …]` mixes a deflated entry at `(p, p - 1)` into
 `(p + 1, p - 1)`. Convergence (that some finite fuel suffices) is Wilkinson's theorem and is not
@@ -2441,12 +2471,12 @@ theorem algorithm_8_3_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {t
     let out := Id.run (algorithm_8_3_3 pure tol A fuel)
     out.2.1 ∈ orthogonalGroup (Fin n) ℝ ∧ out.1.IsSymm ∧ out.1.IsTridiagonal ∧
       (∃ E : Matrix (Fin n) (Fin n) ℝ, Eᵀ = E ∧ out.2.1ᵀ * (A + E) * out.2.1 = out.1 ∧
-        (4 * ((n - 1 : ℕ) : ℝ) * tol < 1 →
-          ‖E‖ ≤ 4 * ((n - 1 : ℕ) : ℝ) * tol * ‖A‖ / (1 - 4 * ((n - 1 : ℕ) : ℝ) * tol))) ∧
+        (2 * ((n - 1 : ℕ) : ℝ) * tol < 1 →
+          ‖E‖ ≤ 2 * ((n - 1 : ℕ) : ℝ) * tol * ‖A‖ / (1 - 2 * ((n - 1 : ℕ) : ℝ) * tol))) ∧
       (out.2.2 = true → ∀ i j, i ≠ j → out.1 i j = 0) := by
   intro out
-  set c : ℝ := 4 * ((n - 1 : ℕ) : ℝ) * tol with hc
-  set κ : ℝ := if c < 1 then 4 * tol * ‖A‖ / (1 - c) else 0 with hκdef
+  set c : ℝ := 2 * ((n - 1 : ℕ) : ℝ) * tol with hc
+  set κ : ℝ := if c < 1 then 2 * tol * ‖A‖ / (1 - c) else 0 with hκdef
   have hκ0 : 0 ≤ κ := by
     rw [hκdef]
     split_ifs with h
@@ -2470,19 +2500,42 @@ theorem algorithm_8_3_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {t
       fun _ _ h => symmetricQRPass_inv htol hκ0 h
   obtain ⟨hQ, hDs, hDt, ⟨F, hFs, hF, hFn⟩, hdone⟩ := key
   refine ⟨hQ, hDs, hDt, ⟨F, hFs, hF, fun hc1 => ?_⟩, hdone⟩
-  have hκ : κ = 4 * tol * ‖A‖ / (1 - c) := by rw [hκdef, ite_eq_left hc1]
-  have h1c : 0 < 1 - c := by linarith
-  have hκeq : 4 * tol * (‖A‖ + κ * (n - 1 : ℕ)) = κ := by
-    rw [hκ]
-    field_simp
-    rw [hc]
-    ring
-  have hF' := hFn hκeq.le
-  have hz := card_zeroCouplings_le out.1
-  calc ‖F‖ ≤ κ * (zeroCouplings out.1).card := hF'
-    _ ≤ κ * (n - 1 : ℕ) := mul_le_mul_of_nonneg_left (by exact_mod_cast hz) hκ0
-    _ = c * ‖A‖ / (1 - c) := by rw [hκ, hc]; field_simp
-    _ = _ := by rw [hc]
+  have hκ : κ = 2 * tol * ‖A‖ / (1 - c) := by rw [hκdef, ite_eq_left hc1]
+  rw [hκ, hc] at hFn
+  exact deflation_bound (by norm_num) htol (norm_nonneg _) hc1 (card_zeroCouplings_le out.1) hFn
+
+/-- **§8.3.3, "Using Corollary 8.1.6"**: when Algorithm 8.3.3 stops on its test (`done`), the
+computed eigenvalues `λ̂_i = d_ii` are the eigenvalues of the perturbed `A + E` of
+`algorithm_8_3_3_spec`, so each `λ_k(A + E)` is a diagonal entry of `D` and
+`|λ_k(A + E) - λ_k(A)| ≤ ‖E‖₂` (`corollary_8_1_6`). -/
+theorem algorithm_8_3_3_eigenvalues {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {tol : ℝ}
+    (htol : 0 ≤ tol) (fuel : ℕ) :
+    let out := Id.run (algorithm_8_3_3 pure tol A fuel)
+    out.2.2 = true → ∃ (E : Matrix (Fin n) (Fin n) ℝ) (hAE : (A + E).IsSymm),
+      (2 * ((n - 1 : ℕ) : ℝ) * tol < 1 →
+        ‖E‖ ≤ 2 * ((n - 1 : ℕ) : ℝ) * tol * ‖A‖ / (1 - 2 * ((n - 1 : ℕ) : ℝ) * tol)) ∧
+      ∀ k, (∃ i, symmEigenvalue hAE k = out.1 i i) ∧
+        |symmEigenvalue hAE k - symmEigenvalue hA k| ≤ lpOpNorm 2 E := by
+  intro out hdone
+  obtain ⟨hQ, -, -, ⟨E, hEs, hEq, hEn⟩, hdiag⟩ := algorithm_8_3_3_spec hA htol fuel
+  have hES : E.IsSymm := hEs
+  have hAE : (A + E).IsSymm := hA.add hES
+  refine ⟨E, hAE, hEn, fun k => ⟨?_, corollary_8_1_6 hA hES hAE k⟩⟩
+  have hmem := symmEigenvalue_mem_spectrum hAE k
+  have hD : out.1 = diagonal fun i => out.1 i i := by
+    ext i j
+    by_cases hij : i = j
+    · subst hij
+      simp
+    · rw [diagonal_apply_ne _ hij]
+      exact hdiag hdone i j hij
+  have hsim : spectrum ℝ (A + E) = spectrum ℝ out.1 := by
+    rw [← hEq]
+    exact (spectrum.units_conjugate (u := ⟨out.2.1ᵀ, out.2.1,
+      (mem_orthogonalGroup_iff' _ ℝ).1 hQ, (mem_orthogonalGroup_iff _ ℝ).1 hQ⟩)).symm
+  rw [hsim, hD, spectrum_diagonal] at hmem
+  obtain ⟨i, hi⟩ := hmem
+  exact ⟨i, hi.symm⟩
 
 end Frobenius
 

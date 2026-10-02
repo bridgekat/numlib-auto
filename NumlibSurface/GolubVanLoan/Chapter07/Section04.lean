@@ -50,10 +50,6 @@ namespace GolubVanLoan.Chapter07
 
 variable {n : ℕ}
 
-/-- Over `ℝ` the star of a matrix is its transpose. -/
-private theorem star_eq_transpose_real {m : ℕ} (M : Matrix (Fin m) (Fin m) ℝ) : star M = Mᵀ := by
-  rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
-
 /-! ### §7.4.1 The real Schur decomposition -/
 
 /-- **Theorem 7.4.1 (real Schur decomposition)** (7.4.2). For `A ∈ ℝ^{n×n}` there is an orthogonal
@@ -274,41 +270,6 @@ private theorem reflector_apply_of_not_mem {o : List (Fin n)} {v : Fin n → ℝ
       (1 : Matrix (Fin n) (Fin n) ℝ) i j := by
   simp [vecMulVec_apply, hv i hi]
 
-/-- A reflector `1 - β v vᵀ` with `v` zero off `o` is the identity in the columns off `o`. -/
-private theorem reflector_apply_of_not_mem' {o : List (Fin n)} {v : Fin n → ℝ}
-    (hv : ∀ i, i ∉ o → v i = 0) (β : ℝ) (i : Fin n) {j : Fin n} (hj : j ∉ o) :
-    (1 - β • vecMulVec v v : Matrix (Fin n) (Fin n) ℝ) i j =
-      (1 : Matrix (Fin n) (Fin n) ℝ) i j := by
-  simp [vecMulVec_apply, hv j hj]
-
-/-- A reflector acting on `o` leaves the rows off `o` of a product unchanged. -/
-private theorem reflector_mul_apply_of_not_mem {o : List (Fin n)} {v : Fin n → ℝ}
-    (hv : ∀ i, i ∉ o → v i = 0) (β : ℝ) (N : Matrix (Fin n) (Fin n) ℝ) {i : Fin n} (hi : i ∉ o)
-    (q : Fin n) : ((1 - β • vecMulVec v v) * N) i q = N i q := by
-  rw [mul_apply]
-  simp_rw [reflector_apply_of_not_mem hv β hi]
-  rw [← mul_apply, Matrix.one_mul]
-
-/-- A reflector acting on `o` leaves the columns off `o` of a product unchanged. -/
-private theorem mul_reflector_apply_of_not_mem {o : List (Fin n)} {v : Fin n → ℝ}
-    (hv : ∀ i, i ∉ o → v i = 0) (β : ℝ) (N : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) {j : Fin n}
-    (hj : j ∉ o) : (N * (1 - β • vecMulVec v v)) i j = N i j := by
-  rw [mul_apply]
-  simp_rw [reflector_apply_of_not_mem' hv β _ hj]
-  rw [← mul_apply, Matrix.mul_one]
-
-/-- A reflector acting on `o` leaves a column vanishing on `o` unchanged. -/
-private theorem reflector_mul_apply_of_col {o : List (Fin n)} {v : Fin n → ℝ}
-    (hv : ∀ i, i ∉ o → v i = 0) (β : ℝ) (N : Matrix (Fin n) (Fin n) ℝ) (i q : Fin n)
-    (hN : ∀ l ∈ o, N l q = 0) : ((1 - β • vecMulVec v v) * N) i q = N i q := by
-  have hdot : v ⬝ᵥ (fun l => N l q) = 0 := by
-    refine Finset.sum_eq_zero fun l _ => ?_
-    by_cases hl : l ∈ o
-    · simp [hN l hl]
-    · simp [hv l hl]
-  change ((1 - β • vecMulVec v v) *ᵥ fun l => N l q) i = N i q
-  rw [one_sub_smul_vecMulVec_mulVec_apply, hdot, mul_zero, sub_zero]
-
 /-- Right multiplication by a reflector acting on `o` sees only the columns in `o`. -/
 private theorem mul_reflector_apply_congr {o : List (Fin n)} {v : Fin n → ℝ}
     (hv : ∀ i, i ∉ o → v i = 0) (β : ℝ) {N₁ N₂ : Matrix (Fin n) (Fin n) ℝ} {i : Fin n}
@@ -388,13 +349,13 @@ theorem hessenbergReduceStep_inv {A₀ : Matrix (Fin n) (Fin n) ℝ} (k : Fin (n
     · -- an old column
       have hjo : j ∉ o := by rw [hmo]; omega
       have hPW : (P * W * P) i j = W i j := by
-        rw [mul_reflector_apply_of_not_mem hvout _ _ _ hjo,
-          reflector_mul_apply_of_col hvout _ _ _ _ (hWo j hjk)]
+        rw [mul_one_sub_smul_vecMulVec_apply_of_notMem hvout _ _ _ hjo,
+          one_sub_smul_vecMulVec_mul_apply_of_forall hvout _ _ (hWo j hjk) _]
       rw [hPW]
       refine ⟨fun h => (hW i j).1 ⟨hjk, h.2⟩, fun h => ?_⟩
       have hjk' : j ≠ k' := fun e => by rw [e] at hjk; omega
       rw [of_apply, ite_eq_right (fun h' => hjk' h'.1), hCeq,
-        mul_reflector_apply_of_not_mem hvout _ _ _ hjo, hBeq, of_apply,
+        mul_one_sub_smul_vecMulVec_apply_of_notMem hvout _ _ _ hjo, hBeq, of_apply,
         ite_eq_right (by rw [mem_indexFrom]; omega)]
       exact (hW i j).2 (fun h' => h ⟨by omega, h'.2⟩)
     rcases Nat.lt_or_ge k (j : ℕ) with hjk' | hjk'
@@ -413,7 +374,7 @@ theorem hessenbergReduceStep_inv {A₀ : Matrix (Fin n) (Fin n) ℝ} (k : Fin (n
       subst hjeq
       have hko : k' ∉ o := by rw [hmo]; omega
       have hPWk : (P * W * P) i k' = (P *ᵥ x) i := by
-        rw [mul_reflector_apply_of_not_mem hvout _ _ _ hko]
+        rw [mul_one_sub_smul_vecMulVec_apply_of_notMem hvout _ _ _ hko]
         change (P *ᵥ fun l => W l k') i = _
         simp_rw [hWx]
       rw [hPWk]
@@ -430,7 +391,7 @@ theorem hessenbergReduceStep_inv {A₀ : Matrix (Fin n) (Fin n) ℝ} (k : Fin (n
       · intro h
         have hik : ¬((k : ℕ) + 2 ≤ i) := fun h' => h ⟨by omega, h'⟩
         rw [of_apply, ite_eq_right (fun h' => hik h'.2), hCeq,
-          mul_reflector_apply_of_not_mem hvout _ _ _ hko, hBeq, of_apply,
+          mul_one_sub_smul_vecMulVec_apply_of_notMem hvout _ _ _ hko, hBeq, of_apply,
           ite_eq_left (by rw [mem_indexFrom]; omega)]
         rfl
 
@@ -717,7 +678,7 @@ theorem theorem_7_4_3 {N : ℕ} {Q : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
       (Qᵀ * krylovMatrix A (Q.col 0) (N + 1)).IsUpperTriangular ∧
         IsUnit (Qᵀ * krylovMatrix A (Q.col 0) (N + 1)).det := by
   have h := isUnreducedUpperHessenberg_conj_iff_krylovMatrix hQ A
-  rwa [star_eq_transpose_real] at h
+  rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
 
 /-- The geometric multiplicity of an eigenvalue is at least one. -/
 private theorem one_le_finrank_eigenspace {m : ℕ} {M : Matrix (Fin m) (Fin m) ℂ} {μ : ℂ}

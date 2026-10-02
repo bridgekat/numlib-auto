@@ -10,6 +10,7 @@ import Numlib.Eigen.RayleighRitz
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Polar
 import Numlib.LinearAlgebra.Matrix.Schur
+import Numlib.LinearAlgebra.Matrix.Symmetric
 import Numlib.LinearAlgebra.Matrix.Sylvester
 import NumlibSurface.GolubVanLoan.Chapter02.Section05
 import NumlibSurface.GolubVanLoan.Chapter07.Section02
@@ -138,7 +139,7 @@ theorem theorem_8_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, Qᵀ * A * Q = diagonal (symmEigenvalue hA) ∧
       ∀ k, A *ᵥ Q.col k = symmEigenvalue hA k • Q.col k := by
   obtain ⟨U, hU, h1, h2⟩ :=
-    (isHermitian_iff_isSymm.2 hA).exists_unitary_conj_eq_diagonal_eigenvalues₀
+    (isHermitian_iff_isSymm.2 hA).exists_unitary_conj_eq_diagonal_sortedEigenvalues
   refine ⟨U, hU, ?_, fun k => ?_⟩
   · rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h1
     convert h1 using 2
@@ -180,10 +181,6 @@ theorem l2_opNorm_eq_max_abs_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA
       · exact ⟨_, (hspec _).2 (symmEigenvalue_mem_spectrum hA ⟨0, hn⟩), by simp [M, h]⟩
       · exact ⟨_, (hspec _).2 (symmEigenvalue_mem_spectrum hA ⟨n - 1, by omega⟩), by simp [M, h]⟩
 
-/-- The linear equivalence between `ℝⁿ` as `EuclideanSpace` and as functions. -/
-private abbrev euclideanEquiv (n : ℕ) : EuclideanSpace ℝ (Fin n) ≃ₗ[ℝ] (Fin n → ℝ) :=
-  WithLp.linearEquiv 2 ℝ (Fin n → ℝ)
-
 /-- **Theorem 8.1.2 (Courant–Fischer minimax).** For symmetric `A` and `k = 1:n`,
 `λ_k(A) = max_{dim(S) = k} min_{0 ≠ y ∈ S} yᵀAy / yᵀy` (0-based: `dim S = k + 1`), both extrema
 attained. -/
@@ -194,7 +191,7 @@ theorem theorem_8_1_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k : Fin 
   have hn : Module.finrank ℝ (EuclideanSpace ℝ (Fin n)) = n := finrank_euclideanSpace_fin
   have hlam : symmEigenvalue hA k = hT.eigenvalues hn k :=
     symmEigenvalue_eq_eigenvalues hA hT rfl hn k
-  set e := euclideanEquiv n
+  set e : EuclideanSpace ℝ (Fin n) ≃ₗ[ℝ] (Fin n → ℝ) := WithLp.linearEquiv 2 ℝ (Fin n → ℝ)
   refine ⟨⟨(hT.eigenvectorSpan hn (Finset.Iic k)).map e.toLinearMap, ?_, ?_, ?_⟩, ?_⟩
   · rw [LinearEquiv.finrank_map_eq, hT.finrank_eigenvectorSpan hn, Fin.card_Iic]
   · refine ⟨e (hT.eigenvectorBasis hn k), ⟨Submodule.mem_map_of_mem
@@ -224,7 +221,7 @@ theorem theorem_8_1_2_minmax {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k
   have hn : Module.finrank ℝ (EuclideanSpace ℝ (Fin n)) = n := finrank_euclideanSpace_fin
   have hlam : symmEigenvalue hA k = hT.eigenvalues hn k :=
     symmEigenvalue_eq_eigenvalues hA hT rfl hn k
-  set e := euclideanEquiv n
+  set e : EuclideanSpace ℝ (Fin n) ≃ₗ[ℝ] (Fin n → ℝ) := WithLp.linearEquiv 2 ℝ (Fin n → ℝ)
   refine ⟨⟨(hT.eigenvectorSpan hn (Finset.Ici k)).map e.toLinearMap, ?_, ?_, ?_⟩, ?_⟩
   · rw [LinearEquiv.finrank_map_eq, hT.finrank_eigenvectorSpan hn, Fin.card_Ici]
   · refine ⟨e (hT.eigenvectorBasis hn k), ⟨Submodule.mem_map_of_mem
@@ -569,8 +566,7 @@ theorem theorem_8_1_10 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s :
   set E' := Qᵀ * E * Q
   -- the diagonal blocks are symmetric, hence both nonempty since `sep > 0`
   have hQAQs : (Qᵀ * A * Q).IsSymm := by
-    simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
-      (isHermitian_conjTranspose_mul_mul Q (isHermitian_iff_isSymm.2 hA))
+    exact hA.transpose_mul_mul Q
   have hD₁ : D₁.IsSymm := by
     have := hQAQs.eq
     rw [hAQ, fromBlocks_transpose, fromBlocks_inj] at this
@@ -722,8 +718,9 @@ private theorem norm_toLp_eq_one_of_transpose_mul_self {x : Fin n → ℝ}
     simpa [sq] using h00
   exact (pow_left_inj₀ (norm_nonneg _) zero_le_one two_ne_zero).1 (by rw [h2, one_pow])
 
-/-- For unit vectors `q`, `u`, `sin θ(q, span{u}) = √(1 − ⟪u, q⟫²)` (Pythagoras). -/
-private theorem sinAngle_span_singleton_eq {E : Type*} [NormedAddCommGroup E]
+/-- For unit vectors `q`, `u`, `sin θ(q, span{u}) = √(1 − ⟪u, q⟫²)` (Pythagoras; the chapter's one
+copy, also used by §8.2). -/
+theorem sinAngle_span_singleton_eq {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
     (ℝ ∙ u).sinAngle q = √(1 - inner ℝ u q ^ 2) := by
   have hP : (ℝ ∙ u).starProjection q = inner ℝ u q • u := by
@@ -882,13 +879,6 @@ theorem theorem_8_1_14 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} {Q₁ : Matrix
 
 end Frobenius
 
-/-- A standard basis vector of `EuclideanSpace ℝ (Fin r)` has norm one. -/
-private theorem norm_toLp_single_one {r : ℕ} (k : Fin r) :
-    ‖(WithLp.toLp 2 (Pi.single k (1 : ℝ)) : EuclideanSpace ℝ (Fin r))‖ = 1 := by
-  have := PiLp.norm_single (p := 2) (β := fun _ : Fin r => ℝ) k (1 : ℝ)
-  rw [norm_one] at this
-  exact this
-
 /-- The residual identity behind Theorem 8.1.15: with `Zᵀ (Q₁ᵀ A Q₁) Z = diag(θ)` for an
 orthogonal `Z`, `A y_k - θ_k y_k = (I - Q₁ Q₁ᵀ) A Q₁ Z e_k` for `y_k = Q₁ Z e_k`. -/
 private theorem ritz_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ}
@@ -923,7 +913,7 @@ theorem theorem_8_1_15 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} {Q₁ : Matrix
   have hcol : ‖WithLp.toLp 2 (Z.col k)‖ = 1 := by
     rw [← mulVec_single_one, ← toEuclideanLin_toLp,
       norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hZ']
-    exact norm_toLp_single_one k
+    simp
   exact (norm_toEuclideanLin_apply_le _ _).trans_eq (by rw [hcol, mul_one])
 
 /-- **§8.1.4, Ritz pairs.** In the setting of Theorem 8.1.15, each `(θ_k, y_k)` is a Ritz pair
@@ -952,7 +942,7 @@ theorem ritzPair_isRitzPair (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ}
       rw [col_mul_eq_mulVec_col, ← toEuclideanLin_toLp,
         norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hQ', ← mulVec_single_one,
         ← toEuclideanLin_toLp, norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hZ']
-      exact norm_toLp_single_one k
+      simp
     rw [h0, norm_zero] at hn1
     exact zero_ne_one hn1
   · rw [Submodule.mem_orthogonal]
@@ -1050,11 +1040,6 @@ theorem equation_8_1_7 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
 
 end L2
 
-/-- The `S = X₁ᵀ A X₁` of Theorem 8.1.16 is symmetric. -/
-theorem isSymm_transpose_mul_mul {r : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
-    (X₁ : Matrix (Fin n) (Fin r) ℝ) : (X₁ᵀ * A * X₁).IsSymm := by
-  rw [IsSymm, transpose_mul, transpose_mul, transpose_transpose, hA.eq, Matrix.mul_assoc]
-
 /-- **Theorem 8.1.16** (paired form). "Suppose `A ∈ ℝ^{n×n}` is symmetric and that
 `AX₁ − X₁S = F₁` where `X₁ ∈ ℝ^{n×r}` and `S = X₁ᵀAX₁`. If `‖X₁ᵀX₁ − I_r‖₂ = τ < 1` (8.1.4), then
 there exist `μ₁, …, μ_r ∈ λ(A)` such that `|μ_k − λ_k(S)| ≤ √2 (‖F₁‖₂ + τ(2 + τ)‖A‖₂)` for
@@ -1064,10 +1049,10 @@ proof: `Q` with orthonormal columns and `‖Q − X₁‖₂ ≤ τ` from (8.1.7
 theorem theorem_8_1_16 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r : ℕ}
     (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ} (hτ : lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ) (hτ1 : τ < 1) :
     ∃ σ : Fin r ↪ Fin n, ∀ k,
-      |symmEigenvalue hA (σ k) - symmEigenvalue (isSymm_transpose_mul_mul hA X₁) k| ≤
+      |symmEigenvalue hA (σ k) - symmEigenvalue (hA.transpose_mul_mul X₁) k| ≤
         √2 * (lpOpNorm 2 (A * X₁ - X₁ * (X₁ᵀ * A * X₁)) + τ * (2 + τ) * lpOpNorm 2 A) := by
   obtain ⟨Q, hQ, hQX⟩ := equation_8_1_7 X₁ hτ hτ1
-  obtain ⟨σ, hσ⟩ := theorem_8_1_13 hA (isSymm_transpose_mul_mul hA X₁) hQ
+  obtain ⟨σ, hσ⟩ := theorem_8_1_13 hA (hA.transpose_mul_mul X₁) hQ
   refine ⟨σ, fun k => (hσ k).trans (mul_le_mul_of_nonneg_left ?_ (Real.sqrt_nonneg 2))⟩
   have h5 := equation_8_1_5 A X₁ Q
   have h6 := equation_8_1_6 X₁ hτ
@@ -1128,8 +1113,7 @@ theorem theorem_8_1_17 {A X : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hX : 
     (hXAX : (Xᵀ * A * X).IsSymm) : inertia hXAX = inertia hA := by
   have hc : Xᴴ * A * X = Xᵀ * A * X := by rw [conjTranspose_eq_transpose_of_trivial]
   have h := (isHermitian_iff_isSymm.2 hA).inertia_conj ((isUnit_iff_isUnit_det X).2 hX)
-  rw [← inertia_congr hc (isHermitian_iff_isSymm.1
-    (isHermitian_conjTranspose_mul_mul X (isHermitian_iff_isSymm.2 hA))) hXAX]
+  rw [← inertia_congr hc (by rw [hc]; exact hA.transpose_mul_mul X) hXAX]
   exact h
 
 end GolubVanLoan.Chapter08

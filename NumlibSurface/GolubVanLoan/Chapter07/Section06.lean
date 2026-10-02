@@ -637,47 +637,25 @@ private theorem schurSwapStep_pure (Δ : Finset ℝ)
     split_ifs
     rfl
   have hT1 : Id.run (Chapter05.givensApplyLeft pure i i' c s (Chapter05.indexFrom n k) QT.2) =
-      (Chapter05.givensRotation i i' c s)ᵀ * QT.2 := by
-    rw [Chapter05.givensApplyLeft_spec hne c s (Chapter05.nodup_indexFrom n k)]
-    ext r q
-    rw [of_apply]
-    split_ifs with hq
-    · rfl
-    have hq' : (q : ℕ) < k := by rw [Chapter05.mem_indexFrom] at hq; omega
-    unfold Chapter05.givensRotation
-    rw [transpose_planeRotation_mul_apply hne]
-    split_ifs with h1 h2
-    · rw [h1, z _ _ hq', z _ _ (show (q : ℕ) < i' by simp [i']; omega)]
-      ring
-    · rw [h2, z _ _ (show (q : ℕ) < i by simp [i]; omega), z _ _ (show (q : ℕ) < i' by
-        simp [i']; omega)]
-      ring
-    · rfl
+      (Chapter05.givensRotation i i' c s)ᵀ * QT.2 :=
+    givensApplyLeft_eq_mul hne c s (Chapter05.nodup_indexFrom n k) fun q hq => by
+      have hq' : (q : ℕ) < k := by rw [Chapter05.mem_indexFrom] at hq; omega
+      exact ⟨z _ _ (show (q : ℕ) < i by simp [i]; omega), z _ _ (show (q : ℕ) < i' by
+        simp [i']; omega)⟩
   have hT2 : Id.run (Chapter05.givensApplyRight pure i i' c s
       ((List.finRange n).filter fun r => (r : ℕ) ≤ k + 1)
       ((Chapter05.givensRotation i i' c s)ᵀ * QT.2)) =
-      (Chapter05.givensRotation i i' c s)ᵀ * QT.2 * Chapter05.givensRotation i i' c s := by
-    rw [Chapter05.givensApplyRight_spec hne c s ((List.nodup_finRange n).filter _)]
-    ext r q
-    rw [of_apply]
-    split_ifs with hr
-    · rfl
-    have hr' : k + 1 < (r : ℕ) := by
-      simp only [List.mem_filter, List.mem_finRange, true_and, decide_eq_true_eq] at hr
-      omega
-    have hri : r ≠ i := fun e => by rw [e] at hr'; simp [i] at hr'
-    have hri' : r ≠ i' := fun e => by rw [e] at hr'; simp [i'] at hr'
-    unfold Chapter05.givensRotation
-    simp only [mul_planeRotation_apply hne, transpose_planeRotation_mul_apply hne, hri, hri',
-      ite_false]
-    split_ifs with h1 h2
-    · rw [h1, z _ _ (show (i : ℕ) < r by simp [i]; omega), z _ _ (show (i' : ℕ) < r by
-        simp [i']; omega)]
-      ring
-    · rw [h2, z _ _ (show (i : ℕ) < r by simp [i]; omega), z _ _ (show (i' : ℕ) < r by
-        simp [i']; omega)]
-      ring
-    · rfl
+      (Chapter05.givensRotation i i' c s)ᵀ * QT.2 * Chapter05.givensRotation i i' c s :=
+    givensApplyRight_eq_mul hne c s ((List.nodup_finRange n).filter _) fun r hr => by
+      have hr' : k + 1 < (r : ℕ) := by
+        simp only [List.mem_filter, List.mem_finRange, true_and, decide_eq_true_eq] at hr
+        omega
+      have hri : r ≠ i := fun e => by rw [e] at hr'; simp [i] at hr'
+      have hri' : r ≠ i' := fun e => by rw [e] at hr'; simp [i'] at hr'
+      unfold Chapter05.givensRotation
+      simp only [transpose_planeRotation_mul_apply hne, hri, hri', ite_false]
+      exact ⟨z _ _ (show (i : ℕ) < r by simp [i]; omega), z _ _ (show (i' : ℕ) < r by
+        simp [i']; omega)⟩
   have hswap := conj_givensRotation_swap hT (i := i) (i' := i') rfl hcs hsc
   refine ⟨Chapter05.givensRotation i i' c s, Chapter05.givensRotation_mem_orthogonalGroup hne hcs,
     ?_, ?_, ?_, ?_⟩

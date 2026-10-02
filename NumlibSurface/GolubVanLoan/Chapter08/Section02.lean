@@ -17,18 +17,20 @@ diagonal form (§8.2.5).
 ## Conventions
 
 The iterations are displays of the book, not numbered algorithms. The power method (8.2.3) and
-orthogonal iteration (8.2.8) are chapter 7's (7.3.3) and (7.3.6); the nodes that use them
-(Theorems 8.2.1–8.2.2, (8.2.13), (8.2.15), the orthogonal-iteration form of the QR step) wait for
-chapter 7's surface and are planned in this group. Inverse iteration is the backbone's
-`Krylov.inverseIterate`, Rayleigh quotient iteration `Krylov.rayleighQuotientIterate`, the QR
-iteration `Matrix.qrIterate`.
+orthogonal iteration (8.2.8) are chapter 7's (7.3.3) and (7.3.6), which the nodes that use them
+(Theorems 8.2.1–8.2.2, (8.2.13), (8.2.15), the orthogonal-iteration form of the QR step) cite.
+Inverse iteration is the backbone's `Krylov.inverseIterate`, Rayleigh quotient iteration
+`Krylov.rayleighQuotientIterate`, the QR iteration `Matrix.qrIterate`.
 
 ## Readings
 
 (8.2.7) loses the signs: `x_{k+1} = (c_k³, -s_k³)/√(c_k⁶ + s_k⁶)`, and needs `c_k s_k ≠ 0` (else
 `μ_k` is an eigenvalue). In the proof of Theorem 8.2.1 the first sum is garbled and
 `|λ_1 - λ_n|` should be `max_i |λ_1 - λ_i|`; in the proof of Theorem 8.2.2, `V_k = Q_αᵀ Q_0` should
-be `Q_αᵀ Q_k` and `1/(1 - d_0²)` should be `1/√(1 - d_0²)`.
+be `Q_αᵀ Q_k` and `1/(1 - d_0²)` should be `1/√(1 - d_0²)`. (8.2.15) is a hypothesis display (the
+gaps `dist(D_i(A), span{q^{(0)}_1, …, q^{(0)}_i}) < 1`), not an algorithm, so its node keeps the
+content name `orthogonalIteration_gap_le_of_forall`; the program (8.2.6) is
+`rayleighQuotientIteration` with its exact semantics `equation_8_2_6`.
 -/
 
 open Matrix
@@ -63,9 +65,7 @@ theorem equation_8_2_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
         transpose_mul, Matrix.mul_assoc]
   refine ⟨key k, ?_⟩
   rw [key k]
-  simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
-    (isHermitian_conjTranspose_mul_mul (U₀ * ((List.range k).map fun i => U (i + 1)).prod)
-      (isHermitian_iff_isSymm.2 hA))
+  exact hA.transpose_mul_mul (U₀ * ((List.range k).map fun i => U (i + 1)).prod)
 
 /-- The columns of an orthogonal matrix, as an orthonormal basis of `ℝⁿ`. -/
 private noncomputable def colBasis {Q : Matrix (Fin n) (Fin n) ℝ}
@@ -92,16 +92,6 @@ private theorem toEuclideanLin_colBasis {A Q : Matrix (Fin n) (Fin n) ℝ}
   simp only [colBasis, OrthonormalBasis.coe_mk]
   exact h
 
-/-- On unit vectors the sine of the angle to a line is `√(1 - (uᵀx)²)`. -/
-private theorem sinAngle_span_singleton_eq {u x : EuclideanSpace ℝ (Fin n)} (hu : ‖u‖ = 1)
-    (hx : ‖x‖ = 1) : (ℝ ∙ u).sinAngle x = √(1 - inner ℝ u x ^ 2) := by
-  have hs := (ℝ ∙ u).sinAngle_mul_norm x
-  rw [hx, mul_one, Submodule.starProjection_singleton, hu] at hs
-  rw [hs, ← Real.sqrt_sq (norm_nonneg _), norm_sub_sq_real, hx, norm_smul, inner_smul_right,
-    real_inner_comm, hu]
-  simp only [one_pow, RCLike.ofReal_real_eq_id, id_eq, div_one, Real.norm_eq_abs, mul_one, sq_abs]
-  ring_nf
-
 /-- **Theorem 8.2.1, (8.2.4).** Let `Qᵀ A Q = diag(λ)` with `Q = [q₁ | ⋯ | q_n]` orthogonal and
 `|λ₁| > |λ₂| ≥ ⋯ ≥ |λ_n|`, and let `q^{(k)}` be the power method (8.2.3) (chapter 7's (7.3.3)) from
 a unit `q^{(0)}` with `cos θ₀ = |q₁ᵀ q^{(0)}| ≠ 0`. Then
@@ -126,15 +116,15 @@ theorem theorem_8_2_1 {N : ℕ} {A Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
       rw [Fin.le_def, Fin.val_one]; exact Nat.one_le_iff_ne_zero.2 (fun h => hi (Fin.ext h)))
   have hne : (toEuclideanLin A ^ k) q₀ ≠ 0 := by
     intro h0
-    have h := Krylov.inner_pow_apply_of_eigenbasis (colBasis hQ) hv k q₀ 0
+    have h := OrthonormalBasis.inner_pow_apply_of_apply_eq_smul (colBasis hQ) hv k q₀ 0
     rw [h0, inner_zero_right, hv0] at h
     exact mul_ne_zero (pow_ne_zero _ hl0) hc h.symm
   have hunit : ‖(Chapter07.powerMethod A q₀ k).1‖ = 1 := by
     rw [Chapter07.powerMethod_fst A hq₀]; exact Krylov.norm_powerIterate_of_ne_zero _ _ _ hne
   have h := Krylov.sinAngle_powerIterate_le_of_eigenbasis (colBasis hQ) hv hl0 hρ hq₀
     (by rwa [hv0]) k
-  rw [← Chapter07.powerMethod_fst A hq₀, sinAngle_span_singleton_eq ((colBasis hQ).orthonormal.1 0)
-    hunit, hv0] at h
+  rw [← Chapter07.powerMethod_fst A hq₀, sinAngle_span_singleton_eq hunit
+    ((colBasis hQ).orthonormal.1 0), hv0] at h
   simpa only [Real.norm_eq_abs, sq_abs, abs_div] using h
 
 /-- **Theorem 8.2.1, (8.2.5).** Under the hypotheses of Theorem 8.2.1, the eigenvalue estimates
@@ -289,7 +279,7 @@ private theorem ringInverse_toEuclideanLin' (M : Matrix (Fin n) (Fin n) ℝ) :
 /-- **(8.2.6) is the backbone's Rayleigh quotient iteration**: from a unit `x_0`, the book's
 iterates are `Krylov.rayleighQuotientIterate (toEuclideanLin A) x_0` (inverse iteration with the
 Rayleigh shift `⟪x, A x⟫`, normalized). -/
-theorem rayleighQuotientIteration_eq (A : Matrix (Fin n) (Fin n) ℝ) {x₀ : Fin n → ℝ}
+theorem equation_8_2_6 (A : Matrix (Fin n) (Fin n) ℝ) {x₀ : Fin n → ℝ}
     (hx₀ : x₀ ⬝ᵥ x₀ = 1) (k : ℕ) :
     WithLp.toLp 2 (rayleighQuotientIteration A x₀ k) =
       Krylov.rayleighQuotientIterate (toEuclideanLin A) (WithLp.toLp 2 x₀) k := by
@@ -336,6 +326,9 @@ theorem rayleighQuotientIteration_eq (A : Matrix (Fin n) (Fin n) ℝ) {x₀ : Fi
       rfl
     rw [hop, toEuclideanLin_toLp, WithLp.toLp_smul]
     rfl
+
+
+@[deprecated (since := "2026-09-30")] alias rayleighQuotientIteration_eq := equation_8_2_6
 
 /-- **(8.2.7).** Rayleigh quotient iteration on `A = diag(λ₁, λ₂)`, `λ₁ > λ₂`, from
 `x_k = (c_k, s_k)` with `c_k² + s_k² = 1` and `c_k s_k ≠ 0` (the book omits this: otherwise
@@ -530,7 +523,8 @@ theorem theorem_8_2_2 {A Q : Matrix (Fin n) (Fin n) ℝ} (hQ : Q ∈ orthogonalG
   set D := Submodule.span ℝ (v '' {i | (i : ℕ) < r}) with hD
   have hv := toEuclideanLin_colBasis hQ hQA
   have hv' : ∀ i, toEuclideanLin A (v i) = ((lam i : ℝ) : ℝ) • v i := hv
-  have hA : (toEuclideanLin A).IsSymmetric := Krylov.isSymmetric_of_eigenbasis v hv'
+  have hA : (toEuclideanLin A).IsSymmetric :=
+    OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul v hv'
   have hρ : 0 < |lam ⟨r - 1, by omega⟩| := (abs_nonneg _).trans_lt hgap
   have hJ : ∀ j ∈ {i : Fin n | (i : ℕ) < r}, |lam ⟨r - 1, by omega⟩| ≤ |lam j| := fun j hj =>
     hlam (Fin.le_def.2 (by have : (j : ℕ) < r := hj; change (j : ℕ) ≤ r - 1; omega))
@@ -555,7 +549,7 @@ theorem theorem_8_2_2 {A Q : Matrix (Fin n) (Fin n) ℝ} (hQ : Q ∈ orthogonalG
         (fun a b _ _ ha hb => by rw [inner_add_left, ha, hb, add_zero])
         (fun c a _ ha => by rw [inner_smul_left, ha, mul_zero]) hu
       rintro _ ⟨i, hi, rfl⟩
-      have h := Krylov.inner_pow_apply_of_eigenbasis v hv' k w i
+      have h := OrthonormalBasis.inner_pow_apply_of_apply_eq_smul v hv' k w i
       rw [hAw, inner_zero_right] at h
       have hli : lam i ≠ 0 := fun h0 => by
         have := hJ i hi; rw [h0, abs_zero] at this; exact hρ.not_ge this

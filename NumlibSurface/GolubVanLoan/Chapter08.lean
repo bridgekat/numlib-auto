@@ -38,8 +38,7 @@ the GSVD and the structured quadratic eigenproblem (§8.7). One surface module p
   the book's `≈ u ‖A‖` statements become explicit `γ`-constants where the book (or its source) gives
   a derivation, and are not formalized otherwise.
 * Algorithms: the numbered conventions 1–14 of `NumlibSurface/GolubVanLoan` (also those of
-  `Numlib/FloatingPoint/Program`) govern every program and supersede any wording in a section group;
-  the shapes are settled by the prototype `notes/gvl/ch08/proto/Jacobi.lean` (it elaborates).
+  `Numlib/FloatingPoint/Program`) govern every program and supersede any wording in a section group.
   `noncomputable` monadic programs `algorithm_8_M_K {M} [Monad M] (rnd : ℝ → M ℝ) …` in the book's
   operation order: every `+ − × / √` result through `rnd` (`√` is `Real.sqrt` then one `rnd`),
   including the arithmetic of a test (`δ ← fl(tol · ‖A‖_F)`, `fl(tol · fl(|d_ii| +
@@ -85,7 +84,7 @@ a definite pair stays definite under perturbations `ε < c`),
 `LinearMap.singularValues_add_le`, Theorems 8.6.1–8.6.3, the Hermitian dilation
 `LinearMap.hermitianDilation`) and `Numlib/Analysis/Matrix/SingularValues` (the matrix level:
 `Matrix.hermitianDilation`, Theorem 8.6.4 `Matrix.sum_sq_sortedSingularValues_sub_le`, Theorem
-8.6.5, (8.1.3)). Appends (staged in `notes/gvl/ch08/appends/`): `MinMax` (sorted spectral
+8.6.5, (8.1.3)). Additions to existing modules: `MinMax` (sorted spectral
 decomposition, Hoffman–Wielandt, two-sided Weyl, low-rank interlacing, trace), `Perturbation` (block
 residual bounds: the paired `√2` form
 `Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul` of Theorem 8.1.13 and the unpaired
@@ -126,31 +125,4 @@ chapter 6's Theorem 6.1.1, Algorithm 8.7.2 uses chapter 2's thin CS decompositio
 * definitions by stationary values only (§8.7.4's characterization of generalized singular values,
   §8.7.8's product and restricted SVDs), and the overdamping theorem of §8.7.9 (quoted from
   Duffin/Veselić: "it can be shown that there is `μ > 0` with `A(μ)` positive definite").
-
-**Closes.** No `notes/frontier.md` item: the Givens rounding model (blocker 12's second half) is
-chapter 5's, and Wilkinson's sweep analysis (blocker 13) stays out of scope as above.
-
-**Order of attack.**
-
-Backbone, in dependency order (estimated lines):
-1. `Eigen/MinMax` appends — sorted spectral decomposition (60), trace (20), two-sided Weyl (40),
-   low-rank interlacing (80), Hoffman–Wielandt (200): ~400.
-2. `LinearAlgebra/Matrix/SVD` appends (170), `LinearAlgebra/Matrix/QR` append (20),
-   `Eigen/Perturbation` append (50), `Eigen/RayleighRitz` append (70).
-3. `Eigen/Inertia`: ~250.
-4. `Eigen/PowerMethod` appends: angle bound (90), Rayleigh bound (80), explicit subspace-iteration
-   rate with the graph–gap lemma (300): ~470.
-5. `Eigen/DivideConquer`: ~600. `Eigen/InverseEigenvalue`: ~400 (after `QR`'s Hessenberg reduction).
-6. `Eigen/SymmetricPencil`: ~650. `Analysis/InnerProductSpace/SingularValues`: ~500 without Theorem
-   8.6.5 (+350 after chapter 7's Riccati lemma).
-7. `FloatingPoint/Householder` (symmetric rank-two update, `IsReflectorPert`, the tridiagonalization
-   step and reduction over any reflector formula): ~450, shared with chapter 7's Hessenberg
-   reduction, after chapter 1's `FloatingPoint/Program` for the surface bridge. Backbone total ≈ 4
-   500 lines (+350 blocked).
-
-Surface, by section (estimated lines): §8.1 ~600 (after 1–3; 8.1.10–8.1.12 after chapter 7's Theorem
-7.2.4), §8.2 ~500 (after 4), §8.4 ~400 (after 3, 5), §8.5 ~700 (independent: can start now, the
-prototype is its skeleton), §8.3 ~2 000 (the three algorithms; after chapter 5's house and givens
-and chapter 7's implicit Q theorem), §8.6 ~1 400 (after §8.3 and 6), §8.7 ~500 (after 6 and chapters
-2, 6). Surface total ≈ 6 000 lines.
 -/

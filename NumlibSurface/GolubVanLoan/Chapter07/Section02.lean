@@ -66,19 +66,13 @@ private theorem sum_erase_norm_diagonal_add {d : Fin n → ℂ} {F : Matrix (Fin
   refine Finset.sum_congr rfl fun j hj => ?_
   rw [Matrix.add_apply, diagonal_apply_ne _ (Finset.ne_of_mem_erase hj).symm, zero_add]
 
-/-- A similarity preserves the spectrum (Section 1's `spectrum_subset_of_mul_eq_mul`). -/
-private theorem spectrum_conj {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) :
-    spectrum ℂ (X⁻¹ * A * X) = spectrum ℂ A :=
-  (spectrum_subset_of_mul_eq_mul (X := (1 : Matrix (Fin n) (Fin n) ℂ)) (B := A)
-    (by rw [Matrix.mul_one, Matrix.one_mul])).2.2.2 X hX
-
 /-- **Theorem 7.2.1 (Gershgorin circle theorem).** If `X⁻¹ A X = D + F` with
 `D = diag(d₁, …, dₙ)` and `F` of zero diagonal, then `λ(A) ⊆ ⋃ D_i` with
 `D_i = {z : |z - d_i| ≤ ∑_j |f_ij|}`. -/
 theorem theorem_7_2_1 {A X F : Matrix (Fin n) (Fin n) ℂ} {d : Fin n → ℂ} (hX : IsUnit X)
     (h : X⁻¹ * A * X = diagonal d + F) (hF : ∀ i, F i i = 0) :
     spectrum ℂ A ⊆ ⋃ i, closedBall (d i) (∑ j, ‖F i j‖) := by
-  rw [← spectrum_conj hX, h]
+  rw [IsSimilar.spectrum_eq (B := A) ⟨X, hX, rfl⟩, h]
   intro μ hμ
   obtain ⟨i, hi⟩ := Set.mem_iUnion.1 (spectrum_subset_iUnion_closedBall _ hμ)
   rw [diagonal_add_apply_self hF, sum_erase_norm_diagonal_add hF] at hi
@@ -137,7 +131,7 @@ theorem theorem_7_2_3 {A Q N E : Matrix (Fin n) (Fin n) ℂ} {d : Fin n → ℂ}
     ∃ i, ‖d i - μ‖ ≤
       max (‖E‖ * ∑ k ∈ Finset.range p, ‖N‖ ^ k)
         ((‖E‖ * ∑ k ∈ Finset.range p, ‖N‖ ^ k) ^ (1 / p : ℝ)) := by
-  obtain ⟨i, hi⟩ := infDist_spectrum_le_of_schur hQ hQA hp hN E hμ
+  obtain ⟨i, hi⟩ := exists_norm_sub_le_of_schur hQ hQA hp hN E hμ
   exact ⟨i, by rwa [norm_sub_rev]⟩
 
 end L2

@@ -32,7 +32,10 @@ a window `w` of consecutive indices, bulge chasing by `houseOn` and
 rests on the bulge pattern `IsFrancisBulge`: each reflector annihilates the bulge column, and the
 restricted ranges miss only zeros, so each step is the full similarity `P H P`; the triangularity
 of `Zᵀ (H - a₁ I)(H - a₂ I)` is the implicit-shift principle
-`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`. `triangularize2x2` is the
+`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`, packaged as
+`isFrancisStep_of_first_reflector`. On a window `[p, p + N + 3)` (the unreduced block `H₂₂`,
+indexed by `windowEmb`, blocks `windowBlock`) the run is a Francis step on `H₂₂`
+(`algorithm_7_5_1_window`, `IsFrancisStepOn`). `triangularize2x2` is the
 book's unspecified "upper triangularize all 2-by-2 diagonal blocks with real eigenvalues" (an
 eigenvector, then `givens`), with `triangularize2x2_spec`. `algorithm_7_5_2` runs Algorithm 7.4.2,
 the backward accumulation of its reflectors, at most `fuel` deflation-and-Francis passes
@@ -42,7 +45,10 @@ perturbs by at most `2 tol ‖H‖_F` (`qrDeflate_spec`), while the Francis step
 `[p, m)` and the off-block updates (`offBlockConj`) together are the exact similarity by
 `diag(I_p, Z, I_q)` (`offBlockConj_blockConj`), and the partition search really finds a
 decoupled quasi-triangular `H₃₃` (`schurTrailingStart_spec`, `NoTwoSubdiag`,
-`isQuasiUpperTriangular_of_noTwoSubdiag`).
+`isQuasiUpperTriangular_of_noTwoSubdiag`). Each pass is the book's loop body
+(`qrPass_isQRPass`): the deflation `IsQRDeflation` (`qrDeflate_isQRDeflation`) followed by a
+Francis step on the unreduced block (`IsQRPass`, `IsQRFrancisPass`), and the specification
+records this trace of passes.
 
 ## Not formalized
 
@@ -61,7 +67,7 @@ open GolubVanLoan.Chapter05 (houseOn houseOn_spec householderApplyLeft household
   givensApplyRight givensApplyLeft_spec givensApplyRight_spec givensApplyRight_spec_of_forall_mem
   mul_one_sub_smul_vecMulVec_apply one_sub_smul_vecMulVec_mul_apply_of_notMem
   one_sub_smul_vecMulVec_mul_apply_of_forall householderProduct_mulVec_single
-  one_sub_smul_vecMulVec_mul_self_of_mem)
+  one_sub_smul_vecMulVec_mul_self_of_mem one_sub_smul_vecMulVec_mul_apply_eq_mulVec)
 
 namespace GolubVanLoan.Chapter07
 
@@ -830,14 +836,6 @@ theorem isFrancisBulge_of_isUpperHessenberg {H : Matrix (Fin n) (Fin n) ℝ}
 
 variable {v u : Fin n → ℝ} {β : ℝ}
 
-/-- `(I - β v vᵀ) H` in a column equal to `u` is `(I - β v vᵀ) u`. -/
-private theorem one_sub_smul_vecMulVec_mul_apply_eq_mulVec {H : Matrix (Fin n) (Fin n) ℝ}
-    {j : Fin n} (hu : ∀ r, H r j = u r) (i : Fin n) :
-    ((1 - β • vecMulVec v v) * H) i j = ((1 - β • vecMulVec v v) *ᵥ u) i := by
-  have h : (fun r => H r j) = u := funext hu
-  rw [← h]
-  rfl
-
 /-- **One bulge-chasing step keeps the pattern** ([golub2013matrix] §7.5.5, the pictures of the
 Francis step), on the window `[p, m)`: if `H` has the pattern before the step on `(a, a+1, a+2)`,
 `p ≤ a`, `a + 2 < m`, `v` is supported on those rows, and `P = I - β v vᵀ` maps `u` — column
@@ -877,7 +875,8 @@ theorem IsFrancisBulge.conj {p m a : ℕ} {H : Matrix (Fin n) (Fin n) ℝ}
       · rw [one_sub_smul_vecMulVec_mul_apply_of_forall hv' _ _ (fun r hr => hB r j (by omega)
           (by omega))]
         exact hB i j hij (by omega)
-      · rw [one_sub_smul_vecMulVec_mul_apply_eq_mulVec (hu j hin.2.1 (by omega))]
+      · rw [one_sub_smul_vecMulVec_mul_apply_eq_mulVec hv' _ H u
+          (fun l _ => hu j hin.2.1 (by omega) l) hi]
         exact hPu i (by omega) hi.2
     · rw [one_sub_smul_vecMulVec_mul_apply_of_notMem hv' _ H hi]
       exact hB i j hij (by omega)
@@ -911,7 +910,7 @@ theorem IsFrancisBulge.conj_last {p m a : ℕ} (ham : a + 3 = m)
     · rw [one_sub_smul_vecMulVec_mul_apply_of_forall hv' _ _ (fun r hr => hB r j (by omega)
         (by omega))]
       exact hB i j hij (by omega)
-    · rw [one_sub_smul_vecMulVec_mul_apply_eq_mulVec (hu j (by omega))]
+    · rw [one_sub_smul_vecMulVec_mul_apply_eq_mulVec hv' _ H u (fun l _ => hu j (by omega) l) hi]
       exact hPu i (by omega)
   · rw [one_sub_smul_vecMulVec_mul_apply_of_notMem hv' _ H hi]
     exact hB i j hij (by omega)
@@ -1109,6 +1108,277 @@ theorem francis_step_last {p m : ℕ} {a b c : Fin n} (hb : (b : ℕ) = a + 1)
 
 end FrancisSpec
 
+/-! ### The Francis step on a window -/
+
+section WindowBlock
+
+/-- The exact first column of `francisShiftVector`. -/
+theorem francisShiftVector_pure (a b c m l : Fin n) (H : Matrix (Fin n) (Fin n) ℝ) :
+    Id.run (francisShiftVector pure a b c m l H) = fun i =>
+      if i = a then H a a * H a a + H a b * H b a - (H m m + H l l) * H a a +
+          (H m m * H l l - H m l * H l m)
+      else if i = b then H b a * (H a a + H b b - (H m m + H l l))
+      else if i = c then H b a * H c b else 0 := rfl
+
+/-- The polynomial of the double shift, evaluated at `H`. -/
+theorem aeval_francisPoly (H : Matrix (Fin n) (Fin n) ℝ) (s t : ℝ) :
+    aeval H (X ^ 2 - C s * X + C t) = H * H - s • H + t • 1 := by
+  simp only [map_add, map_sub, map_mul, aeval_X, aeval_C,
+    Algebra.algebraMap_eq_smul_one, Matrix.smul_mul, Matrix.one_mul, sq]
+
+/-- **The window `[p, p + k)` as an embedding** `i ↦ p + i` of `Fin k` into `Fin n`: it indexes
+the diagonal block `H₂₂` of Algorithms 7.5.2 and 7.7.3. -/
+def windowEmb (p : ℕ) {k : ℕ} (h : p + k ≤ n) (i : Fin k) : Fin n := ⟨p + i, by omega⟩
+
+@[simp]
+theorem val_windowEmb (p : ℕ) {k : ℕ} (h : p + k ≤ n) (i : Fin k) :
+    (windowEmb p h i : ℕ) = p + i := rfl
+
+theorem windowEmb_injective (p : ℕ) {k : ℕ} (h : p + k ≤ n) :
+    Function.Injective (windowEmb p h) := fun i j hij => by
+  have := congrArg Fin.val hij
+  simp only [val_windowEmb] at this
+  exact Fin.ext (by omega)
+
+/-- The range of the window embedding is the window. -/
+theorem mem_range_windowEmb {p k : ℕ} (h : p + k ≤ n) {i : Fin n} :
+    i ∈ Set.range (windowEmb p h) ↔ p ≤ (i : ℕ) ∧ (i : ℕ) < p + k := by
+  constructor
+  · rintro ⟨j, rfl⟩
+    have := j.isLt
+    simp only [val_windowEmb]
+    omega
+  · rintro ⟨h1, h2⟩
+    exact ⟨⟨(i : ℕ) - p, by omega⟩, Fin.ext (by simp only [val_windowEmb]; omega)⟩
+
+/-- The window embedding lands in the window. -/
+theorem windowEmb_mem {p k : ℕ} (h : p + k ≤ n) (i : Fin k) :
+    p ≤ (windowEmb p h i : ℕ) ∧ (windowEmb p h i : ℕ) < p + k :=
+  (mem_range_windowEmb h).1 ⟨i, rfl⟩
+
+/-- **The diagonal block on the window `[p, p + k)`**: `X(p:p+k, p:p+k)`. -/
+def windowBlock (p : ℕ) {k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ) :
+    Matrix (Fin k) (Fin k) ℝ :=
+  X.submatrix (windowEmb p h) (windowEmb p h)
+
+@[simp]
+theorem windowBlock_apply (p : ℕ) {k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ)
+    (i j : Fin k) : windowBlock p h X i j = X (windowEmb p h i) (windowEmb p h j) := rfl
+
+theorem windowBlock_transpose (p : ℕ) {k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ) :
+    windowBlock p h Xᵀ = (windowBlock p h X)ᵀ := rfl
+
+theorem windowBlock_one (p : ℕ) {k : ℕ} (h : p + k ≤ n) :
+    windowBlock p h (1 : Matrix (Fin n) (Fin n) ℝ) = 1 :=
+  submatrix_one _ (windowEmb_injective p h)
+
+/-- A sum of a function vanishing off the window is a sum over the window. -/
+theorem sum_eq_sum_windowEmb {p k : ℕ} (h : p + k ≤ n) {f : Fin n → ℝ}
+    (hf : ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < p + k) → f i = 0) :
+    ∑ i, f i = ∑ a, f (windowEmb p h a) :=
+  (Fintype.sum_of_injective _ (windowEmb_injective p h) _ _
+    (fun i hi => hf i fun hw => hi ((mem_range_windowEmb h).2 hw)) fun _ => rfl).symm
+
+/-- The transpose of a matrix acting on a block acts on it. -/
+theorem IsBlockSupported.transpose {p m : ℕ} {Q : Matrix (Fin n) (Fin n) ℝ}
+    (hQ : IsBlockSupported p m Q) : IsBlockSupported p m Qᵀ := fun i j hij => by
+  simpa [one_apply, eq_comm] using hQ j i fun h => hij ⟨h.2, h.1⟩
+
+/-- A matrix acting on the window is zero between a window index and an index off it. -/
+theorem IsBlockSupported.apply_eq_zero {p k : ℕ} {Q : Matrix (Fin n) (Fin n) ℝ}
+    (hQ : IsBlockSupported p (p + k) Q) {i j : Fin n}
+    (h : ¬ ((p ≤ (i : ℕ) ∧ (i : ℕ) < p + k) ↔ (p ≤ (j : ℕ) ∧ (j : ℕ) < p + k))) : Q i j = 0 := by
+  rw [hQ i j fun hh => h ⟨fun _ => hh.2, fun _ => hh.1⟩,
+    one_apply_ne fun e => h (by rw [e])]
+
+/-- **The window block of a product with a matrix acting on the window** on the right:
+`(X Y)₂₂ = X₂₂ Y₂₂`. -/
+theorem windowBlock_mul_of_isBlockSupported_right {p k : ℕ} (h : p + k ≤ n)
+    {Y : Matrix (Fin n) (Fin n) ℝ} (hY : IsBlockSupported p (p + k) Y)
+    (X : Matrix (Fin n) (Fin n) ℝ) :
+    windowBlock p h (X * Y) = windowBlock p h X * windowBlock p h Y := by
+  ext a b
+  simp only [windowBlock_apply, mul_apply]
+  refine sum_eq_sum_windowEmb h fun l hl => ?_
+  rw [hY.apply_eq_zero (fun e => hl (e.2 (windowEmb_mem h b))), mul_zero]
+
+/-- **The window block of a product with a matrix acting on the window** on the left:
+`(X Y)₂₂ = X₂₂ Y₂₂`. -/
+theorem windowBlock_mul_of_isBlockSupported_left {p k : ℕ} (h : p + k ≤ n)
+    {X : Matrix (Fin n) (Fin n) ℝ} (hX : IsBlockSupported p (p + k) X)
+    (Y : Matrix (Fin n) (Fin n) ℝ) :
+    windowBlock p h (X * Y) = windowBlock p h X * windowBlock p h Y := by
+  ext a b
+  simp only [windowBlock_apply, mul_apply]
+  refine sum_eq_sum_windowEmb h fun l hl => ?_
+  rw [hX.apply_eq_zero (fun e => hl (e.1 (windowEmb_mem h a))), zero_mul]
+
+/-- The window block of an orthogonal matrix acting on the window is orthogonal. -/
+theorem windowBlock_mem_orthogonalGroup {p k : ℕ} (h : p + k ≤ n)
+    {Z : Matrix (Fin n) (Fin n) ℝ} (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
+    (hZS : IsBlockSupported p (p + k) Z) : windowBlock p h Z ∈ orthogonalGroup (Fin k) ℝ := by
+  rw [mem_orthogonalGroup_iff, ← windowBlock_transpose,
+    ← windowBlock_mul_of_isBlockSupported_right h hZS.transpose,
+    (mem_orthogonalGroup_iff (Fin n) ℝ).1 hZ, windowBlock_one]
+
+/-- **The window block of an equivalence by matrices acting on the window**:
+`(Qᵀ H Z)₂₂ = Q₂₂ᵀ H₂₂ Z₂₂`. -/
+theorem windowBlock_transpose_mul_mul {p k : ℕ} (h : p + k ≤ n)
+    {Q Z : Matrix (Fin n) (Fin n) ℝ} (hQS : IsBlockSupported p (p + k) Q)
+    (hZS : IsBlockSupported p (p + k) Z) (H : Matrix (Fin n) (Fin n) ℝ) :
+    windowBlock p h (Qᵀ * H * Z) =
+      (windowBlock p h Q)ᵀ * windowBlock p h H * windowBlock p h Z := by
+  rw [windowBlock_mul_of_isBlockSupported_right h hZS,
+    windowBlock_mul_of_isBlockSupported_left h hQS.transpose, windowBlock_transpose]
+
+/-- The window block of the block similarity `blockConj` is the window block of the
+similarity. -/
+theorem windowBlock_blockConj {p k : ℕ} (h : p + k ≤ n) (Z H : Matrix (Fin n) (Fin n) ℝ) :
+    windowBlock p h (blockConj p (p + k) Z H) = windowBlock p h (Zᵀ * H * Z) := by
+  ext a b
+  simp only [windowBlock_apply, blockConj, of_apply]
+  rw [ite_eq_left ⟨windowEmb_mem h a, windowEmb_mem h b⟩]
+
+/-- The window block of an upper Hessenberg matrix is upper Hessenberg. -/
+theorem isUpperHessenberg_windowBlock {p k : ℕ} (h : p + k ≤ n) {H : Matrix (Fin n) (Fin n) ℝ}
+    (hH : H.IsUpperHessenberg) : (windowBlock p h H).IsUpperHessenberg := by
+  rw [isUpperHessenberg_iff_fin] at hH ⊢
+  intro a b hab
+  exact hH _ _ (by simp only [val_windowEmb]; omega)
+
+/-- The window block of an upper triangular matrix is upper triangular. -/
+theorem isUpperTriangular_windowBlock {p k : ℕ} (h : p + k ≤ n) {B : Matrix (Fin n) (Fin n) ℝ}
+    (hB : B.IsUpperTriangular) : (windowBlock p h B).IsUpperTriangular := by
+  rw [isUpperTriangular_iff_fin] at hB ⊢
+  intro a b hab
+  exact hB _ _ (by simp only [val_windowEmb]; omega)
+
+/-- `X₂₂ u₂₂` is the window part of `X u` for `u` vanishing off the window. -/
+theorem windowBlock_mulVec {p k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ)
+    {u : Fin n → ℝ} (hu : ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < p + k) → u i = 0) (a : Fin k) :
+    (windowBlock p h X *ᵥ (u ∘ windowEmb p h)) a = (X *ᵥ u) (windowEmb p h a) := by
+  simp only [mulVec, dotProduct, windowBlock_apply, Function.comp_apply]
+  exact (sum_eq_sum_windowEmb h (f := fun i => X (windowEmb p h a) i * u i)
+    fun i hi => by rw [hu i hi, mul_zero]).symm
+
+/-- The columns of a window block. -/
+theorem windowBlock_mulVec_single {p k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ)
+    (a : Fin k) :
+    windowBlock p h X *ᵥ Pi.single a 1 = (X *ᵥ Pi.single (windowEmb p h a) 1) ∘ windowEmb p h := by
+  funext b
+  simp only [mulVec_single_one, col_apply, windowBlock_apply, Function.comp_apply]
+
+/-- **The first reflector on the window**: if `Z` and `P` act on the window `[p, p + k)`,
+`P² = I`, `Z e_p = P e_p`, and `P u` vanishes off `p` for `u` vanishing off the window, then the
+window blocks satisfy the same: `P₂₂² = I`, `Z₂₂ e₀ = P₂₂ e₀`, `P₂₂ u₂₂ ∥ e₀`. -/
+theorem windowBlock_first_reflector {p N : ℕ} (h : p + (N + 1) ≤ n)
+    {Z P : Matrix (Fin n) (Fin n) ℝ} {u : Fin n → ℝ}
+    (hPS : IsBlockSupported p (p + (N + 1)) P) (hP : P * P = 1)
+    (hZP : Z *ᵥ Pi.single (windowEmb p h 0) 1 = P *ᵥ Pi.single (windowEmb p h 0) 1)
+    (hu : ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < p + (N + 1)) → u i = 0)
+    (hPu : ∀ i, i ≠ windowEmb p h 0 → (P *ᵥ u) i = 0) :
+    windowBlock p h P * windowBlock p h P = 1 ∧
+      windowBlock p h Z *ᵥ Pi.single 0 1 = windowBlock p h P *ᵥ Pi.single 0 1 ∧
+      ∀ a, a ≠ 0 → (windowBlock p h P *ᵥ (u ∘ windowEmb p h)) a = 0 := by
+  refine ⟨?_, ?_, fun a ha => ?_⟩
+  · rw [← windowBlock_mul_of_isBlockSupported_right h hPS, hP, windowBlock_one]
+  · rw [windowBlock_mulVec_single, windowBlock_mulVec_single, hZP]
+  · rw [windowBlock_mulVec h P hu]
+    exact hPu _ ((windowEmb_injective p h).ne ha)
+
+/-- The trace `s` of the trailing `2 × 2` block (the double shift of the Francis step, (7.5.8)). -/
+def trailingTrace {N : ℕ} (H : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) : ℝ :=
+  H (Fin.last N).castSucc (Fin.last N).castSucc + H (Fin.last (N + 1)) (Fin.last (N + 1))
+
+/-- The determinant `t` of the trailing `2 × 2` block (the double shift of the Francis step,
+(7.5.8)). -/
+def trailingDet {N : ℕ} (H : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) : ℝ :=
+  H (Fin.last N).castSucc (Fin.last N).castSucc * H (Fin.last (N + 1)) (Fin.last (N + 1)) -
+    H (Fin.last N).castSucc (Fin.last (N + 1)) * H (Fin.last (N + 1)) (Fin.last N).castSucc
+
+/-- **The implicit-shift argument of the Francis step** (§7.5.5; also §7.7.6 for the QZ step):
+for `H` unreduced upper Hessenberg, `Z` orthogonal with `Zᵀ H Z` upper Hessenberg, and a first
+reflector `P` (`P² = I`) with `Z e₁ = P e₁` that maps `M e₁` to a multiple of `e₁`,
+`M = H² - s H + t I`: `Z e₁ ∥ M e₁`, so `Zᵀ M` is upper triangular
+(`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`) and `Zᵀ H Z` is a Francis
+step of `H`. (`M e₁ ≠ 0`: its third entry is `h₂₁ h₃₂`.) -/
+theorem isFrancisStep_of_first_reflector {N : ℕ}
+    {H Z P : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ} {s t : ℝ} (hH : IsUnreduced H)
+    (hZ : Z ∈ orthogonalGroup (Fin (N + 3)) ℝ)
+    (hG : (Zᵀ * H * Z).IsUpperHessenberg) (hP : P * P = 1)
+    (hZP : Z *ᵥ Pi.single 0 1 = P *ᵥ Pi.single 0 1)
+    (hPu : ∀ i, i ≠ 0 → (P *ᵥ (H * H - s • H + t • 1).col 0) i = 0) :
+    (Zᵀ * (H * H - s • H + t • 1)).IsUpperTriangular ∧
+      Z.col 0 ∈ Submodule.span ℝ {(H * H - s • H + t • 1).col 0} ∧
+      IsFrancisStep s t H (Zᵀ * H * Z) := by
+  set M := H * H - s • H + t • 1 with hM
+  set u := M.col 0 with hudef
+  have hu0 : u ≠ 0 := by
+    intro hu
+    have hz := congrFun hu ⟨2, by omega⟩
+    rw [hudef, col_apply, Pi.zero_apply, hM, (francis_first_column hH.1 s t).2.2.1] at hz
+    have hsub := (isUnreduced_iff.1 hH).2
+    have e10 : H 1 0 ≠ 0 := by
+      convert hsub 0 (by omega) using 2 <;> exact Fin.ext (by simp)
+    have e21 : H ⟨2, by omega⟩ 1 ≠ 0 := by
+      convert hsub 1 (by omega) using 2
+      exact Fin.ext (by simp)
+    exact mul_ne_zero e10 e21 hz
+  set c := (P *ᵥ u) 0 with hc
+  have hPu' : P *ᵥ u = c • Pi.single 0 1 := by
+    funext i
+    rw [Pi.smul_apply, Pi.single_apply, smul_eq_mul]
+    by_cases hi : i = 0
+    · rw [hi, ite_eq_left rfl, mul_one]
+    · rw [ite_eq_right hi, mul_zero]
+      exact hPu i hi
+  have hc0 : c ≠ 0 := by
+    intro h0
+    refine hu0 ?_
+    rw [← one_mulVec u, ← hP, ← mulVec_mulVec, hPu', h0, zero_smul, mulVec_zero]
+  have hPe : P *ᵥ Pi.single 0 1 = c⁻¹ • u := by
+    have h' : u = c • (P *ᵥ Pi.single 0 1) := by
+      rw [← mulVec_smul, ← hPu', mulVec_mulVec, hP, one_mulVec]
+    rw [h', smul_smul, inv_mul_cancel₀ hc0, one_smul]
+  have hcol : Z.col 0 ∈ Submodule.span ℝ {M.col 0} := by
+    rw [← mulVec_single_one Z 0, hZP, hPe]
+    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
+  have hstarZ : star Z = Zᵀ := by
+    rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
+  have htri : (Zᵀ * M).IsUpperTriangular := by
+    have := IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval hH
+      (X ^ 2 - C s * X + C t) hZ (by rw [hstarZ]; exact hG)
+      (by rw [aeval_francisPoly, mulVec_single_one]; exact hcol)
+    rwa [aeval_francisPoly, hstarZ] at this
+  exact ⟨htri, hcol, Z, hZ, rfl, hG, htri⟩
+
+/-- **A Francis step on the window `[p, p + N + 3)`** (the loop body of Algorithm 7.5.2,
+"perform a Francis QR step on `H₂₂`: `H₂₂ = Zᵀ H₂₂ Z`"): `Z` is orthogonal and acts on the window
+only (`diag(I_p, Z₂₂, I_q)`), `Z₂₂ᵀ H₂₂ Z₂₂` is upper Hessenberg, and
+`Z₂₂ᵀ (H₂₂ - a₁ I)(H₂₂ - a₂ I)` is upper triangular, `a₁, a₂` the eigenvalues of the trailing
+`2 × 2` block of `H₂₂` (`IsFrancisStepOn.isFrancisStep`). -/
+def IsFrancisStepOn (p N : ℕ) (h : p + (N + 3) ≤ n) (H Z : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  Z ∈ orthogonalGroup (Fin n) ℝ ∧ IsBlockSupported p (p + (N + 3)) Z ∧
+    ((windowBlock p h Z)ᵀ * windowBlock p h H * windowBlock p h Z).IsUpperHessenberg ∧
+    ((windowBlock p h Z)ᵀ * (windowBlock p h H * windowBlock p h H -
+      trailingTrace (windowBlock p h H) • windowBlock p h H +
+      trailingDet (windowBlock p h H) • 1)).IsUpperTriangular
+
+/-- A Francis step on the window: the window block of `Zᵀ H Z` is `Z₂₂ᵀ H₂₂ Z₂₂`, a Francis step
+of `H₂₂` (`Matrix.IsFrancisStep`). -/
+theorem IsFrancisStepOn.isFrancisStep {p N : ℕ} {h : p + (N + 3) ≤ n}
+    {H Z : Matrix (Fin n) (Fin n) ℝ} (hF : IsFrancisStepOn p N h H Z) :
+    windowBlock p h (Zᵀ * H * Z) =
+        (windowBlock p h Z)ᵀ * windowBlock p h H * windowBlock p h Z ∧
+      IsFrancisStep (trailingTrace (windowBlock p h H)) (trailingDet (windowBlock p h H))
+        (windowBlock p h H) (windowBlock p h (Zᵀ * H * Z)) := by
+  obtain ⟨hZ, hZS, hG, htri⟩ := hF
+  have e := windowBlock_transpose_mul_mul h hZS hZS H
+  exact ⟨e, windowBlock p h Z, windowBlock_mem_orthogonalGroup h hZ hZS, e, by rw [e]; exact hG,
+    htri⟩
+
+end WindowBlock
+
 /-! ### Algorithm 7.5.1 on a window -/
 
 section FrancisWindow
@@ -1303,20 +1573,106 @@ private theorem algorithm_7_5_1_window_aux {p m : ℕ} (hm : m ≤ n) (hpm : p +
       exact fun i hi => hv₃ i (Or.inl (by rw [hvN0]; omega))
 
 /-- **Algorithm 7.5.1 on a window** (what Algorithm 7.5.2 runs on the unreduced block `H₂₂`): for an
-upper Hessenberg `H` and a window `[p, m)` of at least three indices, the exact run `(H', data)`
-has `Z = householderProduct data` orthogonal and acting on the window only, `H'` is the block
-similarity `blockConj p m Z H` (`Zᵀ H Z` on the block `H₂₂`, `H` elsewhere), and `H'` is upper
-Hessenberg. -/
-theorem algorithm_7_5_1_window {p m : ℕ} (hm : m ≤ n) (hpm : p + 3 ≤ m)
+upper Hessenberg `H` and the window `[p, p + N + 3)`, the exact run `(H', data)` has
+`Z = householderProduct data` orthogonal and acting on the window only, `H'` is the block
+similarity `blockConj p (p + N + 3) Z H` (`Zᵀ H Z` on the block `H₂₂`, `H` elsewhere), `H'` is upper
+Hessenberg, and when `H₂₂` is unreduced, `Z` performs a Francis step on `H₂₂`
+(`IsFrancisStepOn`): the first reflector maps the first column of `(H₂₂ - a₁ I)(H₂₂ - a₂ I)` to a
+multiple of `e₁` and the others fix `e₁`, so the implicit-shift argument
+`isFrancisStep_of_first_reflector` applies to the window blocks. -/
+theorem algorithm_7_5_1_window {p N : ℕ} (hm : p + (N + 3) ≤ n)
     {H H' : Matrix (Fin n) (Fin n) ℝ} {data : List ((Fin n → ℝ) × ℝ)}
     (hH : H.IsUpperHessenberg)
-    (h : Id.run (algorithm_7_5_1 pure (francisWindow n p m) H) = (H', data)) :
+    (h : Id.run (algorithm_7_5_1 pure (francisWindow n p (p + (N + 3))) H) = (H', data)) :
     householderProduct data ∈ orthogonalGroup (Fin n) ℝ ∧
-      IsBlockSupported p m (householderProduct data) ∧
-      H' = blockConj p m (householderProduct data) H ∧ H'.IsUpperHessenberg ∧
-      ∀ q ∈ data, ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → q.1 i = 0 := by
-  obtain ⟨hZ, hZS, hsupp, hH', hHess, -⟩ := algorithm_7_5_1_window_aux hm hpm hH h
-  exact ⟨hZ, hZS, hH', hHess, hsupp⟩
+      IsBlockSupported p (p + (N + 3)) (householderProduct data) ∧
+      H' = blockConj p (p + (N + 3)) (householderProduct data) H ∧ H'.IsUpperHessenberg ∧
+      (∀ q ∈ data, ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < p + (N + 3)) → q.1 i = 0) ∧
+      (IsUnreduced (windowBlock p hm H) → IsFrancisStepOn p N hm H (householderProduct data)) := by
+  obtain ⟨hZ, hZS, hsupp, hH', hHess, v₀, β₀, rest, hdata, hrest0, hβ₁, hPu₀⟩ :=
+    algorithm_7_5_1_window_aux hm (by omega) hH h
+  refine ⟨hZ, hZS, hH', hHess, hsupp, fun hU => ?_⟩
+  obtain ⟨ha₀, hb₀, hc₀⟩ := francisTri_val (n := n) (k := p) (by omega)
+  obtain ⟨-, hvm, hvl⟩ := francisTri_val (n := n) (k := p + (N + 3) - 3) (by omega)
+  set u₀ := Id.run (francisShiftVector pure (francisTri n p).1 (francisTri n p).2.1
+    (francisTri n p).2.2 (francisTri n (p + (N + 3) - 3)).2.1
+    (francisTri n (p + (N + 3) - 3)).2.2 H) with hu₀
+  set Z := householderProduct data with hZdef
+  set P₀ : Matrix (Fin n) (Fin n) ℝ := 1 - β₀ • vecMulVec v₀ v₀ with hP₀
+  have hP₀S : IsBlockSupported p (p + (N + 3)) P₀ :=
+    isBlockSupported_reflector β₀ (hsupp _ (by rw [hdata]; exact List.mem_cons_self))
+  have hP₀P₀ : P₀ * P₀ = 1 := by
+    refine one_sub_smul_vecMulVec_mul_self_of_mem
+      (one_sub_smul_vecMulVec_mem_orthogonalGroup ?_)
+    rcases hβ₁ with hb | hb
+    · rw [hb, zero_mul]
+    · rw [hb, sub_self, mul_zero]
+  have hZP : Z *ᵥ Pi.single (windowEmb p hm 0) 1 = P₀ *ᵥ Pi.single (windowEmb p hm 0) 1 := by
+    rw [hZdef, hdata, householderProduct_cons, ← mulVec_mulVec,
+      householderProduct_mulVec_single fun q hq => hrest0 q hq _ (by simp)]
+  -- the window indices of the shift vector
+  have hne : ∀ (a : Fin (N + 3)) (x : Fin n) (k : ℕ), (x : ℕ) = p + k → (a : ℕ) ≠ k →
+      windowEmb p hm a ≠ x := fun a x k hx hak h' => hak (by
+    have := congrArg Fin.val h'
+    simp only [val_windowEmb] at this
+    omega)
+  have eA : windowEmb p hm 0 = (francisTri n p).1 := Fin.ext (by simp [ha₀])
+  have eB : windowEmb p hm 1 = (francisTri n p).2.1 := Fin.ext (by simp [hb₀])
+  have eC : windowEmb p hm ⟨2, by omega⟩ = (francisTri n p).2.2 := Fin.ext (by simp [hc₀])
+  have eM : windowEmb p hm (Fin.last (N + 1)).castSucc = (francisTri n (p + (N + 3) - 3)).2.1 :=
+    Fin.ext (by simp [hvm]; omega)
+  have eL : windowEmb p hm (Fin.last (N + 2)) = (francisTri n (p + (N + 3) - 3)).2.2 :=
+    Fin.ext (by simp [hvl]; omega)
+  have hu0 : ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < p + (N + 3)) → u₀ i = 0 := by
+    intro i hi
+    rw [hu₀, francisShiftVector_pure]
+    dsimp only
+    rw [ite_eq_right (fun h' => hi (by rw [h', ha₀]; omega)),
+      ite_eq_right (fun h' => hi (by rw [h', hb₀]; omega)),
+      ite_eq_right (fun h' => hi (by rw [h', hc₀]; omega))]
+  have hPu : ∀ i, i ≠ windowEmb p hm 0 → (P₀ *ᵥ u₀) i = 0 := by
+    intro i hi
+    rw [hPu₀]
+    dsimp only
+    rw [ite_eq_right (fun h' => hi (by rw [h', eA]))]
+    split_ifs with hl'
+    · rfl
+    · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hl'
+      rw [hu₀, francisShiftVector_pure]
+      simp [hl'.1, hl'.2.1, hl'.2.2]
+  obtain ⟨hPP₂, hZP₂, hPu₂⟩ := windowBlock_first_reflector hm hP₀S hP₀P₀ hZP hu0 hPu
+  have hG : ((windowBlock p hm Z)ᵀ * windowBlock p hm H *
+      windowBlock p hm Z).IsUpperHessenberg := by
+    rw [← windowBlock_transpose_mul_mul hm hZS hZS, ← windowBlock_blockConj, ← hH']
+    exact isUpperHessenberg_windowBlock hm hHess
+  have hMu : (windowBlock p hm H * windowBlock p hm H -
+      trailingTrace (windowBlock p hm H) • windowBlock p hm H +
+      trailingDet (windowBlock p hm H) • 1).col 0 = u₀ ∘ windowEmb p hm := by
+    obtain ⟨fx, fy, fz, frest⟩ := francis_first_column hU.1 (trailingTrace (windowBlock p hm H))
+      (trailingDet (windowBlock p hm H))
+    funext a
+    rw [col_apply, Function.comp_apply, hu₀, francisShiftVector_pure]
+    dsimp only
+    by_cases a0 : a = 0
+    · rw [a0, fx, ite_eq_left eA]
+      simp only [trailingTrace, trailingDet, windowBlock_apply, eA, eB, eM, eL]
+    rw [ite_eq_right (hne a _ 0 (by rw [ha₀]; rfl) fun h' => a0 (Fin.ext h'))]
+    by_cases a1 : a = 1
+    · rw [a1, fy, ite_eq_left eB]
+      simp only [trailingTrace, windowBlock_apply, eA, eB, eM, eL]
+    rw [ite_eq_right (hne a _ 1 hb₀ fun h' => a1 (Fin.ext h'))]
+    by_cases a2 : a = ⟨2, by omega⟩
+    · rw [a2, fz, ite_eq_left eC]
+      simp only [windowBlock_apply, eA, eB, eC]
+    rw [ite_eq_right (hne a _ 2 hc₀ fun h' => a2 (Fin.ext h'))]
+    refine frest a ?_
+    have : (a : ℕ) ≠ 0 := fun h' => a0 (Fin.ext h')
+    have : (a : ℕ) ≠ 1 := fun h' => a1 (Fin.ext h')
+    have : (a : ℕ) ≠ 2 := fun h' => a2 (Fin.ext h')
+    omega
+  obtain ⟨htri, -, -⟩ := isFrancisStep_of_first_reflector hU
+    (windowBlock_mem_orthogonalGroup hm hZ hZS) hG hPP₂ hZP₂ (by rw [hMu]; exact hPu₂)
+  exact ⟨hZ, hZS, hG, htri⟩
 
 end FrancisWindow
 
@@ -1325,20 +1681,6 @@ end FrancisWindow
 section FrancisTheorem
 
 variable {N : ℕ}
-
-/-- The exact first column of `francisShiftVector`. -/
-theorem francisShiftVector_pure (a b c m l : Fin n) (H : Matrix (Fin n) (Fin n) ℝ) :
-    Id.run (francisShiftVector pure a b c m l H) = fun i =>
-      if i = a then H a a * H a a + H a b * H b a - (H m m + H l l) * H a a +
-          (H m m * H l l - H m l * H l m)
-      else if i = b then H b a * (H a a + H b b - (H m m + H l l))
-      else if i = c then H b a * H c b else 0 := rfl
-
-/-- The polynomial of the double shift, evaluated at `H`. -/
-theorem aeval_francisPoly (H : Matrix (Fin n) (Fin n) ℝ) (s t : ℝ) :
-    aeval H (X ^ 2 - C s * X + C t) = H * H - s • H + t • 1 := by
-  simp only [map_add, map_sub, map_mul, aeval_X, aeval_C,
-    Algebra.algebraMap_eq_smul_one, Matrix.smul_mul, Matrix.one_mul, sq]
 
 /-- **Algorithm 7.5.1 computes a Francis step** ([golub2013matrix] Algorithm 7.5.1, header): for
 `H ∈ ℝ^{n×n}` unreduced upper Hessenberg, `n ≥ 3`, and `s`, `t` the trace and determinant of the
@@ -1427,36 +1769,11 @@ theorem algorithm_7_5_1_spec {H H' : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
       · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hl'
         rw [hu₀, francisShiftVector_pure]
         simp [h0, hl'.1, hl'.2.1, hl'.2.2]
-  have hu0 : u₀ ≠ 0 := by
-    intro hu
-    have hz := congrFun (hMu.trans hu) ⟨2, by omega⟩
-    rw [col_apply, Pi.zero_apply, hM, (francis_first_column hHess s t).2.2.1] at hz
-    have hsub := (isUnreduced_iff.1 hH).2
-    have e10 : H 1 0 ≠ 0 := by
-      convert hsub 0 (by omega) using 2 <;> exact Fin.ext (by simp)
-    have e21 : H ⟨2, by omega⟩ 1 ≠ 0 := by
-      convert hsub 1 (by omega) using 2
-      exact Fin.ext (by simp)
-    exact mul_ne_zero e10 e21 hz
-  have hcn0 : cn ≠ 0 := by
-    intro hc
-    refine hu0 ?_
-    rw [← one_mulVec u₀, ← hPP, ← mulVec_mulVec, hPu, hc, zero_smul, mulVec_zero]
-  have hPe : P₀ *ᵥ Pi.single 0 1 = cn⁻¹ • u₀ := by
-    have h' : u₀ = cn • (P₀ *ᵥ Pi.single 0 1) := by
-      rw [← mulVec_smul, ← hPu, mulVec_mulVec, hPP, one_mulVec]
-    rw [h', smul_smul, inv_mul_cancel₀ hcn0, one_smul]
-  have hcol : Z.col 0 ∈ Submodule.span ℝ {M.col 0} := by
-    rw [← mulVec_single_one Z 0, hZcol, hPe, hMu]
-    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
-  have hstarZ : star Z = Zᵀ := by
-    rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
-  have htri : (Zᵀ * M).IsUpperTriangular := by
-    have := IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval hH
-      (X ^ 2 - C s * X + C t) hZo (by rw [hstarZ, ← hH'eq]; exact hHess')
-      (by rw [aeval_francisPoly, mulVec_single_one]; exact hcol)
-    rwa [aeval_francisPoly, hstarZ] at this
-  exact ⟨hZo, hH'eq, hHess', htri, hcol, Z, hZo, hH'eq, hHess', htri⟩
+  obtain ⟨htri, hcol, hF⟩ := isFrancisStep_of_first_reflector (s := s) (t := t) hH hZo
+    (by rw [← hH'eq]; exact hHess') hPP hZcol fun i hi => by
+      rw [← hM, hMu, hPu, Pi.smul_apply, Pi.single_apply, ite_eq_right hi, smul_zero]
+  rw [← hH'eq] at hF
+  exact ⟨hZo, hH'eq, hHess', htri, hcol, hF⟩
 
 end FrancisTheorem
 
@@ -1508,8 +1825,9 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 Algorithm 7.5.2, "upper triangularize all 2-by-2 diagonal blocks in `H` that have real
 eigenvalues and accumulate the transformations"; the book gives no algorithm). For the block
 `[w x; y z]` in rows and columns `(i, j)`, `j = i + 1`: `δ = w - z`, `d = δ² + 4xy`; if `d ≥ 0`,
-the eigenvalue of larger modulus `λ = (w + z)/2 + sign(δ) √d / 2` (`sign(δ)·` a copy or a negation,
-exact), its eigenvector `(x, λ - w)` (or `(λ - z, y)` when `x = 0`), `(c, s) = givens` of it
+the eigenvalue `λ = (w + z)/2 + sign(δ) √d / 2` on the side of `w` (`sign(δ)·` a copy or a
+negation, exact; not necessarily the one of larger modulus), its eigenvector `(x, λ - w)` (or
+`(λ - z, y)` when `x = 0`), `(c, s) = givens` of it
 (Algorithm 5.1.3), and the rotation applied to rows `i, j` over the columns `≥ i`, to columns
 `i, j` over the rows `≤ j`, and to the columns `i, j` of `Q`; if `d < 0` nothing is done. Every
 arithmetic operation is rounded, the comparisons are exact. -/
@@ -1619,6 +1937,53 @@ private theorem givens_entry_eq_zero {w x y z lam a b c s : ℝ} (hcs : c ^ 2 + 
 end Standardize
 
 
+section GivensUpdates
+
+open GolubVanLoan.Chapter05
+
+/-- The row update on a column list is the full product `G(i, k, θ)ᵀ A` when the omitted
+columns vanish in the rows `i`, `k`. -/
+theorem givensApplyLeft_eq_mul {m p : ℕ} {i k : Fin m} (hik : i ≠ k) (c s : ℝ)
+    {cols : List (Fin p)} (hcols : cols.Nodup) {A : Matrix (Fin m) (Fin p) ℝ}
+    (hA : ∀ q, q ∉ cols → A i q = 0 ∧ A k q = 0) :
+    Id.run (givensApplyLeft pure i k c s cols A) = (givensRotation i k c s)ᵀ * A := by
+  rw [givensApplyLeft_spec hik c s hcols]
+  ext r q
+  rw [of_apply]
+  split_ifs with hq
+  · rfl
+  · rw [givensRotation_transpose_mul_apply hik, (hA q hq).1, (hA q hq).2]
+    split_ifs with h1 h2
+    · subst h1; rw [(hA q hq).1]; ring
+    · subst h2; rw [(hA q hq).2]; ring
+    · rfl
+
+/-- The column update on a row list is the full product `A G(i, k, θ)` when the omitted rows
+vanish in the columns `i`, `k`. -/
+theorem givensApplyRight_eq_mul {m p : ℕ} {i k : Fin p} (hik : i ≠ k) (c s : ℝ)
+    {rows : List (Fin m)} (hrows : rows.Nodup) {A : Matrix (Fin m) (Fin p) ℝ}
+    (hA : ∀ r, r ∉ rows → A r i = 0 ∧ A r k = 0) :
+    Id.run (givensApplyRight pure i k c s rows A) = A * givensRotation i k c s := by
+  rw [givensApplyRight_spec hik c s hrows]
+  ext r q
+  rw [of_apply]
+  split_ifs with hr
+  · rfl
+  · rw [mul_givensRotation_apply hik, (hA r hr).1, (hA r hr).2]
+    split_ifs with h1 h2
+    · subst h1; rw [(hA r hr).1]; ring
+    · subst h2; rw [(hA r hr).2]; ring
+    · rfl
+
+/-- The exact output of `givens`. -/
+theorem givens_exact (a b : ℝ) :
+    ∃ c s : ℝ, Id.run (algorithm_5_1_3 pure a b) = (c, s) ∧ c ^ 2 + s ^ 2 = 1 ∧
+      s * a + c * b = 0 := by
+  obtain ⟨h1, h2, -⟩ := algorithm_5_1_3_spec a b
+  exact ⟨_, _, rfl, h1, h2⟩
+
+end GivensUpdates
+
 section Standardize2
 
 /-- **Exact semantics of `triangularize2x2`**: if rows `i`, `j = i + 1` vanish in the columns
@@ -1673,49 +2038,25 @@ theorem triangularize2x2_spec {i j : Fin n} (hij : (j : ℕ) = i + 1)
         (Id.run (givensApplyLeft pure i j cs.1 cs.2 ((List.finRange n).filter fun q => i ≤ q) H))),
         Id.run (givensApplyRight pure i j cs.1 cs.2 (List.finRange n) Q)) = _
     have hL : Id.run (givensApplyLeft pure i j cs.1 cs.2
-        ((List.finRange n).filter fun q => i ≤ q) H) = Gᵀ * H := by
-      rw [givensApplyLeft_spec hne _ _ ((List.nodup_finRange n).filter _)]
-      ext r q
-      rw [of_apply]
-      split_ifs with hq
-      · rfl
-      · have hq' : (q : ℕ) < i := by
-          have : ¬ i ≤ q := fun h =>
-            hq (List.mem_filter.2 ⟨List.mem_finRange q, decide_eq_true h⟩)
-          rw [Fin.le_def] at this
-          omega
-        obtain ⟨h1, h2⟩ := hrow q hq'
-        have hGq : (Gᵀ * H) r q = (Gᵀ *ᵥ fun p => H p q) r := rfl
-        rw [hGq, givensRotation_transpose_mulVec_apply hne]
-        split_ifs with hri hrj
-        · rw [hri, h1, h2]; ring
-        · rw [hrj, h1, h2]; ring
-        · rfl
+        ((List.finRange n).filter fun q => i ≤ q) H) = Gᵀ * H :=
+      givensApplyLeft_eq_mul hne _ _ ((List.nodup_finRange n).filter _) fun q hq => hrow q (by
+        have : ¬ i ≤ q := fun h => hq (List.mem_filter.2 ⟨List.mem_finRange q, decide_eq_true h⟩)
+        rw [Fin.le_def] at this
+        omega)
     have hR : Id.run (givensApplyRight pure i j cs.1 cs.2
         ((List.finRange n).filter fun r => r ≤ j) (Gᵀ * H)) = Gᵀ * H * G := by
-      rw [givensApplyRight_spec hne _ _ ((List.nodup_finRange n).filter _)]
-      ext r q
-      rw [of_apply]
-      split_ifs with hr
-      · rfl
-      · have hr' : (j : ℕ) < r := by
-          have : ¬ r ≤ j := fun h =>
-            hr (List.mem_filter.2 ⟨List.mem_finRange r, decide_eq_true h⟩)
-          rw [Fin.le_def] at this
-          omega
-        have hri : r ≠ i := fun e => by rw [e] at hr'; omega
-        have hrj : r ≠ j := fun e => by rw [e] at hr'; omega
-        obtain ⟨h1, h2⟩ := hcol r hr'
-        have hrow' : ∀ p, (Gᵀ * H) r p = H r p := fun p => by
-          have hGp : (Gᵀ * H) r p = (Gᵀ *ᵥ fun t => H t p) r := rfl
-          rw [hGp, givensRotation_transpose_mulVec_apply hne, ite_eq_right hri, ite_eq_right hrj]
-        have hGq : (Gᵀ * H * G) r q = (Gᵀ *ᵥ (Gᵀ * H) r) q := by
-          rw [mulVec_transpose]; rfl
-        rw [hGq, givensRotation_transpose_mulVec_apply hne, hrow' q, hrow' i, hrow' j, h1, h2]
-        split_ifs with hqi hqj
-        · rw [hqi, h1]; ring
-        · rw [hqj, h2]; ring
-        · rfl
+      refine givensApplyRight_eq_mul hne _ _ ((List.nodup_finRange n).filter _) fun r hr => ?_
+      have hr' : (j : ℕ) < r := by
+        have : ¬ r ≤ j := fun h => hr (List.mem_filter.2 ⟨List.mem_finRange r, decide_eq_true h⟩)
+        rw [Fin.le_def] at this
+        omega
+      have hri : r ≠ i := fun e => by rw [e] at hr'; omega
+      have hrj : r ≠ j := fun e => by rw [e] at hr'; omega
+      have hrow' : ∀ p, (Gᵀ * H) r p = H r p := fun p => by
+        have hGp : (Gᵀ * H) r p = (Gᵀ *ᵥ fun t => H t p) r := rfl
+        rw [hGp, givensRotation_transpose_mulVec_apply hne, ite_eq_right hri, ite_eq_right hrj]
+      rw [hrow' i, hrow' j]
+      exact hcol r hr'
     rw [hL, hR, givensApplyRight_spec_of_forall_mem hne _ _ (List.nodup_finRange n)
       List.mem_finRange]
   · rw [givens_conj_apply_ji hne]
@@ -1944,7 +2285,10 @@ theorem unreducedStart_spec (H : Matrix (Fin n) (Fin n) ℝ) :
       · exact c k h₁ (by omega)
 
 /-- No two consecutive subdiagonal entries of `H` are nonzero: together with the Hessenberg form,
-upper quasi-triangular (`isQuasiUpperTriangular_of_noTwoSubdiag`). -/
+upper quasi-triangular (`isQuasiUpperTriangular_of_noTwoSubdiag`). Each pass is the book's loop body
+(`qrPass_isQRPass`): the deflation `IsQRDeflation` (`qrDeflate_isQRDeflation`) followed by a
+Francis step on the unreduced block (`IsQRPass`, `IsQRFrancisPass`), and the specification
+records this trace of passes. -/
 def NoTwoSubdiag (H : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ i, 0 < i → SubdiagZero H i ∨ SubdiagZero H (i + 1)
 
@@ -2102,6 +2446,91 @@ theorem qrDeflate_spec {tol : ℝ} (htol : 0 ≤ tol) {Q Z : Matrix (Fin n) (Fin
   unfold qrDeflate
   rw [List.idRun_foldlM]
   exact this
+
+/-- **The deflation of Algorithm 7.5.2**, as a relation: `H₁` is `H` with every subdiagonal entry
+satisfying the test `|h_{i,i-1}| ≤ tol (|h_ii| + |h_{i-1,i-1}|)` set to zero (exact arithmetic).
+The tests read only entries that the sweep does not change, so the sequential sweep `qrDeflate`
+is this simultaneous one (`qrDeflate_isQRDeflation`). -/
+def IsQRDeflation (tol : ℝ) (H H₁ : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  ∀ i j : Fin n, H₁ i j =
+    if (j : ℕ) + 1 = i ∧ |H i j| ≤ tol * (|H i i| + |H j j|) then 0 else H i j
+
+/-- A deflation keeps the upper Hessenberg form. -/
+theorem IsQRDeflation.isUpperHessenberg {tol : ℝ} {H H₁ : Matrix (Fin n) (Fin n) ℝ}
+    (h : IsQRDeflation tol H H₁) (hH : H.IsUpperHessenberg) : H₁.IsUpperHessenberg := by
+  intro i j hij
+  rw [h i j]
+  split_ifs
+  · rfl
+  · exact hH i j hij
+
+/-- **The deflation sweep of Algorithm 7.5.2 deflates** (exact arithmetic): the run of `qrDeflate`
+is the simultaneous deflation `IsQRDeflation`. -/
+theorem qrDeflate_isQRDeflation (tol : ℝ) (H : Matrix (Fin n) (Fin n) ℝ) :
+    IsQRDeflation tol H (Id.run (qrDeflate pure tol H)) := by
+  have key : ∀ l : List (Fin n), l.Nodup → ∀ G : Matrix (Fin n) (Fin n) ℝ,
+      (∀ a, G a a = H a a) → (∀ i ∈ l, ∀ c, G i c = H i c) → ∀ i j,
+      (l.foldl (fun H i => Id.run (qrDeflateStep pure tol H i)) G) i j =
+        if i ∈ l ∧ (j : ℕ) + 1 = i ∧ |H i j| ≤ tol * (|H i i| + |H j j|) then 0 else G i j := by
+    intro l
+    induction l with
+    | nil => intro _ G _ _ i j; simp
+    | cons k l ih =>
+      intro hnd G hdiag hrow i j
+      obtain ⟨hk, hnd'⟩ := List.nodup_cons.1 hnd
+      rw [List.foldl_cons]
+      have hG' : ∀ r c, Id.run (qrDeflateStep pure tol G k) r c =
+          if r = k ∧ (c : ℕ) + 1 = r ∧ |H r c| ≤ tol * (|H r r| + |H c c|) then 0
+          else G r c := by
+        intro r c
+        rw [qrDeflateStep_pure]
+        by_cases hk0 : 0 < (k : ℕ)
+        · have hrowk := hrow k List.mem_cons_self
+          simp only [hk0, ↓reduceIte, hrowk, hdiag]
+          split_ifs with ht h2 h2
+          · obtain ⟨hr, hc, -⟩ := h2
+            have hcj : c = ⟨(k : ℕ) - 1, lt_of_le_of_lt (Nat.sub_le _ _) k.isLt⟩ :=
+              Fin.ext (by simp only; omega)
+            rw [hr, hcj]
+            simp [updateRow_apply]
+          · rw [updateRow_apply]
+            split_ifs with hr
+            · rw [hr, Function.update_apply, ite_eq_right]
+              intro hcj
+              refine h2 ⟨hr, by rw [hcj, hr]; simp only; omega, ?_⟩
+              rw [hr, hcj]
+              exact ht
+            · rfl
+          · obtain ⟨hr, hc, ht'⟩ := h2
+            have hcj : c = ⟨(k : ℕ) - 1, lt_of_le_of_lt (Nat.sub_le _ _) k.isLt⟩ :=
+              Fin.ext (by simp only; omega)
+            rw [hr, hcj] at ht'
+            exact absurd ht' ht
+          · rfl
+        · simp only [hk0, ↓reduceIte]
+          rw [ite_eq_right]
+          intro h'
+          omega
+      rw [ih hnd' _ (fun a => by
+          rw [hG', ite_eq_right]
+          · exact hdiag a
+          · intro h'
+            omega)
+        (fun i' hi' c => by
+          rw [hG', ite_eq_right]
+          · exact hrow i' (List.mem_cons_of_mem _ hi') c
+          · intro h'
+            exact hk (h'.1 ▸ hi')),
+        hG']
+      by_cases hik : i = k
+      · subst hik
+        simp [hk]
+      · simp [hik]
+  have := key (List.finRange n) (List.nodup_finRange n) H (fun _ => rfl) (fun _ _ _ => rfl)
+  intro i j
+  unfold qrDeflate
+  rw [List.idRun_foldlM, this]
+  simp [List.mem_finRange]
 
 end Deflation
 
@@ -2584,6 +3013,126 @@ private theorem qrInit (A : Matrix (Fin n) (Fin n) ℝ) :
   | succ N =>
     exact ⟨(algorithm_7_4_2_spec A).1, (algorithm_7_4_2_spec A).2.1, (algorithm_7_4_2_spec A).2.2.1⟩
 
+/-- **The Francis branch of a pass of Algorithm 7.5.2** on the deflated `H₁`: the partition
+`H₁ = [H₁₁ H₁₂ H₁₃; 0 H₂₂ H₂₃; 0 0 H₃₃]` with `H₂₂ = H₁(p:p+N+3, p:p+N+3)` unreduced (decoupled by
+zero subdiagonal entries above rows `p` and `p + N + 3`) and `H₃₃` upper quasi-triangular (no two
+consecutive nonzero subdiagonal entries below), and `Z = diag(I_p, Z₂₂, I_q)` a Francis step on
+`H₂₂` (`IsFrancisStepOn`) with `Zᵀ H₁ Z` upper Hessenberg. -/
+def IsQRFrancisPass (p N : ℕ) (h : p + (N + 3) ≤ n) (H₁ Z : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  SubdiagZero H₁ p ∧ SubdiagZero H₁ (p + (N + 3)) ∧
+    (∀ i, p + (N + 3) < i → SubdiagZero H₁ i ∨ SubdiagZero H₁ (i + 1)) ∧
+    IsUnreduced (windowBlock p h H₁) ∧ IsFrancisStepOn p N h H₁ Z ∧
+    (Zᵀ * H₁ * Z).IsUpperHessenberg
+
+/-- **One unfinished pass of Algorithm 7.5.2, exact arithmetic**: for upper Hessenberg `H`, with
+`H₁` the deflated matrix, either no two consecutive subdiagonal entries of `H₁` are nonzero
+(`q = n`) and the pass returns `(H₁, Q, true)`, or it returns `(Zᵀ H₁ Z, Q Z, false)` for a Francis
+step `Z = diag(I_p, Z₂₂, I_q)` on the unreduced block `H₂₂` (`IsQRFrancisPass`) — "perform a
+Francis QR step on `H₂₂`: `H₂₂ = Zᵀ H₂₂ Z`; `Q = Q diag(I_p, Z, I_q)`; `H₁₂ = H₁₂ Z`;
+`H₂₃ = Zᵀ H₂₃`". -/
+theorem qrPass_false_spec (tol : ℝ) {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg)
+    (Q : Matrix (Fin n) (Fin n) ℝ) :
+    (NoTwoSubdiag (Id.run (qrDeflate pure tol H)) ∧
+        Id.run (qrPass pure tol (H, Q, false)) = (Id.run (qrDeflate pure tol H), Q, true)) ∨
+      ∃ (p N : ℕ) (h : p + (N + 3) ≤ n) (Z : Matrix (Fin n) (Fin n) ℝ),
+        IsQRFrancisPass p N h (Id.run (qrDeflate pure tol H)) Z ∧
+        Id.run (qrPass pure tol (H, Q, false)) =
+          (Zᵀ * Id.run (qrDeflate pure tol H) * Z, Q * Z, false) := by
+  have hrun : Id.run (qrPass pure tol (H, Q, false)) =
+      (let H₁ := Id.run (qrDeflate pure tol H)
+       if schurTrailingStart H₁ n = 0 then (H₁, Q, true) else
+         let p := unreducedStart H₁ (schurTrailingStart H₁ n - 1)
+         let r := Id.run (algorithm_7_5_1 pure
+           (francisWindow n p (schurTrailingStart H₁ n)) H₁)
+         let HQ := Id.run (r.2.foldlM
+           (francisOffBlockStep pure p (schurTrailingStart H₁ n)) (r.1, Q))
+         (HQ.1, HQ.2, false)) := rfl
+  rw [hrun]
+  have hH₁ := (qrDeflate_isQRDeflation tol H).isUpperHessenberg hH
+  generalize Id.run (qrDeflate pure tol H) = H₁ at hH₁ ⊢
+  dsimp only
+  obtain ⟨hm_le, hmSZ, hquasi, hm3⟩ :=
+    schurTrailingStart_spec H₁ n (subdiagZero_of_le H₁ le_rfl)
+  generalize schurTrailingStart H₁ n = m at hm_le hmSZ hquasi hm3 ⊢
+  have hq' : ∀ i, m < i → SubdiagZero H₁ i ∨ SubdiagZero H₁ (i + 1) := fun i hi => by
+    by_cases hin : i + 1 < n
+    · exact hquasi i hi hin
+    · exact Or.inr (subdiagZero_of_le H₁ (by omega))
+  split_ifs with hm0
+  · refine Or.inl ⟨fun i hi => hq' i (by omega), rfl⟩
+  obtain ⟨hm3', hm1, hm2⟩ := hm3 hm0
+  obtain ⟨hp_le, hpSZ, hpU⟩ := unreducedStart_spec H₁ (m - 1)
+  generalize unreducedStart H₁ (m - 1) = p at hp_le hpSZ hpU ⊢
+  have hpm : p + 3 ≤ m := by
+    have h1 : p ≠ m - 1 := fun e => hm1 (by rw [← e]; exact hpSZ)
+    have h2 : p ≠ m - 2 := fun e => hm2 (by rw [← e]; exact hpSZ)
+    omega
+  obtain ⟨N, rfl⟩ : ∃ N, m = p + (N + 3) := ⟨m - p - 3, by omega⟩
+  have : NeZero n := ⟨by omega⟩
+  generalize hr : Id.run (algorithm_7_5_1 pure (francisWindow n p (p + (N + 3))) H₁) = r
+  obtain ⟨H₂, data⟩ := r
+  have hU : IsUnreduced (windowBlock p hm_le H₁) := by
+    refine isUnreduced_iff.2 ⟨isUpperHessenberg_windowBlock hm_le hH₁, fun k hk h0 => ?_⟩
+    refine hpU (p + k + 1) (by omega) (by omega) fun hlt _ => ?_
+    rw [windowBlock_apply] at h0
+    convert h0 using 2 <;> exact Fin.ext (by simp only [val_windowEmb]; omega)
+  obtain ⟨hZ, hZS, hH₂, hH₂hess, hdata, hF⟩ := algorithm_7_5_1_window hm_le hH₁ hr
+  dsimp only
+  rw [List.idRun_foldlM]
+  have hfold := francisOffBlock_foldl hdata 1 H₂ Q
+  rw [offBlockConj_one, Matrix.one_mul] at hfold
+  rw [hfold]
+  have hH₁' := isUpperHessenberg_iff_fin.1 hH₁
+  have hp0 : ∀ i j : Fin n, p ≤ (i : ℕ) → (j : ℕ) < p → H₁ i j = 0 := by
+    intro i j hi hj
+    by_cases hij : (j : ℕ) + 1 < i
+    · exact hH₁' i j hij
+    · have hip : (i : ℕ) = p := by omega
+      exact (subdiagZero_iff (H := H₁) (i := j) (j := i) (by omega)).1
+        (by rw [hip]; exact hpSZ)
+  have hm0' : ∀ i j : Fin n, p + (N + 3) ≤ (i : ℕ) → (j : ℕ) < p + (N + 3) → H₁ i j = 0 := by
+    intro i j hi hj
+    by_cases hij : (j : ℕ) + 1 < i
+    · exact hH₁' i j hij
+    · have him : (i : ℕ) = p + (N + 3) := by omega
+      exact (subdiagZero_iff (H := H₁) (i := j) (j := i) (by omega)).1
+        (by rw [him]; exact hmSZ)
+  have hconj : offBlockConj p (p + (N + 3)) (householderProduct data) H₂ =
+      (householderProduct data)ᵀ * H₁ * householderProduct data := by
+    rw [hH₂, offBlockConj_blockConj hZS hp0 hm0']
+  refine Or.inr ⟨p, N, hm_le, householderProduct data,
+    ⟨hpSZ, hmSZ, hq', hU, hF hU, ?_⟩, by rw [hconj]⟩
+  rw [← hconj]
+  exact isUpperHessenberg_offBlockConj hH₂hess _ _ _
+
+/-- **One pass of Algorithm 7.5.2 in exact arithmetic**, as a relation between the states
+`(H, Q, done)` before and after: a finished state is kept; an unfinished one is deflated
+(`IsQRDeflation`) to `H₁`, and then either `H₁` has no two consecutive nonzero subdiagonal entries
+and the state becomes `(H₁, Q, true)`, or the state becomes `(Zᵀ H₁ Z, Q Z, false)` for a Francis
+step `Z = diag(I_p, Z₂₂, I_q)` on the unreduced block `H₂₂` of `H₁` (`IsQRFrancisPass`). -/
+def IsQRPass (tol : ℝ)
+    (st st' : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) : Prop :=
+  (st.2.2 = true → st' = st) ∧
+    (st.2.2 = false → ∃ H₁, IsQRDeflation tol st.1 H₁ ∧
+      ((NoTwoSubdiag H₁ ∧ st' = (H₁, st.2.1, true)) ∨
+        ∃ (p N : ℕ) (h : p + (N + 3) ≤ n) (Z : Matrix (Fin n) (Fin n) ℝ),
+          IsQRFrancisPass p N h H₁ Z ∧ st' = (Zᵀ * H₁ * Z, st.2.1 * Z, false)))
+
+/-- **A pass of Algorithm 7.5.2 is the book's loop body** (exact arithmetic): on a state with
+`H` upper Hessenberg, `qrPass` is a deflation followed by a Francis step on the unreduced block
+`H₂₂` (`IsQRPass`). -/
+theorem qrPass_isQRPass (tol : ℝ)
+    {st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool}
+    (hH : st.1.IsUpperHessenberg) : IsQRPass tol st (Id.run (qrPass pure tol st)) := by
+  obtain ⟨H, Q, d⟩ := st
+  cases d with
+  | true => exact ⟨fun _ => rfl, fun h => absurd h (by simp)⟩
+  | false =>
+    refine ⟨fun h => absurd h (by simp), fun _ => ⟨_, qrDeflate_isQRDeflation tol H, ?_⟩⟩
+    rcases qrPass_false_spec tol hH Q with h | ⟨p, N, h, Z, hF, hrun⟩
+    · exact Or.inl h
+    · exact Or.inr ⟨p, N, h, Z, hF, hrun⟩
+
 /-- **The invariant of the passes of Algorithm 7.5.2**: `H = Qᵀ (A + E) Q` upper Hessenberg with
 `Q` orthogonal and `‖E‖_F ≤ (c - 1) ‖A‖_F` (`E = 0` when `tol = 0`), and no two consecutive
 subdiagonal entries of `H` nonzero once `done`. -/
@@ -2612,61 +3161,14 @@ private theorem qrPass_inv {tol : ℝ} (htol : 0 ≤ tol) {A : Matrix (Fin n) (F
     have : c ≤ (1 + 2 * tol) ^ n * c := le_mul_of_one_le_left (by linarith) hpow
     nlinarith
   | false =>
-    have hrun : Id.run (qrPass pure tol (H, Q, false)) =
-        (let H₁ := Id.run (qrDeflate pure tol H)
-         if schurTrailingStart H₁ n = 0 then (H₁, Q, true) else
-           let p := unreducedStart H₁ (schurTrailingStart H₁ n - 1)
-           let r := Id.run (algorithm_7_5_1 pure
-             (francisWindow n p (schurTrailingStart H₁ n)) H₁)
-           let HQ := Id.run (r.2.foldlM
-             (francisOffBlockStep pure p (schurTrailingStart H₁ n)) (r.1, Q))
-           (HQ.1, HQ.2, false)) := rfl
-    rw [hrun]
-    dsimp only
     obtain ⟨E₁, hH₁E, hE₁, hE₁0, hH₁⟩ := qrDeflate_spec htol hQ hQ A hHE hE hE0 hH
-    generalize Id.run (qrDeflate pure tol H) = H₁ at hH₁E hH₁ ⊢
-    obtain ⟨hm_le, hmSZ, hquasi, hm3⟩ :=
-      schurTrailingStart_spec H₁ n (subdiagZero_of_le H₁ le_rfl)
-    generalize schurTrailingStart H₁ n = m at hm_le hmSZ hquasi hm3 ⊢
-    split_ifs with hm0
-    · refine ⟨hQ, hH₁, fun _ i hi => ?_, E₁, hH₁E, hE₁, hE₁0⟩
-      by_cases hin : i + 1 < n
-      · exact hquasi i (by omega) hin
-      · exact Or.inr (subdiagZero_of_le H₁ (by omega))
-    · obtain ⟨hm3', hm1, hm2⟩ := hm3 hm0
-      obtain ⟨hp_le, hpSZ, -⟩ := unreducedStart_spec H₁ (m - 1)
-      generalize unreducedStart H₁ (m - 1) = p at hp_le hpSZ ⊢
-      have hpm : p + 3 ≤ m := by
-        have h1 : p ≠ m - 1 := fun e => hm1 (by rw [← e]; exact hpSZ)
-        have h2 : p ≠ m - 2 := fun e => hm2 (by rw [← e]; exact hpSZ)
-        omega
-      have : NeZero n := ⟨by omega⟩
-      generalize hr : Id.run (algorithm_7_5_1 pure (francisWindow n p m) H₁) = r
-      obtain ⟨H₂, data⟩ := r
-      obtain ⟨hZ, hZS, hH₂, hH₂hess, hdata⟩ := algorithm_7_5_1_window hm_le hpm hH₁ hr
-      dsimp only
-      rw [List.idRun_foldlM]
-      have hfold := francisOffBlock_foldl hdata 1 H₂ Q
-      rw [offBlockConj_one, Matrix.one_mul] at hfold
-      rw [hfold]
-      have hH₁' := isUpperHessenberg_iff_fin.1 hH₁
-      have hp0 : ∀ i j : Fin n, p ≤ (i : ℕ) → (j : ℕ) < p → H₁ i j = 0 := by
-        intro i j hi hj
-        by_cases hij : (j : ℕ) + 1 < i
-        · exact hH₁' i j hij
-        · have hip : (i : ℕ) = p := by omega
-          exact (subdiagZero_iff (H := H₁) (i := j) (j := i) (by omega)).1
-            (by rw [hip]; exact hpSZ)
-      have hm0' : ∀ i j : Fin n, m ≤ (i : ℕ) → (j : ℕ) < m → H₁ i j = 0 := by
-        intro i j hi hj
-        by_cases hij : (j : ℕ) + 1 < i
-        · exact hH₁' i j hij
-        · have him : (i : ℕ) = m := by omega
-          exact (subdiagZero_iff (H := H₁) (i := j) (j := i) (by omega)).1
-            (by rw [him]; exact hmSZ)
-      refine ⟨mul_mem hQ hZ, isUpperHessenberg_offBlockConj hH₂hess p m _,
-        fun h => by simp at h, E₁, ?_, hE₁, hE₁0⟩
-      rw [hH₂, offBlockConj_blockConj hZS hp0 hm0', hH₁E, transpose_mul]
+    rcases qrPass_false_spec tol hH Q with ⟨h2, hrun⟩ |
+        ⟨p, N, h, Z, ⟨-, -, -, -, ⟨hZ, -⟩, hZH⟩, hrun⟩
+    · rw [hrun]
+      exact ⟨hQ, hH₁, fun _ => h2, E₁, hH₁E, hE₁, hE₁0⟩
+    · rw [hrun]
+      refine ⟨mul_mem hQ hZ, hZH, fun h => by simp at h, E₁, ?_, hE₁, hE₁0⟩
+      rw [hH₁E, transpose_mul]
       simp only [Matrix.mul_assoc]
 
 /-- The passes of Algorithm 7.5.2 keep the invariant, the perturbation factor growing by
@@ -2691,10 +3193,14 @@ private theorem qrPass_foldl {tol : ℝ} (htol : 0 ≤ tol) (A : Matrix (Fin n) 
 `Q` is orthogonal and `T = Qᵀ (A + E) Q` is upper Hessenberg for a perturbation `E` with
 `‖E‖_F ≤ ((1 + 2 tol)^(n·fuel) - 1) ‖A‖_F` (each of the at most `n` deflations of a pass perturbs
 by `tol (|h_ii| + |h_{i-1,i-1}|) ≤ 2 tol ‖H‖_F`; everything else is an exact orthogonal
-similarity), `E = 0` when `tol = 0`; and if the loop ended (`q = n`, `done`), `T` is upper
+similarity), `E = 0` when `tol = 0`; if the loop ended (`q = n`, `done`), `T` is upper
 quasi-triangular and every `2 × 2` diagonal block with a nonzero subdiagonal entry has complex
 eigenvalues, `(t_ii - t_jj)² + 4 t_ij t_ji < 0`: `T` is the real Schur form of `A + E`
-("upper triangularize all 2-by-2 diagonal blocks in `H` that have real eigenvalues"). -/
+("upper triangularize all 2-by-2 diagonal blocks in `H` that have real eigenvalues"). And the
+iteration is the book's: the states `(H_k, Q_k, done_k)` start from the Hessenberg reduction
+`H₀ = Q₀ᵀ A Q₀`, each pass is a deflation followed by a Francis QR step on the unreduced block
+`H₂₂` (`IsQRPass`), and `(Q, T)` is `(Q_fuel G, Gᵀ H_fuel G)` for the orthogonal `G` of the final
+standardization. -/
 theorem algorithm_7_5_2_spec {tol : ℝ} (htol : 0 ≤ tol) (A : Matrix (Fin n) (Fin n) ℝ)
     (fuel : ℕ) {Q T : Matrix (Fin n) (Fin n) ℝ} {done : Bool}
     (h : Id.run (algorithm_7_5_2 pure tol A fuel) = (Q, T, done)) :
@@ -2704,7 +3210,13 @@ theorem algorithm_7_5_2_spec {tol : ℝ} (htol : 0 ≤ tol) (A : Matrix (Fin n) 
       T.IsUpperHessenberg ∧
       (done = true → T.IsQuasiUpperTriangular ∧
         ∀ i j : Fin n, (j : ℕ) = i + 1 → T j i ≠ 0 →
-          (T i i - T j j) ^ 2 + 4 * T i j * T j i < 0) := by
+          (T i i - T j j) ^ 2 + 4 * T i j * T j i < 0) ∧
+      ∃ (Q₀ : Matrix (Fin n) (Fin n) ℝ)
+        (sts : ℕ → Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool),
+        Q₀ ∈ orthogonalGroup (Fin n) ℝ ∧ (Q₀ᵀ * A * Q₀).IsUpperHessenberg ∧
+        sts 0 = (Q₀ᵀ * A * Q₀, Q₀, false) ∧ (∀ k < fuel, IsQRPass tol (sts k) (sts (k + 1))) ∧
+        (sts fuel).2.2 = done ∧
+        ∃ G ∈ orthogonalGroup (Fin n) ℝ, Q = (sts fuel).2.1 * G ∧ T = Gᵀ * (sts fuel).1 * G := by
   have hrun : Id.run (algorithm_7_5_2 pure tol A fuel) =
       (let r := Id.run (algorithm_7_4_2 pure A)
        let st := Id.run ((List.range fuel).foldlM (fun st _ => qrPass pure tol st)
@@ -2720,11 +3232,22 @@ theorem algorithm_7_5_2_spec {tol : ℝ} (htol : 0 ≤ tol) (A : Matrix (Fin n) 
       householderProduct (Id.run (algorithm_7_4_2 pure A)).2, false) :=
     ⟨hQ₀, hH₀, fun h => by simp at h, 0, by rw [add_zero]; exact hH₀E, by simp,
       fun _ => rfl⟩
-  have hpass := qrPass_foldl htol A (List.range fuel) 1 _ le_rfl hinit
-  rw [List.length_range, mul_one] at hpass
-  generalize (List.range fuel).foldl (fun st _ => Id.run (qrPass pure tol st))
-    (hessenbergPart (Id.run (algorithm_7_4_2 pure A)).1,
-      householderProduct (Id.run (algorithm_7_4_2 pure A)).2, false) = st at hpass h
+  let sts : ℕ → Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool := fun k =>
+    (List.range k).foldl (fun st _ => Id.run (qrPass pure tol st))
+      (hessenbergPart (Id.run (algorithm_7_4_2 pure A)).1,
+        householderProduct (Id.run (algorithm_7_4_2 pure A)).2, false)
+  have hinvk : ∀ k, QRPassInv tol A ((1 + 2 * tol) ^ (n * k)) (sts k) := fun k => by
+    have := qrPass_foldl htol A (List.range k) 1 _ le_rfl hinit
+    rwa [List.length_range, mul_one] at this
+  have hstep : ∀ k, sts (k + 1) = Id.run (qrPass pure tol (sts k)) := fun k => by
+    simp only [sts, List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
+  have hpass := hinvk fuel
+  change QRPassInv tol A _ (sts fuel) at hpass
+  have hfuel : (List.range fuel).foldl (fun st _ => Id.run (qrPass pure tol st))
+      (hessenbergPart (Id.run (algorithm_7_4_2 pure A)).1,
+        householderProduct (Id.run (algorithm_7_4_2 pure A)).2, false) = sts fuel := rfl
+  rw [hfuel] at h
+  generalize hst : sts fuel = st at hpass h
   obtain ⟨hQ, hH, hdone, E, hHE, hE, hE0⟩ := hpass
   have hstd := standardize_foldl (A := A) (E := E) (D := st.2.2 = true) (List.finRange n) st.1
     st.2.1 (fun _ => False) hQ hHE hH fun d => ⟨hdone d, fun _ _ _ h => h.elim⟩
@@ -2733,9 +3256,18 @@ theorem algorithm_7_5_2_spec {tol : ℝ} (htol : 0 ≤ tol) (A : Matrix (Fin n) 
   simp only [Prod.mk.injEq] at h
   obtain ⟨rfl, rfl, rfl⟩ := h
   obtain ⟨hQ', hHE', hH', hD⟩ := hstd
-  exact ⟨hQ', ⟨E, hHE', hE, hE0⟩, hH', fun hd =>
+  have hQQ : ∀ X : Matrix (Fin n) (Fin n) ℝ, st.2.1 * (st.2.1ᵀ * X) = X := fun X => by
+    rw [← Matrix.mul_assoc, (mem_orthogonalGroup_iff (Fin n) ℝ).1 hQ, Matrix.one_mul]
+  refine ⟨hQ', ⟨E, hHE', hE, hE0⟩, hH', fun hd =>
     ⟨isQuasiUpperTriangular_of_noTwoSubdiag hH' (hD hd).1,
-      fun i j hij hji => (hD hd).2 i j hij (Or.inr (List.mem_finRange i)) hji⟩⟩
+      fun i j hij hji => (hD hd).2 i j hij (Or.inr (List.mem_finRange i)) hji⟩,
+    householderProduct (Id.run (algorithm_7_4_2 pure A)).2, sts, hQ₀, by rw [← hH₀E]; exact hH₀,
+    by change (hessenbergPart _, _, false) = _; rw [hH₀E],
+    fun k _ => by rw [hstep]; exact qrPass_isQRPass tol (hinvk k).2.1, by rw [hst],
+    st.2.1ᵀ * HQ.2, mul_mem (Matrix.transpose_mem_unitaryGroup_iff.2 hQ) hQ', ?_, ?_⟩
+  · rw [hst, hQQ]
+  · rw [hst, hHE', hHE, transpose_mul, transpose_transpose]
+    simp only [Matrix.mul_assoc, hQQ]
 
 end QRSpec
 

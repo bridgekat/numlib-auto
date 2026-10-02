@@ -104,3 +104,7 @@ source = 'Golub–Van Loan, Matrix Computations, §8.7.9'
 id = "equation_8_7_18"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.18)'
+
+[[node]]
+id = "generalizedRayleighQuotientIteration_succ"
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.5)'

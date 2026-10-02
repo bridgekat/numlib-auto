@@ -333,7 +333,7 @@ theorem span_leading_schurVectors_eq {p q : ℕ} {A Q : Matrix (Fin (p + q)) (Fi
   have hQu : IsUnit Q := (isUnit_iff_isUnit_det Q).2
     (isUnit_det_of_right_inverse (mem_unitaryGroup_iff.1 hQ))
   have hinv : Q⁻¹ = star Q := Matrix.inv_eq_left_inv (mem_unitaryGroup_iff'.1 hQ)
-  have hspan := span_cols_eq_iSup_maxGenEigenspace_of_conj hQu finSumFinEquiv.symm
+  have hspan := span_cols_eq_spectralSubspace_of_conj hQu finSumFinEquiv.symm
     (by rwa [hinv]) hdisj
   simp only [Equiv.symm_symm, finSumFinEquiv_apply_left] at hspan
   refine ⟨hspan, fun S hS hdim hΛ => ?_⟩
@@ -343,7 +343,7 @@ theorem span_leading_schurVectors_eq {p q : ℕ} {A Q : Matrix (Fin (p + q)) (Fi
       (Submodule.span ℂ (Set.range fun i : Fin p => Q.col (Fin.castAdd q i))) = p := by
     rw [finrank_span_eq_card hli, Fintype.card_fin]
   rw [hspan]
-  refine Module.End.invtSubmodule_eq_iSup_maxGenEigenspace hS
+  refine Module.End.invtSubmodule_eq_spectralSubspace hS
     (fun μ hμ x hx hAx => hΛ μ hμ x hx (by rwa [toLin'_apply] at hAx)) ?_
   rw [← hspan, hfin, hdim]
 

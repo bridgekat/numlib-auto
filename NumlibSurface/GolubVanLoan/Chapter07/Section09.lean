@@ -615,7 +615,7 @@ theorem equation_7_9_10_max {θ ε rmax : ℝ} (hε : 0 < ε) {A : Matrix m m �
     have hlip : ∀ r r' : ℝ, dist (s r) (s r') ≤ (‖(1 : Matrix m m ℂ)‖₊ : ℝ) * dist r r' := by
       intro r r'
       rw [Real.dist_eq, Real.dist_eq, coe_nnnorm]
-      refine (iInf_colSingularValues_sub_le _ _).trans (le_of_eq ?_)
+      refine (abs_iInf_colSingularValues_sub_le _ _).trans (le_of_eq ?_)
       have e : A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1 -
           (A - ((r' : ℂ) * Complex.exp (θ * Complex.I)) • 1) =
           (((r' - r : ℝ) : ℂ) * Complex.exp (θ * Complex.I)) • 1 := by

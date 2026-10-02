@@ -353,6 +353,26 @@ noncomputable def generalizedRayleighQuotientIteration (A B : Matrix (Fin n) (Fi
     let z := (A - ((x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)) • B)⁻¹ *ᵥ (B *ᵥ x)
     ‖(WithLp.toLp 2 z : EuclideanSpace ℝ (Fin n))‖⁻¹ • z
 
+/-- **(8.7.5) is Rayleigh quotient iteration on `B⁻¹A`**: for nonsingular `B`, each step solves
+`(B⁻¹A - μ_k I) z_{k+1} = x_k` — inverse iteration (7.6.1) on `B⁻¹A` with the generalized Rayleigh
+quotient `μ_k = x_kᵀAx_k / x_kᵀBx_k` as shift — and normalizes. -/
+theorem generalizedRayleighQuotientIteration_succ {A B : Matrix (Fin n) (Fin n) ℝ}
+    (hB : IsUnit B.det) (x₀ : Fin n → ℝ) (k : ℕ) :
+    let x := generalizedRayleighQuotientIteration A B x₀ k
+    let z := (B⁻¹ * A - ((x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)) • 1)⁻¹ *ᵥ x
+    generalizedRayleighQuotientIteration A B x₀ (k + 1) =
+      ‖(WithLp.toLp 2 z : EuclideanSpace ℝ (Fin n))‖⁻¹ • z := by
+  intro x z
+  have key : ∀ μ : ℝ, (A - μ • B)⁻¹ *ᵥ (B *ᵥ x) = (B⁻¹ * A - μ • 1)⁻¹ *ᵥ x := fun μ => by
+    have e : A - μ • B = B * (B⁻¹ * A - μ • 1) := by
+      rw [Matrix.mul_sub, ← Matrix.mul_assoc, mul_nonsing_inv B hB, Matrix.one_mul,
+        Matrix.mul_smul, Matrix.mul_one]
+    rw [e, Matrix.mul_inv_rev, mulVec_mulVec, Matrix.mul_assoc, nonsing_inv_mul B hB,
+      Matrix.mul_one]
+  change ‖(WithLp.toLp 2 ((A - ((x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)) • B)⁻¹ *ᵥ (B *ᵥ x)) :
+      EuclideanSpace ℝ (Fin n))‖⁻¹ • ((A - ((x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)) • B)⁻¹ *ᵥ (B *ᵥ x)) = _
+  rw [key]
+
 /-- **(8.7.6)–(8.7.7).** For positive definite `B` and `x ≠ 0`, `λ = xᵀAx / xᵀBx` minimizes
 `f(λ) = ‖Ax - λBx‖_B`, `‖z‖_B² = zᵀB⁻¹z` (`A` need not be symmetric). -/
 theorem equation_8_7_7 (A : Matrix (Fin n) (Fin n) ℝ) {B : Matrix (Fin n) (Fin n) ℝ}
