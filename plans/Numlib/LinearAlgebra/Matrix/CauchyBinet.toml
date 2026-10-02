@@ -5,3 +5,6 @@ id = "det_mul_eq_sum_prod_mul_det_submatrix"
 
 [[node]]
 id = "factorial_mul_det_transpose_mul_diagonal_mul"
+
+[[node]]
+id = "factorial_mul_det_mul"

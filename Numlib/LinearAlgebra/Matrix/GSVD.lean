@@ -33,9 +33,15 @@ Paige–Saunders 1981) diagonalizes both at once: unitary `U₁`, `U₂` and an 
   eigenvectors of the pencil `AᴴA − μ² BᴴB`.
 * `Matrix.IsGSVD.ker_inf_ker`: the common kernel of `A` and `B` is spanned by the columns
   `x_i`, `i ≥ r`.
-* `Matrix.IsGSVD.svd_of_eq_one`: the GSVD of `(A, I)` is an SVD of `A`.
+* `Matrix.IsGSVD.star_mul_mul_eq_of_eq_one`, `Matrix.IsGSVD.pos_of_eq_one`: the GSVD of `(A, I)`
+  is an SVD of `A`, `U₁ᴴ A U₂ = diag(α_i / β_i)` with `β_i > 0`.
 
 ## Implementation notes
+
+The field names follow the thin CS decomposition `Matrix.IsThinCSD` the proof goes through: the
+two left factors are `mem_unitaryGroup_left₁` (`U₁`, of `A`) and `mem_unitaryGroup_left₂` (`U₂`,
+of `B`), and the two diagonal forms are `star_mul_mul₁` and `star_mul_mul₂`; the lemmas about
+`A` and `B` carry the same subscripts.
 
 The consequences that read `α_i` off `D_A` assume the book's standing hypothesis `n ≤ m₁`: without
 it the entries `α_i` with `m₁ ≤ i < n` are not seen by the `m₁ × n` matrix `D_A`.
@@ -65,26 +71,70 @@ book's `x_1, …, x_n`. -/
 structure IsGSVD (A : Matrix (Fin m₁) (Fin n) 𝕜) (B : Matrix (Fin m₂) (Fin n) 𝕜)
     (U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜) (U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜)
     (X : Matrix (Fin n) (Fin n) 𝕜) (α β : ℕ → ℝ) : Prop where
-  /-- The first left factor is unitary. -/
-  mem_unitaryGroup_left : U₁ ∈ unitaryGroup (Fin m₁) 𝕜
-  /-- The second left factor is unitary. -/
-  mem_unitaryGroup_right : U₂ ∈ unitaryGroup (Fin m₂) 𝕜
+  /-- The first left factor (of `A`) is unitary. -/
+  mem_unitaryGroup_left₁ : U₁ ∈ unitaryGroup (Fin m₁) 𝕜
+  /-- The second left factor (of `B`) is unitary. -/
+  mem_unitaryGroup_left₂ : U₂ ∈ unitaryGroup (Fin m₂) 𝕜
   /-- The right factor is invertible. -/
   isUnit : IsUnit X
   /-- The first `p` pairs are `(1, 0)`. -/
-  of_lt_p : ∀ i < (fromRows A B).rank - m₂, α i = 1 ∧ β i = 0
+  eq_one_and_eq_zero_of_lt : ∀ i < (fromRows A B).rank - m₂, α i = 1 ∧ β i = 0
   /-- The middle pairs are cosine–sine pairs. -/
   sq_add_sq : ∀ i, (fromRows A B).rank - m₂ ≤ i → i < (fromRows A B).rank →
     α i ^ 2 + β i ^ 2 = 1
   /-- The pairs are nonnegative. -/
   nonneg : ∀ i, 0 ≤ α i ∧ 0 ≤ β i
   /-- The pairs past the rank vanish. -/
-  of_le_r : ∀ i, (fromRows A B).rank ≤ i → α i = 0 ∧ β i = 0
-  /-- The factorization of `A`. -/
-  star_mul_mul_left : star U₁ * A * X = rectDiagonal fun i => ((α i : ℝ) : 𝕜)
-  /-- The factorization of `B`. -/
-  star_mul_mul_right : star U₂ * B * X =
+  eq_zero_and_eq_zero_of_rank_le : ∀ i, (fromRows A B).rank ≤ i → α i = 0 ∧ β i = 0
+  /-- The factorization `U₁ᴴ A X = D_A`. -/
+  star_mul_mul₁ : star U₁ * A * X = rectDiagonal fun i => ((α i : ℝ) : 𝕜)
+  /-- The factorization `U₂ᴴ B X = D_B`. -/
+  star_mul_mul₂ : star U₂ * B * X =
     shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜)
+
+section Deprecated
+
+variable {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (Fin m₂) (Fin n) 𝕜}
+  {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
+  {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
+
+/-- The first left factor is unitary (the former field name). -/
+@[deprecated IsGSVD.mem_unitaryGroup_left₁ (since := "2026-09-30")]
+theorem IsGSVD.mem_unitaryGroup_left (h : IsGSVD A B U₁ U₂ X α β) :
+    U₁ ∈ unitaryGroup (Fin m₁) 𝕜 :=
+  h.mem_unitaryGroup_left₁
+
+/-- The second left factor is unitary (the former field name, which called it *right*). -/
+@[deprecated IsGSVD.mem_unitaryGroup_left₂ (since := "2026-09-30")]
+theorem IsGSVD.mem_unitaryGroup_right (h : IsGSVD A B U₁ U₂ X α β) :
+    U₂ ∈ unitaryGroup (Fin m₂) 𝕜 :=
+  h.mem_unitaryGroup_left₂
+
+/-- The first `p` pairs are `(1, 0)` (the former field name). -/
+@[deprecated IsGSVD.eq_one_and_eq_zero_of_lt (since := "2026-09-30")]
+theorem IsGSVD.of_lt_p (h : IsGSVD A B U₁ U₂ X α β) :
+    ∀ i < (fromRows A B).rank - m₂, α i = 1 ∧ β i = 0 :=
+  h.eq_one_and_eq_zero_of_lt
+
+/-- The pairs past the rank vanish (the former field name). -/
+@[deprecated IsGSVD.eq_zero_and_eq_zero_of_rank_le (since := "2026-09-30")]
+theorem IsGSVD.of_le_r (h : IsGSVD A B U₁ U₂ X α β) :
+    ∀ i, (fromRows A B).rank ≤ i → α i = 0 ∧ β i = 0 :=
+  h.eq_zero_and_eq_zero_of_rank_le
+
+/-- The factorization of `A` (the former field name). -/
+@[deprecated IsGSVD.star_mul_mul₁ (since := "2026-09-30")]
+theorem IsGSVD.star_mul_mul_left (h : IsGSVD A B U₁ U₂ X α β) :
+    star U₁ * A * X = rectDiagonal fun i => ((α i : ℝ) : 𝕜) :=
+  h.star_mul_mul₁
+
+/-- The factorization of `B` (the former field name). -/
+@[deprecated IsGSVD.star_mul_mul₂ (since := "2026-09-30")]
+theorem IsGSVD.star_mul_mul_right (h : IsGSVD A B U₁ U₂ X α β) :
+    star U₂ * B * X = shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) :=
+  h.star_mul_mul₂
+
+end Deprecated
 
 end Def
 
@@ -122,8 +172,7 @@ theorem exists_isGSVD (hnm : n ≤ m₁) (A : Matrix (Fin m₁) (Fin n) 𝕜)
   -- the first `r` columns of `Q`, split into blocks
   set Q₁₁ : Matrix (Fin m₁) (Fin r) 𝕜 := Q.submatrix (Fin.castAdd m₂) (Fin.castLE hrm)
   set Q₂₁ : Matrix (Fin m₂) (Fin r) 𝕜 := Q.submatrix (Fin.natAdd m₁) (Fin.castLE hrm)
-  have hQQ : Qᴴ * Q = 1 := by
-    rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.1 hs.mem_unitaryGroup_left
+  have hQQ := conjTranspose_mul_self_of_mem_unitaryGroup hs.mem_unitaryGroup_left
   have hQo : Q₁₁ᴴ * Q₁₁ + Q₂₁ᴴ * Q₂₁ = 1 := by
     ext i j
     have h := congrFun (congrFun hQQ (Fin.castLE hrm i)) (Fin.castLE hrm j)
@@ -154,8 +203,7 @@ theorem exists_isGSVD (hnm : n ≤ m₁) (A : Matrix (Fin m₁) (Fin n) 𝕜)
     rw [ite_eq_left (lt_of_lt_of_le i.isLt hrn), mul_one]
   have hRX : ∀ Y : Matrix (Fin r) (Fin n) 𝕜, R * (Rᵀ * Y) = Y := fun Y => by
     rw [← Matrix.mul_assoc, hRRt, Matrix.one_mul]
-  have hVV : V₁ * V₁ᴴ = 1 := by
-    rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff.1 hc.mem_unitaryGroup_right
+  have hVV := mul_conjTranspose_self_of_mem_unitaryGroup hc.mem_unitaryGroup_right
   have hVX : ∀ Y : Matrix (Fin r) (Fin n) 𝕜, V₁ * (V₁ᴴ * Y) = Y := fun Y => by
     rw [← Matrix.mul_assoc, hVV, Matrix.one_mul]
   -- the right factor `X = Z Y`
@@ -227,14 +275,14 @@ theorem exists_isGSVD (hnm : n ≤ m₁) (A : Matrix (Fin m₁) (Fin n) 𝕜)
     simp only [hα, hβ, hi', ↓reduceIte, and_self]
   · rw [Matrix.mul_assoc, hAX]
     simp only [← Matrix.mul_assoc]
-    rw [hc.star_mul_mul_left]
+    rw [hc.star_mul_mul₁]
     ext i j
     rw [mul_rectDiagonal_apply]
     by_cases hj : (j : ℕ) < r <;> by_cases hij : (i : ℕ) = j <;>
       simp [rectDiagonal_apply, hα, hj, hij]
   · rw [Matrix.mul_assoc, hBX]
     simp only [← Matrix.mul_assoc]
-    rw [hc.star_mul_mul_right, hp]
+    rw [hc.star_mul_mul₂, hp]
     ext i j
     rw [mul_rectDiagonal_apply]
     by_cases hij : (j : ℕ) = i + (r - m₂)
@@ -252,19 +300,30 @@ variable {m₁ m₂ n : ℕ} {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (F
   {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
   {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
 
+/-- `A X = U₁ D_A`. -/
+theorem IsGSVD.mul_eq₁ (h : IsGSVD A B U₁ U₂ X α β) :
+    A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) := by
+  rw [← h.star_mul_mul₁, Matrix.mul_assoc, ← Matrix.mul_assoc U₁, star_eq_conjTranspose,
+    mul_conjTranspose_self_of_mem_unitaryGroup h.mem_unitaryGroup_left₁, Matrix.one_mul]
+
+/-- `B X = U₂ D_B`. -/
+theorem IsGSVD.mul_eq₂ (h : IsGSVD A B U₁ U₂ X α β) :
+    B * X = U₂ * shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) := by
+  rw [← h.star_mul_mul₂, Matrix.mul_assoc, ← Matrix.mul_assoc U₂, star_eq_conjTranspose,
+    mul_conjTranspose_self_of_mem_unitaryGroup h.mem_unitaryGroup_left₂, Matrix.one_mul]
+
 /-- `Xᴴ Mᴴ M X = (Uᴴ M X)ᴴ (Uᴴ M X)` for unitary `U`. -/
 private theorem conjTranspose_mul_gram_mul_eq {m : ℕ} {M : Matrix (Fin m) (Fin n) 𝕜}
     {U : Matrix (Fin m) (Fin m) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜) :
     Xᴴ * (Mᴴ * M) * X = (star U * M * X)ᴴ * (star U * M * X) := by
-  have hU' : U * Uᴴ = 1 := by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff.1 hU
   simp only [conjTranspose_mul, star_eq_conjTranspose, conjTranspose_conjTranspose,
     Matrix.mul_assoc]
-  rw [← Matrix.mul_assoc U, hU', Matrix.one_mul]
+  rw [← Matrix.mul_assoc U, mul_conjTranspose_self_of_mem_unitaryGroup hU, Matrix.one_mul]
 
 /-- **The GSVD diagonalizes `AᴴA`**: `Xᴴ AᴴA X = diag(α²)`, for `n ≤ m₁`. -/
-theorem IsGSVD.conjTranspose_mul_gram_left_mul (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m₁) :
+theorem IsGSVD.conjTranspose_mul_gram_mul₁ (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m₁) :
     Xᴴ * (Aᴴ * A) * X = diagonal fun i : Fin n => ((α i ^ 2 : ℝ) : 𝕜) := by
-  rw [conjTranspose_mul_gram_mul_eq h.mem_unitaryGroup_left, h.star_mul_mul_left,
+  rw [conjTranspose_mul_gram_mul_eq h.mem_unitaryGroup_left₁, h.star_mul_mul₁,
     conjTranspose_rectDiagonal_mul_self]
   congr 1
   funext j
@@ -274,9 +333,9 @@ theorem IsGSVD.conjTranspose_mul_gram_left_mul (h : IsGSVD A B U₁ U₂ X α β
 
 /-- **The GSVD diagonalizes `BᴴB`**: `Xᴴ BᴴB X = diag(β²)`. The shift of `D_B` disappears, and the
 `β_j` it does not see vanish. -/
-theorem IsGSVD.conjTranspose_mul_gram_right_mul (h : IsGSVD A B U₁ U₂ X α β) :
+theorem IsGSVD.conjTranspose_mul_gram_mul₂ (h : IsGSVD A B U₁ U₂ X α β) :
     Xᴴ * (Bᴴ * B) * X = diagonal fun i : Fin n => ((β i ^ 2 : ℝ) : 𝕜) := by
-  rw [conjTranspose_mul_gram_mul_eq h.mem_unitaryGroup_right, h.star_mul_mul_right,
+  rw [conjTranspose_mul_gram_mul_eq h.mem_unitaryGroup_left₂, h.star_mul_mul₂,
     conjTranspose_shiftedRectDiagonal_mul_self]
   congr 1
   funext j
@@ -286,10 +345,16 @@ theorem IsGSVD.conjTranspose_mul_gram_right_mul (h : IsGSVD A B U₁ U₂ X α �
     ring
   · have hβ : β j = 0 := by
       rcases not_and_or.1 hj with hj | hj
-      · exact (h.of_lt_p j (not_le.1 hj)).2
-      · exact (h.of_le_r j (by omega)).2
+      · exact (h.eq_one_and_eq_zero_of_lt j (not_le.1 hj)).2
+      · exact (h.eq_zero_and_eq_zero_of_rank_le j (by omega)).2
     rw [hβ]
     simp
+
+@[deprecated (since := "2026-09-30")]
+alias IsGSVD.conjTranspose_mul_gram_left_mul := IsGSVD.conjTranspose_mul_gram_mul₁
+
+@[deprecated (since := "2026-09-30")]
+alias IsGSVD.conjTranspose_mul_gram_right_mul := IsGSVD.conjTranspose_mul_gram_mul₂
 
 /-- **The GSVD diagonalizes `AᴴA + λ BᴴB`** ([golub2013matrix] §6.1.6, the display before
 (6.1.26), and §6.2.6): `Xᴴ (AᴴA + λ BᴴB) X = diag(α_i² + λ β_i²)`, for `n ≤ m₁`. -/
@@ -298,7 +363,7 @@ theorem IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul (h : IsGSVD A B U₁ U�
     Xᴴ * (Aᴴ * A + (μ : 𝕜) • (Bᴴ * B)) * X
       = diagonal fun i : Fin n => ((α i ^ 2 + μ * β i ^ 2 : ℝ) : 𝕜) := by
   rw [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul,
-    h.conjTranspose_mul_gram_left_mul hnm, h.conjTranspose_mul_gram_right_mul, ← diagonal_smul,
+    h.conjTranspose_mul_gram_mul₁ hnm, h.conjTranspose_mul_gram_mul₂, ← diagonal_smul,
     diagonal_add]
   congr 1
   funext i
@@ -324,12 +389,6 @@ theorem IsGSVD.inv_gram_add_smul_gram_eq (h : IsGSVD A B U₁ U₂ X α β) (hnm
       funext fun i => inv_mul_cancel₀ (RCLike.ofReal_ne_zero.2 (hd i)),
     diagonal_one, Matrix.one_mul, mul_nonsing_inv _ hXd]
 
-/-- A matrix times a column of `X` is the column of the product. -/
-private theorem mulVec_col_eq {m : Type*} (M : Matrix m (Fin n) 𝕜) (i : Fin n) :
-    M *ᵥ X.col i = (M * X).col i := by
-  ext k
-  simp [mulVec, dotProduct, mul_apply, col_apply]
-
 /-- If `Xᴴ M X = diag a` and `Xᴴ N X = diag b` with `X` invertible, then `b_i M x_i = a_i N x_i`
 for every column `x_i` of `X`. -/
 private theorem smul_mulVec_col_eq_of_conj_diagonal {M N : Matrix (Fin n) (Fin n) 𝕜}
@@ -348,7 +407,7 @@ private theorem smul_mulVec_col_eq_of_conj_diagonal {M N : Matrix (Fin n) (Fin n
     congr 2
     funext j
     ring
-  rw [mulVec_col_eq, mulVec_col_eq]
+  rw [← col_mul_eq_mulVec_col, ← col_mul_eq_mulVec_col]
   ext k
   have := congrFun (congrFun hmat k) i
   simp only [mul_diagonal] at this
@@ -361,8 +420,8 @@ relating the GSVD to `AᵀA x = μ² BᵀB x`, taken up in §8.7.4): for `n ≤ 
 theorem IsGSVD.gram_mulVec_col (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m₁) (i : Fin n) :
     ((β i ^ 2 : ℝ) : 𝕜) • ((Aᴴ * A) *ᵥ X.col i)
       = ((α i ^ 2 : ℝ) : 𝕜) • ((Bᴴ * B) *ᵥ X.col i) :=
-  smul_mulVec_col_eq_of_conj_diagonal h.isUnit (h.conjTranspose_mul_gram_left_mul hnm)
-    h.conjTranspose_mul_gram_right_mul i
+  smul_mulVec_col_eq_of_conj_diagonal h.isUnit (h.conjTranspose_mul_gram_mul₁ hnm)
+    h.conjTranspose_mul_gram_mul₂ i
 
 /-- The common kernel of `A` and `B` is the kernel of the stacked matrix `[A; B]`. -/
 theorem ker_inf_ker_eq_ker_fromRows {m₁ m₂ n : Type*} [Fintype n] (A : Matrix m₁ n 𝕜)
@@ -387,20 +446,16 @@ theorem IsGSVD.ker_inf_ker (h : IsGSVD A B U₁ U₂ X α β) :
       = Submodule.span 𝕜 (X.col '' {i | (fromRows A B).rank ≤ (i : ℕ)}) := by
   classical
   set r := (fromRows A B).rank with hr
-  have hAX : A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) := by
-    rw [← h.star_mul_mul_left, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
-      mem_unitaryGroup_iff.1 h.mem_unitaryGroup_left, Matrix.one_mul]
-  have hBX : B * X = U₂ * shiftedRectDiagonal (r - m₂) fun i => ((β i : ℝ) : 𝕜) := by
-    rw [← h.star_mul_mul_right, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
-      mem_unitaryGroup_iff.1 h.mem_unitaryGroup_right, Matrix.one_mul]
+  have hAX := h.mul_eq₁
+  have hBX := h.mul_eq₂
   have hle : Submodule.span 𝕜 (X.col '' {i | r ≤ (i : ℕ)})
       ≤ LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin := by
     refine Submodule.span_le.2 ?_
     rintro _ ⟨i, hi, rfl⟩
-    obtain ⟨hα, hβ⟩ := h.of_le_r i hi
+    obtain ⟨hα, hβ⟩ := h.eq_zero_and_eq_zero_of_rank_le i hi
     refine ⟨?_, ?_⟩
     · change A *ᵥ X.col i = 0
-      rw [mulVec_col_eq, hAX]
+      rw [← col_mul_eq_mulVec_col, hAX]
       ext k
       rw [col_apply, mul_apply]
       refine Finset.sum_eq_zero fun l _ => ?_
@@ -409,7 +464,7 @@ theorem IsGSVD.ker_inf_ker (h : IsGSVD A B U₁ U₂ X α β) :
       · rw [hli, hα, RCLike.ofReal_zero, mul_zero]
       · rw [mul_zero]
     · change B *ᵥ X.col i = 0
-      rw [mulVec_col_eq, hBX]
+      rw [← col_mul_eq_mulVec_col, hBX]
       ext k
       rw [col_apply, mul_apply]
       exact Finset.sum_eq_zero fun l _ => by simp [shiftedRectDiagonal_apply, hβ]
@@ -444,54 +499,65 @@ theorem IsGSVD.ker_inf_ker (h : IsGSVD A B U₁ U₂ X α β) :
   refine (Submodule.eq_of_le_of_finrank_le hle ?_).symm
   rw [hfin, ker_inf_ker_eq_ker_fromRows, hker]
 
-/-- **The GSVD of `(A, I)` is an SVD of `A`** ([golub2013matrix] §6.1.6, "if `B = I_{n₁}` … we
-obtain the SVD of `A`", made precise): then `p = 0`, `r = n`, `β_i > 0` for `i < n`, and
-`U₁ᴴ A U₂ = diag(α_i / β_i)` — an SVD of `A` with singular values `α_i / β_i` (unsorted). The
-book's "set `X = U₂`" is loose: `X` itself is `U₂ D_B`. -/
-theorem IsGSVD.svd_of_eq_one {A : Matrix (Fin m₁) (Fin n) 𝕜} {U₂ : Matrix (Fin n) (Fin n) 𝕜}
+/-- Stacking the identity below `A` gives full column rank: `rank [A; I] = n`. -/
+theorem rank_fromRows_one (A : Matrix (Fin m₁) (Fin n) 𝕜) :
+    (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank = n := by
+  have hker : LinearMap.ker (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).mulVecLin = ⊥ := by
+    rw [LinearMap.ker_eq_bot']
+    intro v hv
+    rw [mulVecLin_apply, fromRows_mulVec] at hv
+    have := congrFun hv
+    funext k
+    simpa using this (Sum.inr k)
+  have := LinearMap.finrank_range_add_finrank_ker
+    (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).mulVecLin
+  rw [Module.finrank_fin_fun, hker, finrank_bot] at this
+  change (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank + 0 = n at this
+  omega
+
+section OfEqOne
+
+variable {A : Matrix (Fin m₁) (Fin n) 𝕜} {U₂ : Matrix (Fin n) (Fin n) 𝕜}
+
+/-- In a GSVD of `(A, I)` the right factor is `X = U₂ D_B` with `D_B = diag(β)`: `p = 0` since
+`rank [A; I] = n` (`Matrix.rank_fromRows_one`). -/
+theorem IsGSVD.eq_mul_diagonal_of_eq_one
     (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U₁ U₂ X α β) :
-    (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank - n = 0 ∧
-      (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank = n ∧ (∀ i < n, 0 < β i) ∧
-      star U₁ * A * U₂ = rectDiagonal fun i => ((α i / β i : ℝ) : 𝕜) := by
-  classical
-  set r := (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank with hr
-  have hrn : r = n := by
-    have hker : LinearMap.ker (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).mulVecLin = ⊥ := by
-      rw [LinearMap.ker_eq_bot']
-      intro v hv
-      rw [mulVecLin_apply, fromRows_mulVec] at hv
-      have := congrFun hv
-      funext k
-      simpa using this (Sum.inr k)
-    have := LinearMap.finrank_range_add_finrank_ker
-      (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).mulVecLin
-    rw [Module.finrank_fin_fun, hker, finrank_bot] at this
-    change r + 0 = n at this
-    omega
-  have hp : r - n = 0 := by omega
-  have hD : star U₂ * X = diagonal fun i : Fin n => ((β i : ℝ) : 𝕜) := by
-    have := h.star_mul_mul_right
-    rw [Matrix.mul_one, ← hr, hp, shiftedRectDiagonal_zero, rectDiagonal_eq_diagonal] at this
-    exact this
-  have hX : X = U₂ * diagonal fun i : Fin n => ((β i : ℝ) : 𝕜) := by
-    rw [← hD, ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 h.mem_unitaryGroup_right,
-      Matrix.one_mul]
-  have hβ0 : ∀ i : Fin n, β i ≠ 0 := by
-    have hdet := (isUnit_iff_isUnit_det X).1 h.isUnit
-    rw [hX, det_mul, det_diagonal] at hdet
-    have hprod := (isUnit_of_mul_isUnit_right hdet).ne_zero
-    intro i hi
-    exact hprod (Finset.prod_eq_zero (Finset.mem_univ i) (by rw [hi, RCLike.ofReal_zero]))
-  refine ⟨hp, hrn, fun i hi => lt_of_le_of_ne (h.nonneg i).2 (hβ0 ⟨i, hi⟩).symm, ?_⟩
+    X = U₂ * diagonal fun i : Fin n => ((β i : ℝ) : 𝕜) := by
+  have hX := h.mul_eq₂
+  rw [Matrix.one_mul, rank_fromRows_one, Nat.sub_self, shiftedRectDiagonal_zero,
+    rectDiagonal_eq_diagonal] at hX
+  exact hX
+
+/-- In a GSVD of `(A, I)` every `β_i`, `i < n`, is positive: `X = U₂ diag(β)` is invertible. -/
+theorem IsGSVD.pos_of_eq_one (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U₁ U₂ X α β) :
+    ∀ i < n, 0 < β i := by
+  intro i hi
+  refine lt_of_le_of_ne (h.nonneg i).2 fun hβ => ?_
+  have hdet := (isUnit_iff_isUnit_det X).1 h.isUnit
+  rw [h.eq_mul_diagonal_of_eq_one, det_mul, det_diagonal] at hdet
+  exact (isUnit_of_mul_isUnit_right hdet).ne_zero
+    (Finset.prod_eq_zero (Finset.mem_univ ⟨i, hi⟩)
+      (show ((β i : ℝ) : 𝕜) = 0 by rw [← hβ, RCLike.ofReal_zero]))
+
+/-- **The GSVD of `(A, I)` is an SVD of `A`** ([golub2013matrix] §6.1.6, "if `B = I_{n₁}` … we
+obtain the SVD of `A`", made precise): `U₁ᴴ A U₂ = diag(α_i / β_i)`, an SVD of `A` with singular
+values `α_i / β_i` (unsorted, positive denominators by `Matrix.IsGSVD.pos_of_eq_one`). The book's
+"set `X = U₂`" is loose: `X` itself is `U₂ D_B` (`Matrix.IsGSVD.eq_mul_diagonal_of_eq_one`). -/
+theorem IsGSVD.star_mul_mul_eq_of_eq_one
+    (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U₁ U₂ X α β) :
+    star U₁ * A * U₂ = rectDiagonal fun i => ((α i / β i : ℝ) : 𝕜) := by
+  have hβ0 : ∀ i : Fin n, ((β i : ℝ) : 𝕜) ≠ 0 := fun i =>
+    RCLike.ofReal_ne_zero.2 (h.pos_of_eq_one i i.isLt).ne'
   have hU₂ : U₂ = X * diagonal fun i : Fin n => (((β i : ℝ) : 𝕜))⁻¹ := by
-    rw [hX, Matrix.mul_assoc, diagonal_mul_diagonal]
+    rw [h.eq_mul_diagonal_of_eq_one, Matrix.mul_assoc, diagonal_mul_diagonal]
     conv_lhs => rw [← Matrix.mul_one U₂]
     congr 1
     rw [← diagonal_one]
     congr 1
     funext i
-    rw [mul_inv_cancel₀ (RCLike.ofReal_ne_zero.2 (hβ0 i))]
-  rw [hU₂, ← Matrix.mul_assoc, h.star_mul_mul_left]
+    rw [mul_inv_cancel₀ (hβ0 i)]
+  rw [hU₂, ← Matrix.mul_assoc, h.star_mul_mul₁]
   ext i j
   rw [mul_diagonal, rectDiagonal_apply, rectDiagonal_apply]
   split_ifs with hij
@@ -499,6 +565,17 @@ theorem IsGSVD.svd_of_eq_one {A : Matrix (Fin m₁) (Fin n) 𝕜} {U₂ : Matrix
     push_cast
     rw [div_eq_mul_inv]
   · rw [zero_mul]
+
+/-- **The GSVD of `(A, I)` is an SVD of `A`**, the four facts bundled (the former statement). -/
+@[deprecated IsGSVD.star_mul_mul_eq_of_eq_one +typeChanged (since := "2026-09-30")]
+theorem IsGSVD.svd_of_eq_one (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U₁ U₂ X α β) :
+    (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank - n = 0 ∧
+      (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank = n ∧ (∀ i < n, 0 < β i) ∧
+      star U₁ * A * U₂ = rectDiagonal fun i => ((α i / β i : ℝ) : 𝕜) :=
+  ⟨by rw [rank_fromRows_one, Nat.sub_self], rank_fromRows_one A, h.pos_of_eq_one,
+    h.star_mul_mul_eq_of_eq_one⟩
+
+end OfEqOne
 
 end Consequences
 

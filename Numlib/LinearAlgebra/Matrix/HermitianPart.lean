@@ -116,24 +116,6 @@ theorem eq_hermitianPart_add_I_smul_skewHermitianPart (A : Matrix n n ℂ) :
 
 variable [Fintype n]
 
-/-- For a real matrix `A` and a real vector `u`, `(A u, u) = (H u, u)`: the quadratic form of `A`
-is that of its symmetric part. -/
-theorem mulVec_dotProduct_eq_hermitianPart (A : Matrix n n ℝ) (u : n → ℝ) :
-    (A *ᵥ u) ⬝ᵥ u = (hermitianPart A *ᵥ u) ⬝ᵥ u := by
-  have hT : (Aᵀ *ᵥ u) ⬝ᵥ u = (A *ᵥ u) ⬝ᵥ u := by
-    rw [dotProduct_comm, dotProduct_mulVec, vecMul_transpose]
-  have hH : hermitianPart A = (2⁻¹ : ℝ) • (A + Aᵀ) := by
-    ext i j; simp [hermitianPart_apply]
-  rw [hH, smul_mulVec, smul_dotProduct, add_mulVec, add_dotProduct, hT, smul_eq_mul]
-  ring
-
-/-- For a real matrix `M` and a real vector `x`, `xᵀ H x = xᵀ M x`: the quadratic form of the
-symmetric part is that of the matrix (`Matrix.mulVec_dotProduct_eq_hermitianPart` with the dot
-product the other way round). -/
-theorem dotProduct_mulVec_hermitianPart (M : Matrix n n ℝ) (x : n → ℝ) :
-    x ⬝ᵥ (hermitianPart M *ᵥ x) = x ⬝ᵥ (M *ᵥ x) := by
-  rw [dotProduct_comm, ← mulVec_dotProduct_eq_hermitianPart, dotProduct_comm]
-
 variable [DecidableEq n]
 
 /-- The real part of the quadratic form of `A` is that of its Hermitian part; the matrix form of
@@ -178,6 +160,22 @@ theorem star_dotProduct_hermitianPart_mulVec (A : Matrix n n 𝕜) (x : n → �
     RCLike.add_conj, smul_eq_mul, ← mul_assoc, show (2⁻¹ : 𝕜) * 2 = 1 by norm_num, one_mul]
 
 omit [DecidableEq n] in
+/-- For a real matrix `M` and a real vector `x`, `xᵀ H x = xᵀ M x`: the quadratic form of the
+symmetric part is that of the matrix, the real case of
+`Matrix.star_dotProduct_hermitianPart_mulVec`. -/
+theorem dotProduct_mulVec_hermitianPart (M : Matrix n n ℝ) (x : n → ℝ) :
+    x ⬝ᵥ (hermitianPart M *ᵥ x) = x ⬝ᵥ (M *ᵥ x) := by
+  simpa using star_dotProduct_hermitianPart_mulVec M x
+
+omit [DecidableEq n] in
+/-- For a real matrix `A` and a real vector `u`, `(A u, u) = (H u, u)`: the quadratic form of `A`
+is that of its symmetric part (`Matrix.dotProduct_mulVec_hermitianPart` with the dot product the
+other way round). -/
+theorem mulVec_dotProduct_eq_hermitianPart (A : Matrix n n ℝ) (u : n → ℝ) :
+    (A *ᵥ u) ⬝ᵥ u = (hermitianPart A *ᵥ u) ⬝ᵥ u := by
+  rw [dotProduct_comm, ← dotProduct_mulVec_hermitianPart, dotProduct_comm]
+
+omit [DecidableEq n] in
 /-- **Positive definiteness of the Hermitian part** is positivity of the real part of the
 quadratic form: `(hermitianPart A).PosDef ↔ ∀ x ≠ 0, 0 < re (xᴴ A x)`. Over `ℝ` it reads
 `∀ x ≠ 0, 0 < xᵀ A x`, the unsymmetric "positive definite" of [golub2013matrix] §4.2. -/
@@ -197,7 +195,7 @@ theorem re_dotProduct_mulVec_pos_of_posDef_hermitianPart {A : Matrix n n 𝕜}
   rwa [star_dotProduct_hermitianPart_mulVec, RCLike.ofReal_pos] at this
 
 /-- A matrix whose Hermitian part is positive definite is nonsingular (the `RCLike` form of
-`Matrix.isUnit_of_posDef_add_transpose`). -/
+`Matrix.isUnit_of_posDef_add_transpose`, whose `P + Pᵀ` is `2 • hermitianPart P` over `ℝ`). -/
 theorem isUnit_of_posDef_hermitianPart {A : Matrix n n 𝕜}
     (hA : (hermitianPart A).PosDef) : IsUnit A := by
   rw [← mulVec_injective_iff_isUnit]

@@ -192,3 +192,9 @@ source = 'Golub–Van Loan, Matrix Computations (4th ed.), Theorem 5.2.3'
 
 [[node]]
 id = "dotProduct_mulVec_self_le_of_posDef_hermitianPart"
+
+[[node]]
+id = "dotProduct_transpose_mulVec_self_le_of_posDef_hermitianPart"
+
+[[node]]
+id = "PosSemidef.re_schurComplementSingle_apply_self_le"

@@ -11,3 +11,15 @@ id = "exists_generalizedRealSchur"
 
 [[node]]  # staged by ch07
 id = "exists_generalizedSchur"
+
+[[node]]
+id = "exists_tendsto_subseq_of_mem_unitaryGroup"
+
+[[node]]
+id = "exists_tendsto_subseq_of_mem_unitaryGroup₂"
+
+[[node]]
+id = "star_mul_mul_apply_eq_zero_of_tendsto"
+
+[[node]]
+id = "_root_.Finite.exists_strictMono_forall_eq"

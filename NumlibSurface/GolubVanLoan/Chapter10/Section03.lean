@@ -1034,17 +1034,17 @@ private theorem mul_lastBlockSel_apply (R : Matrix (Fin n) (Fin p) ℝ) (k : ℕ
 (`Matrix.blockTridiagonal_apply_eq_ite` with `F = Bᵀ`). -/
 private theorem blockTridiagonal_entry (Md Bd : ℕ → Matrix (Fin p) (Fin p) ℝ) (k : ℕ)
     (a c : Fin (k + 1)) (y l : Fin p) :
-    Matrix.blockTridiagonal (fun j : Fin k => Bd j) (fun j : Fin k => (Bd j)ᵀ)
-        (fun j : Fin (k + 1) => Md j) (a, y) (c, l) =
+    Matrix.blockTridiagonal (fun j : Fin k => Bd j) (fun j : Fin (k + 1) => Md j)
+        (fun j : Fin k => (Bd j)ᵀ) (a, y) (c, l) =
       if (a : ℕ) = c then Md a y l else if (a : ℕ) = c + 1 then Bd c y l
         else if (c : ℕ) = a + 1 then Bd a l y else 0 :=
-  Matrix.blockTridiagonal_apply_eq_ite Bd (fun j => (Bd j)ᵀ) Md a c y l
+  Matrix.blockTridiagonal_apply_eq_ite Bd Md (fun j => (Bd j)ᵀ) a c y l
 
 /-- `[X_1 | ⋯ | X_{k+1}] T̄_{k+1}`, column block `b`. -/
 private theorem blockCols_mul_blockTridiagonal_apply (X : ℕ → Matrix (Fin n) (Fin p) ℝ)
     (Md Bd : ℕ → Matrix (Fin p) (Fin p) ℝ) (k : ℕ) (i : Fin n) (b : Fin (k + 1)) (l : Fin p) :
     (blockCols X (k + 1) * Matrix.blockTridiagonal (fun j : Fin k => Bd j)
-        (fun j : Fin k => (Bd j)ᵀ) (fun j : Fin (k + 1) => Md j)) i (b, l) =
+        (fun j : Fin (k + 1) => Md j) (fun j : Fin k => (Bd j)ᵀ)) i (b, l) =
       (X b * Md b) i l + (if (b : ℕ) + 1 < k + 1 then (X (b + 1) * Bd b) i l else 0) +
         (if (b : ℕ) = 0 then 0 else (X (b - 1) * (Bd (b - 1))ᵀ) i l) := by
   rw [Matrix.mul_apply, Fintype.sum_prod_type]
@@ -1104,7 +1104,7 @@ theorem equation_10_3_9 (hpn : p ≤ n) (A : Matrix (Fin n) (Fin n) ℝ)
     let s := Id.run (blockLanczos pure hpn A X₁ r)
     A * blockCols s.X (k + 1) =
       blockCols s.X (k + 1) * Matrix.blockTridiagonal (fun j : Fin k => s.B j)
-          (fun j : Fin k => (s.B j)ᵀ) (fun j : Fin (k + 1) => s.M j) +
+          (fun j : Fin (k + 1) => s.M j) (fun j : Fin k => (s.B j)ᵀ) +
         blockResidual A s k * lastBlockSel p (k + 1) := by
   intro s
   have h := blInv_run hpn A X₁ r
@@ -1351,8 +1351,8 @@ theorem equation_10_3_8 (hpn : p ≤ n) {A : Matrix (Fin n) (Fin n) ℝ} (hA : A
       (∀ b ≤ k, s.M b = (s.X b)ᵀ * A * s.X b) ∧
       (∀ b < k, ∀ i j : Fin p, j < i → s.B b i j = 0) ∧
       (blockCols s.X (k + 1))ᵀ * A * blockCols s.X (k + 1) =
-        Matrix.blockTridiagonal (fun j : Fin k => s.B j) (fun j : Fin k => (s.B j)ᵀ)
-          (fun j : Fin (k + 1) => s.M j) ∧
+        Matrix.blockTridiagonal (fun j : Fin k => s.B j) (fun j : Fin (k + 1) => s.M j)
+          (fun j : Fin k => (s.B j)ᵀ) ∧
       LinearMap.range (Matrix.toEuclideanLin (blockCols s.X (k + 1))) =
         Krylov.blockSubspace (Matrix.toEuclideanLin A) (fun l => WithLp.toLp 2 fun i => X₁ i l)
           (k + 1) := by
@@ -1372,8 +1372,8 @@ theorem equation_10_3_8 (hpn : p ≤ n) {A : Matrix (Fin n) (Fin n) ℝ} (hA : A
 theorem blockLanczos_blockTridiagonal_isHermitian (hpn : p ≤ n) {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) (X₁ : Matrix (Fin n) (Fin p) ℝ) {r k : ℕ} (hkr : k + 1 ≤ r) :
     (Matrix.blockTridiagonal (fun j : Fin k => (Id.run (blockLanczos pure hpn A X₁ r)).B j)
-      (fun j : Fin k => ((Id.run (blockLanczos pure hpn A X₁ r)).B j)ᵀ)
-      (fun j : Fin (k + 1) => (Id.run (blockLanczos pure hpn A X₁ r)).M j)).IsHermitian := by
+      (fun j : Fin (k + 1) => (Id.run (blockLanczos pure hpn A X₁ r)).M j)
+      (fun j : Fin k => ((Id.run (blockLanczos pure hpn A X₁ r)).B j)ᵀ)).IsHermitian := by
   have h := blInv_run hpn A X₁ r
   set s := Id.run (blockLanczos pure hpn A X₁ r)
   have hM : ∀ b < k + 1, ∀ l l', s.M b l' l = s.M b l l' := by
@@ -1451,7 +1451,7 @@ theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n
   change (blockCols s.X (k + 1))ᵀ * blockCols s.X (k + 1) = 1 at hQQ
   change (blockCols s.X (k + 1))ᵀ * A * blockCols s.X (k + 1) =
     Matrix.blockTridiagonal (fun j : Fin k => s.B j)
-      (fun j : Fin k => (s.B j)ᵀ) (fun j : Fin (k + 1) => s.M j) at hcomp
+      (fun j : Fin (k + 1) => s.M j) (fun j : Fin k => (s.B j)ᵀ) at hcomp
   set v : Fin p → EuclideanSpace ℝ (Fin n) := fun l => WithLp.toLp 2 fun r => X₁ r l with hv
   set K := Krylov.blockSubspace T v (k + 1) with hK
   change LinearMap.range (Matrix.toEuclideanLin (blockCols s.X (k + 1))) = K at hrange
@@ -1495,7 +1495,7 @@ theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n
   set b := OrthonormalBasis.mk hon hsp.ge with hb
   have htoM : LinearMap.toMatrix b.toBasis b.toBasis (compression T K) =
       Matrix.blockTridiagonal (fun j : Fin k => s.B j)
-      (fun j : Fin k => (s.B j)ᵀ) (fun j : Fin (k + 1) => s.M j) := by
+      (fun j : Fin (k + 1) => s.M j) (fun j : Fin k => (s.B j)ᵀ) := by
     ext al bl
     rw [LinearMap.toMatrix_apply, OrthonormalBasis.coe_toBasis_repr_apply,
       OrthonormalBasis.repr_apply_apply, OrthonormalBasis.coe_toBasis, hb,
@@ -1510,7 +1510,7 @@ theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n
   have hμ : μ = (compression.isSymmetric T K hT).eigenvalues hd ∘ Fin.cast hcard := by
     have hchar : (compression T K).charpoly =
         (Matrix.blockTridiagonal (fun j : Fin k => s.B j)
-      (fun j : Fin k => (s.B j)ᵀ) (fun j : Fin (k + 1) => s.M j)).charpoly.map
+      (fun j : Fin (k + 1) => s.M j) (fun j : Fin k => (s.B j)ᵀ)).charpoly.map
           (algebraMap ℝ ℝ) := by
       rw [← LinearMap.charpoly_toMatrix _ b.toBasis, htoM, Algebra.algebraMap_self,
         Polynomial.map_id]

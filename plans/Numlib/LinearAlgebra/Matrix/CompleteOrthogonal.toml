@@ -20,3 +20,6 @@ id = "exists_isCompleteOrthogonal"
 
 [[node]]
 id = "IsCompleteOrthogonal.isMinNormLeastSquaresSolution"
+
+[[node]]
+id = "IsCompleteOrthogonal.isUnitaryEquiv"

@@ -69,12 +69,14 @@ bounds of positive (semi)definite matrices; and the bridge to Mathlib's `Matrix.
   Schur complement is a quadratic form of the matrix.
 * `Matrix.IsLU.frobenius_norm_abs_mul_abs_le`: Theorem 4.2.6,
   `‖|L| |U|‖_F ≤ n (‖T‖₂ + ‖S T⁻¹ S‖₂)`, from
-  `Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart`
+  `Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart` and its transpose twin
+  `Matrix.dotProduct_transpose_mulVec_self_le_of_posDef_hermitianPart`
   (`‖A x‖², ‖Aᵀ x‖² ≤ (‖T‖₂ + ‖S T⁻¹ S‖₂) xᵀ A x`, through `A T⁻¹ Aᵀ = Aᵀ T⁻¹ A = T − S T⁻¹ S`)
   applied to a row of `L⁻¹` and a column of `U⁻¹`.
 * Semidefinite matrices: `Matrix.PosSemidef.apply_eq_zero_of_diag_eq_zero` ((4.2.15)),
-  `Matrix.PosSemidef.schurComplementSingle` ((4.2.16)) and the rank-revealing pivoted `L D Lᴴ`,
-  `Matrix.PosSemidef.exists_perm_ldl_rank` ((4.2.17)).
+  `Matrix.PosSemidef.schurComplementSingle` and
+  `Matrix.PosSemidef.re_schurComplementSingle_apply_self_le` ((4.2.16)) and the rank-revealing
+  pivoted `L D Lᴴ`, `Matrix.PosSemidef.exists_perm_ldl_rank` ((4.2.17)).
 * The factor: `Matrix.cholesky_finSumFin` (the block form (4.2.18)),
   `Matrix.cholesky_hasLowerBandwidth` (§4.3.5), `Matrix.sq_norm_cholesky_apply_le` and
   `Matrix.l2_opNorm_cholesky_sq` (§4.2.6).
@@ -781,26 +783,6 @@ section SchurStep
 
 variable {A : Matrix n n 𝕜} {p : n}
 
-/-- One elimination step reproduces `A x` off the pivot row when `(A x)_p = 0`.
-(Local copy; `Matrix.schurComplementSingle_mulVec_of_apply_eq_zero` of
-`Numlib/LinearAlgebra/Matrix/SchurComplement` states the same.) -/
-private theorem schurComplementSingle_mulVec_apply' (hpp : A p p ≠ 0) {X : n → 𝕜}
-    (hX : (A *ᵥ X) p = 0) (i : {x : n // x ≠ p}) :
-    (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i = (A *ᵥ X) i.1 := by
-  have hp : A p p * X p + ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 = 0 := by
-    rw [← hX, mulVec, dotProduct, sum_eq_add_sum_subtype_ne p]
-  have hsum : ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 = -(A p p * X p) := by
-    linear_combination hp
-  rw [mulVec, dotProduct, mulVec, dotProduct, sum_eq_add_sum_subtype_ne p (fun j => A i.1 j * X j)]
-  simp only [schurComplementSingle_apply, sub_mul, Finset.sum_sub_distrib]
-  have : ∑ j : {x : n // x ≠ p}, A i.1 p * (A p p)⁻¹ * A p j.1 * X j.1 =
-      A i.1 p * (A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 := by
-    rw [Finset.mul_sum]
-    exact Finset.sum_congr rfl fun j _ => by ring
-  rw [this, hsum]
-  field_simp
-  ring
-
 /-- **The quadratic form of one elimination step**: for `A p p ≠ 0` and any `z` off the pivot,
 the extension `X` of `z` with `X p = -(A p p)⁻¹ ∑_j A p j z j` has `(A X)_p = 0`, and
 `zᴴ S z = Xᴴ A X` for the Schur complement `S = schurComplementSingle A p`. -/
@@ -823,7 +805,7 @@ theorem exists_star_dotProduct_schurComplementSingle_mulVec (hpp : A p p ≠ 0)
   conv_rhs => rw [dotProduct, sum_eq_add_sum_subtype_ne p, hAX, mul_zero, zero_add]
   rw [dotProduct]
   refine Finset.sum_congr rfl fun t _ => ?_
-  rw [hzX, schurComplementSingle_mulVec_apply' hpp hAX t]
+  rw [hzX, schurComplementSingle_mulVec_of_apply_eq_zero A hpp hAX t]
   rfl
 
 end SchurStep
@@ -867,12 +849,10 @@ theorem PosSemidef.apply_eq_zero_of_diag_eq_zero (hA : A.PosSemidef) {i : n} (hi
     norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 (le_antisymm h2 (sq_nonneg _)))⟩
 
 omit [Fintype n] in
-/-- **One step of the outer-product `L D Lᴴ` on a positive semidefinite matrix**
-([golub2013matrix] (4.2.16)): if `A` is positive semidefinite and `A p p ≠ 0`, the Schur
-complement of one elimination step is positive semidefinite and its diagonal is dominated by that
-of `A`, the book's `Ã = B − v vᵀ/α`. The semidefinite analogue of
-`Matrix.PosDef.schurComplement`. -/
-theorem PosSemidef.schurComplementSingle [Finite n] (hA : A.PosSemidef) {p : n} (hpp : A p p ≠ 0) :
+/-- The two halves of `Matrix.PosSemidef.schurComplementSingle` and
+`Matrix.PosSemidef.re_schurComplementSingle_apply_self_le`, proved together. -/
+private theorem PosSemidef.schurComplementSingle_aux [Finite n] (hA : A.PosSemidef) {p : n}
+    (hpp : A p p ≠ 0) :
     (A.schurComplementSingle p).PosSemidef ∧
       ∀ i, RCLike.re ((A.schurComplementSingle p) i i) ≤ RCLike.re (A i.1 i.1) := by
   have : Fintype n := Fintype.ofFinite n
@@ -902,6 +882,24 @@ theorem PosSemidef.schurComplementSingle [Finite n] (hA : A.PosSemidef) {p : n} 
       field_simp
     rw [this, RCLike.ofReal_re]
     positivity
+
+omit [Fintype n] in
+/-- **One step of the outer-product `L D Lᴴ` on a positive semidefinite matrix**
+([golub2013matrix] (4.2.16)): if `A` is positive semidefinite and `A p p ≠ 0`, the Schur
+complement of one elimination step, the book's `Ã = B − v vᵀ/α`, is positive semidefinite. The
+semidefinite analogue of `Matrix.PosDef.schurComplement`; its diagonal is dominated by that of `A`
+(`Matrix.PosSemidef.re_schurComplementSingle_apply_self_le`). -/
+theorem PosSemidef.schurComplementSingle [Finite n] (hA : A.PosSemidef) {p : n} (hpp : A p p ≠ 0) :
+    (A.schurComplementSingle p).PosSemidef :=
+  (hA.schurComplementSingle_aux hpp).1
+
+omit [Fintype n] in
+/-- [golub2013matrix] (4.2.16): the diagonal of the one-step Schur complement of a positive
+semidefinite matrix is dominated by that of the matrix, `re Ã_ii ≤ re a_ii`. -/
+theorem PosSemidef.re_schurComplementSingle_apply_self_le [Finite n] (hA : A.PosSemidef) {p : n}
+    (hpp : A p p ≠ 0) (i : {x : n // x ≠ p}) :
+    RCLike.re ((A.schurComplementSingle p) i i) ≤ RCLike.re (A i.1 i.1) :=
+  (hA.schurComplementSingle_aux hpp).2 i
 
 end Semidefinite
 
@@ -999,7 +997,7 @@ theorem PosSemidef.exists_perm_ldl_antitone :
     have hBstar : ∀ a b, star (B a b) = B b a := fun a b => hB.1.apply b a
     have hBle : ∀ y, RCLike.re (B y y) ≤ α := fun y => hp _ (mem_univ _)
     set e : Fin m → {i : Fin (m + 1) // i ≠ 0} := fun i => ⟨i.succ, Fin.succ_ne_zero i⟩ with he
-    have hSchur := hB.schurComplementSingle (p := 0) (by rw [hB00]; exact hαne)
+    have hSchur := hB.schurComplementSingle_aux (p := 0) (by rw [hB00]; exact hαne)
     set S := (B.schurComplementSingle 0).submatrix e e with hSd
     have hS : S.PosSemidef := hSchur.1.submatrix e
     obtain ⟨σ', L', d', hL', heq, hanti, hnn⟩ := PosSemidef.exists_perm_ldl_antitone hS
@@ -1233,25 +1231,13 @@ end Block
 
 section UnsymmetricLU
 
-open scoped Matrix.Norms.Frobenius
-
-omit [LinearOrder n] in
-/-- `0 ≤ vᵀ v` for a real vector. -/
-private theorem dot_self_nonneg (v : n → ℝ) : 0 ≤ v ⬝ᵥ v :=
-  Finset.sum_nonneg fun _ _ => mul_self_nonneg _
-
-/-- From `p² ≤ p r` with `p, r ≥ 0`, `p ≤ r`. -/
-private theorem le_of_sq_le_mul {p r : ℝ} (hp : 0 ≤ p) (hr : 0 ≤ r) (h : p ^ 2 ≤ p * r) :
-    p ≤ r := by
-  rcases hp.eq_or_lt with h0 | h0
-  · rw [← h0]; exact hr
-  · nlinarith
+open scoped Matrix.Norms.L2Operator
 
 /-- `‖M x‖² ≤ ‖M T⁻¹ Mᵀ‖₂ xᵀ T x` for positive definite `T`: with `y = M x` and `T w = Mᵀ y`,
 `‖y‖² = xᵀ T w ≤ √(xᵀ T x) √(wᵀ T w)` and `wᵀ T w = yᵀ M T⁻¹ Mᵀ y ≤ ‖M T⁻¹ Mᵀ‖₂ ‖y‖²`. -/
 private theorem dotProduct_mulVec_self_le_of_posDef {T : Matrix n n ℝ} (hT : T.PosDef)
     (M : Matrix n n ℝ) (x : n → ℝ) :
-    (M *ᵥ x) ⬝ᵥ (M *ᵥ x) ≤ ‖toEuclideanCLM (𝕜 := ℝ) (M * T⁻¹ * Mᵀ)‖ * (x ⬝ᵥ (T *ᵥ x)) := by
+    (M *ᵥ x) ⬝ᵥ (M *ᵥ x) ≤ ‖M * T⁻¹ * Mᵀ‖ * (x ⬝ᵥ (T *ᵥ x)) := by
   have hTu : IsUnit T.det := (isUnit_iff_isUnit_det T).1 hT.isUnit
   set y := M *ᵥ x
   set w := T⁻¹ *ᵥ (Mᵀ *ᵥ y) with hw
@@ -1264,30 +1250,28 @@ private theorem dotProduct_mulVec_self_le_of_posDef {T : Matrix n n ℝ} (hT : T
     simp only [hw, mulVec_mulVec, Matrix.mul_assoc]
   have hq0 : 0 ≤ x ⬝ᵥ (T *ᵥ x) := by simpa using hT.posSemidef.dotProduct_mulVec_nonneg x
   have h1 := hT.posSemidef.sq_dotProduct_mulVec_le x w
-  have h2 : y ⬝ᵥ ((M * T⁻¹ * Mᵀ) *ᵥ y) ≤ ‖toEuclideanCLM (𝕜 := ℝ) (M * T⁻¹ * Mᵀ)‖ * (y ⬝ᵥ y) := by
+  have h2 : y ⬝ᵥ ((M * T⁻¹ * Mᵀ) *ᵥ y) ≤ ‖M * T⁻¹ * Mᵀ‖ * (y ⬝ᵥ y) := by
     have := dotProduct_mulVec_le_l2_opNorm (M * T⁻¹ * Mᵀ) y y
-    rwa [← sq, ← dotProduct_self_eq_norm_sq, ← l2_opNorm_toEuclideanCLM] at this
-  refine le_of_sq_le_mul (dot_self_nonneg _) (mul_nonneg (norm_nonneg _) hq0) ?_
-  calc (y ⬝ᵥ y) ^ 2 = (x ⬝ᵥ (T *ᵥ w)) ^ 2 := by rw [hyy]
-    _ ≤ (x ⬝ᵥ (T *ᵥ x)) * (w ⬝ᵥ (T *ᵥ w)) := h1
-    _ ≤ (x ⬝ᵥ (T *ᵥ x)) * (‖toEuclideanCLM (𝕜 := ℝ) (M * T⁻¹ * Mᵀ)‖ * (y ⬝ᵥ y)) := by
-        rw [hwTw]; exact mul_le_mul_of_nonneg_left h2 hq0
-    _ = _ := by ring
+    rwa [← sq, ← dotProduct_self_eq_norm_sq] at this
+  have hy0 : 0 ≤ y ⬝ᵥ y := by simpa using dotProduct_star_self_nonneg y
+  have hsq : (y ⬝ᵥ y) ^ 2 ≤ (y ⬝ᵥ y) * (‖M * T⁻¹ * Mᵀ‖ * (x ⬝ᵥ (T *ᵥ x))) :=
+    calc (y ⬝ᵥ y) ^ 2 = (x ⬝ᵥ (T *ᵥ w)) ^ 2 := by rw [hyy]
+      _ ≤ (x ⬝ᵥ (T *ᵥ x)) * (w ⬝ᵥ (T *ᵥ w)) := h1
+      _ ≤ (x ⬝ᵥ (T *ᵥ x)) * (‖M * T⁻¹ * Mᵀ‖ * (y ⬝ᵥ y)) := by
+          rw [hwTw]; exact mul_le_mul_of_nonneg_left h2 hq0
+      _ = _ := by ring
+  have hr0 : 0 ≤ ‖M * T⁻¹ * Mᵀ‖ * (x ⬝ᵥ (T *ᵥ x)) := mul_nonneg (norm_nonneg _) hq0
+  nlinarith
 
-/-- **The growth bound behind [golub2013matrix] Theorem 4.2.6**: for a real `A` with positive
-definite symmetric part `T = (A + Aᵀ)/2` and skew part `S = A − T`, both `‖A x‖²` and `‖Aᵀ x‖²`
-are at most `(‖T‖₂ + ‖S T⁻¹ S‖₂) xᵀ A x`. Here `xᵀ A x = xᵀ T x` and
+/-- The two growth bounds behind [golub2013matrix] Theorem 4.2.6, for a real `A` with positive
+definite symmetric part `T = (A + Aᵀ)/2` and skew part `S = A − T`: `xᵀ A x = xᵀ T x`,
 `A T⁻¹ Aᵀ = Aᵀ T⁻¹ A = T − S T⁻¹ S` (the identity `A T⁻¹ Aᵀ = T + S T⁻¹ Sᵀ` of Golub and Van Loan
-1979), so `‖A x‖² ≤ ‖A T⁻¹ Aᵀ‖₂ xᵀ T x ≤ (‖T‖₂ + ‖S T⁻¹ S‖₂) xᵀ T x` by Cauchy–Schwarz for the form
-of `T`, and likewise for `Aᵀ`. -/
-theorem dotProduct_mulVec_self_le_of_posDef_hermitianPart {A : Matrix n n ℝ}
-    (hT : (hermitianPart A).PosDef) (x : n → ℝ) :
-    (A *ᵥ x) ⬝ᵥ (A *ᵥ x) ≤ (‖toEuclideanCLM (𝕜 := ℝ) (hermitianPart A)‖
-        + ‖toEuclideanCLM (𝕜 := ℝ) ((A - hermitianPart A) * (hermitianPart A)⁻¹
-          * (A - hermitianPart A))‖) * (x ⬝ᵥ (A *ᵥ x)) ∧
-      (Aᵀ *ᵥ x) ⬝ᵥ (Aᵀ *ᵥ x) ≤ (‖toEuclideanCLM (𝕜 := ℝ) (hermitianPart A)‖
-        + ‖toEuclideanCLM (𝕜 := ℝ) ((A - hermitianPart A) * (hermitianPart A)⁻¹
-          * (A - hermitianPart A))‖) * (x ⬝ᵥ (A *ᵥ x)) := by
+1979), and its spectral norm is at most `‖T‖₂ + ‖S T⁻¹ S‖₂`. -/
+private theorem growth_aux {A : Matrix n n ℝ} (hT : (hermitianPart A).PosDef) (x : n → ℝ) :
+    x ⬝ᵥ (A *ᵥ x) = x ⬝ᵥ (hermitianPart A *ᵥ x) ∧
+      A * (hermitianPart A)⁻¹ * Aᵀ = Aᵀ * (hermitianPart A)⁻¹ * Aᵀᵀ ∧
+      ‖A * (hermitianPart A)⁻¹ * Aᵀ‖ ≤ ‖hermitianPart A‖
+        + ‖(A - hermitianPart A) * (hermitianPart A)⁻¹ * (A - hermitianPart A)‖ := by
   classical
   set T := hermitianPart A with hTdef
   set S := A - T with hSdef
@@ -1312,9 +1296,6 @@ theorem dotProduct_mulVec_self_le_of_posDef_hermitianPart {A : Matrix n n ℝ}
       conv_lhs => rw [dotProduct_mulVec, ← mulVec_transpose, hSt, neg_mulVec, neg_dotProduct,
         dotProduct_comm]
     linarith
-  have hq : x ⬝ᵥ (A *ᵥ x) = x ⬝ᵥ (T *ᵥ x) := by
-    rw [hA, add_mulVec, dotProduct_add, hskew, add_zero]
-  -- `A T⁻¹ Aᵀ = Aᵀ T⁻¹ A = T − S T⁻¹ S`, of norm at most `‖T‖₂ + ‖S T⁻¹ S‖₂`
   have hG : A * T⁻¹ * Aᵀ = T - S * T⁻¹ * S := by
     rw [hAT, hA]
     simp only [Matrix.add_mul, Matrix.mul_sub, hTT, Matrix.one_mul, Matrix.mul_assoc, hTT',
@@ -1325,18 +1306,47 @@ theorem dotProduct_mulVec_self_le_of_posDef_hermitianPart {A : Matrix n n ℝ}
     simp only [Matrix.sub_mul, Matrix.mul_add, hTT, Matrix.one_mul, Matrix.mul_assoc, hTT',
       Matrix.mul_one]
     abel
-  have hnorm : ‖toEuclideanCLM (𝕜 := ℝ) (T - S * T⁻¹ * S)‖ ≤ ‖toEuclideanCLM (𝕜 := ℝ) T‖
-      + ‖toEuclideanCLM (𝕜 := ℝ) (S * T⁻¹ * S)‖ := by
-    rw [map_sub]
-    exact norm_sub_le _ _
-  have hq0 : 0 ≤ x ⬝ᵥ (T *ᵥ x) := by simpa using hT.posSemidef.dotProduct_mulVec_nonneg x
-  have h1 := dotProduct_mulVec_self_le_of_posDef hT A x
-  have h2 := dotProduct_mulVec_self_le_of_posDef hT Aᵀ x
-  rw [hG] at h1
-  rw [hG'] at h2
+  refine ⟨by rw [hA, add_mulVec, dotProduct_add, hskew, add_zero], hG.trans hG'.symm, ?_⟩
+  rw [hG]
+  exact norm_sub_le _ _
+
+/-- **The growth bound behind [golub2013matrix] Theorem 4.2.6**: for a real `A` with positive
+definite symmetric part `T = (A + Aᵀ)/2` and skew part `S = A − T`,
+`‖A x‖² ≤ (‖T‖₂ + ‖S T⁻¹ S‖₂) xᵀ A x`. Here `xᵀ A x = xᵀ T x` and `A T⁻¹ Aᵀ = T − S T⁻¹ S`, so
+`‖A x‖² ≤ ‖A T⁻¹ Aᵀ‖₂ xᵀ T x` by Cauchy–Schwarz for the form of `T`. The transpose twin is
+`Matrix.dotProduct_transpose_mulVec_self_le_of_posDef_hermitianPart`. -/
+theorem dotProduct_mulVec_self_le_of_posDef_hermitianPart {A : Matrix n n ℝ}
+    (hT : (hermitianPart A).PosDef) (x : n → ℝ) :
+    (A *ᵥ x) ⬝ᵥ (A *ᵥ x) ≤ (‖hermitianPart A‖
+        + ‖(A - hermitianPart A) * (hermitianPart A)⁻¹ * (A - hermitianPart A)‖) *
+      (x ⬝ᵥ (A *ᵥ x)) := by
+  obtain ⟨hq, -, hnorm⟩ := growth_aux hT x
+  have hq0 : 0 ≤ x ⬝ᵥ (hermitianPart A *ᵥ x) := by
+    simpa using hT.posSemidef.dotProduct_mulVec_nonneg x
   rw [hq]
-  exact ⟨h1.trans (mul_le_mul_of_nonneg_right hnorm hq0),
-    h2.trans (mul_le_mul_of_nonneg_right hnorm hq0)⟩
+  exact (dotProduct_mulVec_self_le_of_posDef hT A x).trans
+    (mul_le_mul_of_nonneg_right hnorm hq0)
+
+/-- **The growth bound behind [golub2013matrix] Theorem 4.2.6**, for the transpose:
+`‖Aᵀ x‖² ≤ (‖T‖₂ + ‖S T⁻¹ S‖₂) xᵀ A x`, since also `Aᵀ T⁻¹ A = T − S T⁻¹ S`. -/
+theorem dotProduct_transpose_mulVec_self_le_of_posDef_hermitianPart {A : Matrix n n ℝ}
+    (hT : (hermitianPart A).PosDef) (x : n → ℝ) :
+    (Aᵀ *ᵥ x) ⬝ᵥ (Aᵀ *ᵥ x) ≤ (‖hermitianPart A‖
+        + ‖(A - hermitianPart A) * (hermitianPart A)⁻¹ * (A - hermitianPart A)‖) *
+      (x ⬝ᵥ (A *ᵥ x)) := by
+  obtain ⟨hq, hG, hnorm⟩ := growth_aux hT x
+  have hq0 : 0 ≤ x ⬝ᵥ (hermitianPart A *ᵥ x) := by
+    simpa using hT.posSemidef.dotProduct_mulVec_nonneg x
+  rw [hq]
+  have h := dotProduct_mulVec_self_le_of_posDef hT Aᵀ x
+  rw [← hG] at h
+  exact h.trans (mul_le_mul_of_nonneg_right hnorm hq0)
+
+end UnsymmetricLU
+
+section UnsymmetricLUGrowth
+
+open scoped Matrix.Norms.Frobenius
 
 /-- **The growth of `|L| |U|` for a positive definite symmetric part** ([golub2013matrix]
 Theorem 4.2.6, from G. H. Golub and C. F. Van Loan, *Unsymmetric positive definite linear systems*,
@@ -1344,7 +1354,9 @@ Linear Algebra Appl. 28 (1979) 85–97): if `A = L U` is real with `T = (A + A�
 and `S = A − T`, then `‖|L| |U|‖_F ≤ n (‖T‖₂ + ‖S T⁻¹ S‖₂)`. `|L| |U| = ∑_k |ℓ_k| |u_kᵀ|`, and with
 `y` the `k`-th row of `L⁻¹` and `x` the `k`-th column of `U⁻¹`, `u_k = Aᵀ y`, `ℓ_k = A x`,
 `yᵀ A y = u_kk` and `xᵀ A x = 1/u_kk`, so `Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart`
-gives `‖ℓ_k‖ ‖u_k‖ ≤ ‖T‖₂ + ‖S T⁻¹ S‖₂` for each of the `n` terms. -/
+gives `‖ℓ_k‖ ‖u_k‖ ≤ ‖T‖₂ + ‖S T⁻¹ S‖₂` for each of the `n` terms. The norm of `|L| |U|` is the
+Frobenius norm, so the spectral norms are written `‖toEuclideanCLM ·‖` here
+(`Matrix.l2_opNorm_toEuclideanCLM`), the two scoped matrix norms not being open together. -/
 theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
     (hT : (hermitianPart A).PosDef) (h : IsLU A L U) :
     ‖L.abs * U.abs‖ ≤ Fintype.card n * (‖toEuclideanCLM (𝕜 := ℝ) (hermitianPart A)‖
@@ -1355,7 +1367,12 @@ theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
         * (A - hermitianPart A))‖
   set c := a + b
   have hc0 : 0 ≤ c := add_nonneg (norm_nonneg _) (norm_nonneg _)
-  have hP := dotProduct_mulVec_self_le_of_posDef_hermitianPart hT
+  have hPA : ∀ v : n → ℝ, (A *ᵥ v) ⬝ᵥ (A *ᵥ v) ≤ c * (v ⬝ᵥ (A *ᵥ v)) := fun v => by
+    have := dotProduct_mulVec_self_le_of_posDef_hermitianPart hT v
+    rwa [← l2_opNorm_toEuclideanCLM, ← l2_opNorm_toEuclideanCLM] at this
+  have hPAt : ∀ v : n → ℝ, (Aᵀ *ᵥ v) ⬝ᵥ (Aᵀ *ᵥ v) ≤ c * (v ⬝ᵥ (A *ᵥ v)) := fun v => by
+    have := dotProduct_transpose_mulVec_self_le_of_posDef_hermitianPart hT v
+    rwa [← l2_opNorm_toEuclideanCLM, ← l2_opNorm_toEuclideanCLM] at this
   have hL := h.isUnitLowerTriangular
   have hLi := hL.inv
   have hLL : L⁻¹ * L = 1 := nonsing_inv_mul L ((isUnit_iff_isUnit_det L).1 hL.isUnit)
@@ -1389,7 +1406,7 @@ theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
     simpa using h1
   -- the rows of `U`
   have hrow : ∀ k, (fun j => U k j) ⬝ᵥ (fun j => U k j) ≤ c * U k k := fun k => by
-    have := (hP fun j => L⁻¹ k j).2
+    have := hPAt fun j => L⁻¹ k j
     rwa [mulVec_transpose, hyA k, hyAy k] at this
   -- the columns of `L`, through the columns of `U⁻¹`
   have hUu : IsUnit U.det := by
@@ -1419,7 +1436,7 @@ theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
       · rw [hUi hi, zero_mul]
     · simp
   have hcol : ∀ k, (fun i => L i k) ⬝ᵥ (fun i => L i k) ≤ c * (U k k)⁻¹ := fun k => by
-    have := (hP fun i => U⁻¹ i k).1
+    have := hPA fun i => U⁻¹ i k
     rwa [hxAx k, hAx k] at this
   -- each rank-one term has norm at most `c`
   have hnorm : ∀ v : n → ℝ, ‖WithLp.toLp 2 (fun i => |v i|)‖ = √(v ⬝ᵥ v) := fun v => by
@@ -1427,10 +1444,11 @@ theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
     simp [sq]
   have hterm : ∀ k, ‖WithLp.toLp 2 (fun i => |L i k|)‖ * ‖WithLp.toLp 2 (fun j => |U k j|)‖
       ≤ c := fun k => by
-    rw [hnorm (fun i => L i k), hnorm (fun j => U k j), ← Real.sqrt_mul (dot_self_nonneg _)]
+    have hdot : ∀ v : n → ℝ, 0 ≤ v ⬝ᵥ v := fun v => by simpa using dotProduct_star_self_nonneg v
+    rw [hnorm (fun i => L i k), hnorm (fun j => U k j), ← Real.sqrt_mul (hdot _)]
     calc √(((fun i => L i k) ⬝ᵥ fun i => L i k) * ((fun j => U k j) ⬝ᵥ fun j => U k j))
         ≤ √((c * (U k k)⁻¹) * (c * U k k)) :=
-          Real.sqrt_le_sqrt (mul_le_mul (hcol k) (hrow k) (dot_self_nonneg _)
+          Real.sqrt_le_sqrt (mul_le_mul (hcol k) (hrow k) (hdot _)
             (mul_nonneg hc0 (inv_nonneg.2 (hpos k).le)))
       _ = c := by
           rw [show c * (U k k)⁻¹ * (c * U k k) = c ^ 2 by field_simp [(hpos k).ne']]
@@ -1450,6 +1468,6 @@ theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
     _ ≤ ∑ _k : n, c := Finset.sum_le_sum fun k _ => (hvmv _ _).trans (hterm k)
     _ = Fintype.card n * c := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
 
-end UnsymmetricLU
+end UnsymmetricLUGrowth
 
 end Matrix

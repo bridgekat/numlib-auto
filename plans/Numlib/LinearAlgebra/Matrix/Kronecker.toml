@@ -92,3 +92,9 @@ id = "permMatrix_kronecker_permMatrix"
 
 [[node]]  # staged by ch12
 id = "kronecker_mem_rowStochastic"
+
+[[node]]
+id = "piKroneckerVec"
+
+[[node]]
+id = "piKronecker_mulVec_piKroneckerVec"

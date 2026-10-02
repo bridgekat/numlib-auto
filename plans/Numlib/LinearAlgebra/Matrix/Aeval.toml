@@ -1,2 +1,8 @@
 [[node]]
 id = "Matrix.minpoly_transpose"
+
+[[node]]
+id = "Commute.ringInverse_right"
+
+[[node]]
+id = "Commute.ringInverse_left"

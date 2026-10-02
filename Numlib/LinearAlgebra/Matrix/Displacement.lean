@@ -2,7 +2,6 @@
 Upstreaming candidate: general material with no numerical-analysis-specific content, written
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: a file beside `Mathlib.LinearAlgebra.Matrix.Kronecker`.
-Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.Rank
@@ -22,7 +21,8 @@ Morf 1979; Gohberg, Kailath and Olshevsky 1995).
   `Matrix.displacementRank F G A`. When the Sylvester operator is injective, generators determine
   the matrix (`Matrix.eq_of_sylvesterMap_eq`).
 * The Cauchy matrix has displacement `e eᵀ` for diagonal operators
-  (`Matrix.sylvesterMap_diagonal_cauchy`).
+  (`Matrix.sylvesterMap_diagonal_cauchy`), hence displacement rank `1`
+  (`Matrix.displacementRank_diagonal_cauchy`).
 * **The generator update under one step of Gaussian elimination**
   (`Matrix.sylvesterMap_schurComplement`, [golub2013matrix] Theorem 12.1.1, generalized): if the
   first row of `F` and the first column of `G` vanish off the corner, the Schur complement
@@ -81,17 +81,20 @@ end Rank
 
 /-- **The Cauchy matrix has displacement `e eᵀ`** ([golub2013matrix] §12.1.2): if `ω k ≠ ν j`
 for all `k`, `j`, then `diag(ω) C − C diag(ν) = e eᵀ` for the Cauchy matrix
-`C = (1 / (ω k − ν j))`, and its displacement rank is `1` when `n ≠ 0`. -/
+`C = (1 / (ω k − ν j))`. -/
 theorem sylvesterMap_diagonal_cauchy {n : ℕ} {ω ν : Fin n → K} (h : ∀ k j, ω k ≠ ν j) :
-    sylvesterMap (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = vecMulVec 1 1 ∧
-      (n ≠ 0 → displacementRank (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = 1) := by
-  have heq : sylvesterMap (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = vecMulVec 1 1 := by
-    ext k j
-    rw [sylvesterMap_diagonal_apply, cauchy_apply, vecMulVec_apply, Pi.neg_apply, ← sub_eq_add_neg,
-      Pi.one_apply, Pi.one_apply, mul_one]
-    exact mul_inv_cancel₀ (sub_ne_zero.mpr (h k j))
-  refine ⟨heq, fun hn => ?_⟩
-  rw [displacementRank, heq]
+    sylvesterMap (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = vecMulVec 1 1 := by
+  ext k j
+  rw [sylvesterMap_diagonal_apply, cauchy_apply, vecMulVec_apply, Pi.neg_apply, ← sub_eq_add_neg,
+    Pi.one_apply, Pi.one_apply, mul_one]
+  exact mul_inv_cancel₀ (sub_ne_zero.mpr (h k j))
+
+/-- **The Cauchy matrix has displacement rank `1`** ([golub2013matrix] §12.1.2) for diagonal
+operators with disjoint diagonals, `n ≠ 0`: its displacement is `e eᵀ`
+(`Matrix.sylvesterMap_diagonal_cauchy`). -/
+theorem displacementRank_diagonal_cauchy {n : ℕ} {ω ν : Fin n → K} (h : ∀ k j, ω k ≠ ν j)
+    (hn : n ≠ 0) : displacementRank (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = 1 := by
+  rw [displacementRank, sylvesterMap_diagonal_cauchy h]
   refine le_antisymm (rank_vecMulVec_le _ _) ?_
   have : NeZero n := ⟨hn⟩
   by_contra h0

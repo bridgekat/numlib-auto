@@ -544,10 +544,12 @@ import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.Semiseparable
 import Numlib.LinearAlgebra.Matrix.Similar
 import Numlib.LinearAlgebra.Matrix.Sylvester
+import Numlib.LinearAlgebra.Matrix.Symmetric
 import Numlib.LinearAlgebra.Matrix.SymmetricIndefinite
 import Numlib.LinearAlgebra.Matrix.Toeplitz
 import Numlib.LinearAlgebra.Matrix.Triangular
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
+import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
 import Numlib.LinearAlgebra.Matrix.WY
 import Numlib.LinearAlgebra.Sparse.Fill

@@ -37,8 +37,10 @@ rectangular matrix indexed by `Fin m × Fin n`.
   bidiagonal shapes of `Numlib/LinearAlgebra/Matrix/Hessenberg`.
 * Sums keep the larger band (`Matrix.HasLowerBandwidth.add`) and products add bands
   (`Matrix.HasLowerBandwidth.mul`), which is how `L U` is read back in banded storage.
-* `Matrix.isUnit_one_add_of_potential`: a matrix whose nonzero entries strictly increase a
-  potential `f : Fin n → ℕ` is nilpotent (`Matrix.pow_apply_eq_zero_of_potential`), so `1 + M` is
+* Transposition exchanges the bands (`Matrix.hasLowerBandwidth_transpose_iff`,
+  `Matrix.hasUpperBandwidth_transpose_iff` and their rectangular forms).
+* `Matrix.isUnit_one_add_of_potential`: a matrix whose nonzero entries strictly increase a bounded
+  potential `f : ι → ℕ` is nilpotent (`Matrix.pow_apply_eq_zero_of_potential`), so `1 + M` is
   a unit over any ring — the strictly triangular and strictly banded shapes with an index order
   other than the natural one.
 -/
@@ -132,19 +134,31 @@ def HasLowerBandwidth (A : Matrix n n R) (p : ℕ) : Prop :=
 /-- `A.HasUpperBandwidth q`: an entry `A i j` vanishes as soon as more than `q` indices lie in
 `[i, j)`, the condition `j > i + q` of [quarteroni2000numerical] §1.6.3; `q = 0` is lower
 triangularity. It is the lower bandwidth of the transpose
-(`Matrix.hasUpperBandwidth_iff_transpose`). -/
+(`Matrix.hasLowerBandwidth_transpose_iff`). -/
 def HasUpperBandwidth (A : Matrix n n R) (q : ℕ) : Prop :=
   ∀ i j, q < #{k | i ≤ k ∧ k < j} → A i j = 0
 
 variable {A B : Matrix n n R} {p q : ℕ}
 
-/-- The upper bandwidth of a matrix is the lower bandwidth of its transpose. -/
-theorem hasUpperBandwidth_iff_transpose : A.HasUpperBandwidth q ↔ Aᵀ.HasLowerBandwidth q :=
+/-- The lower bandwidth of the transpose is the upper bandwidth. -/
+theorem hasLowerBandwidth_transpose_iff : Aᵀ.HasLowerBandwidth p ↔ A.HasUpperBandwidth p :=
   forall_comm
 
-/-- The lower bandwidth of a matrix is the upper bandwidth of its transpose. -/
-theorem hasLowerBandwidth_iff_transpose : A.HasLowerBandwidth p ↔ Aᵀ.HasUpperBandwidth p :=
+/-- The upper bandwidth of the transpose is the lower bandwidth. -/
+theorem hasUpperBandwidth_transpose_iff : Aᵀ.HasUpperBandwidth q ↔ A.HasLowerBandwidth q :=
   forall_comm
+
+/-- The upper bandwidth of a matrix is the lower bandwidth of its transpose (the former name, in
+the reverse direction). -/
+@[deprecated hasLowerBandwidth_transpose_iff +typeChanged (since := "2026-09-30")]
+theorem hasUpperBandwidth_iff_transpose : A.HasUpperBandwidth q ↔ Aᵀ.HasLowerBandwidth q :=
+  hasLowerBandwidth_transpose_iff.symm
+
+/-- The lower bandwidth of a matrix is the upper bandwidth of its transpose (the former name, in
+the reverse direction). -/
+@[deprecated hasUpperBandwidth_transpose_iff +typeChanged (since := "2026-09-30")]
+theorem hasLowerBandwidth_iff_transpose : A.HasLowerBandwidth p ↔ Aᵀ.HasUpperBandwidth p :=
+  hasUpperBandwidth_transpose_iff.symm
 
 /-- On `Fin N`, lower bandwidth `p` is the usual condition: `A i j = 0` whenever `i > j + p`. -/
 theorem hasLowerBandwidth_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
@@ -345,11 +359,11 @@ end Rect
 
 section Potential
 
-variable {S : Type*} [Ring S] {N : ℕ}
+variable {ι S : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- A matrix over a ring whose nonzero entries strictly increase a potential `f` is nilpotent:
-`(M ^ k) i j = 0` as soon as `f j < f i + k`. -/
-theorem pow_apply_eq_zero_of_potential (M : Matrix (Fin N) (Fin N) S) (f : Fin N → ℕ)
+/-- A matrix over a semiring whose nonzero entries strictly increase a potential `f` is
+nilpotent: `(M ^ k) i j = 0` as soon as `f j < f i + k`. -/
+theorem pow_apply_eq_zero_of_potential [Semiring S] (M : Matrix ι ι S) (f : ι → ℕ)
     (hM : ∀ i j, f j ≤ f i → M i j = 0) (k : ℕ) :
     ∀ i j, f j < f i + k → (M ^ k) i j = 0 := by
   induction k with
@@ -366,8 +380,9 @@ theorem pow_apply_eq_zero_of_potential (M : Matrix (Fin N) (Fin N) S) (f : Fin N
     · rw [hM r j hr, mul_zero]
     · rw [ih i r (by omega), zero_mul]
 
-/-- `1 + M` is a unit when the nonzero entries of `M` strictly increase a potential. -/
-theorem isUnit_one_add_of_potential (M : Matrix (Fin N) (Fin N) S) (f : Fin N → ℕ)
+/-- `1 + M` is a unit over a ring when the nonzero entries of `M` strictly increase a potential
+bounded by some `N`: then `M ^ N = 0`. -/
+theorem isUnit_one_add_of_potential [Ring S] (M : Matrix ι ι S) (f : ι → ℕ) {N : ℕ}
     (hf : ∀ i, f i < N) (hM : ∀ i j, f j ≤ f i → M i j = 0) : IsUnit (1 + M) := by
   refine IsNilpotent.isUnit_one_add ⟨N, ?_⟩
   ext i j

@@ -55,7 +55,7 @@ theorem equation_12_1_3 {F G A : Matrix (Fin n) (Fin n) ℝ} {r : ℕ}
 theorem cauchy_displacement {ω ν : Fin n → ℝ} (h : ∀ k j, ω k ≠ ν j) :
     diagonal ω * cauchy ω (-ν) - cauchy ω (-ν) * diagonal ν = vecMulVec 1 1 ∧
       (n ≠ 0 → displacementRank (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = 1) :=
-  sylvesterMap_diagonal_cauchy h
+  ⟨sylvesterMap_diagonal_cauchy h, displacementRank_diagonal_cauchy h⟩
 
 /-- **§12.1.2**, Definition: `A` is Cauchy-like with respect to `ω`, `ν` if
 `diag(ω) A − A diag(ν) = R Sᵀ` for some `R, S ∈ ℝ^{n×r}` of full column rank `r` ((12.1.4); the

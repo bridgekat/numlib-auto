@@ -14,7 +14,7 @@ The matrix (4.5.2) has `q × q` real blocks, `N + 1` diagonal blocks `D 0, …, 
 book's `D_1, …, D_N` with `N` one larger), subdiagonal blocks `E 0, …, E (N − 1)` and superdiagonal
 blocks `F 0, …, F (N − 1)`. In the block ring `Matrix (Fin q) (Fin q) ℝ` it is
 `Matrix.tridiagonalOf E D F`, and the book's scalar matrix is its flattening
-`Matrix.blockTridiagonal E F D : Matrix (Fin (N + 1) × Fin q) (Fin (N + 1) × Fin q) ℝ` by Mathlib's
+`Matrix.blockTridiagonal E D F : Matrix (Fin (N + 1) × Fin q) (Fin (N + 1) × Fin q) ℝ` by Mathlib's
 `Matrix.comp` (a ring isomorphism, `Matrix.compRingEquiv`). The block recurrence (4.5.4) is the
 backbone's `ℕ`-indexed `Matrix.tridiagonalLUPivot` (`U_i`) and `Matrix.tridiagonalLUMultiplier`
 (`L_i`), so the blocks of the §4.5.1–4.5.2 statements are `ℕ`-indexed families. The book's `‖·‖₁`
@@ -53,9 +53,9 @@ upper bidiagonal matrix with diagonal blocks `U_i` and superdiagonal blocks `F_i
 solve `L_i U_i = E_i`. -/
 theorem equation_4_5_3 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (hU : ∀ i < N, IsUnit (tridiagonalLUPivot E D F i)) :
-    blockTridiagonal (N := N) (fun i => E i) (fun i => F i) (fun i => D i) =
-        blockTridiagonal (fun i => tridiagonalLUMultiplier E D F i) 0 1 *
-          blockTridiagonal 0 (fun i => F i) (fun i => tridiagonalLUPivot E D F i) ∧
+    blockTridiagonal (N := N) (fun i => E i) (fun i => D i) (fun i => F i) =
+        blockTridiagonal (fun i => tridiagonalLUMultiplier E D F i) 1 0 *
+          blockTridiagonal 0 (fun i => tridiagonalLUPivot E D F i) (fun i => F i) ∧
       ∀ i < N, tridiagonalLUMultiplier E D F i * tridiagonalLUPivot E D F i = E i := by
   refine ⟨?_, fun i hi => tridiagonalLUMultiplier_mul_tridiagonalLUPivot E D F (hU i hi)⟩
   simp only [blockTridiagonal, ← compRingEquiv_apply, ← map_mul]
@@ -72,7 +72,7 @@ theorem equation_4_5_6 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
       ((if i = 0 then 0 else lpOpNorm 1 (F (i - 1))) + (if i < N then lpOpNorm 1 (E i) else 0))
         < 1) :
     (∀ i ≤ N, IsUnit (tridiagonalLUPivot E D F i)) ∧
-      IsUnit (blockTridiagonal (N := N) (fun i => E i) (fun i => F i) (fun i => D i)) := by
+      IsUnit (blockTridiagonal (N := N) (fun i => E i) (fun i => D i) (fun i => F i)) := by
   have hdom := (isStrictBlockColDiagDominant_tridiagonalOf_iff (N := N) E D F).2 h
   exact ⟨fun i hi => (hdom.isUnit_tridiagonalLUPivot hi).1, hdom.isUnit_blockTridiagonal⟩
 
@@ -94,7 +94,7 @@ theorem equation_4_5_8 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
       ((if i = 0 then 0 else lpOpNorm 1 (F (i - 1))) + (if i < N then lpOpNorm 1 (E i) else 0))
         < 1) :
     ∀ i ≤ N, lpOpNorm 1 (tridiagonalLUPivot E D F i) ≤
-      lpOpNorm 1 (blockTridiagonal (N := N) (fun i => E i) (fun i => F i) (fun i => D i)) :=
+      lpOpNorm 1 (blockTridiagonal (N := N) (fun i => E i) (fun i => D i) (fun i => F i)) :=
   fun _ hi => ((isStrictBlockColDiagDominant_tridiagonalOf_iff (N := N) E D F).2 h
     ).lpOpNorm_tridiagonalLUPivot_le hi
 
@@ -162,15 +162,16 @@ blocks `F̃_i = D_i⁻¹ F_i` and subdiagonal blocks `Ẽ_i = D_{i+1}⁻¹ E_i`,
 `(diag(D_i⁻¹) A) x = b̃` with `b̃_i = D_i⁻¹ b_i`. -/
 theorem equation_4_5_14 (E F : Fin N → Matrix (Fin q) (Fin q) ℝ)
     (D : Fin (N + 1) → Matrix (Fin q) (Fin q) ℝ) (hD : ∀ i, IsUnit (D i)) :
-    comp _ _ _ _ ℝ (diagonal fun i => (D i)⁻¹) * blockTridiagonal E F D =
-        blockTridiagonal (fun i => (D i.succ)⁻¹ * E i) (fun i => (D i.castSucc)⁻¹ * F i)
-          (fun _ => 1) ∧
-      ∀ x b : Fin (N + 1) × Fin q → ℝ, blockTridiagonal E F D *ᵥ x = b ↔
-        blockTridiagonal (fun i => (D i.succ)⁻¹ * E i) (fun i => (D i.castSucc)⁻¹ * F i)
-            (fun _ => 1) *ᵥ x = fun p => ((D p.1)⁻¹ *ᵥ fun k => b (p.1, k)) p.2 := by
-  have hmul : comp _ _ _ _ ℝ (diagonal fun i => (D i)⁻¹) * blockTridiagonal E F D =
-      blockTridiagonal (fun i => (D i.succ)⁻¹ * E i) (fun i => (D i.castSucc)⁻¹ * F i)
-        (fun _ => 1) := by
+    comp _ _ _ _ ℝ (diagonal fun i => (D i)⁻¹) * blockTridiagonal E D F =
+        blockTridiagonal (fun i => (D i.succ)⁻¹ * E i) (fun _ => 1)
+          (fun i => (D i.castSucc)⁻¹ * F i) ∧
+      ∀ x b : Fin (N + 1) × Fin q → ℝ, blockTridiagonal E D F *ᵥ x = b ↔
+        blockTridiagonal (fun i => (D i.succ)⁻¹ * E i) (fun _ => 1)
+            (fun i => (D i.castSucc)⁻¹ * F i) *ᵥ x =
+          fun p => ((D p.1)⁻¹ *ᵥ fun k => b (p.1, k)) p.2 := by
+  have hmul : comp _ _ _ _ ℝ (diagonal fun i => (D i)⁻¹) * blockTridiagonal E D F =
+      blockTridiagonal (fun i => (D i.succ)⁻¹ * E i) (fun _ => 1)
+        (fun i => (D i.castSucc)⁻¹ * F i) := by
     simp only [blockTridiagonal, ← compRingEquiv_apply, ← map_mul]
     rw [diagonal_inv_mul_tridiagonalOf E F D hD]
   refine ⟨hmul, fun x b => ?_⟩

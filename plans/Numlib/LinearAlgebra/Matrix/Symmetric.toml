@@ -1,0 +1,7 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsSymm.transpose_mul_mul"
+
+[[node]]
+id = "IsSymm.mul_mul_transpose"

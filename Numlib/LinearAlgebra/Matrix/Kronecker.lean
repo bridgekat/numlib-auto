@@ -456,6 +456,16 @@ def piKronecker [CommMonoid R] (M : ∀ i, Matrix (μ i) (κ i) R) :
 theorem piKronecker_apply [CommMonoid R] (M : ∀ i, Matrix (μ i) (κ i) R) (a : ∀ i, μ i)
     (b : ∀ i, κ i) : piKronecker M a b = ∏ i, M i (a i) (b i) := rfl
 
+/-- The elementary tensor of a family of vectors, the family form of `Matrix.kroneckerVec`:
+`piKroneckerVec z b = ∏ i, z i (b i)`. -/
+def piKroneckerVec [CommMonoid R] (z : ∀ i, κ i → R) : (∀ i, κ i) → R :=
+  fun b => ∏ i, z i (b i)
+
+/-- The entries of a family elementary tensor. -/
+@[simp]
+theorem piKroneckerVec_apply [CommMonoid R] (z : ∀ i, κ i → R) (b : ∀ i, κ i) :
+    piKroneckerVec z b = ∏ i, z i (b i) := rfl
+
 /-- For two factors, `piKronecker` is the Kronecker product `M 0 ⊗ₖ M 1`. -/
 theorem piKronecker_fin_two [CommMonoid R] {μ κ : Fin 2 → Type*} (M : ∀ i, Matrix (μ i) (κ i) R) :
     piKronecker M = (M 0 ⊗ₖ M 1).submatrix (piFinTwoEquiv μ) (piFinTwoEquiv κ) := by
@@ -492,12 +502,17 @@ theorem piKronecker_mul_piKronecker [∀ i, Fintype (κ i)] (N : ∀ i, Matrix (
   ext a b
   simp only [mul_apply, piKronecker_apply, Fintype.prod_sum, Finset.prod_mul_distrib]
 
-/-- The family Kronecker product acts on an elementary tensor factor by factor. -/
-theorem piKronecker_mulVec_prod [∀ i, Fintype (κ i)] (M : ∀ i, Matrix (μ i) (κ i) R)
+/-- The family Kronecker product acts on an elementary tensor factor by factor:
+`(⊗ᵢ Mᵢ)(⊗ᵢ zᵢ) = ⊗ᵢ (Mᵢ zᵢ)`. -/
+theorem piKronecker_mulVec_piKroneckerVec [∀ i, Fintype (κ i)] (M : ∀ i, Matrix (μ i) (κ i) R)
     (z : ∀ i, κ i → R) :
-    piKronecker M *ᵥ (fun b => ∏ i, z i (b i)) = fun a => ∏ i, (M i *ᵥ z i) (a i) := by
+    piKronecker M *ᵥ piKroneckerVec z = piKroneckerVec fun i => M i *ᵥ z i := by
   funext a
-  simp only [mulVec, dotProduct, piKronecker_apply, Fintype.prod_sum, Finset.prod_mul_distrib]
+  simp only [mulVec, dotProduct, piKronecker_apply, piKroneckerVec, Fintype.prod_sum,
+    Finset.prod_mul_distrib]
+
+@[deprecated (since := "2026-09-30")]
+alias piKronecker_mulVec_prod := piKronecker_mulVec_piKroneckerVec
 
 /-- A Kronecker product of matrices with orthonormal columns has orthonormal columns. -/
 theorem conjTranspose_piKronecker_mul_piKronecker [StarRing R] [∀ i, Fintype (μ i)]
@@ -766,14 +781,14 @@ theorem kronecker_mem_rowStochastic {B : Matrix m m R} {C : Matrix n n R}
   simp only [Fintype.sum_prod_type, kroneckerMap_apply]
   rw [← Fintype.sum_mul_sum, hB.2, hC.2, one_mul]
 
-/-- The Kronecker product of two column-stochastic matrices is column-stochastic. -/
+/-- The Kronecker product of two column-stochastic matrices is column-stochastic, the transpose of
+`Matrix.kronecker_mem_rowStochastic`. -/
 theorem kronecker_mem_colStochastic {B : Matrix m m R} {C : Matrix n n R}
     (hB : B ∈ colStochastic R m) (hC : C ∈ colStochastic R n) :
     B ⊗ₖ C ∈ colStochastic R (m × n) := by
-  rw [mem_colStochastic_iff_sum] at hB hC ⊢
-  refine ⟨fun i j => mul_nonneg (hB.1 _ _) (hC.1 _ _), fun j => ?_⟩
-  simp only [Fintype.sum_prod_type, kroneckerMap_apply]
-  rw [← Fintype.sum_mul_sum, hB.2, hC.2, one_mul]
+  rw [← transpose_mem_rowStochastic_iff_mem_colStochastic] at hB hC ⊢
+  rw [← kroneckerMap_transpose]
+  exact kronecker_mem_rowStochastic hB hC
 
 end Permutation
 

@@ -49,11 +49,12 @@ without importing the theory of stationary iterations.
   diagonal, or its lower triangle, scaled by an eigenvalue) rather than to the matrix itself.
 * `Matrix.IsStrictDiagDominant.posDef`: a Hermitian strictly row dominant matrix with positive
   diagonal is positive definite ([quarteroni2000numerical] §1.12), by Gershgorin's theorem.
-* `Matrix.IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec` and
-  `Matrix.IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec`: dominance with a margin `δ`
-  bounds `A x` from below, `δ ‖x‖₁ ≤ ‖A x‖₁` for columns and `δ ‖x‖_∞ ≤ ‖A x‖_∞` for rows, which
-  is `‖A⁻¹‖ ≤ 1 / δ` in the corresponding induced norm ([golub2013matrix] Theorem 4.1.2 and its
-  row twin, Varah's bound).
+* `Matrix.mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin` and
+  `Matrix.mul_sup_norm_le_sup_norm_mulVec_of_diagDominantMargin`: dominance with a margin `δ`
+  (`δ ≤ |a_jj| - ∑_{i ≠ j} |a_ij|` for every column, resp. row, a hypothesis on `A` and `δ` rather
+  than a dominance predicate) bounds `A x` from below, `δ ‖x‖₁ ≤ ‖A x‖₁` for columns and
+  `δ ‖x‖_∞ ≤ ‖A x‖_∞` for rows, which is `‖A⁻¹‖ ≤ 1 / δ` in the corresponding induced norm
+  ([golub2013matrix] Theorem 4.1.2 and its row twin, Varah's bound).
 * `Matrix.IsColDiagDominant.schurComplementSingle`, `Matrix.IsDiagDominant.schurComplementSingle`:
   one step of Gaussian elimination (`Matrix.schurComplementSingle` of
   `Numlib/LinearAlgebra/Matrix/SchurComplement.lean`) preserves weak column and weak row dominance
@@ -363,7 +364,7 @@ Theorem 4.1.2, the heart of its proof): if `δ ≤ |a_jj| - ∑_{i ≠ j} |a_ij|
 then `δ ∑ⱼ |x_j| ≤ ∑ᵢ |(A x)_i|`. The diagonal terms `|a_ii x_i| ≤ |(A x)_i| + ∑_{j ≠ i} |a_ij x_j|`
 are summed over the rows, and the off-diagonal double sum is regrouped by columns. The bound
 `‖A⁻¹‖₁ ≤ 1 / δ` follows. -/
-theorem IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec {δ : ℝ}
+theorem mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin {δ : ℝ}
     (hδ : ∀ j, δ ≤ ‖A j j‖ - ∑ i ∈ Finset.univ.erase j, ‖A i j‖) (x : n → 𝕜) :
     δ * ∑ j, ‖x j‖ ≤ ∑ i, ‖(A *ᵥ x) i‖ := by
   have hoff : ∑ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ * ‖x j‖
@@ -384,7 +385,7 @@ P4.1.2; Varah 1975): if `δ ≤ |a_ii| - ∑_{j ≠ i} |a_ij|` for every row `i`
 `δ ‖x‖_∞ ≤ ‖A x‖_∞`, the sup norms of `n → 𝕜`. At an index `j` where `|x_j|` is largest,
 `|(A x)_j| ≥ |a_jj| |x_j| - ∑_{k ≠ j} |a_jk| |x_k| ≥ δ |x_j|`. The bound `‖A⁻¹‖_∞ ≤ 1 / δ`
 follows. -/
-theorem IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec {δ : ℝ}
+theorem mul_sup_norm_le_sup_norm_mulVec_of_diagDominantMargin {δ : ℝ}
     (hδ : ∀ i, δ ≤ ‖A i i‖ - ∑ j ∈ Finset.univ.erase i, ‖A i j‖) (x : n → 𝕜) :
     δ * ‖x‖ ≤ ‖A *ᵥ x‖ := by
   rcases isEmpty_or_nonempty n with hn | hn
@@ -403,6 +404,14 @@ theorem IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec {δ : ℝ}
         mul_le_mul_of_nonneg_right (hδ j) (norm_nonneg _)
     _ ≤ ‖(A *ᵥ x) j‖ := by linarith [norm_diag_mul_le A x j]
     _ ≤ ‖A *ᵥ x‖ := norm_le_pi_norm _ j
+
+@[deprecated (since := "2026-09-30")]
+alias IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec :=
+  mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin
+
+@[deprecated (since := "2026-09-30")]
+alias IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec :=
+  mul_sup_norm_le_sup_norm_mulVec_of_diagDominantMargin
 
 end Margin
 

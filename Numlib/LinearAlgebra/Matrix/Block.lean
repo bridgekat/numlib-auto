@@ -42,8 +42,9 @@ Two vocabularies for a block split of `Fin`-indexed matrices:
 * the head `Fin.castLE h : Fin r → Fin N` and the tail `Matrix.tailIdx h : Fin (N - r) → Fin N`
   of `Fin N`, the vector `[y; z]` built from them (`Matrix.blockVec`), and the matching split of
   a sum (`Matrix.sum_eq_sum_castLE_add_sum_tailIdx`); together the head and the tail form
-  `Matrix.blockEquiv h : Fin r ⊕ Fin (N - r) ≃ Fin N`, along which a matrix reindexes to a
-  `fromBlocks` matrix of its four blocks;
+  `Matrix.blockEquiv h : Fin r ⊕ Fin (N - r) ≃ Fin N` (with its inverse on the two halves,
+  `Matrix.blockEquiv_symm_apply_of_lt`, `Matrix.blockEquiv_symm_apply_of_le`), along which a matrix
+  reindexes to a `fromBlocks` matrix of its four blocks;
 * the block diagonal matrix `diag(a, Q)` with a `1 × 1` corner (`Matrix.consDiag`), built by
   `Fin.cons`, with its product, identity, conjugate transpose and unitarity rules.
 
@@ -160,6 +161,17 @@ theorem blockEquiv_inl (h : r ≤ N) (i : Fin r) :
 @[simp]
 theorem blockEquiv_inr (h : r ≤ N) (j : Fin (N - r)) :
     blockEquiv h (Sum.inr j) = tailIdx h j := Fin.ext rfl
+
+/-- The inverse of `Matrix.blockEquiv` on a head index `i < r`. -/
+theorem blockEquiv_symm_apply_of_lt (h : r ≤ N) {i : Fin N} (hi : (i : ℕ) < r) :
+    (blockEquiv h).symm i = Sum.inl ⟨i, hi⟩ :=
+  (Equiv.symm_apply_eq _).2 (Fin.ext rfl)
+
+/-- The inverse of `Matrix.blockEquiv` on a tail index `r ≤ i`. -/
+theorem blockEquiv_symm_apply_of_le (h : r ≤ N) {i : Fin N} (hi : r ≤ (i : ℕ)) :
+    (blockEquiv h).symm i = Sum.inr ⟨i - r, by omega⟩ :=
+  (Equiv.symm_apply_eq _).2 <| Fin.ext <| by
+    rw [blockEquiv_inr, val_tailIdx]; exact (Nat.add_sub_cancel' hi).symm
 
 /-- The vector `[y; z]` on `Fin N`, with `y` on the first `r` indices and `z` on the rest. -/
 def blockVec (h : r ≤ N) (y : Fin r → α) (z : Fin (N - r) → α) : Fin N → α :=

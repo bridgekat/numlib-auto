@@ -19,4 +19,11 @@ id = "l2_opNorm_toBlocks₂₁_eq_toBlocks₁₂"
 id = "csdUpperRight"
 
 [[node]]
-id = "IsCSD.isThinCSD"
+id = "IsCSD.toIsThinCSD"
+desc = 'The first block column of a CS decomposition is a thin CS decomposition (the parent projection of `Matrix.IsCSD`).'
+
+[[node]]
+id = "IsThinCSD.isUnitaryEquiv₁"
+
+[[node]]
+id = "IsThinCSD.isUnitaryEquiv₂"

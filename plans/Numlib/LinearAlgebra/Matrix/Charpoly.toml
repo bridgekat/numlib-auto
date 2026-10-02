@@ -13,10 +13,10 @@ id = "IsHermitian.trace_pow_eq_sum"
 id = "IsHermitian.charpoly_neg_of_trace_pow_odd"
 
 [[node]]  # added by lo2: vanishing odd power sums give a symmetric family
-id = "_root_.map_neg_eq_of_sum_pow_odd"
+id = "_root_.Fintype.map_neg_eq_of_sum_pow_odd"
 
 [[node]]  # added by lo2
-id = "_root_.sum_eval_neg_eq_of_sum_pow_odd"
+id = "_root_.Fintype.sum_eval_neg_eq_of_sum_pow_odd"
 
 [[node]]  # added by lo2
 id = "card_eq_of_charpoly_eq_prod"

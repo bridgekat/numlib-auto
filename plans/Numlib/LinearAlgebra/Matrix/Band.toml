@@ -44,3 +44,9 @@ id = "hasLowerBandwidthRect_transpose_iff"
 
 [[node]]
 id = "hasUpperBandwidthRect_iff"
+
+[[node]]
+id = "hasLowerBandwidth_transpose_iff"
+
+[[node]]
+id = "hasUpperBandwidth_transpose_iff"

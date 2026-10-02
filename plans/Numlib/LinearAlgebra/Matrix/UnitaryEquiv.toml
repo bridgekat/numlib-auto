@@ -1,0 +1,49 @@
+namespace = "Matrix"
+
+[[node]]
+id = "conjTranspose_mul_self_of_mem_unitaryGroup"
+
+[[node]]
+id = "mul_conjTranspose_self_of_mem_unitaryGroup"
+
+[[node]]
+id = "conjTranspose_mem_unitaryGroup"
+
+[[node]]
+id = "isUnit_det_of_mem_unitaryGroup"
+
+[[node]]
+id = "IsUnitaryEquiv"
+
+[[node]]
+id = "isUnitaryEquiv_star_mul_mul"
+
+[[node]]
+id = "IsUnitaryEquiv.conjTranspose_mul_mul"
+
+[[node]]
+id = "IsUnitaryEquiv.mul_eq"
+
+[[node]]
+id = "IsUnitaryEquiv.conjTranspose_mul_eq"
+
+[[node]]
+id = "IsUnitaryEquiv.eq_mul_mul"
+
+[[node]]
+id = "IsUnitaryEquiv.mulVec_col"
+
+[[node]]
+id = "IsUnitaryEquiv.conjTranspose_mul_self"
+
+[[node]]
+id = "IsUnitaryEquiv.mul_conjTranspose_self"
+
+[[node]]
+id = "IsUnitaryEquiv.rank_eq"
+
+[[node]]
+id = "IsUnitaryEquiv.conjTranspose"
+
+[[node]]
+id = "IsUnitaryEquiv.trans"

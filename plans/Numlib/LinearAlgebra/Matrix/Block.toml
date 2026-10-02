@@ -14,3 +14,9 @@ id = "blockVec"
 
 [[node]]
 id = "consDiag"
+
+[[node]]
+id = "blockEquiv_symm_apply_of_lt"
+
+[[node]]
+id = "blockEquiv_symm_apply_of_le"

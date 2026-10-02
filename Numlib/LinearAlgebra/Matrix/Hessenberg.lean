@@ -20,9 +20,8 @@ The named shapes of band width one, on a matrix indexed by a linearly ordered ty
   difference of the indices (`Matrix.isUpperHessenberg_iff_fin`,
   `Matrix.isTridiagonal_iff_fin`).
 * `Matrix.IsUpperHessenbergRect`: the rectangular `(m + 1) × m` form of the same condition, as in
-  the matrix `H̄ₘ` of the Arnoldi process; it is lower bandwidth `1` in the rectangular vocabulary
-  of `Numlib/LinearAlgebra/Matrix/Band`
-  (`Matrix.isUpperHessenbergRect_iff_hasLowerBandwidthRect_one`).
+  the matrix `H̄ₘ` of the Arnoldi process; it is an abbreviation for lower bandwidth `1` in the
+  rectangular vocabulary of `Numlib/LinearAlgebra/Matrix/Band`.
 * `Matrix.IsUpperBidiagonal`, `Matrix.IsLowerBidiagonal`: the two bidiagonal shapes, the shape of
   the Golub–Kahan bidiagonalization and of the factors of a tridiagonal matrix.
 * `Matrix.tridiagonalOf b d c`: the tridiagonal matrix `tridiag(b, d, c)` with the given
@@ -79,12 +78,15 @@ theorem IsUpperHessenberg.submatrix_of_strictMono {m : Type*} [LinearOrder m] [Z
     (H.submatrix f f).IsUpperHessenberg :=
   fun _ _ ⟨c, hjc, hci⟩ => hH _ _ ⟨f c, hf hjc, hf hci⟩
 
-/-- Rectangular upper Hessenberg (`(m+1) × m`, as in Arnoldi's `H̄_m`). -/
-def IsUpperHessenbergRect [Zero R] {m : ℕ} (H : Matrix (Fin (m + 1)) (Fin m) R) : Prop :=
-  ∀ (i : Fin (m + 1)) (j : Fin m), (j : ℕ) + 1 < (i : ℕ) → H i j = 0
+/-- Rectangular upper Hessenberg (`(m+1) × m`, as in Arnoldi's `H̄_m`): `H i j = 0` whenever
+`i > j + 1`, that is lower bandwidth `1` in the rectangular vocabulary of [golub2013matrix]
+§1.2.1, of which this is an abbreviation. -/
+abbrev IsUpperHessenbergRect [Zero R] {m : ℕ} (H : Matrix (Fin (m + 1)) (Fin m) R) : Prop :=
+  H.HasLowerBandwidthRect 1
 
-/-- The two spellings of "rectangular upper Hessenberg" agree: the Arnoldi shape `H̄ₘ` is lower
-bandwidth `1` in the rectangular vocabulary of [golub2013matrix] §1.2.1. -/
+/-- The two spellings of "rectangular upper Hessenberg" agree, by definition. -/
+@[deprecated "`Matrix.IsUpperHessenbergRect` is an abbreviation of `HasLowerBandwidthRect · 1`"
+  (since := "2026-09-30")]
 theorem isUpperHessenbergRect_iff_hasLowerBandwidthRect_one [Zero R] {m : ℕ}
     {H : Matrix (Fin (m + 1)) (Fin m) R} :
     H.IsUpperHessenbergRect ↔ H.HasLowerBandwidthRect 1 :=

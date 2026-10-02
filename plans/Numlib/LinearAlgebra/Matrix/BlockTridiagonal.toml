@@ -41,3 +41,12 @@ id = "tridiagonalLUPivot_succ"
 
 [[node]]
 id = "tridiagonalLUMultiplier_mul_tridiagonalLUPivot"
+
+[[node]]
+id = "blockColOffNorm"
+
+[[node]]
+id = "IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one"
+
+[[node]]
+id = "tridiagonalLUMultiplier_eq_thomasBeta"

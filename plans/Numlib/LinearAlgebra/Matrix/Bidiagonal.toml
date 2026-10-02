@@ -33,7 +33,7 @@ id = "exists_unitary_mul_mul_unitary_apply_eq_zero"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
 
 [[node]]
-id = "exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal"
+id = "exists_unitary_mul_mul_unitary_isUpperBidiagonal"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
 
 [[node]]

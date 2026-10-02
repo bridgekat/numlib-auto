@@ -409,7 +409,7 @@ theorem theorem_2_5_3 {m₁ m₂ n₁ n₂ : ℕ} (Q₁₁ : Matrix (Fin m₁) (
     (Q₁₂ : Matrix (Fin m₁) (Fin n₂) ℝ) (Q₂₁ : Matrix (Fin m₂) (Fin n₁) ℝ)
     (Q₂₂ : Matrix (Fin m₂) (Fin n₂) ℝ) (hsq : m₁ + m₂ = n₁ + n₂)
     (hQ : (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᵀ * fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ = 1)
-    (hQ' : fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ * (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᵀ = 1) (h₁ : n₁ ≤ m₁) :
+    (_hQ' : fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ * (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᵀ = 1) (h₁ : n₁ ≤ m₁) :
     ∃ U₁ ∈ orthogonalGroup (Fin m₁) ℝ, ∃ U₂ ∈ orthogonalGroup (Fin m₂) ℝ,
       ∃ V₁ ∈ orthogonalGroup (Fin n₁) ℝ, ∃ V₂ ∈ orthogonalGroup (Fin n₂) ℝ, ∃ θ : ℕ → ℝ,
         (fromBlocks U₁ 0 0 U₂)ᵀ * fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ * fromBlocks V₁ 0 0 V₂ =
@@ -420,8 +420,8 @@ theorem theorem_2_5_3 {m₁ m₂ n₁ n₂ : ℕ} (Q₁₁ : Matrix (Fin m₁) (
                 if i < n₁ - (n₁ - min n₁ m₂) then -Real.cos (θ (i + (n₁ - min n₁ m₂))) else 1) ∧
           Monotone θ ∧ (∀ i, θ i ∈ Set.Icc 0 (Real.pi / 2)) ∧
           ∀ i < n₁ - min n₁ m₂, θ i = 0 := by
-  rw [← conjTranspose_eq_transpose_of_trivial] at hQ hQ'
-  obtain ⟨U₁, U₂, V₁, V₂, θ, hc⟩ := exists_isCSD hsq hQ hQ' h₁
+  rw [← conjTranspose_eq_transpose_of_trivial] at hQ
+  obtain ⟨U₁, U₂, V₁, V₂, θ, hc⟩ := exists_isCSD hsq hQ h₁
   have h11 := hc.star_mul_mul₁₁
   have h12 := hc.star_mul_mul₁₂
   have h21 := hc.star_mul_mul₂₁

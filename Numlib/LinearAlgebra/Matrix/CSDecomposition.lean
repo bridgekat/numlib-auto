@@ -4,6 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix`, beside a future SVD.
 -/
 import Numlib.Analysis.Matrix.SingularValues
+import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 
 /-!
 # The CS decomposition
@@ -20,7 +21,14 @@ SIAM J. Numer. Anal. 18 (1981)).
   `U₂ᴴ Q₂ V = diag(sin θ)`, the latter shifted by `p = n₁ − min n₁ m₂` columns when `Q₂` has fewer
   rows than columns.
 * `Matrix.IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ`: a CS decomposition of the unitary matrix
-  `fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂`, in the 5-by-5 block form of [golub2013matrix] Theorem 2.5.3.
+  `fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂`, in the 5-by-5 block form of [golub2013matrix] Theorem 2.5.3; it
+  extends the thin CS decomposition `Matrix.IsThinCSD Q₁₁ Q₂₁ U₁ U₂ V₁ θ` of the first block column.
+
+The field names follow the two-sided factorizations (`Matrix.IsUnitaryEquiv`): *left* and *right*
+name the side of the factored block, the subscripts the block row or column (`U₁`, `U₂` on the
+left, `V₁`, `V₂` on the right), and `star_mul_mul₁` … `star_mul_mul₂₂` the blocks
+(`Matrix.IsThinCSD.isUnitaryEquiv₁`, `Matrix.IsThinCSD.isUnitaryEquiv₂` package the two blocks of
+a thin CS decomposition as unitary equivalences).
 
 ## Main results
 
@@ -71,13 +79,43 @@ structure IsThinCSD (Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₂ : Matrix (F
   mem_Icc : ∀ i, θ i ∈ Set.Icc 0 (Real.pi / 2)
   /-- The first `p = n₁ − min n₁ m₂` angles vanish. -/
   eq_zero_of_lt : ∀ i < n₁ - min n₁ m₂, θ i = 0
-  /-- The cosine block. -/
-  star_mul_mul_left : star U₁ * Q₁ * V = rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜)
-  /-- The sine block. -/
-  star_mul_mul_right :
+  /-- The cosine block `U₁ᴴ Q₁ V`. -/
+  star_mul_mul₁ : star U₁ * Q₁ * V = rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜)
+  /-- The sine block `U₂ᴴ Q₂ V`. -/
+  star_mul_mul₂ :
     star U₂ * Q₂ * V = shiftedRectDiagonal (n₁ - min n₁ m₂) fun i => ((Real.sin (θ i) : ℝ) : 𝕜)
 
 variable {Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜} {Q₂ : Matrix (Fin m₂) (Fin n₁) 𝕜}
+
+section Deprecated
+
+variable {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
+  {V : Matrix (Fin n₁) (Fin n₁) 𝕜} {θ : ℕ → ℝ}
+
+/-- The cosine block (the former field name). -/
+@[deprecated IsThinCSD.star_mul_mul₁ (since := "2026-09-30")]
+theorem IsThinCSD.star_mul_mul_left (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) :
+    star U₁ * Q₁ * V = rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜) :=
+  h.star_mul_mul₁
+
+/-- The sine block (the former field name). -/
+@[deprecated IsThinCSD.star_mul_mul₂ (since := "2026-09-30")]
+theorem IsThinCSD.star_mul_mul_right (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) :
+    star U₂ * Q₂ * V = shiftedRectDiagonal (n₁ - min n₁ m₂) fun i => ((Real.sin (θ i) : ℝ) : 𝕜) :=
+  h.star_mul_mul₂
+
+end Deprecated
+
+/-- The cosine block of a thin CS decomposition as a two-sided unitary equivalence. -/
+theorem IsThinCSD.isUnitaryEquiv₁ {U₁ U₂ V θ} (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) :
+    IsUnitaryEquiv Q₁ U₁ (rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜)) V :=
+  ⟨h.mem_unitaryGroup_left₁, h.mem_unitaryGroup_right, h.star_mul_mul₁⟩
+
+/-- The sine block of a thin CS decomposition as a two-sided unitary equivalence. -/
+theorem IsThinCSD.isUnitaryEquiv₂ {U₁ U₂ V θ} (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) :
+    IsUnitaryEquiv Q₂ U₂
+      (shiftedRectDiagonal (n₁ - min n₁ m₂) fun i => ((Real.sin (θ i) : ℝ) : 𝕜)) V :=
+  ⟨h.mem_unitaryGroup_left₂, h.mem_unitaryGroup_right, h.star_mul_mul₂⟩
 
 /-- The angles of a thin CS decomposition have nonnegative cosines. -/
 theorem IsThinCSD.cos_nonneg {U₁ U₂ V θ} (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) (i : ℕ) :
@@ -99,8 +137,8 @@ private theorem gram_mul_eq_diagonal (hQ : Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂ = 1) 
   have hQ₁ : Q₁ * V = U₁ * rectDiagonal fun i => ((c i : ℝ) : 𝕜) := by
     rw [← hc, ← Matrix.mul_assoc, ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hU₁,
       Matrix.one_mul]
-  have hVV : Vᴴ * V = 1 := by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.1 hV
-  have hUU : U₁ᴴ * U₁ = 1 := by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.1 hU₁
+  have hVV := conjTranspose_mul_self_of_mem_unitaryGroup hV
+  have hUU := conjTranspose_mul_self_of_mem_unitaryGroup hU₁
   have h1 : (Q₂ * V)ᴴ * (Q₂ * V) = 1 - (Q₁ * V)ᴴ * (Q₁ * V) := by
     rw [eq_sub_iff_add_eq, conjTranspose_mul, conjTranspose_mul]
     calc Vᴴ * Q₂ᴴ * (Q₂ * V) + Vᴴ * Q₁ᴴ * (Q₁ * V) = Vᴴ * (Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂) * V := by
@@ -289,7 +327,7 @@ Theorem 2.5.3). For `Q = fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂` (given by i
 `U₁, U₂, V₁, V₂` and monotone angles `θ i ∈ [0, π/2]`, the first `p = n₁ − min n₁ m₂` of them `0`,
 with `q = m₂ − min n₁ m₂`, `c_i = cos θ_i`, `s_i = sin θ_i`:
 * `U₁ᴴ Q₁₁ V₁ = diag(c)` and `U₂ᴴ Q₂₁ V₁ = S` shifted by `p` (a thin CS decomposition of the first
-  block column, `Matrix.IsCSD.isThinCSD`),
+  block column, `Matrix.IsCSD.toIsThinCSD`),
 * `U₁ᴴ Q₁₂ V₂ = Matrix.csdUpperRight n₁ p q s` and
   `U₂ᴴ Q₂₂ V₂ = diag(−c_p, …, −c_{n₁−1}, 1, …, 1)`.
 This is the book's 5-by-5 block form with row blocks `p, n₁ − p, m₁ − n₁ | n₁ − p, q` and column
@@ -298,26 +336,10 @@ reading is the one whose block sizes add up. -/
 structure IsCSD (Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₁₂ : Matrix (Fin m₁) (Fin n₂) 𝕜)
     (Q₂₁ : Matrix (Fin m₂) (Fin n₁) 𝕜) (Q₂₂ : Matrix (Fin m₂) (Fin n₂) 𝕜)
     (U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜) (U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜)
-    (V₁ : Matrix (Fin n₁) (Fin n₁) 𝕜) (V₂ : Matrix (Fin n₂) (Fin n₂) 𝕜) (θ : ℕ → ℝ) : Prop where
-  /-- The first left factor is unitary. -/
-  mem_unitaryGroup_left₁ : U₁ ∈ unitaryGroup (Fin m₁) 𝕜
-  /-- The second left factor is unitary. -/
-  mem_unitaryGroup_left₂ : U₂ ∈ unitaryGroup (Fin m₂) 𝕜
-  /-- The first right factor is unitary. -/
-  mem_unitaryGroup_right₁ : V₁ ∈ unitaryGroup (Fin n₁) 𝕜
+    (V₁ : Matrix (Fin n₁) (Fin n₁) 𝕜) (V₂ : Matrix (Fin n₂) (Fin n₂) 𝕜) (θ : ℕ → ℝ) : Prop
+    extends IsThinCSD Q₁₁ Q₂₁ U₁ U₂ V₁ θ where
   /-- The second right factor is unitary. -/
   mem_unitaryGroup_right₂ : V₂ ∈ unitaryGroup (Fin n₂) 𝕜
-  /-- The angles are sorted. -/
-  monotone : Monotone θ
-  /-- The angles lie in `[0, π/2]`. -/
-  mem_Icc : ∀ i, θ i ∈ Set.Icc 0 (Real.pi / 2)
-  /-- The first `p` angles vanish. -/
-  eq_zero_of_lt : ∀ i < n₁ - min n₁ m₂, θ i = 0
-  /-- The `(1, 1)` block. -/
-  star_mul_mul₁₁ : star U₁ * Q₁₁ * V₁ = rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜)
-  /-- The `(2, 1)` block. -/
-  star_mul_mul₂₁ :
-    star U₂ * Q₂₁ * V₁ = shiftedRectDiagonal (n₁ - min n₁ m₂) fun i => ((Real.sin (θ i) : ℝ) : 𝕜)
   /-- The `(1, 2)` block. -/
   star_mul_mul₁₂ : star U₁ * Q₁₂ * V₂ = csdUpperRight n₁ (n₁ - min n₁ m₂) (m₂ - min n₁ m₂)
     fun i => ((Real.sin (θ i) : ℝ) : 𝕜)
@@ -325,12 +347,35 @@ structure IsCSD (Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₁₂ : Matrix 
   star_mul_mul₂₂ : star U₂ * Q₂₂ * V₂ = rectDiagonal fun i =>
     if i < n₁ - (n₁ - min n₁ m₂) then -((Real.cos (θ (i + (n₁ - min n₁ m₂))) : ℝ) : 𝕜) else 1
 
-/-- The first block column of a CS decomposition is a thin CS decomposition. -/
-theorem IsCSD.isThinCSD {Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜} {Q₁₂ : Matrix (Fin m₁) (Fin n₂) 𝕜}
-    {Q₂₁ : Matrix (Fin m₂) (Fin n₁) 𝕜} {Q₂₂ : Matrix (Fin m₂) (Fin n₂) 𝕜} {U₁ U₂ V₁ V₂ θ}
-    (h : IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ) : IsThinCSD Q₁₁ Q₂₁ U₁ U₂ V₁ θ :=
-  ⟨h.mem_unitaryGroup_left₁, h.mem_unitaryGroup_left₂, h.mem_unitaryGroup_right₁, h.monotone,
-    h.mem_Icc, h.eq_zero_of_lt, h.star_mul_mul₁₁, h.star_mul_mul₂₁⟩
+section Deprecated
+
+variable {Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜} {Q₁₂ : Matrix (Fin m₁) (Fin n₂) 𝕜}
+  {Q₂₁ : Matrix (Fin m₂) (Fin n₁) 𝕜} {Q₂₂ : Matrix (Fin m₂) (Fin n₂) 𝕜}
+  {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
+  {V₁ : Matrix (Fin n₁) (Fin n₁) 𝕜} {V₂ : Matrix (Fin n₂) (Fin n₂) 𝕜} {θ : ℕ → ℝ}
+
+@[deprecated (since := "2026-09-30")] alias IsCSD.isThinCSD := IsCSD.toIsThinCSD
+
+/-- The first right factor is unitary (the former field name). -/
+@[deprecated IsThinCSD.mem_unitaryGroup_right +typeChanged (since := "2026-09-30")]
+theorem IsCSD.mem_unitaryGroup_right₁ (h : IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ) :
+    V₁ ∈ unitaryGroup (Fin n₁) 𝕜 :=
+  h.mem_unitaryGroup_right
+
+/-- The `(1, 1)` block (the former field name). -/
+@[deprecated IsThinCSD.star_mul_mul₁ +typeChanged (since := "2026-09-30")]
+theorem IsCSD.star_mul_mul₁₁ (h : IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ) :
+    star U₁ * Q₁₁ * V₁ = rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜) :=
+  h.star_mul_mul₁
+
+/-- The `(2, 1)` block (the former field name). -/
+@[deprecated IsThinCSD.star_mul_mul₂ +typeChanged (since := "2026-09-30")]
+theorem IsCSD.star_mul_mul₂₁ (h : IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ) :
+    star U₂ * Q₂₁ * V₁ =
+      shiftedRectDiagonal (n₁ - min n₁ m₂) fun i => ((Real.sin (θ i) : ℝ) : 𝕜) :=
+  h.star_mul_mul₂
+
+end Deprecated
 
 /-- `(Uᴴ X V)(U'ᴴ Y V)ᴴ = Uᴴ (X Yᴴ) U'` for unitary `V`. -/
 private theorem star_mul_mul_mul_conjTranspose {a b c : ℕ} (U : Matrix (Fin a) (Fin a) 𝕜)
@@ -338,7 +383,7 @@ private theorem star_mul_mul_mul_conjTranspose {a b c : ℕ} (U : Matrix (Fin a)
     (hV : V ∈ unitaryGroup (Fin c) 𝕜) (X : Matrix (Fin a) (Fin c) 𝕜)
     (Y : Matrix (Fin b) (Fin c) 𝕜) :
     (star U * X * V) * (star U' * Y * V)ᴴ = star U * (X * Yᴴ) * U' := by
-  have hVV : V * Vᴴ = 1 := by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff.1 hV
+  have hVV := mul_conjTranspose_self_of_mem_unitaryGroup hV
   rw [conjTranspose_mul, conjTranspose_mul, star_eq_conjTranspose U', conjTranspose_conjTranspose]
   simp only [Matrix.mul_assoc]
   rw [← Matrix.mul_assoc V, hVV, Matrix.one_mul]
@@ -348,7 +393,8 @@ variable {Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜} {Q₁₂ : Matrix (Fin m�
 
 /-- **The CS decomposition** ([golub2013matrix] Theorem 2.5.3, which defers the proof to Paige
 and Saunders (1981)): a unitary `Q = fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂` with `n₁ ≤ m₁` has a
-CS decomposition (the book's second hypothesis `m₂ ≤ m₁` is not needed). Take a thin CS
+CS decomposition (the book's second hypothesis `m₂ ≤ m₁` is not needed). Unitarity is given as
+`Qᴴ Q = 1` for the square shape `m₁ + m₂ = n₁ + n₂`, which gives `Q Qᴴ = 1`. Take a thin CS
 decomposition `(U₁, U₂, V₁, θ)` of the first block column
 (`Matrix.exists_isThinCSD`). With `Yᵢ = Uᵢᴴ Qᵢ₂`, `[C; S]` the transformed first block column
 and `[T₁; T₂]` the target second block column, set `V₂ = Y₁ᴴ T₁ + Y₂ᴴ T₂`. The rows of the unitary
@@ -356,10 +402,12 @@ and `[T₁; T₂]` the target second block column, set `V₂ = Y₁ᴴ T₁ + Y�
 orthonormal columns orthogonal to those of `[C; S]` (an entrywise computation with
 `c_i² + s_i² = 1`). Hence `Y V₂ = T` and `V₂ᴴ V₂ = Tᴴ T = I`. -/
 theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
-    (hQ : (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᴴ * fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ = 1)
-    (hQ' : fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ * (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᴴ = 1) (hn₁ : n₁ ≤ m₁) :
+    (hQ : (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᴴ * fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ = 1) (hn₁ : n₁ ≤ m₁) :
     ∃ U₁ U₂ V₁ V₂ θ, IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ := by
   classical
+  have hQ' : fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ * (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᴴ = 1 :=
+    (mul_eq_one_comm_of_card_eq _ _ _
+      (by simp only [Fintype.card_sum, Fintype.card_fin]; omega)).1 hQ
   rw [fromBlocks_conjTranspose, fromBlocks_multiply, ← fromBlocks_one] at hQ hQ'
   obtain ⟨h11, -, -, -⟩ := fromBlocks_inj.1 hQ
   obtain ⟨k11, k12, k21, k22⟩ := fromBlocks_inj.1 hQ'
@@ -373,8 +421,8 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
   set T₂ : Matrix (Fin m₂) (Fin n₂) 𝕜 := rectDiagonal σ with hT₂
   obtain ⟨Y₁, hY₁⟩ : ∃ Y, Y = star U₁ * Q₁₂ * (1 : Matrix (Fin n₂) (Fin n₂) 𝕜) := ⟨_, rfl⟩
   obtain ⟨Y₂, hY₂⟩ : ∃ Y, Y = star U₂ * Q₂₂ * (1 : Matrix (Fin n₂) (Fin n₂) 𝕜) := ⟨_, rfl⟩
-  have hC := hc.star_mul_mul_left
-  have hS := hc.star_mul_mul_right
+  have hC := hc.star_mul_mul₁
+  have hS := hc.star_mul_mul₂
   have hV₁ := hc.mem_unitaryGroup_right
   have hU₁ : star U₁ * U₁ = 1 := mem_unitaryGroup_iff'.1 hc.mem_unitaryGroup_left₁
   have hU₂ : star U₂ * U₂ = 1 := mem_unitaryGroup_iff'.1 hc.mem_unitaryGroup_left₂
@@ -522,8 +570,7 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
         conjTranspose_conjTranspose, conjTranspose_conjTranspose]
     rw [star_eq_conjTranspose, hVh, Matrix.add_mul, Matrix.mul_assoc, Matrix.mul_assoc, hYV₁,
       hYV₂, t2]
-  refine ⟨U₁, U₂, V₁, V₂, θ, hc.mem_unitaryGroup_left₁, hc.mem_unitaryGroup_left₂, hV₁,
-    mem_unitaryGroup_iff'.2 hVV, hc.monotone, hc.mem_Icc, hc.eq_zero_of_lt, hC, hS, ?_, ?_⟩
+  refine ⟨U₁, U₂, V₁, V₂, θ, hc, mem_unitaryGroup_iff'.2 hVV, ?_, ?_⟩
   · have := hYV₁
     rw [hY₁, Matrix.mul_one] at this
     exact this

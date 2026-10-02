@@ -123,9 +123,9 @@ private theorem sum_ite_eq_succ (v : Fin (N + 1) → Fin q → K) (i : Fin (N + 
 diagonal blocks `D` and off-diagonal blocks `F`, applied to the flattened `x`. -/
 theorem constBlockTridiagonal_eq_blockTridiagonal_mulVec (D F : Matrix (Fin q) (Fin q) K)
     (x : Fin (N + 1) → Fin q → K) (i : Fin (N + 1)) (k : Fin q) :
-    (blockTridiagonal (fun _ => F) (fun _ => F) (fun _ => D) *ᵥ fun p => x p.1 p.2) (i, k) =
+    (blockTridiagonal (fun _ => F) (fun _ => D) (fun _ => F) *ᵥ fun p => x p.1 p.2) (i, k) =
       constBlockTridiagonal D F x i k := by
-  have hsum : (blockTridiagonal (fun _ => F) (fun _ => F) (fun _ => D) *ᵥ
+  have hsum : (blockTridiagonal (fun _ => F) (fun _ => D) (fun _ => F) *ᵥ
       fun p => x p.1 p.2) (i, k) =
       (∑ j : Fin (N + 1), tridiagonalOf (fun _ : Fin N => F) (fun _ => D) (fun _ => F) i j *ᵥ
         x j) k := by

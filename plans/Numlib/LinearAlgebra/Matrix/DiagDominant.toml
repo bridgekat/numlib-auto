@@ -100,7 +100,7 @@ id = "IsDiagDominant.schurComplementSingle"
 id = "IsDiagDominant.posSemidef"
 
 [[node]]
-id = "IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec"
+id = "mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin"
 
 [[node]]
-id = "IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec"
+id = "mul_sup_norm_le_sup_norm_mulVec_of_diagDominantMargin"

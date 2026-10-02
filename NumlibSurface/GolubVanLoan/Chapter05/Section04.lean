@@ -1899,8 +1899,8 @@ theorem algorithm_5_4_2_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     · rcases lt_or_gt_of_ne (show (q : ℕ) ≠ i from fun h => hiq (Or.inl h)) with h | h
       · exact hb i q q.isLt h
       · exact hc i q (by omega) (by omega)
-  refine ⟨⟨hU, hV, ?_, fun i q h1 h2 => ?_⟩, hdβ', hdγ'⟩
-  · rw [conjTranspose_eq_transpose_of_trivial]
+  refine ⟨⟨⟨hU, hV, ?_⟩, fun i q h1 h2 => ?_⟩, hdβ', hdγ'⟩
+  · rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
     exact hconj
   · rw [bidiagonalPart, of_apply, ite_eq_right (show ¬ ((q : ℕ) = i ∨ (q : ℕ) = i + 1) by omega)]
 

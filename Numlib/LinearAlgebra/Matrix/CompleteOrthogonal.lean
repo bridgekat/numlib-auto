@@ -5,6 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.CompleteOrthogonal`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Numlib.LinearAlgebra.Matrix.RankRevealing
+import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 
 /-!
 # Complete orthogonal decompositions
@@ -17,7 +18,10 @@ is the minimal-norm least-squares solution, with residual `‖d‖`.
 
 ## Main definitions
 
-* `Matrix.IsCompleteOrthogonal A U V r`: the specification (5.4.12).
+* `Matrix.IsCompleteOrthogonal A U V r`: the specification (5.4.12), a two-sided unitary
+  equivalence `Uᴴ A V = T` (`Matrix.IsCompleteOrthogonal.isUnitaryEquiv`, with
+  `Matrix.IsUnitaryEquiv` of `Numlib/LinearAlgebra/Matrix/UnitaryEquiv`) whose middle factor
+  `T = Uᴴ A V` is zero outside an invertible leading `r × r` block.
 
 ## Main results
 
@@ -28,6 +32,9 @@ is the minimal-norm least-squares solution, with residual `‖d‖`.
 
 ## Implementation notes
 
+The middle factor `T = Uᴴ A V` is determined by `U` and `V`, so it is not a parameter and the
+structure does not extend `Matrix.IsUnitaryEquiv`; `Matrix.IsCompleteOrthogonal.isUnitaryEquiv`
+is the projection to it, and the unitary algebra (`A = U T Vᴴ`, rank invariance) comes from there.
 The block structure is expressed entrywise, `(Uᴴ A V) i j = 0` whenever `r ≤ i` or `r ≤ j`, and
 the leading block is `(Uᴴ A V).submatrix (Fin.castLE _) (Fin.castLE _)`, as for
 `Matrix.IsPivotedQR.IsRankRevealing`; rank, range and least squares go through the shared
@@ -64,26 +71,24 @@ namespace IsCompleteOrthogonal
 variable {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
   {V : Matrix (Fin N) (Fin N) 𝕜} {r : ℕ}
 
+/-- A complete orthogonal decomposition is a two-sided unitary equivalence `Uᴴ A V = T`, with
+middle factor `T = Uᴴ A V`. -/
+theorem isUnitaryEquiv (h : IsCompleteOrthogonal A U V r) :
+    IsUnitaryEquiv A U (Uᴴ * A * V) V :=
+  isUnitaryEquiv_star_mul_mul h.mem_unitaryGroup_left h.mem_unitaryGroup_right
+
 /-- `A = U T Vᴴ` with `T = Uᴴ A V`. -/
-theorem eq_mul (h : IsCompleteOrthogonal A U V r) : A = U * (Uᴴ * A * V) * Vᴴ := by
-  rw [← star_eq_conjTranspose, ← star_eq_conjTranspose]
-  simp only [← Matrix.mul_assoc, Unitary.mul_star_self_of_mem h.mem_unitaryGroup_left,
-    Matrix.one_mul]
-  rw [Matrix.mul_assoc, Unitary.mul_star_self_of_mem h.mem_unitaryGroup_right, Matrix.mul_one]
+theorem eq_mul (h : IsCompleteOrthogonal A U V r) : A = U * (Uᴴ * A * V) * Vᴴ :=
+  h.isUnitaryEquiv.eq_mul_mul
 
 /-- The adjoint of the right factor is invertible. -/
-theorem isUnit_conjTranspose_right (h : IsCompleteOrthogonal A U V r) : IsUnit Vᴴ := by
-  rw [← star_eq_conjTranspose]
-  exact isUnit_of_mem_unitaryGroup (Unitary.star_mem h.mem_unitaryGroup_right)
+theorem isUnit_conjTranspose_right (h : IsCompleteOrthogonal A U V r) : IsUnit Vᴴ :=
+  isUnit_of_mem_unitaryGroup (conjTranspose_mem_unitaryGroup h.mem_unitaryGroup_right)
 
 /-- **The block size is the rank** ([golub2013matrix] §5.4.7): rank is invariant under the unitary
-factors, and `Uᴴ A V` has a revealing block. -/
+factors (`Matrix.IsUnitaryEquiv.rank_eq`), and `Uᴴ A V` has a revealing block. -/
 theorem rank_eq (h : IsCompleteOrthogonal A U V r) : A.rank = r := by
-  classical
-  rw [h.eq_mul, rank_mul_eq_left_of_isUnit_det _ _
-      ((isUnit_iff_isUnit_det _).1 h.isUnit_conjTranspose_right),
-    rank_mul_eq_right_of_isUnit_det _ _
-      ((isUnit_iff_isUnit_det U).1 (isUnit_of_mem_unitaryGroup h.mem_unitaryGroup_left))]
+  rw [h.isUnitaryEquiv.rank_eq]
   exact rank_eq_of_apply_eq_zero_of_isUnit h.le_rows h.le_cols
     (fun i j hi => h.apply_eq_zero i j (Or.inl hi)) h.isUnit_block
 
@@ -123,12 +128,8 @@ theorem ker_eq_span (h : IsCompleteOrthogonal A U V r) :
   have hA : ∀ x : Fin N → 𝕜, A *ᵥ x = U *ᵥ (T *ᵥ (Vᴴ *ᵥ x)) := fun x => by
     conv_lhs => rw [h.eq_mul]
     rw [← mulVec_mulVec, ← mulVec_mulVec]
-  have hVV : V * Vᴴ = 1 := by
-    rw [← star_eq_conjTranspose]
-    exact Unitary.mul_star_self_of_mem h.mem_unitaryGroup_right
-  have hVV' : Vᴴ * V = 1 := by
-    rw [← star_eq_conjTranspose]
-    exact Unitary.star_mul_self_of_mem h.mem_unitaryGroup_right
+  have hVV := mul_conjTranspose_self_of_mem_unitaryGroup h.mem_unitaryGroup_right
+  have hVV' := conjTranspose_mul_self_of_mem_unitaryGroup h.mem_unitaryGroup_right
   have hUinj : ∀ y : Fin M → 𝕜, U *ᵥ y = 0 → y = 0 := fun y hy => by
     rw [← one_mulVec y, ← Unitary.star_mul_self_of_mem h.mem_unitaryGroup_left, ← mulVec_mulVec,
       hy, mulVec_zero]
@@ -196,9 +197,7 @@ theorem isMinNormLeastSquaresSolution (h : IsCompleteOrthogonal A U V r)
   set c : Fin r → 𝕜 := fun i => (Uᴴ *ᵥ WithLp.ofLp b) (Fin.castLE h.le_rows i)
   set y₀ : Fin r → 𝕜 := B⁻¹ *ᵥ c
   set x₀ : EuclideanSpace 𝕜 (Fin N) := WithLp.toLp 2 (V *ᵥ blockVec h.le_cols y₀ 0)
-  have hVV' : Vᴴ * V = 1 := by
-    rw [← star_eq_conjTranspose]
-    exact Unitary.star_mul_self_of_mem h.mem_unitaryGroup_right
+  have hVV' := conjTranspose_mul_self_of_mem_unitaryGroup h.mem_unitaryGroup_right
   have hlsq := fun {x : EuclideanSpace 𝕜 (Fin N)} =>
     isLeastSquaresSolution_iff_of_eq_mul (b := b) (x := x) h.mem_unitaryGroup_left h.le_rows
       h.le_cols h.eq_mul h.isUnit_conjTranspose_right
@@ -225,10 +224,8 @@ theorem isMinNormLeastSquaresSolution (h : IsCompleteOrthogonal A U V r)
         EuclideanSpace 𝕜 (Fin r))‖ ^ 2 +
       ‖(WithLp.toLp 2 fun j => (Vᴴ *ᵥ WithLp.ofLp x) (tailIdx h.le_cols j) :
         EuclideanSpace 𝕜 (Fin (N - r)))‖ ^ 2 := fun x => by
-    have hVu : Vᴴ ∈ unitaryGroup (Fin N) 𝕜 := by
-      rw [← star_eq_conjTranspose]
-      exact Unitary.star_mem h.mem_unitaryGroup_right
-    rw [← norm_toEuclideanLin_apply_of_mem_unitaryGroup hVu x, EuclideanSpace.norm_sq_eq,
+    rw [← norm_toEuclideanLin_apply_of_mem_unitaryGroup
+        (conjTranspose_mem_unitaryGroup h.mem_unitaryGroup_right) x, EuclideanSpace.norm_sq_eq,
       EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq,
       sum_eq_sum_castLE_add_sum_tailIdx h.le_cols]
     rfl
@@ -263,9 +260,7 @@ theorem isCompleteOrthogonal_of_svd {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matri
   classical
   have hrM : A.rank ≤ M := A.rank_le_height
   have hrN : A.rank ≤ N := by simpa using A.rank_le_card_width
-  have hT : Uᴴ * A * V = rectDiagonal fun i => ((σ i : ℝ) : 𝕜) := by
-    rw [← star_eq_conjTranspose]
-    exact h.star_mul_mul
+  have hT : Uᴴ * A * V = rectDiagonal fun i => ((σ i : ℝ) : 𝕜) := h.star_mul_mul
   have hσ : ∀ i, i < M → i < N → (σ i = 0 ↔ A.rank ≤ i) := fun i hiM hiN => by
     rw [h.singularValues_eq hiM hiN, sortedSingularValues_eq_zero_iff_rank_le]
   refine ⟨h.mem_unitaryGroup_left, h.mem_unitaryGroup_right, hrM, hrN, fun i j hij => ?_, ?_⟩

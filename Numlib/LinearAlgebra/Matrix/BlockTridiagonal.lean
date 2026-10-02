@@ -2,7 +2,6 @@
 Upstreaming candidate: general material with no numerical-analysis-specific content, written
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix`, beside `Mathlib.Data.Matrix.Composition`.
-Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Data.Matrix.Composition
 import Mathlib.RingTheory.Nilpotent.Basic
@@ -17,7 +16,8 @@ A block tridiagonal matrix with `q × q` blocks ([golub2013matrix] §4.5.1–4.5
 §13.2) is the scalar tridiagonal matrix `Matrix.tridiagonalOf E D F` of
 `Numlib.LinearAlgebra.Matrix.Hessenberg` *over the block ring* `Matrix (Fin q) (Fin q) K`, and the
 matrix the book writes is its flattening by Mathlib's `Matrix.comp`
-(`Matrix.blockTridiagonal`; `Matrix.compRingEquiv` is a ring isomorphism, so products and inverses
+(`Matrix.blockTridiagonal E D F`, with the blocks in the order of `Matrix.tridiagonalOf`: sub,
+diagonal, super; `Matrix.compRingEquiv` is a ring isomorphism, so products and inverses
 transport).
 
 ## The block LU recurrence
@@ -30,16 +30,18 @@ The block LU factorization ([golub2013matrix] (4.5.3)–(4.5.4)) is a recurrence
 bidiagonal matrix (`Matrix.tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot`), over any ring. The
 sequences are `ℕ`-indexed, the convention of the scalar Thomas recurrence `Matrix.thomasAlpha` of
 `Numlib.LinearAlgebra.Matrix.LU`, which is the case of a field
-(`Matrix.tridiagonalLUPivot_eq_thomasAlpha`).
+(`Matrix.tridiagonalLUPivot_eq_thomasAlpha`, `Matrix.tridiagonalLUMultiplier_eq_thomasBeta`).
 
 ## Block diagonal dominance
 
 Block column diagonal dominance in the induced `1`-norm ([golub2013matrix] (4.5.6), Feingold–Varga
 1962) is `Matrix.IsStrictBlockColDiagDominant`, for any square block matrix; on a block tridiagonal
 matrix it reads `‖D_i⁻¹‖₁ (‖F_{i−1}‖₁ + ‖E_i‖₁) < 1`
-(`Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff`). It makes every pivot nonsingular with
+(`Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff`, the off-diagonal column norm being
+`Matrix.blockColOffNorm`). It makes every pivot nonsingular with
 `‖U_i⁻¹‖₁ ≤ ‖D_i⁻¹‖₁ / (1 − ‖D_i⁻¹‖₁ ‖F_{i−1}‖₁)`, the multipliers contractive, `‖L_i‖₁ < 1`
-((4.5.7)), the pivots bounded by the matrix, `‖U_i‖₁ ≤ ‖A‖₁` ((4.5.8)), and the matrix
+((4.5.7), `Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one`), the
+pivots bounded by the matrix, `‖U_i‖₁ ≤ ‖A‖₁` ((4.5.8)), and the matrix
 nonsingular. The Neumann bound behind all of them is `Matrix.inducedNorm_inv_one_sub_le` of
 `Numlib.Analysis.Matrix.OperatorNorm`.
 
@@ -59,23 +61,25 @@ variable {R : Type*} {N q : ℕ}
 
 /-- The block tridiagonal matrix ([golub2013matrix] (4.5.2)) with subdiagonal blocks `E i`,
 diagonal blocks `D i` and superdiagonal blocks `F i`, flattened: the tridiagonal matrix
-`tridiagonalOf E D F` over the block ring, read through `Matrix.comp`. -/
-def blockTridiagonal [Zero R] (E F : Fin N → Matrix (Fin q) (Fin q) R)
-    (D : Fin (N + 1) → Matrix (Fin q) (Fin q) R) :
+`tridiagonalOf E D F` over the block ring, read through `Matrix.comp`. The blocks are taken in the
+order of `Matrix.tridiagonalOf`. -/
+def blockTridiagonal [Zero R] (E : Fin N → Matrix (Fin q) (Fin q) R)
+    (D : Fin (N + 1) → Matrix (Fin q) (Fin q) R) (F : Fin N → Matrix (Fin q) (Fin q) R) :
     Matrix (Fin (N + 1) × Fin q) (Fin (N + 1) × Fin q) R :=
   comp _ _ _ _ R (tridiagonalOf E D F)
 
 /-- The entries of a block tridiagonal matrix: the `(k, l)` entry of its `(i, j)` block. -/
-theorem blockTridiagonal_apply [Zero R] (E F : Fin N → Matrix (Fin q) (Fin q) R)
-    (D : Fin (N + 1) → Matrix (Fin q) (Fin q) R) (i j : Fin (N + 1)) (k l : Fin q) :
-    blockTridiagonal E F D (i, k) (j, l) = tridiagonalOf E D F i j k l := rfl
+theorem blockTridiagonal_apply [Zero R] (E : Fin N → Matrix (Fin q) (Fin q) R)
+    (D : Fin (N + 1) → Matrix (Fin q) (Fin q) R) (F : Fin N → Matrix (Fin q) (Fin q) R)
+    (i j : Fin (N + 1)) (k l : Fin q) :
+    blockTridiagonal E D F (i, k) (j, l) = tridiagonalOf E D F i j k l := rfl
 
 /-- The entries of a block tridiagonal matrix whose blocks are read off `ℕ`-indexed sequences:
 the `(k, l)` entry of block `(i, j)` is that of `D i` on the diagonal, of `E j` below it and of
 `F i` above it. -/
-theorem blockTridiagonal_apply_eq_ite [Zero R] (E F D : ℕ → Matrix (Fin q) (Fin q) R)
+theorem blockTridiagonal_apply_eq_ite [Zero R] (E D F : ℕ → Matrix (Fin q) (Fin q) R)
     (i j : Fin (N + 1)) (k l : Fin q) :
-    blockTridiagonal (fun a : Fin N => E a) (fun a : Fin N => F a) (fun a : Fin (N + 1) => D a)
+    blockTridiagonal (fun a : Fin N => E a) (fun a : Fin (N + 1) => D a) (fun a : Fin N => F a)
         (i, k) (j, l) =
       if (i : ℕ) = j then D i k l else if (i : ℕ) = j + 1 then E j k l
         else if (j : ℕ) = i + 1 then F i k l else 0 := by
@@ -148,11 +152,10 @@ theorem tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot {N : ℕ}
        simp only [hi', Nat.add_sub_cancel, tridiagonalLUPivot_succ]
        abel1)
 
-/-- **Over a field the block recurrence is the Thomas recurrence** ([quarteroni2000numerical]
-(3.53)): `U_i = α_i` for `Matrix.thomasAlpha` with the subdiagonal read one row lower
-(`b j = E (j − 1)`), and the multipliers are the shifted `Matrix.thomasBeta`,
-`L_i = β_{i+1}`. -/
-theorem tridiagonalLUPivot_eq_thomasAlpha {K : Type*} [Field K] (E D F : ℕ → K) (i : ℕ) :
+/-- The pivots and multipliers over a field, by one induction (the two public halves are
+`Matrix.tridiagonalLUPivot_eq_thomasAlpha` and `Matrix.tridiagonalLUMultiplier_eq_thomasBeta`). -/
+private theorem tridiagonalLUPivot_eq_thomasAlpha_aux {K : Type*} [Field K] (E D F : ℕ → K)
+    (i : ℕ) :
     tridiagonalLUPivot E D F i = thomasAlpha D (fun j => E (j - 1)) F i
       ∧ tridiagonalLUMultiplier E D F i = thomasBeta D (fun j => E (j - 1)) F (i + 1) := by
   induction i with
@@ -167,6 +170,20 @@ theorem tridiagonalLUPivot_eq_thomasAlpha {K : Type*} [Field K] (E D F : ℕ →
     refine ⟨hU, ?_⟩
     rw [tridiagonalLUMultiplier, thomasBeta_succ, Ring.inverse_eq_inv', hU, div_eq_mul_inv]
     rfl
+
+/-- **Over a field the block recurrence is the Thomas recurrence** ([quarteroni2000numerical]
+(3.53)): the pivots are `U_i = α_i` for `Matrix.thomasAlpha` with the subdiagonal read one row
+lower (`b j = E (j − 1)`). -/
+theorem tridiagonalLUPivot_eq_thomasAlpha {K : Type*} [Field K] (E D F : ℕ → K) (i : ℕ) :
+    tridiagonalLUPivot E D F i = thomasAlpha D (fun j => E (j - 1)) F i :=
+  (tridiagonalLUPivot_eq_thomasAlpha_aux E D F i).1
+
+/-- **Over a field the block multipliers are the shifted Thomas multipliers**
+([quarteroni2000numerical] (3.53)): `L_i = β_{i+1}` for `Matrix.thomasBeta` with the subdiagonal
+read one row lower. -/
+theorem tridiagonalLUMultiplier_eq_thomasBeta {K : Type*} [Field K] (E D F : ℕ → K) (i : ℕ) :
+    tridiagonalLUMultiplier E D F i = thomasBeta D (fun j => E (j - 1)) F (i + 1) :=
+  (tridiagonalLUPivot_eq_thomasAlpha_aux E D F i).2
 
 end Recurrence
 
@@ -185,20 +202,24 @@ def IsStrictBlockColDiagDominant {ι : Type*} [Fintype ι] [DecidableEq ι]
     (A : Matrix ι ι (Matrix (Fin q) (Fin q) 𝕜)) : Prop :=
   ∀ j, IsUnit (A j j) ∧ lpOpNorm 1 (A j j)⁻¹ * ∑ i ∈ univ.erase j, lpOpNorm 1 (A i j) < 1
 
+/-- The `1`-norms of the off-diagonal blocks in block column `i` of `tridiag(E, D, F)` with `N + 1`
+block rows ([golub2013matrix] (4.5.6), `0`-based): `‖F_{i−1}‖₁ + ‖E_i‖₁`, with
+`E_N ≡ F_{−1} ≡ 0`. -/
+noncomputable def blockColOffNorm (E F : ℕ → Matrix (Fin q) (Fin q) 𝕜) (N i : ℕ) : ℝ :=
+  (if i = 0 then 0 else lpOpNorm 1 (F (i - 1))) + (if i < N then lpOpNorm 1 (E i) else 0)
+
 /-- **Block dominance of a block tridiagonal matrix** ([golub2013matrix] (4.5.6), `0`-based, with
 `E_N ≡ F_{−1} ≡ 0`): column `i` has the off-diagonal blocks `F_{i−1}` and `E_i` only, so the
-condition reads `‖D_i⁻¹‖₁ (‖F_{i−1}‖₁ + ‖E_i‖₁) < 1` for `i ≤ N`. -/
+condition reads `‖D_i⁻¹‖₁ (‖F_{i−1}‖₁ + ‖E_i‖₁) < 1` for `i ≤ N` (`Matrix.blockColOffNorm`). -/
 theorem isStrictBlockColDiagDominant_tridiagonalOf_iff (E D F : ℕ → Matrix (Fin q) (Fin q) 𝕜) :
     (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
         (fun i => F i)).IsStrictBlockColDiagDominant ↔
-      ∀ i ≤ N, IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ *
-        ((if i = 0 then 0 else lpOpNorm 1 (F (i - 1)))
-          + (if i < N then lpOpNorm 1 (E i) else 0)) < 1 := by
+      ∀ i ≤ N, IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ * blockColOffNorm E F N i < 1 := by
   set T := tridiagonalOf (N := N) (fun i => E i) (fun i => D i) (fun i => F i) with hT
   have hcol : ∀ j : Fin (N + 1), ∑ r ∈ univ.erase j, lpOpNorm 1 (T r j)
-      = (if (j : ℕ) = 0 then 0 else lpOpNorm 1 (F ((j : ℕ) - 1)))
-        + (if (j : ℕ) < N then lpOpNorm 1 (E j) else 0) := by
+      = blockColOffNorm E F N j := by
     intro j
+    rw [blockColOffNorm]
     have hg : ∑ r ∈ univ.erase j, lpOpNorm 1 (T r j)
         = ∑ r, (if r = j then 0 else lpOpNorm 1 (T r j)) := by
       rw [← Finset.sum_erase univ (f := fun r => if r = j then 0 else lpOpNorm 1 (T r j))
@@ -245,8 +266,7 @@ variable {E D F : ℕ → Matrix (Fin q) (Fin q) 𝕜}
 
 /-- The multiplier bound `‖L_i‖₁ < 1` from the pivot bound at `i` and dominance at `i < N`. -/
 private theorem lpOpNorm_multiplier_lt_one {i : ℕ} (hN : i < N)
-    (hd : IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ * ((if i = 0 then 0 else lpOpNorm 1 (F (i - 1)))
-        + (if i < N then lpOpNorm 1 (E i) else 0)) < 1)
+    (hd : IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ * blockColOffNorm E F N i < 1)
     (hU : lpOpNorm 1 (tridiagonalLUPivot E D F i)⁻¹
       ≤ lpOpNorm 1 (D i)⁻¹ /
         (1 - lpOpNorm 1 (D i)⁻¹ * (if i = 0 then 0 else lpOpNorm 1 (F (i - 1)))))
@@ -256,7 +276,7 @@ private theorem lpOpNorm_multiplier_lt_one {i : ℕ} (hN : i < N)
   have ha : 0 ≤ a := lpOpNorm_nonneg _ _
   have hf : 0 ≤ f := by simp only [f]; split_ifs <;> first | rfl | exact lpOpNorm_nonneg _ _
   have he : 0 ≤ lpOpNorm 1 (E i) := lpOpNorm_nonneg _ _
-  rw [ite_eq_left hN] at hd
+  rw [blockColOffNorm, ite_eq_left hN] at hd
   have hden : 0 < 1 - a * f := by nlinarith [hd.2]
   calc lpOpNorm 1 (tridiagonalLUMultiplier E D F i)
       ≤ lpOpNorm 1 (E i) * lpOpNorm 1 (tridiagonalLUPivot E D F i)⁻¹ := by
@@ -270,9 +290,7 @@ private theorem lpOpNorm_multiplier_lt_one {i : ℕ} (hN : i < N)
 /-- The pivots under dominance, with their inverse bound (the induction behind
 `IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot`). -/
 private theorem pivot_of_dominant (hq : 0 < q)
-    (hd : ∀ i ≤ N, IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ *
-        ((if i = 0 then 0 else lpOpNorm 1 (F (i - 1)))
-          + (if i < N then lpOpNorm 1 (E i) else 0)) < 1) :
+    (hd : ∀ i ≤ N, IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ * blockColOffNorm E F N i < 1) :
     ∀ i ≤ N, IsUnit (tridiagonalLUPivot E D F i) ∧ lpOpNorm 1 (tridiagonalLUPivot E D F i)⁻¹
       ≤ lpOpNorm 1 (D i)⁻¹ / (1 - lpOpNorm 1 (D i)⁻¹ *
         (if i = 0 then 0 else lpOpNorm 1 (F (i - 1)))) := by
@@ -288,7 +306,7 @@ private theorem pivot_of_dominant (hq : 0 < q)
     obtain ⟨hUi, hUi'⟩ := ih (by omega)
     have hL := lpOpNorm_multiplier_lt_one (by omega) (hd i (by omega)) hUi'
     obtain ⟨hD, hdom⟩ := hd (i + 1) hi
-    simp only [Nat.add_one_ne_zero, ite_false, Nat.add_sub_cancel] at hdom ⊢
+    simp only [blockColOffNorm, Nat.add_one_ne_zero, ite_false, Nat.add_sub_cancel] at hdom ⊢
     set a := lpOpNorm 1 (D (i + 1))⁻¹
     have ha : 0 ≤ a := lpOpNorm_nonneg _ _
     have hF : 0 ≤ lpOpNorm 1 (F i) := lpOpNorm_nonneg _ _
@@ -340,15 +358,24 @@ theorem IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot
   · exact ⟨isUnit_of_subsingleton _, by simp [lpOpNorm_eq_zero_of_fin_zero]⟩
   exact pivot_of_dominant hq ((isStrictBlockColDiagDominant_tridiagonalOf_iff E D F).mp h) i hi
 
-/-- [golub2013matrix] (4.5.7): under strict block column dominance the multipliers satisfy
-`‖L_i‖₁ ≤ 1` (indeed `< 1`) for `i < N`: `‖E_i U_i⁻¹‖₁ ≤ ‖E_i‖₁ ‖D_i⁻¹‖₁ / (1 − ‖D_i⁻¹‖₁ ‖F_{i−1}‖₁)
-< 1`. -/
+/-- [golub2013matrix] (4.5.7), strictly: under strict block column dominance the multipliers
+satisfy `‖L_i‖₁ < 1` for `i < N`:
+`‖E_i U_i⁻¹‖₁ ≤ ‖E_i‖₁ ‖D_i⁻¹‖₁ / (1 − ‖D_i⁻¹‖₁ ‖F_{i−1}‖₁) < 1`. -/
+theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one
+    (h : (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
+      (fun i => F i)).IsStrictBlockColDiagDominant) {i : ℕ} (hi : i < N) :
+    lpOpNorm 1 (tridiagonalLUMultiplier E D F i) < 1 :=
+  lpOpNorm_multiplier_lt_one hi ((isStrictBlockColDiagDominant_tridiagonalOf_iff E D F).mp h i
+    hi.le) (h.isUnit_tridiagonalLUPivot hi.le).2
+
+/-- [golub2013matrix] (4.5.7) as printed: under strict block column dominance the multipliers
+satisfy `‖L_i‖₁ ≤ 1` for `i < N` (strictly, by
+`Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one`). -/
 theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_le
     (h : (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
       (fun i => F i)).IsStrictBlockColDiagDominant) {i : ℕ} (hi : i < N) :
     lpOpNorm 1 (tridiagonalLUMultiplier E D F i) ≤ 1 :=
-  (lpOpNorm_multiplier_lt_one hi ((isStrictBlockColDiagDominant_tridiagonalOf_iff E D F).mp h i
-    hi.le) (h.isUnit_tridiagonalLUPivot hi.le).2).le
+  (h.lpOpNorm_tridiagonalLUMultiplier_lt_one hi).le
 
 /-- [golub2013matrix] (4.5.8), read as `‖U_i‖₁ ≤ ‖A‖₁` (the printed `‖A_n‖₁` has no referent):
 under strict block column dominance the pivots are bounded by the flattened block tridiagonal
@@ -358,10 +385,10 @@ theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUPivot_le
     (h : (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
       (fun i => F i)).IsStrictBlockColDiagDominant) {i : ℕ} (hi : i ≤ N) :
     lpOpNorm 1 (tridiagonalLUPivot E D F i)
-      ≤ lpOpNorm 1 (blockTridiagonal (fun i : Fin N => E i) (fun i : Fin N => F i)
-        fun i : Fin (N + 1) => D i) := by
-  set A := blockTridiagonal (fun i : Fin N => E i) (fun i : Fin N => F i)
-    fun i : Fin (N + 1) => D i with hA
+      ≤ lpOpNorm 1 (blockTridiagonal (fun i : Fin N => E i) (fun i : Fin (N + 1) => D i)
+        fun i : Fin N => F i) := by
+  set A := blockTridiagonal (fun i : Fin N => E i) (fun i : Fin (N + 1) => D i)
+    fun i : Fin N => F i with hA
   -- the column sums of `A` below its norm, restricted to one or two block rows
   have hcolA : ∀ c : Fin q, ∑ p : Fin (N + 1) × Fin q, ‖A p (⟨i, by omega⟩, c)‖ ≤ lpOpNorm 1 A :=
     fun c => sum_norm_le_lpOpNorm_one A _
@@ -402,14 +429,14 @@ theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUPivot_le
 
 /-- **A block column diagonally dominant block tridiagonal matrix is nonsingular**
 ([golub2013matrix] P4.5.1(a), the fact §4.5.2 presupposes): all pivots `U_0, …, U_N` are units, so
-the factorization
-(4.5.3) is a product of a unit lower bidiagonal and an upper bidiagonal matrix with unit diagonal,
-both units of the block matrix ring, and the flattening `Matrix.compRingEquiv` preserves units. -/
+the factorization (4.5.3) is a product of a unit lower bidiagonal matrix and an upper bidiagonal
+matrix whose diagonal blocks are the pivots, both units of the block matrix ring, and the
+flattening `Matrix.compRingEquiv` preserves units. -/
 theorem IsStrictBlockColDiagDominant.isUnit_blockTridiagonal
     (h : (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
       (fun i => F i)).IsStrictBlockColDiagDominant) :
-    IsUnit (blockTridiagonal (fun i : Fin N => E i) (fun i : Fin N => F i)
-      fun i : Fin (N + 1) => D i) := by
+    IsUnit (blockTridiagonal (fun i : Fin N => E i) (fun i : Fin (N + 1) => D i)
+      fun i : Fin N => F i) := by
   have hU : ∀ i, i ≤ N → IsUnit (tridiagonalLUPivot E D F i) :=
     fun i hi => (h.isUnit_tridiagonalLUPivot hi).1
   have hfac := tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot E D F fun i hi => hU i hi.le

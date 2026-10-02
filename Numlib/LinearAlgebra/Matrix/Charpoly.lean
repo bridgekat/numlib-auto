@@ -19,8 +19,8 @@ of [golub2013matrix] §12.2.10, Fact 2).
 
 * `Matrix.trace_add_pow_odd_eq_zero`: if `A² = B² = 1` and `tr A = tr B = 0`, the odd powers of
   `A + B` are traceless.
-* `map_neg_eq_of_sum_pow_odd`: over a field of characteristic zero, a finite family whose odd
-  power sums vanish is symmetric about `0` (as a multiset).
+* `Fintype.map_neg_eq_of_sum_pow_odd`: over a field of characteristic zero, a finite family whose
+  odd power sums vanish is symmetric about `0` (as a multiset).
 * `Matrix.IsHermitian.trace_pow_eq_sum`, `Matrix.IsHermitian.charpoly_neg_of_trace_pow_odd`: a
   Hermitian matrix whose odd powers are traceless has `charpoly (-A) = charpoly A`.
 * `Matrix.card_eq_of_charpoly_eq_prod`: a characteristic polynomial that is a product of `m` monic
@@ -105,7 +105,8 @@ private theorem trace_mul_sq_pow_eq_zero [NoZeroDivisors R] [CharZero R] (hA : A
 /-- **Odd powers of a sum of two involutions of trace zero are traceless**: if `A² = B² = 1` and
 `tr A = tr B = 0` then `tr (A + B)^{2j+1} = 0`. Expanded, every odd word in `A` and `B` reduces
 cyclically to a single letter; the proof runs instead through `Z = (A + B)²`, which commutes with
-`A` and `B`, and the anticommutator `AB − BA` (`Matrix.trace_mul_sq_pow_eq_zero`). -/
+`A` and `B`, and the commutator `AB − BA`: the traces `tr (A Zʲ)` satisfy `t_{j+2} = 4 t_{j+1}`
+with `t₀ = t₁ = 0`. -/
 theorem trace_add_pow_odd_eq_zero [NoZeroDivisors R] [CharZero R] (hA : A * A = 1)
     (hB : B * B = 1) (htA : trace A = 0) (htB : trace B = 0) (j : ℕ) :
     trace ((A + B) ^ (2 * j + 1)) = 0 := by
@@ -121,6 +122,8 @@ end Matrix
 section PowerSum
 
 variable {ι K : Type*} [Fintype ι] [Field K]
+
+namespace Fintype
 
 /-- If the odd power sums of `μ` vanish, then every polynomial has the same sum over `μ` and over
 `-μ`: its odd part sums to zero on both. -/
@@ -152,7 +155,7 @@ private theorem sum_eval_prod_erase [DecidableEq K] {T : Finset K} (v : K) {ν :
 /-- **A family whose odd power sums vanish is symmetric**: over a field of characteristic zero,
 if `∑ μ_i^{2j+1} = 0` for every `j`, then the multiset of the `-μ_i` is that of the `μ_i`. Each
 multiplicity is read off by summing a polynomial that vanishes at every other value of `±μ`
-(`sum_eval_neg_eq_of_sum_pow_odd`). -/
+(`Fintype.sum_eval_neg_eq_of_sum_pow_odd`). -/
 theorem map_neg_eq_of_sum_pow_odd [CharZero K] {μ : ι → K}
     (h : ∀ j, ∑ i, μ i ^ (2 * j + 1) = 0) :
     univ.val.map (fun i => -μ i) = univ.val.map μ := by
@@ -168,6 +171,14 @@ theorem map_neg_eq_of_sum_pow_odd [CharZero K] {μ : ι → K}
       (mem_image_of_mem _ (mem_univ i)), nsmul_eq_mul, nsmul_eq_mul] at key
   rw [Multiset.count_map, Multiset.count_map]
   exact_mod_cast mul_right_cancel₀ hne key
+
+end Fintype
+
+@[deprecated (since := "2026-09-30")]
+alias sum_eval_neg_eq_of_sum_pow_odd := Fintype.sum_eval_neg_eq_of_sum_pow_odd
+
+@[deprecated (since := "2026-09-30")]
+alias map_neg_eq_of_sum_pow_odd := Fintype.map_neg_eq_of_sum_pow_odd
 
 end PowerSum
 
@@ -188,11 +199,11 @@ theorem trace_pow_eq_sum (hA : A.IsHermitian) (k : ℕ) :
 /-- **A Hermitian matrix whose odd powers are traceless has a spectrum symmetric about `0`**:
 `charpoly (-A) = charpoly A`. The odd power sums of the eigenvalues vanish
 (`Matrix.IsHermitian.trace_pow_eq_sum`), so the eigenvalue multiset is symmetric
-(`map_neg_eq_of_sum_pow_odd`). -/
+(`Fintype.map_neg_eq_of_sum_pow_odd`). -/
 theorem charpoly_neg_of_trace_pow_odd (hA : A.IsHermitian)
     (h : ∀ j, trace (A ^ (2 * j + 1)) = 0) : (-A).charpoly = A.charpoly := by
   have hs : univ.val.map (fun i => -hA.eigenvalues i) = univ.val.map hA.eigenvalues :=
-    map_neg_eq_of_sum_pow_odd fun j => by
+    Fintype.map_neg_eq_of_sum_pow_odd fun j => by
       have := h j
       rw [hA.trace_pow_eq_sum] at this
       exact_mod_cast this

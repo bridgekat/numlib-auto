@@ -17,14 +17,37 @@ Evaluating a polynomial at a matrix (`Polynomial.aeval`) commutes with the struc
 on matrices: block diagonal matrices (`Matrix.aeval_blockDiagonal'`,
 `Matrix.aeval_fromBlocks_zero`),
 the transpose (`Matrix.aeval_transpose`, hence `Matrix.minpoly_transpose`) and an entrywise ring
-endomorphism of the scalars (`Matrix.map_aeval`). Whatever commutes with a matrix commutes with its
-nonsingular inverse (`Matrix.commute_nonsing_inv_right`, `Matrix.commute_nonsing_inv_left`).
+endomorphism of the scalars (`Matrix.map_aeval`, Mathlib's `Polynomial.map_aeval_eq_aeval_map`
+for `φ.mapMatrix`). Whatever commutes with an element of a monoid with zero commutes with its ring
+inverse (`Commute.ringInverse_right`, `Commute.ringInverse_left`), so whatever commutes with a
+matrix commutes with its nonsingular inverse (`Matrix.commute_nonsing_inv_right`,
+`Matrix.commute_nonsing_inv_left`).
 
 These are the algebraic inputs of the matrix forms of the primary functional calculus
 (`Numlib/Analysis/Matrix/Function/Basic`).
 -/
 
 open Polynomial
+
+section RingInverse
+
+variable {M₀ : Type*} [MonoidWithZero M₀] {b c : M₀}
+
+/-- Whatever commutes with `b` commutes with its ring inverse `Ring.inverse b` (which is `0` when
+`b` is not a unit). Mathlib has the two-sided `Commute.ringInverse_ringInverse`. -/
+theorem Commute.ringInverse_right (h : Commute c b) : Commute c (Ring.inverse b) := by
+  by_cases hb : IsUnit b
+  · obtain ⟨u, rfl⟩ := hb
+    rw [Ring.inverse_unit]
+    exact h.units_inv_right
+  · rw [Ring.inverse_non_unit _ hb]
+    exact Commute.zero_right c
+
+/-- The ring inverse `Ring.inverse b` commutes with whatever commutes with `b`. -/
+theorem Commute.ringInverse_left (h : Commute b c) : Commute (Ring.inverse b) c :=
+  h.symm.ringInverse_right.symm
+
+end RingInverse
 
 namespace Matrix
 
@@ -65,17 +88,14 @@ theorem aeval_transpose (A : Matrix n n R) (p : R[X]) : aeval Aᵀ p = (aeval A 
   | monomial k c =>
     simp only [aeval_monomial, ← Algebra.smul_def, transpose_smul, transpose_pow]
 
-/-- Polynomials commute with an entrywise ring endomorphism of the scalars. -/
-theorem map_aeval (φ : R →+* R) (A : Matrix n n R) (p : R[X]) :
-    (aeval A p).map φ = aeval (A.map φ) (p.map φ) := by
-  change φ.mapMatrix (aeval A p) = aeval (φ.mapMatrix A) (p.map φ)
-  induction p using Polynomial.induction_on' with
-  | add p q hp hq => rw [map_add, map_add, Polynomial.map_add, map_add, hp, hq]
-  | monomial k c =>
-    have hc : φ.mapMatrix (algebraMap R (Matrix n n R) c) = algebraMap R (Matrix n n R) (φ c) := by
-      ext i j
-      by_cases h : i = j <;> simp [algebraMap_eq_diagonal, h]
-    rw [aeval_monomial, Polynomial.map_monomial, aeval_monomial, map_mul, map_pow, hc]
+/-- Polynomials commute with an entrywise ring homomorphism of the scalars: Mathlib's
+`Polynomial.map_aeval_eq_aeval_map` for `φ.mapMatrix`, which carries the scalar matrices to the
+scalar matrices. -/
+theorem map_aeval {S : Type*} [CommSemiring S] (φ : R →+* S) (A : Matrix n n R) (p : R[X]) :
+    (aeval A p).map φ = aeval (A.map φ) (p.map φ) :=
+  map_aeval_eq_aeval_map (ψ := φ.mapMatrix) (RingHom.ext fun c => by
+    ext i j
+    by_cases h : i = j <;> simp [algebraMap_eq_diagonal, h]) p A
 
 end CommSemiring
 
@@ -95,12 +115,8 @@ variable {α : Type*} [CommRing α] {n : Type*} [Fintype n] [DecidableEq n]
 /-- Whatever commutes with a matrix commutes with its (nonsingular) inverse `B⁻¹` (which is `0`
 when `B` is singular). -/
 theorem commute_nonsing_inv_right {B C : Matrix n n α} (h : Commute C B) : Commute C B⁻¹ := by
-  by_cases hB : IsUnit B
-  · obtain ⟨u, rfl⟩ := hB
-    rw [← coe_units_inv]
-    exact h.units_inv_right
-  · rw [nonsing_inv_eq_ringInverse, Ring.inverse_non_unit _ hB]
-    exact Commute.zero_right C
+  rw [nonsing_inv_eq_ringInverse]
+  exact h.ringInverse_right
 
 /-- The (nonsingular) inverse `B⁻¹` of a matrix commutes with whatever commutes with `B`. -/
 theorem commute_nonsing_inv_left {B C : Matrix n n α} (h : Commute B C) : Commute B⁻¹ C :=

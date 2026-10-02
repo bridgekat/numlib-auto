@@ -53,3 +53,6 @@ id = "displacementRank_cornerTridiagonal_hankel_le"
 
 [[node]]
 id = "displacementRank_cornerTridiagonal_toeplitz_add_hankel_le"
+
+[[node]]
+id = "displacementRank_diagonal_cauchy"
