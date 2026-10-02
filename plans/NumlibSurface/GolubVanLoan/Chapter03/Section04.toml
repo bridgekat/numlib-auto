@@ -61,7 +61,7 @@ id = "solvePLU"
 source = 'Golub–Van Loan, Matrix Computations, §3.4.3'
 
 [[node]]
-id = "solvePLU_spec"
+id = "solveGEPP_spec"
 source = 'Golub–Van Loan, Matrix Computations, §3.4.3'
 
 [[node]]
@@ -97,6 +97,18 @@ id = "equation_3_4_9"
 source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.9)'
 
 [[node]]
+id = "equation_3_4_6_gaxpy"
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.6)'
+
+[[node]]
+id = "equation_3_4_7_gaxpy"
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.7)'
+
+[[node]]
+id = "equation_3_4_9_gaxpy"
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.9)'
+
+[[node]]
 id = "growthExample"
 source = 'Golub–Van Loan, Matrix Computations, §3.4.5, Definition'
 
@@ -121,7 +133,7 @@ id = "solvePLUQ"
 source = 'Golub–Van Loan, Matrix Computations, §3.4.6'
 
 [[node]]
-id = "solvePLUQ_spec"
+id = "solveGECP_spec"
 source = 'Golub–Van Loan, Matrix Computations, §3.4.6'
 
 [[node]]
@@ -177,10 +189,6 @@ id = "solveGEPP"
 
 [[node]]
 id = "solveGECP"
-
-[[node]]
-id = "equation_3_4_10_frozen"
-source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.10)'
 
 [[node]]
 id = "growthExample_noInterchange"

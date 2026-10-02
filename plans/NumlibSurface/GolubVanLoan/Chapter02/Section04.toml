@@ -9,6 +9,14 @@ id = "sigmaMin"
 source = 'Golub–Van Loan, Matrix Computations, §2.4.1, Definition'
 
 [[node]]
+id = "sigmaMax_eq_iSup_colSingularValues"
+source = 'Golub–Van Loan, Matrix Computations, §2.4.1, Definition'
+
+[[node]]
+id = "sigmaMin_eq_iInf_colSingularValues"
+source = 'Golub–Van Loan, Matrix Computations, §2.4.1, Definition'
+
+[[node]]
 id = "theorem_2_4_1"
 source = 'Golub–Van Loan, Matrix Computations, Theorem 2.4.1'
 

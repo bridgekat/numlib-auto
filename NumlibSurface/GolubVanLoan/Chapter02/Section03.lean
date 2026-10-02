@@ -7,7 +7,9 @@ import NumlibSurface.GolubVanLoan.Chapter02.Section02
 # Golub–Van Loan §2.3: matrix norms
 
 Surface file for [golub2013matrix] §2.3: the definition of a matrix norm, the Frobenius norm
-(2.3.1) and the `p`-norms (2.3.2), consistency (2.3.3)–(2.3.4) with the book's counterexample,
+(2.3.1) and the `p`-norms (2.3.2), consistency of the `p`-norms (2.3.3) with the book's
+counterexample for `‖·‖_Δ` (the definition (2.3.4) of consistent norms is used only in prose and is
+not formalized),
 subordinate norms (2.3.5)–(2.3.6), the norm comparisons (2.3.7)–(2.3.13), convergence of matrix
 sequences (§2.3.2), the 2-norm through `AᵀA` (Theorem 2.3.1, Corollary 2.3.2), the Neumann series
 and the perturbation of the inverse (Lemma 2.3.3, Theorem 2.3.4), and orthogonal invariance
@@ -266,27 +268,18 @@ theorem theorem_2_3_1 (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
   have h := congrArg WithLp.ofLp (A.toEuclideanLin_conjTranspose_mul_self_rightSingularBasis i)
   simpa [toEuclideanLin_apply, conjTranspose_eq_transpose_of_trivial, hi] using h
 
-/-- The eigenvalues of a Hermitian matrix depend on the matrix only. -/
-private theorem eigenvalues₀_congr {M N : Matrix (Fin n) (Fin n) ℝ} (h : M = N)
-    (hM : M.IsHermitian) (hN : N.IsHermitian) : hM.eigenvalues₀ = hN.eigenvalues₀ := by
-  subst h
-  rfl
-
-/-- **§2.3.3, after Theorem 2.3.1**: `‖A‖₂ = √λ_max(AᵀA)` (for `n ≥ 1`), and `‖A‖₂²` is a zero of
+/-- **§2.3.3, after Theorem 2.3.1**: `‖A‖₂ = √λ_max(AᵀA)` (for `n ≥ 1`), `λ_max` the first sorted
+eigenvalue of `AᵀA` (§2.1's convention; over `ℝ`, `Aᴴ = Aᵀ`), and `‖A‖₂²` is a zero of
 `p(λ) = det(AᵀA - λI)`. -/
-theorem l2_opNorm_eq_sqrt_eigenvalues₀_zero (A : Matrix (Fin m) (Fin n) ℝ)
-    (hAtA : (Aᵀ * A).IsHermitian) (hn : 0 < n) :
-    lpOpNorm 2 A = √(hAtA.eigenvalues₀ ⟨0, by simpa using hn⟩) ∧
+theorem l2_opNorm_eq_sqrt_lambdaMax (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
+    lpOpNorm 2 A = √((isHermitian_conjTranspose_mul_self A).sortedEigenvalues ⟨0, hn⟩) ∧
       (Aᵀ * A - lpOpNorm 2 A ^ 2 • (1 : Matrix (Fin n) (Fin n) ℝ)).det = 0 := by
-  set k₀ : Fin (Fintype.card (Fin n)) := ⟨0, by simpa using hn⟩
   have hG := isHermitian_conjTranspose_mul_self A
-  have hcongr : hAtA.eigenvalues₀ = hG.eigenvalues₀ :=
-    eigenvalues₀_congr (by rw [conjTranspose_eq_transpose_of_trivial]) hAtA hG
+  set k₀ : Fin (Fintype.card (Fin n)) := ⟨0, by simpa using hn⟩
   obtain ⟨i₀, hi₀, hmax⟩ := exists_colSingularValues_eq_lpOpNorm_two A hn
   set e : Fin (Fintype.card (Fin n)) ≃ Fin n := Fintype.equivOfCardEq (Fintype.card_fin _)
   have heig : ∀ j, hG.eigenvalues j = hG.eigenvalues₀ (e.symm j) := fun j => rfl
-  have hsq : lpOpNorm 2 A ^ 2 = hAtA.eigenvalues₀ k₀ := by
-    rw [hcongr]
+  have hsq : lpOpNorm 2 A ^ 2 = hG.eigenvalues₀ k₀ := by
     refine le_antisymm ?_ ?_
     · rw [← hi₀, sq_colSingularValues, heig]
       exact hG.eigenvalues₀_antitone (Fin.le_def.2 (Nat.zero_le _))
@@ -294,10 +287,17 @@ theorem l2_opNorm_eq_sqrt_eigenvalues₀_zero (A : Matrix (Fin m) (Fin n) ℝ)
       rw [heig, Equiv.symm_apply_apply] at h
       rw [← h]
       exact pow_le_pow_left₀ (A.colSingularValues_nonneg _) (hmax _) 2
-  refine ⟨by rw [← hsq, Real.sqrt_sq (lpOpNorm_nonneg _ _)], ?_⟩
+  refine ⟨by
+    rw [IsHermitian.sortedEigenvalues_apply]
+    exact (by rw [← hsq, Real.sqrt_sq (lpOpNorm_nonneg _ _)] :
+      lpOpNorm 2 A = √(hG.eigenvalues₀ k₀)),
+    ?_⟩
   obtain ⟨z, hz1, hz⟩ := theorem_2_3_1 A hn
   refine exists_mulVec_eq_zero_iff.1 ⟨z, fun h0 => by simp [h0] at hz1, ?_⟩
   rw [sub_mulVec, hz, smul_mulVec, one_mulVec, sub_self]
+
+@[deprecated "use `l2_opNorm_eq_sqrt_lambdaMax`" (since := "2026-09-30")]
+alias l2_opNorm_eq_sqrt_eigenvalues₀_zero := l2_opNorm_eq_sqrt_lambdaMax
 
 /-- **Corollary 2.3.2**: `‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)`. -/
 theorem corollary_2_3_2 (A : Matrix (Fin m) (Fin n) ℝ) :

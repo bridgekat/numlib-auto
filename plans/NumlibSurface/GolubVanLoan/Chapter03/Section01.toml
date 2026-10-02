@@ -73,6 +73,14 @@ id = "equation_3_1_4"
 source = 'Golub–Van Loan, Matrix Computations, Equation (3.1.4)'
 
 [[node]]
+id = "unitForwardSubstColOn"
+source = 'Golub–Van Loan, Matrix Computations, §3.1.7'
+
+[[node]]
+id = "unitForwardSubstColOn_id_eq"
+source = 'Golub–Van Loan, Matrix Computations, §3.1.7'
+
+[[node]]
 id = "nonsquareLower_tall"
 source = 'Golub–Van Loan, Matrix Computations, §3.1.6'
 
@@ -95,9 +103,3 @@ source = 'Golub–Van Loan, Matrix Computations, §3.1.7'
 [[node]]
 id = "unitTriangular_mul"
 source = 'Golub–Van Loan, Matrix Computations, §3.1.7'
-
-[[node]]
-id = "forall_mem_run_foldlM_update_rows"
-
-[[node]]
-id = "roundsForwardSubst_of_mem_run_colSubst"

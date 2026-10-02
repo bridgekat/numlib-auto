@@ -29,6 +29,9 @@ The surface of Chapter 1 of Golub and Van Loan, *Matrix Computations* (4th editi
   are in §1.1, beside the algorithms, and the exact specifications of §1.1 are read off them at the
   exact model. The `0 + fl(x₁y₁)` mismatch between the book's loops and `RoundsSum` is resolved by
   the hypothesis `fp.IsIdempotent`, assumed only by the bridges that need the book's `γ_n`.
+* **Shared helpers.** The rounded entrywise operations `vecAdd`, `vecSub`, `vecPointwiseMul`
+  (§1.4, any hook `rnd : K → M K`) and `matrixAdd`, `matrixSub` (§1.3, rectangular), each with its
+  `_spec`, are the ones every later chapter calls (the root module's shared-helper list).
 * Kronecker products, `vec` and the perfect shuffle are the positional backbone forms
   `Matrix.kroneckerFin`, `Matrix.vecFin`, `Matrix.perfectShuffle` (row `(i₁ − 1) m₂ + i₂` of
   `B ⊗ C` is `finProdFinEquiv (i₁, i₂)`); permutation matrices `I_n(v,:)` are Mathlib's

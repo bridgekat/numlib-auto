@@ -60,6 +60,27 @@ noncomputable def sigmaMax (A : Matrix (Fin m) (Fin n) ℝ) : ℝ :=
 noncomputable def sigmaMin (A : Matrix (Fin m) (Fin n) ℝ) : ℝ :=
   A.sortedSingularValues (min m n - 1)
 
+/-- `σ_max(A)` is the largest of the backbone's column-indexed singular values
+`Matrix.colSingularValues` (both `0` when `n = 0`). -/
+theorem sigmaMax_eq_iSup_colSingularValues (A : Matrix (Fin m) (Fin n) ℝ) :
+    sigmaMax A = ⨆ i, A.colSingularValues i := by
+  rcases n.eq_zero_or_pos with rfl | hn
+  · rw [Real.iSup_of_isEmpty, sigmaMax]
+    exact sortedSingularValues_eq_zero_of_min_le A (by simp)
+  · have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
+    exact (sortedSingularValues_zero_eq_l2_opNorm A).trans (l2_opNorm_eq_iSup_colSingularValues A)
+
+/-- For `n ≤ m`, `σ_min(A)` is the least of the backbone's column-indexed singular values
+`Matrix.colSingularValues` (both `0` when `n = 0`). -/
+theorem sigmaMin_eq_iInf_colSingularValues (A : Matrix (Fin m) (Fin n) ℝ) (hmn : n ≤ m) :
+    sigmaMin A = ⨅ i, A.colSingularValues i := by
+  rcases n.eq_zero_or_pos with rfl | hn
+  · rw [Real.iInf_of_isEmpty, sigmaMin]
+    exact sortedSingularValues_eq_zero_of_min_le A (by simp)
+  · have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
+    rw [sigmaMin, min_eq_right hmn, ← sortedSingularValues_eq_iInf_colSingularValues,
+      Fintype.card_fin]
+
 /-- **Theorem 2.4.1 (Singular Value Decomposition).** For `A ∈ ℝ^{m×n}` there are orthogonal
 `U ∈ ℝ^{m×m}`, `V ∈ ℝ^{n×n}` with `Uᵀ A V = Σ = diag(σ₁, …, σ_p)`, `σ₁ ≥ ⋯ ≥ σ_p ≥ 0`: an SVD
 whose diagonal is the sorted singular values (backbone `Matrix.exists_svd`). -/

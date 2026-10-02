@@ -37,11 +37,12 @@ carries (convention 12):
 
 Two loop lemmas carry the bridges. A loop that writes entry `i` at step `i`, reading only the
 entries written before it and its own initial value, satisfies any row property that is stable
-under changes of the later entries (`forall_mem_run_foldlM_update_rows`): the row versions. The
-column versions are one loop over any sorted index list of any linear order
-(`roundsForwardSubst_of_mem_run_colSubst`, the invariant of the prototype
-`notes/gvl/ch03/proto/Bridge.lean`); back substitution is its instance on the dual order
-`(Fin n)ᵒᵈ`, as in the backbone (`FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual`).
+under changes of the later entries (`SetM.forall_mem_run_foldlM_update_of_nodup`): the row
+versions, one loop over any sorted index list of any linear order. The column versions are likewise
+one loop over any linear order (`FloatingPoint.roundsForwardSubst_of_mem_run_colSubst`). In both
+pairs back substitution is the forward loop on the dual order `(Fin n)ᵒᵈ`, as in the backbone
+(`FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual`,
+`FloatingPoint.roundsBackSubstDot_iff_roundsForwardSubstDot_toDual`).
 
 ## Main results
 
@@ -49,6 +50,8 @@ column versions are one loop over any sorted index list of any linear order
 * `equation_3_1_1`, `equation_3_1_2`, `algorithm_3_1_3_rounding`, `algorithm_3_1_4_rounding`;
 * `blockForwardElim`, the block forward elimination (3.1.4), and `equation_3_1_4`, its exact
   semantics (`L X = B`), through `forwardSubstColOn_exact`;
+* `unitForwardSubstColOn`, the unit lower triangular solve that does not divide by the unit
+  diagonal (convention 2), used by the block LU Algorithms 3.2.3–3.2.4;
 * `nonsquareLower_tall`, `nonsquareLower_wide` (§3.1.6);
 * `triangular_inv`, `triangular_mul`, `unitTriangular_inv`, `unitTriangular_mul` (§3.1.7).
 
@@ -65,7 +68,7 @@ namespace GolubVanLoan.Chapter03
 /-! ### Loop lemmas -/
 
 /-- On `Fin n`, the minimal index is `0`. -/
-theorem fin_isMin_iff {n : ℕ} (i : Fin n) : IsMin i ↔ (i : ℕ) = 0 := by
+private theorem fin_isMin_iff {n : ℕ} (i : Fin n) : IsMin i ↔ (i : ℕ) = 0 := by
   constructor
   · intro h
     by_contra h0
@@ -75,7 +78,7 @@ theorem fin_isMin_iff {n : ℕ} (i : Fin n) : IsMin i ↔ (i : ℕ) = 0 := by
     exact Nat.zero_le _
 
 /-- On `Fin n`, the maximal index is `n - 1`. -/
-theorem fin_isMax_iff {n : ℕ} (i : Fin n) : IsMax i ↔ (i : ℕ) = n - 1 := by
+private theorem fin_isMax_iff {n : ℕ} (i : Fin n) : IsMax i ↔ (i : ℕ) = n - 1 := by
   constructor
   · intro h
     by_contra h0
@@ -84,47 +87,12 @@ theorem fin_isMax_iff {n : ℕ} (i : Fin n) : IsMax i ↔ (i : ℕ) = n - 1 := b
     rw [Fin.le_def, h]
     omega
 
-/-- **A loop writing one entry per step, in dependence order.** Over a duplicate-free list `l`,
-a loop whose step `i` writes entry `i` of the state with a result of `g i s` satisfies a row
-property `R i` at every index of `l`, if every result of `g i s` satisfies `R i` whenever the
-entries not yet written hold their initial values, and `R i` depends only on the entries written
-before `i`. The row-oriented substitutions have this shape; the backbone's
-`SetM.forall_mem_run_foldlM_update_of_nodup`. -/
-theorem forall_mem_run_foldlM_update_rows {ι β : Type} [DecidableEq ι] {l : List ι}
-    (hl : l.Nodup) (g : ι → (ι → β) → SetM β) (R : ι → (ι → β) → β → Prop) (b : ι → β)
-    (hg : ∀ p i q, l = p ++ i :: q → ∀ s : ι → β, (∀ j, j ∉ p → s j = b j) →
-      ∀ x ∈ (g i s).run, R i s x)
-    (hR : ∀ p i q, l = p ++ i :: q → ∀ (s s' : ι → β) x, (∀ j ∈ p, s j = s' j) →
-      R i s x → R i s' x) :
-    ∀ y ∈ (l.foldlM (fun s i => do let x ← g i s; pure (Function.update s i x)) b).run,
-      ∀ i ∈ l, R i y (y i) :=
-  SetM.forall_mem_run_foldlM_update_of_nodup hl g R b hg hR
+@[deprecated SetM.forall_mem_run_foldlM_update_of_nodup (since := "2026-09-30")]
+alias forall_mem_run_foldlM_update_rows := SetM.forall_mem_run_foldlM_update_of_nodup
 
-/-! ### The column-oriented loop, over any linear order -/
-
-section ColSubst
-
-variable {ι : Type} [LinearOrder ι] [DecidableEq ι]
-
-/-- **Column-oriented forward substitution, over any linear order**: the loop "for `j` in
-increasing order, `b(j) = b(j)/L(j,j)`, then `b(i) = b(i) - b(j) L(i,j)` for every `i > j`" (the
-inner list `c j` enumerating the indices above `j` in any order) computes, in every run of the
-relational model, an admissible forward substitution `FloatingPoint.RoundsForwardSubst`: row `i`
-receives its subtractions over `j < i` one at a time, each from the finished `x̂ j`. -/
-theorem roundsForwardSubst_of_mem_run_colSubst (fp : RoundingModel ℝ) (L : Matrix ι ι ℝ)
-    {l : List ι} (hl : l.Pairwise (· < ·)) (hall : ∀ i, i ∈ l) (c : ι → List ι)
-    (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) (b x : ι → ℝ)
-    (hx : x ∈ (l.foldlM (fun (b : ι → ℝ) j => do
-      let bj ← fp.round (b j / L j j)
-      (c j).foldlM (fun (b : ι → ℝ) i => do
-          let p ← fp.round (b j * L i j)
-          let bi ← fp.round (b i - p)
-          pure (Function.update b i bi))
-        (Function.update b j bj)) b).run) :
-    RoundsForwardSubst fp L b x :=
-  FloatingPoint.roundsForwardSubst_of_mem_run_colSubst fp L hl hall c hc hcm b x hx
-
-end ColSubst
+@[deprecated FloatingPoint.roundsForwardSubst_of_mem_run_colSubst (since := "2026-09-30")]
+alias roundsForwardSubst_of_mem_run_colSubst :=
+  FloatingPoint.roundsForwardSubst_of_mem_run_colSubst
 
 /-! ### The four substitution algorithms -/
 
@@ -226,119 +194,109 @@ section Bridges
 
 variable (fp : RoundingModel ℝ) {n : ℕ}
 
+/-- **Row-oriented forward substitution, over any linear order**: the loop "for `i` in increasing
+order, `b(i) = (b(i) - L(i,c i) · b(c i))/L(i,i)`", the first row dividing only (`first i`, the
+minimal index) and the dot product over the list `c i` of the indices below `i` accumulated from
+`0` (`FloatingPoint.dotAccum`), computes in every run an admissible forward substitution in the
+inner-product order, `FloatingPoint.RoundsForwardSubstDot`. Algorithm 3.1.1 is its instance on
+`Fin n`, Algorithm 3.1.2 its instance on the dual order `(Fin n)ᵒᵈ`. -/
+private theorem roundsForwardSubstDot_of_mem_run_rowSubst {ι : Type} [LinearOrder ι]
+    (L : Matrix ι ι ℝ) {l : List ι} (hl : l.Pairwise (· < ·)) (hall : ∀ i, i ∈ l)
+    (first : ι → Prop) [DecidablePred first] (hfirst : ∀ i, first i ↔ IsMin i)
+    (c : ι → List ι) (hc : ∀ i, (c i).Nodup) (hcm : ∀ i j, j ∈ c i ↔ j < i) (b x : ι → ℝ)
+    (hx : x ∈ (l.foldlM (fun (b : ι → ℝ) (i : ι) => do
+      let t ← if first i then pure (b i) else do
+        let s ← dotAccum fp.round (c i) (L i) b 0
+        fp.round (b i - s)
+      let x ← fp.round (t / L i i)
+      pure (Function.update b i x)) b).run) :
+    RoundsForwardSubstDot fp L b x := by
+  have hnd : l.Nodup := hl.imp ne_of_lt
+  let g : ι → (ι → ℝ) → SetM ℝ := fun i s =>
+    if first i then fp.round (s i / L i i) else do
+      let t ← dotAccum fp.round (c i) (L i) s 0
+      let u ← fp.round (s i - t)
+      fp.round (u / L i i)
+  have hprog : l.foldlM (fun (b : ι → ℝ) (i : ι) => do
+      let t ← if first i then pure (b i) else do
+        let s ← dotAccum fp.round (c i) (L i) b 0
+        fp.round (b i - s)
+      let x ← fp.round (t / L i i)
+      pure (Function.update b i x)) b =
+      l.foldlM (fun s i => do let x ← g i s; pure (Function.update s i x)) b := by
+    congr 1
+    funext s i
+    simp only [g]
+    split_ifs <;> simp only [pure_bind, bind_assoc]
+  rw [hprog] at hx
+  have key := SetM.forall_mem_run_foldlM_update_of_nodup hnd g
+    (fun i s x => (IsMin i → fp.Rounds (b i / L i i) x) ∧
+      (¬ IsMin i → ∃ (o : List ι) (p : ι → ℝ) (s' t : ℝ), o.Nodup ∧
+        (∀ j, j ∈ o ↔ j < i) ∧ (∀ j ∈ o, fp.Rounds (L i j * s j) (p j)) ∧
+        RoundsSumFrom fp 0 (o.map p) s' ∧ fp.Rounds (b i - s') t ∧ fp.Rounds (t / L i i) x))
+    b ?_ ?_ x hx
+  · exact fun i => key i (hall i)
+  · rintro p i q hl' s hs x hx
+    have hsi : s i = b i := hs i fun h =>
+      List.disjoint_of_nodup_append (hl' ▸ hnd) h List.mem_cons_self
+    by_cases hi : first i
+    · simp only [g, hi, ↓reduceIte] at hx
+      refine ⟨fun _ => ?_, fun h => absurd ((hfirst i).1 hi) h⟩
+      rw [← hsi]
+      exact hx
+    · simp only [g, hi, ↓reduceIte, SetM.mem_run_bind] at hx
+      obtain ⟨s', hs', t, ht, hx⟩ := hx
+      obtain ⟨pp, hpp, hsum⟩ := exists_of_mem_run_dotAccum (hc i) hs'
+      refine ⟨fun h => absurd ((hfirst i).2 h) hi, fun _ =>
+        ⟨_, pp, s', t, hc i, hcm i, hpp, hsum, ?_, hx⟩⟩
+      rw [← hsi]
+      exact ht
+  · rintro p i q hl' s s' x hss ⟨h₁, h₂⟩
+    refine ⟨h₁, fun hi => ?_⟩
+    obtain ⟨o, pp, s₁, t, hnd', ho, hpp, hsum, ht, hx⟩ := h₂ hi
+    refine ⟨o, pp, s₁, t, hnd', ho, fun j hj => ?_, hsum, ht, hx⟩
+    have hjp : j ∈ p := List.mem_prefix_of_pairwise hl hl' (hall j) (ne_of_lt ((ho j).1 hj))
+      (lt_asymm ((ho j).1 hj))
+    rw [← hss j hjp]
+    exact hpp j hj
+
 /-- **The bridge of Algorithm 3.1.1**: every run in the relational model is an admissible forward
 substitution in the inner-product order, `FloatingPoint.RoundsForwardSubstDot`. No hypothesis on
 `L`. -/
 theorem algorithm_3_1_1_rounds (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
-    ∀ x ∈ (algorithm_3_1_1 fp.round L b).run, RoundsForwardSubstDot fp L b x := by
-  intro x hx
-  let g : Fin n → (Fin n → ℝ) → SetM ℝ := fun i s =>
-    if (i : ℕ) = 0 then fp.round (s i / L i i) else do
-      let t ← dotAccum fp.round ((List.finRange n).filter (· < i)) (L i) s 0
-      let u ← fp.round (s i - t)
-      fp.round (u / L i i)
-  have hprog : algorithm_3_1_1 fp.round L b =
-      (List.finRange n).foldlM (fun s i => do let x ← g i s; pure (Function.update s i x)) b := by
-    unfold algorithm_3_1_1
-    congr 1
-    funext s i
-    simp only [g]
-    split_ifs <;> simp only [pure_bind, bind_assoc]
-  rw [hprog] at hx
-  have key := forall_mem_run_foldlM_update_rows (List.nodup_finRange n) g
-    (fun i s x => (IsMin i → fp.Rounds (b i / L i i) x) ∧
-      (¬ IsMin i → ∃ (o : List (Fin n)) (p : Fin n → ℝ) (s' t : ℝ), o.Nodup ∧
-        (∀ j, j ∈ o ↔ j < i) ∧ (∀ j ∈ o, fp.Rounds (L i j * s j) (p j)) ∧
-        RoundsSumFrom fp 0 (o.map p) s' ∧ fp.Rounds (b i - s') t ∧ fp.Rounds (t / L i i) x))
-    b ?_ ?_ x hx
-  · exact fun i => key i (List.mem_finRange i)
-  · rintro p i q hl s hs x hx
-    have hsi : s i = b i := hs i fun h =>
-      List.disjoint_of_nodup_append (hl ▸ List.nodup_finRange n) h List.mem_cons_self
-    by_cases hi : (i : ℕ) = 0
-    · simp only [g, hi, ↓reduceIte] at hx
-      refine ⟨fun _ => ?_, fun h => absurd ((fin_isMin_iff i).2 hi) h⟩
-      rw [← hsi]
-      exact hx
-    · simp only [g, hi, ↓reduceIte, SetM.mem_run_bind] at hx
-      obtain ⟨s', hs', t, ht, hx⟩ := hx
-      have hnd := (List.nodup_finRange n).filter (· < i)
-      obtain ⟨pp, hpp, hsum⟩ := exists_of_mem_run_dotAccum hnd hs'
-      refine ⟨fun h => absurd ((fin_isMin_iff i).1 h) hi, fun _ =>
-        ⟨_, pp, s', t, hnd, fun j => by simp, hpp, hsum, ?_, hx⟩⟩
-      rw [← hsi]
-      exact ht
-  · rintro p i q hl s s' x hss ⟨h₁, h₂⟩
-    refine ⟨h₁, fun hi => ?_⟩
-    obtain ⟨o, pp, s₁, t, hnd, ho, hpp, hsum, ht, hx⟩ := h₂ hi
-    refine ⟨o, pp, s₁, t, hnd, ho, fun j hj => ?_, hsum, ht, hx⟩
-    have hjp : j ∈ p := List.mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
-      (List.mem_finRange j) (ne_of_lt ((ho j).1 hj)) (lt_asymm ((ho j).1 hj))
-    rw [← hss j hjp]
-    exact hpp j hj
+    ∀ x ∈ (algorithm_3_1_1 fp.round L b).run, RoundsForwardSubstDot fp L b x :=
+  fun x hx => roundsForwardSubstDot_of_mem_run_rowSubst fp L (List.pairwise_lt_finRange n)
+    List.mem_finRange (fun i => (i : ℕ) = 0) (fun i => (fin_isMin_iff i).symm)
+    (fun i => (List.finRange n).filter (· < i)) (fun _ => (List.nodup_finRange n).filter _)
+    (fun i j => by simp) b x hx
 
 /-- **The bridge of Algorithm 3.1.2**: every run is an admissible back substitution in the
-inner-product order, `FloatingPoint.RoundsBackSubstDot`. No hypothesis on `U`. -/
+inner-product order, `FloatingPoint.RoundsBackSubstDot` — Algorithm 3.1.1's loop on the dual order
+`(Fin n)ᵒᵈ`. No hypothesis on `U`. -/
 theorem algorithm_3_1_2_rounds (U : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ x ∈ (algorithm_3_1_2 fp.round U b).run, RoundsBackSubstDot fp U b x := by
   intro x hx
-  have hsort : (List.finRange n).reverse.Pairwise (fun a b => b < a) :=
-    List.pairwise_reverse.2 (List.pairwise_lt_finRange n)
-  have hnodup : (List.finRange n).reverse.Nodup := List.nodup_reverse.2 (List.nodup_finRange n)
-  let g : Fin n → (Fin n → ℝ) → SetM ℝ := fun i s =>
-    if (i : ℕ) = n - 1 then fp.round (s i / U i i) else do
-      let t ← dotAccum fp.round ((List.finRange n).filter (i < ·)) (U i) s 0
-      let u ← fp.round (s i - t)
-      fp.round (u / U i i)
-  have hprog : algorithm_3_1_2 fp.round U b =
-      (List.finRange n).reverse.foldlM
-        (fun s i => do let x ← g i s; pure (Function.update s i x)) b := by
-    unfold algorithm_3_1_2
-    congr 1
-    funext s i
-    simp only [g]
-    split_ifs <;> simp only [pure_bind, bind_assoc]
-  rw [hprog] at hx
-  have key := forall_mem_run_foldlM_update_rows hnodup g
-    (fun i s x => (IsMax i → fp.Rounds (b i / U i i) x) ∧
-      (¬ IsMax i → ∃ (o : List (Fin n)) (p : Fin n → ℝ) (s' t : ℝ), o.Nodup ∧
-        (∀ j, j ∈ o ↔ i < j) ∧ (∀ j ∈ o, fp.Rounds (U i j * s j) (p j)) ∧
-        RoundsSumFrom fp 0 (o.map p) s' ∧ fp.Rounds (b i - s') t ∧ fp.Rounds (t / U i i) x))
-    b ?_ ?_ x hx
-  · exact fun i => key i (List.mem_reverse.2 (List.mem_finRange i))
-  · rintro p i q hl s hs x hx
-    have hsi : s i = b i := hs i fun h =>
-      List.disjoint_of_nodup_append (hl ▸ hnodup) h List.mem_cons_self
-    by_cases hi : (i : ℕ) = n - 1
-    · simp only [g, hi, ↓reduceIte] at hx
-      refine ⟨fun _ => ?_, fun h => absurd ((fin_isMax_iff i).2 hi) h⟩
-      rw [← hsi]
-      exact hx
-    · simp only [g, hi, ↓reduceIte, SetM.mem_run_bind] at hx
-      obtain ⟨s', hs', t, ht, hx⟩ := hx
-      have hnd := (List.nodup_finRange n).filter (i < ·)
-      obtain ⟨pp, hpp, hsum⟩ := exists_of_mem_run_dotAccum hnd hs'
-      refine ⟨fun h => absurd ((fin_isMax_iff i).1 h) hi, fun _ =>
-        ⟨_, pp, s', t, hnd, fun j => by simp, hpp, hsum, ?_, hx⟩⟩
-      rw [← hsi]
-      exact ht
-  · rintro p i q hl s s' x hss ⟨h₁, h₂⟩
-    refine ⟨h₁, fun hi => ?_⟩
-    obtain ⟨o, pp, s₁, t, hnd, ho, hpp, hsum, ht, hx⟩ := h₂ hi
-    refine ⟨o, pp, s₁, t, hnd, ho, fun j hj => ?_, hsum, ht, hx⟩
-    have hjp : j ∈ p := List.mem_prefix_of_pairwise hsort hl
-      (List.mem_reverse.2 (List.mem_finRange j)) (ne_of_gt ((ho j).1 hj))
-      (lt_asymm ((ho j).1 hj))
-    rw [← hss j hjp]
-    exact hpp j hj
+  rw [roundsBackSubstDot_iff_roundsForwardSubstDot_toDual]
+  refine roundsForwardSubstDot_of_mem_run_rowSubst (ι := (Fin n)ᵒᵈ) fp U
+    (l := ((List.finRange n).reverse : List (Fin n)ᵒᵈ))
+    (List.pairwise_reverse.2 (List.pairwise_lt_finRange n))
+    (fun i => List.mem_reverse.2 (List.mem_finRange (OrderDual.ofDual i)))
+    (fun i => ((OrderDual.ofDual i : Fin n) : ℕ) = n - 1)
+    (fun i => (fin_isMax_iff (OrderDual.ofDual i)).symm.trans isMin_toDual_iff.symm)
+    (fun i : (Fin n)ᵒᵈ =>
+      ((List.finRange n).filter (fun j : Fin n => OrderDual.ofDual i < j) : List (Fin n)ᵒᵈ))
+    (fun _ => (List.nodup_finRange n).filter _) (fun i j => ?_) b x hx
+  change OrderDual.ofDual j ∈ (List.finRange n).filter
+      (fun j : Fin n => decide (OrderDual.ofDual i < j)) ↔ OrderDual.ofDual i < OrderDual.ofDual j
+  simp
 
 /-- **The bridge of Algorithm 3.1.3** (the prototype's): every run is an admissible forward
 substitution in the running-difference order, `FloatingPoint.RoundsForwardSubst`. No hypothesis on
 `L`, and no idempotence: the relation starts from the unrounded `b i`. -/
 theorem algorithm_3_1_3_rounds (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ x ∈ (algorithm_3_1_3 fp.round L b).run, RoundsForwardSubst fp L b x :=
-  fun x hx => roundsForwardSubst_of_mem_run_colSubst fp L (List.pairwise_lt_finRange n)
-    List.mem_finRange (fun j => (List.finRange n).filter (j < ·))
+  fun x hx => FloatingPoint.roundsForwardSubst_of_mem_run_colSubst fp L
+    (List.pairwise_lt_finRange n) List.mem_finRange (fun j => (List.finRange n).filter (j < ·))
     (fun _ => (List.nodup_finRange n).filter _) (fun j i => by simp) b x hx
 
 /-- **The bridge of Algorithm 3.1.4**: every run is an admissible back substitution,
@@ -347,7 +305,7 @@ theorem algorithm_3_1_4_rounds (U : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → �
     ∀ x ∈ (algorithm_3_1_4 fp.round U b).run, RoundsBackSubst fp U b x := by
   intro x hx
   rw [roundsBackSubst_iff_roundsForwardSubst_toDual]
-  refine roundsForwardSubst_of_mem_run_colSubst (ι := (Fin n)ᵒᵈ) fp U
+  refine FloatingPoint.roundsForwardSubst_of_mem_run_colSubst (ι := (Fin n)ᵒᵈ) fp U
     (l := ((List.finRange n).reverse : List (Fin n)ᵒᵈ))
     (List.pairwise_reverse.2 (List.pairwise_lt_finRange n))
     (fun i => List.mem_reverse.2 (List.mem_finRange (OrderDual.ofDual i)))
@@ -528,6 +486,22 @@ theorem forwardSubstColOn_finRange {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (b
     forwardSubstColOn rnd (List.finRange n) L b = algorithm_3_1_3 rnd L b :=
   rfl
 
+/-- **The unit lower triangular solve** on the rows and columns of an index list `o`: the loop of
+`forwardSubstColOn` for a unit lower triangular `L`, whose division by the unit diagonal is not
+performed (convention 2; "unit triangular solves inside factorizations do not divide", §3.1.7):
+for `j` in `o`, `b(i) = b(i) - b(j) L(i,j)` for the later `i` of `o`, every product and difference
+rounded. The diagonal of `L` is not read. It is the solve with `L₁₁`, `L_kk` of the block LU
+Algorithms 3.2.3 and 3.2.4. -/
+noncomputable def unitForwardSubstColOn {n : ℕ} (o : List (Fin n))
+    (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) :=
+  o.foldlM (fun (b : Fin n → ℝ) j =>
+      (o.filter (j < ·)).foldlM
+        (fun (b : Fin n → ℝ) i => do
+          let p ← rnd (b j * L i j)
+          let bi ← rnd (b i - p)
+          pure (Function.update b i bi)) b)
+    b
+
 /-- **(3.1.4), block forward elimination** for `L X = B` with `B ∈ ℝ^{n×q}`:
 ```
 for j = 1:N
@@ -652,22 +626,20 @@ theorem forwardSubstColOn_exact {n : ℕ} {o : List (Fin n)} (ho : o.Pairwise (�
     rw [hsum, hxx, ite_eq_left ⟨hi, hiq⟩, hx₂, hs₁, Function.update_of_ne hix, h₃ i hi hip']
     ring
 
+/-- **The unit solve in exact arithmetic** is the column-oriented solve when the diagonal of `L` on
+the list is `1`: the skipped division is `b(j)/1 = b(j)`. -/
+theorem unitForwardSubstColOn_id_eq {n : ℕ} {o : List (Fin n)} {L : Matrix (Fin n) (Fin n) ℝ}
+    (hL : ∀ j ∈ o, L j j = 1) (b : Fin n → ℝ) :
+    Id.run (unitForwardSubstColOn pure o L b) = Id.run (forwardSubstColOn pure o L b) := by
+  simp only [unitForwardSubstColOn, forwardSubstColOn, List.idRun_foldlM, pure_bind, Id.run_pure]
+  exact List.foldl_ext _ _ _ fun b j hj => by rw [hL j hj, div_one, Function.update_eq_self]
 
-/-- In exact arithmetic, a loop replacing column `c` by `f` of its current value, over a
-duplicate-free list of columns, replaces every listed column once: `List.foldl_update_of_nodup`
-on the transposed state. -/
+@[deprecated "use `Matrix.foldl_updateCol_apply` with `fun _ => f`" (since := "2026-09-30")]
 theorem foldl_updateCol_apply_of_col {n q : ℕ} (f : (Fin n → ℝ) → Fin n → ℝ)
     {cs : List (Fin q)} (hcs : cs.Nodup) (B : Matrix (Fin n) (Fin q) ℝ) (i : Fin n) (c : Fin q) :
     cs.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) c => B.updateCol c (f fun i => B i c)) B i c =
-      if c ∈ cs then f (fun i => B i c) i else B i c := by
-  have hhom := List.foldl_hom (transpose : Matrix (Fin n) (Fin q) ℝ → Matrix (Fin q) (Fin n) ℝ)
-    (g₁ := fun (B : Matrix (Fin n) (Fin q) ℝ) c => B.updateCol c (f fun i => B i c))
-    (g₂ := fun (y : Matrix (Fin q) (Fin n) ℝ) c => Function.update y c (f (y c))) (l := cs)
-    (init := B) fun B c => updateRow_transpose
-  refine (congrFun (congrFun hhom c) i).symm.trans ((congrFun (congrFun
-    (List.foldl_update_of_nodup hcs (fun c y => f (y c)) (fun _ _ _ _ _ e => by rw [e]) Bᵀ) c)
-    i).trans ?_)
-  split_ifs <;> rfl
+      if c ∈ cs then f (fun i => B i c) i else B i c :=
+  Matrix.foldl_updateCol_apply (fun _ => f) hcs B i c
 
 /-- In exact arithmetic, the innermost loop of the block saxpy of (3.1.4): entry `(i,c)` receives
 `L(i,j) B(j,c)` subtracted for every listed `j` (rows off `i`), every other entry is kept. -/
@@ -833,7 +805,7 @@ theorem equation_3_1_4 {n N q : ℕ} {blk : Fin n → Fin N} (hblk : Monotone bl
   set S₁ := (List.finRange q).foldl (fun (S : Matrix (Fin n) (Fin q) ℝ) c =>
     S.updateCol c (Y x fun i => S i c)) S with hS₁def
   have hS₁ : ∀ i c, S₁ i c = Y x (fun i => S i c) i := fun i c => by
-    rw [hS₁def, foldl_updateCol_apply_of_col (Y x) (List.nodup_finRange q),
+    rw [hS₁def, Matrix.foldl_updateCol_apply (fun _ => Y x) (List.nodup_finRange q),
       ite_eq_left (List.mem_finRange c)]
   have hS₂ : ∀ i c, (R x).foldl
         (fun (S : Matrix (Fin n) (Fin q) ℝ) i => (List.finRange q).foldl
@@ -914,7 +886,7 @@ theorem nonsquareLower_tall {n p : ℕ} {L₁₁ : Matrix (Fin n) (Fin n) ℝ}
     (b₁ : Fin n → ℝ) (b₂ : Fin p → ℝ) :
     ((∃ x, fromRows L₁₁ L₂₁ *ᵥ x = Sum.elim b₁ b₂) ↔ L₂₁ *ᵥ (L₁₁⁻¹ *ᵥ b₁) = b₂) ∧
       ∀ x, fromRows L₁₁ L₂₁ *ᵥ x = Sum.elim b₁ b₂ → x = L₁₁⁻¹ *ᵥ b₁ := by
-  have hU : IsUnit L₁₁ := (isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular hL).2 hd
+  have hU : IsUnit L₁₁ := hL.isUnit_iff.2 hd
   have : Invertible L₁₁ := hU.invertible
   have key : ∀ x, fromRows L₁₁ L₂₁ *ᵥ x = Sum.elim b₁ b₂ ↔
       L₁₁ *ᵥ x = b₁ ∧ L₂₁ *ᵥ x = b₂ := by
@@ -943,7 +915,7 @@ theorem nonsquareLower_wide {m p : ℕ} {L : Matrix (Fin m) (Fin (m + p)) ℝ}
     L *ᵥ x = b ↔ (fun i => x (Fin.castAdd p i)) = (L.submatrix id (Fin.castAdd p))⁻¹ *ᵥ b := by
   set L₁ := L.submatrix id (Fin.castAdd p)
   have hL₁ : L₁.IsLowerTriangular := fun i j hij => hL i _ (by simpa using hij)
-  have hU : IsUnit L₁ := (isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular hL₁).2 hd
+  have hU : IsUnit L₁ := hL₁.isUnit_iff.2 hd
   have : Invertible L₁ := hU.invertible
   have hsplit : L *ᵥ x = L₁ *ᵥ fun i => x (Fin.castAdd p i) := by
     funext i

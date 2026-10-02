@@ -125,6 +125,10 @@ id = "algorithm_3_2_2_spec"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.2'
 
 [[node]]
+id = "gaxpyColumn"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.2'
+
+[[node]]
 id = "rectangularLU_exists"
 source = 'Golub–Van Loan, Matrix Computations, §3.2.10'
 
@@ -169,9 +173,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.4'
 [[node]]
 id = "algorithm_3_2_4_spec"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.4'
-
-[[node]]
-id = "mem_run_foldlM_updateEntry"
 
 [[node]]
 id = "outerProductStep"

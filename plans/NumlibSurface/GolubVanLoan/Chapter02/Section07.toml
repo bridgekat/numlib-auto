@@ -33,6 +33,10 @@ id = "equation_2_7_4"
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.4)'
 
 [[node]]
+id = "equation_2_7_4_system"
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.4)'
+
+[[node]]
 id = "equation_2_7_5"
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.5)'
 

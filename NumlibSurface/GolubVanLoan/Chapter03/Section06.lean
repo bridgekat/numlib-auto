@@ -120,11 +120,11 @@ theorem exists_blockLUPivoting {r : ℕ} (hr : 0 < r) :
   have hL₁₁unit : L₁₁.IsUnitLowerTriangular := by
     refine ⟨fun i j hij => ?_, fun i => ?_⟩
     · have hij' : (i : ℕ) < j := Fin.lt_def.1 (OrderDual.toDual_lt_toDual.1 hij)
-      exact hRect.lower _ _ (by
+      exact hRect.hasUpperBandwidthRect _ _ (by
         simp only [finSumFinEquiv_apply_left, Fin.val_castAdd, add_zero]; exact hij')
-    · exact hRect.lower_apply_self _ _ (by simp)
+    · exact hRect.apply_eq_one _ _ (by simp)
   have hU₁₁upper : U₁₁.IsUpperTriangular := fun i j hij =>
-    hRect.upper i j (by have := Fin.lt_def.1 (show j < i from hij); omega)
+    hRect.hasLowerBandwidthRect i j (by have := Fin.lt_def.1 (show j < i from hij); omega)
   have h₁₁ : IsLU Ã₁₁ L₁₁ U₁₁ := ⟨hL₁₁unit, hU₁₁upper, by
     ext i j; rw [mul_apply, hÃ₁₁, of_apply, hcol]; rfl⟩
   have h₂₁ : Ã₂₁ = L₂₁ * U₁₁ := by

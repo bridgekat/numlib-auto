@@ -4,9 +4,29 @@ import NumlibSurface.GolubVanLoan.Chapter03.Section03
 # Golub–Van Loan §3.4: pivoting
 
 Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §3.4:
-interchange permutations and the `piv` encoding (§3.4.1), partial pivoting ((3.4.1)–(3.4.3)) and
+interchange permutations and the `piv` encoding (§3.4.1), partial pivoting ((3.4.1)–(3.4.5)) and
 the outer product LU with partial pivoting, Algorithm 3.4.1, with its rounding bridge and the
-solve that follows it; the backward error (3.4.6).
+solves that follow it ((3.4.12)–(3.4.13)); the gaxpy version, Algorithm 3.4.2, with its bridge;
+the backward error (3.4.6) and its normwise forms (3.4.7), (3.4.9) for both algorithms, the growth
+factor (3.4.8) and `2^{n-1}` example; complete pivoting (Algorithm 3.4.3, Wilkinson's bound
+(3.4.10), rank revelation); rook pivoting (§3.4.7); the underdetermined systems (3.4.11) and the
+location of `L` (§3.4.8).
+
+## Main results
+
+* `algorithm_3_4_1`, `algorithm_3_4_1_rounds`, `algorithm_3_4_1_spec`; `solvePLU`, `solveGEPP`,
+  `solveGEPP_spec`, `equation_3_4_12`, `equation_3_4_13`;
+* `equation_3_4_6`, `equation_3_4_7`, `equation_3_4_9` (Algorithm 3.4.1) and `equation_3_4_6_gaxpy`,
+  `equation_3_4_7_gaxpy`, `equation_3_4_9_gaxpy` (Algorithm 3.4.2), through the shared
+  `exists_backward_error_of_roundsLU`;
+* `algorithm_3_4_2`, `algorithm_3_4_2_rounds`, `algorithm_3_4_2_spec` (the column step of
+  Algorithm 3.2.2, `gaxpyInv_succ`, on the row-interchanged matrix, with dominated multipliers);
+* `growthFactorStages`, `growthFactor_le_two_pow`, `growthExample_isLU`,
+  `growthExample_noInterchange`;
+* `algorithm_3_4_3`, `algorithm_3_4_3_spec`, `solveGECP_spec`, `equation_3_4_10`,
+  `completePivoting_rank`, `completePivoting_rank_factorization`;
+* `rookPivotSearch_spec`, `rookPivoting_isLU`; `equation_3_4_11`, `underdetermined_solve`;
+  `equation_3_4_4`, `equation_3_4_5`.
 
 ## Design
 
@@ -82,7 +102,7 @@ def applyPivRev (piv : Fin n → Fin n) (x : Fin n → ℝ) : Fin n → ℝ :=
   (List.finRange n).reverse.foldl (fun x k => x ∘ Equiv.swap k (piv k)) x
 
 /-- A fold over `List.finRange n` is a fold over `List.range n`. -/
-theorem foldl_finRange_eq_foldl_range {β : Type*} (f : β → Fin n → β) (b : β) :
+private theorem foldl_finRange_eq_foldl_range {β : Type*} (f : β → Fin n → β) (b : β) :
     (List.finRange n).foldl f b =
       (List.range n).foldl (fun b k => if h : k < n then f b ⟨k, h⟩ else b) b := by
   rw [← List.map_coe_finRange_eq_range, List.foldl_map]
@@ -91,7 +111,7 @@ theorem foldl_finRange_eq_foldl_range {β : Type*} (f : β → Fin n → β) (b 
   simp [k.2]
 
 /-- A right fold over `List.finRange n` is a right fold over `List.range n`. -/
-theorem foldr_finRange_eq_foldr_range {β : Type*} (f : Fin n → β → β) (b : β) :
+private theorem foldr_finRange_eq_foldr_range {β : Type*} (f : Fin n → β → β) (b : β) :
     (List.finRange n).foldr f b =
       (List.range n).foldr (fun k b => if h : k < n then f ⟨k, h⟩ b else b) b := by
   rw [← List.map_coe_finRange_eq_range, List.foldr_map]
@@ -629,11 +649,13 @@ theorem solvePLU_id_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin
 
 /-- **Exact correctness of the solve after Algorithm 3.4.1**: for nonsingular `A`, Gaussian
 elimination with partial pivoting followed by `Ly = Pb`, `Ux = y` solves `Ax = b`. -/
-theorem solvePLU_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin n → ℝ) :
+theorem solveGEPP_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin n → ℝ) :
     A *ᵥ Id.run (solveGEPP pure A b) = b :=
   solvePLU_id_eq hA b
 
-/-- A loop writing column `k` with a fixed vector `g k` sets the listed columns. -/
+@[deprecated (since := "2026-09-30")] alias solvePLU_spec := solveGEPP_spec
+
+@[deprecated "use `Matrix.foldl_updateCol_apply`" (since := "2026-09-30")]
 theorem foldl_updateCol_apply {p : ℕ}
     (u : Matrix (Fin n) (Fin p) ℝ → Fin p → Matrix (Fin n) (Fin p) ℝ)
     (g : Fin p → Fin n → ℝ) (hu : ∀ X k, u X k = X.updateCol k (g k)) (l : List (Fin p))
@@ -665,13 +687,9 @@ theorem equation_3_4_12 {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit 
         let x ← solvePLU pure out.1 out.2 (fun i => B i k)
         pure (X.updateCol k x) : Id _)) B j k =
         Id.run (solvePLU pure out.1 out.2 (fun i => B i k)) j := fun j => by
-      have h := foldl_updateCol_apply (fun X k => Id.run (do
-          let x ← solvePLU pure out.1 out.2 (fun i => B i k)
-          pure (X.updateCol k x) : Id _))
-        (fun k => Id.run (solvePLU pure out.1 out.2 (fun i => B i k))) (fun _ _ => rfl)
-        (List.finRange p) B j k
-      rw [h]
-      simp
+      exact (Matrix.foldl_updateCol_apply
+        (fun k _ => Id.run (solvePLU pure out.1 out.2 (fun i => B i k)))
+        (List.nodup_finRange p) B j k).trans (ite_eq_left (List.mem_finRange k))
     simp only [hcol]
     exact congrFun (solvePLU_id_eq hA (fun i => B i k)) i
   exact ⟨key B, (inv_eq_right_inv (key 1)).symm⟩
@@ -699,6 +717,27 @@ section Backward
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
+/-- **The backward error of the solve with computed factors of `P A`** (Theorem 3.3.2 for the
+system `(PA) x = Pb`, [higham2002accuracy] Theorem 9.4): if `L̂, Û` is an admissible computed LU
+factorization of the row-permuted `A(σ, :)` with nonzero pivots, every run of `Ly = b(σ)`
+(Algorithm 3.1.1) followed by every run of `Ux = y` (Algorithm 3.1.2) gives `(A + E) x̂ = b` with
+`|E| ≤ γ_{3n} Pᵀ |L̂| |Û|`. Shared by the partial pivoting Algorithms 3.4.1 and 3.4.2. -/
+theorem exists_backward_error_of_roundsLU (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
+    {A L U : Matrix (Fin n) (Fin n) ℝ} {σ : Equiv.Perm (Fin n)}
+    (hR : RoundsLU fp (A.submatrix σ id) L U) (hpiv : ∀ j, U j j ≠ 0) {b y x : Fin n → ℝ}
+    (hy : y ∈ (algorithm_3_1_1 fp.round L (b ∘ σ)).run)
+    (hx : x ∈ (algorithm_3_1_2 fp.round U y).run) :
+    ∃ E : Matrix (Fin n) (Fin n) ℝ, (A + E) *ᵥ x = b ∧
+      E.abs ≤ₑ gamma fp.u (3 * n) • (L.abs * U.abs).submatrix σ.symm id := by
+  obtain ⟨E', hE', hAx⟩ := exists_roundsLU_solveDot_eq hu (by simpa using hn) hR hpiv
+    (algorithm_3_1_1_rounds fp _ _ y hy) (algorithm_3_1_2_rounds fp _ y x hx)
+  refine ⟨E'.submatrix σ.symm id, funext fun i => ?_, fun i j => ?_⟩
+  · have h := congrFun hAx (σ.symm i)
+    simp only [Function.comp_apply, Equiv.apply_symm_apply] at h
+    rw [← h]
+    simp only [mulVec, dotProduct, Matrix.add_apply, submatrix_apply, id, Equiv.apply_symm_apply]
+  · simpa [Matrix.abs, smul_eq_mul] using hE' (σ.symm i) j
+
 /-- **(3.4.6)**, rigorous form: every run `(F, piv)` of Algorithm 3.4.1 with nonzero returned
 pivots, followed by every run of the solve `Ly = Pb`, `Ux = y`, gives `(A + E) x̂ = b` with
 `|E| ≤ γ_{3n} Pᵀ |L̂| |Û|` entrywise (`Pᵀ M` is `M` with its rows permuted back,
@@ -715,18 +754,9 @@ theorem equation_3_4_6 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
   obtain ⟨hR, -⟩ := algorithm_3_4_1_rounds A out hout fun j _ => hpiv j
   rw [solvePLU, SetM.mem_run_bind] at hx
   obtain ⟨y, hy, hx⟩ := hx
-  obtain ⟨E', hE', hAx⟩ := exists_roundsLU_solveDot_eq hu (by simpa using hn) hR
-    (fun j => by rw [packedU_apply_of_le _ le_rfl]; exact hpiv j)
-    (algorithm_3_1_1_rounds fp _ _ y hy) (algorithm_3_1_2_rounds fp _ y x hx)
-  set σ := pivPerm out.2
-  have hPb : applyPiv out.2 b = b ∘ σ := by rw [(applyPiv_eq _ _).1, permMatrix_mulVec]
-  rw [hPb] at hAx
-  refine ⟨E'.submatrix σ.symm id, funext fun i => ?_, fun i j => ?_⟩
-  · have h := congrFun hAx (σ.symm i)
-    simp only [Function.comp_apply, Equiv.apply_symm_apply] at h
-    rw [← h]
-    simp only [mulVec, dotProduct, Matrix.add_apply, submatrix_apply, id, Equiv.apply_symm_apply]
-  · simpa [Matrix.abs, smul_eq_mul] using hE' (σ.symm i) j
+  rw [(applyPiv_eq _ _).1, permMatrix_mulVec] at hy
+  exact exists_backward_error_of_roundsLU hu hn hR
+    (fun j => by rw [packedU_apply_of_le _ le_rfl]; exact hpiv j) hy hx
 
 end Backward
 
@@ -974,7 +1004,7 @@ noncomputable def solveGECP {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin 
 
 /-- **Exact correctness of the GECP solve**: for nonsingular `A`, complete pivoting followed by
 Steps 1–3 solves `Ax = b`. -/
-theorem solvePLUQ_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin n → ℝ) :
+theorem solveGECP_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin n → ℝ) :
     A *ᵥ Id.run (solveGECP pure A b) = b := by
   obtain ⟨hLU, -, -⟩ := algorithm_3_4_3_spec A
   set out := Id.run (algorithm_3_4_3 pure A)
@@ -1010,16 +1040,7 @@ theorem solvePLUQ_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin
   simp only [mulVec, dotProduct, submatrix_apply, Equiv.apply_symm_apply]
   exact (Fintype.sum_equiv ρ _ _ fun j => by simp [ρ]).symm
 
-/-- **(3.4.10)**, Wilkinson's bound for complete pivoting in exact arithmetic, with the index
-corrected: the entries of the trailing block of `A^{(k)}`, the matrix after `k` steps of complete
-pivoting, satisfy `|a_ij^{(k)}| ≤ (k+1)^{1/2} (2 · 3^{1/2} ⋯ (k+1)^{1/k})^{1/2} max |a_ij|`
-(`Matrix.wilkinsonGrowthBound (k + 1) * supAbs A`). The book prints the bound with `k` in place of
-`k + 1`, which is false for `k = 1` (`!![1, 1; 1, -1]` produces `-2 > 1 = f(1)`); with the (3.2.3)
-indexing (`A^{(k)}` after `k - 1` steps) the printed form is right. -/
-theorem equation_3_4_10 (A : Matrix (Fin n) (Fin n) ℝ) {k : ℕ} (hk : k < n) {i j : Fin n}
-    (hi : k ≤ (i : ℕ)) (hj : k ≤ (j : ℕ)) :
-    |(gemFullPivotStage A completePivotEntry k).1 i j| ≤ wilkinsonGrowthBound (k + 1) * A.supAbs :=
-  abs_gemFullPivotStage_le_wilkinson A isCompletePivot_completePivotEntry hk hi hj
+@[deprecated (since := "2026-09-30")] alias solvePLUQ_spec := solveGECP_spec
 
 /-- §3.4.6, rank revelation: "suppose `rank(A) = r < n`. It follows that at the beginning of step
 `r + 1`, `A(r+1:n, r+1:n) = 0`", and the first `r` pivots are nonzero. -/
@@ -1267,16 +1288,22 @@ private theorem frozen_aux (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
       have := j.2
       omega
 
-/-- **(3.4.10), the frozen rows** (the second clause of the book's bound, for every entry and not
-only the trailing block): after `k` steps of complete pivoting every entry satisfies
-`|a_ij^{(k)}| ≤ wilkinsonGrowthBound (k + 1) · max |a_ij|` — an entry outside the trailing block
-is either an eliminated entry (zero; a zero pivot of complete pivoting comes with a zero column)
-or in a row frozen at an earlier step, where the smaller bound holds
+/-- **(3.4.10)**, Wilkinson's bound for complete pivoting in exact arithmetic, with the index
+corrected: "the elements of `A^{(k)}`", the matrix after `k` steps of complete pivoting, satisfy
+`|a_ij^{(k)}| ≤ (k+1)^{1/2} (2 · 3^{1/2} ⋯ (k+1)^{1/k})^{1/2} max |a_ij|`
+(`Matrix.wilkinsonGrowthBound (k + 1) * supAbs A`), for every entry. The book prints the bound with
+`k` in place of `k + 1`, which is false for `k = 1` (`!![1, 1; 1, -1]` produces `-2 > 1 = f(1)`);
+with the (3.2.3) indexing (`A^{(k)}` after `k - 1` steps) the printed form is right. On the
+trailing block it is Wilkinson's theorem (`Matrix.abs_gemFullPivotStage_le_wilkinson`); an entry
+outside it is either an eliminated entry (zero; a zero pivot of complete pivoting comes with a zero
+column) or in a row frozen at an earlier step, where the smaller bound holds
 (`Matrix.wilkinsonGrowthBound_mono`). -/
-theorem equation_3_4_10_frozen (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) (i j : Fin n) :
+theorem equation_3_4_10 (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) (i j : Fin n) :
     |(gemFullPivotStage A completePivotEntry k).1 i j| ≤
       wilkinsonGrowthBound (k + 1) * A.supAbs :=
   (frozen_aux A k).1 i j
+
+@[deprecated (since := "2026-09-30")] alias equation_3_4_10_frozen := equation_3_4_10
 
 end Complete
 
@@ -1631,6 +1658,35 @@ theorem linfty_opNorm_le_of_equation_3_4_6 {E L U : Matrix (Fin n) (Fin n) ℝ}
   calc ‖L.abs * U.abs‖ ≤ ‖L.abs‖ * ‖U.abs‖ := linfty_opNorm_mul _ _
     _ = ‖L‖ * ‖U‖ := by rw [linfty_opNorm_abs, linfty_opNorm_abs]
 
+/-- The backward error (3.4.6) in norm with multipliers at most `1 + u`:
+`‖E‖_∞ ≤ n (1 + u) γ ‖Û‖_∞`. -/
+theorem linfty_opNorm_le_of_backward_error {E L U : Matrix (Fin n) (Fin n) ℝ}
+    {σ : Equiv.Perm (Fin n)} {γ : ℝ} (hγ : 0 ≤ γ)
+    (hE : E.abs ≤ₑ γ • (L.abs * U.abs).submatrix σ.symm id) (hL : ∀ i j, |L i j| ≤ 1 + fp.u) :
+    ‖E‖ ≤ n * (1 + fp.u) * γ * ‖U‖ := by
+  have hL' : ‖L‖ ≤ n * (1 + fp.u) := by
+    have h := linfty_opNorm_le_card_mul_of_abs_le (by linarith [fp.u_nonneg]) hL
+    rwa [Fintype.card_fin] at h
+  refine (linfty_opNorm_le_of_equation_3_4_6 hγ hE).trans ?_
+  calc γ * (‖L‖ * ‖U‖) ≤ γ * ((n * (1 + fp.u)) * ‖U‖) := by gcongr
+    _ = n * (1 + fp.u) * γ * ‖U‖ := by ring
+
+/-- The backward error (3.4.6) in norm, with multipliers at most `1 + u` and the computed `Û`
+bounded by `ρ ‖A‖_∞`: `‖E‖_∞ ≤ n² (1 + u) γ ρ ‖A‖_∞`. -/
+theorem linfty_opNorm_le_of_backward_error_growth {A E L U : Matrix (Fin n) (Fin n) ℝ}
+    {σ : Equiv.Perm (Fin n)} {γ ρ : ℝ} (hγ : 0 ≤ γ) (hρ : 0 ≤ ρ)
+    (hE : E.abs ≤ₑ γ • (L.abs * U.abs).submatrix σ.symm id) (hL : ∀ i j, |L i j| ≤ 1 + fp.u)
+    (hU : ∀ i j, |U i j| ≤ ρ * ‖A‖) :
+    ‖E‖ ≤ (n : ℝ) ^ 2 * (1 + fp.u) * γ * ρ * ‖A‖ := by
+  have hU' : ‖U‖ ≤ n * (ρ * ‖A‖) := by
+    have h := linfty_opNorm_le_card_mul_of_abs_le (mul_nonneg hρ (norm_nonneg _)) hU
+    rwa [Fintype.card_fin] at h
+  refine (linfty_opNorm_le_of_backward_error hγ hE hL).trans ?_
+  calc (n : ℝ) * (1 + fp.u) * γ * ‖U‖ ≤ n * (1 + fp.u) * γ * (n * (ρ * ‖A‖)) :=
+        mul_le_mul_of_nonneg_left hU'
+          (mul_nonneg (mul_nonneg (Nat.cast_nonneg n) (by linarith [fp.u_nonneg])) hγ)
+    _ = (n : ℝ) ^ 2 * (1 + fp.u) * γ * ρ * ‖A‖ := by ring
+
 /-- **(3.4.7)**, rigorous form: under the hypotheses of (3.4.6), `‖E‖_∞ ≤ n (1 + u) γ_{3n} ‖Û‖_∞` —
 the computed multipliers are at most `1 + u` in absolute value, so `‖L̂‖_∞ ≤ n (1 + u)`. The book's
 `nu(2‖A‖_∞ + 4n‖Û‖_∞) + O(u²)` is implied to first order. -/
@@ -1641,20 +1697,15 @@ theorem equation_3_4_7 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
         (A + E) *ᵥ x = b ∧ ‖E‖ ≤ n * (1 + fp.u) * gamma fp.u (3 * n) * ‖packedU out.1‖ := by
   intro out hout hpiv x hx
   obtain ⟨E, hAx, hE⟩ := equation_3_4_6 hu hn A b out hout hpiv x hx
-  have hγ : 0 ≤ gamma fp.u (3 * n) := gamma_nonneg fp.u_nonneg hn
-  have hL : ‖packedL out.1‖ ≤ n * (1 + fp.u) := by
-    have h := linfty_opNorm_le_card_mul_of_abs_le (by linarith [fp.u_nonneg])
-      (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2
-    rwa [Fintype.card_fin] at h
-  refine ⟨E, hAx, (linfty_opNorm_le_of_equation_3_4_6 hγ hE).trans ?_⟩
-  calc gamma fp.u (3 * n) * (‖packedL out.1‖ * ‖packedU out.1‖)
-      ≤ gamma fp.u (3 * n) * ((n * (1 + fp.u)) * ‖packedU out.1‖) := by gcongr
-    _ = n * (1 + fp.u) * gamma fp.u (3 * n) * ‖packedU out.1‖ := by ring
+  exact ⟨E, hAx, linfty_opNorm_le_of_backward_error (gamma_nonneg fp.u_nonneg hn) hE
+    (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2⟩
 
 /-- **(3.4.9)**, its rigorous conditional form (Higham's "illicit manoeuvre" made a hypothesis):
 under the hypotheses of (3.4.6), if the computed `Û` satisfies `|û_ij| ≤ ρ ‖A‖_∞`, then
-`‖E‖_∞ ≤ n² (1 + u) γ_{3n} ρ ‖A‖_∞`. With `ρ` the growth factor (3.4.8) this is the book's
-`6 n³ ρ ‖A‖_∞ u + O(u²)` with the better constant `3` (`n² γ_{3n} = 3 n³ u + O(u²)`). -/
+`‖E‖_∞ ≤ n² (1 + u) γ_{3n} ρ ‖A‖_∞` — the book's `6 n³ ρ ‖A‖_∞ u + O(u²)` with the better constant
+`3` (`n² γ_{3n} = 3 n³ u + O(u²)`). Here `ρ` is any bound on `|Û|/‖A‖_∞` for the *computed* `Û`,
+the book's reading of the growth factor; the formal (3.4.8), `growthFactorStages`, is defined on
+the exact stages (errata) and does not bound the computed `Û`, so it cannot be plugged in. -/
 theorem equation_3_4_9 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) {ρ : ℝ} (hρ : 0 ≤ ρ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, (∀ j, out.1 j j ≠ 0) →
@@ -1663,20 +1714,8 @@ theorem equation_3_4_9 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
         (A + E) *ᵥ x = b ∧ ‖E‖ ≤ (n : ℝ) ^ 2 * (1 + fp.u) * gamma fp.u (3 * n) * ρ * ‖A‖ := by
   intro out hout hpiv hU x hx
   obtain ⟨E, hAx, hE⟩ := equation_3_4_6 hu hn A b out hout hpiv x hx
-  have hγ : 0 ≤ gamma fp.u (3 * n) := gamma_nonneg fp.u_nonneg hn
-  have hL : ‖packedL out.1‖ ≤ n * (1 + fp.u) := by
-    have h := linfty_opNorm_le_card_mul_of_abs_le (by linarith [fp.u_nonneg])
-      (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2
-    rwa [Fintype.card_fin] at h
-  have hU' : ‖packedU out.1‖ ≤ n * (ρ * ‖A‖) := by
-    have h := linfty_opNorm_le_card_mul_of_abs_le (mul_nonneg hρ (norm_nonneg _)) hU
-    rwa [Fintype.card_fin] at h
-  refine ⟨E, hAx, (linfty_opNorm_le_of_equation_3_4_6 hγ hE).trans ?_⟩
-  calc gamma fp.u (3 * n) * (‖packedL out.1‖ * ‖packedU out.1‖)
-      ≤ gamma fp.u (3 * n) * ((n * (1 + fp.u)) * (n * (ρ * ‖A‖))) := by
-        gcongr
-        exact (norm_nonneg _).trans hL
-    _ = (n : ℝ) ^ 2 * (1 + fp.u) * gamma fp.u (3 * n) * ρ * ‖A‖ := by ring
+  exact ⟨E, hAx, linfty_opNorm_le_of_backward_error_growth (gamma_nonneg fp.u_nonneg hn) hρ hE
+    (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2 hU⟩
 
 end Normwise
 
@@ -1720,17 +1759,13 @@ for j = 1:n
 end
 ```
 The interchanges recorded so far are applied to `A(:,j)` by the `piv` loop (`applyPiv`, the
-entries at and after `j` still the identity); the triangular solve and the gaxpy are the row
-loop of running differences of Algorithm 3.2.2. The state is `(L, U, piv)`. -/
+entries at and after `j` still the identity); the triangular solve and the gaxpy are the column
+`gaxpyColumn` of Algorithm 3.2.2. The state is `(L, U, piv)`. -/
 noncomputable def algorithm_3_4_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) :=
   (List.finRange n).foldlM
     (fun (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) j => do
-      let v ← (List.finRange n).foldlM (fun (v : Fin n → ℝ) i => do
-        let vi ← ((List.finRange n).filter (fun r => r < i ∧ r < j)).foldlM (fun (c : ℝ) r => do
-          let p ← rnd (st.1 i r * v r)
-          rnd (c - p)) (applyPiv st.2.2 (fun i => A i j) i)
-        pure (Function.update v i vi)) (applyPiv st.2.2 fun i => A i j)
+      let v ← gaxpyColumn rnd st.1 (applyPiv st.2.2 fun i => A i j) j
       if v (Equiv.swap j (firstMaxIndex v j) j) ≠ 0 then do
         let L ← ((List.finRange n).filter (j < ·)).foldlM
           (fun (L : Matrix (Fin n) (Fin n) ℝ) i => do
@@ -1749,23 +1784,20 @@ section Alg342Bridge
 
 variable {fp : RoundingModel ℝ}
 
+/-- The domination of the multipliers of partial pivoting in the finished columns before `j`: the
+running difference `t` of each `l_ic` is at most the pivot `|u_cc|`. -/
+def GaxpyDom (fp : RoundingModel ℝ) (B : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
+    (L U : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  ∀ i c : Fin n, (c : ℕ) < j → c < i → ∃ (o : List (Fin n)) (t : ℝ), o.Nodup ∧
+    (∀ r, r ∈ o ↔ r < c) ∧ RoundsRunningDiff fp o (L i) (fun r => U r c) (B i c) t ∧
+    |t| ≤ |U c c| ∧ fp.Rounds (t / U c c) (L i c)
+
 /-- The invariant of Algorithm 3.4.2 after the columns before `j`, for the matrix `B` with its rows
-permuted by the interchanges so far: the finished columns hold the entries of the Doolittle
-recurrence of `B` (the multipliers dominated by their pivot), the later columns of `L` and `U` are
-still those of the identity and of the zero matrix, and the later `piv` entries are trivial. -/
+permuted by the interchanges so far: the invariant `GaxpyInv` of Algorithm 3.2.2 for `B`, with the
+multipliers dominated by their pivots (`GaxpyDom`). -/
 def Alg342Core (fp : RoundingModel ℝ) (B : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
     (L U : Matrix (Fin n) (Fin n) ℝ) : Prop :=
-  (∀ i c : Fin n, (c : ℕ) < j → i ≤ c → ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧
-    (∀ r, r ∈ o ↔ r < i) ∧ (∀ r ∈ o, fp.Rounds (L i r * U r c) (p r)) ∧
-    RoundsSumFrom fp (B i c) (o.map fun r => -p r) (U i c)) ∧
-  (∀ i c : Fin n, (c : ℕ) < j → c < i → ∃ (o : List (Fin n)) (p : Fin n → ℝ) (t : ℝ), o.Nodup ∧
-    (∀ r, r ∈ o ↔ r < c) ∧ (∀ r ∈ o, fp.Rounds (L i r * U r c) (p r)) ∧
-    RoundsSumFrom fp (B i c) (o.map fun r => -p r) t ∧ |t| ≤ |U c c| ∧
-    fp.Rounds (t / U c c) (L i c)) ∧
-  (∀ i c : Fin n, j ≤ (c : ℕ) → L i c = if i = c then 1 else 0) ∧
-  (∀ i c : Fin n, j ≤ (c : ℕ) → U i c = 0) ∧
-  (∀ i c : Fin n, i < c → L i c = 0) ∧ (∀ i, L i i = 1) ∧
-  (∀ i c : Fin n, c < i → U i c = 0)
+  GaxpyInv fp B j (L, U) ∧ GaxpyDom fp B j L U
 
 /-- The invariant of Algorithm 3.4.2 after `j` columns, or — only in a model that does not round
 every value to itself — a zero pivot already returned. -/
@@ -1790,17 +1822,93 @@ theorem applyPiv_eq_comp_pivPermUpTo {piv : Fin n → Fin n} {j : ℕ}
       · exact ih
   rw [(applyPiv_eq piv x).1, permMatrix_mulVec, pivPerm, hup n hj]
 
-/-- One column of Algorithm 3.4.2 keeps its invariant. -/
+/-- The `L` of the interchanged rows: the finished columns before `j` of row `i` are those of row
+`σ i`, the book's `L(j,1:j-1) ↔ L(μ,1:j-1)`. -/
+private abbrev swapFinished (L : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) (σ : Equiv.Perm (Fin n)) :
+    Matrix (Fin n) (Fin n) ℝ :=
+  of fun i c => if c < j then L (σ i) c else L i c
+
+/-- **Interchanging rows at or after `j`** keeps the invariant of Algorithm 3.2.2, for the matrix
+with the same rows interchanged and the finished columns of `L` interchanged with them. -/
+theorem gaxpyInv_submatrix {B L U : Matrix (Fin n) (Fin n) ℝ} {j : Fin n} {σ : Equiv.Perm (Fin n)}
+    (hfix : ∀ i, i < j → σ i = i) (hmap : ∀ i, j ≤ i → j ≤ σ i) (h : GaxpyInv fp B j (L, U)) :
+    GaxpyInv fp (B.submatrix σ id) j (swapFinished L j σ, U) := by
+  obtain ⟨hU, hL, hLid, hU0, hLlow, hLdiag, hUup⟩ := h
+  dsimp only at hU hL hLid hU0 hLlow hLdiag hUup
+  refine ⟨fun i c hc hic => ?_, fun i c hc hci => ?_, fun i c hc => ?_, hU0,
+    fun i c hic => ?_, fun i => ?_, hUup⟩
+  · have hij : i < j := lt_of_le_of_lt hic (Fin.lt_def.2 hc)
+    obtain ⟨o, hnd, ho, hrd⟩ := hU i c hc hic
+    refine ⟨o, hnd, ho, ?_⟩
+    simp only [submatrix_apply, id, hfix i hij]
+    exact hrd.congr (fun r hr => by simp [((ho r).1 hr).trans hij, hfix i hij]) fun _ _ => rfl
+  · have hc' : c < j := Fin.lt_def.2 hc
+    have hcσ : c < σ i := by
+      by_cases hij : i < j
+      · rw [hfix i hij]; exact hci
+      · exact lt_of_lt_of_le hc' (hmap i (not_lt.1 hij))
+    obtain ⟨o, t, hnd, ho, hrd, hx⟩ := hL (σ i) c hc hcσ
+    refine ⟨o, t, hnd, ho, hrd.congr (fun r hr => by simp [((ho r).1 hr).trans hc'])
+      fun _ _ => rfl, ?_⟩
+    simpa [hc'] using hx
+  · have hcj : ¬ c < j := fun h => absurd (Fin.lt_def.1 h) (not_lt.2 hc)
+    simp only [of_apply, hcj, ↓reduceIte]
+    exact hLid i c hc
+  · by_cases hcj : c < j
+    · simp only [of_apply, hcj, ↓reduceIte, hfix i (hic.trans hcj)]
+      exact hLlow i c hic
+    · simp only [of_apply, hcj, ↓reduceIte]
+      exact hLlow i c hic
+  · by_cases hij : i < j
+    · simp only [of_apply, hij, ↓reduceIte, hfix i hij]
+      exact hLdiag i
+    · simp only [of_apply, hij, ↓reduceIte]
+      exact hLdiag i
+
+/-- Interchanging rows at or after `j` keeps the domination of the finished multipliers. -/
+theorem gaxpyDom_submatrix {B L U : Matrix (Fin n) (Fin n) ℝ} {j : Fin n} {σ : Equiv.Perm (Fin n)}
+    (hfix : ∀ i, i < j → σ i = i) (hmap : ∀ i, j ≤ i → j ≤ σ i) (h : GaxpyDom fp B j L U) :
+    GaxpyDom fp (B.submatrix σ id) j (swapFinished L j σ) U := by
+  intro i c hc hci
+  have hc' : c < j := Fin.lt_def.2 hc
+  have hcσ : c < σ i := by
+    by_cases hij : i < j
+    · rw [hfix i hij]; exact hci
+    · exact lt_of_lt_of_le hc' (hmap i (not_lt.1 hij))
+  obtain ⟨o, t, hnd, ho, hrd, hdom, hx⟩ := h (σ i) c hc hcσ
+  refine ⟨o, t, hnd, ho, hrd.congr (fun r hr => by simp [((ho r).1 hr).trans hc'])
+    fun _ _ => rfl, hdom, ?_⟩
+  simpa [hc'] using hx
+
+/-- The column `v` of the gaxpy, interchanged: row `i` of `v ∘ σ` is the running difference of
+row `σ i`, over the same `r < min(i, j)`, against the interchanged `L`. -/
+private theorem gaxpyColumn_rounds_swap {B L : Matrix (Fin n) (Fin n) ℝ} {j : Fin n}
+    {σ : Equiv.Perm (Fin n)} (hfix : ∀ i, i < j → σ i = i) (hmap : ∀ i, j ≤ i → j ≤ σ i)
+    {v : Fin n → ℝ} (hv : v ∈ (gaxpyColumn fp.round L (fun i => B i j) j).run) (i : Fin n) :
+    RoundsRunningDiff fp ((List.finRange n).filter (fun r => r < i ∧ r < j))
+      (swapFinished L j σ i) (v ∘ σ) (B.submatrix σ id i j) ((v ∘ σ) i) := by
+  have h := gaxpyColumn_rounds L (fun i => B i j) j v hv (σ i)
+  have hfilt : (List.finRange n).filter (fun r => r < σ i ∧ r < j) =
+      (List.finRange n).filter (fun r => r < i ∧ r < j) := by
+    refine List.filter_congr fun r _ => ?_
+    simp only [decide_eq_decide]
+    by_cases hij : i < j
+    · rw [hfix i hij]
+    · exact ⟨fun h => ⟨lt_of_lt_of_le h.2 (not_lt.1 hij), h.2⟩,
+        fun h => ⟨lt_of_lt_of_le h.2 (hmap i (not_lt.1 hij)), h.2⟩⟩
+  rw [hfilt] at h
+  exact h.congr (fun r hr => by simp [(by simpa using hr : r < i ∧ r < j).2])
+    fun r hr => by simp [hfix r (by simpa using hr : r < i ∧ r < j).2]
+
+/-- One column of Algorithm 3.4.2 keeps its invariant: the column step of Algorithm 3.2.2
+(`gaxpyInv_succ`) for the interchanged matrix, plus the domination of the new multipliers by the
+pivot `|v(μ)|`. -/
 theorem alg342Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n))
     (hst : Alg342Inv fp A j st)
     (st' : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n))
     (hst' : st' ∈ (do
-      let v ← (List.finRange n).foldlM (fun (v : Fin n → ℝ) i => do
-        let vi ← ((List.finRange n).filter (fun r => r < i ∧ r < j)).foldlM (fun (c : ℝ) r => do
-          let p ← fp.round (st.1 i r * v r)
-          fp.round (c - p)) (applyPiv st.2.2 (fun i => A i j) i)
-        pure (Function.update v i vi)) (applyPiv st.2.2 fun i => A i j)
+      let v ← gaxpyColumn fp.round st.1 (applyPiv st.2.2 fun i => A i j) j
       if v (Equiv.swap j (firstMaxIndex v j) j) ≠ 0 then do
         let L ← ((List.finRange n).filter (j < ·)).foldlM
           (fun (L : Matrix (Fin n) (Fin n) ℝ) i => do
@@ -1823,12 +1931,10 @@ theorem alg342Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
   set σ := Equiv.swap j μ with hσ
   obtain ⟨hjμ, hvmax⟩ := firstMaxIndex_spec v j
   obtain ⟨hfix, hmap⟩ := swap_fix_and_map (k := j) hjμ
-  set L₀ : Matrix (Fin n) (Fin n) ℝ := of fun i c => if c < j then L (σ i) c else L i c with hL₀
   set U' := U.updateCol j (fun i => if i ≤ j then v (σ i) else 0) with hU'
   have hU'o : ∀ i c, c ≠ j → U' i c = U i c := fun i c hc => by simp [hU', hc]
   have hU'j : ∀ i, U' i j = if i ≤ j then v (σ i) else 0 := fun i => by simp [hU']
-  -- the column `U` entries are never changed after their step
-  rcases hst with ⟨⟨hU, hL, hLid, hU0, hLlow, hLdiag, hUup⟩, hpiv⟩ | ⟨⟨c, hc, hcn, hc0⟩, hnrefl⟩
+  rcases hst with ⟨⟨hG, hD⟩, hpiv⟩ | ⟨⟨c, hc, hcn, hc0⟩, hnrefl⟩
   swap
   · -- a zero pivot was already returned
     refine Or.inr ⟨⟨c, by omega, hcn, ?_⟩, hnrefl⟩
@@ -1846,203 +1952,76 @@ theorem alg342Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
       change U' c c = 0
       rw [hU'o c c hcj]
       exact hc0
-  dsimp only at hU hL hLid hU0 hLlow hLdiag hUup hpiv
+  dsimp only at hpiv
   set π := pivPermUpTo piv j with hπ
   set B := A.submatrix π id with hB
   have hx₀ : applyPiv piv (fun i => A i j) = fun i => B i j := by
     rw [applyPiv_eq_comp_pivPermUpTo hpiv j.2.le]
     rfl
   rw [hx₀] at hv
-  -- the entries of `v`: running differences over `r < min i j`
-  have hvrow : ∀ i, ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧
-      (∀ r, r ∈ o ↔ r < i ∧ r < j) ∧ (∀ r ∈ o, fp.Rounds (L i r * v r) (p r)) ∧
-      RoundsSumFrom fp (B i j) (o.map fun r => -p r) (v i) := by
-    have key := forall_mem_run_foldlM_update_rows (List.nodup_finRange n)
-      (fun i (s : Fin n → ℝ) => ((List.finRange n).filter (fun r => r < i ∧ r < j)).foldlM
-        (fun (c : ℝ) r => do let p ← fp.round (L i r * s r); fp.round (c - p)) (B i j))
-      (fun i s x => ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧
-        (∀ r, r ∈ o ↔ r < i ∧ r < j) ∧ (∀ r ∈ o, fp.Rounds (L i r * s r) (p r)) ∧
-        RoundsSumFrom fp (B i j) (o.map fun r => -p r) x)
-      (fun i => B i j) ?_ ?_ v hv
-    · exact fun i => key i (List.mem_finRange i)
-    · rintro p i q hl s - x hx
-      have hnd := (List.nodup_finRange n).filter (fun r => decide (r < i ∧ r < j))
-      obtain ⟨pp, hpp, hsum⟩ := exists_of_mem_run_foldlM_sub hnd hx
-      exact ⟨_, pp, hnd, fun r => by simp, hpp, hsum⟩
-    · rintro p i q hl s s' x hss ⟨o, pp, hnd, ho, hpp, hsum⟩
-      refine ⟨o, pp, hnd, ho, fun r hr => ?_, hsum⟩
-      have hri := ((ho r).1 hr).1
-      have hrp : r ∈ p := List.mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
-        (List.mem_finRange r) (ne_of_lt hri) (lt_asymm hri)
-      rw [← hss r hrp]
-      exact hpp r hr
-  -- the new permuted matrix
+  have hσfix : ∀ i : Fin n, i < j → σ i = i := fun i hi => hfix i (Fin.lt_def.1 hi)
+  have hσmap : ∀ i : Fin n, j ≤ i → j ≤ σ i := fun i hi => Fin.le_def.2 (hmap i (Fin.le_def.1 hi))
+  have hσj : σ j = μ := Equiv.swap_apply_left j μ
   have hB' : A.submatrix (pivPermUpTo (Function.update piv j μ) (j + 1)) id =
       B.submatrix σ id := by
     rw [pivPermUpTo_update, hB, submatrix_submatrix, Equiv.Perm.coe_mul]
     rfl
-  have hσlt : ∀ i : Fin n, j < i → j ≤ σ i := fun i hi =>
-    Fin.le_def.2 (hmap i (Fin.le_def.1 hi.le))
-  have hσfix : ∀ i : Fin n, i < j → σ i = i := fun i hi => hfix i (Fin.lt_def.1 hi)
-  have hσj : σ j = μ := Equiv.swap_apply_left j μ
-  -- the swapped `L`
-  have hL₀lt : ∀ i c : Fin n, c < j → L₀ i c = L (σ i) c := fun i c hc => by
-    simp [hL₀, hc]
-  have hL₀ge : ∀ i c : Fin n, ¬ c < j → L₀ i c = L i c := fun i c hc => by
-    simp [hL₀, hc]
-  -- the common part of the new invariant, given the new column `j` of `L`
-  have hcore : ∀ L' : Matrix (Fin n) (Fin n) ℝ, (∀ i c, ¬ (j < i ∧ c = j) → L' i c = L₀ i c) →
-      (∀ i, j < i → ∃ (o : List (Fin n)) (p : Fin n → ℝ) (t : ℝ), o.Nodup ∧
-        (∀ r, r ∈ o ↔ r < j) ∧ (∀ r ∈ o, fp.Rounds (L' i r * U' r j) (p r)) ∧
-        RoundsSumFrom fp (B.submatrix σ id i j) (o.map fun r => -p r) t ∧ |t| ≤ |U' j j| ∧
-        fp.Rounds (t / U' j j) (L' i j)) →
-      Alg342Core fp (B.submatrix σ id) (j + 1) L' U' := by
-    intro L' hL'o hL'j
-    have hLc : ∀ i c, c ≠ j → L' i c = L₀ i c := fun i c hc => hL'o i c fun h => hc h.2
-    have hLrow : ∀ i c, c < j → L' i c = L (σ i) c := fun i c hc => by
-      rw [hLc i c (ne_of_lt hc), hL₀lt i c hc]
-    refine ⟨fun i c hc hic => ?_, fun i c hc hci => ?_, fun i c hc => ?_, fun i c hc => ?_,
-      fun i c hic => ?_, fun i => ?_, fun i c hci => ?_⟩
-    · rcases Nat.lt_succ_iff_lt_or_eq.1 hc with hc | hc
-      · have hc' : c < j := Fin.lt_def.2 hc
-        have hij : i < j := lt_of_le_of_lt hic hc'
-        obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hU i c hc hic
-        refine ⟨o, p, hnd, ho, fun r hr => ?_, ?_⟩
-        · have hri := (ho r).1 hr
-          rw [hLrow i r (hri.trans hij), hσfix i hij, hU'o r c (ne_of_lt hc')]
-          exact hp r hr
-        · rw [submatrix_apply, hσfix i hij, hU'o i c (ne_of_lt hc')]
-          exact hsum
-      · have hcj : c = j := Fin.ext hc
-        subst hcj
-        obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hvrow (σ i)
-        have hσi : ∀ r : Fin n, r < c → (r < σ i ↔ r < i) := fun r hr => by
-          rcases eq_or_lt_of_le hic with rfl | hic
-          · rw [hσj]
-            exact ⟨fun _ => hr, fun _ => lt_of_lt_of_le hr hjμ⟩
-          · rw [hσfix i hic]
-        refine ⟨o, p, hnd, fun r => (ho r).trans ⟨fun h => (hσi r h.2).1 h.1,
-          fun h => ⟨(hσi r (lt_of_lt_of_le h hic)).2 h, lt_of_lt_of_le h hic⟩⟩,
-          fun r hr => ?_, ?_⟩
-        · have hr' := (ho r).1 hr
-          rw [hLrow i r hr'.2, hU'j r, ite_eq_left hr'.2.le, hσfix r hr'.2]
-          exact hp r hr
-        · rw [hU'j i, ite_eq_left hic, submatrix_apply]
-          exact hsum
-    · rcases Nat.lt_succ_iff_lt_or_eq.1 hc with hc | hc
-      · have hc' : c < j := Fin.lt_def.2 hc
-        have hcσ : c < σ i := by
-          by_cases hij : i < j
-          · rw [hσfix i hij]; exact hci
-          · exact lt_of_lt_of_le hc' (Fin.le_def.2 (hmap i (Fin.le_def.1 (not_lt.1 hij))))
-        obtain ⟨o, p, t, hnd, ho, hp, hsum, hdom, hx⟩ := hL (σ i) c hc hcσ
-        refine ⟨o, p, t, hnd, ho, fun r hr => ?_, ?_, ?_, ?_⟩
-        · have hrc := (ho r).1 hr
-          rw [hLrow i r (hrc.trans hc'), hU'o r c (ne_of_lt hc')]
-          exact hp r hr
-        · rw [submatrix_apply]; exact hsum
-        · rw [hU'o c c (ne_of_lt hc')]; exact hdom
-        · rw [hU'o c c (ne_of_lt hc'), hLrow i c hc']; exact hx
-      · have hcj : c = j := Fin.ext hc
-        subst hcj
-        exact hL'j i hci
-    · have hcj : c ≠ j := fun h => by rw [h] at hc; exact absurd hc (by simp)
-      rw [hLc i c hcj, hL₀ge i c (fun h => by have := Fin.lt_def.1 h; omega)]
-      exact hLid i c (by omega)
-    · have hcj : c ≠ j := fun h => by rw [h] at hc; exact absurd hc (by simp)
-      rw [hU'o i c hcj]
-      exact hU0 i c (by omega)
-    · rw [hL'o i c fun h => by rw [h.2] at hic; exact lt_asymm h.1 hic]
-      by_cases hcj : c < j
-      · rw [hL₀lt i c hcj, hσfix i (hic.trans hcj)]
-        exact hLlow i c hic
-      · rw [hL₀ge i c hcj]
-        exact hLlow i c hic
-    · rw [hL'o i i fun ⟨h1, h2⟩ => by rw [h2] at h1; exact lt_irrefl _ h1]
-      by_cases hij : i < j
-      · rw [hL₀lt i i hij, hσfix i hij]
-        exact hLdiag i
-      · rw [hL₀ge i i hij]
-        exact hLdiag i
-    · by_cases hcj : c = j
-      · subst hcj
-        rw [hU'j i, ite_eq_right (not_le.2 hci)]
-      · rw [hU'o i c hcj]
-        exact hUup i c hci
-  -- the rows of the new column `j` of `L`, from `v`
-  have hvL : ∀ i, j < i → ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧
-      (∀ r, r ∈ o ↔ r < j) ∧ (∀ r ∈ o, fp.Rounds (L₀ i r * U' r j) (p r)) ∧
-      RoundsSumFrom fp (B.submatrix σ id i j) (o.map fun r => -p r) (v (σ i)) := by
-    intro i hi
-    obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hvrow (σ i)
-    refine ⟨o, p, hnd, fun r => (ho r).trans ⟨fun h => h.2,
-      fun h => ⟨lt_of_lt_of_le h (hσlt i hi), h⟩⟩, fun r hr => ?_, hsum⟩
-    have hr' := (ho r).1 hr
-    rw [hL₀lt i r hr'.2, hU'j r, ite_eq_left hr'.2.le, hσfix r hr'.2]
-    exact hp r hr
-  have hdomv : ∀ i, j < i → |v (σ i)| ≤ |U' j j| := fun i hi => by
-    rw [hU'j j, ite_eq_left le_rfl, hσj]
-    exact hvmax _ (hσlt i hi)
   have hpiv' : ∀ c : Fin n, (j : ℕ) + 1 ≤ (c : ℕ) → Function.update piv j μ c = c := fun c hc => by
     rw [Function.update_of_ne (fun h => by rw [h] at hc; omega)]
     exact hpiv c (by omega)
+  -- the invariant for the interchanged matrix, before the new column
+  have hG₀ := gaxpyInv_submatrix hσfix hσmap hG
+  have hD₀ := gaxpyDom_submatrix hσfix hσmap hD
+  have hv₀ := gaxpyColumn_rounds_swap hσfix hσmap hv
+  -- the new invariant, given the new column `j` of `L`
+  have hcore : ∀ L' : Matrix (Fin n) (Fin n) ℝ,
+      (∀ i c, ¬ (j < i ∧ c = j) → L' i c = swapFinished L j σ i c) →
+      (∀ i, j < i → fp.Rounds (v (σ i) / v (σ j)) (L' i j)) →
+      Alg342Core fp (B.submatrix σ id) (j + 1) L' U' := by
+    intro L' hL'o hL'j
+    refine ⟨gaxpyInv_succ hG₀ hv₀ hL'o hL'j, fun i c hc hci => ?_⟩
+    have hLc : ∀ r, r ≠ j → L' i r = swapFinished L j σ i r := fun r hr =>
+      hL'o i r fun h => hr h.2
+    rcases Nat.lt_succ_iff_lt_or_eq.1 hc with hc | hc
+    · have hc' : c < j := Fin.lt_def.2 hc
+      obtain ⟨o, t, hnd, ho, hrd, hdom, hx⟩ := hD₀ i c hc hci
+      refine ⟨o, t, hnd, ho, hrd.congr (fun r hr => hLc r (ne_of_lt (((ho r).1 hr).trans hc')))
+        fun r hr => hU'o r c (ne_of_lt hc'), ?_, ?_⟩
+      · rw [hU'o c c (ne_of_lt hc')]; exact hdom
+      · rw [hU'o c c (ne_of_lt hc'), hLc c (ne_of_lt hc')]; exact hx
+    · have hcj : c = j := Fin.ext hc
+      subst hcj
+      obtain ⟨o, hnd, ho, hrd⟩ := gaxpy_newCol_lower hci (hv₀ i) (fun r hr => hLc r (ne_of_lt hr)) U
+      refine ⟨o, v (σ i), hnd, ho, hrd, ?_, ?_⟩
+      · rw [hU'j c, ite_eq_left le_rfl, hσj]
+        exact hvmax _ (Fin.le_def.1 (hσmap i hci.le))
+      · rw [hU'j c, ite_eq_left le_rfl]
+        exact hL'j i hci
   split_ifs at hst' with h0
   · rw [SetM.mem_run_bind] at hst'
     obtain ⟨L', hL', hst'⟩ := hst'
     rw [SetM.mem_run_pure] at hst'
     subst hst'
-    -- the entries of `L'`
-    have hL'eq : ((List.finRange n).filter (j < ·)).foldlM
-        (fun (L : Matrix (Fin n) (Fin n) ℝ) i => do
-          let l ← fp.round (v (σ i) / v (σ j))
-          pure (L.updateRow i (Function.update (L i) j l))) L₀ =
-        (((List.finRange n).filter (j < ·)).map (·, j)).foldlM
-          (fun (L : Matrix (Fin n) (Fin n) ℝ) a => do
-            let x ← (fun (a : Fin n × Fin n) (_ : ℝ) (_ : Matrix (Fin n) (Fin n) ℝ) =>
-              fp.round (v (σ a.1) / v (σ j))) a (L a.1 a.2) L
-            pure (L.updateRow a.1 (Function.update (L a.1) a.2 x))) L₀ := by
-      rw [List.foldlM_map]
-    have hnd₁ : ((List.finRange n).filter (j < ·)).Nodup := (List.nodup_finRange n).filter _
-    have hl₁ : (((List.finRange n).filter (j < ·)).map (·, j)).Nodup :=
-      hnd₁.map fun _ _ h => (Prod.mk.inj h).1
-    have hl₁mem : ∀ i c, (i, c) ∈ ((List.finRange n).filter (j < ·)).map (·, j) ↔
-        j < i ∧ c = j := fun i c => by
-      simp only [List.mem_map, List.mem_filter, List.mem_finRange, true_and, decide_eq_true_eq,
-        Prod.mk.injEq]
-      constructor
-      · rintro ⟨a, ha, rfl, rfl⟩; exact ⟨ha, rfl⟩
-      · rintro ⟨hi, rfl⟩; exact ⟨i, hi, rfl, rfl⟩
-    rw [hL'eq] at hL'
-    obtain ⟨hL'₁, hL'₂⟩ := (mem_run_foldlM_updateEntry _ hl₁
-      (fun a _ (_ : Matrix (Fin n) (Fin n) ℝ) => fp.round (v (σ a.1) / v (σ j)))
-      (fun _ _ _ _ _ _ => rfl) L₀ L').1 hL'
-    have hL'o : ∀ i c, ¬ (j < i ∧ c = j) → L' i c = L₀ i c := fun i c h =>
-      hL'₁ i c fun hm => h ((hl₁mem i c).1 hm)
-    have hL'j : ∀ i, j < i → fp.Rounds (v (σ i) / v (σ j)) (L' i j) := fun i hi =>
-      hL'₂ (i, j) ((hl₁mem i j).2 ⟨hi, rfl⟩)
+    obtain ⟨hL'o, hL'j⟩ := mem_run_multipliers (v := v ∘ σ) hL'
     refine Or.inl ⟨?_, hpiv'⟩
     rw [hB']
-    refine hcore L' hL'o fun i hi => ?_
-    obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hvL i hi
-    refine ⟨o, p, v (σ i), hnd, ho, fun r hr => ?_, hsum, hdomv i hi, ?_⟩
-    · rw [hL'o i r fun h => by rw [h.2] at hr; exact lt_irrefl _ ((ho j).1 hr)]
-      exact hp r hr
-    · rw [hU'j j, ite_eq_left le_rfl]
-      exact hL'j i hi
+    exact hcore L' hL'o hL'j
   · rw [SetM.mem_run_pure] at hst'
     subst hst'
     have h0' : v (σ j) = 0 := not_not.1 h0
     by_cases hc : (∀ x, fp.Rounds x x) ∨ ¬ (j : ℕ) + 1 < n
     · refine Or.inl ⟨?_, hpiv'⟩
       rw [hB']
-      refine hcore L₀ (fun _ _ _ => rfl) fun i hi => ?_
-      obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hvL i hi
-      refine ⟨o, p, v (σ i), hnd, ho, hp, hsum, hdomv i hi, ?_⟩
+      refine hcore _ (fun _ _ _ => rfl) fun i hi => ?_
       have hvi : v (σ i) = 0 := by
-        have := hdomv i hi
-        rw [hU'j j, ite_eq_left le_rfl, h0', abs_zero] at this
+        have := hvmax _ (Fin.le_def.1 (hσmap i hi.le))
+        rw [← hμ, ← hσj, h0', abs_zero] at this
         exact abs_nonpos_iff.1 this
-      rw [hL₀ge i j (lt_irrefl _), hLid i j le_rfl, ite_eq_right (ne_of_gt hi), hvi, zero_div]
+      have hLij : swapFinished L j σ i j = 0 := by
+        simp only [of_apply, lt_irrefl, ↓reduceIte]
+        exact (hG.2.2.1 i j le_rfl).trans (ite_eq_right (ne_of_gt hi))
+      change fp.Rounds (v (σ i) / v (σ j)) (swapFinished L j σ i j)
+      rw [hLij, hvi, zero_div]
       rcases hc with hc | hc
       · exact hc 0
       · exact absurd (by have := Fin.lt_def.1 hi; have := i.2; omega) hc
@@ -2056,10 +2035,7 @@ theorem alg342Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
 theorem alg342Inv_of_mem_run (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ out ∈ (algorithm_3_4_2 fp.round A).run, Alg342Inv fp A n out :=
   SetM.forall_mem_run_foldlM_finRange (Alg342Inv fp A)
-    (Or.inl ⟨⟨fun _ _ h => absurd h (Nat.not_lt_zero _),
-      fun _ _ h => absurd h (Nat.not_lt_zero _), fun i c _ => by simp [one_apply],
-      fun _ _ _ => rfl, fun i c h => by simp [one_apply, h.ne], fun i => by simp,
-      fun _ _ _ => rfl⟩, fun _ _ => rfl⟩)
+    (Or.inl ⟨⟨gaxpyInv_zero _, fun _ _ h => absurd h (Nat.not_lt_zero _)⟩, fun _ _ => rfl⟩)
     fun j st hst st' hst' => alg342Inv_step A j st hst st' hst'
 
 /-- The finished invariant of Algorithm 3.4.2, read on the packed matrix of `L` and `U`: the
@@ -2070,25 +2046,26 @@ theorem pivStageInv_of_alg342Core {B L U : Matrix (Fin n) (Fin n) ℝ}
     PivStageInv fp B n (of fun i c => if c < i then L i c else U i c) ∧
       packedL (of fun i c => if c < i then L i c else U i c) = L ∧
       packedU (of fun i c => if c < i then L i c else U i c) = U := by
-  obtain ⟨hU, hL, -, -, hLlow, hLdiag, hUup⟩ := h
+  obtain ⟨⟨hU, hL, -, -, hLlow, hLdiag, hUup⟩, hD⟩ := h
+  dsimp only at hU hL hLlow hLdiag hUup
   set S : Matrix (Fin n) (Fin n) ℝ := of fun i c => if c < i then L i c else U i c with hS
   have hSl : ∀ i c : Fin n, c < i → S i c = L i c := fun i c h => by simp [hS, h]
   have hSu : ∀ i c : Fin n, i ≤ c → S i c = U i c := fun i c h => by simp [hS, not_lt.2 h]
   refine ⟨⟨fun i j => ⟨fun _ hij => ?_, fun _ hji => ?_, fun hi _ => absurd i.2 (not_lt.2 hi)⟩,
     fun i j _ hji => ?_⟩, ?_, ?_⟩
-  · obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hU i j j.2 hij
+  · obtain ⟨o, hnd, ho, p, hp, hsum⟩ := hU i j j.2 hij
     refine ⟨o, p, hnd, ho, fun r hr => ?_, ?_⟩
     · have hri := (ho r).1 hr
       rw [hSl i r hri, hSu r j (hri.le.trans hij)]
       exact hp r hr
     · rw [hSu i j hij]; exact hsum
-  · obtain ⟨o, p, t, hnd, ho, hp, hsum, -, hx⟩ := hL i j j.2 hji
+  · obtain ⟨o, t, hnd, ho, ⟨p, hp, hsum⟩, hx⟩ := hL i j j.2 hji
     refine ⟨o, p, t, hnd, ho, fun r hr => ?_, hsum, ?_⟩
     · have hrj := (ho r).1 hr
       rw [hSl i r (hrj.trans hji), hSu r j hrj.le]
       exact hp r hr
     · rw [hSu j j le_rfl, hSl i j hji]; exact hx
-  · obtain ⟨o, p, t, hnd, ho, hp, hsum, hd, hx⟩ := hL i j j.2 hji
+  · obtain ⟨o, t, hnd, ho, ⟨p, hp, hsum⟩, hd, hx⟩ := hD i j j.2 hji
     refine ⟨o, p, t, hnd, ho, fun r hr => ?_, hsum, ?_, ?_⟩
     · have hrj := (ho r).1 hr
       rw [hSl i r (hrj.trans hji), hSu r j hrj.le]
@@ -2135,7 +2112,8 @@ theorem algorithm_3_4_2_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
 private theorem algorithm_3_4_2_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_3_4_2 pure A) ∈ (algorithm_3_4_2 (RoundingModel.exact ℝ).round A).run := by
   rw [RoundingModel.round_exact]
-  simp only [algorithm_3_4_2, pure_bind, ite_pure, List.foldlM_pure, SetM.mem_run_pure]
+  simp only [algorithm_3_4_2, gaxpyColumn, runningDiff, pure_bind, ite_pure, List.foldlM_pure,
+    SetM.mem_run_pure]
   rfl
 
 /-- **Exact correctness of Algorithm 3.4.2**: "this algorithm computes the factorization
@@ -2156,6 +2134,65 @@ theorem algorithm_3_4_2_spec (A : Matrix (Fin n) (Fin n) ℝ) :
   · exact absurd (fun x => rfl) hn
 
 end Alg342Bridge
+
+/-! ### The backward error of the gaxpy version (§3.4.5) -/
+
+section Alg342Backward
+
+variable {fp : RoundingModel ℝ}
+
+/-- **(3.4.6) for Algorithm 3.4.2**, rigorous form ("`P̂, L̂, Û` are the computed analogs of
+`P, L, U` as produced by the above algorithms"): every run `(L̂, Û, piv)` of the gaxpy LU with
+partial pivoting with nonzero returned pivots, followed by every run of `Ly = Pb`
+(Algorithm 3.1.1) and every run of `Ux = y` (Algorithm 3.1.2), gives `(A + E) x̂ = b` with
+`|E| ≤ γ_{3n} Pᵀ |L̂| |Û|`, through the bridge `algorithm_3_4_2_rounds`. -/
+theorem equation_3_4_6_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
+    (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
+    ∀ out ∈ (algorithm_3_4_2 fp.round A).run, (∀ j, out.2.1 j j ≠ 0) →
+      ∀ y ∈ (algorithm_3_1_1 fp.round out.1 (applyPiv out.2.2 b)).run,
+      ∀ x ∈ (algorithm_3_1_2 fp.round out.2.1 y).run, ∃ E : Matrix (Fin n) (Fin n) ℝ,
+        (A + E) *ᵥ x = b ∧ E.abs ≤ₑ gamma fp.u (3 * n) •
+          (out.1.abs * out.2.1.abs).submatrix (pivPerm out.2.2).symm id := by
+  intro out hout hpiv y hy x hx
+  obtain ⟨hR, -⟩ := algorithm_3_4_2_rounds A out hout fun j _ => hpiv j
+  rw [(applyPiv_eq _ _).1, permMatrix_mulVec] at hy
+  exact exists_backward_error_of_roundsLU hu hn hR hpiv hy hx
+
+section Normwise
+
+open scoped Matrix.Norms.Operator
+
+/-- **(3.4.7) for Algorithm 3.4.2**, rigorous form: under the hypotheses of `equation_3_4_6_gaxpy`,
+`‖E‖_∞ ≤ n (1 + u) γ_{3n} ‖Û‖_∞`. -/
+theorem equation_3_4_7_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
+    (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
+    ∀ out ∈ (algorithm_3_4_2 fp.round A).run, (∀ j, out.2.1 j j ≠ 0) →
+      ∀ y ∈ (algorithm_3_1_1 fp.round out.1 (applyPiv out.2.2 b)).run,
+      ∀ x ∈ (algorithm_3_1_2 fp.round out.2.1 y).run, ∃ E : Matrix (Fin n) (Fin n) ℝ,
+        (A + E) *ᵥ x = b ∧ ‖E‖ ≤ n * (1 + fp.u) * gamma fp.u (3 * n) * ‖out.2.1‖ := by
+  intro out hout hpiv y hy x hx
+  obtain ⟨E, hAx, hE⟩ := equation_3_4_6_gaxpy hu hn A b out hout hpiv y hy x hx
+  exact ⟨E, hAx, linfty_opNorm_le_of_backward_error (gamma_nonneg fp.u_nonneg hn) hE
+    (algorithm_3_4_2_rounds A out hout fun j _ => hpiv j).2⟩
+
+/-- **(3.4.9) for Algorithm 3.4.2**, rigorous conditional form: under the hypotheses of
+`equation_3_4_6_gaxpy`, if the computed `Û` satisfies `|û_ij| ≤ ρ ‖A‖_∞`, then
+`‖E‖_∞ ≤ n² (1 + u) γ_{3n} ρ ‖A‖_∞`. -/
+theorem equation_3_4_9_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
+    (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) {ρ : ℝ} (hρ : 0 ≤ ρ) :
+    ∀ out ∈ (algorithm_3_4_2 fp.round A).run, (∀ j, out.2.1 j j ≠ 0) →
+      (∀ i j, |out.2.1 i j| ≤ ρ * ‖A‖) →
+      ∀ y ∈ (algorithm_3_1_1 fp.round out.1 (applyPiv out.2.2 b)).run,
+      ∀ x ∈ (algorithm_3_1_2 fp.round out.2.1 y).run, ∃ E : Matrix (Fin n) (Fin n) ℝ,
+        (A + E) *ᵥ x = b ∧ ‖E‖ ≤ (n : ℝ) ^ 2 * (1 + fp.u) * gamma fp.u (3 * n) * ρ * ‖A‖ := by
+  intro out hout hpiv hU y hy x hx
+  obtain ⟨E, hAx, hE⟩ := equation_3_4_6_gaxpy hu hn A b out hout hpiv y hy x hx
+  exact ⟨E, hAx, linfty_opNorm_le_of_backward_error_growth (gamma_nonneg fp.u_nonneg hn) hρ hE
+    (algorithm_3_4_2_rounds A out hout fun j _ => hpiv j).2 hU⟩
+
+end Normwise
+
+end Alg342Backward
 
 /-- §3.4.5, the matrix of the `2^{n-1}` example: `a_ij = 1` if `i = j` or `j = n`, `-1` if
 `i > j`, `0` otherwise (0-based, `j = n - 1`). -/

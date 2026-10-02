@@ -602,9 +602,10 @@ theorem algorithm_1_4_3_spec (t : ℕ) (x : Fin (2 ^ t + 1) → ℝ) :
 
 /-- **§1.4.3**: the Haar wavelet transform matrix `W_n`, `n = 2^t`, defined recursively by
 `W_1 = [1]` and `W_{2m} = [W_m ⊗ (1; 1) | I_m ⊗ (1; −1)]`. (The printed recursion lost its brackets
-in conversion; `W_2` and `W_4` fix the meaning. The printed `W_8` has a garbled sixth row and is not
-used as evidence.) Column `j < m` of `W_{2m}` is `W_m(⌊i/2⌋, j)`, column `m + j` is `(−1)^{i mod 2}`
-where `⌊i/2⌋ = j` and `0` elsewhere (`haarMatrix_succ_apply`). -/
+in conversion, and both printed examples beyond `W_2` are partly garbled: `W_2` and the intact
+rows of `W_8`, which agree with the recursion, fix the meaning; the printed `W_4` and the sixth row
+of `W_8` are not used as evidence.) Column `j < m` of `W_{2m}` is `W_m(⌊i/2⌋, j)`, column `m + j`
+is `(−1)^{i mod 2}` where `⌊i/2⌋ = j` and `0` elsewhere (`haarMatrix_succ_apply`). -/
 def haarMatrix : (t : ℕ) → Matrix (Fin (2 ^ t)) (Fin (2 ^ t)) ℝ
   | 0 => 1
   | t + 1 => of fun i j => Sum.elim

@@ -16,8 +16,8 @@ The block matrices of §1.6.8 are `N × N` arrays of `n₁ × n₁` blocks,
 arithmetic. The book's `A^{(1)}, …, A^{(4)}` for `N = 4` are, 0-based, the general
 `A^{(k)}_{ij} = A_{i, i + j − k}`, `B^{(k)}_{ij} = B_{i + j − k, j}` (`cannonA`, `cannonB`), which
 is how the book's P1.6.6 asks for general `N`. The block downshift `P` of the shift relations is the
-downshift `𝒟_N` of §1.2.11 (`GolubVanLoan.Chapter01.downshift`, the permutation matrix of
-`(finRotate N)⁻¹`) acting on block rows; multiplying by it, or by its transpose on the right, is a
+downshift `𝒟_N` of §1.2.11 over the ring of blocks (the backbone's `Matrix.downshift N`, the
+permutation matrix of `(finRotate N)⁻¹`); multiplying by it, or by its transpose on the right, is a
 reindexing (`Matrix.submatrix`).
 
 ## Not formalized here
@@ -61,11 +61,10 @@ theorem equation_1_6_16 (A B : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n�
 private theorem finRotate_symm_apply (j : Fin N) : (finRotate N).symm j = j - 1 := by
   rw [Equiv.symm_apply_eq, finRotate_apply, sub_add_cancel]
 
-/-- **§1.6.8**: "observe that `A^{(k+1)} = A^{(k)} Pᵀ` and `B^{(k+1)} = P B^{(k)}`" for the block
-downshift `P` (`downshift`): the `A`-blocks move one column right and the `B`-blocks one row down,
-with wrap-around. Multiplication by the block permutation is the reindexing by
-`(finRotate N)⁻¹`, the permutation of `𝒟_N`. -/
-theorem cannon_succ (A B : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n₁) ℝ)) (k : Fin N) :
+/-- The shift relations as reindexings: the `A`-blocks move one column right and the `B`-blocks
+one row down, with wrap-around. -/
+private theorem cannon_succ_submatrix (A B : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n₁) ℝ))
+    (k : Fin N) :
     cannonA A (k + 1) = (cannonA A k).submatrix id (finRotate N).symm ∧
       cannonB B (k + 1) = (cannonB B k).submatrix (finRotate N).symm id := by
   refine ⟨Matrix.ext fun i j => ?_, Matrix.ext fun i j => ?_⟩ <;>
@@ -75,5 +74,17 @@ theorem cannon_succ (A B : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n₁) 
     abel
   · congr 1
     abel
+
+/-- **§1.6.8**: "define the block downshift permutation `P` … and observe that
+`A^{(k+1)} = A^{(k)} Pᵀ` and `B^{(k+1)} = P B^{(k)}`". `P` is the downshift `𝒟_N` of §1.2.11 over
+the ring of `n₁ × n₁` blocks (`Matrix.downshift N`, identity blocks at the cyclic positions
+`(j + 1, j)`, zero blocks elsewhere). -/
+theorem cannon_succ (A B : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n₁) ℝ)) (k : Fin N) :
+    cannonA A (k + 1) = cannonA A k * (Matrix.downshift N).transpose ∧
+      cannonB B (k + 1) = Matrix.downshift N * cannonB B k := by
+  obtain ⟨hA, hB⟩ := cannon_succ_submatrix A B k
+  rw [hA, hB, Matrix.downshift, Matrix.transpose_permMatrix, Equiv.Perm.permMatrix,
+    Equiv.Perm.permMatrix, PEquiv.mul_toMatrix_toPEquiv, PEquiv.toMatrix_toPEquiv_mul]
+  exact ⟨rfl, rfl⟩
 
 end GolubVanLoan.Chapter01

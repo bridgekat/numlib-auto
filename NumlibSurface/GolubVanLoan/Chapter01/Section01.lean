@@ -17,8 +17,9 @@ Every algorithm is written once, as a monadic program in the book's loop order, 
 BLAS order (`a x y` for the saxpy, `A x y` for the gaxpys, `A B C` for the products) and the state
 is overwritten as the book overwrites it: vectors by `Function.update`, matrices by
 `Matrix.updateRow C i (Function.update (C i) j c)` or `Matrix.updateCol`. The colon-notation
-algorithms call the scalar ones: Algorithm 1.1.6's `A(i,:)·B(:,j)` is `algorithm_1_1_1`,
-Algorithm 1.1.7's `C(:,j) = C(:,j) + A(:,k) B(k,j)` is `algorithm_1_1_2`. Indices are 0-based.
+algorithms call the scalar ones: Algorithm 1.1.6's `C(i,j) + A(i,:)·B(:,j)` is the loop of
+Algorithm 1.1.1 accumulating onto `C(i,j)` (`FloatingPoint.dotAccum`), Algorithm 1.1.7's
+`C(:,j) = C(:,j) + A(:,k) B(k,j)` is `algorithm_1_1_2`. Indices are 0-based.
 
 Each algorithm carries three kinds of theorem (convention 12):
 
@@ -70,21 +71,8 @@ open FloatingPoint Matrix
 
 namespace GolubVanLoan.Chapter01
 
-/-! ### Loop fusion: a loop acting on one row of its state -/
-
-/-- A loop writing the entries of row `i` of a matrix, each from its current value, is one update of
-the row by the loop run on the row vector: `Matrix.foldlM_updateRow` with an entrywise step. -/
-theorem foldlM_updateRow_row {M : Type → Type} [Monad M] [LawfulMonad M] {m n : ℕ}
-    (i : Fin m) (h : Fin n → ℝ → M ℝ) (l : List (Fin n)) (C₀ : Matrix (Fin m) (Fin n) ℝ) :
-    l.foldlM (fun (C : Matrix (Fin m) (Fin n) ℝ) j => do
-        let c ← h j (C i j); pure (C.updateRow i (Function.update (C i) j c))) C₀
-      = (do
-        let r ← l.foldlM (fun (r : Fin n → ℝ) j => do
-          let c ← h j (r j); pure (Function.update r j c)) (C₀ i)
-        pure (C₀.updateRow i r)) := by
-  have := Matrix.foldlM_updateRow i
-    (fun j (r : Fin n → ℝ) => do let c ← h j (r j); pure (Function.update r j c)) l C₀
-  simpa only [bind_assoc, pure_bind] using this
+@[deprecated (since := "2026-09-30")]
+alias foldlM_updateRow_row := Matrix.foldlM_updateRow_entrywise
 
 /-! ### Run sets of loops writing one entry per step -/
 
@@ -237,14 +225,15 @@ for i = 1:m
     end
 end
 ```
-The dot product `A(i,:)·B(:,j)` is formed first, from `0`, by Algorithm 1.1.1, and then added to
-`C(i,j)`: a different rounding structure from Algorithm 1.1.5. -/
+The book introduces it as Algorithm 1.1.5 "which we rewrite using the colon notation to highlight
+the mission of the innermost loop": the update `C(i,j) + A(i,:)·B(:,j)` is the loop of
+Algorithm 1.1.1 accumulating onto `c = C(i,j)` (`FloatingPoint.dotAccum` started at `C(i,j)`), so
+Algorithm 1.1.6 performs exactly the operations of Algorithm 1.1.5. -/
 def algorithm_1_1_6 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ)
     (C : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   (List.finRange m).foldlM (fun C i =>
     (List.finRange n).foldlM (fun C j => do
-      let s ← algorithm_1_1_1 rnd (A i) (fun k => B k j)
-      let c ← rnd (C i j + s)
+      let c ← dotAccum rnd (List.finRange r) (A i) (fun k => B k j) (C i j)
       pure (C.updateRow i (Function.update (C i) j c))) C) C
 
 /-- **Algorithm 1.1.7 (Saxpy Matrix Multiplication).**
@@ -313,7 +302,7 @@ private theorem algorithm_1_1_5_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ
   unfold algorithm_1_1_5
   congr 1
   funext C i
-  rw [← foldlM_updateRow_row i
+  rw [← Matrix.foldlM_updateRow_entrywise i
     (fun j c => dotAccum rnd (List.finRange r) (A i) (fun k => B k j) c)]
   congr 1
   funext C j
@@ -322,21 +311,16 @@ private theorem algorithm_1_1_5_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ
   simp only [bind_assoc] at this
   exact this
 
-/-- Algorithm 1.1.6 as two loops writing one entry per step. -/
-private theorem algorithm_1_1_6_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
+/-- Algorithm 1.1.6 is Algorithm 1.1.5 with the innermost loop named. -/
+private theorem algorithm_1_1_6_eq_algorithm_1_1_5 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) :
-    algorithm_1_1_6 rnd A B C = (List.finRange m).foldlM (fun C i => do
-      let row ← (List.finRange n).foldlM (fun row j => do
-        let c ← (do let s ← algorithm_1_1_1 rnd (A i) (fun k => B k j); rnd (row j + s))
-        pure (Function.update row j c)) (C i)
-      pure (C.updateRow i row)) C := by
+    algorithm_1_1_6 rnd A B C = algorithm_1_1_5 rnd A B C := by
+  rw [algorithm_1_1_5_eq]
   unfold algorithm_1_1_6
   congr 1
   funext C i
-  have := foldlM_updateRow_row i
-    (fun j c => do let s ← algorithm_1_1_1 rnd (A i) (fun k => B k j); rnd (c + s))
-    (List.finRange n) C
-  simpa only [bind_assoc] using this
+  exact Matrix.foldlM_updateRow_entrywise i
+    (fun j c => dotAccum rnd (List.finRange r) (A i) (fun k => B k j) c) (List.finRange n) C
 
 /-- Algorithm 1.1.7 as a loop writing one column per step around a loop of saxpys. -/
 private theorem algorithm_1_1_7_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
@@ -365,7 +349,8 @@ private theorem algorithm_1_1_8_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ
   funext C k
   congr 1
   funext C i
-  have := foldlM_updateRow_row i (fun j c => do let p ← rnd (A i k * B k j); rnd (c + p))
+  have := Matrix.foldlM_updateRow_entrywise i
+    (fun j c => do let p ← rnd (A i k * B k j); rnd (c + p))
     (List.finRange n) C
   simpa only [bind_assoc] using this
 
@@ -414,13 +399,6 @@ private theorem algorithm_1_1_5_mem_exact :
       (algorithm_1_1_5 (RoundingModel.exact ℝ).round A B C).run := by
   rw [RoundingModel.round_exact]
   simp only [algorithm_1_1_5, pure_bind, List.foldlM_pure, SetM.mem_run_pure]
-  rfl
-
-private theorem algorithm_1_1_6_mem_exact :
-    Id.run (algorithm_1_1_6 pure A B C) ∈
-      (algorithm_1_1_6 (RoundingModel.exact ℝ).round A B C).run := by
-  rw [RoundingModel.round_exact]
-  simp only [algorithm_1_1_6, algorithm_1_1_1, pure_bind, List.foldlM_pure, SetM.mem_run_pure]
   rfl
 
 private theorem algorithm_1_1_7_mem_exact :
@@ -493,20 +471,15 @@ theorem algorithm_1_1_5_mem_run {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
   exact mem_run_foldlM_finRange_update
     (fun j b => dotAccum fp.round (List.finRange r) (A i) (fun k => B k j) b) (C i) (Ĉ i)
 
-/-- **The run set of the dot-product matrix multiplication**: every entry is an admissible
-`fl(C(i,j) + s)` with `s` a run of Algorithm 1.1.1 on `A(i,:)` and `B(:,j)`. -/
+/-- **The dot-product matrix multiplication rounds as the `ijk` product does**: the right side of
+`algorithm_1_1_5_mem_run` characterizes its run set, each entry the accumulation of
+`A(i,:)·B(:,j)` onto `C(i,j)`. -/
 theorem algorithm_1_1_6_mem_run {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C Ĉ : Matrix (Fin m) (Fin n) ℝ) :
     Ĉ ∈ (algorithm_1_1_6 fp.round A B C).run ↔
-      ∀ i j, ∃ s ∈ (algorithm_1_1_1 fp.round (A i) (fun k => B k j)).run,
-        fp.Rounds (C i j + s) (Ĉ i j) := by
-  rw [algorithm_1_1_6_eq]
-  refine (mem_run_foldlM_finRange_updateRow (fun i row => (List.finRange n).foldlM (fun row j => do
-      let c ← (do let s ← algorithm_1_1_1 fp.round (A i) (fun k => B k j); fp.round (row j + s))
-      pure (Function.update row j c)) row) C Ĉ).trans (forall_congr' fun i => ?_)
-  exact (mem_run_foldlM_finRange_update (fun j b => do
-    let s ← algorithm_1_1_1 fp.round (A i) (fun k => B k j); fp.round (b + s)) (C i) (Ĉ i)).trans
-    (by simp)
+      ∀ i j, Ĉ i j ∈ (dotAccum fp.round (List.finRange r) (A i) (fun k => B k j) (C i j)).run := by
+  rw [algorithm_1_1_6_eq_algorithm_1_1_5]
+  exact algorithm_1_1_5_mem_run fp A B C Ĉ
 
 /-- **The saxpy product rounds entry by entry as the `ijk` product does**: the right side of
 `algorithm_1_1_5_mem_run` characterizes the run set of Algorithm 1.1.7. The `j` loop writes
@@ -610,12 +583,8 @@ theorem algorithm_1_1_5_spec {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
 theorem algorithm_1_1_6_spec {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_1_1_6 pure A B C) = C + A * B := by
-  ext i j
-  obtain ⟨s, hs, hc⟩ := (algorithm_1_1_6_mem_run _ A B C _).1 (algorithm_1_1_6_mem_exact A B C) i j
-  rw [RoundingModel.exact_rounds_iff] at hc
-  rw [algorithm_1_1_1_eq_dotAccum, mem_run_dotAccum_exact_iff, zero_add] at hs
-  rw [hc, hs, add_apply, ← Fin.sum_univ_def]
-  rfl
+  rw [algorithm_1_1_6_eq_algorithm_1_1_5]
+  exact algorithm_1_1_5_spec A B C
 
 /-- **Algorithm 1.1.7 overwrites `C` with `C + AB`.** -/
 theorem algorithm_1_1_7_spec {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
@@ -667,23 +636,12 @@ theorem algorithm_1_1_5_rounds (hfp : fp.IsIdempotent) {m r n : ℕ} (A : Matrix
     ∀ Ĉ ∈ (algorithm_1_1_5 fp.round A B 0).run, RoundsMul fp A B Ĉ := fun _ h =>
   roundsMul_of_forall_mem_run hfp ((algorithm_1_1_5_mem_run _ A B 0 _).1 h)
 
-/-- **Every run of Algorithm 1.1.6 with `C = 0` is a relational matrix product**: each entry is
-`fl(0 + s)` with `s` a run of Algorithm 1.1.1, `= s` by idempotence, and `s` is a `RoundsDot` by
-`algorithm_1_1_1_rounds`. -/
+/-- **Every run of Algorithm 1.1.6 with `C = 0` is a relational matrix product**, as for
+Algorithm 1.1.5: from `C(i,j) = 0` each entry is a run of Algorithm 1.1.1 on `A(i,:)`, `B(:,j)`. -/
 theorem algorithm_1_1_6_rounds (hfp : fp.IsIdempotent) {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) :
-    ∀ Ĉ ∈ (algorithm_1_1_6 fp.round A B 0).run, RoundsMul fp A B Ĉ := by
-  intro Ĉ h i j
-  obtain ⟨s, hs, hc⟩ := (algorithm_1_1_6_mem_run _ A B 0 _).1 h i j
-  rw [zero_apply, zero_add] at hc
-  have hsc : Ĉ i j = s := by
-    rcases FloatingPoint.eq_or_rounds_of_mem_run_dotAccum (o := List.finRange r) (x := A i)
-        (y := fun k => B k j) (c := 0) hs with
-      rfl | ⟨z, hz⟩
-    · exact hc.eq_zero_of_zero
-    · exact hfp hz hc
-  rw [hsc]
-  exact algorithm_1_1_1_rounds hfp _ _ s hs
+    ∀ Ĉ ∈ (algorithm_1_1_6 fp.round A B 0).run, RoundsMul fp A B Ĉ := fun _ h =>
+  roundsMul_of_forall_mem_run hfp ((algorithm_1_1_6_mem_run _ A B 0 _).1 h)
 
 /-- **Every run of Algorithm 1.1.7 with `C = 0` is a relational matrix product** (the book's
 (2.7.19) "for a gaxpy based procedure"). -/

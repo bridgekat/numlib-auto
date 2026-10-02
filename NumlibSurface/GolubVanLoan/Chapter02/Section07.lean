@@ -33,10 +33,11 @@ run characterizations `…_mem_run`) turn runs into the backbone's relations `Ro
 ## Sources
 
 Backbone `Numlib/FloatingPoint/{Model,System,InnerProduct}`, and
-`Numlib/Analysis/Matrix/OperatorNorm` for the norm forms. Not formalized: the sample roundings of
-§2.7.1, `±∞`, `NaN`, exceptions and the directed rounding modes of §2.7.2 (the `lsb` tie rule is
-covered by "any nearest element"), Maxims 2 and 3, the styles (2.7.13)–(2.7.14), the Wilkinson
-quotation, and the Strassen claims of §2.7.10 (see the chapter's plan).
+`Numlib/Analysis/Matrix/OperatorNorm` for the norm forms. Not formalized: the IEEE bit layout
+(2.7.1) (notation), the sample roundings of §2.7.1, `±∞`, `NaN`, exceptions and the directed
+rounding modes of §2.7.2 (the `lsb` tie rule is covered by "any nearest element"), Maxims 2
+and 3, the styles (2.7.13)–(2.7.14), the Wilkinson quotation, and the Strassen claims of
+§2.7.10 (no stated constant; see the chapter module).
 -/
 
 open Finset Matrix FloatingPoint WithLp
@@ -240,13 +241,16 @@ theorem ieeeDouble_round_nearest {x y : ℝ} (h1 : System.ieeeDouble.xmin ℝ �
 
 /-! ### §2.7.3 The `fl` notation -/
 
-/-- **(2.7.4)**: a floating point representation is `fl(x) = x (1 + δ)` with `|δ| ≤ u`: for every
-admissible rounding `y` of `x` in the model, and for the rounding of a system `𝔽`. -/
-theorem equation_2_7_4 (fp : RoundingModel ℝ) {x y : ℝ} (h : fp.Rounds x y) (s : System)
-    (z : ℝ) :
-    (∃ δ : ℝ, |δ| ≤ fp.u ∧ y = x * (1 + δ)) ∧
-      ∃ δ : ℝ, |δ| ≤ s.unitRoundoff ℝ ∧ s.round z = z * (1 + δ) :=
-  ⟨h.exists_delta, s.exists_round_eq_mul_one_add z⟩
+/-- **(2.7.4)**: a floating point representation is `fl(x) = x (1 + δ)` with `|δ| ≤ u`, for every
+admissible rounding `y` of `x` in the model. -/
+theorem equation_2_7_4 (fp : RoundingModel ℝ) {x y : ℝ} (h : fp.Rounds x y) :
+    ∃ δ : ℝ, |δ| ≤ fp.u ∧ y = x * (1 + δ) :=
+  h.exists_delta
+
+/-- **(2.7.4)** for the rounding `fl` of a concrete system `𝔽`: `fl(z) = z (1 + δ)`, `|δ| ≤ u`. -/
+theorem equation_2_7_4_system (s : System) (z : ℝ) :
+    ∃ δ : ℝ, |δ| ≤ s.unitRoundoff ℝ ∧ s.round z = z * (1 + δ) :=
+  s.exists_round_eq_mul_one_add z
 
 /-- **(2.7.5)**: `u = ½ × (gap between 1 and the next larger floating point number)`, for a system
 with at least two digits whose exponent range contains `1`; for the IEEE formats `u = 2⁻²⁴`

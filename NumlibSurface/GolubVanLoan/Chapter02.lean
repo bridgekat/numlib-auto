@@ -33,9 +33,10 @@ sensitivity of square systems (§2.6), finite precision arithmetic (§2.7). One 
   book's `κ = ∞` convention is the surface definition `kappa` (§2.6).
 * Singular values in the book's order: `σ_i(A) = A.sortedSingularValues (i - 1)` (a backbone
   `abbrev` for Mathlib's sorted `(toEuclideanLin A).singularValues`, shared with chapter 8's
-  surface); `sigmaMax`, `sigmaMin` (§2.4). "An SVD of `A`" is chapter 6's `Matrix.IsSVD A U σ V`.
-  The column-indexed `Matrix.colSingularValues` of the backbone is the working form behind the norm
-  identities.
+  surface); `σ_max`, `σ_min` are `sigmaMax`, `sigmaMin` (§2.4), the surface convention for every
+  later section and chapter. "An SVD of `A`" is the backbone's `Matrix.IsSVD A U σ V`. The
+  column-indexed `Matrix.colSingularValues` of the backbone is the working form behind the norm
+  identities (`sigmaMax_eq_iSup_colSingularValues`, `sigmaMin_eq_iInf_colSingularValues`).
 * Subspaces are `Submodule ℝ (EuclideanSpace ℝ (Fin n))`, `ran(A) = LinearMap.range (toEuclideanLin
   A)`, `null(A) = LinearMap.ker (toEuclideanLin A)`; `dist(S₁, S₂) = Submodule.gap S₁ S₂`
   (`subspaceDist`).
@@ -43,7 +44,7 @@ sensitivity of square systems (§2.6), finite precision arithmetic (§2.7). One 
   chapter 1's algorithms in `SetM` (`∀ s ∈ (alg fp.round …).run`), or entrywise `fp.Rounds`
   relations for the non-algorithmic `fl(αA)`, `fl(A + B)`, `fl(A)`. Concrete arithmetic is
   `FloatingPoint.System` (`calculator3`, `ieeeDouble`). First-order `+ O(u²)` bounds are stated with
-  `FloatingPoint.gamma` or with the `u²` term explicit (brief §3 rule 6). The book's exact `fl(0 +
+  `FloatingPoint.gamma` or with the `u²` term explicit. The book's exact `fl(0 +
   p) = p` is chapter 1's hypothesis `fp.IsIdempotent` (true of every `FloatingPoint.System`),
   carried by the dot-product and matrix-product run statements; chapter 1's run characterizations
   and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_1_rounds`, `…_1_1_2_mem_run`,
@@ -58,7 +59,7 @@ comparison of §2.3), `Numlib/Analysis/Normed/Lp/PiLp` (§2.2),
 `Numlib/Analysis/Normed/Ring/{Inverse,CondNumber}`, `Numlib/Conditioning/LinearSystem` (+
 `Componentwise`: Lemma 2.6.1, Theorems 2.6.2–2.6.3, Kahan (2.6.6), the Skeel number),
 `Numlib/LinearAlgebra/Matrix/{SVD,NonsingularInverse,Similar}`, `Numlib/Eigen/MinMax`,
-`Numlib/FloatingPoint/{Model,InnerProduct,System}`. New this round:
+`Numlib/FloatingPoint/{Model,InnerProduct,System}`, and the modules and appends written for it:
 
 * `Numlib/LinearAlgebra/Matrix/CSDecomposition` (new module): the specifications `Matrix.IsThinCSD`,
   `Matrix.IsCSD` and their existence theorems `Matrix.exists_isThinCSD`, `Matrix.exists_isCSD`
@@ -95,6 +96,8 @@ chapter 1's Algorithms 1.1.2, 1.1.6, 1.1.7, 1.1.8.
   `hasDerivAt_pi`).
 * §2.2.3: absolute/relative error are names; "relative error `≈ 10^{-p}` means `p` correct digits"
   is a heuristic with no rigorous reading, and the `1.234`/`.05674` example is numerical.
+* (2.3.4), the definition of mutually consistent norms: used only in prose (the counterexample
+  after it is stated numerically, `maxAbs_not_consistent`). (2.7.1), the IEEE bit layout: notation.
 * The operation-count remarks ("`O(n²)` computations", "2-norm computation is iterative").
 * The hyperellipsoid geometry of the SVD (§2.4.2, §2.6.2), the "intimate connection with `AᵀA`"
   prose, and "all real SVD properties have complex analogs" (covered by the `RCLike` backbone, not
@@ -120,37 +123,4 @@ chapter 1's Algorithms 1.1.2, 1.1.6, 1.1.7, 1.1.8.
   P2.3.3 → `Matrix.l2_opNorm_rectDiagonal`, P2.4.7 →
   `Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`, P2.7.2 →
   `FloatingPoint.System.abs_sub_le_of_forall_abs_sub_le`).
-
-## What this chapter closes
-
-No open node and no `notes/frontier.md` item (the corpus had none open). It answers the question
-`Numlib/Analysis/InnerProductSpace/Projection/Gap`'s module doc leaves open (one-sided versus
-symmetric gap), and supplies to later chapters: sorted singular values and Eckart–Young (chapters 5,
-6, 8), the CS decomposition — the thin form without the book's `m₂ ≥ n₁`, as chapter 6's GSVD needs
-— (chapters 6, 8), the orthonormal completion (chapters 5, 6), `svdTruncation` and 2-norm
-Eckart–Young (chapter 5's `RankRevealing`, chapter 6's `LeastSquares/Total`, chapter 10), the
-subspace-distance theorems (chapter 5's `RankRevealing`, chapter 6's `PrincipalAngles`, chapter 7's
-`InvariantSubspace`, chapter 8), the Oettli–Prager backward error, Lemma 2.7.1's constant.
-
-## Order of attack
-
-Backbone, in dependency order (estimated lines):
-1. `FloatingPoint/Model` appends (★, ~60), `FloatingPoint/InnerProduct` appends (★★, ~100),
-   `FloatingPoint/System` appends (★, ~80), `Normed/Lp/PiLp` Hölder (★★, ~40).
-2. `Normed/Ring/Inverse` appends (★, ~40); `OperatorNorm` appends (★–★★, ~150).
-3. `Conditioning/LinearSystem` appends (★–★★★, ~250), `…/Componentwise` appends (★★, ~120).
-4. `SVD` appends (★–★★, ~330: bridge and `σ₀ = ‖A‖₂` ~80, orthonormal completion ~40, thin SVD ~40,
-   `rectDiagonal` norm ~30, truncation and Eckart–Young ~140), after chapter 6's `IsSVD`,
-   `singularValues_adjoint`, `shiftedRectDiagonal` and Frobenius lower bound and chapter 7's
-   `iInf_colSingularValues_eq_iInf_norm`.
-5. `CSDecomposition` (★★★, ~700) and `Projection/Gap` (★★, ~280), independent of each other since
-   the review (`Projection/Gap` is coordinate-free and imports no matrix module; the matrix form of
-   Theorem 2.5.1, `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`, lives in
-   `Analysis/Matrix/SingularValues`).
-
-Surface, in section order (all ★–★★ delegation, ~1200 lines total): §2.1 (~120), §2.2 (~100), §2.3
-(~200), §2.4 (~230), §2.5 (~180), §2.6 (~200), §2.7 (~280, of which ~100 wait on chapter 1's
-`Program` and bridges). §2.1–2.3 and §2.6 can start as soon as their appends land; §2.4–2.5 need the
-SVD and CS modules and chapter 8's Weyl inequality (Corollary 2.4.4); §2.7's run statements need
-chapter 1.
 -/

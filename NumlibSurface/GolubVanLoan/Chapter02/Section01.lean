@@ -52,17 +52,24 @@ private theorem rank_eq_finrank_range_toEuclideanLin (A : Matrix (Fin m) (Fin n)
     (EuclideanSpace.basisFun (Fin n) ℝ).toBasis]
   rfl
 
-/-- **§2.1.2, rank–nullity and the column space.** For `A ∈ ℝ^{m×n}`,
-`dim(null(A)) + rank(A) = n`; `ran(A) = span{a₁, …, aₙ}` for the columns `aⱼ`; and the rank is the
-maximal number of independent columns, or of rows. -/
+/-- **§2.1.2, rank–nullity.** For `A ∈ ℝ^{m×n}`, `dim(null(A)) + rank(A) = n`. -/
 theorem finrank_ker_add_rank (A : Matrix (Fin m) (Fin n) ℝ) :
-    Module.finrank ℝ (LinearMap.ker (toEuclideanLin A)) + A.rank = n ∧
-      LinearMap.range A.mulVecLin = Submodule.span ℝ (Set.range A.col) ∧
-      A.rank = Module.finrank ℝ (Submodule.span ℝ (Set.range A.col)) ∧
-      A.rank = Module.finrank ℝ (Submodule.span ℝ (Set.range A.row)) := by
-  refine ⟨?_, Matrix.range_mulVecLin A, A.rank_eq_finrank_span_cols, A.rank_eq_finrank_span_row⟩
+    Module.finrank ℝ (LinearMap.ker (toEuclideanLin A)) + A.rank = n := by
   rw [rank_eq_finrank_range_toEuclideanLin, add_comm,
     LinearMap.finrank_range_add_finrank_ker, finrank_euclideanSpace_fin]
+
+/-- **§2.1.2, the column space.** For `A ∈ ℝ^{m×n}`, `ran(A) = span{a₁, …, aₙ}` for the columns
+`aⱼ`. -/
+theorem range_eq_span_columns (A : Matrix (Fin m) (Fin n) ℝ) :
+    LinearMap.range (toEuclideanLin A) =
+      Submodule.span ℝ (Set.range fun j => WithLp.toLp 2 (A.col j)) :=
+  Matrix.range_toEuclideanLin_eq_span_col A
+
+/-- **§2.1.2, rank.** The rank of `A` is the maximal number of independent columns, or of rows. -/
+theorem rank_eq_finrank_span_col_and_row (A : Matrix (Fin m) (Fin n) ℝ) :
+    A.rank = Module.finrank ℝ (Submodule.span ℝ (Set.range A.col)) ∧
+      A.rank = Module.finrank ℝ (Submodule.span ℝ (Set.range A.row)) :=
+  ⟨A.rank_eq_finrank_span_cols, A.rank_eq_finrank_span_row⟩
 
 /-- **§2.1.2, rank deficiency.** `A ∈ ℝ^{m×n}` is *rank deficient* if
 `rank(A) < min{m, n}`. -/
@@ -295,34 +302,36 @@ private theorem rayleighQuotient_toEuclideanLin (A : Matrix (Fin n) (Fin n) ℝ)
     EuclideanSpace.inner_eq_star_dotProduct, EuclideanSpace.inner_eq_star_dotProduct]
   simp
 
+/-- Every sorted eigenvalue of a symmetric `A` is a Rayleigh quotient, and every Rayleigh quotient
+lies between the smallest and the largest eigenvalue. -/
+private theorem rayleigh_attained_and_mem_Icc {A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
+    (hA : A.IsHermitian) (k : Fin (n + 1)) :
+    (∃ x : Fin (n + 1) → ℝ, x ≠ 0 ∧ hA.sortedEigenvalues k = x ⬝ᵥ (A *ᵥ x) / (x ⬝ᵥ x)) ∧
+      ∀ x : Fin (n + 1) → ℝ, x ≠ 0 → x ⬝ᵥ (A *ᵥ x) / (x ⬝ᵥ x) ∈
+        Set.Icc (hA.sortedEigenvalues (Fin.last n)) (hA.sortedEigenvalues 0) := by
+  have hT := isSymmetric_toEuclideanLin_iff.mpr hA
+  have hn : Module.finrank ℝ (EuclideanSpace ℝ (Fin (n + 1))) = n + 1 := finrank_euclideanSpace_fin
+  simp only [sortedEigenvalues_eq]
+  refine ⟨⟨WithLp.ofLp (hT.eigenvectorBasis hn k), by simpa using hT.eigenvectorBasis_ne_zero hn k,
+    ?_⟩, fun x hx => ?_⟩
+  · rw [← rayleighQuotient_toEuclideanLin, WithLp.toLp_ofLp, hT.rayleighQuotient_eigenvectorBasis]
+  · rw [← rayleighQuotient_toEuclideanLin]
+    exact hT.rayleighQuotient_mem_Icc hn (by simpa using hx)
+
 /-- **(2.1.7)**: the largest eigenvalue of a symmetric `A` is the maximum of the Rayleigh quotient,
 `λ_max(A) = max_{x ≠ 0} xᵀ A x / xᵀ x`. -/
 theorem equation_2_1_7 {A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} (hA : A.IsHermitian) :
     IsGreatest {r : ℝ | ∃ x : Fin (n + 1) → ℝ, x ≠ 0 ∧ r = x ⬝ᵥ (A *ᵥ x) / (x ⬝ᵥ x)}
       (hA.sortedEigenvalues 0) := by
-  have hT := isSymmetric_toEuclideanLin_iff.mpr hA
-  have hn : Module.finrank ℝ (EuclideanSpace ℝ (Fin (n + 1))) = n + 1 := finrank_euclideanSpace_fin
-  rw [sortedEigenvalues_eq]
-  refine ⟨⟨WithLp.ofLp (hT.eigenvectorBasis hn 0), ?_, ?_⟩, ?_⟩
-  · simpa using hT.eigenvectorBasis_ne_zero hn 0
-  · rw [← rayleighQuotient_toEuclideanLin, WithLp.toLp_ofLp, hT.rayleighQuotient_eigenvectorBasis]
-  · rintro r ⟨x, hx, rfl⟩
-    rw [← rayleighQuotient_toEuclideanLin]
-    exact (hT.rayleighQuotient_mem_Icc hn (by simpa using hx)).2
+  obtain ⟨hx, hI⟩ := rayleigh_attained_and_mem_Icc hA 0
+  exact ⟨hx, by rintro r ⟨x, hx, rfl⟩; exact (hI x hx).2⟩
 
 /-- **(2.1.8)**: the smallest eigenvalue of a symmetric `A` is the minimum of the Rayleigh
 quotient, `λ_min(A) = min_{x ≠ 0} xᵀ A x / xᵀ x`. -/
 theorem equation_2_1_8 {A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} (hA : A.IsHermitian) :
     IsLeast {r : ℝ | ∃ x : Fin (n + 1) → ℝ, x ≠ 0 ∧ r = x ⬝ᵥ (A *ᵥ x) / (x ⬝ᵥ x)}
       (hA.sortedEigenvalues (Fin.last n)) := by
-  have hT := isSymmetric_toEuclideanLin_iff.mpr hA
-  have hn : Module.finrank ℝ (EuclideanSpace ℝ (Fin (n + 1))) = n + 1 := finrank_euclideanSpace_fin
-  rw [sortedEigenvalues_eq]
-  refine ⟨⟨WithLp.ofLp (hT.eigenvectorBasis hn (Fin.last n)), ?_, ?_⟩, ?_⟩
-  · simpa using hT.eigenvectorBasis_ne_zero hn (Fin.last n)
-  · rw [← rayleighQuotient_toEuclideanLin, WithLp.toLp_ofLp, hT.rayleighQuotient_eigenvectorBasis]
-  · rintro r ⟨x, hx, rfl⟩
-    rw [← rayleighQuotient_toEuclideanLin]
-    exact (hT.rayleighQuotient_mem_Icc hn (by simpa using hx)).1
+  obtain ⟨hx, hI⟩ := rayleigh_attained_and_mem_Icc hA (Fin.last n)
+  exact ⟨hx, by rintro r ⟨x, hx, rfl⟩; exact (hI x hx).1⟩
 
 end GolubVanLoan.Chapter02

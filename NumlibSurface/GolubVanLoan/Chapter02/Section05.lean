@@ -385,8 +385,8 @@ theorem theorem_2_5_2 {m₁ m₂ n₁ : ℕ} (Q₁ : Matrix (Fin m₁) (Fin n₁
   simp only [← conjTranspose_eq_transpose_of_trivial] at hQ
   obtain ⟨U₁, U₂, V, θ, hc⟩ := exists_isThinCSD Q₁ Q₂ hQ h₁
   have hp : n₁ - min n₁ m₂ = 0 := by omega
-  have hl := hc.star_mul_mul_left
-  have hr := hc.star_mul_mul_right
+  have hl := hc.star_mul_mul₁
+  have hr := hc.star_mul_mul₂
   rw [hp, shiftedRectDiagonal_zero] at hr
   simp only [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
     RCLike.ofReal_real_eq_id, id] at hl hr
@@ -404,12 +404,12 @@ column blocks `n₁, n₂`) is square and orthogonal and `m₁ ≥ n₁`, then w
 `0 ≤ θ_{p+1} ≤ ⋯ ≤ θ_{n₁} ≤ π/2` (0-based: the angles `θ i` are monotone in `[0, π/2]` with the
 first `p` of them `0`, which produces the identity block). The four blocks are the backbone's
 `Matrix.rectDiagonal`, `Matrix.csdUpperRight`, `Matrix.shiftedRectDiagonal` patterns of the
-predicate `Matrix.IsCSD` (`Matrix.exists_isCSD`); the book's hypothesis `m₁ ≥ m₂` is not needed. -/
+predicate `Matrix.IsCSD` (`Matrix.exists_isCSD`). The book's hypothesis `m₁ ≥ m₂` is not needed,
+and of "orthogonal" only `QᵀQ = I` is assumed: with `m₁ + m₂ = n₁ + n₂` it implies `QQᵀ = I`. -/
 theorem theorem_2_5_3 {m₁ m₂ n₁ n₂ : ℕ} (Q₁₁ : Matrix (Fin m₁) (Fin n₁) ℝ)
     (Q₁₂ : Matrix (Fin m₁) (Fin n₂) ℝ) (Q₂₁ : Matrix (Fin m₂) (Fin n₁) ℝ)
     (Q₂₂ : Matrix (Fin m₂) (Fin n₂) ℝ) (hsq : m₁ + m₂ = n₁ + n₂)
-    (hQ : (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᵀ * fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ = 1)
-    (_hQ' : fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ * (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᵀ = 1) (h₁ : n₁ ≤ m₁) :
+    (hQ : (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᵀ * fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ = 1) (h₁ : n₁ ≤ m₁) :
     ∃ U₁ ∈ orthogonalGroup (Fin m₁) ℝ, ∃ U₂ ∈ orthogonalGroup (Fin m₂) ℝ,
       ∃ V₁ ∈ orthogonalGroup (Fin n₁) ℝ, ∃ V₂ ∈ orthogonalGroup (Fin n₂) ℝ, ∃ θ : ℕ → ℝ,
         (fromBlocks U₁ 0 0 U₂)ᵀ * fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ * fromBlocks V₁ 0 0 V₂ =
@@ -422,14 +422,14 @@ theorem theorem_2_5_3 {m₁ m₂ n₁ n₂ : ℕ} (Q₁₁ : Matrix (Fin m₁) (
           ∀ i < n₁ - min n₁ m₂, θ i = 0 := by
   rw [← conjTranspose_eq_transpose_of_trivial] at hQ
   obtain ⟨U₁, U₂, V₁, V₂, θ, hc⟩ := exists_isCSD hsq hQ h₁
-  have h11 := hc.star_mul_mul₁₁
+  have h11 := hc.star_mul_mul₁
   have h12 := hc.star_mul_mul₁₂
-  have h21 := hc.star_mul_mul₂₁
+  have h21 := hc.star_mul_mul₂
   have h22 := hc.star_mul_mul₂₂
   simp only [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
     RCLike.ofReal_real_eq_id, id] at h11 h12 h21 h22
   refine ⟨U₁, hc.mem_unitaryGroup_left₁, U₂, hc.mem_unitaryGroup_left₂, V₁,
-    hc.mem_unitaryGroup_right₁, V₂, hc.mem_unitaryGroup_right₂, θ, ?_, hc.monotone, hc.mem_Icc,
+    hc.mem_unitaryGroup_right, V₂, hc.mem_unitaryGroup_right₂, θ, ?_, hc.monotone, hc.mem_Icc,
     hc.eq_zero_of_lt⟩
   rw [fromBlocks_transpose, fromBlocks_multiply, fromBlocks_multiply]
   simp only [transpose_zero, Matrix.zero_mul, Matrix.mul_zero, add_zero, zero_add, h11, h12, h21,

@@ -47,6 +47,11 @@ deps = []
 source = 'Golub–Van Loan, Matrix Computations, §1.2.10, Definition'
 
 [[node]]
+id = "permMatrix_mul_permMatrix_eq"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §1.2.10, Definition'
+
+[[node]]
 id = "exchange_eq_permMatrix_rev"
 source = 'Golub–Van Loan, Matrix Computations, §1.2.11, Definition'
 

@@ -174,18 +174,18 @@ section Strassen
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- The entrywise rounded sum `fl(X + Y)` of two square matrices, `X(i,j) = X(i,j) + Y(i,j)` over
-the rows, then the columns. -/
-def matrixAdd {k : ℕ} (X Y : Matrix (Fin k) (Fin k) ℝ) : M (Matrix (Fin k) (Fin k) ℝ) :=
-  (List.finRange k).foldlM (fun Z i =>
-    (List.finRange k).foldlM (fun Z j => do
+/-- The entrywise rounded sum `fl(X + Y)` of two matrices, `X(i,j) = X(i,j) + Y(i,j)` over the
+rows, then the columns. -/
+def matrixAdd {m n : ℕ} (X Y : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
+  (List.finRange m).foldlM (fun Z i =>
+    (List.finRange n).foldlM (fun Z j => do
       let z ← rnd (Z i j + Y i j)
       pure (Z.updateRow i (Function.update (Z i) j z))) Z) X
 
-/-- The entrywise rounded difference `fl(X − Y)` of two square matrices. -/
-def matrixSub {k : ℕ} (X Y : Matrix (Fin k) (Fin k) ℝ) : M (Matrix (Fin k) (Fin k) ℝ) :=
-  (List.finRange k).foldlM (fun Z i =>
-    (List.finRange k).foldlM (fun Z j => do
+/-- The entrywise rounded difference `fl(X − Y)` of two matrices. -/
+def matrixSub {m n : ℕ} (X Y : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
+  (List.finRange m).foldlM (fun Z i =>
+    (List.finRange n).foldlM (fun Z j => do
       let z ← rnd (Z i j - Y i j)
       pure (Z.updateRow i (Function.update (Z i) j z))) Z) X
 
@@ -245,45 +245,47 @@ def algorithm_1_3_1 (d : ℕ) :
 end Strassen
 
 /-- The row loop of `matrixAdd`/`matrixSub` after fusion. -/
-private def matrixRowOp {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (op : ℝ → ℝ → ℝ) {k : ℕ}
-    (y : Fin k → ℝ) (r : Fin k → ℝ) : M (Fin k → ℝ) :=
-  (List.finRange k).foldlM (fun r j => do
+private def matrixRowOp {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (op : ℝ → ℝ → ℝ) {n : ℕ}
+    (y : Fin n → ℝ) (r : Fin n → ℝ) : M (Fin n → ℝ) :=
+  (List.finRange n).foldlM (fun r j => do
     let c ← rnd (op (r j) (y j)); pure (Function.update r j c)) r
 
 /-- An entrywise operation written as a loop over the rows of fused row loops. -/
 private theorem foldlM_entrywise_eq {M : Type → Type} [Monad M] [LawfulMonad M] (rnd : ℝ → M ℝ)
-    (op : ℝ → ℝ → ℝ) {k : ℕ} (X Y : Matrix (Fin k) (Fin k) ℝ) :
-    (List.finRange k).foldlM (fun (Z : Matrix (Fin k) (Fin k) ℝ) i =>
-      (List.finRange k).foldlM (fun (Z : Matrix (Fin k) (Fin k) ℝ) j => do
+    (op : ℝ → ℝ → ℝ) {m n : ℕ} (X Y : Matrix (Fin m) (Fin n) ℝ) :
+    (List.finRange m).foldlM (fun (Z : Matrix (Fin m) (Fin n) ℝ) i =>
+      (List.finRange n).foldlM (fun (Z : Matrix (Fin m) (Fin n) ℝ) j => do
         let z ← rnd (op (Z i j) (Y i j))
         pure (Z.updateRow i (Function.update (Z i) j z))) Z) X =
-    (List.finRange k).foldlM (fun Z i => do
+    (List.finRange m).foldlM (fun Z i => do
       let r ← matrixRowOp rnd op (Y i) (Z i); pure (Z.updateRow i r)) X := by
   congr 1
   funext Z i
-  exact foldlM_updateRow_row i (fun j c => rnd (op c (Y i j))) _ Z
+  exact Matrix.foldlM_updateRow_entrywise i (fun j c => rnd (op c (Y i j))) _ Z
 
 /-- In exact arithmetic an entrywise loop computes the entrywise operation. -/
-private theorem idRun_foldlM_entrywise (op : ℝ → ℝ → ℝ) {k : ℕ} (X Y : Matrix (Fin k) (Fin k) ℝ) :
-    Id.run ((List.finRange k).foldlM (fun (Z : Matrix (Fin k) (Fin k) ℝ) i =>
-      (List.finRange k).foldlM (fun (Z : Matrix (Fin k) (Fin k) ℝ) j => do
+private theorem idRun_foldlM_entrywise (op : ℝ → ℝ → ℝ) {m n : ℕ}
+    (X Y : Matrix (Fin m) (Fin n) ℝ) :
+    Id.run ((List.finRange m).foldlM (fun (Z : Matrix (Fin m) (Fin n) ℝ) i =>
+      (List.finRange n).foldlM (fun (Z : Matrix (Fin m) (Fin n) ℝ) j => do
         let z ← (pure (op (Z i j) (Y i j)) : Id ℝ)
         pure (Z.updateRow i (Function.update (Z i) j z))) Z) X) =
       Matrix.of fun i j => op (X i j) (Y i j) := by
   rw [foldlM_entrywise_eq pure op X Y]
   ext i j
-  rw [idRun_foldlM_updateRow_apply _ _ (List.nodup_finRange k), ite_eq_left (List.mem_finRange i),
-    matrixRowOp, List.idRun_foldlM_update_apply (fun j c => (pure (op c (Y i j)) : Id ℝ)) _
-      (List.nodup_finRange k), ite_eq_left (List.mem_finRange j)]
+  rw [Matrix.idRun_foldlM_updateRow_apply _ _ (List.nodup_finRange m),
+    ite_eq_left (List.mem_finRange i), matrixRowOp,
+    List.idRun_foldlM_update_apply (fun j c => (pure (op c (Y i j)) : Id ℝ)) _
+      (List.nodup_finRange n), ite_eq_left (List.mem_finRange j)]
   rfl
 
 /-- In exact arithmetic `matrixAdd` is the sum. -/
-theorem matrixAdd_spec {k : ℕ} (X Y : Matrix (Fin k) (Fin k) ℝ) :
+theorem matrixAdd_spec {m n : ℕ} (X Y : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (matrixAdd pure X Y) = X + Y :=
   (idRun_foldlM_entrywise (· + ·) X Y).trans rfl
 
 /-- In exact arithmetic `matrixSub` is the difference. -/
-theorem matrixSub_spec {k : ℕ} (X Y : Matrix (Fin k) (Fin k) ℝ) :
+theorem matrixSub_spec {m n : ℕ} (X Y : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (matrixSub pure X Y) = X - Y :=
   (idRun_foldlM_entrywise (· - ·) X Y).trans rfl
 

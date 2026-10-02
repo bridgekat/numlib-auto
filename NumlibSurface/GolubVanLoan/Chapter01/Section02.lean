@@ -23,7 +23,7 @@ The storage schemes (1.2.1) `A.band(i − j + q + 1, j) = a_ij` and (1.2.2)
 algorithm's specification, relating the stored array to the matrix. In 0-based form (1.2.1) reads
 `Aband ⟨i + q − j, _⟩ j = A i j` for `j ≤ i + q`, `i ≤ j + p`, and (1.2.2) reads
 `Avec ⟨j n − j (j + 1) / 2 + i, _⟩ = A i j` for `j ≤ i`. The programs read the arrays through
-`bandEntry` and `packedEntry`, which return `0` outside the stored range (never read there). The
+`bandEntry` and `packedEntry`, whose values outside the stored range are junk, never read. The
 book's integer arithmetic `α₁, α₂, β₁, β₂` of Algorithm 1.2.2 is the filter of the loop's index list
 and is not rounded.
 
@@ -33,7 +33,7 @@ backbone's `Matrix.exchange`, `Matrix.downshift`, `Matrix.perfectShuffle`
 (`Numlib/LinearAlgebra/Matrix/Permutation`).
 
 The exact specifications of the three algorithms are proved in exact arithmetic (`M := Id`):
-the loops are fused into per-entry updates (`GolubVanLoan.Chapter01.foldlM_updateRow_row`,
+the loops are fused into per-entry updates (`Matrix.foldlM_updateRow_entrywise`,
 `Matrix.foldlM_updateRow_update`), a loop writing one entry per step over a duplicate-free list is
 evaluated entrywise, and a loop acting on every entry independently is interchanged with the
 entry (`List.foldl_apply_of_pi`).
@@ -44,7 +44,8 @@ entry (`List.foldl_apply_of_pi`).
 * `algorithm_1_2_1`, `algorithm_1_2_1_spec` — triangular matrix multiplication.
 * `algorithm_1_2_2`, `algorithm_1_2_2_spec` — the band storage gaxpy.
 * `algorithm_1_2_3`, `algorithm_1_2_3_spec` — the symmetric storage gaxpy.
-* `permutation_mulVec`, `permutation_transpose_mul_self`, `permutation_mul_mul_transpose` — §1.2.10.
+* `permutation_mulVec`, `permutation_transpose_mul_self`, `permutation_mul_mul_transpose`,
+  `permMatrix_mul_permMatrix_eq` — §1.2.10.
 * `exchange_eq_permMatrix_rev`, `exchange_mul_self`, `downshift`, `perfectShuffle_mulVec_eq`,
   `equation_1_2_4` — §1.2.11.
 
@@ -53,7 +54,9 @@ entry (`List.foldl_apply_of_pi`).
 §1.2.4 (flop sums), §1.2.6 on diagonal scaling (Mathlib's `Matrix.diagonal_mul`,
 `Matrix.mul_diagonal`), the prose definitions of (skew-)symmetric and (skew-)Hermitian (Mathlib's
 `Matrix.IsSymm`, `Matrix.IsHermitian`), the example (1.2.3), the index vectors of §1.2.9 (`Fin`
-maps), the count `2n(p + q + 1)` after Algorithm 1.2.2.
+maps), the count `2n(p + q + 1)` after Algorithm 1.2.2. Table 1.2.1 is stated for square matrices
+only (the triangular, bidiagonal and Hessenberg predicates are square; lower Hessenberg is read as
+`Aᵀ` upper Hessenberg, there being no lower Hessenberg predicate).
 -/
 
 open FloatingPoint Matrix
@@ -65,9 +68,8 @@ namespace GolubVanLoan.Chapter01
 /-- **Table 1.2.1** (band terminology), for `A ∈ ℝ^{n×n}`: diagonal is bandwidths `(0, 0)`, upper
 triangular `(0, n − 1)`, lower triangular `(n − 1, 0)`, tridiagonal `(1, 1)`, upper bidiagonal
 `(0, 1)`, lower bidiagonal `(1, 0)`, upper Hessenberg `(1, n − 1)`, lower Hessenberg (`Aᵀ` upper
-Hessenberg) `(n − 1, 1)`. For a rectangular `A ∈ ℝ^{m×n}` the rows read the same with
-`Matrix.HasLowerBandwidthRect`/`Matrix.HasUpperBandwidthRect`, the bound `m − 1` or `n − 1` then
-holding for every matrix. -/
+Hessenberg) `(n − 1, 1)`. The book's table is for `m × n` matrices; the rows are stated for square
+ones, where Mathlib's and the backbone's triangular, bidiagonal and Hessenberg predicates live. -/
 theorem table_1_2_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     (A.IsDiag ↔ A.HasLowerBandwidth 0 ∧ A.HasUpperBandwidth 0) ∧
     (A.IsUpperTriangular ↔ A.HasLowerBandwidth 0 ∧ A.HasUpperBandwidth (n - 1)) ∧
@@ -100,18 +102,11 @@ theorem table_1_2_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
   · rw [Matrix.isUpperHessenberg_iff_hasLowerBandwidth_one]
     exact ⟨fun h => ⟨h, hup⟩, And.left⟩
   · rw [Matrix.isUpperHessenberg_iff_hasLowerBandwidth_one,
-      ← Matrix.hasUpperBandwidth_iff_transpose]
+      Matrix.hasLowerBandwidth_transpose_iff]
     exact ⟨fun h => ⟨hlow, h⟩, And.right⟩
 
-/-! ### Exact evaluation of loops writing one entry per step -/
-
-/-- The row form of `List.idRun_foldlM_update_apply`. -/
-theorem idRun_foldlM_updateRow_apply {m n : ℕ} (g : Fin m → (Fin n → ℝ) → Id (Fin n → ℝ))
-    (l : List (Fin m)) (hl : l.Nodup) (C₀ : Matrix (Fin m) (Fin n) ℝ) (i : Fin m) :
-    Id.run (l.foldlM (fun (C : Matrix (Fin m) (Fin n) ℝ) a => do
-      let r ← g a (C a); pure (C.updateRow a r)) C₀) i =
-      if i ∈ l then Id.run (g i (C₀ i)) else C₀ i :=
-  List.idRun_foldlM_update_apply (β := Fin n → ℝ) g l hl C₀ i
+@[deprecated (since := "2026-09-30")]
+alias idRun_foldlM_updateRow_apply := Matrix.idRun_foldlM_updateRow_apply
 
 /-! ### Algorithm 1.2.1: triangular matrix multiplication -/
 
@@ -139,8 +134,9 @@ def algorithm_1_2_1 {n : ℕ} (A B C : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (
         let c ← rnd (C i j + p)
         pure (C.updateRow i (Function.update (C i) j c))) C) C) C
 
-/-- The entry `A.band(i − j + q + 1, j)` of the band storage (1.2.1), 0-based `Aband (i + q − j) j`;
-`0` outside the stored array (Algorithm 1.2.2 reads only inside the band). -/
+/-- The entry `A.band(i − j + q + 1, j)` of the band storage (1.2.1), 0-based `Aband (i + q − j) j`
+inside the band. Below the band (`i > j + p`) it is `0`; above it (`j > i + q`) the truncated
+`ℕ` subtraction reads the junk value `Aband 0 j`. Algorithm 1.2.2 reads only inside the band. -/
 def bandEntry {p q n : ℕ} (Aband : Matrix (Fin (p + q + 1)) (Fin n) ℝ) (i j : Fin n) : ℝ :=
   if h : (i : ℕ) + q - j < p + q + 1 then Aband ⟨i + q - j, h⟩ j else 0
 
@@ -222,7 +218,7 @@ private theorem algorithm_1_2_1_eq {M : Type → Type} [Monad M] [LawfulMonad M]
   unfold algorithm_1_2_1
   congr 1
   funext C i
-  rw [triangularRow, ← foldlM_updateRow_row i (fun j c =>
+  rw [triangularRow, ← Matrix.foldlM_updateRow_entrywise i (fun j c =>
     dotAccum rnd ((List.finRange n).filter (fun k => i ≤ k ∧ k ≤ j)) (A i) (fun k => B k j) c)]
   congr 1
   funext C j
@@ -241,8 +237,9 @@ theorem algorithm_1_2_1_spec {n : ℕ} (A B C : Matrix (Fin n) (Fin n) ℝ)
     Id.run (algorithm_1_2_1 pure A B C) = C + A * B := by
   rw [algorithm_1_2_1_eq]
   ext i j
-  rw [idRun_foldlM_updateRow_apply _ _ (List.nodup_finRange n), ite_eq_left (List.mem_finRange i),
-    triangularRow, List.idRun_foldlM_update_apply _ _ ((List.nodup_finRange n).filter _),
+  rw [Matrix.idRun_foldlM_updateRow_apply _ _ (List.nodup_finRange n),
+    ite_eq_left (List.mem_finRange i), triangularRow,
+    List.idRun_foldlM_update_apply _ _ ((List.nodup_finRange n).filter _),
     Matrix.add_apply, Matrix.mul_apply]
   split_ifs with hij
   · rw [dotAccum_id, List.sum_map_filter_finRange (fun k => i ≤ k ∧ k ≤ j),
@@ -369,17 +366,19 @@ theorem permutation_transpose_mul_self {n : ℕ} (v : Equiv.Perm (Fin n)) :
     mul_inv_cancel, inv_mul_cancel, Matrix.permMatrix_one]
   exact ⟨rfl, rfl⟩
 
-/-- **§1.2.10**: for `P = I_m(v,:)` and `Q = I_n(w,:)`, `PAQᵀ = A(v, w)`; and
-`I_n(v,:) · I_n(w,:) = I_n(w(v),:)`, the composite `w(v)` being `i ↦ w (v i)`, `v.trans w`. -/
+/-- **§1.2.10**: for `P = I_m(v,:)` and `Q = I_n(w,:)`, `PAQᵀ = A(v, w)`. -/
 theorem permutation_mul_mul_transpose {m n : ℕ} (v : Equiv.Perm (Fin m))
     (w : Equiv.Perm (Fin n)) (A : Matrix (Fin m) (Fin n) ℝ) :
-    v.permMatrix ℝ * A * (w.permMatrix ℝ)ᵀ = A.submatrix v w ∧
-      ∀ v' w' : Equiv.Perm (Fin m),
-        v'.permMatrix ℝ * w'.permMatrix ℝ = Equiv.Perm.permMatrix ℝ (v'.trans w') := by
-  refine ⟨?_, fun v' w' => (Matrix.permMatrix_mul w' v').symm⟩
+    v.permMatrix ℝ * A * (w.permMatrix ℝ)ᵀ = A.submatrix v w := by
   rw [Matrix.transpose_permMatrix, Equiv.Perm.permMatrix, Equiv.Perm.permMatrix,
     PEquiv.toMatrix_toPEquiv_mul, PEquiv.mul_toMatrix_toPEquiv, Matrix.submatrix_submatrix]
   rfl
+
+/-- **§1.2.10**: `I_n(v,:) · I_n(w,:) = I_n(w(v),:)`, the composite `w(v)` being `i ↦ w (v i)`,
+`v.trans w`. -/
+theorem permMatrix_mul_permMatrix_eq {n : ℕ} (v w : Equiv.Perm (Fin n)) :
+    v.permMatrix ℝ * w.permMatrix ℝ = Equiv.Perm.permMatrix ℝ (v.trans w) :=
+  (Matrix.permMatrix_mul w v).symm
 
 /-! ### Three famous permutation matrices (§1.2.11) -/
 

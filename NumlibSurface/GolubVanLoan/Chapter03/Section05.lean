@@ -9,7 +9,9 @@ import NumlibSurface.GolubVanLoan.Chapter03.Section04
 Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §3.5:
 the rigorous readings of Heuristic I and (3.5.2), scaling ((3.5.3), equilibration), iterative
 improvement ((3.5.4), mixed precision (3.5.5)) and condition estimation (the implication of Cline,
-Moler, Stewart and Wilkinson).
+Moler, Stewart and Wilkinson): the `∞`-norm `linftyNormRounded`, the condition estimator
+Algorithm 3.5.1 with the back substitution for a chosen right-hand side (3.5.6), and the estimate
+`luCondEstimate` from `PA = LU` (§3.5.4).
 
 ## Design
 
@@ -382,7 +384,7 @@ theorem backSubstChosenRHS_sign [NeZero n] {T : Matrix (Fin n) (Fin n) ℝ}
     rw [hq, signChoice]
     split_ifs <;> simp
   refine ⟨hsign, ?_⟩
-  have hU : IsUnit T := (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hT).2 hd
+  have hU : IsUnit T := hT.isUnit_iff.2 hd
   have := linfty_opNorm_mul_norm_le_condNumberLp_top_of_mulVec_eq hU (equation_3_5_6 hT hd)
     fun j => by rw [Real.norm_eq_abs]; exact hsign j
   rwa [lpOpNorm_top] at this
@@ -482,14 +484,11 @@ theorem linftyNormRounded_id {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
     simp only [linftyNormRounded, pure_bind, List.foldlM_pure]
     rw [← hr]
     rfl
-  rw [h]
-  refine le_antisymm ((pi_norm_le_iff_of_nonneg (norm_nonneg A)).2 fun i => ?_) ?_
-  · rw [Real.norm_of_nonneg (Finset.sum_nonneg fun j _ => abs_nonneg _)]
-    exact sum_abs_apply_le_linfty_opNorm A i
-  · refine linfty_opNorm_le_of_forall_sum_le (norm_nonneg _) fun i => ?_
-    refine (le_abs_self _).trans ?_
-    have := norm_le_pi_norm (fun i => ∑ j, |A i j|) i
-    rwa [Real.norm_eq_abs] at this
+  -- the `O(n²)` formula (2.3.10): the sup norm of the vector of row sums
+  rw [h, ← lpOpNorm_top, GolubVanLoan.Chapter02.equation_2_3_10, Pi.norm_def,
+    Finset.sup_univ_eq_ciSup, NNReal.coe_iSup]
+  simp only [coe_nnnorm, Real.norm_eq_abs]
+  exact iSup_congr fun i => abs_of_nonneg (Finset.sum_nonneg fun j _ => abs_nonneg (A i j))
 
 /-- **§3.5.4, "note that `‖z‖_∞ ≤ ‖A⁻¹‖_∞ ‖r‖_∞`"**: in exact arithmetic, with exact factors
 `PA = LU` of a nonsingular `A`, the estimate of `luCondEstimate` never exceeds `κ_∞(A)`,
@@ -640,7 +639,7 @@ theorem algorithm_3_5_1_spec [NeZero n] {T : Matrix (Fin n) (Fin n) ℝ}
     rw [hq, lookaheadChoice]
     split_ifs <;> simp
   have hTy : T *ᵥ out.1 = out.2 := equation_3_5_6 hT hd
-  have hU : IsUnit T := (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hT).2 hd
+  have hU : IsUnit T := hT.isUnit_iff.2 hd
   have hy0 : out.1 ≠ 0 := by
     intro h0
     have := hsign 0

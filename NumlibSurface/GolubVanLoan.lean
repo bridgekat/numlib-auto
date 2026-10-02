@@ -131,17 +131,25 @@ Plan and per-result book alignment: the module plans under
   or Mathlib.
 
 The book is real, `Matrix (Fin m) (Fin n) ℝ`, 1-based in its colon notation; the surface is 0-based
-on `Fin n`, and each chapter states the translation. Complex statements (Chapter 7's
-decompositions, §7.9, parts of Chapter 9) are over `ℂ`.
+on `Fin n`, and each chapter states the translation. Complex statements (§1.4's FFT and the
+DST/DCT through it, §2.1.7 and the complex SVD of §2.4.4, Chapter 7's decompositions, §7.9, parts
+of Chapter 9) are over `ℂ`.
 
 **Singular values.** The book's sorted `σ_k` is `A.sortedSingularValues (k - 1)` (Mathlib's
-`LinearMap.singularValues` of `toEuclideanLin A`); `σ_min(A)` and `σ_max(A)` of an `m × n` matrix
-with `n ≤ m` may be read as `⨅ i, A.colSingularValues i` / `⨆ i, A.colSingularValues i` over the
-backbone's column-indexed `Matrix.colSingularValues`.
+`LinearMap.singularValues` of `toEuclideanLin A`). The surface's `σ_max(A)` and `σ_min(A)` are
+`GolubVanLoan.Chapter02.sigmaMax` and `GolubVanLoan.Chapter02.sigmaMin` (§2.4, defined for every
+shape). The backbone's working form is the column-indexed `Matrix.colSingularValues`: for `n ≤ m`,
+`sigmaMax A = ⨆ i, A.colSingularValues i` and `sigmaMin A = ⨅ i, A.colSingularValues i`
+(`Chapter02.sigmaMax_eq_iSup_colSingularValues`, `Chapter02.sigmaMin_eq_iInf_colSingularValues`).
 
-**Shared helper programs** (convention 13; all in `GolubVanLoan.Chapter05`, §5.1, each with its own
-`_spec` and, where the book analyses it, `_rounds`/`_rounding`; every later chapter calls them and
-defines no variant):
+**Shared helper programs** (convention 13; every later chapter calls them and defines no variant):
+
+* Chapter 1 (`GolubVanLoan.Chapter01`, each with its `_spec`): the rounded entrywise vector
+  operations `vecAdd`, `vecSub`, `vecPointwiseMul` (§1.4, any hook `rnd : K → M K`) and matrix
+  operations `matrixAdd`, `matrixSub` (§1.3).
+
+The Householder and Givens family is in `GolubVanLoan.Chapter05`, §5.1, each with its own `_spec`
+and, where the book analyses it, `_rounds`/`_rounding`:
 
 * `houseOn rnd (o : List (Fin m)) (x : Fin m → ℝ) : M ((Fin m → ℝ) × ℝ)` — Algorithm 5.1.1 on the
   entries of `x` listed by `o` (pivot `o.head`, the book's `x(1)`; the tail sum by Algorithm 1.1.1
@@ -170,14 +178,17 @@ The same list, with the same numbers, heads the module documentation of
    `√` (`√` is `Real.sqrt` followed by one `rnd`), **including arithmetic whose only use is a
    test** — `fl(tol · fl(|h_ii| + |h_{i-1,i-1}|))`, `δ ← fl(tol · ‖A‖_F)`, the `fl(1 − fl(α²))` of a
    positivity check. IEEE negation, `abs` and copysign are exact, and the relational model does not
-   know `Rounds x x`, so rounding them would only add spurious error.
+   know `Rounds x x`, so rounding them would only add spurious error. An elementary-function value
+   (`exp`, `cos`, `sin`, e.g. the root `exp(−2πi/n)` of the FFT) is one rounded result;
+   multiplication by `±1` and `±i` is exact (a sign change, a swap of real and imaginary parts).
 2. A division by a unit diagonal inside a factorization is not performed.
 3. Loops are `List.foldlM` over `List.finRange n` or an explicit index list, never `for … in
    [a:b]`. A `while` loop is `List.foldlM` over `List.range fuel` with a `done : Bool` field in the
    state: once `done`, a step is the identity; the spec theorem states what holds after
    `min fuel stop` passes (`stop` the book's exit index). The fuel parameter is named `fuel : ℕ` and
    is the **last** explicit argument. Structural or well-founded recursion is reserved for
-   genuinely recursive algorithms (Strassen, the FFT, recursive block LU/Cholesky/QR, `LUdisp`).
+   genuinely recursive algorithms (Strassen, the FFT, the Haar transform, recursive block
+   LU/Cholesky/QR, `LUdisp`).
 4. A program that branches on a real test is a `noncomputable def` (through `Real.decidableEq`,
    `Real.decidableLT`).
 5. A step the book delegates to an algorithm of a *later* chapter ("compute the SVD", "find
@@ -185,7 +196,8 @@ The same list, with the same numbers, heads the module documentation of
    delegated to an *earlier* chapter calls that chapter's program.
 6. `fp.IsIdempotent` is assumed **only when the stated constant needs it**: a program whose
    accumulation starts from `0` and whose bound is the book's `γ_n` through a relation that starts
-   from the unrounded first term (`RoundsDot`, `RoundsSum`) needs it (the `0 + p` paragraph below);
+   from the unrounded first term (`RoundsDot`, `RoundsSum`) needs it
+   (`Numlib/FloatingPoint/Program`, "The `0 + p` mismatch");
    a relation that itself absorbs the `0 + p` rounding (`RoundsForwardSubstDot`) needs nothing.
 7. The monad variable is `M` (`{M : Type → Type} [Monad M]`), never `m`, which is the book's row
    count.
@@ -206,7 +218,9 @@ The same list, with the same numbers, heads the module documentation of
     `householderApplyLeft/Right`, `givensApplyLeft/Right`), and a vector-level book algorithm is
     its helper at the full list (`algorithm_5_1_1 rnd x = houseOn rnd (List.finRange (k+1)) x` by
     `rfl`). The backbone relations read such a block through the subtype `{i // i ∈ rows}` or a
-    pivot `i : ι` of the full index type.
+    pivot `i : ι` of the full index type. The genuinely recursive algorithms of convention 3
+    (Strassen, the FFT, the Haar transform) do pass typed halves `Fin (2^t)`: their recursion is on
+    the size, not a loop over a shrinking active block.
 11. **Exact specs are read off bridges.** When a bridge "every run satisfies the backbone relation
     `R`" exists, the exact spec `_spec` is its instance at `RoundingModel.exact` (`round_exact`
     and `R`'s exact characterization, e.g. `roundsLU_exact_iff`, `mem_run_dotAccum_exact_iff`),

@@ -69,7 +69,7 @@ id = "theorem_2_3_1"
 source = 'Golub–Van Loan, Matrix Computations, Theorem 2.3.1'
 
 [[node]]
-id = "l2_opNorm_eq_sqrt_eigenvalues₀_zero"
+id = "l2_opNorm_eq_sqrt_lambdaMax"
 source = 'Golub–Van Loan, Matrix Computations, §2.3.3'
 
 [[node]]

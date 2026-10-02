@@ -2,6 +2,7 @@ import Numlib.Conditioning.LinearSystem
 import Numlib.Conditioning.LinearSystem.Componentwise
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import NumlibSurface.GolubVanLoan.Chapter02.Section03
+import NumlibSurface.GolubVanLoan.Chapter02.Section04
 
 /-!
 # Golub–Van Loan §2.6: the sensitivity of square systems
@@ -23,8 +24,7 @@ number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` is the backbone's real-valued `Matri
 an explicit `IsUnit A`; the book's convention `κ(A) = ∞` for singular `A` is the surface
 definition `kappa`. The first-order bounds (2.6.2) and (2.6.4), printed with `+ O(ε²)`, are stated
 in the rigorous form whose factor `1 / (1 - |ε| ‖A⁻¹‖ ‖F‖) = 1 + O(ε)` produces the `O(ε²)` term.
-`σ_max(A)` and `σ_min(A)` in (2.6.5) are read as `⨆ i, A.colSingularValues i` and
-`⨅ i, A.colSingularValues i` over the backbone's column-indexed singular values (the convention of
+`σ_max(A)` and `σ_min(A)` in (2.6.5) are §2.4's `sigmaMax` and `sigmaMin` (the convention of
 `NumlibSurface/GolubVanLoan`). An SVD `A = U Σ Vᵀ` in (2.6.1) is given by its three factors.
 
 ## Sources
@@ -188,8 +188,9 @@ open scoped Matrix.Norms.L2Operator
 /-- **(2.6.5)**: `κ₂(A) = ‖A‖₂ ‖A⁻¹‖₂ = σ_max(A) / σ_min(A)` for nonsingular `A`. -/
 theorem equation_2_6_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
     condNumberLp 2 A = lpOpNorm 2 A * lpOpNorm 2 A⁻¹ ∧
-      condNumberLp 2 A = (⨆ i, A.colSingularValues i) / (⨅ i, A.colSingularValues i) := by
+      condNumberLp 2 A = sigmaMax A / sigmaMin A := by
   refine ⟨rfl, ?_⟩
+  rw [sigmaMax_eq_iSup_colSingularValues, sigmaMin_eq_iInf_colSingularValues A le_rfl]
   rcases isEmpty_or_nonempty (Fin n) with hn | hn
   · rw [Subsingleton.elim A 0]
     simp [condNumberLp]
@@ -272,23 +273,26 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§2.6.2**: `κ_p(A) ≥ 1` for every `A ∈ ℝ^{n×n}`, `n ≥ 1` (for singular `A`, `κ = ∞`), and
-orthogonal matrices are perfectly conditioned in the 2-norm, `κ₂(Q) = ‖Q‖₂ ‖Qᵀ‖₂ = 1`. -/
-theorem one_le_kappa (p : ℝ≥0∞) [Fact (1 ≤ p)] (hn : 0 < n) (A : Matrix (Fin n) (Fin n) ℝ)
-    {Q : Matrix (Fin n) (Fin n) ℝ} (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) :
-    1 ≤ kappa p A ∧ kappa 2 Q = 1 := by
+/-- **§2.6.2**: `κ_p(A) ≥ 1` for every `A ∈ ℝ^{n×n}`, `n ≥ 1` (for singular `A`, `κ = ∞`). -/
+theorem one_le_kappa (p : ℝ≥0∞) [Fact (1 ≤ p)] (hn : 0 < n) (A : Matrix (Fin n) (Fin n) ℝ) :
+    1 ≤ kappa p A := by
   have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
-  refine ⟨?_, ?_⟩
-  · by_cases hA : IsUnit A
-    · rw [kappa_of_isUnit p hA]
-      exact ENNReal.one_le_ofReal.2 (one_le_condNumberLp p hA)
-    · rw [kappa_of_not_isUnit p hA]
-      exact le_top
-  · have hQu : IsUnit Q :=
-      ⟨⟨Q, star Q, mem_unitaryGroup_iff.1 hQ, mem_unitaryGroup_iff'.1 hQ⟩, rfl⟩
-    have h := condNumber_l2_of_mem_unitaryGroup hQ
-    rw [NormedRing.condNumber, ← nonsing_inv_eq_ringInverse] at h
-    rw [kappa_of_isUnit 2 hQu, condNumberLp, lpOpNorm_two, lpOpNorm_two, h, ENNReal.ofReal_one]
+  by_cases hA : IsUnit A
+  · rw [kappa_of_isUnit p hA]
+    exact ENNReal.one_le_ofReal.2 (one_le_condNumberLp p hA)
+  · rw [kappa_of_not_isUnit p hA]
+    exact le_top
+
+/-- **§2.6.2**: orthogonal matrices are perfectly conditioned in the 2-norm,
+`κ₂(Q) = ‖Q‖₂ ‖Qᵀ‖₂ = 1` (`n ≥ 1`). -/
+theorem kappa_two_eq_one_of_mem_orthogonalGroup (hn : 0 < n) {Q : Matrix (Fin n) (Fin n) ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) : kappa 2 Q = 1 := by
+  have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
+  have hQu : IsUnit Q :=
+    ⟨⟨Q, star Q, mem_unitaryGroup_iff.1 hQ, mem_unitaryGroup_iff'.1 hQ⟩, rfl⟩
+  have h := condNumber_l2_of_mem_unitaryGroup hQ
+  rw [NormedRing.condNumber, ← nonsing_inv_eq_ringInverse] at h
+  rw [kappa_of_isUnit 2 hQu, condNumberLp, lpOpNorm_two, lpOpNorm_two, h, ENNReal.ofReal_one]
 
 end L2
 
@@ -319,7 +323,7 @@ private theorem cEntry_succ (k j : ℕ) :
   · have e : j + 1 - k - 1 = (j - k - 1) + 1 := by omega
     simp only [cEntry]
     rw [e]
-    simp [h.ne, h, show k ≠ j + 1 by omega, show k < j + 1 by omega, pow_succ]
+    simp only [show k ≠ j + 1 by omega, show k < j + 1 by omega, h.ne, h, ↓reduceIte, pow_succ]
     ring
   · norm_num [cEntry]
   · rcases (show k = j + 1 ∨ j + 1 < k by omega) with rfl | h'
@@ -510,9 +514,12 @@ theorem theorem_2_6_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A ΔA : Matrix (Fin n) 
 
 /-- **§2.6.5, the Skeel condition number** `‖|A⁻¹| |A|‖_∞` (the backbone's `Matrix.skeelCond A`)
 is at most `κ_∞(A)`. -/
-theorem skeel_condition_number (A : Matrix (Fin n) (Fin n) ℝ) :
+theorem skeelCond_eq_and_le_condNumberLp (A : Matrix (Fin n) (Fin n) ℝ) :
     skeelCond A = lpOpNorm ∞ (A⁻¹.abs * A.abs) ∧ skeelCond A ≤ condNumberLp ∞ A :=
   ⟨(lpOpNorm_top _).symm, skeelCond_le_condNumberLp_top A⟩
+
+@[deprecated (since := "2026-09-30")]
+alias skeel_condition_number := skeelCond_eq_and_le_condNumberLp
 
 /-- **Theorem 2.6.3, (2.6.12).** Suppose `Ax = b` with `A` nonsingular and `b ≠ 0`,
 `(A + ΔA) y = b + Δb`, `|ΔA| ≤ ε |A|` and `|Δb| ≤ ε |b|`. If `ε κ_∞(A) = r < 1`, then `A + ΔA` is
@@ -541,10 +548,10 @@ theorem theorem_2_6_3 {A ΔA : Matrix (Fin n) (Fin n) ℝ} {b Δb x y : Fin n �
   have hsmall : ε * skeelCond A < 1 := lt_of_le_of_lt (mul_le_mul_of_nonneg_left hsk hε0) hr
   refine ⟨isUnit_add_of_lpOpNorm_le ∞ hA hΔA' hr, ?_⟩
   have hsk0 : 0 ≤ skeelCond A := by
-    rw [(skeel_condition_number A).1]
+    rw [(skeelCond_eq_and_le_condNumberLp A).1]
     exact lpOpNorm_nonneg _ _
   have h := (norm_sub_le_of_abs_le_abs hA hx hy hε0 hΔA hΔb hsmall hx0).2
-  rw [PiLp.norm_toLp, PiLp.norm_toLp, ← (skeel_condition_number A).1]
+  rw [PiLp.norm_toLp, PiLp.norm_toLp, ← (skeelCond_eq_and_le_condNumberLp A).1]
   refine h.trans (mul_le_mul_of_nonneg_right ?_ hsk0)
   refine div_le_div_of_nonneg_left (by positivity) (by linarith) ?_
   linarith [mul_le_mul_of_nonneg_left hsk hε0]

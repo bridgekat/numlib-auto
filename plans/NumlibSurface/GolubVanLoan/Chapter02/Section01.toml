@@ -5,6 +5,14 @@ id = "finrank_ker_add_rank"
 source = 'Golub–Van Loan, Matrix Computations, §2.1.2'
 
 [[node]]
+id = "range_eq_span_columns"
+source = 'Golub–Van Loan, Matrix Computations, §2.1.2'
+
+[[node]]
+id = "rank_eq_finrank_span_col_and_row"
+source = 'Golub–Van Loan, Matrix Computations, §2.1.2'
+
+[[node]]
 id = "IsRankDeficient"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, §2.1.2, Definition'
