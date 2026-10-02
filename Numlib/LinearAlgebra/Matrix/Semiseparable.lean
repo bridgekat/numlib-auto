@@ -2312,7 +2312,7 @@ theorem det_reflectorFactor (φ : ℕ → ℝ) (k : ℕ) :
 /-- **The product (12.2.18) is orthogonal**, as a product of orthogonal factors. -/
 theorem prodFwd_reflectorFactor_mem_orthogonalGroup (φ : ℕ → ℝ) (r : ℕ) :
     prodFwd (reflectorFactor N φ) r ∈ orthogonalGroup (Fin (N + 1)) ℝ :=
-  prodFwd_mem_orthogonalGroup (reflectorFactor_mem_orthogonalGroup φ) r
+  prodFwd_mem_orthogonalGroup fun k _ => reflectorFactor_mem_orthogonalGroup φ k
 
 /-- **The determinant of the product (12.2.18)** is `(−1)^{N+1}`: each of its `N + 1` factors has
 determinant `−1`. -/
