@@ -554,9 +554,6 @@ section Splitting
 
 variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
 
-@[deprecated Module.End.isCompl_spectralSubspace (since := "2026-09-30")]
-alias isCompl_iSup_maxGenEigenspace := Module.End.isCompl_spectralSubspace
-
 /-- The `l`-generalized eigenspace and the span of the other generalized eigenspaces are
 complementary: the one-eigenvalue case of `Module.End.isCompl_spectralSubspace`, which is what the
 power method's splitting `x₀ = u + w` uses. -/
@@ -609,40 +606,6 @@ theorem maxGenEigenspace_eq_eigenspace_of_finrank_eq_one {B : Module.End K V} {l
   exact Submodule.one_le_finrank_iff.mpr (Module.End.hasEigenvalue_iff.mp hev)
 
 /-! The spectral projector moved to `Numlib/LinearAlgebra/Eigenspace/Spectral`. -/
-
-@[deprecated Module.End.spectralProjector (since := "2026-09-30")]
-alias spectralProjector := Module.End.spectralProjector
-
-@[deprecated Module.End.spectralProjector_apply_mem (since := "2026-09-30")]
-alias spectralProjector_apply_mem := Module.End.spectralProjector_apply_mem
-
-@[deprecated Module.End.sub_spectralProjector_mem (since := "2026-09-30")]
-alias sub_spectralProjector_mem := Module.End.sub_spectralProjector_mem
-
-@[deprecated Module.End.spectralProjector_apply_of_mem (since := "2026-09-30")]
-alias spectralProjector_apply_of_mem := Module.End.spectralProjector_apply_of_mem
-
-@[deprecated Module.End.spectralProjector_apply_eq_zero_iff (since := "2026-09-30")]
-alias spectralProjector_apply_eq_zero_iff := Module.End.spectralProjector_apply_eq_zero_iff
-
-@[deprecated Module.End.ker_spectralProjector (since := "2026-09-30")]
-alias ker_spectralProjector := Module.End.ker_spectralProjector
-
-@[deprecated Module.End.range_spectralProjector (since := "2026-09-30")]
-alias range_spectralProjector := Module.End.range_spectralProjector
-
-@[deprecated Module.End.isIdempotentElem_spectralProjector (since := "2026-09-30")]
-alias isIdempotentElem_spectralProjector := Module.End.isIdempotentElem_spectralProjector
-
-@[deprecated Module.End.spectralProjector_add_of_mem (since := "2026-09-30")]
-alias spectralProjector_add_of_mem := Module.End.spectralProjector_add_of_mem
-
-@[deprecated Module.End.injOn_spectralProjector_iff (since := "2026-09-30")]
-alias injOn_spectralProjector_iff := Module.End.injOn_spectralProjector_iff
-
-@[deprecated Module.End.existsUnique_mem_spectralProjector_eq (since := "2026-09-30")]
-alias existsUnique_mem_spectralProjector_eq := Module.End.existsUnique_mem_spectralProjector_eq
-
 
 end Splitting
 
@@ -1222,7 +1185,6 @@ theorem exists_gap_subspaceIterate_span_image_le [FiniteDimensional 𝕜 E]
     exact (le_max_left _ _).trans
       (Finset.single_le_sum (fun i _ => le_max_right (Cf i) 0) (Finset.mem_univ j))
 
-
 end SubspaceIteration
 
 section Conjugation
@@ -1489,9 +1451,6 @@ theorem _root_.norm_inv_norm_smul_sub_le {u v : E} (hu : ‖u‖ = 1) :
         norm_sub_le_norm_sub_add_norm_sub _ _ _
     _ ≤ 2 * ‖v - u‖ := by linarith
 
-@[deprecated _root_.norm_inv_norm_smul_sub_le (since := "2026-09-30")]
-alias norm_inv_norm_smul_sub_le := _root_.norm_inv_norm_smul_sub_le
-
 /-- The unimodular rephasing of the power iterate: with `a = α i₀ l i₀^k ≠ 0` and
 `A^k x₀ = a v`, the iterate times `‖a‖ / a` is the normalization `‖v‖⁻¹ v` of `v`. -/
 theorem smul_powerIterate_eq_of_eq_smul {A : Module.End 𝕜 E} {x₀ v : E} {a : 𝕜} {k : ℕ}
@@ -1547,9 +1506,6 @@ theorem _root_.Submodule.sinAngle_span_singleton_le_norm_smul_sub {u q : E} (hq 
   rw [hq, mul_one] at hs
   rw [hs]
   exact h.trans heq.le
-
-@[deprecated Submodule.sinAngle_span_singleton_le_norm_smul_sub (since := "2026-09-30")]
-alias sinAngle_span_singleton_le_norm_smul_sub := Submodule.sinAngle_span_singleton_le_norm_smul_sub
 
 /-- The eigendirection rate of the power method with an eigenbasis ([golub2013matrix] §7.3.1,
 `dist(span{q^(k)}, span{x₁}) = O(|λ₂/λ₁|^k)`): under the hypotheses of
@@ -1643,12 +1599,6 @@ theorem exists_norm_inner_powerIterate_sub_le_of_eigenbasis {ι : Type*} [Fintyp
 /-! ### An orthonormal eigenbasis -/
 
 variable {ι : Type*} [Fintype ι] {A : Module.End 𝕜 E}
-
-@[deprecated OrthonormalBasis.inner_pow_apply_of_apply_eq_smul (since := "2026-09-30")]
-alias inner_pow_apply_of_eigenbasis := OrthonormalBasis.inner_pow_apply_of_apply_eq_smul
-
-@[deprecated OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul (since := "2026-09-30")]
-alias isSymmetric_of_eigenbasis := OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul
 
 /-- The angle bound of the power method ([golub2013matrix] Theorem 8.2.1, (8.2.4)): let `v` be
 an orthonormal basis of `E` with `A (v i) = l i • v i`, a distinguished `i₀` with `l i₀ ≠ 0` and

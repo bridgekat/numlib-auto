@@ -677,10 +677,4 @@ theorem tendsto_penaltyLSE_solution {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fi
     (hx : IsLSESolution A b B d x) : Tendsto (penaltyLSE A B b d) atTop (𝓝 x) :=
   Matrix.tendsto_penaltyLSE hnm hB hAB hx
 
-@[deprecated (since := "2026-09-30")] alias IsLSQISolution := IsSphereLSQISolution
-@[deprecated (since := "2026-09-30")] alias IsLSQISolution.norm_eq := IsSphereLSQISolution.norm_eq
-@[deprecated (since := "2026-09-30")]
-alias isLSQISolution_tikhonov := isSphereLSQISolution_tikhonov
-@[deprecated (since := "2026-09-30")] alias tendsto_penaltyLSE := tendsto_penaltyLSE_solution
-
 end GolubVanLoan.Chapter06

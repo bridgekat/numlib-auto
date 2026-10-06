@@ -46,9 +46,6 @@ theorem ContinuousOn.pow_smul_comp_segment {φ : 𝕜 → F} (hφ : ContinuousOn
   (continuous_pow k).continuousOn.smul
     (hφ.comp (by fun_prop) fun _ ht => hU.add_smul_sub_mem ha hz ht)
 
-@[deprecated (since := "2026-09-30")]
-alias ContinuousOn.comp_segment := ContinuousOn.pow_smul_comp_segment
-
 omit [NormedSpace 𝕜 F] [NormedSpace ℝ F] [IsScalarTower ℝ 𝕜 F] in
 /-- Around a point `z` of an open convex set `U`, the segments from `a ∈ U` to the points of a
 closed ball about `z` sweep out a compact subset of `U`, on which a function continuous on `U` is

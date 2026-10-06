@@ -87,25 +87,6 @@ structure IsThinCSD (Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₂ : Matrix (F
 
 variable {Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜} {Q₂ : Matrix (Fin m₂) (Fin n₁) 𝕜}
 
-section Deprecated
-
-variable {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
-  {V : Matrix (Fin n₁) (Fin n₁) 𝕜} {θ : ℕ → ℝ}
-
-/-- The cosine block (the former field name). -/
-@[deprecated IsThinCSD.star_mul_mul₁ (since := "2026-09-30")]
-theorem IsThinCSD.star_mul_mul_left (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) :
-    star U₁ * Q₁ * V = rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜) :=
-  h.star_mul_mul₁
-
-/-- The sine block (the former field name). -/
-@[deprecated IsThinCSD.star_mul_mul₂ (since := "2026-09-30")]
-theorem IsThinCSD.star_mul_mul_right (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) :
-    star U₂ * Q₂ * V = shiftedRectDiagonal (n₁ - min n₁ m₂) fun i => ((Real.sin (θ i) : ℝ) : 𝕜) :=
-  h.star_mul_mul₂
-
-end Deprecated
-
 /-- The cosine block of a thin CS decomposition as a two-sided unitary equivalence. -/
 theorem IsThinCSD.isUnitaryEquiv₁ {U₁ U₂ V θ} (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) :
     IsUnitaryEquiv Q₁ U₁ (rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜)) V :=
@@ -346,36 +327,6 @@ structure IsCSD (Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₁₂ : Matrix 
   /-- The `(2, 2)` block. -/
   star_mul_mul₂₂ : star U₂ * Q₂₂ * V₂ = rectDiagonal fun i =>
     if i < n₁ - (n₁ - min n₁ m₂) then -((Real.cos (θ (i + (n₁ - min n₁ m₂))) : ℝ) : 𝕜) else 1
-
-section Deprecated
-
-variable {Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜} {Q₁₂ : Matrix (Fin m₁) (Fin n₂) 𝕜}
-  {Q₂₁ : Matrix (Fin m₂) (Fin n₁) 𝕜} {Q₂₂ : Matrix (Fin m₂) (Fin n₂) 𝕜}
-  {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
-  {V₁ : Matrix (Fin n₁) (Fin n₁) 𝕜} {V₂ : Matrix (Fin n₂) (Fin n₂) 𝕜} {θ : ℕ → ℝ}
-
-@[deprecated (since := "2026-09-30")] alias IsCSD.isThinCSD := IsCSD.toIsThinCSD
-
-/-- The first right factor is unitary (the former field name). -/
-@[deprecated IsThinCSD.mem_unitaryGroup_right +typeChanged (since := "2026-09-30")]
-theorem IsCSD.mem_unitaryGroup_right₁ (h : IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ) :
-    V₁ ∈ unitaryGroup (Fin n₁) 𝕜 :=
-  h.mem_unitaryGroup_right
-
-/-- The `(1, 1)` block (the former field name). -/
-@[deprecated IsThinCSD.star_mul_mul₁ +typeChanged (since := "2026-09-30")]
-theorem IsCSD.star_mul_mul₁₁ (h : IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ) :
-    star U₁ * Q₁₁ * V₁ = rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜) :=
-  h.star_mul_mul₁
-
-/-- The `(2, 1)` block (the former field name). -/
-@[deprecated IsThinCSD.star_mul_mul₂ +typeChanged (since := "2026-09-30")]
-theorem IsCSD.star_mul_mul₂₁ (h : IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ) :
-    star U₂ * Q₂₁ * V₁ =
-      shiftedRectDiagonal (n₁ - min n₁ m₂) fun i => ((Real.sin (θ i) : ℝ) : 𝕜) :=
-  h.star_mul_mul₂
-
-end Deprecated
 
 /-- `(Uᴴ X V)(U'ᴴ Y V)ᴴ = Uᴴ (X Yᴴ) U'` for unitary `V`. -/
 private theorem star_mul_mul_mul_conjTranspose {a b c : ℕ} (U : Matrix (Fin a) (Fin a) 𝕜)

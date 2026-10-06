@@ -797,16 +797,13 @@ theorem sep_diagonal [DecidableEq m] [DecidableEq n] [Nonempty m] [Nonempty n] (
 /-- **The separation of two Hermitian matrices is the distance between their spectra**
 ([golub2013matrix] P8.1.9, the step of Theorem 8.1.10):
 `sep A B = min_{i,j} |λ_i(A) - λ_j(B)|`. Both are unitarily diagonalizable
-(`Matrix.IsHermitian.spectral_theorem`), the separation is unitarily invariant, and for diagonal
-matrices it is the least distance between the diagonal entries. -/
+(`Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`), the separation is unitarily invariant,
+and for diagonal matrices it is the least distance between the diagonal entries. -/
 theorem IsHermitian.sep_eq_iInf_abs_eigenvalues_sub [DecidableEq m] [DecidableEq n]
     [Nonempty m] [Nonempty n] (hA : A.IsHermitian) (hB : B.IsHermitian) :
     sep A B = ⨅ i, ⨅ j, |hA.eigenvalues i - hB.eigenvalues j| := by
-  have hA' := hA.conjStarAlgAut_star_eigenvectorUnitary
-  have hB' := hB.conjStarAlgAut_star_eigenvectorUnitary
-  rw [Unitary.conjStarAlgAut_star_apply] at hA' hB'
-  rw [← sep_unitary_conj hA.eigenvectorUnitary.2 hB.eigenvectorUnitary.2, hA', hB',
-    sep_diagonal]
+  rw [← sep_unitary_conj hA.eigenvectorUnitary.2 hB.eigenvectorUnitary.2,
+    hA.star_eigenvectorUnitary_mul_mul, hB.star_eigenvectorUnitary_mul_mul, sep_diagonal]
   simp only [Function.comp_apply, ← RCLike.ofReal_sub, RCLike.norm_ofReal]
 
 /-- **The separation from a scalar is a least singular value** ([golub2013matrix] proof of

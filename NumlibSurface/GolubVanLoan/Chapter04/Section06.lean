@@ -56,9 +56,6 @@ def vandermondeCols (x : Fin (n + 1) → ℝ) : Matrix (Fin (n + 1)) (Fin (n + 1
 theorem vandermondeCols_apply (x : Fin (n + 1) → ℝ) (i j : Fin (n + 1)) :
     vandermondeCols x i j = x j ^ (i : ℕ) := rfl
 
-@[deprecated (since := "2026-09-30")] alias vandermonde := vandermondeCols
-@[deprecated (since := "2026-09-30")] alias vandermonde_apply := vandermondeCols_apply
-
 /-- **§4.6.** "Note that the discrete Fourier transform matrix (§1.4.1) is a very special complex
 Vandermonde matrix": `F_n = (ω_n^{kj})` is the Vandermonde matrix of the nodes `ω_n^k`,
 `ω_n = exp(−2πi/n)` (symmetric, so it is also its transpose). -/

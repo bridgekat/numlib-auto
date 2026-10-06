@@ -41,7 +41,7 @@ factorization for *every* zero pattern avoiding the diagonal, that no pivot vani
 L U - R` is then a regular splitting, hence a convergent iteration (`Matrix.IsMMatrix.exists_isILU`
 and `Matrix.IsILU.isRegular`). This is due to [meijerink1977iterative]; the induction rests on
 [fan1960note] theorem [fan1960note], that one step of Gaussian elimination applied to an M-matrix
-produces an M-matrix (`Matrix.IsMMatrix.isMMatrix_schurComplementSingle`), and on the comparison
+produces an M-matrix (`Matrix.IsMMatrix.schurComplementSingle`), and on the comparison
 theorem `Matrix.IsMMatrix.of_entrywiseLE` of `Numlib/LinearAlgebra/Matrix/MMatrix`, which is what
 makes the *dropping* step legitimate: discarding a nonpositive off-diagonal entry moves the matrix
 up in the entrywise order, and an entrywise-larger matrix with nonpositive off-diagonal entries is
@@ -987,7 +987,7 @@ A Stieltjes matrix is an M-matrix, so it has an incomplete `LU` factorization wh
 has positive pivots `d_i` (`Matrix.IsMMatrix.exists_isILU_isMMatrix`); by symmetry `U = D Lᵀ`
 (`Matrix.IsILU.eq_diagonal_mul_transpose`), and `L D^{1/2}` is the incomplete Cholesky factor. The
 book's recursive `incChol`, which keeps each Schur complement Stieltjes by
-`Matrix.IsStieltjes.isStieltjes_sub_drop`, computes the same factor. -/
+`Matrix.IsStieltjes.sub_drop`, computes the same factor. -/
 theorem IsStieltjes.exists_isIC {A : Matrix n n ℝ} (hA : A.IsStieltjes)
     (hPs : ∀ i j, (i, j) ∈ P → (j, i) ∈ P) (hP : ∀ i, (i, i) ∉ P) :
     ∃ L : Matrix n n ℝ, IsIC P A L ∧ ∀ i, 0 < L i i := by

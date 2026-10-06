@@ -77,12 +77,6 @@ constant.
 
 namespace Module.End
 
-@[deprecated invtSubmodule_le_spectralSubspace (since := "2026-09-30")]
-alias invtSubmodule_le_iSup_maxGenEigenspace := invtSubmodule_le_spectralSubspace
-
-@[deprecated invtSubmodule_eq_spectralSubspace (since := "2026-09-30")]
-alias invtSubmodule_eq_iSup_maxGenEigenspace := invtSubmodule_eq_spectralSubspace
-
 end Module.End
 
 namespace Matrix
@@ -248,9 +242,6 @@ theorem span_cols_eq_spectralSubspace_of_conj [IsAlgClosed K] {A Q : Matrix n n 
         simp only [hπ, Function.comp_apply, Pi.zero_apply] at this
         rw [Sum.elim_inr, Pi.zero_apply, ← this, ← hj, Equiv.symm_apply_apply]
     rw [hwx, mulVec_mulVec, hQQ, one_mulVec]
-
-@[deprecated (since := "2026-09-30")]
-alias span_cols_eq_iSup_maxGenEigenspace_of_conj := span_cols_eq_spectralSubspace_of_conj
 
 end Block
 
@@ -1246,21 +1237,6 @@ private theorem norm_toEuclideanLin_le_lpOpNorm {p q : Type*} [Fintype p] [Finty
     ‖toEuclideanLin M y‖ ≤ lpOpNorm 2 M * ‖y‖ :=
   (lpCLM 2 M).le_opNorm y
 
-/-- A triangular matrix has only its diagonal entries as eigenvalues. -/
-private theorem exists_eq_of_mem_spectrum_of_isUpperTriangular {k : ℕ}
-    {T : Matrix (Fin k) (Fin k) ℂ} (hT : T.IsUpperTriangular) {μ : ℂ}
-    (hμ : μ ∈ spectrum ℂ T) : ∃ i, T i i = μ := by
-  rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det,
-    isUnit_iff_ne_zero, not_not] at hμ
-  have htri : (μ • (1 : Matrix (Fin k) (Fin k) ℂ) - T).IsUpperTriangular := fun i j hij => by
-    have hji : j < i := hij
-    rw [sub_apply, smul_apply, one_apply_ne (ne_of_lt hji).symm, hT hji, smul_zero, sub_zero]
-  rw [det_of_isUpperTriangular htri, Finset.prod_eq_zero_iff] at hμ
-  obtain ⟨i, -, hi⟩ := hμ
-  refine ⟨i, ?_⟩
-  simp only [sub_apply, smul_apply, one_apply_eq, smul_eq_mul, mul_one] at hi
-  exact (sub_eq_zero.1 hi).symm
-
 /-- The block form of the corrected Theorem 7.3.1: in `EuclideanSpace ℂ (Fin r ⊕ Fin s)`, for
 `M = [T₁₁ T₁₂; 0 T₂₂]` with `T₁₁` invertible and `X` solving `T₁₁ X - X T₂₂ = -T₁₂`, the ranges
 `D = ran [I; 0]`, `W = ran [X; I]` are complementary invariant subspaces, `Wᗮ = D' = ran [I; -Xᴴ]`,
@@ -1492,8 +1468,9 @@ theorem gap_subspaceIterate_le_of_schur {n r : ℕ} {A Q : Matrix (Fin n) (Fin n
     rw [sep_pos_iff_disjoint_spectrum]
     rw [Set.disjoint_left]
     intro μ' h₁ h₂
-    obtain ⟨i, hi⟩ := exists_eq_of_mem_spectrum_of_isUpperTriangular hT₁₁ h₁
-    obtain ⟨j, hj⟩ := exists_eq_of_mem_spectrum_of_isUpperTriangular hT₂₂ h₂
+    obtain ⟨i, hi⟩ := hT₁₁.spectrum_eq.subset h₁
+    obtain ⟨j, hj⟩ := hT₂₂.spectrum_eq.subset h₂
+    beta_reduce at hi hj
     have := ha i
     rw [hi, ← hj] at this
     linarith [hb j]

@@ -582,8 +582,6 @@ theorem li_sun {A Ã U Ũ P P' : Matrix (Fin n) (Fin n) ℝ} (h : Matrix.IsPolar
       Ã.sortedSingularValues (n - 2) + Ã.sortedSingularValues (n - 1)) :=
   Matrix.frobenius_norm_polar_sub_le h h' hdet
 
-@[deprecated (since := "2026-09-30")] alias liSun := li_sun
-
 /-! ### §9.4.4 The matrix logarithm -/
 
 /-- §9.4.4: if the real eigenvalues of `A ∈ ℝ^{n×n}` are all positive, there is a unique real `X`
@@ -678,8 +676,6 @@ theorem log_pade_33 :
   simp only [R, D]
   rw [div_eq_mul_inv]
   linear_combination (-Complex.logTaylor 7 x) * hDD
-
-@[deprecated (since := "2026-09-30")] alias logPade33 := log_pade_33
 
 /-- §9.4.4, inverse scaling and squaring: with `A₀ = A` and `A_k = A_{k-1}^{1/2}`,
 `log(A) = 2^k log(A_k)` for every `k`, when no eigenvalue of `A` lies on `(-∞, 0]`. -/

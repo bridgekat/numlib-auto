@@ -148,18 +148,6 @@ theorem hasLowerBandwidth_transpose_iff : Aᵀ.HasLowerBandwidth p ↔ A.HasUppe
 theorem hasUpperBandwidth_transpose_iff : Aᵀ.HasUpperBandwidth q ↔ A.HasLowerBandwidth q :=
   forall_comm
 
-/-- The upper bandwidth of a matrix is the lower bandwidth of its transpose (the former name, in
-the reverse direction). -/
-@[deprecated hasLowerBandwidth_transpose_iff +typeChanged (since := "2026-09-30")]
-theorem hasUpperBandwidth_iff_transpose : A.HasUpperBandwidth q ↔ Aᵀ.HasLowerBandwidth q :=
-  hasLowerBandwidth_transpose_iff.symm
-
-/-- The lower bandwidth of a matrix is the upper bandwidth of its transpose (the former name, in
-the reverse direction). -/
-@[deprecated hasUpperBandwidth_transpose_iff +typeChanged (since := "2026-09-30")]
-theorem hasLowerBandwidth_iff_transpose : A.HasLowerBandwidth p ↔ Aᵀ.HasUpperBandwidth p :=
-  hasUpperBandwidth_transpose_iff.symm
-
 /-- On `Fin N`, lower bandwidth `p` is the usual condition: `A i j = 0` whenever `i > j + p`. -/
 theorem hasLowerBandwidth_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
     A.HasLowerBandwidth p ↔ ∀ i j : Fin N, (j : ℕ) + p < (i : ℕ) → A i j = 0 := by

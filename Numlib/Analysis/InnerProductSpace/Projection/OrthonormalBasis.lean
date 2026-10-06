@@ -23,13 +23,6 @@ namespace OrthonormalBasis
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] {ι : Type*}
   [Fintype ι] (b : OrthonormalBasis ι 𝕜 E)
 
-/-- Parseval's identity in the coordinates of an orthonormal basis:
-`∑ i, ‖b.repr x i‖² = ‖x‖²`. -/
-@[deprecated "use `OrthonormalBasis.sum_sq_norm_inner_right` and `repr_apply_apply`"
-  (since := "2026-09-30")]
-theorem sum_sq_norm_repr (x : E) : ∑ i, ‖b.repr x i‖ ^ 2 = ‖x‖ ^ 2 := by
-  simpa only [b.repr_apply_apply] using b.sum_sq_norm_inner_right x
-
 variable [FiniteDimensional 𝕜 E] (s : Set ι) [DecidablePred (· ∈ s)]
 
 /-- The coordinates of the orthogonal projection onto the span of some vectors of an orthonormal

@@ -541,12 +541,6 @@ theorem IsLowerTriangular.isUnit_iff {K : Type*} [Field K] {L : Matrix n n K}
     Finset.prod_ne_zero_iff]
   simp
 
-@[deprecated (since := "2026-09-30")]
-alias isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular := IsUpperTriangular.isUnit_iff
-
-@[deprecated (since := "2026-09-30")]
-alias isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular := IsLowerTriangular.isUnit_iff
-
 /-- An upper triangular matrix with no zero on its diagonal has a unit determinant, the form the
 substitution and least-squares solvers consume. -/
 theorem IsUpperTriangular.isUnit_det_of_diag_ne_zero {K : Type*} [Field K] {U : Matrix n n K}

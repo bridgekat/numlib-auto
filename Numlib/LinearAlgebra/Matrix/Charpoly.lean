@@ -219,12 +219,6 @@ theorem map_neg_eq_of_sum_pow_odd [CharZero K] {μ : ι → K}
 
 end Fintype
 
-@[deprecated (since := "2026-09-30")]
-alias sum_eval_neg_eq_of_sum_pow_odd := Fintype.sum_eval_neg_eq_of_sum_pow_odd
-
-@[deprecated (since := "2026-09-30")]
-alias map_neg_eq_of_sum_pow_odd := Fintype.map_neg_eq_of_sum_pow_odd
-
 end PowerSum
 
 namespace Matrix

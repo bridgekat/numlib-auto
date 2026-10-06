@@ -54,7 +54,6 @@ the bandwidths in `Numlib/LinearAlgebra/Matrix/Band`, the block product rules in
 `Numlib/LinearAlgebra/Matrix/Bidiagonal`.
 -/
 
-
 namespace Matrix
 
 variable {n R : Type*} [LinearOrder n]
@@ -113,14 +112,6 @@ theorem IsUpperHessenberg.submatrix_of_strictMono {m : Type*} [LinearOrder m] [Z
 §1.2.1, of which this is an abbreviation. -/
 abbrev IsUpperHessenbergRect [Zero R] {m : ℕ} (H : Matrix (Fin (m + 1)) (Fin m) R) : Prop :=
   H.HasLowerBandwidthRect 1
-
-/-- The two spellings of "rectangular upper Hessenberg" agree, by definition. -/
-@[deprecated "`Matrix.IsUpperHessenbergRect` is an abbreviation of `HasLowerBandwidthRect · 1`"
-  (since := "2026-09-30")]
-theorem isUpperHessenbergRect_iff_hasLowerBandwidthRect_one [Zero R] {m : ℕ}
-    {H : Matrix (Fin (m + 1)) (Fin m) R} :
-    H.IsUpperHessenbergRect ↔ H.HasLowerBandwidthRect 1 :=
-  Iff.rfl
 
 section Bidiagonal
 

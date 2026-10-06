@@ -98,9 +98,10 @@ Gram–Schmidt orthonormalizes from left to right and so has to know what "earli
 for `Fin n`.
 
 `Numlib.LinearAlgebra.Matrix.QR` already has the QR factorization, as the *existence* statement
-`Matrix.exists_qr` together with its uniqueness `Matrix.IsThinQR.unique`; an existence statement
-cannot be iterated, so the algorithm needs the factorization as a function of the matrix, which is
-what `Matrix.qrQ` and `Matrix.qrR` are.  They are the same factorization: both take `Q` to be the
+`Matrix.exists_isThinQR` together with its uniqueness `Matrix.IsThinQR.unique`; an existence
+statement cannot be iterated, so the algorithm needs the factorization as a function of the
+matrix, which is what `Matrix.qrQ` and `Matrix.qrR` are.  They are the same factorization: both
+take `Q` to be the
 Gram–Schmidt orthonormalization of the columns, and `Matrix.IsThinQR.unique` identifies them with
 any other factorization of positive diagonal, a product of Householder reflectors included.  What
 is not there and is proved here is the reverse reading,

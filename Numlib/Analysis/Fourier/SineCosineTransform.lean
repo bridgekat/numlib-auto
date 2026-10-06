@@ -712,9 +712,6 @@ theorem secondDifferenceNN_mulVec_cosAngleVec_mul_pi_div (hm : 0 < m) (j : Fin (
   rw [secondDifferenceNN_mulVec_cosAngleVec (by omega), hres, zero_smul, add_zero,
     show θ / 2 = (j : ℕ) * π / (2 * m) by rw [hθ]; field_simp]
 
-@[deprecated (since := "2026-09-30")]
-alias secondDifferenceNN_mulVec_dct1_col := secondDifferenceNN_mulVec_cosAngleVec_mul_pi_div
-
 /-- The columns of `DCT(m + 1) · diag (2, 1, …, 1, 2)` (the book's `V^{(NN)}_{m+1}`) are the cosine
 vectors at `θ_j = j π / m`. -/
 theorem dct1_mul_diagonal_apply (k j : Fin (m + 1)) :

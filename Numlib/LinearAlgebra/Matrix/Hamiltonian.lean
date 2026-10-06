@@ -214,9 +214,6 @@ theorem isSkewHamiltonian_fromBlocks_iff {A G F H : Matrix l l R} :
   · rintro ⟨rfl, hF, hG⟩
     exact ⟨by rw [hF, neg_neg], rfl, transpose_transpose A, hG⟩
 
-@[deprecated (since := "2026-09-30")]
-alias isSkewHamiltonian_iff_fromBlocks := isSkewHamiltonian_fromBlocks_iff
-
 /-- The zero matrix is skew-Hamiltonian. -/
 theorem isSkewHamiltonian_zero : (0 : Matrix (l ⊕ l) (l ⊕ l) R).IsSkewHamiltonian :=
   isSkewHamiltonian_iff_mem_selfAdjointMatricesSubmodule.2 (zero_mem _)

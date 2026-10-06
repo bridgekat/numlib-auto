@@ -700,15 +700,6 @@ theorem tendsto_norm_toEuclideanLin_tikhonov_atTop (A : Matrix m n 𝕜) (b : Eu
   filter_upwards [eventually_gt_atTop 0] with α hα
   rw [← norm_sq_toEuclideanLin_tikhonov_apply A hα, Real.sqrt_sq (norm_nonneg _)]
 
-@[deprecated (since := "2026-09-30")]
-alias continuousOn_norm_tikhonov_mulVec := continuousOn_norm_toEuclideanLin_tikhonov
-@[deprecated (since := "2026-09-30")]
-alias antitoneOn_norm_tikhonov_mulVec := antitoneOn_norm_toEuclideanLin_tikhonov
-@[deprecated (since := "2026-09-30")]
-alias strictAntiOn_norm_tikhonov_mulVec := strictAntiOn_norm_toEuclideanLin_tikhonov
-@[deprecated (since := "2026-09-30")]
-alias tendsto_norm_tikhonov_mulVec_atTop := tendsto_norm_toEuclideanLin_tikhonov_atTop
-
 omit [DecidableEq m] in
 /-- **Ridge regression tends to the minimal-norm least-squares solution** ([golub2013matrix]
 §6.1.4, `lim_{λ→0} x(λ) = x_LS`): `A.tikhonov α → A⁺` as `α → 0⁺`. By
@@ -869,7 +860,7 @@ theorem posDef_gram_add_smul_gram_iff (A : Matrix m n 𝕜) (B : Matrix p n 𝕜
 
 /-- **General-form Tikhonov regularization** ([golub2013matrix] (6.1.20)–(6.1.21)):
 `(Aᴴ A + α Bᴴ B)⁻¹ Aᴴ`, the solution operator of `min ‖A x - b‖² + α ‖B x‖²` when
-`ker A ⊓ ker B = ⊥` (`Matrix.generalFormTikhonov_mulVec_eq_iff_isMinOn`); junk otherwise. -/
+`ker A ⊓ ker B = ⊥` (`Matrix.eq_toEuclideanLin_generalFormTikhonov_iff`); junk otherwise. -/
 noncomputable def generalFormTikhonov (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) (α : ℝ) :
     Matrix n m 𝕜 :=
   (Aᴴ * A + (α : 𝕜) • (Bᴴ * B))⁻¹ * Aᴴ
@@ -938,19 +929,6 @@ theorem eq_toEuclideanLin_generalFormTikhonov_iff (A : Matrix m n 𝕜) (B : Mat
     linarith
 
 open scoped ComplexOrder in
-/-- General-form Tikhonov, with the minimizer unbundled. -/
-@[deprecated eq_toEuclideanLin_generalFormTikhonov_iff +typeChanged (since := "2026-09-30")]
-theorem generalFormTikhonov_mulVec_eq_iff_isMinOn (A : Matrix m n 𝕜) (B : Matrix p n 𝕜)
-    {α : ℝ} (hα : 0 < α) (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥)
-    (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
-    (x = toEuclideanLin (generalFormTikhonov A B α) b ↔
-      toEuclideanLin (Aᴴ * A + (α : 𝕜) • (Bᴴ * B)) x = toEuclideanLin Aᴴ b) ∧
-    (x = toEuclideanLin (generalFormTikhonov A B α) b ↔
-      ∀ y, ‖toEuclideanLin A x - b‖ ^ 2 + α * ‖toEuclideanLin B x‖ ^ 2
-        ≤ ‖toEuclideanLin A y - b‖ ^ 2 + α * ‖toEuclideanLin B y‖ ^ 2) := by
-  obtain ⟨h1, h2⟩ := eq_toEuclideanLin_generalFormTikhonov_iff A B hα hAB b x
-  exact ⟨h1, h2.trans isMinOn_univ_iff⟩
-
 /-- **Ridge regression** ([golub2013matrix] (6.1.11)–(6.1.12)): for `0 < α`, `x(α) = A.tikhonov α b`
 is the unique minimizer of `‖A x - b‖² + α ‖x‖²` — the general form at `B = 1`
 (`Matrix.generalFormTikhonov_one`), where `ker B = ⊥`. -/
@@ -966,15 +944,6 @@ theorem eq_toEuclideanLin_tikhonov_iff_isMinOn (A : Matrix m n 𝕜) {α : ℝ} 
       exact Submodule.zero_mem _
   simpa only [generalFormTikhonov_one, toEuclideanLin_one_apply] using
     (eq_toEuclideanLin_generalFormTikhonov_iff A 1 hα hker b x).2
-
-/-- Ridge regression, with the minimizer unbundled. -/
-@[deprecated eq_toEuclideanLin_tikhonov_iff_isMinOn +typeChanged (since := "2026-09-30")]
-theorem tikhonov_mulVec_eq_iff_isMinOn (A : Matrix m n 𝕜) {α : ℝ} (hα : 0 < α)
-    (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
-    x = toEuclideanLin (A.tikhonov α) b ↔
-      ∀ y, ‖toEuclideanLin A x - b‖ ^ 2 + α * ‖x‖ ^ 2
-        ≤ ‖toEuclideanLin A y - b‖ ^ 2 + α * ‖y‖ ^ 2 :=
-  (eq_toEuclideanLin_tikhonov_iff_isMinOn A hα b x).trans isMinOn_univ_iff
 
 end GeneralForm
 
@@ -1350,18 +1319,6 @@ theorem norm_sub_sq_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V) (b : EuclideanSpac
       exact hi h0
     rw [ite_eq_left hin, mul_inv_cancel₀ (by exact_mod_cast hσ), sub_self, norm_zero]
     ring
-
-@[deprecated (since := "2026-09-30")]
-alias tikhonov_mulVec_eq_sum_of_isSVD := toEuclideanLin_tikhonov_eq_sum_of_isSVD
-@[deprecated (since := "2026-09-30")]
-alias norm_sq_tikhonov_mulVec_eq_sum_of_isSVD := norm_sq_toEuclideanLin_tikhonov_eq_sum_of_isSVD
-@[deprecated (since := "2026-09-30")]
-alias pinv_mulVec_eq_sum_of_isSVD := toEuclideanLin_pinv_eq_sum_of_isSVD
-@[deprecated (since := "2026-09-30")]
-alias norm_sq_pinv_mulVec_eq_sum_of_isSVD := norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD
-@[deprecated (since := "2026-09-30")]
-alias norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD :=
-  norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD
 
 end IsSVD
 

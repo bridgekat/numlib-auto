@@ -1049,9 +1049,6 @@ theorem max_inv_prod_le_lpOpNorm_one_inv (hr : r 0 = 1) {m : ℕ}
     rw [h1]
     nlinarith
 
-@[deprecated (since := "2026-09-30")]
-alias inv_beta_le_lpOpNorm_one_inv := max_inv_prod_le_lpOpNorm_one_inv
-
 /-! ### Cybenko's upper bound -/
 
 /-- The `ℓ¹` norm of `p_k`: `∑_m |[z^m] p_k| = 1 + ∑_i |y^{(k)}_i|`, over any range containing the

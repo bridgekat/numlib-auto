@@ -296,9 +296,6 @@ theorem l2_opNorm_eq_sqrt_lambdaMax (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n
   refine exists_mulVec_eq_zero_iff.1 ⟨z, fun h0 => by simp [h0] at hz1, ?_⟩
   rw [sub_mulVec, hz, smul_mulVec, one_mulVec, sub_self]
 
-@[deprecated "use `l2_opNorm_eq_sqrt_lambdaMax`" (since := "2026-09-30")]
-alias l2_opNorm_eq_sqrt_eigenvalues₀_zero := l2_opNorm_eq_sqrt_lambdaMax
-
 /-- **Corollary 2.3.2**: `‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)`. -/
 theorem corollary_2_3_2 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm 2 A ≤ √(lpOpNorm 1 A * lpOpNorm ∞ A) :=

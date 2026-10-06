@@ -48,7 +48,7 @@ uses, and counts of indices such as `#{k | i ≤ k ∧ k < j}` replace the diffe
 book (on `Fin N` they agree, `Matrix.card_filter_le_lt_fin`). Backward substitution is *defined*
 as forward substitution on `nᵒᵈ`, so that every fact about it is the dual instance of the forward
 one; `Matrix.IsUpperTriangular.isLowerTriangular_orderDual` is the bridge. It and the
-nonsingularity criterion `Matrix.isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular` (a triangular
+nonsingularity criterion `Matrix.IsUpperTriangular.isUnit_iff` (a triangular
 matrix is nonsingular exactly when its diagonal has no zero, the sentence opening
 [quarteroni2000numerical] §3.2) live in `Numlib/LinearAlgebra/Matrix/Triangular`.
 

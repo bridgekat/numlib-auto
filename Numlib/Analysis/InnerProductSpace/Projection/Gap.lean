@@ -338,15 +338,6 @@ theorem gap_le_max {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b)
   rw [gap_eq_max_norm_orthogonal_mul]
   exact max_le_max (K.norm_orthogonal_mul_le L ha hKL) (L.norm_orthogonal_mul_le K hb hLK)
 
-/-- The gap is bounded by the sum of the two one-sided distances; `Submodule.gap_le_max` is
-sharper. -/
-@[deprecated "use `Submodule.gap_le_max`, which is sharper" (since := "2026-09-30")]
-theorem gap_le_add {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b)
-    (hKL : ∀ u ∈ K, ‖u - L.starProjection u‖ ≤ a * ‖u‖)
-    (hLK : ∀ y ∈ L, ‖y - K.starProjection y‖ ≤ b * ‖y‖) :
-    K.gap L ≤ a + b :=
-  (K.gap_le_max L ha hb hKL hLK).trans (max_le_add_of_nonneg ha hb)
-
 /-- **The gap is Lipschitz in a spanning family.** If `K` is spanned by `x` and `L` by a family `w`
 with `‖w j - x j‖ ≤ δ` for every `j`, then `gap K L ≤ 2 κ δ`, where `κ` is the ℓ¹ conditioning
 of the family `x` — the constant of `LinearIndependent.exists_forall_sum_norm_le`.

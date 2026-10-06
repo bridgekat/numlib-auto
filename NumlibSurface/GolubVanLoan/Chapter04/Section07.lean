@@ -63,8 +63,6 @@ theorem isPersymmetric_iff {B : Matrix (Fin n) (Fin n) ℝ} :
     IsPersymmetricExchange B ↔ B.IsPersymmetric :=
   isPersymmetric_iff_exchange_mul_mul_exchange.symm
 
-@[deprecated (since := "2026-09-30")] alias IsPersymmetric := IsPersymmetricExchange
-
 /-- §4.7.1: "If `B` is persymmetric, then `ℰ_n B` is symmetric." -/
 theorem isSymm_exchange_mul {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsPersymmetricExchange B) :
     (exchange n * B).IsSymm :=
@@ -210,7 +208,6 @@ theorem equation_4_7_1 {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplitz n r)
 theorem durbin_beta_succ {r : ℕ → ℝ} {k : ℕ} (h : Durbin.beta r k ≠ 0) :
     Durbin.beta r (k + 1) = (1 - Durbin.alpha r k ^ 2) * Durbin.beta r k :=
   Durbin.beta_succ h
-
 
 /-! ### Algorithm 4.7.1 (Durbin) -/
 

@@ -34,7 +34,8 @@ characteristic polynomial as `Matrix.charpoly_units_conj` but has no name for th
 
 * `Matrix.IsSimilar.refl`, `Matrix.IsSimilar.symm`, `Matrix.IsSimilar.trans`: similarity is an
   equivalence relation.
-* `Matrix.IsSimilar.charpoly_eq`: similar matrices have the same characteristic polynomial.
+* `Matrix.IsSimilar.charpoly_eq`, `Matrix.IsSimilar.spectrum_eq`: similar matrices have the same
+  characteristic polynomial and the same spectrum.
 * `Matrix.IsSimilar.mulVec_eq_smul`: the eigenvectors of `A` are transported to those of
   `C⁻¹ * A * C` by `C⁻¹`.
 * `Matrix.IsSimilar.pow`, `Matrix.IsSimilar.sub_smul_one`: similarity survives powers and shifts,
@@ -67,7 +68,7 @@ and about eigenspaces are over a field.
 
 ## TODO
 
-The invariance of the spectrum, determinant, trace and rank as separate statements
+The invariance of the determinant, trace and rank as separate statements
 (`Matrix.rank_conj` of `Numlib/LinearAlgebra/Matrix/Rank` is the rank), and the nonvanishing
 `C⁻¹ *ᵥ x ≠ 0` of the transported eigenvector.
 -/
@@ -132,6 +133,14 @@ theorem IsSimilar.charpoly_eq {A B : Matrix n n R} (h : IsSimilar A B) :
   obtain ⟨C, hC, rfl⟩ := h
   have h1 := Matrix.charpoly_units_conj' hC.unit A
   rwa [IsUnit.unit_spec, eq_comm] at h1
+
+/-- Similar matrices have the same spectrum: conjugation by a unit preserves the spectrum
+(`spectrum.units_conjugate'`). -/
+theorem IsSimilar.spectrum_eq {A B : Matrix n n R} (h : IsSimilar A B) :
+    spectrum R A = spectrum R B := by
+  obtain ⟨C, hC, rfl⟩ := h
+  have h1 := spectrum.units_conjugate' (R := R) (a := A) (u := hC.unit)
+  rwa [coe_units_inv, IsUnit.unit_spec, eq_comm] at h1
 
 /-- Similarity survives subtracting a scalar from both matrices: `C⁻¹ (A - c I) C = B - c I`. -/
 theorem IsSimilar.sub_smul_one {A B : Matrix n n R} (h : IsSimilar A B) (c : R) :

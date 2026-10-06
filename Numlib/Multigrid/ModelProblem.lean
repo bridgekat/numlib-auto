@@ -573,12 +573,4 @@ theorem toEuclideanLin_modelCoarseCorrection :
   simp only [Matrix.mul_assoc]
   rfl
 
-@[deprecated (since := "2026-09-30")]
-alias coarseCorrection_mulVec_sineVec := modelCoarseCorrection_mulVec_sineVec
-@[deprecated (since := "2026-09-30")]
-alias coarseCorrection_mulVec_sineVec_aliasIndex := modelCoarseCorrection_mulVec_sineVec_aliasIndex
-@[deprecated (since := "2026-09-30")]
-alias coarseCorrection_mulVec_sineVec_middleIndex :=
-  modelCoarseCorrection_mulVec_sineVec_middleIndex
-
 end Multigrid

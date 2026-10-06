@@ -251,11 +251,6 @@ theorem isToeplitz_symmToeplitz (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).I
 theorem isPersymmetric_symmToeplitz (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).IsPersymmetric :=
   (isToeplitz_symmToeplitz n r).isPersymmetric
 
-@[deprecated (since := "2026-09-30")] alias symmToeplitz_isSymm := isSymm_symmToeplitz
-@[deprecated (since := "2026-09-30")] alias symmToeplitz_isToeplitz := isToeplitz_symmToeplitz
-@[deprecated (since := "2026-09-30")]
-alias symmToeplitz_isPersymmetric := isPersymmetric_symmToeplitz
-
 /-- A symmetric Toeplitz matrix is invariant under the reversal of rows and columns — the book's
 `ℰ T ℰ = T` ([golub2013matrix] §4.7.3), which with `ℰ² = I` is `ℰ T = T ℰ`. -/
 theorem symmToeplitz_submatrix_rev (n : ℕ) (r : ℕ → R) :
@@ -363,9 +358,6 @@ theorem IsHankel.isToeplitz_exchange_mul [NonAssocSemiring R] {A : Matrix (Fin m
     (hA : A.IsHankel) : (exchange m * A).IsToeplitz := by
   rw [exchange_mul_eq_submatrix]
   exact hA.isToeplitz_submatrix_rev
-
-@[deprecated (since := "2026-09-30")]
-alias exchange_mul_isHankel := IsHankel.isToeplitz_exchange_mul
 
 /-! ### Circulant matrices -/
 

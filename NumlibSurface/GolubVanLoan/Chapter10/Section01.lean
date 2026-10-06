@@ -210,10 +210,7 @@ theorem algorithm_10_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {
     have h1 : ‖q‖ = 1 := hq
     rw [h, norm_zero] at h1
     exact zero_ne_one h1
-  have hg : 0 < grade T q := by
-    rw [Nat.pos_iff_ne_zero, Ne, grade_eq_zero_iff]
-    push Not
-    exact ⟨hq0, inferInstance⟩
+  have hg : 0 < grade T q := Krylov.grade_pos_of_ne_zero _ _ hq0
   -- the invariant after `t` passes
   let P : ℕ → LanczosState n → Prop := fun t s =>
     s.k = min t (grade T q) ∧ s.done = decide (grade T q ≤ s.k) ∧

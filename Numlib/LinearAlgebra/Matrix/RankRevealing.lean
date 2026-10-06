@@ -124,12 +124,6 @@ theorem HasRevealingBlock.rank_eq {T : Matrix (Fin M) (Fin N) 𝕜} (h : T.HasRe
   · have := rank_submatrix_le T (Fin.castLE hM) (Fin.castLE hN)
     rwa [rank_of_isUnit _ hu, Fintype.card_fin] at this
 
-@[deprecated HasRevealingBlock.rank_eq +typeChanged (since := "2026-09-30")]
-theorem rank_eq_of_apply_eq_zero_of_isUnit {T : Matrix (Fin M) (Fin N) 𝕜} (hM : r ≤ M)
-    (hN : r ≤ N) (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
-    (hu : IsUnit (T.submatrix (Fin.castLE hM) (Fin.castLE hN))) : T.rank = r :=
-  HasRevealingBlock.rank_eq ⟨hM, hN, hz, hu⟩
-
 variable {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
   {T : Matrix (Fin M) (Fin N) 𝕜} {W : Matrix (Fin N) (Fin N) 𝕜}
 
@@ -184,15 +178,6 @@ theorem HasRevealingBlock.range_toEuclideanLin_eq_span (h : T.HasRevealingBlock 
       mul_nonsing_inv _ ((isUnit_iff_isUnit_det W).1 hW), one_mulVec, hTv]
     ext l
     simp [mulVec, dotProduct, Pi.single_apply, Matrix.col]
-
-@[deprecated HasRevealingBlock.range_toEuclideanLin_eq_span +typeChanged (since := "2026-09-30")]
-theorem range_toEuclideanLin_eq_span_of_eq_mul (hM : r ≤ M) (hN : r ≤ N) (hA : A = U * T * W)
-    (hW : IsUnit W) (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
-    (hu : IsUnit (T.submatrix (Fin.castLE hM) (Fin.castLE hN))) :
-    LinearMap.range (toEuclideanLin A) =
-      Submodule.span 𝕜 (Set.range fun i : Fin r =>
-        (WithLp.toLp 2 (U.col (Fin.castLE hM i)) : EuclideanSpace 𝕜 (Fin M))) :=
-  HasRevealingBlock.range_toEuclideanLin_eq_span ⟨hM, hN, hz, hu⟩ hA hW
 
 /-- **The residual splits**: for `A = U T W` with `U` unitary and the rows of `T` from the `r`-th
 on zero, `‖A x − b‖²` is the squared residual of the first `r` equations of `T (W x) = Uᴴ b`
@@ -263,16 +248,6 @@ theorem HasRevealingBlock.isLeastSquaresSolution_iff (h : T.HasRevealingBlock r)
     refine le_of_sq_le_sq ?_ (norm_nonneg _)
     rw [hres x hx, norm_toEuclideanLin_sub_sq_eq_of_eq_mul hU hM hA hz]
     exact le_add_of_nonneg_left (Finset.sum_nonneg fun _ _ => sq_nonneg _)
-
-@[deprecated HasRevealingBlock.isLeastSquaresSolution_iff +typeChanged (since := "2026-09-30")]
-theorem isLeastSquaresSolution_iff_of_eq_mul (hU : U ∈ unitaryGroup (Fin M) 𝕜) (hM : r ≤ M)
-    (hN : r ≤ N) (hA : A = U * T * W) (hW : IsUnit W)
-    (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
-    (hu : IsUnit (T.submatrix (Fin.castLE hM) (Fin.castLE hN))) {b : EuclideanSpace 𝕜 (Fin M)}
-    {x : EuclideanSpace 𝕜 (Fin N)} :
-    IsLeastSquaresSolution A b x ↔ ∀ i : Fin r,
-      (T *ᵥ (W *ᵥ WithLp.ofLp x)) (Fin.castLE hM i) = (Uᴴ *ᵥ WithLp.ofLp b) (Fin.castLE hM i) :=
-  HasRevealingBlock.isLeastSquaresSolution_iff ⟨hM, hN, hz, hu⟩ hU hA hW
 
 end RevealingBlock
 

@@ -216,11 +216,7 @@ theorem arnoldiCoeff_succ_self_eq_zero_iff (hv : ‖v₁‖ = 1) (j : ℕ) :
 /-- A unit starting vector has positive grade, so Algorithm 6.1 takes at least one step. -/
 theorem grade_pos (hv : ‖v₁‖ = 1) : 0 < grade A v₁ := by
   rw [grade_eq]
-  refine Nat.pos_of_ne_zero fun h => ?_
-  rcases (Krylov.grade_eq_zero_iff (op A) v₁).1 h with h0 | h0
-  · rw [h0, norm_zero] at hv
-    exact zero_ne_one hv
-  · exact h0 inferInstance
+  exact Krylov.grade_pos_of_ne_zero _ _ (by rintro rfl; simp at hv)
 
 /-- Not stopping before step `m` is exactly `m ≤ μ`, the grade of the starting vector. -/
 theorem noBreakdownBefore_iff (hv : ‖v₁‖ = 1) (m : ℕ) :

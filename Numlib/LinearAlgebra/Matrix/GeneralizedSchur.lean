@@ -238,17 +238,6 @@ theorem exists_orthogonal_pencil_isQuasiUpperTriangular (A B : Matrix (Fin n) (F
     fun i j hij => hlim tendsto_const_nhds fun k => htri (φ (ψ k)) (hrel (ψ k) hij)⟩,
     fun i j hij => hlim hBlim fun k => hupp (φ (ψ k)) hij⟩
 
-/-- The generalized real Schur form with the block index of the quasi-triangular factor spelled
-out (the former statement of `Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular`). -/
-@[deprecated exists_orthogonal_pencil_isQuasiUpperTriangular +typeChanged (since := "2026-09-30")]
-theorem exists_generalizedRealSchur (A B : Matrix (Fin n) (Fin n) ℝ) :
-    ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
-      Monotone p ∧ (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
-        (Uᵀ * A * Z).BlockTriangular p ∧ (Uᵀ * B * Z).IsUpperTriangular := by
-  obtain ⟨U, hU, Z, hZ, ⟨p, hp, hcard, hA⟩, hB⟩ :=
-    exists_orthogonal_pencil_isQuasiUpperTriangular A B
-  exact ⟨U, hU, Z, hZ, p, hp, hcard, hA, hB⟩
-
 /-- **The complex generalized Schur form of an arbitrary pair** ([golub2013matrix] Theorem 7.7.1,
 existence): for square `A`, `B` over an algebraically closed `RCLike` field (that is, over `ℂ`),
 indexed by any finite linear order, with no regularity hypothesis on the pencil, there are

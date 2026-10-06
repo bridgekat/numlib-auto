@@ -260,8 +260,6 @@ theorem planeEmbed_mulVec_apply_of_ne (hjk : j ≠ k) (x : n → R) {p : n} (hpj
     (hpk : p ≠ k) : (planeEmbed j k G *ᵥ x) p = x p := by
   rw [planeEmbed_mulVec_apply G hjk, ite_eq_right hpj, ite_eq_right hpk]
 
-@[deprecated (since := "2026-09-30")] alias planeEmbed_mul_apply_rect := planeEmbed_mul_apply
-
 /-- A row vector against an embedded `2 × 2` matrix, the transpose of
 `Matrix.planeEmbed_mulVec_apply`. -/
 theorem vecMul_planeEmbed_apply (hjk : j ≠ k) (x : n → R) (q : n) :

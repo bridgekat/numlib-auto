@@ -128,9 +128,6 @@ theorem moler_van_loan [NeZero n] (p q j : ℕ) {A : Matrix (Fin n) (Fin n) ℝ}
     rw [div_le_iff₀ hpos]
     exact Pade.norm_exp_sub_expApprox_pow_le p q j hA'
 
-
-@[deprecated (since := "2026-09-30")] alias molerVanLoan := moler_van_loan
-
 end Infinity
 
 /-- Splitting a sum over `range (2m)` into its even and odd terms. -/
@@ -254,7 +251,7 @@ private theorem updateEntriesM_id (h : Fin n → Fin n → ℝ → ℝ) (C : Mat
     Id.run (updateEntriesM (M := Id) (fun i l x => pure (h i l x)) C) =
       Matrix.of fun i l => h i l (C i l) := by
   ext i l
-  have h1 := Chapter01.idRun_foldlM_updateRow_apply (fun i (row : Fin n → ℝ) =>
+  have h1 := Matrix.idRun_foldlM_updateRow_apply (fun i (row : Fin n → ℝ) =>
     (List.finRange n).foldlM (fun (r : Fin n → ℝ) l => do
       let b ← (pure (h i l (r l)) : Id ℝ)
       pure (Function.update r l b)) row) (List.finRange n) (List.nodup_finRange n) C i

@@ -449,9 +449,6 @@ theorem tendsto_iterate_scalarStep_of_antitoneOn_deriv (hαx : α ≤ x₀)
   rw [hfℓ, hα, sub_zero, zero_div] at hξeq
   exact (hneg ξ (hsub (Ioo_subset_Icc_self hξ))).ne hξeq
 
-@[deprecated (since := "2026-09-30")]
-alias tendsto_iterate_scalarStep_of_concaveOn := tendsto_iterate_scalarStep_of_antitoneOn_deriv
-
 end Monotone
 
 end Newton

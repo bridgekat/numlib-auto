@@ -72,7 +72,7 @@ private theorem sum_erase_norm_diagonal_add {d : Fin n → ℂ} {F : Matrix (Fin
 theorem theorem_7_2_1 {A X F : Matrix (Fin n) (Fin n) ℂ} {d : Fin n → ℂ} (hX : IsUnit X)
     (h : X⁻¹ * A * X = diagonal d + F) (hF : ∀ i, F i i = 0) :
     spectrum ℂ A ⊆ ⋃ i, closedBall (d i) (∑ j, ‖F i j‖) := by
-  rw [IsSimilar.spectrum_eq (B := A) ⟨X, hX, rfl⟩, h]
+  rw [IsSimilar.spectrum_eq (A := A) ⟨X, hX, rfl⟩, h]
   intro μ hμ
   obtain ⟨i, hi⟩ := Set.mem_iUnion.1 (spectrum_subset_iUnion_closedBall _ hμ)
   rw [diagonal_add_apply_self hF, sum_erase_norm_diagonal_add hF] at hi

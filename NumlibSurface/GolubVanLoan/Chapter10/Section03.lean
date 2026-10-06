@@ -162,10 +162,7 @@ theorem equation_10_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ :
     have h1 : ‖q‖ = 1 := hq
     rw [h, norm_zero] at h1
     exact zero_ne_one h1
-  have hg : 0 < grade T q := by
-    rw [Nat.pos_iff_ne_zero, Ne, grade_eq_zero_iff]
-    push Not
-    exact ⟨hq0, inferInstance⟩
+  have hg : 0 < grade T q := Krylov.grade_pos_of_ne_zero _ _ hq0
   have hv0 : (Arnoldi.vec T q 0).ofLp = q₁ := by
     rw [Arnoldi.vec_zero T q hq0, show ‖q‖ = 1 from hq]
     simp [q]

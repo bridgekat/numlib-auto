@@ -71,9 +71,6 @@ open FloatingPoint Matrix
 
 namespace GolubVanLoan.Chapter01
 
-@[deprecated (since := "2026-09-30")]
-alias foldlM_updateRow_row := Matrix.foldlM_updateRow_entrywise
-
 /-! ### Run sets of loops writing one entry per step -/
 
 /-- **One entry per step, over `List.finRange n`.** A loop whose step `i` rewrites entry `i` from

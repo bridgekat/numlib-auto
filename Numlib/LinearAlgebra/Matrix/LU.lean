@@ -1019,10 +1019,6 @@ structure IsRectLU [Semiring R] (A : Matrix (Fin M) (Fin N) R) (L : Matrix (Fin 
   /-- The factors multiply to `A`. -/
   mul_eq : L * U = A
 
-@[deprecated (since := "2026-09-30")] alias IsRectLU.lower := IsRectLU.hasUpperBandwidthRect
-@[deprecated (since := "2026-09-30")] alias IsRectLU.lower_apply_self := IsRectLU.apply_eq_one
-@[deprecated (since := "2026-09-30")] alias IsRectLU.upper := IsRectLU.hasLowerBandwidthRect
-
 /-- On a square `Fin N` the rectangular LU factorization is the LU factorization. -/
 theorem isRectLU_iff_isLU [Semiring R] {A L U : Matrix (Fin N) (Fin N) R} :
     IsRectLU A L U ↔ IsLU A L U := by
@@ -1126,9 +1122,6 @@ theorem exists_isRectLU_of_forall_det_ne_zero {A : Matrix (Fin M) (Fin N) K}
         simp only [Function.comp_apply, OrderDual.toDual_lt_toDual, b, Fin.val_castLE]; omega),
         zero_mul]
     · rw [h.blockTriangular (by simp only [b, Fin.val_castLE]; omega), mul_zero]
-
-@[deprecated (since := "2026-09-30")]
-alias exists_isRectLU_of_forall_isUnit := exists_isRectLU_of_forall_det_ne_zero
 
 end RectLU
 

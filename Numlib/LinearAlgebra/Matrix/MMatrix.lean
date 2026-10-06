@@ -650,9 +650,6 @@ theorem IsMMatrix.schurComplementSingle {A : Matrix n n ℝ} (hA : A.IsMMatrix) 
   · rw [inv_schurComplementSingle hA.isUnit hpp.ne']
     exact entrywiseNonneg_iff.2 fun i j => hA.inv_entrywiseNonneg.apply i.1 j.1
 
-@[deprecated (since := "2026-09-30")]
-alias IsMMatrix.isMMatrix_schurComplementSingle := IsMMatrix.schurComplementSingle
-
 end KyFan
 
 /-! ### Stieltjes matrices -/
@@ -787,8 +784,6 @@ theorem IsStieltjes.sub_drop [Finite n] {A : Matrix n n ℝ} (hA : A.IsStieltjes
     split_ifs <;> ring
   · rw [of_apply]
     linarith [hA.offDiag_nonpos _ _ (Subtype.coe_injective.ne hij), hdrop i j]
-
-@[deprecated (since := "2026-09-30")] alias IsStieltjes.isStieltjes_sub_drop := IsStieltjes.sub_drop
 
 end Stieltjes
 

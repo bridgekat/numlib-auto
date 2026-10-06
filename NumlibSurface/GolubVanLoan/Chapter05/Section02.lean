@@ -266,8 +266,6 @@ theorem lt_of_mem_take_finRange {j : ℕ} {k : Fin n}
   change i < j
   omega
 
-@[deprecated (since := "2026-09-30")] alias val_lt_of_mem_take_finRange := lt_of_mem_take_finRange
-
 /-- The product of the reflectors of the first `j` steps of Algorithm 5.2.1, read from the state
 (the stored vectors and the recorded `β`). -/
 private noncomputable def qrPrefix (j : ℕ) (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)) :
@@ -490,7 +488,6 @@ theorem equation_5_1_4_beta (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
   rw [factoredQ_eq_prod, factoredQ_eq_prod]
   congr 1
   exact List.map_congr_left fun j _ => by rw [key j (h j)]
-
 
 /-! ### The backward error of Householder QR -/
 
@@ -1799,7 +1796,6 @@ theorem givensVectorSweep_spec {m n : ℕ} (b count : ℕ) (w : Fin m → ℝ)
 
 end Sweeps
 
-
 /-! ### Givens QR: rounding errors -/
 
 section GivensQRRounding
@@ -2026,7 +2022,6 @@ theorem algorithm_5_2_5_rounding {fp : RoundingModel ℝ} (hu : ((15 : ℕ) : �
     · exact hE'
 
 end GivensQRRounding
-
 
 section GivensQRRounding'
 
@@ -2727,7 +2722,6 @@ private def MGSInvariant (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ)
     (∀ j : Fin n, (j : ℕ) < k → 0 < st.2.2 j j) ∧
     (∀ j : Fin n, (j : ℕ) < k → st.2.1.col j ∈ Submodule.span ℝ (Aᵀ '' {i | (i : ℕ) < k}))
 
-
 /-- One step of modified Gram–Schmidt preserves the invariant (full column rank). -/
 private theorem mgsInvariant_step {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ}
@@ -3267,7 +3261,6 @@ theorem algorithm_5_2_3_spec (nb : ℕ) {n : ℕ} (A : Matrix (Fin m) (Fin n) �
   algorithm_5_2_3_spec_aux nb n A hA
 
 end BlockQR
-
 
 /-! ### §5.2.3 Block Householder QR -/
 

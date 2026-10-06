@@ -55,9 +55,6 @@ open FloatingPoint Matrix
 
 namespace GolubVanLoan.Chapter03
 
-@[deprecated SetM.mem_run_foldlM_updateRow_update_of_nodup (since := "2026-09-30")]
-alias mem_run_foldlM_updateEntry := SetM.mem_run_foldlM_updateRow_update_of_nodup
-
 /-! ### Gauss transformations (§3.2.1–3.2.2) -/
 
 section Gauss
@@ -1405,7 +1402,6 @@ private theorem outerProductStep_exact (k : Fin n) (S : Matrix (Fin n) (Fin n) �
   rw [RoundingModel.exact_rounds_iff] at hp hq
   rw [hq, hp]
 
-
 /-- The indices of `Fin n` below `r`, read in `Fin r`: the filter of `List.finRange n` by
 `· < r` is `List.finRange r`. -/
 private theorem filterMap_finRange_lt (hrn : r ≤ n) :
@@ -1472,7 +1468,6 @@ private theorem foldl_outerProductStep_castLE (hrn : r ≤ n) (l : List (Fin n))
       rcases h.2 with h | h
       · exact hk (by rw [← h]; exact hjr)
       · exact hk (lt_trans (Fin.lt_def.1 h) hjr)
-
 
 /-- The strict leading principal submatrices of the bordered matrix `[A | [0; I]]` are nonsingular
 when the leading blocks of `A` of order `≤ r` are: below order `r` they are those blocks, beyond it
@@ -1887,7 +1882,6 @@ noncomputable def algorithm_3_2_4 {N r : ℕ} (A : Matrix (Fin (N * r)) (Fin (N 
 
 end Program
 
-
 section Exact
 
 variable {n : ℕ}
@@ -2173,7 +2167,6 @@ private theorem elimStep {A L U : Matrix (Fin n) (Fin n) ℝ} (hLU : IsLU A L U)
             simp only [Fin.val_min] at hmin
             exact hjp ⟨Fin.ext (by omega), (hmemR i).2 (Fin.lt_def.2 (by omega))⟩
       · simp only [hBj, ↓reduceIte]
-
 
 /-- Removing the pivots of one block from the trailing values. -/
 private theorem schurRest_add_block {A L U : Matrix (Fin n) (Fin n) ℝ} (K r : ℕ)

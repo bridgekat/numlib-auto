@@ -204,7 +204,6 @@ private def tailEquiv (k : ℕ) :
     {i : Fin n // k + 1 ≤ (i : ℕ)} ≃ {i // i ∈ Chapter05.indexFrom n (k + 1)} :=
   Equiv.subtypeEquivRight fun _ => Chapter05.mem_indexFrom.symm
 
-
 /-- An accumulation from `0` over the tail list is a `RoundsDot` on the tail subtype. -/
 private theorem roundsDot_tail {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (k : ℕ)
     {x y : Fin n → ℝ} {s : ℝ}
@@ -212,7 +211,6 @@ private theorem roundsDot_tail {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) 
     RoundsDot fp (fun i : {i : Fin n // k + 1 ≤ (i : ℕ)} => x i) (fun i => y i) s :=
   (roundsDot_comp_equiv_iff (tailEquiv k)).2
     (Chapter05.roundsDot_subtype_of_mem_run_dotAccum hfp (Chapter05.nodup_indexFrom _ _) h)
-
 
 /-- The lower-triangle pairs of a list are its pairs `(i, j)` with `j ≤ i`. -/
 private theorem mem_lowerPairs {T : List (Fin n)} {ij : Fin n × Fin n} :
@@ -231,7 +229,6 @@ private theorem nodup_lowerPairs {T : List (Fin n)} (hT : T.Nodup) : (lowerPairs
   simp only [List.mem_map]
   rintro _ ⟨x, -, rfl⟩ ⟨y, -, hy⟩
   exact hab (Prod.mk.inj hy).1.symm
-
 
 private theorem tridiagonalizeOut_succ_self (k : Fin n) (hk : (k : ℕ) + 1 < n)
     (A : Matrix (Fin n) (Fin n) ℝ) (L : Fin n × Fin n → ℝ) (ν : ℝ) :
@@ -524,7 +521,6 @@ private theorem sum_subtype_mem {l : List (Fin n)} (hl : l.Nodup) (g : Fin n →
     ∑ j : {j // j ∈ l}, g j = (l.map g).sum := by
   rw [← List.sum_toFinset g hl, Finset.sum_subtype l.toFinset (fun _ => List.mem_toFinset) g]
 
-
 /-- The exact run of one step of Algorithm 8.3.1, unpacked. -/
 private theorem tridiagonalizeStep_pure (k : Fin n) (hk : (k : ℕ) + 1 < n)
     (A : Matrix (Fin n) (Fin n) ℝ) :
@@ -721,8 +717,6 @@ private theorem tridiagonalizeStep_conj (k : Fin n) (hk : (k : ℕ) + 1 < n)
     rw [sum_subtype_mem hT (fun j => ‖A j k‖ ^ 2)]
     exact congrArg List.sum (List.map_congr_left fun j _ => by
       rw [Real.norm_eq_abs, sq_abs, sq])
-
-
 
 /-- The loop invariant of Algorithm 8.3.1 after `j` steps: the cleaned array is `Qᵀ A Q` for the
 product `Q` of the reflector data so far, there are `j` reflectors, the `k`-th vanishing on the
@@ -1130,9 +1124,6 @@ theorem equation_8_3_2 (shift : Matrix (Fin n) (Fin n) ℝ → ℝ)
       simp only [Matrix.mul_assoc]
     · rw [hstep]
       exact hs.transpose_mul_mul U
-
-
-@[deprecated (since := "2026-09-30")] alias explicitShiftedQR_spec := equation_8_3_2
 
 /-! ### §8.3.5 Implicit shift version -/
 
@@ -1605,7 +1596,6 @@ private theorem chaseInv_run {p m : ℕ} (hm : m ≤ n) (hpm : p + 2 ≤ m)
       rw [← mulVec_mulVec, givensRotation_mulVec_single_of_ne hab
         (fun e => by rw [e, ha] at hf₀; omega) (fun e => by rw [e, hb] at hf₀; omega), he₀]
 
-
 /-- The exact Wilkinson shift of Algorithm 8.3.2 is the book's closed form
 `a - b² / (d + sign(d) √(d² + b²))`. -/
 theorem wilkinsonShiftComputed_pure (a' a b : ℝ) :
@@ -2029,7 +2019,6 @@ theorem lastRunWindow_spec {nz : ℕ → Prop} [DecidablePred nz] (hnz : ∀ i, 
         omega
       · simpa using hqm.2
 
-
 section Frobenius
 
 open scoped Matrix.Norms.Frobenius
@@ -2251,7 +2240,6 @@ private theorem isTridiagonal_deflated {tol : ℝ} {D : Matrix (Fin n) (Fin n) �
     rcases hij with ⟨k, h1, h2⟩ | ⟨k, h1, h2⟩ <;> rw [Fin.lt_def] at h1 h2 <;> omega
   rw [deflated_apply_of_not h]
   exact hD i j hij
-
 
 section Frobenius
 

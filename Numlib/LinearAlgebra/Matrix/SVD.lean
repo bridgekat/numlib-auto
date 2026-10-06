@@ -1071,8 +1071,6 @@ theorem rectDiagonal_conjTranspose {α : Type*} [AddMonoid α] [StarAddMonoid α
   · exact absurd h2.symm h1
   · exact star_zero α
 
-@[deprecated (since := "2026-09-30")] alias conjTranspose_rectDiagonal := rectDiagonal_conjTranspose
-
 section Semiring
 
 variable {α : Type*} [NonUnitalNonAssocSemiring α]

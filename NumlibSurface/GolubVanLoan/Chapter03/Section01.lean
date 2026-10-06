@@ -87,13 +87,6 @@ private theorem fin_isMax_iff {n : ℕ} (i : Fin n) : IsMax i ↔ (i : ℕ) = n 
     rw [Fin.le_def, h]
     omega
 
-@[deprecated SetM.forall_mem_run_foldlM_update_of_nodup (since := "2026-09-30")]
-alias forall_mem_run_foldlM_update_rows := SetM.forall_mem_run_foldlM_update_of_nodup
-
-@[deprecated FloatingPoint.roundsForwardSubst_of_mem_run_colSubst (since := "2026-09-30")]
-alias roundsForwardSubst_of_mem_run_colSubst :=
-  FloatingPoint.roundsForwardSubst_of_mem_run_colSubst
-
 /-! ### The four substitution algorithms -/
 
 section Programs
@@ -381,7 +374,7 @@ theorem algorithm_3_1_4_eq_backSubst (U : Matrix (Fin n) (Fin n) ℝ) (b : Fin n
     (algorithm_3_1_4_rounds _ U b _ (algorithm_3_1_4_mem_exact U b))
 
 /-- **Exact correctness of Algorithm 3.1.1**: for lower triangular nonsingular `L` (nonzero
-diagonal, `Matrix.isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular`), the algorithm
+diagonal, `Matrix.IsLowerTriangular.isUnit_iff`), the algorithm
 overwrites `b` with the solution of `L x = b`. Read off the bridge at the exact model. -/
 theorem algorithm_3_1_1_spec {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular)
     (hd : ∀ i, L i i ≠ 0) (b : Fin n → ℝ) : L *ᵥ Id.run (algorithm_3_1_1 pure L b) = b := by
@@ -633,13 +626,6 @@ theorem unitForwardSubstColOn_id_eq {n : ℕ} {o : List (Fin n)} {L : Matrix (Fi
     Id.run (unitForwardSubstColOn pure o L b) = Id.run (forwardSubstColOn pure o L b) := by
   simp only [unitForwardSubstColOn, forwardSubstColOn, List.idRun_foldlM, pure_bind, Id.run_pure]
   exact List.foldl_ext _ _ _ fun b j hj => by rw [hL j hj, div_one, Function.update_eq_self]
-
-@[deprecated "use `Matrix.foldl_updateCol_apply` with `fun _ => f`" (since := "2026-09-30")]
-theorem foldl_updateCol_apply_of_col {n q : ℕ} (f : (Fin n → ℝ) → Fin n → ℝ)
-    {cs : List (Fin q)} (hcs : cs.Nodup) (B : Matrix (Fin n) (Fin q) ℝ) (i : Fin n) (c : Fin q) :
-    cs.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) c => B.updateCol c (f fun i => B i c)) B i c =
-      if c ∈ cs then f (fun i => B i c) i else B i c :=
-  Matrix.foldl_updateCol_apply (fun _ => f) hcs B i c
 
 /-- In exact arithmetic, the innermost loop of the block saxpy of (3.1.4): entry `(i,c)` receives
 `L(i,j) B(j,c)` subtracted for every listed `j` (rows off `i`), every other entry is kept. -/

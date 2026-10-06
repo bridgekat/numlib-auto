@@ -190,10 +190,6 @@ theorem exists_unitary_mul_mul_unitary_isUpperBidiagonal (h : N ≤ M)
     have h2 := Fin.lt_def.1 hlj
     exact hB _ _ (by simp; omega) (by simp; omega)
 
-@[deprecated (since := "2026-09-30")]
-alias exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal :=
-  exists_unitary_mul_mul_unitary_isUpperBidiagonal
-
 end Bidiagonal
 
 /-! ### Rectangular bidiagonal shapes -/
@@ -391,30 +387,6 @@ structure IsBidiagonalization (A : Matrix (Fin M) (Fin N) 𝕜) (U : Matrix (Fin
     extends IsUnitaryEquiv A U B V where
   /-- The transformed matrix is upper bidiagonal. -/
   isUpperBidiagonalRect : B.IsUpperBidiagonalRect
-
-section Deprecated
-
-variable {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
-  {V : Matrix (Fin N) (Fin N) 𝕜} {B : Matrix (Fin M) (Fin N) 𝕜}
-
-/-- The left factor is unitary (the former field name). -/
-@[deprecated IsUnitaryEquiv.mem_unitaryGroup_left +typeChanged (since := "2026-09-30")]
-theorem IsBidiagonalization.left_mem_unitaryGroup (h : IsBidiagonalization A U V B) :
-    U ∈ unitaryGroup (Fin M) 𝕜 :=
-  h.mem_unitaryGroup_left
-
-/-- The right factor is unitary (the former field name). -/
-@[deprecated IsUnitaryEquiv.mem_unitaryGroup_right +typeChanged (since := "2026-09-30")]
-theorem IsBidiagonalization.right_mem_unitaryGroup (h : IsBidiagonalization A U V B) :
-    V ∈ unitaryGroup (Fin N) 𝕜 :=
-  h.mem_unitaryGroup_right
-
-/-- The two-sided transformation of `A` is `B` (the former field name). -/
-@[deprecated IsUnitaryEquiv.conjTranspose_mul_mul +typeChanged (since := "2026-09-30")]
-theorem IsBidiagonalization.conj_eq (h : IsBidiagonalization A U V B) : Uᴴ * A * V = B :=
-  h.star_mul_mul
-
-end Deprecated
 
 /-- **Every rectangular matrix has an orthogonal bidiagonalization** ([golub2013matrix] (5.4.13)):
 `Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero` repackaged. -/

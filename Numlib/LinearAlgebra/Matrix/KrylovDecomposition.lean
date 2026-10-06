@@ -205,8 +205,6 @@ theorem leading_of_apply_eq_zero {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matr
     rw [hcol, Fin.sum_eq_sum_castLE_add_sum_Ioi j (fun i => Q x i * B i (Fin.castLE j.isLt a)), hz,
       add_zero]
 
-@[deprecated (since := "2026-09-30")] alias mul_unitary := mul_of_conjTranspose_mul_self
-
 end IsKrylovDecomposition
 
 /-- A unitary `Q` gives a Krylov decomposition with zero residual: `A Q = Q (Qᴴ A Q)`. -/

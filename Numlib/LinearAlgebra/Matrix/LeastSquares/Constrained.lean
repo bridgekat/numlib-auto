@@ -243,9 +243,6 @@ theorem existsUnique_norm_toEuclideanLin_tikhonov_eq {α : ℝ} (hα0 : 0 < α)
     (continuousOn_norm_toEuclideanLin_tikhonov A b) h0
     (A.tendsto_norm_toEuclideanLin_tikhonov_atTop b) hα0 hα
 
-@[deprecated (since := "2026-09-30")]
-alias existsUnique_norm_tikhonov_mulVec_eq := existsUnique_norm_toEuclideanLin_tikhonov_eq
-
 end Sphere
 
 /-! ### Least squares with equality constraints -/

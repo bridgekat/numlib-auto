@@ -664,7 +664,4 @@ theorem theorem_6_4_2 {q : ℕ} {A : Matrix (Fin m) (Fin p) ℝ} {B : Matrix (Fi
   refine Set.image_congr fun i hi => ?_
   exact hfg.eq_of_cosPrincipalAngle_eq_one ((hs i).2 hi)
 
-@[deprecated (since := "2026-09-30")]
-alias cosPrincipalAngle_le_one := singularValues_transpose_mul_eq_cosPrincipalAngle
-
 end GolubVanLoan.Chapter06

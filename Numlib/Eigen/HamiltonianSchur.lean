@@ -186,9 +186,6 @@ theorem fromBlocks_diagonal_mem_orthoSymplecticGroup {P : Matrix l l ℝ}
   refine ⟨hO, (mem_symplecticGroup_iff_commute_J_of_mem_orthogonalGroup hO).2 ?_⟩
   exact (commute_J_iff).2 ⟨P, 0, by simp⟩
 
-@[deprecated (since := "2026-09-30")]
-alias fromBlocks_diagonal_mem_symplecticGroup := fromBlocks_diagonal_mem_orthoSymplecticGroup
-
 /-- [golub2013matrix] §7.8.1: a plane rotation in the coordinates `inl i`, `inr i` ("a Givens
 rotation that involves planes `i` and `i + n`") is orthogonal symplectic: it has the block form
 `fromBlocks Q₁ Q₂ (-Q₂) Q₁`, hence commutes with `J`. -/
@@ -201,9 +198,6 @@ theorem planeRotation_inl_inr_mem_orthoSymplecticGroup (i : l) {c s : ℝ}
   refine (commute_J_iff).2 ⟨1 + (c - 1) • single i i 1, (-s) • single i i 1, ?_⟩
   ext (a | a) (b | b) <;> by_cases ha : a = i <;> by_cases hb : b = i <;>
     simp [planeRotation_apply hne, one_apply, ha, hb, @eq_comm _ i]
-
-@[deprecated (since := "2026-09-30")]
-alias planeRotation_inl_inr_mem_symplecticGroup := planeRotation_inl_inr_mem_orthoSymplecticGroup
 
 /-- **The stable invariant subspace of a Hamiltonian matrix is isotropic** (the key lemma of the
 real Hamiltonian–Schur form, [golub2013matrix] §7.8.1; Paige–Van Loan 1981): if `M` is
@@ -235,9 +229,6 @@ theorem IsHamiltonian.isotropic_of_mul_eq_mul_of_stable {k : Type*} [Fintype k] 
     rw [Complex.neg_re] at h4
     linarith
   exact sylvesterMap_injective_of_isCoprime hcop (hsyl.trans (map_zero _).symm)
-
-@[deprecated (since := "2026-09-30")]
-alias IsHamiltonian.isLagrangian_stable_invariant := IsHamiltonian.isotropic_of_mul_eq_mul_of_stable
 
 /-- **The algebraic Riccati equation from the Hamiltonian–Schur form** ([golub2013matrix]
 (7.8.2)): let `M = fromBlocks A F G (-Aᵀ)` and `Q = fromBlocks Q₁ Q₂ (-Q₂) Q₁` orthogonal with

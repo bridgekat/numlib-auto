@@ -405,14 +405,6 @@ theorem mul_sup_norm_le_sup_norm_mulVec_of_diagDominantMargin {δ : ℝ}
     _ ≤ ‖(A *ᵥ x) j‖ := by linarith [norm_diag_mul_le A x j]
     _ ≤ ‖A *ᵥ x‖ := norm_le_pi_norm _ j
 
-@[deprecated (since := "2026-09-30")]
-alias IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec :=
-  mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin
-
-@[deprecated (since := "2026-09-30")]
-alias IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec :=
-  mul_sup_norm_le_sup_norm_mulVec_of_diagDominantMargin
-
 end Margin
 
 section Gershgorin

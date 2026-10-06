@@ -327,9 +327,6 @@ theorem equation_8_2_6 (A : Matrix (Fin n) (Fin n) ℝ) {x₀ : Fin n → ℝ}
     rw [hop, toEuclideanLin_toLp, WithLp.toLp_smul]
     rfl
 
-
-@[deprecated (since := "2026-09-30")] alias rayleighQuotientIteration_eq := equation_8_2_6
-
 /-- **(8.2.7).** Rayleigh quotient iteration on `A = diag(λ₁, λ₂)`, `λ₁ > λ₂`, from
 `x_k = (c_k, s_k)` with `c_k² + s_k² = 1` and `c_k s_k ≠ 0` (the book omits this: otherwise
 `μ_k` is an eigenvalue): `μ_k = λ₁c_k² + λ₂s_k²`,

@@ -653,20 +653,6 @@ theorem solveGEPP_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin
     A *ᵥ Id.run (solveGEPP pure A b) = b :=
   solvePLU_id_eq hA b
 
-@[deprecated (since := "2026-09-30")] alias solvePLU_spec := solveGEPP_spec
-
-@[deprecated "use `Matrix.foldl_updateCol_apply`" (since := "2026-09-30")]
-theorem foldl_updateCol_apply {p : ℕ}
-    (u : Matrix (Fin n) (Fin p) ℝ → Fin p → Matrix (Fin n) (Fin p) ℝ)
-    (g : Fin p → Fin n → ℝ) (hu : ∀ X k, u X k = X.updateCol k (g k)) (l : List (Fin p))
-    (X₀ : Matrix (Fin n) (Fin p) ℝ) (i : Fin n) (k : Fin p) :
-    l.foldl u X₀ i k = if k ∈ l then g k i else X₀ i k := by
-  induction l generalizing X₀ with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.foldl_cons, ih, hu]
-    by_cases hk : k ∈ l <;> by_cases hka : k = a <;> simp [hk, hka]
-
 /-- **(3.4.12)** solves `AX = B`: for nonsingular `A` the exact output `X` of the multiple
 right-hand side procedure satisfies `AX = B`, and with `B = I` it is `A⁻¹`. -/
 theorem equation_3_4_12 {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
@@ -1040,8 +1026,6 @@ theorem solveGECP_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin
   simp only [mulVec, dotProduct, submatrix_apply, Equiv.apply_symm_apply]
   exact (Fintype.sum_equiv ρ _ _ fun j => by simp [ρ]).symm
 
-@[deprecated (since := "2026-09-30")] alias solvePLUQ_spec := solveGECP_spec
-
 /-- §3.4.6, rank revelation: "suppose `rank(A) = r < n`. It follows that at the beginning of step
 `r + 1`, `A(r+1:n, r+1:n) = 0`", and the first `r` pivots are nonzero. -/
 theorem completePivoting_rank (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} (hr : A.rank = r) :
@@ -1302,8 +1286,6 @@ theorem equation_3_4_10 (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) (i j : Fin n)
     |(gemFullPivotStage A completePivotEntry k).1 i j| ≤
       wilkinsonGrowthBound (k + 1) * A.supAbs :=
   (frozen_aux A k).1 i j
-
-@[deprecated (since := "2026-09-30")] alias equation_3_4_10_frozen := equation_3_4_10
 
 end Complete
 

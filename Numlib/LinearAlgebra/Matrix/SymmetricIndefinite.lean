@@ -204,9 +204,6 @@ theorem exists_principal_pivot_ne_zero {m : Type*} [Field K] {A : Matrix m m K} 
   rw [hd i, hd j, zero_mul, zero_sub, hA.apply i j, neg_ne_zero]
   exact mul_ne_zero hij hij
 
-@[deprecated (since := "2026-09-30")]
-alias exists_isUnit_principal_pivot := exists_principal_pivot_ne_zero
-
 /-! ### Existence of the block `L D Lᵀ` factorization -/
 
 section Bordering

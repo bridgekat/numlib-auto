@@ -1258,7 +1258,6 @@ theorem sortedEigenvalues_submatrix_castSucc_interlace {A : Matrix (Fin (n + 1))
   rw [e1, e2] at h
   exact h
 
-
 /-- **The spectral decomposition with sorted eigenvalues** ([golub2013matrix] Theorem 8.1.1, with
 `λ_1 ≥ ⋯ ≥ λ_n`): a Hermitian `A` of order `N` is unitarily similar to the diagonal matrix of its
 decreasingly sorted eigenvalues, `Uᴴ A U = diag(λ_1, …, λ_n)`, the `k`-th column of `U` being an
@@ -1293,10 +1292,6 @@ theorem exists_unitary_conj_eq_diagonal_sortedEigenvalues {A : Matrix (Fin n) (F
   refine ⟨U, hU, ?_, hcol⟩
   rw [Matrix.mul_assoc, hAU, ← Matrix.mul_assoc, (Matrix.mem_unitaryGroup_iff').mp hU,
     Matrix.one_mul]
-
-@[deprecated (since := "2026-09-30")]
-alias exists_unitary_conj_eq_diagonal_eigenvalues₀ :=
-  exists_unitary_conj_eq_diagonal_sortedEigenvalues
 
 end Matrix.IsHermitian
 

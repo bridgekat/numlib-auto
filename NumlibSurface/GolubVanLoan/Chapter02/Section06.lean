@@ -518,9 +518,6 @@ theorem skeelCond_eq_and_le_condNumberLp (A : Matrix (Fin n) (Fin n) ℝ) :
     skeelCond A = lpOpNorm ∞ (A⁻¹.abs * A.abs) ∧ skeelCond A ≤ condNumberLp ∞ A :=
   ⟨(lpOpNorm_top _).symm, skeelCond_le_condNumberLp_top A⟩
 
-@[deprecated (since := "2026-09-30")]
-alias skeel_condition_number := skeelCond_eq_and_le_condNumberLp
-
 /-- **Theorem 2.6.3, (2.6.12).** Suppose `Ax = b` with `A` nonsingular and `b ≠ 0`,
 `(A + ΔA) y = b + Δb`, `|ΔA| ≤ ε |A|` and `|Δb| ≤ ε |b|`. If `ε κ_∞(A) = r < 1`, then `A + ΔA` is
 nonsingular and `‖y - x‖_∞ / ‖x‖_∞ ≤ 2ε / (1 - r) · ‖|A⁻¹| |A|‖_∞`. -/

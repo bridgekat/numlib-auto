@@ -237,7 +237,7 @@ theorem equation_4_5_5 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
       have hj : j = N := by omega
       subst hj
       rw [hx₀, ite_eq_right (lt_irrefl _), add_zero, Function.update_self]
-      exact Chapter03.solvePLU_spec (hU _ le_rfl) _) (f := h)
+      exact Chapter03.solveGEPP_spec (hU _ le_rfl) _) (f := h)
     fun k hk x hx => by
       rw [List.length_reverse, List.length_range] at hk
       have hidx : (List.range N).reverse[k]'(by simpa using hk) = N - 1 - k := by
@@ -250,7 +250,7 @@ theorem equation_4_5_5 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
         exact hx j (by omega) hjN
       · obtain rfl : j = N - 1 - k := by omega
         rw [Function.update_self, Function.update_of_ne (by omega), ite_eq_left (by omega),
-          Chapter03.solvePLU_spec (hU _ (by omega)), neg_mulVec]
+          Chapter03.solveGEPP_spec (hU _ (by omega)), neg_mulVec]
         abel
   rw [List.length_reverse, List.length_range, ← hrun] at hback
   set x := Id.run (blockTridiagonalSolve pure N L U F b) with hx

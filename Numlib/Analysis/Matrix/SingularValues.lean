@@ -123,13 +123,6 @@ theorem sortedSingularValues_submatrix_le (A : Matrix m n 𝕜) {f : l → m}
     _ ≤ (A.submatrix f id).sortedSingularValues i := sortedSingularValues_submatrix_id_le _ hg i
     _ ≤ A.sortedSingularValues i := sortedSingularValues_submatrix_id_right_le _ hf i
 
-/-- Deleting rows does not increase any singular value. -/
-@[deprecated "use `Matrix.sortedSingularValues_submatrix_le` with `Function.injective_id`"
-  (since := "2026-09-30")]
-theorem sortedSingularValues_submatrix_rows_le (A : Matrix m n 𝕜) (f : l ↪ m) (i : ℕ) :
-    (A.submatrix f id).sortedSingularValues i ≤ A.sortedSingularValues i :=
-  sortedSingularValues_submatrix_id_right_le A f.injective i
-
 /-- **Reindexing does not change the singular values**: for equivalences `e : l ≃ m`,
 `f : k ≃ n`, `σ(A.submatrix e f) = σ(A)`. Both directions are deletions of no rows and
 columns. -/
@@ -867,9 +860,6 @@ theorem abs_iInf_colSingularValues_sub_le [DecidableEq n] [Nonempty n] (A B : Ma
     (norm_nonneg _) (fun x => by
       rw [LinearMap.sub_apply, ← toEuclideanLin_sub_apply]
       exact norm_toEuclideanLin_apply_le _ x) _
-
-@[deprecated (since := "2026-09-30")]
-alias iInf_colSingularValues_sub_le := abs_iInf_colSingularValues_sub_le
 
 end Blocks
 

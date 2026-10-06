@@ -740,7 +740,6 @@ private theorem basisCols_transpose_mul_self {v : ℕ → Fin n → ℝ} {p : �
   rw [← dotProduct.eq_def, h]
   simp [Fin.ext_iff]
 
-
 /-- A vector orthogonal to `v 0, …, v (p − 1)` is orthogonal to their span `ran V_p`. -/
 private theorem toLp_mem_orthogonal_span {p : ℕ} (v : ℕ → Fin n → ℝ) (y : Fin n → ℝ)
     (h : ∀ i < p, v i ⬝ᵥ y = 0) :
@@ -1370,7 +1369,5 @@ theorem isLeast_trace_transpose_mul_mul {A B : Matrix (Fin n) (Fin n) ℝ} (hA :
     rw [hVX, hconj, trace_transpose_mul_mul_eq_sum]
     simp only [hlow]
     exact hky
-
-@[deprecated (since := "2026-09-30")] alias traceMin := isLeast_trace_transpose_mul_mul
 
 end GolubVanLoan.Chapter10

@@ -511,9 +511,6 @@ theorem piKronecker_mulVec_piKroneckerVec [∀ i, Fintype (κ i)] (M : ∀ i, Ma
   simp only [mulVec, dotProduct, piKronecker_apply, piKroneckerVec, Fintype.prod_sum,
     Finset.prod_mul_distrib]
 
-@[deprecated (since := "2026-09-30")]
-alias piKronecker_mulVec_prod := piKronecker_mulVec_piKroneckerVec
-
 /-- A Kronecker product of matrices with orthonormal columns has orthonormal columns. -/
 theorem conjTranspose_piKronecker_mul_piKronecker [StarRing R] [∀ i, Fintype (μ i)]
     [∀ i, DecidableEq (κ i)] {M : ∀ i, Matrix (μ i) (κ i) R} (h : ∀ i, (M i)ᴴ * M i = 1) :

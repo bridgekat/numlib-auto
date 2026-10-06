@@ -117,9 +117,6 @@ theorem Fin.prod_eq_prod_castLE_mul_prod_Ioi {M : Type*} [CommMonoid M] {k : ℕ
     ext i
     simp
 
-@[deprecated (since := "2026-09-30")]
-alias Matrix.sum_fin_eq_sum_castLE_add_sum_Ioi := Fin.sum_eq_sum_castLE_add_sum_Ioi
-
 /-- A product over `Fin k`, read through `Fin.castLE` into `Fin a` for `k ≤ a`, is the product over
 `Fin a` of the terms below `k`. -/
 @[to_additive /-- A sum over `Fin k`, read through `Fin.castLE` into `Fin a` for `k ≤ a`, is the sum

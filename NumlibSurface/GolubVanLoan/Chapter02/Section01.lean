@@ -226,10 +226,8 @@ theorem mem_spectrum_iff_det_sub_eq_zero (A : Matrix (Fin n) (Fin n) ℂ) (x : �
 /-- **§2.1.7, similarity.** If `X` is nonsingular and `B = X⁻¹ A X`, then `A` and `B` are similar
 and have exactly the same eigenvalues (indeed the same characteristic polynomial). -/
 theorem isSimilar_spectrum_eq (A X : Matrix (Fin n) (Fin n) ℂ) (hX : IsUnit X) :
-    (X⁻¹ * A * X).charpoly = A.charpoly ∧ spectrum ℂ (X⁻¹ * A * X) = spectrum ℂ A := by
-  have h : (X⁻¹ * A * X).charpoly = A.charpoly := (IsSimilar.charpoly_eq ⟨X, hX, rfl⟩).symm
-  refine ⟨h, Set.ext fun x => ?_⟩
-  rw [mem_spectrum_iff_isRoot_charpoly, mem_spectrum_iff_isRoot_charpoly, h]
+    (X⁻¹ * A * X).charpoly = A.charpoly ∧ spectrum ℂ (X⁻¹ * A * X) = spectrum ℂ A :=
+  ⟨(IsSimilar.charpoly_eq ⟨X, hX, rfl⟩).symm, (IsSimilar.spectrum_eq ⟨X, hX, rfl⟩).symm⟩
 
 /-- **§2.1.7, diagonalizability.** If `A ∈ ℂ^{n×n}` has `n` independent eigenvectors
 `A xᵢ = λᵢ xᵢ`, then `X = [x₁ | ⋯ | xₙ]` is nonsingular and `X⁻¹ A X = diag(λ₁, …, λₙ)`. -/

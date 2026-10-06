@@ -105,9 +105,6 @@ theorem table_1_2_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
       Matrix.hasLowerBandwidth_transpose_iff]
     exact ⟨fun h => ⟨hlow, h⟩, And.right⟩
 
-@[deprecated (since := "2026-09-30")]
-alias idRun_foldlM_updateRow_apply := Matrix.idRun_foldlM_updateRow_apply
-
 /-! ### Algorithm 1.2.1: triangular matrix multiplication -/
 
 section Programs

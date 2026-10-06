@@ -1127,16 +1127,6 @@ theorem IsThinQR.unique {A Q₁ Q₂ : Matrix m (Fin N) 𝕜} {R₁ R₂ : Matri
     _ = Q₂ * (R₂ * R₁⁻¹) := Matrix.mul_assoc _ _ _
     _ = Q₂ := by rw [hS1, Matrix.mul_one]
 
-/-- Uniqueness of the QR factorization with a positive diagonal, with the hypotheses unbundled. -/
-@[deprecated IsThinQR.unique +typeChanged (since := "2026-09-30")]
-theorem qr_unique {M N : ℕ} {X Q₁ Q₂ : Matrix (Fin N) (Fin M) 𝕜}
-    {R₁ R₂ : Matrix (Fin M) (Fin M) 𝕜} (hX₁ : X = Q₁ * R₁) (hX₂ : X = Q₂ * R₂)
-    (hQ₁ : Q₁ᴴ * Q₁ = 1) (hQ₂ : Q₂ᴴ * Q₂ = 1)
-    (hR₁ : R₁.IsUpperTriangular) (hR₂ : R₂.IsUpperTriangular)
-    (hd₁ : ∀ j, 0 < R₁.diag j) (hd₂ : ∀ j, 0 < R₂.diag j) :
-    Q₁ = Q₂ ∧ R₁ = R₂ :=
-  IsThinQR.unique ⟨hX₁.symm, hQ₁, hR₁⟩ ⟨hX₂.symm, hQ₂, hR₂⟩ hd₁ hd₂
-
 end ThinQR
 
 /-! ### The Gram–Schmidt factorization -/
@@ -1242,22 +1232,6 @@ theorem exists_isThinQR (A : Matrix m (Fin N) 𝕜) (hA : LinearIndependent 𝕜
   · intro j
     rw [Matrix.of_apply, inner_gramSchmidtNormed_self]
     exact pos_iff_exists_ofReal.2 ⟨‖gramSchmidt 𝕜 f j‖, norm_pos_iff.2 (hgne j), rfl⟩
-
-/-- The Gram–Schmidt factorization `X = Q R` of a matrix with linearly independent columns, with
-the conclusion unbundled. -/
-@[deprecated exists_isThinQR +typeChanged (since := "2026-09-30")]
-theorem exists_qr {N M : ℕ} (X : Matrix (Fin N) (Fin M) 𝕜) (hX : LinearIndependent 𝕜 Xᵀ) :
-    ∃ (Q : Matrix (Fin N) (Fin M) 𝕜) (R : Matrix (Fin M) (Fin M) 𝕜),
-      X = Q * R ∧ Qᴴ * Q = 1 ∧ R.IsUpperTriangular ∧ ∀ j, 0 < R.diag j := by
-  obtain ⟨Q, R, h, hd⟩ := exists_isThinQR X hX
-  exact ⟨Q, R, h.mul_eq.symm, h.conjTranspose_mul_self, h.isUpperTriangular, hd⟩
-
-/-- The converse of the Gram–Schmidt factorization, with the hypotheses unbundled. -/
-@[deprecated IsThinQR.linearIndependent +typeChanged (since := "2026-09-30")]
-theorem linearIndependent_of_qr {N M : ℕ} {X Q : Matrix (Fin N) (Fin M) 𝕜}
-    {R : Matrix (Fin M) (Fin M) 𝕜} (hX : X = Q * R) (hQ : Qᴴ * Q = 1)
-    (hR : R.IsUpperTriangular) (hd : ∀ j, 0 < R.diag j) : LinearIndependent 𝕜 Xᵀ :=
-  IsThinQR.linearIndependent ⟨hX.symm, hQ, hR⟩ (hR.isUnit_iff.2 fun j => (hd j).ne')
 
 end GramSchmidt
 
@@ -1501,14 +1475,6 @@ of `Q` and the first `N` rows `R̃` of `R` are a thin factorization: `A = Q̃ R�
 `R̃` upper triangular. -/
 theorem IsQR.isThinQR (h : IsQR A Q R) (hNM : N ≤ M) :
     IsThinQR A (firstColumns Q hNM) (firstRows R hNM) :=
-  ⟨h.firstColumns_mul_firstRows hNM, h.conjTranspose_firstColumns_mul_self hNM,
-    h.isUpperTriangular_firstRows hNM⟩
-
-/-- The reduced QR factorization, as a conjunction. -/
-@[deprecated IsQR.isThinQR +typeChanged (since := "2026-09-30")]
-theorem IsQR.reduced (h : IsQR A Q R) (hNM : N ≤ M) :
-    firstColumns Q hNM * firstRows R hNM = A ∧
-      (firstColumns Q hNM)ᴴ * firstColumns Q hNM = 1 ∧ (firstRows R hNM).IsUpperTriangular :=
   ⟨h.firstColumns_mul_firstRows hNM, h.conjTranspose_firstColumns_mul_self hNM,
     h.isUpperTriangular_firstRows hNM⟩
 
@@ -1895,16 +1861,6 @@ theorem prodFwd_adjacentEmbed_mul_apply_eq_zero [Semiring α] {T : Matrix (Fin M
     · exact (adjacentEmbed_mul_apply_of_ne b (G b) _ (by omega) (by omega) l).trans
         (ih' i (by omega))
 
-/-- The list-product form of `Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`. -/
-@[deprecated prodFwd_adjacentEmbed_mul_apply_eq_zero +typeChanged (since := "2026-09-30")]
-theorem prod_planeEmbed_mul_apply_eq_zero [Semiring α] {T : Matrix (Fin M) (Fin N) α}
-    (hT : T.HasLowerBandwidthRect 0) (G : ℕ → Matrix (Fin 2) (Fin 2) α) (b n : ℕ) {i : Fin M}
-    {l : Fin N} (h : (l : ℕ) + 1 < i ∨ (l : ℕ) < i ∧ (l : ℕ) < b) :
-    (((List.range' b n).map fun j =>
-      (adjacentEmbed j (G j) : Matrix (Fin M) (Fin M) α)).prod * T) i l = 0 := by
-  rw [prod_map_range'_eq_prodFwd]
-  exact prodFwd_adjacentEmbed_mul_apply_eq_zero hT G b n h
-
 /-- **The square case of (6.5.2)**: a product of embeddings in the planes `(0, 1), (1, 2), …` in
 increasing order, times an upper trapezoidal matrix, is upper Hessenberg. -/
 theorem hasLowerBandwidthRect_prodFwd_adjacentEmbed_mul [Semiring α]
@@ -1966,9 +1922,6 @@ theorem hasLowerBandwidthRect_zero_of_adjacentRotations [NonAssocSemiring α]
   have hi := i.isLt
   have hl := l.isLt
   exact (key _ le_rfl).2 i l (by omega) (by omega)
-
-@[deprecated (since := "2026-09-30")]
-alias upperTrapezoidal_of_adjacentRotations := hasLowerBandwidthRect_zero_of_adjacentRotations
 
 end AdjacentSweep
 

@@ -542,9 +542,6 @@ theorem submatrix_apply_eq_zero_of_levels_far {n : ℕ} (A : Matrix (Fin n) (Fin
   · exact apply_eq_zero_of_dist_lt v h
   · exact apply_eq_zero_of_dist_lt' v h
 
-@[deprecated (since := "2026-09-30")]
-alias cuthillMcKee_blockTridiagonal := submatrix_apply_eq_zero_of_levels_far
-
 /-! ### §11.1.6: minimum degree, Cholesky with pivoting, and the symbolic fill -/
 
 /-- **The minimum-degree pivot rule** of §11.1.6: at step `k`, the index `p ≥ k` whose node has

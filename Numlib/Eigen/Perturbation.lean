@@ -1658,9 +1658,6 @@ theorem exists_norm_sub_le_of_schur {A : Matrix n n ℂ} {Q : Matrix n n ℂ}
           rw [← Real.rpow_natCast, ← Real.rpow_mul hδ.le, mul_one_div_cancel hp0, Real.rpow_one]
       _ ≤ θ ^ (1 / p : ℝ) := by gcongr
 
-@[deprecated (since := "2026-09-30")]
-alias infDist_spectrum_le_of_schur := exists_norm_sub_le_of_schur
-
 end Schur
 
 /-- The block form of the residual bound ([golub2013matrix] Theorem 8.1.13, with the constant `1`

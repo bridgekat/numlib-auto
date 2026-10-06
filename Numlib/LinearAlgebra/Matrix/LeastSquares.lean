@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.LinearAlgebra.Matrix.Block
-import Numlib.Analysis.Matrix.OperatorNorm
+import Numlib.Analysis.Matrix.Frobenius
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Direct.Substitution
 import Numlib.LinearAlgebra.Matrix.QR
@@ -678,14 +678,6 @@ theorem isMinOn_norm_mul_sub_one_pinv (A : Matrix m n 𝕜) :
     rw [← hpinv] at h
     simpa using h
 
-/-- The matrix least-squares problem `min_X ‖A X - I‖_F`, with the minimizer unbundled. -/
-@[deprecated isMinOn_norm_mul_sub_one_pinv +typeChanged (since := "2026-09-30")]
-theorem pinv_isMinOn_frobenius (A : Matrix m n 𝕜) :
-    (∀ X : Matrix n m 𝕜, ‖A * A.pinv - 1‖ ≤ ‖A * X - 1‖) ∧
-      ∀ X : Matrix n m 𝕜, ‖A * X - 1‖ = ‖A * A.pinv - 1‖ →
-        ‖A.pinv‖ ≤ ‖X‖ ∧ (‖X‖ = ‖A.pinv‖ → X = A.pinv) :=
-  ⟨isMinOn_univ_iff.1 (isMinOn_norm_mul_sub_one_pinv A).1, (isMinOn_norm_mul_sub_one_pinv A).2⟩
-
 end Frobenius
 
 section MatrixUnknown
@@ -770,14 +762,6 @@ theorem isMinOn_norm_sub_mul_conjTranspose_iff (A : Matrix m r 𝕜)
     rw [hsum, hsum]
     refine Finset.sum_le_sum fun i _ => ?_
     exact pow_le_pow_left₀ (norm_nonneg _) (((hrow i).2 (congrFun h i)) _) 2
-
-omit [DecidableEq n] [DecidableEq r] in
-/-- Least squares with a matrix unknown on the left, with the minimizer unbundled. -/
-@[deprecated isMinOn_norm_sub_mul_conjTranspose_iff +typeChanged (since := "2026-09-30")]
-theorem isMinOn_norm_sub_mul_transpose_iff (A : Matrix m r 𝕜)
-    (K : Matrix r n 𝕜) (F : Matrix m n 𝕜) :
-    (∀ G : Matrix m n 𝕜, ‖A - F * Kᴴ‖ ≤ ‖A - G * Kᴴ‖) ↔ F * (Kᴴ * K) = A * K :=
-  isMinOn_univ_iff.symm.trans (isMinOn_norm_sub_mul_conjTranspose_iff A K F)
 
 omit [DecidableEq n] [DecidableEq r] [Fintype m] in
 /-- **The matrix least-squares problem `min_F ‖A - F Kᴴ‖_F` has a solution**: row `i` of `F` is

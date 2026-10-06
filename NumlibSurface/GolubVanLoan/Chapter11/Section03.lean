@@ -1108,11 +1108,8 @@ private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA 
     · obtain ⟨h1, h2, h3⟩ := hvec j hj
       refine ⟨?_, by rw [h2, hal], by rw [h3, hbe]⟩
       rw [h1, WithLp.toLp_ofLp, hvs]
-    · have hgpos : 0 < Krylov.grade (toEuclideanLin A) (cgR A b x₀) := by
-        rw [Nat.pos_iff_ne_zero, Ne, Krylov.grade_eq_zero_iff]
-        push Not
-        refine ⟨fun h => h0 ?_, inferInstance⟩
-        rw [hβ₀, h, norm_zero]
+    · have hgpos : 0 < Krylov.grade (toEuclideanLin A) (cgR A b x₀) :=
+        Krylov.grade_pos_of_ne_zero _ _ fun h => h0 (by rw [hβ₀, h, norm_zero])
       have hd : L.done = true ↔ 0 < L.k ∧ L.beta (L.k - 1) = 0 :=
         algorithm_10_1_1_done A q₁ fuel
       rw [hd]

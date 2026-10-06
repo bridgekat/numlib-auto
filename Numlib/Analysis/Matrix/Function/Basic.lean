@@ -258,8 +258,6 @@ theorem pfc_complexify_of_conj {f : ℂ → ℂ} (B : Matrix n n ℝ)
   rw [complexify_apply, map_apply]
   exact (Complex.conj_eq_iff_re.mp h).symm
 
-@[deprecated (since := "2026-09-30")] alias pfc_map_ofReal_of_conj := pfc_complexify_of_conj
-
 end Conj
 
 end Matrix

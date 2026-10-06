@@ -192,9 +192,8 @@ theorem theorem_7_7_1_spectrum {A B Q Z : Matrix (Fin n) (Fin n) ℂ}
 orthogonal `Q`, `Z` with `Qᵀ A Z` upper quasi-triangular and `Qᵀ B Z` upper triangular. -/
 theorem theorem_7_7_2 (A B : Matrix (Fin n) (Fin n) ℝ) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ,
-      (Qᵀ * A * Z).IsQuasiUpperTriangular ∧ (Qᵀ * B * Z).IsUpperTriangular := by
-  obtain ⟨Q, hQ, Z, hZ, p, hp, hcard, hA, hB⟩ := exists_generalizedRealSchur A B
-  exact ⟨Q, hQ, Z, hZ, ⟨p, hp, hcard, hA⟩, hB⟩
+      (Qᵀ * A * Z).IsQuasiUpperTriangular ∧ (Qᵀ * B * Z).IsUpperTriangular :=
+  exists_orthogonal_pencil_isQuasiUpperTriangular A B
 
 /-! ### §7.7.4 Hessenberg–triangular form -/
 

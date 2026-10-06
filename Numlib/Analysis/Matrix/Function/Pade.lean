@@ -129,13 +129,6 @@ theorem _root_.Nat.factorial_add_sub_mul_factorial_le (p q k : ℕ) (hk : k ≤ 
     _ ≤ (p + q - k)! * ((q - k)! * (p + q).descFactorial k) := by gcongr
     _ = (p + q)! * (q - k)! := by rw [← h2]; ring
 
-/-- The coefficients of `D_pq` are bounded by those of the exponential series. -/
-@[deprecated "use `Nat.factorial_add_sub_mul_factorial_le` (stated in `ℕ`)"
-  (since := "2026-09-30")]
-theorem factorial_ratio_le_one (p q k : ℕ) (hk : k ≤ q) :
-    (((p + q - k)! * q ! : ℕ) : ℝ) ≤ ((p + q)! * (q - k)! : ℕ) := by
-  exact_mod_cast Nat.factorial_add_sub_mul_factorial_le p q k hk
-
 section Norm
 
 variable {𝕂 : Type*} [RCLike 𝕂] {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra 𝕂 𝔸]

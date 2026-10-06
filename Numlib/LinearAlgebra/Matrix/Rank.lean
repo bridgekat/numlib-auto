@@ -344,8 +344,6 @@ end Blocks
 
 /-! ### The nullity theorem -/
 
-@[deprecated (since := "2026-09-30")] alias rank_one_submatrix_mul := rank_submatrix_one_mul
-
 section Nullity
 
 variable {n : Type*} [Fintype n] [DecidableEq n]

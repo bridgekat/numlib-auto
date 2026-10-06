@@ -96,50 +96,6 @@ structure IsGSVD (A : Matrix (Fin m₁) (Fin n) 𝕜) (B : Matrix (Fin m₂) (Fi
   star_mul_mul₂ : star U₂ * B * X =
     shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜)
 
-section Deprecated
-
-variable {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (Fin m₂) (Fin n) 𝕜}
-  {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
-  {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
-
-/-- The first left factor is unitary (the former field name). -/
-@[deprecated IsGSVD.mem_unitaryGroup_left₁ (since := "2026-09-30")]
-theorem IsGSVD.mem_unitaryGroup_left (h : IsGSVD A B U₁ U₂ X α β) :
-    U₁ ∈ unitaryGroup (Fin m₁) 𝕜 :=
-  h.mem_unitaryGroup_left₁
-
-/-- The second left factor is unitary (the former field name, which called it *right*). -/
-@[deprecated IsGSVD.mem_unitaryGroup_left₂ (since := "2026-09-30")]
-theorem IsGSVD.mem_unitaryGroup_right (h : IsGSVD A B U₁ U₂ X α β) :
-    U₂ ∈ unitaryGroup (Fin m₂) 𝕜 :=
-  h.mem_unitaryGroup_left₂
-
-/-- The first `p` pairs are `(1, 0)` (the former field name). -/
-@[deprecated IsGSVD.eq_one_and_eq_zero_of_lt (since := "2026-09-30")]
-theorem IsGSVD.of_lt_p (h : IsGSVD A B U₁ U₂ X α β) :
-    ∀ i < (fromRows A B).rank - m₂, α i = 1 ∧ β i = 0 :=
-  h.eq_one_and_eq_zero_of_lt
-
-/-- The pairs past the rank vanish (the former field name). -/
-@[deprecated IsGSVD.eq_zero_and_eq_zero_of_rank_le (since := "2026-09-30")]
-theorem IsGSVD.of_le_r (h : IsGSVD A B U₁ U₂ X α β) :
-    ∀ i, (fromRows A B).rank ≤ i → α i = 0 ∧ β i = 0 :=
-  h.eq_zero_and_eq_zero_of_rank_le
-
-/-- The factorization of `A` (the former field name). -/
-@[deprecated IsGSVD.star_mul_mul₁ (since := "2026-09-30")]
-theorem IsGSVD.star_mul_mul_left (h : IsGSVD A B U₁ U₂ X α β) :
-    star U₁ * A * X = rectDiagonal fun i => ((α i : ℝ) : 𝕜) :=
-  h.star_mul_mul₁
-
-/-- The factorization of `B` (the former field name). -/
-@[deprecated IsGSVD.star_mul_mul₂ (since := "2026-09-30")]
-theorem IsGSVD.star_mul_mul_right (h : IsGSVD A B U₁ U₂ X α β) :
-    star U₂ * B * X = shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) :=
-  h.star_mul_mul₂
-
-end Deprecated
-
 end Def
 
 section Exists
@@ -354,12 +310,6 @@ theorem IsGSVD.conjTranspose_mul_gram_mul₂ (h : IsGSVD A B U₁ U₂ X α β) 
     rw [hβ]
     simp
 
-@[deprecated (since := "2026-09-30")]
-alias IsGSVD.conjTranspose_mul_gram_left_mul := IsGSVD.conjTranspose_mul_gram_mul₁
-
-@[deprecated (since := "2026-09-30")]
-alias IsGSVD.conjTranspose_mul_gram_right_mul := IsGSVD.conjTranspose_mul_gram_mul₂
-
 /-- **The GSVD diagonalizes `AᴴA + λ BᴴB`** ([golub2013matrix] §6.1.6, the display before
 (6.1.26), and §6.2.6): `Xᴴ (AᴴA + λ BᴴB) X = diag(α_i² + λ β_i²)`, for `n ≤ m₁`. -/
 theorem IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul (h : IsGSVD A B U₁ U₂ X α β)
@@ -569,15 +519,6 @@ theorem IsGSVD.star_mul_mul_eq_of_eq_one
     push_cast
     rw [div_eq_mul_inv]
   · rw [zero_mul]
-
-/-- **The GSVD of `(A, I)` is an SVD of `A`**, the four facts bundled (the former statement). -/
-@[deprecated IsGSVD.star_mul_mul_eq_of_eq_one +typeChanged (since := "2026-09-30")]
-theorem IsGSVD.svd_of_eq_one (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U₁ U₂ X α β) :
-    (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank - n = 0 ∧
-      (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank = n ∧ (∀ i < n, 0 < β i) ∧
-      star U₁ * A * U₂ = rectDiagonal fun i => ((α i / β i : ℝ) : 𝕜) :=
-  ⟨by rw [rank_fromRows_one, Nat.sub_self], rank_fromRows_one A, h.pos_of_eq_one,
-    h.star_mul_mul_eq_of_eq_one⟩
 
 end OfEqOne
 

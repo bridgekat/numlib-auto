@@ -134,12 +134,7 @@ theorem krylov_smul {c : 𝕜} (hc : c ≠ 0) (m : ℕ) : krylov A (c • v) m =
 
 /-- Rescaling the starting vector does not change its grade. -/
 theorem grade_smul {c : 𝕜} (hc : c ≠ 0) : grade A (c • v) = grade A v := by
-  have hs : ∀ m : ℕ, Krylov.subspace (op A) (c • v) m = Krylov.subspace (op A) v m := fun m => by
-    rw [← krylov_eq, ← krylov_eq, krylov_smul A v hc]
-  rw [grade_eq, grade_eq, Krylov.grade_eq_sInf, Krylov.grade_eq_sInf]
-  congr 1
-  ext m
-  rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, hs m, map_smul, Submodule.smul_mem_iff _ hc]
+  rw [grade_eq, grade_eq, Krylov.grade_smul (op A) v hc]
 
 /-- Normalizing a nonzero vector does not change its grade: the bridge between the book's grade
 of `r_0` and of `v_1 = r_0 / ‖r_0‖`, needed wherever an algorithm starts from a residual. -/

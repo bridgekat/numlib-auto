@@ -17,6 +17,9 @@ id = "IsSimilar.trans"
 id = "IsSimilar.charpoly_eq"
 
 [[node]]
+id = "IsSimilar.spectrum_eq"
+
+[[node]]
 id = "IsSimilar.mulVec_eq_smul"
 
 [[node]]

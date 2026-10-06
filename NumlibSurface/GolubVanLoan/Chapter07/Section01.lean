@@ -174,13 +174,6 @@ private theorem eq_zero_of_mulVec_eq_zero {m k : ℕ} {X : Matrix (Fin m) (Fin k
   rw [h] at hmem
   exact (Submodule.mem_bot ℂ).1 hmem
 
-/-- **Similar matrices have the same spectrum** (via `Matrix.IsSimilar.charpoly_eq`; the chapter's
-one copy of this fact, used in §7.1, §7.2 and §7.8). -/
-theorem IsSimilar.spectrum_eq {m : ℕ} {B C : Matrix (Fin m) (Fin m) ℂ}
-    (h : IsSimilar B C) : spectrum ℂ B = spectrum ℂ C := by
-  ext μ
-  simp only [Matrix.mem_spectrum_iff_isRoot_charpoly, h.charpoly_eq]
-
 /-- **§7.1.1, invariant subspaces from `A X = X B`**, for `X ∈ ℂ^{n×k}`, `B ∈ ℂ^{k×k}`: `ran(X)` is
 invariant for `A`; `B y = λ y ⇒ A (X y) = λ (X y)`; if `X` has full column rank then
 `λ(B) ⊆ λ(A)`; and a similarity `B = X⁻¹ A X` with `X` square and nonsingular preserves the
@@ -254,14 +247,6 @@ theorem theorem_7_1_3 (A : Matrix (Fin n) (Fin n) ℂ) :
   · simp [Matrix.sub_apply, hT hlt, diagonal_apply_ne _ hlt.ne']
   · simp
 
-/-- The spectrum of an upper triangular matrix is the set of its diagonal entries. -/
-private theorem spectrum_eq_range_diag {k : ℕ} {T : Matrix (Fin k) (Fin k) ℂ}
-    (hT : T.IsUpperTriangular) : spectrum ℂ T = Set.range fun i => T i i := by
-  ext μ
-  rw [Matrix.mem_spectrum_iff_isRoot_charpoly, charpoly_of_isUpperTriangular T hT,
-    Polynomial.IsRoot.def, Polynomial.eval_prod, Finset.prod_eq_zero_iff]
-  simp [sub_eq_zero, eq_comm]
-
 /-- `A Q = Q T` for a unitary `Q` and `T = Qᴴ A Q`. -/
 private theorem mul_eq_mul_conj {Q A : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) : A * Q = Q * (star Q * A * Q) := by
@@ -316,7 +301,7 @@ theorem equation_7_1_8 {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGro
         submatrix_mul _ _ _ id _ Function.bijective_id,
         submatrix_mul _ _ _ id _ Function.bijective_id]
       rfl
-    rw [hsub, spectrum_eq_range_diag]
+    rw [hsub, Matrix.IsUpperTriangular.spectrum_eq]
     · rfl
     · intro i j hij
       have hij' : (j : ℕ) < i := hij

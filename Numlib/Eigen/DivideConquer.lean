@@ -275,7 +275,6 @@ theorem hasEigenvector_diagonal_add_rankOne_resolvent (hd : Function.Injective d
   rw [Pi.smul_apply, smul_eq_mul, mul_div_assoc', eq_div_iff hne, mul_comm (v i), h i]
   ring
 
-
 /-! ### Strict interlacing -/
 
 section Interlacing
@@ -822,10 +821,6 @@ theorem neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos {r : Fin m �
     have : 0 ≤ ∑ i, (Qᵀ *ᵥ r) i ^ 2 / (hB.eigenvalues i - t) ^ 3 :=
       Finset.sum_nonneg fun i _ => div_nonneg (sq_nonneg _) (pow_nonneg (by linarith [ht i]) 3)
     linarith
-
-@[deprecated (since := "2026-09-30")]
-alias borderedSecularFunction_deriv_nonpos :=
-  neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos
 
 open Filter Topology Set in
 /-- **Newton's method for the smallest eigenvalue of a bordered matrix converges monotonically

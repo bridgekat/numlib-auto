@@ -44,12 +44,6 @@ theorem det_sq_eq_one_of_mem_orthogonalGroup {R : Type*} [CommRing R] {O : Matri
   rw [det_mul, det_transpose, det_one] at this
   rw [sq]; exact this
 
-/-- The determinant of a real matrix with `Oᵀ O = 1` is `±1`: its square is `1`. -/
-@[deprecated det_sq_eq_one_of_mem_orthogonalGroup +typeChanged (since := "2026-09-30")]
-theorem det_sq_eq_one_of_transpose_mul_self {O : Matrix n n ℝ} (hO : Oᵀ * O = 1) :
-    O.det ^ 2 = 1 :=
-  det_sq_eq_one_of_mem_orthogonalGroup ((mem_orthogonalGroup_iff' n ℝ).2 hO)
-
 /-- **A unitary factor does not increase the real trace of a positive semidefinite matrix**:
 `re tr(W P) ≤ re tr P` for `W` unitary and `P ⪰ 0` — the step "`tr(ZΣ) = ∑ z_ii σ_i ≤ ∑ σ_i`" of
 [golub2013matrix] §6.4.1 in polar form. In an eigenbasis of `P`, `tr(W P) = ∑ z_ii λ_i` with
@@ -170,14 +164,5 @@ theorem le_trace_mul_one_sub {P W : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ} 
   rw [e2] at h2
   nlinarith [mul_nonneg (sub_nonneg.2 hab)
     (show 0 ≤ (Fintype.card n - trace W) - 2 * (1 - trace (vecMulVec u u * W)) by linarith)]
-
-/-- The pairing inequality with the hypotheses unbundled. -/
-@[deprecated le_trace_mul_one_sub +typeChanged (since := "2026-09-30")]
-theorem trace_mul_one_sub_ge {P W : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ} (hab : a ≤ b)
-    (hu : u ⬝ᵥ u = 1) (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef)
-    (hW : Wᵀ * W = 1) (hdet : W.det = 1) :
-    (a + b) / 2 * trace (1 - W) ≤ trace (P * (1 - W)) :=
-  le_trace_mul_one_sub hab hu hP
-    (mem_specialOrthogonalGroup_iff.2 ⟨(mem_orthogonalGroup_iff' n ℝ).2 hW, hdet⟩)
 
 end Matrix

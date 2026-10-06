@@ -422,14 +422,6 @@ section Square
 
 variable [DecidableEq n]
 
-/-- Conjugation commutes with powers: `(P X P')ᵏ⁺¹ = P Xᵏ⁺¹ P'` when `P' P = 1`; Mathlib's
-`Units.conj_pow` for the unit `⟨P, P'⟩`, which covers `k = 0` as well. -/
-@[deprecated "use Mathlib's `Units.conj_pow` for the unit `⟨P, P', _, h⟩`"
-  (since := "2026-09-30")]
-theorem conj_pow_of_mul_eq_one {P P' X : Matrix n n 𝕜} (h : P' * P = 1) (k : ℕ) :
-    (P * X * P') ^ (k + 1) = P * X ^ (k + 1) * P' :=
-  Units.conj_pow ⟨P, P', mul_eq_one_comm.1 h, h⟩ X (k + 1)
-
 /-- The condition number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` in the induced `p`-norm (Saad, *Iterative
 Methods for Sparse Linear Systems*, §1.13.2; Quarteroni–Sacco–Saleri, *Numerical Mathematics*,
 §3.1.1 (3.4)).  Mathlib's `A⁻¹` is `0` for a singular `A`, so `condNumberLp p A = 0` then, in
@@ -1443,10 +1435,6 @@ theorem complexSpectralRadius_toReal_eq_lpOpNorm_two_of_transpose_eq_neg {S : Ma
   have : IsStarNormal (complexify S) := ⟨by rw [hstar]; exact (Commute.refl _).neg_left⟩
   rw [complexSpectralRadius, ← l2_opNorm_eq_spectralRadius_of_isStarNormal,
     l2_opNNNorm_complexify, ENNReal.coe_toReal, coe_nnnorm, lpOpNorm_two]
-
-@[deprecated (since := "2026-09-30")]
-alias complexSpectralRadius_toReal_of_skew :=
-  complexSpectralRadius_toReal_eq_lpOpNorm_two_of_transpose_eq_neg
 
 /-- **A normal matrix has the smallest spectral norm among all the induced `p`-norms**:
 `‖A‖₂ ≤ ‖A‖_r` for every `r ≥ 1`, since `‖A‖₂ = ρ(A)` and `ρ(A) ≤ ‖A‖_r` by consistency.

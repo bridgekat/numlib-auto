@@ -767,10 +767,7 @@ theorem bidiagLoop_spec {m n : ℕ} (B : Matrix (Fin m) (Fin n) ℝ) {v₀ : Fin
     have h1 : ‖q‖ = 1 := hv
     rw [h, norm_zero] at h1
     exact zero_ne_one h1
-  have hg : 0 < grade (Ts ∘ₗ T) q := by
-    rw [Nat.pos_iff_ne_zero, Ne, grade_eq_zero_iff]
-    push Not
-    exact ⟨hq0, inferInstance⟩
+  have hg : 0 < grade (Ts ∘ₗ T) q := Krylov.grade_pos_of_ne_zero _ _ hq0
   have hunit_r : ∀ j, GolubKahan.rightVec T Ts q j ≠ 0 → ‖GolubKahan.rightVec T Ts q j‖ = 1 :=
     fun j h => Arnoldi.norm_vec_eq_one_of_ne_zero _ _ h
   have hunit_l : ∀ j, GolubKahan.leftVec T Ts q j ≠ 0 → ‖GolubKahan.leftVec T Ts q j‖ = 1 :=

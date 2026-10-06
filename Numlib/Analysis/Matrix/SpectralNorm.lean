@@ -372,9 +372,6 @@ private theorem sq_add_sq_le_of_blockBound {μ γ δ a b : ℝ} (hμ : 0 ≤ μ)
       + 2 * (μ + δ) * a * b * hPR
   nlinarith [mul_nonneg (add_nonneg hμ hδ) (sq_nonneg (P * a - R * b))]
 
-@[deprecated (since := "2026-09-30")]
-alias norm_toLp_sumElim_sq := EuclideanSpace.norm_toLp_sumElim_sq
-
 /-- **The spectral norm of a `2 × 2` block matrix from the norms of its blocks**: if `‖E‖₂ ≤ μ`,
 `‖C‖₂ ≤ γ`, `‖C'‖₂ ≤ γ` and `‖D‖₂ ≤ δ`, then `‖[E C; C' D]‖₂ ≤ λ`, the largest eigenvalue
 `(μ + δ + √((μ - δ)² + 4γ²)) / 2` of `[μ γ; γ δ]` (Kahan's lemma, [golub2013matrix] Lemma 10.3.1,
@@ -437,9 +434,6 @@ theorem l2_opNorm_fromBlocks_conjTranspose_le {m₁ m₂ : Type*} [Fintype m₁]
     {μ γ δ : ℝ} (hE : ‖E‖ ≤ μ) (hC : ‖C‖ ≤ γ) (hD : ‖D‖ ≤ δ) :
     ‖fromBlocks E C Cᴴ D‖ ≤ (μ + δ + √((μ - δ) ^ 2 + 4 * γ ^ 2)) / 2 :=
   l2_opNorm_fromBlocks_le hE hC (by rwa [l2_opNorm_conjTranspose]) hD
-
-@[deprecated (since := "2026-09-30")]
-alias l2_opNorm_fromBlocks_le_of_isHermitian := l2_opNorm_fromBlocks_conjTranspose_le
 
 end Blocks
 

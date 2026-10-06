@@ -68,7 +68,4 @@ theorem frobenius_norm_sq_eq_sum_norm_sq_row (A : Matrix m n 𝕜) :
   rw [frobenius_norm_sq_eq_sum_sq]
   exact Finset.sum_congr rfl fun i _ => by rw [EuclideanSpace.norm_sq_eq]
 
-@[deprecated (since := "2026-09-30")]
-alias frobenius_norm_sq_eq_sum_norm_toLp_row_sq := frobenius_norm_sq_eq_sum_norm_sq_row
-
 end Matrix

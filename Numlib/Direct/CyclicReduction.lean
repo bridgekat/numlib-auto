@@ -234,9 +234,6 @@ theorem constBlockTridiagonal_even_eq {D F : Matrix (Fin q) (Fin q) K}
   push_cast
   abel
 
-@[deprecated (since := "2026-09-30")]
-alias constBlockTridiagonal_odd_eq := constBlockTridiagonal_even_eq
-
 /-! ### Iterated reduction -/
 
 /-- The sizes `2^k − 1` of the systems that reduce down to one unknown:

@@ -2099,10 +2099,6 @@ theorem givensChain_mul_strictLower_add_diagPart
         (by rw [Fin.lt_def] at hkj hji; omega), zero_mul]
     · rw [ite_eq_right hkj, mul_zero]
 
-@[deprecated (since := "2026-09-30")]
-alias transpose_givensChain_mul_strictLower_add_diagPart :=
-  givensChain_mul_strictLower_add_diagPart
-
 end SemiseparableQR
 
 /-! ### Products along a path: the odd–even splitting -/
@@ -2544,20 +2540,6 @@ theorem isTridiagonal_oddEvenHalfDiff (φ : ℕ → ℝ) : (oddEvenHalfDiff N φ
   rw [oddEvenHalfDiff, smul_apply, sub_apply, prodFwdEven, prodFwdOdd,
     prodFwd_mask_apply_eq_zero φ Even (fun _ _ => even_add_two_le) hij,
     prodFwd_mask_apply_eq_zero φ Odd (fun _ _ => odd_add_two_le) hij, sub_zero, smul_zero]
-
-@[deprecated "use `Matrix.isSymm_oddEvenHalfSum`, `Matrix.isTridiagonal_oddEvenHalfSum` and their
-`oddEvenHalfDiff` twins" (since := "2026-09-30")]
-theorem isTridiagonal_oddEven_half_sum (φ : ℕ → ℝ) :
-    ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
-      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal ∧
-      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
-      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal :=
-  ⟨isSymm_oddEvenHalfSum φ, isTridiagonal_oddEvenHalfSum φ, isSymm_oddEvenHalfDiff φ,
-    isTridiagonal_oddEvenHalfDiff φ⟩
 
 open Complex in
 /-- **Fact 2 of [golub2013matrix] §12.2.10, the spectrum**: if the eigenvalues of the product

@@ -1,3 +1,4 @@
+import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.LinearAlgebra.Matrix.CauchyBinet
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 import Numlib.LinearAlgebra.Matrix.SchurComplement

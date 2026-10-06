@@ -498,7 +498,7 @@ variable [FiniteDimensional ℝ E]
 
 /-- **The real Schur form with irreducible `2 × 2` blocks**, operator form
 ([quarteroni2000numerical] Property 5.8; Golub–Van Loan Theorem 7.4.1): the basis of
-`LinearMap.exists_orthonormalBasis_quasiUpperTriangular` can be chosen so that no `2 × 2` diagonal
+`LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular` can be chosen so that no `2 × 2` diagonal
 block has a real eigenvalue — for two distinct indices `i, j` of one block, the characteristic
 polynomial `(a_ii - μ)(a_jj - μ) - a_ij a_ji` of the block has no real root `μ` — so that each
 `2 × 2` block carries a pair of complex conjugate eigenvalues. The induction peels off, at each
@@ -770,9 +770,6 @@ theorem exists_orthogonal_conj_isQuasiUpperTriangular {N : ℕ} (A : Matrix (Fin
     exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks A
   exact ⟨Q, hQ, p, hmono, hcard, htri⟩
 
-@[deprecated (since := "2026-09-30")]
-alias exists_orthogonal_conj_quasiUpperTriangular := exists_orthogonal_conj_isQuasiUpperTriangular
-
 end Matrix
 
 /-- **The real Schur form**, operator form: a real operator has an orthonormal basis in which its
@@ -792,12 +789,7 @@ theorem LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular {E : Type*}
     OrthonormalBasis.coe_toBasis_repr_apply, OrthonormalBasis.repr_apply_apply]
   exact htri i j hji
 
-@[deprecated (since := "2026-09-30")]
-alias LinearMap.exists_orthonormalBasis_quasiUpperTriangular :=
-  LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular
-
 namespace Matrix
-
 
 /-! ### The spectrum of a special orthogonal matrix -/
 
