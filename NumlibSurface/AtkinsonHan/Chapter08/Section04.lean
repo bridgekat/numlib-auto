@@ -36,7 +36,7 @@ open AtkinsonHan.Chapter07 SobolevMultiIndex
 theorem (`Numlib/Analysis/Sobolev/Compactness.lean` takes `p : ℝ≥0`); `H^1(Ω)` is
 `SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume`, definitionally the space
 `SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 2 Ω volume` of `corollary_7_2_4`; the instance
-`Fact (1 ≤ 𝟚)` is `AtkinsonHan.Chapter07.fact_one_le_two_coe`. -/
+`Fact (1 ≤ 𝟚)` is the backbone's `fact_one_le_coe_two_ennreal`. -/
 local notation "𝟚" => ((2 : ℝ≥0) : ℝ≥0∞)
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}

@@ -13,17 +13,18 @@ import Mathlib.Topology.MetricSpace.ProperSpace
 /-!
 # Functions continuous on the closure of a set
 
-Two facts about a function continuous on the closure `closure s` of a set `s`, used for the
+Facts about functions continuous on the closure `closure s` of a set `s`, used for the
 coefficients and data of boundary value problems on a bounded open set `Ω` (functions continuous
 on `Ω̄`):
 
-* it is essentially bounded on `s` when `closure s` is compact — in particular on a bounded set
-  of a proper space (`ContinuousOn.memLp_top_restrict_of_isCompact_closure`,
+* such a function is essentially bounded on `s` when `closure s` is compact — in particular on a
+  bounded set of a proper space (`ContinuousOn.memLp_top_restrict_of_isCompact_closure`,
   `ContinuousOn.memLp_top_restrict_of_isBounded`);
-* a bound `|g| ≤ C` holding almost everywhere on an open `s`, for a measure positive on open
-  sets, holds everywhere on `closure s` (`ContinuousOn.abs_le_on_closure_of_ae_abs_le`), and
-  two functions continuous on `s` and ordered almost everywhere on it are ordered everywhere on
-  it (`le_on_of_ae_le`).
+* a bound `|g| ≤ C` holding almost everywhere on an open `s`, for a measure positive on open sets,
+  holds everywhere on `closure s` (`ContinuousOn.abs_le_on_closure_of_ae_abs_le`); two functions
+  continuous on `closure s` and equal almost everywhere on `s` are equal on `closure s`
+  (`ContinuousOn.eqOn_closure_of_ae_eq`); and two functions continuous on `s` and ordered almost
+  everywhere on it are ordered everywhere on it (`le_on_of_ae_le`).
 -/
 
 open MeasureTheory Set
@@ -72,6 +73,17 @@ theorem ContinuousOn.abs_le_on_closure_of_ae_abs_le [μ.IsOpenPosMeasure] {s : S
   intro x hx
   have h2 := h1.of_subset_closure hc continuousOn_const subset_closure le_rfl hx
   exact sub_nonpos.1 (max_eq_right_iff.1 h2)
+
+omit [OpensMeasurableSpace X] in
+/-- **Two functions continuous on the closure of an open set and almost everywhere equal on it
+agree on the closure**, for a measure positive on open sets: they agree on the open set by
+`Measure.eqOn_open_of_ae_eq`, hence on its closure by continuity. This is the uniqueness of the
+continuous representative up to the boundary of an element of `L^p(s)`. -/
+theorem ContinuousOn.eqOn_closure_of_ae_eq [μ.IsOpenPosMeasure] {Y : Type*} [TopologicalSpace Y]
+    [T2Space Y] {s : Set X} (hs : IsOpen s) {f g : X → Y} (hf : ContinuousOn f (closure s))
+    (hg : ContinuousOn g (closure s)) (h : f =ᵐ[μ.restrict s] g) : EqOn f g (closure s) :=
+  (Measure.eqOn_open_of_ae_eq h hs (hf.mono subset_closure)
+    (hg.mono subset_closure)).of_subset_closure hf hg subset_closure subset_rfl
 
 omit [OpensMeasurableSpace X] in
 /-- Two functions continuous on an open set that are ordered almost everywhere on it, for a

@@ -2,6 +2,7 @@ import Numlib.Analysis.Calculus.ContDiffOnClosure
 import Numlib.Analysis.Calculus.ProdContDiff
 import Numlib.Analysis.Calculus.SpaceTime
 import Numlib.Analysis.PDE.Bochner
+import Numlib.MeasureTheory.Function.ContinuousOnClosure
 import Numlib.Analysis.Sobolev.EmbeddingDomain
 
 /-!
@@ -21,8 +22,6 @@ of the solutions of the heat and wave equations in space and time.
 * `Bochner.continuousOn_prod_of_forall_norm_sub_le`: the general joint-continuity lemma behind the
   bridge — if `rep w` is continuous on `K` for every `w`, and `‖rep w₁ x − rep w₂ x‖ ≤ C ‖w₁ − w₂‖`
   on `K`, then `(x, t) ↦ rep (v t) x` is continuous on `K ×ˢ s` for every `v` continuous on `s`.
-* `Bochner.eqOn_closure_of_ae_eq`: two continuous functions almost everywhere equal on an open
-  set agree on its closure (the uniqueness of continuous representatives).
 * `Bochner.continuousOn_spaceTime_of_contDiffOnThrough`: **the `k = 0` bridge** — for an extension
   domain `Ω` (a `C¹` domain with bounded boundary, or the half space) and `m > N/2`, a curve
   `u ∈ C(s; H^m(Ω))` read in `L²(Ω)` has a space–time representative `U` continuous on
@@ -103,18 +102,6 @@ theorem continuousOn_prod_of_forall_norm_sub_le {X V F : Type*} [PseudoMetricSpa
     _ < ε / 2 + ε / 2 := add_lt_add_of_le_of_lt hA (h₂ hp.1 hp1)
     _ = ε := add_halves ε
 
-/-! ### Uniqueness of continuous representatives up to the boundary -/
-
-/-- **Two continuous functions almost everywhere equal on an open set agree on its closure**
-(for a measure positive on open sets): the continuous representative of a Sobolev function is
-unique on `Ω̄`. -/
-theorem eqOn_closure_of_ae_eq {X F : Type*} [TopologicalSpace X] [MeasurableSpace X]
-    [TopologicalSpace F] [T2Space F] {μ : Measure X} [μ.IsOpenPosMeasure] {Ω : Set X}
-    (hΩ : IsOpen Ω) {f g : X → F} (hf : Continuous f) (hg : Continuous g)
-    (h : f =ᵐ[μ.restrict Ω] g) : EqOn f g (closure Ω) :=
-  (Measure.eqOn_open_of_ae_eq h hΩ hf.continuousOn hg.continuousOn).of_subset_closure
-    hf.continuousOn hg.continuousOn subset_closure subset_rfl
-
 /-! ### The `k = 0` bridge -/
 
 variable {N m : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
@@ -128,9 +115,9 @@ continuous on `s`. Then there is `U : ℝ^N × ℝ → ℝ`, continuous on `clos
 
 Proof: Corollary 9.15 at `k = 0`
 (`SobolevEuclidean.exists_forall_continuous_ae_eq_of_order_of_hasSobolevExtension`) gives every
-`w ∈ H^m(Ω)` a continuous representative `w̃` on `ℝ^N` with `‖w̃‖_∞ ≤ C ‖w‖`. The
-representative is unique on `closure Ω` (`eqOn_closure_of_ae_eq`), so `w ↦ w̃` is additive there
-and `‖w̃₁ x − w̃₂ x‖ ≤ C ‖w₁ − w₂‖` for `x ∈ closure Ω`; `U(x, t) := (v t)~(x)` is then jointly
+`w ∈ H^m(Ω)` a continuous representative `w̃` on `ℝ^N` with `‖w̃‖_∞ ≤ C ‖w‖`. The representative is
+unique on `closure Ω` (`ContinuousOn.eqOn_closure_of_ae_eq`), so `w ↦ w̃` is additive there and
+`‖w̃₁ x − w̃₂ x‖ ≤ C ‖w₁ − w₂‖` for `x ∈ closure Ω`; `U(x, t) := (v t)~(x)` is then jointly
 continuous by `continuousOn_prod_of_forall_norm_sub_le`. This is what [brezis2011functional]
 Corollary 10.5 (`u ∈ C(Q̄)`) needs. -/
 theorem continuousOn_spaceTime_of_contDiffOnThrough (hΩ : IsSobolevExtensionDomainAll N Ω)
@@ -160,7 +147,8 @@ theorem continuousOn_spaceTime_of_contDiffOnThrough (hΩ : IsSobolevExtensionDom
       rwa [sub_add_cancel] at h2
     have heq : EqOn (rep w₁) (rep (w₁ - w₂) + rep w₂)
         (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
-      refine eqOn_closure_of_ae_eq (μ := volume) Ω.isOpen (hrepc w₁) ((hrepc _).add (hrepc w₂)) ?_
+      refine ContinuousOn.eqOn_closure_of_ae_eq (μ := volume) Ω.isOpen (hrepc w₁).continuousOn
+        ((hrepc _).add (hrepc w₂)).continuousOn ?_
       filter_upwards [hrepae w₁, hrepae w₂, hrepae (w₁ - w₂), h1] with x hx₁ hx₂ hx₃ hx₄
       rw [← hx₁, hx₄, Pi.add_apply, Pi.add_apply, hx₂, hx₃]
     have h3 := heq hx
@@ -182,13 +170,14 @@ variable {N m : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {p : ℝ≥0∞}
   {rep : SobolevEuclidean N m p Ω → EuclideanSpace ℝ (Fin N) → ℝ}
 
 /-- The continuous representatives of a sum: `rep (w₁ + w₂) = rep w₁ + rep w₂` on `closure Ω`, by
-the uniqueness of continuous representatives (`eqOn_closure_of_ae_eq`). -/
+the uniqueness of continuous representatives (`ContinuousOn.eqOn_closure_of_ae_eq`). -/
 theorem eqOn_closure_rep_add (hrepc : ∀ w, Continuous (rep w))
     (hrepae : ∀ w, SobolevMultiIndex.fn w
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] rep w)
     (w₁ w₂ : SobolevEuclidean N m p Ω) :
     EqOn (rep (w₁ + w₂)) (rep w₁ + rep w₂) (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
-  refine eqOn_closure_of_ae_eq (μ := volume) Ω.isOpen (hrepc _) ((hrepc w₁).add (hrepc w₂)) ?_
+  refine ContinuousOn.eqOn_closure_of_ae_eq (μ := volume) Ω.isOpen (hrepc _).continuousOn
+    ((hrepc w₁).add (hrepc w₂)).continuousOn ?_
   filter_upwards [hrepae w₁, hrepae w₂, hrepae (w₁ + w₂), SobolevMultiIndex.fn_add w₁ w₂]
     with x h₁ h₂ h₃ h₄
   rw [← h₃, h₄, Pi.add_apply, Pi.add_apply, h₁, h₂]
@@ -199,7 +188,8 @@ theorem eqOn_closure_rep_smul (hrepc : ∀ w, Continuous (rep w))
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] rep w)
     (c : ℝ) (w : SobolevEuclidean N m p Ω) :
     EqOn (rep (c • w)) (c • rep w) (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
-  refine eqOn_closure_of_ae_eq (μ := volume) Ω.isOpen (hrepc _) ((hrepc w).const_smul c) ?_
+  refine ContinuousOn.eqOn_closure_of_ae_eq (μ := volume) Ω.isOpen (hrepc _).continuousOn
+    ((hrepc w).const_smul c).continuousOn ?_
   filter_upwards [hrepae w, hrepae (c • w), SobolevMultiIndex.fn_smul c w] with x h₁ h₂ h₃
   rw [← h₂, h₃, Pi.smul_apply, Pi.smul_apply, h₁]
 
@@ -427,7 +417,7 @@ is `C^∞` on `Ω ×ˢ s` with every derivative within `Ω ×ˢ s` extending con
 `closure Ω ×ˢ s`. Each order `k` is the finite-order bridge
 `exists_contDiffOnExtendsTo_spaceTime_of_contDiffOnThrough` at `m = k + N + 1`; the `U` produced
 at different orders agree on `closure Ω ×ˢ s` by the uniqueness of continuous representatives
-(`eqOn_closure_of_ae_eq`), so the one of order `0` serves for all. -/
+(`ContinuousOn.eqOn_closure_of_ae_eq`), so the one of order `0` serves for all. -/
 theorem contDiffOnExtendsTo_spaceTime_of_forall_contDiffOnThrough
     (hΩ : IsSobolevExtensionDomainAll N Ω) {s : Set ℝ} (hs : UniqueDiffOn ℝ s)
     {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -449,7 +439,8 @@ theorem contDiffOnExtendsTo_spaceTime_of_forall_contDiffOnThrough
   refine ⟨U 0, hUae 0, contDiffOnExtendsTo_infty_iff.2 fun k ↦ (hU k).congr fun q hq ↦ ?_⟩
   obtain ⟨x, t⟩ := q
   obtain ⟨hx, ht⟩ : x ∈ Ω ∧ t ∈ s := hq
-  exact eqOn_closure_of_ae_eq (μ := volume) Ω.isOpen (hUc 0 t ht) (hUc k t ht)
+  exact ContinuousOn.eqOn_closure_of_ae_eq (μ := volume) Ω.isOpen (hUc 0 t ht).continuousOn
+    (hUc k t ht).continuousOn
     ((hUae 0 t ht).trans (hUae k t ht).symm) (subset_closure hx)
 
 /-- **Joint smoothness from smoothness into every `H^m(Ω)`** (the space–time bridge). Let `Ω` be

@@ -3,7 +3,7 @@ import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
 import Numlib.Analysis.Sobolev.Boundary.Polygon
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
-import NumlibSurface.AtkinsonHan.Chapter10.Section04
+import Numlib.FiniteElement.Triangle
 
 /-!
 # Quarteroni–Sacco–Saleri §12.6: a quick glance at the two-dimensional case
@@ -21,8 +21,8 @@ one-dimensional model matrix `T = tridiag(-1, 2, -1)`, which makes its symmetry,
 definiteness and its M-matrix property (Exercise 14) immediate. The finite element method of
 the section — the space `V_h` of (12.94) on a triangulation and the error estimate (12.96) of
 Property 12.2 — is stated on the triangulation scaffold of `Numlib/Geometry/Triangulation.lean`
-and proved through Atkinson–Han's Theorem 10.4.1 (`NumlibSurface/AtkinsonHan/Chapter10/Section04`,
-the one module of the other book this file imports, for its `ℙ_k` Lagrange element).
+and proved by the backbone's finite element error estimate for the Poisson problem with the `ℙ_k`
+Lagrange element (`Numlib/FiniteElement/Triangle.lean`).
 
 ## Main definitions
 
@@ -57,10 +57,11 @@ the one module of the other book this file imports, for its `ℙ_k` Lagrange ele
   continuous `H¹` function vanishing on `∂Ω` is in `H¹₀`, Brezis's Theorem 9.17), and
   `finiteDimensional_equation_12_94` that it is finite-dimensional.
 * `property_12_2` — the `H¹` estimate (12.96), `‖u − u_h‖_{H¹₀} ≤ (M/α₀) C h^l ‖u‖_{H^{l+1}}`,
-  on a polygon triangulated by a regular family: Atkinson–Han's Theorem 10.4.1
-  (`AtkinsonHan.Chapter10.theorem_10_4_1`, Céa's lemma and the interpolation estimate of
-  Theorem 10.3.9) with the `ℙ_k` Lagrange element on the principal lattice, whose interpolant of
-  a boundary-vanishing function lies in `V_h`.
+  on a polygon triangulated by a regular family:
+  `FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm` (Céa's lemma and the global
+  interpolation estimate `Triangulation.sobolevNorm_sub_globalInterp_le`) with the `ℙ_k` Lagrange
+  element on the principal lattice, whose interpolant of a boundary-vanishing function lies in
+  `V_h`.
 
 ## Not formalized here
 
@@ -69,22 +70,22 @@ the one module of the other book this file imports, for its `ℙ_k` Lagrange ele
   its finite element approximation of degree `k ≥ 1`, `l = min(k, s - 1)` — one has
   `‖u - u_h‖_{L²(Ω)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(Ω)}`. The book quotes it from [QV94, Theorem 6.2.1]
   without proof. The proof is the Aubin–Nitsche duality argument, and that argument is already
-  formalized abstractly: `AtkinsonHan.Chapter10.theorem_10_4_3` and `corollary_10_4_4_abstract`
-  give `‖u - u_h‖_{L²} ≤ M δ ‖u - u_h‖_{H¹}` whenever every dual solution `φ_g`, defined by
-  `a(v, φ_g) = (g, v)_{L²}`, is approximated from `V_h` within `δ ‖g‖_{L²}`. With (12.96), proved
-  here as `property_12_2`, that yields (12.97) as soon as `δ = C h`, that is as soon as the dual
-  solutions satisfy `φ_g ∈ H²(Ω)` with `‖φ_g‖_{H²} ≤ C ‖g‖_{L²}`. This is the `H²` regularity of
-  the Dirichlet problem on a **convex polygon** (Grisvard, *Elliptic Problems in Nonsmooth
-  Domains*, Theorem 3.2.1.2), and it is the single missing piece: `Elliptic.regularity_dirichlet`
+  formalized abstractly: the backbone's `norm_map_sq_le_of_dual` and `norm_map_le_of_dual_approx`
+  (`Numlib/Variational/Galerkin.lean`) give `‖u - u_h‖_{L²} ≤ M δ ‖u - u_h‖_{H¹}` whenever every
+  dual solution `φ_g`, defined by `a(v, φ_g) = (g, v)_{L²}`, is approximated from `V_h` within
+  `δ ‖g‖_{L²}`. With (12.96), proved here as `property_12_2`, that yields (12.97) as soon as
+  `δ = C h`, that is as soon as the dual solutions satisfy `φ_g ∈ H²(Ω)` with
+  `‖φ_g‖_{H²} ≤ C ‖g‖_{L²}`. This is the `H²` regularity of the Dirichlet problem on a **convex
+  polygon** (Grisvard, *Elliptic Problems in Nonsmooth Domains*, Theorem 3.2.1.2), and it is the
+  single missing piece: `Elliptic.regularity_dirichlet`
   (`Numlib/Analysis/PDE/Elliptic/Regularity.lean`, Brezis Theorem 9.25) proves it on `C²` domains
-  with bounded boundary, and nothing proves it on a polygon. Convexity is not a technicality
-  there — at a re-entrant corner of angle `ω > π` the solution carries a singular part
-  `r^{π/ω} sin(πθ/ω) ∉ H²`, so the bound is false without it. The interpolation half is
-  available: `‖φ_g - Π_h φ_g‖_{H¹} ≤ C h |φ_g|_{H²}` is
-  `AtkinsonHan.Chapter10.theorem_10_3_9_lattice` at `m = 1`, `k = 1`, with `Π_h φ_g ∈ V_h` by
-  `Triangulation.exists_mem_polySpaceZero_globalInterp`. Estimate: ~100 lines here once that
-  regularity bound exists on a convex polygon; the regularity bound itself is research-scale
-  (`notes/frontier.md` blocker 18).
+  with bounded boundary, and nothing proves it on a polygon. Convexity is not a technicality there —
+  at a re-entrant corner of angle `ω > π` the solution carries a singular part
+  `r^{π/ω} sin(πθ/ω) ∉ H²`, so the bound is false without it. The interpolation half is available:
+  `‖φ_g - Π_h φ_g‖_{H¹} ≤ C h |φ_g|_{H²}` is `LagrangeElement.sobolevNorm_sub_globalInterp_le` at
+  `m = 1`, `k = 1`, with `Π_h φ_g ∈ V_h` by `LagrangeElement.exists_mem_polySpaceZero_globalInterp`.
+  Estimate: ~100 lines here once that regularity bound exists on a convex polygon; the regularity
+  bound itself is research-scale (`notes/frontier.md` blocker 18).
 
 Green's formula (12.95) on a *Lipschitz* plane domain in general is out of scope: it is proved on
 bounded `C¹` domains and on triangulated polygons (the boundary round of 2026-09-21,
@@ -374,10 +375,10 @@ end Green
 
 The two-dimensional finite element method of §12.6 on the triangulation scaffold of
 `Numlib/Geometry/Triangulation.lean`: the space `V_h` of (12.94) is `Triangulation.polySpaceZero`
-of `Numlib/Analysis/Sobolev/Triangulation.lean`, and Property 12.2 is Atkinson–Han's Theorem
-10.4.1 (`AtkinsonHan.Chapter10.theorem_10_4_1`, Céa's lemma with the interpolation estimate of
-Theorem 10.3.9) for the `ℙ_k` Lagrange element on the principal lattice
-(`AtkinsonHan.Chapter10.latticeNode`, `latticeShapeFun`), the element whose global basis is the
+of `Numlib/Analysis/Sobolev/Triangulation.lean`, and Property 12.2 is the backbone's
+`FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm` (Céa's lemma with the global
+interpolation estimate) for the `ℙ_k` Lagrange element on the principal lattice
+(`LagrangeElement.node`, `LagrangeElement.shape`), the element whose global basis is the
 Lagrange basis (8.36)–(8.37) of §8.5.2. -/
 
 section FiniteElement
@@ -425,9 +426,7 @@ theorem exists_mem_equation_12_94 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
 nodes of the `ℙ_k` Lagrange element (`Triangulation.finiteDimensional_polySpaceZero`). -/
 theorem finiteDimensional_equation_12_94 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {k : ℕ}
     (hk : 1 ≤ k) : FiniteDimensional ℝ (equation_12_94 𝒯 k) :=
-  𝒯.finiteDimensional_polySpaceZero 2 (AtkinsonHan.Chapter10.isConformingElement_lattice hk 𝒯)
-    (AtkinsonHan.Chapter10.latticeNode_mem_closure hk)
-    (AtkinsonHan.Chapter10.nodalInterp_lattice_eval hk)
+  LagrangeElement.finiteDimensional_polySpaceZero hk 𝒯 2
 
 /-- **Property 12.2, the estimate (12.96).** Let `u ∈ H¹₀(Ω)` be the exact solution of the Poisson
 problem (12.90), `∫_Ω ∇u · ∇v = ∫_Ω f v` for all `v ∈ H¹₀(Ω)`, on a polygon `Ω ⊆ B(0, R)`
@@ -441,18 +440,19 @@ representative `ũ` continuous up to the boundary with `ũ = 0` on `∂Ω`, then
 
 with `M = 1` the continuity constant of the form and `α₀ = (1 + (2R)²)⁻¹` its coercivity
 constant on `H¹₀(Ω)` (Poincaré's inequality), and `C` independent of `h` and of `u`. The book
-quotes the estimate from [QV94, Theorem 6.2.1]; it is Céa's lemma
-(`IsGalerkinSolution.norm_sub_le`) with `v_h = Π_h u` and the interpolation estimate of
-Atkinson–Han's Theorem 10.3.9 for the `ℙ_k` Lagrange element, packaged as
-`AtkinsonHan.Chapter10.theorem_10_4_1`; `Π_h u ∈ V_h` because the Lagrange element is conforming,
-polynomial and edge unisolvent, so that `Π_h ũ` vanishes on `∂Ω` with `ũ`
-(`Triangulation.exists_mem_polySpaceZero_globalInterp`). The regularity `u ∈ H^{l+1}(Ω)` is read on
-the continuous representative as in Theorem 10.3.9; the boundary condition `ũ = 0` on `∂Ω` is
-the problem's, a hypothesis on a polygon (on a `C¹` domain it follows from `u ∈ H¹₀(Ω)`). The
-`L²` estimate (12.97) is not formalized; see `## Not formalized here` in the module doc. -/
-theorem property_12_2 {k : ℕ} (hk : 1 ≤ k) {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι}
+quotes the estimate from [QV94, Theorem 6.2.1]; it is the backbone's
+`FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm`: Céa's lemma
+(`IsGalerkinSolution.norm_sub_le`) with `v_h = Π_h u` and the global interpolation estimate for
+the `ℙ_k` Lagrange element; `Π_h u ∈ V_h` because the Lagrange element is conforming, polynomial
+and edge unisolvent, so that `Π_h ũ` vanishes on `∂Ω` with `ũ`
+(`LagrangeElement.exists_mem_polySpaceZero_globalInterp`). The regularity `u ∈ H^{l+1}(Ω)` is read
+on the continuous representative, as in the interpolation estimates; the boundary condition
+`ũ = 0` on `∂Ω` is the problem's, a hypothesis on a polygon (on a `C¹` domain it follows from
+`u ∈ H¹₀(Ω)`). The `L²` estimate (12.97) is not formalized; see `## Not formalized here` in the
+module doc. The book's `k ≥ 1` is not a separate hypothesis: it follows from `1 ≤ l ≤ k`. -/
+theorem property_12_2 {k : ℕ} {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Triangulation Ω}
-    (hreg : AtkinsonHan.Chapter10.IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
+    (hreg : FiniteElement.IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
     {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) (hedge : ∀ i, (𝒯 i).FrontierSubsetEdges)
     {R : ℝ} (hR : 0 ≤ R) (hΩ : (Ω : Set 𝔼₂) ⊆ Metric.ball 0 R) {s : ℕ} (hs : 1 ≤ s) (hsk : s ≤ k) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼₂)))
@@ -468,46 +468,8 @@ theorem property_12_2 {k : ℕ} (hk : 1 ≤ k) {Ω : Opens 𝔼₂} {ι : Type*}
           MemSobolev ũ (s + 1) 2 Ω volume → ContinuousOn ũ (closure (Ω : Set 𝔼₂)) →
           EqOn ũ 0 (frontier (Ω : Set 𝔼₂)) →
           ∀ i, ‖u - uh i‖ ≤ (1 / (1 + (2 * R) ^ 2)⁻¹) * C * (𝒯 i).meshSize ^ s
-            * (sobolevNorm ũ (s + 1) 2 Ω volume).toReal := by
-  have hk0 : 0 < k := hk
-  have hpos : (0 : ℝ) < (1 + (2 * R) ^ 2)⁻¹ := by positivity
-  have hα : (0 : ℝ) < 1 + (2 * R) ^ 2 := by positivity
-  have h10 := AtkinsonHan.Chapter10.theorem_10_4_1 (k := s) hs
-    (AtkinsonHan.Chapter10.latticeNode k) (AtkinsonHan.Chapter10.latticeShapeFun k)
-    (AtkinsonHan.Chapter10.latticeNode_mem_closure hk0)
-    (fun i ↦ (AtkinsonHan.Chapter10.contDiff_latticeShapeFun k i).of_le (by simp))
-    (fun q hq x _ ↦ AtkinsonHan.Chapter10.nodalInterp_lattice_eval hk0 q (hq.trans hsk) x)
-    hreg hH (fun i ↦ AtkinsonHan.Chapter10.isConformingElement_lattice hk0 (𝒯 i))
-    (AtkinsonHan.Chapter10.poissonForm_isBoundedWith Ω) hpos
-    (AtkinsonHan.Chapter10.poissonForm_isEllipticWith Ω hR hΩ)
-  obtain ⟨c, hc0, hc⟩ := h10
-  refine ⟨c / (1 + (2 * R) ^ 2), by positivity, fun f u hu uh huh ũ hũ hũk hũc hũ0 i ↦ ?_⟩
-  have hint : ∀ i, ∃ w ∈ equation_12_94 (𝒯 i) k,
-      SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)]
-        (𝒯 i).globalInterp (AtkinsonHan.Chapter10.latticeNode k)
-          (AtkinsonHan.Chapter10.latticeShapeFun k) ũ := fun i ↦
-    (𝒯 i).exists_mem_polySpaceZero_globalInterp 2 (by simp)
-      (AtkinsonHan.Chapter10.isConformingElement_lattice hk0 (𝒯 i))
-      (fun i ↦ (AtkinsonHan.Chapter10.contDiff_latticeShapeFun k i).continuous)
-      (AtkinsonHan.Chapter10.isEdgeUnisolvent_lattice hk0)
-      (AtkinsonHan.Chapter10.latticeShapeFun_eq_eval k) (hedge i) hũ0
-  have h := hc (AtkinsonHan.Chapter10.poissonLoad Ω f) u hu (fun i ↦ equation_12_94 (𝒯 i) k) uh
-    huh ũ hũ hũk hũc hint i
-  refine h.trans ?_
-  -- the seminorm is bounded by the norm, and `(M/α₀) C = c`
-  have hfin : sobolevNorm ũ (s + 1) 2 Ω volume ≠ ⊤ := by
-    refine ne_top_of_le_ne_top ?_ (hũk.sobolevNorm_le_sum_sobolevSeminorm (by simp))
-    exact ENNReal.sum_ne_top.2 fun n _ ↦
-      (hũk.mono_order (by exact_mod_cast Nat.lt_succ_iff.1 n.2)).sobolevSeminorm_ne_top
-  have hle : (sobolevSeminorm ũ (s + 1) 2 Ω volume).toReal
-      ≤ (sobolevNorm ũ (s + 1) 2 Ω volume).toReal :=
-    ENNReal.toReal_mono hfin
-      (eLpNorm_weakIteratedFDeriv_le_sobolevNorm (by simp) (by simp) le_rfl)
-  have hh0 : 0 ≤ (𝒯 i).meshSize := (𝒯 i).meshSize_nonneg
-  have hcc : 1 / (1 + (2 * R) ^ 2)⁻¹ * (c / (1 + (2 * R) ^ 2)) = c := by
-    field_simp
-  rw [hcc]
-  gcongr
+            * (sobolevNorm ũ (s + 1) 2 Ω volume).toReal :=
+  FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm hs hsk hreg hH hedge hR hΩ
 
 end FiniteElement
 

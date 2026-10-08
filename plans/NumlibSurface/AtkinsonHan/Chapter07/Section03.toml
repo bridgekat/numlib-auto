@@ -184,10 +184,6 @@ id = "example_7_3_16"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.3.16'
 
 [[node]]
-id = "fact_one_le_two_coe"
-source = "the exponent `p = 2` in the backbone's form `((2 : ℝ≥0) : ℝ≥0∞)`, for Corollary 7.3.18"
-
-[[node]]
 id = "theorem_7_3_17"
 source = "Theorem 7.3.17"
 

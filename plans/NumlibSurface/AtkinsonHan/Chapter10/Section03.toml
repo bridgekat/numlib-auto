@@ -65,9 +65,6 @@ id = "q1Node_mem_closure"
 id = "contDiff_q1Shape"
 
 [[node]]
-id = "memSobolev_of_contDiff"
-
-[[node]]
 id = "memSobolev_q1Shape"
 
 [[node]]
@@ -79,29 +76,6 @@ id = "example_10_3_8_square"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.3.8 (on the unit square, Q₁ elements)"
 
 [[node]]
-id = "eqOn_closure_of_ae_eq_of_continuousOn"
-
-[[node]]
-id = "nodalInterp_eq_sum_smul"
-
-[[node]]
-id = "memSobolev_nodalInterp"
-
-[[node]]
-id = "sobolevSeminorm_nodalInterp_le"
-
-[[node]]
-id = "sobolevSeminorm_sum_apply_smul_le"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.3 (the boundedness of Π̂)"
-
-[[node]]
-id = "continuous_eval_coords"
-
-[[node]]
-id = "sum_apply_smul_ae_eq_fn_of_mem_polynomialSubmodule"
-source = "Atkinson–Han, Theoretical Numerical Analysis, (10.3.4), the polynomial invariance"
-
-[[node]]
 id = "theorem_10_3_3"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.3"
 
@@ -110,23 +84,8 @@ id = "theorem_10_3_4"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.4"
 
 [[node]]
-id = "affine_leftInverse"
-
-[[node]]
-id = "isBounded_image_affine"
-
-[[node]]
-id = "abs_det_rpow_half_mul_rpow_neg_half"
-
-[[node]]
 id = "theorem_10_3_5"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.5"
-
-[[node]]
-id = "memSobolev_comp_affine_inv"
-
-[[node]]
-id = "pow_div_pow_le_of_le_mul"
 
 [[node]]
 id = "corollary_10_3_7"

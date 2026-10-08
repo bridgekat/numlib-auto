@@ -3,54 +3,24 @@ Atkinson–Han, Chapter 10: finite element analysis. Four sections: one-dimensio
 (10.1), triangulations, shape functions and affine-equivalent families (10.2), interpolation error
 estimates via the reference element (10.3), and convergence of the finite element solution (10.4).
 
-**Which results are out of scope, precisely.** The chapter is not uniformly Sobolev-bound, and an
-earlier version of this plan said it was. Nor is the Sobolev *space* the obstruction any longer:
-`H^m(Ω)` over an open set is `AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` with the seminorm
-`definition_7_2_2_multiIndex_norm`, and `H¹₀(Ω)` is `definition_7_2_9`, all proved. What is missing
-is the §7.3 structure theory over them, and one item below needs not even that. The results that
-still wait on Sobolev work of some kind are
+The general theory is the backbone's `Numlib/FiniteElement/`: the `ℙ_k` Lagrange element on the
+principal lattice (`LagrangeElement`, Proposition 10.2.1 and the conformity of Example 10.2.3),
+the reference-element estimates (`Interpolation`: Theorems 10.3.3, 10.3.5 and 10.3.9, Corollary
+10.3.7, Definition 10.3.6, Lemma 10.2.2) and Céa plus interpolation on a triangulation
+(`Triangle`: Theorem 10.4.1 and the Poisson error estimate of Example 10.4.2), on the
+triangulation scaffold of `Numlib/Geometry/Triangulation.lean` and
+`Numlib/Analysis/Sobolev/Triangulation.lean`. The section files restate each numbered result in
+the book's terms — its `BilinForm` and `GalerkinProblem` of Chapters 8 and 9, its mesh parameter
+`meshSize` — and prove it by delegation. What is the book's own stays here: the §10.1 algebra, the
+low-degree nodal representations (10.2.23), Exercises 10.2.1 and 10.2.3, Example 10.2.3, Theorem
+10.3.1, Theorem 10.3.4, Exercise 10.3.3, Example 10.3.8 and its `Q₁` counterpart, the
+Aubin–Nitsche lemma (Theorem 10.4.3) with Corollary 10.4.4 in abstract form, and Exercise 10.4.5.
 
-* Theorem 10.3.3, `|v̂ − Π̂ v̂|_{m,K̂} ≤ c |v̂|_{k+1,K̂}`, which needs the embedding
-  `H^{k+1}(K̂) ↪ C(K̂)` (Theorem 7.3.7) and the Bramble–Hilbert estimate (Theorem 7.3.17, resting
-  on Deny–Lions, Theorem 7.3.12), all three of them open;
-* Theorem 10.3.4, the transformation `|v̂|_{m,K̂} ≤ c ‖T_K‖^m |det T_K|^{−1/2} |v|_{m,K}` of an `H^m`
-  seminorm under an affine change of variables. This one needs no §7.3 result at all: it is the
-  chain rule for a weak derivative along an affine map, of which
-  `HasWeakIteratedLineDerivOn.contDiff_comp` (`Numlib/Analysis/Sobolev/Mollification.lean`) is the
-  first-order form, plus the Jacobian factor in the `L²` norm. It is simply unwritten;
-* Theorem 10.3.5 and Corollary 10.3.7, which combine those two with Lemma 10.2.2, and
-  Example 10.3.8, which is Corollary 10.3.7 at `k = 1` on a triangle;
-* Theorem 10.3.9, the global bound, which adds the additivity of the `H^m` norm over a
-  triangulation;
-* Theorem 10.4.1 and (10.4.11), the convergence orders, which are Céa's inequality plus 10.3.9,
-  and Example 10.4.2, which is Theorem 10.4.1 for `-Δu = f` with `u = 0` on the boundary;
-  the *abstract* half of 10.4.1 is already `Chapter09.corollary_9_1_4`, and what is missing there is
-  only the density of the finite element spaces in `H¹`;
-* Corollary 10.4.4 in the book's own form, whose hypothesis (10.4.9) is `H²` elliptic regularity;
-* the concrete finite element spaces themselves — the model problems of §10.1 and §10.2, the
-  triangulation axioms (1)–(4), and every exercise and example that names a domain.
-
-Everything else in the chapter was merely unwritten. It needs no Sobolev space at all:
-
-* **Lemma 10.2.2** (`Chapter10/Section02`) is metric geometry: a ball of diameter `ρ̂` inside `K̂`
-  and an affine image inside a `K` of diameter `h_K` give `‖T_K‖ ≤ h_K/ρ̂`.
-* **Theorem 10.3.1** (`Chapter10/Section03`) is two lines of algebra: nodal interpolation commutes
-  with a change of variables that carries the nodes and the shape functions along.
-* **Definition 10.3.6** (`Chapter10/Section03`) needs only a diameter and an inscribed ball, and
-  **Example 10.3.2** only barycentric coordinates.
-* **§10.1's algebra** (`Chapter10/Section01`) — the Schur complement of Exercise 10.1.2, the cubic
-  Hermite shape functions of §10.1.3, and the two-element bump of Exercise 10.1.3.
-* **The nodal representation formulas** (`Chapter10/Section02`) — (10.2.23) for `ℙ₂` on the reference
-  triangle, Exercise 10.2.1 for `ℙ₃` on the principal lattice `N̂₃`, and Exercise 10.2.3 for `ℚ_{1,1}`
-  on the reference square, each with the duality of its shape functions to its nodes, which is what
-  the book derives them from.
-* Still open, and open for reasons of *algebra* or of missing Mathlib vocabulary rather than of
-  Sobolev theory: Proposition 10.2.1 (unisolvence of `ℙ_k` on the principal lattice for every `k`;
-  its cases `k = 2, 3` are the two formulas above), Exercise 10.3.3 (the angle criterion, which
-  wants an inradius Mathlib does not have), Exercise 10.4.5 (the Laplacian in polar coordinates),
-  and (10.1.9), the condition number of `tridiag(−1, 2, −1)`, whose eigenvalues the backbone *does*
-  have.
-
-The entries in `Chapter10/Section01.toml`, `Section02.toml`, `Section03.toml` and `Section04.toml`
-carry each obstruction.
+The reference element is assumed to be a Sobolev extension domain (the reference triangle and the
+unit square are proved to be), and functions of `H^{k+1}` are read on a representative continuous
+up to the boundary. Out of scope: the model Neumann problems of §10.1–10.2, whose boundary terms
+need traces on a general boundary; Exercise 10.2.5; Corollary 10.4.4 in the book's form, whose
+hypothesis (10.4.9) is `H²` regularity on a convex polygon (`notes/frontier.md` blocker 18); and
+the exercises that name a domain. The entries in `Chapter10/Section0{1,2,3,4}.toml` carry each
+item.
 '''

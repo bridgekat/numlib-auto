@@ -3,6 +3,7 @@ import Numlib.Analysis.Sobolev.Friedrichs
 import Numlib.Analysis.Sobolev.SeminormCompare
 import Numlib.Analysis.Sobolev.Zero
 import Numlib.Geometry.Triangulation
+import Numlib.MeasureTheory.Function.ContinuousOnClosure
 
 /-!
 # Sobolev functions on a triangulated domain
@@ -543,14 +544,6 @@ is unique (two continuous functions agreeing almost everywhere on the open set `
 `Ω̄`), it satisfies `v = Π_h v` on `Ω̄` (`ℙ_k` reproduction on each element), and `Π_h v` depends
 on the nodal values of `v` only. -/
 
-omit 𝒯 in
-/-- Two functions continuous on `Ω̄` that are almost everywhere equal on `Ω` agree on `Ω̄`. -/
-theorem eqOn_closure_of_ae_eq {v v' : 𝔼₂ → ℝ} (h : v =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v')
-    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hv' : ContinuousOn v' (closure (Ω : Set 𝔼₂))) :
-    EqOn v v' (closure (Ω : Set 𝔼₂)) :=
-  (Measure.eqOn_open_of_ae_eq h Ω.isOpen (hv.mono subset_closure)
-    (hv'.mono subset_closure)).of_subset_closure hv hv' subset_closure subset_rfl
-
 /-- **`ℙ_k` reproduction on the elements**: for a conforming element with nodes in the closed
 reference triangle whose reference interpolant reproduces every polynomial of total degree at
 most `k`, the global interpolant of a piecewise polynomial of degree at most `k` is that
@@ -595,8 +588,8 @@ theorem polySpaceRep_eqOn {k : ℕ} (w : 𝒯.polySpace p k) {v : 𝔼₂ → �
     (hvw : SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω)
       =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v) :
     EqOn (𝒯.polySpaceRep p w) v (closure (Ω : Set 𝔼₂)) :=
-  eqOn_closure_of_ae_eq ((𝒯.fn_ae_eq_polySpaceRep p w).symm.trans hvw)
-    (𝒯.continuousOn_polySpaceRep p w) hv
+  (𝒯.continuousOn_polySpaceRep p w).eqOn_closure_of_ae_eq Ω.isOpen hv
+    ((𝒯.fn_ae_eq_polySpaceRep p w).symm.trans hvw)
 
 /-- **The nodal values of an element of `X_h`**, as a linear map into `ℝ^{𝒯.elems × I}`: the
 values of the continuous representative at the nodes `F_K x̂ᵢ` of the elements. -/

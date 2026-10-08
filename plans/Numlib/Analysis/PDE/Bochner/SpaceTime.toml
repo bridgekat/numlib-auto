@@ -4,9 +4,6 @@ namespace = "Bochner"
 id = "continuousOn_prod_of_forall_norm_sub_le"
 
 [[node]]
-id = "eqOn_closure_of_ae_eq"
-
-[[node]]
 id = "continuousOn_spaceTime_of_contDiffOnThrough"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Corollary 10.5"
 

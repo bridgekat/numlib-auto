@@ -447,6 +447,9 @@ import Numlib.FiniteDifference.Parabolic
 import Numlib.FiniteDifference.Stencil
 import Numlib.FiniteDifference.TwoLevel
 import Numlib.FiniteDifference.VonNeumann
+import Numlib.FiniteElement.Interpolation
+import Numlib.FiniteElement.LagrangeElement
+import Numlib.FiniteElement.Triangle
 import Numlib.FloatingPoint.Givens
 import Numlib.FloatingPoint.Householder
 import Numlib.FloatingPoint.InnerProduct

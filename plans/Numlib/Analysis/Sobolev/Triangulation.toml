@@ -92,9 +92,6 @@ id = "Triangulation.mem_polySpace_iff"
 id = "Triangulation.exists_mem_polySpace"
 
 [[node]]
-id = "Triangulation.eqOn_closure_of_ae_eq"
-
-[[node]]
 id = "Triangulation.globalInterp_eqOn_closure_of_isPiecewisePoly"
 
 [[node]]

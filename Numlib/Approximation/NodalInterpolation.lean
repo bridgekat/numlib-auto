@@ -1,4 +1,5 @@
 import Mathlib.Algebra.BigOperators.Module
+import Mathlib.Algebra.BigOperators.Pi
 
 /-!
 # Nodal interpolation and the reference element
@@ -80,5 +81,13 @@ theorem nodalInterp_comp (x : ι → α) (φ : ι → α → 𝕜) (v : β → M
     nodalInterp (F ∘ x) (fun i => φ i ∘ G) v ∘ F = nodalInterp x φ (v ∘ F) := by
   funext y
   simp [nodalInterp, hG y]
+
+omit [Semiring 𝕜] [AddCommMonoid M] [Module 𝕜 M] in
+/-- For scalar data the interpolant is a linear combination of the shape functions:
+`nodalInterp x φ v = ∑ i, v (x i) • φ i` ([han2009theoretical], (10.3.1)). -/
+theorem nodalInterp_eq_sum_smul {R : Type*} [CommSemiring R] (x : ι → α) (φ : ι → α → R)
+    (v : α → R) : nodalInterp x φ v = ∑ i, v (x i) • φ i := by
+  funext y
+  simp [nodalInterp_apply, Finset.sum_apply, mul_comm]
 
 end Approximation

@@ -638,8 +638,8 @@ and every `x ∈ Ω̄`,
 `T`. The regularity hypothesis `max_T h_T/ρ_T ≤ σ` of the book is not needed in the sup norm
 (it is inherited from the Sobolev-norm version of the cited theorem, [QV94] Remark 3.4.2); the
 `ℙ_k` Lagrange element on the principal lattice satisfies the hypotheses on the reference
-basis (Atkinson–Han, `Chapter10/Section02`: `latticeShapeFun_isNodalBasis`,
-`nodalInterp_lattice_eval`, `isConformingElement_lattice`). -/
+basis (`Numlib/FiniteElement/LagrangeElement.lean`: `LagrangeElement.isNodalBasis`,
+`LagrangeElement.nodalInterp_eval`, `LagrangeElement.isConformingElement`). -/
 theorem equation_8_40 {I : ℕ} {k : ℕ} {xhat : Fin I → 𝔼₂}
     (hx : ∀ i, xhat i ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂))
     {φhat : Fin I → 𝔼₂ → ℝ} (hnodal : Approximation.IsNodalBasis xhat φhat)

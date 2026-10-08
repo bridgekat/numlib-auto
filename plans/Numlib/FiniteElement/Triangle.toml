@@ -1,0 +1,16 @@
+namespace = "FiniteElement"
+
+[[node]]
+id = "exists_norm_le_sobolevNorm"
+
+[[node]]
+id = "norm_sub_le_of_isGalerkinSolution"
+source = "[han2009theoretical] Theorem 10.4.1, (10.4.4)"
+
+[[node]]
+id = "tendsto_norm_sub_of_isGalerkinSolution"
+source = "[han2009theoretical] Theorem 10.4.1"
+
+[[node]]
+id = "norm_sub_le_of_isGalerkinSolution_dirichletForm"
+source = "[han2009theoretical] Example 10.4.2; [quarteroni2000numerical] Property 12.2, (12.96)"

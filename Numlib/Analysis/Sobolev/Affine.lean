@@ -39,6 +39,10 @@ dimensional factor, because `∂^m (v ∘ F)(x) = ∂^m v (F x) ∘ (T, …, T)`
   `L^p` and of `W^{m,p}` transports along `F`, at every order `m : ℕ∞` and every exponent, the
   weak derivatives being `x ↦ ∂^n v (F x) ∘ (T, …, T)` (`HasWeakIteratedFDerivOn.comp_affineEquiv`).
 * `sobolevSeminorm_comp_affine_le`: the estimate (10.3.5) for the tensor seminorm and every `p`.
+* `sobolevSeminorm_comp_affine_le_of_image`, `sobolevSeminorm_le_comp_affine_of_image`: (10.3.5)
+  and (10.3.6) at `p = 2` with the reference set written as `K̂` and `K = F(K̂)` its image, the
+  form the finite element estimates take them in; `memSobolev_comp_affine_inv` transports
+  `W^{m,p}(K̂)` to `W^{m,p}(K)` along `F⁻¹`.
 * `ContinuousLinearEquiv.det_symm_eq_inv`: `det T⁻¹ = (det T)⁻¹`.
 * `closure_affinePreimage`, `ContinuousOn.comp_affine_closure`: the closure of `F⁻¹(Ω)` is
   `F⁻¹(closure Ω)`, so a function continuous on `closure Ω` composes to one continuous on
@@ -199,6 +203,86 @@ theorem ContinuousLinearEquiv.det_symm_eq_inv (T : E ≃L[ℝ] E) :
   have : (T.symm : E →ₗ[ℝ] E).comp (T : E →ₗ[ℝ] E) = LinearMap.id :=
     LinearMap.ext fun x ↦ T.symm_apply_apply x
   rw [this, LinearMap.det_id]
+
+/-! ### The change of variables between a reference set and its affine image -/
+
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
+/-- The image of a bounded set under the affine map `F x = T x + c` is bounded. -/
+theorem isBounded_image_affine (T : E ≃L[ℝ] E) (c : E) {s : Set E}
+    (hs : Bornology.IsBounded s) : Bornology.IsBounded ((fun x ↦ T x + c) '' s) :=
+  ((isometry_add_right c).lipschitzWith.comp (T : E →L[ℝ] E).lipschitzWith).isBounded_image hs
+
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
+/-- `|det T|^{1/2} · |det T|^{-1/2} = 1` for a continuous linear equivalence `T`. -/
+theorem abs_det_rpow_half_mul_rpow_neg_half (T : E ≃L[ℝ] E) :
+    |LinearMap.det (T : E →ₗ[ℝ] E)| ^ (1 / 2 : ℝ)
+      * |LinearMap.det (T : E →ₗ[ℝ] E)| ^ (-(1 / 2 : ℝ)) = 1 := by
+  have hdet : 0 < |LinearMap.det (T : E →ₗ[ℝ] E)| :=
+    abs_pos.2 (LinearEquiv.isUnit_det' T.toLinearEquiv).ne_zero
+  rw [Real.rpow_neg hdet.le, mul_inv_cancel₀ (Real.rpow_pos_of_pos hdet _).ne']
+
+/-- The constants of the affine change of variables in `ℝ≥0∞` at `p = 2`:
+`ofReal (a^m) * ofReal |x| ^ (1/2) = ofReal (a^m |x|^{1/2})`. -/
+theorem ofReal_pow_mul_ofReal_abs_rpow {a : ℝ} (ha : 0 ≤ a) (m : ℕ) (x : ℝ) :
+    ENNReal.ofReal (a ^ m) * ENNReal.ofReal |x| ^ (1 / (2 : ℝ≥0∞)).toReal
+      = ENNReal.ofReal (a ^ m * |x| ^ (1 / 2 : ℝ)) := by
+  have h2 : (1 / (2 : ℝ≥0∞)).toReal = 1 / 2 := by norm_num
+  rw [h2, ENNReal.ofReal_rpow_of_nonneg (abs_nonneg _) (by norm_num),
+    ← ENNReal.ofReal_mul (pow_nonneg ha m)]
+
+/-- **Functions transported from a reference set to its affine image**: if `φ ∈ W^{m,p}(K̂)` and
+`K = F(K̂)` for `F x = T x + c`, then `φ ∘ F⁻¹ ∈ W^{m,p}(K)`, `memSobolev_comp_affine` for the
+inverse map `y ↦ T⁻¹(y − c)`. -/
+theorem memSobolev_comp_affine_inv [NormedSpace ℝ G] (T : E ≃L[ℝ] E) (c : E) {Khat K : Opens E}
+    (hK : (fun x ↦ T x + c) '' Khat = K) {φ : E → G} {m : ℕ∞} {p : ℝ≥0∞}
+    (hφ : MemSobolev φ m p Khat μ) :
+    MemSobolev (φ ∘ fun y ↦ T.symm (y - c)) m p K μ := by
+  have hKhat : Khat = affinePreimage T c K := (affinePreimage_eq_of_image_eq T c hK).symm
+  have h := memSobolev_comp_affine T.symm (-T.symm c) hφ
+  rw [hKhat, affinePreimage_symm] at h
+  refine h.congr_ae (Filter.Eventually.of_forall fun y ↦ ?_)
+  simp [sub_eq_add_neg]
+
+/-- **The seminorm of the pullback to the reference set** ([han2009theoretical] (10.3.5) at
+`p = 2`): for `K = F(K̂)`, `F x̂ = T x̂ + c`, and `v ∈ H^m(K)`,
+`|v ∘ F|_{m,K̂} ≤ ‖T‖^m |det T|^{-1/2} |v|_{m,K}`. It is `sobolevSeminorm_comp_affine_le` with
+`K̂` written as the preimage of `K`. -/
+theorem sobolevSeminorm_comp_affine_le_of_image [NormedSpace ℝ G] [CompleteSpace G]
+    (T : E ≃L[ℝ] E) (c : E) {Khat K : Opens E} (hK : (fun x ↦ T x + c) '' Khat = K) {m : ℕ}
+    {v : E → G} (hv : MemSobolev v m 2 K μ) :
+    sobolevSeminorm (fun x ↦ v (T x + c)) m 2 Khat μ
+      ≤ ENNReal.ofReal (‖(T : E →L[ℝ] E)‖ ^ m * |LinearMap.det (T : E →ₗ[ℝ] E)| ^ (-(1 / 2 : ℝ)))
+        * sobolevSeminorm v m 2 K μ := by
+  have hKhat : Khat = affinePreimage T c K := (affinePreimage_eq_of_image_eq T c hK).symm
+  subst hKhat
+  refine (sobolevSeminorm_comp_affine_le T c hv).trans (le_of_eq ?_)
+  rw [← mul_assoc, ofReal_pow_mul_ofReal_abs_rpow (norm_nonneg _), abs_inv,
+    Real.inv_rpow (abs_nonneg _), ← Real.rpow_neg (abs_nonneg _)]
+
+/-- **The seminorm on the image by that of the pullback** ([han2009theoretical] (10.3.6) at
+`p = 2`): for `K = F(K̂)`, `F x̂ = T x̂ + c`, and `v ∈ H^m(K)`,
+`|v|_{m,K} ≤ ‖T⁻¹‖^m |det T|^{1/2} |v ∘ F|_{m,K̂}`, `sobolevSeminorm_comp_affine_le_of_image`
+for `F⁻¹`. -/
+theorem sobolevSeminorm_le_comp_affine_of_image [NormedSpace ℝ G] [CompleteSpace G]
+    (T : E ≃L[ℝ] E) (c : E) {Khat K : Opens E} (hK : (fun x ↦ T x + c) '' Khat = K) {m : ℕ}
+    {v : E → G} (hv : MemSobolev v m 2 K μ) :
+    sobolevSeminorm v m 2 K μ
+      ≤ ENNReal.ofReal
+          (‖(T.symm : E →L[ℝ] E)‖ ^ m * |LinearMap.det (T : E →ₗ[ℝ] E)| ^ (1 / 2 : ℝ))
+        * sobolevSeminorm (fun x ↦ v (T x + c)) m 2 Khat μ := by
+  have hKhat : Khat = affinePreimage T c K := (affinePreimage_eq_of_image_eq T c hK).symm
+  subst hKhat
+  have h' : MemSobolev (fun x ↦ v (T x + c)) m 2 (affinePreimage T c K) μ :=
+    memSobolev_comp_affine T c hv
+  have key := sobolevSeminorm_comp_affine_le T.symm (-T.symm c) h'
+  rw [affinePreimage_symm] at key
+  have hfun : (fun y ↦ v (T (T.symm y + -T.symm c) + c)) = v := by
+    funext y
+    simp
+  rw [hfun] at key
+  refine key.trans (le_of_eq ?_)
+  rw [← mul_assoc, ofReal_pow_mul_ofReal_abs_rpow (norm_nonneg _),
+    ContinuousLinearEquiv.det_symm_eq_inv, inv_inv]
 
 end Affine
 

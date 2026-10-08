@@ -1,0 +1,14 @@
+desc = '''
+The finite element method — reference elements and their nodal interpolation, interpolation
+error estimates on affine families and regular meshes, and the a priori error of the Galerkin
+method on finite element spaces.
+
+`LagrangeElement` is the `ℙ_k` Lagrange element on the principal lattice of the reference
+triangle (unisolvence, conformity, edge unisolvence); `Interpolation` is the reference-element
+technique (Bramble–Hilbert on the reference element, affine transport, regular families, the
+global estimate on a `Triangulation`); `Triangle` is Céa plus interpolation on a triangulated
+polygon, with the Poisson problem as the instance both [han2009theoretical] Example 10.4.2 and
+[quarteroni2000numerical] Property 12.2 restate. The scaffold they build on is
+`Numlib/Geometry/Triangulation.lean` and `Numlib/Analysis/Sobolev/Triangulation.lean`; the
+one-dimensional `Variational/FiniteElementInterval.lean` will move here afterwards.
+'''

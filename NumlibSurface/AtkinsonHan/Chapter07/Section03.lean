@@ -2000,11 +2000,6 @@ theorem example_7_3_15 (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (
 
 section PoincareFriedrichs
 
-/-- `1 ≤ 2` for the exponent `p = 2` written in the backbone's form `((2 : ℝ≥0) : ℝ≥0∞)`, the
-form in which the Euclidean theorems of `Numlib/Analysis/Sobolev/DenyLions.lean` (which take
-`p : ℝ≥0`) return statements at `p = 2`. -/
-instance fact_one_le_two_coe : Fact (1 ≤ ((2 : ℝ≥0) : ℝ≥0∞)) := ⟨by norm_num⟩
-
 local notation "𝟚" => ((2 : ℝ≥0) : ℝ≥0∞)
 
 /-- An element of `H¹(Ω)` which is almost everywhere a polynomial of degree `≤ 0` is almost

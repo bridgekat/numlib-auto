@@ -1,5 +1,6 @@
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Variational.Galerkin
+import Numlib.FiniteElement.Triangle
 import NumlibSurface.AtkinsonHan.Chapter09.Section01
 import NumlibSurface.AtkinsonHan.Chapter10.Section03
 
@@ -42,9 +43,16 @@ hypothesis), so that an interpolant vanishing at the boundary nodes vanishes on 
   density of `H^{k+1}(Ω) ∩ C(Ω̄)` in `V` with interpolants in the `V_h`.
 * `example_10_4_2` — the Dirichlet problem for the Poisson equation with the `ℙ_k` Lagrange
   element: the weak problem on `H¹₀(Ω)` and its discretization on `V_h` each have a unique
-  solution, and `‖u − u_h‖_{1,Ω} ≤ c h^k ‖u‖_{k+1,Ω}`; `isEdgeUnisolvent_lattice` is the
-  edge argument that puts `Π_h u` in `V_h`, and `poissonForm`, `poissonLoad` the form and the
-  load of the problem.
+  solution, and `‖u − u_h‖_{1,Ω} ≤ c h^k ‖u‖_{k+1,Ω}`; `poissonForm`, `poissonLoad` are the form
+  and the load of the problem.
+
+Theorem 10.4.1 and the error estimate of Example 10.4.2 are restatements of the backbone's
+`Numlib/FiniteElement/Triangle.lean` (`FiniteElement.norm_sub_le_of_isGalerkinSolution`,
+`FiniteElement.tendsto_norm_sub_of_isGalerkinSolution`,
+`FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm`), stated there with the backbone's
+`SesqForm` and `IsGalerkinSolution`; the book's `BilinForm` and `GalerkinProblem` are bridged
+through `BilinForm.toCLM` (`BilinForm.isBoundedWith_toCLM`,
+`BilinForm.isEllipticWith_iff_isCoerciveWith`).
 * `DualProblem` — the dual (adjoint) problem (10.4.4) `a(v, φ_g) = (g, ι v)_H`.
 * `norm_le_of_dualProblem` — its Lax–Milgram stability estimate `‖φ_g‖ ≤ (‖ι‖/c₀) ‖g‖`, which is
   what makes the supremum in (10.4.5) finite.
@@ -275,60 +283,6 @@ open Filter MeasureTheory Set TopologicalSpace EuclideanSpace Topology
 open scoped ENNReal
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
-
-/-- The norm of `H¹(Ω)` (the multi-index space of Definition 7.2.2) is bounded by the tensor
-Sobolev norm `‖·‖_{1,Ω}` of the function, up to a constant depending on the dimension only:
-`SobolevMultiIndex.ofReal_norm_le_sobolevNorm` in real form. -/
-theorem exists_norm_le_sobolevNorm (Ω : Opens 𝔼₂) :
-    ∃ C : ℝ, 0 ≤ C ∧ ∀ w : SobolevEuclidean 2 1 2 Ω,
-      ‖w‖ ≤ C * (sobolevNorm (SobolevMultiIndex.fn w) 1 2 Ω volume).toReal := by
-  obtain ⟨C₂, hC₂fin, hC₂⟩ : ∃ C₂ : ℝ≥0∞, C₂ ≠ ⊤ ∧ ∀ w : SobolevEuclidean 2 1 2 Ω,
-      ENNReal.ofReal ‖w‖ ≤ C₂ * sobolevNorm (SobolevMultiIndex.fn w) 1 2 Ω volume :=
-    ⟨_, ENNReal.add_ne_top.2 ⟨ENNReal.one_ne_top, ENNReal.sum_ne_top.2 fun _ _ ↦ enorm_ne_top⟩,
-      fun w ↦ SobolevMultiIndex.ofReal_norm_le_sobolevNorm (by simp) w⟩
-  refine ⟨C₂.toReal, ENNReal.toReal_nonneg, fun w ↦ ?_⟩
-  have hfin : sobolevNorm (SobolevMultiIndex.fn w) 1 2 Ω volume ≠ ⊤ := by
-    refine ne_top_of_le_ne_top ?_
-      ((SobolevMultiIndex.memSobolev_fn w).sobolevNorm_le_sum_sobolevSeminorm (by simp))
-    exact ENNReal.sum_ne_top.2 fun n _ ↦ ((SobolevMultiIndex.memSobolev_fn w).mono_order
-      (by exact_mod_cast Nat.lt_succ_iff.1 n.2)).sobolevSeminorm_ne_top
-  have h := ENNReal.toReal_mono (ENNReal.mul_ne_top hC₂fin hfin) (hC₂ w)
-  rwa [ENNReal.toReal_ofReal (norm_nonneg _), ENNReal.toReal_mul] at h
-
-/-- The distance in a subspace `V ⊆ H¹(Ω)` between two elements is bounded by the tensor
-Sobolev norm of the difference of their functions. -/
-theorem norm_sub_le_of_fn_ae_eq {Ω : Opens 𝔼₂} {C : ℝ}
-    (hC : ∀ w : SobolevEuclidean 2 1 2 Ω,
-      ‖w‖ ≤ C * (sobolevNorm (SobolevMultiIndex.fn w) 1 2 Ω volume).toReal)
-    {V : Submodule ℝ (SobolevEuclidean 2 1 2 Ω)} (w wh : V) {w' g : 𝔼₂ → ℝ}
-    (hw : SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω)
-      =ᵐ[volume.restrict (Ω : Set 𝔼₂)] w')
-    (hwh : SobolevMultiIndex.fn (wh : SobolevEuclidean 2 1 2 Ω)
-      =ᵐ[volume.restrict (Ω : Set 𝔼₂)] g) :
-    ‖w - wh‖ ≤ C * (sobolevNorm (w' - g) 1 2 Ω volume).toReal := by
-  have hfn : SobolevMultiIndex.fn ((w : SobolevEuclidean 2 1 2 Ω) - (wh : SobolevEuclidean 2 1 2 Ω))
-      =ᵐ[volume.restrict (Ω : Set 𝔼₂)] w' - g := by
-    refine (SobolevMultiIndex.fn_sub _ _).trans ?_
-    filter_upwards [hw, hwh] with x h1 h2
-    simp only [Pi.sub_apply, h1, h2]
-  have h := hC ((w : SobolevEuclidean 2 1 2 Ω) - (wh : SobolevEuclidean 2 1 2 Ω))
-  rw [sobolevNorm_congr_ae hfn] at h
-  exact h
-
-/-- The global interpolation estimate (10.3.13) at `m = 1`, in real form:
-`‖v − Π_h v‖_{1,Ω} ≤ c h^k |v|_{k+1,Ω}`. -/
-theorem toReal_sobolevNorm_sub_globalInterp_le {k : ℕ} {I : ℕ} {xhat : Fin I → 𝔼₂}
-    {φhat : Fin I → 𝔼₂ → ℝ} {Ω : Opens 𝔼₂} {𝒯 : Triangulation Ω} {c : ℝ} (hc : 0 ≤ c)
-    {v : 𝔼₂ → ℝ} (hv : MemSobolev v (k + 1) 2 Ω volume)
-    (h : sobolevNorm (v - 𝒯.globalInterp xhat φhat v) 1 2 Ω volume
-      ≤ ENNReal.ofReal (c * 𝒯.meshSize ^ (k + 1 - 1)) * sobolevSeminorm v (k + 1) 2 Ω volume) :
-    (sobolevNorm (v - 𝒯.globalInterp xhat φhat v) 1 2 Ω volume).toReal
-      ≤ c * 𝒯.meshSize ^ k * (sobolevSeminorm v (k + 1) 2 Ω volume).toReal := by
-  have h' := ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofReal_ne_top
-    hv.sobolevSeminorm_ne_top) h
-  rwa [ENNReal.toReal_mul, Nat.add_sub_cancel,
-    ENNReal.toReal_ofReal (mul_nonneg hc (pow_nonneg 𝒯.meshSize_nonneg k))] at h'
-
 /-- **Theorem 10.4.1**, the error estimate (10.4.4). Let `V ⊆ H¹(Ω)` be a subspace carrying a
 bounded, `V`-elliptic bilinear form `a` (the assumptions of the Lax–Milgram lemma), let `{𝒯_h}`
 be a regular family of triangulations of `Ω` with mesh parameters at most `H`, and let the
@@ -344,11 +298,12 @@ finite element spaces of piecewise polynomials of degree at most `k`. Then there
 
 The proof is the book's: Céa's inequality (10.4.3) with `v_h = Π_h u`
 (`Chapter09.proposition_9_1_3_le`), then the interpolation estimate (10.3.13) at `m = 1`
-(`theorem_10_3_9`), with the norm of `V ⊆ H¹(Ω)` compared to the tensor norm `‖·‖_{1,Ω}` of
-§10.3 by `exists_norm_le_sobolevNorm`. The book's "`V_h` is the finite element space" enters
-only through `Π_h u ∈ V_h`, which for `V = H¹(Ω)` is automatic (`V_h = X_h`, the space
-`Triangulation.polySpace`) and for `V = H¹₀(Ω)` is
-`Triangulation.exists_mem_polySpaceZero_globalInterp` (Example 10.4.2); the convergence half of
+(`theorem_10_3_9`), with the norm of `V ⊆ H¹(Ω)` compared to the tensor norm `‖·‖_{1,Ω}` of §10.3 by
+`FiniteElement.exists_norm_le_sobolevNorm`; it is the backbone's
+`FiniteElement.norm_sub_le_of_isGalerkinSolution` for the form `a.toCLM`. The book's "`V_h` is the
+finite element space" enters only through `Π_h u ∈ V_h`, which for `V = H¹(Ω)` is automatic
+(`V_h = X_h`, the space `Triangulation.polySpace`) and for `V = H¹₀(Ω)` is
+`LagrangeElement.exists_mem_polySpaceZero_globalInterp` (Example 10.4.2); the convergence half of
 the theorem is `theorem_10_4_1_tendsto`. -/
 theorem theorem_10_4_1 {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xhat : Fin I → 𝔼₂) (φhat : Fin I → 𝔼₂ → ℝ)
     (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂))
@@ -370,27 +325,9 @@ theorem theorem_10_4_1 {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xhat : Fin I → 𝔼
         (∀ i, ∃ w ∈ Vh i, SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω)
           =ᵐ[volume.restrict (Ω : Set 𝔼₂)] (𝒯 i).globalInterp xhat φhat ũ) →
         ∀ i, ‖u - uh i‖
-          ≤ c * (𝒯 i).meshSize ^ k * (sobolevSeminorm ũ (k + 1) 2 Ω volume).toReal := by
-  have h10 := theorem_10_3_9 (m := 1) le_rfl hk xhat φhat hx hφ hP hreg hH hconf
-  obtain ⟨c₁, hc₁, hest⟩ := h10
-  have hCC := exists_norm_le_sobolevNorm Ω
-  obtain ⟨C, hC0, hC⟩ := hCC
-  refine ⟨max (M / c₀) 0 * (C * c₁), by positivity,
-    fun ℓ u hu Vh uh huh ũ hũ hũk hũc hint i ↦ ?_⟩
-  obtain ⟨w, hw, hfw⟩ := hint i
-  have hcea := Chapter09.proposition_9_1_3_le hM hc₀ ha hu (huh i) hw
-  have h1 := norm_sub_le_of_fn_ae_eq hC u w hũ hfw
-  have h2 := toReal_sobolevNorm_sub_globalInterp_le hc₁ hũk (hest i ũ hũk hũc)
-  have hS0 : 0 ≤ (sobolevSeminorm ũ (k + 1) 2 Ω volume).toReal := ENNReal.toReal_nonneg
-  have hh0 : 0 ≤ (𝒯 i).meshSize := (𝒯 i).meshSize_nonneg
-  calc ‖u - uh i‖ ≤ M / c₀ * ‖u - w‖ := hcea
-    _ ≤ max (M / c₀) 0 * ‖u - w‖ :=
-        mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _)
-    _ ≤ max (M / c₀) 0
-          * (C * (c₁ * (𝒯 i).meshSize ^ k * (sobolevSeminorm ũ (k + 1) 2 Ω volume).toReal)) := by
-        gcongr
-        exact h1.trans (mul_le_mul_of_nonneg_left h2 hC0)
-    _ = _ := by ring
+          ≤ c * (𝒯 i).meshSize ^ k * (sobolevSeminorm ũ (k + 1) 2 Ω volume).toReal :=
+  FiniteElement.norm_sub_le_of_isGalerkinSolution hk xhat φhat hx hφ hP hreg hH hconf
+    (BilinForm.isBoundedWith_toCLM hM) hc₀ ((BilinForm.isEllipticWith_iff_isCoerciveWith hM).1 ha)
 
 /-- **Theorem 10.4.1**, the convergence half: under the assumptions of `theorem_10_4_1`, if the
 solution `u ∈ V` can be approximated in `V` by functions in `H^{k+1}(Ω) ∩ C(Ω̄)` whose
@@ -421,58 +358,22 @@ theorem theorem_10_4_1_tendsto {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xhat : Fin I 
       MemSobolev w' (k + 1) 2 Ω volume ∧ ContinuousOn w' (closure (Ω : Set 𝔼₂)) ∧
       ∀ i, ∃ wh ∈ Vh i, SobolevMultiIndex.fn (wh : SobolevEuclidean 2 1 2 Ω)
         =ᵐ[volume.restrict (Ω : Set 𝔼₂)] (𝒯 i).globalInterp xhat φhat w') :
-    Tendsto (fun i ↦ ‖u - uh i‖) l (𝓝 0) := by
-  have h10 := theorem_10_3_9 (m := 1) le_rfl hk xhat φhat hx hφ hP hreg hH hconf
-  obtain ⟨c₁, hc₁, hest⟩ := h10
-  have hCC := exists_norm_le_sobolevNorm Ω
-  obtain ⟨C, hC0, hC⟩ := hCC
-  have hmesh : Tendsto (fun i ↦ (𝒯 i).meshSize) l (𝓝 0) := ((isRegularFamily_iff l 𝒯).1 hreg).2
-  rw [Metric.tendsto_nhds]
-  intro ε hε
-  obtain ⟨M', hM'0, hMM'⟩ : ∃ M' : ℝ, 0 ≤ M' ∧ M / c₀ ≤ M' := ⟨max (M / c₀) 0, le_max_right _ _,
-    le_max_left _ _⟩
-  obtain ⟨δ, hδ, hδε⟩ : ∃ δ : ℝ, 0 < δ ∧ M' * (2 * δ) < ε := by
-    refine ⟨ε / (2 * (M' + 1)), by positivity, ?_⟩
-    rw [mul_div_assoc', mul_div_assoc', div_lt_iff₀ (by positivity)]
-    nlinarith
-  obtain ⟨w, w', hw, hfw, hw'k, hw'c, hwh⟩ := hdense δ hδ
-  -- the interpolation error of `w'` tends to zero with the mesh parameter
-  have hev : ∀ᶠ i in l,
-      C * (c₁ * (𝒯 i).meshSize ^ k * (sobolevSeminorm w' (k + 1) 2 Ω volume).toReal) < δ := by
-    have ht : Tendsto (fun i ↦ C * (c₁ * (𝒯 i).meshSize ^ k
-        * (sobolevSeminorm w' (k + 1) 2 Ω volume).toReal)) l
-        (𝓝 (C * (c₁ * (0 : ℝ) ^ k * (sobolevSeminorm w' (k + 1) 2 Ω volume).toReal))) :=
-      (((hmesh.pow k).const_mul c₁).mul_const _).const_mul C
-    rw [zero_pow (by omega), mul_zero, zero_mul, mul_zero] at ht
-    exact ht.eventually_lt_const hδ
-  filter_upwards [hev] with i hi
-  obtain ⟨wh, hwh', hfwh⟩ := hwh i
-  have hcea := Chapter09.proposition_9_1_3_le hM hc₀ ha hu (huh i) hwh'
-  have h1 := norm_sub_le_of_fn_ae_eq hC w wh hfw hfwh
-  have h2 := toReal_sobolevNorm_sub_globalInterp_le hc₁ hw'k (hest i w' hw'k hw'c)
-  have hwwh : ‖w - wh‖ < δ :=
-    (h1.trans (mul_le_mul_of_nonneg_left h2 hC0)).trans_lt hi
-  rw [dist_zero_right, Real.norm_of_nonneg (norm_nonneg _)]
-  calc ‖u - uh i‖ ≤ M / c₀ * ‖u - wh‖ := hcea
-    _ ≤ M' * ‖u - wh‖ := mul_le_mul_of_nonneg_right hMM' (norm_nonneg _)
-    _ ≤ M' * (‖u - w‖ + ‖w - wh‖) := by
-        gcongr
-        exact norm_sub_le_norm_sub_add_norm_sub u w wh
-    _ ≤ M' * (δ + δ) := by gcongr
-    _ = M' * (2 * δ) := by ring
-    _ < ε := hδε
+    Tendsto (fun i ↦ ‖u - uh i‖) l (𝓝 0) :=
+  FiniteElement.tendsto_norm_sub_of_isGalerkinSolution hk xhat φhat hx hφ hP hreg hH hconf
+    (BilinForm.isBoundedWith_toCLM hM) hc₀ ((BilinForm.isEllipticWith_iff_isCoerciveWith hM).1 ha)
+    (ℓ := ℓ) hu huh hdense
 
 end Theorem1041
 
 /-! ### Example 10.4.2: the Dirichlet problem for the Poisson equation
 
 The concrete instance of Theorem 10.4.1 on `V = H¹₀(Ω)` with the `ℙ_k` Lagrange element on the
-principal lattice (`latticeNode`, `latticeShapeFun` of `Chapter10/Section02`) and the finite
+principal lattice (the backbone's `LagrangeElement.node`, `LagrangeElement.shape`) and the finite
 element space `V_h = {v_h ∈ C(Ω̄) : v_h|_K ∈ ℙ_k(K), v_h|_∂Ω = 0}` (`Triangulation.polySpaceZero`).
-The two ingredients the book leaves implicit are proved here: the lattice element is edge
-unisolvent (`isEdgeUnisolvent_lattice`), so that `Π_h u` vanishes on `∂Ω` when `u` does, and
-its shape functions are polynomials of degree at most `k` (`latticeShapeFun_eq_eval`), so that
-`Π_h u` is piecewise polynomial. -/
+The two ingredients the book leaves implicit are the backbone's: the lattice element is edge
+unisolvent (`LagrangeElement.isEdgeUnisolvent`), so that `Π_h u` vanishes on `∂Ω` when `u` does,
+and its shape functions are polynomials of degree at most `k` (`LagrangeElement.shape_eq_eval`),
+so that `Π_h u` is piecewise polynomial. -/
 
 section Example1042
 
@@ -481,78 +382,6 @@ open scoped ENNReal
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- The shape functions of the `ℙ_k` Lagrange element are polynomials of total degree at most
-`k` (Silvester's `latticeShape`). -/
-theorem latticeShapeFun_eq_eval (k : ℕ) (i : Fin (Fintype.card (LatticeNode k))) :
-    ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k ∧
-      ∀ x : 𝔼₂, latticeShapeFun k i x = eval (fun j ↦ x j) q :=
-  ⟨_, totalDegree_latticeShape_le (LatticeNode.sum_toFinsupp_le _), fun _ ↦ rfl⟩
-
-/-- **The `ℙ_k` Lagrange element on the principal lattice is edge unisolvent**: along a
-reference edge `[x̂_a, x̂_b]`, the interpolant `Π̂ v` is a polynomial of degree at most `k` in the
-parameter `s` of `x̂_a + s (x̂_b − x̂_a)` (`lineRestrict`), and it vanishes at the `k + 1` lattice
-nodes `s = j/k` of the edge when `v` does — there `Π̂ v = v` — hence identically. This is the
-argument of `isConformingElement_lattice` (Example 10.2.3) with the zero polynomial as the
-second interpolant. -/
-theorem isEdgeUnisolvent_lattice {k : ℕ} (hk : 0 < k) :
-    IsEdgeUnisolvent (latticeNode k) (latticeShapeFun k) := by
-  intro a b hab v hv y hy
-  have hk' : (k : ℝ) ≠ 0 := by exact_mod_cast hk.ne'
-  rw [segment_eq_image'] at hy
-  obtain ⟨s, -, rfl⟩ := hy
-  -- the interpolant, as a polynomial in the reference coordinates
-  obtain ⟨P, hP⟩ : ∃ P : MvPolynomial (Fin 2) ℝ, P = ∑ i, C (v (latticeNode k i))
-      * latticeShape k ((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp := ⟨_, rfl⟩
-  have hPdeg : P.totalDegree ≤ k := by
-    rw [hP, ← mem_restrictTotalDegree]
-    refine Submodule.sum_mem _ fun i _ ↦ ?_
-    rw [C_mul']
-    exact Submodule.smul_mem _ _ ((mem_restrictTotalDegree _ _ _).2
-      (totalDegree_latticeShape_le (LatticeNode.sum_toFinsupp_le _)))
-  have hPeval : ∀ z : 𝔼₂, Approximation.nodalInterp (latticeNode k) (latticeShapeFun k) v z
-      = eval (fun j ↦ z j) P := by
-    intro z
-    rw [hP, map_sum, Approximation.nodalInterp_apply]
-    refine Finset.sum_congr rfl fun i _ ↦ ?_
-    rw [map_mul, eval_C, smul_eq_mul, mul_comm]
-    rfl
-  -- its restriction to the edge, as a polynomial in the parameter
-  obtain ⟨A, hA⟩ : ∃ A : Fin 2 → ℝ, A = fun j ↦ referenceTriangleVertex a j := ⟨_, rfl⟩
-  obtain ⟨B, hB⟩ : ∃ B : Fin 2 → ℝ,
-      B = fun j ↦ (referenceTriangleVertex b - referenceTriangleVertex a) j := ⟨_, rfl⟩
-  have key : ∀ t : ℝ, Approximation.nodalInterp (latticeNode k) (latticeShapeFun k) v
-      (referenceTriangleVertex a + t • (referenceTriangleVertex b - referenceTriangleVertex a))
-      = (lineRestrict P A B).eval t := by
-    intro t
-    rw [hPeval, eval_lineRestrict, hA, hB]
-    refine congrArg (fun g : Fin 2 → ℝ ↦ eval g P) (funext fun j ↦ ?_)
-    simp only [PiLp.add_apply, PiLp.smul_apply, PiLp.sub_apply, smul_eq_mul, mul_comm]
-  -- it vanishes at the `k + 1` nodes `j / k` of the edge
-  have hzero : ∀ t ∈ (Finset.range (k + 1)).image (fun j : ℕ ↦ (j : ℝ) / k),
-      (lineRestrict P A B).eval t = (0 : Polynomial ℝ).eval t := by
-    intro t ht
-    obtain ⟨j, hj, rfl⟩ := Finset.mem_image.1 ht
-    have hj' : j ≤ k := Nat.lt_succ_iff.1 (Finset.mem_range.1 hj)
-    obtain ⟨i, hi⟩ := exists_latticeNode_eq_lineMap hk a b hj'
-    rw [← key, ← hi, (latticeShapeFun_isNodalBasis hk).nodalInterp_apply_node, Polynomial.eval_zero]
-    refine hv i ?_
-    rw [hi, segment_eq_image']
-    refine ⟨(j : ℝ) / k, ⟨by positivity, ?_⟩, rfl⟩
-    rw [div_le_one (by exact_mod_cast hk)]
-    exact_mod_cast hj'
-  have hcard : ((Finset.range (k + 1)).image (fun j : ℕ ↦ (j : ℝ) / k)).card = k + 1 := by
-    rw [Finset.card_image_of_injective _ fun j₁ j₂ h ↦ ?_, Finset.card_range]
-    exact_mod_cast (div_left_inj' hk').1 h
-  have hdeg : (lineRestrict P A B).degree
-      < ((Finset.range (k + 1)).image (fun j : ℕ ↦ (j : ℝ) / k)).card := by
-    rw [hcard]
-    refine Polynomial.degree_le_natDegree.trans_lt ?_
-    exact_mod_cast Nat.lt_succ_of_le ((natDegree_lineRestrict_le _ _ _).trans hPdeg)
-  have hdeg0 : (0 : Polynomial ℝ).degree
-      < ((Finset.range (k + 1)).image (fun j : ℕ ↦ (j : ℝ) / k)).card := by
-    rw [Polynomial.degree_zero]
-    exact WithBot.bot_lt_coe _
-  rw [key, Polynomial.eq_of_degrees_lt_of_eval_finset_eq _ hdeg hdeg0 hzero, Polynomial.eval_zero]
 
 variable (Ω : Opens 𝔼₂)
 
@@ -610,11 +439,10 @@ boundary condition of the problem — the error is estimated by
 
   `‖u − u_h‖_{1,Ω} ≤ c h^k ‖u‖_{k+1,Ω}`.
 
-The estimate is `theorem_10_4_1` with the `ℙ_k` Lagrange element on the principal lattice,
-whose interpolant `Π_h ũ` lies in `V_h` because the element is conforming
-(`isConformingElement_lattice`), its shape functions are polynomials of degree at most `k`
-(`latticeShapeFun_eq_eval`), and it is edge unisolvent (`isEdgeUnisolvent_lattice`), so that
-`Π_h ũ` vanishes on `∂Ω` with `ũ` (`Triangulation.exists_mem_polySpaceZero_globalInterp`); it is
+The estimate is `theorem_10_4_1` with the `ℙ_k` Lagrange element on the principal lattice, whose
+interpolant `Π_h ũ` lies in `V_h` because the element is conforming, polynomial and edge unisolvent,
+so that `Π_h ũ` vanishes on `∂Ω` with `ũ` (`LagrangeElement.exists_mem_polySpaceZero_globalInterp`):
+the backbone's `FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm` at `s = k`. It is
 stated with the seminorm `|u|_{k+1,Ω}` replaced by the norm `‖u‖_{k+1,Ω}`, as the book writes it.
 
 The hypothesis "`ũ = 0` on `Γ`" is the book's boundary condition; it would follow from
@@ -648,37 +476,17 @@ theorem example_10_4_2 {k : ℕ} (hk : 1 ≤ k) {ι : Type*} {l : Filter ι}
     refine (existsUnique_congr fun u ↦ forall_congr' fun v ↦ ?_).2 h
     rw [poissonForm_apply]
   · -- the discrete problem: Lax–Milgram on the finite-dimensional `V_h`
-    have := (𝒯 i).finiteDimensional_polySpaceZero 2 (isConformingElement_lattice hk0 (𝒯 i))
-      (latticeNode_mem_closure hk0) (nodalInterp_lattice_eval hk0)
+    have := LagrangeElement.finiteDimensional_polySpaceZero hk0 (𝒯 i) 2
     exact Chapter09.existsUnique_galerkinProblem hM hpos hα (poissonLoad Ω f)
       ((𝒯 i).polySpaceZero 2 k)
-  · -- the error estimate: Theorem 10.4.1 with the Lagrange element
-    obtain ⟨c, hc0, hc⟩ := theorem_10_4_1 hk (latticeNode k) (latticeShapeFun k)
-      (latticeNode_mem_closure hk0) (fun i ↦ (contDiff_latticeShapeFun k i).of_le (by simp))
-      (fun q hq x _ ↦ nodalInterp_lattice_eval hk0 q hq x) hreg hH
-      (fun i ↦ isConformingElement_lattice hk0 (𝒯 i)) hM hpos hα
-    refine ⟨c, hc0, fun f u hu uh huh ũ hũ hũk hũc hũ0 i ↦ ?_⟩
-    have hint : ∀ i, ∃ w ∈ (𝒯 i).polySpaceZero 2 k,
-        SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)]
-          (𝒯 i).globalInterp (latticeNode k) (latticeShapeFun k) ũ := fun i ↦
-      (𝒯 i).exists_mem_polySpaceZero_globalInterp 2 (by simp)
-        (isConformingElement_lattice hk0 (𝒯 i))
-        (fun i ↦ (contDiff_latticeShapeFun k i).continuous) (isEdgeUnisolvent_lattice hk0)
-        (latticeShapeFun_eq_eval k) (hedge i) hũ0
-    refine (hc (poissonLoad Ω f) u hu _ uh huh ũ hũ hũk hũc hint i).trans ?_
-    -- the seminorm is bounded by the norm
-    have hfin : sobolevNorm ũ (k + 1) 2 Ω volume ≠ ⊤ := by
-      refine ne_top_of_le_ne_top ?_ (hũk.sobolevNorm_le_sum_sobolevSeminorm (by simp))
-      exact ENNReal.sum_ne_top.2 fun n _ ↦
-        (hũk.mono_order (by exact_mod_cast Nat.lt_succ_iff.1 n.2)).sobolevSeminorm_ne_top
-    have hle : (sobolevSeminorm ũ (k + 1) 2 Ω volume).toReal
-        ≤ (sobolevNorm ũ (k + 1) 2 Ω volume).toReal :=
-      ENNReal.toReal_mono hfin
-        (eLpNorm_weakIteratedFDeriv_le_sobolevNorm (by simp) (by simp) le_rfl)
-    have hh0 : 0 ≤ (𝒯 i).meshSize := (𝒯 i).meshSize_nonneg
-    gcongr
+  · -- the error estimate: the backbone's Poisson instance of Theorem 10.4.1
+    have h := FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm (k := k) hk le_rfl
+      hreg hH hedge hR hΩ
+    obtain ⟨C, hC0, hC⟩ := h
+    exact ⟨1 / (1 + (2 * R) ^ 2)⁻¹ * C, by positivity, fun f u hu uh huh ↦ hC f u hu uh huh⟩
 
 end Example1042
+
 
 end Chapter10
 

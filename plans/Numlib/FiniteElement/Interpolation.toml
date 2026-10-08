@@ -1,0 +1,41 @@
+namespace = "FiniteElement"
+
+[[node]]
+id = "sobolevSeminorm_sub_nodalInterp_le"
+source = "[han2009theoretical] Theorem 10.3.3"
+
+[[node]]
+id = "opNorm_le_diam_div_of_image"
+source = "[han2009theoretical] Lemma 10.2.2"
+
+[[node]]
+id = "sobolevSeminorm_sub_nodalInterp_comp_affine_le"
+source = "[han2009theoretical] Theorem 10.3.5"
+
+[[node]]
+id = "IsRegularFamily"
+source = "[han2009theoretical] Definition 10.3.6"
+
+[[node]]
+id = "sobolevNorm_sub_nodalInterp_comp_affine_le"
+source = "[han2009theoretical] Corollary 10.3.7"
+
+[[node]]
+id = "isRegularFamily_range_K_iff"
+source = "[han2009theoretical] Definition 10.3.6"
+
+[[node]]
+id = "_root_.Triangulation.sobolevNorm_sub_globalInterp_le"
+source = "[han2009theoretical] Theorem 10.3.9"
+
+[[node]]
+id = "_root_.LagrangeElement.sobolevNorm_sub_globalInterp_le"
+source = "[han2009theoretical] Theorem 10.3.9"
+
+[[node]]
+id = "_root_.LagrangeElement.exists_mem_polySpaceZero_globalInterp"
+source = "[han2009theoretical] Example 10.4.2"
+
+[[node]]
+id = "_root_.LagrangeElement.finiteDimensional_polySpaceZero"
+source = "[han2009theoretical] Example 10.4.2"

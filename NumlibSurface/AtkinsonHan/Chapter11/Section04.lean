@@ -495,7 +495,7 @@ theorem le_on_closure_of_ae_le {Ω : Opens 𝔼₂} {v w : 𝔼₂ → ℝ}
     (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hw : ContinuousOn w (closure (Ω : Set 𝔼₂))) :
     ∀ x ∈ closure (Ω : Set 𝔼₂), v x ≤ w x := by
   have hmax : EqOn (fun x ↦ max (v x) (w x)) w (closure (Ω : Set 𝔼₂)) := by
-    refine Triangulation.eqOn_closure_of_ae_eq ?_ (hv.sup hw) hw
+    refine (hv.sup hw).eqOn_closure_of_ae_eq (μ := volume) Ω.isOpen hw ?_
     filter_upwards [h] with x hx
     exact max_eq_right hx
   intro x hx
@@ -730,7 +730,7 @@ theorem example_11_4_3 {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 :
   obtain ⟨c₁, hc₁, hest₁⟩ := h1
   have h0 := Chapter10.theorem_10_3_9_linear (m := 0) (by norm_num) hreg hH
   obtain ⟨c₀', hc₀', hest₀⟩ := h0
-  have hCC := Chapter10.exists_norm_le_sobolevNorm Ω
+  have hCC := FiniteElement.exists_norm_le_sobolevNorm Ω
   obtain ⟨C, hC0, hC⟩ := hCC
   -- the seminorms of the data
   obtain ⟨Su, hSu⟩ : ∃ Su : ℝ, Su = (sobolevSeminorm u' 2 2 Ω volume).toReal := ⟨_, rfl⟩
@@ -814,7 +814,7 @@ theorem example_11_4_3 {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 :
       ((eLpNorm_le_sobolevNorm_zero (memSobolev_sub_globalInterp_linear (𝒯 i) hu'2)).trans hest)
   -- `‖u − Π_h u‖₁ ≤ C c h |u|₂`
   have hH1 : ‖u - vh‖ ≤ C * (c₁ * (𝒯 i).meshSize * Su) := by
-    have h1 := Chapter10.norm_sub_le_of_fn_ae_eq hC u vh hu' hfvh
+    have h1 := FiniteElement.norm_sub_le_of_fn_ae_eq hC u vh hu' hfvh
     have hest := hest₁ i u' hu'2 hu'c
     simp only [Nat.add_one_sub_one, pow_one] at hest
     rw [hSu]
@@ -1826,7 +1826,7 @@ every boundary edge of every `𝒯_h` lies on one of the finitely many sides. Th
       + ½ (C c₁ |u|_{H²(Ω)})²`,
 
 `c₀`, `c₁` the interpolation constants of `Chapter10.theorem_10_3_9_linear` (where the shape
-regularity enters), `C` the norm comparison of `Chapter10.exists_norm_le_sobolevNorm`, and `Mν`,
+regularity enters), `C` the norm comparison of `FiniteElement.exists_norm_le_sobolevNorm`, and `Mν`,
 `Mσ` bounds — uniform in `h`, as they are for a fixed polygon — for `‖∂u/∂ν‖_{L²(Γ_h)}` and
 `√(meas Γ_h)`, the surface measure being the one carried by each triangulation.
 
@@ -1869,7 +1869,7 @@ theorem example_11_4_4 {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 :
   -- the interpolation constants of Theorem 10.3.9 and the norm comparison
   obtain ⟨c₁, hc₁, hest₁⟩ := Chapter10.theorem_10_3_9_linear (m := 1) le_rfl hreg hH
   obtain ⟨c₀', hc₀', hest₀⟩ := Chapter10.theorem_10_3_9_linear (m := 0) (by norm_num) hreg hH
-  obtain ⟨C, hC0, hC⟩ := Chapter10.exists_norm_le_sobolevNorm Ω
+  obtain ⟨C, hC0, hC⟩ := FiniteElement.exists_norm_le_sobolevNorm Ω
   obtain ⟨Su, hSu⟩ : ∃ Su : ℝ, Su = (sobolevSeminorm ũ 2 2 Ω volume).toReal := ⟨_, rfl⟩
   obtain ⟨S, hS⟩ : ∃ S : ℝ,
       S = ∑ k, ‖Q k - P k‖⁻¹ ^ 3 * SobolevInterval.seminorm 2 0 1 (Us k) ^ 2 := ⟨_, rfl⟩

@@ -1637,6 +1637,11 @@ end Reflexive
 
 section Euclidean
 
+/-- `1 ≤ 2` for the exponent `p = 2` written as `((2 : ℝ≥0) : ℝ≥0∞)`, the form in which the
+Euclidean theorems that take `p : ℝ≥0` (Rellich–Kondrachov, Deny–Lions, Bramble–Hilbert) return
+statements about `H^k(Ω) = W^{k,2}(Ω)`. -/
+instance fact_one_le_coe_two_ennreal : Fact (1 ≤ ((2 : NNReal) : ℝ≥0∞)) := ⟨by norm_num⟩
+
 /-- **The Sobolev space `W^{k,p}(Ω)` on an open set `Ω ⊆ ℝ^N`** of [brezis2011functional] §9.1
 (the Definition, and the paragraph "The spaces `W^{m,p}(Ω)`"): the multi-index formulation over
 the standard basis of `ℝ^N` and Lebesgue measure. Its norm is `(∑_{|α| ≤ k} ‖∂^α u‖_p^p)^{1/p}`

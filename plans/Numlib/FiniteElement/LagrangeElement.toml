@@ -1,0 +1,61 @@
+namespace = "LagrangeElement"
+
+[[node]]
+id = "latticePoint"
+source = "[han2009theoretical] (10.2.24)"
+
+[[node]]
+id = "latticeShape"
+source = "[han2009theoretical] Proposition 10.2.1"
+
+[[node]]
+id = "latticeEval"
+source = "[han2009theoretical] Proposition 10.2.1"
+
+[[node]]
+id = "eval_latticeShape"
+source = "[han2009theoretical] Proposition 10.2.1"
+
+[[node]]
+id = "bijective_latticeEval"
+source = "[han2009theoretical] Proposition 10.2.1"
+
+[[node]]
+id = "eq_zero_of_eval_latticePoint"
+source = "[han2009theoretical] Proposition 10.2.1"
+
+[[node]]
+id = "LatticeNode"
+
+[[node]]
+id = "node"
+source = "[han2009theoretical] (10.2.24)"
+
+[[node]]
+id = "shape"
+source = "[han2009theoretical] Proposition 10.2.1"
+
+[[node]]
+id = "isNodalBasis"
+source = "[han2009theoretical] Proposition 10.2.1"
+
+[[node]]
+id = "node_mem_closure"
+
+[[node]]
+id = "contDiff_shape"
+
+[[node]]
+id = "nodalInterp_eval"
+source = "[han2009theoretical] (10.3.4)"
+
+[[node]]
+id = "shape_eq_eval"
+
+[[node]]
+id = "isConformingElement"
+source = "[han2009theoretical] Example 10.2.3, Exercise 10.2.4"
+
+[[node]]
+id = "isEdgeUnisolvent"
+source = "[han2009theoretical] Example 10.2.3"
