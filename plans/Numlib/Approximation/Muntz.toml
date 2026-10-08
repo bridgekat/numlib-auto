@@ -1,0 +1,25 @@
+namespace = "Muntz"
+
+[[node]]
+id = "powerL2"
+source = "[han2009theoretical] §3.1"
+
+[[node]]
+id = "inner_powerL2"
+source = "[han2009theoretical] §3.1"
+
+[[node]]
+id = "linearIndependent_powerL2"
+source = "[han2009theoretical] §3.1"
+
+[[node]]
+id = "dist_sq_powerL2"
+source = "[han2009theoretical] §3.1"
+
+[[node]]
+id = "dense_span_powerL2_natCast"
+source = "[han2009theoretical] §3.1"
+
+[[node]]
+id = "dense_span_powerL2_iff"
+source = "[han2009theoretical] Theorem 3.1.5"

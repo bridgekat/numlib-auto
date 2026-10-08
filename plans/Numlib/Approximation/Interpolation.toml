@@ -154,3 +154,7 @@ id = "Lagrange.exists_eq_iff_eval_nodal_eq_zero"
 
 [[node]]
 id = "Lagrange.interpolate_comp_equiv"
+
+[[node]]
+id = "abs_add_mul_mul_sub_le"
+source = "[han2009theoretical] (12.3.27)"

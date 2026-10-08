@@ -54,7 +54,9 @@ interpolation at the equispaced nodes of a period. The material is [han2009theor
   `exists_sub_piecewisePolyInterpCLM_apply_eq` and its consequence
   `norm_sub_piecewisePolyInterpCLM_le`, the bound `(1 + Λ) ω(f, h)` of
   `norm_sub_piecewisePolyInterpCLM_le_modulus`, and the uniform convergence
-  `tendsto_piecewisePolyInterpCLM`.  `isPanelLebesgueBound_of_sep` bounds the local Lebesgue
+  `tendsto_piecewisePolyInterpCLM`; `abs_add_mul_mul_sub_le` is the bound on the nodal polynomial of
+  three equispaced nodes that the error bound needs for piecewise quadratics on a uniform mesh.
+  `isPanelLebesgueBound_of_sep` bounds the local Lebesgue
   constants by the separation of the nodes within their panels, and
   `exists_isPanelLebesgueBound_of_affine` reads off from it the bound for nodes placed at fixed
   fractions of every panel, where one constant serves every mesh however unequal its panels.
@@ -1739,6 +1741,30 @@ theorem tendsto_piecewisePolyInterpCLM {N : ℕ → ℕ} {y : ℕ → ℕ → Se
   refine squeeze_zero (fun p => norm_nonneg _) (fun p => ?_) hmod
   rw [norm_sub_rev]
   exact norm_sub_piecewisePolyInterpCLM_le_modulus (h p) (hΛ p) f (hmesh p)
+
+/-- **The nodal polynomial of three equispaced nodes.**  In the variable `w` centred at the middle
+node, the nodal polynomial of the nodes `-δ, 0, δ` is `(w + δ) w (w - δ)`, and
+`4 δ⁶ - 27 w² (w² - δ²)² = (3 w² - δ²)² (4 δ² - 3 w²)` is nonnegative for `|w| ≤ δ`, so on the
+panel it does not exceed `2 √3 δ³/9`, its value at `w = ∓ δ/√3`. Divided by `3! = 6` it gives
+the constant `√3/27` of piecewise quadratic interpolation on a uniform mesh of width `δ`
+([han2009theoretical] (12.3.27)), through `norm_sub_piecewisePolyInterpCLM_le`. -/
+theorem abs_add_mul_mul_sub_le {δ w : ℝ} (hδ : 0 < δ) (hw : |w| ≤ δ) :
+    |(w + δ) * w * (w - δ)| ≤ 2 * Real.sqrt 3 * δ ^ 3 / 9 := by
+  have hwle := abs_le.mp hw
+  have hsq : w ^ 2 ≤ δ ^ 2 := by nlinarith [hwle.1, hwle.2]
+  have hc0 : (0 : ℝ) ≤ 2 * Real.sqrt 3 * δ ^ 3 / 9 := by positivity
+  have hs3 : Real.sqrt 3 ^ 2 = 3 := Real.sq_sqrt (by norm_num)
+  have hkey : ((w + δ) * w * (w - δ)) ^ 2 ≤ (2 * Real.sqrt 3 * δ ^ 3 / 9) ^ 2 := by
+    have hrhs : (2 * Real.sqrt 3 * δ ^ 3 / 9) ^ 2 = 4 * δ ^ 6 / 27 := by
+      have hexp : (2 * Real.sqrt 3 * δ ^ 3 / 9) ^ 2
+          = 4 * Real.sqrt 3 ^ 2 * δ ^ 6 / 81 := by ring
+      rw [hexp, hs3]
+      ring
+    rw [hrhs]
+    nlinarith [mul_nonneg (sq_nonneg (3 * w ^ 2 - δ ^ 2))
+      (show (0 : ℝ) ≤ 4 * δ ^ 2 - 3 * w ^ 2 by nlinarith)]
+  have hsqrt := Real.sqrt_le_sqrt hkey
+  rwa [Real.sqrt_sq_eq_abs, Real.sqrt_sq hc0] at hsqrt
 
 end PiecewisePolynomialApi
 

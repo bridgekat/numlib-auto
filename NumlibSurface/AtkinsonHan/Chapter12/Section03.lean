@@ -381,30 +381,6 @@ open IntegralOperator MeasureTheory
 
 variable {a b : ℝ}
 
-/-- **The extreme value of the nodal polynomial of a quadratic panel.**  In the variable
-`w = y - x_{2k+1}` centred at the midpoint of the panel the nodal polynomial is `(w + h) w (w - h)`,
-and `4 h⁶ - 27 w² (w² - h²)² = (3 w² - h²)² (4 h² - 3 w²)` is nonnegative for `|w| ≤ h`, so the
-polynomial does not exceed `2 √3 h³/9`, its value at `w = ∓ h/√3`.
-
-Divided by `3! = 6` this is the constant `√3/27` of (12.3.27). -/
-theorem abs_cubic_nodal_le {δ w : ℝ} (hδ : 0 < δ) (hw : |w| ≤ δ) :
-    |(w + δ) * w * (w - δ)| ≤ 2 * Real.sqrt 3 * δ ^ 3 / 9 := by
-  have hwle := abs_le.mp hw
-  have hsq : w ^ 2 ≤ δ ^ 2 := by nlinarith [hwle.1, hwle.2]
-  have hc0 : (0 : ℝ) ≤ 2 * Real.sqrt 3 * δ ^ 3 / 9 := by positivity
-  have hs3 : Real.sqrt 3 ^ 2 = 3 := Real.sq_sqrt (by norm_num)
-  have hkey : ((w + δ) * w * (w - δ)) ^ 2 ≤ (2 * Real.sqrt 3 * δ ^ 3 / 9) ^ 2 := by
-    have hrhs : (2 * Real.sqrt 3 * δ ^ 3 / 9) ^ 2 = 4 * δ ^ 6 / 27 := by
-      have hexp : (2 * Real.sqrt 3 * δ ^ 3 / 9) ^ 2
-          = 4 * Real.sqrt 3 ^ 2 * δ ^ 6 / 81 := by ring
-      rw [hexp, hs3]
-      ring
-    rw [hrhs]
-    nlinarith [mul_nonneg (sq_nonneg (3 * w ^ 2 - δ ^ 2))
-      (show (0 : ℝ) ≤ 4 * δ ^ 2 - 3 * w ^ 2 by nlinarith)]
-  have hsqrt := Real.sqrt_le_sqrt hkey
-  rwa [Real.sqrt_sq_eq_abs, Real.sqrt_sq hc0] at hsqrt
-
 /-- The nodal polynomial of the `k`-th panel of the piecewise quadratic mesh is bounded by
 `2 √3 h³/9` on that panel. -/
 theorem abs_prod_quadNode_le (hab : a < b) {p k : ℕ} (hk : k ≤ p) {s : ℝ}
@@ -432,7 +408,7 @@ theorem abs_prod_quadNode_le (hab : a < b) {p k : ℕ} (hk : k ≤ p) {s : ℝ}
     rw [Fin.prod_univ_three, h0, h1, h2, hw]
     ring
   rw [hrw]
-  exact abs_cubic_nodal_le hδ hwabs
+  exact abs_add_mul_mul_sub_le hδ hwabs
 
 /-- **(12.3.27)**, the error of piecewise quadratic interpolation:
 `‖u - P_n u‖_∞ ≤ (√3/27) h³ ‖u'''‖_∞`.
@@ -467,7 +443,8 @@ variable {a b : ℝ}
 `k (x, x_{2k}) ∫ (u - P_n u)`, and the integral of the quadratic interpolant over its own panel is
 Simpson's rule for `u` there, so that integral is exactly the Simpson panel error, of size
 `h⁵ ‖u⁗‖/90`.  The second part is at most `L (2h) ‖u - P_n u‖ (2h)`, so it is `𝒪(h⁵)` as well —
-and it needs only a Lipschitz bound on the kernel, not the book's `C¹` in `y`. -/
+and it needs only a Lipschitz bound on the kernel, not the book's `C¹` in `y`.  This is the
+backbone's `Quadrature.abs_integral_mul_sub_eval_le`, read on the nodes of the panel. -/
 private theorem abs_panel_integral_le (hab : a < b) {k : C(Set.Icc a b × Set.Icc a b, ℝ)} {L : ℝ}
     (hL0 : 0 ≤ L) (hL : ∀ x y z : Set.Icc a b, |k (x, y) - k (x, z)| ≤ L * |(y : ℝ) - (z : ℝ)|)
     {G : ℝ → ℝ} (hG : ContDiff ℝ ((4 : ℕ) : WithTop ℕ∞) G) {u : C(Set.Icc a b, ℝ)}
@@ -487,12 +464,9 @@ private theorem abs_panel_integral_le (hab : a < b) {k : C(Set.Icc a b × Set.Ic
   have hmemab : ∀ y ∈ Set.Icc ((quadBreak hab.le p j : ℝ)) ((quadBreak hab.le p (j + 1) : ℝ)),
       y ∈ Set.Icc a b := fun y hy =>
     ⟨le_trans (quadBreak hab.le p j).2.1 hy.1, le_trans hy.2 (quadBreak hab.le p (j + 1)).2.2⟩
-  -- the two factors of the integrand, as functions on the line
+  -- the kernel row, as a function on the line
   have hκc : Continuous fun y : ℝ => k (x, Set.projIcc a b hab.le y) :=
     k.continuous.comp (continuous_const.prodMk continuous_projIcc)
-  have hεc : Continuous fun y : ℝ =>
-      (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y) :=
-    (u - quadInterpCLM hab.le p u).continuous.comp continuous_projIcc
   -- the panel interpolant, and its values at the three nodes
   have hinj : Set.InjOn (fun q => ((quadNode hab.le p j q : ℝ)))
       (↑(Finset.univ : Finset (Fin (2 + 1)))) := (hnodes.injective j hj).injOn
@@ -533,7 +507,7 @@ private theorem abs_panel_integral_le (hab : a < b) {k : C(Set.Icc a b × Set.Ic
       = G (((quadBreak hab.le p j : ℝ) + (quadBreak hab.le p (j + 1) : ℝ)) / 2) := by
     rw [← hn1]
     exact hqnode 1
-  -- the interpolant on the panel, and the resulting Simpson error
+  -- the interpolation error on the panel, as a function on the line
   have hεval : ∀ y ∈ Set.Icc ((quadBreak hab.le p j : ℝ)) ((quadBreak hab.le p (j + 1) : ℝ)),
       (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)
         = G y - (panelPoly (quadNode hab.le p) j u).eval y := by
@@ -543,124 +517,49 @@ private theorem abs_panel_integral_le (hab : a < b) {k : C(Set.Icc a b × Set.Ic
     rw [ContinuousMap.sub_apply, hu, hproj, quadInterpCLM,
       piecewisePolyInterpCLM_apply_of_mem hnodes u hj (by rw [hproj]; exact hy.1)
         (by rw [hproj]; exact hy.2), hproj]
-  have hinteps : (∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-        (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y))
-      = (∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)), G y)
-        - ((quadBreak hab.le p (j + 1) : ℝ) - (quadBreak hab.le p j : ℝ)) / 6 *
-          (G ((quadBreak hab.le p j : ℝ))
-            + 4 * G ((((quadBreak hab.le p j : ℝ)) + ((quadBreak hab.le p (j + 1) : ℝ))) / 2)
-            + G ((quadBreak hab.le p (j + 1) : ℝ))) := by
-    have hq := Quadrature.integral_eq_simpson_of_natDegree_le hle hqdeg
-    rw [hqα, hqβ, hqm] at hq
-    rw [← hq, ← intervalIntegral.integral_sub (hG.continuous.intervalIntegrable _ _)
-      ((panelPoly (quadNode hab.le p) j u).continuous.intervalIntegrable _ _)]
+  have hcongr : (∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
+        k (x, Set.projIcc a b hab.le y)
+          * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y))
+      = ∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
+          k (x, Set.projIcc a b hab.le y)
+            * (G y - (panelPoly (quadNode hab.le p) j u).eval y) := by
     refine intervalIntegral.integral_congr fun y hy => ?_
     rw [Set.uIcc_of_le hle] at hy
-    exact hεval y hy
+    simp only [hεval y hy]
   have hstep : ∀ i : ℕ, i < 4 → ∀ y : ℝ,
       HasDerivAt (iteratedDeriv i G) (iteratedDeriv (i + 1) G y) y := by
     intro i hi y
     have hd := ((hG.differentiable_iteratedDeriv i (by exact_mod_cast hi)) y).hasDerivAt
     rwa [← iteratedDeriv_succ] at hd
   have hc4 : Continuous (iteratedDeriv 4 G) := hG.continuous_iteratedDeriv 4 le_rfl
-  have hsimp : |∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-        (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)|
-      ≤ M₄ * (2 * quadMesh a b p) ^ 5 / 2880 := by
-    rw [hinteps, ← hlen]
-    exact Quadrature.abs_sub_simpson_le (g := G) (g' := iteratedDeriv 1 G)
-      (g'' := iteratedDeriv 2 G) (g₃ := iteratedDeriv 3 G) (g₄ := iteratedDeriv 4 G) hle
-      (fun y _ => by simpa only [iteratedDeriv_zero] using hstep 0 (by norm_num) y)
-      (fun y _ => hstep 1 (by norm_num) y) (fun y _ => hstep 2 (by norm_num) y)
-      (fun y _ => hstep 3 (by norm_num) y) hc4.continuousOn
-      (fun t ht => hM₄ t (hmemab t ht))
-  -- the splitting of the kernel on the panel
-  have hdecomp : (∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-        k (x, Set.projIcc a b hab.le y)
-          * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y))
-      = k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ)))
-          * (∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-              (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y))
-        + ∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-            (k (x, Set.projIcc a b hab.le y)
-                - k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ))))
-              * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y) := by
-    have hcongr : (∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-          k (x, Set.projIcc a b hab.le y)
-            * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y))
-        = ∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-            (k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ)))
-                * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)
-              + (k (x, Set.projIcc a b hab.le y)
-                  - k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ))))
-                * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)) :=
-      intervalIntegral.integral_congr fun y _ => by ring
-    have hint1 : IntervalIntegrable (fun y : ℝ =>
-        k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ)))
-          * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)) MeasureTheory.volume
-        ((quadBreak hab.le p j : ℝ)) ((quadBreak hab.le p (j + 1) : ℝ)) :=
-      Continuous.intervalIntegrable (continuous_const.mul hεc) _ _
-    have hint2 : IntervalIntegrable (fun y : ℝ =>
-        (k (x, Set.projIcc a b hab.le y)
-            - k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ))))
-          * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)) MeasureTheory.volume
-        ((quadBreak hab.le p j : ℝ)) ((quadBreak hab.le p (j + 1) : ℝ)) :=
-      Continuous.intervalIntegrable ((hκc.sub continuous_const).mul hεc) _ _
-    rw [hcongr, intervalIntegral.integral_add hint1 hint2,
-      intervalIntegral.integral_const_mul]
-  -- the two terms
-  have hterm1 : |k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ)))
-        * (∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-            (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y))|
-      ≤ ‖k‖ * (M₄ * (2 * quadMesh a b p) ^ 5 / 2880) := by
-    rw [abs_mul]
-    refine mul_le_mul ?_ hsimp (abs_nonneg _) (norm_nonneg k)
-    simpa using k.norm_coe_le_norm _
-  have hterm2 : |∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-        (k (x, Set.projIcc a b hab.le y)
-            - k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ))))
-          * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)|
-      ≤ L * (2 * quadMesh a b p) * E * (2 * quadMesh a b p) := by
-    have hLd0 : (0 : ℝ) ≤ L * (2 * quadMesh a b p) := mul_nonneg hL0 (by linarith)
-    have hbnd : ∀ y ∈ Set.uIoc ((quadBreak hab.le p j : ℝ)) ((quadBreak hab.le p (j + 1) : ℝ)),
-        ‖(k (x, Set.projIcc a b hab.le y)
-            - k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ))))
-          * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)‖
-          ≤ L * (2 * quadMesh a b p) * E := by
-      intro y hy
-      rw [Set.uIoc_of_le hle] at hy
-      have hy' : y ∈ Set.Icc ((quadBreak hab.le p j : ℝ)) ((quadBreak hab.le p (j + 1) : ℝ)) :=
-        ⟨hy.1.le, hy.2⟩
-      have hprojy : ((Set.projIcc a b hab.le y : Set.Icc a b) : ℝ) = y := by
-        rw [Set.projIcc_of_mem hab.le (hmemab y hy')]
-      have hproja : ((Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ)) : Set.Icc a b) : ℝ)
-          = ((quadBreak hab.le p j : ℝ)) := by
-        rw [Set.projIcc_of_mem hab.le (hmemab _ ⟨le_rfl, hle⟩)]
-      have h1 : |k (x, Set.projIcc a b hab.le y)
+  have hLd : ∀ y ∈ Set.Icc ((quadBreak hab.le p j : ℝ)) ((quadBreak hab.le p (j + 1) : ℝ)),
+      |k (x, Set.projIcc a b hab.le y)
           - k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ)))|
-          ≤ L * (2 * quadMesh a b p) := by
-        refine le_trans (hL x _ _) ?_
-        rw [hprojy, hproja, abs_of_nonneg (by linarith [hy'.1])]
-        nlinarith [hlen, hL0, hy'.1, hy'.2]
-      have h2 : |(u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)| ≤ E :=
-        le_trans (by simpa using (u - quadInterpCLM hab.le p u).norm_coe_le_norm _) hE
-      rw [Real.norm_eq_abs, abs_mul]
-      exact mul_le_mul h1 h2 (abs_nonneg _) hLd0
-    have habs2 : |2 * quadMesh a b p| = 2 * quadMesh a b p := abs_of_nonneg (by linarith)
-    have hres := intervalIntegral.norm_integral_le_of_norm_le_const hbnd
-    rw [Real.norm_eq_abs, hlen, habs2] at hres
-    exact hres
-  rw [hdecomp]
-  calc |k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ)))
-        * (∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-            (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y))
-        + ∫ y in ((quadBreak hab.le p j : ℝ))..((quadBreak hab.le p (j + 1) : ℝ)),
-            (k (x, Set.projIcc a b hab.le y)
-                - k (x, Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ))))
-              * (u - quadInterpCLM hab.le p u) (Set.projIcc a b hab.le y)|
-      ≤ ‖k‖ * (M₄ * (2 * quadMesh a b p) ^ 5 / 2880)
-          + L * (2 * quadMesh a b p) * E * (2 * quadMesh a b p) :=
-        (abs_add_le _ _).trans (add_le_add hterm1 hterm2)
-    _ = ‖k‖ * M₄ * quadMesh a b p ^ 5 / 90 + 4 * L * quadMesh a b p ^ 2 * E := by ring
+        ≤ L * (2 * quadMesh a b p) := by
+    intro y hy
+    have hprojy : ((Set.projIcc a b hab.le y : Set.Icc a b) : ℝ) = y := by
+      rw [Set.projIcc_of_mem hab.le (hmemab y hy)]
+    have hproja : ((Set.projIcc a b hab.le ((quadBreak hab.le p j : ℝ)) : Set.Icc a b) : ℝ)
+        = ((quadBreak hab.le p j : ℝ)) := by
+      rw [Set.projIcc_of_mem hab.le (hmemab _ ⟨le_rfl, hle⟩)]
+    refine le_trans (hL x _ _) ?_
+    rw [hprojy, hproja, abs_of_nonneg (by linarith [hy.1])]
+    nlinarith [hlen, hL0, hy.1, hy.2]
+  have hEd : ∀ y ∈ Set.Icc ((quadBreak hab.le p j : ℝ)) ((quadBreak hab.le p (j + 1) : ℝ)),
+      |G y - (panelPoly (quadNode hab.le p) j u).eval y| ≤ E := by
+    intro y hy
+    rw [← hεval y hy]
+    exact le_trans (by simpa using (u - quadInterpCLM hab.le p u).norm_coe_le_norm _) hE
+  have h := Quadrature.abs_integral_mul_sub_eval_le (g := G) (g' := iteratedDeriv 1 G)
+    (g'' := iteratedDeriv 2 G) (g₃ := iteratedDeriv 3 G) (g₄ := iteratedDeriv 4 G) hle
+    (fun y _ => by simpa only [iteratedDeriv_zero] using hstep 0 (by norm_num) y)
+    (fun y _ => hstep 1 (by norm_num) y) (fun y _ => hstep 2 (by norm_num) y)
+    (fun y _ => hstep 3 (by norm_num) y) hc4.continuousOn (fun t ht => hM₄ t (hmemab t ht))
+    hqdeg hqα hqm hqβ hκc.continuousOn (by simpa using k.norm_coe_le_norm _) hLd hEd
+  rw [hcongr]
+  refine h.trans (le_of_eq ?_)
+  rw [hlen]
+  ring
 
 /-- **(12.3.31)**: for a kernel Lipschitz in its second variable and `u ∈ C⁴[a, b]`,
 

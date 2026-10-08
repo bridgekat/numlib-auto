@@ -1,0 +1,9 @@
+[[node]]
+id = "intervalIntegrable_log_abs_sin"
+
+[[node]]
+id = "integral_log_abs_sin_add_pi"
+
+[[node]]
+id = "integral_log_abs_cos_sub_cos"
+source = "[han2009theoretical] Example 12.5.3"

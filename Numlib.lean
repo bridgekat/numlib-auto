@@ -340,6 +340,7 @@ import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 import Numlib.Analysis.SpecialFunctions.Integrals.Beta
+import Numlib.Analysis.SpecialFunctions.Integrals.LogTrigonometric
 import Numlib.Analysis.SpecialFunctions.LaplaceTransform
 import Numlib.Analysis.SpecialFunctions.Log
 import Numlib.Analysis.SpecialFunctions.Pow.Deriv
@@ -369,6 +370,7 @@ import Numlib.Approximation.Jackson
 import Numlib.Approximation.LeastSquares
 import Numlib.Approximation.MarkovInequality
 import Numlib.Approximation.MvPolynomial
+import Numlib.Approximation.Muntz
 import Numlib.Approximation.NewtonCotes
 import Numlib.Approximation.NewtonForm
 import Numlib.Approximation.NodalInterpolation

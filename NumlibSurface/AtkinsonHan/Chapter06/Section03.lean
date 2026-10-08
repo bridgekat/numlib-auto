@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Numlib.Analysis.PDE.Heat.SineSeries
+import Numlib.FiniteDifference.Derivative
 import Numlib.FiniteDifference.TwoLevel
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import NumlibSurface.AtkinsonHan.Chapter06.Section02
@@ -263,28 +264,10 @@ theorem abs_sub_backward_time_le {x t k : ℝ} (hx : x ∈ Icc (0 : ℝ) π) (ht
 theorem abs_centred_sub_le {x t h : ℝ} (hxl : x - h ∈ Icc (0 : ℝ) π) (hxr : x + h ∈ Icc (0 : ℝ) π)
     (hh : 0 ≤ h) (ht : t ∈ Icc (0 : ℝ) T) :
     |u (x + h, t) - 2 * u (x, t) + u (x - h, t) - h ^ 2 * ux 2 (x, t)| ≤ Mxxxx * h ^ 4 / 12 := by
-  have hx : x ∈ Icc (0 : ℝ) π := ⟨by linarith [hxl.1], by linarith [hxr.2]⟩
-  have hy : ∀ m < 4, ∀ s ∈ Icc (0 : ℝ) π,
-      HasDerivWithinAt (fun y => ux m (y, t)) (ux (m + 1) (s, t)) (Icc 0 π) s :=
-    fun m hm s hs => hu.hasDerivWithinAt_ux m hm t ht s hs
-  have hK : ∀ s ∈ Icc (0 : ℝ) π, ‖ux 4 (s, t)‖ ≤ Mxxxx := fun s hs => by
-    rw [Real.norm_eq_abs]; exact hu.abs_ux_four_le s hs t ht
-  have hr := norm_sub_sum_smul_le (y := fun m y => ux m (y, t)) 4 hy hK hx hxr
-  have hl := norm_sub_sum_smul_le (y := fun m y => ux m (y, t)) 4 hy hK hx hxl
-  simp only [Finset.sum_range_succ, Finset.sum_range_zero, Nat.factorial, smul_eq_mul,
-    Real.norm_eq_abs, hu.ux_zero, add_sub_cancel_left, sub_sub_cancel_left, abs_neg,
-    abs_of_nonneg hh] at hr hl
-  push_cast at hr hl
-  have e : u (x + h, t) - 2 * u (x, t) + u (x - h, t) - h ^ 2 * ux 2 (x, t)
-      = (u (x + h, t) - (0 + h ^ 0 / 1 * u (x, t) + h ^ 1 / 1 * ux 1 (x, t)
-          + h ^ 2 / 2 * ux 2 (x, t) + h ^ 3 / 6 * ux 3 (x, t)))
-        + (u (x - h, t) - (0 + (-h) ^ 0 / 1 * u (x, t) + (-h) ^ 1 / 1 * ux 1 (x, t)
-          + (-h) ^ 2 / 2 * ux 2 (x, t) + (-h) ^ 3 / 6 * ux 3 (x, t))) := by
-    ring
-  rw [e]
-  calc _ ≤ Mxxxx * h ^ 4 / 24 + Mxxxx * h ^ 4 / 24 :=
-        (abs_add_le _ _).trans (add_le_add hr hl)
-    _ = Mxxxx * h ^ 4 / 12 := by ring
+  simpa only [hu.ux_zero] using
+    FiniteDifference.abs_secondDiff_sub_le (y := fun m y => ux m (y, t))
+    (fun m hm s hs => hu.hasDerivWithinAt_ux m hm t ht s hs)
+    (fun s hs => hu.abs_ux_four_le s hs t ht) hxl hxr hh
 
 end IsRegularHeatSolution
 

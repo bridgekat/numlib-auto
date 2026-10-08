@@ -47,7 +47,9 @@ continuity bound, and the mean value form of the composite trapezoidal error.
   composite mean value form `∫_a^b g - simpsonSum g a h N = -h⁴ (b - a) g⁗(ξ)/2880`.
   `Quadrature.abs_sub_simpson_le` is the one-panel bound `M (β - α)⁵/2880` that follows from it,
   and `Quadrature.integral_eq_simpson_of_natDegree_le` the exactness of Simpson's rule on
-  polynomials of degree at most three.
+  polynomials of degree at most three; together they give
+  `Quadrature.abs_integral_mul_sub_eval_le`, the `𝒪((β - α)⁵)` bound for a weighted integral of a
+  quadratic interpolation error over one panel.
 * `Quadrature.norm_sub_simpsonSum_le`, the composite Simpson bound `M h⁴ (b - a)/2880` for an
   integrand with values in a real Banach space, by duality from the scalar mean value form.
 
@@ -1245,6 +1247,69 @@ theorem integral_eq_simpson_of_natDegree_le {α β : ℝ} (hαβ : α ≤ β) {p
       - (β - α) / 6 * (p.eval α + 4 * p.eval ((α + β) / 2) + p.eval β) = 0 :=
     le_antisymm (by simpa using hmem.2) (by simpa using hmem.1)
   linarith [hzero]
+
+/-- **A weighted integral of a quadratic interpolation error on one panel.**  Let `g` have four
+derivatives on `[α, β]` with `|g⁗| ≤ M` there, and let `q` be a polynomial of degree at most three
+that agrees with `g` at `α`, `(α + β)/2` and `β` (for instance the quadratic interpolant at those
+three nodes). For a weight `κ` continuous on the panel with `|κ α| ≤ K`, `|κ y - κ α| ≤ L` and
+`|g y - q y| ≤ E` on `[α, β]`,
+
+`|∫_α^β κ (g - q)| ≤ K M (β - α)⁵/2880 + L E (β - α)`.
+
+Splitting `κ = κ α + (κ - κ α)`, the integral of `q` over the panel is Simpson's rule for `g`
+(`integral_eq_simpson_of_natDegree_le`), so the first part is `κ α` times the Simpson panel error
+(`abs_sub_simpson_le`). For a weight Lipschitz with constant `Λ` the oscillation is
+`L = Λ (β - α)` and both parts are `𝒪((β - α)⁵)` against an `𝒪((β - α)³)` interpolation error:
+the gain of one power of the mesh in iterated piecewise quadratic collocation
+([han2009theoretical] (12.3.31)). -/
+theorem abs_integral_mul_sub_eval_le {α β M K L E : ℝ} (hαβ : α ≤ β)
+    (hg : ∀ x ∈ Set.Icc α β, HasDerivAt g (g' x) x)
+    (hg' : ∀ x ∈ Set.Icc α β, HasDerivAt g' (g'' x) x)
+    (hg'' : ∀ x ∈ Set.Icc α β, HasDerivAt g'' (g₃ x) x)
+    (hg₃ : ∀ x ∈ Set.Icc α β, HasDerivAt g₃ (g₄ x) x) (hc₄ : ContinuousOn g₄ (Set.Icc α β))
+    (hM : ∀ t ∈ Set.Icc α β, |g₄ t| ≤ M) {q : Polynomial ℝ} (hq : q.natDegree ≤ 3)
+    (hqα : q.eval α = g α) (hqm : q.eval ((α + β) / 2) = g ((α + β) / 2))
+    (hqβ : q.eval β = g β) {κ : ℝ → ℝ} (hκ : ContinuousOn κ (Set.Icc α β)) (hK : |κ α| ≤ K)
+    (hL : ∀ y ∈ Set.Icc α β, |κ y - κ α| ≤ L) (hE : ∀ y ∈ Set.Icc α β, |g y - q.eval y| ≤ E) :
+    |∫ y in α..β, κ y * (g y - q.eval y)| ≤ K * (M * (β - α) ^ 5 / 2880) + L * E * (β - α) := by
+  have hgc : ContinuousOn g (Set.Icc α β) := fun x hx =>
+    (hg x hx).continuousAt.continuousWithinAt
+  have hεc : ContinuousOn (fun y => g y - q.eval y) (Set.Icc α β) :=
+    hgc.sub q.continuous.continuousOn
+  have hu : Set.uIcc α β = Set.Icc α β := Set.uIcc_of_le hαβ
+  have hint : ∀ {f : ℝ → ℝ}, ContinuousOn f (Set.Icc α β) →
+      IntervalIntegrable f MeasureTheory.volume α β := fun hf =>
+    ContinuousOn.intervalIntegrable (by rwa [hu])
+  -- the Simpson part
+  have hsimp : |∫ y in α..β, (g y - q.eval y)| ≤ M * (β - α) ^ 5 / 2880 := by
+    rw [intervalIntegral.integral_sub (hint hgc) (hint q.continuous.continuousOn),
+      integral_eq_simpson_of_natDegree_le hαβ hq, hqα, hqm, hqβ]
+    exact abs_sub_simpson_le hαβ hg hg' hg'' hg₃ hc₄ hM
+  -- the oscillation part
+  have hosc : |∫ y in α..β, (κ y - κ α) * (g y - q.eval y)| ≤ L * E * (β - α) := by
+    have hbnd : ∀ y ∈ Set.uIoc α β, ‖(κ y - κ α) * (g y - q.eval y)‖ ≤ L * E := by
+      intro y hy
+      rw [Set.uIoc_of_le hαβ] at hy
+      have hy' : y ∈ Set.Icc α β := ⟨hy.1.le, hy.2⟩
+      rw [Real.norm_eq_abs, abs_mul]
+      exact mul_le_mul (hL y hy') (hE y hy') (abs_nonneg _)
+        ((abs_nonneg _).trans (hL y hy'))
+    have h := intervalIntegral.norm_integral_le_of_norm_le_const hbnd
+    rwa [Real.norm_eq_abs, abs_of_nonneg (sub_nonneg.2 hαβ)] at h
+  have hsplit : (∫ y in α..β, κ y * (g y - q.eval y))
+      = κ α * (∫ y in α..β, (g y - q.eval y))
+        + ∫ y in α..β, (κ y - κ α) * (g y - q.eval y) := by
+    have hcongr : (∫ y in α..β, κ y * (g y - q.eval y))
+        = ∫ y in α..β, (κ α * (g y - q.eval y) + (κ y - κ α) * (g y - q.eval y)) :=
+      intervalIntegral.integral_congr fun y _ => by ring
+    rw [hcongr, intervalIntegral.integral_add
+      (hint (f := fun y => κ α * (g y - q.eval y)) (continuousOn_const.mul hεc))
+      (hint (f := fun y => (κ y - κ α) * (g y - q.eval y))
+        ((hκ.sub continuousOn_const).mul hεc)), intervalIntegral.integral_const_mul]
+  rw [hsplit]
+  refine (abs_add_le _ _).trans (add_le_add ?_ hosc)
+  rw [abs_mul]
+  exact mul_le_mul hK hsimp (abs_nonneg _) ((abs_nonneg _).trans hK)
 
 end SimpsonError
 

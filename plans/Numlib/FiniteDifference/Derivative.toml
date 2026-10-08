@@ -125,3 +125,7 @@ id = "_root_.Lagrange.derivMatrix_node_last_last"
 
 [[node]]
 id = "_root_.Lagrange.chebyshevLobattoDerivMatrix_apply"
+
+[[node]]
+id = "abs_secondDiff_sub_le"
+source = "[quarteroni2000numerical] (10.66); [han2009theoretical] Example 6.3.3"

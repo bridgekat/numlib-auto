@@ -53,11 +53,12 @@ introducing a notion. What is new is the dimension count.
   below is Exercise 14.1.1, the affine change of variables, an unrelated result with a colliding
   number.
 
-* The **moduli of continuity** `ω(f, h) = sup_{|x − y| ≤ h} |f(x) − f(y)|` and
-  `ω_n(f, h) = ∑_{|α| = n} ω(∂^α f, h)`, and the norm `‖f‖_{*,n} = max_{|α| ≤ n} ‖∂^α f‖_∞`, which
-  Theorem 14.1.1 is stated with. Nothing in Mathlib or in `Numlib` defines a modulus of continuity
-  yet. It belongs in a backbone module of its own — §12.2 and §12.5 want it too — and is not
-  written here, because with Theorem 14.1.1 out of reach chapter 14 has no consumer for it.
+* The **higher moduli of continuity** `ω_n(f, h) = ∑_{|α| = n} ω(∂^α f, h)` and the norm
+  `‖f‖_{*,n} = max_{|α| ≤ n} ‖∂^α f‖_∞`, which Theorem 14.1.1 is stated with. The modulus
+  `ω(f, h) = sup_{|x − y| ≤ h} |f(x) − f(y)|` itself is the backbone's
+  `ContinuousMap.modulusOfContinuity` (`Numlib/Approximation/Interpolation`), for a continuous
+  function on any compact metric space, `D ⊆ ℝ^d` included; `ω_n` and `‖f‖_{*,n}` are not written
+  here, because with Theorem 14.1.1 out of reach chapter 14 has no consumer for them.
 -/
 
 open Module

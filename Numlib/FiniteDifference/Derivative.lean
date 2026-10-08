@@ -324,6 +324,35 @@ theorem iteratedDeriv_two_sub_secondCentredDiff_eq_one_point (hh : 0 < h)
   rw [hT, hgζ]
   ring
 
+/-- **The second centred difference error as a bound, for a tower of one-sided derivatives**: if
+`y 0, …, y 4` is a tower of derivatives within `[a, b]` (`y (m + 1)` is the derivative of `y m`
+within `[a, b]`, one-sided at its ends), `|y 4| ≤ K` on `[a, b]`, and `x - h, x + h ∈ [a, b]` with
+`h ≥ 0`, then `|y 0 (x + h) - 2 y 0 x + y 0 (x - h) - h² y 2 x| ≤ K h⁴ / 12`. The two third-order
+Taylor bounds at `x` (`norm_sub_sum_smul_le`) are added, and the odd terms cancel. Only the
+derivatives within the interval are used, so the bound holds up to its ends, and no continuity of
+`y 4` is needed ([quarteroni2000numerical] (10.66), [han2009theoretical] Example 6.3.3). -/
+theorem abs_secondDiff_sub_le {y : ℕ → ℝ → ℝ} {a b K : ℝ}
+    (hy : ∀ m < 4, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
+    (hK : ∀ s ∈ Icc a b, |y 4 s| ≤ K) (hxl : x - h ∈ Icc a b) (hxr : x + h ∈ Icc a b)
+    (hh : 0 ≤ h) :
+    |y 0 (x + h) - 2 * y 0 x + y 0 (x - h) - h ^ 2 * y 2 x| ≤ K * h ^ 4 / 12 := by
+  have hx : x ∈ Icc a b := ⟨by linarith [hxl.1], by linarith [hxr.2]⟩
+  have hK' : ∀ s ∈ Icc a b, ‖y 4 s‖ ≤ K := fun s hs => by rw [Real.norm_eq_abs]; exact hK s hs
+  have hr := norm_sub_sum_smul_le 4 hy hK' hx hxr
+  have hl := norm_sub_sum_smul_le 4 hy hK' hx hxl
+  simp only [sum_range_succ, sum_range_zero, Nat.factorial, smul_eq_mul, Real.norm_eq_abs,
+    add_sub_cancel_left, sub_sub_cancel_left, abs_neg, abs_of_nonneg hh] at hr hl
+  push_cast at hr hl
+  have e : y 0 (x + h) - 2 * y 0 x + y 0 (x - h) - h ^ 2 * y 2 x
+      = (y 0 (x + h) - (0 + h ^ 0 / 1 * y 0 x + h ^ 1 / 1 * y 1 x
+          + h ^ 2 / 2 * y 2 x + h ^ 3 / 6 * y 3 x))
+        + (y 0 (x - h) - (0 + (-h) ^ 0 / 1 * y 0 x + (-h) ^ 1 / 1 * y 1 x
+          + (-h) ^ 2 / 2 * y 2 x + (-h) ^ 3 / 6 * y 3 x)) := by
+    ring
+  rw [e]
+  calc _ ≤ K * h ^ 4 / 24 + K * h ^ 4 / 24 := (abs_add_le _ _).trans (add_le_add hr hl)
+    _ = K * h ^ 4 / 12 := by ring
+
 end Quotients
 
 /-! ### Compact schemes -/

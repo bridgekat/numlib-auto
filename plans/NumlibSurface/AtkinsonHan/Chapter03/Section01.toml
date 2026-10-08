@@ -13,25 +13,4 @@ id = "corollary_3_1_3"
 id = "corollary_3_1_4"
 
 [[node]]
-id = "memLp_rpow"
-
-[[node]]
-id = "powerL2"
-
-[[node]]
-id = "coeFn_powerL2"
-
-[[node]]
-id = "inner_powerL2"
-
-[[node]]
-id = "linearIndependent_powerL2"
-
-[[node]]
-id = "dist_sq_powerL2"
-
-[[node]]
-id = "dense_span_monomials"
-
-[[node]]
 id = "theorem_3_1_5"
