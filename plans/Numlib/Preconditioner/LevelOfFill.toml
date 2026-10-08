@@ -1,0 +1,28 @@
+namespace = "Matrix"
+
+[[node]]
+id = "initialLevel"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 10.5"
+
+[[node]]
+id = "levelOfFill"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (10.17)"
+
+[[node]]
+id = "levelPattern"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 10.3.3, Algorithm 10.5"
+
+[[node]]
+id = "levelPattern_zero"
+
+[[node]]
+id = "IsFillPath"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 10.3.3"
+
+[[node]]
+id = "levelOfFill_eq_iff_isLeast"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.7"
+
+[[node]]
+id = "levelOfFill_ne_top_iff"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.6"

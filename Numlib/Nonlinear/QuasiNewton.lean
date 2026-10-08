@@ -22,8 +22,12 @@ exact value `‖Q₊ - Q‖ = ‖y - Q s‖ / ‖s‖`). The iteration (7.11)–
 with the junk-valued `ContinuousLinearMap.inverse`, as `Newton.step` does, so that a singular `Q`
 leaves the state unchanged rather than breaking the definition.
 
-On `Matrix n n ℝ` the update is `Matrix.broydenUpdate`, bridged to the operator form through
-`Matrix.toEuclideanCLM`, with the least-change property in the Frobenius norm
+On `Matrix n n ℝ` the update is `Matrix.broydenUpdate`, the case `c = s` of the rank-one secant
+update `Matrix.rankOneSecantUpdate B s y c` ([quarteroni2000numerical] (7.42)), whose symmetric
+variants for minimization are in `Numlib/Optimization/QuasiNewton`. It is bridged to the operator
+form through `Matrix.toEuclideanCLM`, its error against any `J` splits as
+`(Q - J) (1 - P) + ((y - J s) sᵀ) / (sᵀ s)` (`Matrix.broydenUpdate_sub_eq`), with the least-change
+property in the Frobenius norm
 (`Matrix.frobenius_norm_broydenUpdate_sub_le`, Dennis–Schnabel Lemma 8.1.1) and the
 **bounded deterioration** estimate
 `‖Q₊ - J(z)‖_F ≤ ‖Q - J(z)‖_F + (L / 2) (‖x₊ - z‖ + ‖x - z‖)`
@@ -166,28 +170,83 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 
 open WithLp
 
+/-- **The rank-one secant update** ([quarteroni2000numerical] (7.42)):
+`B₊ = B + ((y - B s) cᵀ) / (cᵀ s)`, with an arbitrary scaling vector `c`. With `c = s` it is
+Broyden's update `Matrix.broydenUpdate`; with `c = y - B s` it is the symmetric rank-one update
+`Matrix.sr1Update` of `Numlib/Optimization/QuasiNewton`. For `cᵀ s = 0` the coefficient is the
+junk value `0` and `B₊ = B`. -/
+noncomputable def rankOneSecantUpdate (B : Matrix n n ℝ) (s y c : n → ℝ) : Matrix n n ℝ :=
+  B + (1 / (c ⬝ᵥ s)) • vecMulVec (y - B *ᵥ s) c
+
+omit [DecidableEq n] in
+/-- **The secant equation** for the rank-one update: `B₊ s = y` whenever `cᵀ s ≠ 0`. -/
+theorem rankOneSecantUpdate_mulVec (B : Matrix n n ℝ) {s c : n → ℝ} (hcs : c ⬝ᵥ s ≠ 0)
+    (y : n → ℝ) : rankOneSecantUpdate B s y c *ᵥ s = y := by
+  simp only [rankOneSecantUpdate, add_mulVec, smul_mulVec, vecMulVec_mulVec,
+    op_smul_eq_smul, smul_smul, one_div, inv_mul_cancel₀ hcs, one_smul]
+  abel
+
 /-- **Broyden's update in matrix form** ([quarteroni2000numerical] (7.14)):
-`Q₊ = Q + ((y - Q s) sᵀ) / (sᵀ s)`. -/
+`Q₊ = Q + ((y - Q s) sᵀ) / (sᵀ s)`, the rank-one secant update with `c = s`. -/
 noncomputable def broydenUpdate (Q : Matrix n n ℝ) (s y : n → ℝ) : Matrix n n ℝ :=
-  Q + (1 / (s ⬝ᵥ s)) • vecMulVec (y - Q *ᵥ s) s
+  rankOneSecantUpdate Q s y s
+
+omit [DecidableEq n] in
+/-- Broyden's update is the rank-one secant update with `c = s`. -/
+theorem broydenUpdate_eq_rankOneSecantUpdate (B : Matrix n n ℝ) (s y : n → ℝ) :
+    broydenUpdate B s y = rankOneSecantUpdate B s y s :=
+  rfl
+
+omit [DecidableEq n] in
+/-- Broyden's update written out: `Q₊ = Q + ((y - Q s) sᵀ) / (sᵀ s)`. -/
+theorem broydenUpdate_eq (Q : Matrix n n ℝ) (s y : n → ℝ) :
+    broydenUpdate Q s y = Q + (1 / (s ⬝ᵥ s)) • vecMulVec (y - Q *ᵥ s) s :=
+  rfl
+
+/-- **The error of Broyden's update against any matrix `J`**: with `P = s sᵀ / (sᵀ s)`,
+`Q₊ - J = (Q - J) (1 - P) + ((y - J s) sᵀ) / (sᵀ s)`. The first term is the old error with its
+component along the step removed, the second the secant residual of `J`; both the bounded
+deterioration estimate and the Dennis–Moré inequality start from this decomposition. -/
+theorem broydenUpdate_sub_eq (Q J : Matrix n n ℝ) (s y : n → ℝ) :
+    broydenUpdate Q s y - J
+      = (Q - J) * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)
+        + (1 / (s ⬝ᵥ s)) • vecMulVec (y - J *ᵥ s) s := by
+  rw [broydenUpdate_eq, Matrix.mul_sub, Matrix.mul_one, Matrix.mul_smul, mul_vecMulVec,
+    sub_mulVec, show y - Q *ᵥ s = (y - J *ᵥ s) - (Q *ᵥ s - J *ᵥ s) by abel, sub_vecMulVec,
+    smul_sub]
+  abel
 
 omit [DecidableEq n] in
 /-- Broyden's update with a zero step does not move: `broydenUpdate Q 0 y = Q`. -/
 theorem broydenUpdate_zero_left (Q : Matrix n n ℝ) (y : n → ℝ) :
     broydenUpdate Q 0 y = Q := by
-  simp [broydenUpdate]
+  simp [broydenUpdate_eq]
 
 /-- The matrix update is the operator update: `toEuclideanCLM (broydenUpdate Q s y)` is
 `Broyden.update` of `toEuclideanCLM Q` with the secant pair read in `EuclideanSpace ℝ n`. -/
 theorem toEuclideanCLM_broydenUpdate (Q : Matrix n n ℝ) (s y : n → ℝ) :
     toEuclideanCLM (𝕜 := ℝ) (broydenUpdate Q s y)
       = Broyden.update (toEuclideanCLM (𝕜 := ℝ) Q) (toLp 2 s) (toLp 2 y) := by
-  rw [broydenUpdate, Broyden.update, map_add, map_smul, toEuclideanCLM_vecMulVec,
+  rw [broydenUpdate_eq, Broyden.update, map_add, map_smul, toEuclideanCLM_vecMulVec,
     EuclideanSpace.inner_toLp_toLp, star_trivial, toEuclideanCLM_toLp, ← toLp_sub]
 
 section Frobenius
 
 open scoped Matrix.Norms.Frobenius
+
+/-- The rank-one matrix `(w sᵀ) / (sᵀ s)` has Frobenius norm at most `‖w‖ / ‖s‖` (equality in fact;
+both sides are `0` for `s = 0` by the junk value of the division). -/
+theorem frobenius_norm_smul_vecMulVec_le (w s : n → ℝ) :
+    ‖(1 / (s ⬝ᵥ s)) • vecMulVec w s‖ ≤ ‖toLp 2 w‖ / ‖toLp 2 s‖ := by
+  rcases eq_or_ne s 0 with rfl | hs
+  · simp
+  have hs0 : 0 < ‖toLp 2 s‖ := norm_pos_iff.2 (by simpa using hs)
+  rw [norm_smul, Real.norm_eq_abs, dotProduct_self_eq_norm_sq, abs_of_nonneg (by positivity)]
+  calc 1 / ‖toLp 2 s‖ ^ 2 * ‖vecMulVec w s‖
+      ≤ 1 / ‖toLp 2 s‖ ^ 2 * (‖toLp 2 w‖ * ‖toLp 2 s‖) := by
+        gcongr
+        exact frobenius_norm_vecMulVec_le _ _
+    _ = ‖toLp 2 w‖ / ‖toLp 2 s‖ := by field_simp
 
 /-- **Least change in the Frobenius norm** (Dennis–Schnabel Lemma 8.1.1): among all matrices
 `Q'` satisfying the secant condition `Q' s = y`, Broyden's update is the closest to `Q`, since
@@ -195,13 +254,10 @@ open scoped Matrix.Norms.Frobenius
 theorem frobenius_norm_broydenUpdate_sub_le (Q Q' : Matrix n n ℝ) {s y : n → ℝ} (hs : s ≠ 0)
     (hQ's : Q' *ᵥ s = y) : ‖broydenUpdate Q s y - Q‖ ≤ ‖Q' - Q‖ := by
   have hs0 : 0 < ‖toLp 2 s‖ := norm_pos_iff.2 (by simpa using hs)
-  rw [broydenUpdate, add_sub_cancel_left, norm_smul, ← hQ's, ← sub_mulVec, Real.norm_eq_abs,
-    dotProduct_self_eq_norm_sq, abs_of_nonneg (by positivity)]
-  calc 1 / ‖toLp 2 s‖ ^ 2 * ‖vecMulVec ((Q' - Q) *ᵥ s) s‖
-      ≤ 1 / ‖toLp 2 s‖ ^ 2 * (‖toLp 2 ((Q' - Q) *ᵥ s)‖ * ‖toLp 2 s‖) := by
-        gcongr
-        exact frobenius_norm_vecMulVec_le _ _
-    _ ≤ 1 / ‖toLp 2 s‖ ^ 2 * (‖Q' - Q‖ * ‖toLp 2 s‖ * ‖toLp 2 s‖) := by
+  rw [broydenUpdate_eq, add_sub_cancel_left, ← hQ's, ← sub_mulVec]
+  calc ‖(1 / (s ⬝ᵥ s)) • vecMulVec ((Q' - Q) *ᵥ s) s‖
+      ≤ ‖toLp 2 ((Q' - Q) *ᵥ s)‖ / ‖toLp 2 s‖ := frobenius_norm_smul_vecMulVec_le _ _
+    _ ≤ ‖Q' - Q‖ * ‖toLp 2 s‖ / ‖toLp 2 s‖ := by
         gcongr
         exact frobenius_norm_mulVec_le _ _
     _ = ‖Q' - Q‖ := by field_simp
@@ -234,11 +290,8 @@ theorem frobenius_norm_broydenUpdate_sub_le_add {F : EuclideanSpace ℝ n → Eu
   have hs0 : 0 < ‖toLp 2 s‖ := norm_pos_iff.2 (by simpa using hs)
   -- the decomposition
   have hdecomp : broydenUpdate Q s y - J z
-      = (Q - J z) * (1 - P) + (1 / (s ⬝ᵥ s)) • vecMulVec w s := by
-    rw [broydenUpdate, hPdef, Matrix.mul_sub, Matrix.mul_one, Matrix.mul_smul, mul_vecMulVec,
-      hw, sub_mulVec, show y - Q *ᵥ s = (y - J z *ᵥ s) - (Q *ᵥ s - J z *ᵥ s) by abel,
-      sub_vecMulVec, smul_sub]
-    abel
+      = (Q - J z) * (1 - P) + (1 / (s ⬝ᵥ s)) • vecMulVec w s :=
+    broydenUpdate_sub_eq Q (J z) s y
   -- the mean value estimate for the secant residual
   have hmv : ‖toLp 2 w‖ ≤ L / 2 * (‖x - z‖ + ‖x + toLp 2 s - z‖) * ‖toLp 2 s‖ := by
     have h := Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add hD hF
@@ -248,14 +301,9 @@ theorem frobenius_norm_broydenUpdate_sub_le_add {F : EuclideanSpace ℝ n → Eu
     rw [hw, hy, toLp_sub, toLp_ofLp, toEuclideanCLM_toLp]
   have hsecond : ‖(1 / (s ⬝ᵥ s)) • vecMulVec w s‖
       ≤ L / 2 * (‖x + toLp 2 s - z‖ + ‖x - z‖) := by
-    rw [norm_smul, Real.norm_eq_abs, dotProduct_self_eq_norm_sq, abs_of_nonneg (by positivity)]
-    calc 1 / ‖toLp 2 s‖ ^ 2 * ‖vecMulVec w s‖
-        ≤ 1 / ‖toLp 2 s‖ ^ 2 * (‖toLp 2 w‖ * ‖toLp 2 s‖) := by
-          gcongr
-          exact frobenius_norm_vecMulVec_le _ _
-      _ ≤ 1 / ‖toLp 2 s‖ ^ 2
-            * (L / 2 * (‖x - z‖ + ‖x + toLp 2 s - z‖) * ‖toLp 2 s‖ * ‖toLp 2 s‖) := by
-          gcongr
+    calc ‖(1 / (s ⬝ᵥ s)) • vecMulVec w s‖ ≤ ‖toLp 2 w‖ / ‖toLp 2 s‖ :=
+          frobenius_norm_smul_vecMulVec_le _ _
+      _ ≤ L / 2 * (‖x - z‖ + ‖x + toLp 2 s - z‖) * ‖toLp 2 s‖ / ‖toLp 2 s‖ := by gcongr
       _ = L / 2 * (‖x + toLp 2 s - z‖ + ‖x - z‖) := by
           field_simp
           ring

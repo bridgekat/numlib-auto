@@ -1,7 +1,10 @@
 import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Basic
 import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Isometric
 import Mathlib.Analysis.CStarAlgebra.ContinuousLinearMap
+import Mathlib.Analysis.Matrix.PosDef
 import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.Stationary.Splitting
 
 /-!
@@ -43,8 +46,14 @@ Three things the usual framing obscures.
   and that is what convergence rests on.
 
 Everything is stated in an inner product space, complete where an inverse is needed; matrices reach
-it through `Matrix.toEuclideanCLM`.  The Cayley inequality is an upstreaming candidate on its own
-and should move beside the coercivity API as soon as a second consumer appears.
+it through `Matrix.toEuclideanCLM`.  The last section does that once for the surfaces: the matrix
+sweep is the operator sweep (`Matrix.toEuclideanCLM_peacemanRachfordTwo`), and for real symmetric
+positive definite `H`, `V` the spectral bounds hold for `Matrix.complexSpectralRadius`
+(`Matrix.PosDef.complexSpectralRadius_peacemanRachford_lt_one`,
+`Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le`,
+`Matrix.IsHermitian.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset`).  The Cayley
+inequality is an upstreaming candidate on its own and should move beside the coercivity API as soon
+as a second consumer appears.
 
 This is [saad2003iterative], §4.3: Algorithm 4.3 and the identities (4.50)–(4.52).  The book states
 no numbered result there and asserts the convergence claim in one sentence.
@@ -678,3 +687,167 @@ theorem spectralRadius_peacemanRachford_le_of_spectrum_subset {H V : F →L[ℂ]
 end Complex
 
 end Stationary
+
+/-! ### Matrices
+
+The sweep of two square matrices, read through `Matrix.toEuclideanCLM`, and the bounds of the
+previous sections for real symmetric positive definite matrices, read through `Matrix.complexify`
+and `Matrix.complexSpectralRadius`.  The matrix is written out,
+`(V + r₂ I)⁻¹ (H - r₂ I) (H + r₁ I)⁻¹ (V - r₁ I)`, with Mathlib's junk-valued `Matrix.inv`; the
+nonsingularity of the shifts is a hypothesis where the operator side needs it, and follows from
+positive definiteness in the corollaries. -/
+
+namespace Matrix
+
+open Stationary
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι]
+
+section RCLike
+
+variable {𝕜 : Type*} [RCLike 𝕜] {H V : Matrix ι ι 𝕜} {r₁ r₂ : ℝ}
+
+/-- The matrix `(V + r₂ I)⁻¹ (H - r₂ I) (H + r₁ I)⁻¹ (V - r₁ I)` of a two-parameter
+Peaceman–Rachford sweep acts on `EuclideanSpace 𝕜 ι` as the operator
+`Stationary.peacemanRachfordTwo` of `H` and `V`, when the shifts `H + r₁ I` and `V + r₂ I` are
+nonsingular. -/
+theorem toEuclideanCLM_peacemanRachfordTwo (hH : IsUnit (H + (r₁ : 𝕜) • (1 : Matrix ι ι 𝕜)))
+    (hV : IsUnit (V + (r₂ : 𝕜) • (1 : Matrix ι ι 𝕜))) :
+    toEuclideanCLM (n := ι) (𝕜 := 𝕜)
+        ((V + (r₂ : 𝕜) • 1)⁻¹ * (H - (r₂ : 𝕜) • 1) * (H + (r₁ : 𝕜) • 1)⁻¹ *
+          (V - (r₁ : 𝕜) • 1)) =
+      peacemanRachfordTwo (toEuclideanCLM (n := ι) (𝕜 := 𝕜) H)
+        (toEuclideanCLM (n := ι) (𝕜 := 𝕜) V) r₁ r₂ := by
+  rw [peacemanRachfordTwo, map_mul, map_mul, map_mul, toEuclideanCLM_nonsing_inv hV,
+    toEuclideanCLM_nonsing_inv hH, toEuclideanCLM_add_smul_one, toEuclideanCLM_add_smul_one,
+    toEuclideanCLM_sub_smul_one, toEuclideanCLM_sub_smul_one]
+
+/-- The matrix `(V + r₂ I)⁻¹ (I - (H - r₂ I)(H + r₁ I)⁻¹)` of the affine part of a two-parameter
+Peaceman–Rachford sweep acts on `EuclideanSpace 𝕜 ι` as `Stationary.peacemanRachfordTwoConst`. -/
+theorem toEuclideanCLM_peacemanRachfordTwoConst
+    (hH : IsUnit (H + (r₁ : 𝕜) • (1 : Matrix ι ι 𝕜)))
+    (hV : IsUnit (V + (r₂ : 𝕜) • (1 : Matrix ι ι 𝕜))) (b : EuclideanSpace 𝕜 ι) :
+    toEuclideanCLM (n := ι) (𝕜 := 𝕜)
+        ((V + (r₂ : 𝕜) • 1)⁻¹ * (1 - (H - (r₂ : 𝕜) • 1) * (H + (r₁ : 𝕜) • 1)⁻¹)) b =
+      peacemanRachfordTwoConst (toEuclideanCLM (n := ι) (𝕜 := 𝕜) H)
+        (toEuclideanCLM (n := ι) (𝕜 := 𝕜) V) r₁ r₂ b := by
+  rw [peacemanRachfordTwoConst, map_mul, map_sub, map_mul, map_one,
+    toEuclideanCLM_nonsing_inv hV, toEuclideanCLM_nonsing_inv hH, toEuclideanCLM_add_smul_one,
+    toEuclideanCLM_add_smul_one, toEuclideanCLM_sub_smul_one]
+  rfl
+
+end RCLike
+
+section Real
+
+variable {H V : Matrix ι ι ℝ} {r₁ r₂ : ℝ}
+
+/-- The real spectrum of the Euclidean operator of a complexified real matrix is the real
+spectrum of the matrix. -/
+theorem spectrum_real_toEuclideanCLM_complexify (A : Matrix ι ι ℝ) :
+    spectrum ℝ (toEuclideanCLM (n := ι) (𝕜 := ℂ) (complexify A)) = spectrum ℝ A := by
+  ext t
+  rw [← spectrum.algebraMap_mem_iff ℂ, AlgEquiv.spectrum_eq (toEuclideanCLM (n := ι) (𝕜 := ℂ)),
+    Complex.coe_algebraMap, ofReal_mem_spectrum_complexify_iff]
+
+/-- A nonsingular real shift stays nonsingular after complexification. -/
+private theorem isUnit_complexify_add_smul_one {A : Matrix ι ι ℝ} {r : ℝ}
+    (hA : IsUnit (A + r • (1 : Matrix ι ι ℝ))) :
+    IsUnit (complexify A + (r : ℂ) • (1 : Matrix ι ι ℂ)) := by
+  rwa [← complexify_one, ← complexify_smul, ← complexify_add, isUnit_complexify_iff]
+
+/-- The complex spectral radius of the real two-parameter Peaceman–Rachford matrix
+`(V + r₂ I)⁻¹ (H - r₂ I) (H + r₁ I)⁻¹ (V - r₁ I)` is the spectral radius of the operator
+`Stationary.peacemanRachfordTwo` of the complexified `H` and `V` on `EuclideanSpace ℂ ι`. -/
+theorem complexSpectralRadius_peacemanRachfordTwo (hH : IsUnit (H + r₁ • (1 : Matrix ι ι ℝ)))
+    (hV : IsUnit (V + r₂ • (1 : Matrix ι ι ℝ))) :
+    complexSpectralRadius ((V + r₂ • 1)⁻¹ * (H - r₂ • 1) * (H + r₁ • 1)⁻¹ * (V - r₁ • 1)) =
+      spectralRadius ℂ (peacemanRachfordTwo (toEuclideanCLM (n := ι) (𝕜 := ℂ) (complexify H))
+        (toEuclideanCLM (n := ι) (𝕜 := ℂ) (complexify V)) r₁ r₂) := by
+  have h : toEuclideanCLM (n := ι) (𝕜 := ℂ)
+      ((complexify V + (r₂ : ℂ) • 1)⁻¹ * (complexify H - (r₂ : ℂ) • 1) *
+        (complexify H + (r₁ : ℂ) • 1)⁻¹ * (complexify V - (r₁ : ℂ) • 1)) =
+      peacemanRachfordTwo (toEuclideanCLM (n := ι) (𝕜 := ℂ) (complexify H))
+        (toEuclideanCLM (n := ι) (𝕜 := ℂ) (complexify V)) r₁ r₂ :=
+    toEuclideanCLM_peacemanRachfordTwo (isUnit_complexify_add_smul_one hH)
+      (isUnit_complexify_add_smul_one hV)
+  have hc : complexify ((V + r₂ • 1)⁻¹ * (H - r₂ • 1) * (H + r₁ • 1)⁻¹ * (V - r₁ • 1)) =
+      (complexify V + (r₂ : ℂ) • 1)⁻¹ * (complexify H - (r₂ : ℂ) • 1) *
+        (complexify H + (r₁ : ℂ) • 1)⁻¹ * (complexify V - (r₁ : ℂ) • 1) := by
+    simp only [complexify_mul, complexify_inv, complexify_add, complexify_sub, complexify_smul,
+      complexify_one]
+  rw [complexSpectralRadius, hc, ← h, spectralRadius_eq_of_unital, spectralRadius_eq_of_unital,
+    AlgEquiv.spectrum_eq (toEuclideanCLM (n := ι) (𝕜 := ℂ))]
+
+/-- **The two-parameter ADI bound for symmetric positive definite matrices**
+([quarteroni2000numerical] §4.3.6, the display after (4.50), with `r_i = 1/α_i`): for `H`, `V`
+positive definite and `r₁, r₂ > 0`, if `|λ - r₂| / (λ + r₁) ≤ M₁` on the spectrum of `H` and
+`|μ - r₁| / (μ + r₂) ≤ M₂` on the spectrum of `V`, then the complex spectral radius of
+`(V + r₂ I)⁻¹ (H - r₂ I) (H + r₁ I)⁻¹ (V - r₁ I)` is at most `M₁ M₂`.  It is
+`Stationary.spectralRadius_peacemanRachfordTwo_le` for the complexified matrices; `H` and `V`
+need not commute. -/
+theorem PosDef.complexSpectralRadius_peacemanRachfordTwo_le (hH : H.PosDef) (hV : V.PosDef)
+    (hr₁ : 0 < r₁) (hr₂ : 0 < r₂) {M₁ M₂ : ℝ} (hM₁ : 0 ≤ M₁) (hM₂ : 0 ≤ M₂)
+    (h₁ : ∀ t ∈ spectrum ℝ H, |t - r₂| / (t + r₁) ≤ M₁)
+    (h₂ : ∀ t ∈ spectrum ℝ V, |t - r₁| / (t + r₂) ≤ M₂) :
+    complexSpectralRadius ((V + r₂ • 1)⁻¹ * (H - r₂ • 1) * (H + r₁ • 1)⁻¹ * (V - r₁ • 1)) ≤
+      ENNReal.ofReal (M₁ * M₂) := by
+  rw [complexSpectralRadius_peacemanRachfordTwo (hH.add (PosDef.one.smul hr₁)).isUnit
+    (hV.add (PosDef.one.smul hr₂)).isUnit]
+  refine spectralRadius_peacemanRachfordTwo_le hH.isSymmetricCoercive_toEuclideanCLM_complexify
+    hV.isSymmetricCoercive_toEuclideanCLM_complexify hr₁ hr₂ hM₁ hM₂ ?_ ?_
+  · rwa [spectrum_real_toEuclideanCLM_complexify]
+  · rwa [spectrum_real_toEuclideanCLM_complexify]
+
+/-- **Convergence of the ADI sweep for symmetric positive definite matrices**
+([saad2003iterative] §4.3, [quarteroni2000numerical] §4.3.6 for `α₁ = α₂`): for `H`, `V` positive
+definite and `r > 0`, the matrix `(V + r I)⁻¹ (H - r I) (H + r I)⁻¹ (V - r I)` has complex
+spectral radius below one.  It is `Stationary.spectralRadius_peacemanRachford_lt_one` for the
+complexified matrices; `H` and `V` need not commute. -/
+theorem PosDef.complexSpectralRadius_peacemanRachford_lt_one (hH : H.PosDef) (hV : V.PosDef)
+    {r : ℝ} (hr : 0 < r) :
+    complexSpectralRadius ((V + r • 1)⁻¹ * (H - r • 1) * (H + r • 1)⁻¹ * (V - r • 1)) < 1 := by
+  rw [complexSpectralRadius_peacemanRachfordTwo (hH.add (PosDef.one.smul hr)).isUnit
+    (hV.add (PosDef.one.smul hr)).isUnit, peacemanRachfordTwo_self]
+  exact spectralRadius_peacemanRachford_lt_one
+    hH.isSymmetricCoercive_toEuclideanCLM_complexify.isCoercive
+    hV.isSymmetricCoercive_toEuclideanCLM_complexify.isCoercive hr
+
+/-- **The ADI bound for spectra in `[γ, δ]`, for real symmetric matrices**
+([quarteroni2000numerical] §4.3.6, last display): if the spectra of the symmetric `H` and `V` lie
+in `[γ, δ]` with `0 < γ ≤ δ`, the parameter `r = √(γ δ)` gives
+`ρ((V + r I)⁻¹ (H - r I) (H + r I)⁻¹ (V - r I)) ≤ ((1 - √(γ/δ)) / (1 + √(γ/δ)))²`.  It is
+`Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le` at `r₁ = r₂ = r`, as in
+`Stationary.spectralRadius_peacemanRachford_le_of_spectrum_subset`. -/
+theorem IsHermitian.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset
+    (hH : H.IsHermitian) (hV : V.IsHermitian) {γ δ : ℝ} (hγ : 0 < γ) (hγδ : γ ≤ δ)
+    (h₁ : spectrum ℝ H ⊆ Set.Icc γ δ) (h₂ : spectrum ℝ V ⊆ Set.Icc γ δ) :
+    complexSpectralRadius ((V + √(γ * δ) • 1)⁻¹ * (H - √(γ * δ) • 1) *
+        (H + √(γ * δ) • 1)⁻¹ * (V - √(γ * δ) • 1)) ≤
+      ENNReal.ofReal (((1 - √(γ / δ)) / (1 + √(γ / δ))) ^ 2) := by
+  have hpos : ∀ {A : Matrix ι ι ℝ} (hA : A.IsHermitian), spectrum ℝ A ⊆ Set.Icc γ δ → A.PosDef :=
+    fun hA h => (IsHermitian.posDef_iff_eigenvalues_pos hA).mpr fun i =>
+      hγ.trans_le (h (by
+        rw [IsHermitian.spectrum_real_eq_range_eigenvalues hA]; exact ⟨i, rfl⟩)).1
+  set a := √γ with ha_def
+  set b := √δ with hb_def
+  have ha : 0 < a := Real.sqrt_pos.mpr hγ
+  have hab : a ≤ b := Real.sqrt_le_sqrt hγδ
+  have hb : 0 < b := ha.trans_le hab
+  have ha2 : a ^ 2 = γ := Real.sq_sqrt hγ.le
+  have hb2 : b ^ 2 = δ := Real.sq_sqrt (hγ.le.trans hγδ)
+  have hr : √(γ * δ) = a * b := Real.sqrt_mul hγ.le δ
+  have hK : (1 - √(γ / δ)) / (1 + √(γ / δ)) = (b - a) / (b + a) := by
+    rw [Real.sqrt_div hγ.le, ← ha_def, ← hb_def]
+    field_simp
+  have hK0 : 0 ≤ (b - a) / (b + a) := div_nonneg (by linarith) (by linarith)
+  have hbound : ∀ {A : Matrix ι ι ℝ}, spectrum ℝ A ⊆ Set.Icc γ δ →
+      ∀ t ∈ spectrum ℝ A, |t - a * b| / (t + a * b) ≤ (b - a) / (b + a) := fun h t ht =>
+    Stationary.abs_sub_div_add_le ha hab (ha2 ▸ (h ht).1) (hb2 ▸ (h ht).2)
+  rw [hK, hr, sq]
+  exact PosDef.complexSpectralRadius_peacemanRachfordTwo_le (hpos hH h₁) (hpos hV h₂)
+    (mul_pos ha hb) (mul_pos ha hb) hK0 hK0 (hbound h₁) (hbound h₂)
+
+end Real
+
+end Matrix

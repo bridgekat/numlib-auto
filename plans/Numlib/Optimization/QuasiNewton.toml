@@ -1,15 +1,6 @@
 namespace = "Matrix"
 
 [[node]]
-id = "rankOneSecantUpdate"
-
-[[node]]
-id = "broydenUpdate_eq_rankOneSecantUpdate"
-
-[[node]]
-id = "rankOneSecantUpdate_mulVec"
-
-[[node]]
 id = "sr1Update"
 
 [[node]]

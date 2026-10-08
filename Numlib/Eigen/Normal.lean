@@ -49,6 +49,9 @@ The route avoids both Schur triangulation and the Jordan form, neither of which 
   (`LinearMap.IsStarNormal.aeval_eq_adjoint_of_eval_eq`), and Lagrange interpolation supplies one
   (`LinearMap.IsStarNormal.exists_aeval_eq_adjoint`).
   `Matrix.IsStarNormal.exists_aeval_eq_conjTranspose` is the matrix form, `Aᴴ = q(A)`.
+  When `q` can be taken of degree at most one, `A = e^{iθ}(ρ I + B)` with `B` skew-Hermitian, and
+  conversely (`Matrix.exists_natDegree_le_one_aeval_eq_conjTranspose_iff`, [saad2003iterative]
+  §6.10).
 * Two commuting normal operators have a common orthonormal eigenbasis
   (`LinearMap.IsStarNormal.exists_orthonormalBasis_eigenvector_of_commute`), and two commuting
   normal matrices are simultaneously unitarily diagonalizable
@@ -854,5 +857,156 @@ theorem abs_dotProduct_mulVec_le {A : Matrix n n ℝ} (hA : A.IsHermitian) {k : 
     _ ≤ ∑ l, |hA.eigenvalues k| * (q l ⬝ᵥ x) ^ 2 :=
         Finset.sum_le_sum fun l _ => mul_le_mul_of_nonneg_right (hk l) (sq_nonneg _)
     _ = |hA.eigenvalues k| := by rw [← Finset.mul_sum, hpars, mul_one]
+
+/-! ### Matrices whose conjugate transpose is affine in them -/
+
+section AffineConjTranspose
+
+/-- `conj e^{iθ} = e^{-iθ}`. -/
+private theorem star_exp_mul_I (θ : ℝ) :
+    star (Complex.exp (θ * Complex.I)) = Complex.exp (-(θ * Complex.I)) := by
+  rw [show star (Complex.exp ((θ : ℂ) * Complex.I))
+      = starRingEnd ℂ (Complex.exp ((θ : ℂ) * Complex.I)) from rfl, ← Complex.exp_conj]
+  congr 1
+  simp only [map_mul, Complex.conj_ofReal, Complex.conj_I]
+  ring
+
+/-- `e^{iθ}` is a unit of modulus one: `e^{iθ} conj e^{iθ} = 1`. -/
+private theorem exp_mul_I_mul_star (θ : ℝ) :
+    Complex.exp (θ * Complex.I) * star (Complex.exp (θ * Complex.I)) = 1 := by
+  rw [star_exp_mul_I, ← Complex.exp_add, add_neg_cancel, Complex.exp_zero]
+
+/-- `aeval` of a polynomial of degree at most one. -/
+private theorem aeval_C_mul_X_add_C (A : Matrix n n ℂ) (c a : ℂ) :
+    aeval A (C c * X + C a) = a • (1 : Matrix n n ℂ) + c • A := by
+  rw [map_add, map_mul, aeval_C, aeval_C, aeval_X, ← Algebra.smul_def,
+    Algebra.algebraMap_eq_smul_one, add_comm]
+
+/-- **The matrices whose conjugate transpose is affine in them**: `Aᴴ` is a polynomial of degree
+at most one in `A` exactly when `A = e^{iθ}(ρ I + B)` with `θ`, `ρ` real and `B` skew-Hermitian.
+This is the sharp form of the closing remark of [saad2003iterative] §6.10 (the case `ν(A) ≤ 1` of
+the Faber–Manteuffel theory, where the Conjugate Gradient method applies); no normality is assumed,
+the left-hand side forcing it.
+
+The forward direction writes `Aᴴ = α I + β A` and conjugates, which gives
+`(1 - β̄β) A = (ᾱ + β̄α) I`: either `A` is a scalar matrix, or `|β| = 1`. In the second case `β`
+is `-e^{-2iθ}` for a real `θ`, the same conjugation forces `α e^{iθ}` to be real, and
+`B = e^{-iθ}A - ρI` with `2ρ = α e^{iθ}` is skew-Hermitian. -/
+theorem exists_natDegree_le_one_aeval_eq_conjTranspose_iff {A : Matrix n n ℂ} :
+    (∃ q : ℂ[X], q.natDegree ≤ 1 ∧ aeval A q = Aᴴ) ↔
+      ∃ (θ ρ : ℝ) (B : Matrix n n ℂ), Bᴴ = -B ∧
+        A = Complex.exp (θ * Complex.I) •
+          ((ρ : ℂ) • (1 : Matrix n n ℂ) + B) := by
+  constructor
+  · rintro ⟨q, hq1, hq2⟩
+    obtain ⟨α, b, hAH⟩ : ∃ α b : ℂ, Aᴴ = α • (1 : Matrix n n ℂ) + b • A :=
+      ⟨q.coeff 0, q.coeff 1, by
+        conv_lhs => rw [← hq2, eq_X_add_C_of_natDegree_le_one hq1]
+        rw [aeval_C_mul_X_add_C]⟩
+    have hAAH : A = star α • (1 : Matrix n n ℂ) + star b • Aᴴ := by
+      have h := congrArg conjTranspose hAH
+      rwa [conjTranspose_conjTranspose, conjTranspose_add,
+        conjTranspose_smul, conjTranspose_smul, conjTranspose_one] at h
+    have h2 : A = star α • (1 : Matrix n n ℂ)
+        + star b • (α • (1 : Matrix n n ℂ) + b • A) := by
+      rw [hAH] at hAAH
+      exact hAAH
+    have hkey : ((1 : ℂ) - star b * b) • A
+        = (star α + star b * α) • (1 : Matrix n n ℂ) :=
+      calc ((1 : ℂ) - star b * b) • A = A - (star b * b) • A := by rw [sub_smul, one_smul]
+        _ = (star α • (1 : Matrix n n ℂ)
+              + star b • (α • (1 : Matrix n n ℂ) + b • A))
+              - (star b * b) • A := by rw [← h2]
+        _ = (star α + star b * α) • (1 : Matrix n n ℂ) := by module
+    by_cases hsc : ∃ c : ℂ, A = c • (1 : Matrix n n ℂ)
+    · obtain ⟨c, rfl⟩ := hsc
+      refine ⟨Complex.arg c, ‖c‖, 0, by simp, ?_⟩
+      rw [add_zero, smul_smul, mul_comm, Complex.norm_mul_exp_arg_mul_I]
+    · have hne : Nonempty n := by
+        rcases isEmpty_or_nonempty n with hE | hN
+        · refine absurd ⟨0, ?_⟩ hsc
+          ext i
+          exact (hE.false i).elim
+        · exact hN
+      obtain ⟨i⟩ := hne
+      have hsmul_one : ∀ c : ℂ, c • (1 : Matrix n n ℂ) = 0 → c = 0 := by
+        intro c hc
+        have := congrFun (congrFun hc i) i
+        simpa using this
+      have hd : star b * b = 1 := by
+        by_contra hd0
+        refine hsc ⟨((1 : ℂ) - star b * b)⁻¹ * (star α + star b * α), ?_⟩
+        have hdne : (1 : ℂ) - star b * b ≠ 0 := sub_ne_zero.2 (Ne.symm hd0)
+        rw [mul_smul, ← hkey, inv_smul_smul₀ hdne]
+      have he : star α + star b * α = 0 := by
+        refine hsmul_one _ ?_
+        rw [← hkey, hd, sub_self, zero_smul]
+      have hbnorm : ‖b‖ = 1 := by
+        have h := congrArg norm hd
+        rw [norm_mul, norm_star, norm_one] at h
+        have h0 : (‖b‖ - 1) * (‖b‖ + 1) = 0 := by nlinarith
+        rcases mul_eq_zero.1 h0 with h1 | h1
+        · linarith
+        · exfalso; linarith [norm_nonneg b]
+      obtain ⟨θ, w, hw, hww, hbw⟩ : ∃ (θ : ℝ) (w : ℂ),
+          w = Complex.exp (θ * Complex.I) ∧ w * star w = 1 ∧ b = -(star w) ^ 2 := by
+        refine ⟨-(Complex.arg (-b)) / 2, _, rfl, exp_mul_I_mul_star _, ?_⟩
+        have hexp : Complex.exp ((Complex.arg (-b) : ℂ) * Complex.I) = -b := by
+          have h := Complex.norm_mul_exp_arg_mul_I (-b)
+          rwa [norm_neg, hbnorm, Complex.ofReal_one, one_mul] at h
+        rw [star_exp_mul_I, sq, ← Complex.exp_add,
+          show -(((-(Complex.arg (-b)) / 2 : ℝ) : ℂ) * Complex.I)
+                + -(((-(Complex.arg (-b)) / 2 : ℝ) : ℂ) * Complex.I)
+              = ((Complex.arg (-b) : ℝ) : ℂ) * Complex.I by push_cast; ring,
+          hexp, neg_neg]
+      have hsb : star b = -w ^ 2 := by rw [hbw, star_neg, star_pow, star_star]
+      have hαstar : star α = w ^ 2 * α := by
+        have hα' : star α = -(star b * α) := by linear_combination he
+        rw [hα', hsb]
+        ring
+      have hreal : star (α * w) = α * w := by
+        rw [star_mul, hαstar]
+        calc star w * (w ^ 2 * α) = (w * star w) * (w * α) := by ring
+          _ = α * w := by rw [hww, one_mul, mul_comm]
+      obtain ⟨r, hr⟩ : ∃ r : ℝ, ((r : ℂ)) = α * w :=
+        ⟨(α * w).re, Complex.conj_eq_iff_re.1 hreal⟩
+      have hαw : w * α = 2 * ((r / 2 : ℝ) : ℂ) := by
+        rw [mul_comm w α, ← hr]
+        push_cast
+        ring
+      have hwb : w * b = -star w := by
+        rw [hbw]
+        calc w * -(star w) ^ 2 = -((w * star w) * star w) := by ring
+          _ = -star w := by rw [hww, one_mul]
+      have hρstar : star (((r / 2 : ℝ) : ℂ)) = ((r / 2 : ℝ) : ℂ) := Complex.conj_ofReal _
+      refine ⟨θ, r / 2, star w • A - ((r / 2 : ℝ) : ℂ) • (1 : Matrix n n ℂ), ?_, ?_⟩
+      · rw [conjTranspose_sub, conjTranspose_smul, conjTranspose_smul,
+          conjTranspose_one, star_star, hAH, hρstar, smul_add, smul_smul, smul_smul,
+          hαw, hwb]
+        module
+      · have hinner : ((r / 2 : ℝ) : ℂ) • (1 : Matrix n n ℂ)
+            + (star w • A - ((r / 2 : ℝ) : ℂ) • (1 : Matrix n n ℂ))
+            = star w • A := by abel
+        rw [← hw, hinner, smul_smul, hww, one_smul]
+  · rintro ⟨θ, ρ, B, hB, hA⟩
+    have hww : Complex.exp (θ * Complex.I) * star (Complex.exp (θ * Complex.I)) = 1 :=
+      exp_mul_I_mul_star θ
+    have hρstar : star ((ρ : ℂ)) = ((ρ : ℂ)) := Complex.conj_ofReal _
+    have hBeq : B = star (Complex.exp (θ * Complex.I)) • A
+        - (ρ : ℂ) • (1 : Matrix n n ℂ) := by
+      rw [hA, smul_smul, mul_comm (star (Complex.exp (θ * Complex.I))), hww, one_smul]
+      abel
+    have hAH : Aᴴ = star (Complex.exp (θ * Complex.I)) •
+        ((ρ : ℂ) • (1 : Matrix n n ℂ) + -B) := by
+      conv_lhs => rw [hA]
+      rw [conjTranspose_smul, conjTranspose_add, conjTranspose_smul,
+        conjTranspose_one, hB, hρstar]
+    refine ⟨C (-(star (Complex.exp (θ * Complex.I))) ^ 2)
+        * X + C (2 * (ρ : ℂ) * star (Complex.exp (θ * Complex.I))),
+      natDegree_linear_le, ?_⟩
+    rw [aeval_C_mul_X_add_C, hAH, hBeq]
+    module
+
+end AffineConjTranspose
 
 end Matrix

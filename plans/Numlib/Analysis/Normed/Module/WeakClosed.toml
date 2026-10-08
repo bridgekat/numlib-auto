@@ -125,3 +125,7 @@ id = "LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn"
 
 [[node]]
 id = "UpperSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconcaveOn"
+
+[[node]]
+id = "WeakBilin.hasBasis_nhds"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Propositions 3.4 and 3.12"

@@ -69,3 +69,9 @@ id = "Matrix.backwardSorSweep_one_eq_mulVecStep"
 
 [[node]]
 id = "Matrix.ssorSweep_eq_mulVecStep"
+
+[[node]]
+id = "Matrix.sorRelax"
+
+[[node]]
+id = "Matrix.foldl_sorRelax_eq_sorSweep"

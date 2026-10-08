@@ -624,145 +624,31 @@ private theorem ofLp_nrSORStep (i : Fin n) (x : E n) :
   · rw [Function.update_of_ne hj]
     simp [coordVec, hj]
 
-/-- The relaxed entry after one NR-SOR relaxation. -/
-private theorem ofLp_nrSORStep_self (i : Fin n) (x : E n) :
-    WithLp.ofLp (nrSORStep A b ω i x) i
-      = WithLp.ofLp x i + ω * WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) i / (Aᵀ * A) i i := by
-  rw [ofLp_nrSORStep, Function.update_self]
-
-/-- Every other entry is left alone. -/
-private theorem ofLp_nrSORStep_of_ne {i j : Fin n} (hj : j ≠ i) (x : E n) :
-    WithLp.ofLp (nrSORStep A b ω i x) j = WithLp.ofLp x j := by
-  rw [ofLp_nrSORStep, Function.update_of_ne hj]
-
-/-- The first `k` relaxations of an NR-SOR sweep. -/
-private noncomputable def partialSweep (A : Matrix (Fin n) (Fin n) ℝ) (b : E n) (ω : ℝ) (k : ℕ)
-    (x : E n) : E n :=
-  ((List.finRange n).take k).foldl (fun y i => nrSORStep A b ω i y) x
-
-private theorem partialSweep_succ {k : ℕ} (hk : k < n) (x : E n) :
-    partialSweep A b ω (k + 1) x = nrSORStep A b ω ⟨k, hk⟩ (partialSweep A b ω k x) := by
-  rw [partialSweep, partialSweep, List.take_add_one,
-    List.getElem?_eq_getElem (by simpa using hk), List.foldl_append]
-  simp
-
-private theorem partialSweep_card (x : E n) : partialSweep A b ω n x = nrSORSweep A b ω x := by
-  rw [partialSweep, nrSORSweep, List.take_of_length_le (by simp)]
-
-/-- Entries from `k` on are untouched by the first `k` relaxations. -/
-private theorem ofLp_partialSweep_of_le (x : E n) :
-    ∀ k : ℕ, k ≤ n → ∀ j : Fin n, k ≤ (j : ℕ) →
-      WithLp.ofLp (partialSweep A b ω k x) j = WithLp.ofLp x j := by
-  intro k
-  induction k with
-  | zero => intro _ j _; rfl
-  | succ k ih =>
-    intro hk j hj
-    have hkn : k < n := lt_of_lt_of_le (Nat.lt_succ_self k) hk
-    have hne : j ≠ ⟨k, hkn⟩ := by
-      simp only [ne_eq, Fin.ext_iff]
-      omega
-    rw [partialSweep_succ hkn, ofLp_nrSORStep_of_ne hne, ih hkn.le j (by omega)]
-
-/-- Entries below `k` are frozen once the first `k` relaxations are done. -/
-private theorem ofLp_partialSweep_stable (x : E n) :
-    ∀ l : ℕ, l ≤ n → ∀ k : ℕ, k ≤ l → ∀ j : Fin n, (j : ℕ) < k →
-      WithLp.ofLp (partialSweep A b ω l x) j = WithLp.ofLp (partialSweep A b ω k x) j := by
-  intro l
-  induction l with
-  | zero => intro _ k hk j hj; omega
-  | succ l ih =>
-    intro hl k hk j hj
-    rcases eq_or_lt_of_le hk with rfl | hkl
-    · rfl
-    have hln : l < n := lt_of_lt_of_le (Nat.lt_succ_self l) hl
-    have hne : j ≠ ⟨l, hln⟩ := by
-      simp only [ne_eq, Fin.ext_iff]
-      omega
-    rw [partialSweep_succ hln, ofLp_nrSORStep_of_ne hne, ih hln.le k (by omega) j hj]
-
 /-- **Saad §8.2.1**: one NR-SOR sweep is one SOR step for the normal equations `AᵀA x = Aᵀ b`.
-Relaxation `i` sets the `i`-th entry from the entries already updated below `i` and the old ones
-above it, which is exactly the recursion (4.12) defines. -/
-theorem nrSORSweep_eq_sorStep (hd : IsUnit (Matrix.diagPart (Aᵀ * A))) (hω : ω ≠ 0) (x : E n) :
+Relaxation `i` is the SOR relaxation `Matrix.sorRelax` of the `i`-th unknown of the normal
+equations (`ofLp_nrSORStep`), and a loop of SOR relaxations in the natural order is the SOR sweep
+(backbone `Matrix.foldl_sorRelax_eq_sorSweep`), which is the recursion (4.12) defines.  No
+condition on `ω` is needed. -/
+theorem nrSORSweep_eq_sorStep (hd : IsUnit (Matrix.diagPart (Aᵀ * A))) (x : E n) :
     WithLp.ofLp (nrSORSweep A b ω x)
       = Chapter04.sorStep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)) (WithLp.ofLp x) := by
-  have hdiag : ∀ i : Fin n, (Aᵀ * A) i i ≠ 0 := (Matrix.isUnit_diagPart_iff _).1 hd
-  have hres : (Chapter04.D (Aᵀ * A) - ω • Chapter04.E (Aᵀ * A)) *ᵥ
-      (WithLp.ofLp (nrSORSweep A b ω x) - WithLp.ofLp x)
-      = ω • (WithLp.ofLp ((Aᵀ ⬝ b) : E n) - (Aᵀ * A) *ᵥ WithLp.ofLp x) := by
-    funext i
-    -- the state after the first `i` relaxations agrees with the finished sweep below `i` and
-    -- with the starting vector from `i` on
-    have hzlt : ∀ j : Fin n, j < i →
-        WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j
-          = WithLp.ofLp (nrSORSweep A b ω x) j := by
-      intro j hj
-      rw [← partialSweep_card (A := A) (b := b) (ω := ω) x]
-      exact (ofLp_partialSweep_stable x n le_rfl (i : ℕ) i.2.le j hj).symm
-    have hzge : ∀ j : Fin n, ¬ j < i →
-        WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j = WithLp.ofLp x j := fun j hj =>
-      ofLp_partialSweep_of_le x (i : ℕ) i.2.le j (by omega)
-    -- the `i`-th entry of the finished sweep is the one relaxation `i` produced
-    have hyi : WithLp.ofLp (nrSORSweep A b ω x) i
-        = WithLp.ofLp x i
-          + ω * WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ partialSweep A b ω (i : ℕ) x)) i
-            / (Aᵀ * A) i i := by
-      have h1 : WithLp.ofLp (nrSORSweep A b ω x) i
-          = WithLp.ofLp (partialSweep A b ω ((i : ℕ) + 1) x) i := by
-        rw [← partialSweep_card (A := A) (b := b) (ω := ω) x]
-        exact ofLp_partialSweep_stable x n le_rfl ((i : ℕ) + 1) i.2 i (Nat.lt_succ_self _)
-      have h2 : (⟨(i : ℕ), i.2⟩ : Fin n) = i := rfl
-      rw [h1, partialSweep_succ i.2, h2, ofLp_nrSORStep_self,
-        ofLp_partialSweep_of_le x (i : ℕ) i.2.le i le_rfl]
-    have hmv : ∀ w : E n, WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ w)) i
-        = WithLp.ofLp ((Aᵀ ⬝ b) : E n) i - ((Aᵀ * A) *ᵥ WithLp.ofLp w) i := fun _ => rfl
-    have hkey : (Aᵀ * A) i i * (WithLp.ofLp (nrSORSweep A b ω x) i - WithLp.ofLp x i)
-        = ω * (WithLp.ofLp ((Aᵀ ⬝ b) : E n) i
-          - ((Aᵀ * A) *ᵥ WithLp.ofLp (partialSweep A b ω (i : ℕ) x)) i) := by
-      rw [hyi, add_sub_cancel_left, hmv, mul_div_cancel₀ _ (hdiag i)]
-    -- splitting a row sum at `i`
-    have hsplit : ∀ w : Fin n → ℝ, ((Aᵀ * A) *ᵥ w) i
-        = ∑ j ∈ Finset.univ.filter (· < i), (Aᵀ * A) i j * w j
-          + ∑ j ∈ Finset.univ.filter (fun j => ¬ j < i), (Aᵀ * A) i j * w j := by
-      intro w
-      change ∑ j, (Aᵀ * A) i j * w j = _
-      exact (Finset.sum_filter_add_sum_filter_not _ _ _).symm
-    have hlow : ∑ j ∈ Finset.univ.filter (· < i),
-          (Aᵀ * A) i j * (WithLp.ofLp (nrSORSweep A b ω x) j - WithLp.ofLp x j)
-        = ((Aᵀ * A) *ᵥ WithLp.ofLp (partialSweep A b ω (i : ℕ) x)) i
-          - ((Aᵀ * A) *ᵥ WithLp.ofLp x) i := by
-      have hexp : ∑ j ∈ Finset.univ.filter (· < i),
-            (Aᵀ * A) i j * (WithLp.ofLp (nrSORSweep A b ω x) j - WithLp.ofLp x j)
-          = ∑ j ∈ Finset.univ.filter (· < i),
-              (Aᵀ * A) i j * WithLp.ofLp (nrSORSweep A b ω x) j
-            - ∑ j ∈ Finset.univ.filter (· < i), (Aᵀ * A) i j * WithLp.ofLp x j := by
-        rw [← Finset.sum_sub_distrib]
-        exact Finset.sum_congr rfl fun j _ => by ring
-      have h1 : ∑ j ∈ Finset.univ.filter (· < i),
-            (Aᵀ * A) i j * WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j
-          = ∑ j ∈ Finset.univ.filter (· < i),
-            (Aᵀ * A) i j * WithLp.ofLp (nrSORSweep A b ω x) j :=
-        Finset.sum_congr rfl fun j hj => by rw [hzlt j (Finset.mem_filter.1 hj).2]
-      have h2 : ∑ j ∈ Finset.univ.filter (fun j => ¬ j < i),
-            (Aᵀ * A) i j * WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j
-          = ∑ j ∈ Finset.univ.filter (fun j => ¬ j < i),
-            (Aᵀ * A) i j * WithLp.ofLp x j :=
-        Finset.sum_congr rfl fun j hj => by rw [hzge j (Finset.mem_filter.1 hj).2]
-      rw [hexp, hsplit, hsplit, h1, h2]
-      ring
-    simp only [Pi.smul_apply, smul_eq_mul, Pi.sub_apply, Matrix.sub_mulVec, Chapter04.D_mulVec,
-      Matrix.smul_mulVec, Chapter04.E_mulVec]
-    rw [hlow, hkey]
-    ring
-  have hunit := Chapter04.isUnit_D_sub_smul_E hd hω
-  have hstep : (Chapter04.D (Aᵀ * A) - ω • Chapter04.E (Aᵀ * A)) *ᵥ
-      (WithLp.ofLp (nrSORSweep A b ω x) - WithLp.ofLp x)
-      = (Chapter04.D (Aᵀ * A) - ω • Chapter04.E (Aᵀ * A)) *ᵥ
-        (Chapter04.sorStep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)) (WithLp.ofLp x)
-          - WithLp.ofLp x) := by
-    rw [hres, Chapter04.sorStep_sub hd hω]
-  exact sub_left_inj.mp (Matrix.mulVec_injective_of_isUnit hunit hstep)
+  have hfold : ∀ (l : List (Fin n)) (y : E n),
+      WithLp.ofLp (l.foldl (fun y i => nrSORStep A b ω i y) y)
+        = l.foldl (fun z i => Matrix.sorRelax (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)) i z)
+          (WithLp.ofLp y) := by
+    intro l
+    induction l with
+    | nil => intro y; rfl
+    | cons i l ih =>
+      intro y
+      rw [List.foldl_cons, List.foldl_cons, ih, ofLp_nrSORStep]
+      rfl
+  have hsor : Chapter04.sorStep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n))
+      = Matrix.sorSweep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)) := by
+    funext y
+    rw [Chapter04.sorStep, Matrix.sorSweep, Chapter04.D, Chapter04.E, Chapter04.F, smul_neg,
+      sub_neg_eq_add, smul_neg, neg_add_eq_sub]
+  rw [nrSORSweep, hfold, Matrix.foldl_sorRelax_eq_sorSweep hd, hsor]
 
 /-- **Saad §8.2.1**: because `AᵀA` is symmetric positive definite whenever `A` is nonsingular,
 Theorem 4.10 applies to it, and the NR-SOR sweep converges for every `0 < ω < 2` — from every
@@ -806,7 +692,7 @@ theorem sorSweep_tendsto (hA : IsUnit A) (hω0 : 0 < ω) (hω2 : ω < 2) (x₀ :
     | zero => rfl
     | succ k ih =>
       rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← ih,
-        nrSORSweep_eq_sorStep hd hω0.ne']
+        nrSORSweep_eq_sorStep hd]
   simp only [hiter]
   rw [Chapter04.sorStep_eq hd hω0.ne']
   exact Chapter04.Splitting.tendsto_step _ hρ _ _

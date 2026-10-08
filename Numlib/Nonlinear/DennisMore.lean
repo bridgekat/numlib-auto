@@ -105,23 +105,9 @@ theorem sq_norm_sub_mulVec_div_le_broydenUpdate (Q J : Matrix n n ℝ) {s y : n 
           + ‖toLp 2 (y - J *ᵥ s)‖ / ‖toLp 2 s‖) := by
   set P : Matrix n n ℝ := (1 / (s ⬝ᵥ s)) • vecMulVec s s with hPdef
   set w : n → ℝ := y - J *ᵥ s with hw
-  have hs0 : 0 < ‖toLp 2 s‖ := norm_pos_iff.2 (by simpa using hs)
-  have hdecomp : broydenUpdate Q s y - J = (Q - J) * (1 - P) + (1 / (s ⬝ᵥ s)) • vecMulVec w s := by
-    rw [broydenUpdate, hPdef, Matrix.mul_sub, Matrix.mul_one, Matrix.mul_smul, mul_vecMulVec,
-      hw, sub_mulVec, show y - Q *ᵥ s = (y - J *ᵥ s) - (Q *ᵥ s - J *ᵥ s) by abel,
-      sub_vecMulVec, smul_sub]
-    abel
-  have hsecond : ‖(1 / (s ⬝ᵥ s)) • vecMulVec w s‖ ≤ ‖toLp 2 w‖ / ‖toLp 2 s‖ := by
-    rw [norm_smul, Real.norm_eq_abs, dotProduct_self_eq_norm_sq, abs_of_nonneg (by positivity)]
-    calc 1 / ‖toLp 2 s‖ ^ 2 * ‖vecMulVec w s‖
-        ≤ 1 / ‖toLp 2 s‖ ^ 2 * (‖toLp 2 w‖ * ‖toLp 2 s‖) := by
-          gcongr
-          exact frobenius_norm_vecMulVec_le _ _
-      _ = ‖toLp 2 w‖ / ‖toLp 2 s‖ := by
-          field_simp
   have h1 : ‖broydenUpdate Q s y - J‖ ≤ ‖(Q - J) * (1 - P)‖ + ‖toLp 2 w‖ / ‖toLp 2 s‖ := by
-    rw [hdecomp]
-    exact (norm_add_le _ _).trans (add_le_add le_rfl hsecond)
+    rw [broydenUpdate_sub_eq]
+    exact (norm_add_le _ _).trans (add_le_add le_rfl (frobenius_norm_smul_vecMulVec_le _ _))
   have h2 := sq_norm_mulVec_div_le_frobenius (Q - J) hs
   have h3 : 0 ≤ ‖Q - J‖ := norm_nonneg _
   refine h2.trans ?_

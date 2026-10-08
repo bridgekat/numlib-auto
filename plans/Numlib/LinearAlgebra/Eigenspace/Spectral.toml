@@ -32,3 +32,7 @@ id = "injOn_spectralProjector_iff"
 
 [[node]]
 id = "existsUnique_mem_spectralProjector_eq"
+
+[[node]]
+id = "maxGenEigenspace_eq_eigenspace_of_iSup_eigenspace_eq_top"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 1.7"

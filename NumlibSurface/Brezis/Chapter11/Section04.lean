@@ -397,7 +397,7 @@ theorem proposition_11_28_symm [CompleteSpace H] (a : SesqForm ℂ H) {α : ℝ}
 /-- **Lax–Milgram over `ℂ`.** "When `K = H`, (16) becomes `a(u, v) = conj ⟨φ, v⟩` for all
 `v ∈ H`": for a coercive form `a` and `φ ∈ H*`, the solutions of (16) on `K = H` are exactly
 the `u` with `a v u = conj (φ v)` for all `v` (in Mathlib's convention), and there is exactly
-one of them. -/
+one of them (backbone `SesqForm.laxMilgram`, for the flipped form `(u, v) ↦ conj (a v u)`). -/
 theorem laxMilgram_complex [CompleteSpace H] (a : SesqForm ℂ H) {α : ℝ} (hα : 0 < α)
     (ha : a.IsCoerciveWith α) (φ : StrongDual ℂ H) :
     (∀ u, (∀ v, (φ (v - u)).re ≤ (a (v - u) u).re) ↔ ∀ v, a v u = conj (φ v)) ∧
@@ -428,10 +428,18 @@ theorem laxMilgram_complex [CompleteSpace H] (a : SesqForm ℂ H) {α : ℝ} (h�
     · intro h v
       rw [h (v - u), Complex.conj_re]
   refine ⟨key, ?_⟩
-  have := proposition_11_28 a hα ha Set.univ_nonempty isClosed_univ convex_univ φ
-  refine (existsUnique_congr fun u => ?_).1 this
-  rw [← key u]
-  simp only [Set.mem_univ, true_and, true_implies]
+  -- the book's `a(u, v)` is linear in `u`; the backbone's Lax–Milgram puts the unknown in the
+  -- conjugate-linear slot, so it is applied to the flipped form `(u, v) ↦ conj (a v u)`
+  set a' : SesqForm ℂ H := SesqForm.ofOperator (ContinuousLinearMap.adjoint (SesqForm.toOperator a))
+  have ha' : ∀ u v, a' u v = conj (a v u) := fun u v => by
+    rw [SesqForm.ofOperator_apply, ContinuousLinearMap.adjoint_inner_left, ← inner_conj_symm,
+      SesqForm.inner_toOperator]
+  have hcoer : a'.IsCoerciveWith α := fun v => by
+    rw [ha']
+    exact (ha v).trans_eq (RCLike.conj_re _).symm
+  refine (existsUnique_congr fun u => forall_congr' fun v => ?_).1 (a'.laxMilgram φ hα hcoer)
+  rw [ha']
+  exact ⟨fun h => by rw [← h, Complex.conj_conj], fun h => by rw [h, Complex.conj_conj]⟩
 
 /-- **Proposition 11.29 (Lax–Milgram, modulus form).** Assume that `T ∈ 𝓛(H)` satisfies
 `|(T u, u)| ≥ α |u|²` for all `u ∈ H`, for some `α > 0` (display (18)). Then `T` is bijective.

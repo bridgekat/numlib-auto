@@ -223,58 +223,14 @@ theorem isUnit_add_smul_one_of_posDef (hH : H.PosDef) (hr : 0 < r) :
     (toEuclideanCLM (n := ι) (𝕜 := ℝ)).symm
   rwa [map_add, map_smul, map_one, StarAlgEquiv.symm_apply_apply] at h
 
-open scoped Matrix.Norms.L2Operator in
 /-- Saad §4.3: for symmetric positive definite `H` and `V` and a positive parameter `r`, the
-iteration matrix (4.50) of Algorithm 4.3 has spectral radius below one.  The Euclidean operator
-norm of `G_r` itself need not be below one; what is below one is the norm of its conjugate by
-`V + r`, which is the product of the two Cayley transforms.  And `X ↦ ‖(V + r) X (V + r)⁻¹‖₂` is
-a consistent matrix norm, so it dominates the spectral radius. -/
+iteration matrix (4.50) of Algorithm 4.3 has spectral radius below one (backbone
+`Matrix.PosDef.complexSpectralRadius_peacemanRachford_lt_one`).  The Euclidean operator norm of
+`G_r` itself need not be below one; what is below one is the norm of its conjugate by `V + r`,
+the product of the two Cayley transforms, and similarity preserves the spectrum. -/
 theorem adi_complexSpectralRadius_lt_one (hH : H.PosDef) (hV : V.PosDef) (hr : 0 < r) :
-    complexSpectralRadius (G_adi H V r) < 1 := by
-  have hHu : IsUnit (H + r • (1 : Matrix ι ι ℝ)) := isUnit_add_smul_one_of_posDef hH hr
-  have hVu : IsUnit (V + r • (1 : Matrix ι ι ℝ)) := isUnit_add_smul_one_of_posDef hV hr
-  have hSS : (V + r • (1 : Matrix ι ι ℝ))⁻¹ * (V + r • 1) = 1 :=
-    nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp hVu)
-  have hmul : ∀ B C : Matrix ι ι ℝ,
-      ‖(V + r • (1 : Matrix ι ι ℝ)) * (B * C) * (V + r • 1)⁻¹‖₊
-        ≤ ‖(V + r • (1 : Matrix ι ι ℝ)) * B * (V + r • 1)⁻¹‖₊ *
-          ‖(V + r • (1 : Matrix ι ι ℝ)) * C * (V + r • 1)⁻¹‖₊ := by
-    intro B C
-    have h : (V + r • (1 : Matrix ι ι ℝ)) * (B * C) * (V + r • 1)⁻¹
-        = ((V + r • 1) * B * (V + r • 1)⁻¹) * ((V + r • 1) * C * (V + r • 1)⁻¹) := by
-      calc (V + r • (1 : Matrix ι ι ℝ)) * (B * C) * (V + r • 1)⁻¹
-          = (V + r • 1) * B * ((V + r • 1)⁻¹ * (V + r • 1)) * C * (V + r • 1)⁻¹ := by
-            rw [hSS]; noncomm_ring
-        _ = _ := by noncomm_ring
-    rw [h]
-    exact nnnorm_mul_le _ _
-  have hsmul : ∀ (c : ℝ) (B : Matrix ι ι ℝ),
-      ‖(V + r • (1 : Matrix ι ι ℝ)) * (c • B) * (V + r • 1)⁻¹‖₊
-        = ‖c‖₊ * ‖(V + r • (1 : Matrix ι ι ℝ)) * B * (V + r • 1)⁻¹‖₊ := by
-    intro c B
-    rw [mul_smul_comm, smul_mul_assoc, nnnorm_smul]
-  have hzero : ∀ B : Matrix ι ι ℝ,
-      ‖(V + r • (1 : Matrix ι ι ℝ)) * B * (V + r • 1)⁻¹‖₊ = 0 → B = 0 := by
-    intro B hB
-    have h0 : (V + r • (1 : Matrix ι ι ℝ)) * B * (V + r • 1)⁻¹ = 0 := by
-      simpa using hB
-    have h1 : (V + r • (1 : Matrix ι ι ℝ))⁻¹ *
-        ((V + r • 1) * B * (V + r • 1)⁻¹) * (V + r • 1) = B := by
-      calc (V + r • (1 : Matrix ι ι ℝ))⁻¹ * ((V + r • 1) * B * (V + r • 1)⁻¹) * (V + r • 1)
-          = ((V + r • 1)⁻¹ * (V + r • 1)) * B * ((V + r • 1)⁻¹ * (V + r • 1)) := by
-            noncomm_ring
-        _ = B := by rw [hSS, one_mul, mul_one]
-    rw [h0] at h1
-    simpa using h1.symm
-  refine (complexSpectralRadius_le_of_norm
-    (fun X => ‖(V + r • (1 : Matrix ι ι ℝ)) * X * (V + r • 1)⁻¹‖₊) (G_adi H V r) hmul hsmul
-    hzero).trans_lt ?_
-  rw [ENNReal.coe_lt_one_iff, ← NNReal.coe_lt_one, coe_nnnorm,
-    ← l2_opNorm_toEuclideanCLM (𝕜 := ℝ), map_mul, map_mul, toEuclideanCLM_G_adi hHu hVu,
-    toEuclideanCLM_nonsing_inv hVu, toEuclideanCLM_add_smul_one]
-  obtain ⟨c₁, hc₁, h₁⟩ := ((posDef_iff_isSymmetricCoercive H).1 hH).isCoercive
-  obtain ⟨c₂, hc₂, h₂⟩ := ((posDef_iff_isSymmetricCoercive V).1 hV).isCoercive
-  exact norm_conj_peacemanRachford_lt_one ⟨c₁, hc₁, h₁⟩ ⟨c₂, hc₂, h₂⟩ hr
+    complexSpectralRadius (G_adi H V r) < 1 :=
+  hH.complexSpectralRadius_peacemanRachford_lt_one hV hr
 
 /-- **The convergence claim of Saad §4.3**, which the book asserts without proof: when `H` and
 `V` are symmetric positive definite and the parameter `r` is a positive constant, the iterates of

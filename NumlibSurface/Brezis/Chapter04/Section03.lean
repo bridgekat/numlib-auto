@@ -2,6 +2,7 @@ import Mathlib.Analysis.Normed.Module.WeakDual
 import Mathlib.Analysis.Real.Cardinality
 import Mathlib.MeasureTheory.Measure.SeparableMeasure
 import Numlib.Analysis.Normed.Module.Reflexive.Kakutani
+import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.MeasureTheory.Function.LpSpace.Clarkson
 import Numlib.MeasureTheory.Function.LpSpace.Duality
 import NumlibSurface.Brezis.Chapter04.Section02
@@ -295,8 +296,9 @@ theorem lInfty_weakStar_isCompact_closedBall [SigmaFinite μ] :
 /-- **§4.3 C (ii).** For `Ω ⊆ ℝ^N` and a bounded sequence `fₙ` in `L^∞(Ω)`, there are a
 subsequence `f_{nₖ}` and `f ∈ L^∞(Ω)` with `f_{nₖ} ⇀ f` in the weak-∗ topology `σ(L^∞, L^1)`,
 i.e. `∫ f_{nₖ} g → ∫ f g` for every `g ∈ L^1(Ω)`: Corollary 3.30 (the sequential Banach–Alaoglu
-theorem for the dual of the separable space `L^1(Ω)`, `WeakDual.isSeqCompact_closedBall`)
-through the identification `L^∞ = (L^1)^*` of Remark 5. -/
+theorem for the dual of the separable space `L^1(Ω)`, in the backbone's transported form
+`LinearIsometryEquiv.exists_subseq_tendsto_apply`) through the identification `L^∞ = (L^1)^*` of
+Remark 5. -/
 theorem lInfty_exists_subseq_weakStar_tendsto {N : ℕ} {Ω : Set (EuclideanSpace ℝ (Fin N))}
     (f : ℕ → Lp ℝ ∞ (volume.restrict Ω)) {C : ℝ} (hf : ∀ n, ‖f n‖ ≤ C) :
     ∃ (φ : ℕ → ℕ) (g : Lp ℝ ∞ (volume.restrict Ω)), StrictMono φ ∧
@@ -305,30 +307,10 @@ theorem lInfty_exists_subseq_weakStar_tendsto {N : ℕ} {Ω : Set (EuclideanSpac
           (𝓝 (∫ x, g x * h x ∂(volume.restrict Ω))) := by
   have : TopologicalSpace.SeparableSpace (Lp ℝ 1 (volume.restrict Ω)) :=
     theorem_4_13_subset Ω ENNReal.one_ne_top
-  set e := Lp.dualEquiv ℝ 1 ∞ (volume.restrict Ω) ENNReal.one_ne_top with he
-  have hmem : ∀ n, StrongDual.toWeakDual (e (f n)) ∈
-      WeakDual.toStrongDual ⁻¹' closedBall (0 : StrongDual ℝ (Lp ℝ 1 (volume.restrict Ω))) C :=
-    fun n => by
-      rw [Set.mem_preimage, StrongDual.toStrongDual_toWeakDual, mem_closedBall_zero_iff,
-        e.norm_map]
-      exact hf n
-  obtain ⟨a, -, φ, hφ, hlim⟩ := WeakDual.isSeqCompact_closedBall ℝ (Lp ℝ 1 (volume.restrict Ω))
-    0 C hmem
-  refine ⟨φ, e.symm (WeakDual.toStrongDual a), hφ, fun h => ?_⟩
-  have key := tendsto_iff_forall_eval_tendsto_topDualPairing.1 hlim h
-  simp only [Function.comp_apply] at key
-  have h1 : ∀ k, (StrongDual.toWeakDual (e (f (φ k))) : WeakDual ℝ (Lp ℝ 1 (volume.restrict Ω))) h
-      = ∫ x, f (φ k) x * h x ∂(volume.restrict Ω) := fun k => by
-    rw [StrongDual.toWeakDual_apply, he, Lp.dualEquiv_apply]
-  have h2 : a h = ∫ x, (e.symm (WeakDual.toStrongDual a)) x * h x ∂(volume.restrict Ω) := by
-    have := Lp.dualEquiv_apply (𝕜 := ℝ) (μ := volume.restrict Ω) (p := 1) (q := ∞)
-      ENNReal.one_ne_top (e.symm (WeakDual.toStrongDual a)) h
-    rw [← he, e.apply_symm_apply] at this
-    exact this
-  have key' : Tendsto (fun k => ∫ x, f (φ k) x * h x ∂(volume.restrict Ω)) atTop (𝓝 (a h)) :=
-    key.congr h1
-  rw [h2] at key'
-  exact key'
+  obtain ⟨φ, g, hφ, hlim⟩ :=
+    (Lp.dualEquiv ℝ 1 ∞ (volume.restrict Ω) ENNReal.one_ne_top).exists_subseq_tendsto_apply hf
+  refine ⟨φ, g, hφ, fun h => ?_⟩
+  simpa only [Lp.dualEquiv_apply] using hlim h
 
 /-- **§4.3 C, non-reflexivity.** `L^∞(Ω)` is not reflexive, for a nonempty open `Ω ⊆ ℝ^N`
 (`N ≥ 1`): `L^∞ = (L^1)^*` (Remark 5), so `L^1` would be reflexive by Corollary 3.21

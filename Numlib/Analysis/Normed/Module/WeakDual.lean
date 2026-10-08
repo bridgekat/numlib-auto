@@ -31,9 +31,12 @@ convergence of `ℓ (vₙ)` for every bounded linear functional `ℓ`.
   coarser than the weak topology `WeakSpace 𝕜 (StrongDual 𝕜 V)`, and the weak-∗ versions of the
   three sequential facts, `exists_norm_le_of_tendsto_toWeakDual`,
   `norm_le_liminf_norm_of_weakStar_tendsto` and `tendsto_apply_of_tendsto_toWeakDual_of_tendsto`,
-  which need `V` complete because the uniform boundedness principle is applied on `V` itself.
+  which need `V` complete because the uniform boundedness principle is applied on `V` itself;
+* `LinearIsometryEquiv.exists_subseq_tendsto_apply` — a bounded sequence in a space isometric to
+  the dual of a separable space has a weak-∗ convergent subsequence (the sequential
+  Banach–Alaoglu theorem, transported).
 
-These are [brezis2011functional] Propositions 3.5 and 3.13.
+These are [brezis2011functional] Propositions 3.5 and 3.13 and Corollary 3.30.
 -/
 
 open Filter Topology Bornology
@@ -218,3 +221,24 @@ theorem tendsto_apply_of_tendsto_toWeakDual_of_tendsto [CompleteSpace V] {f : �
     _ ≤ C * ‖x n - u‖ + ‖f n u - g u‖ := by
         gcongr
         exact ((f n).le_opNorm (x n - u)).trans (by gcongr; exact hC n)
+
+/-- **Sequential Banach–Alaoglu for a space isometric to a separable dual**: if
+`e : X ≃ₗᵢ[𝕜] V'` and `V` is separable, every bounded sequence `f` in `X` has a subsequence
+`f ∘ φ` and a `g ∈ X` with `e (f (φ k)) x → e g x` for every `x ∈ V`, convergence in the weak-∗
+topology that `e` transports to `X`.  It is Mathlib's `WeakDual.isSeqCompact_closedBall`
+([brezis2011functional] Corollary 3.30); the case `X = L^∞ = (L^1)'` is
+[brezis2011functional] §4.3 C. -/
+theorem LinearIsometryEquiv.exists_subseq_tendsto_apply [TopologicalSpace.SeparableSpace V]
+    {X : Type*} [NormedAddCommGroup X] [NormedSpace 𝕜 X] (e : X ≃ₗᵢ[𝕜] StrongDual 𝕜 V)
+    {f : ℕ → X} {C : ℝ} (hf : ∀ n, ‖f n‖ ≤ C) :
+    ∃ (φ : ℕ → ℕ) (g : X), StrictMono φ ∧
+      ∀ x : V, Tendsto (fun k => e (f (φ k)) x) atTop (𝓝 (e g x)) := by
+  have hmem : ∀ n, StrongDual.toWeakDual (e (f n)) ∈
+      WeakDual.toStrongDual ⁻¹' Metric.closedBall (0 : StrongDual 𝕜 V) C := fun n => by
+    rw [Set.mem_preimage, StrongDual.toStrongDual_toWeakDual, Metric.mem_closedBall,
+      dist_zero_right, e.norm_map]
+    exact hf n
+  obtain ⟨a, -, φ, hφ, hlim⟩ := WeakDual.isSeqCompact_closedBall 𝕜 V 0 C hmem
+  refine ⟨φ, e.symm (WeakDual.toStrongDual a), hφ, fun x => ?_⟩
+  rw [e.apply_symm_apply]
+  exact tendsto_iff_forall_eval_tendsto_topDualPairing.1 hlim x

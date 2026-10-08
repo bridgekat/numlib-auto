@@ -54,7 +54,8 @@ and never by abusing the definitional equality `WeakSpace 𝕜 E = E`. This file
   annihilators of `Numlib.Analysis.Normed.Module.Annihilator`.
 * `WeakBilin.exists_finset_forall_norm_lt_subset_of_mem_nhds_zero` — the basic neighbourhoods
   of `0` in any weak topology, cut out by finitely many functionals, in the pointwise form that
-  the arguments here and in `Numlib.Analysis.Normed.Module.WeakStarMetrizable` use.
+  the arguments here and in `Numlib.Analysis.Normed.Module.WeakStarMetrizable` use, and
+  `WeakBilin.hasBasis_nhds`, the same basis at an arbitrary point.
 
 ## Implementation notes
 
@@ -92,6 +93,42 @@ theorem WeakBilin.exists_finset_forall_norm_lt_subset_of_mem_nhds_zero
   refine ⟨s, ε, hε, fun x hx => hVU ?_⟩
   rw [id, Seminorm.ball_finset_sup_eq_iInter _ _ _ hε]
   exact Set.mem_iInter₂.2 fun y hy => (Seminorm.mem_ball_zero _).2 (hx y hy)
+
+/-- The sets `{x | ∀ y ∈ s, ‖B x y - B x₀ y‖ < ε}`, `s` finite and `ε > 0`, form a neighbourhood
+basis of `x₀` in `WeakBilin B`: the translate of
+`WeakBilin.exists_finset_forall_norm_lt_subset_of_mem_nhds_zero` to an arbitrary point
+([brezis2011functional] Propositions 3.4 and 3.12, the common core). -/
+theorem WeakBilin.hasBasis_nhds (B : E →ₗ[𝕜] F →ₗ[𝕜] 𝕜) (x₀ : WeakBilin B) :
+    (𝓝 x₀).HasBasis (fun p : Finset F × ℝ => 0 < p.2)
+      (fun p => {x : WeakBilin B | ∀ y ∈ p.1, ‖B x y - B x₀ y‖ < p.2}) := by
+  refine Filter.hasBasis_iff.2 fun t => ⟨fun ht => ?_, ?_⟩
+  · have hU : (x₀ + ·) ⁻¹' t ∈ 𝓝 (0 : WeakBilin B) := by
+      rw [← map_add_left_nhds_zero x₀] at ht
+      exact ht
+    obtain ⟨s, ε, hε, hsub⟩ := WeakBilin.exists_finset_forall_norm_lt_subset_of_mem_nhds_zero hU
+    refine ⟨(s, ε), hε, fun x hx => ?_⟩
+    have hmem : x - x₀ ∈ {x : WeakBilin B | ∀ y ∈ s, ‖B x y‖ < ε} := fun y hy => by
+      have e : B (x - x₀) y = B x y - B x₀ y :=
+        (congrArg (fun g : F →ₗ[𝕜] 𝕜 => g y) (map_sub B (x : E) x₀)).trans
+          (LinearMap.sub_apply _ _ _)
+      rw [e]
+      exact hx y hy
+    have := hsub hmem
+    simpa using this
+  · rintro ⟨⟨s, ε⟩, hε, hsub⟩
+    dsimp only at hε hsub
+    refine Filter.mem_of_superset ?_ hsub
+    have hopen : IsOpen {x : WeakBilin B | ∀ y ∈ s, ‖B x y - B x₀ y‖ < ε} := by
+      have : {x : WeakBilin B | ∀ y ∈ s, ‖B x y - B x₀ y‖ < ε} =
+          ⋂ y ∈ s, {x : WeakBilin B | ‖B x y - B x₀ y‖ < ε} := by
+        ext x
+        simp only [mem_ofPred_eq, mem_iInter]
+      rw [this]
+      exact isOpen_biInter_finset fun y _ =>
+        isOpen_lt (((WeakBilin.eval_continuous B y).sub continuous_const).norm) continuous_const
+    refine hopen.mem_nhds fun y _ => ?_
+    rw [sub_self, norm_zero]
+    exact hε
 
 end Basic
 

@@ -73,3 +73,16 @@ source = "Dennis–Schnabel, Numerical Methods for Unconstrained Optimization an
 
 [[node]]
 id = "Matrix.broydenUpdate_zero_left"
+
+[[node]]
+id = "Matrix.rankOneSecantUpdate"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.42"
+
+[[node]]
+id = "Matrix.rankOneSecantUpdate_mulVec"
+
+[[node]]
+id = "Matrix.broydenUpdate_eq_rankOneSecantUpdate"
+
+[[node]]
+id = "Matrix.broydenUpdate_sub_eq"

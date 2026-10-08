@@ -32,6 +32,9 @@ eigenvalue (`p := (· = l)`), the invariant subspace of a spectral set `Λ` (`p 
 * `Module.End.invtSubmodule_le_spectralSubspace` and `Module.End.invtSubmodule_eq_spectralSubspace`:
   an invariant subspace on which every eigenvalue satisfies `p` lies in `A.spectralSubspace p`, and
   equals it when the dimensions agree — the uniqueness of the invariant subspace of a spectral set.
+* `Module.End.maxGenEigenspace_eq_eigenspace_of_iSup_eigenspace_eq_top`: when the eigenspaces span,
+  every generalized eigenspace is an eigenspace (a diagonalizable endomorphism has no defective
+  eigenvalue).
 -/
 
 namespace Module.End
@@ -127,6 +130,68 @@ theorem invtSubmodule_eq_spectralSubspace [IsAlgClosed K] [FiniteDimensional K V
     (hdim : Module.finrank K S = Module.finrank K (A.spectralSubspace p)) :
     S = A.spectralSubspace p :=
   Submodule.eq_of_le_of_finrank_eq (invtSubmodule_le_spectralSubspace hS hp) hdim
+
+/-! ### Diagonalizable endomorphisms -/
+
+/-- **A diagonalizable endomorphism has no defective eigenvalue**: if the eigenspaces of `f` span
+the whole space, the maximal generalized eigenspace of `μ` is already the eigenspace of `μ`
+([saad2003iterative] Proposition 1.7, the direction from diagonalizability). The reason is that
+`f - μ` maps every *other* eigenspace into itself and annihilates the `μ`-eigenspace, so its range
+misses the `μ`-eigenspace; a vector killed by `(f - μ)²` therefore has `(f - μ) v` in both, hence
+zero, and the general power follows by induction. -/
+theorem maxGenEigenspace_eq_eigenspace_of_iSup_eigenspace_eq_top {f : End K V}
+    (hf : (⨆ μ : K, f.eigenspace μ) = ⊤) (μ : K) :
+    f.maxGenEigenspace μ = f.eigenspace μ := by
+  refine le_antisymm ?_ eigenspace_le_maxGenEigenspace
+  set g := f - μ • (1 : End K V) with hg
+  have hgx : ∀ x : V, g x = f x - μ • x := by
+    intro x
+    rw [hg]
+    simp
+  have hker : eigenspace f μ = LinearMap.ker g := by
+    rw [hg, eigenspace_def]
+  have hmapν : ∀ ν : K,
+      Submodule.map g (eigenspace f ν) ≤ eigenspace f ν := by
+    rintro ν _ ⟨x, hx, rfl⟩
+    have hx' : f x = ν • x := mem_eigenspace_iff.1 hx
+    have hgv : g x = (ν - μ) • x := by rw [hgx, hx', sub_smul]
+    rw [mem_eigenspace_iff, hgv, map_smul, hx', smul_comm]
+  have hmapμ : Submodule.map g (eigenspace f μ) = ⊥ := by
+    rw [Submodule.eq_bot_iff]
+    rintro _ ⟨x, hx, rfl⟩
+    have hx' : f x = μ • x := mem_eigenspace_iff.1 hx
+    rw [hgx, hx', sub_self]
+  have hrange : LinearMap.range g ≤ ⨆ (ν : K) (_ : ν ≠ μ), eigenspace f ν := by
+    have h1 : LinearMap.range g = Submodule.map g (⨆ ν : K, eigenspace f ν) := by
+      rw [hf, Submodule.map_top]
+    rw [h1, Submodule.map_iSup]
+    refine iSup_le fun ν => ?_
+    rcases eq_or_ne ν μ with rfl | hν
+    · rw [hmapμ]
+      exact bot_le
+    · exact (hmapν ν).trans (le_iSup_of_le ν (le_iSup_of_le hν le_rfl))
+  have hdisj := iSupIndep_def.1 (eigenspaces_iSupIndep f) μ
+  have key : ∀ x : V, g (g x) = 0 → g x = 0 := by
+    intro x hx
+    refine Submodule.disjoint_def.1 hdisj (g x) ?_ (hrange (LinearMap.mem_range_self g x))
+    rw [hker, LinearMap.mem_ker]
+    exact hx
+  have hpow : ∀ (k : ℕ) (x : V), (g ^ k) x = 0 → g x = 0 := by
+    intro k
+    induction k with
+    | zero =>
+        intro x hx
+        rw [pow_zero, one_apply] at hx
+        rw [hx, map_zero]
+    | succ k ih =>
+        intro x hx
+        rw [pow_succ, mul_apply] at hx
+        exact key x (ih (g x) hx)
+  intro v hv
+  rw [mem_maxGenEigenspace] at hv
+  obtain ⟨k, hk⟩ := hv
+  rw [hker, LinearMap.mem_ker]
+  exact hpow k v (by rw [hg]; exact hk)
 
 /-! ### The spectral projector -/
 

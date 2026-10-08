@@ -4,6 +4,7 @@ import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Numlib.Analysis.Normed.Module.NormEquivalence
+import Numlib.LinearAlgebra.Eigenspace.Spectral
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.RealSchur
@@ -84,64 +85,6 @@ theorem diagonalizable_of_injective_eigenvalues {A : Matrix (Fin n) (Fin n) 𝕜
 
 /-! ### §1.8.1 Proposition 1.7: semisimple eigenvalues -/
 
-/-- If the eigenvectors of `f` span the whole space then no eigenvalue is defective: the maximal
-generalized eigenspace of `μ` is already the eigenspace of `μ`. The reason is that `f - μ` maps
-every *other* eigenspace into itself and annihilates the `μ`-eigenspace, so its range misses the
-`μ`-eigenspace; a vector killed by `(f - μ)²` therefore has `(f - μ) v` in both, hence zero, and
-the general power follows by induction. -/
-private theorem maxGenEigenspace_le_eigenspace {K M : Type*} [Field K] [AddCommGroup M]
-    [Module K M] {f : Module.End K M} (hf : (⨆ μ : K, Module.End.eigenspace f μ) = ⊤) (μ : K) :
-    Module.End.maxGenEigenspace f μ ≤ Module.End.eigenspace f μ := by
-  set g := f - μ • (1 : Module.End K M) with hg
-  have hgx : ∀ x : M, g x = f x - μ • x := by
-    intro x
-    rw [hg]
-    simp
-  have hker : Module.End.eigenspace f μ = LinearMap.ker g := by
-    rw [hg, Module.End.eigenspace_def]
-  have hmapν : ∀ ν : K,
-      Submodule.map g (Module.End.eigenspace f ν) ≤ Module.End.eigenspace f ν := by
-    rintro ν _ ⟨x, hx, rfl⟩
-    have hx' : f x = ν • x := Module.End.mem_eigenspace_iff.1 hx
-    have hgv : g x = (ν - μ) • x := by rw [hgx, hx', sub_smul]
-    rw [Module.End.mem_eigenspace_iff, hgv, map_smul, hx', smul_comm]
-  have hmapμ : Submodule.map g (Module.End.eigenspace f μ) = ⊥ := by
-    rw [Submodule.eq_bot_iff]
-    rintro _ ⟨x, hx, rfl⟩
-    have hx' : f x = μ • x := Module.End.mem_eigenspace_iff.1 hx
-    rw [hgx, hx', sub_self]
-  have hrange : LinearMap.range g ≤ ⨆ (ν : K) (_ : ν ≠ μ), Module.End.eigenspace f ν := by
-    have h1 : LinearMap.range g = Submodule.map g (⨆ ν : K, Module.End.eigenspace f ν) := by
-      rw [hf, Submodule.map_top]
-    rw [h1, Submodule.map_iSup]
-    refine iSup_le fun ν => ?_
-    rcases eq_or_ne ν μ with rfl | hν
-    · rw [hmapμ]
-      exact bot_le
-    · exact (hmapν ν).trans (le_iSup_of_le ν (le_iSup_of_le hν le_rfl))
-  have hdisj := iSupIndep_def.1 (Module.End.eigenspaces_iSupIndep f) μ
-  have key : ∀ x : M, g (g x) = 0 → g x = 0 := by
-    intro x hx
-    refine Submodule.disjoint_def.1 hdisj (g x) ?_ (hrange (LinearMap.mem_range_self g x))
-    rw [hker, LinearMap.mem_ker]
-    exact hx
-  have hpow : ∀ (k : ℕ) (x : M), (g ^ k) x = 0 → g x = 0 := by
-    intro k
-    induction k with
-    | zero =>
-        intro x hx
-        rw [pow_zero, Module.End.one_apply] at hx
-        rw [hx, map_zero]
-    | succ k ih =>
-        intro x hx
-        rw [pow_succ, Module.End.mul_apply] at hx
-        exact key x (ih (g x) hx)
-  intro v hv
-  rw [Module.End.mem_maxGenEigenspace] at hv
-  obtain ⟨k, hk⟩ := hv
-  rw [hker, LinearMap.mem_ker]
-  exact hpow k v (by rw [hg]; exact hk)
-
 /-- **Saad Proposition 1.7**: over `ℂ`, a matrix is diagonalizable if and only if every eigenvalue
 is *semisimple* — its eigenspace is already the whole maximal generalized eigenspace, so the
 geometric and algebraic multiplicities agree. One direction is that the generalized eigenspaces
@@ -154,8 +97,8 @@ theorem proposition_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
         Module.End.maxGenEigenspace A.mulVecLin μ := by
   rw [Matrix.isSimilar_diagonal_iff_iSup_eigenspace_eq_top]
   constructor
-  · exact fun hsup μ => le_antisymm Module.End.eigenspace_le_maxGenEigenspace
-      (maxGenEigenspace_le_eigenspace hsup μ)
+  · exact fun hsup μ =>
+      (Module.End.maxGenEigenspace_eq_eigenspace_of_iSup_eigenspace_eq_top hsup μ).symm
   · intro hss
     calc (⨆ μ : ℂ, Module.End.eigenspace A.mulVecLin μ)
         = ⨆ μ : ℂ, Module.End.maxGenEigenspace A.mulVecLin μ := iSup_congr hss

@@ -28,6 +28,8 @@ about a componentwise formula.
   that a forward SOR sweep followed by a backward one is the step of `Matrix.ssorSplitting`
   ([quarteroni2000numerical] §4.2.6, the elimination of `x^{(k+1/2)}`; at `ω = 1` the symmetric
   Gauss–Seidel method (4.21)).
+* `Matrix.foldl_sorRelax_eq_sorSweep`: the loop that relaxes the unknowns one at a time
+  (`Matrix.sorRelax`), in the natural order of `Fin m`, is the SOR sweep.
 
 ## Design
 
@@ -297,5 +299,119 @@ theorem ssorSweep_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) 
       Splitting.mulVecStep (ssorSplitting A h hω hω2) b x := by
   rw [sorSweep_eq_mulVecStep A h hω, backwardSorSweep_eq_mulVecStep A h hω]
   exact Splitting.mulVecStep_mulVecStep b x _ _ _ (ringInverse_ssorSplitting_m A h hω hω2)
+
+/-! ### The SOR sweep as a loop of relaxations
+
+What a program executes is a loop over the unknowns, each relaxed once from the current vector.
+Over `Fin m`, in the natural order, that loop is the sweep `Matrix.sorSweep`. -/
+
+section Relaxation
+
+variable {m : ℕ} {𝕜 : Type*} [Field 𝕜] (A : Matrix (Fin m) (Fin m) 𝕜) (ω : 𝕜) (b : Fin m → 𝕜)
+
+/-- One relaxation of the `i`-th unknown in an SOR sweep: the `i`-th entry of `x` moves by `ω`
+times the `i`-th residual over `a_ii`, and every other entry is kept
+([quarteroni2000numerical] (4.15), [saad2003iterative] (4.12), one inner iteration). -/
+def sorRelax (i : Fin m) (x : Fin m → 𝕜) : Fin m → 𝕜 :=
+  Function.update x i (x i + ω * (b - A *ᵥ x) i / A i i)
+
+/-- The first `k` relaxations of the loop. -/
+private def sorRelaxPartial (k : ℕ) (x : Fin m → 𝕜) : Fin m → 𝕜 :=
+  ((List.finRange m).take k).foldl (fun y i => sorRelax A ω b i y) x
+
+variable {A ω b}
+
+private theorem sorRelaxPartial_succ {k : ℕ} (hk : k < m) (x : Fin m → 𝕜) :
+    sorRelaxPartial A ω b (k + 1) x = sorRelax A ω b ⟨k, hk⟩ (sorRelaxPartial A ω b k x) := by
+  rw [sorRelaxPartial, sorRelaxPartial, List.take_add_one,
+    List.getElem?_eq_getElem (by simpa using hk), List.foldl_append]
+  simp
+
+/-- Entries from `k` on are untouched by the first `k` relaxations. -/
+private theorem sorRelaxPartial_of_le (x : Fin m → 𝕜) :
+    ∀ k : ℕ, k ≤ m → ∀ j : Fin m, k ≤ (j : ℕ) → sorRelaxPartial A ω b k x j = x j := by
+  intro k
+  induction k with
+  | zero => intro _ j _; rfl
+  | succ k ih =>
+    intro hk j hj
+    have hkm : k < m := lt_of_lt_of_le (Nat.lt_succ_self k) hk
+    have hne : j ≠ ⟨k, hkm⟩ := by
+      simp only [ne_eq, Fin.ext_iff]
+      omega
+    rw [sorRelaxPartial_succ hkm, sorRelax, Function.update_of_ne hne, ih hkm.le j (by omega)]
+
+/-- Entries below `k` are frozen once the first `k` relaxations are done. -/
+private theorem sorRelaxPartial_stable (x : Fin m → 𝕜) :
+    ∀ l : ℕ, l ≤ m → ∀ k : ℕ, k ≤ l → ∀ j : Fin m, (j : ℕ) < k →
+      sorRelaxPartial A ω b l x j = sorRelaxPartial A ω b k x j := by
+  intro l
+  induction l with
+  | zero => intro _ k hk j hj; omega
+  | succ l ih =>
+    intro hl k hk j hj
+    rcases eq_or_lt_of_le hk with rfl | hkl
+    · rfl
+    have hlm : l < m := lt_of_lt_of_le (Nat.lt_succ_self l) hl
+    have hne : j ≠ ⟨l, hlm⟩ := by
+      simp only [ne_eq, Fin.ext_iff]
+      omega
+    rw [sorRelaxPartial_succ hlm, sorRelax, Function.update_of_ne hne,
+      ih hlm.le k (by omega) j hj]
+
+/-- **The SOR sweep is its loop of relaxations**: relaxing the unknowns one at a time in the order
+`0, 1, …, m - 1`, each from the current vector, is the sweep `Matrix.sorSweep`, the solution of
+`(D + ωL) y = ((1 - ω) D - ωU) x + ω b` ([quarteroni2000numerical] (4.15)–(4.16)).  No condition
+on `ω` is needed, only nonzero pivots. -/
+theorem foldl_sorRelax_eq_sorSweep (h : IsUnit (diagPart A)) (x : Fin m → 𝕜) :
+    (List.finRange m).foldl (fun y i => sorRelax A ω b i y) x = sorSweep A ω b x := by
+  set y := (List.finRange m).foldl (fun y i => sorRelax A ω b i y) x with hy
+  have hdiag : ∀ i : Fin m, A i i ≠ 0 := (isUnit_diagPart_iff A).1 h
+  have hcard : sorRelaxPartial A ω b m x = y := by
+    rw [hy, sorRelaxPartial, List.take_of_length_le (by simp)]
+  have hres : (diagPart A + ω • strictLower A) *ᵥ (y - x) = ω • (b - A *ᵥ x) := by
+    funext i
+    -- the vector before relaxation `i` agrees with `y` below `i` and with `x` from `i` on
+    set z := sorRelaxPartial A ω b (i : ℕ) x with hz
+    have hzlt : ∀ j : Fin m, j < i → z j = y j := fun j hj => by
+      rw [← hcard]
+      exact (sorRelaxPartial_stable x m le_rfl (i : ℕ) i.2.le j hj).symm
+    have hzge : ∀ j : Fin m, ¬ j < i → z j = x j := fun j hj =>
+      sorRelaxPartial_of_le x (i : ℕ) i.2.le j (by omega)
+    have hyi : y i = x i + ω * (b - A *ᵥ z) i / A i i := by
+      have h1 : y i = sorRelaxPartial A ω b ((i : ℕ) + 1) x i := by
+        rw [← hcard]
+        exact sorRelaxPartial_stable x m le_rfl ((i : ℕ) + 1) i.2 i (Nat.lt_succ_self _)
+      rw [h1, sorRelaxPartial_succ i.2, sorRelax, Function.update_self,
+        sorRelaxPartial_of_le x (i : ℕ) i.2.le i le_rfl]
+    have hkey : A i i * (y i - x i) = ω * (b i - (A *ᵥ z) i) := by
+      rw [hyi, add_sub_cancel_left, Pi.sub_apply, mul_div_cancel₀ _ (hdiag i)]
+    have hsplit : ∀ w : Fin m → 𝕜, (A *ᵥ w) i
+        = ∑ j ∈ univ.filter (· < i), A i j * w j
+          + ∑ j ∈ univ.filter (fun j => ¬ j < i), A i j * w j := fun w => by
+      change ∑ j, A i j * w j = _
+      exact (sum_filter_add_sum_filter_not _ _ _).symm
+    have hlow : ∑ j ∈ univ.filter (· < i), A i j * (y j - x j)
+        = (A *ᵥ z) i - (A *ᵥ x) i := by
+      have h1 : ∑ j ∈ univ.filter (· < i), A i j * z j
+          = ∑ j ∈ univ.filter (· < i), A i j * y j :=
+        sum_congr rfl fun j hj => by rw [hzlt j (mem_filter.1 hj).2]
+      have h2 : ∑ j ∈ univ.filter (fun j => ¬ j < i), A i j * z j
+          = ∑ j ∈ univ.filter (fun j => ¬ j < i), A i j * x j :=
+        sum_congr rfl fun j hj => by rw [hzge j (mem_filter.1 hj).2]
+      rw [hsplit, hsplit, h1, h2]
+      simp only [mul_sub, sum_sub_distrib]
+      ring
+    simp only [Pi.smul_apply, smul_eq_mul, Pi.sub_apply, add_mulVec, Pi.add_apply,
+      diagPart_mulVec_apply, smul_mulVec, strictLower_mulVec_apply]
+    rw [hlow, hkey]
+    ring
+  have hstep : (diagPart A + ω • strictLower A) *ᵥ (y - x)
+      = (diagPart A + ω • strictLower A) *ᵥ (sorSweep A ω b x - x) := by
+    rw [hres, diagPart_add_smul_strictLower_mulVec_sorSweep_sub A h]
+  exact sub_left_inj.mp
+    (mulVec_injective_of_isUnit (isUnit_diagPart_add_smul_strictLower h ω) hstep)
+
+end Relaxation
 
 end Matrix

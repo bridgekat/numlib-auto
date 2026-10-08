@@ -31,3 +31,7 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 [[node]]
 id = "tendsto_apply_of_tendsto_toWeakDual_of_tendsto"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
+
+[[node]]
+id = "LinearIsometryEquiv.exists_subseq_tendsto_apply"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.30 and §4.3 C"

@@ -36,7 +36,10 @@ variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Modul
   {B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {F : Bifun U X} {v : V} {x : X}
 
 /-- The **Lagrangian** of the generalized convex program associated with `F`:
-`L(v, x) = ⨅ u (⟨u, v⟩ + F u x)`. -/
+`L(v, x) = ⨅ u (⟨u, v⟩ + F u x)`. For the equality-constrained program with perturbed constraints
+`h x = u` and the dot product pairing it is the real-valued `Constrained.lagrangian f h x v =
+f x + ∑ v_i h_i x` of `Numlib/Optimization/Constrained`, read in `EReal`
+(`Constrained.coe_lagrangian_eq`). -/
 noncomputable def lagrangian (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) : V → X → EReal :=
   fun v x => ⨅ u, ((B u v : ℝ) : EReal) + F u x
 

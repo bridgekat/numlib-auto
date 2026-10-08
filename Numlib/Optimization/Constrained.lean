@@ -5,7 +5,9 @@ import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Analysis.InnerProductSpace.Calculus
+import Mathlib.LinearAlgebra.Matrix.ToLin
 import Numlib.Analysis.Calculus.Taylor
+import Numlib.Analysis.Convex.Extremum.Lagrangian
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.LinearInequalities
 import Numlib.Analysis.Convex.Extremum.Program
@@ -109,13 +111,37 @@ def activeSet (g : κ → E → ℝ) (x : E) : Set κ := {j | g j x = 0}
 variable [Fintype ι]
 
 /-- The Lagrangian `ℒ(x, λ) = f x + ∑ λ_i h_i x` of the equality-constrained problem
-([quarteroni2000numerical] §7.3). -/
+([quarteroni2000numerical] §7.3). It is the real-valued, differentiable form of Rockafellar's
+Lagrangian `ConvexAnalysis.lagrangian` of the program with perturbed constraints `h x = u`
+(`Constrained.coe_lagrangian_eq`); the convex-analysis one is `EReal`-valued and defined for an
+arbitrary perturbation bifunction. -/
 def lagrangian (f : E → ℝ) (h : ι → E → ℝ) (x : E) (l : ι → ℝ) : ℝ := f x + ∑ i, l i * h i x
 
 /-- On the feasible set the Lagrangian is the objective. -/
 theorem lagrangian_eq_of_mem {f : E → ℝ} {h : ι → E → ℝ} {x : E} (hx : x ∈ feasibleEq h)
     (l : ι → ℝ) : lagrangian f h x l = f x := by
   simp [lagrangian, hx _]
+
+/-- **The equality-constrained Lagrangian is Rockafellar's Lagrangian** ([rockafellar1970convex]
+§29). `ConvexAnalysis.lagrangian B F v x = ⨅ u (⟨u, v⟩ + F u x)` is defined for any perturbation
+bifunction `F`; for the perturbation `F u x = f x` if `h x = u` and `⊤` otherwise — the
+constraints `h x = 0` shifted to `h x = u` — and the dot product pairing on `ι → ℝ`, the infimum
+is attained at `u = h x` and is `lagrangian f h x v = f x + ∑ v_i h_i x`, read in `EReal`. -/
+theorem coe_lagrangian_eq (f : E → ℝ) (h : ι → E → ℝ) (x : E) (l : ι → ℝ) :
+    ((lagrangian f h x l : ℝ) : EReal) =
+      ConvexAnalysis.lagrangian (dotProductBilin ℝ ℝ)
+        (fun u y => if (fun i => h i y) = u then ((f y : ℝ) : EReal) else ⊤) l x := by
+  have hval : ((lagrangian f h x l : ℝ) : EReal) =
+      (((dotProductBilin ℝ ℝ (fun i => h i x) l : ℝ)) : EReal) + ((f x : ℝ) : EReal) := by
+    rw [← EReal.coe_add, dotProductBilin_apply_apply, lagrangian, dotProduct, add_comm]
+    simp only [mul_comm]
+  rw [ConvexAnalysis.lagrangian_apply]
+  refine le_antisymm (le_iInf fun u => ?_) (iInf_le_of_le (fun i => h i x) ?_)
+  · split_ifs with hu
+    · rw [← hu, hval]
+    · rw [EReal.add_top_of_ne_bot (EReal.coe_ne_bot _)]
+      exact le_top
+  · rw [ite_eq_left rfl, hval]
 
 end Defs
 

@@ -13,8 +13,9 @@ on `Matrix n n ℝ`. With `s = xp - x` the last step and `y = ∇f(xp) - ∇f(x)
 of the gradient, every update enforces the secant equation `B₊ s = y`:
 
 * `Matrix.rankOneSecantUpdate B s y c`, the rank-one update (7.42) with an arbitrary scaling
-  vector `c`, of which Broyden's update `Matrix.broydenUpdate` (`Numlib/Nonlinear/QuasiNewton`)
-  is the case `c = s`;
+  vector `c`, of which Broyden's update `Matrix.broydenUpdate` is the case `c = s`: both live in
+  `Numlib/Nonlinear/QuasiNewton`, which this module imports, so that the nonsymmetric updates for
+  systems and the symmetric ones for minimization share one definition;
 * `Matrix.sr1Update B s y`, the symmetric rank-one update (7.43), the case `c = y - B s`, which
   preserves symmetry; its inverse (7.44) is `Matrix.sr1Update_inv`, by the Sherman–Morrison
   formula `Matrix.inv_add_vecMulVec` of `Numlib/LinearAlgebra/Matrix/NonsingularInverse`;
@@ -58,26 +59,7 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n]
 
-/-! ### The rank-one secant update (7.42) and the symmetric rank-one update (7.43) -/
-
-/-- **The rank-one secant update** ([quarteroni2000numerical] (7.42)):
-`B₊ = B + ((y - B s) cᵀ) / (cᵀ s)`, with an arbitrary scaling vector `c`. With `c = s` it is
-Broyden's update `Matrix.broydenUpdate`; with `c = y - B s` it is the symmetric rank-one update
-`Matrix.sr1Update`. For `cᵀ s = 0` the coefficient is the junk value `0` and `B₊ = B`. -/
-noncomputable def rankOneSecantUpdate (B : Matrix n n ℝ) (s y c : n → ℝ) : Matrix n n ℝ :=
-  B + (1 / (c ⬝ᵥ s)) • vecMulVec (y - B *ᵥ s) c
-
-/-- Broyden's update is the rank-one secant update with `c = s`. -/
-theorem broydenUpdate_eq_rankOneSecantUpdate (B : Matrix n n ℝ) (s y : n → ℝ) :
-    broydenUpdate B s y = rankOneSecantUpdate B s y s :=
-  rfl
-
-/-- **The secant equation** for the rank-one update: `B₊ s = y` whenever `cᵀ s ≠ 0`. -/
-theorem rankOneSecantUpdate_mulVec (B : Matrix n n ℝ) {s c : n → ℝ} (hcs : c ⬝ᵥ s ≠ 0)
-    (y : n → ℝ) : rankOneSecantUpdate B s y c *ᵥ s = y := by
-  simp only [rankOneSecantUpdate, add_mulVec, smul_mulVec, vecMulVec_mulVec,
-    op_smul_eq_smul, smul_smul, one_div, inv_mul_cancel₀ hcs, one_smul]
-  abel
+/-! ### The symmetric rank-one update (7.43) -/
 
 /-- **The symmetric rank-one update** ([quarteroni2000numerical] (7.43)):
 `B₊ = B + ((y - B s)(y - B s)ᵀ) / ((y - B s)ᵀ s)`, the rank-one secant update with

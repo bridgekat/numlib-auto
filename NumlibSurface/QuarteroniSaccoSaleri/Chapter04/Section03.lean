@@ -1668,14 +1668,6 @@ private theorem toEuclideanCLM_complexify_adiMatrix (hA₁ : A₁.PosDef) (hA₂
     complexify_smul, complexify_smul, complexify_smul, complexify_one, hc α₁, hc α₂]
   exact toEuclideanCLM_adiMatrix_general _ _ h₁ h₂ hu₁ hu₂
 
-/-- The real spectrum of the operator of a complexified real matrix is the real spectrum of the
-matrix. -/
-private theorem spectrum_real_toEuclideanCLM_complexify (A : Matrix (Fin n) (Fin n) ℝ) :
-    spectrum ℝ (toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify A)) = spectrum ℝ A := by
-  ext t
-  rw [← spectrum.algebraMap_mem_iff ℂ, AlgEquiv.spectrum_eq (toEuclideanCLM (n := Fin n) (𝕜 := ℂ)),
-    Complex.coe_algebraMap, ofReal_mem_spectrum_complexify_iff]
-
 /-- The operator of a complexified real symmetric matrix with real spectrum in `[lmin, lmax]` has
 its quadratic form enclosed in `[lmin, lmax]`. -/
 private theorem isSymmetricBoundedBy_toEuclideanCLM_complexify {A : Matrix (Fin n) (Fin n) ℝ}
@@ -1721,9 +1713,9 @@ private theorem abs_sub_div_add_eq {t : ℝ} (ht : 0 < t) (hα₁ : 0 < α₁) (
 /-- **§4.3.6, the estimate of `ρ(B)`.** For `A₁`, `A₂` symmetric positive definite with
 eigenvalues `λ_i⁽¹⁾`, `λ_i⁽²⁾` (Mathlib's `Matrix.IsHermitian.eigenvalues`) and `α₁, α₂ > 0`,
 `ρ(B) ≤ max_i |(1 - α₂ λ_i⁽¹⁾)/(1 + α₁ λ_i⁽¹⁾)| · max_i |(1 - α₁ λ_i⁽²⁾)/(1 + α₂ λ_i⁽²⁾)|`
-(backbone `Stationary.spectralRadius_peacemanRachfordTwo_le`, which needs no commutativity of
-`A₁` and `A₂`; the two factors are those of the backbone up to the constants `α₁/α₂` and `α₂/α₁`,
-which cancel in the product). -/
+(backbone `Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le`, which needs no
+commutativity of `A₁` and `A₂`, at `r_i = 1/α_i`; the two factors are those of the backbone up to
+the constants `α₁/α₂` and `α₂/α₁`, which cancel in the product). -/
 theorem adi_spectralRadius_le [NeZero n] (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) (hα₁ : 0 < α₁)
     (hα₂ : 0 < α₂) :
     complexSpectralRadius (adiMatrix A₁ A₂ α₁ α₂) ≤ ENNReal.ofReal
@@ -1746,21 +1738,19 @@ theorem adi_spectralRadius_le [NeZero n] (hA₁ : A₁.PosDef) (hA₂ : A₂.Pos
       (mem_univ (0 : Fin n)))
     exact div_nonneg (abs_nonneg _) (by linarith [mul_pos hα₂ (hA₂.eigenvalues_pos 0)])
   have hbound : ∀ {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) {β γ : ℝ}, 0 < β → 0 < γ →
-      ∀ t ∈ spectrum ℝ (toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify A)),
-        |t - 1 / γ| / (t + 1 / β) ≤ β / γ * univ.sup' univ_nonempty
+      ∀ t ∈ spectrum ℝ A, |t - γ⁻¹| / (t + β⁻¹) ≤ β / γ * univ.sup' univ_nonempty
           (fun i => |1 - γ * hA.1.eigenvalues i| / (1 + β * hA.1.eigenvalues i)) := by
     intro A hA β γ hβ hγ t ht
-    rw [spectrum_real_toEuclideanCLM_complexify, hA.1.spectrum_real_eq_range_eigenvalues] at ht
+    rw [hA.1.spectrum_real_eq_range_eigenvalues] at ht
     obtain ⟨i, rfl⟩ := ht
-    rw [abs_sub_div_add_eq β γ (hA.eigenvalues_pos i) hβ hγ]
+    rw [← one_div, ← one_div, abs_sub_div_add_eq β γ (hA.eigenvalues_pos i) hβ hγ]
     exact mul_le_mul_of_nonneg_left (Finset.le_sup'
       (fun i => |1 - γ * hA.1.eigenvalues i| / (1 + β * hA.1.eigenvalues i)) (mem_univ i))
       (div_pos hβ hγ).le
-  rw [complexSpectralRadius_adiMatrix A₁ A₂ α₁ α₂ hA₁ hA₂ hα₁ hα₂,
+  rw [adiMatrix, adiMatrix_eq_general A₁ A₂ hα₁.ne' hα₂.ne',
     show M₁ * M₂ = (α₁ / α₂ * M₁) * (α₂ / α₁ * M₂) by field_simp]
-  exact spectralRadius_peacemanRachfordTwo_le hA₁.isSymmetricCoercive_toEuclideanCLM_complexify
-    hA₂.isSymmetricCoercive_toEuclideanCLM_complexify (one_div_pos.mpr hα₁) (one_div_pos.mpr hα₂)
-    (mul_nonneg (div_pos hα₁ hα₂).le hM₁0) (mul_nonneg (div_pos hα₂ hα₁).le hM₂0)
+  exact hA₁.complexSpectralRadius_peacemanRachfordTwo_le hA₂ (inv_pos.mpr hα₁)
+    (inv_pos.mpr hα₂) (mul_nonneg (div_pos hα₁ hα₂).le hM₁0) (mul_nonneg (div_pos hα₂ hα₁).le hM₂0)
     (hbound hA₁ hα₁ hα₂) (hbound hA₂ hα₂ hα₁)
 
 /-- **§4.3.6, convergence for equal parameters.** "The method converges if `ρ(B) < 1`, which is

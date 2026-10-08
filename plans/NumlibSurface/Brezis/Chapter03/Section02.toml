@@ -69,9 +69,5 @@ id = "remark_3_3"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 3"
 
 [[node]]
-id = "WeakBilin.hasBasis_nhds"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Propositions 3.4 and 3.12"
-
-[[node]]
 id = "weakTopology_le"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Definition"

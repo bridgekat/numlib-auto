@@ -23,7 +23,4 @@ id = "isCGs_of_natDegree_minpoly_le_or_isStarNormal"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 6.24, the sufficiency half"
 
 [[node]]
-id = "exists_natDegree_le_one_iff"
-
-[[node]]
 id = "nu_le_one_iff"

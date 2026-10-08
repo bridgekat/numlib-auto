@@ -62,3 +62,21 @@ id = "spectralRadius_peacemanRachfordTwo_le"
 
 [[node]]
 id = "spectralRadius_peacemanRachford_le_of_spectrum_subset"
+
+[[node]]
+id = "_root_.Matrix.toEuclideanCLM_peacemanRachfordTwo"
+
+[[node]]
+id = "_root_.Matrix.complexSpectralRadius_peacemanRachfordTwo"
+
+[[node]]
+id = "_root_.Matrix.PosDef.complexSpectralRadius_peacemanRachford_lt_one"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.3"
+
+[[node]]
+id = "_root_.Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.3.6"
+
+[[node]]
+id = "_root_.Matrix.IsHermitian.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.3.6"

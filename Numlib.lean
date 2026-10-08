@@ -622,6 +622,7 @@ import Numlib.Order.GaloisConnection
 import Numlib.Preconditioner.ApproximateInverse
 import Numlib.Preconditioner.Chebyshev
 import Numlib.Preconditioner.ILU
+import Numlib.Preconditioner.LevelOfFill
 import Numlib.Preconditioner.Polynomial
 import Numlib.Probability.MonteCarlo
 import Numlib.Projection.Additive

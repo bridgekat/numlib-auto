@@ -69,3 +69,7 @@ id = "Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute"
 
 [[node]]
 id = "LinearMap.IsSymmetric.exists_orthonormalBasis_eigenvector_of_pairwise_commute"
+
+[[node]]
+id = "Matrix.exists_natDegree_le_one_aeval_eq_conjTranspose_iff"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 6.10, the closing remark"
