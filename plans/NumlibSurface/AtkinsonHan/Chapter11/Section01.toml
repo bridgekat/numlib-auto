@@ -139,12 +139,6 @@ id = "example_11_1_2"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.2"
 
 [[node]]
-id = "memLp_top_of_continuousOn_frontier"
-
-[[node]]
-id = "exists_bump_lt_integral_mul"
-
-[[node]]
 id = "inner_gradient_eq_sum"
 
 [[node]]

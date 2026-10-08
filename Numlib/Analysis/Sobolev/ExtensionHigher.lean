@@ -16,9 +16,10 @@ import Numlib.Analysis.Sobolev.Extension
 
 The higher-order extension theorem: for an open set `Ω ⊆ ℝ^N` of class `C^k` (`k ≥ 1`) with
 bounded boundary and `1 ≤ p ≤ ∞`, there is a bounded linear extension operator
-`P : W^{k,p}(Ω) → W^{k,p}(ℝ^N)` with `P u = u` on `Ω`
-(`SobolevEuclidean.exists_extensionL_of_order`, `IsSobolevExtensionDomainOfOrder`), and with it
-the density of the restrictions of `C_c^∞(ℝ^N)` functions in `W^{k,p}(Ω)` for `p < ∞`
+`P : W^{k,p}(Ω) → W^{k,p}(ℝ^N)` with `P u = u` on `Ω`, bounded at once on `W^{k,p}` and on `L^p`
+(`SobolevEuclidean.exists_extensionL_of_order`, `IsSobolevExtensionDomainOfOrder`); the operators
+of all exponents are one map on functions (`SobolevEuclidean.exists_extensionL_of_order_uniform`).
+With it comes the density of the restrictions of `C_c^∞(ℝ^N)` functions in `W^{k,p}(Ω)` for `p < ∞`
 (`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_order`). The order-one case
 is Brezis's Theorem 9.7 (`Numlib/Analysis/Sobolev/Extension.lean`); the higher-order operator is
 the classical variant by *higher-order reflection* (Brezis, Comments on Chapter 9; Lions–Magenes;
@@ -56,7 +57,10 @@ interface.
   the higher-order reflection in place of the even one, maps the functions of `W^{k,p}(Ω)` into
   `W^{k,p}(ℝ^N)`; its restriction `W^{k,p}(Ω) → W^{k,p}(ℝ^N)` is then bounded by the closed graph
   theorem, since convergence in `W^{k,p}` implies convergence in `W^{1,p}` and `P₁` is continuous
-  there. No constant is tracked through the transports.
+  there. The closed graph theorem does not change the function of `P₁`, so the `L^p` bound of
+  `P₁` (each piece moves mass boundedly: `SobolevEuclidean.exists_eLpNorm_fn_chartExtendLr_le`)
+  is one of `P`, and so is its formula on functions
+  (`SobolevEuclidean.chartExtendLr_fn_ae_eq_higherReflection`), which involves no exponent.
 
 The general tools of the proof live where they belong: the algebra of `MemSobolevMultiIndex`,
 the `C^k` multipliers and the zero extension at every order and exponent in `Cutoff.lean`, the
@@ -2010,6 +2014,59 @@ theorem chartExtendLr_mem_of_order {k : ℕ} (hnk : (k : WithTop ℕ∞) ≤ n)
     ((c.contDiffOn_invFun.of_le hnk).mono subset_closure) (c.closure_opensUr_subset hr)
     (c.isCompact_closure_opensUr hr) (c.opensInterr_le hr) hak u hu
 
+/-- **The `L^p` bound of the chart-local extension at higher order**:
+`‖w‖_{L^p(U_r)} ≤ C ‖u‖_{L^p(U_r ∩ Ω)}`. After the restriction, each step moves mass boundedly:
+the two transports along the chart (`SobolevMultiIndex.exists_eLpNorm_fn_compDiffeoL_le`) and the
+higher-order reflection, a finite sum of dilations
+(`SobolevMultiIndex.exists_eLpNorm_fn_higherReflectionL_le`). -/
+theorem exists_eLpNorm_fn_chartExtendLr_le : ∃ C : ℝ≥0∞, C ≠ ⊤ ∧
+    ∀ u : SobolevEuclidean (d + 1) 1 p Ω,
+      eLpNorm (SobolevMultiIndex.fn (chartExtendLr p c hn hr ha hl hl1 u)) p
+          (volume.restrict (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+        ≤ C * eLpNorm (SobolevMultiIndex.fn u) p
+          (volume.restrict (c.opensInterr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))) := by
+  obtain ⟨C₁, hC₁, h₁⟩ := SobolevMultiIndex.exists_eLpNorm_fn_compDiffeoL_le (F := ℝ)
+    (b := (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis) (p := p) (μ := volume)
+    (c.exists_isDiffeoOnWithBoundedJacobian_posHalf_cylinder hr hn).choose_spec
+  obtain ⟨C₂, hC₂, h₂⟩ := SobolevMultiIndex.exists_eLpNorm_fn_higherReflectionL_le (F := ℝ)
+    (b := (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis) (p := p) (r := r) ha hl hl1
+  obtain ⟨C₃, hC₃, h₃⟩ := SobolevMultiIndex.exists_eLpNorm_fn_compDiffeoL_le (F := ℝ)
+    (b := (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis) (p := p) (μ := volume)
+    (c.exists_isDiffeoOnWithBoundedJacobian_cylinder hr hn).choose_spec.symm
+  refine ⟨C₃ * (C₂ * C₁), ENNReal.mul_ne_top hC₃ (ENNReal.mul_ne_top hC₂ hC₁), fun u ↦ ?_⟩
+  rw [chartExtendLr_apply]
+  refine (h₃ _).trans ?_
+  rw [mul_assoc]
+  gcongr
+  refine (h₂ _).trans ?_
+  rw [mul_assoc]
+  gcongr
+  exact (h₁ _).trans_eq (by rw [eLpNorm_congr_ae (fn_chartRestrictLr p c hr u)])
+
+/-- **The function of the chart-local extension on all of `U_r`**: `w = P(u ∘ H) ∘ H⁻¹` almost
+everywhere on `U_r`, for the higher-order reflection `P`. `SobolevEuclidean.chartExtendLr_fn_ae_eq`
+is its restriction to `U_r ∩ Ω`; this formula shows the operator at the level of functions, and in
+particular that it does not depend on the exponent `p`. -/
+theorem chartExtendLr_fn_ae_eq_higherReflection (u : SobolevEuclidean (d + 1) 1 p Ω) :
+    SobolevMultiIndex.fn (chartExtendLr p c hn hr ha hl hl1 u)
+      =ᵐ[volume.restrict (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+        fun x ↦ higherReflection a l (fun y ↦ SobolevMultiIndex.fn u (c.toFun y)) (c.invFun x) := by
+  have h₁ : SobolevMultiIndex.fn (chartTransferLr p c hn hr (chartRestrictLr p c hr u))
+      =ᵐ[volume.restrict (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r) :
+        Set (EuclideanSpace ℝ (Fin (d + 1))))] fun y ↦ SobolevMultiIndex.fn u (c.toFun y) :=
+    (fn_chartTransferLr p c hn hr _).trans
+      ((c.exists_isDiffeoOnWithBoundedJacobian_posHalf_cylinder hr hn).choose_spec.ae_comp_restrict
+        (fn_chartRestrictLr p c hr u))
+  have h₂ : SobolevMultiIndex.fn (cubeReflectLr p ha hl hl1
+      (chartTransferLr p c hn hr (chartRestrictLr p c hr u)))
+      =ᵐ[volume.restrict (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+        higherReflection a l (fun y ↦ SobolevMultiIndex.fn u (c.toFun y)) :=
+    (fn_cubeReflectLr p ha hl hl1 _).trans
+      ((isReflectionSet_cylinder hl hl1 r).higherReflection_congr_ae a h₁)
+  rw [chartExtendLr_apply]
+  exact (fn_chartRetransferLr p c hn hr _).trans
+    ((c.exists_isDiffeoOnWithBoundedJacobian_cylinder hr hn).choose_spec.symm.ae_comp_restrict h₂)
+
 end SobolevEuclidean
 
 end ChartLocalHigher
@@ -2095,57 +2152,10 @@ theorem exists_vandermonde_coeffs_scales (k : ℕ) (hk : 1 ≤ k) :
     fun j ↦ neg_one_le_neg_inv_succ j, ?_, ha⟩
   simpa using ha 0 hk
 
-/-- **The assembly with the operators as variables**: for `E₀`, `E i`, `C i` as in
-`SobolevEuclidean.fn_extension_ae_eq_of_ops` and `SobolevEuclidean.extension_mem_of_ops`, the
-operator `P₁ = E₀ + ∑ E i ∘ C i` is the identity on `Ω` and maps the functions of `W^{k,p}(Ω)`
-into `W^{k,p}(ℝ^N)`. -/
-theorem SobolevEuclidean.exists_extension_of_ops_higher {k n : ℕ}
-    {U Ωc : Fin n → Opens (EuclideanSpace ℝ (Fin (d + 1)))}
-    (hΩc : ∀ i, (Ωc i : Set (EuclideanSpace ℝ (Fin (d + 1))))
-      = (U i : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∩ Ω)
-    (E₀ : SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p ⊤)
-    (E : ∀ i, SobolevEuclidean (d + 1) 1 p (U i) →L[ℝ] SobolevEuclidean (d + 1) 1 p ⊤)
-    (C : ∀ i, SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p (U i))
-    {θ₀ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} {θ : Fin n → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
-    (hsum : ∀ x, θ₀ x + ∑ i, θ i x = 1)
-    (hE₀fn : ∀ u, SobolevMultiIndex.fn (E₀ u) =ᵐ[volume]
-      (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator fun x ↦ θ₀ x • SobolevMultiIndex.fn u x)
-    (hEfn : ∀ i w, SobolevMultiIndex.fn (E i w) =ᵐ[volume]
-      (U i : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator fun x ↦ θ i x • SobolevMultiIndex.fn w
-        x)
-    (hCfn : ∀ i u, SobolevMultiIndex.fn (C i u)
-      =ᵐ[volume.restrict (Ωc i : Set (EuclideanSpace ℝ (Fin (d + 1))))] SobolevMultiIndex.fn u)
-    (hθ₀ : ContDiff ℝ ∞ θ₀) (hθ₀κ : ∃ κ : ℝ, HasCompactSupport fun x ↦ θ₀ x - κ)
-    (hθ₀Γ : Disjoint (tsupport θ₀) (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
-    (hθ : ∀ i, ContDiff ℝ ∞ (θ i)) (hθc : ∀ i, HasCompactSupport (θ i))
-    (hθU : ∀ i, tsupport (θ i) ⊆ U i)
-    (hC : ∀ i (u : SobolevEuclidean (d + 1) 1 p Ω),
-      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-        (SobolevMultiIndex.fn u) k p Ω volume →
-      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-        (SobolevMultiIndex.fn (C i u)) k p (U i) volume) :
-    ∃ P₁ : SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p ⊤,
-      (∀ u, SobolevMultiIndex.fn (P₁ u)
-        =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] SobolevMultiIndex.fn u) ∧
-      ∀ u : SobolevEuclidean (d + 1) 1 p Ω,
-        MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-          (SobolevMultiIndex.fn u) k p Ω volume →
-        MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-          (SobolevMultiIndex.fn (P₁ u)) k p ⊤ volume := by
-  obtain ⟨P₁, hP₁⟩ : ∃ P₁ : SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p ⊤,
-      ∀ u, P₁ u = E₀ u + ∑ i, E i (C i u) :=
-    ⟨E₀ + ∑ i, (E i).comp (C i), fun u ↦ by
-      simp only [add_apply, sum_apply, ContinuousLinearMap.comp_apply]⟩
-  refine ⟨P₁, fun u ↦ ?_, fun u hu ↦
-    SobolevEuclidean.extension_mem_of_ops hE₀fn hEfn hP₁ hθ₀ hθ₀κ hθ₀Γ hθ hθc hθU hC u hu⟩
-  refine SobolevEuclidean.fn_extension_ae_eq_of_ops hΩc (α₀ := θ₀) (α := θ) (χ := fun _ ↦ 1)
-    (fun x _ ↦ hsum x) (fun i x hx ↦ ?_) hE₀fn hEfn hCfn hP₁ u
-    (Eventually.of_forall fun x ↦ (one_mul _).symm)
-  exact image_eq_zero_of_notMem_tsupport fun h ↦ hx (hθU i h)
-
 /-- **From an order-one operator preserving `W^{k,p}` to the operator at order `k`**: the closed
-graph theorem `SobolevMultiIndex.exists_continuousLinearMap_of_order`, with the identity on `Ω`
-carried over. -/
+graph theorem `SobolevMultiIndex.exists_continuousLinearMap_of_order` gives a bounded operator on
+`W^{k,p}(Ω)` whose function is the function of `P₁`. So the identity on `Ω` and an `L^p` bound
+`‖P₁ u‖_{L^p(ℝ^N)} ≤ K ‖u‖_{L^p(Ω)}` carry over to it, with one constant `C` for both bounds. -/
 theorem SobolevEuclidean.exists_extensionL_of_order_of_ops {k : ℕ} (hk : 1 ≤ k)
     (P₁ : SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p ⊤)
     (hid : ∀ u, SobolevMultiIndex.fn (P₁ u)
@@ -2154,25 +2164,57 @@ theorem SobolevEuclidean.exists_extensionL_of_order_of_ops {k : ℕ} (hk : 1 ≤
       MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
         (SobolevMultiIndex.fn u) k p Ω volume →
       MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-        (SobolevMultiIndex.fn (P₁ u)) k p ⊤ volume) :
+        (SobolevMultiIndex.fn (P₁ u)) k p ⊤ volume)
+    {K : ℝ≥0∞} (hK : K ≠ ⊤)
+    (hlp : ∀ u, eLpNorm (SobolevMultiIndex.fn (P₁ u)) p volume
+      ≤ K * eLpNorm (SobolevMultiIndex.fn u) p
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     ∃ (P : SobolevEuclidean (d + 1) k p Ω →L[ℝ] SobolevEuclidean (d + 1) k p ⊤) (C : ℝ),
       ∀ u : SobolevEuclidean (d + 1) k p Ω,
+        SobolevMultiIndex.fn (P u) =ᵐ[volume] SobolevMultiIndex.fn (P₁
+          (SobolevMultiIndex.toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p Ω
+            volume hk u)) ∧
         SobolevMultiIndex.fn (P u)
           =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (P u)) p volume ≤ ENNReal.ofReal C
+          * eLpNorm (SobolevMultiIndex.fn u) p
+            (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) ∧
         ‖P u‖ ≤ C * ‖u‖ := by
   obtain ⟨Pk, hPk⟩ := SobolevMultiIndex.exists_continuousLinearMap_of_order hk P₁ fun u ↦
     hmem (SobolevMultiIndex.toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p Ω
       volume hk u) (SobolevMultiIndex.memSobolevMultiIndex u)
-  refine ⟨Pk, ‖Pk‖, fun u ↦ ⟨?_, Pk.le_opNorm u⟩⟩
-  exact Filter.EventuallyEq.trans (ae_restrict_of_ae_restrict_of_subset (subset_univ _) (hPk u))
-    (hid _)
+  have hfn : ∀ u, SobolevMultiIndex.fn (Pk u) =ᵐ[volume] SobolevMultiIndex.fn (P₁
+      (SobolevMultiIndex.toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p Ω
+        volume hk u)) := fun u ↦ eventuallyEq_restrict_coe_top_iff.1 (hPk u)
+  refine ⟨Pk, max K.toReal ‖Pk‖, fun u ↦ ⟨hfn u,
+    Filter.EventuallyEq.trans
+      (ae_restrict_of_ae_restrict_of_subset (subset_univ _) (hPk u)) (hid _), ?_,
+    (Pk.le_opNorm u).trans (mul_le_mul_of_nonneg_right (le_max_right _ _) (norm_nonneg _))⟩⟩
+  have hKC : K ≤ ENNReal.ofReal (max K.toReal ‖Pk‖) :=
+    calc K = ENNReal.ofReal K.toReal := (ENNReal.ofReal_toReal hK).symm
+      _ ≤ ENNReal.ofReal (max K.toReal ‖Pk‖) := ENNReal.ofReal_le_ofReal (le_max_left _ _)
+  -- the function of `u` read at order one is the function of `u`, by definition
+  have h₁ : eLpNorm (SobolevMultiIndex.fn (P₁ (SobolevMultiIndex.toLowerOrderL ℝ
+      (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p Ω volume hk u))) p volume
+      ≤ K * eLpNorm (SobolevMultiIndex.fn u) p
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) := hlp _
+  exact (eLpNorm_congr_ae (hfn u)).trans_le (h₁.trans (by gcongr))
 
-/-- **The order-one operator of the higher-order extension theorem, over an explicit atlas**: for
-`C^k` charts `c i` (`k ≥ 1`), a partition of unity `θ₀, θ i` with `supp θ i ⊆ Hᵢ(Q_{rᵢ})`, and
-coefficients `a` with the Vandermonde conditions of order `k` for the scales `l`, the operator
-`P₁ = E₀ + ∑ E i ∘ C i` (zero extensions of `θ₀ ·` and `θ i ·`, chart-local extensions
-`SobolevEuclidean.chartExtendLr`) is the identity on `Ω` and maps the functions of `W^{k,p}(Ω)`
-into `W^{k,p}(ℝ^N)`. -/
+/-- **The extension operator at every order, over an explicit atlas, for every exponent at
+once**: for `C^k` charts `c i` (`k ≥ 1`), a partition of unity `θ₀, θ i` with
+`supp θ i ⊆ Hᵢ(Q_{rᵢ})`, and coefficients `a` with the Vandermonde conditions of order `k` for the
+scales `l`, there is one map on functions
+`E f = 1_Ω θ₀ f + ∑ᵢ 1_{Hᵢ(Q_{rᵢ})} θᵢ · (P(f ∘ Hᵢ) ∘ Hᵢ⁻¹)`
+(`P` the higher-order reflection) such that for every `1 ≤ p ≤ ∞` some bounded linear operator
+`W^{k,p}(Ω) → W^{k,p}(ℝ^N)` has `E` as its function, is the identity on `Ω`, and is bounded both
+`W^{k,p}(Ω) → W^{k,p}(ℝ^N)` and `L^p(Ω) → L^p(ℝ^N)` with one constant.
+
+At order one the operator is `P₁ = E₀ + ∑ E i ∘ C i` (zero extensions of `θ₀ ·` and `θ i ·`,
+chart-local extensions `SobolevEuclidean.chartExtendLr`), whose function is `E` by
+`SobolevEuclidean.chartExtendLr_fn_ae_eq_higherReflection` and whose `L^p` bound is
+`SobolevEuclidean.eLpNorm_fn_extension_le_of_ops`; the closed graph theorem
+(`SobolevEuclidean.exists_extensionL_of_order_of_ops`) lifts it to order `k` without changing its
+function. -/
 theorem SobolevEuclidean.exists_extensionL_of_order_of_atlas {k n : ℕ} (hk : 1 ≤ k)
     (c : Fin n → ContDiffChart k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     {θ₀ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} {θ : Fin n → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2183,36 +2225,119 @@ theorem SobolevEuclidean.exists_extensionL_of_order_of_atlas {k n : ℕ} (hk : 1
     (hθr : ∀ i, tsupport (θ i) ⊆ (c i).opensUr (hr i)) {m : ℕ} {a l : Fin m → ℝ}
     (ha0 : ∑ j, a j = 1) (hl0 : ∀ j, l j < 0) (hl1 : ∀ j, -1 ≤ l j)
     (hak : ∀ i < k, ∑ j, a j * l j ^ i = 1) :
-    ∃ (P : SobolevEuclidean (d + 1) k p Ω →L[ℝ] SobolevEuclidean (d + 1) k p ⊤) (C : ℝ),
-      ∀ u : SobolevEuclidean (d + 1) k p Ω,
-        SobolevMultiIndex.fn (P u)
-          =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] SobolevMultiIndex.fn u ∧
-        ‖P u‖ ≤ C * ‖u‖ := by
+    ∃ E : (EuclideanSpace ℝ (Fin (d + 1)) → ℝ) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+      ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)],
+        ∃ (P : SobolevEuclidean (d + 1) k p Ω →L[ℝ] SobolevEuclidean (d + 1) k p ⊤) (C : ℝ),
+          ∀ u : SobolevEuclidean (d + 1) k p Ω,
+            SobolevMultiIndex.fn (P u) =ᵐ[volume] E (SobolevMultiIndex.fn u) ∧
+            SobolevMultiIndex.fn (P u)
+              =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+              SobolevMultiIndex.fn u ∧
+            eLpNorm (SobolevMultiIndex.fn (P u)) p volume ≤ ENNReal.ofReal C
+              * eLpNorm (SobolevMultiIndex.fn u) p
+                (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) ∧
+            ‖P u‖ ≤ C * ‖u‖ := by
   have hn : (1 : WithTop ℕ∞) ≤ (k : WithTop ℕ∞) := by exact_mod_cast hk
   have hα₀ : IsSobolevCutoff Ω θ₀ :=
     IsSobolevCutoff.of_hasCompactSupport_sub hθ₀ hθ₀κ.choose_spec hθ₀Γ
   have hα : ∀ i, IsSobolevCutoff ((c i).opensUr (hr i)) (θ i) := fun i ↦
     IsSobolevCutoff.of_hasCompactSupport (hθ i) (hθc i) (hθr i)
-  have hex := SobolevEuclidean.exists_extension_of_ops_higher (k := k)
-    (U := fun i ↦ (c i).opensUr (hr i)) (Ωc := fun i ↦ (c i).opensInterr (hr i)) (fun i ↦ rfl)
-    (SobolevMultiIndex.extendZeroMulL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p volume
-      hα₀)
-    (fun i ↦ SobolevMultiIndex.extendZeroMulL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-      p volume (hα i))
-    (fun i ↦ SobolevEuclidean.chartExtendLr p (c i) hn (hr i) ha0 hl0 hl1) hsum
-    (fun u ↦ SobolevMultiIndex.fn_extendZeroMulL hα₀ u)
-    (fun i w ↦ SobolevMultiIndex.fn_extendZeroMulL (hα i) w)
-    (fun i u ↦ SobolevEuclidean.chartExtendLr_fn_ae_eq p (c i) hn (hr i) ha0 hl0 hl1 u)
-    hθ₀ hθ₀κ hθ₀Γ hθ hθc hθr
-    (fun i u hu ↦ SobolevEuclidean.chartExtendLr_mem_of_order p (c i) hn (hr i) ha0 hl0 hl1 le_rfl
-      hak u hu)
-  obtain ⟨P₁, hid, hmem⟩ := hex
-  exact SobolevEuclidean.exists_extensionL_of_order_of_ops hk P₁ hid hmem
+  have hM₀' := hα₀.exists_nonneg_bound
+  obtain ⟨M₀, -, hM₀⟩ := hM₀'
+  have hM' := fun i ↦ (hα i).exists_nonneg_bound
+  choose M hM0 hM using hM'
+  have hE' :
+      ∃ E : (EuclideanSpace ℝ (Fin (d + 1)) → ℝ) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+        E = fun f x ↦ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (fun y ↦ θ₀ y • f y) x
+          + ∑ i, ((c i).opensUr (hr i) : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator
+            (fun y ↦ θ i y • higherReflection a l (fun z ↦ f ((c i).toFun z)) ((c i).invFun y))
+              x := ⟨_, rfl⟩
+  obtain ⟨E, hE⟩ := hE'
+  refine ⟨E, fun p _ ↦ ?_⟩
+  have hB' := fun i ↦
+    SobolevEuclidean.exists_eLpNorm_fn_chartExtendLr_le p (c i) hn (hr i) ha0 hl0 hl1
+  choose B hB hBu using hB'
+  have hP₁' :
+      ∃ P₁ : SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p ⊤,
+        ∀ u, P₁ u = SobolevMultiIndex.extendZeroMulL ℝ
+            (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p volume hα₀ u
+          + ∑ i, SobolevMultiIndex.extendZeroMulL ℝ
+              (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p volume (hα i)
+              (SobolevEuclidean.chartExtendLr p (c i) hn (hr i) ha0 hl0 hl1 u) :=
+    ⟨SobolevMultiIndex.extendZeroMulL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p
+        volume hα₀
+      + ∑ i, (SobolevMultiIndex.extendZeroMulL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+          p volume (hα i)).comp (SobolevEuclidean.chartExtendLr p (c i) hn (hr i) ha0 hl0 hl1),
+      fun u ↦ by simp only [add_apply, sum_apply, ContinuousLinearMap.comp_apply]⟩
+  obtain ⟨P₁, hP₁⟩ := hP₁'
+  have hid : ∀ u, SobolevMultiIndex.fn (P₁ u)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+      SobolevMultiIndex.fn u := fun u ↦
+    SobolevEuclidean.fn_extension_ae_eq_of_ops (Ωc := fun i ↦ (c i).opensInterr (hr i))
+      (fun _ ↦ rfl) (χ := fun _ ↦ 1) (fun x _ ↦ hsum x)
+      (fun i x hx ↦ image_eq_zero_of_notMem_tsupport fun h ↦ hx (hθr i h))
+      (fun u ↦ SobolevMultiIndex.fn_extendZeroMulL hα₀ u)
+      (fun i w ↦ SobolevMultiIndex.fn_extendZeroMulL (hα i) w)
+      (fun i u ↦ SobolevEuclidean.chartExtendLr_fn_ae_eq p (c i) hn (hr i) ha0 hl0 hl1 u)
+      hP₁ u (Eventually.of_forall fun x ↦ (one_mul _).symm)
+  have hmem : ∀ u : SobolevEuclidean (d + 1) 1 p Ω,
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+        (SobolevMultiIndex.fn u) k p Ω volume →
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+        (SobolevMultiIndex.fn (P₁ u)) k p ⊤ volume :=
+    fun u hu ↦ SobolevEuclidean.extension_mem_of_ops
+      (fun u ↦ SobolevMultiIndex.fn_extendZeroMulL hα₀ u)
+      (fun i w ↦ SobolevMultiIndex.fn_extendZeroMulL (hα i) w) hP₁ hθ₀ hθ₀κ hθ₀Γ hθ hθc hθr
+      (fun i u hu ↦ SobolevEuclidean.chartExtendLr_mem_of_order p (c i) hn (hr i) ha0 hl0 hl1
+        le_rfl hak u hu) u hu
+  have hlp : ∀ u : SobolevEuclidean (d + 1) 1 p Ω,
+      eLpNorm (SobolevMultiIndex.fn (P₁ u)) p volume
+        ≤ (ENNReal.ofReal M₀ + ∑ i, ENNReal.ofReal (M i) * B i)
+          * eLpNorm (SobolevMultiIndex.fn u) p
+            (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) := fun u ↦
+    SobolevEuclidean.eLpNorm_fn_extension_le_of_ops (Ωc := fun i ↦ (c i).opensInterr (hr i))
+      (fun _ ↦ rfl)
+      (fun u ↦ SobolevMultiIndex.eLpNorm_fn_extendZeroMulL_le hα₀ (fun x ↦ (hM₀ x).1) u)
+      (fun i w ↦ SobolevMultiIndex.eLpNorm_fn_extendZeroMulL_le (hα i) (fun x ↦ (hM i x).1) w)
+      (fun i u ↦ hBu i u) hP₁ u
+  have hK : ENNReal.ofReal M₀ + ∑ i, ENNReal.ofReal (M i) * B i ≠ ⊤ :=
+    ENNReal.add_ne_top.2 ⟨ENNReal.ofReal_ne_top,
+      ENNReal.sum_ne_top.2 fun i _ ↦ ENNReal.mul_ne_top ENNReal.ofReal_ne_top (hB i)⟩
+  have hP' := SobolevEuclidean.exists_extensionL_of_order_of_ops hk P₁ hid hmem hK hlp
+  obtain ⟨P, C, hP⟩ := hP'
+  -- the function of `P₁ v` is `E` applied to the function of `v`, summand by summand
+  have hsummand : ∀ v i, SobolevMultiIndex.fn (SobolevMultiIndex.extendZeroMulL ℝ
+      (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p volume (hα i)
+        (SobolevEuclidean.chartExtendLr p (c i) hn (hr i) ha0 hl0 hl1 v))
+      =ᵐ[volume] ((c i).opensUr (hr i) : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator
+        (fun y ↦ θ i y • higherReflection a l (fun z ↦ SobolevMultiIndex.fn v ((c i).toFun z))
+          ((c i).invFun y)) := fun v i ↦ by
+    filter_upwards [SobolevMultiIndex.fn_extendZeroMulL (hα i)
+        (SobolevEuclidean.chartExtendLr p (c i) hn (hr i) ha0 hl0 hl1 v),
+      (ae_restrict_iff' ((c i).opensUr (hr i)).isOpen.measurableSet).1
+        (SobolevEuclidean.chartExtendLr_fn_ae_eq_higherReflection p (c i) hn (hr i) ha0 hl0 hl1
+          v)] with x hx1 hx2
+    rw [hx1]
+    by_cases hx : x ∈ ((c i).opensUr (hr i) : Set (EuclideanSpace ℝ (Fin (d + 1))))
+    · rw [Set.indicator_of_mem hx, Set.indicator_of_mem hx, hx2 hx]
+    · rw [Set.indicator_of_notMem hx, Set.indicator_of_notMem hx]
+  have hfn : ∀ v, SobolevMultiIndex.fn (P₁ v) =ᵐ[volume] E (SobolevMultiIndex.fn v) := by
+    intro v
+    filter_upwards [SobolevEuclidean.fn_extension_of_ops hP₁ v,
+      SobolevMultiIndex.fn_extendZeroMulL hα₀ v, ae_all_iff.2 (hsummand v)] with x hx0 hx1 hx2
+    rw [hE, hx0]
+    simp only [Pi.add_apply, Finset.sum_apply, hx1]
+    congr 1
+    exact Finset.sum_congr rfl fun i _ ↦ hx2 i
+  -- the function of `u` read at order one is the function of `u`, by definition
+  exact ⟨P, C, fun u ↦ ⟨(hP u).1.trans (hfn _), (hP u).2⟩⟩
 
-/-- **The extension theorem at every order** (Brezis, Comments on Chapter 9; Lions–Magenes;
-[han2009theoretical] Theorem 7.3.5 at order `k`): for an open set `Ω ⊆ ℝ^N` of class `C^k`,
-`k ≥ 1`, with bounded boundary, and `1 ≤ p ≤ ∞`, there is a bounded linear extension operator
-`P : W^{k,p}(Ω) → W^{k,p}(ℝ^N)` with `P u = u` on `Ω` and `‖P u‖ ≤ C ‖u‖`.
+/-- **The extension theorem at every order, one operator for every exponent** (Brezis, Comments
+on Chapter 9; Lions–Magenes; [han2009theoretical] Theorem 7.3.5 at order `k`): for an open set
+`Ω ⊆ ℝ^N` of class `C^k`, `k ≥ 1`, with bounded boundary, there is a single map `E` on functions
+such that for every `1 ≤ p ≤ ∞` some bounded linear extension operator
+`P : W^{k,p}(Ω) → W^{k,p}(ℝ^N)` has `E` as its function: `P u = E u`, `P u = u` on `Ω`,
+`‖P u‖_{L^p(ℝ^N)} ≤ C ‖u‖_{L^p(Ω)}` and `‖P u‖_{W^{k,p}(ℝ^N)} ≤ C ‖u‖_{W^{k,p}(Ω)}`.
 
 The operator is built at order one as in the proof of Theorem 9.7 — the partition of unity
 `θ₀, θᵢ` of Lemma 9.3 subordinate to a finite atlas of `C^k` charts, the zero extension of `θ₀ u`,
@@ -2223,26 +2348,38 @@ even one, its coefficients solving the Vandermonde system of order `k`
 (`exists_vandermonde_coeffs`). This operator maps the functions of `W^{k,p}(Ω)` into
 `W^{k,p}(ℝ^N)` (`SobolevEuclidean.extension_mem_of_ops`), and the closed graph theorem
 (`SobolevMultiIndex.exists_continuousLinearMap_of_order`) makes its restriction to `W^{k,p}(Ω)`
-bounded. At `k = 1` it is a second proof of Theorem 9.7 (`SobolevEuclidean.exists_extensionL`)
-without the `L^p` bound. -/
-theorem SobolevEuclidean.exists_extensionL_of_order {k : ℕ} (hk : 1 ≤ k)
+bounded without changing its function. None of these choices involves `p`, whence the single `E`;
+what the construction does not give is one operator for every order `k`. -/
+theorem SobolevEuclidean.exists_extensionL_of_order_uniform {k : ℕ} (hk : 1 ≤ k)
     (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
-    ∃ (P : SobolevEuclidean (d + 1) k p Ω →L[ℝ] SobolevEuclidean (d + 1) k p ⊤) (C : ℝ),
-      ∀ u : SobolevEuclidean (d + 1) k p Ω,
-        SobolevMultiIndex.fn (P u)
-          =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] SobolevMultiIndex.fn u ∧
-        ‖P u‖ ≤ C * ‖u‖ := by
+    ∃ E : (EuclideanSpace ℝ (Fin (d + 1)) → ℝ) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+      ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)],
+        ∃ (P : SobolevEuclidean (d + 1) k p Ω →L[ℝ] SobolevEuclidean (d + 1) k p ⊤) (C : ℝ),
+          ∀ u : SobolevEuclidean (d + 1) k p Ω,
+            SobolevMultiIndex.fn (P u) =ᵐ[volume] E (SobolevMultiIndex.fn u) ∧
+            SobolevMultiIndex.fn (P u)
+              =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+              SobolevMultiIndex.fn u ∧
+            eLpNorm (SobolevMultiIndex.fn (P u)) p volume ≤ ENNReal.ofReal C
+              * eLpNorm (SobolevMultiIndex.fn u) p
+                (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) ∧
+            ‖P u‖ ≤ C * ‖u‖ := by
   -- the atlas and the partition of unity
-  obtain ⟨n, c, hc⟩ := hΩ.exists_finite_atlas hΓ
+  -- (each existential is named before it is destructured: `obtain … := term` would first
+  -- generalize `term` in this large goal, and that check is expensive)
+  have hatlas := hΩ.exists_finite_atlas hΓ
+  obtain ⟨n, c, hc⟩ := hatlas
   have hK : IsCompact (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
     Metric.isCompact_of_isClosed_isBounded isClosed_frontier hΓ
-  obtain ⟨θ₀, θ, hθ₀, hθ, -, -, hsum, hθc, hθU, hθ₀K⟩ :=
-    hK.exists_contDiff_partitionOfUnity (fun i ↦ (c i).isOpen_U) hc
+  have hpart := hK.exists_contDiff_partitionOfUnity (fun i ↦ (c i).isOpen_U) hc
+  obtain ⟨θ₀, θ, hθ₀, hθ, -, -, hsum, hθc, hθU, hθ₀K⟩ := hpart
   -- the radii `rᵢ < 1` with `supp θᵢ ⊆ Hᵢ(Q_{rᵢ})`
-  choose r hr hθr using fun i ↦ (c i).exists_lt_one_subset_opensUr (hθc i) (hθU i)
+  have hradii := fun i ↦ (c i).exists_lt_one_subset_opensUr (hθc i) (hθU i)
+  choose r hr hθr using hradii
   -- the scales and the Vandermonde coefficients
-  obtain ⟨a, l, hl0, hl1, ha0, hak⟩ := exists_vandermonde_coeffs_scales k hk
+  have hvdm := exists_vandermonde_coeffs_scales k hk
+  obtain ⟨a, l, hl0, hl1, ha0, hak⟩ := hvdm
   -- `θ₀ − 1 = −∑ θ i` is compactly supported
   have hθ₀κ : HasCompactSupport fun x ↦ θ₀ x - 1 := by
     have e : (fun x ↦ θ₀ x - 1) = -(∑ i, θ i) := by
@@ -2253,6 +2390,29 @@ theorem SobolevEuclidean.exists_extensionL_of_order {k : ℕ} (hk : 1 ≤ k)
     exact (HasCompactSupport.finset_sum fun i _ ↦ hθc i).neg
   exact SobolevEuclidean.exists_extensionL_of_order_of_atlas hk c hθ₀ ⟨1, hθ₀κ⟩ hθ₀K hθ hθc hsum
     hr hθr ha0 hl0 hl1 hak
+
+/-- **The extension theorem at every order** (Brezis, Comments on Chapter 9; Lions–Magenes;
+[han2009theoretical] Theorem 7.3.5 at order `k`): for an open set `Ω ⊆ ℝ^N` of class `C^k`,
+`k ≥ 1`, with bounded boundary, and `1 ≤ p ≤ ∞`, there are a bounded linear extension operator
+`P : W^{k,p}(Ω) → W^{k,p}(ℝ^N)` and a constant `C` with `P u = u` on `Ω`,
+`‖P u‖_{L^p(ℝ^N)} ≤ C ‖u‖_{L^p(Ω)}` and `‖P u‖_{W^{k,p}(ℝ^N)} ≤ C ‖u‖_{W^{k,p}(Ω)}` — the one
+operator bounded at the orders `0` and `k` at once. This is
+`SobolevEuclidean.exists_extensionL_of_order_uniform` at one exponent; at `k = 1` it is a second
+proof of Theorem 9.7 (`SobolevEuclidean.exists_extensionL`). -/
+theorem SobolevEuclidean.exists_extensionL_of_order {k : ℕ} (hk : 1 ≤ k)
+    (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    ∃ (P : SobolevEuclidean (d + 1) k p Ω →L[ℝ] SobolevEuclidean (d + 1) k p ⊤) (C : ℝ),
+      ∀ u : SobolevEuclidean (d + 1) k p Ω,
+        SobolevMultiIndex.fn (P u)
+          =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (P u)) p volume ≤ ENNReal.ofReal C
+          * eLpNorm (SobolevMultiIndex.fn u) p
+            (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) ∧
+        ‖P u‖ ≤ C * ‖u‖ := by
+  obtain ⟨E, hE⟩ := SobolevEuclidean.exists_extensionL_of_order_uniform hk hΩ hΓ
+  obtain ⟨P, C, hP⟩ := hE p
+  exact ⟨P, C, fun u ↦ (hP u).2⟩
 
 variable (p Ω) in
 /-- **`Ω` is a `W^{k,p}`-extension domain**: there is a bounded linear operator

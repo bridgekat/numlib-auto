@@ -53,6 +53,10 @@ id = "SobolevEuclidean.exists_extensionL_of_order"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7, at every order (Comments on Chapter 9; Lions–Magenes); Atkinson–Han, Theorem 7.3.5 at order k"
 
 [[node]]
+id = "SobolevEuclidean.exists_extensionL_of_order_uniform"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7, at every order (Comments on Chapter 9; Lions–Magenes), one operator for every exponent; Atkinson–Han, Theorem 7.3.5 at order k"
+
+[[node]]
 id = "IsSobolevExtensionDomainOfOrder"
 
 [[node]]

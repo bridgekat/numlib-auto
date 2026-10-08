@@ -119,6 +119,94 @@ theorem integrableOn_of_continuous {G : Type*} [NormedAddCommGroup G] [NormedSpa
     {f : 𝔼 → G} (hf : Continuous f) : IntegrableOn f (Ω : Set 𝔼) :=
   B.integrableOn_of_continuousOn hf.continuousOn
 
+/-! ### Bump tests on the boundary -/
+
+/-- A function continuous on `∂Ω` is bounded and measurable for the surface measure. -/
+theorem memLp_top_of_continuousOn_frontier {h : 𝔼 → ℝ}
+    (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) : MemLp h ⊤ B.σ := by
+  have hm : AEStronglyMeasurable h B.σ := by
+    rw [← Measure.restrict_eq_self_of_ae_mem B.ae_mem_frontier]
+    exact hc.aestronglyMeasurable isClosed_frontier.measurableSet
+  have hK : IsCompact (frontier (Ω : Set 𝔼)) :=
+    B.isBounded.isCompact_closure.of_isClosed_subset isClosed_frontier frontier_subset_closure
+  obtain ⟨C, hC⟩ := hK.exists_bound_of_continuousOn hc
+  exact MemLp.of_bound hm C (B.ae_mem_frontier.mono fun x hx ↦ hC x hx)
+
+open Metric in
+/-- **A bump test against a function continuous on the boundary**: if the surface measure charges
+every open set meeting `∂Ω` (as on a bounded `C¹` domain,
+`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), `h` is continuous on `∂Ω` and `h x₀ > c` at a
+boundary point `x₀`, then some smooth compactly supported bump `ψ` with `0 ≤ ψ ≤ 1` satisfies
+`c ∫ ψ dσ < ∫ h ψ dσ`: a `ContDiffBump` supported in a ball around `x₀` on which
+`h > (c + h x₀)/2`, whose integral is positive because the smaller ball has positive measure. -/
+theorem exists_bump_lt_integral_mul
+    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
+    {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) {x₀ : 𝔼}
+    (hx₀ : x₀ ∈ frontier (Ω : Set 𝔼)) {c : ℝ} (hlt : c < h x₀) :
+    ∃ ψ : 𝔼 → ℝ, ContDiff ℝ ∞ ψ ∧ HasCompactSupport ψ ∧ (∀ x, 0 ≤ ψ x) ∧ (∀ x, ψ x ≤ 1) ∧
+      c * ∫ x, ψ x ∂B.σ < ∫ x, h x * ψ x ∂B.σ := by
+  obtain ⟨m, hm⟩ : ∃ m : ℝ, m = (c + h x₀) / 2 := ⟨_, rfl⟩
+  have hcm : c < m := by rw [hm]; linarith
+  have hmx : m < h x₀ := by rw [hm]; linarith
+  -- a ball on which `h > m`, relative to `∂Ω`
+  have hev : ∀ᶠ x in 𝓝[frontier (Ω : Set 𝔼)] x₀, m < h x :=
+    (hc x₀ hx₀).eventually (lt_mem_nhds hmx)
+  obtain ⟨r, hr, hball⟩ := Metric.mem_nhdsWithin_iff.1 hev
+  -- the bump
+  let ψ : ContDiffBump x₀ := ⟨r / 2, r, by positivity, by linarith⟩
+  refine ⟨ψ, ψ.contDiff, ψ.hasCompactSupport, fun x ↦ ψ.nonneg, fun x ↦ ψ.le_one, ?_⟩
+  have hψc : Continuous ψ := ψ.continuous
+  have hIψ : Integrable (fun x ↦ ψ x) B.σ := B.integrable_of_continuous hψc
+  have hIhψ : Integrable (fun x ↦ h x * ψ x) B.σ :=
+    (B.memLp_top_of_continuousOn_frontier hc).integrable_mul (B.memLp_of_continuous hψc 1)
+  -- `∫ ψ dσ > 0`
+  have hpsi : 0 < ∫ x, ψ x ∂B.σ := by
+    have h1 : B.σ.real (ball x₀ (r / 2)) ≤ ∫ x, ψ x ∂B.σ := by
+      rw [← integral_indicator_one measurableSet_ball]
+      refine integral_mono ((integrable_const (1 : ℝ)).indicator measurableSet_ball) hIψ
+        fun x ↦ ?_
+      by_cases hx : x ∈ ball x₀ (r / 2)
+      · rw [indicator_of_mem hx]
+        exact (ψ.one_of_mem_closedBall (ball_subset_closedBall hx)).ge
+      · rw [indicator_of_notMem hx]
+        exact ψ.nonneg
+    refine lt_of_lt_of_le ?_ h1
+    rw [measureReal_def]
+    exact ENNReal.toReal_pos (hpos _ isOpen_ball ⟨x₀, mem_ball_self (by positivity), hx₀⟩).ne'
+      (measure_ne_top _ _)
+  -- `∫ h ψ ≥ m ∫ ψ`
+  have hle : m * ∫ x, ψ x ∂B.σ ≤ ∫ x, h x * ψ x ∂B.σ := by
+    rw [← integral_const_mul]
+    refine integral_mono_ae (hIψ.const_mul m) hIhψ ?_
+    filter_upwards [B.ae_mem_frontier] with x hx
+    by_cases hxb : x ∈ ball x₀ r
+    · exact mul_le_mul_of_nonneg_right (hball ⟨hxb, hx⟩).le ψ.nonneg
+    · rw [ψ.zero_of_le_dist (not_lt.1 fun h' ↦ hxb (mem_ball.2 h')), mul_zero, mul_zero]
+  calc c * ∫ x, ψ x ∂B.σ < m * ∫ x, ψ x ∂B.σ := mul_lt_mul_of_pos_right hcm hpsi
+    _ ≤ _ := hle
+
+/-- **A function continuous on `∂Ω` whose integrals against all smooth compactly supported
+functions vanish is zero on `∂Ω`**, when the surface measure charges every open set meeting
+`∂Ω`: the sign of `h` at a boundary point survives on a small ball, against whose bump the
+integral would not vanish (`BoundaryData.exists_bump_lt_integral_mul`). -/
+theorem eqOn_zero_frontier_of_forall_integral_mul_eq_zero
+    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
+    {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
+    (hint : ∀ ψ : 𝔼 → ℝ, ContDiff ℝ ∞ ψ → HasCompactSupport ψ → ∫ x, h x * ψ x ∂B.σ = 0) :
+    EqOn h 0 (frontier (Ω : Set 𝔼)) := by
+  intro x₀ hx₀
+  by_contra hne
+  rcases lt_or_gt_of_ne hne with hlt | hgt
+  · obtain ⟨ψ, hψ, hψc, -, -, hψi⟩ := B.exists_bump_lt_integral_mul hpos hc.neg hx₀
+      (c := 0) (by simpa using hlt)
+    have := hint ψ hψ hψc
+    simp only [Pi.neg_apply, neg_mul, integral_neg, zero_mul] at hψi
+    linarith
+  · obtain ⟨ψ, hψ, hψc, -, -, hψi⟩ := B.exists_bump_lt_integral_mul hpos hc hx₀ (c := 0) hgt
+    have := hint ψ hψ hψc
+    rw [zero_mul] at hψi
+    linarith
+
 /-! ### Nečas's inequality -/
 
 /-- **The divergence-theorem step of Nečas's inequality at a fixed `ε`**: for a transversal

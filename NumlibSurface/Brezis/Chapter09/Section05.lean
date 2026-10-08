@@ -849,96 +849,6 @@ theorem inner_gradient_eq_sum (u v : 𝔼 → ℝ) (x : 𝔼) :
   refine Finset.sum_congr rfl fun i _ ↦ ?_
   rw [EuclideanSpace.gradient_apply, EuclideanSpace.gradient_apply, RCLike.inner_apply,
     conj_trivial, mul_comm]
-
-/-- A function continuous on `∂Ω` is bounded and measurable for the surface measure of a
-`BoundaryData`. Helper; belongs beside `BoundaryData.memLp_of_continuousOn` in
-`Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
-theorem memLp_top_of_continuousOn_frontier (B : BoundaryData Ω) {h : 𝔼 → ℝ}
-    (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) : MemLp h ⊤ B.σ := by
-  have hm : AEStronglyMeasurable h B.σ := by
-    rw [← Measure.restrict_eq_self_of_ae_mem B.ae_mem_frontier]
-    exact hc.aestronglyMeasurable isClosed_frontier.measurableSet
-  have hK : IsCompact (frontier (Ω : Set 𝔼)) :=
-    B.isBounded.isCompact_closure.of_isClosed_subset isClosed_frontier frontier_subset_closure
-  obtain ⟨C, hC⟩ := hK.exists_bound_of_continuousOn hc
-  exact MemLp.of_bound hm C (B.ae_mem_frontier.mono fun x hx ↦ hC x hx)
-
-/-- **A bump test against a function continuous on the boundary**: for a `BoundaryData` whose
-surface measure charges every open set meeting `∂Ω` (a bounded `C¹` domain,
-`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), a function `h` continuous on `∂Ω` and a
-boundary point `x₀` with `h x₀ > c`, some smooth compactly supported bump `ψ` with `0 ≤ ψ ≤ 1`
-satisfies `c ∫ ψ dσ < ∫ h ψ dσ`: a `ContDiffBump` supported in a ball around `x₀` on which
-`h > (c + h x₀)/2`, whose integral is positive because the smaller ball has positive measure.
-Helper; belongs in `Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
-theorem exists_bump_lt_integral_mul (B : BoundaryData Ω)
-    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
-    {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) {x₀ : 𝔼}
-    (hx₀ : x₀ ∈ frontier (Ω : Set 𝔼)) {c : ℝ} (hlt : c < h x₀) :
-    ∃ ψ : 𝔼 → ℝ, ContDiff ℝ ∞ ψ ∧ HasCompactSupport ψ ∧ (∀ x, 0 ≤ ψ x) ∧ (∀ x, ψ x ≤ 1) ∧
-      c * ∫ x, ψ x ∂B.σ < ∫ x, h x * ψ x ∂B.σ := by
-  obtain ⟨m, hm⟩ : ∃ m : ℝ, m = (c + h x₀) / 2 := ⟨_, rfl⟩
-  have hcm : c < m := by rw [hm]; linarith
-  have hmx : m < h x₀ := by rw [hm]; linarith
-  -- a ball on which `h > m`, relative to `∂Ω`
-  have hev : ∀ᶠ x in 𝓝[frontier (Ω : Set 𝔼)] x₀, m < h x :=
-    (hc x₀ hx₀).eventually (lt_mem_nhds hmx)
-  obtain ⟨r, hr, hball⟩ := Metric.mem_nhdsWithin_iff.1 hev
-  -- the bump
-  let ψ : ContDiffBump x₀ := ⟨r / 2, r, by positivity, by linarith⟩
-  refine ⟨ψ, ψ.contDiff, ψ.hasCompactSupport, fun x ↦ ψ.nonneg, fun x ↦ ψ.le_one, ?_⟩
-  have hψc : Continuous ψ := ψ.continuous
-  have hIψ : Integrable (fun x ↦ ψ x) B.σ := B.integrable_of_continuous hψc
-  have hIhψ : Integrable (fun x ↦ h x * ψ x) B.σ :=
-    (memLp_top_of_continuousOn_frontier B hc).integrable_mul (B.memLp_of_continuous hψc 1)
-  -- `∫ ψ dσ > 0`
-  have hpsi : 0 < ∫ x, ψ x ∂B.σ := by
-    have h1 : B.σ.real (ball x₀ (r / 2)) ≤ ∫ x, ψ x ∂B.σ := by
-      rw [← integral_indicator_one measurableSet_ball]
-      refine integral_mono ((integrable_const (1 : ℝ)).indicator measurableSet_ball) hIψ
-        fun x ↦ ?_
-      by_cases hx : x ∈ ball x₀ (r / 2)
-      · rw [indicator_of_mem hx]
-        exact (ψ.one_of_mem_closedBall (ball_subset_closedBall hx)).ge
-      · rw [indicator_of_notMem hx]
-        exact ψ.nonneg
-    refine lt_of_lt_of_le ?_ h1
-    rw [measureReal_def]
-    exact ENNReal.toReal_pos (hpos _ isOpen_ball ⟨x₀, mem_ball_self (by positivity), hx₀⟩).ne'
-      (measure_ne_top _ _)
-  -- `∫ h ψ ≥ m ∫ ψ`
-  have hle : m * ∫ x, ψ x ∂B.σ ≤ ∫ x, h x * ψ x ∂B.σ := by
-    rw [← integral_const_mul]
-    refine integral_mono_ae (hIψ.const_mul m) hIhψ ?_
-    filter_upwards [B.ae_mem_frontier] with x hx
-    by_cases hxb : x ∈ ball x₀ r
-    · exact mul_le_mul_of_nonneg_right (hball ⟨hxb, hx⟩).le ψ.nonneg
-    · rw [ψ.zero_of_le_dist (not_lt.1 fun h' ↦ hxb (mem_ball.2 h')), mul_zero, mul_zero]
-  calc c * ∫ x, ψ x ∂B.σ < m * ∫ x, ψ x ∂B.σ := mul_lt_mul_of_pos_right hcm hpsi
-    _ ≤ _ := hle
-
-/-- **A function continuous on `∂Ω` whose integrals against all smooth compactly supported
-functions vanish is zero on `∂Ω`**, when the surface measure charges every open set meeting
-`∂Ω`: the sign of `h` at a boundary point survives on a small ball, against whose bump the
-integral would not vanish (`exists_bump_lt_integral_mul`). Helper; belongs in
-`Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
-theorem eqOn_zero_frontier_of_forall_integral_mul_eq_zero (B : BoundaryData Ω)
-    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
-    {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
-    (hint : ∀ ψ : 𝔼 → ℝ, ContDiff ℝ ∞ ψ → HasCompactSupport ψ → ∫ x, h x * ψ x ∂B.σ = 0) :
-    EqOn h 0 (frontier (Ω : Set 𝔼)) := by
-  intro x₀ hx₀
-  by_contra hne
-  rcases lt_or_gt_of_ne hne with hlt | hgt
-  · obtain ⟨ψ, hψ, hψc, -, -, hψi⟩ := exists_bump_lt_integral_mul B hpos hc.neg hx₀
-      (c := 0) (by simpa using hlt)
-    have := hint ψ hψ hψc
-    simp only [Pi.neg_apply, neg_mul, integral_neg, zero_mul] at hψi
-    linarith
-  · obtain ⟨ψ, hψ, hψc, -, -, hψi⟩ := exists_bump_lt_integral_mul B hpos hc hx₀ (c := 0) hgt
-    have := hint ψ hψ hψc
-    rw [zero_mul] at hψi
-    linarith
-
 end BoundaryTools
 
 section Example4Boundary
@@ -1059,7 +969,7 @@ The book's argument, (47) with `v ∈ C_c^∞(ℝ^N)`: Green's formula
 (`example_9_4_stepD_interior`) leave `∫_Γ (∂u/∂n) v dσ = 0` for every such `v`; `∂u/∂n` is
 continuous on `Γ` (`IsContDiffDomain.continuousOn_outwardNormal`), and every open set meeting
 `Γ` has positive surface measure (`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), so it
-vanishes everywhere on `Γ` (`eqOn_zero_frontier_of_forall_integral_mul_eq_zero`). -/
+vanishes everywhere on `Γ` (`BoundaryData.eqOn_zero_frontier_of_forall_integral_mul_eq_zero`). -/
 theorem example_9_4_stepD (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
     {U : hSpace (d + 1) Ω} (hU : IsWeakSolutionNeumann Ω f U) {u : 𝔼 → ℝ}
@@ -1078,7 +988,7 @@ theorem example_9_4_stepD (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
   have hc : ContinuousOn (fun x ↦ g x (hΩ.outwardNormal hb x)) (frontier (Ω : Set 𝔼)) :=
     (hg.mono frontier_subset_closure).clm_apply (hΩ.continuousOn_outwardNormal hb)
   have hbd : ∀ x ∈ frontier (Ω : Set 𝔼), g x (hΩ.outwardNormal hb x) = 0 := by
-    refine eqOn_zero_frontier_of_forall_integral_mul_eq_zero (hΩ.boundaryData hb)
+    refine (hΩ.boundaryData hb).eqOn_zero_frontier_of_forall_integral_mul_eq_zero
       (fun U hU hne ↦ hΩ.boundaryMeasure_pos_of_isOpen hb hU hne) hc fun ψ hψ hψc ↦ ?_
     have hψ1 : ContDiff ℝ 1 ψ := hψ.of_le (by simp)
     obtain ⟨W, hW⟩ := hψ1.exists_sobolevMultiIndex_of_hasCompactSupport'

@@ -80,30 +80,12 @@ id = "eLpNorm_max_sub_le"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.3 (the bound on inf_K ‖v − u_h‖₀)"
 
 [[node]]
-id = "ae_abs_le_of_norm_le"
-
-[[node]]
-id = "exists_multiplier_of_forall_abs_le"
-
-[[node]]
-id = "frictionFunctional_neg"
-
-[[node]]
-id = "friction_eq_and_le_of_forall"
-
-[[node]]
-id = "friction_multiplier_iff"
-
-[[node]]
 id = "theorem_11_4_5"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.5"
 
 [[node]]
 id = "theorem_11_4_5_unique"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.5"
-
-[[node]]
-id = "norm_sq_eq_integral_sq"
 
 [[node]]
 id = "weakLaplacian"
@@ -119,39 +101,3 @@ id = "normalTraceL"
 
 [[node]]
 id = "abs_residual_le"
-
-[[node]]
-id = "sum_setIntegral_le_of_pairwiseDisjoint"
-
-[[node]]
-id = "integral_sq_sub_affine_le"
-
-[[node]]
-id = "integral_edgeMeasure_lineMap"
-
-[[node]]
-id = "norm_vertex_sub_le_meshSize"
-
-[[node]]
-id = "exists_param_of_segment_subset"
-
-[[node]]
-id = "lineMap_mem_openSegment_of_mem_Ioo"
-
-[[node]]
-id = "norm_lineMap_sub_lineMap"
-
-[[node]]
-id = "globalInterp_lineMap_side"
-
-[[node]]
-id = "integral_sq_sub_globalInterp_edge_le"
-
-[[node]]
-id = "exists_param_integral_sq_sub_globalInterp_le"
-
-[[node]]
-id = "integral_sq_sub_globalInterp_boundaryMeasure_le"
-
-[[node]]
-id = "norm_traceL_sub_globalInterp_le"

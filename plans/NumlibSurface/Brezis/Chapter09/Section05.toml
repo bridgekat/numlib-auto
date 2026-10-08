@@ -161,15 +161,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition
 id = "inner_gradient_eq_sum"
 
 [[node]]
-id = "memLp_top_of_continuousOn_frontier"
-
-[[node]]
-id = "exists_bump_lt_integral_mul"
-
-[[node]]
-id = "eqOn_zero_frontier_of_forall_integral_mul_eq_zero"
-
-[[node]]
 id = "example_9_4_stepA"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 4"
 

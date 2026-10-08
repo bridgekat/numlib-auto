@@ -306,6 +306,7 @@ import Numlib.Analysis.Sobolev.Embedding
 import Numlib.Analysis.Sobolev.EmbeddingDomain
 import Numlib.Analysis.Sobolev.Extension
 import Numlib.Analysis.Sobolev.ExtensionHigher
+import Numlib.Analysis.Sobolev.FourierCharacterization
 import Numlib.Analysis.Sobolev.Friedrichs
 import Numlib.Analysis.Sobolev.HolderEmbedding
 import Numlib.Analysis.Sobolev.Interval
@@ -449,6 +450,7 @@ import Numlib.FiniteDifference.Parabolic
 import Numlib.FiniteDifference.Stencil
 import Numlib.FiniteDifference.TwoLevel
 import Numlib.FiniteDifference.VonNeumann
+import Numlib.FiniteElement.BoundaryInterpolation
 import Numlib.FiniteElement.Interpolation
 import Numlib.FiniteElement.Interval
 import Numlib.FiniteElement.LagrangeElement
@@ -666,6 +668,7 @@ import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
 import Numlib.Variational.Inequality.Approximation
 import Numlib.Variational.Inequality.Basic
+import Numlib.Variational.Inequality.Multiplier
 import Numlib.Variational.Inequality.NormalCone
 import Numlib.Variational.LaxMilgram
 import Numlib.Variational.Minimax

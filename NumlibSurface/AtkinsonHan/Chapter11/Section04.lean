@@ -1,9 +1,10 @@
 import Mathlib.Analysis.Normed.Module.HahnBanach
 import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Sobolev.Boundary.PolygonTrace
-import Numlib.Approximation.SobolevInterpolation
+import Numlib.FiniteElement.BoundaryInterpolation
 import Numlib.MeasureTheory.Function.LpSpace.Duality
 import Numlib.Variational.Inequality.Approximation
+import Numlib.Variational.Inequality.Multiplier
 import NumlibSurface.AtkinsonHan.Chapter10.Section04
 import NumlibSurface.AtkinsonHan.Chapter11.Section03
 
@@ -34,7 +35,8 @@ solvability is Theorem 11.3.1 again.  What the section adds is the analysis of t
   here the residual does not vanish and is integrated by parts on the polygon
   (`laplaceForm_sub_load_eq_normalTrace_add`, `abs_residual_le`), which brings in the trace and
   the boundary term `∫_Γ ∂_ν u (γ v_h − γ u) ds`, bounded through the one-dimensional
-  interpolation estimate along each side (`norm_traceL_sub_globalInterp_le`).
+  interpolation estimate along each side (`Triangulation.norm_traceL_sub_globalInterp_le` of
+  `Numlib/FiniteElement/BoundaryInterpolation.lean`).
 
 `residual` is the book's `R(v, w)` of the display preceding (11.4.7), with the functional at the
 two arguments kept separate so that the same definition serves the `R_h` of (11.4.27).
@@ -79,9 +81,10 @@ two arguments kept separate so that the same definition serves the `R_h` of (11.
   (a bounded `C¹` domain or a polygon, the book's Lipschitz domain).  The book extends the
   functional `ℓ − a(u, ·)` from `H^{1/2}(Γ)` to `L¹(Γ)` by Hahn–Banach and uses the density of
   `H^{1/2}(Γ)` in `L²(Γ)` for the uniqueness; here the functional is extended from the subspace of
-  traces of `L¹(σ)` (`exists_multiplier_of_forall_abs_le`, with the Riesz representation
-  `(L¹)' = L^∞` of `Numlib/MeasureTheory/Function/LpSpace/Duality.lean`) and the uniqueness rests
-  on the traces of the smooth compactly supported functions
+  traces in `L¹(σ)` (`exists_multiplier_of_forall_abs_le` and
+  `forall_le_add_integral_abs_iff_exists_multiplier` of
+  `Numlib/Variational/Inequality/Multiplier.lean`, with the Riesz representation
+  `(L¹)' = L^∞`) and the uniqueness rests on the traces of the smooth compactly supported functions
   (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`); no fractional space enters.
 
 ## Example 11.4.4 and its hypotheses
@@ -862,230 +865,6 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData �
 /-- `ℝ^N`, locally. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- An element of `L^∞(μ)` of norm at most `g` is bounded by `g` almost everywhere. Helper;
-Mathlib-facing (`MeasureTheory.Lp`). -/
-theorem ae_abs_le_of_norm_le {μ : Measure 𝔼} {k : Lp ℝ ⊤ μ} {g : ℝ} (hk : ‖k‖ ≤ g) :
-    ∀ᵐ x ∂μ, |k x| ≤ g := by
-  have h1 : eLpNormEssSup k μ ≠ ⊤ := by
-    have := Lp.eLpNorm_ne_top k
-    rwa [eLpNorm_exponent_top (Lp.aestronglyMeasurable k)] at this
-  have h2 : (eLpNormEssSup k μ).toReal ≤ g := by
-    rw [Lp.norm_def, eLpNorm_exponent_top (Lp.aestronglyMeasurable k)] at hk
-    exact hk
-  filter_upwards [ae_le_eLpNormEssSup (f := k) (μ := μ)] with x hx
-  rw [← Real.norm_eq_abs]
-  refine le_trans ?_ h2
-  rw [← ofReal_norm] at hx
-  exact (ENNReal.ofReal_le_iff_le_toReal h1).1 hx
-
-/-- **The Lagrange multiplier by Hahn–Banach and `(L¹)' = L^∞`**: a bounded functional `L` on
-`H¹(Ω)` with `|L(w)| ≤ g ∫_Γ |γ w| dσ` — so that `L(w)` depends on the trace `γ w` only, as a
-functional bounded in the `L¹(σ)` norm on the subspace `γ(H¹(Ω)) ⊆ L¹(σ)` — extends by the
-Hahn–Banach theorem (`exists_extension_norm_eq`) to a functional on `L¹(σ)` of norm at most `g`,
-which the Riesz representation `(L¹(σ))' = L^∞(σ)` (`MeasureTheory.Lp.toDual_surjective`,
-`Numlib/MeasureTheory/Function/LpSpace/Duality.lean`) makes `h ↦ ∫ λ̄ h dσ` for some
-`λ̄ ∈ L^∞(σ)` with `‖λ̄‖_∞ ≤ g`. The book's route through `H^{1/2}(Γ)` is not needed: the
-subspace of `L¹(σ)` is the range of the trace, and the functional is transported to it through
-the quotient `H¹(Ω)/ker` (`LinearMap.quotKerEquivRange`). -/
-theorem exists_multiplier_of_forall_abs_le {g : ℝ} (hg : 0 ≤ g)
-    (F : SobolevEuclidean N 1 2 Ω →L[ℝ] ℝ)
-    (hF : ∀ w, |F w| ≤ g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ) :
-    ∃ l : Lp ℝ ⊤ B.σ, ‖l‖ ≤ g ∧
-      ∀ w, F w = ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x ∂B.σ := by
-  -- the trace into `L¹(σ)`
-  let ι : Lp ℝ 2 B.σ →ₗ[ℝ] Lp ℝ 1 B.σ :=
-    { toFun := fun k ↦ ⟨(k : 𝔼 →ₘ[B.σ] ℝ), Lp.antitone one_le_two k.2⟩
-      map_add' := fun _ _ ↦ rfl
-      map_smul' := fun _ _ ↦ rfl }
-  let T : SobolevEuclidean N 1 2 Ω →ₗ[ℝ] Lp ℝ 1 B.σ :=
-    ι ∘ₗ (𝒯.traceL 2 ENNReal.ofNat_ne_top).toLinearMap
-  have hT : ∀ w, (T w : 𝔼 → ℝ) = (𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) := fun w ↦ rfl
-  have hTnorm : ∀ w, ‖T w‖ = ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ := by
-    intro w
-    rw [L1.norm_eq_integral_norm, hT]
-    simp only [Real.norm_eq_abs]
-  -- `F` vanishes on the kernel of `T`
-  have hker : LinearMap.ker T ≤ LinearMap.ker (F : SobolevEuclidean N 1 2 Ω →ₗ[ℝ] ℝ) := by
-    intro w hw
-    rw [LinearMap.mem_ker] at hw ⊢
-    have h := hF w
-    rw [← hTnorm, hw, norm_zero, mul_zero] at h
-    exact abs_nonpos_iff.1 h
-  -- the functional on the range of `T`
-  let Fq := (LinearMap.ker T).liftQ (F : SobolevEuclidean N 1 2 Ω →ₗ[ℝ] ℝ) hker
-  let F' : LinearMap.range T →ₗ[ℝ] ℝ := Fq ∘ₗ T.quotKerEquivRange.symm.toLinearMap
-  have hF' : ∀ w, F' ⟨T w, LinearMap.mem_range_self T w⟩ = F w := fun w ↦ by
-    simp only [F', LinearMap.comp_apply, LinearEquiv.coe_coe,
-      LinearMap.quotKerEquivRange_symm_apply_image, Fq]
-    rfl
-  have hbound : ∀ s : LinearMap.range T, ‖F' s‖ ≤ g * ‖s‖ := by
-    rintro ⟨_, w, rfl⟩
-    rw [hF' w, Real.norm_eq_abs]
-    change |F w| ≤ g * ‖T w‖
-    rw [hTnorm]
-    exact hF w
-  let F'' : LinearMap.range T →L[ℝ] ℝ := F'.mkContinuous g hbound
-  have hF''norm : ‖F''‖ ≤ g := LinearMap.mkContinuous_norm_le _ hg _
-  -- Hahn–Banach
-  obtain ⟨G, hGext, hGnorm⟩ := exists_extension_norm_eq (LinearMap.range T) F''
-  -- Riesz: `G = ∫ l ·` with `l ∈ L^∞`
-  obtain ⟨l, hl⟩ := Lp.toDual_surjective (𝕜 := ℝ) (p := 1) (q := ⊤) (μ := B.σ)
-    ENNReal.one_ne_top G
-  refine ⟨l, ?_, fun w ↦ ?_⟩
-  · rw [← (Lp.toDual ℝ 1 ⊤ B.σ).norm_map l, hl, hGnorm]
-    exact hF''norm
-  · have h1 := hGext ⟨T w, LinearMap.mem_range_self T w⟩
-    rw [← hl, Lp.toDual_apply] at h1
-    have h2 : F'' ⟨T w, LinearMap.mem_range_self T w⟩ = F w := by
-      rw [LinearMap.mkContinuous_apply, hF']
-    exact h2.symm.trans h1.symm
-
-/-- `j(−w) = j(w)`. -/
-theorem frictionFunctional_neg (g : ℝ) (w : SobolevEuclidean N 1 2 Ω) :
-    frictionFunctional B 𝒯 g (-w) = frictionFunctional B 𝒯 g w := by
-  simp only [frictionFunctional, map_neg]
-  congr 1
-  refine integral_congr_ae ?_
-  filter_upwards [Lp.coeFn_neg (𝒯.traceL 2 ENNReal.ofNat_ne_top w)] with x hx
-  rw [hx, Pi.neg_apply, abs_neg]
-
-/-- **(11.4.23) and the inequality of Exercise 11.3.10 for the friction problem**: a solution
-`u` of (11.4.10) satisfies `a(u, u) + j(u) = ℓ(u)` (test with `v = 0` and `v = 2u`) and
-`a(u, w) + j(w) ≥ ℓ(w)` for all `w` (test with `v = u + w`, `j` being subadditive). -/
-theorem friction_eq_and_le_of_forall {g : ℝ} (hg : 0 ≤ g)
-    (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) {u : SobolevEuclidean N 1 2 Ω}
-    (hu : ∀ v, Elliptic.load Ω f (v - u) ≤ Elliptic.laplaceForm Ω u (v - u)
-      + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u) :
-    Elliptic.laplaceForm Ω u u + frictionFunctional B 𝒯 g u = Elliptic.load Ω f u ∧
-      ∀ w, Elliptic.load Ω f w ≤ Elliptic.laplaceForm Ω u w + frictionFunctional B 𝒯 g w := by
-  have h0 := hu 0
-  have h2 := hu ((2 : ℝ) • u)
-  have e0 : (0 : SobolevEuclidean N 1 2 Ω) - u = -u := zero_sub u
-  have e2 : (2 : ℝ) • u - u = u := by rw [two_smul, add_sub_cancel_right]
-  simp only [e0, frictionFunctional_zero] at h0
-  simp only [e2, frictionFunctional_two_smul] at h2
-  have h3 : Elliptic.load Ω f (-u) = -Elliptic.load Ω f u := map_neg _ _
-  have h4 : Elliptic.laplaceForm Ω u (-u) = -Elliptic.laplaceForm Ω u u := map_neg _ _
-  refine ⟨by linarith, fun w ↦ ?_⟩
-  have h5 := hu (u + w)
-  have e5 : u + w - u = w := add_sub_cancel_left u w
-  simp only [e5] at h5
-  have h6 := frictionFunctional_add_sub_le B 𝒯 hg u w
-  rw [← frictionFunctional_apply] at h6
-  linarith
-
-/-- **Theorem 11.4.5 in the backbone's vocabulary**: `u ∈ H¹(Ω)` solves the friction problem
-`a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for all `v` if and only if there is `λ ∈ L^∞(σ)` with
-`|λ| ≤ 1` `σ`-a.e., `a(u, v) + g ∫_Γ λ γv dσ = ℓ(v)` for all `v` and `λ γu = |γu|` `σ`-a.e.
-The book's proof: from the inequality, `a(u, u) + j(u) = ℓ(u)` and `|ℓ(v) − a(u, v)| ≤ j(v)`
-(`friction_eq_and_le_of_forall`), so `ℓ − a(u, ·)` is represented on the traces by an
-`L^∞(σ)` function of norm at most `g` (`exists_multiplier_of_forall_abs_le`), `λ` is its
-quotient by `g`, and (11.4.22) follows from (11.4.21) at `v = u` and (11.4.23), the integrand
-`|γu| − λ γu` being nonnegative with zero integral. Conversely (11.4.21) at `v − u`, with
-`λ γv ≤ |γv|` and `λ γu = |γu|`, is the inequality. -/
-theorem friction_multiplier_iff {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
-    (u : SobolevEuclidean N 1 2 Ω) :
-    (∀ v, Elliptic.laplaceForm Ω u (v - u) + frictionFunctional B 𝒯 g v
-        - frictionFunctional B 𝒯 g u ≥ Elliptic.load Ω f (v - u)) ↔
-      ∃ l : Lp ℝ ⊤ B.σ, (∀ᵐ x ∂B.σ, |l x| ≤ 1) ∧
-        (∀ v, Elliptic.laplaceForm Ω u v
-          + g * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ
-          = Elliptic.load Ω f v) ∧
-        ∀ᵐ x ∂B.σ, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
-          = |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by
-  have hI : ∀ k : Lp ℝ 2 B.σ, Integrable (fun x ↦ |k x|) B.σ := fun k ↦
-    ((Lp.memLp k).integrable one_le_two).abs
-  have hIl : ∀ (l : Lp ℝ ⊤ B.σ) (k : Lp ℝ 2 B.σ), Integrable (fun x ↦ l x * k x) B.σ :=
-    fun l k ↦ (Lp.memLp l).integrable_mul ((Lp.memLp k).mono_exponent one_le_two)
-  constructor
-  · intro hu
-    replace hu : ∀ v, Elliptic.load Ω f (v - u) ≤ Elliptic.laplaceForm Ω u (v - u)
-        + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u := fun v ↦ hu v
-    obtain ⟨h23, h24⟩ := friction_eq_and_le_of_forall B 𝒯 hg.le f hu
-    -- the functional `L(w) = ℓ(w) − a(u, w)` is bounded by `j(w)`
-    obtain ⟨F, hFdef⟩ : ∃ F : SobolevEuclidean N 1 2 Ω →L[ℝ] ℝ,
-        F = Elliptic.load Ω f - Elliptic.laplaceForm Ω u := ⟨_, rfl⟩
-    have hFapply : ∀ w, F w = Elliptic.load Ω f w - Elliptic.laplaceForm Ω u w := fun w ↦ by
-      rw [hFdef]; rfl
-    have hF : ∀ w, |F w| ≤ g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ := by
-      intro w
-      have h1 := h24 w
-      have h2 := h24 (-w)
-      have h3 : Elliptic.load Ω f (-w) = -Elliptic.load Ω f w := map_neg _ _
-      have h4 : Elliptic.laplaceForm Ω u (-w) = -Elliptic.laplaceForm Ω u w := map_neg _ _
-      rw [frictionFunctional_neg] at h2
-      rw [← frictionFunctional_apply, hFapply, abs_le]
-      constructor <;> linarith
-    obtain ⟨l, hl, hFl⟩ := exists_multiplier_of_forall_abs_le B 𝒯 hg.le F hF
-    have hlg := ae_abs_le_of_norm_le hl
-    refine ⟨g⁻¹ • l, ?_, fun v ↦ ?_, ?_⟩
-    · filter_upwards [hlg, Lp.coeFn_smul g⁻¹ l] with x hx hx'
-      rw [hx', Pi.smul_apply, smul_eq_mul, abs_mul, abs_of_pos (inv_pos.2 hg)]
-      calc g⁻¹ * |l x| ≤ g⁻¹ * g := by gcongr
-        _ = 1 := inv_mul_cancel₀ hg.ne'
-    · have e : ∫ x, (g⁻¹ • l : Lp ℝ ⊤ B.σ) x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x
-          ∂B.σ = g⁻¹ * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ := by
-        rw [← integral_const_mul]
-        refine integral_congr_ae ?_
-        filter_upwards [Lp.coeFn_smul g⁻¹ l] with x hx
-        rw [hx, Pi.smul_apply, smul_eq_mul, mul_assoc]
-      rw [e, ← mul_assoc, mul_inv_cancel₀ hg.ne', one_mul, ← hFl, hFapply]
-      ring
-    · -- (11.4.22)
-      have h21 := hFl u
-      rw [hFapply] at h21
-      have hgu : ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x ∂B.σ
-          = g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| ∂B.σ := by
-        rw [← frictionFunctional_apply]; linarith
-      have hnn : 0 ≤ᵐ[B.σ] fun x ↦ g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|
-          - l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x := by
-        filter_upwards [hlg] with x hx
-        have : l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
-            ≤ g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by
-          calc l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
-              ≤ |l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := le_abs_self _
-            _ = |l x| * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := abs_mul _ _
-            _ ≤ g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by gcongr
-        simp only [Pi.zero_apply]
-        linarith
-      have hzero : ∫ x, (g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|
-          - l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x) ∂B.σ = 0 := by
-        rw [integral_sub ((hI _).const_mul g) (hIl l _), integral_const_mul, hgu, sub_self]
-      have hae := (integral_eq_zero_iff_of_nonneg_ae hnn
-        (((hI _).const_mul g).sub (hIl l _))).1 hzero
-      filter_upwards [hae, Lp.coeFn_smul g⁻¹ l] with x hx hx'
-      simp only [Pi.zero_apply] at hx
-      rw [hx', Pi.smul_apply, smul_eq_mul, mul_assoc]
-      have : l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
-          = g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by linarith
-      rw [this, ← mul_assoc, inv_mul_cancel₀ hg.ne', one_mul]
-  · rintro ⟨l, hl1, h21, h22⟩ v
-    have hv := h21 v
-    have hu := h21 u
-    have hjv : g * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ
-        ≤ frictionFunctional B 𝒯 g v := by
-      rw [frictionFunctional_apply]
-      refine mul_le_mul_of_nonneg_left (integral_mono_ae (hIl l _) (hI _) ?_) hg.le
-      filter_upwards [hl1] with x hx
-      calc l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x
-          ≤ |l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| := le_abs_self _
-        _ = |l x| * |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| := abs_mul _ _
-        _ ≤ 1 * |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| := by gcongr
-        _ = _ := one_mul _
-    have hju : g * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x ∂B.σ
-        = frictionFunctional B 𝒯 g u := by
-      rw [frictionFunctional_apply]
-      congr 1
-      refine integral_congr_ae ?_
-      filter_upwards [h22] with x hx
-      rw [hx]
-    have e1 : Elliptic.laplaceForm Ω u (v - u)
-        = Elliptic.laplaceForm Ω u v - Elliptic.laplaceForm Ω u u := map_sub _ _ _
-    have e2 : Elliptic.load Ω f (v - u) = Elliptic.load Ω f v - Elliptic.load Ω f u :=
-      map_sub _ _ _
-    rw [ge_iff_le, e1, e2]
-    linarith
-
 /-- **Theorem 11.4.5 (the Lagrange multiplier of the simplified friction problem)**, over the
 boundary interface `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` of
 `Numlib/Analysis/Sobolev/Boundary/Data.lean` (a bounded `C¹` domain, `IsContDiffDomain.traceFamily`,
@@ -1102,8 +881,8 @@ if and only if there is `λ ∈ Λ` such that
 
 the multiplier is unique (`theorem_11_4_5_unique`). The proof is the book's, except that the
 extension of `L(v) = ℓ(v) − a(u, v)` from the traces to `L¹(Γ)` by Hahn–Banach and the duality
-`(L¹(Γ))' = L^∞(Γ)` need no fractional space `H^{1/2}(Γ)` (`friction_multiplier_iff`,
-`exists_multiplier_of_forall_abs_le`). -/
+`(L¹(Γ))' = L^∞(Γ)` need no fractional space `H^{1/2}(Γ)`: it is the backbone's
+`forall_le_add_integral_abs_iff_exists_multiplier` with `T = γ`, `A = a(u, ·)` and the load. -/
 theorem theorem_11_4_5 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (u : SobolevEuclidean N 1 2 Ω) :
     (∀ v : SobolevEuclidean N 1 2 Ω,
@@ -1122,10 +901,13 @@ theorem theorem_11_4_5 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω
             = ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn v x) ∧
         ∀ᵐ x ∂B.σ, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
           = |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by
-  have h := friction_multiplier_iff B 𝒯 hg f u
-  simp only [ge_iff_le, Elliptic.laplaceForm_apply, Elliptic.load_apply] at h
+  have h := forall_le_add_integral_abs_iff_exists_multiplier hg
+    (𝒯.traceL 2 ENNReal.ofNat_ne_top).toLinearMap (Elliptic.laplaceForm Ω u).toLinearMap
+    (Elliptic.load Ω f).toLinearMap u
+  simp only [ContinuousLinearMap.coe_coe, Elliptic.laplaceForm_apply, Elliptic.load_apply] at h
   refine (forall_congr' fun v ↦ (friction_ineq_iff B 𝒯 g f u v).trans ?_).trans h
-  rw [Elliptic.laplaceForm_apply, Elliptic.load_apply]
+  rw [Elliptic.laplaceForm_apply, Elliptic.load_apply, frictionFunctional_apply,
+    frictionFunctional_apply]
 
 /-- **Theorem 11.4.5, uniqueness of the Lagrange multiplier**: two elements of `L^∞(Γ)` both
 satisfying (11.4.21) for the same `u` agree. Their difference `μ` satisfies
@@ -1209,12 +991,6 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
 /-- The standard basis of `ℝ^N`, locally. -/
 local notation "𝔅" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin N) ℝ)
-
-/-- `‖k‖² = ∫ k²` in `L²(μ)`. Helper; Mathlib-facing (`MeasureTheory.L2Space`). -/
-theorem norm_sq_eq_integral_sq {α : Type*} [MeasurableSpace α] {μ : Measure α} (k : Lp ℝ 2 μ) :
-    ‖k‖ ^ 2 = ∫ x, k x ^ 2 ∂μ := by
-  rw [← real_inner_self_eq_norm_sq, L2.inner_eq_integral_mul]
-  exact integral_congr_ae (Eventually.of_forall fun x ↦ (sq _).symm)
 
 /-- **The weak Laplacian of an `H²(Ω)` function**, `Δ_w u = ∑ᵢ ∂ᵢ(∂ᵢu) ∈ L²(Ω)`. -/
 noncomputable def weakLaplacian (U : SobolevEuclidean N 2 2 Ω) :
@@ -1398,401 +1174,6 @@ theorem abs_residual_le {g : ℝ} (hg : 0 ≤ g) {U : SobolevEuclidean N 2 2 Ω}
 
 end Residual
 
-/-! #### The `L²(Γ)` error of the linear interpolant on a polygon
-
-The boundary edges of a triangulation of a polygon lie on the finitely many sides of the polygon;
-along a side the linear interpolant is the one-dimensional affine interpolant of the restriction
-of `u` at the ends of the edge, so the panel estimate
-`integral_sq_sub_piecewiseLinearInterpCLM_le` of `Numlib/Approximation/SobolevInterpolation.lean`
-applies on each edge and the edges of one side have disjoint parameter intervals. -/
-
-section EdgeInterpolation
-
-open MeasureTheory TopologicalSpace EuclideanSpace SobolevMultiIndex intervalIntegral
-
-/-- `ℝ²`, locally. -/
-local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
-
-/-- A finite sum of integrals of a nonnegative function over pairwise disjoint measurable subsets
-of `J` is at most the integral over `J`. -/
-theorem sum_setIntegral_le_of_pairwiseDisjoint {ι : Type*} (S : Finset ι) {I : ι → Set ℝ}
-    {J : Set ℝ} {F : ℝ → ℝ} (hI : ∀ e ∈ S, MeasurableSet (I e)) (hIJ : ∀ e ∈ S, I e ⊆ J)
-    (hdisj : (S : Set ι).PairwiseDisjoint I) (hF : IntegrableOn F J) (hF0 : ∀ x, 0 ≤ F x) :
-    ∑ e ∈ S, ∫ x in I e, F x ≤ ∫ x in J, F x := by
-  rw [← integral_biUnion_finset S hI hdisj fun e he ↦ hF.mono_set (hIJ e he)]
-  exact setIntegral_mono_set hF (Eventually.of_forall hF0)
-    (LE.le.eventuallySubset (iUnion₂_subset hIJ))
-
-/-- **The one-panel affine interpolation estimate** on a sub-interval `[s, t] ⊆ [0, 1]` for the
-`C¹` representative `f` of an element `U ∈ H²(0, 1)`: `∫_s^t (f − G)² ≤ (t − s)⁴ ∫_s^t |U''|²`
-when `G` is the affine interpolant of `f` at `s` and `t`
-(`integral_sq_sub_piecewiseLinearInterpCLM_le` with the one-panel partition `{s, t}`). -/
-theorem integral_sq_sub_affine_le (U : SobolevInterval 2 0 1) {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f)
-    (hfU : ∀ r ∈ Icc (0 : ℝ) 1, ∀ r' ∈ Icc (0 : ℝ) 1,
-      deriv f r' - deriv f r = ∫ x in r..r', SobolevInterval.deriv U (Fin.last 2) x)
-    {s t : ℝ} (hs : 0 ≤ s) (hst : s < t) (ht : t ≤ 1) {G : ℝ → ℝ}
-    (hG : ∀ r ∈ Icc s t, G r = f s + (f t - f s) * ((r - s) / (t - s))) :
-    ∫ r in s..t, (f r - G r) ^ 2
-      ≤ (t - s) ^ 4 * ∫ r in s..t, SobolevInterval.deriv U (Fin.last 2) r ^ 2 := by
-  let x : ℕ → Icc s t := fun j ↦
-    if j = 0 then ⟨s, left_mem_Icc.2 hst.le⟩ else ⟨t, right_mem_Icc.2 hst.le⟩
-  have hx0 : (x 0 : ℝ) = s := by simp [x]
-  have hx1 : (x 1 : ℝ) = t := by simp [x]
-  have hstep : ∀ i ≤ 0, (x i : ℝ) < (x (i + 1) : ℝ) := by
-    intro i hi
-    obtain rfl : i = 0 := Nat.le_zero.1 hi
-    rw [hx0, hx1]
-    exact hst
-  have hmesh : ∀ j ≤ 0, (x (j + 1) : ℝ) - (x j : ℝ) ≤ t - s := by
-    intro j hj
-    obtain rfl : j = 0 := Nat.le_zero.1 hj
-    rw [hx0, hx1]
-  have hsub : uIcc s t ⊆ uIcc (0 : ℝ) 1 := by
-    rw [uIcc_of_le hst.le, uIcc_of_le zero_le_one]
-    exact Icc_subset_Icc hs ht
-  let F : C(Icc s t, ℝ) := ⟨fun r ↦ f r, hf.continuous.comp continuous_subtype_val⟩
-  refine integral_sq_sub_piecewiseLinearInterpCLM_le hstep hx0 hx1 hmesh hf
-    ((SobolevInterval.intervalIntegrable_deriv zero_le_one U _).mono_set hsub)
-    ((SobolevInterval.intervalIntegrable_deriv_sq zero_le_one U _).mono_set hsub)
-    (fun r hr r' hr' ↦ hfU r ⟨hs.trans hr.1, hr.2.trans ht⟩ r' ⟨hs.trans hr'.1, hr'.2.trans ht⟩)
-    (F := F) (fun r ↦ rfl) (fun r ↦ ?_)
-  rw [piecewiseLinearInterpCLM_apply_of_mem hstep F le_rfl (by rw [hx0]; exact r.2.1)
-    (by rw [hx1]; exact r.2.2), hG r r.2]
-  simp only [F, ContinuousMap.coe_mk, hx0, hx1]
-
-/-- **The arclength integral over a sub-segment of a side**, as an interval integral of the
-pulled-back function: `∫ F d(edgeMeasure (A + s(B−A)) (A + t(B−A))) = ‖B − A‖ ∫_s^t F(A + r(B−A))`.
--/
-theorem integral_edgeMeasure_lineMap {A B : 𝔼₂} {s t : ℝ} (hst : s < t) {F : 𝔼₂ → ℝ}
-    (hF : ContinuousOn F (segment ℝ (AffineMap.lineMap A B s) (AffineMap.lineMap A B t))) :
-    ∫ x, F x ∂edgeMeasure (AffineMap.lineMap A B s) (AffineMap.lineMap A B t)
-      = ‖B - A‖ * ∫ r in s..t, F (AffineMap.lineMap A B r) := by
-  rw [integral_edgeMeasure hF]
-  have hQP : AffineMap.lineMap A B t - AffineMap.lineMap A B s = (t - s) • (B - A) := by
-    simp only [lineMap_eq]
-    module
-  have hcomp : ∀ r : ℝ, AffineMap.lineMap (AffineMap.lineMap A B s) (AffineMap.lineMap A B t) r
-      = AffineMap.lineMap A B ((t - s) * r + s) := by
-    intro r
-    simp only [lineMap_eq]
-    module
-  simp_rw [hcomp]
-  rw [integral_comp_mul_add (fun r ↦ F (AffineMap.lineMap A B r)) (sub_ne_zero.2 hst.ne') s,
-    hQP, norm_smul, Real.norm_eq_abs, abs_of_pos (sub_pos.2 hst)]
-  simp only [mul_zero, zero_add, mul_one, sub_add_cancel, smul_eq_mul]
-  have hts : t - s ≠ 0 := sub_ne_zero.2 hst.ne'
-  field_simp
-
-variable {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
-
-/-- The length of an edge of an element is at most the mesh size. -/
-theorem norm_vertex_sub_le_meshSize (T : 𝒯.elems) (a b : Fin 3) :
-    ‖T.1 b - T.1 a‖ ≤ 𝒯.meshSize := by
-  rw [← dist_eq_norm]
-  refine (Metric.dist_le_diam_of_mem (𝒯.isCompact_closedK T).isBounded (𝒯.vertex_mem_closedK T b)
-    (𝒯.vertex_mem_closedK T a)).trans ?_
-  rw [← 𝒯.closure_K, Metric.diam_closure]
-  exact 𝒯.diam_le_meshSize T
-
-/-- **A boundary edge on a side, parametrized**: if the edge `[T a, T (a+1)]` lies on the segment
-`[A, B]` then its ends are `A + s(B − A)` and `A + t(B − A)` with `0 ≤ s < t ≤ 1`, in one of the
-two orientations. -/
-theorem exists_param_of_segment_subset {A B : 𝔼₂} (T : 𝒯.elems) (a : Fin 3)
-    (h : segment ℝ (T.1 a) (T.1 (a + 1)) ⊆ segment ℝ A B) :
-    ∃ s t : ℝ, 0 ≤ s ∧ s < t ∧ t ≤ 1 ∧
-      ((T.1 a = AffineMap.lineMap A B s ∧ T.1 (a + 1) = AffineMap.lineMap A B t) ∨
-        (T.1 a = AffineMap.lineMap A B t ∧ T.1 (a + 1) = AffineMap.lineMap A B s)) := by
-  obtain ⟨s₀, hs₀0, hs₀1, hs₀⟩ := mem_segment_iff'.1 (h (left_mem_segment ℝ _ _))
-  obtain ⟨t₀, ht₀0, ht₀1, ht₀⟩ := mem_segment_iff'.1 (h (right_mem_segment ℝ _ _))
-  rw [← lineMap_eq] at hs₀ ht₀
-  have hne : s₀ ≠ t₀ := fun e ↦ 𝒯.vertex_ne_vertex_add_one T a (by rw [hs₀, ht₀, e])
-  rcases lt_or_gt_of_ne hne with hlt | hlt
-  · exact ⟨s₀, t₀, hs₀0, hlt, ht₀1, Or.inl ⟨hs₀, ht₀⟩⟩
-  · exact ⟨t₀, s₀, ht₀0, hlt, hs₀1, Or.inr ⟨hs₀, ht₀⟩⟩
-
-/-- The open parameter interval of a sub-segment maps into its open segment. -/
-theorem lineMap_mem_openSegment_of_mem_Ioo {A B : 𝔼₂} {s t : ℝ} (hst : s < t) {r : ℝ}
-    (hr : r ∈ Ioo s t) :
-    AffineMap.lineMap A B r
-      ∈ openSegment ℝ (AffineMap.lineMap A B s) (AffineMap.lineMap A B t) := by
-  have hts : t - s ≠ 0 := sub_ne_zero.2 hst.ne'
-  rw [mem_openSegment_iff']
-  refine ⟨(r - s) / (t - s), div_pos (sub_pos.2 hr.1) (sub_pos.2 hst),
-    (div_lt_one (sub_pos.2 hst)).2 (sub_lt_sub_right hr.2 s), ?_⟩
-  simp only [lineMap_eq]
-  rw [show A + t • (B - A) - (A + s • (B - A)) = (t - s) • (B - A) by module, smul_smul,
-    div_mul_cancel₀ _ hts]
-  module
-
-/-- The length of a sub-segment of a side. -/
-theorem norm_lineMap_sub_lineMap (A B : 𝔼₂) {s t : ℝ} (hst : s ≤ t) :
-    ‖AffineMap.lineMap A B t - AffineMap.lineMap A B s‖ = (t - s) * ‖B - A‖ := by
-  rw [show AffineMap.lineMap A B t - AffineMap.lineMap A B s = (t - s) • (B - A) by
-    simp only [lineMap_eq]; module, norm_smul, Real.norm_eq_abs, abs_of_nonneg (sub_nonneg.2 hst)]
-
-/-- **The linear interpolant along an edge is the affine interpolant of the edge restriction**:
-for two vertices `T b = A + s(B − A)`, `T c = A + t(B − A)` of the element `T` on the side
-`[A, B]`, `Π_h v (A + r(B − A)) = v(T b) + (v(T c) − v(T b)) (r − s)/(t − s)` for `r ∈ [s, t]`
-(`Triangulation.localInterp_lineMap` for the affine barycentric shape functions). -/
-theorem globalInterp_lineMap_side {A B : 𝔼₂} {s t : ℝ} (hst : s < t) (T : 𝒯.elems) (b c : Fin 3)
-    (hb : T.1 b = AffineMap.lineMap A B s) (hc : T.1 c = AffineMap.lineMap A B t) (v : 𝔼₂ → ℝ)
-    {r : ℝ} (hr : r ∈ Icc s t) :
-    𝒯.globalInterp referenceTriangleVertex baryCoord v (AffineMap.lineMap A B r)
-      = v (T.1 b) + (v (T.1 c) - v (T.1 b)) * ((r - s) / (t - s)) := by
-  have hts : t - s ≠ 0 := sub_ne_zero.2 hst.ne'
-  have hpt : AffineMap.lineMap A B r = T.1 b + ((r - s) / (t - s)) • (T.1 c - T.1 b) := by
-    rw [hb, hc]
-    simp only [lineMap_eq]
-    rw [show A + t • (B - A) - (A + s • (B - A)) = (t - s) • (B - A) by module, smul_smul,
-      div_mul_cancel₀ _ hts]
-    module
-  have hmem : AffineMap.lineMap A B r ∈ 𝒯.closedK T := by
-    refine 𝒯.segment_subset_closedK T b c ?_
-    rw [hpt, mem_segment_iff']
-    exact ⟨_, div_nonneg (sub_nonneg.2 hr.1) (sub_nonneg.2 hst.le),
-      div_le_one_of_le₀ (sub_le_sub_right hr.2 s) (sub_nonneg.2 hst.le), rfl⟩
-  rw [𝒯.globalInterp_eq_of_mem_closedK _ _ 𝒯.isConformingElement_linear T v hmem, hpt,
-    𝒯.localInterp_lineMap _ _ baryCoord_lineMap, 𝒯.localInterp_linear_vertex,
-    𝒯.localInterp_linear_vertex]
-  ring
-
-/-- **The `L²` error of the linear interpolant on a boundary edge lying on a side**: for
-`T b = A + s(B − A)`, `T c = A + t(B − A)` and an edge restriction
-`r ↦ ũ (A + r(B − A)) ∈ H²(0, 1)` (represented by `U`),
-`∫_{[T b, T c]} (ũ − Π_h ũ)² ds ≤ ‖B − A‖ (t − s)⁴ ∫_s^t |U''|²`. -/
-theorem integral_sq_sub_globalInterp_edge_le {A B : 𝔼₂} {ũ : 𝔼₂ → ℝ}
-    (hũc : ContinuousOn ũ (closure (Ω : Set 𝔼₂))) (U : SobolevInterval 2 0 1)
-    (hU : SobolevInterval.fn U =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
-      fun r ↦ ũ (AffineMap.lineMap A B r))
-    {s t : ℝ} (hs : 0 ≤ s) (hst : s < t) (ht : t ≤ 1) (T : 𝒯.elems) (b c : Fin 3)
-    (hb : T.1 b = AffineMap.lineMap A B s) (hc : T.1 c = AffineMap.lineMap A B t) :
-    ∫ x, (ũ x - 𝒯.globalInterp referenceTriangleVertex baryCoord ũ x) ^ 2
-        ∂edgeMeasure (T.1 b) (T.1 c)
-      ≤ ‖B - A‖ * (t - s) ^ 4 * ∫ r in s..t, SobolevInterval.deriv U (Fin.last 2) r ^ 2 := by
-  obtain ⟨f, hf, hae, hftc⟩ := SobolevInterval.exists_contDiff_ae_eq zero_lt_one U
-  have hf0 : SobolevInterval.fn U =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] f := by
-    rw [← SobolevInterval.deriv_zero U]
-    simpa using hae 0
-  have hts : t - s ≠ 0 := sub_ne_zero.2 hst.ne'
-  -- the parametrization maps `[s, t]` onto the edge, which lies in `Ω̄`
-  have hseg : ∀ r ∈ Icc s t, AffineMap.lineMap A B r ∈ segment ℝ (T.1 b) (T.1 c) := by
-    intro r hr
-    rw [hb, hc, mem_segment_iff']
-    refine ⟨(r - s) / (t - s), div_nonneg (sub_nonneg.2 hr.1) (sub_nonneg.2 hst.le),
-      div_le_one_of_le₀ (sub_le_sub_right hr.2 s) (sub_nonneg.2 hst.le), ?_⟩
-    simp only [lineMap_eq]
-    rw [show A + t • (B - A) - (A + s • (B - A)) = (t - s) • (B - A) by module, smul_smul,
-      div_mul_cancel₀ _ hts]
-    module
-  have hcl : ∀ r ∈ Icc s t, AffineMap.lineMap A B r ∈ closure (Ω : Set 𝔼₂) := fun r hr ↦
-    𝒯.segment_subset_closure T b c (hseg r hr)
-  have hcont : ContinuousOn (fun r ↦ ũ (AffineMap.lineMap A B r)) (Icc s t) :=
-    hũc.comp (continuous_lineMap A B).continuousOn hcl
-  have hfeq : EqOn f (fun r ↦ ũ (AffineMap.lineMap A B r)) (Icc s t) :=
-    eqOn_Icc_of_ae_eq hst hf.continuous.continuousOn hcont
-      ((hf0.symm.trans hU).filter_mono (ae_mono (Measure.restrict_mono (Ioo_subset_Ioo hs ht)
-        le_rfl)))
-  -- the interpolant along the edge
-  have hG : ∀ r ∈ Icc s t, 𝒯.globalInterp referenceTriangleVertex baryCoord ũ
-      (AffineMap.lineMap A B r) = f s + (f t - f s) * ((r - s) / (t - s)) := by
-    intro r hr
-    rw [globalInterp_lineMap_side 𝒯 hst T b c hb hc ũ hr, hfeq (left_mem_Icc.2 hst.le),
-      hfeq (right_mem_Icc.2 hst.le), hb, hc]
-  -- the arclength integral as an interval integral
-  have hcP : ContinuousOn (fun x ↦ (ũ x - 𝒯.globalInterp referenceTriangleVertex baryCoord ũ x) ^ 2)
-      (segment ℝ (T.1 b) (T.1 c)) :=
-    ((hũc.sub (𝒯.continuousOn_globalInterp referenceTriangleVertex baryCoord
-      𝒯.isConformingElement_linear (fun i ↦ (contDiff_baryCoord i).continuous) ũ)).pow 2).mono
-      (𝒯.segment_subset_closure T b c)
-  rw [hb, hc] at hcP ⊢
-  rw [integral_edgeMeasure_lineMap hst hcP]
-  have hcongr : ∫ r in s..t, (ũ (AffineMap.lineMap A B r)
-      - 𝒯.globalInterp referenceTriangleVertex baryCoord ũ (AffineMap.lineMap A B r)) ^ 2
-      = ∫ r in s..t, (f r - (f s + (f t - f s) * ((r - s) / (t - s)))) ^ 2 := by
-    refine integral_congr fun r hr ↦ ?_
-    rw [uIcc_of_le hst.le] at hr
-    rw [hfeq hr, hG r hr]
-  rw [hcongr, mul_assoc]
-  refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
-  refine integral_sq_sub_affine_le U (by simpa using hf) (fun r hr r' hr' ↦ ?_) hs hst ht
-    (G := fun r ↦ f s + (f t - f s) * ((r - s) / (t - s))) (fun r _ ↦ rfl)
-  have := hftc r hr r' hr'
-  simpa only [iteratedDeriv_one] using this
-
-/-- **The per-edge estimate with the mesh size**: a boundary edge `(T, a)` lying on the side
-`[A, B]` has parameters `0 ≤ s < t ≤ 1` on the side, its open parameter interval maps into its
-open segment, its length is `(t − s) ‖B − A‖`, and
-`∫_e (ũ − Π_h ũ)² ds ≤ h⁴ ‖B − A‖⁻³ ∫_s^t |U''|²` with `h` the mesh size. -/
-theorem exists_param_integral_sq_sub_globalInterp_le {A B : 𝔼₂} (hAB : A ≠ B) {ũ : 𝔼₂ → ℝ}
-    (hũc : ContinuousOn ũ (closure (Ω : Set 𝔼₂))) (U : SobolevInterval 2 0 1)
-    (hU : SobolevInterval.fn U =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
-      fun r ↦ ũ (AffineMap.lineMap A B r))
-    (T : 𝒯.elems) (a : Fin 3) (h : segment ℝ (T.1 a) (T.1 (a + 1)) ⊆ segment ℝ A B) :
-    ∃ s t : ℝ, 0 ≤ s ∧ s < t ∧ t ≤ 1 ∧
-      (∀ r ∈ Ioo s t, AffineMap.lineMap A B r ∈ openSegment ℝ (T.1 a) (T.1 (a + 1))) ∧
-      ‖T.1 (a + 1) - T.1 a‖ = (t - s) * ‖B - A‖ ∧
-      ∫ x, (ũ x - 𝒯.globalInterp referenceTriangleVertex baryCoord ũ x) ^ 2
-          ∂edgeMeasure (T.1 a) (T.1 (a + 1))
-        ≤ 𝒯.meshSize ^ 4 * ‖B - A‖⁻¹ ^ 3
-          * ∫ r in Ioo s t, SobolevInterval.deriv U (Fin.last 2) r ^ 2 := by
-  have hBA : 0 < ‖B - A‖ := norm_pos_iff.2 (sub_ne_zero.2 hAB.symm)
-  obtain ⟨s, t, hs, hst, ht, hor⟩ := exists_param_of_segment_subset 𝒯 T a h
-  refine ⟨s, t, hs, hst, ht, ?_, ?_, ?_⟩
-  · intro r hr
-    rcases hor with ⟨hb, hc⟩ | ⟨hb, hc⟩
-    · rw [hb, hc]
-      exact lineMap_mem_openSegment_of_mem_Ioo hst hr
-    · rw [hb, hc, openSegment_symm]
-      exact lineMap_mem_openSegment_of_mem_Ioo hst hr
-  · rcases hor with ⟨hb, hc⟩ | ⟨hb, hc⟩
-    · rw [hb, hc, norm_lineMap_sub_lineMap A B hst.le]
-    · rw [hb, hc, norm_sub_rev, norm_lineMap_sub_lineMap A B hst.le]
-  · have hlen : (t - s) * ‖B - A‖ ≤ 𝒯.meshSize := by
-      rcases hor with ⟨hb, hc⟩ | ⟨hb, hc⟩
-      · rw [← norm_lineMap_sub_lineMap A B hst.le, ← hb, ← hc]
-        exact norm_vertex_sub_le_meshSize 𝒯 T a (a + 1)
-      · rw [← norm_lineMap_sub_lineMap A B hst.le, ← hb, ← hc]
-        exact norm_vertex_sub_le_meshSize 𝒯 T (a + 1) a
-    have hI : ∫ r in Ioo s t, SobolevInterval.deriv U (Fin.last 2) r ^ 2
-        = ∫ r in s..t, SobolevInterval.deriv U (Fin.last 2) r ^ 2 := by
-      rw [integral_of_le hst.le, integral_Ioc_eq_integral_Ioo]
-    have hI0 : 0 ≤ ∫ r in s..t, SobolevInterval.deriv U (Fin.last 2) r ^ 2 :=
-      integral_nonneg hst.le fun r _ ↦ sq_nonneg _
-    have hcoef : ‖B - A‖ * (t - s) ^ 4 ≤ 𝒯.meshSize ^ 4 * ‖B - A‖⁻¹ ^ 3 := by
-      have h4 : ((t - s) * ‖B - A‖) ^ 4 ≤ 𝒯.meshSize ^ 4 :=
-        pow_le_pow_left₀ (mul_nonneg (sub_nonneg.2 hst.le) hBA.le) hlen 4
-      have e : ‖B - A‖ * (t - s) ^ 4 = ((t - s) * ‖B - A‖) ^ 4 * ‖B - A‖⁻¹ ^ 3 := by
-        field_simp
-      rw [e]
-      exact mul_le_mul_of_nonneg_right h4 (by positivity)
-    rw [hI]
-    rcases hor with ⟨hb, hc⟩ | ⟨hb, hc⟩
-    · exact (integral_sq_sub_globalInterp_edge_le 𝒯 hũc U hU hs hst ht T a (a + 1) hb hc).trans
-        (mul_le_mul_of_nonneg_right hcoef hI0)
-    · rw [edgeMeasure_symm]
-      exact (integral_sq_sub_globalInterp_edge_le 𝒯 hũc U hU hs hst ht T (a + 1) a hc hb).trans
-        (mul_le_mul_of_nonneg_right hcoef hI0)
-
-/-- **The `L²(Γ)` error of the linear interpolant on a polygon**: if every boundary edge of `𝒯`
-lies on one of the sides `[P k, Q k]` and the restriction of `ũ` to each side is in `H²(0, 1)`
-(represented by `Us k`), then
-
-  `∫_Γ (ũ − Π_h ũ)² ds ≤ h⁴ ∑ₖ ‖Q k − P k‖⁻³ |Us k|²_{H²(0,1)}`.
-
-The sum over the boundary edges is grouped by the sides; on one side the parameter intervals of
-the edges are pairwise disjoint (their open segments are, by
-`Triangulation.openSegment_disjoint_of_isBoundaryEdge`), so the panel estimates add up to the
-integral over `(0, 1)`. -/
-theorem integral_sq_sub_globalInterp_boundaryMeasure_le {κ : Type*} [Fintype κ]
-    {P Q : κ → 𝔼₂} (hPQ : ∀ k, P k ≠ Q k)
-    (hside : ∀ (T : 𝒯.elems) (a : Fin 3), 𝒯.IsBoundaryEdge T a →
-      ∃ k, segment ℝ (T.1 a) (T.1 (a + 1)) ⊆ segment ℝ (P k) (Q k))
-    {ũ : 𝔼₂ → ℝ} (hũc : ContinuousOn ũ (closure (Ω : Set 𝔼₂))) (Us : κ → SobolevInterval 2 0 1)
-    (hUs : ∀ k, SobolevInterval.fn (Us k) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
-      fun r ↦ ũ (AffineMap.lineMap (P k) (Q k) r)) :
-    ∫ x, (ũ x - 𝒯.globalInterp referenceTriangleVertex baryCoord ũ x) ^ 2 ∂𝒯.boundaryMeasure
-      ≤ 𝒯.meshSize ^ 4
-        * ∑ k, ‖Q k - P k‖⁻¹ ^ 3 * SobolevInterval.seminorm 2 0 1 (Us k) ^ 2 := by
-  classical
-  choose k hk using hside
-  let ke : 𝒯.boundaryEdges → κ := fun e ↦ k e.1.1 e.1.2 (Triangulation.mem_boundaryEdges.1 e.2)
-  have hedge := fun e : 𝒯.boundaryEdges ↦
-    exists_param_integral_sq_sub_globalInterp_le 𝒯 (hPQ (ke e)) hũc (Us (ke e)) (hUs (ke e))
-      e.1.1 e.1.2 (hk e.1.1 e.1.2 (Triangulation.mem_boundaryEdges.1 e.2))
-  choose s t hs hst ht hopen _ hbound using hedge
-  have hcont2 : ContinuousOn
-      (fun x ↦ (ũ x - 𝒯.globalInterp referenceTriangleVertex baryCoord ũ x) ^ 2)
-      (closure (Ω : Set 𝔼₂)) :=
-    (hũc.sub (𝒯.continuousOn_globalInterp referenceTriangleVertex baryCoord
-      𝒯.isConformingElement_linear (fun i ↦ (contDiff_baryCoord i).continuous) ũ)).pow 2
-  have hint : ∀ e ∈ 𝒯.boundaryEdges, Integrable
-      (fun x ↦ (ũ x - 𝒯.globalInterp referenceTriangleVertex baryCoord ũ x) ^ 2)
-      (edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1))) := fun e he ↦
-    ((𝒯.boundaryData.memLp_of_continuousOn hcont2 1).integrable le_rfl).mono_measure
-      (Triangulation.edgeMeasure_le_boundaryMeasure (Triangulation.mem_boundaryEdges.1 he))
-  rw [Triangulation.boundaryMeasure, integral_finsetSum_measure hint, ← Finset.sum_coe_sort]
-  refine le_trans (Finset.sum_le_sum fun e _ ↦ hbound e) ?_
-  calc ∑ e : 𝒯.boundaryEdges, 𝒯.meshSize ^ 4 * ‖Q (ke e) - P (ke e)‖⁻¹ ^ 3
-          * ∫ r in Ioo (s e) (t e), SobolevInterval.deriv (Us (ke e)) (Fin.last 2) r ^ 2
-      = ∑ j, ∑ e ∈ Finset.univ.filter (fun e ↦ ke e = j), 𝒯.meshSize ^ 4
-          * ‖Q (ke e) - P (ke e)‖⁻¹ ^ 3
-          * ∫ r in Ioo (s e) (t e), SobolevInterval.deriv (Us (ke e)) (Fin.last 2) r ^ 2 :=
-        (Finset.sum_fiberwise _ ke _).symm
-    _ = ∑ j, 𝒯.meshSize ^ 4 * ‖Q j - P j‖⁻¹ ^ 3 * ∑ e ∈ Finset.univ.filter (fun e ↦ ke e = j),
-          ∫ r in Ioo (s e) (t e), SobolevInterval.deriv (Us j) (Fin.last 2) r ^ 2 := by
-        refine Finset.sum_congr rfl fun j _ ↦ ?_
-        rw [Finset.mul_sum]
-        refine Finset.sum_congr rfl fun e he ↦ ?_
-        rw [(Finset.mem_filter.1 he).2]
-    _ ≤ ∑ j, 𝒯.meshSize ^ 4 * ‖Q j - P j‖⁻¹ ^ 3
-          * ∫ r in Ioo (0 : ℝ) 1, SobolevInterval.deriv (Us j) (Fin.last 2) r ^ 2 := by
-        refine Finset.sum_le_sum fun j _ ↦ mul_le_mul_of_nonneg_left ?_ (by positivity)
-        refine sum_setIntegral_le_of_pairwiseDisjoint _ (fun e _ ↦ measurableSet_Ioo)
-          (fun e _ ↦ Ioo_subset_Ioo (hs e) (ht e)) ?_
-          ((memLp_two_iff_integrable_sq (Lp.aestronglyMeasurable _)).1 (Lp.memLp _))
-          (fun x ↦ sq_nonneg _)
-        intro e he e' he' hne
-        rw [Finset.mem_coe, Finset.mem_filter] at he he'
-        refine Set.disjoint_left.2 fun r hr hr' ↦ ?_
-        have h1 := hopen e r hr
-        have h2 := hopen e' r hr'
-        rw [he.2] at h1
-        rw [he'.2] at h2
-        exact Set.disjoint_left.1 (Triangulation.openSegment_disjoint_of_isBoundaryEdge
-          (Triangulation.mem_boundaryEdges.1 e.2) (Triangulation.mem_boundaryEdges.1 e'.2)
-          fun h ↦ hne (Subtype.ext h)) h1 h2
-    _ = 𝒯.meshSize ^ 4
-          * ∑ j, ‖Q j - P j‖⁻¹ ^ 3 * SobolevInterval.seminorm 2 0 1 (Us j) ^ 2 := by
-        rw [Finset.mul_sum]
-        refine Finset.sum_congr rfl fun j _ ↦ ?_
-        rw [SobolevInterval.seminorm_sq_eq_integral zero_le_one, integral_of_le zero_le_one,
-          integral_Ioc_eq_integral_Ioo]
-        ring
-
-/-- **The `L²(Γ)` error of the linear interpolant, as the norm of a trace**: for `w ∈ H¹(Ω)` whose
-function is `Π_h ũ − ũ`,
-`‖γ w‖_{L²(Γ)} ≤ h² √(∑ₖ ‖Q k − P k‖⁻³ |u|²_{H²(Γₖ)})`. -/
-theorem norm_traceL_sub_globalInterp_le (hI : 𝒯.InteriorEdgesSubset) {κ : Type*} [Fintype κ]
-    {P Q : κ → 𝔼₂} (hPQ : ∀ k, P k ≠ Q k)
-    (hside : ∀ (T : 𝒯.elems) (a : Fin 3), 𝒯.IsBoundaryEdge T a →
-      ∃ k, segment ℝ (T.1 a) (T.1 (a + 1)) ⊆ segment ℝ (P k) (Q k))
-    {ũ : 𝔼₂ → ℝ} (hũc : ContinuousOn ũ (closure (Ω : Set 𝔼₂))) (Us : κ → SobolevInterval 2 0 1)
-    (hUs : ∀ k, SobolevInterval.fn (Us k) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
-      fun r ↦ ũ (AffineMap.lineMap (P k) (Q k) r))
-    {w : SobolevEuclidean 2 1 2 Ω}
-    (hw : fn w =ᵐ[volume.restrict (Ω : Set 𝔼₂)]
-      𝒯.globalInterp referenceTriangleVertex baryCoord ũ - ũ) :
-    ‖(𝒯.traceFamily hI).traceL 2 ENNReal.ofNat_ne_top w‖
-      ≤ 𝒯.meshSize ^ 2
-        * Real.sqrt (∑ k, ‖Q k - P k‖⁻¹ ^ 3 * SobolevInterval.seminorm 2 0 1 (Us k) ^ 2) := by
-  have hcont := 𝒯.continuousOn_globalInterp referenceTriangleVertex baryCoord
-    𝒯.isConformingElement_linear (fun j ↦ (contDiff_baryCoord j).continuous) ũ
-  have hγ := (𝒯.traceFamily hI).traceL_ae_eq 2 ENNReal.ofNat_ne_top w
-    (𝒯.globalInterp referenceTriangleVertex baryCoord ũ - ũ) hw (hcont.sub hũc)
-  have hkey := integral_sq_sub_globalInterp_boundaryMeasure_le 𝒯 hPQ hside hũc Us hUs
-  have hsq : ‖(𝒯.traceFamily hI).traceL 2 ENNReal.ofNat_ne_top w‖ ^ 2
-      ≤ 𝒯.meshSize ^ 4
-        * ∑ k, ‖Q k - P k‖⁻¹ ^ 3 * SobolevInterval.seminorm 2 0 1 (Us k) ^ 2 := by
-    rw [norm_sq_eq_integral_sq]
-    refine le_trans (le_of_eq ?_) hkey
-    refine integral_congr_ae ?_
-    filter_upwards [hγ] with x hx
-    rw [hx, Pi.sub_apply]
-    ring
-  have hS0 : 0 ≤ ∑ k, ‖Q k - P k‖⁻¹ ^ 3 * SobolevInterval.seminorm 2 0 1 (Us k) ^ 2 :=
-    Finset.sum_nonneg fun k _ ↦ by positivity
-  calc ‖(𝒯.traceFamily hI).traceL 2 ENNReal.ofNat_ne_top w‖
-      = Real.sqrt (‖(𝒯.traceFamily hI).traceL 2 ENNReal.ofNat_ne_top w‖ ^ 2) :=
-        (Real.sqrt_sq (norm_nonneg _)).symm
-    _ ≤ Real.sqrt (𝒯.meshSize ^ 4
-          * ∑ k, ‖Q k - P k‖⁻¹ ^ 3 * SobolevInterval.seminorm 2 0 1 (Us k) ^ 2) :=
-        Real.sqrt_le_sqrt hsq
-    _ = _ := by
-        rw [Real.sqrt_mul (by positivity),
-          show 𝒯.meshSize ^ 4 = (𝒯.meshSize ^ 2) ^ 2 by ring, Real.sqrt_sq (by positivity)]
-
-end EdgeInterpolation
-
 
 /-! #### The error estimate -/
 
@@ -1837,7 +1218,7 @@ since `V_h ⊆ V`), the residual integrated by parts
 `‖u − Π_h u‖_{m,Ω} ≤ c h^{2−m} |u|_{2,Ω}` at `m = 0, 1` (`Chapter10.theorem_10_3_9_linear`), and
 on the boundary `γ(u − Π_h u) = ũ − Π_h ũ` with
 `‖ũ − Π_h ũ‖_{L²(Γ)} ≤ h² √(∑ₖ ‖Q k − P k‖⁻³ |u|²_{H²(Γₖ)})`
-(`norm_traceL_sub_globalInterp_le`, the edge bookkeeping). -/
+(`Triangulation.norm_traceL_sub_globalInterp_le`, the edge bookkeeping). -/
 theorem example_11_4_4 {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 : ι → Triangulation Ω}
     (hreg : Chapter10.IsRegularFamily l fun i ↦ Set.range (𝒯 i).K) {H : ℝ}
     (hH : ∀ i, (𝒯 i).meshSize ≤ H) (hIe : ∀ i, (𝒯 i).InteriorEdgesSubset)
@@ -1929,7 +1310,7 @@ theorem example_11_4_4 {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 :
   -- the residual at `v_h = Π_h ũ`
   have hres := abs_residual_le ((𝒯 i).traceFamily (hIe i)) hg.le hU f vh
   -- the boundary error
-  have hT := norm_traceL_sub_globalInterp_le (𝒯 i) (hIe i) hPQ (hside i) hũc Us hUs hvhsub
+  have hT := (𝒯 i).norm_traceL_sub_globalInterp_le (hIe i) hPQ (hside i) hũc Us hUs hvhsub
   rw [← hS] at hT
   -- the `L²(Ω)` error
   have hL2 : ‖weakDeriv (vh - u) 0‖ ≤ c₀' * (𝒯 i).meshSize ^ 2 * Su := by

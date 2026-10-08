@@ -5,6 +5,12 @@ id = "BoundaryData.HasTransversalField"
 id = "BoundaryData.memLp_of_continuousOn"
 
 [[node]]
+id = "BoundaryData.exists_bump_lt_integral_mul"
+
+[[node]]
+id = "BoundaryData.eqOn_zero_frontier_of_forall_integral_mul_eq_zero"
+
+[[node]]
 id = "BoundaryData.integral_rpowReg_le"
 
 [[node]]

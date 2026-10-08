@@ -67,7 +67,7 @@ For `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` (surface measure `σ = B.σ` o
   density of smooth functions (`IsContDiffDomain.hasSmoothDensity`), the continuity of the
   outward normal (`IsContDiffDomain.continuousOn_outwardNormal`) and the positivity of the surface
   measure on open sets meeting `Γ` (`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), through
-  bump tests on the boundary (`exists_bump_lt_integral_mul`).
+  bump tests on the boundary (`BoundaryData.exists_bump_lt_integral_mul`).
 
 ## Deviations from the book
 
@@ -740,73 +740,7 @@ theorem example_11_1_2 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω
     SesqForm.inner_rieszRep, SesqForm.inner_toOperator]
   exact forall_congr' fun v ↦ (friction_ineq_iff B 𝒯 g f u v).symm
 
-/-! ### Tools for the pointwise form: bump tests on the boundary -/
-
-/-- A function continuous on `∂Ω` is bounded and measurable for the surface measure of a
-`BoundaryData`. Helper; belongs beside `BoundaryData.memLp_of_continuousOn` in
-`Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
-theorem memLp_top_of_continuousOn_frontier {h : 𝔼 → ℝ}
-    (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) : MemLp h ⊤ B.σ := by
-  have hm : AEStronglyMeasurable h B.σ := by
-    rw [← Measure.restrict_eq_self_of_ae_mem B.ae_mem_frontier]
-    exact hc.aestronglyMeasurable isClosed_frontier.measurableSet
-  have hK : IsCompact (frontier (Ω : Set 𝔼)) :=
-    B.isBounded.isCompact_closure.of_isClosed_subset isClosed_frontier frontier_subset_closure
-  obtain ⟨C, hC⟩ := hK.exists_bound_of_continuousOn hc
-  exact MemLp.of_bound hm C (B.ae_mem_frontier.mono fun x hx ↦ hC x hx)
-
-/-- **A bump test against a function continuous on the boundary**: for a `BoundaryData` whose
-surface measure charges every open set meeting `∂Ω` (a bounded `C¹` domain,
-`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), a function `h` continuous on `∂Ω` and a
-boundary point `x₀` with `h x₀ > c`, some smooth compactly supported bump `ψ` with `0 ≤ ψ ≤ 1`
-satisfies `c ∫ ψ dσ < ∫ h ψ dσ`: a `ContDiffBump` supported in a ball around `x₀` on which
-`h > (c + h x₀)/2`, whose integral is positive because the smaller ball has positive measure.
-Helper; belongs in `Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
-theorem exists_bump_lt_integral_mul
-    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
-    {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) {x₀ : 𝔼}
-    (hx₀ : x₀ ∈ frontier (Ω : Set 𝔼)) {c : ℝ} (hlt : c < h x₀) :
-    ∃ ψ : 𝔼 → ℝ, ContDiff ℝ ∞ ψ ∧ HasCompactSupport ψ ∧ (∀ x, 0 ≤ ψ x) ∧ (∀ x, ψ x ≤ 1) ∧
-      c * ∫ x, ψ x ∂B.σ < ∫ x, h x * ψ x ∂B.σ := by
-  obtain ⟨m, hm⟩ : ∃ m : ℝ, m = (c + h x₀) / 2 := ⟨_, rfl⟩
-  have hcm : c < m := by rw [hm]; linarith
-  have hmx : m < h x₀ := by rw [hm]; linarith
-  -- a ball on which `h > m`, relative to `∂Ω`
-  have hev : ∀ᶠ x in 𝓝[frontier (Ω : Set 𝔼)] x₀, m < h x :=
-    (hc x₀ hx₀).eventually (lt_mem_nhds hmx)
-  obtain ⟨r, hr, hball⟩ := Metric.mem_nhdsWithin_iff.1 hev
-  -- the bump
-  let ψ : ContDiffBump x₀ := ⟨r / 2, r, by positivity, by linarith⟩
-  refine ⟨ψ, ψ.contDiff, ψ.hasCompactSupport, fun x ↦ ψ.nonneg, fun x ↦ ψ.le_one, ?_⟩
-  have hψc : Continuous ψ := ψ.continuous
-  have hIψ : Integrable (fun x ↦ ψ x) B.σ := B.integrable_of_continuous hψc
-  have hIhψ : Integrable (fun x ↦ h x * ψ x) B.σ :=
-    (memLp_top_of_continuousOn_frontier B hc).integrable_mul (B.memLp_of_continuous hψc 1)
-  -- `∫ ψ dσ > 0`
-  have hpsi : 0 < ∫ x, ψ x ∂B.σ := by
-    have h1 : B.σ.real (ball x₀ (r / 2)) ≤ ∫ x, ψ x ∂B.σ := by
-      rw [← integral_indicator_one measurableSet_ball]
-      refine integral_mono ((integrable_const (1 : ℝ)).indicator measurableSet_ball) hIψ
-        fun x ↦ ?_
-      by_cases hx : x ∈ ball x₀ (r / 2)
-      · rw [indicator_of_mem hx]
-        exact (ψ.one_of_mem_closedBall (ball_subset_closedBall hx)).ge
-      · rw [indicator_of_notMem hx]
-        exact ψ.nonneg
-    refine lt_of_lt_of_le ?_ h1
-    rw [measureReal_def]
-    exact ENNReal.toReal_pos (hpos _ isOpen_ball ⟨x₀, mem_ball_self (by positivity), hx₀⟩).ne'
-      (measure_ne_top _ _)
-  -- `∫ h ψ ≥ m ∫ ψ`
-  have hle : m * ∫ x, ψ x ∂B.σ ≤ ∫ x, h x * ψ x ∂B.σ := by
-    rw [← integral_const_mul]
-    refine integral_mono_ae (hIψ.const_mul m) hIhψ ?_
-    filter_upwards [B.ae_mem_frontier] with x hx
-    by_cases hxb : x ∈ ball x₀ r
-    · exact mul_le_mul_of_nonneg_right (hball ⟨hxb, hx⟩).le ψ.nonneg
-    · rw [ψ.zero_of_le_dist (not_lt.1 fun h' ↦ hxb (mem_ball.2 h')), mul_zero, mul_zero]
-  calc c * ∫ x, ψ x ∂B.σ < m * ∫ x, ψ x ∂B.σ := mul_lt_mul_of_pos_right hcm hpsi
-    _ ≤ _ := hle
+/-! ### Tools for the pointwise form -/
 
 /-- The inner product of two gradients is the sum of the products of the partial derivatives,
 `∇u · ∇v = ∑ᵢ ∂ᵢu ∂ᵢv`. Helper; belongs beside `EuclideanSpace.gradient_apply` in
@@ -935,7 +869,7 @@ theorem abs_integral_mul_le_of_forall_le {g : ℝ} (hg : 0 ≤ g) {h : 𝔼 → 
 
 /-- **`|h| ≤ g` on `Γ` from the friction inequality**, for `h` continuous on `Γ` and a surface
 measure charging every open set meeting `Γ`: where `|h x₀| > g` a bump test
-(`exists_bump_lt_integral_mul`) contradicts `abs_integral_mul_le_of_forall_le`. -/
+(`BoundaryData.exists_bump_lt_integral_mul`) contradicts `abs_integral_mul_le_of_forall_le`. -/
 theorem abs_le_of_forall_le
     (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
     {g : ℝ} (hg : 0 ≤ g) {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
@@ -949,7 +883,7 @@ theorem abs_le_of_forall_le
   constructor
   · by_contra hlt
     push Not at hlt
-    obtain ⟨ψ, hψ, hψc, hψ0, -, hψi⟩ := exists_bump_lt_integral_mul B hpos hc.neg hx₀ (c := g)
+    obtain ⟨ψ, hψ, hψc, hψ0, -, hψi⟩ := B.exists_bump_lt_integral_mul hpos hc.neg hx₀ (c := g)
       (by simp only [Pi.neg_apply]; linarith)
     have := abs_integral_mul_le_of_forall_le B 𝒯 hg hvi hψ hψc hψ0
     simp only [Pi.neg_apply, neg_mul, integral_neg] at hψi
@@ -957,7 +891,7 @@ theorem abs_le_of_forall_le
     linarith [this.1]
   · by_contra hlt
     push Not at hlt
-    obtain ⟨ψ, hψ, hψc, hψ0, -, hψi⟩ := exists_bump_lt_integral_mul B hpos hc hx₀ (c := g) hlt
+    obtain ⟨ψ, hψ, hψc, hψ0, -, hψi⟩ := B.exists_bump_lt_integral_mul hpos hc hx₀ (c := g) hlt
     have := abs_integral_mul_le_of_forall_le B 𝒯 hg hvi hψ hψc hψ0
     rw [abs_le] at this
     linarith [this.2]
@@ -977,7 +911,7 @@ theorem mul_add_abs_eq_zero_of_forall_le
       0 ≤ (∫ x, h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top (v - u) : 𝔼 → ℝ) x ∂B.σ)
         + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u) :
     ∀ x ∈ frontier (Ω : Set 𝔼), h x * ũ x + g * |ũ x| = 0 := by
-  have hh : MemLp h 2 B.σ := (memLp_top_of_continuousOn_frontier B hc).mono_exponent le_top
+  have hh : MemLp h 2 B.σ := (B.memLp_top_of_continuousOn_frontier hc).mono_exponent le_top
   -- the integral of `h ũ + g |ũ|` vanishes: test with `v = 0` and `v = 2u`
   have hzero : ∫ x, (h x * ũ x + g * |ũ x|) ∂B.σ = 0 := by
     have h0 := hvi 0
@@ -1026,12 +960,12 @@ theorem mul_add_abs_eq_zero_of_forall_le
   intro x₀ hx₀
   by_contra hne
   have hgt : 0 < h x₀ * ũ x₀ + g * |ũ x₀| := lt_of_le_of_ne (hk0 x₀ hx₀) (Ne.symm hne)
-  obtain ⟨ψ, hψ, -, -, hψ1, hψi⟩ := exists_bump_lt_integral_mul B hpos hk hx₀ (c := 0) hgt
+  obtain ⟨ψ, hψ, -, -, hψ1, hψi⟩ := B.exists_bump_lt_integral_mul hpos hk hx₀ (c := 0) hgt
   rw [zero_mul] at hψi
   have hIk : Integrable (fun x ↦ h x * ũ x + g * |ũ x|) B.σ :=
-    (memLp_top_of_continuousOn_frontier B hk).integrable le_top
+    (B.memLp_top_of_continuousOn_frontier hk).integrable le_top
   have hIkψ : Integrable (fun x ↦ (h x * ũ x + g * |ũ x|) * ψ x) B.σ :=
-    (memLp_top_of_continuousOn_frontier B hk).integrable_mul
+    (B.memLp_top_of_continuousOn_frontier hk).integrable_mul
       (B.memLp_of_continuous hψ.continuous 1)
   have hmono : ∫ x, (h x * ũ x + g * |ũ x|) * ψ x ∂B.σ
       ≤ ∫ x, (h x * ũ x + g * |ũ x|) ∂B.σ := by
@@ -1073,7 +1007,7 @@ theorem laplaceForm_sub_load_eq_integral (hΩ : IsContDiffDomain 1 (Ω : Set �
   have hc : ContinuousOn (fun x ↦ G x (hΩ.outwardNormal hb x)) (frontier (Ω : Set 𝔼)) :=
     (hG.mono frontier_subset_closure).clm_apply (hΩ.continuousOn_outwardNormal hb)
   have hhL : MemLp (fun x ↦ G x (hΩ.outwardNormal hb x)) 2 (hΩ.boundaryData hb).σ :=
-    (memLp_top_of_continuousOn_frontier (hΩ.boundaryData hb) hc).mono_exponent le_top
+    ((hΩ.boundaryData hb).memLp_top_of_continuousOn_frontier hc).mono_exponent le_top
   have hfL : ∀ W : SobolevEuclidean (d + 1) 1 2 Ω, Elliptic.load Ω f W
       = ∫ x in (Ω : Set 𝔼), (-Δ ũ x + ũ x) * SobolevMultiIndex.fn W x := fun W ↦ by
     rw [Elliptic.load_apply]

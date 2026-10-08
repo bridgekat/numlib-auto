@@ -11,6 +11,10 @@ relates, rather than by a pointwise inequality:
 * if a ball of radius `r` sits inside `S` and the affine map `x ↦ T x + b` sends `S` into a bounded
   set `D`, then `‖T‖ ≤ diam D / (2 r)`.
 
+It also records the operator norm as the supremum of the ratios `‖T v‖ / ‖v‖` over `v ≠ 0`
+(`ContinuousLinearMap.iSup_norm_apply_div_eq_opNorm`) and, for a real functional, of the signed
+ratios `f v / ‖v‖` (`ContinuousLinearMap.iSup_apply_div_eq_opNorm`).
+
 The second is the estimate behind the reference element technique of the finite element method: for
 an affine map `F x̂ = T x̂ + b` of a reference element `K̂` onto an element `K`, it reads
 `‖T‖ ≤ h_K / ρ̂` with `h_K` the diameter of `K` and `ρ̂` the diameter of a ball inscribed in `K̂`
@@ -83,5 +87,53 @@ theorem opNorm_le_diam_div (T : E →L[ℝ] F) {S : Set E} {D : Set F} {c : E} {
     linarith
   have := T.opNorm_le_div_of_norm_le hr (by positivity) key
   rwa [div_div] at this
+
+/-! ### The operator norm as a supremum of ratios -/
+
+section Supremum
+
+variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+  [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+
+/-- The ratios `‖f v‖ / ‖v‖` are bounded above by `‖f‖`. -/
+theorem norm_apply_div_le_opNorm (f : E →L[𝕜] F) (v : {v : E // v ≠ 0}) :
+    ‖f v‖ / ‖(v : E)‖ ≤ ‖f‖ :=
+  (div_le_iff₀ (norm_pos_iff.mpr v.2)).mpr (f.le_opNorm _)
+
+/-- **The operator norm is the supremum of the ratios**: `sup_{v ≠ 0} ‖f v‖ / ‖v‖ = ‖f‖`. -/
+theorem iSup_norm_apply_div_eq_opNorm (f : E →L[𝕜] F) :
+    (⨆ v : {v : E // v ≠ 0}, ‖f v‖ / ‖(v : E)‖) = ‖f‖ := by
+  refine le_antisymm (Real.iSup_le f.norm_apply_div_le_opNorm (norm_nonneg _)) ?_
+  refine f.opNorm_le_bound (Real.iSup_nonneg fun v => by positivity) fun v => ?_
+  rcases eq_or_ne v 0 with rfl | hv
+  · simp
+  · rw [← div_le_iff₀ (norm_pos_iff.mpr hv)]
+    exact le_ciSup (f := fun v : {v : E // v ≠ 0} => ‖f v‖ / ‖(v : E)‖)
+      ⟨‖f‖, Set.forall_mem_range.2 f.norm_apply_div_le_opNorm⟩ ⟨v, hv⟩
+
+/-- **The norm of a real functional is the supremum of the signed ratios**:
+`sup_{v ≠ 0} f(v) / ‖v‖ = ‖f‖`, with no absolute value, because `v ↦ -v` is a bijection of the
+nonzero vectors ([han2009theoretical] (8.7.2) writes the inf–sup condition this way). -/
+theorem iSup_apply_div_eq_opNorm {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+    (f : X →L[ℝ] ℝ) : (⨆ v : {v : X // v ≠ 0}, f v / ‖(v : X)‖) = ‖f‖ := by
+  have hle : ∀ v : {v : X // v ≠ 0}, f v / ‖(v : X)‖ ≤ ‖f‖ := fun v =>
+    (div_le_div_of_nonneg_right (le_abs_self _) (norm_nonneg _)).trans
+      (by rw [← Real.norm_eq_abs]; exact f.norm_apply_div_le_opNorm v)
+  have hbdd : BddAbove (Set.range fun v : {v : X // v ≠ 0} => f v / ‖(v : X)‖) :=
+    ⟨‖f‖, Set.forall_mem_range.2 hle⟩
+  refine le_antisymm (Real.iSup_le hle (norm_nonneg _)) ?_
+  rw [← f.iSup_norm_apply_div_eq_opNorm]
+  rcases isEmpty_or_nonempty {v : X // v ≠ 0} with hX | hX
+  · simp only [Real.iSup_of_isEmpty, le_refl]
+  refine ciSup_le fun v => ?_
+  rcases abs_choice (f (v : X)) with h | h
+  · rw [Real.norm_eq_abs, h]
+    exact le_ciSup hbdd v
+  · have := le_ciSup hbdd (⟨-(v : X), neg_ne_zero.mpr v.2⟩ : {w : X // w ≠ 0})
+    rw [show ((⟨-(v : X), neg_ne_zero.mpr v.2⟩ : {w : X // w ≠ 0}) : X) = -(v : X) from rfl,
+      map_neg, norm_neg] at this
+    rwa [Real.norm_eq_abs, h]
+
+end Supremum
 
 end ContinuousLinearMap

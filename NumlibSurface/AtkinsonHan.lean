@@ -253,8 +253,8 @@ from §3.3, which needed it first for Example 3.3.5, and §11.3 takes strong mon
   `a(u, v)/‖v‖` *without* absolute values, and prints (8.7.3) as `sup_u a(u, v) > 0`. Read
   literally the latter says nothing, since the supremum of a nonzero linear functional is `+∞`;
   it is formalized as `∃ u, 0 < a(u, v)`. Both printed forms are then proved equivalent to the
-  backbone's, by `iSup_div_eq_opNorm` (a sign-symmetry argument, `v ↦ -v`) and by
-  `BilinForm₂.exists_pos_iff_exists_ne_zero`.
+  backbone's, by `ContinuousLinearMap.iSup_apply_div_eq_opNorm` (a sign-symmetry argument,
+  `v ↦ -v`) and by `BilinForm₂.exists_pos_iff_exists_ne_zero`.
 * **§9.2, Remark 9.2.2.** The Xu–Zikatanov bound `‖u − u_N‖ ≤ (M/α_N) inf_{w_N} ‖u − w_N‖` needs
   `U_N ≠ {0}`, which the remark does not say. On the trivial trial space the Petrov–Galerkin
   projector is `0`, every other hypothesis holds vacuously, and the bound fails; the sharpening is

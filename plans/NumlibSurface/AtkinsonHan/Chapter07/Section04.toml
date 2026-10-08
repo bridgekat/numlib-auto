@@ -1,18 +1,6 @@
 namespace = "AtkinsonHan.Chapter07"
 
 [[node]]
-id = "memSobolev_two_iff_memLp_symbol_mul_fourier"
-
-[[node]]
-id = "fourier_aeEq_symbol_mul_fourier_of_besselPotential_eq"
-
-[[node]]
-id = "memSobolev_iteratedLineDerivOp"
-
-[[node]]
-id = "memLp_iteratedLineDerivOp"
-
-[[node]]
 id = "equation_7_4_2"
 
 [[node]]

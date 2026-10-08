@@ -1,0 +1,9 @@
+[[node]]
+id = "MeasureTheory.Lp.ae_abs_le_of_norm_le"
+
+[[node]]
+id = "exists_multiplier_of_forall_abs_le"
+
+[[node]]
+id = "forall_le_add_integral_abs_iff_exists_multiplier"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 11.4.5"

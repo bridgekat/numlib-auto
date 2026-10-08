@@ -1,0 +1,36 @@
+[[node]]
+id = "MeasureTheory.Lp.ae_eq_symbol_mul_of_smulLeftCLM_eq"
+
+[[node]]
+id = "TemperedDistribution.memSobolev_two_iff_memLp_symbol_mul_fourier"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (7.4.2)"
+
+[[node]]
+id = "TemperedDistribution.norm_eq_eLpNorm_symbol_mul_fourier_of_besselPotential_eq"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (7.4.2), the norm"
+
+[[node]]
+id = "TemperedDistribution.MemSobolev.exists_iteratedLineDerivOp_eq"
+
+[[node]]
+id = "OrthonormalBasis.coordMonomial"
+
+[[node]]
+id = "OrthonormalBasis.sumSqCoordMonomial"
+
+[[node]]
+id = "OrthonormalBasis.pow_one_add_norm_sq_le"
+
+[[node]]
+id = "OrthonormalBasis.exists_bounds_rpow_one_add_norm_sq"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Exercise 7.4.2"
+
+[[node]]
+id = "OrthonormalBasis.sobolevSymbol"
+
+[[node]]
+id = "OrthonormalBasis.sq_eLpNorm_sum_eq_lintegral"
+
+[[node]]
+id = "OrthonormalBasis.exists_norm_equiv_eLpNorm_symbol_mul_fourier"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (7.4.1)"

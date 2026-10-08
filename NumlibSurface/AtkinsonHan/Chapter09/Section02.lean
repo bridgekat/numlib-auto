@@ -14,9 +14,10 @@ The Petrov–Galerkin problem (9.2.5), the discrete inf–sup constant (9.2.6), 
 convergence corollary 9.2.3 (with (9.2.11)–(9.2.12)) and the uniform inf–sup condition
 (9.2.13)–(9.2.14).
 
-The book's supremum in (9.2.6) is taken without absolute values; `iSup_div_eq_opNorm`
-(§8.7) identifies it with the norm of the functional `a(u_N, ·)` restricted to `V_N`, which is the
-backbone's `IsPetrovGalerkinSolution.DiscreteInfSup`.
+The book's supremum in (9.2.6) is taken without absolute values; the backbone's
+`ContinuousLinearMap.iSup_apply_div_eq_opNorm` (as in §8.7) identifies it with the norm of the
+functional `a(u_N, ·)` restricted to `V_N`, which is the backbone's
+`IsPetrovGalerkinSolution.DiscreteInfSup`.
 
 Remark 9.2.2 — the Xu–Zikatanov sharpening `‖u − u_N‖ ≤ (M/α_N) inf_{w_N} ‖u − w_N‖` — is
 `remark_9_2_2`, a specialization of the backbone's
@@ -86,7 +87,7 @@ theorem petrovGalerkinProblem_iff (hM : a.IsBoundedWith M) :
 theorem iSup_div_eq_norm_comp (hM : a.IsBoundedWith M) (w : U) (VN : Submodule ℝ V) :
     (⨆ vN : {v : VN // v ≠ 0}, a w ((vN : VN) : V) / ‖((vN : VN) : V)‖)
       = ‖(a.toCLM hM w).comp VN.subtypeL‖ :=
-  iSup_div_eq_opNorm ((a.toCLM hM w).comp VN.subtypeL)
+  ((a.toCLM hM w).comp VN.subtypeL).iSup_apply_div_eq_opNorm
 
 /-- (9.2.6) is the backbone's discrete inf–sup condition. -/
 theorem discreteInfSup_iff (hM : a.IsBoundedWith M) :
