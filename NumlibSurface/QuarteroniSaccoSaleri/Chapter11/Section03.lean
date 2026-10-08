@@ -21,10 +21,11 @@ increment function; the local truncation error `τ_{n+1}(h)` defined by (11.12) 
 the regions of the four elementary methods ((11.27), the backward Euler, Crank–Nicolson and Heun
 regions), Examples 11.1–11.2, A-stability, and Remark 11.2 for the explicit Runge–Kutta methods.
 
-Everything is the scalar case `E = ℝ` of `Numlib/ODE/OneStep` and `Numlib/ODE/Gronwall` — the
-test equation on `E = ℂ` — with `Numlib/ODE/RungeKutta` for Remark 11.2. The book's `C²`
-solutions are bridged to the explicit-derivative hypotheses of the backbone by
-`hasDerivWithinAt_derivWithin_of_contDiffOn_two` of `Numlib/Analysis/Calculus/ContDiffOnIcc`.
+Everything is the scalar case `E = ℝ` of `Numlib/ODE/OneStep` and
+`Numlib/Analysis/ODE/DiscreteGronwall` — the test equation on `E = ℂ` — with
+`Numlib/ODE/RungeKutta` for Remark 11.2. The book's `C²` solutions are bridged to the
+explicit-derivative hypotheses of the backbone by `hasDerivWithinAt_derivWithin_of_contDiffOn_two`
+of `Numlib/Analysis/Calculus/ContDiffOnIcc`.
 
 ## Main definitions
 

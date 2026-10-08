@@ -1,9 +1,11 @@
 import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.LinearAlgebra.Lagrange
+import Numlib.Analysis.Asymptotics.Pow
 import Numlib.Analysis.Calculus.Taylor
-import Numlib.ODE.DifferenceEquation
-import Numlib.ODE.RungeKutta
+import Numlib.Analysis.LinearRecurrence
+import Numlib.Data.Fin.Sum
+import Numlib.ODE.OneStep
 import Numlib.RingTheory.Polynomial.SchurCohn
 
 /-!
@@ -41,13 +43,14 @@ of the `m`-th order condition; the error constant of a method of order `q` is
 `errorConstant q = C_{q+1}/(q+1)!` (the values of the book's Table 11.1). The Taylor bound itself
 is `norm_sub_sum_smul_le` of `Numlib/Analysis/Calculus/Taylor`, stated for explicit derivative
 functions with `HasDerivWithinAt` on a closed interval. The necessity
-halves test the monomials `t ↦ t^i` (`opL_pow`, `lte_pow_node`).
+halves test the monomials `t ↦ t^i` (`opL_pow`, `lte_pow_node`) and read the coefficients off the
+`O(h^q)` truncation error with `eq_zero_of_isBigO_pow_succ` (`Numlib/Analysis/Asymptotics/Pow`).
 
 **Characteristic polynomials and root conditions.** `rho = X^{p+1} - ∑ a_j X^{p-j}`,
 `sigma = b_{-1} X^{p+1} + ∑ b_j X^{p-j}` in `ℝ[X]`, `charPoly z = ρ - zσ` in `ℂ[X]` (11.55). The
 root conditions are those of `Polynomial.SatisfiesRootCondition` and
-`Polynomial.SatisfiesStrongRootCondition` (`Numlib/ODE/DifferenceEquation`) applied to `ρ` read in
-`ℂ[X]`.
+`Polynomial.SatisfiesStrongRootCondition` (`Numlib/Analysis/LinearRecurrence`) applied to `ρ`
+read in `ℂ[X]`.
 
 **Zero-stability** (`IsZeroStable`, Definition 11.13) and **Theorem 11.4**: the root condition is
 equivalent to zero-stability for every field Lipschitz in the state. Sufficiency is the estimate
@@ -548,42 +551,6 @@ section Consistency
 
 variable {t₀ T h : ℝ}
 
-/-- The uniform first-order Taylor bound on a compact interval: if `y' = y'` is continuous on
-`Icc a b`, then for every `ε > 0` there is `η > 0` such that
-`‖y (t + s) - y t - s • y' t‖ ≤ ε |s|` whenever `t, t + s ∈ Icc a b` and `|s| ≤ η`. -/
-theorem exists_forall_norm_sub_sub_smul_le {a b : ℝ} {y y' : ℝ → E}
-    (hy : ∀ s ∈ Icc a b, HasDerivAt y (y' s) s) (hy' : ContinuousOn y' (Icc a b)) {ε : ℝ}
-    (hε : 0 < ε) :
-    ∃ η > 0, ∀ t ∈ Icc a b, ∀ s : ℝ, t + s ∈ Icc a b → |s| ≤ η →
-      ‖y (t + s) - y t - s • y' t‖ ≤ ε * |s| := by
-  obtain ⟨η, hη, hunif⟩ := Metric.uniformContinuousOn_iff.1
-    (isCompact_Icc.uniformContinuousOn_of_continuous hy') ε hε
-  refine ⟨η / 2, half_pos hη, fun t ht s hts hs => ?_⟩
-  have hsub : uIcc t (t + s) ⊆ Icc a b := uIcc_subset_Icc ht hts
-  have hg : ∀ u ∈ uIcc t (t + s), HasDerivWithinAt (fun u => y u - u • y' t) (y' u - y' t)
-      (uIcc t (t + s)) u := fun u hu =>
-    ((hy u (hsub hu)).sub (((hasDerivAt_id' u).smul_const (y' t)).congr_deriv
-      (one_smul ℝ _))).hasDerivWithinAt
-  have hbound : ∀ u ∈ uIcc t (t + s), ‖y' u - y' t‖ ≤ ε := fun u hu => by
-    have hdist : dist u t < η := by
-      rw [Real.dist_eq]
-      rcases le_total 0 s with hs0 | hs0
-      · rw [abs_of_nonneg hs0] at hs
-        rw [uIcc_of_le (by linarith)] at hu
-        rw [abs_lt]; constructor <;> linarith [hu.1, hu.2]
-      · rw [abs_of_nonpos hs0] at hs
-        rw [uIcc_of_ge (by linarith)] at hu
-        rw [abs_lt]; constructor <;> linarith [hu.1, hu.2]
-    have := hunif u (hsub hu) t ht hdist
-    rw [dist_eq_norm] at this
-    exact this.le
-  have key := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le hg hbound (convex_uIcc _ _)
-    left_mem_uIcc right_mem_uIcc
-  rw [add_sub_cancel_left, Real.norm_eq_abs] at key
-  have e : y (t + s) - (t + s) • y' t - (y t - t • y' t) = y (t + s) - y t - s • y' t := by
-    rw [add_smul]; abel
-  rwa [e] at key
-
 /-- The residual of `L` in terms of the first-order Taylor remainders: under the order
 conditions `0` and `1`, with `y' = deriv y` at the points used,
 `L[y; h](t) = R(h) - ∑ a_j R(-jh) - h (b_{-1} R'(h) + ∑ b_j R'(-jh))` where
@@ -628,7 +595,8 @@ theorem isConsistentFor_of_orderCondition (h0 : M.orderCondition 0) (h1 : M.orde
   have hA : 0 < A := by linarith
   set ε' : ℝ := ε / (2 * A)
   have hε' : 0 < ε' := by positivity
-  obtain ⟨η, hη, hη'⟩ := exists_forall_norm_sub_sub_smul_le hy hy' hε'
+  obtain ⟨η, hη, hη'⟩ :=
+    exists_forall_norm_sub_sub_smul_le (fun s hs => (hy s hs).hasDerivWithinAt) hy' hε'
   -- the modulus of continuity of `y'`, once more, for the derivative terms
   obtain ⟨η₂, hη₂, hunif⟩ := Metric.uniformContinuousOn_iff.1
     (isCompact_Icc.uniformContinuousOn_of_continuous hy') ε' hε'
@@ -780,15 +748,6 @@ theorem lte_pow_node (hh : 0 < h) {i : ℕ} (hlow : ∀ m < i, M.taylorCoeff m =
   · simp only [Nat.choose_self, Nat.cast_one, one_mul, Nat.sub_self, pow_zero, mul_assoc]
   · rw [hlow m (lt_of_le_of_ne (Nat.lt_succ_iff.1 (Finset.mem_range.1 hm)) hmi), mul_zero]
 
-/-- `h^n = O(h^m)` as `h → 0⁺` when `m ≤ n`. -/
-theorem isBigO_pow_pow_of_le {m n : ℕ} (hmn : m ≤ n) :
-    (fun h : ℝ => h ^ n) =O[𝓝[>] 0] fun h => h ^ m := by
-  refine IsBigO.of_bound 1 ?_
-  filter_upwards [Ioc_mem_nhdsGT (zero_lt_one' ℝ)] with h hh
-  rw [one_mul, Real.norm_of_nonneg (pow_nonneg hh.1.le _),
-    Real.norm_of_nonneg (pow_nonneg hh.1.le _)]
-  exact pow_le_pow_of_le_one hh.1.le hh.2 hmn
-
 /-- On the horizon `T = 1` from `t₀ = 0`, the first step `n = p` is taken once `(p + 1) h ≤ 1`. -/
 theorem lt_gridCount_one (hh : 0 < h) (hph : (M.p + 1) * h ≤ 1) : M.p < gridCount 1 h :=
   (le_gridCount_iff zero_le_one hh).2 (by exact_mod_cast hph)
@@ -828,7 +787,7 @@ theorem taylorCoeff_eq_zero_of_hasOrder {i : ℕ} (hiq : i ≤ q) (hq : M.HasOrd
       field_simp
       ring
     rw [show i - 1 + 1 = i by omega]
-    exact (e.trans_isBigO hlow').trans (isBigO_pow_pow_of_le hiq)
+    exact (e.trans_isBigO hlow').trans ((isBigO_pow_pow hiq).mono nhdsWithin_le_nhds)
 
 end Bridges
 
@@ -2778,17 +2737,6 @@ end AbsoluteStability
 
 section Pad
 
-/-- A sum over `Fin (q + 1)` of a function supported on the first `k + 1` indices. -/
-theorem sum_dite_lt {R : Type*} [AddCommMonoid R] {q k : ℕ} (hkq : k ≤ q) (g : Fin (k + 1) → R) :
-    ∑ i : Fin (q + 1), (if h : (i : ℕ) < k + 1 then g ⟨i, h⟩ else 0) = ∑ j : Fin (k + 1), g j := by
-  rw [Fin.sum_univ_eq_sum_range (fun n => if h : n < k + 1 then g ⟨n, h⟩ else 0) (q + 1),
-    Finset.sum_fin_eq_sum_range g]
-  symm
-  have hsub : range (k + 1) ⊆ range (q + 1) := Finset.range_mono (by omega)
-  refine Finset.sum_subset hsub fun n _ hn' => ?_
-  rw [Finset.mem_range] at hn'
-  simp [hn']
-
 /-- **Padding** a `p + 1`-step method to `q + 1 ≥ p + 1` steps by zero coefficients: the same
 scheme, read as a method with more steps (the convention of [quarteroni2000numerical] §11.7 after
 Example 11.8 for the corrector of a predictor–corrector pair). -/
@@ -2812,7 +2760,7 @@ theorem rho_pad (q : ℕ) (hq : M.p ≤ q) : (M.pad q hq).rho = X ^ (q - M.p) * 
       C (M.a j) * X ^ (q - j) by
     have := j.is_lt
     rw [mul_left_comm, ← pow_add, show q - M.p + (M.p - j) = q - j by omega],
-    ← sum_dite_lt hq fun j => C (M.a j) * X ^ (q - j)]
+    ← Fin.sum_dite_lt (Nat.succ_le_succ hq) fun j => C (M.a j) * X ^ (q - j)]
   refine Finset.sum_congr rfl fun i _ => ?_
   split_ifs <;> first | rfl | simp
 
@@ -2827,7 +2775,7 @@ theorem sigma_pad (q : ℕ) (hq : M.p ≤ q) : (M.pad q hq).sigma = X ^ (q - M.p
       C (M.b j) * X ^ (q - j) by
     have := j.is_lt
     rw [mul_left_comm, ← pow_add, show q - M.p + (M.p - j) = q - j by omega],
-    ← sum_dite_lt hq fun j => C (M.b j) * X ^ (q - j)]
+    ← Fin.sum_dite_lt (Nat.succ_le_succ hq) fun j => C (M.b j) * X ^ (q - j)]
   refine Finset.sum_congr rfl fun i _ => ?_
   split_ifs <;> first | rfl | simp
 

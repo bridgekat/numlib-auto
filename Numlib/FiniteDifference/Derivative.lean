@@ -7,6 +7,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Topology.Order.IntermediateValue
+import Numlib.Analysis.Asymptotics.Pow
 import Numlib.Analysis.Calculus.Taylor
 import Numlib.Approximation.GaussLobatto
 
@@ -451,25 +452,18 @@ theorem compactError_expansion (hf : ContDiffAt ℝ 7 f x) :
         rw [← e2', ← e3']; exact add_le_add (add_le_add e1 e2) e3
     _ = M * (|α| / 360 + |β| / 5040 + |γ| * 64 / 5040) * |h| ^ 6 := by ring
 
-/-- `h ^ n = O(h ^ m)` as `h → 0` for `m ≤ n`. -/
-private theorem isBigO_pow_pow_nhdsWithin {m n : ℕ} (hmn : m ≤ n) :
-    (fun h : ℝ => h ^ n) =O[𝓝[≠] 0] fun h => h ^ m := by
-  rcases hmn.lt_or_eq with hlt | rfl
-  · exact (isLittleO_pow_pow hlt).isBigO.mono nhdsWithin_le_nhds
-  · exact isBigO_refl _ _
-
 /-- **Second-order compact schemes** ([quarteroni2000numerical] §10.10.2): if `2α + 1 = β + γ`
 then the consistency error is `O(h²)` for `f` of class `C⁷` at `x`. -/
 theorem compactError_isBigO_pow_two (h₁ : 2 * α + 1 = β + γ) (hf : ContDiffAt ℝ 7 f x) :
     (fun h => compactError α β γ f x h) =O[𝓝[≠] 0] fun h => h ^ 2 := by
   have e1 : 2 * α + 1 - β - γ = 0 := by linarith
   have hexp := (compactError_expansion (α := α) (β := β) (γ := γ) hf).trans
-    (isBigO_pow_pow_nhdsWithin (by norm_num : 2 ≤ 6))
+    ((isBigO_pow_pow (𝕜 := ℝ) (by norm_num : 2 ≤ 6)).mono nhdsWithin_le_nhds)
   have hmain : (fun h : ℝ => (α - β / 6 - 2 * γ / 3) * iteratedDeriv 3 f x * h ^ 2
       + (α / 12 - β / 120 - 2 * γ / 15) * iteratedDeriv 5 f x * h ^ 4)
       =O[𝓝[≠] 0] fun h => h ^ 2 :=
     ((isBigO_refl (fun h : ℝ => h ^ 2) _).const_mul_left _).add
-      (((isBigO_pow_pow_nhdsWithin (by norm_num : 2 ≤ 4)).const_mul_left _))
+      (((isBigO_pow_pow (𝕜 := ℝ) (by norm_num : 2 ≤ 4)).mono nhdsWithin_le_nhds).const_mul_left _)
   refine (hexp.add hmain).congr_left fun h => ?_
   rw [e1]
   ring
@@ -482,7 +476,7 @@ theorem compactError_isBigO_pow_four (h₁ : 2 * α + 1 = β + γ) (h₂ : 6 * �
   have e1 : 2 * α + 1 - β - γ = 0 := by linarith
   have e2 : α - β / 6 - 2 * γ / 3 = 0 := by linarith
   have hexp := (compactError_expansion (α := α) (β := β) (γ := γ) hf).trans
-    (isBigO_pow_pow_nhdsWithin (by norm_num : 4 ≤ 6))
+    ((isBigO_pow_pow (𝕜 := ℝ) (by norm_num : 4 ≤ 6)).mono nhdsWithin_le_nhds)
   have hmain : (fun h : ℝ => (α / 12 - β / 120 - 2 * γ / 15) * iteratedDeriv 5 f x * h ^ 4)
       =O[𝓝[≠] 0] fun h => h ^ 4 :=
     (isBigO_refl (fun h : ℝ => h ^ 4) _).const_mul_left _

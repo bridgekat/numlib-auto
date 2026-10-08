@@ -1,7 +1,25 @@
 desc = '''
-Ordinary differential equations: what Mathlib's `Mathlib.Analysis.ODE` lacks for the textbook
-statements of the Picard–Lindelöf theorem, Gronwall's inequality, linear systems, and the abstract
-Cauchy problem `u' + A u = 0` in a Hilbert space solved by the Hille–Yosida theorem
-(`HilleYosida`; Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
-chapter 7).
+Ordinary differential equations, the analytic theory: what Mathlib's `Mathlib.Analysis.ODE` lacks
+for the textbook statements of the Cauchy problem, the Picard–Lindelöf theorem, Gronwall's
+inequality, linear systems, and the abstract Cauchy problem `u' + A u = 0` in a Hilbert space
+solved by the Hille–Yosida theorem (Brezis, *Functional Analysis, Sobolev Spaces and Partial
+Differential Equations*, chapter 7). The directory mirrors Mathlib's `Mathlib/Analysis/ODE/`; the
+numerical methods for the Cauchy problem (one-step, multistep, Runge–Kutta) are `Numlib/ODE`.
+
+Layout:
+
+* `PicardLindelof`: local existence and uniqueness with the solution confined to the ball, from
+  Mathlib's `IsPicardLindelof`.
+* `Gronwall`: Gronwall's lemma in integral form and linear differential inequalities, from one
+  variation-of-constants inequality.
+* `DiscreteGronwall`: the discrete Gronwall lemma in the summed form the books use, derived from
+  Mathlib's recursive `discrete_gronwall` (`Mathlib/Analysis/ODE/DiscreteGronwall.lean`).
+* `Cauchy`: the Cauchy problem `y' = f(t, y)` on a normed space — solutions on a set of times,
+  the integral equation, Liapunov stability, global existence and uniqueness for a Lipschitz
+  field.
+* `LinearSystem`: `y' = A y` with a constant matrix, its exponential solution, eigenvector
+  expansion, decay and the stiffness quotient.
+* `HarmonicOscillator`, `SturmComparison`: the scalar second-order equations `a'' = −λ a` and the
+  Sturm comparison theorem.
+* `HilleYosida`: the contraction semigroup of a maximal monotone operator on a real Hilbert space.
 '''

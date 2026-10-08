@@ -1,6 +1,7 @@
 import Numlib.Algebra.LinearRecurrence
 import Numlib.Algebra.Polynomial.AevalApply
 import Numlib.Algebra.Polynomial.Commute
+import Numlib.Analysis.Asymptotics.Pow
 import Numlib.Analysis.Calculus.AddTorsor.AffineMap
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.Calculus.ContDiffMapIcc
@@ -199,6 +200,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.OrthonormalBasis
 import Numlib.Analysis.InnerProductSpace.SingularValues
 import Numlib.Analysis.InnerProductSpace.Spectrum
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
+import Numlib.Analysis.LinearRecurrence
 import Numlib.Analysis.Matrix.Frobenius
 import Numlib.Analysis.Matrix.Function.Approximation
 import Numlib.Analysis.Matrix.Function.Basic
@@ -260,6 +262,7 @@ import Numlib.Analysis.Normed.Operator.Unbounded.Reflexive
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.ODE.Cauchy
+import Numlib.Analysis.ODE.DiscreteGronwall
 import Numlib.Analysis.ODE.Gronwall
 import Numlib.Analysis.ODE.HarmonicOscillator
 import Numlib.Analysis.ODE.HilleYosida
@@ -600,8 +603,6 @@ import Numlib.Nonlinear.Order
 import Numlib.Nonlinear.QuasiNewton
 import Numlib.Nonlinear.ScalarNewton
 import Numlib.Nonlinear.Secant
-import Numlib.ODE.DifferenceEquation
-import Numlib.ODE.Gronwall
 import Numlib.ODE.Multistep
 import Numlib.ODE.OneStep
 import Numlib.ODE.RungeKutta

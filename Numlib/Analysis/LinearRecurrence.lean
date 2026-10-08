@@ -6,7 +6,7 @@ import Numlib.Algebra.LinearRecurrence
 import Numlib.RingTheory.Polynomial.SchurCohn
 
 /-!
-# Linear difference equations: the root condition and bounded solutions
+# Linear recurrences: the root condition and bounded solutions
 
 The analytic half of the theory of linear difference equations with constant coefficients, as
 [quarteroni2000numerical] §11.4 and §11.6 present it for the analysis of multistep methods: the
@@ -14,7 +14,7 @@ root condition of a polynomial, and the characterization of the recurrences all 
 are bounded (the book's Lemma 11.3) or decay (the criterion behind absolute stability). The
 algebra — Mathlib's `LinearRecurrence`, the Kronecker fundamental solutions `ψ_j`, the discrete
 Duhamel formula and the fundamental system of binomial sequences `n.choose s * r ^ (n - s)` —
-is `Numlib/Algebra/LinearRecurrence`; this module adds the norms.
+is `Numlib/Algebra/LinearRecurrence`; this module, its analytic counterpart, adds the norms.
 
 ## The root conditions
 
@@ -32,7 +32,7 @@ is `Numlib/Algebra/LinearRecurrence`; this module adds the norms.
   by a nonzero constant, which is how the absolute stability region reads it off `Π(z)`.
 
 Both are stated for a polynomial over any normed field; for a real polynomial the condition of
-interest is that of its image in `ℂ[X]`, which is how `ODE/Multistep` reads the first
+interest is that of its image in `ℂ[X]`, which is how `Numlib/ODE/Multistep` reads the first
 characteristic polynomial `ρ` of a real method.
 
 ## Bounded and decaying solutions
@@ -76,8 +76,8 @@ carry the names of the book's statements.
   every `n`, and a real solution with `c n ≤ |u n|` for infinitely many `n`. A convergence proof
   that scales the counterexample by `h ≈ T/n` needs this, not mere unboundedness.
 
-Consumers: `ODE/Multistep` (zero-stability, convergence, absolute stability) and the boundary-value
-difference equations of chapter 12.
+Consumers: `Numlib/ODE/Multistep` (zero-stability, convergence, absolute stability of linear
+multistep methods).
 -/
 
 open Filter Finset Polynomial Topology

@@ -49,7 +49,7 @@ argument is used (which is how the book proves Theorem 13.1) and on `ℤ` for th
 Cross-chapter nodes this chapter expects (to be reconciled by the orchestrator): from chapter 10,
 Lemma 10.1 (`Matrix.conjTranspose_dft_mul_dft`) and the Taylor bounds of difference quotients
 (`Numlib/FiniteDifference/Derivative`); from chapter 11, Lemma 11.1 (integral Gronwall,
-`Numlib/Analysis/ODE/Gronwall`), Lemma 11.2 (discrete Gronwall, `Numlib/ODE/Gronwall`) and the
+`Numlib/Analysis/ODE/Gronwall`), Lemma 11.2 (discrete Gronwall, `Numlib/Analysis/ODE/DiscreteGronwall`) and the
 θ-method as a one-step method (`Numlib/ODE/OneStep`); from chapter 12, `H¹(a, b)`, `H¹₀(0, 1)`
 and Poincaré (12.16) (`Numlib/Analysis/Sobolev/Interval`), `A_fd` (12.8) and its eigenvalues
 (`Numlib/FiniteDifference/BoundaryValue`), the finite element space (12.57) with its hat basis.

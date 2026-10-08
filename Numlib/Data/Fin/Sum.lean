@@ -23,9 +23,11 @@ Ways of cutting `Fin` into a head and a tail, each the form some matrix argument
   `j + 1` indices, read through `Fin.castLE`, plus the sum over the indices after `j`.
 * `Fin.sum_castLE_eq_sum_ite`: a sum over `Fin k` read through `Fin.castLE` into `Fin a` is the sum
   over `Fin a` of the terms below `k`.
+* `Fin.sum_dite_lt`: a sum over `Fin a` of a function given on `Fin k`, `k ≤ a`, and extended by
+  zero is the sum over `Fin k` — the padding of a coefficient vector to more entries.
 
-The two sum lemmas are the additive forms of `Fin.prod_eq_prod_castLE_mul_prod_Ioi` and
-`Fin.prod_castLE_eq_prod_ite`.
+The three sum lemmas are the additive forms of `Fin.prod_eq_prod_castLE_mul_prod_Ioi`,
+`Fin.prod_castLE_eq_prod_ite` and `Fin.prod_dite_lt`.
 -/
 
 open Finset
@@ -138,3 +140,15 @@ theorem Fin.prod_castLE_eq_prod_ite {M : Type*} [CommMonoid M] {k a : ℕ} (hk :
   ext j
   simp only [Finset.mem_range, Finset.mem_filter]
   omega
+
+/-- A product over `Fin a` of a function given on the first `k ≤ a` indices and extended by `1` is
+the product over `Fin k`. -/
+@[to_additive /-- A sum over `Fin a` of a function given on the first `k ≤ a` indices and extended
+by `0` is the sum over `Fin k`. -/]
+theorem Fin.prod_dite_lt {M : Type*} [CommMonoid M] {k a : ℕ} (hk : k ≤ a) (g : Fin k → M) :
+    ∏ i : Fin a, (if h : (i : ℕ) < k then g ⟨i, h⟩ else 1) = ∏ j, g j := by
+  rw [Fin.prod_univ_eq_prod_range (fun n => if h : n < k then g ⟨n, h⟩ else 1) a,
+    Finset.prod_fin_eq_prod_range g]
+  refine (Finset.prod_subset (Finset.range_mono hk) fun n _ hn => ?_).symm
+  rw [Finset.mem_range] at hn
+  simp [hn]

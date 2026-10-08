@@ -29,7 +29,10 @@ on all of `ℝ` the ball disappears (`abs_sub_sum_taylor_le_of_contDiff`), and `
 For a curve `y : ℝ → E` the hypotheses are a chain of *derivative functions* rather than a
 `ContDiffOn` hypothesis: `HasDerivWithinAt (Y k) (Y (k + 1) s) (Icc a b) s` for `k ≤ n`. This is
 what the truncation errors of one-step methods and the order conditions of Runge–Kutta methods
-have to hand, and it avoids `iteratedDerivWithin` at the endpoints entirely. The general bound is
+have to hand, and it avoids `iteratedDerivWithin` at the endpoints entirely. For a curve that is
+merely `C¹` the first-order bound holds uniformly over the interval with an arbitrary `ε`
+(`exists_forall_norm_sub_sub_smul_le`: uniform continuity of `y'` and the mean value inequality),
+which is what consistency of one-step and multistep methods needs. The general bound is
 `norm_sub_sum_smul_le`, which expands at an arbitrary point `c` of the interval and evaluates at
 an arbitrary `x` on either side of it; forwards it is `norm_sub_sum_smul_le_of_le`, proved by
 induction on the order from `image_norm_le_of_norm_deriv_right_le_deriv_boundary`, and backwards it
@@ -241,6 +244,40 @@ theorem hasDerivWithinAt_comp_const_sub_Icc
     ⟨by linarith [hx.2], by linarith [hx.1]⟩
   have := (hy _ hmem).scomp s h1 hmaps
   simpa [Function.comp_def, neg_one_smul] using this
+
+/-- **The uniform first-order Taylor bound on a compact interval**: if `y` has derivative `y' s`
+within `Icc a b` at every point of `Icc a b` and `y'` is continuous there, then for every `ε > 0`
+there is `η > 0` with `‖y (t + s) - y t - s • y' t‖ ≤ ε * |s|` whenever `t, t + s ∈ Icc a b` and
+`|s| ≤ η`. This is the uniform continuity of `y'` on the compact interval together with the mean
+value inequality for `u ↦ y u - u • y' t` on the segment between `t` and `t + s`. -/
+theorem exists_forall_norm_sub_sub_smul_le
+    (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s) (hy' : ContinuousOn y' (Icc a b))
+    {ε : ℝ} (hε : 0 < ε) :
+    ∃ η > 0, ∀ t ∈ Icc a b, ∀ s : ℝ, t + s ∈ Icc a b → |s| ≤ η →
+      ‖y (t + s) - y t - s • y' t‖ ≤ ε * |s| := by
+  obtain ⟨η, hη, hunif⟩ := Metric.uniformContinuousOn_iff.1
+    (isCompact_Icc.uniformContinuousOn_of_continuous hy') ε hε
+  refine ⟨η / 2, half_pos hη, fun t ht s hts hs => ?_⟩
+  have hsub : uIcc t (t + s) ⊆ Icc a b := uIcc_subset_Icc ht hts
+  have hg : ∀ u ∈ uIcc t (t + s), HasDerivWithinAt (fun u => y u - u • y' t) (y' u - y' t)
+      (uIcc t (t + s)) u := fun u hu =>
+    ((hy u (hsub hu)).mono hsub).sub
+      (((hasDerivWithinAt_id u _).smul_const (y' t)).congr_deriv (one_smul ℝ _))
+  have hbound : ∀ u ∈ uIcc t (t + s), ‖y' u - y' t‖ ≤ ε := fun u hu => by
+    have hdist : dist u t < η := by
+      rw [Real.dist_eq]
+      have := abs_sub_left_of_mem_uIcc hu
+      rw [add_sub_cancel_left] at this
+      linarith
+    have := hunif u (hsub hu) t ht hdist
+    rw [dist_eq_norm] at this
+    exact this.le
+  have key := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le hg hbound (convex_uIcc _ _)
+    left_mem_uIcc right_mem_uIcc
+  rw [add_sub_cancel_left, Real.norm_eq_abs] at key
+  have e : y (t + s) - (t + s) • y' t - (y t - t • y' t) = y (t + s) - y t - s • y' t := by
+    rw [add_smul]; abel
+  rwa [e] at key
 
 /-! #### The expansion at an arbitrary point of the interval
 

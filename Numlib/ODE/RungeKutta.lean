@@ -2,6 +2,7 @@ import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
 import Mathlib.Topology.Algebra.Polynomial
+import Numlib.Analysis.Asymptotics.Pow
 import Numlib.Analysis.Normed.Operator.Multilinear
 import Numlib.ODE.OneStep
 
@@ -35,10 +36,12 @@ as `h → 0⁺` (`isConsistentFor_of_sum_b_eq_one`); conversely on `y' = 1` the 
 the constant `1 - ∑ b_i` (`sum_b_eq_one_of_isConsistentFor`). The two-stage order-two conditions
 `b₁ + b₂ = 1`, `c₂ b₂ = 1/2` of §11.8.1 are derived by the Taylor expansion of the second stage in
 the pair `(t, y)` (`hasOrderFor_two_of`), and are necessary on the test problems `y' = 1` and
-`y' = 2t` (`sum_b_mul_c_eq_half_of_hasOrderFor`, `orderTwoConditions_of_hasOrderFor`). Heun's
-method and the modified Euler method are the two-stage instances (`heun`, `modifiedEuler`); the
-classical fourth-order method (11.73) is `rk4`, with its algebraic order conditions
-(`rk4_orderConditions`). Property 11.4 (Butcher's barriers) is quoted, not formalized.
+`y' = 2t` (`sum_b_mul_c_eq_half_of_hasOrderFor`, `orderTwoConditions_of_hasOrderFor`: a
+coefficient `c` with `c h = O(h²)` vanishes, `eq_zero_of_isBigO_pow_succ` of
+`Numlib/Analysis/Asymptotics/Pow`). Heun's method and the modified Euler method are the two-stage
+instances (`heun`, `modifiedEuler`); the classical fourth-order method (11.73) is `rk4`, with its
+algebraic order conditions (`rk4_orderConditions`). Property 11.4 (Butcher's barriers) is quoted,
+not formalized.
 A tableau satisfying the row-sum condition sees a non-autonomous problem as the autonomous
 problem `Y' = (1, f(Y))` on `ℝ × E` and has the same order along the two (`autonomize`,
 `hasOrderFor_autonomize_iff`); that reduction is what lets the fourth order of the classical
@@ -90,7 +93,8 @@ For an explicit tableau `A` is nilpotent, so
 method therefore has a bounded region and is never A-stable (`not_isAStable_of_isExplicit`,
 Remark 11.2 for Runge–Kutta methods), and an explicit `s`-stage method of order `s` has
 `R(z) = ∑_{k ≤ s} z^k / k!` (`stabilityFunction_eq_truncExp_of_hasOrder`, proved from the
-real problem `y' = y` alone). `stabilityFunction_rk4` is the truncated exponential of degree `4`.
+real problem `y' = y` alone with `Polynomial.eq_zero_of_isBigO_pow_succ`). `stabilityFunction_rk4`
+is the truncated exponential of degree `4`.
 
 ## Conventions
 
@@ -1469,82 +1473,7 @@ theorem stabilityFunction_implicitMidpoint {z : ℂ} (hz : z ≠ 2) :
   field_simp
   ring
 
-end ButcherTableau
-
 /-! ### Order conditions on test problems -/
-
-/-- A coefficient `c` with `c h^m = O(h^{m+1})` as `h → 0⁺` vanishes. -/
-theorem _root_.eq_zero_of_isBigO_pow_succ {c : ℝ} {m : ℕ}
-    (h : (fun h : ℝ => c * h ^ m) =O[𝓝[>] 0] fun h => h ^ (m + 1)) : c = 0 := by
-  obtain ⟨C, hC⟩ := h.bound
-  have hev : ∀ᶠ h in 𝓝[>] (0 : ℝ), |c| ≤ C * h := by
-    filter_upwards [hC, eventually_mem_nhdsWithin] with h hh (hpos : 0 < h)
-    rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul, abs_of_pos (pow_pos hpos m),
-      abs_of_pos (pow_pos hpos _), pow_succ, ← mul_assoc] at hh
-    have hm : 0 < h ^ m := pow_pos hpos m
-    have : |c| * h ^ m ≤ (C * h) * h ^ m := by linarith [hh]
-    exact le_of_mul_le_mul_right this hm
-  have hlim : Tendsto (fun h : ℝ => C * h) (𝓝[>] 0) (𝓝 0) := by
-    have : Tendsto (fun h : ℝ => C * h) (𝓝 0) (𝓝 (C * 0)) :=
-      (by fun_prop : Continuous fun h : ℝ => C * h).tendsto 0
-    rw [mul_zero] at this
-    exact this.mono_left nhdsWithin_le_nhds
-  exact abs_nonpos_iff.1 (ge_of_tendsto hlim hev)
-
-/-- **A complex polynomial of degree at most `n` that is `O(h^{n+1})` along real `h → 0⁺`
-vanishes.** By induction on `n`: the constant term is the limit at `0`, and `p / X` is `O(h^n)`.
--/
-theorem _root_.Polynomial.eq_zero_of_isBigO_pow_succ :
-    ∀ (n : ℕ) (p : Polynomial ℂ), p.natDegree ≤ n →
-      (fun h : ℝ => p.eval (h : ℂ)) =O[𝓝[>] 0] (fun h => h ^ (n + 1)) → p = 0 := by
-  intro n
-  induction n with
-  | zero =>
-    intro p hp h
-    rw [Polynomial.eq_C_of_natDegree_le_zero hp] at h ⊢
-    simp only [Polynomial.eval_C, zero_add, pow_one] at h
-    obtain ⟨C, hC⟩ := h.bound
-    have hev : ∀ᶠ h in 𝓝[>] (0 : ℝ), ‖p.coeff 0‖ ≤ C * h := by
-      filter_upwards [hC, eventually_mem_nhdsWithin] with h hh (hpos : 0 < h)
-      rwa [Real.norm_of_nonneg hpos.le] at hh
-    have hlim : Tendsto (fun h : ℝ => C * h) (𝓝[>] 0) (𝓝 0) := by
-      have : Tendsto (fun h : ℝ => C * h) (𝓝 0) (𝓝 (C * 0)) :=
-        (by fun_prop : Continuous fun h : ℝ => C * h).tendsto 0
-      rw [mul_zero] at this
-      exact this.mono_left nhdsWithin_le_nhds
-    rw [norm_le_zero_iff.1 (ge_of_tendsto hlim hev), map_zero]
-  | succ n ih =>
-    intro p hp h
-    -- the constant term vanishes
-    have h0 : p.coeff 0 = 0 := by
-      have hlim : Tendsto (fun h : ℝ => p.eval (h : ℂ)) (𝓝[>] 0) (𝓝 (p.eval 0)) := by
-        have : Tendsto (fun h : ℝ => p.eval (h : ℂ)) (𝓝 0) (𝓝 (p.eval ((0 : ℝ) : ℂ))) :=
-          (p.continuous.comp Complex.continuous_ofReal).tendsto 0
-        simpa using this.mono_left nhdsWithin_le_nhds
-      have hzero : Tendsto (fun h : ℝ => p.eval (h : ℂ)) (𝓝[>] 0) (𝓝 0) :=
-        h.trans_tendsto <| ((continuous_pow (n + 1 + 1)).tendsto' 0 0 (by simp)).mono_left
-          nhdsWithin_le_nhds
-      rw [Polynomial.coeff_zero_eq_eval_zero]
-      exact tendsto_nhds_unique hlim hzero
-    -- so `p = divX p * X` and `divX p` is `O(h^{n+1})`
-    have hpX : p = p.divX * Polynomial.X := by
-      conv_lhs => rw [← p.divX_mul_X_add]
-      rw [h0, map_zero, add_zero]
-    have hdiv : (fun h : ℝ => p.divX.eval (h : ℂ)) =O[𝓝[>] 0] (fun h => h ^ (n + 1)) := by
-      obtain ⟨C, hC⟩ := h.bound
-      refine IsBigO.of_bound C ?_
-      filter_upwards [hC, eventually_mem_nhdsWithin] with h hh (hpos : 0 < h)
-      rw [hpX, Polynomial.eval_mul, Polynomial.eval_X, norm_mul, Complex.norm_real,
-        Real.norm_of_nonneg hpos.le, Real.norm_of_nonneg (pow_pos hpos _).le, pow_succ,
-        ← mul_assoc] at hh
-      rw [Real.norm_of_nonneg (pow_pos hpos _).le]
-      exact le_of_mul_le_mul_right hh hpos
-    have := ih p.divX (by
-      have := p.natDegree_divX_eq_natDegree_tsub_one
-      omega) hdiv
-    rw [hpX, this, zero_mul]
-
-namespace ButcherTableau
 
 variable {s : ℕ} (tab : ButcherTableau s)
 

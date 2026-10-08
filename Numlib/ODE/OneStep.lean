@@ -5,7 +5,7 @@ import Mathlib.Analysis.Complex.Basic
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.SpecificLimits.Normed
 import Numlib.Analysis.Calculus.Taylor
-import Numlib.ODE.Gronwall
+import Numlib.Analysis.ODE.DiscreteGronwall
 
 /-!
 # One-step methods for the Cauchy problem
@@ -316,44 +316,23 @@ variable {f : ℝ → E → E} {y : ℝ → E}
 /-- Along a `C¹` solution, the difference quotients converge to the derivative uniformly on the
 interval: for every `ε > 0` there is `η > 0` such that
 `‖(y (t + h) - y t) / h - f t (y t)‖ ≤ ε` whenever `0 < h ≤ η` and `t, t + h ∈ [t₀, t₀ + T]`. This
-is the uniform continuity of `y' = f(·, y ·)` on the compact interval together with the mean
-value inequality. -/
+is the uniform first-order Taylor bound `exists_forall_norm_sub_sub_smul_le` divided by `h`. -/
 theorem exists_forall_norm_sub_smul_le_of_continuousOn
     (hy : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt y (f s (y s)) (Icc t₀ (t₀ + T)) s)
     (hf : ContinuousOn (fun s => f s (y s)) (Icc t₀ (t₀ + T))) {ε : ℝ} (hε : 0 < ε) :
     ∃ η > 0, ∀ h ∈ Ioc 0 η, ∀ t ∈ Icc t₀ (t₀ + T), t + h ∈ Icc t₀ (t₀ + T) →
       ‖h⁻¹ • (y (t + h) - y t) - f t (y t)‖ ≤ ε := by
-  obtain ⟨η, hη, hunif⟩ := Metric.uniformContinuousOn_iff.1
-    (isCompact_Icc.uniformContinuousOn_of_continuous hf) ε hε
-  refine ⟨η / 2, half_pos hη, fun h hh t ht hth => ?_⟩
-  have hsub : Icc t (t + h) ⊆ Icc t₀ (t₀ + T) := Icc_subset_Icc ht.1 hth.2
-  have hne : h ≠ 0 := hh.1.ne'
-  have hinv : 0 ≤ h⁻¹ := inv_nonneg.2 hh.1.le
-  -- the mean value inequality on `s ↦ y s - s • f t (y t)`
-  have hg : ∀ s ∈ Icc t (t + h), HasDerivWithinAt (fun s => y s - s • f t (y t))
-      (f s (y s) - f t (y t)) (Icc t (t + h)) s := fun s hs =>
-    ((hy s (hsub hs)).mono hsub).sub
-      (((hasDerivWithinAt_id s _).smul_const (f t (y t))).congr_deriv (one_smul ℝ _))
-  have hbound : ∀ s ∈ Icc t (t + h), ‖f s (y s) - f t (y t)‖ ≤ ε := by
-    intro s hs
-    have := hunif s (hsub hs) t ht (by
-      rw [Real.dist_eq, abs_lt]; constructor <;> linarith [hs.1, hs.2, hh.2])
-    rw [dist_eq_norm] at this
-    exact this.le
-  have key := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le hg hbound (convex_Icc _ _)
-    (left_mem_Icc.2 (by linarith [hh.1])) (right_mem_Icc.2 (by linarith [hh.1]))
-  rw [add_sub_cancel_left, Real.norm_of_nonneg hh.1.le] at key
-  have e : h⁻¹ • (y (t + h) - y t) - f t (y t) =
-      h⁻¹ • ((y (t + h) - (t + h) • f t (y t)) - (y t - t • f t (y t))) := by
-    have e1 : (y (t + h) - (t + h) • f t (y t)) - (y t - t • f t (y t)) =
-        (y (t + h) - y t) - h • f t (y t) := by
-      rw [add_smul]; abel
-    rw [e1, smul_sub h⁻¹ (y (t + h) - y t) (h • f t (y t)), smul_smul, inv_mul_cancel₀ hne,
+  obtain ⟨η, hη, hη'⟩ := exists_forall_norm_sub_sub_smul_le (y' := fun s => f s (y s)) hy hf hε
+  refine ⟨η, hη, fun h hh t ht hth => ?_⟩
+  have key := hη' t ht h hth (by rw [abs_of_pos hh.1]; exact hh.2)
+  rw [abs_of_pos hh.1] at key
+  have e : h⁻¹ • (y (t + h) - y t) - f t (y t) = h⁻¹ • (y (t + h) - y t - h • f t (y t)) := by
+    rw [smul_sub h⁻¹ (y (t + h) - y t) (h • f t (y t)), smul_smul, inv_mul_cancel₀ hh.1.ne',
       one_smul]
   rw [e, norm_smul, norm_inv, Real.norm_of_nonneg hh.1.le]
-  calc h⁻¹ * ‖y (t + h) - (t + h) • f t (y t) - (y t - t • f t (y t))‖ ≤ h⁻¹ * (ε * h) :=
-        mul_le_mul_of_nonneg_left key hinv
-    _ = ε := by field_simp
+  calc h⁻¹ * ‖y (t + h) - y t - h • f t (y t)‖ ≤ h⁻¹ * (ε * h) :=
+        mul_le_mul_of_nonneg_left key (inv_nonneg.2 hh.1.le)
+    _ = ε := by rw [mul_comm ε, ← mul_assoc, inv_mul_cancel₀ hh.1.ne', one_mul]
 
 /-- **The consistency criterion** ([quarteroni2000numerical] (11.13)): if `y` is a `C¹`
 solution of `y' = f(t, y)` on `[t₀, t₀ + T]` and the increment converges to the field along

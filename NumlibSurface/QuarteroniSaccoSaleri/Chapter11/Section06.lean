@@ -19,7 +19,7 @@ Dahlquist barrier (Property 11.2), the region `𝒜*` of Remark 11.3 and relativ
 (11.66).
 
 Everything is the scalar case `E = ℝ` of `Numlib/ODE/Multistep` — the test problem on `ℂ` — with
-`Numlib/ODE/DifferenceEquation` for Lemma 11.3. The Dahlquist barriers (Property 11.1 and the
+`Numlib/Analysis/LinearRecurrence` for Lemma 11.3. The Dahlquist barriers (Property 11.1 and the
 order and ϑ-stability clauses of Property 11.2) and the zero-stability of the BDF methods with
 `p ≥ 3` are not formalized; see `## Not formalized here` below.
 

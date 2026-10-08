@@ -277,12 +277,6 @@ id = "ButcherTableau.stabilityFunction_heun"
 id = "ButcherTableau.stabilityFunction_implicitMidpoint"
 
 [[node]]
-id = "_root_.eq_zero_of_isBigO_pow_succ"
-
-[[node]]
-id = "_root_.Polynomial.eq_zero_of_isBigO_pow_succ"
-
-[[node]]
 id = "ButcherTableau.sum_b_mul_c_eq_half_of_hasOrderFor"
 
 [[node]]

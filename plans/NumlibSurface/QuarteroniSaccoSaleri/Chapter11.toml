@@ -8,8 +8,8 @@ methods, embedded pairs, implicit families and stability functions (§11.8); sys
 stiffness (§11.10). §11.11 (a pendulum and an arterial-wall model) states no numbered result and
 has no group; the exercises the main text cites (1–5, 12 with (11.91)) are in `Section12`.
 
-The backbone it specializes is `Numlib/Analysis/ODE/{Gronwall,Cauchy,LinearSystem}`,
-`Numlib/Algebra/LinearRecurrence` and `Numlib/ODE/{Gronwall,OneStep,DifferenceEquation,Multistep,RungeKutta}`,
+The backbone it specializes is `Numlib/Analysis/ODE/{Gronwall,DiscreteGronwall,Cauchy,LinearSystem}`,
+`Numlib/{Algebra,Analysis}/LinearRecurrence` and `Numlib/ODE/{OneStep,Multistep,RungeKutta}`,
 all stated for a real normed space `E`; the surface reads them at `E = ℝ` (scalar chapter,
 §11.2–11.8), at `E = ℂ` for the test equation, and at `E = EuclideanSpace ℝ (Fin n)` in §11.9.
 The book's `Φ(t_n, u_n, f_n; h)` becomes an increment `Φ t u v h` with `f` built in; the book's

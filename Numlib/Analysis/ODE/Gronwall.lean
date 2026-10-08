@@ -33,6 +33,9 @@ Conventions. Intervals are `Icc a b` as in Mathlib's Gronwall file (the books' `
 on `Icc a b`, the weakest hypotheses under which the comparison argument runs, so that a consumer
 holding `HasDerivWithinAt F (F' t) (Icc a b) t` converts with `HasDerivWithinAt.continuousOn` and
 `HasDerivWithinAt.mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem ht)`.
+
+The discrete Gronwall lemma, in the summed form the one-step and multistep theories use, is the
+sibling module `Numlib/Analysis/ODE/DiscreteGronwall`, in the same namespace `Gronwall`.
 -/
 
 open Set Filter Topology intervalIntegral Real

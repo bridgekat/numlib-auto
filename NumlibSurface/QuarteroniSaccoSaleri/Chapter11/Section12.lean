@@ -13,7 +13,7 @@ roots, cited in §11.4), Exercise 4 ((11.32) for simple roots), Exercise 5 (the 
 (11.37) is nonsingular), and Exercise 12 with the modified Euler method (11.91), cited in §11.8.1.
 
 Restatements of `Numlib/ODE/OneStep`, `Numlib/Algebra/LinearRecurrence`,
-`Numlib/ODE/DifferenceEquation` and `Numlib/ODE/RungeKutta`, with the closed form of Exercise 3
+`Numlib/Analysis/LinearRecurrence` and `Numlib/ODE/RungeKutta`, with the closed form of Exercise 3
 verified here. Exercises 6–11 and 13–15 are not cited by the main text and are not formalized.
 
 ## Main results

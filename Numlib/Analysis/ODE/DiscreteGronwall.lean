@@ -23,6 +23,10 @@ delivers.
 The book states the hypothesis as `φ 0 ≤ g₀` together with the summed bound for `n ≥ 1`; since
 the sums are empty at `n = 0`, this is the single hypothesis `∀ n, φ n ≤ …` used here. No sign
 condition on `φ` is needed.
+
+The continuous counterpart, Gronwall's lemma in integral form, is `Numlib/Analysis/ODE/Gronwall`
+(same namespace `Gronwall`). The consumers of the discrete lemma are the numerical methods of
+`Numlib/ODE`: zero-stability and convergence of one-step and multistep methods.
 -/
 
 open Finset Real
