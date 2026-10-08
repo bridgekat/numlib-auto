@@ -33,30 +33,6 @@ id = "example_7_4_3"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.4.3, the inequality (7.4.4) on a bounded C^{d+1} domain"
 
 [[node]]
-id = "sq_lintegral_enorm_le_mul"
-
-[[node]]
-id = "lintegral_ofReal_rpow_neg_one_add_mul_norm_sq"
-
-[[node]]
-id = "pow_one_add_mul_le"
-
-[[node]]
-id = "exists_rpow_neg_half_mul_add_eq"
-
-[[node]]
-id = "lintegral_ofReal_rpow_neg_one_add_norm_sq_ne_top"
-
-[[node]]
-id = "sq_lintegral_enorm_fourier_le"
-
-[[node]]
-id = "sq_toReal_lintegral_enorm_fourier_le"
-
-[[node]]
-id = "norm_le_toReal_eLpNorm_symbol_mul_fourier"
-
-[[node]]
 id = "example_7_4_3_whole_space_complex"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.4.3, the whole-space case Ω = ℝ^d, complex-valued"
 

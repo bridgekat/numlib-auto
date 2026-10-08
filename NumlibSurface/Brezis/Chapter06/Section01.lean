@@ -1,4 +1,5 @@
 import Numlib.Analysis.Normed.Operator.Compact.Banach
+import Numlib.Nonlinear.CompletelyContinuous
 import NumlibSurface.Brezis.Chapter03.Section05
 
 /-!
@@ -13,7 +14,8 @@ the book's statement uses it). The book's `K(E, F)` is Mathlib's predicate `IsCo
 (`Numlib/Analysis/Normed/Operator/Unbounded/Adjoint`); weak convergence `uₙ ⇀ u` is chapter 3's
 `Brezis.Chapter03.WeakTendsto`. Theorem 6.1 and Proposition 6.3 are Mathlib's; Corollary 6.2,
 Remark 1 and Theorem 6.4 (Schauder) delegate to the backbone
-`Numlib/Analysis/Normed/Operator/Compact` and `…/Compact/Banach`, Remark 2 to the same.
+`Numlib/Analysis/Normed/Operator/Compact` and `…/Compact/Banach` (the nonlinear part of Remark 1
+to `Numlib/Nonlinear/CompletelyContinuous`), Remark 2 to the same.
 
 ## Main results
 
@@ -106,70 +108,10 @@ theorem remark_6_1_nonlinear {X : Type*} [TopologicalSpace X] {F : Type*} [Norme
     (hK : IsCompact (closure (Set.range T))) {ε : ℝ} (hε : 0 < ε) :
     ∃ Tε : X → F, Continuous Tε ∧
       (∃ G : Submodule ℝ F, FiniteDimensional ℝ G ∧ ∀ x, Tε x ∈ G) ∧ ∀ x, ‖Tε x - T x‖ < ε := by
-  classical
-  obtain ⟨t, -, htfin, hcover⟩ := finite_cover_balls_of_compact hK (half_pos hε)
-  obtain ⟨q, hq⟩ : ∃ q : F → X → ℝ, ∀ f x, q f x = max (ε - ‖T x - f‖) 0 := ⟨_, fun _ _ => rfl⟩
-  have hq_cont : ∀ f, Continuous (q f) := fun f => by
-    have : q f = fun x => max (ε - ‖T x - f‖) 0 := funext (hq f)
-    rw [this]
-    exact (continuous_const.sub (hT.sub continuous_const).norm).max continuous_const
-  have hq_nonneg : ∀ f x, 0 ≤ q f x := fun f x => by rw [hq]; exact le_max_right _ _
-  -- every `T x` is within `ε / 2` of some `f₀ ∈ t`, so `∑ qᵢ x > 0`
-  have hnear : ∀ x, ∃ f ∈ htfin.toFinset, ‖T x - f‖ < ε / 2 := fun x => by
-    obtain ⟨f, hf, hxf⟩ := Set.mem_iUnion₂.1 (hcover (subset_closure ⟨x, rfl⟩))
-    exact ⟨f, htfin.mem_toFinset.2 hf, by rwa [Metric.mem_ball, dist_eq_norm] at hxf⟩
-  have hQ_pos : ∀ x, 0 < ∑ f ∈ htfin.toFinset, q f x := fun x => by
-    obtain ⟨f, hf, hxf⟩ := hnear x
-    have h1 : ε / 2 ≤ q f x := by
-      rw [hq]
-      exact le_max_of_le_left (by linarith)
-    exact lt_of_lt_of_le (half_pos hε)
-      (h1.trans (Finset.single_le_sum (fun g _ => hq_nonneg g x) hf))
-  refine ⟨fun x => (∑ f ∈ htfin.toFinset, q f x)⁻¹ • ∑ f ∈ htfin.toFinset, q f x • f, ?_,
-    ⟨Submodule.span ℝ (htfin.toFinset : Set F), inferInstance, fun x => ?_⟩, fun x => ?_⟩
-  · -- continuity
-    exact ((continuous_finsetSum _ fun f _ => hq_cont f).inv₀ fun x => (hQ_pos x).ne').smul
-      (continuous_finsetSum _ fun f _ => (hq_cont f).smul continuous_const)
-  · -- range in the span of the `fᵢ`
-    exact Submodule.smul_mem _ _ (Submodule.sum_mem _ fun f hf =>
-      Submodule.smul_mem _ _ (Submodule.subset_span hf))
-  · -- the error bound
-    have hrw : (∑ f ∈ htfin.toFinset, q f x)⁻¹ • ∑ f ∈ htfin.toFinset, q f x • f - T x =
-        (∑ f ∈ htfin.toFinset, q f x)⁻¹ • ∑ f ∈ htfin.toFinset, q f x • (f - T x) := by
-      simp only [smul_sub, Finset.sum_sub_distrib, ← Finset.sum_smul, smul_smul,
-        inv_mul_cancel₀ (hQ_pos x).ne', one_smul]
-    rw [hrw, norm_smul, norm_inv, Real.norm_of_nonneg (hQ_pos x).le]
-    have hlt : ‖∑ f ∈ htfin.toFinset, q f x • (f - T x)‖ < (∑ f ∈ htfin.toFinset, q f x) * ε := by
-      calc ‖∑ f ∈ htfin.toFinset, q f x • (f - T x)‖
-          ≤ ∑ f ∈ htfin.toFinset, ‖q f x • (f - T x)‖ := norm_sum_le _ _
-        _ = ∑ f ∈ htfin.toFinset, q f x * ‖f - T x‖ := by
-            refine Finset.sum_congr rfl fun f _ => ?_
-            rw [norm_smul, Real.norm_of_nonneg (hq_nonneg f x)]
-        _ < ∑ f ∈ htfin.toFinset, q f x * ε := by
-            obtain ⟨f₀, hf₀, hxf₀⟩ := hnear x
-            refine Finset.sum_lt_sum (fun f _ => ?_) ⟨f₀, hf₀, ?_⟩
-            · rcases (hq_nonneg f x).eq_or_lt with h | h
-              · rw [← h, zero_mul, zero_mul]
-              · have hlt' : ‖f - T x‖ < ε := by
-                  rw [norm_sub_rev]
-                  by_contra hge
-                  have : q f x = 0 := by
-                    rw [hq]
-                    exact max_eq_right (by linarith [not_lt.1 hge])
-                  linarith
-                exact mul_le_mul_of_nonneg_left hlt'.le (hq_nonneg f x)
-            · have hpos : 0 < q f₀ x := by
-                rw [hq]
-                exact lt_of_lt_of_le (half_pos hε) (le_max_of_le_left (by linarith))
-              have : ‖f₀ - T x‖ < ε := by
-                rw [norm_sub_rev]
-                linarith
-              exact mul_lt_mul_of_pos_left this hpos
-        _ = (∑ f ∈ htfin.toFinset, q f x) * ε := (Finset.sum_mul _ _ _).symm
-    calc (∑ f ∈ htfin.toFinset, q f x)⁻¹ * ‖∑ f ∈ htfin.toFinset, q f x • (f - T x)‖
-        < (∑ f ∈ htfin.toFinset, q f x)⁻¹ * ((∑ f ∈ htfin.toFinset, q f x) * ε) :=
-          mul_lt_mul_of_pos_left hlt (inv_pos.2 (hQ_pos x))
-      _ = ε := by rw [← mul_assoc, inv_mul_cancel₀ (hQ_pos x).ne', one_mul]
+  obtain ⟨t, -, Tε, hc, hmem, hlt⟩ :=
+    hT.exists_finset_mem_convexHull_norm_sub_lt (hK.totallyBounded.subset subset_closure) hε
+  exact ⟨Tε, hc, ⟨Submodule.span ℝ (t : Set F), inferInstance, fun x =>
+    convexHull_min Submodule.subset_span (Submodule.span ℝ _).convex (hmem x)⟩, hlt⟩
 
 /-- **Proposition 6.3, first case.** For `T ∈ L(E, F)` and `S ∈ K(F, G)`, `S ∘ T ∈ K(E, G)`. -/
 theorem proposition_6_3_left (T : E →L[ℝ] F) {S : F →L[ℝ] G} (hS : IsCompactOperator S) :

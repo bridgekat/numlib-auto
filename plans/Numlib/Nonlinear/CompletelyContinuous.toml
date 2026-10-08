@@ -5,4 +5,7 @@ id = "IsCompactMap"
 id = "IsCompactMap.isCompactOperator_hasFDerivAt"
 
 [[node]]
+id = "Continuous.exists_finset_mem_convexHull_norm_sub_lt"
+
+[[node]]
 id = "isCompactMap_univ_iff_isCompactOperator"

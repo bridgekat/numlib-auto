@@ -139,9 +139,6 @@ id = "example_11_1_2"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.2"
 
 [[node]]
-id = "inner_gradient_eq_sum"
-
-[[node]]
 id = "laplaceForm_eq_integral_add_of_contDiffOnClosure"
 
 [[node]]

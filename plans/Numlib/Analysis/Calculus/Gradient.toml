@@ -14,4 +14,7 @@ id = "EuclideanSpace.inner_gradient_eq_fderiv"
 id = "EuclideanSpace.gradient_apply"
 
 [[node]]
+id = "EuclideanSpace.inner_gradient_eq_sum"
+
+[[node]]
 id = "EuclideanSpace.norm_fderiv_eq"

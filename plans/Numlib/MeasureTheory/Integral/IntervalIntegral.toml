@@ -29,6 +29,9 @@ id = "ContinuousOn.memLp_two_restrict_Ioo"
 id = "MeasureTheory.integrableOn_continuousOn_mul"
 
 [[node]]
+id = "MeasureTheory.L2.norm_sq_eq_integral_sq"
+
+[[node]]
 id = "norm_sq_eq_integral_sq"
 
 [[node]]

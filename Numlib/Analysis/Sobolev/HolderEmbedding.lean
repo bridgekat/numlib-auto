@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Numlib.Analysis.Calculus.HolderSpace
 import Numlib.Analysis.Sobolev.DenyLions
+import Numlib.MeasureTheory.Function.ContinuousOnClosure
 
 /-!
 # The Sobolev embeddings into the Hölder spaces `C^{k,θ}(Ω̄)`
@@ -63,14 +64,13 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {p : ℝ≥0} [Fact
 
 omit [Fact (1 ≤ (p : ℝ≥0∞))] in
 /-- Two continuous functions that are both almost everywhere equal to `fn u` on `Ω` agree on
-`Ω`, hence on `closure Ω`. -/
+`closure Ω`: `ContinuousOn.eqOn_closure_of_ae_eq`. -/
 theorem SobolevEuclidean.eqOn_closure_of_ae_eq {m : ℕ} {u : SobolevEuclidean N m p Ω}
     {f g : EuclideanSpace ℝ (Fin N) → ℝ} (hf : Continuous f) (hg : Continuous g)
     (hfu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] f)
     (hgu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] g) :
     EqOn f g (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-  (Measure.eqOn_open_of_ae_eq (hfu.symm.trans hgu) Ω.isOpen hf.continuousOn
-    hg.continuousOn).of_subset_closure hf.continuousOn hg.continuousOn subset_closure subset_rfl
+  hf.continuousOn.eqOn_closure_of_ae_eq Ω.isOpen hg.continuousOn (hfu.symm.trans hgu)
 
 /-- **Corollary 9.15 in tuple form**: for an extension domain, `k + N/p < m`, there are `C ≥ 0`
 and `θ ∈ (0, 1]` (the sharp `m − N/p − k` when it is less than `1`) such that every

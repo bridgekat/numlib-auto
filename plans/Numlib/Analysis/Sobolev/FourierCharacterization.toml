@@ -34,3 +34,30 @@ id = "OrthonormalBasis.sq_eLpNorm_sum_eq_lintegral"
 [[node]]
 id = "OrthonormalBasis.exists_norm_equiv_eLpNorm_symbol_mul_fourier"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (7.4.1)"
+
+[[node]]
+id = "sq_lintegral_enorm_le_mul"
+
+[[node]]
+id = "integrable_rpow_neg_one_add_norm_sq_natCast"
+
+[[node]]
+id = "lintegral_ofReal_rpow_neg_one_add_norm_sq_ne_top"
+
+[[node]]
+id = "lintegral_ofReal_rpow_neg_one_add_mul_norm_sq"
+
+[[node]]
+id = "pow_one_add_mul_le"
+
+[[node]]
+id = "exists_rpow_neg_half_mul_add_eq"
+
+[[node]]
+id = "sq_lintegral_enorm_le_mul_add"
+
+[[node]]
+id = "sq_toReal_lintegral_enorm_fourier_le"
+
+[[node]]
+id = "norm_le_toReal_eLpNorm_symbol_mul_fourier"

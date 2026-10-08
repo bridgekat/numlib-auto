@@ -829,28 +829,6 @@ end Example4
 
 /-! ### Example 4 on a bounded `C¹` domain: Steps A and D through the boundary theory -/
 
-section BoundaryTools
-
-variable {N : ℕ}
-
-/-- The book's `ℝ^N`. -/
-local notation "𝔼" => EuclideanSpace ℝ (Fin N)
-
-variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-/-- The inner product of two gradients is the sum of the products of the partial derivatives,
-`∇u · ∇v = ∑ᵢ ∂ᵢu ∂ᵢv` (the reading of the book's integrand). Helper; belongs beside
-`EuclideanSpace.gradient_apply` in `Numlib/Analysis/Sobolev/Boundary/Divergence.lean`. -/
-theorem inner_gradient_eq_sum (u v : 𝔼 → ℝ) (x : 𝔼) :
-    ⟪_root_.gradient u x, _root_.gradient v x⟫_ℝ
-      = ∑ i, fderiv ℝ u x (EuclideanSpace.single i 1)
-        * fderiv ℝ v x (EuclideanSpace.single i 1) := by
-  rw [PiLp.inner_apply]
-  refine Finset.sum_congr rfl fun i _ ↦ ?_
-  rw [EuclideanSpace.gradient_apply, EuclideanSpace.gradient_apply, RCLike.inner_apply,
-    conj_trivial, mul_comm]
-end BoundaryTools
-
 section Example4Boundary
 
 variable {d : ℕ}
@@ -937,7 +915,7 @@ theorem example_9_4_stepA (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
       rw [← integral_add hI₁ hI₂]
       refine integral_congr_ae ?_
       filter_upwards [ae_all_iff.2 hdU, ae_all_iff.2 hdV, hU, hV] with x hxU hxV hUx hVx
-      simp only [hxU, hxV, hUx, hVx, inner_gradient_eq_sum]
+      simp only [hxU, hxV, hUx, hVx, EuclideanSpace.inner_gradient_eq_sum]
     -- the right side is `∫ f v = ∫ (−Δu) v + ∫ u v`
     have hR : ∫ x in (Ω : Set 𝔼), (hf.toLp f) x * SobolevMultiIndex.fn V x
         = ∫ x in (Ω : Set 𝔼), f x * v x :=
@@ -1027,7 +1005,7 @@ theorem example_9_4_stepD (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
         = ∫ x in (Ω : Set 𝔼), ⟪_root_.gradient u x, _root_.gradient ψ x⟫_ℝ := by
       refine integral_congr_ae ?_
       filter_upwards [ae_all_iff.2 hdU, ae_all_iff.2 hdW] with x hxU hxW
-      simp only [partialDeriv, hxU, hxW, inner_gradient_eq_sum]
+      simp only [partialDeriv, hxU, hxW, EuclideanSpace.inner_gradient_eq_sum]
     have hM : ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn U x * SobolevMultiIndex.fn W x
         = ∫ x in (Ω : Set 𝔼), u x * ψ x := integral_congr_ae (hUu.mul hW)
     have hR : ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn W x

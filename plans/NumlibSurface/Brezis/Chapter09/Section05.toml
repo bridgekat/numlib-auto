@@ -158,9 +158,6 @@ id = "isWeakSolutionNeumann_iff"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition"
 
 [[node]]
-id = "inner_gradient_eq_sum"
-
-[[node]]
 id = "example_9_4_stepA"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 4"
 

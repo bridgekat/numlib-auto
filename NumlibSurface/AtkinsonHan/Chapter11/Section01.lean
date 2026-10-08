@@ -742,18 +742,6 @@ theorem example_11_1_2 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω
 
 /-! ### Tools for the pointwise form -/
 
-/-- The inner product of two gradients is the sum of the products of the partial derivatives,
-`∇u · ∇v = ∑ᵢ ∂ᵢu ∂ᵢv`. Helper; belongs beside `EuclideanSpace.gradient_apply` in
-`Numlib/Analysis/Sobolev/Boundary/Divergence.lean`. -/
-theorem inner_gradient_eq_sum (u v : 𝔼 → ℝ) (x : 𝔼) :
-    ⟪gradient u x, gradient v x⟫_ℝ
-      = ∑ i, fderiv ℝ u x (EuclideanSpace.single i 1)
-        * fderiv ℝ v x (EuclideanSpace.single i 1) := by
-  rw [PiLp.inner_apply]
-  refine Finset.sum_congr rfl fun i _ ↦ ?_
-  rw [EuclideanSpace.gradient_apply, EuclideanSpace.gradient_apply, RCLike.inner_apply,
-    conj_trivial, mul_comm]
-
 open Laplacian in
 /-- **The form `a(u, W) = ∫_Ω (∇u·∇W + u W)` of a `C²(Ω̄)` function against a smooth test
 function, with its boundary term**: for `u ∈ H¹(Ω)` with a representative `ũ ∈ C²(Ω̄)` whose
@@ -800,7 +788,7 @@ theorem laplaceForm_eq_integral_add_of_contDiffOnClosure {u : SobolevEuclidean N
     rw [Elliptic.laplaceForm_apply, ← integral_add hI₁ hI₂]
     refine integral_congr_ae ?_
     filter_upwards [ae_all_iff.2 hdU, ae_all_iff.2 hdW, hũ, hW] with x hxU hxW hUx hWx
-    simp only [hxU, hxW, hUx, hWx, inner_gradient_eq_sum]
+    simp only [hxU, hxW, hUx, hWx, EuclideanSpace.inner_gradient_eq_sum]
   have hR : ∫ x in (Ω : Set 𝔼), (-Δ ũ x + ũ x) * ψ x
       = (∫ x in (Ω : Set 𝔼), -(Δ ũ x * ψ x)) + ∫ x in (Ω : Set 𝔼), ũ x * ψ x := by
     have hI₃' : Integrable (fun x ↦ -(Δ ũ x * ψ x)) (volume.restrict (Ω : Set 𝔼)) := hI₃.neg

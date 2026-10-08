@@ -181,12 +181,6 @@ theorem truncationPrimitive_sub_le_sq (hG : IsTruncation G) {K : ℝ} (hK : 0 �
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- `‖v‖² = ∫_Ω v²` in `L²(Ω)`. -/
-theorem norm_sq_eq_integral_sq (w : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
-    ‖w‖ ^ 2 = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), w x ^ 2 := by
-  rw [← real_inner_self_eq_norm_sq, L2.inner_eq_integral_mul]
-  exact integral_congr_ae (Eventually.of_forall fun x ↦ (sq _).symm)
-
 /-- `v² ∈ L¹(Ω)` for `v ∈ L²(Ω)`. -/
 theorem integrable_sq (v : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     Integrable (fun x ↦ v x ^ 2) (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
@@ -301,7 +295,7 @@ theorem abs_truncationFunctional_sub_sub_inner_le (hG : IsTruncation G) {K : ℝ
       - truncationPrimitive G (v x - K) - truncationL2 Ω hG hK v x * w x)
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := h12.sub h3
   rw [L2.inner_eq_integral_mul, truncationFunctional, truncationFunctional, ← integral_sub h1 h2,
-    ← integral_sub h12 h3, norm_sq_eq_integral_sq]
+    ← integral_sub h12 h3, L2.norm_sq_eq_integral_sq]
   refine (abs_integral_le_integral_abs).trans (integral_mono_ae h123.abs (integrable_sq w) ?_)
   filter_upwards [Lp.coeFn_add v w, coeFn_truncationL2 hG hK v] with x hx1 hx2
   rw [hx1, Pi.add_apply, hx2]

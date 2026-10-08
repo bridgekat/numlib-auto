@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Calculus.FDeriv.Basic
+import Mathlib.Analysis.Convex.Combination
 import Mathlib.Analysis.LocallyConvex.Bounded
 import Mathlib.Analysis.Normed.Operator.Compact.Basic
 
@@ -17,6 +18,10 @@ hypothesis, which is why the two words are needed.
   interior point is a **compact linear operator**. This is what licenses the Fredholm alternative
   for `1 - T'(v₀)`, and so it is the bridge from a nonlinear fixed point problem `u = T u` to the
   linear theory of second-kind equations.
+* `Continuous.exists_finset_mem_convexHull_norm_sub_lt`: the **Schauder projection** — a
+  continuous map with totally bounded range is, to within any `ε`, a continuous map with values in
+  the convex hull of finitely many points of its range. This is the step from Brouwer's to
+  Schauder's fixed point theorem.
 
 The proof of the derivative theorem is the classical one: for a scalar `a` of small norm the
 difference quotients `v ↦ a⁻¹ • (T (v₀ + a • v) - T v₀)` run over a totally bounded set as `v` runs
@@ -25,9 +30,10 @@ a totally bounded set. Continuity of `T` is not used: differentiability at the o
 together with compactness on bounded sets is enough, so the hypothesis is weaker than the
 "completely continuous" of the source.
 
-These are [han2009theoretical] Definition 5.5.3 and Proposition 5.5.5. Brouwer's and Schauder's
-fixed point theorems, and the rotation of a completely continuous vector field, are not here:
-Mathlib has neither a Brouwer theorem nor degree theory.
+These are [han2009theoretical] Definition 5.5.3 and Proposition 5.5.5, and
+[brezis2011functional] §6.1 Remark 1 (3). Brouwer's and Schauder's fixed point theorems, and the
+rotation of a completely continuous vector field, are not here: Mathlib has neither a Brouwer
+theorem nor degree theory.
 -/
 
 open Metric Set Bornology
@@ -50,6 +56,89 @@ theorem mono (hT : IsCompactMap T K) (h : L ⊆ K) : IsCompactMap T L :=
   fun _ hB hb => hT _ (hB.trans h) hb
 
 end IsCompactMap
+
+section SchauderProjection
+
+/-- **The Schauder projection** ([brezis2011functional] §6.1 Remark 1 (3)). Let `X` be a
+topological space and `T : X → F` a continuous map into a normed space whose range is totally
+bounded (e.g. relatively compact). Then for every `ε > 0` there are finitely many points `t` of
+the range and a continuous map `Tε : X → F` with values in the convex hull of `t` and
+`‖Tε x - T x‖ < ε` for all `x`.
+
+The construction: cover the range by the balls `B(f, ε/2)`, `f ∈ t`, put
+`q_f(x) = max (ε - ‖T x - f‖) 0` and let `Tε x` be the centre of mass of the points `f` with the
+weights `q_f(x)`, a convex combination of points within `ε` of `T x`. This is the step from
+Brouwer's to Schauder's fixed point theorem. -/
+theorem Continuous.exists_finset_mem_convexHull_norm_sub_lt {X F : Type*} [TopologicalSpace X]
+    [SeminormedAddCommGroup F] [NormedSpace ℝ F] {T : X → F} (hT : Continuous T)
+    (hK : TotallyBounded (range T)) {ε : ℝ} (hε : 0 < ε) :
+    ∃ t : Finset F, (t : Set F) ⊆ range T ∧ ∃ Tε : X → F, Continuous Tε ∧
+      (∀ x, Tε x ∈ convexHull ℝ (t : Set F)) ∧ ∀ x, ‖Tε x - T x‖ < ε := by
+  classical
+  obtain ⟨s, hsT, hsfin, hcover⟩ := finite_approx_of_totallyBounded hK (ε / 2) (half_pos hε)
+  set t := hsfin.toFinset
+  obtain ⟨q, hq⟩ : ∃ q : F → X → ℝ, ∀ f x, q f x = max (ε - ‖T x - f‖) 0 := ⟨_, fun _ _ => rfl⟩
+  have hq_cont : ∀ f, Continuous (q f) := fun f => by
+    have : q f = fun x => max (ε - ‖T x - f‖) 0 := funext (hq f)
+    rw [this]
+    exact (continuous_const.sub (hT.sub continuous_const).norm).max continuous_const
+  have hq_nonneg : ∀ f x, 0 ≤ q f x := fun f x => by rw [hq]; exact le_max_right _ _
+  -- every `T x` is within `ε / 2` of some `f₀ ∈ t`, so `∑ q_f x > 0`
+  have hnear : ∀ x, ∃ f ∈ t, ‖T x - f‖ < ε / 2 := fun x => by
+    obtain ⟨f, hf, hxf⟩ := mem_iUnion₂.1 (hcover ⟨x, rfl⟩)
+    exact ⟨f, hsfin.mem_toFinset.2 hf, by rwa [mem_ball, dist_eq_norm] at hxf⟩
+  have hQ_pos : ∀ x, 0 < ∑ f ∈ t, q f x := fun x => by
+    obtain ⟨f, hf, hxf⟩ := hnear x
+    have h1 : ε / 2 ≤ q f x := by
+      rw [hq]
+      exact le_max_of_le_left (by linarith)
+    exact lt_of_lt_of_le (half_pos hε)
+      (h1.trans (Finset.single_le_sum (fun g _ => hq_nonneg g x) hf))
+  refine ⟨t, by simpa [t] using hsT, fun x => t.centerMass (fun f => q f x) id, ?_,
+    fun x => t.centerMass_mem_convexHull (fun f _ => hq_nonneg f x) (hQ_pos x)
+      (fun f hf => Finset.mem_coe.2 hf), fun x => ?_⟩
+  · -- continuity
+    exact ((continuous_finsetSum _ fun f _ => hq_cont f).inv₀ fun x => (hQ_pos x).ne').smul
+      (continuous_finsetSum _ fun f _ => (hq_cont f).smul continuous_const)
+  · -- the error bound
+    have hrw : t.centerMass (fun f => q f x) id - T x =
+        (∑ f ∈ t, q f x)⁻¹ • ∑ f ∈ t, q f x • (f - T x) := by
+      simp only [Finset.centerMass, id, smul_sub, Finset.sum_sub_distrib, ← Finset.sum_smul,
+        smul_smul, inv_mul_cancel₀ (hQ_pos x).ne', one_smul]
+    rw [hrw, norm_smul, norm_inv, Real.norm_of_nonneg (hQ_pos x).le]
+    have hlt : ‖∑ f ∈ t, q f x • (f - T x)‖ < (∑ f ∈ t, q f x) * ε := by
+      calc ‖∑ f ∈ t, q f x • (f - T x)‖
+          ≤ ∑ f ∈ t, ‖q f x • (f - T x)‖ := norm_sum_le _ _
+        _ = ∑ f ∈ t, q f x * ‖f - T x‖ := by
+            refine Finset.sum_congr rfl fun f _ => ?_
+            rw [norm_smul, Real.norm_of_nonneg (hq_nonneg f x)]
+        _ < ∑ f ∈ t, q f x * ε := by
+            obtain ⟨f₀, hf₀, hxf₀⟩ := hnear x
+            refine Finset.sum_lt_sum (fun f _ => ?_) ⟨f₀, hf₀, ?_⟩
+            · rcases (hq_nonneg f x).eq_or_lt with h | h
+              · rw [← h, zero_mul, zero_mul]
+              · have hlt' : ‖f - T x‖ < ε := by
+                  rw [norm_sub_rev]
+                  by_contra hge
+                  have : q f x = 0 := by
+                    rw [hq]
+                    exact max_eq_right (by linarith [not_lt.1 hge])
+                  linarith
+                exact mul_le_mul_of_nonneg_left hlt'.le (hq_nonneg f x)
+            · have hpos : 0 < q f₀ x := by
+                rw [hq]
+                exact lt_of_lt_of_le (half_pos hε) (le_max_of_le_left (by linarith))
+              have : ‖f₀ - T x‖ < ε := by
+                rw [norm_sub_rev]
+                linarith
+              exact mul_lt_mul_of_pos_left this hpos
+        _ = (∑ f ∈ t, q f x) * ε := (Finset.sum_mul _ _ _).symm
+    calc (∑ f ∈ t, q f x)⁻¹ * ‖∑ f ∈ t, q f x • (f - T x)‖
+        < (∑ f ∈ t, q f x)⁻¹ * ((∑ f ∈ t, q f x) * ε) :=
+          mul_lt_mul_of_pos_left hlt (inv_pos.2 (hQ_pos x))
+      _ = ε := by rw [← mul_assoc, inv_mul_cancel₀ (hQ_pos x).ne', one_mul]
+
+end SchauderProjection
 
 section Linear
 

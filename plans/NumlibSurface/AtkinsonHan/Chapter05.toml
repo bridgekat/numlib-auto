@@ -11,6 +11,6 @@ Not formalized, with the record in the "Not formalized here" section of `Chapter
 * **Theorem 5.5.1** (Brouwer) — Mathlib has no Brouwer fixed-point theorem and none of the
   simplicial or degree-theoretic machinery for one; estimate 1500–3000 lines.
 * **Theorem 5.5.4** (Schauder) — blocked by 5.5.1 alone; the Schauder-projection half is proved as
-  `Brezis.Chapter06.remark_6_1_nonlinear`, leaving 150–250 lines.
+  the backbone's `Continuous.exists_finset_mem_convexHull_norm_sub_lt`, leaving 150–250 lines.
 * **§5.5.1**, the rotation of a completely continuous vector field and P1–P5 — degree theory.
 '''

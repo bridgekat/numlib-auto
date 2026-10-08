@@ -1,6 +1,7 @@
 import Numlib.Analysis.Sobolev.Extension
 import Numlib.Analysis.Sobolev.TranslationCurve
 import Numlib.Geometry.Triangulation
+import Numlib.MeasureTheory.Function.ContinuousOnClosure
 
 /-!
 # Density of smooth functions up to the boundary
@@ -167,9 +168,8 @@ theorem SobolevEuclidean.HasSmoothDensity.exists_seq_contDiff_one
 
 omit [Fact (1 ≤ p)] in
 /-- **Uniqueness of continuous representatives up to the boundary**: two functions continuous on
-`closure Ω` and both almost everywhere equal to `fn u` on `Ω` agree on `closure Ω`. They agree on
-the open set `Ω` (`MeasureTheory.Measure.eqOn_open_of_ae_eq`), hence on its closure by
-continuity. -/
+`closure Ω` and both almost everywhere equal to `fn u` on `Ω` agree on `closure Ω`:
+`ContinuousOn.eqOn_closure_of_ae_eq`. -/
 theorem SobolevEuclidean.eqOn_closure_of_ae_eq_of_continuousOn (u : SobolevEuclidean N 1 p Ω)
     {v₁ v₂ : EuclideanSpace ℝ (Fin N) → ℝ}
     (h₁ : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] v₁)
@@ -177,8 +177,7 @@ theorem SobolevEuclidean.eqOn_closure_of_ae_eq_of_continuousOn (u : SobolevEucli
     (hc₁ : ContinuousOn v₁ (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (hc₂ : ContinuousOn v₂ (closure (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     EqOn v₁ v₂ (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-  (Measure.eqOn_open_of_ae_eq (h₁.symm.trans h₂) Ω.isOpen (hc₁.mono subset_closure)
-    (hc₂.mono subset_closure)).of_subset_closure hc₁ hc₂ subset_closure le_rfl
+  hc₁.eqOn_closure_of_ae_eq Ω.isOpen hc₂ (h₁.symm.trans h₂)
 
 /-- **An extension domain has smooth density** ([brezis2011functional] Corollary 9.8 in its
 abstract form, the density

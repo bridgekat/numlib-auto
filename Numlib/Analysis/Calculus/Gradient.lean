@@ -18,9 +18,10 @@ modules of `Numlib/Analysis/Sobolev/Boundary/` use:
 * `gradient_eq_toDualReal_symm`: the gradient through the real-linear Riesz map
   `InnerProductSpace.toDualReal` (so the calculus lemmas for `≃ₗᵢ[ℝ]` apply);
 * on `ℝ^N`: `EuclideanSpace.gradient_apply` (the coordinates of the gradient are the partial
-  derivatives), `EuclideanSpace.inner_gradient_eq_fderiv`, `EuclideanSpace.norm_gradient_eq`,
-  `EuclideanSpace.norm_fderiv_eq` (the operator norm of `Du(x)` is the Euclidean norm of the
-  tuple of partial derivatives) and `EuclideanSpace.continuous_gradient` for a `C¹` function.
+  derivatives), `EuclideanSpace.inner_gradient_eq_fderiv`, `EuclideanSpace.inner_gradient_eq_sum`,
+  `EuclideanSpace.norm_gradient_eq`, `EuclideanSpace.norm_fderiv_eq` (the operator norm of `Du(x)`
+  is the Euclidean norm of the tuple of partial derivatives) and
+  `EuclideanSpace.continuous_gradient` for a `C¹` function.
 -/
 
 open scoped InnerProductSpace
@@ -88,6 +89,14 @@ theorem gradient_apply (g : EuclideanSpace ℝ (Fin d) → ℝ) (x : EuclideanSp
   have h : gradient g x i = ⟪gradient g x, EuclideanSpace.single i 1⟫_ℝ := by
     rw [EuclideanSpace.inner_single_right, conj_trivial, one_mul]
   rw [h, gradient, InnerProductSpace.toDual_symm_apply]
+
+/-- **The inner product of two gradients in coordinates**, `⟪∇u, ∇v⟫ = ∑ᵢ ∂ᵢu ∂ᵢv`. -/
+theorem inner_gradient_eq_sum (u v : EuclideanSpace ℝ (Fin d) → ℝ)
+    (x : EuclideanSpace ℝ (Fin d)) :
+    ⟪gradient u x, gradient v x⟫_ℝ
+      = ∑ i, fderiv ℝ u x (EuclideanSpace.single i 1)
+        * fderiv ℝ v x (EuclideanSpace.single i 1) := by
+  simp only [real_inner_eq_sum, gradient_apply]
 
 /-- The operator norm of the derivative of `u : ℝ^N → ℝ` is the Euclidean norm of the tuple of
 partial derivatives `(∂ᵢu x)ᵢ`. -/

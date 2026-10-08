@@ -446,19 +446,6 @@ theorem multiIndexTuple_of_sum_eq_one {b : Fin d → EuclideanSpace ℝ (Fin d)}
   rw [List.mem_replicate] at hi
   rw [hi.2, h i hi.1]
 
-/-- In `ℝ^d` the sum of the squared coordinates is the squared norm. -/
-theorem sum_sq_apply (x : EuclideanSpace ℝ (Fin d)) : ∑ i, x i ^ 2 = ‖x‖ ^ 2 := by
-  rw [EuclideanSpace.norm_eq, Real.sq_sqrt (by positivity)]; simp
-
-/-- In `ℝ^d` a coordinate is bounded by the norm. -/
-theorem abs_apply_le_norm (x : EuclideanSpace ℝ (Fin d)) (i : Fin d) : |x i| ≤ ‖x‖ := by
-  have h2 : x i ^ 2 ≤ ‖x‖ ^ 2 := by
-    rw [← sum_sq_apply x]
-    exact Finset.single_le_sum (f := fun j ↦ x j ^ 2) (fun j _ ↦ sq_nonneg _) (Finset.mem_univ i)
-  calc |x i| = √(x i ^ 2) := (Real.sqrt_sq_eq_abs _).symm
-    _ ≤ √(‖x‖ ^ 2) := Real.sqrt_le_sqrt h2
-    _ = ‖x‖ := by rw [Real.sqrt_sq (norm_nonneg x)]
-
 /-- The classical gradient of `v(x) = |x|^λ` on `ℝ^d ∖ {0}`, read as a linear functional
 `h ↦ λ |x|^{λ-2} ⟪x, h⟫`. Its `i`-th component is the `v_{x_i}(x) = λ |x|^{λ-2} x_i` displayed in
 Example 7.2.5. -/
@@ -630,7 +617,7 @@ theorem example_7_2_5_memW1p (hd : 0 < d) {lam : ℝ} (hlam : lam ≠ 0) (p : �
         rcases eq_or_ne x 0 with rfl | hx
         · simp
         · rw [abs_div, abs_of_nonneg (norm_nonneg x), div_le_one (norm_pos_iff.2 hx)]
-          exact abs_apply_le_norm x i
+          exact (Real.norm_eq_abs (x i)).ge.trans (PiLp.norm_apply_le x i)
     have heq : (fun x : EuclideanSpace ℝ (Fin d) ↦
           ∑ i, (x i / ‖x‖) * normRpowGrad lam x (stdBasis d i))
         =ᵐ[volume.restrict (ball (0 : EuclideanSpace ℝ (Fin d)) 1)]
@@ -645,7 +632,7 @@ theorem example_7_2_5_memW1p (hd : 0 < d) {lam : ℝ} (hlam : lam ≠ 0) (p : �
           = (lam * ‖x‖ ^ (lam - 2) / ‖x‖) * ∑ i, x i ^ 2 := by
         rw [Finset.mul_sum]
         exact Finset.sum_congr rfl fun i _ ↦ by ring
-      rw [hcalc, sum_sq_apply]
+      rw [hcalc, ← EuclideanSpace.real_norm_sq_eq]
       calc lam * ‖x‖ ^ (lam - 2) / ‖x‖ * ‖x‖ ^ 2
           = lam * (‖x‖ ^ (lam - 2) * ‖x‖) * (‖x‖ / ‖x‖) := by ring
         _ = lam * ‖x‖ ^ (lam - 1) := by rw [div_self hn.ne', mul_one, hpow]

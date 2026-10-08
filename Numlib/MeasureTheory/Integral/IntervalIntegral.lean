@@ -32,7 +32,8 @@ interval `(a, b)`, none of which is about any particular numerical method:
 * a function continuous on `[a, b]` is essentially bounded and square integrable on `(a, b)`
   (`ContinuousOn.memLp_top_restrict_Ioo`, `ContinuousOn.memLp_two_restrict_Ioo`), integrable
   against an `L²` function (`MeasureTheory.integrableOn_continuousOn_mul`), and determined on
-  `[a, b]` by its class in `L²(a, b)` (`eqOn_Icc_of_ae_eq`); two norm bounds for `L²(a, b)`
+  `[a, b]` by its class in `L²(a, b)` (`eqOn_Icc_of_ae_eq`); `‖f‖² = ∫ f²` in a real `L²(μ)`
+  (`MeasureTheory.L2.norm_sq_eq_integral_sq`); two norm bounds for `L²(a, b)`
   (`MeasureTheory.Lp.norm_le_sqrt_mul_of_ae_bound`, `MeasureTheory.Lp.norm_le_of_abs_le`);
 * **Cauchy–Schwarz** for the integral of a product, `|∫ f g| ≤ √(∫ f²) √(∫ g²)` for any measure
   (`MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt`) and for interval integrals
@@ -158,13 +159,18 @@ theorem MeasureTheory.integrableOn_continuousOn_mul {g : ℝ → ℝ} (hg : Cont
   IntegrableOn.continuousOn_mul_of_subset hg ((Lp.memLp f).integrable one_le_two) isCompact_Icc
     measurableSet_Ioo Ioo_subset_Icc_self
 
-/-- `‖f‖² = ∫_a^b |f|²` in `L²(a, b)`. -/
-theorem norm_sq_eq_integral_sq (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
-    ‖f‖ ^ 2 = ∫ x in Ioo a b, |f x| ^ 2 := by
+/-- `‖f‖² = ∫ f²` in a real `L²(μ)`, for any measure. -/
+theorem MeasureTheory.L2.norm_sq_eq_integral_sq {X : Type*} [MeasurableSpace X] {μ : Measure X}
+    (f : Lp ℝ 2 μ) : ‖f‖ ^ 2 = ∫ x, f x ^ 2 ∂μ := by
   rw [← real_inner_self_eq_norm_sq, L2.inner_def]
   refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
   dsimp only
-  rw [real_inner_self_eq_norm_sq, Real.norm_eq_abs]
+  rw [real_inner_self_eq_norm_sq, Real.norm_eq_abs, sq_abs]
+
+/-- `‖f‖² = ∫_a^b |f|²` in `L²(a, b)`: `MeasureTheory.L2.norm_sq_eq_integral_sq`. -/
+theorem norm_sq_eq_integral_sq (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
+    ‖f‖ ^ 2 = ∫ x in Ioo a b, |f x| ^ 2 := by
+  simp_rw [L2.norm_sq_eq_integral_sq, sq_abs]
 
 /-- An `L²(a, b)` function bounded by `C` has norm at most `√(b - a) C`. -/
 theorem MeasureTheory.Lp.norm_le_sqrt_mul_of_ae_bound (hab : a ≤ b)

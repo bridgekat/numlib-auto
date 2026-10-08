@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.InnerProductSpace.Dual
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Analysis.Normed.Operator.Scaling
 
 /-!
 # Bounded sesquilinear forms on Hilbert spaces
@@ -277,18 +278,10 @@ def IsNondegenerate : Prop := ∀ v, v ≠ 0 → ∃ u, a u v ≠ 0
 
 /-- `sup_{v ≠ 0} |a u v| / ‖v‖ = ‖a u‖`: the supremum in which the inf–sup condition is usually
 stated is exactly the operator norm of the functional `a u`, which is why `InfSupWith` may be
-phrased with `‖a u‖`. -/
+phrased with `‖a u‖` (`ContinuousLinearMap.iSup_norm_apply_div_eq_opNorm`). -/
 theorem iSup_norm_div_eq_norm (u : U) :
-    (⨆ v : {v : V // v ≠ 0}, ‖a u v‖ / ‖(v : V)‖) = ‖a u‖ := by
-  have hle : ∀ v : {v : V // v ≠ 0}, ‖a u (v : V)‖ / ‖(v : V)‖ ≤ ‖a u‖ := fun v =>
-    (div_le_iff₀ (norm_pos_iff.mpr v.2)).mpr ((a u).le_opNorm _)
-  refine le_antisymm (Real.iSup_le hle (norm_nonneg _)) ?_
-  refine (a u).opNorm_le_bound (Real.iSup_nonneg fun v => by positivity) fun v => ?_
-  rcases eq_or_ne v 0 with rfl | hv
-  · simp
-  · rw [← div_le_iff₀ (norm_pos_iff.mpr hv)]
-    exact le_ciSup (f := fun v : {v : V // v ≠ 0} => ‖a u (v : V)‖ / ‖(v : V)‖)
-      ⟨‖a u‖, Set.forall_mem_range.2 hle⟩ ⟨v, hv⟩
+    (⨆ v : {v : V // v ≠ 0}, ‖a u v‖ / ‖(v : V)‖) = ‖a u‖ :=
+  (a u).iSup_norm_apply_div_eq_opNorm
 
 /-- A coercive one-space form satisfies the inf–sup condition with the same constant.  This is why
 the two-space theory contains Lax–Milgram as a special case ([han2009theoretical], Exercise 8.7.1).

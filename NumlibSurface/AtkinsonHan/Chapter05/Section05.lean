@@ -50,14 +50,13 @@ without proof, referring the reader elsewhere for one.
   no-retraction theorem through Stokes' theorem, is a project of its own; estimate 1500–3000 lines.
 * **Theorem 5.5.4**, Schauder's fixed-point theorem: for `V` a Banach space and `K ⊆ V` bounded,
   closed and convex, a completely continuous `T : K → K` has at least one fixed point in `K`. Its
-  only obstruction is Theorem 5.5.1. The other half of the standard proof already exists:
-  `Brezis.Chapter06.remark_6_1_nonlinear` (`NumlibSurface/Brezis/Chapter06/Section01.lean`)
-  approximates a continuous map with relatively compact range, to within any `ε`, by a continuous
-  map with finite-dimensional range — the Schauder projection onto the convex hull of a finite
-  `ε`-net — so Schauder's theorem follows from Brouwer's on the finite-dimensional convex set
-  `conv {x₁, …, xₙ}` by the usual limiting argument; estimate 150–250 lines once Brouwer's theorem
-  exists, at which point the projection lemma should move to `Numlib/Nonlinear/CompletelyContinuous`
-  or to a `Nonlinear/SchauderProjection` module of its own. That the hypotheses of Theorem 5.5.4
+  only obstruction is Theorem 5.5.1. The other half of the standard proof already exists: the
+  backbone's `Continuous.exists_finset_mem_convexHull_norm_sub_lt`
+  (`Numlib/Nonlinear/CompletelyContinuous`) approximates a continuous map with totally bounded
+  range, to within any `ε`, by a continuous map with values in the convex hull of a finite `ε`-net
+  of its range — the Schauder projection — so Schauder's theorem follows from Brouwer's on the
+  finite-dimensional convex set `conv {x₁, …, xₙ}` by the usual limiting argument; estimate
+  150–250 lines once Brouwer's theorem exists. That the hypotheses of Theorem 5.5.4
   cannot be relaxed to a Lipschitz condition is `example_5_5_2` below, which *is* formalized.
 * **§5.5.1** in its entirety — the rotation of a completely continuous vector field and its
   properties P1–P5 — which is degree theory, of which Mathlib has none.

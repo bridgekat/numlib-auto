@@ -48,9 +48,6 @@ id = "abs_truncationPrimitive_sub_sub_le"
 id = "truncationPrimitive_sub_le_sq"
 
 [[node]]
-id = "norm_sq_eq_integral_sq"
-
-[[node]]
 id = "integrable_sq"
 
 [[node]]

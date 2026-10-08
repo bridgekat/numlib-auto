@@ -35,11 +35,16 @@ basis `b` is equivalent to that Fourier norm.
   so Plancherel turns `∑_{|α| ≤ k} ‖∂^α v‖²_{L²}` into `∫ (∑_{|α| ≤ k} (2π)^{2|α|} |ξ^α|²) |ℱv|²`
   (`OrthonormalBasis.sq_eLpNorm_sum_eq_lintegral`), and the symbol inequality compares this with
   `∫ (1 + |ξ|²)^k |ℱv|²`.
+* `sq_toReal_lintegral_enorm_fourier_le`: the Fourier side of the interpolation inequality
+  `‖v‖²_∞ ≲ ‖v‖_{L²} ‖v‖_{H^k}`, `2k > dim E` — the weighted Cauchy–Schwarz bound
+  (`sq_lintegral_enorm_le_mul`) against the scaled weight `(1 + λ|ξ|²)^{±k/2}`, whose integral
+  scales like `λ^{−dim E/2}` (`lintegral_ofReal_rpow_neg_one_add_mul_norm_sq`), with the optimal
+  `λ` given by `exists_rpow_neg_half_mul_add_eq`.
 
 ## References
 
 [han2009theoretical], §7.4: Theorem 7.4.1, the display (7.4.2) defining `H^s(ℝ^d)`, the norm
-equivalence (7.4.1) and Exercise 7.4.2.
+equivalence (7.4.1), Exercise 7.4.2 and the Fourier steps of Example 7.4.3.
 -/
 
 open FourierTransform LineDeriv MeasureTheory TemperedDistribution TopologicalSpace
@@ -604,3 +609,241 @@ theorem exists_norm_equiv_eLpNorm_symbol_mul_fourier :
 end NormEquivalence
 
 end OrthonormalBasis
+
+/-! ### The Fourier side of the interpolation inequality `‖v‖²_∞ ≲ ‖v‖_{L²} ‖v‖_{H^k}`
+
+The steps of [han2009theoretical] Example 7.4.3: `|v(x)| ≤ ∫ |ℱv|`, and `(∫ |ℱv|)²` is bounded by
+the Cauchy–Schwarz inequality against the scaled weight `(1 + λ|ξ|²)^{±k/2}`, `2k > dim E`, which
+after the choice of `λ` gives `(∫ |ℱv|)² ≲ ‖v‖_{L²} ‖(1 + |ξ|²)^{k/2} ℱv‖_{L²}`. -/
+
+section Interpolation
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+  [MeasurableSpace E] [BorelSpace E]
+
+open Module
+
+/-- **The weighted Cauchy–Schwarz inequality** ([han2009theoretical] Example 7.4.3): for an
+a.e.-measurable `F` and `l > 0`,
+`(∫ ‖F‖)² ≤ ∫ (1 + l|ξ|²)^{−k} · ∫ (1 + l|ξ|²)^k ‖F‖²`, in `lintegral` form. -/
+theorem sq_lintegral_enorm_le_mul {G : Type*} [NormedAddCommGroup G] {F : E → G}
+    (hF : AEStronglyMeasurable F volume) {l : ℝ} (hl : 0 < l) (k : ℕ) :
+    (∫⁻ ξ, ‖F ξ‖ₑ) ^ 2 ≤
+      (∫⁻ ξ : E, ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ (-(k : ℝ)))) *
+        ∫⁻ ξ, ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ k) * ‖F ξ‖ₑ ^ 2 := by
+  have hpos : ∀ ξ : E, (0 : ℝ) < 1 + l * ‖ξ‖ ^ 2 := fun ξ ↦ by positivity
+  obtain ⟨f, hf⟩ : ∃ f : E → ℝ≥0∞,
+      f = fun ξ ↦ ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ (-(k : ℝ) / 2)) := ⟨_, rfl⟩
+  obtain ⟨g, hg⟩ : ∃ g : E → ℝ≥0∞,
+      g = fun ξ ↦ ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2)) * ‖F ξ‖ₑ := ⟨_, rfl⟩
+  have hcont : Continuous fun ξ : E ↦ 1 + l * ‖ξ‖ ^ 2 := by fun_prop
+  have hfm : AEMeasurable f volume := by
+    rw [hf]
+    exact (ENNReal.measurable_ofReal.comp
+      (hcont.rpow_const fun ξ ↦ Or.inl (hpos ξ).ne').measurable).aemeasurable
+  have hgm : AEMeasurable g volume := by
+    rw [hg]
+    exact ((ENNReal.measurable_ofReal.comp
+      (hcont.rpow_const fun ξ ↦ Or.inl (hpos ξ).ne').measurable).aemeasurable).mul
+      hF.enorm
+  have hfg : ∀ ξ, f ξ * g ξ = ‖F ξ‖ₑ := fun ξ ↦ by
+    rw [hf, hg, ← mul_assoc, ← ENNReal.ofReal_mul (Real.rpow_nonneg (hpos ξ).le _),
+      ← Real.rpow_add (hpos ξ), show -(k : ℝ) / 2 + (k : ℝ) / 2 = 0 by ring, Real.rpow_zero,
+      ENNReal.ofReal_one, one_mul]
+  have hH := ENNReal.lintegral_mul_le_Lp_mul_Lq volume Real.HolderConjugate.two_two hfm hgm
+  simp only [Pi.mul_apply, hfg] at hH
+  have hf2 : ∀ ξ, f ξ ^ (2 : ℝ) = ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ (-(k : ℝ))) := fun ξ ↦ by
+    rw [hf, ENNReal.ofReal_rpow_of_nonneg (Real.rpow_nonneg (hpos ξ).le _) zero_le_two,
+      ← Real.rpow_mul (hpos ξ).le, show -(k : ℝ) / 2 * 2 = -(k : ℝ) by ring]
+  have hg2 : ∀ ξ, g ξ ^ (2 : ℝ)
+      = ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ k) * ‖F ξ‖ₑ ^ 2 := fun ξ ↦ by
+    rw [hg, ENNReal.mul_rpow_of_nonneg _ _ zero_le_two,
+      ENNReal.ofReal_rpow_of_nonneg (Real.rpow_nonneg (hpos ξ).le _) zero_le_two,
+      ← Real.rpow_mul (hpos ξ).le, ENNReal.rpow_two,
+      show (k : ℝ) / 2 * 2 = ((k : ℕ) : ℝ) by ring, Real.rpow_natCast]
+  simp only [hf2, hg2] at hH
+  calc (∫⁻ ξ, ‖F ξ‖ₑ) ^ 2
+      ≤ ((∫⁻ ξ, ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ (-(k : ℝ)))) ^ (1 / (2 : ℝ)) *
+          (∫⁻ ξ, ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ k) * ‖F ξ‖ₑ ^ 2) ^ (1 / (2 : ℝ))) ^ 2 := by
+        gcongr
+    _ = _ := by
+        rw [mul_pow, ← ENNReal.rpow_natCast, ← ENNReal.rpow_natCast, ← ENNReal.rpow_mul,
+          ← ENNReal.rpow_mul]
+        norm_num
+
+/-- The integral of `(1 + |ξ|²)^{−k}` over `E` is finite for `2k > dim E`. -/
+theorem integrable_rpow_neg_one_add_norm_sq_natCast {k : ℕ} (hk : finrank ℝ E < 2 * k) :
+    Integrable (fun ξ : E ↦ (1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))) volume := by
+  have := integrable_rpow_neg_one_add_norm_sq (E := E) (μ := volume) (r := 2 * k)
+    (by exact_mod_cast hk)
+  refine this.congr (Filter.Eventually.of_forall fun ξ ↦ ?_)
+  change (1 + ‖ξ‖ ^ 2) ^ (-(2 * (k : ℝ)) / 2) = (1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))
+  rw [show -(2 * (k : ℝ)) / 2 = -(k : ℝ) by ring]
+
+/-- The integral of `(1 + |ξ|²)^{−k}` over `E` is finite for `2k > dim E`, in `lintegral`
+form. -/
+theorem lintegral_ofReal_rpow_neg_one_add_norm_sq_ne_top {k : ℕ} (hk : finrank ℝ E < 2 * k) :
+    ∫⁻ ξ : E, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))) ≠ ⊤ := by
+  rw [← ofReal_integral_eq_lintegral_ofReal (integrable_rpow_neg_one_add_norm_sq_natCast hk)
+    (Filter.Eventually.of_forall fun ξ ↦ Real.rpow_nonneg (by positivity) _)]
+  exact ENNReal.ofReal_ne_top
+
+/-- The integral of `(1 + l|ξ|²)^{−k}` over `E` scales like `l^{−dim E/2}`. -/
+theorem lintegral_ofReal_rpow_neg_one_add_mul_norm_sq {l : ℝ} (hl : 0 < l) {k : ℕ}
+    (hk : finrank ℝ E < 2 * k) :
+    ∫⁻ ξ : E, ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ (-(k : ℝ)))
+      = ENNReal.ofReal (l ^ (-(finrank ℝ E : ℝ) / 2)) *
+        ∫⁻ ξ : E, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))) := by
+  have hint := integrable_rpow_neg_one_add_norm_sq_natCast (E := E) hk
+  have hsq : ∀ ξ : E, ‖Real.sqrt l • ξ‖ ^ 2 = l * ‖ξ‖ ^ 2 := fun ξ ↦ by
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (Real.sqrt_nonneg l), mul_pow,
+      Real.sq_sqrt hl.le]
+  have hcomp := Measure.integral_comp_smul (volume : Measure E)
+    (fun ξ ↦ (1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))) (Real.sqrt l)
+  simp only [hsq] at hcomp
+  have hscale : |((Real.sqrt l) ^ finrank ℝ E)⁻¹| = l ^ (-(finrank ℝ E : ℝ) / 2) := by
+    rw [abs_of_nonneg (by positivity), ← Real.rpow_natCast, Real.sqrt_eq_rpow,
+      ← Real.rpow_mul hl.le, ← Real.rpow_neg hl.le]
+    congr 1
+    ring
+  rw [hscale, smul_eq_mul] at hcomp
+  have hint' : Integrable (fun ξ : E ↦ (1 + l * ‖ξ‖ ^ 2) ^ (-(k : ℝ))) volume := by
+    have := (integrable_comp_smul_iff volume (fun ξ : E ↦
+      (1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))) (Real.sqrt_pos.2 hl).ne').2 hint
+    refine this.congr (Filter.Eventually.of_forall fun ξ ↦ ?_)
+    simp only [hsq]
+  rw [← ofReal_integral_eq_lintegral_ofReal hint' (Filter.Eventually.of_forall fun ξ ↦
+      Real.rpow_nonneg (by positivity) _),
+    ← ofReal_integral_eq_lintegral_ofReal hint (Filter.Eventually.of_forall fun ξ ↦
+      Real.rpow_nonneg (by positivity) _),
+    hcomp, ENNReal.ofReal_mul (Real.rpow_nonneg hl.le _)]
+
+/-- The elementary bound `(1 + l s)^k ≤ 2^k (1 + l^k (1 + s)^k)` for `l, s ≥ 0`. -/
+theorem pow_one_add_mul_le (k : ℕ) {l s : ℝ} (hl : 0 ≤ l) (hs : 0 ≤ s) :
+    (1 + l * s) ^ k ≤ 2 ^ k * (1 + l ^ k * (1 + s) ^ k) := by
+  have h1 : 1 + l * s ≤ 2 * max 1 (l * s) := by
+    have := le_max_left 1 (l * s)
+    have := le_max_right 1 (l * s)
+    linarith
+  have h2 : (max 1 (l * s)) ^ k ≤ 1 + l ^ k * (1 + s) ^ k := by
+    have hls : (l * s) ^ k ≤ l ^ k * (1 + s) ^ k := by
+      rw [mul_pow]
+      exact mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hs (by linarith) k) (by positivity)
+    rcases le_total 1 (l * s) with h | h
+    · rw [max_eq_right h]
+      linarith
+    · rw [max_eq_left h, one_pow]
+      linarith [pow_nonneg (mul_nonneg hl hs) k, (le_trans (pow_nonneg (mul_nonneg hl hs) k) hls)]
+  calc (1 + l * s) ^ k ≤ (2 * max 1 (l * s)) ^ k := pow_le_pow_left₀ (by positivity) h1 k
+    _ = 2 ^ k * (max 1 (l * s)) ^ k := mul_pow _ _ _
+    _ ≤ 2 ^ k * (1 + l ^ k * (1 + s) ^ k) := mul_le_mul_of_nonneg_left h2 (by positivity)
+
+/-- **The optimal scaling** of [han2009theoretical] Example 7.4.3: for `n ≠ 0`, `a, b > 0` and
+`λ = (a/b)^{1/n}`, `λ^{−n/2} (a + λ^n b) = 2 √a √b`. -/
+theorem exists_rpow_neg_half_mul_add_eq {n : ℕ} (hn : n ≠ 0) {a b : ℝ} (ha : 0 < a)
+    (hb : 0 < b) :
+    ∃ l : ℝ, 0 < l ∧ l ^ (-(n : ℝ) / 2) * (a + l ^ n * b) = 2 * Real.sqrt a * Real.sqrt b := by
+  have hn0 : (n : ℝ) ≠ 0 := by exact_mod_cast hn
+  have hab : 0 < a / b := div_pos ha hb
+  refine ⟨(a / b) ^ ((1 : ℝ) / n), Real.rpow_pos_of_pos hab _, ?_⟩
+  have h1 : ((a / b) ^ ((1 : ℝ) / n)) ^ n = a / b := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul hab.le, one_div, inv_mul_cancel₀ hn0, Real.rpow_one]
+  have h2 : ((a / b) ^ ((1 : ℝ) / n)) ^ (-(n : ℝ) / 2) = Real.sqrt b / Real.sqrt a := by
+    rw [← Real.rpow_mul hab.le, show (1 : ℝ) / n * (-(n : ℝ) / 2) = -(1 / 2) by field_simp,
+      Real.rpow_neg hab.le, ← Real.sqrt_eq_rpow, Real.sqrt_div ha.le, inv_div]
+  rw [h1, h2, div_mul_cancel₀ _ hb.ne']
+  have hsa : Real.sqrt a ≠ 0 := (Real.sqrt_pos.2 ha).ne'
+  rw [div_mul_eq_mul_div, div_eq_iff hsa]
+  linear_combination (-2 * Real.sqrt b) * Real.mul_self_sqrt ha.le
+
+/-- **The scaled weighted bound** ([han2009theoretical] Example 7.4.3), in `lintegral` form: for
+`2k > dim E`, an a.e.-measurable `F` (in the application `F = ℱv`) and every `λ > 0`,
+`(∫ |F|)² ≤ λ^{−dim E/2} I_k · 2^k (∫ |F|² + λ^k ∫ (1 + |ξ|²)^k |F|²)`,
+`I_k = ∫ (1 + |ξ|²)^{−k}`. -/
+theorem sq_lintegral_enorm_le_mul_add {k : ℕ} (hk : finrank ℝ E < 2 * k) {G : Type*}
+    [NormedAddCommGroup G] {F : E → G} (hF : AEStronglyMeasurable F volume) {l : ℝ}
+    (hl : 0 < l) :
+    (∫⁻ ξ, ‖F ξ‖ₑ) ^ 2 ≤ ENNReal.ofReal (l ^ (-(finrank ℝ E : ℝ) / 2)) *
+      (∫⁻ ξ : E, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ)))) *
+      (2 ^ k * ((∫⁻ ξ, ‖F ξ‖ₑ ^ 2) +
+        ENNReal.ofReal (l ^ k) * ∫⁻ ξ, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ k) * ‖F ξ‖ₑ ^ 2)) := by
+  refine (sq_lintegral_enorm_le_mul hF hl k).trans ?_
+  rw [lintegral_ofReal_rpow_neg_one_add_mul_norm_sq hl hk]
+  refine mul_le_mul' le_rfl ?_
+  calc ∫⁻ ξ, ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ k) * ‖F ξ‖ₑ ^ 2
+      ≤ ∫⁻ ξ, 2 ^ k * (‖F ξ‖ₑ ^ 2
+          + ENNReal.ofReal (l ^ k) * (ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ k) * ‖F ξ‖ₑ ^ 2)) := by
+        refine lintegral_mono fun ξ ↦ ?_
+        have h := pow_one_add_mul_le k hl.le (sq_nonneg ‖ξ‖)
+        calc ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ k) * ‖F ξ‖ₑ ^ 2
+            ≤ ENNReal.ofReal (2 ^ k * (1 + l ^ k * (1 + ‖ξ‖ ^ 2) ^ k)) * ‖F ξ‖ₑ ^ 2 :=
+              mul_le_mul' (ENNReal.ofReal_le_ofReal h) le_rfl
+          _ = (2 ^ k * (1 + ENNReal.ofReal (l ^ k) * ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ k)))
+              * ‖F ξ‖ₑ ^ 2 := by
+              rw [ENNReal.ofReal_mul (by positivity), ENNReal.ofReal_pow zero_le_two,
+                ENNReal.ofReal_ofNat, ENNReal.ofReal_add zero_le_one (by positivity),
+                ENNReal.ofReal_one, ENNReal.ofReal_mul (by positivity)]
+          _ = _ := by ring
+    _ = _ := by
+        rw [lintegral_const_mul' _ _ (by simp), lintegral_add_left' (hF.enorm.pow_const 2),
+          lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
+
+/-- **The scaled Fourier bound** ([han2009theoretical] Example 7.4.3), in real form: for
+`2k > dim E`, `v ∈ L²(E)` with `(1 + |ξ|²)^{k/2} ℱv ∈ L²` (that is, `v ∈ H^k(E)`) and every
+`λ > 0`, `(∫ |ℱv|)² ≤ λ^{−dim E/2} I_k · 2^k (‖v‖²_{L²} + λ^k ‖(1 + |ξ|²)^{k/2} ℱv‖²_{L²})`. -/
+theorem sq_toReal_lintegral_enorm_fourier_le {k : ℕ} (hk : finrank ℝ E < 2 * k)
+    (v : Lp ℂ 2 (volume : Measure E))
+    (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume)
+    {l : ℝ} (hl : 0 < l) :
+    (∫⁻ ξ, ‖(𝓕 v : Lp ℂ 2 (volume : Measure E)) ξ‖ₑ).toReal ^ 2
+      ≤ l ^ (-(finrank ℝ E : ℝ) / 2) *
+        (∫⁻ ξ : E, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ)))).toReal *
+        (2 ^ k * (‖v‖ ^ 2 + l ^ k * (eLpNorm
+          (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
+            volume).toReal ^ 2)) := by
+  obtain ⟨J, hJ⟩ : ∃ J : ℝ≥0∞, J = ∫⁻ ξ, ‖(𝓕 v : Lp ℂ 2 (volume : Measure E)) ξ‖ₑ := ⟨_, rfl⟩
+  obtain ⟨A, hA⟩ : ∃ A : ℝ≥0∞, A = ∫⁻ ξ, ‖(𝓕 v : Lp ℂ 2 (volume : Measure E)) ξ‖ₑ ^ 2 :=
+    ⟨_, rfl⟩
+  obtain ⟨B, hB⟩ : ∃ B : ℝ≥0∞, B = ∫⁻ ξ, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ k)
+      * ‖(𝓕 v : Lp ℂ 2 (volume : Measure E)) ξ‖ₑ ^ 2 := ⟨_, rfl⟩
+  obtain ⟨I, hI⟩ : ∃ I : ℝ≥0∞, I = ∫⁻ ξ : E,
+      ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))) := ⟨_, rfl⟩
+  have hIfin : I ≠ ⊤ := hI ▸ lintegral_ofReal_rpow_neg_one_add_norm_sq_ne_top hk
+  have hAv : A = ENNReal.ofReal (‖v‖ ^ 2) := by
+    rw [hA, ← sq_eLpNorm_two (Lp.aestronglyMeasurable _), Lp.eLpNorm_fourier_eq, Lp.norm_def,
+      ENNReal.ofReal_pow ENNReal.toReal_nonneg, ENNReal.ofReal_toReal (Lp.eLpNorm_ne_top v)]
+  have hAfin : A ≠ ⊤ := by rw [hAv]; exact ENNReal.ofReal_ne_top
+  have hBsq : B = eLpNorm (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
+      volume ^ 2 := by rw [hB, sq_eLpNorm_symbol_mul_fourier]
+  have hBfin : B ≠ ⊤ := by rw [hBsq]; exact ENNReal.pow_ne_top hF.eLpNorm_ne_top
+  have hmain := sq_lintegral_enorm_le_mul_add hk (Lp.aestronglyMeasurable (𝓕 v)) hl
+  rw [← hJ, ← hA, ← hB, ← hI] at hmain
+  have hRfin : ENNReal.ofReal (l ^ (-(finrank ℝ E : ℝ) / 2)) * I
+      * (2 ^ k * (A + ENNReal.ofReal (l ^ k) * B)) ≠ ⊤ :=
+    ENNReal.mul_ne_top (ENNReal.mul_ne_top ENNReal.ofReal_ne_top hIfin)
+      (ENNReal.mul_ne_top (ENNReal.pow_ne_top (by simp))
+        (ENNReal.add_ne_top.2 ⟨hAfin, ENNReal.mul_ne_top ENNReal.ofReal_ne_top hBfin⟩))
+  have h := ENNReal.toReal_mono hRfin hmain
+  rw [ENNReal.toReal_pow, ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_mul,
+    ENNReal.toReal_pow, ENNReal.toReal_ofNat,
+    ENNReal.toReal_add hAfin (ENNReal.mul_ne_top ENNReal.ofReal_ne_top hBfin), ENNReal.toReal_mul,
+    ENNReal.toReal_ofReal (Real.rpow_nonneg hl.le _), ENNReal.toReal_ofReal (by positivity), hAv,
+    ENNReal.toReal_ofReal (by positivity), hBsq, ENNReal.toReal_pow] at h
+  rw [← hJ, ← hI]
+  exact h
+
+/-- `‖v‖_{L²} ≤ ‖(1 + |ξ|²)^{s/2} ℱv‖_{L²}` for `s ≥ 0`: Plancherel and `(1 + |ξ|²)^{s/2} ≥ 1`. -/
+theorem norm_le_toReal_eLpNorm_symbol_mul_fourier {s : ℝ} (hs : 0 ≤ s)
+    (v : Lp ℂ 2 (volume : Measure E))
+    (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ (s / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume) :
+    ‖v‖ ≤ (eLpNorm (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ (s / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
+      volume).toReal := by
+  rw [← Lp.norm_fourier_eq v, Lp.norm_def]
+  refine ENNReal.toReal_mono hF.eLpNorm_ne_top (eLpNorm_mono_ae (Lp.aestronglyMeasurable _)
+    (Filter.Eventually.of_forall fun ξ ↦ ?_))
+  rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
+    abs_of_nonneg (Real.rpow_nonneg (by positivity) _)]
+  exact le_mul_of_one_le_left (norm_nonneg _)
+    (Real.one_le_rpow (by nlinarith [norm_nonneg ξ]) (by positivity))
+
+end Interpolation
