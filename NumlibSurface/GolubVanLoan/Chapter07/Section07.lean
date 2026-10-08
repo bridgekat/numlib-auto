@@ -2571,7 +2571,7 @@ theorem algorithm_7_7_2_spec {N : ℕ} {A B A' B' : Matrix (Fin (N + 3)) (Fin (N
     rw [hdQ, householderProduct_cons, ← mulVec_mulVec,
       householderProduct_mulVec_single fun q hq => hrest q hq 0 rfl]
   have hPP : P₀ * P₀ = 1 := by
-    refine one_sub_smul_vecMulVec_mul_self_of_mem
+    refine one_sub_smul_vecMulVec_mul_self_eq_one
       (one_sub_smul_vecMulVec_mem_orthogonalGroup ?_)
     rcases hβ₀ with hb | hb
     · rw [hb, zero_mul]
@@ -2667,7 +2667,7 @@ theorem algorithm_7_7_2_window {p N : ℕ} (hm : p + (N + 3) ≤ n)
   have hP₀S : IsBlockSupported p (p + (N + 3)) P₀ :=
     isBlockSupported_reflector d₀.2 (hsQ' d₀ (by rw [hdQ]; exact List.mem_cons_self))
   have hPP : P₀ * P₀ = 1 := by
-    refine one_sub_smul_vecMulVec_mul_self_of_mem
+    refine one_sub_smul_vecMulVec_mul_self_eq_one
       (one_sub_smul_vecMulVec_mem_orthogonalGroup ?_)
     rcases hβ₀ with hb | hb
     · rw [hb, zero_mul]

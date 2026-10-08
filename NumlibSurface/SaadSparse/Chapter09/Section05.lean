@@ -161,38 +161,38 @@ variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 
 /-- **Algorithm 9.7**, line 4: `α_j = (z_j, r̃_j)/‖w_j‖₂²`, with `r̃_j = Aᴴ r_j`,
 `z_j = M⁻¹ r̃_j` and `w_j = A p_j` recomputed rather than stored. -/
-noncomputable def pcgnrStepAlpha (s : Krylov.CGNR.State 𝔼) : 𝕜 :=
+noncomputable def pcgnrStepAlpha (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 (op Aᴴ s.r) (op M⁻¹ (op Aᴴ s.r)) / (‖op A s.p‖ : 𝕜) ^ 2
 
 /-- **Algorithm 9.7**, line 6: `r_{j+1} = r_j - α_j w_j`. -/
-noncomputable def pcgnrStepR (s : Krylov.CGNR.State 𝔼) : 𝔼 :=
+noncomputable def pcgnrStepR (s : Krylov.CGNR.State 𝔼 𝔼) : 𝔼 :=
   s.r - pcgnrStepAlpha A M s • op A s.p
 
 /-- **Algorithm 9.7**, line 9: `β_j = (z_{j+1}, r̃_{j+1})/(z_j, r̃_j)`. -/
-noncomputable def pcgnrStepBeta (s : Krylov.CGNR.State 𝔼) : 𝕜 :=
+noncomputable def pcgnrStepBeta (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 (op Aᴴ (pcgnrStepR A M s)) (op M⁻¹ (op Aᴴ (pcgnrStepR A M s))) /
     inner 𝕜 (op Aᴴ s.r) (op M⁻¹ (op Aᴴ s.r))
 
 /-- One pass through lines 3–10 of **Algorithm 9.7**, on the triple `(x_j, r_j, p_j)`. -/
-noncomputable def pcgnrStep (s : Krylov.CGNR.State 𝔼) : Krylov.CGNR.State 𝔼 :=
+noncomputable def pcgnrStep (s : Krylov.CGNR.State 𝔼 𝔼) : Krylov.CGNR.State 𝔼 𝔼 :=
   { x := s.x + pcgnrStepAlpha A M s • s.p
     r := pcgnrStepR A M s
     p := op M⁻¹ (op Aᴴ (pcgnrStepR A M s)) + pcgnrStepBeta A M s • s.p }
 
 /-- **Algorithm 9.7** (left-preconditioned CGNR) run for `j` steps, started from
 `r_0 = b - A x_0` and `p_0 = z_0 = M⁻¹ Aᴴ r_0`. -/
-noncomputable def pcgnr (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : Krylov.CGNR.State 𝔼 :=
+noncomputable def pcgnr (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : Krylov.CGNR.State 𝔼 𝔼 :=
   (pcgnrStep A M)^[j] { x := x₀, r := b - op A x₀, p := op M⁻¹ (op Aᴴ (b - op A x₀)) }
 
 /-- Algorithm 9.7, line 5: `x_{j+1} = x_j + α_j p_j`. -/
-theorem pcgnrStep_x (s : Krylov.CGNR.State 𝔼) :
+theorem pcgnrStep_x (s : Krylov.CGNR.State 𝔼 𝔼) :
     (pcgnrStep A M s).x = s.x + pcgnrStepAlpha A M s • s.p := rfl
 
 /-- Algorithm 9.7, line 6: `r_{j+1} = r_j - α_j w_j`. -/
-theorem pcgnrStep_r (s : Krylov.CGNR.State 𝔼) : (pcgnrStep A M s).r = pcgnrStepR A M s := rfl
+theorem pcgnrStep_r (s : Krylov.CGNR.State 𝔼 𝔼) : (pcgnrStep A M s).r = pcgnrStepR A M s := rfl
 
 /-- Algorithm 9.7, line 10: `p_{j+1} = z_{j+1} + β_j p_j`. -/
-theorem pcgnrStep_p (s : Krylov.CGNR.State 𝔼) :
+theorem pcgnrStep_p (s : Krylov.CGNR.State 𝔼 𝔼) :
     (pcgnrStep A M s).p
       = op M⁻¹ (op Aᴴ (pcgnrStepR A M s)) + pcgnrStepBeta A M s • s.p := rfl
 
@@ -225,21 +225,21 @@ theorem pcgnr_residual_eq (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
 
 variable {A M}
 
-private theorem pcgnrStepAlpha_eq (hMinv : (op M⁻¹).IsSymmetric) (s : Krylov.CGNR.State 𝔼) :
+private theorem pcgnrStepAlpha_eq (hMinv : (op M⁻¹).IsSymmetric) (s : Krylov.CGNR.State 𝔼 𝔼) :
     pcgnrStepAlpha A M s = pcgStepAlpha (Aᴴ * A) M (s.x, op Aᴴ s.r, s.p) := by
   rw [pcgnrStepAlpha, pcgStepAlpha_def, hMinv (op Aᴴ s.r) (op Aᴴ s.r),
     inner_conjTranspose_mul_self]
 
-private theorem pcgnrStepR_eq (hMinv : (op M⁻¹).IsSymmetric) (s : Krylov.CGNR.State 𝔼) :
+private theorem pcgnrStepR_eq (hMinv : (op M⁻¹).IsSymmetric) (s : Krylov.CGNR.State 𝔼 𝔼) :
     op Aᴴ (pcgnrStepR A M s) = pcgStepR (Aᴴ * A) M (s.x, op Aᴴ s.r, s.p) := by
   rw [pcgnrStepR, pcgStepR_def, ← pcgnrStepAlpha_eq hMinv, map_sub, map_smul, op_mul_apply]
 
-private theorem pcgnrStepBeta_eq (hMinv : (op M⁻¹).IsSymmetric) (s : Krylov.CGNR.State 𝔼) :
+private theorem pcgnrStepBeta_eq (hMinv : (op M⁻¹).IsSymmetric) (s : Krylov.CGNR.State 𝔼 𝔼) :
     pcgnrStepBeta A M s = pcgStepBeta (Aᴴ * A) M (s.x, op Aᴴ s.r, s.p) := by
   rw [pcgnrStepBeta, pcgStepBeta_def, ← pcgnrStepR_eq hMinv,
     hMinv (op Aᴴ (pcgnrStepR A M s)) (op Aᴴ (pcgnrStepR A M s)), hMinv (op Aᴴ s.r) (op Aᴴ s.r)]
 
-private theorem pcgnrStep_eq (hMinv : (op M⁻¹).IsSymmetric) (s : Krylov.CGNR.State 𝔼) :
+private theorem pcgnrStep_eq (hMinv : (op M⁻¹).IsSymmetric) (s : Krylov.CGNR.State 𝔼 𝔼) :
     ((pcgnrStep A M s).x, op Aᴴ (pcgnrStep A M s).r, (pcgnrStep A M s).p)
       = pcgStep (Aᴴ * A) M (s.x, op Aᴴ s.r, s.p) := by
   rw [pcgnrStep_x, pcgnrStep_r, pcgnrStep_p, pcgStep, pcgnrStepAlpha_eq hMinv,
@@ -300,37 +300,37 @@ variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 /-- **Algorithm 9.8**, line 4: `α_j = (z_j, r_j)/(p_j, p_j)`, with `z_j = M⁻¹ r_j` recomputed
 rather than stored. The direction `p_j` is the direction `q_j` of Algorithm 9.1 for
 `A Aᴴ u = b` premultiplied by `Aᴴ`, so `(p_j, p_j)` is that algorithm's `(A Aᴴ q_j, q_j)`. -/
-noncomputable def pcgneStepAlpha (s : Krylov.CGNE.State 𝔼) : 𝕜 :=
+noncomputable def pcgneStepAlpha (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 s.r (op M⁻¹ s.r) / inner 𝕜 s.p s.p
 
 /-- **Algorithm 9.8**, line 6: `r_{j+1} = r_j - α_j w_j` with `w_j = A p_j`. -/
-noncomputable def pcgneStepR (s : Krylov.CGNE.State 𝔼) : 𝔼 :=
+noncomputable def pcgneStepR (s : Krylov.CGNE.State 𝔼 𝔼) : 𝔼 :=
   s.r - pcgneStepAlpha M s • op A s.p
 
 /-- **Algorithm 9.8**, line 8: `β_j = (z_{j+1}, r_{j+1})/(z_j, r_j)`. -/
-noncomputable def pcgneStepBeta (s : Krylov.CGNE.State 𝔼) : 𝕜 :=
+noncomputable def pcgneStepBeta (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 (pcgneStepR A M s) (op M⁻¹ (pcgneStepR A M s)) / inner 𝕜 s.r (op M⁻¹ s.r)
 
 /-- One pass through lines 3–9 of **Algorithm 9.8**, on the triple `(x_j, r_j, p_j)`. -/
-noncomputable def pcgneStep (s : Krylov.CGNE.State 𝔼) : Krylov.CGNE.State 𝔼 :=
+noncomputable def pcgneStep (s : Krylov.CGNE.State 𝔼 𝔼) : Krylov.CGNE.State 𝔼 𝔼 :=
   { x := s.x + pcgneStepAlpha M s • s.p
     r := pcgneStepR A M s
     p := op Aᴴ (op M⁻¹ (pcgneStepR A M s)) + pcgneStepBeta A M s • s.p }
 
 /-- **Algorithm 9.8** (left-preconditioned CGNE) run for `j` steps, started from
 `r_0 = b - A x_0` and `p_0 = Aᴴ z_0 = Aᴴ M⁻¹ r_0`. -/
-noncomputable def pcgne (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : Krylov.CGNE.State 𝔼 :=
+noncomputable def pcgne (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : Krylov.CGNE.State 𝔼 𝔼 :=
   (pcgneStep A M)^[j] { x := x₀, r := b - op A x₀, p := op Aᴴ (op M⁻¹ (b - op A x₀)) }
 
 /-- Algorithm 9.8, line 5: `x_{j+1} = x_j + α_j p_j`. -/
-theorem pcgneStep_x (s : Krylov.CGNE.State 𝔼) :
+theorem pcgneStep_x (s : Krylov.CGNE.State 𝔼 𝔼) :
     (pcgneStep A M s).x = s.x + pcgneStepAlpha M s • s.p := rfl
 
 /-- Algorithm 9.8, line 6: `r_{j+1} = r_j - α_j w_j`. -/
-theorem pcgneStep_r (s : Krylov.CGNE.State 𝔼) : (pcgneStep A M s).r = pcgneStepR A M s := rfl
+theorem pcgneStep_r (s : Krylov.CGNE.State 𝔼 𝔼) : (pcgneStep A M s).r = pcgneStepR A M s := rfl
 
 /-- Algorithm 9.8, line 9: `p_{j+1} = Aᴴ z_{j+1} + β_j p_j`. -/
-theorem pcgneStep_p (s : Krylov.CGNE.State 𝔼) :
+theorem pcgneStep_p (s : Krylov.CGNE.State 𝔼 𝔼) :
     (pcgneStep A M s).p
       = op Aᴴ (op M⁻¹ (pcgneStepR A M s)) + pcgneStepBeta A M s • s.p := rfl
 

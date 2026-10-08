@@ -1562,6 +1562,62 @@ theorem tridiagonalOfNat_eq_tridiagonalOf [Zero R] (a b c : ℕ → R) (N : ℕ)
   simp only [tridiagonalOfNat, tridiagonalOf, of_apply]
   split_ifs <;> first | rfl | omega | congr 1
 
+/-- Each term of `(tridiagonalOfNat a b c N * x) i`, split into its three possible
+contributions. -/
+theorem tridiagonalOfNat_apply_mul_eq [NonUnitalNonAssocSemiring R] (a b c : ℕ → R) {N : ℕ}
+    (x : Fin N → R) (i j : Fin N) :
+    tridiagonalOfNat a b c N i j * x j =
+      (if j = i then a i * x i else 0) +
+        (if h : (j : ℕ) + 1 = i then b i * x ⟨i - 1, by omega⟩ else 0) +
+        (if h : (j : ℕ) = i + 1 then c i * x ⟨i + 1, by omega⟩ else 0) := by
+  by_cases hij : j = i
+  · subst hij
+    simp [tridiagonalOfNat]
+  · have hij' : (i : ℕ) ≠ j := fun h => hij (Fin.ext h.symm)
+    simp only [tridiagonalOfNat, of_apply, hij', ite_false, hij]
+    split_ifs <;> (try simp only [zero_add, add_zero]) <;>
+      first | omega | (congr 2; exact Fin.ext (by simp; omega)) | simp
+
+/-- Each term of `(x * tridiagonalOfNat a b c N) j`, split into its three possible
+contributions. -/
+theorem mul_tridiagonalOfNat_apply_eq [NonUnitalNonAssocSemiring R] (a b c : ℕ → R) {N : ℕ}
+    (x : Fin N → R) (i j : Fin N) :
+    x i * tridiagonalOfNat a b c N i j =
+      (if i = j then x j * a j else 0) +
+        (if h : (i : ℕ) = j + 1 then x ⟨j + 1, by omega⟩ * b (j + 1) else 0) +
+        (if h : (i : ℕ) + 1 = j then x ⟨j - 1, by omega⟩ * c (j - 1) else 0) := by
+  by_cases hij : i = j
+  · subst hij
+    simp [tridiagonalOfNat]
+  · have hij' : (i : ℕ) ≠ j := fun h => hij (Fin.ext h)
+    simp only [tridiagonalOfNat, of_apply, hij', ite_false, hij]
+    split_ifs <;> (try simp only [zero_add, add_zero]) <;>
+      first | omega | (congr 2 <;> first | omega | exact Fin.ext (by simp; omega)) | simp
+
+/-- **The three-term formula for `Matrix.tridiagonalOfNat`**:
+`(T x)ᵢ = bᵢ xᵢ₋₁ + aᵢ xᵢ + cᵢ xᵢ₊₁`, the boundary terms absent at `i = 0` and `i = N - 1`. -/
+theorem tridiagonalOfNat_mulVec [NonUnitalNonAssocSemiring R] (a b c : ℕ → R) {N : ℕ}
+    (x : Fin N → R) (i : Fin N) :
+    (tridiagonalOfNat a b c N *ᵥ x) i =
+      (if h : 0 < (i : ℕ) then b i * x ⟨i - 1, by omega⟩ else 0) + a i * x i +
+        (if h : (i : ℕ) + 1 < N then c i * x ⟨i + 1, h⟩ else 0) := by
+  simp only [mulVec, dotProduct, tridiagonalOfNat_apply_mul_eq, Finset.sum_add_distrib,
+    Finset.sum_ite_eq', Finset.mem_univ, ite_true, sum_dite_val_add_one_eq,
+    sum_dite_val_eq_add_one]
+  abel
+
+/-- **The three-term formula for `Matrix.tridiagonalOfNat` acting on the left**:
+`(xᵀ T)ⱼ = xⱼ₋₁ cⱼ₋₁ + xⱼ aⱼ + xⱼ₊₁ bⱼ₊₁`, the boundary terms absent at `j = 0` and `j = N - 1`. -/
+theorem tridiagonalOfNat_vecMul [NonUnitalNonAssocSemiring R] (a b c : ℕ → R) {N : ℕ}
+    (x : Fin N → R) (j : Fin N) :
+    (x ᵥ* tridiagonalOfNat a b c N) j =
+      (if h : 0 < (j : ℕ) then x ⟨j - 1, by omega⟩ * c (j - 1) else 0) + x j * a j +
+        (if h : (j : ℕ) + 1 < N then x ⟨j + 1, h⟩ * b (j + 1) else 0) := by
+  simp only [vecMul, dotProduct, mul_tridiagonalOfNat_apply_eq, Finset.sum_add_distrib,
+    Finset.sum_ite_eq', Finset.mem_univ, ite_true, sum_dite_val_add_one_eq,
+    sum_dite_val_eq_add_one]
+  abel
+
 /-- The pivots `α_i` of the Thomas algorithm, [quarteroni2000numerical] (3.53):
 `α_0 = a_0`, `α_{i+1} = a_{i+1} - β_{i+1} c_i` with `β_{i+1} = b_{i+1} / α_i`. -/
 noncomputable def thomasAlpha (a b c : ℕ → K) : ℕ → K

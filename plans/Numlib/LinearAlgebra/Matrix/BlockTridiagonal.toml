@@ -54,3 +54,9 @@ id = "tridiagonalLUMultiplier_eq_thomasBeta"
 [[node]]
 id = "IsBlockLU.toBlock_recurrence_of_blockTridiagonal"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.58)'
+
+[[node]]
+id = "tridiagonalOf_eq_mul_of_mul_star"
+
+[[node]]
+id = "blockTridiagonal_eq_mul_transpose"

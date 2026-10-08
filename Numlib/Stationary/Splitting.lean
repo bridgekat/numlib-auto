@@ -558,6 +558,42 @@ theorem _root_.Stationary.Splitting.isUnit_of_complexSpectralRadius_lt_one {A : 
   exact isUnit_of_mul_isUnit_right hu
 
 omit [LinearOrder n] in
+/-- **A splitting iteration with `ρ(B) < 1` converges to the solution** ([saad2003iterative] §4.2,
+Theorem 4.1; [quarteroni2000numerical] Theorem 4.1): for every `b` and every starting vector, the
+iterates of `x ↦ B x + P⁻¹ b`, `B = 1 - P⁻¹ A` the iteration operator, converge to `A⁻¹ b`. The
+error after `k` steps is `Bᵏ (x₀ - A⁻¹ b)`, and `Bᵏ → 0`
+(`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`). -/
+theorem _root_.Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one
+    {A : Matrix n n ℝ} (s : Splitting A) (hs : complexSpectralRadius s.iterationOperator < 1)
+    (b x₀ : n → ℝ) :
+    Filter.Tendsto (fun k => (fun x => s.iterationOperator *ᵥ x + s.m⁻¹ *ᵥ b)^[k] x₀)
+      Filter.atTop (nhds (A⁻¹ *ᵥ b)) := by
+  set G := s.iterationOperator with hGdef
+  set xs := A⁻¹ *ᵥ b with hxs
+  have hA := s.isUnit_of_complexSpectralRadius_lt_one hs
+  have hG : G = 1 - s.m⁻¹ * A := by
+    rw [hGdef, Splitting.iterationOperator, nonsing_inv_eq_ringInverse]
+  have hAx : A *ᵥ xs = b := by
+    rw [hxs, mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA), one_mulVec]
+  have hfix : G *ᵥ xs + s.m⁻¹ *ᵥ b = xs := by
+    rw [hG, sub_mulVec, one_mulVec, ← mulVec_mulVec, hAx, sub_add_cancel]
+  have herr : ∀ k, (fun x => G *ᵥ x + s.m⁻¹ *ᵥ b)^[k] x₀ - xs = (G ^ k) *ᵥ (x₀ - xs) := by
+    intro k
+    induction k with
+    | zero => simp
+    | succ k ih =>
+      rw [Function.iterate_succ_apply', pow_succ', ← mulVec_mulVec, ← ih, mulVec_sub]
+      calc G *ᵥ (fun x => G *ᵥ x + s.m⁻¹ *ᵥ b)^[k] x₀ + s.m⁻¹ *ᵥ b - xs
+          = G *ᵥ (fun x => G *ᵥ x + s.m⁻¹ *ᵥ b)^[k] x₀ + s.m⁻¹ *ᵥ b
+              - (G *ᵥ xs + s.m⁻¹ *ᵥ b) := by rw [hfix]
+        _ = _ := by abel
+  have hpow := (tendsto_pow_iff_complexSpectralRadius_lt_one G).2 hs
+  have hc : Continuous fun M : Matrix n n ℝ => M *ᵥ (x₀ - xs) :=
+    continuous_id.matrix_mulVec continuous_const
+  rw [← tendsto_sub_nhds_zero_iff]
+  simpa only [herr, zero_mulVec, Function.comp_def] using (hc.tendsto 0).comp hpow
+
+omit [LinearOrder n] in
 /-- The Jacobi iteration matrix of `complexify A` is the complexification of that of `A`. -/
 theorem complexify_jacobi_iterationOperator (A : Matrix n n ℝ) (h : IsUnit (diagPart A))
     (h' : IsUnit (diagPart (complexify A))) :

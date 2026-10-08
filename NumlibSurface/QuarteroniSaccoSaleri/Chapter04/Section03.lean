@@ -600,8 +600,8 @@ Then the gradient method converges for any initial datum `x⁽⁰⁾`, and (4.38
 `‖e⁽ᵏ⁺¹⁾‖_A ≤ (K₂(A) - 1)/(K₂(A) + 1) ‖e⁽ᵏ⁾‖_A`, `K₂(A) = λ_max/λ_min` being the spectral
 condition number. The one-step estimate is the backbone's
 `Projection.energyNorm_steepestDescentStep_le` (the book's argument: the gradient step beats the
-optimal Richardson step of Corollary 4.1 in the `A`-norm), and the convergence follows from the
-contraction (`Projection.tendsto_of_forall_norm_succ_le`). -/
+optimal Richardson step of Corollary 4.1 in the `A`-norm), and the convergence is
+`Projection.tendsto_iterate_steepestDescentStep`. -/
 theorem theorem_4_10 [NeZero n] (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
     (hx : toEuclideanLin A x = b) :
     (∀ x₀, Tendsto (fun k => (gradientStep A b)^[k] x₀) atTop (𝓝 x)) ∧
@@ -609,27 +609,12 @@ theorem theorem_4_10 [NeZero n] (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
         (κ A - 1) / (κ A + 1) * energyNorm (toEuclideanLin A) (x - y) := by
   obtain ⟨lmin, lmax, hsub, hmin, hmax, hIcc⟩ := exists_extreme_eigenvalues hA.1
   have hpos : 0 < lmin := (open scoped MatrixOrder in hA.isStrictlyPositive.spectrum_pos hmin)
-  have hle : lmin ≤ lmax := (hsub hmin).2
   have hB := hA.1.isSymmetricBoundedBy_toEuclideanLin hIcc
   have hκ : (κ A - 1) / (κ A + 1) = (lmax - lmin) / (lmax + lmin) := by
     rw [condNumber_eq_div_of_posDef hA hsub hmin hmax]
     field_simp
-  have hrate : ∀ y, energyNorm (toEuclideanLin A) (x - gradientStep A b y) ≤
-      (lmax - lmin) / (lmax + lmin) * energyNorm (toEuclideanLin A) (x - y) := fun y =>
-    Projection.energyNorm_steepestDescentStep_le hpos hB hx y
-  refine ⟨fun x₀ => ?_, fun y => hκ ▸ hrate y⟩
-  have hρ0 : 0 ≤ (lmax - lmin) / (lmax + lmin) := div_nonneg (by linarith) (by linarith)
-  have hρ1 : (lmax - lmin) / (lmax + lmin) < 1 := by
-    rw [div_lt_one (by linarith)]
-    linarith
-  refine Projection.tendsto_of_forall_norm_succ_le (N := energyNorm (toEuclideanLin A))
-    (C := (Real.sqrt lmin)⁻¹) (fun v => ?_) (fun v => energyNorm_nonneg _ _) hρ0 hρ1 fun k => ?_
-  · have h := hB.isCoerciveWith.norm_le_energyNorm hpos.le v
-    have hs : 0 < Real.sqrt lmin := Real.sqrt_pos.mpr hpos
-    rw [← div_eq_inv_mul, le_div_iff₀ hs, mul_comm]
-    exact h
-  · rw [Function.iterate_succ_apply']
-    exact hrate _
+  exact ⟨fun x₀ => Projection.tendsto_iterate_steepestDescentStep hpos hB hx x₀,
+    fun y => hκ ▸ Projection.energyNorm_steepestDescentStep_le hpos hB hx y⟩
 
 end Gradient
 

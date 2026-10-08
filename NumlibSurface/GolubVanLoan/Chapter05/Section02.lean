@@ -554,7 +554,7 @@ theorem householderQRStep_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIde
       exact hv ⟨i, hi⟩
     · rw [hv'out i hi, hvout i hi]
       exact ⟨0, by simpa using gamma_nonneg hu0 (hle K (by omega)), by ring⟩
-  have hdot' : v' ⬝ᵥ v' = v ⬝ᵥ v := by rw [dotProduct_eq_dotProduct_subtype o hv'out, hv'o]
+  have hdot' : v' ⬝ᵥ v' = v ⬝ᵥ v := by rw [dotProduct_eq_dotProduct_subtype hv'out, hv'o]
   have hP2 : |bb| * (v' ⬝ᵥ v') ≤ 2 := by rwa [hdot']
   obtain ⟨hBout, hcolb, -⟩ := householderApplyLeft_rounding hfp hnd (nodup_indexFrom n k)
     (K := K) (hle _ (by omega)) hbb hvv' hv'out hP2 B hB'

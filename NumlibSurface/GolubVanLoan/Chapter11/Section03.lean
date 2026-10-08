@@ -139,11 +139,6 @@ private theorem apply_inv_apply {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
   simp only [toEuclideanLin_apply, mulVec_mulVec, mul_nonsing_inv _ h,
     one_mulVec, WithLp.toLp_ofLp]
 
-/-- The energy norm is even: `‖x − y‖_A = ‖y − x‖_A`. -/
-private theorem energyNorm_sub_comm (T : 𝔼 n →ₗ[ℝ] 𝔼 n) (x y : 𝔼 n) :
-    energyNorm T (x - y) = energyNorm T (y - x) := by
-  rw [energyNorm, energyNorm, ← neg_sub y x, map_neg, inner_neg_left, inner_neg_right, neg_neg]
-
 /-- The spectral bounds of a positive definite matrix: its extreme eigenvalues `0 < λ_min ≤ λ_max`
 bound the quadratic form, and `κ₂(A) = λ_max/λ_min`. -/
 private theorem posDef_bounds {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) [Nonempty (Fin n)] :
@@ -466,18 +461,8 @@ theorem steepestDescent_rate (hA : A.PosDef) {b xs : 𝔼 n} (hxs : toEuclideanL
   rcases isEmpty_or_nonempty (Fin n) with hn | hn
   · simp only [eq_zero_of_isEmpty _]
     exact tendsto_const_nhds
-  obtain ⟨lmin, lmax, hl, hll, hB, hκ⟩ := posDef_bounds hA
-  have hc1 : c < 1 := by
-    rw [Real.sqrt_lt' one_pos, one_pow, hκ, one_div_div]
-    have : 0 < lmin / lmax := div_pos hl (hl.trans_le hll)
-    linarith
-  -- the contraction in the energy norm, with `√λ_min ‖v‖ ≤ ‖v‖_A`
-  refine Projection.tendsto_of_forall_norm_succ_le (N := energyNorm T) (C := (√lmin)⁻¹)
-    (fun v => ?_) (fun v => energyNorm_nonneg _ _) (Real.sqrt_nonneg _) hc1 fun k => ?_
-  · rw [← div_eq_inv_mul, le_div_iff₀ (Real.sqrt_pos.2 hl), mul_comm]
-    exact LinearMap.IsCoerciveWith.norm_le_energyNorm hl.le hB.le_re_inner v
-  · rw [Function.iterate_succ_apply', energyNorm_sub_comm T xs, energyNorm_sub_comm T xs]
-    exact hstep _
+  obtain ⟨lmin, lmax, hl, -, hB, -⟩ := posDef_bounds hA
+  exact Projection.tendsto_iterate_steepestDescentStep hl hB hxs x₀
 
 end SteepestDescent
 
@@ -2710,10 +2695,11 @@ private theorem cgnr_run_succ {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (b : Fi
     GolubVanLoan.Chapter01.algorithm_1_1_1_spec, GolubVanLoan.Chapter01.algorithm_1_1_2_spec,
     zero_add, cgnrStep]
 
-/-- **Figure 11.3.1, CGNR, exact semantics** (square `A`): after `k` passes the state is the
-backbone's `Krylov.CGNR.iterate` (one product with `A` and one with `Aᵀ` per step) with `z = Aᵀr`;
-so its iterates are CG on the normal equations, those of (11.3.28). -/
-theorem cgnr_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (k : ℕ) :
+/-- **Figure 11.3.1, CGNR, exact semantics**, for the book's rectangular `A`: after `k` passes the
+state is the backbone's `Krylov.CGNR.iterate` (one product with `A` and one with `Aᵀ` per step)
+with `z = Aᵀr`; so its iterates are CG on the normal equations, those of (11.3.28). -/
+theorem cgnr_spec {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (x₀ : Fin n → ℝ)
+    (k : ℕ) :
     let s := Id.run (cgnr pure A b x₀ k)
     let it := Krylov.CGNR.iterate (toEuclideanLin A) (toEuclideanLin Aᵀ) (WithLp.toLp 2 b)
       (WithLp.toLp 2 x₀) k
@@ -2813,10 +2799,12 @@ private theorem cgne_run_succ {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (b : Fi
     GolubVanLoan.Chapter01.algorithm_1_1_1_spec, GolubVanLoan.Chapter01.algorithm_1_1_2_spec,
     zero_add, cgneStep]
 
-/-- **Figure 11.3.1, CGNE, exact semantics** (square `A`): after `k` passes the state is the
-backbone's `Krylov.CGNE.iterate`, which is `Aᵀ` of CG on `AAᵀy = b` (`Krylov.CGNE.iterate_eq`); so
-for consistent `Ax = b` its iterates are those of `cgne_isMinError`. -/
-theorem cgne_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (k : ℕ) :
+/-- **Figure 11.3.1, CGNE, exact semantics**, for the book's rectangular `A`: after `k` passes the
+state is the backbone's `Krylov.CGNE.iterate`, which is `Aᵀ` of CG on `AAᵀy = b`
+(`Krylov.CGNE.iterate_eq`); so for consistent `Ax = b` its iterates are those of
+`cgne_isMinError`. -/
+theorem cgne_spec {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (x₀ : Fin n → ℝ)
+    (k : ℕ) :
     let s := Id.run (cgne pure A b x₀ k)
     let it := Krylov.CGNE.iterate (toEuclideanLin A) (toEuclideanLin Aᵀ) (WithLp.toLp 2 b)
       (WithLp.toLp 2 x₀) k

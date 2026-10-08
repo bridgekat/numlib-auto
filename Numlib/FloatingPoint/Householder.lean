@@ -406,6 +406,12 @@ theorem one_sub_smul_vecMulVec_mulVec_apply (β : ℝ) (v b : ι → ℝ) (i : �
     Pi.sub_apply, Pi.smul_apply, Pi.smul_apply, smul_eq_mul, smul_eq_mul]
   ring
 
+/-- `1 - β v vᵀ` with `v` vanishing at `p` fixes `e_p`. -/
+theorem one_sub_smul_vecMulVec_mulVec_single {v : ι → ℝ} {p : ι} (hv : v p = 0) (β : ℝ) :
+    (1 - β • vecMulVec v v) *ᵥ Pi.single p 1 = Pi.single p 1 := by
+  funext i
+  rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_single, hv, zero_mul, mul_zero, sub_zero]
+
 /-- **Computed reflector data, whatever the formula that produced them.** For `x : ι → ℝ`, a
 pivot `i : ι` and a target `c : ℝ`, `IsReflectorPert u K x i c v̂ β̂` says that the computed
 `(v̂, β̂)` are relative perturbations of order `K` of exact data `(v, β)` whose matrix
@@ -1427,6 +1433,37 @@ theorem extendByZero_dotProduct (v : {i // p i} → ℝ) (w : ι → ℝ) :
     Finset.sum_eq_zero fun a _ => by rw [extendByZero_apply_of_not v a.2, zero_mul]
   rw [h2, add_zero]
   exact Finset.sum_congr rfl fun a _ => by rw [extendByZero_apply]
+
+omit [DecidableEq ι] [DecidablePred p] in
+/-- A dot product with a vector vanishing off the coordinates `{i // p i}` is the dot product of
+the restrictions (the converse reading of `extendByZero_dotProduct`). Any `Fintype` instance on
+the subtype is allowed. -/
+theorem dotProduct_eq_dotProduct_subtype [hp : Fintype {i // p i}] {v : ι → ℝ}
+    (hv : ∀ i, ¬ p i → v i = 0) (x : ι → ℝ) :
+    v ⬝ᵥ x = (fun i : {i // p i} => v i) ⬝ᵥ (fun i => x i) := by
+  classical
+  obtain rfl : hp = Subtype.fintype p := Subsingleton.elim _ _
+  have hv' : extendByZero p (fun i : {i // p i} => v i) = v := by
+    funext r
+    by_cases hr : p r
+    · exact extendByZero_apply _ ⟨r, hr⟩
+    · rw [extendByZero_apply_of_not _ hr, hv r hr]
+  rw [← extendByZero_dotProduct, hv']
+
+/-- **A rank-one modification supported on `{i // p i}` acts on those coordinates only**: for `v`
+vanishing off `p`, `(1 - β v vᵀ) x` is `x` off `p` and, on `p`, the action of the restricted
+`1 - β v vᵀ` on the restricted `x`. Any `Fintype` instance on the subtype is allowed. -/
+theorem one_sub_smul_vecMulVec_mulVec_apply_subtype [Fintype {i // p i}] {v : ι → ℝ}
+    (hv : ∀ i, ¬ p i → v i = 0) (β : ℝ) (x : ι → ℝ) (i : ι) :
+    ((1 - β • vecMulVec v v) *ᵥ x) i =
+      if h : p i then
+        ((1 - β • vecMulVec (fun j : {j // p j} => v j) (fun j : {j // p j} => v j) :
+          Matrix {j // p j} {j // p j} ℝ) *ᵥ (fun j : {j // p j} => x j)) ⟨i, h⟩
+      else x i := by
+  rw [one_sub_smul_vecMulVec_mulVec_apply]
+  split_ifs with h
+  · rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_eq_dotProduct_subtype hv]
+  · rw [hv i h, mul_zero, zero_mul, sub_zero]
 
 /-- The reflector of the extended vector acts on the block as the reflector of the vector. Any
 `Fintype` instance on the subtype is allowed (e.g. `List.Subtype.fintype` for `p = (· ∈ l)`). -/

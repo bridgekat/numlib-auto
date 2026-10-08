@@ -752,14 +752,15 @@ private theorem householderLSStep_rounding {fp : RoundingModel ℝ} (hfp : fp.Is
     rw [this] at hθ
     exact one_ne_zero hθ
   have hβv : β * (v ⬝ᵥ v) = 2 := by
-    rcases mul_eq_zero.1 (beta_mul_eq_zero_of_mem_orthogonalGroup hvp hO) with h0 | h2
+    rcases mul_eq_zero.1 (mul_mul_dotProduct_sub_two_eq_zero_of_mem_orthogonalGroup hvp hO) with
+      h0 | h2
     · exact absurd h0 hβ0
     · linarith
   have hvv0 : v ⬝ᵥ v ≠ 0 := fun h0 => by rw [h0, mul_zero] at hβv; norm_num at hβv
   have hβeq : β = 2 / (v ⬝ᵥ v) := eq_div_of_mul_eq hvv0 hβv
   -- restrictions to the rows `j:m`
   have hdot : v ⬝ᵥ v = (fun i : {i // i ∈ o} => v i) ⬝ᵥ (fun i => v i) :=
-    dotProduct_eq_dotProduct_subtype o hvout v
+    dotProduct_eq_dotProduct_subtype hvout v
   -- `β̂` is a relative perturbation of `β`
   have hvvrel : IsRelPert fp.u (2 * K + Fintype.card {i // i ∈ o})
       ((fun i : {i // i ∈ o} => v i) ⬝ᵥ (fun i => v i)) vv :=
@@ -789,7 +790,7 @@ private theorem householderLSStep_rounding {fp : RoundingModel ℝ} (hfp : fp.Is
         (1 - β • vecMulVec (fun i : {i // i ∈ o} => v i) (fun i : {i // i ∈ o} => v i) :
           Matrix {i // i ∈ o} {i // i ∈ o} ℝ) *ᵥ (fun i : {i // i ∈ o} => b i) := by
     funext i
-    rw [hD, Pi.sub_apply, Pi.sub_apply, one_sub_smul_vecMulVec_mulVec_apply_subtype o hvout,
+    rw [hD, Pi.sub_apply, Pi.sub_apply, one_sub_smul_vecMulVec_mulVec_apply_subtype hvout,
       dite_eq_left i.2]
   have hγ : 3 * gamma fp.u (3 * (4 * K + 2 * m + 1) + o.length + 3) ≤
       3 * gamma fp.u (3 * (4 * K + 2 * m + 1) + m + 3) :=

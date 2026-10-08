@@ -1,4 +1,5 @@
 import Numlib.Krylov.Preconditioned
+import Numlib.LinearAlgebra.Matrix.BlockTridiagonal
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.Preconditioner.ApproximateInverse
 import Numlib.Preconditioner.ILU
@@ -1542,82 +1543,44 @@ private theorem mul_transpose_eq {E G : Matrix (Fin q) (Fin q) ℝ} :
 /-- **§11.5.9, block Cholesky of a block tridiagonal matrix.** With `G₁G₁ᵀ = A₁` and, for each
 `k`, `F_k = E_kG_k⁻ᵀ` and `G_{k+1}G_{k+1}ᵀ = A_{k+1} − E_k(G_kG_kᵀ)⁻¹E_kᵀ` (nonsingular `G_k`),
 the block tridiagonal `A = [A₁ E₁ᵀ; E₁ A₂ E₂ᵀ; ⋱]` factors as `A = GGᵀ` with the block lower
-bidiagonal `G = [G₁ 0; F₁ G₂ 0; ⋱]`. -/
+bidiagonal `G = [G₁ 0; F₁ G₂ 0; ⋱]`: the backbone's `Matrix.blockTridiagonal_eq_mul_transpose`,
+once the blocks are read as `ℕ`-indexed sequences. -/
 theorem blockTridiagonal_cholesky (Ad E Gd : Fin p → Matrix (Fin q) (Fin q) ℝ)
     (hG : ∀ k, IsUnit (Gd k)) (h0 : ∀ k : Fin p, (k : ℕ) = 0 → Gd k * (Gd k)ᵀ = Ad k)
     (hS : ∀ k l : Fin p, (k : ℕ) + 1 = l →
       Gd l * (Gd l)ᵀ = Ad l - E k * (Gd k * (Gd k)ᵀ)⁻¹ * (E k)ᵀ) :
     blockTridiag Ad E = blockLowerBidiag Gd (fun k => E k * ((Gd k)⁻¹)ᵀ) *
       (blockLowerBidiag Gd (fun k => E k * ((Gd k)⁻¹)ᵀ))ᵀ := by
-  set F : Fin p → Matrix (Fin q) (Fin q) ℝ := fun k => E k * ((Gd k)⁻¹)ᵀ with hF
-  have hFG : ∀ m, F m * (Gd m)ᵀ = E m := fun m => by
-    rw [hF, Matrix.mul_assoc, ← transpose_mul,
-      mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 (hG m)), transpose_one, Matrix.mul_one]
-  ext ⟨k, i⟩ ⟨l, j⟩
-  rw [mul_apply]
-  simp only [transpose_apply]
-  rw [sum_blockLowerBidiag]
-  -- the entries of `G` in block row `l`
-  have hGl : ∀ m t, blockLowerBidiag Gd F (l, j) (m, t) = if m = l then Gd l j t
-      else if (m : ℕ) + 1 = l then F m j t else 0 := fun m t => rfl
-  simp only [hGl]
-  by_cases hkl : k = l
-  · subst hkl
-    have hsum : ∑ m : Fin p, (if (m : ℕ) + 1 = k then ∑ t, F m i t *
-        (if m = k then Gd k j t else if (m : ℕ) + 1 = k then F m j t else 0) else 0) =
-        ∑ m : Fin p, if (m : ℕ) + 1 = k then (F m * (F m)ᵀ) i j else 0 := by
-      refine Finset.sum_congr rfl fun m _ => ?_
-      by_cases hm : (m : ℕ) + 1 = k
-      · have hmk : m ≠ k := fun e => by rw [e] at hm; omega
-        simp [hm, hmk, mul_apply]
-      · simp [hm]
-    simp only [ite_true, hsum]
-    have hdiag : ∑ t, Gd k i t * Gd k j t = (Gd k * (Gd k)ᵀ) i j := by simp [mul_apply]
-    rw [hdiag]
-    by_cases h0k : (k : ℕ) = 0
-    · rw [Finset.sum_eq_zero fun m _ => by rw [ite_eq_right (by omega)], add_zero, h0 k h0k]
-      simp [blockTridiag]
-    · obtain ⟨m, hm⟩ : ∃ m : Fin p, (m : ℕ) + 1 = k := ⟨⟨k - 1, by omega⟩, by simp; omega⟩
-      rw [Finset.sum_eq_single m (fun m' _ hm' => by
-          rw [ite_eq_right (fun h => hm' (Fin.ext (by omega)))]) (by simp), ite_eq_left hm,
-        hS m k hm, mul_transpose_eq]
-      simp [blockTridiag]
-  · by_cases hlk : (l : ℕ) + 1 = k
-    · -- the subdiagonal block `E_l`
-      have hkl' : ¬ (k : ℕ) + 1 = l := by omega
-      rw [Finset.sum_eq_single l (fun m _ hm => by
-          rw [ite_eq_right_iff.2 fun h => by
-            simp [show m ≠ l from hm, show ¬ (m : ℕ) + 1 = l by omega]]) (by simp),
-        ite_eq_left hlk]
-      simp only [ite_true, hkl, ite_false, show ¬ (k : ℕ) + 1 = l from hkl']
-      rw [show ∑ t, F l i t * Gd l j t = (F l * (Gd l)ᵀ) i j by simp [mul_apply], hFG]
-      simp [blockTridiag, Ne.symm hkl, hlk]
-    · have hkl₀ : (k : ℕ) ≠ l := fun h => hkl (Fin.ext h)
-      by_cases hkl' : (k : ℕ) + 1 = l
-      · -- the superdiagonal block `E_kᵀ`
-        have h2 : (∑ m : Fin p, if (m : ℕ) + 1 = k then ∑ t, F m i t *
-            (if m = l then Gd l j t else if (m : ℕ) + 1 = l then F m j t else 0) else 0) = 0 := by
-          refine Finset.sum_eq_zero fun m _ => ?_
-          by_cases hm : (m : ℕ) + 1 = k
-          · have h1 : m ≠ l := by rintro rfl; omega
-            simp [hm, h1, hkl₀]
-          · simp [hm]
-        rw [h2, add_zero]
-        simp only [hkl, ite_false, hkl', ite_true]
-        rw [show ∑ t, Gd k i t * F k j t = (F k * (Gd k)ᵀ) j i by
-          simp [mul_apply, mul_comm], hFG]
-        simp [blockTridiag, Ne.symm hkl, hlk, hkl']
-      · -- blocks two or more apart vanish
-        have h2 : (∑ m : Fin p, if (m : ℕ) + 1 = k then ∑ t, F m i t *
-            (if m = l then Gd l j t else if (m : ℕ) + 1 = l then F m j t else 0) else 0) = 0 := by
-          refine Finset.sum_eq_zero fun m _ => ?_
-          by_cases hm : (m : ℕ) + 1 = k
-          · have h1 : m ≠ l := by rintro rfl; omega
-            simp [hm, h1, hkl₀]
-          · simp [hm]
-        rw [h2, add_zero]
-        simp only [hkl, hkl', ite_false, mul_zero, Finset.sum_const_zero]
-        simp [blockTridiag, Ne.symm hkl, hlk, hkl']
+  obtain _ | N := p
+  · ext ⟨k, _⟩
+    exact k.elim0
+  -- the blocks as `ℕ`-indexed sequences, as `Matrix.blockTridiagonal_eq_mul_transpose` reads them
+  let ext' : (Fin (N + 1) → Matrix (Fin q) (Fin q) ℝ) → ℕ → Matrix (Fin q) (Fin q) ℝ :=
+    fun X k => if h : k < N + 1 then X ⟨k, h⟩ else 0
+  have hext' : ∀ X (k : ℕ) (hk : k < N + 1), ext' X k = X ⟨k, hk⟩ := fun X k hk => by
+    simp [ext', Nat.lt_succ_iff.mp hk]
+  have hext : ∀ X (k : Fin (N + 1)), ext' X k = X k := fun X k => hext' X k k.2
+  set F := fun k => E k * ((Gd k)⁻¹)ᵀ with hF
+  have hA : blockTridiag Ad E = blockTridiagonal (N := N) (fun a => ext' E a)
+      (fun a => ext' Ad a) (fun a => (ext' E a)ᵀ) := by
+    ext ⟨k, a⟩ ⟨l, c⟩
+    simp only [blockTridiag, blockTridiagonal_apply, tridiagonalOf, of_apply, Fin.ext_iff]
+    split_ifs <;> first | (exfalso; omega) | rfl | rw [transpose_apply, hext] | rw [hext]
+  have hL : blockLowerBidiag Gd F = blockTridiagonal (N := N) (fun a => ext' F a)
+      (fun a => ext' Gd a) 0 := by
+    ext ⟨k, a⟩ ⟨l, c⟩
+    simp only [blockLowerBidiag, blockTridiagonal_apply, tridiagonalOf, of_apply, Fin.ext_iff]
+    split_ifs <;> first | (exfalso; omega) | rfl | rw [transpose_apply, hext] | rw [hext]
+  rw [hA, hL]
+  refine blockTridiagonal_eq_mul_transpose _ _ _ _ (fun i hi => ?_) ?_ (fun i hi => ?_)
+  · rw [hext' _ i (by omega), hext' _ i (by omega), hext' _ i (by omega), hF, Matrix.mul_assoc,
+      ← transpose_mul, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 (hG _)), transpose_one,
+      Matrix.mul_one]
+  · rw [hext' _ 0 (by omega), hext' _ 0 (by omega)]
+    exact h0 _ rfl
+  · rw [hext' _ (i + 1) (by omega), hext' _ (i + 1) (by omega), hext' _ i (by omega),
+      hS ⟨i, by omega⟩ ⟨i + 1, by omega⟩ rfl, hF, mul_transpose_eq, sub_add_cancel]
+
 /-- **(11.5.10)**, "with this strategy each `G̃_k` is lower bidiagonal": if `A_{k+1}` is
 tridiagonal, `E_k` diagonal and `Λ_k` symmetric tridiagonal, then `A_{k+1} − E_kΛ_kE_kᵀ` is
 tridiagonal, and the Cholesky factor of a positive definite tridiagonal matrix is bidiagonal: with

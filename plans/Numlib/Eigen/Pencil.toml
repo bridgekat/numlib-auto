@@ -132,3 +132,14 @@ id = "isDeflatingSubspace_one_iff"
 
 [[node]]  # staged by ch07
 id = "isDeflatingSubspace_span_cols_of_isUpperTriangular"
+
+[[node]]
+id = "smul_mulVec_col_eq_of_conj_diagonal"
+
+[[node]]
+id = "hasPencilEigenvector_col_of_conj_diagonal"
+source = 'Golub–Van Loan, Matrix Computations, §8.7.4'
+
+[[node]]
+id = "pencilSpectrum_eq_range_of_conj_diagonal"
+source = 'Golub–Van Loan, Matrix Computations, §8.7.4'

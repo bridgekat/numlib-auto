@@ -639,4 +639,52 @@ theorem tendsto_of_forall_norm_succ_le {N : E → ℝ} {C ρ : ℝ} {xseq : ℕ 
   rw [tendsto_iff_norm_sub_tendsto_zero]
   simpa only [norm_sub_rev] using hzero
 
+/-! ### Convergence of the steepest-descent iterates -/
+
+/-- The steepest-descent factor `(λmax - λmin)/(λmax + λmin)` of a nonzero space lies in `[0, 1)`:
+on a nontrivial space the bounds `λmin ≤ λmax` are forced by any nonzero vector. -/
+theorem steepestDescentFactor_mem_Ico [Nontrivial E] {lmin lmax : ℝ} (hl : 0 < lmin)
+    (hA : A.IsSymmetricBoundedBy lmin lmax) :
+    0 ≤ (lmax - lmin) / (lmax + lmin) ∧ (lmax - lmin) / (lmax + lmin) < 1 := by
+  obtain ⟨v, hv⟩ := exists_ne (0 : E)
+  have hv2 : (0 : ℝ) < ‖v‖ ^ 2 := by have := norm_pos_iff.2 hv; positivity
+  have hll : lmin ≤ lmax := by nlinarith [hA.le_re_inner v, hA.re_inner_le v]
+  have hs : 0 < lmax + lmin := by linarith
+  exact ⟨div_nonneg (by linarith) hs.le, by rw [div_lt_one hs]; linarith⟩
+
+/-- **The steepest-descent rate along the iterates** ([saad2003iterative] Thm 5.9,
+[quarteroni2000numerical] Theorem 4.10): the energy norm of the error after `k` steps is at most
+`((λmax - λmin)/(λmax + λmin))^k` times the initial one. -/
+theorem energyNorm_iterate_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lmin)
+    (hA : A.IsSymmetricBoundedBy lmin lmax) {xstar : E} (hstar : A xstar = b) (x₀ : E) (k : ℕ) :
+    energyNorm A (xstar - (steepestDescentStep A b)^[k] x₀) ≤
+      ((lmax - lmin) / (lmax + lmin)) ^ k * energyNorm A (xstar - x₀) := by
+  rcases subsingleton_or_nontrivial E with hE | hE
+  · simp [Subsingleton.elim _ (0 : E), energyNorm]
+  have hρ := (steepestDescentFactor_mem_Ico hl hA).1
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [Function.iterate_succ_apply', pow_succ', mul_assoc]
+    exact (energyNorm_steepestDescentStep_le hl hA hstar _).trans
+      (mul_le_mul_of_nonneg_left ih hρ)
+
+/-- **Steepest descent converges** from every starting vector ([saad2003iterative] Thm 5.9,
+[quarteroni2000numerical] Theorem 4.10): the energy norm contracts by a factor `< 1` and dominates
+`√λmin` times the norm (`tendsto_of_forall_norm_succ_le`). -/
+theorem tendsto_iterate_steepestDescentStep {lmin lmax : ℝ} (hl : 0 < lmin)
+    (hA : A.IsSymmetricBoundedBy lmin lmax) {xstar : E} (hstar : A xstar = b) (x₀ : E) :
+    Filter.Tendsto (fun k => (steepestDescentStep A b)^[k] x₀) Filter.atTop (nhds xstar) := by
+  rcases subsingleton_or_nontrivial E with hE | hE
+  · simp only [Subsingleton.elim _ xstar]
+    exact tendsto_const_nhds
+  obtain ⟨hρ0, hρ1⟩ := steepestDescentFactor_mem_Ico hl hA
+  have hs : 0 < Real.sqrt lmin := Real.sqrt_pos.2 hl
+  refine tendsto_of_forall_norm_succ_le (N := energyNorm A) (C := (Real.sqrt lmin)⁻¹)
+    (fun v => ?_) (energyNorm_nonneg A) hρ0 hρ1 fun k => ?_
+  · rw [← div_eq_inv_mul, le_div_iff₀ hs, mul_comm]
+    exact hA.isCoerciveWith.norm_le_energyNorm hl.le v
+  · rw [Function.iterate_succ_apply']
+    exact energyNorm_steepestDescentStep_le hl hA hstar _
+
 end Projection

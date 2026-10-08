@@ -2,6 +2,7 @@ import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Stationary.Block
 import Numlib.Stationary.Splitting
+import Numlib.Stationary.Sweep
 import NumlibSurface.SaadSparse.Common
 
 /-!
@@ -347,33 +348,31 @@ theorem sorStep_one (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
   funext x
   simp [sorStep, gsStep]
 
-/-- The SOR sweep in residual form: `(D - ω E) (x' - x) = ω (b - A x)`. -/
-theorem sorStep_sub (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
-    (D A - ω • E A) *ᵥ (sorStep A ω b x - x) = ω • (b - A *ᵥ x) := by
-  have h1 : ω • (b - A *ᵥ x) = ω • b - (ω • A) *ᵥ x := by
-    rw [smul_sub, smul_mulVec]
-  rw [mulVec_sub, sorStep_spec h hω b x, h1, omega_smul_decomp A ω]
-  simp only [sub_mulVec, add_mulVec]
-  abel
+/-- Saad's SOR step (4.12) is the backbone's `Matrix.sorSweep`: `D - ω E = D + ω L` and
+`ω F + (1 - ω) D = (1 - ω) D - ω U`. -/
+theorem sorStep_eq_sorSweep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b : Fin n → ℝ) :
+    sorStep A ω b = sorSweep A ω b := by
+  funext x
+  simp only [sorStep, sorSweep, D, E, F, smul_neg, sub_neg_eq_add, neg_add_eq_sub]
 
-/-- The backward SOR sweep in residual form. -/
-theorem backwardSORStep_sub (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
-    (D A - ω • F A) *ᵥ (backwardSORStep A ω b x - x) = ω • (b - A *ᵥ x) := by
-  have h1 : ω • (b - A *ᵥ x) = ω • b - (ω • A) *ᵥ x := by
-    rw [smul_sub, smul_mulVec]
-  rw [mulVec_sub, backwardSORStep_spec h hω b x, h1, omega_smul_decomp' A ω]
-  simp only [sub_mulVec, add_mulVec]
-  abel
+/-- Saad's backward SOR step is the backbone's `Matrix.backwardSorSweep`. -/
+theorem backwardSORStep_eq_backwardSorSweep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ)
+    (b : Fin n → ℝ) : backwardSORStep A ω b = backwardSorSweep A ω b := by
+  funext x
+  simp only [backwardSORStep, backwardSorSweep, D, E, F, smul_neg, sub_neg_eq_add,
+    neg_add_eq_sub]
 
-/-- Saad (4.12): SOR is the splitting with `M = ω⁻¹ (D - ω E)`. -/
+/-- The step of a splitting is the backbone's `Stationary.Splitting.mulVecStep`. -/
+theorem Splitting.step_eq_mulVecStep (s : Splitting A) (b : Fin n → ℝ) :
+    Splitting.step s b = Stationary.Splitting.mulVecStep s b := by
+  funext x
+  rw [Splitting.step_eq, Stationary.Splitting.mulVecStep_eq_add_inv_mulVec]
+
+/-- Saad (4.12): SOR is the splitting with `M = ω⁻¹ (D - ω E)` (backbone
+`Matrix.sorSweep_eq_mulVecStep`). -/
 theorem sorStep_eq (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b : Fin n → ℝ) :
     sorStep A ω b = Splitting.step (sorSplitting A h hω) b := by
-  funext x
-  refine (Splitting.step_eq_of_mulVec _ b x _ ?_).symm
-  have hm0 : (sorSplitting A h hω).m = ω⁻¹ • diagPart A + strictLower A := rfl
-  have hm : (sorSplitting A h hω).m = ω⁻¹ • (D A - ω • E A) := by
-    rw [hm0, D, E, smul_neg, sub_neg_eq_add, smul_add, smul_smul, inv_mul_cancel₀ hω, one_smul]
-  rw [hm, smul_mulVec, sorStep_sub h hω b x, smul_smul, inv_mul_cancel₀ hω, one_smul]
+  rw [sorStep_eq_sorSweep, sorSweep_eq_mulVecStep A h hω, Splitting.step_eq_mulVecStep]
 
 /-! ### Preconditioners (4.24)–(4.27) -/
 
@@ -405,41 +404,13 @@ theorem M_ssor_eq (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (hω2 : ω ≠ 2) :
         (diagPart A + ω • strictUpper A)) := rfl
   rw [hm, M_ssor, D, E, F, smul_neg, smul_neg, sub_neg_eq_add, sub_neg_eq_add]
 
-/-- The key computation behind Saad (4.27): if `y` is the forward SOR sweep from `x` and `z` the
-backward SOR sweep from `y`, then `M_SSOR (z - x) = b - A x`. -/
-private theorem ssor_key (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (hω2 : ω ≠ 2)
-    (b x y z : Fin n → ℝ)
-    (hu : (D A - ω • E A) *ᵥ (y - x) = ω • (b - A *ᵥ x))
-    (hv : (D A - ω • F A) *ᵥ (z - y) = ω • (b - A *ᵥ y)) :
-    M_ssor A ω *ᵥ (z - x) = b - A *ᵥ x := by
-  have hD : IsUnit (D A) := h
-  have hω2' : (2 : ℝ) - ω ≠ 0 := sub_ne_zero_of_ne (Ne.symm hω2)
-  have hv' : (D A - ω • F A) *ᵥ (z - y) = (ω • F A + (1 - ω) • D A) *ᵥ (y - x) := by
-    have h2 : ω • (b - A *ᵥ y) = ω • (b - A *ᵥ x) - (ω • A) *ᵥ (y - x) := by
-      simp only [smul_mulVec, mulVec_sub, smul_sub]
-      abel
-    have h3 : (ω • A) *ᵥ (y - x)
-        = (D A - ω • E A) *ᵥ (y - x) - (ω • F A + (1 - ω) • D A) *ᵥ (y - x) := by
-      rw [omega_smul_decomp A ω]
-      simp only [sub_mulVec]
-    rw [hv, h2, h3, hu]
-    abel
-  have hsum : (D A - ω • F A) *ᵥ (z - x) = (2 - ω) • (D A *ᵥ (y - x)) := by
-    have hsplit : z - x = (z - y) + (y - x) := by abel
-    rw [hsplit, mulVec_add, hv', ← add_mulVec,
-      show (ω • F A + (1 - ω) • D A) + (D A - ω • F A) = (2 - ω) • D A by module, smul_mulVec]
-  rw [M_ssor, smul_mulVec, ← mulVec_mulVec, ← mulVec_mulVec, hsum, mulVec_smul,
-    nonsing_inv_mulVec_mulVec hD, mulVec_smul, hu, smul_smul, smul_smul,
-    show (ω * (2 - ω))⁻¹ * (2 - ω) * ω = 1 by field_simp, one_smul]
-
-/-- Saad (4.13)–(4.14), (4.27): the SSOR sweep is the splitting with `M = M_SSOR`. -/
+/-- Saad (4.13)–(4.14), (4.27): the SSOR sweep is the splitting with `M = M_SSOR` (backbone
+`Matrix.ssorSweep_eq_mulVecStep`; `M_SSOR` is its `m` by `M_ssor_eq`). -/
 theorem ssorStep_eq (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (hω2 : ω ≠ 2) (b : Fin n → ℝ) :
     ssorStep A ω b = Splitting.step (ssorSplitting A h hω hω2) b := by
   funext x
-  refine (Splitting.step_eq_of_mulVec _ b x _ ?_).symm
-  rw [← M_ssor_eq h hω hω2]
-  exact ssor_key h hω hω2 b x (sorStep A ω b x) (ssorStep A ω b x) (sorStep_sub h hω b x)
-    (backwardSORStep_sub h hω b (sorStep A ω b x))
+  rw [ssorStep, Function.comp_apply, sorStep_eq_sorSweep, backwardSORStep_eq_backwardSorSweep,
+    ssorSweep_eq_mulVecStep A h hω hω2, Splitting.step_eq_mulVecStep]
 
 /-! ### The closed form (4.13)–(4.14) of the SSOR iteration -/
 

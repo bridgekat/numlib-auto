@@ -19,27 +19,31 @@ A`, that is with `κ(A)²` in place of `κ(A)`
 `Krylov.CGNE.iterate` are the two recurrences as a program writes them — one application of `A` and
 one of `Aᴴ` per step, never forming a product — identified with the corresponding CG iterates.
 
-The adjoint enters as a *hypothesis* `∀ u v, ⟪Aᴴ u, v⟫ = ⟪u, A v⟫` on a second operator rather than
-as `LinearMap.adjoint A`, so that the module needs neither finite-dimensionality nor completeness;
+The operator may be rectangular, `A : E →ₗ F`, in the general lemmas and in the two recurrences
+(as in [golub2013matrix] Figure 11.3.1); the optimality statements are for `E = F`, the setting
+of `Krylov.IsMinResidual`. The adjoint enters as a *hypothesis* `∀ u v, ⟪Aᴴ u, v⟫ = ⟪u, A v⟫` on
+a second operator rather than as `LinearMap.adjoint A`, so that the module needs neither
+finite-dimensionality nor completeness;
 `LinearMap.adjoint_inner_left` and `ContinuousLinearMap.adjoint_inner_left` supply the hypothesis
 where those are available.
 -/
 
 open Krylov
 
-variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+  [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
 
 namespace Krylov
 
 section Adjoint
 
-variable {A Astar : E →ₗ[𝕜] E}
+variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
 
-variable (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A v))
+variable (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v))
 include hadj
 
 /-- The adjoint relation read the other way round: `⟪u, Aᴴ v⟫ = ⟪A u, v⟫`. -/
-theorem inner_adjoint_right (u v : E) : inner 𝕜 u (Astar v) = inner 𝕜 (A u) v := by
+theorem inner_adjoint_right (u : E) (v : F) : inner 𝕜 u (Astar v) = inner 𝕜 (A u) v := by
   rw [← inner_conj_symm, hadj, inner_conj_symm]
 
 /-- The quadratic form of `Aᴴ A` is the squared norm of `A`: `⟪Aᴴ A x, x⟫ = ‖A x‖²`. This one
@@ -224,39 +228,40 @@ namespace CGNR
 /-- State of the CGNR iteration ([saad2003iterative], Algorithm 8.4): iterate, residual `r = b - A
 x`, and search direction. The normal-equations residual `z = Aᴴ r` is recomputed rather than stored.
 -/
-structure State (E : Type*) where
+structure State (E F : Type*) where
   /-- The current iterate. -/
   x : E
   /-- The residual `b - A x` of the *original* system. -/
-  r : E
+  r : F
   /-- The search direction. -/
   p : E
 
 /-- The CGNR step length `α = ‖Aᴴ r‖² / ‖A p‖²`, which is the CG step length of `Aᴴ A`. -/
-noncomputable def alpha (A Astar : E →ₗ[𝕜] E) (s : State E) : 𝕜 :=
+noncomputable def alpha (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : 𝕜 :=
   inner 𝕜 (Astar s.r) (Astar s.r) / inner 𝕜 (A s.p) (A s.p)
 
 /-- One CGNR step. -/
-noncomputable def step (A Astar : E →ₗ[𝕜] E) (s : State E) : State E :=
+noncomputable def step (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : State E F :=
   let α := alpha A Astar s
   let r' := s.r - α • A s.p
   let β : 𝕜 := inner 𝕜 (Astar r') (Astar r') / inner 𝕜 (Astar s.r) (Astar s.r)
   { x := s.x + α • s.p, r := r', p := Astar r' + β • s.p }
 
 /-- The CGNR direction update coefficient `β = ‖Aᴴ r'‖² / ‖Aᴴ r‖²`. -/
-noncomputable def beta (A Astar : E →ₗ[𝕜] E) (s : State E) : 𝕜 :=
+noncomputable def beta (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : 𝕜 :=
   inner 𝕜 (Astar (step A Astar s).r) (Astar (step A Astar s).r) /
     inner 𝕜 (Astar s.r) (Astar s.r)
 
 /-- The starting state: `r₀ = b - A x₀` and `p₀ = Aᴴ r₀`. -/
-def init (A Astar : E →ₗ[𝕜] E) (b x₀ : E) : State E :=
+def init (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E) : State E F :=
   { x := x₀, r := b - A x₀, p := Astar (b - A x₀) }
 
 /-- The `k`-th CGNR state for `A x = b` started at `x₀`. -/
-noncomputable def iterate (A Astar : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : State E :=
+noncomputable def iterate (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E) (k : ℕ) :
+    State E F :=
   (step A Astar)^[k] (init A Astar b x₀)
 
-variable (A Astar : E →ₗ[𝕜] E) (b x₀ : E)
+variable (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E)
 
 /-- The recurrence: state `k + 1` is one `CGNR.step` applied to state `k`. -/
 theorem iterate_succ (k : ℕ) :
@@ -264,20 +269,20 @@ theorem iterate_succ (k : ℕ) :
   Function.iterate_succ_apply' _ _ _
 
 /-- The iterate update `x' = x + α p` of one CGNR step. -/
-theorem step_x (s : State E) : (step A Astar s).x = s.x + alpha A Astar s • s.p := rfl
+theorem step_x (s : State E F) : (step A Astar s).x = s.x + alpha A Astar s • s.p := rfl
 
 /-- The residual update `r' = r - α A p` of one CGNR step. -/
-theorem step_r (s : State E) : (step A Astar s).r = s.r - alpha A Astar s • A s.p := rfl
+theorem step_r (s : State E F) : (step A Astar s).r = s.r - alpha A Astar s • A s.p := rfl
 
 /-- The direction update `p' = Aᴴ r' + β p` of one CGNR step. -/
-theorem step_p (s : State E) :
+theorem step_p (s : State E F) :
     (step A Astar s).p = Astar (step A Astar s).r + beta A Astar s • s.p := rfl
 
 /-- CGNR is CG on the normal equations, state by state: the iterate and the search direction are the
 CG ones for `Aᴴ A x = Aᴴ b`, the CG residual is `Aᴴ` of the CGNR residual, and the CGNR residual is
 the true residual `b - A x`.  Everything proved of `CG.iterate` — the orthogonality relations,
 finite termination, the Chebyshev bounds — therefore holds of CGNR. -/
-theorem iterate_eq (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (k : ℕ) :
+theorem iterate_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (k : ℕ) :
     (iterate A Astar b x₀ k).x = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).x ∧
       Astar (iterate A Astar b x₀ k).r = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).r ∧
       (iterate A Astar b x₀ k).p = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).p ∧
@@ -307,12 +312,12 @@ theorem iterate_eq (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A
     · rw [iterate_succ, step_r, step_x, hres, map_add, map_smul, sub_sub]
 
 /-- [saad2003iterative], Algorithm 8.4 computes the CG iterates of the normal equations. -/
-theorem iterate_x_eq (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (k : ℕ) :
+theorem iterate_x_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (k : ℕ) :
     (iterate A Astar b x₀ k).x = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).x :=
   (iterate_eq A Astar b x₀ hadj k).1
 
 /-- The CGNR state's residual field is the true residual `b - A x`. -/
-theorem residual_eq (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (k : ℕ) :
+theorem residual_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (k : ℕ) :
     (iterate A Astar b x₀ k).r = b - A (iterate A Astar b x₀ k).x :=
   (iterate_eq A Astar b x₀ hadj k).2.2.2
 
@@ -322,38 +327,39 @@ namespace CGNE
 
 /-- State of the CGNE (Craig) iteration ([saad2003iterative], Algorithm 8.5): iterate, residual `r =
 b - A x`, and search direction `p`, which is `Aᴴ` of the direction of the `A Aᴴ` system. -/
-structure State (E : Type*) where
+structure State (E F : Type*) where
   /-- The current iterate. -/
   x : E
   /-- The residual `b - A x`. -/
-  r : E
+  r : F
   /-- The search direction. -/
   p : E
 
 /-- The CGNE step length `α = ‖r‖² / ‖p‖²`.  Unlike the other step lengths of this file it takes no
 operator, so `𝕜` is fixed only by the expected type and call sites read `(alpha s : 𝕜)`. -/
-noncomputable def alpha (s : State E) : 𝕜 := inner 𝕜 s.r s.r / inner 𝕜 s.p s.p
+noncomputable def alpha (s : State E F) : 𝕜 := inner 𝕜 s.r s.r / inner 𝕜 s.p s.p
 
 /-- One CGNE step. -/
-noncomputable def step (A Astar : E →ₗ[𝕜] E) (s : State E) : State E :=
+noncomputable def step (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : State E F :=
   let α : 𝕜 := alpha s
   let r' := s.r - α • A s.p
   let β : 𝕜 := inner 𝕜 r' r' / inner 𝕜 s.r s.r
   { x := s.x + α • s.p, r := r', p := Astar r' + β • s.p }
 
 /-- The CGNE direction update coefficient `β = ‖r'‖² / ‖r‖²`. -/
-noncomputable def beta (A Astar : E →ₗ[𝕜] E) (s : State E) : 𝕜 :=
+noncomputable def beta (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : 𝕜 :=
   inner 𝕜 (step A Astar s).r (step A Astar s).r / inner 𝕜 s.r s.r
 
 /-- The starting state: `r₀ = b - A x₀` and `p₀ = Aᴴ r₀`. -/
-def init (A Astar : E →ₗ[𝕜] E) (b x₀ : E) : State E :=
+def init (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E) : State E F :=
   { x := x₀, r := b - A x₀, p := Astar (b - A x₀) }
 
 /-- The `k`-th CGNE state for `A x = b` started at `x₀`. -/
-noncomputable def iterate (A Astar : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : State E :=
+noncomputable def iterate (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E) (k : ℕ) :
+    State E F :=
   (step A Astar)^[k] (init A Astar b x₀)
 
-variable (A Astar : E →ₗ[𝕜] E) (b x₀ : E)
+variable (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E)
 
 /-- The recurrence: state `k + 1` is one `CGNE.step` applied to state `k`. -/
 theorem iterate_succ (k : ℕ) :
@@ -361,19 +367,19 @@ theorem iterate_succ (k : ℕ) :
   Function.iterate_succ_apply' _ _ _
 
 /-- The iterate update `x' = x + α p` of one CGNE step. -/
-theorem step_x (s : State E) : (step A Astar s).x = s.x + (alpha s : 𝕜) • s.p := rfl
+theorem step_x (s : State E F) : (step A Astar s).x = s.x + (alpha s : 𝕜) • s.p := rfl
 
 /-- The residual update `r' = r - α A p` of one CGNE step. -/
-theorem step_r (s : State E) : (step A Astar s).r = s.r - (alpha s : 𝕜) • A s.p := rfl
+theorem step_r (s : State E F) : (step A Astar s).r = s.r - (alpha s : 𝕜) • A s.p := rfl
 
 /-- The direction update `p' = Aᴴ r' + β p` of one CGNE step. -/
-theorem step_p (s : State E) :
+theorem step_p (s : State E F) :
     (step A Astar s).p = Astar (step A Astar s).r + beta A Astar s • s.p := rfl
 
 /-- CGNE is CG on `A Aᴴ u = b` read through `x = Aᴴ u`: for any `u₀` with `Aᴴ u₀ = x₀`, the CGNE
 iterate is `Aᴴ` of the CG iterate, the CGNE direction is `Aᴴ` of the CG direction, and the two
 residuals agree.  This is [saad2003iterative], Algorithm 8.5 (Craig's method). -/
-theorem iterate_eq (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) {u₀ : E}
+theorem iterate_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) {u₀ : F}
     (hu₀ : Astar u₀ = x₀) (k : ℕ) :
     (iterate A Astar b x₀ k).x = Astar (CG.iterate (A ∘ₗ Astar) b u₀ k).x ∧
       (iterate A Astar b x₀ k).r = (CG.iterate (A ∘ₗ Astar) b u₀ k).r ∧
@@ -408,7 +414,7 @@ theorem iterate_eq (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A
         map_smul]
 
 /-- Craig's method computes `Aᴴ` of the CG iterates of `A Aᴴ u = b`. -/
-theorem iterate_x_eq (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) {u₀ : E}
+theorem iterate_x_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) {u₀ : F}
     (hu₀ : Astar u₀ = x₀) (k : ℕ) :
     (iterate A Astar b x₀ k).x = Astar (CG.iterate (A ∘ₗ Astar) b u₀ k).x :=
   (iterate_eq A Astar b x₀ hadj hu₀ k).1

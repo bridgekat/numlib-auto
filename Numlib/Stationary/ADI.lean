@@ -742,14 +742,6 @@ section Real
 
 variable {H V : Matrix ι ι ℝ} {r₁ r₂ : ℝ}
 
-/-- The real spectrum of the Euclidean operator of a complexified real matrix is the real
-spectrum of the matrix. -/
-theorem spectrum_real_toEuclideanCLM_complexify (A : Matrix ι ι ℝ) :
-    spectrum ℝ (toEuclideanCLM (n := ι) (𝕜 := ℂ) (complexify A)) = spectrum ℝ A := by
-  ext t
-  rw [← spectrum.algebraMap_mem_iff ℂ, AlgEquiv.spectrum_eq (toEuclideanCLM (n := ι) (𝕜 := ℂ)),
-    Complex.coe_algebraMap, ofReal_mem_spectrum_complexify_iff]
-
 /-- A nonsingular real shift stays nonsingular after complexification. -/
 private theorem isUnit_complexify_add_smul_one {A : Matrix ι ι ℝ} {r : ℝ}
     (hA : IsUnit (A + r • (1 : Matrix ι ι ℝ))) :

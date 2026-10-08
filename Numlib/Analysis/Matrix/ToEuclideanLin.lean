@@ -663,6 +663,14 @@ theorem PosDef.isSymmetricCoercive_toEuclideanCLM_complexify {X : Matrix n n ℝ
   rw [coe_toEuclideanCLM_eq_toEuclideanLin]
   exact (posDef_iff_isSymmetricCoercive _).mp (posDef_complexify_iff.mpr hX)
 
+/-- The real spectrum of the Euclidean operator of a complexified real matrix is the real
+spectrum of the matrix. -/
+theorem spectrum_real_toEuclideanCLM_complexify (A : Matrix n n ℝ) :
+    spectrum ℝ (toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A)) = spectrum ℝ A := by
+  ext t
+  rw [← spectrum.algebraMap_mem_iff ℂ, AlgEquiv.spectrum_eq (toEuclideanCLM (n := n) (𝕜 := ℂ)),
+    Complex.coe_algebraMap, ofReal_mem_spectrum_complexify_iff]
+
 end Complexify
 
 end Matrix

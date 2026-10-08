@@ -201,24 +201,6 @@ theorem theorem_4_1 (G : Matrix (Fin n) (Fin n) ℝ) :
       complexSpectralRadius G < 1 :=
   ⟨theorem_4_1_mpr, fun hG f x₀ => ⟨_, (theorem_4_1_mp hG).2 f x₀⟩⟩
 
-/-- Saad §4.2: a splitting whose iteration matrix has spectral radius `< 1` converges to the
-solution `A⁻¹ b` from every starting vector. -/
-theorem Splitting.tendsto_step (s : Splitting A)
-    (hs : complexSpectralRadius s.iterationOperator < 1) (b x₀ : Fin n → ℝ) :
-    Tendsto (fun k => (Splitting.step s b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
-  have hu : IsUnit (1 - s.iterationOperator) :=
-    Chapter01.theorem_1_11_isUnit hs
-  have hGA : (1 : Matrix (Fin n) (Fin n) ℝ) - s.iterationOperator = s.m⁻¹ * A := by
-    rw [iterationOperator_eq_one_sub, sub_sub_cancel]
-  have hA : IsUnit A := by
-    rw [isUnit_iff_isUnit_det] at hu ⊢
-    rw [hGA, det_mul] at hu
-    exact isUnit_of_mul_isUnit_right hu
-  have hstep : Splitting.step s b = affineStep s.iterationOperator (s.m⁻¹ *ᵥ b) := rfl
-  rw [hstep]
-  exact tendsto_affineStep_of_complexSpectralRadius_lt_one hs _ x₀
-    ((step_fixed_iff s b _).mpr (mulVec_nonsing_inv_mulVec hA b))
-
 /-! ### Corollary 4.2 -/
 
 section Lp
@@ -433,7 +415,8 @@ theorem theorem_4_9_jacobi (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ)
     Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hd := h.isUnit_diagPart
   rw [jacobiStep_eq hd]
-  exact Splitting.tendsto_step _ (jacobi_complexSpectralRadius_lt_one h hd) b x₀
+  exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
+    (jacobi_complexSpectralRadius_lt_one h hd) b x₀
 
 /-- Saad, Theorem 4.9 (Gauss–Seidel): for a strictly diagonally dominant `A` the Gauss–Seidel
 iteration converges to the solution from every starting vector. -/
@@ -441,14 +424,16 @@ theorem theorem_4_9_gs (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hd := h.isUnit_diagPart
   rw [gsStep_eq hd]
-  exact Splitting.tendsto_step _ (gaussSeidel_complexSpectralRadius_lt_one h hd) b x₀
+  exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
+    (gaussSeidel_complexSpectralRadius_lt_one h hd) b x₀
 
 /-- Saad, Theorem 4.9 (Jacobi, strict column dominance): Kress's variant, from
 `Matrix.jacobi_spectralRadius_lt_one_of_col`. -/
 theorem theorem_4_9_jacobi_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
     (b x₀ : Fin n → ℝ) : Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [jacobiStep_eq hd]
-  exact Splitting.tendsto_step _ (jacobi_complexSpectralRadius_lt_one_of_col h hd) b x₀
+  exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
+    (jacobi_complexSpectralRadius_lt_one_of_col h hd) b x₀
 
 end DiagonallyDominant
 
@@ -731,7 +716,8 @@ theorem theorem_4_4_mmatrix (h : IsRegularSplitting A M N) (hA : A.IsMMatrix) (b
   have hstep : affineStep (M⁻¹ * N) (M⁻¹ *ᵥ b) = Splitting.step (⟨M, h.2.1⟩ : Splitting A) b := by
     rw [Splitting.step, hiter]
   rw [hstep]
-  exact Splitting.tendsto_step _ (hiter ▸ hreg.complexSpectralRadius_lt_one_of_isMMatrix hA) b x₀
+  exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
+    (hiter ▸ hreg.complexSpectralRadius_lt_one_of_isMMatrix hA) b x₀
 
 end Regular
 
@@ -773,20 +759,23 @@ converges to the solution from every starting vector. -/
 theorem theorem_4_9_jacobi_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [jacobiStep_eq h.isUnit_diagPart]
-  exact Splitting.tendsto_step _ (h.jacobi_complexSpectralRadius_lt_one h.isUnit_diagPart) b x₀
+  exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
+    (h.jacobi_complexSpectralRadius_lt_one h.isUnit_diagPart) b x₀
 
 /-- **Saad, Theorem 4.9** (Gauss–Seidel), the irreducibly diagonally dominant half. -/
 theorem theorem_4_9_gs_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [gsStep_eq h.isUnit_diagPart]
-  exact Splitting.tendsto_step _ (h.gaussSeidel_complexSpectralRadius_lt_one h.isUnit_diagPart) b x₀
+  exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
+    (h.gaussSeidel_complexSpectralRadius_lt_one h.isUnit_diagPart) b x₀
 
 /-- Saad, Theorem 4.9 (Gauss–Seidel) under strict *column* diagonal dominance, the reading of
 Definition 4.5 as printed. -/
 theorem theorem_4_9_gs_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
     (b x₀ : Fin n → ℝ) : Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [gsStep_eq hd]
-  exact Splitting.tendsto_step _ (gaussSeidel_complexSpectralRadius_lt_one_of_col h hd) b x₀
+  exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
+    (gaussSeidel_complexSpectralRadius_lt_one_of_col h hd) b x₀
 
 end Irreducible
 
@@ -827,7 +816,7 @@ theorem theorem_4_10_tendsto (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit
     exact hx
   · intro hρ b x₀
     rw [sorStep_eq h hω0.ne']
-    exact ⟨_, Splitting.tendsto_step _ hρ b x₀⟩
+    exact ⟨_, Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _ hρ b x₀⟩
 
 end SOR
 

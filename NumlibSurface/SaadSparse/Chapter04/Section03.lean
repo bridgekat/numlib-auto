@@ -217,11 +217,8 @@ theorem f_adi_eq_m_inv_mulVec {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix
 /-- For a symmetric positive definite `H` and `r > 0` the matrix `H + r I` of a half-step of
 Algorithm 4.3 is nonsingular, so the sweep is well defined. -/
 theorem isUnit_add_smul_one_of_posDef (hH : H.PosDef) (hr : 0 < r) :
-    IsUnit (H + r • (1 : Matrix ι ι ℝ)) := by
-  obtain ⟨c, hc, hcw⟩ := ((posDef_iff_isSymmetricCoercive H).1 hH).isCoercive
-  have h := (Stationary.isUnit_add_smul_one (A := toEuclideanCLM (𝕜 := ℝ) H) hc hcw hr).map
-    (toEuclideanCLM (n := ι) (𝕜 := ℝ)).symm
-  rwa [map_add, map_smul, map_one, StarAlgEquiv.symm_apply_apply] at h
+    IsUnit (H + r • (1 : Matrix ι ι ℝ)) :=
+  (hH.add (PosDef.one.smul hr)).isUnit
 
 /-- Saad §4.3: for symmetric positive definite `H` and `V` and a positive parameter `r`, the
 iteration matrix (4.50) of Algorithm 4.3 has spectral radius below one (backbone

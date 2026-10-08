@@ -50,14 +50,3 @@ id = "conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal"
 
 [[node]]
 id = "mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal"
-
-[[node]]
-id = "smul_mulVec_col_eq_of_conj_diagonal"
-
-[[node]]
-id = "hasPencilEigenvector_col_of_conj_diagonal"
-source = 'Golub–Van Loan, Matrix Computations, §8.7.4'
-
-[[node]]
-id = "pencilSpectrum_eq_range_of_conj_diagonal"
-source = 'Golub–Van Loan, Matrix Computations, §8.7.4'

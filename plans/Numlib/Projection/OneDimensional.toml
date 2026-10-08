@@ -69,3 +69,9 @@ id = "Projection.step1_eq_self_of_inner_eq_zero"
 
 [[node]]
 id = "Projection.step1_isGalerkin"
+
+[[node]]
+id = "Projection.energyNorm_iterate_steepestDescentStep_le"
+
+[[node]]
+id = "Projection.tendsto_iterate_steepestDescentStep"

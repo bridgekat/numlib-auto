@@ -117,57 +117,6 @@ theorem roundsDot_subtype_of_mem_run_dotAccum {fp : RoundingModel ℝ} (hfp : fp
 
 variable {ι : Type} [Fintype ι] [DecidableEq ι]
 
-/-- A dot product with a vector vanishing off `l` is the dot product of the restrictions to
-`{i // i ∈ l}`. -/
-theorem dotProduct_eq_dotProduct_subtype (l : List ι) {v : ι → ℝ} (hv : ∀ i, i ∉ l → v i = 0)
-    (x : ι → ℝ) : v ⬝ᵥ x = (fun i : {i // i ∈ l} => v i) ⬝ᵥ (fun i => x i) := by
-  have h0 : ∑ i : {i // i ∉ l}, v i * x i = 0 :=
-    Finset.sum_eq_zero fun i _ => by rw [hv i i.2, zero_mul]
-  simp only [dotProduct]
-  rw [← Fintype.sum_subtype_add_sum_subtype (fun i => i ∈ l) (fun i => v i * x i), h0, add_zero]
-  convert rfl
-
-/-- **A rank-one modification supported on `l` acts on the coordinates of `l` only**: for `v`
-vanishing off `l`, `(1 - β v vᵀ) x` is `x` off `l` and, on `l`, the action of the restricted
-`1 - β v vᵀ` on the restricted `x`. -/
-theorem one_sub_smul_vecMulVec_mulVec_apply_subtype (l : List ι) {v : ι → ℝ}
-    (hv : ∀ i, i ∉ l → v i = 0) (β : ℝ) (x : ι → ℝ) (i : ι) :
-    ((1 - β • vecMulVec v v) *ᵥ x) i =
-      if h : i ∈ l then
-        ((1 - β • vecMulVec (fun j : {j // j ∈ l} => v j) (fun j : {j // j ∈ l} => v j) :
-          Matrix {j // j ∈ l} {j // j ∈ l} ℝ) *ᵥ (fun j : {j // j ∈ l} => x j)) ⟨i, h⟩
-      else x i := by
-  rw [one_sub_smul_vecMulVec_mulVec_apply]
-  split_ifs with h
-  · rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_eq_dotProduct_subtype l hv]
-  · rw [hv i h, mul_zero, zero_mul, sub_zero]
-
-/-- **Orthogonality forces the `β` dichotomy**: if `1 - β v vᵀ` is orthogonal and some entry of `v`
-is nonzero, then `β (β vᵀv - 2) = 0`, i.e. `β = 0` or `β vᵀv = 2`. -/
-theorem beta_mul_eq_zero_of_mem_orthogonalGroup {v : ι → ℝ} {β : ℝ} {p : ι} (hp : v p ≠ 0)
-    (h : (1 - β • vecMulVec v v) ∈ orthogonalGroup ι ℝ) : β * (β * (v ⬝ᵥ v) - 2) = 0 := by
-  have h1 := (mem_orthogonalGroup_iff' ι ℝ).1 h
-  rw [transpose_one_sub_smul_vecMulVec, one_sub_smul_vecMulVec_mul_self] at h1
-  have h2 := congrFun (congrFun h1 p) p
-  rw [Matrix.add_apply, Matrix.smul_apply, vecMulVec_apply, one_apply_eq, smul_eq_mul,
-    add_eq_left] at h2
-  rcases mul_eq_zero.1 h2 with h | h
-  · exact h
-  · exact absurd (mul_self_eq_zero.1 h) hp
-
-/-- A Householder matrix is symmetric, so an orthogonal one is an involution. -/
-theorem one_sub_smul_vecMulVec_mul_self_of_mem {v : ι → ℝ} {β : ℝ}
-    (h : (1 - β • vecMulVec v v) ∈ orthogonalGroup ι ℝ) :
-    (1 - β • vecMulVec v v) * (1 - β • vecMulVec v v) = 1 := by
-  have h1 := (mem_orthogonalGroup_iff' ι ℝ).1 h
-  rwa [transpose_one_sub_smul_vecMulVec] at h1
-
-/-- `I - β v vᵀ` with `v` vanishing at `p` fixes `e_p`. -/
-theorem one_sub_smul_vecMulVec_mulVec_single {v : ι → ℝ} {p : ι} (hv : v p = 0) (β : ℝ) :
-    (1 - β • vecMulVec v v) *ᵥ Pi.single p 1 = Pi.single p 1 := by
-  funext i
-  rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_single, hv, zero_mul, mul_zero, sub_zero]
-
 /-! #### The entries of `(I - β v vᵀ) M` and `M (I - β v vᵀ)` -/
 
 variable {κ : Type*}
@@ -580,7 +529,7 @@ theorem IsReflectorPert.of_comp_equiv {ι κ : Type} [Fintype ι] [DecidableEq �
     · obtain ⟨p, hp⟩ := Function.ne_iff.1 hv0
       refine one_sub_smul_vecMulVec_mem_orthogonalGroup ?_
       rw [hvv]
-      exact beta_mul_eq_zero_of_mem_orthogonalGroup hp hO
+      exact mul_mul_dotProduct_sub_two_eq_zero_of_mem_orthogonalGroup hp hO
   · funext j
     have hj := congrFun hmul (e.symm j)
     rw [one_sub_smul_vecMulVec_mulVec_apply] at hj ⊢
@@ -622,8 +571,9 @@ theorem houseOn_spec {o : List (Fin m)} (ho : o.Nodup) (hne : o ≠ []) (x : Fin
   subst hβ' hv'
   have hdot : vβ.1 ⬝ᵥ vβ.1 =
       (fun i : {i // i ∈ o} => vβ.1 i) ⬝ᵥ (fun i : {i // i ∈ o} => vβ.1 i) :=
-    dotProduct_eq_dotProduct_subtype o hout _
-  have hc := beta_mul_eq_zero_of_mem_orthogonalGroup (v := fun i : {i // i ∈ o} => vβ.1 i)
+    dotProduct_eq_dotProduct_subtype hout _
+  have hc := mul_mul_dotProduct_sub_two_eq_zero_of_mem_orthogonalGroup
+    (v := fun i : {i // i ∈ o} => vβ.1 i)
     (p := ⟨o.head hne, List.head_mem hne⟩) (by rw [hvp]; exact one_ne_zero) hO
   rw [← hdot] at hc
   refine ⟨hvp, hout, ?_, one_sub_smul_vecMulVec_mem_orthogonalGroup hc, ?_⟩
@@ -631,7 +581,7 @@ theorem houseOn_spec {o : List (Fin m)} (ho : o.Nodup) (hne : o ≠ []) (x : Fin
     · exact Or.inl h
     · exact Or.inr (by linarith)
   · funext i
-    rw [one_sub_smul_vecMulVec_mulVec_apply_subtype o hout]
+    rw [one_sub_smul_vecMulVec_mulVec_apply_subtype hout]
     by_cases hio : i ∈ o
     · simp only [hio, ↓reduceDIte]
       rw [hmul]
@@ -944,7 +894,7 @@ theorem householderApplyLeft_spec {rows : List (Fin m)} {cols : List (Fin n)}
   · have hPA : ((1 - β • vecMulVec v v : Matrix (Fin m) (Fin m) ℝ) * A) i q =
         ((1 - β • vecMulVec v v) *ᵥ fun r => A r q) i :=
       rfl
-    rw [hPA, one_sub_smul_vecMulVec_mulVec_apply_subtype rows hv]
+    rw [hPA, one_sub_smul_vecMulVec_mulVec_apply_subtype hv]
     split_ifs with hi
     · rw [one_sub_smul_vecMulVec_mulVec_apply]
       exact eq_of_roundsHouseholderApplyScaled_exact (hin q hq) ⟨i, hi⟩
@@ -978,7 +928,7 @@ theorem householderApplyRight_spec {rows : List (Fin m)} {cols : List (Fin n)}
         ((1 - β • vecMulVec v v) *ᵥ A r) j := by
       conv_rhs => rw [← transpose_one_sub_smul_vecMulVec β v, mulVec_transpose]
       rfl
-    rw [hAP, one_sub_smul_vecMulVec_mulVec_apply_subtype cols hv]
+    rw [hAP, one_sub_smul_vecMulVec_mulVec_apply_subtype hv]
     split_ifs with hj
     · rw [one_sub_smul_vecMulVec_mulVec_apply]
       exact eq_of_roundsHouseholderApplyScaled_exact (hin r hr) ⟨j, hj⟩
@@ -1034,7 +984,7 @@ theorem householderApplyLeft_rounding (hfp : fp.IsIdempotent) {rows : List (Fin 
   obtain ⟨hout, hin⟩ := householderApplyLeft_rounds hfp hrows hcols vhat βhat A h
   have hcard := card_subtype_mem_of_nodup hrows
   have hP' : |β| * ((fun i : {i // i ∈ rows} => v i) ⬝ᵥ (fun i => v i)) ≤ 2 := by
-    rwa [← dotProduct_eq_dotProduct_subtype rows hv]
+    rwa [← dotProduct_eq_dotProduct_subtype hv]
   have := frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_col
     (ι := {i // i ∈ rows}) (κ := {q // q ∈ cols}) (by rwa [hcard]) hβ (fun i => hvv i) hP'
     (A := A.submatrix Subtype.val Subtype.val) (B := B.submatrix Subtype.val Subtype.val)
@@ -1077,7 +1027,7 @@ theorem householderApplyRight_rounding (hfp : fp.IsIdempotent) {rows : List (Fin
   obtain ⟨hout, hin⟩ := householderApplyRight_rounds hfp hrows hcols vhat βhat A h
   have hcard := card_subtype_mem_of_nodup hcols
   have hP' : |β| * ((fun j : {j // j ∈ cols} => v j) ⬝ᵥ (fun j => v j)) ≤ 2 := by
-    rwa [← dotProduct_eq_dotProduct_subtype cols hv]
+    rwa [← dotProduct_eq_dotProduct_subtype hv]
   have := frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_row
     (ι := {j // j ∈ cols}) (κ := {r // r ∈ rows}) (by rwa [hcard]) hβ (fun j => hvv j) hP'
     (A := A.submatrix Subtype.val Subtype.val) (B := B.submatrix Subtype.val Subtype.val)

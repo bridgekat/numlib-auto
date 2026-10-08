@@ -310,27 +310,6 @@ private theorem symmTridiagonalToeplitz_mulVec_gridValues {N : ℕ} {u : ℝ × 
     · have : (i : ℕ) = N := by omega
       rw [this, show ((N : ℝ) + 2) * hx = π by rw [hhx]; field_simp, hπ, mul_zero]
 
-/-- The row bound `|(tridiag(a, b, a) v)_i| ≤ (2 |a| + |b|) ‖v‖_∞`. -/
-private theorem abs_symmTridiagonalToeplitz_mulVec_le {N : ℕ} (a b : ℝ) (v : Fin (N + 1) → ℝ)
-    (i : Fin (N + 1)) :
-    |(symmTridiagonalToeplitz (N + 1) a b *ᵥ v) i| ≤ (2 * |a| + |b|) * ‖v‖ := by
-  rw [symmTridiagonalToeplitz_mulVec_apply']
-  have hv : ∀ j, |v j| ≤ ‖v‖ := fun j => (Real.norm_eq_abs _).symm.trans_le (norm_le_pi_norm v j)
-  have h1 : |if h : 0 < (i : ℕ) then a * v ⟨i - 1, by omega⟩ else 0| ≤ |a| * ‖v‖ := by
-    split_ifs
-    · rw [abs_mul]; exact mul_le_mul_of_nonneg_left (hv _) (abs_nonneg a)
-    · rw [abs_zero]; positivity
-  have h2 : |if h : (i : ℕ) < N then a * v ⟨i + 1, by omega⟩ else 0| ≤ |a| * ‖v‖ := by
-    split_ifs
-    · rw [abs_mul]; exact mul_le_mul_of_nonneg_left (hv _) (abs_nonneg a)
-    · rw [abs_zero]; positivity
-  have h3 : |b * v i| ≤ |b| * ‖v‖ := by
-    rw [abs_mul]; exact mul_le_mul_of_nonneg_left (hv _) (abs_nonneg b)
-  calc _ ≤ |if h : 0 < (i : ℕ) then a * v ⟨i - 1, by omega⟩ else 0| + |b * v i|
-        + |if h : (i : ℕ) < N then a * v ⟨i + 1, by omega⟩ else 0| := abs_add_three _ _ _
-    _ ≤ |a| * ‖v‖ + |b| * ‖v‖ + |a| * ‖v‖ := add_le_add (add_le_add h1 h3) h2
-    _ = (2 * |a| + |b|) * ‖v‖ := by ring
-
 /-- A matrix as a bounded operator on `ℝ^{N+1}` with the maximum norm. -/
 private noncomputable def toLinfty {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
     (Fin (N + 1) → ℝ) →L[ℝ] (Fin (N + 1) → ℝ) :=
@@ -340,17 +319,15 @@ private theorem toLinfty_apply {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1))
     (v : Fin (N + 1) → ℝ) : toLinfty A v = A *ᵥ v := by
   rw [toLinfty, LinearMap.coe_toContinuousLinearMap', Matrix.toLin'_apply]
 
-/-- The Euclidean norm of a vector of `ℝ^{N+1}` is at most `√(N + 1)` times its maximum norm. -/
+/-- The Euclidean norm of a vector of `ℝ^{N+1}` is at most `√(N + 1)` times its maximum norm
+(`PiLp.norm_toLp_two_le_sqrt_card_mul_norm_toLp_top`). -/
 private theorem norm_toLp_le {N : ℕ} (v : Fin (N + 1) → ℝ) {δ : ℝ} (hδ : 0 ≤ δ)
     (hv : ∀ j, |v j| ≤ δ) :
     ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin (N + 1)))‖ ≤ Real.sqrt ((N : ℝ) + 1) * δ := by
-  rw [EuclideanSpace.norm_eq, ← Real.sqrt_sq hδ, ← Real.sqrt_mul (by positivity)]
-  refine Real.sqrt_le_sqrt ?_
-  calc ∑ i, ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin (N + 1))) i‖ ^ 2
-      ≤ ∑ _i : Fin (N + 1), δ ^ 2 := Finset.sum_le_sum fun i _ => by
-        rw [Real.norm_eq_abs]
-        exact pow_le_pow_left₀ (abs_nonneg _) (hv i) 2
-    _ = ((N : ℝ) + 1) * δ ^ 2 := by simp
+  refine (PiLp.norm_toLp_two_le_sqrt_card_mul_norm_toLp_top v).trans ?_
+  rw [PiLp.norm_toLp, Fintype.card_fin, Nat.cast_add_one]
+  exact mul_le_mul_of_nonneg_left ((pi_norm_le_iff_of_nonneg hδ).2 fun j =>
+    (Real.norm_eq_abs _).trans_le (hv j)) (Real.sqrt_nonneg _)
 
 /-! #### The forward scheme, Example 6.3.3 -/
 
@@ -502,7 +479,7 @@ theorem example_6_3_3 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {h
     rw [one_mul, hQ, toLinfty_apply]
     refine (pi_norm_le_iff_of_nonneg (norm_nonneg _)).2 fun i => ?_
     rw [Real.norm_eq_abs]
-    refine (abs_symmTridiagonalToeplitz_mulVec_le _ _ _ _).trans ?_
+    refine (abs_symmTridiagonalToeplitz_mulVec_apply_le _ _ _ _).trans ?_
     rw [abs_of_nonneg hr0, abs_of_nonneg (by linarith : (0 : ℝ) ≤ 1 - 2 * r),
       show 2 * r + (1 - 2 * r) = 1 by ring, one_mul]
   have hδ : 0 ≤ (Mtt / 2 + ν * Mxxxx / 12) * (hx ^ 2 + ht) := by positivity

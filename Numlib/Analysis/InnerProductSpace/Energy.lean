@@ -61,6 +61,16 @@ scoped[Energy] notation "‖" x "‖_[" A "]" => energyNorm A x
 root. Keep it at hand: `positivity` does not see through `energyNorm`. -/
 theorem energyNorm_nonneg (A : E →ₗ[𝕜] E) (x : E) : 0 ≤ energyNorm A x := Real.sqrt_nonneg _
 
+/-- The energy norm is even, for every `A`: `‖-x‖_A = ‖x‖_A`. -/
+@[simp]
+theorem energyNorm_neg (A : E →ₗ[𝕜] E) (x : E) : energyNorm A (-x) = energyNorm A x := by
+  simp [energyNorm]
+
+/-- The energy norm of a difference is symmetric, for every `A`: `‖x - y‖_A = ‖y - x‖_A`. -/
+theorem energyNorm_sub_comm (A : E →ₗ[𝕜] E) (x y : E) :
+    energyNorm A (x - y) = energyNorm A (y - x) := by
+  rw [← neg_sub, energyNorm_neg]
+
 /-- The energy functional `φ(x) = ½ re ⟪A x, x⟫ - re ⟪b, x⟫` of the system `A x = b`
 ([quarteroni2000numerical] §4.3.3, (7.35); [fong2012cg] (2.1)). For symmetric coercive `A` its
 unique minimizer is the solution of `A x = b`, and Galerkin iterates minimize it over affine

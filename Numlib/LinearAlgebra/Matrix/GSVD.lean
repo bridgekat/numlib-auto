@@ -38,7 +38,7 @@ Paige–Saunders 1981) diagonalizes both at once: unitary `U₁`, `U₂` and an 
   congruence to diagonal forms (so also for [golub2013matrix] Theorem 8.7.4's unshifted version):
   `Matrix.mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal` (`M x_k = γ_k u_k`),
   `Matrix.conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal` (`Xᴴ MᴴM X = diag |γ|²`),
-  `Matrix.hasPencilEigenvector_col_of_conj_diagonal` and
+  and, in `Numlib/Eigen/Pencil`, `Matrix.hasPencilEigenvector_col_of_conj_diagonal` and
   `Matrix.pencilSpectrum_eq_range_of_conj_diagonal` (the pencil `P − λ Q` with `Xᴴ P X = diag a`,
   `Xᴴ Q X = diag b` has eigenvectors `x_k` and eigenvalues `a_k / b_k`).
 * `Matrix.IsGSVD.star_mul_mul_eq_of_eq_one`, `Matrix.IsGSVD.pos_of_eq_one`: the GSVD of `(A, I)`
@@ -308,74 +308,6 @@ theorem mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal (hnm : n ≤ m) {γ : 
     have hj' : ¬ ((j : ℕ) = k) := fun h => hj (Fin.ext (by simp [h]))
     simp [hj']
   · simp
-
-variable {P Q : Matrix (Fin n) (Fin n) 𝕜} {a b : Fin n → 𝕜}
-
-/-- If `Xᴴ P X = diag a` and `Xᴴ Q X = diag b` with `X` invertible, then `b_i P x_i = a_i Q x_i`
-for every column `x_i` of `X`. -/
-theorem smul_mulVec_col_eq_of_conj_diagonal (hX : IsUnit X) (hP : Xᴴ * P * X = diagonal a)
-    (hQ : Xᴴ * Q * X = diagonal b) (i : Fin n) :
-    b i • (P *ᵥ X.col i) = a i • (Q *ᵥ X.col i) := by
-  have hXh : IsUnit Xᴴ.det := by
-    rw [det_conjTranspose]; exact ((isUnit_iff_isUnit_det X).1 hX).star
-  have hPX : P * X = (Xᴴ)⁻¹ * diagonal a := by
-    rw [← hP, ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hXh, Matrix.one_mul]
-  have hQX : Q * X = (Xᴴ)⁻¹ * diagonal b := by
-    rw [← hQ, ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hXh, Matrix.one_mul]
-  have hmat : P * X * diagonal b = Q * X * diagonal a := by
-    rw [hPX, hQX, Matrix.mul_assoc, Matrix.mul_assoc, diagonal_mul_diagonal,
-      diagonal_mul_diagonal]
-    congr 2
-    funext j
-    ring
-  rw [← col_mul_eq_mulVec_col, ← col_mul_eq_mulVec_col]
-  ext k
-  have := congrFun (congrFun hmat k) i
-  simp only [mul_diagonal] at this
-  simp only [Pi.smul_apply, smul_eq_mul, col_apply]
-  rw [mul_comm, this, mul_comm]
-
-/-- **The columns of a congruence to diagonal forms are pencil eigenvectors**: if
-`Xᴴ P X = diag a`, `Xᴴ Q X = diag b` with `X` invertible and `b_k ≠ 0`, then `x_k` is an
-eigenvector of the pencil `P − λ Q` for `λ = a_k / b_k`. -/
-theorem hasPencilEigenvector_col_of_conj_diagonal (hX : IsUnit X)
-    (hP : Xᴴ * P * X = diagonal a) (hQ : Xᴴ * Q * X = diagonal b) {k : Fin n} (hk : b k ≠ 0) :
-    HasPencilEigenvector P Q (a k / b k) (X.col k) := by
-  refine ⟨(linearIndependent_cols_iff_isUnit.2 hX).ne_zero k, ?_⟩
-  have h := smul_mulVec_col_eq_of_conj_diagonal hX hP hQ k
-  rw [div_eq_inv_mul, mul_smul, ← h, smul_smul, inv_mul_cancel₀ hk, one_smul]
-
-/-- **The spectrum of a pencil congruent to diagonal forms**: if `Xᴴ P X = diag a`,
-`Xᴴ Q X = diag b` with `X` invertible and every `b_k ≠ 0`, then the eigenvalues of the pencil
-`P − λ Q` are exactly the ratios `a_k / b_k`. -/
-theorem pencilSpectrum_eq_range_of_conj_diagonal (hX : IsUnit X)
-    (hP : Xᴴ * P * X = diagonal a) (hQ : Xᴴ * Q * X = diagonal b) (hb : ∀ k, b k ≠ 0) :
-    pencilSpectrum P Q = Set.range fun k => a k / b k := by
-  have hXd : IsUnit X.det := (isUnit_iff_isUnit_det X).1 hX
-  ext l
-  simp only [mem_pencilSpectrum_iff_det, Set.mem_range]
-  have hdet : (P - l • Q).det * (star X.det * X.det) = ∏ k : Fin n, (a k - l * b k) := by
-    have hpen : Xᴴ * (P - l • Q) * X = diagonal fun k => a k - l * b k := by
-      rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul, hP, hQ]
-      ext i j
-      by_cases h : i = j <;> simp [h]
-    have := congrArg det hpen
-    rw [det_mul, det_mul, det_conjTranspose, det_diagonal] at this
-    rw [← this]
-    ring
-  have hXX : star X.det * X.det ≠ 0 := mul_ne_zero (star_ne_zero.2 hXd.ne_zero) hXd.ne_zero
-  constructor
-  · intro h
-    rw [h, zero_mul, eq_comm, Finset.prod_eq_zero_iff] at hdet
-    obtain ⟨k, -, hk⟩ := hdet
-    refine ⟨k, ?_⟩
-    rw [div_eq_iff (hb k)]
-    linear_combination hk
-  · rintro ⟨k, rfl⟩
-    have hk : ∏ j : Fin n, (a j - a k / b k * b j) = 0 :=
-      Finset.prod_eq_zero (Finset.mem_univ k) (by rw [div_mul_cancel₀ _ (hb k), sub_self])
-    rw [hk] at hdet
-    exact (mul_eq_zero.1 hdet).resolve_right hXX
 
 end DiagonalForms
 

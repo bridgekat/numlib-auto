@@ -1449,33 +1449,22 @@ theorem abs_taylor_snd_three (hD : HasPartialDerivs v D) (hM : ∀ y s, |D i (j 
   abs_taylor_fst_three hD.swap (fun y s => hM s y) t x h
 
 /-- **The second central difference in the first variable approximates the second partial
-derivative**, with the constant `M h²/12` of the symmetric third-order expansion (the odd terms
-cancel). -/
+derivative**, with the constant `M h²/12`: `FiniteDifference.abs_secondDiff_sub_le` applied to the
+tower of slices `y ↦ D (i + m) j y t` on `[x - h, x + h]`, divided by `h²`. -/
 theorem abs_secondDiff_fst_sub_le (hD : HasPartialDerivs v D)
     (hM : ∀ y s, |D (i + 4) j y s| ≤ M) {h : ℝ} (hh : 0 < h) (x t : ℝ) :
     |(D i j (x + h) t - 2 * D i j x t + D i j (x - h) t) / h ^ 2 - D (i + 2) j x t|
       ≤ M * h ^ 2 / 12 := by
-  have hh' : h ≠ 0 := ne_of_gt hh
-  have hp := abs_taylor_fst_three hD hM x t h
-  have hm := abs_taylor_fst_three hD hM x t (-h)
-  rw [show x + -h = x - h from by ring, show M * (-h) ^ 4 / 24 = M * h ^ 4 / 24 from by ring] at hm
-  have hid : ((D i j (x + h) t - 2 * D i j x t + D i j (x - h) t) / h ^ 2
-        - D (i + 2) j x t) * h ^ 2
-      = (D i j (x + h) t - D i j x t - h * D (i + 1) j x t - h ^ 2 / 2 * D (i + 2) j x t
-          - h ^ 3 / 6 * D (i + 3) j x t)
-        + (D i j (x - h) t - D i j x t - -h * D (i + 1) j x t - (-h) ^ 2 / 2 * D (i + 2) j x t
-          - (-h) ^ 3 / 6 * D (i + 3) j x t) := by
-    field_simp
-    ring
-  refine le_of_mul_le_mul_right ?_ (by positivity : (0 : ℝ) < h ^ 2)
-  calc |(D i j (x + h) t - 2 * D i j x t + D i j (x - h) t) / h ^ 2 - D (i + 2) j x t| * h ^ 2
-      = |((D i j (x + h) t - 2 * D i j x t + D i j (x - h) t) / h ^ 2
-          - D (i + 2) j x t) * h ^ 2| := by
-        rw [abs_mul, abs_of_pos (by positivity : (0 : ℝ) < h ^ 2)]
-    _ ≤ M * h ^ 4 / 24 + M * h ^ 4 / 24 := by
-        rw [hid]
-        exact (abs_add_le _ _).trans (add_le_add hp hm)
-    _ = M * h ^ 2 / 12 * h ^ 2 := by ring
+  have key := FiniteDifference.abs_secondDiff_sub_le (y := fun m y => D (i + m) j y t)
+    (a := x - h) (b := x + h)
+    (fun m _ s _ => (hD.hasPartialDerivFst (i + m) j s t).hasDerivWithinAt) (fun s _ => hM s t)
+    ⟨le_rfl, by linarith⟩ ⟨by linarith, le_rfl⟩ hh.le
+  simp only [add_zero] at key
+  have hh2 : (0 : ℝ) < h ^ 2 := by positivity
+  rw [show (D i j (x + h) t - 2 * D i j x t + D i j (x - h) t) / h ^ 2 - D (i + 2) j x t
+      = (D i j (x + h) t - 2 * D i j x t + D i j (x - h) t - h ^ 2 * D (i + 2) j x t) / h ^ 2 by
+    field_simp, abs_div, abs_of_pos hh2, div_le_iff₀ hh2]
+  linarith
 
 /-- **The second central difference in the second variable approximates the second partial
 derivative**. -/

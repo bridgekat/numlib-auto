@@ -189,6 +189,69 @@ theorem tridiagonalLUMultiplier_eq_thomasBeta {K : Type*} [Field K] (E D F : ℕ
 
 end Recurrence
 
+/-! ### The block Cholesky factorization -/
+
+section Cholesky
+
+variable {R : Type*} [Ring R] [StarRing R]
+
+/-- **The block Cholesky factorization of a block tridiagonal matrix** ([golub2013matrix] §4.5,
+§11.5.9) over any star ring, the factors given: if `F_i G_iᴴ = E_i`, `G_0 G_0ᴴ = D_0` and
+`G_{i+1} G_{i+1}ᴴ + F_i F_iᴴ = D_{i+1}` for `i < N`, then
+`tridiag(E, D, Eᴴ) = tridiag(F, G, 0) · tridiag(0, Gᴴ, Fᴴ)`, a lower bidiagonal matrix times its
+adjoint (block by block; in the block ring `Matrix (Fin q) (Fin q) ℝ`, `star` is the transpose).
+The sequences are `ℕ`-indexed, as in `Matrix.tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot`. -/
+theorem tridiagonalOf_eq_mul_of_mul_star {N : ℕ} (E D G F : ℕ → R)
+    (hFG : ∀ i, i < N → F i * star (G i) = E i) (h0 : G 0 * star (G 0) = D 0)
+    (hS : ∀ i, i < N → G (i + 1) * star (G (i + 1)) + F i * star (F i) = D (i + 1)) :
+    tridiagonalOf (N := N) (fun i => E i) (fun i => D i) (fun i => star (E i))
+      = tridiagonalOf (fun i => F i) (fun i => G i) 0
+        * tridiagonalOf 0 (fun i => star (G i)) (fun i => star (F i)) := by
+  ext i j
+  have hi := i.isLt
+  have hj := j.isLt
+  change _ = (tridiagonalOf (fun i : Fin N => F i) (fun i : Fin (N + 1) => G i) 0 *ᵥ
+    fun r => tridiagonalOf 0 (fun i : Fin (N + 1) => star (G i))
+      (fun i : Fin N => star (F i)) r j) i
+  rw [tridiagonalOf_mulVec]
+  simp only [tridiagonalOf, of_apply, Pi.zero_apply, zero_mul]
+  split_ifs <;> simp only [mul_zero, zero_add, add_zero] <;> first
+    | (exfalso; omega)
+    | (have h0' : (i : ℕ) = 0 := by omega
+       rw [h0', h0])
+    | (obtain ⟨i', hi'⟩ : ∃ i', (i : ℕ) = i' + 1 := ⟨(i : ℕ) - 1, by omega⟩
+       rw [hi', Nat.add_sub_cancel, ← hS i' (by omega), add_comm])
+    | (have h1 : (i : ℕ) - 1 = j := by omega
+       rw [h1, hFG j (by omega)])
+    | rw [← hFG i (by omega), star_mul, star_star]
+
+/-- **The block Cholesky factorization, flattened** ([golub2013matrix] §11.5.9): for real
+`q × q` blocks with `F_i G_iᵀ = E_i`, `G_0 G_0ᵀ = D_0` and `G_{i+1} G_{i+1}ᵀ + F_i F_iᵀ = D_{i+1}`,
+the block tridiagonal `A = [D₀ E₀ᵀ; E₀ D₁ E₁ᵀ; ⋱]` is `G Gᵀ` with the block lower bidiagonal
+`G = [G₀ 0; F₀ G₁ 0; ⋱]`: `Matrix.tridiagonalOf_eq_mul_of_mul_star` transported by the ring
+isomorphism `Matrix.compRingEquiv`. -/
+theorem blockTridiagonal_eq_mul_transpose {N q : ℕ} (E D G F : ℕ → Matrix (Fin q) (Fin q) ℝ)
+    (hFG : ∀ i, i < N → F i * (G i)ᵀ = E i) (h0 : G 0 * (G 0)ᵀ = D 0)
+    (hS : ∀ i, i < N → G (i + 1) * (G (i + 1))ᵀ + F i * (F i)ᵀ = D (i + 1)) :
+    blockTridiagonal (N := N) (fun i => E i) (fun i => D i) (fun i => (E i)ᵀ) =
+      blockTridiagonal (fun i => F i) (fun i => G i) 0 *
+        (blockTridiagonal (N := N) (fun i => F i) (fun i => G i) 0)ᵀ := by
+  have hstar : ∀ M : Matrix (Fin q) (Fin q) ℝ, star M = Mᵀ := fun M =>
+    (star_eq_conjTranspose M).trans (conjTranspose_eq_transpose_of_trivial M)
+  have h := tridiagonalOf_eq_mul_of_mul_star (N := N) E D G F (by simpa only [hstar] using hFG)
+    (by simpa only [hstar] using h0) (by simpa only [hstar] using hS)
+  simp only [hstar] at h
+  have hT : (tridiagonalOf (N := N) (fun i => F i) (fun i => G i) 0)ᵀ.map transpose =
+      tridiagonalOf 0 (fun i => (G i)ᵀ) (fun i => (F i)ᵀ) := by
+    rw [tridiagonalOf_transpose]
+    ext i j : 1
+    simp only [map_apply, tridiagonalOf, of_apply]
+    split_ifs <;> simp
+  rw [blockTridiagonal, blockTridiagonal, transpose_comp, hT, h, ← compRingEquiv_apply,
+    ← compRingEquiv_apply, ← compRingEquiv_apply, map_mul]
+
+end Cholesky
+
 /-! ### Block diagonal dominance -/
 
 section Dominance

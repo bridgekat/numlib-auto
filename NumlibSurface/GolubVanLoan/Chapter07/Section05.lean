@@ -67,7 +67,7 @@ open GolubVanLoan.Chapter05 (houseOn houseOn_spec householderApplyLeft household
   givensApplyRight givensApplyLeft_spec givensApplyRight_spec givensApplyRight_spec_of_forall_mem
   mul_one_sub_smul_vecMulVec_apply one_sub_smul_vecMulVec_mul_apply_of_notMem
   one_sub_smul_vecMulVec_mul_apply_of_forall householderProduct_mulVec_single
-  one_sub_smul_vecMulVec_mul_self_of_mem one_sub_smul_vecMulVec_mul_apply_eq_mulVec)
+  one_sub_smul_vecMulVec_mul_apply_eq_mulVec)
 
 namespace GolubVanLoan.Chapter07
 
@@ -1467,7 +1467,7 @@ theorem algorithm_7_5_1_window {p N : ℕ} (hm : p + (N + 3) ≤ n)
   have hP₀S : IsBlockSupported p (p + (N + 3)) P₀ :=
     isBlockSupported_reflector β₀ (hsupp _ (by rw [hdata]; exact List.mem_cons_self))
   have hP₀P₀ : P₀ * P₀ = 1 := by
-    refine one_sub_smul_vecMulVec_mul_self_of_mem
+    refine one_sub_smul_vecMulVec_mul_self_eq_one
       (one_sub_smul_vecMulVec_mem_orthogonalGroup ?_)
     rcases hβ₁ with hb | hb
     · rw [hb, zero_mul]
@@ -1617,7 +1617,7 @@ theorem algorithm_7_5_1_spec {H H' : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     rcases hβ₁ with hb | hb
     · rw [hb, zero_mul]
     · rw [hb, sub_self, mul_zero]
-  have hPP : P₀ * P₀ = 1 := one_sub_smul_vecMulVec_mul_self_of_mem hP₀o
+  have hPP : P₀ * P₀ = 1 := one_sub_smul_vecMulVec_mul_self_eq_one hP₀o
   set cn := ‖(WithLp.toLp 2 (fun j : {j // j ∈ [(francisTri (N + 3) 0).1,
     (francisTri (N + 3) 0).2.1, (francisTri (N + 3) 0).2.2]} => u₀ j) :
       EuclideanSpace ℝ {j // j ∈ [(francisTri (N + 3) 0).1, (francisTri (N + 3) 0).2.1,

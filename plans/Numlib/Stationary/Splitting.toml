@@ -135,3 +135,6 @@ id = "Matrix.complexify_sor_iterationOperator"
 
 [[node]]
 id = "Stationary.Splitting.isUnit_of_complexSpectralRadius_lt_one"
+
+[[node]]
+id = "Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one"

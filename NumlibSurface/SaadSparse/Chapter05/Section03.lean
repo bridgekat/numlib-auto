@@ -179,48 +179,21 @@ theorem theorem_5_9_factor_lt_one {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.PosDe
   rw [div_lt_one hsum]
   linarith
 
-/-- Saad, Theorem 5.9: geometric decay of the energy norm of the error along Algorithm 5.2. -/
+/-- Saad, Theorem 5.9: geometric decay of the energy norm of the error along Algorithm 5.2
+(`Projection.energyNorm_iterate_steepestDescentStep_le`). -/
 theorem theorem_5_9 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) (k : ℕ) :
     E_A A xstar ((sdStep A b)^[k] x₀) ≤
       ((lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1)) ^ k *
-        E_A A xstar x₀ := by
-  obtain ⟨hnn, -⟩ := theorem_5_9_factor_lt_one hA
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    rw [Function.iterate_succ_apply', pow_succ]
-    refine (theorem_5_9_step hA hstar _).trans ?_
-    calc (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) *
-            E_A A xstar ((sdStep A b)^[k] x₀)
-        ≤ (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) *
-            (((lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1)) ^ k *
-              E_A A xstar x₀) := mul_le_mul_of_nonneg_left ih hnn
-      _ = ((lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1)) ^ k *
-            ((lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1)) *
-            E_A A xstar x₀ := by ring
+        E_A A xstar x₀ :=
+  Projection.energyNorm_iterate_steepestDescentStep_le (lambdaMin_pos hA)
+    (isSymmetricBoundedBy_toEuclideanLin hA.1) hstar x₀ k
 
-/-- Saad, Theorem 5.9: Algorithm 5.2 converges to the solution from every starting vector. -/
+/-- Saad, Theorem 5.9: Algorithm 5.2 converges to the solution from every starting vector
+(`Projection.tendsto_iterate_steepestDescentStep`). -/
 theorem theorem_5_9_tendsto (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) :
-    Tendsto (fun k => (sdStep A b)^[k] x₀) atTop (𝓝 xstar) := by
-  have hl : 0 < lambdaMin hA.1 := lambdaMin_pos hA
-  obtain ⟨hnn, hlt⟩ := theorem_5_9_factor_lt_one hA
-  set ρ := (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) with hρ
-  have hs : 0 < Real.sqrt (lambdaMin hA.1) := Real.sqrt_pos.mpr hl
-  have hcoer : (toEuclideanLin A).IsCoerciveWith (lambdaMin hA.1) :=
-    (isSymmetricBoundedBy_toEuclideanLin hA.1).isCoerciveWith
-  have hbound : ∀ k, ‖(sdStep A b)^[k] x₀ - xstar‖ ≤
-      (Real.sqrt (lambdaMin hA.1))⁻¹ * (ρ ^ k * E_A A xstar x₀) := by
-    intro k
-    have h1 := hcoer.norm_le_energyNorm hl.le (xstar - (sdStep A b)^[k] x₀)
-    have h2 : energyNorm (toEuclideanLin A) (xstar - (sdStep A b)^[k] x₀)
-        ≤ ρ ^ k * E_A A xstar x₀ := theorem_5_9 hA hstar x₀ k
-    rw [← norm_neg, neg_sub, inv_mul_eq_div, le_div_iff₀ hs, mul_comm]
-    exact h1.trans h2
-  rw [← tendsto_sub_nhds_zero_iff]
-  refine squeeze_zero_norm hbound ?_
-  have hpow : Tendsto (fun k => ρ ^ k) atTop (𝓝 0) :=
-    tendsto_pow_atTop_nhds_zero_of_lt_one hnn hlt
-  simpa using ((hpow.mul_const (E_A A xstar x₀)).const_mul (Real.sqrt (lambdaMin hA.1))⁻¹)
+    Tendsto (fun k => (sdStep A b)^[k] x₀) atTop (𝓝 xstar) :=
+  Projection.tendsto_iterate_steepestDescentStep (lambdaMin_pos hA)
+    (isSymmetricBoundedBy_toEuclideanLin hA.1) hstar x₀
 
 /-! ### Theorem 5.10 -/
 

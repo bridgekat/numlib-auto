@@ -49,6 +49,10 @@ preconditioned matrix `P⁻¹ A` is really about ([quarteroni2000numerical] Rema
   (`Matrix.pencilSpectrum_subset_range_ofReal_of_posDef`), positive when `A` is positive definite
   too (`Matrix.re_pos_of_mem_pencilSpectrum_of_posDef`), and the columns of `M` are
   `B`-orthonormal eigenvectors (`Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal`).
+* `Matrix.hasPencilEigenvector_col_of_conj_diagonal`,
+  `Matrix.pencilSpectrum_eq_range_of_conj_diagonal`: a pencil `(P, Q)` congruent to diagonal
+  forms, `Xᴴ P X = diag a`, `Xᴴ Q X = diag b`, has the columns of `X` as eigenvectors and the
+  ratios `a_k / b_k` as eigenvalues ([golub2013matrix] §8.7.4, the GSVD).
 * `Matrix.mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul`,
   `Matrix.spectrum_inv_mul_subset_of_posDef` and `Matrix.spectrum_inv_mul_subset_Icc_div`: the
   real symmetric-definite pencil `(A, P)` in the preconditioned form `P⁻¹ A`
@@ -537,6 +541,79 @@ end Schur
 
 /-! ### Symmetric-definite pencils -/
 
+section CongruenceDiagonal
+/-! ### A pencil congruent to a pair of diagonal matrices -/
+
+variable {K : Type*} [Field K] [StarRing K] {X P Q : Matrix n n K} {a b : n → K}
+
+/-- If `Xᴴ P X = diag a` and `Xᴴ Q X = diag b` with `X` invertible, then `b_i P x_i = a_i Q x_i`
+for every column `x_i` of `X`. -/
+theorem smul_mulVec_col_eq_of_conj_diagonal (hX : IsUnit X) (hP : Xᴴ * P * X = diagonal a)
+    (hQ : Xᴴ * Q * X = diagonal b) (i : n) :
+    b i • (P *ᵥ X.col i) = a i • (Q *ᵥ X.col i) := by
+  have hXh : IsUnit Xᴴ.det := by
+    rw [det_conjTranspose]; exact ((isUnit_iff_isUnit_det X).1 hX).star
+  have hPX : P * X = (Xᴴ)⁻¹ * diagonal a := by
+    rw [← hP, ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hXh, Matrix.one_mul]
+  have hQX : Q * X = (Xᴴ)⁻¹ * diagonal b := by
+    rw [← hQ, ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hXh, Matrix.one_mul]
+  have hmat : P * X * diagonal b = Q * X * diagonal a := by
+    rw [hPX, hQX, Matrix.mul_assoc, Matrix.mul_assoc, diagonal_mul_diagonal,
+      diagonal_mul_diagonal]
+    congr 2
+    funext j
+    ring
+  rw [← col_mul_eq_mulVec_col, ← col_mul_eq_mulVec_col]
+  ext k
+  have := congrFun (congrFun hmat k) i
+  simp only [mul_diagonal] at this
+  simp only [Pi.smul_apply, smul_eq_mul, col_apply]
+  rw [mul_comm, this, mul_comm]
+
+/-- **The columns of a congruence to diagonal forms are pencil eigenvectors**: if
+`Xᴴ P X = diag a`, `Xᴴ Q X = diag b` with `X` invertible and `b_k ≠ 0`, then `x_k` is an
+eigenvector of the pencil `P − λ Q` for `λ = a_k / b_k`. -/
+theorem hasPencilEigenvector_col_of_conj_diagonal (hX : IsUnit X)
+    (hP : Xᴴ * P * X = diagonal a) (hQ : Xᴴ * Q * X = diagonal b) {k : n} (hk : b k ≠ 0) :
+    HasPencilEigenvector P Q (a k / b k) (X.col k) := by
+  refine ⟨(linearIndependent_cols_iff_isUnit.2 hX).ne_zero k, ?_⟩
+  have h := smul_mulVec_col_eq_of_conj_diagonal hX hP hQ k
+  rw [div_eq_inv_mul, mul_smul, ← h, smul_smul, inv_mul_cancel₀ hk, one_smul]
+
+/-- **The spectrum of a pencil congruent to diagonal forms**: if `Xᴴ P X = diag a`,
+`Xᴴ Q X = diag b` with `X` invertible and every `b_k ≠ 0`, then the eigenvalues of the pencil
+`P − λ Q` are exactly the ratios `a_k / b_k`. -/
+theorem pencilSpectrum_eq_range_of_conj_diagonal (hX : IsUnit X)
+    (hP : Xᴴ * P * X = diagonal a) (hQ : Xᴴ * Q * X = diagonal b) (hb : ∀ k, b k ≠ 0) :
+    pencilSpectrum P Q = Set.range fun k => a k / b k := by
+  have hXd : IsUnit X.det := (isUnit_iff_isUnit_det X).1 hX
+  ext l
+  simp only [mem_pencilSpectrum_iff_det, Set.mem_range]
+  have hdet : (P - l • Q).det * (star X.det * X.det) = ∏ k, (a k - l * b k) := by
+    have hpen : Xᴴ * (P - l • Q) * X = diagonal fun k => a k - l * b k := by
+      rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul, hP, hQ]
+      ext i j
+      by_cases h : i = j <;> simp [h]
+    have := congrArg det hpen
+    rw [det_mul, det_mul, det_conjTranspose, det_diagonal] at this
+    rw [← this]
+    ring
+  have hXX : star X.det * X.det ≠ 0 := mul_ne_zero (star_ne_zero.2 hXd.ne_zero) hXd.ne_zero
+  constructor
+  · intro h
+    rw [h, zero_mul, eq_comm, Finset.prod_eq_zero_iff] at hdet
+    obtain ⟨k, -, hk⟩ := hdet
+    refine ⟨k, ?_⟩
+    rw [div_eq_iff (hb k)]
+    linear_combination hk
+  · rintro ⟨k, rfl⟩
+    have hk : ∏ j, (a j - a k / b k * b j) = 0 :=
+      Finset.prod_eq_zero (Finset.mem_univ k) (by rw [div_mul_cancel₀ _ (hb k), sub_self])
+    rw [hk] at hdet
+    exact (mul_eq_zero.1 hdet).resolve_right hXX
+
+end CongruenceDiagonal
+
 section SymmetricDefinite
 
 open scoped ComplexOrder
@@ -550,15 +627,8 @@ by `Matrix.star_col_dotProduct_mulVec_col_of_conj_eq_one`.) -/
 theorem hasPencilEigenvector_col_of_conj_eq_diagonal {A B M : Matrix n n 𝕜} {d : n → 𝕜}
     (hM : IsUnit M) (hB : star M * B * M = 1) (hA : star M * A * M = diagonal d) (i : n) :
     HasPencilEigenvector A B (d i) (M.col i) := by
-  have hMs : IsUnit (star M).det := (isUnit_iff_isUnit_det _).mp hM.star
-  have hAM : A * M = (star M)⁻¹ * diagonal d := by
-    rw [← hA, Matrix.mul_assoc (star M), nonsing_inv_mul_cancel_left _ _ hMs]
-  have hBM : B * M = (star M)⁻¹ := by
-    rw [Matrix.mul_assoc] at hB
-    exact (inv_eq_right_inv hB).symm
-  refine ⟨(linearIndependent_cols_iff_isUnit.mpr hM).ne_zero i, ?_⟩
-  rw [← mulVec_single_one, mulVec_mulVec, mulVec_mulVec, hAM, ← hBM, ← mulVec_mulVec,
-    diagonal_mulVec_single, ← mulVec_smul, ← Pi.single_smul, smul_eq_mul]
+  simpa using hasPencilEigenvector_col_of_conj_diagonal (b := fun _ => 1) hM hA
+    (by rw [diagonal_one]; exact hB) (k := i) one_ne_zero
 
 /-- The columns of a congruence with `Mᴴ B M = 1` are `B`-orthonormal:
 `(M eᵢ)ᴴ B (M eⱼ) = δᵢⱼ`. -/

@@ -424,7 +424,7 @@ private theorem reflMat_mem {h : (Fin n → ℝ) × ℝ} (hh : h.2 = 0 ∨ h.2 *
 /-- Such a reflector is an involution. -/
 private theorem reflMat_mul_self {h : (Fin n → ℝ) × ℝ}
     (hh : h.2 = 0 ∨ h.2 * (h.1 ⬝ᵥ h.1) = 2) : reflMat h * reflMat h = 1 :=
-  GolubVanLoan.Chapter05.one_sub_smul_vecMulVec_mul_self_of_mem (reflMat_mem hh)
+  Matrix.one_sub_smul_vecMulVec_mul_self_eq_one (reflMat_mem hh)
 
 /-- A reflector whose vector vanishes at `i` fixes `e_i`. -/
 private theorem reflMat_mulVec_single {h : (Fin n → ℝ) × ℝ} {i : Fin n} (hi : h.1 i = 0) :

@@ -668,6 +668,29 @@ theorem one_sub_smul_vecMulVec_mem_orthogonalGroup {β : ℝ} {v : n → ℝ}
   rw [mem_orthogonalGroup_iff, transpose_one_sub_smul_vecMulVec,
     one_sub_smul_vecMulVec_mul_self, h, zero_smul, add_zero]
 
+/-- **Orthogonality forces the `β` dichotomy** (the converse of
+`Matrix.one_sub_smul_vecMulVec_mem_orthogonalGroup`, [golub2013matrix] §5.1.2): if `1 - β v vᵀ`
+is orthogonal and some entry of `v` is nonzero, then `β (β vᵀv - 2) = 0`, i.e. `β = 0` or
+`β vᵀv = 2`. -/
+theorem mul_mul_dotProduct_sub_two_eq_zero_of_mem_orthogonalGroup {v : n → ℝ} {β : ℝ} {p : n}
+    (hp : v p ≠ 0) (h : (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup n ℝ) :
+    β * (β * (v ⬝ᵥ v) - 2) = 0 := by
+  have h1 := (mem_orthogonalGroup_iff' n ℝ).1 h
+  rw [transpose_one_sub_smul_vecMulVec, one_sub_smul_vecMulVec_mul_self] at h1
+  have h2 := congrFun (congrFun h1 p) p
+  rw [Matrix.add_apply, Matrix.smul_apply, vecMulVec_apply, one_apply_eq, smul_eq_mul,
+    add_eq_left] at h2
+  rcases mul_eq_zero.1 h2 with h | h
+  · exact h
+  · exact absurd (mul_self_eq_zero.1 h) hp
+
+/-- An orthogonal `1 - β v vᵀ` is an involution, being symmetric. -/
+theorem one_sub_smul_vecMulVec_mul_self_eq_one {v : n → ℝ} {β : ℝ}
+    (h : (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup n ℝ) :
+    (1 - β • vecMulVec v v) * (1 - β • vecMulVec v v) = 1 := by
+  have h1 := (mem_orthogonalGroup_iff' n ℝ).1 h
+  rwa [transpose_one_sub_smul_vecMulVec] at h1
+
 end OneSubSmulVecMulVec
 
 /-! ### Triangularization by a product of reflectors -/

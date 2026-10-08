@@ -530,22 +530,14 @@ end Block
 section BlockExact
 
 /-- In exact arithmetic, a loop subtracting `b j · L(i,j)` from entry `i` for every listed `i`
-(which does not include `j`) subtracts once from each listed entry. -/
+(which does not include `j`) subtracts once from each listed entry: no step reads an entry written
+by another (`List.foldl_update_of_nodup`). -/
 private theorem foldl_saxpy_apply {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
     {c : List (Fin n)} (hc : c.Nodup) (hjc : j ∉ c) (b : Fin n → ℝ) (i : Fin n) :
     c.foldl (fun (b : Fin n → ℝ) i => Function.update b i (b i - b j * L i j)) b i =
-      if i ∈ c then b i - b j * L i j else b i := by
-  induction c generalizing b with
-  | nil => simp
-  | cons a c ih =>
-    rcases List.nodup_cons.1 hc with ⟨ha, hc'⟩
-    have hja : j ≠ a := fun h => hjc (h ▸ List.mem_cons_self)
-    rw [List.foldl_cons, ih hc' (fun h => hjc (List.mem_cons_of_mem _ h)),
-      Function.update_of_ne hja]
-    by_cases hia : i = a
-    · subst hia
-      simp [ha]
-    · simp [hia]
+      if i ∈ c then b i - b j * L i j else b i :=
+  congrFun (List.foldl_update_of_nodup hc (fun i (y : Fin n → ℝ) => y i - y j * L i j)
+    (fun _ _ y y' hout hi => by rw [hi, hout j hjc]) b) i
 
 /-- **Column-oriented forward substitution on a sorted index list, in exact arithmetic**: the rows
 off the list keep their values, and every listed row `i` satisfies `∑_{j ∈ o} L(i,j) y(j) = b(i)`

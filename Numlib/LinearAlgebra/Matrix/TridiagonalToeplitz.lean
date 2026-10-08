@@ -1515,6 +1515,30 @@ theorem symmTridiagonalToeplitz_mulVec_apply' {N : ℕ} (a b : ℝ) (v : Fin (N 
   rw [symmTridiagonalToeplitz_eq_tridiagonalToeplitz, tridiagonalToeplitz_eq_tridiagonalOf,
     tridiagonalOf_mulVec]
 
+/-- **The row bound in the maximum norm**: every entry of `tridiag(a, b, a) v` is at most
+`(2 |a| + |b|) ‖v‖_∞` in absolute value (the row sums of the absolute entries are at most
+`2 |a| + |b|`), as used for the stability of the forward heat scheme in [han2009theoretical]
+Example 6.3.3. -/
+theorem abs_symmTridiagonalToeplitz_mulVec_apply_le {N : ℕ} (a b : ℝ) (v : Fin (N + 1) → ℝ)
+    (i : Fin (N + 1)) :
+    |(symmTridiagonalToeplitz (N + 1) a b *ᵥ v) i| ≤ (2 * |a| + |b|) * ‖v‖ := by
+  rw [symmTridiagonalToeplitz_mulVec_apply']
+  have hv : ∀ j, |v j| ≤ ‖v‖ := fun j => (Real.norm_eq_abs _).symm.trans_le (norm_le_pi_norm v j)
+  have h1 : |if h : 0 < (i : ℕ) then a * v ⟨i - 1, by omega⟩ else 0| ≤ |a| * ‖v‖ := by
+    split_ifs
+    · rw [abs_mul]; exact mul_le_mul_of_nonneg_left (hv _) (abs_nonneg a)
+    · rw [abs_zero]; positivity
+  have h2 : |if h : (i : ℕ) < N then a * v ⟨i + 1, by omega⟩ else 0| ≤ |a| * ‖v‖ := by
+    split_ifs
+    · rw [abs_mul]; exact mul_le_mul_of_nonneg_left (hv _) (abs_nonneg a)
+    · rw [abs_zero]; positivity
+  have h3 : |b * v i| ≤ |b| * ‖v‖ := by
+    rw [abs_mul]; exact mul_le_mul_of_nonneg_left (hv _) (abs_nonneg b)
+  calc _ ≤ |if h : 0 < (i : ℕ) then a * v ⟨i - 1, by omega⟩ else 0| + |b * v i|
+        + |if h : (i : ℕ) < N then a * v ⟨i + 1, by omega⟩ else 0| := abs_add_three _ _ _
+    _ ≤ |a| * ‖v‖ + |b| * ‖v‖ + |a| * ‖v‖ := add_le_add (add_le_add h1 h3) h2
+    _ = (2 * |a| + |b|) * ‖v‖ := by ring
+
 /-- Transposition exchanges the two off-diagonals. -/
 theorem tridiagonalToeplitz_transpose (n : ℕ) (a b c : ℝ) :
     (tridiagonalToeplitz n a b c)ᵀ = tridiagonalToeplitz n c b a := by

@@ -695,7 +695,7 @@ theorem sorSweep_tendsto (hA : IsUnit A) (hω0 : 0 < ω) (hω2 : ω < 2) (x₀ :
         nrSORSweep_eq_sorStep hd]
   simp only [hiter]
   rw [Chapter04.sorStep_eq hd hω0.ne']
-  exact Chapter04.Splitting.tendsto_step _ hρ _ _
+  exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _ hρ _ _
 
 end Convergence
 

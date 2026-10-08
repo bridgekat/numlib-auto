@@ -116,3 +116,7 @@ source = 'Bertsekas, Constrained Optimization and Lagrange Multiplier Methods, S
 [[node]]
 id = "exists_forall_pos_fderiv_fderiv_augmented"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.17'
+
+[[node]]
+id = "coe_lagrangian_eq"
+source = 'Rockafellar, Convex Analysis, §29'

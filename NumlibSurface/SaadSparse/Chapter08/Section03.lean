@@ -79,28 +79,28 @@ section CGNR
 variable (A : Matrix (Fin n) (Fin n) 𝕜)
 
 /-- **Algorithm 8.4**, line 4: `α_i = ‖z_i‖₂²/‖w_i‖₂²` with `z_i = Aᴴ r_i` and `w_i = A p_i`. -/
-noncomputable def cgnrStepAlpha (s : Krylov.CGNR.State 𝔼) : 𝕜 :=
+noncomputable def cgnrStepAlpha (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   (‖op Aᴴ s.r‖ : 𝕜) ^ 2 / (‖op A s.p‖ : 𝕜) ^ 2
 
 /-- **Algorithm 8.4**, line 6: `r_{i+1} = r_i - α_i w_i`. -/
-noncomputable def cgnrStepR (s : Krylov.CGNR.State 𝔼) : 𝔼 :=
+noncomputable def cgnrStepR (s : Krylov.CGNR.State 𝔼 𝔼) : 𝔼 :=
   s.r - cgnrStepAlpha A s • op A s.p
 
 /-- **Algorithm 8.4**, line 8: `β_i = ‖z_{i+1}‖₂²/‖z_i‖₂²`. -/
-noncomputable def cgnrStepBeta (s : Krylov.CGNR.State 𝔼) : 𝕜 :=
+noncomputable def cgnrStepBeta (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   (‖op Aᴴ (cgnrStepR A s)‖ : 𝕜) ^ 2 / (‖op Aᴴ s.r‖ : 𝕜) ^ 2
 
 /-- One pass through lines 3–9 of **Algorithm 8.4**, on the triple `(x_i, r_i, p_i)`; the
 normal-equations residual `z_i = Aᴴ r_i` and the product `w_i = A p_i` are recomputed rather
 than stored. -/
-noncomputable def cgnrStep (s : Krylov.CGNR.State 𝔼) : Krylov.CGNR.State 𝔼 :=
+noncomputable def cgnrStep (s : Krylov.CGNR.State 𝔼 𝔼) : Krylov.CGNR.State 𝔼 𝔼 :=
   { x := s.x + cgnrStepAlpha A s • s.p
     r := cgnrStepR A s
     p := op Aᴴ (cgnrStepR A s) + cgnrStepBeta A s • s.p }
 
 /-- **Algorithm 8.4** (CGNR) run for `i` steps, started from `r_0 = b - A x_0` and
 `p_0 = z_0 = Aᴴ r_0`. -/
-noncomputable def cgnr (b x₀ : 𝔼) (i : ℕ) : Krylov.CGNR.State 𝔼 :=
+noncomputable def cgnr (b x₀ : 𝔼) (i : ℕ) : Krylov.CGNR.State 𝔼 𝔼 :=
   (cgnrStep A)^[i] { x := x₀, r := b - op A x₀, p := op Aᴴ (b - op A x₀) }
 
 variable (b x₀ : EuclideanSpace 𝕜 (Fin n))
@@ -122,21 +122,21 @@ theorem cgnr_succ (i : ℕ) : cgnr A b x₀ (i + 1) = cgnrStep A (cgnr A b x₀ 
 
 variable {A}
 
-private theorem cgnrStepAlpha_eq (s : Krylov.CGNR.State 𝔼) :
+private theorem cgnrStepAlpha_eq (s : Krylov.CGNR.State 𝔼 𝔼) :
     cgnrStepAlpha A s = Krylov.CGNR.alpha (op A) (op Aᴴ) s := by
   rw [cgnrStepAlpha, Krylov.CGNR.alpha, inner_self_eq_norm_sq_to_K,
     inner_self_eq_norm_sq_to_K]
 
-private theorem cgnrStepR_eq (s : Krylov.CGNR.State 𝔼) :
+private theorem cgnrStepR_eq (s : Krylov.CGNR.State 𝔼 𝔼) :
     cgnrStepR A s = (Krylov.CGNR.step (op A) (op Aᴴ) s).r := by
   rw [cgnrStepR, cgnrStepAlpha_eq, Krylov.CGNR.step_r]
 
-private theorem cgnrStepBeta_eq (s : Krylov.CGNR.State 𝔼) :
+private theorem cgnrStepBeta_eq (s : Krylov.CGNR.State 𝔼 𝔼) :
     cgnrStepBeta A s = Krylov.CGNR.beta (op A) (op Aᴴ) s := by
   rw [cgnrStepBeta, Krylov.CGNR.beta, cgnrStepR_eq, inner_self_eq_norm_sq_to_K,
     inner_self_eq_norm_sq_to_K]
 
-private theorem cgnrStep_eq (s : Krylov.CGNR.State 𝔼) :
+private theorem cgnrStep_eq (s : Krylov.CGNR.State 𝔼 𝔼) :
     cgnrStep A s = Krylov.CGNR.step (op A) (op Aᴴ) s := by
   have h : cgnrStep A s =
       { x := s.x + cgnrStepAlpha A s • s.p
@@ -175,26 +175,26 @@ section CGNE
 variable (A : Matrix (Fin n) (Fin n) 𝕜)
 
 /-- **Algorithm 8.5**, line 3: `α_i = (r_i, r_i)/(p_i, p_i)`. -/
-noncomputable def cgneStepAlpha (s : Krylov.CGNE.State 𝔼) : 𝕜 :=
+noncomputable def cgneStepAlpha (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   (‖s.r‖ : 𝕜) ^ 2 / (‖s.p‖ : 𝕜) ^ 2
 
 /-- **Algorithm 8.5**, line 5: `r_{i+1} = r_i - α_i A p_i`. -/
-noncomputable def cgneStepR (s : Krylov.CGNE.State 𝔼) : 𝔼 :=
+noncomputable def cgneStepR (s : Krylov.CGNE.State 𝔼 𝔼) : 𝔼 :=
   s.r - cgneStepAlpha s • op A s.p
 
 /-- **Algorithm 8.5**, line 6: `β_i = (r_{i+1}, r_{i+1})/(r_i, r_i)`. -/
-noncomputable def cgneStepBeta (s : Krylov.CGNE.State 𝔼) : 𝕜 :=
+noncomputable def cgneStepBeta (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   (‖cgneStepR A s‖ : 𝕜) ^ 2 / (‖s.r‖ : 𝕜) ^ 2
 
 /-- One pass through lines 3–7 of **Algorithm 8.5**, on the triple `(x_i, r_i, p_i)`. -/
-noncomputable def cgneStep (s : Krylov.CGNE.State 𝔼) : Krylov.CGNE.State 𝔼 :=
+noncomputable def cgneStep (s : Krylov.CGNE.State 𝔼 𝔼) : Krylov.CGNE.State 𝔼 𝔼 :=
   { x := s.x + cgneStepAlpha s • s.p
     r := cgneStepR A s
     p := op Aᴴ (cgneStepR A s) + cgneStepBeta A s • s.p }
 
 /-- **Algorithm 8.5** (CGNE, Craig's method) run for `i` steps, started from `r_0 = b - A x_0`
 and `p_0 = Aᴴ r_0`. -/
-noncomputable def cgne (b x₀ : 𝔼) (i : ℕ) : Krylov.CGNE.State 𝔼 :=
+noncomputable def cgne (b x₀ : 𝔼) (i : ℕ) : Krylov.CGNE.State 𝔼 𝔼 :=
   (cgneStep A)^[i] { x := x₀, r := b - op A x₀, p := op Aᴴ (b - op A x₀) }
 
 variable (b x₀ : EuclideanSpace 𝕜 (Fin n))
@@ -216,21 +216,21 @@ theorem cgne_succ (i : ℕ) : cgne A b x₀ (i + 1) = cgneStep A (cgne A b x₀ 
 
 variable {A}
 
-private theorem cgneStepAlpha_eq (s : Krylov.CGNE.State 𝔼) :
+private theorem cgneStepAlpha_eq (s : Krylov.CGNE.State 𝔼 𝔼) :
     cgneStepAlpha s = (Krylov.CGNE.alpha s : 𝕜) := by
   rw [cgneStepAlpha, Krylov.CGNE.alpha, inner_self_eq_norm_sq_to_K,
     inner_self_eq_norm_sq_to_K]
 
-private theorem cgneStepR_eq (s : Krylov.CGNE.State 𝔼) :
+private theorem cgneStepR_eq (s : Krylov.CGNE.State 𝔼 𝔼) :
     cgneStepR A s = (Krylov.CGNE.step (op A) (op Aᴴ) s).r := by
   rw [cgneStepR, cgneStepAlpha_eq, Krylov.CGNE.step_r]
 
-private theorem cgneStepBeta_eq (s : Krylov.CGNE.State 𝔼) :
+private theorem cgneStepBeta_eq (s : Krylov.CGNE.State 𝔼 𝔼) :
     cgneStepBeta A s = Krylov.CGNE.beta (op A) (op Aᴴ) s := by
   rw [cgneStepBeta, Krylov.CGNE.beta, cgneStepR_eq, inner_self_eq_norm_sq_to_K,
     inner_self_eq_norm_sq_to_K]
 
-private theorem cgneStep_eq (s : Krylov.CGNE.State 𝔼) :
+private theorem cgneStep_eq (s : Krylov.CGNE.State 𝔼 𝔼) :
     cgneStep A s = Krylov.CGNE.step (op A) (op Aᴴ) s := by
   have h : cgneStep A s =
       { x := s.x + cgneStepAlpha s • s.p

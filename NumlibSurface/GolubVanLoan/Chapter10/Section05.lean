@@ -1569,51 +1569,25 @@ private theorem unsym_relations {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁
           · simp only [h0, ↓reduceIte, Function.update_of_ne (show s0.k - 1 ≠ s0.k by omega)]
             module
 
-/-- A column of a product with a tridiagonal matrix given by its three diagonals: the entry
-`(Q T)(x, j)` collects `c_j Q(x, j−1) + a_j Q(x, j) + b_{j+1} Q(x, j+1)`. -/
-private theorem sum_mul_tridiag {k : ℕ} (f : Fin k → ℝ) (a b c : ℕ → ℝ) (j : Fin k) :
-    ∑ l : Fin k, f l * (if (l : ℕ) = j then a l else if (l : ℕ) + 1 = j then c j
-      else if (j : ℕ) + 1 = l then b l else 0) =
-      (if h : 0 < (j : ℕ) then c j * f ⟨j - 1, by omega⟩ else 0) + a j * f j +
-        (if h : (j : ℕ) + 1 < k then b (j + 1) * f ⟨j + 1, h⟩ else 0) := by
-  have hsplit : ∀ l : Fin k, f l * (if (l : ℕ) = j then a l else if (l : ℕ) + 1 = j then c j
-      else if (j : ℕ) + 1 = l then b l else 0) =
-      (if l = j then a j * f j else 0) +
-        ((if (l : ℕ) + 1 = j then c j * f l else 0) +
-          (if (j : ℕ) + 1 = l then b (j + 1) * f l else 0)) := by
-    intro l
-    by_cases h1 : l = j
-    · subst h1; simp [mul_comm]
-    · have h1' : (l : ℕ) ≠ j := fun h => h1 (Fin.ext h)
-      rw [ite_eq_right h1', ite_eq_right h1]
-      by_cases h2 : (l : ℕ) + 1 = j
-      · rw [ite_eq_left h2, ite_eq_left h2, ite_eq_right (by omega)]; ring
-      · rw [ite_eq_right h2, ite_eq_right h2]
-        by_cases h3 : (j : ℕ) + 1 = l
-        · rw [ite_eq_left h3, ite_eq_left h3, ← h3]; ring
-        · rw [ite_eq_right h3, ite_eq_right h3]; ring
-  rw [Finset.sum_congr rfl fun l _ => hsplit l, Finset.sum_add_distrib, Finset.sum_add_distrib,
-    Finset.sum_ite_eq' Finset.univ j, ite_eq_left (Finset.mem_univ _)]
-  have hlow : ∑ l : Fin k, (if (l : ℕ) + 1 = j then c j * f l else 0) =
-      if h : 0 < (j : ℕ) then c j * f ⟨j - 1, by omega⟩ else 0 := by
-    split_ifs with h
-    · rw [Finset.sum_eq_single ⟨j - 1, by omega⟩ (fun l _ hl => ite_eq_right (fun h' =>
-        hl (Fin.ext (by simp; omega)))) (fun h' => absurd (Finset.mem_univ _) h')]
-      rw [ite_eq_left (by simp; omega)]
-    · exact Finset.sum_eq_zero fun l _ => ite_eq_right (by omega)
-  have hup : ∑ l : Fin k, (if (j : ℕ) + 1 = l then b (j + 1) * f l else 0) =
-      if h : (j : ℕ) + 1 < k then b (j + 1) * f ⟨j + 1, h⟩ else 0 := by
-    split_ifs with h
-    · rw [Finset.sum_eq_single ⟨j + 1, h⟩ (fun l _ hl => ite_eq_right (fun h' =>
-        hl (Fin.ext (by simp; omega)))) (fun h' => absurd (Finset.mem_univ _) h')]
-      rw [ite_eq_left rfl]
-    · exact Finset.sum_eq_zero fun l _ => ite_eq_right (fun h' => h (by omega))
-  rw [hlow, hup]
-  ring
+/-- `T_k` is the backbone's `Matrix.tridiagonalOfNat` of `α`, `β` and the shifted `γ`. -/
+private theorem unsymTridiag_eq {n : ℕ} (st : UnsymLanczosState n) (k : ℕ) :
+    unsymTridiag st k =
+      Matrix.tridiagonalOfNat st.alpha st.beta (fun i => st.gamma (i + 1)) k := by
+  ext i j
+  simp only [unsymTridiag, Matrix.tridiagonalOfNat, Matrix.of_apply]
+  split_ifs <;> first | rfl | omega | (congr 1; omega)
+
+/-- `T_kᵀ` is the backbone's `Matrix.tridiagonalOfNat` of `α`, `γ` and the shifted `β`. -/
+private theorem unsymTridiag_transpose {n : ℕ} (st : UnsymLanczosState n) (k : ℕ) :
+    (unsymTridiag st k)ᵀ =
+      Matrix.tridiagonalOfNat st.alpha st.gamma (fun i => st.beta (i + 1)) k := by
+  ext i j
+  simp only [Matrix.transpose_apply, unsymTridiag, Matrix.tridiagonalOfNat, Matrix.of_apply]
+  split_ifs <;> first | rfl | omega | (congr 1; omega) | congr 1
 
 /-- **(10.5.12)**: at the bottom of the loop of (10.5.11) (exact arithmetic),
 `A [q_1 | ⋯ | q_k] = [q_1 | ⋯ | q_k] T_k + r_k e_kᵀ`, `T_k` the tridiagonal matrix of the computed
-`α`, `β`, `γ`. Column by column from the recurrence. -/
+`α`, `β`, `γ`. Column by column from the recurrence, with `Matrix.tridiagonalOfNat_mulVec`. -/
 theorem equation_10_5_12 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
     (fuel : ℕ) :
     let st := Id.run (unsymmetricLanczos pure A q₁ qt₁ fuel)
@@ -1627,9 +1601,11 @@ theorem equation_10_5_12 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ 
   ext x j
   have h := congrFun (hrel j j.isLt) x
   rw [Matrix.add_apply, Matrix.vecMulVec_apply, Matrix.mul_apply, Matrix.mul_apply]
-  rw [show (∑ l, A x l * unsymQ st st.k l j) = (A *ᵥ st.q j) x from rfl, h]
-  simp only [unsymQ, unsymTridiag, Matrix.of_apply]
-  rw [sum_mul_tridiag (fun l : Fin st.k => st.q l x) st.alpha st.beta st.gamma j]
+  rw [show (∑ l, A x l * unsymQ st st.k l j) = (A *ᵥ st.q j) x from rfl, h,
+    show (∑ l, unsymQ st st.k x l * unsymTridiag st st.k l j)
+      = ((fun l : Fin st.k => st.q l x) ᵥ* unsymTridiag st st.k) j from rfl,
+    ← Matrix.transpose_transpose (unsymTridiag st st.k), unsymTridiag_transpose,
+    Matrix.vecMul_transpose, Matrix.tridiagonalOfNat_mulVec]
   simp only [Krylov.lastVec, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
   rcases Nat.eq_zero_or_pos (j : ℕ) with h0 | h0
   · by_cases h1 : 1 < st.k
@@ -1640,7 +1616,7 @@ theorem equation_10_5_12 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ 
     · simp [h0.ne', show (j : ℕ) + 1 = st.k by omega]
 
 /-- **(10.5.13)**: `Aᵀ [q̃_1 | ⋯ | q̃_k] = [q̃_1 | ⋯ | q̃_k] T_kᵀ + r̃_k e_kᵀ`. Column by column
-from the recurrence for `q̃`. -/
+from the recurrence for `q̃`, with `Matrix.tridiagonalOfNat_mulVec`. -/
 theorem equation_10_5_13 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
     (fuel : ℕ) :
     let st := Id.run (unsymmetricLanczos pure A q₁ qt₁ fuel)
@@ -1654,15 +1630,10 @@ theorem equation_10_5_13 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ 
   ext x j
   have h := congrFun (hrel j j.isLt) x
   rw [Matrix.add_apply, Matrix.vecMulVec_apply, Matrix.mul_apply, Matrix.mul_apply]
-  rw [show (∑ l, Aᵀ x l * unsymQt st st.k l j) = (Aᵀ *ᵥ st.qt j) x from rfl, h]
-  have hT : ∀ l : Fin st.k, (unsymTridiag st st.k)ᵀ l j =
-      (if (l : ℕ) = j then st.alpha l else if (l : ℕ) + 1 = j then st.beta j
-        else if (j : ℕ) + 1 = l then st.gamma l else 0) := by
-    intro l
-    simp only [Matrix.transpose_apply, unsymTridiag, Matrix.of_apply]
-    split_ifs <;> first | rfl | omega | congr 1
-  simp only [unsymQt, Matrix.of_apply, hT]
-  rw [sum_mul_tridiag (fun l : Fin st.k => st.qt l x) st.alpha st.gamma st.beta j]
+  rw [show (∑ l, Aᵀ x l * unsymQt st st.k l j) = (Aᵀ *ᵥ st.qt j) x from rfl, h,
+    show (∑ l, unsymQt st st.k x l * (unsymTridiag st st.k)ᵀ l j)
+      = ((fun l : Fin st.k => st.qt l x) ᵥ* (unsymTridiag st st.k)ᵀ) j from rfl,
+    Matrix.vecMul_transpose, unsymTridiag_eq, Matrix.tridiagonalOfNat_mulVec]
   simp only [Krylov.lastVec, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
   rcases Nat.eq_zero_or_pos (j : ℕ) with h0 | h0
   · by_cases h1 : 1 < st.k
