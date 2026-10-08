@@ -9,6 +9,7 @@ technique (Bramble–Hilbert on the reference element, affine transport, regular
 global estimate on a `Triangulation`); `Triangle` is Céa plus interpolation on a triangulated
 polygon, with the Poisson problem as the instance both [han2009theoretical] Example 10.4.2 and
 [quarteroni2000numerical] Property 12.2 restate. The scaffold they build on is
-`Numlib/Geometry/Triangulation.lean` and `Numlib/Analysis/Sobolev/Triangulation.lean`; the
-one-dimensional `Variational/FiniteElementInterval.lean` will move here afterwards.
+`Numlib/Geometry/Triangulation.lean` and `Numlib/Analysis/Sobolev/Triangulation.lean`. `Interval`
+is the one-dimensional method: the Lagrange spaces `X_h^k` on a partition of `[a, b]`, hat
+functions, stiffness and mass matrices, and the nodal interpolants.
 '''

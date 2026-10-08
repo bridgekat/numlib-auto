@@ -34,7 +34,7 @@ ones, `MemSobolev v m 2 K volume`, `sobolevSeminorm`, `sobolevNorm`.
 * **Regularity of a family** (`FiniteElement.IsRegularFamily`) asks for *some* inscribed ball of
   radius `r` with `h_K ≤ σ (2 r)`, rather than for the largest inscribed ball, which Mathlib has no
   name for; the mesh parameter is the supremum of the diameters, written inline so as not to
-  clash with `FiniteElement.meshSize` of `Numlib/Variational/FiniteElementInterval.lean`.
+  clash with `FiniteElement.meshSize` of `Numlib/FiniteElement/Interval.lean`.
 * The local estimate on an affine image is proved directly from the affine change of variables
   in `H^m` (`sobolevSeminorm_comp_affine_le`) and the operator-norm bound by inscribed balls
   (`ContinuousLinearMap.opNorm_le_diam_div`).

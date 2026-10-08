@@ -448,6 +448,7 @@ import Numlib.FiniteDifference.Stencil
 import Numlib.FiniteDifference.TwoLevel
 import Numlib.FiniteDifference.VonNeumann
 import Numlib.FiniteElement.Interpolation
+import Numlib.FiniteElement.Interval
 import Numlib.FiniteElement.LagrangeElement
 import Numlib.FiniteElement.Triangle
 import Numlib.FloatingPoint.Givens
@@ -658,7 +659,6 @@ import Numlib.Variational.EllipticInterval.MaximumPrinciple
 import Numlib.Variational.EllipticInterval.SturmLiouville
 import Numlib.Variational.EnergyPairing
 import Numlib.Variational.Evolution
-import Numlib.Variational.FiniteElementInterval
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
 import Numlib.Variational.Inequality.Approximation

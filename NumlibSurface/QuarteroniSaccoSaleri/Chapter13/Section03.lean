@@ -4,7 +4,7 @@ import Numlib.Approximation.MarkovInequality
 import Numlib.Approximation.OrthogonalPolynomial.LegendreNodes
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.FiniteDifference.Parabolic
-import Numlib.Variational.FiniteElementInterval
+import Numlib.FiniteElement.Interval
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section03
 
 /-!

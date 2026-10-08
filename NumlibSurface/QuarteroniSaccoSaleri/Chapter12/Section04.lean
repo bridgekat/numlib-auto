@@ -3,7 +3,7 @@ import Mathlib.Analysis.Distribution.Distribution
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 import Numlib.Variational.EllipticInterval
-import Numlib.Variational.FiniteElementInterval
+import Numlib.FiniteElement.Interval
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section03
 
 /-!

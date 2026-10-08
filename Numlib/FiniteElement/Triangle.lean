@@ -9,7 +9,7 @@ The a priori error of the Galerkin method on finite element spaces over a regula
 triangulations of a plane domain: Céa's lemma (`IsGalerkinSolution.norm_sub_le`) with the
 interpolant `v_h = Π_h u` as competitor, and the global interpolation estimate
 `Triangulation.sobolevNorm_sub_globalInterp_le` at `m = 1`. The one-dimensional counterpart is
-`Numlib/Variational/FiniteElementInterval.lean`.
+`Numlib/FiniteElement/Interval.lean`.
 
 The setting is the backbone's: a subspace `V ⊆ H¹(Ω)` (`SobolevEuclidean 2 1 2 Ω`), a bounded
 coercive form `a : SesqForm ℝ V` (`SesqForm.IsBoundedWith`, `SesqForm.IsCoerciveWith`), and Galerkin

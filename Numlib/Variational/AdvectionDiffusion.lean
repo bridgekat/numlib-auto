@@ -1,7 +1,7 @@
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.Variational.EllipticInterval
-import Numlib.Variational.FiniteElementInterval
+import Numlib.FiniteElement.Interval
 
 /-!
 # Advection–diffusion in one dimension, and its stabilized discretizations
