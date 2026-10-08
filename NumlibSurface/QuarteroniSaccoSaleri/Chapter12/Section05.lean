@@ -153,8 +153,8 @@ theorem remark_12_5 (ε β : ℝ) (u : SobolevInterval 1 0 1) {v : SobolevInterv
   have hcε := EllipticInterval.coeFn_constLinf 0 1 ε
   have hcβ := EllipticInterval.coeFn_constLinf 0 1 β
   have hc1 := EllipticInterval.coeFn_constLinf 0 1 1
-  have hru := fn_ae_eq_rep hab u
-  have hrv := fn_ae_eq_rep hab v
+  have hru := fn_ae_eq_rep u
+  have hrv := fn_ae_eq_rep v
   -- the three integrands, and their integrability
   have i1 : IntegrableOn (fun x => ε * (deriv u 1 x * deriv v 1 x)) (Ioo (0 : ℝ) 1) := by
     refine (EllipticInterval.integrable_mul_mul (EllipticInterval.constLinf 0 1 ε)

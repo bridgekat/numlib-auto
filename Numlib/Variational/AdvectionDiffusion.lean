@@ -970,7 +970,7 @@ theorem stabilizedForm_self (hab : a < b) {ε β h : ℝ} (φ : ℝ → ℝ)
     (contDiffOn_const (c := β) (n := 1) (s := uIcc a b)).absolutelyContinuousOnInterval
   have hc := coeFn_constLinf a b (viscosity ε β h φ)
   have hcb := coeFn_constLinf a b β
-  have hrep := SobolevInterval.fn_ae_eq_rep hab v
+  have hrep := SobolevInterval.fn_ae_eq_rep v
   have i1 : IntegrableOn (fun x => viscosity ε β h φ
       * (SobolevInterval.deriv v 1 x * SobolevInterval.deriv v 1 x)) (Ioo a b) := by
     refine (EllipticInterval.integrable_mul_mul (constLinf a b (viscosity ε β h φ))

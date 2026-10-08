@@ -571,7 +571,7 @@ theorem form_ofContDiffMapIcc_eq (hab : a < b) {α β γ f : ℝ → ℝ}
     rw [form_apply]
     refine integral_congr_ae ?_
     filter_upwards [hαL, hβL, hγL, deriv_ofContDiffMapIcc_zero hab u,
-      deriv_ofContDiffMapIcc_one hab u, fn_ae_eq_rep hab v] with x h1 h2 h3 h4 h5 h6
+      deriv_ofContDiffMapIcc_one hab u, fn_ae_eq_rep v] with x h1 h2 h3 h4 h5 h6
     rw [h1, h2, h3, h4, h5, deriv_zero, h6, hψ]
     ring
   -- integration by parts on the first term
@@ -626,7 +626,7 @@ theorem isWeakSolution_of_classical (hab : a < b) {α β γ f : ℝ → ℝ}
     SobolevIntervalZero.rep_left_eq_zero hab hv, SobolevIntervalZero.rep_right_eq_zero hab hv,
     zero_mul, zero_mul, sub_zero, add_zero, load_apply]
   refine integral_congr_ae ?_
-  filter_upwards [hfL, fn_ae_eq_rep hab v] with x h1 h2
+  filter_upwards [hfL, fn_ae_eq_rep v] with x h1 h2
   rw [h1, deriv_zero, h2]
 
 open SobolevInterval in
@@ -650,7 +650,7 @@ theorem isWeakSolution_of_classical_neumann (hab : a < b) {α β γ f : ℝ → 
   rw [form_ofContDiffMapIcc_eq hab αL βL γL hαL hβL hγL hα hβ hγ u hode v, hw₀, hw₁, load_apply]
   have : ∫ x in Ioo a b, fL x * deriv v 0 x = ∫ x in Ioo a b, f x * rep v x := by
     refine integral_congr_ae ?_
-    filter_upwards [hfL, fn_ae_eq_rep hab v] with x h1 h2
+    filter_upwards [hfL, fn_ae_eq_rep v] with x h1 h2
     rw [h1, deriv_zero, h2]
   rw [this]
   ring
@@ -686,7 +686,7 @@ theorem integral_mul_deriv_mul_rep_eq (hab : a < b) {β : ℝ → ℝ}
   rw [hga, hgb, mul_zero, mul_zero, sub_zero, zero_sub] at key
   -- `deriv g = 2 g_v v'` almost everywhere
   have hderiv : ∀ᵐ t, t ∈ uIoc a b → β t * deriv g t = 2 * (β t * (deriv v 1 t * rep v t)) := by
-    filter_upwards [hrAC.ae_differentiableAt, ae_deriv_rep_eq hab.le v] with t h1 h2 ht
+    filter_upwards [hrAC.ae_differentiableAt, ae_deriv_rep_eq v] with t h1 h2 ht
     rw [uIoc_of_le hab.le] at ht
     have hd := h1 (uIcc_of_le hab.le ▸ Ioc_subset_Icc_self ht)
     rw [hg, deriv_fun_mul hd hd, h2 ht]
@@ -712,7 +712,7 @@ theorem form_isCoerciveWith_seminorm_of_le (hab : a < b)
     α₀ * seminorm 1 a b v ^ 2 ≤ form a b αL βL γL v v := by
   have hβAC : AbsolutelyContinuousOnInterval β a b := by
     rw [← uIcc_of_le hab.le] at hβ; exact hβ.absolutelyContinuousOnInterval
-  have hrep := fn_ae_eq_rep hab v
+  have hrep := fn_ae_eq_rep v
   have hcont := continuousOn_rep hab.le v
   -- the three integrals
   have i1 : IntegrableOn (fun x ↦ αL x * deriv v 1 x * deriv v 1 x) (Ioo a b) :=
@@ -883,7 +883,8 @@ theorem mem_sobolevInterval_two_of_forall_testFunction (hab : a < b)
     refine (ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun x hx ↦ ?_)
     rw [ContDiffMapIcc.extend_of_mem Ainv (Ioo_subset_Icc_self hx), hAinv]
     exact ContDiffMapIcc.coe_ofContDiffOn hab.le hab hαinv ⟨x, Ioo_subset_Icc_self hx⟩
-  have hmul := memSobolevInterval_mul hab Gel AinvH
+  have hmul := SobolevIntervalLp.memSobolevIntervalLp_mul
+    (SobolevIntervalLp.ordConnected_coe_Ioo a b) Gel AinvH
   have hu' : MemSobolevInterval (deriv u 1) 1 a b := by
     refine hmul.congr_ae ?_
     filter_upwards [hc, hαL, ae_restrict_mem measurableSet_Ioo] with x h1 h2 hx
@@ -981,8 +982,8 @@ theorem exists_sobolevInterval_two_of_forall_testFunction (hab : a < b)
   rw [hΦ2]
   have hweak := hasWeakDerivOn_mulL_deriv_of_forall αL βL γL f hu
   obtain ⟨A, hArep, hA'⟩ := exists_sobolevInterval_of_contDiffOn hab hα
-  have hprod := hasWeakDerivOn_rep_mul hab A U₁
-  have hrepU₁ := fn_ae_eq_rep hab U₁
+  have hprod := hasWeakDerivOn_rep_mul A U₁
+  have hrepU₁ := fn_ae_eq_rep U₁
   have hfn : (fun t ↦ rep A t * rep U₁ t) =ᵐ[volume.restrict (Ioo a b)]
       fun x ↦ αL x * deriv u 1 x := by
     filter_upwards [hαL, hU₁, hrepU₁, ae_restrict_mem measurableSet_Ioo] with x h1 h2 h3 hx

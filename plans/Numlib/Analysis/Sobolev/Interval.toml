@@ -1,31 +1,4 @@
 [[node]]
-id = "TestFunction.eq_zero_of_le_left"
-
-[[node]]
-id = "TestFunction.eq_zero_of_le_right"
-
-[[node]]
-id = "TestFunction.integral_eq_setIntegral_Ioo"
-
-[[node]]
-id = "TestFunction.exists_tsupport_subset_Icc"
-
-[[node]]
-id = "TestFunction.support_integral_subset"
-
-[[node]]
-id = "TestFunction.primitive"
-
-[[node]]
-id = "TestFunction.primitive_coe"
-
-[[node]]
-id = "TestFunction.deriv_primitive"
-
-[[node]]
-id = "exists_testFunction_integral_eq_one"
-
-[[node]]
 id = "absolutelyContinuousOnInterval_integral"
 
 [[node]]
@@ -33,9 +6,6 @@ id = "ae_deriv_integral_eq"
 
 [[node]]
 id = "hasWeakDerivOn_integral"
-
-[[node]]
-id = "ae_eq_const_of_hasWeakDerivOn_zero"
 
 [[node]]
 id = "HasWeakDerivOn.exists_ae_eq_integral"
@@ -61,15 +31,6 @@ id = "memSobolevInterval_succ_iff"
 [[node]]
 id = "memSobolevInterval_one_iff"
 source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.42)'
-
-[[node]]
-id = "SobolevInterval.fn"
-
-[[node]]
-id = "SobolevInterval.derivIndex"
-
-[[node]]
-id = "SobolevInterval.derivIndexEquiv"
 
 [[node]]
 id = "SobolevInterval.deriv"
@@ -99,12 +60,6 @@ id = "SobolevInterval.hasWeakIteratedDerivOn_deriv"
 id = "SobolevInterval.hasWeakDerivOn_deriv_succ"
 
 [[node]]
-id = "SobolevInterval.memSobolevInterval_fn"
-
-[[node]]
-id = "SobolevInterval.integrableOn_deriv"
-
-[[node]]
 id = "SobolevInterval.norm_sq_eq"
 source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (10.35)'
 
@@ -129,25 +84,10 @@ source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.49)'
 id = "SobolevInterval.seminorm_apply"
 
 [[node]]
-id = "SobolevInterval.seminorm_le_norm"
-
-[[node]]
 id = "SobolevInterval.mk"
 
 [[node]]
 id = "SobolevInterval.deriv_mk"
-
-[[node]]
-id = "SobolevInterval.fn_mk"
-
-[[node]]
-id = "SobolevInterval.derivₗ"
-
-[[node]]
-id = "SobolevInterval.deriv_derivₗ"
-
-[[node]]
-id = "SobolevInterval.norm_derivₗ_le"
 
 [[node]]
 id = "SobolevInterval.derivCLM"
@@ -156,28 +96,10 @@ id = "SobolevInterval.derivCLM"
 id = "SobolevInterval.deriv_derivCLM"
 
 [[node]]
-id = "SobolevInterval.norm_derivCLM_le"
-
-[[node]]
-id = "SobolevInterval.inclusionₗ"
-
-[[node]]
-id = "SobolevInterval.deriv_inclusionₗ"
-
-[[node]]
-id = "SobolevInterval.norm_inclusionₗ_le"
-
-[[node]]
 id = "SobolevInterval.inclusionCLM"
 
 [[node]]
 id = "SobolevInterval.deriv_inclusionCLM"
-
-[[node]]
-id = "SobolevInterval.fn_inclusionCLM"
-
-[[node]]
-id = "SobolevInterval.norm_inclusionCLM_le"
 
 [[node]]
 id = "abs_setIntegral_le_sqrt_mul_norm"
@@ -192,28 +114,13 @@ id = "integral_abs_le_sqrt_mul_norm"
 id = "SobolevInterval.hasWeakDerivOn_fn"
 
 [[node]]
-id = "SobolevInterval.repConst"
-
-[[node]]
-id = "SobolevInterval.rep"
-
-[[node]]
-id = "SobolevInterval.rep_apply"
-
-[[node]]
 id = "SobolevInterval.continuousOn_rep"
 
 [[node]]
 id = "SobolevInterval.absolutelyContinuousOnInterval_rep"
 
 [[node]]
-id = "SobolevInterval.hasWeakDerivOn_rep"
-
-[[node]]
 id = "SobolevInterval.ae_deriv_rep_eq"
-
-[[node]]
-id = "SobolevInterval.rep_sub_rep"
 
 [[node]]
 id = "SobolevInterval.fn_ae_eq_rep"
@@ -231,34 +138,10 @@ id = "SobolevInterval.rep_smul"
 id = "SobolevInterval.abs_rep_le"
 
 [[node]]
-id = "SobolevInterval.toContinuousMapₗ"
-
-[[node]]
-id = "SobolevInterval.norm_toContinuousMapₗ_le"
-
-[[node]]
-id = "SobolevInterval.toContinuousMap"
-
-[[node]]
-id = "SobolevInterval.toContinuousMap_apply"
-
-[[node]]
 id = "SobolevInterval.norm_toContinuousMap_le"
 
 [[node]]
 id = "SobolevInterval.norm_toContinuousMap_le'"
-
-[[node]]
-id = "SobolevInterval.coe_toContinuousMap_ae_eq"
-
-[[node]]
-id = "SobolevInterval.toContinuousMap_eq_of_continuousOn"
-
-[[node]]
-id = "SobolevInterval.toContinuousMap_sub_eq_integral"
-
-[[node]]
-id = "SobolevInterval.absolutelyContinuousOnInterval_toContinuousMap"
 
 [[node]]
 id = "integral_mul_add_mul_of_eq_integral"
@@ -273,21 +156,6 @@ id = "SobolevInterval.integral_deriv_mul_eq_sub_integral_mul_deriv"
 id = "SobolevInterval.integral_deriv_mul_contDiffOn"
 
 [[node]]
-id = "SobolevInterval.rep_mul_rep_eq"
-
-[[node]]
-id = "SobolevInterval.integrableOn_leibniz"
-
-[[node]]
-id = "SobolevInterval.hasWeakDerivOn_rep_mul"
-
-[[node]]
-id = "SobolevInterval.memLp_leibniz"
-
-[[node]]
-id = "SobolevInterval.memSobolevInterval_mul"
-
-[[node]]
 id = "integral_Ioo_sub_left"
 
 [[node]]
@@ -297,22 +165,7 @@ id = "SobolevInterval.norm_le_of_eq_integral"
 id = "SobolevIntervalZero"
 
 [[node]]
-id = "SobolevIntervalZero.mem_of_fn_ae_eq"
-
-[[node]]
-id = "SobolevIntervalZero.exists_mem_fn_ae_eq"
-
-[[node]]
-id = "SobolevIntervalZero.rep_left_eq_zero"
-
-[[node]]
-id = "SobolevIntervalZero.rep_right_eq_zero"
-
-[[node]]
 id = "SobolevIntervalZero.toContinuousMap_eq_zero"
-
-[[node]]
-id = "SobolevIntervalZero.rep_eq_integral"
 
 [[node]]
 id = "SobolevIntervalZero.norm_deriv_zero_le"
@@ -416,12 +269,6 @@ id = "SobolevInterval.intervalIntegrable_deriv"
 id = "SobolevInterval.intervalIntegrable_deriv_sq"
 
 [[node]]
-id = "SobolevInterval.toContinuousMap_injective"
-
-[[node]]
-id = "SobolevInterval.exists_toContinuousMap_eq"
-
-[[node]]
 id = "SobolevInterval.norm_le_add_norm_deriv"
 
 [[node]]
@@ -434,16 +281,22 @@ id = "ContDiffMapIcc.denseRange_toSobolevInterval_one"
 id = "SobolevInterval.inner_eq_intervalIntegral"
 
 [[node]]
-id = "SobolevInterval.evalCLM"
-
-[[node]]
-id = "SobolevInterval.evalCLM_apply"
-
-[[node]]
 id = "SobolevInterval.rep_finset_sum"
 
 [[node]]
-id = "SobolevInterval.rep_eq_repLp"
+id = "SobolevInterval.toContinuousMap"
 
 [[node]]
-id = "SobolevInterval.fn_ae_eq_repLp"
+id = "SobolevInterval.evalCLM"
+
+[[node]]
+id = "SobolevInterval.toContinuousMap_sub_eq_integral"
+
+[[node]]
+id = "SobolevInterval.toContinuousMap_injective"
+
+[[node]]
+id = "SobolevInterval.hasWeakDerivOn_rep_mul"
+
+[[node]]
+id = "SobolevIntervalZero.exists_mem_fn_ae_eq"

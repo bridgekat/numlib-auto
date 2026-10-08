@@ -293,7 +293,7 @@ theorem rep_truncationElem (hab : a < b) (u : SobolevInterval 1 a b) (K : ℝ) :
   refine rep_eq_of_continuousOn hab _
     ((contDiff_truncation_sub K).continuous.comp_continuousOn (continuousOn_rep hab.le u)) ?_
   filter_upwards [fn_truncationElem hab u K, ae_restrict_mem measurableSet_Ioo] with t h1 h2
-  rw [h1, SobolevInterval.rep_eq_repLp hab u (Ioo_subset_Icc_self h2)]
+  rw [h1]
 
 open SobolevInterval in
 /-- **The truncated element lies in `H_0^1(a, b)` when `u ≤ K` at the endpoints**
@@ -324,11 +324,11 @@ theorem integral_eq_zero_of_form_truncationElem (hab : a < b)
   have hv₀ : (deriv v 0 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)]
       fun x ↦ truncation (deriv u 0 x - K) := by
     rw [deriv_zero]
-    filter_upwards [fn_truncationElem hab u K, SobolevInterval.fn_ae_eq_repLp u] with x h1 h2
+    filter_upwards [fn_truncationElem hab u K, SobolevInterval.fn_ae_eq_rep u] with x h1 h2
     rw [h1, deriv_zero, h2]
   have hv₁ : (deriv v 1 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)]
       fun x ↦ 2 * max (deriv u 0 x - K) 0 * deriv u 1 x := by
-    filter_upwards [coeFn_deriv_truncationElem_one hab u K, SobolevInterval.fn_ae_eq_repLp u]
+    filter_upwards [coeFn_deriv_truncationElem_one hab u K, SobolevInterval.fn_ae_eq_rep u]
       with x h1 h2
     rw [h1, deriv_zero, h2]
   have i4 : Integrable (fun x ↦ γL x * deriv v 0 x) (volume.restrict (Ioo a b)) :=
@@ -528,10 +528,10 @@ theorem rep_le_of_le_of_isWeakSolution_neumann (hab : a < b)
     (by filter_upwards [h1] with x hx; rw [hx]; exact zero_le_one) f (K := K)
     (by filter_upwards [hf, h1] with x hx hx'; rw [hx', mul_one]; exact hx) (hu _)
   refine le_on_Icc_of_ae_le hab (continuousOn_rep hab.le u) ?_
-  filter_upwards [hB, h1, fn_truncationElem hab u K, SobolevInterval.fn_ae_eq_repLp u,
+  filter_upwards [hB, h1, fn_truncationElem hab u K, SobolevInterval.fn_ae_eq_rep u,
     ae_restrict_mem measurableSet_Ioo] with x hx hx1 hx2 hx3 hxI
   rw [hx1, one_mul, deriv_zero, deriv_zero, hx2, hx3] at hx
-  rw [SobolevInterval.rep_eq_repLp hab u (Ioo_subset_Icc_self hxI), ← sub_nonpos]
+  rw [← sub_nonpos]
   exact mul_truncation_eq_zero_iff.1 hx
 
 open SobolevInterval in

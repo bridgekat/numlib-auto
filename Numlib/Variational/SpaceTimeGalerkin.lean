@@ -100,7 +100,8 @@ theorem SobolevInterval.ae_eq_deriv_one_of_hasDerivAt {a b : ℝ} (hab : a < b) 
   have hw : HasWeakDerivOn (fn U) (SobolevInterval.deriv U 1) (Opens.Ioo a b) := by
     have := hasWeakDerivOn_deriv_succ U 0
     rwa [Fin.castSucc_zero, deriv_zero, Fin.succ_zero_eq_one] at this
-  have hint : IntegrableOn (SobolevInterval.deriv U 1) (Ioo a b) := integrableOn_deriv U 1
+  have hint : IntegrableOn (SobolevInterval.deriv U 1) (Ioo a b) :=
+    SobolevIntervalLp.integrableOn_deriv_Ioo U 1
   obtain ⟨g, hg, hUg, hgint⟩ := hw.exists_continuousOn_ae_eq hab hint
   have hfg : EqOn f g (Icc a b) := eqOn_Icc_of_ae_eq hab hf hg (hU.symm.trans hUg)
   have hii : IntervalIntegrable (SobolevInterval.deriv U 1) volume a b :=

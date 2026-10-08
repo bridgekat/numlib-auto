@@ -201,7 +201,7 @@ theorem dirichlet_stepC (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
           fun x ↦ SobolevInterval.fn Φ x - f x := by
   obtain ⟨Φ, hΦ, hΦ2⟩ := exists_sobolevInterval_two_of_forall_modelForm f hu.2
   refine ⟨?_, Φ, hΦ, hΦ2⟩
-  have := SobolevInterval.memSobolevInterval_fn Φ
+  have := SobolevIntervalLp.memSobolevIntervalLp_fn Φ
   rw [← SobolevInterval.fn_inclusionCLM Φ, hΦ] at this
   exact this
 

@@ -2818,7 +2818,7 @@ theorem seminorm_sub_quadraticInterp_le (hab : a < b) (hx : Spline.IsPartition a
       filter_upwards [(ae_restrict_iff' measurableSet_Ioo).1
           (Lp.coeFn_sub (SobolevInterval.deriv u₁ 1) (SobolevInterval.deriv w 1)),
         (ae_restrict_iff' measurableSet_Ioo).1 hderiv,
-        SobolevInterval.ae_deriv_rep_eq hab.le w] with t hcs hdf hdr htmem
+        SobolevInterval.ae_deriv_rep_eq w] with t hcs hdf hdr htmem
       have htab : t ∈ Ioo a b := hIoo m hm htmem
       have hev : SobolevInterval.rep w =ᶠ[nhds t] fun s ↦ (quadElemPoly x c m).eval s := by
         filter_upwards [Icc_mem_nhds htmem.1 htmem.2] with s hs

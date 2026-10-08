@@ -913,7 +913,8 @@ theorem _root_.SobolevInterval.sub_eq_integral_deriv_one {a b : ℝ} (hab : a < 
   have hw : HasWeakDerivOn (fn U) (SobolevInterval.deriv U 1) (TopologicalSpace.Opens.Ioo a b) := by
     have := hasWeakDerivOn_deriv_succ U 0
     rwa [Fin.castSucc_zero, deriv_zero, Fin.succ_zero_eq_one] at this
-  obtain ⟨g, hg, hUg, hgint⟩ := hw.exists_continuousOn_ae_eq hab (integrableOn_deriv U 1)
+  obtain ⟨g, hg, hUg, hgint⟩ :=
+    hw.exists_continuousOn_ae_eq hab (SobolevIntervalLp.integrableOn_deriv_Ioo U 1)
   have hfg : EqOn f g (Icc a b) := eqOn_Icc_of_ae_eq hab hf hg (hU.symm.trans hUg)
   rw [hfg hs, hfg ht]
   exact hgint s hs t ht

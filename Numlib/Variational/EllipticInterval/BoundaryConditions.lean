@@ -101,7 +101,7 @@ theorem SobolevInterval.rep_sub (hab : a < b) (u v : SobolevInterval 1 a b) :
   SobolevInterval.rep_eq_of_continuousOn hab (u - v)
     ((SobolevInterval.continuousOn_rep hab.le u).sub (SobolevInterval.continuousOn_rep hab.le v))
     ((Lp.coeFn_sub _ _).trans
-      ((SobolevInterval.fn_ae_eq_rep hab u).sub (SobolevInterval.fn_ae_eq_rep hab v)))
+      ((SobolevInterval.fn_ae_eq_rep u).sub (SobolevInterval.fn_ae_eq_rep v)))
 
 end Bridge
 
@@ -337,7 +337,7 @@ theorem _root_.MemSobolevInterval.sub {k : ℕ} {g h : ℝ → ℝ} (hg : MemSob
     (hh : MemSobolevInterval h k a b) : MemSobolevInterval (fun x ↦ g x - h x) k a b := by
   obtain ⟨G, hG⟩ := MemSobolevMultiIndex.exists_sobolevMultiIndex hg
   obtain ⟨H, hH⟩ := MemSobolevMultiIndex.exists_sobolevMultiIndex hh
-  refine (SobolevInterval.memSobolevInterval_fn (G - H)).congr_ae ?_
+  refine (SobolevIntervalLp.memSobolevIntervalLp_fn (G - H)).congr_ae ?_
   have e : SobolevInterval.fn (G - H) =ᵐ[volume.restrict (Ioo a b)]
       SobolevInterval.fn G - SobolevInterval.fn H := Lp.coeFn_sub _ _
   filter_upwards [e, hG, hH] with x h1 h2 h3
@@ -399,10 +399,12 @@ theorem modelForm_inclusionCLM_eq (hab : a < b) (Φ : SobolevInterval 2 a b)
   have green := integral_deriv_mul_add_mul_deriv hab U₁ v
   rw [intervalIntegral.integral_eq_setIntegral_Ioo hab.le] at green
   have i1 : IntegrableOn (fun t ↦ deriv U₁ 1 t * rep v t) (Ioo a b) :=
-    (integrableOn_deriv U₁ 1).mul_continuousOn_of_subset (continuousOn_rep hab.le v)
+    (SobolevIntervalLp.integrableOn_deriv_Ioo U₁ 1).mul_continuousOn_of_subset
+      (continuousOn_rep hab.le v)
       measurableSet_Ioo isCompact_Icc Ioo_subset_Icc_self
   have i2 : IntegrableOn (fun t ↦ rep U₁ t * deriv v 1 t) (Ioo a b) :=
-    (integrableOn_deriv v 1).continuousOn_mul_of_subset (continuousOn_rep hab.le U₁)
+    (SobolevIntervalLp.integrableOn_deriv_Ioo v 1).continuousOn_mul_of_subset
+      (continuousOn_rep hab.le U₁)
       isCompact_Icc measurableSet_Ioo Ioo_subset_Icc_self
   rw [integral_add i1 i2] at green
   -- the form as two integrals
@@ -414,21 +416,23 @@ theorem modelForm_inclusionCLM_eq (hab : a < b) (Φ : SobolevInterval 2 a b)
       add_comm]
     congr 1
     · refine integral_congr_ae ?_
-      filter_upwards [fn_ae_eq_rep hab U₁] with x hx
+      filter_upwards [fn_ae_eq_rep U₁] with x hx
       have hx' : (deriv U₁ 0 : ℝ → ℝ) x = rep U₁ x := hx
       simp only [RCLike.inner_apply, conj_trivial]
       rw [hx', mul_comm]
     · refine integral_congr_ae ?_
-      filter_upwards [fn_ae_eq_rep hab v] with x hx
+      filter_upwards [fn_ae_eq_rep v] with x hx
       have hx' : (deriv v 0 : ℝ → ℝ) x = rep v x := hx
       simp only [RCLike.inner_apply, conj_trivial]
       rw [hx', mul_comm]
       rfl
   have i3 : IntegrableOn (fun t ↦ fn Φ t * rep v t) (Ioo a b) :=
-    (integrableOn_deriv Φ 0).mul_continuousOn_of_subset (continuousOn_rep hab.le v)
+    (SobolevIntervalLp.integrableOn_deriv_Ioo Φ 0).mul_continuousOn_of_subset
+      (continuousOn_rep hab.le v)
       measurableSet_Ioo isCompact_Icc Ioo_subset_Icc_self
   have i4 : IntegrableOn (fun t ↦ deriv Φ 2 t * rep v t) (Ioo a b) :=
-    (integrableOn_deriv Φ 2).mul_continuousOn_of_subset (continuousOn_rep hab.le v)
+    (SobolevIntervalLp.integrableOn_deriv_Ioo Φ 2).mul_continuousOn_of_subset
+      (continuousOn_rep hab.le v)
       measurableSet_Ioo isCompact_Icc Ioo_subset_Icc_self
   have e1 : ∫ x in Ioo a b, (fn Φ x - deriv Φ 2 x) * rep v x
       = (∫ x in Ioo a b, fn Φ x * rep v x) - ∫ x in Ioo a b, deriv Φ 2 x * rep v x := by
@@ -451,7 +455,7 @@ theorem modelForm_inclusionCLM_eq_of_deriv_two (hab : a < b)
   rw [modelForm_inclusionCLM_eq hab Φ v, load_apply]
   congr 1
   refine integral_congr_ae ?_
-  filter_upwards [hΦ, fn_ae_eq_rep hab v] with x h1 h2
+  filter_upwards [hΦ, fn_ae_eq_rep v] with x h1 h2
   rw [h1, deriv_zero, h2]
   ring
 
@@ -930,7 +934,7 @@ theorem neumannLoad_apply (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)
     neumannLoad hab f α β v
       = load a b f v - α * SobolevInterval.rep v a + β * SobolevInterval.rep v b := by
   simp only [neumannLoad, add_apply, sub_apply, smul_apply, smul_eq_mul,
-    SobolevInterval.evalCLM_apply, SobolevInterval.toContinuousMap_apply]
+    SobolevInterval.evalCLM_apply]
 
 open SobolevInterval in
 /-- **Proposition 8.18 of [brezis2011functional] (the inhomogeneous Neumann problem)**: for
@@ -1001,7 +1005,7 @@ theorem robinForm_apply (hab : a < b) (k : ℝ) (u v : SobolevInterval 1 a b) :
       = modelForm a b u v + k * (SobolevInterval.rep u a * SobolevInterval.rep v a) := by
   simp only [robinForm, add_apply, smul_apply, ContinuousLinearMap.flip_apply,
     ContinuousLinearMap.comp_apply, smul_eq_mul, innerSL_apply_apply, RCLike.inner_apply,
-    conj_trivial, SobolevInterval.evalCLM_apply, SobolevInterval.toContinuousMap_apply]
+    conj_trivial, SobolevInterval.evalCLM_apply]
   ring
 
 /-- The Robin form is symmetric. -/

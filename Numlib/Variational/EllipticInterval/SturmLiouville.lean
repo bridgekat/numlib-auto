@@ -483,7 +483,7 @@ theorem exists_contDiffMapIcc_eigenfunction (h : Hypotheses a b p q α) (n : ℕ
   have hfL : (f : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)]
       fun x ↦ eigenvalue h n * rep (solution h f) x := by
     filter_upwards [Lp.coeFn_smul (eigenvalue h n) (eigenfunction h n),
-      fn_ae_eq_rep h.lt (solution h f)] with x h1 h2
+      fn_ae_eq_rep (solution h f)] with x h1 h2
     have h1' : f x = eigenvalue h n * eigenfunction h n x := by
       rw [hf, h1, Pi.smul_apply, smul_eq_mul]
     rw [h1', ← h2, ← SobolevInterval.deriv_zero, hTf]
@@ -496,7 +496,7 @@ theorem exists_contDiffMapIcc_eigenfunction (h : Hypotheses a b p q α) (n : ℕ
     rw [← he]; exact rep_ofContDiffMapIcc h.lt e
   refine ⟨e, ?_, ?_, ?_, fun x hx ↦ ?_⟩
   · rw [← hTf, SobolevInterval.deriv_zero]
-    filter_upwards [fn_ae_eq_rep h.lt (solution h f), ae_restrict_mem measurableSet_Ioo]
+    filter_upwards [fn_ae_eq_rep (solution h f), ae_restrict_mem measurableSet_Ioo]
       with x h1 h2
     rw [h1, hrep (Ioo_subset_Icc_self h2)]
   · rw [← hrep (left_mem_Icc.2 h.lt.le)]
@@ -635,7 +635,7 @@ theorem form_sinElem (n : ℕ) {v : SobolevInterval 1 0 1} (hv : v ∈ SobolevIn
       = -(((n : ℝ) + 1) * π) ^ 2 * ∫ x in Ioo (0 : ℝ) 1, sinUnitLp n x * deriv v 0 x := by
     rw [← integral_const_mul]
     refine integral_congr_ae ?_
-    filter_upwards [coeFn_sinUnitLp n, fn_ae_eq_rep zero_lt_one v] with x h1 h2
+    filter_upwards [coeFn_sinUnitLp n, fn_ae_eq_rep v] with x h1 h2
     rw [h1, deriv_zero, h2]
     ring
   rw [e1, ibp, e2]
