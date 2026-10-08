@@ -49,3 +49,7 @@ id = "Variational.dgConst"
 [[node]]
 id = "Variational.dG_error_sq_le"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the convergence estimate for discontinuous finite elements of degree r (quoted from Quarteroni–Valli §14.3.3)"
+
+[[node]]
+id = "Variational.dG_error_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 13.10.1'

@@ -38,10 +38,9 @@ an algorithm or a result and have no node.
 ## Readings
 
 The residual formula `‖r⁽ᵐ⁾‖₂ = |γ_{m+1} e_mᵀ y_m| ‖v_{m+1}‖₂` is stated, as the book's derivation
-needs, for a run of `m` steps without breakdown (`γ_2, …, γ_{m+1} ≠ 0`); the backbone's
-Hessenberg relation is stated for a process without *serious* breakdown at every step, and the
-`m`-step form is obtained here by padding the relation with zeros beyond column `m`
-(`hessenbergRelation_trunc`), which is worth moving to the backbone. The QMR bound (Saad,
+needs, for a run of `m` steps without breakdown (`γ_2, …, γ_{m+1} ≠ 0`), through the backbone's
+`m`-step Hessenberg relation `BiLanczos.NoBreakdown.hessenbergRelation₂`, which pads the relation
+with zeros beyond column `m`. The QMR bound (Saad,
 Proposition 7.3) is stated the same way, with the norm of the coordinate map `V_{m+1}` as an
 explicit constant.
 -/
@@ -252,49 +251,6 @@ section Method
 
 variable {A : Matrix (Fin n) (Fin n) ℝ} {v₁ z₁ : EuclideanSpace ℝ (Fin n)}
 
-open BiLanczos in
-/-- Everything strictly to the left of the subdiagonal of a column of the coefficient array
-collapses to the single `β_j` term. -/
-private theorem sum_coeff_lt (j : ℕ) :
-    ∑ i ∈ Finset.range j, coeff (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ i j •
-        vec (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ i =
-      beta (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ j •
-        vecPrev (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ j := by
-  cases j with
-  | zero => simp
-  | succ k =>
-    have hz : ∑ i ∈ Finset.range k, coeff (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ i (k + 1) •
-        vec (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ i = 0 :=
-      Finset.sum_eq_zero fun i hi => by
-        have hik : i < k := Finset.mem_range.1 hi
-        rw [coeff_eq_zero _ _ _ _ (by omega) (by omega) (by omega), zero_smul]
-    rw [Finset.sum_range_succ, hz, zero_add, coeff_self_succ, vecPrev_succ]
-
-open BiLanczos in
--- TODO(backbone): an `m`-step form of `BiLanczos.hessenbergRelation` under `NoBreakdown m`.
-/-- The `m`-step Hessenberg relation of the process: under `NoBreakdown m`, the first `m` columns
-of `A V = V T̄` hold, and padding the iterate basis and the coefficients with zeros beyond column
-`m - 1` gives a two-family Hessenberg relation to which the residual formulas of
-`Numlib/Krylov/Hessenberg` apply. -/
-private theorem hessenbergRelation_trunc {m : ℕ}
-    (h : NoBreakdown (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ m) :
-    Krylov.HessenbergRelation₂ (toEuclideanLin A)
-      (fun j => if j < m then vec (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ j else 0)
-      (vec (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁)
-      (fun i j => if j < m then coeff (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ i j else 0) where
-  apply_eq j := by
-    by_cases hj : j < m
-    · simp only [hj, ite_true]
-      rw [show j + 2 = j + 1 + 1 from rfl, Finset.sum_range_succ, Finset.sum_range_succ,
-        sum_coeff_lt, coeff_self, coeff_succ_self]
-      exact apply_vec _ _ _ _ (h.delta_ne_zero j hj)
-    · simp only [hj, ite_false, map_zero, zero_smul, Finset.sum_const_zero]
-  eq_zero_of_lt i j hij := by
-    by_cases hj : j < m
-    · simp only [hj, ite_true]
-      exact coeff_eq_zero_of_lt _ _ _ _ hij
-    · simp only [hj, ite_false]
-
 /-- The residual of `x₀ + ∑_j y_j v_j` under `NoBreakdown m`, expanded in the basis
 `v_1, …, v_{m+1}` with the coordinate vector `‖r⁽⁰⁾‖ e₁ - T̄_m y`. -/
 private theorem residual_eq_sum {b x₀ : EuclideanSpace ℝ (Fin n)} {β : ℝ}
@@ -304,7 +260,7 @@ private theorem residual_eq_sum {b x₀ : EuclideanSpace ℝ (Fin n)} {β : ℝ}
       ∑ i : Fin (m + 1), (β • e₁ (m + 1) - That A v₁ z₁ m *ᵥ y) i • blV A v₁ z₁ i := by
   have hv : ∀ k, blV A v₁ z₁ k = BiLanczos.vec (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ k :=
     fun k => (biLanczos_eq A v₁ z₁ k).2.1
-  have hrel := (hessenbergRelation_trunc h).residual_eq (β := β) (b := b) (x₀ := x₀)
+  have hrel := h.hessenbergRelation₂.residual_eq (β := β) (b := b) (x₀ := x₀)
     (by rw [hr]; rfl) m y
   have hz : ∑ j : Fin m, y j • (if (j : ℕ) < m then
       BiLanczos.vec (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ j else 0) =
@@ -352,7 +308,7 @@ theorem lanczosUnsym_norm_residual {b x₀ : EuclideanSpace ℝ (Fin n)}
       BiLanczos.coeff (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ v₁ i j else 0) m *ᵥ y =
       Krylov.firstVec ‖b - toEuclideanLin A x₀‖ m := by
     rw [hT, hy, smul_e₁_eq_firstVec]
-  have hres := (hessenbergRelation_trunc h).residual_eq_of_mulVec_eq (b := b) (x₀ := x₀)
+  have hres := h.hessenbergRelation₂.residual_eq_of_mulVec_eq (b := b) (x₀ := x₀)
     (show b - toEuclideanLin A x₀ = ‖b - toEuclideanLin A x₀‖ •
       BiLanczos.vec (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ v₁ 0 from hr') hm y hy'
   have hsum : ∑ j : Fin m, y j • (if (j : ℕ) < m then

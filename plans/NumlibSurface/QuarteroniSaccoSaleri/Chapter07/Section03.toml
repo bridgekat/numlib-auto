@@ -17,14 +17,6 @@ id = "isStronglyConvexOn_iff"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.49'
 
 [[node]]
-id = "strongConvexOn_isCoerciveFunctionalOn"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.10'
-
-[[node]]
-id = "existsUnique_isMinOn_of_strongConvexOn'"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.10'
-
-[[node]]
 id = "property_7_10"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.10'
 
@@ -67,14 +59,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 7.3'
 [[node]]
 id = "property_7_12"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.12'
-
-[[node]]
-id = "real_inner_eq_sum"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3'
-
-[[node]]
-id = "innerSL_eq_sum_smul_proj"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3'
 
 [[node]]
 id = "feasibleRegion"

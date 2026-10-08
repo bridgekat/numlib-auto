@@ -133,10 +133,6 @@ id = "psbBoundedDeterioration"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2.7'
 
 [[node]]
-id = "fderiv_eq_innerSL_gradient"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
-
-[[node]]
 id = "gradient_eq_toDual_symm_fderiv"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
 

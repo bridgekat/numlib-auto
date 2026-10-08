@@ -1,0 +1,5 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "card_roots_X_sq_sub_C"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.1'

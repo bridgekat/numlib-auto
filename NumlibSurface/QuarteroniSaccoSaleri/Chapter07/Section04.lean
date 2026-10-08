@@ -99,7 +99,7 @@ theorem equation_7_58 (hA : A.IsSymm) (u : EuclideanSpace ℝ (Fin n)) :
         : EuclideanSpace ℝ (Fin n) →L[ℝ] ℝ) = innerSL ℝ (semiconductorPhi K u) := by
       ext w
       simp [InnerProductSpace.toDual_apply_apply]
-    rw [h3, innerSL_eq_sum_smul_proj, Finset.smul_sum]
+    rw [h3, EuclideanSpace.innerSL_eq_sum_smul_proj, Finset.smul_sum]
     exact Finset.sum_congr rfl fun i _ => by rw [smul_smul]; rfl
   have hgrad : HasGradientAt (semiconductorFunctional A K b) (semiconductorSystem A K b u) u := by
     rw [hasGradientAt_iff_hasFDerivAt] at hquad hcosh ⊢

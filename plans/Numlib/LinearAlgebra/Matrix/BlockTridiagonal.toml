@@ -50,3 +50,7 @@ id = "IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one"
 
 [[node]]
 id = "tridiagonalLUMultiplier_eq_thomasBeta"
+
+[[node]]
+id = "IsBlockLU.toBlock_recurrence_of_blockTridiagonal"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.58)'

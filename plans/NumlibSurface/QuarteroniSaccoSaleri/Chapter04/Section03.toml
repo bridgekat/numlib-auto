@@ -61,10 +61,6 @@ id = "equation_4_29"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.29'
 
 [[node]]
-id = "posDef_pos_of_mem_spectrum"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Corollary 4.1'
-
-[[node]]
 id = "corollary_4_1"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Corollary 4.1'
 

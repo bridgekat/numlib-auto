@@ -3593,12 +3593,6 @@ theorem _root_.EuclideanSpace.eq_sum_single_smul (z : EuclideanSpace ℝ (Fin N)
   have := (EuclideanSpace.basisFun (Fin N) ℝ).sum_repr z
   simpa [EuclideanSpace.basisFun_repr, EuclideanSpace.basisFun_apply] using this.symm
 
-/-- The real inner product on `ℝ^N` is the sum of the products of the coordinates. -/
-theorem _root_.EuclideanSpace.real_inner_eq_sum (x y : EuclideanSpace ℝ (Fin N)) :
-    ⟪x, y⟫_ℝ = ∑ k, x k * y k := by
-  rw [PiLp.inner_apply]
-  exact Finset.sum_congr rfl fun k _ ↦ by simp [RCLike.inner_apply, mul_comm]
-
 /-- The chain rule for the inverse: `fderiv J (H y) ∘ fderiv H y = id` at a point of the source
 of a `C¹` diffeomorphism. -/
 theorem _root_.IsDiffeoOnWithBoundedJacobian.fderiv_invFun_comp_fderiv

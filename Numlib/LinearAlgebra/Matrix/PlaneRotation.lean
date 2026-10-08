@@ -6,6 +6,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.UnitaryGroup
@@ -475,6 +476,24 @@ theorem conj_planeRotation_apply_row_k (hjk : j ≠ k) (M : Matrix n n ℝ) {q :
     Ne.symm hjk]
 
 /-! ### The Givens pair -/
+
+/-- **A point of the unit circle is `(cos θ, sin θ)`**: a pair `(c, s)` with `c² + s² = 1` is the
+cosine and sine of some angle, so every rotation `planeRotation j k c s` with `c² + s² = 1` (in
+particular every Givens pair, `Matrix.givensPair_sq_add_sq`) is the rotation by an angle `θ`.
+The angle is `± arccos c`, with the sign of `s`. Upstreaming candidate (natural home Mathlib's
+`Mathlib/Analysis/SpecialFunctions/Trigonometric/Inverse`). -/
+theorem _root_.Real.exists_cos_eq_sin_eq {c s : ℝ} (h : c ^ 2 + s ^ 2 = 1) :
+    ∃ θ : ℝ, Real.cos θ = c ∧ Real.sin θ = s := by
+  have hc2 : c ^ 2 ≤ 1 := by nlinarith [sq_nonneg s]
+  have hc1 : -1 ≤ c := by nlinarith
+  have hc1' : c ≤ 1 := by nlinarith
+  have hsq : √(1 - c ^ 2) = |s| := by
+    rw [show 1 - c ^ 2 = s ^ 2 by linarith, Real.sqrt_sq_eq_abs]
+  rcases le_or_gt 0 s with hs | hs
+  · exact ⟨Real.arccos c, Real.cos_arccos hc1 hc1',
+      by rw [Real.sin_arccos, hsq, abs_of_nonneg hs]⟩
+  · exact ⟨-Real.arccos c, by rw [Real.cos_neg, Real.cos_arccos hc1 hc1'],
+      by rw [Real.sin_neg, Real.sin_arccos, hsq, abs_of_neg hs, neg_neg]⟩
 
 /-- The cosine and sine `(c, s) = (a, b) / √(a² + b²)` of the rotation whose transpose sends
 `(a, b)` to `(√(a² + b²), 0)`, and `(1, 0)` when `a = b = 0`: [quarteroni2000numerical] (5.44)

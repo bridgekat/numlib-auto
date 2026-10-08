@@ -69,23 +69,3 @@ id = "columns"
 deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
 
-[[node]]
-id = "gramSchmidtQ"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
-
-[[node]]
-id = "gramSchmidtR"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
-
-[[node]]
-id = "gramSchmidt_qr"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
-
-[[node]]
-id = "modifiedGramSchmidtSweep"
-deps = []
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
-
-[[node]]
-id = "modifiedGramSchmidtSweep_eq_sub_sum"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'

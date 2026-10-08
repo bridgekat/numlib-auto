@@ -350,14 +350,6 @@ theorem equation_4_29 (hM : (P⁻¹ * A).PosDef) {lmin lmax : ℝ}
   exact ⟨Splitting.complexSpectralRadius_one_sub_smul_optimal_eq_condNumber hM.1 hsub' hmin hmax
     hpos, Splitting.two_div_add_eq_mul_norm_inv_div_condNumber hM.1 hsub' hmin hmax hpos⟩
 
--- TODO(backbone): `Matrix.PosDef.pos_of_mem_spectrum`, beside `Matrix.PosDef.eigenvalues_pos`.
-/-- A real eigenvalue of a positive definite matrix is positive: it is one of the
-`Matrix.IsHermitian.eigenvalues`, all of which are positive. -/
-theorem posDef_pos_of_mem_spectrum (hA : A.PosDef) {μ : ℝ} (hμ : μ ∈ spectrum ℝ A) : 0 < μ := by
-  rw [hA.1.spectrum_real_eq_range_eigenvalues] at hμ
-  obtain ⟨i, rfl⟩ := hμ
-  exact hA.eigenvalues_pos i
-
 /-- **Corollary 4.1, the non preconditioned method.** Let `A` be symmetric positive definite, with
 extreme eigenvalues `λ_min(A)`, `λ_max(A)`. Then the non preconditioned stationary Richardson method
 (`P = I`) is convergent for `0 < α < 2/λ_max(A)` — the range Theorem 4.9 supplies and the
@@ -372,7 +364,7 @@ theorem corollary_4_1 (hA : A.PosDef) {lmin lmax : ℝ} (hsub : spectrum ℝ A �
       (richardsonStep A 1 α = fun b => affineStep (1 - α • A) (α • b)) ∧
       ∀ e : Fin n → ℝ, (A *ᵥ ((1 - α • A) *ᵥ e)) ⬝ᵥ ((1 - α • A) *ᵥ e) ≤
         (complexSpectralRadius (1 - α • A)).toReal ^ 2 * ((A *ᵥ e) ⬝ᵥ e) := by
-  have hpos : 0 < lmin := posDef_pos_of_mem_spectrum hA hmin
+  have hpos : 0 < lmin := (open scoped MatrixOrder in hA.isStrictlyPositive.spectrum_pos hmin)
   refine ⟨fun hα0 hα1 => ?_, ?_, fun e => ?_⟩
   · rw [forall_tendsto_richardsonStep_iff isUnit_one, inv_one, Matrix.one_mul]
     exact (Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff
@@ -600,7 +592,8 @@ extreme eigenvalues, `K₂(A) = λ_max/λ_min` (the sentence after Theorem 4.10;
 theorem condNumber_eq_div_of_posDef {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) {lmin lmax : ℝ}
     (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) : κ A = lmax / lmin :=
-  Splitting.condNumber_eq_div_of_spectrum hA.1 hsub hmin hmax (posDef_pos_of_mem_spectrum hA hmin)
+  Splitting.condNumber_eq_div_of_spectrum hA.1 hsub hmin hmax
+    (open scoped MatrixOrder in hA.isStrictlyPositive.spectrum_pos hmin)
 
 /-- **Theorem 4.10.** Let `A` be symmetric positive definite and `x` the solution of `A x = b`.
 Then the gradient method converges for any initial datum `x⁽⁰⁾`, and (4.38)
@@ -615,7 +608,7 @@ theorem theorem_4_10 [NeZero n] (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
       ∀ y, energyNorm (toEuclideanLin A) (x - gradientStep A b y) ≤
         (κ A - 1) / (κ A + 1) * energyNorm (toEuclideanLin A) (x - y) := by
   obtain ⟨lmin, lmax, hsub, hmin, hmax, hIcc⟩ := exists_extreme_eigenvalues hA.1
-  have hpos : 0 < lmin := posDef_pos_of_mem_spectrum hA hmin
+  have hpos : 0 < lmin := (open scoped MatrixOrder in hA.isStrictlyPositive.spectrum_pos hmin)
   have hle : lmin ≤ lmax := (hsub hmin).2
   have hB := hA.1.isSymmetricBoundedBy_toEuclideanLin hIcc
   have hκ : (κ A - 1) / (κ A + 1) = (lmax - lmin) / (lmax + lmin) := by
@@ -1073,7 +1066,7 @@ theorem theorem_4_12_bound [NeZero n] (hA : A.PosDef) {x : EuclideanSpace ℝ (F
         energyNorm (toEuclideanLin A) (x - x₀) := by
   have hA' := (posDef_isSymmetricCoercive_toEuclideanLin hA)
   obtain ⟨lmin, lmax, hsub, hmin, hmax, hIcc⟩ := exists_extreme_eigenvalues hA.1
-  have hpos : 0 < lmin := posDef_pos_of_mem_spectrum hA hmin
+  have hpos : 0 < lmin := (open scoped MatrixOrder in hA.isStrictlyPositive.spectrum_pos hmin)
   have hle : lmin ≤ lmax := (hsub hmin).2
   have hB := hA.1.isSymmetricBoundedBy_toEuclideanLin hIcc
   have hκ : κ A = lmax / lmin := condNumber_eq_div_of_posDef hA hsub hmin hmax
@@ -1616,13 +1609,6 @@ private theorem isUnit_add_smul_one_of_posDef {A : Matrix (Fin n) (Fin n) ℝ} (
     {r : ℝ} (hr : 0 < r) : IsUnit (A + r • (1 : Matrix (Fin n) (Fin n) ℝ)) :=
   (hA.add (Matrix.PosDef.one.smul hr)).isUnit
 
-/-- The complexified shift is nonsingular as well. -/
-private theorem isUnit_complexify_add_smul_one_of_posDef {A : Matrix (Fin n) (Fin n) ℝ}
-    (hA : A.PosDef) {r : ℝ} (hr : 0 < r) :
-    IsUnit (complexify A + (r : ℂ) • (1 : Matrix (Fin n) (Fin n) ℂ)) := by
-  rw [← complexify_one, ← complexify_smul, ← complexify_add, isUnit_complexify_iff]
-  exact isUnit_add_smul_one_of_posDef hA hr
-
 /-- **The display after (4.50), the identification with the backbone.** For `A₁`, `A₂` symmetric
 positive definite and `α₁, α₂ > 0`, the matrix `B` of the ADI method acts on `EuclideanSpace` as
 the two-parameter Peaceman–Rachford sweep operator `Stationary.peacemanRachfordTwo` with the
@@ -1649,50 +1635,6 @@ theorem equation_4_50 (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) (hα₁ : 0 < 
     rw [RCLike.ofReal_real_eq_id, id_eq, id_eq, hinv, hinv] at h
     rw [adiConst, ← toEuclideanCLM_toLp]
     exact h
-
-/-- The complexified ADI matrix acts on `EuclideanSpace ℂ (Fin n)` as the Peaceman–Rachford sweep
-operator of the complexified `A₁`, `A₂`. -/
-private theorem toEuclideanCLM_complexify_adiMatrix (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef)
-    (hα₁ : 0 < α₁) (hα₂ : 0 < α₂) :
-    toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify (adiMatrix A₁ A₂ α₁ α₂)) =
-      peacemanRachfordTwo (toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify A₁))
-        (toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify A₂)) (1 / α₁) (1 / α₂) := by
-  have h₁ : (1 / α₁ : ℝ) ≠ 0 := one_div_ne_zero hα₁.ne'
-  have h₂ : (1 / α₂ : ℝ) ≠ 0 := one_div_ne_zero hα₂.ne'
-  have hu₁ := isUnit_complexify_add_smul_one_of_posDef hA₁ (one_div_pos.mpr hα₁)
-  have hu₂ := isUnit_complexify_add_smul_one_of_posDef hA₂ (one_div_pos.mpr hα₂)
-  have hc : ∀ α : ℝ, (α : ℂ) = (((1 / α : ℝ) : ℂ))⁻¹ := fun α => by
-    rw [one_div, Complex.ofReal_inv, inv_inv]
-  rw [adiMatrix, complexify_mul, complexify_mul, complexify_mul, complexify_inv, complexify_inv,
-    complexify_add, complexify_add, complexify_sub, complexify_sub, complexify_smul,
-    complexify_smul, complexify_smul, complexify_smul, complexify_one, hc α₁, hc α₂]
-  exact toEuclideanCLM_adiMatrix_general _ _ h₁ h₂ hu₁ hu₂
-
-/-- The operator of a complexified real symmetric matrix with real spectrum in `[lmin, lmax]` has
-its quadratic form enclosed in `[lmin, lmax]`. -/
-private theorem isSymmetricBoundedBy_toEuclideanCLM_complexify {A : Matrix (Fin n) (Fin n) ℝ}
-    (hA : A.IsHermitian) {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) :
-    ((toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify A) :
-      EuclideanSpace ℂ (Fin n) →L[ℂ] EuclideanSpace ℂ (Fin n)) :
-        EuclideanSpace ℂ (Fin n) →ₗ[ℂ] EuclideanSpace ℂ (Fin n)).IsSymmetricBoundedBy
-          lmin lmax := by
-  rw [coe_toEuclideanCLM_eq_toEuclideanLin]
-  refine (LinearMap.IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue
-    (isSymmetric_toEuclideanLin_iff.mpr ((isHermitian_complexify_iff A).mpr hA)) lmin lmax).mpr
-    fun μ hμ => ?_
-  rw [hasEigenvalue_toEuclideanLin_iff] at hμ
-  obtain ⟨t, ht, rfl⟩ := hA.spectrum_complexify_subset hsub hμ
-  simpa using ht
-
-/-- The complex spectral radius of the ADI matrix is the spectral radius of the sweep operator. -/
-private theorem complexSpectralRadius_adiMatrix (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef)
-    (hα₁ : 0 < α₁) (hα₂ : 0 < α₂) :
-    complexSpectralRadius (adiMatrix A₁ A₂ α₁ α₂) =
-      spectralRadius ℂ (peacemanRachfordTwo (toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify A₁))
-        (toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify A₂)) (1 / α₁) (1 / α₂)) := by
-  rw [← toEuclideanCLM_complexify_adiMatrix A₁ A₂ α₁ α₂ hA₁ hA₂ hα₁ hα₂,
-    Matrix.complexSpectralRadius_eq_iSup, spectralRadius_eq_of_unital,
-    AlgEquiv.spectrum_eq (toEuclideanCLM (n := Fin n) (𝕜 := ℂ))]
 
 /-- The scalar identity behind the book's form of the ADI bound: for `t, α₁, α₂ > 0`,
 `|t - 1/α₂| / (t + 1/α₁) = (α₁/α₂) |1 - α₂ t| / (1 + α₁ t)`. -/
@@ -1785,8 +1727,9 @@ theorem adi_tendsto (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) {α : ℝ} (hα 
 /-- **§4.3.6, the last display.** If the eigenvalues of `A₁` and `A₂` all lie in `[γ, δ]`,
 `0 < γ ≤ δ`, then with `α₁ = α₂ = 1/√(δγ)` the ADI iteration matrix satisfies
 `ρ(B) ≤ ((1 - √(γ/δ))/(1 + √(γ/δ)))²` (backbone
-`Stationary.spectralRadius_peacemanRachford_le_of_spectrum_subset`). The book's proviso "provided
-`γ/δ` tends to `0` as the size of `A` grows" is not a hypothesis of the inequality. -/
+`Matrix.IsHermitian.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset`). The book's
+proviso "provided `γ/δ` tends to `0` as the size of `A` grows" is not a hypothesis of the
+inequality. -/
 theorem adi_spectralRadius_le_sq (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) {γ δ : ℝ} (hγ : 0 < γ)
     (hγδ : γ ≤ δ) (h₁ : ∀ i, hA₁.1.eigenvalues i ∈ Set.Icc γ δ)
     (h₂ : ∀ i, hA₂.1.eigenvalues i ∈ Set.Icc γ δ) :
@@ -1799,11 +1742,10 @@ theorem adi_spectralRadius_le_sq (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) {γ
     rw [hA.spectrum_real_eq_range_eigenvalues]
     rintro _ ⟨i, rfl⟩
     exact h i
-  rw [complexSpectralRadius_adiMatrix A₁ A₂ _ _ hA₁ hA₂ hr hr, one_div_one_div,
-    peacemanRachfordTwo_self, mul_comm δ γ]
-  exact spectralRadius_peacemanRachford_le_of_spectrum_subset hγ hγδ
-    (isSymmetricBoundedBy_toEuclideanCLM_complexify hA₁.1 (hsub hA₁.1 h₁))
-    (isSymmetricBoundedBy_toEuclideanCLM_complexify hA₂.1 (hsub hA₂.1 h₂))
+  have hc : (1 / √(δ * γ))⁻¹ = √(γ * δ) := by rw [one_div, inv_inv, mul_comm]
+  rw [adiMatrix, adiMatrix_eq_general A₁ A₂ hr.ne' hr.ne', hc]
+  exact hA₁.1.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset hA₂.1 hγ hγδ
+    (hsub hA₁.1 h₁) (hsub hA₂.1 h₂)
 
 end ADI
 

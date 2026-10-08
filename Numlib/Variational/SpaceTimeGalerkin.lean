@@ -1727,6 +1727,136 @@ theorem dG_error_sq_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
   rw [hgconst, hΦsq, hQ, hP, hKtr, hΦ₀, hK, hρ, dgConst]
   ring
 
+/-- `√(p + q) ≤ √p + √q` for `p, q ≥ 0`. -/
+private theorem sqrt_add_le_sqrt_add_sqrt {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
+    √(p + q) ≤ √p + √q := by
+  calc √(p + q) ≤ √((√p + √q) ^ 2) := by
+        refine Real.sqrt_le_sqrt ?_
+        rw [add_sq, Real.sq_sqrt hp, Real.sq_sqrt hq]
+        nlinarith [mul_nonneg (Real.sqrt_nonneg p) (Real.sqrt_nonneg q)]
+    _ = √p + √q := Real.sqrt_sq (by positivity)
+
+/-- `√p + √q ≤ √2 √(p + q)` for `p, q ≥ 0`. -/
+private theorem sqrt_add_sqrt_le_sqrt_two_mul {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
+    √p + √q ≤ √2 * √(p + q) := by
+  have hsq : (√p + √q) ^ 2 ≤ (√2 * √(p + q)) ^ 2 := by
+    rw [mul_pow, Real.sq_sqrt (by norm_num), Real.sq_sqrt (add_nonneg hp hq), add_sq,
+      Real.sq_sqrt hp, Real.sq_sqrt hq]
+    nlinarith [sq_nonneg (√p - √q), Real.sq_sqrt hp, Real.sq_sqrt hq]
+  exact (pow_le_pow_iff_left₀ (by positivity) (by positivity) two_ne_zero).1 hsq
+
+/-- **The error estimate of the discontinuous Galerkin method for the transport equation**
+([quarteroni2000numerical] §13.10.1, quoted there from Quarteroni–Valli §14.3.3 without proof):
+under the hypotheses of `Variational.dG_error_sq_le`, for every `t ∈ [0, T]`
+
+`‖u(t) - u_h(t)‖ + (∫₀ᵗ (‖u(τ) - u_h(τ)‖² + ∑_{j=1}^{n-1} a(x_j) [u_h(τ)]_j²
+    + a(x 0) (u_h⁺(x 0, τ) - φ(τ))²) dτ)^{1/2}
+  ≤ √2 (√(16 + 4/μ₀) ‖u₀ - u_{0,h}‖ + √dgConst h^{r+1/2})`,
+
+the book's `O(‖u₀ - u_{0,h}‖ + h^{r+1/2})` with explicit constants, `h^{r+1/2}` written `h^r √h`.
+From the squared form by `√p + √q ≤ √2 √(p + q)` and `√(p + q) ≤ √p + √q`. -/
+theorem dG_error_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
+    (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
+    (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
+    (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
+    (hd' : ContinuousOn (deriv a) (Icc (x 0) (x (Fin.last n))))
+    {μ₀ : ℝ} (hμ : 0 < μ₀)
+    (hμ₀ : ∀ t ∈ Icc 0 T, ∀ s ∈ Icc (x 0) (x (Fin.last n)), μ₀ ≤ a₀ s t - deriv a s / 2)
+    (hapos : ∀ s ∈ Icc (x 0) (x (Fin.last n)), 0 ≤ a s) {A A' A₀ : ℝ}
+    (hA : ∀ s ∈ Icc (x 0) (x (Fin.last n)), |a s| ≤ A)
+    (hA' : ∀ s ∈ Icc (x 0) (x (Fin.last n)), |deriv a s| ≤ A')
+    (hA₀ : ∀ t ∈ Icc 0 T, ∀ s ∈ Icc (x 0) (x (Fin.last n)), |a₀ s t| ≤ A₀)
+    {u ux ut f : ℝ → ℝ → ℝ} {φ : ℝ → ℝ}
+    (huc2 : ContinuousOn (fun p : ℝ × ℝ => u p.1 p.2) (Icc (x 0) (x (Fin.last n)) ×ˢ Icc 0 T))
+    (hux : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
+      HasDerivWithinAt (fun y => u y t) (ux y t) (Icc (x 0) (x (Fin.last n))) y)
+    (hut : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
+      HasDerivWithinAt (fun t => u y t) (ut y t) (Icc 0 T) t)
+    (hutc2 : ContinuousOn (fun p : ℝ × ℝ => ut p.1 p.2) (Icc (x 0) (x (Fin.last n)) ×ˢ Icc 0 T))
+    (hpde : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
+      ut y t + a y * ux y t + a₀ y t * u y t = f y t)
+    (hin : ∀ t ∈ Icc 0 T, u (x 0) t = φ t) {M : ℝ}
+    (hreg : ∀ t ∈ Icc 0 T, ∃ U : SobolevInterval (r + 1) (x 0) (x (Fin.last n)),
+      SobolevInterval.fn U =ᵐ[volume.restrict (Ioo (x 0) (x (Fin.last n)))] (fun y => u y t) ∧
+        SobolevInterval.seminorm (r + 1) (x 0) (x (Fin.last n)) U ≤ M)
+    {node : Fin n → Fin (r + 1) → ℝ} (hnode : IsNodes x r node) {h hmin : ℝ}
+    (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h) (h0 : 0 < hmin)
+    (hminle : ∀ i : Fin n, hmin ≤ x i.succ - x i.castSucc)
+    {fh : ℝ → BrokenPolynomial x r}
+    (hfh : ∀ t ∈ Icc 0 T, ∀ v, ⟪fh t, v⟫ = pairing (fun y => f y t) v)
+    {u₀h : BrokenPolynomial x r} {uh : ℝ → BrokenPolynomial x r}
+    (huh : IsSemidiscreteGalerkin (fun t => dgUpwindForm x r ha (ha₀ t))
+      (fun t => innerSL ℝ (fh t) + (a (x 0) * φ t) • traceRightL x r ⟨0, hn⟩) u₀h T uh)
+    {t : ℝ} (ht : t ∈ Icc 0 T) :
+    √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2)
+      + √(∫ τ in (0 : ℝ)..t, ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
+          + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n), a (x i.castSucc) * jump (uh τ) i ^ 2)
+          + a (x 0) * (traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2))
+    ≤ √2 * (√(16 + 4 / μ₀) * √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2)
+        + √(dgConst r A A' A₀ μ₀ T M h hmin) * (h ^ r * √h)) := by
+  have hm : Monotone x := hx.out.monotone
+  have hab : x 0 < x (Fin.last n) := hx.out (Fin.pos_iff_ne_zero.2 (Fin.ne_of_val_ne hn.ne'))
+  have hle : ∀ i : Fin n, x i.castSucc ≤ x i.succ := fun i => hm (Fin.castSucc_lt_succ (i := i)).le
+  have hh : 0 ≤ h := (sub_nonneg.2 (hle ⟨0, hn⟩)).trans (hmesh ⟨0, hn⟩)
+  have hT0 : (0 : ℝ) ∈ Icc 0 T := ⟨le_rfl, hT.le⟩
+  obtain ⟨U₀, hU₀, hU₀M⟩ := hreg 0 hT0
+  have hM : 0 ≤ M := (apply_nonneg _ _).trans hU₀M
+  have hA0 : 0 ≤ A := (abs_nonneg _).trans (hA (x 0) (left_mem_Icc.2 hab.le))
+  have hA'0 : 0 ≤ A' := (abs_nonneg _).trans (hA' (x 0) (left_mem_Icc.2 hab.le))
+  have hA₀0 : 0 ≤ A₀ := (abs_nonneg _).trans (hA₀ 0 hT0 (x 0) (left_mem_Icc.2 hab.le))
+  have key := dG_error_sq_le hn hT ha ha₀ hd hd' hμ hμ₀ hapos hA hA' hA₀ huc2 hux hut hutc2 hpde
+    hin hreg hnode hmesh h0 hminle hfh huh ht
+  -- nonnegativity of the pieces
+  have hY₀ : 0 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2 :=
+    Finset.sum_nonneg fun i _ => intervalIntegral.integral_nonneg (hle i) fun _ _ => sq_nonneg _
+  have hI : 0 ≤ ∫ τ in (0 : ℝ)..t,
+      ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
+        + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
+            a (x i.castSucc) * jump (uh τ) i ^ 2)
+        + a (x 0) * (traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2) := by
+    refine intervalIntegral.integral_nonneg ht.1 fun τ _ => ?_
+    have h1 : 0 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2 :=
+      Finset.sum_nonneg fun i _ => intervalIntegral.integral_nonneg (hle i) fun _ _ => sq_nonneg _
+    have h2 : 0 ≤ ∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
+        a (x i.castSucc) * jump (uh τ) i ^ 2 :=
+      Finset.sum_nonneg fun i _ => mul_nonneg
+        (hapos _ (Icc_panel_subset hm i (left_mem_Icc.2 (hle i)))) (sq_nonneg _)
+    have h3 : 0 ≤ a (x 0) * (traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2 :=
+      mul_nonneg (hapos _ (left_mem_Icc.2 hab.le)) (sq_nonneg _)
+    linarith
+  have hYi : 0 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2 :=
+    Finset.sum_nonneg fun i _ => intervalIntegral.integral_nonneg (hle i) fun _ _ => sq_nonneg _
+  have hC₁ : 0 ≤ 16 + 4 / μ₀ := by positivity
+  have hC₂ : 0 ≤ dgConst r A A' A₀ μ₀ T M h hmin := by
+    unfold dgConst
+    positivity
+  have hpow : √(h ^ (2 * r + 1)) = h ^ r * √h := by
+    rw [show h ^ (2 * r + 1) = (h ^ r) ^ 2 * h by rw [pow_succ, pow_mul'],
+      Real.sqrt_mul (sq_nonneg _), Real.sqrt_sq (pow_nonneg hh r)]
+  calc √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2)
+        + √(∫ τ in (0 : ℝ)..t,
+          ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
+          + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
+              a (x i.castSucc) * jump (uh τ) i ^ 2)
+          + a (x 0) * (traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2))
+      ≤ √2 * √((∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2)
+          + ∫ τ in (0 : ℝ)..t,
+          ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
+          + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
+              a (x i.castSucc) * jump (uh τ) i ^ 2)
+          + a (x 0) * (traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2)) :=
+        sqrt_add_sqrt_le_sqrt_two_mul hY₀ hI
+    _ ≤ √2 * √((16 + 4 / μ₀) * (∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2)
+          + dgConst r A A' A₀ μ₀ T M h hmin * h ^ (2 * r + 1)) :=
+        mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt key) (Real.sqrt_nonneg _)
+    _ ≤ √2 * (√((16 + 4 / μ₀) * (∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2))
+          + √(dgConst r A A' A₀ μ₀ T M h hmin * h ^ (2 * r + 1))) :=
+        mul_le_mul_of_nonneg_left (sqrt_add_le_sqrt_add_sqrt (by positivity) (by positivity))
+          (Real.sqrt_nonneg _)
+    _ = √2 * (√(16 + 4 / μ₀) * √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2)
+          + √(dgConst r A A' A₀ μ₀ T M h hmin) * (h ^ r * √h)) := by
+        rw [Real.sqrt_mul hC₁, Real.sqrt_mul hC₂, hpow]
+
 end DGTimeDependent
 
 end Variational

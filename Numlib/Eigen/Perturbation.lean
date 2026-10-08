@@ -569,8 +569,10 @@ The branch is assumed here and constructed in
 together with the simplicity of `λ`. -/
 
 /-- **The derivative of a simple eigenvalue** ([saad2011numerical], §3.2.1): along a differentiable
-branch `t ↦ (μ t, u t)` of eigenpairs of `A + t B`, with `w` a left eigenvector of `A` for `λ = μ 0`
-not orthogonal to `u 0`, the eigenvalue's derivative at `0` is `⟪w, B (u 0)⟫ / ⟪w, u 0⟫`.
+branch `t ↦ (μ t, u t)` of eigenpairs of `A + t B` — the eigen-relation needed only for `t` near
+`0`, which is what `Module.End.hasDerivAt_eigenvalue_perturbation` supplies — with `w` a left
+eigenvector of `A` for `λ = μ 0` not orthogonal to `u 0`, the eigenvalue's derivative at `0` is
+`⟪w, B (u 0)⟫ / ⟪w, u 0⟫`.
 
 The left-eigenvector hypothesis is stated as `⟪w, A y⟫ = λ ⟪w, y⟫` for every `y`, which is what the
 proof tests the differentiated eigenvalue equation against; it is equivalent to `A† w = conj λ • w`
@@ -581,7 +583,7 @@ u 0`, and testing against `w` cancels the two terms carrying the unknown `u'`. -
 theorem deriv_eigenvalue_perturbation {A B : E →L[𝕜] E} {u : 𝕜 → E}
     {mu : 𝕜 → 𝕜} {u' : E} {mu' lam : 𝕜} {w : E}
     (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
-    (heig : ∀ t, A (u t) + t • B (u t) = mu t • u t)
+    (heig : ∀ᶠ t in nhds 0, A (u t) + t • B (u t) = mu t • u t)
     (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = lam * inner 𝕜 w y) (hlam : mu 0 = lam)
     (hne : (inner 𝕜 w (u 0) : 𝕜) ≠ 0) :
     mu' = inner 𝕜 w (B (u 0)) / inner 𝕜 w (u 0) := by
@@ -596,7 +598,7 @@ theorem deriv_eigenvalue_perturbation {A B : E →L[𝕜] E} {u : 𝕜 → E}
     exact h
   have hf : HasDerivAt (fun t : 𝕜 => mu t • u t) (A u' + B (u 0)) 0 :=
     HasDerivAt.congr_of_eventuallyEq (HasDerivAt.add h1 h3)
-      (Filter.Eventually.of_forall fun t => (heig t).symm)
+      (heig.mono fun t ht => ht.symm)
   have hderiv : A u' + B (u 0) = mu 0 • u' + mu' • u 0 :=
     hf.unique (HasDerivAt.smul hmu hu)
   have htest := congrArg (fun y : E => (inner 𝕜 w y : 𝕜)) hderiv
@@ -613,7 +615,7 @@ No normalization of `u 0` or of `w` is needed: both sides are scale invariant. -
 theorem norm_deriv_eigenvalue_perturbation_le {A B : E →L[𝕜] E} {u : 𝕜 → E}
     {mu : 𝕜 → 𝕜} {u' : E} {mu' lam : 𝕜} {w : E}
     (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
-    (heig : ∀ t, A (u t) + t • B (u t) = mu t • u t)
+    (heig : ∀ᶠ t in nhds 0, A (u t) + t • B (u t) = mu t • u t)
     (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = lam * inner 𝕜 w y) (hlam : mu 0 = lam)
     (hne : (inner 𝕜 w (u 0) : 𝕜) ≠ 0) :
     ‖mu'‖ ≤ ‖B‖ * eigenvalueCondNumber 𝕜 (u 0) w := by

@@ -158,3 +158,6 @@ id = "adjacentEmbed"
 
 [[node]]
 id = "planeReflector"
+
+[[node]]
+id = "_root_.Real.exists_cos_eq_sin_eq"

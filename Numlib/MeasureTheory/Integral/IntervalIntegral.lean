@@ -42,7 +42,9 @@ interval `(a, b)`, none of which is about any particular numerical method:
   `intervalIntegrable_sub_sq`);
 * **Poincaré's inequality in classical form**, `∫_a^b v² ≤ (b - a)²/2 ∫_a^b (v')²` for a `C¹`
   function vanishing at the left endpoint
-  (`intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`);
+  (`intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`), from the Cauchy–Schwarz
+  bound on an increment, `(v(b) - v(a))² ≤ (b - a) ∫_a^b (v')²`
+  (`intervalIntegral.sq_sub_le_mul_integral_sq_of_hasDerivAt`);
 * the primitive `x ↦ ∫_a^x w` of a function integrable on `(a, b)` is continuous on `[a, b]`
   (`intervalIntegral.continuousOn_integral_of_integrableOn_Ioo`) and, for `w` continuous, has right
   derivative `w` on `[a, b)` (`intervalIntegral.hasDerivWithinAt_integral_Ici`,
@@ -303,6 +305,22 @@ end CauchySchwarz
 
 /-! ### Poincaré's inequality on an interval, classical form -/
 
+/-- **Cauchy–Schwarz for the increment of a `C¹` function**: `(v(b) - v(a))² ≤ (b - a) ∫_a^b (v')²`
+for `v` continuous on `[a, b]` with a continuous derivative `v'` inside, from
+`v(b) - v(a) = ∫_a^b v'` and `intervalIntegral.sq_integral_mul_le_of_continuousOn` against `1`.
+The pointwise step of Poincaré's inequality
+`intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`. -/
+theorem intervalIntegral.sq_sub_le_mul_integral_sq_of_hasDerivAt {a b : ℝ} (hab : a ≤ b)
+    {v vx : ℝ → ℝ} (hv : ContinuousOn v (Icc a b)) (hvx : ContinuousOn vx (Icc a b))
+    (hd : ∀ x ∈ Ioo a b, HasDerivAt v (vx x) x) :
+    (v b - v a) ^ 2 ≤ (b - a) * ∫ x in a..b, vx x ^ 2 := by
+  have hftc : ∫ x in a..b, vx x = v b - v a :=
+    integral_eq_sub_of_hasDerivAt_of_le hab hv hd (hvx.intervalIntegrable_of_Icc hab)
+  have hcs := intervalIntegral.sq_integral_mul_le_of_continuousOn hab (f := fun _ => (1 : ℝ))
+    (g := vx) continuousOn_const hvx
+  simp only [one_mul, one_pow, intervalIntegral.integral_const, smul_eq_mul, mul_one] at hcs
+  rwa [hftc] at hcs
+
 /-- **Poincaré's inequality on an interval, classical form**: for a `C¹` function `v` on
 `[a, b]` vanishing at the left endpoint, `∫_a^b v² ≤ (b - a)²/2 ∫_a^b (v')²`. Since
 `v(y) = ∫_a^y v'`, Cauchy–Schwarz against `1` gives `v(y)² ≤ (y - a) ∫_a^b (v')²`, and
@@ -313,23 +331,12 @@ theorem intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero {a b : ℝ
     (hd : ∀ x ∈ Ioo a b, HasDerivAt v (vx x) x) (hva : v a = 0) :
     (∫ x in a..b, v x ^ 2) ≤ (b - a) ^ 2 / 2 * ∫ x in a..b, vx x ^ 2 := by
   set K := ∫ x in a..b, vx x ^ 2 with hK
-  have hvxint : ∀ y ∈ Icc a b, IntervalIntegrable vx volume a y := fun y hy =>
-    (hvx.mono (Icc_subset_Icc le_rfl hy.2)).intervalIntegrable_of_Icc hy.1
-  have hrep : ∀ y ∈ Icc a b, v y = ∫ x in a..y, vx x := by
-    intro y hy
-    have h := integral_eq_sub_of_hasDerivAt_of_le hy.1 (hv.mono (Icc_subset_Icc le_rfl hy.2))
-      (fun x hx => hd x ⟨hx.1, lt_of_lt_of_le hx.2 hy.2⟩) (hvxint y hy)
-    rw [h, hva, sub_zero]
   have hbound : ∀ y ∈ Icc a b, v y ^ 2 ≤ (y - a) * K := by
     intro y hy
-    have hcs := intervalIntegral.sq_integral_mul_le_of_continuousOn (g := vx)
-      (f := fun _ => (1 : ℝ)) hy.1 continuousOn_const (hvx.mono (Icc_subset_Icc le_rfl hy.2))
-    have h1 : (∫ x in a..y, (1 : ℝ) * vx x) = v y := by
-      rw [hrep y hy]
-      exact integral_congr fun x _ => one_mul _
-    have h2 : (∫ x in a..y, (1 : ℝ) ^ 2) = y - a := by
-      simp
-    rw [h1, h2] at hcs
+    have hcs := intervalIntegral.sq_sub_le_mul_integral_sq_of_hasDerivAt hy.1
+      (hv.mono (Icc_subset_Icc le_rfl hy.2)) (hvx.mono (Icc_subset_Icc le_rfl hy.2))
+      fun x hx => hd x ⟨hx.1, lt_of_lt_of_le hx.2 hy.2⟩
+    rw [hva, sub_zero] at hcs
     have i1 : IntervalIntegrable (fun x => vx x ^ 2) volume a y :=
       ((hvx.mono (Icc_subset_Icc le_rfl hy.2)).pow 2).intervalIntegrable_of_Icc hy.1
     have i2 : IntervalIntegrable (fun x => vx x ^ 2) volume y b :=

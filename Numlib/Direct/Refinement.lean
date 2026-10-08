@@ -135,6 +135,77 @@ theorem forall_tendsto_iff_spectralRadius_lt_one [FiniteDimensional ℂ F] {C A 
 
 end Refinement
 
+/-! ### Iterative refinement on real matrices
+
+The matrix form `x ↦ x + C (b - A x)` of `Refinement.step`, for real square matrices: its error
+recursion and the convergence criterion `ρ(I - C A) < 1` in terms of the complex spectral radius
+of `Numlib/LinearAlgebra/Matrix/Complexify`. Unlike
+`Refinement.forall_tendsto_iff_spectralRadius_lt_one` no surjectivity of `C` is needed, because the
+convergence asked for is to one limit independent of the start. -/
+
+namespace Refinement
+
+open Matrix
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι]
+
+/-- **Error propagation for the matrix refinement step** ([quarteroni2000numerical] §3.12.2): for a
+solution `x*` of `A x* = b`, the iterates of `x ↦ x + C (b - A x)` satisfy
+`x⁽ᵏ⁾ - x* = (I - C A)ᵏ (x⁽⁰⁾ - x*)`. -/
+theorem iterate_sub_eq_mulVec (C A : Matrix ι ι ℝ) {b xs : ι → ℝ} (hxs : A *ᵥ xs = b)
+    (x₀ : ι → ℝ) (k : ℕ) :
+    (fun x => x + C *ᵥ (b - A *ᵥ x))^[k] x₀ - xs = ((1 - C * A) ^ k) *ᵥ (x₀ - xs) := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [Function.iterate_succ_apply', pow_succ', ← mulVec_mulVec, ← ih]
+    generalize (fun x => x + C *ᵥ (b - A *ᵥ x))^[k] x₀ = y
+    rw [← hxs]
+    simp only [sub_mulVec, one_mulVec, ← mulVec_mulVec, mulVec_sub]
+    abel
+
+/-- **Convergence of iterative refinement iff `ρ(I - C A) < 1`** ([quarteroni2000numerical]
+§3.12.2 with Theorem 1.5): for real square matrices, the iterates of `x ↦ x + C (b - A x)`
+converge, for every right-hand side `b`, to one limit independent of the start iff the spectral
+radius of `I - C A` is less than one. The "only if" takes `b = 0` and compares the iterates from
+`v` and from `0`, whose difference is `(I - C A)ᵏ v`; the "if" makes `C A` and hence `A`
+nonsingular, the limit being `A⁻¹ b`. -/
+theorem forall_exists_forall_tendsto_iff_complexSpectralRadius_lt_one (C A : Matrix ι ι ℝ) :
+    (∀ b : ι → ℝ, ∃ x, ∀ x₀,
+        Tendsto (fun k => (fun x => x + C *ᵥ (b - A *ᵥ x))^[k] x₀) atTop (𝓝 x)) ↔
+      complexSpectralRadius (1 - C * A) < 1 := by
+  constructor
+  · intro h
+    obtain ⟨x, hx⟩ := h 0
+    rw [← tendsto_pow_iff_complexSpectralRadius_lt_one,
+      tendsto_zero_iff_forall_mulVec_tendsto_zero]
+    intro v
+    have hv := (hx v).sub (hx 0)
+    rw [sub_self] at hv
+    have key : ∀ k, (fun x => x + C *ᵥ (0 - A *ᵥ x))^[k] v -
+        (fun x => x + C *ᵥ (0 - A *ᵥ x))^[k] 0 = ((1 - C * A) ^ k) *ᵥ v := by
+      intro k
+      have h1 := iterate_sub_eq_mulVec C A (xs := 0) (mulVec_zero A) v k
+      have h2 := iterate_sub_eq_mulVec C A (xs := 0) (mulVec_zero A) 0 k
+      rw [sub_zero, sub_zero] at h1
+      rw [sub_zero, sub_zero, mulVec_zero] at h2
+      rw [h1, h2, sub_zero]
+    simpa only [key] using hv
+  · intro h b
+    have hu : IsUnit (C * A) := by
+      have := isUnit_one_sub_of_complexSpectralRadius_lt_one h
+      rwa [sub_sub_cancel] at this
+    have hA : IsUnit A := (isUnit_iff_isUnit_det A).2
+      (isUnit_of_mul_isUnit_right (by rw [← det_mul]; exact (isUnit_iff_isUnit_det _).1 hu))
+    refine ⟨A⁻¹ *ᵥ b, fun x₀ => ?_⟩
+    rw [← tendsto_sub_nhds_zero_iff]
+    have hpow := (tendsto_pow_iff_complexSpectralRadius_lt_one _).2 h
+    rw [tendsto_zero_iff_forall_mulVec_tendsto_zero] at hpow
+    simpa only [iterate_sub_eq_mulVec C A (mulVec_nonsing_inv_mulVec hA b) x₀] using
+      hpow (x₀ - A⁻¹ *ᵥ b)
+
+end Refinement
+
 /-! ### The error of one computed refinement step
 
 `Refinement.step` is the step in exact arithmetic; what an implementation computes is something

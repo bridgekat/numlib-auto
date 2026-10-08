@@ -64,6 +64,3 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.8.3, Method 3 
 id = "integral_taylorSum_div_rpow"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.48) and (9.51), the common closed form'
 
-[[node]]
-id = "contDiffOn_div_rpow"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.8.2, smoothness of `f` on `[a + ε, b]`'

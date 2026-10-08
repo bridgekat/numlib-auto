@@ -247,18 +247,15 @@ cites [Dem97] for an *unreduced* Hessenberg `T⁽⁰⁾`; that hypothesis is not
 what makes the QR factorization of the singular matrix `T − λ I` unique in [Dem97]'s discussion,
 and the nonsingularity hypothesis `hreg` (the shift is never exactly an eigenvalue, the generic
 case in which the book's algorithm and `Matrix.qrQ` agree) replaces it. (iii) The constants
-depend on `λ`'s conditioning: `c` is `4 K C² A'² ‖A‖₂` with `K` the bound of the resolvent of
-`Aᵀ − λ` on the complement of the right eigenvector, `C = ‖A‖₂ + |λ|` and
-`A' = 2 K (1 + ‖x‖ ‖y‖)` for the left and right eigenvectors normalized by `yᵀ x = 1`.
+depend on `λ`'s conditioning, through the resolvent of `Aᵀ − λ` on the complement of the right
+eigenvector.
 
-Backbone: `Matrix.abs_shiftedQrStep_last_le_of_conj` (one step, on the Hessenberg orthogonal
-conjugate `T⁽ᵏ⁾ = Qᵀ A Q` of `equation_5_53_eq_conj`), whose proof is the identification of the
-last row of a shifted QR step with a step of Rayleigh quotient iteration on `Tᵀ` from `e_n`
-(`Matrix.toEuclideanLin_transpose_euclideanCol_qrQ_last`) and the local quadratic convergence of
-that iteration at a simple eigenvalue (`Krylov.norm_sub_inner_smul_le_sq_mul_norm`);
-`Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one` supplies the eigenvectors and `K`
-from the simplicity of `λ`, and `Matrix.isUpperHessenberg_rayleighShiftQrIterate` the Hessenberg
-form of every iterate. -/
+Backbone: `Matrix.exists_abs_isShiftedQrStep_last_le_sq` (the local quadratic bound of one
+single-shift step on a Hessenberg orthogonal conjugate `T⁽ᵏ⁾ = Qᵀ A Q`, `equation_5_53_eq_conj`),
+whose proof identifies the last row of a shifted QR step with a step of Rayleigh quotient
+iteration on `Tᵀ` from `e_n`; `Matrix.isUpperHessenberg_rayleighShiftQrIterate` gives the
+Hessenberg form of every iterate. The constant here is `c = (|C| + 1) ‖T⁽⁰⁾‖₂` for the backbone's
+`C`, and `ε₀` is chosen so that `ε₀ ‖T⁽⁰⁾‖₂` lies below the backbone's radius and `c ε₀ ≤ 1`. -/
 theorem equation_5_53_quadratic {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hA : A.IsUpperHessenberg) {lam : ℝ} (hlam : A.charpoly.rootMultiplicity lam = 1)
     (hreg : ∀ k, IsUnit (equation_5_53 A k -
@@ -271,8 +268,7 @@ theorem equation_5_53_quadratic {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
             c * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 / ‖A‖ ∧
           |equation_5_53 A (k + 1) (Fin.last (N + 1)) (Fin.last (N + 1)) - lam| ≤
             c * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 / ‖A‖ := by
-  obtain ⟨x, y, K, hx, hy, hyx, hK, hKw⟩ :=
-    Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one hlam
+  obtain ⟨C, δ, hδ, hstep⟩ := Matrix.exists_abs_isShiftedQrStep_last_le_sq hlam
   -- the starting matrix is not zero, its shifted form being nonsingular
   have hA0 : 0 < ‖A‖ := by
     rcases (norm_nonneg A).lt_or_eq with h | h
@@ -282,72 +278,34 @@ theorem equation_5_53_quadratic {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
       have hu := hreg 0
       rw [show equation_5_53 A 0 = A from rfl, hA', Matrix.zero_apply, zero_smul, sub_zero] at hu
       exact not_isUnit_zero hu
-  -- the constants
-  set C : ℝ := ‖A‖ + |lam| with hCdef
-  have hC0 : 0 < C := by positivity
-  have hCz : ∀ z : EuclideanSpace ℝ (Fin (N + 2)),
-      ‖toEuclideanLin Aᵀ z - lam • z‖ ≤ C * ‖z‖ := fun z => by
-    calc ‖toEuclideanLin Aᵀ z - lam • z‖ ≤ ‖toEuclideanLin Aᵀ z‖ + ‖lam • z‖ := norm_sub_le _ _
-      _ ≤ ‖Aᵀ‖ * ‖z‖ + |lam| * ‖z‖ := by
-        gcongr
-        · exact norm_toEuclideanLin_apply_le _ _
-        · rw [norm_smul, Real.norm_eq_abs]
-      _ = C * ‖z‖ := by
-        rw [← conjTranspose_eq_transpose_of_trivial, l2_opNorm_conjTranspose]
-        ring
-  set A' : ℝ := 2 * K * (1 + ‖x‖ * ‖y‖) with hA'def
-  have hA'0 : 0 < A' := by positivity
-  set c₁ : ℝ := 4 * K * C ^ 2 * A' ^ 2 with hc₁def
-  have hc₁ : 0 < c₁ := by positivity
-  set D : ℝ := 4 * A' + 2 * K * C * A' + 2 * K + c₁ with hDdef
-  have hD : 0 < D := by positivity
-  have hKCA : 0 ≤ 2 * K * C * A' := by positivity
   -- every iterate is upper Hessenberg
   have hess : ∀ k, (equation_5_53 A k).IsUpperHessenberg := fun k => by
     rw [equation_5_53_eq]
     refine Matrix.isUpperHessenberg_rayleighShiftQrIterate hA (fun j => ?_) k
     rw [← equation_5_53_eq]
     exact hreg j
-  refine ⟨c₁ * ‖A‖, 1 / (D * ‖A‖), by positivity, by positivity, ?_, fun k ht hd => ?_⟩
-  · rw [mul_one_div, mul_div_mul_right _ _ hA0.ne', div_le_one hD]
-    linarith
-  · have hε : 1 / (D * ‖A‖) * ‖A‖ = 1 / D := by field_simp
-    rw [hε] at ht hd
-    obtain ⟨Q, hQ, hTQ⟩ := equation_5_53_eq_conj A k
-    have ht0 : 0 ≤ |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| :=
-      abs_nonneg _
-    have hsub1 : 4 * A' * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ≤
-        1 := by
-      calc 4 * A' * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))|
-          ≤ 4 * A' * (1 / D) := by gcongr
-        _ ≤ 1 := by
-          rw [mul_one_div, div_le_one hD]
-          linarith
-    have hsub2 : 2 * K * C * A' *
-        |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ≤ 1 := by
-      calc 2 * K * C * A' * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))|
-          ≤ 2 * K * C * A' * (1 / D) := by gcongr
-        _ ≤ 1 := by
-          rw [mul_one_div, div_le_one hD]
-          linarith
-    have hdiag : 2 * K * |equation_5_53 A k (Fin.last (N + 1)) (Fin.last (N + 1)) - lam| ≤ 1 := by
-      calc 2 * K * |equation_5_53 A k (Fin.last (N + 1)) (Fin.last (N + 1)) - lam|
-          ≤ 2 * K * (1 / D) := by gcongr
-        _ ≤ 1 := by
-          rw [mul_one_div, div_le_one hD]
-          linarith
-    have h := Matrix.abs_shiftedQrStep_last_le_of_conj hQ hTQ (hess k) hx hy hyx hK.le hKw hCz
-      (hreg k) hsub1 hsub2 hdiag
-    have hnext : equation_5_53 A (k + 1) =
-        Matrix.shiftedQrStep (equation_5_53 A k (Fin.last (N + 1)) (Fin.last (N + 1)))
-          (equation_5_53 A k) := rfl
-    have hc : c₁ * ‖A‖ * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 /
-        ‖A‖ = c₁ * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 := by
-      field_simp
-    have hne : Fin.castSucc (Fin.last N) ≠ Fin.last (N + 1) := fun h => by
-      simpa using congrArg Fin.val h
-    rw [hnext, hc]
-    exact ⟨h.1 _ hne, h.2⟩
+  set c : ℝ := (|C| + 1) * ‖A‖ with hcdef
+  have hc : 0 < c := by positivity
+  refine ⟨c, min (δ / ‖A‖) (1 / c), hc, lt_min (by positivity) (by positivity),
+    (mul_le_mul_of_nonneg_left (min_le_right _ _) hc.le).trans_eq (mul_one_div_cancel hc.ne'),
+    fun k ht hd => ?_⟩
+  have hεA : min (δ / ‖A‖) (1 / c) * ‖A‖ ≤ δ :=
+    (mul_le_mul_of_nonneg_right (min_le_left _ _) hA0.le).trans_eq (div_mul_cancel₀ δ hA0.ne')
+  obtain ⟨Q, hQ, hTQ⟩ := equation_5_53_eq_conj A k
+  obtain ⟨h1, h2⟩ := hstep Q _ _ hQ hTQ (hess k) (hreg k) (ht.trans hεA) (hd.trans hεA)
+    (Matrix.isShiftedQrStep_shiftedQrStep _ _)
+  have hnext : equation_5_53 A (k + 1) =
+      Matrix.shiftedQrStep (equation_5_53 A k (Fin.last (N + 1)) (Fin.last (N + 1)))
+        (equation_5_53 A k) := rfl
+  have hc' : c * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 / ‖A‖ =
+      (|C| + 1) * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 := by
+    rw [hcdef]
+    field_simp
+  have hsq : C * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 ≤
+      (|C| + 1) * |equation_5_53 A k (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 :=
+    mul_le_mul_of_nonneg_right ((le_abs_self C).trans (by linarith)) (sq_nonneg _)
+  rw [hnext, hc']
+  exact ⟨h1.trans hsq, h2.trans hsq⟩
 
 
 open scoped Matrix.Norms.L2Operator in

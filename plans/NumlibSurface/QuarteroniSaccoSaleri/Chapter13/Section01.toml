@@ -33,41 +33,5 @@ id = "energy"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy E(t)'
 
 [[node]]
-id = "heat_continuousOn"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
-
-[[node]]
-id = "poincare_classical"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
-
-[[node]]
-id = "heat_ibp"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
-
-[[node]]
-id = "clampRect"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
-
-[[node]]
-id = "clampRect_eq"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
-
-[[node]]
-id = "continuous_clampRect"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
-
-[[node]]
-id = "heat_energy_sub"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
-
-[[node]]
-id = "heat_continuousOn_source"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
-
-[[node]]
-id = "heat_differential_inequality"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
-
-[[node]]
 id = "equation_13_7"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.7)'

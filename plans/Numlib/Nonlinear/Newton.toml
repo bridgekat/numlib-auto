@@ -71,3 +71,7 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1"
 [[node]]
 id = "norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1"
+
+[[node]]
+id = "tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le_of_mem"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1'

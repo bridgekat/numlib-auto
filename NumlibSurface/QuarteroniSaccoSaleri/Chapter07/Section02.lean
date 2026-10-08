@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Calculus.FDeriv.Symmetric
+import Numlib.Analysis.Calculus.Gradient
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.LineSearch
 import Numlib.Optimization.QuasiNewton
@@ -22,8 +23,9 @@ ConjugateGradient, QuasiNewton}`, `Numlib/Projection/{OneDimensional, ConjugateD
 ## Conventions
 
 Gradients are Mathlib's `gradient f x` on `EuclideanSpace ℝ (Fin n)`, which the backbone's
-derivative data `f' = fderiv ℝ f` reach through `fderiv_eq_innerSL_gradient`
-(`fderiv ℝ f x = innerSL ℝ (gradient f x)`, so `fderiv ℝ f x d = ⟪∇f(x), d⟫`). The Hessian
+derivative data `f' = fderiv ℝ f` reach through the backbone's `fderiv_eq_innerSL_gradient`
+(`Numlib/Analysis/Calculus/Gradient`; `fderiv ℝ f x = innerSL ℝ (gradient f x)`, so
+`fderiv ℝ f x d = ⟪∇f(x), d⟫`). The Hessian
 matrix `H(x)` is `hessianMatrix f x`, the matrix of the second partial derivatives
 `∂²f/∂xᵢ∂xⱼ`, with bridges to the second Fréchet derivative and to the derivative of the gradient
 map (`hasFDerivAt_gradient`) for `C²` functions. A descent method (7.25)–(7.26) is the
@@ -62,17 +64,6 @@ variable {n : ℕ}
 section Hessian
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
-
--- TODO(backbone): natural home `Mathlib/Analysis/Calculus/Gradient/Basic`, beside
--- `toDual_gradient`; it is the form in which the backbone's derivative data
--- `f' x = innerSL ℝ (g x)` (`Numlib/Optimization/Descent`) is met by Mathlib's gradient.
-/-- The Fréchet derivative is the inner product with the gradient, as a continuous linear map:
-`fderiv ℝ f x = innerSL ℝ (∇f(x))`, so that `fderiv ℝ f x d = ⟪∇f(x), d⟫`. No differentiability
-is needed, both sides being junk-valued together. -/
-theorem fderiv_eq_innerSL_gradient (f : H → ℝ) (x : H) :
-    fderiv ℝ f x = innerSL ℝ (gradient f x) := by
-  ext d
-  rw [innerSL_apply_apply, inner_gradient_left]
 
 /-- The gradient map is `(toDual ℝ H).symm ∘ fderiv ℝ f`. -/
 theorem gradient_eq_toDual_symm_fderiv (f : H → ℝ) :

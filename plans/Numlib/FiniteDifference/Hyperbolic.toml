@@ -371,3 +371,11 @@ id = "isLeapFrogOp_of_isLeapFrog"
 
 [[node]]
 id = "isNewmarkOp_of_isNewmark"
+
+[[node]]
+id = "abs_residual_leapFrog_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (13.44)'
+
+[[node]]
+id = "abs_residual_newmark_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (13.45)'

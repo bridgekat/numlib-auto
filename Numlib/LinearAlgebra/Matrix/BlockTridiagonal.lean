@@ -46,7 +46,9 @@ nonsingular. The Neumann bound behind all of them is `Matrix.inducedNorm_inv_one
 `Numlib.Analysis.Matrix.OperatorNorm`.
 
 `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal` (`LU`) is the *labelling* form of the same
-shape statement; this module is the constructive form with the recurrence.
+shape statement; this module is the constructive form with the recurrence, and
+`Matrix.IsBlockLU.toBlock_recurrence_of_blockTridiagonal` reads the recurrence off a labelled
+block LU factorization ([quarteroni2000numerical] (3.58)).
 -/
 
 open Finset
@@ -447,4 +449,127 @@ theorem IsStrictBlockColDiagDominant.isUnit_blockTridiagonal
   exact hT.map (compRingEquiv (Fin (N + 1)) (Fin q) 𝕜)
 
 end Dominance
+
+/-! ### The block Thomas recurrence in the labelling form -/
+
+section BlockLU
+
+variable {N m : ℕ} {b : Fin N → Fin m} {K : Type*} [Field K] {A L U : Matrix (Fin N) (Fin N) K}
+
+/-- A product of two blocks, entry by entry, as a sum over the labels of the middle block. -/
+private theorem toBlock_mul_toBlock_apply (k : Fin m) {p r : Fin N → Prop}
+    (X Y : Matrix (Fin N) (Fin N) K) (i : {x : Fin N // p x}) (j : {x : Fin N // r x}) :
+    (X.toBlock p (fun x => b x = k) * Y.toBlock (fun x => b x = k) r) i j =
+      ∑ j' ∈ univ.filter fun x => b x = k, X i.1 j' * Y j' j.1 := by
+  rw [mul_apply]
+  exact (Finset.sum_subtype _ (fun x => by simp) fun j' => X i.1 j' * Y j' j.1).symm
+
+/-- A row of `U` agrees with the corresponding row of `A` as soon as the entries of `U` in the
+blocks strictly below the label of that row do not meet the column: the first block row of a
+block LU factorization, and the superdiagonal blocks of a block bidiagonal one. -/
+private theorem upper_apply_eq (h : IsBlockLU b A L U) {i j : Fin N}
+    (hlow : ∀ j', b j' < b i → U j' j = 0) : U i j = A i j := by
+  have key : (L * U) i j = ((1 : Matrix (Fin N) (Fin N) K) * U) i j := by
+    rw [mul_apply, mul_apply]
+    refine Finset.sum_congr rfl fun j' _ => ?_
+    rcases lt_trichotomy (b j') (b i) with hb | hb | hb
+    · rw [hlow j' hb, mul_zero, mul_zero]
+    · rw [h.isBlockUnitLowerTriangular.apply_eq_one_of_eq i j' hb.symm]
+    · rw [h.isBlockUnitLowerTriangular.blockTriangular (OrderDual.toDual_lt_toDual.2 hb),
+        one_apply_ne fun hij => hb.ne (congrArg b hij), zero_mul]
+  rw [h.mul_eq, Matrix.one_mul] at key
+  exact key.symm
+
+/-- **The block Thomas recurrence** ([quarteroni2000numerical] §3.8.3, (3.58);
+[golub2013matrix] (4.5.3)–(4.5.4)), in the labelling form of `Matrix.IsBlockLU`. Let `A` be block
+tridiagonal with
+nonsingular leading principal block submatrices and let `A = L U` be its block LU factorization,
+which by `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal` is block bidiagonal. Equating the
+blocks gives
+`U₁ = A₁₁`, the superdiagonal blocks of `U` are those of `A`, and the remaining blocks are
+obtained sequentially, for `i = 2, …, n`, by solving `L_{i-1} U_{i-1} = A_{i,i-1}` for the
+subdiagonal block of `L` and computing `U_i = A_{ii} - L_{i-1} A_{i-1,i}`. This is the recurrence
+`Matrix.tridiagonalLUPivot`, `Matrix.tridiagonalLUMultiplier` of the constructive form above, for
+blocks given by a labelling `b : Fin N → Fin m` of the indices. -/
+theorem IsBlockLU.toBlock_recurrence_of_blockTridiagonal (h : IsBlockLU b A L U)
+    (htriL : ∀ i j, (b j : ℕ) + 1 < b i → A i j = 0)
+    (htriU : ∀ i j, (b i : ℕ) + 1 < b j → A i j = 0)
+    (hlead : ∀ k : Fin m, IsUnit (A.toBlock (b · ≤ k) (b · ≤ k))) :
+    (∀ k : Fin m, (∀ i, k ≤ b i) →
+        U.toBlock (b · = k) (b · = k) = A.toBlock (b · = k) (b · = k)) ∧
+      (∀ k l : Fin m, (k : ℕ) + 1 = l →
+        U.toBlock (b · = k) (b · = l) = A.toBlock (b · = k) (b · = l)) ∧
+      (∀ k l : Fin m, (k : ℕ) + 1 = l →
+        L.toBlock (b · = l) (b · = k) * U.toBlock (b · = k) (b · = k) =
+          A.toBlock (b · = l) (b · = k)) ∧
+      (∀ k l : Fin m, (k : ℕ) + 1 = l →
+        U.toBlock (b · = l) (b · = l) = A.toBlock (b · = l) (b · = l) -
+          L.toBlock (b · = l) (b · = k) * A.toBlock (b · = k) (b · = l)) := by
+  obtain ⟨hLbd, hUbd⟩ := IsBlockLU.blockBidiagonal_of_blockTridiagonal h htriL htriU hlead
+  have hsuper : ∀ {i j : Fin N}, ((b i : ℕ) + 1 = b j ∨ ∀ x, b i ≤ b x) → U i j = A i j := by
+    rintro i j (hij | hmin)
+    · exact upper_apply_eq h fun j' hj' => hUbd j' j (by have := Fin.lt_def.1 hj'; omega)
+    · exact upper_apply_eq h fun j' hj' => absurd (hmin j') (not_le.2 hj')
+  refine ⟨fun k hk => ?_, fun k l hkl => ?_, fun k l hkl => ?_, fun k l hkl => ?_⟩
+  · ext i j
+    exact hsuper (Or.inr fun x => by rw [i.2]; exact hk x)
+  · ext i j
+    exact hsuper (Or.inl (by rw [i.2, j.2]; exact hkl))
+  · ext i j
+    rw [toBlock_mul_toBlock_apply, toBlock_apply, ← h.mul_eq, mul_apply]
+    refine Finset.sum_subset (filter_subset _ _) fun x _ hx => ?_
+    have hxk : b x ≠ k := by simpa using hx
+    rcases lt_or_gt_of_ne hxk with hlt | hgt
+    · rw [hLbd i.1 x (by rw [i.2]; have := Fin.lt_def.1 hlt; omega), zero_mul]
+    · rcases eq_or_lt_of_le (show l ≤ b x from Fin.le_def.2 (by
+        have := Fin.lt_def.1 hgt; omega)) with heq | hlt'
+      · rw [h.blockTriangular (show b j.1 < b x by
+          rw [j.2, ← heq]; exact Fin.lt_def.2 (by omega)), mul_zero]
+      · rw [h.isBlockUnitLowerTriangular.blockTriangular
+          (OrderDual.toDual_lt_toDual.2 (show b i.1 < b x by rw [i.2]; exact hlt')), zero_mul]
+  · ext i j
+    have hone : ∀ x ∈ univ.filter fun x => b x = k,
+        (1 : Matrix (Fin N) (Fin N) K) i.1 x * U x j.1 = 0 := by
+      intro x hx
+      have hxk : b x = k := by simpa using hx
+      rw [one_apply_ne fun hij => by rw [← hij, i.2] at hxk; omega, zero_mul]
+    have hrest : ∀ x ∈ univ.filter fun x => ¬ b x = k,
+        L i.1 x * U x j.1 = (1 : Matrix (Fin N) (Fin N) K) i.1 x * U x j.1 := by
+      intro x hx
+      have hxk : b x ≠ k := by simpa using hx
+      rcases lt_or_gt_of_ne hxk with hlt | hgt
+      · have hne : i.1 ≠ x := fun hij => by
+          rw [← hij, i.2] at hlt; exact absurd (Fin.lt_def.1 hlt) (by omega)
+        rw [hLbd i.1 x (by rw [i.2]; have := Fin.lt_def.1 hlt; omega), one_apply_ne hne,
+          zero_mul]
+      · rcases eq_or_lt_of_le (show l ≤ b x from Fin.le_def.2 (by
+          have := Fin.lt_def.1 hgt; omega)) with heq | hlt'
+        · rw [h.isBlockUnitLowerTriangular.apply_eq_one_of_eq i.1 x (by rw [i.2, ← heq])]
+        · have hne : i.1 ≠ x := fun hij => by
+            rw [← hij, i.2] at hlt'; exact absurd hlt' (lt_irrefl _)
+          rw [h.isBlockUnitLowerTriangular.blockTriangular
+            (OrderDual.toDual_lt_toDual.2 (show b i.1 < b x by rw [i.2]; exact hlt')),
+            one_apply_ne hne, zero_mul]
+    have hsum : A i.1 j.1 =
+        (∑ x ∈ univ.filter fun x => b x = k, L i.1 x * U x j.1) + U i.1 j.1 := by
+      have hall : (∑ x ∈ univ.filter fun x => b x = k,
+            (1 : Matrix (Fin N) (Fin N) K) i.1 x * U x j.1) +
+          ∑ x ∈ univ.filter fun x => ¬ b x = k,
+            (1 : Matrix (Fin N) (Fin N) K) i.1 x * U x j.1 = U i.1 j.1 := by
+        rw [Finset.sum_filter_add_sum_filter_not univ (fun x => b x = k)
+          fun x => (1 : Matrix (Fin N) (Fin N) K) i.1 x * U x j.1, ← mul_apply, Matrix.one_mul]
+      rw [Finset.sum_eq_zero hone, zero_add] at hall
+      rw [← h.mul_eq, mul_apply,
+        ← Finset.sum_filter_add_sum_filter_not univ (fun x => b x = k)
+          fun x => L i.1 x * U x j.1, Finset.sum_congr rfl hrest, hall]
+    have hAU : ∀ x ∈ univ.filter fun x => b x = k, L i.1 x * A x j.1 = L i.1 x * U x j.1 := by
+      intro x hx
+      have hxk : b x = k := by simpa using hx
+      rw [hsuper (Or.inl (by rw [hxk, j.2]; exact hkl))]
+    rw [toBlock_apply, Matrix.sub_apply, toBlock_apply, toBlock_mul_toBlock_apply,
+      Finset.sum_congr rfl hAU, hsum]
+    ring
+
+end BlockLU
+
 end Matrix

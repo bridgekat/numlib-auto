@@ -540,27 +540,9 @@ theorem cG_convergence (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
 
 /-! ### The convergence estimate of the discontinuous Galerkin method -/
 
-/-- `√(p + q) ≤ √p + √q` for `p, q ≥ 0`. -/
-private theorem sqrt_add_le_sqrt_add_sqrt {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
-    √(p + q) ≤ √p + √q := by
-  calc √(p + q) ≤ √((√p + √q) ^ 2) := by
-        refine Real.sqrt_le_sqrt ?_
-        rw [add_sq, Real.sq_sqrt hp, Real.sq_sqrt hq]
-        nlinarith [mul_nonneg (Real.sqrt_nonneg p) (Real.sqrt_nonneg q)]
-    _ = √p + √q := Real.sqrt_sq (by positivity)
-
-/-- `√p + √q ≤ √2 √(p + q)` for `p, q ≥ 0`. -/
-private theorem sqrt_add_sqrt_le_sqrt_two_mul {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
-    √p + √q ≤ √2 * √(p + q) := by
-  have hsq : (√p + √q) ^ 2 ≤ (√2 * √(p + q)) ^ 2 := by
-    rw [mul_pow, Real.sq_sqrt (by norm_num), Real.sq_sqrt (add_nonneg hp hq), add_sq,
-      Real.sq_sqrt hp, Real.sq_sqrt hq]
-    nlinarith [sq_nonneg (√p - √q), Real.sq_sqrt hp, Real.sq_sqrt hq]
-  exact (pow_le_pow_iff_left₀ (by positivity) (by positivity) two_ne_zero).1 hsq
-
 /-- **The convergence estimate for discontinuous finite elements of degree `r ≥ 0`**
 ([quarteroni2000numerical] §13.10.1, quoted there from [QV94] §14.3.3 without proof; proved here
-with explicit constants, as `Variational.dG_error_sq_le`). The book says "for a smooth solution
+with explicit constants, as `Variational.dG_error_le`). The book says "for a smooth solution
 `u`"; the regularity is taken as hypotheses: `u` is a classical solution of (13.64)
 (`equation_13_64`) continuous on the strip, its time derivative `ut` is continuous on the strip,
 and `u(·, t) ∈ H^{r+1}(α, β)` with `|u(·, t)|_{H^{r+1}} ≤ M` for every `t ∈ [0, T]`. The discrete
@@ -613,15 +595,7 @@ theorem dG_convergence (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
         + √(Variational.dgConst r A A' A₀ μ₀ T M h hmin) * (h ^ r * √h)) := by
   obtain ⟨ux, ut₀, hpart, hpde, hin, hinit⟩ := hu
   have hm : Monotone x := hx.out.monotone
-  have hab : x 0 < x (Fin.last n) := hx.out (Fin.pos_iff_ne_zero.2 (Fin.ne_of_val_ne hn.ne'))
-  have hT0 : (0 : ℝ) ∈ Icc 0 T := ⟨le_rfl, hT.le⟩
   have hle : ∀ i : Fin n, x i.castSucc ≤ x i.succ := fun i => hm (Fin.castSucc_lt_succ (i := i)).le
-  have hh : 0 ≤ h := (sub_nonneg.2 (hle ⟨0, hn⟩)).trans (hmesh ⟨0, hn⟩)
-  obtain ⟨U₀, hU₀, hU₀M⟩ := hreg 0 hT0
-  have hM : 0 ≤ M := (apply_nonneg _ _).trans hU₀M
-  have hA0 : 0 ≤ A := (abs_nonneg _).trans (hA (x 0) (left_mem_Icc.2 hab.le))
-  have hA'0 : 0 ≤ A' := (abs_nonneg _).trans (hA' (x 0) (left_mem_Icc.2 hab.le))
-  have hA₀0 : 0 ≤ A₀ := (abs_nonneg _).trans (hA₀ 0 hT0 (x 0) (left_mem_Icc.2 hab.le))
   have hux : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
       HasDerivWithinAt (fun y => u y t) (ux y t) (Icc (x 0) (x (Fin.last n))) y :=
     fun y hy t ht => hpart.hasDerivWithinAt_fst hy ht
@@ -632,64 +606,14 @@ theorem dG_convergence (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
       ut y t + a y * ux y t + a₀ y t * u y t = f y t := fun y hy t ht => by
     rw [← hut₀ y hy t ht]
     exact hpde y hy t ht
-  have key := Variational.dG_error_sq_le hn hT ha ha₀ hd hd' hμ hμ₀ hapos hA hA' hA₀ huc hux hut
+  have key := Variational.dG_error_le hn hT ha ha₀ hd hd' hμ hμ₀ hapos hA hA' hA₀ huc hux hut
     hutc hpde' hin hreg hnode hmesh h0 hminle hfh huh ht
   have e : ∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2
       = ∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2 :=
     Finset.sum_congr rfl fun i _ => intervalIntegral.integral_congr fun s hs => by
       rw [uIcc_of_le (hle i)] at hs
       rw [hinit s (BrokenPolynomial.Icc_panel_subset hm i hs)]
-  rw [e] at key
-  -- nonnegativity of the pieces
-  have hY₀ : 0 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2 :=
-    Finset.sum_nonneg fun i _ => intervalIntegral.integral_nonneg (hle i) fun _ _ => sq_nonneg _
-  have hI : 0 ≤ ∫ τ in (0 : ℝ)..t,
-      ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
-        + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
-            a (x i.castSucc) * BrokenPolynomial.jump (uh τ) i ^ 2)
-        + a (x 0) * (BrokenPolynomial.traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2) := by
-    refine intervalIntegral.integral_nonneg ht.1 fun τ _ => ?_
-    have h1 : 0 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2 :=
-      Finset.sum_nonneg fun i _ => intervalIntegral.integral_nonneg (hle i) fun _ _ => sq_nonneg _
-    have h2 : 0 ≤ ∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
-        a (x i.castSucc) * BrokenPolynomial.jump (uh τ) i ^ 2 :=
-      Finset.sum_nonneg fun i _ => mul_nonneg
-        (hapos _ (BrokenPolynomial.Icc_panel_subset hm i (left_mem_Icc.2 (hle i)))) (sq_nonneg _)
-    have h3 : 0 ≤ a (x 0) * (BrokenPolynomial.traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2 :=
-      mul_nonneg (hapos _ (left_mem_Icc.2 hab.le)) (sq_nonneg _)
-    linarith
-  have hYi : 0 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2 :=
-    Finset.sum_nonneg fun i _ => intervalIntegral.integral_nonneg (hle i) fun _ _ => sq_nonneg _
-  have hC₁ : 0 ≤ 16 + 4 / μ₀ := by positivity
-  have hC₂ : 0 ≤ Variational.dgConst r A A' A₀ μ₀ T M h hmin := by
-    unfold Variational.dgConst
-    positivity
-  have hpow : √(h ^ (2 * r + 1)) = h ^ r * √h := by
-    rw [show h ^ (2 * r + 1) = (h ^ r) ^ 2 * h by rw [pow_succ, pow_mul'],
-      Real.sqrt_mul (sq_nonneg _), Real.sqrt_sq (pow_nonneg hh r)]
-  calc √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2)
-        + √(∫ τ in (0 : ℝ)..t,
-          ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
-          + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
-              a (x i.castSucc) * BrokenPolynomial.jump (uh τ) i ^ 2)
-          + a (x 0) * (BrokenPolynomial.traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2))
-      ≤ √2 * √((∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2)
-          + ∫ τ in (0 : ℝ)..t,
-          ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
-          + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
-              a (x i.castSucc) * BrokenPolynomial.jump (uh τ) i ^ 2)
-          + a (x 0) * (BrokenPolynomial.traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2)) :=
-        sqrt_add_sqrt_le_sqrt_two_mul hY₀ hI
-    _ ≤ √2 * √((16 + 4 / μ₀) * (∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2)
-          + Variational.dgConst r A A' A₀ μ₀ T M h hmin * h ^ (2 * r + 1)) :=
-        mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt key) (Real.sqrt_nonneg _)
-    _ ≤ √2 * (√((16 + 4 / μ₀) * (∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2))
-          + √(Variational.dgConst r A A' A₀ μ₀ T M h hmin * h ^ (2 * r + 1))) :=
-        mul_le_mul_of_nonneg_left (sqrt_add_le_sqrt_add_sqrt (by positivity) (by positivity))
-          (Real.sqrt_nonneg _)
-    _ = √2 * (√(16 + 4 / μ₀) * √(∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2)
-          + √(Variational.dgConst r A A' A₀ μ₀ T M h hmin) * (h ^ r * √h)) := by
-        rw [Real.sqrt_mul hC₁, Real.sqrt_mul hC₂, hpow]
+  rwa [e] at key
 
 /-! ### Time discretization: backward Euler (13.70) -/
 

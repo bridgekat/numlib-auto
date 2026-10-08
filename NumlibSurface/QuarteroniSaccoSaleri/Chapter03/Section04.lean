@@ -32,7 +32,9 @@ is the backbone's `Matrix.IsQR A Q R` (`Q` orthogonal, `R` upper trapezoidal), t
 `Matrix.firstRows R h` for `h : n ≤ m`, and a reduced factorization is a pair `Q̃`, `R̃` with
 `A = Q̃ R̃`, `Q̃ᵀ Q̃ = 1` and `R̃` upper triangular. The Gram–Schmidt vectors `q_k` of (3.49) are
 Mathlib's `gramSchmidt ℝ x k`, the normalized ones `q̃_k` are `gramSchmidtNormed ℝ x k`, and the
-reduced factors they produce are `gramSchmidtQ A` and `gramSchmidtR A`. The book's scalar
+reduced factors they produce are the backbone's `Matrix.gramSchmidtQ A` and `Matrix.gramSchmidtR A`
+(`Matrix.isThinQR_gramSchmidtQ`); the modified sweep is the backbone's
+`InnerProductSpace.modifiedGramSchmidtSweep`. The book's scalar
 product `(x, y)` is `inner ℝ y x`, which over `ℝ` is `inner ℝ x y`.
 
 Rounding-error statements are in the relational model `m : FloatingPoint.RoundingModel ℝ` of
@@ -47,9 +49,7 @@ difference, square root and division rounded once.
 * `definition_3_1`, `definition_3_1_iff`, `property_3_3`, `property_3_3_unique`,
   `property_3_3_cholesky`, `property_3_3_diag_ne_zero_iff`, `property_3_3_range` — §3.4.3, the
   QR factorization.
-* `columns`, `gramSchmidtQ`, `gramSchmidtR`, `gramSchmidt_qr`, `equation_3_49`,
-  `modifiedGramSchmidtSweep`, `modifiedGramSchmidtSweep_eq_sub_sum`, `modifiedGramSchmidt_eq` —
-  Gram–Schmidt and its modified form.
+* `columns`, `equation_3_49`, `modifiedGramSchmidt_eq` — Gram–Schmidt and its modified form.
 
 Example 3.4 (a numerical comparison of the two Gram–Schmidt variants) and Programs 7–8 are not
 nodes; the operation counts are prose.
@@ -298,93 +298,15 @@ variable {m : ℕ}
 noncomputable def columns (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n) : EuclideanSpace ℝ (Fin m) :=
   toLp 2 (Aᵀ j)
 
-/-- The matrix `Q̃` whose columns are the normalized Gram–Schmidt vectors `q̃_j` of the columns
-of `A` (§3.4.3, the display after (3.49)). -/
-noncomputable def gramSchmidtQ (A : Matrix (Fin m) (Fin n) ℝ) : Matrix (Fin m) (Fin n) ℝ :=
-  of fun r j => ofLp (gramSchmidtNormed ℝ (columns A) j) r
-
-/-- The matrix `R̃` of the Gram–Schmidt coefficients, `r̃_ij = (q̃_i, a_j)`, obtained "by imposing
-`A = Q̃ R̃` and exploiting `Q̃ᵀ Q̃ = I`" (§3.4.3). -/
-noncomputable def gramSchmidtR (A : Matrix (Fin m) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
-  of fun i j => inner ℝ (gramSchmidtNormed ℝ (columns A) i) (columns A j)
-
-/-- The columns of `A` are linearly independent as Euclidean vectors iff `Aᵀ` is. -/
-private theorem linearIndependent_columns_iff (A : Matrix (Fin m) (Fin n) ℝ) :
-    LinearIndependent ℝ (columns A) ↔ LinearIndependent ℝ Aᵀ := by
-  constructor <;> intro h <;> refine Fintype.linearIndependent_iff.2 fun g hg i =>
-    Fintype.linearIndependent_iff.1 h g ?_ i
-  · have h0 := congrArg (toLp 2 : (Fin m → ℝ) → EuclideanSpace ℝ (Fin m)) hg
-    simpa [columns, map_sum] using h0
-  · have h0 := congrArg (fun z : EuclideanSpace ℝ (Fin m) => ofLp z) hg
-    simpa [columns, WithLp.ofLp_sum] using h0
-
--- TODO(backbone): belongs in `Numlib/LinearAlgebra/Matrix/QR` beside `Matrix.exists_isThinQR`,
--- whose proof constructs exactly these factors but exports only their existence.
-/-- **Gram–Schmidt computes the reduced QR factorization** (§3.4.3): for `A` of full column
-rank, `A = Q̃ R̃` with `Q̃ = gramSchmidtQ A`, whose columns are orthonormal, and
-`R̃ = gramSchmidtR A`, upper triangular with positive diagonal. -/
-theorem gramSchmidt_qr (A : Matrix (Fin m) (Fin n) ℝ) (hA : LinearIndependent ℝ Aᵀ) :
-    A = gramSchmidtQ A * gramSchmidtR A ∧ (gramSchmidtQ A)ᵀ * gramSchmidtQ A = 1 ∧
-      (gramSchmidtR A).IsUpperTriangular ∧ ∀ j, 0 < gramSchmidtR A j j := by
-  set f := columns A with hf_def
-  have hf : LinearIndependent ℝ f := (linearIndependent_columns_iff A).2 hA
-  have hgne : ∀ j, gramSchmidt ℝ f j ≠ 0 := fun j => gramSchmidt_ne_zero j hf
-  have hnne : ∀ j, ‖gramSchmidt ℝ f j‖ ≠ 0 := fun j => norm_ne_zero_iff.2 (hgne j)
-  have hon : Orthonormal ℝ (gramSchmidtNormed ℝ f) := gramSchmidtNormed_orthonormal hf
-  have htri : ∀ i j, j < i → inner ℝ (gramSchmidtNormed ℝ f i) (f j) = 0 := fun i j hji => by
-    rw [gramSchmidtNormed, inner_smul_left, gramSchmidt_inv_triangular ℝ f hji, mul_zero]
-  have hexp : ∀ j,
-      f j = ∑ i, inner ℝ (gramSchmidtNormed ℝ f i) (f j) • gramSchmidtNormed ℝ f i := by
-    intro j
-    have hsum : ∑ i, inner ℝ (gramSchmidtNormed ℝ f i) (f j) • gramSchmidtNormed ℝ f i =
-        ∑ i ∈ Iic j, inner ℝ (gramSchmidtNormed ℝ f i) (f j) • gramSchmidtNormed ℝ f i := by
-      refine (Finset.sum_subset (Finset.subset_univ _) fun i _ hi => ?_).symm
-      rw [htri i j (by simpa using hi), zero_smul]
-    have hterm : ∀ i, inner ℝ (gramSchmidtNormed ℝ f i) (f j) • gramSchmidtNormed ℝ f i =
-        (inner ℝ (gramSchmidt ℝ f i) (f j) / ‖gramSchmidt ℝ f i‖ ^ 2) • gramSchmidt ℝ f i := by
-      intro i
-      rw [gramSchmidtNormed, inner_smul_left, smul_smul]
-      congr 1
-      simp only [RCLike.ofReal_real_eq_id, id, conj_trivial]
-      field_simp
-    have hdiag : inner ℝ (gramSchmidtNormed ℝ f j) (f j) • gramSchmidtNormed ℝ f j =
-        gramSchmidt ℝ f j := by
-      rw [inner_gramSchmidtNormed_self, gramSchmidtNormed, smul_smul]
-      simp only [RCLike.ofReal_real_eq_id, id]
-      rw [mul_inv_cancel₀ (hnne j), one_smul]
-    rw [hsum, ← Finset.Iio_insert, Finset.sum_insert (by simp), hdiag,
-      Finset.sum_congr rfl fun i _ => hterm i]
-    have := gramSchmidt_def'' ℝ f j
-    simpa only [RCLike.ofReal_real_eq_id, id] using this
-  refine ⟨?_, ?_, fun i j hji => htri i j hji, fun j => ?_⟩
-  · ext r j
-    have h0 := congrArg (fun z : EuclideanSpace ℝ (Fin m) => ofLp z r) (hexp j)
-    simp only [hf_def, columns, ofLp_toLp, transpose_apply, WithLp.ofLp_sum, WithLp.ofLp_smul,
-      Finset.sum_apply, Pi.smul_apply, smul_eq_mul] at h0
-    rw [h0, mul_apply]
-    exact Finset.sum_congr rfl fun i _ => by
-      rw [gramSchmidtQ, gramSchmidtR, of_apply, of_apply, mul_comm]
-      rfl
-  · ext i j
-    have h : ∑ r, ofLp (gramSchmidtNormed ℝ f i) r * ofLp (gramSchmidtNormed ℝ f j) r =
-        inner ℝ (gramSchmidtNormed ℝ f i) (gramSchmidtNormed ℝ f j) := by
-      rw [EuclideanSpace.inner_eq_star_dotProduct, dotProduct]
-      exact Finset.sum_congr rfl fun r _ => by simp [mul_comm]
-    rw [mul_apply]
-    simp only [transpose_apply, gramSchmidtQ, of_apply]
-    rw [h, orthonormal_iff_ite.1 hon i j, one_apply]
-  · rw [gramSchmidtR, of_apply, inner_gramSchmidtNormed_self]
-    simpa using norm_pos_iff.2 (hgne j)
-
 /-- **(3.49), the Gram–Schmidt orthogonalization.** Starting from linearly independent vectors
 `x₁, …, xₙ` of `ℝᵐ`, the vectors `q₁ = x₁`, `q_{k+1} = x_{k+1} - ∑_{i≤k} ((q_i, x_{k+1}) /
 (q_i, q_i)) q_i` (Mathlib's `gramSchmidt ℝ x`) are mutually orthogonal and nonzero; the
 normalized vectors `q̃_k = q_k / ‖q_k‖₂` (`gramSchmidtNormed ℝ x`) are orthonormal and satisfy
 `q_{k+1} = x_{k+1} - ∑_{j≤k} (q̃_j, x_{k+1}) q̃_j`; and for the columns `a_j` of a full-rank
 `A ∈ ℝ^{m×n}` the `q̃_j` are the columns of the `Q̃` of the reduced factorization (3.47), with
-`R̃ = Q̃ᵀ A` (`gramSchmidt_qr`, which by `property_3_3_unique` is *the* reduced factorization
-with positive diagonal). Mathlib's `gramSchmidt_def''`, `gramSchmidt_orthogonal`,
-`gramSchmidtNormed_orthonormal`. -/
+`R̃ = Q̃ᵀ A` (backbone `Matrix.isThinQR_gramSchmidtQ`, which by `property_3_3_unique` is *the*
+reduced factorization with positive diagonal). Mathlib's `gramSchmidt_def''`,
+`gramSchmidt_orthogonal`, `gramSchmidtNormed_orthonormal`. -/
 theorem equation_3_49 [NeZero n] (x : Fin n → EuclideanSpace ℝ (Fin m))
     (hx : LinearIndependent ℝ x) (A : Matrix (Fin m) (Fin n) ℝ) (hA : LinearIndependent ℝ Aᵀ) :
     gramSchmidt ℝ x 0 = x 0 ∧
@@ -409,7 +331,11 @@ theorem equation_3_49 [NeZero n] (x : Fin n → EuclideanSpace ℝ (Fin m))
     simp only [RCLike.ofReal_real_eq_id, id, ← real_inner_self_eq_norm_sq] at this
     exact eq_sub_iff_add_eq.2 this.symm
   have hne : ∀ k, gramSchmidt ℝ x k ≠ 0 := fun k => gramSchmidt_ne_zero k hx
-  have hqr := gramSchmidt_qr A hA
+  have hqr : A = gramSchmidtQ A * gramSchmidtR A ∧ (gramSchmidtQ A)ᵀ * gramSchmidtQ A = 1 ∧
+      (gramSchmidtR A).IsUpperTriangular ∧ ∀ j, 0 < gramSchmidtR A j j := by
+    have h := isThinQR_gramSchmidtQ hA
+    exact ⟨h.mul_eq.symm, by simpa using h.conjTranspose_mul_self, h.isUpperTriangular,
+      gramSchmidtR_apply_self_pos hA⟩
   refine ⟨?_, hdef, fun i j hij => gramSchmidt_orthogonal ℝ x hij, hne, fun k => ?_,
     gramSchmidtNormed_orthonormal hx, fun k => ?_, fun j => rfl, ?_, hqr⟩
   · rw [hdef, Finset.sum_eq_zero fun i hi =>
@@ -425,94 +351,20 @@ theorem equation_3_49 [NeZero n] (x : Fin n → EuclideanSpace ℝ (Fin m))
     field_simp [hne i]
   · ext i j
     rw [gramSchmidtR, of_apply, mul_apply, EuclideanSpace.inner_eq_star_dotProduct, dotProduct]
-    exact Finset.sum_congr rfl fun r _ => by simp [gramSchmidtQ, columns, mul_comm]
-
-variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
-
--- TODO(backbone): planned as `InnerProductSpace.modifiedGramSchmidtSweep` in
--- `Numlib/Analysis/InnerProductSpace/GramSchmidt`, together with the lemma below.
-/-- **One step of the modified Gram–Schmidt method** (§3.4.3): the vectors
-`a^{(1)} = a - (q̃₁, a) q̃₁`, `a^{(2)} = a^{(1)} - (q̃₂, a^{(1)}) q̃₂`, …, obtained by subtracting
-from `a` its projections along `q̃₁, …, q̃_k` one after the other, each computed on the current
-vector. `modifiedGramSchmidtSweep q a j` is `a^{(j)}`; past the length of `q` nothing happens. -/
-noncomputable def modifiedGramSchmidtSweep {k : ℕ} (q : Fin k → E) (a : E) : ℕ → E
-  | 0 => a
-  | j + 1 =>
-    if h : j < k then
-      modifiedGramSchmidtSweep q a j -
-        inner 𝕜 (q ⟨j, h⟩) (modifiedGramSchmidtSweep q a j) • q ⟨j, h⟩
-    else modifiedGramSchmidtSweep q a j
-
-/-- **Modified equals classical Gram–Schmidt** (§3.4.3, the display before Program 8): if the
-vectors `q̃₁, …, q̃_k` are mutually orthogonal, then subtracting the projections one after the
-other gives `a^{(j)} = a - ∑_{i<j} (q̃_i, a) q̃_i`, because each earlier subtraction leaves the
-inner product with the next `q̃_i` unchanged. -/
-theorem modifiedGramSchmidtSweep_eq_sub_sum {k : ℕ} {q : Fin k → E}
-    (hq : ∀ i j, i ≠ j → inner 𝕜 (q i) (q j) = 0) (a : E) (j : ℕ) :
-    modifiedGramSchmidtSweep (𝕜 := 𝕜) q a j =
-      a - ∑ i ∈ univ.filter (fun i : Fin k => (i : ℕ) < j), inner 𝕜 (q i) a • q i := by
-  induction j with
-  | zero =>
-    rw [Finset.sum_eq_zero fun i hi => absurd (mem_filter.1 hi).2 (Nat.not_lt_zero _), sub_zero]
-    rfl
-  | succ j ih =>
-    by_cases h : j < k
-    · have hsplit : ∀ g : Fin k → E,
-          ∑ i ∈ univ.filter (fun i : Fin k => (i : ℕ) < j + 1), g i =
-            ∑ i ∈ univ.filter (fun i : Fin k => (i : ℕ) < j), g i + g ⟨j, h⟩ := by
-        intro g
-        have : (univ.filter fun i : Fin k => (i : ℕ) < j + 1) =
-            insert ⟨j, h⟩ (univ.filter fun i : Fin k => (i : ℕ) < j) := by
-          ext i
-          simp only [mem_filter, mem_univ, true_and, mem_insert, Fin.ext_iff]
-          omega
-        rw [this, Finset.sum_insert (by simp), add_comm]
-      have hinner :
-          inner 𝕜 (q ⟨j, h⟩)
-              (a - ∑ i ∈ univ.filter (fun i : Fin k => (i : ℕ) < j), inner 𝕜 (q i) a • q i) =
-            inner 𝕜 (q ⟨j, h⟩) a := by
-        rw [inner_sub_right, inner_sum]
-        simp only [inner_smul_right]
-        rw [Finset.sum_eq_zero fun i hi => ?_, sub_zero]
-        have hi' : (i : ℕ) < j := (mem_filter.1 hi).2
-        rw [hq _ _ fun hij => absurd hi' (by rw [← hij]; exact lt_irrefl j), mul_zero]
-      simp only [modifiedGramSchmidtSweep, h, dite_true]
-      rw [ih, hinner, hsplit, sub_sub]
-    · simp only [modifiedGramSchmidtSweep, h, dite_false]
-      rw [ih]
-      congr 1
-      refine Finset.sum_congr (Finset.filter_congr fun i _ => ?_) fun _ _ => rfl
-      have hi : (i : ℕ) < k := i.2
-      omega
+    exact Finset.sum_congr rfl fun r _ => by simp [gramSchmidtQ, mul_comm]
 
 /-- **§3.4.3, the modified Gram–Schmidt method.** At step `k + 1`, the projections of `a_{k+1}`
-along `q̃₁, …, q̃_k` are subtracted one after the other; the resulting vector `a^{(k)}_{k+1}`
-coincides with the vector `q_{k+1}` of the standard Gram–Schmidt process, since by the
-orthogonality of `q̃₁, …, q̃_k`, `a^{(k)}_{k+1} = a_{k+1} - ∑_{j≤k} (q̃_j, a_{k+1}) q̃_j`
-(`modifiedGramSchmidtSweep_eq_sub_sum` with (3.49)). -/
-theorem modifiedGramSchmidt_eq (x : Fin n → EuclideanSpace ℝ (Fin m)) (k : Fin n) :
-    modifiedGramSchmidtSweep (𝕜 := ℝ) (gramSchmidtNormed ℝ x) (x k) k = gramSchmidt ℝ x k := by
-  have hq : ∀ i j, i ≠ j → inner ℝ (gramSchmidtNormed ℝ x i) (gramSchmidtNormed ℝ x j) = 0 := by
-    intro i j hij
-    rw [gramSchmidtNormed, gramSchmidtNormed, inner_smul_left, inner_smul_right,
-      gramSchmidt_orthogonal ℝ x hij, mul_zero, mul_zero]
-  rw [modifiedGramSchmidtSweep_eq_sub_sum hq]
-  have hfilter : (univ.filter fun i : Fin n => (i : ℕ) < k) = Iio k := by
-    ext i
-    simp only [mem_filter, mem_univ, true_and, Finset.mem_Iio, Fin.val_fin_lt]
-  rw [hfilter]
-  have := gramSchmidt_def'' ℝ x k
-  simp only [RCLike.ofReal_real_eq_id, id] at this
-  refine (eq_sub_iff_add_eq.2 (Eq.trans ?_ this.symm)).symm
-  congr 1
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [gramSchmidtNormed, inner_smul_left, smul_smul]
-  simp only [conj_trivial]
-  congr 1
-  simp only [RCLike.ofReal_real_eq_id, id]
-  rcases eq_or_ne ‖gramSchmidt ℝ x i‖ 0 with h0 | h0
-  · simp [h0]
-  · field_simp
+along `q̃₁, …, q̃_k` are subtracted one after the other, each computed on the current vector
+(`InnerProductSpace.modifiedGramSchmidtSweep`); the resulting vector `a^{(k)}_{k+1}` coincides
+with the vector `q_{k+1}` of the standard Gram–Schmidt process, since by the orthogonality of
+`q̃₁, …, q̃_k`, `a^{(k)}_{k+1} = a_{k+1} - ∑_{j≤k} (q̃_j, a_{k+1}) q̃_j` (backbone
+`InnerProductSpace.modifiedGramSchmidt_eq_gramSchmidt`, through
+`InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum` and (3.49)). The vectors `a_1, a_2, …`
+are a sequence `x : ℕ → ℝᵐ`; a finite family is one padded arbitrarily, the statement at step `k`
+reading only `x 0, …, x k`. -/
+theorem modifiedGramSchmidt_eq (x : ℕ → EuclideanSpace ℝ (Fin m)) (k : ℕ) :
+    modifiedGramSchmidtSweep ℝ (gramSchmidtNormed ℝ x) (x k) k = gramSchmidt ℝ x k :=
+  modifiedGramSchmidt_eq_gramSchmidt ℝ x k
 
 end GramSchmidt
 

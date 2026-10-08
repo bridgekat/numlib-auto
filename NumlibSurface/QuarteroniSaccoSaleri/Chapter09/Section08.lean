@@ -209,18 +209,6 @@ theorem equation_9_48 (hε : 0 < ε) (hμ0 : 0 ≤ μ) (hμ1 : μ < 1) (hU : IsO
     exact intervalIntegral.integral_sub hint₁ hint₂
   rwa [hsplit, hclosed] at hbound
 
--- TODO(backbone): belongs beside `Quadrature.intervalIntegrable_div_rpow` in
--- `Numlib/Approximation/SingularIntegral`.
-/-- `φ(x)/(x - a)^μ` is as smooth as `φ` away from the singularity `a`. -/
-theorem contDiffOn_div_rpow {k : WithTop ℕ∞} (hφ : ContDiffOn ℝ k φ U) (a μ : ℝ) :
-    ContDiffOn ℝ k (fun x => φ x / (x - a) ^ μ) (U ∩ Ioi a) := by
-  refine (hφ.mono inter_subset_left).div ?_ fun x hx =>
-    ne_of_gt (rpow_pos_of_pos (by simpa [sub_pos] using hx.2) μ)
-  intro x hx
-  have hne : x - a ≠ 0 := sub_ne_zero.mpr (ne_of_gt hx.2)
-  exact ((Real.contDiffAt_rpow_const_of_ne (p := μ) hne).comp x
-    (contDiffAt_id.sub contDiffAt_const)).contDiffWithinAt
-
 /-- **(9.49), the a priori bound on `I_2`.** Approximating `I_2 = ∫_{a+ε}^b φ(x)/(x - a)^μ dx` by
 the composite closed Newton–Cotes formula with `m` subintervals and `n + 1` nodes on each, `n`
 even, Theorem 9.3 on `[a + ε, b]` gives
@@ -241,7 +229,7 @@ theorem equation_9_49 (hn : Even n) (hn0 : 0 < n) (hε : 0 < ε) (hab : a + ε <
   have hsub : Icc (a + ε) b ⊆ U ∩ Ioi a := fun x hx =>
     ⟨hUab ⟨by linarith [hx.1], hx.2⟩, by simp only [mem_Ioi]; linarith [hx.1]⟩
   obtain ⟨ξ, hξ, h⟩ := theorem_9_3_even hn hn0 hab hm (hU.inter isOpen_Ioi) hsub
-    (contDiffOn_div_rpow hφ a μ)
+    (Quadrature.contDiffOn_div_rpow hφ)
   have hba : (0 : ℝ) ≤ b - (a + ε) := by linarith
   have hnR : (0 : ℝ) < n := by exact_mod_cast hn0
   have hnpow : (0 : ℝ) < (n : ℝ) ^ (n + 3) := by positivity

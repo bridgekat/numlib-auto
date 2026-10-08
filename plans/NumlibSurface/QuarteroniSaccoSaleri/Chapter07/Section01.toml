@@ -113,10 +113,6 @@ id = "equation_7_10_succ"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.10'
 
 [[node]]
-id = "_root_.Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le_of_mem"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1'
-
-[[node]]
 id = "jacobianMatrix_apply"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.1'
 

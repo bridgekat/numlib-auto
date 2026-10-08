@@ -70,35 +70,6 @@ theorem inner_toEuclideanLin_eq_of_conjTranspose_eq {A : Matrix (Fin n) (Fin n) 
   rw [← toEuclideanLin_conjTranspose_inner_left, hy, inner_smul_left]
   simp
 
--- TODO(backbone): `Module.End.deriv_eigenvalue_perturbation` and
--- `Module.End.norm_deriv_eigenvalue_perturbation_le` use their hypothesis `heig` only through
--- `Filter.Eventually.of_forall`; generalize it to `∀ᶠ t in 𝓝 0` there and delete this.
-/-- `Module.End.norm_deriv_eigenvalue_perturbation_le` with the eigen-equation of the branch
-required only near `0`: the branch is replaced by one that agrees with it near `0` and is the zero
-eigenpair elsewhere. -/
-theorem norm_deriv_eigenvalue_perturbation_le_of_eventually {E : Type*} [NormedAddCommGroup E]
-    [InnerProductSpace ℂ E] {A B : E →L[ℂ] E} {u : ℂ → E} {mu : ℂ → ℂ} {u' : E} {mu' lam : ℂ}
-    {w : E} (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
-    (heig : ∀ᶠ t in 𝓝 0, A (u t) + t • B (u t) = mu t • u t)
-    (hw : ∀ y, inner ℂ w (A y) = lam * inner ℂ w y) (hlam : mu 0 = lam)
-    (hne : inner ℂ w (u 0) ≠ 0) :
-    ‖mu'‖ ≤ ‖B‖ * Module.End.eigenvalueCondNumber ℂ (u 0) w := by
-  classical
-  set p : ℂ → Prop := fun t => A (u t) + t • B (u t) = mu t • u t with hp
-  have h0 : p 0 := heig.self_of_nhds
-  have hu₁ : (fun t => if p t then u t else 0) =ᶠ[𝓝 0] u :=
-    heig.mono fun t ht => ite_eq_left ht
-  have hmu₁ : (fun t => if p t then mu t else 0) =ᶠ[𝓝 0] mu :=
-    heig.mono fun t ht => ite_eq_left ht
-  have key := Module.End.norm_deriv_eigenvalue_perturbation_le (A := A) (B := B)
-    (hu.congr_of_eventuallyEq hu₁) (hmu.congr_of_eventuallyEq hmu₁) (fun t => ?_) hw
-    (by simp only [ite_eq_left h0, hlam]) (by simpa only [ite_eq_left h0] using hne)
-  · simpa only [ite_eq_left h0] using key
-  · by_cases ht : p t
-    · simp only [ite_eq_left ht]
-      exact ht
-    · simp only [ite_eq_right ht, map_zero, smul_zero, add_zero]
-
 /-! ### Theorem 5.3: Bauer–Fike -/
 
 /-- **Theorem 5.3 (Bauer–Fike), (5.8), `p = 2`.** Let `A ∈ ℂ^{n×n}` be diagonalizable,
@@ -161,7 +132,7 @@ theorem theorem_5_4 {A E : Matrix (Fin n) (Fin n) ℂ} (hE : ‖E‖ = 1) {lam :
     Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one hAx (by simp [← norm_pos_iff, hx])
       (inner_toEuclideanLin_eq_of_conjTranspose_eq hAy) (by simp [← norm_pos_iff, hy])
       (by rw [finrank_maxGenEigenspace_toEuclideanLin]; exact hsimple)
-  have h := norm_deriv_eigenvalue_perturbation_le_of_eventually
+  have h := Module.End.norm_deriv_eigenvalue_perturbation_le
     (A := toEuclideanCLM (n := Fin n) (𝕜 := ℂ) A) (B := toEuclideanCLM (n := Fin n) (𝕜 := ℂ) E)
     hv hmu (heig.mono fun t ht => by
       rw [map_add, map_smul, LinearMap.add_apply, LinearMap.smul_apply] at ht

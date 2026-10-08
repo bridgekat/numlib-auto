@@ -406,65 +406,23 @@ theorem givensBisection_spec (d b : ℕ → ℝ) (n i : ℕ) :
           (givensBisection d b n i r).2) :=
   ⟨Sturm.spectrum_subset_Icc d b n, fun _ => rfl⟩
 
--- TODO(backbone): natural home `Numlib/Eigen/Sturm`, beside
--- `Sturm.eigenvalues_mem_bisectionIterate`, whose half-open bracket fails when the Gershgorin
--- bound `α` is itself the smallest eigenvalue.
 /-- **Givens' bisection from the Gershgorin interval encloses the eigenvalue**: for an unreduced
 `T` and `1 ≤ i ≤ n`, the `i`-th largest eigenvalue lies in the *closed* interval `[a^(r), b^(r)]`
-for every `r`. When `s(α) ≤ n − i` this is `Sturm.eigenvalues_mem_bisectionIterate` (with
-`s(β) = n`); otherwise `α` is the smallest eigenvalue, `i = n`, and the left endpoint never
-moves. -/
+for every `r`. Backbone `Sturm.eigenvalues_mem_Icc_bisectionIterate`: the Gershgorin left end `α`
+is at most every eigenvalue (`Sturm.eigenvalues_mem_Icc`) and `s(β) = n`
+(`Sturm.count_eq_of_le`). -/
 theorem eigenvalues_mem_Icc_givensBisection (d b : ℕ → ℝ) (hb : ∀ i, b i ≠ 0) {n i : ℕ}
     (hi : 1 ≤ i) (hin : i ≤ n) (r : ℕ) :
     Sturm.eigenvalues d b n ⟨i - 1, by omega⟩ ∈
       Set.Icc (givensBisection d b n i r).1 (givensBisection d b n i r).2 := by
-  set α := ⨅ j : Fin n, (d j - Sturm.gershgorinRadius b n j) with hα
-  set β := ⨆ j : Fin n, (d j + Sturm.gershgorinRadius b n j) with hβ
-  have hn : 0 < n := by omega
-  have hβs : n - i < Sturm.signChanges d b n β := by
+  have hβ : n - i <
+      Sturm.signChanges d b n (⨆ j : Fin n, (d j + Sturm.gershgorinRadius b n j)) := by
     rw [Sturm.signChanges_eq_count d b n (fun j _ => hb j), Sturm.count_eq_of_le d b le_rfl]
     omega
-  by_cases hαs : Sturm.signChanges d b n α ≤ n - i
-  · exact Set.Ioc_subset_Icc_self
-      (Sturm.eigenvalues_mem_bisectionIterate d b (fun j _ => hb j) hi hin (ab := (α, β)) ⟨hαs, hβs⟩
-        r)
-  push Not at hαs
-  -- `α` is an eigenvalue, hence the smallest one, and `i = n`
-  have hpos : 0 < Sturm.count d b n α := by
-    rw [← Sturm.signChanges_eq_count d b n (fun j _ => hb j)]; omega
-  obtain ⟨k, hk⟩ : ∃ k, Sturm.eigenvalues d b n k ≤ α := by
-    rw [Sturm.count, Finset.card_pos] at hpos
-    obtain ⟨k, hk⟩ := hpos
-    exact ⟨k, (Finset.mem_filter.mp hk).2⟩
-  have hlast : Sturm.eigenvalues d b n ⟨n - 1, by omega⟩ = α :=
-    le_antisymm ((Sturm.antitone_eigenvalues d b n
-      (Fin.le_iff_val_le_val.mpr (by simp; omega))).trans hk) (Sturm.eigenvalues_mem_Icc d b n _).1
-  have hcount : Sturm.count d b n α = 1 := by
-    have h := Sturm.count_eigenvalues d b (n := n) (fun j _ => hb j) ⟨n - 1, by omega⟩
-    rw [hlast] at h
-    rw [h]
-    simp only
-    omega
-  have hin' : i = n := by
-    rw [Sturm.signChanges_eq_count d b n (fun j _ => hb j), hcount] at hαs
-    omega
-  subst hin'
-  -- the left endpoint never moves
-  have hleft : ∀ r, (givensBisection d b i i r).1 = α ∧ α ≤ (givensBisection d b i i r).2 := by
-    intro r
-    induction r with
-    | zero => exact ⟨rfl, ((Sturm.eigenvalues_mem_Icc d b i ⟨0, hn⟩).1).trans
-        (Sturm.eigenvalues_mem_Icc d b i ⟨0, hn⟩).2⟩
-    | succ r ih =>
-      have hc : α ≤ ((givensBisection d b i i r).1 + (givensBisection d b i i r).2) / 2 := by
-        rw [ih.1]; linarith [ih.2]
-      have hs : i - i < Sturm.signChanges d b i
-          (((givensBisection d b i i r).1 + (givensBisection d b i i r).2) / 2) :=
-        lt_of_lt_of_le hαs (Sturm.signChanges_monotone d b i (fun j _ => hb j) hc)
-      rw [(givensBisection_spec d b i i).2 r, ite_eq_left hs]
-      exact ⟨ih.1, hc⟩
-  rw [hlast, (hleft r).1]
-  exact ⟨le_rfl, (hleft r).2⟩
+  exact Sturm.eigenvalues_mem_Icc_bisectionIterate d b (fun j _ => hb j) hi hin
+    (ab := (⨅ j : Fin n, (d j - Sturm.gershgorinRadius b n j),
+      ⨆ j : Fin n, (d j + Sturm.gershgorinRadius b n j)))
+    (fun k => (Sturm.eigenvalues_mem_Icc d b n k).1) hβ r
 
 /-- **Givens' method, the error bound** (§5.10.2). For an unreduced `T` and `1 ≤ i ≤ n`, after
 `r` bisection steps from `[α, β]` the interval `[a^(r), b^(r)]` contains `λ_i`, has length

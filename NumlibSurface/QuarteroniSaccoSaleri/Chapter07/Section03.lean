@@ -22,7 +22,7 @@ and `StrongConvexOn`.
 
 Constraints are families `h : Fin m → ℝⁿ → ℝ` and `g : Fin r → ℝⁿ → ℝ`; the book's `J_h(x)`, whose
 columns are the `∇h_i(x)`, is the family `fun i => gradient (h i) x`, and the backbone's derivative
-data `h' i x = fderiv ℝ (h i) x = innerSL ℝ (∇h_i(x))` (`fderiv_eq_innerSL_gradient` of §7.2).
+data `h' i x = fderiv ℝ (h i) x = innerSL ℝ (∇h_i(x))` (backbone `fderiv_eq_innerSL_gradient`).
 Local minimizers on a set are `IsLocalMinOn`.
 
 ## Readings and errata
@@ -148,102 +148,6 @@ theorem isStronglyConvexOn_iff (hΩ : Convex ℝ Ω) {ρ : ℝ} :
     simp only [smul_eq_mul] at this
     linarith
 
--- TODO(backbone): the planned `StrongConvexOn.isCoerciveFunctionalOn` of
--- `Numlib/Variational/Minimization` (open there); proved here in its planned generality so that
--- Property 7.10 delegates to it. Move it there.
-/-- **A strongly convex function bounded below near a point of its domain is coercive.** If
-`StrongConvexOn K m f` with `0 < m`, `x₀ ∈ K` and `c ≤ f` on `K ∩ B(x₀; r)` for some `r > 0`
-(in particular if `f` is lower semicontinuous at `x₀`), then `f` is coercive on `K`: along the
-segment from `x₀` to a far point `y ∈ K`, the point `z` at distance `r/2` from `x₀` satisfies
-`c ≤ f z ≤ (1-t) f x₀ + t f y - (m/2) t (1-t) ‖y - x₀‖²` with `t = r / (2‖y - x₀‖)`, which
-forces `f y ≥ (m/4) ‖y - x₀‖² - (2(|c| + |f x₀|)/r) ‖y - x₀‖`. -/
-theorem strongConvexOn_isCoerciveFunctionalOn {V : Type*} [NormedAddCommGroup V]
-    [InnerProductSpace ℝ V] {K : Set V} {m : ℝ} {f : V → ℝ} (hf : StrongConvexOn K m f)
-    (hm : 0 < m) {x₀ : V} (hx₀ : x₀ ∈ K) {r c : ℝ} (hr : 0 < r)
-    (hc : ∀ y ∈ K, y ∈ ball x₀ r → c ≤ f y) : IsCoerciveFunctionalOn f K := by
-  intro M
-  set K₀ : ℝ := |c| + |f x₀| with hK₀
-  have hK₀0 : 0 ≤ K₀ := by positivity
-  set R₀ : ℝ := max (max r (16 * K₀ / (m * r))) (max 1 (8 * |M| / m)) with hR₀
-  refine ⟨R₀ + ‖x₀‖, fun y hy hyn => ?_⟩
-  set d : ℝ := ‖y - x₀‖ with hd
-  have hdR : R₀ ≤ d := by
-    have := norm_sub_norm_le y x₀
-    linarith
-  have hdr : r ≤ d := le_trans (le_trans (le_max_left _ _) (le_max_left _ _)) hdR
-  have hd1 : 1 ≤ d := le_trans (le_trans (le_max_left _ _) (le_max_right _ _)) hdR
-  have hdK : 16 * K₀ / (m * r) ≤ d :=
-    le_trans (le_trans (le_max_right _ _) (le_max_left _ _)) hdR
-  have hdM : 8 * |M| / m ≤ d := le_trans (le_trans (le_max_right _ _) (le_max_right _ _)) hdR
-  have hd0 : 0 < d := by linarith
-  -- the intermediate point `z = (1 - t) x₀ + t y`
-  set t : ℝ := r / (2 * d) with ht
-  have ht0 : 0 < t := by positivity
-  have htd : t * d = r / 2 := by rw [ht]; field_simp
-  have ht1 : t ≤ 1 / 2 := by
-    rw [ht, div_le_iff₀ (by positivity)]
-    nlinarith
-  have hz : (1 - t) • x₀ + t • y ∈ K := hf.1 hx₀ hy (by linarith) ht0.le (by ring)
-  have hzball : (1 - t) • x₀ + t • y ∈ ball x₀ r := by
-    rw [mem_ball, dist_eq_norm, show (1 - t) • x₀ + t • y - x₀ = t • (y - x₀) by module,
-      norm_smul, Real.norm_eq_abs, abs_of_pos ht0, ← hd, htd]
-    linarith
-  have hfz : c ≤ f ((1 - t) • x₀ + t • y) := hc _ hz hzball
-  have hsc := hf.2 hx₀ hy (by linarith : (0 : ℝ) ≤ 1 - t) ht0.le (by ring)
-  simp only [smul_eq_mul] at hsc
-  rw [← norm_neg, neg_sub, ← hd] at hsc
-  -- the key lower bound `t f y ≥ -K₀ + t (m/4) d²`
-  have hfx₀ : (1 - t) * f x₀ ≤ |f x₀| := by
-    have h1 : f x₀ ≤ |f x₀| := le_abs_self _
-    have h2 : 0 ≤ |f x₀| := abs_nonneg _
-    nlinarith
-  have hcK : -|c| ≤ c := neg_abs_le c
-  have hkey : t * (m / 4 * d ^ 2) - K₀ ≤ t * f y := by
-    have h1 : t * (m / 4 * d ^ 2) ≤ (1 - t) * t * (m / 2 * d ^ 2) := by
-      have : 0 ≤ t * (m / 2 * d ^ 2) := by positivity
-      nlinarith
-    linarith
-  -- divide by `t` and conclude
-  have hfy : m / 4 * d ^ 2 - 2 * K₀ / r * d ≤ f y := by
-    have h1 : K₀ = t * (2 * K₀ / r * d) := by
-      rw [ht]; field_simp
-    have h2 : t * (m / 4 * d ^ 2 - 2 * K₀ / r * d) ≤ t * f y := by linarith
-    exact le_of_mul_le_mul_left h2 ht0
-  have h3 : 2 * K₀ / r * d ≤ m / 8 * d ^ 2 := by
-    have : 2 * K₀ / r ≤ m / 8 * d := by
-      rw [div_le_iff₀ (by positivity)] at hdK
-      rw [div_le_iff₀ hr]
-      nlinarith
-    nlinarith
-  have h4 : |M| ≤ m / 8 * d ^ 2 := by
-    rw [div_le_iff₀ hm] at hdM
-    have hmd : m * d ≤ m * d ^ 2 := by nlinarith [mul_pos hm hd0]
-    nlinarith
-  linarith [le_abs_self M]
-
--- TODO(backbone): the planned `existsUnique_isMinOn_of_strongConvexOn` of
--- `Numlib/Variational/Minimization` (open there); proved here for Property 7.10. Move it there.
-/-- **Existence and uniqueness of the minimizer of a strongly convex function** on a nonempty
-closed convex subset `K` of a finite-dimensional real inner product space, for `f` lower
-semicontinuous on `K` and `StrongConvexOn K m f` with `0 < m`. Existence is
-`exists_isMinOn_of_isClosed_of_finiteDimensional` with the coercivity
-`strongConvexOn_isCoerciveFunctionalOn` (lower semicontinuity at a point of `K` gives the local
-lower bound); uniqueness is `IsMinOn.eq_of_strictConvexOn`. -/
-theorem existsUnique_isMinOn_of_strongConvexOn' {V : Type*} [NormedAddCommGroup V]
-    [InnerProductSpace ℝ V] [FiniteDimensional ℝ V] {K : Set V} (hcl : IsClosed K)
-    (hne : K.Nonempty) {f : V → ℝ} (hlsc : LowerSemicontinuousOn f K) {m : ℝ}
-    (hf : StrongConvexOn K m f) (hm : 0 < m) : ∃! x, x ∈ K ∧ IsMinOn f K x := by
-  obtain ⟨x₀, hx₀⟩ := hne
-  -- a local lower bound at `x₀`, from lower semicontinuity
-  have hlow : ∀ᶠ y in 𝓝[K] x₀, f x₀ - 1 < f y := hlsc x₀ hx₀ (f x₀ - 1) (by linarith)
-  obtain ⟨r, hr, hrK⟩ := Metric.mem_nhdsWithin_iff.1 hlow
-  have hcoer : IsCoerciveFunctionalOn f K :=
-    strongConvexOn_isCoerciveFunctionalOn hf hm hx₀ hr fun y hy hyb => (hrK ⟨hyb, hy⟩).le
-  obtain ⟨u, huK, humin⟩ := exists_isMinOn_of_isClosed_of_finiteDimensional (⊤ : Submodule ℝ V)
-    (fun _ _ => Submodule.mem_top) hcl ⟨x₀, hx₀⟩ hlsc hcoer
-  refine ⟨u, ⟨huK, humin⟩, fun v ⟨hvK, hvmin⟩ => ?_⟩
-  exact IsMinOn.eq_of_strictConvexOn (hf.strictConvexOn hm) hvmin humin hvK huK
-
 /-- **Property 7.10, with the hypothesis the book omits.** Let `Ω ⊆ ℝⁿ` be nonempty, closed and
 convex, and `f` strongly convex (7.49) *and lower semicontinuous* on `Ω` (the book's examples are
 continuous; without semicontinuity the statement is false). Then there is exactly one local
@@ -254,7 +158,7 @@ theorem property_7_10 (hΩc : IsClosed Ω) (hΩ : Convex ℝ Ω) (hne : Ω.Nonem
     (∃! xstar, xstar ∈ Ω ∧ IsMinOn f Ω xstar) ∧
       ∀ x ∈ Ω, IsLocalMinOn f Ω x → IsMinOn f Ω x := by
   obtain ⟨hρ, hsc⟩ := (isStronglyConvexOn_iff hΩ).1 hf
-  refine ⟨existsUnique_isMinOn_of_strongConvexOn' hΩc hne hlsc hsc (by positivity),
+  refine ⟨existsUnique_isMinOn_of_strongConvexOn hΩc hne (by positivity) hsc hlsc,
     fun x hx hloc => IsMinOn.of_isLocalMinOn_of_convexOn hx hloc (hsc.convexOn fun r => ?_)⟩
   positivity
 
@@ -489,13 +393,6 @@ def feasibleRegion (g : Fin m → EuclideanSpace ℝ (Fin n) → ℝ) (b : Fin m
       (∀ i : Fin m, l ≤ (i : ℕ) → (i : ℕ) < k → b i ≤ g i x) ∧
       (∀ i : Fin m, k ≤ (i : ℕ) → g i x = b i) ∧ ∀ j, 0 ≤ x j := Iff.rfl
 
--- TODO(backbone): natural home `Mathlib/Analysis/InnerProductSpace/PiL2`, beside
--- `EuclideanSpace.inner_eq_star_dotProduct`, of which it is the real case written as a sum.
-/-- The inner product of `ℝⁿ` in coordinates, `⟪v, w⟫ = ∑ j, v_j w_j`. -/
-theorem real_inner_eq_sum (v w : EuclideanSpace ℝ (Fin n)) :
-    ⟪v, w⟫_ℝ = ∑ j, v j * w j := by
-  simp [PiLp.inner_apply, RCLike.inner_apply, mul_comm]
-
 /-- A multiple of a coordinate is a convex function on any convex set. -/
 private theorem convexOn_const_mul_coord {C : Set (EuclideanSpace ℝ (Fin n))} (hC : Convex ℝ C)
     (c : ℝ) (j : Fin n) : ConvexOn ℝ C fun y : EuclideanSpace ℝ (Fin n) => c * y j := by
@@ -518,17 +415,7 @@ theorem nonlinearLagrangian_eq (x : EuclideanSpace ℝ (Fin n))
     (lam : (Fin m → ℝ) × EuclideanSpace ℝ (Fin n)) :
     nonlinearLagrangian f g b x lam
       = f x + ∑ i, lam.1 i * (b i - g i x) - ∑ j, lam.2 j * x j := by
-  rw [nonlinearLagrangian, real_inner_eq_sum]
-
--- TODO(backbone): natural home `Mathlib/Analysis/InnerProductSpace/PiL2`, beside
--- `EuclideanSpace.proj`; it is how a gradient is read off the coordinate derivatives.
-/-- A real functional on `ℝⁿ` written through the coordinate projections:
-`⟪v, ·⟫ = ∑ j, v j • proj j`. -/
-theorem innerSL_eq_sum_smul_proj (v : EuclideanSpace ℝ (Fin n)) :
-    innerSL ℝ v = ∑ j, v j • EuclideanSpace.proj (𝕜 := ℝ) j := by
-  ext w
-  rw [innerSL_apply_apply, real_inner_eq_sum]
-  simp
+  rw [nonlinearLagrangian, EuclideanSpace.real_inner_eq_sum]
 
 /-- **The partial Jacobian `J_ℒ(x, λ) = ∇_x ℒ(x, λ)` of the Lagrangian of (7.52)**:
 `∇_x ℒ(x, λ) = ∇f(x) - ∑ λ_i ∇g_i(x) - λ₂`, for `f` and the `g_i` differentiable at `x`. -/
@@ -713,7 +600,7 @@ theorem exists_kuhnTucker (hlk : l ≤ k) (hreg : IsRegularNLP g b l k xstar)
         simp only [hlam1, dite_eq_right (not_lt.2 i.2), standardEqDeriv]
     have h2 : innerSL ℝ (lam1, lam2).2
         = ∑ j, mu (Sum.inr j) • standardIneqDeriv g l k (Sum.inr j) xstar := by
-      rw [innerSL_eq_sum_smul_proj]
+      rw [EuclideanSpace.innerSL_eq_sum_smul_proj]
       refine Finset.sum_congr rfl fun j _ => ?_
       simp only [standardIneqDeriv, Sum.elim_inr, hlam2v, neg_smul, smul_neg]
     have h3 : fderiv ℝ f xstar - ∑ i, (lam1, lam2).1 i • fderiv ℝ (g i) xstar
@@ -791,7 +678,7 @@ theorem property_7_14 (hlk : l ≤ k) (hreg : IsRegularNLP g b l k xstar)
     fun i hik => by rw [hy3 i hik]; ring⟩,
     lam, fun j => by rw [hgrad]; simp, fun j _ => by rw [hgrad]; simp,
     by rw [hgrad, inner_zero_left], ?_⟩
-  rw [Finset.sum_eq_zero fun i _ => hc1 i, real_inner_eq_sum,
+  rw [Finset.sum_eq_zero fun i _ => hc1 i, EuclideanSpace.real_inner_eq_sum,
     Finset.sum_eq_zero fun j _ => hc2 j, sub_zero]
 
 /-- **Property 7.15 (sufficiency of the Kuhn–Tucker conditions).** Let `f` be concave and each
@@ -829,7 +716,7 @@ theorem property_7_15 {C : Set (EuclideanSpace ℝ (Fin n))}
   have hzero : ∑ i, lam.1 i * (b i - g i xstar) = 0 ∧ ∑ j, lam.2 j * xstar j = 0 := by
     have hA : 0 ≤ ∑ i, lam.1 i * (b i - g i xstar) := Finset.sum_nonneg fun i _ => hterm1 i
     have hB : ∑ j, lam.2 j * xstar j ≤ 0 := Finset.sum_nonpos fun j _ => hterm2 j
-    rw [real_inner_eq_sum] at hIV
+    rw [EuclideanSpace.real_inner_eq_sum] at hIV
     exact ⟨by linarith, by linarith⟩
   have hc1 : ∀ i, lam.1 i * (b i - g i xstar) = 0 := fun i =>
     (Finset.sum_eq_zero_iff_of_nonneg fun i _ => hterm1 i).1 hzero.1 i (Finset.mem_univ i)
@@ -898,10 +785,10 @@ theorem property_7_15 {C : Set (EuclideanSpace ℝ (Fin n))}
           = ⟪gradient (fun y => nonlinearLagrangian f g b y lam) xstar, y⟫_ℝ := by
         rw [inner_sub_right, hII, sub_zero]
       have h4 : ⟪gradient (fun y => nonlinearLagrangian f g b y lam) xstar, y⟫_ℝ ≤ 0 := by
-        rw [real_inner_eq_sum]
+        rw [EuclideanSpace.real_inner_eq_sum]
         exact Finset.sum_nonpos fun j _ => by nlinarith [hI j, hCnonneg y hyC j]
       have h5 : ∑ j : Fin n, -lam.2 j * -((y - xstar) j) = ⟪lam.2, y - xstar⟫_ℝ := by
-        rw [real_inner_eq_sum]
+        rw [EuclideanSpace.real_inner_eq_sum]
         exact Finset.sum_congr rfl fun j _ => by ring
       rw [Fintype.sum_sum_type]
       simp only [Sum.elim_inl, Sum.elim_inr, _root_.neg_apply, EuclideanSpace.coe_proj]

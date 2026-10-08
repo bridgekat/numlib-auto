@@ -248,22 +248,6 @@ theorem equation_5_44 {i k : Fin N} (hik : i ≠ k) (θ : ℝ) (x : Fin N → �
       ite_eq_left rfl]
     ring
 
--- TODO(backbone): a point of the unit circle is `(cos θ, sin θ)`; natural home
--- `Mathlib/Analysis/SpecialFunctions/Complex/Arg`, beside `Complex.norm_eq_one_iff`.
-/-- A pair `(c, s)` with `c² + s² = 1` is `(cos θ, sin θ)` for some angle `θ`. -/
-theorem exists_cos_eq_sin_eq {c s : ℝ} (h : c ^ 2 + s ^ 2 = 1) :
-    ∃ θ : ℝ, Real.cos θ = c ∧ Real.sin θ = s := by
-  have hz : ‖(⟨c, s⟩ : ℂ)‖ = 1 := by
-    rw [← pow_eq_one_iff_of_nonneg (norm_nonneg _) two_ne_zero, ← Complex.normSq_eq_norm_sq,
-      Complex.normSq_mk, ← h]
-    ring
-  obtain ⟨θ, hθ⟩ := (Complex.norm_eq_one_iff _).1 hz
-  refine ⟨θ, ?_, ?_⟩
-  · have := congrArg Complex.re hθ
-    rwa [Complex.exp_ofReal_mul_I_re] at this
-  · have := congrArg Complex.im hθ
-    rwa [Complex.exp_ofReal_mul_I_im] at this
-
 /-- **(5.44), the annihilating choice, and (5.51).** Let `α_ik = √(x_i² + x_k²) > 0`. If `θ` is
 chosen with `c = cos θ = x_i/α_ik` and `s = sin θ = −x_k/α_ik` (that is, `θ = arctan(−x_k/x_i)`) —
 such a `θ` exists — then `y = G(i, k, θ)ᵀ x` has `y_k = 0`, `y_i = α_ik` and `y_j = x_j` for
@@ -282,7 +266,7 @@ theorem equation_5_51 {i k : Fin N} (hik : i ≠ k) (x : Fin N → ℝ) (hx : ¬
     rw [hpair] at h
     rw [neg_sq]
     exact h
-  obtain ⟨θ, hc, hs⟩ := exists_cos_eq_sin_eq hsq
+  obtain ⟨θ, hc, hs⟩ := Real.exists_cos_eq_sin_eq hsq
   have hG : equation_5_43 i k θ =
       planeRotation i k (givensPair (x i) (x k)).1 (givensPair (x i) (x k)).2 := by
     rw [equation_5_43, hc, hs, neg_neg, hpair]
@@ -513,7 +497,7 @@ annihilate the entry `(j+1, j)` of `G_{j−1}ᵀ ⋯ G_1ᵀ H`, the matrix `R = 
 triangular, (5.47), and `H = Q R` with `Q = G_1 ⋯ G_{n−1}` orthogonal and itself upper Hessenberg,
 (5.48). The pair `(Q, R)` is the backbone's `Matrix.hessenbergGivensQR H` (Program 31), the fold
 of the `n − 1` rotations of the Givens pairs; `Matrix.hessenbergGivensQR_spec` gives the
-factorization and `Matrix.exists_cos_eq_sin_eq` the angles. -/
+factorization and `Real.exists_cos_eq_sin_eq` the angles. -/
 theorem equation_5_47 {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessenberg) :
     ∃ θ : ℕ → ℝ,
       let G : ℕ → Matrix (Fin N) (Fin N) ℝ := fun j =>
@@ -534,7 +518,7 @@ theorem equation_5_47 {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessenberg
       set b := R ⟨j + 1, h⟩ ⟨j, by omega⟩
       have hsq : (givensPair a b).1 ^ 2 + (-(givensPair a b).2) ^ 2 = 1 := by
         rw [neg_sq]; exact givensPair_sq_add_sq a b
-      obtain ⟨θ, hc, hs⟩ := exists_cos_eq_sin_eq hsq
+      obtain ⟨θ, hc, hs⟩ := Real.exists_cos_eq_sin_eq hsq
       refine ⟨θ, fun h' => ?_⟩
       rw [equation_5_43, hc, hs, neg_neg]
       rfl

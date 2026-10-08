@@ -998,6 +998,68 @@ theorem eigenvalues₀_mem_bisectionIterate {n idx : ℕ} (hb : IsUnreduced b n)
       Set.Ioc (bisectionIterate d b n idx ab r).1 (bisectionIterate d b n idx ab r).2 :=
   eigenvalues_mem_bisectionIterate d b hb hidx hidxn h r
 
+/-- **Givens' bisection from a lower bound of the spectrum keeps the eigenvalue in the closed
+interval** ([quarteroni2000numerical] §5.10.2): for an unreduced matrix, `1 ≤ idx ≤ n`, and a
+starting interval `(a, b')` whose left end `a` is at most every eigenvalue and whose right end has
+`n - idx < s(b')`, the `idx`-th largest eigenvalue lies in the *closed* `r`-th bisection interval
+for every `r`. When `s(a) ≤ n - idx` this is `Sturm.eigenvalues_mem_bisectionIterate`; otherwise
+`a` is itself the smallest eigenvalue, `idx = n`, and the left endpoint never moves — the case in
+which the half-open bracket of `Sturm.eigenvalues_mem_bisectionIterate` fails, as it does for the
+Gershgorin interval when its left end is an eigenvalue. -/
+theorem eigenvalues_mem_Icc_bisectionIterate {n idx : ℕ} (hb : IsUnreduced b n) (hidx : 1 ≤ idx)
+    (hidxn : idx ≤ n) {ab : ℝ × ℝ} (ha : ∀ k, ab.1 ≤ eigenvalues d b n k)
+    (hb' : n - idx < signChanges d b n ab.2) (r : ℕ) :
+    eigenvalues d b n ⟨idx - 1, by omega⟩ ∈
+      Set.Icc (bisectionIterate d b n idx ab r).1 (bisectionIterate d b n idx ab r).2 := by
+  have hn : 0 < n := by omega
+  by_cases has : signChanges d b n ab.1 ≤ n - idx
+  · exact Set.Ioc_subset_Icc_self (eigenvalues_mem_bisectionIterate d b hb hidx hidxn ⟨has, hb'⟩ r)
+  push Not at has
+  -- `a` is an eigenvalue, hence the smallest one, and `idx = n`
+  have hpos : 0 < count d b n ab.1 := by
+    rw [← signChanges_eq_count d b n hb]; omega
+  obtain ⟨k, hk⟩ : ∃ k, eigenvalues d b n k ≤ ab.1 := by
+    rw [count, Finset.card_pos] at hpos
+    obtain ⟨k, hk⟩ := hpos
+    exact ⟨k, (Finset.mem_filter.mp hk).2⟩
+  have hlast : eigenvalues d b n ⟨n - 1, by omega⟩ = ab.1 :=
+    le_antisymm ((antitone_eigenvalues d b n
+      (Fin.le_iff_val_le_val.mpr (by simp; omega))).trans hk) (ha _)
+  have hcount : count d b n ab.1 = 1 := by
+    have h := count_eigenvalues d b (n := n) hb ⟨n - 1, by omega⟩
+    rw [hlast] at h
+    rw [h]
+    simp only
+    omega
+  have hidx' : idx = n := by
+    rw [signChanges_eq_count d b n hb, hcount] at has
+    omega
+  subst hidx'
+  -- the right end lies above some eigenvalue, hence above `a`
+  have hab : ab.1 ≤ ab.2 := by
+    have hpos' : 0 < count d b idx ab.2 := by
+      rw [← signChanges_eq_count d b idx hb]; omega
+    rw [count, Finset.card_pos] at hpos'
+    obtain ⟨k', hk'⟩ := hpos'
+    exact (ha k').trans (Finset.mem_filter.mp hk').2
+  -- the left endpoint never moves
+  have hleft : ∀ r, (bisectionIterate d b idx idx ab r).1 = ab.1 ∧
+      ab.1 ≤ (bisectionIterate d b idx idx ab r).2 := by
+    intro r
+    induction r with
+    | zero => exact ⟨rfl, hab⟩
+    | succ r ih =>
+      have hc : ab.1 ≤ ((bisectionIterate d b idx idx ab r).1 +
+          (bisectionIterate d b idx idx ab r).2) / 2 := by
+        rw [ih.1]; linarith [ih.2]
+      have hs : idx - idx < signChanges d b idx
+          (((bisectionIterate d b idx idx ab r).1 + (bisectionIterate d b idx idx ab r).2) / 2) :=
+        lt_of_lt_of_le has (signChanges_monotone d b idx hb hc)
+      rw [bisectionIterate_succ, bisectionStep, ite_eq_left hs]
+      exact ⟨ih.1, hc⟩
+  rw [hlast, (hleft r).1]
+  exact ⟨le_rfl, (hleft r).2⟩
+
 /-- The Gershgorin interval brackets every eigenvalue: a point `a` below it and a point `b'` at or
 above it satisfy `s(a) = 0 ≤ n - idx < n = s(b')` for `1 ≤ idx ≤ n`. -/
 theorem signChanges_gershgorin {n idx : ℕ} (hb : IsUnreduced b n) (hidx : 1 ≤ idx)

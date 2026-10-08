@@ -222,3 +222,7 @@ id = "Matrix.IsHermitian.eigenvalues_injective_of_isUnreducedUpperHessenberg"
 
 [[node]]
 id = "Matrix.IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm"
+
+[[node]]
+id = "Sturm.eigenvalues_mem_Icc_bisectionIterate"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'

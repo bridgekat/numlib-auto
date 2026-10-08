@@ -33,9 +33,36 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteS
 theorem gradient_eq_toDualReal_symm (f : E → ℝ) :
     gradient f = fun x ↦ (InnerProductSpace.toDualReal E).symm (fderiv ℝ f x) := rfl
 
+/-- **The Fréchet derivative is the inner product with the gradient**, as a continuous linear
+map: `fderiv ℝ f x = innerSL ℝ (∇f(x))`, so that `fderiv ℝ f x d = ⟪∇f(x), d⟫`. No
+differentiability is needed, both sides being junk-valued together. This is the form in which
+derivative data `f' x = innerSL ℝ (g x)` (as in `Numlib/Optimization/Descent`) meets Mathlib's
+gradient; upstreaming candidate beside Mathlib's `toDual_gradient`. -/
+theorem fderiv_eq_innerSL_gradient (f : E → ℝ) (x : E) :
+    fderiv ℝ f x = innerSL ℝ (gradient f x) := by
+  ext d
+  rw [innerSL_apply_apply, inner_gradient_left]
+
 end ToDualReal
 
 namespace EuclideanSpace
+
+/-- **The inner product of `ℝⁿ` in coordinates**, `⟪v, w⟫ = ∑ j, v_j w_j`: the real case of
+`EuclideanSpace.inner_eq_star_dotProduct`, written as a sum. Upstreaming candidate (natural home
+`Mathlib/Analysis/InnerProductSpace/PiL2`). -/
+theorem real_inner_eq_sum {ι : Type*} [Fintype ι] (v w : EuclideanSpace ℝ ι) :
+    ⟪v, w⟫_ℝ = ∑ j, v j * w j := by
+  simp [PiLp.inner_apply, RCLike.inner_apply, mul_comm]
+
+/-- **A real functional on `ℝⁿ` through the coordinate projections**:
+`⟪v, ·⟫ = ∑ j, v j • proj j`, which is how a gradient is read off the coordinate derivatives.
+Upstreaming candidate (natural home `Mathlib/Analysis/InnerProductSpace/PiL2`, beside
+`EuclideanSpace.proj`). -/
+theorem innerSL_eq_sum_smul_proj {ι : Type*} [Fintype ι] (v : EuclideanSpace ℝ ι) :
+    innerSL ℝ v = ∑ j, v j • EuclideanSpace.proj (𝕜 := ℝ) j := by
+  ext w
+  rw [innerSL_apply_apply, real_inner_eq_sum]
+  simp
 
 variable {d : ℕ} {g : EuclideanSpace ℝ (Fin d) → ℝ}
 

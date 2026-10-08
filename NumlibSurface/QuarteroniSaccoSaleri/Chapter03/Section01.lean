@@ -155,16 +155,6 @@ theorem exists_lpCLM_eq (t : PiLp p (fun _ : Fin n => ℝ) →L[ℝ] PiLp p (fun
     ∃ M : Matrix (Fin n) (Fin n) ℝ, lpCLM p M = t :=
   (lpCLMEquiv p).surjective t
 
--- TODO(backbone): the operator ring of a finite-dimensional space is Dedekind-finite; stated
--- here for `PiLp p (Fin n → ℝ)` through the matrix algebra, for `isUnit_of_norm_mul_sub_one_lt`.
-instance : IsDedekindFiniteMonoid
-    (PiLp p (fun _ : Fin n => ℝ) →L[ℝ] PiLp p (fun _ : Fin n => ℝ)) where
-  mul_eq_one_symm {a b} h := by
-    obtain ⟨A, rfl⟩ := exists_lpCLM_eq a
-    obtain ⟨B, rfl⟩ := exists_lpCLM_eq b
-    rw [← lpCLM_mul, ← lpCLM_one] at h ⊢
-    rw [mul_eq_one_comm.mp ((lpCLMEquiv p).injective (a₁ := A * B) (a₂ := 1) h)]
-
 /-- **Remark 3.1, (3.6) (Kahan).** For a nonsingular `A`, the relative distance of `A` from the
 set of singular matrices in the `p`-norm, `dist_p(A) = min {‖δA‖_p / ‖A‖_p : A + δA singular}`,
 is attained and equals `1 / K_p(A)` (backbone `ContinuousLinearEquiv.isLeast_dist_singular` for

@@ -59,5 +59,3 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.11)'
 [[node]]
 id = "inner_toEuclideanLin_eq_of_conjTranspose_eq"
 
-[[node]]
-id = "norm_deriv_eigenvalue_perturbation_le_of_eventually"

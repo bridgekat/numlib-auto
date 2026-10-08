@@ -354,45 +354,6 @@ theorem ieeeUnitRoundoff :
 
 /-! ### §2.5.5 Rounding of a real number in its machine representation -/
 
-/-- The nearest-integer rounding of `μ ≥ 0` as the book's digit rule: with `a_{t+1} = ⌊β μ⌋ mod β`
-the first digit beyond the integer part, `round μ = ⌊μ⌋ + 1` when `a_{t+1} ≥ β/2` and `⌊μ⌋`
-otherwise — for even `β`. -/
-private theorem round_eq_floor_add_ite {β : ℕ} (hβ : Even β) (hβ2 : 2 ≤ β) (μ : ℝ) :
-    round μ = ⌊μ⌋ + if (β : ℤ) / 2 ≤ ⌊μ * β⌋ % β then 1 else 0 := by
-  obtain ⟨k, hk⟩ := hβ
-  have hk1 : 1 ≤ k := by omega
-  have hkR : (0 : ℝ) < k := by exact_mod_cast hk1
-  have hβk : (β : ℝ) = 2 * k := by rw [hk]; push_cast; ring
-  have hβk' : (β : ℤ) / 2 = k := by rw [hk]; omega
-  -- the first digit beyond the integer part is `⌊fract μ · β⌋`
-  have hfloor : ⌊μ * β⌋ % β = ⌊Int.fract μ * β⌋ := by
-    have h1 : μ * β = ((⌊μ⌋ * β : ℤ) : ℝ) + Int.fract μ * β := by
-      push_cast; rw [Int.fract]; ring
-    rw [h1, Int.floor_intCast_add, Int.mul_add_emod_self_right]
-    refine Int.emod_eq_of_lt (Int.floor_nonneg.2 (by positivity)) ?_
-    rw [Int.floor_lt]
-    push_cast
-    exact mul_lt_of_lt_one_left (by exact_mod_cast (show 0 < β by omega)) (Int.fract_lt_one μ)
-  have hround : round μ = ⌊μ⌋ + ⌊Int.fract μ + 1 / 2⌋ := by
-    rw [round_eq, ← Int.floor_intCast_add]
-    congr 1
-    rw [Int.fract]; ring
-  rw [hround, hfloor, hβk']
-  congr 1
-  have h0 := Int.fract_nonneg μ
-  have h1 := Int.fract_lt_one μ
-  split_ifs with h
-  · rw [Int.le_floor, hβk] at h
-    push_cast at h
-    rw [Int.floor_eq_iff]
-    push_cast
-    constructor <;> nlinarith
-  · rw [Int.le_floor, hβk, not_le] at h
-    push_cast at h
-    rw [Int.floor_eq_iff]
-    push_cast
-    constructor <;> nlinarith
-
 /-- **(2.32), the rounding as a digit rule**: for even `β` (the book's standing assumption of
 §2.5.1) and `x` with exponent `e`, digits `|x| = (0.a₁a₂…a_t a_{t+1}…) β^e`, integer part of the
 shifted mantissa `a₁…a_t = ⌊μ⌋` where `μ = |x| β^(t-e)`, and next digit `a_{t+1} = ⌊β μ⌋ mod β`,

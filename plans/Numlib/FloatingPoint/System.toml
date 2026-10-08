@@ -291,3 +291,7 @@ id = "System.abs_chop"
 
 [[node]]
 id = "System.chop_eq_self_of_abs_eq"
+
+[[node]]
+id = "round_eq_floor_add_ite"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (2.32)'

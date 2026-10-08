@@ -8,6 +8,7 @@ import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Analysis.Normed.Module.HahnBanach
 import Mathlib.Analysis.Normed.Operator.Banach
 import Mathlib.Analysis.RCLike.Lemmas
+import Mathlib.RingTheory.Artinian.Module
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Conditioning.Problem
@@ -813,6 +814,20 @@ theorem NormedRing.norm_sub_le_of_norm_mul_sub_one_lt {a c : R} (hc : IsUnit c)
   exact NormedRing.norm_sub_inverse_le_of_norm_mul_sub_one_lt hc hr
 
 end ApproxInverse
+
+section DedekindFinite
+
+/-- **The operator ring of a finite-dimensional space is Dedekind-finite**: for operators of a
+finite-dimensional normed space, `a * b = 1` implies `b * a = 1`. `E →L[𝕜] E` is a
+finite-dimensional algebra over the field `𝕜`, hence an Artinian ring, and Artinian rings are
+Dedekind-finite. This is the hypothesis `isUnit_of_norm_mul_sub_one_lt` asks of the operator
+ring. -/
+instance ContinuousLinearMap.isDedekindFiniteMonoid [CompleteSpace 𝕜] [FiniteDimensional 𝕜 E] :
+    IsDedekindFiniteMonoid (E →L[𝕜] E) :=
+  have : IsArtinianRing (E →L[𝕜] E) := IsArtinianRing.of_finite 𝕜 (E →L[𝕜] E)
+  inferInstance
+
+end DedekindFinite
 
 /-! ### A posteriori: the residual and an approximate inverse -/
 

@@ -729,6 +729,28 @@ theorem hessenbergRelation (h : NoSeriousBreakdown A B v₁ w₁) :
     exact h.apply_vec j
   eq_zero_of_lt _ _ hij := coeff_eq_zero_of_lt _ _ _ _ hij
 
+/-- **The `m`-step Hessenberg relation** ([saad2003iterative] (7.3) for a run of `m` steps): under
+`NoBreakdown m` the first `m` columns of `A V = V T̄` hold, and padding the iterate basis and the
+coefficients with zeros beyond column `m - 1` gives a two-family Hessenberg relation, to which the
+residual formulas `Krylov.HessenbergRelation₂.residual_eq` and
+`Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq` apply. Unlike `BiLanczos.hessenbergRelation`
+it asks nothing of the process past step `m`. -/
+theorem NoBreakdown.hessenbergRelation₂ {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
+    Krylov.HessenbergRelation₂ A (fun j => if j < m then vec A B v₁ w₁ j else 0)
+      (vec A B v₁ w₁) (fun i j => if j < m then coeff A B v₁ w₁ i j else 0) where
+  apply_eq j := by
+    by_cases hj : j < m
+    · simp only [hj, ite_true]
+      rw [show j + 2 = j + 1 + 1 from rfl, Finset.sum_range_succ, Finset.sum_range_succ,
+        sum_coeff_lt, coeff_self, coeff_succ_self]
+      exact apply_vec _ _ _ _ (h.delta_ne_zero j hj)
+    · simp only [hj, ite_false, map_zero, zero_smul, Finset.sum_const_zero]
+  eq_zero_of_lt i j hij := by
+    by_cases hj : j < m
+    · simp only [hj, ite_true]
+      exact coeff_eq_zero_of_lt _ _ _ _ hij
+    · simp only [hj, ite_false]
+
 private theorem map_span_le {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {k : ℕ} (hk : k ≤ m) :
     Submodule.map A (Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio k)) ≤
       Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio (k + 1)) := by

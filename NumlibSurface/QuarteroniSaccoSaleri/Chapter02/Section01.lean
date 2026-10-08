@@ -4,6 +4,7 @@ import Mathlib.Analysis.Calculus.Deriv.Prod
 import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
+import Numlib.Algebra.Polynomial.Roots
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Conditioning.Problem
 
@@ -69,24 +70,6 @@ namespace QuarteroniSaccoSaleri.Chapter02
 the parameter `a`. -/
 noncomputable def example_2_1_polynomial (a : ℝ) : ℝ[X] :=
   X ^ 4 - C (2 * a - 1) * X ^ 2 + C (a * (a - 1))
-
--- TODO(backbone): a Mathlib-shaped fact about real quadratics, with no home in the backbone yet.
-/-- The real roots of `X ^ 2 - C c`, counted with multiplicity: two (`±√c`, a double root `0` at
-`c = 0`) when `0 ≤ c`, none when `c < 0`. -/
-theorem card_roots_X_sq_sub_C (c : ℝ) :
-    Multiset.card (X ^ 2 - C c : ℝ[X]).roots = if 0 ≤ c then 2 else 0 := by
-  split_ifs with hc
-  · have h : (X ^ 2 - C c : ℝ[X]) = (X - C √c) * (X - C (-√c)) := by
-      conv_lhs => rw [← Real.sq_sqrt hc, C_pow]
-      rw [C_neg]; ring
-    rw [h, roots_mul (mul_ne_zero (X_sub_C_ne_zero _) (X_sub_C_ne_zero _)), roots_X_sub_C,
-      roots_X_sub_C]
-    simp
-  · rw [Multiset.card_eq_zero]
-    refine Multiset.eq_zero_of_forall_notMem fun x hx => ?_
-    rw [mem_roots (X_pow_sub_C_ne_zero two_pos c), IsRoot.def] at hx
-    simp at hx
-    nlinarith [sq_nonneg x]
 
 /-- **Example 2.1.** The number of real roots of `x⁴ - x²(2a - 1) + a(a - 1)`, counted with
 multiplicity, is `4` if `a ≥ 1`, `2` if `a ∈ [0, 1)` and `0` if `a < 0`: it varies discontinuously

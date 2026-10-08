@@ -102,6 +102,19 @@ theorem intervalIntegrable_div_rpow (hab : a < b) (hμ0 : 0 ≤ μ) (hμ1 : μ <
       abs_of_pos (Real.rpow_pos_of_pos hxa (-μ)), Real.rpow_neg hxa.le, div_eq_mul_inv]
     exact mul_le_mul_of_nonneg_right (hM x hx) (inv_nonneg.2 hpos.le)
 
+/-- **`φ(x)/(x - a)^μ` is as smooth as `φ` away from the singularity `a`**: `C^k` on `U ∩ (a, ∞)`
+whenever `φ` is `C^k` on `U`, since `x ↦ (x - a)^μ` is smooth and positive there. This is what
+lets a Newton–Cotes error bound be applied to the integrand on `[a + ε, b]`
+([quarteroni2000numerical] (9.49)). -/
+theorem contDiffOn_div_rpow {U : Set ℝ} {k : WithTop ℕ∞} (hφ : ContDiffOn ℝ k φ U) :
+    ContDiffOn ℝ k (fun x => φ x / (x - a) ^ μ) (U ∩ Set.Ioi a) := by
+  refine (hφ.mono Set.inter_subset_left).div ?_ fun x hx =>
+    ne_of_gt (Real.rpow_pos_of_pos (by simpa [sub_pos] using hx.2) μ)
+  intro x hx
+  have hne : x - a ≠ 0 := sub_ne_zero.mpr (ne_of_gt hx.2)
+  exact ((Real.contDiffAt_rpow_const_of_ne (p := μ) hne).comp x
+    (contDiffAt_id.sub contDiffAt_const)).contDiffWithinAt
+
 /-- **The a priori bound of [quarteroni2000numerical] §9.8.2.** For `μ < 1` and `φ` with
 `|φ| ≤ M` on `(a, b]`, `|∫_a^b φ(x)/(x - a)^μ dx| ≤ M (b - a)^{1-μ}/(1 - μ)` (the integral exists
 by `intervalIntegrable_div_rpow` when `φ` is measurable; the bound needs no more than the

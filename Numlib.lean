@@ -1,6 +1,7 @@
 import Numlib.Algebra.LinearRecurrence
 import Numlib.Algebra.Polynomial.AevalApply
 import Numlib.Algebra.Polynomial.Commute
+import Numlib.Algebra.Polynomial.Roots
 import Numlib.Analysis.Asymptotics.Pow
 import Numlib.Analysis.Calculus.AddTorsor.AffineMap
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
@@ -279,6 +280,7 @@ import Numlib.Analysis.PDE.Elliptic.Regularity
 import Numlib.Analysis.PDE.Elliptic.Spectral
 import Numlib.Analysis.PDE.Heat
 import Numlib.Analysis.PDE.Heat.Classical
+import Numlib.Analysis.PDE.Heat.Energy
 import Numlib.Analysis.PDE.Heat.MaximumPrinciple
 import Numlib.Analysis.PDE.Heat.SineSeries
 import Numlib.Analysis.PDE.Transport

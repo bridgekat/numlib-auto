@@ -59,7 +59,8 @@ Also here: the density of finite positional expansions (`exists_int_mul_zpow_sub
 [quarteroni2000numerical] §2.5.1), the IEC 559 / IEEE 754 parameter sets `System.ieeeSingle`
 and `System.ieeeDouble` ([quarteroni2000numerical] §2.5.4) with their constants `ε_M`, `x_min`
 and `x_max` ([golub2013matrix] §2.7.2), and the monotonicity of Mathlib's
-`round` (`FloatingPoint.monotone_round`), which Mathlib lacks.
+`round` (`FloatingPoint.monotone_round`), which Mathlib lacks, and its digit rule in an even base
+(`FloatingPoint.round_eq_floor_add_ite`, [quarteroni2000numerical] (2.32)).
 
 Searched and not reused: Mathlib's `Mathlib/Data/FP/Basic.lean` (an `unsafe`, theorem-free
 `FP.Float`); `Int.log` and `round` are reused.
@@ -77,6 +78,46 @@ variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 theorem monotone_round [FloorRing K] : Monotone (round : K → ℤ) := fun x y hxy => by
   rw [round_eq, round_eq]
   exact Int.floor_mono (by linarith)
+
+/-- **Rounding to nearest as a digit rule** ([quarteroni2000numerical] (2.32)): for an even base
+`β ≥ 2`, with `a = ⌊β μ⌋ mod β` the first digit of `μ` beyond its integer part,
+`round μ = ⌊μ⌋ + 1` when `a ≥ β/2` and `⌊μ⌋` otherwise. For odd `β` the digit rule chops some
+tails above one half. -/
+theorem round_eq_floor_add_ite [FloorRing K] {β : ℕ} (hβ : Even β) (hβ2 : 2 ≤ β) (μ : K) :
+    round μ = ⌊μ⌋ + if (β : ℤ) / 2 ≤ ⌊μ * β⌋ % β then 1 else 0 := by
+  obtain ⟨k, hk⟩ := hβ
+  have hk1 : 1 ≤ k := by omega
+  have hkR : (0 : K) < k := by exact_mod_cast hk1
+  have hβk : (β : K) = 2 * k := by rw [hk]; push_cast; ring
+  have hβk' : (β : ℤ) / 2 = k := by rw [hk]; omega
+  -- the first digit beyond the integer part is `⌊fract μ · β⌋`
+  have hfloor : ⌊μ * β⌋ % β = ⌊Int.fract μ * β⌋ := by
+    have h1 : μ * β = ((⌊μ⌋ * β : ℤ) : K) + Int.fract μ * β := by
+      push_cast; rw [Int.fract]; ring
+    rw [h1, Int.floor_intCast_add, Int.mul_add_emod_self_right]
+    refine Int.emod_eq_of_lt (Int.floor_nonneg.2 (by positivity)) ?_
+    rw [Int.floor_lt]
+    push_cast
+    exact mul_lt_of_lt_one_left (by exact_mod_cast (show 0 < β by omega)) (Int.fract_lt_one μ)
+  have hround : round μ = ⌊μ⌋ + ⌊Int.fract μ + 1 / 2⌋ := by
+    rw [round_eq, ← Int.floor_intCast_add]
+    congr 1
+    rw [Int.fract]; ring
+  rw [hround, hfloor, hβk']
+  congr 1
+  have h0 := Int.fract_nonneg μ
+  have h1 := Int.fract_lt_one μ
+  split_ifs with h
+  · rw [Int.le_floor, hβk] at h
+    push_cast at h
+    rw [Int.floor_eq_iff]
+    push_cast
+    constructor <;> nlinarith
+  · rw [Int.le_floor, hβk, not_le] at h
+    push_cast at h
+    rw [Int.floor_eq_iff]
+    push_cast
+    constructor <;> nlinarith
 
 /-- `|sign x| ≤ 1`, the sign cast into the field. -/
 theorem abs_coe_sign_le_one (x : K) : |(SignType.sign x : K)| ≤ 1 := by

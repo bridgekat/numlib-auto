@@ -1,0 +1,17 @@
+namespace = "Heat"
+
+[[node]]
+id = "IsClassicalSolutionIccWith"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equations (13.1)–(13.4)'
+
+[[node]]
+id = "IsClassicalSolutionIcc"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equations (13.1)–(13.4)'
+
+[[node]]
+id = "energy"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 13.1'
+
+[[node]]
+id = "IsClassicalSolutionIcc.energy_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (13.7)'

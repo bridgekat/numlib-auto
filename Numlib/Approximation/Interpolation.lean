@@ -43,7 +43,8 @@ interpolation at the equispaced nodes of a period. The material is [han2009theor
   `t` vanish, it gives the error formula `Lagrange.exists_sub_interpolate_eq`.
 * `Lagrange.isGreatest_norm_interpolateCLM` and `Lagrange.norm_interpolateCLM` identify the operator
   norm of the interpolation operator with the **Lebesgue constant** of its nodes, the largest value
-  of `t ↦ ∑ i, |ℓ_i t|`.
+  of `t ↦ ∑ i, |ℓ_i t|`; at equispaced nodes it is at least `2^n/(8n²)`
+  (`Lagrange.two_pow_div_le_sum_abs_eval_basis_equispaced`, Schönhage's lower bound).
 * `norm_piecewiseLinearInterpCLM` says that piecewise-linear interpolation has norm one, and
   `norm_sub_piecewiseLinearInterpCLM_le` bounds its error on a mesh of size `h` by `h² ‖f''‖ / 8` —
   the two-node case of the same error formula. `norm_sub_piecewiseLinearInterpCLM_le_modulus` is the
@@ -2223,5 +2224,292 @@ theorem norm_interpolateCLM_chebyshev_le (n : ℕ) :
   rw [hcos] at this
   refine le_trans (le_of_eq ?_) this
   exact Finset.sum_congr rfl fun i _ => by rw [Lagrange.basisCM_apply]; rfl
+
+
+/-! ### A lower bound for the equispaced Lebesgue constants -/
+
+section Equispaced
+
+open Finset
+open scoped Nat
+
+/-- `∏_{j<m} (m − j) = m !`, over `ℝ`. -/
+private theorem prod_range_sub_cast (m : ℕ) : ∏ j ∈ range m, ((m : ℝ) - j) = (m ! : ℝ) := by
+  have h : ∀ j ∈ range m, ((m : ℝ) - (j : ℝ)) = ((m - j : ℕ) : ℝ) := fun j hj => by
+    rw [Nat.cast_sub (le_of_lt (mem_range.mp hj))]
+  rw [Finset.prod_congr rfl h, ← Nat.cast_prod, ← Nat.descFactorial_eq_prod_range,
+    Nat.descFactorial_self]
+
+/-- `∏_{i<k} (i + 1) = k !`, over `ℝ`. -/
+private theorem prod_range_add_one_cast (k : ℕ) : ∏ i ∈ range k, ((i : ℝ) + 1) = (k ! : ℝ) := by
+  rw [← Finset.prod_range_add_one_eq_factorial k, Nat.cast_prod]
+  exact Finset.prod_congr rfl fun i _ => by push_cast; ring
+
+/-- `∏_{m < j ≤ n} (j − m) = (n − m)!`, over `ℝ`. -/
+private theorem prod_Ico_sub_cast {m n : ℕ} :
+    ∏ j ∈ Ico (m + 1) (n + 1), ((j : ℝ) - m) = ((n - m)! : ℝ) := by
+  rw [Finset.prod_Ico_eq_prod_range]
+  simp only [Nat.add_sub_add_right]
+  rw [← prod_range_add_one_cast (n - m)]
+  exact Finset.prod_congr rfl fun i _ => by push_cast; ring
+
+/-- The product of the distances from `m` to the other integers `0, …, n`, with the vanishing
+factor at `k = m` replaced by `1`: it is `m ! (n − m)!`. -/
+private theorem prod_range_ite_abs_sub {m n : ℕ} (hmn : m ≤ n) :
+    ∏ k ∈ range (n + 1), (if k = m then (1 : ℝ) else |(m : ℝ) - (k : ℝ)|)
+      = (m ! : ℝ) * ((n - m)! : ℝ) := by
+  rw [Finset.range_eq_Ico,
+    ← Finset.prod_Ico_consecutive _ (Nat.zero_le m) (Nat.le_succ_of_le hmn),
+    ← Finset.prod_Ico_consecutive _ (Nat.le_succ m) (Nat.succ_le_succ hmn)]
+  have h1 : ∏ k ∈ Ico 0 m, (if k = m then (1 : ℝ) else |(m : ℝ) - (k : ℝ)|) = (m ! : ℝ) := by
+    rw [← Finset.range_eq_Ico, ← prod_range_sub_cast m]
+    refine Finset.prod_congr rfl fun k hk => ?_
+    have hk' : k < m := mem_range.mp hk
+    have hkm : (k : ℝ) < (m : ℝ) := by exact_mod_cast hk'
+    rw [ite_eq_right (Nat.ne_of_lt hk')]
+    exact abs_of_nonneg (by linarith)
+  have h2 : ∏ k ∈ Ico m (m + 1), (if k = m then (1 : ℝ) else |(m : ℝ) - (k : ℝ)|) = 1 := by
+    rw [Finset.prod_Ico_succ_top (le_refl m), Finset.Ico_self, Finset.prod_empty, one_mul]
+    simp
+  have h3 : ∏ k ∈ Ico (m + 1) (n + 1), (if k = m then (1 : ℝ) else |(m : ℝ) - (k : ℝ)|)
+      = ((n - m)! : ℝ) := by
+    rw [← prod_Ico_sub_cast (m := m) (n := n)]
+    refine Finset.prod_congr rfl fun k hk => ?_
+    have hk' : m + 1 ≤ k := (Finset.mem_Ico.mp hk).1
+    have hkm : (m : ℝ) < (k : ℝ) := by
+      have h : ((m : ℝ) + 1) ≤ (k : ℝ) := by exact_mod_cast hk'
+      linarith
+    rw [ite_eq_right (by omega : k ≠ m), abs_sub_comm]
+    exact abs_of_nonneg (by linarith)
+  rw [h1, h2, h3, one_mul]
+
+/-- The denominator of the `i`-th characteristic polynomial at equispaced nodes, with the node
+spacing scaled away: `∏_{j ≠ i} |i − j| = i ! (n − i)!`. -/
+private theorem prod_erase_abs_sub (n : ℕ) (i : Fin (n + 1)) :
+    ∏ j ∈ (univ : Finset (Fin (n + 1))).erase i, |((i : ℕ) : ℝ) - ((j : ℕ) : ℝ)|
+      = ((i : ℕ)! : ℝ) * (((n - (i : ℕ))! : ℝ)) := by
+  have hmn : (i : ℕ) ≤ n := Nat.lt_succ_iff.mp i.isLt
+  have hstep : ∏ j ∈ (univ : Finset (Fin (n + 1))).erase i, |((i : ℕ) : ℝ) - ((j : ℕ) : ℝ)|
+      = ∏ j ∈ (univ : Finset (Fin (n + 1))),
+          (if (j : ℕ) = (i : ℕ) then (1 : ℝ) else |((i : ℕ) : ℝ) - ((j : ℕ) : ℝ)|) := by
+    rw [← Finset.prod_erase (univ : Finset (Fin (n + 1)))
+      (f := fun j : Fin (n + 1) =>
+        if (j : ℕ) = (i : ℕ) then (1 : ℝ) else |((i : ℕ) : ℝ) - ((j : ℕ) : ℝ)|)
+      (a := i) (by simp)]
+    refine Finset.prod_congr rfl fun j hj => ?_
+    have hne : (j : ℕ) ≠ (i : ℕ) := fun hc => (Finset.mem_erase.mp hj).1 (Fin.ext hc)
+    rw [ite_eq_right hne]
+  rw [hstep, Fin.prod_univ_eq_prod_range
+    (fun k => if k = (i : ℕ) then (1 : ℝ) else |((i : ℕ) : ℝ) - (k : ℝ)|) (n + 1),
+    prod_range_ite_abs_sub hmn]
+
+/-- The numerator of the Lebesgue function at the midpoint of the first panel, before the node
+`i` is removed: `∏_{j=0}^{n} |1/2 − j| = (2n)! / (2^{2n+1} n !)`. -/
+private theorem prod_range_abs_half (n : ℕ) :
+    ∏ j ∈ range (n + 1), |1 / 2 - (j : ℝ)| = ((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ)) := by
+  induction n with
+  | zero => norm_num
+  | succ n ih =>
+    have hfn : (0 : ℝ) < (n ! : ℝ) := by exact_mod_cast n.factorial_pos
+    have habs : |1 / 2 - ((n + 1 : ℕ) : ℝ)| = (n : ℝ) + 1 / 2 := by
+      push_cast
+      rw [abs_of_nonpos (by linarith)]
+      ring
+    have hfac2 : (((2 * (n + 1))! : ℕ) : ℝ)
+        = (2 * (n : ℝ) + 2) * (2 * (n : ℝ) + 1) * (((2 * n)! : ℕ) : ℝ) := by
+      have h : 2 * (n + 1) = 2 * n + 1 + 1 := by ring
+      rw [h, Nat.factorial_succ, Nat.factorial_succ]
+      push_cast
+      ring
+    have hfac1 : (((n + 1)! : ℕ) : ℝ) = ((n : ℝ) + 1) * (n ! : ℝ) := by
+      rw [Nat.factorial_succ]
+      push_cast
+      ring
+    rw [Finset.prod_range_succ, ih, habs, hfac2, hfac1]
+    have hmul : 2 * (n + 1) + 1 = 2 * n + 1 + 2 := by ring
+    rw [hmul, pow_add]
+    field_simp
+    ring
+
+/-- `∑_{i=0}^{n} 1/(i ! (n − i)!) = 2^n / n !`, the binomial theorem in the form the Lebesgue
+function needs. -/
+private theorem sum_inv_factorial_mul (n : ℕ) :
+    ∑ i ∈ range (n + 1), 1 / ((i ! : ℝ) * ((n - i)! : ℝ)) = 2 ^ n / (n ! : ℝ) := by
+  have hfn : (0 : ℝ) < (n ! : ℝ) := by exact_mod_cast n.factorial_pos
+  have key : ∀ i ∈ range (n + 1),
+      1 / ((i ! : ℝ) * ((n - i)! : ℝ)) = (n.choose i : ℝ) / (n ! : ℝ) := by
+    intro i hi
+    have hle : i ≤ n := Nat.lt_succ_iff.mp (mem_range.mp hi)
+    have h : ((n.choose i : ℝ)) * (i ! : ℝ) * ((n - i)! : ℝ) = (n ! : ℝ) := by
+      exact_mod_cast congrArg (fun k : ℕ => (k : ℝ))
+        (Nat.choose_mul_factorial_mul_factorial hle)
+    have hfi : (0 : ℝ) < (i ! : ℝ) := by exact_mod_cast i.factorial_pos
+    have hfni : (0 : ℝ) < ((n - i)! : ℝ) := by exact_mod_cast (n - i).factorial_pos
+    rw [div_eq_div_iff (by positivity) (ne_of_gt hfn)]
+    linarith [h]
+  rw [Finset.sum_congr rfl key, ← Finset.sum_div, ← Nat.cast_sum, Nat.sum_range_choose]
+  norm_num
+
+/-- Every factor `|1/2 − k|` of the Lebesgue function at the midpoint of the first panel is at
+least `1/2`; in particular it is positive. -/
+private theorem half_le_abs_half_sub (k : ℕ) : (1 : ℝ) / 2 ≤ |1 / 2 - (k : ℝ)| := by
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · norm_num
+  · have h : (1 : ℝ) ≤ k := by exact_mod_cast hk
+    rw [abs_of_nonpos (by linarith)]
+    linarith
+
+/-- The largest factor `|1/2 − k|`, `k ≤ n`, is the one at `k = n`: it is `(2n − 1)/2`. -/
+private theorem abs_half_sub_le {k n : ℕ} (hk : k ≤ n) (hn : 1 ≤ n) :
+    |1 / 2 - (k : ℝ)| ≤ (2 * (n : ℝ) - 1) / 2 := by
+  have hkn : (k : ℝ) ≤ n := by exact_mod_cast hk
+  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hk0 : (0 : ℝ) ≤ k := Nat.cast_nonneg k
+  rw [abs_le]
+  constructor <;> linarith
+
+/-- The arithmetic of the Schönhage bound: the value `2 (2n)! 2^n / ((2n − 1) 2^{2n+1} (n !)²)`
+that the Lebesgue function reaches at the midpoint of the first panel is
+`C(2n, n) 2^n / (4^n (2n − 1))`, and `C(2n, n) ≥ 4^n/(2n)`
+(`Nat.four_pow_le_two_mul_self_mul_centralBinom`) makes it at least `2^n/(8n²)`. -/
+private theorem two_pow_div_le_of_centralBinom {n : ℕ} (hn : 1 ≤ n) :
+    (2 : ℝ) ^ n / (8 * (n : ℝ) ^ 2)
+      ≤ 2 * (((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ))) / (2 * (n : ℝ) - 1)
+          * ((2 : ℝ) ^ n / (n ! : ℝ)) := by
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast hn
+  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hfn : (0 : ℝ) < (n ! : ℝ) := by exact_mod_cast n.factorial_pos
+  have hcb : ((Nat.centralBinom n : ℕ) : ℝ) * (n ! : ℝ) * (n ! : ℝ) = (((2 * n)! : ℕ) : ℝ) := by
+    have hle : n ≤ 2 * n := Nat.le_mul_of_pos_left n (by norm_num)
+    have h := Nat.choose_mul_factorial_mul_factorial hle
+    have h2 : 2 * n - n = n := by omega
+    rw [h2] at h
+    rw [Nat.centralBinom_eq_two_mul_choose]
+    exact_mod_cast h
+  have hcb2 : (4 : ℝ) ^ n ≤ 2 * (n : ℝ) * ((Nat.centralBinom n : ℕ) : ℝ) := by
+    have h := Nat.four_pow_le_two_mul_self_mul_centralBinom n hn
+    have h' : ((4 ^ n : ℕ) : ℝ) ≤ ((2 * n * Nat.centralBinom n : ℕ) : ℝ) := by exact_mod_cast h
+    push_cast at h'
+    linarith
+  have hpow : (2 : ℝ) ^ (2 * n + 1) = 2 * 4 ^ n := by
+    rw [pow_succ, pow_mul]
+    norm_num
+    ring
+  have hc0 : (0 : ℝ) ≤ ((Nat.centralBinom n : ℕ) : ℝ) := Nat.cast_nonneg _
+  have h4 : (0 : ℝ) < (4 : ℝ) ^ n := by positivity
+  have h2p : (0 : ℝ) < (2 : ℝ) ^ n := by positivity
+  have h2n1 : (0 : ℝ) < 2 * (n : ℝ) - 1 := by linarith
+  have key : 2 * (((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ))) / (2 * (n : ℝ) - 1)
+      * ((2 : ℝ) ^ n / (n ! : ℝ))
+      = ((Nat.centralBinom n : ℕ) : ℝ) * 2 ^ n / (4 ^ n * (2 * (n : ℝ) - 1)) := by
+    rw [hpow, ← hcb]
+    field_simp
+  have h8n : (0 : ℝ) < 8 * (n : ℝ) ^ 2 := by nlinarith
+  rw [key, div_le_div_iff₀ h8n (mul_pos h4 h2n1)]
+  have e1 : (4 : ℝ) ^ n * (2 * (n : ℝ) - 1)
+      ≤ (2 * (n : ℝ) * ((Nat.centralBinom n : ℕ) : ℝ)) * (2 * (n : ℝ) - 1) :=
+    mul_le_mul_of_nonneg_right hcb2 h2n1.le
+  have e2 : (2 * (n : ℝ) * ((Nat.centralBinom n : ℕ) : ℝ)) * (2 * (n : ℝ) - 1)
+      ≤ ((Nat.centralBinom n : ℕ) : ℝ) * (8 * (n : ℝ) ^ 2) := by nlinarith [hc0, hn0]
+  nlinarith [e1, e2, h2p]
+
+/-- **The equispaced Lebesgue function is exponentially large** (Schönhage;
+[quarteroni2000numerical] §8.1.3): for `n ≥ 1` and the `n + 1` equally spaced nodes
+`x_j = a + j (b − a)/n` of `[a, b]`, the Lebesgue function `∑_i |ℓ_i|` at the midpoint
+`t = a + (b − a)/(2n)` of the first panel is at least `2^n/(8 n²) = 2^{n−3}/n²`. Hence (by
+`Lagrange.norm_interpolateCLM`) the Lebesgue constant of equispaced interpolation grows
+exponentially, the one-sided half of Turetskii's asymptotics `Λ_n ≃ 2^{n+1}/(e n log n)`.
+
+At `t` the node spacing cancels from every characteristic polynomial,
+`ℓ_i(t) = ∏_{j ≠ i} (1/2 − j)/(i − j)`; the denominators telescope into `i ! (n − i)!` and the
+common numerator into `(2n)!/(2^{2n+1} n !)`; the largest omitted factor is `(2n − 1)/2`, and
+summing `∑_i 1/(i ! (n − i)!) = 2^n/n !` gives `C(2n, n) 2^n/(4^n (2n − 1))`, which
+`Nat.four_pow_le_two_mul_self_mul_centralBinom` bounds below by `2^n/(8n²)`. -/
+theorem two_pow_div_le_sum_abs_eval_basis_equispaced {a b : ℝ} (hab : a < b) {n : ℕ}
+    (hn : 1 ≤ n) :
+    (2 : ℝ) ^ n / (8 * (n : ℝ) ^ 2) ≤
+      ∑ i : Fin (n + 1),
+        |(Lagrange.basis univ (fun j : Fin (n + 1) => a + ((j : ℕ) : ℝ) * (b - a) / n) i).eval
+          (a + (b - a) / (2 * n))| := by
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast hn
+  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hba : (0 : ℝ) < b - a := by linarith
+  have hc : (b - a) / (n : ℝ) ≠ 0 := ne_of_gt (by positivity)
+  have hval : ∀ i : Fin (n + 1),
+      |(Lagrange.basis univ (fun j : Fin (n + 1) => a + ((j : ℕ) : ℝ) * (b - a) / n) i).eval
+          (a + (b - a) / (2 * n))|
+        = (∏ j ∈ (univ : Finset (Fin (n + 1))).erase i, |1 / 2 - ((j : ℕ) : ℝ)|)
+            / (((i : ℕ)! : ℝ) * ((n - (i : ℕ))! : ℝ)) := by
+    intro i
+    have hprod : (Lagrange.basis univ (fun j : Fin (n + 1) => a + ((j : ℕ) : ℝ) * (b - a) / n)
+          i).eval (a + (b - a) / (2 * n))
+        = ∏ j ∈ (univ : Finset (Fin (n + 1))).erase i,
+            (1 / 2 - ((j : ℕ) : ℝ)) / (((i : ℕ) : ℝ) - ((j : ℕ) : ℝ)) := by
+      rw [Lagrange.eval_basis_eq_prod]
+      refine Finset.prod_congr rfl fun j hj => ?_
+      have e1 : a + (b - a) / (2 * n) - (a + ((j : ℕ) : ℝ) * (b - a) / n)
+          = ((b - a) / n) * (1 / 2 - ((j : ℕ) : ℝ)) := by
+        field_simp
+        ring
+      have e2 : a + ((i : ℕ) : ℝ) * (b - a) / n - (a + ((j : ℕ) : ℝ) * (b - a) / n)
+          = ((b - a) / n) * (((i : ℕ) : ℝ) - ((j : ℕ) : ℝ)) := by
+        field_simp
+        ring
+      rw [e1, e2, mul_div_mul_left _ _ hc]
+    have hsplit : (∏ j ∈ (univ : Finset (Fin (n + 1))).erase i,
+        |(1 / 2 - ((j : ℕ) : ℝ)) / (((i : ℕ) : ℝ) - ((j : ℕ) : ℝ))|)
+        = (∏ j ∈ (univ : Finset (Fin (n + 1))).erase i, |1 / 2 - ((j : ℕ) : ℝ)|)
+          / ∏ j ∈ (univ : Finset (Fin (n + 1))).erase i, |((i : ℕ) : ℝ) - ((j : ℕ) : ℝ)| := by
+      rw [← Finset.prod_div_distrib]
+      exact Finset.prod_congr rfl fun j _ => abs_div _ _
+    rw [hprod, Finset.abs_prod, hsplit, prod_erase_abs_sub]
+  have hPeq : ∏ j ∈ (univ : Finset (Fin (n + 1))), |1 / 2 - ((j : ℕ) : ℝ)|
+      = ((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ)) := by
+    rw [← prod_range_abs_half n]
+    exact Fin.prod_univ_eq_prod_range (fun k => |1 / 2 - (k : ℝ)|) (n + 1)
+  have h2n1 : (0 : ℝ) < 2 * (n : ℝ) - 1 := by linarith
+  have hlower : ∀ i : Fin (n + 1),
+      2 * (((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ))) / (2 * (n : ℝ) - 1)
+        ≤ ∏ j ∈ (univ : Finset (Fin (n + 1))).erase i, |1 / 2 - ((j : ℕ) : ℝ)| := by
+    intro i
+    have hprodpos : (0 : ℝ) < ∏ j ∈ (univ : Finset (Fin (n + 1))).erase i,
+        |1 / 2 - ((j : ℕ) : ℝ)| :=
+      Finset.prod_pos fun j _ => lt_of_lt_of_le (by norm_num) (half_le_abs_half_sub _)
+    have hmul : |1 / 2 - ((i : ℕ) : ℝ)|
+        * (∏ j ∈ (univ : Finset (Fin (n + 1))).erase i, |1 / 2 - ((j : ℕ) : ℝ)|)
+        = ((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ)) := by
+      rw [← hPeq]
+      exact Finset.mul_prod_erase (univ : Finset (Fin (n + 1)))
+        (fun j : Fin (n + 1) => |1 / 2 - ((j : ℕ) : ℝ)|) (Finset.mem_univ i)
+    have hub := abs_half_sub_le (Nat.lt_succ_iff.mp i.isLt) hn
+    have step : ((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ))
+        ≤ ((2 * (n : ℝ) - 1) / 2)
+          * (∏ j ∈ (univ : Finset (Fin (n + 1))).erase i, |1 / 2 - ((j : ℕ) : ℝ)|) := by
+      rw [← hmul]
+      exact mul_le_mul_of_nonneg_right hub hprodpos.le
+    rw [div_le_iff₀ h2n1]
+    linarith
+  have hsum1 : ∑ i : Fin (n + 1), (1 : ℝ) / (((i : ℕ)! : ℝ) * ((n - (i : ℕ))! : ℝ))
+      = 2 ^ n / (n ! : ℝ) := by
+    rw [Fin.sum_univ_eq_sum_range (fun k => (1 : ℝ) / ((k ! : ℝ) * ((n - k)! : ℝ))) (n + 1)]
+    exact sum_inv_factorial_mul n
+  refine le_trans (two_pow_div_le_of_centralBinom hn) ?_
+  calc 2 * (((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ))) / (2 * (n : ℝ) - 1)
+        * ((2 : ℝ) ^ n / (n ! : ℝ))
+      = ∑ i : Fin (n + 1), 2 * (((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ)))
+            / (2 * (n : ℝ) - 1) * ((1 : ℝ) / (((i : ℕ)! : ℝ) * ((n - (i : ℕ))! : ℝ))) := by
+        rw [← Finset.mul_sum, hsum1]
+    _ ≤ ∑ i : Fin (n + 1),
+          |(Lagrange.basis univ (fun j : Fin (n + 1) => a + ((j : ℕ) : ℝ) * (b - a) / n) i).eval
+            (a + (b - a) / (2 * n))| := by
+        refine Finset.sum_le_sum fun i _ => ?_
+        have hfi : (0 : ℝ) < ((i : ℕ)! : ℝ) := by exact_mod_cast (i : ℕ).factorial_pos
+        have hfni : (0 : ℝ) < ((n - (i : ℕ))! : ℝ) := by
+          exact_mod_cast (n - (i : ℕ)).factorial_pos
+        rw [hval i, mul_one_div, div_le_div_iff_of_pos_right (mul_pos hfi hfni)]
+        exact hlower i
+
+
+end Equispaced
 
 end Lagrange

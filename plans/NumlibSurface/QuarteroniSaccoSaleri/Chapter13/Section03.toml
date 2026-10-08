@@ -213,10 +213,6 @@ id = "exists_definition_13_1_mul_norm_sq_le"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the eigenbasis expansion of the θ-method'
 
 [[node]]
-id = "sq_sub_le_mul_integral_derivative_sq"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the Cauchy–Schwarz step of the Poincaré inequality (12.16)'
-
-[[node]]
 id = "SpectralSpace.lagrangeBasis"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like O(N⁴)"'
 

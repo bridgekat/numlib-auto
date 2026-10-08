@@ -800,20 +800,6 @@ def spectralSubmodule (N : ℕ) : Submodule ℝ ℝ[X] where
 theorem mem_spectralSubmodule_iff {N : ℕ} {p : ℝ[X]} :
     p ∈ spectralSubmodule N ↔ p.natDegree ≤ N ∧ p.eval (-1) = 0 ∧ p.eval 1 = 0 := Iff.rfl
 
-/-- **Cauchy–Schwarz for the increment of a polynomial**: `(p(b) − p(a))² ≤ (b − a) ∫_a^b (p')²`,
-from `p(b) − p(a) = ∫_a^b p'` and `intervalIntegral.sq_integral_mul_le_of_continuousOn` against
-`1`. TODO(backbone): the `C¹` form beside `Chapter12.poincare_poly`. -/
-theorem sq_sub_le_mul_integral_derivative_sq (p : ℝ[X]) {a b : ℝ} (hab : a ≤ b) :
-    (p.eval b - p.eval a) ^ 2 ≤ (b - a) * ∫ t in a..b, (derivative p).eval t ^ 2 := by
-  have hftc : ∫ t in a..b, (derivative p).eval t = p.eval b - p.eval a :=
-    intervalIntegral.integral_eq_sub_of_hasDerivAt (fun t _ => p.hasDerivAt t)
-      ((derivative p).continuous.intervalIntegrable _ _)
-  have hcs := intervalIntegral.sq_integral_mul_le_of_continuousOn hab (f := fun _ => (1 : ℝ))
-    (g := fun t => (derivative p).eval t) continuousOn_const
-    (derivative p).continuous.continuousOn
-  simp only [one_mul, one_pow, intervalIntegral.integral_const, smul_eq_mul, mul_one] at hcs
-  rwa [hftc] at hcs
-
 -- the nodes and weights are phantom parameters of the type, there for the inner product instance
 set_option linter.unusedVariables false in
 /-- **The pseudo-spectral trial space** `V_N = ℙ_N^0` of §13.3.1's "pseudo-spectral Galerkin
@@ -1073,7 +1059,8 @@ theorem le_spectralForm_lagrangeBasis_self [hx : Fact (Chapter12.IsLegendreLobat
     fun h => hjN (hx.out.injective (h.trans hx.out.last.symm))
   have hxj : -1 ≤ x j := (hx.out.mem j).1
   have hpos : 0 < 1 - x j := by linarith
-  have h1 := sq_sub_le_mul_integral_derivative_sq l hxj1.le
+  have h1 := intervalIntegral.sq_sub_le_mul_integral_sq_of_hasDerivAt hxj1.le
+    l.continuous.continuousOn (derivative l).continuous.continuousOn fun t _ => l.hasDerivAt t
   have hl1 : l.eval 1 = 0 := by
     rw [hl, ← hx.out.last]; exact Lagrange.eval_basis_of_ne hjN (Finset.mem_univ _)
   have hlj : l.eval (x j) = 1 := by

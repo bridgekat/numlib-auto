@@ -508,6 +508,83 @@ theorem tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le {Fn : E → F}
   have h := (hone k (hmem k)).2
   linarith
 
+omit [CompleteSpace E] [CompleteSpace F] [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E] in
+open scoped Classical in
+/-- The guarded form of a Newton-like recursion `x_{k+1} = x_k - (B k (x k))⁻¹ F (x k)`: the
+approximate derivative `B k (x k)` is used while the iterate is in `S`, and the exact one
+outside. It agrees with the unguarded recursion as long as the iterates stay in `S`, which is
+how the conditional convergence theorem below is reduced to the unconditional one. -/
+private noncomputable def guardedIterate (Fn : E → F) (F' : E → E →L[𝕜] F)
+    (B : ℕ → E → E →L[𝕜] F) (S : Set E) (x₀ : E) : ℕ → E
+  | 0 => x₀
+  | k + 1 =>
+    let z := guardedIterate Fn F' B S x₀ k
+    z - (if z ∈ S then B k z else F' z).inverse (Fn z)
+
+omit [CompleteSpace F] in
+/-- **Linear convergence of Newton-like iterations with approximate derivatives depending on the
+iterate** ([quarteroni2000numerical] Property 7.1, for the difference Jacobian of (7.10)), the
+conditional form of `Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le`: near a
+root `x*` with `F'(x*)` invertible and `F'` Lipschitz there are `δ, η > 0` such that for every
+family `B k z` of operators with `‖B k z - F' z‖ ≤ η` *for `z` in the ball `B(x*; δ)`*, every
+sequence `x (k+1) = x k - (B k (x k))⁻¹ F (x k)` started in the ball stays in it, has every
+`B k (x k)` invertible with `‖(B k (x k))⁻¹‖ ≤ 2 ‖F'(x*)⁻¹‖`, halves its error at every step and
+converges to `x*`. The unconditional statement uses its hypothesis `‖B k - F' (x k)‖ ≤ η` only at
+iterates lying in the ball, so this one follows from it by guarding the recursion
+(`Newton.guardedIterate`) rather than by reproving the induction. -/
+theorem tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le_of_mem
+    {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E} (hstar : Fn xstar = 0)
+    (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' xstar) {r L : ℝ} (hr : 0 < r)
+    (hF : ∀ x ∈ Metric.ball xstar r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.ball xstar r, ∀ y ∈ Metric.ball xstar r, ‖F' x - F' y‖ ≤ L * ‖x - y‖) :
+    ∃ δ > 0, δ ≤ r ∧ ∃ η > 0, ∀ (B : ℕ → E → E →L[𝕜] F) (x : ℕ → E),
+      x 0 ∈ Metric.ball xstar δ → (∀ k, ∀ z ∈ Metric.ball xstar δ, ‖B k z - F' z‖ ≤ η) →
+      (∀ k, x (k + 1) = x k - (B k (x k)).inverse (Fn (x k))) →
+      (∀ k, x k ∈ Metric.ball xstar δ) ∧
+        (∀ k, ∃ e' : E ≃L[𝕜] F, (e' : E →L[𝕜] F) = B k (x k) ∧
+          ‖(e'.symm : F →L[𝕜] E)‖ ≤ 2 * ‖(e.symm : F →L[𝕜] E)‖) ∧
+        (∀ k, ‖x (k + 1) - xstar‖ ≤ ‖x k - xstar‖ / 2) ∧ Tendsto x atTop (𝓝 xstar) := by
+  classical
+  obtain ⟨δ, hδ, hδr, η, hη, hmain⟩ :=
+    tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le hstar e he hr hF hLip
+  refine ⟨δ, hδ, hδr, η, hη, fun B x hx0 hB hstep => ?_⟩
+  let x' : ℕ → E := guardedIterate Fn F' B (Metric.ball xstar δ) (x 0)
+  let B' : ℕ → E →L[𝕜] F := fun k =>
+    if x' k ∈ Metric.ball xstar δ then B k (x' k) else F' (x' k)
+  have hx'0 : x' 0 = x 0 := rfl
+  have hx'succ : ∀ k, x' (k + 1) = x' k - (B' k).inverse (Fn (x' k)) := fun k => by
+    change guardedIterate Fn F' B (Metric.ball xstar δ) (x 0) (k + 1) = _
+    rw [guardedIterate]
+  have hB'η : ∀ k, ‖B' k - F' (x' k)‖ ≤ η := fun k => by
+    change ‖(if x' k ∈ Metric.ball xstar δ then B k (x' k) else F' (x' k)) - F' (x' k)‖ ≤ η
+    split_ifs with hmem
+    · exact hB k _ hmem
+    · rw [sub_self, norm_zero]; exact hη.le
+  obtain ⟨hmem, hinv, hhalf, hlim⟩ := hmain x' B' (by rw [hx'0]; exact hx0) hB'η hx'succ
+  -- the guarded sequence is the original one
+  have heq : ∀ k, x' k = x k := by
+    intro k
+    induction k with
+    | zero => exact hx'0
+    | succ k ih =>
+      have : B' k = B k (x k) := by
+        have hm := hmem k
+        rw [ih] at hm
+        change (if x' k ∈ Metric.ball xstar δ then B k (x' k) else F' (x' k)) = B k (x k)
+        simp only [ih, hm, ↓reduceIte]
+      rw [hx'succ, hstep, ih, this]
+  have hB'eq : ∀ k, B' k = B k (x k) := fun k => by
+    have hm := hmem k
+    rw [heq] at hm
+    change (if x' k ∈ Metric.ball xstar δ then B k (x' k) else F' (x' k)) = B k (x k)
+    simp only [heq, hm, ↓reduceIte]
+  refine ⟨fun k => heq k ▸ hmem k, fun k => ?_, fun k => ?_, ?_⟩
+  · obtain ⟨e', he', hn⟩ := hinv k
+    exact ⟨e', by rw [he', hB'eq], hn⟩
+  · have := hhalf k
+    rwa [heq, heq] at this
+  · exact hlim.congr heq
+
 omit [CompleteSpace E] [CompleteSpace F] in
 /-- **Quadratic convergence of Newton-like iterations whose derivative error is first order in the
 error** ([quarteroni2000numerical] Property 7.1, second part). For a sequence

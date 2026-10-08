@@ -5,10 +5,6 @@ id = "example_2_1_polynomial"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.1'
 
 [[node]]
-id = "card_roots_X_sq_sub_C"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.1'
-
-[[node]]
 id = "example_2_1"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.1'
 

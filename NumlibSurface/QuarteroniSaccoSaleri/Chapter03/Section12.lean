@@ -159,13 +159,6 @@ private theorem toLp_iterate (x₀ : Fin n → ℝ) (k : ℕ) :
       (Refinement.step (lpCLM p C) (lpCLM p A) (toLp p b))^[k] (toLp p x₀) :=
   (Function.Semiconj.iterate_right (fun x => (iterativeRefinementStep_eq C A b p x).1) k) x₀
 
-/-- `Matrix.lpCLM p` respects powers. -/
-private theorem lpCLM_pow' (M : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
-    lpCLM p (M ^ k) = lpCLM p M ^ k := by
-  induction k with
-  | zero => rw [pow_zero, pow_zero, lpCLM_one]
-  | succ k ih => rw [pow_succ, lpCLM_mul, ih, pow_succ]
-
 variable {C A b}
 
 /-- **§3.12.2, exactness.** "In absence of rounding errors, the process would stop at the first
@@ -194,17 +187,6 @@ theorem iterativeRefinement_exact (hA : IsUnit A) {xs : Fin n → ℝ} (hxs : A 
   rw [hz]
   exact h1
 
-/-- The error recursion of iterative refinement in exact arithmetic: with `x*` a solution of
-`A x = b`, `x⁽ᵏ⁾ - x* = (I - C A)ᵏ (x⁽⁰⁾ - x*)` (backbone `Refinement.iterate_sub_eq`). -/
-private theorem iterate_sub_eq' (C A : Matrix (Fin n) (Fin n) ℝ) {b xs : Fin n → ℝ}
-    (hxs : A *ᵥ xs = b) (x₀ : Fin n → ℝ) (k : ℕ) :
-    (iterativeRefinementStep C A b)^[k] x₀ - xs = ((1 - C * A) ^ k) *ᵥ (x₀ - xs) := by
-  have h := Refinement.iterate_sub_eq (C := lpCLM 2 C) (A := lpCLM 2 A) (b := toLp 2 b)
-    (xs := toLp 2 xs) (by rw [lpCLM_apply, ofLp_toLp, hxs]) (toLp 2 x₀) k
-  rw [← toLp_iterate, ← toLp_sub, ← toLp_sub, ← lpCLM_mul, ← lpCLM_one, ← lpCLM_sub,
-    ← lpCLM_pow', lpCLM_apply, ofLp_toLp] at h
-  exact toLp_injective 2 h
-
 /-- **§3.12.2, convergence in exact arithmetic.** Iterative refinement with the approximate
 inverse `C` is the stationary iteration with matrix `I - C A`: for a solution `x*` of `A x = b`
 the error obeys `x⁽ᵏ⁾ - x* = (I - C A)ᵏ (x⁽⁰⁾ - x*)`, so it is reduced by a factor
@@ -220,40 +202,12 @@ theorem iterativeRefinement_convergence (C A : Matrix (Fin n) (Fin n) ℝ) :
     ((∀ b : Fin n → ℝ, ∃ x, ∀ x₀,
         Tendsto (fun k => (iterativeRefinementStep C A b)^[k] x₀) atTop (𝓝 x)) ↔
       complexSpectralRadius (1 - C * A) < 1) := by
-  refine ⟨fun b xs hxs x₀ k => ⟨iterate_sub_eq' C A hxs x₀ k, ?_⟩, ?_⟩
+  refine ⟨fun b xs hxs x₀ k => ⟨Refinement.iterate_sub_eq_mulVec C A hxs x₀ k, ?_⟩, ?_⟩
   · have h := Refinement.norm_iterate_sub_le (C := lpCLM p C) (A := lpCLM p A) (b := toLp p b)
       (xs := toLp p xs) (by rw [lpCLM_apply, ofLp_toLp, hxs]) (toLp p x₀) k
     rw [← toLp_iterate, ← toLp_sub, ← toLp_sub, ← lpCLM_mul, ← lpCLM_one, ← lpCLM_sub] at h
     exact h
-  · constructor
-    · intro h
-      obtain ⟨x, hx⟩ := h 0
-      rw [← tendsto_pow_iff_complexSpectralRadius_lt_one,
-        tendsto_zero_iff_forall_mulVec_tendsto_zero]
-      intro v
-      have hv := (hx v).sub (hx 0)
-      rw [sub_self] at hv
-      have key : ∀ k, (iterativeRefinementStep C A 0)^[k] v -
-          (iterativeRefinementStep C A 0)^[k] 0 = ((1 - C * A) ^ k) *ᵥ v := by
-        intro k
-        have h1 := iterate_sub_eq' C A (xs := 0) (mulVec_zero A) v k
-        have h2 := iterate_sub_eq' C A (xs := 0) (mulVec_zero A) 0 k
-        rw [sub_zero, sub_zero] at h1
-        rw [sub_zero, sub_zero, mulVec_zero] at h2
-        rw [h1, h2, sub_zero]
-      simpa only [key] using hv
-    · intro h b
-      have hu : IsUnit (C * A) := by
-        have := isUnit_one_sub_of_complexSpectralRadius_lt_one h
-        rwa [sub_sub_cancel] at this
-      have hA : IsUnit A := (isUnit_iff_isUnit_det A).2
-        (isUnit_of_mul_isUnit_right (by rw [← det_mul]; exact (isUnit_iff_isUnit_det _).1 hu))
-      refine ⟨A⁻¹ *ᵥ b, fun x₀ => ?_⟩
-      rw [← tendsto_sub_nhds_zero_iff]
-      have hpow := (tendsto_pow_iff_complexSpectralRadius_lt_one _).2 h
-      rw [tendsto_zero_iff_forall_mulVec_tendsto_zero] at hpow
-      simpa only [iterate_sub_eq' C A (mulVec_nonsing_inv_mulVec hA b) x₀] using
-        hpow (x₀ - A⁻¹ *ᵥ b)
+  · exact Refinement.forall_exists_forall_tendsto_iff_complexSpectralRadius_lt_one C A
 
 end Refinement
 
