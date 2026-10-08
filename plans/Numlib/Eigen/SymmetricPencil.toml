@@ -12,6 +12,10 @@ id = "Matrix.pencilEigenvalues_eq_of_conj_eq_one"
 id = "Matrix.isGreatest_pencilEigenvalues"
 
 [[node]]
+id = "Matrix.isLeast_re_trace_conjTranspose_mul_mul"
+source = 'Golub–Van Loan, Matrix Computations, §10.6.5, the trace-min principle'
+
+[[node]]
 id = "Matrix.crawfordNumber"
 deps = []
 

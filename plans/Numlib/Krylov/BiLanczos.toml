@@ -155,6 +155,14 @@ id = "BiLanczos.inner_apply_eq"
 id = "BiLanczos.inner_dualVec_apply_vec"
 
 [[node]]
+id = "BiLanczos.inner_eq_ite_of_threeTerm"
+source = 'Golub–Van Loan, Matrix Computations, §10.5.5; Saad, Iterative Methods, Proposition 7.1'
+
+[[node]]
+id = "BiLanczos.inner_dualVec_sub_apply_sum_eq_zero"
+source = 'Golub–Van Loan, Matrix Computations, §11.4.5'
+
+[[node]]
 id = "BiLanczos.inner_dualVec_vec"
 
 [[node]]

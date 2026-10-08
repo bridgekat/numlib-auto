@@ -18,12 +18,14 @@ operator `B` with `⟪A x, y⟫ = ⟪x, B y⟫`, taken as data because the ambie
 complete nor finite-dimensional.
 
 The main results are [saad2003iterative] Prop 7.1: the two families are biorthogonal
-(`BiLanczos.inner_vec_dualVec`), they span `𝒦_m(A, v₁)` and `𝒦_m(B, w₁)` (`BiLanczos.span_vec`,
-`BiLanczos.span_dualVec`), and `W_mᴴ A V_m = T_m` for the tridiagonal coefficient array
-(`BiLanczos.inner_dualVec_apply_vec`). The relation `A V_m = V_{m+1} T̄_m` is a
-`Krylov.HessenbergRelation` of `Numlib/Krylov/Hessenberg` with a basis that is *not* orthonormal
-(`BiLanczos.hessenbergRelation`), so the residual formula `Krylov.HessenbergRelation₂.residual_eq`
-applies verbatim.
+(`BiLanczos.inner_vec_dualVec`, from `BiLanczos.inner_eq_ite_of_threeTerm`, the biorthogonality of
+any pair of coupled three-term recurrences normalized by `⟪w_j, v_j⟫ = 1`, which also covers the
+normalization `β_{j+1} = ‖v̂_{j+1}‖` of [golub2013matrix] §10.5.5), they span `𝒦_m(A, v₁)` and
+`𝒦_m(B, w₁)` (`BiLanczos.span_vec`, `BiLanczos.span_dualVec`), and `W_mᴴ A V_m = T_m` for the
+tridiagonal coefficient array (`BiLanczos.inner_dualVec_apply_vec`). The relation
+`A V_m = V_{m+1} T̄_m` is a `Krylov.HessenbergRelation` of `Numlib/Krylov/Hessenberg` with a basis
+that is *not* orthonormal (`BiLanczos.hessenbergRelation`), so the residual formula
+`Krylov.HessenbergRelation₂.residual_eq` applies verbatim.
 
 Breakdown comes in two kinds. A *lucky* one, `v̂_{j+1} = 0`, is benign: it implies
 `BiLanczos.NoSeriousBreakdown` (`BiLanczos.NoSeriousBreakdown.of_vhat_eq_zero`), the span built so
@@ -467,7 +469,96 @@ theorem inner_aeval_map_aeval (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (
       inner 𝕜 w (Polynomial.aeval A (q * p) v) := by
   rw [inner_aeval_map_eq hB q, Module.End.aeval_mul_apply]
 
-/-- The biorthogonality relation up to step `m`, the invariant the induction carries. -/
+/-- **Biorthogonality of coupled three-term recurrences**, the engine of [saad2003iterative] Prop
+7.1 and of [golub2013matrix] §10.5.5, for any normalization of the two-sided Lanczos process: let
+`B` be the adjoint of `A` and let `v`, `w` satisfy, for `j < m`,
+```
+A v_j = γ_j v_{j-1} + α_j v_j + β_{j+1} v_{j+1},
+B w_j = conj β_j w_{j-1} + conj α_j w_j + conj γ_{j+1} w_{j+1}    (v_{-1} = w_{-1} = 0)
+```
+with `α_j = ⟪w_j, A v_j⟫`, `⟪w_j, v_j⟫ = 1` and `β_{j+1}, γ_{j+1} ≠ 0`. Then `⟪w_i, v_j⟫ = δ_ij`
+for `i, j < m`, and the `m`-th vectors (in a run that stops, the residuals) are orthogonal to the
+opposite family: `⟪w_i, v_m⟫ = 0 = ⟪w_m, v_i⟫` for `i < m`. Only the product `β_{j+1} γ_{j+1}` is
+fixed by `⟪w_{j+1}, v_{j+1}⟫ = 1`; Saad's choice `|β_{j+1}| = |γ_{j+1}|` and Golub–Van Loan's
+`β_{j+1} = ‖v̂_{j+1}‖` both fit. Induction on `m`, moving `A` across the inner product. -/
+theorem inner_eq_ite_of_threeTerm (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
+    {v w : ℕ → E} {α β γ : ℕ → 𝕜} {m : ℕ}
+    (hv : ∀ j < m, A (v j) = γ j • (if j = 0 then 0 else v (j - 1)) + α j • v j +
+      β (j + 1) • v (j + 1))
+    (hw : ∀ j < m, B (w j) = starRingEnd 𝕜 (β j) • (if j = 0 then 0 else w (j - 1)) +
+      starRingEnd 𝕜 (α j) • w j + starRingEnd 𝕜 (γ (j + 1)) • w (j + 1))
+    (hα : ∀ j < m, inner 𝕜 (w j) (A (v j)) = α j) (hone : ∀ j < m, inner 𝕜 (w j) (v j) = 1)
+    (hβ : ∀ j < m, β (j + 1) ≠ 0) (hγ : ∀ j < m, γ (j + 1) ≠ 0) :
+    (∀ i < m, ∀ j < m, inner 𝕜 (w i) (v j) = if i = j then 1 else 0) ∧
+      (∀ i < m, inner 𝕜 (w i) (v m) = 0) ∧ ∀ j < m, inner 𝕜 (w m) (v j) = 0 := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    obtain ⟨I1, I2, I3⟩ := ih (fun j hj => hv j (by omega)) (fun j hj => hw j (by omega))
+      (fun j hj => hα j (by omega)) (fun j hj => hone j (by omega))
+      (fun j hj => hβ j (by omega)) (fun j hj => hγ j (by omega))
+    -- biorthogonality through `m`
+    have J : ∀ i ≤ m, ∀ j ≤ m, inner 𝕜 (w i) (v j) = if i = j then 1 else 0 := by
+      intro i hi j hj
+      rcases hi.lt_or_eq with hi | hi <;> rcases hj.lt_or_eq with hj | hj
+      · exact I1 i hi j hj
+      · rw [hj, I2 i hi, ite_eq_right hi.ne]
+      · rw [hi, I3 j hj, ite_eq_right hj.ne']
+      · rw [hi, hj, hone m (by omega), ite_eq_left rfl]
+    have Jv : ∀ i ≤ m, ∀ j ≤ m, inner 𝕜 (w i) (if j = 0 then 0 else v (j - 1)) =
+        if i + 1 = j then 1 else 0 := by
+      intro i hi j hj
+      split_ifs with h0 h1 h1
+      · omega
+      · exact inner_zero_right _
+      · rw [J i hi (j - 1) (by omega), ite_eq_left (by omega)]
+      · rw [J i hi (j - 1) (by omega), ite_eq_right (by omega)]
+    have Jw : ∀ i ≤ m, ∀ j ≤ m, inner 𝕜 (if i = 0 then 0 else w (i - 1)) (v j) =
+        if i = j + 1 then 1 else 0 := by
+      intro i hi j hj
+      split_ifs with h0 h1 h1
+      · omega
+      · exact inner_zero_left _
+      · rw [J (i - 1) (by omega) j hj, ite_eq_left (by omega)]
+      · rw [J (i - 1) (by omega) j hj, ite_eq_right (by omega)]
+    refine ⟨fun i hi j hj => J i (by omega) j (by omega), fun i hi => ?_, fun j hj => ?_⟩
+    · -- the new primal vector is orthogonal to the dual vectors built so far
+      have e : β (m + 1) • v (m + 1) =
+          A (v m) - γ m • (if m = 0 then 0 else v (m - 1)) - α m • v m := by
+        rw [hv m (by omega)]; abel
+      have key : β (m + 1) * inner 𝕜 (w i) (v (m + 1)) = 0 := by
+        rw [← inner_smul_right, e, inner_sub_right, inner_sub_right, inner_smul_right,
+          inner_smul_right, Jv i (by omega) m le_rfl, J i (by omega) m le_rfl]
+        rcases (Nat.lt_succ_iff.1 hi).lt_or_eq with hi | rfl
+        · rw [inner_apply_eq hB, hw i (by omega), inner_add_left, inner_add_left,
+            inner_smul_left, inner_smul_left, inner_smul_left, RCLike.conj_conj,
+            RCLike.conj_conj, RCLike.conj_conj, Jw i hi.le m le_rfl, J i hi.le m le_rfl,
+            J (i + 1) hi m le_rfl]
+          by_cases h : i + 1 = m <;> simp [h, hi.ne, show i ≠ m + 1 by omega]
+        · rw [hα i (by omega)]
+          simp
+      exact (mul_eq_zero.1 key).resolve_left (hβ m (by omega))
+    · -- the new dual vector is orthogonal to the primal vectors built so far
+      have e : starRingEnd 𝕜 (γ (m + 1)) • w (m + 1) =
+          B (w m) - starRingEnd 𝕜 (β m) • (if m = 0 then 0 else w (m - 1)) -
+            starRingEnd 𝕜 (α m) • w m := by
+        rw [hw m (by omega)]; abel
+      have key : γ (m + 1) * inner 𝕜 (w (m + 1)) (v j) = 0 := by
+        rw [← RCLike.conj_conj (γ (m + 1)), ← inner_smul_left, e, inner_sub_left, inner_sub_left,
+          inner_smul_left, inner_smul_left, RCLike.conj_conj, RCLike.conj_conj,
+          Jw m le_rfl j (by omega), J m le_rfl j (by omega), ← inner_apply_eq hB]
+        rcases (Nat.lt_succ_iff.1 hj).lt_or_eq with hj | rfl
+        · rw [hv j (by omega), inner_add_right, inner_add_right, inner_smul_right,
+            inner_smul_right, inner_smul_right, Jv m le_rfl j hj.le, J m le_rfl j hj.le,
+            J m le_rfl (j + 1) hj]
+          by_cases h : j + 1 = m
+          · simp [h, hj.ne', show m + 1 ≠ j by omega]
+          · simp [Ne.symm h, hj.ne', show m + 1 ≠ j by omega]
+        · rw [hα j (by omega)]
+          simp
+      exact (mul_eq_zero.1 key).resolve_left (hγ m (by omega))
+
+/-- The biorthogonality relation up to step `m`. -/
 private def Biorth (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (m : ℕ) : Prop :=
   ∀ i ≤ m, ∀ j ≤ m, inner 𝕜 (dualVec A B v₁ w₁ i) (vec A B v₁ w₁ j) = if i = j then 1 else 0
 
@@ -478,81 +569,31 @@ private theorem inner_dualVec_vecPrev {n : ℕ} (hP : Biorth A B v₁ w₁ n) {i
   | zero => simp
   | succ j => rw [vecPrev_succ, hP i hi j (by omega)]; simp
 
-private theorem inner_dualVecPrev_vec {n : ℕ} (hP : Biorth A B v₁ w₁ n) {i j : ℕ} (hi : i ≤ n)
-    (hj : j ≤ n) :
-    inner 𝕜 (dualVecPrev A B v₁ w₁ i) (vec A B v₁ w₁ j) = if i = j + 1 then 1 else 0 := by
-  cases i with
-  | zero => simp
-  | succ i => rw [dualVecPrev_succ, hP i (by omega) j hj]; simp
-
-/-- The new primal vector is orthogonal to every dual vector built so far. -/
-private theorem inner_dualVec_vhat {m : ℕ} (h : NoBreakdown A B v₁ w₁ (m + 1))
-    (hP : Biorth A B v₁ w₁ m) {i : ℕ} (hi : i ≤ m) :
-    inner 𝕜 (dualVec A B v₁ w₁ i) (vhat A B v₁ w₁ m) = 0 := by
-  rw [vhat_eq, inner_sub_right, inner_sub_right, inner_smul_right, inner_smul_right,
-    hP i hi m le_rfl, inner_dualVec_vecPrev hP hi le_rfl]
-  rcases eq_or_lt_of_le hi with rfl | hlt
-  · rw [← alpha_eq]
-    simp
-  · have hd : delta A B v₁ w₁ (i + 1) ≠ 0 := h.delta_ne_zero i (by omega)
-    have hne1 : i ≠ m := Nat.ne_of_lt hlt
-    have hne2 : i ≠ m + 1 := by omega
-    rw [inner_apply_eq h.adjoint, apply_dualVec _ _ _ _ hd, inner_add_left, inner_add_left,
-      inner_smul_left, inner_smul_left, inner_smul_left, RCLike.conj_conj, RCLike.conj_conj,
-      RCLike.conj_conj, inner_dualVecPrev_vec hP (le_of_lt hlt) le_rfl, hP i hi m le_rfl,
-      hP (i + 1) hlt m le_rfl]
-    by_cases hi1 : i + 1 = m
-    · rw [hi1]
-      simp [hne1, hne2]
-    · simp [hne1, hne2, hi1]
-
-/-- The new dual vector is orthogonal to every primal vector built so far. -/
-private theorem inner_dualVhat_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ (m + 1))
-    (hP : Biorth A B v₁ w₁ m) {j : ℕ} (hj : j ≤ m) :
-    inner 𝕜 (dualVhat A B v₁ w₁ m) (vec A B v₁ w₁ j) = 0 := by
-  rw [dualVhat_eq, inner_sub_left, inner_sub_left, inner_smul_left, inner_smul_left,
-    RCLike.conj_conj, RCLike.conj_conj, hP m le_rfl j hj, inner_dualVecPrev_vec hP le_rfl hj]
-  rw [← inner_apply_eq h.adjoint]
-  rcases eq_or_lt_of_le hj with rfl | hlt
-  · rw [← alpha_eq]
-    simp
-  · have hd : delta A B v₁ w₁ (j + 1) ≠ 0 := h.delta_ne_zero j (by omega)
-    have hne1 : m ≠ j := Nat.ne_of_gt hlt
-    have hne2 : m + 1 ≠ j := by omega
-    rw [apply_vec _ _ _ _ hd, inner_add_right, inner_add_right, inner_smul_right,
-      inner_smul_right, inner_smul_right, inner_dualVec_vecPrev hP le_rfl (le_of_lt hlt),
-      hP m le_rfl j hj, hP m le_rfl (j + 1) hlt]
-    by_cases hj1 : m = j + 1
-    · rw [← hj1]
-      simp [hne1, hne2]
-    · simp [hne1, hne2, hj1]
-
-private theorem biorth_succ {m : ℕ} (h : NoBreakdown A B v₁ w₁ (m + 1))
-    (hP : Biorth A B v₁ w₁ m) : Biorth A B v₁ w₁ (m + 1) := by
-  have hd : delta A B v₁ w₁ (m + 1) ≠ 0 := h.delta_ne_zero m (Nat.lt_succ_self m)
-  intro i hi j hj
-  by_cases hi' : i = m + 1
-  · subst hi'
-    by_cases hj' : j = m + 1
-    · subst hj'
-      rw [inner_dualVec_vec_succ _ _ _ _ hd]
-      simp
-    · rw [dualVec_succ, inner_smul_left, inner_dualVhat_vec h hP (by omega), mul_zero]
-      simp [Ne.symm hj']
-  · by_cases hj' : j = m + 1
-    · subst hj'
-      rw [vec_succ, inner_smul_right, inner_dualVec_vhat h hP (by omega), mul_zero]
-      simp [hi']
-    · exact hP i (by omega) j (by omega)
-
+/-- The process satisfies the coupled recurrences of `BiLanczos.inner_eq_ite_of_threeTerm`, with
+`γ = β` and `β = δ` there. -/
 private theorem biorth {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) : Biorth A B v₁ w₁ m := by
-  induction m with
-  | zero =>
-    intro i hi j hj
-    obtain rfl : i = 0 := Nat.le_zero.1 hi
-    obtain rfl : j = 0 := Nat.le_zero.1 hj
-    simpa using h.inner_start
-  | succ m ih => exact biorth_succ h (ih (h.mono (Nat.le_succ m)))
+  have hprev : ∀ j, vecPrev A B v₁ w₁ j = if j = 0 then 0 else vec A B v₁ w₁ (j - 1) :=
+    fun j => by cases j <;> simp
+  have hdprev : ∀ j, dualVecPrev A B v₁ w₁ j = if j = 0 then 0 else dualVec A B v₁ w₁ (j - 1) :=
+    fun j => by cases j <;> simp
+  have hone : ∀ j ≤ m, inner 𝕜 (dualVec A B v₁ w₁ j) (vec A B v₁ w₁ j) = 1 := fun j hj => by
+    cases j with
+    | zero => exact h.inner_start
+    | succ j => exact inner_dualVec_vec_succ A B v₁ w₁ (h.delta_ne_zero j (by omega))
+  obtain ⟨I1, I2, I3⟩ := inner_eq_ite_of_threeTerm h.adjoint (v := vec A B v₁ w₁)
+    (w := dualVec A B v₁ w₁) (α := alpha A B v₁ w₁) (β := delta A B v₁ w₁)
+    (γ := beta A B v₁ w₁) (m := m)
+    (fun j hj => by rw [← hprev]; exact apply_vec A B v₁ w₁ (h.delta_ne_zero j hj))
+    (fun j hj => by rw [← hdprev]; exact apply_dualVec A B v₁ w₁ (h.delta_ne_zero j hj))
+    (fun j _ => (alpha_eq A B v₁ w₁ j).symm) (fun j hj => hone j hj.le)
+    (fun j hj => h.delta_ne_zero j hj)
+    (fun j hj => (beta_succ_ne_zero_iff A B v₁ w₁ j).2 (h.delta_ne_zero j hj))
+  intro i hi j hj
+  rcases hi.lt_or_eq with hi | hi <;> rcases hj.lt_or_eq with hj | hj
+  · exact I1 i hi j hj
+  · rw [hj, I2 i hi, ite_eq_right hi.ne]
+  · rw [hi, I3 j hj, ite_eq_right hj.ne']
+  · rw [hi, hj, hone m le_rfl, ite_eq_left rfl]
 
 /-- [saad2003iterative], Prop 7.1: the primal and dual two-sided Lanczos vectors are biorthogonal,
 `⟪w_i, v_j⟫ = δ_{ij}`, as long as the process has not broken down. -/
@@ -594,6 +635,28 @@ theorem inner_dualVec_apply_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ (m + 1)
       · rw [ite_eq_right (by omega : i + 1 ≠ j), ite_eq_right h1, ite_eq_right h2,
           ite_eq_right h1, ite_eq_right h2, ite_eq_right h3]
         ring
+
+
+open Matrix in
+/-- **The Petrov–Galerkin condition** ([golub2013matrix] §11.4.5, [saad2003iterative] §7.1): if
+`y` solves the tridiagonal system `T_{m+1} y = W_{m+1}ᴴ r`, then the residual `r - A V_{m+1} y` is
+orthogonal to the dual vectors `w_0, …, w_m` — by `BiLanczos.inner_dualVec_apply_vec`,
+`W_{m+1}ᴴ A V_{m+1} = T_{m+1}`. This is the iterate of the biconjugate gradient method for
+`r = b - A x₀`. -/
+theorem inner_dualVec_sub_apply_sum_eq_zero {m : ℕ} (h : NoBreakdown A B v₁ w₁ (m + 1)) {r : E}
+    {y : Fin (m + 1) → 𝕜}
+    (hy : hessenbergSqOf (coeff A B v₁ w₁) (m + 1) *ᵥ y =
+      fun i : Fin (m + 1) => inner 𝕜 (dualVec A B v₁ w₁ i) r)
+    (i : Fin (m + 1)) :
+    inner 𝕜 (dualVec A B v₁ w₁ i) (r - A (∑ j, y j • vec A B v₁ w₁ j)) = 0 := by
+  have hsum : inner 𝕜 (dualVec A B v₁ w₁ i) (A (∑ j, y j • vec A B v₁ w₁ j)) =
+      (hessenbergSqOf (coeff A B v₁ w₁) (m + 1) *ᵥ y) i := by
+    rw [map_sum, inner_sum]
+    simp only [map_smul, inner_smul_right, Matrix.mulVec, dotProduct, hessenbergSqOf,
+      Matrix.of_apply]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [inner_dualVec_apply_vec h (by omega) (by omega), mul_comm]
+  rw [inner_sub_right, hsum, hy, sub_self]
 
 end Biorthogonality
 

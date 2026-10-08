@@ -444,8 +444,8 @@ and `∫ p_i p_j dμ = δ_ij` — the backbone's `OrthogonalPolynomial.orthonorm
 here `γ_k = ‖π_k‖/‖π_{k−1}‖` for the monic `π_k` and `ω_k` the backbone's
 `OrthogonalPolynomial.alpha`; and they are unique up to a factor `±1`: a polynomial of degree `k`
 orthogonal to every polynomial of lower degree with `∫ q² dμ = 1` is `±p_k`. Backbone
-`OrthogonalPolynomial.orthonormalFamily_recurrence` and the monic uniqueness
-`OrthogonalPolynomial.eq_zero_of_degree_lt`. -/
+`OrthogonalPolynomial.orthonormalFamily_recurrence` and
+`OrthogonalPolynomial.eq_orthonormalFamily_or_eq_neg`. -/
 theorem orthonormalPolynomials_threeTerm (hw : IsWeight μ) :
     (∀ k, (orthonormalFamily μ k).degree = k) ∧
     (∀ i j, ∫ x, (orthonormalFamily μ i).eval x * (orthonormalFamily μ j).eval x ∂μ =
@@ -477,41 +477,7 @@ theorem orthonormalPolynomials_threeTerm (hw : IsWeight μ) :
     simp only [cdA, cdB, cdC, show k + 1 - 1 = k by omega]
     field_simp [hN k, hN (k + 1), hN (k + 2)]
     ring
-  · -- uniqueness up to sign
-    have hq0 : q ≠ 0 := by
-      rintro rfl
-      simp at hq
-    set c := q.leadingCoeff with hcdef
-    have hc0 : c ≠ 0 := leadingCoeff_ne_zero.2 hq0
-    have hdegC : (C c * family μ k).degree = k := by
-      rw [degree_C_mul hc0, degree_family]
-    have hlt : (q - C c * family μ k).degree < k := by
-      have h := degree_sub_lt_left (p := q) (q := C c * family μ k) (by rw [hq, hdegC]) hq0
-        (by rw [leadingCoeff_mul, leadingCoeff_C, (monic_family μ k).leadingCoeff, mul_one])
-      rwa [hq] at h
-    have hfam : q = C c * family μ k := by
-      refine sub_eq_zero.1 (eq_zero_of_degree_lt hw hlt fun j hj => ?_)
-      have e : ∀ x, (q - C c * family μ k).eval x * (family μ j).eval x =
-          q.eval x * (family μ j).eval x - c * ((family μ k).eval x * (family μ j).eval x) :=
-        fun x => by simp only [eval_sub, eval_mul, eval_C]; ring
-      simp_rw [e]
-      rw [integral_sub (hw.integrable_eval_mul q _)
-        ((hw.integrable_eval_mul _ _).const_mul c), integral_const_mul,
-        horth _ (by rw [degree_family]; exact_mod_cast hj),
-        integral_family_mul_family hw (by omega), mul_zero, sub_zero]
-    have hsq : c ^ 2 * normSq μ k = 1 := by
-      rw [← hq1, hfam, normSq]
-      simp only [eval_mul, eval_C, mul_pow]
-      exact (integral_const_mul _ _).symm
-    have hc2 : c ^ 2 = (normOf μ k)⁻¹ ^ 2 := by
-      rw [inv_pow, normOf, Real.sq_sqrt (normSq_pos hw k).le]
-      field_simp [(normSq_pos hw k).ne']
-      linarith
-    rcases sq_eq_sq_iff_eq_or_eq_neg.1 hc2 with h | h
-    · left
-      rw [hfam, h, orthonormalFamily]
-    · right
-      rw [hfam, h, orthonormalFamily, C_neg, neg_mul]
+  · exact eq_orthonormalFamily_or_eq_neg hw hq horth hq1
 
 /-- **Fact 2** (§10.2.3): the zeros of `p_k` are the eigenvalues of the Jacobi matrix `T_k`
 (diagonal `ω_i`, off-diagonal `γ_i`), and they are distinct: both root multisets are the image of

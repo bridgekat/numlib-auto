@@ -381,69 +381,6 @@ theorem equation_11_4_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     simp [Pi.single_apply]
   rw [hres, inner_sub_right, h1, h2, hy, sub_self]
 
-/-- `R̄_mᵀ z` only sees the first `m` entries of `z`: the last row of `R̄_m` vanishes. -/
-private theorem rotated_transpose_mulVec (h : ℕ → ℕ → ℝ) (hh : ∀ i j, j + 1 < i → h i j = 0)
-    (m : ℕ) (z : Fin (m + 1) → ℝ) :
-    (hessenbergOf (rotated h m) m)ᵀ *ᵥ z =
-      (hessenbergSqOf (rotated h m) m)ᵀ *ᵥ fun i => z i.castSucc := by
-  funext j
-  simp only [mulVec, dotProduct, transpose_apply, Fin.sum_univ_castSucc, hessenbergOf,
-    hessenbergSqOf, Matrix.of_apply, Fin.val_last, Fin.val_castSucc]
-  rw [rotated_last_row h hh m j j.isLt, zero_mul, add_zero]
-
-/-- The squared Euclidean norm of `z ∈ ℝ^{m+1}` splits off its last entry. -/
-private theorem norm_sq_toLp_snoc {m : ℕ} (z : Fin (m + 1) → ℝ) :
-    ‖(WithLp.toLp 2 z : EuclideanSpace ℝ (Fin (m + 1)))‖ ^ 2 =
-      ‖(WithLp.toLp 2 (fun i : Fin m => z i.castSucc) : EuclideanSpace ℝ (Fin m))‖ ^ 2 +
-        z (Fin.last m) ^ 2 := by
-  rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq, Fin.sum_univ_castSucc]
-  simp [Real.norm_eq_abs, sq_abs]
-
-/-- The accumulated Givens rotation is orthogonal: `Q_mᵀ ∈ O(m+1)` and `Q_mᵀQ_m = 1`. -/
-private theorem givensQ_transpose_mem (h : ℕ → ℕ → ℝ) {m : ℕ}
-    (hρ : ∀ l < m, givensRho h l ≠ 0) :
-    (givensQ h m)ᵀ ∈ Matrix.unitaryGroup (Fin (m + 1)) ℝ ∧ (givensQ h m)ᵀ * givensQ h m = 1 := by
-  have hQ := givensQ_mem_unitaryGroup h m hρ
-  have h1 : star (givensQ h m) * givensQ h m = 1 := Matrix.mem_unitaryGroup_iff'.1 hQ
-  have h2 : star (givensQ h m) = (givensQ h m)ᵀ := by
-    rw [Matrix.star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
-  refine ⟨?_, h2 ▸ h1⟩
-  rw [← h2]
-  exact Unitary.star_mem hQ
-
-/-- The minimum-norm solve of the underdetermined `H̄_mᵀ y = c` by the transposed Givens QR:
-`y = Q_mᵀ[w; 0]` with `R_mᵀ w = c` solves it, with least norm. -/
-private theorem minNorm_snoc (h : ℕ → ℕ → ℝ) (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
-    (hρ : ∀ l < m, givensRho h l ≠ 0) (c w : Fin m → ℝ)
-    (hw : (hessenbergSqOf (rotated h m) m)ᵀ *ᵥ w = c) :
-    (hessenbergOf h m)ᵀ *ᵥ ((givensQ h m)ᵀ *ᵥ Fin.snoc w 0) = c ∧
-    ∀ y' : Fin (m + 1) → ℝ, (hessenbergOf h m)ᵀ *ᵥ y' = c →
-      ‖(WithLp.toLp 2 ((givensQ h m)ᵀ *ᵥ Fin.snoc w 0) : EuclideanSpace ℝ (Fin (m + 1)))‖ ≤
-        ‖(WithLp.toLp 2 y' : EuclideanSpace ℝ (Fin (m + 1)))‖ := by
-  obtain ⟨hQt, hQQ⟩ := givensQ_transpose_mem h hρ
-  have hRtu : IsUnit (hessenbergSqOf (rotated h m) m)ᵀ :=
-    (isUnit_transpose _).2 (isUnit_hessenbergSqOf_rotated_self h hh hρ)
-  have hkey : ∀ z : Fin (m + 1) → ℝ, (hessenbergOf h m)ᵀ *ᵥ ((givensQ h m)ᵀ *ᵥ z) =
-      (hessenbergSqOf (rotated h m) m)ᵀ *ᵥ fun i => z i.castSucc := fun z => by
-    rw [mulVec_mulVec, ← Matrix.transpose_mul, givensQ_mul_hessenbergOf,
-      rotated_transpose_mulVec h hh]
-  refine ⟨?_, fun y' hy' => ?_⟩
-  · rw [hkey]
-    simpa using hw
-  · have hyz : y' = (givensQ h m)ᵀ *ᵥ (givensQ h m *ᵥ y') := by
-      rw [mulVec_mulVec, hQQ, one_mulVec]
-    have hzw : (fun i : Fin m => (givensQ h m *ᵥ y') i.castSucc) = w := by
-      have h1 : (hessenbergSqOf (rotated h m) m)ᵀ *ᵥ
-          (fun i : Fin m => (givensQ h m *ᵥ y') i.castSucc) =
-          (hessenbergSqOf (rotated h m) m)ᵀ *ᵥ w := by
-        rw [← hkey, ← hyz, hy', hw]
-      exact (Matrix.mulVec_injective_iff_isUnit.2 hRtu) h1
-    rw [hyz, norm_toLp_mulVec_of_mem_unitaryGroup hQt, norm_toLp_mulVec_of_mem_unitaryGroup hQt]
-    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
-    rw [norm_sq_toLp_snoc, norm_sq_toLp_snoc (givensQ h m *ᵥ y'), hzw]
-    simp only [Fin.snoc_castSucc, Fin.snoc_last]
-    nlinarith [sq_nonneg ((givensQ h m *ᵥ y') (Fin.last m))]
-
 /-- **§11.4.1, SYMMLQ's minimum-norm solution.** "Note that the underdetermined system (11.4.5) has
 full row rank and that `y_k` can be determined via a Givens rotation lower triangularization …
 `H_{k−1}ᵀG₁⋯G_{k−1} = [L_{k−1} | 0]` where `L_{k−1}` is lower triangular. (This is just the
@@ -455,7 +392,7 @@ With `m = k − 1` below the grade, `G₁⋯G_m = Q_mᵀ` for the backbone's acc
 `Q_m = Krylov.givensQ` (orthogonal) and `L_m = R_mᵀ`, `R_m` the rotated square block: (i)
 `H_mᵀQ_mᵀ = R̄_mᵀ = [L_m | 0]`; (ii) `L_m` is lower triangular and nonsingular, and has lower
 bandwidth `2` for symmetric `A`; (iii) for `L_mw = β₀e₁`, `y = Q_mᵀ[w; 0]` solves (11.4.5) and has
-the least norm among its solutions. -/
+the least norm among its solutions (`Krylov.conjTranspose_hessenbergOf_mulVec_givensQ_snoc`). -/
 theorem symmlq_minNorm_solution {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (r₀ : EuclideanSpace ℝ (Fin n)) {m : ℕ} (hm : m < grade (toEuclideanLin A) r₀) (β₀ : ℝ) :
     (Arnoldi.hessenberg (toEuclideanLin A) r₀ m)ᵀ *
@@ -481,7 +418,7 @@ theorem symmlq_minNorm_solution {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
       (by simpa using (show l + 1 < grade (toEuclideanLin A) r₀ by omega))
     simpa using this
   rw [Arnoldi.hessenberg_eq]
-  refine ⟨?_, ?_, ?_, fun i j hij => ?_, fun w hw => minNorm_snoc _ hh hρ _ w hw⟩
+  refine ⟨?_, ?_, ?_, fun i j hij => ?_, fun w hw => ?_⟩
   · rw [← Matrix.transpose_mul, givensQ_mul_hessenbergOf]
   · exact (hessenbergSqOf_rotated_isUpperTriangular _ hh (Nat.le_succ m)).transpose
   · exact (isUnit_transpose _).2 (isUnit_hessenbergSqOf_rotated_self _ hh hρ)
@@ -489,6 +426,9 @@ theorem symmlq_minNorm_solution {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     exact rotated_eq_zero_of_add_two_lt _
       (fun i j hij => Arnoldi.coeff_eq_zero_of_isSymmetric hA.isSymmetric_toEuclideanLin r₀ hij)
       m j i hij
+  · have h := conjTranspose_hessenbergOf_mulVec_givensQ_snoc _ hh hρ (c := firstVec β₀ m)
+      (w := w) (by rwa [conjTranspose_eq_transpose_of_trivial])
+    simpa only [conjTranspose_eq_transpose_of_trivial] using h
 
 /-! ### §11.4.2: LSQR and LSMR -/
 
@@ -1347,15 +1287,6 @@ private theorem gInv_foldl (op : (Fin n → ℝ) → Id (Fin n → ℝ)) (z₀ :
     exact gInv_step op ht (ih (by omega))
 
 
-/-! Scaling the starting vector. -/
-
-/-- Rescaling the starting vector by a positive number does not change the Arnoldi vectors (both
-sequences satisfy the modified Gram–Schmidt recurrence from `v/‖v‖`). -/
-private theorem vec_smul_of_pos (T : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n))
-    (v : EuclideanSpace ℝ (Fin n)) {c : ℝ} (hc : 0 < c) :
-    Arnoldi.vec T (c • v) = Arnoldi.vec T v := by
-  simpa using Arnoldi.vec_smul_of_pos T v hc
-
 /-- A sum over `Fin p` whose terms vanish from index `k` on is the sum over its first `k`
 indices. -/
 private theorem sum_castLE_eq {k p : ℕ} (h : k ≤ p) (f : Fin p → ℝ)
@@ -1424,7 +1355,7 @@ private theorem gmres_arnoldi_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)}
     obtain ⟨hk, hvec, -⟩ := GolubVanLoan.Chapter10.algorithm_10_5_1_spec B hqn m
     have hvs : Arnoldi.vec (toEuclideanLin B) (WithLp.toLp 2 (β₀⁻¹ • z₀)) =
         Arnoldi.vec (toEuclideanLin B) (WithLp.toLp 2 z₀) := by
-      rw [hq]; exact vec_smul_of_pos _ _ (inv_pos.2 hβpos)
+      rw [hq]; simpa using Arnoldi.vec_smul_of_pos (toEuclideanLin B) _ (inv_pos.2 hβpos)
     have hgr : grade (toEuclideanLin B) (WithLp.toLp 2 (β₀⁻¹ • z₀)) =
         grade (toEuclideanLin B) (WithLp.toLp 2 z₀) := by
       rw [hq]; exact grade_smul _ _ (inv_ne_zero h0)
@@ -1441,8 +1372,9 @@ with `R_k` upper triangular and nonsingular, so the back substitution solves `R_
 `x̃ = x₀ + Q_k y_k` is the minimal-residual iterate of `Bx = c` on `x₀ + 𝒦(B, z₀, k)`
 (`Krylov.IsMinResidualIterate`), with residual norm `|ρ_k|`; if the loop stopped on `β_k = 0`,
 `x̃` solves `Bx = c` (`Krylov.IsMinResidualIterate.apply_eq_of_grade_le`). The rotations need not
-be the backbone's (`Krylov.givensQ`): `givens` fixes their signs differently, and the argument
-uses only that they are orthogonal and triangularize `H̃_k`. -/
+be the backbone's (`Krylov.givensQ`): `givens` fixes their signs differently, and the backbone's
+`Krylov.isMinResidualIterate_of_unitary_mul_hessenberg` uses only that they are orthogonal and
+triangularize `H̃_k`. -/
 theorem gmresCore_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)} {B : Matrix (Fin n) (Fin n) ℝ}
     (hB : IsUnit B) (hop : ∀ q, Id.run (op q) = B *ᵥ q) (c x₀ z₀ : Fin n → ℝ)
     (hz : z₀ = c - B *ᵥ x₀) (m : ℕ) :
@@ -1548,17 +1480,6 @@ theorem gmresCore_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)} {B : Matrix
     rfl
   have hC4 : ∀ b : Fin k, R' (Fin.last k) b = 0 := fun b =>
     hRlow (κ b) b.2 (ι (Fin.last k)) (by simp [κ, ι])
-  -- the least-squares identity
-  have hLS : ∀ w : Fin k → ℝ,
-      ‖(WithLp.toLp 2 (Krylov.firstVec β₀ (k + 1) - Hk *ᵥ w) : EuclideanSpace ℝ (Fin (k + 1)))‖ ^ 2
-        = ‖(WithLp.toLp 2 (pk - Rk *ᵥ w) : EuclideanSpace ℝ (Fin k))‖ ^ 2 +
-          s.g (ι (Fin.last k)) ^ 2 := by
-    intro w
-    rw [← norm_toLp_mulVec_of_mem_unitaryGroup hW'mem, mulVec_sub, mulVec_mulVec, hC1, ← hC3,
-      EuclideanSpace.real_norm_sq_eq, EuclideanSpace.real_norm_sq_eq, Fin.sum_univ_castSucc]
-    congr 1
-    all_goals simp only [Pi.sub_apply, mulVec, dotProduct, hC4, zero_mul,
-      Finset.sum_const_zero, sub_zero]
   -- `R_k` is upper triangular and nonsingular
   have hRkU : Rk.IsUpperTriangular := fun a b hab => hRlow (κ b) b.2 _ (by simpa [κ] using hab)
   have hTinj : Function.Injective T := by
@@ -1613,35 +1534,24 @@ theorem gmresCore_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)} {B : Matrix
     simp [mulVec, dotProduct, Finset.sum_apply, mul_comm]
   have hzE : z = WithLp.toLp 2 c - T (WithLp.toLp 2 x₀) := by
     rw [hzdef, hz, hT, toEuclideanLin_toLp, WithLp.toLp_sub]
+  -- GMRES through the computed rotations
+  obtain ⟨hmin', hres'⟩ := isMinResidualIterate_of_unitary_mul_hessenberg (A := T)
+    (b := WithLp.toLp 2 c) (x₀ := WithLp.toLp 2 x₀) (hzE ▸ hkg) (W := W') hW'mem
+    (fun j => by rw [← hzE, ← hHk, hC1]; exact hC4 j) (y := y) (fun i => by
+      rw [← hzE, ← hHk, hC1]
+      simp only [RCLike.ofReal_real_eq_id, id_eq]
+      rw [← hβ₀, ← hC3]
+      exact congrFun hyR i)
+  rw [← hzE] at hmin' hres'
+  simp only [RCLike.ofReal_real_eq_id, id_eq] at hres'
   have hmin : IsMinResidualIterate T (WithLp.toLp 2 c) (WithLp.toLp 2 x₀) k
       (WithLp.toLp 2 (x₀ + (of fun i (l : Fin k) => s.arnoldi.q l i) *ᵥ y)) := by
     rw [hxE]
-    have key := isMinResidualIterate_iff_isMinOn (A := T) (b := WithLp.toLp 2 c)
-      (x₀ := WithLp.toLp 2 x₀) (hzE ▸ hkg) y
-    rw [← hzE] at key
-    refine key.2 (isMinOn_iff.2 fun w _ => ?_)
-    have e1 := hLS y
-    have e2 := hLS w
-    rw [hyR, sub_self] at e1
-    simp only [WithLp.toLp_zero, norm_zero] at e1
-    simp only [RCLike.ofReal_real_eq_id, id_eq] at key
-    have hle : ‖(WithLp.toLp 2 (Krylov.firstVec β₀ (k + 1) - Hk *ᵥ y) :
-        EuclideanSpace ℝ (Fin (k + 1)))‖ ^ 2 ≤
-        ‖(WithLp.toLp 2 (Krylov.firstVec β₀ (k + 1) - Hk *ᵥ w) :
-          EuclideanSpace ℝ (Fin (k + 1)))‖ ^ 2 := by
-      rw [e1, e2]
-      nlinarith [sq_nonneg ‖(WithLp.toLp 2 (pk - Rk *ᵥ w) : EuclideanSpace ℝ (Fin k))‖]
-    exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hle
+    exact hmin'
   refine ⟨hk, hvec, hmin, fun i hi => ?_, fun hdone => ?_⟩
   · have hiι : i = ι (Fin.last k) := Fin.ext hi
-    have e1 := hLS y
-    rw [hyR, sub_self, WithLp.toLp_zero, norm_zero] at e1
-    have hres := norm_residual_eq_norm_firstVec_sub_mulVec (A := T) (b := WithLp.toLp 2 c)
-      (x₀ := WithLp.toLp 2 x₀) (hzE ▸ hkg) y
-    rw [← hzE] at hres
-    simp only [RCLike.ofReal_real_eq_id, id_eq] at hres
-    rw [hxE, hres, hiι, ← Real.sqrt_sq (norm_nonneg _), e1, zero_pow two_ne_zero,
-      zero_add, Real.sqrt_sq_eq_abs]
+    rw [hxE, hres', ← hβ₀, ← hC3, hiι]
+    exact (Real.norm_eq_abs _).symm
   · have hgk : grade T z ≤ k := by
       rcases hdn hdone with ⟨-, hb0⟩ | ⟨hpos, hh0⟩
       · have hz0 : z = 0 := norm_eq_zero.1 hb0
@@ -1824,7 +1734,8 @@ tridiagonal system `T_ky_k = Q̃_kᵀr₀`. It follows that `Q̃_kᵀ(b − Ax_k
 `x₀ + Q_{k+1}y` is orthogonal to `q̃_0, …, q̃_k` whenever `T_{k+1}y = Q̃_{k+1}ᵀr₀`; (ii) if
 `T_{k+1} = LU` with `L`, `U` invertible, that `y` is `U⁻¹(L⁻¹(Q̃_{k+1}ᵀr₀))`. The BiCG recurrence
 of Figure 11.4.1 computes this iterate
-(`BCG.isPetrovGalerkin`, through `bicg_spec`). -/
+(`BCG.isPetrovGalerkin`, through `bicg_spec`). Backbone
+`BiLanczos.inner_dualVec_sub_apply_sum_eq_zero`. -/
 theorem bicg_residual_orthogonal (A : Matrix (Fin n) (Fin n) ℝ)
     {b x₀ q₁ qt₁ : EuclideanSpace ℝ (Fin n)} {k : ℕ}
     (h : BiLanczos.NoBreakdown (toEuclideanLin A) (toEuclideanLin Aᵀ) q₁ qt₁ (k + 1))
@@ -1847,15 +1758,8 @@ theorem bicg_residual_orthogonal (A : Matrix (Fin n) (Fin n) ℝ)
   set q := BiLanczos.vec T (toEuclideanLin Aᵀ) q₁ qt₁
   set qt := BiLanczos.dualVec T (toEuclideanLin Aᵀ) q₁ qt₁
   refine ⟨fun i => ?_, fun L U hL hU hLU => ?_⟩
-  · have hres : b - T (x₀ + ∑ j, y j • q j) = (b - T x₀) - ∑ j, y j • T (q j) := by
-      rw [map_add, map_sum]; simp only [map_smul]; abel
-    have hsum : inner ℝ (qt i) (∑ j, y j • T (q j)) =
-        (hessenbergSqOf (BiLanczos.coeff T (toEuclideanLin Aᵀ) q₁ qt₁) (k + 1) *ᵥ y) i := by
-      rw [inner_sum]
-      simp only [inner_smul_right, mulVec, dotProduct, hessenbergSqOf, Matrix.of_apply]
-      refine Finset.sum_congr rfl fun j _ => ?_
-      rw [BiLanczos.inner_dualVec_apply_vec h (by omega) (by omega), mul_comm]
-    rw [hres, inner_sub_right, hsum, hy, sub_self]
+  · rw [map_add, sub_add_eq_sub_sub]
+    exact BiLanczos.inner_dualVec_sub_apply_sum_eq_zero h hy i
   · have hLd := (Matrix.isUnit_iff_isUnit_det L).mp hL
     have hUd := (Matrix.isUnit_iff_isUnit_det U).mp hU
     rw [← hy, mulVec_mulVec, mulVec_mulVec, hLU, Matrix.mul_assoc, ← Matrix.mul_assoc L⁻¹,

@@ -471,16 +471,13 @@ theorem steepestDescent_rate (hA : A.PosDef) {b xs : 𝔼 n} (hxs : toEuclideanL
     rw [Real.sqrt_lt' one_pos, one_pow, hκ, one_div_div]
     have : 0 < lmin / lmax := div_pos hl (hl.trans_le hll)
     linarith
-  have hc0 : 0 ≤ c := Real.sqrt_nonneg _
-  -- `√λ_min ‖v‖ ≤ ‖v‖_A`
-  have hlow : ∀ v, ‖v‖ ≤ energyNorm T v / √lmin := fun v => by
-    rw [le_div_iff₀ (Real.sqrt_pos.2 hl), mul_comm]
+  -- the contraction in the energy norm, with `√λ_min ‖v‖ ≤ ‖v‖_A`
+  refine Projection.tendsto_of_forall_norm_succ_le (N := energyNorm T) (C := (√lmin)⁻¹)
+    (fun v => ?_) (fun v => energyNorm_nonneg _ _) (Real.sqrt_nonneg _) hc1 fun k => ?_
+  · rw [← div_eq_inv_mul, le_div_iff₀ (Real.sqrt_pos.2 hl), mul_comm]
     exact LinearMap.IsCoerciveWith.norm_le_energyNorm hl.le hB.le_re_inner v
-  rw [tendsto_iff_norm_sub_tendsto_zero]
-  refine squeeze_zero (fun _ => norm_nonneg _) (fun k => (hlow _).trans
-    (div_le_div_of_nonneg_right (hrate k) (Real.sqrt_nonneg _))) ?_
-  simpa using ((tendsto_pow_atTop_nhds_zero_of_lt_one hc0 hc1).mul_const
-    (energyNorm T (x₀ - xs))).div_const (√lmin)
+  · rw [Function.iterate_succ_apply', energyNorm_sub_comm T xs, energyNorm_sub_comm T xs]
+    exact hstep _
 
 end SteepestDescent
 
@@ -1026,13 +1023,6 @@ private theorem algorithm_10_1_1_done (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : F
     · simp only [GolubVanLoan.Chapter10.lanczosStep, h, ↓reduceIte, Id.run_pure]
       exact ⟨fun _ => ih.1 h, fun _ => trivial⟩
 
-/-- Rescaling the starting vector by a positive number does not change the Arnoldi vectors: both
-sequences satisfy the modified Gram–Schmidt recurrence from `v/‖v‖`
-(`Arnoldi.eq_vec_of_modifiedGramSchmidt`). -/
-private theorem arnoldi_vec_smul_of_pos (T : 𝔼 n →ₗ[ℝ] 𝔼 n) (v : 𝔼 n) {c : ℝ} (hc : 0 < c) :
-    Arnoldi.vec T (c • v) = Arnoldi.vec T v := by
-  simpa using Arnoldi.vec_smul_of_pos T v hc
-
 /-- The Lanczos state after the exact run of (11.3.14), in backbone terms: `k = min(fuel, grade)`
 steps, the Lanczos vectors and coefficients of `r₀`, and the exit test. -/
 private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
@@ -1091,7 +1081,7 @@ private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA 
     obtain ⟨hk, hvec, -⟩ := GolubVanLoan.Chapter10.algorithm_10_1_1_spec hA hqn fuel
     have hvs : Arnoldi.vec (toEuclideanLin A) (WithLp.toLp 2 q₁) =
         Arnoldi.vec (toEuclideanLin A) (cgR A b x₀) := by
-      rw [hq]; exact arnoldi_vec_smul_of_pos (toEuclideanLin A) _ (inv_pos.2 hβpos)
+      rw [hq]; simpa using Arnoldi.vec_smul_of_pos (toEuclideanLin A) _ (inv_pos.2 hβpos)
     have hgr : Krylov.grade (toEuclideanLin A) (WithLp.toLp 2 q₁) =
         Krylov.grade (toEuclideanLin A) (cgR A b x₀) := by
       rw [hq]; exact Krylov.grade_smul (toEuclideanLin A) _ (inv_ne_zero h0)

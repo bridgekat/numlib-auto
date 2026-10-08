@@ -71,6 +71,14 @@ id = "orthonormalFamily_recurrence"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercises 3.5.5–3.5.6"
 
 [[node]]
+id = "eq_C_leadingCoeff_mul_family"
+source = "Golub–Van Loan, Matrix Computations, §10.2.3, Fact 1"
+
+[[node]]
+id = "eq_orthonormalFamily_or_eq_neg"
+source = "Golub–Van Loan, Matrix Computations, §10.2.3, Fact 1"
+
+[[node]]
 id = "IsWeight.denseRange_toLpₗ"
 
 [[node]]

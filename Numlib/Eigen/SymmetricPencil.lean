@@ -37,6 +37,10 @@ continuation, kept separate because it is where the *ordering* of the real eigen
   and min–max characterizations `Matrix.isGreatest_pencilEigenvalues`,
   `Matrix.isLeast_pencilEigenvalues` for the generalized Rayleigh quotient
   `re (xᴴ A x) / re (xᴴ B x)`.
+* `Matrix.isLeast_re_trace_conjTranspose_mul_mul`: the trace-min principle of Sameh–Wisniewski
+  ([golub2013matrix] §10.6.5), `min {re tr(Vᴴ A V) : Vᴴ B V = I_k}` is the sum of the `k` smallest
+  pencil eigenvalues, attained at pencil eigenvectors; Ky Fan's minimum principle
+  (`LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner`) after a normalizer.
 * `Matrix.crawfordNumber A B = min_{‖x‖ = 1} √((xᴴ A x)² + (xᴴ B x)²)` (with the square root, as in
   Stewart; the book's display (8.7.4) omits it), positive for a positive definite `B`
   (`Matrix.crawfordNumber_pos_of_posDef`) and 1-Lipschitz in the pair
@@ -214,6 +218,121 @@ theorem isLeast_pencilEigenvalues {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (
   rw [setOf_exists_submodule_eq Φ hΦ _ fun c r => r ≤ c]
   exact (isSymmetric_toEuclideanLin_iff.mpr (isHermitian_star_mul_mul hA _)).isLeast_eigenvalues
     finrank_euclideanSpace i
+
+/-- `(Vᴴ C V)(a, b) = ⟪v_a, C v_b⟫` over the columns `v_a` of `V`, in `EuclideanSpace`. -/
+private theorem conjTranspose_mul_mul_apply {k : ℕ} (C : Matrix n n 𝕜) (V : Matrix n (Fin k) 𝕜)
+    (a b : Fin k) :
+    (Vᴴ * C * V) a b = inner 𝕜 (WithLp.toLp 2 (V.col a))
+      (toEuclideanLin C (WithLp.toLp 2 (V.col b))) := by
+  simp only [EuclideanSpace.inner_toLp_toLp, toEuclideanLin_toLp, mul_apply, conjTranspose_apply,
+    col_apply, dotProduct, mulVec, Finset.sum_mul, Pi.star_apply]
+  rw [Finset.sum_comm]
+  exact Finset.sum_congr rfl fun c _ => Finset.sum_congr rfl fun d _ => by ring
+
+/-- **The trace-min principle** of Sameh–Wisniewski ([golub2013matrix] §10.6.5): for a
+symmetric-definite pencil `(A, B)` and `k ≤ card n`, the minimum of `re tr(Vᴴ A V)` over the
+`V ∈ 𝕜^{n×k}` with `Vᴴ B V = I_k` is the sum of the `k` smallest pencil eigenvalues (the last `k`
+of the decreasing `Matrix.pencilEigenvalues`), attained at a `V` with `Vᴴ A V` the diagonal matrix
+of those eigenvalues whose columns are pencil eigenvectors, `A v_j = μ_j B v_j`. With a normalizer
+`W`, `Wᴴ B W = 1`, the feasible `V` are the `W X` with `Xᴴ X = I_k` and
+`re tr(Vᴴ A V) = re tr(Xᴴ (Wᴴ A W) X)`, so this is Ky Fan's minimum principle
+`LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner` for `Wᴴ A W`, whose sorted eigenvalues are
+the pencil eigenvalues (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`); the minimizer is `W X` for
+`X` the last `k` eigenvectors. -/
+theorem isLeast_re_trace_conjTranspose_mul_mul {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+    (hB : B.PosDef) {k : ℕ} (hkn : k ≤ Fintype.card n) :
+    IsLeast {t : ℝ | ∃ V : Matrix n (Fin k) 𝕜, Vᴴ * B * V = 1 ∧
+        t = RCLike.re (Vᴴ * A * V).trace}
+        (∑ i : Fin k, pencilEigenvalues hA hB ⟨i + (Fintype.card n - k), by omega⟩) ∧
+      ∃ V : Matrix n (Fin k) 𝕜, Vᴴ * B * V = 1 ∧
+        Vᴴ * A * V = diagonal (fun i : Fin k =>
+          (pencilEigenvalues hA hB ⟨i + (Fintype.card n - k), by omega⟩ : 𝕜)) ∧
+        ∀ j : Fin k, A *ᵥ V.col j =
+          (pencilEigenvalues hA hB ⟨j + (Fintype.card n - k), by omega⟩ : 𝕜) • (B *ᵥ V.col j) := by
+  set low : Fin k → ℝ := fun i => pencilEigenvalues hA hB ⟨i + (Fintype.card n - k), by omega⟩
+    with hlowdef
+  obtain ⟨W, hWu, hWstar⟩ := hB.exists_isUnit_conj_eq_one
+  have hWs : star W = Wᴴ := star_eq_conjTranspose W
+  have hW : Wᴴ * B * W = 1 := by rw [← hWs]; exact hWstar
+  have hC := isHermitian_star_mul_mul hA W
+  have hμ := pencilEigenvalues_eq_of_conj_eq_one hA hB hWstar
+  set T := toEuclideanLin (star W * A * W) with hTdef
+  have hT : T.IsSymmetric := isSymmetric_toEuclideanLin_iff.mpr hC
+  have hn : Module.finrank 𝕜 (EuclideanSpace 𝕜 n) = Fintype.card n := finrank_euclideanSpace
+  have hev : ∀ i, hT.eigenvalues hn i = pencilEigenvalues hA hB i := fun i => by rw [← hμ]; rfl
+  have hlow : ∀ i : Fin k, low i = hT.eigenvalues hn ⟨i + (Fintype.card n - k), by omega⟩ :=
+    fun i => by rw [hev]
+  have hdet := (isUnit_iff_isUnit_det W).1 hWu
+  -- `B = W⁻ᴴ W⁻¹`
+  have hB' : B = (W⁻¹)ᴴ * W⁻¹ := by
+    have h1 : (W⁻¹)ᴴ * (Wᴴ * B * W) * W⁻¹ = B := by
+      rw [conjTranspose_nonsing_inv, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+        nonsing_inv_mul _ (by rw [det_conjTranspose]; exact hdet.star), Matrix.one_mul,
+        Matrix.mul_assoc, mul_nonsing_inv _ hdet, Matrix.mul_one]
+    rw [← h1, hW, Matrix.mul_one]
+  -- the attaining matrix
+  set X : Matrix n (Fin k) 𝕜 := Matrix.of fun a i =>
+    (hT.eigenvectorBasis hn ⟨i + (Fintype.card n - k), by omega⟩) a with hX
+  have hXcol : ∀ i, WithLp.toLp 2 (X.col i) =
+      hT.eigenvectorBasis hn ⟨i + (Fintype.card n - k), by omega⟩ := fun i => rfl
+  have hXX : Xᴴ * X = 1 := by
+    rw [conjTranspose_mul_self_eq_one_iff_orthonormal]
+    simp only [hXcol]
+    exact (hT.eigenvectorBasis hn).orthonormal.comp _ (fun i j h => Fin.ext (by
+      have := congrArg Fin.val h; simp at this; omega))
+  have hXCX : Xᴴ * (star W * A * W) * X = diagonal fun i => (low i : 𝕜) := by
+    ext i j
+    rw [conjTranspose_mul_mul_apply, ← hTdef, hXcol, hXcol, hT.apply_eigenvectorBasis,
+      inner_smul_right, OrthonormalBasis.inner_eq_ite, diagonal_apply]
+    by_cases hij : i = j
+    · subst hij
+      simp [hlow]
+    · have hij' : (i : ℕ) ≠ j := fun h => hij (Fin.ext h)
+      simp [hij, hij']
+  -- the feasible matrices
+  have hfeas : ∀ X' : Matrix n (Fin k) 𝕜, X'ᴴ * X' = 1 → (W * X')ᴴ * B * (W * X') = 1 :=
+    fun X' h => by
+      rw [conjTranspose_mul, Matrix.mul_assoc, Matrix.mul_assoc, ← Matrix.mul_assoc B,
+        ← Matrix.mul_assoc Wᴴ, ← Matrix.mul_assoc Wᴴ, hW, Matrix.one_mul, h]
+  have hconj : ∀ X' : Matrix n (Fin k) 𝕜,
+      (W * X')ᴴ * A * (W * X') = X'ᴴ * (star W * A * W) * X' := fun X' => by
+    rw [conjTranspose_mul, hWs]
+    simp only [Matrix.mul_assoc]
+  -- the columns of `W X` are eigenvectors of the pencil
+  have heig : ∀ j, A *ᵥ (W * X).col j = (low j : 𝕜) • (B *ᵥ (W * X).col j) := by
+    intro j
+    have hx : (star W * A * W) *ᵥ X.col j = (low j : 𝕜) • X.col j := by
+      have h := congrArg WithLp.ofLp (hT.apply_eigenvectorBasis hn
+        ⟨j + (Fintype.card n - k), by omega⟩)
+      rw [← hXcol, ← hlow] at h
+      simpa [hTdef, toEuclideanLin_toLp, Matrix.mul_assoc] using h
+    have hcol : (W * X).col j = W *ᵥ X.col j := by
+      ext r
+      simp [mul_apply, mulVec, dotProduct]
+    have hWT : (W⁻¹)ᴴ * Wᴴ = 1 := by
+      rw [← conjTranspose_mul, mul_nonsing_inv _ hdet, conjTranspose_one]
+    have hA1 : A *ᵥ (W *ᵥ X.col j) = (W⁻¹)ᴴ *ᵥ ((star W * A * W) *ᵥ X.col j) := by
+      simp only [hWs, mulVec_mulVec, ← Matrix.mul_assoc, hWT, Matrix.one_mul]
+    have hB1 : B *ᵥ (W *ᵥ X.col j) = (W⁻¹)ᴴ *ᵥ X.col j := by
+      rw [hB', mulVec_mulVec, Matrix.mul_assoc, nonsing_inv_mul _ hdet, Matrix.mul_one]
+    rw [hcol, hA1, hB1, hx, mulVec_smul]
+  refine ⟨⟨⟨W * X, hfeas X hXX, ?_⟩, ?_⟩, W * X, hfeas X hXX, by rw [hconj, hXCX], heig⟩
+  · rw [hconj, hXCX, trace_diagonal, ← RCLike.ofReal_sum, RCLike.ofReal_re]
+  · rintro t ⟨V, hV, rfl⟩
+    set X' := W⁻¹ * V with hX'
+    have hVX : V = W * X' := by
+      rw [hX', ← Matrix.mul_assoc, mul_nonsing_inv _ hdet, Matrix.one_mul]
+    have hXX' : X'ᴴ * X' = 1 := by
+      rw [← hV, hB', hX', conjTranspose_mul]
+      simp only [Matrix.mul_assoc]
+    have horth : Orthonormal 𝕜 fun i => WithLp.toLp 2 (X'.col i) :=
+      conjTranspose_mul_self_eq_one_iff_orthonormal.1 hXX'
+    have hky := hT.sum_eigenvalues_le_sum_re_inner hn horth hkn
+    rw [hVX, hconj, trace, map_sum]
+    simp only [diag_apply, conjTranspose_mul_mul_apply, ← hTdef]
+    simp only [hlow]
+    refine hky.trans_eq (Finset.sum_congr rfl fun i _ => ?_)
+    rw [inner_re_symm]
 
 omit [DecidableEq n] in
 /-- The real part `re (xᴴ M x)` of the quadratic form of a matrix at a vector of `EuclideanSpace`:

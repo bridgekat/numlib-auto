@@ -1,4 +1,5 @@
 import Numlib.Eigen.ImplicitRestart
+import Numlib.Krylov.BiLanczos
 import NumlibSurface.GolubVanLoan.Chapter05.Section02
 import NumlibSurface.GolubVanLoan.Chapter10.Section01
 
@@ -1671,40 +1672,35 @@ theorem equation_10_5_13 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ 
     · simp [h0.ne', h1, show (j : ℕ) + 1 ≠ st.k by omega]
     · simp [h0.ne', show (j : ℕ) + 1 = st.k by omega]
 
-/-- The biorthogonality kept by the exact run of (10.5.11): `q̃_aᵀ q_b = δ_ab`, the residuals are
-orthogonal to the opposite family, the computed `β`, `γ` are nonzero, and the first vectors are
-nonzero multiples of `q₁`, `q̃₁`. -/
-private theorem unsym_biorth {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
+/-- The normalization kept by the exact run of (10.5.11): `q̃_aᵀ q_a = 1` and `α_a = q̃_aᵀ A q_a`,
+the computed `β`, `γ` are nonzero, and the first vectors are nonzero multiples of `q₁`, `q̃₁`. -/
+private theorem unsym_normalized {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
     (t : ℕ) :
     let st := Id.run (unsymmetricLanczos pure A q₁ qt₁ t)
-    (∀ a < st.k, ∀ b < st.k, st.qt a ⬝ᵥ st.q b = if a = b then 1 else 0) ∧
-    (∀ a < st.k, st.qt a ⬝ᵥ st.r = 0) ∧ (∀ a < st.k, st.s ⬝ᵥ st.q a = 0) ∧
-    (∀ a < st.k, st.beta a ≠ 0 ∧ st.gamma a ≠ 0) ∧
+    (∀ a < st.k, st.qt a ⬝ᵥ st.q a = 1 ∧ st.alpha a = st.qt a ⬝ᵥ A *ᵥ st.q a ∧
+      st.beta a ≠ 0 ∧ st.gamma a ≠ 0) ∧
     (st.k = 0 → st.r = q₁ ∧ st.s = qt₁) ∧
     (0 < st.k → st.q 0 = (st.beta 0)⁻¹ • q₁ ∧ st.qt 0 = (st.gamma 0)⁻¹ • qt₁) := by
   intro st
   let P : UnsymLanczosState n → Prop := fun st =>
-    (∀ a < st.k, ∀ b < st.k, st.qt a ⬝ᵥ st.q b = if a = b then 1 else 0) ∧
-    (∀ a < st.k, st.qt a ⬝ᵥ st.r = 0) ∧ (∀ a < st.k, st.s ⬝ᵥ st.q a = 0) ∧
-    (∀ a < st.k, st.beta a ≠ 0 ∧ st.gamma a ≠ 0) ∧
+    (∀ a < st.k, st.qt a ⬝ᵥ st.q a = 1 ∧ st.alpha a = st.qt a ⬝ᵥ A *ᵥ st.q a ∧
+      st.beta a ≠ 0 ∧ st.gamma a ≠ 0) ∧
     (st.k = 0 → st.r = q₁ ∧ st.s = qt₁) ∧
     (0 < st.k → st.q 0 = (st.beta 0)⁻¹ • q₁ ∧ st.qt 0 = (st.gamma 0)⁻¹ • qt₁)
   suffices hP : ∀ t, P (Id.run (unsymmetricLanczos pure A q₁ qt₁ t)) from hP t
   intro t
   induction t with
   | zero =>
-    refine ⟨fun a ha => ?_, fun a ha => ?_, fun a ha => ?_, fun a ha => ?_, fun _ => ?_,
-      fun h => ?_⟩ <;> simp [unsymmetricLanczos] at *
+    refine ⟨fun a ha => ?_, fun _ => ?_, fun h => ?_⟩ <;> simp [unsymmetricLanczos] at *
   | succ t ih =>
-    have hrelt := unsym_relations A q₁ qt₁ t
+    have hdone := (unsym_relations A q₁ qt₁ t).1
     rw [unsymmetricLanczos_succ]
     set s0 := Id.run (unsymmetricLanczos pure A q₁ qt₁ t) with hs0
-    obtain ⟨hdone, hrel⟩ := hrelt
-    obtain ⟨I1, I2, I3, I4, I5, I6⟩ := ih
+    obtain ⟨I1, I5, I6⟩ := ih
     cases hsd : s0.done with
     | true =>
       simp only [unsymLanczosStep, hsd, ↓reduceIte, Id.run_pure]
-      exact ⟨I1, I2, I3, I4, I5, I6⟩
+      exact ⟨I1, I5, I6⟩
     | false =>
       have htest : ¬ (s0.r = 0 ∨ s0.s = 0 ∨ s0.s ⬝ᵥ s0.r = 0) := by
         simpa [hsd] using hdone.symm
@@ -1720,107 +1716,104 @@ private theorem unsym_biorth {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt
         exact hr0 (by simpa using congrArg WithLp.ofLp h)
       set γ := s0.s ⬝ᵥ s0.r / β with hγ
       have hγ0 : γ ≠ 0 := div_ne_zero hsr hβ0
-      have hβγ : γ * β = s0.s ⬝ᵥ s0.r := by rw [hγ]; field_simp
-      set qn := β⁻¹ • s0.r with hqn
-      set qtn := γ⁻¹ • s0.s with hqtn
-      set α := qtn ⬝ᵥ A *ᵥ qn with hα
-      set pv := if s0.k = 0 then (0 : Fin n → ℝ) else s0.q (s0.k - 1) with hpv
-      set pvt := if s0.k = 0 then (0 : Fin n → ℝ) else s0.qt (s0.k - 1) with hpvt
-      set q' := Function.update s0.q s0.k qn with hq'
-      set qt' := Function.update s0.qt s0.k qtn with hqt'
-      have hq'o : ∀ a < s0.k, q' a = s0.q a := fun a ha => Function.update_of_ne ha.ne _ _
-      have hqt'o : ∀ a < s0.k, qt' a = s0.qt a := fun a ha => Function.update_of_ne ha.ne _ _
-      have hq'n : q' s0.k = qn := Function.update_self _ _ _
-      have hqt'n : qt' s0.k = qtn := Function.update_self _ _ _
-      -- the new biorthogonality
-      have hqtq_new : ∀ a < s0.k, s0.qt a ⬝ᵥ qn = 0 := fun a ha => by
-        rw [hqn, dotProduct_smul, I2 a ha, smul_zero]
-      have hqtnq : ∀ a < s0.k, qtn ⬝ᵥ s0.q a = 0 := fun a ha => by
-        rw [hqtn, smul_dotProduct, I3 a ha, smul_zero]
-      have hnn : qtn ⬝ᵥ qn = 1 := by
-        rw [hqtn, hqn, smul_dotProduct, dotProduct_smul, ← hβγ, smul_eq_mul, smul_eq_mul]
+      have hnn : (γ⁻¹ • s0.s) ⬝ᵥ (β⁻¹ • s0.r) = 1 := by
+        rw [smul_dotProduct, dotProduct_smul, smul_eq_mul, smul_eq_mul, hγ]
         field_simp
-      have J1 : ∀ a < s0.k + 1, ∀ b < s0.k + 1, qt' a ⬝ᵥ q' b = if a = b then 1 else 0 := by
-        intro a ha b hb
-        rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
-        · rcases Nat.lt_succ_iff_lt_or_eq.1 hb with hb | rfl
-          · rw [hqt'o a ha, hq'o b hb]; exact I1 a ha b hb
-          · rw [hqt'o a ha, hq'n, hqtq_new a ha, ite_eq_right ha.ne]
-        · rcases Nat.lt_succ_iff_lt_or_eq.1 hb with hb | rfl
-          · rw [hqt'n, hq'o b hb, hqtnq b hb, ite_eq_right hb.ne']
-          · rw [hqt'n, hq'n, hnn, ite_eq_left rfl]
-      -- products with `A`
-      have hAq : ∀ a < s0.k, s0.qt a ⬝ᵥ A *ᵥ qn = if a + 1 = s0.k then γ else 0 := by
-        intro a ha
-        rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose, (hrel a ha).2]
-        simp only [add_dotProduct, smul_dotProduct, smul_eq_mul]
-        have h1 : (if a = 0 then (0 : Fin n → ℝ) else s0.qt (a - 1)) ⬝ᵥ qn = 0 := by
-          split_ifs
-          · simp
-          · exact hqtq_new _ (by omega)
-        rw [h1, hqtq_new a ha, mul_zero, mul_zero, zero_add, zero_add]
-        split_ifs with h2 h3 h3
-        · omega
-        · rw [smul_dotProduct, hqtq_new _ h2, smul_zero]
-        · rw [hqn, dotProduct_smul, smul_eq_mul, hγ]; ring
-        · omega
-      have hAqt : ∀ a < s0.k, qtn ⬝ᵥ A *ᵥ s0.q a = if a + 1 = s0.k then β else 0 := by
-        intro a ha
-        rw [(hrel a ha).1]
-        simp only [dotProduct_add, dotProduct_smul, smul_eq_mul]
-        have h1 : qtn ⬝ᵥ (if a = 0 then (0 : Fin n → ℝ) else s0.q (a - 1)) = 0 := by
-          split_ifs
-          · simp
-          · exact hqtnq _ (by omega)
-        rw [h1, hqtnq a ha, mul_zero, mul_zero, zero_add, zero_add]
-        split_ifs with h2 h3 h3
-        · omega
-        · rw [dotProduct_smul, hqtnq _ h2, smul_zero]
-        · rw [hqtn, smul_dotProduct, smul_eq_mul, ← hβγ]
-          field_simp
-        · omega
-      refine ⟨J1, fun a ha => ?_, fun a ha => ?_, fun a ha => ?_, fun h => by omega,
-        fun _ => ?_⟩
-      · -- `q̃_aᵀ r_{k+1} = 0`
-        simp only [dotProduct_add, dotProduct_smul, smul_eq_mul]
-        rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
-        · rw [hqt'o a ha, hAq a ha, hqtq_new a ha]
-          have hpv' : s0.qt a ⬝ᵥ pv = if a + 1 = s0.k then 1 else 0 := by
-            rw [hpv, ite_eq_right (by omega), I1 a ha _ (by omega)]
-            split_ifs <;> first | rfl | omega
-          rw [hpv']
-          split_ifs <;> ring
-        · rw [hqt'n, ← hα, hnn]
-          have : qtn ⬝ᵥ pv = 0 := by
-            rw [hpv]; split_ifs
-            · simp
-            · exact hqtnq _ (by omega)
-          rw [this]; ring
-      · -- `r̃_{k+1}ᵀ q_a = 0`
-        simp only [add_dotProduct, smul_dotProduct, smul_eq_mul]
-        rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
-        · rw [hq'o a ha, Matrix.mulVec_transpose, ← Matrix.dotProduct_mulVec, hAqt a ha,
-            hqtnq a ha]
-          have hpv' : pvt ⬝ᵥ s0.q a = if a + 1 = s0.k then 1 else 0 := by
-            rw [hpvt, ite_eq_right (by omega), I1 _ (by omega) a ha]
-            split_ifs <;> first | rfl | omega
-          rw [hpv']
-          split_ifs <;> ring
-        · rw [hq'n, Matrix.mulVec_transpose, ← Matrix.dotProduct_mulVec, ← hα, hnn]
-          have : pvt ⬝ᵥ qn = 0 := by
-            rw [hpvt]; split_ifs
-            · simp
-            · exact hqtq_new _ (by omega)
-          rw [this]; ring
+      refine ⟨fun a ha => ?_, fun h => by omega, fun _ => ?_⟩
       · rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
-        · rw [Function.update_of_ne ha.ne, Function.update_of_ne ha.ne]; exact I4 a ha
-        · rw [Function.update_self, Function.update_self]; exact ⟨hβ0, hγ0⟩
+        · simp only [Function.update_of_ne ha.ne]
+          exact I1 a ha
+        · refine ⟨?_, ?_, ?_, ?_⟩ <;> simp only [Function.update_self]
+          · exact hnn
+          · exact hβ0
+          · exact hγ0
       · rcases Nat.eq_zero_or_pos s0.k with h0 | h0
         · obtain ⟨hr, hs⟩ := I5 h0
-          rw [← h0, Function.update_self, Function.update_self, hq'n, hqt'n, hqn, hqtn, hr, hs]
+          rw [← h0, Function.update_self, Function.update_self, Function.update_self,
+            Function.update_self, hr, hs]
           exact ⟨rfl, rfl⟩
-        · rw [Function.update_of_ne h0.ne, Function.update_of_ne h0.ne, hq'o 0 h0, hqt'o 0 h0]
+        · simp only [Function.update_of_ne h0.ne]
           exact I6 h0
+
+/-- **The biorthogonality of the exact run of (10.5.11)**: `q̃_aᵀ q_b = δ_ab` and `q̃_aᵀ r_k = 0` —
+the backbone's `BiLanczos.inner_eq_ite_of_threeTerm` for the families `q_0, …, q_{k−1}, r_k` and
+`q̃_0, …, q̃_{k−1}, r̃_k` (with `β_k = γ_k = 1`), whose coupled recurrences are (10.5.12)–(10.5.13)
+(`unsym_relations`) and whose normalization is `unsym_normalized`. The book's `β_k = ‖r_k‖₂` is
+one admissible normalization of the two-sided Lanczos process. -/
+private theorem unsym_biorth {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
+    (t : ℕ) :
+    let st := Id.run (unsymmetricLanczos pure A q₁ qt₁ t)
+    (∀ a < st.k, ∀ b < st.k, st.qt a ⬝ᵥ st.q b = if a = b then 1 else 0) ∧
+    (∀ a < st.k, st.qt a ⬝ᵥ st.r = 0) := by
+  intro st
+  have N := (unsym_normalized A q₁ qt₁ t).1
+  have hrel := (unsym_relations A q₁ qt₁ t).2
+  -- the two families, closed by the residuals
+  set v : ℕ → EuclideanSpace ℝ (Fin n) := fun j => WithLp.toLp 2 (Function.update st.q st.k st.r j)
+    with hv
+  set w : ℕ → EuclideanSpace ℝ (Fin n) :=
+    fun j => WithLp.toLp 2 (Function.update st.qt st.k st.s j) with hw
+  have hvo : ∀ j < st.k, v j = WithLp.toLp 2 (st.q j) := fun j hj => by
+    simp only [hv, Function.update_of_ne hj.ne]
+  have hwo : ∀ j < st.k, w j = WithLp.toLp 2 (st.qt j) := fun j hj => by
+    simp only [hw, Function.update_of_ne hj.ne]
+  have hvk : v st.k = WithLp.toLp 2 st.r := by simp only [hv, Function.update_self]
+  have hwk : w st.k = WithLp.toLp 2 st.s := by simp only [hw, Function.update_self]
+  have hvp : ∀ j < st.k, (if j = 0 then 0 else v (j - 1)) =
+      WithLp.toLp 2 (if j = 0 then 0 else st.q (j - 1)) := fun j hj => by
+    split_ifs
+    · simp
+    · rw [hvo _ (by omega)]
+  have hwp : ∀ j < st.k, (if j = 0 then 0 else w (j - 1)) =
+      WithLp.toLp 2 (if j = 0 then 0 else st.qt (j - 1)) := fun j hj => by
+    split_ifs
+    · simp
+    · rw [hwo _ (by omega)]
+  set β' := Function.update st.beta st.k 1 with hβ'
+  set γ' := Function.update st.gamma st.k 1 with hγ'
+  have hvn : ∀ j < st.k, β' (j + 1) • v (j + 1) =
+      WithLp.toLp 2 (if j + 1 < st.k then st.beta (j + 1) • st.q (j + 1) else st.r) := by
+    intro j hj
+    by_cases hj1 : j + 1 < st.k
+    · rw [hβ', Function.update_of_ne hj1.ne, hvo _ hj1, ite_eq_left hj1, WithLp.toLp_smul]
+    · rw [show j + 1 = st.k by omega, hβ', Function.update_self, one_smul, hvk,
+        ite_eq_right (lt_irrefl _)]
+  have hwn : ∀ j < st.k, γ' (j + 1) • w (j + 1) =
+      WithLp.toLp 2 (if j + 1 < st.k then st.gamma (j + 1) • st.qt (j + 1) else st.s) := by
+    intro j hj
+    by_cases hj1 : j + 1 < st.k
+    · rw [hγ', Function.update_of_ne hj1.ne, hwo _ hj1, ite_eq_left hj1, WithLp.toLp_smul]
+    · rw [show j + 1 = st.k by omega, hγ', Function.update_self, one_smul, hwk,
+        ite_eq_right (lt_irrefl _)]
+  have hinner := EuclideanSpace.inner_toLp_toLp_real (ι := Fin n)
+  obtain ⟨I1, I2, -⟩ := BiLanczos.inner_eq_ite_of_threeTerm (A := Matrix.toEuclideanLin A)
+    (B := Matrix.toEuclideanLin Aᵀ)
+    (fun x y => (Matrix.toEuclideanLin_transpose_inner_right A x y).symm)
+    (v := v) (w := w) (α := st.alpha) (β := β') (γ := γ') (m := st.k)
+    (fun j hj => by
+      rw [hvo j hj, hvp j hj, hvn j hj, hγ', Function.update_of_ne hj.ne,
+        Matrix.toEuclideanLin_toLp, (hrel j hj).1, WithLp.toLp_add, WithLp.toLp_add,
+        WithLp.toLp_smul, WithLp.toLp_smul])
+    (fun j hj => by
+      rw [hwo j hj, hwp j hj, conj_trivial, conj_trivial, conj_trivial, hwn j hj, hβ',
+        Function.update_of_ne hj.ne, Matrix.toEuclideanLin_toLp, (hrel j hj).2,
+        WithLp.toLp_add, WithLp.toLp_add, WithLp.toLp_smul, WithLp.toLp_smul])
+    (fun j hj => by
+      rw [hwo j hj, hvo j hj, Matrix.toEuclideanLin_toLp, hinner, (N j hj).2.1])
+    (fun j hj => by rw [hwo j hj, hvo j hj, hinner, (N j hj).1])
+    (fun j hj => by
+      by_cases hj1 : j + 1 < st.k
+      · rw [hβ', Function.update_of_ne hj1.ne]; exact (N _ hj1).2.2.1
+      · rw [show j + 1 = st.k by omega, hβ', Function.update_self]; exact one_ne_zero)
+    (fun j hj => by
+      by_cases hj1 : j + 1 < st.k
+      · rw [hγ', Function.update_of_ne hj1.ne]; exact (N _ hj1).2.2.2
+      · rw [show j + 1 = st.k by omega, hγ', Function.update_self]; exact one_ne_zero)
+  refine ⟨fun a ha b hb => ?_, fun a ha => ?_⟩
+  · have h := I1 a ha b hb
+    rwa [hwo a ha, hvo b hb, hinner] at h
+  · have h := I2 a ha
+    rwa [hwo a ha, hvk, hinner] at h
 
 /-- A three-term recurrence spans the Krylov subspaces: if `v_0` is a nonzero multiple of `v₁` and
 `B v_a = c₁_a v_{a−1} + c₂_a v_a + c₃_{a+1} v_{a+1}` with `c₃_{a+1} ≠ 0` for `a + 1 < k`, then
@@ -1847,8 +1840,9 @@ pass had `r_k ≠ 0`, `r̃_k ≠ 0`, `r̃_kᵀ r_k ≠ 0`), with `k` passes, the
 biorthonormal, `Q̃_kᵀ Q_k = I_k`; they span the Krylov subspaces,
 `span {q_1, …, q_j} = 𝒦(A, q₁, j)` and `span {q̃_1, …, q̃_j} = 𝒦(Aᵀ, q̃₁, j)` for `j ≤ k`; and
 `Q̃_kᵀ A Q_k = T_k`, the tridiagonal matrix of the computed `α`, `β`, `γ`. Proved directly from the
-recurrences (10.5.12)–(10.5.13) (the book's derivation, whose normalization `β_k = ‖r_k‖₂` differs
-from the backbone `BiLanczos`'s `δ_{j+1} = |⟪ŵ, v̂⟫|^{1/2}`). -/
+recurrences (10.5.12)–(10.5.13); the biorthogonality is the backbone's
+`BiLanczos.inner_eq_ite_of_threeTerm`, which allows the book's normalization `β_k = ‖r_k‖₂` as well
+as `BiLanczos`'s `δ_{j+1} = |⟪ŵ, v̂⟫|^{1/2}`. -/
 theorem equation_10_5_11 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
     (fuel : ℕ) :
     let st := Id.run (unsymmetricLanczos pure A q₁ qt₁ fuel)
@@ -1861,7 +1855,10 @@ theorem equation_10_5_11 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ 
         Krylov.subspace (Matrix.toEuclideanLin Aᵀ) (WithLp.toLp 2 qt₁) j) ∧
       (unsymQt st st.k)ᵀ * A * unsymQ st st.k = unsymTridiag st st.k := by
   intro st
-  obtain ⟨I1, I2, -, I4, -, I6⟩ := unsym_biorth A q₁ qt₁ fuel
+  obtain ⟨I1, I2⟩ := unsym_biorth A q₁ qt₁ fuel
+  obtain ⟨N, -, I6⟩ := unsym_normalized A q₁ qt₁ fuel
+  have I4 : ∀ a < st.k, st.beta a ≠ 0 ∧ st.gamma a ≠ 0 := fun a ha => ⟨(N a ha).2.2.1,
+    (N a ha).2.2.2⟩
   have hrel := (unsym_relations A q₁ qt₁ fuel).2
   have hQQ : (unsymQt st st.k)ᵀ * unsymQ st st.k = 1 := by
     ext a b

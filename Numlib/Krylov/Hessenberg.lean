@@ -20,7 +20,8 @@ import Numlib.LinearAlgebra.Matrix.PlaneRotation
 * FOM and GMRES in coordinates ([saad2003iterative] (6.16)–(6.17), (6.28)–(6.30)): for `m ≤ grade`,
   the Galerkin iterate is `x₀ + V_m y` with `H_m y = β e₁`, exists uniquely iff `H_m` is a unit, and
   the minimal-residual iterate is `x₀ + V_m y` with `y` the least-squares solution of `H̄_m y ≈ β
-  e₁`.
+  e₁`, computable through any unitary triangularization of `H̄_m`
+  (`Krylov.isMinResidualIterate_of_unitary_mul_hessenberg`).
 * Givens rotations, indexed by `ℕ` (no `Fin` casts): the progressive QR factorization of the
   Hessenberg coefficients `h`, the parameters `c_k, s_k, ρ_k`, the transformed right-hand side `γ_k,
   g_k` with `γ_{k+1} = -s_k γ_k` ([saad2003iterative] (6.37), (6.44)–(6.47), (6.80)–(6.81);
@@ -29,6 +30,9 @@ import Numlib.LinearAlgebra.Matrix.PlaneRotation
   ‖r^F_{m+1}‖`, `H_{m+1}` unit iff `c_m ≠ 0` ([saad2003iterative] Prop 6.9, (6.75), Lemma 6.16).
   Because the rotations are computed from the infinite coefficient function, prefix stability across
   `m` is automatic.
+  Transposed, the same factorization gives the minimum-norm solution of the underdetermined
+  `H̄_mᴴ y = c` that SYMMLQ needs ([golub2013matrix] §11.4.1,
+  `Krylov.conjTranspose_hessenbergOf_mulVec_givensQ_snoc`).
 
 The residual itself, not only its norm, is read off the rotations: as long as no rotation has
 degenerated, `r^G_m = γ_m ∑_i conj (Q_m)_{m,i} v_i`
@@ -511,6 +515,48 @@ theorem isMinResidualIterate_iff_isMinOn {m : ℕ} (hm : m ≤ grade A (b - A x�
     rw [hwe, norm_residual_eq_norm_firstVec_sub_mulVec hm y,
       norm_residual_eq_norm_firstVec_sub_mulVec hm c]
     exact h3
+
+
+/-- **GMRES through any unitary triangularization of `H̄_m`** ([saad2003iterative] Prop 6.5,
+[golub2013matrix] §11.4.3): if a unitary `W` brings `H̄_m` to a matrix with zero last row and `y`
+solves the leading `m` rows of `(W H̄_m) y = W (β e₁)`, then `x₀ + V_m y` is the minimal-residual
+iterate, with residual norm `|(W β e₁)_m|`. The rotations need not be those of `Krylov.givensQ`:
+any sign convention, or a Householder factorization, works. Proof: `W` is an isometry, so
+`‖β e₁ - H̄_m z‖² = ∑_{i < m} |(W β e₁ - W H̄_m z)_i|² + |(W β e₁)_m|²`, whose first part vanishes
+at `y`. -/
+theorem isMinResidualIterate_of_unitary_mul_hessenberg {m : ℕ} (hm : m ≤ grade A (b - A x₀))
+    {W : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜} (hW : W ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜)
+    (hlast : ∀ j, (W * Arnoldi.hessenberg A (b - A x₀) m) (Fin.last m) j = 0) {y : Fin m → 𝕜}
+    (hy : ∀ i : Fin m, ((W * Arnoldi.hessenberg A (b - A x₀) m).mulVec y) i.castSucc =
+      (W.mulVec (firstVec (‖b - A x₀‖ : 𝕜) (m + 1))) i.castSucc) :
+    IsMinResidualIterate A b x₀ m (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j) ∧
+      ‖b - A (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j)‖ =
+        ‖(W.mulVec (firstVec (‖b - A x₀‖ : 𝕜) (m + 1))) (Fin.last m)‖ := by
+  set g := W.mulVec (firstVec (‖b - A x₀‖ : 𝕜) (m + 1)) with hg
+  set R := W * Arnoldi.hessenberg A (b - A x₀) m with hR
+  have hRz : ∀ z : Fin m → 𝕜, (R.mulVec z) (Fin.last m) = 0 := fun z => by
+    simp only [Matrix.mulVec, dotProduct, hlast, zero_mul, Finset.sum_const_zero]
+  have key : ∀ z : Fin m → 𝕜, ‖(WithLp.toLp 2 (firstVec (‖b - A x₀‖ : 𝕜) (m + 1) -
+      (Arnoldi.hessenberg A (b - A x₀) m).mulVec z) : EuclideanSpace 𝕜 (Fin (m + 1)))‖ ^ 2 =
+      (∑ i : Fin m, ‖g i.castSucc - (R.mulVec z) i.castSucc‖ ^ 2) + ‖g (Fin.last m)‖ ^ 2 := by
+    intro z
+    rw [← Matrix.norm_toLp_mulVec_of_mem_unitaryGroup hW, Matrix.mulVec_sub, Matrix.mulVec_mulVec,
+      ← hg, ← hR, EuclideanSpace.norm_sq_eq, Fin.sum_univ_castSucc]
+    simp only [Pi.sub_apply, hRz, sub_zero]
+  have hy0 : ∀ i : Fin m, g i.castSucc - (R.mulVec y) i.castSucc = 0 := fun i => by
+    rw [hy i, sub_self]
+  have hkey : ‖(WithLp.toLp 2 (firstVec (‖b - A x₀‖ : 𝕜) (m + 1) -
+      (Arnoldi.hessenberg A (b - A x₀) m).mulVec y) : EuclideanSpace 𝕜 (Fin (m + 1)))‖ ^ 2 =
+      ‖g (Fin.last m)‖ ^ 2 := by
+    rw [key]
+    simp only [hy0, norm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
+      Finset.sum_const_zero, zero_add]
+  refine ⟨(isMinResidualIterate_iff_isMinOn hm y).2 (isMinOn_iff.2 fun z _ => ?_), ?_⟩
+  · refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+    rw [hkey, key]
+    exact le_add_of_nonneg_left (Finset.sum_nonneg fun i _ => sq_nonneg _)
+  · rw [norm_residual_eq_norm_firstVec_sub_mulVec hm y]
+    exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hkey
 
 end Coordinates
 
@@ -1503,6 +1549,63 @@ theorem rotated_self_mul_eq_gamma (hh : ∀ i j, j + 1 < i → h i j = 0) (β : 
     Pi.sub_apply, givensQAux_mulVec_firstVec h β (m + 1) m (by omega),
     givensQAux_mulVec_of_last h _ hd ⟨m, Nat.lt_succ_self m⟩, sub_zero]
   exact gvecTrunc_self h β m
+
+/-! #### The transposed system `H̄_mᴴ y = c`: the minimum-norm solve -/
+
+open scoped Matrix in
+/-- `R̄_mᴴ z` sees only the first `m` entries of `z`: the last row of `R̄_m` vanishes. -/
+theorem conjTranspose_hessenbergOf_rotated_mulVec (hh : ∀ i j, j + 1 < i → h i j = 0) (m : ℕ)
+    (z : Fin (m + 1) → 𝕜) :
+    (hessenbergOf (rotated h m) m)ᴴ *ᵥ z =
+      (hessenbergSqOf (rotated h m) m)ᴴ *ᵥ fun i => z i.castSucc := by
+  funext j
+  simp only [Matrix.mulVec, dotProduct, Matrix.conjTranspose_apply, Fin.sum_univ_castSucc,
+    hessenbergOf, hessenbergSqOf, Matrix.of_apply, Fin.val_last, Fin.val_castSucc]
+  rw [rotated_last_row h hh m j j.isLt, star_zero, zero_mul, add_zero]
+
+open scoped Matrix in
+/-- **The minimum-norm solution of `H̄_mᴴ y = c`** (the SYMMLQ solve, [golub2013matrix] §11.4.1):
+when no rotation degenerates, `y = Q_mᴴ [w; 0]` with `R_mᴴ w = c` solves the underdetermined
+system `H̄_mᴴ y = c` and has the least norm among its solutions. The Givens QR factorization of
+`H̄_m`, transposed, is `H̄_mᴴ Q_mᴴ = R̄_mᴴ = [R_mᴴ | 0]` (`Krylov.givensQ_mul_hessenbergOf`); every
+solution is `Q_mᴴ [w; t]` for some `t`, since `R_mᴴ` is nonsingular, and `Q_m` is unitary. -/
+theorem conjTranspose_hessenbergOf_mulVec_givensQ_snoc (hh : ∀ i j, j + 1 < i → h i j = 0)
+    {m : ℕ} (hρ : ∀ l < m, givensRho h l ≠ 0) {c w : Fin m → 𝕜}
+    (hw : (hessenbergSqOf (rotated h m) m)ᴴ *ᵥ w = c) :
+    (hessenbergOf h m)ᴴ *ᵥ ((givensQ h m)ᴴ *ᵥ Fin.snoc w 0) = c ∧
+      ∀ y : Fin (m + 1) → 𝕜, (hessenbergOf h m)ᴴ *ᵥ y = c →
+        ‖(WithLp.toLp 2 ((givensQ h m)ᴴ *ᵥ Fin.snoc w 0) : EuclideanSpace 𝕜 (Fin (m + 1)))‖ ≤
+          ‖(WithLp.toLp 2 y : EuclideanSpace 𝕜 (Fin (m + 1)))‖ := by
+  have hQ := givensQ_mem_unitaryGroup h m hρ
+  have hQs : (givensQ h m)ᴴ = star (givensQ h m) := (Matrix.star_eq_conjTranspose _).symm
+  have hQt : (givensQ h m)ᴴ ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜 := hQs ▸ Unitary.star_mem hQ
+  have hQQ : (givensQ h m)ᴴ * givensQ h m = 1 := hQs ▸ Matrix.mem_unitaryGroup_iff'.1 hQ
+  have hRu : IsUnit (hessenbergSqOf (rotated h m) m)ᴴ :=
+    (Matrix.isUnit_conjTranspose _).2 (isUnit_hessenbergSqOf_rotated_self h hh hρ)
+  have hkey : ∀ z : Fin (m + 1) → 𝕜, (hessenbergOf h m)ᴴ *ᵥ ((givensQ h m)ᴴ *ᵥ z) =
+      (hessenbergSqOf (rotated h m) m)ᴴ *ᵥ fun i => z i.castSucc := fun z => by
+    rw [Matrix.mulVec_mulVec, ← Matrix.conjTranspose_mul, givensQ_mul_hessenbergOf,
+      conjTranspose_hessenbergOf_rotated_mulVec h hh]
+  -- the norm of `z ∈ 𝕜^{m+1}` splits off its last entry
+  have hsplit : ∀ z : Fin (m + 1) → 𝕜,
+      ‖(WithLp.toLp 2 z : EuclideanSpace 𝕜 (Fin (m + 1)))‖ ^ 2 =
+      ‖(WithLp.toLp 2 (fun i : Fin m => z i.castSucc) : EuclideanSpace 𝕜 (Fin m))‖ ^ 2 +
+        ‖z (Fin.last m)‖ ^ 2 := fun z => by
+    rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq, Fin.sum_univ_castSucc]
+  refine ⟨?_, fun y hy => ?_⟩
+  · rw [hkey]
+    simpa using hw
+  · have hyz : y = (givensQ h m)ᴴ *ᵥ (givensQ h m *ᵥ y) := by
+      rw [Matrix.mulVec_mulVec, hQQ, Matrix.one_mulVec]
+    have hzw : (fun i : Fin m => (givensQ h m *ᵥ y) i.castSucc) = w := by
+      refine (Matrix.mulVec_injective_iff_isUnit.2 hRu) ?_
+      rw [← hkey, ← hyz, hy, hw]
+    rw [hyz, Matrix.norm_toLp_mulVec_of_mem_unitaryGroup hQt,
+      Matrix.norm_toLp_mulVec_of_mem_unitaryGroup hQt]
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+    rw [hsplit, hsplit (givensQ h m *ᵥ y), hzw]
+    simp only [Fin.snoc_castSucc, Fin.snoc_last, norm_zero]
+    nlinarith [sq_nonneg ‖(givensQ h m *ᵥ y) (Fin.last m)‖]
 
 end Givens
 

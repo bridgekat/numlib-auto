@@ -1014,6 +1014,56 @@ theorem leadingCoeff_orthonormalFamily (μ : Measure ℝ) (n : ℕ) :
   rw [orthonormalFamily, leadingCoeff_mul, leadingCoeff_C, (monic_family μ n).leadingCoeff,
     mul_one]
 
+/-- **Uniqueness of the monic orthogonal polynomials** ([golub2013matrix] §10.2.3, Fact 1): a
+polynomial of degree `n` orthogonal in `L²(μ)` to every polynomial of lower degree is its leading
+coefficient times the monic `family μ n` (the difference has degree `< n` and is orthogonal to
+`family μ 0, …, family μ (n - 1)`, `eq_zero_of_degree_lt`). -/
+theorem eq_C_leadingCoeff_mul_family (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree = n)
+    (horth : ∀ r : ℝ[X], r.degree < n → ∫ x, q.eval x * r.eval x ∂μ = 0) :
+    q = C q.leadingCoeff * family μ n := by
+  have hq0 : q ≠ 0 := by
+    rintro rfl
+    simp at hq
+  set c := q.leadingCoeff with hcdef
+  have hc0 : c ≠ 0 := leadingCoeff_ne_zero.2 hq0
+  have hdegC : (C c * family μ n).degree = n := by
+    rw [degree_C_mul hc0, degree_family]
+  have hlt : (q - C c * family μ n).degree < n := by
+    have h := degree_sub_lt_left (p := q) (q := C c * family μ n) (by rw [hq, hdegC]) hq0
+      (by rw [leadingCoeff_mul, leadingCoeff_C, (monic_family μ n).leadingCoeff, mul_one])
+    rwa [hq] at h
+  refine sub_eq_zero.1 (eq_zero_of_degree_lt hw hlt fun j hj => ?_)
+  have e : ∀ x, (q - C c * family μ n).eval x * (family μ j).eval x =
+      q.eval x * (family μ j).eval x - c * ((family μ n).eval x * (family μ j).eval x) :=
+    fun x => by simp only [eval_sub, eval_mul, eval_C]; ring
+  simp_rw [e]
+  rw [integral_sub (hw.integrable_eval_mul q _) ((hw.integrable_eval_mul _ _).const_mul c),
+    integral_const_mul, horth _ (by rw [degree_family]; exact_mod_cast hj),
+    integral_family_mul_family hw (by omega), mul_zero, sub_zero]
+
+/-- **Uniqueness of the orthonormal polynomials up to sign** ([golub2013matrix] §10.2.3, Fact 1):
+a polynomial of degree `n`, orthogonal in `L²(μ)` to every polynomial of lower degree and of unit
+`L²(μ)` norm, is `± orthonormalFamily μ n`. -/
+theorem eq_orthonormalFamily_or_eq_neg (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree = n)
+    (horth : ∀ r : ℝ[X], r.degree < n → ∫ x, q.eval x * r.eval x ∂μ = 0)
+    (hq1 : ∫ x, q.eval x ^ 2 ∂μ = 1) :
+    q = orthonormalFamily μ n ∨ q = -orthonormalFamily μ n := by
+  have hfam := eq_C_leadingCoeff_mul_family hw hq horth
+  set c := q.leadingCoeff
+  have hsq : c ^ 2 * normSq μ n = 1 := by
+    rw [← hq1, hfam, normSq]
+    simp only [eval_mul, eval_C, mul_pow]
+    exact (integral_const_mul _ _).symm
+  have hc2 : c ^ 2 = (normOf μ n)⁻¹ ^ 2 := by
+    rw [inv_pow, sq_normOf hw]
+    field_simp [(normSq_pos hw n).ne']
+    linarith
+  rcases sq_eq_sq_iff_eq_or_eq_neg.1 hc2 with h | h
+  · left
+    rw [hfam, h, orthonormalFamily]
+  · right
+    rw [hfam, h, orthonormalFamily, C_neg, neg_mul]
+
 /-! ### The three-term recurrence of the orthonormal polynomials -/
 
 /-- The coefficient `a_n = ‖p_n‖ / ‖p_{n+1}‖` of `X` in the three-term recurrence for the

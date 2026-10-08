@@ -56,6 +56,14 @@ id = "Krylov.givensQ"
 id = "Krylov.givensQ_mem_unitaryGroup"
 
 [[node]]
+id = "Krylov.isMinResidualIterate_of_unitary_mul_hessenberg"
+source = 'Golub–Van Loan, Matrix Computations, §11.4.3; Saad, Iterative Methods, Proposition 6.5'
+
+[[node]]
+id = "Krylov.conjTranspose_hessenbergOf_mulVec_givensQ_snoc"
+source = 'Golub–Van Loan, Matrix Computations, §11.4.1, the SYMMLQ solve'
+
+[[node]]
 id = "Krylov.givensQ_mulVec_firstVec"
 
 [[node]]

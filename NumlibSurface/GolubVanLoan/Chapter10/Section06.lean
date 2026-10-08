@@ -1232,35 +1232,14 @@ theorem jacobiDavidson_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
 
 /-! ### The trace-min principle (§10.6.5) -/
 
-/-- `(Xᵀ C X)(a, b) = ⟪C x_b, x_a⟫` over the columns of `X`. -/
-private theorem transpose_mul_mul_apply {k : ℕ} (C : Matrix (Fin n) (Fin n) ℝ)
-    (X : Matrix (Fin n) (Fin k) ℝ) (a b : Fin k) :
-    (Xᵀ * C * X) a b = RCLike.re (inner ℝ
-      (Matrix.toEuclideanLin C (WithLp.toLp 2 (X.col b))) (WithLp.toLp 2 (X.col a))) := by
-  simp only [RCLike.re_to_real, EuclideanSpace.inner_toLp_toLp, Matrix.toEuclideanLin_toLp,
-    star_trivial, Matrix.mul_apply, Matrix.transpose_apply, Matrix.col_apply, dotProduct,
-    Matrix.mulVec, Finset.sum_mul, Finset.mul_sum]
-  rw [Finset.sum_comm]
-  exact Finset.sum_congr rfl fun c _ => Finset.sum_congr rfl fun d _ => by ring
-
-/-- `tr(Xᵀ C X) = ∑ᵢ ⟪C xᵢ, xᵢ⟫` over the columns `xᵢ` of `X`. -/
-private theorem trace_transpose_mul_mul_eq_sum {k : ℕ} (C : Matrix (Fin n) (Fin n) ℝ)
-    (X : Matrix (Fin n) (Fin k) ℝ) :
-    (Xᵀ * C * X).trace = ∑ i : Fin k, RCLike.re (inner ℝ
-      (Matrix.toEuclideanLin C (WithLp.toLp 2 (X.col i))) (WithLp.toLp 2 (X.col i))) := by
-  simp only [Matrix.trace, Matrix.diag, transpose_mul_mul_apply]
-
 /-- **The trace-min principle** (§10.6.5, Sameh–Wisniewski): for a symmetric `A`, a positive
 definite `B` and `k ≤ n`, with the pencil eigenvalues `μ_1 ≤ ⋯ ≤ μ_n` of `A − λB` (the book counts
 from the smallest here; `Matrix.pencilEigenvalues` is decreasing, so the book's `μ_1, …, μ_k` are
 its last `k`), `min {tr(VᵀAV) : V ∈ ℝ^{n×k}, VᵀBV = I_k} = μ_1 + ⋯ + μ_k`, attained at a `V_opt`
 with `V_optᵀ A V_opt = diag(μ_1, …, μ_k)` and `A V_opt(:, j) = μ_j B V_opt(:, j)`. The book's "if
 `V_opt` solves the problem then `V_optᵀ A V_opt = diag(μ)`" holds for *some* minimizer, not every
-one (any `V_opt Q`, `Q` orthogonal, also minimizes). Proof: with a normalizer `W`, `WᵀBW = I`, every
-feasible `V` is `W X` with `XᵀX = I_k` and `tr(VᵀAV) = tr(Xᵀ(WᵀAW)X)`; Ky Fan's minimum principle
-`LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner` for `WᵀAW`, whose sorted eigenvalues are the
-pencil eigenvalues (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`); equality at `X` = the last `k`
-eigenvectors. -/
+one (any `V_opt Q`, `Q` orthogonal, also minimizes). The real case of the backbone's
+`Matrix.isLeast_re_trace_conjTranspose_mul_mul`. -/
 theorem isLeast_trace_transpose_mul_mul {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hB : B.PosDef) {k : ℕ} (hkn : k ≤ n) :
     let μ := Matrix.pencilEigenvalues (Matrix.isHermitian_iff_isSymm.mpr hA) hB
@@ -1270,104 +1249,13 @@ theorem isLeast_trace_transpose_mul_mul {A B : Matrix (Fin n) (Fin n) ℝ} (hA :
       ∃ V : Matrix (Fin n) (Fin k) ℝ, Vᵀ * B * V = 1 ∧ Vᵀ * A * V = Matrix.diagonal low ∧
         ∀ j, A *ᵥ V.col j = low j • (B *ᵥ V.col j) := by
   intro μ low
-  have hA' : A.IsHermitian := Matrix.isHermitian_iff_isSymm.mpr hA
-  obtain ⟨W, hWu, hWstar⟩ := hB.exists_isUnit_conj_eq_one
-  have hWs : star W = Wᵀ := by
-    rw [Matrix.star_eq_conjTranspose, Matrix.conjTranspose_eq_transpose_of_trivial]
-  have hW : Wᵀ * B * W = 1 := by rw [← hWs]; exact hWstar
-  have hC : (Wᵀ * A * W).IsHermitian := by
-    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.transpose_mul,
-      Matrix.transpose_mul, Matrix.transpose_transpose, hA.eq, Matrix.mul_assoc]
-  have key : ∀ (M N : Matrix (Fin n) (Fin n) ℝ) (h : M = N) (hM : M.IsHermitian)
-      (hN : N.IsHermitian), hM.eigenvalues₀ = hN.eigenvalues₀ := by
-    intro M N h hM hN
-    subst h
-    rfl
-  have hμ : hC.eigenvalues₀ = μ :=
-    (key _ _ (by rw [hWs]) hC _).trans (Matrix.pencilEigenvalues_eq_of_conj_eq_one hA' hB hWstar)
-  set T := Matrix.toEuclideanLin (Wᵀ * A * W) with hTdef
-  have hT : T.IsSymmetric := Matrix.isSymmetric_toEuclideanLin_iff.mpr hC
-  have hn : Module.finrank ℝ (EuclideanSpace ℝ (Fin n)) = Fintype.card (Fin n) :=
-    finrank_euclideanSpace
-  have hev : ∀ i, hT.eigenvalues hn i = μ i := fun i => by rw [← hμ]; rfl
-  have hkn' : k ≤ Fintype.card (Fin n) := by rw [Fintype.card_fin]; exact hkn
-  have hlow : ∀ i : Fin k, low i = hT.eigenvalues hn ⟨i + (Fintype.card (Fin n) - k), by omega⟩ :=
-    fun i => by rw [hev]; simp only [low, Fintype.card_fin]
-  have hdet := (Matrix.isUnit_iff_isUnit_det W).1 hWu
-  -- `B = W⁻ᵀ W⁻¹`
-  have hB' : B = (W⁻¹)ᵀ * W⁻¹ := by
-    have h1 : (W⁻¹)ᵀ * (Wᵀ * B * W) * W⁻¹ = B := by
-      rw [Matrix.transpose_nonsing_inv, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
-        Matrix.nonsing_inv_mul _ (by rwa [Matrix.det_transpose]), Matrix.one_mul,
-        Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hdet, Matrix.mul_one]
-    rw [← h1, hW, Matrix.mul_one]
-  -- the attaining matrix
-  set X : Matrix (Fin n) (Fin k) ℝ := Matrix.of fun a i =>
-    (hT.eigenvectorBasis hn ⟨i + (Fintype.card (Fin n) - k), by omega⟩) a with hX
-  have hXcol : ∀ i, WithLp.toLp 2 (X.col i) =
-      hT.eigenvectorBasis hn ⟨i + (Fintype.card (Fin n) - k), by omega⟩ := fun i => rfl
-  have hXX : Xᵀ * X = 1 := by
-    rw [← Matrix.conjTranspose_eq_transpose_of_trivial,
-      Matrix.conjTranspose_mul_self_eq_one_iff_orthonormal]
-    simp only [hXcol]
-    exact (hT.eigenvectorBasis hn).orthonormal.comp _ (fun i j h => Fin.ext (by
-      have := congrArg Fin.val h; simp at this; omega))
-  have hXCX : Xᵀ * (Wᵀ * A * W) * X = Matrix.diagonal low := by
-    ext i j
-    have hmul : ∀ a b : Fin k, (Xᵀ * (Wᵀ * A * W) * X) a b = RCLike.re (inner ℝ
-        (T (WithLp.toLp 2 (X.col b))) (WithLp.toLp 2 (X.col a))) := fun a b =>
-      transpose_mul_mul_apply _ X a b
-    rw [hmul, hXcol, hXcol, hT.apply_eigenvectorBasis, inner_smul_left,
-      OrthonormalBasis.inner_eq_ite, Matrix.diagonal_apply]
-    by_cases hij : i = j
-    · subst hij
-      simp [hlow]
-    · have hij' : (j : ℕ) ≠ i := fun h => hij (Fin.ext h).symm
-      simp [hij, hij']
-  -- the feasible matrices
-  have hfeas : ∀ X' : Matrix (Fin n) (Fin k) ℝ, X'ᵀ * X' = 1 →
-      (W * X')ᵀ * B * (W * X') = 1 := fun X' h => by
-    rw [Matrix.transpose_mul, Matrix.mul_assoc, Matrix.mul_assoc, ← Matrix.mul_assoc B,
-      ← Matrix.mul_assoc Wᵀ, ← Matrix.mul_assoc Wᵀ, hW, Matrix.one_mul, h]
-  have hconj : ∀ X' : Matrix (Fin n) (Fin k) ℝ,
-      (W * X')ᵀ * A * (W * X') = X'ᵀ * (Wᵀ * A * W) * X' := fun X' => by
-    rw [Matrix.transpose_mul]
-    simp only [Matrix.mul_assoc]
-  -- the columns of `W X` are eigenvectors of the pencil
-  have heig : ∀ j, A *ᵥ (W * X).col j = low j • (B *ᵥ (W * X).col j) := by
-    intro j
-    have hx : (Wᵀ * A * W) *ᵥ X.col j = low j • X.col j := by
-      have h := congrArg WithLp.ofLp (hT.apply_eigenvectorBasis hn
-        ⟨j + (Fintype.card (Fin n) - k), by omega⟩)
-      rw [← hXcol, hlow] at *
-      simpa [hTdef, Matrix.toEuclideanLin_toLp, Matrix.mul_assoc] using h
-    have hcol : (W * X).col j = W *ᵥ X.col j := by
-      ext r
-      simp [Matrix.mul_apply, Matrix.mulVec, dotProduct]
-    have hWT : (W⁻¹)ᵀ * Wᵀ = 1 := by
-      rw [← Matrix.transpose_mul, Matrix.mul_nonsing_inv _ hdet, Matrix.transpose_one]
-    have hA1 : A *ᵥ (W *ᵥ X.col j) = (W⁻¹)ᵀ *ᵥ ((Wᵀ * A * W) *ᵥ X.col j) := by
-      simp only [Matrix.mulVec_mulVec, ← Matrix.mul_assoc, hWT, Matrix.one_mul]
-    have hB1 : B *ᵥ (W *ᵥ X.col j) = (W⁻¹)ᵀ *ᵥ X.col j := by
-      rw [hB', Matrix.mulVec_mulVec, Matrix.mul_assoc,
-        Matrix.nonsing_inv_mul _ hdet, Matrix.mul_one]
-    rw [hcol, hA1, hB1, hx, Matrix.mulVec_smul]
-  refine ⟨⟨⟨W * X, hfeas X hXX, ?_⟩, ?_⟩, W * X, hfeas X hXX, by rw [hconj, hXCX], heig⟩
-  · rw [hconj, hXCX, Matrix.trace_diagonal]
-  · rintro t ⟨V, hV, rfl⟩
-    set X' := W⁻¹ * V with hX'
-    have hVX : V = W * X' := by
-      rw [hX', ← Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hdet, Matrix.one_mul]
-    have hXX' : X'ᵀ * X' = 1 := by
-      rw [← hV, hB', hX', Matrix.transpose_mul]
-      simp only [Matrix.mul_assoc]
-    have horth : Orthonormal ℝ fun i => WithLp.toLp 2 (X'.col i) := by
-      rw [← Matrix.conjTranspose_mul_self_eq_one_iff_orthonormal,
-        Matrix.conjTranspose_eq_transpose_of_trivial]
-      exact hXX'
-    have hky := hT.sum_eigenvalues_le_sum_re_inner hn horth hkn'
-    rw [hVX, hconj, trace_transpose_mul_mul_eq_sum]
-    simp only [hlow]
-    exact hky
+  have hlow : ∀ i : Fin k, Matrix.pencilEigenvalues (Matrix.isHermitian_iff_isSymm.mpr hA) hB
+      ⟨i + (Fintype.card (Fin n) - k), by rw [Fintype.card_fin]; omega⟩ = low i := fun i => by
+    simp only [low, μ, Fintype.card_fin]
+  have h := Matrix.isLeast_re_trace_conjTranspose_mul_mul (Matrix.isHermitian_iff_isSymm.mpr hA) hB
+    (k := k) (by rw [Fintype.card_fin]; exact hkn)
+  simp only [Matrix.conjTranspose_eq_transpose_of_trivial, RCLike.re_to_real,
+    RCLike.ofReal_real_eq_id, id, hlow] at h
+  exact h
 
 end GolubVanLoan.Chapter10
