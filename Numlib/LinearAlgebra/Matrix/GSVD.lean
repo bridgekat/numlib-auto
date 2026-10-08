@@ -4,6 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix`, beside a future SVD.
 -/
 import Mathlib.Data.Matrix.ColumnRowPartitioned
+import Numlib.Eigen.Pencil
 import Numlib.LinearAlgebra.Matrix.CSDecomposition
 
 /-!
@@ -33,6 +34,13 @@ Paige–Saunders 1981) diagonalizes both at once: unitary `U₁`, `U₂` and an 
   eigenvectors of the pencil `AᴴA − μ² BᴴB`.
 * `Matrix.IsGSVD.ker_inf_ker`: the common kernel of `A` and `B` is spanned by the columns
   `x_i`, `i ≥ r`.
+* The simultaneous diagonal forms behind these, for one factorization `Uᴴ M X = diag(γ)` or a
+  congruence to diagonal forms (so also for [golub2013matrix] Theorem 8.7.4's unshifted version):
+  `Matrix.mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal` (`M x_k = γ_k u_k`),
+  `Matrix.conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal` (`Xᴴ MᴴM X = diag |γ|²`),
+  `Matrix.hasPencilEigenvector_col_of_conj_diagonal` and
+  `Matrix.pencilSpectrum_eq_range_of_conj_diagonal` (the pencil `P − λ Q` with `Xᴴ P X = diag a`,
+  `Xᴴ Q X = diag b` has eigenvectors `x_k` and eigenvalues `a_k / b_k`).
 * `Matrix.IsGSVD.star_mul_mul_eq_of_eq_one`, `Matrix.IsGSVD.pos_of_eq_one`: the GSVD of `(A, I)`
   is an SVD of `A`, `U₁ᴴ A U₂ = diag(α_i / β_i)` with `β_i > 0`.
 * The facts used in GSVD coordinates by the least-squares applications:
@@ -252,6 +260,125 @@ theorem exists_isGSVD (hnm : n ≤ m₁) (A : Matrix (Fin m₁) (Fin n) 𝕜)
 
 end Exists
 
+/-! ### Simultaneous diagonal forms
+
+The facts below use only one factorization `Uᴴ M X = D` with `U` unitary and `D` rectangular
+diagonal, or a congruence of two matrices to diagonal ones by the same invertible `X`; they serve
+the GSVD and its tall rectangular version ([golub2013matrix] Theorem 8.7.4) alike. -/
+
+section DiagonalForms
+
+variable {m n : ℕ} {M : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜}
+  {X : Matrix (Fin n) (Fin n) 𝕜}
+
+/-- `Uᴴ M X = D` with `U` unitary gives `M X = U D`. -/
+theorem mul_eq_mul_of_star_mul_mul_eq {D : Matrix (Fin m) (Fin n) 𝕜}
+    (hU : U ∈ unitaryGroup (Fin m) 𝕜) (h : star U * M * X = D) : M * X = U * D := by
+  rw [← h, Matrix.mul_assoc, ← Matrix.mul_assoc U, star_eq_conjTranspose,
+    mul_conjTranspose_self_of_mem_unitaryGroup hU, Matrix.one_mul]
+
+/-- `Xᴴ Mᴴ M X = (Uᴴ M X)ᴴ (Uᴴ M X)` for unitary `U`. -/
+theorem conjTranspose_mul_gram_mul_eq (hU : U ∈ unitaryGroup (Fin m) 𝕜) :
+    Xᴴ * (Mᴴ * M) * X = (star U * M * X)ᴴ * (star U * M * X) := by
+  simp only [conjTranspose_mul, star_eq_conjTranspose, conjTranspose_conjTranspose,
+    Matrix.mul_assoc]
+  rw [← Matrix.mul_assoc U, mul_conjTranspose_self_of_mem_unitaryGroup hU, Matrix.one_mul]
+
+/-- **A unitary rectangular-diagonal form diagonalizes the Gram matrix**: if `Uᴴ M X = diag(γ)`
+with `U` unitary and `n ≤ m`, then `Xᴴ MᴴM X = diag(|γ_k|²)`. -/
+theorem conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal (hnm : n ≤ m)
+    (hU : U ∈ unitaryGroup (Fin m) 𝕜) {γ : ℕ → 𝕜} (h : star U * M * X = rectDiagonal γ) :
+    Xᴴ * (Mᴴ * M) * X = diagonal fun k : Fin n => star (γ k) * γ k := by
+  rw [conjTranspose_mul_gram_mul_eq hU, h, conjTranspose_rectDiagonal_mul_self]
+  congr 1
+  funext k
+  rw [ite_eq_left (lt_of_lt_of_le k.isLt hnm)]
+
+/-- **The columns of a rectangular-diagonal form**: if `M X = U diag(γ)` and `n ≤ m`, then
+`M x_k = γ_k u_k` for the columns `x_k` of `X` and `u_k` of `U`. -/
+theorem mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal (hnm : n ≤ m) {γ : ℕ → 𝕜}
+    (h : M * X = U * rectDiagonal γ) (k : Fin n) :
+    M *ᵥ X.col k = γ k • U.col (Fin.castLE hnm k) := by
+  rw [← col_mul_eq_mulVec_col, h]
+  ext i
+  simp only [col_apply, mul_apply, rectDiagonal_apply, Pi.smul_apply, smul_eq_mul]
+  rw [Finset.sum_eq_single (Fin.castLE hnm k)]
+  · simp [mul_comm]
+  · intro j _ hj
+    have hj' : ¬ ((j : ℕ) = k) := fun h => hj (Fin.ext (by simp [h]))
+    simp [hj']
+  · simp
+
+variable {P Q : Matrix (Fin n) (Fin n) 𝕜} {a b : Fin n → 𝕜}
+
+/-- If `Xᴴ P X = diag a` and `Xᴴ Q X = diag b` with `X` invertible, then `b_i P x_i = a_i Q x_i`
+for every column `x_i` of `X`. -/
+theorem smul_mulVec_col_eq_of_conj_diagonal (hX : IsUnit X) (hP : Xᴴ * P * X = diagonal a)
+    (hQ : Xᴴ * Q * X = diagonal b) (i : Fin n) :
+    b i • (P *ᵥ X.col i) = a i • (Q *ᵥ X.col i) := by
+  have hXh : IsUnit Xᴴ.det := by
+    rw [det_conjTranspose]; exact ((isUnit_iff_isUnit_det X).1 hX).star
+  have hPX : P * X = (Xᴴ)⁻¹ * diagonal a := by
+    rw [← hP, ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hXh, Matrix.one_mul]
+  have hQX : Q * X = (Xᴴ)⁻¹ * diagonal b := by
+    rw [← hQ, ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hXh, Matrix.one_mul]
+  have hmat : P * X * diagonal b = Q * X * diagonal a := by
+    rw [hPX, hQX, Matrix.mul_assoc, Matrix.mul_assoc, diagonal_mul_diagonal,
+      diagonal_mul_diagonal]
+    congr 2
+    funext j
+    ring
+  rw [← col_mul_eq_mulVec_col, ← col_mul_eq_mulVec_col]
+  ext k
+  have := congrFun (congrFun hmat k) i
+  simp only [mul_diagonal] at this
+  simp only [Pi.smul_apply, smul_eq_mul, col_apply]
+  rw [mul_comm, this, mul_comm]
+
+/-- **The columns of a congruence to diagonal forms are pencil eigenvectors**: if
+`Xᴴ P X = diag a`, `Xᴴ Q X = diag b` with `X` invertible and `b_k ≠ 0`, then `x_k` is an
+eigenvector of the pencil `P − λ Q` for `λ = a_k / b_k`. -/
+theorem hasPencilEigenvector_col_of_conj_diagonal (hX : IsUnit X)
+    (hP : Xᴴ * P * X = diagonal a) (hQ : Xᴴ * Q * X = diagonal b) {k : Fin n} (hk : b k ≠ 0) :
+    HasPencilEigenvector P Q (a k / b k) (X.col k) := by
+  refine ⟨(linearIndependent_cols_iff_isUnit.2 hX).ne_zero k, ?_⟩
+  have h := smul_mulVec_col_eq_of_conj_diagonal hX hP hQ k
+  rw [div_eq_inv_mul, mul_smul, ← h, smul_smul, inv_mul_cancel₀ hk, one_smul]
+
+/-- **The spectrum of a pencil congruent to diagonal forms**: if `Xᴴ P X = diag a`,
+`Xᴴ Q X = diag b` with `X` invertible and every `b_k ≠ 0`, then the eigenvalues of the pencil
+`P − λ Q` are exactly the ratios `a_k / b_k`. -/
+theorem pencilSpectrum_eq_range_of_conj_diagonal (hX : IsUnit X)
+    (hP : Xᴴ * P * X = diagonal a) (hQ : Xᴴ * Q * X = diagonal b) (hb : ∀ k, b k ≠ 0) :
+    pencilSpectrum P Q = Set.range fun k => a k / b k := by
+  have hXd : IsUnit X.det := (isUnit_iff_isUnit_det X).1 hX
+  ext l
+  simp only [mem_pencilSpectrum_iff_det, Set.mem_range]
+  have hdet : (P - l • Q).det * (star X.det * X.det) = ∏ k : Fin n, (a k - l * b k) := by
+    have hpen : Xᴴ * (P - l • Q) * X = diagonal fun k => a k - l * b k := by
+      rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul, hP, hQ]
+      ext i j
+      by_cases h : i = j <;> simp [h]
+    have := congrArg det hpen
+    rw [det_mul, det_mul, det_conjTranspose, det_diagonal] at this
+    rw [← this]
+    ring
+  have hXX : star X.det * X.det ≠ 0 := mul_ne_zero (star_ne_zero.2 hXd.ne_zero) hXd.ne_zero
+  constructor
+  · intro h
+    rw [h, zero_mul, eq_comm, Finset.prod_eq_zero_iff] at hdet
+    obtain ⟨k, -, hk⟩ := hdet
+    refine ⟨k, ?_⟩
+    rw [div_eq_iff (hb k)]
+    linear_combination hk
+  · rintro ⟨k, rfl⟩
+    have hk : ∏ j : Fin n, (a j - a k / b k * b j) = 0 :=
+      Finset.prod_eq_zero (Finset.mem_univ k) (by rw [div_mul_cancel₀ _ (hb k), sub_self])
+    rw [hk] at hdet
+    exact (mul_eq_zero.1 hdet).resolve_right hXX
+
+end DiagonalForms
+
 /-! ### Consequences of a GSVD -/
 
 section Consequences
@@ -262,23 +389,13 @@ variable {m₁ m₂ n : ℕ} {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (F
 
 /-- `A X = U₁ D_A`. -/
 theorem IsGSVD.mul_eq₁ (h : IsGSVD A B U₁ U₂ X α β) :
-    A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) := by
-  rw [← h.star_mul_mul₁, Matrix.mul_assoc, ← Matrix.mul_assoc U₁, star_eq_conjTranspose,
-    mul_conjTranspose_self_of_mem_unitaryGroup h.mem_unitaryGroup_left₁, Matrix.one_mul]
+    A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) :=
+  mul_eq_mul_of_star_mul_mul_eq h.mem_unitaryGroup_left₁ h.star_mul_mul₁
 
 /-- `B X = U₂ D_B`. -/
 theorem IsGSVD.mul_eq₂ (h : IsGSVD A B U₁ U₂ X α β) :
-    B * X = U₂ * shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) := by
-  rw [← h.star_mul_mul₂, Matrix.mul_assoc, ← Matrix.mul_assoc U₂, star_eq_conjTranspose,
-    mul_conjTranspose_self_of_mem_unitaryGroup h.mem_unitaryGroup_left₂, Matrix.one_mul]
-
-/-- `Xᴴ Mᴴ M X = (Uᴴ M X)ᴴ (Uᴴ M X)` for unitary `U`. -/
-private theorem conjTranspose_mul_gram_mul_eq {m : ℕ} {M : Matrix (Fin m) (Fin n) 𝕜}
-    {U : Matrix (Fin m) (Fin m) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜) :
-    Xᴴ * (Mᴴ * M) * X = (star U * M * X)ᴴ * (star U * M * X) := by
-  simp only [conjTranspose_mul, star_eq_conjTranspose, conjTranspose_conjTranspose,
-    Matrix.mul_assoc]
-  rw [← Matrix.mul_assoc U, mul_conjTranspose_self_of_mem_unitaryGroup hU, Matrix.one_mul]
+    B * X = U₂ * shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) :=
+  mul_eq_mul_of_star_mul_mul_eq h.mem_unitaryGroup_left₂ h.star_mul_mul₂
 
 /-- **The GSVD diagonalizes `AᴴA`**: `Xᴴ AᴴA X = diag(α²)`, for `n ≤ m₁`. -/
 theorem IsGSVD.conjTranspose_mul_gram_mul₁ (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m₁) :
@@ -342,31 +459,6 @@ theorem IsGSVD.inv_gram_add_smul_gram_eq (h : IsGSVD A B U₁ U₂ X α β) (hnm
         ((α i ^ 2 + μ * β i ^ 2 : ℝ) : 𝕜)) = fun _ => 1 from
       funext fun i => inv_mul_cancel₀ (RCLike.ofReal_ne_zero.2 (hd i)),
     diagonal_one, Matrix.one_mul, mul_nonsing_inv _ hXd]
-
-/-- If `Xᴴ M X = diag a` and `Xᴴ N X = diag b` with `X` invertible, then `b_i M x_i = a_i N x_i`
-for every column `x_i` of `X`. -/
-private theorem smul_mulVec_col_eq_of_conj_diagonal {M N : Matrix (Fin n) (Fin n) 𝕜}
-    (hX : IsUnit X) {a b : Fin n → 𝕜} (hM : Xᴴ * M * X = diagonal a)
-    (hN : Xᴴ * N * X = diagonal b) (i : Fin n) :
-    b i • (M *ᵥ X.col i) = a i • (N *ᵥ X.col i) := by
-  have hXh : IsUnit Xᴴ.det := by
-    rw [det_conjTranspose]; exact ((isUnit_iff_isUnit_det X).1 hX).star
-  have hMX : M * X = (Xᴴ)⁻¹ * diagonal a := by
-    rw [← hM, ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hXh, Matrix.one_mul]
-  have hNX : N * X = (Xᴴ)⁻¹ * diagonal b := by
-    rw [← hN, ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hXh, Matrix.one_mul]
-  have hmat : M * X * diagonal b = N * X * diagonal a := by
-    rw [hMX, hNX, Matrix.mul_assoc, Matrix.mul_assoc, diagonal_mul_diagonal,
-      diagonal_mul_diagonal]
-    congr 2
-    funext j
-    ring
-  rw [← col_mul_eq_mulVec_col, ← col_mul_eq_mulVec_col]
-  ext k
-  have := congrFun (congrFun hmat k) i
-  simp only [mul_diagonal] at this
-  simp only [Pi.smul_apply, smul_eq_mul, col_apply]
-  rw [mul_comm, this, mul_comm]
 
 /-- **The GSVD diagonalizes the pencil `AᴴA − μ² BᴴB`** ([golub2013matrix] §6.1.6, the remark
 relating the GSVD to `AᵀA x = μ² BᵀB x`, taken up in §8.7.4): for `n ≤ m₁` and every column

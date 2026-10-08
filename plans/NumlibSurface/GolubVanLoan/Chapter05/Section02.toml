@@ -118,6 +118,10 @@ id = "classicalGramSchmidt"
 source = 'Golub–Van Loan, Matrix Computations, §5.2.7'
 
 [[node]]
+id = "classicalGramSchmidt_eq_gramSchmidt"
+source = 'Golub–Van Loan, Matrix Computations, §5.2.7'
+
+[[node]]
 id = "classicalGramSchmidt_spec"
 source = 'Golub–Van Loan, Matrix Computations, §5.2.7'
 
@@ -127,6 +131,10 @@ source = 'Golub–Van Loan, Matrix Computations, §5.2.8'
 
 [[node]]
 id = "algorithm_5_2_6"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.6'
+
+[[node]]
+id = "algorithm_5_2_6_eq_gramSchmidt"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.6'
 
 [[node]]

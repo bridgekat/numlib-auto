@@ -52,6 +52,10 @@ id = "jacobiStep_apply_jj_sub"
 id = "jacobiStep_apply_kk_sub"
 
 [[node]]
+id = "sum_sq_jacobiStep_sub"
+source = 'Golub–Van Loan, Matrix Computations, §8.5.2'
+
+[[node]]
 id = "abs_le_sqrt_offDiagNormSq"
 
 [[node]]
@@ -86,6 +90,13 @@ id = "offDiagNormSq_add_sum_diag_sq_real"
 
 [[node]]
 id = "sum_sq_conj_eq"
+
+[[node]]
+id = "offDiagNormSq_fromBlocks"
+
+[[node]]
+id = "offDiagNormSq_conj_block"
+source = 'Golub–Van Loan, Matrix Computations, §8.5.6'
 
 [[node]]
 id = "sum_diag_sq_conj_planeRotation_of_apply_eq_zero"

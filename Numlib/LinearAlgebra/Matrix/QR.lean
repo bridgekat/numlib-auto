@@ -1136,52 +1136,126 @@ section GramSchmidt
 open InnerProductSpace
 open scoped ComplexOrder
 
-variable {ι E : Type*} [LinearOrder ι] [LocallyFiniteOrderBot ι] [WellFoundedLT ι]
-  [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+variable {m : Type*} [Fintype m] {N : ℕ} (A : Matrix m (Fin N) 𝕜)
 
-/-- `⟪gramSchmidt f j, f j⟫ = ‖gramSchmidt f j‖²`: the Gram–Schmidt vector is the orthogonal
-component of `f j`.  (This is the index-general form of the same lemma in
-`Numlib.Analysis.InnerProductSpace.GramSchmidt`, which is stated for `ℕ`.) -/
-private theorem inner_gramSchmidt_self (f : ι → E) (j : ι) :
-    inner 𝕜 (gramSchmidt 𝕜 f j) (f j) = ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) ^ 2 := by
-  conv_lhs => rw [gramSchmidt_def'' 𝕜 f j]
-  rw [inner_add_right, inner_sum, inner_self_eq_norm_sq_to_K]
-  convert add_zero _
-  refine Finset.sum_eq_zero fun i hi => ?_
-  rw [inner_smul_right, gramSchmidt_orthogonal 𝕜 f (Finset.mem_Iio.1 hi).ne', mul_zero]
+/-- **The orthonormal factor of the Gram–Schmidt factorization**: column `j` is the normalized
+Gram–Schmidt vector `gramSchmidtNormed 𝕜 a j` of the columns `a j = A(:, j)`, read in
+`EuclideanSpace 𝕜 m`. For linearly independent columns it is the `Q` of the thin QR factorization
+with positive diagonal (`Matrix.isThinQR_gramSchmidtQ`); in general, a column whose Gram–Schmidt
+vector vanishes is zero. -/
+noncomputable def gramSchmidtQ : Matrix m (Fin N) 𝕜 :=
+  of fun r j => WithLp.ofLp (gramSchmidtNormed 𝕜 (fun j => WithLp.toLp 2 (A.col j)) j) r
 
-private theorem inner_gramSchmidtNormed_self (f : ι → E) (j : ι) :
-    inner 𝕜 (gramSchmidtNormed 𝕜 f j) (f j) = ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) := by
-  rw [gramSchmidtNormed, inner_smul_left, inner_gramSchmidt_self, RCLike.conj_inv,
-    RCLike.conj_ofReal]
-  rcases eq_or_ne ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) 0 with h | h
-  · simp [h]
-  · rw [sq, ← mul_assoc, inv_mul_cancel₀ h, one_mul]
+/-- **The triangular factor of the Gram–Schmidt factorization**: `R i j = ⟪q_i, a_j⟫` for the
+columns `q_i` of `Matrix.gramSchmidtQ A` and `a_j` of `A` (`Matrix.gramSchmidtR_apply`). It
+vanishes below the diagonal (`Matrix.gramSchmidtR_apply_of_lt`), and its diagonal entry `j` is
+`‖gramSchmidt 𝕜 a j‖` (`Matrix.gramSchmidtR_apply_self`). -/
+noncomputable def gramSchmidtR : Matrix (Fin N) (Fin N) 𝕜 :=
+  of fun i j =>
+    inner 𝕜 (gramSchmidtNormed 𝕜 (fun j => WithLp.toLp 2 (A.col j)) i) (WithLp.toLp 2 (A.col j))
 
-variable {m : Type*} [Fintype m] {N : ℕ}
+/-- **The Gram–Schmidt residual of column `k`**: `a_k - ∑_{i<k} r_ik q_i`, the vector classical
+Gram–Schmidt normalizes. It is the Gram–Schmidt vector `gramSchmidt 𝕜 a k`
+(`Matrix.toLp_gramSchmidtResidual`), so `q_k` is it divided by its norm
+(`Matrix.col_gramSchmidtQ`) and `r_kk` is its norm (`Matrix.gramSchmidtR_apply_self'`). -/
+noncomputable def gramSchmidtResidual (k : Fin N) : m → 𝕜 :=
+  A.col k - ∑ i ∈ Finset.Iio k, gramSchmidtR A i k • (gramSchmidtQ A).col i
 
-/-- **Existence of the thin QR factorization** with a positive diagonal, for linearly independent
-columns ([saad2003iterative] (1.19), [golub2013matrix] Theorem 5.2.3): `A = Q R` with orthonormal
-columns in `Q` and `R` upper triangular of positive diagonal. The factors are the Gram–Schmidt
-orthonormalization of the columns and the matrix `R i j = ⟪Q i, A j⟫` of the coefficients, which is
-[saad2003iterative] Algorithm 1.1; Algorithm 1.2 (modified Gram–Schmidt) computes the same pair,
-by `Matrix.IsThinQR.unique`. -/
-theorem exists_isThinQR (A : Matrix m (Fin N) 𝕜) (hA : LinearIndependent 𝕜 Aᵀ) :
-    ∃ Q R, IsThinQR A Q R ∧ ∀ j, 0 < R j j := by
-  set f : Fin N → EuclideanSpace 𝕜 m := fun j => WithLp.toLp 2 (Aᵀ j) with hf_def
-  have hf : LinearIndependent 𝕜 f := by
-    refine Fintype.linearIndependent_iff.2 fun g hg i => ?_
-    refine Fintype.linearIndependent_iff.1 hA g ?_ i
-    funext r
-    have h0 := congrArg (fun z : EuclideanSpace 𝕜 m => WithLp.ofLp z r) hg
-    simpa [hf_def] using h0
-  have hgne : ∀ j : Fin N, gramSchmidt 𝕜 f j ≠ 0 := fun j => gramSchmidt_ne_zero j hf
-  have hnne : ∀ j : Fin N, ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) ≠ 0 := fun j => by
-    simpa using norm_ne_zero_iff.2 (hgne j)
+/-- The columns of `Matrix.gramSchmidtQ A` are the normalized Gram–Schmidt vectors. -/
+theorem toLp_col_gramSchmidtQ (j : Fin N) :
+    WithLp.toLp 2 ((gramSchmidtQ A).col j) =
+      gramSchmidtNormed 𝕜 (fun j => WithLp.toLp 2 (A.col j)) j :=
+  rfl
+
+/-- `R i j = ⟪q_i, a_j⟫ = a_jᵀ conj(q_i)`. -/
+theorem gramSchmidtR_apply (i j : Fin N) :
+    gramSchmidtR A i j = A.col j ⬝ᵥ star ((gramSchmidtQ A).col i) :=
+  rfl
+
+/-- The Gram–Schmidt triangular factor vanishes below the diagonal (no hypothesis on `A`). -/
+theorem gramSchmidtR_apply_of_lt {i j : Fin N} (h : j < i) : gramSchmidtR A i j = 0 := by
+  rw [gramSchmidtR, of_apply, gramSchmidtNormed, inner_smul_left,
+    gramSchmidt_inv_triangular 𝕜 _ h, mul_zero]
+
+/-- The diagonal of the Gram–Schmidt triangular factor is the norm of the Gram–Schmidt vector. -/
+theorem gramSchmidtR_apply_self (j : Fin N) :
+    gramSchmidtR A j j = (‖gramSchmidt 𝕜 (fun j => WithLp.toLp 2 (A.col j)) j‖ : 𝕜) :=
+  inner_gramSchmidtNormed_self (𝕜 := 𝕜) (fun j => WithLp.toLp 2 (A.col j)) j
+
+/-- Distinct columns of `Matrix.gramSchmidtQ A` are orthogonal (no hypothesis on `A`):
+`⟪q_i, q_j⟫ = q_jᵀ conj(q_i) = 0` for `i ≠ j`. -/
+theorem col_gramSchmidtQ_dotProduct_star {i j : Fin N} (h : i ≠ j) :
+    (gramSchmidtQ A).col j ⬝ᵥ star ((gramSchmidtQ A).col i) = 0 := by
+  change inner 𝕜 (gramSchmidtNormed 𝕜 (fun j => WithLp.toLp 2 (A.col j)) i)
+    (gramSchmidtNormed 𝕜 (fun j => WithLp.toLp 2 (A.col j)) j) = 0
+  rw [gramSchmidtNormed, gramSchmidtNormed, inner_smul_left, inner_smul_right,
+    gramSchmidt_orthogonal 𝕜 _ h, mul_zero, mul_zero]
+
+/-- The Gram–Schmidt residual of column `k` is the Gram–Schmidt vector `gramSchmidt 𝕜 a k`. -/
+theorem toLp_gramSchmidtResidual (k : Fin N) :
+    WithLp.toLp 2 (gramSchmidtResidual A k) =
+      gramSchmidt 𝕜 (fun j => WithLp.toLp 2 (A.col j)) k := by
+  rw [gramSchmidtResidual, WithLp.toLp_sub, WithLp.toLp_sum, sub_eq_iff_eq_add]
+  refine (gramSchmidt_def'' 𝕜 (fun j => WithLp.toLp 2 (A.col j)) k).trans
+    (congrArg (gramSchmidt 𝕜 (fun j => WithLp.toLp 2 (A.col j)) k + ·)
+      (Finset.sum_congr rfl fun i _ => ?_))
+  rw [WithLp.toLp_smul, toLp_col_gramSchmidtQ, gramSchmidtR, of_apply,
+    inner_gramSchmidtNormed_smul_self]
+
+/-- Column `k` of `Matrix.gramSchmidtQ A` is the Gram–Schmidt residual divided by its norm. -/
+theorem col_gramSchmidtQ (k : Fin N) :
+    (gramSchmidtQ A).col k =
+      ((‖WithLp.toLp 2 (gramSchmidtResidual A k)‖ : 𝕜))⁻¹ • gramSchmidtResidual A k := by
+  apply WithLp.toLp_injective 2
+  rw [toLp_col_gramSchmidtQ, WithLp.toLp_smul, toLp_gramSchmidtResidual, gramSchmidtNormed]
+
+/-- The diagonal entry `k` of `Matrix.gramSchmidtR A` is the norm of the Gram–Schmidt residual. -/
+theorem gramSchmidtR_apply_self' (k : Fin N) :
+    gramSchmidtR A k k = ‖WithLp.toLp 2 (gramSchmidtResidual A k)‖ := by
+  rw [gramSchmidtR_apply_self, toLp_gramSchmidtResidual]
+
+/-- Over `ℝ`, `r_ij = q_iᵀ a_j`. -/
+theorem gramSchmidtR_apply_eq_dotProduct (A : Matrix m (Fin N) ℝ) (i j : Fin N) :
+    gramSchmidtR A i j = (gramSchmidtQ A).col i ⬝ᵥ A.col j := by
+  rw [gramSchmidtR_apply, star_trivial, dotProduct_comm]
+
+/-- Over `ℝ`, distinct columns of `Matrix.gramSchmidtQ A` are orthogonal: `q_iᵀ q_j = 0`. -/
+theorem col_gramSchmidtQ_dotProduct_col (A : Matrix m (Fin N) ℝ) {i j : Fin N} (h : i ≠ j) :
+    (gramSchmidtQ A).col i ⬝ᵥ (gramSchmidtQ A).col j = 0 := by
+  rw [dotProduct_comm, ← col_gramSchmidtQ_dotProduct_star A h, star_trivial]
+
+/-- Over `ℝ`, `q_k = z / √(zᵀz)` for the Gram–Schmidt residual `z` of column `k`. -/
+theorem col_gramSchmidtQ_eq_inv_sqrt_smul (A : Matrix m (Fin N) ℝ) (k : Fin N) :
+    (gramSchmidtQ A).col k = (√(gramSchmidtResidual A k ⬝ᵥ gramSchmidtResidual A k))⁻¹ •
+      gramSchmidtResidual A k := by
+  rw [col_gramSchmidtQ, dotProduct_self_eq_norm_sq, Real.sqrt_sq (norm_nonneg _)]
+  rfl
+
+/-- Over `ℝ`, `r_kk = √(zᵀz)` for the Gram–Schmidt residual `z` of column `k`. -/
+theorem gramSchmidtR_apply_self_eq_sqrt (A : Matrix m (Fin N) ℝ) (k : Fin N) :
+    gramSchmidtR A k k = √(gramSchmidtResidual A k ⬝ᵥ gramSchmidtResidual A k) := by
+  rw [gramSchmidtR_apply_self', dotProduct_self_eq_norm_sq, Real.sqrt_sq (norm_nonneg _)]
+  rfl
+
+variable {A}
+
+omit [Fintype m] in
+/-- Linearly independent columns stay independent as vectors of `EuclideanSpace 𝕜 m`. -/
+private theorem linearIndependent_toLp_col (hA : LinearIndependent 𝕜 Aᵀ) :
+    LinearIndependent 𝕜 (fun j => WithLp.toLp 2 (A.col j) : Fin N → EuclideanSpace 𝕜 m) := by
+  refine Fintype.linearIndependent_iff.2 fun g hg i => ?_
+  refine Fintype.linearIndependent_iff.1 hA g ?_ i
+  funext r
+  have h0 := congrArg (fun z : EuclideanSpace 𝕜 m => WithLp.ofLp z r) hg
+  simpa using h0
+
+/-- **The Gram–Schmidt factorization is a thin QR factorization** for linearly independent
+columns ([saad2003iterative] Algorithm 1.1, [golub2013matrix] Theorem 5.2.3). -/
+theorem isThinQR_gramSchmidtQ (hA : LinearIndependent 𝕜 Aᵀ) :
+    IsThinQR A (gramSchmidtQ A) (gramSchmidtR A) := by
+  set f : Fin N → EuclideanSpace 𝕜 m := fun j => WithLp.toLp 2 (A.col j) with hf_def
+  have hf : LinearIndependent 𝕜 f := linearIndependent_toLp_col hA
   have hon : Orthonormal 𝕜 (gramSchmidtNormed 𝕜 f) := gramSchmidtNormed_orthonormal hf
-  have htri : ∀ i j : Fin N, j < i → inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) = 0 := by
-    intro i j hji
-    rw [gramSchmidtNormed, inner_smul_left, gramSchmidt_inv_triangular 𝕜 f hji, mul_zero]
   have hexp : ∀ j : Fin N, f j = ∑ i : Fin N,
       inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) • gramSchmidtNormed 𝕜 f i := by
     intro j
@@ -1189,35 +1263,26 @@ theorem exists_isThinQR (A : Matrix m (Fin N) 𝕜) (hA : LinearIndependent 𝕜
         = ∑ i ∈ Finset.Iic j,
             inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) • gramSchmidtNormed 𝕜 f i := by
       refine (Finset.sum_subset (Finset.subset_univ _) fun i _ hi => ?_).symm
-      rw [htri i j (by simpa using hi), zero_smul]
-    have hterm : ∀ i : Fin N,
-        inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) • gramSchmidtNormed 𝕜 f i
-          = (inner 𝕜 (gramSchmidt 𝕜 f i) (f j) / ((‖gramSchmidt 𝕜 f i‖ : 𝕜)) ^ 2)
-            • gramSchmidt 𝕜 f i := by
-      intro i
-      rw [gramSchmidtNormed, inner_smul_left, RCLike.conj_inv, RCLike.conj_ofReal, smul_smul]
-      congr 1
-      field_simp [hnne i]
+      rw [show inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) = gramSchmidtR A i j from rfl,
+        gramSchmidtR_apply_of_lt A (by simpa using hi), zero_smul]
     have hdiagterm : inner 𝕜 (gramSchmidtNormed 𝕜 f j) (f j) • gramSchmidtNormed 𝕜 f j
         = gramSchmidt 𝕜 f j := by
+      have hnne : ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) ≠ 0 := by
+        simpa using norm_ne_zero_iff.2 (gramSchmidt_ne_zero j hf)
       rw [inner_gramSchmidtNormed_self, gramSchmidtNormed, smul_smul,
-        mul_inv_cancel₀ (hnne j), one_smul]
+        mul_inv_cancel₀ hnne, one_smul]
     rw [hsum, ← Finset.Iio_insert, Finset.sum_insert (by simp), hdiagterm,
-      show (∑ i ∈ Finset.Iio j,
-            inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j) • gramSchmidtNormed 𝕜 f i)
-          = ∑ i ∈ Finset.Iio j,
-            (inner 𝕜 (gramSchmidt 𝕜 f i) (f j) / ((‖gramSchmidt 𝕜 f i‖ : 𝕜)) ^ 2)
-              • gramSchmidt 𝕜 f i from Finset.sum_congr rfl fun i _ => hterm i]
+      Finset.sum_congr rfl fun i _ => inner_gramSchmidtNormed_smul_self 𝕜 f i (f j)]
     exact gramSchmidt_def'' 𝕜 f j
-  refine ⟨Matrix.of fun r j => WithLp.ofLp (gramSchmidtNormed 𝕜 f j) r,
-    Matrix.of fun i j => inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j), ⟨?_, ?_, ?_⟩, ?_⟩
+  refine ⟨?_, ?_, fun i j hji => gramSchmidtR_apply_of_lt A hji⟩
   · ext r j
     have h : A r j = ∑ i : Fin N, inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f j)
         * WithLp.ofLp (gramSchmidtNormed 𝕜 f i) r := by
       have h0 := congrArg (fun z : EuclideanSpace 𝕜 m => WithLp.ofLp z r) (hexp j)
       simpa [hf_def] using h0
     rw [mul_apply, h]
-    exact Finset.sum_congr rfl fun i _ => by rw [Matrix.of_apply, Matrix.of_apply, mul_comm]
+    exact Finset.sum_congr rfl fun i _ => by
+      rw [gramSchmidtQ, gramSchmidtR, Matrix.of_apply, Matrix.of_apply, mul_comm]
   · ext i j
     have h : ∑ r : m, starRingEnd 𝕜 (WithLp.ofLp (gramSchmidtNormed 𝕜 f i) r)
           * WithLp.ofLp (gramSchmidtNormed 𝕜 f j) r
@@ -1225,13 +1290,27 @@ theorem exists_isThinQR (A : Matrix m (Fin N) 𝕜) (hA : LinearIndependent 𝕜
       rw [EuclideanSpace.inner_eq_star_dotProduct, dotProduct]
       exact Finset.sum_congr rfl fun r _ => by simp [mul_comm]
     rw [mul_apply]
-    simp only [conjTranspose_apply, Matrix.of_apply, RCLike.star_def]
+    simp only [gramSchmidtQ, conjTranspose_apply, Matrix.of_apply, RCLike.star_def]
     rw [h, orthonormal_iff_ite.1 hon i j, one_apply]
-  · intro i j hji
-    exact htri i j hji
-  · intro j
-    rw [Matrix.of_apply, inner_gramSchmidtNormed_self]
-    exact pos_iff_exists_ofReal.2 ⟨‖gramSchmidt 𝕜 f j‖, norm_pos_iff.2 (hgne j), rfl⟩
+
+/-- For linearly independent columns the Gram–Schmidt triangular factor has a positive
+diagonal. -/
+theorem gramSchmidtR_apply_self_pos (hA : LinearIndependent 𝕜 Aᵀ) (j : Fin N) :
+    0 < gramSchmidtR A j j := by
+  rw [gramSchmidtR_apply_self]
+  exact pos_iff_exists_ofReal.2
+    ⟨‖gramSchmidt 𝕜 (fun j => WithLp.toLp 2 (A.col j)) j‖,
+      norm_pos_iff.2 (gramSchmidt_ne_zero j (linearIndependent_toLp_col hA)), rfl⟩
+
+/-- **Existence of the thin QR factorization** with a positive diagonal, for linearly independent
+columns ([saad2003iterative] (1.19), [golub2013matrix] Theorem 5.2.3): `A = Q R` with orthonormal
+columns in `Q` and `R` upper triangular of positive diagonal. The factors are the Gram–Schmidt
+orthonormalization of the columns and the matrix `R i j = ⟪Q i, A j⟫` of the coefficients
+(`Matrix.gramSchmidtQ`, `Matrix.gramSchmidtR`), which is [saad2003iterative] Algorithm 1.1;
+Algorithm 1.2 (modified Gram–Schmidt) computes the same pair, by `Matrix.IsThinQR.unique`. -/
+theorem exists_isThinQR (A : Matrix m (Fin N) 𝕜) (hA : LinearIndependent 𝕜 Aᵀ) :
+    ∃ Q R, IsThinQR A Q R ∧ ∀ j, 0 < R j j :=
+  ⟨_, _, isThinQR_gramSchmidtQ hA, gramSchmidtR_apply_self_pos hA⟩
 
 end GramSchmidt
 

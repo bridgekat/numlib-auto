@@ -1402,25 +1402,6 @@ private theorem outerProductStep_exact (k : Fin n) (S : Matrix (Fin n) (Fin n) �
   rw [RoundingModel.exact_rounds_iff] at hp hq
   rw [hq, hp]
 
-/-- The indices of `Fin n` below `r`, read in `Fin r`: the filter of `List.finRange n` by
-`· < r` is `List.finRange r`. -/
-private theorem filterMap_finRange_lt (hrn : r ≤ n) :
-    (List.finRange n).filterMap
-        (fun k : Fin n => if h : (k : ℕ) < r then some (⟨k, h⟩ : Fin r) else none) =
-      List.finRange r := by
-  induction n, hrn using Nat.le_induction with
-  | base =>
-    conv_rhs => rw [← List.filterMap_some (l := List.finRange r)]
-    exact List.filterMap_congr fun k _ => by simp
-  | succ m hrm ih =>
-    rw [List.finRange_succ_last, List.filterMap_append, List.filterMap_map]
-    have hlast : (List.filterMap (fun k : Fin (m + 1) =>
-        if h : (k : ℕ) < r then some (⟨k, h⟩ : Fin r) else none) [Fin.last m]) = [] := by
-      simp only [List.filterMap_cons, List.filterMap_nil, Fin.val_last]
-      rw [dite_eq_right (by omega)]
-    rw [hlast, List.append_nil, ← ih]
-    rfl
-
 /-- The square matrix `[A | [0; I]]` bordering a tall `A ∈ ℝ^{n×r}`: its first `r` columns are
 those of `A`, its last `n - r` columns those of the identity. -/
 private def tallBorder (A : Matrix (Fin n) (Fin r) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
@@ -1549,7 +1530,7 @@ theorem equation_3_2_8 (hrn : r ≤ n) {A : Matrix (Fin n) (Fin r) ℝ}
     simp [tallBorder]
   have hGF : ∀ i j, G i (Fin.castLE hrn j) = F i j := fun i j => by
     have h := foldl_outerProductStep_castLE hrn (List.finRange n) (tallBorder A) A hBA i j
-    rw [filterMap_finRange_lt hrn] at h
+    rw [List.filterMap_finRange_of_le hrn] at h
     rw [hG, hF, tallOuterProductLU_eq_foldlM, algorithm_3_2_1, List.idRun_foldlM,
       List.idRun_foldlM]
     exact h
@@ -1601,34 +1582,8 @@ private theorem foldl_foldl_updateEntry_const {m q : ℕ} (g : Fin m → Fin q �
     R.foldl (fun (X : Matrix (Fin m) (Fin q) ℝ) i =>
         C.foldl (fun (X : Matrix (Fin m) (Fin q) ℝ) j =>
           X.updateRow i (Function.update (X i) j (g i j))) X) X₀ i j =
-      if i ∈ R ∧ j ∈ C then g i j else X₀ i j := by
-  have hrow : ∀ (a : Fin m) (X : Matrix (Fin m) (Fin q) ℝ) (i : Fin m) (j : Fin q),
-      C.foldl (fun (X : Matrix (Fin m) (Fin q) ℝ) j =>
-        X.updateRow a (Function.update (X a) j (g a j))) X i j =
-      if i = a ∧ j ∈ C then g a j else X i j := by
-    intro a
-    induction C with
-    | nil => intro X i j; simp
-    | cons b C ih =>
-      intro X i j
-      rw [List.foldl_cons, ih]
-      by_cases hia : i = a
-      · subst hia
-        by_cases hj : j ∈ C
-        · simp [hj]
-        · by_cases hjb : j = b
-          · subst hjb; simp [hj]
-          · simp [hj, hjb]
-      · simp [hia]
-  induction R generalizing X₀ with
-  | nil => simp
-  | cons a R ih =>
-    rw [List.foldl_cons, ih, hrow]
-    by_cases hi : i ∈ R
-    · by_cases hj : j ∈ C <;> simp [hi, hj]
-    · by_cases hia : i = a
-      · subst hia; simp [hi]
-      · simp [hi, hia]
+      if i ∈ R ∧ j ∈ C then g i j else X₀ i j :=
+  congrFun (congrFun (List.foldl_foldl_update_update_eq_ite g R C X₀) i) j
 
 /-- An LU factorization of a block matrix read on `Fin n` through `finSumFinEquiv` followed by a
 cast of `Fin (r + s)` to `Fin n` (an order isomorphism). -/
@@ -1952,21 +1907,14 @@ private theorem foldl_divCol_apply (p : Fin n) {R : List (Fin n)} (hR : R.Nodup)
     R.foldl (fun (S : Matrix (Fin n) (Fin n) ℝ) i =>
         S.updateRow i (Function.update (S i) p (S i p / S p p))) S i j =
       if j = p ∧ i ∈ R then S i p / S p p else S i j := by
-  induction R generalizing S with
-  | nil => simp
-  | cons a R ih =>
-    rcases List.nodup_cons.1 hR with ⟨ha, hR'⟩
-    have hpa : p ≠ a := fun h => hpR (h ▸ List.mem_cons_self)
-    rw [List.foldl_cons, ih hR' fun h => hpR (List.mem_cons_of_mem _ h)]
-    have hpp : (S.updateRow a (Function.update (S a) p (S a p / S p p))) p p = S p p := by
-      rw [updateRow_ne hpa]
-    rw [hpp]
-    by_cases hia : i = a
-    · subst hia
-      simp only [ha, and_false, ↓reduceIte, List.mem_cons, true_or, and_true, updateRow_self,
-        Function.update_apply]
-    · have hi : (i ∈ a :: R) ↔ i ∈ R := by simp [hia]
-      simp only [hi, updateRow_ne hia]
+  have hh : ∀ y y' : Fin n → Fin n → ℝ, (∀ a b, ¬ (a ∈ R ∧ b ∈ [p]) → y a b = y' a b) →
+      ∀ i ∈ R, ∀ j ∈ [p], y i j = y' i j → y i p / y p p = y' i p / y' p p := by
+    intro y y' hy i _ j hj hij
+    obtain rfl := List.mem_singleton.1 hj
+    rw [hij, hy j j fun h => hpR h.1]
+  refine (congrFun (congrFun (List.foldl_foldl_update_update_of_nodup hR (List.nodup_singleton p)
+    (fun S i _ => S i p / S p p) hh S) i) j).trans ?_
+  simp only [List.mem_singleton, and_comm]
 
 /-- A double loop subtracting from each listed entry `(i, j)` a quantity `g S i j` read off entries
 outside the listed block writes every listed entry once, from its initial value. -/
@@ -1978,79 +1926,9 @@ private theorem foldl_foldl_sub_apply {R C : List (Fin n)} (hR : R.Nodup) (hC : 
     R.foldl (fun (S : Matrix (Fin n) (Fin n) ℝ) i =>
         C.foldl (fun (S : Matrix (Fin n) (Fin n) ℝ) j =>
         S.updateRow i (Function.update (S i) j (S i j - g S i j))) S) S i j =
-      if i ∈ R ∧ j ∈ C then S i j - g S i j else S i j := by
-  -- one row
-  have hrow : ∀ i₀ ∈ R, ∀ (C' : List (Fin n)), C'.Nodup → (∀ b ∈ C', b ∈ C) →
-      ∀ (S : Matrix (Fin n) (Fin n) ℝ) (a b : Fin n),
-      C'.foldl (fun (S : Matrix (Fin n) (Fin n) ℝ) j =>
-        S.updateRow i₀ (Function.update (S i₀) j (S i₀ j - g S i₀ j))) S a b =
-      if a = i₀ ∧ b ∈ C' then S i₀ b - g S i₀ b else S a b := by
-    intro i₀ hi₀ C' hC' hsub
-    induction C' with
-    | nil => intro S a b; simp
-    | cons c C' ih =>
-      intro S a b
-      rcases List.nodup_cons.1 hC' with ⟨hc, hC''⟩
-      rw [List.foldl_cons, ih hC'' fun b hb => hsub b (List.mem_cons_of_mem _ hb)]
-      set S₁ := S.updateRow i₀ (Function.update (S i₀) c (S i₀ c - g S i₀ c)) with hS₁
-      have hS₁g : ∀ i j, g S₁ i j = g S i j := fun i j =>
-        (hg S S₁ (fun a' b' hab => by
-          rw [hS₁, updateRow_apply]
-          split_ifs with h
-          · rw [h, Function.update_of_ne fun h' => hab ⟨by rw [h]; exact hi₀,
-              by rw [h']; exact hsub c List.mem_cons_self⟩]
-          · rfl) i j).symm
-      by_cases hab : a = i₀ ∧ b ∈ C'
-      · have hbc : b ≠ c := fun h => hc (h ▸ hab.2)
-        rw [ite_eq_left hab, ite_eq_left ⟨hab.1, List.mem_cons_of_mem _ hab.2⟩, hS₁g, hS₁,
-          updateRow_self, Function.update_of_ne hbc]
-      · rw [ite_eq_right hab, hS₁, updateRow_apply]
-        by_cases ha : a = i₀
-        · subst ha
-          by_cases hbc : b = c
-          · subst hbc
-            simp
-          · have hb : b ∉ c :: C' := by
-              intro h
-              rcases List.mem_cons.1 h with h | h
-              · exact hbc h
-              · exact hab ⟨rfl, h⟩
-            simp [hb, Function.update_of_ne hbc]
-        · simp [ha]
-  -- all rows
-  have hall : ∀ (R' : List (Fin n)), R'.Nodup → (∀ a ∈ R', a ∈ R) →
-      ∀ (S : Matrix (Fin n) (Fin n) ℝ) (a b : Fin n),
-      R'.foldl (fun (S : Matrix (Fin n) (Fin n) ℝ) i =>
-        C.foldl (fun (S : Matrix (Fin n) (Fin n) ℝ) j =>
-          S.updateRow i (Function.update (S i) j (S i j - g S i j))) S) S a b =
-      if a ∈ R' ∧ b ∈ C then S a b - g S a b else S a b := by
-    intro R' hR' hsub
-    induction R' with
-    | nil => intro S a b; simp
-    | cons c R' ih =>
-      intro S a b
-      rcases List.nodup_cons.1 hR' with ⟨hc, hR''⟩
-      rw [List.foldl_cons, ih hR'' fun a ha => hsub a (List.mem_cons_of_mem _ ha)]
-      have hrowc := hrow c (hsub c List.mem_cons_self) C hC fun b hb => hb
-      set S₁ := C.foldl (fun (S : Matrix (Fin n) (Fin n) ℝ) j =>
-        S.updateRow c (Function.update (S c) j (S c j - g S c j))) S with hS₁
-      have hS₁g : ∀ i j, g S₁ i j = g S i j := fun i j =>
-        (hg S S₁ (fun a' b' hab => by
-          rw [hS₁, hrowc, ite_eq_right (show ¬ (a' = c ∧ b' ∈ C) from fun h =>
-            hab ⟨by rw [h.1]; exact hsub c List.mem_cons_self, h.2⟩)])
-          i j).symm
-      by_cases hab : a ∈ R' ∧ b ∈ C
-      · have hac : a ≠ c := fun h => hc (h ▸ hab.1)
-        rw [ite_eq_left hab, ite_eq_left ⟨List.mem_cons_of_mem _ hab.1, hab.2⟩, hS₁g, hS₁,
-          hrowc, ite_eq_right fun h => hac h.1]
-      · rw [ite_eq_right hab, hS₁, hrowc]
-        by_cases hac : a = c
-        · subst hac
-          simp
-        · have : ¬ (a ∈ c :: R' ∧ b ∈ C) := fun h =>
-            hab ⟨(List.mem_cons.1 h.1).resolve_left hac, h.2⟩
-          rw [ite_eq_right fun h => hac h.1, ite_eq_right this]
-  exact hall R hR (fun a ha => ha) S i j
+      if i ∈ R ∧ j ∈ C then S i j - g S i j else S i j :=
+  congrFun (congrFun (List.foldl_foldl_update_update_of_nodup hR hC (fun S i j => S i j - g S i j)
+    (fun y y' hy i _ j _ hij => by rw [hij, hg y y' hy]) S) i) j
 
 /-- Uniqueness of the solution of a unit lower triangular system on a sorted index list: two
 vectors satisfying the same equations `∑_{j ∈ o} L(i,j) x(j) = b(i)`, `i ∈ o`, agree on `o`. -/

@@ -255,6 +255,28 @@ id = "reflector_mulVec_eq_of_sq"
 id = "IsThinQR"
 
 [[node]]
+id = "gramSchmidtQ"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 1.1"
+
+[[node]]
+id = "gramSchmidtR"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 1.1"
+
+[[node]]
+id = "gramSchmidtResidual"
+source = "Golub–Van Loan, Matrix Computations, §5.2.7"
+
+[[node]]
+id = "toLp_gramSchmidtResidual"
+
+[[node]]
+id = "isThinQR_gramSchmidtQ"
+source = "Golub–Van Loan, Matrix Computations, Theorem 5.2.3"
+
+[[node]]
+id = "gramSchmidtR_apply_self_pos"
+
+[[node]]
 id = "exists_isThinQR"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (1.19)"
 

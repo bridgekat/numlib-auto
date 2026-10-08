@@ -73,43 +73,6 @@ namespace GolubVanLoan.Chapter07
 
 variable {n : ℕ}
 
-/-- A QR step `H' = R U + μ I` after `H - μ I = U R` is the unitary similarity `H' = Uᴴ H U`. -/
-private theorem qr_step_eq_conj {𝕜 : Type*} [RCLike 𝕜] {H U R H' : Matrix (Fin n) (Fin n) 𝕜}
-    {μ : 𝕜} (hU : U ∈ unitaryGroup (Fin n) 𝕜) (hQR : H - μ • 1 = U * R)
-    (hH' : H' = R * U + μ • 1) : H' = star U * H * U := by
-  have h1 : star U * U = 1 := mem_unitaryGroup_iff'.1 hU
-  have hR : R = star U * (H - μ • 1) := by rw [hQR, ← Matrix.mul_assoc, h1, Matrix.one_mul]
-  rw [hH', hR, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, h1,
-    sub_add_cancel]
-
-/-- A unimodular diagonal matrix is unitary. -/
-private theorem diagonal_mem_unitaryGroup {𝕜 : Type*} [RCLike 𝕜] {d : Fin n → 𝕜}
-    (hd : ∀ i, ‖d i‖ = 1) : diagonal d ∈ unitaryGroup (Fin n) 𝕜 := by
-  rw [mem_unitaryGroup_iff', star_eq_conjTranspose, diagonal_conjTranspose, diagonal_mul_diagonal]
-  rw [← diagonal_one]
-  congr 1
-  funext i
-  rw [Pi.star_apply, RCLike.star_def, RCLike.conj_mul, hd i]
-  simp
-
-/-- A shifted QR step of a unimodular diagonal similarity `D* H D` of `H` (taken with the factors
-`D* U`, `R D` of the factorization `H - μ I = U R`) lands on the same matrix as the step of `H`. -/
-private theorem isShiftedQrStep_diagonal_conj {𝕜 : Type*} [RCLike 𝕜] {μ : 𝕜}
-    {H H' : Matrix (Fin n) (Fin n) 𝕜} {d : Fin n → 𝕜} (hd : ∀ i, ‖d i‖ = 1)
-    (h : IsShiftedQrStep μ H H') :
-    IsShiftedQrStep μ (star (diagonal d) * H * diagonal d) H' := by
-  obtain ⟨U, hU, R, hR, hQR, rfl⟩ := h
-  have hD := diagonal_mem_unitaryGroup hd
-  have hDD : star (diagonal d) * diagonal d = 1 := mem_unitaryGroup_iff'.1 hD
-  have hDD' : diagonal d * star (diagonal d) = 1 := mem_unitaryGroup_iff.1 hD
-  refine ⟨star (diagonal d) * U, Submonoid.mul_mem _ (Unitary.star_mem hD) hU, R * diagonal d,
-    hR.mul (blockTriangular_diagonal d), ?_, ?_⟩
-  · have hH : H = U * R + μ • 1 := by rw [← hQR, sub_add_cancel]
-    rw [hH, Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul,
-      hDD, add_sub_cancel_right]
-    simp only [Matrix.mul_assoc]
-  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc (diagonal d), hDD', Matrix.one_mul]
-
 /-! ### §7.5.2 The shifted QR iteration -/
 
 /-- **(7.5.3).** Each matrix of the shifted QR iteration is orthogonally similar to its predecessor:
@@ -117,58 +80,8 @@ if `H - μ I = U R` with `U` orthogonal, then `R U + μ I = Uᵀ (U R + μ I) U 
 theorem equation_7_5_3 {H U R : Matrix (Fin n) (Fin n) ℝ} {μ : ℝ}
     (hU : U ∈ orthogonalGroup (Fin n) ℝ) (hQR : H - μ • 1 = U * R) :
     R * U + μ • 1 = Uᵀ * H * U := by
-  have h := qr_step_eq_conj hU hQR rfl
+  have h := mul_add_smul_one_eq_star_mul_mul hU hQR
   rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
-
-/-- An entry of a real unimodular diagonal similarity has the modulus of the original entry. -/
-private theorem abs_diagonal_conj_apply {d : Fin n → ℝ} (hd : ∀ i, ‖d i‖ = 1)
-    (S : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
-    |(star (diagonal d) * S * diagonal d) i j| = |S i j| := by
-  rw [star_eq_conjTranspose, diagonal_conjTranspose, mul_diagonal, diagonal_mul]
-  have hi : |d i| = 1 := by simpa using hd i
-  have hj : |d j| = 1 := by simpa using hd j
-  simp [abs_mul, hi, hj]
-
-/-- A real unimodular diagonal similarity keeps the diagonal. -/
-private theorem diagonal_conj_apply_self {d : Fin n → ℝ} (hd : ∀ i, ‖d i‖ = 1)
-    (S : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
-    (star (diagonal d) * S * diagonal d) i i = S i i := by
-  rw [star_eq_conjTranspose, diagonal_conjTranspose, mul_diagonal, diagonal_mul]
-  have hi : |d i| = 1 := by simpa using hd i
-  have hii : d i * d i = 1 := by rw [← abs_mul_abs_self, hi, one_mul]
-  simp only [Pi.star_apply, star_trivial]
-  calc d i * S i i * d i = (d i * d i) * S i i := by ring
-    _ = S i i := by rw [hii, one_mul]
-
-/-- **Any fixed-shift QR iteration is the canonical one up to a unimodular diagonal
-similarity**, as long as `A - μ I` is nonsingular: the QR factorization of a nonsingular matrix is
-unique up to such a diagonal (`Matrix.IsShiftedQrStep.unique_of_isUnit`). -/
-private theorem exists_eq_diagonal_conj_shiftedQrIterate {A : Matrix (Fin n) (Fin n) ℝ} {μ : ℝ}
-    (hA : IsUnit (A - μ • 1).det) {H : ℕ → Matrix (Fin n) (Fin n) ℝ} (hH0 : H 0 = A)
-    (hH : ∀ k, IsShiftedQrStep μ (H k) (H (k + 1))) (k : ℕ) :
-    ∃ d : Fin n → ℝ, (∀ i, ‖d i‖ = 1) ∧
-      H k = star (diagonal d) * shiftedQrIterate A μ k * diagonal d := by
-  induction k with
-  | zero =>
-    refine ⟨fun _ => 1, fun _ => by simp, ?_⟩
-    rw [diagonal_one, star_one, Matrix.one_mul, Matrix.mul_one, hH0, shiftedQrIterate_zero]
-  | succ k ih =>
-    obtain ⟨d, hd, hk⟩ := ih
-    have hD := diagonal_mem_unitaryGroup hd
-    have hDD : star (diagonal d) * diagonal d = 1 := mem_unitaryGroup_iff'.1 hD
-    have hDD' : diagonal d * star (diagonal d) = 1 := mem_unitaryGroup_iff.1 hD
-    have hc : IsShiftedQrStep μ (H k) (shiftedQrIterate A μ (k + 1)) := by
-      rw [hk, shiftedQrIterate_succ]
-      exact isShiftedQrStep_diagonal_conj hd (isShiftedQrStep_shiftedQrStep _ _)
-    have hsub : H k - μ • 1 = star (diagonal d) * qrIterate (A - μ • 1) k * diagonal d := by
-      rw [hk, ← add_sub_cancel_right (qrIterate (A - μ • 1) k) (μ • 1),
-        ← shiftedQrIterate_eq_qrIterate_sub_add, Matrix.mul_sub, Matrix.sub_mul,
-        Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, hDD]
-    have hdet : IsUnit (H k - μ • 1).det := by
-      rw [hsub, det_mul, det_mul]
-      exact ((isUnit_det_of_right_inverse hDD).mul (isUnit_det_qrIterate hA k)).mul
-        (isUnit_det_of_right_inverse hDD')
-    exact hc.unique_of_isUnit (hH k) hdet
 
 /-- **§7.5.2, the rate of the fixed-shift QR iteration.** "If `μ` is a fixed shift and the
 eigenvalues `λ_i` of `H` are ordered so that `|λ₁ - μ| ≥ ⋯ ≥ |λ_n - μ|`, then the theory of §7.3
@@ -211,11 +124,11 @@ theorem shiftedQr_rate {A X : Matrix (Fin n) (Fin n) ℝ} {l : Fin n → ℝ} {�
   have hr'r : r' ≤ r := min_le_left _ _
   have hρr' : ρ < r' := lt_min hr (by linarith)
   have hr'L : r' < L := (min_le_right _ _).trans_lt (by linarith)
-  obtain ⟨C, hC⟩ := exists_abs_qrIterate_apply_le hdetB (x := euclideanCol X)
-    (l := fun j => l j - μ) (linearIndependent_euclideanCol hX)
-    (span_range_euclideanCol_eq_top hX) (toEuclideanLin_euclideanCol_of_conj_eq_diagonal hXu hXB)
+  obtain ⟨C, hC⟩ := exists_norm_apply_le_of_isShiftedQrStep hdetB
+    (linearIndependent_euclideanCol hX) (span_range_euclideanCol_eq_top hX)
+    (toEuclideanLin_euclideanCol_of_conj_eq_diagonal hXu hXA)
     (fun j k hjk => by simpa [Real.norm_eq_abs] using hsep j k hjk)
-    ((forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal hX).2 hgen) hpq' hr'0
+    ((forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal hX).2 hgen) hH0 hH hpq' hr'0
     (fun j' hj' => by
       simp only [Real.norm_eq_abs]
       rcases eq_or_lt_of_le (Fin.le_def.2 (show (q : ℕ) ≤ j' by
@@ -225,13 +138,8 @@ theorem shiftedQr_rate {A X : Matrix (Fin n) (Fin n) ℝ} {l : Fin n → ℝ} {�
     (by simpa [Real.norm_eq_abs] using hr'L)
   have hL0 : 0 < L := (abs_nonneg _).trans_lt hρL
   refine ⟨max C 0, fun k => ?_⟩
-  obtain ⟨d, hd, hk⟩ := exists_eq_diagonal_conj_shiftedQrIterate hdetB hH0 hH k
-  have hqp : q ≠ p := hpq'.ne'
-  have hentry : |H k q p| = ‖qrIterate B k q p‖ := by
-    rw [hk, abs_diagonal_conj_apply hd, shiftedQrIterate_eq_qrIterate_sub_add, Matrix.add_apply,
-      Matrix.smul_apply, one_apply_ne hqp, smul_zero, add_zero, Real.norm_eq_abs]
-  rw [hentry]
-  calc ‖qrIterate B k q p‖ ≤ C * (r' / ‖l p - μ‖) ^ k := hC k
+  rw [← Real.norm_eq_abs]
+  calc ‖H k q p‖ ≤ C * (r' / ‖l p - μ‖) ^ k := hC k
     _ ≤ max C 0 * (r' / L) ^ k := by
         rw [Real.norm_eq_abs]
         exact mul_le_mul_of_nonneg_right (le_max_left _ _) (by positivity)
@@ -274,52 +182,8 @@ theorem single_shift_quadratic {N : ℕ} {A : Matrix (Fin (N + 2)) (Fin (N + 2))
       |T' (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ≤
           C * |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 ∧
         |T' (Fin.last (N + 1)) (Fin.last (N + 1)) - l| ≤
-          C * |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 := by
-  obtain ⟨x, y, K, hx, hy, hyx, hK, hKw⟩ := exists_eigenvector_data_of_rootMultiplicity_eq_one hl
-  set C₀ : ℝ := ‖LinearMap.toContinuousLinearMap (toEuclideanLin Aᵀ)‖ + |l| with hC₀def
-  have hC₀ : 0 ≤ C₀ := by positivity
-  have hCz : ∀ z : EuclideanSpace ℝ (Fin (N + 2)), ‖toEuclideanLin Aᵀ z - l • z‖ ≤ C₀ * ‖z‖ :=
-    fun z => by
-      calc ‖toEuclideanLin Aᵀ z - l • z‖ ≤ ‖toEuclideanLin Aᵀ z‖ + ‖l • z‖ := norm_sub_le _ _
-        _ ≤ ‖LinearMap.toContinuousLinearMap (toEuclideanLin Aᵀ)‖ * ‖z‖ + |l| * ‖z‖ := by
-          gcongr
-          · exact (LinearMap.toContinuousLinearMap (toEuclideanLin Aᵀ)).le_opNorm z
-          · rw [norm_smul, Real.norm_eq_abs]
-        _ = C₀ * ‖z‖ := by ring
-  set A' : ℝ := 2 * K * (1 + ‖x‖ * ‖y‖) with hA'def
-  have hA'0 : 0 < A' := by positivity
-  set D : ℝ := 4 * A' + 2 * K * C₀ * A' + 2 * K with hDdef
-  have hD : 0 < D := by positivity
-  refine ⟨4 * K * C₀ ^ 2 * A' ^ 2, 1 / D, by positivity,
-    fun Q T T' hQ hTQ hT hunit ht hd hstep => ?_⟩
-  set t := |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| with htdef
-  have ht0 : 0 ≤ t := abs_nonneg _
-  have hsub1 : 4 * A' * t ≤ 1 := by
-    calc 4 * A' * t ≤ 4 * A' * (1 / D) := by gcongr
-      _ ≤ 1 := by
-        rw [mul_one_div, div_le_one hD]
-        nlinarith [mul_nonneg (mul_nonneg hK.le hC₀) hA'0.le]
-  have hsub2 : 2 * K * C₀ * A' * t ≤ 1 := by
-    calc 2 * K * C₀ * A' * t ≤ 2 * K * C₀ * A' * (1 / D) := by
-          gcongr
-      _ ≤ 1 := by
-        rw [mul_one_div, div_le_one hD]
-        nlinarith [hA'0, hK]
-  have hdiag : 2 * K * |T (Fin.last (N + 1)) (Fin.last (N + 1)) - l| ≤ 1 := by
-    calc 2 * K * |T (Fin.last (N + 1)) (Fin.last (N + 1)) - l| ≤ 2 * K * (1 / D) := by gcongr
-      _ ≤ 1 := by
-        rw [mul_one_div, div_le_one hD]
-        nlinarith [mul_nonneg (mul_nonneg hK.le hC₀) hA'0.le, hA'0]
-  obtain ⟨h₁, h₂⟩ := abs_shiftedQrStep_last_le_of_conj hQ hTQ hT hx hy hyx hK.le hKw hCz hunit
-    hsub1 hsub2 hdiag
-  obtain ⟨d, hd, hT'⟩ := (isShiftedQrStep_shiftedQrStep _ T).unique_of_isUnit hstep
-    ((isUnit_iff_isUnit_det _).1 hunit)
-  have hne : Fin.castSucc (Fin.last N) ≠ Fin.last (N + 1) := Fin.castSucc_lt_last _ |>.ne
-  refine ⟨?_, ?_⟩
-  · rw [hT', abs_diagonal_conj_apply hd]
-    exact h₁ _ hne
-  · rw [hT', diagonal_conj_apply_self hd]
-    exact h₂
+          C * |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 :=
+  exists_abs_isShiftedQrStep_last_le_sq hl
 
 
 /-! ### §7.5.4 The double-shift strategy -/
@@ -346,7 +210,8 @@ theorem equation_7_5_7 {H H₁ H₂ U₁ U₂ R₁ R₂ : Matrix (Fin n) (Fin n)
           simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.smul_mul, Matrix.mul_smul,
             Matrix.one_mul, Matrix.mul_one, sub_smul, smul_sub, smul_smul]
           module
-  · rw [qr_step_eq_conj hU₂ h₂ hH₂, qr_step_eq_conj hU₁ h₁ hH₁, star_mul]
+  · rw [hH₂, mul_add_smul_one_eq_star_mul_mul hU₂ h₂, hH₁, mul_add_smul_one_eq_star_mul_mul hU₁ h₁,
+      star_mul]
     simp only [Matrix.mul_assoc]
 
 /-- **(7.5.5) and (7.5.8).** Let `G = [h_mm h_mn; h_nm h_nn]` (`m = n - 1`) be the trailing `2 × 2`
@@ -403,7 +268,7 @@ theorem double_shift_real (H : Matrix (Fin n) (Fin n) ℝ) {a : ℂ}
   have hc₂ : IsShiftedQrStep (starRingEnd ℂ a) H₁
       (shiftedQrStep (starRingEnd ℂ a) (shiftedQrStep a H.complexify)) := by
     rw [hH₁]
-    exact isShiftedQrStep_diagonal_conj hd (isShiftedQrStep_shiftedQrStep _ _)
+    exact (isShiftedQrStep_shiftedQrStep _ _).diagonal_conj hd
   -- `H₁ - ā I` is nonsingular: `ā` is not an eigenvalue of the real `H`, nor of its conjugates
   have hā : starRingEnd ℂ a ∉ spectrum ℂ H.complexify := fun h =>
     ha ((star_mem_spectrum_complexify_iff H a).1 h)

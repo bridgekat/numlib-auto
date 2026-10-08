@@ -75,6 +75,9 @@ off-diagonal entries are bounded by `C` times the complementary component of `q_
   (5.53) consumes, every iterate being such a conjugate;
 * `Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one`: an algebraically simple real
   eigenvalue supplies `x`, `y`, `K`;
+* `Matrix.exists_abs_isShiftedQrStep_last_le_sq`: the three combined, for a single-shift step
+  with any QR factorization (`Matrix.IsShiftedQrStep`), with constants depending only on `A`
+  and `l`;
 * `Matrix.isUpperHessenberg_shiftedQrStep`, `Matrix.isUpperHessenberg_rayleighShiftQrIterate`:
   Hessenberg form is preserved as long as no shift is exactly an eigenvalue.
 
@@ -968,5 +971,81 @@ theorem isUpperHessenberg_rayleighShiftQrIterate {A : Matrix (Fin (N + 1)) (Fin 
     exact isUpperHessenberg_shiftedQrStep ih (hreg k)
 
 end RayleighShift
+
+/-! ### Local quadratic convergence of the single-shift step, for any factorization -/
+
+section Quadratic
+
+variable {N : ℕ}
+
+/-- **Local quadratic convergence of the single-shift QR step at a simple eigenvalue, for any
+QR factorization** ([golub2013matrix] §7.5.3, [quarteroni2000numerical] (5.53)): for `A` with an
+algebraically simple real eigenvalue `l` there are `C` and `δ > 0` such that, for every Hessenberg
+orthogonal conjugate `T = Qᵀ A Q` with `|t_{n,n-1}| ≤ δ`, `|t_nn - l| ≤ δ` and `T - t_nn I`
+nonsingular, every single-shift QR step `T'` of `T` (`Matrix.IsShiftedQrStep` with shift `t_nn`,
+any factorization) has `|t'_{n,n-1}| ≤ C t_{n,n-1}²` and `|t'_nn - l| ≤ C t_{n,n-1}²` (0-based: `n`
+is `Fin.last`). The canonical step is bounded by `Matrix.abs_shiftedQrStep_last_le_of_conj` with
+the data of `Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one`, and any other step is a
+unimodular diagonal similarity of it (`Matrix.IsShiftedQrStep.unique_of_isUnit`), which keeps the
+moduli of the entries and the diagonal. -/
+theorem exists_abs_isShiftedQrStep_last_le_sq {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ} {l : ℝ}
+    (hl : A.charpoly.rootMultiplicity l = 1) :
+    ∃ C δ : ℝ, 0 < δ ∧ ∀ Q T T' : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ,
+      Q ∈ orthogonalGroup (Fin (N + 2)) ℝ → T = Qᵀ * A * Q → T.IsUpperHessenberg →
+      IsUnit (T - T (Fin.last (N + 1)) (Fin.last (N + 1)) • 1) →
+      |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ≤ δ →
+      |T (Fin.last (N + 1)) (Fin.last (N + 1)) - l| ≤ δ →
+      IsShiftedQrStep (T (Fin.last (N + 1)) (Fin.last (N + 1))) T T' →
+      |T' (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ≤
+          C * |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 ∧
+        |T' (Fin.last (N + 1)) (Fin.last (N + 1)) - l| ≤
+          C * |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 := by
+  obtain ⟨x, y, K, hx, hy, hyx, hK, hKw⟩ := exists_eigenvector_data_of_rootMultiplicity_eq_one hl
+  set C₀ : ℝ := ‖LinearMap.toContinuousLinearMap (toEuclideanLin Aᵀ)‖ + |l| with hC₀def
+  have hC₀ : 0 ≤ C₀ := by positivity
+  have hCz : ∀ z : EuclideanSpace ℝ (Fin (N + 2)), ‖toEuclideanLin Aᵀ z - l • z‖ ≤ C₀ * ‖z‖ :=
+    fun z => by
+      calc ‖toEuclideanLin Aᵀ z - l • z‖ ≤ ‖toEuclideanLin Aᵀ z‖ + ‖l • z‖ := norm_sub_le _ _
+        _ ≤ ‖LinearMap.toContinuousLinearMap (toEuclideanLin Aᵀ)‖ * ‖z‖ + |l| * ‖z‖ := by
+          gcongr
+          · exact (LinearMap.toContinuousLinearMap (toEuclideanLin Aᵀ)).le_opNorm z
+          · rw [norm_smul, Real.norm_eq_abs]
+        _ = C₀ * ‖z‖ := by ring
+  set A' : ℝ := 2 * K * (1 + ‖x‖ * ‖y‖) with hA'def
+  have hA'0 : 0 < A' := by positivity
+  set D : ℝ := 4 * A' + 2 * K * C₀ * A' + 2 * K with hDdef
+  have hD : 0 < D := by positivity
+  refine ⟨4 * K * C₀ ^ 2 * A' ^ 2, 1 / D, by positivity,
+    fun Q T T' hQ hTQ hT hunit ht hd hstep => ?_⟩
+  set t := |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| with htdef
+  have ht0 : 0 ≤ t := abs_nonneg _
+  have hsub1 : 4 * A' * t ≤ 1 := by
+    calc 4 * A' * t ≤ 4 * A' * (1 / D) := by gcongr
+      _ ≤ 1 := by
+        rw [mul_one_div, div_le_one hD]
+        nlinarith [mul_nonneg (mul_nonneg hK.le hC₀) hA'0.le]
+  have hsub2 : 2 * K * C₀ * A' * t ≤ 1 := by
+    calc 2 * K * C₀ * A' * t ≤ 2 * K * C₀ * A' * (1 / D) := by
+          gcongr
+      _ ≤ 1 := by
+        rw [mul_one_div, div_le_one hD]
+        nlinarith [hA'0, hK]
+  have hdiag : 2 * K * |T (Fin.last (N + 1)) (Fin.last (N + 1)) - l| ≤ 1 := by
+    calc 2 * K * |T (Fin.last (N + 1)) (Fin.last (N + 1)) - l| ≤ 2 * K * (1 / D) := by gcongr
+      _ ≤ 1 := by
+        rw [mul_one_div, div_le_one hD]
+        nlinarith [mul_nonneg (mul_nonneg hK.le hC₀) hA'0.le, hA'0]
+  obtain ⟨h₁, h₂⟩ := abs_shiftedQrStep_last_le_of_conj hQ hTQ hT hx hy hyx hK.le hKw hCz hunit
+    hsub1 hsub2 hdiag
+  obtain ⟨d, hd, hT'⟩ := (isShiftedQrStep_shiftedQrStep _ T).unique_of_isUnit hstep
+    ((isUnit_iff_isUnit_det _).1 hunit)
+  have hne : Fin.castSucc (Fin.last N) ≠ Fin.last (N + 1) := Fin.castSucc_lt_last _ |>.ne
+  refine ⟨?_, ?_⟩
+  · rw [hT', ← Real.norm_eq_abs, norm_diagonal_conj_apply hd, Real.norm_eq_abs]
+    exact h₁ _ hne
+  · rw [hT', diagonal_conj_apply_self hd]
+    exact h₂
+
+end Quadratic
 
 end Matrix

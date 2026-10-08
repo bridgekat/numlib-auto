@@ -156,6 +156,13 @@ id = "_root_.Matrix.shiftedQrIterate_eq_conj_qrAccum"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.7.1'
 
 [[node]]
+id = "_root_.Matrix.exists_eq_diagonal_conj_shiftedQrIterate"
+
+[[node]]
+id = "_root_.Matrix.exists_norm_apply_le_of_isShiftedQrStep"
+source = 'Golub–Van Loan, Matrix Computations, §7.5.2'
+
+[[node]]
 id = "_root_.Matrix.rayleighShiftQrIterate"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
 
@@ -213,6 +220,9 @@ id = "_root_.Matrix.IsShiftedQrStep"
 
 [[node]]
 id = "_root_.Matrix.isShiftedQrStep_shiftedQrStep"
+
+[[node]]
+id = "_root_.Matrix.mul_add_smul_one_eq_star_mul_mul"
 
 [[node]]
 id = "_root_.Matrix.IsShiftedQrStep.eq_conj"

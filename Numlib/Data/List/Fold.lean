@@ -32,7 +32,9 @@ general facts about such folds that the proofs about algorithms keep needing.
   each written entry holds its step's value on the initial state), its two common special cases
   `List.foldl_update_of_nodup` and `List.foldl_update_eq_ite`, and the in-place (Gauss–Seidel)
   form `List.exists_foldl_update_apply_of_pairwise_rel` / `List.foldl_update_apply_of_pairwise_rel`,
-  where a step may read the entries written before it.
+  where a step may read the entries written before it; for a state `κ → ι → β` written by a
+  double loop over rows and columns, `List.foldl_foldl_update_update_of_nodup` and
+  `List.foldl_foldl_update_update_eq_ite`.
 * **Exact arithmetic.** Running sums and differences (`List.foldl_add_eq_add_sum_map`,
   `List.foldl_sub_eq_sub_sum_map`), loop interchange (`List.foldl_apply_of_pi`) and a loop
   accumulating into one entry (`List.foldl_update_self`, `List.foldlM_update_self`).
@@ -52,6 +54,24 @@ theorem exists_cons_cons_of_two_le_length :
   | a :: b :: t, _ => ⟨a, b, t, rfl⟩
   | [], h => absurd h (by simp)
   | [_], h => absurd h (by simp)
+
+/-- The indices of `Fin n` below `r ≤ n`, read in `Fin r`, are `List.finRange r`, in order. -/
+theorem filterMap_finRange_of_le {r n : ℕ} (hrn : r ≤ n) :
+    (finRange n).filterMap
+        (fun k : Fin n => if h : (k : ℕ) < r then some (⟨k, h⟩ : Fin r) else none) =
+      finRange r := by
+  induction n, hrn using Nat.le_induction with
+  | base =>
+    conv_rhs => rw [← filterMap_some (l := finRange r)]
+    exact filterMap_congr fun k _ => by simp
+  | succ m hrm ih =>
+    rw [finRange_succ_last, filterMap_append, filterMap_map]
+    have hlast : (filterMap (fun k : Fin (m + 1) =>
+        if h : (k : ℕ) < r then some (⟨k, h⟩ : Fin r) else none) [Fin.last m]) = [] := by
+      simp only [filterMap_cons, filterMap_nil, Fin.val_last]
+      rw [dite_eq_right (by omega)]
+    rw [hlast, append_nil, ← ih]
+    rfl
 
 /-- In a list that is pairwise related by `r`, split as `p ++ i :: q`, an element `j ≠ i` with
 `¬ r i j` lies before `i`. -/
@@ -343,6 +363,118 @@ theorem foldl_update_eq_ite (g : κ → β) (l : List κ) (y : κ → β) :
     funext i
     by_cases hi : i ∈ l
     · simp [hi]
+    · by_cases hia : i = a
+      · subst hia; simp [hi]
+      · simp [hi, hia]
+
+/-- **A double loop writing one entry per step.** In a loop over the rows `R` whose body loops over
+the columns `C`, step `(i, j)` replacing entry `(i, j)` of a state `κ → ι → β` by `h y i j`
+computed from the current state `y`: if `R` and `C` are duplicate-free and `h y i j` reads only
+entry `(i, j)` and the entries outside `R × C`, then every entry of `R × C` is replaced by `h` of
+the initial state, and the other entries are kept. -/
+theorem foldl_foldl_update_update_of_nodup {ι : Type*} [DecidableEq ι] {R : List κ} {C : List ι}
+    (hR : R.Nodup) (hC : C.Nodup) (h : (κ → ι → β) → κ → ι → β)
+    (hh : ∀ y y' : κ → ι → β, (∀ a b, ¬ (a ∈ R ∧ b ∈ C) → y a b = y' a b) →
+      ∀ i ∈ R, ∀ j ∈ C, y i j = y' i j → h y i j = h y' i j)
+    (y : κ → ι → β) :
+    R.foldl (fun y i => C.foldl (fun y j =>
+        Function.update y i (Function.update (y i) j (h y i j))) y) y =
+      fun i j => if i ∈ R ∧ j ∈ C then h y i j else y i j := by
+  -- one row
+  have hrow : ∀ i₀ ∈ R, ∀ C' : List ι, C'.Nodup → (∀ b ∈ C', b ∈ C) → ∀ (y : κ → ι → β) a b,
+      C'.foldl (fun y j => Function.update y i₀ (Function.update (y i₀) j (h y i₀ j))) y a b =
+        if a = i₀ ∧ b ∈ C' then h y i₀ b else y a b := by
+    intro i₀ hi₀ C' hC' hsub
+    induction C' with
+    | nil => intro y a b; simp
+    | cons c C' ih =>
+      intro y a b
+      obtain ⟨hc, hC''⟩ := nodup_cons.1 hC'
+      rw [foldl_cons, ih hC'' fun b hb => hsub b (mem_cons_of_mem _ hb)]
+      set y₁ := Function.update y i₀ (Function.update (y i₀) c (h y i₀ c)) with hy₁
+      have hy₁a : ∀ a b, ¬ (a = i₀ ∧ b = c) → y₁ a b = y a b := fun a b hab => by
+        rw [hy₁, Function.update_apply]
+        split_ifs with ha
+        · rw [ha, Function.update_of_ne fun hb => hab ⟨ha, hb⟩]
+        · rfl
+      by_cases hab : a = i₀ ∧ b ∈ C'
+      · have hbc : b ≠ c := fun e => hc (e ▸ hab.2)
+        rw [ite_eq_left hab, ite_eq_left ⟨hab.1, mem_cons_of_mem _ hab.2⟩]
+        refine hh y₁ y (fun a' b' h' => hy₁a a' b' fun e => h' ⟨e.1 ▸ hi₀,
+          e.2 ▸ hsub c mem_cons_self⟩) i₀ hi₀ b (hsub b (mem_cons_of_mem _ hab.2))
+          (hy₁a i₀ b fun e => hbc e.2)
+      · rw [ite_eq_right hab]
+        by_cases hac : a = i₀ ∧ b = c
+        · obtain ⟨rfl, rfl⟩ := hac
+          simp [hy₁]
+        · rw [hy₁a a b hac, ite_eq_right fun h' => ?_]
+          rcases mem_cons.1 h'.2 with e | e
+          · exact hac ⟨h'.1, e⟩
+          · exact hab ⟨h'.1, e⟩
+  -- all rows
+  have hall : ∀ R' : List κ, R'.Nodup → (∀ a ∈ R', a ∈ R) → ∀ (y : κ → ι → β) a b,
+      R'.foldl (fun y i => C.foldl (fun y j =>
+        Function.update y i (Function.update (y i) j (h y i j))) y) y a b =
+        if a ∈ R' ∧ b ∈ C then h y a b else y a b := by
+    intro R' hR' hsub
+    induction R' with
+    | nil => intro y a b; simp
+    | cons c R' ih =>
+      intro y a b
+      obtain ⟨hc, hR''⟩ := nodup_cons.1 hR'
+      rw [foldl_cons, ih hR'' fun a ha => hsub a (mem_cons_of_mem _ ha)]
+      have hrowc := hrow c (hsub c mem_cons_self) C hC fun b hb => hb
+      set y₁ := C.foldl (fun y j => Function.update y c (Function.update (y c) j (h y c j))) y
+        with hy₁
+      have hy₁a : ∀ a b, ¬ (a = c ∧ b ∈ C) → y₁ a b = y a b := fun a b hab => by
+        rw [hy₁, hrowc, ite_eq_right hab]
+      by_cases hab : a ∈ R' ∧ b ∈ C
+      · have hac : a ≠ c := fun e => hc (e ▸ hab.1)
+        rw [ite_eq_left hab, ite_eq_left ⟨mem_cons_of_mem _ hab.1, hab.2⟩]
+        refine hh y₁ y (fun a' b' h' => hy₁a a' b' fun e => h' ⟨e.1 ▸ hsub c mem_cons_self,
+          e.2⟩) a (hsub a (mem_cons_of_mem _ hab.1)) b hab.2 (hy₁a a b fun e => hac e.1)
+      · rw [ite_eq_right hab, hy₁, hrowc]
+        by_cases hac : a = c
+        · subst hac
+          by_cases hb : b ∈ C <;> simp [hb]
+        · have : ¬ (a ∈ c :: R' ∧ b ∈ C) := fun h' =>
+            hab ⟨(mem_cons.1 h'.1).resolve_left hac, h'.2⟩
+          rw [ite_eq_right fun e => hac e.1, ite_eq_right this]
+  funext a b
+  exact hall R hR (fun a ha => ha) y a b
+
+/-- **A double loop writing values fixed in advance** sets the entries of `R × C` and keeps the
+others (no duplicate-freeness needed: a repeated step rewrites the same value). -/
+theorem foldl_foldl_update_update_eq_ite {ι : Type*} [DecidableEq ι] (g : κ → ι → β)
+    (R : List κ) (C : List ι) (y : κ → ι → β) :
+    R.foldl (fun y i => C.foldl (fun y j =>
+        Function.update y i (Function.update (y i) j (g i j))) y) y =
+      fun i j => if i ∈ R ∧ j ∈ C then g i j else y i j := by
+  have hrow : ∀ (a : κ) (y : κ → ι → β),
+      C.foldl (fun y j => Function.update y a (Function.update (y a) j (g a j))) y =
+        fun i j => if i = a ∧ j ∈ C then g a j else y i j := by
+    intro a
+    induction C with
+    | nil => intro y; funext i j; simp
+    | cons b C ih =>
+      intro y
+      rw [foldl_cons, ih]
+      funext i j
+      by_cases hia : i = a
+      · subst hia
+        by_cases hj : j ∈ C
+        · simp [hj]
+        · by_cases hjb : j = b
+          · subst hjb; simp [hj]
+          · simp [hj, hjb]
+      · simp [hia]
+  induction R generalizing y with
+  | nil => funext i j; simp
+  | cons a R ih =>
+    rw [foldl_cons, ih, hrow]
+    funext i j
+    by_cases hi : i ∈ R
+    · by_cases hj : j ∈ C <;> simp [hi, hj]
     · by_cases hia : i = a
       · subst hia; simp [hi]
       · simp [hi, hia]

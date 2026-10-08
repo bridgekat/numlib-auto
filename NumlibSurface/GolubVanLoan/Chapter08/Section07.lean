@@ -443,86 +443,40 @@ theorem gsvd_columns_and_pencil {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n)
       HasPencilEigenvector (Aᵀ * A) (Bᵀ * B) ((α k / β k) ^ 2) (X.col k)) ∧
     ((∀ k : Fin n, β k ≠ 0) →
       pencilSpectrum (Aᵀ * A) (Bᵀ * B) = Set.range fun k : Fin n => (α k / β k) ^ 2) := by
-  -- `A X = U₁ D_A`, `B X = U₂ D_B`
-  have hAX : ∀ {m : ℕ} {M : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
-      {γ : ℕ → ℝ}, U ∈ orthogonalGroup (Fin m) ℝ → Uᵀ * M * X = rectDiagonal γ →
-      M * X = U * rectDiagonal γ := fun {m M U γ} hU h => by
-    rw [← h, ← Matrix.mul_assoc, ← Matrix.mul_assoc, (mem_orthogonalGroup_iff _ ℝ).1 hU,
-      Matrix.one_mul]
-  have hcol : ∀ {m : ℕ} (hm : n ≤ m) {M : Matrix (Fin m) (Fin n) ℝ}
-      {U : Matrix (Fin m) (Fin m) ℝ} {γ : ℕ → ℝ}, M * X = U * rectDiagonal γ →
-      ∀ k : Fin n, M *ᵥ X.col k = γ k • U.col (Fin.castLE hm k) := fun {m} hm {M U γ} h k => by
-    rw [← col_mul_eq_mulVec_col, h]
-    ext i
-    simp only [col_apply, mul_apply, rectDiagonal_apply, Pi.smul_apply, smul_eq_mul]
-    rw [Finset.sum_eq_single (Fin.castLE hm k)]
-    · simp [mul_comm]
-    · intro j _ hj
-      have hj' : ¬ ((j : ℕ) = k) := fun h => hj (Fin.ext (by simp [h]))
-      simp [hj']
-    · simp
-  -- the Gram matrices
+  have hstar : ∀ {m : ℕ} (U : Matrix (Fin m) (Fin m) ℝ), star U = Uᵀ := fun U => by
+    rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
+  have hA' : star U₁ * A * X = rectDiagonal α := by rwa [hstar]
+  have hB' : star U₂ * B * X = rectDiagonal β := by rwa [hstar]
+  -- the Gram matrices, by `Matrix.conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal`
   have hgram : ∀ {m : ℕ} (hm : n ≤ m) {M : Matrix (Fin m) (Fin n) ℝ}
       {U : Matrix (Fin m) (Fin m) ℝ} {γ : ℕ → ℝ}, U ∈ orthogonalGroup (Fin m) ℝ →
-      M * X = U * rectDiagonal γ →
-      Xᵀ * (Mᵀ * M) * X = diagonal fun k : Fin n => γ k ^ 2 := fun {m} hm {M U γ} hU h => by
-    have e : Xᵀ * (Mᵀ * M) * X = (M * X)ᵀ * (M * X) := by
-      simp only [transpose_mul, Matrix.mul_assoc]
-    rw [e, h, transpose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Uᵀ,
-      (mem_orthogonalGroup_iff' _ ℝ).1 hU, Matrix.one_mul, ← conjTranspose_eq_transpose_of_trivial,
-      conjTranspose_rectDiagonal_mul_self]
+      star U * M * X = rectDiagonal γ →
+      Xᴴ * (Mᴴ * M) * X = diagonal fun k : Fin n => γ k ^ 2 := fun {m} hm {M U γ} hU h => by
+    rw [conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal hm hU h]
     congr 1
     funext k
-    simp [show (k : ℕ) < m by omega, sq]
-  have hAX' := hAX hU₁ hA
-  have hBX' := hAX hU₂ hB
+    rw [star_trivial, sq]
+  have hgA := hgram hm₁ hU₁ hA'
+  have hgB := hgram hm₂ hU₂ hB'
+  simp only [conjTranspose_eq_transpose_of_trivial] at hgA hgB
   have hpen : ∀ l : ℝ, Xᵀ * (Aᵀ * A - l • (Bᵀ * B)) * X =
       diagonal fun k : Fin n => α k ^ 2 - l * β k ^ 2 := fun l => by
-    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul, hgram hm₁ hU₁ hAX',
-      hgram hm₂ hU₂ hBX']
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul, hgA, hgB]
     ext i j
     by_cases h : i = j <;> simp [h]
   have hXu : IsUnit X := (isUnit_iff_isUnit_det X).2 hX
-  have hXt : IsUnit Xᵀ.det := by rw [det_transpose]; exact hX
-  refine ⟨fun k => ⟨hcol hm₁ hAX' k, hcol hm₂ hBX' k⟩, hpen, fun k hk => ?_, fun hβ => ?_⟩
-  · refine ⟨(linearIndependent_cols_iff_isUnit.2 hXu).ne_zero k, ?_⟩
-    set l := (α k / β k) ^ 2
-    have hzero : Xᵀ *ᵥ ((Aᵀ * A - l • (Bᵀ * B)) *ᵥ X.col k) = 0 := by
-      rw [← col_mul_eq_mulVec_col, ← col_mul_eq_mulVec_col, ← Matrix.mul_assoc, hpen l]
-      ext i
-      simp only [col_apply, diagonal_apply, Pi.zero_apply]
-      split_ifs with h
-      · subst h
-        simp only [l]
-        field_simp
-        ring
-      · rfl
-    have hinj := (Matrix.mulVec_injective_iff_isUnit).2 ((isUnit_iff_isUnit_det _).2 hXt)
-    have h0 := hinj (hzero.trans (mulVec_zero _).symm)
-    rw [sub_mulVec, smul_mulVec, sub_eq_zero] at h0
-    exact h0
-  · ext l
-    simp only [mem_pencilSpectrum_iff_det, Set.mem_range]
-    have hdet : (Aᵀ * A - l • (Bᵀ * B)).det * (X.det * X.det) =
-        ∏ k : Fin n, (α k ^ 2 - l * β k ^ 2) := by
-      have := congrArg det (hpen l)
-      rw [det_mul, det_mul, det_transpose, det_diagonal] at this
-      rw [← this]
-      ring
-    have hXX : X.det * X.det ≠ 0 := mul_ne_zero hX.ne_zero hX.ne_zero
-    constructor
-    · intro h
-      rw [h, zero_mul, eq_comm, Finset.prod_eq_zero_iff] at hdet
-      obtain ⟨k, -, hk⟩ := hdet
-      refine ⟨k, ?_⟩
-      have := hβ k
-      field_simp
-      linarith
-    · rintro ⟨k, rfl⟩
-      have hk : ∏ j : Fin n, (α j ^ 2 - (α k / β k) ^ 2 * β j ^ 2) = 0 :=
-        Finset.prod_eq_zero (Finset.mem_univ k) (by have := hβ k; field_simp; ring)
-      rw [hk] at hdet
-      exact (mul_eq_zero.1 hdet).resolve_right hXX
+  have hgA' : Xᴴ * (Aᵀ * A) * X = diagonal fun k : Fin n => α k ^ 2 := by
+    rwa [conjTranspose_eq_transpose_of_trivial]
+  have hgB' : Xᴴ * (Bᵀ * B) * X = diagonal fun k : Fin n => β k ^ 2 := by
+    rwa [conjTranspose_eq_transpose_of_trivial]
+  refine ⟨fun k => ⟨mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal hm₁
+      (mul_eq_mul_of_star_mul_mul_eq hU₁ hA') k,
+    mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal hm₂
+      (mul_eq_mul_of_star_mul_mul_eq hU₂ hB') k⟩, hpen, fun k hk => ?_, fun hβ => ?_⟩
+  · rw [div_pow]
+    exact hasPencilEigenvector_col_of_conj_diagonal hXu hgA' hgB' (pow_ne_zero 2 hk)
+  · rw [pencilSpectrum_eq_range_of_conj_diagonal hXu hgA' hgB' fun k => pow_ne_zero 2 (hβ k)]
+    simp only [div_pow]
 
 /-! ### §8.7.5 Computing the GSVD -/
 

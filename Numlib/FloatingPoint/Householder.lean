@@ -1428,25 +1428,30 @@ theorem extendByZero_dotProduct (v : {i // p i} → ℝ) (w : ι → ℝ) :
   rw [h2, add_zero]
   exact Finset.sum_congr rfl fun a _ => by rw [extendByZero_apply]
 
-/-- The reflector of the extended vector acts on the block as the reflector of the vector. -/
-private theorem one_sub_smul_vecMulVec_extendByZero_mulVec_apply (β : ℝ)
+/-- The reflector of the extended vector acts on the block as the reflector of the vector. Any
+`Fintype` instance on the subtype is allowed (e.g. `List.Subtype.fintype` for `p = (· ∈ l)`). -/
+theorem one_sub_smul_vecMulVec_extendByZero_mulVec_apply [hp : Fintype {i // p i}] (β : ℝ)
     (v : {i // p i} → ℝ) (w : ι → ℝ) (a : {i // p i}) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) *ᵥ w) (a : ι) =
       ((1 - β • vecMulVec v v) *ᵥ fun b : {i // p i} => w b) a := by
+  obtain rfl : hp = Subtype.fintype p := Subsingleton.elim _ _
   rw [one_sub_smul_vecMulVec_mulVec_apply, one_sub_smul_vecMulVec_mulVec_apply,
     extendByZero_apply, extendByZero_dotProduct]
 
 /-- The reflector of the extended vector fixes the coordinates off the block. -/
-private theorem one_sub_smul_vecMulVec_extendByZero_mulVec_apply_of_not (β : ℝ)
+theorem one_sub_smul_vecMulVec_extendByZero_mulVec_apply_of_not (β : ℝ)
     (v : {i // p i} → ℝ) (w : ι → ℝ) {r : ι} (hr : ¬ p r) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) *ᵥ w) r = w r := by
   rw [one_sub_smul_vecMulVec_mulVec_apply, extendByZero_apply_of_not v hr]
   ring
 
-/-- The extension of an orthogonal reflector of the block by the identity is orthogonal. -/
-private theorem one_sub_smul_vecMulVec_extendByZero_mem_orthogonalGroup {β : ℝ}
-    {v : {i // p i} → ℝ} (h : (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup {i // p i} ℝ) :
+/-- The extension of an orthogonal reflector of the block by the identity is orthogonal. Any
+`Fintype` instance on the subtype is allowed. -/
+theorem one_sub_smul_vecMulVec_extendByZero_mem_orthogonalGroup [hp : Fintype {i // p i}]
+    {β : ℝ} {v : {i // p i} → ℝ}
+    (h : (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup {i // p i} ℝ) :
     (1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) ∈ Matrix.orthogonalGroup ι ℝ := by
+  obtain rfl : hp = Subtype.fintype p := Subsingleton.elim _ _
   rw [mem_orthogonalGroup_iff, transpose_one_sub_smul_vecMulVec,
     one_sub_smul_vecMulVec_mul_self] at h ⊢
   have h0 : (β * (β * (v ⬝ᵥ v) - 2)) • vecMulVec v v = 0 := by simpa using h
@@ -1501,8 +1506,8 @@ theorem norm_toLp_eq_restrict [hp : Fintype {i // p i}] {d : ι → ℝ}
 /-- **An update of a block of coordinates, against the extended reflector**: if `z` agrees with
 `w` off the block and, on the block, is entrywise at least as close to `P (w|_block)` as a vector
 `y` with `‖y - P (w|_block)‖₂ ≤ ε ‖w|_block‖₂`, then `‖z - P' w‖₂ ≤ ε ‖w‖₂` for the extension
-`P'` of `P = 1 - β v vᵀ` by the identity. -/
-private theorem norm_sub_one_sub_smul_vecMulVec_extendByZero_mulVec_le {β ε : ℝ}
+`P'` of `P = 1 - β v vᵀ` by the identity. Any `Fintype` instance on the subtype is allowed. -/
+theorem norm_sub_one_sub_smul_vecMulVec_extendByZero_mulVec_le [Fintype {i // p i}] {β ε : ℝ}
     (hε : 0 ≤ ε) {v : {i // p i} → ℝ} {w z : ι → ℝ} {y : {i // p i} → ℝ}
     (hout : ∀ r, ¬ p r → z r = w r)
     (hin : ∀ a : {i // p i},

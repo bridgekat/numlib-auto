@@ -225,68 +225,9 @@ theorem jacobi_frobenius_dist {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {
         2 * A p q ^ 2 / jacobiCosSmall A p q ^ 2 := by
   rw [← jacobiRotation_eq_planeRotation_small, jacobiCosSmall_eq]
   change ‖jacobiStep A p q - A‖ ^ 2 = _
-  set B := jacobiStep A p q with hBdef
-  set C := jacobiCos A p q with hCdef
-  set S := jacobiSin A p q with hSdef
-  have hB : B = (planeRotation p q C S)ᵀ * A * planeRotation p q C S := rfl
-  have hcs : C ^ 2 + S ^ 2 = 1 := jacobiCos_sq_add_jacobiSin_sq A p q
-  have hqp : A q p = A p q := hA.apply p q
-  have hmem : ∀ i, i ∈ (Finset.univ.erase p).erase q → i ≠ p ∧ i ≠ q := fun i hi => by
-    simp only [Finset.mem_erase, Finset.mem_univ, and_true] at hi
-    exact ⟨hi.2, hi.1⟩
-  -- the entries of `B`
-  have hBij : ∀ i j, i ∈ (Finset.univ.erase p).erase q → j ∈ (Finset.univ.erase p).erase q →
-      B i j = A i j := fun i j hi hj => by
-    rw [hB]
-    exact conj_planeRotation_apply_of_ne hpq A (hmem i hi).1 (hmem i hi).2 (hmem j hj).1
-      (hmem j hj).2
-  have hBip : ∀ i ∈ (Finset.univ.erase p).erase q, B i p = C * A i p + S * A i q := fun i hi => by
-    rw [hB]; exact conj_planeRotation_apply_col_j hpq A (hmem i hi).1 (hmem i hi).2
-  have hBiq : ∀ i ∈ (Finset.univ.erase p).erase q, B i q = -S * A i p + C * A i q :=
-    fun i hi => by rw [hB]; exact conj_planeRotation_apply_col_k hpq A (hmem i hi).1 (hmem i hi).2
-  have hBpj : ∀ j ∈ (Finset.univ.erase p).erase q, B p j = C * A p j + S * A q j := fun j hj => by
-    rw [hB]; exact conj_planeRotation_apply_row_j hpq A (hmem j hj).1 (hmem j hj).2
-  have hBqj : ∀ j ∈ (Finset.univ.erase p).erase q, B q j = -S * A p j + C * A q j :=
-    fun j hj => by rw [hB]; exact conj_planeRotation_apply_row_k hpq A (hmem j hj).1 (hmem j hj).2
-  have hBpq : B p q = 0 := jacobiStep_apply_eq_zero A hA hpq
-  have hBqp : B q p = 0 := ((isSymm_jacobiStep hA p q).apply p q).trans hBpq
-  have hBpp : B p p - A p p = jacobiTan A p q * A p q := jacobiStep_apply_jj_sub A hA hpq
-  have hBqq : B q q - A q q = -(jacobiTan A p q * A p q) := jacobiStep_apply_kk_sub A hA hpq
-  -- `c² = 1 / (1 + t²)`
-  have hC2 : 2 * A p q ^ 2 / C ^ 2 = 2 * A p q ^ 2 * (1 + jacobiTan A p q ^ 2) := by
-    have hpos : 0 < 1 + jacobiTan A p q ^ 2 := by positivity
-    have : C ^ 2 = 1 / (1 + jacobiTan A p q ^ 2) := by
-      rw [hCdef, jacobiCos, div_pow, one_pow, Real.sq_sqrt hpos.le]
-    rw [this]
-    field_simp
-  -- split every sum over `Fin n` at `p` and `q`
-  have hsplit : ∀ h : Fin n → ℝ,
-      ∑ j, h j = h p + h q + ∑ j ∈ (Finset.univ.erase p).erase q, h j := fun h => by
-    rw [← Finset.add_sum_erase Finset.univ h (Finset.mem_univ p),
-      ← Finset.add_sum_erase (Finset.univ.erase p) h
-        (Finset.mem_erase.2 ⟨hpq.symm, Finset.mem_univ q⟩)]
-    ring
   rw [frobenius_norm_sq_eq_sum_sq]
   simp only [Matrix.sub_apply, Real.norm_eq_abs, sq_abs]
-  rw [Finset.sum_congr rfl fun i _ => hsplit (fun j => (B i j - A i j) ^ 2),
-    hsplit (fun i => (B i p - A i p) ^ 2 + (B i q - A i q) ^ 2 +
-      ∑ j ∈ (Finset.univ.erase p).erase q, (B i j - A i j) ^ 2)]
-  have h1 : ∑ i ∈ (Finset.univ.erase p).erase q, ((B i p - A i p) ^ 2 + (B i q - A i q) ^ 2 +
-      ∑ j ∈ (Finset.univ.erase p).erase q, (B i j - A i j) ^ 2) =
-      (2 - 2 * C) * ∑ i ∈ (Finset.univ.erase p).erase q, (A i p ^ 2 + A i q ^ 2) := by
-    rw [Finset.mul_sum]
-    refine Finset.sum_congr rfl fun i hi => ?_
-    rw [Finset.sum_eq_zero fun j hj => by rw [hBij i j hi hj]; ring, hBip i hi, hBiq i hi]
-    linear_combination (A i p ^ 2 + A i q ^ 2) * hcs
-  have h2 : ∑ j ∈ (Finset.univ.erase p).erase q, (B p j - A p j) ^ 2 +
-      ∑ j ∈ (Finset.univ.erase p).erase q, (B q j - A q j) ^ 2 =
-      (2 - 2 * C) * ∑ i ∈ (Finset.univ.erase p).erase q, (A i p ^ 2 + A i q ^ 2) := by
-    rw [← Finset.sum_add_distrib, Finset.mul_sum]
-    refine Finset.sum_congr rfl fun j hj => ?_
-    rw [hBpj j hj, hBqj j hj, hA.apply j p, hA.apply j q]
-    linear_combination (A j p ^ 2 + A j q ^ 2) * hcs
-  rw [h1, hBpp, hBqq, hBpq, hBqp, hqp, hC2]
-  linear_combination h2
+  exact sum_sq_jacobiStep_sub A hA hpq
 
 end Frobenius
 
@@ -830,96 +771,6 @@ theorem algorithm_8_5_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (t
 end Frobenius
 
 /-! ### §8.5.6 Block Jacobi procedures -/
-
-/-- The off-diagonal mass of a `2 × 2` block matrix: that of the diagonal blocks plus the full mass
-of the off-diagonal blocks. -/
-private theorem offDiagNormSq_fromBlocks {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq κ₁]
-    [Fintype κ₂] [DecidableEq κ₂] (P : Matrix κ₁ κ₁ ℝ) (Q : Matrix κ₁ κ₂ ℝ) (R : Matrix κ₂ κ₁ ℝ)
-    (S : Matrix κ₂ κ₂ ℝ) :
-    offDiagNormSq (fromBlocks P Q R S) = offDiagNormSq P + offDiagNormSq S +
-      ∑ i, ∑ j, Q i j ^ 2 + ∑ i, ∑ j, R i j ^ 2 := by
-  have h := offDiagNormSq_add_sum_diag_sq_real (fromBlocks P Q R S)
-  have hP := offDiagNormSq_add_sum_diag_sq_real P
-  have hS := offDiagNormSq_add_sum_diag_sq_real S
-  simp only [Fintype.sum_sum_type, fromBlocks_apply₁₁, fromBlocks_apply₁₂, fromBlocks_apply₂₁,
-    fromBlocks_apply₂₂, Finset.sum_add_distrib] at h
-  linarith
-
-/-- The off-diagonal mass after a rotation acting on a set of coordinates: if `V` is the
-orthogonal `W` on the coordinates `e(κ)` and the identity elsewhere, then
-`off(VᵀAV)² = off(A)² - off(A_e)² + off(Wᵀ A_e W)²` for the principal block `A_e` on `e(κ)`. -/
-private theorem offDiagNormSq_conj_block {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
-    [DecidableEq κ] (A : Matrix ι ι ℝ) {e : κ → ι} (he : Function.Injective e)
-    {W : Matrix κ κ ℝ} (hW : Wᵀ * W = 1) {V : Matrix ι ι ℝ} (hV : ∀ a b, V (e a) (e b) = W a b)
-    (hV' : ∀ i j, (i ∉ Set.range e ∨ j ∉ Set.range e) → V i j = (1 : Matrix ι ι ℝ) i j) :
-    offDiagNormSq (Vᵀ * A * V) = offDiagNormSq A - offDiagNormSq (A.submatrix e e) +
-      offDiagNormSq (Wᵀ * A.submatrix e e * W) := by
-  classical
-  let σ : κ ⊕ {i // i ∉ Set.range e} ≃ ι :=
-    (Equiv.sumCongr (Equiv.ofInjective e he) (Equiv.refl _)).trans
-      (Equiv.sumCompl (· ∈ Set.range e))
-  have hσl : ∀ a, σ (Sum.inl a) = e a := fun a => rfl
-  have hσr : ∀ b, σ (Sum.inr b) = b.1 := fun b => rfl
-  -- reindexing preserves the off-diagonal mass
-  have hre : ∀ M : Matrix ι ι ℝ, offDiagNormSq (M.submatrix σ σ) = offDiagNormSq M := fun M => by
-    have h1 := offDiagNormSq_add_sum_diag_sq_real (M.submatrix σ σ)
-    have h2 := offDiagNormSq_add_sum_diag_sq_real M
-    have e1 : ∑ i, (M.submatrix σ σ i i) ^ 2 = ∑ i, M i i ^ 2 :=
-      Equiv.sum_comp σ (fun i => M i i ^ 2)
-    have e2 : ∑ i, ∑ j, (M.submatrix σ σ i j) ^ 2 = ∑ i, ∑ j, M i j ^ 2 := by
-      rw [← Equiv.sum_comp σ (fun i => ∑ j, M i j ^ 2)]
-      exact Finset.sum_congr rfl fun i _ => Equiv.sum_comp σ (fun j => M (σ i) j ^ 2)
-    linarith
-  -- in the reindexed coordinates `V` is `diag(W, I)`
-  have hVs : V.submatrix σ σ = fromBlocks W 0 0 1 := by
-    ext i j
-    rcases i with a | b <;> rcases j with a' | b'
-    · exact hV a a'
-    · rw [submatrix_apply, hσl, hσr, hV' _ _ (Or.inr b'.2), fromBlocks_apply₁₂, Matrix.zero_apply,
-        one_apply_ne]
-      intro h
-      exact b'.2 ⟨a, h⟩
-    · rw [submatrix_apply, hσl, hσr, hV' _ _ (Or.inl b.2), fromBlocks_apply₂₁, Matrix.zero_apply,
-        one_apply_ne]
-      intro h
-      exact b.2 ⟨a', h.symm⟩
-    · rw [submatrix_apply, hσr, hσr, hV' _ _ (Or.inl b.2), fromBlocks_apply₂₂]
-      by_cases h : b = b'
-      · subst h
-        simp
-      · rw [one_apply_ne (fun h' => h (Subtype.ext h')), one_apply_ne h]
-  set U : Matrix (κ ⊕ {i // i ∉ Set.range e}) (κ ⊕ {i // i ∉ Set.range e}) ℝ :=
-    fromBlocks W 0 0 1 with hUdef
-  have hU : Uᵀ * U = 1 := by
-    rw [hUdef, fromBlocks_transpose, fromBlocks_multiply]
-    simp [hW, fromBlocks_one]
-  have hBs : (Vᵀ * A * V).submatrix σ σ = Uᵀ * A.submatrix σ σ * U := by
-    rw [← submatrix_mul_equiv _ _ _ σ _, ← submatrix_mul_equiv _ _ _ σ _, ← transpose_submatrix,
-      hVs]
-  have hblk : Uᵀ * A.submatrix σ σ * U =
-      fromBlocks (Wᵀ * (A.submatrix σ σ).toBlocks₁₁ * W) (Wᵀ * (A.submatrix σ σ).toBlocks₁₂)
-        ((A.submatrix σ σ).toBlocks₂₁ * W) (A.submatrix σ σ).toBlocks₂₂ := by
-    conv_lhs => rw [← fromBlocks_toBlocks (A.submatrix σ σ)]
-    simp only [hUdef, fromBlocks_transpose, fromBlocks_multiply, transpose_zero, transpose_one,
-      Matrix.zero_mul, Matrix.mul_zero, add_zero, zero_add, Matrix.one_mul, Matrix.mul_one]
-  have e1 := hre (Vᵀ * A * V)
-  rw [hBs] at e1
-  have e2 := hre A
-  have hT1 := offDiagNormSq_add_sum_diag_sq_real (Uᵀ * A.submatrix σ σ * U)
-  have hT2 := offDiagNormSq_add_sum_diag_sq_real (A.submatrix σ σ)
-  have hT3 := sum_sq_conj_eq (A.submatrix σ σ) U hU
-  have hd1 : ∑ i, (Uᵀ * A.submatrix σ σ * U) i i ^ 2 =
-      ∑ a, (Wᵀ * A.submatrix e e * W) a a ^ 2 + ∑ b, (A.submatrix σ σ).toBlocks₂₂ b b ^ 2 := by
-    rw [hblk, Fintype.sum_sum_type]
-    rfl
-  have hd2 : ∑ i, (A.submatrix σ σ) i i ^ 2 =
-      ∑ a, (A.submatrix e e) a a ^ 2 + ∑ b, (A.submatrix σ σ).toBlocks₂₂ b b ^ 2 := by
-    rw [Fintype.sum_sum_type]
-    rfl
-  have hW1 := offDiagNormSq_add_sum_diag_sq_real (Wᵀ * A.submatrix e e * W)
-  have hW2 := offDiagNormSq_add_sum_diag_sq_real (A.submatrix e e)
-  have hW3 := sum_sq_conj_eq (A.submatrix e e) W hW
-  linarith
 
 /-- **§8.5.6, the block-Jacobi identity.** Let `A` be symmetric, partitioned into `N × N` blocks
 of size `r` (rows and columns indexed by `(block, position) ∈ Fin N × Fin r`, so `A_pq` is

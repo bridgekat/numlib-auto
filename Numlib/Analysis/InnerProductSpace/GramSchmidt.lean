@@ -276,7 +276,7 @@ theorem inner_modifiedGramSchmidtSweep_self {q : ℕ → E}
 /-- The rank-one term of the classical Gram–Schmidt formula, written with the normalized
 vectors: `⟪gramSchmidtNormed f i, x⟫ • gramSchmidtNormed f i` is the orthogonal projection of `x`
 on the line through `gramSchmidt f i`. -/
-private theorem inner_gramSchmidtNormed_smul_self (f : ι → E) (i : ι) (x : E) :
+theorem inner_gramSchmidtNormed_smul_self (f : ι → E) (i : ι) (x : E) :
     inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i =
       (inner 𝕜 (gramSchmidt 𝕜 f i) x / (‖gramSchmidt 𝕜 f i‖ : 𝕜) ^ 2) • gramSchmidt 𝕜 f i := by
   rw [gramSchmidtNormed, inner_smul_left, smul_smul, RCLike.conj_inv, RCLike.conj_ofReal]

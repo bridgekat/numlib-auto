@@ -76,6 +76,12 @@ id = "foldl_update_of_nodup"
 id = "foldl_update_eq_ite"
 
 [[node]]
+id = "foldl_foldl_update_update_of_nodup"
+
+[[node]]
+id = "foldl_foldl_update_update_eq_ite"
+
+[[node]]
 id = "exists_foldl_update_apply_of_pairwise_rel"
 
 [[node]]

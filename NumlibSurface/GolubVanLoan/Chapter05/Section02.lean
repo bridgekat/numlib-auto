@@ -29,6 +29,9 @@ The backward error of Algorithm 5.2.1 is also stated with its reflector data
 (`householderQRStep_rounding_data`, `algorithm_5_2_1_rounding_data`), the form §5.3.3 consumes.
 Beside Algorithm 5.2.5 live the two Givens sweeps of §6.5 (`givensHessenbergSweep`,
 `givensVectorSweep`, with the exact step `givensPairStep`), shared by the updating procedures.
+Classical and modified Gram–Schmidt compute, for every `A`, the backbone's Gram–Schmidt factors
+`Matrix.gramSchmidtQ`, `Matrix.gramSchmidtR` (`classicalGramSchmidt_eq_gramSchmidt`,
+`algorithm_5_2_6_eq_gramSchmidt`); their QR specifications are `Matrix.isThinQR_gramSchmidtQ`.
 
 ## Not formalized
 
@@ -542,13 +545,13 @@ theorem householderQRStep_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIde
     exact hvi
   set K := 18 * o.length + 31 with hK
   -- the exact vector, extended by zero off `o`
-  set v' : Fin m → ℝ := fun i => if h : i ∈ o then v ⟨i, h⟩ else 0 with hv'
-  have hv'o : (fun i : {i // i ∈ o} => v' i) = v := funext fun i => by simp [hv', i.2]
-  have hv'out : ∀ i, i ∉ o → v' i = 0 := fun i hi => by simp [hv', hi]
+  set v' : Fin m → ℝ := extendByZero (· ∈ o) v with hv'
+  have hv'o : (fun i : {i // i ∈ o} => v' i) = v := funext fun i => extendByZero_apply v i
+  have hv'out : ∀ i, i ∉ o → v' i = 0 := fun i hi => extendByZero_apply_of_not v hi
   have hvv' : ∀ i, IsRelPert fp.u K (v' i) (vβ.1 i) := fun i => by
     by_cases hi : i ∈ o
-    · have := hv ⟨i, hi⟩
-      simpa [hv', hi] using this
+    · rw [show v' i = v ⟨i, hi⟩ from extendByZero_apply v ⟨i, hi⟩]
+      exact hv ⟨i, hi⟩
     · rw [hv'out i hi, hvout i hi]
       exact ⟨0, by simpa using gamma_nonneg hu0 (hle K (by omega)), by ring⟩
   have hdot' : v' ⬝ᵥ v' = v ⬝ᵥ v := by rw [dotProduct_eq_dotProduct_subtype o hv'out, hv'o]
@@ -560,17 +563,10 @@ theorem householderQRStep_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIde
     mul_le_mul_of_nonneg_left (gamma_mono hu0 (by omega) hu) (by norm_num)
   have hε0 : 0 ≤ 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) := by
     have := gamma_nonneg hu0 hu; positivity
-  -- the exact reflector on `ℝ^m`
+  -- the exact reflector on `ℝ^m`: the block reflector extended by the identity
   set P : Matrix (Fin m) (Fin m) ℝ := 1 - bb • vecMulVec v' v' with hP
-  have hPO : P ∈ orthogonalGroup (Fin m) ℝ := by
-    by_cases hv0 : v = 0
-    · have : v' = 0 := funext fun i => by simp [hv', hv0]
-      rw [hP, this, vecMulVec_zero, smul_zero, sub_zero]
-      exact one_mem _
-    · obtain ⟨p, hp⟩ := Function.ne_iff.1 hv0
-      refine one_sub_smul_vecMulVec_mem_orthogonalGroup ?_
-      rw [hdot']
-      exact beta_mul_eq_zero_of_mem_orthogonalGroup hp hO
+  have hPO : P ∈ orthogonalGroup (Fin m) ℝ :=
+    one_sub_smul_vecMulVec_extendByZero_mem_orthogonalGroup hO
   set B'' := B'.updateCol k fun i => if (k : ℕ) < i then vβ.1 i else B' i k with hB''
   have hB''q : ∀ i (q : Fin n), q ≠ k → B'' i q = B' i q := fun i q hq => by
     simp only [hB'', updateCol_ne hq]
@@ -627,40 +623,27 @@ theorem householderQRStep_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIde
           hBout i q (Or.inr hq'), sub_self]
     rw [hzero, toLp_zero, norm_zero]
     exact mul_nonneg hε0 (norm_nonneg _)
-  · -- a column of the current block
+  · -- a column of the current block, by the backbone's block-reflector bound
     have hq : q ∈ indexFrom n k := mem_indexFrom.2 hqk
-    have hRcol : ∀ r, R r q = B r q := fun r => by
-      rw [hRe, ite_eq_right (by omega)]
-    set e : {i // i ∈ o} → ℝ :=
-      (B'.submatrix (Subtype.val : {i // i ∈ o} → Fin m)
-          (Subtype.val : {q // q ∈ indexFrom n k} → Fin n) -
-        (1 - bb • vecMulVec v v) * B.submatrix Subtype.val Subtype.val).col ⟨q, hq⟩ with he
-    have hPx : ∀ i (hi : i ∈ o), (P *ᵥ fun r => R r q) i =
-        ((1 - bb • vecMulVec v v) *ᵥ fun r : {r // r ∈ o} => B r q) ⟨i, hi⟩ := fun i hi => by
-      rw [hP, one_sub_smul_vecMulVec_mulVec_apply_subtype o hv'out, dite_eq_left hi, hv'o]
-      simp only [hRcol]
-    set D := (R' - P * R).col q with hD
-    have hDout : ∀ i, i ∉ o → D i = 0 := fun i hi => by
+    have hRcol : (fun r : {r // r ∈ o} => R r q) = fun r : {r // r ∈ o} => B r q :=
+      funext fun r => by rw [hRe, ite_eq_right (by omega)]
+    have hcol : (R' - P * R).col q = (fun i => R' i q) - P *ᵥ fun r => R r q := rfl
+    rw [hcol, show R.col q = fun r => R r q from rfl]
+    refine norm_sub_one_sub_smul_vecMulVec_extendByZero_mulVec_le (p := (· ∈ o))
+      (y := fun a => B' a q) hε0 (fun i hi => ?_) (fun a => ?_) ?_
+    · -- off the block both arrays keep the entry
       have hik : (i : ℕ) < k := by rw [ho, mem_indexFrom] at hi; omega
-      have h1 : (P * R) i q = B i q := by
-        rw [hPR, hP, one_sub_smul_vecMulVec_mulVec_apply, hv'out i hi, mul_zero, zero_mul,
-          sub_zero, hRcol]
-      have h2 : R' i q = B i q := by
-        rw [hR'e, ite_eq_right (by omega)]
-        by_cases h : q = k
-        · subst h
-          rw [hB''k, ite_eq_right (by omega)]
-          exact hBout i _ (Or.inl hi)
-        · rw [hB''q i q h]
-          exact hBout i q (Or.inl hi)
-      change R' i q - (P * R) i q = 0
-      rw [h1, h2, sub_self]
-    have hDin : ∀ i (hi : i ∈ o), |D i| ≤ |e ⟨i, hi⟩| := fun i hi => by
-      have hki : (k : ℕ) ≤ i := mem_indexFrom.1 hi
-      have heq : e ⟨i, hi⟩ = B' i q - ((1 - bb • vecMulVec v v) *ᵥ
-          fun r : {r // r ∈ o} => B r q) ⟨i, hi⟩ := rfl
-      change |R' i q - (P * R) i q| ≤ _
-      rw [hPR, hPx i hi]
+      change R' i q = R i q
+      rw [hRe, ite_eq_right (by omega), hR'e, ite_eq_right (by omega)]
+      by_cases h : q = k
+      · subst h
+        rw [hB''k, ite_eq_right (by omega)]
+        exact hBout i _ (Or.inl hi)
+      · rw [hB''q i q h]
+        exact hBout i q (Or.inl hi)
+    · -- on the block the stored entries are at least as close as the computed ones
+      obtain ⟨i, hi⟩ := a
+      rw [hRcol]
       by_cases hqk' : q = k
       · subst hqk'
         by_cases hik : (q : ℕ) < i
@@ -677,24 +660,16 @@ theorem householderQRStep_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIde
               0 := by
             refine (congrFun hmul ⟨i, hi⟩).trans ?_
             simp [Pi.single_eq_of_ne hne']
+          change |R' i q - _| ≤ _
           rw [hR'e, ite_eq_left ⟨by omega, hik⟩, hx0, sub_zero, abs_zero]
           exact abs_nonneg _
-        · rw [hR'e, ite_eq_right (by omega), hB''k, ite_eq_right hik, heq]
-      · rw [hR'e, ite_eq_right (by omega), hB''q i q hqk', heq]
-    have hBsub := norm_toLp_restrict_le (p := (· ∈ o)) (fun r => B r q)
-    have hRc : R.col q = fun r => B r q := funext hRcol
-    calc ‖(toLp 2 D : EuclideanSpace ℝ (Fin m))‖
-        = ‖(toLp 2 (fun i : {i // i ∈ o} => D i) : EuclideanSpace ℝ {i // i ∈ o})‖ :=
-          norm_toLp_eq_restrict (p := (· ∈ o)) hDout
-      _ ≤ ‖(toLp 2 e : EuclideanSpace ℝ {i // i ∈ o})‖ :=
-          norm_toLp_le_of_abs_le fun i => hDin i i.2
-      _ ≤ 3 * gamma fp.u (3 * K + o.length + 3) *
-          ‖(toLp 2 (fun r : {r // r ∈ o} => B r q) : EuclideanSpace ℝ {i // i ∈ o})‖ :=
-          hcolb ⟨q, hq⟩
-      _ ≤ 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) *
-          ‖(toLp 2 (R.col q) : EuclideanSpace ℝ (Fin m))‖ := by
-          rw [hRc]
-          exact mul_le_mul hε hBsub (norm_nonneg _) hε0
+        · change |R' i q - _| ≤ _
+          rw [hR'e, ite_eq_right (by omega), hB''k, ite_eq_right hik]
+      · change |R' i q - _| ≤ _
+        rw [hR'e, ite_eq_right (by omega), hB''q i q hqk']
+    · -- the block bound of `householderApplyLeft_rounding`
+      rw [hRcol]
+      exact (hcolb ⟨q, hq⟩).trans (mul_le_mul_of_nonneg_right hε (norm_nonneg _))
 
 /-- The exact reflectors `1 - β_j v_j v_jᵀ` of reflector data `(v, β)`. -/
 noncomputable def dataReflector (v : ℕ → Fin m → ℝ) (β : ℕ → ℝ) (j : ℕ) :
@@ -2346,13 +2321,9 @@ theorem foldl_updateRow_update_eq {α : Type*} (g : Fin n → α) (k : Fin n) (l
     (R : Matrix (Fin n) (Fin n) α) :
     l.foldl (fun (R : Matrix (Fin n) (Fin n) α) i => R.updateRow i (Function.update (R i) k (g i)))
       R = of fun i j => if j = k ∧ i ∈ l then g i else R i j := by
-  induction l generalizing R with
-  | nil => ext i j; simp
-  | cons a l ih =>
-    rw [List.foldl_cons, ih]
-    ext i j
-    simp only [of_apply, updateRow_apply, Function.update_apply, List.mem_cons]
-    by_cases hj : j = k <;> by_cases hi : i ∈ l <;> by_cases hia : i = a <;> simp_all
+  refine (List.foldl_foldl_update_update_eq_ite (fun i _ => g i) l [k] R).trans ?_
+  ext i j
+  simp only [List.mem_singleton, and_comm, of_apply]
 
 /-- The CGS residual `z = a_k - ∑_{i<k} (q_iᵀ a_k) q_i`. -/
 noncomputable def cgsResidual (Q : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
@@ -2441,194 +2412,91 @@ theorem cgsStep_pure (A : Matrix (Fin m) (Fin n) ℝ)
     refine Finset.sum_congr rfl fun i hi => ?_
     rw [ite_eq_left (Finset.mem_filter.1 hi).2]
 
-/-- The invariant of classical Gram–Schmidt after `k` steps. -/
-private def CGSInvariant (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ)
-    (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) : Prop :=
-  (∀ i j : Fin n, (i : ℕ) < k → (j : ℕ) < k →
-      st.1.col i ⬝ᵥ st.1.col j = if i = j then 1 else 0) ∧
-    (∀ j : Fin n, (j : ℕ) < k → A.col j = ∑ i, st.2 i j • st.1.col i) ∧
-    (∀ i j : Fin n, j < i → st.2 i j = 0) ∧
-    (∀ j : Fin n, (j : ℕ) < k → 0 < st.2 j j) ∧
-    (∀ j : Fin n, k ≤ (j : ℕ) → st.1.col j = 0 ∧ ∀ i, st.2 i j = 0) ∧
-    (∀ j : Fin n, (j : ℕ) < k → st.1.col j ∈ Submodule.span ℝ (Aᵀ '' {i | (i : ℕ) < k}))
+/-- The state of classical Gram–Schmidt after `k` steps: the first `k` columns of the backbone's
+Gram–Schmidt factors `Matrix.gramSchmidtQ`, `Matrix.gramSchmidtR`, zero elsewhere. -/
+private noncomputable def cgsState (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) :
+    Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ :=
+  (of fun p j => if (j : ℕ) < k then gramSchmidtQ A p j else 0,
+    of fun i j => if (j : ℕ) < k then gramSchmidtR A i j else 0)
 
-/-- One step of classical Gram–Schmidt preserves the invariant (full column rank). -/
-private theorem cgsInvariant_step {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
-    {st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ} (k : Fin n)
-    (h : CGSInvariant A k st) : CGSInvariant A (k + 1) (Id.run (cgsStep pure A st k)) := by
-  obtain ⟨Q, R⟩ := st
-  obtain ⟨hon, hcol, hlow, hpos, hzero, hspan⟩ := h
-  simp only at hon hcol hlow hpos hzero hspan
+/-- **One step of classical Gram–Schmidt computes the next column of the backbone's Gram–Schmidt
+factors**: the CGS residual against the first `k` columns is `Matrix.gramSchmidtResidual`. -/
+private theorem cgsStep_cgsState (A : Matrix (Fin m) (Fin n) ℝ) (k : Fin n) :
+    Id.run (cgsStep pure A (cgsState A k) k) = cgsState A (k + 1) := by
   rw [cgsStep_pure]
-  dsimp only
-  set z := cgsResidual Q A k with hz
-  set ρ := √(z ⬝ᵥ z) with hρ
-  -- the residual is orthogonal to the previous columns
-  have hperp : ∀ j : Fin n, (j : ℕ) < k → Q.col j ⬝ᵥ z = 0 := by
-    intro j hj
-    rw [hz, cgsResidual, dotProduct_sub, dotProduct_sum]
-    rw [Finset.sum_congr rfl fun i hi => by
-      rw [dotProduct_smul, hon j i hj (by simpa using hi), smul_eq_mul]]
-    simp only [mul_ite, mul_one, mul_zero]
-    rw [Finset.sum_ite_eq, ite_eq_left (by simpa using hj), sub_self]
-  -- the residual is nonzero, by independence
-  have hz0 : z ≠ 0 := by
-    intro h0
-    have hmem : A.col k ∈ Submodule.span ℝ (Aᵀ '' {i | (i : ℕ) < k}) := by
-      have : A.col k = ∑ i ∈ Finset.univ.filter (· < k), (Q.col i ⬝ᵥ A.col k) • Q.col i := by
-        rw [← sub_eq_zero]; exact h0
-      rw [this]
-      exact Submodule.sum_mem _ fun i hi =>
-        Submodule.smul_mem _ _ (hspan i (by simpa using hi))
-    exact hA.notMem_span_image (s := {i | (i : ℕ) < k}) (x := k) (by simp) hmem
-  have hzz : 0 < z ⬝ᵥ z := lt_of_le_of_ne (by rw [dotProduct_self_eq_norm_sq]; positivity)
-    (fun e => hz0 (dotProduct_self_eq_zero.1 e.symm))
-  have hρ0 : 0 < ρ := Real.sqrt_pos.2 hzz
-  have hρρ : ρ * ρ = z ⬝ᵥ z := Real.mul_self_sqrt hzz.le
-  have hcolQ : ∀ j : Fin n, (Q.updateCol k (ρ⁻¹ • z)).col j = if j = k then ρ⁻¹ • z else Q.col j :=
-    fun j => by
-      ext p
-      by_cases hj : j = k
-      · subst hj; simp
-      · simp [hj]
-  have hlt : ∀ j : Fin n, (j : ℕ) < k + 1 → j ≠ k → (j : ℕ) < k := fun j hj hjk => by
-    have : (j : ℕ) ≠ k := fun e => hjk (Fin.ext e)
-    omega
-  have hspan_mono : Submodule.span ℝ (Aᵀ '' {i : Fin n | (i : ℕ) < k}) ≤
-      Submodule.span ℝ (Aᵀ '' {i : Fin n | (i : ℕ) < k + 1}) :=
-    Submodule.span_mono (Set.image_mono fun i (hi : (i : ℕ) < k) => by
-      change (i : ℕ) < k + 1; omega)
-  refine ⟨fun i j hi hj => ?_, fun j hj => ?_, fun i j hij => ?_, fun j hj => ?_,
-    fun j hj => ?_, fun j hj => ?_⟩
-  · -- orthonormality
-    rw [hcolQ, hcolQ]
-    by_cases hik : i = k <;> by_cases hjk : j = k
-    · subst hik; subst hjk
-      simp only [↓reduceIte, dotProduct_smul, smul_dotProduct, smul_eq_mul, ← hρρ]
-      field_simp
-    · subst hik
-      simp only [↓reduceIte, hjk, Ne.symm hjk, smul_dotProduct, smul_eq_mul]
-      rw [dotProduct_comm, hperp j (hlt j hj hjk), mul_zero]
-    · subst hjk
-      simp only [↓reduceIte, hik, dotProduct_smul, smul_eq_mul]
-      rw [hperp i (hlt i hi hik), mul_zero]
-    · simp only [hik, hjk, ↓reduceIte]
-      exact hon i j (hlt i hi hik) (hlt j hj hjk)
-  · -- the columns of `A`
+  set Q := (cgsState A k).1 with hQ
+  have hQc : ∀ i : Fin n, i < k → Q.col i = (gramSchmidtQ A).col i := fun i hi => by
+    ext p
+    simp only [hQ, cgsState, col_apply, of_apply, ite_eq_left_iff]
+    exact fun h => absurd hi h
+  have hres : cgsResidual Q A k = gramSchmidtResidual A k := by
+    rw [cgsResidual, gramSchmidtResidual, Finset.filter_gt_eq_Iio]
+    congr 1
+    refine Finset.sum_congr rfl fun i hi => ?_
+    rw [hQc i (Finset.mem_Iio.1 hi), gramSchmidtR_apply_eq_dotProduct]
+  rw [hres, ← col_gramSchmidtQ_eq_inv_sqrt_smul, ← gramSchmidtR_apply_self_eq_sqrt]
+  refine Prod.ext ?_ ?_
+  · ext p j
+    simp only [cgsState, updateCol_apply, of_apply]
     by_cases hjk : j = k
     · subst hjk
-      have hterm : ∀ i : Fin n, (of fun i j' => if j' = j ∧ i < j then Q.col i ⬝ᵥ A.col j
-            else if j' = j ∧ i = j then ρ else R i j' : Matrix (Fin n) (Fin n) ℝ) i j •
-            (if i = j then ρ⁻¹ • z else Q.col i) =
-          (if i < j then (Q.col i ⬝ᵥ A.col j) • Q.col i else 0) + (if i = j then z else 0) := by
-        intro i
-        simp only [of_apply, true_and]
-        rcases lt_trichotomy i j with hij | hij | hij
-        · simp [hij, ne_of_lt hij]
-        · subst hij
-          simp only [lt_self_iff_false, ↓reduceIte, smul_smul, mul_inv_cancel₀ hρ0.ne', one_smul,
-            zero_add]
-        · have hne : i ≠ j := ne_of_gt hij
-          simp only [not_lt.2 hij.le, ↓reduceIte, hne, add_zero]
-          rw [(hzero j le_rfl).2 i, zero_smul]
-      simp only [hcolQ]
-      rw [Finset.sum_congr rfl fun i _ => hterm i, Finset.sum_add_distrib, Finset.sum_ite_eq',
-        ite_eq_left (Finset.mem_univ _), ← Finset.sum_filter, hz, cgsResidual]
-      abel
-    · have hj' := hlt j hj hjk
-      rw [hcol j hj']
-      refine Finset.sum_congr rfl fun i _ => ?_
-      simp only [of_apply, hjk, false_and, ↓reduceIte, hcolQ]
-      by_cases hik : i = k
-      · subst hik
-        rw [hlow i j (by exact_mod_cast hj'), zero_smul, zero_smul]
-      · rw [ite_eq_right hik]
-  · -- zeros below the diagonal
-    simp only [of_apply]
-    split_ifs with h1 h2
-    · exact absurd (h1.1 ▸ h1.2) (not_lt.2 hij.le)
-    · exact absurd (h2.1.trans h2.2.symm ▸ hij) (lt_irrefl _)
-    · exact hlow i j hij
-  · -- positive diagonal
-    simp only [of_apply]
+      simp
+    · have : (j : ℕ) < k + 1 ↔ (j : ℕ) < k := by
+        have : (j : ℕ) ≠ k := fun e => hjk (Fin.ext e)
+        omega
+      simp [hjk, this, hQ, cgsState]
+  · ext i j
+    simp only [cgsState, of_apply]
     by_cases hjk : j = k
-    · subst hjk; simp only [lt_self_iff_false, and_false, ↓reduceIte, and_self]; exact hρ0
-    · simp only [hjk, false_and, ↓reduceIte]; exact hpos j (hlt j hj hjk)
-  · -- the unprocessed columns
-    have hjk : j ≠ k := fun e => by rw [e] at hj; omega
-    refine ⟨by rw [hcolQ]; simp only [hjk, ↓reduceIte]; exact (hzero j (by omega)).1,
-      fun i => ?_⟩
-    simp only [of_apply, hjk, false_and, ↓reduceIte]
-    exact (hzero j (by omega)).2 i
-  · -- the span
-    rw [hcolQ]
-    by_cases hjk : j = k
-    · simp only [hjk, ↓reduceIte]
-      rw [hz, cgsResidual]
-      refine Submodule.smul_mem _ _ (Submodule.sub_mem _ ?_ ?_)
-      · exact Submodule.subset_span ⟨k, by simp, rfl⟩
-      · exact Submodule.sum_mem _ fun i hi =>
-          Submodule.smul_mem _ _ (hspan_mono (hspan i (by simpa using hi)))
-    · simp only [hjk, ↓reduceIte]
-      exact hspan_mono (hspan j (hlt j hj hjk))
+    · subst hjk
+      rcases lt_trichotomy i j with hij | hij | hij
+      · simp only [true_and, hij, ↓reduceIte, lt_add_one]
+        rw [hQc i hij, gramSchmidtR_apply_eq_dotProduct]
+      · subst hij
+        simp
+      · simp [hij.ne', not_lt.2 hij.le, gramSchmidtR_apply_of_lt A hij]
+    · have : (j : ℕ) < k + 1 ↔ (j : ℕ) < k := by
+        have : (j : ℕ) ≠ k := fun e => hjk (Fin.ext e)
+        omega
+      simp [hjk, this]
 
-/-- **§5.2.7, classical Gram–Schmidt computes the thin QR factorization**: for `A` of full column
-rank, the exact output `(Q, R)` satisfies `A = QR`, `QᵀQ = I`, `R` upper triangular with positive
-diagonal. -/
-theorem classicalGramSchmidt_spec (A : Matrix (Fin m) (Fin n) ℝ) (hA : LinearIndependent ℝ Aᵀ) :
-    IsThinQR A (Id.run (classicalGramSchmidt pure A)).1 (Id.run (classicalGramSchmidt pure A)).2 ∧
-      ∀ j, 0 < (Id.run (classicalGramSchmidt pure A)).2 j j := by
-  have hall : ∀ j ≤ n, CGSInvariant A j (((List.finRange n).take j).foldl
-      (fun st k => Id.run (cgsStep pure A st k)) (0, 0)) := by
+/-- **Classical Gram–Schmidt computes the backbone's Gram–Schmidt factors** `Matrix.gramSchmidtQ`,
+`Matrix.gramSchmidtR`, for every `A` (a column with a vanishing residual gives a zero column of
+`Q` and a zero diagonal entry of `R`). -/
+theorem classicalGramSchmidt_eq_gramSchmidt (A : Matrix (Fin m) (Fin n) ℝ) :
+    Id.run (classicalGramSchmidt pure A) = (gramSchmidtQ A, gramSchmidtR A) := by
+  have hall : ∀ j ≤ n, ((List.finRange n).take j).foldl
+      (fun st k => Id.run (cgsStep pure A st k)) (0, 0) = cgsState A j := by
     intro j
     induction j with
     | zero =>
       intro _
-      refine ⟨fun i _ hi => absurd hi (Nat.not_lt_zero _),
-        fun j hj => absurd hj (Nat.not_lt_zero _), fun _ _ _ => rfl,
-        fun j hj => absurd hj (Nat.not_lt_zero _), fun j _ => ⟨?_, fun _ => rfl⟩,
-        fun j hj => absurd hj (Nat.not_lt_zero _)⟩
-      ext p; rfl
+      refine Prod.ext ?_ ?_ <;> ext <;> simp [cgsState]
     | succ j ih =>
       intro hj
       rw [List.take_succ_eq_append_getElem (by simpa using hj), List.foldl_append,
-        List.foldl_cons, List.foldl_nil]
-      have h := cgsInvariant_step hA ⟨j, by omega⟩ (ih (by omega))
-      simpa using h
-  obtain ⟨hon, hcol, hlow, hpos, -, -⟩ := hall n le_rfl
-  rw [List.take_of_length_le (by simp)] at hon hcol hlow hpos
-  have hprog : Id.run (classicalGramSchmidt pure A) =
-      (List.finRange n).foldl (fun st k => Id.run (cgsStep pure A st k)) (0, 0) := by
-    rw [classicalGramSchmidt, List.idRun_foldlM]
-  rw [hprog]
-  refine ⟨⟨?_, ?_, fun i j hij => hlow i j hij⟩, fun j => hpos j j.isLt⟩
-  · ext p j
-    have := congrFun (hcol j j.isLt) p
-    rw [Matrix.mul_apply, show A p j = A.col j p from rfl, this, Finset.sum_apply]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    simp [mul_comm]
-  · ext i j
-    have := hon i j i.isLt j.isLt
-    simp only [Matrix.mul_apply, conjTranspose_apply, star_trivial]
-    rw [one_apply, ← this]
-    rfl
+        List.foldl_cons, List.foldl_nil, ih (by omega)]
+      simpa using cgsStep_cgsState A ⟨j, by omega⟩
+  have h := hall n le_rfl
+  rw [List.take_of_length_le (by simp)] at h
+  rw [classicalGramSchmidt, List.idRun_foldlM, h]
+  refine Prod.ext ?_ ?_ <;> ext <;> simp [cgsState]
+
+/-- **§5.2.7, classical Gram–Schmidt computes the thin QR factorization**: for `A` of full column
+rank, the exact output `(Q, R)` satisfies `A = QR`, `QᵀQ = I`, `R` upper triangular with positive
+diagonal. The program refines the backbone's Gram–Schmidt factorization
+(`classicalGramSchmidt_eq_gramSchmidt`, `Matrix.isThinQR_gramSchmidtQ`). -/
+theorem classicalGramSchmidt_spec (A : Matrix (Fin m) (Fin n) ℝ) (hA : LinearIndependent ℝ Aᵀ) :
+    IsThinQR A (Id.run (classicalGramSchmidt pure A)).1 (Id.run (classicalGramSchmidt pure A)).2 ∧
+      ∀ j, 0 < (Id.run (classicalGramSchmidt pure A)).2 j j := by
+  rw [classicalGramSchmidt_eq_gramSchmidt]
+  exact ⟨isThinQR_gramSchmidtQ hA, gramSchmidtR_apply_self_pos hA⟩
 
 /-- A loop subtracting `q_p c` from each listed entry of a vector, once each. -/
 theorem foldl_update_sub_mul (a₀ q : Fin m → ℝ) (c : ℝ) {l : List (Fin m)} (hl : l.Nodup) :
     l.foldl (fun (y : Fin m → ℝ) p => Function.update y p (y p - q p * c)) a₀ =
-      fun p => if p ∈ l then a₀ p - q p * c else a₀ p := by
-  induction l generalizing a₀ with
-  | nil => funext p; simp
-  | cons a l ih =>
-    rcases List.nodup_cons.1 hl with ⟨ha, hl'⟩
-    rw [List.foldl_cons, ih _ hl']
-    funext p
-    by_cases hp : p ∈ l
-    · have hpa : p ≠ a := fun e => ha (e ▸ hp)
-      simp [hp, hpa]
-    · by_cases hpa : p = a
-      · subst hpa; simp [hp]
-      · simp [hp, hpa]
+      fun p => if p ∈ l then a₀ p - q p * c else a₀ p :=
+  List.foldl_update_of_nodup hl (fun p y => y p - q p * c) (fun _ _ _ _ _ h => by rw [h]) a₀
 
 /-- The exact inner step of MGS. -/
 theorem mgsInner_pure (q : Fin m → ℝ) (k : Fin n)
@@ -2708,238 +2576,130 @@ theorem mgsStep_pure
   simp only [List.mem_filter, List.mem_finRange, decide_eq_true_eq, true_and]
   rfl
 
-/-- The invariant of MGS after `k` steps (working array `W`, `Q`, `R`). -/
-private def MGSInvariant (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ)
-    (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :
-    Prop :=
-  (∀ i j : Fin n, (i : ℕ) < k → (j : ℕ) < k →
-      st.2.1.col i ⬝ᵥ st.2.1.col j = if i = j then 1 else 0) ∧
-    (∀ j : Fin n, (j : ℕ) < k → A.col j = ∑ i, st.2.2 i j • st.2.1.col i) ∧
-    (∀ j : Fin n, k ≤ (j : ℕ) → A.col j = st.1.col j + ∑ i, st.2.2 i j • st.2.1.col i) ∧
-    (∀ i j : Fin n, (i : ℕ) < k → k ≤ (j : ℕ) → st.2.1.col i ⬝ᵥ st.1.col j = 0) ∧
-    (∀ i j : Fin n, j < i → st.2.2 i j = 0) ∧
-    (∀ i : Fin n, k ≤ (i : ℕ) → (∀ j, st.2.2 i j = 0) ∧ st.2.1.col i = 0) ∧
-    (∀ j : Fin n, (j : ℕ) < k → 0 < st.2.2 j j) ∧
-    (∀ j : Fin n, (j : ℕ) < k → st.2.1.col j ∈ Submodule.span ℝ (Aᵀ '' {i | (i : ℕ) < k}))
+/-- The state of MGS after `k` steps: the working column `j` is `a_j - ∑ r_ij q_i` over the
+`i < k` with `i < j` (the Gram–Schmidt residual once `j < k`), and `Q`, `R` hold the first `k`
+columns, resp. rows, of the backbone's Gram–Schmidt factors, zero elsewhere. -/
+private noncomputable def mgsState (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) :
+    Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ :=
+  (of fun p j => (A.col j - ∑ i ∈ Finset.univ.filter (fun i : Fin n => (i : ℕ) < k ∧ i < j),
+      gramSchmidtR A i j • (gramSchmidtQ A).col i) p,
+    of fun p j => if (j : ℕ) < k then gramSchmidtQ A p j else 0,
+    of fun i j => if (i : ℕ) < k then gramSchmidtR A i j else 0)
 
-/-- One step of modified Gram–Schmidt preserves the invariant (full column rank). -/
-private theorem mgsInvariant_step {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
-    {st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ}
-    (k : Fin n) (h : MGSInvariant A k st) :
-    MGSInvariant A (k + 1) (Id.run (mgsStep pure st k)) := by
-  obtain ⟨W, Q, R⟩ := st
-  obtain ⟨hon, hcol, hwork, hperp, hlow, hzero, hpos, hspan⟩ := h
-  simp only at hon hcol hwork hperp hlow hzero hpos hspan
+/-- **One step of MGS computes the next row of the backbone's Gram–Schmidt factors**: the working
+column `k` is the Gram–Schmidt residual, and the coefficient `q_kᵀ w_j` taken against the current
+working column `w_j` is `r_kj = q_kᵀ a_j`, because `w_j - a_j` lies in the span of `q_0, …, q_{k-1}`
+(`Matrix.col_gramSchmidtQ_dotProduct_col`). -/
+private theorem mgsStep_mgsState (A : Matrix (Fin m) (Fin n) ℝ) (k : Fin n) :
+    Id.run (mgsStep pure (mgsState A k) k) = mgsState A (k + 1) := by
   rw [mgsStep_pure]
-  unfold MGSInvariant
-  dsimp only
-  set w := W.col k with hw
-  set ρ := √(w ⬝ᵥ w) with hρ
-  set q := ρ⁻¹ • w with hq
-  have hsumk : ∀ j : Fin n, ∑ i, R i j • Q.col i =
-      ∑ i ∈ Finset.univ.filter (fun i : Fin n => (i : ℕ) < k), R i j • Q.col i := by
-    intro j
-    rw [← Finset.sum_filter_add_sum_filter_not Finset.univ (fun i : Fin n => (i : ℕ) < k)]
-    rw [Finset.sum_eq_zero (s := Finset.univ.filter (fun i : Fin n => ¬ (i : ℕ) < k))
-      fun i hi => by rw [(hzero i (not_lt.1 (Finset.mem_filter.1 hi).2)).1 j, zero_smul],
-      add_zero]
-  -- the working column `k` is nonzero, by independence
-  have hw0 : w ≠ 0 := by
-    intro h0
-    have hmem : A.col k ∈ Submodule.span ℝ (Aᵀ '' {i | (i : ℕ) < k}) := by
-      rw [hwork k le_rfl, ← hw, h0, zero_add, hsumk]
-      exact Submodule.sum_mem _ fun i hi =>
-        Submodule.smul_mem _ _ (hspan i (Finset.mem_filter.1 hi).2)
-    exact hA.notMem_span_image (s := {i | (i : ℕ) < k}) (x := k) (by simp) hmem
-  have hww : 0 < w ⬝ᵥ w := lt_of_le_of_ne (by rw [dotProduct_self_eq_norm_sq]; positivity)
-    (fun e => hw0 (dotProduct_self_eq_zero.1 e.symm))
-  have hρ0 : 0 < ρ := Real.sqrt_pos.2 hww
-  have hρρ : ρ * ρ = w ⬝ᵥ w := Real.mul_self_sqrt hww.le
-  have hqq : q ⬝ᵥ q = 1 := by
-    rw [hq, dotProduct_smul, smul_dotProduct, smul_eq_mul, smul_eq_mul, ← hρρ]
-    field_simp
-  have hqperp : ∀ i : Fin n, (i : ℕ) < k → Q.col i ⬝ᵥ q = 0 := fun i hi => by
-    rw [hq, dotProduct_smul, hperp i k hi le_rfl, smul_zero]
-  have hρq : ρ • q = w := by rw [hq, smul_smul, mul_inv_cancel₀ hρ0.ne', one_smul]
-  have hcolQ : ∀ j : Fin n, (Q.updateCol k q).col j = if j = k then q else Q.col j := fun j => by
-    ext p
-    by_cases hj : j = k
-    · subst hj; simp
-    · simp [hj]
-  have hcolW : ∀ j : Fin n, (of fun p j => if k < j then W p j - (q ⬝ᵥ W.col j) * q p
-      else W p j : Matrix (Fin m) (Fin n) ℝ).col j =
-        if k < j then W.col j - (q ⬝ᵥ W.col j) • q else W.col j := fun j => by
-    ext p
-    by_cases hj : k < j <;> simp [hj]
-  have hRent : ∀ i j : Fin n, (of fun i j => if i = k ∧ k < j then q ⬝ᵥ W.col j
-      else (R.updateRow k (Function.update (R k) k ρ)) i j : Matrix (Fin n) (Fin n) ℝ) i j =
-        if i = k then (if k < j then q ⬝ᵥ W.col j else if j = k then ρ else R k j)
-        else R i j := fun i j => by
+  set W := (mgsState A k).1 with hW
+  have hWc : ∀ j, W.col j = A.col j - ∑ i ∈ Finset.univ.filter
+      (fun i : Fin n => (i : ℕ) < k ∧ i < j), gramSchmidtR A i j • (gramSchmidtQ A).col i :=
+    fun _ => rfl
+  have hWk : W.col k = gramSchmidtResidual A k := by
+    rw [hWc, gramSchmidtResidual]
+    congr 1
+    refine Finset.sum_congr ?_ fun _ _ => rfl
+    ext i
+    simp
+  rw [hWk, ← col_gramSchmidtQ_eq_inv_sqrt_smul, ← gramSchmidtR_apply_self_eq_sqrt]
+  set q := (gramSchmidtQ A).col k with hq
+  have hdot : ∀ j, q ⬝ᵥ W.col j = gramSchmidtR A k j := fun j => by
+    rw [hWc, dotProduct_sub, dotProduct_sum, Finset.sum_eq_zero fun i hi => ?_, sub_zero,
+      gramSchmidtR_apply_eq_dotProduct]
+    have hik : k ≠ i := fun e => by
+      have := (Finset.mem_filter.1 hi).2.1
+      rw [← e] at this
+      exact lt_irrefl _ this
+    rw [dotProduct_smul, hq, col_gramSchmidtQ_dotProduct_col A hik, smul_zero]
+  refine Prod.ext ?_ (Prod.ext ?_ ?_)
+  · ext p j
+    simp only [of_apply, hdot]
+    change _ = (A.col j - ∑ i ∈ Finset.univ.filter
+      (fun i : Fin n => (i : ℕ) < (k : ℕ) + 1 ∧ i < j),
+        gramSchmidtR A i j • (gramSchmidtQ A).col i) p
+    rw [show W p j = _ from congrFun (hWc j) p]
+    by_cases hkj : k < j
+    · have hF : Finset.univ.filter (fun i : Fin n => (i : ℕ) < (k : ℕ) + 1 ∧ i < j) =
+          insert k (Finset.univ.filter (fun i : Fin n => (i : ℕ) < k ∧ i < j)) := by
+        ext i
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert, Fin.lt_def,
+          Fin.ext_iff]
+        omega
+      simp only [hkj, ↓reduceIte]
+      rw [hF, Finset.sum_insert (by simp)]
+      simp only [Pi.sub_apply, Pi.add_apply, Pi.smul_apply, smul_eq_mul, Finset.sum_apply, hq,
+        col_apply]
+      ring
+    · have hF : Finset.univ.filter (fun i : Fin n => (i : ℕ) < (k : ℕ) + 1 ∧ i < j) =
+          Finset.univ.filter (fun i : Fin n => (i : ℕ) < k ∧ i < j) := by
+        ext i
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and, Fin.lt_def] at hkj ⊢
+        omega
+      simp only [hkj, ↓reduceIte]
+      rw [hF]
+  · ext p j
+    simp only [mgsState, updateCol_apply, of_apply]
+    by_cases hjk : j = k
+    · subst hjk
+      simp [hq]
+    · have : (j : ℕ) < k + 1 ↔ (j : ℕ) < k := by
+        have : (j : ℕ) ≠ k := fun e => hjk (Fin.ext e)
+        omega
+      simp [hjk, this]
+  · ext i j
+    simp only [mgsState, of_apply, hdot]
     by_cases hik : i = k
     · subst hik
-      by_cases hij : i < j
+      rcases lt_trichotomy i j with hij | hij | hij
       · simp [hij]
-      · by_cases hj : j = i <;> simp [hij, hj, updateRow_apply, Function.update_apply]
-    · simp [hik, updateRow_apply]
-  have hlt : ∀ j : Fin n, (j : ℕ) < k + 1 → j ≠ k → (j : ℕ) < k := fun j hj hjk => by
-    have : (j : ℕ) ≠ k := fun e => hjk (Fin.ext e)
-    omega
-  have hspan_mono : Submodule.span ℝ (Aᵀ '' {i : Fin n | (i : ℕ) < k}) ≤
-      Submodule.span ℝ (Aᵀ '' {i : Fin n | (i : ℕ) < k + 1}) :=
-    Submodule.span_mono (Set.image_mono fun i (hi : (i : ℕ) < k) => by
-      change (i : ℕ) < k + 1; omega)
-  refine ⟨fun i j hi hj => ?_, fun j hj => ?_, fun j hj => ?_, fun i j hi hj => ?_,
-    fun i j hij => ?_, fun i hi => ?_, fun j hj => ?_, fun j hj => ?_⟩
-  · -- orthonormality
-    rw [hcolQ, hcolQ]
-    by_cases hik : i = k <;> by_cases hjk : j = k
-    · subst hik; subst hjk; simp only [↓reduceIte]; exact hqq
-    · subst hik
-      simp only [↓reduceIte, hjk, Ne.symm hjk]
-      rw [dotProduct_comm, hqperp j (hlt j hj hjk)]
-    · subst hjk
-      simp only [↓reduceIte, hik]
-      exact hqperp i (hlt i hi hik)
-    · simp only [hik, hjk, ↓reduceIte]
-      exact hon i j (hlt i hi hik) (hlt j hj hjk)
-  · -- the finished columns
-    simp only [hcolQ, hRent]
-    by_cases hjk : j = k
-    · subst hjk
-      rw [hwork j le_rfl]
-      have hterm : ∀ i : Fin n, (if i = j then (if j < j then q ⬝ᵥ W.col j else if j = j then ρ
-          else R j j) else R i j) • (if i = j then q else Q.col i) =
-            (if i = j then w else 0) + R i j • Q.col i := by
-        intro i
-        by_cases hij : i = j
-        · subst hij
-          simp only [lt_self_iff_false, ↓reduceIte, hρq, (hzero i le_rfl).2, smul_zero,
-            add_zero]
-        · simp [hij]
-      rw [Finset.sum_congr rfl fun i _ => hterm i, Finset.sum_add_distrib, Finset.sum_ite_eq',
-        ite_eq_left (Finset.mem_univ _)]
-    · rw [hcol j (hlt j hj hjk)]
-      refine Finset.sum_congr rfl fun i _ => ?_
-      by_cases hik : i = k
-      · subst hik
-        have hji : j < i := hlt j hj hjk
-        simp only [↓reduceIte, not_lt.2 hji.le, hjk, hlow i j hji, zero_smul]
-      · simp [hik]
-  · -- the working columns
-    have hkj : k < j := by
-      change (k : ℕ) < j; omega
-    rw [hwork j (by omega), hcolW, ite_eq_left hkj]
-    simp only [hcolQ, hRent]
-    have hterm : ∀ i : Fin n, (if i = k then (if k < j then q ⬝ᵥ W.col j else if j = k then ρ
-        else R k j) else R i j) • (if i = k then q else Q.col i) =
-          (if i = k then (q ⬝ᵥ W.col j) • q else 0) + R i j • Q.col i := by
-      intro i
-      by_cases hik : i = k
-      · subst hik
-        simp only [↓reduceIte, hkj, (hzero i le_rfl).1, zero_smul, add_zero]
-      · simp [hik]
-    rw [Finset.sum_congr rfl fun i _ => hterm i, Finset.sum_add_distrib, Finset.sum_ite_eq',
-      ite_eq_left (Finset.mem_univ _)]
-    abel
-  · -- the working columns stay orthogonal to the finished ones
-    have hkj : k < j := by
-      change (k : ℕ) < j; omega
-    rw [hcolQ, hcolW, ite_eq_left hkj]
-    by_cases hik : i = k
-    · subst hik
-      simp only [↓reduceIte, dotProduct_sub, dotProduct_smul, hqq, smul_eq_mul, mul_one,
-        sub_self]
-    · simp only [hik, ↓reduceIte, dotProduct_sub, dotProduct_smul, smul_eq_mul]
-      rw [hperp i j (hlt i hi hik) (by omega), hqperp i (hlt i hi hik), mul_zero, sub_zero]
-  · -- zeros below the diagonal
-    rw [hRent]
-    by_cases hik : i = k
-    · subst hik
-      simp only [↓reduceIte, not_lt.2 hij.le, ne_of_lt hij, hlow i j hij]
-    · simp only [hik, ↓reduceIte]
-      exact hlow i j hij
-  · -- the unprocessed rows and columns
-    have hik : i ≠ k := fun e => by rw [e] at hi; omega
-    refine ⟨fun j => ?_, ?_⟩
-    · rw [hRent]; simp only [hik, ↓reduceIte]; exact (hzero i (by omega)).1 j
-    · rw [hcolQ]; simp only [hik, ↓reduceIte]; exact (hzero i (by omega)).2
-  · -- positive diagonal
-    rw [hRent]
-    by_cases hjk : j = k
-    · subst hjk; simp only [↓reduceIte, lt_self_iff_false]; exact hρ0
-    · simp only [hjk, ↓reduceIte]; exact hpos j (hlt j hj hjk)
-  · -- the span
-    rw [hcolQ]
-    by_cases hjk : j = k
-    · subst hjk
-      simp only [↓reduceIte]
-      rw [hq, hw]
-      refine Submodule.smul_mem _ _ ?_
-      have hwk : W.col j = A.col j - ∑ i, R i j • Q.col i := by
-        rw [hwork j le_rfl]; abel
-      rw [hwk, hsumk]
-      refine Submodule.sub_mem _ (Submodule.subset_span ⟨j, by simp, rfl⟩) ?_
-      exact Submodule.sum_mem _ fun i hi =>
-        Submodule.smul_mem _ _ (hspan_mono (hspan i (Finset.mem_filter.1 hi).2))
-    · simp only [hjk, ↓reduceIte]
-      exact hspan_mono (hspan j (hlt j hj hjk))
+      · subst hij
+        simp
+      · simp [not_lt.2 hij.le, hij.ne, gramSchmidtR_apply_of_lt A hij]
+    · have : (i : ℕ) < k + 1 ↔ (i : ℕ) < k := by
+        have : (i : ℕ) ≠ k := fun e => hik (Fin.ext e)
+        omega
+      simp [hik, this]
 
-/-- **Algorithm 5.2.6 (MGS) computes the thin QR factorization**: "Given `A ∈ ℝ^{m×n}` with
-`rank(A) = n`, the following algorithm computes the thin QR factorization `A = Q₁R₁` where
-`Q₁ ∈ ℝ^{m×n}` has orthonormal columns and `R₁ ∈ ℝ^{n×n}` is upper triangular" (with positive
-diagonal). Invariant: after step `k` the working column `j > k` is `a_j - ∑_{i≤k} r_ij q_i`,
-orthogonal to `q_0, …, q_k`. -/
-theorem algorithm_5_2_6_spec (A : Matrix (Fin m) (Fin n) ℝ) (hA : LinearIndependent ℝ Aᵀ) :
-    IsThinQR A (Id.run (algorithm_5_2_6 pure A)).1 (Id.run (algorithm_5_2_6 pure A)).2 ∧
-      ∀ j, 0 < (Id.run (algorithm_5_2_6 pure A)).2 j j := by
-  have hall : ∀ j ≤ n, MGSInvariant A j (((List.finRange n).take j).foldl
-      (fun st k => Id.run (mgsStep pure st k)) (A, 0, 0)) := by
+/-- **Algorithm 5.2.6 (MGS) computes the backbone's Gram–Schmidt factors** `Matrix.gramSchmidtQ`,
+`Matrix.gramSchmidtR`, for every `A`. -/
+theorem algorithm_5_2_6_eq_gramSchmidt (A : Matrix (Fin m) (Fin n) ℝ) :
+    Id.run (algorithm_5_2_6 pure A) = (gramSchmidtQ A, gramSchmidtR A) := by
+  have hall : ∀ j ≤ n, ((List.finRange n).take j).foldl
+      (fun st k => Id.run (mgsStep pure st k)) (A, 0, 0) = mgsState A j := by
     intro j
     induction j with
     | zero =>
       intro _
-      refine ⟨fun i _ hi => absurd hi (Nat.not_lt_zero _),
-        fun j hj => absurd hj (Nat.not_lt_zero _), fun j _ => ?_,
-        fun i _ hi => absurd hi (Nat.not_lt_zero _), fun _ _ _ => rfl,
-        fun i _ => ⟨fun _ => rfl, ?_⟩, fun j hj => absurd hj (Nat.not_lt_zero _),
-        fun j hj => absurd hj (Nat.not_lt_zero _)⟩
-      · simp only [List.take_zero, List.foldl_nil]
-        rw [Finset.sum_eq_zero fun i _ => by simp, add_zero]
-      · ext p; rfl
+      refine Prod.ext ?_ (Prod.ext ?_ ?_) <;> ext <;> simp [mgsState]
     | succ j ih =>
       intro hj
       rw [List.take_succ_eq_append_getElem (by simpa using hj), List.foldl_append,
-        List.foldl_cons, List.foldl_nil]
-      have h := mgsInvariant_step hA ⟨j, by omega⟩ (ih (by omega))
-      simpa using h
-  obtain ⟨hon, hcol, -, -, hlow, -, hpos, -⟩ := hall n le_rfl
-  rw [List.take_of_length_le (by simp)] at hon hcol hlow hpos
-  have hprog : Id.run (algorithm_5_2_6 pure A) =
-      (((List.finRange n).foldl (fun st k => Id.run (mgsStep pure st k)) (A, 0, 0)).2.1,
-        ((List.finRange n).foldl (fun st k => Id.run (mgsStep pure st k)) (A, 0, 0)).2.2) := by
-    simp only [algorithm_5_2_6, Id.run_bind, Id.run_pure, List.idRun_foldlM]
-  rw [hprog]
-  refine ⟨⟨?_, ?_, fun i j hij => hlow i j hij⟩, fun j => hpos j j.isLt⟩
-  · ext p j
-    have := congrFun (hcol j j.isLt) p
-    rw [Matrix.mul_apply, show A p j = A.col j p from rfl, this, Finset.sum_apply]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    simp [mul_comm]
-  · ext i j
-    have := hon i j i.isLt j.isLt
-    simp only [Matrix.mul_apply, conjTranspose_apply, star_trivial]
-    rw [one_apply, ← this]
-    rfl
+        List.foldl_cons, List.foldl_nil, ih (by omega)]
+      simpa using mgsStep_mgsState A ⟨j, by omega⟩
+  have h := hall n le_rfl
+  rw [List.take_of_length_le (by simp)] at h
+  simp only [algorithm_5_2_6, Id.run_bind, Id.run_pure, List.idRun_foldlM, h]
+  refine Prod.ext ?_ ?_ <;> ext <;> simp [mgsState]
+
+/-- **Algorithm 5.2.6 (MGS) computes the thin QR factorization**: "Given `A ∈ ℝ^{m×n}` with
+`rank(A) = n`, the following algorithm computes the thin QR factorization `A = Q₁R₁` where
+`Q₁ ∈ ℝ^{m×n}` has orthonormal columns and `R₁ ∈ ℝ^{n×n}` is upper triangular" (with positive
+diagonal). The program refines the backbone's Gram–Schmidt factorization
+(`algorithm_5_2_6_eq_gramSchmidt`, `Matrix.isThinQR_gramSchmidtQ`). -/
+theorem algorithm_5_2_6_spec (A : Matrix (Fin m) (Fin n) ℝ) (hA : LinearIndependent ℝ Aᵀ) :
+    IsThinQR A (Id.run (algorithm_5_2_6 pure A)).1 (Id.run (algorithm_5_2_6 pure A)).2 ∧
+      ∀ j, 0 < (Id.run (algorithm_5_2_6 pure A)).2 j j := by
+  rw [algorithm_5_2_6_eq_gramSchmidt]
+  exact ⟨isThinQR_gramSchmidtQ hA, gramSchmidtR_apply_self_pos hA⟩
 
 /-- **§5.2.8**: MGS is "a rearrangement of the calculation" of CGS — in exact arithmetic the two
-compute the same thin QR factorization of a full-column-rank matrix (`Matrix.IsThinQR.unique`). -/
-theorem algorithm_5_2_6_eq_classicalGramSchmidt (A : Matrix (Fin m) (Fin n) ℝ)
-    (hA : LinearIndependent ℝ Aᵀ) :
+compute the same pair, the backbone's Gram–Schmidt factors, for every `A` (no rank hypothesis:
+`algorithm_5_2_6_eq_gramSchmidt`, `classicalGramSchmidt_eq_gramSchmidt`). -/
+theorem algorithm_5_2_6_eq_classicalGramSchmidt (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_5_2_6 pure A) = Id.run (classicalGramSchmidt pure A) := by
-  obtain ⟨h₁, hd₁⟩ := algorithm_5_2_6_spec A hA
-  obtain ⟨h₂, hd₂⟩ := classicalGramSchmidt_spec A hA
-  obtain ⟨hQ, hR⟩ := h₁.unique h₂ hd₁ hd₂
-  exact Prod.ext hQ hR
+  rw [algorithm_5_2_6_eq_gramSchmidt, classicalGramSchmidt_eq_gramSchmidt]
 
 /-- The columns of the orthonormal factor of a thin QR factorization are orthonormal. -/
 theorem isThinQR_col_dotProduct_col {A Q : Matrix (Fin m) (Fin n) ℝ} {R : Matrix (Fin n) (Fin n) ℝ}
@@ -3377,19 +3137,8 @@ end Programs
 theorem foldl_update_sub_eq {ι : Type*} [DecidableEq ι] (h : ι → ℝ) {l : List ι}
     (hl : l.Nodup) (y₀ : ι → ℝ) :
     l.foldl (fun (y : ι → ℝ) k => Function.update y k (y k - h k)) y₀ =
-      fun k => if k ∈ l then y₀ k - h k else y₀ k := by
-  induction l generalizing y₀ with
-  | nil => funext k; simp
-  | cons a l ih =>
-    rcases List.nodup_cons.1 hl with ⟨ha, hl'⟩
-    rw [List.foldl_cons, ih hl']
-    funext k
-    by_cases hk : k ∈ l
-    · have hka : k ≠ a := fun e => ha (e ▸ hk)
-      simp [hk, hka]
-    · by_cases hka : k = a
-      · subst hka; simp [hk]
-      · simp [hk, hka]
+      fun k => if k ∈ l then y₀ k - h k else y₀ k :=
+  List.foldl_update_of_nodup hl (fun k y => y k - h k) (fun _ _ _ _ _ h => by rw [h]) y₀
 
 /-- The exact block update of one column. -/
 theorem wyApplyLeft_single {r : ℕ} (W Y : Matrix (Fin m) (Fin r) ℝ) (q : Fin n)
