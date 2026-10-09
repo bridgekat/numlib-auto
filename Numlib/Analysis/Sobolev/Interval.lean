@@ -54,7 +54,7 @@ the representative lemmas, stated on `[a, b]` rather than on the closure of an o
   corresponding predicate on functions, `SobolevInterval.deriv u j` the `j`-th weak derivative in
   `L²(a, b)`, and `SobolevInterval.seminorm m a b` the seminorm `|u|_{H^m} = ‖u^{(m)}‖_{L²}`;
 * `SobolevInterval.toContinuousMap hab`, the embedding `H^1(a, b) ↪ C[a, b]`, sending `u` to
-  its continuous representative, and `SobolevInterval.nodalCLM hab t ht`, the evaluation of that
+  its continuous representative, and `SobolevInterval.evalCLM hab c`, the evaluation of that
   representative at one point of `[a, b]` as a bounded linear functional;
 * `SobolevIntervalZero a b`, the space `H^1_0(a, b)`;
 * `SobolevInterval.derivCLM m a b`, weak differentiation `H^{m+1}(a, b) → H^m(a, b)`, and
@@ -262,8 +262,12 @@ export SobolevIntervalLp (fn fn_mk seminorm_le_norm fn_inclusionCLM norm_derivCL
 `SobolevIntervalLp.deriv u j`, with its codomain spelled `Lp ℝ 2 (volume.restrict (Ioo a b))`
 rather than `Lp ℝ 2 (volume.restrict ↑(Opens.Ioo a b))`. The two are definitionally equal, but
 the lemmas about `L²(a, b)` (`norm_sq_eq_integral_sq`, `ae_restrict_iff' measurableSet_Ioo`, …)
-rewrite only with the first spelling; this is the reason the basic lemmas about `deriv` are
-restated below, each a one-line instance of its `SobolevIntervalLp` counterpart. -/
+and the interval integrals of the consumers rewrite only with the first spelling; this is the
+reason the basic lemmas about `deriv` are restated below, each a one-line instance of its
+`SobolevIntervalLp` counterpart. (Making `Opens.Ioo` reducible does not remove the need: `rw`
+still fails to match `∫ x in Ioo a b` against `∫ x in ↑(Opens.Ioo a b)`, and rewriting the
+coercion away is blocked by the dependent `Lp` types; normalizing the spelling here, once, is what
+keeps every consumer on the `Set.Ioo` form.) -/
 abbrev deriv (u : SobolevInterval m a b) (j : Fin (m + 1)) : Lp ℝ 2 (volume.restrict (Ioo a b)) :=
   SobolevIntervalLp.deriv u j
 
@@ -626,16 +630,6 @@ theorem norm_toContinuousMap_le' (hab : a < b) :
       ≤ 1 / Real.sqrt (b - a) + Real.sqrt (b - a) :=
   ContinuousLinearMap.opNorm_le_bound _ (by positivity) (norm_toContinuousMap_le hab)
 
-/-- **Evaluation of the continuous representative** at a point of `[a, b]`, as a bounded linear
-functional on `H^1(a, b)`; it is what turns an argument about pointwise values into a linear one. -/
-def nodalCLM (hab : a < b) (t : ℝ) (ht : t ∈ Icc a b) :
-    SobolevInterval 1 a b →L[ℝ] ℝ :=
-  evalCLM hab ⟨t, ht⟩
-
-/-- Nodal evaluation is the continuous representative. -/
-@[simp]
-theorem nodalCLM_apply (hab : a < b) (t : ℝ) (ht : t ∈ Icc a b) (u : SobolevInterval 1 a b) :
-    nodalCLM hab t ht u = rep u t := rfl
 
 end SobolevInterval
 

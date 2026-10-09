@@ -731,8 +731,8 @@ theorem linearIndependent_hatElem (hab : a < b) (hx : Spline.IsPartition a b n x
   have hsub : (∑ i, g i • hatFunction hx hn (i : ℕ)) = 0 := by
     have := congrArg (Subtype.val) hg
     simpa [hatElem] using this
-  have hval := congrArg (SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.evalCLM hab ⟨_, node_mem_Icc hx hjn⟩) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.evalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
     (rep_hatFunction_node hx hn (i := (i : ℕ)) (j := (j : ℕ)) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -762,8 +762,8 @@ theorem hatBasis_repr (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 �
       = (v : SobolevInterval 1 a b) := by
     have := congrArg (Subtype.val) ((hatBasis hab hx hn).sum_repr v)
     simpa [hatElem] using this
-  have hval := congrArg (SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, SobolevInterval.nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.evalCLM hab ⟨_, node_mem_Icc hx hjn⟩) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, SobolevInterval.evalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg ((hatBasis hab hx hn).repr v i * ·)
     (rep_hatFunction_node hx hn (i := (i : ℕ)) (j := (j : ℕ)) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -796,8 +796,8 @@ theorem linearIndependent_hatElemZero (hab : a < b) (hx : Spline.IsPartition a b
   have hsub : (∑ i, g i • hatFunction hx hn ((i : ℕ) + 1)) = 0 := by
     have := congrArg (Subtype.val) hg
     simpa [hatElemZero] using this
-  have hval := congrArg (SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.evalCLM hab ⟨_, node_mem_Icc hx hjn⟩) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.evalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
     (rep_hatFunction_node hx hn (i := (i : ℕ) + 1) (j := (j : ℕ) + 1) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -1422,8 +1422,8 @@ theorem linearIndependent_hatElemH0 (hab : a < b) (hx : Spline.IsPartition a b n
   have hsub : (∑ i, g i • hatFunction hx hn ((i : ℕ) + 1)) = 0 := by
     have := congrArg (Subtype.val) hg
     simpa [hatElemH0] using this
-  have hval := congrArg (SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.evalCLM hab ⟨_, node_mem_Icc hx hjn⟩) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.evalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
     (rep_hatFunction_node hx hn (i := (i : ℕ) + 1) (j := (j : ℕ) + 1) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -1710,10 +1710,10 @@ theorem rep_sum_hatFunction (hab : a < b) (hx : Spline.IsPartition a b n x) (hn 
     (c : ℕ → ℝ) {j : ℕ} (hj : j ≤ n) :
     SobolevInterval.rep (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) (x j) = c j := by
   have h : SobolevInterval.rep (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) (x j)
-      = SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hj)
+      = SobolevInterval.evalCLM hab ⟨_, node_mem_Icc hx hj⟩
         (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) := rfl
   rw [h, map_sum]
-  simp only [map_smul, smul_eq_mul, SobolevInterval.nodalCLM_apply]
+  simp only [map_smul, smul_eq_mul, SobolevInterval.evalCLM_apply]
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (c i * ·)
     (rep_hatFunction_node hx hn (i := i) (j := j) hj)]
   simp [Finset.sum_ite_eq' (Finset.range (n + 1)) j, Nat.lt_succ_iff.2 hj]
@@ -2448,8 +2448,8 @@ theorem linearIndependent_quadraticElem (hab : a < b)
   have hsub : (∑ i, g i • quadraticShape hab hx hn (i : ℕ)) = 0 := by
     have := congrArg (Subtype.val) hg
     simpa [quadraticElem] using this
-  have hval := congrArg (SobolevInterval.nodalCLM hab _ hmem) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.evalCLM hab ⟨_, hmem⟩) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.evalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
     (rep_quadraticShape_node hab hx hn (i := (i : ℕ)) (l := (j : ℕ)) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -2624,11 +2624,11 @@ theorem rep_sum_quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n
       = ∑ i ∈ Finset.range (2 * n + 1), c i * quadShapeFun n x i t := by
   have h : SobolevInterval.rep
         (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) t
-      = SobolevInterval.nodalCLM hab t ht
+      = SobolevInterval.evalCLM hab ⟨t, ht⟩
         (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) :=
     rfl
   rw [h, map_sum]
-  simp only [map_smul, smul_eq_mul, SobolevInterval.nodalCLM_apply]
+  simp only [map_smul, smul_eq_mul, SobolevInterval.evalCLM_apply]
   exact Finset.sum_congr rfl fun i _ ↦ by rw [rep_quadraticShape hab hx hn i ht]
 
 /-- The representative of the quadratic interpolant is the nodal combination of the shape
