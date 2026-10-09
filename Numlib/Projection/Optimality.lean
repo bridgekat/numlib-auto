@@ -303,9 +303,10 @@ theorem unique {x' : E} (hx : IsMinError xstar x₀ K x) (hx' : IsMinError xstar
   exact (sub_eq_zero.1 (norm_eq_zero.1 this)).symm
 
 /-- [saad2003iterative], §8.3, and [choi2006iterative], *Iterative Methods for Singular Linear
-Equations*: minimal error over `x₀ + A† K` is Petrov–Galerkin with `L = K` (CGNE / Craig's method as
-a Petrov–Galerkin method). -/
-theorem isPetrovGalerkin_of_map_adjoint [FiniteDimensional 𝕜 E] {L : Submodule 𝕜 E}
+Equations*: minimal error over `x₀ + A† L` is Petrov–Galerkin with test space `L` (CGNE / Craig's
+method as a Petrov–Galerkin method), for a possibly rectangular `A : E →ₗ F`. -/
+theorem isPetrovGalerkin_of_map_adjoint {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
+    [FiniteDimensional 𝕜 E] [FiniteDimensional 𝕜 F] {A : E →ₗ[𝕜] F} {b : F} {L : Submodule 𝕜 F}
     (hK : K = L.map (LinearMap.adjoint A)) (hstar : A xstar = b) (hx : IsMinError xstar x₀ K x) :
     IsPetrovGalerkin A b x₀ K L x := by
   refine ⟨hx.mem, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩

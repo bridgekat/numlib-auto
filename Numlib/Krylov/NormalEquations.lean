@@ -19,13 +19,13 @@ A`, that is with `κ(A)²` in place of `κ(A)`
 `Krylov.CGNE.iterate` are the two recurrences as a program writes them — one application of `A` and
 one of `Aᴴ` per step, never forming a product — identified with the corresponding CG iterates.
 
-The operator may be rectangular, `A : E →ₗ F`, in the general lemmas and in the two recurrences
-(as in [golub2013matrix] Figure 11.3.1); the optimality statements are for `E = F`, the setting
-of `Krylov.IsMinResidual`. The adjoint enters as a *hypothesis* `∀ u v, ⟪Aᴴ u, v⟫ = ⟪u, A v⟫` on
-a second operator rather than as `LinearMap.adjoint A`, so that the module needs neither
-finite-dimensionality nor completeness;
-`LinearMap.adjoint_inner_left` and `ContinuousLinearMap.adjoint_inner_left` supply the hypothesis
-where those are available.
+The operator may be rectangular, `A : E →ₗ F`, throughout — the general lemmas, the two
+optimality properties, the convergence bound and the two recurrences — as in [golub2013matrix]
+§11.3.9 and Figure 11.3.1: CGNR is the normal-equation method for full-rank least squares, CGNE
+for consistent underdetermined systems. The adjoint enters as a *hypothesis*
+`∀ u v, ⟪Aᴴ u, v⟫ = ⟪u, A v⟫` on a second operator rather than as `LinearMap.adjoint A`, so that the
+module needs neither finite-dimensionality nor completeness; `LinearMap.adjoint_inner_left` and
+`ContinuousLinearMap.adjoint_inner_left` supply the hypothesis where those are available.
 -/
 
 open Krylov
@@ -110,8 +110,8 @@ end Adjoint
 
 section Optimality
 
-variable {A Astar : E →ₗ[𝕜] E}
-  (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (b x₀ : E)
+variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
+  (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (b : F) (x₀ : E)
 include hadj
 
 omit hadj in
@@ -153,7 +153,7 @@ The conclusion is `Krylov.IsMinError` over `𝒦_m(Aᴴ A, Aᴴ r₀)` and *not*
 extra application of the operator, since `IsMinErrorIterate B xstar x₀ m` minimizes over `x₀ + B
 𝒦_m(B, B (x* - x₀))`, which for `B = Aᴴ A` is `x₀ + 𝒦_m(Aᴴ A, Aᴴ A Aᴴ r₀)` — one step short of the
 space CGNE searches. -/
-theorem isMinError_of_isGalerkinIterate_comp_adjoint {u₀ u xstar : E} {m : ℕ}
+theorem isMinError_of_isGalerkinIterate_comp_adjoint {u₀ u : F} {xstar : E} {m : ℕ}
     (hx₀ : x₀ = Astar u₀) (hstar : A xstar = b)
     (hu : IsGalerkinIterate (A ∘ₗ Astar) b u₀ m u) :
     IsMinError xstar x₀ (subspace (Astar ∘ₗ A) (Astar (b - A x₀)) m)
@@ -186,8 +186,8 @@ end Optimality
 
 section Convergence
 
-variable {A Astar : E →ₗ[𝕜] E}
-  (hadj : ∀ u v : E, inner 𝕜 (Astar u) v = inner 𝕜 u (A v))
+variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
+  (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v))
 include hadj
 
 /-- The CG convergence bound transported to CGNR: with singular values in `[σmin, σmax]`, a
@@ -199,7 +199,7 @@ that squaring is the price of the normal equations, and it is the reason CGNR is
 ill-conditioned system. -/
 theorem IsMinResidual.norm_residual_le_of_adjoint_comp {smin smax : ℝ} (hs : 0 < smin)
     (hss : smin ≤ smax) (hB : (Astar ∘ₗ A).IsSymmetricBoundedBy (smin ^ 2) (smax ^ 2))
-    {b x₀ : E} {m : ℕ} {x xstar : E} (hstar : A xstar = b)
+    {b : F} {x₀ : E} {m : ℕ} {x xstar : E} (hstar : A xstar = b)
     (hx : IsMinResidual A b x₀ (subspace (Astar ∘ₗ A) (Astar (b - A x₀)) m) x) :
     ‖b - A x‖ ≤ 2 * ((smax / smin - 1) / (smax / smin + 1)) ^ m * ‖b - A x₀‖ := by
   have hgal : IsGalerkinIterate (Astar ∘ₗ A) (Astar b) x₀ m x :=

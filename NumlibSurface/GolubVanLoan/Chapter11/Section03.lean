@@ -80,7 +80,9 @@ quantities `q_j, α_j, β_j` (`j ≥ 1`) are the backbone's `Arnoldi.vec T r₀ 
   Hestenes–Stiefel programs.
 * `cg_relativeError_le`, `equation_11_3_27`: error estimates.
 * `energyFunctional_normalEquations`, `equation_11_3_28`, `cgne_isMinError`, `cgnr`, `cgnr_spec`,
-  `cgne`, `cgne_spec`: CGNR and CGNE.
+  `cgne`, `cgne_spec`: CGNR and CGNE; `cgnr_isMinResidual_of_injective` and
+  `cgne_isMinError_of_injective_transpose` are the remark after Figure 11.3.1, the two optimality
+  properties for a rectangular `A` (full column rank, resp. full row rank and a consistent system).
 
 ## Not formalized here
 
@@ -2596,42 +2598,71 @@ theorem energyFunctional_normalEquations {m : ℕ} (A : Matrix (Fin m) (Fin n) �
       real_inner_self_eq_norm_sq]
     ring
 
-/-- **(11.3.28)**, CGNR: "if we apply CG to the `AᵀAx = Aᵀb` problem, then at the `k`th step a
-vector `x_k` is produced that minimizes `φ_{AᵀA}(x) = ½‖Ax − b‖²₂ − ½bᵀb` over the affine space
-`S_k = x₀ + 𝒦(AᵀA, Aᵀr₀, k)`", `r₀ = b − Ax₀`, for nonsingular `A`. -/
-theorem equation_11_3_28 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b x₀ : 𝔼 n) (k : ℕ) :
+/-- **§11.3.9, CGNR on a rectangular system** (the remark after Figure 11.3.1: "The CGNR method can
+be applied if `A` is rectangular. Thus, it provides a normal equation framework for solving sparse,
+full rank, least squares problems"): for `A ∈ ℝ^{m×n}` of full column rank, CG applied to
+`AᵀAx = Aᵀb` produces at the `k`th step the minimizer of `‖b − Ax‖₂` over the affine space
+`x₀ + 𝒦(AᵀA, Aᵀr₀, k)` of (11.3.28), `r₀ = b − Ax₀`. -/
+theorem cgnr_isMinResidual_of_injective {m : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    (hA : Function.Injective (toEuclideanLin A)) (b : 𝔼 m) (x₀ : 𝔼 n) (k : ℕ) :
     IsMinResidual (toEuclideanLin A) b x₀
       (Krylov.subspace (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A)
         (toEuclideanLin Aᵀ (b - toEuclideanLin A x₀)) k)
       (CG.iterate (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A) (toEuclideanLin Aᵀ b) x₀ k).x := by
   have hadj := inner_transpose_apply A
-  have hinj : Function.Injective (toEuclideanLin A) := fun u v h => by
-    rw [← inv_apply_apply hA u, h, inv_apply_apply hA]
-  have hS := Krylov.adjoint_comp_isSymmetricCoercive_of_injective hadj hinj
+  have hS := Krylov.adjoint_comp_isSymmetricCoercive_of_injective hadj hA
   exact (Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual hadj b x₀ k _).1
     (CG.isGalerkinIterate _ x₀ hS k)
 
+/-- **(11.3.28)**, CGNR: "if we apply CG to the `AᵀAx = Aᵀb` problem, then at the `k`th step a
+vector `x_k` is produced that minimizes `φ_{AᵀA}(x) = ½‖Ax − b‖²₂ − ½bᵀb` over the affine space
+`S_k = x₀ + 𝒦(AᵀA, Aᵀr₀, k)`", `r₀ = b − Ax₀`, for nonsingular `A`; the rectangular case is
+`cgnr_isMinResidual_of_injective`. -/
+theorem equation_11_3_28 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b x₀ : 𝔼 n) (k : ℕ) :
+    IsMinResidual (toEuclideanLin A) b x₀
+      (Krylov.subspace (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A)
+        (toEuclideanLin Aᵀ (b - toEuclideanLin A x₀)) k)
+      (CG.iterate (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A) (toEuclideanLin Aᵀ b) x₀ k).x :=
+  cgnr_isMinResidual_of_injective (fun u v h => by
+    rw [← inv_apply_apply hA u, h, inv_apply_apply hA]) b x₀ k
+
+/-- **§11.3.9, CGNE on a rectangular system** (the remark after Figure 11.3.1: "The CGNE method can
+also be applied to rectangular problems, but the underlying system must be consistent"): for
+`A ∈ ℝ^{m×n}` of full row rank and a consistent system `Ax_* = b`, CG applied to the `y`-problem
+`AAᵀy = b` from `y₀`, with `x_k = Aᵀy_k`, produces the minimizer of `‖x − x_*‖₂` over the affine
+space `x₀ + 𝒦(AᵀA, Aᵀr₀, k)` of (11.3.28), `x₀ = Aᵀy₀`. Full row rank is what makes `AAᵀ`
+positive definite, so that CG on the `y`-problem is the method of this section. -/
+theorem cgne_isMinError_of_injective_transpose {m : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    (hA : Function.Injective (toEuclideanLin Aᵀ)) {b : 𝔼 m} {xs : 𝔼 n}
+    (hxs : toEuclideanLin A xs = b) (y₀ : 𝔼 m) (k : ℕ) :
+    IsMinError xs (toEuclideanLin Aᵀ y₀)
+      (Krylov.subspace (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A)
+        (toEuclideanLin Aᵀ (b - toEuclideanLin A (toEuclideanLin Aᵀ y₀))) k)
+      (toEuclideanLin Aᵀ (CG.iterate (toEuclideanLin A ∘ₗ toEuclideanLin Aᵀ) b y₀ k).x) := by
+  have hadj := inner_transpose_apply A
+  -- `AAᵀ` is symmetric positive definite: `(Aᵀ)ᵀ = A` is the adjoint of `Aᵀ`
+  have hadj' : ∀ (u : 𝔼 n) (v : 𝔼 m), ⟪toEuclideanLin A u, v⟫ = ⟪u, toEuclideanLin Aᵀ v⟫ :=
+    fun u v => by
+      have := inner_transpose_apply Aᵀ u v
+      rwa [transpose_transpose] at this
+  have hS := Krylov.adjoint_comp_isSymmetricCoercive_of_injective hadj' hA
+  have h := Krylov.isMinError_of_isGalerkinIterate_comp_adjoint hadj b (toEuclideanLin Aᵀ y₀)
+    rfl hxs (CG.isGalerkinIterate b y₀ hS k)
+  rwa [← map_add, add_sub_cancel] at h
+
 /-- **§11.3.9**, CGNE (Craig's method): "if we apply the CG method to the `y`-problem `AAᵀy = b`,
 … setting `x_k = Aᵀy_k`, … `x = x_k` minimizes `‖x − x_*‖₂` over the affine space defined in
-(11.3.28)", for nonsingular `A`, `x₀ = Aᵀy₀`. -/
+(11.3.28)", for nonsingular `A`, `x₀ = Aᵀy₀`; the rectangular case is
+`cgne_isMinError_of_injective_transpose`. -/
 theorem cgne_isMinError {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) {b xs : 𝔼 n}
     (hxs : toEuclideanLin A xs = b) (y₀ : 𝔼 n) (k : ℕ) :
     IsMinError xs (toEuclideanLin Aᵀ y₀)
       (Krylov.subspace (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A)
         (toEuclideanLin Aᵀ (b - toEuclideanLin A (toEuclideanLin Aᵀ y₀))) k)
       (toEuclideanLin Aᵀ (CG.iterate (toEuclideanLin A ∘ₗ toEuclideanLin Aᵀ) b y₀ k).x) := by
-  have hadj := inner_transpose_apply A
   have hBT : IsUnit Aᵀ := (isUnit_transpose A).2 hA
-  have hinj : Function.Injective (toEuclideanLin Aᵀ) := fun u v h => by
-    rw [← inv_apply_apply hBT u, h, inv_apply_apply hBT]
-  -- `AAᵀ` is symmetric positive definite: `(Aᵀ)ᵀ = A` is the adjoint of `Aᵀ`
-  have hadj' : ∀ u v : 𝔼 n, ⟪toEuclideanLin A u, v⟫ = ⟪u, toEuclideanLin Aᵀ v⟫ := fun u v => by
-    have := inner_transpose_apply Aᵀ u v
-    rwa [transpose_transpose] at this
-  have hS := Krylov.adjoint_comp_isSymmetricCoercive_of_injective hadj' hinj
-  have h := Krylov.isMinError_of_isGalerkinIterate_comp_adjoint hadj b (toEuclideanLin Aᵀ y₀)
-    rfl hxs (CG.isGalerkinIterate b y₀ hS k)
-  rwa [← map_add, add_sub_cancel] at h
+  exact cgne_isMinError_of_injective_transpose (fun u v h => by
+    rw [← inv_apply_apply hBT u, h, inv_apply_apply hBT]) hxs y₀ k
 
 variable {M : Type → Type} [Monad M]
 

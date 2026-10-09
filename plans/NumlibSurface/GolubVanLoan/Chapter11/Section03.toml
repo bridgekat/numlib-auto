@@ -193,6 +193,14 @@ id = "cgne_isMinError"
 source = 'Golub–Van Loan, Matrix Computations, §11.3.9'
 
 [[node]]
+id = "cgnr_isMinResidual_of_injective"
+source = 'Golub–Van Loan, Matrix Computations, §11.3.9 (remark after Figure 11.3.1)'
+
+[[node]]
+id = "cgne_isMinError_of_injective_transpose"
+source = 'Golub–Van Loan, Matrix Computations, §11.3.9 (remark after Figure 11.3.1)'
+
+[[node]]
 id = "cgnr"
 source = 'Golub–Van Loan, Matrix Computations, Figure 11.3.1'
 

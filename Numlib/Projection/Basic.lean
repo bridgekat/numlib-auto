@@ -19,9 +19,17 @@ Well-posedness ([saad2003iterative] Prop 5.1), the residual formula ([saad2003it
 exactness on invariant subspaces ([saad2003iterative] Prop 5.6), the matrix representation
 ([saad2003iterative] (5.7)) and the general error bound ([saad2003iterative] Thm 5.7) are stated
 here; optimality characterizations are in `Optimality.lean`.
+
+The operator may be rectangular, `A : E →ₗ F` with `b ∈ F`, in the Petrov–Galerkin and
+minimal-residual specifications and in everything that does not compare `A x` with `x`: the trial
+space `K` lives in `E` and the test space `L` in `F`, which is the setting of the normal-equation
+methods on a rectangular system ([golub2013matrix] §11.3.9) and of least-squares Krylov methods.
+The Galerkin specification `L = K` and the statements about coercivity or invariant subspaces need
+`E = F`.
 -/
 
-variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+  [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
 
 namespace Submodule
 
@@ -71,7 +79,8 @@ end Submodule
 
 /-- Petrov–Galerkin specification: `x ∈ x₀ + K` and `b - A x ⟂ L` ([saad2003iterative],
 (5.1)–(5.2)). -/
-structure IsPetrovGalerkin (A : E →ₗ[𝕜] E) (b x₀ : E) (K L : Submodule 𝕜 E) (x : E) : Prop where
+structure IsPetrovGalerkin (A : E →ₗ[𝕜] F) (b : F) (x₀ : E) (K : Submodule 𝕜 E) (L : Submodule 𝕜 F)
+    (x : E) : Prop where
   mem : x - x₀ ∈ K
   orth : b - A x ∈ Lᗮ
 
@@ -80,7 +89,7 @@ abbrev IsGalerkin (A : E →ₗ[𝕜] E) (b x₀ : E) (K : Submodule 𝕜 E) (x 
   IsPetrovGalerkin A b x₀ K K x
 
 /-- Minimal-residual specification: `x ∈ x₀ + K` minimizes `‖b - A x‖`. -/
-structure IsMinResidual (A : E →ₗ[𝕜] E) (b x₀ : E) (K : Submodule 𝕜 E) (x : E) : Prop where
+structure IsMinResidual (A : E →ₗ[𝕜] F) (b : F) (x₀ : E) (K : Submodule 𝕜 E) (x : E) : Prop where
   mem : x - x₀ ∈ K
   min : ∀ y, y - x₀ ∈ K → ‖b - A x‖ ≤ ‖b - A y‖
 
@@ -94,11 +103,11 @@ structure IsMinError (xstar x₀ : E) (K : Submodule 𝕜 E) (x : E) : Prop wher
 
 namespace IsPetrovGalerkin
 
-variable {A : E →ₗ[𝕜] E} {b x₀ : E} {K L : Submodule 𝕜 E} {x : E}
+variable {A : E →ₗ[𝕜] F} {b : F} {x₀ : E} {K : Submodule 𝕜 E} {L : Submodule 𝕜 F} {x : E}
 
 /-- The Petrov–Galerkin condition as a scalar equation: the residual `b - A x` is orthogonal to
 every test vector `w ∈ L`.  This is the form in which the orthogonality is used downstream. -/
-theorem inner_residual_eq_zero (hx : IsPetrovGalerkin A b x₀ K L x) {w : E} (hw : w ∈ L) :
+theorem inner_residual_eq_zero (hx : IsPetrovGalerkin A b x₀ K L x) {w : F} (hw : w ∈ L) :
     inner 𝕜 w (b - A x) = 0 :=
   (Submodule.mem_orthogonal _ _).1 hx.orth w hw
 
@@ -118,7 +127,8 @@ theorem eq_of_forall (hx : IsPetrovGalerkin A b x₀ K L x) {x' : E}
 /-- [saad2003iterative], Prop 5.6: exactness on invariant subspaces.  If `K` is invariant under `A`,
 the initial residual lies in `K` and `K ⊓ Lᗮ = 0`, then the Petrov–Galerkin iterate solves `A x = b`
 exactly. -/
-theorem eq_of_invt (hx : IsPetrovGalerkin A b x₀ K L x) (hK : K ∈ Module.End.invtSubmodule A)
+theorem eq_of_invt {A : E →ₗ[𝕜] E} {b : E} {L : Submodule 𝕜 E}
+    (hx : IsPetrovGalerkin A b x₀ K L x) (hK : K ∈ Module.End.invtSubmodule A)
     (hr : b - A x₀ ∈ K) (hKL : ∀ z ∈ K, z ∈ Lᗮ → z = 0) : A x = b := by
   have h1 : b - A x ∈ K := by
     have h : b - A x = (b - A x₀) - A (x - x₀) := by rw [map_sub]; abel
@@ -143,12 +153,12 @@ theorem residual_mem_orthogonal (hx : IsPetrovGalerkin A b x₀ K L x) : b - A x
 end IsPetrovGalerkin
 
 /-- The residual at `y` in terms of the initial residual. -/
-theorem residual_eq_sub_apply_sub (A : E →ₗ[𝕜] E) (b x₀ y : E) :
+theorem residual_eq_sub_apply_sub (A : E →ₗ[𝕜] F) (b : F) (x₀ y : E) :
     b - A y = (b - A x₀) - A (y - x₀) := by rw [map_sub]; abel
 
 namespace IsMinResidual
 
-variable {A : E →ₗ[𝕜] E} {b x₀ : E} {K : Submodule 𝕜 E} {x : E}
+variable {A : E →ₗ[𝕜] F} {b : F} {x₀ : E} {K : Submodule 𝕜 E} {x : E}
 
 /-- [saad2003iterative], Prop 5.3: minimal residual over `x₀ + K` iff Petrov–Galerkin with `L = A
 K`. -/
@@ -273,16 +283,6 @@ theorem existsUnique_isGalerkin_of_isCoercive (hA : A.IsCoercive) [FiniteDimensi
     rw [map_add, ← sub_sub, inner_sub_right, h1, sub_self]
   exact ⟨x₀ + (z : E), hgal, fun y hy => hy.eq_of_forall hgal hKL⟩
 
-/-- A minimal-residual iterate always exists on a finite-dimensional `K`. -/
-theorem exists_isMinResidual [FiniteDimensional 𝕜 K] : ∃ x, IsMinResidual A b x₀ K x := by
-  obtain ⟨z, hz, hzeq⟩ := Submodule.mem_map.1
-    (Submodule.starProjection_apply_mem (K.map A) (b - A x₀))
-  refine ⟨x₀ + z, IsMinResidual.iff_isPetrovGalerkin.2 ⟨by simpa using hz, ?_⟩⟩
-  have h : b - A (x₀ + z) = (b - A x₀) - (K.map A).starProjection (b - A x₀) := by
-    rw [map_add, hzeq]; abel
-  rw [h]
-  exact Submodule.sub_starProjection_mem_orthogonal _
-
 /-- **Well-posedness of the general Petrov–Galerkin step** ([saad2003iterative], Prop 5.1): if the
 trial and test spaces have the same finite dimension and `A` maps `K` injectively modulo `Lᗮ`, then
 the Petrov–Galerkin problem has exactly one solution.
@@ -290,12 +290,12 @@ the Petrov–Galerkin problem has exactly one solution.
 The nondegeneracy hypothesis is the one of `IsPetrovGalerkin.eq_of_forall`, which gives uniqueness;
 what the equal dimensions add is existence, by turning the injectivity of `z ↦ P_L (A z)` on `K`
 into surjectivity onto `L`. -/
-theorem existsUnique_isPetrovGalerkin_of_finrank_eq {A : E →ₗ[𝕜] E} (b x₀ : E)
-    (K L : Submodule 𝕜 E) [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
+theorem existsUnique_isPetrovGalerkin_of_finrank_eq {A : E →ₗ[𝕜] F} (b : F) (x₀ : E)
+    (K : Submodule 𝕜 E) (L : Submodule 𝕜 F) [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L)
     (hKL : ∀ z ∈ K, A z ∈ Lᗮ → z = 0) : ∃! x, IsPetrovGalerkin A b x₀ K L x := by
-  set F : ↥K →ₗ[𝕜] ↥L := (L.orthogonalProjectionOnto : E →ₗ[𝕜] ↥L).comp (A.comp K.subtype) with hF
-  have hinj : Function.Injective F := by
+  set G : ↥K →ₗ[𝕜] ↥L := (L.orthogonalProjectionOnto : F →ₗ[𝕜] ↥L).comp (A.comp K.subtype) with hG
+  have hinj : Function.Injective G := by
     rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
     intro z hz
     refine Subtype.ext (hKL (z : E) z.2 ?_)
@@ -306,9 +306,29 @@ theorem existsUnique_isPetrovGalerkin_of_finrank_eq {A : E →ₗ[𝕜] E} (b x�
     refine ⟨by simp, Submodule.orthogonalProjectionOnto_eq_zero_iff.1 ?_⟩
     have hres : b - A (x₀ + (δ : E)) = (b - A x₀) - A (δ : E) := by rw [map_add]; abel
     rw [hres, map_sub]
-    change L.orthogonalProjectionOnto (b - A x₀) - F δ = 0
+    change L.orthogonalProjectionOnto (b - A x₀) - G δ = 0
     rw [hδ, sub_self]
   exact ⟨x₀ + δ, hPG, fun y hy => hy.eq_of_forall hPG hKL⟩
+
+/-- A minimal-error iterate always exists on a finite-dimensional `K` (projection of `x*`). -/
+theorem exists_isMinError [FiniteDimensional 𝕜 K] (xstar : E) : ∃ x, IsMinError xstar x₀ K x :=
+  ⟨_, isMinError_add_starProjection (K := K) xstar x₀⟩
+
+end WellPosed
+
+section WellPosedMinResidual
+
+variable {A : E →ₗ[𝕜] F} (b : F) (x₀ : E) (K : Submodule 𝕜 E)
+
+/-- A minimal-residual iterate always exists on a finite-dimensional `K`. -/
+theorem exists_isMinResidual [FiniteDimensional 𝕜 K] : ∃ x, IsMinResidual A b x₀ K x := by
+  obtain ⟨z, hz, hzeq⟩ := Submodule.mem_map.1
+    (Submodule.starProjection_apply_mem (K.map A) (b - A x₀))
+  refine ⟨x₀ + z, IsMinResidual.iff_isPetrovGalerkin.2 ⟨by simpa using hz, ?_⟩⟩
+  have h : b - A (x₀ + z) = (b - A x₀) - (K.map A).starProjection (b - A x₀) := by
+    rw [map_add, hzeq]; abel
+  rw [h]
+  exact Submodule.sub_starProjection_mem_orthogonal _
 
 /-- [saad2003iterative], Prop 5.1 (ii): minimal residual with `A` injective on `K` is uniquely
 solvable. -/
@@ -322,29 +342,25 @@ theorem existsUnique_isMinResidual_of_injOn [FiniteDimensional 𝕜 K] (hinj : S
       (Submodule.mem_map_of_mem hz))
   exact hinj hz K.zero_mem (by rw [h0, map_zero])
 
-/-- A minimal-error iterate always exists on a finite-dimensional `K` (projection of `x*`). -/
-theorem exists_isMinError [FiniteDimensional 𝕜 K] (xstar : E) : ∃ x, IsMinError xstar x₀ K x :=
-  ⟨_, isMinError_add_starProjection (K := K) xstar x₀⟩
-
-end WellPosed
+end WellPosedMinResidual
 
 section MatrixForm
 
 variable {ι : Type*} [Fintype ι]
-variable {A : E →ₗ[𝕜] E} {b x₀ : E} {K L : Submodule 𝕜 E}
+variable {A : E →ₗ[𝕜] F} {b : F} {x₀ : E} {K : Submodule 𝕜 E} {L : Submodule 𝕜 F}
 
 /-- [saad2003iterative], (5.7): with bases `V` of `K` and `W` of `L`, `x = x₀ + V y` is
 Petrov–Galerkin iff `(Wᴴ A V) y = Wᴴ r₀`, where `r₀ = b - A x₀`. -/
 theorem isPetrovGalerkin_iff_mulVec (V : Module.Basis ι 𝕜 K) (W : Module.Basis ι 𝕜 L)
     (y : ι → 𝕜) :
     IsPetrovGalerkin A b x₀ K L (x₀ + ∑ j, y j • (V j : E)) ↔
-      (Matrix.of fun i j => inner 𝕜 (W i : E) (A (V j))).mulVec y =
-        fun i => inner 𝕜 (W i : E) (b - A x₀) := by
+      (Matrix.of fun i j => inner 𝕜 (W i : F) (A (V j))).mulVec y =
+        fun i => inner 𝕜 (W i : F) (b - A x₀) := by
   have hmem : (x₀ + ∑ j, y j • (V j : E)) - x₀ ∈ K := by
     simpa using Submodule.sum_mem _ fun j (_ : j ∈ Finset.univ) => K.smul_mem (y j) (V j).2
-  have hinner : ∀ i : ι, inner 𝕜 (W i : E) (b - A (x₀ + ∑ j, y j • (V j : E)))
-      = inner 𝕜 (W i : E) (b - A x₀)
-        - (Matrix.of fun i j => inner 𝕜 (W i : E) (A (V j))).mulVec y i := by
+  have hinner : ∀ i : ι, inner 𝕜 (W i : F) (b - A (x₀ + ∑ j, y j • (V j : E)))
+      = inner 𝕜 (W i : F) (b - A x₀)
+        - (Matrix.of fun i j => inner 𝕜 (W i : F) (A (V j))).mulVec y i := by
     intro i
     have hres : b - A (x₀ + ∑ j, y j • (V j : E))
         = (b - A x₀) - ∑ j, y j • A (V j) := by
@@ -353,14 +369,14 @@ theorem isPetrovGalerkin_iff_mulVec (V : Module.Basis ι 𝕜 K) (W : Module.Bas
     congr 1
     simp only [Matrix.mulVec, Matrix.of_apply, dotProduct, inner_smul_right]
     exact Finset.sum_congr rfl fun j _ => mul_comm _ _
-  have hL : Submodule.span 𝕜 (Set.range fun i => (W i : E)) = L := by
-    have himg : (L.subtype '' Set.range W) = Set.range fun i => (W i : E) := by
+  have hL : Submodule.span 𝕜 (Set.range fun i => (W i : F)) = L := by
+    have himg : (L.subtype '' Set.range W) = Set.range fun i => (W i : F) := by
       rw [← Set.range_comp]; rfl
     rw [← himg, ← Submodule.map_span, W.span_eq, Submodule.map_top, Submodule.range_subtype]
   constructor
   · intro h
     funext i
-    have h0 := (Submodule.mem_orthogonal _ _).1 h.orth (W i : E) (W i).2
+    have h0 := (Submodule.mem_orthogonal _ _).1 h.orth (W i : F) (W i).2
     rw [hinner i] at h0
     exact (sub_eq_zero.1 h0).symm
   · intro h

@@ -384,15 +384,18 @@ end Semiconj
 
 /-- Swapping a composition through one of its factors: `N ((A N)^i v) = (N A)^i (N v)`, the case
 `N ∘ (B N) = (N B) ∘ N` of `Krylov.pow_apply_of_semiconj`. -/
-theorem pow_comp_apply (B N : Module.End R M) (i : ℕ) (u : M) :
+theorem pow_comp_apply {M' : Type*} [AddCommGroup M'] [Module R M'] (B : M' →ₗ[R] M)
+    (N : M →ₗ[R] M') (i : ℕ) (u : M) :
     N (((B ∘ₗ N) ^ i) u) = ((N ∘ₗ B) ^ i) (N u) :=
   pow_apply_of_semiconj (N := N) (B := B ∘ₗ N) (C := N ∘ₗ B) (fun _ => rfl) i u
 
 /-- `N` carries the Krylov space of `B N` to the Krylov space of `N B`: `N 𝒦_m(B N, v) = 𝒦_m(N B, N
 v)`.  This is the identity behind every "change of variables" in a Krylov method — CGNE's `x = Aᴴ
 u`, right preconditioning's `x = M⁻¹ u` — which is why the two variants search the same affine
-space. It is the case `N ∘ (B N) = (N B) ∘ N` of `Krylov.map_subspace_of_semiconj`. -/
-theorem map_subspace_comp (B N : Module.End R M) (u : M) (m : ℕ) :
+space. `N` and `B` may map between two modules (`N = Aᴴ`, `B = A` for a rectangular `A`). It is the
+case `N ∘ (B N) = (N B) ∘ N` of `Krylov.map_subspace_of_semiconj`. -/
+theorem map_subspace_comp {M' : Type*} [AddCommGroup M'] [Module R M'] (B : M' →ₗ[R] M)
+    (N : M →ₗ[R] M') (u : M) (m : ℕ) :
     (subspace (B ∘ₗ N) u m).map N = subspace (N ∘ₗ B) (N u) m :=
   map_subspace_of_semiconj (N := N) (B := B ∘ₗ N) (C := N ∘ₗ B) (fun _ => rfl) u m
 
