@@ -43,6 +43,7 @@ The user can prompt an agent to formalize a plan. In such cases, the agent shoul
 
 - Estimate the amount of work, focus on one part of the plan at a time. `lake exe tracker ready` lists the modules whose dependencies are all proved, which are the best next steps of formalization.
 - Write the actual Lean proofs according to the corresponding TOML plans, optionally by spawning parallel sub-agents to work on different files. Start each with the output of `tracker show <module>`, tell them to mark `wrong` on problematic planned declarations and allow them to plan their own. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
+- Before merging a sub-agent's work, have an independent reviewer check its diff according to [reviewing a formalization](#reviewing-a-formalization). Suggested refactors or improvements that sub-agents report should be done when the round finishes, not recorded for later.
 - Run `lake exe tracker lint` and remove superseded fields in the plan: the Lean files now become the source of truth.
 - Verify the formalization by compiling the Lean files and running `lake exe tracker check`.
 
@@ -55,11 +56,14 @@ The review of a formalization may be done at any time after the formalization ha
 In such cases, the agent should make sure that the formalization is idiomatic Lean code and pleasant to read, on top of being semantically correct. Some code style guidance:
 
 - Match Mathlib style in general: use notations, tactics, and doc comments in similar ways. By default, follow the same conventions.
+- Minimize redundancy: state a result at the level its proof uses, with no unused hypotheses or extra structures (e.g. no normed space requirement where the argument is purely algebraic).
 - Minimize duplication: something may have been formalized elsewhere in Mathlib or within this project, or the same logic is repeated in multiple proofs. A restatement in the surface layer that delegates directly is not duplication, but do not repeat proofs.
 - Respect symmetry: if there are dual concepts or theorems, make sure they have symmetric naming and placement within the codebase. When possible, delegate the proof of one to the other rather than duplicating effort.
 - Prefer multiple short lemmas rather than rushing to theorems in long proofs.
+- Give a definition the lemmas that characterize it (introduction and elimination forms, `mem_` and `_iff` restatements, `@[simp]` normal forms), so that no proof in another file has to unfold it directly using raw definitions (which are considered as implementation details).
 - Prefer defining and using bundled, named interfaces for a named concept rather than repeating individual assumptions.
 - Identify Mathlib interfaces (e.g. topological spaces, modules, rings) that emerge implicitly from the definitions, and instantiate them eagerly to benefit from Mathlib machinery (e.g. the `ring` tactic and helpful lemmas) and simplify proofs.
+- Keep `private` for a step specific to the surrounding argument. A lemma that would stand on its own in an earlier file or in Mathlib is stated publicly, where it belongs.
 
 Finally, check for semantic alignment:
 
