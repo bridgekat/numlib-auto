@@ -99,7 +99,7 @@ is the coercion of its own real value. -/
 theorem dirDeriv_eq_coe_toReal_of_mem_interior_convexDom (hg : ConvexFn g) (hgp : ProperConvex g)
     (hx : x ∈ interior (convexDom g)) (z : E) :
     dirDeriv g x z = (((dirDeriv g x z).toReal : ℝ) : EReal) := by
-  have hri : x ∈ ri (convexDom g) := Convex.interior_subset_relint hg.convex_convexDom ⟨x, hx⟩ hx
+  have hri : x ∈ ri (convexDom g) := Convex.interior_subset_relint hx
   have hbot : dirDeriv g x z ≠ ⊥ :=
       (properConvex_dirDeriv_of_mem_relint_convexDom hg hgp hri).ne_bot z
   have hdom := (convexDom_dirDeriv_eq_univ_iff_mem_interior_convexDom hg hgp hri).2 hx
@@ -111,7 +111,7 @@ whole space. -/
 theorem convexOn_toReal_dirDeriv (hg : ConvexFn g) (hgp : ProperConvex g)
     (hx : x ∈ interior (convexDom g)) :
     ConvexOn ℝ (univ : Set E) fun z => (dirDeriv g x z).toReal := by
-  have hri : x ∈ ri (convexDom g) := Convex.interior_subset_relint hg.convex_convexDom ⟨x, hx⟩ hx
+  have hri : x ∈ ri (convexDom g) := Convex.interior_subset_relint hx
   have hdom := (convexDom_dirDeriv_eq_univ_iff_mem_interior_convexDom hg hgp hri).2 hx
   have hxdom : x ∈ convexDom g := interior_subset hx
   have h :=
@@ -292,8 +292,8 @@ theorem subdifferential_subset_add_closedBall_of_forall_dirDeriv_le {p q : E →
       (dirDeriv p u z).toReal ≤ (dirDeriv q v z).toReal + ε) :
     subdifferential (innerₗ E) p u
       ⊆ subdifferential (innerₗ E) q v + Metric.closedBall (0 : E) ε := by
-  have huri : u ∈ ri (convexDom p) := Convex.interior_subset_relint hp.convex_convexDom ⟨u, hu⟩ hu
-  have hvri : v ∈ ri (convexDom q) := Convex.interior_subset_relint hq.convex_convexDom ⟨v, hv⟩ hv
+  have huri : u ∈ ri (convexDom p) := Convex.interior_subset_relint hu
+  have hvri : v ∈ ri (convexDom q) := Convex.interior_subset_relint hv
   have hhom : ∀ z : E, dirDeriv p u z ≤ (((dirDeriv q v z).toReal + ε * ‖z‖ : ℝ) : EReal) := by
     intro z
     have hreal : (dirDeriv p u z).toReal ≤ (dirDeriv q v z).toReal + ε * ‖z‖ := by
@@ -484,6 +484,7 @@ theorem mem_interior_convexDom_dirDeriv (hfp : ProperConvex f) (hx : x ∈ conve
   rw [hs, hr, ← EReal.coe_sub, ← EReal.coe_div]
   exact EReal.coe_lt_top _
 
+omit [FiniteDimensional ℝ E] in
 /-- **`f'(x; ·)` is proper once it is finite at one interior point of its effective domain.** A
 convex function that takes the value `-∞` takes it throughout the relative interior of its domain,
 so a single finite interior value rules `-∞` out everywhere. -/
@@ -495,7 +496,7 @@ theorem properConvex_dirDeriv_of_ne_bot (hf : ConvexFn f) (hfp : ProperConvex f)
       convexFn_dirDeriv hf (mem_convexDom.1 hx).ne (hfp.ne_bot x)
   by_contra h
   exact hne (ConvexFn.eq_bot_of_mem_relint_convexDom hconv h
-    (Convex.interior_subset_relint hconv.convex_convexDom ⟨y, hy⟩ hy))
+    (Convex.interior_subset_relint hy))
 
 /-- **The directional-derivative half**: directional derivatives are upper
 semicontinuous along an approach to a point of `dom f` that need not be interior, provided the
@@ -580,13 +581,13 @@ theorem eventually_dirDeriv_lt_of_tendsto_dir (hf : ConvexFn f) (hfp : ProperCon
   have hScont : ContinuousAt (fun v => (dirDeriv f x v).toReal) y :=
     (hgconv.continuousOn_toReal_relint_convexDom hgp).continuousAt (mem_nhds_iff.2
       ⟨interior (convexDom (dirDeriv f x)),
-        Convex.interior_subset_relint hgconv.convex_convexDom ⟨y, hyint⟩, isOpen_interior, hyint⟩)
+        Convex.interior_subset_relint, isOpen_interior, hyint⟩)
   have hSten : Tendsto (fun i => (dirDeriv f x (Y i)).toReal) atTop (𝓝 c) := by
     have h := hScont.tendsto.comp hYten
     rwa [hc, EReal.toReal_coe] at h
   have hFcont : ContinuousAt (fun v => (f v).toReal) (x + b • (y + lam • z)) :=
     (hf.continuousOn_toReal_relint_convexDom hfp).continuousAt (mem_nhds_iff.2
-      ⟨interior (convexDom f), Convex.interior_subset_relint hf.convex_convexDom ⟨_, hbu⟩,
+      ⟨interior (convexDom f), Convex.interior_subset_relint,
         isOpen_interior, hbu⟩)
   have hpt : Tendsto (fun i => x + (e i + b) • U i) atTop (𝓝 (x + b • (y + lam • z))) := by
     have h : Tendsto (fun i => x + (e i + b) • U i) atTop
@@ -756,7 +757,7 @@ theorem eventually_subdifferential_subset_exposed_add_closedBall (hf : ConvexFn 
       mem_interior_convexDom_dirDeriv hfp hx hα hαy
   have hgp : ProperConvex (dirDeriv f x) := properConvex_dirDeriv_of_ne_bot hf hfp hx hyint hy
   have hyri : y ∈ ri (convexDom (dirDeriv f x)) :=
-    Convex.interior_subset_relint hgc.convex_convexDom ⟨y, hyint⟩ hyint
+    Convex.interior_subset_relint hyint
   -- The exposed face is `∂(f'(x; ·))(y)`.
   have hflip : IsCompatiblePairing ((innerₗ E).flip) := by rw [flip_innerₗ]; infer_instance
   have hface : subdifferential (innerₗ E) (dirDeriv f x) y

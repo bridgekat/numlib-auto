@@ -412,7 +412,6 @@ omit [NormedSpace ℝ F] in
 /-- **The `L^p` norm of a reflected function** is at most the sum of the `L^p(V₊)` norms of its
 two halves, for `1 ≤ p`. -/
 theorem eLpNorm_le_of_reflected {p : ℝ≥0∞} (hp : 1 ≤ p)
-    (hAm : AEStronglyMeasurable A (volume.restrict (posHalf v V : Set E)))
     (hBm : AEStronglyMeasurable B (volume.restrict (posHalf v V : Set E))) :
     eLpNorm G p (volume.restrict (V : Set E))
       ≤ eLpNorm A p (volume.restrict (posHalf v V : Set E))
@@ -423,7 +422,6 @@ theorem eLpNorm_le_of_reflected {p : ℝ≥0∞} (hp : 1 ≤ p)
     exact hBm.comp_measurePreserving
       ((measurePreserving_hyperplaneReflection v).restrict_preimage_emb
         (measurableEmbedding_hyperplaneReflection v) _)
-  have hA' := (aestronglyMeasurable_indicator_iff (posHalf v V).isOpen.measurableSet).2 hAm
   have hB' := (aestronglyMeasurable_indicator_iff isOpen_negHalf.measurableSet).2 hBσ
   have heq : G =ᵐ[volume.restrict (V : Set E)] (posHalf v V : Set E).indicator A
       + ((V : Set E) ∩ {x | ⟪x, v⟫ < 0}).indicator (B ∘ hyperplaneReflection v) := by
@@ -463,7 +461,7 @@ theorem eLpNorm_le_of_reflected {p : ℝ≥0∞} (hp : 1 ≤ p)
               (measurableEmbedding_hyperplaneReflection v) _)]
 
 /-- **The integral of a reflected function** is `∫_{V₊} A + ∫_{V₊} B`. -/
-theorem setIntegral_of_reflected [CompleteSpace F]
+theorem setIntegral_of_reflected
     (hAi : IntegrableOn A (posHalf v V : Set E)) (hBi : IntegrableOn B (posHalf v V : Set E)) :
     ∫ x in (V : Set E), G x = (∫ x in (posHalf v V : Set E), A x)
       + ∫ x in (posHalf v V : Set E), B x := by
@@ -641,6 +639,7 @@ theorem fderiv_comp_hyperplaneReflection_apply {φ : E → ℝ} (hφ : ContDiff 
   rw [show (fun x ↦ φ (hyperplaneReflection v x)) = φ ∘ hyperplaneReflection v from rfl, h.fderiv]
   rfl
 
+omit [CompleteSpace F] in
 /-- **Lemma 9.2 (extension by reflection), the identity**: for a unit vector `v`, an open set
 `V` with `σ '' V = V`, and `u ∈ W^{1,p}(V₊)` with weak derivative `w`, `1 ≤ p`, the even
 reflection `u^⋆` has the weak derivative `reflectFDeriv v w` on `V`.
@@ -682,7 +681,7 @@ theorem HasWeakFDerivOn.evenReflection (hv : ‖v‖ = 1)
       (fun x _ hx ↦ evenReflection_of_neg v hx) hum hum
   have hurp : MemLp (_root_.evenReflection v u) p (volume.restrict (V : Set E)) := by
     refine (eLpNorm_le_of_reflected hv0 hV (fun x _ hx ↦ evenReflection_of_nonneg v hx)
-      (fun x _ hx ↦ evenReflection_of_neg v hx) hp hum hum).trans_lt ?_
+      (fun x _ hx ↦ evenReflection_of_neg v hx) hp hum).trans_lt ?_
     exact ENNReal.add_lt_top.2 ⟨hup, hup⟩
   have hwrB : ∀ x ∈ (V : Set E), ⟪x, v⟫ < 0 →
       reflectFDeriv v w x = (w (hyperplaneReflection v x)).comp σL := by
@@ -690,7 +689,7 @@ theorem HasWeakFDerivOn.evenReflection (hv : ‖v‖ = 1)
     rw [reflectFDeriv_of_neg v hx, hσL]
   have hwrp : MemLp (reflectFDeriv v w) p (volume.restrict (V : Set E)) := by
     refine (eLpNorm_le_of_reflected hv0 hV (fun x _ hx ↦ reflectFDeriv_of_nonneg v hx)
-      hwrB hp hwm hwσm).trans_lt (ENNReal.add_lt_top.2 ⟨hwp, ?_⟩)
+      hwrB hp hwσm).trans_lt (ENNReal.add_lt_top.2 ⟨hwp, ?_⟩)
     refine (eLpNorm_mono_ae hwσm (Eventually.of_forall fun z ↦ (hwσn z).le)).trans_lt hwp
   refine hasWeakFDerivOn_iff.2 ⟨hurp.locallyIntegrableOn hp, hwrp.locallyIntegrableOn hp,
     fun φ y ↦ ?_⟩
@@ -1033,7 +1032,7 @@ theorem eLpNorm_evenReflection_le (hv : v ≠ 0) (hV : hyperplaneReflection v ''
       ≤ 2 * eLpNorm u p (volume.restrict (posHalf v V : Set E)) := by
   rw [two_mul]
   exact eLpNorm_le_of_reflected hv hV (fun x _ hx ↦ evenReflection_of_nonneg v hx)
-    (fun x _ hx ↦ evenReflection_of_neg v hx) hp hu hu
+    (fun x _ hx ↦ evenReflection_of_neg v hx) hp hu
 
 omit [NormedSpace ℝ F] in
 /-- The even reflection of a measurable function is measurable. -/
@@ -1066,12 +1065,10 @@ theorem eLpNorm_reflectFDeriv_le (hv : v ≠ 0) (hV : hyperplaneReflection v '' 
     ((ContinuousLinearMap.compL ℝ E E F).flip _).continuous.comp_aestronglyMeasurable hw
   rw [two_mul]
   refine (eLpNorm_le_of_reflected hv hV (fun x _ hx ↦ reflectFDeriv_of_nonneg v hx)
-    (fun x _ hx ↦ reflectFDeriv_of_neg v hx) hp hw hwσ).trans ?_
+    (fun x _ hx ↦ reflectFDeriv_of_neg v hx) hp hwσ).trans ?_
   gcongr
   exact eLpNorm_mono_ae hwσ (Eventually.of_forall fun z ↦
     (ContinuousLinearMap.opNorm_comp_linearIsometryEquiv _ _).le)
-
-variable [CompleteSpace F]
 
 /-- **Lemma 9.2, membership**: for a unit vector `v`, an open `V` with `σ '' V = V`, and
 `u ∈ W^{1,p}(V₊)`, `1 ≤ p ≤ ∞`, the even reflection `u^⋆` lies in `W^{1,p}(V)`, with
@@ -1118,6 +1115,7 @@ variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteD
   {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)]
   {v : E} {V : Opens E}
 
+omit [CompleteSpace F] in
 /-- Lemma 9.2 in the multi-index formulation. -/
 theorem MemSobolevMultiIndex.evenReflection (hv : ‖v‖ = 1)
     (hV : hyperplaneReflection v '' (V : Set E) = V) {u : E → F}

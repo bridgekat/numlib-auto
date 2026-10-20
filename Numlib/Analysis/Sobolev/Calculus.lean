@@ -174,7 +174,7 @@ theorem ae_comp (h : IsDiffeoOnWithBoundedJacobian H Hinv s t M) {A : Set E} (hA
 
 /-- Composition with the diffeomorphism preserves almost everywhere strong measurability. -/
 theorem aestronglyMeasurable_comp (h : IsDiffeoOnWithBoundedJacobian H Hinv s t M) {A : Set E}
-    (hA : IsOpen A) (hAs : A ⊆ s) {F : Type*} [TopologicalSpace F] [PseudoMetrizableSpace F]
+    (hA : IsOpen A) (hAs : A ⊆ s) {F : Type*} [TopologicalSpace F]
     {f : E → F} (hf : AEStronglyMeasurable f (μ.restrict (H '' A))) :
     AEStronglyMeasurable (fun y ↦ f (H y)) (μ.restrict A) := by
   obtain ⟨g, hg, hfg⟩ := hf
@@ -373,13 +373,6 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
   {H Hinv : E → E} {Ω' Ω : Opens E} {M : ℝ} {u : E → F} {w : E → E →L[ℝ] F}
 
-omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] [CompleteSpace F] in
-/-- The first iterated derivative is the uncurried first derivative. -/
-theorem iteratedFDeriv_one_eq (f : E → F) (x : E) :
-    iteratedFDeriv ℝ 1 f x = (continuousMultilinearCurryFin1 ℝ E F).symm (fderiv ℝ f x) := by
-  ext m
-  simp [iteratedFDeriv_one_apply]
-
 /-- **Proposition 9.6 (change of variables), the identity**: for a `C^1` diffeomorphism
 `H : Ω' → Ω` with bounded Jacobians and a first-order weak derivative `w` of `u` on `Ω`,
 `u ∘ H` has the weak derivative `y ↦ (w (H y)) ∘ Jac H (y)` on `Ω'` — the book's
@@ -450,7 +443,7 @@ theorem HasWeakFDerivOn.comp_diffeoOn (h : IsDiffeoOnWithBoundedJacobian H Hinv 
       ((hgs i).of_le (by simp)).comp_contDiffOn (h.contDiffOn.mono hω')
     refine (ContDiffOn.hasWeakIteratedFDerivOn hc le_rfl).congr_ae (EventuallyEq.refl _ _) ?_
     filter_upwards [ae_restrict_mem ω'.isOpen.measurableSet] with y hy
-    rw [iteratedFDeriv_one_eq, he]
+    rw [iteratedFDeriv_one_eq_symm_fderiv, he]
     congr 1
     exact fderiv_comp y ((hgs i).differentiable (by simp) _)
       ((h.contDiffOn.differentiableOn one_ne_zero).differentiableAt
@@ -496,7 +489,7 @@ theorem HasWeakFDerivOn.comp_diffeoOn (h : IsDiffeoOnWithBoundedJacobian H Hinv 
         filter_upwards [ae_restrict_mem ω'.isOpen.measurableSet, h.ae_comp ω'.isOpen hω' hwVae]
           with y hy hyw
         rw [Pi.sub_apply, ← map_sub, e.norm_map, ← ContinuousLinearMap.sub_comp, Pi.sub_apply,
-          hyw, iteratedFDeriv_one_eq, ← he, ← map_sub, e.norm_map]
+          hyw, iteratedFDeriv_one_eq_symm_fderiv, ← he, ← map_sub, e.norm_map]
         calc ‖(fderiv ℝ (g i) (H y) - w (H y)).comp (fderiv ℝ H y)‖
             ≤ ‖fderiv ℝ (g i) (H y) - w (H y)‖ * ‖fderiv ℝ H y‖ :=
               ContinuousLinearMap.opNorm_comp_le _ _
@@ -729,12 +722,14 @@ def compDiffeo (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M)
     (u : SobolevMultiIndex F b 1 p Ω μ) : SobolevMultiIndex F b 1 p Ω' μ :=
   ((memSobolevMultiIndex u).comp_diffeoOn h).exists_sobolevMultiIndex.choose
 
+omit [Fact (1 ≤ p)] in
 /-- The function of `SobolevMultiIndex.compDiffeo h u` is `u ∘ H`. -/
 theorem fn_compDiffeo (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M)
     (u : SobolevMultiIndex F b 1 p Ω μ) :
     fn (compDiffeo h u) =ᵐ[μ.restrict (Ω' : Set E)] fun y ↦ fn u (H y) :=
   ((memSobolevMultiIndex u).comp_diffeoOn h).exists_sobolevMultiIndex.choose_spec
 
+omit [Fact (1 ≤ p)] in
 /-- The change of variables is additive. -/
 theorem compDiffeo_add (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M)
     (u v : SobolevMultiIndex F b 1 p Ω μ) :
@@ -748,6 +743,7 @@ theorem compDiffeo_add (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M)
   filter_upwards [fn_compDiffeo h u, fn_compDiffeo h v] with y hyu hyv
   rw [Pi.add_apply, hyu, hyv]
 
+omit [Fact (1 ≤ p)] in
 /-- The change of variables commutes with scalar multiplication. -/
 theorem compDiffeo_smul (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M) (c : ℝ)
     (u : SobolevMultiIndex F b 1 p Ω μ) : compDiffeo h (c • u) = c • compDiffeo h u := by
@@ -759,6 +755,7 @@ theorem compDiffeo_smul (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M) (c :
   filter_upwards [fn_compDiffeo h u] with y hyu
   rw [Pi.smul_apply, hyu]
 
+omit [Fact (1 ≤ p)] in
 /-- **The `L^p` bound on the change of variables**:
 `‖u ∘ H‖_{L^p(Ω')} ≤ D^{1/p} ‖u‖_{L^p(Ω)}` for a bound `D` on `|det Jac H⁻¹|` on `Ω`. -/
 theorem eLpNorm_fn_compDiffeo_le (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M) {D : ℝ}
@@ -770,6 +767,7 @@ theorem eLpNorm_fn_compDiffeo_le (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' �
     (f := fn u) (by rw [h.bijOn.image_eq]; exact (memLp u).aestronglyMeasurable) p
   rwa [h.bijOn.image_eq] at this
 
+omit [Fact (1 ≤ p)] in
 /-- The partial derivatives of `u ∘ H` are `(∂u ∘ H) (∂ᵢ H)`, in terms of a tensor weak
 derivative `w` of `u`: `∂ᵢ (u ∘ H) (y) = w (H y) (Jac H (y) bᵢ)` almost everywhere on `Ω'`. -/
 theorem weakDeriv_compDiffeo_single (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M)

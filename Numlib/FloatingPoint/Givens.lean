@@ -79,7 +79,7 @@ private theorem isRelPert_givens_branch {m : RoundingModel ℝ} (hu : ((13 : ℕ
   have ht₂ : IsRelPert m.u 4 (1 + τ * τ) t₂ :=
     (IsRelPert.add_of_nonneg zero_le_one (mul_self_nonneg τ) h1 ht₁).rounds
       (hlt 4 (by omega)) h₂
-  have hg : gamma m.u 4 ≤ 1 := (gamma_lt_one hu0 (by
+  have hg : gamma m.u 4 ≤ 1 := (gamma_lt_one (by
     have := hlt 8 (by omega)
     push_cast at this ⊢
     linarith)).le
@@ -157,7 +157,7 @@ theorem RoundsGivensPairDirect.isRelPert {m : RoundingModel ℝ} (hu : ((7 : ℕ
   have ht' : IsRelPert m.u 2 (a * a + b * b) t :=
     (IsRelPert.add_of_nonneg (mul_self_nonneg a) (mul_self_nonneg b) (hp.isRelPert hu1)
       (hq.isRelPert hu1)).rounds (hlt 2 (by omega)) ht
-  have hg : gamma m.u 2 ≤ 1 := (gamma_lt_one hu0 (by
+  have hg : gamma m.u 2 ≤ 1 := (gamma_lt_one (by
     have := hlt 4 (by omega)
     push_cast at this ⊢
     linarith)).le

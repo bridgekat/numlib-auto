@@ -342,15 +342,8 @@ theorem convexBifun_indicatorBifun (A : ConvexProcess U X) : ConvexBifun A.indic
 
 /-- Positive multiples do not move the graph of a convex process: it is a cone. -/
 theorem smul_graph (A : ConvexProcess U X) {a : ℝ} (ha : 0 < a) :
-    a • (A.graph : Set (U × X)) = (A.graph : Set (U × X)) := by
-  ext p
-  constructor
-  · rintro ⟨q, hq, rfl⟩
-    exact smul_mem_graph ha.le hq
-  · intro hp
-    refine ⟨a⁻¹ • p, smul_mem_graph (inv_nonneg.2 ha.le) hp, ?_⟩
-    change a • a⁻¹ • p = p
-    rw [smul_smul, mul_inv_cancel₀ ha.ne', one_smul]
+    a • (A.graph : Set (U × X)) = (A.graph : Set (U × X)) :=
+  smul_coe_pointedCone A.graph a ha
 
 /-- **`A (λ u) = λ (A u)` for `λ > 0`**, the positive-homogeneity axiom of a convex process.
 
@@ -662,16 +655,6 @@ theorem graph_coadjointProcess_adjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] 
     simp only [map_neg] at hb
     linarith
 
-private theorem mul_le_iff_le_inv_mul {a : ℝ} (ha : 0 < a) (r s : ℝ) :
-    a * r ≤ s ↔ r ≤ a⁻¹ * s := by
-  constructor
-  · intro h
-    have h' := mul_le_mul_of_nonneg_left h (inv_nonneg.2 ha.le)
-    rwa [← mul_assoc, inv_mul_cancel₀ ha.ne', one_mul] at h'
-  · intro h
-    have h' := mul_le_mul_of_nonneg_left h ha.le
-    rwa [← mul_assoc, mul_inv_cancel₀ ha.ne', one_mul] at h'
-
 /-- **The adjoint of a scalar multiple**: `(λ A)* = λ (A*)` for `λ > 0`.
 
 Rockafellar deduces this from the adjoint formula for `Fλ`. It is cheaper here as a direct
@@ -689,7 +672,7 @@ theorem adjointProcess_smul (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →�
     · have hmem : ((p.1, a • p.2) : U × X) ∈ (a • A).graph := ⟨p.2, hp, rfl⟩
       have h' := h (p.1, a • p.2) hmem
       simp only [map_smul, LinearMap.smul_apply, smul_eq_mul] at h' ⊢
-      exact (mul_le_iff_le_inv_mul ha _ _).1 h'
+      exact (le_inv_mul_iff₀ ha).2 h'
     · rw [smul_smul, mul_inv_cancel₀ ha.ne', one_smul]
   · rintro ⟨w, hw, hv⟩ p ⟨x, hx, hz⟩
     have hz' : p.2 = a • x := hz

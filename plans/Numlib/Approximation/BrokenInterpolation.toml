@@ -22,9 +22,6 @@ id = "sqrt_sum_integral_add_sq_le"
 id = "pairing"
 
 [[node]]
-id = "sum_integral_eval_mul_eq_inner"
-
-[[node]]
 id = "pairing_le_sqrt_mul_norm"
 
 [[node]]

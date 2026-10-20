@@ -107,13 +107,13 @@ theorem laplaceTransform_of_not_converges {f : ℝ → E} {s : ℂ} (h : ¬ Conv
   rw [laplaceTransform, dite_eq_right h]
 
 /-- Absolute convergence of the Laplace integral implies its convergence. -/
-theorem converges_of_integrableOn [CompleteSpace E] {f : ℝ → E} {s : ℂ}
+theorem converges_of_integrableOn {f : ℝ → E} {s : ℂ}
     (h : IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) • f t) (Ioi 0)) : Converges f s :=
   ⟨_, intervalIntegral_tendsto_integral_Ioi 0 h tendsto_id⟩
 
 /-- **Under absolute convergence the transform is the Bochner integral over `(0, ∞)`**,
 `MeasureTheory.intervalIntegral_tendsto_integral_Ioi`. -/
-theorem laplaceTransform_eq_integral [CompleteSpace E] {f : ℝ → E} {s : ℂ}
+theorem laplaceTransform_eq_integral {f : ℝ → E} {s : ℂ}
     (h : IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) • f t) (Ioi 0)) :
     laplaceTransform f s = ∫ t : ℝ in Ioi 0, Complex.exp (-(s * t)) • f t :=
   laplaceTransform_eq_of_tendsto (intervalIntegral_tendsto_integral_Ioi 0 h tendsto_id)

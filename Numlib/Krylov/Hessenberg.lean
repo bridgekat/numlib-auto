@@ -232,7 +232,7 @@ combination of Arnoldi vectors in terms of the coefficient vector. -/
 variable (A : E →ₗ[𝕜] E) (r : E)
 
 /-- `𝒦_m` is spanned by the `Fin m`-indexed family of Arnoldi vectors. -/
-private theorem span_range_vec (m : ℕ) :
+theorem span_range_vec (m : ℕ) :
     Submodule.span 𝕜 (Set.range fun j : Fin m => Arnoldi.vec A r (j : ℕ)) = subspace A r m := by
   rw [← Arnoldi.span_vec A r m]
   congr 1
@@ -249,11 +249,6 @@ theorem mem_subspace_iff_exists_coeffs (m : ℕ) (z : E) :
     z ∈ subspace A r m ↔ ∃ y : Fin m → 𝕜, z = ∑ j, y j • Arnoldi.vec A r (j : ℕ) := by
   rw [← span_range_vec A r m, Submodule.mem_span_range_iff_exists_fun]
   exact ⟨fun ⟨c, hc⟩ => ⟨c, hc.symm⟩, fun ⟨c, hc⟩ => ⟨c, hc.symm⟩⟩
-
-private theorem vec_mem_subspace_of_lt {m j : ℕ} (hj : j < m) :
-    Arnoldi.vec A r j ∈ subspace A r m := by
-  rw [← span_range_vec A r m]
-  exact Submodule.subset_span ⟨⟨j, hj⟩, rfl⟩
 
 private theorem sum_smul_vec_mem (m : ℕ) (y : Fin m → 𝕜) :
     ∑ j, y j • Arnoldi.vec A r (j : ℕ) ∈ subspace A r m :=
@@ -330,7 +325,7 @@ private theorem sum_smul_vec_mem_orthogonal {m : ℕ} (hm : m ≤ grade A r) (c 
 private theorem coeff_eq_zero_of_mem_orthogonal {m : ℕ} (hm : m ≤ grade A r)
     (c : Fin (m + 1) → 𝕜) (h : (∑ i, c i • Arnoldi.vec A r (i : ℕ)) ∈ (subspace A r m)ᗮ)
     (j : Fin (m + 1)) (hj : (j : ℕ) < m) : c j = 0 := by
-  have hin := Submodule.inner_right_of_mem_orthogonal (vec_mem_subspace_of_lt A r hj) h
+  have hin := Submodule.inner_right_of_mem_orthogonal (Arnoldi.vec_mem_subspace_of_lt A r hj) h
   rwa [inner_vec_sum_eq A r c j (lt_of_lt_of_le hj hm)] at hin
 
 /-- The residual coefficient vector vanishes at the last index once the grade is reached. -/
@@ -809,15 +804,6 @@ theorem givensMatrix_eq_one_of_lt (k m : ℕ) (hk : m < k) : givensMatrix h k m 
   rw [givensMatrix, Matrix.of_apply, Matrix.one_apply]
   simp only [show (i : ℕ) ≠ k by omega, show (i : ℕ) ≠ k + 1 by omega, false_and, ite_false]
 
-/-- A sum over `Fin N` all of whose terms outside `{p, q}` vanish. -/
-private theorem sum_pair_of_eq_zero {ι : Type*} [Fintype ι] {p q : ι}
-    (hpq : p ≠ q) (f : ι → 𝕜) (hf : ∀ l, l ≠ p → l ≠ q → f l = 0) :
-    ∑ l, f l = f p + f q := by
-  classical
-  rw [← Finset.sum_subset (Finset.subset_univ ({p, q} : Finset ι))
-    (fun x _ hx => hf x (fun hc => hx (by simp [hc])) fun hc => hx (by simp [hc])),
-    Finset.sum_pair hpq]
-
 /-- The row action of a Givens matrix. -/
 private theorem givensMatrix_row (k m : ℕ) (hk : k < m) (i : Fin (m + 1)) (z : Fin (m + 1) → 𝕜) :
     ∑ l, givensMatrix h k m i l * z l =
@@ -829,16 +815,16 @@ private theorem givensMatrix_row (k m : ℕ) (hk : k < m) (i : Fin (m + 1)) (z :
       else z i := by
   have hpq : (⟨k, by omega⟩ : Fin (m + 1)) ≠ ⟨k + 1, by omega⟩ := by simp [Fin.ext_iff]
   split_ifs with h1 h2
-  · rw [sum_pair_of_eq_zero hpq _ ?_]
+  · rw [Fintype.sum_eq_add _ _ hpq ?_]
     · simp [givensMatrix, h1]
-    · intro l hlp hlq
+    · rintro l ⟨hlp, hlq⟩
       have hl1 : (l : ℕ) ≠ k := fun hc => hlp (Fin.ext hc)
       have hl2 : (l : ℕ) ≠ k + 1 := fun hc => hlq (Fin.ext hc)
       have hil : i ≠ l := fun hc => hl1 (hc ▸ h1)
       simp [givensMatrix, h1, hl1, hl2, hil]
-  · rw [sum_pair_of_eq_zero hpq _ ?_]
+  · rw [Fintype.sum_eq_add _ _ hpq ?_]
     · simp [givensMatrix, h2]
-    · intro l hlp hlq
+    · rintro l ⟨hlp, hlq⟩
       have hl1 : (l : ℕ) ≠ k := fun hc => hlp (Fin.ext hc)
       have hl2 : (l : ℕ) ≠ k + 1 := fun hc => hlq (Fin.ext hc)
       have hil : i ≠ l := fun hc => hl2 (hc ▸ h2)
@@ -1439,7 +1425,7 @@ theorem norm_sq_firstVec_sub_mulVec_eq_of_breakdown (hh : ∀ i j, j + 1 < i →
 
 /-- Rows `0, …, m` of `Q^{(m)}_{m+1}` ignore the last coordinate, because the first `m` rotations
 leave column `m + 1` alone. -/
-private theorem givensQAux_mulVec_of_last {m : ℕ} (v : Fin (m + 2) → 𝕜)
+theorem givensQAux_mulVec_of_last {m : ℕ} (v : Fin (m + 2) → 𝕜)
     (hv : ∀ l : Fin (m + 2), (l : ℕ) ≠ m + 1 → v l = 0) (i : Fin (m + 1)) :
     (givensQAux h m (m + 1)).mulVec v i.castSucc = 0 := by
   simp only [Matrix.mulVec, dotProduct]

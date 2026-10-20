@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.MeanInequalities
+import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.MultiIndex
@@ -775,20 +776,6 @@ section PiLpNorm
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {ι : Type*} [Fintype ι]
 
-/-- **The `ℓ^p` norm is monotone in each coordinate**: if `‖x i‖ ≤ ‖y i‖` for every `i`, then
-`‖x‖ ≤ ‖y‖`, the two tuples possibly living in different families of spaces. -/
-theorem PiLp.norm_le_norm_of_forall_norm_le {β β' : ι → Type*} [∀ i, SeminormedAddCommGroup (β i)]
-    [∀ i, SeminormedAddCommGroup (β' i)] {x : PiLp p β} {y : PiLp p β'}
-    (h : ∀ i, ‖x i‖ ≤ ‖y i‖) : ‖x‖ ≤ ‖y‖ := by
-  rcases eq_or_ne p ⊤ with rfl | hp
-  · rw [PiLp.norm_eq_ciSup, PiLp.norm_eq_ciSup]
-    exact ciSup_mono (Finite.bddAbove_range _) h
-  · have hP : 0 < p.toReal :=
-      ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
-    rw [PiLp.norm_eq_sum hP, PiLp.norm_eq_sum hP]
-    refine Real.rpow_le_rpow (Finset.sum_nonneg fun _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _)
-      (Finset.sum_le_sum fun i _ ↦ Real.rpow_le_rpow (norm_nonneg _) (h i) hP.le) (by positivity)
-
 /-- **The `ℓ^p` norm is at most the `ℓ^1` norm**: `‖x‖ ≤ ∑ i, ‖x i‖`, by writing `x` as the sum of
 its coordinates and the triangle inequality. -/
 theorem PiLp.norm_le_sum_norm {β : ι → Type*} [∀ i, SeminormedAddCommGroup (β i)]
@@ -878,7 +865,7 @@ theorem gradFn_combo (a c : ℝ) (u v : SobolevMultiIndex F b 1 p Ω μ) :
 variable [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F]
 
 /-- `∇v ∈ L^p(Ω; F^ι)` ([han2009theoretical] Exercise 8.8.2). -/
-theorem memLp_gradFn [Fact (1 ≤ p)] (v : SobolevMultiIndex F b 1 p Ω μ) :
+theorem memLp_gradFn (v : SobolevMultiIndex F b 1 p Ω μ) :
     MemLp (gradFn v) p (μ.restrict (Ω : Set E)) := by
   have hsum : MemLp (fun x ↦ ∑ i, ‖weakDeriv v (MultiIndexLE.single i) x‖) p
       (μ.restrict (Ω : Set E)) :=
@@ -1360,6 +1347,7 @@ theorem ofReal_norm_le_sobolevNorm_of_order {k : ℕ} (hp' : p ≠ ⊤)
         Finset.sum_le_sum fun α _ ↦ hα α
     _ = _ := by rw [Finset.sum_mul]
 
+omit [Fact (1 ≤ p)] in
 /-- A smooth compactly supported function is the function of an element of `W^{k,p}(Ω)`. -/
 theorem _root_.ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport {k : ℕ} {v : E → F}
     (hv : ContDiff ℝ ∞ v) (hvc : HasCompactSupport v) :
@@ -1373,7 +1361,7 @@ theorem _root_.ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport {k : ℕ} 
 /-- **A smooth function is the function of an element of `W^{k,p}(Ω)` for a bounded open `Ω`**:
 multiply it by a smooth compactly supported cutoff equal to `1` on `closure Ω`. -/
 theorem _root_.SobolevEuclidean.exists_fn_ae_eq_of_contDiff {N : ℕ}
-    {Ω : Opens (EuclideanSpace ℝ (Fin N))} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+    {Ω : Opens (EuclideanSpace ℝ (Fin N))} {k : ℕ} {p : ℝ≥0∞}
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     {φ : EuclideanSpace ℝ (Fin N) → ℝ} (hφ : ContDiff ℝ ∞ φ) :
     ∃ u : SobolevEuclidean N k p Ω,

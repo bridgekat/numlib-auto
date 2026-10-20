@@ -147,7 +147,6 @@ cardinal functions of trigonometric interpolation. -/
 theorem dirichletKernel_node_sub (n : ℕ) (d : ℤ) (hd : d.natAbs ≤ 2 * n) :
     dirichletKernel n (2 * π * d / (2 * n + 1))
       = if d = 0 then (2 * (n : ℝ) + 1) / 2 else 0 := by
-  have hN : (0 : ℝ) < 2 * (n : ℝ) + 1 := by positivity
   rcases eq_or_ne d 0 with rfl | hd0
   · have h0 : 2 * π * ((0 : ℤ) : ℝ) / (2 * (n : ℝ) + 1) = 0 := by simp
     rw [ite_eq_left rfl, h0, dirichletKernel_apply]

@@ -489,9 +489,8 @@ theorem coe_mk' (f : E → F) (hf : ContDiffOn ℝ j f Ω)
     (hGb : ∀ i, ∀ x ∈ closure (Ω : Set E), ‖G i x‖ ≤ M i)
     (hGeq : ∀ i, ∀ x ∈ Ω, G i x = iteratedFDeriv ℝ i f x) {C : ℝ≥0}
     (hH : HolderOnWith C β (G (Fin.last j)) (closure (Ω : Set E))) (x : E) (hx : x ∈ Ω) :
-    mk' f hf G hGc M hGb hGeq hH ⟨x, subset_closure hx⟩ = f x := by
-  rw [coe_def, deriv_mk', hGeq 0 x hx]
-  exact (continuousMultilinearCurryFin0 ℝ E F).apply_symm_apply (f x)
+    mk' f hf G hGc M hGb hGeq hH ⟨x, subset_closure hx⟩ = f x :=
+  (LinearIsometryEquiv.eq_symm_apply _).mp (hGeq 0 x hx)
 
 /-- The norm of `mk' f …` is bounded by the data: `∑ M i + C`. -/
 theorem norm_mk'_le (f : E → F) (hf : ContDiffOn ℝ j f Ω)

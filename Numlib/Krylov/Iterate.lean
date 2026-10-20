@@ -88,14 +88,6 @@ private theorem aeval_one_sub_X_mul (A : E →ₗ[𝕜] E) (g : 𝕜[X]) (v : E)
     aeval A (1 - X * g) v = v - A (aeval A g v) := by
   simp [Module.End.mul_apply]
 
-/-- Polynomials in `A` commute with `A`. -/
-private theorem aeval_apply_comm (A : E →ₗ[𝕜] E) (p : 𝕜[X]) (u : E) :
-    aeval A p (A u) = A (aeval A p u) := by
-  have h1 : aeval A p (A u) = (aeval A p * A) u := rfl
-  have h2 : A (aeval A p u) = (A * aeval A p) u := rfl
-  rw [h1, h2, show (aeval A p * A) = aeval A (p * X) by rw [map_mul, aeval_X],
-    show (A * aeval A p) = aeval A (X * p) by rw [map_mul, aeval_X], mul_comm]
-
 /-- The constant polynomial `1` is a residual polynomial for every `m`.  Named apart from Mathlib's
 `Polynomial.degree_one_le`, which is the same bound at `m = 0`. -/
 private theorem degree_one_le_natCast (m : ℕ) : (1 : 𝕜[X]).degree ≤ (m : WithBot ℕ) :=
@@ -366,7 +358,7 @@ private theorem error_eq_aeval (hA : A.IsSymmetricCoercive) {xstar y : E} (hstar
   refine hA.isCoercive.injective ?_
   have hr : b - A x₀ = A (xstar - x₀) := by rw [map_sub, hstar]
   have hl : b - A y = A (xstar - y) := by rw [map_sub, hstar]
-  rw [← hl, hres, hr, aeval_apply_comm]
+  rw [← hl, hres, hr, Module.End.aeval_apply_apply]
 
 /-- Energy-norm counterpart of `Krylov.IsMinResidualIterate.norm_residual_le_norm_aeval`, for
 symmetric coercive `A`: `‖x* - x‖_A ≤ ‖p(A) (x* - x₀)‖_A` for each `p` of degree at most `m` with

@@ -128,10 +128,10 @@ theorem Polyhedral.recessionCone_image {C : Set E} (hC : Polyhedral C) (hne : C.
   obtain ⟨P, D, hPD⟩ := hC.finitelyGenerated
   have himg : A '' C = convexHull ℝ ((P.image A : Finset F) : Set F)
       + (PointedCone.hull ℝ ((D.image A : Finset F) : Set F) : Set F) := by
-    rw [hPD, Set.image_add A, LinearMap.image_convexHull, image_coe_hull, Finset.coe_image,
+    rw [hPD, Set.image_add A, LinearMap.image_convexHull, ← coe_hull_image, Finset.coe_image,
       Finset.coe_image]
   rw [recessionCone_of_finitelyGenerated himg (hne.image A),
-    recessionCone_of_finitelyGenerated hPD hne, Finset.coe_image, ← image_coe_hull]
+    recessionCone_of_finitelyGenerated hPD hne, Finset.coe_image, coe_hull_image]
 
 end Generators
 

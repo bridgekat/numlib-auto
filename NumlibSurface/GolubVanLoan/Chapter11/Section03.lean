@@ -1095,13 +1095,13 @@ private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA 
         obtain ⟨-, -, h3⟩ := hvec (L.k - 1) (by omega)
         have h4 : Lanczos.beta (toEuclideanLin A) (cgR A b x₀) (L.k - 1) = 0 := by
           rw [← hbe, ← h3, hb]
-        rw [Lanczos.beta_eq_zero_iff (cgR A b x₀) hT] at h4
+        rw [Lanczos.beta_eq_zero_iff (cgR A b x₀)] at h4
         omega
       · intro hle
         have hpos : 0 < L.k := by omega
         refine ⟨hpos, ?_⟩
         obtain ⟨-, -, h3⟩ := hvec (L.k - 1) (by omega)
-        rw [h3, hbe, Lanczos.beta_eq_zero_iff (cgR A b x₀) hT]
+        rw [h3, hbe, Lanczos.beta_eq_zero_iff (cgR A b x₀)]
         omega
 
 /-- The iterate of the exact run of (11.3.14) is `x₀ + Q_k T_k⁻¹(β₀e₁)` of the final Lanczos state
@@ -1633,7 +1633,7 @@ private theorem lanczosCGStep_inv {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDe
   have hT := hA.isSymmetricCoercive_toEuclideanLin
   have hsym := hT.isSymmetric
   obtain ⟨hk, hx, h0, hsucc⟩ := hs
-  have hrj : (cgIt A b x₀ j).r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ hT hj
+  have hrj : (cgIt A b x₀ j).r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ hj
   have hαj : 0 < CG.alpha (toEuclideanLin A) (cgIt A b x₀ j) := cg_alpha_pos hA b x₀ hrj
   have hρj : ‖(cgIt A b x₀ j).r‖ ≠ 0 := norm_ne_zero_iff.2 hrj
   have hQdiv : lcgQ s = s.β⁻¹ • s.r := by funext t; simp [lcgQ, div_eq_inv_mul]
@@ -1648,7 +1648,7 @@ private theorem lanczosCGStep_inv {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDe
       simp only [RCLike.ofReal_real_eq_id, id_eq] at hv
       rw [hv, hQdiv, WithLp.toLp_smul, hr, hb]
     · obtain ⟨-, hr, hb, -⟩ := hsucc i rfl
-      refine ⟨fun h => (not_le.2 hj) ((Lanczos.beta_eq_zero_iff _ hsym _).1 (hb.symm.trans h)),
+      refine ⟨fun h => (not_le.2 hj) ((Lanczos.beta_eq_zero_iff _ _).1 (hb.symm.trans h)),
         ?_⟩
       have hv := Arnoldi.vec_succ_eq (toEuclideanLin A) (cgR A b x₀) i
       simp only [RCLike.ofReal_real_eq_id, id_eq] at hv
@@ -1703,7 +1703,7 @@ private theorem lanczosCGStep_inv {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDe
     · have hk' : s.k ≠ 0 := by omega
       obtain ⟨-, -, hb, -, hd1, hd2, hν, hc⟩ := hsucc i rfl
       have hri : (cgIt A b x₀ i).r ≠ 0 :=
-        CG.residual_ne_zero_of_lt_grade _ _ hT (Nat.lt_of_succ_lt hj)
+        CG.residual_ne_zero_of_lt_grade _ _ (Nat.lt_of_succ_lt hj)
       have hαi : 0 < CG.alpha (toEuclideanLin A) (cgIt A b x₀ i) := cg_alpha_pos hA b x₀ hri
       have hρi : ‖(cgIt A b x₀ i).r‖ ≠ 0 := norm_ne_zero_iff.2 hri
       have hlb := CG.lanczos_beta_eq (WithLp.toLp 2 b) (WithLp.toLp 2 x₀) hT (k := i) hrj
@@ -1792,7 +1792,7 @@ private theorem algorithm_11_3_2_inv {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.Po
               (k := 0) (by omega)
             exact this
           · rw [(hsucc (g - 1) hg1).2.2.1]
-            exact (Lanczos.beta_eq_zero_iff _ hT.isSymmetric _).2 (by omega)
+            exact (Lanczos.beta_eq_zero_iff _ _).2 (by omega)
         simp only [hdone, Bool.false_eq_true, ↓reduceIte]
         rw [ite_eq_left hβ, min_eq_right (by omega : g ≤ m + 1)]
         exact ⟨hinv, (decide_eq_true (by omega : g < m + 1)).symm⟩
@@ -1887,9 +1887,9 @@ theorem theorem_11_3_4 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ 
       · rw [h0, Lanczos.beta, h0, norm_zero, zero_smul]
       · rw [hw, smul_smul, Lanczos.beta, mul_inv_cancel₀ (norm_ne_zero_iff.2 h0), one_smul]
     rcases hj.lt_or_eq with hlt | heq
-    · have hrm1 : (cgIt A b x₀ (m + 1)).r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ hT hlt
+    · have hrm1 : (cgIt A b x₀ (m + 1)).r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ hlt
       have hrm : (cgIt A b x₀ m).r ≠ 0 :=
-        CG.residual_ne_zero_of_lt_grade _ _ hT (Nat.lt_of_succ_lt hlt)
+        CG.residual_ne_zero_of_lt_grade _ _ (Nat.lt_of_succ_lt hlt)
       have hαm := cg_alpha_pos hA b x₀ hrm
       have hρm : ‖(cgIt A b x₀ m).r‖ ≠ 0 := norm_ne_zero_iff.2 hrm
       have hρm1 : ‖(cgIt A b x₀ (m + 1)).r‖ ≠ 0 := norm_ne_zero_iff.2 hrm1
@@ -1910,7 +1910,7 @@ theorem theorem_11_3_4 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ 
         neg_one_pow_mul_self, div_self (mul_ne_zero hρm hαm.ne'), mul_inv_cancel₀ hρm1]
       ring
     · have hβ0 : Lanczos.beta (toEuclideanLin A) (cgR A b x₀) m = 0 :=
-        (Lanczos.beta_eq_zero_iff _ hT.isSymmetric _).2 heq.ge
+        (Lanczos.beta_eq_zero_iff _ _).2 heq.ge
       have hr0 := CG.residual_eq_zero_of_grade_le (WithLp.toLp 2 b) (WithLp.toLp 2 x₀) hT
         (k := m + 1) heq.ge
       rw [hwn, hβ0, zero_smul, smul_zero, hr0, neg_zero]
@@ -1938,7 +1938,7 @@ theorem theorem_11_3_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ 
     real_inner_smul_right]
   split_ifs with hij
   · obtain rfl : i' = j' := by omega
-    have hr : (cgIt A b x₀ i').r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ hT (by omega)
+    have hr : (cgIt A b x₀ i').r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ (by omega)
     have hα := cg_alpha_pos hA b x₀ hr
     have hρ : ‖(cgIt A b x₀ i').r‖ ≠ 0 := norm_ne_zero_iff.2 hr
     have hX : ⟪(cgIt A b x₀ i').p, toEuclideanLin A (cgIt A b x₀ i').p⟫ =
@@ -1974,7 +1974,7 @@ theorem equation_11_3_23 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x�
   · obtain ⟨⟨-, -, -, hs⟩, -⟩ := algorithm_11_3_2_inv hA b x₀ (k + 1)
     rw [min_eq_left hk] at hs
     obtain ⟨-, -, -, -, -, -, -, hc⟩ := hs k rfl
-    have hr : (cgIt A b x₀ k).r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ hT (by omega)
+    have hr : (cgIt A b x₀ k).r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ (by omega)
     have hρ : ‖(cgIt A b x₀ k).r‖ ≠ 0 := norm_ne_zero_iff.2 hr
     refine ⟨-((-1) ^ k * ‖(cgIt A b x₀ k).r‖),
       neg_ne_zero.2 (mul_ne_zero (pow_ne_zero _ (by norm_num)) hρ), ?_⟩
@@ -2283,7 +2283,7 @@ private theorem algorithm_11_3_3_inv {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.Po
         exact ⟨⟨hk, hx, hr, hp⟩, (decide_eq_true (by omega : g < m + 1)).symm⟩
       · -- a step
         rw [min_eq_left hmg.le] at hk hx hr hp
-        have hne : (cgIt A b x₀ m).r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ hT hmg
+        have hne : (cgIt A b x₀ m).r ≠ 0 := CG.residual_ne_zero_of_lt_grade _ _ hmg
         have hc : ¬ s.r ⬝ᵥ s.r = 0 := by
           rw [dotProduct_self_eq_zero_iff]
           rintro h0

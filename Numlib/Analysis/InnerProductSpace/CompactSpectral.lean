@@ -287,7 +287,7 @@ private theorem tendsto_abs_eigenVal (hK : IsCompactOperator T) :
   have hne : ψ N ≠ ψ (N + 1) := fun he => by simpa using hψ.injective he
   exact absurd hlt (not_lt.2 (hsep _ _ hne))
 
-private theorem orthogonal_ne_bot [CompleteSpace E] (hfin : ¬ FiniteDimensional 𝕜 E)
+private theorem orthogonal_ne_bot (hfin : ¬ FiniteDimensional 𝕜 E)
     {S : Submodule 𝕜 E} [FiniteDimensional 𝕜 S] : Sᗮ ≠ ⊥ := by
   intro h
   have htop : S = ⊤ := by

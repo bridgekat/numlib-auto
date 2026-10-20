@@ -304,18 +304,13 @@ end Internal
 
 /-! ### Weak sequential lower semicontinuity of a convex continuous functional -/
 
-/-- Symmetry of the real inner product, with the arguments in the order they appear on the left.
-Mathlib's `real_inner_comm a b` is `⟪b, a⟫ = ⟪a, b⟫`, so aiming it at a particular occurrence needs
-the arguments reversed; this wrapper spares every call site that reversal. -/
-private theorem inner_comm' (a b : V) : inner ℝ a b = inner ℝ b a := real_inner_comm _ _
-
 /-- Weak convergence written with the vector on the left is weak convergence with it on the right;
 over `ℝ` the inner product is symmetric. -/
 private theorem tendsto_inner_of_weak {v : ℕ → V} {z : V}
     (hw : ∀ y : V, Tendsto (fun k => inner ℝ (v k) y) atTop (𝓝 (inner ℝ z y))) (y : V) :
     Tendsto (fun k => inner ℝ y (v k)) atTop (𝓝 (inner ℝ y z)) := by
-  rw [inner_comm' y z]
-  exact Filter.Tendsto.congr (fun k => inner_comm' (v k) y) (hw y)
+  rw [real_inner_comm z y]
+  exact Filter.Tendsto.congr (fun k => real_inner_comm y (v k)) (hw y)
 
 section WeakLsc
 
@@ -328,7 +323,7 @@ private theorem mem_of_weak_tendsto {S : Set V} (hconv : Convex ℝ S) (hclosed 
     (hw : ∀ y : V, Tendsto (fun k => inner ℝ (v k) y) atTop (𝓝 (inner ℝ z y))) : z ∈ S := by
   refine mem_of_weak_tendsto_of_convex hconv hclosed hmem fun l => ?_
   have hcomm : ∀ x : V, inner ℝ x (SesqForm.rieszRep l) = l x := fun x => by
-    rw [inner_comm' x (SesqForm.rieszRep l), SesqForm.inner_rieszRep]
+    rw [real_inner_comm (SesqForm.rieszRep l) x, SesqForm.inner_rieszRep]
   simpa only [hcomm] using hw (SesqForm.rieszRep l)
 
 /-- **A convex continuous functional is weakly sequentially lower semicontinuous.**  Its sublevel

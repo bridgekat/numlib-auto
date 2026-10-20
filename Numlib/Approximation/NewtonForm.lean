@@ -973,16 +973,11 @@ theorem confluent_const (f : ℝ → ℝ) (x : ℝ) :
   | zero => simp
   | succ m => rw [confluent_succ, ite_eq_left rfl]
 
-private theorem univ_val_map_eq_ofFn {n : ℕ} (v : Fin n → ℝ) :
-    (Finset.univ : Finset (Fin n)).val.map v = (List.ofFn v : Multiset ℝ) := by
-  rw [Fin.univ_def, List.ofFn_eq_map]
-  rfl
-
 /-- The multiset of the last `m + 1` nodes of `m + 2`. -/
 private theorem univ_val_map_tail (v : Fin (m + 2) → ℝ) :
     (Finset.univ : Finset (Fin (m + 1))).val.map (Fin.tail v)
       = v (Fin.last _) ::ₘ (List.ofFn fun i : Fin m => v i.succ.castSucc : Multiset ℝ) := by
-  rw [univ_val_map_eq_ofFn, List.ofFn_succ', List.concat_eq_append,
+  rw [Fin.univ_val_map, List.ofFn_succ', List.concat_eq_append,
     Multiset.coe_eq_coe.mpr (List.perm_append_singleton _ _), ← Multiset.cons_coe]
   simp only [Fin.tail, Fin.succ_last, Fin.succ_castSucc]
 
@@ -990,7 +985,7 @@ private theorem univ_val_map_tail (v : Fin (m + 2) → ℝ) :
 private theorem univ_val_map_init (v : Fin (m + 2) → ℝ) :
     (Finset.univ : Finset (Fin (m + 1))).val.map (Fin.init v)
       = v 0 ::ₘ (List.ofFn fun i : Fin m => v i.succ.castSucc : Multiset ℝ) := by
-  rw [univ_val_map_eq_ofFn, List.ofFn_succ]
+  rw [Fin.univ_val_map, List.ofFn_succ]
   simp only [Fin.init, Fin.castSucc_zero]
   rfl
 
@@ -1002,15 +997,15 @@ theorem confluent_eq_divDiff (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (hv : M
     confluent f v = Hermite.divDiff f ((Finset.univ : Finset (Fin (m + 1))).val.map v) := by
   induction m with
   | zero =>
-    rw [confluent_zero, univ_val_map_eq_ofFn, List.ofFn_succ, List.ofFn_zero]
+    rw [confluent_zero, Fin.univ_val_map, List.ofFn_succ, List.ofFn_zero]
     exact (Hermite.divDiff_singleton f (v 0)).symm
   | succ m ih =>
     have hmap : (Finset.univ : Finset (Fin (m + 2))).val.map v
         = v (Fin.last _) ::ₘ v 0 ::ₘ
           (List.ofFn fun i : Fin m => v i.succ.castSucc : Multiset ℝ) := by
-      rw [univ_val_map_eq_ofFn, List.ofFn_succ, ← Multiset.cons_coe]
+      rw [Fin.univ_val_map, List.ofFn_succ, ← Multiset.cons_coe]
       change v 0 ::ₘ (List.ofFn (Fin.tail v) : Multiset ℝ) = _
-      rw [← univ_val_map_eq_ofFn, univ_val_map_tail, Multiset.cons_swap]
+      rw [← Fin.univ_val_map, univ_val_map_tail, Multiset.cons_swap]
     rw [confluent_succ]
     split_ifs with h
     · have hc : ∀ i, v i = v 0 := fun i =>

@@ -116,9 +116,6 @@ id = "Continuous.memLp_restrict_of_isCompact_closure"
 id = "MeasureTheory.eLpNorm_sub_le_of_norm"
 
 [[node]]
-id = "MeasureTheory.MemLp.sub_of_norm"
-
-[[node]]
 id = "SobolevMultiIndex.weakDeriv_ae_eq_iteratedFDeriv_of_fn_ae_eq"
 
 [[node]]

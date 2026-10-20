@@ -557,9 +557,9 @@ theorem coeff_eq_dft_mulVec {N : ℕ} (m : ℤ) (f : ℝ → ℂ) (k : Fin N) :
   field_simp
   ring_nf
 
-/-- The character `exp (i p x)` is the Fourier monomial `fourier p` of Mathlib's circle of
-circumference `2 π`, evaluated at the class of `x`. -/
-private theorem fourier_coe_eq_exp (p : ℤ) (x : ℝ) :
+/-- The character `exp (i p x)` is the Fourier monomial `fourier p` of the circle of circumference
+`2 π`, evaluated at the class of `x`. -/
+theorem fourier_coe_two_pi (p : ℤ) (x : ℝ) :
     (fourier p (x : AddCircle (2 * π)) : ℂ) = Complex.exp ((p : ℂ) * x * I) := by
   rw [fourier_coe_apply]
   congr 1
@@ -606,7 +606,7 @@ theorem coeff_eq_tsum_fourierCoeff {N : ℕ} (hN : 0 < N) (m : ℤ) {f : C(AddCi
     refine tsum_congr fun p => ?_
     rw [hG]
     simp only
-    rw [fourier_coe_eq_exp, smul_eq_mul, mul_assoc]
+    rw [fourier_coe_two_pi, smul_eq_mul, mul_assoc]
   -- exchange the sums
   have hcoeff : coeff N m (fun x : ℝ => f x) k = (N : ℂ)⁻¹ * ∑' p, ∑ j ∈ range N, G j p := by
     rw [coeff_def, Summable.tsum_finsetSum fun j _ => hsumm j]

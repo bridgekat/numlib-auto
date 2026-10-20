@@ -110,8 +110,6 @@ theorem span_leftVec (k : ℕ) :
 
 private theorem semiconj_right : Function.Semiconj A (Astar ∘ₗ A) (A ∘ₗ Astar) := fun _ => rfl
 
-private theorem semiconj_left : Function.Semiconj Astar (A ∘ₗ Astar) (Astar ∘ₗ A) := fun _ => rfl
-
 private theorem eq_sum_leftVec {x : F} {m : ℕ} (hx : x ∈ subspace (A ∘ₗ Astar) (A v) m) :
     x = ∑ i ∈ range m, inner 𝕜 (leftVec A Astar v i) x • leftVec A Astar v i :=
   Arnoldi.eq_sum_inner_smul_vec _ _ hx
@@ -129,7 +127,7 @@ theorem apply_rightVec_mem (j : ℕ) :
 /-- `Astar u_j ∈ 𝒦_{j+2}(Aᴴ A, v)`. -/
 theorem adjoint_apply_leftVec_mem (j : ℕ) :
     Astar (leftVec A Astar v j) ∈ subspace (Astar ∘ₗ A) v (j + 2) :=
-  Arnoldi.apply_vec_mem_subspace_of_semiconj (semiconj_left A Astar) (s := 1)
+  Arnoldi.apply_vec_mem_subspace_of_semiconj (semiconj_right Astar A) (s := 1)
     (by rw [pow_one]; rfl) j
 
 private theorem alpha_spec (j : ℕ) :
@@ -149,7 +147,7 @@ private theorem beta_spec (j : ℕ) :
       inner 𝕜 (rightVec A Astar v (j + 1)) (Astar (leftVec A Astar v j)) =
         (beta A Astar v j : 𝕜) ∧
       (beta A Astar v j = 0 → rightVec A Astar v (j + 1) = 0) := by
-  obtain ⟨r, hr, heq, h0⟩ := Arnoldi.inner_vec_apply_vec_of_semiconj (semiconj_left A Astar)
+  obtain ⟨r, hr, heq, h0⟩ := Arnoldi.inner_vec_apply_vec_of_semiconj (semiconj_right Astar A)
     (b := A v) (c := v) (s := 1) (by rw [pow_one]; rfl) j
   have hb : beta A Astar v j = r := by
     rw [beta]
@@ -262,16 +260,6 @@ private theorem hermitianDilation_toLp (a : E) (b : F) :
     hermitianDilation A Astar (WithLp.toLp 2 (a, b)) = WithLp.toLp 2 (Astar b, A a) :=
   rfl
 
-private theorem norm_toLp_fst (a : E) :
-    ‖(WithLp.toLp 2 (a, (0 : F)) : WithLp 2 (E × F))‖ = ‖a‖ := by
-  rw [WithLp.prod_norm_eq_of_L2]
-  simp [Real.sqrt_sq (norm_nonneg a)]
-
-private theorem norm_toLp_snd (a : F) :
-    ‖(WithLp.toLp 2 ((0 : E), a) : WithLp 2 (E × F))‖ = ‖a‖ := by
-  rw [WithLp.prod_norm_eq_of_L2]
-  simp [Real.sqrt_sq (norm_nonneg a)]
-
 /-- `‖c x‖ = c` for a real `c ≥ 0` and a vector `x` that is a unit vector unless it is `0`, in which
 case `c = 0`: the norm of an Arnoldi vector times its leading coefficient. -/
 private theorem norm_ofReal_smul_eq {G : Type*} [NormedAddCommGroup G] [InnerProductSpace 𝕜 G]
@@ -348,7 +336,7 @@ private theorem vec_zero_hermitianDilation :
     exact (Arnoldi.vec_eq_zero_iff_pow_apply_mem _ 0 0).2 (by simp)
   · have hz : (WithLp.toLp 2 (v, (0 : F)) : WithLp 2 (E × F)) ≠ 0 := fun h =>
       hv (by simpa using congrArg (fun z : WithLp 2 (E × F) => (WithLp.ofLp z).1) h)
-    rw [Arnoldi.vec_zero _ _ hz, rightVec, Arnoldi.vec_zero _ _ hv, norm_toLp_fst,
+    rw [Arnoldi.vec_zero _ _ hz, rightVec, Arnoldi.vec_zero _ _ hv, WithLp.norm_toLp_fst,
       ← WithLp.toLp_smul, Prod.smul_mk, smul_zero]
 
 /-- One step of the classical Arnoldi recurrence, when the image splits as a part orthogonal to the
@@ -385,12 +373,6 @@ theorem grade_comp_adjoint_add_finrank [FiniteDimensional 𝕜 (fullSubspace (As
 
 variable {A Astar} (hadj : ∀ u x, inner 𝕜 (Astar u) x = inner 𝕜 u (A x))
 include hadj
-
-/-- The adjoint relation read the other way: `⟪A x, u⟫ = ⟪x, Astar u⟫`, the hypothesis `hadj` of the
-pair `(Astar, A)`. -/
-theorem inner_apply_eq_inner_adjoint_apply (x : E) (u : F) :
-    inner 𝕜 (A x) u = inner 𝕜 x (Astar u) := by
-  rw [← inner_conj_symm, ← hadj, inner_conj_symm]
 
 private theorem inner_leftVec_apply_rightVec_of_add_two_le {i j : ℕ} (h : i + 2 ≤ j) :
     inner 𝕜 (leftVec A Astar v i) (A (rightVec A Astar v j)) = 0 := by
@@ -446,7 +428,7 @@ theorem adjoint_apply_leftVec (j : ℕ) :
 private theorem inner_rightVec_comp_apply (i j : ℕ) :
     inner 𝕜 (rightVec A Astar v i) ((Astar ∘ₗ A) (rightVec A Astar v j)) =
       inner 𝕜 (A (rightVec A Astar v i)) (A (rightVec A Astar v j)) := by
-  rw [LinearMap.comp_apply, inner_apply_eq_inner_adjoint_apply hadj]
+  rw [LinearMap.comp_apply, LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj]
 
 /-- The first diagonal Lanczos coefficient of `Aᴴ A`: `α₀(Aᴴ A) = α₀²` ([golub2013matrix] the remark
 after (10.4.12)). -/
@@ -634,7 +616,7 @@ theorem residual_eq {u : F} (hu : ‖u‖ = 1) {b : F} {x₀ : E} {β : 𝕜} (h
       ∑ i : Fin (k + 1), (firstVec β (k + 1) -
         ((bidiagLower Astar A u k).map (algebraMap ℝ 𝕜)) *ᵥ y) i • rightVec Astar A u i := by
   have hrel := hessenbergRelation₂ (A := Astar) (Astar := A) u
-    (inner_apply_eq_inner_adjoint_apply hadj)
+    (LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj)
   have hu0 : u ≠ 0 := by
     rintro rfl
     simp at hu
@@ -694,11 +676,11 @@ private theorem vec_hermitianDilation_eq_dilVec (i : ℕ) :
       rw [Arnoldi.vec_succ_eq, w_hermitianDilation_of_forall v hadj ih']
       obtain ⟨j, rfl | rfl⟩ := Nat.even_or_odd' i
       · rw [dilW_two_mul, dilVec_two_mul_add_one, ← WithLp.toLp_smul, Prod.smul_mk, smul_zero,
-          norm_toLp_snd, inv_norm_smul_smul (alpha_nonneg A Astar v j)
+          WithLp.norm_toLp_snd, inv_norm_smul_smul (alpha_nonneg A Astar v j)
             (leftVec_eq_zero_of_alpha_eq_zero A Astar v)
             (Arnoldi.norm_vec_eq_one_of_ne_zero _ _)]
       · rw [dilW_two_mul_add_one, show 2 * j + 1 + 1 = 2 * (j + 1) by ring, dilVec_two_mul,
-          ← WithLp.toLp_smul, Prod.smul_mk, smul_zero, norm_toLp_fst,
+          ← WithLp.toLp_smul, Prod.smul_mk, smul_zero, WithLp.norm_toLp_fst,
           inv_norm_smul_smul (beta_nonneg A Astar v j)
             (rightVec_eq_zero_of_beta_eq_zero A Astar v)
             (Arnoldi.norm_vec_eq_one_of_ne_zero _ _)]
@@ -730,7 +712,7 @@ theorem lanczos_beta_hermitianDilation_two_mul (j : ℕ) :
     Lanczos.beta (hermitianDilation A Astar) (WithLp.toLp 2 (v, 0)) (2 * j) =
       alpha A Astar v j := by
   rw [Lanczos.beta, w_hermitianDilation_of_forall v hadj
-    (fun l _ => vec_hermitianDilation_eq_dilVec v hadj l), dilW_two_mul, norm_toLp_snd]
+    (fun l _ => vec_hermitianDilation_eq_dilVec v hadj l), dilW_two_mul, WithLp.norm_toLp_snd]
   refine norm_ofReal_smul_eq (alpha_nonneg A Astar v j) (fun h => ?_)
     (Arnoldi.norm_vec_eq_one_of_ne_zero _ _)
   rw [alpha, h, inner_zero_left, map_zero]
@@ -740,7 +722,8 @@ theorem lanczos_beta_hermitianDilation_two_mul_add_one (j : ℕ) :
     Lanczos.beta (hermitianDilation A Astar) (WithLp.toLp 2 (v, 0)) (2 * j + 1) =
       beta A Astar v j := by
   rw [Lanczos.beta, w_hermitianDilation_of_forall v hadj
-    (fun l _ => vec_hermitianDilation_eq_dilVec v hadj l), dilW_two_mul_add_one, norm_toLp_fst]
+    (fun l _ => vec_hermitianDilation_eq_dilVec v hadj l), dilW_two_mul_add_one,
+    WithLp.norm_toLp_fst]
   refine norm_ofReal_smul_eq (beta_nonneg A Astar v j) (fun h => ?_)
     (Arnoldi.norm_vec_eq_one_of_ne_zero _ _)
   rw [beta, h, inner_zero_left, map_zero]
@@ -816,10 +799,6 @@ theorem conjTranspose_leftMatrix_mul_self {k : ℕ}
   rw [leftMatrix_eq_basisMatrix]
   exact Arnoldi.conjTranspose_basisMatrix_mul_self _ _ hk
 
-private theorem hadj_toEuclideanLin :
-    ∀ u x, inner 𝕜 (toEuclideanLin Aᴴ u) x = inner 𝕜 u (toEuclideanLin A x) :=
-  fun u x => toEuclideanLin_conjTranspose_inner_left A x u
-
 /-- (10.4.9) of [golub2013matrix]: `A V_k = U_k B_k`, for every `k` (past breakdown the columns
 vanish on both sides). -/
 theorem mul_rightMatrix (k : ℕ) :
@@ -843,7 +822,8 @@ theorem mul_rightMatrix (k : ℕ) :
       have hl' : (l : ℕ) ≠ 0 := fun h => hl (Fin.ext h)
       rw [ite_eq_right (by simpa using hl'), ite_eq_right (by simp), RCLike.ofReal_zero, mul_zero]
   | succ j =>
-    rw [apply_rightVec v (hadj_toEuclideanLin A), Fintype.sum_eq_add ⟨j, by omega⟩ ⟨j + 1, hj⟩
+    rw [apply_rightVec v (fun u x => toEuclideanLin_conjTranspose_inner_left A x u),
+      Fintype.sum_eq_add ⟨j, by omega⟩ ⟨j + 1, hj⟩
       (fun h => by simpa using congrArg Fin.val h) (fun l hl => by
         have h1 : (l : ℕ) ≠ j := fun h => hl.1 (Fin.ext h)
         have h2 : (l : ℕ) ≠ j + 1 := fun h => hl.2 (Fin.ext h)
@@ -862,7 +842,8 @@ theorem conjTranspose_mul_leftMatrix (k : ℕ) :
       (toEuclideanLin Aᴴ (leftVec (toEuclideanLin A) (toEuclideanLin Aᴴ) v j)).ofLp x := by
     rw [ofLp_toEuclideanLin]
     rfl
-  rw [hl, Matrix.mul_apply, adjoint_apply_leftVec v (hadj_toEuclideanLin A),
+  rw [hl, Matrix.mul_apply,
+    adjoint_apply_leftVec v (fun u x => toEuclideanLin_conjTranspose_inner_left A x u),
     Fintype.sum_eq_add j.castSucc j.succ Fin.castSucc_lt_succ.ne (fun l hl => by
       have h1 : (l : ℕ) ≠ j := fun h => hl.1 (Fin.ext h)
       have h2 : (l : ℕ) ≠ j + 1 := fun h => hl.2 (Fin.ext h)

@@ -74,16 +74,11 @@ section Clamp
 
 variable (hab : a ≤ b)
 
-/-- The clamping map `Set.projIcc a b hab` of the line onto the compact interval is continuous. -/
-@[fun_prop]
-theorem continuous_projIcc : Continuous (projIcc a b hab) :=
-  continuous_induced_rng.2 (continuous_const.max (continuous_const.min continuous_id))
-
 /-- A continuous function on `Set.Icc a b` composed with the clamping map is continuous on `ℝ`. -/
 @[fun_prop]
 theorem continuous_apply_projIcc (u : C(Icc a b, ℝ)) :
     Continuous fun y : ℝ => u (projIcc a b hab y) :=
-  u.continuous.comp (continuous_projIcc hab)
+  u.continuous.comp continuous_projIcc
 
 /-- Clamping fixes a point already in the interval, so it does not change the value there. -/
 theorem apply_projIcc_of_mem (u : C(Icc a b, ℝ)) {y : ℝ} (hy : y ∈ Icc a b) :

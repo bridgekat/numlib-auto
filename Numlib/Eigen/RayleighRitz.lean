@@ -1043,7 +1043,7 @@ multiple of `u`, so `(θ - lam) ‖w‖ ^ 2` may be evaluated at `w - P_{𝕜 �
 
 Chained with `sin_angle_ritzVector_le` this bounds `|θ - lam|` by `C (1 + γ² / δ²) sin²θ(u, K)`. -/
 theorem abs_ritz_value_sub_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {K : Submodule 𝕜 E}
-    [K.HasOrthogonalProjection] {lam C : ℝ}
+    {lam C : ℝ}
     (hC : ∀ x : E, |RCLike.re (inner 𝕜 (A x) x) - lam * ‖x‖ ^ 2| ≤ C * ‖x‖ ^ 2)
     {u w : E} (hu : A u = (lam : 𝕜) • u) (hu0 : u ≠ 0) {θ : ℝ}
     (h : IsRitzPair A K (θ : 𝕜) w) :

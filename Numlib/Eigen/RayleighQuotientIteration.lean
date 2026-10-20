@@ -767,15 +767,13 @@ variable {n : Type*} [Fintype n] [DecidableEq n] {Q : Matrix n n ℝ}
 
 /-- A real orthogonal matrix satisfies `Q Qᵀ = 1`. -/
 theorem mul_transpose_of_mem_orthogonalGroup (hQ : Q ∈ Matrix.orthogonalGroup n ℝ) :
-    Q * Qᵀ = 1 := by
-  have h := mem_unitaryGroup_iff.mp hQ
-  rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
+    Q * Qᵀ = 1 :=
+  (Matrix.mem_orthogonalGroup_iff n ℝ).mp hQ
 
 /-- A real orthogonal matrix satisfies `Qᵀ Q = 1`. -/
 theorem transpose_mul_of_mem_orthogonalGroup (hQ : Q ∈ Matrix.orthogonalGroup n ℝ) :
-    Qᵀ * Q = 1 := by
-  have h := mem_unitaryGroup_iff'.mp hQ
-  rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
+    Qᵀ * Q = 1 :=
+  (Matrix.mem_orthogonalGroup_iff' n ℝ).mp hQ
 
 /-- `Q (Qᵀ v) = v` for an orthogonal `Q`. -/
 theorem toEuclideanLin_toEuclideanLin_transpose_apply (hQ : Q ∈ Matrix.orthogonalGroup n ℝ)

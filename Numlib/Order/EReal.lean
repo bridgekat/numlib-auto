@@ -507,9 +507,8 @@ theorem coe_add_iInf {ι : Sort*} (r : ℝ) (u : ι → EReal) :
 
 /-- **A real constant subtracted from an infimum turns it into a supremum.** -/
 theorem coe_sub_iInf {ι : Sort*} (r : ℝ) (u : ι → EReal) :
-    (r : EReal) - ⨅ i, u i = ⨆ i, ((r : EReal) - u i) := by
-  rw [sub_eq_add_neg, neg_iInf, add_comm, iSup_add_coe]
-  exact iSup_congr fun i => by rw [add_comm, ← sub_eq_add_neg]
+    (r : EReal) - ⨅ i, u i = ⨆ i, ((r : EReal) - u i) :=
+  sub_iInf r u
 
 /-- An arbitrary constant may be moved in and out of an infimum **whose value is not `⊥`**. Note
 where the hypothesis sits: for suprema (`EReal.biSup_add_of_ne_bot`) it is the *values* that

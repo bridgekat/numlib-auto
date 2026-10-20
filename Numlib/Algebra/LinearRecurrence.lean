@@ -516,9 +516,9 @@ theorem chooseMulPow_mem_genEigenspace (r : R) (s : ℕ) :
   simp
 
 /-- For a fixed `r`, the binomial sequences `chooseMulPow r s`, `s < m`, are linearly independent
-(over any nontrivial commutative ring): the dual family
+(over any commutative ring): the dual family
 `shift_sub_smul_pow_chooseMulPow_apply_zero`. -/
-theorem linearIndependent_chooseMulPow [Nontrivial R] (r : R) (m : ℕ) :
+theorem linearIndependent_chooseMulPow (r : R) (m : ℕ) :
     LinearIndependent R fun s : Fin m => chooseMulPow r s := by
   rw [Fintype.linearIndependent_iff]
   intro g hg s

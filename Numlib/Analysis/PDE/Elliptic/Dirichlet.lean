@@ -218,8 +218,8 @@ theorem dirichletForm_isHermitian : (dirichletForm Ω).IsHermitian := fun u v �
 
 /-- The Dirichlet form is additive in its first argument. -/
 theorem dirichletForm_add_left (u v w : SobolevEuclidean N 1 2 Ω) :
-    dirichletForm Ω (u + v) w = dirichletForm Ω u w + dirichletForm Ω v w := by
-  rw [map_add, add_apply]
+    dirichletForm Ω (u + v) w = dirichletForm Ω u w + dirichletForm Ω v w :=
+  ContinuousLinearMap.map_add₂ _ u v w
 
 /-- The Dirichlet form is homogeneous in its first argument. -/
 theorem dirichletForm_smul_left (c : ℝ) (u w : SobolevEuclidean N 1 2 Ω) :

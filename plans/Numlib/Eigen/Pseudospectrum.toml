@@ -156,6 +156,3 @@ id = "ContinuousLinearMap.mem_closedPseudospectrum_of_hasEigenvalue_add"
 
 [[node]]  # added by syl1
 id = "Matrix.mem_closedPseudospectrum_conjTranspose_iff"
-
-[[node]]  # added by syl1
-id = "Matrix.norm_toEuclideanCLM_of_mem_unitaryGroup"

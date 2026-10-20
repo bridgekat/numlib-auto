@@ -1235,14 +1235,6 @@ variable {N : ℕ}
 
 open SobolevMultiIndex
 
-/-- Every subspace of `H^1(Ω)` is invariant under a translation if it is `⊤`. -/
-theorem translateL_mem_top {Ω : Opens (EuclideanSpace ℝ (Fin N))} {h : EuclideanSpace ℝ (Fin N)}
-    (hh : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
-    (u : SobolevEuclidean N 1 2 Ω) (_ : u ∈ (⊤ : Submodule ℝ (SobolevEuclidean N 1 2 Ω))) :
-    translateL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 volume hh u ∈
-      (⊤ : Submodule ℝ (SobolevEuclidean N 1 2 Ω)) :=
-  trivial
-
 /-- **`H²` regularity on an open set invariant under all translations, with bounds**: if `Ω` is
 invariant under every translation along the coordinate directions (the whole space), `u ∈ H^1(Ω)`
 and `∫_Ω ∇u · ∇φ = ∫_Ω g φ` for all `φ ∈ H^1(Ω)`, then `u` is the function of an element
@@ -2374,24 +2366,6 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- The pointwise ellipticity condition on continuous representatives gives the almost
-everywhere condition `IsUniformlyElliptic` on the `L^∞` classes. -/
-theorem isUniformlyElliptic_of_forall
-    {A : Fin (d + 1) → Fin (d + 1) →
-      Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    {a : Fin (d + 1) → Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
-    (hAa : ∀ k l, ⇑(A k l) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] a k l)
-    {α : ℝ} (hα0 : 0 < α)
-    (hell : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), ∀ ξ : EuclideanSpace ℝ (Fin (d + 1)),
-      α * ‖ξ‖ ^ 2 ≤ ∑ k, ∑ l, a k l x * ξ k * ξ l) :
-    IsUniformlyElliptic Ω A α := by
-  refine ⟨hα0, ?_⟩
-  have h : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
-      ∀ k l, A k l x = a k l x := ae_all_iff.2 fun k ↦ ae_all_iff.2 fun l ↦ hAa k l
-  filter_upwards [h, ae_restrict_mem Ω.isOpen.measurableSet] with x hx hxΩ ξ
-  simp only [hx]
-  exact hell x hxΩ ξ
-
 /-- The diagonal coefficient `a_{NN}` of an elliptic matrix is at least `α`. -/
 theorem le_diag_of_forall_elliptic
     {a : Fin (d + 1) → Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2483,7 +2457,7 @@ theorem exists_sobolevEuclidean_two_of_tangential
       fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn u ∧
       ‖U‖ ≤ regularityConst d α M₀ M * (‖u‖ + ‖g‖) := by
   have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) := Ω.isOpen.measurableSet
-  have hA : IsUniformlyElliptic Ω A α := isUniformlyElliptic_of_forall hAa hα0 hell
+  have hA : IsUniformlyElliptic Ω A α := isUniformlyElliptic_of_forall_mem Ω A hα0 hell hAa
   obtain ⟨C₁, hC₁⟩ : ∃ C₁ : ℝ, C₁ = α⁻¹ * (1 + (d + 1) ^ 2 * M) := ⟨_, rfl⟩
   have hC₁0 : 0 ≤ C₁ := by rw [hC₁]; positivity
   -- the tangential bound in terms of `‖u‖ + ‖g‖`
@@ -3587,12 +3561,6 @@ section ChartElliptic
 
 variable {N : ℕ}
 
-/-- A vector of `ℝ^N` is the sum of its coordinates times the basis vectors. -/
-theorem _root_.EuclideanSpace.eq_sum_single_smul (z : EuclideanSpace ℝ (Fin N)) :
-    z = ∑ k, z k • EuclideanSpace.single k (1 : ℝ) := by
-  have := (EuclideanSpace.basisFun (Fin N) ℝ).sum_repr z
-  simpa [EuclideanSpace.basisFun_repr, EuclideanSpace.basisFun_apply] using this.symm
-
 /-- The chain rule for the inverse: `fderiv J (H y) ∘ fderiv H y = id` at a point of the source
 of a `C¹` diffeomorphism. -/
 theorem _root_.IsDiffeoOnWithBoundedJacobian.fderiv_invFun_comp_fderiv
@@ -3871,13 +3839,6 @@ theorem _root_.MeasureTheory.MemLp.integrable_mul_two {X : Type*} [MeasurableSpa
     Integrable (fun x ↦ f x * g x) ν := by
   have : ENNReal.HolderTriple 2 2 1 := ⟨by rw [inv_one]; exact ENNReal.inv_two_add_inv_two⟩
   exact memLp_one_iff_integrable.1 (hf.fun_mul hg)
-
-/-- A linear functional on `ℝ^N` evaluated at `z` is the sum of `z_k` times its values on the
-basis vectors. -/
-theorem _root_.ContinuousLinearMap.apply_eq_sum_single (L : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ)
-    (z : EuclideanSpace ℝ (Fin N)) : L z = ∑ k, z k * L (EuclideanSpace.single k 1) := by
-  conv_lhs => rw [EuclideanSpace.eq_sum_single_smul z, map_sum]
-  simp only [map_smul, smul_eq_mul]
 
 /-- The bounded factor `|det DH(y)| (DJ(Hy) e_j)_k (DJ(Hy) e_j)_l` of the transferred integrand is
 continuous on the source and bounded there. -/
@@ -4196,20 +4157,6 @@ theorem extendCoeff_of_notMem_tsupport {χ : E → ℝ} {a : Fin N → Fin N →
     {y : E} (hy : y ∉ tsupport χ) : extendCoeff χ a k l y = if k = l then 1 else 0 := by
   simp [extendCoeff, image_eq_zero_of_notMem_tsupport hy]
 
-/-- A `C^n` function with support in an open set `Q` times a `C^n` function on `Q` is `C^n`
-everywhere. -/
-theorem _root_.ContDiff.mul_contDiffOn_of_tsupport_subset {n : WithTop ℕ∞} {χ f : E → ℝ}
-    (hχ : ContDiff ℝ n χ) {Q : Set E} (hQ : IsOpen Q) (hf : ContDiffOn ℝ n f Q)
-    (hχQ : tsupport χ ⊆ Q) : ContDiff ℝ n fun y ↦ χ y * f y := by
-  rw [contDiff_iff_contDiffAt]
-  intro y
-  by_cases hy : y ∈ Q
-  · exact hχ.contDiffAt.mul ((hf y hy).contDiffAt (hQ.mem_nhds hy))
-  · have hy' : y ∉ tsupport χ := fun h ↦ hy (hχQ h)
-    refine (contDiffAt_const (c := (0 : ℝ))).congr_of_eventuallyEq ?_
-    filter_upwards [(isClosed_tsupport χ).isOpen_compl.mem_nhds hy'] with z hz
-    rw [image_eq_zero_of_notMem_tsupport hz, zero_mul]
-
 theorem contDiff_extendCoeff {χ : E → ℝ} (hχ : ContDiff ℝ 1 χ) {Q : Set E} (hQ : IsOpen Q)
     {a : Fin N → Fin N → E → ℝ} (ha : ∀ k l, ContDiffOn ℝ 1 (a k l) Q) (hχQ : tsupport χ ⊆ Q)
     (k l : Fin N) : ContDiff ℝ 1 (extendCoeff χ a k l) :=
@@ -4354,33 +4301,6 @@ theorem exists_extendZero_mem_zero (hΩ' : Ω' ≤ Ω) {w : SobolevEuclidean N 1
   · rw [Set.indicator_of_notMem hxΩ']
     exact ((φ n).eq_zero_of_notMem hxΩ').symm
 
-/-- The partial derivatives of `w ∈ H^1(Ω')` vanish almost everywhere off a closed set off which
-`w` vanishes: on the open set `Ω' ∖ K` the function is zero, and weak derivatives are unique. -/
-theorem weakDeriv_ae_eq_zero_of_fn_ae_eq_zero {w : SobolevEuclidean N 1 2 Ω'}
-    {K : Set (EuclideanSpace ℝ (Fin N))} (hK : IsClosed K)
-    (hw : ∀ᵐ y ∂volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N))), y ∉ K → fn w y = 0)
-    (i : Fin N) :
-    ∀ᵐ y ∂volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N))),
-      y ∉ K → weakDeriv w (MultiIndexLE.single i) y = 0 := by
-  obtain ⟨V, hV⟩ : ∃ V : Opens (EuclideanSpace ℝ (Fin N)),
-    V = ⟨(Ω' : Set (EuclideanSpace ℝ (Fin N))) \ K, Ω'.isOpen.sdiff hK⟩ := ⟨_, rfl⟩
-  have hVΩ' : V ≤ Ω' := by
-    rw [hV]
-    exact sdiff_subset
-  have hVm : MeasurableSet (V : Set (EuclideanSpace ℝ (Fin N))) := V.isOpen.measurableSet
-  have h0 : fn w =ᵐ[volume.restrict (V : Set (EuclideanSpace ℝ (Fin N)))] 0 := by
-    have := (ae_restrict_iff' Ω'.isOpen.measurableSet).1 hw
-    rw [Filter.EventuallyEq, ae_restrict_iff' hVm]
-    filter_upwards [this] with y hy hyV
-    rw [hV] at hyV
-    exact hy hyV.1 hyV.2
-  have h1 := ((weakDeriv_hasWeakIteratedLineDerivOn_single w i).mono hVΩ').congr_ae h0
-    (EventuallyEq.refl _ _)
-  have h2 := h1.ae_eq HasWeakIteratedLineDerivOn.zero
-  rw [ae_restrict_iff' Ω'.isOpen.measurableSet]
-  filter_upwards [h2] with y hy hyΩ' hyK
-  exact hy (by rw [hV]; exact ⟨hyΩ', hyK⟩)
-
 /-- **The equation for the zero extension** on `Ω ≥ Ω'`: for `w ∈ H^1_0(Ω')` vanishing off the
 compact `K ⊆ Q`, `Q ∩ Ω ⊆ Ω'`, solving `∑_{kℓ} ∫_{Ω'} a_{kℓ} ∂_k w ∂_ℓ ψ = ∫_{Ω'} g ψ` on
 `H^1_0(Ω')`, and `W ∈ H^1(Ω)` with `∂ᵢW = 1_{Ω'} ∂ᵢw`, the extension `W` solves
@@ -4425,7 +4345,7 @@ theorem sum_integral_extendCoeff_eq (hΩ' : Ω' ≤ Ω) {Q : Set (EuclideanSpace
     have hnhds : χ =ᶠ[𝓝 y] fun _ ↦ 1 := Filter.eventuallyEq_of_mem
       (isOpen_interior.mem_nhds (hKL hy)) fun z hz ↦ hχ1 (interior_subset hz)
     exact ⟨hχ1 (interior_subset (hKL hy)), by rw [hnhds.fderiv_eq, fderiv_const_apply]⟩
-  have hKw := fun i ↦ weakDeriv_ae_eq_zero_of_fn_ae_eq_zero hK hwK i
+  have hKw := fun i ↦ weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl w hK hwK (MultiIndexLE.single i)
   have hkey := forall_testFunction_of_forall_mem_general hAa
     SobolevMultiIndexZero.testFunctions_le heq ψ'
   have hterm : ∀ k l, ∫ y in (Ω : Set (EuclideanSpace ℝ (Fin N))), extendCoeff χ a k l y
@@ -5418,7 +5338,8 @@ theorem memSobolevMultiIndex_comp_chart_of_order (k : ℕ) :
       exact (EuclideanSpace.proj l).contDiff.comp_contDiffOn (hdJ.clm_apply contDiffOn_const)
     have hmult : ∀ i l, IsContDiffConstOffCompact k fun x ↦ χ x * c i l x := fun i l ↦
       IsContDiffConstOffCompact.of_hasCompactSupport
-        ((hχ.of_le (by simp)).mul_contDiffOn_of_tsupport_subset hV (hcV i l) hχV) hχc.mul_right
+        ((hχ.of_le (by simp)).mul_contDiffOn_of_tsupport_subset hV (hcV i l) hχV)
+        hχc.mul_right
     -- `w ∈ H^k(Ω')`, its partial derivatives `g l ∈ H^k(Ω')`, and a tensor weak derivative `Dw`
     obtain ⟨hw1, hwd⟩ := memSobolevMultiIndex_succ_iff.1 hw
     choose g hg hgp using hwd

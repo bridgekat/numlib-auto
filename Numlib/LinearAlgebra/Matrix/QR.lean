@@ -604,8 +604,8 @@ variable {R : Type*} [Field R] [StarRing R]
 omit [DecidableEq n] in
 /-- A Hermitian quadratic form takes self-adjoint values: `star (vᴴ B v) = vᴴ B v`. -/
 theorem star_dotProduct_mulVec_self_of_conjTranspose_eq {B : Matrix n n R} (hB : Bᴴ = B)
-    (v : n → R) : star (star v ⬝ᵥ (B *ᵥ v)) = star v ⬝ᵥ (B *ᵥ v) := by
-  conv_rhs => rw [star_dotProduct, star_mulVec, hB, ← dotProduct_mulVec]
+    (v : n → R) : star (star v ⬝ᵥ (B *ᵥ v)) = star v ⬝ᵥ (B *ᵥ v) :=
+  IsHermitian.star_dotProduct_mulVec_comm hB v v
 
 /-- **The two-sided reflection as a symmetric rank-two update** ([golub2013matrix] §8.3.1): for
 a Hermitian `B` (`Bᴴ = B`), an axis `v` and a self-adjoint `β` (no normalization is needed, and
@@ -1026,16 +1026,6 @@ private theorem pos_mul_inv {a b : 𝕜} (ha : 0 < a) (hb : 0 < b) : 0 < b * a�
   refine pos_iff_exists_ofReal.2 ⟨rb * ra⁻¹, by positivity, ?_⟩
   rw [RCLike.ofReal_mul, RCLike.ofReal_inv]
 
-/-- The diagonal of a product of upper triangular matrices is the product of the diagonals. -/
-private theorem upperTriangular_mul_diag {A B : Matrix (Fin N) (Fin N) 𝕜}
-    (hA : A.IsUpperTriangular) (hB : B.IsUpperTriangular) (j : Fin N) :
-    (A * B) j j = A j j * B j j := by
-  rw [mul_apply]
-  refine Finset.sum_eq_single j (fun r _ hr => ?_) fun h => absurd (Finset.mem_univ j) h
-  rcases lt_or_gt_of_ne hr with h | h
-  · rw [hA h, zero_mul]
-  · rw [hB h, mul_zero]
-
 /-- A unitary upper triangular matrix with positive diagonal is the identity.  This is the
 flag-uniqueness argument of `Numlib.Analysis.InnerProductSpace.GramSchmidt` at matrix level, and it
 is what makes the QR factorization with a positive diagonal unique. -/
@@ -1125,12 +1115,12 @@ theorem IsThinQR.unique {A Q₁ Q₂ : Matrix m (Fin N) 𝕜} {R₁ R₂ : Matri
   have hinvdiag : ∀ j, (R₁⁻¹) j j = (R₁ j j)⁻¹ := by
     intro j
     have h1 : R₁ j j * (R₁⁻¹) j j = 1 := by
-      rw [← upperTriangular_mul_diag hR₁ hinvUT j, mul_nonsing_inv R₁ hdet, one_apply_eq]
+      rw [← hR₁.mul_apply_self hinvUT j, mul_nonsing_inv R₁ hdet, one_apply_eq]
     calc (R₁⁻¹) j j = (R₁ j j)⁻¹ * (R₁ j j * (R₁⁻¹) j j) := by
           rw [← mul_assoc, inv_mul_cancel₀ (hd₁ j).ne', one_mul]
       _ = (R₁ j j)⁻¹ := by rw [h1, mul_one]
   have hSd : ∀ j, 0 < (R₂ * R₁⁻¹) j j := fun j => by
-    rw [upperTriangular_mul_diag hR₂ hinvUT j, hinvdiag j]
+    rw [hR₂.mul_apply_self hinvUT j, hinvdiag j]
     exact pos_mul_inv (hd₁ j) (hd₂ j)
   have hSu : (R₂ * R₁⁻¹)ᴴ * (R₂ * R₁⁻¹) = 1 := by
     have h : (R₂ * R₁⁻¹)ᴴ * (R₂ * R₁⁻¹) = (R₁⁻¹)ᴴ * (R₂ᴴ * R₂ * R₁⁻¹) := by

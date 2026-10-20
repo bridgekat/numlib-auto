@@ -392,7 +392,7 @@ namespace MeasureTheory
 variable {F : Type*} [NormedAddCommGroup F] {p : ℝ≥0∞}
 
 /-- The square of the `L²` seminorm is the Lebesgue integral of the squared norms. -/
-theorem sq_eLpNorm_two {E : Type*} [NormedAddCommGroup E] [MeasurableSpace E] {f : E → ℂ}
+theorem sq_eLpNorm_two {E : Type*} [MeasurableSpace E] {f : E → ℂ}
     {μ : Measure E} (hf : AEStronglyMeasurable f μ) :
     eLpNorm f 2 μ ^ 2 = ∫⁻ ξ, ‖f ξ‖ₑ ^ 2 ∂μ := by
   have h := lintegral_rpow_enorm_eq_rpow_eLpNorm (μ := μ) (p := 2) (f := f)

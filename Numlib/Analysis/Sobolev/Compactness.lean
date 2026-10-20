@@ -243,7 +243,7 @@ theorem HasSobolevExtensionOn.isBounded_image_closedBall [Fact (1 ≤ (q : ℝ�
 /-- The family `ℱ = P(unit ball)` has a uniform translation modulus in `L^q(ℝ^N)`,
 `p ≤ q < p*` — the hypothesis of the Kolmogorov–M. Riesz–Fréchet theorem in
 [brezis2011functional] §9.3, proof of Theorem 9.16. -/
-theorem HasSobolevExtensionOn.uniform_translate_image_closedBall [Fact (1 ≤ (q : ℝ≥0∞))]
+theorem HasSobolevExtensionOn.uniform_translate_image_closedBall
     (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤) {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q < p') :
     ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ (fun u : S ↦
@@ -702,7 +702,7 @@ omit [NormedSpace ℝ E] in
 /-- **Extension by zero is injective for `Ω ⊆ K ⊆ closure Ω`**, `Ω` open and `μ` positive on open
 sets: a continuous function on `K` vanishing almost everywhere on `Ω` vanishes on `Ω`, hence on
 its closure. -/
-theorem extendZeroToLpL_injective [TopologicalSpace.PseudoMetrizableSpace E] [BorelSpace E]
+theorem extendZeroToLpL_injective
     [μ.IsOpenPosMeasure] (hΩK : Ω ⊆ K) (hKΩ : K ⊆ closure Ω) (hΩo : IsOpen Ω) (hμ : μ Ω ≠ ⊤) :
     Function.Injective (extendZeroToLpL μ K Ω p hΩK hΩo.measurableSet hμ) := by
   intro f g hfg
@@ -721,8 +721,8 @@ theorem extendZeroToLpL_injective [TopologicalSpace.PseudoMetrizableSpace E] [Bo
 omit [NormedSpace ℝ E] in
 /-- **Extension by zero is a continuous embedding `C(K, ℝ) ↪ L^p(Ω)`** for
 `Ω ⊆ K ⊆ closure Ω`, `Ω` open of finite positive measure. -/
-theorem isContinuousEmbedding_extendZeroToLpL [TopologicalSpace.PseudoMetrizableSpace E]
-    [BorelSpace E] [μ.IsOpenPosMeasure] (hΩK : Ω ⊆ K) (hKΩ : K ⊆ closure Ω) (hΩo : IsOpen Ω)
+theorem isContinuousEmbedding_extendZeroToLpL
+    [μ.IsOpenPosMeasure] (hΩK : Ω ⊆ K) (hKΩ : K ⊆ closure Ω) (hΩo : IsOpen Ω)
     (hμ : μ Ω ≠ ⊤) :
     IsContinuousEmbedding (extendZeroToLpL μ K Ω p hΩK hΩo.measurableSet hμ).toLinearMap :=
   ⟨extendZeroToLpL_injective hΩK hKΩ hΩo hμ, _,
@@ -758,8 +758,7 @@ theorem SobolevEuclidean.toLpₗ_eq_extendZeroToLpL_comp_toContinuousMapL {N : �
   refine Filter.EventuallyEq.trans ?_ (ContinuousMap.coeFn_extendZeroToLpL subset_closure
     Ω.isOpen.measurableSet hμ (SobolevEuclidean.toContinuousMapL hΩ hp
       (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) u)).symm
-  refine (SobolevEuclidean.fn_ae_eq_toContinuousMapL hΩ hp
-    (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) u).trans ?_
+  refine (SobolevEuclidean.fn_ae_eq_toContinuousMapL hΩ hp u).trans ?_
   refine ae_restrict_of_forall_mem Ω.isOpen.measurableSet fun x hx ↦ ?_
   rw [ContinuousMap.extendZero_of_mem _ (subset_closure hx)]
   rfl
@@ -1576,7 +1575,7 @@ theorem SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order (k :
       (SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain (hΩ r)
         hNr hK)⟩
   refine ⟨_, (SobolevEuclidean.contRep hNr _).continuous,
-    (hT u).symm.trans (SobolevEuclidean.fn_ae_eq_toContinuousMapL (hΩ r) hNr K (T u)),
+    (hT u).symm.trans (SobolevEuclidean.fn_ae_eq_toContinuousMapL (hΩ r) hNr (T u)),
     fun x ↦ rfl⟩
 
 /-- **`W^{k,p}(Ω) ⊂⊂ W^{l,p}(Ω)` for `l < k` on an extension domain of finite measure**

@@ -16,6 +16,7 @@ import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
 import Numlib.Eigen.PowerMethod
+import Numlib.Eigen.RayleighRitz
 import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.LeastSquares
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
@@ -217,22 +218,17 @@ theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ
     · exact mul_nonneg (by linarith) (by linarith)
   nlinarith [h]
 
--- `hμ` says that `μ` is an eigenvalue, which is what makes this Kato–Temple and is part of the
--- stated interface; the proof does not use it, because `hunique` and `hμab` already force every
--- eigenvalue in `(a, b)` to be `μ` and the estimate then holds for `re μ` whether or not `μ` is
--- one. Keeping it makes the statement faithful, and it is what the caller
--- `abs_sub_rayleigh_le_norm_residual_sq_div` has to hand anyway.
-set_option linter.unusedVariables false in
 /-- Kato–Temple ([saad2011numerical], Thm 3.8): if `(a, b)` contains the Rayleigh quotient `θ = re⟪A
-x, x⟫` of a unit vector `x` and exactly one eigenvalue `λ`, then `-‖r‖²/(b - θ) ≤ λ - θ ≤ ‖r‖²/(θ -
-a)` for the residual `r = A x - θ x`.
+x, x⟫` of a unit vector `x` and at most one eigenvalue, `μ` (every eigenvalue with real part in
+`(a, b)` is `μ`; `μ` itself need not be one, which only makes the statement more general), then
+`-‖r‖²/(b - θ) ≤ re μ - θ ≤ ‖r‖²/(θ - a)` for the residual `r = A x - θ x`.
 
 The denominators here are the ones the proof produces: the *lower* bound is controlled by the
 distance from `θ` to the right end `b`, and the *upper* bound by the distance to the left end `a`.
 Exchanging the two denominators gives a false statement: for `A = diag(0, 10)` and `x` with `‖x‖ =
 1`, `x₂² = 3/5`, one gets `θ = 6`, `‖r‖² = 24`, and `(a, b) = (5, 20)` contains only the eigenvalue
 `10`, yet `10 - 6 = 4 > 24/(20 - 6)`. -/
-theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜} (hμ : Module.End.HasEigenvalue A μ)
+theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜}
     (hab : a < RCLike.re (inner 𝕜 (A x) x) ∧ RCLike.re (inner 𝕜 (A x) x) < b)
     (hμab : RCLike.re μ ∈ Set.Ioo a b)
     (hunique : ∀ μ' : 𝕜, Module.End.HasEigenvalue A μ' → RCLike.re μ' ∈ Set.Ioo a b → μ' = μ) :
@@ -282,8 +278,8 @@ theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜} (hμ : Mo
 /-- [saad2011numerical], Cor 3.4: `|λ - θ| ≤ ‖r‖² / δ`, where `θ = re⟪A x, x⟫` is the Rayleigh
 quotient of a unit vector `x`, `r = A x - θ x` its residual, and `δ` the gap from `θ` to the
 eigenvalues other than `λ`. -/
-theorem abs_sub_rayleigh_le_norm_residual_sq_div {x : E} (hx : ‖x‖ = 1) {μ : 𝕜}
-    (hμ : Module.End.HasEigenvalue A μ) {δ : ℝ} (hδ : 0 < δ)
+theorem abs_sub_rayleigh_le_norm_residual_sq_div {x : E} (hx : ‖x‖ = 1) {μ : 𝕜} {δ : ℝ}
+    (hδ : 0 < δ)
     (hgap : ∀ μ' : 𝕜, Module.End.HasEigenvalue A μ' → μ' ≠ μ →
       δ ≤ |RCLike.re μ' - RCLike.re (inner 𝕜 (A x) x)|)
     (hclose : |RCLike.re μ - RCLike.re (inner 𝕜 (A x) x)| ≤
@@ -301,7 +297,7 @@ theorem abs_sub_rayleigh_le_norm_residual_sq_div {x : E} (hx : ‖x‖ = 1) {μ 
       obtain ⟨h21, h22⟩ := Set.mem_Ioo.mp h2
       have hcon : |RCLike.re μ' - θ| < δ := abs_lt.mpr ⟨by linarith, by linarith⟩
       linarith
-    obtain ⟨h1, h2⟩ := hA.kato_temple hx hμ ⟨by linarith, by linarith⟩
+    obtain ⟨h1, h2⟩ := hA.kato_temple hx ⟨by linarith, by linarith⟩
       (Set.mem_Ioo.mpr ⟨by linarith, by linarith⟩) hunique
     rw [← hθ] at h1 h2
     rw [show θ + δ - θ = δ from by ring] at h1
@@ -339,33 +335,6 @@ theorem rayleigh_mem_Icc {lmin lmax : ℝ}
 
 A small residual forces the approximate eigenvector to be close to an eigenspace, provided the
 corresponding eigenvalue is separated from the rest of the spectrum. -/
-
-/-- On the orthogonal complement of the `lam`-eigenspace the shifted operator `A - θ` is bounded
-below by the separation `δ` of `lam` from the other eigenvalues: `δ ‖q‖ ≤ ‖(A - θ) q‖`.
-
-In the eigenvector basis the coordinates of `q` vanish at every index whose eigenvalue is `lam`, so
-the sum defining `‖(A - θ) q‖²` runs only over the indices where the separation applies. -/
-private theorem mul_norm_le_norm_sub_smul_of_mem_orthogonal {n : ℕ}
-    (hn : Module.finrank 𝕜 E = n) {lam θ δ : ℝ} (hδ : 0 ≤ δ)
-    (hsep : ∀ i, hA.eigenvalues hn i ≠ lam → δ ≤ |hA.eigenvalues hn i - θ|)
-    {q : E} (hq : q ∈ (Module.End.eigenspace A (lam : 𝕜))ᗮ) :
-    δ * ‖q‖ ≤ ‖A q - (θ : 𝕜) • q‖ := by
-  have hzero : ∀ i, hA.eigenvalues hn i = lam → (hA.eigenvectorBasis hn).repr q i = 0 := by
-    intro i hi
-    have hmem : hA.eigenvectorBasis hn i ∈ Module.End.eigenspace A (lam : 𝕜) :=
-      Module.End.mem_eigenspace_iff.2 (by rw [hA.apply_eigenvectorBasis hn, hi])
-    rw [OrthonormalBasis.repr_apply_apply]
-    exact (Submodule.mem_orthogonal _ q).1 hq _ hmem
-  have hsq : (δ * ‖q‖) ^ 2 ≤ ‖A q - (θ : 𝕜) • q‖ ^ 2 := by
-    rw [mul_pow, hA.norm_residual_sq hn θ q, hA.norm_sq_eq_sum_norm_repr_sq hn q, Finset.mul_sum]
-    refine Finset.sum_le_sum fun i _ => ?_
-    by_cases hi : hA.eigenvalues hn i = lam
-    · rw [hzero i hi]
-      simp
-    · refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
-      have h := hsep i hi
-      nlinarith [sq_abs (hA.eigenvalues hn i - θ), abs_nonneg (hA.eigenvalues hn i - θ)]
-  exact le_of_sq_le_sq hsq (norm_nonneg _)
 
 /-- **The eigenvector residual bound** ([saad2011numerical], Thm 3.9): for a unit vector `x` with
 Rayleigh quotient `θ = re⟪A x, x⟫` and residual `r = A x - θ x`, and a real number `lam` separated
@@ -417,7 +386,7 @@ theorem sin_angle_le_norm_residual_div {n : ℕ} (hn : Module.finrank 𝕜 E = n
     simp only [pow_two]
     exact norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _
       (Submodule.inner_right_of_mem_orthogonal (Submodule.smul_mem _ _ hpmem) hres)
-  have hlow := hA.mul_norm_le_norm_sub_smul_of_mem_orthogonal hn hδ.le hsep hqmem
+  have hlow := hA.mul_norm_le_norm_sub_smul hn hδ.le hsep hqmem
   have hle : δ * ‖x - W.starProjection x‖ ≤ ‖A x - (θ : 𝕜) • x‖ := by
     refine hlow.trans ?_
     nlinarith [hpyth, norm_nonneg (A x - (θ : 𝕜) • x),
@@ -1131,7 +1100,7 @@ theorem hirsch_im (A : Matrix n n ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) 
       from rfl, ← Units.smul_def, ← Units.smul_def, spectrum.unit_smul_eq_smul]
     exact Set.smul_mem_smul_set hμ
   have h := re_mem_Icc_eigenvalues_of_mem_spectrum (skewHermitianPart_isHermitian A)
-    (fun x => by rw [← hermitianPart_neg_I_smul, re_inner_hermitianPart]) hμ'
+    (fun x => by rw [skewHermitianPart_eq_hermitianPart, re_inner_hermitianPart]) hμ'
   simpa [Complex.mul_re] using h
 
 end Matrix

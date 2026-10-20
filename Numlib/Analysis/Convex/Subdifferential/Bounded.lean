@@ -68,7 +68,7 @@ theorem exists_lipschitz_forall_pairing_le_of_isCompact (hf : ConvexFn f) (hp : 
   have hTc : IsCompact (Metric.cthickening δ S) := hS.cthickening
   have hTdom : Metric.cthickening δ S ⊆ convexDom f := hδsub.trans interior_subset
   have hTri : Metric.cthickening δ S ⊆ ri (convexDom f) := fun w hw =>
-    Convex.interior_subset_relint hf.convex_convexDom ⟨w, hδsub hw⟩ (hδsub hw)
+    Convex.interior_subset_relint (hδsub hw)
   obtain ⟨K, hK⟩ := hf.exists_lipschitzOnWith_of_isCompact hp hTc hTri
   -- The single estimate both halves consume.
   have hkey : ∀ x ∈ S, ∀ z : E, z ≠ 0 → ∀ a b : ℝ, f x = (a : EReal) →
@@ -158,7 +158,7 @@ theorem image_subgradientRel_nonempty (hf : ConvexFn f) (hp : ProperConvex f) {S
     ((subgradientRel (innerₗ E) f).image S).Nonempty := by
   obtain ⟨x, hx⟩ := hne
   obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_convexDom (B := innerₗ E) hf hp
-    (Convex.interior_subset_relint hf.convex_convexDom ⟨x, hSD hx⟩ (hSD hx))
+    (Convex.interior_subset_relint (hSD hx))
   exact ⟨y, x, hx, hy⟩
 
 /-- **The topological half**: `∂f(S)` is compact for a closed proper convex `f` and a compact

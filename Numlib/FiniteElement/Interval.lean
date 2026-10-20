@@ -984,10 +984,8 @@ theorem hatDerivFun_eq_panel (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k
 
 /-- Interval integrals over a panel do not see the endpoints. -/
 private theorem integral_congr_Ioo {u v : ℝ} (huv : u ≤ v) {f g : ℝ → ℝ}
-    (h : EqOn f g (Ioo u v)) : ∫ t in u..v, f t = ∫ t in u..v, g t := by
-  rw [integral_of_le huv, integral_of_le huv, integral_Ioc_eq_integral_Ioo,
-    integral_Ioc_eq_integral_Ioo]
-  exact setIntegral_congr_fun measurableSet_Ioo h
+    (h : EqOn f g (Ioo u v)) : ∫ t in u..v, f t = ∫ t in u..v, g t :=
+  intervalIntegral.integral_congr_Ioo huv h
 
 /-- **The panel mass integral** `∫_{x_k}^{x_{k+1}} φ_i φ_j`. -/
 theorem integral_panel_hat_mul_hat (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n)

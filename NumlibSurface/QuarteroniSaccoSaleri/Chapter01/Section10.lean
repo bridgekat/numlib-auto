@@ -83,7 +83,7 @@ theorem inner_eq_star_dotProduct {n : ℕ} (x y : EuclideanSpace 𝕜 (Fin n)) :
   ⟨EuclideanSpace.inner_eq_star_dotProduct y x, rfl⟩
 
 /-- **(1.12).** For a square matrix `A` and `x, y ∈ ℂⁿ`, `(A x, y) = (x, Aᴴ y)` (backbone
-`Matrix.toEuclideanLin_conjTranspose`: `Aᴴ` acts as the adjoint); in particular
+`Matrix.toEuclideanLin_conjTranspose_eq_adjoint`: `Aᴴ` acts as the adjoint); in particular
 `(Q x, Q y) = (x, Qᴴ Q y)` for every `Q`. -/
 theorem equation_1_12 {n : ℕ} (A Q : Matrix (Fin n) (Fin n) 𝕜) (x y : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 y (toEuclideanLin A x) = inner 𝕜 (toEuclideanLin Aᴴ y) x ∧

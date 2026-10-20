@@ -271,15 +271,14 @@ variable {ι : Type*} {E F : Type*}
   [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {s t u : Finset ι} {f : ι → E → EReal}
 
-private theorem isExactFinsetSum_of_polyhedral_pair_aux [IsCompatiblePairing B]
-    [IsCompatiblePairing B.flip] (f : ι → E → EReal) (x₀ : E) :
-    ∀ t : Finset ι, t.Nonempty → (∀ i ∈ t, PolyhedralFn (f i)) → (∀ i ∈ t, ProperConvex (f i)) →
-      (∀ i ∈ t, x₀ ∈ convexDom (f i)) → IsExactFinsetSum B t f := by
-  intro t
-  induction t using Finset.cons_induction with
-  | empty => intro hne; exact absurd hne (by simp)
+/-- **The all-polyhedral case, for `m` summands**: finitely many proper polyhedral convex
+functions add exactly as soon as their effective domains have a point in common. -/
+theorem IsExactFinsetSum.of_polyhedral_pair [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
+    (hs : s.Nonempty) (hpoly : ∀ i ∈ s, PolyhedralFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i))
+    {x₀ : E} (hx₀ : ∀ i ∈ s, x₀ ∈ convexDom (f i)) : IsExactFinsetSum B s f := by
+  induction s using Finset.cons_induction with
+  | empty => exact absurd hs (by simp)
   | cons i t hi ih =>
-    intro _ hpoly hpf hx₀
     have hmt : ∀ j ∈ t, j ∈ Finset.cons i t hi := fun j hj => Finset.mem_cons_of_mem hj
     rcases Finset.eq_empty_or_nonempty t with rfl | htne
     · rw [Finset.cons_empty]
@@ -295,13 +294,6 @@ private theorem isExactFinsetSum_of_polyhedral_pair_aux [IsCompatiblePairing B]
         (fun j hj x => (hpf j (hmt j hj)).ne_bot x)) hprop (hx₀ i (by simp)) ?_
     rw [hdom]
     exact Set.mem_iInter₂.2 fun j hj => hx₀ j (hmt j hj)
-
-/-- **The all-polyhedral case, for `m` summands**: finitely many proper polyhedral convex
-functions add exactly as soon as their effective domains have a point in common. -/
-theorem IsExactFinsetSum.of_polyhedral_pair [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
-    (hs : s.Nonempty) (hpoly : ∀ i ∈ s, PolyhedralFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i))
-    {x₀ : E} (hx₀ : ∀ i ∈ s, x₀ ∈ convexDom (f i)) : IsExactFinsetSum B s f :=
-  isExactFinsetSum_of_polyhedral_pair_aux f x₀ s hs hpoly hpf hx₀
 
 /-- The `m`-ary form: let `f₁, …, fₘ` be proper convex with `f₁, …, f_k` polyhedral, and suppose
 

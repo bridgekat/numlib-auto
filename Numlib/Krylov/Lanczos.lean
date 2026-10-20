@@ -220,8 +220,7 @@ theorem w_succ_eq (j : ℕ) :
     Finset.sum_range_succ, sum_coeff_eq_zero b hA j, zero_add]
   abel
 
--- `hA` is not needed here: `beta` is `‖w‖` and `Arnoldi.coeff_succ_self_eq_zero_iff` is general.
-set_option linter.unusedSectionVars false in
+omit hA in
 /-- Lanczos breaks down exactly at the grade: `β_j = 0` iff `grade ≤ j + 1`, so the recurrence runs
 with nonzero `β` for as long as there is a new direction to find. -/
 theorem beta_eq_zero_iff [FiniteDimensional 𝕜 (fullSubspace A b)] (j : ℕ) :

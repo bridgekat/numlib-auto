@@ -1243,10 +1243,7 @@ theorem integral_eq_simpson_of_natDegree_le {α β : ℝ} (hαβ : α ≤ β) {p
       rwa [hp₄, Polynomial.eval_zero] at hd)
     continuousOn_const (fun _ _ => le_rfl) (fun _ _ => le_rfl)
   rw [Set.mem_Icc] at hmem
-  have hzero : (∫ t in α..β, p.eval t)
-      - (β - α) / 6 * (p.eval α + 4 * p.eval ((α + β) / 2) + p.eval β) = 0 :=
-    le_antisymm (by simpa using hmem.2) (by simpa using hmem.1)
-  linarith [hzero]
+  linarith
 
 /-- **A weighted integral of a quadratic interpolation error on one panel.**  Let `g` have four
 derivatives on `[α, β]` with `|g⁗| ≤ M` there, and let `q` be a polynomial of degree at most three
@@ -1380,9 +1377,10 @@ variable {T : ℝ} [hT : Fact (0 < T)]
 On a periodic integrand the composite trapezoidal rule and the composite rectangle rule are the
 same rule, because the two endpoints of the parameter interval are one and the same node of the
 circle; that is why the periodic trapezoidal rule has no half weights. -/
-noncomputable def circleTrapezoid (T : ℝ) [Fact (0 < T)] (n : ℕ) : C(AddCircle T, ℝ) →L[ℝ] ℝ :=
+noncomputable def circleTrapezoid (T : ℝ) (n : ℕ) : C(AddCircle T, ℝ) →L[ℝ] ℝ :=
   functional (fun _ : Fin n => T / n) fun j : Fin n => (((j : ℕ) * (T / n) : ℝ) : AddCircle T)
 
+omit hT in
 /-- The periodic trapezoidal rule at an integrand, `h ∑_{j < n} v (j h)` with `h = T / n`. -/
 theorem circleTrapezoid_apply (n : ℕ) (v : C(AddCircle T, ℝ)) :
     circleTrapezoid T n v

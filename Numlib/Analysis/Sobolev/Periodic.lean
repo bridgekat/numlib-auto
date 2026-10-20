@@ -12,6 +12,7 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.NumberTheory.LSeries.RiemannZeta
 import Mathlib.RingTheory.RootsOfUnity.Complex
+import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Normed.Operator.Compact
 
 /-!
@@ -992,11 +993,11 @@ theorem lift_eq_liftIoc {f : ℝ → F} (hf : Periodic f T) (a : ℝ) :
   rw [← AddCircle.coe_equivIoc (y := t), lift_coe,
     AddCircle.liftIoc_coe_apply (AddCircle.equivIoc T a t).2]
 
+omit hT in
 /-- The lift of a continuous periodic function is continuous. -/
 theorem continuous_lift [TopologicalSpace F] {f : ℝ → F} (hf : Periodic f T)
-    (hc : Continuous f) : Continuous hf.lift := by
-  rw [lift_eq_liftIoc hf 0]
-  exact AddCircle.liftIoc_continuous (hf 0).symm hc.continuousOn
+    (hc : Continuous f) : Continuous hf.lift :=
+  continuous_coinduced_dom.mpr hc
 
 /-- The Fourier coefficients of the lift are Mathlib's `fourierCoeffOn` over `[0, T]`. -/
 theorem fourierCoeff_lift_eq_fourierCoeffOn {f : ℝ → ℂ} (hf : Periodic f T) (n : ℤ) :
@@ -1017,11 +1018,6 @@ section TrigSeries
 open AddCircle MeasureTheory
 
 variable {T : ℝ} [hT : Fact (0 < T)]
-
-omit hT in
-/-- The characters of the circle have modulus one at every point. -/
-theorem norm_fourier_apply (n : ℤ) (x : AddCircle T) : ‖fourier n x‖ = 1 := by
-  rw [fourier_apply, Circle.norm_coe]
 
 omit hT in
 /-- The sum of an absolutely convergent trigonometric series is continuous. -/

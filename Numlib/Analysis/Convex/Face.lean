@@ -37,7 +37,7 @@ Extreme points and exposed faces are Mathlib's `Set.extremePoints` and `IsExpose
 * `exists_notMem_relint_mem_segment` — in a compact set of positive dimension, every relative
   interior point lies on a segment joining two relative boundary points.
 * `convexHull_extremePoints` — **Minkowski's theorem**: a compact convex set is the convex hull of
-  its extreme points; `extremePoints_nonempty` records that it has one.
+  its extreme points; Mathlib's `IsCompact.extremePoints_nonempty` records that it has one.
 
 ## References
 
@@ -435,15 +435,6 @@ theorem convexHull_extremePoints (hcomp : IsCompact C) (hconv : Convex ℝ C) :
     convexHull ℝ (C.extremePoints ℝ) = C :=
   Subset.antisymm (convexHull_min extremePoints_subset hconv)
     (subset_convexHull_extremePoints_aux _ C le_rfl hcomp hconv)
-
-/-- A nonempty compact convex set has an extreme point: the convex hull of the empty set is
-empty. -/
-theorem extremePoints_nonempty (hcomp : IsCompact C) (hconv : Convex ℝ C) (hne : C.Nonempty) :
-    (C.extremePoints ℝ).Nonempty := by
-  rcases (C.extremePoints ℝ).eq_empty_or_nonempty with hem | h
-  · rw [← convexHull_extremePoints hcomp hconv, hem, convexHull_empty] at hne
-    exact absurd hne Set.not_nonempty_empty
-  · exact h
 
 end Bounded
 

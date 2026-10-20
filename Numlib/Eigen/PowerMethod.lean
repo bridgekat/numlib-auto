@@ -1068,7 +1068,7 @@ theorem exists_gap_subspaceIterate_le [IsAlgClosed 𝕜] [FiniteDimensional 𝕜
 
 /-- **A basis splits the space along any set of indices**: the span of the vectors indexed by `J`
 and the span of the rest are complementary. -/
-theorem isCompl_span_image [FiniteDimensional 𝕜 E] {ι : Type*} {x : ι → E}
+theorem isCompl_span_image {ι : Type*} {x : ι → E}
     (hx : LinearIndependent 𝕜 x) (hxtop : Submodule.span 𝕜 (Set.range x) = ⊤) (J : Set ι) :
     IsCompl (Submodule.span 𝕜 (x '' J)) (Submodule.span 𝕜 (x '' Jᶜ)) where
   disjoint := hx.disjoint_span_image disjoint_compl_right

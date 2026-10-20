@@ -405,12 +405,11 @@ is closed (`range_strongDualAdjoint_codRestrict`); the closed range criterion fo
 injective operator `A₁*` gives `‖ζ‖ ≤ C ‖A₁* ζ‖` on `D(A₁*)`, and Theorem 2.20 (b) ⇒ (a) for `A₁`
 makes it onto `Z`, i.e. `R(A) = Z`. -/
 theorem IsClosed.isClosed_range_of_isClosed_range_strongDualAdjoint [CompleteSpace E]
-    [CompleteSpace F] (hc : A.IsClosed) (hd : Dense (A.domain : Set E))
+    (hc : A.IsClosed) (hd : Dense (A.domain : Set E))
     (h : _root_.IsClosed (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual 𝕜 E))) :
     _root_.IsClosed (LinearMap.range A.toFun : Set F) := by
   set Z := (LinearMap.range A.toFun).topologicalClosure with hZ
   have hZc : _root_.IsClosed (Z : Set F) := Submodule.isClosed_topologicalClosure _
-  have : CompleteSpace Z := hZc.completeSpace_coe
   have hmem : ∀ u : A.domain, A u ∈ Z := fun u =>
     Submodule.le_topologicalClosure _ (LinearMap.mem_range_self _ u)
   set A₁ := A.codRestrict Z hmem with hA₁

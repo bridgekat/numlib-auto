@@ -571,7 +571,7 @@ private theorem op_symmPart (A : Matrix (Fin n) (Fin n) ℝ) :
     op (symmPart A) = (2⁻¹ : ℝ) • (op A + LinearMap.adjoint (op A)) := by
   have h : Matrix.toEuclideanLin ((2⁻¹ : ℝ) • (A + Aᴴ)) =
       (2⁻¹ : ℝ) • (Matrix.toEuclideanLin A + LinearMap.adjoint (Matrix.toEuclideanLin A)) := by
-    rw [map_smul, map_add, Matrix.toEuclideanLin_conjTranspose]
+    rw [map_smul, map_add, Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
   rw [symmPart, show (Aᵀ : Matrix (Fin n) (Fin n) ℝ) = Aᴴ from
     (Matrix.conjTranspose_eq_transpose_of_trivial A).symm]
   exact h

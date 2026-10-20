@@ -495,7 +495,7 @@ theorem cg_residual_eq_zero_iff (hA : A.PosDef) (k : ℕ) :
   constructor
   · intro h
     by_contra hlt
-    exact CG.residual_ne_zero_of_lt_grade b 0 (isSymmetricCoercive_of_posDef hA)
+    exact CG.residual_ne_zero_of_lt_grade b 0
       (by rw [sub_mulVecE_zero]; exact not_le.1 hlt) h
   · intro h
     exact CG.residual_eq_zero_of_grade_le b 0 (isSymmetricCoercive_of_posDef hA)

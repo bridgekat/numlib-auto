@@ -474,10 +474,10 @@ open Module.End
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [NormedAddCommGroup X]
   [NormedSpace 𝕜 X]
 
-/-- **`0` is in the spectrum of a compact operator on an infinite-dimensional Banach space**
+/-- **`0` is in the spectrum of a compact operator on an infinite-dimensional normed space**
 ([brezis2011functional] Theorem 6.8 (a)): otherwise `T` would be invertible and `1 = T⁻¹ ∘ T`
 compact, which forces finite dimension (`isCompactOperator_id_iff_finiteDimensional`). -/
-theorem zero_mem_spectrum [LocallyCompactSpace 𝕜] [CompleteSpace X] {T : X →L[𝕜] X}
+theorem zero_mem_spectrum [LocallyCompactSpace 𝕜] {T : X →L[𝕜] X}
     (hT : IsCompactOperator T)
     (hX : ¬ FiniteDimensional 𝕜 X) : (0 : 𝕜) ∈ spectrum 𝕜 T := by
   rw [spectrum.mem_iff, map_zero, zero_sub, IsUnit.neg_iff]

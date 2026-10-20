@@ -1267,8 +1267,8 @@ variable [LinearOrder n] [Fintype n] {K : Type*} [Field K]
 
 /-- Splitting a sum over `n` into the term at `p` and the sum over the other indices. -/
 theorem sum_eq_add_sum_subtype_ne {M : Type*} [AddCommMonoid M] (p : n) (f : n → M) :
-    ∑ j, f j = f p + ∑ j : {j // j ≠ p}, f j := by
-  rw [Fintype.sum_eq_add_sum_compl p, Finset.sum_subtype (p := (· ≠ p)) {p}ᶜ (fun x => by simp) f]
+    ∑ j, f j = f p + ∑ j : {j // j ≠ p}, f j :=
+  Fintype.sum_eq_add_sum_subtype_ne f p
 
 /-- The unit lower factor of `A` bordered from the lower factor `L'` of the Schur complement of
 `A` at the pivot `p`: the identity row at `p`, the multipliers `a_ip / a_pp` in column `p`, and

@@ -173,17 +173,8 @@ end Submodule
 
 /-- A polynomial in `A` acts on an eigenvector by the value of the polynomial at the eigenvalue. -/
 theorem Polynomial.aeval_apply_of_apply_eq_smul {A : E →ₗ[𝕜] E} {u : E} {c : 𝕜} (h : A u = c • u)
-    (p : 𝕜[X]) : aeval A p u = p.eval c • u := by
-  have hpow : ∀ k : ℕ, (A ^ k) u = c ^ k • u := by
-    intro k
-    induction k with
-    | zero => simp
-    | succ k ih => rw [pow_succ, Module.End.mul_apply, h, map_smul, ih, smul_smul, ← pow_succ']
-  induction p using Polynomial.induction_on' with
-  | add p q hp hq => rw [map_add, LinearMap.add_apply, hp, hq, eval_add, add_smul]
-  | monomial k a =>
-      have hmon : aeval A (monomial k a) u = a • (A ^ k) u := by simp [aeval_monomial]
-      rw [hmon, hpow, smul_smul, eval_monomial]
+    (p : 𝕜[X]) : aeval A p u = p.eval c • u :=
+  Module.End.aeval_apply_of_mem_apply_eq_smul h
 
 /-- A polynomial in `A` is bounded by the values of the polynomial at those eigenvalues of an
 orthonormal eigenbasis whose eigenvector actually occurs in `x`: if `‖p(μ j)‖ ≤ M` whenever
@@ -509,11 +500,6 @@ symmetric (`OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul`), and its sort
 
 section Eigenbasis
 
-/-- The value of a real polynomial mapped into `𝕜`, at a real point. -/
-private theorem eval_map_ofReal (p : ℝ[X]) (t : ℝ) :
-    (p.map (algebraMap ℝ 𝕜)).eval ((t : ℝ) : 𝕜) = ((p.eval t : ℝ) : 𝕜) := by
-  rw [← RCLike.algebraMap_eq_ofReal, eval_map, eval₂_at_apply, RCLike.algebraMap_eq_ofReal]
-
 variable {A : E →ₗ[𝕜] E} {n : ℕ} (b : OrthonormalBasis (Fin n) 𝕜 E)
   {lam : Fin n → ℝ} (hb : ∀ j, A (b j) = (lam j : 𝕜) • b j)
 include hb
@@ -521,7 +507,7 @@ include hb
 /-- In the eigenbasis, a real polynomial `q` in `A` acts on coordinates by `q(λ)`. -/
 theorem repr_aeval_map_apply (q : ℝ[X]) (x : E) (j : Fin n) :
     b.repr (aeval A (q.map (algebraMap ℝ 𝕜)) x) j = ((q.eval (lam j) : ℝ) : 𝕜) * b.repr x j := by
-  rw [b.repr_aeval_apply_of_apply_eq_smul hb, eval_map_ofReal]
+  rw [b.repr_aeval_apply_of_apply_eq_smul hb, eval_map_apply, RCLike.algebraMap_eq_ofReal]
 
 /-- **Every competitor polynomial gives an angle bound.**  If a real polynomial `p` of degree below
 `m` takes the value `1` at the `i`-th eigenvalue and is bounded by `M` at all the others, then `tan
@@ -538,7 +524,7 @@ theorem tan_angle_le_of_forall_abs_eval_le (i : Fin n) {v : E}
   have hu : ‖b i‖ = 1 := b.norm_eq_one i
   have hdeg' : (p.map (algebraMap ℝ 𝕜)).degree < (m : ℕ) := lt_of_le_of_lt degree_map_le hdeg
   have hp' : (p.map (algebraMap ℝ 𝕜)).eval ((lam i : ℝ) : 𝕜) = 1 := by
-    rw [eval_map_ofReal, hp, RCLike.ofReal_one]
+    rw [eval_map_apply, RCLike.algebraMap_eq_ofReal, hp, RCLike.ofReal_one]
   have hwi : b.repr (v - (inner 𝕜 (b i) v : 𝕜) • b i) i = 0 := by
     rw [OrthonormalBasis.repr_apply_apply, inner_sub_right, inner_smul_right,
       inner_self_eq_norm_sq_to_K, hu]
@@ -546,7 +532,7 @@ theorem tan_angle_le_of_forall_abs_eval_le (i : Fin n) {v : E}
   have hbnd' : ∀ j : Fin n, b.repr (v - (inner 𝕜 (b i) v : 𝕜) • b i) j ≠ 0 →
       ‖(p.map (algebraMap ℝ 𝕜)).eval ((lam j : ℝ) : 𝕜)‖ ≤ M := by
     intro j hj
-    rw [eval_map_ofReal, RCLike.norm_ofReal]
+    rw [eval_map_apply, RCLike.algebraMap_eq_ofReal, RCLike.norm_ofReal]
     refine hbnd j fun hji => hj ?_
     rw [hji, hwi]
   have h1 := tan_angle_le_norm_aeval_div (b.isSymmetric_of_apply_eq_ofReal_smul hb) hu (hb i) hv
@@ -691,7 +677,7 @@ theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc (hA : A.IsSymmetri
   have hqne : qc ≠ 0 := by
     intro h0
     have h1 : ((q.eval (lam i') : ℝ) : 𝕜) = 0 := by
-      rw [← eval_map_ofReal q (lam i'), ← hqc, h0, eval_zero]
+      rw [← RCLike.algebraMap_eq_ofReal, ← eval_map_apply, ← hqc, h0, eval_zero]
     rw [hq1] at h1
     simp at h1
   have hnd : qc.natDegree < m := (Polynomial.natDegree_lt_iff_degree_lt hqne).2 hqq
@@ -701,7 +687,8 @@ theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc (hA : A.IsSymmetri
   have horth : ∀ j : Fin m, j < i →
       (inner 𝕜 (hC.eigenvectorBasis hm j) (⟨x, hxK⟩ : K) : 𝕜) = 0 := by
     intro j hj
-    rw [← OrthonormalBasis.repr_apply_apply, hy, hC.repr_aeval_apply hm, hqc, eval_map_ofReal,
+    rw [← OrthonormalBasis.repr_apply_apply, hy, hC.repr_aeval_apply hm, hqc, eval_map_apply,
+      RCLike.algebraMap_eq_ofReal,
       hqz j (Finset.mem_Iio.2 hj), RCLike.ofReal_zero, zero_mul]
   -- Courant–Fischer for the compression
   have hx0 : x ≠ 0 := by
@@ -804,7 +791,7 @@ alone that has nothing to do with the Krylov structure.
 
 This is `Lanczos.eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc` with the interval `[λ_n,
 λ_{i+1}]`, weakened from the sharper spread `λ_i - λ_n` to `λ_1 - λ_n`. -/
-theorem eigenvalues_sub_eigenvalues_compression_le [FiniteDimensional 𝕜 E] (hA : A.IsSymmetric)
+theorem eigenvalues_sub_eigenvalues_compression_le (hA : A.IsSymmetric)
     {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
     (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : ∀ j : Fin n, first ≤ j)

@@ -95,21 +95,16 @@ section Supremum
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- The ratios `‖f v‖ / ‖v‖` are bounded above by `‖f‖`. -/
-theorem norm_apply_div_le_opNorm (f : E →L[𝕜] F) (v : {v : E // v ≠ 0}) :
-    ‖f v‖ / ‖(v : E)‖ ≤ ‖f‖ :=
-  (div_le_iff₀ (norm_pos_iff.mpr v.2)).mpr (f.le_opNorm _)
-
 /-- **The operator norm is the supremum of the ratios**: `sup_{v ≠ 0} ‖f v‖ / ‖v‖ = ‖f‖`. -/
 theorem iSup_norm_apply_div_eq_opNorm (f : E →L[𝕜] F) :
     (⨆ v : {v : E // v ≠ 0}, ‖f v‖ / ‖(v : E)‖) = ‖f‖ := by
-  refine le_antisymm (Real.iSup_le f.norm_apply_div_le_opNorm (norm_nonneg _)) ?_
+  refine le_antisymm (Real.iSup_le (fun v => f.ratio_le_opNorm v) (norm_nonneg _)) ?_
   refine f.opNorm_le_bound (Real.iSup_nonneg fun v => by positivity) fun v => ?_
   rcases eq_or_ne v 0 with rfl | hv
   · simp
   · rw [← div_le_iff₀ (norm_pos_iff.mpr hv)]
     exact le_ciSup (f := fun v : {v : E // v ≠ 0} => ‖f v‖ / ‖(v : E)‖)
-      ⟨‖f‖, Set.forall_mem_range.2 f.norm_apply_div_le_opNorm⟩ ⟨v, hv⟩
+      ⟨‖f‖, Set.forall_mem_range.2 fun v => f.ratio_le_opNorm v⟩ ⟨v, hv⟩
 
 /-- **The norm of a real functional is the supremum of the signed ratios**:
 `sup_{v ≠ 0} f(v) / ‖v‖ = ‖f‖`, with no absolute value, because `v ↦ -v` is a bijection of the
@@ -118,7 +113,7 @@ theorem iSup_apply_div_eq_opNorm {X : Type*} [NormedAddCommGroup X] [NormedSpace
     (f : X →L[ℝ] ℝ) : (⨆ v : {v : X // v ≠ 0}, f v / ‖(v : X)‖) = ‖f‖ := by
   have hle : ∀ v : {v : X // v ≠ 0}, f v / ‖(v : X)‖ ≤ ‖f‖ := fun v =>
     (div_le_div_of_nonneg_right (le_abs_self _) (norm_nonneg _)).trans
-      (by rw [← Real.norm_eq_abs]; exact f.norm_apply_div_le_opNorm v)
+      (by rw [← Real.norm_eq_abs]; exact f.ratio_le_opNorm v)
   have hbdd : BddAbove (Set.range fun v : {v : X // v ≠ 0} => f v / ‖(v : X)‖) :=
     ⟨‖f‖, Set.forall_mem_range.2 hle⟩
   refine le_antisymm (Real.iSup_le hle (norm_nonneg _)) ?_

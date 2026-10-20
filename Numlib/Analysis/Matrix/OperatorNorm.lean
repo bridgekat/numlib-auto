@@ -1769,7 +1769,7 @@ open WithLp
 variable [DecidableEq n]
 
 /-- The Frobenius norm squared of a real matrix is the trace of `Aᵀ A`. -/
-private theorem frobenius_norm_sq_eq_trace_transpose (A : Matrix n n ℝ) :
+theorem frobenius_norm_sq_eq_trace_transpose (A : Matrix n n ℝ) :
     ‖A‖ ^ 2 = trace (Aᵀ * A) := by
   have h := frobenius_norm_sq_eq_trace (𝕜 := ℝ) A
   simpa [conjTranspose_eq_transpose_of_trivial] using h

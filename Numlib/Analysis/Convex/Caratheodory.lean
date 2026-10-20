@@ -8,6 +8,7 @@ import Numlib.Analysis.Convex.Duality.Pairing
 import Numlib.Analysis.Convex.Operations.Hull
 import Numlib.Analysis.Convex.Recession.ConeHull
 import Numlib.Analysis.Convex.Separation
+import Numlib.Data.Fin.Sum
 
 /-!
 # Carathéodory: a fixed index, cones, and points with directions
@@ -85,25 +86,6 @@ open Set
 
 namespace ConvexAnalysis
 
-/-- A sum over `Fin N` of a family cut off after the first `m` indices is a sum over `Fin m`. This
-is the padding lemma behind `mem_convexHull_iff_exists_fin_finrank_succ`. -/
-theorem sum_ite_lt {M : Type*} [AddCommMonoid M] {m N : ℕ} (h : m ≤ N) (g : Fin N → M) :
-    ∑ i : Fin N, (if (i : ℕ) < m then g i else 0) = ∑ j : Fin m, g (Fin.castLE h j) := by
-  classical
-  rw [← Finset.sum_subset (Finset.subset_univ (Finset.univ.map (Fin.castLEEmb h)))]
-  · rw [Finset.sum_map]
-    refine Finset.sum_congr rfl fun j _ => ?_
-    have hlt : ((Fin.castLEEmb h j : Fin N) : ℕ) < m := j.2
-    split
-    · rfl
-    · exact absurd hlt ‹_›
-  · intro i _ hi
-    have hnot : ¬ ((i : ℕ) < m) := fun hlt =>
-      hi (Finset.mem_map.2 ⟨⟨i, hlt⟩, Finset.mem_univ _, by ext; rfl⟩)
-    split
-    · exact absurd ‹_› hnot
-    · rfl
-
 section Caratheodory
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
@@ -161,7 +143,7 @@ theorem mem_convexHull_iff_exists_fin_finrank_succ {S : Set E} {x : E} :
     · exact hw₀ _ (hmemt i)
     · exact le_rfl
   · have hstep : ∑ i, ww i = ∑ j : Fin t.card, w (zz (Fin.castLE hcard j)) := by
-      simpa only [hww] using sum_ite_lt hcard fun i => w (zz i)
+      simpa only [hww] using (Fin.sum_castLE_eq_sum_ite hcard fun i => w (zz i)).symm
     rw [hstep]
     have hval : ∀ j : Fin t.card, zz (Fin.castLE hcard j) = ((t.equivFin.symm j : E)) := by
       intro j
@@ -175,7 +157,7 @@ theorem mem_convexHull_iff_exists_fin_finrank_succ {S : Set E} {x : E} :
       simp only [hww]
       split <;> simp
     rw [Finset.sum_congr rfl fun i _ => hprod i,
-      sum_ite_lt hcard fun i => w (zz i) • zz i]
+      ← Fin.sum_castLE_eq_sum_ite hcard fun i => w (zz i) • zz i]
     have hval : ∀ j : Fin t.card, zz (Fin.castLE hcard j) = ((t.equivFin.symm j : E)) := by
       intro j
       simp only [hzz, hrj j]
@@ -1187,7 +1169,7 @@ private theorem sum_pad_eq {M : Type*} [AddCommMonoid M] {κ : Type*} (t : Finse
     (hjj : ∀ j : Fin t.card, jj (Fin.castLE hcard j) = (t.equivFin.symm j : κ)) (H : κ → M) :
     ∑ i : Fin N, (if (i : ℕ) < t.card then H (jj i) else 0) = ∑ j ∈ t, H j := by
   classical
-  rw [sum_ite_lt hcard fun i => H (jj i),
+  rw [← Fin.sum_castLE_eq_sum_ite hcard fun i => H (jj i),
     Finset.sum_congr rfl fun j _ => by rw [hjj j],
     Fintype.sum_equiv t.equivFin.symm _ (fun y : {y // y ∈ t} => H (y : κ)) fun _ => rfl,
     Finset.sum_coe_sort t H]

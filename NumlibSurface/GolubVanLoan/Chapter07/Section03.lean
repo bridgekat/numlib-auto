@@ -466,11 +466,11 @@ theorem equation_7_3_24 [NeZero n] {m : ℕ} (X : Matrix (Fin n) (Fin m) ℂ)
     have h1 : ‖toEuclideanLin Gᴴ v‖ ^ 2 = ‖v‖ ^ 2 + ‖toEuclideanLin Xᴴ v‖ ^ 2 := by
       have e1 : (inner ℂ (toEuclideanLin Gᴴ v) (toEuclideanLin Gᴴ v) : ℂ) =
           inner ℂ v (toEuclideanLin (G * Gᴴ) v) := by
-        rw [toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose G,
+        rw [toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose_eq_adjoint G,
           LinearMap.adjoint_inner_left]
       have e2 : (inner ℂ v (toEuclideanLin (X * Xᴴ) v) : ℂ) =
           inner ℂ (toEuclideanLin Xᴴ v) (toEuclideanLin Xᴴ v) := by
-        rw [toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose X,
+        rw [toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose_eq_adjoint X,
           LinearMap.adjoint_inner_left]
       rw [@norm_sq_eq_re_inner ℂ, @norm_sq_eq_re_inner ℂ, @norm_sq_eq_re_inner ℂ, e1, hG,
         map_add, LinearMap.add_apply, toLpLin_one, LinearMap.id_apply, inner_add_right, e2,
@@ -501,7 +501,7 @@ theorem equation_7_3_24 [NeZero n] {m : ℕ} (X : Matrix (Fin n) (Fin m) ℂ)
       calc ‖x‖ ^ 2 = RCLike.re (inner ℂ (toEuclideanLin Gᴴ y) x) := by
             rw [hy, @norm_sq_eq_re_inner ℂ]
         _ = RCLike.re (inner ℂ y (toEuclideanLin G x)) := by
-            rw [toEuclideanLin_conjTranspose, LinearMap.adjoint_inner_left]
+            rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.adjoint_inner_left]
         _ ≤ ‖y‖ * ‖toEuclideanLin G x‖ := (RCLike.re_le_norm _).trans (norm_inner_le_norm _ _)
         _ ≤ ‖x‖ * ‖toEuclideanLin G x‖ := by gcongr
     nlinarith

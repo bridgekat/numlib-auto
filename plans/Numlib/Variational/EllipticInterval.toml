@@ -89,9 +89,6 @@ source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.51)'
 id = "existsUnique_isWeakSolution"
 
 [[node]]
-id = "seminorm_sub_le_of_galerkin_orthogonal"
-
-[[node]]
 id = "galerkin_seminorm_sub_le"
 source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, Theorem 12.3'
 

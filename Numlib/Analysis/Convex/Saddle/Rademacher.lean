@@ -67,10 +67,10 @@ theorem ConcaveConvexOn.exists_lipschitzOnWith_ball (hCo : IsOpen C) (hCc : Conv
     exact Set.prod_mono (closedBall_subset_ball hhalf) (closedBall_subset_ball hhalf)
   have hzero : (0 : ℝ) ≤ r / 2 := by linarith
   have hriC : closedBall u (r / 2) ⊆ ri C := fun w hw =>
-    Convex.interior_subset_relint hCc ⟨u, by rw [hCo.interior_eq]; exact hp.1⟩
+    Convex.interior_subset_relint
       (by rw [hCo.interior_eq]; exact (hcb (Set.mk_mem_prod hw (mem_closedBall_self hzero))).1)
   have hriD : closedBall v (r / 2) ⊆ ri D := fun x hx =>
-    Convex.interior_subset_relint hDc ⟨v, by rw [hDo.interior_eq]; exact hp.2⟩
+    Convex.interior_subset_relint
       (by rw [hDo.interior_eq]; exact (hcb (Set.mk_mem_prod (mem_closedBall_self hzero) hx)).2)
   obtain ⟨k, hk⟩ := hK.exists_lipschitzOnWith_of_isCompact hCc hDc
     (isCompact_closedBall u (r / 2)) hriC (isCompact_closedBall v (r / 2)) hriD

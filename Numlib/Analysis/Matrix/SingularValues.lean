@@ -156,7 +156,7 @@ theorem sortedSingularValues_conjTranspose [DecidableEq m] (A : Matrix m n 𝕜)
     Aᴴ.sortedSingularValues = A.sortedSingularValues := by
   funext i
   change (toEuclideanLin Aᴴ).singularValues i = (toEuclideanLin A).singularValues i
-  rw [toEuclideanLin_conjTranspose, LinearMap.singularValues_adjoint]
+  rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.singularValues_adjoint]
 
 /-- Scaling by `c` scales the stretch on a max–min subspace by `‖c‖`. -/
 private theorem mul_sortedSingularValues_le_smul (c : 𝕜) (A : Matrix m n 𝕜) (i : ℕ) :
@@ -318,7 +318,7 @@ theorem IsHermitian.eigenvalues₀_hermitianDilation {A : Matrix m n 𝕜}
         (LinearMap.adjoint (toEuclideanLin A))).charpoly := by
     rw [← (PiLp.sumPiLpEquivProdLpPiLp (𝕜 := 𝕜) 2
         fun _ : n ⊕ m => 𝕜).toLinearEquiv.symm.charpoly_conj, LinearEquiv.symm_conj_apply,
-      toEuclideanLin_hermitianDilation, toEuclideanLin_conjTranspose]
+      toEuclideanLin_hermitianDilation, toEuclideanLin_conjTranspose_eq_adjoint]
     rfl
   have heq := (LinearMap.IsSymmetric.eigenvalues_eq_eigenvalues_iff
     (isSymmetric_toEuclideanLin_iff.mpr hA) finrank_euclideanSpace
@@ -937,23 +937,8 @@ theorem linearIndependent_add_of_l2_opNorm_lt {A δA : Matrix m n 𝕜}
 `Matrix.eventually_linearIndependent_transpose_add_smul`. -/
 theorem eventually_linearIndependent_add_smul {m n : Type*} [Finite m] [Finite n]
     {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 A) (E : Matrix m n 𝕜) :
-    ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E) := by
-  classical
-  have := Fintype.ofFinite m
-  have := Fintype.ofFinite n
-  rcases isEmpty_or_nonempty m with hm | hm
-  · exact Filter.Eventually.of_forall fun _ => linearIndependent_empty_type
-  have hc : LinearIndependent 𝕜 Aᴴᵀ := by
-    refine mulVec_injective_iff.1 fun v w hvw => ?_
-    have e : ∀ u, Aᴴ *ᵥ u = star (star u ᵥ* A) := fun u => by rw [star_vecMul, star_star]
-    rw [e, e] at hvw
-    exact star_injective (vecMul_injective_iff.2 hA (star_injective hvw))
-  have hlim : Filter.Tendsto (fun t : 𝕜 => ‖t • E‖) (nhds 0) (nhds 0) := by
-    have := ((continuous_id.smul (continuous_const (y := E))).norm).tendsto (0 : 𝕜)
-    simpa using this
-  filter_upwards [hlim.eventually_lt_const (iInf_colSingularValues_pos_of_linearIndependent hc)]
-    with t ht
-  exact linearIndependent_add_of_l2_opNorm_lt ht
+    ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E) :=
+  eventually_linearIndependent_transpose_add_smul (A := Aᵀ) hA Eᵀ
 
 end Stability
 

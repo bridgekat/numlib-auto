@@ -248,10 +248,7 @@ private theorem odd_energy_bound {M A : ℝ} (hM : 0 < M) (hb : 1 ≤ 4 * M * A 
     1 / (4 * (2 * M + 1)) ≤ ((2 * M + 1) * (2 * M + 1 + 1))⁻¹ * ((2 * M + 1) * A) ^ 2 := by
   have hden : (0 : ℝ) < (2 * M + 1) * (2 * M + 1 + 1) := by positivity
   rw [inv_mul_eq_div, div_le_div_iff₀ (by positivity) hden]
-  have h2 : (2 * M + 1) ^ 3 * 1 ≤ (2 * M + 1) ^ 3 * (4 * M * A ^ 2) :=
-    mul_le_mul_of_nonneg_left hb (by positivity)
-  have h3 : M * ((2 * M + 1) * (2 * M + 1 + 1)) ≤ (2 * M + 1) ^ 3 := by nlinarith [hM.le]
-  nlinarith [h2, h3, hM]
+  nlinarith [hM]
 
 /-- **`E_n(0) ≥ 1/(4n)` for `n ≥ 1`.** For even `n = 2m` the energy at the origin is at least
 `L_{2m}(0)² ≥ 1/(4m) = 1/(2n)`; for odd `n = 2m + 1` the polynomial vanishes at the origin and the

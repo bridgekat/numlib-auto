@@ -163,7 +163,7 @@ theorem timeDeriv_spaceLaplacian (hw : ContDiff ℝ ∞ w) :
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- The time derivative is local: functions agreeing on an open set have the same time
 derivative there. -/
-theorem timeDeriv_eqOn [NormedSpace ℝ E] {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ w₂ V) :
+theorem timeDeriv_eqOn {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ w₂ V) :
     EqOn (timeDeriv w₁) (timeDeriv w₂) V := by
   rintro ⟨x, t⟩ hp
   have hmem : (fun s : ℝ ↦ (x, s)) ⁻¹' V ∈ 𝓝 t :=
@@ -248,9 +248,9 @@ theorem spaceLaplacian_iterate_slice (w : E × ℝ → ℝ) (j : ℕ) (t : ℝ) 
     rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← ih]
     rfl
 
-omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- The iterated time derivative, on a slice, is the iterated derivative of the slice. -/
-theorem timeDeriv_iterate_slice [NormedSpace ℝ E] (w : E × ℝ → ℝ) (j : ℕ) (x : E) :
+theorem timeDeriv_iterate_slice (w : E × ℝ → ℝ) (j : ℕ) (x : E) :
     (fun s ↦ timeDeriv^[j] w (x, s)) = deriv^[j] fun s ↦ w (x, s) := by
   induction j with
   | zero => rfl

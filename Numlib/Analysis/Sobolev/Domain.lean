@@ -139,7 +139,7 @@ theorem mono_order {k' : ℕ∞} (h : MemSobolev f k p Ω μ) (hk : k' ≤ k) : 
   ⟨h.1, fun n hn ↦ h.2 n (hn.trans hk)⟩
 
 /-- Membership of `W^{k,p}` is inherited by open subsets. -/
-theorem mono_set [OpensMeasurableSpace E] {Ω' : Opens E} (h : MemSobolev f k p Ω μ)
+theorem mono_set {Ω' : Opens E} (h : MemSobolev f k p Ω μ)
     (hΩ : Ω' ≤ Ω) : MemSobolev f k p Ω' μ := by
   refine ⟨h.1.mono_measure (Measure.restrict_mono hΩ le_rfl), fun n hn ↦ ?_⟩
   obtain ⟨w, hw, hwp⟩ := h.2 n hn

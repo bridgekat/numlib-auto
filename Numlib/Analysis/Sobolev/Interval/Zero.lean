@@ -978,25 +978,15 @@ namespace SobolevIntervalLp
 variable {p : ℝ≥0∞} {I J : Opens ℝ} [Fact (1 ≤ p)]
 
 /-- The zero function has weak derivative zero. -/
-theorem hasWeakDerivOn_zero (I : Opens ℝ) : HasWeakDerivOn (0 : ℝ → ℝ) 0 I := by
-  have := hasWeakDerivOn_of_contDiffOn (I := I) (contDiffOn_const (c := (0 : ℝ)))
-  rw [deriv_const'] at this
-  exact this
+theorem hasWeakDerivOn_zero (I : Opens ℝ) : HasWeakDerivOn (0 : ℝ → ℝ) 0 I :=
+  HasWeakIteratedLineDerivOn.zero
 
 omit [Fact (1 ≤ p)] in
 /-- Two elements of `W^{1,p}(I)` with the same function are equal: the weak derivative is
 unique. -/
 theorem eq_of_fn_ae_eq {u v : SobolevIntervalLp 1 p I} (h : fn u =ᵐ[volume.restrict I] fn v) :
-    u = v := by
-  have h1 : ⇑(deriv u 1) =ᵐ[volume.restrict I] deriv v 1 := by
-    have hw : HasWeakDerivOn (fn v) (deriv u 1) I :=
-      (hasWeakDerivOn_fn u).congr_ae h EventuallyEq.rfl
-    rw [Filter.EventuallyEq, ae_restrict_iff' I.isOpen.measurableSet]
-    exact hw.ae_eq (hasWeakDerivOn_fn v)
-  refine ext fun j ↦ ?_
-  fin_cases j
-  · exact Lp.ext h
-  · exact Lp.ext h1
+    u = v :=
+  SobolevMultiIndex.ext_of_fn_ae_eq h
 
 omit [Fact (1 ≤ p)] in
 /-- An element of `W^{1,p}(I)` whose representative vanishes on the closure of `I` is zero. -/

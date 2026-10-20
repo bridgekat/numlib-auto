@@ -215,7 +215,7 @@ theorem enorm_convolution_le_eLpNorm_mul_eLpNorm {q : ℝ≥0∞} [q.HolderConju
 kernel `ρ` with compact support and `f ∈ L^p`, `1/p + 1/q = 1`, the convolution `ρ ⋆ f` is
 Lipschitz with constant `‖∇ρ‖_q * ‖f‖ₚ`, because `∇(ρ ⋆ f) = ∇ρ ⋆ f` is bounded by Hölder's
 inequality. -/
-theorem lipschitzWith_convolution_of_contDiff [CompleteSpace E] {q : ℝ≥0∞} [p.HolderConjugate q]
+theorem lipschitzWith_convolution_of_contDiff {q : ℝ≥0∞} [p.HolderConjugate q]
     {ρ : G → ℝ} (hρ : ContDiff ℝ 1 ρ) (hcρ : HasCompactSupport ρ) {f : G → E} (hf : MemLp f p μ) :
     LipschitzWith ((eLpNorm (fderiv ℝ ρ) q μ).toNNReal * (eLpNorm f p μ).toNNReal)
       (ρ ⋆[lsmul ℝ ℝ, μ] f) := by

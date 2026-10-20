@@ -333,7 +333,7 @@ theorem pfc_mul_pfc_eq_one [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpo
 
 /-- **Inverses**: if `f` is `C^{m_λ - 1}` and nonvanishing at every eigenvalue `λ`, then `f(a)` is
 invertible with inverse `(1/f)(a)` ([golub2013matrix] §9.1's rational functions). -/
-theorem pfc_inv [CharZero 𝕜] [CompleteSpace 𝕜] (ha : IsIntegral 𝕜 a)
+theorem pfc_inv [CharZero 𝕜] (ha : IsIntegral 𝕜 a)
     (hs : (minpoly 𝕜 a).Splits) {f : 𝕜 → 𝕜}
     (hf : ∀ μ ∈ (minpoly 𝕜 a).roots,
       ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ)
@@ -349,7 +349,7 @@ theorem pfc_inv [CharZero 𝕜] [CompleteSpace 𝕜] (ha : IsIntegral 𝕜 a)
   exact ⟨u.isUnit, (Ring.inverse_unit u).symm⟩
 
 /-- The inverse of an element with `0` outside its spectrum is `pfc (·⁻¹)`. -/
-theorem pfc_inv_id [CharZero 𝕜] [CompleteSpace 𝕜] (ha : IsIntegral 𝕜 a)
+theorem pfc_inv_id [CharZero 𝕜] (ha : IsIntegral 𝕜 a)
     (hs : (minpoly 𝕜 a).Splits) (h0 : (0 : 𝕜) ∉ spectrum 𝕜 a) :
     pfc (fun z : 𝕜 => z⁻¹) a = Ring.inverse a := by
   have h := (pfc_inv ha hs (f := fun z : 𝕜 => z) (fun μ _ => contDiffAt_id) fun μ hμ hμ0 => h0 ?_).2

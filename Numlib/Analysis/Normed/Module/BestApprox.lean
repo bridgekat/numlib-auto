@@ -1,3 +1,9 @@
+/-
+Upstreaming candidate: general material with no numerical-analysis-specific content, written
+to Mathlib conventions with a view to contributing it to Mathlib.
+Natural home: a new `Mathlib.Analysis.Normed.Module.BestApprox`, beside `Metric.infDist`.
+Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
+-/
 import Mathlib.Analysis.Convex.StrictConvexSpace
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
@@ -118,11 +124,11 @@ section Existence
 
 variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- A closed subset of a finite-dimensional subspace admits best approximations: the workhorse
-behind the two existence theorems below. -/
-private theorem exists_isBestApprox_aux [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜] {K : Set V}
-    (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S]
-    (hKS : K ⊆ S) (u : V) :
+/-- Best approximations from closed convex finite-dimensional sets exist (a closed subset of a
+finite-dimensional subspace); [han2009theoretical], Thm 3.3.15. -/
+theorem exists_isBestApprox_of_isClosed_of_finiteDimensional
+    [LocallyCompactSpace 𝕜] {K : Set V} (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V)
+    [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (u : V) :
     ∃ v, IsBestApprox K u v := by
   obtain ⟨v₀, hv₀⟩ := hne
   have : ProperSpace S := FiniteDimensional.proper 𝕜 S
@@ -149,15 +155,8 @@ private theorem exists_isBestApprox_aux [CompleteSpace 𝕜] [LocallyCompactSpac
 theorem exists_isBestApprox_of_finiteDimensional [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜]
     (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V) :
     ∃ v, IsBestApprox (K : Set V) u v :=
-  exists_isBestApprox_aux K.closed_of_finiteDimensional ⟨0, K.zero_mem⟩ K le_rfl u
-
-/-- Best approximations from closed convex finite-dimensional sets exist (a closed subset of a
-finite-dimensional subspace); [han2009theoretical], Thm 3.3.15. -/
-theorem exists_isBestApprox_of_isClosed_of_finiteDimensional [CompleteSpace 𝕜]
-    [LocallyCompactSpace 𝕜] {K : Set V} (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V)
-    [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (u : V) :
-    ∃ v, IsBestApprox K u v :=
-  exists_isBestApprox_aux hK hne S hKS u
+  exists_isBestApprox_of_isClosed_of_finiteDimensional K.closed_of_finiteDimensional
+    ⟨0, K.zero_mem⟩ K le_rfl u
 
 end Existence
 
@@ -229,7 +228,7 @@ section Hilbert
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
 
 /-- Membership in the orthogonal complement of a span is orthogonality to the generators. -/
-private theorem mem_orthogonal_span_range_iff {ι : Type*} (u : ι → V) (x : V) :
+theorem Submodule.mem_orthogonal_span_range_iff {ι : Type*} (u : ι → V) (x : V) :
     x ∈ (Submodule.span 𝕜 (Set.range u))ᗮ ↔ ∀ j, inner 𝕜 (u j) x = 0 := by
   rw [Submodule.mem_orthogonal']
   refine ⟨fun h j => inner_eq_zero_symm.1 (h _ (Submodule.subset_span (Set.mem_range_self j))),
@@ -271,7 +270,7 @@ theorem isBestApprox_sum_iff {ι : Type*} [Fintype ι] (u : ι → V) (a : ι �
       ∀ j, ∑ i, a i * inner 𝕜 (u j) (u i) = inner 𝕜 (u j) w := by
   rw [isBestApprox_iff_mem_orthogonal _ (Submodule.sum_mem _ fun i _ =>
     Submodule.smul_mem _ _ (Submodule.subset_span (Set.mem_range_self i))),
-    mem_orthogonal_span_range_iff]
+    Submodule.mem_orthogonal_span_range_iff]
   simp only [inner_sub_right, inner_sum, inner_smul_right]
   exact forall_congr' fun _ => by rw [sub_eq_zero, eq_comm]
 

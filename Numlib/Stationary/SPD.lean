@@ -438,16 +438,8 @@ theorem spectralRadius_energyIterationOperator :
 `B`-inner product. -/
 theorem isSelfAdjoint_energyIterationOperator
     (hcomm : ∀ x y, inner ℂ (B (s.iterationOperator x)) y = inner ℂ (B x) (s.iterationOperator y)) :
-    IsSelfAdjoint (energyIterationOperator s hB) := by
-  rw [ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric]
-  intro u v
-  obtain ⟨x, rfl⟩ := (WithEnergy.equiv B hB).surjective u
-  obtain ⟨y, rfl⟩ := (WithEnergy.equiv B hB).surjective v
-  change inner ℂ (energyIterationOperator s hB (WithEnergy.equiv B hB x)) (WithEnergy.equiv B hB y)
-    = inner ℂ (WithEnergy.equiv B hB x) (energyIterationOperator s hB (WithEnergy.equiv B hB y))
-  rw [energyIterationOperator_apply, energyIterationOperator_apply, WithEnergy.inner_equiv,
-    WithEnergy.inner_equiv]
-  exact hcomm x y
+    IsSelfAdjoint (energyIterationOperator s hB) :=
+  LinearMap.IsSymmetric.isSelfAdjoint hcomm
 
 include hB in
 /-- **The `B`-operator norm of a `B`-symmetric iteration operator is its spectral radius**: for
@@ -653,22 +645,6 @@ private theorem complexSpectralRadius_eq_of_forall_le {X : Matrix n n ℝ} {K : 
       _ ≤ ENNReal.ofReal K := ENNReal.ofReal_le_ofReal (hle μ hμ)
   · calc ENNReal.ofReal K = (‖μ₀‖₊ : ℝ≥0∞) := by rw [← hμ₀K, ofReal_norm]; rfl
       _ ≤ _ := le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify X)) => (‖k‖₊ : ℝ≥0∞)) μ₀ hμ₀
-
-/-- A nonzero scalar multiple is a unit exactly when the matrix is. -/
-private theorem isUnit_smul_iff {c : ℂ} (hc : c ≠ 0) (M : Matrix n n ℂ) :
-    IsUnit (c • M) ↔ IsUnit M := by
-  rw [isUnit_iff_isUnit_det, isUnit_iff_isUnit_det, det_smul, isUnit_iff_ne_zero,
-    isUnit_iff_ne_zero, mul_ne_zero_iff, and_iff_right (pow_ne_zero _ hc)]
-
-/-- The spectrum of an affine function `c + d t` of a complex matrix, `d ≠ 0`. -/
-private theorem mem_spectrum_affine_iff {Y : Matrix n n ℂ} {c d : ℂ} (hd : d ≠ 0) (μ : ℂ) :
-    μ ∈ spectrum ℂ (c • 1 + d • Y) ↔ (μ - c) / d ∈ spectrum ℂ Y := by
-  have key : algebraMap ℂ (Matrix n n ℂ) μ - (c • 1 + d • Y)
-      = d • (algebraMap ℂ (Matrix n n ℂ) ((μ - c) / d) - Y) := by
-    rw [Algebra.algebraMap_eq_smul_one, Algebra.algebraMap_eq_smul_one, smul_sub, smul_smul,
-      mul_div_cancel₀ _ hd]
-    module
-  rw [spectrum.mem_iff, spectrum.mem_iff, key, isUnit_smul_iff hd]
 
 /-- The complex spectrum of `c • 1 + d • X` for a real matrix `X`. -/
 private theorem mem_spectrum_complexify_affine_iff (X : Matrix n n ℝ) {c d : ℝ} (hd : d ≠ 0)
@@ -1656,12 +1632,6 @@ open Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix n n ℝ} (s : Splitting A)
 
-omit [DecidableEq n] in
-/-- The bilinear form of a symmetric matrix is symmetric. -/
-private theorem dotProduct_mulVec_comm {X : Matrix n n ℝ} (hX : X.IsSymm) (x y : n → ℝ) :
-    x ⬝ᵥ (X *ᵥ y) = y ⬝ᵥ (X *ᵥ x) := by
-  rw [dotProduct_mulVec, ← mulVec_transpose, hX.eq, dotProduct_comm]
-
 /-- `A G = A - A M⁻¹ A` for the iteration matrix `G = 1 - M⁻¹ A` of a splitting. -/
 theorem mul_iterationOperator_eq : A * s.iterationOperator = A - A * s.m⁻¹ * A := by
   rw [iterationOperator, Matrix.mul_sub, Matrix.mul_one, nonsing_inv_eq_ringInverse,
@@ -1688,13 +1658,13 @@ theorem mul_iterationOperator_posSemidef (hA : A.PosDef) (hm : s.m.IsSymm)
     set y := s.m⁻¹ *ᵥ (A *ᵥ x) with hy
     have hmy : s.m *ᵥ y = A *ᵥ x := mulVec_nonsing_inv_mulVec s.isUnit _
     have h1 : x ⬝ᵥ (A *ᵥ y) = y ⬝ᵥ (s.m *ᵥ y) := by
-      rw [dotProduct_mulVec_comm hsymm, ← hmy]
+      rw [hsymm.dotProduct_mulVec_comm, ← hmy]
     have h2 : 0 ≤ y ⬝ᵥ ((s.m - A) *ᵥ y) := by simpa using hsub.dotProduct_mulVec_nonneg y
     have h3 : 0 ≤ (x - y) ⬝ᵥ (A *ᵥ (x - y)) := by
       simpa using hA.posSemidef.dotProduct_mulVec_nonneg (x - y)
     rw [sub_mulVec, dotProduct_sub] at h2
     rw [mulVec_sub, dotProduct_sub, sub_dotProduct, sub_dotProduct,
-      dotProduct_mulVec_comm hsymm y x] at h3
+      hsymm.dotProduct_mulVec_comm (x := y) (y := x)] at h3
     linarith
 
 end Stationary.Splitting

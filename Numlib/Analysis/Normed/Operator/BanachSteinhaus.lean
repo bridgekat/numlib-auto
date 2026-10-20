@@ -88,7 +88,7 @@ theorem tendsto_of_tendsto_on_dense_of_bounded {ι : Type*} {l : Filter ι} {s :
   nlinarith
 
 /-- A convergent sequence in a normed space has bounded norms. -/
-private theorem exists_norm_le_of_tendsto {X : Type*} [NormedAddCommGroup X] {f : ℕ → X} {a : X}
+theorem _root_.Filter.Tendsto.exists_norm_le {X : Type*} [NormedAddCommGroup X] {f : ℕ → X} {a : X}
     (h : Tendsto f atTop (𝓝 a)) : ∃ C : ℝ, ∀ n, ‖f n‖ ≤ C := by
   obtain ⟨C, hC⟩ := isBounded_iff_forall_norm_le.1 (Metric.isBounded_range_of_tendsto _ h)
   exact ⟨C, fun n => hC _ ⟨n, rfl⟩⟩
@@ -104,7 +104,7 @@ theorem tendsto_iff_tendsto_on_dense_of_completeSpace [CompleteSpace V] {s : Set
     (L : V →L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) :
     (∀ v, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ↔
       (∀ v ∈ s, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ∧ ∃ C, ∀ n, ‖Ln n‖ ≤ C := by
-  refine ⟨fun h => ⟨fun v _ => h v, banach_steinhaus fun v => exists_norm_le_of_tendsto (h v)⟩, ?_⟩
+  refine ⟨fun h => ⟨fun v _ => h v, banach_steinhaus fun v => (h v).exists_norm_le⟩, ?_⟩
   rintro ⟨hdense, C, hC⟩
   exact tendsto_of_tendsto_on_dense_of_bounded hs hC hdense
 
@@ -119,7 +119,7 @@ theorem exists_not_tendsto_of_not_bddAbove [CompleteSpace V] {Ln : ℕ → V →
     ∃ v : V, ¬ Tendsto (fun n => Ln n v) atTop (𝓝 (L v)) := by
   by_contra hcon
   simp only [not_exists, not_not] at hcon
-  obtain ⟨C, hC⟩ := banach_steinhaus fun v => exists_norm_le_of_tendsto (hcon v)
+  obtain ⟨C, hC⟩ := banach_steinhaus fun v => (hcon v).exists_norm_le
   exact h ⟨C, by rintro x ⟨n, rfl⟩; exact hC n⟩
 
 /-- **The operator norm is lower semicontinuous under pointwise convergence**

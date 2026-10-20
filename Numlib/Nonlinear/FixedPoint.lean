@@ -109,7 +109,7 @@ set_option linter.unusedVariables false in
 /-- A priori bound on a closed invariant subset: `dist (f^[n] x₀) x* ≤ K^n / (1 - K) * dist (f x₀)
 x₀`, so the number of iterations needed for a prescribed accuracy can be read off before iterating
 ([han2009theoretical], (5.1.4); [kress1998numerical], Thm 3.46). -/
-theorem dist_iterate_le_of_mapsTo [CompleteSpace α] {f : α → α} {s : Set α} (hs : IsClosed s)
+theorem dist_iterate_le_of_mapsTo {f : α → α} {s : Set α} (hs : IsClosed s)
     (hmaps : Set.MapsTo f s s) {K : ℝ} (hK0 : 0 ≤ K) (hK : K < 1)
     (hf : ∀ x ∈ s, ∀ y ∈ s, dist (f x) (f y) ≤ K * dist x y) {x' : α} (hx' : x' ∈ s)
     (hfix : f x' = x') {x₀ : α} (hx₀ : x₀ ∈ s) (n : ℕ) :
@@ -588,15 +588,12 @@ theorem norm_sub_damped_le {T : E → E} {s : Set E} {c L θ : ℝ} (hθ : 0 ≤
     _ = Real.sqrt (1 - 2 * θ * c + θ ^ 2 * L ^ 2) * ‖x - y‖ := by
         rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _)]
 
--- `hc` and completeness are not needed for the contraction estimate itself (only `hθ'` and
--- `hθ` are); they are kept so that the statement matches its use in Lax–Milgram.
-set_option linter.unusedVariables false in
-set_option linter.unusedSectionVars false in
+omit [CompleteSpace E] in
 /-- The damped iteration `x ↦ x - θ (T x - b)` contracts with factor `√(1 - 2θc + θ²L²)` for `0 < θ
 < 2c/L²`.  Its fixed points are exactly the solutions of `T x = b`, so this is what converts strong
 monotonicity into an application of the Banach fixed-point theorem: it is the proof of
 [han2009theoretical], Thm 5.1.4, and also their first proof of the Lax–Milgram lemma. -/
-theorem contractingWith_damped {T : E → E} {c L : ℝ} (hc : 0 < c) (hL : 0 < L)
+theorem contractingWith_damped {T : E → E} {c L : ℝ} (hL : 0 < L)
     (hmono : IsStronglyMonotoneWith 𝕜 T c) (hlip : LipschitzWith (Real.toNNReal L) T) (b : E)
     {θ : ℝ} (hθ : 0 < θ)
     (hθ' : θ < 2 * c / L ^ 2) :
@@ -629,7 +626,7 @@ theorem zarantonello {T : E → E} {c L : ℝ} (hc : 0 < c) (hmono : IsStronglyM
   have hθ' : c / max L 1 ^ 2 < 2 * c / max L 1 ^ 2 := by
     have h2 : 2 * c / max L 1 ^ 2 = c / max L 1 ^ 2 + c / max L 1 ^ 2 := by ring
     linarith
-  have hcon := contractingWith_damped (𝕜 := 𝕜) hc hL' hmono hlip' b hθ hθ'
+  have hcon := contractingWith_damped (𝕜 := 𝕜) hL' hmono hlip' b hθ hθ'
   have : Nonempty E := ⟨0⟩
   have hiff : ∀ y : E,
       (fun x => x - ((c / max L 1 ^ 2 : ℝ) : 𝕜) • (T x - b)) y = y ↔ T y = b := by
@@ -639,7 +636,7 @@ theorem zarantonello {T : E → E} {c L : ℝ} (hc : 0 < c) (hmono : IsStronglyM
   obtain ⟨xstar, hfix, huniq⟩ := hcon.existsUnique_eq_self
   exact ⟨xstar, (hiff _).mp hfix, fun y hy => huniq y ((hiff y).mpr hy)⟩
 
-set_option linter.unusedSectionVars false in
+omit [CompleteSpace E] in
 /-- Lipschitz dependence on the right-hand side: the inverse of a strongly monotone map is `1 /
 c`-Lipschitz ([han2009theoretical], (5.1.11)). -/
 theorem norm_sub_le_of_strongly_monotone {T : E → E} {c : ℝ} (hc : 0 < c)

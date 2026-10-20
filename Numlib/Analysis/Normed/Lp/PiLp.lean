@@ -9,6 +9,7 @@ import Mathlib.Analysis.MeanInequalitiesPow
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Normed.Lp.PiLp
 import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
+import Numlib.Data.ENNReal.Real
 
 /-!
 # Comparison of the `ℓ^p` norms on a finite product
@@ -60,10 +61,6 @@ namespace PiLp
 
 variable {ι : Type*} [Fintype ι] {β : ι → Type*} [∀ i, SeminormedAddCommGroup (β i)]
 
-/-- `1 ≤ p.toReal` for a finite exponent `p` with `Fact (1 ≤ p)`. -/
-private theorem one_le_toReal {p : ℝ≥0∞} [hp : Fact (1 ≤ p)] (h : p ≠ ∞) : 1 ≤ p.toReal := by
-  simpa using ENNReal.toReal_mono h hp.out
-
 /-- **The `p`-norms decrease in `p`**: `‖x‖_q ≤ ‖x‖_p` for `1 ≤ p ≤ q ≤ ∞`. For finite `q` this
 is the superadditivity of `t ↦ t ^ (q / p)`, `∑ ‖x i‖ ^ q ≤ (∑ ‖x i‖ ^ p) ^ (q / p)`; for
 `q = ∞` it is `PiLp.norm_apply_le`. These are the constants `c_pq = 1` of
@@ -74,8 +71,8 @@ theorem norm_le_norm_of_le {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] 
   · rw [norm_toLp]
     exact (pi_norm_le_iff_of_nonneg (norm_nonneg _)).2 fun i => norm_apply_le (toLp p x) i
   have hp : p ≠ ∞ := ne_top_of_le_ne_top hq hpq
-  have hP : 0 < p.toReal := zero_lt_one.trans_le (one_le_toReal hp)
-  have hQ : 0 < q.toReal := zero_lt_one.trans_le (one_le_toReal hq)
+  have hP : 0 < p.toReal := zero_lt_one.trans_le (ENNReal.one_le_toReal_of_ne_top hp)
+  have hQ : 0 < q.toReal := zero_lt_one.trans_le (ENNReal.one_le_toReal_of_ne_top hq)
   have hr : 1 ≤ q.toReal / p.toReal := (one_le_div hP).2 (ENNReal.toReal_mono hq hpq)
   have key : ‖toLp q x‖₊ ≤ ‖toLp p x‖₊ := by
     rw [nnnorm_eq_sum hq, nnnorm_eq_sum hp]
@@ -105,8 +102,8 @@ theorem norm_le_card_rpow_mul_norm {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 
     have h := (lipschitzWith_toLp p β).norm_le_mul (toLp_zero p) x
     rwa [NNReal.coe_rpow, NNReal.coe_natCast, one_div, ENNReal.toReal_inv, ← one_div] at h
   have hp : p ≠ ∞ := ne_top_of_le_ne_top hq hpq
-  have hP : 0 < p.toReal := zero_lt_one.trans_le (one_le_toReal hp)
-  have hQ : 0 < q.toReal := zero_lt_one.trans_le (one_le_toReal hq)
+  have hP : 0 < p.toReal := zero_lt_one.trans_le (ENNReal.one_le_toReal_of_ne_top hp)
+  have hQ : 0 < q.toReal := zero_lt_one.trans_le (ENNReal.one_le_toReal_of_ne_top hq)
   have hr : 1 ≤ q.toReal / p.toReal := (one_le_div hP).2 (ENNReal.toReal_mono hq hpq)
   have key : ‖toLp p x‖₊ ≤
       (Fintype.card ι : ℝ≥0) ^ (1 / p.toReal - 1 / q.toReal) * ‖toLp q x‖₊ := by
@@ -221,6 +218,19 @@ theorem norm_toLp_le_mul_norm_toLp (p : ℝ≥0∞) [Fact (1 ≤ p)] {y : ∀ i,
             (Finset.sum_nonneg fun i _ => Real.rpow_nonneg (norm_nonneg _) _),
             ← Real.rpow_mul hc, mul_one_div_cancel hp0.ne', Real.rpow_one]
 
+/-- **The `ℓ^p` norm is monotone in each coordinate**: if `‖x i‖ ≤ ‖y i‖` for every `i`, then
+`‖x‖ ≤ ‖y‖`, the two tuples possibly living in different families of spaces. -/
+theorem norm_le_norm_of_forall_norm_le {p : ℝ≥0∞} [Fact (1 ≤ p)] {x : PiLp p β} {y : PiLp p γ}
+    (h : ∀ i, ‖x i‖ ≤ ‖y i‖) : ‖x‖ ≤ ‖y‖ := by
+  rcases eq_or_ne p ⊤ with rfl | hp
+  · rw [PiLp.norm_eq_ciSup, PiLp.norm_eq_ciSup]
+    exact ciSup_mono (Finite.bddAbove_range _) h
+  · have hP : 0 < p.toReal :=
+      ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
+    rw [PiLp.norm_eq_sum hP, PiLp.norm_eq_sum hP]
+    refine Real.rpow_le_rpow (Finset.sum_nonneg fun _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _)
+      (Finset.sum_le_sum fun i _ ↦ Real.rpow_le_rpow (norm_nonneg _) (h i) hP.le) (by positivity)
+
 end Mono
 
 /-! ### Subfamilies of coordinates, and extension by zero -/
@@ -331,6 +341,19 @@ theorem EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one {n : ℕ}
   have : v = 0 := PiLp.ext fun i ↦ by_contra fun h ↦ hcon ⟨i, h⟩
   rw [this, norm_zero] at hv
   exact zero_ne_one hv
+
+/-- A vector of `ℝ^N` is the sum of its coordinates times the basis vectors. -/
+theorem EuclideanSpace.eq_sum_single_smul {N : ℕ} (z : EuclideanSpace ℝ (Fin N)) :
+    z = ∑ k, z k • EuclideanSpace.single k (1 : ℝ) := by
+  have := (EuclideanSpace.basisFun (Fin N) ℝ).sum_repr z
+  simpa [EuclideanSpace.basisFun_repr, EuclideanSpace.basisFun_apply] using this.symm
+
+/-- A linear functional on `ℝ^N` evaluated at `z` is the sum of `z_k` times its values on the
+basis vectors. -/
+theorem ContinuousLinearMap.apply_eq_sum_single {N : ℕ} (L : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ)
+    (z : EuclideanSpace ℝ (Fin N)) : L z = ∑ k, z k * L (EuclideanSpace.single k 1) := by
+  conv_lhs => rw [EuclideanSpace.eq_sum_single_smul z, map_sum]
+  simp only [map_smul, smul_eq_mul]
 
 /-! ### The Euclidean norm as a dot product -/
 

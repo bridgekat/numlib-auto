@@ -10,9 +10,6 @@ id = 'maximin_subtype'
 id = 'minimax_subtype'
 
 [[node]]
-id = 'biSup_biInf_le_biInf_biSup'
-
-[[node]]
 id = 'isSaddlePointOn_iff_attained'
 
 [[node]]

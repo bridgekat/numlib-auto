@@ -245,8 +245,8 @@ variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace
 theorem EuclideanSpace.basisFun_toBasis_last :
     ((EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis :
         Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1))) (Fin.last d)
-      = EuclideanSpace.single (Fin.last d) 1 := by
-  rw [OrthonormalBasis.coe_toBasis, EuclideanSpace.basisFun_apply]
+      = EuclideanSpace.single (Fin.last d) 1 :=
+  EuclideanSpace.basisFun_toBasis_apply (Fin.last d)
 
 /-- A subset of the ball of radius `R` lies in the slab `{−R < x_N < R}`. -/
 theorem EuclideanSpace.subset_slab_of_subset_ball {R : ℝ} {s : Set (EuclideanSpace ℝ (Fin (d + 1)))}

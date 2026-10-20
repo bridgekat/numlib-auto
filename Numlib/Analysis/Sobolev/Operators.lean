@@ -473,19 +473,8 @@ omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] [NormedSpace �
 does not go through `ESeminormedAddCommMonoid`; see `MeasureTheory.eLpNorm_add_le_of_norm`. -/
 theorem _root_.MeasureTheory.eLpNorm_sub_le_of_norm {X G : Type*} [MeasurableSpace X]
     {ν : Measure X} [NormedAddCommGroup G] {a b : X → G} (hp : 1 ≤ p) :
-    eLpNorm (a - b) p ν ≤ eLpNorm a p ν + eLpNorm b p ν := by
-  rw [sub_eq_add_neg]
-  exact (eLpNorm_add_le_of_norm hp).trans (by rw [eLpNorm_neg])
-
-omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] [NormedSpace ℝ F]
-  [CompleteSpace F] [Fact (1 ≤ p)] in
-/-- `L^p` membership is closed under subtraction, stated for a normed group so that the instance
-search does not go through the `ENorm` hierarchy; see `MeasureTheory.MemLp.add_of_norm`. -/
-theorem _root_.MeasureTheory.MemLp.sub_of_norm {X G : Type*} [MeasurableSpace X] {ν : Measure X}
-    [NormedAddCommGroup G] {a b : X → G} (ha : MemLp a p ν) (hb : MemLp b p ν) :
-    MemLp (a - b) p ν := by
-  rw [sub_eq_add_neg]
-  exact ha.add_of_norm hb.neg
+    eLpNorm (a - b) p ν ≤ eLpNorm a p ν + eLpNorm b p ν :=
+  eLpNorm_sub_le hp
 
 namespace SobolevMultiIndex
 
@@ -600,7 +589,7 @@ theorem mem_zero_of_ae_eq_zero_compl_isCompact (hp' : p ≠ ⊤) (u : SobolevMul
     eLpNorm (iteratedFDeriv ℝ s (g i) - weakIteratedFDeriv s (fn u) Ω μ) p (μ.restrict V)
     with hedef
   have hetop : ∀ i, e i ≠ ⊤ := fun i ↦ ENNReal.sum_ne_top.2 fun s hs ↦
-    (MemLp.sub_of_norm
+    (MemLp.sub
       (((hgs i).continuous_iteratedFDeriv (m := s) (by simp)).memLp_restrict_of_isCompact_closure
         hVc)
       ((hf.memLp_weakIteratedFDeriv (Nat.lt_succ_iff.1 (Finset.mem_range.1 hs))).mono_measure
@@ -701,7 +690,7 @@ theorem mem_zero_of_ae_eq_zero_compl_isCompact (hp' : p ≠ ⊤) (u : SobolevMul
     refine ENNReal.toReal_mono ?_ (eLpNorm_smul_restrict_le_of_tsupport_subset hVo.measurableSet
       hαs.continuous hαb hαV ((hgs i).continuous.aestronglyMeasurable.sub
         (hf.memLp.aestronglyMeasurable.mono_measure (Measure.restrict_mono hVΩ' le_rfl))))
-    exact (MemLp.sub_of_norm ((hgs i).continuous.memLp_restrict_of_isCompact_closure hVc)
+    exact (MemLp.sub ((hgs i).continuous.memLp_restrict_of_isCompact_closure hVc)
       (hf.memLp.mono_measure (Measure.restrict_mono hVΩ' le_rfl))).eLpNorm_ne_top
   refine squeeze_zero (fun _ ↦ norm_nonneg _) hkey ?_
   have := (ENNReal.tendsto_toReal ENNReal.zero_ne_top).comp hgt
@@ -740,13 +729,13 @@ def toLowerExponent (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) (u : SobolevMultiIndex
     SobolevMultiIndex F b k r Ω μ :=
   (memSobolevMultiIndex_of_le hΩ hrp u).exists_sobolevMultiIndex.choose
 
-omit [Fact (1 ≤ p)] in
+omit [Fact (1 ≤ p)] [Fact (1 ≤ r)] in
 /-- The function of `toLowerExponent u` is the function of `u`. -/
 theorem fn_toLowerExponent (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) (u : SobolevMultiIndex F b k p Ω μ) :
     fn (toLowerExponent F b k p r μ hΩ hrp u) =ᵐ[μ.restrict (Ω : Set E)] fn u :=
   (memSobolevMultiIndex_of_le hΩ hrp u).exists_sobolevMultiIndex.choose_spec
 
-omit [Fact (1 ≤ p)] in
+omit [Fact (1 ≤ p)] [Fact (1 ≤ r)] in
 /-- The weak derivatives of `toLowerExponent u` are those of `u`. -/
 theorem weakDeriv_toLowerExponent (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) (u : SobolevMultiIndex F b k p Ω μ)
     (α : MultiIndexLE ι k) :

@@ -223,11 +223,6 @@ theorem pairing_smul_left (g : ℝ → ℝ) (c : ℝ) (v : BrokenPolynomial x r)
   simp only [pairing_def, Finset.mul_sum, ← intervalIntegral.integral_const_mul]
   exact Finset.sum_congr rfl fun i _ => integral_congr fun s _ => by ring
 
-/-- The pairing of the step function of `w` (panelwise, `w i` on the panel `i`) is the inner
-product: `∑ᵢ ∫ wᵢ vᵢ = ⟪w, v⟫`. -/
-theorem sum_integral_eval_mul_eq_inner (w v : BrokenPolynomial x r) :
-    ∑ i, ∫ s in x i.castSucc..x i.succ, (w i).eval s * (v i).eval s = ⟪w, v⟫ := rfl
-
 section StrictMono
 
 variable [hx : Fact (StrictMono x)]
@@ -833,7 +828,7 @@ theorem sum_integral_sub_proj_mul_eval_eq_zero {g : ℝ → ℝ}
     ∑ i, ∫ s in x i.castSucc..x i.succ, (g s - (proj x r g i).eval s) * (v i).eval s = 0 := by
   have hm : Monotone x := hx.out.monotone
   have h := inner_proj hg v
-  rw [← sum_integral_eval_mul_eq_inner, pairing_def] at h
+  rw [BrokenPolynomial.inner_def, pairing_def] at h
   rw [← sub_eq_zero.2 h.symm, ← Finset.sum_sub_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   have hc : Continuous fun s => (proj x r g i).eval s * (v i).eval s := by fun_prop

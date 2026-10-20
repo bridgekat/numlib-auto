@@ -147,7 +147,7 @@ theorem exists_solutionEquiv {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c) :
 iteration `u ↦ u - θ (A u - f)` is a contraction with factor `√(1 - 2θc + θ²‖a‖²)` for `0 < θ < 2c /
 ‖a‖²`, so the Banach fixed-point theorem produces the solution (see `contractingWith_damped`,
 `ContinuousLinearMap.norm_sub_smul_apply_sq_le`). -/
-theorem contractingWith_damped_toOperator {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c)
+theorem contractingWith_damped_toOperator {c : ℝ} (ha : a.IsCoerciveWith c)
     (ha0 : 0 < ‖a‖) {θ : ℝ} (hθ : 0 < θ) (hθ' : θ < 2 * c / ‖a‖ ^ 2) :
     ContractingWith (Real.toNNReal (Real.sqrt (1 - 2 * θ * c + θ ^ 2 * ‖a‖ ^ 2)))
       (fun u => u - (θ : 𝕜) • (toOperator a u - rieszRep ℓ)) := by
@@ -159,7 +159,7 @@ theorem contractingWith_damped_toOperator {c : ℝ} (hc : 0 < c) (ha : a.IsCoerc
   have hlip : LipschitzWith (Real.toNNReal ‖a‖) (toOperator a) := by
     rw [← a.norm_toOperator, ← coe_nnnorm, Real.toNNReal_coe]
     exact (toOperator a).lipschitzWith
-  exact contractingWith_damped (𝕜 := 𝕜) hc ha0 hmono hlip (rieszRep ℓ) hθ hθ'
+  exact contractingWith_damped (𝕜 := 𝕜) ha0 hmono hlip (rieszRep ℓ) hθ hθ'
 
 omit [CompleteSpace V] in
 /-- Expansion of the energy around a point for a Hermitian form: `E(u + w) - E(u) = re (a u w) - re
@@ -338,7 +338,7 @@ variational inequality `re (a u (v - u)) ≥ re (ℓ (v - u))` for all `v ∈ K`
 (8.3.3)).  On a subspace the inequality can be applied to both `v` and `2u - v`, which is how it
 collapses to the equality of `isMinOn_energy_iff`. -/
 theorem isMinOn_energy_iff_forall_le {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
-    [CompleteSpace V] {a : SesqForm ℝ V} (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ) {c : ℝ}
+    {a : SesqForm ℝ V} (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ) {c : ℝ}
     (hc : 0 < c) (hcoer : a.IsCoerciveWith c) {K : Set V} (hK : Convex ℝ K) {u : V} (hu : u ∈ K) :
     IsMinOn (a.energy ℓ) K u ↔ ∀ v ∈ K, ℓ (v - u) ≤ a u (v - u) := by
   constructor

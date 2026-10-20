@@ -97,9 +97,6 @@ id = "_root_.Lagrange.basis_neg"
 id = "_root_.Lagrange.derivMatrix_neg"
 
 [[node]]
-id = "_root_.Polynomial.Chebyshev.node_injective"
-
-[[node]]
 id = "_root_.Polynomial.Chebyshev.eval_derivative_T_node_of_pos_of_lt"
 
 [[node]]

@@ -153,8 +153,8 @@ theorem _root_.SobolevMultiIndex.fn_neg (u : SobolevEuclidean N 1 2 Ω) :
 
 /-- The form of `-Δ + 1` is odd in its first argument. -/
 theorem laplaceForm_neg_apply (u φ : SobolevEuclidean N 1 2 Ω) :
-    laplaceForm Ω (-u) φ = -laplaceForm Ω u φ := by
-  rw [map_neg, neg_apply]
+    laplaceForm Ω (-u) φ = -laplaceForm Ω u φ :=
+  ContinuousLinearMap.map_neg₂ _ u φ
 
 /-- The load of `-f` is the opposite of the load of `f`. -/
 theorem load_neg_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -780,8 +780,8 @@ theorem generalForm_neg_apply
     (a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (u φ : SobolevEuclidean N 1 2 Ω) :
-    generalForm Ω A a₁ a₀ (-u) φ = -generalForm Ω A a₁ a₀ u φ := by
-  rw [map_neg, neg_apply]
+    generalForm Ω A a₁ a₀ (-u) φ = -generalForm Ω A a₁ a₀ u φ :=
+  ContinuousLinearMap.map_neg₂ _ u φ
 
 /-- The weak equation for `-u`, `-f`, from the one for `u`, `f` (general form). -/
 theorem forall_generalForm_neg_eq_load_neg

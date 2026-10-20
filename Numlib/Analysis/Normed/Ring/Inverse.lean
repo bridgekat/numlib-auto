@@ -70,15 +70,6 @@ theorem norm_inverse_one_sub_le {t : R} (h : ‖t‖ < 1) :
   norm_inverse_one_sub_le' norm_one.le h
 
 omit [NormOneClass R] [CompleteSpace R] in
-/-- `1 - t^m = (1 - t) ∑_{i < m} t^i`, and the two factors commute. -/
-private theorem one_sub_pow_eq (t : R) (m : ℕ) :
-    (1 - t) * (∑ i ∈ Finset.range m, t ^ i) = 1 - t ^ m := by
-  have h : (t - 1) * (∑ i ∈ Finset.range m, t ^ i) = t ^ m - 1 := mul_geom_sum t m
-  have hneg : (1 - t) * (∑ i ∈ Finset.range m, t ^ i)
-      = -((t - 1) * (∑ i ∈ Finset.range m, t ^ i)) := by rw [← neg_mul, neg_sub]
-  rw [hneg, h, neg_sub]
-
-omit [NormOneClass R] [CompleteSpace R] in
 private theorem commute_one_sub_geom_sum (t : R) (m : ℕ) :
     Commute (1 - t) (∑ i ∈ Finset.range m, t ^ i) :=
   Commute.sum_right _ _ _ fun i _ =>
@@ -88,7 +79,7 @@ omit [NormOneClass R] in
 /-- `‖t ^ m‖ < 1` for a single `m` already suffices for `1 - t` to be a unit. -/
 theorem isUnit_one_sub_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^ m‖ < 1) : IsUnit (1 - t) := by
   have hprod : IsUnit ((1 - t) * ∑ i ∈ Finset.range m, t ^ i) := by
-    rw [one_sub_pow_eq]
+    rw [mul_neg_geom_sum]
     exact isUnit_one_sub_of_norm_lt_one h
   exact ((commute_one_sub_geom_sum t m).isUnit_mul_iff.mp hprod).1
 
@@ -99,7 +90,7 @@ theorem norm_inverse_one_sub_le_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^
   have hunit : IsUnit (1 - t) := isUnit_one_sub_of_norm_pow_lt_one h
   have hpow : IsUnit (1 - t ^ m) := isUnit_one_sub_of_norm_lt_one h
   have h₁ : (1 - t) * ((∑ i ∈ Finset.range m, t ^ i) * Ring.inverse (1 - t ^ m)) = 1 := by
-    rw [← mul_assoc, one_sub_pow_eq, Ring.mul_inverse_cancel _ hpow]
+    rw [← mul_assoc, mul_neg_geom_sum, Ring.mul_inverse_cancel _ hpow]
   have hkey : Ring.inverse (1 - t)
       = (∑ i ∈ Finset.range m, t ^ i) * Ring.inverse (1 - t ^ m) := by
     calc Ring.inverse (1 - t)

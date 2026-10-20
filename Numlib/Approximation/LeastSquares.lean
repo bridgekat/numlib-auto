@@ -451,7 +451,6 @@ theorem norm_chebyshevProj (N : ℕ) : ‖chebyshevProj N‖ = lebesgueConstant 
         ∂chebyshevMeasureIcc) ≤ lebesgueConstant N := fun x => by
     rw [hrow x]
     exact integral_abs_chebyshevKernel_le N _
-  have hone : (⟨1, by norm_num⟩ : Set.Icc (-1 : ℝ) 1) ∈ Set.univ := Set.mem_univ _
   have heq : (∫ t, |∑ i : Fin (N + 1),
       chebyshevOrthonormal i (⟨1, by norm_num⟩ : Set.Icc (-1 : ℝ) 1) *
         chebyshevOrthonormal i t| ∂chebyshevMeasureIcc) = lebesgueConstant N := by

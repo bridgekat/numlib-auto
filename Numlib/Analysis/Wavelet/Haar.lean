@@ -387,7 +387,7 @@ def hilbertBasis_V (j : ℤ) : HilbertBasis ℤ ℝ (V j) :=
 
 /-- The image of the closure of a subspace under a surjective linear isometry is the closure of the
 image. -/
-private theorem map_topologicalClosure
+theorem map_topologicalClosure
     (D : Lp ℝ 2 (volume : Measure ℝ) ≃ₗᵢ[ℝ] Lp ℝ 2 (volume : Measure ℝ))
     (K : Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ))) :
     K.topologicalClosure.map D.toLinearEquiv.toLinearMap

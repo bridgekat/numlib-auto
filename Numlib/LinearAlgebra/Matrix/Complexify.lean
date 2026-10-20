@@ -310,7 +310,7 @@ theorem rootMultiplicity_charpoly_complexify_star (A : Matrix n n ℝ) (μ : ℂ
   exact h.symm
 
 /-- The spectrum of an affine image `c • 1 + d • Y` of a complex matrix, `d ≠ 0`. -/
-private theorem mem_spectrum_affine_iff {Y : Matrix n n ℂ} {c d : ℂ} (hd : d ≠ 0) (μ : ℂ) :
+theorem mem_spectrum_affine_iff {Y : Matrix n n ℂ} {c d : ℂ} (hd : d ≠ 0) (μ : ℂ) :
     μ ∈ spectrum ℂ (c • 1 + d • Y) ↔ (μ - c) / d ∈ spectrum ℂ Y := by
   have key : algebraMap ℂ (Matrix n n ℂ) μ - (c • 1 + d • Y)
       = d • (algebraMap ℂ (Matrix n n ℂ) ((μ - c) / d) - Y) := by
@@ -1235,13 +1235,6 @@ theorem im_star_dotProduct_complexify_mulVec (A : Matrix n n ℝ) (z : n → ℂ
   ring
 
 omit [DecidableEq n] in
-/-- The bilinear form of a symmetric real matrix is symmetric. -/
-private theorem dotProduct_mulVec_comm_of_isHermitian {A : Matrix n n ℝ} (hA : A.IsHermitian)
-    (x y : n → ℝ) : x ⬝ᵥ (A *ᵥ y) = y ⬝ᵥ (A *ᵥ x) := by
-  have hT : Aᵀ = A := by simpa [conjTranspose_eq_transpose_of_trivial] using hA.eq
-  rw [dotProduct_mulVec, ← mulVec_transpose, hT, dotProduct_comm]
-
-omit [DecidableEq n] in
 /-- **The Hermitian form of the complexification of a symmetric real matrix is real**:
 `star z ⬝ᵥ (Ā z) = x ⬝ A x + y ⬝ A y` for `z = x + i y`. -/
 theorem star_dotProduct_complexify_mulVec_of_isHermitian {A : Matrix n n ℝ} (hA : A.IsHermitian)
@@ -1252,7 +1245,7 @@ theorem star_dotProduct_complexify_mulVec_of_isHermitian {A : Matrix n n ℝ} (h
   apply Complex.ext
   · rw [Complex.ofReal_re, re_star_dotProduct_complexify_mulVec]
   · rw [Complex.ofReal_im, im_star_dotProduct_complexify_mulVec,
-      dotProduct_mulVec_comm_of_isHermitian hA, sub_self]
+      hA.isSymm.dotProduct_mulVec_comm, sub_self]
 
 omit [DecidableEq n] in
 -- `Matrix.PosDef` is stated with finitely supported sums and needs no `Fintype n`, but the proof

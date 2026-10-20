@@ -389,8 +389,6 @@ theorem recessionCone_setOf_forall_le {ι : Type*} (b : ι → E →ₗ[ℝ] ℝ
     rw [map_add, map_smul, smul_eq_mul] at hval
     have hcancel : (b i x - β i + 1) / (-(b i y)) * (-(b i y)) = b i x - β i + 1 :=
       div_mul_cancel₀ _ hd.ne'
-    have hneg : (b i x - β i + 1) / (-(b i y)) * (-(b i y))
-        = -((b i x - β i + 1) / (-(b i y)) * b i y) := by ring
     linarith
   · have hxi : ∀ j, β j ≤ b j x := hx
     have hyi : ∀ j, (0 : ℝ) ≤ b j y := hy

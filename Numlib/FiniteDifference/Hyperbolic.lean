@@ -751,15 +751,6 @@ private theorem exp_neg_mul_I' (x : ℝ) :
 private theorem normSq_add_mul_I' (x y : ℝ) : ‖(x : ℂ) + (y : ℂ) * I‖ ^ 2 = x ^ 2 + y ^ 2 := by
   rw [← Complex.normSq_eq_norm_sq, Complex.normSq_add_mul_I]
 
-/-- A nonnegative real with square at most one is at most one. -/
-private theorem le_one_of_sq_le_one {x : ℝ} (hx : 0 ≤ x) (h : x ^ 2 ≤ 1) : x ≤ 1 := by nlinarith
-
-/-- A nonnegative real at most one has square at most one. -/
-private theorem sq_le_one_of_le_one {x : ℝ} (hx : 0 ≤ x) (h : x ≤ 1) : x ^ 2 ≤ 1 := by nlinarith
-
-/-- A nonnegative real with square at least one is at least one. -/
-private theorem one_le_of_one_le_sq {x : ℝ} (hx : 0 ≤ x) (h : 1 ≤ x ^ 2) : 1 ≤ x := by nlinarith
-
 variable [NeZero N]
 
 /-- **The amplification factor of the forward Euler/centred scheme**
@@ -913,7 +904,7 @@ theorem norm_amplificationFactor_upwind_le_one_iff (hN : 2 ≤ N) {a lam : ℝ} 
     have hsq := norm_amplificationFactor_upwind_sq a lam k₁
     have hcos := cos_gridPhase_lt_one hN hk₁
     have hnn := norm_nonneg (amplificationFactor (Stencil.toPeriodic N (upwind a lam)) k₁)
-    have hsq1 := sq_le_one_of_le_one hnn hk
+    have hsq1 := (sq_le_one_iff₀ hnn).mpr hk
     have h3 : 2 * (lam * |a|) * (1 - lam * |a|) * (1 - Real.cos (gridPhase N k₁)) < 0 :=
       mul_neg_of_neg_of_pos (mul_neg_of_pos_of_neg (by linarith) (by linarith)) (by linarith)
     linarith
@@ -923,7 +914,7 @@ theorem norm_amplificationFactor_upwind_le_one_iff (hN : 2 ≤ N) {a lam : ℝ} 
     have hnn := norm_nonneg (amplificationFactor (Stencil.toPeriodic N (upwind a lam)) k)
     have h3 : 0 ≤ 2 * (lam * |a|) * (1 - lam * |a|) * (1 - Real.cos (gridPhase N k)) :=
       mul_nonneg (mul_nonneg (by linarith) (by linarith)) (by linarith)
-    exact le_one_of_sq_le_one hnn (by linarith)
+    exact (sq_le_one_iff₀ hnn).mp (by linarith)
 
 /-- **The stability condition of the Lax–Friedrichs scheme is the CFL condition**
 ([quarteroni2000numerical] §13.8.3): for `N ≥ 3`, all the amplification factors have modulus at
@@ -943,7 +934,7 @@ theorem norm_amplificationFactor_laxFriedrichs_le_one_iff (hN : 3 ≤ N) (a lam 
     have hpy := Real.sin_sq_add_cos_sq (gridPhase N k₁)
     have habs : 1 < (lam * a) ^ 2 := by nlinarith [abs_nonneg (lam * a), sq_abs (lam * a)]
     have hnn := norm_nonneg (amplificationFactor (Stencil.toPeriodic N (laxFriedrichs a lam)) k₁)
-    have hsq1 := sq_le_one_of_le_one hnn hk
+    have hsq1 := (sq_le_one_iff₀ hnn).mpr hk
     have hs2 : 0 < Real.sin (gridPhase N k₁) ^ 2 := by positivity
     have h3 : 0 < ((lam * a) ^ 2 - 1) * Real.sin (gridPhase N k₁) ^ 2 :=
       mul_pos (by linarith) hs2
@@ -955,7 +946,7 @@ theorem norm_amplificationFactor_laxFriedrichs_le_one_iff (hN : 3 ≤ N) (a lam 
     have hnn := norm_nonneg (amplificationFactor (Stencil.toPeriodic N (laxFriedrichs a lam)) k)
     have h3 : 0 ≤ (1 - (lam * a) ^ 2) * Real.sin (gridPhase N k) ^ 2 :=
       mul_nonneg (by linarith) (sq_nonneg _)
-    exact le_one_of_sq_le_one hnn (by nlinarith)
+    exact (sq_le_one_iff₀ hnn).mp (by nlinarith)
 
 /-- **The stability condition of the Lax–Wendroff scheme is the CFL condition**
 ([quarteroni2000numerical] §13.8.3): for `N ≥ 2`, all the amplification factors have modulus at
@@ -974,7 +965,7 @@ theorem norm_amplificationFactor_laxWendroff_le_one_iff (hN : 2 ≤ N) (a lam : 
     have hcos := cos_gridPhase_lt_one hN hk₁
     have habs : 1 < (lam * a) ^ 2 := by nlinarith [abs_nonneg (lam * a), sq_abs (lam * a)]
     have hnn := norm_nonneg (amplificationFactor (Stencil.toPeriodic N (laxWendroff a lam)) k₁)
-    have hsq1 := sq_le_one_of_le_one hnn hk
+    have hsq1 := (sq_le_one_iff₀ hnn).mpr hk
     have hc2 : 0 < (1 - Real.cos (gridPhase N k₁)) ^ 2 := by positivity
     have h3 : (lam * a) ^ 2 * (1 - (lam * a) ^ 2) * (1 - Real.cos (gridPhase N k₁)) ^ 2 < 0 :=
       mul_neg_of_neg_of_pos (mul_neg_of_pos_of_neg (by linarith) (by linarith)) hc2
@@ -986,7 +977,7 @@ theorem norm_amplificationFactor_laxWendroff_le_one_iff (hN : 2 ≤ N) (a lam : 
     have hnn := norm_nonneg (amplificationFactor (Stencil.toPeriodic N (laxWendroff a lam)) k)
     have h3 : 0 ≤ (lam * a) ^ 2 * (1 - (lam * a) ^ 2) * (1 - Real.cos (gridPhase N k)) ^ 2 :=
       mul_nonneg (mul_nonneg (sq_nonneg _) (by linarith)) (sq_nonneg _)
-    exact le_one_of_sq_le_one hnn (by linarith)
+    exact (sq_le_one_iff₀ hnn).mp (by linarith)
 
 /-- **The amplification factor of the implicit backward Euler/centred scheme**
 ([quarteroni2000numerical] (13.43)): `γ_k = 1 / (1 + i λ a sin φ_k)`. -/
@@ -1013,7 +1004,7 @@ theorem norm_amplificationFactor₂_backwardEulerCentred_le_one (a lam : ℝ) (k
       normSq_add_mul_I']
     ring
   have h1 : 1 ≤ ‖(1 : ℂ) + I * (lam * a) * (Real.sin (gridPhase N k) : ℂ)‖ :=
-    one_le_of_one_le_sq (norm_nonneg _) (by
+    (one_le_sq_iff₀ (norm_nonneg _)).mp (by
       rw [hden]
       nlinarith [sq_nonneg (lam * a), sq_nonneg (Real.sin (gridPhase N k))])
   rw [div_le_one (by linarith)]

@@ -333,6 +333,15 @@ theorem IsSymmetric.isSymmetricBoundedBy_neg_norm_norm {A : E →L[𝕜] E}
     exact (abs_le.1 (abs_re_inner_apply_self_le A x)).1
   · exact (abs_le.1 (abs_re_inner_apply_self_le A x)).2
 
+/-- The adjoint relation read the other way: if `⟪Astar u, x⟫ = ⟪u, A x⟫` for all `u`, `x`, then
+`⟪A x, u⟫ = ⟪x, Astar u⟫`. Mathlib's `LinearMap.adjoint_inner_right` is the case of the adjoint
+`A†`, which needs finite dimension; here `Astar` is any map with the adjoint property. -/
+theorem inner_apply_eq_inner_apply_of_adjoint {F : Type*} [NormedAddCommGroup F]
+    [InnerProductSpace 𝕜 F] {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
+    (hadj : ∀ u x, inner 𝕜 (Astar u) x = inner 𝕜 u (A x)) (x : E) (u : F) :
+    inner 𝕜 (A x) u = inner 𝕜 x (Astar u) := by
+  rw [← inner_conj_symm, ← hadj, inner_conj_symm]
+
 end LinearMap
 
 section Richardson

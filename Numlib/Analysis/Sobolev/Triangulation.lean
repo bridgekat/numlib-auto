@@ -236,7 +236,7 @@ method): a function continuous on `Ω̄` and equal on each open element to a `C�
 `W^{1,p}(Ω)`, with weak derivative the elementwise derivative. -/
 theorem memSobolev_of_piecewise {u : 𝔼₂ → ℝ} (hu : ContinuousOn u (closure (Ω : Set 𝔼₂)))
     {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ 1 (g T))
-    (hug : ∀ T, ∀ x ∈ 𝒯.K T, u x = g T x) (p : ℝ≥0∞) [Fact (1 ≤ p)] :
+    (hug : ∀ T, ∀ x ∈ 𝒯.K T, u x = g T x) (p : ℝ≥0∞) :
     MemSobolev u 1 p Ω volume := by
   have hfin : IsFiniteMeasure (volume.restrict (Ω : Set 𝔼₂)) :=
     isFiniteMeasure_restrict.2 𝒯.isBounded.measure_lt_top.ne
@@ -366,7 +366,7 @@ theorem hasWeakIteratedLineDerivOn_of_piecewise {k : ℕ} {v : 𝔼₂ → ℝ} 
 piece on each open element. This is how the global finite element interpolant, glued from the
 elementwise polynomial interpolants, enters `H¹(Ω)`. -/
 theorem memSobolev_glue {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : 𝒯.Compatible g)
-    (hgc : ∀ T, ContDiff ℝ 1 (g T)) (p : ℝ≥0∞) [Fact (1 ≤ p)] :
+    (hgc : ∀ T, ContDiff ℝ 1 (g T)) (p : ℝ≥0∞) :
     MemSobolev (𝒯.glue g) 1 p Ω volume :=
   𝒯.memSobolev_of_piecewise (𝒯.continuousOn_glue hg fun T ↦ (hgc T).continuous.continuousOn)
     hgc (fun T _ hx ↦ 𝒯.glue_eq_of_mem_K hg T hx) p
@@ -399,7 +399,7 @@ variable {I : ℕ} (xhat : Fin I → 𝔼₂) (φhat : Fin I → 𝔼₂ → ℝ
 /-- **The global interpolant of a conforming element with `C¹` shape functions lies in
 `W^{1,p}(Ω)`** for every `1 ≤ p ≤ ∞` ([han2009theoretical] §10.2.3, `X_h ⊆ H¹(Ω)`). -/
 theorem memSobolev_globalInterp (h : 𝒯.IsConformingElement xhat φhat)
-    (hφ : ∀ i, ContDiff ℝ 1 (φhat i)) (v : 𝔼₂ → ℝ) (p : ℝ≥0∞) [Fact (1 ≤ p)] :
+    (hφ : ∀ i, ContDiff ℝ 1 (φhat i)) (v : 𝔼₂ → ℝ) (p : ℝ≥0∞) :
     MemSobolev (𝒯.globalInterp xhat φhat v) 1 p Ω volume :=
   𝒯.memSobolev_glue (h v) (fun T ↦ 𝒯.contDiff_localInterp xhat φhat hφ T v) p
 
@@ -468,8 +468,8 @@ variable {𝒯}
 ([han2009theoretical] §10.2.3, the conformity `X_h ⊆ H¹(Ω)`): `memSobolev_of_piecewise` with
 the polynomial pieces. -/
 theorem IsPiecewisePoly.memSobolev {k : ℕ} {v : 𝔼₂ → ℝ}
-    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (h : 𝒯.IsPiecewisePoly k v) (p : ℝ≥0∞)
-    [Fact (1 ≤ p)] : MemSobolev v 1 p Ω volume := by
+    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (h : 𝒯.IsPiecewisePoly k v) (p : ℝ≥0∞) :
+    MemSobolev v 1 p Ω volume := by
   choose q hq hvq using h
   exact 𝒯.memSobolev_of_piecewise hv
     (g := fun T x ↦ eval (fun j ↦ (𝒯.linearPart T).symm (x - T.1 0) j) (q T))
@@ -528,7 +528,7 @@ theorem mem_polySpace_iff {k : ℕ} {w : SobolevEuclidean 2 1 p Ω} :
 
 /-- **Every continuous piecewise polynomial is the function of an element of `X_h`**: the
 space `X_h` is the book's space of continuous piecewise polynomials. -/
-theorem exists_mem_polySpace [Fact (1 ≤ p)] {k : ℕ} {v : 𝔼₂ → ℝ}
+theorem exists_mem_polySpace {k : ℕ} {v : 𝔼₂ → ℝ}
     (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hvp : 𝒯.IsPiecewisePoly k v) :
     ∃ w ∈ 𝒯.polySpace p k, SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v := by
   have h := ((hvp.memSobolev hvc p).memSobolevMultiIndex

@@ -93,24 +93,12 @@ noncomputable def truncatedHOSVDOf (U : ∀ k, Matrix (κ k) (κ k) 𝕜) (A : T
 
 variable {U : ∀ k, Matrix (κ k) (κ k) 𝕜} (A : Tensor κ 𝕜)
 
-omit [Fintype ι] [DecidableEq ι] in
-private theorem conjTranspose_mul_self_of_mem (hU : ∀ k, U k ∈ unitaryGroup (κ k) 𝕜) (k : ι) :
-    (U k)ᴴ * U k = 1 := by
-  rw [← star_eq_conjTranspose]
-  exact mem_unitaryGroup_iff'.1 (hU k)
-
-omit [Fintype ι] [DecidableEq ι] in
-private theorem mul_conjTranspose_self_of_mem (hU : ∀ k, U k ∈ unitaryGroup (κ k) 𝕜) (k : ι) :
-    U k * (U k)ᴴ = 1 := by
-  rw [← star_eq_conjTranspose]
-  exact mem_unitaryGroup_iff.1 (hU k)
-
 /-- **The HOSVD in any unitary factors** ([golub2013matrix] Theorem 12.5.1, (12.5.6)):
 `𝒜 = 𝒮 ×₁ U₁ ⋯ ×_d U_d` with `𝒮 = 𝒜 ×₁ U₁ᴴ ⋯ ×_d U_dᴴ`. -/
 theorem multilinearProd_hosvdCoreOf (hU : ∀ k, U k ∈ unitaryGroup (κ k) 𝕜) :
     multilinearProd U (hosvdCoreOf U A) = A := by
   rw [hosvdCoreOf, multilinearProd_multilinearProd]
-  simp_rw [mul_conjTranspose_self_of_mem hU, multilinearProd_one]
+  simp_rw [fun k => mul_conjTranspose_self_of_mem_unitaryGroup (hU k), multilinearProd_one]
 
 /-- The HOSVD in any unitary factors as a sum of rank-one tensors ([golub2013matrix] (12.5.7)). -/
 theorem eq_sum_hosvdCoreOf_smul_rankOne (hU : ∀ k, U k ∈ unitaryGroup (κ k) 𝕜) :
@@ -127,7 +115,7 @@ private theorem transpose_piKronecker_mul_conjTranspose (hU : ∀ k, U k ∈ uni
   set P := piKronecker fun j : {j // j ≠ k} => (U j)ᴴ
   have hP : Pᴴ * P = 1 := conjTranspose_piKronecker_mul_piKronecker fun j => by
     rw [conjTranspose_conjTranspose]
-    exact mul_conjTranspose_self_of_mem hU j
+    exact mul_conjTranspose_self_of_mem_unitaryGroup (hU j)
   have hT : (Pᵀ)ᴴ = (Pᴴ)ᵀ := by
     ext
     simp
@@ -204,7 +192,8 @@ theorem norm_sub_truncatedHOSVDOf_sq_le (hU : ∀ k, U k ∈ unitaryGroup (κ k)
     ext j
     simp only [sub_apply, of_apply]
     split_ifs <;> simp
-  rw [hA, frobenius_norm_multilinearProd_of_orthonormal (conjTranspose_mul_self_of_mem hU),
+  rw [hA, frobenius_norm_multilinearProd_of_orthonormal
+      (fun k => conjTranspose_mul_self_of_mem_unitaryGroup (hU k)),
     frobenius_norm_sq]
   -- every excluded index is excluded in some mode
   have hle : ∀ j : ∀ k, κ k, ‖(of fun j => if j ∈ Fintype.piFinset s then 0 else

@@ -20,9 +20,6 @@ id = "Refinement.forall_tendsto_iff_spectralRadius_lt_one"
 id = "Matrix.scaled_mulVec_eq_iff"
 
 [[node]]
-id = "Refinement.norm_pow_le_pow_norm"
-
-[[node]]
 id = "Refinement.step_error"
 
 [[node]]

@@ -38,12 +38,8 @@ theorem energyNorm_add_sq (hA : A.IsSymmetricCoercive) {u v : E} (h : energyInne
 
 namespace IsGalerkin
 
--- `hA` is part of the stated interface (the hypothesis of Saad, *Iterative Methods*, Prop 5.2)
--- but the identity
--- `⟪A (x* - x), z⟫ = ⟪b - A x, z⟫` needs neither symmetry nor coercivity.
-set_option linter.unusedVariables false in
 /-- Galerkin error is energy-orthogonal to `K`. -/
-theorem energyInner_error_eq_zero (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀ K x)
+theorem energyInner_error_eq_zero (hx : IsGalerkin A b x₀ K x)
     (hstar : A xstar = b) {z : E} (hz : z ∈ K) : energyInner A (xstar - x) z = 0 := by
   have h : energyInner A (xstar - x) z = inner 𝕜 (A (xstar - x)) z := rfl
   rw [h, map_sub, hstar]
@@ -58,7 +54,7 @@ theorem energyNorm_sq_add (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀
     rw [h]; exact K.sub_mem hx.mem hy
   have hsum : xstar - y = (xstar - x) + (x - y) := by abel
   rw [hsum]
-  exact energyNorm_add_sq hA (energyInner_error_eq_zero hA hx hstar hxy)
+  exact energyNorm_add_sq hA (energyInner_error_eq_zero hx hstar hxy)
 
 /-- [saad2003iterative], Prop 5.2 (⇒): Galerkin iterates minimize the energy norm of the error over
 `x₀ + K`. -/
@@ -136,7 +132,7 @@ theorem error_eq_starProjection (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A 
     rw [hM] at hu
     obtain ⟨z, hz, rfl⟩ := Submodule.mem_map.1 hu
     have hzero : inner 𝕜 (A (xstar - x)) z = (0 : 𝕜) :=
-      energyInner_error_eq_zero hA hx hstar hz
+      energyInner_error_eq_zero hx hstar hz
     have hgoal : inner 𝕜 (A z) (xstar - x) = (0 : 𝕜) := by
       rw [hA.isSymmetric z (xstar - x), ← inner_conj_symm, hzero, map_zero]
     exact hgoal

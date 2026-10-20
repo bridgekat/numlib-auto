@@ -279,12 +279,9 @@ theorem convexDom_posHomGen (hf : ConvexFn f) :
 /-- **`hom f` is `posHomGen` applied to the level-one lift**, the two generated cones being the
 same set. The hypothesis `f ≢ +∞` is needed: for `f ≡ +∞` the cone degenerates to `{0}`, whose
 `ofEpi` is `δ(· | 0)`, whereas `hom f ≡ +∞`. -/
-theorem posHomGenCone_levelOneLift (f : E → EReal) :
-    posHomGenCone (levelOneLift f) = homCone f := rfl
-
 theorem posHomGen_levelOneLift (hf : ConvexFn f) (hdom : (convexDom f).Nonempty) :
     posHomGen (levelOneLift f) = hom f := by
-  rw [posHomGen_eq_ofEpi (convexFn_levelOneLift hf), posHomGenCone_levelOneLift,
+  rw [posHomGen_eq_ofEpi (convexFn_levelOneLift hf), ← homCone_eq_posHomGenCone,
     ← hom_eq_ofEpi_homCone hdom]
 
 end PosHomGen

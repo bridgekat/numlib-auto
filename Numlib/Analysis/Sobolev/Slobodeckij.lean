@@ -185,7 +185,7 @@ Framework*, 3rd edition, Springer, 2009, Definition 7.2.10, whose `σ` lies in `
 restriction is what makes this the source's space rather than what makes it well formed, and it is
 not imposed. The norm carried as a subspace of an `ℓ^p` combination is the norm displayed there, by
 `SobolevSlobodeckij.norm_eq_add` and `SobolevSlobodeckij.norm_snd_rpow`. -/
-def SobolevSlobodeckij (k : ℕ) (σ : ℝ) (p : ℝ≥0∞) [Fact (1 ≤ p)] (Ω : Opens E) (μ : Measure E)
+def SobolevSlobodeckij (k : ℕ) (σ : ℝ) (p : ℝ≥0∞) (Ω : Opens E) (μ : Measure E)
     [SFinite μ] : Submodule ℝ (SobolevSlobodeckijTuple F ι k p Ω μ) where
   carrier := {U | U.fst ∈ SobolevMultiIndex F b k p Ω μ ∧
     ∀ α : MultiIndexEq ι k,
@@ -212,8 +212,6 @@ def SobolevSlobodeckij (k : ℕ) (σ : ℝ) (p : ℝ≥0∞) [Fact (1 ≤ p)] (�
       (by rw [slobodeckijQuotient_smul])).symm
 
 namespace SobolevSlobodeckij
-
-variable [Fact (1 ≤ p)]
 
 /-- The `W^{k,p}(Ω)` part of an element of `W^{s,p}(Ω)`, as an element of the integer-order space
 of `Numlib/Analysis/Sobolev/MultiIndex.lean`. -/
@@ -264,8 +262,7 @@ theorem fn_smul (c : ℝ) (U : SobolevSlobodeckij F b k σ p Ω μ) :
     fn (c • U) =ᵐ[μ.restrict (Ω : Set E)] c • fn U :=
   SobolevMultiIndexTuple.fn_smul _ _
 
-private theorem toReal_pos (hp : p ≠ ⊤) : 0 < p.toReal :=
-  ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
+variable [Fact (1 ≤ p)]
 
 /-- The norm of `W^{s,p}(Ω)` as the `ℓ^p` combination of the `L^p(Ω)` norms of the `∂^α v` with
 `|α| ≤ k` and the `L^p(Ω × Ω)` norms of the difference quotients of those with `|α| = k`. The first
@@ -278,7 +275,7 @@ theorem norm_eq_add (hp : p ≠ ⊤) (U : SobolevSlobodeckij F b k σ p Ω μ) :
           ‖(U : SobolevSlobodeckijTuple F ι k p Ω μ).fst α‖ ^ p.toReal)
         + ∑ α : MultiIndexEq ι k,
           ‖(U : SobolevSlobodeckijTuple F ι k p Ω μ).snd α‖ ^ p.toReal) ^ (1 / p.toReal) := by
-  have htp := toReal_pos (p := p) hp
+  have htp := p.toReal_pos_iff_ne_top.mpr hp
   rw [← Submodule.norm_coe, WithLp.prod_norm_eq_add htp, PiLp.norm_eq_sum htp,
     PiLp.norm_eq_sum htp, one_div, Real.rpow_inv_rpow (by positivity) htp.ne',
     Real.rpow_inv_rpow (by positivity) htp.ne']
@@ -293,7 +290,7 @@ theorem norm_snd_rpow (hp : p ≠ ⊤) (U : SobolevSlobodeckij F b k σ p Ω μ)
       ∫ z, ‖((U : SobolevSlobodeckijTuple F ι k p Ω μ).fst α.1 : E → F) z.1
             - ((U : SobolevSlobodeckijTuple F ι k p Ω μ).fst α.1 : E → F) z.2‖ ^ p.toReal
           / ‖z.1 - z.2‖ ^ (σ * p.toReal + finrank ℝ E) ∂(prodRestrict Ω μ) := by
-  have htp := toReal_pos (p := p) hp
+  have htp := p.toReal_pos_iff_ne_top.mpr hp
   have h0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
   rw [Lp.norm_def, (Lp.memLp _).eLpNorm_eq_integral_rpow_norm h0 hp,
     ENNReal.toReal_ofReal (by positivity), Real.rpow_inv_rpow (by positivity) htp.ne']

@@ -266,6 +266,7 @@ theorem proposition_9_18_i_ii [p.HolderConjugate q] {u : 𝔼 → ℝ}
   exact h1.trans (mul_le_mul_of_nonneg_right
     (SobolevMultiIndex.norm_weakDeriv_single_le_gradNorm v i) ENNReal.toReal_nonneg)
 
+omit [Fact (1 ≤ p)] in
 /-- **Proposition 9.18, (ii) ⇒ (iii), on an arbitrary open set.** Let `u ∈ L^p(Ω)`,
 `1 < p < ∞` (`p'` the conjugate exponent, `p' ≠ ∞`). If there is a constant `C` with
 `|∫_Ω u ∂φ/∂x_i| ≤ C ‖φ‖_{L^{p'}(Ω)}` for all `φ ∈ C_c^1(ℝ^N)` and all `i`, then the extension by
@@ -521,8 +522,7 @@ theorem exists_continuous_ae_eq_toContinuousMapClosureZero (hb : Bornology.IsBou
       ∀ x : closure (Ω : Set 𝔼), toContinuousMapClosureZero hb hp u x = ũ x := by
   have : CompactSpace (closure (Ω : Set 𝔼)) := isCompact_iff_compactSpace.1 hb.isCompact_closure
   exact ⟨_, (SobolevEuclidean.contRep hp _).continuous,
-    SobolevEuclideanZero.hasSobolevExtensionOn.fn_ae_eq_toContinuousMapOnL hp
-      (closure (Ω : Set 𝔼)) u, fun x ↦ rfl⟩
+    SobolevEuclideanZero.hasSobolevExtensionOn.fn_ae_eq_toContinuousMapOnL hp u, fun x ↦ rfl⟩
 
 /-- **Remark 20, the conclusion of Theorem 9.16 on `W_0^{1,p}(Ω)`, case `p > N`**: for an
 arbitrary bounded open set `Ω` and `N < p < ∞`, the injection `W_0^{1,p}(Ω) ⊂ C(Ω̄)`,

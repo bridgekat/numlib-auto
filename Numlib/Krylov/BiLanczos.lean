@@ -997,15 +997,11 @@ theorem poly_succ (j : ℕ) :
   | zero => rfl
   | succ j => rfl
 
-private theorem aeval_C_mul_apply (T : E →ₗ[𝕜] E) (c : 𝕜) (p : 𝕜[X]) (x : E) :
-    Polynomial.aeval T (C c * p) x = c • Polynomial.aeval T p x := by
-  rw [map_mul, Module.End.mul_apply, aeval_C, Module.algebraMap_end_apply]
-
 private theorem aeval_step (T : E →ₗ[𝕜] E) (a b : 𝕜) (p q : 𝕜[X]) (x : E) :
     Polynomial.aeval T ((X - C a) * p - C b * q) x =
       T (Polynomial.aeval T p x) - a • Polynomial.aeval T p x - b • Polynomial.aeval T q x := by
   rw [map_sub, LinearMap.sub_apply, map_mul, Module.End.mul_apply, map_sub, LinearMap.sub_apply,
-    aeval_X, aeval_C, Module.algebraMap_end_apply, aeval_C_mul_apply]
+    aeval_X, aeval_C, Module.algebraMap_end_apply, Module.End.aeval_apply_C_mul]
 
 private theorem aeval_poly_aux (j : ℕ) :
     Polynomial.aeval A (poly A B v₁ w₁ j) v₁ = vec A B v₁ w₁ j ∧
@@ -1015,7 +1011,7 @@ private theorem aeval_poly_aux (j : ℕ) :
   | succ j ih =>
     have hv : Polynomial.aeval A (vhatPoly A B v₁ w₁ j) v₁ = vhat A B v₁ w₁ j := by
       rw [vhatPoly, aeval_step, ih.1, ih.2, vhat_eq]
-    exact ⟨by rw [poly_succ, aeval_C_mul_apply, hv, vec_succ],
+    exact ⟨by rw [poly_succ, Module.End.aeval_apply_C_mul, hv, vec_succ],
       by rw [polyPrev_succ, ih.1, vecPrev_succ]⟩
 
 /-- [saad2003iterative], §7.1.2: the Lanczos vectors are polynomials in `A` applied to the starting
@@ -1170,7 +1166,7 @@ private theorem aeval_dualPoly_aux (j : ℕ) :
   | succ j ih =>
     have hv : Polynomial.aeval B (dualVhatPoly A B v₁ w₁ j) w₁ = dualVhat A B v₁ w₁ j := by
       rw [dualVhatPoly, aeval_step, ih.1, ih.2, dualVhat_eq]
-    exact ⟨by rw [dualPoly_succ, aeval_C_mul_apply, hv, dualVec_succ],
+    exact ⟨by rw [dualPoly_succ, Module.End.aeval_apply_C_mul, hv, dualVec_succ],
       by rw [dualPolyPrev_succ, ih.1, dualVecPrev_succ]⟩
 
 /-- The dual vectors are polynomials in `B` applied to `w₁`: `p*_j(Aᴴ) w₁ = w_j`. -/
@@ -1241,7 +1237,7 @@ private theorem dualPoly_eq_aux (j : ℕ) :
 theorem dualVhat_eq_smul (j : ℕ) :
     dualVhat A B v₁ w₁ j = dualPolyScalar A B v₁ w₁ j •
       Polynomial.aeval B ((vhatPoly A B v₁ w₁ j).map (starRingEnd 𝕜)) w₁ := by
-  rw [← aeval_dualVhatPoly, (dualPoly_eq_aux A B v₁ w₁ j).2, aeval_C_mul_apply]
+  rw [← aeval_dualVhatPoly, (dualPoly_eq_aux A B v₁ w₁ j).2, Module.End.aeval_apply_C_mul]
 
 /-- [saad2003iterative], §7.1.2: `⟨p_j, p_j⟩ = γ_j (p_j(A) v₁, p_j(Aᴴ) w₁)` — the breakdown scalar
 of the process is the indefinite norm of `p_j` up to the factor `γ_j`. -/

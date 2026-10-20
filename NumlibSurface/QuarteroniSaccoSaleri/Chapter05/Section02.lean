@@ -218,7 +218,8 @@ theorem equation_5_11_normal {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal
   rw [equation_5_11_eq_eigenvalueCondNumber hx hy]
   exact Module.End.eigenvalueCondNumber_eq_one_of_isStarNormal
     (isStarNormal_toEuclideanLin_iff.mpr hA) hAx hx0
-    (by rw [← toEuclideanLin_conjTranspose]; exact hAy) (by simp [← norm_pos_iff, hy]) hgeom
+    (by rw [← toEuclideanLin_conjTranspose_eq_adjoint]; exact hAy) (by simp [← norm_pos_iff, hy])
+    hgeom
 
 /-- **Unitary similarity preserves the conditioning** (§5.2.1, after (5.11)). Let `U` be unitary
 and `Ã = Uᴴ A U`. If `x`, `y` are right and left eigenvectors of `A` for `λ`, then `Uᴴ x`, `Uᴴ y`

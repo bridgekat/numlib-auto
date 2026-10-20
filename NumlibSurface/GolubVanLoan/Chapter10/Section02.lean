@@ -567,13 +567,13 @@ theorem equation_10_2_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   refine ⟨Lanczos.aeval_poly hA.isSymmetric_toEuclideanLin u,
     fun j hj => Lanczos.poly_degree _ u hj, fun hg => ?_, fun j hj => ?_⟩
   · have hβ : Lanczos.beta (toEuclideanLin A) u 0 ≠ 0 := by
-      rw [Ne, Lanczos.beta_eq_zero_iff u hA.isSymmetric_toEuclideanLin]
+      rw [Ne, Lanczos.beta_eq_zero_iff u]
       omega
     rw [Lanczos.poly_one]
     simp only [RCLike.ofReal_real_eq_id, id]
     rw [← mul_assoc, ← C_mul, mul_inv_cancel₀ hβ, C_1, one_mul]
   have hβ : Lanczos.beta (toEuclideanLin A) u (j + 1) ≠ 0 := by
-    rw [Ne, Lanczos.beta_eq_zero_iff u hA.isSymmetric_toEuclideanLin]
+    rw [Ne, Lanczos.beta_eq_zero_iff u]
     omega
   rw [Lanczos.poly_add_two]
   simp only [RCLike.ofReal_real_eq_id, id]

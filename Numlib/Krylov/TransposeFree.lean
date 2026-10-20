@@ -107,7 +107,6 @@ private theorem natDegree_polyPair_le (j : ℕ) :
       rw [residualPoly_succ]
       refine (natDegree_sub_le _ _).trans (max_le (ih.1.trans (Nat.le_succ j)) ?_)
       refine (natDegree_C_mul_le _ _).trans (natDegree_mul_le.trans ?_)
-      have := ih.2
       simp only [natDegree_X]
       omega
     refine ⟨hφ, ?_⟩
@@ -564,14 +563,6 @@ section Polynomial
 
 variable {B : E →ₗ[𝕜] E}
 
-omit [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] in
-/-- `a b / (a c) = b / c` for `a ≠ 0`. -/
-private theorem mul_div_mul_left_cancel {a b c : 𝕜} (ha : a ≠ 0) : a * b / (a * c) = b / c := by
-  rcases eq_or_ne c 0 with rfl | hc
-  · simp
-  · rw [div_eq_div_iff (mul_ne_zero ha hc) hc]
-    ring
-
 /-- **Only the leading coefficient survives**: for `deg q ≤ j` and `v` orthogonal to
 `𝒦_j(B, r*₀)`, `⟪r*₀, q(A) v⟫ = q_j ⟪B^j r*₀, v⟫`. -/
 private theorem inner_aeval_eq_coeff_mul (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
@@ -656,7 +647,7 @@ private theorem alpha_eq_aux (hω : ∀ i < m, omega A b x₀ rs₀ i ≠ 0) {j 
   have he := stabPoly_coeff_ne_zero A b x₀ rs₀ (j := j) fun i hi => hω i (by omega)
   rw [alpha, BCG.alpha, inner_residual h hj.le hr, inner_apply_direction h hj.le hp,
     inner_dualResidual_residual h hj.le, inner_dualDirection_apply_direction h hj.le,
-    mul_div_mul_left_cancel he, mul_div_mul_left_cancel (coeff_ne_zero_and h hj).1]
+    mul_div_mul_left _ _ he, mul_div_mul_left _ _ (coeff_ne_zero_and h hj).1]
 
 private theorem beta_eq_aux (hω : ∀ i < m, omega A b x₀ rs₀ i ≠ 0) {j : ℕ} (hj : j < m)
     (hr : (iterate A b x₀ rs₀ j).r
@@ -673,17 +664,18 @@ private theorem beta_eq_aux (hω : ∀ i < m, omega A b x₀ rs₀ i ≠ 0) {j :
     BCG.residualPoly_coeff_succ, stabPoly_coeff_succ, hα]
   field_simp
 
-/-- The induction behind `BiCGSTAB.residual_eq`, `BiCGSTAB.alpha_eq` and `BiCGSTAB.beta_eq`. -/
-private theorem vec_eq (hω : ∀ i < m, omega A b x₀ rs₀ i ≠ 0) :
-    ∀ j ≤ m, (iterate A b x₀ rs₀ j).r
+/-- **BiCGSTAB computes the stabilized BCG polynomials** ([saad2003iterative] (7.46), (7.52), van
+der Vorst; [golub2013matrix] §11.4.5): if the BCG run with `B` the adjoint of `A` does not break
+down through step `m` and no `ω_i` with `i < m` vanishes, then for `j ≤ m`, with
+`r₀ = b - A x₀`, `r_j = ψ_j(A) φ_j(A) r₀` and `p_j = ψ_j(A) π_j(A) r₀`. -/
+theorem residual_eq (hω : ∀ i < m, omega A b x₀ rs₀ i ≠ 0) {j : ℕ} (hj : j ≤ m) :
+    (iterate A b x₀ rs₀ j).r
         = aeval A (stabPoly A b x₀ rs₀ j * BCG.residualPoly A B b x₀ rs₀ j) (b - A x₀) ∧
       (iterate A b x₀ rs₀ j).p
         = aeval A (stabPoly A b x₀ rs₀ j * BCG.directionPoly A B b x₀ rs₀ j) (b - A x₀) := by
-  intro j
   induction j with
-  | zero => intro _; simp
+  | zero => simp
   | succ j ih =>
-    intro hj
     obtain ⟨hr, hp⟩ := ih (by omega)
     have hjm : j < m := by omega
     have hα := alpha_eq_aux h hω hjm hr hp
@@ -716,23 +708,12 @@ private theorem vec_eq (hω : ∀ i < m, omega A b x₀ rs₀ i ≠ 0) :
     rw [iterate_succ_p, hr', hp, hβ, hpoly, aeval_apply_add, aeval_apply_C_mul, aeval_apply_sub,
       aeval_apply_C_mul, aeval_apply_X_mul]
 
-/-- **BiCGSTAB computes the stabilized BCG polynomials** ([saad2003iterative] (7.46), (7.52), van
-der Vorst; [golub2013matrix] §11.4.5): if the BCG run with `B` the adjoint of `A` does not break
-down through step `m` and no `ω_i` with `i < m` vanishes, then for `j ≤ m`, with
-`r₀ = b - A x₀`, `r_j = ψ_j(A) φ_j(A) r₀` and `p_j = ψ_j(A) π_j(A) r₀`. -/
-theorem residual_eq (hω : ∀ i < m, omega A b x₀ rs₀ i ≠ 0) {j : ℕ} (hj : j ≤ m) :
-    (iterate A b x₀ rs₀ j).r
-        = aeval A (stabPoly A b x₀ rs₀ j * BCG.residualPoly A B b x₀ rs₀ j) (b - A x₀) ∧
-      (iterate A b x₀ rs₀ j).p
-        = aeval A (stabPoly A b x₀ rs₀ j * BCG.directionPoly A B b x₀ rs₀ j) (b - A x₀) :=
-  vec_eq h hω j hj
-
 /-- **The BCG step length from the BiCGSTAB vectors** ([saad2003iterative] (7.53)): under the
 hypotheses of `BiCGSTAB.residual_eq`, the BiCGSTAB `α_j = ⟪r*₀, r_j⟫/⟪r*₀, A p_j⟫` is the BCG
 `α_j`, for `j < m`. -/
 theorem alpha_eq (hω : ∀ i < m, omega A b x₀ rs₀ i ≠ 0) {j : ℕ} (hj : j < m) :
     alpha A b x₀ rs₀ j = BCG.alpha A B b x₀ rs₀ j := by
-  obtain ⟨hr, hp⟩ := vec_eq h hω j hj.le
+  obtain ⟨hr, hp⟩ := residual_eq h hω hj.le
   exact alpha_eq_aux h hω hj hr hp
 
 /-- **The BCG direction coefficient from the BiCGSTAB vectors** ([saad2003iterative] (7.54)):
@@ -740,8 +721,8 @@ under the hypotheses of `BiCGSTAB.residual_eq`, the BiCGSTAB
 `β_j = (⟪r*₀, r_{j+1}⟫/⟪r*₀, r_j⟫)(α_j/ω_j)` is the BCG `β_j`, for `j < m`. -/
 theorem beta_eq (hω : ∀ i < m, omega A b x₀ rs₀ i ≠ 0) {j : ℕ} (hj : j < m) :
     beta A b x₀ rs₀ j = BCG.beta A B b x₀ rs₀ j := by
-  obtain ⟨hr, hp⟩ := vec_eq h hω j hj.le
-  exact beta_eq_aux h hω hj hr (vec_eq h hω (j + 1) hj).1 (alpha_eq_aux h hω hj hr hp)
+  obtain ⟨hr, hp⟩ := residual_eq h hω hj.le
+  exact beta_eq_aux h hω hj hr (residual_eq h hω hj).1 (alpha_eq_aux h hω hj hr hp)
 
 end Polynomial
 

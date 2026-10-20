@@ -1556,16 +1556,10 @@ theorem iSup_enorm_eq_ofReal_iSup {f : α → E} (hf : BddAbove (Set.range fun a
 
 variable [MeasurableSpace α] [MeasurableSingletonClass α] [Countable α]
 
-/-- Every function on a countable measurable space with measurable singletons is a.e. strongly
-measurable for the counting measure. -/
-theorem aestronglyMeasurable_count (f : α → E) :
-    AEStronglyMeasurable f (Measure.count : Measure α) :=
-  StronglyMeasurable.of_discrete.aestronglyMeasurable
-
 /-- The `L^p` seminorm for the counting measure, `p ≠ 0, ∞`, as a `tsum`. -/
 theorem eLpNorm_count_eq_tsum (hp0 : p ≠ 0) (hp : p ≠ ∞) (f : α → E) :
     eLpNorm f p (Measure.count : Measure α) = (∑' a, ‖f a‖ₑ ^ p.toReal) ^ (1 / p.toReal) := by
-  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal hp0 hp (aestronglyMeasurable_count f),
+  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal hp0 hp .of_discrete,
     lintegral_count]
 
 /-- `Memℓp f p ↔ MemLp f p count` for `1 ≤ p`: the finiteness of `∑ ‖f a‖ ^ p`, resp. of
@@ -1575,7 +1569,7 @@ theorem memℓp_iff_memLp_count [Fact (1 ≤ p)] (f : α → E) :
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le Fact.out).ne'
   rw [memLp_iff]
   rcases eq_or_ne p ∞ with rfl | hp
-  · rw [memℓp_infty_iff, eLpNorm_exponent_top (aestronglyMeasurable_count f), eLpNormEssSup_count]
+  · rw [memℓp_infty_iff, eLpNorm_exponent_top .of_discrete, eLpNormEssSup_count]
     constructor
     · intro hf
       rw [iSup_enorm_eq_ofReal_iSup hf]
@@ -1600,7 +1594,7 @@ theorem toReal_eLpNorm_count [Fact (1 ≤ p)] (f : lp (fun _ : α => E) p) :
     (eLpNorm f p (Measure.count : Measure α)).toReal = ‖f‖ := by
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le Fact.out).ne'
   rcases eq_or_ne p ∞ with rfl | hp
-  · rw [eLpNorm_exponent_top (aestronglyMeasurable_count _), eLpNormEssSup_count,
+  · rw [eLpNorm_exponent_top .of_discrete, eLpNormEssSup_count,
       iSup_enorm_eq_ofReal_iSup (lp.memℓp f).bddAbove, lp.norm_eq_ciSup, ENNReal.toReal_ofReal]
     rcases isEmpty_or_nonempty α with hα | hα
     · simp

@@ -38,9 +38,6 @@ id = "PeriodicSobolev.tsum_norm_coeff_notMem_window_le"
 id = "PeriodicSobolev.tsum_norm_coeff_sq_notMem_window_le"
 
 [[node]]
-id = "DFT.fourier_coe_two_pi"
-
-[[node]]
 id = "DFT.sum_range_eq_sum_window"
 
 [[node]]

@@ -348,7 +348,7 @@ private theorem properConvex_of_finite_on_isOpen {g : Rn n → EReal} (hg : Conv
   by_contra hp
   have hxi : x ∈ interior (convexDom g) := hC.subset_interior_iff.2 hCdom hx
   exact (hfin x hx).1 (hg.eq_bot_of_mem_relint_convexDom hp
-    (Convex.interior_subset_relint hg.convex_convexDom ⟨x, hxi⟩ hxi))
+    (Convex.interior_subset_relint hxi))
 
 /-- **Theorem 24.5**, first assertion without junk values: every real `μ` above `f'(x; y)`
 eventually bounds `fᵢ'(xᵢ; yᵢ)`. This is the book's `limsup` inequality with the extended-real limit

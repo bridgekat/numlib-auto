@@ -4,6 +4,7 @@ import Numlib.LinearAlgebra.Matrix.Kronecker
 import Numlib.LinearAlgebra.Matrix.LU
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
+import Numlib.Topology.Algebra.Polynomial
 
 /-!
 # Norms, spectra and triangular factors of Kronecker products
@@ -58,13 +59,6 @@ theorem frobenius_norm_kronecker (B : Matrix m₁ n₁ 𝕜) (C : Matrix m₂ n�
 end Frobenius
 
 /-! ### Singular values -/
-
-/-- The roots of `∏ (X - a_i)` are the `a_i` (`Polynomial.roots_multiset_prod_X_sub_C`). -/
-private theorem roots_prod_X_sub_C_univ {K : Type*} [Field K] {ι : Type*} [Fintype ι]
-    (a : ι → K) : (∏ i, (X - C (a i))).roots = Multiset.map a Finset.univ.val := by
-  rw [Finset.prod_eq_multiset_prod]
-  have := roots_multiset_prod_X_sub_C (Multiset.map a Finset.univ.val)
-  rwa [Multiset.map_map] at this
 
 /-- The Kronecker product of the right singular unitaries diagonalizes `(B ⊗ C)ᴴ (B ⊗ C)`. -/
 private theorem conjTranspose_kronecker_mul_self_eq [DecidableEq n₁] [DecidableEq n₂]
@@ -238,10 +232,10 @@ private theorem charpoly_kronecker_fin {a b : ℕ} (A : Matrix (Fin a) (Fin a) �
       reindex_apply,
       hK]
     exact Fintype.prod_equiv finProdFinEquiv.symm _ _ fun _ => rfl
-  have hT := (roots_prod_X_sub_C_univ _).symm.trans
-    ((congrArg roots (hPc.symm.trans hA)).trans (roots_prod_X_sub_C_univ _))
-  have hS := (roots_prod_X_sub_C_univ _).symm.trans
-    ((congrArg roots (hQc.symm.trans hB)).trans (roots_prod_X_sub_C_univ _))
+  have hT := (roots_prod_univ_X_sub_C _).symm.trans
+    ((congrArg roots (hPc.symm.trans hA)).trans (roots_prod_univ_X_sub_C _))
+  have hS := (roots_prod_univ_X_sub_C _).symm.trans
+    ((congrArg roots (hQc.symm.trans hB)).trans (roots_prod_univ_X_sub_C _))
   rw [hTS, Fintype.prod_prod_type]
   calc ∏ i, ∏ j, (X - C (T i i * S j j)) = ∏ i, ∏ j, (X - C (T i i * γ j)) :=
         Finset.prod_congr rfl fun i _ => prod_comp_eq_of_map_eq hS fun s => X - C (T i i * s)

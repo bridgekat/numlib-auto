@@ -480,8 +480,6 @@ theorem logSingleLayer_sin (m : ℕ) (t : ℝ) :
       ((intervalIntegrable_logChord_mul (by fun_prop)).const_mul _),
     intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul,
     integral_logChord_mul_cos, integral_logChord_mul_sin, mul_zero, sub_zero]
-  have hmax : (0 : ℝ) < ((max 1 m : ℕ) : ℝ) :=
-    Nat.cast_pos.2 (lt_of_lt_of_le Nat.zero_lt_one (le_max_left 1 m))
   field_simp
 
 /-! ### The integer Fourier modes -/

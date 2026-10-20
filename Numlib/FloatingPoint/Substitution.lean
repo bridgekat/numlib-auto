@@ -244,11 +244,6 @@ def RoundsForwardSubst (m : RoundingModel K) (T : Matrix n n K) (b xhat : n → 
   ∀ i, ∃ (o : List n) (t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
     RoundsRunningDiff m o (T i) xhat (b i) t ∧ m.Rounds (t / T i i) (xhat i)
 
-/-- The number of indices `≤ i` is at most the number of indices. -/
-theorem card_filter_le_le_card (i : n) : #{j | j ≤ i} ≤ Fintype.card n := by
-  rw [← Finset.card_univ]
-  exact Finset.card_le_card (Finset.filter_subset _ _)
-
 /-- A list of exactly the indices below `i` enumerates the `Finset` of the indices below `i`. -/
 theorem toFinset_eq_filter_lt_of_forall_mem_iff {o : List n} {i : n} (ho : ∀ j, j ∈ o ↔ j < i) :
     o.toFinset = univ.filter (· < i) := by
@@ -263,7 +258,7 @@ theorem length_add_one_le_card_of_forall_mem_iff {o : List n} {i : n} (hnd : o.N
   have hlen : o.length + 1 = #{j | j ≤ i} := by
     rw [← List.toFinset_card_of_nodup hnd, toFinset_eq_filter_lt_of_forall_mem_iff ho,
       Finset.card_eq_sum_ones, Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
-  exact hlen ▸ card_filter_le_le_card i
+  exact hlen ▸ Finset.card_le_univ _
 
 /-- **One row of [higham2002accuracy] Theorem 8.5**: a computed row of forward substitution
 satisfies `t_ii x̂_i (1 + θ₀) = b_i - ∑_{j < i} t_ij x̂_j (1 + θ_j)` with every `|θ| ≤ γ_n`, `n` the

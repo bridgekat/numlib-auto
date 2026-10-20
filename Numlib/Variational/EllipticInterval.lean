@@ -481,23 +481,6 @@ theorem existsUnique_isWeakSolution (hab : a < b) (α γ : Lp ℝ ⊤ (volume.re
   rintro y ⟨hyK, hy⟩
   exact congrArg Subtype.val (hwu ⟨y, hyK⟩ fun z ↦ hy (z : SobolevInterval 1 a b) z.2)
 
-/-- **Céa's lemma in a seminorm**, relative to a subspace `W`: if the bilinear form `B` is
-bounded by `M` and coercive with constant `c` for the seminorm `q` on `W`, then for `u ∈ W` and
-`uh ∈ K ≤ W` with the Galerkin orthogonality `B (u - uh) v = 0` on `K`,
-`q (u - uh) ≤ (M / c) q (u - w)` for every `w ∈ K`.
-
-This is the general lemma `_root_.seminorm_sub_le_of_galerkin_orthogonal` of
-`Numlib/Variational/Galerkin`, restated here in the namespace of its consumer
-`galerkin_seminorm_sub_le`; the proof is there. -/
-theorem seminorm_sub_le_of_galerkin_orthogonal {V : Type*} [AddCommGroup V] [Module ℝ V]
-    (q : Seminorm ℝ V) (B : V → V → ℝ) (hadd : ∀ x y z, B x (y + z) = B x y + B x z)
-    {W : Submodule ℝ V} {M c : ℝ} (hc : 0 < c)
-    (hM : ∀ u ∈ W, ∀ v ∈ W, |B u v| ≤ M * q u * q v) (hcoer : ∀ v ∈ W, c * q v ^ 2 ≤ B v v)
-    {K : Submodule ℝ V} (hK : K ≤ W) {u uh : V} (hu : u ∈ W) (huh : uh ∈ K)
-    (horth : ∀ v ∈ K, B (u - uh) v = 0) {w : V} (hw : w ∈ K) :
-    q (u - uh) ≤ M / c * q (u - w) :=
-  _root_.seminorm_sub_le_of_galerkin_orthogonal q B hadd hc hM hcoer hK hu huh horth hw
-
 open SobolevInterval in
 /-- **Céa's lemma with the constant of [quarteroni2000numerical] Theorem 12.3**: for the weak
 solution `u ∈ H^1_0(a, b)` and the Galerkin solution `uh` in a subspace `K ≤ H^1_0(a, b)`,

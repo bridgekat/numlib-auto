@@ -71,7 +71,7 @@ every direction there, hence a finite convex function on the whole space, hence 
 what removes the `cl` from the support-function formula for `f'(x; ·)`. -/
 theorem closedConvex_dirDeriv_of_mem_interior_convexDom (hf : ConvexFn f) (hp : ProperConvex f)
     (hx : x ∈ interior (convexDom f)) : ClosedConvex (dirDeriv f x) := by
-  have hri : x ∈ ri (convexDom f) := Convex.interior_subset_relint hf.convex_convexDom ⟨x, hx⟩ hx
+  have hri : x ∈ ri (convexDom f) := Convex.interior_subset_relint hx
   have hgp : ProperConvex (dirDeriv f x) := properConvex_dirDeriv_of_mem_relint_convexDom hf hp hri
   have hgc : ConvexFn (dirDeriv f x) :=
     convexFn_dirDeriv hf (mem_convexDom.1 (interior_subset hx)).ne (hp.ne_bot x)
@@ -138,7 +138,7 @@ theorem ConvexFn.convexCl_eventuallyEq_of_mem_interior_convexDom (hf : ConvexFn 
     (hx : x ∈ interior (convexDom f)) : convexCl f =ᶠ[nhds x] f := by
   filter_upwards [isOpen_interior.mem_nhds hx] with z hz
   exact hf.convexCl_eq_of_mem_relint_convexDom
-      (Convex.interior_subset_relint hf.convex_convexDom ⟨x, hx⟩ hz)
+      (Convex.interior_subset_relint hz)
 
 /-- `∇(cl f) = ∇f` for a proper convex `f`: a closure changes no gradient, and creates none. One
 direction holds because a gradient of `f` at `x` puts `x` in `int (dom f)`, where the two functions
@@ -181,8 +181,7 @@ theorem exists_subdifferential_convexCl_eq_singleton_iff [IsCompatiblePairing B]
   have key : ∀ x : E,
       x ∈ interior (convexDom f) → subdifferential B (convexCl f) x = subdifferential B f x :=
     fun x hx => Set.ext fun _ => mem_subdifferential_convexCl_iff
-      (hf.convexCl_eq_of_mem_relint_convexDom (Convex.interior_subset_relint
-          hf.convex_convexDom ⟨x, hx⟩ hx))
+      (hf.convexCl_eq_of_mem_relint_convexDom (Convex.interior_subset_relint hx))
   constructor
   · rintro ⟨x, hx⟩
     have hint : x ∈ interior (convexDom f) := by
@@ -220,8 +219,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 reduction to `cl g` is done directly here; `cl g` supports the same set and is again positively
 homogeneous. -/
 theorem mem_exposedPoints_supportSet_iff_of_properConvex [IsCompatiblePairing B]
-    [IsCompatiblePairing B.flip] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
-    [LocallyConvexSpace ℝ E] (hgh : PosHomogeneous g) (hgc : ConvexFn g) (hgp : ProperConvex g)
+    [IsCompatiblePairing B.flip] (hgh : PosHomogeneous g) (hgc : ConvexFn g) (hgp : ProperConvex g)
     {z : E} :
     z ∈ (supportSet B.flip g).exposedPoints ℝ ↔ ∃ y : F, subdifferential B.flip g y = {z} := by
   obtain ⟨w, hw⟩ := hgp.convexDom_nonempty

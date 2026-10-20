@@ -52,7 +52,7 @@ theorem l2_opNorm_pfc_jordanBlock_le {𝕜 : Type*} [RCLike 𝕜] (h : 𝕜 → 
       rw [pfc_jordanBlock_apply]
       split_ifs with hij
       · rw [taylorJet, norm_div, RCLike.norm_natCast]
-        exact hM _ (by have := j.isLt; omega)
+        exact hM _ (by omega)
       · rw [norm_zero]
         exact hM0
   rwa [lpOpNorm_two, Fintype.card_fin, Real.sqrt_mul_self (Nat.cast_nonneg _)] at this

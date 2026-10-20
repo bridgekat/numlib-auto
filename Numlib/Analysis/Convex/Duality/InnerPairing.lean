@@ -200,7 +200,7 @@ theorem pairingNorm_nonneg (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) (x : E) : 0 ≤
     pairingNorm B (0 : E) = 0 :=
   pairingNorm_eq_zero_iff.2 rfl
 
-theorem pairingNorm_neg (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) [IsInnerPairing B] (x : E) :
+theorem pairingNorm_neg (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) (x : E) :
     pairingNorm B (-x) = pairingNorm B x := by
   simp only [pairingNorm, map_neg, LinearMap.neg_apply, neg_neg]
 

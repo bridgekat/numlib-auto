@@ -118,31 +118,26 @@ theorem finrank_maxGenEigenspace_toEuclideanLin (A : Matrix n n 𝕜) (μ : 𝕜
       A.charpoly.rootMultiplicity μ := by
   rw [LinearMap.finrank_maxGenEigenspace_eq, toEuclideanLin_eq_toLin_orthonormal, charpoly_toLin]
 
-/-- The adjoint of `toEuclideanLin A` is `toEuclideanLin Aᴴ`. -/
-theorem toEuclideanLin_conjTranspose {m : Type*} [Fintype m] [DecidableEq m] (A : Matrix m n 𝕜) :
-    toEuclideanLin Aᴴ = LinearMap.adjoint (toEuclideanLin A) :=
-  toEuclideanLin_conjTranspose_eq_adjoint A
-
 /-- `⟪Aᴴ y, x⟫ = ⟪y, A x⟫`: the conjugate transpose moves across the inner product as the adjoint
 does (`LinearMap.adjoint_inner_left`). -/
 theorem toEuclideanLin_conjTranspose_inner_left {m : Type*} [Fintype m] [DecidableEq m]
     (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
     inner 𝕜 (toEuclideanLin Aᴴ y) x = inner 𝕜 y (toEuclideanLin A x) := by
-  rw [toEuclideanLin_conjTranspose, LinearMap.adjoint_inner_left]
+  rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.adjoint_inner_left]
 
 /-- `⟪x, Aᴴ y⟫ = ⟪A x, y⟫`: the conjugate transpose moves across the inner product as the adjoint
 does (`LinearMap.adjoint_inner_right`). -/
 theorem toEuclideanLin_conjTranspose_inner_right {m : Type*} [Fintype m] [DecidableEq m]
     (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
     inner 𝕜 x (toEuclideanLin Aᴴ y) = inner 𝕜 (toEuclideanLin A x) y := by
-  rw [toEuclideanLin_conjTranspose, LinearMap.adjoint_inner_right]
+  rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.adjoint_inner_right]
 
 /-- Over a field with trivial star (`ℝ`), the adjoint of `toEuclideanLin A` is `toEuclideanLin Aᵀ`,
-for rectangular matrices too: `Matrix.toEuclideanLin_conjTranspose` with `Aᴴ = Aᵀ`. -/
+for rectangular matrices too: `Matrix.toEuclideanLin_conjTranspose_eq_adjoint` with `Aᴴ = Aᵀ`. -/
 theorem toEuclideanLin_transpose_eq_adjoint [TrivialStar 𝕜] {m : Type*} [Fintype m]
     [DecidableEq m] (A : Matrix m n 𝕜) :
     toEuclideanLin Aᵀ = LinearMap.adjoint (toEuclideanLin A) := by
-  rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose]
+  rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_eq_adjoint]
 
 /-- `⟪Aᵀ y, x⟫ = ⟪y, A x⟫` over a field with trivial star: the real form of
 `Matrix.toEuclideanLin_conjTranspose_inner_left`. -/
@@ -333,11 +328,8 @@ variable {U : Matrix n n 𝕜}
 /-- A unitary matrix becomes a unitary operator on `EuclideanSpace 𝕜 n`. -/
 theorem toEuclideanCLM_mem_unitary (hU : U ∈ Matrix.unitaryGroup n 𝕜) :
     toEuclideanCLM (n := n) (𝕜 := 𝕜) U ∈
-      unitary (EuclideanSpace 𝕜 n →L[𝕜] EuclideanSpace 𝕜 n) := by
-  rw [Unitary.mem_iff] at hU ⊢
-  refine ⟨?_, ?_⟩
-  · rw [← map_star, ← map_mul, hU.1, map_one]
-  · rw [← map_star, ← map_mul, hU.2, map_one]
+      unitary (EuclideanSpace 𝕜 n →L[𝕜] EuclideanSpace 𝕜 n) :=
+  Unitary.map_mem _ hU
 
 /-- A unitary matrix acts as an isometry of `EuclideanSpace 𝕜 n`. -/
 theorem norm_toEuclideanCLM_apply_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜)
@@ -498,8 +490,8 @@ theorem toEuclideanLin_one_apply (v : EuclideanSpace 𝕜 n) :
 coercion its applications use; `StarAlgEquiv.injective` is stated for the underlying ring
 equivalence instead, and a goal closed by it comes out phrased in `toRingEquiv`. -/
 theorem toEuclideanCLM_injective :
-    Function.Injective (toEuclideanCLM (n := n) (𝕜 := 𝕜)) := fun _ _ h => by
-  simpa using congrArg (toEuclideanCLM (n := n) (𝕜 := 𝕜)).symm h
+    Function.Injective (toEuclideanCLM (n := n) (𝕜 := 𝕜)) :=
+  EmbeddingLike.injective' _
 
 section Inverse
 

@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Numlib.Analysis.Sobolev.Operators
 import Numlib.MeasureTheory.Function.LpSpace.Duality
+import Numlib.Analysis.Calculus.ContDiffOnClosure
 
 /-!
 # Approximation in `W^{1,p}(Ω)` on an arbitrary open set, and the characterizations of `W^{1,p}`
@@ -558,7 +559,7 @@ omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace
 /-- The first iterated derivative is the uncurried first derivative. -/
 theorem iteratedFDeriv_one_eq_symm_fderiv (g : E → F) (x : E) :
     iteratedFDeriv ℝ 1 g x = (continuousMultilinearCurryFin1 ℝ E F).symm (fderiv ℝ g x) :=
-  ContinuousMultilinearMap.ext fun m ↦ by simp
+  iteratedFDeriv_one_eq_symm_fderiv' g x
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
 /-- A function of `W^{1,p}(Ω)` has a first-order weak derivative in `L^p(Ω)`, in the

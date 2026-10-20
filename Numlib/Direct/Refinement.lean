@@ -93,14 +93,6 @@ theorem iterate_sub_eq {xs : E} (hxs : A xs = b) (x₀ : E) (k : ℕ) :
   rw [hxs]
   abel
 
-/-- `‖G ^ k‖ ≤ ‖G‖ ^ k` for operators, including `k = 0`, where `‖1‖ ≤ 1` holds even on a
-trivial space. -/
-theorem norm_pow_le_pow_norm (G : E →L[𝕜] E) (k : ℕ) : ‖G ^ k‖ ≤ ‖G‖ ^ k := by
-  rcases Nat.eq_zero_or_pos k with rfl | hk
-  · rw [pow_zero, pow_zero]
-    exact ContinuousLinearMap.norm_id_le
-  · exact norm_pow_le' G hk
-
 /-- **Linear convergence of iterative refinement**: the error after `k` steps is at most
 `‖1 - C A‖ ^ k` times the initial error, so the iteration converges from every start when
 `‖1 - C A‖ < 1`. Bounds of the type `‖1 - C A‖ ≤ ‖C‖ ‖A - C⁻¹‖` relate this to the backward a
@@ -109,7 +101,7 @@ theorem norm_iterate_sub_le {xs : E} (hxs : A xs = b) (x₀ : E) (k : ℕ) :
     ‖(step C A b)^[k] x₀ - xs‖ ≤ ‖1 - C * A‖ ^ k * ‖x₀ - xs‖ := by
   rw [iterate_sub_eq hxs x₀ k]
   exact (ContinuousLinearMap.le_opNorm _ _).trans
-    (mul_le_mul_of_nonneg_right (norm_pow_le_pow_norm _ k) (norm_nonneg _))
+    (mul_le_mul_of_nonneg_right (ContinuousLinearMap.norm_pow_le_pow_norm _ k) (norm_nonneg _))
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℂ F]
 
@@ -552,7 +544,7 @@ def RoundsStepLUMixed (m m' : RoundingModel ℝ) (A L U : Matrix (Fin n) (Fin n)
 /-- The residual computed as an affine step, with the error in the form of
 [higham2002accuracy] (12.2): `r̂ = b - A x̂ + ξ` with
 `|ξ| ≤ γ_{n+1} |A| |x - x̂| + 2 γ_{n+1} |A| |x|` when `A x = b`. -/
-theorem exists_roundsAffineStep_residual_eq_add [NeZero n] {m : RoundingModel ℝ} (hu : m.u < 1)
+theorem exists_roundsAffineStep_residual_eq_add {m : RoundingModel ℝ} (hu : m.u < 1)
     (hcard : ((n + 1 : ℕ) : ℝ) * m.u < 1) {A : Matrix (Fin n) (Fin n) ℝ} {b x xhat rhat : Fin n → ℝ}
     (hx : A *ᵥ x = b) (hres : RoundsAffineStep m (-A) b xhat rhat) :
     ∃ ξ : Fin n → ℝ, rhat = b - A *ᵥ xhat + ξ ∧
@@ -570,7 +562,7 @@ theorem exists_roundsAffineStep_residual_eq_add [NeZero n] {m : RoundingModel �
 rounded once to the model `m`, `r̂ = b - A x̂ + ξ` with
 `|ξ| ≤ (u + (1 + u) γ̄_{n+1}) |A| |x - x̂| + 2 (1 + u) γ̄_{n+1} |A| |x|`, where `u = m.u` and
 `γ̄_{n+1}` is the constant of `m'`. -/
-theorem exists_mixed_residual_eq_add [NeZero n] {m m' : RoundingModel ℝ} (hu' : m'.u < 1)
+theorem exists_mixed_residual_eq_add {m m' : RoundingModel ℝ} (hu' : m'.u < 1)
     (hcard' : ((n + 1 : ℕ) : ℝ) * m'.u < 1) {A : Matrix (Fin n) (Fin n) ℝ}
     {b x xhat s rhat : Fin n → ℝ} (hx : A *ᵥ x = b) (hres : RoundsAffineStep m' (-A) b xhat s)
     (hround : ∀ i, m.Rounds (s i) (rhat i)) :

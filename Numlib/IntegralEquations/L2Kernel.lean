@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Integral.Prod
 import Mathlib.MeasureTheory.Measure.SeparableMeasure
+import Numlib.MeasureTheory.Function.LpSpace.Duality
 import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
@@ -33,7 +34,7 @@ kernel, which is a different object: its bound is the row `L¹` norm, not the `L
 Along the way, `MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt`
 (`Numlib/MeasureTheory/Integral/IntervalIntegral`) is the Cauchy–Schwarz inequality for a
 product of two square-integrable real functions, and
-`IntegralOperator.norm_lp_eq_sqrt_integral_sq` and `IntegralOperator.real_inner_lp_eq` read the
+`IntegralOperator.norm_lp_eq_sqrt_integral_sq` and `MeasureTheory.L2.inner_eq_integral_mul` read the
 norm and the inner product of `Lp ℝ 2 μ` as ordinary integrals, which is what makes the
 statements below quantifier-free integral inequalities rather than `eLpNorm` manipulations.
 -/
@@ -53,11 +54,6 @@ theorem norm_lp_eq_sqrt_integral_sq (f : Lp ℝ 2 μ) : ‖f‖ = √(∫ x, f x
     simp [sq]
   rw [h2, ← sq] at h
   rw [h, Real.sqrt_sq (norm_nonneg f)]
-
-/-- The inner product of `L²(μ)` as an ordinary integral, `⟪f, g⟫ = ∫ f g`. -/
-theorem real_inner_lp_eq (f g : Lp ℝ 2 μ) : (inner ℝ f g : ℝ) = ∫ x, f x * g x ∂μ := by
-  rw [MeasureTheory.L2.inner_def]
-  exact integral_congr_ae (Eventually.of_forall fun x => by simp [mul_comm])
 
 /-! ### Rows of a square-integrable kernel -/
 
@@ -230,7 +226,7 @@ theorem adjoint_l2KernelCLM (hk : MemLp k 2 (μ.prod μ)) :
   have hF : Integrable (Function.uncurry fun a b => k (a, b) * (v b * w a)) (μ.prod μ) :=
     integrable_kernel_mul_prod hk (Lp.memLp v) (Lp.memLp w)
   have hswap := integral_integral_swap hF
-  rw [real_inner_lp_eq, real_inner_lp_eq]
+  rw [L2.inner_eq_integral_mul, L2.inner_eq_integral_mul]
   have hL : ∫ z, (l2KernelCLM (memLp_swapKernel hk) w) z * v z ∂μ
       = ∫ b, ∫ a, k (a, b) * (v b * w a) ∂μ ∂μ := by
     refine integral_congr_ae ?_
@@ -303,7 +299,7 @@ theorem ae_eq_zero_of_l2KernelCLM_eq_zero (hk : MemLp k 2 (μ.prod μ))
     filter_upwards [ae_memLp_row hk, hD] with x hxL2 hxD
     have hinner : ∀ v : Lp ℝ 2 μ, (inner ℝ (hxL2.toLp _) v : ℝ) = ∫ y, k (x, y) * v y ∂μ := by
       intro v
-      rw [real_inner_lp_eq]
+      rw [L2.inner_eq_integral_mul]
       exact integral_congr_ae ((MemLp.coeFn_toLp hxL2).mono fun y hy => by simp only [hy])
     have hcont : Continuous fun v : Lp ℝ 2 μ => (inner ℝ (hxL2.toLp _) v : ℝ) :=
       continuous_const.inner continuous_id

@@ -188,10 +188,8 @@ theorem strongDualQuotLIEAnnihilator_apply (M : Submodule 𝕜 E) [IsClosed (M :
 theorem strongDualQuotLIEAnnihilator_symm_apply (M : Submodule 𝕜 E) [IsClosed (M : Set E)]
     (f : M.strongDualAnnihilator) :
     M.strongDualQuotLIEAnnihilator.symm f =
-      M.liftQL (f : StrongDual 𝕜 E) fun x hx => mem_strongDualAnnihilator.1 f.2 x hx := by
-  apply M.strongDualQuotLIEAnnihilator.injective
-  rw [LinearIsometryEquiv.apply_symm_apply]
-  exact Subtype.ext (by ext; rfl)
+      M.liftQL (f : StrongDual 𝕜 E) fun x hx => mem_strongDualAnnihilator.1 f.2 x hx :=
+  (LinearIsometryEquiv.symm_apply_eq _).mpr rfl
 
 end DualQuotient
 

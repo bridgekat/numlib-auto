@@ -8,6 +8,7 @@ import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Mathlib.LinearAlgebra.FiniteDimensional.Basic
 import Mathlib.LinearAlgebra.Matrix.Irreducible.Defs
+import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Order
 
@@ -133,14 +134,6 @@ section L2Operator
 
 open scoped Matrix.Norms.L2Operator
 
-/-- The Euclidean norm is monotone under an entrywise comparison of absolute values. -/
-private theorem norm_toLp_le_of_abs_le {a b : n → ℝ} (h : ∀ i, |a i| ≤ |b i|) :
-    ‖(WithLp.toLp 2 a : EuclideanSpace ℝ n)‖ ≤ ‖(WithLp.toLp 2 b : EuclideanSpace ℝ n)‖ := by
-  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
-  refine Real.sqrt_le_sqrt (Finset.sum_le_sum fun i _ => ?_)
-  simp only [Real.norm_eq_abs]
-  exact pow_le_pow_left₀ (abs_nonneg _) (h i) 2
-
 /-- The Euclidean norm ignores entrywise signs. -/
 private theorem norm_toLp_abs (a : n → ℝ) :
     ‖(WithLp.toLp 2 (fun i => |a i|) : EuclideanSpace ℝ n)‖
@@ -178,7 +171,7 @@ theorem EntrywiseLE.l2_opNorm_le {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
     exact h1.trans h2
   calc ‖(WithLp.toLp 2 (A *ᵥ d) : EuclideanSpace ℝ n)‖
       ≤ ‖(WithLp.toLp 2 (B *ᵥ fun j => |d j|) : EuclideanSpace ℝ n)‖ :=
-        norm_toLp_le_of_abs_le hstep
+        PiLp.norm_le_norm_of_forall_norm_le hstep
     _ ≤ ‖B‖ * ‖(WithLp.toLp 2 (fun j => |d j|) : EuclideanSpace ℝ n)‖ :=
         l2_opNorm_mulVec _ (WithLp.toLp 2 fun j => |d j|)
     _ = ‖B‖ * ‖(WithLp.toLp 2 d : EuclideanSpace ℝ n)‖ := by rw [norm_toLp_abs]
@@ -428,7 +421,8 @@ private theorem le_complexSpectralRadius_of_pos [Nonempty n] (hA : ∀ i j, 0 �
     intro k
     have hcmp : ‖(WithLp.toLp 2 ((t ^ k) • u) : EuclideanSpace ℝ n)‖
         ≤ ‖(WithLp.toLp 2 ((A ^ k) *ᵥ u) : EuclideanSpace ℝ n)‖ := by
-      refine norm_toLp_le_of_abs_le fun i => ?_
+      refine PiLp.norm_le_norm_of_forall_norm_le fun i => ?_
+      simp only [Real.norm_eq_abs]
       have hlo : 0 ≤ t ^ k * u i := mul_nonneg (pow_nonneg ht k) (hu i).le
       rw [Pi.smul_apply, smul_eq_mul, abs_of_nonneg hlo, abs_of_nonneg (hlo.trans (hiter k i))]
       exact hiter k i

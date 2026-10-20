@@ -204,7 +204,7 @@ theorem tendsto_norm_fderiv_iff_tendsto_dirDeriv (hf : ConvexFn f) (hp : ProperC
       ↔ Tendsto (fun t : ℝ => dirDeriv f (x + t • (a - x)) (a - x)) (𝓝[>] 0) (𝓝 ⊥) :=
   (subdifferential_eq_empty_iff_tendsto_norm_fderiv hf hp hcl hne hdiff x).symm.trans
     (subdifferential_eq_empty_iff_tendsto_dirDeriv hf hp hcl
-      (Convex.interior_subset_relint hf.convex_convexDom hne ha) x)
+      (Convex.interior_subset_relint ha) x)
 
 /-- For a closed proper convex function satisfying (a) and (b), essential smoothness is condition
 (c'), the collapse of the directional derivative to `−∞` along every segment reaching a point

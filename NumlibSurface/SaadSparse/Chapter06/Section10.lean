@@ -217,7 +217,8 @@ variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
 /-- Over `ℝ` the transpose induces the adjoint of `op A`. -/
 private theorem adjoint_op_eq :
     LinearMap.adjoint (op A) = op Aᵀ := by
-  rw [← Matrix.toEuclideanLin_conjTranspose A, Matrix.conjTranspose_eq_transpose_of_trivial]
+  rw [← Matrix.toEuclideanLin_conjTranspose_eq_adjoint A,
+    Matrix.conjTranspose_eq_transpose_of_trivial]
 
 /-- **Proposition 6.22**. Assume that `A` is such that `Aᵀ v ∈ 𝒦_s(A, v)` for every vector `v`.
 Then DIOM(s) is mathematically equivalent to FOM: the Arnoldi coefficients satisfy

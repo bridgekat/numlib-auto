@@ -413,10 +413,6 @@ theorem crawfordNumber_le_norm_mul (A B : Matrix n n 𝕜) (x : EuclideanSpace �
   rw [hscale, mul_comm]
   exact mul_le_mul_of_nonneg_left hle (by positivity)
 
-/-- The pair norm through the complex modulus: `√(a² + b²) = ‖a + b i‖`. -/
-private theorem sqrt_eq_norm (a b : ℝ) : Real.sqrt (a ^ 2 + b ^ 2) = ‖(a : ℂ) + b * Complex.I‖ :=
-  (Complex.norm_add_mul_I a b).symm
-
 /-- The pointwise perturbation of the pair `(xᴴ A x, xᴴ B x)`:
 `|(xᴴ(A + E_A)x, xᴴ(B + E_B)x) - (xᴴ A x, xᴴ B x)| ≤ ε ‖x‖²` with `ε = √(‖E_A‖₂² + ‖E_B‖₂²)`. -/
 private theorem norm_pair_sub_le (A B EA EB : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n) :
@@ -431,7 +427,7 @@ private theorem norm_pair_sub_le (A B EA EB : Matrix n n 𝕜) (x : EuclideanSpa
       ((reQuadForm A x : ℂ) + reQuadForm B x * Complex.I)
       = (reQuadForm EA x : ℂ) + reQuadForm EB x * Complex.I := by
     rw [hA, hB]; push_cast; ring
-  rw [heq, ← sqrt_eq_norm]
+  rw [heq, Complex.norm_add_mul_I]
   have h1 := abs_qf_le EA x
   have h2 := abs_qf_le EB x
   rw [← Real.sqrt_sq (by positivity : (0 : ℝ) ≤ ‖x‖ ^ 2), ← Real.sqrt_mul (by positivity)]
@@ -456,9 +452,9 @@ theorem crawfordNumber_sub_le (A B EA EB : Matrix n n 𝕜) :
   have hc := crawfordNumber_le_norm_mul A B x
   have hd := norm_pair_sub_le A B EA EB x
   rw [hx, one_pow, mul_one] at hc hd
-  rw [sqrt_eq_norm] at hc
+  rw [← Complex.norm_add_mul_I] at hc
   change _ ≤ Real.sqrt (reQuadForm (A + EA) x ^ 2 + reQuadForm (B + EB) x ^ 2)
-  rw [sqrt_eq_norm (reQuadForm (A + EA) x)]
+  rw [← Complex.norm_add_mul_I (reQuadForm (A + EA) x)]
   have := norm_sub_norm_le ((reQuadForm A x : ℂ) + reQuadForm B x * Complex.I)
     ((reQuadForm (A + EA) x : ℂ) + reQuadForm (B + EB) x * Complex.I)
   rw [norm_sub_rev] at this
@@ -676,7 +672,7 @@ theorem sin_abs_arctan_pencilEigenvalues_sub_le {A B EA EB : Matrix n n 𝕜} (h
         ((reQuadForm A X : ℂ) + reQuadForm B X * Complex.I)
       = ((reQuadForm (A + EA) X - reQuadForm A X : ℝ) : ℂ) +
         (reQuadForm (B + EB) X - reQuadForm B X : ℝ) * Complex.I by
-        push_cast; ring, ← sqrt_eq_norm] at hd
+        push_cast; ring, Complex.norm_add_mul_I] at hd
     exact abs_arctan_div_sub_le hb hb' hε0 hε hr hu hd
   have hl := isGreatest_pencilEigenvalues hA hB i
   have hm := isGreatest_pencilEigenvalues hA' hB' i

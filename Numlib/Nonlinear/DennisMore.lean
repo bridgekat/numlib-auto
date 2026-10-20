@@ -82,10 +82,8 @@ theorem sq_norm_mulVec_div_le_frobenius (A : Matrix n n ℝ) {s : n → ℝ} (hs
   have hq : ‖toLp 2 (A *ᵥ s)‖ ^ 2 / ‖toLp 2 s‖ ^ 2 ≤ b ^ 2 := by
     rw [div_le_iff₀ (by positivity)]
     have h0 : 0 ≤ ‖toLp 2 (A *ᵥ s)‖ := norm_nonneg _
-    have hb0 : 0 ≤ b * ‖toLp 2 s‖ := by positivity
     calc ‖toLp 2 (A *ᵥ s)‖ ^ 2 ≤ (b * ‖toLp 2 s‖) ^ 2 := pow_le_pow_left₀ h0 hproj 2
       _ = b ^ 2 * ‖toLp 2 s‖ ^ 2 := by ring
-  have hc0 : 0 ≤ c := norm_nonneg _
   nlinarith
 
 /-- **The Dennis–Moré inequality for Broyden's update** ([dennis1996numerical], proof of Theorem

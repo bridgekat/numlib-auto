@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib`.
 import Mathlib.Combinatorics.SimpleGraph.Coloring.Vertex
 import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 import Mathlib.Combinatorics.SimpleGraph.Finite
+import Numlib.Data.Finset.Card
 
 /-!
 # Greedy colouring of a finite simple graph
@@ -49,14 +50,6 @@ namespace SimpleGraph
 
 variable {V : Type*} [LinearOrder V] (G : SimpleGraph V)
 
-/-- A vertex has strictly fewer predecessors than any vertex above it: the measure that makes the
-recursion defining `SimpleGraph.greedyColoring` terminate. -/
-private theorem card_filter_lt_lt_card_filter_lt [Fintype V] {v w : V} (h : w < v) :
-    #{x ∈ univ | x < w} < #{x ∈ univ | x < v} := by
-  refine card_lt_card ((ssubset_iff_of_subset fun x hx => ?_).2 ⟨w, by simp [h], by simp⟩)
-  simp only [mem_filter, mem_univ, true_and] at hx ⊢
-  exact hx.trans h
-
 /-- The greedy sequential colouring of a finite simple graph along a linear order on its vertices:
 `G.greedyColoring v` is the least natural number that no neighbour of `v` below `v` carries.
 
@@ -66,7 +59,7 @@ formalized. -/
 noncomputable def greedyColoring [Fintype V] (v : V) : ℕ :=
   sInf {k | ∀ w, w < v → G.Adj w v → greedyColoring w ≠ k}
 termination_by #{x ∈ univ | x < v}
-decreasing_by exact card_filter_lt_lt_card_filter_lt ‹_›
+decreasing_by exact card_filter_lt_lt_of_lt ‹_›
 
 variable [Fintype V]
 

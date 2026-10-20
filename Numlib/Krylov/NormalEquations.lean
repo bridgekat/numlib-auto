@@ -42,10 +42,6 @@ variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
 variable (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v))
 include hadj
 
-/-- The adjoint relation read the other way round: `⟪u, Aᴴ v⟫ = ⟪A u, v⟫`. -/
-theorem inner_adjoint_right (u : E) (v : F) : inner 𝕜 u (Astar v) = inner 𝕜 (A u) v := by
-  rw [← inner_conj_symm, hadj, inner_conj_symm]
-
 /-- The quadratic form of `Aᴴ A` is the squared norm of `A`: `⟪Aᴴ A x, x⟫ = ‖A x‖²`. This one
 identity is what turns every statement about the energy norm of `Aᴴ A` into a statement about the
 residual norm of `A`. -/
@@ -63,7 +59,8 @@ theorem energyNorm_adjoint_comp (x : E) : energyNorm (Astar ∘ₗ A) x = ‖A x
 /-- `Aᴴ A` is symmetric, whatever `A` is. -/
 theorem adjoint_comp_isSymmetric : (Astar ∘ₗ A).IsSymmetric := by
   intro x y
-  rw [LinearMap.comp_apply, LinearMap.comp_apply, hadj, inner_adjoint_right hadj]
+  rw [LinearMap.comp_apply, LinearMap.comp_apply, hadj,
+    ← LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj]
 
 /-- `Aᴴ A` is coercive with constant `c` as soon as `A` is bounded below by `√c`, that is `c ‖x‖² ≤
 ‖A x‖²`. -/
@@ -117,8 +114,8 @@ include hadj
 omit hadj in
 /-- The initial residual of the normal equations is the image of the initial residual: `Aᴴ b - Aᴴ A
 x₀ = Aᴴ (b - A x₀)`. -/
-theorem adjoint_residual : Astar b - (Astar ∘ₗ A) x₀ = Astar (b - A x₀) := by
-  rw [LinearMap.comp_apply, ← map_sub]
+theorem adjoint_residual : Astar b - (Astar ∘ₗ A) x₀ = Astar (b - A x₀) :=
+  (Astar.map_sub b (A x₀)).symm
 
 /-- CGNR's optimality ([saad2003iterative], §8.3.1): a Galerkin iterate for the normal equations `Aᴴ
 A x = Aᴴ b` is exactly a minimal-residual iterate for `A x = b` over the same affine space `x₀ +
@@ -136,12 +133,13 @@ theorem isGalerkinIterate_adjoint_comp_iff_isMinResidual (m : ℕ) (x : E) :
     rintro _ ⟨w, hw, rfl⟩
     have h := (Submodule.mem_orthogonal _ _).1 horth w
       (by rwa [adjoint_residual (A := A) (Astar := Astar) b x₀])
-    rwa [LinearMap.comp_apply, ← map_sub, inner_adjoint_right hadj] at h
+    rwa [LinearMap.comp_apply, ← map_sub,
+      ← LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj] at h
   · rw [← adjoint_residual (A := A) (Astar := Astar) b x₀] at hmem
     refine ⟨hmem, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩
     rw [adjoint_residual (A := A) (Astar := Astar) b x₀] at hw
     have h := (Submodule.mem_orthogonal _ _).1 horth (A w) (Submodule.mem_map_of_mem hw)
-    rwa [LinearMap.comp_apply, ← map_sub, inner_adjoint_right hadj]
+    rwa [LinearMap.comp_apply, ← map_sub, ← LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj]
 
 /-- CGNE's optimality ([saad2003iterative], §8.3.2): if `u` is a Galerkin iterate for `A Aᴴ u = b`
 over `𝒦_m(A Aᴴ, r₀)` and `x = x₀ + Aᴴ (u - u₀)`, then `x` minimizes the *error* `‖x* - y‖` over `y ∈
@@ -179,7 +177,7 @@ theorem isMinError_of_isGalerkinIterate_comp_adjoint {u₀ u : F} {xstar : E} {m
     rw [map_sub, map_sub]
   have hA : A ((xstar - x₀) - Astar (u - u₀)) = b - (A ∘ₗ Astar) u := by
     rw [h3, hstar, h1, h2]; abel
-  rw [inner_adjoint_right hadj, hA, ← inner_conj_symm,
+  rw [← LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj, hA, ← inner_conj_symm,
     (Submodule.mem_orthogonal _ _).1 horth z hz, map_zero]
 
 end Optimality
@@ -396,7 +394,8 @@ theorem iterate_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner �
           (CG.iterate (A ∘ₗ Astar) b u₀ k).p
         = inner 𝕜 (Astar (CG.iterate (A ∘ₗ Astar) b u₀ k).p)
           (Astar (CG.iterate (A ∘ₗ Astar) b u₀ k).p) := by
-      rw [LinearMap.comp_apply, ← inner_conj_symm, inner_adjoint_right hadj, inner_conj_symm]
+      rw [LinearMap.comp_apply, ← inner_conj_symm,
+        ← LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj, inner_conj_symm]
     have halpha : (alpha (iterate A Astar b x₀ k) : 𝕜)
         = CG.alpha (A ∘ₗ Astar) (CG.iterate (A ∘ₗ Astar) b u₀ k) := by
       rw [alpha, CG.alpha, hq, hr, hp]

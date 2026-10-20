@@ -348,13 +348,6 @@ private theorem dense_polynomialFunctions (a b : ℝ) :
   rw [SetLike.ext'_iff, Subalgebra.topologicalClosure_coe, Algebra.coe_top] at h
   exact dense_iff_closure_eq.2 h
 
-/-- A convergent sequence in a normed space has bounded norms. -/
-private theorem exists_norm_le_of_tendsto {Y : Type*} [NormedAddCommGroup Y] {f : ℕ → Y} {y : Y}
-    (h : Tendsto f atTop (𝓝 y)) : ∃ C : ℝ, ∀ k, ‖f k‖ ≤ C := by
-  obtain ⟨C, hC⟩ :=
-    isBounded_iff_forall_norm_le.1 (Metric.isBounded_range_of_tendsto _ h)
-  exact ⟨C, fun k => hC _ ⟨k, rfl⟩⟩
-
 /-- **The Szegő–Pólya convergence criterion for quadrature rules.** A sequence of rules at distinct
 nodes of `[a, b]`, exact for a bounded functional `L` on the polynomials of degree at most `d k`
 with `d k → ∞`, converges to `L` at every continuous integrand if and only if the absolute sums of
@@ -373,7 +366,7 @@ theorem tendsto_iff_bddAbove_sum_abs {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) �
       ∃ C, ∀ k, ∑ i, |w k i| ≤ C := by
   constructor
   · intro h
-    obtain ⟨C, hC⟩ := banach_steinhaus fun v => exists_norm_le_of_tendsto (h v)
+    obtain ⟨C, hC⟩ := banach_steinhaus fun v => (h v).exists_norm_le
     exact ⟨C, fun k => by rw [← norm_functional (w k) (hx k)]; exact hC k⟩
   · rintro ⟨C, hC⟩
     have hCk : ∀ k, ‖functional (w k) (x k)‖ ≤ C := fun k => by

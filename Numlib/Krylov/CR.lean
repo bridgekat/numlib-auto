@@ -169,11 +169,6 @@ private theorem residual_succ_eq_zero_of_eq_zero {k : ℕ} (hr : (iterate A b x�
 
 /-! ### Elementary consequences of the recurrence -/
 
-private theorem inner_self_eq_ofReal_norm_sq (x : E) : inner 𝕜 x x = ((‖x‖ ^ 2 : ℝ) : 𝕜) := by
-  rw [inner_self_eq_norm_sq_to_K]
-  push_cast
-  ring
-
 /-- Each residual is a combination of two consecutive directions. -/
 private theorem inner_eq_zero_of_inner_direction {j : ℕ} {v : E}
     (h : ∀ l ≤ j, inner 𝕜 v (A (iterate A b x₀ l).p) = 0) :
@@ -255,11 +250,6 @@ private theorem re_inner_self_nonneg (x : E) : 0 ≤ RCLike.re (inner 𝕜 x (A 
   obtain ⟨c, hc, h⟩ := hA.isCoercive
   rw [← hA.isSymmetric]
   exact le_trans (by positivity) (h x)
-
-omit hA in
-private theorem inner_self_ofReal (hAs : A.IsSymmetric) (x : E) :
-    ((RCLike.re (inner 𝕜 x (A x)) : ℝ) : 𝕜) = inner 𝕜 x (A x) :=
-  RCLike.conj_eq_iff_re.1 (by rw [inner_conj_symm, hAs])
 
 private theorem eq_zero_of_inner_self_eq_zero {x : E} (h : inner 𝕜 x (A x) = 0) : x = 0 := by
   by_contra hx
@@ -579,7 +569,8 @@ omit hA in
 private theorem alpha_eq_ofReal (hAs : A.IsSymmetric) (k : ℕ) : alpha A (iterate A b x₀ k) =
     ((RCLike.re (inner 𝕜 (iterate A b x₀ k).r (A (iterate A b x₀ k).r)) /
       ‖(iterate A b x₀ k).q‖ ^ 2 : ℝ) : 𝕜) := by
-  rw [RCLike.ofReal_div, inner_self_ofReal hAs, ← inner_self_eq_ofReal_norm_sq, alpha]
+  rw [RCLike.ofReal_div, hAs.coe_re_inner_self_apply, RCLike.ofReal_pow,
+    ← inner_self_eq_norm_sq_to_K, alpha]
 
 omit hA in
 private theorem re_alpha_nonneg' (hAs : A.IsSymmetric)
@@ -598,7 +589,7 @@ omit hA in
 private theorem beta_eq_ofReal (hAs : A.IsSymmetric) (k : ℕ) : beta A (iterate A b x₀ k) =
     ((RCLike.re (inner 𝕜 (iterate A b x₀ (k + 1)).r (A (iterate A b x₀ (k + 1)).r)) /
       RCLike.re (inner 𝕜 (iterate A b x₀ k).r (A (iterate A b x₀ k).r)) : ℝ) : 𝕜) := by
-  rw [RCLike.ofReal_div, inner_self_ofReal hAs, inner_self_ofReal hAs, beta_iterate]
+  rw [RCLike.ofReal_div, hAs.coe_re_inner_self_apply, hAs.coe_re_inner_self_apply, beta_iterate]
 
 omit hA in
 private theorem re_beta_nonneg (hAs : A.IsSymmetric)

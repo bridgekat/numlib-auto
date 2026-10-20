@@ -279,7 +279,7 @@ omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
 `convexConj_smul` at `g = f*`, with Fenchel–Moreau turning `f**` back into `f`. It supplies
 closedness of `fa`, which the epigraph-image definition of `smulRight` does not see. -/
 theorem smulRight_eq_convexConj_smul (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ)
-    [IsCompatiblePairing B] [IsCompatiblePairing B.flip] (hc : ConvexFn f) (hcl : ClosedConvex f)
+    [IsCompatiblePairing B] (hc : ConvexFn f) (hcl : ClosedConvex f)
     (ha : 0 < a) : smulRight f a = convexConj B.flip (fun y => (a : EReal) * convexConj B f y) := by
   have hbi : convexConj B.flip (convexConj B f) = f := convexBiconj_eq_self hc hcl
   rw [convexConj_smul ha B.flip (convexConj B f), hbi]
@@ -288,7 +288,7 @@ omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
 /-- **`fa` is closed** when `f` is closed convex and `a > 0`. It is a conjugate
 (`smulRight_eq_convexConj_smul`). -/
 theorem closedConvex_smulRight (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ)
-    [IsCompatiblePairing B] [IsCompatiblePairing B.flip] (hc : ConvexFn f) (hcl : ClosedConvex f)
+    [IsCompatiblePairing B] (hc : ConvexFn f) (hcl : ClosedConvex f)
     (ha : 0 < a) : ClosedConvex (smulRight f a) := by
   rw [smulRight_eq_convexConj_smul B hc hcl ha]
   exact closedConvex_convexConj

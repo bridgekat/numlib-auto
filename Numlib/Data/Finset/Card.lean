@@ -22,4 +22,13 @@ theorem card_filter_comp_equiv {α β : Type*} [Fintype α] [Fintype β] (e : α
     [DecidablePred p] : #{a | p (e a)} = #{b | p b} :=
   card_equiv e fun _ => by simp
 
+/-- A smaller strict initial segment has fewer elements. -/
+theorem card_filter_lt_lt_of_lt {n : Type*} [Fintype n] [LinearOrder n] {a b : n} (h : a < b) :
+    #{k | k < a} < #{k | k < b} := by
+  refine Finset.card_lt_card (Finset.ssubset_iff_of_subset (fun k hk => ?_) |>.2 ⟨a, ?_, ?_⟩)
+  · simp only [mem_filter, mem_univ, true_and] at hk ⊢
+    exact hk.trans h
+  · simp [h]
+  · simp
+
 end Finset

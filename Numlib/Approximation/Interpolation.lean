@@ -857,8 +857,8 @@ theorem piecewiseLinearInterpCLM_apply (n : ℕ) (x : ℕ → Set.Icc a b) (f : 
   simp [piecewiseLinearInterpCLM, div_eq_inv_mul, mul_assoc]
 
 /-- The nodes of a partition increase along the used range. -/
-private theorem le_node_of_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) {i j : ℕ}
-    (hij : i ≤ j)
+theorem piecewiseLinearInterpCLM.le_node_of_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
+    {i j : ℕ} (hij : i ≤ j)
     (hj : j ≤ n + 1) : (x i : ℝ) ≤ (x j : ℝ) := by
   revert hj
   induction j, hij using Nat.le_induction with
@@ -906,10 +906,12 @@ theorem piecewiseLinearInterpCLM_apply_of_mem (hstep : ∀ i ≤ n, (x i : ℝ) 
   have hbefore : ∀ i < j, F i = f (x (i + 1)) - f (x i) := by
     intro i hi
     have hd : (0 : ℝ) < (x (i + 1) : ℝ) - (x i : ℝ) := sub_pos.mpr (hstep i (by omega))
-    have hle : (x (i + 1) : ℝ) ≤ (t : ℝ) := (le_node_of_le hstep (by omega) (by omega)).trans h1
+    have hle : (x (i + 1) : ℝ) ≤ (t : ℝ) :=
+      (piecewiseLinearInterpCLM.le_node_of_le hstep (by omega) (by omega)).trans h1
     have hmax : max ((t : ℝ) - (x i : ℝ)) 0 = (t : ℝ) - (x i : ℝ) := by
       refine max_eq_left ?_
-      have : (x i : ℝ) ≤ (t : ℝ) := (le_node_of_le hstep (by omega) (by omega)).trans h1
+      have : (x i : ℝ) ≤ (t : ℝ) :=
+        (piecewiseLinearInterpCLM.le_node_of_le hstep (by omega) (by omega)).trans h1
       linarith
     have hmin : min ((t : ℝ) - (x i : ℝ)) ((x (i + 1) : ℝ) - (x i : ℝ))
         = (x (i + 1) : ℝ) - (x i : ℝ) := min_eq_right (by linarith)
@@ -920,7 +922,8 @@ theorem piecewiseLinearInterpCLM_apply_of_mem (hstep : ∀ i ≤ n, (x i : ℝ) 
   have hafter : ∀ i, j < i → i ≤ n → F i = 0 := by
     intro i hi hin
     have hd : (0 : ℝ) < (x (i + 1) : ℝ) - (x i : ℝ) := sub_pos.mpr (hstep i hin)
-    have hge : (t : ℝ) ≤ (x i : ℝ) := h2.trans (le_node_of_le hstep (by omega) (by omega))
+    have hge : (t : ℝ) ≤ (x i : ℝ) :=
+      h2.trans (piecewiseLinearInterpCLM.le_node_of_le hstep (by omega) (by omega))
     have hmax : max ((t : ℝ) - (x i : ℝ)) 0 = 0 := max_eq_right (by linarith)
     rw [hF]
     simp only [hmax]
@@ -1338,7 +1341,8 @@ theorem piecewisePolyInterpCLM_apply_of_mem (h : IsPanelNodes n m x node) (f : C
   have hbefore : ∀ j < k, F j = f (x (j + 1)) - f (x j) := by
     intro j hj
     have hjn : j ≤ n := by omega
-    have hle : (x (j + 1) : ℝ) ≤ (t : ℝ) := (le_node_of_le h.step (by omega) (by omega)).trans h1
+    have hle : (x (j + 1) : ℝ) ≤ (t : ℝ) :=
+      (piecewiseLinearInterpCLM.le_node_of_le h.step (by omega) (by omega)).trans h1
     have hlej : (x j : ℝ) ≤ (t : ℝ) := (h.step j hjn).le.trans hle
     rw [hF]
     simp only
@@ -1347,7 +1351,8 @@ theorem piecewisePolyInterpCLM_apply_of_mem (h : IsPanelNodes n m x node) (f : C
   -- the panels to the right of `t` contribute nothing
   have hafter : ∀ j, k < j → j ≤ n → F j = 0 := by
     intro j hj hjn
-    have hge : (t : ℝ) ≤ (x j : ℝ) := h2.trans (le_node_of_le h.step (by omega) (by omega))
+    have hge : (t : ℝ) ≤ (x j : ℝ) :=
+      h2.trans (piecewiseLinearInterpCLM.le_node_of_le h.step (by omega) (by omega))
     rw [hF]
     simp only
     rw [panelInterpCLM_apply, max_eq_right hge, min_eq_left (h.step j hjn).le,
@@ -2364,7 +2369,6 @@ private theorem abs_half_sub_le {k n : ℕ} (hk : k ≤ n) (hn : 1 ≤ n) :
     |1 / 2 - (k : ℝ)| ≤ (2 * (n : ℝ) - 1) / 2 := by
   have hkn : (k : ℝ) ≤ n := by exact_mod_cast hk
   have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
-  have hk0 : (0 : ℝ) ≤ k := Nat.cast_nonneg k
   rw [abs_le]
   constructor <;> linarith
 

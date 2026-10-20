@@ -181,7 +181,7 @@ theorem abs_transport_defect_le (ha : IntervalIntegrable a volume (x 0) (x (Fin.
   set S₃ := ∑ i, ∫ s in x i.castSucc..x i.succ, a₀ s * (u s - (W i).eval s) * (v i).eval s
     with hS₃
   have hD : pairing f v - (⟪W', v⟫ + transportForm x r ha ha₀ W v) = S₁ + S₂ + S₃ := by
-    rw [pairing_def, ← sum_integral_eval_mul_eq_inner, transportForm_apply, hS₁, hS₂, hS₃,
+    rw [pairing_def, BrokenPolynomial.inner_def, transportForm_apply, hS₁, hS₂, hS₃,
       ← Finset.sum_add_distrib, ← Finset.sum_add_distrib, ← Finset.sum_add_distrib,
       ← Finset.sum_sub_distrib]
     refine Finset.sum_congr rfl fun i _ => ?_

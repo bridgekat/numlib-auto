@@ -341,12 +341,13 @@ theorem isProjector_conjTranspose {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsPr
 /-- Saad (1.69): `Null Pᴴ = (Ran P)ᗮ`. -/
 theorem ker_conjTranspose_eq_orthogonal_range (P : Matrix (Fin n) (Fin n) 𝕜) :
     LinearMap.ker (toEuclideanLin Pᴴ) = (LinearMap.range (toEuclideanLin P))ᗮ := by
-  rw [toEuclideanLin_conjTranspose, LinearMap.orthogonal_range]
+  rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.orthogonal_range]
 
 /-- Saad (1.70): `Null P = (Ran Pᴴ)ᗮ`. -/
 theorem ker_eq_orthogonal_range_conjTranspose (P : Matrix (Fin n) (Fin n) 𝕜) :
     LinearMap.ker (toEuclideanLin P) = (LinearMap.range (toEuclideanLin Pᴴ))ᗮ := by
-  rw [toEuclideanLin_conjTranspose, LinearMap.orthogonal_range, LinearMap.adjoint_adjoint]
+  rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.orthogonal_range,
+    LinearMap.adjoint_adjoint]
 
 /-! ### Proposition 1.37 -/
 

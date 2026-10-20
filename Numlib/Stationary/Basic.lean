@@ -5,6 +5,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.LinearAlgebra.Eigenspace.Basic
 import Mathlib.Topology.MetricSpace.Contracting
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.Analysis.Normed.Ring.Inverse
 
 /-!
@@ -49,7 +50,8 @@ def step (G : E →L[𝕜] E) (f : E) (x : E) : E := G x + f
 
 /-- Submultiplicativity of the operator norm, including the exponent `0`, where `NormOneClass` is
 unavailable because `E` may be trivial. -/
-private theorem norm_pow_le_pow_norm (G : E →L[𝕜] E) (k : ℕ) : ‖G ^ k‖ ≤ ‖G‖ ^ k := by
+theorem _root_.ContinuousLinearMap.norm_pow_le_pow_norm (G : E →L[𝕜] E) (k : ℕ) :
+    ‖G ^ k‖ ≤ ‖G‖ ^ k := by
   induction k with
   | zero =>
     rw [pow_zero, pow_zero]
@@ -98,19 +100,19 @@ private theorem norm_sub_fixed_le (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f =
   nlinarith
 
 /-- A priori bound `‖x_k - x*‖ ≤ ‖G‖^k / (1 - ‖G‖) ‖x₁ - x₀‖` for `‖G‖ < 1`. -/
-theorem norm_iterate_sub_le [CompleteSpace E] (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x')
+theorem norm_iterate_sub_le (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x')
     (x₀ : E) (k : ℕ) :
     ‖(step G f)^[k] x₀ - x'‖ ≤ ‖G‖ ^ k / (1 - ‖G‖) * ‖step G f x₀ - x₀‖ := by
   rw [step_iterate_sub G f hfix]
   calc ‖(G ^ k) (x₀ - x')‖ ≤ ‖G ^ k‖ * ‖x₀ - x'‖ := (G ^ k).le_opNorm _
     _ ≤ ‖G‖ ^ k * (‖step G f x₀ - x₀‖ / (1 - ‖G‖)) := by
         gcongr
-        · exact norm_pow_le_pow_norm G k
+        · exact G.norm_pow_le_pow_norm k
         · exact norm_sub_fixed_le G f hG hfix x₀
     _ = ‖G‖ ^ k / (1 - ‖G‖) * ‖step G f x₀ - x₀‖ := by ring
 
 /-- A posteriori bound `‖x_k - x*‖ ≤ ‖G‖ / (1 - ‖G‖) ‖x_k - x_{k-1}‖`. -/
-theorem norm_iterate_sub_le' [CompleteSpace E] (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x')
+theorem norm_iterate_sub_le' (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x')
     (x₀ : E) (k : ℕ) :
     ‖(step G f)^[k + 1] x₀ - x'‖ ≤
       ‖G‖ / (1 - ‖G‖) * ‖(step G f)^[k + 1] x₀ - (step G f)^[k] x₀‖ := by
@@ -378,17 +380,6 @@ theorem exists_norm_iterate_sub_le [CompleteSpace F] (G : F →L[ℂ] F) {r : NN
     calc ‖(G ^ k) (x₀ - x')‖ ≤ ‖G ^ k‖ * ‖x₀ - x'‖ := (G ^ k).le_opNorm _
       _ ≤ C * (r : ℝ) ^ k * ‖x₀ - x'‖ := by gcongr; exact hC k
 
-/-- `C ^ (1/k) → 1` for a positive constant `C`, because the exponent tends to `0`.  This is what
-turns the geometric bound `‖G^k‖ ≤ C r^k` into the asymptotic rate `r`. -/
-private theorem tendsto_const_rpow_one_div {C : ℝ} (hC : 0 < C) :
-    Tendsto (fun k : ℕ => C ^ (1 / k : ℝ)) atTop (𝓝 1) := by
-  have h0 : Tendsto (fun k : ℕ => Real.log C * (1 / k : ℝ)) atTop (𝓝 0) := by
-    simpa using (tendsto_one_div_atTop_nhds_zero_nat (𝕜 := ℝ)).const_mul (Real.log C)
-  have h1 := (Real.continuous_exp.tendsto 0).comp h0
-  rw [Real.exp_zero] at h1
-  refine h1.congr fun k => ?_
-  rw [Function.comp_apply, ← Real.rpow_def_of_pos hC]
-
 /-- **No starting vector beats the spectral radius.**  The limsup of the `k`-th root of the relative
 growth `‖G^k d₀‖ / ‖d₀‖` is at most `ρ(G)`, for every `d₀`: the geometric bound `‖G^k‖ ≤ C r^k`
 valid for each `r > ρ(G)` gives `(‖G^k d₀‖/‖d₀‖)^{1/k} ≤ C^{1/k} r → r`.
@@ -440,7 +431,7 @@ theorem limsup_norm_pow_apply_rpow_le_spectralRadius [CompleteSpace F] (G : F �
       _ = max C 1 ^ (1 / k : ℝ) * r := by
           rw [one_div, Real.pow_rpow_inv_natCast r.coe_nonneg (by omega)]
   have hlim : Tendsto (fun k : ℕ => max C 1 ^ (1 / k : ℝ) * (r : ℝ)) atTop (𝓝 ((1 : ℝ) * r)) :=
-    (tendsto_const_rpow_one_div hC1).mul_const _
+    (tendsto_const_rpow_one_div_natCast hC1).mul_const _
   refine Filter.limsup_le_of_le hcob ?_
   filter_upwards [eventually_ge_atTop 1,
     hlim.eventually_lt_const (by rw [one_mul]; exact hrc')] with k hk1 hk2

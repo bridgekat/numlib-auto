@@ -682,7 +682,6 @@ private theorem exists_stable_lagrangian {M : Matrix (Fin n ⊕ Fin n) (Fin n �
   have hsum := Submodule.finrank_sup_add_finrank_inf_eq Xs Xu
   rw [htop, finrank_top, Module.finrank_fintype_fun_eq_card, Fintype.card_sum,
     Fintype.card_fin] at hsum
-  have hinf := Submodule.finrank_le (Xs ⊓ Xu)
   have hd : Module.finrank ℝ Xs = n := by omega
   obtain ⟨X₀, h1, hMX, hcol⟩ := exists_orthonormal_cols M Xs
     (fun x hx => mulVec_mem_realSub hx) hd

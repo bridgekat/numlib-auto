@@ -53,9 +53,8 @@ derivative: the `(n + 1)`-st derivative of `f` along `m` is the derivative along
 theorem iteratedFDeriv_succ_apply_left_of_differentiableAt
     (h : DifferentiableAt ℝ (iteratedFDeriv ℝ n f) x) (m : Fin (n + 1) → E) :
     iteratedFDeriv ℝ (n + 1) f x m
-      = fderiv ℝ (fun z ↦ iteratedFDeriv ℝ n f z (Fin.tail m)) x (m 0) := by
-  rw [fderiv_continuousMultilinear_apply_const h, iteratedFDeriv_succ_apply_left]
-  rfl
+      = fderiv ℝ (fun z ↦ iteratedFDeriv ℝ n f z (Fin.tail m)) x (m 0) :=
+  h.iteratedFDeriv_succ_apply_left'
 
 /-- For a smooth function, an extra derivative in the direction `v` may be taken either outside or
 inside the `n` iterated derivatives. Iterating this is the symmetry of higher derivatives; only

@@ -424,11 +424,9 @@ theorem IsMaximalMonotone.exists_forall_norm_expYosida_sub_lt (hA : A.IsMaximalM
     (hA.norm_yosida_apply_le_norm_apply hd v₀)
   rw [sub_self, norm_zero, zero_pow two_ne_zero, zero_add] at h
   refine lt_of_pow_lt_pow_left₀ 2 hε.le (h.trans_lt ?_)
-  have hM : 0 ≤ M := norm_nonneg _
   have key : (c + d) * (t * M ^ 2) < 2 * (ε ^ 2 / (8 * (t + 1) * (M ^ 2 + 1))) * ((t + 1) *
       (M ^ 2 + 1)) := by
     have h1 : t * M ^ 2 ≤ (t + 1) * (M ^ 2 + 1) := by nlinarith
-    have h2 : 0 < (t + 1) * (M ^ 2 + 1) := by positivity
     calc (c + d) * (t * M ^ 2) ≤ (c + d) * ((t + 1) * (M ^ 2 + 1)) := by gcongr
       _ < 2 * (ε ^ 2 / (8 * (t + 1) * (M ^ 2 + 1))) * ((t + 1) * (M ^ 2 + 1)) := by
           gcongr

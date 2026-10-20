@@ -224,18 +224,6 @@ namespace IsMultiresolutionAnalysis
 
 variable {V : ℤ → Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ))} {φ : Lp ℝ 2 (volume : Measure ℝ)}
 
-/-- The image of the closure of a subspace under a surjective linear isometry is the closure of the
-image. -/
-private theorem map_topologicalClosure
-    (D : Lp ℝ 2 (volume : Measure ℝ) ≃ₗᵢ[ℝ] Lp ℝ 2 (volume : Measure ℝ))
-    (K : Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ))) :
-    K.topologicalClosure.map D.toLinearEquiv.toLinearMap
-      = (K.map D.toLinearEquiv.toLinearMap).topologicalClosure := by
-  refine SetLike.ext' ?_
-  rw [Submodule.map_coe, Submodule.topologicalClosure_coe, Submodule.topologicalClosure_coe,
-    Submodule.map_coe]
-  exact D.toHomeomorph.image_closure _
-
 /-- **The scaling system of every level is orthonormal.** The level-`j` system is the image of the
 level-`0` system under the unitary dilation by `2 ^ j`.
 
@@ -257,7 +245,7 @@ theorem eq_topologicalClosure_span_scalingSystem (h : IsMultiresolutionAnalysis 
         Set.range (translates φ) = Set.range (scalingSystem φ j) := by
     rw [← Set.range_comp]
     rfl
-  rw [h.eq_map_dilation j, h.eq_topologicalClosure_span, map_topologicalClosure,
+  rw [h.eq_map_dilation j, h.eq_topologicalClosure_span, Haar.map_topologicalClosure,
     Submodule.map_span, himg]
 
 theorem scalingSystem_mem (h : IsMultiresolutionAnalysis V φ) (j k : ℤ) :
@@ -426,7 +414,7 @@ theorem map_dilation_V (h : IsMultiresolutionAnalysis V φ) (i j : ℤ) :
     rw [← Set.range_comp]
     exact congrArg Set.range (funext fun k => dilationₗᵢ_scalingSystem φ i j k)
   rw [h.eq_topologicalClosure_span_scalingSystem j,
-    h.eq_topologicalClosure_span_scalingSystem (i + j), map_topologicalClosure,
+    h.eq_topologicalClosure_span_scalingSystem (i + j), Haar.map_topologicalClosure,
     Submodule.map_span, himg]
 
 theorem dilation_mem_V (h : IsMultiresolutionAnalysis V φ) {i j : ℤ}

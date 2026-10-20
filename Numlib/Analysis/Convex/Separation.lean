@@ -48,7 +48,7 @@ relative boundary point, rest on the line segment principle and on `ri C ≠ ∅
 * `separatesStrongly_iff_zero_notMem_closure_sub` — strong separation is possible exactly when
   `0 ∉ closure (s - t)`; `separatesStrongly_of_disjoint_isCompact_isClosed` is the compact/closed
   case.
-* `isClosed_convex_eq_iInter_halfspaces` — a closed convex set is the intersection of the closed
+* Mathlib's `RCLike.iInter_halfSpaces_eq'` — a closed convex set is the intersection of the closed
   half-spaces containing it ([rockafellar1970convex] Theorem 11.5), with
   `mem_iff_forall_le_halfSpace` as its pointwise form and `closure_convexHull_eq_iInter_halfspaces`
   for an arbitrary set.
@@ -211,12 +211,6 @@ theorem iInf₂_lt_top_of_nonempty (ht : t.Nonempty) : (⨅ x ∈ t, (f x : ERea
   obtain ⟨x, hx⟩ := ht
   exact lt_of_le_of_lt (iInf₂_le_coe_apply hx) (EReal.coe_lt_top _)
 
-/-- Over a nonempty set the infimum is at most the supremum. -/
-theorem iInf₂_le_iSup₂_of_nonempty (hs : s.Nonempty) :
-    (⨅ x ∈ s, (f x : EReal)) ≤ ⨆ x ∈ s, (f x : EReal) := by
-  obtain ⟨x, hx⟩ := hs
-  exact (iInf₂_le_coe_apply hx).trans (coe_apply_le_iSup₂ hx)
-
 /-- Some hyperplane orthogonal to `f` separates two nonempty sets exactly when `f` never exceeds on
 `s` what it attains on `t`. -/
 theorem exists_separates_iff_iSup_le_iInf (hs : s.Nonempty) (ht : t.Nonempty) :
@@ -272,8 +266,8 @@ theorem exists_separatesProperly_iff_iSup_le_iInf (hs : s.Nonempty) (ht : t.None
     obtain ⟨h₁, h₂⟩ := separates_iff_iSup_le_iInf.1 hc.toSeparates
     refine ⟨h₁.trans h₂, ?_⟩
     rcases (separatesProperly_iff_iInf_lt_or_lt_iSup.1 hc).2 with hlt | hlt
-    · exact hlt.trans_le (h₂.trans (iInf₂_le_iSup₂_of_nonempty ht))
-    · exact lt_of_le_of_lt ((iInf₂_le_iSup₂_of_nonempty hs).trans h₁) hlt
+    · exact hlt.trans_le (h₂.trans (biInf_le_biSup ht))
+    · exact lt_of_le_of_lt ((biInf_le_biSup hs).trans h₁) hlt
   · rintro ⟨h₁, h₂⟩
     obtain ⟨a, ha⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
       (bot_lt_iSup₂_of_nonempty (f := f) hs).ne' (lt_of_le_of_lt h₁ (iInf₂_lt_top_of_nonempty ht))
@@ -282,7 +276,7 @@ theorem exists_separatesProperly_iff_iSup_le_iInf (hs : s.Nonempty) (ht : t.None
     rcases lt_or_ge (⨅ x ∈ s, (f x : EReal)) (a : EReal) with hlt | hge
     · exact Or.inl hlt
     · have hEq : (⨅ x ∈ s, (f x : EReal)) = (a : EReal) :=
-        le_antisymm ((iInf₂_le_iSup₂_of_nonempty hs).trans ha.le) hge
+        le_antisymm ((biInf_le_biSup hs).trans ha.le) hge
       exact Or.inr (hEq ▸ h₂)
 
 /-- Strong separation by *some* hyperplane orthogonal to `f` is exactly a gap between the two
@@ -814,13 +808,6 @@ theorem mem_iff_forall_le_halfSpace (hs₁ : Convex ℝ s) (hs₂ : IsClosed s) 
   obtain ⟨f, c, hfs, hfx⟩ := geometric_hahn_banach_closed_point hs₁ hs₂ hx
   exact absurd (h f c fun y hy => (hfs y hy).le) (not_le.2 hfx)
 
-/-- **A closed convex set is the intersection of the closed half-spaces containing it.** -/
-theorem isClosed_convex_eq_iInter_halfspaces (hs₁ : Convex ℝ s) (hs₂ : IsClosed s) :
-    ⋂ (f : E →L[ℝ] ℝ) (c : ℝ) (_ : ∀ y ∈ s, f y ≤ c), {x | f x ≤ c} = s := by
-  ext x
-  simp only [Set.mem_iInter, Set.mem_ofPred]
-  exact (mem_iff_forall_le_halfSpace hs₁ hs₂).symm
-
 /-- The closed convex hull of an arbitrary set is the intersection of the closed half-spaces
 containing that set. -/
 theorem closure_convexHull_eq_iInter_halfspaces (s : Set E) :
@@ -832,7 +819,7 @@ theorem closure_convexHull_eq_iInter_halfspaces (s : Set E) :
       h y (subset_closure (subset_convexHull ℝ s hy))⟩
     exact closure_minimal (convexHull_min h (convex_halfSpace_le f.toLinearMap.isLinear c))
       (isClosed_le f.continuous continuous_const) hy
-  rw [← isClosed_convex_eq_iInter_halfspaces (convex_convexHull ℝ s).closure isClosed_closure]
+  rw [← RCLike.iInter_halfSpaces_eq' (𝕜 := ℝ) (convex_convexHull ℝ s).closure isClosed_closure]
   ext x
   simp only [Set.mem_iInter, Set.mem_ofPred]
   exact forall₂_congr fun f c => imp_congr_left (hkey f c)

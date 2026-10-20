@@ -133,7 +133,7 @@ on `K̂`. The nodes may lie on the boundary of `K̂`, which is why the represent
 theorem sum_apply_smul_ae_eq_fn_of_mem_polynomialSubmodule
     {Khat : Opens (EuclideanSpace ℝ (Fin d))}
     (hb : Bornology.IsBounded (Khat : Set (EuclideanSpace ℝ (Fin d)))) {k : ℕ}
-    {K : Set (EuclideanSpace ℝ (Fin d))} [CompactSpace K]
+    {K : Set (EuclideanSpace ℝ (Fin d))}
     (ι : SobolevEuclidean d (k + 1) 𝟚 Khat →L[ℝ] C(K, ℝ))
     (hι : ∀ u, ∃ ut : EuclideanSpace ℝ (Fin d) → ℝ, Continuous ut ∧
       SobolevMultiIndex.fn u =ᵐ[volume.restrict (Khat : Set (EuclideanSpace ℝ (Fin d)))] ut ∧

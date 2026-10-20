@@ -3591,20 +3591,6 @@ theorem exists_sub_correctedTrapezoid_eq (hab : a ≤ b) {g g' g'' g₃ g₄ : �
   rw [integral_peanoKernel_sq] at hξval
   linarith
 
-/-- The uniform mesh points `a + j H`, `H = (b - a)/m`, `j ≤ m`, lie in `[a, b]`. -/
-private theorem mesh_mem' (hab : a ≤ b) {m : ℕ} (hm : 0 < m) {j : ℕ} (hj : j ≤ m) :
-    a + j * ((b - a) / m) ∈ Icc a b := by
-  have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
-  have hj' : (j : ℝ) ≤ m := by exact_mod_cast hj
-  have h0 : (0 : ℝ) ≤ j := Nat.cast_nonneg _
-  have hH : 0 ≤ (b - a) / m := by
-    have : 0 ≤ b - a := by linarith
-    positivity
-  refine ⟨by nlinarith, ?_⟩
-  have : (j : ℝ) * ((b - a) / m) ≤ m * ((b - a) / m) := mul_le_mul_of_nonneg_right hj' hH
-  rw [mul_div_cancel₀ _ hmR.ne'] at this
-  linarith
-
 /-- **The composite corrected trapezoidal rule is the sum of the panel rules**: the derivative
 corrections at the interior nodes telescope away.
 
@@ -3647,7 +3633,7 @@ theorem sub_correctedTrapezoidSum_eq (hab : a < b) {m : ℕ} (hm : 0 < m) {g g' 
   have hxstep : ∀ j : ℕ, x (j + 1) - x j = H := by
     intro j; simp only [hxdef]; push_cast; ring
   have hxle : ∀ j : ℕ, x j ≤ x (j + 1) := fun j => by linarith [hxstep j, hHpos]
-  have hxmem : ∀ j ≤ m, x j ∈ Icc a b := fun j hj => mesh_mem' hab.le hm hj
+  have hxmem : ∀ j ≤ m, x j ∈ Icc a b := fun j hj => mesh_mem hab.le hm hj
   have hxsub : ∀ j < m, Icc (x j) (x (j + 1)) ⊆ Icc a b := fun j hj =>
     Icc_subset_Icc (hxmem j hj.le).1 (hxmem (j + 1) hj).2
   have hpanel : ∀ j < m, ∃ ξ ∈ Icc (x j) (x (j + 1)),

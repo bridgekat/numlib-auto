@@ -73,7 +73,6 @@ theorem continuousOn_prod_of_forall_norm_sub_le {X V F : Type*} [PseudoMetricSpa
   intro q hq
   rw [Metric.continuousWithinAt_iff]
   intro ε hε
-  have hC : 0 ≤ |C| + 1 := by positivity
   obtain ⟨δ₁, hδ₁, h₁⟩ := Metric.continuousWithinAt_iff.1 (hv q.2 hq.2) (ε / (2 * (|C| + 1)))
     (by positivity)
   obtain ⟨δ₂, hδ₂, h₂⟩ := Metric.continuousWithinAt_iff.1 (hcont (v q.2) q.1 hq.1) (ε / 2)

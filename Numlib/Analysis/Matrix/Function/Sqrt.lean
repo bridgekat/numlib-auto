@@ -268,7 +268,6 @@ theorem denmanBeavers_fst_eq_mul_snd {A : Matrix n n ℂ} (hA : spectrum ℂ A �
   | succ k ih =>
     obtain ⟨h1, h2⟩ := ih
     obtain ⟨-, hX, hY⟩ := newtonSignIterate_fromBlocks hA k
-    have hYdet := (isUnit_iff_isUnit_det _).mp hY
     have hinv : (denmanBeavers A k).1⁻¹ = (denmanBeavers A k).2⁻¹ * A⁻¹ := by
       rw [h1, mul_inv_rev]
     refine ⟨?_, ?_⟩

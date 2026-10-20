@@ -931,7 +931,7 @@ theorem SobolevMultiIndex.mem_zero_of_fn_ae_eq_of_tsupport_subset (hp' : p ≠ �
   SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact hp' u hvc hvΩ
     (hu.mono fun x hx hxK ↦ by rw [hx]; exact image_eq_zero_of_notMem_tsupport hxK)
 
-omit [μ.IsAddHaarMeasure] in
+omit [μ.IsAddHaarMeasure] [Fact (1 ≤ p)] in
 /-- A `C^k` function with compact support is the function of an element of `W^{k,p}(Ω)`: the
 `C^∞` case is `ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport`. -/
 theorem ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport' [μ.IsAddHaarMeasure] {v : E → F}

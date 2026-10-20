@@ -822,7 +822,7 @@ finite-dimensional normed space, `a * b = 1` implies `b * a = 1`. `E →L[𝕜] 
 finite-dimensional algebra over the field `𝕜`, hence an Artinian ring, and Artinian rings are
 Dedekind-finite. This is the hypothesis `isUnit_of_norm_mul_sub_one_lt` asks of the operator
 ring. -/
-instance ContinuousLinearMap.isDedekindFiniteMonoid [CompleteSpace 𝕜] [FiniteDimensional 𝕜 E] :
+instance ContinuousLinearMap.isDedekindFiniteMonoid [FiniteDimensional 𝕜 E] :
     IsDedekindFiniteMonoid (E →L[𝕜] E) :=
   have : IsArtinianRing (E →L[𝕜] E) := IsArtinianRing.of_finite 𝕜 (E →L[𝕜] E)
   inferInstance

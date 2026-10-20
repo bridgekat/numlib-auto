@@ -596,8 +596,7 @@ theorem MemSobolev.memLp_iteratedFDeriv (h : MemSobolev f k p Ω μ) (hf : ContD
     ((ContDiffOn.hasWeakIteratedFDerivOn hf (by simp)).weakIteratedFDeriv_ae_eq (μ := μ))
 
 /-- A sequence of bump functions centred at the origin whose outer radii tend to `0`. -/
-theorem exists_seq_contDiffBump_tendsto_rOut_zero (E : Type*) [NormedAddCommGroup E]
-    [NormedSpace ℝ E] :
+theorem exists_seq_contDiffBump_tendsto_rOut_zero (E : Type*) [NormedAddCommGroup E] :
     ∃ φ : ℕ → ContDiffBump (0 : E), Tendsto (fun j ↦ (φ j).rOut) atTop (𝓝 0) := by
   refine ⟨fun j ↦ ⟨1 / (2 * (j + 2)), 1 / (j + 2), by positivity, ?_⟩, ?_⟩
   · apply div_lt_div_of_pos_left one_pos (by positivity)

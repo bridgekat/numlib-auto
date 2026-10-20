@@ -632,7 +632,7 @@ a `K`-basis in which multiplication by `X` has matrix `J i`, then `f` has matrix
 `Matrix.blockDiagonal' J` in the transported basis. -/
 private theorem exists_basis_toMatrix_eq_blockDiagonal' (f : End K V)
     {d : ℕ} {N : Fin d → Type*} [∀ i, AddCommGroup (N i)] [∀ i, Module K[X] (N i)]
-    [∀ i, Module K (N i)] [∀ i, IsScalarTower K K[X] (N i)]
+    [∀ i, Module K (N i)]
     {e : Fin d → ℕ} (c : ∀ i, Basis (Fin (e i)) K (N i))
     (J : ∀ i, Matrix (Fin (e i)) (Fin (e i)) K)
     (E : V ≃ₗ[K] ∀ i, N i) (hE : ∀ v, E (f v) = (X : K[X]) • E v)

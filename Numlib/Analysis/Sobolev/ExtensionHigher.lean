@@ -102,21 +102,6 @@ theorem ExtensionHigher.exists_contDiff_eqOn_one_hasCompactSupport {K V : Set E}
   exact ⟨θ, hθ, hθ1, hLc.of_isClosed_subset (isClosed_tsupport θ) (hθL.trans interior_subset),
     hθL.trans (interior_subset.trans hLV)⟩
 
-omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- A `C^n` function with support in an open set `Q` times a `C^n` function on `Q` is `C^n`
-everywhere. -/
-theorem ExtensionHigher.contDiff_mul_of_tsupport_subset {n : WithTop ℕ∞} {χ f : E → ℝ}
-    (hχ : ContDiff ℝ n χ) {Q : Set E} (hQ : IsOpen Q) (hf : ContDiffOn ℝ n f Q)
-    (hχQ : tsupport χ ⊆ Q) : ContDiff ℝ n fun y ↦ χ y * f y := by
-  rw [contDiff_iff_contDiffAt]
-  intro y
-  by_cases hy : y ∈ Q
-  · exact hχ.contDiffAt.mul ((hf y hy).contDiffAt (hQ.mem_nhds hy))
-  · have hy' : y ∉ tsupport χ := fun h ↦ hy (hχQ h)
-    refine (contDiffAt_const (c := (0 : ℝ))).congr_of_eventuallyEq ?_
-    filter_upwards [(isClosed_tsupport χ).isOpen_compl.mem_nhds hy'] with z hz
-    rw [image_eq_zero_of_notMem_tsupport hz, zero_mul]
-
 end Multiplier
 
 /-! ### Transport along a `C^k` diffeomorphism at every order -/
@@ -126,19 +111,6 @@ section Transport
 variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 open SobolevMultiIndex
-
-/-- A vector of `ℝ^N` is the sum of its coordinates times the basis vectors. -/
-theorem ExtensionHigher.eq_sum_single_smul (z : EuclideanSpace ℝ (Fin N)) :
-    z = ∑ k, z k • EuclideanSpace.single k (1 : ℝ) := by
-  have := (EuclideanSpace.basisFun (Fin N) ℝ).sum_repr z
-  simpa [EuclideanSpace.basisFun_repr, EuclideanSpace.basisFun_apply] using this.symm
-
-/-- A linear functional on `ℝ^N` evaluated at `z` is the sum of `z_k` times its values on the
-basis vectors. -/
-theorem ExtensionHigher.clm_apply_eq_sum_single (L : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ)
-    (z : EuclideanSpace ℝ (Fin N)) : L z = ∑ k, z k * L (EuclideanSpace.single k 1) := by
-  conv_lhs => rw [ExtensionHigher.eq_sum_single_smul z, map_sum]
-  simp only [map_smul, smul_eq_mul]
 
 /-- **`W^{k,p}` is preserved by a `C^k` diffeomorphism, at every order and exponent**: for a `C¹`
 diffeomorphism `H : Ω' → Ω` with bounded Jacobians and inverse `J`, with `J` of class `C^k` on an
@@ -184,7 +156,7 @@ theorem MemSobolevMultiIndex.comp_diffeoOn_of_order (k : ℕ) :
       exact (EuclideanSpace.proj l).contDiff.comp_contDiffOn (hdJ.clm_apply contDiffOn_const)
     have hmult : ∀ i l, IsContDiffConstOffCompact k fun x ↦ χ x * c i l x := fun i l ↦
       IsContDiffConstOffCompact.of_hasCompactSupport
-        (ExtensionHigher.contDiff_mul_of_tsupport_subset (hχ.of_le (by simp)) hV (hcV i l) hχV)
+        ((hχ.of_le (by simp)).mul_contDiffOn_of_tsupport_subset hV (hcV i l) hχV)
         hχc.mul_right
     -- `w ∈ W^{k,p}(Ω')`, its partial derivatives `g l ∈ W^{k,p}(Ω')`, and a tensor derivative `Dw`
     obtain ⟨hw1, hwd⟩ := memSobolevMultiIndex_succ_iff.1 hw
@@ -222,7 +194,7 @@ theorem MemSobolevMultiIndex.comp_diffeoOn_of_order (k : ℕ) :
       filter_upwards [ae_all_iff.2 hae, self_mem_ae_restrict Ω.isOpen.measurableSet] with x hx hxΩ
       simp only [continuousMultilinearCurryFin1_symm_apply, Matrix.cons_val_zero,
         ContinuousLinearMap.comp_apply]
-      rw [ExtensionHigher.clm_apply_eq_sum_single (Dw (J x))
+      rw [ContinuousLinearMap.apply_eq_sum_single (Dw (J x))
         (fderiv ℝ J x (EuclideanSpace.single i 1))]
       refine Finset.sum_congr rfl fun l _ ↦ ?_
       rw [hx l, hc, hχ1 (hΩK hxΩ), Pi.one_apply, one_mul]

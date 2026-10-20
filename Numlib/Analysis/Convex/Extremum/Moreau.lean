@@ -93,7 +93,7 @@ theorem convexFn_quadFn : ConvexFn (quadFn B) := by
 omit [IsInnerPairing B] in
 /-- `x ↦ w (z - x)` is proper: it is finite everywhere. -/
 theorem properConvex_quadFn_sub (z : E) : ProperConvex (fun x => quadFn B (z - x)) :=
-  ⟨⟨z, mem_convexDom.2 (lt_top_iff_ne_top.2 (quadFn_ne_top _))⟩, fun _ => quadFn_ne_bot _⟩
+  properConvex_coe fun x => B (z - x) (z - x) / 2
 
 /-- **The quadratic is self-conjugate** under its own pairing: `w* = w`. The supremum
 `⨆ x (B x y - ½ B x x)` has defect `½ B (x - y) (x - y)` and is attained at `x = y`. -/
@@ -170,11 +170,6 @@ private theorem iInf_comp_sub {α : Type*} [AddCommGroup α] (φ : α → EReal)
       (le_of_eq (by rw [sub_sub_cancel])))
     (le_iInf fun x => iInf_le φ (z - x))
 
-private theorem iInf_comp_neg {α : Type*} [AddCommGroup α] (φ : α → EReal) :
-    (⨅ y, φ y) = ⨅ y, φ (-y) :=
-  le_antisymm (le_iInf fun y => iInf_le φ (-y))
-    (le_iInf fun y => le_trans (iInf_le (fun w => φ (-w)) (-y)) (le_of_eq (by rw [neg_neg])))
-
 omit [IsContinuousInnerPairing B] [IsCompatiblePairing B] in
 /-- The **Moreau envelope** written out: `(f □ w) z = inf_x {f x + w (z - x)}`. -/
 theorem infConv_quadFn_apply (hb : ∀ x, f x ≠ ⊥) (z : E) :
@@ -216,7 +211,7 @@ theorem moreau_add (hf : ClosedProperConvexFn f) (z : E) :
   have hQD : convexConj B (f + fun x => quadFn B (z - x)) 0
       = infConv (convexConj B f) (quadFn B) z + ((-(B z z / 2) : ℝ) : EReal) := by
     rw [hex.convexConj_add_apply 0,
-      iInf_comp_neg fun y => convexConj B f (0 - y)
+      ← neg_surjective.iInf_comp fun y => convexConj B f (0 - y)
         + convexConj B (fun x => quadFn B (z - x)) y,
       hD, EReal.iInf_add_coe]
     exact iInf_congr hstep

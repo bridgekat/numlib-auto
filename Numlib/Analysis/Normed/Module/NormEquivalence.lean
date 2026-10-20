@@ -149,7 +149,7 @@ theorem tendsto_apply_iff_tendsto_norm (p : Seminorm ℝ E) (hp : ∀ x, p x = 0
 
 /-- A positive constant has `k`-th roots tending to `1`, which is why the factor between two
 equivalent norms is invisible to a `k`-th root asymptotic. -/
-private theorem tendsto_const_rpow_one_div {c : ℝ} (hc : 0 < c) :
+theorem _root_.tendsto_const_rpow_one_div_natCast {c : ℝ} (hc : 0 < c) :
     Tendsto (fun k : ℕ => c ^ (1 / k : ℝ)) atTop (𝓝 1) := by
   have h : Tendsto (fun k : ℕ => Real.log c * (1 / k : ℝ)) atTop (𝓝 0) := by
     simpa using (tendsto_one_div_atTop_nhds_zero_nat (𝕜 := ℝ)).const_mul (Real.log c)
@@ -168,8 +168,8 @@ theorem tendsto_rpow_one_div (p : Seminorm ℝ E) (hp : ∀ x : E, p x = 0 → x
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le
     (g := fun k : ℕ => c ^ (1 / k : ℝ) * ‖f k‖ ^ (1 / k : ℝ))
     (h := fun k : ℕ => C ^ (1 / k : ℝ) * ‖f k‖ ^ (1 / k : ℝ))
-    (by simpa using (tendsto_const_rpow_one_div hc).mul hf)
-    (by simpa using (tendsto_const_rpow_one_div hC).mul hf) (fun k => ?_) fun k => ?_
+    (by simpa using (tendsto_const_rpow_one_div_natCast hc).mul hf)
+    (by simpa using (tendsto_const_rpow_one_div_natCast hC).mul hf) (fun k => ?_) fun k => ?_
   · dsimp only
     rw [← Real.mul_rpow hc.le (norm_nonneg _)]
     exact Real.rpow_le_rpow (by positivity) (hb (f k)).1 (by positivity)

@@ -134,7 +134,7 @@ easy half of Lemma 1.15 in coordinates. -/
 theorem conjTranspose_apply_normalEigenBasis (hA : IsStarNormal A) (k : Fin n) :
     (Aᴴ ⬝ normalEigenBasis hA k) = conj (normalEigenvalues hA k) • normalEigenBasis hA k := by
   have hT := Matrix.isStarNormal_toEuclideanLin_iff.2 hA
-  rw [Matrix.toEuclideanLin_conjTranspose]
+  rw [Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
   refine mem_eigenspace_iff.1 ?_
   rw [LinearMap.IsStarNormal.eigenspace_adjoint hT]
   exact mem_eigenspace_iff.2 (apply_normalEigenBasis hA k)
@@ -146,7 +146,7 @@ theorem inner_normalEigenBasis_apply (hA : IsStarNormal A) (k : Fin n)
     inner ℂ (normalEigenBasis hA k) (A ⬝ x) =
       normalEigenvalues hA k * inner ℂ (normalEigenBasis hA k) x := by
   have h := LinearMap.adjoint_inner_left (toEuclideanLin A) x (normalEigenBasis hA k)
-  rw [← Matrix.toEuclideanLin_conjTranspose, conjTranspose_apply_normalEigenBasis hA k,
+  rw [← Matrix.toEuclideanLin_conjTranspose_eq_adjoint, conjTranspose_apply_normalEigenBasis hA k,
     inner_smul_left, RingHomCompTriple.comp_apply, RingHom.id_apply] at h
   exact h.symm
 
@@ -163,14 +163,14 @@ theorem lemma_1_15 {A : Matrix (Fin n) (Fin n) ℂ} :
   constructor
   · intro hT μ v hv
     refine ⟨conj μ, ?_⟩
-    rw [Matrix.toEuclideanLin_conjTranspose]
+    rw [Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
     refine mem_eigenspace_iff.1 ?_
     rw [LinearMap.IsStarNormal.eigenspace_adjoint hT]
     exact mem_eigenspace_iff.2 hv
   · intro h
     refine LinearMap.isStarNormal_of_adjoint_apply_eq_smul fun μ v hv => ?_
     obtain ⟨ν, hν⟩ := h μ v hv
-    exact ⟨ν, by rwa [Matrix.toEuclideanLin_conjTranspose] at hν⟩
+    exact ⟨ν, by rwa [Matrix.toEuclideanLin_conjTranspose_eq_adjoint] at hν⟩
 
 /-- **Saad Corollary 1.16**: a normal matrix with real spectrum is Hermitian.  The converse is
 Theorem 1.19. -/
@@ -530,7 +530,7 @@ theorem inner_self_isReal_iff_isHermitian {A : Matrix (Fin n) (Fin n) ℂ} :
             (starRingEnd ℂ) (inner ℂ x ((toEuclideanLin A) x)) := (inner_conj_symm _ _).symm
         rw [h1, Complex.conj_im, neg_eq_zero]
         exact h x
-      rw [LinearMap.sub_apply, inner_sub_left, Matrix.toEuclideanLin_conjTranspose,
+      rw [LinearMap.sub_apply, inner_sub_left, Matrix.toEuclideanLin_conjTranspose_eq_adjoint,
         LinearMap.adjoint_inner_left, ← inner_conj_symm x (toEuclideanLin A x),
         Complex.conj_eq_iff_im.mpr him, sub_self]
     have hsub := (inner_map_self_eq_zero _).1 hzero

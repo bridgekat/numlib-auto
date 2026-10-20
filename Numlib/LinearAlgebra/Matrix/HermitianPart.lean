@@ -92,11 +92,6 @@ theorem skewHermitianPart_eq_hermitianPart (A : Matrix n n ℂ) :
   rw [mul_inv, Complex.inv_I]
   ring
 
-/-- The Hermitian part of `-i A` is `S = (A - Aᴴ)/(2i)`. -/
-theorem hermitianPart_neg_I_smul (A : Matrix n n ℂ) :
-    hermitianPart ((-Complex.I) • A) = skewHermitianPart A :=
-  (skewHermitianPart_eq_hermitianPart A).symm
-
 /-- `S = (A - Aᴴ)/(2i)` is Hermitian. -/
 theorem skewHermitianPart_isHermitian (A : Matrix n n ℂ) : (skewHermitianPart A).IsHermitian := by
   rw [skewHermitianPart_eq_hermitianPart]
@@ -138,7 +133,7 @@ theorem re_inner_hermitianPart (A : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n)
       = RCLike.re (inner 𝕜 (toEuclideanLin A x) x) := by
   have hH : toEuclideanLin (hermitianPart A) =
       (2⁻¹ : 𝕜) • (toEuclideanLin A + LinearMap.adjoint (toEuclideanLin A)) := by
-    rw [hermitianPart, map_smul, map_add, toEuclideanLin_conjTranspose]
+    rw [hermitianPart, map_smul, map_add, toEuclideanLin_conjTranspose_eq_adjoint]
   have hadj : inner 𝕜 (LinearMap.adjoint (toEuclideanLin A) x) x
       = starRingEnd 𝕜 (inner 𝕜 (toEuclideanLin A x) x) := by
     rw [LinearMap.adjoint_inner_left, inner_conj_symm]

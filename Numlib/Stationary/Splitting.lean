@@ -471,7 +471,7 @@ noncomputable def jorSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {
 
 omit [LinearOrder n] in
 /-- The inverse of a nonzero scalar multiple of a unit. -/
-private theorem ringInverse_smul {c : 𝕜} (hc : c ≠ 0) {m : Matrix n n 𝕜} (hm : IsUnit m) :
+theorem ringInverse_smul {c : 𝕜} (hc : c ≠ 0) {m : Matrix n n 𝕜} (hm : IsUnit m) :
     Ring.inverse (c • m) = c⁻¹ • Ring.inverse m := by
   have h1 : (c • m) * (c⁻¹ • Ring.inverse m) = 1 := by
     rw [smul_mul_smul_comm, mul_inv_cancel₀ hc, Ring.mul_inverse_cancel _ hm, one_smul]

@@ -535,9 +535,9 @@ theorem tendsto_eval_prod_of_tendsto (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo 
     (hu : u ∈ C) (hv : v ∈ D) (hus : Tendsto us atTop (𝓝 u)) (hvs : Tendsto vs atTop (𝓝 v)) :
     Tendsto (fun i => Ks i (us i, vs i)) atTop (𝓝 (K (u, v))) := by
   have hriC : C ⊆ ri C := fun z hz =>
-    Convex.interior_subset_relint hCc ⟨u, by rwa [hCo.interior_eq]⟩ (by rwa [hCo.interior_eq])
+    Convex.interior_subset_relint (by rwa [hCo.interior_eq])
   have hriD : D ⊆ ri D := fun z hz =>
-    Convex.interior_subset_relint hDc ⟨v, by rwa [hDo.interior_eq]⟩ (by rwa [hDo.interior_eq])
+    Convex.interior_subset_relint (by rwa [hDo.interior_eq])
   obtain ⟨r, hr, hrball⟩ := Metric.isOpen_iff.1 hCo u hu
   obtain ⟨r', hr', hrball'⟩ := Metric.isOpen_iff.1 hDo v hv
   have hSC : Metric.closedBall u (r / 2) ⊆ C := fun z hz =>
@@ -1054,7 +1054,7 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteD
 omit [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ U] in
 /-- `∂₂K(u, v)` is nonempty at every point of the open rectangle: a convex function has a
 subgradient wherever it is finite on a neighbourhood. -/
-theorem subdifferentialSndOn_nonempty (hDo : IsOpen D) (hDc : Convex ℝ D)
+theorem subdifferentialSndOn_nonempty (hDo : IsOpen D)
     (hK : ConvexOn ℝ D fun x => K (u, x)) (hv : v ∈ D) :
     (subdifferentialSndOn D K (u, v)).Nonempty := by
   have hf : ConvexFn (ConvexAnalysis.convexRestrict D fun x => ((K (u, x) : ℝ) : EReal)) :=
@@ -1062,7 +1062,7 @@ theorem subdifferentialSndOn_nonempty (hDo : IsOpen D) (hDc : Convex ℝ D)
   have hri : v
       ∈ ri (convexDom (ConvexAnalysis.convexRestrict D fun x => ((K (u, x) : ℝ) : EReal))) := by
     rw [convexDom_convexRestrict_coe]
-    exact Convex.interior_subset_relint hDc ⟨v, by rwa [hDo.interior_eq]⟩
+    exact Convex.interior_subset_relint
       (by rwa [hDo.interior_eq])
   rw [subdifferentialSndOn_eq_subdifferential (D := D) (K := K) (p := (u, v)) hv]
   exact subdifferential_nonempty_of_mem_relint_convexDom
@@ -1071,12 +1071,12 @@ theorem subdifferentialSndOn_nonempty (hDo : IsOpen D) (hDc : Convex ℝ D)
 omit [NormedAddCommGroup X] [InnerProductSpace ℝ X] [FiniteDimensional ℝ X] in
 /-- `∂₁K(u, v)` is nonempty at every point of the open rectangle: the convex statement read at
 `swapReal`. -/
-theorem superdifferentialFstOn_nonempty (hCo : IsOpen C) (hCc : Convex ℝ C)
+theorem superdifferentialFstOn_nonempty (hCo : IsOpen C)
     (hK : ConcaveOn ℝ C fun w => K (w, v)) (hu : u ∈ C) :
     (superdifferentialFstOn C K (u, v)).Nonempty := by
   rw [superdifferentialFstOn_eq_neg_subdifferentialSndOn_swapReal, Prod.swap_prod_mk,
       Set.nonempty_neg]
-  exact subdifferentialSndOn_nonempty (K := swapReal K) hCo hCc hK.neg hu
+  exact subdifferentialSndOn_nonempty (K := swapReal K) hCo hK.neg hu
 
 /-- Upper semicontinuity of `∂₁K` on the rectangle, in the concave variable alone. -/
 theorem eventually_nhds_superdifferentialFstOn_subset (hCo : IsOpen C) (hCc : Convex ℝ C)
@@ -1139,11 +1139,11 @@ theorem hasSaddleGradientAt_of_subdifferential_eq_singleton (hCo : IsOpen C) (hC
     simpa using hcont.tendsto 0
   filter_upwards [hmove.eventually hCmem, hmove.eventually hDmem, hmove.eventually hFsub,
     hmid.eventually hFsub, hmid.eventually hSsub] with h hxC hyD hFp hFm hSm
-  obtain ⟨b, hb⟩ := subdifferentialSndOn_nonempty (u := u) (v := v + h.2) hDo hDc
+  obtain ⟨b, hb⟩ := subdifferentialSndOn_nonempty (u := u) (v := v + h.2) hDo
     (hK.convex_snd u hu) hyD
-  obtain ⟨a, ha⟩ := superdifferentialFstOn_nonempty (u := u) (v := v + h.2) hCo hCc
+  obtain ⟨a, ha⟩ := superdifferentialFstOn_nonempty (u := u) (v := v + h.2) hCo
     (hK.concave_fst (v + h.2) hyD) hu
-  obtain ⟨a', ha'⟩ := superdifferentialFstOn_nonempty (u := u + h.1) (v := v + h.2) hCo hCc
+  obtain ⟨a', ha'⟩ := superdifferentialFstOn_nonempty (u := u + h.1) (v := v + h.2) hCo
     (hK.concave_fst (v + h.2) hyD) hxC
   have hbε : ‖b - q.2‖ ≤ c / 2 := by
     refine norm_sub_le_of_mem_singleton_add_closedBall ?_
@@ -1201,8 +1201,8 @@ theorem hasSaddleGradientAt_iff_saddleSubdifferentialOn_eq_singleton (hCo : IsOp
     HasSaddleGradientAt K q (u, v) ↔ saddleSubdifferentialOn C D K (u, v) = {q} := by
   refine ⟨saddleSubdifferentialOn_eq_singleton_of_hasSaddleGradientAt hCo hDo hK hu hv, fun h => ?_⟩
   obtain ⟨h₁, h₂⟩ := (saddleSubdifferentialOn_eq_singleton_iff
-    (superdifferentialFstOn_nonempty hCo hCc (hK.concave_fst v hv) hu)
-    (subdifferentialSndOn_nonempty hDo hDc (hK.convex_snd u hu) hv)).1 h
+    (superdifferentialFstOn_nonempty hCo (hK.concave_fst v hv) hu)
+    (subdifferentialSndOn_nonempty hDo (hK.convex_snd u hu) hv)).1 h
   exact hasSaddleGradientAt_of_subdifferential_eq_singleton hCo hCc hDo hDc hK hu hv h₁ h₂
 
 /-- The same without naming the gradient: differentiability and unique subdifferentiability are the

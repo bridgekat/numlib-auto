@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
@@ -49,18 +50,6 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 instance Submodule.finiteDimensional_span_range {ι : Type*} [Finite ι] (V : ι → E) :
     FiniteDimensional 𝕜 (Submodule.span 𝕜 (Set.range V)) :=
   Module.Finite.span_of_finite 𝕜 (Set.finite_range V)
-
-/-- Membership in the orthogonal complement of a span is orthogonality to the generators. -/
-private theorem mem_orthogonal_span_range_iff {ι : Type*} (W : ι → E) (x : E) :
-    x ∈ (Submodule.span 𝕜 (Set.range W))ᗮ ↔ ∀ j, inner 𝕜 (W j) x = 0 := by
-  rw [Submodule.mem_orthogonal']
-  refine ⟨fun h j => inner_eq_zero_symm.1 (h _ (Submodule.subset_span (Set.mem_range_self j))),
-    fun h y hy => ?_⟩
-  have hle : Submodule.span 𝕜 (Set.range W) ≤
-      LinearMap.ker ((innerSL 𝕜 x : E →L[𝕜] 𝕜) : E →ₗ[𝕜] 𝕜) := by
-    rw [Submodule.span_le, Set.range_subset_iff]
-    exact fun j => inner_eq_zero_symm.2 (h j)
-  exact hle hy
 
 namespace LinearMap
 
@@ -242,7 +231,7 @@ projector down, by `LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq`. -/
 theorem ker_obliqueProjectionOfBases :
     LinearMap.ker (obliqueProjectionOfBases 𝕜 V W) = (Submodule.span 𝕜 (Set.range W))ᗮ := by
   ext x
-  rw [LinearMap.mem_ker, mem_orthogonal_span_range_iff]
+  rw [LinearMap.mem_ker, Submodule.mem_orthogonal_span_range_iff]
   constructor
   · intro h j
     have hj := inner_apply_eq V W hVW x j
@@ -257,7 +246,7 @@ theorem ker_obliqueProjectionOfBases :
 `span W`, the test space. -/
 theorem sub_obliqueProjectionOfBases_apply_mem_orthogonal (x : E) :
     x - obliqueProjectionOfBases 𝕜 V W x ∈ (Submodule.span 𝕜 (Set.range W))ᗮ := by
-  rw [mem_orthogonal_span_range_iff]
+  rw [Submodule.mem_orthogonal_span_range_iff]
   intro j
   rw [inner_sub_right, inner_apply_eq V W hVW x j, sub_self]
 
@@ -308,15 +297,6 @@ theorem norm_smul_add_smul_eq_norm_add {s t : ℝ} (hs : 0 < s) (hst : s * t = 1
   exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) (by norm_num)).1 hsq
 
 namespace ContinuousLinearMap
-
-/-- A nonzero bounded idempotent has norm at least `1`. -/
-private theorem one_le_norm_of_isIdempotentElem {P : E →L[𝕜] E} (hP : IsIdempotentElem P)
-    (h0 : P ≠ 0) : 1 ≤ ‖P‖ := by
-  have hpos : 0 < ‖P‖ := norm_pos_iff.2 h0
-  have hle : ‖P‖ ≤ ‖P‖ * ‖P‖ := by
-    conv_lhs => rw [← hP]
-    exact norm_mul_le P P
-  nlinarith
 
 /-- For a norm-one projector the range is orthogonal to the kernel. -/
 private theorem inner_eq_zero_of_norm_eq_one {P : E →L[𝕜] E} (hnorm : ‖P‖ = 1) {y z : E}

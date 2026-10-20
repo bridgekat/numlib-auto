@@ -54,7 +54,7 @@ theorem injective_domRestrict (h : IsNondegeneratePair A K L) :
 
 /-- The image `A K` has the dimension of the test space, so the projector onto `A K` along `Lᗮ`
 exists. -/
-theorem finrank_map_eq (h : IsNondegeneratePair A K L) [FiniteDimensional 𝕜 K] :
+theorem finrank_map_eq (h : IsNondegeneratePair A K L) :
     finrank 𝕜 (K.map A) = finrank 𝕜 L := by
   rw [← LinearMap.range_domRestrict, LinearMap.finrank_range_of_inj h.injective_domRestrict]
   exact h.finrank_eq

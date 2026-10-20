@@ -265,11 +265,6 @@ theorem norm_sq_toEuclideanLin_apply (x : EuclideanSpace 𝕜 n) :
   simp only [hc] at key2
   exact_mod_cast key2
 
-/-- Composing with the conjugate transpose gives back the Gram matrix. -/
-theorem toEuclideanLin_conjTranspose_toEuclideanLin [DecidableEq m] (y : EuclideanSpace 𝕜 n) :
-    toEuclideanLin Aᴴ (toEuclideanLin A y) = toEuclideanLin (Aᴴ * A) y := by
-  rw [toLpLin_mul_same, LinearMap.comp_apply]
-
 /-! ### The singular system -/
 
 open scoped ComplexOrder in
@@ -327,7 +322,7 @@ theorem exists_singularSystem [DecidableEq m] :
   · intro j
     rw [smul_smul, mul_inv_cancel₀ (hne j), one_smul]
   · intro j
-    rw [map_smul, toEuclideanLin_conjTranspose_toEuclideanLin,
+    rw [map_smul, ← toEuclideanLin_mul_apply,
       toEuclideanLin_conjTranspose_mul_self_rightSingularBasis, smul_smul]
     congr 1
     have h := hne j
@@ -355,12 +350,6 @@ theorem exists_singularSystem [DecidableEq m] :
 section Pinv
 
 open scoped ComplexOrder
-
-/-- `x x⁻¹ x = x`, at `x = 0` too. -/
-private theorem mul_inv_mul_self (x : 𝕜) : x * x⁻¹ * x = x := by
-  rcases eq_or_ne x 0 with rfl | h
-  · simp
-  · rw [mul_inv_cancel₀ h, one_mul]
 
 /-- `x⁻¹ x x⁻¹ = x⁻¹`, at `x = 0` too. -/
 private theorem inv_mul_mul_inv (x : 𝕜) : x⁻¹ * x * x⁻¹ = x⁻¹ := by
@@ -438,7 +427,7 @@ theorem gram_mul_gramPinv_mul_gram : Aᴴ * A * A.gramPinv * (Aᴴ * A) = Aᴴ *
   rw [conjTranspose_mul_self_eq_conj_diagonal, gramPinv_def, conj_diagonal_mul_conj_diagonal,
     conj_diagonal_mul_conj_diagonal]
   congr 2
-  exact congrArg diagonal (funext fun i => mul_inv_mul_self _)
+  exact congrArg diagonal (funext fun i => mul_inv_mul_cancel _)
 
 /-- The second Penrose condition for the Gram matrix. -/
 theorem gramPinv_mul_gram_mul_gramPinv : A.gramPinv * (Aᴴ * A) * A.gramPinv = A.gramPinv := by
@@ -826,7 +815,7 @@ theorem exists_equiv_colSingularValues_eq_sortedSingularValues :
   set T : EuclideanSpace 𝕜 n →ₗ[𝕜] EuclideanSpace 𝕜 m := toEuclideanLin A with hT
   have hn : finrank 𝕜 (EuclideanSpace 𝕜 n) = Fintype.card n := finrank_euclideanSpace
   have hTT : LinearMap.adjoint T ∘ₗ T = toEuclideanLin (Aᴴ * A) := by
-    rw [toEuclideanLin_mul, toEuclideanLin_conjTranspose]
+    rw [toEuclideanLin_mul, toEuclideanLin_conjTranspose_eq_adjoint]
   have heig : T.isSymmetric_adjoint_comp_self.eigenvalues hn
       = (isHermitian_conjTranspose_mul_self A).eigenvalues₀ := by
     rw [IsHermitian.eigenvalues₀, T.isSymmetric_adjoint_comp_self.eigenvalues_eq_eigenvalues_iff]
@@ -1213,7 +1202,7 @@ theorem conjTranspose_shiftedRectDiagonal_mul_apply {o : Type*} (k : ℕ) (σ : 
     · exact fun h' => absurd (Finset.mem_univ _) h'
   · refine Finset.sum_eq_zero fun j _ => ?_
     rw [conjTranspose_apply, shiftedRectDiagonal_apply,
-      ite_eq_right (fun hij => h ⟨by omega, by have := j.isLt; omega⟩), star_zero, zero_mul]
+      ite_eq_right (fun hij => h ⟨by omega, by omega⟩), star_zero, zero_mul]
 
 /-- `Σᴴ v` for a shifted rectangular diagonal `Σ`: the vector form of
 `Matrix.conjTranspose_shiftedRectDiagonal_mul_apply`. -/
@@ -1303,14 +1292,8 @@ theorem unitaryOfBasis_transpose_apply {ι : Type*} [Fintype ι] [DecidableEq ι
 /-- The columns of a matrix with `Vᴴ V = 1` are orthonormal vectors of `EuclideanSpace`. -/
 theorem orthonormal_toLp_transpose_of_conjTranspose_mul_self_eq_one {ι r : Type*} [Fintype ι]
     [DecidableEq r] {V : Matrix ι r 𝕜} (hV : Vᴴ * V = 1) :
-    Orthonormal 𝕜 fun j => (WithLp.toLp 2 (Vᵀ j) : EuclideanSpace 𝕜 ι) := by
-  rw [orthonormal_iff_ite]
-  intro i j
-  have h := congrFun (congrFun hV i) j
-  rw [mul_apply, one_apply] at h
-  rw [← h, EuclideanSpace.inner_eq_star_dotProduct]
-  simp only [dotProduct, transpose_apply, Pi.star_apply, conjTranspose_apply]
-  exact Finset.sum_congr rfl fun k _ => mul_comm _ _
+    Orthonormal 𝕜 fun j => (WithLp.toLp 2 (Vᵀ j) : EuclideanSpace 𝕜 ι) :=
+  conjTranspose_mul_self_eq_one_iff_orthonormal.mp hV
 
 /-- **Orthonormal columns extend to a unitary matrix** ([golub2013matrix] Theorem 2.1.1): for
 `V` with `Vᴴ V = 1` and a placement `f` of its columns among those of an `ι × ι` matrix, there is a
@@ -1619,7 +1602,7 @@ theorem pinv_eq_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fi
   have h1 : S * S' * S = S := by
     rw [hS, hS', rectDiagonal_mul_rectDiagonal, rectDiagonal_mul_rectDiagonal]
     refine rectDiagonal_congr fun i him hin => ?_
-    rw [ite_eq_left him, ite_eq_left hin, mul_inv_mul_self]
+    rw [ite_eq_left him, ite_eq_left hin, mul_inv_mul_cancel]
   have h2 : S' * S * S' = S' := by
     rw [hS, hS', rectDiagonal_mul_rectDiagonal, rectDiagonal_mul_rectDiagonal]
     refine rectDiagonal_congr fun i hin him => ?_
@@ -1906,7 +1889,7 @@ theorem singularValues_eq_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (
   have hDsym : (toEuclideanLin (diagonal fun j => ((d j : ℝ) : 𝕜))).IsSymmetric :=
     isSymmetric_toEuclideanLin_iff.2 (isHermitian_diagonal_ofReal d)
   have hTT : LinearMap.adjoint T ∘ₗ T = toEuclideanLin (Aᴴ * A) := by
-    rw [toEuclideanLin_mul, toEuclideanLin_conjTranspose]
+    rw [toEuclideanLin_mul, toEuclideanLin_conjTranspose_eq_adjoint]
   have hchar : (LinearMap.adjoint T ∘ₗ T).charpoly
       = (toEuclideanLin (diagonal fun j => ((d j : ℝ) : 𝕜))).charpoly := by
     rw [hTT, toEuclideanLin, toLpLin_eq_toLin, Matrix.charpoly_toLin, Matrix.charpoly_toLin,

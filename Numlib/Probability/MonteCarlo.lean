@@ -85,7 +85,7 @@ variable {f : (Fin d → ℝ) → ℝ} {X : ℕ → Ω → (Fin d → ℝ)}
 
 /-- **The sample mean is unbiased**: `E[I_N(f)] = E[f(X 0)]` for identically distributed
 integrable samples and `N ≥ 1`. -/
-theorem integral_sampleMean [IsProbabilityMeasure μ] (hf : Measurable f)
+theorem integral_sampleMean (hf : Measurable f)
     (hint : Integrable (f ∘ X 0) μ)
     (hident : ∀ i, IdentDistrib (X i) (X 0) μ μ) {N : ℕ} (hN : 0 < N) :
     μ[sampleMean f X N] = μ[f ∘ X 0] := by

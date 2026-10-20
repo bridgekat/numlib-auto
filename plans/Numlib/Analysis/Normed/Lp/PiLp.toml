@@ -50,3 +50,6 @@ id = "norm_toLp_le_mul_norm_toLp"
 
 [[node]]
 id = "_root_.Matrix.dotProduct_self_eq_norm_sq"
+
+[[node]]
+id = "norm_le_norm_of_forall_norm_le"

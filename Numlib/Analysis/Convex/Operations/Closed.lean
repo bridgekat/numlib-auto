@@ -25,10 +25,8 @@ variable {E G : Type*} [TopologicalSpace E] [TopologicalSpace G] {g : G → ERea
 
 /-- Lower semicontinuity is preserved by precomposition with a continuous map. -/
 theorem lowerSemicontinuous_comp (hg : LowerSemicontinuous g) {φ : E → G} (hφ : Continuous φ) :
-    LowerSemicontinuous (g ∘ φ) := by
-  rw [lowerSemicontinuous_iff_isOpen_preimage]
-  intro y
-  exact (hg.isOpen_preimage y).preimage hφ
+    LowerSemicontinuous (g ∘ φ) :=
+  hg.comp hφ
 
 end Comp
 

@@ -194,7 +194,7 @@ theorem coe_zero : ((0 : MultiIndexLE ι k) : ι → ℕ) = 0 := rfl
 
 /-- The order of the multi-index `0` is `0`. Stated for the zero function rather than for
 `(0 : MultiIndexLE ι k)` because that is the form in which the order appears. -/
-theorem sum_zero : ∑ _i : ι, (0 : ι → ℕ) _i = 0 := by simp
+theorem sum_zero : ∑ _i : ι, (0 : ι → ℕ) _i = 0 := Fintype.sum_eq_zero _ fun _ ↦ rfl
 
 /-- The multi-indices of order at most `k'` embed into those of order at most `k ≥ k'`. -/
 theorem castLE_injective {k' : ℕ} (hk : k' ≤ k) :
@@ -430,11 +430,8 @@ section Products
 
 /-- The product of a finite sum of multisets is the product of the products. -/
 theorem prod_multiset_sum {ι M : Type*} [CommMonoid M] [Fintype ι] (f : ι → Multiset M) :
-    (∑ i, f i).prod = ∏ i, (f i).prod := by
-  classical
-  induction (Finset.univ : Finset ι) using Finset.cons_induction with
-  | empty => simp
-  | cons a s ha ih => rw [Finset.sum_cons, Multiset.prod_add, Finset.prod_cons, ih]
+    (∑ i, f i).prod = ∏ i, (f i).prod :=
+  Multiset.prod_sum f Finset.univ
 
 /-- A product over the tuple of directions naming a multi-index `α` is the product over the index
 type of the `α i`-th powers, the tuple listing `b i` exactly `α i` times. -/
@@ -892,7 +889,7 @@ set of `Ω`, the function underlying an element of `SobolevMultiIndex F b k p Ω
 `SobolevMultiIndex.memSobolevMultiIndex` this identifies the type with the space of Atkinson and
 Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition,
 Definition 7.2.2. -/
-theorem MemSobolevMultiIndex.exists_sobolevMultiIndex [Fact (1 ≤ p)] [FiniteDimensional ℝ E]
+theorem MemSobolevMultiIndex.exists_sobolevMultiIndex [FiniteDimensional ℝ E]
     [BorelSpace E] [CompleteSpace F] (h : MemSobolevMultiIndex b f k p Ω μ) :
     ∃ u : SobolevMultiIndex F b k p Ω μ, SobolevMultiIndex.fn u =ᵐ[μ.restrict (Ω : Set E)] f := by
   choose w hw hwp using h.2
@@ -1108,7 +1105,7 @@ theorem mem_testFunctions {u : SobolevMultiIndex F b k p Ω μ} :
 `SobolevMultiIndex.testFunctions`, so that submodule really is the image of `C_0^∞(Ω)` in
 `W^{k,p}(Ω)`: a test function is smooth with compact support, so all its derivatives `∂^α` are
 continuous with compact support and lie in `L^p(Ω)`. -/
-theorem _root_.TestFunction.exists_mem_sobolevMultiIndex_testFunctions [Fact (1 ≤ p)]
+theorem _root_.TestFunction.exists_mem_sobolevMultiIndex_testFunctions
     [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure]
     (φ : 𝓓(Ω, F)) :
     ∃ u ∈ testFunctions F b k p Ω μ, fn u =ᵐ[μ.restrict (Ω : Set E)] φ :=

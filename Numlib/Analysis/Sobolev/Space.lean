@@ -166,7 +166,7 @@ noncomputable def fn (u : SobolevTuple F k p Ω μ) : E → F := fun x ↦ (u 0 
 theorem fn_apply (u : SobolevTuple F k p Ω μ) (x : E) : u.fn x = (u 0 x) 0 := rfl
 
 /-- The function underlying a tuple lies in `L^p(Ω)`. -/
-theorem memLp_fn [Fact (1 ≤ p)] (u : SobolevTuple F k p Ω μ) :
+theorem memLp_fn (u : SobolevTuple F k p Ω μ) :
     MemLp u.fn p (μ.restrict (Ω : Set E)) :=
   (ContinuousMultilinearMap.apply ℝ (fun _ : Fin 0 ↦ E) F 0).comp_memLp' (Lp.memLp (u 0))
 
@@ -261,10 +261,12 @@ theorem mem_iff [IsLocallyFiniteMeasure μ] {u : SobolevTuple F k p Ω μ} :
       locallyIntegrableOn_weakDeriv := (Lp.memLp (u n)).locallyIntegrableOn Fact.out
       integral_smul_eq := h n }⟩
 
+omit [Fact (1 ≤ p)] in
 /-- The function underlying an element of `W^{k,p}(Ω)` lies in `L^p(Ω)`. -/
 theorem memLp (u : Sobolev F k p Ω μ) : MemLp (fn u) p (μ.restrict (Ω : Set E)) :=
   SobolevTuple.memLp_fn _
 
+omit [Fact (1 ≤ p)] in
 /-- The function underlying an element of `W^{k,p}(Ω)` belongs to `W^{k,p}(Ω)` in the sense of
 `MemSobolev`, that is, of Atkinson and Han, *Theoretical Numerical Analysis: A Functional Analysis
 Framework*, 3rd edition, Definition 7.2.2. -/

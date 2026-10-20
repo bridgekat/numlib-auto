@@ -97,7 +97,7 @@ theorem condNumber_smul {𝕜 : Type*} [NormedField 𝕜] [NormedAlgebra 𝕜 R]
 
 /-- Conditioning is submultiplicative: a product is no worse conditioned than the product of the
 conditionings of its factors. -/
-theorem condNumber_mul_le [NormOneClass R] {a b : R} (ha : IsUnit a) (hb : IsUnit b) :
+theorem condNumber_mul_le {a b : R} (ha : IsUnit a) (hb : IsUnit b) :
     condNumber (a * b) ≤ condNumber a * condNumber b := by
   obtain ⟨u, rfl⟩ := ha
   obtain ⟨v, rfl⟩ := hb

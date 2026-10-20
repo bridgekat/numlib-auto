@@ -163,11 +163,6 @@ open MeasureTheory
 
 variable [FiniteDimensional 𝕜 E]
 
-/-- A real polynomial, mapped into `𝕜` and evaluated at a real point. -/
-private theorem eval_map_ofReal (p : ℝ[X]) (t : ℝ) :
-    (p.map (algebraMap ℝ 𝕜)).eval ((t : ℝ) : 𝕜) = ((p.eval t : ℝ) : 𝕜) := by
-  rw [← RCLike.algebraMap_eq_ofReal, eval_map, eval₂_hom, RCLike.algebraMap_eq_ofReal]
-
 /-- The discrete spectral measure of the pair `(A, v)` for a symmetric `A` in finite dimension
 ([meurant2006lanczos], §2.2): the measure `∑_l ω_l δ_{λ_l}` on `ℝ` carried by the eigenvalues of
 `A`, with the weight `ω_l = |⟪u_l, v⟫|²` at the eigenvector `u_l`. Its total mass is `‖v‖²`, and the
@@ -206,8 +201,8 @@ theorem polyInner_eq_integral {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymmetr
       inner 𝕜 (hA.eigenvectorBasis hn i) (aeval A (r.map (algebraMap ℝ 𝕜)) v)
         = ((r.eval (hA.eigenvalues hn i) : ℝ) : 𝕜) *
           inner 𝕜 (hA.eigenvectorBasis hn i) v := fun r i => by
-    rw [← OrthonormalBasis.repr_apply_apply, hA.repr_aeval_apply hn, eval_map_ofReal,
-      OrthonormalBasis.repr_apply_apply]
+    rw [← OrthonormalBasis.repr_apply_apply, hA.repr_aeval_apply hn, eval_map_apply,
+      RCLike.algebraMap_eq_ofReal, OrthonormalBasis.repr_apply_apply]
   rw [integral_spectralMeasure, polyInner,
     ← OrthonormalBasis.sum_inner_mul_inner (hA.eigenvectorBasis hn)]
   push_cast

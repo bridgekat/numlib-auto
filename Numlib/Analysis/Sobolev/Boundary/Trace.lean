@@ -115,7 +115,7 @@ theorem integrable_of_continuous {G : Type*} [NormedAddCommGroup G] {f : 𝔼 �
 
 include B in
 /-- A continuous function is integrable on the bounded `Ω`. -/
-theorem integrableOn_of_continuous {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
+theorem integrableOn_of_continuous {G : Type*} [NormedAddCommGroup G]
     {f : 𝔼 → G} (hf : Continuous f) : IntegrableOn f (Ω : Set 𝔼) :=
   B.integrableOn_of_continuousOn hf.continuousOn
 

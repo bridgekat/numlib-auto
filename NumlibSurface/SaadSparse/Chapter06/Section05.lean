@@ -2882,13 +2882,14 @@ theorem mrsX_sub_mem (xO rO : ℕ → 𝔼) {m : ℕ}
       (Submodule.smul_mem _ _ (Submodule.sub_mem _ (hO (k + 1) le_rfl) (hmono ihk)))
 
 /-- **§6.5.8**: minimal residual smoothing of a sequence of Galerkin (FOM) iterates produces the
-minimal-residual (GMRES) iterates. -/
-theorem mrs_isMinResidualIterate (hA : IsUnit A) (xO rO : ℕ → 𝔼)
+minimal-residual (GMRES) iterates. Saad assumes `A` nonsingular throughout Chapter 6; this
+statement needs no such assumption. -/
+theorem mrs_isMinResidualIterate (xO rO : ℕ → 𝔼)
     (hr : ∀ j, rO j = b - op A (xO j)) (m : ℕ)
     (hO : ∀ i ≤ m, Krylov.IsGalerkinIterate (op A) b x₀ i (xO i)) :
     Krylov.IsMinResidualIterate (op A) b x₀ m (mrsX xO rO m) := by
   rw [(mrs_eq A b xO rO hr m).1]
-  exact Krylov.IsGalerkinIterate.mrs_isMinResidualIterate (injective_op_of_isUnit hA) m hO
+  exact Krylov.IsGalerkinIterate.mrs_isMinResidualIterate m hO
 
 /-- **§6.5.8**: minimal residual smoothing of the FOM approximations produces exactly the GMRES
 approximations. The FOM residuals are mutually orthogonal, so Lemma 6.18 applies at every step
@@ -2944,21 +2945,23 @@ theorem mrs_fom_eq_gmres (hA : IsUnit A) (rO : ℕ → 𝔼)
     Krylov.existsUnique_isMinResidualIterate_of_injective (injective_op_of_isUnit hA) b x₀ m
   rw [huniq _ hmres, huniq _ hG]
 
-/-- **(6.79)** for a sequence of Galerkin (FOM) iterates, read off the backbone directly. -/
-theorem residual_mrs_eq (hA : IsUnit A) (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - op A (xO j))
+/-- **(6.79)** for a sequence of Galerkin (FOM) iterates, read off the backbone directly. Saad
+assumes `A` nonsingular throughout Chapter 6; this statement needs no such assumption. -/
+theorem residual_mrs_eq (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - op A (xO j))
     {m : ℕ} (hO : ∀ i ≤ m, Krylov.IsGalerkinIterate (op A) b x₀ i (xO i))
     (h0 : ∀ j ≤ m, rO j ≠ 0) :
     mrsR xO rO m = (∑ j ∈ Finset.range (m + 1), 1 / ‖rO j‖ ^ 2)⁻¹ •
       ∑ j ∈ Finset.range (m + 1), (1 / ‖rO j‖ ^ 2) • rO j := by
-  have hkey := Krylov.residual_mrs_eq (injective_op_of_isUnit hA) m hO
+  have hkey := Krylov.residual_mrs_eq m hO
     (fun j hj => by rw [← hr j]; exact h0 j hj)
   simp only [RCLike.ofReal_real_eq_id, id_eq] at hkey
   rw [(mrs_eq A b xO rO hr m).2, hkey]
   simp only [← hr]
 
 /-- **P-6.26**: the directions `x^O_{j+1} - x^S_j` produced by Algorithm 6.14 from a sequence of
-Galerkin iterates are `AᵀA`-orthogonal, the hypothesis of Lemma 6.21 (GCR / ORTHOMIN). -/
-theorem problem_6_26 (hA : IsUnit A) (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - op A (xO j))
+Galerkin iterates are `AᵀA`-orthogonal, the hypothesis of Lemma 6.21 (GCR / ORTHOMIN). Saad
+assumes `A` nonsingular throughout Chapter 6; this statement needs no such assumption. -/
+theorem problem_6_26 (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - op A (xO j))
     (hO : ∀ m, Krylov.IsGalerkinIterate (op A) b x₀ m (xO m)) {i j : ℕ} (hij : i ≠ j) :
     inner ℝ (op A (xO (i + 1) - mrsX xO rO i)) (op A (xO (j + 1) - mrsX xO rO j)) = 0 := by
   have hmemS : ∀ k, mrsX xO rO k - x₀ ∈ Krylov.subspace (op A) (b - op A x₀) k :=
@@ -2968,7 +2971,7 @@ theorem problem_6_26 (hA : IsUnit A) (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = 
     rw [h.1]
     exact h.2
   have hminres : ∀ k, Krylov.IsMinResidualIterate (op A) b x₀ k (mrsX xO rO k) :=
-    fun k => mrs_isMinResidualIterate A b x₀ hA xO rO hr k fun i _ => hO i
+    fun k => mrs_isMinResidualIterate A b x₀ xO rO hr k fun i _ => hO i
   have key : ∀ p q : ℕ, p < q →
       inner ℝ (op A (xO (p + 1) - mrsX xO rO p)) (op A (xO (q + 1) - mrsX xO rO q)) = 0 := by
     intro p q hpq

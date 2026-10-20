@@ -22,7 +22,6 @@ in `(-2, 2)` and all simple.
 
 ## Main results
 
-* `Polynomial.Chebyshev.eval_C_two_mul_cos`: `C_n(2 cos θ) = 2 cos(n θ)`.
 * `Polynomial.Chebyshev.natDegree_C_natCast` and `Polynomial.Chebyshev.monic_C_natCast`.
 * `Polynomial.Chebyshev.roots_C_real`: the roots as a multiset.
 * `Polynomial.Chebyshev.C_natCast_eq_prod`: `C_n = ∏_{k<n} (X - 2 cos((2k+1)π/(2n)))`.
@@ -35,14 +34,6 @@ namespace Polynomial.Chebyshev
 /-- The `k`-th root `2 cos((2k+1)π/(2n))` of the Vieta–Lucas polynomial `C_n`.  Mathlib's
 `Polynomial.Chebyshev.node` is a different family, the *extremal* points `cos(kπ/n)` of `T_n`. -/
 noncomputable def rootNode (n k : ℕ) : ℝ := 2 * Real.cos ((2 * k + 1) * π / (2 * n))
-
-/-- `C_n(2 cos θ) = 2 cos(n θ)`, the defining property `C_n(2x) = 2 T_n(x)` read at `x = cos θ`. -/
-theorem eval_C_two_mul_cos (n : ℤ) (θ : ℝ) :
-    (C ℝ n).eval (2 * Real.cos θ) = 2 * Real.cos (n * θ) := by
-  have h := congrArg (Polynomial.eval (Real.cos θ)) (C_comp_two_mul_X ℝ n)
-  rw [eval_comp] at h
-  simp only [eval_mul, eval_ofNat, eval_X, T_real_cos] at h
-  exact h
 
 /-- `2 * X` has degree one, which is what makes `C_n ↦ C_n ∘ (2X)` degree-preserving. -/
 private theorem natDegree_two_mul_X : ((2 : ℝ[X]) * X).natDegree = 1 := by
@@ -98,7 +89,7 @@ theorem roots_C_real (n : ℕ) :
   have hmonic : (C ℝ (n : ℤ)).Monic := monic_C_natCast hn
   refine roots_eq_of_degree_eq_card (fun x hx ↦ ?_) ?_
   · obtain ⟨k, hk, rfl⟩ := Finset.mem_image.mp hx
-    rw [rootNode, eval_C_two_mul_cos, mul_eq_zero]
+    rw [rootNode, C_two_mul_real_cos, mul_eq_zero]
     refine Or.inr ?_
     rw [Real.cos_eq_zero_iff]
     refine ⟨k, ?_⟩

@@ -141,14 +141,6 @@ section Norms
 variable {ι κ : Type*} [Fintype ι] [Fintype κ]
 
 
-/-- Monotonicity of the Euclidean norm in the entries. -/
-theorem norm_toLp_le_of_abs_le {x y : ι → ℝ} (h : ∀ i, |x i| ≤ |y i|) :
-    ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ ≤ ‖(toLp 2 y : EuclideanSpace ℝ ι)‖ := by
-  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
-  refine Real.sqrt_le_sqrt (Finset.sum_le_sum fun i _ => ?_)
-  simp only [Real.norm_eq_abs]
-  exact pow_le_pow_left₀ (abs_nonneg _) (h i) 2
-
 /-- `‖|x|‖₂ = ‖x‖₂`. -/
 theorem norm_toLp_abs (x : ι → ℝ) :
     ‖(toLp 2 |x| : EuclideanSpace ℝ ι)‖ = ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := by
@@ -172,7 +164,8 @@ theorem norm_toLp_le_of_abs_le_add {z b v : ι → ℝ} {a c : ℝ} (ha : 0 ≤ 
       a * ‖(toLp 2 b : EuclideanSpace ℝ ι)‖ + c * ‖(toLp 2 v : EuclideanSpace ℝ ι)‖ := by
   calc ‖(toLp 2 z : EuclideanSpace ℝ ι)‖
       ≤ ‖(toLp 2 (a • |b| + c • |v|) : EuclideanSpace ℝ ι)‖ := by
-        refine norm_toLp_le_of_abs_le fun i => (h i).trans (le_of_eq ?_)
+        refine PiLp.norm_le_norm_of_forall_norm_le fun i => (h i).trans (le_of_eq ?_)
+        rw [PiLp.toLp_apply, Real.norm_eq_abs]
         have hi : (a • |b| + c • |v|) i = a * |b i| + c * |v i| := rfl
         rw [hi]
         exact (abs_of_nonneg (by positivity)).symm
@@ -350,7 +343,7 @@ theorem RoundsHouseholderVector.isRelPert {m : RoundingModel ℝ}
       rw [hxxabs] at this
       rwa [abs_of_nonneg hnn]
     have h2 : IsRelPert m.u n N (√s₀) := by
-      have := h1.sqrt (gamma_lt_one hu0 (by
+      have := h1.sqrt (gamma_lt_one (by
         have := hlt (2 * n) (by omega)
         push_cast at this
         linarith)).le (by rw [hxx]; positivity)
@@ -585,7 +578,7 @@ theorem RoundsHouseholderVectorParlett.isReflectorPert {m : RoundingModel ℝ}
   have hσhat0 : σhat = 0 → σ = 0 := fun h0 => by
     obtain ⟨θ, hθ, he⟩ := hσrel
     rw [h0] at he
-    have hg : gamma m.u k < 1 := gamma_lt_one hu0 (by
+    have hg : gamma m.u k < 1 := gamma_lt_one (by
       have := hlt (2 * k) (by omega)
       push_cast at this
       linarith)
@@ -696,7 +689,7 @@ theorem RoundsHouseholderVectorParlett.isReflectorPert {m : RoundingModel ℝ}
     have ht1 : IsRelPert m.u (k + 1) (x i * x i + σ) t :=
       (IsRelPert.add_of_nonneg (mul_self_nonneg _) hσ0 hp1 hσrel).rounds (hlt _ (by omega)) ht
     have hsqrt : IsRelPert m.u (k + 1) N (√t) := by
-      have hg : gamma m.u (k + 1) ≤ 1 := (gamma_lt_one hu0 (by
+      have hg : gamma m.u (k + 1) ≤ 1 := (gamma_lt_one (by
         have := hlt (2 * (k + 1)) (by omega)
         push_cast at this ⊢
         linarith)).le
@@ -1558,8 +1551,9 @@ theorem norm_sub_one_sub_smul_vecMulVec_extendByZero_mulVec_le [Fintype {i // p 
   rw [norm_toLp_eq_restrict fun r hr => by
     rw [Pi.sub_apply, one_sub_smul_vecMulVec_extendByZero_mulVec_apply_of_not β v w hr, hout r hr,
       sub_self]]
-  refine (norm_toLp_le_of_abs_le fun a => ?_).trans
+  refine (PiLp.norm_le_norm_of_forall_norm_le fun a => ?_).trans
     (hy.trans (mul_le_mul_of_nonneg_left (norm_toLp_restrict_le w) hε))
+  simp only [Real.norm_eq_abs]
   rw [Pi.sub_apply, one_sub_smul_vecMulVec_extendByZero_mulVec_apply]
   exact hin a
 
@@ -1721,7 +1715,7 @@ private theorem abs_rounds_sqrt_sub_norm_le {κ : Type*} [Fintype κ] {m : Round
     have e : |x| ⬝ᵥ |x| = x ⬝ᵥ x := by simp only [dotProduct, Pi.abs_apply, abs_mul_abs_self]
     rw [e] at this
     rwa [abs_of_nonneg (show (0 : ℝ) ≤ x ⬝ᵥ x by rw [hxx]; positivity)]
-  have h2 := h1.sqrt (gamma_lt_one hu0 (by
+  have h2 := h1.sqrt (gamma_lt_one (by
     have := hlt (2 * n) (by omega)
     push_cast at this
     linarith)).le (by rw [hxx]; positivity)

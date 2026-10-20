@@ -135,7 +135,7 @@ theorem equation_1_2 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 
 `EuclideanSpace.inner_eq_star_dotProduct`, and the adjoint identity `(A x, y) = (x, Aᴴ y)`. -/
 theorem equation_1_5 (A : Matrix (Fin n) (Fin n) 𝕜) (x y : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 y (A ⬝ x) = inner 𝕜 (Aᴴ ⬝ y) x := by
-  rw [Matrix.toEuclideanLin_conjTranspose]
+  rw [Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
   exact (LinearMap.adjoint_inner_left _ _ _).symm
 
 /-! ### §1.5 Matrix norms -/
@@ -290,7 +290,7 @@ theorem equation_1_18 (A : Matrix (Fin n) (Fin n) 𝕜) :
       IsCompl (LinearMap.range (toEuclideanLin B)) (LinearMap.ker (toEuclideanLin Bᴴ)) := by
     intro B
     have h : (LinearMap.range (toEuclideanLin B))ᗮ = LinearMap.ker (toEuclideanLin Bᴴ) := by
-      rw [Matrix.toEuclideanLin_conjTranspose]
+      rw [Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
       exact LinearMap.orthogonal_range _
     exact h ▸ Submodule.isCompl_orthogonal _
   refine ⟨key A, ?_⟩

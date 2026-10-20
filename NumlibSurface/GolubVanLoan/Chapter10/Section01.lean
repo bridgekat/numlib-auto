@@ -279,7 +279,7 @@ theorem algorithm_10_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {
             simp [sub_eq_add_neg, hTx]
         rw [hw, WithLp.toLp_ofLp, ← Lanczos.beta]
         refine ⟨by omega, ?_, fun j hj => ?_, by simp⟩
-        · simp only [Lanczos.beta_eq_zero_iff q hT s.k]
+        · simp only [Lanczos.beta_eq_zero_iff q s.k]
         · rcases Nat.lt_succ_iff_lt_or_eq.1 hj with hj | rfl
           · simp only [Function.update_of_ne hj.ne]
             exact hvec j hj
@@ -595,7 +595,7 @@ theorem golub_rankOne_bracket {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   refine ⟨fun hab i hi => ?_, fun hk2 x => ?_⟩
   · have hβ : ∀ j, j + 1 < k → Lanczos.beta (toEuclideanLin A) q₁ j ≠ 0 := by
       intro j hj h
-      have h' := (Lanczos.beta_eq_zero_iff q₁ hA.isSymmetric_toEuclideanLin j).1 h
+      have h' := (Lanczos.beta_eq_zero_iff q₁ j).1 h
       omega
     have hθ : Chapter08.symmEigenvalue hT =
         Sturm.eigenvalues (rankOneDiag A q₁ k (τ * a ^ 2)) (Lanczos.beta (toEuclideanLin A) q₁)

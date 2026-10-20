@@ -51,12 +51,6 @@ section Fenchel
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f g : E → EReal}
 
-omit [Module ℝ E] [Module ℝ F] in
-/-- Reindexing an infimum over a group by negation. -/
-private theorem iInf_neg_comp (ψ : F → EReal) : (⨅ y : F, ψ y) = ⨅ y : F, ψ (-y) :=
-  le_antisymm (le_iInf fun y => iInf_le ψ (-y))
-    (le_iInf fun y => le_trans (iInf_le (fun z => ψ (-z)) (-y)) (le_of_eq (by rw [neg_neg])))
-
 /-- Two Fenchel inequalities sharing the same *finite* value `p` combine into a comparison of
 differences; both `∞ - ∞` collisions are absorbed on the correct side. -/
 private theorem sub_le_sub_of_le_sub_of_sub_le {a b c d : EReal} {p : ℝ}
@@ -95,7 +89,7 @@ theorem fenchel_duality (hex : IsExactSum B f (-g)) :
     exact iInf_congr fun x => by rw [Pi.add_apply, sub_eq_add_neg]
   have hdual : convexConj B (f + fun x => -(g x)) 0 = ⨅ y : F,
       convexConj B f y - concaveConj B g y := by
-    rw [hex'.convexConj_add_apply 0, iInf_neg_comp]
+    rw [hex'.convexConj_add_apply 0, ← (neg_surjective (G := F)).iInf_comp]
     refine iInf_congr fun y => ?_
     rw [zero_sub, neg_neg, ← neg_concaveConj B g y, sub_eq_add_neg]
   rw [hprimal, hdual, EReal.neg_iInf]
@@ -549,7 +543,8 @@ produced by the splitting is the sign flip turning `K°` into `K*`. -/
 theorem iInf_add_indicatorFn_eq_neg_iInf_convexConj_add_indicatorFn
     (hex : IsExactSum B f (indicatorFn K)) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) :
     (⨅ z, (f + indicatorFn K) z) = -(⨅ w, (convexConj B f + indicatorFn (-(polarCone B K))) w) := by
-  rw [iInf_eq_neg_convexConj_zero B, hex.convexConj_add_apply 0, iInf_neg_comp]
+  rw [iInf_eq_neg_convexConj_zero B, hex.convexConj_add_apply 0,
+    ← (neg_surjective (G := F)).iInf_comp]
   congr 1
   refine iInf_congr fun w => ?_
   rw [Pi.add_apply, convexConj_indicatorFn_eq_indicatorFn_polarCone hK hne, zero_sub, neg_neg,

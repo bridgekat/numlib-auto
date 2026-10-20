@@ -262,20 +262,6 @@ theorem ConvexFn.exists_mem_inter_eq_of_isCompl (hf : ConvexFn f) (hray : BddAbo
   rw [show p + q = q + p by abel]
   exact hf.add_eq_of_mem_linealitySpace hray hq.1 (by simpa using hp)
 
-/-- **A convex function bounded above on the whole space is constant** — the unbounded companion of
-the maximum principle, where the absence of any boundary replaces `ri C`. -/
-theorem ConvexFn.eq_of_forall_le (hf : ConvexFn f) {β : ℝ} (hbdd : ∀ x : E, f x ≤ (β : EReal))
-    (x y : E) : f x = f y := by
-  have key : ∀ u v : E, f (u + v) ≤ f u := fun u v =>
-    hf.add_le_of_forall_add_smul_le fun t _ => hbdd _
-  have hxy : x + (y - x) = y := by abel
-  have hyx : y + (x - y) = x := by abel
-  have h₁ := key x (y - x)
-  have h₂ := key y (x - y)
-  rw [hxy] at h₁
-  rw [hyx] at h₂
-  exact le_antisymm h₂ h₁
-
 end Ray
 
 section ExtremeUnbounded

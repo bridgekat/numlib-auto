@@ -267,7 +267,7 @@ theorem exists_isTangentAt_lt_of_zero_mem_interior (hC : Convex ℝ C) (hCcl : I
 
 /-- **A closed convex set with nonempty interior is the intersection of the closed half-spaces
 tangent to it.** ("`n`-dimensional in `ℝⁿ`" is `(interior C).Nonempty`.) This sharpens
-`isClosed_convex_eq_iInter_halfspaces`, which intersects *all* the closed half-spaces containing
+Mathlib's `RCLike.iInter_halfSpaces_eq'`, which intersects *all* the closed half-spaces containing
 `C`. -/
 theorem eq_iInter_tangent_halfSpaces (hC : Convex ℝ C) (hCcl : IsClosed C)
     (hint : (interior C).Nonempty) :

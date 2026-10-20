@@ -6,6 +6,7 @@ Natural home: `Mathlib.Analysis.Distribution.Sobolev`, beside the material of
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Numlib.Analysis.Sobolev.Interval.Basic
+import Numlib.Analysis.Sobolev.Operators
 
 /-!
 # The extension operator `W^{1,p}(I) → W^{1,p}(ℝ)`
@@ -569,8 +570,8 @@ omit [Fact (1 ≤ p)] in
 /-- Almost everywhere equality read over the restriction of Lebesgue measure to the whole line,
 the measure of the type `SobolevIntervalLp m p ⊤`. -/
 theorem eventuallyEq_restrict_top_iff {f g : ℝ → ℝ} :
-    f =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)] g ↔ f =ᵐ[volume] g := by
-  rw [Opens.coe_top, Measure.restrict_univ]
+    f =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)] g ↔ f =ᵐ[volume] g :=
+  MeasureTheory.eventuallyEq_restrict_coe_top_iff
 
 /-- **The even reflection of a `W^{1,p}(c, ∞)` function has the odd reflection of its derivative
 as weak derivative on `ℝ`**: with `ũ(x) = ũ(c) + ∫_c^x u*` for the odd reflection `u*` of `u'`

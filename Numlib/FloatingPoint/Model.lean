@@ -185,15 +185,13 @@ omit [LinearOrder K] [IsStrictOrderedRing K] in
 theorem gamma_one_eq {u : K} : gamma u 1 = u / (1 - u) := by simp [gamma_def]
 
 /-- `γ_k < 1` when `2 k u < 1`. -/
-theorem gamma_lt_one {u : K} (hu : 0 ≤ u) {k : ℕ} (h : 2 * ((k : K) * u) < 1) : gamma u k < 1 := by
-  have hk : (0 : K) ≤ k * u := mul_nonneg (Nat.cast_nonneg k) hu
+theorem gamma_lt_one {u : K} {k : ℕ} (h : 2 * ((k : K) * u) < 1) : gamma u k < 1 := by
   rw [gamma_def, div_lt_one (by linarith)]
   linarith
 
 /-- `γ_k / (1 - γ_k) = k u / (1 - 2 k u)`. -/
-theorem gamma_div_one_sub_gamma {u : K} (hu : 0 ≤ u) {k : ℕ} (h : 2 * ((k : K) * u) < 1) :
+theorem gamma_div_one_sub_gamma {u : K} {k : ℕ} (h : 2 * ((k : K) * u) < 1) :
     gamma u k / (1 - gamma u k) = k * u / (1 - 2 * (k * u)) := by
-  have hk : (0 : K) ≤ k * u := mul_nonneg (Nat.cast_nonneg k) hu
   have h1 : (1 : K) - k * u ≠ 0 := by linarith
   have h2 : (1 : K) - 2 * (k * u) ≠ 0 := by linarith
   have : 1 - gamma u k = (1 - 2 * (k * u)) / (1 - k * u) := by

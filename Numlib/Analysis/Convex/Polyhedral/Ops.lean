@@ -198,16 +198,6 @@ def toNNLinear (A : E →ₗ[ℝ] F) : E →ₗ[{c : ℝ // 0 ≤ c}] F where
 
 @[simp] theorem toNNLinear_apply (A : E →ₗ[ℝ] F) (x : E) : toNNLinear A x = A x := rfl
 
-/-- A linear map carries the cone hull of a set to the cone hull of its image. -/
-theorem image_coe_hull (A : E →ₗ[ℝ] F) (S : Set E) :
-    A '' (PointedCone.hull ℝ S : Set E) = (PointedCone.hull ℝ (A '' S) : Set F) := by
-  have hmap : (Submodule.map (toNNLinear A) (PointedCone.hull ℝ S) : Set F)
-      = (PointedCone.hull ℝ (A '' S) : Set F) := by
-    rw [PointedCone.hull, Submodule.map_span]
-    rfl
-  rw [← hmap, Submodule.map_coe]
-  rfl
-
 /-- The cone hull of a linear subspace is the subspace itself. -/
 theorem coe_hull_coe_submodule (S : Submodule ℝ E) :
     (PointedCone.hull ℝ (S : Set E) : Set E) = (S : Set E) := by
@@ -358,7 +348,7 @@ theorem FinitelyGenerated.image {C : Set E} (hC : FinitelyGenerated C) (A : E �
   classical
   obtain ⟨P, D, rfl⟩ := hC
   refine ⟨P.image A, D.image A, ?_⟩
-  rw [Set.image_add A, LinearMap.image_convexHull, image_coe_hull, Finset.coe_image,
+  rw [Set.image_add A, LinearMap.image_convexHull, ← coe_hull_image, Finset.coe_image,
     Finset.coe_image]
 
 /-- The sum of two finitely generated sets is finitely generated: add the generating points

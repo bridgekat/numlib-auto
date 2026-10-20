@@ -609,13 +609,8 @@ theorem eventually_mem_Ico_nhdsLT_one : ∀ᶠ a : ℝ in 𝓝[<] (1 : ℝ), 0 �
     self_mem_nhdsWithin] with a ha ha1 using ⟨ha, ha1⟩
 
 theorem tendsto_affine_nhdsLT_one (α β : ℝ) :
-    Tendsto (fun a : ℝ => (1 - a) * α + a * β) (𝓝[<] (1 : ℝ)) (𝓝 β) := by
-  have hcont : Continuous fun a : ℝ => (1 - a) * α + a * β :=
-    ((continuous_const.sub continuous_id).mul continuous_const).add
-      (continuous_id.mul continuous_const)
-  have h : Tendsto (fun a : ℝ => (1 - a) * α + a * β) (𝓝[<] (1 : ℝ))
-      (𝓝 ((1 - (1 : ℝ)) * α + (1 : ℝ) * β)) := (hcont.tendsto 1).mono_left nhdsWithin_le_nhds
-  simpa using h
+    Tendsto (fun a : ℝ => (1 - a) * α + a * β) (𝓝[<] (1 : ℝ)) (𝓝 β) :=
+  tendsto_segment α β
 
 end Segment
 

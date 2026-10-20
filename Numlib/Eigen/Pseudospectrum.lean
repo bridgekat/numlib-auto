@@ -830,7 +830,7 @@ Proof by continuity of roots, not by the maximum modulus principle. If the compo
 with `‖B‖ ≤ ε` and `z ∈ σ(A + B)`; along `t ↦ A + t B`, `t ∈ [0, 1]`, all eigenvalues stay in
 `Λ_ε(A) = C ∪ D`, so the number of them in `C` is constant
 (`Polynomial.countRootsIn_eq_of_preconnected`): `0` at `t = 0`, at least `1` at `t = 1`. -/
-theorem exists_mem_spectrum_mem_connectedComponentIn [Nontrivial E] (A : E →L[ℂ] E) {z : ℂ}
+theorem exists_mem_spectrum_mem_connectedComponentIn (A : E →L[ℂ] E) {z : ℂ}
     (hz : z ∈ closedPseudospectrum ε A) :
     ∃ μ ∈ spectrum ℂ A, μ ∈ connectedComponentIn (closedPseudospectrum ε A) z := by
   have := FiniteDimensional.complete ℂ E
@@ -934,14 +934,6 @@ theorem mem_closedPseudospectrum_iff_iInf_colSingularValues [Nonempty n] {A : Ma
     rfl
   simp_rw [h]
 
-/-- A unitary matrix acts isometrically on `EuclideanSpace`. -/
-theorem norm_toEuclideanCLM_of_mem_unitaryGroup {U : Matrix n n 𝕜} (hU : U ∈ unitaryGroup n 𝕜)
-    (w : EuclideanSpace 𝕜 n) : ‖toEuclideanCLM (n := n) (𝕜 := 𝕜) U w‖ = ‖w‖ := by
-  refine norm_map_of_mem_unitary ?_ w
-  rw [Unitary.mem_iff, ← map_star, ← map_mul, ← map_mul, Unitary.star_mul_self_of_mem hU,
-    Unitary.mul_star_self_of_mem hU, map_one]
-  exact ⟨rfl, rfl⟩
-
 section L2
 
 open scoped Matrix.Norms.L2Operator
@@ -981,14 +973,14 @@ private theorem closedPseudospectrum_unitary_conj_subset {V : Matrix n n 𝕜}
       (toEuclideanCLM (n := n) (𝕜 := 𝕜) B).closedPseudospectrum ε := by
   rintro z ⟨w, hw, h⟩
   refine ⟨toEuclideanCLM (n := n) (𝕜 := 𝕜) V w, by
-    rw [norm_toEuclideanCLM_of_mem_unitaryGroup hV, hw], ?_⟩
+    rw [norm_toEuclideanCLM_apply_of_mem_unitaryGroup hV, hw], ?_⟩
   have hres : toEuclideanCLM (n := n) (𝕜 := 𝕜) B (toEuclideanCLM (n := n) (𝕜 := 𝕜) V w) -
       z • toEuclideanCLM (n := n) (𝕜 := 𝕜) V w =
       toEuclideanCLM (n := n) (𝕜 := 𝕜) V
         (toEuclideanCLM (n := n) (𝕜 := 𝕜) (star V * B * V) w - z • w) := by
     rw [map_sub, map_smul, ← toEuclideanCLM_mul_apply, ← toEuclideanCLM_mul_apply,
       ← Matrix.mul_assoc, ← Matrix.mul_assoc, Unitary.mul_star_self_of_mem hV, Matrix.one_mul]
-  rw [hres, norm_toEuclideanCLM_of_mem_unitaryGroup hV]
+  rw [hres, norm_toEuclideanCLM_apply_of_mem_unitaryGroup hV]
   exact h
 
 /-- [golub2013matrix] Corollary 7.9.3: unitary similarity preserves the closed pseudospectrum,

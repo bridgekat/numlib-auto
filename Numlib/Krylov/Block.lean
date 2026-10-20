@@ -506,9 +506,8 @@ theorem coeff_one (A : E →ₗ[𝕜] E) (v : Fin 1 → E) : coeff A v = Arnoldi
 
 /-- `Arnoldi.hessenbergRelation` is the `p = 1` case of `BlockArnoldi.hessenbergRelation`. -/
 theorem hessenbergRelation_one (A : E →ₗ[𝕜] E) (v : Fin 1 → E) :
-    HessenbergRelation A (Arnoldi.vec A (v 0)) (Arnoldi.coeff A (v 0)) := by
-  rw [← vec_one, ← coeff_one]
-  exact bandRelation_one_iff.1 (hessenbergRelation A v)
+    HessenbergRelation A (Arnoldi.vec A (v 0)) (Arnoldi.coeff A (v 0)) :=
+  Arnoldi.hessenbergRelation A (v 0)
 
 end BlockArnoldi
 

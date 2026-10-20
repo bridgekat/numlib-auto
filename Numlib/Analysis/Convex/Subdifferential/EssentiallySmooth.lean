@@ -142,7 +142,7 @@ theorem essentiallySmooth_of_subsingleton_subdifferential (hf : ConvexFn f) (hp 
     obtain ⟨z, hz⟩ := Convex.relint_nonempty hf.convex_convexDom hp.convexDom_nonempty
     exact ⟨z, hri hz⟩
   refine ⟨hne, fun z hz => differentiableAtFn_of_subsingleton_subdifferential hf hp h
-    (Convex.interior_subset_relint hf.convex_convexDom hne hz), ?_⟩
+    (Convex.interior_subset_relint hz), ?_⟩
   intro z hz zs hzs hlim
   by_contra hcon
   -- A bounded subsequence of gradients.
@@ -154,7 +154,7 @@ theorem essentiallySmooth_of_subsingleton_subdifferential (hf : ConvexFn f) (hp 
     rw [hvsdef, LinearIsometryEquiv.apply_symm_apply]
     exact DifferentiableAtFn.hasGradientAtFn_fderiv
       (differentiableAtFn_of_subsingleton_subdifferential hf hp h
-        (Convex.interior_subset_relint hf.convex_convexDom hne (hzs i)))
+        (Convex.interior_subset_relint (hzs i)))
   have hvsb : ∀ n, vs (φ n) ∈ closedBall (0 : E) b := fun n => by
     rw [mem_closedBall_zero_iff, hvsdef, LinearIsometryEquiv.norm_map]
     exact (not_le.1 (hφb n)).le

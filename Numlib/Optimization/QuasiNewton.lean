@@ -306,12 +306,6 @@ open scoped Matrix.Norms.Frobenius
 
 variable [DecidableEq n]
 
-/-- The Frobenius norm squared of a real matrix is the trace of `Aᵀ A`. -/
-private theorem frobenius_norm_sq_eq_trace_transpose (A : Matrix n n ℝ) :
-    ‖A‖ ^ 2 = trace (Aᵀ * A) := by
-  have h := frobenius_norm_sq_eq_trace (𝕜 := ℝ) A
-  simpa [conjTranspose_eq_transpose_of_trivial] using h
-
 /-- **Pythagoras for the two-sided compression by a symmetric idempotent**: for `Qᵀ = Q` and
 `Q² = Q`, `‖A‖_F² = ‖A - Q A Q‖_F² + ‖Q A Q‖_F²`, since `Q A Q` is the Frobenius-orthogonal
 projection of `A` onto `{Q Z Q}`. In the trace form `‖M‖_F² = tr(Mᵀ M)` the cross terms are
@@ -367,11 +361,10 @@ private theorem proj_mul_proj (hs : s ≠ 0) :
 the correction `psbUpdate B s (B s + R) - B` equals `Δ - (1 - P) Δ (1 - P)` with
 `P = s sᵀ / (sᵀ s)`: the update moves `B` by the component of `Δ` outside the subspace
 `{(1 - P) Z (1 - P)}` of symmetric matrices vanishing on `s`. -/
-theorem psbUpdate_sub_eq_of_isSymm {B Δ : Matrix n n ℝ} (hΔ : Δ.IsSymm) (hs : s ≠ 0) {y : n → ℝ}
+theorem psbUpdate_sub_eq_of_isSymm {B Δ : Matrix n n ℝ} (hΔ : Δ.IsSymm) {y : n → ℝ}
     (hΔs : Δ *ᵥ s = y - B *ᵥ s) :
     psbUpdate B s y - B
       = Δ - (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s) * Δ * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s) := by
-  have hss : s ⬝ᵥ s ≠ 0 := mt dotProduct_self_eq_zero.1 hs
   have hsΔ : s ᵥ* Δ = y - B *ᵥ s := by rw [← mulVec_transpose, hΔ.eq, hΔs]
   have hE : psbUpdate B s y - B
       = (1 / (s ⬝ᵥ s)) • (vecMulVec (y - B *ᵥ s) s + vecMulVec s (y - B *ᵥ s))
@@ -396,7 +389,7 @@ theorem frobenius_norm_psbUpdate_sub_le {B B' : Matrix n n ℝ} (hB : B.IsSymm) 
     ‖psbUpdate B s y - B‖ ≤ ‖B' - B‖ := by
   have hΔ : (B' - B).IsSymm := hB'.sub hB
   have hΔs : (B' - B) *ᵥ s = y - B *ᵥ s := by rw [sub_mulVec, hB's]
-  rw [psbUpdate_sub_eq_of_isSymm hΔ hs hΔs]
+  rw [psbUpdate_sub_eq_of_isSymm hΔ hΔs]
   exact frobenius_norm_sub_mul_mul_le _ (by rw [transpose_sub, transpose_one, transpose_proj])
     (by
       rw [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.one_mul,
@@ -417,7 +410,7 @@ theorem frobenius_norm_psbUpdate_sub_lt {B B' : Matrix n n ℝ} (hB : B.IsSymm) 
     rw [hQ, Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.one_mul,
       Matrix.mul_one, proj_mul_proj hs]
     abel
-  have hE := psbUpdate_sub_eq_of_isSymm hΔ hs hΔs
+  have hE := psbUpdate_sub_eq_of_isSymm hΔ hΔs
   rw [← hQ] at hE
   have hpyth := frobenius_norm_sq_sub_mul_mul_add_sq (B' - B) hQt hQQ
   have hN : Q * (B' - B) * Q ≠ 0 := by
@@ -516,7 +509,7 @@ theorem frobenius_norm_psbUpdate_sub_le_add {g : EuclideanSpace ℝ n → Euclid
     have h1 : psbUpdate B s y - H xp = Δ + (psbUpdate B s y - B) := by rw [hΔ]; abel
     have h2 : y - B *ᵥ s = w - Δ *ᵥ s := by rw [hw, hΔ, sub_mulVec]; abel
     have h3 : psbCorrection s (Δ *ᵥ s) = Δ - Q * Δ * Q := by
-      have := psbUpdate_sub_eq_of_isSymm (B := H xp) (y := H xp *ᵥ s + Δ *ᵥ s) hΔsym hs
+      have := psbUpdate_sub_eq_of_isSymm (B := H xp) (y := H xp *ᵥ s + Δ *ᵥ s) hΔsym
         (by rw [add_sub_cancel_left])
       rw [psbUpdate_sub_eq_psbCorrection, add_sub_cancel_left] at this
       rw [this]
@@ -569,8 +562,8 @@ end Frobenius
 /-- The quadratic form of a symmetric matrix is symmetric in its arguments:
 `uᵀ B v = vᵀ B u`. -/
 theorem dotProduct_mulVec_comm_of_isSymm {B : Matrix n n ℝ} (hB : B.IsSymm) (u v : n → ℝ) :
-    u ⬝ᵥ (B *ᵥ v) = v ⬝ᵥ (B *ᵥ u) := by
-  rw [dotProduct_mulVec, ← mulVec_transpose, hB.eq, dotProduct_comm]
+    u ⬝ᵥ (B *ᵥ v) = v ⬝ᵥ (B *ᵥ u) :=
+  hB.dotProduct_mulVec_comm
 
 /-- **The Broyden–Fletcher–Goldfarb–Shanno update** (Nocedal–Wright (6.19)) of a Hessian
 approximation: `B₊ = B - (B s)(B s)ᵀ / (sᵀ B s) + y yᵀ / (yᵀ s)`. It satisfies the secant

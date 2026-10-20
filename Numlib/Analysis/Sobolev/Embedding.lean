@@ -570,9 +570,8 @@ theorem ContDiff.enorm_sub_le_enorm_mul_lintegral_fderiv (hu : ContDiff ℝ 1 u)
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] in
 /-- The homothety of centre `x` and ratio `t ≠ 0` is injective. -/
 theorem AffineMap.homothety_injective_of_ne_zero (x : E) {t : ℝ} (ht : t ≠ 0) :
-    Function.Injective (AffineMap.homothety x t) := fun z₁ z₂ h ↦ by
-  simp only [AffineMap.homothety_apply, vsub_eq_sub, vadd_eq_add, add_left_inj] at h
-  simpa using smul_right_injective E ht h
+    Function.Injective (AffineMap.homothety x t) :=
+  AffineMap.homothety_injective x ht
 
 omit [FiniteDimensional ℝ E] in
 /-- The image of a measurable set under a homothety of nonzero ratio is measurable. -/
@@ -2221,7 +2220,7 @@ theorem iteratedFDeriv_fun_sum_smul_const {E F : Type*} [NormedAddCommGroup E] [
 /-- The tensor weak derivative of `u ∈ W^{m+1,p}(Ω)` assembled from (representatives of) its
 partial derivatives: if `g i = ∂_i u` almost everywhere on `Ω`, then `x ↦ ∑ i, g i x • proj i` is
 a weak derivative of `fn u` on `Ω`. -/
-theorem SobolevEuclidean.hasWeakFDerivOn_sum_smul_proj {m : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+theorem SobolevEuclidean.hasWeakFDerivOn_sum_smul_proj {m : ℕ} {p : ℝ≥0∞}
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} (u : SobolevEuclidean N (m + 1) p Ω)
     {g : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
     (hg : ∀ i, fn (partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω volume i u)

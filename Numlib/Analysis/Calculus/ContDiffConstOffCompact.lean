@@ -169,6 +169,20 @@ theorem exists_bound_fderiv (h : IsContDiffConstOffCompact (n + 1) c) :
 
 end IsContDiffConstOffCompact
 
+/-- A `C^n` function with support in an open set `Q` times a `C^n` function on `Q` is `C^n`
+everywhere. -/
+theorem ContDiff.mul_contDiffOn_of_tsupport_subset {n : WithTop ℕ∞} {χ f : E → ℝ}
+    (hχ : ContDiff ℝ n χ) {Q : Set E} (hQ : IsOpen Q) (hf : ContDiffOn ℝ n f Q)
+    (hχQ : tsupport χ ⊆ Q) : ContDiff ℝ n fun y ↦ χ y * f y := by
+  rw [contDiff_iff_contDiffAt]
+  intro y
+  by_cases hy : y ∈ Q
+  · exact hχ.contDiffAt.mul ((hf y hy).contDiffAt (hQ.mem_nhds hy))
+  · have hy' : y ∉ tsupport χ := fun h ↦ hy (hχQ h)
+    refine (contDiffAt_const (c := (0 : ℝ))).congr_of_eventuallyEq ?_
+    filter_upwards [(isClosed_tsupport χ).isOpen_compl.mem_nhds hy'] with z hz
+    rw [image_eq_zero_of_notMem_tsupport hz, zero_mul]
+
 end ConstOffCompact
 
 /-! ### Iterated derivatives of compactly supported functions of one variable -/

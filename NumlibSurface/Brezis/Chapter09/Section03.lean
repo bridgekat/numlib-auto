@@ -1209,7 +1209,7 @@ theorem exists_continuous_ae_eq_toContinuousMapClosure (hΩ : IsClassC1 (Ω : Se
   have : CompactSpace (closure (Ω : Set 𝔼)) := isCompact_iff_compactSpace.1 hb.isCompact_closure
   refine ⟨_, (SobolevEuclidean.contRep hp _).continuous,
     SobolevEuclidean.fn_ae_eq_toContinuousMapL (IsSobolevExtensionDomain.of_isContDiffChartDomain
-      hΩ (hb.closure.subset frontier_subset_closure)) hp (closure (Ω : Set 𝔼)) u, fun x ↦ rfl⟩
+      hΩ (hb.closure.subset frontier_subset_closure)) hp u, fun x ↦ rfl⟩
 
 /-- **Theorem 9.16 (Rellich–Kondrachov), case `p < N`.** For `Ω` bounded of class `C^1`,
 `1 ≤ p < N` and `1/p* = 1/p − 1/N`, `W^{1,p}(Ω) ⊂ L^q(Ω)` with compact injection for all

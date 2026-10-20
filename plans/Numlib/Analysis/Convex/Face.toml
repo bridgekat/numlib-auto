@@ -41,6 +41,3 @@ id = 'exists_notMem_relint_mem_segment'
 
 [[node]]
 id = 'convexHull_extremePoints'
-
-[[node]]
-id = 'extremePoints_nonempty'

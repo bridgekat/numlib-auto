@@ -4,9 +4,6 @@ namespace = "Polynomial.Chebyshev"
 id = "rootNode"
 
 [[node]]
-id = "eval_C_two_mul_cos"
-
-[[node]]
 id = "natDegree_C_natCast"
 
 [[node]]

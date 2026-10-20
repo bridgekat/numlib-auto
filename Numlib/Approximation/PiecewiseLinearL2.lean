@@ -146,20 +146,6 @@ theorem iccIndicatorLp_smul {s : Set (Set.Icc a b)} (hs : MeasurableSet s) (c : 
   rw [h2, Pi.smul_apply, h0, h1]
   by_cases ht : t ∈ s <;> simp [Set.indicator_of_mem, Set.indicator_of_notMem, ht]
 
-/-- The coefficient functions of `L²(a, b)` are pointwise sums almost everywhere. -/
-private theorem coeFn_finset_sum {ι : Type*} (s : Finset ι)
-    (F : ι → Lp ℝ 2 (iccMeasure a b)) :
-    ⇑(∑ i ∈ s, F i) =ᵐ[iccMeasure a b] fun y => ∑ i ∈ s, F i y := by
-  classical
-  induction s using Finset.induction with
-  | empty =>
-    simp only [Finset.sum_empty]
-    exact Lp.coeFn_zero ℝ 2 (iccMeasure a b)
-  | insert i s hi ih =>
-    rw [Finset.sum_insert hi]
-    filter_upwards [Lp.coeFn_add (F i) (∑ j ∈ s, F j), ih] with y h1 h2
-    rw [h1, Finset.sum_insert hi, Pi.add_apply, h2]
-
 end IntegralOperator
 
 /-! ### Best approximation in `L²(a, b)` by a continuous element of the subspace -/
@@ -273,15 +259,6 @@ theorem measurableSet_meshPanel (x : ℕ → Set.Icc a b) (i : ℕ) :
     MeasurableSet (meshPanel x i) :=
   measurableSet_Ico.preimage measurable_subtype_coe
 
-/-- The nodes of a partition increase along the used range. -/
-private theorem node_mono {n : ℕ} {x : ℕ → Set.Icc a b}
-    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) {i j : ℕ} (hij : i ≤ j) (hj : j ≤ n + 1) :
-    (x i : ℝ) ≤ (x j : ℝ) := by
-  revert hj
-  induction j, hij using Nat.le_induction with
-  | base => exact fun _ => le_rfl
-  | succ k hk ih => exact fun hk1 => (ih (by omega)).trans (hstep k (by omega)).le
-
 /-- **Every point of `[a, b)` lies in a panel.**  The endpoint `b` lies in none of them, which is
 why the statement excludes it; it is a null set, so nothing is lost in `L²`. -/
 theorem exists_mem_meshPanel {n : ℕ} {x : ℕ → Set.Icc a b}
@@ -302,8 +279,12 @@ theorem notMem_meshPanel_of_mem {n : ℕ} {x : ℕ → Set.Icc a b}
     (hij : i ≠ j) {t : Set.Icc a b} (htj : t ∈ meshPanel x j) : t ∉ meshPanel x i := by
   intro hti
   rcases lt_or_gt_of_ne hij with h | h
-  · exact absurd (hti.2.trans_le ((node_mono hstep h (by omega)).trans htj.1)) (lt_irrefl _)
-  · exact absurd (htj.2.trans_le ((node_mono hstep h (by omega)).trans hti.1)) (lt_irrefl _)
+  · exact absurd
+      (hti.2.trans_le ((piecewiseLinearInterpCLM.le_node_of_le hstep h (by omega)).trans htj.1))
+      (lt_irrefl _)
+  · exact absurd
+      (htj.2.trans_le ((piecewiseLinearInterpCLM.le_node_of_le hstep h (by omega)).trans hti.1))
+      (lt_irrefl _)
 
 /-- **`L²(a, b)` splits over the panels**: the pieces of a continuous function on the panels of a
 partition sum back to the function, because the panels are disjoint and cover `[a, b)`, whose
@@ -320,7 +301,7 @@ theorem sum_iccIndicatorLp_meshPanel {n : ℕ} {x : ℕ → Set.Icc a b}
       (iccIndicatorLp a b (measurableSet_meshPanel x i) g) t
         = (meshPanel x i).indicator (g : Set.Icc a b → ℝ) t :=
     (Filter.eventually_all_finset _).2 fun i _ => coeFn_iccIndicatorLp _ g
-  filter_upwards [coeFn_finset_sum (Finset.range (n + 1))
+  filter_upwards [Lp.coeFn_fun_finsetSum (Finset.range (n + 1))
       (fun i => iccIndicatorLp a b (measurableSet_meshPanel x i) g), hall, coeFn_iccToLp g,
     ae_ne_iccMeasure (⟨b, ⟨hab, le_rfl⟩⟩ : Set.Icc a b)] with t hsum hind htoLp htb
   rw [hsum, htoLp]
@@ -586,7 +567,7 @@ theorem norm_l2KernelCLM_comp_le (hab : a ≤ b) {k : C(Set.Icc a b × Set.Icc a
       rfl
     have hinner : (inner ℝ (Q (iccToLp a b (k.curry z))) v : ℝ)
         = ∫ y, k (z, y) * (Q v) y ∂(iccMeasure a b) := by
-      rw [← hrowae, ← real_inner_lp_eq]
+      rw [← hrowae, ← L2.inner_eq_integral_mul]
       conv_lhs => rw [← hQ.adjoint_eq]
       rw [ContinuousLinearMap.adjoint_inner_left]
     rw [hz, ← hinner, Real.norm_eq_abs]

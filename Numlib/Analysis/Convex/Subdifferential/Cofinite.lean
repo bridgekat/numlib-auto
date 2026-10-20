@@ -183,8 +183,7 @@ theorem convexDom_convexConj_eq_univ_of_isBounded (hf : ConvexFn f) (hp : Proper
   have hsub := gradientRange_subset_interior_convexDom_convexConj_of_isBounded hf hp hdom hdiff hbd
   have heq : gradientRange f = interior (convexDom (convexConj (innerₗ E) f)) :=
     Subset.antisymm hsub
-      ((Convex.interior_subset_relint (convexFn_convexConj _ f).convex_convexDom
-          (hne.mono hsub)).trans
+      ((Convex.interior_subset_relint).trans
         (relint_convexDom_convexConj_subset_gradientRange hf hp hcl hes))
   have hclopen : IsClopen (gradientRange f) :=
     ⟨isClosed_gradientRange_of_isBounded hf hp hdom hdiff hbd, heq ▸ isOpen_interior⟩

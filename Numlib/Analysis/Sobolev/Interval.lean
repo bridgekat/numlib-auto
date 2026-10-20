@@ -106,19 +106,11 @@ noncomputable section
 
 /-! ### Finite sums in `L^p` -/
 
-/-- The coercion of a finite sum in `L^p` is almost everywhere the sum of the coercions. Mathlib
-has `lp.coeFn_sum` for the sequence spaces `lp E p`, but nothing for `MeasureTheory.Lp`. -/
+/-- The coercion of a finite sum in `L^2` is almost everywhere the sum of the coercions: Mathlib's
+`MeasureTheory.Lp.coeFn_fun_finsetSum`, for an `ℕ`-indexed family on `ℝ`. -/
 theorem MeasureTheory.Lp.coeFn_sum {μ : Measure ℝ} (s : Finset ℕ) (F : ℕ → Lp ℝ 2 μ) :
-    ⇑(∑ i ∈ s, F i) =ᵐ[μ] fun t ↦ ∑ i ∈ s, F i t := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-    simp only [Finset.sum_empty]
-    exact Lp.coeFn_zero ℝ 2 μ
-  | insert i s hi ih =>
-    rw [Finset.sum_insert hi]
-    filter_upwards [Lp.coeFn_add (F i) (∑ j ∈ s, F j), ih] with t h1 h2
-    rw [h1, Pi.add_apply, h2, Finset.sum_insert hi]
+    ⇑(∑ i ∈ s, F i) =ᵐ[μ] fun t ↦ ∑ i ∈ s, F i t :=
+  Lp.coeFn_fun_finsetSum s F
 
 /-! ### Antiderivatives, and the absolutely continuous representative -/
 

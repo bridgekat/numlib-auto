@@ -1,9 +1,6 @@
 namespace = "Krylov"
 
 [[node]]
-id = "inner_adjoint_right"
-
-[[node]]
 id = "inner_adjoint_comp_self"
 
 [[node]]

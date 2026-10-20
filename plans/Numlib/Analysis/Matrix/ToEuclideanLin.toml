@@ -37,9 +37,6 @@ id = "toEuclideanCLM_sub_smul_one"
 id = "toEuclideanLin_apply_eq_sum"
 
 [[node]]
-id = "toEuclideanLin_conjTranspose"
-
-[[node]]
 id = "toEuclideanLin_mul"
 
 [[node]]

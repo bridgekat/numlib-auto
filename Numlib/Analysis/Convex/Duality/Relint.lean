@@ -74,7 +74,6 @@ omit [FiniteDimensional ℝ G] [FiniteDimensional ℝ H] in
 relative-interior condition: "`g*` recedes along `z`, and `A'` kills `z`" says that `⟨·, z⟩` is
 `≤ 0` on `dom g` and vanishes at `A x₀ ∈ ri (dom g)`, which makes it constant there. -/
 theorem mem_constancySpace_convexConj_of_relint [IsCompatiblePairing B']
-    [IsCompatiblePairing B'.flip]
     (hA : IsAdjointPair B B' A A') (hg : ClosedProperConvexFn g)
     {x₀ : E} (hx₀ : A x₀ ∈ ri (convexDom g)) {z : H}
     (hrec : recessionFn (convexConj B' g) z ≤ 0) (hz0 : A' z = 0) :
@@ -478,15 +477,18 @@ theorem mem_relint_convexDom_finsetSum (hf : ∀ i ∈ s, ConvexFn (f i))
     Convex.relint_biInter_finset (fun i hi => (hf i hi).convex_convexDom) hx₀]
   exact Set.mem_iInter₂.2 hx₀
 
-private theorem isExactFinsetSum_of_relint_aux [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
-    (f : ι → E → EReal) (x₀ : E) : ∀ t : Finset ι, t.Nonempty → (∀ i ∈ t, ConvexFn (f i)) →
-      (∀ i ∈ t, ProperConvex (f i)) → (∀ i ∈ t, x₀ ∈ ri (convexDom (f i)))
-          → IsExactFinsetSum B t f := by
-  intro t
-  induction t using Finset.cons_induction with
-  | empty => intro hne; exact absurd hne (by simp)
+/-- **Finitely many proper convex functions add exactly as soon as the relative interiors of their
+effective domains have a point in common.**
+
+The induction is `IsExactFinsetSum.cons`; beyond the binary case it needs only that the effective
+domain of a partial sum is `⋂ dom fᵢ` and that `x₀` lies in the relative interior of that
+intersection (`mem_relint_convexDom_finsetSum`). -/
+theorem IsExactFinsetSum.of_relint [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
+    (hs : s.Nonempty) (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i)) {x₀ : E}
+    (hx₀ : ∀ i ∈ s, x₀ ∈ ri (convexDom (f i))) : IsExactFinsetSum B s f := by
+  induction s using Finset.cons_induction with
+  | empty => exact absurd hs (by simp)
   | cons i t hi ih =>
-    intro _ hf hpf hx₀
     have hmt : ∀ j ∈ t, j ∈ Finset.cons i t hi := fun j hj => Finset.mem_cons_of_mem hj
     rcases Finset.eq_empty_or_nonempty t with rfl | htne
     · rw [Finset.cons_empty]
@@ -500,17 +502,6 @@ private theorem isExactFinsetSum_of_relint_aux [IsCompatiblePairing B] [IsCompat
     exact IsExactSum.of_relint (hf i (by simp)) (hpf i (by simp)) hconv hprop (hx₀ i (by simp))
       (mem_relint_convexDom_finsetSum (fun j hj => hf j (hmt j hj)) (fun j hj => hpf j (hmt j hj))
         (fun j hj => hx₀ j (hmt j hj)))
-
-/-- **Finitely many proper convex functions add exactly as soon as the relative interiors of their
-effective domains have a point in common.**
-
-The induction is `IsExactFinsetSum.cons`; beyond the binary case it needs only that the effective
-domain of a partial sum is `⋂ dom fᵢ` and that `x₀` lies in the relative interior of that
-intersection (`mem_relint_convexDom_finsetSum`). -/
-theorem IsExactFinsetSum.of_relint [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
-    (hs : s.Nonempty) (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i)) {x₀ : E}
-    (hx₀ : ∀ i ∈ s, x₀ ∈ ri (convexDom (f i))) : IsExactFinsetSum B s f :=
-  isExactFinsetSum_of_relint_aux f x₀ s hs hf hpf hx₀
 
 end FinsetSum
 

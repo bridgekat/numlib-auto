@@ -222,7 +222,7 @@ theorem lanczosBeta_nonneg (j : ℕ) : 0 ≤ lanczosBeta A v₁ j := by
 /-- Breakdown: `β_{j+1} = 0` exactly when the grade of `v₁` has been reached. -/
 theorem lanczosBeta_succ_eq_zero_iff (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (j : ℕ) :
     lanczosBeta A v₁ (j + 1) = 0 ↔ grade A v₁ ≤ j + 1 := by
-  rw [lanczosBeta_succ_eq A v₁ hA hv, Lanczos.beta_eq_zero_iff v₁ hA, grade_eq]
+  rw [lanczosBeta_succ_eq A v₁ hA hv, Lanczos.beta_eq_zero_iff v₁, grade_eq]
 
 /-- `α_j = (A v_j, v_j)`: the coefficient of Algorithm 6.15, line 4, as a Rayleigh quotient. -/
 theorem lanczosAlpha_eq_inner (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (j : ℕ) :

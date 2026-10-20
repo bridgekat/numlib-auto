@@ -1802,9 +1802,8 @@ theorem translate_translate_neg (h : ℝ) (u : SobolevIntervalLp 1 2 ⊤) :
 /-- **The translations are each other's adjoints on `L²(ℝ)`**: `⟪τ_h f, g⟫ = ⟪f, τ_{-h} g⟫`. -/
 theorem inner_translateLp_left (h : ℝ)
     (f g : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
-    ⟪translateLp h f, g⟫_ℝ = ⟪f, translateLp (-h) g⟫_ℝ := by
-  conv_lhs => rw [← translateLp_translateLp_neg h g]
-  exact (translateLp h).inner_map_map f (translateLp (-h) g)
+    ⟪translateLp h f, g⟫_ℝ = ⟪f, translateLp (-h) g⟫_ℝ :=
+  Lp.inner_translate (isTranslationInvariant_top h) f g
 
 /-- **The translations are each other's adjoints on `H¹(ℝ)`**: `⟪τ_h u, v⟫ = ⟪u, τ_{-h} v⟫`. -/
 theorem inner_translate_left (h : ℝ) (u v : SobolevIntervalLp 1 2 ⊤) :

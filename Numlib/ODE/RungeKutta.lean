@@ -363,7 +363,6 @@ theorem lipschitzIncrement_explicit (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
   refine (norm_sum_le _ _).trans ?_
   have hx0 : 0 ≤ h₀ * L * tab.entrySum := by
     have := tab.entrySum_nonneg
-    have := L.coe_nonneg
     have := hh.1.le.trans hh.2
     positivity
   calc ∑ i, ‖tab.b i • (tab.explicitStages f h t u i - tab.explicitStages f h t v i)‖

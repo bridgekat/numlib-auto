@@ -63,22 +63,14 @@ noncomputable def preconditionedRichardson (A : Matrix n n 𝕜) {P : Matrix n n
 theorem preconditionedRichardson_m (A : Matrix n n 𝕜) {P : Matrix n n 𝕜} (hP : IsUnit P) {α : 𝕜}
     (hα : α ≠ 0) : (preconditionedRichardson A hP hα).m = α⁻¹ • P := rfl
 
-/-- The inverse of a nonzero scalar multiple of a unit. -/
-private theorem ringInverse_smul {c : 𝕜} (hc : c ≠ 0) {m : Matrix n n 𝕜} (hm : IsUnit m) :
-    Ring.inverse (c • m) = c⁻¹ • Ring.inverse m := by
-  have h1 : (c • m) * (c⁻¹ • Ring.inverse m) = 1 := by
-    rw [smul_mul_smul_comm, mul_inv_cancel₀ hc, Ring.mul_inverse_cancel _ hm, one_smul]
-  have h2 : (c⁻¹ • Ring.inverse m) * (c • m) = 1 := by
-    rw [smul_mul_smul_comm, inv_mul_cancel₀ hc, Ring.inverse_mul_cancel _ hm, one_smul]
-  exact Ring.inverse_unit ⟨c • m, c⁻¹ • Ring.inverse m, h1, h2⟩
-
 /-- **The Richardson iteration matrix** `R_α = 1 - α P⁻¹ A` ([quarteroni2000numerical] §4.3;
 `R_P = 1 - P⁻¹ A` at `α = 1`). -/
 theorem preconditionedRichardson_iterationOperator (A : Matrix n n 𝕜) {P : Matrix n n 𝕜}
     (hP : IsUnit P) {α : 𝕜} (hα : α ≠ 0) :
     (preconditionedRichardson A hP hα).iterationOperator = 1 - α • (P⁻¹ * A) := by
-  rw [Splitting.iterationOperator, preconditionedRichardson_m, ringInverse_smul (inv_ne_zero hα) hP,
-    inv_inv, smul_mul_assoc, nonsing_inv_eq_ringInverse]
+  rw [Splitting.iterationOperator, preconditionedRichardson_m,
+    Matrix.ringInverse_smul (inv_ne_zero hα) hP, inv_inv, smul_mul_assoc,
+    nonsing_inv_eq_ringInverse]
 
 /-- The unpreconditioned method is `P = 1`: `preconditionedRichardson A isUnit_one hα` is
 `Stationary.Splitting.richardson A hα`. -/

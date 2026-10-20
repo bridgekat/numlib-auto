@@ -15,8 +15,7 @@ stated over the whole space. This module transfers it to `C × D` and then reads
   saddle-point of the restriction of `K` to the subtype product `↥C × ↥D`; `maximin_subtype` and
   `minimax_subtype` identify the iterated extrema of that restriction with
   `⨆ u ∈ C, ⨅ x ∈ D, K (u, x)` and `⨅ x ∈ D, ⨆ u ∈ C, K (u, x)`.
-* `biSup_biInf_le_biInf_biSup` — `sup inf ≤ inf sup` over `C × D`;
-  `isSaddlePointOn_iff_attained` — `p` is a saddle-point relative to `C × D` exactly when the outer
+* `isSaddlePointOn_iff_attained` — `p` is a saddle-point relative to `C × D` exactly when the outer
   extrema of `sup inf` and `inf sup` over `C × D` are attained at `p.1` and `p.2` and agree;
   `IsSaddlePointOn.biSup_biInf_eq`, `IsSaddlePointOn.biInf_biSup_eq` — both then equal `K p`.
 * For `L : U × X → ℝ` read through `EReal`: `IsSaddlePointOn.isGreatest_image_coe`,
@@ -76,12 +75,6 @@ theorem minimax_subtype (K : U × X → EReal) (C : Set U) (D : Set X) :
     minimax (fun q : C × D => K (q.1, q.2)) = ⨅ x ∈ D, ⨆ u ∈ C, K (u, x) := by
   rw [minimax_apply, iInf_subtype]
   exact iInf_congr fun x => iInf_congr fun _ => iSup_subtype
-
-/-- **`sup inf ≤ inf sup` over `C × D`**, with no hypothesis. -/
-theorem biSup_biInf_le_biInf_biSup (K : U × X → EReal) (C : Set U) (D : Set X) :
-    (⨆ u ∈ C, ⨅ x ∈ D, K (u, x)) ≤ ⨅ x ∈ D, ⨆ u ∈ C, K (u, x) := by
-  rw [← maximin_subtype, ← minimax_subtype]
-  exact maximin_le_minimax _
 
 /-- `p` is a saddle-point relative to `C × D` exactly when the outer supremum in `sup inf` over
 `C × D` is attained at `p.1`, the outer infimum in `inf sup` over `C × D` is attained at `p.2`,

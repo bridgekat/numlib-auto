@@ -539,7 +539,7 @@ theorem fderiv_evalBasis_apply_basis (q : MvPolynomial ι ℝ) (x : E) (i : ι) 
 /-- **Two polynomials whose functions agree almost everywhere on a nonempty open set are equal.**
 The functions are continuous, so they agree on the open set, whose image under the coordinate
 map has nonempty interior. -/
-theorem eq_of_evalBasis_ae_eq [MeasurableSpace E] [BorelSpace E] {μ : Measure E}
+theorem eq_of_evalBasis_ae_eq [MeasurableSpace E] {μ : Measure E}
     [μ.IsOpenPosMeasure] {Ω : Opens E} (hΩ : (Ω : Set E).Nonempty) {q r : MvPolynomial ι ℝ}
     (h : evalBasis b q =ᵐ[μ.restrict (Ω : Set E)] evalBasis b r) : q = r := by
   have heq : EqOn (evalBasis b q) (evalBasis b r) Ω :=
@@ -608,10 +608,6 @@ theorem exists_ae_eq_add_const_of_forall_fderiv_apply_ae_eq {k : ℕ}
   rw [Pi.sub_apply] at hx
   linarith
 
-omit [LinearOrder ι] in
-/-- The zero multi-index has order zero, as an element of `MultiIndexEq ι 0`. -/
-theorem _root_.MultiIndexEq.zero_mem : ∑ i, ((0 : MultiIndexLE ι 0) : ι → ℕ) i = 0 := by simp
-
 /-- The order of `α + e_i` is `|α| + 1`. -/
 theorem _root_.MultiIndexLE.sum_addSingle {k : ℕ} (i : ι) (α : MultiIndexLE ι k) :
     ∑ j, ((MultiIndexLE.addSingle i α : MultiIndexLE ι (k + 1)) : ι → ℕ) j = ∑ j, α.1 j + 1 := by
@@ -643,7 +639,7 @@ theorem exists_mvPolynomial_ae_eq_of_forall_weakDeriv_eq_zero (hΩ : IsPreconnec
   | zero =>
     intro u hu
     refine ⟨0, by simp, ?_⟩
-    have h0 := hu ⟨0, MultiIndexEq.zero_mem⟩
+    have h0 := hu ⟨0, Fintype.sum_eq_zero _ fun _ ↦ rfl⟩
     rw [evalBasis_zero, ← weakDeriv_zero u, h0]
     exact Lp.coeFn_zero _ _ _
   | succ k ih =>
@@ -1566,6 +1562,7 @@ variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace
 
 namespace SobolevEuclidean
 
+omit [Fact (1 ≤ p)] in
 /-- The polynomial function `x ↦ q(x)` is the function of an element of `W^{k,p}(Ω)`, `Ω`
 bounded. -/
 theorem exists_fn_ae_eq_eval (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
@@ -1585,6 +1582,7 @@ def ofPolynomial (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)
     (q : MvPolynomial (Fin N) ℝ) : SobolevEuclidean N k p Ω :=
   (exists_fn_ae_eq_eval (k := k) (p := p) hb q).choose
 
+omit [Fact (1 ≤ p)] in
 /-- The function of `ofPolynomial hb q` is `x ↦ q(x)` almost everywhere on `Ω`. -/
 theorem fn_ofPolynomial (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (q : MvPolynomial (Fin N) ℝ) :
@@ -1592,6 +1590,7 @@ theorem fn_ofPolynomial (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ 
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fun x ↦ eval (fun i ↦ x i) q :=
   (exists_fn_ae_eq_eval (k := k) (p := p) hb q).choose_spec
 
+omit [Fact (1 ≤ p)] in
 /-- `ofPolynomial` is additive: the elements are determined by their functions. -/
 theorem ofPolynomial_add (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (q r : MvPolynomial (Fin N) ℝ) :
@@ -1604,6 +1603,7 @@ theorem ofPolynomial_add (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ
       with x h1 h2 h3 h4
     rw [h1, h4, Pi.add_apply, h2, h3, map_add]
 
+omit [Fact (1 ≤ p)] in
 /-- `ofPolynomial` is homogeneous. -/
 theorem ofPolynomial_smul (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (c : ℝ) (q : MvPolynomial (Fin N) ℝ) :
@@ -1636,6 +1636,7 @@ instance instFiniteDimensionalPolynomialSubmodule
     FiniteDimensional ℝ (polynomialSubmodule (k := k) (p := p) hb) :=
   Module.Finite.range _
 
+omit [Fact (1 ≤ p)] in
 /-- **Membership in `ℙ_k(Ω)`**: the function is a polynomial of degree at most `k` almost
 everywhere on `Ω`. -/
 theorem mem_polynomialSubmodule_iff

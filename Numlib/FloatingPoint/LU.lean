@@ -462,9 +462,9 @@ theorem abs_le_of_roundsLU_of_entrywiseNonneg (hu : m.u < 1)
     linarith [mul_nonneg (Nat.cast_nonneg (α := K) (Fintype.card n)) m.u_nonneg]
   obtain ⟨ΔA, hΔ, hLU⟩ := exists_roundsLU_mul_eq_add hu hcard' h hd
   refine ⟨ΔA, ?_, hLU⟩
-  rw [← gamma_div_one_sub_gamma m.u_nonneg hcard]
+  rw [← gamma_div_one_sub_gamma hcard]
   refine abs_entrywiseLE_of_abs_mul_eq (gamma_nonneg m.u_nonneg hcard')
-    (gamma_lt_one m.u_nonneg hcard) hΔ hLU ?_
+    (gamma_lt_one hcard) hΔ hLU ?_
   have hLa : L.abs = L := Matrix.ext fun i j => abs_of_nonneg (hL.apply i j)
   have hUa : U.abs = U := Matrix.ext fun i j => abs_of_nonneg (hU.apply i j)
   rw [hLa, hUa]
@@ -1549,11 +1549,11 @@ theorem exists_roundsThomas_mul_eq_add_of_diag_pos (hu : 2 * m.u < 1)
   obtain ⟨ΔA, hΔ, hLU⟩ := exists_roundsThomas_mul_eq_add hu1 h (fun i => (hα i).ne') N
   refine ⟨ΔA, ?_, hLU⟩
   have h2 : 2 * (((1 : ℕ) : K) * m.u) < 1 := by simpa using hu
-  have := gamma_div_one_sub_gamma m.u_nonneg h2
+  have := gamma_div_one_sub_gamma h2
   simp only [Nat.cast_one, one_mul] at this
   rw [← this]
   exact abs_entrywiseLE_of_abs_mul_eq (gamma_nonneg m.u_nonneg (by simpa using hu1))
-    (gamma_lt_one m.u_nonneg h2) hΔ hLU (abs_lowerBidiagonalOf_mul_upperBidiagonalOf hα hbc N)
+    (gamma_lt_one h2) hΔ hLU (abs_lowerBidiagonalOf_mul_upperBidiagonalOf hα hbc N)
 
 end Thomas
 

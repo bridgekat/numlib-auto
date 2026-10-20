@@ -1041,7 +1041,7 @@ theorem twoGridError_eq_coarseCorrection (m : ℕ) (p₁ p₂ : ℕ) :
         (toEuclideanLin ((modelA m)⁻¹ * restrictionMatrix m * modelA (2 * m + 1)) x) =
         LinearMap.adjoint (toEuclideanLin (prolongationMatrix m))
           (toEuclideanLin (modelA (2 * m + 1)) x) := by
-      rw [galerkinCoarse_apply, ← toEuclideanLin_conjTranspose,
+      rw [galerkinCoarse_apply, ← toEuclideanLin_conjTranspose_eq_adjoint,
         conjTranspose_eq_transpose_of_trivial, hPT]
       simp only [← toEuclideanLin_mul_apply]
       rw [key]

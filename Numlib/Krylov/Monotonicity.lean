@@ -28,7 +28,7 @@ namespace Krylov.IsMinResidualIterate
 
 include hA
 
-set_option linter.unusedSectionVars false in
+omit [FiniteDimensional 𝕜 E] in
 /-- Minimal-residual iterates of an SPD system coincide with the CR iterates. -/
 theorem eq_CR_iterate {x₀ : E} {k : ℕ} {x : E} (hx : IsMinResidualIterate A b x₀ k x) :
     x = (CR.iterate A b x₀ k).x := by
@@ -118,13 +118,14 @@ namespace Krylov.IsGalerkinIterate
 
 include hA
 
-set_option linter.unusedSectionVars false in
+omit [FiniteDimensional 𝕜 E] in
 /-- Galerkin iterates of an SPD system coincide with the CG iterates. -/
 theorem eq_CG_iterate {x₀ : E} {k : ℕ} {x : E} (hx : IsGalerkinIterate A b x₀ k x) :
     x = (CG.iterate A b x₀ k).x := by
   obtain ⟨y, -, huniq⟩ := existsUnique_isGalerkinIterate_of_isCoercive hA.isCoercive b x₀ k
   exact (huniq x hx).trans (huniq _ (CG.isGalerkinIterate b x₀ hA k)).symm
 
+omit [FiniteDimensional 𝕜 E] in
 /-- [steihaug1983conjugate], *The conjugate gradient method and trust regions in large scale
 optimization* (tabulated as the CG column of [fong2012cg], Table 5.1): `‖x_k‖` is nondecreasing (`x₀
 = 0`). -/

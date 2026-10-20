@@ -156,7 +156,7 @@ theorem toLpₗOn_coeFn {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
   MemLp.coeFn_toLp (h u)
 
 /-- The norm of `SobolevMultiIndex.toLpₗOn S h u` is the `L^q(Ω)` norm of the function. -/
-theorem norm_toLpₗOn [Fact (1 ≤ q)] {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
+theorem norm_toLpₗOn {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
     (h : ∀ u : S, MemLp (fn (u : SobolevMultiIndex F b k p Ω μ)) q (μ.restrict (Ω : Set E)))
     (u : S) :
     ‖toLpₗOn F b k p Ω μ S h u‖
@@ -660,10 +660,11 @@ theorem HasSobolevExtensionOn.toContinuousMapOnL_apply (hS : HasSobolevExtension
     hS.toContinuousMapOnL hp K u x = SobolevEuclidean.contRep hp (hS.choose u) x :=
   rfl
 
-/-- The trace map is the continuous representative: for `u ∈ S`, the function
-`x ↦ hS.toContinuousMapOnL hp K u x` is `fn u` almost everywhere on `Ω ⊆ K`. -/
+/-- The trace map is the continuous representative: for `u ∈ S`, `fn u` is a.e. on `Ω` the
+continuous representative of the extension (which is what `toContinuousMapOnL hp K` restricts
+to `K`). -/
 theorem HasSobolevExtensionOn.fn_ae_eq_toContinuousMapOnL (hS : HasSobolevExtensionOn S)
-    (hp : N < p) (K : Set (EuclideanSpace ℝ (Fin N))) [CompactSpace K] (u : S) :
+    (hp : N < p) (u : S) :
     fn (u : SobolevEuclidean N 1 p Ω) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       SobolevEuclidean.contRep hp (hS.choose u) :=
   (hS.choose_spec u).symm.trans
@@ -681,7 +682,7 @@ theorem HasSobolevExtensionOn.toContinuousMapOnL_apply_of_ae_eq (hS : HasSobolev
   rw [hS.toContinuousMapOnL_apply]
   have heq : EqOn (SobolevEuclidean.contRep hp (hS.choose u)) g
       (Ω : Set (EuclideanSpace ℝ (Fin N))) :=
-    Measure.eqOn_open_of_ae_eq ((hS.fn_ae_eq_toContinuousMapOnL hp K u).symm.trans hu) Ω.isOpen
+    Measure.eqOn_open_of_ae_eq ((hS.fn_ae_eq_toContinuousMapOnL hp u).symm.trans hu) Ω.isOpen
       (SobolevEuclidean.contRep hp (hS.choose u)).continuous.continuousOn hg.continuousOn
   exact heq.of_subset_closure (SobolevEuclidean.contRep hp (hS.choose u)).continuous.continuousOn
     hg.continuousOn subset_closure subset_rfl hx
@@ -702,8 +703,8 @@ theorem HasSobolevExtensionOn.toContinuousMapOnL_injective (hS : HasSobolevExten
     Function.Injective (hS.toContinuousMapOnL hp K) := by
   intro u v huv
   refine Subtype.ext (ext_of_fn_ae_eq ?_)
-  refine (hS.fn_ae_eq_toContinuousMapOnL hp K u).trans
-    (Filter.EventuallyEq.trans ?_ (hS.fn_ae_eq_toContinuousMapOnL hp K v).symm)
+  refine (hS.fn_ae_eq_toContinuousMapOnL hp u).trans
+    (Filter.EventuallyEq.trans ?_ (hS.fn_ae_eq_toContinuousMapOnL hp v).symm)
   refine ae_restrict_of_forall_mem Ω.isOpen.measurableSet fun x hx ↦ ?_
   have := congrArg (fun f : C(K, ℝ) ↦ f ⟨x, hK hx⟩) huv
   simpa [HasSobolevExtensionOn.toContinuousMapOnL_apply] using this
@@ -778,11 +779,10 @@ theorem SobolevEuclidean.toContinuousMapL_apply (hΩ : IsSobolevExtensionDomain 
 
 /-- The trace map on `W^{1,p}(Ω)` is the continuous representative on `Ω`. -/
 theorem SobolevEuclidean.fn_ae_eq_toContinuousMapL (hΩ : IsSobolevExtensionDomain N p Ω)
-    (hp : N < p) (K : Set (EuclideanSpace ℝ (Fin N))) [CompactSpace K]
-    (u : SobolevEuclidean N 1 p Ω) :
+    (hp : N < p) (u : SobolevEuclidean N 1 p Ω) :
     fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       SobolevEuclidean.contRep hp (hΩ.choose ⟨u, Submodule.mem_top⟩) :=
-  hΩ.fn_ae_eq_toContinuousMapOnL hp K ⟨u, Submodule.mem_top⟩
+  hΩ.fn_ae_eq_toContinuousMapOnL hp ⟨u, Submodule.mem_top⟩
 
 /-- The trace map on `W^{1,p}(Ω)` is injective for `K ⊇ Ω`. -/
 theorem SobolevEuclidean.toContinuousMapL_injective (hΩ : IsSobolevExtensionDomain N p Ω)
@@ -1590,10 +1590,10 @@ theorem ENNReal.one_div_toReal_sub_nonneg_of_le {q r : ℝ≥0∞} (hq : 1 ≤ q
   · exact one_div_le_one_div_of_le (ENNReal.toReal_pos (one_pos.trans_le hq).ne'
       (ne_top_of_le_ne_top hr hqr)) (ENNReal.toReal_mono hr hqr)
 
-/-- **Lowering the exponent of an embedding on a set of finite measure**: from
-`‖u‖_{L^r(Ω)} ≤ K ‖u‖` and `1 ≤ q ≤ r` follows `‖u‖_{L^q(Ω)} ≤ K |Ω|^{1/q − 1/r} ‖u‖`. -/
+/-- **Lowering the exponent of an embedding**: from `‖u‖_{L^r(Ω)} ≤ K ‖u‖` and `q ≤ r` follows
+`‖u‖_{L^q(Ω)} ≤ K |Ω|^{1/q − 1/r} ‖u‖`; when `|Ω| = ∞` (and `q < r`) the factor is `∞`. -/
 theorem SobolevEuclidean.eLpNorm_fn_le_mul_of_le
-    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {q r : ℝ≥0∞} (hq : 1 ≤ q) (hqr : q ≤ r)
+    {q r : ℝ≥0∞} (hqr : q ≤ r)
     {K : ℝ≥0∞}
     (hKu : ∀ u : SobolevEuclidean N 1 p Ω, eLpNorm (fn u) r
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) ≤ K * ENNReal.ofReal ‖u‖)
@@ -1601,8 +1601,6 @@ theorem SobolevEuclidean.eLpNorm_fn_le_mul_of_le
     eLpNorm (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
       ≤ K * volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ^ (1 / q.toReal - 1 / r.toReal)
         * ENNReal.ofReal ‖u‖ := by
-  have _ := hΩ
-  have _ := hq
   calc eLpNorm (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
       ≤ eLpNorm (fn u) r (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
         * (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) univ
@@ -1636,7 +1634,7 @@ theorem SobolevEuclidean.exists_forall_gradNorm_add_eLpNorm_le_norm
       ≤ M.toReal * ‖u‖ := by
     rw [← ENNReal.toReal_ofReal (norm_nonneg u), ← ENNReal.toReal_mul, hM]
     exact ENNReal.toReal_mono (ENNReal.mul_ne_top (hM ▸ hMt) ENNReal.ofReal_ne_top)
-      (SobolevEuclidean.eLpNorm_fn_le_mul_of_le hΩ hq hqr hKu u)
+      (SobolevEuclidean.eLpNorm_fn_le_mul_of_le hqr hKu u)
   calc gradNorm u + (eLpNorm (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toReal
       ≤ ‖u‖ + M.toReal * ‖u‖ := add_le_add (gradNorm_le_norm u) h2
     _ = (1 + M.toReal) * ‖u‖ := by ring
@@ -1664,7 +1662,7 @@ theorem SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_isBounded
       eLpNorm (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) ≠ ⊤ := fun u ↦
     ne_top_of_le_ne_top (ENNReal.mul_ne_top (ENNReal.mul_ne_top hK (ENNReal.rpow_ne_top_of_nonneg
       (ENNReal.one_div_toReal_sub_nonneg_of_le hq hqr) hΩ)) ENNReal.ofReal_ne_top)
-      (SobolevEuclidean.eLpNorm_fn_le_mul_of_le hΩ hq hqr hKu u)
+      (SobolevEuclidean.eLpNorm_fn_le_mul_of_le hqr hKu u)
   -- the norm through the function and the gradient
   have hnorm : ∀ u : SobolevEuclidean N 1 p Ω, ‖u‖ ≤
       (eLpNorm (fn u) p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toReal
@@ -2058,7 +2056,7 @@ classical partial derivatives as weak derivatives: the case `m = n = 1` of
 Remark 2 of Chapter 9 read on `Ω̄`, the membership step of §9.5, Example 1, Step A. -/
 theorem ContDiffOnClosure.memSobolevMultiIndex_of_isBounded
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
-    (hu : ContDiffOnClosure ℝ 1 u Ω) (p : ℝ≥0∞) [Fact (1 ≤ p)] :
+    (hu : ContDiffOnClosure ℝ 1 u Ω) (p : ℝ≥0∞) :
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u 1 p Ω volume :=
   hu.memSobolevMultiIndex_of_isBounded_of_le Ω hΩ p le_rfl
 

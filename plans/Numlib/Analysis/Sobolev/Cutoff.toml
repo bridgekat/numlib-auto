@@ -74,9 +74,6 @@ id = "eLpNorm_indicator_smul_le_of_forall_norm_le"
 id = "memLp_indicator_smul_of_forall_norm_le"
 
 [[node]]
-id = "PiLp.norm_le_norm_of_forall_norm_le"
-
-[[node]]
 id = "PiLp.norm_le_sum_norm"
 
 [[node]]

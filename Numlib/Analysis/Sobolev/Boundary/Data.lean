@@ -424,7 +424,7 @@ theorem integral_div_eq_of_contDiff {F : EuclideanSpace ℝ (Fin N) → Euclidea
 
 include B in
 /-- A function continuous on `closure Ω` is integrable on the bounded `Ω`. -/
-theorem integrableOn_of_continuousOn {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
+theorem integrableOn_of_continuousOn {G : Type*} [NormedAddCommGroup G]
     {f : EuclideanSpace ℝ (Fin N) → G}
     (hf : ContinuousOn f (closure (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     IntegrableOn f (Ω : Set (EuclideanSpace ℝ (Fin N))) :=

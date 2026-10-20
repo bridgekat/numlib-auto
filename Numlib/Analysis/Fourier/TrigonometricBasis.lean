@@ -143,7 +143,8 @@ noncomputable abbrev trigLp (T : ℝ) [hT : Fact (0 < T)] (n : ℤ) :
     Lp ℝ 2 (@AddCircle.haarAddCircle T hT) :=
   ContinuousMap.toLp (E := ℝ) 2 AddCircle.haarAddCircle ℝ (trigFun T n)
 
-private theorem norm_fourier_apply (n : ℤ) (x : AddCircle T) : ‖fourier n x‖ = 1 := by
+/-- The characters of the circle have modulus one at every point. -/
+theorem norm_fourier_apply (n : ℤ) (x : AddCircle T) : ‖fourier n x‖ = 1 := by
   rw [fourier_apply, Circle.norm_coe]
 
 /-- The circle of circumference `2 π`, on which the classical Fourier series lives, needs

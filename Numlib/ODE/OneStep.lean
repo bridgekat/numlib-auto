@@ -218,8 +218,8 @@ theorem isOrbit_iff {u : ℕ → E} : IsOrbit S h t₀ u ↔ ∀ n, S h (node t�
 ([quarteroni2000numerical] (11.11)). -/
 theorem isOrbit_ofIncrement_iff {u : ℕ → E} :
     IsOrbit (ofIncrement Φ) h t₀ u ↔
-      ∀ n, u (n + 1) = u n + h • Φ (node t₀ h n) (u n) (u (n + 1)) h := by
-  simp [IsOrbit, IsOrbitWith, ofIncrement]
+      ∀ n, u (n + 1) = u n + h • Φ (node t₀ h n) (u n) (u (n + 1)) h :=
+  isOrbit_iff
 
 /-- A perturbed orbit of an increment function is the recursion
 `z_{n+1} = z_n + h Φ(t_n, z_n, z_{n+1} - h δ_{n+1}; h) + h δ_{n+1}`

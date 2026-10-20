@@ -270,9 +270,8 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 `U` is nonsingular then `(U⁻¹ A U)(U⁻¹ x) = μ (U⁻¹ x)`. -/
 theorem mulVec_conj_eq_smul_of_mulVec_eq_smul {R : Type*} [CommRing R] {A U : Matrix n n R}
     (hU : IsUnit U) {μ : R} {x : n → R} (hx : A *ᵥ x = μ • x) :
-    (U⁻¹ * A * U) *ᵥ (U⁻¹ *ᵥ x) = μ • (U⁻¹ *ᵥ x) := by
-  rw [mulVec_mulVec, Matrix.mul_assoc, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hU),
-    Matrix.mul_one, ← mulVec_mulVec, hx, mulVec_smul]
+    (U⁻¹ * A * U) *ᵥ (U⁻¹ *ᵥ x) = μ • (U⁻¹ *ᵥ x) :=
+  IsSimilar.mulVec_eq_smul hU rfl hx
 
 /-- The unitary form of `Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul`: if `A x = μ x` and `U` is
 unitary then `(Uᴴ A U)(Uᴴ x) = μ (Uᴴ x)`. This is how an eigenvector of the Hessenberg or Schur

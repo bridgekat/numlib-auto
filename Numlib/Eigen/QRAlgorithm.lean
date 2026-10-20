@@ -618,24 +618,6 @@ theorem span_euclideanCol_eq_map (A : Matrix n n 𝕜) (S : Set n) :
 
 end Ring
 
-section Order
-
-variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
-
-/-! ### Upper triangular matrices -/
-
-omit [DecidableEq n] in
-/-- The diagonal of a product of upper triangular matrices is the product of the diagonals. -/
-theorem IsUpperTriangular.diag_mul {M N : Matrix n n 𝕜} (hM : M.IsUpperTriangular)
-    (hN : N.IsUpperTriangular) (i : n) : (M * N) i i = M i i * N i i := by
-  rw [Matrix.mul_apply]
-  refine Finset.sum_eq_single i (fun p _ hp => ?_) (fun h => absurd (Finset.mem_univ i) h)
-  rcases lt_or_gt_of_ne hp with hlt | hgt
-  · rw [hM hlt, zero_mul]
-  · rw [hN hgt, mul_zero]
-
-end Order
-
 /-! ### Shifted QR steps for arbitrary factorizations
 
 The canonical steps below (`Matrix.shiftedQrStep`, `Matrix.qrIterate`) fix one QR factorization,
@@ -1371,15 +1353,6 @@ theorem isUnit_det_qrIterate {A : Matrix n n 𝕜} (hA : IsUnit A.det) (k : ℕ)
   rw [qrIterate_eq_conj_qrAccum, Matrix.det_mul, Matrix.det_mul, mul_right_comm]
   exact (isUnit_of_mul_isUnit_left hunit |>.mul (isUnit_of_mul_isUnit_right hunit)).mul hA
 
-private theorem mul_pos_of_pos {a b : 𝕜} (ha : 0 < a) (hb : 0 < b) : 0 < a * b := by
-  rw [RCLike.pos_iff] at ha hb ⊢
-  refine ⟨?_, ?_⟩
-  · rw [RCLike.mul_re, ha.2, hb.2]
-    have := mul_pos ha.1 hb.1
-    nlinarith
-  · rw [RCLike.mul_im, ha.2, hb.2]
-    ring
-
 /-- **The accumulated triangular factor has a positive diagonal** at a nonsingular matrix: it is a
 product of the triangular factors `R_j`, each of which has one by `Matrix.qrR_diag_pos`. -/
 theorem qrTriangle_diag_pos {A : Matrix n n 𝕜} (hA : IsUnit A.det) (k : ℕ) (j : n) :
@@ -1390,8 +1363,8 @@ theorem qrTriangle_diag_pos {A : Matrix n n 𝕜} (hA : IsUnit A.det) (k : ℕ) 
     exact zero_lt_one
   | succ k ih =>
     rw [qrTriangle_succ,
-      IsUpperTriangular.diag_mul (isUpperTriangular_qrR _) (isUpperTriangular_qrTriangle A k)]
-    exact mul_pos_of_pos (qrR_diag_pos (isUnit_det_qrIterate hA k) j) ih
+      IsUpperTriangular.mul_apply_self (isUpperTriangular_qrR _) (isUpperTriangular_qrTriangle A k)]
+    exact mul_pos (qrR_diag_pos (isUnit_det_qrIterate hA k) j) ih
 
 /-- **The accumulated unitary factor of the QR algorithm is the orthogonal iteration of the
 canonical flag** ([kress1998numerical], §7.4): the columns of `Q̃_k` are the Gram–Schmidt
@@ -2025,7 +1998,7 @@ theorem doubleShiftQrStep_map_ofReal (H : Matrix (Fin N) (Fin N) ℝ) {a : ℂ}
       conjTranspose_qrQ_mul_self]
   have htri : (R₂ * R₁).IsUpperTriangular := (isUpperTriangular_qrR _).mul (isUpperTriangular_qrR _)
   have hpos : ∀ j, 0 < (R₂ * R₁).diag j := fun j => by
-    rw [diag_apply, IsUpperTriangular.diag_mul (isUpperTriangular_qrR _) (isUpperTriangular_qrR _)]
+    rw [diag_apply, (isUpperTriangular_qrR _).mul_apply_self (isUpperTriangular_qrR _)]
     exact mul_pos (qrR_diag_pos hdet₂ j) (qrR_diag_pos hdet₁ j)
   have htriM : ((qrR M).complexify).IsUpperTriangular := fun i j hij => by
     rw [complexify_apply, isUpperTriangular_qrR M hij, Complex.ofReal_zero]

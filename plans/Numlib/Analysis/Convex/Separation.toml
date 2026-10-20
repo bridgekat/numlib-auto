@@ -61,9 +61,6 @@ id = 'exists_separating_of_notMem_closed_convex'
 id = 'mem_iff_forall_le_halfSpace'
 
 [[node]]
-id = 'isClosed_convex_eq_iInter_halfspaces'
-
-[[node]]
 id = 'closure_convexHull_eq_iInter_halfspaces'
 
 [[node]]

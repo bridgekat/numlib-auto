@@ -143,10 +143,6 @@ theorem norm_sub_le_of_projection {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIde
 
 /-! ### Jacobson's identity -/
 
-/-- Composition of operators of a space into itself is the multiplication of its endomorphism ring.
-The two spellings are definitionally equal; this moves between them where ring lemmas are wanted. -/
-private theorem comp_eq_mul (C D : X →L[𝕜] X) : C ∘L D = C * D := rfl
-
 /-- **Jacobson's identity**, [han2009theoretical] Lemma 12.3.1: for bounded operators `A`, `B` on a
 Banach space and a nonzero `μ`, an inverse of `μ - A B` produces one of `μ - B A`, namely `(μ - B
 A)⁻¹ = (1 + B (μ - A B)⁻¹ A) / μ`.
@@ -159,7 +155,7 @@ theorem exists_equiv_smul_sub_comp_comm {μ : 𝕜} (hμ : μ ≠ 0) {A B : X �
     (he : (e : X →L[𝕜] X) = μ • 1 - A ∘L B) :
     ∃ e' : X ≃L[𝕜] X, (e' : X →L[𝕜] X) = μ • 1 - B ∘L A ∧
       (e'.symm : X →L[𝕜] X) = μ⁻¹ • (1 + B ∘L ((e.symm : X →L[𝕜] X) ∘L A)) := by
-  simp only [comp_eq_mul] at he ⊢
+  simp only [← ContinuousLinearMap.mul_def] at he ⊢
   obtain ⟨R, hR⟩ : ∃ R : X →L[𝕜] X, (e.symm : X →L[𝕜] X) = R := ⟨_, rfl⟩
   rw [hR]
   have hRr : ((μ • 1 : X →L[𝕜] X) - A * B) * R = 1 := by

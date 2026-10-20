@@ -122,11 +122,11 @@ theorem isGalerkin_adjoint_comp_iff_isMinResidual (A : Matrix (Fin n) (Fin n) �
     rintro _ ⟨w, hw, rfl⟩
     have h := (Submodule.mem_orthogonal _ _).1 horth w hw
     rwa [LinearMap.comp_apply, ← map_sub,
-      Krylov.inner_adjoint_right (Chapter08.inner_op_conjTranspose A)] at h
+      ← LinearMap.inner_apply_eq_inner_apply_of_adjoint (Chapter08.inner_op_conjTranspose A)] at h
   · refine ⟨hmem, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩
     have h := (Submodule.mem_orthogonal _ _).1 horth (op A w) (Submodule.mem_map_of_mem hw)
     rwa [LinearMap.comp_apply, ← map_sub,
-      Krylov.inner_adjoint_right (Chapter08.inner_op_conjTranspose A)]
+      ← LinearMap.inner_apply_eq_inner_apply_of_adjoint (Chapter08.inner_op_conjTranspose A)]
 
 /-- **CGNE's optimality over an arbitrary subspace.** If `u` is a Galerkin iterate for
 `A Aᴴ u = b` over `u₀ + K` and `x = x₀ + Aᴴ (u - u₀)`, then `x` minimizes the *error*
@@ -150,7 +150,8 @@ theorem isMinError_of_isGalerkin_comp_adjoint (A : Matrix (Fin n) (Fin n) 𝕜)
   have h2 : op A x₀ = (op A ∘ₗ op Aᴴ) u₀ := by rw [hx₀, LinearMap.comp_apply]
   have hA : op A ((xstar - x₀) - op Aᴴ (u - u₀)) = b - (op A ∘ₗ op Aᴴ) u := by
     rw [map_sub, map_sub, hstar, h1, h2]; abel
-  rw [Krylov.inner_adjoint_right (Chapter08.inner_op_conjTranspose A), hA, ← inner_conj_symm,
+  rw [← LinearMap.inner_apply_eq_inner_apply_of_adjoint (Chapter08.inner_op_conjTranspose A), hA,
+    ← inner_conj_symm,
     (Submodule.mem_orthogonal _ _).1 hu.orth z hz, map_zero]
 
 /-! ### Algorithm 9.7: left-preconditioned CGNR -/

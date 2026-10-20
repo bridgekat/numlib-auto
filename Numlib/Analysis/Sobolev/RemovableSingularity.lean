@@ -252,12 +252,6 @@ private theorem norm_integral_le_mul_setIntegral_norm {g h : E → F} {s : Set E
   · exact ((integrable_indicator_iff hs).2 hh.norm).const_mul C
   · exact le_of_eq (by rw [integral_const_mul, integral_indicator hs])
 
-/-- Almost every point differs from a given one: a point is null for an additive Haar measure on
-a nontrivial space. -/
-private theorem ae_ne_of_isAddHaarMeasure (a : E) : ∀ᵐ x ∂μ, x ≠ a := by
-  have ha : μ ({a} : Set E) = 0 := by simp
-  simp [ae_iff, ha]
-
 /-- **The removable-singularity lemma for weak derivatives.** Let `f` be locally integrable on the
 open set `Ω`, let `w` be locally integrable on `Ω`, and suppose that `w x` is the classical
 derivative of `f` at every point of `Ω` other than `a`. If moreover
@@ -367,7 +361,7 @@ theorem hasWeakFDerivOn_of_hasFDerivAt_compl_singleton (hf : LocallyIntegrableOn
     have h1 : I + J - (A δ + B δ + C δ) = 0 := by rw [← h0]; abel
     exact sub_eq_zero.1 h1
   -- Almost every point differs from the singular one.
-  have hae : ∀ᵐ x ∂μ, x ≠ a := ae_ne_of_isAddHaarMeasure a
+  have hae : ∀ᵐ x ∂μ, x ≠ a := Measure.ae_ne μ a
   have hvanish : ∀ x : E, x ≠ a →
       ∀ᶠ δ : ℝ in 𝓝[>] (0 : ℝ), 0 < δ ∧ punctureBump a δ x = 0 := by
     intro x hx

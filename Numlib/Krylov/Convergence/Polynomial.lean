@@ -3,6 +3,7 @@ import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.Topology.Algebra.Polynomial
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
+import Numlib.Eigen.MinMax
 
 /-!
 # Polynomials in a symmetric operator: spectral norm bounds
@@ -29,16 +30,6 @@ namespace LinearMap.IsSymmetric
 variable {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
 include hA
 
-/-- In the eigenvector basis, `A^k` acts diagonally by `λ^k`. -/
-private theorem repr_pow_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (k : ℕ) (x : E) (i : Fin n) :
-    (hA.eigenvectorBasis hn).repr ((A ^ k) x) i =
-      (hA.eigenvalues hn i : 𝕜) ^ k * (hA.eigenvectorBasis hn).repr x i := by
-  induction k generalizing x with
-  | zero => simp
-  | succ k ih =>
-      rw [pow_succ, Module.End.mul_apply, ih, hA.eigenvectorBasis_apply_self_apply hn]
-      ring
-
 /-- In the eigenvector basis, `p(A)` acts diagonally by `p(λ)`.  This is the expansion behind every
 bound on `p(A)` in terms of the values of `p` on the spectrum, here and in the Krylov eigenvalue
 estimates. -/
@@ -51,19 +42,10 @@ theorem repr_aeval_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (p : 𝕜[X]
   | monomial k c =>
       have hmon : aeval A (monomial k c) x = c • (A ^ k) x := by
         simp [aeval_monomial]
-      rw [hmon, map_smul, PiLp.smul_apply, smul_eq_mul, hA.repr_pow_apply hn, eval_monomial]
+      rw [hmon, map_smul, PiLp.smul_apply, smul_eq_mul,
+        (hA.eigenvectorBasis hn).repr_pow_apply_of_apply_eq_smul (hA.apply_eigenvectorBasis hn),
+        eval_monomial]
       ring
-
-/-- The quadratic form in the eigenvector basis. -/
-private theorem re_inner_apply_self {n : ℕ} (hn : Module.finrank 𝕜 E = n) (x : E) :
-    RCLike.re (inner 𝕜 (A x) x) =
-      ∑ i, hA.eigenvalues hn i * ‖(hA.eigenvectorBasis hn).repr x i‖ ^ 2 := by
-  rw [← (hA.eigenvectorBasis hn).sum_inner_mul_inner (A x) x, map_sum]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [hA x (hA.eigenvectorBasis hn i), hA.apply_eigenvectorBasis hn, inner_smul_right,
-    ← inner_conj_symm x (hA.eigenvectorBasis hn i), mul_assoc, RCLike.conj_mul,
-    OrthonormalBasis.repr_apply_apply]
-  simp
 
 /-- Eigenvalues of `p(A)` are `p(λ)`; hence `‖p(A) x‖ ≤ C ‖x‖` whenever `‖p(λ)‖ ≤ C` on the
 spectrum. -/
@@ -102,7 +84,7 @@ theorem energyNorm_aeval_apply_le (hA' : A.IsSymmetricCoercive) {C : ℝ} (p : �
     simpa using h.le
   have key : RCLike.re (inner 𝕜 (A (aeval A p x)) (aeval A p x)) ≤
       C ^ 2 * RCLike.re (inner 𝕜 (A x) x) := by
-    rw [hA.re_inner_apply_self hn, hA.re_inner_apply_self hn, Finset.mul_sum]
+    rw [hA.re_inner_apply_self_eq_sum hn, hA.re_inner_apply_self_eq_sum hn, Finset.mul_sum]
     refine Finset.sum_le_sum fun i _ => ?_
     rw [hA.repr_aeval_apply hn, norm_mul, mul_pow]
     have hle : ‖p.eval (hA.eigenvalues hn i : 𝕜)‖ ^ 2 ≤ C ^ 2 := by
@@ -197,11 +179,6 @@ end Compression
 
 section Interval
 
-/-- The image of a compact interval under `|p|` is bounded above. -/
-private theorem bddAbove_image_abs_eval (p : ℝ[X]) (a b : ℝ) :
-    BddAbove ((fun t => |p.eval t|) '' Set.Icc a b) :=
-  (isCompact_Icc.image p.continuous.abs).bddAbove
-
 /-- For a symmetric operator with quadratic form in `[a, b]`, the values of a real polynomial at the
 (real) eigenvalues are bounded by its sup over `[a, b]`. -/
 private theorem norm_eval_map_le_sSup {A : E →ₗ[𝕜] E} {a b : ℝ}
@@ -218,7 +195,7 @@ private theorem norm_eval_map_le_sSup {A : E →ₗ[𝕜] E} {a b : ℝ}
     conv_lhs => rw [hμ']
     rw [eval_map, eval₂_at_apply, RCLike.algebraMap_eq_ofReal]
   rw [heval, RCLike.norm_ofReal]
-  exact le_csSup (bddAbove_image_abs_eval p a b) ⟨RCLike.re μ, hmem, rfl⟩
+  exact le_csSup (isCompact_Icc.image p.continuous.abs).bddAbove ⟨RCLike.re μ, hmem, rfl⟩
 
 end Interval
 

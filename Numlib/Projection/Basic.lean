@@ -144,12 +144,6 @@ theorem of_mem (hx : IsPetrovGalerkin A b x₀ K L x) {x₁ : E} (hx₁ : x₁ -
   have h : x - x₁ = (x - x₀) - (x₁ - x₀) := by abel
   rw [h]; exact K.sub_mem hx.mem hx₁
 
-/-- The Petrov–Galerkin residual is orthogonal to `L`; a restatement of the defining condition, and
-the input to the quasi-optimality bound of [saad2003iterative], Thm 5.7, which with `r₀ = b - A x₀`
-and `d₀ = x* - x₀` controls the error by the distance of `d₀` from `K`.  See `Optimality.lean` for
-the Galerkin / minimal-residual cases. -/
-theorem residual_mem_orthogonal (hx : IsPetrovGalerkin A b x₀ K L x) : b - A x ∈ Lᗮ := hx.orth
-
 end IsPetrovGalerkin
 
 /-- The residual at `y` in terms of the initial residual. -/
@@ -162,7 +156,7 @@ variable {A : E →ₗ[𝕜] F} {b : F} {x₀ : E} {K : Submodule 𝕜 E} {x : E
 
 /-- [saad2003iterative], Prop 5.3: minimal residual over `x₀ + K` iff Petrov–Galerkin with `L = A
 K`. -/
-theorem iff_isPetrovGalerkin [FiniteDimensional 𝕜 K] :
+theorem iff_isPetrovGalerkin :
     IsMinResidual A b x₀ K x ↔ IsPetrovGalerkin A b x₀ K (K.map A) x := by
   constructor
   · rintro ⟨hmem, hmin⟩
@@ -185,7 +179,7 @@ theorem iff_isPetrovGalerkin [FiniteDimensional 𝕜 K] :
 
 /-- The forward direction of `IsMinResidual.iff_isPetrovGalerkin`: a minimal-residual iterate is
 Petrov–Galerkin with `L = A K`. -/
-theorem isPetrovGalerkin [FiniteDimensional 𝕜 K] (hx : IsMinResidual A b x₀ K x) :
+theorem isPetrovGalerkin (hx : IsMinResidual A b x₀ K x) :
     IsPetrovGalerkin A b x₀ K (K.map A) x :=
   (iff_isPetrovGalerkin).1 hx
 

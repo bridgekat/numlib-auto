@@ -687,12 +687,6 @@ open Real
 
 variable {n : ℕ}
 
-/-- The Chebyshev–Gauss–Lobatto nodes `cos (jπ/n)`, `j = 0, …, n`, are distinct. -/
-theorem node_injective : Function.Injective fun j : Fin (n + 1) => node n j := by
-  intro j k h
-  exact Fin.ext ((strictAntiOn_node n).injOn (Finset.mem_coe.2 (Finset.mem_range.2 j.isLt))
-    (Finset.mem_coe.2 (Finset.mem_range.2 k.isLt)) h)
-
 /-- `T_n'` vanishes at the interior Chebyshev–Gauss–Lobatto nodes, the extrema of `T_n`. -/
 theorem eval_derivative_T_node_of_pos_of_lt {j : ℕ} (hj0 : 0 < j) (hjn : j < n) :
     (derivative (T ℝ n)).eval (node n j) = 0 := by
@@ -812,7 +806,7 @@ theorem lobattoNodalT_eq_C_mul_nodal (hn : n ≠ 0) :
       = Polynomial.C c * Lagrange.nodal Finset.univ (fun j : Fin (n + 1) => node n j) := by
   have hdvd : Lagrange.nodal Finset.univ (fun j : Fin (n + 1) => node n j) ∣ lobattoNodalT n := by
     rw [Lagrange.nodal_eq]
-    refine Finset.prod_dvd_of_coprime ((pairwise_coprime_X_sub_C node_injective).set_pairwise _)
+    refine Finset.prod_dvd_of_coprime ((pairwise_coprime_X_sub_C (injective_node n)).set_pairwise _)
       fun j _ => ?_
     rw [dvd_iff_isRoot]
     exact eval_lobattoNodalT_node (Nat.lt_succ_iff.1 j.isLt)
@@ -899,11 +893,11 @@ theorem derivMatrix_node_of_ne (hn : n ≠ 0) {l j : Fin (n + 1)} (hlj : l ≠ j
     derivMatrix (fun j : Fin (n + 1) => node n j) l j
       = lobattoFactor n l / lobattoFactor n j * (-1) ^ ((l : ℕ) + j) / (node n l - node n j) := by
   obtain ⟨c, hc, hp⟩ := lobattoNodalT_eq_C_mul_nodal hn
-  rw [derivMatrix_apply, eval_derivative_basis_of_ne_of_eq_C_mul_nodal node_injective.injOn
+  rw [derivMatrix_apply, eval_derivative_basis_of_ne_of_eq_C_mul_nodal (injective_node n).injOn
     (Finset.mem_univ _) (Finset.mem_univ _) hlj.symm hc hp]
   rw [eval_derivative_lobattoNodalT_node (Nat.lt_succ_iff.1 l.isLt),
     eval_derivative_lobattoNodalT_node (Nat.lt_succ_iff.1 j.isLt)]
-  have hne : node n l - node n j ≠ 0 := sub_ne_zero.2 fun h => hlj (node_injective h)
+  have hne : node n l - node n j ≠ 0 := sub_ne_zero.2 fun h => hlj (injective_node n h)
   have hdl : lobattoFactor n l ≠ 0 := (lobattoFactor_pos n l).ne'
   have hdj : lobattoFactor n j ≠ 0 := (lobattoFactor_pos n j).ne'
   have hn' : (n : ℝ) ≠ 0 := by exact_mod_cast hn
@@ -917,7 +911,7 @@ theorem derivMatrix_node_self_of_pos_of_lt (hn : n ≠ 0) {j : Fin (n + 1)} (hj0
     (hjn : (j : ℕ) < n) :
     derivMatrix (fun j : Fin (n + 1) => node n j) j j = -node n j / (2 * (1 - node n j ^ 2)) := by
   obtain ⟨c, hc, hp⟩ := lobattoNodalT_eq_C_mul_nodal hn
-  rw [derivMatrix_apply, eval_derivative_basis_self_of_eq_C_mul_nodal node_injective.injOn
+  rw [derivMatrix_apply, eval_derivative_basis_self_of_eq_C_mul_nodal (injective_node n).injOn
     (Finset.mem_univ _) hc hp, eval_derivative_lobattoNodalT_node (Nat.lt_succ_iff.1 j.isLt),
     lobattoFactor_of_ne hj0.ne' hjn.ne]
   have h := one_sub_sq_mul_eval_derivative_derivative_lobattoNodalT_node hj0 hjn
@@ -936,7 +930,7 @@ theorem derivMatrix_node_self_of_pos_of_lt (hn : n ≠ 0) {j : Fin (n + 1)} (hj0
 theorem derivMatrix_node_zero_zero (hn : n ≠ 0) :
     derivMatrix (fun j : Fin (n + 1) => node n j) 0 0 = (2 * (n : ℝ) ^ 2 + 1) / 6 := by
   obtain ⟨c, hc, hp⟩ := lobattoNodalT_eq_C_mul_nodal hn
-  rw [derivMatrix_apply, eval_derivative_basis_self_of_eq_C_mul_nodal node_injective.injOn
+  rw [derivMatrix_apply, eval_derivative_basis_self_of_eq_C_mul_nodal (injective_node n).injOn
     (Finset.mem_univ _) hc hp]
   simp only [Fin.val_zero, node_eq_one, eval_derivative_derivative_lobattoNodalT_one]
   rw [← node_eq_one (n := n), eval_derivative_lobattoNodalT_node (Nat.zero_le n), node_eq_one,
@@ -951,7 +945,7 @@ theorem derivMatrix_node_last_last (hn : n ≠ 0) :
     derivMatrix (fun j : Fin (n + 1) => node n j) (Fin.last n) (Fin.last n)
       = -((2 * (n : ℝ) ^ 2 + 1) / 6) := by
   obtain ⟨c, hc, hp⟩ := lobattoNodalT_eq_C_mul_nodal hn
-  rw [derivMatrix_apply, eval_derivative_basis_self_of_eq_C_mul_nodal node_injective.injOn
+  rw [derivMatrix_apply, eval_derivative_basis_self_of_eq_C_mul_nodal (injective_node n).injOn
     (Finset.mem_univ _) hc hp]
   simp only [Fin.val_last]
   rw [eval_derivative_lobattoNodalT_node le_rfl, node_eq_neg_one hn,

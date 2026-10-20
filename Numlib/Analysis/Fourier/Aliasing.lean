@@ -509,16 +509,6 @@ namespace DFT
 
 open Complex
 
-/-- The character `exp (i p x)` is the Fourier monomial `fourier p` of the circle of circumference
-`2 π`, evaluated at the class of `x`. -/
-theorem fourier_coe_two_pi (p : ℤ) (x : ℝ) :
-    (fourier p (x : AddCircle (2 * π)) : ℂ) = Complex.exp ((p : ℂ) * x * I) := by
-  rw [fourier_coe_apply]
-  congr 1
-  have : (2 * π : ℂ) ≠ 0 := by exact_mod_cast Real.two_pi_pos.ne'
-  push_cast
-  field_simp
-
 /-- A sum over `k < N` of the frequencies `k − N/2` is a sum over the centred window. -/
 theorem sum_range_eq_sum_window (N : ℕ) (F : ℤ → ℂ) :
     ∑ k ∈ Finset.range N, F ((k : ℤ) + -((N / 2 : ℕ) : ℤ)) = ∑ q ∈ window N, F q := by

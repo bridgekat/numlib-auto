@@ -1500,7 +1500,7 @@ variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ} {f : ℝ → ℝ}
 
 /-- Every function of `W^{m,p}(I)` is, up to a null set of `I`, the function of an element of
 `SobolevIntervalLp m p I`. -/
-theorem MemSobolevIntervalLp.exists_sobolevIntervalLp [Fact (1 ≤ p)]
+theorem MemSobolevIntervalLp.exists_sobolevIntervalLp
     (h : MemSobolevIntervalLp f m p I) :
     ∃ u : SobolevIntervalLp m p I, SobolevIntervalLp.fn u =ᵐ[volume.restrict I] f :=
   MemSobolevMultiIndex.exists_sobolevMultiIndex h
@@ -1520,7 +1520,7 @@ theorem TestFunction.memLp_deriv (φ : 𝓓(I, ℝ)) (q : ℝ≥0∞) :
 
 /-- A test function lies in every `L^q(I)`. -/
 theorem TestFunction.memLp' (φ : 𝓓(I, ℝ)) (q : ℝ≥0∞) : MemLp φ q (volume.restrict I) :=
-  φ.continuous.memLp_of_hasCompactSupport φ.hasCompactSupport
+  φ.memLp q _
 
 /-- Every exponent `1 ≤ p ≤ ∞` has the Hölder conjugate `(1 - p⁻¹)⁻¹` (`∞` for `p = 1`, `1` for
 `p = ∞`). -/

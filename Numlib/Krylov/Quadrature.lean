@@ -438,23 +438,23 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 open Krylov Quadrature
 
 /-- The Lanczos matrix is unreduced below the grade: `(T_k)_{i,i+1} = β_i ≠ 0` for `i + 1 < k`. -/
-private theorem tridiag_succ_ne_zero {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E)
+private theorem tridiag_succ_ne_zero {A : E →ₗ[𝕜] E} (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {k : ℕ} (hk : k ≤ grade A v) (i : ℕ)
     (h : i + 1 < k) : tridiag A v k ⟨i, by omega⟩ ⟨i + 1, h⟩ ≠ 0 := by
   rw [tridiag_apply, ite_eq_right (by simp), ite_eq_left (by simp)]
   intro h0
-  rw [beta_eq_zero_iff v hA] at h0
+  rw [beta_eq_zero_iff v] at h0
   dsimp only at h0
   omega
 
 /-- The Lanczos matrix is unreduced below the grade. -/
-private theorem tridiag_isUnreducedUpperHessenberg {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E)
+private theorem tridiag_isUnreducedUpperHessenberg {A : E →ₗ[𝕜] E} (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {k : ℕ} (hk : k ≤ grade A v) :
     (tridiag A v k).IsUnreducedUpperHessenberg :=
   Matrix.isUnreducedUpperHessenberg_iff_fin.2 ⟨(tridiag_isTridiagonal A v k).isUpperHessenberg,
     fun i h => by
       rw [(tridiag_isSymm A v k).apply ⟨i, by omega⟩ ⟨i + 1, h⟩]
-      exact tridiag_succ_ne_zero hA v hk i h⟩
+      exact tridiag_succ_ne_zero v hk i h⟩
 
 /-- The Gauss–Radau matrix is tridiagonal. -/
 theorem radauTridiag_isTridiagonal (A : E →ₗ[𝕜] E) (v : E) (m : ℕ) (a : ℝ) :
@@ -495,7 +495,7 @@ private theorem gauss_rule (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
   set hT := tridiag_isHermitian A v m
   have hmg := le_grade_of_finrank hmk
   have hv := ne_zero_of_finrank hm hmk
-  have hU := tridiag_isUnreducedUpperHessenberg hA v hmg
+  have hU := tridiag_isUnreducedUpperHessenberg v hmg
   have hinj : Function.Injective hT.eigenvalues :=
     hT.eigenvalues_injective_of_isUnreducedUpperHessenberg hU
   have hexact : IsExactOnMeasure (spectralMeasure hA hn v)
@@ -560,7 +560,7 @@ private theorem radau_rule (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
       have := congrArg Fin.val h'.1
       simp at this
       omega]
-    exact tridiag_succ_ne_zero hA v hmg i h
+    exact tridiag_succ_ne_zero v hmg i h
   have hRS : (radauTridiag A v m a).IsSymm := Matrix.isHermitian_iff_isSymm.1 hR
   have hU : (radauTridiag A v m a).IsUnreducedUpperHessenberg :=
     Matrix.isUnreducedUpperHessenberg_iff_fin.2

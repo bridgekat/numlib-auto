@@ -721,7 +721,7 @@ variable {K : Type*} [Field K]
 /-- Over a field, the range of `f ⊗ g` has dimension `dim range f · dim range g`. -/
 private theorem finrank_range_tensorProduct_map {M N P Q : Type*} [AddCommGroup M] [Module K M]
     [AddCommGroup N] [Module K N] [AddCommGroup P] [Module K P] [AddCommGroup Q] [Module K Q]
-    [FiniteDimensional K P] [FiniteDimensional K Q] (f : M →ₗ[K] P) (g : N →ₗ[K] Q) :
+    (f : M →ₗ[K] P) (g : N →ₗ[K] Q) :
     Module.finrank K (LinearMap.range (TensorProduct.map f g))
       = Module.finrank K (LinearMap.range f) * Module.finrank K (LinearMap.range g) := by
   have h : TensorProduct.map f g = TensorProduct.map (LinearMap.range f).subtype

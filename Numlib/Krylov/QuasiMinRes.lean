@@ -275,18 +275,6 @@ theorem isMinOn_norm_residual (hv : HessenbergRelation₂ A z v h) (hr : b - A x
 
 end IsQuasiMinResidualIterate
 
-/-- The Arnoldi vectors span `𝒦_m` as a `Fin m`-indexed family. -/
-private theorem span_range_arnoldi_vec (A : E →ₗ[𝕜] E) (r : E) (m : ℕ) :
-    Submodule.span 𝕜 (Set.range fun j : Fin m => Arnoldi.vec A r (j : ℕ)) = subspace A r m := by
-  rw [← Arnoldi.span_vec A r m]
-  congr 1
-  ext w
-  constructor
-  · rintro ⟨j, rfl⟩
-    exact ⟨(j : ℕ), j.isLt, rfl⟩
-  · rintro ⟨j, hj, rfl⟩
-    exact ⟨⟨j, hj⟩, rfl⟩
-
 /-- For the Arnoldi basis — `z = v` orthonormal, `h = Arnoldi.coeff`, `m ≤ grade` — the
 quasi-minimal-residual specification *is* the minimal-residual specification. This is the book's
 "QGMRES coincides with GMRES when the orthogonalization is complete" ([saad2003iterative], §6.5.6),
@@ -303,7 +291,7 @@ theorem isQuasiMinResidualIterate_iff_isMinResidualIterate {A : E →ₗ[𝕜] E
   · intro hx
     have hmem : x - x₀ ∈ Submodule.span 𝕜 (Set.range fun j : Fin m =>
         Arnoldi.vec A (b - A x₀) (j : ℕ)) := by
-      rw [span_range_arnoldi_vec]
+      rw [span_range_vec]
       exact hx.mem
     obtain ⟨y, hy⟩ := (Submodule.mem_span_range_iff_exists_fun 𝕜).mp hmem
     have hxe : x = x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ) := by
@@ -449,21 +437,6 @@ end Harmonic
 section Smoothing
 
 variable (h : ℕ → ℕ → 𝕜)
-
-/-- Rows `0, …, m` of the product of the first `m` rotations ignore the last coordinate. -/
-private theorem givensQAux_mulVec_of_last {m : ℕ} (d : Fin (m + 2) → 𝕜)
-    (hd : ∀ l : Fin (m + 2), (l : ℕ) ≠ m + 1 → d l = 0) (i : Fin (m + 1)) :
-    (givensQAux h m (m + 1)).mulVec d i.castSucc = 0 := by
-  simp only [Matrix.mulVec, dotProduct]
-  refine Finset.sum_eq_zero fun l _ => ?_
-  by_cases hl : (l : ℕ) = m + 1
-  · have hi := i.isLt
-    have hne : i.castSucc ≠ l := by
-      intro hc
-      have h1 : (i : ℕ) = (l : ℕ) := by rw [← hc]; rfl
-      omega
-    rw [givensQAux_apply_of_lt h m (m + 1) i.castSucc l (by omega), ite_eq_right hne, zero_mul]
-  · rw [hd l hl, mul_zero]
 
 /-- The Galerkin system in rotated coordinates: if `H_{m+1} y = β e₁` then `R̃_{m+1} y` is the
 truncated rotated right-hand side `(g_0, …, g_{m-1}, γ_m)`. -/

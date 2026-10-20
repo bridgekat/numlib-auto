@@ -107,8 +107,8 @@ theorem energyEnd_apply (B : E →ₗ[𝕜] E) (x : E) :
     hM.energyEnd B (hM.toEnergy x) = hM.toEnergy (B x) := rfl
 
 /-- `‖x‖²` in the `M`-inner product is the quadratic form of `M`. -/
-theorem norm_toEnergy_sq (x : E) : ‖hM.toEnergy x‖ ^ 2 = RCLike.re (inner 𝕜 (M x) x) := by
-  rw [WithEnergy.norm_equiv, hM.isSymmetricCoercive.energyNorm_sq]
+theorem norm_toEnergy_sq (x : E) : ‖hM.toEnergy x‖ ^ 2 = RCLike.re (inner 𝕜 (M x) x) :=
+  norm_sq_eq_re_inner (𝕜 := 𝕜) (hM.toEnergy x)
 
 /-- The `M`-inner product of `w` with a preconditioned vector is the original inner product: `⟪w,
 M⁻¹ u⟫_M = ⟪w, u⟫`.  This is the identity that makes preconditioning a change of inner product and

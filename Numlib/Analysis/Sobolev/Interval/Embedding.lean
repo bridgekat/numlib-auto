@@ -754,7 +754,7 @@ theorem memLp_of_le (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} (hpq : p 
 
 variable (p) in
 /-- The inclusion `W^{1,p}(I) → L^q(I)`, `p ≤ q ≤ ∞`, as a linear map. -/
-def toLpₗ (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} [Fact (1 ≤ q)] (hpq : p ≤ q) :
+def toLpₗ (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} (hpq : p ≤ q) :
     SobolevIntervalLp 1 p I →ₗ[ℝ] Lp ℝ q (volume.restrict (I : Set ℝ)) where
   toFun u := (memLp_of_le hI hpq u).toLp _
   map_add' u v := by
@@ -815,7 +815,7 @@ theorem eLpNorm_le_of_bounded (q : ℝ≥0∞) (u : SobolevIntervalLp 1 p (Opens
 
 variable (p) in
 /-- The inclusion `W^{1,p}(a, b) → L^q(a, b)`, every `1 ≤ q ≤ ∞`, as a linear map. -/
-def toLpOfBoundedₗ (q : ℝ≥0∞) [Fact (1 ≤ q)] :
+def toLpOfBoundedₗ (q : ℝ≥0∞) :
     SobolevIntervalLp 1 p (Opens.Ioo a b) →ₗ[ℝ] Lp ℝ q (volume.restrict (Ioo a b)) where
   toFun u := (memLp_of_bounded q u).toLp _
   map_add' u v := by

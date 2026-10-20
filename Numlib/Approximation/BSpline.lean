@@ -65,12 +65,12 @@ Guide to Splines*, chapters IX–XI.
 
 ## Implementation notes
 
-Two divided-difference identities — the recursion `f[x_0, …, x_{m+1}]
-= (f[x_1, …, x_{m+1}] - f[x_0, …, x_m])/(x_{m+1} - x_0)` and the Leibniz rule for an affine factor
-`((· - t) g)[x_0, …, x_{m+1}] = (x_0 - t) g[x_0, …, x_{m+1}] + g[x_1, …, x_{m+1}]` — are proved here
-privately from the explicit sum defining `DividedDifference.newton`; they belong to
-`Numlib/Approximation/NewtonForm` (`newton_succ`, `newton_mul`) and should be replaced by those once
-that module exists.
+Two divided-difference identities are used: the recursion `f[x_0, …, x_{m+1}]
+= (f[x_1, …, x_{m+1}] - f[x_0, …, x_m])/(x_{m+1} - x_0)`, which is
+`DividedDifference.newton_succ`, and the Leibniz rule for an affine factor
+`((· - t) g)[x_0, …, x_{m+1}] = (x_0 - t) g[x_0, …, x_{m+1}] + g[x_1, …, x_{m+1}]`, which is proved
+here privately from the explicit sum defining `DividedDifference.newton`; it belongs to
+`Numlib/Approximation/NewtonForm` (`newton_mul`) and should be replaced by that.
 -/
 
 open Filter Polynomial Set
@@ -313,10 +313,10 @@ theorem bspline_pos (hx : StrictMono x) (ht : t ∈ Ioo (x i) (x (i + k + 1))) :
 
 /-! ### Divided differences of truncated powers
 
-The two divided-difference identities used below are proved from the explicit sum defining
-`DividedDifference.newton`; they are planned for `Numlib/Approximation/NewtonForm` (as
-`DividedDifference.newton_succ` and the Leibniz rule `DividedDifference.newton_mul`) and should be
-replaced by those once that module exists. -/
+The recursion for divided differences is `DividedDifference.newton_succ`. The Leibniz rule for an
+affine factor is proved here from the explicit sum defining `DividedDifference.newton`; it belongs
+to `Numlib/Approximation/NewtonForm` (as `DividedDifference.newton_mul`) and should be replaced by
+that. -/
 
 section DividedDifference
 
@@ -354,47 +354,6 @@ private theorem wt_castSucc {m : ℕ} (v : Fin (m + 2) → ℝ) (i : Fin (m + 1)
       (fun j : Fin (m + 2) => if j = i.castSucc then 1 else v i.castSucc - v j),
     ite_eq_right (Fin.castSucc_lt_last i).ne']
   simp only [Fin.castSucc_inj, Fin.init]
-  ring
-
--- TODO(NewtonForm): this is `DividedDifference.newton_succ` of `Numlib/Approximation/NewtonForm`.
-/-- **The recursion for divided differences**
-`f[x_0, …, x_{m+1}] = (f[x_1, …, x_{m+1}] - f[x_0, …, x_m])/(x_{m+1} - x_0)`
-([quarteroni2000numerical] (8.19)). -/
-private theorem newton_succ {m : ℕ} (f : ℝ → ℝ) {v : Fin (m + 2) → ℝ} (hv : Function.Injective v) :
-    newton f v
-      = (newton f (Fin.tail v) - newton f (Fin.init v)) / (v (Fin.last (m + 1)) - v 0) := by
-  have hne : v (Fin.last (m + 1)) - v 0 ≠ 0 :=
-    sub_ne_zero.mpr fun h => absurd (hv h) (Fin.last_pos' (n := m + 1)).ne'
-  rw [eq_div_iff hne, newton_eq_sum_div, newton_eq_sum_div, newton_eq_sum_div]
-  have htail : ∑ i : Fin (m + 1), f (Fin.tail v i) / wt (Fin.tail v) i
-      = ∑ j : Fin (m + 2), f (v j) * (v j - v 0) / wt v j := by
-    rw [Fin.sum_univ_succ (fun j : Fin (m + 2) => f (v j) * (v j - v 0) / wt v j)]
-    simp only [sub_self, mul_zero, zero_div, zero_add]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    rw [wt_succ, Fin.tail]
-    have := wt_ne_zero hv i.succ
-    have h2 : v i.succ - v 0 ≠ 0 :=
-      sub_ne_zero.mpr fun h => absurd (hv h) (Fin.succ_ne_zero i)
-    rw [wt_succ] at this
-    have h3 : wt (Fin.tail v) i ≠ 0 := right_ne_zero_of_mul this
-    field_simp
-  have hinit : ∑ i : Fin (m + 1), f (Fin.init v i) / wt (Fin.init v) i
-      = ∑ j : Fin (m + 2), f (v j) * (v j - v (Fin.last (m + 1))) / wt v j := by
-    rw [Fin.sum_univ_castSucc
-      (fun j : Fin (m + 2) => f (v j) * (v j - v (Fin.last (m + 1))) / wt v j)]
-    simp only [sub_self, mul_zero, zero_div, add_zero]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    rw [wt_castSucc, Fin.init]
-    have := wt_ne_zero hv i.castSucc
-    have h2 : v i.castSucc - v (Fin.last (m + 1)) ≠ 0 :=
-      sub_ne_zero.mpr fun h => absurd (hv h) (Fin.castSucc_lt_last i).ne
-    rw [wt_castSucc] at this
-    have h3 : wt (Fin.init v) i ≠ 0 := right_ne_zero_of_mul this
-    field_simp
-  rw [htail, hinit, ← Finset.sum_sub_distrib, Finset.sum_mul]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  have := wt_ne_zero hv j
-  field_simp
   ring
 
 -- TODO(NewtonForm): the Leibniz rule `DividedDifference.newton_mul` with an affine first factor.
@@ -492,7 +451,7 @@ theorem nform_succ (hx : StrictMono x) (d i : ℕ) (t : ℝ) :
   have hv := injective_nodes hx (d + 1) i
   have hg : (fun s => Quadrature.truncPow (d + 1) s t)
       = fun s => (s - t) * Quadrature.truncPow d s t := funext fun s => truncPow_succ d s t
-  have hrec := newton_succ (fun s => Quadrature.truncPow d s t) hv
+  have hrec := DividedDifference.newton_succ (fun s => Quadrature.truncPow d s t) hv
   have hleib := newton_sub_mul (fun s => Quadrature.truncPow d s t) t hv
   rw [tail_nodes, init_nodes] at hrec
   rw [tail_nodes] at hleib
@@ -647,7 +606,7 @@ theorem hasDerivAt_bspline (hx : StrictMono x) (ht : ∀ m, t ≠ x m) (k i : �
   rw [← nform_eq_bspline hx (by omega) i, ← nform_eq_bspline_of_ne hx ht k i,
     ← nform_eq_bspline_of_ne hx ht k (i + 1)]
   have hv := injective_nodes hx (k + 1) i
-  have hrec := newton_succ (fun s => Quadrature.truncPow k s t) hv
+  have hrec := DividedDifference.newton_succ (fun s => Quadrature.truncPow k s t) hv
   rw [tail_nodes, init_nodes] at hrec
   simp only [Fin.val_zero, add_zero, Fin.val_last] at hrec
   have h1 : x (i + (k + 1 + 1)) - x i ≠ 0 := sub_ne_zero.mpr (hx (by omega)).ne'

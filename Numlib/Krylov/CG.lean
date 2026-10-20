@@ -311,11 +311,6 @@ private theorem re_inner_apply_self_nonneg (x : E) : 0 ≤ RCLike.re (inner 𝕜
   obtain ⟨c, hc, h⟩ := hA.isCoercive
   exact le_trans (by positivity) (h x)
 
-omit hA in
-private theorem inner_apply_self_ofReal (hAs : A.IsSymmetric) (x : E) :
-    ((RCLike.re (inner 𝕜 (A x) x) : ℝ) : 𝕜) = inner 𝕜 (A x) x :=
-  RCLike.conj_eq_iff_re.1 (by rw [inner_conj_symm, ← hAs])
-
 private theorem eq_zero_of_inner_apply_self_eq_zero {x : E} (h : inner 𝕜 (A x) x = 0) : x = 0 := by
   by_contra hx
   have := hA.isCoercive.inner_self_pos hx
@@ -453,11 +448,10 @@ theorem re_inner_apply_direction_pos {k : ℕ} (hr : (iterate A b x₀ k).r ≠ 
   rw [hp, inner_zero_right] at h
   exact inner_self_eq_zero.1 h.symm
 
-set_option linter.unusedSectionVars false in
+omit hA in
 /-- Once the residual vanishes the iteration is stationary.  This is a restatement of
 `CG.iterate_eq_of_residual_eq_zero'` with the later index written as `k + j`; like it, the proof
-uses only the recurrence, so the section's symmetry and coercivity hypothesis appears in the
-signature without being used. -/
+uses only the recurrence. -/
 theorem iterate_eq_of_residual_eq_zero {k : ℕ} (hr : (iterate A b x₀ k).r = 0) (j : ℕ) :
     iterate A b x₀ (k + j) = iterate A b x₀ k :=
   iterate_eq_of_residual_eq_zero' A b x₀ hr (k + j) (Nat.le_add_right k j)
@@ -560,11 +554,10 @@ theorem span_residual_eq (k : ℕ) :
   le_antisymm (resSpan_le_subspace A b x₀ k)
     ((subspace_le_dirSpan b x₀ hA k).trans (dirSpan_le_resSpan A b x₀ k))
 
-set_option linter.unusedSectionVars false in
+omit hA in
 /-- CG stays in the affine Krylov space: `x_k ∈ x₀ + 𝒦_k(A, r₀)`. This is the membership half of the
 Galerkin specification `CG.isGalerkinIterate`, and it follows from the recurrence alone — each
-correction is a multiple of a direction `p_j ∈ 𝒦_{j+1}`. The section's symmetry and coercivity
-hypothesis appears in the signature but is not used by the proof. -/
+correction is a multiple of a direction `p_j ∈ 𝒦_{j+1}`. -/
 theorem iterate_sub_mem (k : ℕ) : (iterate A b x₀ k).x - x₀ ∈ subspace A (b - A x₀) k := by
   induction k with
   | zero => simp [init]
@@ -578,7 +571,7 @@ theorem iterate_sub_mem (k : ℕ) : (iterate A b x₀ k).x - x₀ ∈ subspace A
 
 /-- CG realises the Galerkin specification (hence minimizes the energy-norm error). -/
 theorem isGalerkinIterate (k : ℕ) : IsGalerkinIterate A b x₀ k (iterate A b x₀ k).x := by
-  refine ⟨iterate_sub_mem b x₀ hA k, ?_⟩
+  refine ⟨iterate_sub_mem b x₀ k, ?_⟩
   rw [← residual_eq, ← span_direction_eq b x₀ hA k]
   refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨i, rfl⟩
@@ -625,7 +618,7 @@ private theorem alpha_eq_ofReal_pos {k : ℕ} (hr : (iterate A b x₀ k).r ≠ 0
       RCLike.re (inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p),
     div_pos (pow_pos (norm_pos_iff.2 hr) 2) (re_inner_apply_direction_pos b x₀ hA hr), ?_⟩
   rw [RCLike.ofReal_div, ← inner_self_eq_ofReal_norm_sq,
-    inner_apply_self_ofReal hA.isSymmetric, alpha]
+    hA.isSymmetric.coe_re_inner_apply_self, alpha]
 
 /-- `∏_{j<k} (-α_j) = (-1)^k · (positive real)`. -/
 private theorem prod_neg_alpha (k : ℕ) (hr : (iterate A b x₀ k).r ≠ 0) :
@@ -642,7 +635,7 @@ private theorem prod_neg_alpha (k : ℕ) (hr : (iterate A b x₀ k).r ≠ 0) :
     push_cast
     ring
 
-set_option linter.unusedSectionVars false in
+omit hA in
 /-- Leading coefficients: `r_k` and `p_k` both lie in `(∏_{j<k} (-α_j)) A^k r₀ + 𝒦_k`. -/
 private theorem leading (k : ℕ) :
     (iterate A b x₀ k).r -
@@ -694,29 +687,6 @@ private theorem leading (k : ℕ) :
     rw [key]
     exact Submodule.add_mem _ (Submodule.add_mem _ hr (Submodule.smul_mem _ _ (hmono ihp)))
       (Submodule.smul_mem _ _ (Submodule.smul_mem _ _ hmem))
-
-omit hA in
-/-- Gram–Schmidt normalises with a *positive* leading coefficient: `⟪gramSchmidtNormed f n, f n⟫ =
-‖gramSchmidt f n‖ ≥ 0`. -/
-private theorem inner_gramSchmidtNormed_self (f : ℕ → E) (n : ℕ) :
-    inner 𝕜 (InnerProductSpace.gramSchmidtNormed 𝕜 f n) (f n) =
-      ((‖InnerProductSpace.gramSchmidt 𝕜 f n‖ : ℝ) : 𝕜) := by
-  have hz : ∀ i ∈ Finset.Iio n,
-      inner 𝕜 (InnerProductSpace.gramSchmidt 𝕜 f n)
-        ((𝕜 ∙ InnerProductSpace.gramSchmidt 𝕜 f i).starProjection (f n)) = 0 := by
-    intro i hi
-    rw [Submodule.starProjection_singleton, inner_smul_right,
-      InnerProductSpace.gramSchmidt_orthogonal 𝕜 f (Finset.mem_Iio.1 hi).ne', mul_zero]
-  have hmain : inner 𝕜 (InnerProductSpace.gramSchmidt 𝕜 f n) (f n) =
-      ((‖InnerProductSpace.gramSchmidt 𝕜 f n‖ : 𝕜)) ^ 2 := by
-    conv_lhs => rw [InnerProductSpace.gramSchmidt_def' 𝕜 f n]
-    rw [inner_add_right, inner_sum, Finset.sum_eq_zero hz, add_zero, inner_self_eq_norm_sq_to_K]
-  rw [InnerProductSpace.gramSchmidtNormed, inner_smul_left, hmain, map_inv₀, RCLike.conj_ofReal]
-  rcases eq_or_ne (InnerProductSpace.gramSchmidt 𝕜 f n) 0 with h | h
-  · simp [h]
-  · have h0 : ((‖InnerProductSpace.gramSchmidt 𝕜 f n‖ : ℝ) : 𝕜) ≠ 0 := by
-      simpa using norm_ne_zero_iff.2 h
-    rw [sq, ← mul_assoc, inv_mul_cancel₀ h0, one_mul]
 
 /-- CG residuals are the Lanczos vectors up to sign: `v_k = (-1)^k r_k / ‖r_k‖`
 ([saad2003iterative], (6.87), (6.99); [meurant2006lanczos] (3.4)). [saad2003iterative] (6.99)
@@ -790,7 +760,7 @@ theorem arnoldi_vec_eq (k : ℕ) (hr : (iterate A b x₀ k).r ≠ 0) :
   obtain ⟨g, hgpos, hg⟩ : ∃ g : ℝ, 0 < g ∧
       inner 𝕜 (Arnoldi.vec A (b - A x₀) k) ((A ^ k) (b - A x₀)) = (g : 𝕜) := by
     refine ⟨‖InnerProductSpace.gramSchmidt 𝕜 (fun i : ℕ => (A ^ i) (b - A x₀)) k‖, ?_,
-      hveq ▸ inner_gramSchmidtNormed_self (fun i : ℕ => (A ^ i) (b - A x₀)) k⟩
+      hveq ▸ InnerProductSpace.inner_gramSchmidtNormed_self (fun i : ℕ => (A ^ i) (b - A x₀)) k⟩
     rw [norm_pos_iff]
     intro h0
     exact hvne (by rw [hveq, InnerProductSpace.gramSchmidtNormed, h0, smul_zero])
@@ -801,7 +771,7 @@ theorem arnoldi_vec_eq (k : ℕ) (hr : (iterate A b x₀ k).r ≠ 0) :
           ((iterate A b x₀ k).r -
             (∏ j ∈ Finset.range k, -alpha A (iterate A b x₀ j)) • (A ^ k) (b - A x₀)) := by
       abel
-    rw [hsplit, inner_add_right, hvperp' _ (leading b x₀ hA k).1, add_zero, inner_smul_right,
+    rw [hsplit, inner_add_right, hvperp' _ (leading b x₀ k).1, add_zero, inner_smul_right,
       hc, hg]
     push_cast
     ring
@@ -822,6 +792,7 @@ theorem residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b 
   rw [residual_eq, sub_eq_zero]
   exact ((isGalerkinIterate b x₀ hA k).apply_eq_of_grade_le hk).symm
 
+omit hA in
 /-- Sharpness of `CG.residual_eq_zero_of_grade_le`: before the grade the residual is still nonzero,
 so CG takes exactly `grade A r₀` steps, never fewer. A vanishing `r_k` would make `x_k` an exact
 solution inside `x₀ + 𝒦_k`, and an exact Krylov solution at step `k` forces the grade down to `k`
@@ -830,7 +801,7 @@ theorem residual_ne_zero_of_lt_grade [FiniteDimensional 𝕜 (fullSubspace A (b 
     (hk : k < grade A (b - A x₀)) : (iterate A b x₀ k).r ≠ 0 := by
   intro h
   rw [residual_eq, sub_eq_zero] at h
-  exact absurd (grade_le_of_apply_eq (iterate_sub_mem b x₀ hA k) h.symm) (by omega)
+  exact absurd (grade_le_of_apply_eq (iterate_sub_mem b x₀ k) h.symm) (by omega)
 
 /-! ### Real coefficients and their signs -/
 
@@ -838,7 +809,7 @@ omit hA in
 private theorem alpha_eq_ofReal (hAs : A.IsSymmetric) (k : ℕ) : alpha A (iterate A b x₀ k) =
     ((‖(iterate A b x₀ k).r‖ ^ 2 /
       RCLike.re (inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p) : ℝ) : 𝕜) := by
-  rw [RCLike.ofReal_div, ← inner_self_eq_ofReal_norm_sq, inner_apply_self_ofReal hAs, alpha]
+  rw [RCLike.ofReal_div, ← inner_self_eq_ofReal_norm_sq, hAs.coe_re_inner_apply_self, alpha]
 
 omit hA in
 /-- The step length is nonnegative as soon as the current direction has nonnegative `A`-norm, which
@@ -1585,7 +1556,7 @@ theorem lanczos_tridiag_eq_ldl [FiniteDimensional 𝕜 (fullSubspace A (b - A x�
         (Matrix.of (fun i j : Fin m => if (i : ℕ) = j then 1 else if (j : ℕ) + 1 = i then
           ‖(iterate A b x₀ i).r‖ / ‖(iterate A b x₀ j).r‖ else 0)).transpose := by
   have hne : ∀ k : ℕ, k < m → (iterate A b x₀ k).r ≠ 0 := fun k hk =>
-    residual_ne_zero_of_lt_grade b x₀ hA (hk.trans_le hm)
+    residual_ne_zero_of_lt_grade b x₀ (hk.trans_le hm)
   ext i j
   rw [Lanczos.tridiag_apply, Matrix.mul_apply]
   simp only [Matrix.mul_diagonal, Matrix.transpose_apply, Matrix.of_apply]

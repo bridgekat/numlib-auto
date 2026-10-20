@@ -272,37 +272,36 @@ theorem eq_of_zpow_sub_one_le_of_lt {e e' : ℤ} {y : K} (h1 : (s.β : K) ^ (e -
 `0` together with the numbers `± m β^(e - t)` with an integer mantissa `β^(t-1) ≤ m ≤ β^t - 1`
 (the normalization `a₁ ≠ 0` of the book's digit string `m = a₁a₂…a_t`) and an exponent `L ≤ e ≤
 U`. -/
-def numbers (s : System) (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K] : Set K :=
+def numbers (s : System) (K : Type*) [Field K] : Set K :=
   {x | x = 0 ∨ ∃ (σ : ℤˣ) (m : ℕ) (e : ℤ), s.β ^ (s.t - 1) ≤ m ∧ m ≤ s.β ^ s.t - 1 ∧
     s.L ≤ e ∧ e ≤ s.U ∧ x = ((σ : ℤ) : K) * m * (s.β : K) ^ (e - s.t)}
 
 /-- The **de-normalized numbers** `𝔽_D` ([quarteroni2000numerical] §2.5.2): the numbers `± m
 β^(L - t)` with a mantissa `1 ≤ m ≤ β^(t-1) - 1` below the normalization threshold, at the
 minimum exponent `L`. -/
-def denormalized (s : System) (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K] :
+def denormalized (s : System) (K : Type*) [Field K] :
     Set K :=
   {x | ∃ (σ : ℤˣ) (m : ℕ), 1 ≤ m ∧ m ≤ s.β ^ (s.t - 1) - 1 ∧
     x = ((σ : ℤ) : K) * m * (s.β : K) ^ (s.L - s.t)}
 
 /-- `x_min = β^(L-1)`, the smallest positive normalized number ([quarteroni2000numerical]
 (2.30)). -/
-noncomputable def xmin (s : System) (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K] :
+noncomputable def xmin (s : System) (K : Type*) [Field K] :
     K := (s.β : K) ^ (s.L - 1)
 
 /-- `x_max = β^U (1 - β^(-t))`, the largest normalized number ([quarteroni2000numerical]
 (2.30)). -/
-noncomputable def xmax (s : System) (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K] :
+noncomputable def xmax (s : System) (K : Type*) [Field K] :
     K := (s.β : K) ^ s.U * (1 - (s.β : K) ^ (-(s.t : ℤ)))
 
 /-- The **machine epsilon** `ε_M = β^(1-t)` ([quarteroni2000numerical] §2.5.3), the spacing of
 the numbers of `𝔽` in the binade `[1, β)`. -/
-noncomputable def machineEps (s : System) (K : Type*) [Field K] [LinearOrder K]
-    [IsStrictOrderedRing K] : K := (s.β : K) ^ (1 - (s.t : ℤ))
+noncomputable def machineEps (s : System) (K : Type*) [Field K] : K := (s.β : K) ^ (1 - (s.t : ℤ))
 
 /-- The **roundoff unit** `u = ½ β^(1-t) = ½ ε_M` ([quarteroni2000numerical] (2.34)), the
 relative error bound of rounding to nearest. -/
-noncomputable def unitRoundoff (s : System) (K : Type*) [Field K] [LinearOrder K]
-    [IsStrictOrderedRing K] : K := (1 / 2 : K) * (s.β : K) ^ (1 - (s.t : ℤ))
+noncomputable def unitRoundoff (s : System) (K : Type*) [Field K] : K :=
+  (1 / 2 : K) * (s.β : K) ^ (1 - (s.t : ℤ))
 
 /-- `0 < x_min`. -/
 theorem xmin_pos : 0 < s.xmin K := s.zpow_β_pos _
@@ -355,6 +354,7 @@ theorem mem_numbers_iff_abs {x : K} :
       · exact Or.inr ⟨1, m, e, hm1, hm2, hL, hU, by rw [mul_assoc, ← hx, abs_of_nonneg h]; simp⟩
       · exact Or.inr ⟨-1, m, e, hm1, hm2, hL, hU, by rw [mul_assoc, ← hx, abs_of_neg h]; simp⟩
 
+omit [LinearOrder K] [IsStrictOrderedRing K] in
 /-- `0 ∈ 𝔽`. -/
 theorem zero_mem_numbers : (0 : K) ∈ s.numbers K := Or.inl rfl
 
@@ -440,13 +440,14 @@ theorem mem_numbers_iff_exists_unique {x : K} (hx : x ≠ 0) :
 
 /-- `𝔽` as a finset: `{0}` together with the images of the mantissa–exponent rectangle under `(m, e)
 ↦ m β^(e-t)` and `(m, e) ↦ -(m β^(e-t))`. -/
-def finset (s : System) (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K] :
+def finset (s : System) (K : Type*) [Field K] [LinearOrder K] :
     Finset K :=
   {0} ∪ (Icc (s.β ^ (s.t - 1)) (s.β ^ s.t - 1) ×ˢ Icc s.L s.U).image
       (fun p : ℕ × ℤ => (p.1 : K) * (s.β : K) ^ (p.2 - s.t)) ∪
     (Icc (s.β ^ (s.t - 1)) (s.β ^ s.t - 1) ×ˢ Icc s.L s.U).image
       (fun p : ℕ × ℤ => -((p.1 : K) * (s.β : K) ^ (p.2 - s.t)))
 
+omit [IsStrictOrderedRing K] in
 /-- The finset `System.finset` is the set `System.numbers`. -/
 theorem coe_finset : (s.finset K : Set K) = s.numbers K := by
   ext x
@@ -630,6 +631,7 @@ theorem abs_lt_xmin_of_mem_denormalized {x : K} (hx : x ∈ s.denormalized K) :
         mul_lt_mul_of_pos_right hm (s.zpow_β_pos _)
     _ = (s.β : K) ^ (s.L - 1) := by rw [← zpow_add₀ s.β_cast_ne_zero]; congr 1; ring
 
+omit [LinearOrder K] [IsStrictOrderedRing K] in
 /-- `β^(L-t)` is de-normalized when `t ≥ 2` (for `t = 1` there are no de-normalized numbers). -/
 theorem zpow_mem_denormalized (ht : 2 ≤ s.t) : (s.β : K) ^ (s.L - s.t) ∈ s.denormalized K := by
   refine ⟨1, 1, le_rfl, ?_, by simp⟩
@@ -1389,6 +1391,7 @@ theorem ieeeDouble_unitRoundoff : ieeeDouble.unitRoundoff K = 2 ^ (-53 : ℤ) :=
 theorem ieeeDouble_machineEps : ieeeDouble.machineEps K = 2 ^ (-52 : ℤ) := by
   norm_num [machineEps, ieeeDouble]
 
+omit [LinearOrder K] [IsStrictOrderedRing K] in
 /-- The smallest positive normalized number of double precision is `2^(-1022)`, the `N_min` of
 [golub2013matrix] §2.7.2. -/
 theorem ieeeDouble_xmin : ieeeDouble.xmin K = 2 ^ (-1022 : ℤ) := by

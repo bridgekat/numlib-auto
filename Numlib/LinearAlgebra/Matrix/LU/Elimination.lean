@@ -5,6 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.LU`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Numlib.Data.Finset.Card
 import Numlib.LinearAlgebra.Matrix.LU
 
 /-!
@@ -499,14 +500,6 @@ theorem gemStage_submatrix_blockEmb {K : Type*} [Field K] {N : ℕ} (A : Matrix 
     rw [he, ← gemStage_succ_of_lt A hkt, Nat.add_assoc]
 
 /-! ### The Doolittle recurrence -/
-
-/-- A smaller strict initial segment has fewer elements. -/
-theorem card_filter_lt_lt_of_lt {a b : n} (h : a < b) : #{k | k < a} < #{k | k < b} := by
-  refine Finset.card_lt_card (Finset.ssubset_iff_of_subset (fun k hk => ?_) |>.2 ⟨a, ?_, ?_⟩)
-  · simp only [mem_filter, mem_univ, true_and] at hk ⊢
-    exact hk.trans h
-  · simp [h]
-  · simp
 
 /-- The Doolittle recurrence, [quarteroni2000numerical] (3.43), as one total function on a finite
 linear order, in packed form: `luPacked A i j = A i j - ∑_{r < i} luPacked A i r * luPacked A r j`

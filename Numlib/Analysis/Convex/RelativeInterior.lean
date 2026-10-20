@@ -31,8 +31,8 @@ modules `Closure.lean` and `Separation.lean` can state only in dimension-free fo
   ([rockafellar1970convex] Theorem 6.1).
 * `Convex.relint_nonempty`, `Convex.affineSpan_relint` — a nonempty convex set has a nonempty
   relative interior, and the same affine hull as it.
-* `Convex.interior_subset_relint` — the full-dimensional collapse `ri C = int C`, in the direction
-  every caller uses.
+* `Convex.interior_subset_relint` — `int C ⊆ ri C` for every set, Mathlib's
+  `interior_subset_intrinsicInterior`; for a full-dimensional convex set the two agree.
 * `Convex.closure_relint`, `Convex.relint_closure` — `C`, `ri C` and `cl C` share a closure and a
   relative interior, whence `Convex.closure_eq_iff_relint_eq` and
   `Convex.relint_inter_nonempty_of_isOpen`.
@@ -311,14 +311,13 @@ theorem _root_.Convex.affineSpan_relint (hC : Convex ℝ C) :
   rw [hrw]
   exact AffineSubspace.combo_mem (subset_affineSpan ℝ _ hz) (subset_affineSpan ℝ _ hm) 2
 
-/-- For a full-dimensional convex set the affine hull is the whole space and `ri C = int C`. A
-convex set with an interior point is full-dimensional, so the two interiors agree; `int C ⊆ ri C`
+omit [FiniteDimensional ℝ E] in
+/-- The interior is contained in the relative interior, Mathlib's
+`interior_subset_intrinsicInterior`; for a full-dimensional convex set the two agree. `int C ⊆ ri C`
 is the half every caller uses, since it makes the relative-interior theorems applicable at an
 ordinary interior point. -/
-theorem _root_.Convex.interior_subset_relint (hC : Convex ℝ C) (hne : (interior C).Nonempty) :
-    interior C ⊆ ri C :=
-  le_of_eq (intrinsicInterior_eq_interior
-    ((Convex.interior_nonempty_iff_affineSpan_eq_top hC).1 hne)).symm
+theorem _root_.Convex.interior_subset_relint : interior C ⊆ ri C :=
+  interior_subset_intrinsicInterior
 
 /-! ### Interchanging closure and relative interior -/
 
@@ -482,7 +481,6 @@ theorem _root_.Convex.mem_interior_iff_absorbs (hC : Convex ℝ C) {z : E} :
     obtain ⟨δ, hδ, hball⟩ := Metric.isOpen_iff.1 isOpen_interior z hz
     rcases eq_or_ne y 0 with rfl | hy
     · exact ⟨1, one_pos, by simpa using interior_subset hz⟩
-    have hy0 : (0 : ℝ) < ‖y‖ := norm_pos_iff.2 hy
     refine ⟨δ / (2 * ‖y‖), by positivity, interior_subset (hball ?_)⟩
     have hlt : ‖(δ / (2 * ‖y‖)) • y‖ < δ := by
       rw [norm_smul, Real.norm_eq_abs, abs_of_pos (by positivity)]
@@ -768,14 +766,6 @@ section Indexed
 
 variable {ι : Type*}
 
-omit [FiniteDimensional ℝ E] in
-/-- A product set is the intersection of the preimages of its factors under the coordinate
-projections. -/
-theorem univ_pi_eq_iInter_proj_preimage (C : ι → Set E) :
-    univ.pi C = ⋂ i, (LinearMap.proj i : (ι → E) →ₗ[ℝ] E) ⁻¹' C i := by
-  ext x
-  simp [Set.mem_pi]
-
 /-- Over a `Finset`: the relative interior of a finite intersection is the intersection of the
 relative interiors, as soon as the latter has a point in common. This is `Convex.relint_iInter`
 read over the subtype `↥s`. -/
@@ -807,9 +797,9 @@ theorem _root_.Convex.relint_univ_pi [Finite ι] (C : ι → Set E) (hC : ∀ i,
       refine ⟨z, mem_iInter.2 fun i => ?_⟩
       rw [hproj i]
       exact hz i
-    rw [univ_pi_eq_iInter_proj_preimage C, univ_pi_eq_iInter_proj_preimage fun i => ri (C i),
-      Convex.relint_iInter (fun i => Convex.linear_preimage (hC i) _) hnonempty]
-    exact iInter_congr hproj
+    rw [Set.univ_pi_eq_iInter C, Set.univ_pi_eq_iInter fun i => ri (C i)]
+    exact (Convex.relint_iInter (fun i => Convex.linear_preimage (hC i) _) hnonempty).trans
+      (iInter_congr hproj)
   · simp only [not_forall, Set.not_nonempty_iff_eq_empty] at hne
     obtain ⟨i₀, hi₀⟩ := hne
     have hleft : univ.pi C = ∅ := Set.univ_pi_eq_empty_iff.2 ⟨i₀, hi₀⟩
@@ -1285,7 +1275,7 @@ theorem ConvexFn.interior_convexDom_convexCl (hf : ConvexFn f) (hp : ProperConve
   · rw [hemp]
     exact Set.empty_subset _
   refine interior_maximal ?_ isOpen_interior
-  refine (Convex.interior_subset_relint (convexFn_convexCl hf).convex_convexDom hne).trans ?_
+  refine (Convex.interior_subset_relint).trans ?_
   rw [hf.relint_convexDom_convexCl hp]
   exact intrinsicInterior_subset
 

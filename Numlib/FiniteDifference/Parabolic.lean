@@ -285,7 +285,7 @@ for a basis `φ` of the finite-dimensional trial space, `0 ≤ θ`, `Δt > 0` an
 θ-step of the coordinates of `u` for the mass matrix, the stiffness matrix and the source vectors
 `(ℓ (φ i))_i`. -/
 theorem _root_.Variational.IsThetaStep.iff_thetaStep {K : Type*} [NormedAddCommGroup K]
-    [InnerProductSpace ℝ K] [FiniteDimensional ℝ K] {ι : Type*} [Fintype ι] [DecidableEq ι]
+    [InnerProductSpace ℝ K] {ι : Type*} [Fintype ι] [DecidableEq ι]
     (φ : Module.Basis ι ℝ K) (a : SesqForm ℝ K) {θ Δt : ℝ} (hθ : 0 ≤ θ) (hΔt : 0 < Δt)
     (hpos : a.IsCoerciveWith 0) (ℓ₀ ℓ₁ : K →L[ℝ] ℝ) (u u' : K) :
     Variational.IsThetaStep a θ Δt ℓ₀ ℓ₁ u u' ↔

@@ -497,13 +497,14 @@ theorem lipschitzWith_toOperator [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBou
   exact BilinForm.norm_toOperator_le hM0 hM
 
 /-- The map `P_θ u = u − θ (A u − f)` of the first proof of Theorem 8.3.4 is a contraction for
-`0 < θ < 2α/M²`, so Banach's fixed point theorem produces the solution of (8.3.5). -/
+`0 < θ < 2α/M²` (this forces `α > 0`), so Banach's fixed point theorem produces the solution of
+(8.3.5). -/
 theorem contractingWith_damped_sub_smul [CompleteSpace V] (hM0 : 0 < M) (hM : a.IsBoundedWith M)
-    (hα : 0 < α) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {θ : ℝ} (hθ : 0 < θ)
+    (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {θ : ℝ} (hθ : 0 < θ)
     (hθ' : θ < 2 * α / M ^ 2) :
     ContractingWith (Real.toNNReal (Real.sqrt (1 - 2 * θ * α + θ ^ 2 * M ^ 2)))
       (fun u => u - θ • (BilinForm.toOperator a hM u - SesqForm.rieszRep ℓ)) :=
-  contractingWith_damped (𝕜 := ℝ) hα hM0 (stronglyMonotone_toOperator hM ha)
+  contractingWith_damped (𝕜 := ℝ) hM0 (stronglyMonotone_toOperator hM ha)
     (lipschitzWith_toOperator hM0.le hM) (SesqForm.rieszRep ℓ) hθ hθ'
 
 /-! ### Second proof of Theorem 8.3.4: closed range plus dense range -/

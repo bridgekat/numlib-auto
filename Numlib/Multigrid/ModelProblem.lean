@@ -564,7 +564,7 @@ theorem toEuclideanLin_modelCoarseCorrection :
   have hy : galerkinCoarse (toEuclideanLin T) (toEuclideanLin (linearInterpolation m))
       (toEuclideanLin (Tm⁻¹ * ((4 : ℝ) • fullWeighting m) * T) x) =
       LinearMap.adjoint (toEuclideanLin (linearInterpolation m)) (toEuclideanLin T x) := by
-    rw [galerkinCoarse_apply, ← toEuclideanLin_conjTranspose,
+    rw [galerkinCoarse_apply, ← toEuclideanLin_conjTranspose_eq_adjoint,
       conjTranspose_eq_transpose_of_trivial, hPT]
     simp only [← toEuclideanLin_mul_apply]
     rw [key]

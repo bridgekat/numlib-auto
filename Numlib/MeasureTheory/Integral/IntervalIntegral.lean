@@ -101,10 +101,8 @@ variable {a b : ℝ}
 
 /-- Two functions agreeing on the open interval have the same interval integral. -/
 theorem integral_congr_Ioo {g h : ℝ → ℝ} (hab : a ≤ b) (hgh : ∀ t ∈ Ioo a b, g t = h t) :
-    ∫ t in a..b, g t = ∫ t in a..b, h t := by
-  rw [intervalIntegral.integral_of_le hab, intervalIntegral.integral_of_le hab,
-    MeasureTheory.integral_Ioc_eq_integral_Ioo, MeasureTheory.integral_Ioc_eq_integral_Ioo]
-  exact MeasureTheory.setIntegral_congr_fun measurableSet_Ioo fun t ht => hgh t ht
+    ∫ t in a..b, g t = ∫ t in a..b, h t :=
+  integral_congr_Ioo_of_le hab hgh
 
 /-- Interval integrals between two points of `[a, b]` only see the integrand almost everywhere on
 `(a, b)`. -/

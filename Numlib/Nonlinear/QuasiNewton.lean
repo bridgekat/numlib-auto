@@ -67,8 +67,8 @@ theorem update_apply (Q : E →L[ℝ] E) (s y v : E) :
 
 /-- The correction made by the update is the scaled rank-one operator `((y - Q s) ⊗ s) / ⟪s, s⟫`. -/
 theorem update_sub (Q : E →L[ℝ] E) (s y : E) :
-    update Q s y - Q = (1 / ⟪s, s⟫_ℝ) • InnerProductSpace.rankOne ℝ (y - Q s) s := by
-  simp [update]
+    update Q s y - Q = (1 / ⟪s, s⟫_ℝ) • InnerProductSpace.rankOne ℝ (y - Q s) s :=
+  sub_eq_of_eq_add' rfl
 
 /-- **The secant condition** ([quarteroni2000numerical] (7.12) with `j = 1`): for `s ≠ 0`,
 `Q₊ s = y`. -/

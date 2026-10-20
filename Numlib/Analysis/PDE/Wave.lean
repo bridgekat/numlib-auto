@@ -414,7 +414,7 @@ theorem fnL_operator_apply_fst (U : (operator Ω).domain) :
 /-- `0 ≤ a + (‖x‖² + ‖y‖²)` when `a = −⟪e, y⟫` with `‖e‖ ≤ ‖x‖`:
 `⟪e, y⟫ ≤ ‖e‖ ‖y‖ ≤ ‖x‖ ‖y‖ ≤ ½(‖x‖² + ‖y‖²)`. -/
 theorem nonneg_add_sq_of_eq_neg_inner {E F : Type*} [NormedAddCommGroup E]
-    [InnerProductSpace ℝ E] [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     (x : E) (y : F) {a : ℝ} {e : F} (ha : a = -⟪e, y⟫_ℝ) (he : ‖e‖ ≤ ‖x‖) :
     0 ≤ a + (‖x‖ ^ 2 + ‖y‖ ^ 2) := by
   rw [ha]

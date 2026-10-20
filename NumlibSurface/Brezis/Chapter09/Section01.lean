@@ -868,6 +868,7 @@ theorem proposition_9_3_i_ii {q : ℝ≥0∞} [p.HolderConjugate q] (u : sobolev
   congr 1
   exact setIntegral_congr_fun Ω.isOpen.measurableSet fun x _ ↦ by rw [smul_eq_mul, mul_comm]
 
+omit [Fact (1 ≤ p)] in
 /-- **Proposition 9.3, (ii) ⇒ (i).** Let `u ∈ L^p(Ω)`, `1 < p ≤ ∞`, `q` the conjugate exponent
 (`1 < p` is `q < ∞`). If there is a constant `C` with `|∫_Ω u ∂φ/∂x_i| ≤ C ‖φ‖_{p'}` for every
 `φ ∈ C_c^∞(Ω)` and every `i`, then `u ∈ W^{1,p}(Ω)`: the proof of Proposition 8.3, the Riesz
@@ -1216,6 +1217,7 @@ omit [Fact (1 ≤ p)] in
 theorem sobolevSpaceHigher_one : sobolevSpaceHigher N 1 p Ω = sobolevSpace N p Ω :=
   rfl
 
+omit [Fact (1 ≤ p)] in
 /-- A function is (almost everywhere on `Ω`) the function of an element of `W^{m,p}(Ω)` if and
 only if it satisfies the backbone's predicate `MemSobolevMultiIndex`. -/
 theorem exists_fn_ae_eq_iff {m : ℕ} (u : 𝔼 → ℝ) :
@@ -1249,6 +1251,7 @@ theorem sobolevSpaceHigher_iff {m : ℕ} (u : 𝔼 → ℝ) :
     exact ⟨g, hasWeakIteratedLineDerivOn_of_forall (hu.locallyIntegrableOn hp)
       (hgp.locallyIntegrableOn hp) hg, hgp⟩
 
+omit [Fact (1 ≤ p)] in
 /-- **The inductive definition of `W^{m+1,p}(Ω)`**: a function `u` is in `W^{m+1,p}(Ω)` if and
 only if it is in `W^{m,p}(Ω)` and, for every `i`, its weak partial derivative `∂u/∂x_i` exists
 and is in `W^{m,p}(Ω)` — the book's `W^{m,p} = {u ∈ W^{m−1,p} : ∂_i u ∈ W^{m−1,p} ∀ i}`. -/

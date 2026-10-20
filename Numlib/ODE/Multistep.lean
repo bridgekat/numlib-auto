@@ -171,8 +171,8 @@ theorem isOrbit_iff {u : ℕ → E} :
 
 /-- An orbit, in terms of the right-hand side `rhs`. -/
 theorem isOrbit_iff_rhs {u : ℕ → E} :
-    M.IsOrbit f h t₀ u ↔ ∀ n, u (n + M.p + 1) = M.rhs f h t₀ u n := by
-  simp [IsOrbit, IsOrbitWith]
+    M.IsOrbit f h t₀ u ↔ ∀ n, u (n + M.p + 1) = M.rhs f h t₀ u n :=
+  M.isOrbit_iff
 
 /-! ### The operator `L`, the local and global truncation errors -/
 

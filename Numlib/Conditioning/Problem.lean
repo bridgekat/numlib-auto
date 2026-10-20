@@ -397,7 +397,6 @@ private theorem eventually_scaledRelCondNumber_le (hG : HasFDerivAt G G' d) (hGd
         ENNReal.ofReal ((‖G'‖ + c) * ‖d‖ / ‖G d‖) := by
   filter_upwards [eventually_norm_remainder_le hG hc, self_mem_nhdsWithin] with ε hR hε
   have hε0 : 0 < ε := hε
-  have hφ : 0 < ‖G d‖ := norm_pos_iff.mpr hGd
   refine iSup₂_le fun δd hδd => ENNReal.div_le_of_le_mul ?_
   rw [← ofReal_norm, ← ofReal_norm, ← ENNReal.ofReal_mul hε0.le,
     ← ENNReal.ofReal_mul (by positivity)]
@@ -460,7 +459,6 @@ derivative `G'` at `d ≠ 0` and `G d ≠ 0`, then `scaledRelCondNumber G d = �
 theorem scaledRelCondNumber_eq_of_hasFDerivAt (hG : HasFDerivAt G G' d) (hd : d ≠ 0)
     (hGd : G d ≠ 0) : scaledRelCondNumber G d = ‖G'‖ₑ * ‖d‖ₑ / ‖G d‖ₑ := by
   have hφ : 0 < ‖G d‖ := norm_pos_iff.mpr hGd
-  have ha : 0 < ‖d‖ := norm_pos_iff.mpr hd
   have hC : ‖G'‖ₑ * ‖d‖ₑ / ‖G d‖ₑ = ENNReal.ofReal (‖G'‖ * ‖d‖ / ‖G d‖) := by
     rw [ENNReal.ofReal_div_of_pos hφ, ENNReal.ofReal_mul (norm_nonneg _), ofReal_norm,
       ofReal_norm, ofReal_norm]

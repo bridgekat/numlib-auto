@@ -155,14 +155,12 @@ private theorem map_subspace_succ_eq_sup_span' (hG : IsMinResidualIterate A b x�
     exact Submodule.add_mem _ (Submodule.mem_sup_left (Submodule.mem_map_of_mem hu))
       (Submodule.mem_sup_right (Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)))
 
-set_option linter.unusedVariables false in
 /-- The step from `A 𝒦_m` to `A 𝒦_{m+1}` is spanned by `r^F_{m+1} - r^G_m` (the Galerkin residual at
 `m + 1` minus the minimal-residual residual at `m`), the key step of the residual-smoothing proof of
 the [greenbaum1997iterative] [cullum1996relations] relation: `A 𝒦_{m+1} = A 𝒦_m ⊔ 𝕜 ∙ (r^F_{m+1} -
 r^G_m)`. -/
 theorem map_subspace_succ_eq_sup_span {m : ℕ} {xG xF : E} (hG : IsMinResidualIterate A b x₀ m xG)
-    (hF : IsGalerkinIterate A b x₀ (m + 1) xF) (hF0 : b - A xF ≠ 0)
-    (hinj : Function.Injective A) [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
+    (hF : IsGalerkinIterate A b x₀ (m + 1) xF) [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hm : m + 1 ≤ grade A (b - A x₀)) :
     (subspace A (b - A x₀) (m + 1)).map A =
       (subspace A (b - A x₀) m).map A ⊔ 𝕜 ∙ ((b - A xF) - (b - A xG)) := by
@@ -538,12 +536,11 @@ private theorem isMinResidual_of_residual_eq_zero {K : Submodule 𝕜 E} {x : E}
 private theorem smoothingCoeff_zero_left (r : E) : (smoothingCoeff (0 : E) r : 𝕜) = 0 := by
   simp [smoothingCoeff]
 
-set_option linter.unusedVariables false in
 /-- [saad2003iterative], §6.5.8 ([weiss1990convergence]; [zhou1994residual], *Residual smoothing
 techniques for iterative methods*): minimal-residual smoothing of the Galerkin (FOM) iterates
 produces the minimal-residual (GMRES) iterates. -/
-theorem IsGalerkinIterate.mrs_isMinResidualIterate {xO : ℕ → E} (hinj : Function.Injective A)
-    (m : ℕ) (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) :
+theorem IsGalerkinIterate.mrs_isMinResidualIterate {xO : ℕ → E} (m : ℕ)
+    (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) :
     IsMinResidualIterate A b x₀ m (mrs A b xO m) := by
   induction m with
   | zero =>
@@ -593,7 +590,7 @@ whole normalised by the sum of the weights. Read together with
 `Krylov.IsGalerkinIterate.mrs_isMinResidualIterate`, which identifies the smoothed sequence with the
 minimal-residual (GMRES) iterates, it exhibits `r^G_m` as that average — the vector form of the
 [greenbaum1997iterative] [cullum1996relations] relation `1/‖r^G_m‖² = ∑_{j ≤ m} 1/‖r^F_j‖²`. -/
-theorem residual_mrs_eq {xO : ℕ → E} (hinj : Function.Injective A) (m : ℕ)
+theorem residual_mrs_eq {xO : ℕ → E} (m : ℕ)
     (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) (h0 : ∀ j ≤ m, b - A (xO j) ≠ 0) :
     b - A (mrs A b xO m) =
       (((∑ j ∈ Finset.range (m + 1), 1 / ‖b - A (xO j)‖ ^ 2)⁻¹ : ℝ) : 𝕜) •
@@ -614,7 +611,7 @@ theorem residual_mrs_eq {xO : ℕ → E} (hinj : Function.Injective A) (m : ℕ)
         exact one_div_pos.2 (pow_pos (norm_pos_iff.2 (hOn j hj')) 2)) ⟨0, by simp⟩
     have hrpos : (0 : ℝ) < ‖b - A (xO (n + 1))‖ ^ 2 :=
       pow_pos (norm_pos_iff.2 (h0 (n + 1) le_rfl)) 2
-    have hmres := IsGalerkinIterate.mrs_isMinResidualIterate hinj n hGn
+    have hmres := IsGalerkinIterate.mrs_isMinResidualIterate n hGn
     have hSne : b - A (mrs A b xO n) ≠ 0 := fun h =>
       hOn n le_rfl (galerkin_residual_eq_zero_of_minRes hmres h (hO n (Nat.le_succ n)))
     have hsum := inv_sq_norm_residual_minRes_eq_sum hmres

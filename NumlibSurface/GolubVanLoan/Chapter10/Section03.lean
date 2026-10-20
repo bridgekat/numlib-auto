@@ -189,7 +189,7 @@ theorem equation_10_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ :
       have hα0 : q₁ ⬝ᵥ (A *ᵥ q₁) = Lanczos.alpha T q 0 := by rw [← hα 0, hv0]
       rw [hw0, WithLp.toLp_ofLp, ← Lanczos.beta]
       refine ⟨le_rfl, by omega, ?_, fun j hj => ?_, hv0.symm, rfl⟩
-      · simp only [Lanczos.beta_eq_zero_iff q hT 0, zero_add]
+      · simp only [Lanczos.beta_eq_zero_iff q 0, zero_add]
       · obtain rfl : j = 0 := by omega
         simp [hα0]
     | succ t ih =>
@@ -238,7 +238,7 @@ theorem equation_10_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ :
           module
         rw [hr, WithLp.toLp_ofLp, ← Lanczos.beta]
         refine ⟨by omega, by omega, ?_, fun i hi => ?_, rfl, rfl⟩
-        · simp only [Lanczos.beta_eq_zero_iff q hT (j + 1)]
+        · simp only [Lanczos.beta_eq_zero_iff q (j + 1)]
         · rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | rfl
           · simp only [Function.update_of_ne (show i ≠ j + 1 by omega)]
             exact hvec i (by omega)
@@ -562,7 +562,7 @@ private theorem hlInv_step {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q�
     have hcβ : c = Lanczos.beta T q t := (sq_eq_sq₀ hcnn (Lanczos.beta_nonneg T q t)).1 hc2
     refine ⟨⟨by rw [hqt, hα], by rw [hy, hcβ]; simp⟩, fun htg' => ?_⟩
     have hβne : Lanczos.beta T q t ≠ 0 := by
-      rw [Ne, Lanczos.beta_eq_zero_iff q hT t]
+      rw [Ne, Lanczos.beta_eq_zero_iff q t]
       omega
     have hHe : reflMat H *ᵥ (Pi.single ⟨t + 1, ht⟩ 1 : Fin n → ℝ) = c⁻¹ • w := by
       have h2 := congrArg (fun x => reflMat H *ᵥ x) hy

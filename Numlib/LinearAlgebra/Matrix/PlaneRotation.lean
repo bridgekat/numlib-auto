@@ -350,9 +350,8 @@ matrix `G(i, k, θ)` of [quarteroni2000numerical] (5.43) is `planeRotation i k (
 def planeRotation (j k : n) (c s : ℝ) : Matrix n n ℝ := planeEmbed j k !![c, -s; s, c]
 
 /-- The transposed `2 × 2` rotation block is the rotation by the opposite angle. -/
-theorem rotationBlock_transpose (c s : ℝ) : !![c, -s; s, c]ᵀ = !![c, s; -s, c] := by
-  ext i j
-  fin_cases i <;> fin_cases j <;> rfl
+theorem rotationBlock_transpose (c s : ℝ) : !![c, -s; s, c]ᵀ = !![c, s; -s, c] :=
+  eta_fin_two _
 
 variable {j k : n} {c s : ℝ}
 

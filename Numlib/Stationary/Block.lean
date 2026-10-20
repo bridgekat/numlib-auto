@@ -1,4 +1,5 @@
 import Mathlib.LinearAlgebra.Matrix.Block
+import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Projection.Coordinate
 import Numlib.Stationary.Splitting
 
@@ -182,8 +183,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] [Fintype n] [DecidableEq n] [LinearOrder �
 variable {π : n → ι} {A : Matrix n n 𝕜}
 
 /-- Entries of `toEuclideanLin M v` are the entries of `M *ᵥ v`. -/
-private theorem toEuclideanLin_apply_eq_sum (M : Matrix n n 𝕜) (v : EuclideanSpace 𝕜 n) (k : n) :
-    toEuclideanLin M v k = ∑ j, M k j * v j := rfl
+private theorem toEuclideanLin_apply_eq_sum_mul (M : Matrix n n 𝕜) (v : EuclideanSpace 𝕜 n)
+    (k : n) : toEuclideanLin M v k = ∑ j, M k j * v j := rfl
 
 omit [Fintype n] [DecidableEq n] in
 /-- Entries of a finite sum in `EuclideanSpace` are the sums of the entries. -/
@@ -218,7 +219,7 @@ private theorem sum_blockRestrict [Fintype ι] (v : EuclideanSpace 𝕜 n) :
 private theorem blockDiag_apply_of_eq {i : ι} {v : EuclideanSpace 𝕜 n}
     (hv : v ∈ blockSubspace 𝕜 π i) {k : n} (hk : π k = i) :
     toEuclideanLin (blockDiagPart π A) v k = toEuclideanLin A v k := by
-  rw [toEuclideanLin_apply_eq_sum, toEuclideanLin_apply_eq_sum]
+  rw [toEuclideanLin_apply_eq_sum_mul, toEuclideanLin_apply_eq_sum_mul]
   refine Finset.sum_congr rfl fun j _ => ?_
   by_cases hj : π j = i
   · rw [blockDiagPart_apply, ite_eq_left (hk.trans hj.symm)]
@@ -228,7 +229,7 @@ private theorem blockDiag_apply_of_eq {i : ι} {v : EuclideanSpace 𝕜 n}
 private theorem blockDiag_apply_of_ne {i : ι} {v : EuclideanSpace 𝕜 n}
     (hv : v ∈ blockSubspace 𝕜 π i) {k : n} (hk : π k ≠ i) :
     toEuclideanLin (blockDiagPart π A) v k = 0 := by
-  rw [toEuclideanLin_apply_eq_sum]
+  rw [toEuclideanLin_apply_eq_sum_mul]
   refine Finset.sum_eq_zero fun j _ => ?_
   by_cases hj : π j = i
   · rw [blockDiagPart_apply, ite_eq_right (by rw [hj]; exact hk), zero_mul]
@@ -238,7 +239,7 @@ private theorem blockDiag_apply_of_ne {i : ι} {v : EuclideanSpace 𝕜 n}
 private theorem blockDiag_blockRestrict_apply (i : ι) (v : EuclideanSpace 𝕜 n) {k : n}
     (hk : π k = i) : toEuclideanLin (blockDiagPart π A) (blockRestrict π i v) k
       = toEuclideanLin (blockDiagPart π A) v k := by
-  rw [toEuclideanLin_apply_eq_sum, toEuclideanLin_apply_eq_sum]
+  rw [toEuclideanLin_apply_eq_sum_mul, toEuclideanLin_apply_eq_sum_mul]
   refine Finset.sum_congr rfl fun j _ => ?_
   by_cases hj : π j = i
   · rw [blockRestrict_apply, ite_eq_left hj]
@@ -251,7 +252,7 @@ the block-lower part `D - E` as in `A` itself: the diagonal block contributes fo
 private theorem blockLower_apply_of_le {i : ι} {v : EuclideanSpace 𝕜 n}
     (hv : v ∈ blockSubspace 𝕜 π i) {k : n} (hk : i ≤ π k) :
     toEuclideanLin (blockDiagPart π A + blockStrictLower π A) v k = toEuclideanLin A v k := by
-  rw [toEuclideanLin_apply_eq_sum, toEuclideanLin_apply_eq_sum]
+  rw [toEuclideanLin_apply_eq_sum_mul, toEuclideanLin_apply_eq_sum_mul]
   refine Finset.sum_congr rfl fun j _ => ?_
   by_cases hj : π j = i
   · rw [Matrix.add_apply, blockDiagPart_apply, blockStrictLower_apply]
@@ -267,7 +268,7 @@ private theorem blockLower_apply_of_le {i : ι} {v : EuclideanSpace 𝕜 n}
 private theorem blockLower_apply_eq_zero {i : ι} {v : EuclideanSpace 𝕜 n}
     (hv : ∀ j, ¬ i < π j → v j = 0) {k : n} (hk : π k ≤ i) :
     toEuclideanLin (blockDiagPart π A + blockStrictLower π A) v k = 0 := by
-  rw [toEuclideanLin_apply_eq_sum]
+  rw [toEuclideanLin_apply_eq_sum_mul]
   refine Finset.sum_eq_zero fun j _ => ?_
   by_cases hj : i < π j
   · have h1 : π k < π j := lt_of_le_of_lt hk hj
@@ -298,13 +299,6 @@ theorem isNondegeneratePair_blockSubspace (h : IsUnit (blockDiagPart π A)) (i :
           rw [Matrix.toLpLin_mul_same, LinearMap.comp_apply]
       _ = 0 := by rw [hzero, map_zero]
 
-/-- Applying the inverse of an invertible matrix undoes the matrix. -/
-private theorem toEuclideanLin_inv_apply {M : Matrix n n 𝕜} (hM : IsUnit M)
-    (v : EuclideanSpace 𝕜 n) : toEuclideanLin M (toEuclideanLin M⁻¹ v) = v := by
-  rw [← LinearMap.comp_apply, ← Matrix.toLpLin_mul_same,
-    Matrix.mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hM), Matrix.toLpLin_one,
-    LinearMap.id_apply]
-
 /-- **[saad2003iterative], §5.4**: one **block Jacobi** step is one step of the *additive*
 projection process over the blocks, with all relaxation weights equal to `1`.  Each block
 contributes the Petrov–Galerkin correction of the pair `K i = L i = ` the coordinate subspace of
@@ -320,7 +314,7 @@ theorem blockJacobiSplitting_step_eq_additiveStep [Fintype ι] (h : IsUnit (bloc
   set d : EuclideanSpace 𝕜 n :=
     toEuclideanLin (blockDiagPart π A)⁻¹ (b - toEuclideanLin A x) with hd
   have hMd : toEuclideanLin (blockDiagPart π A) d = b - toEuclideanLin A x :=
-    toEuclideanLin_inv_apply h _
+    toEuclideanLin_mul_nonsing_inv_apply h _
   have hstep : ∀ i : ι, pairStep (toEuclideanLin A) b (blockSubspace 𝕜 π i)
       (blockSubspace 𝕜 π i) (isNondegeneratePair_blockSubspace h i) x
         = x + blockRestrict π i d := by
