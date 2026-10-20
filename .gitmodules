@@ -1,3 +1,6 @@
 [submodule "tools/tracker"]
 	path = tools/tracker
 	url = https://github.com/bridgekat/tracker
+[submodule "tools/metrics"]
+	path = tools/metrics
+	url = https://github.com/bridgekat/metrics
