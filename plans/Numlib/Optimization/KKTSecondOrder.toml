@@ -1,0 +1,40 @@
+namespace = "Constrained"
+
+[[node]]
+id = "mixedLagrangian"
+
+[[node]]
+id = "kktCriticalCone"
+
+[[node]]
+id = "criticalFace"
+
+[[node]]
+id = "IsKKTPoint.mem_criticalFace"
+
+[[node]]
+id = "mixedLagrangian_eq_of_mem_criticalFace"
+
+[[node]]
+id = "IsKKTPoint.mem_posTangentConeAt_criticalFace"
+
+[[node]]
+id = "mixedLagrangian_hasFDerivAt"
+
+[[node]]
+id = "contDiffOn_mixedLagrangian"
+
+[[node]]
+id = "IsKKTPoint.nonneg_second_of_isLocalMinOn"
+
+[[node]]
+id = "IsKKTPoint.mem_kktCriticalCone_of_tangent_of_nonpos"
+
+[[node]]
+id = "IsKKTPoint.isStrictLocalMinOn_of_posDef_second"
+
+[[node]]
+id = "exists_kkt_second_of_isLocalMinOn"
+
+[[node]]
+id = "IsKKTPoint.isStrictLocalMinOn_of_contDiffOn_posDef_second"

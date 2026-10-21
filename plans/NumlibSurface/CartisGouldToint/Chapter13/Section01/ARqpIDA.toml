@@ -1,0 +1,25 @@
+namespace = "CartisGouldToint.Chapter13.Section01"
+
+[[node]]
+id = "ARqpIDAParameters"
+
+[[node]]
+id = "algorithm_13_1_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 13.1.2"
+
+[[node]]
+id = "arqpida_allp_algorithm"
+
+[[node]]
+id = "lemma_13_1_9"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.9"
+
+[[node]]
+id = "lemma_13_1_11"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.11"
+
+[[node]]
+id = "arqpida_allp_sigma_upper"
+
+[[node]]
+id = "arqpida_true_quality_of_uniform_accuracy"

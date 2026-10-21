@@ -1,0 +1,79 @@
+namespace = "Optimization.TrustRegionSecondOrder"
+
+[[node]]
+id = "hessianOperator"
+
+[[node]]
+id = "curvature"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "taylorModel_eq"
+
+[[node]]
+id = "exists_signed_unit"
+
+[[node]]
+id = "quadratic_boundary_le"
+
+[[node]]
+id = "IsRun.curvature_decrease"
+
+[[node]]
+id = "norm_hessianOperator"
+
+[[node]]
+id = "gradient_lipschitz_of_hessian_bound"
+
+[[node]]
+id = "IsRun.ratio_ge_of_curvature_radius"
+
+[[node]]
+id = "IsRun.exists_firstOrder_complexity_constants"
+
+[[node]]
+id = "Stationary"
+
+[[node]]
+id = "not_stationary_iff"
+
+[[node]]
+id = "IsRun.ratio_ge_of_joint_radius"
+
+[[node]]
+id = "IsRun.radius_lower_before_joint_test"
+
+[[node]]
+id = "accuracyScale"
+
+[[node]]
+id = "accuracyScale_eq"
+
+[[node]]
+id = "IsRun.predicted_decrease_before_joint_test"
+
+[[node]]
+id = "jointRadiusCoefficient"
+
+[[node]]
+id = "jointRadiusCoefficient_spec"
+
+[[node]]
+id = "IsRun.joint_success_count_le"
+
+[[node]]
+id = "IsRun.joint_prefix_count_le"
+
+[[node]]
+id = "IsRun.exists_joint_complexity_constants"
+
+[[node]]
+id = "exists_signed_eigenvector"
+
+[[node]]
+id = "eigenpoint"
+
+[[node]]
+id = "eigenpoint_spec"

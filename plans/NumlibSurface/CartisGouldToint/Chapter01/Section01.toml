@@ -1,0 +1,21 @@
+namespace = "CartisGouldToint.Chapter01.Section01"
+
+[[node]]
+id = "feasibleDisplacements"
+source = "Cartis, Gould and Toint, Section 1.1, essential definitions and assumptions"
+
+[[node]]
+id = "theorem_1_1_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.1"
+
+[[node]]
+id = "theorem_1_1_2"
+kind = "theorem"
+desc = '''Necessary first-, second- and third-order directional conditions on the radial feasible displacements C(x*) for a local minimum on a nonempty closed convex set. The printed converse is false for arbitrary convex sets; separate the valid necessary clauses and formulate sufficiency on the tangent critical cone.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.2"
+wrong = '''Supplied transcription strict sufficiency is false for radial feasible directions on general closed convex sets. At x*=0, C={(u,v):v≥u²} and f(u,v)=v−2u² satisfy the stated first-order and vacuous critical radial-Hessian conditions, but f(u,u²)=−u²<0. Use tangent critical cone for the corrected converse.'''
+
+[[node]]
+id = "theorem_1_1_2_necessary"
+source = "Cartis, Gould and Toint, Theorem 1.1.2, necessary direction"

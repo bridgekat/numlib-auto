@@ -1,0 +1,67 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "AcceptedTrial"
+
+[[node]]
+id = "Transition.exists_acceptedTrial"
+
+[[node]]
+id = "AcceptedTrial.next_point"
+
+[[node]]
+id = "AcceptedTrial.next_radii"
+
+[[node]]
+id = "AcceptedTrial.next_request"
+
+[[node]]
+id = "AcceptedTrial.objective_decrease"
+
+[[node]]
+id = "AcceptedTrial.long_predicted_decrease"
+
+[[node]]
+id = "AcceptedTrial.long_objective_decrease"
+
+[[node]]
+id = "Execution.acceptedTrial"
+
+[[node]]
+id = "incomingErrorCheck_failure_transfer"
+
+[[node]]
+id = "errorTransferConstant"
+
+[[node]]
+id = "one_le_errorTransferConstant"
+
+[[node]]
+id = "incomingErrorCheck_failure_transfer_standard"
+
+[[node]]
+id = "AcceptedTrial.endpoint_gap_le"
+
+[[node]]
+id = "AcceptedTrial.transfer_of_initialFailure"
+
+[[node]]
+id = "AcceptedTrial.transfer_cases_of_not_certified"
+
+[[node]]
+id = "AcceptedTrial.step_lower_bound_of_no_initialFailure"
+
+[[node]]
+id = "AcceptedTrial.predicted_decrease_of_no_initialFailure"
+
+[[node]]
+id = "AcceptedTrial.accepted_decrease_of_no_initialFailure"
+
+[[node]]
+id = "Execution.accepted_transfer_cases"
+
+[[node]]
+id = "Execution.predicted_decrease_of_no_initialFailure"
+
+[[node]]
+id = "Execution.accepted_decrease_of_no_initialFailure"

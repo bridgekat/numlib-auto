@@ -1,0 +1,250 @@
+namespace = "Optimization.SteepestDescentValley"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "roundedParameters"
+
+[[node]]
+id = "roundedParameters_eps"
+
+[[node]]
+id = "roundedParameters_count"
+
+[[node]]
+id = "cellLength"
+
+[[node]]
+id = "lengthDrop"
+
+[[node]]
+id = "cellSign"
+
+[[node]]
+id = "nodeX"
+
+[[node]]
+id = "nodeY"
+
+[[node]]
+id = "nodeValue"
+
+[[node]]
+id = "nodeMidpoint"
+
+[[node]]
+id = "cellLength_zero"
+
+[[node]]
+id = "cellLength_count"
+
+[[node]]
+id = "cellLength_succ"
+
+[[node]]
+id = "lengthDrop_pos"
+
+[[node]]
+id = "cellLength_bounds"
+
+[[node]]
+id = "cellLength_pos"
+
+[[node]]
+id = "cellSign_succ"
+
+[[node]]
+id = "abs_cellSign"
+
+[[node]]
+id = "nodeX_succ"
+
+[[node]]
+id = "nodeY_succ"
+
+[[node]]
+id = "nodeValue_succ"
+
+[[node]]
+id = "nodeMidpoint_succ"
+
+[[node]]
+id = "nodeX_strict"
+
+[[node]]
+id = "objectiveJet"
+
+[[node]]
+id = "widthJet"
+
+[[node]]
+id = "midpointJet"
+
+[[node]]
+id = "extendedNodeX"
+
+[[node]]
+id = "extendedObjectiveJet"
+
+[[node]]
+id = "scalarObjective"
+
+[[node]]
+id = "scalarWidth"
+
+[[node]]
+id = "scalarMidpoint"
+
+[[node]]
+id = "extendedNodeX_of_le"
+
+[[node]]
+id = "extendedNodeX_last"
+
+[[node]]
+id = "extendedNodeX_strict"
+
+[[node]]
+id = "contDiff_scalarObjective"
+
+[[node]]
+id = "contDiff_scalarWidth"
+
+[[node]]
+id = "contDiff_scalarMidpoint"
+
+[[node]]
+id = "scalarObjective_node_jets"
+
+[[node]]
+id = "scalarWidth_node_jets"
+
+[[node]]
+id = "scalarMidpoint_node_jets"
+
+[[node]]
+id = "quinticCell_constantJets"
+
+[[node]]
+id = "quinticCell_objective_formula"
+
+[[node]]
+id = "scalarWidth_cell"
+
+[[node]]
+id = "scalarMidpoint_cell"
+
+[[node]]
+id = "scalarObjective_cell"
+
+[[node]]
+id = "scalarObjective_left"
+
+[[node]]
+id = "scalarObjective_right"
+
+[[node]]
+id = "scalarWidth_left"
+
+[[node]]
+id = "scalarWidth_right"
+
+[[node]]
+id = "scalarMidpoint_left"
+
+[[node]]
+id = "scalarMidpoint_right"
+
+[[node]]
+id = "scalarObjective_transition"
+
+[[node]]
+id = "cell_coordinate_mem_Icc"
+
+[[node]]
+id = "scalarWidth_bounds"
+
+[[node]]
+id = "scalarWidth_pos"
+
+[[node]]
+id = "nodeValue_lower"
+
+[[node]]
+id = "lengthDrop_le_eps"
+
+[[node]]
+id = "scalarObjective_cell_lower"
+
+[[node]]
+id = "scalarObjective_lower"
+
+[[node]]
+id = "quinticCell_constantJets_derivatives"
+
+[[node]]
+id = "deriv_correctionCoefficient_of_nonpos"
+
+[[node]]
+id = "hasFDerivAt_correction_zero"
+
+[[node]]
+id = "hasFDerivAt_profile_core"
+
+[[node]]
+id = "euclideanMovingProfile"
+
+[[node]]
+id = "euclideanObjective"
+
+[[node]]
+id = "contDiff_euclideanMovingProfile"
+
+[[node]]
+id = "contDiff_euclideanObjective"
+
+[[node]]
+id = "euclideanObjective_lower"
+
+[[node]]
+id = "hasDerivAt_scalarObjective_node"
+
+[[node]]
+id = "hasDerivAt_scalarWidth_node"
+
+[[node]]
+id = "hasDerivAt_scalarMidpoint_node"
+
+[[node]]
+id = "nodePoint"
+
+[[node]]
+id = "nodeGradient"
+
+[[node]]
+id = "scalarWidth_node"
+
+[[node]]
+id = "scalarMidpoint_node"
+
+[[node]]
+id = "nodePoint_apply"
+
+[[node]]
+id = "hasFDerivAt_euclideanObjective_node"
+
+[[node]]
+id = "gradient_euclideanObjective_node"
+
+[[node]]
+id = "norm_gradient_euclideanObjective_node"
+
+[[node]]
+id = "nodePoint_succ"
+
+[[node]]
+id = "terminal_gradient_norm"
+
+[[node]]
+id = "preceding_gradient_norm"

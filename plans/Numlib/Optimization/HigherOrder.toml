@@ -1,0 +1,25 @@
+namespace = "Descent"
+
+[[node]]
+id = "eventually_lt_of_eventually_deriv_neg_right"
+
+[[node]]
+id = "nonneg_second_of_eventually_min_right"
+
+[[node]]
+id = "nonneg_third_of_eventually_min_right"
+
+[[node]]
+id = "third_apply_apply_apply_eq_zero_of_isLocalMin"
+
+[[node]]
+id = "isLocalMin_of_posDef_second"
+
+[[node]]
+id = "eventually_le_on_ray_of_isLocalMinOn"
+
+[[node]]
+id = "nonneg_apply_apply_of_isLocalMinOn"
+
+[[node]]
+id = "nonneg_third_apply_apply_apply_of_isLocalMinOn"

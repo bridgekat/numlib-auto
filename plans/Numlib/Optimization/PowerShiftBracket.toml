@@ -1,0 +1,10 @@
+namespace = "Optimization"
+
+[[node]]
+id = "shiftPower"
+
+[[node]]
+id = "strictMonoOn_shiftPower"
+
+[[node]]
+id = "shiftPower_root_bracket"

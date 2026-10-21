@@ -1,0 +1,32 @@
+namespace = "CartisGouldToint.Chapter09.Section03"
+
+[[node]]
+id = "regularizationMultiplierBracket"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 9.3.1, (9.3.1)–(9.3.5)"
+
+[[node]]
+id = "generalizedGershgorinBounds"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 9.3.1, (9.3.6)–(9.3.7)"
+
+[[node]]
+id = "theorem_9_3_2"
+kind = "theorem"
+desc = '''For λC∈F and π=‖s(λC)‖M², conditions π≤(r/2)^(2/(r−2))(λC/σ)^(2/(r−2)); |π^((r−2)/2)−λC/σ|≤θ1√π/(2σ); and π^((r−2)/2)−λC/σ≥−θ2√π/σ imply early termination. Proof exact objective identity, gradient=(σ‖s‖M^(r−2)−λC)Ms and positive rank-one Hessian correction. Need energy-metric Hessian lower bound for arbitrary SPD M; Euclidean λmin needs an extra eigenvalue(M) factor.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 9.3.2"
+deps = ["CartisGouldToint.Chapter09.Section03.regularizationEarlyTermination"]
+wrong = '''As literally written for arbitrary SPD M, condition (9.3.15c) controls generalized curvature relative to M, not Euclidean λmin in (9.3.14c). Appendix drops the M factor. Resolve norm/eigenvalue convention (or specialize M=I) before asserting the supplied transcription conclusion.'''
+
+[[node]]
+id = "weightedDualNorm_eq_norm_toEnergy"
+
+[[node]]
+id = "secularEigenvalues_shift_nonneg"
+
+[[node]]
+id = "secularThreshold_le_of_posSemidef"
+
+[[node]]
+id = "stationary_weightedNorm_bounds"
+
+[[node]]
+id = "regularizationMultiplierRootBracket"

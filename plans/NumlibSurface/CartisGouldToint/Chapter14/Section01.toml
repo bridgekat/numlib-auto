@@ -1,0 +1,25 @@
+namespace = "CartisGouldToint.Chapter14.Section01"
+
+[[node]]
+id = "CompositeProblem"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation14.1.1, Assumptionsc.D1pL,h.L,h.S0,w.Bb"
+
+[[node]]
+id = "compositeTaylorModel"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations14.1.5–14.1.6"
+
+[[node]]
+id = "IsCompositeApproxOrderMinimizer"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations14.1.9–14.1.10"
+
+[[node]]
+id = "compositeRegularizedModel"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations14.1.11–14.1.14"
+
+[[node]]
+id = "lemma_14_1_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.1"
+
+[[node]]
+id = "lemma_14_1_5"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.5"

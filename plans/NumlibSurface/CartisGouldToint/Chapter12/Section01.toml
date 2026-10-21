@@ -1,0 +1,45 @@
+namespace = "CartisGouldToint.Chapter12.Section01"
+
+[[node]]
+id = "curveCompositionIndices"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 12.1.5"
+
+[[node]]
+id = "curveCoefficient"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations 12.1.6–12.1.7"
+
+[[node]]
+id = "IsCurveOrderMinimizer"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.1.2"
+
+[[node]]
+id = "taylorDecrement"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 12.1.11"
+
+[[node]]
+id = "taylorCriticality"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 12.1.10"
+
+[[node]]
+id = "IsApproxOrderMinimizer"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Key Definition, Equation 12.1.25"
+
+[[node]]
+id = "theorem_12_1_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.2"
+
+[[node]]
+id = "theorem_12_1_5"
+kind = "theorem"
+desc = '''As transcribed: isolated minimality of T_f, j(x,·), f∈C^(j+1), and bounded D^(j+1)f(x) imply isolated minimality of T_f, j+1 and f. Preserve this item as wrong; a separate corrected theorem requires uniform positive order-j Taylor growth.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.5"
+deps = ["taylorCriticality"]
+wrong = '''False as transcribed: j=6 and f(u,v)=(v−u²)²+v⁶−u⁷ at0. Its degree6 Taylor polynomial has an isolated global minimum at0, but f(t,t²)=t¹²−t⁷<0 for0<t<1. The polynomial is C∞ and D⁷f(0) is bounded. The proof chooses direction-dependent radii and incorrectly infers a uniform neighbourhood. Printed-source verification remains outstanding.'''
+
+[[node]]
+id = "theorem_12_1_8"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.8"
+
+[[node]]
+id = "isLocalMin_of_uniform_taylor_growth"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Correction to transcribed Theorem 12.1.5"

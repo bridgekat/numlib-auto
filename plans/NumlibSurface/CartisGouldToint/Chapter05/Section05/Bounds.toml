@@ -1,0 +1,25 @@
+namespace = "CartisGouldToint.Chapter05.Section05"
+
+[[node]]
+id = "universalSuccessCoefficient"
+
+[[node]]
+id = "lemma_5_5_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.3"
+
+[[node]]
+id = "universalToleranceCoefficient"
+
+[[node]]
+id = "lemma_5_5_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.4"
+
+[[node]]
+id = "universalSuccessThreshold"
+
+[[node]]
+id = "universalUniformSigma"
+
+[[node]]
+id = "lemma_5_5_5"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.5"

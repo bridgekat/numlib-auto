@@ -1,0 +1,31 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "uniform_error_budget"
+
+[[node]]
+id = "Inspection.true_quality_of_uniform_accuracy"
+
+[[node]]
+id = "very_successful_of_step_accuracy"
+
+[[node]]
+id = "StepAccurate.request_le_power"
+
+[[node]]
+id = "Transition.sigma_nonincrease_of_large"
+
+[[node]]
+id = "Transition.sigma_le_gamma3"
+
+[[node]]
+id = "Execution.sigma_upper"
+
+[[node]]
+id = "Transition.request_eq"
+
+[[node]]
+id = "Execution.refinementCount"
+
+[[node]]
+id = "Execution.request_eq"

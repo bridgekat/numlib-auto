@@ -1,0 +1,91 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "correctedSigmaBound"
+
+[[node]]
+id = "initial_le_correctedSigmaBound"
+
+[[node]]
+id = "correctedSigmaBound_pos"
+
+[[node]]
+id = "correctedTransferConstant"
+
+[[node]]
+id = "one_le_correctedTransferConstant"
+
+[[node]]
+id = "corrected_decrease_coefficient_pos"
+
+[[node]]
+id = "prescribedRadiusCoefficient"
+
+[[node]]
+id = "prescribedRadiusCoefficient_pos"
+
+[[node]]
+id = "prescribedRadiusCoefficient_le_one"
+
+[[node]]
+id = "PrescribedModelRadii"
+
+[[node]]
+id = "PrescribedModelRadii.regimes"
+
+[[node]]
+id = "ExecutedTrial"
+
+[[node]]
+id = "Transition.exists_executedTrial"
+
+[[node]]
+id = "ExecutedTrial.accepted_iff"
+
+[[node]]
+id = "ExecutedTrial.next_sigma"
+
+[[node]]
+id = "ExecutedTrial.next_request"
+
+[[node]]
+id = "ExecutedTrial.next_fresh"
+
+[[node]]
+id = "ExecutedTrial.accepted_point"
+
+[[node]]
+id = "ExecutedTrial.accepted_radii"
+
+[[node]]
+id = "Execution.executedTrial"
+
+[[node]]
+id = "Execution.sigma_le_correctedSigmaBound"
+
+[[node]]
+id = "Execution.supplied_coefficient_norm_le"
+
+[[node]]
+id = "InnerResult.long_predicted_decrease"
+
+[[node]]
+id = "ExecutedTrial.long_objective_decrease"
+
+[[node]]
+id = "InnerResult.prescribedModelRadii_of_bounds"
+
+[[node]]
+id = "Execution.prescribedModelRadii_of_bounds"
+
+[[node]]
+id = "Execution.step_lower_bound_of_true_gap_failure"
+
+[[node]]
+id = "Execution.predicted_decrease_of_true_gap_failure"
+
+[[node]]
+id = "Execution.trial_predicted_decrease_of_true_gap_failure"
+
+[[node]]
+id = "Execution.accepted_decrease_of_true_gap_failure"

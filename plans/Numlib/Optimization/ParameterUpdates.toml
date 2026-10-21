@@ -1,0 +1,55 @@
+namespace = "Optimization.ParameterUpdates"
+
+[[node]]
+id = "UpdateBounds"
+
+[[node]]
+id = "unsuccessful_count_le_of_upper_bound"
+
+[[node]]
+id = "unsuccessful_count_le_of_lower_bound"
+
+[[node]]
+id = "le_max_of_nonincrease_above"
+
+[[node]]
+id = "min_le_of_nondecrease_below"
+
+[[node]]
+id = "successCount"
+
+[[node]]
+id = "unsuccessfulCount"
+
+[[node]]
+id = "successCount_add_unsuccessfulCount"
+
+[[node]]
+id = "UpdateBounds.log_budget"
+
+[[node]]
+id = "total_count_le_of_upper_bound"
+
+[[node]]
+id = "total_count_le_of_lower_bound"
+
+[[node]]
+id = "RegularizationParameters"
+
+[[node]]
+id = "RegularizationUpdates"
+
+[[node]]
+id = "RegularizationUpdates.lower"
+
+[[node]]
+id = "RegularizationUpdates.pos"
+
+[[node]]
+id = "RegularizationUpdates.updateBounds"
+
+[[node]]
+id = "RegularizationUpdates.total_count_le"
+
+[[node]]
+id = "RegularizationUpdates.upper"

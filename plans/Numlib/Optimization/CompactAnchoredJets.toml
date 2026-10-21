@@ -1,0 +1,7 @@
+namespace = "Optimization.ConstrainedTaylorCriticality"
+
+[[node]]
+id = "HasAnchoredBoundedJets.mono_centers"
+
+[[node]]
+id = "exists_anchoredBoundedJets_of_contDiff"

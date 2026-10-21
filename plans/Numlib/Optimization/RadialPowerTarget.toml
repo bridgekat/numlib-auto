@@ -1,0 +1,10 @@
+namespace = "Optimization.QuadraticSubproblem"
+
+[[node]]
+id = "radialShift_iff_radius"
+
+[[node]]
+id = "radialShift_iff_sq_radius"
+
+[[node]]
+id = "inverse_radial_target_eq"

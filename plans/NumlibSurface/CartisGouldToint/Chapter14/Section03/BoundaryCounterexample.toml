@@ -1,0 +1,146 @@
+namespace = "CartisGouldToint.Chapter14.Section03"
+
+[[node]]
+id = "TwoPhaseBoundary.Plane"
+
+[[node]]
+id = "TwoPhaseBoundary.g"
+
+[[node]]
+id = "TwoPhaseBoundary.lagrangian"
+
+[[node]]
+id = "TwoPhaseBoundary.X"
+
+[[node]]
+id = "TwoPhaseBoundary.norm_g_sq"
+
+[[node]]
+id = "TwoPhaseBoundary.inner_g"
+
+[[node]]
+id = "TwoPhaseBoundary.fderiv_lagrangian"
+
+[[node]]
+id = "TwoPhaseBoundary.feasible_unit_ball"
+
+[[node]]
+id = "TwoPhaseBoundary.gap_lagrangian"
+
+[[node]]
+id = "TwoPhaseBoundary.fails_every_multiplier"
+
+[[node]]
+id = "TwoPhaseBoundary.objective"
+
+[[node]]
+id = "TwoPhaseBoundary.scalarConstraint"
+
+[[node]]
+id = "TwoPhaseBoundary.constraint"
+
+[[node]]
+id = "TwoPhaseBoundary.initialPoint"
+
+[[node]]
+id = "TwoPhaseBoundary.norm_constraint"
+
+[[node]]
+id = "TwoPhaseBoundary.initial_values"
+
+[[node]]
+id = "TwoPhaseBoundary.output_values"
+
+[[node]]
+id = "TwoPhaseBoundary.component_jets"
+
+[[node]]
+id = "TwoPhaseBoundary.target_objective_eq"
+
+[[node]]
+id = "TwoPhaseBoundary.target_fderiv"
+
+[[node]]
+id = "TwoPhaseBoundary.target_gap"
+
+[[node]]
+id = "TwoPhaseBoundary.simple_set_properties"
+
+[[node]]
+id = "TwoPhaseBoundary.initial_feasible"
+
+[[node]]
+id = "TwoPhaseBoundary.tube_bounds"
+
+[[node]]
+id = "TwoPhaseBoundary.innerStep"
+
+[[node]]
+id = "TwoPhaseBoundary.innerTerminal"
+
+[[node]]
+id = "TwoPhaseBoundary.ordinaryInner"
+
+[[node]]
+id = "TwoPhaseBoundary.ordinary_evaluations"
+
+[[node]]
+id = "TwoPhaseBoundary.ordinary_contract"
+
+[[node]]
+id = "TwoPhaseBoundary.actualInnerCall"
+
+[[node]]
+id = "TwoPhaseBoundary.phaseOneTrace"
+
+[[node]]
+id = "TwoPhaseBoundary.phase_one_stops"
+
+[[node]]
+id = "TwoPhaseBoundary.phase_one_execution"
+
+[[node]]
+id = "TwoPhaseBoundary.initial_factor"
+
+[[node]]
+id = "TwoPhaseBoundary.phase_one_literal"
+
+[[node]]
+id = "TwoPhaseBoundary.phaseTwoTrace"
+
+[[node]]
+id = "TwoPhaseBoundary.initial_residual"
+
+[[node]]
+id = "TwoPhaseBoundary.output_residual"
+
+[[node]]
+id = "TwoPhaseBoundary.componentResponse"
+
+[[node]]
+id = "TwoPhaseBoundary.phase_two_execution"
+
+[[node]]
+id = "TwoPhaseBoundary.actual_execution"
+
+[[node]]
+id = "TwoPhaseBoundary.source_lagrangian_eq"
+
+[[node]]
+id = "TwoPhaseBoundary.multiplier_scale"
+
+[[node]]
+id = "TwoPhaseBoundary.source_multiplier_failure"
+
+[[node]]
+id = "TwoPhaseBoundary.termination_alternatives_fail"
+
+[[node]]
+id = "literal_two_phase_boundary_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.5 counterexample"
+
+[[node]]
+id = "TwoPhaseBoundary.targetGradient"
+
+[[node]]
+id = "TwoPhaseBoundary.target_fderiv_at"

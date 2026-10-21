@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.AppendixA.Section03"
+
+[[node]]
+id = "QConvergenceRate"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.3"

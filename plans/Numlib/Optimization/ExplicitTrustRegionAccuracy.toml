@@ -1,0 +1,25 @@
+namespace = "Optimization.ExplicitTrustRegion"
+
+[[node]]
+id = "UniformAccuracy"
+
+[[node]]
+id = "Oracle.uniformAccuracy"
+
+[[node]]
+id = "LegalPrefix.step_decrement_error"
+
+[[node]]
+id = "LegalPrefix.approximate_gaps_at_pass"
+
+[[node]]
+id = "Quality"
+
+[[node]]
+id = "LegalPrefix.errorCheck_each"
+
+[[node]]
+id = "LegalPrefix.certified_quality"
+
+[[node]]
+id = "LegalPrefix.errorCheck_of_requests"

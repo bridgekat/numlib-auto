@@ -1,0 +1,64 @@
+namespace = "Matrix"
+
+[[node]]
+id = "absoluteScalingWeight"
+
+[[node]]
+id = "le_absoluteScalingWeight"
+
+[[node]]
+id = "absoluteScalingWeight_pos"
+
+[[node]]
+id = "absoluteScalingWeight_of_abs_ge"
+
+[[node]]
+id = "absoluteScalingWeight_of_abs_le"
+
+[[node]]
+id = "normalizedCurvature"
+
+[[node]]
+id = "abs_normalizedCurvature_le_one"
+
+[[node]]
+id = "abs_normalizedCurvature_lt_one"
+
+[[node]]
+id = "normalizedCurvature_of_ge"
+
+[[node]]
+id = "normalizedCurvature_of_le_neg"
+
+[[node]]
+id = "unitaryDiagonalScaling"
+
+[[node]]
+id = "unitaryDiagonalScaling_eq"
+
+[[node]]
+id = "unitaryDiagonalScaling_one"
+
+[[node]]
+id = "unitaryDiagonalScaling_posDef"
+
+[[node]]
+id = "unitaryDiagonalScaling_sub_floor_posSemidef"
+
+[[node]]
+id = "spectrum_unitaryDiagonalScaling"
+
+[[node]]
+id = "modifiedAbsoluteScaling"
+
+[[node]]
+id = "modifiedAbsoluteScaling_eq"
+
+[[node]]
+id = "modifiedAbsoluteScaling_posDef"
+
+[[node]]
+id = "modifiedAbsoluteScaling_sub_floor_posSemidef"
+
+[[node]]
+id = "modifiedAbsoluteScaling_eigenvalues_ge"

@@ -1,0 +1,19 @@
+namespace = "BoundedAffineExtension"
+
+[[node]]
+id = "exists_transition"
+
+[[node]]
+id = "scaled"
+
+[[node]]
+id = "scaled_contDiff"
+
+[[node]]
+id = "deriv_scaled"
+
+[[node]]
+id = "deriv_deriv_scaled"
+
+[[node]]
+id = "exists_extension"

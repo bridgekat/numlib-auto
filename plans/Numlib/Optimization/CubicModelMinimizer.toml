@@ -1,0 +1,61 @@
+namespace = "Optimization.CubicRegularization"
+
+[[node]]
+id = "contDiff_two_cubicModel"
+
+[[node]]
+id = "cubicModel_eq_powerRegularizedQuadratic"
+
+[[node]]
+id = "exists_isMinOn_cubicModel"
+
+[[node]]
+id = "fderiv_eq_zero_of_isMinOn_cubicModel"
+
+[[node]]
+id = "hessian_nonneg_of_isMinOn_cubicModel"
+
+[[node]]
+id = "hessian_cubicModel_zero"
+
+[[node]]
+id = "decrease_or_eq_zero_of_isMinOn_cubicModel"
+
+[[node]]
+id = "strict_decrease_of_isMinOn_cubicModel"
+
+[[node]]
+id = "exists_legal_cubicModel_step"
+
+[[node]]
+id = "exists_strict_legal_cubicModel_step"
+
+[[node]]
+id = "exactStep"
+
+[[node]]
+id = "exactStep_isMinOn"
+
+[[node]]
+id = "exactStates"
+
+[[node]]
+id = "exactStates_zero"
+
+[[node]]
+id = "exactStates_sigma_lower"
+
+[[node]]
+id = "exactSteps"
+
+[[node]]
+id = "exactSteps_isMinOn"
+
+[[node]]
+id = "exactStates_isRun"
+
+[[node]]
+id = "exactStates_hessian_nonneg"
+
+[[node]]
+id = "cubicModel_of_scalar_hessian"

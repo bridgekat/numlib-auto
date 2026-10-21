@@ -1,0 +1,43 @@
+namespace = "Optimization.ResidualLeastSquares"
+
+[[node]]
+id = "InnerTrace.prefix"
+
+[[node]]
+id = "InnerTrace.prefix_point"
+
+[[node]]
+id = "InnerTrace.prefix_state"
+
+[[node]]
+id = "InnerTrace.prefix_length"
+
+[[node]]
+id = "InnerTrace.prefix_queries_of_lt"
+
+[[node]]
+id = "InnerTrace.prefix_queries_terminal"
+
+[[node]]
+id = "InnerTrace.prefix_evaluations_le"
+
+[[node]]
+id = "InnerTrace.prefix_evaluations_full"
+
+[[node]]
+id = "InterruptibleInnerCall"
+
+[[node]]
+id = "InterruptibleInnerCall.feasible"
+
+[[node]]
+id = "InterruptibleInnerCall.legal"
+
+[[node]]
+id = "InterruptibleInnerCall.cost"
+
+[[node]]
+id = "InterruptibleInnerCall.gap_or_interrupt"
+
+[[node]]
+id = "InterruptibleInnerCall.ofInnerContract"

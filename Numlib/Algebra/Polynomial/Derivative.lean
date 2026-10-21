@@ -7,13 +7,14 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Algebra.Polynomial.Derivative
 
 /-!
-# The top iterated derivative of a polynomial
+# Iterated derivatives of polynomials
 
 The `k`-th derivative of a polynomial of degree at most `k` is the constant `k! · p_k`
 (`Polynomial.iterate_derivative_eq_C_of_natDegree_le`); at `k = natDegree p` it is
 `k! · leadingCoeff p` (`Polynomial.iterate_derivative_eq_C_of_natDegree_eq`), which is `k!` for a
 monic polynomial. These are the constants of every interpolation error formula and of the
-Rodrigues formulas for the classical orthogonal polynomials.
+Rodrigues formulas for the classical orthogonal polynomials. Evaluation of the iterated
+derivatives of an affine polynomial is given by `Polynomial.eval_iterate_derivative_affine`.
 -/
 
 open Nat
@@ -35,5 +36,21 @@ theorem iterate_derivative_eq_C_of_natDegree_le (hp : p.natDegree ≤ k) :
 theorem iterate_derivative_eq_C_of_natDegree_eq (hp : p.natDegree = k) :
     derivative^[k] p = C ((k ! : R) * p.leadingCoeff) := by
   rw [iterate_derivative_eq_C_of_natDegree_le hp.le, leadingCoeff, hp]
+
+/-- The iterated derivatives of an affine polynomial have the expected three branches. -/
+theorem eval_iterate_derivative_affine (a b t : R) (j : ℕ) :
+    (derivative^[j] (C a + C b * X)).eval t =
+      if j = 0 then a + b * t else if j = 1 then b else 0 := by
+  cases j with
+  | zero => simp
+  | succ j =>
+    rw [Function.iterate_succ_apply]
+    simp only [derivative_add, derivative_C, derivative_mul, derivative_X, zero_mul,
+      zero_add, mul_one]
+    cases j with
+    | zero => simp
+    | succ j =>
+      rw [Function.iterate_succ_apply]
+      simp
 
 end Polynomial

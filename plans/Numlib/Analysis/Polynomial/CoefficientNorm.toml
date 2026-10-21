@@ -1,0 +1,70 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "coeffNorm"
+
+[[node]]
+id = "coeffNorm_nonneg"
+
+[[node]]
+id = "coeffNorm_zero"
+
+[[node]]
+id = "coeffNorm_C"
+
+[[node]]
+id = "coeffNorm_eq_sum_range"
+
+[[node]]
+id = "coeffNorm_one"
+
+[[node]]
+id = "coeffNorm_sub_le"
+
+[[node]]
+id = "coeffNorm_C_mul"
+
+[[node]]
+id = "coeffNorm_X_mul"
+
+[[node]]
+id = "coeffNorm_X_pow_mul"
+
+[[node]]
+id = "coeffNorm_derivative_le"
+
+[[node]]
+id = "coeffNorm_neg"
+
+[[node]]
+id = "coeffNorm_add_le"
+
+[[node]]
+id = "norm_coeff_le_coeffNorm"
+
+[[node]]
+id = "coeffNorm_sum_le"
+
+[[node]]
+id = "coeffNorm_C_mul_le"
+
+[[node]]
+id = "coeffNorm_mul_le"
+
+[[node]]
+id = "coeffRingSeminorm"
+
+[[node]]
+id = "coeffRingSeminorm_apply"
+
+[[node]]
+id = "coeffNorm_eq_zero_iff"
+
+[[node]]
+id = "coeffRingNorm"
+
+[[node]]
+id = "coeffRingNorm_apply"
+
+[[node]]
+id = "coeffNorm_map_of_norm_preserving"

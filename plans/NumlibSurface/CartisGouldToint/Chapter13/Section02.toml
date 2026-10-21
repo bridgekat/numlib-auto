@@ -1,0 +1,30 @@
+namespace = "CartisGouldToint.Chapter13.Section02"
+
+[[node]]
+id = "FiniteDerivativeApproximationScheme"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 13.2, Equations13.2.1–13.2.4"
+
+[[node]]
+id = "FiniteDerivativeApproximationScheme.toImplicitAccuracyOracle"
+
+[[node]]
+id = "lowDegreeQueries"
+
+[[node]]
+id = "lowDegreeQueries_length"
+
+[[node]]
+id = "trq_complexity_low_degree_oracles"
+
+[[node]]
+id = "arqpLowDegreeQueries"
+
+[[node]]
+id = "arqpLowDegreeQueries_length"
+
+[[node]]
+id = "arqp_complexity_low_degree_oracles"
+
+[[node]]
+id = "theorem_13_2_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.2.1"

@@ -1,0 +1,17 @@
+[[node]]
+id = "iteratedFDeriv_normRpow_unit_eq_polynomial"
+
+[[node]]
+id = "abs_iteratedFDeriv_normRpow_unit_le_fallingProduct"
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_unit_eq_polynomial"
+
+[[node]]
+id = "abs_iteratedFDeriv_normRpow_apply_unit_le"
+
+[[node]]
+id = "diagonalNorm_iteratedFDeriv_normRpow"
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_self"

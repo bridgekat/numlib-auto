@@ -1,0 +1,64 @@
+namespace = "ContinuousMultilinearMap"
+
+[[node]]
+id = "IsSymmetric"
+
+[[node]]
+id = "symmetricSubmodule"
+
+[[node]]
+id = "diagonal"
+
+[[node]]
+id = "diagonal_smul"
+
+[[node]]
+id = "norm_diagonal_le"
+
+[[node]]
+id = "diagonalNorm"
+
+[[node]]
+id = "diagonalNorm_nonneg"
+
+[[node]]
+id = "diagonalNorm_le_norm"
+
+[[node]]
+id = "exists_norm_diagonal_eq_diagonalNorm"
+
+[[node]]
+id = "diagonalNorm_of_subsingleton"
+
+[[node]]
+id = "norm_diagonal_le_diagonalNorm_mul"
+
+[[node]]
+id = "diagonalNorm_le_iff"
+
+[[node]]
+id = "diagonalNorm_order_one"
+
+[[node]]
+id = "diagonalNorm_order_zero"
+
+[[node]]
+id = "continuous_diagonalNorm"
+
+[[node]]
+id = "diagonalZeroSet"
+
+[[node]]
+id = "diagonalLinearMap"
+
+[[node]]
+id = "diagonalZeroSet_order_one"
+
+[[node]]
+id = "isClosed_diagonalZeroSet"
+
+[[node]]
+id = "smul_mem_diagonalZeroSet"
+
+[[node]]
+id = "diagonalNorm_compContinuousLinearMap_le"

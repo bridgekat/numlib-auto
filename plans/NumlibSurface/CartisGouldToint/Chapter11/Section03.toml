@@ -1,0 +1,39 @@
+namespace = "CartisGouldToint.Chapter11.Section03"
+
+[[node]]
+id = "linearizedLeastSquaresModel"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.3, (11.3.1)\u2013(11.3.2)"
+
+[[node]]
+id = "linearizedLeastSquaresModel_eq_quadratic"
+
+[[node]]
+id = "hasGradientAt_linearizedLeastSquaresModel"
+
+[[node]]
+id = "linearizedLeastSquaresModel_posSemidef"
+
+[[node]]
+id = "leastSquares_shift_posSemidef"
+
+[[node]]
+id = "linearizedLeastSquaresModel_gradient_mem_range"
+
+[[node]]
+id = "leastSquares_generalizedEigenvalues_nonneg"
+
+[[node]]
+id = "leastSquares_secularThreshold_zero"
+
+[[node]]
+id = "leastSquaresAugmentedSystem"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.3, (11.3.3)"
+
+[[node]]
+id = "leastSquaresAugmentedSystem_iff_normal_residual"
+
+[[node]]
+id = "leastSquares_inverse_normal_solution"
+
+[[node]]
+id = "leastSquares_existsUnique_augmentedSolution"

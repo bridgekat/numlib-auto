@@ -1,0 +1,112 @@
+namespace = "Optimization.HigherOrderApproximateRegularization"
+
+[[node]]
+id = "ExecutedTrial"
+
+[[node]]
+id = "OuterTransition.exists_executedTrial"
+
+[[node]]
+id = "ExecutedTrial.step_ne_zero"
+
+[[node]]
+id = "ExecutedTrial.ratio_eq"
+
+[[node]]
+id = "ExecutedTrial.next_sigma"
+
+[[node]]
+id = "ExecutedTrial.next_point"
+
+[[node]]
+id = "ExecutedTrial.next_cache"
+
+[[node]]
+id = "ExecutedTrial.next_radii"
+
+[[node]]
+id = "OuterExecution.executedTrial"
+
+[[node]]
+id = "OuterExecution.step"
+
+[[node]]
+id = "OuterExecution.step_eq"
+
+[[node]]
+id = "OuterExecution.trialPrefix"
+
+[[node]]
+id = "OuterExecution.derivativeBatchCount"
+
+[[node]]
+id = "OuterTransition.function_cost_le"
+
+[[node]]
+id = "OuterTransition.derivative_cost_eq_zero"
+
+[[node]]
+id = "OuterExecution.initial_cache"
+
+[[node]]
+id = "OuterExecution.cache_cases"
+
+[[node]]
+id = "OuterExecution.batch_le_empty_cache"
+
+[[node]]
+id = "OuterExecution.derivativeBatchCount_le"
+
+[[node]]
+id = "OuterExecution.functionCount_le"
+
+[[node]]
+id = "OuterExecution.prefix"
+
+[[node]]
+id = "OuterExecution.le_functionCount"
+
+[[node]]
+id = "parameterUpper"
+
+[[node]]
+id = "trialMultiplier"
+
+[[node]]
+id = "parameterBudget"
+
+[[node]]
+id = "derivativeComplexityCoefficient"
+
+[[node]]
+id = "functionComplexityCoefficient"
+
+[[node]]
+id = "additiveComplexityConstant"
+
+[[node]]
+id = "complexityCoefficients_pos"
+
+[[node]]
+id = "decrease_budget_eq"
+
+[[node]]
+id = "OuterExecution.initial_point"
+
+[[node]]
+id = "OuterExecution.initial_sigma"
+
+[[node]]
+id = "OuterExecution.sigma_upper"
+
+[[node]]
+id = "OuterExecution.accepted_decrease_of_true_gap_failure"
+
+[[node]]
+id = "OuterExecution.evaluation_bounds_before_true_attainment"
+
+[[node]]
+id = "OuterExecution.first_true_attainment_bounds"
+
+[[node]]
+id = "exists_first_true_attainment_of_legal_prefixes"

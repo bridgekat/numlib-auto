@@ -1,0 +1,127 @@
+namespace = "Optimization.ResidualCrossover"
+
+[[node]]
+id = "controls"
+
+[[node]]
+id = "first_model"
+
+[[node]]
+id = "second_model"
+
+[[node]]
+id = "first_model_min"
+
+[[node]]
+id = "second_model_min"
+
+[[node]]
+id = "model_decreases"
+
+[[node]]
+id = "model_gaps_zero"
+
+[[node]]
+id = "first_ratio"
+
+[[node]]
+id = "second_ratio"
+
+[[node]]
+id = "first_gap"
+
+[[node]]
+id = "RawQuery"
+
+[[node]]
+id = "RawQuery.reply"
+
+[[node]]
+id = "RawQuery.value_reply"
+
+[[node]]
+id = "RawQuery.kind"
+
+[[node]]
+id = "callCount"
+
+[[node]]
+id = "incomingQueries"
+
+[[node]]
+id = "outputQueries"
+
+[[node]]
+id = "outerPoint"
+
+[[node]]
+id = "outerSigma"
+
+[[node]]
+id = "rawQueries"
+
+[[node]]
+id = "innerTrace"
+
+[[node]]
+id = "trace"
+
+[[node]]
+id = "incomingEvents"
+
+[[node]]
+id = "outputEvents"
+
+[[node]]
+id = "innerStep"
+
+[[node]]
+id = "innerTerminal"
+
+[[node]]
+id = "call_counts"
+
+[[node]]
+id = "incomingEvents_count"
+
+[[node]]
+id = "outputEvents_count"
+
+[[node]]
+id = "inner_evaluations_eq"
+
+[[node]]
+id = "inner_evaluations"
+
+[[node]]
+id = "inner_steps"
+
+[[node]]
+id = "inner_terminals"
+
+[[node]]
+id = "inputResidual"
+
+[[node]]
+id = "inner_contract"
+
+[[node]]
+id = "not_stops_zero"
+
+[[node]]
+id = "not_stops_one"
+
+[[node]]
+id = "stops_of_two_le"
+
+[[node]]
+id = "execution"
+
+[[node]]
+id = "first_stop"
+
+[[node]]
+id = "inner_cost_violation"
+
+[[node]]
+id = "total_cost_violation"

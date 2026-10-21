@@ -226,18 +226,29 @@ theorem abs_taylor_three {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 4 g)
             abs_of_nonneg (by positivity : (0 : ℝ) ≤ h ^ 4)]]
         norm_num
 
+/-- The normalized Taylor kernel integrates to the next normalized power, in either orientation. -/
+theorem integral_taylor_kernel (x y : ℝ) (n : ℕ) :
+    (∫ u in x..y, (y - u) ^ n / (n ! : ℝ)) =
+      (y - x) ^ (n + 1) / ((n + 1)! : ℝ) := by
+  have hF : ∀ u ∈ uIcc x y, HasDerivAt
+      (fun v : ℝ => -((y - v) ^ (n + 1) / ((n + 1)! : ℝ)))
+      ((y - u) ^ n / (n ! : ℝ)) u := by
+    intro u _
+    convert ((((hasDerivAt_id u).const_sub y).pow (n + 1)).div_const
+      ((n + 1)! : ℝ)).neg using 1
+    · ext v
+      rfl
+    · simp only [id_eq, Nat.add_sub_cancel, Nat.factorial_succ, Nat.cast_mul,
+        Nat.cast_add, Nat.cast_one]
+      field_simp
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hF
+    (Continuous.intervalIntegrable (by fun_prop) _ _)]
+  simp
+
 /-- The order-two Taylor kernel integrates to `(y - x)³/6` over `x..y`, in either orientation. -/
 private theorem integral_sub_sq_div_two (x y : ℝ) :
     ∫ t in x..y, (y - t) ^ 2 / 2 = (y - x) ^ 3 / 6 := by
-  have hF : ∀ t ∈ uIcc x y, HasDerivAt (fun s : ℝ => -((y - s) ^ 3 / 6)) ((y - t) ^ 2 / 2) t := by
-    intro t _
-    have h : HasDerivAt (fun s : ℝ => -((y - s) ^ 3 / 6)) (-(3 * (y - t) ^ 2 * (-1) / 6)) t :=
-      ((((hasDerivAt_id t).const_sub y).pow 3).div_const 6).neg
-    convert h using 1
-    ring
-  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hF
-    (Continuous.intervalIntegrable (by fun_prop) _ _)]
-  ring
+  simpa [Nat.factorial] using integral_taylor_kernel x y 2
 
 /-- The first moment of the order-two Taylor kernel: `∫_x^y (y - t)²/2 · (t - x) dt =
 (y - x)⁴/24`, in either orientation. -/

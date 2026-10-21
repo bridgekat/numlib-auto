@@ -1,0 +1,21 @@
+namespace = "CartisGouldToint.Chapter06.Section01"
+
+[[node]]
+id = "ConvexConstraintAssumptions"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.1, assumption C.CNe"
+
+[[node]]
+id = "feasibleSteps"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.1, (6.1.2)–(6.1.3)"
+
+[[node]]
+id = "restrictedFeasibleSteps"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.1, (6.1.8), (6.1.10)"
+
+[[node]]
+id = "constrainedCriticality"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.1, (6.1.5), (6.1.7), (6.1.9)"
+
+[[node]]
+id = "IsApproximateConstrainedMinimizer"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.1.1, (6.1.4), (6.1.6), text preceding (6.1.9)"

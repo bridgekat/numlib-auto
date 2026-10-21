@@ -1,0 +1,25 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsMMatrix.le_of_mulVec_le"
+
+[[node]]
+id = "IsStieltjes.principal_solution_nonneg"
+
+[[node]]
+id = "IsStieltjes.extend_principal_solution_le"
+
+[[node]]
+id = "IsStieltjes.norm_principal_solution_le"
+
+[[node]]
+id = "IsMMatrix.extend_principal_subsolution_le"
+
+[[node]]
+id = "IsStieltjes.extend_principal_shift_solution_le"
+
+[[node]]
+id = "IsStieltjes.norm_principal_shift_solution_le"
+
+[[node]]
+id = "IsStieltjes.norm_principal_shift_solution_lt"

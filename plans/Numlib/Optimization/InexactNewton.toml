@@ -1,0 +1,79 @@
+namespace = "Optimization.InexactNewton"
+
+[[node]]
+id = "IsStep"
+
+[[node]]
+id = "IsStep.norm_equation_le"
+
+[[node]]
+id = "IsStep.shift_quadratic_le"
+
+[[node]]
+id = "shift_bound_of_quadratic"
+
+[[node]]
+id = "IsStep.gradient_le"
+
+[[node]]
+id = "sqrt_gradient_le_step"
+
+[[node]]
+id = "norm_hessianOperator_le"
+
+[[node]]
+id = "gradient_remainder"
+
+[[node]]
+id = "IsStep.next_gradient_le"
+
+[[node]]
+id = "Jet"
+
+[[node]]
+id = "oracle"
+
+[[node]]
+id = "Decision"
+
+[[node]]
+id = "Action"
+
+[[node]]
+id = "Method"
+
+[[node]]
+id = "Method.ofDecisions"
+
+[[node]]
+id = "internalState"
+
+[[node]]
+id = "internalState_zero"
+
+[[node]]
+id = "internalState_succ_of_accepted"
+
+[[node]]
+id = "Halts"
+
+[[node]]
+id = "Method.ofDecisions_halts"
+
+[[node]]
+id = "execute"
+
+[[node]]
+id = "execute_of_halts"
+
+[[node]]
+id = "execute_fallback_of_not_halts"
+
+[[node]]
+id = "state"
+
+[[node]]
+id = "decisionAt"
+
+[[node]]
+id = "state_succ_point"

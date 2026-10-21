@@ -1,0 +1,49 @@
+namespace = "Optimization.TransverseDyadicRates"
+
+[[node]]
+id = "epsilon"
+
+[[node]]
+id = "epsilon_pos"
+
+[[node]]
+id = "epsilon_le"
+
+[[node]]
+id = "epsilon_eq_rpow"
+
+[[node]]
+id = "slope_pow"
+
+[[node]]
+id = "pow_lt_crossing"
+
+[[node]]
+id = "pow_lt_injectionOrdinate"
+
+[[node]]
+id = "lower_length"
+
+[[node]]
+id = "tailCount_lower"
+
+[[node]]
+id = "epsilon_rate"
+
+[[node]]
+id = "exists_pow_lower_gt"
+
+[[node]]
+id = "exists_tailCount_gt"
+
+[[node]]
+id = "linear_le_rate"
+
+[[node]]
+id = "exists_tailCount_gt_linear"
+
+[[node]]
+id = "abs_log_epsilon"
+
+[[node]]
+id = "exists_tailCount_gt_log"

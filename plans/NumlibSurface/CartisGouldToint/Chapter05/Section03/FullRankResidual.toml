@@ -1,0 +1,25 @@
+namespace = "CartisGouldToint.Chapter05.Section03"
+
+[[node]]
+id = "residualDecreaseRun"
+
+[[node]]
+id = "residualAttained"
+
+[[node]]
+id = "residualAttained_iff"
+
+[[node]]
+id = "residual_attained"
+
+[[node]]
+id = "theorem_5_3_10"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.10"
+
+[[node]]
+id = "theorem_5_3_11"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.11"
+
+[[node]]
+id = "theorem_5_3_12"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.12"

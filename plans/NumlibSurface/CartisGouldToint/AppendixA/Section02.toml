@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.AppendixA.Section02"
+
+[[node]]
+id = "weightedEuclideanNorm"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.2"

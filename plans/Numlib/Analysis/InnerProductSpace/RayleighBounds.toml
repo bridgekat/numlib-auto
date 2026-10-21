@@ -1,0 +1,34 @@
+namespace = "ContinuousLinearMap"
+
+[[node]]
+id = "rayleighInfimum"
+
+[[node]]
+id = "rayleighSupremum"
+
+[[node]]
+id = "rayleighInfimum_le"
+
+[[node]]
+id = "le_rayleighSupremum"
+
+[[node]]
+id = "le_rayleighInfimum_iff"
+
+[[node]]
+id = "rayleighSupremum_le_iff"
+
+[[node]]
+id = "rayleighInfimum_le_rayleighSupremum"
+
+[[node]]
+id = "abs_rayleighInfimum_sub_le"
+
+[[node]]
+id = "abs_rayleighSupremum_sub_le"
+
+[[node]]
+id = "IsSymmetric.hasEigenvalue_rayleighInfimum"
+
+[[node]]
+id = "IsSymmetric.hasEigenvalue_rayleighSupremum"

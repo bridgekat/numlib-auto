@@ -1,0 +1,15 @@
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.universalDecreaseSigma"
+
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.universalDecreaseConstant"
+
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.universalDecreaseConstant_pos"
+
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.universalDecreaseConstant_eq_of_parameters"
+
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.lemma_5_5_6"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.6"

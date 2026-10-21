@@ -1,0 +1,41 @@
+[[node]]
+id = "ContinuousLinearMap.abs_apply_self_le"
+
+[[node]]
+id = "normRpowHessian"
+
+[[node]]
+id = "normRpowHessian_zero"
+
+[[node]]
+id = "hasFDerivAt_fderiv_norm_rpow_zero"
+
+[[node]]
+id = "hasFDerivAt_fderiv_norm_rpow"
+
+[[node]]
+id = "fderiv_fderiv_norm_rpow"
+
+[[node]]
+id = "normRpowHessian_comm"
+
+[[node]]
+id = "norm_normRpowHessian_le"
+
+[[node]]
+id = "abs_normRpowHessian_apply_self_le"
+
+[[node]]
+id = "continuous_normRpowHessian"
+
+[[node]]
+id = "contDiff_two_norm_rpow"
+
+[[node]]
+id = "normRpowHessian_apply"
+
+[[node]]
+id = "normRpowHessian_apply_radial"
+
+[[node]]
+id = "norm_normRpowHessian"

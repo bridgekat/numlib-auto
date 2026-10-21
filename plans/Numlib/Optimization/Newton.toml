@@ -1,0 +1,13 @@
+namespace = "Optimization.Newton"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "gradientEvaluations"
+
+[[node]]
+id = "hessianEvaluations"
+
+[[node]]
+id = "functionEvaluations"

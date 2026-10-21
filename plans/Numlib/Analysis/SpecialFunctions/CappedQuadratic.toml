@@ -1,0 +1,109 @@
+namespace = "CappedQuadratic"
+
+[[node]]
+id = "value"
+
+[[node]]
+id = "first"
+
+[[node]]
+id = "second"
+
+[[node]]
+id = "value_neg"
+
+[[node]]
+id = "first_neg"
+
+[[node]]
+id = "second_neg"
+
+[[node]]
+id = "value_eq_of_abs_le_one"
+
+[[node]]
+id = "first_eq_of_abs_le_one"
+
+[[node]]
+id = "second_eq_of_abs_le_one"
+
+[[node]]
+id = "value_eq_of_one_le_abs_le_two"
+
+[[node]]
+id = "value_eq_of_two_le_abs"
+
+[[node]]
+id = "second_eq_clamp"
+
+[[node]]
+id = "second_eq_abs"
+
+[[node]]
+id = "hasDerivAt_mul_abs"
+
+[[node]]
+id = "hasDerivAt_abs_cube"
+
+[[node]]
+id = "hasDerivAt_value"
+
+[[node]]
+id = "hasDerivAt_first"
+
+[[node]]
+id = "deriv_value"
+
+[[node]]
+id = "deriv_first"
+
+[[node]]
+id = "contDiff_value"
+
+[[node]]
+id = "first_eq_of_one_le_of_le_two"
+
+[[node]]
+id = "first_eq_of_two_le"
+
+[[node]]
+id = "value_nonneg"
+
+[[node]]
+id = "abs_first_le"
+
+[[node]]
+id = "second_nonneg"
+
+[[node]]
+id = "second_le_one"
+
+[[node]]
+id = "abs_second_le"
+
+[[node]]
+id = "lipschitz_second"
+
+[[node]]
+id = "contDiff_first"
+
+[[node]]
+id = "monotone_first"
+
+[[node]]
+id = "convexOn_value"
+
+[[node]]
+id = "lipschitz_value"
+
+[[node]]
+id = "lipschitz_first"
+
+[[node]]
+id = "value_zero"
+
+[[node]]
+id = "first_zero"
+
+[[node]]
+id = "second_zero"

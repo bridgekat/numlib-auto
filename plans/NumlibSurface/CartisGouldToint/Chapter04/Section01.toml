@@ -1,0 +1,62 @@
+namespace = "CartisGouldToint.Chapter04.Section01"
+
+[[node]]
+id = "algorithm_4_1_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 4.1.1"
+
+[[node]]
+id = "higherOrderLipschitz"
+source = "Cartis, Gould and Toint, Section 4.1, essential definitions and assumptions"
+
+[[node]]
+id = "modelFlatDirections"
+source = "Cartis, Gould and Toint, Section 4.1, essential definitions and assumptions"
+
+[[node]]
+id = "lemma_4_1_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.1.1"
+
+[[node]]
+id = "lemma_4_1_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.1.2"
+
+[[node]]
+id = "lemma_4_1_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.1.3"
+
+[[node]]
+id = "lemma_4_1_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.1.4"
+
+[[node]]
+id = "higherOrderModel"
+
+[[node]]
+id = "higherOrderTrialTrace"
+
+[[node]]
+id = "modelFlatDirections_eq_smallCurvatureDirections"
+
+[[node]]
+id = "objectiveFlatDirections_eq_smallCurvatureDirections"
+
+[[node]]
+id = "arpStationary"
+
+[[node]]
+id = "arpStationary_one_iff"
+
+[[node]]
+id = "arpStationary_two_iff"
+
+[[node]]
+id = "arpStationary_three_iff"
+
+[[node]]
+id = "arpPrefix"
+
+[[node]]
+id = "arpStationary.model_directions_subset_objectiveFlatDirections"
+
+[[node]]
+id = "arpPrefix.sigma_upper"

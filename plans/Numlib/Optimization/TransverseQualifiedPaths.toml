@@ -1,0 +1,22 @@
+namespace = "Optimization.TransverseQualifiedContinuation"
+
+[[node]]
+id = "QualifiedPath"
+
+[[node]]
+id = "QualifiedPath.nil"
+
+[[node]]
+id = "QualifiedPath.not_certified"
+
+[[node]]
+id = "QualifiedPath.append"
+
+[[node]]
+id = "QualifiedPath.append_path"
+
+[[node]]
+id = "QualifiedPath.withEndpointInspection"
+
+[[node]]
+id = "QualifiedPath.withEndpointInspection_path"

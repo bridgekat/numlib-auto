@@ -1,0 +1,46 @@
+namespace = "CurveTaylor"
+
+[[node]]
+id = "HasCurveJet"
+
+[[node]]
+id = "RealizableJet"
+
+[[node]]
+id = "hasCurveJet_iff"
+
+[[node]]
+id = "realizableJet_iff"
+
+[[node]]
+id = "hasCurveJet_polynomial"
+
+[[node]]
+id = "realizableJet_of_polynomial"
+
+[[node]]
+id = "RealizableJet.mono"
+
+[[node]]
+id = "HasCurveJet.tendsto"
+
+[[node]]
+id = "HasCurveJet.objective_error"
+
+[[node]]
+id = "HasCurveJet.tendsto_objective_div_pow"
+
+[[node]]
+id = "RealizableJet.coefficient_nonneg"
+
+[[node]]
+id = "vectorCoefficient"
+
+[[node]]
+id = "vectorCoefficient_real"
+
+[[node]]
+id = "vectorCoefficient_zero"
+
+[[node]]
+id = "vectorCoefficient_congr_jet"

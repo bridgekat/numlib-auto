@@ -1,0 +1,31 @@
+namespace = "Optimization.SecularResolvent"
+
+[[node]]
+id = "weightedNormSqResolvent"
+
+[[node]]
+id = "energy_shift_apply"
+
+[[node]]
+id = "isUnit_metric_shift"
+
+[[node]]
+id = "inverse_energy_shift"
+
+[[node]]
+id = "weightedNormSqResolvent_eq"
+
+[[node]]
+id = "toEnergy_inv_ne_zero"
+
+[[node]]
+id = "energyHessian_isSymmetric"
+
+[[node]]
+id = "eventuallyEq_weightedNormSqResolvent"
+
+[[node]]
+id = "weightedTaylorApprox"
+
+[[node]]
+id = "weightedTaylorApprox_eq"

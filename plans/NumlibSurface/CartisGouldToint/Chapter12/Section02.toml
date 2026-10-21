@@ -1,0 +1,17 @@
+namespace = "CartisGouldToint.Chapter12.Section02"
+
+[[node]]
+id = "LipschitzDerivativeFamily"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Assumptions f.D1qL and f.D1pL"
+
+[[node]]
+id = "regularizedTaylorModel"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 12.2.23"
+
+[[node]]
+id = "trqScaledGap"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 12.2.8"
+
+[[node]]
+id = "arqpComplexityExponent"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations 12.2.61–12.2.66"

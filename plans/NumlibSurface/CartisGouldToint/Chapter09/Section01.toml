@@ -1,0 +1,21 @@
+namespace = "CartisGouldToint.Chapter09.Section01"
+
+[[node]]
+id = "algorithm_9_1_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 9.1.1"
+
+[[node]]
+id = "corollary_9_1_1"
+kind = "theorem"
+desc = '''For SPD H+λM with LDLᵀ factorization, Algorithm 9.1.1 returns first lMax derivatives of π. Odd derivative identity 2αk⟨s^(k),Ms^(k+1)⟩ uses ACTUAL derivative vectors. Prove via solving derivative recurrence by factors and (k+1)⟨s^(k),Ms^(k+1)⟩=−⟨yk+1,zk+1⟩. Cholesky special case D=I gives odd derivative −βk ‖yk+1‖², without an extra factor 2.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 9.1.1"
+deps = ["CartisGouldToint.Chapter09.Section01.algorithm_9_1_1"]
+wrong = '''Pseudocode uses +(k+1)Msk but Appendix interprets it as derivative recurrence with a minus. Returned derivative values still match using alternating-sign auxiliary vectors, but the asserted cross-inner-product identity then has the wrong sign. Resolve vector convention; following Cholesky sentence also prints an erroneous extra factor 2.'''
+
+[[node]]
+id = "corollary_9_1_1_corrected"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 9.1.1 (corrected convention)"
+
+[[node]]
+id = "corollary_9_1_1_cholesky"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, paragraph following Corollary 9.1.1 (corrected factor)"

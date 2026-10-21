@@ -1,0 +1,46 @@
+namespace = "Optimization.QuadraticSubproblem"
+
+[[node]]
+id = "energyEmbedding"
+
+[[node]]
+id = "energyEmbedding_apply"
+
+[[node]]
+id = "contDiff_two_energyNorm_rpow"
+
+[[node]]
+id = "hasFDerivAt_energyNorm_rpow"
+
+[[node]]
+id = "fderiv_fderiv_energyNorm_rpow_apply"
+
+[[node]]
+id = "contDiff_two_weightedPowerQuadratic"
+
+[[node]]
+id = "hasFDerivAt_weightedPowerQuadratic"
+
+[[node]]
+id = "fderiv_fderiv_weightedPowerQuadratic_apply"
+
+[[node]]
+id = "sq_mul_rpow_sub_two"
+
+[[node]]
+id = "weightedPowerQuadratic_eq_of_shift"
+
+[[node]]
+id = "gradient_weightedPowerQuadratic_of_shift"
+
+[[node]]
+id = "energyNorm_inverse_smul_apply"
+
+[[node]]
+id = "energyNorm_gradient_weightedPowerQuadratic_of_shift"
+
+[[node]]
+id = "weightedPowerQuadratic_hessian_lower_of_shift"
+
+[[node]]
+id = "fderiv_fderiv_weightedPowerQuadratic_zero_apply"

@@ -1,0 +1,14 @@
+namespace = "CartisGouldToint.Chapter05.Section02"
+
+[[node]]
+id = "partiallySeparableObjective"
+source = "Cartis, Gould and Toint, Section 5.2, essential definitions and assumptions"
+
+[[node]]
+id = "partiallySeparableObjective_apply"
+
+[[node]]
+id = "element_add_of_mem_ker"
+
+[[node]]
+id = "taylorModel_partiallySeparableObjective"

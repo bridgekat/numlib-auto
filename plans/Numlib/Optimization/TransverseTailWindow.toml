@@ -1,0 +1,46 @@
+namespace = "Optimization.TransverseTailWindow"
+
+[[node]]
+id = "injectionOrdinate"
+
+[[node]]
+id = "seventeen_le_injectionOrdinate"
+
+[[node]]
+id = "injection_slope_lower"
+
+[[node]]
+id = "slope_double_lower"
+
+[[node]]
+id = "conditions"
+
+[[node]]
+id = "tailCount"
+
+[[node]]
+id = "tailOrdinate"
+
+[[node]]
+id = "tailOrdinate_zero"
+
+[[node]]
+id = "tailOrdinate_succ"
+
+[[node]]
+id = "tailOrdinate_mem"
+
+[[node]]
+id = "tailOrdinate_conditions"
+
+[[node]]
+id = "tailCount_lower"
+
+[[node]]
+id = "tailCount_pos"
+
+[[node]]
+id = "point_tailOrdinate_succ"
+
+[[node]]
+id = "tailOrdinate_norm_fderiv_lt"

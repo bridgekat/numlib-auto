@@ -1,0 +1,58 @@
+namespace = "Optimization.SparseConstraints"
+
+[[node]]
+id = "supportIndices"
+
+[[node]]
+id = "mem_supportIndices"
+
+[[node]]
+id = "sparseSet"
+
+[[node]]
+id = "mem_sparseSet"
+
+[[node]]
+id = "zero_mem_sparseSet"
+
+[[node]]
+id = "mem_sparseSet_zero"
+
+[[node]]
+id = "mem_sparseSet_iff_exists"
+
+[[node]]
+id = "isClosed_sparseSet"
+
+[[node]]
+id = "mandatoryIndices"
+
+[[node]]
+id = "mem_mandatoryIndices"
+
+[[node]]
+id = "mandatoryIndices_zero"
+
+[[node]]
+id = "not_mem_mandatoryIndices_of_abs_eq"
+
+[[node]]
+id = "mandatoryIndices_subset_support"
+
+[[node]]
+id = "mandatoryIndices_subset_support_add"
+
+[[node]]
+id = "mandatory_card_le"
+
+[[node]]
+id = "optionalWeight"
+
+[[node]]
+id = "optionalSupports"
+
+[[node]]
+id = "mem_optionalSupports"
+
+[[node]]
+id = "optionalSupports_nonempty"

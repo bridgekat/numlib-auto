@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.Chapter13.Section01"
+
+[[node]]
+id = "arqpida_uniform_sigma_bound"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 13.1.2 (fixed-initial-request analysis with corrected constants)"
+
+[[node]]
+id = "arqpida_request_ratios"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 13.1.2 (fixed-initial-request analysis with corrected constants)"

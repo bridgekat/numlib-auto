@@ -1,0 +1,111 @@
+namespace = "CartisGouldToint.Chapter14.Section03"
+
+[[node]]
+id = "lagrangianCriticalSubspaces"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation14.3.45"
+
+[[node]]
+id = "InnerAlgorithmGuarantee"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations14.3.19–14.3.21"
+
+[[node]]
+id = "residualScaledCriticality"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation14.3.18"
+
+[[node]]
+id = "algorithm_14_3_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 14.3.1"
+
+[[node]]
+id = "theorem_14_3_3"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.3"
+
+[[node]]
+id = "theorem_14_3_4"
+kind = "theorem"
+desc = '''Assuming Φ₂has appropriate level set bounded Lipschitz jets and INNER cost bounds withπ_j>1, LENq-SC function calls≤(κ_INNER^F/2)‖r(x₀)‖ max_j[β^(1−2π_j)/(β^(1−π_j)−1) ε₀^(1−π_j)ε_j^(−π_j)], and analogous derivative bound. Sum geometric residual bands; preserve initial terminal and rounding cases rather than forcing a positive cost when no inner call occurs.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.4"
+deps = ["theorem_14_3_3", "InnerAlgorithmGuarantee"]
+
+wrong = "literal_len_geometric_prefactor_counterexample constructs a complete actual q=p=2 LENq-SC execution on a closed convex one-dimensional Euclidean ball with an explicit degree-eight polynomial residual. Its squared-residual objective has actual bounded and anchored-Lipschitz jets throughout a full open convex neighborhood, and global lower bound zero. The same fixed generic regularization-type INNER takes exact global cubic-model minimizers with very-successful accepted parameter updates and warm-start state, while making explicitly recorded real repeated oracle queries at the nonterminal input before computing either step. It is an extended generic INNER, not the literal cached query schedule of Algorithm12.2.2; the theorem assumes only the nonspecific per-call guarantees. With beta4/5, primal799/1000, dual tolerances99/500 and999/1000, fixed exponents4 and20 and coefficients1 in both channels, the two full INNER calls satisfy every actual output-gap and cost contract and have function counts794 and2461 (including terminal events), with four actual separate derivative calls each. The first outer stopping index is exactly2; the intermediate residual7999/10000 fails its actual first-order outer gap test. The sum3255 of actual inner function calls alone exceeds the printed single maximum of geometric coefficients; the initial residual call only strengthens the violation. Different active orders dominate the two calls, so summing their maxima cannot be replaced by the printed maximum of separate sums. No neighboring existential or separated-maxima bound, including Lemma14.3.7, is claimed refuted."
+
+[[node]]
+id = "lemma_14_3_5"
+kind = "theorem"
+desc = '''At TPqp-GC termination under closed X, bounded Lipschitz jets and tube objective bounds, either ‖c ‖>θε₀with all ν gaps≤ε_j ‖c ‖δ_j^j/j!, or ‖c ‖≤ε₀with first-order Lagrangian gap≤ε₁‖(1, y)‖δ₁for some multiplier. For q>1 include(14.3.43–44)second-order gaps on tangent T and critical M; for q=3 include(14.3.46–47)third-order analogues, with the lower-order cross terms in the tangent bound and no pollution in the critical bound. Derive multipliers from residuals and target gap, and use signed displacement polynomial identities; never claim full-space qth-order stationarity.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.5"
+deps = ["algorithm_14_3_2", "lagrangianCriticalSubspaces"]
+wrong = "literal_two_phase_boundary_counterexample constructs a complete actual legal q=p=1 run with X=closedBall(0,3) in Euclidean dimension2, f(x)=x1 and c(x)=x0/4+1/2 in Euclidean dimension1. All closed/nonempty/convex, bounded Lipschitz first-jet and near-feasible tube objective-bound hypotheses hold. With theta=beta1=beta2=1/2, epsilon0=1, epsilon1=1/4, initial point(-6/13,12/13) has constraint norm5/13 and starts with a zero-call literal LEN stop, using strict dual parameters and the printed positive-residual reciprocal restriction. Initial target0 has augmented residual1. The actual one-step INNER translation returns0, with objective decreasing1/2 to1/8, unit radius, exact target gap1/8, fixed exponent2/coefficient1 and two paid evaluations in each channel, including exact raw component responses. The third branch terminates with f=target=0 and constraint norm exactly theta*epsilon0=1/2. Thus the infeasible alternative fails its strict residual inequality. For every finite multiplier y, the first Lagrangian gap is sqrt(1+y0^2/16), strictly greater than (1/4)*sqrt(1+y0^2), so the approximate-solution alternative also fails. No endpoint-domain or zero-reciprocal correction is needed by this example. Higher-order cases and neighboring complexity theorems are not claimed refuted."
+
+[[node]]
+id = "lemma_14_3_8"
+kind = "theorem"
+desc = '''For each K_a target group before termination, accepted inner indices|I_k^s|≤κ_s(1−θ)max_j ε₀^(2−π_j)ε_j^(−π_j), and total trial indices|I_k|≤κ_A(1−θ)max_j ε₀^(2−π_j)ε_j^(−π_j)+κ_C. Use μlevel set uniform regularity, telescopingμ decrease and parameter bookkeeping; preserve warm-start state between target groups.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.8"
+deps = ["lemma_14_3_6", "algorithm_14_3_2"]
+
+[[node]]
+id = "theorem_14_3_9"
+kind = "theorem"
+desc = '''For q∈{1,2,3}, appropriate closed X, bounded Lipschitz jets and tube objective bounds, TPqp-GC finds either the infeasibleν stationarity alternative or the approximate Lagrangian conditions of Lemma 14.3.5. Function calls O(max(ε₀^(−1), max_j ε₀^(1−π_j)ε_j^(−π_j))); derivative calls O(max_j ε₀^(1−π_j)ε_j^(−π_j)). Add Phase 1and Phase 2 counts using target decrease≥(1−θ)ε₀and objective bounds. OCR explicit prefactor f_up−f_low−1 can be negative and requires verification; use a proven positive bound for the same asymptotic result.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.9"
+deps = ["lemma_14_3_5", "lemma_14_3_7", "lemma_14_3_8"]
+
+wrong = "regularized_two_phase_boundary_counterexample upgrades the complete legal equality-boundary fixture for Lemma14.3.5 to a genuine constrained AR1 INNER execution, with p=q=1 and the table exponent2. The actual target gradient at the initial point is (5/52,12/13), step is the negative initial point and sigma is3/4. The actual model decreases by69/169; its true unregularized Taylor prediction is273/338 and acceptance ratio169/364, above eta2=2/5. The actual feasible model criticality is at most(1/2)*norm(step), and sigma updates to1/2 inside the admissible very-successful interval. The selected backend is Algorithm6.2.2 ARp1-CC, whose weak stopping test accepts equality. Its chosen model tolerance3/4 satisfies inherited condition6.2.7 with tau1=tau2=1/4 and theta2=theta3=3/4; the stronger proved model residual1/2*norm(step) implies this source test. The initial true criticality test fails and the actual terminal test equals its input tolerance1/8. Its objective and cached derivative query schedules and counts exactly match the complete paid INNER trace, with fixed coefficients1 and exponent2. Phase1 executes zero calls and every executed Phase2 call is this actual regularization run. All closed/nonempty/convex, bounded Lipschitz positive-jet and tube objective-bound hypotheses hold. The literal third branch returns0 with f=target=0 and constraint norm exactly theta*epsilon0=1/2; the infeasible alternative fails its strict inequality, and every finite multiplier violates the scaled first-order Lagrangian gap. Thus the correct-return clause, and hence the stated complexity-to-that-return conclusion, fails for the supplied literal algorithm, independently of the explicit cost-prefactor issue. No other pending neighboring complexity theorem is inferred wrong."
+
+[[node]]
+id = "InnerAlgorithmGuarantee.toIsConstrainedApproxOrderMinimizer"
+
+[[node]]
+id = "residualScaledCriticality.toCertificate"
+
+[[node]]
+id = "residualScaledCriticality.of_residual_le"
+
+[[node]]
+id = "residualScaledCriticality.of_gaps"
+
+[[node]]
+id = "residualScaledCriticality.gap"
+
+[[node]]
+id = "mem_lagrangianCriticalSubspaces_fst"
+
+[[node]]
+id = "mem_lagrangianCriticalSubspaces_snd"
+
+[[node]]
+id = "lagrangianTaylorGap"
+
+[[node]]
+id = "len_evaluation_bound"
+
+[[node]]
+id = "algorithm_14_3_1_closedDual"
+
+[[node]]
+id = "algorithm_14_3_1.toClosedDual"
+
+[[node]]
+id = "algorithm_14_3_1.ofClosedDual"
+
+[[node]]
+id = "LiteralLENInput"
+
+[[node]]
+id = "LiteralLENInput.factor_pos"
+
+[[node]]
+id = "LiteralLENInput.factor_lt_one"
+
+[[node]]
+id = "LiteralLENInput.reciprocal"
+
+[[node]]
+id = "LiteralLENInput.initial_norm_pos"
+
+[[node]]
+id = "literalLENInput_iff"
+
+[[node]]
+id = "algorithm_14_3_1.input"

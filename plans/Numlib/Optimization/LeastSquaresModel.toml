@@ -1,0 +1,22 @@
+namespace = "Matrix.LeastSquaresModel"
+
+[[node]]
+id = "value"
+
+[[node]]
+id = "value_zero"
+
+[[node]]
+id = "hasGradientAt_value"
+
+[[node]]
+id = "hasGradientAt_value_gram"
+
+[[node]]
+id = "value_eq_quadratic"
+
+[[node]]
+id = "gram_posSemidef"
+
+[[node]]
+id = "constantGradient_mem_range_gram"

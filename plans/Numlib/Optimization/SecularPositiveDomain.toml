@@ -1,0 +1,10 @@
+namespace = "Optimization.SecularResolvent"
+
+[[node]]
+id = "isPositive_shift"
+
+[[node]]
+id = "isPositive_isUnit_shift"
+
+[[node]]
+id = "spectralNormSq_lt_of_lt"

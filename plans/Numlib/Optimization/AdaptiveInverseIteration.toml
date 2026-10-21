@@ -1,0 +1,43 @@
+namespace = "Optimization.AdaptiveInverseIteration"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "Choice"
+
+[[node]]
+id = "Choice.Legal"
+
+[[node]]
+id = "Choice.legal_iff"
+
+[[node]]
+id = "State"
+
+[[node]]
+id = "update"
+
+[[node]]
+id = "update_vector"
+
+[[node]]
+id = "update_shift"
+
+[[node]]
+id = "iterate"
+
+[[node]]
+id = "iterate_zero"
+
+[[node]]
+id = "iterate_succ"
+
+[[node]]
+id = "norm_iterate_vector"
+
+[[node]]
+id = "Parameters.lowerChoice_legal"
+
+[[node]]
+id = "repr_iterate_vector_ne_zero"

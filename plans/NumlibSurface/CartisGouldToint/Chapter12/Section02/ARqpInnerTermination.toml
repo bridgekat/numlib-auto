@@ -1,0 +1,8 @@
+namespace = "CartisGouldToint.Chapter12.Section02"
+
+[[node]]
+id = "arqpCorrectedInnerExecution"
+
+[[node]]
+id = "lemma_12_2_9"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.9"

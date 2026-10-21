@@ -1,0 +1,19 @@
+namespace = "Optimization.KrylovSubproblem"
+
+[[node]]
+id = "lanczosEmbedding_single"
+
+[[node]]
+id = "adjoint_lanczosEmbedding_apply"
+
+[[node]]
+id = "inner_vec_apply_eq_tridiag"
+
+[[node]]
+id = "compressedHessian_lanczosEmbedding_apply"
+
+[[node]]
+id = "adjoint_lanczosEmbedding_start"
+
+[[node]]
+id = "lanczos_apply_sub"

@@ -1,0 +1,22 @@
+namespace = "Optimization"
+
+[[node]]
+id = "residualPowerObjective"
+
+[[node]]
+id = "residualPowerObjective_nonneg"
+
+[[node]]
+id = "residualPowerObjective_eq_zero"
+
+[[node]]
+id = "isMinOn_residualPowerObjective_of_zero"
+
+[[node]]
+id = "residualPowerObjective_eq_sq_norm_rpow"
+
+[[node]]
+id = "contDiff_residualPowerObjective_even"
+
+[[node]]
+id = "contDiff_residualPowerObjective_of_two_mul_le"

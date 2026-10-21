@@ -1,0 +1,55 @@
+namespace = "Optimization.InexactTrustRegion"
+
+[[node]]
+id = "errorCoefficient"
+
+[[node]]
+id = "LegalPrefix.decrease_error"
+
+[[node]]
+id = "LegalPrefix.ratio_ge_of_radius"
+
+[[node]]
+id = "LegalPrefix.radius_nondecrease"
+
+[[node]]
+id = "LegalPrefix.radius_lower_of_threshold"
+
+[[node]]
+id = "radiusCoefficient"
+
+[[node]]
+id = "radiusCoefficient_pos"
+
+[[node]]
+id = "radiusCoefficient_le_one"
+
+[[node]]
+id = "LegalPrefix.radius_lower"
+
+[[node]]
+id = "LegalPrefix.predicted_lower_of_radius"
+
+[[node]]
+id = "LegalPrefix.predicted_lower"
+
+[[node]]
+id = "LegalPrefix.success_count_le"
+
+[[node]]
+id = "decrement_le_two_mul_norm"
+
+[[node]]
+id = "LegalPrefix.step_norm_lower_min"
+
+[[node]]
+id = "LegalPrefix.step_norm_lower"
+
+[[node]]
+id = "LegalPrefix.step_accurate_of_requests"
+
+[[node]]
+id = "LegalPrefix.predicted_lower_two"
+
+[[node]]
+id = "tolerance_monomial_lower"

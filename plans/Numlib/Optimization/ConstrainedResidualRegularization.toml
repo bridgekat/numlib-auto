@@ -1,0 +1,31 @@
+namespace = "Optimization.ConstrainedResidualRegularization"
+
+[[node]]
+id = "Stationary"
+
+[[node]]
+id = "stationary_iff"
+
+[[node]]
+id = "stationary_of_residual_le"
+
+[[node]]
+id = "not_stationary_iff"
+
+[[node]]
+id = "RunPrefix"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "RunPrefix.residual_norm_nonincrease"
+
+[[node]]
+id = "RunPrefix.residual_norm_le_initial"
+
+[[node]]
+id = "RunPrefix.residual_derivative_cache_rejected"
+
+[[node]]
+id = "RunPrefix.root_decrease_from_criticality"

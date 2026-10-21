@@ -1,0 +1,17 @@
+namespace = "CartisGouldToint.Chapter14.Section03"
+
+[[node]]
+id = "augmentedMultiplier"
+
+[[node]]
+id = "augmentedMultiplier_apply_zero"
+
+[[node]]
+id = "augmentedMultiplier_apply_succ"
+
+[[node]]
+id = "norm_augmentedMultiplier"
+
+[[node]]
+id = "theorem_14_3_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.2"

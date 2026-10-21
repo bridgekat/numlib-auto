@@ -1,0 +1,65 @@
+[[node]]
+id = "joinAt"
+
+[[node]]
+id = "joinAt_of_ge"
+
+[[node]]
+id = "hasDerivAt_joinAt"
+
+[[node]]
+id = "Continuous.joinAt"
+
+[[node]]
+id = "contDiff_joinAt_of_matching_jets"
+
+[[node]]
+id = "dist_le_mul_of_lipschitz_across"
+
+[[node]]
+id = "LipschitzOnWith.joinAt"
+
+[[node]]
+id = "LipschitzOnWith.joinAt_Icc"
+
+[[node]]
+id = "LipschitzWith.joinAt"
+
+[[node]]
+id = "LipschitzOnWith.joinAt_Iic"
+
+[[node]]
+id = "joinFin"
+
+[[node]]
+id = "joinFin_eq_last"
+
+[[node]]
+id = "joinFin_succ_of_le"
+
+[[node]]
+id = "contDiff_joinFin_of_matching_jets"
+
+[[node]]
+id = "lipschitzOnWith_joinFin_Iic"
+
+[[node]]
+id = "contDiff_lipschitz_joinFin"
+
+[[node]]
+id = "le_of_adjacent_le"
+
+[[node]]
+id = "joinFin_at_knot"
+
+[[node]]
+id = "norm_joinFin_le"
+
+[[node]]
+id = "norm_joinFin_le_global"
+
+[[node]]
+id = "joinFin_eq_first"
+
+[[node]]
+id = "norm_joinFin_le_on_Icc"

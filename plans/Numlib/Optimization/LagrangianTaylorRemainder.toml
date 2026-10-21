@@ -1,0 +1,16 @@
+namespace = "Optimization.ConstrainedTaylorCriticality"
+
+[[node]]
+id = "taylorModel_residualLagrangian"
+
+[[node]]
+id = "abs_residualLagrangian_sub_taylorModel_le"
+
+[[node]]
+id = "abs_residualLagrangian_sub_taylorModel_le_lipschitz"
+
+[[node]]
+id = "lagrangian_value_stability_signed_of_lipschitz"
+
+[[node]]
+id = "lagrangian_value_stability_signed_on_ball"

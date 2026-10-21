@@ -1,0 +1,19 @@
+namespace = "CartisGouldToint.Chapter11.Section01"
+
+[[node]]
+id = "positiveDiagonalTrustRegion_interior"
+
+[[node]]
+id = "constantSignTrustRegion_boundary"
+
+[[node]]
+id = "positiveDiagonalTrustRegion_iff"
+
+[[node]]
+id = "negativeDiagonalTrustRegion_iff"
+
+[[node]]
+id = "negativeDiagonalTrustRegion_zero_iff"
+
+[[node]]
+id = "zeroDimensional_signedSubproblems"

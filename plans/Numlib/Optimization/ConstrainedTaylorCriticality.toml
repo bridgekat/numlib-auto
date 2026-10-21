@@ -1,0 +1,25 @@
+namespace = "Optimization.ConstrainedTaylorCriticality"
+
+[[node]]
+id = "feasibleDisplacements"
+
+[[node]]
+id = "ResidualScaledCertificate"
+
+[[node]]
+id = "InnerSolverContract"
+
+[[node]]
+id = "lagrangian_value_stability"
+
+[[node]]
+id = "residual_wrapper_terminates"
+
+[[node]]
+id = "squared_residual_jet_bounds"
+
+[[node]]
+id = "HasBoundedLipschitzJets"
+
+[[node]]
+id = "squaredResidual_iteratedFDeriv_eq_sum"

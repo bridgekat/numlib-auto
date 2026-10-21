@@ -1,0 +1,41 @@
+namespace = "CartisGouldToint.Chapter07.Section02"
+
+[[node]]
+id = "norm_targetResidual_eq_residualNorm"
+
+[[node]]
+id = "twoPhaseExecution"
+
+[[node]]
+id = "algorithm_7_2_1_literal"
+
+[[node]]
+id = "algorithm_7_2_1_corrected"
+
+[[node]]
+id = "twoPhaseExecution.phase_one_infeasibility"
+
+[[node]]
+id = "literal_boundary_counterexample"
+
+[[node]]
+id = "outerIterationBlocks"
+source = '''Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.2.2, (7.2.25), (7.2.35)–(7.2.38)'''
+
+[[node]]
+id = "phase_two_invariants"
+
+[[node]]
+id = "lemma_7_2_3"
+source = '''Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.3'''
+
+[[node]]
+id = "lemma_7_2_4"
+source = '''Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.4'''
+
+[[node]]
+id = "corrected_phase_two_certificate"
+
+[[node]]
+id = "lemma_7_2_2"
+source = '''Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.2'''

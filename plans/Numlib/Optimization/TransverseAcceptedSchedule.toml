@@ -1,0 +1,67 @@
+namespace = "Optimization.TransverseAcceptedSchedule"
+
+[[node]]
+id = "totalCount"
+
+[[node]]
+id = "pointAt"
+
+[[node]]
+id = "stepAt"
+
+[[node]]
+id = "pointAt_prelude"
+
+[[node]]
+id = "pointAt_tail"
+
+[[node]]
+id = "pointAt_tail_index"
+
+[[node]]
+id = "stepAt_prelude"
+
+[[node]]
+id = "stepAt_injection"
+
+[[node]]
+id = "stepAt_tail"
+
+[[node]]
+id = "pointAt_zero"
+
+[[node]]
+id = "pointAt_injection_endpoint"
+
+[[node]]
+id = "pointAt_totalCount"
+
+[[node]]
+id = "crossingIndex_lt_totalCount"
+
+[[node]]
+id = "pointAt_succ"
+
+[[node]]
+id = "prelude_conditions"
+
+[[node]]
+id = "injection_conditions"
+
+[[node]]
+id = "tail_index_le"
+
+[[node]]
+id = "tail_conditions"
+
+[[node]]
+id = "pointAt_geometry"
+
+[[node]]
+id = "pointAt_norm_fderiv_lt_epsilon"
+
+[[node]]
+id = "pointAt_norm_fderiv_lt_one"
+
+[[node]]
+id = "pointAt_fderiv_ne_zero"

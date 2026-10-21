@@ -1,0 +1,15 @@
+[[node]]
+id = "CartisGouldToint.Chapter13.Section01.inexactRegularizedModel_exact"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 13.1.45"
+
+[[node]]
+id = "CartisGouldToint.Chapter13.Section01.arqpida_allp_shifted_model_gap_error"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations 13.1.46 and 13.1.49"
+
+[[node]]
+id = "CartisGouldToint.Chapter13.Section01.arqpida_literal_shifted_model_gap_error_of_degree_eq"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations 13.1.46 and 13.1.49"
+
+[[node]]
+id = "CartisGouldToint.Chapter13.Section01.arqpida_shifted_model_gap_error_uniform"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 13.1.50"

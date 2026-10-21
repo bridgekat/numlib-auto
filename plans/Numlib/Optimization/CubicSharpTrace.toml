@@ -1,0 +1,7 @@
+namespace = "Optimization.CubicRegularization"
+
+[[node]]
+id = "sharpParameters"
+
+[[node]]
+id = "secondOrderRun_of_global_minimizers"

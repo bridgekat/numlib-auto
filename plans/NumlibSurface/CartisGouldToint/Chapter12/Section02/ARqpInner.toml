@@ -1,0 +1,17 @@
+namespace = "CartisGouldToint.Chapter12.Section02"
+
+[[node]]
+id = "exists_arqp_modelStep"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.9 (step existence clause)"
+
+[[node]]
+id = "lemma_12_2_10_of_inner_return"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.10"
+
+[[node]]
+id = "lemma_12_2_10"
+kind = "theorem"
+desc = '''Step 2 termination is impossible for q≤2. For q≥3, equalitym(s)=m(0) and the model criteria yield an original-objective(ε,δ)-approximate minimizer for some positive δ vector. Retain actual inner fraction-decrease provenance: equality then forces the global model minimum to equal m(0). Generic outer model nonincrease and small model gaps alone do not provide that implication. Compare model at the origin and Taylor jets, retaining f(x) as the constant term; source phrases m(0)=0 are shifted-model shorthand. Couple the corrected inner run to the outer execution explicitly before claiming this numbered result.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.10"
+deps = ["algorithm_12_2_2", "algorithm_12_2_3", "lemma_12_2_9", "Optimization.HigherOrderApproximateRegularization.InnerExecution"]
+wrong = "False for the literal Algorithm12.2.2: p=q=1, f(t)=t²/2−2t, x=0, σ=1, ε=1/2, radius1; Step1 fails exactly, while Step2 may choose the long step s=4 with model(4)=model(0)=0 and legally stopEqual. The proof silently uses actual inner fraction-of-global-decrease provenance, absent from the stated outer step conditions. The separately named lemma_12_2_10_of_inner_return proves that intended corrected case."

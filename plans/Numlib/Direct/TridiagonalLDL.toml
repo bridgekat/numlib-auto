@@ -1,0 +1,37 @@
+namespace = "Matrix.TridiagonalLDL"
+
+[[node]]
+id = "matrix"
+
+[[node]]
+id = "pivot"
+
+[[node]]
+id = "multiplier"
+
+[[node]]
+id = "lower"
+
+[[node]]
+id = "diagonal"
+
+[[node]]
+id = "diagonal_mul_lower_transpose"
+
+[[node]]
+id = "isLDM"
+
+[[node]]
+id = "posDef_of_pivot_pos"
+
+[[node]]
+id = "matrix_submatrix"
+
+[[node]]
+id = "pivot_pos_of_posDef"
+
+[[node]]
+id = "not_posDef_of_pivot_nonpos"
+
+[[node]]
+id = "posDef_iff_pivot_pos"

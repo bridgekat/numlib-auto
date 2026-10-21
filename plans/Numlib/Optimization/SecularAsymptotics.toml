@@ -1,0 +1,13 @@
+namespace = "Optimization.SecularResolvent"
+
+[[node]]
+id = "tendsto_div_add_atTop"
+
+[[node]]
+id = "tendsto_mul_sq_spectralNormSq"
+
+[[node]]
+id = "tendsto_mul_sq_normSqResolvent"
+
+[[node]]
+id = "tendsto_mul_norm_inverse_shift"

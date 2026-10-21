@@ -1,0 +1,49 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "Coefficients"
+
+[[node]]
+id = "CoefficientWitness"
+
+[[node]]
+id = "exists_coefficientWitness"
+
+[[node]]
+id = "halvedRadius"
+
+[[node]]
+id = "halvedRadius_zero"
+
+[[node]]
+id = "halvedRadius_succ"
+
+[[node]]
+id = "halvedRadius_pos"
+
+[[node]]
+id = "halvedRadius_antitone"
+
+[[node]]
+id = "RadiusSearch"
+
+[[node]]
+id = "RadiusSearch.Finished"
+
+[[node]]
+id = "inspection_finished_of_small_radius"
+
+[[node]]
+id = "RadiusSearch.threshold_lt"
+
+[[node]]
+id = "RadiusSearch.radius_bounds"
+
+[[node]]
+id = "RadiusSearch.length_le"
+
+[[node]]
+id = "exists_finished_search"
+
+[[node]]
+id = "CoefficientWitness.gap_le_half"

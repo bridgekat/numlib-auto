@@ -1,0 +1,10 @@
+namespace = "Optimization.ConstrainedTaylorCriticality"
+
+[[node]]
+id = "_root_.Real.one_add_le_sqrt_two_mul_sqrt_one_add_sq"
+
+[[node]]
+id = "weighted_constant_le_scale"
+
+[[node]]
+id = "weighted_constant_mul_le_scale"

@@ -1,0 +1,30 @@
+namespace = "CartisGouldToint.Chapter05.Section04"
+
+[[node]]
+id = "strengthenedResidual"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation (5.4.3)"
+
+[[node]]
+id = "strengthenedResidual.toFirstOrderRun"
+
+[[node]]
+id = "strengthenedResidual.model_bound"
+
+[[node]]
+id = "strengthenedResidual.relative"
+
+[[node]]
+id = "phaseExclusion"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation (5.4.18)"
+
+[[node]]
+id = "corrected_phase_complexity"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.4.4, corrected local threshold and integer count, non-strict stopping test"
+
+[[node]]
+id = "global_phase_complexity"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation (5.4.16), first-attainment prefix convention"
+
+[[node]]
+id = "theorem_5_4_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.4.4"

@@ -1,0 +1,22 @@
+namespace = "Optimization.HigherOrderApproximateRegularization"
+
+[[node]]
+id = "InnerExecution.return_quality"
+
+[[node]]
+id = "CorrectedInnerExecution.return_quality"
+
+[[node]]
+id = "InnerTransition.radii_valid"
+
+[[node]]
+id = "CorrectedInnerTransition.radii_valid"
+
+[[node]]
+id = "CorrectedInnerExecution.radii_valid"
+
+[[node]]
+id = "CorrectedInnerExecution.exists_modelStep"
+
+[[node]]
+id = "CorrectedInnerExecution.radii_of_return_small"

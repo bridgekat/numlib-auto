@@ -1,0 +1,34 @@
+namespace = "Optimization"
+
+[[node]]
+id = "HasUniformlyFullRankDerivative"
+
+[[node]]
+id = "hasGradientAt_residualPowerObjective"
+
+[[node]]
+id = "gradient_residualPowerObjective"
+
+[[node]]
+id = "HasUniformlyFullRankDerivative.gradient_lower"
+
+[[node]]
+id = "HasUniformlyFullRankDerivative.mono"
+
+[[node]]
+id = "HasUniformlyFullRankDerivative.gradient_eq_zero_iff"
+
+[[node]]
+id = "residualDominationConstant"
+
+[[node]]
+id = "residualDominationConstant_pos"
+
+[[node]]
+id = "residualDominationConstant_two"
+
+[[node]]
+id = "HasUniformlyFullRankDerivative.isMeasureDominated"
+
+[[node]]
+id = "residualPowerObjective_le_iff"

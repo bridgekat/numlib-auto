@@ -1,0 +1,28 @@
+namespace = "Optimization.DerivativeOracle"
+
+[[node]]
+id = "regularizationCountingConstant"
+
+[[node]]
+id = "regularizationRateConstant"
+
+[[node]]
+id = "regularizationOverhead"
+
+[[node]]
+id = "regularizationCountingConstant_pos"
+
+[[node]]
+id = "regularizationRateConstant_pos"
+
+[[node]]
+id = "regularizationOverhead_pos"
+
+[[node]]
+id = "firstOrderComplexityConstant_eq"
+
+[[node]]
+id = "regularization_firstOrderConstant_le"
+
+[[node]]
+id = "regularizationCost_le_order"

@@ -1,0 +1,187 @@
+namespace = "Optimization.CoupledCubicTrustRegionPrefix"
+
+[[node]]
+id = "fixedParameters"
+
+[[node]]
+id = "maximizingWitness"
+
+[[node]]
+id = "maximizingWitness_norm"
+
+[[node]]
+id = "maximizingWitness_decrement"
+
+[[node]]
+id = "maximizingWitness_fraction"
+
+[[node]]
+id = "first_gap"
+
+[[node]]
+id = "second_gap"
+
+[[node]]
+id = "testBall_feasible"
+
+[[node]]
+id = "first_witness_fraction"
+
+[[node]]
+id = "finalTrace"
+
+[[node]]
+id = "finalTrace_ratio"
+
+[[node]]
+id = "finalTrace_decrease"
+
+[[node]]
+id = "finalTrace_legal"
+
+[[node]]
+id = "linearRatio"
+
+[[node]]
+id = "linearTrace"
+
+[[node]]
+id = "linearTrace_ratio"
+
+[[node]]
+id = "linearTrace_legal"
+
+[[node]]
+id = "linearRatio_half"
+
+[[node]]
+id = "linearRatio_reset"
+
+[[node]]
+id = "initialTrace"
+
+[[node]]
+id = "rejectedTrace"
+
+[[node]]
+id = "halfTrace"
+
+[[node]]
+id = "resetTrace"
+
+[[node]]
+id = "initialTrace_legal"
+
+[[node]]
+id = "rejectedTrace_legal"
+
+[[node]]
+id = "halfTrace_legal"
+
+[[node]]
+id = "resetTrace_legal"
+
+[[node]]
+id = "halfTrace_endpoint"
+
+[[node]]
+id = "halvesTrace"
+
+[[node]]
+id = "halvesTrace_initial"
+
+[[node]]
+id = "halvesTrace_endpoint"
+
+[[node]]
+id = "halvesTrace_legal"
+
+[[node]]
+id = "headTrace"
+
+[[node]]
+id = "headTrace_legal"
+
+[[node]]
+id = "headTrace_initial"
+
+[[node]]
+id = "headTrace_endpoint"
+
+[[node]]
+id = "preResetTrace"
+
+[[node]]
+id = "preResetTrace_endpoint"
+
+[[node]]
+id = "preResetTrace_legal"
+
+[[node]]
+id = "resetHistory"
+
+[[node]]
+id = "resetHistory_endpoint"
+
+[[node]]
+id = "resetHistory_legal"
+
+[[node]]
+id = "fullTrace"
+
+[[node]]
+id = "fullTrace_legal"
+
+[[node]]
+id = "point_margin"
+
+[[node]]
+id = "linearTrace_box"
+
+[[node]]
+id = "initialTrace_box"
+
+[[node]]
+id = "rejectedTrace_box"
+
+[[node]]
+id = "halfTrace_box"
+
+[[node]]
+id = "resetTrace_box"
+
+[[node]]
+id = "finalTrace_box"
+
+[[node]]
+id = "halvesTrace_box"
+
+[[node]]
+id = "headTrace_box"
+
+[[node]]
+id = "preResetTrace_box"
+
+[[node]]
+id = "resetHistory_box"
+
+[[node]]
+id = "fullTrace_box"
+
+[[node]]
+id = "fullTrace_initial"
+
+[[node]]
+id = "fullTrace_endpoint"
+
+[[node]]
+id = "fullTrace_final_ratio"
+
+[[node]]
+id = "fullTrace_final_decrease"
+
+[[node]]
+id = "finalTrace_true_gap_failure"
+
+[[node]]
+id = "fullTrace_final_true_gap_failure"

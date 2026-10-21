@@ -1,0 +1,34 @@
+namespace = "Optimization.ParameterUpdates"
+
+[[node]]
+id = "hold"
+
+[[node]]
+id = "hold_of_le"
+
+[[node]]
+id = "hold_of_ge"
+
+[[node]]
+id = "continueRatio"
+
+[[node]]
+id = "RegularizationPrefix"
+
+[[node]]
+id = "RegularizationPrefix.lower"
+
+[[node]]
+id = "RegularizationPrefix.pos"
+
+[[node]]
+id = "RegularizationPrefix.continuation"
+
+[[node]]
+id = "RegularizationPrefix.upper"
+
+[[node]]
+id = "RegularizationPrefix.total_count_le"
+
+[[node]]
+id = "count_of_failed_blocks"

@@ -1,0 +1,46 @@
+namespace = "Optimization.HigherOrderApproximateRegularization"
+
+[[node]]
+id = "gapOn_model_lt_of_isMin"
+
+[[node]]
+id = "exists_modelStep"
+
+[[node]]
+id = "isMin_zero_of_fraction_eq"
+
+[[node]]
+id = "model_taylorDecrement_zero"
+
+[[node]]
+id = "_root_.Optimization.RegularizedTaylorModel.iteratedFDeriv_taylorModel_zero"
+
+[[node]]
+id = "InnerTransition.fraction_of_ne_minimize"
+
+[[node]]
+id = "InnerExecution.mu_bounds"
+
+[[node]]
+id = "InnerExecution.fraction_of_ne_minimize"
+
+[[node]]
+id = "InnerExecution.isMin_zero_of_return_eq"
+
+[[node]]
+id = "exists_approxMinimizer_of_model_isMin_zero"
+
+[[node]]
+id = "not_failedTest_of_model_isMin_zero"
+
+[[node]]
+id = "OuterTransition.failedTest_of_next_test_false"
+
+[[node]]
+id = "OuterExecution.failedTest_of_test_false"
+
+[[node]]
+id = "OuterExecution.failedTest_of_stopEqual"
+
+[[node]]
+id = "OuterTransition.failedTest_of_stopEqual"

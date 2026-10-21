@@ -1,0 +1,31 @@
+namespace = "TwoSine"
+
+[[node]]
+id = "secondAmplitude"
+
+[[node]]
+id = "firstAmplitude"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "contDiff"
+
+[[node]]
+id = "iteratedDeriv_objective"
+
+[[node]]
+id = "amplitudes_bound"
+
+[[node]]
+id = "abs_objective_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_le_one"
+
+[[node]]
+id = "iteratedFDeriv_sub_le"
+
+[[node]]
+id = "jets_zero"

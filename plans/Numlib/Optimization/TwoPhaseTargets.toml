@@ -1,0 +1,46 @@
+namespace = "Optimization.TwoPhaseTargets"
+
+[[node]]
+id = "residualNorm"
+
+[[node]]
+id = "residualNorm_nonneg"
+
+[[node]]
+id = "residualNorm_sq"
+
+[[node]]
+id = "objective_eq_half_sq"
+
+[[node]]
+id = "norm_constraint_le"
+
+[[node]]
+id = "abs_gap_le"
+
+[[node]]
+id = "resetTarget"
+
+[[node]]
+id = "reflectTarget"
+
+[[node]]
+id = "reset_gap_nonneg"
+
+[[node]]
+id = "residualNorm_reset"
+
+[[node]]
+id = "residualNorm_reflect"
+
+[[node]]
+id = "reflect_gap_pos"
+
+[[node]]
+id = "reflectTarget_lt"
+
+[[node]]
+id = "reset_decrease"
+
+[[node]]
+id = "target_mem_interval"

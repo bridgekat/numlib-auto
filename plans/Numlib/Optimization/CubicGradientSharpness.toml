@@ -1,0 +1,13 @@
+namespace = "Optimization.CubicGradientSharpness"
+
+[[node]]
+id = "taylorModel_of_zero_hessian"
+
+[[node]]
+id = "isMinOn_cubicModel_of_gradient"
+
+[[node]]
+id = "exists_scalar_chain"
+
+[[node]]
+id = "exists_hard_family"

@@ -1,0 +1,8 @@
+[[node]]
+id = "sub_sum_taylor_eq_integral_deriv_sub"
+
+[[node]]
+id = "lipschitzOnWith_iteratedFDeriv_iff"
+
+[[node]]
+id = "ContinuousMultilinearMap.opNorm_le_iff_unit_norm"

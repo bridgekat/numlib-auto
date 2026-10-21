@@ -1,0 +1,82 @@
+namespace = "Matrix"
+
+[[node]]
+id = "signedDiagonal"
+
+[[node]]
+id = "signComponent"
+
+[[node]]
+id = "signComponent_apply"
+
+[[node]]
+id = "signComponent_add"
+
+[[node]]
+id = "signComponent_component"
+
+[[node]]
+id = "signComponent_smul"
+
+[[node]]
+id = "signComponent_add_map"
+
+[[node]]
+id = "signedDiagonal_isSymm"
+
+[[node]]
+id = "signedDiagonal_shift"
+
+[[node]]
+id = "signedDiagonal_shift_apply"
+
+[[node]]
+id = "signedDiagonal_stationary_coordinates"
+
+[[node]]
+id = "signedDiagonal_shift_posSemidef_iff"
+
+[[node]]
+id = "signedDiagonal_shift_posDef"
+
+[[node]]
+id = "signedDiagonal_shift_one_posSemidef"
+
+[[node]]
+id = "signedDiagonalStep"
+
+[[node]]
+id = "signedDiagonalStep_apply"
+
+[[node]]
+id = "signedDiagonalStep_stationary"
+
+[[node]]
+id = "signedDiagonal_stationary_iff"
+
+[[node]]
+id = "norm_sq_signComponent"
+
+[[node]]
+id = "norm_sq_signedDiagonalStep"
+
+[[node]]
+id = "signedDiagonal_stationary_one_iff"
+
+[[node]]
+id = "signComponent_zero"
+
+[[node]]
+id = "signedDiagonalHardStep"
+
+[[node]]
+id = "signComponent_true_hardStep"
+
+[[node]]
+id = "signComponent_false_hardStep"
+
+[[node]]
+id = "norm_sq_signedDiagonalHardStep"
+
+[[node]]
+id = "signedDiagonalHardStep_stationary_iff"

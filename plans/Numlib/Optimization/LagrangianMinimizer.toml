@@ -1,0 +1,7 @@
+namespace = "Constrained"
+
+[[node]]
+id = "isMinOn_of_isMinOn_lagrangian"
+
+[[node]]
+id = "isLocalMinOn_of_isLocalMinOn_lagrangian"

@@ -1,0 +1,13 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "exactShortFirstOrderInnerResult"
+
+[[node]]
+id = "exactShortFirstOrderInnerResult_step"
+
+[[node]]
+id = "exactShortFirstOrderInnerResult_radii"
+
+[[node]]
+id = "exists_exactShortFirstOrderInnerResult"

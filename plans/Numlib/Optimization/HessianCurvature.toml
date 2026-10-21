@@ -1,0 +1,28 @@
+namespace = "Optimization"
+
+[[node]]
+id = "leastCurvature"
+
+[[node]]
+id = "bddBelow_bilinearRayleigh"
+
+[[node]]
+id = "le_leastCurvature_iff"
+
+[[node]]
+id = "bilinearOperator_isSymmetric"
+
+[[node]]
+id = "hasEigenvalue_leastCurvature"
+
+[[node]]
+id = "leastCurvature_le_eigenvalue"
+
+[[node]]
+id = "exists_unit_leastCurvature"
+
+[[node]]
+id = "hessian_symmetric"
+
+[[node]]
+id = "leastCurvature_eq_of_scalar"

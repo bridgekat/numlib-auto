@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.Chapter13.Section03.CubicStop"
+
+[[node]]
+id = "literal_arqpeda_cubic_stop_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 13.3.2 and Lemma 13.3.6(ii)"

@@ -1,0 +1,25 @@
+namespace = "Optimization.ComponentSmoothness"
+
+[[node]]
+id = "_root_.BoundedLipschitzJets.On.toSmoothOn"
+
+[[node]]
+id = "norm_sq_jets"
+
+[[node]]
+id = "residualPower_jets_even"
+
+[[node]]
+id = "smoothOn_residualPower_even"
+
+[[node]]
+id = "target_jets"
+
+[[node]]
+id = "smoothOn_target"
+
+[[node]]
+id = "smoothOn_all_targets"
+
+[[node]]
+id = "smoothOn_targets_uniform"

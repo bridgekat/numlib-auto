@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.AppendixA.Section07"
+
+[[node]]
+id = "imageOn"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.7"

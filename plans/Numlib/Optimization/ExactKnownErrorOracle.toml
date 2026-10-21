@@ -1,0 +1,10 @@
+namespace = "Optimization.ExplicitTrustRegion.Oracle"
+
+[[node]]
+id = "exact"
+
+[[node]]
+id = "exact_value"
+
+[[node]]
+id = "exact_derivative"

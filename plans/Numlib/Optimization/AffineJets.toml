@@ -1,0 +1,4 @@
+namespace = "Optimization.ConstrainedTaylorCriticality"
+
+[[node]]
+id = "affine_hasBoundedLipschitzJets_one"

@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.AppendixB.Chapter08"
+desc = '''Scalar Newton/secant convergence and transformed-step monotonicity. Reuse ScalarNewton.scalarStep and HasIterationOrder APIs. Main Chapter 8 numbered theorems are proved in their own modules, not duplicated here. Source omits nonvanishing root derivative for superlinear claims and β=0 limiting convention; preserve these as explicit correction obligations.'''
+
+[[node]]
+id = "lemma_B_8_1"
+kind = "theorem"
+desc = '''For C¹ convex strictly decreasing θ on I=[λmin,λmax], θ(λ*)=0, θ(λ0)>0, and θ′(λ*)<0: Newton iterates stay in [λ0,λ*], increase and converge, with e_(j+1)≤γN ej where γN=1−θ′(λ*)/θ′(λ0)∈[0,1); ultimately Q-superlinear, quadratic if derivative locally Lipschitz. Secant with λ0<λ1<λ*, positive residuals also stays below root and converges superlinearly with same upper contraction bound. Concave increasing case follows by replacing θ with −θ and choosing negative initial θ, not retaining positive sign. Extend terminated-at-root recurrence by absorption; avoid strict increase after root.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.8.1"
+wrong = '''Supplied transcription assumptions do not imply θ′(λ*)≠0. θ(x)=(1−x)^2 on [0,1] is convex strictly decreasing but Newton converges only linearly with factor 1/2. Concave-increasing case also needs sign reversed; γN is an upper error contraction factor, despite wording factor at least.'''

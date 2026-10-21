@@ -1,0 +1,82 @@
+namespace = "Optimization.TransverseInjection"
+
+[[node]]
+id = "Conditions"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "step_zero"
+
+[[node]]
+id = "step_one"
+
+[[node]]
+id = "norm_step_le"
+
+[[node]]
+id = "norm_step_lt_one"
+
+[[node]]
+id = "radial_penalty_le"
+
+[[node]]
+id = "model_decrease_gt"
+
+[[node]]
+id = "taylor_prediction_pos"
+
+[[node]]
+id = "gradient_first_bounds"
+
+[[node]]
+id = "gradient_second_bounds"
+
+[[node]]
+id = "norm_fderiv_model_lt"
+
+[[node]]
+id = "ratio_ge_one"
+
+[[node]]
+id = "direction"
+
+[[node]]
+id = "norm_direction"
+
+[[node]]
+id = "direction_model_decrease_le"
+
+[[node]]
+id = "direction_decrease_le"
+
+[[node]]
+id = "actual_retained"
+
+[[node]]
+id = "initial_slope_eq"
+
+[[node]]
+id = "initial_slope_bounds"
+
+[[node]]
+id = "actual_fraction"
+
+[[node]]
+id = "endpoint_geometry"
+
+[[node]]
+id = "endpoint_slope_bounds"
+
+[[node]]
+id = "direction_decrement_one"
+
+[[node]]
+id = "direction_coefficientWitness"
+
+[[node]]
+id = "direction_computed_failure"
+
+[[node]]
+id = "exists_innerResult"

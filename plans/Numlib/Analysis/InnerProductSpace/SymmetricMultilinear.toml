@@ -1,0 +1,22 @@
+namespace = "ContinuousMultilinearMap"
+
+[[node]]
+id = "opNorm_le_of_unit_bound"
+
+[[node]]
+id = "exists_unit_norm_eq_norm"
+
+[[node]]
+id = "exists_unit_norm_eq_norm_max_sum"
+
+[[node]]
+id = "IsSymmetric.update_update_polarization"
+
+[[node]]
+id = "IsSymmetric.norm_update_update_normalize_add"
+
+[[node]]
+id = "exists_unit_norm_diagonal_eq_norm"
+
+[[node]]
+id = "diagonalNorm_eq_norm_of_isSymmetric"

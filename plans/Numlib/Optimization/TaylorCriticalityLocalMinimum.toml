@@ -1,0 +1,7 @@
+namespace = "Optimization.TaylorCriticality"
+
+[[node]]
+id = "gapOn_taylorDecrement_eq_zero_of_isLocalMin"
+
+[[node]]
+id = "exists_radii_taylorDecrement_le_of_isLocalMin"

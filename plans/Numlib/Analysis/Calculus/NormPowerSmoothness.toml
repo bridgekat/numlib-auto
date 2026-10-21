@@ -1,0 +1,14 @@
+[[node]]
+id = 'norm_rpow_isLittleO_id'
+
+[[node]]
+id = 'hasFDerivAt_iteratedFDeriv_norm_rpow_zero'
+
+[[node]]
+id = 'iteratedFDeriv_norm_rpow_zero_of_lt'
+
+[[node]]
+id = 'continuous_iteratedFDeriv_norm_rpow_of_lt'
+
+[[node]]
+id = 'contDiff_norm_rpow_of_lt'

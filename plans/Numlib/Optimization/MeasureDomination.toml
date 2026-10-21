@@ -1,0 +1,37 @@
+namespace = "Optimization.MeasureDomination"
+
+[[node]]
+id = "IsMeasureDominated"
+
+[[node]]
+id = "implicit_gap_decrease"
+
+[[node]]
+id = "explicit_gap_decrease"
+
+[[node]]
+id = "implicit_recurrence_linear_bound"
+
+[[node]]
+id = "geometricIterationCount"
+
+[[node]]
+id = "geometric_tolerance"
+
+[[node]]
+id = "implicit_recurrence_linear_tolerance"
+
+[[node]]
+id = "explicit_recurrence_linear_bound"
+
+[[node]]
+id = "explicitLinearIterationCount"
+
+[[node]]
+id = "explicit_recurrence_linear_tolerance"
+
+[[node]]
+id = "implicit_recurrence_rpow_step"
+
+[[node]]
+id = "explicit_recurrence_finite_termination"

@@ -1,0 +1,10 @@
+namespace = "Optimization.KrylovSubproblem"
+
+[[node]]
+id = "lanczos_tridiag_isUnreduced"
+
+[[node]]
+id = "lanczos_regularized_shift_posDef"
+
+[[node]]
+id = "lanczos_shift_posDef_of_stationary"

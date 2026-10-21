@@ -1,0 +1,64 @@
+namespace = "Optimization.HigherOrderAffineRegularizationSharpness"
+
+[[node]]
+id = "descFactorial_div_le_one"
+
+[[node]]
+id = "model_term_affine"
+
+[[node]]
+id = "model_deriv_affine_zero"
+
+[[node]]
+id = "model_decrement_affine_le"
+
+[[node]]
+id = "model_quality_affine"
+
+[[node]]
+id = "affineJet"
+
+[[node]]
+id = "affineJet_eq_sparse"
+
+[[node]]
+id = "affineJet_compatible"
+
+[[node]]
+id = "exists_affineJet_chain"
+
+[[node]]
+id = "execution_of_accepted"
+
+[[node]]
+id = "decrement_affineJet"
+
+[[node]]
+id = "gap_affineJet"
+
+[[node]]
+id = "model_affine_strict"
+
+[[node]]
+id = "run_of_affineJet"
+
+[[node]]
+id = "affine_threshold_mono"
+
+[[node]]
+id = "affine_threshold_earlier"
+
+[[node]]
+id = "stepScale"
+
+[[node]]
+id = "affineSigma"
+
+[[node]]
+id = "affineSigma_pos"
+
+[[node]]
+id = "affineExponent"
+
+[[node]]
+id = "exists_hard_family"

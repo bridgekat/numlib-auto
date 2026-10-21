@@ -1,0 +1,37 @@
+namespace = "Optimization.TwoPhaseTargets"
+
+[[node]]
+id = "innerTrialIndices"
+
+[[node]]
+id = "mem_innerTrialIndices"
+
+[[node]]
+id = "blockOwner"
+
+[[node]]
+id = "iterationBlock"
+
+[[node]]
+id = "mem_iterationBlock"
+
+[[node]]
+id = "existsUnique_iterationBlock"
+
+[[node]]
+id = "disjoint_iterationBlock"
+
+[[node]]
+id = "successfulIterationBlock"
+
+[[node]]
+id = "trialQueryPoints"
+
+[[node]]
+id = "acceptedQueryPoints"
+
+[[node]]
+id = "length_trialQueryPoints"
+
+[[node]]
+id = "length_acceptedQueryPoints"

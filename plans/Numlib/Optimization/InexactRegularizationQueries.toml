@@ -1,0 +1,55 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "Run.executedTrial"
+
+[[node]]
+id = "Run.trialPoint"
+
+[[node]]
+id = "Run.trialPoint_of_trial"
+
+[[node]]
+id = "Run.trialPoint_of_not_trial"
+
+[[node]]
+id = "Run.trialPoint_spec"
+
+[[node]]
+id = "Run.trialPoint_of_accepted"
+
+[[node]]
+id = "Run.ratio_eq_trialPoint"
+
+[[node]]
+id = "Run.functionQueries"
+
+[[node]]
+id = "Run.derivativeQueries"
+
+[[node]]
+id = "Run.functionQueries_eq"
+
+[[node]]
+id = "Run.derivativeQueries_eq"
+
+[[node]]
+id = "Run.functionQueries_zero"
+
+[[node]]
+id = "Run.derivativeQueries_zero"
+
+[[node]]
+id = "Run.functionQueries_length"
+
+[[node]]
+id = "Run.derivativeQueries_length"
+
+[[node]]
+id = "Run.mem_functionQueries_iff"
+
+[[node]]
+id = "Run.mem_derivativeQueries_iff"
+
+[[node]]
+id = "Run.derivativeQueries_request_bounds"

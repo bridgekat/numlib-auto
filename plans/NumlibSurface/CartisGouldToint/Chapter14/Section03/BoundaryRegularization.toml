@@ -1,0 +1,66 @@
+namespace = "CartisGouldToint.Chapter14.Section03.TwoPhaseBoundary"
+
+[[node]]
+id = "regularizationParameters"
+
+[[node]]
+id = "initial_norm_sq"
+
+[[node]]
+id = "negative_initial_ne_zero"
+
+[[node]]
+id = "regularization_prediction"
+
+[[node]]
+id = "regularization_model_decrease"
+
+[[node]]
+id = "regularization_ratio"
+
+[[node]]
+id = "regularization_model_fderiv"
+
+[[node]]
+id = "regularization_model_test"
+
+[[node]]
+id = "backendSigma"
+
+[[node]]
+id = "output_feasible_criticality"
+
+[[node]]
+id = "initial_criticality_failure"
+
+[[node]]
+id = "actual_regularization_run"
+
+[[node]]
+id = "backend_function_queries"
+
+[[node]]
+id = "backend_derivative_queries"
+
+[[node]]
+id = "phase_two_inner_eq_ordinary"
+
+[[node]]
+id = "every_executed_backend"
+
+[[node]]
+id = "regularization_exponent"
+
+[[node]]
+id = "backend_function_count"
+
+[[node]]
+id = "backend_derivative_count"
+
+[[node]]
+id = "_root_.CartisGouldToint.Chapter14.Section03.regularized_two_phase_boundary_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.9; literal equality-boundary counterexample"
+
+[[node]]
+id = "source_model_parameters"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 6.2.2 and Equations6.2.7–6.2.8,6.2.29"

@@ -1,0 +1,55 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "Inspection"
+
+[[node]]
+id = "Inspection.radii"
+
+[[node]]
+id = "Inspection.direction"
+
+[[node]]
+id = "InnerResult"
+
+[[node]]
+id = "InnerResult.step"
+
+[[node]]
+id = "InnerResult.radii"
+
+[[node]]
+id = "StepAccurate"
+
+[[node]]
+id = "StepAccurate.short_iff"
+
+[[node]]
+id = "StepAccurate.of_le"
+
+[[node]]
+id = "exists_stepAccurate_not_all_orders"
+
+[[node]]
+id = "State"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "refine"
+
+[[node]]
+id = "Transition"
+
+[[node]]
+id = "Execution"
+
+[[node]]
+id = "Execution.functionCount"
+
+[[node]]
+id = "Execution.derivativeBatches"

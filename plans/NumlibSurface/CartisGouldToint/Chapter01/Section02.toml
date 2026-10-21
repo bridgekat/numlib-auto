@@ -1,0 +1,38 @@
+namespace = "CartisGouldToint.Chapter01.Section02"
+
+[[node]]
+id = "OracleQuery"
+
+[[node]]
+id = "EvaluationEvent"
+
+[[node]]
+id = "evaluationCost"
+source = "Cartis, Gould and Toint, Section 1.2, essential definitions and assumptions"
+
+[[node]]
+id = "orderEvaluationCost"
+
+[[node]]
+id = "iterationCost"
+
+[[node]]
+id = "internalCost"
+
+[[node]]
+id = "CacheValid"
+
+[[node]]
+id = "evaluationCost_sum"
+
+[[node]]
+id = "orderEvaluationCost_reuse"
+
+[[node]]
+id = "firstGoalIndex"
+
+[[node]]
+id = "firstGoalIndex_eq_some_iff"
+
+[[node]]
+id = "firstGoalIndex_eq_none"

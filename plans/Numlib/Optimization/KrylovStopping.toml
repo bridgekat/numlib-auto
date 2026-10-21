@@ -1,0 +1,31 @@
+namespace = "Optimization.KrylovSubproblem"
+
+[[node]]
+id = "chebyshevRate"
+
+[[node]]
+id = "chebyshevRate_nonneg"
+
+[[node]]
+id = "chebyshevRate_pos"
+
+[[node]]
+id = "chebyshevRate_lt_one"
+
+[[node]]
+id = "chebyshevRate_mono"
+
+[[node]]
+id = "lanczosStoppingCount"
+
+[[node]]
+id = "lanczosStoppingCount_eq"
+
+[[node]]
+id = "grade_le_one_of_scalar_second_shift"
+
+[[node]]
+id = "lanczos_shifted_residual_eq_zero_of_grade"
+
+[[node]]
+id = "lanczos_stationary_norm_lower_bound"

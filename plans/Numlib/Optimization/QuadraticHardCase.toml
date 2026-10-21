@@ -1,0 +1,28 @@
+namespace = "Optimization.QuadraticSubproblem"
+
+[[node]]
+id = "norm_le_of_stationary_shift_lt"
+
+[[node]]
+id = "norm_eq_of_power_minimizers"
+
+[[node]]
+id = "norm_eq_radial_target"
+
+[[node]]
+id = "power_minimizers_kernel_completion"
+
+[[node]]
+id = "apply_eq_zero_of_positive_inner_eq_zero"
+
+[[node]]
+id = "ball_minimizers_kernel_completion"
+
+[[node]]
+id = "energy_kernel_iff"
+
+[[node]]
+id = "weighted_power_minimizers_kernel_completion"
+
+[[node]]
+id = "weighted_ball_minimizers_kernel_completion"

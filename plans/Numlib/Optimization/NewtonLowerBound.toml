@@ -1,0 +1,22 @@
+namespace = "Optimization.NewtonLowerBound"
+
+[[node]]
+id = "hardLength"
+
+[[node]]
+id = "hardJet"
+
+[[node]]
+id = "ceil_lt_hardLength"
+
+[[node]]
+id = "hardLength_mul_sq_le"
+
+[[node]]
+id = "hardJet_abs_le"
+
+[[node]]
+id = "exists_scalar_hard_objective"
+
+[[node]]
+id = "exists_hard_run"

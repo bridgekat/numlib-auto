@@ -1,0 +1,70 @@
+namespace = "Optimization.HigherOrderRegularization"
+
+[[node]]
+id = "criticalityConstant"
+
+[[node]]
+id = "inv_criticalityConstant"
+
+[[node]]
+id = "criticalityConstant_pos"
+
+[[node]]
+id = "iteratedFDeriv_model"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_le"
+
+[[node]]
+id = "norm_derivative_sub_model_le"
+
+[[node]]
+id = "abs_diagonal_le_norm"
+
+[[node]]
+id = "abs_diagonal_le_of_model"
+
+[[node]]
+id = "neg_leastCurvature_le_of_model"
+
+[[node]]
+id = "RunPrefix.derivative_difference"
+
+[[node]]
+id = "RunPrefix.gradient_bound"
+
+[[node]]
+id = "RunPrefix.curvature_bound"
+
+[[node]]
+id = "RunPrefix.flat_direction_bounds"
+
+[[node]]
+id = "decreaseConstant"
+
+[[node]]
+id = "decreaseConstant_eq_factorial"
+
+[[node]]
+id = "rpow_measure_le_step_power"
+
+[[node]]
+id = "TrialPrefix.accepted_decrease_step"
+
+[[node]]
+id = "decreaseConstant_pos"
+
+[[node]]
+id = "TrialPrefix.accepted_decrease_of_criticality"
+
+[[node]]
+id = "RunPrefix.gradient_decrease"
+
+[[node]]
+id = "RunPrefix.curvature_decrease"
+
+[[node]]
+id = "RunPrefix.cubic_decrease"
+
+[[node]]
+id = "RunPrefix.flat_hessian_decrease"

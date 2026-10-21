@@ -1,0 +1,10 @@
+namespace = "Optimization.RegularizedTaylorModel"
+
+[[node]]
+id = "normCoefficientBound"
+
+[[node]]
+id = "norm_taylorModel_le"
+
+[[node]]
+id = "eventually_ge_regularized_of_lower_bound"

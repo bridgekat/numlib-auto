@@ -1,0 +1,25 @@
+namespace = "Optimization.CubicCurvatureSharpness"
+
+[[node]]
+id = "curvatureJet"
+
+[[node]]
+id = "endpointTaylor_curvatureJet"
+
+[[node]]
+id = "curvatureJet_compatible"
+
+[[node]]
+id = "exists_scalar_chain"
+
+[[node]]
+id = "cubicModel_of_scalar_hessian"
+
+[[node]]
+id = "isMinOn_cubicModel_of_negative_curvature"
+
+[[node]]
+id = "isMinOn_cubicModel_of_zero_hessian"
+
+[[node]]
+id = "exists_hard_family"

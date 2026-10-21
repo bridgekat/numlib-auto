@@ -1,0 +1,13 @@
+namespace = "Optimization"
+
+[[node]]
+id = "rpow_normalized_mul"
+
+[[node]]
+id = "normalized_power_decrease"
+
+[[node]]
+id = "max_neg_div_eq"
+
+[[node]]
+id = "residual_root_decrease"

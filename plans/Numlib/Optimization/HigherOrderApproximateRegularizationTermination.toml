@@ -1,0 +1,148 @@
+namespace = "Optimization.HigherOrderApproximateRegularization"
+
+[[node]]
+id = "geometricCountdown"
+
+[[node]]
+id = "geometricCountdown_spec"
+
+[[node]]
+id = "geometricCountdown_le"
+
+[[node]]
+id = "geometricCountdown_halve_lt"
+
+[[node]]
+id = "exists_model_gap_threshold"
+
+[[node]]
+id = "accuracyTarget"
+
+[[node]]
+id = "accuracyTarget_bounds"
+
+[[node]]
+id = "radiusFloor"
+
+[[node]]
+id = "radiusFloor_bounds"
+
+[[node]]
+id = "SmallRadiusDecrease"
+
+[[node]]
+id = "InnerBounds"
+
+[[node]]
+id = "InnerInitial.bounds"
+
+[[node]]
+id = "radius_gt_of_small_actual_decrease"
+
+[[node]]
+id = "InnerTransition.bounds"
+
+[[node]]
+id = "InnerExecution.bounds"
+
+[[node]]
+id = "AccuracyThreshold"
+
+[[node]]
+id = "exists_accuracyThreshold"
+
+[[node]]
+id = "refinementCount"
+
+[[node]]
+id = "phaseCost"
+
+[[node]]
+id = "progressRank"
+
+[[node]]
+id = "progressRank_eq_zero_iff"
+
+[[node]]
+id = "InnerTransition.progressRank_lt"
+
+[[node]]
+id = "InnerExecution.length_add_rank_le"
+
+[[node]]
+id = "geometricCountdown_mono"
+
+[[node]]
+id = "InnerTransition.exists_next"
+
+[[node]]
+id = "exists_inner_length_bound"
+
+[[node]]
+id = "eventually_return_of_transition"
+
+[[node]]
+id = "CorrectedInnerExecution"
+
+[[node]]
+id = "CorrectedInnerTransition.source_ne_returned"
+
+[[node]]
+id = "CorrectedInnerTransition.mu_bounds"
+
+[[node]]
+id = "CorrectedInnerTransition.fraction_of_ne_minimize"
+
+[[node]]
+id = "CorrectedInnerTransition.bounds"
+
+[[node]]
+id = "CorrectedInnerTransition.progressRank_lt"
+
+[[node]]
+id = "CorrectedInnerTransition.exists_next"
+
+[[node]]
+id = "CorrectedInnerExecution.mu_bounds"
+
+[[node]]
+id = "CorrectedInnerExecution.fraction_of_ne_minimize"
+
+[[node]]
+id = "CorrectedInnerExecution.bounds"
+
+[[node]]
+id = "CorrectedInnerExecution.length_add_rank_le"
+
+[[node]]
+id = "exists_corrected_inner_length_bound"
+
+[[node]]
+id = "eventually_corrected_return_of_transition"
+
+[[node]]
+id = "InnerTransition.source_ne_returned"
+
+[[node]]
+id = "exists_inner_return_execution"
+
+[[node]]
+id = "exists_corrected_inner_return_execution"
+
+[[node]]
+id = "isCompact_model_sublevel"
+
+[[node]]
+id = "smallRadiusDecrease_model"
+
+[[node]]
+id = "InnerExecution.terminates"
+
+[[node]]
+id = "CorrectedInnerExecution.terminates"
+
+[[node]]
+id = "exists_model_inner_return_execution"
+
+[[node]]
+id = "exists_model_corrected_inner_return_execution"

@@ -1,0 +1,74 @@
+namespace = "CartisGouldToint.Chapter05.Section04"
+
+[[node]]
+id = "localConvexityRadius"
+
+[[node]]
+id = "localConvexityRegion"
+
+[[node]]
+id = "mem_localConvexityRegion"
+
+[[node]]
+id = "localConvexityRadius_pos"
+
+[[node]]
+id = "localConvexityRegion_mem_nhds"
+
+[[node]]
+id = "phaseCurvatureScale"
+
+[[node]]
+id = "phaseBaseThreshold"
+
+[[node]]
+id = "phaseGradientThreshold"
+
+[[node]]
+id = "phaseGradientThreshold_of_le"
+
+[[node]]
+id = "phaseGradientThreshold_of_lt"
+
+[[node]]
+id = "phaseCurvatureScale_pos"
+
+[[node]]
+id = "phaseBaseThreshold_pos"
+
+[[node]]
+id = "phaseGradientThreshold_pos"
+
+[[node]]
+id = "quadraticConvergenceRegion"
+source = "Cartis, Gould and Toint, Section 5.4, essential definitions and assumptions"
+
+[[node]]
+id = "mem_quadraticConvergenceRegion"
+
+[[node]]
+id = "quadraticConvergenceRegion_subset"
+
+[[node]]
+id = "reference_mem_quadraticConvergenceRegion"
+
+[[node]]
+id = "lemma_5_4_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.4.1"
+
+[[node]]
+id = "lemma_5_4_2"
+kind = "theorem"
+desc = "For AR2 strengthened residual stopping (5.4.3), a successful step in the strong-convexity region obeys ||g_next||≤||g_k||²/zeta_*. The smaller region Q*∩{||g||≤zeta_*} is invariant and all subsequent iterations are very successful. Prove step bound, stay-in-ball, cubic model ratio and contraction. Formula (5.4.5) has division by max(theta1−sigma_min,0): interpret zero denominator as absent upper restriction, not Lean real division by zero.\n"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.4.2"
+deps = ["CartisGouldToint.Chapter05.Section04.lemma_5_4_1"]
+wrong = "False for the supplied threshold (5.4.5): literal_phase_quadratic_counterexample constructs a complete lawful strengthened-residual AR2 run on Euclidean one-space for f(t)=t²/2, L=1, xstar=0, sigma_min=sigma_0=sigma_max=128, theta1=1, eta1=1/2, eta2=3/4, gamma1=1/2, gamma2=2, gamma3=3. The initial point 17/16384 lies in Q_*^1, whose threshold is exactly1/16. Its exact-residual step -1/1024 strictly decreases the actual cubic model and has ratio1. The next gradient norm1/16384 exceeds the claimed16*(17/16384)²=289/16777216. All later steps are actual global cubic-model minimizers with legal updates, so this is not a bare scalar or artificial finite-step counterexample. The erroneous proof (5.4.8) replaces the genuine norm-dependent cubic shift by a positive constant; this does not refute quadratic convergence with a corrected threshold."
+
+[[node]]
+id = "lemma_5_4_3"
+kind = "theorem"
+desc = '''The local quadratic recurrence yields logarithmic-logarithmic successful-step complexity after entry with gradient≤zeta≤zeta_*/2. Printed bound log2(log2(zeta/epsilon)) lacks integer rounding and can be nonpositive. Use a ceiling and zero-iteration branch, derived from ||g_after_l||≤zeta_*2^(−2^l), and verify constants against the actual initial gradient.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.4.3"
+deps = ["CartisGouldToint.Chapter05.Section04.lemma_5_4_2"]
+wrong = "False even after ceiling and zero-iteration corrections: literal_phase_count_counterexample constructs a complete exact-global-model-minimization strengthened-residual AR2 run on Euclidean one-space for f(t)=t²/2, L=1, xstar=0, sigma_min=sigma_0=sigma_max=256, theta1=1, eta1=1/2, eta2=3/4, gamma1=1/2, gamma2=2, gamma3=3. Its initial point and gradient are 1/64, inside q_star=1/4, with zeta=1/64 <= zeta_star/2=1/32 and epsilon=1/1024. The displayed log2(log2(zeta/epsilon)) and its natural ceiling are exactly2. Every actual iteration has ratio1 and sigma256, but every state with actual successful-step count at most2 has gradient greater than epsilon; the first successor is 1/128, and the second obeys x_2=128*s_1²>1/1024. Thus the full local count fails independently of integer rounding. This does not refute Theorem5.4.4, whose extra global complexity term remains to be analyzed."

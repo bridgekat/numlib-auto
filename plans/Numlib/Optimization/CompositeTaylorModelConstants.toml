@@ -1,0 +1,16 @@
+namespace = "Optimization.CompositeTaylorModels"
+
+[[node]]
+id = "_root_.Optimization.RegularizedTaylorModel.taylorModel_const"
+
+[[node]]
+id = "normComposition"
+
+[[node]]
+id = "model_const_zero"
+
+[[node]]
+id = "regularizedModel_const_zero"
+
+[[node]]
+id = "decrement_const_zero"

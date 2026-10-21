@@ -1,0 +1,4 @@
+namespace = "Optimization.CompositeRegularization"
+
+[[node]]
+id = "InnerExecution.return_quality"

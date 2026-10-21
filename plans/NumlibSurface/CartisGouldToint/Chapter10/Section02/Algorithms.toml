@@ -1,0 +1,45 @@
+namespace = "CartisGouldToint.Chapter10.Section02"
+
+[[node]]
+id = "lanczosSubdiagonal"
+
+[[node]]
+id = "shiftedLanczos_eq"
+
+[[node]]
+id = "algorithm_10_2_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 10.2.1"
+
+[[node]]
+id = "algorithm_10_2_1_success"
+
+[[node]]
+id = "algorithm_10_2_1_failure"
+
+[[node]]
+id = "algorithm_10_2_1_counts"
+
+[[node]]
+id = "extendRHS"
+
+[[node]]
+id = "algorithm_10_2_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 10.2.2"
+
+[[node]]
+id = "algorithm_10_2_2_correct"
+
+[[node]]
+id = "algorithm_10_2_2_counts"
+
+[[node]]
+id = "algorithm_10_2_2_multiplications_le"
+
+[[node]]
+id = "algorithm_10_2_1_posDef"
+
+[[node]]
+id = "lanczosRightHandSide"
+
+[[node]]
+id = "algorithm_10_2_2_secular_bracket"

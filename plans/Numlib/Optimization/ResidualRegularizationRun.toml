@@ -1,0 +1,61 @@
+namespace = "Optimization.ResidualRegularization"
+
+[[node]]
+id = "NormalizedResidualMeasures"
+
+[[node]]
+id = "normalizedResidualMeasures"
+
+[[node]]
+id = "residualFlatDirections"
+
+[[node]]
+id = "Stationary"
+
+[[node]]
+id = "RunPrefix"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "normalizedResidualMeasures_of_zero"
+
+[[node]]
+id = "normalizedResidualMeasures_of_ne_zero"
+
+[[node]]
+id = "stationary_of_residual_le"
+
+[[node]]
+id = "stationary_one_iff"
+
+[[node]]
+id = "IsRun.no_earlier_stop"
+
+[[node]]
+id = "residualFunctionEvaluations"
+
+[[node]]
+id = "residualDerivativeEvaluations"
+
+[[node]]
+id = "NormalizedResidualMeasures.nonnegativeMeasure"
+
+[[node]]
+id = "NormalizedResidualMeasures.nonnegativeMeasure_zero"
+
+[[node]]
+id = "NormalizedResidualMeasures.nonnegativeMeasure_one"
+
+[[node]]
+id = "NormalizedResidualMeasures.nonnegativeMeasure_two"
+
+[[node]]
+id = "mem_residualFlatDirections"
+
+[[node]]
+id = "normalizedResidualMeasures_eq_none_iff"
+
+[[node]]
+id = "stationary_iff_of_measures"

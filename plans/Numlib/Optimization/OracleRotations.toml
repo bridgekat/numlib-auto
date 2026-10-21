@@ -1,0 +1,43 @@
+namespace = "Optimization.ZeroChains"
+
+[[node]]
+id = "adjoint_embedding_apply"
+
+[[node]]
+id = "adjoint_embedding_surjective"
+
+[[node]]
+id = "norm_adjoint_embedding_le_one"
+
+[[node]]
+id = "norm_adjoint_embedding_apply_le"
+
+[[node]]
+id = "iteratedFDeriv_pullback"
+
+[[node]]
+id = "iteratedFDeriv_rotate"
+
+[[node]]
+id = "rotate_embedding"
+
+[[node]]
+id = "rotate_zero"
+
+[[node]]
+id = "range_rotate"
+
+[[node]]
+id = "sInf_range_rotate"
+
+[[node]]
+id = "bddBelow_range_rotate_iff"
+
+[[node]]
+id = "gradient_rotate"
+
+[[node]]
+id = "norm_gradient_rotate"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.FunctionClass.rotate"

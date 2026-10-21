@@ -1,0 +1,16 @@
+namespace = "Optimization.ConstrainedRegularization"
+
+[[node]]
+id = "SmoothOn.mono_constant"
+
+[[node]]
+id = "smoothOn_const"
+
+[[node]]
+id = "SmoothOn.add"
+
+[[node]]
+id = "SmoothOn.const_mul"
+
+[[node]]
+id = "SmoothOn.add_const"

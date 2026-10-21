@@ -1,0 +1,38 @@
+namespace = "Hermite"
+
+[[node]]
+id = "shiftedPolynomial"
+
+[[node]]
+id = "iteratedDeriv_shiftedPolynomial"
+
+[[node]]
+id = "contDiff_shiftedPolynomial"
+
+[[node]]
+id = "lipschitzOnWith_shiftedPolynomial"
+
+[[node]]
+id = "lipschitzWith_iteratedDeriv_polynomial_of_natDegree_le"
+
+[[node]]
+id = "lipschitzWith_shifted_endpointTaylor"
+
+[[node]]
+id = "finite_hermite_interpolation_with_taylor_tails"
+
+[[node]]
+id = "exists_endpointTaylor_unit_bound"
+
+[[node]]
+id = "constantJet"
+
+[[node]]
+id = "endpointTaylor_constantJet"
+
+[[node]]
+id = "eval_iterate_derivative_C"
+
+[[node]]
+id = "exists_contDiff_lipschitz_iteratedDeriv_of_finite_jets"
+source = "Cartis–Gould–Toint, Theorem A.9.2"

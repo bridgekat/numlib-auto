@@ -120,3 +120,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.17'
 [[node]]
 id = "coe_lagrangian_eq"
 source = 'Rockafellar, Convex Analysis, §29'
+
+[[node]]
+id = "exists_feasible_curve_of_isRegularPointIneq"

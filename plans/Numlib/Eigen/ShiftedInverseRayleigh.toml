@@ -1,0 +1,25 @@
+namespace = "Krylov"
+
+[[node]]
+id = "sq_repr_le_norm_shiftedInversePower_sq"
+
+[[node]]
+id = "inner_shiftedInverseBatch_sub"
+
+[[node]]
+id = "inner_shiftedInverseBatch_ge"
+
+[[node]]
+id = "sum_rayleighError_inversePower_le"
+
+[[node]]
+id = "exists_spectralGap"
+
+[[node]]
+id = "exists_spectralWidth"
+
+[[node]]
+id = "inner_shiftedInverseBatch_eq_of_spectrum_eq"
+
+[[node]]
+id = "inner_shiftedInverseBatch_sub_le"

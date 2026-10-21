@@ -1,0 +1,85 @@
+namespace = "Optimization.TransverseRefinementBlocks"
+
+[[node]]
+id = "exists_prescribed_inspection"
+
+[[node]]
+id = "exists_injection_inspection"
+
+[[node]]
+id = "exists_tail_inspection"
+
+[[node]]
+id = "prelude_coefficientWitness"
+
+[[node]]
+id = "prelude_computed_failure"
+
+[[node]]
+id = "exists_prelude_inspection"
+
+[[node]]
+id = "refinedState"
+
+[[node]]
+id = "refinedState_zero"
+
+[[node]]
+id = "refinedState_succ"
+
+[[node]]
+id = "invariant_refinedState"
+
+[[node]]
+id = "stepAccurate_iff"
+
+[[node]]
+id = "exists_least_refinement"
+
+[[node]]
+id = "refinement_transition"
+
+[[node]]
+id = "acceptedState"
+
+[[node]]
+id = "accepted_transition"
+
+[[node]]
+id = "injection_innerResult"
+
+[[node]]
+id = "tail_innerResult"
+
+[[node]]
+id = "prelude_innerResult"
+
+[[node]]
+id = "prelude_step_ne_zero"
+
+[[node]]
+id = "prediction_pos_of_model_le"
+
+[[node]]
+id = "refinementEndpoint"
+
+[[node]]
+id = "refinementTrialPath"
+
+[[node]]
+id = "refinementTrialPath_node_zero"
+
+[[node]]
+id = "refinementTrialPath_node_end"
+
+[[node]]
+id = "refinementTrialPath_node_before"
+
+[[node]]
+id = "refinementTrialPath_functionQueries_length"
+
+[[node]]
+id = "refinementTrialPath_events"
+
+[[node]]
+id = "refinementTrialPath_branch"

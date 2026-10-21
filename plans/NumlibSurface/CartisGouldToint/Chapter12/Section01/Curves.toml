@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.Chapter12.Section01"
+
+[[node]]
+id = "theorem_12_1_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.1"

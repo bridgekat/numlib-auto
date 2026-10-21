@@ -1,0 +1,28 @@
+namespace = "EuclideanOne"
+
+[[node]]
+id = "coord"
+
+[[node]]
+id = "lift"
+
+[[node]]
+id = "contDiff"
+
+[[node]]
+id = "hasFDerivAt"
+
+[[node]]
+id = "hasGradientAt"
+
+[[node]]
+id = "gradient_eq"
+
+[[node]]
+id = "gradient_lipschitz"
+
+[[node]]
+id = "fderiv_fderiv_apply"
+
+[[node]]
+id = "continuousLinearMapOfBilin_fderiv_fderiv"

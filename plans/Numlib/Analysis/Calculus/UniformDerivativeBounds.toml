@@ -1,0 +1,8 @@
+[[node]]
+id = "norm_iteratedFDeriv_scalar_pullback"
+
+[[node]]
+id = "lipschitzWith_gradient_of_iteratedFDeriv_two_le"
+
+[[node]]
+id = "iteratedDeriv_eq_of_eqOn_unitInterval"

@@ -1,0 +1,49 @@
+namespace = "Optimization.StepScaledUpdates"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "radius"
+
+[[node]]
+id = "weight"
+
+[[node]]
+id = "radius_of_very_successful"
+
+[[node]]
+id = "radius_of_successful"
+
+[[node]]
+id = "radius_of_rejected"
+
+[[node]]
+id = "weight_of_very_successful"
+
+[[node]]
+id = "weight_of_successful"
+
+[[node]]
+id = "weight_of_rejected"
+
+[[node]]
+id = "radius_pos"
+
+[[node]]
+id = "radius_le"
+
+[[node]]
+id = "minimum_le_weight"
+
+[[node]]
+id = "weight_pos"
+
+[[node]]
+id = "powerCalibration"
+
+[[node]]
+id = "powerCalibration_eq"
+
+[[node]]
+id = "powerCalibration_bounds"

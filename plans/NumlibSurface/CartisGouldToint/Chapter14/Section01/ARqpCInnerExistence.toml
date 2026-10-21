@@ -1,0 +1,11 @@
+namespace = "CartisGouldToint.Chapter14.Section01"
+
+[[node]]
+id = "CompositeProblem.one_le_derivativeConstant"
+
+[[node]]
+id = "CompositeProblem.smallRadiusDecrease"
+
+[[node]]
+id = "lemma_14_1_3"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.3"

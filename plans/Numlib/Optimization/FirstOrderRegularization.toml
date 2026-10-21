@@ -1,0 +1,64 @@
+namespace = "Optimization.FirstOrderRegularization"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "trial"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "IsRun.sigma_lower"
+
+[[node]]
+id = "IsRun.sigma_pos"
+
+[[node]]
+id = "IsRun.updateBounds"
+
+[[node]]
+id = "IsRun.total_count_le"
+
+[[node]]
+id = "ratio_ge_of_sigma_ge"
+
+[[node]]
+id = "IsRun.sigma_upper"
+
+[[node]]
+id = "IsRun.accepted_decrease"
+
+[[node]]
+id = "IsRun.objective_nonincrease"
+
+[[node]]
+id = "IsRun.success_count_le"
+
+[[node]]
+id = "IsRun.prefix_count_le"
+
+[[node]]
+id = "IsRun.exists_stationary_with_cost"
+
+[[node]]
+id = "nextSigma"
+
+[[node]]
+id = "nextSigma_lower"
+
+[[node]]
+id = "nextSigma_mem"
+
+[[node]]
+id = "states"
+
+[[node]]
+id = "states_sigma_lower"
+
+[[node]]
+id = "states_isRun"

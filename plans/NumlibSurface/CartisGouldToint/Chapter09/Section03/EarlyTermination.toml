@@ -1,0 +1,23 @@
+namespace = "CartisGouldToint.Chapter09.Section03"
+
+[[node]]
+id = "EarlyTerminationTolerances"
+
+[[node]]
+id = "regularizationEarlyTermination"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 9.3.6, (9.3.14a)–(9.3.14c)"
+
+[[node]]
+id = "regularizationEarlyTermination_iff"
+
+[[node]]
+id = "regularizationEarlyTermination.of_bounds"
+
+[[node]]
+id = "regularizationEarlyTermination.objective_nonpos"
+
+[[node]]
+id = "regularizationEarlyTermination.gradient_bound"
+
+[[node]]
+id = "regularizationEarlyTermination.hessian_bound"

@@ -1,0 +1,26 @@
+namespace = "CartisGouldToint.Chapter03.Section01"
+
+[[node]]
+id = "algorithm_3_1_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 3.1.1"
+
+[[node]]
+id = "hessianLipschitz"
+source = "Cartis, Gould and Toint, Section 3.1, essential definitions and assumptions"
+
+[[node]]
+id = "theorem_3_1_1"
+kind = "theorem"
+desc = 'Source Theorem 3.1.1 asserts a strict inverse-square lower bound for objective, gradient and Hessian evaluations by Algorithm 3.1.1.'
+wrong = '''The source objective-evaluation clause is incompatible with the displayed Algorithm 3.1.1: Step 1 queries the gradient, Step 2 queries the Hessian, and Step 3 accepts the full step without querying f. Section 1.2.4 explicitly distinguishes separate derivative and objective oracles and warns that an iteration need not query each order. Thus this algorithm has zero objective-value evaluations, so the claimed positive objective-evaluation lower bound cannot hold without adding calls absent from the algorithm. The derivative-evaluation clauses are proved separately as theorem_3_1_1_derivative_evaluations.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.1.1"
+
+[[node]]
+id = "theorem_3_1_1_derivative_evaluations"
+source = "Cartis, Gould and Toint, Theorem 3.1.1, derivative-evaluation clauses with exact separate oracle counts"
+
+[[node]]
+id = "hessianLipschitz.of_lipschitzWith"
+
+[[node]]
+id = "hessianLipschitz.mono"

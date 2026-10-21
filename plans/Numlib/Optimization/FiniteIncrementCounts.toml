@@ -1,0 +1,7 @@
+namespace = "Optimization"
+
+[[node]]
+id = "nat_count_le_ceil_of_increment_gate"
+
+[[node]]
+id = "nat_count_le_real_of_increment_gate"

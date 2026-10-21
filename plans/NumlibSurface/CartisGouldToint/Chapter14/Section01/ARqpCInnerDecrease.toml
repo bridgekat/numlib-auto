@@ -1,0 +1,26 @@
+namespace = "CartisGouldToint.Chapter14.Section01"
+
+[[node]]
+id = "CompositeProblem.scalarFamily"
+
+[[node]]
+id = "CompositeProblem.componentFamily"
+
+[[node]]
+id = "CompositeProblem.scalarConstant"
+
+[[node]]
+id = "CompositeProblem.componentConstant"
+
+[[node]]
+id = "CompositeProblem.derivativeConstant"
+
+[[node]]
+id = "CompositeProblem.vectorModel_error"
+
+[[node]]
+id = "CompositeProblem.smoothModel_error"
+
+[[node]]
+id = "lemma_14_1_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.2"

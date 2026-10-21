@@ -1,0 +1,11 @@
+namespace = "CartisGouldToint.Chapter10.Section02"
+
+[[node]]
+id = "norm_toEnergy_eq_weightedNorm"
+
+[[node]]
+id = "lanczosPrimalStep_weightedNorm"
+
+[[node]]
+id = "lemma_10_2_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 10.2.1"

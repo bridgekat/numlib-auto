@@ -1,0 +1,54 @@
+namespace = "CartisGouldToint.Chapter08.Section03"
+
+[[node]]
+id = "secularRegions"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.3.1–8.3.2, regions N,L,G,F"
+
+
+[[node]]
+id = "algorithm_8_3_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 8.3.1"
+
+
+[[node]]
+id = "corollary_8_3_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 8.3.1"
+
+
+[[node]]
+id = "algorithm_8_3_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 8.3.2"
+
+
+[[node]]
+id = "corollary_8_3_2"
+kind = "theorem"
+desc = '''Trust-region minimizers satisfy shifted-system and PSD conditions, λ*≥0 and complementarity; value=(1/2)(⟨g,ss⟩−λ*Δ²). Easy shifted-SPD branch unique; hard branch adds vector in lowest eigenspace to reach boundary when λ*>0. For λ*=0 and singular PSD H, all ss+z with z∈ker H and norm≤Δ minimize, including interior vectors, so do not force equality to Δ.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 8.3.2"
+deps = ["CartisGouldToint.Chapter08.Section03.secularRegions", "Optimization.QuadraticSubproblem.minimizer_eigenspace_completion"]
+wrong = '''The supplied transcription all-minimizer formula forces boundary α roots even for λ*=0 and singular PSD H, omitting interior minimizers. E.g. H=0,g=0,Δ>0: every ball point minimizes, while boundary-only formula misses 0. Generalized inverse must also specify M-minimal solution for arbitrary SPD M.'''
+
+[[node]]
+id = "corollary_8_3_2_corrected"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 8.3.2 (corrected)"
+
+[[node]]
+id = "metric_shift_kernel_iff"
+
+[[node]]
+id = "mem_secularRegions_F"
+
+[[node]]
+id = "metric_shift_kernel_eigenvector_iff"
+
+[[node]]
+id = "generalized_eigenvalue_lower_bound"
+
+[[node]]
+id = "secularTaylor"
+
+[[node]]
+id = "regularizationNewtonCorrection"
+
+[[node]]
+id = "secularTaylor_eq_of_queries"

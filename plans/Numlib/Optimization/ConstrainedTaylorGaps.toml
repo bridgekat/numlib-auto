@@ -1,0 +1,43 @@
+namespace = "Optimization.ConstrainedTaylorCriticality"
+
+[[node]]
+id = "taylorGap"
+
+[[node]]
+id = "zero_mem_feasibleBall"
+
+[[node]]
+id = "exists_eq_taylorGap"
+
+[[node]]
+id = "taylorGap_le_iff"
+
+[[node]]
+id = "taylorGap_nonneg"
+
+[[node]]
+id = "exists_taylorModel_minimum"
+
+[[node]]
+id = "feasibleSublevelSet"
+
+[[node]]
+id = "mem_feasibleSublevelSet"
+
+[[node]]
+id = "self_mem_feasibleSublevelSet"
+
+[[node]]
+id = "HasAnchoredBoundedJets"
+
+[[node]]
+id = "HasAnchoredBoundedJets.diagonalNorm_bound"
+
+[[node]]
+id = "HasAnchoredBoundedJets.lipschitz_diagonalNorm"
+
+[[node]]
+id = "HasAnchoredBoundedJets.value_lipschitz"
+
+[[node]]
+id = "HasAnchoredBoundedJets.remainder"

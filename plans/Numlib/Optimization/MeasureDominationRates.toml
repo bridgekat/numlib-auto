@@ -1,0 +1,73 @@
+namespace = "Optimization.MeasureDomination"
+
+[[node]]
+id = "reciprocal_rpow_difference"
+
+[[node]]
+id = "explicit_recurrence_potential"
+
+[[node]]
+id = "explicit_recurrence_polynomial_bound"
+
+[[node]]
+id = "implicit_recurrence_antitone"
+
+[[node]]
+id = "implicit_recurrence_potential_step"
+
+[[node]]
+id = "implicitPolynomialConstant"
+
+[[node]]
+id = "implicitPolynomialConstant_pos"
+
+[[node]]
+id = "implicit_recurrence_polynomial_bound"
+
+[[node]]
+id = "polynomialIterationCount"
+
+[[node]]
+id = "polynomial_tolerance"
+
+[[node]]
+id = "explicit_recurrence_polynomial_tolerance"
+
+[[node]]
+id = "implicit_recurrence_polynomial_tolerance"
+
+[[node]]
+id = "power_contraction_bound"
+
+[[node]]
+id = "implicit_recurrence_power_envelope"
+
+[[node]]
+id = "implicit_recurrence_entry"
+
+[[node]]
+id = "superlinearIterationCount"
+
+[[node]]
+id = "superlinear_tolerance"
+
+[[node]]
+id = "implicit_recurrence_superlinear_bound"
+
+[[node]]
+id = "explicit_recurrence_positive_gap_upper_bound"
+
+[[node]]
+id = "explicit_recurrence_threshold_zero"
+
+[[node]]
+id = "ImplicitRateBounds"
+
+[[node]]
+id = "implicit_recurrence_rate_bounds"
+
+[[node]]
+id = "ExplicitRateBounds"
+
+[[node]]
+id = "explicit_recurrence_rate_bounds"

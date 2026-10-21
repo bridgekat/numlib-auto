@@ -1,0 +1,58 @@
+namespace = "CartisGouldToint.Chapter11.Section01"
+
+[[node]]
+id = "signedTrustRegion_iff"
+
+[[node]]
+id = "signedTrustRegion_boundary"
+
+[[node]]
+id = "signedTrustRegion_easy"
+
+[[node]]
+id = "signedTrustRegion_easy_unique"
+
+[[node]]
+id = "signedTrustRegion_hard"
+
+[[node]]
+id = "signedTrustRegion_hard_norm_iff"
+
+[[node]]
+id = "signedRegularization_iff"
+
+[[node]]
+id = "exists_signedTrustRegion"
+
+[[node]]
+id = "exists_negative_of_signComponent_ne_zero"
+
+[[node]]
+id = "signedTrustRegion_easy_necessary"
+
+[[node]]
+id = "existsUnique_signedTrustRegion_root"
+
+[[node]]
+id = "signedTrustRegion_hard_iff"
+
+[[node]]
+id = "exists_signedRegularization"
+
+[[node]]
+id = "signedRegularization_easy"
+
+[[node]]
+id = "signedRegularization_hard"
+
+[[node]]
+id = "signedTrustRegion_cases_iff"
+
+[[node]]
+id = "exists_signedTrustRegion_hard"
+
+[[node]]
+id = "exists_signedTrustRegion_completion_iff"
+
+[[node]]
+id = "signedTrustRegion_hard_equality_iff"

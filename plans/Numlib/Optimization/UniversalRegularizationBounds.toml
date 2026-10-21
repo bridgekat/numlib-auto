@@ -1,0 +1,73 @@
+namespace = "Optimization.UniversalRegularization"
+
+[[node]]
+id = "scaled_rpow_le"
+
+[[node]]
+id = "successCoefficient"
+
+[[node]]
+id = "successCoefficient_nonneg"
+
+[[node]]
+id = "successCoefficient_value"
+
+[[node]]
+id = "successCoefficient_first"
+
+[[node]]
+id = "successCoefficient_second"
+
+[[node]]
+id = "toleranceCoefficient"
+
+[[node]]
+id = "toleranceCoefficient_mul_rpow"
+
+[[node]]
+id = "threshold_of_tolerance"
+
+[[node]]
+id = "ComputedStep.ratio_ge_of_error"
+
+[[node]]
+id = "length_test_of_bound"
+
+[[node]]
+id = "ComputedStep.verySuccessful_of_threshold"
+
+[[node]]
+id = "ComputedStep.threshold_of_nonstationary"
+
+[[node]]
+id = "successThreshold"
+
+[[node]]
+id = "successThreshold_le_iff"
+
+[[node]]
+id = "ComputedStep.verySuccessful_of_successThreshold"
+
+[[node]]
+id = "LegalUpdate.le_mul_gamma3"
+
+[[node]]
+id = "RunPrefix.sigma_upper"
+
+[[node]]
+id = "uniformSuccessThreshold"
+
+[[node]]
+id = "uniformSigma"
+
+[[node]]
+id = "uniformSigma_pos"
+
+[[node]]
+id = "RunPrefix.sigma_upper_uniform"
+
+[[node]]
+id = "ComputedStep.objective_decrease"
+
+[[node]]
+id = "RunPrefix.objective_nonincrease"

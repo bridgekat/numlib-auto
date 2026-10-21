@@ -1,0 +1,113 @@
+namespace = "Optimization.QuadraticSubproblem"
+
+[[node]]
+id = "quadratic"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Section 8.1"
+
+[[node]]
+id = "powerRegularizedQuadratic"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Sections 8.1–8.2"
+
+[[node]]
+id = "isMinOn_ball_iff_shift"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Theorem 8.2.7"
+
+[[node]]
+id = "isMin_powerRegularized_iff_shift"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Theorem 8.2.8"
+
+[[node]]
+id = "hasFDerivAt_quadratic"
+
+[[node]]
+id = "hasFDerivAt_powerRegularizedQuadratic"
+
+[[node]]
+id = "stationary_of_isLocalMin_powerRegularizedQuadratic"
+
+[[node]]
+id = "cauchy_decrease"
+
+[[node]]
+id = "cauchy_decrease_pos"
+
+[[node]]
+id = "isMinOn_closedBall_of_shift"
+
+[[node]]
+id = "eq_of_isMinOn_closedBall_of_shift_pos"
+
+[[node]]
+id = "isMinOn_univ_quadratic_iff"
+
+[[node]]
+id = "isMinOn_univ_linear_add_norm_sq"
+
+[[node]]
+id = "tendsto_powerRegularizedQuadratic_cocompact"
+
+[[node]]
+id = "exists_isMinOn_powerRegularizedQuadratic"
+
+[[node]]
+id = "hasFDerivAt_fderiv_powerRegularizedQuadratic"
+
+[[node]]
+id = "inner_shift_nonneg_of_sphere_min"
+
+[[node]]
+id = "isPositive_shift_of_sphere_min"
+
+[[node]]
+id = "rpow_tangent_le"
+
+[[node]]
+id = "radial_power_sub_ge"
+
+[[node]]
+id = "inner_shift_le_powerRegularized_sub"
+
+[[node]]
+id = "isMinOn_univ_powerRegularized_of_shift"
+
+[[node]]
+id = "exists_nonneg_mul_of_ball_first_order"
+
+[[node]]
+id = "exists_shift_of_isMinOn_closedBall"
+
+[[node]]
+id = "isPositive_of_isMinOn_closedBall_zero"
+
+[[node]]
+id = "isPositive_of_isMinOn_powerRegularized_zero"
+
+[[node]]
+id = "isPositive_shift_of_isMinOn_powerRegularized"
+
+[[node]]
+id = "eq_of_isMinOn_powerRegularized_of_shift_pos"
+
+[[node]]
+id = "IsCauchyPoint"
+
+[[node]]
+id = "IsCauchyPoint.norm_le"
+
+[[node]]
+id = "mem_feasible_ray_iff"
+
+[[node]]
+id = "IsCauchyPoint.le_ray"
+
+[[node]]
+id = "isCauchyPoint_iff"
+
+[[node]]
+id = "exists_isCauchyPoint"
+
+[[node]]
+id = "le_all_ray_iff_exists_isCauchyPoint"
+
+[[node]]
+id = "quadratic_zero_negative_scalar_min"

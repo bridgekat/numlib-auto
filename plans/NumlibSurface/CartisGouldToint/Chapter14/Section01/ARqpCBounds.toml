@@ -1,0 +1,11 @@
+namespace = "CartisGouldToint.Chapter14.Section01"
+
+[[node]]
+id = "CompositeProblem.highestRemainderConstant"
+
+[[node]]
+id = "CompositeProblem.value_remainder"
+
+[[node]]
+id = "lemma_14_1_6"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.6"

@@ -1,0 +1,50 @@
+[[node]]
+id = "ContinuousMultilinearMap.norm_iteratedFDeriv_diag_le"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.contDiff_polynomial"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.iteratedFDeriv_polynomial"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.norm_iteratedFDeriv_polynomial_le"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.iteratedFDeriv_polynomial_eq_zero_of_lt"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.iteratedFDeriv_polynomial_top_eq"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.polynomial_sub"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.iteratedFDeriv_polynomial_error_le"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.factorial_tail_sum_le_three"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.norm_iteratedFDeriv_polynomial_le_three"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.iteratedFDeriv_polynomial_error_le_step_power"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.iteratedFDeriv_regularizedPolynomial_of_le"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.iteratedFDeriv_regularizedPolynomial_sub"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.iteratedFDeriv_regularizedPolynomial_error_le_step_power"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.iteratedFDeriv_regularizedPolynomial_error_le_uniform"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.regularizedPolynomial_gap_error_le_step_power"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.regularizedPolynomial_gap_error_le_uniform"

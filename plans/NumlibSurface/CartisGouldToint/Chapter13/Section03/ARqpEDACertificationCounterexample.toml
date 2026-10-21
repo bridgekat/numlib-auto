@@ -1,0 +1,19 @@
+namespace = "CartisGouldToint.Chapter13.Section03"
+
+[[node]]
+id = "transverse_arqpeda_initial_not_optimal"
+
+[[node]]
+id = "transverse_arqpeda_algorithm"
+
+[[node]]
+id = "transverse_arqpeda_return_policy"
+
+[[node]]
+id = "transverse_arqpeda_higher_radius_policy"
+
+[[node]]
+id = "transverse_arqpeda_fixed_controls"
+
+[[node]]
+id = "literal_arqpeda_uniform_certification_counterexample"

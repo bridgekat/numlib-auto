@@ -1,0 +1,67 @@
+namespace = "Optimization.DerivativeDefects"
+
+[[node]]
+id = "first"
+
+[[node]]
+id = "second"
+
+[[node]]
+id = "third"
+
+[[node]]
+id = "abs_diagonal_le"
+
+[[node]]
+id = "normalized_diagonal_le"
+
+[[node]]
+id = "third_bddAbove"
+
+[[node]]
+id = "third_nonneg"
+
+[[node]]
+id = "third_le_iff"
+
+[[node]]
+id = "third_le_norm"
+
+[[node]]
+id = "third_eq_zero_iff"
+
+[[node]]
+id = "first_eq_zero_iff"
+
+[[node]]
+id = "second_eq_zero_iff"
+
+[[node]]
+id = "first_nonneg"
+
+[[node]]
+id = "second_nonneg"
+
+[[node]]
+id = "continuous_first"
+
+[[node]]
+id = "continuous_second"
+
+[[node]]
+id = "measures"
+
+[[node]]
+id = "measures_first"
+
+[[node]]
+id = "measures_second"
+
+[[node]]
+id = "measures_third"
+
+[[node]]
+id = "Satisfies"
+
+[[node]]
+id = "satisfies_iff"

@@ -1,0 +1,40 @@
+namespace = "CartisGouldToint.Chapter12.Section02"
+
+[[node]]
+id = "conservative_test_counterexample"
+
+[[node]]
+id = "lemma_12_2_11_of_true_gap_failure"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.11"
+
+[[node]]
+id = "lemma_12_2_12_of_true_gap_failure"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.12"
+
+[[node]]
+id = "lemma_12_2_13_of_true_gap_failure"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.13"
+
+[[node]]
+id = "lemma_12_2_11"
+kind = "theorem"
+desc = "For a successful ARqp step followed by non termination, some j satisfies(1−θ)ε_jδ_(k+1, j)^j/j!≤(L_f, p+σ_max)Σ_(ℓ=1)^j δ_(k+1, j)^ℓ‖s_k ‖^(p−ℓ+1)/ℓ!. Transfer failed next-point gap through model Taylor remainder and regularizer derivatives."
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.11"
+deps = ["algorithm_12_2_2"]
+wrong = "Step 1 may fail its computed fraction test although the true gap is below tolerance. With p=q=1, f(t)=t^2/2-t/100, fraction=1/100, theta=1/2, epsilon=1/2, sigma=2, exact model step=1/200 is accepted and the next exact witness triggers the conservative failure test. The claimed relationship has left side 1/4 greater than right side 7/200 for sigmaMax=6."
+
+[[node]]
+id = "lemma_12_2_12"
+kind = "theorem"
+desc = "Under the radius choices of Lemma 12.2.9 and successful step followed by non termination, some j has ‖s_k ‖≥[(1−θ)/(2*j!*(L_f, p+σ_max))]^(1/(p−j+1)) ε_j^(1/(p−j+1)) for q≤2. For q>2 use[(1−θ)κ_δ, min^(j−1)/(2*j!*(L_f, p+σ_max))]^(1/p) ε_j^(j/p). Split ‖s ‖ versusδ and boundχ_j(t)=Σt^ℓ/ℓ!."
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.12"
+deps = ["lemma_12_2_11", "lemma_12_2_9"]
+wrong = "The same legal quadratic trial has step 1/200 below the printed first-order bound 1/56; literal computed nontermination does not imply true gap failure."
+
+[[node]]
+id = "lemma_12_2_13"
+kind = "theorem"
+desc = "Taylor decrement≥κ_Δm min_j ε_j^π_j and, at accepted iterations, f(x_k)−f(x_(k+1))≥η₁κ_Δm min_j ε_j^π_j, withπ_j from arqpComplexityExponent and constants independent of ε. Derive from regularization decrease and step bound; source f.D1qL must be f.D1pL whenp>q, and exclude terminal success or when invoking the previous lemma (last iteration counted separately)."
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.13"
+deps = ["lemma_12_2_12", "arqpComplexityExponent"]
+wrong = "The same legal quadratic trial has predicted decrease 1/20000 below the printed bound 1/6272. For p>q the source regularity must also be f.D1pL, and terminal success must be excluded from a next-point failure estimate."

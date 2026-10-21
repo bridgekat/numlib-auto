@@ -1,0 +1,46 @@
+namespace = "Matrix"
+
+[[node]]
+id = "positiveDiagonalScaling"
+
+[[node]]
+id = "positiveDiagonalScaling_posDef"
+
+[[node]]
+id = "positiveDiagonalScaling_apply"
+
+[[node]]
+id = "bandOffDiagonal"
+
+[[node]]
+id = "bandOffDiagonal_of_mem"
+
+[[node]]
+id = "bandOffDiagonal_of_outside"
+
+[[node]]
+id = "bandOffDiagonal_diag"
+
+[[node]]
+id = "bandOffDiagonal_isSymm"
+
+[[node]]
+id = "positiveBandScaling"
+
+[[node]]
+id = "positiveBandScaling_diag"
+
+[[node]]
+id = "positiveBandScaling_offDiag"
+
+[[node]]
+id = "positiveBandScaling_isSymm"
+
+[[node]]
+id = "positiveBandScaling_diag_pos"
+
+[[node]]
+id = "positiveBandScaling_isStrictDiagDominant"
+
+[[node]]
+id = "positiveBandScaling_posDef"

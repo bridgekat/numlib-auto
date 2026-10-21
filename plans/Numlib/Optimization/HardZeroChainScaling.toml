@@ -1,0 +1,61 @@
+namespace = "Optimization.HardZeroChain"
+
+[[node]]
+id = "smoothnessConstant"
+
+[[node]]
+id = "one_le_smoothnessConstant"
+
+[[node]]
+id = "derivativeBudget"
+
+[[node]]
+id = "derivativeBudget_pos"
+
+[[node]]
+id = "chain_derivative_lipschitz"
+
+[[node]]
+id = "inputScale"
+
+[[node]]
+id = "inputScale_pos"
+
+[[node]]
+id = "inputScale_pow"
+
+[[node]]
+id = "scaledChain"
+
+[[node]]
+id = "scaledChain_eq_source"
+
+[[node]]
+id = "scaledChain_lipschitz_budget"
+
+[[node]]
+id = "scaledChain_functionClass"
+
+[[node]]
+id = "scaledChain_isZeroChain"
+
+[[node]]
+id = "scaledChain_gradient"
+
+[[node]]
+id = "dimension_le_minimax"
+
+[[node]]
+id = "dimensionBudget"
+
+[[node]]
+id = "floor_dimensionBudget_le_minimax"
+
+[[node]]
+id = "dimensionBudget_eq_order"
+
+[[node]]
+id = "ceil_half_dimensionBudget_le_minimax"
+
+[[node]]
+id = "minimax_lower_bounds"

@@ -1,0 +1,46 @@
+namespace = "Optimization.StationaryAsymptotics"
+
+[[node]]
+id = "stationary_ne_zero"
+
+[[node]]
+id = "tendsto_mul_norm_of_stationary"
+
+[[node]]
+id = "tendsto_atTop_of_mul_tendsto_pos"
+
+[[node]]
+id = "tendsto_atTop_of_stationary"
+
+[[node]]
+id = "div_rpow_mul_rpow"
+
+[[node]]
+id = "mul_norm_le_add_of_stationary"
+
+[[node]]
+id = "tendsto_zero_of_superquadratic_stationary"
+
+[[node]]
+id = "regularized_normalization"
+
+[[node]]
+id = "tendsto_normalized_multiplier_of_stationary"
+
+[[node]]
+id = "tendsto_normalized_superquadratic_multiplier"
+
+[[node]]
+id = "mul_norm_le_of_stationary"
+
+[[node]]
+id = "regularized_force_le"
+
+[[node]]
+id = "tendsto_zero_of_regularized_stationary"
+
+[[node]]
+id = "tendsto_normalized_regularized_multiplier"
+
+[[node]]
+id = "tendsto_weight_ratio"

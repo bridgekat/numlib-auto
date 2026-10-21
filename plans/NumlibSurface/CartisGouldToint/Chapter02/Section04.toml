@@ -1,0 +1,45 @@
+namespace = "CartisGouldToint.Chapter02.Section04"
+
+
+[[node]]
+id = "algorithm_2_4_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 2.4.1"
+
+[[node]]
+id = "regularizationParameters"
+source = "Cartis, Gould and Toint, Section 2.4, essential definitions and assumptions"
+
+[[node]]
+id = "lemma_2_4_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.4.1"
+
+[[node]]
+id = "lemma_2_4_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.4.2"
+
+[[node]]
+id = "lemma_2_4_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.4.3"
+
+[[node]]
+id = "theorem_2_4_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.4.4"
+
+[[node]]
+id = "theorem_2_4_5"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.4.5"
+
+[[node]]
+id = "algorithm_2_4_1_exists"
+
+[[node]]
+id = "regularizationModel"
+
+[[node]]
+id = "regularizationModel_eq"
+
+[[node]]
+id = "regularizationModel_minimizer"
+
+[[node]]
+id = "sigmaMax"

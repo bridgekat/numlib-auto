@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint.Chapter02.Section01"
+
+[[node]]
+id = "approximateFirstOrderMinimizer"
+source = "Cartis, Gould and Toint, Section 2.1, essential definitions and assumptions"
+
+[[node]]
+id = "assumption_f_gL"
+source = "Cartis, Gould and Toint, Section 2.2, essential definitions and assumptions"
+
+[[node]]
+id = "assumption_f_Bb"
+source = "Cartis–Gould–Toint, Section 2.1, assumption f.Bb"

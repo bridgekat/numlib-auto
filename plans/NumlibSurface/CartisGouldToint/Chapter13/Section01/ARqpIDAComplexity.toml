@@ -1,0 +1,8 @@
+namespace = "CartisGouldToint.Chapter13.Section01"
+
+[[node]]
+id = "arqpida_fixed_analysis_bounds"
+
+[[node]]
+id = "theorem_13_1_19"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.1.19"

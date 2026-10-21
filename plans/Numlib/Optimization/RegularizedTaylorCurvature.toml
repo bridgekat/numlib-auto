@@ -1,0 +1,28 @@
+namespace = "Optimization.RegularizedTaylorModel"
+
+[[node]]
+id = "hessian_norm_power_bound"
+
+[[node]]
+id = "hessian_regularizedModel"
+
+[[node]]
+id = "curvature_step_lower_bound"
+
+[[node]]
+id = "norm_hessian_sub_taylorModel_le_holder"
+
+[[node]]
+id = "hessian_cubic_regularizer_bound"
+
+[[node]]
+id = "cubic_curvature_step_lower_bound"
+
+[[node]]
+id = "hessian_taylorModel_two"
+
+[[node]]
+id = "cubic_curvature_step_lower_bound_of_lipschitz"
+
+[[node]]
+id = "cubic_step_norm_lower_bound_of_negative_curvature"

@@ -1,0 +1,15 @@
+namespace = 'CartisGouldToint.Chapter12.Section02'
+
+[[node]]
+id = "algorithm_12_2_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.2"
+
+[[node]]
+id = "algorithm_12_2_3"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.3"
+
+[[node]]
+id = 'arqpInnerTransitionStrictBoundary'
+
+[[node]]
+id = 'regularizedTaylorModel_contDiff'

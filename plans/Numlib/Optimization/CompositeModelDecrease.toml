@@ -1,0 +1,25 @@
+namespace = "Optimization"
+
+[[node]]
+id = "HigherOrderRegularization.DiagonalLipschitz.value_remainder_of_coefficients"
+
+[[node]]
+id = "HigherOrderRegularization.diagonalLipschitz_taylorModel"
+
+[[node]]
+id = "CompositeTaylorModels.half_decrease_of_errors"
+
+[[node]]
+id = "CompositeRegularization.smoothModel_eq_regularization"
+
+[[node]]
+id = "RegularizedTaylorModel.taylorModel_euclidean_component"
+
+[[node]]
+id = "euclidean_norm_le_sqrt_mul"
+
+[[node]]
+id = "CompositeRegularization.vectorModel_error"
+
+[[node]]
+id = "CompositeRegularization.smoothModel_error"

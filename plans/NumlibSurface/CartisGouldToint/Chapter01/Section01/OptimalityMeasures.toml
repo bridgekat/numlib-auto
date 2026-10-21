@@ -1,0 +1,41 @@
+namespace = "CartisGouldToint.Chapter01.Section01"
+
+[[node]]
+id = "optimalityMeasures"
+source = "Cartis, Gould and Toint, Section 1.1, essential definitions and assumptions"
+
+[[node]]
+id = "optimalityMeasures_first"
+
+[[node]]
+id = "optimalityMeasures_second"
+
+[[node]]
+id = "optimalityMeasures_third"
+
+[[node]]
+id = "MeetsOptimalityTolerances"
+
+[[node]]
+id = "meetsOptimalityTolerances_iff"
+
+[[node]]
+id = "optimalityMeasures_nonneg"
+
+[[node]]
+id = "optimalityMeasures_first_eq_zero"
+
+[[node]]
+id = "optimalityMeasures_second_eq_zero"
+
+[[node]]
+id = "optimalityMeasures_third_eq_zero"
+
+[[node]]
+id = "continuous_optimalityMeasures_first"
+
+[[node]]
+id = "continuous_optimalityMeasures_second"
+
+[[node]]
+id = "optimalityMeasures_eq_zero_of_isLocalMin"

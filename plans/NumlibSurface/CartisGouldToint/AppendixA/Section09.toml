@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint.AppendixA.Section09"
+
+[[node]]
+id = "CompatibleFiniteJetData"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations A.23–A.24,A.30,A.32"
+
+[[node]]
+id = "theorem_A_9_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.9.1"
+
+[[node]]
+id = "theorem_A_9_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.9.2"

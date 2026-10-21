@@ -1,0 +1,7 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "exists_failed_firstOrderInspection"
+
+[[node]]
+id = "Inspection.direction_eq_of_order_one"

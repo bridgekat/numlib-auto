@@ -1,0 +1,46 @@
+namespace = "Matrix"
+
+[[node]]
+id = "diagonalCoordinateMatrix"
+
+[[node]]
+id = "diagonalRecoveryMatrix"
+
+[[node]]
+id = "diagonalCoordinateMatrix_one"
+
+[[node]]
+id = "diagonalRecoveryMatrix_one"
+
+[[node]]
+id = "diagonalRecoveryMatrix_transpose"
+
+[[node]]
+id = "diagonalCoordinateMatrix_mul_recovery"
+
+[[node]]
+id = "diagonalRecoveryMatrix_mul_coordinate"
+
+[[node]]
+id = "diagonalCoordinateEquiv"
+
+[[node]]
+id = "diagonalCoordinateEquiv_apply"
+
+[[node]]
+id = "diagonalCoordinateEquiv_symm_apply"
+
+[[node]]
+id = "diagonalCoordinateMatrix_transpose_mul"
+
+[[node]]
+id = "energyNorm_diagonalCoordinateEquiv"
+
+[[node]]
+id = "diagonalRecoveryMatrix_congruence"
+
+[[node]]
+id = "inner_diagonalCoordinateEquiv"
+
+[[node]]
+id = "inner_hessian_diagonalCoordinateEquiv"

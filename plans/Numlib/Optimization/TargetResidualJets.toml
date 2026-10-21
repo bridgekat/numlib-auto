@@ -1,0 +1,25 @@
+namespace = "Optimization.ConstrainedTaylorCriticality"
+
+[[node]]
+id = "HasBoundedLipschitzJets.sub_const"
+
+[[node]]
+id = "HasBoundedLipschitzJets.mono"
+
+[[node]]
+id = "HasBoundedLipschitzJetsNear"
+
+[[node]]
+id = "hasBoundedLipschitzJetsNear_iff"
+
+[[node]]
+id = "HasBoundedLipschitzJetsNear.exists_common"
+
+[[node]]
+id = "finite_squared_residual_jet_bounds"
+
+[[node]]
+id = "finite_squared_residual_jet_bounds_near"
+
+[[node]]
+id = "squaredResidual_euclidean_eq_sum"

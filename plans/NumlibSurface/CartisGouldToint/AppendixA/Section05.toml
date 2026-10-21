@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint.AppendixA.Section05"
+
+[[node]]
+id = "spectralEndpoints"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations A.1–A.3"
+
+[[node]]
+id = "generalizedRayleighQuotient"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations A.2–A.4"
+
+[[node]]
+id = "min_eigenvalue_lipschitz"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation A.5"

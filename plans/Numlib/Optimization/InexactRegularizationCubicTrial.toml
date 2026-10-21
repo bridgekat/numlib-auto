@@ -1,0 +1,13 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "cubicFailedSearch"
+
+[[node]]
+id = "cubicFailedInspection"
+
+[[node]]
+id = "cubicFailedInspection_radii"
+
+[[node]]
+id = "cubicFailedInspection_direction"

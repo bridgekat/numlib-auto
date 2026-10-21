@@ -1,0 +1,58 @@
+namespace = "Optimization.SmoothDescent"
+
+[[node]]
+id = "gradient_step_upper_bound"
+
+[[node]]
+id = "armijo_of_step_le"
+
+[[node]]
+id = "backtrackingStep"
+
+[[node]]
+id = "IsBacktrackingIndex"
+
+[[node]]
+id = "exists_backtrackingIndex"
+
+[[node]]
+id = "backtrackingStep_lower_bound"
+
+[[node]]
+id = "IsBacktrackingSequence"
+
+[[node]]
+id = "exists_stationary_of_armijo"
+
+[[node]]
+id = "backtrackingIndex_le_of_step_le"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "functionEvaluations_le"
+
+[[node]]
+id = "exists_backtrackingStep_le"
+
+[[node]]
+id = "backtrackingIndex"
+
+[[node]]
+id = "backtrackingIndex_spec"
+
+[[node]]
+id = "backtrackingIterates"
+
+[[node]]
+id = "backtrackingIterates_spec"
+
+[[node]]
+id = "exists_stationary_with_cost"
+
+[[node]]
+id = "backtrackingStep_logb_ceiling_le"
+
+[[node]]
+id = "backtrackingIndex_le_logb_ceiling"

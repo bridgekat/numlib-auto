@@ -1,0 +1,52 @@
+namespace = "Optimization.SecularResolvent"
+
+[[node]]
+id = "ldlForward"
+
+[[node]]
+id = "ldlDiagonal"
+
+[[node]]
+id = "ldlBackward"
+
+[[node]]
+id = "ldlSolve"
+
+[[node]]
+id = "ldl_pivots_ne_zero"
+
+[[node]]
+id = "ldlSolve_equation"
+
+[[node]]
+id = "ldlAuxiliary"
+
+[[node]]
+id = "ldlAuxiliary_eq_sign"
+
+[[node]]
+id = "secularOddCoefficient"
+
+[[node]]
+id = "secularDerivativeCoefficient_eq_oddCoefficient"
+
+[[node]]
+id = "ldlAuxiliaryY"
+
+[[node]]
+id = "ldlAuxiliaryZ"
+
+[[node]]
+id = "ldlOddOutput"
+
+[[node]]
+id = "ldlEvenOutput"
+
+[[node]]
+id = "ldlSecularOutput"
+
+[[node]]
+id = "ldlOddOutput_eq_pairing"
+
+[[node]]
+id = "ldlOddOutput_cholesky"

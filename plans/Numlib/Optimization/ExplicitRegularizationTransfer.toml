@@ -1,0 +1,43 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "InitialFailure"
+
+[[node]]
+id = "IncomingErrorCheck"
+
+[[node]]
+id = "initialFailure_iff"
+
+[[node]]
+id = "not_incomingErrorCheck_iff"
+
+[[node]]
+id = "Inspection.InitialFailure"
+
+[[node]]
+id = "Inspection.initialFailure_iff"
+
+[[node]]
+id = "Inspection.initialFailure_imp"
+
+[[node]]
+id = "Inspection.initialFailure_of_halving"
+
+[[node]]
+id = "Inspection.halvings_eq_zero_of_not_initialFailure"
+
+[[node]]
+id = "Inspection.all_pass_of_not_initialFailure"
+
+[[node]]
+id = "Inspection.radii_eq_of_not_initialFailure"
+
+[[node]]
+id = "Inspection.errorCheck_iff_incoming_of_not_initialFailure"
+
+[[node]]
+id = "Inspection.not_certified_initial_cases"
+
+[[node]]
+id = "_root_.Optimization.InexactRegularization.InnerResult.endpoint_gap_le"

@@ -1,0 +1,28 @@
+namespace = "Optimization.SafeguardedSecularSearch"
+
+[[node]]
+id = "halfParameters"
+
+[[node]]
+id = "halfChoice"
+
+[[node]]
+id = "endpointState"
+
+[[node]]
+id = "endpointState_lower"
+
+[[node]]
+id = "endpointState_upper"
+
+[[node]]
+id = "endpointState_candidate"
+
+[[node]]
+id = "endpointState_greater"
+
+[[node]]
+id = "endpointState_isRun"
+
+[[node]]
+id = "endpoint_nontermination"

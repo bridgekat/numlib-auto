@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.AppendixB.Chapter07"
+
+[[node]]
+id = "lemma_B_7_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.7.1"

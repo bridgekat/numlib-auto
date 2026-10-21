@@ -1,0 +1,47 @@
+namespace = "CartisGouldToint.Chapter14.Section01"
+
+[[node]]
+id = "literal_arqpc_equality_stop_counterexample"
+
+[[node]]
+id = "conservative_composite_test_counterexample"
+
+[[node]]
+id = "lemma_14_1_4"
+kind = "theorem"
+desc = "Step 2 equality termination cannot occur for q=1 and convex h. In other cases it implies an original composite(ε,δ)-approximate minimizer with some positive δ vector. Compare generalized models at zero; do not assume differentiability ofh."
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.4"
+deps = ["algorithm_14_1_1", "lemma_14_1_3"]
+wrong = "The supplied literal outer Step 2 permits a long nonincreasing equality step without positive fraction-of-global-model-decrease provenance. literal_arqpc_equality_stop_counterexample constructs an actual initialized p=q=1 composite execution with a nonzero convex norm h and constant c=0; it stops at x=0 although every positive-radius true first criterion fails. The detailed inner algorithm excludes this behavior, but the literal outer conditions alone do not."
+
+[[node]]
+id = "lemma_14_1_7"
+kind = "theorem"
+desc = "At an accepted composite step followed by non termination, some j satisfies(1−θ)ε_jδ^j/j!≤(L_w, p+σ_max)Σ_(ℓ=1)^j δ^ℓ‖s ‖^(p−ℓ+1)/ℓ!+sqrt(m)L_h,0 L_c, p ‖s ‖^(p+1)/(p+1)!. Use failed new generalized gap and subadditive composition error."
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.7"
+deps = ["algorithm_14_1_1", "lemma_14_1_6"]
+wrong = "conservative_composite_test_counterexample formally supplies two actual accepted literal composite transitions with strict computed upper-test failure after true optimality already holds. For p=q=1, nonzero convex norm h, c=0, f(t)=t^2/2-t/100, fraction=1/200, epsilon=theta=1/2, sigma=2 and sigmaMax=6, the first step is 1/200. The claimed transfer left side is 1/4 while the right side is 7/200. Failure of the actual chosen fractional witness does not imply failure of the true generalized gap."
+
+[[node]]
+id = "lemma_14_1_8"
+kind = "theorem"
+desc = "With prescribed radii and an accepted step followed by non termination: for q=1 and convex h,‖s ‖≥[(1−θ)/(3*j!*(L_w, p+σ_max))]^(1/p) ε_j^(1/p), j=1. Otherwise the Appendix B proof yields the uniform bound ‖s ‖≥[(1−θ)κ_δ, min^j/(3*j!*(L_w, p+σ_max))]^(1/(p−j+1)) ε_j^((j+1)/(p+1)). The OCR omits the ε factor in the second branch. Split ‖s ‖≤δ versus ‖s ‖>δ and boundχ_j; do not formalize the incomplete displayed formula literally."
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.8"
+deps = ["lemma_14_1_7", "lemma_14_1_3"]
+wrong = "conservative_composite_test_counterexample checks all prescribed favorable-branch radii and actual accepted continuing composite transitions with nonzero convex norm h. Its step 1/200 is smaller than the claimed favorable lower bound 1/84 for p=q=1, epsilon=theta=1/2, L_w,p=1 and sigmaMax=6. The missing inference is from a failed conservative computed witness to a failed true generalized gap."
+
+[[node]]
+id = "lemma_14_1_9"
+kind = "theorem"
+desc = "Composite predicted decrement≥κ_Δm min_j ε_j^π_j and accepted w decrease≥η₁ times this, withπ_j=(p+1)/p for q=1, convex h, andπ_j=j+1 otherwise. Constants depend onL_w, p,σ bounds and κ_δ, min. Repair source hypothesis to f.D1pL, c.D1pL, h.L, h.S0 and source actual decrease fromf tof+w-composite w; onlyw is controlled by the ratio."
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.9"
+deps = ["lemma_14_1_8", "lemma_14_1_5"]
+wrong = "conservative_composite_test_counterexample checks actual accepted composite transitions before continuing nontermination with nonzero convex norm h and c=0. Its generalized predicted decrement is 1/20000, below the stated favorable-branch lower bound 1/14112 for p=q=1, epsilon=theta=1/2, sigmaMin=1, L_f,p=1 and sigmaMax=6. This refutes the original planned claim even after its stated assumption and objective repairs."
+
+[[node]]
+id = "theorem_14_1_10"
+kind = "theorem"
+desc = "Under composite regularity andw bounded below, ARqpC finds all generalized gap criteria with unit radius andO(ε₁^(−(p+1)/p)) evaluations when q=1, h convex. Otherwise complexity isO(max_j ε_j^(−j−1)), with positive order-dependent radii. Function calls≤A(w(x₀)−w_low)/min_j ε_j^π_j+C and derivative batches≤S(w(x₀)−w_low)/min_j ε_j^π_j+2. Telescope w decrease and σ counting; state exact costs forf, c, noth."
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.1.10"
+deps = ["lemma_14_1_4", "lemma_14_1_6", "lemma_14_1_9", "Optimization.EvaluationComplexity.card_mul_le_gap"]
+wrong = "literal_arqpc_equality_stop_counterexample constructs an actual initialized finite literal outer execution with p=q=1, a nonzero convex norm composition h, constant c=0 and f(t)=t^2/2-2t. All composite smoothness, Lipschitz, subadditivity, lower-bound, parameter and unit-radius conditions hold. A legal norm-four equality step terminates at x=0, where the true first gap exceeds epsilon*delta for every positive delta. Thus unconditional correct-return complexity is false for the supplied literal outer conditions; a corrected algorithm must retain the detailed inner fraction provenance."

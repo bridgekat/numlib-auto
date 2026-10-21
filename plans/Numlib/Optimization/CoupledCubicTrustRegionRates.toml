@@ -1,0 +1,76 @@
+namespace = "Optimization.CoupledCubicTrustRegionRates"
+
+[[node]]
+id = "scale"
+
+[[node]]
+id = "curvature"
+
+[[node]]
+id = "tolerance"
+
+[[node]]
+id = "scale_pos"
+
+[[node]]
+id = "scale_zero"
+
+[[node]]
+id = "scale_succ"
+
+[[node]]
+id = "scale_antitone"
+
+[[node]]
+id = "scale_le_half"
+
+[[node]]
+id = "scale_le_quarter"
+
+[[node]]
+id = "curvature_sq"
+
+[[node]]
+id = "curvature_pos"
+
+[[node]]
+id = "curvature_le_half"
+
+[[node]]
+id = "scale_le_curvature"
+
+[[node]]
+id = "tolerance_one"
+
+[[node]]
+id = "tolerance_two"
+
+[[node]]
+id = "tolerance_pos"
+
+[[node]]
+id = "tolerance_le_one"
+
+[[node]]
+id = "tolerance_bounds"
+
+[[node]]
+id = "tolerance_one_le_two"
+
+[[node]]
+id = "min_payment"
+
+[[node]]
+id = "decrease_div_payment"
+
+[[node]]
+id = "exists_curvature_lt"
+
+[[node]]
+id = "no_uniform_payment"
+
+[[node]]
+id = "scale_injective"
+
+[[node]]
+id = "tolerance_injective"

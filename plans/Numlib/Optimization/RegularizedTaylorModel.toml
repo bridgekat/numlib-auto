@@ -1,0 +1,25 @@
+namespace = "Optimization.RegularizedTaylorModel"
+
+[[node]]
+id = "taylorModel"
+
+[[node]]
+id = "hasFDerivAt_taylorModel"
+
+[[node]]
+id = "fderiv_taylorModel"
+
+[[node]]
+id = "norm_sub_taylorModel_le"
+
+[[node]]
+id = "regularizedModel"
+
+[[node]]
+id = "taylor_decrease_of_model_decrease"
+
+[[node]]
+id = "fderiv_regularizedModel"
+
+[[node]]
+id = "gradient_step_lower_bound"

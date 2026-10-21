@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint.Chapter14.Section02"
+
+[[node]]
+id = "SmoothBoundedJetsOnLevelSet.derivative_remainder"
+
+[[node]]
+id = "SmoothBoundedJetsOnLevelSet.regularized_derivative_difference"
+
+[[node]]
+id = "SmoothBoundedJetsOnLevelSet.regularized_gap_difference"
+
+[[node]]
+id = "SmoothBoundedJetsOnLevelSet.transfer_of_gap_failure"

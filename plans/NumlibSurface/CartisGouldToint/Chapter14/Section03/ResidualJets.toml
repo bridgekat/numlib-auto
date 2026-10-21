@@ -1,0 +1,70 @@
+namespace = "CartisGouldToint.Chapter14.Section03"
+
+[[node]]
+id = "twoPhaseResidualObjectives"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations14.3.30,14.3.36"
+
+[[node]]
+id = "twoPhaseResidualObjectives_fst"
+
+[[node]]
+id = "twoPhaseResidualObjectives_snd"
+
+[[node]]
+id = "twoPhaseResidual"
+
+[[node]]
+id = "twoPhaseLagrangian"
+
+[[node]]
+id = "twoPhaseResetIndices"
+
+[[node]]
+id = "mem_twoPhaseResetIndices"
+
+[[node]]
+id = "twoPhaseReflectionIndices"
+
+[[node]]
+id = "mem_twoPhaseReflectionIndices"
+
+[[node]]
+id = "disjoint_twoPhase_update_indices"
+
+[[node]]
+id = "BoundedLipschitzJetsNearFeasibleSet"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Assumptionsf.D1pLB.X,c.D1pLB.X,f.B.Fb"
+
+[[node]]
+id = "ComponentwiseBoundedLipschitzJetsNearFeasibleSet"
+
+[[node]]
+id = "componentwiseBoundedLipschitzJetsNearFeasibleSet_iff"
+
+[[node]]
+id = "TwoPhaseTubeObjectiveBounds"
+
+[[node]]
+id = "twoPhaseTubeObjectiveBounds_iff"
+
+[[node]]
+id = "twoPhaseScalarComponents"
+
+[[node]]
+id = "twoPhaseScalarComponents_castSucc"
+
+[[node]]
+id = "twoPhaseScalarComponents_last"
+
+[[node]]
+id = "twoPhase_target_eq_sum"
+
+[[node]]
+id = "lemma_14_3_6_constraint"
+
+[[node]]
+id = "lemma_14_3_6_target"
+
+[[node]]
+id = "lemma_14_3_6"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.6"

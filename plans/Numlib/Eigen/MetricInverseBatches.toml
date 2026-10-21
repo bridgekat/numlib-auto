@@ -1,0 +1,22 @@
+namespace = "Krylov"
+
+[[node]]
+id = "metricInverseBatch"
+
+[[node]]
+id = "toEnergy_metricInverseBatch"
+
+[[node]]
+id = "energyNorm_metricInverseBatch"
+
+[[node]]
+id = "metricInverseBatch_zero"
+
+[[node]]
+id = "metricInverseBatch_succ"
+
+[[node]]
+id = "energyNorm_metricInverseBatch_eq_one"
+
+[[node]]
+id = "inner_energyHessian_toEnergy"

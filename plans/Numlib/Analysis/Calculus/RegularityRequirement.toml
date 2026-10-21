@@ -1,0 +1,31 @@
+namespace = "FunctionRegularity"
+
+[[node]]
+id = "Requirement"
+
+[[node]]
+id = "On"
+
+[[node]]
+id = "Globally"
+
+[[node]]
+id = "Near"
+
+[[node]]
+id = "on_smooth_iff"
+
+[[node]]
+id = "on_derivativeLipschitz_iff"
+
+[[node]]
+id = "on_boundedBelow_iff"
+
+[[node]]
+id = "globally_smooth_iff"
+
+[[node]]
+id = "Globally.near"
+
+[[node]]
+id = "near_univ_iff"

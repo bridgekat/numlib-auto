@@ -1,0 +1,76 @@
+namespace = "Optimization.TwoPhaseTargets"
+
+[[node]]
+id = "ScaledTargetGaps"
+
+[[node]]
+id = "scaledTargetGaps_iff"
+
+[[node]]
+id = "targetAfter"
+
+[[node]]
+id = "targetAfter_of_small"
+
+[[node]]
+id = "targetAfter_of_crossing"
+
+[[node]]
+id = "targetAfter_of_noncrossing"
+
+[[node]]
+id = "TargetInterrupt"
+
+[[node]]
+id = "TargetOuterStops"
+
+[[node]]
+id = "TargetTrace"
+
+[[node]]
+id = "TargetTrace.evaluations"
+
+[[node]]
+id = "ComponentOracleResponse"
+
+[[node]]
+id = "ComponentOracleResponse.value_count"
+
+[[node]]
+id = "ComponentOracleResponse.derivative_count"
+
+[[node]]
+id = "PhaseTwoExecution"
+
+[[node]]
+id = "targetAfter_gap_nonneg"
+
+[[node]]
+id = "reset_radicand_nonneg_of_small"
+
+[[node]]
+id = "targetAfter_residual_bounds"
+
+[[node]]
+id = "PhaseTwoExecution.returned_observations"
+
+[[node]]
+id = "PhaseTwoExecution.radius"
+
+[[node]]
+id = "PhaseTwoExecution.feasible"
+
+[[node]]
+id = "PhaseTwoExecution.inner_residual_le"
+
+[[node]]
+id = "PhaseTwoExecution.residual_bounds"
+
+[[node]]
+id = "PhaseTwoExecution.gap_nonneg"
+
+[[node]]
+id = "PhaseTwoExecution.inner_exit_test"
+
+[[node]]
+id = "PhaseTwoExecution.terminal_scaled_gaps"

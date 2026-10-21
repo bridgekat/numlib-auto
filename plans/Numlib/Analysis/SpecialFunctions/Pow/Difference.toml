@@ -1,0 +1,16 @@
+namespace = "Real"
+
+[[node]]
+id = "rpow_sub_rpow_le_of_nonneg"
+
+[[node]]
+id = "rpow_sub_rpow_le_mul_root_sub"
+
+[[node]]
+id = "root_sub_root_ge_div"
+
+[[node]]
+id = "root_sub_root_ge_of_le_mul"
+
+[[node]]
+id = "root_decrease_of_power_decrease"

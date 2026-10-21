@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.AppendixA.Section08"
+
+[[node]]
+id = "fractionalFactorial_pos"
+source = "Cartis, Gould and Toint, finite-product factorial convention preceding Lemma B.4.1"
+
+[[node]]
+id = "fallingProduct_eq_fractionalFactorial_div"
+source = "Cartis, Gould and Toint, finite-product factorial convention preceding Lemma B.4.1"

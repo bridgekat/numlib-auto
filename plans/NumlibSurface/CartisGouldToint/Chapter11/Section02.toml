@@ -1,0 +1,51 @@
+namespace = "CartisGouldToint.Chapter11.Section02"
+
+[[node]]
+id = "PracticalParameters"
+
+[[node]]
+id = "practicalTrustRegionUpdate"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.2, (11.2.1)"
+
+[[node]]
+id = "practicalRegularizationUpdate"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.2, (11.2.2), (11.2.6)"
+
+[[node]]
+id = "practicalTrustRegionUpdate_of_very_successful"
+
+[[node]]
+id = "practicalTrustRegionUpdate_of_successful"
+
+[[node]]
+id = "practicalTrustRegionUpdate_of_rejected"
+
+[[node]]
+id = "practicalTrustRegionUpdate_pos"
+
+[[node]]
+id = "practicalTrustRegionUpdate_le"
+
+[[node]]
+id = "practicalRegularizationUpdate_of_very_successful"
+
+[[node]]
+id = "practicalRegularizationUpdate_of_successful"
+
+[[node]]
+id = "practicalRegularizationUpdate_of_rejected"
+
+[[node]]
+id = "minimum_le_practicalRegularizationUpdate"
+
+[[node]]
+id = "practicalRegularizationUpdate_pos"
+
+[[node]]
+id = "practicalPowerCalibration"
+
+[[node]]
+id = "practicalPowerCalibration_eq"
+
+[[node]]
+id = "practicalPowerCalibration_bounds"

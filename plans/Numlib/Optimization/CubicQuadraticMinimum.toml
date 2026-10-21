@@ -1,0 +1,10 @@
+namespace = "Optimization"
+
+[[node]]
+id = "linear_coefficient_eq_zero_of_cubic_nonneg"
+
+[[node]]
+id = "quadratic_nonneg_of_cubic_nonneg"
+
+[[node]]
+id = "isMinOn_quadratic_of_cubic"

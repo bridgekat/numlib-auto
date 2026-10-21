@@ -1,0 +1,16 @@
+namespace = "GeometricStopping"
+
+[[node]]
+id = "decayCount"
+
+[[node]]
+id = "decayCount_eq_zero"
+
+[[node]]
+id = "mul_pow_decayCount_le_one"
+
+[[node]]
+id = "mul_pow_decayCount_le"
+
+[[node]]
+id = "exists_index_le_min"

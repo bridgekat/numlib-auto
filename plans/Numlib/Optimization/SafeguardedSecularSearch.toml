@@ -1,0 +1,127 @@
+namespace = "Optimization.SafeguardedSecularSearch"
+
+[[node]]
+id = "Region"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "State"
+
+[[node]]
+id = "Brackets"
+
+[[node]]
+id = "brackets_iff"
+
+[[node]]
+id = "trial"
+
+[[node]]
+id = "improveLower"
+
+[[node]]
+id = "EstimateBelow"
+
+[[node]]
+id = "le_improveLower"
+
+[[node]]
+id = "improveLower_le"
+
+[[node]]
+id = "updateBounds"
+
+[[node]]
+id = "updateBounds_lower"
+
+[[node]]
+id = "updateBounds_upper"
+
+[[node]]
+id = "improveLower_none"
+
+[[node]]
+id = "improveLower_some"
+
+[[node]]
+id = "estimateBelow_none"
+
+[[node]]
+id = "estimateBelow_some_iff"
+
+[[node]]
+id = "trial_false"
+
+[[node]]
+id = "trial_true"
+
+[[node]]
+id = "Choice"
+
+[[node]]
+id = "Choice.Legal"
+
+[[node]]
+id = "Choice.legal_iff"
+
+[[node]]
+id = "ClassifierSpec"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "IsRun.congr_trials"
+
+[[node]]
+id = "affine_le_trial"
+
+[[node]]
+id = "sqrt_mul_le_midpoint"
+
+[[node]]
+id = "trial_le_affine_max"
+
+[[node]]
+id = "trial_mem_Icc"
+
+[[node]]
+id = "updateBounds_bounds"
+
+[[node]]
+id = "lower_le_updateBounds"
+
+[[node]]
+id = "IsRun.brackets"
+
+[[node]]
+id = "IsRun.lower_le_ceiling"
+
+[[node]]
+id = "contraction"
+
+[[node]]
+id = "contraction_bounds"
+
+[[node]]
+id = "IsRun.candidate_bounds"
+
+[[node]]
+id = "IsRun.width_step"
+
+[[node]]
+id = "IsRun.width_le_pow"
+
+[[node]]
+id = "IsRun.exists_lower"
+
+[[node]]
+id = "IsRun.exists_first_lower"
+
+[[node]]
+id = "cutoffClassifier"
+
+[[node]]
+id = "cutoffClassifier_spec"

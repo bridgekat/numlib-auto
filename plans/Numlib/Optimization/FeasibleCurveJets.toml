@@ -1,0 +1,31 @@
+namespace = "Optimization.FeasibleCurveJets"
+
+[[node]]
+id = "equalitySet"
+
+[[node]]
+id = "mem_equalitySet"
+
+[[node]]
+id = "isLocalMinOn_residualLagrangian"
+
+[[node]]
+id = "Jet"
+
+[[node]]
+id = "Jet.of_path"
+
+[[node]]
+id = "Qualification"
+
+[[node]]
+id = "qualification_iff"
+
+[[node]]
+id = "Qualification.mono"
+
+[[node]]
+id = "contDiffAt_residualLagrangian"
+
+[[node]]
+id = "coefficient_nonneg"

@@ -1,0 +1,21 @@
+namespace = "CartisGouldToint.Chapter10.Section02"
+
+[[node]]
+id = "reducedRegularizationMultiplier"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 10.2.1, (10.2.1)–(10.2.3)"
+
+[[node]]
+id = "theorem_10_2_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 10.2.2"
+
+[[node]]
+id = "reducedLanczosModel"
+
+[[node]]
+id = "lanczosPrimalStep"
+
+[[node]]
+id = "lanczosPrimalStep_residual_norm"
+
+[[node]]
+id = "reducedRegularizationMultiplier_spec"

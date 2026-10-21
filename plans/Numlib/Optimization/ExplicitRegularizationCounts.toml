@@ -1,0 +1,46 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "Transition.accepted_is_trial"
+
+[[node]]
+id = "Transition.fresh_cost"
+
+[[node]]
+id = "Execution.trialCount"
+
+[[node]]
+id = "Execution.acceptedCount"
+
+[[node]]
+id = "Execution.refinementCount"
+
+[[node]]
+id = "Execution.refinementCount_succ"
+
+[[node]]
+id = "Execution.trialCount_add_refinementCount"
+
+[[node]]
+id = "Execution.functionQueries_count_bounds"
+
+[[node]]
+id = "Execution.derivativeQueries_count"
+
+[[node]]
+id = "Execution.accepted_count_le"
+
+[[node]]
+id = "Execution.accepted_count_before_certified_le"
+
+[[node]]
+id = "Transition.log_step"
+
+[[node]]
+id = "Execution.log_budget"
+
+[[node]]
+id = "Execution.trial_count_le"
+
+[[node]]
+id = "Execution.evaluation_bounds_of_successor_decrease"

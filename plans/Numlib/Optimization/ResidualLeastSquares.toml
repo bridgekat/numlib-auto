@@ -1,0 +1,106 @@
+namespace = "Optimization.ResidualLeastSquares"
+
+[[node]]
+id = "EvaluationKind"
+
+[[node]]
+id = "InnerTrace"
+
+[[node]]
+id = "InnerTrace.evaluations"
+
+[[node]]
+id = "orderMaximum"
+
+[[node]]
+id = "orderMaximum_nonneg"
+
+[[node]]
+id = "le_orderMaximum"
+
+[[node]]
+id = "orderMaximum_le"
+
+[[node]]
+id = "toleranceWeight"
+
+[[node]]
+id = "toleranceWeight_nonneg"
+
+[[node]]
+id = "le_toleranceWeight"
+
+[[node]]
+id = "toleranceWeight_le"
+
+[[node]]
+id = "residualCostWeight"
+
+[[node]]
+id = "residualCostWeight_nonneg"
+
+[[node]]
+id = "le_residualCostWeight"
+
+[[node]]
+id = "residualCostWeight_le"
+
+[[node]]
+id = "InnerContract"
+
+[[node]]
+id = "Trace"
+
+[[node]]
+id = "Stops"
+
+[[node]]
+id = "Execution"
+
+[[node]]
+id = "evaluations"
+
+[[node]]
+id = "evaluations_zero"
+
+[[node]]
+id = "evaluations_succ"
+
+[[node]]
+id = "totalEvaluations"
+
+[[node]]
+id = "totalEvaluations_zero"
+
+[[node]]
+id = "Execution.stops_iff_certificate"
+
+[[node]]
+id = "Execution.contraction"
+
+[[node]]
+id = "Execution.geometric"
+
+[[node]]
+id = "Execution.terminates"
+
+[[node]]
+id = "Execution.evaluations_le"
+
+[[node]]
+id = "Execution.residual_le_initial"
+
+[[node]]
+id = "Execution.totalEvaluations_le"
+
+[[node]]
+id = "residual_inverse_power_le"
+
+[[node]]
+id = "sum_geometric_le"
+
+[[node]]
+id = "Execution.totalEvaluations_le_uniform"
+
+[[node]]
+id = "Execution.totalEvaluations_le_residualCostWeight"

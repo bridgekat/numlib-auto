@@ -1,0 +1,64 @@
+namespace = "Optimization.ConstrainedRegularization"
+
+[[node]]
+id = "SmoothOn"
+
+[[node]]
+id = "SmoothOn.contDiffAt"
+
+[[node]]
+id = "SmoothOn.derivative_remainder"
+
+[[node]]
+id = "TrialPrefix"
+
+[[node]]
+id = "TrialPrefix.feasible"
+
+[[node]]
+id = "functionQueryPoints"
+
+[[node]]
+id = "length_functionQueryPoints"
+
+[[node]]
+id = "derivativeQueryPoints"
+
+[[node]]
+id = "length_derivativeQueryPoints"
+
+[[node]]
+id = "abs_diagonal_sub_le_norm"
+
+[[node]]
+id = "abs_diagonal_le_add_error"
+
+[[node]]
+id = "TrialPrefix.derivative_cache_rejected"
+
+[[node]]
+id = "TrialPrefix.derivative_difference"
+
+[[node]]
+id = "TrialPrefix.ratio_ge_of_sigma_ge"
+
+[[node]]
+id = "TrialPrefix.sigma_upper"
+
+[[node]]
+id = "FirstOrderPrefix"
+
+[[node]]
+id = "FirstOrderPrefix.criticality_bound"
+
+[[node]]
+id = "FirstOrderPrefix.criticality_decrease"
+
+[[node]]
+id = "FirstOrderRun"
+
+[[node]]
+id = "FirstOrderPrefix.evaluation_bounds"
+
+[[node]]
+id = "exists_first_order_run_with_cost"

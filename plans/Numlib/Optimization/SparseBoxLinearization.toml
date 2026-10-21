@@ -1,0 +1,85 @@
+namespace = "Optimization.SparseConstraints"
+
+[[node]]
+id = "feasibleBoxSteps"
+
+[[node]]
+id = "mem_feasibleBoxSteps"
+
+[[node]]
+id = "zero_mem_feasibleBoxSteps"
+
+[[node]]
+id = "IsOptimalOptionalSupport"
+
+[[node]]
+id = "exists_optimalOptionalSupport"
+
+[[node]]
+id = "optimalOptionalSupport"
+
+[[node]]
+id = "optimalOptionalSupport_spec"
+
+[[node]]
+id = "boxLinearStep"
+
+[[node]]
+id = "boxLinearStep_apply"
+
+[[node]]
+id = "boxLinearStep_of_not_mem"
+
+[[node]]
+id = "abs_boxLinearStep_le"
+
+[[node]]
+id = "supportIndices_add_boxLinearStep_subset"
+
+[[node]]
+id = "boxLinearStep_mem_feasibleBoxSteps_of_card_le"
+
+[[node]]
+id = "boxLinearStep_mem_feasibleBoxSteps"
+
+[[node]]
+id = "sum_mul_boxLinearStep"
+
+[[node]]
+id = "sum_mul_ge_support_gain"
+
+[[node]]
+id = "support_sdiff_mem_optionalSupports"
+
+[[node]]
+id = "boxLinearStep_isMinOn"
+
+[[node]]
+id = "exists_sparseBoxLinear_minimizer"
+
+[[node]]
+id = "supportIndicator"
+
+[[node]]
+id = "supportIndicator_binary"
+
+[[node]]
+id = "sum_supportIndicator"
+
+[[node]]
+id = "sum_supportIndicator_mul"
+
+[[node]]
+id = "IsBinaryOptionalSelection"
+
+[[node]]
+id = "isBinaryOptionalSelection_iff"
+
+[[node]]
+id = "supportIndicator_isBinaryOptionalSelection"
+
+[[node]]
+id = "exists_optionalSupport_indicator"
+
+[[node]]
+id = "IsOptimalOptionalSupport.binary_maximal"

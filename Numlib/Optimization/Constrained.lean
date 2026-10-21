@@ -475,19 +475,19 @@ theorem exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top [CompleteSpace E]
     exact ht
 
 omit [Fintype ι] [Fintype κ] in
-/-- Under LICQ the linearized cone is contained in the positive tangent cone of the feasible set
-(Nocedal–Wright Lemma 12.2): if `x` is a regular point of the mixed constraints, the `h_i` and
-`g_j` are strictly differentiable at `x`, and `z` satisfies `h_i' x z = 0` for all `i` and
-`g_j' x z ≤ 0` for the active `j`, then `z ∈ posTangentConeAt (feasible h g) x`. The curve of
-`exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top` for the active constraints keeps
-`h_i = 0`, makes the active `g_j` equal to `t g_j' x z ≤ 0`, and the inactive constraints stay
-strict by continuity. -/
-theorem mem_posTangentConeAt_of_isRegularPointIneq [FiniteDimensional ℝ E] [Finite ι] [Finite κ]
+/-- Under mixed equality/inequality LICQ, every linearized feasible direction is the
+initial derivative of a locally feasible curve. The values of all initially active
+inequalities are exactly linear along this curve. This strengthens positive tangency
+without requiring a second derivative of the curve. -/
+theorem exists_feasible_curve_of_isRegularPointIneq [FiniteDimensional ℝ E] [Finite ι] [Finite κ]
     {h : ι → E → ℝ}
     {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
     (hx : IsRegularPointIneq h h' g g' x) (hh : ∀ i, HasStrictFDerivAt (h i) (h' i x) x)
     (hg : ∀ j, HasStrictFDerivAt (g j) (g' j x) x) {z : E} (hz1 : ∀ i, h' i x z = 0)
-    (hz2 : ∀ j ∈ activeSet g x, g' j x z ≤ 0) : z ∈ posTangentConeAt (feasible h g) x := by
+    (hz2 : ∀ j ∈ activeSet g x, g' j x z ≤ 0) :
+    ∃ γ : ℝ → E, γ 0 = x ∧ HasDerivAt γ z 0 ∧
+      (∀ᶠ t in 𝓝[>] (0 : ℝ), γ t ∈ feasible h g) ∧
+      ∀ᶠ t in 𝓝 (0 : ℝ), ∀ j ∈ activeSet g x, g j (γ t) = t * g' j x z := by
   classical
   cases nonempty_fintype ι
   cases nonempty_fintype κ
@@ -531,6 +531,29 @@ theorem mem_posTangentConeAt_of_isRegularPointIneq [FiniteDimensional ℝ E] [Fi
         rw [this, mem_activeSet.1 hj, zero_add]
         exact mul_nonpos_of_nonneg_of_nonpos (le_of_lt htpos) (hz2 j hj)
       · exact (hin j hj).le
+  refine ⟨γ, hγ0, hγ, hfeas, ?_⟩
+  filter_upwards [hγc] with t ht j hj
+  have hv := congrFun ht (Sum.inr ⟨j, hj⟩)
+  simpa [hcf, hcf', ContinuousLinearMap.pi_apply, mem_activeSet.mp hj] using hv
+
+omit [Fintype ι] [Fintype κ] in
+/-- Under LICQ the linearized cone is contained in the positive tangent cone of the feasible set
+(Nocedal–Wright Lemma 12.2): if `x` is a regular point of the mixed constraints, the `h_i` and
+`g_j` are strictly differentiable at `x`, and `z` satisfies `h_i' x z = 0` for all `i` and
+`g_j' x z ≤ 0` for the active `j`, then `z ∈ posTangentConeAt (feasible h g) x`. The curve of
+`exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top` for the active constraints keeps
+`h_i = 0`, makes the active `g_j` equal to `t g_j' x z ≤ 0`, and the inactive constraints stay
+strict by continuity. -/
+theorem mem_posTangentConeAt_of_isRegularPointIneq [FiniteDimensional ℝ E] [Finite ι] [Finite κ]
+    {h : ι → E → ℝ}
+    {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
+    (hx : IsRegularPointIneq h h' g g' x) (hh : ∀ i, HasStrictFDerivAt (h i) (h' i x) x)
+    (hg : ∀ j, HasStrictFDerivAt (g j) (g' j x) x) {z : E} (hz1 : ∀ i, h' i x z = 0)
+    (hz2 : ∀ j ∈ activeSet g x, g' j x z ≤ 0) : z ∈ posTangentConeAt (feasible h g) x := by
+  obtain ⟨γ, hγ0, hγ, hfeas, _hactive⟩ :=
+    exists_feasible_curve_of_isRegularPointIneq hx hh hg hz1 hz2
+  have hγcont : Tendsto γ (𝓝 0) (𝓝 x) := by
+    simpa [hγ0] using hγ.continuousAt.tendsto
   -- membership in the tangent cone through the curve
   have hd0 : Tendsto (fun t => γ t - x) (𝓝[>] (0 : ℝ)) (𝓝 0) := by
     have := (hγcont.mono_left (nhdsWithin_le_nhds (s := Ioi 0))).sub_const x

@@ -1,0 +1,10 @@
+namespace = "Optimization.ParameterUpdates"
+
+[[node]]
+id = "successCount_le_of_finite_decrease"
+
+[[node]]
+id = "successCount_le_of_finite_successor_decrease"
+
+[[node]]
+id = "trial_budget_of_log_budget"

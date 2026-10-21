@@ -1,0 +1,46 @@
+namespace = "Optimization.DerivativeOracle"
+
+[[node]]
+id = "Reply.taylor"
+
+[[node]]
+id = "Reply.model"
+
+[[node]]
+id = "Reply.taylor_zero"
+
+[[node]]
+id = "Reply.model_zero"
+
+[[node]]
+id = "oracle_taylor"
+
+[[node]]
+id = "oracle_model"
+
+[[node]]
+id = "Reply.contDiff_taylor"
+
+[[node]]
+id = "Reply.abs_taylor_le"
+
+[[node]]
+id = "Reply.model_eventually_ge"
+
+[[node]]
+id = "Reply.exists_model_minimizer"
+
+[[node]]
+id = "Reply.minimizer"
+
+[[node]]
+id = "Reply.minimizer_le"
+
+[[node]]
+id = "oracle_minimizer_fderiv"
+
+[[node]]
+id = "fderiv_model_zero"
+
+[[node]]
+id = "oracle_minimizer_strict"

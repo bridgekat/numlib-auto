@@ -1,0 +1,4 @@
+namespace = "Equiv"
+
+[[node]]
+id = "isMinOn_iff_of_comp_eq"

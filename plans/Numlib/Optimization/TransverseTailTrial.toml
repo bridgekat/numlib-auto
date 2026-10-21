@@ -1,0 +1,79 @@
+namespace = "Optimization.TransverseTailTrial"
+
+[[node]]
+id = "Conditions"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "norm_step"
+
+[[node]]
+id = "norm_step_lt_one"
+
+[[node]]
+id = "step_ne_zero"
+
+[[node]]
+id = "transverse_abs_le_one"
+
+[[node]]
+id = "model_decrease_eq"
+
+[[node]]
+id = "prediction_eq"
+
+[[node]]
+id = "prediction_lower"
+
+[[node]]
+id = "prediction_pos"
+
+[[node]]
+id = "model_decrease_lower"
+
+[[node]]
+id = "transverse_model_decrease_le"
+
+[[node]]
+id = "retained_comparison"
+
+[[node]]
+id = "endpoint"
+
+[[node]]
+id = "ratio_ge_one"
+
+[[node]]
+id = "norm_fderiv_lt_epsilon"
+
+[[node]]
+id = "endpoint_norm_fderiv_le"
+
+[[node]]
+id = "endpoint_norm_fderiv_bounds"
+
+[[node]]
+id = "endpoint_scalar_bounds"
+
+[[node]]
+id = "transverse_decrement_one"
+
+[[node]]
+id = "transverse_coefficientWitness"
+
+[[node]]
+id = "transverse_computed_failure"
+
+[[node]]
+id = "abs_model_vertical_gradient_le"
+
+[[node]]
+id = "norm_fderiv_model_lt"
+
+[[node]]
+id = "minimizing_fraction"
+
+[[node]]
+id = "exists_innerResult"

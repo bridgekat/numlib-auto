@@ -1,0 +1,47 @@
+namespace = "CartisGouldToint.Chapter03.Section05"
+
+[[node]]
+id = "secondOrderRunConditions"
+
+[[node]]
+id = "secondOrderMethodClass"
+source = "Cartis, Gould and Toint, Section 3.5, essential definitions and assumptions"
+
+[[node]]
+id = "uniformSecondOrderMethodClass"
+
+[[node]]
+id = "uniformSecondOrderMethodClass.membership"
+
+[[node]]
+id = "lemma_3_5_1"
+kind = "theorem"
+desc = '''The printed explicit constant is κλ = 2 sqrt(κλ(1+κrg)). The corrected theorem lemma_3_5_1_corrected uses barκλ inside the square root, as required by the Appendix B.3.5 quadratic.'''
+wrong = '''The printed self-reference forces κλ=4(1+κrg), independent of barκλ. This is false for unrestricted barκλ: in one dimension take H=0, g=1, r=0, κrg=0, κrs=1, λ=10, s=-1/10 and barκλ=100. The residual equation, PSD and λ≤barκλ|s| hold, while λ=10>4. This jet is realized by f(x)=sin(x) at x=0, which also satisfies global f.Bb/f.gL/f.HL with normalized gradient/Hessian Lipschitz constants 1. Appendix B.3.5 explicitly uses barκλ(1+κrg). See lemma_3_5_1_corrected.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.5.1"
+
+[[node]]
+id = "lemma_3_5_1_corrected"
+source = "Cartis, Gould and Toint, Lemma 3.5.1, corrected explicit constant from Appendix B.3.5"
+
+[[node]]
+id = "lemma_3_5_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.5.2"
+
+[[node]]
+id = "lemma_3_5_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.5.3"
+
+[[node]]
+id = "theorem_3_5_4"
+kind = "theorem"
+desc = '''Every deterministic method in class M has a one-dimensional epsilon-dependent uniformly bounded-below objective with uniformly Lipschitz gradient/Hessian requiring exactly ceil(epsilon1^(−3/2)) iterates. Adversarial Hermite interpolation prescribes f_k,g_k,H_k adapted to legal multipliers/residuals; maintain uniform constants. Execution must be that of the deterministic oracle rule in secondOrderMethodClass. Any smoothness-class uniformity needed for a family of adversarial objectives must be an explicit additional premise such as uniformSecondOrderMethodClass, not substituted for literal membership. The supplied proof also has endpoint rounding and sign issues to audit before formalization.'''
+deps = ["secondOrderMethodClass", "uniformSecondOrderMethodClass"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.5.4"
+
+[[node]]
+id = "corollary_3_5_5"
+kind = "theorem"
+desc = '''Under the stated accurate subproblem conditions AR2, TR-epsilon and iRN attain the optimal first-order epsilon1^(−3/2) order within class M. Combine their membership, upper bounds and adversarial lower bound; avoid claiming optimality for all unconstrained oracle methods here.'''
+deps = ["theorem_3_5_4"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 3.5.5"

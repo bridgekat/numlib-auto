@@ -1,0 +1,7 @@
+namespace = "Optimization.RegularizedTaylorModel"
+
+[[node]]
+id = "taylorModel_comp_continuousLinearMap"
+
+[[node]]
+id = "taylorModel_sub"

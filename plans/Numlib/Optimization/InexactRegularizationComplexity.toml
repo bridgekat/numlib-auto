@@ -1,0 +1,37 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "acceptedDecreaseCoefficient"
+
+[[node]]
+id = "acceptedDecreaseCoefficient_pos"
+
+[[node]]
+id = "trialCountMultiplier"
+
+[[node]]
+id = "trialCountMultiplier_pos"
+
+[[node]]
+id = "trialLogBudget"
+
+[[node]]
+id = "trialLogBudget_nonneg"
+
+[[node]]
+id = "refinementCountConstant"
+
+[[node]]
+id = "refinementCountConstant_pos"
+
+[[node]]
+id = "Run.accepted_decrease_before_pointQuality"
+
+[[node]]
+id = "Run.accepted_count_before_pointQuality"
+
+[[node]]
+id = "Run.evaluation_bounds_before_pointQuality"
+
+[[node]]
+id = "Run.first_pointQuality_bounds"

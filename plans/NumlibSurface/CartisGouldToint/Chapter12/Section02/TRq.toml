@@ -1,0 +1,29 @@
+namespace = "CartisGouldToint.Chapter12.Section02"
+
+[[node]]
+id = "algorithm_12_2_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.1"
+
+[[node]]
+id = "lemma_12_2_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.1"
+
+[[node]]
+id = "lemma_12_2_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.2"
+
+[[node]]
+id = "trqRadiusConstant"
+source = "Cartis, Gould and Toint, Section 12.2.1"
+
+[[node]]
+id = "lemma_12_2_3"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.3"
+
+[[node]]
+id = "lemma_12_2_4"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.4"
+
+[[node]]
+id = "theorem_12_2_5"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.5"

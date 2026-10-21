@@ -1,0 +1,4 @@
+namespace = "Relation"
+
+[[node]]
+id = "exists_finite_stopped_chain_of_rank"

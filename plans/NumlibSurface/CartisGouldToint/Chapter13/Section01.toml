@@ -1,0 +1,69 @@
+namespace = "CartisGouldToint.Chapter13.Section01"
+
+[[node]]
+id = "ImplicitAccuracyOracle"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 13.1.2"
+
+[[node]]
+id = "inexactTaylorModel"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations 13.1.1–13.1.5"
+
+[[node]]
+id = "ImplicitSmoothness"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Assumptions f.D0qL and f.D0pL"
+
+[[node]]
+id = "DynamicAccuracyIterationKind"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations 13.1.19–13.1.21"
+
+[[node]]
+id = "taylor_decrement_error"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations 13.1.3, 13.1.6, 13.1.10"
+
+[[node]]
+id = "lemma_13_1_10"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.10"
+
+[[node]]
+id = "lemma_13_1_13"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.13"
+
+[[node]]
+id = "lemma_13_1_14"
+kind = "theorem"
+desc = '''All ARqpIDAσ_k≤max(σ₀,γ₃[2L_f, p+4(p+1)!κ_sκ_max]/(1−η₂)). Ifσ reaches the unmultiplied threshold the trial is very successful, and accuracy-only steps leaveσ fixed.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.14"
+deps = ["lemma_13_1_13", "taylor_decrement_error", "Optimization.ParameterUpdates.le_max_of_nonincrease_above"]
+wrong = "False for the literal Algorithm 13.1.2, whose Step 2 skips (13.1.46) on steps of norm at least one, while kappa_h and kappa_s are independent in (13.1.51). The machine-checked theorem CartisGouldToint.Chapter13.Section01.literal_arqpida_long_step_sigma_counterexample constructs a legal Euclidean one-step execution with p=q=1, globally constant bounded-below f=0, all objective derivative Lipschitz constants one, an all-request-valid oracle with fixed error multiplier one, kappa_h=64 and kappa_s=1/8. Its actual Step 1 witness is d=1; its actual inner procedure returns the global model minimizer s=2 for sigma_0=32. The exact ratio is zero, and a legal rejected update gives sigma_1=64, while the printed bound is max(32,18)=32. The objective is already truly optimal initially, but the printed Lemma 13.1.14 asserts the bound for all k and literal IDA continues; this counterexample does not refute the first-quality-attainment theorem. For the separately named all-p-checked variant, a valid all-k bound using max(kappa_s,kappa_h) is proved as InexactRegularization.Execution.sigma_upper; this is not claimed for the literal q-checked algorithm when q<p."
+
+[[node]]
+id = "lemma_13_1_15"
+kind = "theorem"
+desc = '''Onceh_max≤varsigma[κ_δ^(1)(σ_max)]^q ε_min^(q+1)/(4*q!*κ_max), the Step 1→Step 5 branch implies true approximate optimality at all orders. Use radius lower bound and uniform Taylor-gap perturbation; handleκ_max=0 separately.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.15"
+deps = ["lemma_13_1_12", "lemma_13_1_14"]
+wrong = "False for the literal Algorithm 13.1.2 even when p=q=3. The machine-checked theorem CartisGouldToint.Chapter13.Section01.CubicStop.literal_arqpida_cubic_stop_counterexample constructs a complete legal Euclidean three-transition execution with a bounded two-sine objective, global derivative Lipschitz constants one through order three, and an all-point/all-positive-request oracle with fixed error multiplier one. Put B=2^100, sigma_0=B, kappa_h=B, kappa_s=1/8, gamma_3=B, varsigma=1/8, theta=1/2, and epsilon_j=1/2. The first supplied pure negative cubic of magnitude B has actual global quartic-model minimizer s=3. The exact-objective trial rejects and legally raises sigma to B^2. An actual finite returned inner execution after 99 second-inspection halvings is short and fails the literal Step 2 accuracy check. One genuine refinement with gamma_h=2^-360/B restores the pre-inspection unit radii and requests H=2^-360. The refined supplied jets are (0,0,-1/8), while the true jets at the retained zero point are (b,0,-1/8), b=2^-361. The actual all-pass third-order search uses exact endpoint maximizers during 190 legal halvings and a permitted one-eighth fractional witness at the final radius delta=2^-190. The exact printed sigma_max is 28B, barL_f=1+B, and kappa_delta^(1)(sigma_max)=1/(10752B); H satisfies the entire printed 13.1.78 threshold including its fixed denominator and the actual epsilon minimum. Nevertheless the true third-order Taylor decrement at -delta is b*delta-delta^3/48, strictly above epsilon_3*delta^3/3!. The source initialization, rejection cache, genuine Step 2 and Step 1 refinement transitions, and exact two objective calls and two derivative batches are checked. This local stopping counterexample makes no claim about the first-attainment complexity theorem 13.1.19, which remains pending."
+
+[[node]]
+id = "lemma_13_1_16"
+kind = "theorem"
+desc = '''At an accepted trial followed by non optimality with ‖s ‖<1, some j satisfies(1−θ)ε_j[δ_(k+1, j)^(0)]^j/j!≤(L_f, p+σ_max+3κ_maxκ_s)Σℓ=1…j[δ^(0)]^ℓ‖s ‖^(p−ℓ+1)/ℓ!. Compare exact new jets to approximate old jets and norm regularization derivatives.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.16"
+deps = ["lemma_13_1_12", "lemma_13_1_14"]
+wrong = "False for the literal q-checked Algorithm 13.1.2 when q<p. The machine-checked theorem CartisGouldToint.Chapter13.Section01.literal_arqpida_short_step_jet_counterexample gives a complete legal Euclidean p=2,q=1 one-step execution with f(x)=x_0, all global derivative Lipschitz constants one, and an all-request-valid oracle of fixed error multiplier one. At x_0=0 the supplied gradient is exactly one and the supplied Hessian is 255/16. The actual Step 1 search retains d=-delta and halves 1,1/2,1/4,1/8 before returning d=-1/16. An actual two-transition inner execution returns the global model minimizer s=-1/16 with unit radii and zero model gradient. The positive first request 1/4096 passes the literal q-only Step 2 check, while the unchecked second request is 255/16. The exact ratio 512/257 accepts the step, sigma remains two, the next true gradient remains one, and the printed sigma_max is 30. For the only admissible index j=1 the asserted right side is 251/2048, strictly below the left side 1/4. This refutes Lemma 13.1.16 under its stated f.D0pL hypotheses, not a bounded-below strengthening: this linear objective does not satisfy f.Bb, which is separately required in Theorem 13.1.19. It does not refute Lemmas 13.1.15,18, Theorem 13.1.19, or the separately named all-p-checked variant."
+
+[[node]]
+id = "lemma_13_1_17"
+kind = "theorem"
+desc = '''With the prescribed radii and an accepted step followed by non optimality, some j has step≥C_j ε_j^(1/(p−j+1)) for q≤2, or≥C′_j ε_j^(j/p) for q>2. Constants useD=L_f, p+σ_max+3κ_maxκ_s, denominator2*j!*D, and κ_δ, min=varsigma θ/[24max(barL_f,σ_max)]. Reuse Chapter 12 scalar inequality.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.17"
+deps = ["lemma_13_1_16"]
+wrong = "False for the literal q-checked Algorithm 13.1.2 when q < p. The machine-checked theorem CartisGouldToint.Chapter13.Section01.literal_arqpida_short_step_length_counterexample retains the complete legal p = 2, q = 1 execution and all-request-valid oracle of the short-step jet counterexample: f(x)=x_0 with all global derivative Lipschitz constants one, exact supplied gradient one, inaccurate Hessian 255/16, actual first-search halvings from 1 to 1/16, actual inner global minimizer s=-1/16, accepted exact ratio512/257, and next true gradient one. Both prescribed radius conditions 13.1.69 and 13.1.70 hold, with returned unit radii and the higher-order condition vacuous. The printed sigma_max is 30 and D = 251/8. At the only admissible index j = 1, the exact printed lower bound is sqrt(1/251), strictly larger than the actual norm 1/16. This is a refutation under the stated f.D0pL hypotheses; the linear objective does not satisfy f.Bb. It makes no claim about Lemma 13.1.15, Theorem 13.1.19, or the separately named all-p-checked variant."
+
+[[node]]
+id = "lemma_13_1_18"
+kind = "theorem"
+desc = '''Before true approximate optimality, approximate Taylor decrement≥κ_Δm min_j ε_j^π_j at trials, and true accepted objective decrease≥η₁κ_Δm min_j ε_j^π_j/2;π_j=(p+1)/(p−j+1) for q≤2, otherwise j(p+1)/p. Constants use D and κ_δ, min above; apply regularizer decrease and step bound, count last iteration separately if needed.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.18"
+deps = ["lemma_13_1_13", "lemma_13_1_17"]
+wrong = "False for the literal q-checked Algorithm 13.1.2 when q < p. The machine-checked theorem CartisGouldToint.Chapter13.Section01.TinyStep.literal_arqpida_tiny_step_decrease_counterexample constructs a complete legal p = 2, q = 1 execution with globally linear f(x)=x_0, all objective derivative Lipschitz constants one, exact supplied gradient one, unchecked Hessian (2^40-1)/2^20, and an all-request-valid oracle of fixed multiplier one. The actual first Step 1 search fails at every radius 2^-k for k < 20 and returns d = -2^-20. An actual two-transition inner execution returns that global model minimizer with unit radii. The positive first request 2^-44 passes the literal q-only accuracy check, and the exact ratio 2^41/(2^40+1) accepts the step with sigma remaining two. True approximate optimality fails at both states. The printed sigma_max is 30, D = 251/8, and kappa_Delta_m times epsilon_1^(3/2) equals (1/6)*(1/251)^(3/2). The actual approximate Taylor decrement (2^40+1)/2^61 is strictly smaller, refuting 13.1.82; the actual objective decrease 2^-20 is also strictly smaller than eta1/2 times that bound, refuting 13.1.83. The source Lemma 13.1.18 assumes f.D0pL and does not require f.Bb; this linear objective does not satisfy f.Bb. It makes no claim about Lemma 13.1.15, Theorem 13.1.19, or the separately named all-p-checked variant."

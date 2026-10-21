@@ -1,0 +1,34 @@
+namespace = "Matrix.LeastSquaresModel"
+
+[[node]]
+id = "augmentedMatrix"
+
+[[node]]
+id = "IsAugmentedSolution"
+
+[[node]]
+id = "isAugmentedSolution_iff_rows"
+
+[[node]]
+id = "isAugmentedSolution_iff_normal"
+
+[[node]]
+id = "normal_iff_exists_augmented"
+
+[[node]]
+id = "shiftedGram_posSemidef"
+
+[[node]]
+id = "energyHessian_gram_isPositive"
+
+[[node]]
+id = "shiftedGram_posDef"
+
+[[node]]
+id = "inverse_normal_solution"
+
+[[node]]
+id = "existsUnique_normal_solution"
+
+[[node]]
+id = "existsUnique_augmentedSolution"

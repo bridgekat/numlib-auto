@@ -1,0 +1,23 @@
+namespace = "CartisGouldToint.Chapter14.Section03"
+
+[[node]]
+id = "constraintJetsOnInitialLevel"
+
+[[node]]
+id = "phase_one_evaluation_bound"
+
+[[node]]
+id = "phase_one_evaluation_bound_of_initial_pos"
+
+[[node]]
+id = "algorithm_14_3_2.phase_one_evaluation_bound"
+
+[[node]]
+id = "lemma_14_3_7"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.7"
+
+[[node]]
+id = "algorithm_14_3_2.phase_one_initial_norm_pos"
+
+[[node]]
+id = "algorithm_14_3_2.phase_one_literal_evaluation_bound"

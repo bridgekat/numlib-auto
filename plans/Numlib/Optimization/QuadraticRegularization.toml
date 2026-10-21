@@ -1,0 +1,25 @@
+namespace = "Optimization.QuadraticRegularization"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "deriv_objective"
+
+[[node]]
+id = "derivativeFamily"
+
+[[node]]
+id = "objective_lower"
+
+[[node]]
+id = "model_formula"
+
+[[node]]
+id = "model_deriv"
+
+[[node]]
+id = "decrement_formula"
+
+[[node]]
+id = "gap_formula"

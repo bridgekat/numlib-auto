@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.Chapter11.Section01"
+
+[[node]]
+id = "signedDiagonalSubproblem"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.1.3, (11.1.8)–(11.1.14)"
+
+[[node]]
+id = "signedDiagonalRegularization"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.1.3, regularization paragraph after (11.1.14)"

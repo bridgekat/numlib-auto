@@ -1,0 +1,88 @@
+namespace = "Optimization.HigherOrderSharpness"
+
+[[node]]
+id = "sparseJet"
+
+[[node]]
+id = "endpointTaylor_sparseJet"
+
+[[node]]
+id = "sparseJet_compatible"
+
+[[node]]
+id = "exists_sparseJet_chain"
+
+[[node]]
+id = "model_of_sparseJet"
+
+[[node]]
+id = "iteratedDeriv_model_of_sparseJet"
+
+[[node]]
+id = "normalizedMagnitude"
+
+[[node]]
+id = "model_deriv_zero"
+
+[[node]]
+id = "model_second_deriv"
+
+[[node]]
+id = "model_third_deriv"
+
+[[node]]
+id = "modelResiduals"
+
+[[node]]
+id = "model_smallCurvatureDirections"
+
+[[node]]
+id = "model_decrease"
+
+[[node]]
+id = "ratio_one"
+
+[[node]]
+id = "ObjectiveQuality"
+
+[[node]]
+id = "not_objectiveQuality"
+
+[[node]]
+id = "isRun_of_sparseJet"
+
+[[node]]
+id = "objectiveQuality_terminal"
+
+[[node]]
+id = "iteratedFDeriv_lipschitz"
+
+[[node]]
+id = "derivativeEvaluations_eq"
+
+[[node]]
+id = "sharpExponent"
+
+[[node]]
+id = "toleranceScale"
+
+[[node]]
+id = "exists_hard_family"
+
+[[node]]
+id = "evaluationLowerBound"
+
+[[node]]
+id = "exists_max_hard_family"
+
+[[node]]
+id = "evaluationLowerBound_one"
+
+[[node]]
+id = "evaluationLowerBound_two"
+
+[[node]]
+id = "evaluationLowerBound_three"
+
+[[node]]
+id = "toleranceScale_pos"

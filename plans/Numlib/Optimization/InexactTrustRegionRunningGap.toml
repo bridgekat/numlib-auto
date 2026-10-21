@@ -1,0 +1,16 @@
+namespace = "Optimization.InexactTrustRegion"
+
+[[node]]
+id = "runningGap"
+
+[[node]]
+id = "runningGap_le"
+
+[[node]]
+id = "LegalPrefix.runningGap_lower"
+
+[[node]]
+id = "LegalPrefix.radius_eq_initial_of_no_trials"
+
+[[node]]
+id = "LegalPrefix.radius_lower_runningGap"

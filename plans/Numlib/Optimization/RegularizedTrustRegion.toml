@@ -1,0 +1,101 @@
+namespace = "Optimization.RegularizedTrustRegion"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "model_eq"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "TrialTrace"
+
+[[node]]
+id = "TrialTrace.predicted_decrease"
+
+[[node]]
+id = "TrialTrace.ratio_ge_of_radius"
+
+[[node]]
+id = "TrialTrace.radius_lower_normalized"
+
+[[node]]
+id = "TrialTrace.trial_derivative_bound"
+
+[[node]]
+id = "min_sq_le_of_quadratic_bound"
+
+[[node]]
+id = "TrialTrace.interior_step_lower"
+
+[[node]]
+id = "decreaseCoefficient"
+
+[[node]]
+id = "TrialTrace.interior_decrease"
+
+[[node]]
+id = "TrialTrace.boundary_decrease"
+
+[[node]]
+id = "TrialTrace.total_count_le"
+
+[[node]]
+id = "TrialTrace.accepted_budget"
+
+[[node]]
+id = "TrialTrace.success_count_le"
+
+[[node]]
+id = "TrialTrace.prefix_count_le"
+
+[[node]]
+id = "exists_boundary_model_decrease"
+
+[[node]]
+id = "Stationary"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "exists_firstOrder_with_cost"
+
+
+[[node]]
+id = "exists_firstOrder_complexity_constants"
+
+[[node]]
+id = "JointPrefix"
+
+[[node]]
+id = "curvaturePotential"
+
+[[node]]
+id = "JointPrefix.potential_decrease"
+
+[[node]]
+id = "JointPrefix.success_count_le"
+
+[[node]]
+id = "JointPrefix.prefix_count_le"
+
+[[node]]
+id = "exists_joint_with_cost"
+
+[[node]]
+id = "TrialTrace.iterate_eq_initial_of_gap_zero"
+
+[[node]]
+id = "exists_joint_complexity_constants"
+
+[[node]]
+id = "TrialTrace.total_count_le_logarithmic"

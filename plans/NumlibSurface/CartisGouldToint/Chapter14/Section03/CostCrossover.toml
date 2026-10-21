@@ -1,0 +1,10 @@
+namespace = "CartisGouldToint.Chapter14.Section03.LENCrossover"
+
+[[node]]
+id = "printedFunctionBudget"
+
+[[node]]
+id = "printedFunctionBudget_eq"
+
+[[node]]
+id = "literal_len_geometric_prefactor_counterexample"

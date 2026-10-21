@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.AppendixB.Chapter10"
+
+[[node]]
+id = "lemma_B_10_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.10.1"
+
+[[node]]
+id = "lanczosResidualIdentity"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix to Chapter 10, (B.10.1)–(B.10.2)"

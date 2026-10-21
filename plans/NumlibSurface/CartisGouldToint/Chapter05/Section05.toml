@@ -1,0 +1,60 @@
+namespace = "CartisGouldToint.Chapter05.Section05"
+
+[[node]]
+id = "realPowerFactorial"
+source = "Cartis, Gould and Toint, Section 5.5, essential definitions and assumptions"
+
+[[node]]
+id = "realPowerFactorial_pos"
+
+[[node]]
+id = "realPowerFactorial_natCast"
+
+[[node]]
+id = "realPowerFactorial_sub_one"
+
+[[node]]
+id = "holderDerivativeAssumption"
+source = "Cartis, Gould and Toint, Section 5.5, essential definitions and assumptions"
+
+[[node]]
+id = "universalModel"
+
+[[node]]
+id = "universalModel_eq_model"
+
+[[node]]
+id = "universalParameters"
+
+[[node]]
+id = "universalComputedStep"
+
+[[node]]
+id = "universalPrefix"
+
+[[node]]
+id = "algorithm_5_5_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 5.5.1"
+
+[[node]]
+id = "universalOracleCalls"
+
+[[node]]
+id = "universalEvaluations"
+
+[[node]]
+id = "universalEvaluations_active"
+
+[[node]]
+id = "universalEvaluations_value"
+
+[[node]]
+id = "universalEvaluations_high"
+
+[[node]]
+id = "lemma_5_5_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.1"
+
+[[node]]
+id = "lemma_5_5_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.2"

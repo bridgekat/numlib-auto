@@ -1,0 +1,73 @@
+namespace = "CartisGouldToint.Chapter07.Section02"
+
+[[node]]
+id = "targetResidual"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2, (7.2.4)\u2013(7.2.7)"
+
+[[node]]
+id = "targetResidual_castSucc"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "targetResidual_last"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "targetResidual_norm_sq"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "targetObjective"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "targetObjective_eq_half_norm_sq"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "norm_targetResidual_eq_sqrt"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "nearFeasibleSet"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "mem_nearFeasibleSet"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "targetObjective_hasFDerivAt"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "GeneralConstraintSmoothnessAssumptions"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.2, assumptions c.D1pL.C, f.D1pL.C, f.B.Fb, \u03bc2.DpL.C"
+
+[[node]]
+id = "lemma_7_2_5"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.5"
+
+[[node]]
+id = "component_smoothness_sufficient"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.2, componentwise sufficient smoothness assumptions"
+
+[[node]]
+id = "ComponentDerivativeAssumptions"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.2, componentwise sufficient smoothness assumptions"
+
+[[node]]
+id = "ComponentDerivativeAssumptions.objective_jets"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.2, componentwise sufficient smoothness assumptions"
+
+[[node]]
+id = "ComponentDerivativeAssumptions.constraint_jets"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.2, componentwise sufficient smoothness assumptions"
+
+[[node]]
+id = "component_target_smoothness_sufficient"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.2, componentwise sufficient smoothness assumptions"
+
+[[node]]
+id = "ComponentDerivativeAssumptions.toGeneralConstraintSmoothnessAssumptions"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.2, componentwise sufficient smoothness assumptions"

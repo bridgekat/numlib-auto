@@ -1,0 +1,10 @@
+namespace = "CartisGouldToint.Chapter13.Section03"
+
+[[node]]
+id = "ARqpEDA.uniform_analysis_bounds"
+
+[[node]]
+id = "ARqpEDA.request_ratios"
+
+[[node]]
+id = "ARqpEDA.uniform_request_forcing"

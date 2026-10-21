@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint.AppendixB.Chapter02"
+
+[[node]]
+id = "lower_strip_boundary_conditions"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, equation (B.2.20)"
+
+[[node]]
+id = "valley_profile_branches"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, equation (B.2.19)"
+
+[[node]]
+id = "strip_parameter_derivatives_bounded"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.3, independent width/outward-parameter component"

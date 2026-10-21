@@ -1,0 +1,35 @@
+namespace = "CartisGouldToint.Chapter09.Section03"
+
+[[node]]
+id = "hasLowestComponent"
+
+[[node]]
+id = "hasLowestComponent_iff"
+
+[[node]]
+id = "lowestCoordinate_eq_metricInner"
+
+[[node]]
+id = "hardCaseIterate"
+
+[[node]]
+id = "hardCaseIterate_zero"
+
+[[node]]
+id = "algorithm_9_3_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 9.3.1"
+
+[[node]]
+id = "algorithm_9_3_1_states"
+
+[[node]]
+id = "hardCaseIterate_vector_succ"
+
+[[node]]
+id = "hardCaseIterate_shift_succ"
+
+[[node]]
+id = "hardCaseIterate_weightedNorm"
+
+[[node]]
+id = "hardCaseIterate_hasLowestComponent"

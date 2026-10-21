@@ -1,0 +1,41 @@
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Returned"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Returned.radius_eq_one"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Branch"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Branch.transition"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Branch.queries_length"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Branch.innerCall"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Branch.innerCall_radii"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Branch.innerCall_mu"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.higher_radius_policy_vacuous"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.exists_qualified_successor"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Run"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.Run.isExecution"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.exists_run"
+
+[[node]]
+id = "Optimization.TransverseQualifiedContinuation.exists_run_extension"

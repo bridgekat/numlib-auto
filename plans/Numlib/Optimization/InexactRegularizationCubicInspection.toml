@@ -1,0 +1,37 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "cubicCoefficients"
+
+[[node]]
+id = "cubicCoefficients_equiv"
+
+[[node]]
+id = "cubicCoefficients_three"
+
+[[node]]
+id = "decrement_cubicCoefficients"
+
+[[node]]
+id = "regularizedPolynomial_cubicCoefficients"
+
+[[node]]
+id = "cubicCoefficients_witness"
+
+[[node]]
+id = "cubicCoefficients_eighth_witness"
+
+[[node]]
+id = "cubicPassingSearch"
+
+[[node]]
+id = "cubicPassingSearch_passed"
+
+[[node]]
+id = "decrement_cubicCoefficients_low"
+
+[[node]]
+id = "cubicPassingInspection"
+
+[[node]]
+id = "cubicPassingInspection_radius"

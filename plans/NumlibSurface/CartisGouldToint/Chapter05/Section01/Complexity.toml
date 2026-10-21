@@ -1,0 +1,17 @@
+namespace = "CartisGouldToint.Chapter05.Section01"
+
+[[node]]
+id = "arple_third_order_exponents"
+
+[[node]]
+id = "theorem_5_1_7"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.1.7"
+
+[[node]]
+id = "theorem_5_1_7_of_run"
+
+[[node]]
+id = "theorem_5_1_7_of_available_trials"
+
+[[node]]
+id = "theorem_5_1_7_first_second_order"

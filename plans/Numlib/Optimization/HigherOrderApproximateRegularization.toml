@@ -1,0 +1,85 @@
+namespace = 'Optimization.HigherOrderApproximateRegularization'
+
+[[node]]
+id = 'model'
+
+[[node]]
+id = 'coefficientBound'
+
+[[node]]
+id = 'model_eventually_ge'
+
+[[node]]
+id = 'model_sublevel_isBounded'
+
+[[node]]
+id = 'exists_model_minimizer'
+
+[[node]]
+id = 'contDiff_model'
+
+[[node]]
+id = 'GapWitness'
+
+[[node]]
+id = 'Parameters'
+
+[[node]]
+id = 'ValidRadii'
+
+[[node]]
+id = 'FailedTest'
+
+[[node]]
+id = 'PassedTest'
+
+[[node]]
+id = 'ModelStep'
+
+[[node]]
+id = 'ParameterUpdate'
+
+[[node]]
+id = 'OuterState'
+
+[[node]]
+id = 'OuterOutcome'
+
+[[node]]
+id = 'OuterTransition'
+
+[[node]]
+id = 'IsInitial'
+
+[[node]]
+id = 'InnerPhase'
+
+[[node]]
+id = 'InnerState'
+
+[[node]]
+id = 'InnerInitial'
+
+[[node]]
+id = 'InnerTransition'
+
+[[node]]
+id = 'CorrectedInnerTransition'
+
+[[node]]
+id = 'OuterExecution'
+
+[[node]]
+id = 'InnerExecution'
+
+[[node]]
+id = 'exists_gapWitness'
+
+[[node]]
+id = 'PassedTest.gap_le'
+
+[[node]]
+id = 'exists_fraction_step'
+
+[[node]]
+id = 'InnerExecution.radii_low'

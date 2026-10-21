@@ -1,0 +1,54 @@
+namespace = "Optimization.QuadraticSubproblem"
+
+[[node]]
+id = "weightedPowerQuadratic"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.1"
+
+[[node]]
+id = "energyHessian"
+
+[[node]]
+id = "energyHessian_apply"
+
+[[node]]
+id = "quadratic_energy"
+
+[[node]]
+id = "isSymmetric_energyHessian"
+
+[[node]]
+id = "powerRegularized_energy"
+
+[[node]]
+id = "energy_stationary_iff"
+
+[[node]]
+id = "inner_energy_shift"
+
+[[node]]
+id = "isPositive_energy_shift_iff"
+
+[[node]]
+id = "isMinOn_energy_ball_iff"
+
+[[node]]
+id = "isMinOn_energy_power_iff"
+
+[[node]]
+id = "isMinOn_energy_ball_iff_shift"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.7"
+
+[[node]]
+id = "isMinOn_energy_power_iff_shift"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.8"
+
+[[node]]
+id = "eq_of_energy_ball_shift_pos"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.7"
+
+[[node]]
+id = "eq_of_energy_power_shift_pos"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.8"
+
+[[node]]
+id = "energy_eigenvector_iff"

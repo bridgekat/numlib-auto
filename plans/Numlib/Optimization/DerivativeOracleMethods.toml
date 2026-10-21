@@ -1,0 +1,82 @@
+namespace = "Optimization.DerivativeOracle"
+
+[[node]]
+id = "Reply"
+
+[[node]]
+id = "oracle"
+
+[[node]]
+id = "oracle_value"
+
+[[node]]
+id = "oracle_derivative"
+
+[[node]]
+id = "Method"
+
+[[node]]
+id = "Method.iterate"
+
+[[node]]
+id = "Method.iterate_zero"
+
+[[node]]
+id = "Method.iterate_succ"
+
+[[node]]
+id = "Method.iterate_succ_eq_of_oracle_eq"
+
+[[node]]
+id = "zeroMethod"
+
+[[node]]
+id = "zeroMethod_iterate"
+
+[[node]]
+id = "Method.IsZeroRespecting"
+
+[[node]]
+id = "zeroRespectingMethods"
+
+[[node]]
+id = "mem_zeroRespectingMethods"
+
+[[node]]
+id = "zeroMethod_mem_zeroRespectingMethods"
+
+[[node]]
+id = "FunctionClass"
+
+[[node]]
+id = "Objective"
+
+[[node]]
+id = "functionClass"
+
+[[node]]
+id = "mem_functionClass"
+
+[[node]]
+id = "firstStationaryTime"
+
+[[node]]
+id = "firstStationaryTime_eq_top_iff"
+
+[[node]]
+id = "le_firstStationaryTime_iff"
+
+[[node]]
+id = "firstStationaryTime_eq_natCast_iff"
+
+[[node]]
+id = "minimax"
+
+[[node]]
+id = "minimax_mono_functions"
+
+[[node]]
+id = "_root_.Optimization.ZeroChains.IsZeroChain.le_firstStationaryTime"
+
+[[node]]
+id = "_root_.Optimization.ZeroChains.IsZeroChain.le_minimax"

@@ -1,0 +1,19 @@
+namespace = "Optimization.CompositeRegularization"
+
+[[node]]
+id = "modelDecrement_const_zero"
+
+[[node]]
+id = "ModelStep.ofSmooth"
+
+[[node]]
+id = "PassedTest.ofSmooth"
+
+[[node]]
+id = "failedTest_of_true_gap"
+
+[[node]]
+id = "OuterTransition.ofSmooth"
+
+[[node]]
+id = "OuterExecution.ofSmooth"

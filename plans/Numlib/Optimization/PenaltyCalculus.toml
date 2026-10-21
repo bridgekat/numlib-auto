@@ -1,0 +1,19 @@
+namespace = "Constrained"
+
+[[node]]
+id = "penalized_hasFDerivAt"
+
+[[node]]
+id = "augmented_hasFDerivAt"
+
+[[node]]
+id = "barrierDomain"
+
+[[node]]
+id = "mem_barrierDomain"
+
+[[node]]
+id = "logarithmicBarrier"
+
+[[node]]
+id = "logarithmicBarrier_hasFDerivAt"

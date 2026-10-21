@@ -1,0 +1,58 @@
+namespace = "Optimization.ExplicitTrustRegion"
+
+[[node]]
+id = "refinements_succ"
+
+[[node]]
+id = "LegalPrefix.request_eq_pow"
+
+[[node]]
+id = "LegalPrefix.request_le_pow"
+
+[[node]]
+id = "requestThreshold"
+
+[[node]]
+id = "requestThreshold_pos"
+
+[[node]]
+id = "LegalPrefix.trial_of_small_requests"
+
+[[node]]
+id = "LegalPrefix.refinement_count_le"
+
+[[node]]
+id = "refinementBudget"
+
+[[node]]
+id = "refinementBudget_spec"
+
+[[node]]
+id = "radiusFloor"
+
+[[node]]
+id = "decreaseFloor"
+
+[[node]]
+id = "analysisThreshold"
+
+[[node]]
+id = "successBudget"
+
+[[node]]
+id = "trialFactor"
+
+[[node]]
+id = "trialBudget"
+
+[[node]]
+id = "LegalPrefix.budgets_before_certificate"
+
+[[node]]
+id = "IsExecution"
+
+[[node]]
+id = "prefixBudget"
+
+[[node]]
+id = "IsExecution.exists_first_certificate"

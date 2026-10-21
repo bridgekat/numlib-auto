@@ -1,0 +1,28 @@
+namespace = "Optimization.TaylorCriticality"
+
+[[node]]
+id = "gapOn"
+
+[[node]]
+id = "exists_eq_gapOn"
+
+[[node]]
+id = "gapOn_le_iff"
+
+[[node]]
+id = "gapOn_mono"
+
+[[node]]
+id = "abs_gapOn_sub_le"
+
+[[node]]
+id = "gapOn_nonneg"
+
+[[node]]
+id = "gapOn_eq_zero_iff"
+
+[[node]]
+id = "gapOn_norm_linear"
+
+[[node]]
+id = "gapOn_perturb_le"

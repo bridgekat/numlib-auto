@@ -1,0 +1,4 @@
+namespace = "Optimization.KrylovSubproblem"
+
+[[node]]
+id = "lanczos_regularization_shift_bracket"

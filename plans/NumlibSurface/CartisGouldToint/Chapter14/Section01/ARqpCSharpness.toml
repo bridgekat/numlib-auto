@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.Chapter14.Section01"
+
+[[node]]
+id = "corollary_14_1_11"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 14.1.11"

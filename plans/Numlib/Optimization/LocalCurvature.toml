@@ -1,0 +1,13 @@
+namespace = "Optimization"
+
+[[node]]
+id = "leastCurvature_ge_sub_norm"
+
+[[node]]
+id = "leastCurvature_ge_half_on_closedBall"
+
+[[node]]
+id = "apply_self_ge_half_on_closedBall"
+
+[[node]]
+id = "CubicRegularization.HessianLipschitz.leastCurvature_ge_half"

@@ -1,0 +1,13 @@
+namespace = "Optimization.ConstrainedResidualRegularization"
+
+[[node]]
+id = "RunPrefix.rootDecrease_pos"
+
+[[node]]
+id = "RunPrefix.root_decrease_of_not_stationary"
+
+[[node]]
+id = "RunPrefix.evaluation_bounds"
+
+[[node]]
+id = "exists_first_run_with_cost"

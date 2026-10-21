@@ -1,0 +1,114 @@
+namespace = "CartisGouldToint.Chapter04.Section02"
+
+[[node]]
+id = "derivativeOracleMethod"
+source = "Cartis, Gould and Toint, Section 4.2, essential definitions and assumptions"
+
+[[node]]
+id = "zeroChain"
+source = "Cartis, Gould and Toint, Section 4.2, essential definitions and assumptions"
+
+[[node]]
+id = "difficultZeroChain"
+source = "Cartis, Gould and Toint, Section 4.2, essential definitions and assumptions"
+
+[[node]]
+id = "lemma_4_2_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.2.1"
+
+[[node]]
+id = "lemma_4_2_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.2.2"
+
+[[node]]
+id = "lemma_4_2_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.2.3"
+
+[[node]]
+id = "theorem_4_2_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.4"
+
+[[node]]
+id = "lemma_4_2_5"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.2.5"
+
+[[node]]
+id = "theorem_4_2_6"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "functionClass"
+
+[[node]]
+id = "mem_functionClass_iff"
+
+[[node]]
+id = "zeroRespectingMethod"
+
+[[node]]
+id = "stoppingTime"
+
+[[node]]
+id = "oracleComplexity"
+
+[[node]]
+id = "zeroChain_mixedPartial_eq_zero"
+
+[[node]]
+id = "rotated_mixedPartial"
+
+[[node]]
+id = "difficultZeroChain_smooth"
+
+[[node]]
+id = "difficultZeroChain_isZeroChain"
+
+[[node]]
+id = "difficultZeroChain_gap"
+
+[[node]]
+id = "difficultZeroChain_gradient"
+
+[[node]]
+id = "difficultZeroChain_gradient_coordinate"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.2.5 (ii)"
+
+[[node]]
+id = "scaledDifficultZeroChain"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "scaledDifficultZeroChain_mem_functionClass"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "scaledDifficultZeroChain_rotation_complexity"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "functionClass_eq_oracleFunctionClass"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "theorem_4_2_6_lower_bound"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "theorem_4_2_6_lower_order"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "theorem_4_2_6_arp_run_upper_bound"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "theorem_4_2_6_arp_oracle_upper_bound"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "theorem_4_2_6_minimax_upper_bound"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"
+
+[[node]]
+id = "theorem_4_2_6_arp_oracle_order_upper_bound"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.2.6"

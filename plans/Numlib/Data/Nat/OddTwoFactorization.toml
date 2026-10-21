@@ -1,0 +1,10 @@
+namespace = "Nat"
+
+[[node]]
+id = "two_factorization_of_eq_odd_mul_two_pow"
+
+[[node]]
+id = "odd_mul_two_pow_injective"
+
+[[node]]
+id = "existsUnique_odd_mul_two_pow"

@@ -1,0 +1,14 @@
+namespace = "CartisGouldToint.Chapter09.Section03"
+
+[[node]]
+id = "hardCaseIterate_rayleigh_eq_energy"
+
+[[node]]
+id = "hardCaseIterate_lowestCoordinate_ge"
+
+[[node]]
+id = "hardCaseIterate_rayleighError"
+
+[[node]]
+id = "theorem_9_3_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 9.3.1"

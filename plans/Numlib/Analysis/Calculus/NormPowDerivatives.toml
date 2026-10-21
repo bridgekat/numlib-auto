@@ -1,0 +1,35 @@
+[[node]]
+id = "differentiableAt_normRpowHessian_of_ne_zero"
+
+[[node]]
+id = "fderiv_normRpowHessian_apply"
+
+[[node]]
+id = "abs_fderiv_normRpowHessian_apply_le"
+
+[[node]]
+id = "norm_fderiv_normRpowHessian_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_one_norm_rpow"
+
+[[node]]
+id = "norm_iteratedFDeriv_two_norm_rpow_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_three_norm_rpow_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_one_norm_pow_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_two_norm_pow_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_three_norm_pow_le"
+
+[[node]]
+id = "hasFDerivAt_normRpowHessian_zero"
+
+[[node]]
+id = "iteratedFDeriv_three_norm_rpow_zero"

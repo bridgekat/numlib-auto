@@ -1,0 +1,67 @@
+namespace = "Optimization.HigherOrderRegularization"
+
+[[node]]
+id = "TrialPrefix.success_count_le"
+
+[[node]]
+id = "TrialPrefix.evaluation_bounds"
+
+[[node]]
+id = "exists_first_with_evaluation_bounds"
+
+[[node]]
+id = "stationary_two_iff"
+
+[[node]]
+id = "stationary_three_empty_iff"
+
+[[node]]
+id = "not_stationary_three_empty"
+
+[[node]]
+id = "firstOrderComplexityConstant"
+
+[[node]]
+id = "secondOrderComplexityConstant"
+
+[[node]]
+id = "RunPrefix.first_order_evaluation_bounds"
+
+[[node]]
+id = "RunPrefix.second_order_evaluation_bounds"
+
+[[node]]
+id = "exists_first_order_run_with_cost"
+
+[[node]]
+id = "exists_second_order_run_with_cost"
+
+[[node]]
+id = "ThirdOrderQualityTest"
+
+[[node]]
+id = "Stationary.toThirdOrderQualityTest"
+
+[[node]]
+id = "ThirdOrderQualityTest.certificate"
+
+[[node]]
+id = "directionSequence_unit"
+
+[[node]]
+id = "thirdOrderComplexityConstant"
+
+[[node]]
+id = "RunPrefix.third_order_quality_evaluation_bounds"
+
+[[node]]
+id = "exists_third_order_quality_with_cost"
+
+[[node]]
+id = "firstOrderComplexityConstant_pos"
+
+[[node]]
+id = "secondOrderComplexityConstant_pos"
+
+[[node]]
+id = "thirdOrderComplexityConstant_pos"

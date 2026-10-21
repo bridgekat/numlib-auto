@@ -1,0 +1,10 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "_root_.Real.pow_mul_exp_neg_mul_sq_le"
+
+[[node]]
+id = "norm_eval_mul_exp_neg_mul_sq_le"
+
+[[node]]
+id = "coeffNorm_hermite_le"

@@ -1,0 +1,46 @@
+namespace = "Optimization.RegularizationSufficientDecrease"
+
+[[node]]
+id = "minimumTolerance"
+
+[[node]]
+id = "minimumTolerance_le"
+
+[[node]]
+id = "minimumTolerance_pos"
+
+[[node]]
+id = "le_minimumTolerance_iff"
+
+[[node]]
+id = "HasTaylorDecrease"
+
+[[node]]
+id = "hasTaylorDecrease_iff"
+
+[[node]]
+id = "powered_step_iff_root"
+
+[[node]]
+id = "root_threshold_eq"
+
+[[node]]
+id = "decreaseFactor"
+
+[[node]]
+id = "decreaseFactor_pos"
+
+[[node]]
+id = "prediction_lower"
+
+[[node]]
+id = "accepted_decrease"
+
+[[node]]
+id = "success_count_le_with_exceptions"
+
+[[node]]
+id = "evaluation_bounds"
+
+[[node]]
+id = "exists_first_with_evaluation_bounds"

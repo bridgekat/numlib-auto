@@ -1,0 +1,17 @@
+namespace = "Optimization.FeasibleCriticality"
+
+[[node]]
+id = "feasibleCriticality"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Section 6.1"
+
+[[node]]
+id = "feasibleCriticality_nonneg"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Section 6.1"
+
+[[node]]
+id = "feasibleCriticality_smul"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Sections 6.3 and 7.2"
+
+[[node]]
+id = "feasibleCriticality_lipschitz_derivative"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Lemmas 6.2.1 and 6.2.4"

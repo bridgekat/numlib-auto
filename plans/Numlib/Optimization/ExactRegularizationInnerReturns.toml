@@ -1,0 +1,98 @@
+[[node]]
+id = "Optimization.HigherOrderApproximateRegularization.exists_firstOrder_fractionWitness"
+
+[[node]]
+id = "Optimization.HigherOrderApproximateRegularization.shortFirstOrderExecution"
+
+[[node]]
+id = "Optimization.HigherOrderApproximateRegularization.shortFirstOrderExecution_final"
+
+[[node]]
+id = "Optimization.HigherOrderApproximateRegularization.shortGlobalMinExecution"
+
+[[node]]
+id = "Optimization.HigherOrderApproximateRegularization.shortGlobalMinExecution_final"
+
+[[node]]
+id = "Optimization.HigherOrderApproximateRegularization.longGlobalMinExecution"
+
+[[node]]
+id = "Optimization.HigherOrderApproximateRegularization.longGlobalMinExecution_final"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.regularizedPolynomial_iteratedFDeriv"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.regularizedPolynomial_iteratedFDeriv_minimizer_iff"
+
+[[node]]
+id = "Optimization.InexactRegularization.shortFirstOrderInnerResult"
+
+[[node]]
+id = "Optimization.InexactRegularization.shortFirstOrderInnerResult_step"
+
+[[node]]
+id = "Optimization.InexactRegularization.shortFirstOrderInnerResult_radii"
+
+[[node]]
+id = "Optimization.InexactRegularization.shortGlobalMinInnerResult"
+
+[[node]]
+id = "Optimization.InexactRegularization.shortGlobalMinInnerResult_step"
+
+[[node]]
+id = "Optimization.InexactRegularization.shortGlobalMinInnerResult_radii"
+
+[[node]]
+id = "Optimization.InexactRegularization.longGlobalMinInnerResult"
+
+[[node]]
+id = "Optimization.InexactRegularization.longGlobalMinInnerResult_step"
+
+[[node]]
+id = "Optimization.InexactRegularization.longGlobalMinInnerResult_radii"
+
+[[node]]
+id = "Optimization.InexactRegularization.globalMinInnerResult"
+
+[[node]]
+id = "Optimization.InexactRegularization.globalMinInnerResult_step"
+
+[[node]]
+id = "Optimization.InexactRegularization.globalMinInnerResult_radii"
+
+[[node]]
+id = "Optimization.InexactRegularization.globalMinInnerResult_length"
+
+[[node]]
+id = "Optimization.InexactRegularization.exists_globalMinInnerResult"
+
+[[node]]
+id = "Optimization.InexactRegularization.exactShortGlobalMinInnerResult"
+
+[[node]]
+id = "Optimization.InexactRegularization.exactShortGlobalMinInnerResult_step"
+
+[[node]]
+id = "Optimization.InexactRegularization.exactShortGlobalMinInnerResult_radii"
+
+[[node]]
+id = "Optimization.InexactRegularization.squaredGradientFraction_bounds"
+
+[[node]]
+id = "Optimization.InexactRegularization.squaredGradientGlobalMinInnerResult"
+
+[[node]]
+id = "Optimization.InexactRegularization.squaredGradientGlobalMinInnerResult_initial"
+
+[[node]]
+id = "Optimization.InexactRegularization.squaredGradientGlobalMinInnerResult_final"
+
+[[node]]
+id = "Optimization.InexactRegularization.squaredGradientGlobalMinInnerResult_length"
+
+[[node]]
+id = "Optimization.InexactRegularization.squaredGradientGlobalMinInnerResult_step"
+
+[[node]]
+id = "Optimization.InexactRegularization.squaredGradientGlobalMinInnerResult_radii"

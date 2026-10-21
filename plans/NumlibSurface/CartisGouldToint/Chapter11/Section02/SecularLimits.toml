@@ -1,0 +1,10 @@
+namespace = "CartisGouldToint.Chapter11.Section02"
+
+[[node]]
+id = "secular_rightHandSide_norm"
+
+[[node]]
+id = "tendsto_mul_sq_secularData"
+
+[[node]]
+id = "tendsto_mul_secularStep_norm"

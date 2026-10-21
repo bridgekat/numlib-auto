@@ -1,0 +1,37 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "RadiusSearch.congr"
+
+[[node]]
+id = "Inspection.congr"
+
+[[node]]
+id = "Inspection.congr_radii"
+
+[[node]]
+id = "pullCoefficients"
+
+[[node]]
+id = "norm_pullCoefficients"
+
+[[node]]
+id = "polynomial_pullCoefficients"
+
+[[node]]
+id = "decrement_pullCoefficients"
+
+[[node]]
+id = "regularizedPolynomial_pullCoefficients"
+
+[[node]]
+id = "CoefficientWitness.pull"
+
+[[node]]
+id = "RadiusSearch.pull"
+
+[[node]]
+id = "Inspection.pull"
+
+[[node]]
+id = "Inspection.pull_radii"

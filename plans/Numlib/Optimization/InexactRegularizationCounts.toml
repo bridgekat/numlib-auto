@@ -1,0 +1,22 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "Transition.next_fresh"
+
+[[node]]
+id = "Transition.fresh_cost"
+
+[[node]]
+id = "Execution.trialCount_add_refinementCount"
+
+[[node]]
+id = "Execution.functionCount_eq_trialCount_add_one"
+
+[[node]]
+id = "Execution.derivativeBatches_le"
+
+[[node]]
+id = "Run.objective_nonincrease"
+
+[[node]]
+id = "Run.accepted_count_before_test_le"

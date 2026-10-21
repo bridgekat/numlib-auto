@@ -1,0 +1,20 @@
+namespace = "CartisGouldToint.AppendixB.Chapter02"
+
+[[node]]
+id = "lemma_B_2_1"
+kind = "theorem"
+desc = "Quintic Hermite interpolation on [0,s] matches endpoint values, first and second derivatives, with coefficient matrix (B.2.3). Prove by polynomial differentiation and linear algebra, then derive uniform coefficient bounds from normalized endpoint jets.\n"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.1"
+wrong = "Supplied uniform-bound conclusion from (B.2.3) residual bounds alone is false: with kappa_f=1, constant endpoint data a0=b0=K+1 and all first/second derivatives zero give all three residuals zero, but every interpolant has value K+1 at zero, so no positive bound K depending only on kappa_f works. Formal no_uniform_hermite_bound_of_residuals refutes this universally quantified uniform claim. Valid explicit interpolation/coefficient clauses are proved separately; corrected bound adds initial-jet bounds as in earlier TheoremA.9.1. This diagnoses the supplied transcription, not a claim about an unchecked typeset original."
+
+[[node]]
+id = "lemma_B_2_1_interpolation"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.1, valid interpolation and explicit coefficients"
+
+[[node]]
+id = "no_uniform_hermite_bound_of_residuals"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.1, counterexample to residual-only uniform bound"
+
+[[node]]
+id = "lemma_B_2_1_corrected"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.1, corrected uniform bound with initial-jet bounds"

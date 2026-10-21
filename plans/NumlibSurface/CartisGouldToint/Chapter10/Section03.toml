@@ -1,0 +1,15 @@
+namespace = "CartisGouldToint.Chapter10.Section03"
+
+[[node]]
+id = "trustRegionLanczosResidual"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 10.3, (10.3.1)–(10.3.2)"
+
+[[node]]
+id = "theorem_10_3_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 10.3.2"
+
+[[node]]
+id = "IsTrustRegionLanczosMultiplier"
+
+[[node]]
+id = "isMinOn_reduced_trustRegion_iff"

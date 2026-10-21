@@ -1,0 +1,46 @@
+namespace = "Optimization.LineSearchObstruction"
+
+[[node]]
+id = "quartic"
+
+[[node]]
+id = "contDiff_quartic"
+
+[[node]]
+id = "fderiv_quartic_apply"
+
+[[node]]
+id = "iteratedFDeriv_two_quartic_apply"
+
+[[node]]
+id = "iteratedFDeriv_three_quartic_apply"
+
+[[node]]
+id = "iteratedFDeriv_four_quartic_apply"
+
+[[node]]
+id = "quartic_strict_line"
+
+[[node]]
+id = "quartic_badJet_coefficients"
+
+[[node]]
+id = "quartic_not_isOrderMinimizer"
+
+[[node]]
+id = "quartic_parabola"
+
+[[node]]
+id = "LocallyStrictDescent"
+
+[[node]]
+id = "RequiresLocalDescent"
+
+[[node]]
+id = "quartic_no_local_descent"
+
+[[node]]
+id = "quartic_next_eq_none"
+
+[[node]]
+id = "quartic_not_isLocalMin"

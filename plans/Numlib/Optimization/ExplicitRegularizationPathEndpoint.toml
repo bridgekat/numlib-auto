@@ -1,0 +1,28 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "Path.withEndpointInspection"
+
+[[node]]
+id = "Path.withEndpointInspection_length"
+
+[[node]]
+id = "Path.withEndpointInspection_state"
+
+[[node]]
+id = "Path.withEndpointInspection_node_lt"
+
+[[node]]
+id = "Path.withEndpointInspection_node_end"
+
+[[node]]
+id = "Path.withEndpointInspection_trial"
+
+[[node]]
+id = "Path.withEndpointInspection_accepted"
+
+[[node]]
+id = "Path.withEndpointInspection_queries"
+
+[[node]]
+id = "Path.withEndpointInspection_functionQueries"

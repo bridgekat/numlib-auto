@@ -1,0 +1,58 @@
+namespace = "Matrix.TridiagonalLDL"
+
+[[node]]
+id = "Factors"
+
+[[node]]
+id = "Factors.empty"
+
+[[node]]
+id = "Factors.write"
+
+[[node]]
+id = "factorRow"
+
+[[node]]
+id = "factor"
+
+[[node]]
+id = "Factors.CorrectPrefix"
+
+[[node]]
+id = "factorRow_value"
+
+[[node]]
+id = "Factors.CorrectPrefix.write"
+
+[[node]]
+id = "factor_spec"
+
+[[node]]
+id = "factor_error_not_posDef"
+
+[[node]]
+id = "factor_success_of_posDef"
+
+[[node]]
+id = "Factors.lower"
+
+[[node]]
+id = "Factors.diagonal"
+
+[[node]]
+id = "factor_success_isLDM"
+
+[[node]]
+id = "factorRow_trace_of_success"
+
+[[node]]
+id = "factorTrace"
+
+[[node]]
+id = "factor_trace_of_success"
+
+[[node]]
+id = "factorTrace_counts"
+
+[[node]]
+id = "factor_counts"

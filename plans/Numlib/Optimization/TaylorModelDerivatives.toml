@@ -1,0 +1,14 @@
+[[node]]
+id = "Optimization.RegularizedTaylorModel.iteratedFDeriv_taylorModel_apply"
+
+[[node]]
+id = "Optimization.RegularizedTaylorModel.iteratedFDeriv_taylorModel_slot_sum"
+
+[[node]]
+id = "ContinuousMultilinearMap.sum_embedding_apply_eq_descFactorial"
+
+[[node]]
+id = "Optimization.RegularizedTaylorModel.iteratedFDeriv_taylorModel_contraction"
+
+[[node]]
+id = "Optimization.RegularizedTaylorModel.fderiv_taylorModel_eq_taylorModel_fderiv"

@@ -1,0 +1,7 @@
+namespace = "Optimization.TrustRegionSecondOrderSharpness"
+
+[[node]]
+id = "radius"
+
+[[node]]
+id = "exists_sharp_secondOrder_family"

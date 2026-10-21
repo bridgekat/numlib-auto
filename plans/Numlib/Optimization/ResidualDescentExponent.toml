@@ -1,0 +1,34 @@
+namespace = "Optimization"
+
+[[node]]
+id = "residualDescentExponent"
+
+[[node]]
+id = "residualDescentExponent_eq_sub_inv"
+
+[[node]]
+id = "residualDescentExponent_div_order"
+
+[[node]]
+id = "residualDescentExponent_pos_div_order"
+
+[[node]]
+id = "residualDescentExponent_pos_div_order_of_logb"
+
+[[node]]
+id = "residualDescentExponent_eq_zero_of_choice"
+
+[[node]]
+id = "residualDescentExponent_sub"
+
+[[node]]
+id = "residualDescentExponent_strictAnti_order"
+
+[[node]]
+id = "three_mul_sum_two_pow_even"
+
+[[node]]
+id = "residualDescentExponent_good_choices"
+
+[[node]]
+id = "residualDescentExponent_eq_power_difference"

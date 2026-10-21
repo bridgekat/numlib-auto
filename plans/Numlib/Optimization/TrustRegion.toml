@@ -1,0 +1,91 @@
+namespace = "Optimization.TrustRegion"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "IsRun.radius_update_lower"
+
+[[node]]
+id = "IsRun.radius_pos"
+
+[[node]]
+id = "IsRun.predicted_decrease"
+
+[[node]]
+id = "IsRun.predicted_nonneg"
+
+[[node]]
+id = "IsRun.predicted_pos"
+
+[[node]]
+id = "IsRun.accepted_decrease"
+
+[[node]]
+id = "IsRun.objective_nonincrease"
+
+[[node]]
+id = "IsRun.total_count_le"
+
+[[node]]
+id = "abs_model_error_le"
+
+[[node]]
+id = "IsRun.ratio_ge_of_radius_lt"
+
+[[node]]
+id = "IsRun.radius_nondecrease_of_small"
+
+[[node]]
+id = "runningMin"
+
+[[node]]
+id = "runningMin_le"
+
+[[node]]
+id = "le_runningMin"
+
+[[node]]
+id = "IsRun.radius_lower"
+
+[[node]]
+id = "decreaseCoefficient"
+
+[[node]]
+id = "IsRun.predicted_decrease_of_radius_lower"
+
+[[node]]
+id = "IsRun.radius_lower_before_test"
+
+[[node]]
+id = "decreaseCoefficient_pos"
+
+[[node]]
+id = "IsRun.success_count_le"
+
+[[node]]
+id = "IsRun.prefix_count_le"
+
+[[node]]
+id = "IsRun.exists_stationary_with_cost"
+
+[[node]]
+id = "radiusCoefficient"
+
+[[node]]
+id = "radiusCoefficient_spec"
+
+[[node]]
+id = "IsRun.exists_complexity_constants"
+
+[[node]]
+id = "IsRun.exists_cauchyPoint"
+
+[[node]]
+id = "exists_isRun"

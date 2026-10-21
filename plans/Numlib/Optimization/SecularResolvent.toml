@@ -1,0 +1,17 @@
+namespace = "Optimization.SecularResolvent"
+
+[[node]]
+id = "normSqResolvent"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, (8.2.2)–(8.2.7)"
+
+[[node]]
+id = "iteratedDeriv_normSqResolvent"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, (B.8.8)"
+
+[[node]]
+id = "normSqResolvent_taylor_bounds"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Theorem 8.2.2"
+
+[[node]]
+id = "existsUnique_secular_root"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Lemma 8.2.1"

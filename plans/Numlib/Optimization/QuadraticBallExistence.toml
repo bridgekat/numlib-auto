@@ -1,0 +1,4 @@
+namespace = "Optimization.QuadraticSubproblem"
+
+[[node]]
+id = "exists_isMinOn_ball_quadratic"

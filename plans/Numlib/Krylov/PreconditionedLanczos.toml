@@ -1,0 +1,61 @@
+namespace = "Krylov.PreconditionedLanczos"
+
+[[node]]
+id = "State"
+
+[[node]]
+id = "Trial"
+
+[[node]]
+id = "evaluate"
+
+[[node]]
+id = "next"
+
+[[node]]
+id = "Prefix"
+
+[[node]]
+id = "Execution"
+
+[[node]]
+id = "hessianQueries"
+
+[[node]]
+id = "inverseQueries"
+
+[[node]]
+id = "length_hessianQueries"
+
+[[node]]
+id = "length_inverseQueries"
+
+[[node]]
+id = "Prefix.inverse_oracle"
+
+[[node]]
+id = "Prefix.hessian_oracle"
+
+[[node]]
+id = "Prefix.mono"
+
+[[node]]
+id = "Prefix.residual_eq_gamma_smul_dual"
+
+[[node]]
+id = "inverse_dual"
+
+[[node]]
+id = "gamma_eq_norm"
+
+[[node]]
+id = "gamma_eq_zero_iff"
+
+[[node]]
+id = "norm_primal_eq_one"
+
+[[node]]
+id = "metric_primal"
+
+[[node]]
+id = "rho_eq_energy_inner"

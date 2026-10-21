@@ -1,0 +1,7 @@
+namespace = "Optimization.KrylovSubproblem"
+
+[[node]]
+id = "lanczos_solution_coordinate_eq_inv"
+
+[[node]]
+id = "lanczos_shifted_residual_norm_eq_inv"

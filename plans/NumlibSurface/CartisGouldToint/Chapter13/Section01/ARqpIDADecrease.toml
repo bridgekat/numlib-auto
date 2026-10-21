@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.Chapter13.Section01"
+
+[[node]]
+id = "arqpida_accepted_decrease_bounds"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 13.1.2 and Lemmas 13.1.16–13.1.18 (corrected fixed-initialization constants)"

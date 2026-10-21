@@ -1,0 +1,106 @@
+namespace = "Optimization.CubicRegularization"
+
+[[node]]
+id = "HessianLipschitz"
+
+[[node]]
+id = "cubicModel"
+
+[[node]]
+id = "cubicModel_eq"
+
+[[node]]
+id = "cubicModel_zero"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "IsRun.predicted_decrease"
+
+[[node]]
+id = "IsRun.predicted_decrease_strict"
+
+[[node]]
+id = "IsRun.predicted_pos"
+
+[[node]]
+id = "IsRun.accepted_decrease"
+
+[[node]]
+id = "IsRun.objective_nonincrease"
+
+[[node]]
+id = "HessianLipschitz.value_remainder"
+
+[[node]]
+id = "HessianLipschitz.derivative_remainder"
+
+[[node]]
+id = "IsRun.ratio_ge_of_sigma_ge"
+
+[[node]]
+id = "IsRun.sigma_upper"
+
+[[node]]
+id = "fderiv_cubicModel_zero"
+
+[[node]]
+id = "IsRun.fderiv_eq_zero_of_step_eq_zero"
+
+[[node]]
+id = "IsRun.trial_derivative_bound"
+
+[[node]]
+id = "IsRun.accepted_derivative_bound"
+
+[[node]]
+id = "rpow_three_halves_le_cube"
+
+[[node]]
+id = "IsRun.accepted_budget"
+
+[[node]]
+id = "IsRun.success_count_le"
+
+[[node]]
+id = "IsRun.success_count_before_test"
+
+[[node]]
+id = "IsRun.exists_stationary_with_cost"
+
+[[node]]
+id = "TrialTrace"
+
+[[node]]
+id = "TrialTrace.predicted_decrease"
+
+[[node]]
+id = "TrialTrace.predicted_decrease_strict"
+
+[[node]]
+id = "TrialTrace.predicted_pos"
+
+[[node]]
+id = "TrialTrace.accepted_decrease"
+
+[[node]]
+id = "TrialTrace.accepted_cubic_decrease"
+
+[[node]]
+id = "TrialTrace.objective_nonincrease"
+
+[[node]]
+id = "TrialTrace.ratio_ge_of_sigma_ge"
+
+[[node]]
+id = "TrialTrace.sigma_upper"
+
+[[node]]
+id = "IsRun.accepted_cubic_decrease"
+
+[[node]]
+id = "fderiv_cubicModel_zero_of_contDiffAt"

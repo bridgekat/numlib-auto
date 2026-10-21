@@ -1,0 +1,19 @@
+namespace = "Optimization.HigherOrderApproximateRegularization"
+
+[[node]]
+id = "complexityExponent_nonneg"
+
+[[node]]
+id = "complexityExponent_pos"
+
+[[node]]
+id = "complexityExponent_monotone"
+
+[[node]]
+id = "common_rpow_le_toleranceMeasure"
+
+[[node]]
+id = "div_toleranceMeasure_le_common_rpow"
+
+[[node]]
+id = "logarithmic_budget_le_common_rpow"

@@ -1,0 +1,34 @@
+namespace = "Optimization.SteepestDescentValley"
+
+[[node]]
+id = "profile_plateau_of_coordinates"
+
+[[node]]
+id = "iteratedFDeriv_profile_upper_plateau"
+
+[[node]]
+id = "iteratedFDeriv_profile_lower_plateau"
+
+[[node]]
+id = "iteratedFDeriv_plateau_vertical"
+
+[[node]]
+id = "exists_profile_derivative_bound"
+
+[[node]]
+id = "norm_euclidean_proj_le_one"
+
+[[node]]
+id = "exists_movingCoordinates_derivative_bound"
+
+[[node]]
+id = "exists_euclideanMovingProfile_derivative_bound"
+
+[[node]]
+id = "exists_euclideanMovingProfile_jet_bound"
+
+[[node]]
+id = "exists_euclideanObjective_derivative_bound"
+
+[[node]]
+id = "exists_euclideanObjective_gradient_lipschitz"

@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.Chapter01.Section01"
+
+[[node]]
+id = "theorem_1_1_2_corrected"
+source = "Cartis, Gould and Toint, corrected sufficiency for Theorem 1.1.2"

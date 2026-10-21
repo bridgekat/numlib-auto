@@ -1,0 +1,16 @@
+namespace = "Optimization.FiniteChain"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "point_of_le"
+
+[[node]]
+id = "point_of_ge"
+
+[[node]]
+id = "point_add_step"

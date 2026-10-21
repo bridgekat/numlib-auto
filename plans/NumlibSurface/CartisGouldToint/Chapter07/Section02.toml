@@ -1,0 +1,34 @@
+namespace = "CartisGouldToint.Chapter07.Section02"
+desc = '''Two-phase generally constrained algorithm and evaluation complexity. Faithful state includes outer target updates, inner regularization traces, saved queries and distinct phase outcomes. Reuse least-norm and convex regularization backbone; retain all Phase-1/Phase-2 query costs. Mark source inconsistencies instead of proving altered statements silently: boundary inequalities, ARp-CC versus ARp1-CC, and omitted terminal/reset costs need review.'''
+
+[[node]]
+id = "algorithm_7_2_1"
+kind = "definition"
+desc = '''TPp-GC: 0<ε0≤min(1,β), 0<ε1≤1, θ∈(0,1). Phase 1 runs ARpLE-CC on c until ‖c‖≤θε0 or normalized criticality≤ε1, returning infeasible stationary if first test fails. Else initialize t=f−√(ε0²−‖c‖²). Inner solves μ2 until residual≤θε0 OR f<t OR ωμ2≤ε1 residual. Then target reset t+=f−sqrt(...) if residual<θε0; reflection t+=2f−t when residual≥θε0 and f<t; otherwise terminate. Retest new-target criticality after each update. Describe actual nondeterministic inner steps and query reuse.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 7.2.1"
+deps = ["CartisGouldToint.Chapter07.Section02.GeneralConstraintSmoothnessAssumptions", "CartisGouldToint.Chapter07.Section02.targetResidual"]
+wrong = '''Supplied transcription inner stop uses ≤θε0 while reset branch uses <θε0, permitting premature final-branch exit at equality. Also algorithm calls ARp-CC but Lemma 7.2.6 uses ARp1-CC decrease. Resolve exact-boundary convention and inner model criterion before implementation; do not assume termination correctness as a run axiom.'''
+
+[[node]]
+id = "lemma_7_2_1"
+kind = "theorem"
+desc = '''Termination alternatives: Phase 1 has ωΦell≤ε1 ‖c‖^(ell−1), ‖c‖>θε0. Phase 2 either normalized infeasibility criticality for Φ2 with ‖c‖≥θε0 or scaled approximate KKT with ‖c‖≤ε0 and y=−c/(f−t) when f>t. Prove residual∈[θε0,ε0], f≥t, μ2 criticality; split f=t and f>t, use positive homogeneity of feasible-step criticality.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.1"
+deps = ["CartisGouldToint.Chapter07.Section02.algorithm_7_2_1"]
+wrong = '''Supplied transcription Phase-2 infeasibility alternative (7.2.15) says >θε0, but proof establishes only ≥; additionally algorithm has inconsistent equality branches. Requires source correction, not a strict inequality cheat.'''
+
+[[node]]
+id = "lemma_7_2_6"
+kind = "theorem"
+desc = '''Under stated smoothness and boundedness, block successful count≤κS(1−θ)ε0^((p−1)/p) ε1^(-(p+1)/p), total count≤κA times that scale+κC. Proof concatenates monotone residuals between resets, uses actual next-point μ2 criticality decrease, splits large residual contractions, and telescopes residual drop≤(1−θ)ε0; count rejected steps via uniform σ. Audit reset/terminal query overhead and equality endpoints, including nonempty blocks when scale<1.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.6"
+deps = ["CartisGouldToint.Chapter07.Section02.lemma_7_2_5", "CartisGouldToint.Chapter07.Section02.outerIterationBlocks"]
+wrong = '''Proof invokes Lemma 6.2.4, available for ARp1-CC, while Algorithm 7.2.1 states ARp-CC. Supplied transcription block Ik endpoints exclude a reset iteration but proof uses it; initial and final partial blocks also need explicit coverage. Formalize corrected algorithm/count conventions before claiming this exact bound.'''
+
+[[node]]
+id = "theorem_7_2_7"
+kind = "theorem"
+desc = '''For admissible p,i,ell and hypotheses, TPp-GC outputs infeasible normalized stationary or scaled approximate KKT point. Function evaluations O(max(ε0^(-1), ε0^(-1/p) ε1^(-(p+1)/p))); derivative evaluations O(max(ε0^(-1/2^i), ε0^(-1/p) ε1^(-(p+1)/p))). Include precise Phase-1 terms (7.2.23)–(7.2.24) and Phase-2 (7.2.52)–(7.2.53), with constants independent of tolerances. OCR 2^4 in (7.2.51) is 2^i. Derive by block cover, Lemmas 7.2.4 and 7.2.6, and termination alternatives.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 7.2.7"
+deps = ["CartisGouldToint.Chapter07.Section02.lemma_7_2_1", "CartisGouldToint.Chapter07.Section02.lemma_7_2_2", "CartisGouldToint.Chapter07.Section02.lemma_7_2_4", "CartisGouldToint.Chapter07.Section02.lemma_7_2_6", "CartisGouldToint.Chapter07.Section02.lemma_7_2_5"]
+wrong = "False for the literal transcribed Algorithm 7.2.1. The machine-checked theorem CartisGouldToint.Chapter07.Section02.BoundedBoundary.full_counterexample supplies the complete source smoothness/boundedness assumptions and an actual complete two-phase execution whose returned point satisfies none of (7.2.14), (7.2.15), (7.2.16). Take n=1,m=0,C=[0,1],f(x)=x,c the zero-dimensional residual,p=ell=2,admissible i=2,beta=epsilon0=1,epsilon1=1/4,theta=1/2. The full source GeneralConstraintSmoothnessAssumptions hold with objective bounds [0,1] and zero highest-derivative Lipschitz constants. Phase 1 stops initially at x=1; Phase 2 has target zero and one genuine cubic-regularized trial with sigma=4 returning x=1/2 and ratio one. The weak inner boundary r<=theta*epsilon0 triggers at equality while the strict reset does not, so Step 2(c) returns. Both infeasibility alternatives fail because c=0; every multiplier in Fin 0 is zero, the actual Lagrangian criticality is 1/2 and multiplier scale one, violating the scaled KKT bound 1/4. The target criticality is 1/4>epsilon1*r=1/8. This refutes the output guarantee under the stated source interfaces, which allow natural m=0, and does not refute the separately named corrected algorithm with matching strict boundaries."

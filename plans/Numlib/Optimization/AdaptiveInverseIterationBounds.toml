@@ -1,0 +1,22 @@
+namespace = "Optimization.AdaptiveInverseIteration"
+
+[[node]]
+id = "exists_count_bound_of_eventually_constant"
+
+[[node]]
+id = "abs_repr_iterate_vector_ge"
+
+[[node]]
+id = "iterate_rayleighError_le"
+
+[[node]]
+id = "exists_uniform_iterate_rayleighError_constant"
+
+[[node]]
+id = "update_shift_error"
+
+[[node]]
+id = "update_shift_add_of_spectrum_eq"
+
+[[node]]
+id = "update_shift_pos_of_spectral_smallness"

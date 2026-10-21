@@ -1,0 +1,16 @@
+namespace = "Optimization.HardZeroChain"
+
+[[node]]
+id = "iteratedDeriv_psi"
+
+[[node]]
+id = "norm_iteratedDeriv_psi_le"
+
+[[node]]
+id = "norm_iteratedDeriv_phi_le"
+
+[[node]]
+id = "scalar_uniform_derivative_bounds"
+
+[[node]]
+id = "scalar_derivative_bounds_up_to"

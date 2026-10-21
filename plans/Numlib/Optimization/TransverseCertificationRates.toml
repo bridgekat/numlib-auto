@@ -1,0 +1,40 @@
+namespace = "Optimization.TransverseCertificationRates"
+
+[[node]]
+id = "initialized_of_initialState"
+
+[[node]]
+id = "functionQueries"
+
+[[node]]
+id = "functionQueries_length"
+
+[[node]]
+id = "functionQueries_length_mono"
+
+[[node]]
+id = "exists_long_prefix_run"
+
+[[node]]
+id = "chosenRun"
+
+[[node]]
+id = "chosenRun_initial"
+
+[[node]]
+id = "chosenRun_isExecution"
+
+[[node]]
+id = "chosenRun_certified_query_lower"
+
+[[node]]
+id = "parameters_withTolerances"
+
+[[node]]
+id = "dyadic_epsilon_lt_one"
+
+[[node]]
+id = "exists_rate_violating_run"
+
+[[node]]
+id = "no_uniform_certification_bound"

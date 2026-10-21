@@ -1,0 +1,10 @@
+namespace = "Optimization.ConstrainedRegularization"
+
+[[node]]
+id = "neg_diagonal_le_add_error"
+
+[[node]]
+id = "gapOn_neg_diagonal_le_add_error"
+
+[[node]]
+id = "_root_.Optimization.HigherOrderRegularization.rpow_measure_lt_step_power"

@@ -1,0 +1,28 @@
+namespace = "Optimization.ResidualRegularization"
+
+[[node]]
+id = "Quality"
+
+[[node]]
+id = "quality_iff_of_measures"
+
+[[node]]
+id = "Stationary.quality"
+
+[[node]]
+id = "quality_iff_stationary_of_order_le_two"
+
+[[node]]
+id = "not_quality_witness"
+
+[[node]]
+id = "Quality.certificate"
+
+[[node]]
+id = "RunPrefix.residual_norm_nonincrease"
+
+[[node]]
+id = "RunPrefix.residual_norm_le_initial"
+
+[[node]]
+id = "RunPrefix.restrict"

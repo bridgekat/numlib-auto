@@ -1,0 +1,34 @@
+namespace = "Optimization.CompositeRegularization"
+
+[[node]]
+id = "SmallRadiusDecrease"
+
+[[node]]
+id = "radius_gt_of_small_actual_decrease"
+
+[[node]]
+id = "InnerBounds"
+
+[[node]]
+id = "initial_bounds"
+
+[[node]]
+id = "InnerTransition.bounds"
+
+[[node]]
+id = "InnerExecution.bounds"
+
+[[node]]
+id = "minimumInspectionRank"
+
+[[node]]
+id = "InnerTransition.minimumInspectionRank_lt"
+
+[[node]]
+id = "exists_fraction_long_step"
+
+[[node]]
+id = "not_failed_first_of_minimum"
+
+[[node]]
+id = "exists_inner_return_execution"

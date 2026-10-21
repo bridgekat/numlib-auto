@@ -1,0 +1,52 @@
+namespace = "CartisGouldToint.Chapter10.Section01"
+
+[[node]]
+id = "lanczosBasisMatrix"
+
+[[node]]
+id = "algorithm_10_1_1_prefix"
+
+[[node]]
+id = "algorithm_10_1_1_primal_eq"
+
+[[node]]
+id = "algorithm_10_1_1_length_eq_grade"
+
+[[node]]
+id = "algorithm_10_1_1_length_eq_preconditioned_grade"
+
+[[node]]
+id = "algorithm_10_1_1_gram"
+
+[[node]]
+id = "algorithm_10_1_1_hessian"
+
+[[node]]
+id = "algorithm_10_1_1_gradient"
+
+[[node]]
+id = "algorithm_10_1_1_energy_sum"
+
+[[node]]
+id = "algorithm_10_1_1_operator_relation"
+
+[[node]]
+id = "lanczosBasisMatrix_apply"
+
+[[node]]
+id = "algorithm_10_1_1_gram_matrix"
+
+[[node]]
+id = "algorithm_10_1_1_hessian_matrix"
+
+[[node]]
+id = "algorithm_10_1_1_gradient_matrix"
+
+[[node]]
+id = "algorithm_10_1_1_reduced_coefficients"
+
+[[node]]
+id = "algorithm_10_1_1_operator_relation_normalized"
+
+[[node]]
+id = "algorithm_10_1_1_basis_range"

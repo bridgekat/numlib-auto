@@ -1,0 +1,4 @@
+namespace = "EuclideanSpace"
+
+[[node]]
+id = "eq_of_nonneg_of_le_of_norm_eq"

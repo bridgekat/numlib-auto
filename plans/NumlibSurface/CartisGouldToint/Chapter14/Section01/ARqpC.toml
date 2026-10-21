@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.Chapter14.Section01"
+
+[[node]]
+id = "algorithm_14_1_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 14.1.1"
+
+[[node]]
+id = "algorithm_14_1_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 14.1.2"

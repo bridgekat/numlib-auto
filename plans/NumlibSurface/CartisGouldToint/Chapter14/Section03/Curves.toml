@@ -1,0 +1,15 @@
+namespace = "CartisGouldToint.Chapter14.Section03"
+
+[[node]]
+id = "FeasibleCurveJet"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations14.3.2–14.3.3, AssumptionX.CqQ"
+
+[[node]]
+id = "CurveQualification"
+
+[[node]]
+id = "curveQualification_iff"
+
+[[node]]
+id = "theorem_14_3_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.1"

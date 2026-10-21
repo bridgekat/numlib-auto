@@ -1,0 +1,89 @@
+namespace = "CartisGouldToint.Chapter07.Section02.BoundedBoundary"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "constraints"
+
+[[node]]
+id = "constraintSet"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "history"
+
+[[node]]
+id = "constraint_assumptions"
+
+[[node]]
+id = "target_objective"
+
+[[node]]
+id = "target_norm"
+
+[[node]]
+id = "target_taylor"
+
+[[node]]
+id = "target_model"
+
+[[node]]
+id = "target_smooth"
+
+[[node]]
+id = "smoothness_assumptions"
+
+[[node]]
+id = "target_fderiv"
+
+[[node]]
+id = "criticality_coord"
+
+[[node]]
+id = "initial_not_stationary"
+
+[[node]]
+id = "scalar_model_derivative_zero"
+
+[[node]]
+id = "inner_run"
+
+[[node]]
+id = "outer_run"
+
+[[node]]
+id = "phase_one_run"
+
+[[node]]
+id = "full_execution"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 7.2.1 and Theorem 7.2.7 output clause"
+
+[[node]]
+id = "terminal_target_criticality"
+
+[[node]]
+id = "lagrangian_eq_objective"
+
+[[node]]
+id = "terminal_lagrangian_criticality"
+
+[[node]]
+id = "multiplier_scale"
+
+[[node]]
+id = "no_scaled_kkt"
+
+[[node]]
+id = "SourceOutput"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 7.2.1 and Theorem 7.2.7 output clause"
+
+[[node]]
+id = "fails_source_output"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 7.2.1 and Theorem 7.2.7 output clause"
+
+[[node]]
+id = "full_counterexample"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 7.2.1 and Theorem 7.2.7 output clause"

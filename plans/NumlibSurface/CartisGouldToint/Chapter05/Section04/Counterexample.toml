@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.Chapter05.Section04"
+
+[[node]]
+id = "literal_phase_quadratic_counterexample"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.4.2"
+
+[[node]]
+id = "literal_phase_count_counterexample"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.4.3"

@@ -1,0 +1,4 @@
+namespace = "Hermite"
+
+[[node]]
+id = "exists_contDiff_bounded_of_unit_knots"

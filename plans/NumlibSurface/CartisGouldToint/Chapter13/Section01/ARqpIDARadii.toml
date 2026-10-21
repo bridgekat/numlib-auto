@@ -1,0 +1,17 @@
+namespace = "CartisGouldToint.Chapter13.Section01"
+
+[[node]]
+id = "arqpida_exists_coefficient_bound"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 13.1.63"
+
+[[node]]
+id = "lemma_13_1_12"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.12"
+
+[[node]]
+id = "arqpida_true_quality_at_running_sigma"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.15 with the actual running parameter maximum"
+
+[[node]]
+id = "arqpida_allp_transfer_of_true_gap_failure"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation 13.1.79 for the separately named all-p-checked variant"

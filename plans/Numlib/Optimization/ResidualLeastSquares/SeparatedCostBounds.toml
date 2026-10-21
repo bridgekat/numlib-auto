@@ -1,0 +1,40 @@
+namespace = "Optimization.ResidualLeastSquares"
+
+[[node]]
+id = "geometricCostFactor"
+
+[[node]]
+id = "geometricCostFactor_pos"
+
+[[node]]
+id = "inv_rpow_le_geometricCostFactor"
+
+[[node]]
+id = "one_le_geometricCostFactor"
+
+[[node]]
+id = "geometricCostWeight"
+
+[[node]]
+id = "geometricCostWeight_nonneg"
+
+[[node]]
+id = "primalDualCostWeight"
+
+[[node]]
+id = "primalDualCostWeight_nonneg"
+
+[[node]]
+id = "one_le_primalDualCostWeight"
+
+[[node]]
+id = "residualCostWeight_le_separated"
+
+[[node]]
+id = "Execution.totalEvaluations_le_separated"
+
+[[node]]
+id = "Execution.evaluations_le_separated"
+
+[[node]]
+id = "Execution.totalEvaluations_le_separated_of_initial_pos"

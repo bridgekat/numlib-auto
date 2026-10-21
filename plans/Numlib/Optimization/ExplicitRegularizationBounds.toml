@@ -1,0 +1,91 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "Transition.sigma_floor"
+
+[[node]]
+id = "Transition.valid_radii"
+
+[[node]]
+id = "Transition.request_bounds"
+
+[[node]]
+id = "Transition.cache_positive"
+
+[[node]]
+id = "Transition.rejected_cache"
+
+[[node]]
+id = "Transition.accuracy_only"
+
+[[node]]
+id = "Transition.not_certified"
+
+[[node]]
+id = "ValueTrial.prediction_pos"
+
+[[node]]
+id = "ValueTrial.current_accuracy"
+
+[[node]]
+id = "ValueTrial.accepted_decrease"
+
+[[node]]
+id = "Transition.query_length"
+
+[[node]]
+id = "ValueTrial.recompute_of_cache_none"
+
+[[node]]
+id = "Transition.objective_nonincrease"
+
+[[node]]
+id = "Transition.fresh_iff"
+
+[[node]]
+id = "Execution.sigma_floor"
+
+[[node]]
+id = "Execution.valid_radii"
+
+[[node]]
+id = "Execution.request_bounds"
+
+[[node]]
+id = "Execution.not_certified"
+
+[[node]]
+id = "Transition.query_length_of_cache_none"
+
+[[node]]
+id = "Execution.cache_none_before_first_trial"
+
+[[node]]
+id = "Execution.first_trial_queries"
+
+[[node]]
+id = "Execution.functionQueries_length"
+
+[[node]]
+id = "Execution.functionQueries_bounds"
+
+[[node]]
+id = "Execution.derivativeQueries_length"
+
+[[node]]
+id = "Execution.objective_nonincrease"
+
+[[node]]
+id = "Execution.certified_quality"
+
+[[node]]
+id = "Execution.prefix"
+
+[[node]]
+id = "Execution.prefix_state"
+
+[[node]]
+id = "Execution.prefix_inspection"
+
+[[node]]
+id = "Execution.prefix_queries"

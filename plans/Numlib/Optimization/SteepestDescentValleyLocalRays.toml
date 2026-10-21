@@ -1,0 +1,58 @@
+namespace = "Optimization.SteepestDescentValley"
+
+[[node]]
+id = "smoothStep_le_mul"
+
+[[node]]
+id = "lengthDrop_le_half_cellLength"
+
+[[node]]
+id = "cellDirection"
+
+[[node]]
+id = "cellRayPoint"
+
+[[node]]
+id = "cellRayPoint_coordinates"
+
+[[node]]
+id = "cellRayPoint_horizontal_mem"
+
+[[node]]
+id = "cellRayPoint_mem_core"
+
+[[node]]
+id = "cellRayPolynomial"
+
+[[node]]
+id = "euclideanObjective_cellRay"
+
+[[node]]
+id = "contDiff_euclideanObjective_cellRay"
+
+[[node]]
+id = "iteratedDeriv_euclideanObjective_cellRay"
+
+[[node]]
+id = "derivative_cellRayPolynomial"
+
+[[node]]
+id = "euclideanObjective_cellRay_endpoint_jets"
+
+[[node]]
+id = "isLocalMin_euclideanObjective_cellRay"
+
+[[node]]
+id = "deriv_euclideanObjective_cellRay_neg"
+
+[[node]]
+id = "firstLocalMin_euclideanObjective_cellRay"
+
+[[node]]
+id = "cellDirection_eq_neg_gradient"
+
+[[node]]
+id = "negativeGradientRay_eq_cellRay"
+
+[[node]]
+id = "firstLocalMin_negativeGradientRay"

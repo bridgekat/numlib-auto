@@ -1,0 +1,18 @@
+namespace = "CartisGouldToint.Chapter12.Section03"
+
+[[node]]
+id = "arqpDecreaseExponent"
+
+[[node]]
+id = "arqpDecreaseExponent_pos"
+
+[[node]]
+id = "HasArqpSufficientDecrease"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations 12.3.1–12.3.2"
+
+[[node]]
+id = "hasArqpSufficientDecrease_iff"
+
+[[node]]
+id = "arqp_complexity_of_sufficient_decrease"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.3"

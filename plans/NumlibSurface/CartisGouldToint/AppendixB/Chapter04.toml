@@ -1,0 +1,21 @@
+namespace = "CartisGouldToint.AppendixB.Chapter04"
+
+[[node]]
+id = "lemma_B_4_1"
+kind = "theorem"
+desc = '''The printed bundled radial power derivative identities include a false (p+1)st derivative norm formula for fractional β. Preserve as wrong and split valid j≤p norms/radial evaluations from corrected higher derivative bounds. Distinguish diagonal symmetric tensor norm from an unproved identification with multilinear operator norm.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.4.1"
+wrong = '''Equation (B.4.3) is false in dimension 2 with p=1, β=1/2, s=e1: D²(||·||^(3/2))(e1)[e2,e2]=3/2 while claimed norm is 3/4. Retain correct low-order clauses separately; do not use this formula to justify Hölder remainder constants.'''
+
+[[node]]
+id = "lemma_B_4_1_lower_derivatives"
+source = "Cartis, Gould and Toint, Lemma B.4.1, low-order clauses"
+
+[[node]]
+id = "lemma_B_4_1_higher_derivative_bound"
+source = "Cartis, Gould and Toint, correction to Lemma B.4.1 equation (B.4.3)"
+
+[[node]]
+id = "lemma_B_4_1_higher_radial_evaluation"
+source = "Cartis, Gould and Toint, Lemma B.4.1, exact radial evaluation separated from corrected equation (B.4.3)"

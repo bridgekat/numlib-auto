@@ -1,0 +1,46 @@
+namespace = 'CartisGouldToint.Chapter14.Section02.ARqpEDAUniv'
+
+[[node]]
+id = 'algorithm'
+
+[[node]]
+id = 'algorithm_of_unconstrained'
+
+[[node]]
+id = 'univ_internal_subproblems'
+
+[[node]]
+id = 'transverse_fixed_controls'
+
+[[node]]
+id = 'transverse_table_exponent'
+
+[[node]]
+id = 'transverse_initial_not_optimal'
+
+[[node]]
+id = 'transverse_bounded_positive_jets'
+
+[[node]]
+id = 'transverse_source_smoothness'
+
+[[node]]
+id = 'transverse_sublevel_value_bound'
+
+[[node]]
+id = 'transverse_algorithm'
+
+[[node]]
+id = 'transverse_incoming_radii'
+
+[[node]]
+id = 'transverse_return_policy'
+
+[[node]]
+id = 'exists_rate_violating_run'
+
+[[node]]
+id = 'no_uniform_certification_bound'
+
+[[node]]
+id = 'literal_arqpeda_sc_uniform_certification_counterexample'

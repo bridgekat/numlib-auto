@@ -1,0 +1,22 @@
+namespace = "Optimization.TransverseTrialSegments"
+
+[[node]]
+id = "refinementEndpoint_effects"
+
+[[node]]
+id = "refinementEndpoint_cache_pos"
+
+[[node]]
+id = "invariant_refinementEndpoint"
+
+[[node]]
+id = "prelude_endpoint_geometry"
+
+[[node]]
+id = "exists_prelude_segment"
+
+[[node]]
+id = "exists_injection_segment"
+
+[[node]]
+id = "exists_tail_segment"

@@ -1,0 +1,20 @@
+[[node]]
+id = "Optimization.InexactTaylorModels.contDiff_regularizedPolynomial"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.abs_polynomial_le_coefficient_sum"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.regularizedPolynomial_eventually_ge"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.isCompact_regularizedPolynomial_sublevel"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.exists_regularizedPolynomial_minimizer"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.diagonalLipschitz_regularizedPolynomial"
+
+[[node]]
+id = "Optimization.InexactTaylorModels.norm_iteratedFDeriv_regularizedPolynomial_le_three_max"

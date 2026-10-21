@@ -1,0 +1,13 @@
+namespace = "Optimization.CompositeRegularization"
+
+[[node]]
+id = "decrement_pos_of_model_lt"
+
+[[node]]
+id = "very_successful_of_error"
+
+[[node]]
+id = "OuterTransition.sigma_bound"
+
+[[node]]
+id = "OuterExecution.sigma_upper"

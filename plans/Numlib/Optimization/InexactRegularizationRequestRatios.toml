@@ -1,0 +1,64 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "requestAmplification"
+
+[[node]]
+id = "one_le_requestAmplification"
+
+[[node]]
+id = "request_ratio_le_amplification"
+
+[[node]]
+id = "requestAmplification_le"
+
+[[node]]
+id = "requestAmplification_le_iff"
+
+[[node]]
+id = "Execution.request_proportional"
+
+[[node]]
+id = "Execution.request_ratio"
+
+[[node]]
+id = "Execution.request_le_amplification"
+
+[[node]]
+id = "StepAccurate.first_request_le_power"
+
+[[node]]
+id = "StepAccurate.short_request_le_power"
+
+[[node]]
+id = "effectiveAccuracy"
+
+[[node]]
+id = "effectiveAccuracy_le_iff"
+
+[[node]]
+id = "effectiveAccuracy_pos"
+
+[[node]]
+id = "Execution.step_request_le_power"
+
+[[node]]
+id = "Execution.short_step_request_le_power"
+
+[[node]]
+id = "Execution.short_step_coefficient_le_power"
+
+[[node]]
+id = "Execution.very_successful_of_large"
+
+[[node]]
+id = "Execution.very_successful_of_oracle"
+
+[[node]]
+id = "Execution.sigma_step_nonincrease_of_large"
+
+[[node]]
+id = "Execution.sigma_upper_of_initial_requests"
+
+[[node]]
+id = "Execution.sigma_upper_of_oracle"

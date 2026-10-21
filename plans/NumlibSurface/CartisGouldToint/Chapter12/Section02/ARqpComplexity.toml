@@ -1,0 +1,24 @@
+namespace = "CartisGouldToint.Chapter12.Section02"
+
+[[node]]
+id = "satisfiesCriteria_iff_isApproxOrderMinimizer"
+
+[[node]]
+id = "complexityExponent_eq_arqpComplexityExponent"
+
+[[node]]
+id = "ARqpTruePoint"
+
+[[node]]
+id = "arqpTruePoint_iff"
+
+[[node]]
+id = "theorem_12_2_14_of_legal_prefixes"
+
+[[node]]
+id = "theorem_12_2_14"
+kind = "theorem"
+desc = "Under f.Bb, f.D1pL and uniform radii1 for q≤2 orδ_s, j≥κ_δ, min ε_j otherwise, ARqp finds every requested order criterion. Function calls≤A(f(x₀)−f_low)/min_j ε_j^π_j+C and derivative batches≤S(f(x₀)−f_low)/min_j ε_j^π_j+2,π_j=(p+1)/(p−j+1) if q≤2 andj(p+1)/p otherwise. Keep unit radii in the first case and separate vector radii in the second; telescope successful decreases plus σ iteration count."
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.14"
+deps = ["lemma_12_2_10", "lemma_12_2_13", "Optimization.EvaluationComplexity.card_mul_le_gap"]
+wrong = 'False for the literal Algorithm12.2.2 as transcribed: p=q=1, f(t)=t²/2−2t, x0=0, sigma0=1, epsilon1=1/2 and unit radii satisfy boundedness, f.D1pL and the radius choices. Step2 may choose the long step4 with m(4)=m(0), and stops at x0 although every positive-radius first-order criterion fails. literal_arqp_equality_stop_counterexample constructs the actual legal N0 execution and proves all these properties. Actual inner fraction provenance excludes this behavior; theorem_12_2_14_of_legal_prefixes is explicitly conditional on operational availability, which is not silently assumed for the literal algorithm.'

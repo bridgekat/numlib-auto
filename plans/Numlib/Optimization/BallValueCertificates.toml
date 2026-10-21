@@ -1,0 +1,4 @@
+namespace = "Optimization"
+
+[[node]]
+id = "norm_rescale_boundary"

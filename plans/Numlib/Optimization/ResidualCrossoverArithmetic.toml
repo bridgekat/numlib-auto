@@ -1,0 +1,64 @@
+namespace = "Optimization.ResidualCrossover"
+
+[[node]]
+id = "beta"
+
+[[node]]
+id = "primal"
+
+[[node]]
+id = "epsilon"
+
+[[node]]
+id = "exponent"
+
+[[node]]
+id = "middleResidual"
+
+[[node]]
+id = "finalResidual"
+
+[[node]]
+id = "middleGradient"
+
+[[node]]
+id = "inputTolerance"
+
+[[node]]
+id = "parameter_bounds"
+
+[[node]]
+id = "middle_gap_bounds"
+
+[[node]]
+id = "first_cost_le"
+
+[[node]]
+id = "second_cost_le"
+
+[[node]]
+id = "printedBound"
+
+[[node]]
+id = "printedBound_lt_inner_cost"
+
+[[node]]
+id = "firstCubic"
+
+[[node]]
+id = "secondCubic"
+
+[[node]]
+id = "firstCubic_min"
+
+[[node]]
+id = "secondCubic_min"
+
+[[node]]
+id = "acceptance_and_updates"
+
+[[node]]
+id = "starting_tests_fail"
+
+[[node]]
+id = "input_tolerance_bounds"

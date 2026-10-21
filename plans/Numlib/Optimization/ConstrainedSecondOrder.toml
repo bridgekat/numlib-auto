@@ -1,0 +1,31 @@
+namespace = "Constrained"
+
+[[node]]
+id = "tangentCriticalCone"
+
+[[node]]
+id = "isStrictLocalMinOn_of_posDef_tangentCriticalCone"
+
+[[node]]
+id = "isStrictLocalMinOn_of_contDiff_posDef_tangentCriticalCone"
+
+[[node]]
+id = "nonneg_second_on_tangentCone_of_isLocalMinOn"
+
+[[node]]
+id = "nonneg_lagrangian_second_of_isRegularPoint"
+
+[[node]]
+id = "fderiv_lagrangian"
+
+[[node]]
+id = "contDiffOn_lagrangian"
+
+[[node]]
+id = "existsUnique_stationary_lagrangian_second_of_isLocalMinOn"
+
+[[node]]
+id = "isStrictLocalMinOn_of_contDiffOn_lagrangian_second_order"
+
+[[node]]
+id = "isStrictLocalMinOn_of_contDiffOn_posDef_tangentCriticalCone"

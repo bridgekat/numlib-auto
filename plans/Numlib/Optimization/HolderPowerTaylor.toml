@@ -1,0 +1,25 @@
+namespace = "Optimization"
+
+[[node]]
+id = "HolderDerivative"
+
+[[node]]
+id = "HolderDerivative.norm_sub_le"
+
+[[node]]
+id = "HolderDerivative.norm_iteratedFDeriv_sub_taylorModel_le"
+
+[[node]]
+id = "HolderDerivative.norm_sub_taylorModel_le"
+
+[[node]]
+id = "HolderDerivative.norm_fderiv_sub_taylorModel_le"
+
+[[node]]
+id = "HolderDerivative.norm_hessian_sub_taylorModel_le"
+
+[[node]]
+id = "HolderDerivative.trial_fderiv_bound"
+
+[[node]]
+id = "HolderDerivative.trial_curvature_bound"

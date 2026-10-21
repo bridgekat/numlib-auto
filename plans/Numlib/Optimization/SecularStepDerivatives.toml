@@ -1,0 +1,73 @@
+namespace = "Optimization.SecularResolvent"
+
+[[node]]
+id = "spectralStep"
+
+[[node]]
+id = "inverse_derivative_coefficient"
+
+[[node]]
+id = "iteratedDeriv_neg_div_add"
+
+[[node]]
+id = "iteratedDeriv_spectralStep"
+
+[[node]]
+id = "shift_iteratedDeriv_spectralStep"
+
+[[node]]
+id = "resolventStep"
+
+[[node]]
+id = "resolventStep_eq_spectralStep"
+
+[[node]]
+id = "eventuallyEq_resolventStep"
+
+[[node]]
+id = "iteratedDeriv_resolventStep"
+
+[[node]]
+id = "shift_iteratedDeriv_resolventStep"
+
+[[node]]
+id = "repr_iteratedDeriv_resolventStep"
+
+[[node]]
+id = "inner_iteratedDeriv_resolventStep"
+
+[[node]]
+id = "secularDerivativeCoefficient"
+
+[[node]]
+id = "secularDerivativeCoefficient_zero"
+
+[[node]]
+id = "secularDerivativeCoefficient_succ"
+
+[[node]]
+id = "iteratedDeriv_normSqResolvent_odd"
+
+[[node]]
+id = "iteratedDeriv_normSqResolvent_even"
+
+[[node]]
+id = "weightedResolventStep"
+
+[[node]]
+id = "weightedResolventStep_eq_spectralStep"
+
+[[node]]
+id = "iteratedDeriv_weightedResolventStep"
+
+[[node]]
+id = "toEnergy_iteratedDeriv_weightedResolventStep"
+
+[[node]]
+id = "shift_iteratedDeriv_weightedResolventStep"
+
+[[node]]
+id = "iteratedDeriv_weightedNormSqResolvent_odd"
+
+[[node]]
+id = "iteratedDeriv_weightedNormSqResolvent_even"

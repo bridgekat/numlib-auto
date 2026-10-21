@@ -1,0 +1,4 @@
+namespace = "Optimization.CoupledCubic"
+
+[[node]]
+id = "complete_trustRegion_prefix"

@@ -1,0 +1,22 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "Transition.request_eq"
+
+[[node]]
+id = "Execution.request_eq"
+
+[[node]]
+id = "Execution.request_proportional"
+
+[[node]]
+id = "Execution.request_ratio"
+
+[[node]]
+id = "Execution.request_le_amplification"
+
+[[node]]
+id = "Execution.step_request_le_power"
+
+[[node]]
+id = "Execution.short_step_request_le_power"

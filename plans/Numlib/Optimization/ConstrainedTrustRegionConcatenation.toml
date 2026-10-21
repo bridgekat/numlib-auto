@@ -1,0 +1,49 @@
+namespace = "Optimization.ConstrainedTrustRegion"
+
+[[node]]
+id = "appendTrace"
+
+[[node]]
+id = "appendTrace_point_before"
+
+[[node]]
+id = "appendTrace_step_before"
+
+[[node]]
+id = "appendTrace_radius_before"
+
+[[node]]
+id = "appendTrace_witness_before"
+
+[[node]]
+id = "appendTrace_order_before"
+
+[[node]]
+id = "appendTrace_point_after"
+
+[[node]]
+id = "appendTrace_step_after"
+
+[[node]]
+id = "appendTrace_radius_after"
+
+[[node]]
+id = "appendTrace_witness_after"
+
+[[node]]
+id = "appendTrace_order_after"
+
+[[node]]
+id = "stops_appendTrace_after"
+
+[[node]]
+id = "ratio_appendTrace_after"
+
+[[node]]
+id = "LegalPrefix.append"
+
+[[node]]
+id = "LegalPrefix.isRun_of_stops"
+
+[[node]]
+id = "_root_.Optimization.HigherOrderTrustRegion.LegalPrefix.append"

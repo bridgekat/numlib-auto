@@ -1,0 +1,97 @@
+namespace = "Optimization.HigherOrderTrustRegion"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "Trace"
+
+[[node]]
+id = "testRadius"
+
+[[node]]
+id = "Stops"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "scaledGap"
+
+[[node]]
+id = "LegalPrefix"
+
+[[node]]
+id = "LegalPrefix.radius_pos"
+
+[[node]]
+id = "LegalPrefix.scaledGap_lower"
+
+[[node]]
+id = "LegalPrefix.predicted_ge_scaledGap"
+
+[[node]]
+id = "LegalPrefix.ratio_ge_of_radius"
+
+[[node]]
+id = "radiusCoefficient"
+
+[[node]]
+id = "LegalPrefix.radius_lower"
+
+[[node]]
+id = "LegalPrefix.predicted_lower"
+
+[[node]]
+id = "LegalPrefix.success_count_le"
+
+[[node]]
+id = "LegalPrefix.total_count_le"
+
+[[node]]
+id = "successCoefficient"
+
+[[node]]
+id = "functionCoefficient"
+
+[[node]]
+id = "logCoefficient"
+
+[[node]]
+id = "offsetCoefficient"
+
+[[node]]
+id = "trialBudget"
+
+[[node]]
+id = "complexity_constants_pos"
+
+[[node]]
+id = "LegalPrefix.prefix_count_le"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeBatches"
+
+[[node]]
+id = "functionQueries"
+
+[[node]]
+id = "derivativeQueries"
+
+[[node]]
+id = "IsRun.complexity"
+
+[[node]]
+id = "LegalPrefix.initial_scaledGap_upper"
+
+[[node]]
+id = "runningGap"
+
+[[node]]
+id = "LegalPrefix.radius_lower_runningGap"

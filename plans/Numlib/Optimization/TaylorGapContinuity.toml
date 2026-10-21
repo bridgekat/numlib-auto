@@ -1,0 +1,10 @@
+namespace = "Optimization.TaylorCriticality"
+
+[[node]]
+id = "continuous_taylorModel_joint"
+
+[[node]]
+id = "continuous_taylorDecrement_joint"
+
+[[node]]
+id = "continuous_gapOn_taylorDecrement"

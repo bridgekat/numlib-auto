@@ -1,0 +1,55 @@
+namespace = "Matrix.TridiagonalLDL"
+
+[[node]]
+id = "forwardSweep"
+
+[[node]]
+id = "scaleSweep"
+
+[[node]]
+id = "backwardSweep"
+
+[[node]]
+id = "solve"
+
+[[node]]
+id = "forwardValue"
+
+[[node]]
+id = "forwardSweep_spec"
+
+[[node]]
+id = "scaleSweep_spec"
+
+[[node]]
+id = "backwardSweep_spec"
+
+[[node]]
+id = "lowerBidiagonalOf_mulVec"
+
+[[node]]
+id = "transpose_lowerBidiagonalOf"
+
+[[node]]
+id = "lower_mulVec_forwardSweep"
+
+[[node]]
+id = "transpose_lower_mulVec_backwardSweep"
+
+[[node]]
+id = "diagonal_mulVec_scaleSweep"
+
+[[node]]
+id = "matrix_mulVec_solve"
+
+[[node]]
+id = "forwardSweep_counts"
+
+[[node]]
+id = "scaleSweep_counts"
+
+[[node]]
+id = "backwardSweep_counts"
+
+[[node]]
+id = "solve_counts"

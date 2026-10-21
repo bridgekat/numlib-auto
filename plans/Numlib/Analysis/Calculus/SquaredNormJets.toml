@@ -1,0 +1,13 @@
+namespace = "SquaredNormJets"
+
+[[node]]
+id = "norm_iteratedFDeriv_bilinear_le"
+
+[[node]]
+id = "iteratedFDeriv_comp_eq_sum"
+
+[[node]]
+id = "norm_iteratedFDeriv_comp_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_comp_sub_le"

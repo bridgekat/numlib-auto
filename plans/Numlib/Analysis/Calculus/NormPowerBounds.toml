@@ -1,0 +1,40 @@
+[[node]]
+id = 'tendsto_iteratedFDeriv_norm_rpow_add_smul'
+
+[[node]]
+id = 'iteratedFDeriv_norm_rpow_apply_unit_nat'
+
+[[node]]
+id = 'norm_rpow_add_smul_eq_quadratic'
+
+[[node]]
+id = 'monotone_iteratedFDeriv_odd_norm_rpow_line'
+
+[[node]]
+id = 'iteratedFDeriv_odd_norm_rpow_apply_const_le'
+
+[[node]]
+id = 'abs_iteratedFDeriv_odd_norm_rpow_apply_const_le'
+
+[[node]]
+id = 'norm_iteratedFDeriv_odd_norm_rpow_le'
+
+[[node]]
+id = 'norm_iteratedFDeriv_even_norm_rpow_le'
+
+[[node]]
+id = 'fderiv_iteratedFDeriv_norm_rpow_apply_self'
+
+[[node]]
+id = 'norm_iteratedFDeriv_nat_norm_rpow_le'
+
+[[node]]
+id = 'norm_iteratedFDeriv_norm_nat_rpow_le'
+
+[[node]]
+id = 'norm_iteratedFDeriv_norm_pow_le_of_le'
+source = 'Cartis, Gould and Toint (2022), Appendix B.4, (B.4.1)–(B.4.3)'
+
+[[node]]
+id = 'norm_sub_iteratedFDeriv_norm_pow_le'
+source = 'Cartis, Gould and Toint (2022), Lemma 12.2.7 and Appendix B.4'

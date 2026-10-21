@@ -1,0 +1,154 @@
+namespace = "Optimization.InexactRegularizedNewton"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "residual"
+
+[[node]]
+id = "fderiv_model"
+
+[[node]]
+id = "gradient_model"
+
+[[node]]
+id = "hessian_model"
+
+[[node]]
+id = "projectedHessian"
+
+[[node]]
+id = "projectedCurvature"
+
+[[node]]
+id = "projected_model_hessian"
+
+[[node]]
+id = "projectedCurvature_eq_of_surjective"
+
+[[node]]
+id = "IsStep"
+
+[[node]]
+id = "IsStep.zero"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "IntervalUpdate"
+
+[[node]]
+id = "TrialTrace"
+
+[[node]]
+id = "IsStep.shift_nonneg"
+
+[[node]]
+id = "IsStep.taylor_decrease"
+
+[[node]]
+id = "IsStep.accepted_of_shift"
+
+[[node]]
+id = "IsStep.trial_gradient_le"
+
+[[node]]
+id = "IsStep.projected_curvature_ge"
+
+[[node]]
+id = "upperBound"
+
+[[node]]
+id = "TrialTrace.upper_le"
+
+[[node]]
+id = "TrialTrace.accepted_decrease"
+
+[[node]]
+id = "TrialTrace.accepted_step_sq"
+
+[[node]]
+id = "TrialTrace.curvature_step"
+
+[[node]]
+id = "TrialTrace.interval_order"
+
+[[node]]
+id = "TrialTrace.lower_after_failure"
+
+[[node]]
+id = "TrialTrace.lower_growth"
+
+[[node]]
+id = "TrialTrace.failed_block_growth"
+
+[[node]]
+id = "failureBound"
+
+[[node]]
+id = "TrialTrace.failed_block_count"
+
+[[node]]
+id = "TrialTrace.total_count"
+
+[[node]]
+id = "gradientBound"
+
+[[node]]
+id = "decreaseCoefficient"
+
+[[node]]
+id = "TrialTrace.accepted_gradient_decrease"
+
+[[node]]
+id = "TrialTrace.success_count"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "exists_firstOrder_with_cost"
+
+[[node]]
+id = "exists_firstOrder_complexity_constants"
+
+[[node]]
+id = "Stationary"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "TrialTrace.accepted_curvature_decrease"
+
+[[node]]
+id = "mixedCoefficient"
+
+[[node]]
+id = "TrialTrace.accepted_mixed_decrease"
+
+[[node]]
+id = "merit"
+
+[[node]]
+id = "TrialTrace.merit_decrease"
+
+[[node]]
+id = "TrialTrace.secondOrder_success_count"
+
+[[node]]
+id = "SecondOrderPrefix"
+
+[[node]]
+id = "exists_secondOrder_with_cost"
+
+[[node]]
+id = "exists_secondOrder_complexity_constants"

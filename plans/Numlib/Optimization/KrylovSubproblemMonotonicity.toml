@@ -1,0 +1,53 @@
+namespace = "Optimization.KrylovSubproblem"
+
+[[node]]
+id = "signedLanczosMatrix"
+
+[[node]]
+id = "signedLanczosVector"
+
+[[node]]
+id = "norm_signedLanczosVector"
+
+[[node]]
+id = "signedLanczosMatrix_isStieltjes"
+
+[[node]]
+id = "signedLanczosVector_stationary"
+
+[[node]]
+id = "signedLanczosMatrix_submatrix"
+
+[[node]]
+id = "lanczos_stationary_norm_le_of_shift_le"
+
+[[node]]
+id = "lanczos_regularized_norm_mono_nested"
+
+[[node]]
+id = "lanczos_grade_projected_stationary"
+
+[[node]]
+id = "lanczos_regularized_norm_le_full"
+
+[[node]]
+id = "lanczos_stationary_norm_lt_of_shift_lt"
+
+[[node]]
+id = "lanczos_trustRegion_stationary_norm_mono"
+
+[[node]]
+id = "lanczos_trustRegion_shift_spec"
+
+[[node]]
+id = "lanczos_trustRegion_norm_mono_nested"
+
+[[node]]
+id = "lanczos_trustRegion_norm_le_full"
+
+[[node]]
+id = "lanczos_trustRegion_norm_mono"
+
+[[node]]
+id = "lanczos_regularized_norm_mono"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Lemmas 10.2.1 and 10.3.1"

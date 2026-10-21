@@ -1,0 +1,22 @@
+namespace = "CurveTaylor"
+
+[[node]]
+id = "compositionIndices"
+
+[[node]]
+id = "coefficient"
+
+[[node]]
+id = "coefficient_one"
+
+[[node]]
+id = "coefficient_two"
+
+[[node]]
+id = "coefficient_three"
+
+[[node]]
+id = "coefficient_four"
+
+[[node]]
+id = "IsOrderMinimizer"

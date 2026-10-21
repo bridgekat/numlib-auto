@@ -1,0 +1,46 @@
+namespace = "Optimization.CompositeRegularization"
+
+[[node]]
+id = "smoothModel"
+
+[[node]]
+id = "vectorModel"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "modelDecrement"
+
+[[node]]
+id = "GapWitness"
+
+[[node]]
+id = "exists_fraction_gapWitness"
+
+[[node]]
+id = "PassedTest"
+
+[[node]]
+id = "passedTest_iff"
+
+[[node]]
+id = "ModelStep"
+
+[[node]]
+id = "OuterTransition"
+
+[[node]]
+id = "OuterExecution"
+
+[[node]]
+id = "InnerTransition"
+
+[[node]]
+id = "InnerExecution"
+
+[[node]]
+id = "InnerTransition.mu_bounds"
+
+[[node]]
+id = "InnerExecution.convex_first_radius"

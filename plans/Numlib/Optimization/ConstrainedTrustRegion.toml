@@ -1,0 +1,49 @@
+namespace = "Optimization.ConstrainedTrustRegion"
+
+[[node]]
+id = "testingSet"
+
+[[node]]
+id = "mem_testingSet"
+
+[[node]]
+id = "zero_mem_testingSet"
+
+[[node]]
+id = "isCompact_testingSet"
+
+[[node]]
+id = "exists_maximizer"
+
+[[node]]
+id = "testingSet_univ"
+
+[[node]]
+id = "testingSet_eq_closedBall"
+
+[[node]]
+id = "OperationalPrefix"
+
+[[node]]
+id = "LegalPrefix"
+
+[[node]]
+id = "LegalPrefix.point_mem"
+
+[[node]]
+id = "operationalOfUnconstrained"
+
+[[node]]
+id = "legalPrefix_univ_iff"
+
+[[node]]
+id = "of_unconstrained"
+
+[[node]]
+id = "LegalPrefix.gaps_at_stop"
+
+[[node]]
+id = "LegalPrefix.restrict"
+
+[[node]]
+id = "IsRun"

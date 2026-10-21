@@ -1,0 +1,55 @@
+namespace = "Optimization.HigherOrderApproximateRegularizationSharpness"
+
+[[node]]
+id = "parameters"
+
+[[node]]
+id = "decrement_sparse"
+
+[[node]]
+id = "gap_sparse"
+
+[[node]]
+id = "ModelQuality"
+
+[[node]]
+id = "state"
+
+[[node]]
+id = "execution_of_accepted"
+
+[[node]]
+id = "run_of_sparseJet"
+
+[[node]]
+id = "power_model_minimum"
+
+[[node]]
+id = "sigma"
+
+[[node]]
+id = "sigma_pos"
+
+[[node]]
+id = "model_sparse_shape"
+
+[[node]]
+id = "model_sparse_minimum"
+
+[[node]]
+id = "model_sparse_strict"
+
+[[node]]
+id = "ratio_sparse"
+
+[[node]]
+id = "all_derivatives_lipschitz"
+
+[[node]]
+id = "exists_good_family"
+
+[[node]]
+id = "gap_low_at_minimum"
+
+[[node]]
+id = "exists_low_family"

@@ -1,0 +1,67 @@
+namespace = "Hermite"
+
+[[node]]
+id = "scaledJet"
+
+[[node]]
+id = "intervalQuinticPolynomial"
+
+[[node]]
+id = "quinticCell"
+
+[[node]]
+id = "contDiff_quinticCell"
+
+[[node]]
+id = "iteratedDeriv_quinticCell"
+
+[[node]]
+id = "quinticCell_endpoint_jets"
+
+[[node]]
+id = "quinticCell_eq"
+
+[[node]]
+id = "quinticPieces"
+
+[[node]]
+id = "finiteQuintic"
+
+[[node]]
+id = "quinticPieces_zero"
+
+[[node]]
+id = "quinticPieces_succ"
+
+[[node]]
+id = "quinticPieces_last"
+
+[[node]]
+id = "contDiff_quinticPieces"
+
+[[node]]
+id = "quinticPieces_left_jets"
+
+[[node]]
+id = "quinticPieces_right_jets"
+
+[[node]]
+id = "contDiff_finiteQuintic"
+
+[[node]]
+id = "finiteQuintic_node_jets"
+
+[[node]]
+id = "joinFin_cell"
+
+[[node]]
+id = "finiteQuintic_cell_jets"
+
+[[node]]
+id = "finiteQuintic_left_jets"
+
+[[node]]
+id = "finiteQuintic_right_jets"
+
+[[node]]
+id = "exists_adjacent_cell"

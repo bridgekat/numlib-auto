@@ -1,0 +1,101 @@
+namespace = "CartisGouldToint.Chapter07.Section02"
+
+[[node]]
+id = "quadraticPenaltyModel"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.3.2, (7.2.57)\u2013(7.2.59)"
+
+[[node]]
+id = "quadraticPenaltyModel_eq"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "quadraticPenaltyMultiplier"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "quadraticPenaltyMultiplier_perturbed"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "norm_constraint_eq_mul_norm_penaltyMultiplier"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "quadraticPenaltyModel_hasFDerivAt"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "augmentedLagrangianModel"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.3.3, (7.2.62) and surrounding definitions"
+
+[[node]]
+id = "augmentedLagrangianModel_eq"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "augmentedMultiplier"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "augmentedMultiplier_perturbed"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "augmentedLagrangianModel_hasFDerivAt"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "IsAugmentedUpdate"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "IsAugmentedUpdate.parameter_pos"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "shiftedBarrierDomain"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "logarithmicBarrierModel"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2.3.4, (7.2.63)\u2013(7.2.64)"
+
+[[node]]
+id = "mem_shiftedBarrierDomain"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "barrierMultiplier"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "barrierMultiplier_complementarity"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "barrierMultiplier_pos"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "barrierMultiplier_complementarity_norm_sq"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "barrierMultiplier_complementarity_norm"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "logarithmicBarrierModel_hasFDerivAt"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "quadraticPenaltyModel_fderiv_eq_lagrangian"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "augmentedLagrangianModel_fderiv_eq_lagrangian"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"
+
+[[node]]
+id = "logarithmicBarrierModel_fderiv_eq_lagrangian"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2; target, penalty and barrier identities"

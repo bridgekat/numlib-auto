@@ -1,0 +1,7 @@
+namespace = "Optimization.QuadraticSubproblem"
+
+[[node]]
+id = "contDiff_quadratic"
+
+[[node]]
+id = "fderiv_fderiv_quadratic_apply"

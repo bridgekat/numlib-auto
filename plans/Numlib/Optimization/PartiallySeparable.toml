@@ -1,0 +1,16 @@
+namespace = "Optimization.PartiallySeparable"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "objective_apply"
+
+[[node]]
+id = "element_add_of_mem_ker"
+
+[[node]]
+id = "iteratedFDeriv_objective"
+
+[[node]]
+id = "taylorModel_objective"

@@ -1,0 +1,7 @@
+namespace = "LinearMap.IsSymmetric"
+
+[[node]]
+id = "norm_sq_eq_sum_eigenvector_coordinates"
+
+[[node]]
+id = "norm_shift_bounds_of_eigenvalue_bounds"

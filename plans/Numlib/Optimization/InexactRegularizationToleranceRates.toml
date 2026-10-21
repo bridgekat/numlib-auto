@@ -1,0 +1,25 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "correctedSigmaBound_withTolerances"
+
+[[node]]
+id = "correctedTransferConstant_withTolerances"
+
+[[node]]
+id = "acceptedDecreaseCoefficient_withTolerances"
+
+[[node]]
+id = "trialCountMultiplier_withTolerances"
+
+[[node]]
+id = "trialLogBudget_withTolerances"
+
+[[node]]
+id = "refinementLogSlope_withTolerances"
+
+[[node]]
+id = "refinementCountConstant_withTolerances"
+
+[[node]]
+id = "toleranceMeasure_withTolerances"

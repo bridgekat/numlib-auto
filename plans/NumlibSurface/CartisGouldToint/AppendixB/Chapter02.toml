@@ -1,0 +1,33 @@
+namespace = "CartisGouldToint.AppendixB.Chapter02"
+
+[[node]]
+id = "FiniteValleyData"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, equations (B.2.4)–(B.2.25), explicit finite construction and completion"
+
+[[node]]
+id = "finiteValleyData"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, equations (B.2.4)–(B.2.25), explicit finite construction and completion"
+
+[[node]]
+id = "lemma_B_2_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.2"
+
+[[node]]
+id = "lemma_B_2_2_integral_count"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.2, exact integral reciprocal-square subfamily"
+
+[[node]]
+id = "lemma_B_2_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.3"
+
+[[node]]
+id = "lemma_B_2_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.4"
+
+[[node]]
+id = "lemma_B_2_5"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.5"
+
+[[node]]
+id = "lemma_B_2_6"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.6"

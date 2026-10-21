@@ -1,0 +1,22 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "TrialData"
+
+[[node]]
+id = "TrialData.execution"
+
+[[node]]
+id = "TrialData.execution_state_zero"
+
+[[node]]
+id = "TrialData.execution_state_one"
+
+[[node]]
+id = "TrialData.execution_trial"
+
+[[node]]
+id = "TrialData.execution_accepted"
+
+[[node]]
+id = "TrialData.execution_queries"

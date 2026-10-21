@@ -1,0 +1,40 @@
+namespace = "Optimization.HigherOrderRegularization"
+
+[[node]]
+id = "DiagonalLipschitz"
+
+[[node]]
+id = "DiagonalLipschitz.of_operator"
+
+[[node]]
+id = "DiagonalLipschitz.value_remainder"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "model_zero"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "TrialTrace"
+
+[[node]]
+id = "predicted_decrease_of_model_le"
+
+[[node]]
+id = "TrialTrace.predicted_decrease"
+
+[[node]]
+id = "TrialTrace.predicted_pos"
+
+[[node]]
+id = "TrialTrace.ratio_ge_of_sigma_ge"
+
+[[node]]
+id = "TrialTrace.sigma_upper"
+
+[[node]]
+id = "ratio_ge_of_prediction"

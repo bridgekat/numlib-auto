@@ -1,0 +1,22 @@
+namespace = "Optimization.TargetLeastSquares"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "objective_nonneg"
+
+[[node]]
+id = "objective_affine_target"
+
+[[node]]
+id = "smoothOn_of_two_targets"
+
+[[node]]
+id = "smoothOn_of_abs_target_le"
+
+[[node]]
+id = "smoothOn_of_target_mem_Icc"
+
+[[node]]
+id = "objective_hasFDerivAt"

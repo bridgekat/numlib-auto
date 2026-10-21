@@ -1,0 +1,46 @@
+namespace = "CartisGouldToint.Chapter06.Section02"
+
+[[node]]
+id = "ConstrainedSmoothnessAssumptions"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, assumptions f.bB.C and f.DpL.C"
+
+[[node]]
+id = "modelRestrictedCriticality"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.1, (6.2.1)\u2013(6.2.5), (6.2.7)"
+
+[[node]]
+id = "algorithm_6_2_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 6.2.1"
+
+[[node]]
+id = "lemma_6_2_1"
+kind = "theorem"
+desc = '''On successful ARp-CC iterations under C.CNe and f.DpL.C: failure of next-point first criticality gives ‖s‖^p > p!(1−θ1)ε1/(L+σmax); failure of objective j=2,3 measures over MODEL restricted directions gives ‖s‖^(p−j+1)>(p−j+1)!(1−θj)εj/(L+σmax). Also bounds |Dm(s)[d]| and |D²m(s)[d,d]| by Taylor remainder plus τj εj for restricted OBJECTIVE d of norm≤1. Proof compares derivatives of objective and regularized Taylor model. Supplied transcription final clauses omit ‖d‖≤1, required by estimate (6.2.23).'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 6.2.1"
+deps = ["CartisGouldToint.Chapter06.Section02.algorithm_6_2_1"]
+wrong = '''The claims (6.2.18)–(6.2.19) quantify over unrestricted-length d but their Taylor error estimate only holds for ‖d‖≤1. Restrict to C1∩B and C2∩B, as required by the subsequent proof; confirm against original typeset source before clearing.'''
+
+
+[[node]]
+id = "algorithm_6_2_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 6.2.2"
+
+[[node]]
+id = "lemma_6_2_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 6.2.4"
+
+[[node]]
+id = "theorem_6_2_5"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 6.2.5"
+
+[[node]]
+id = "modelRestrictedSteps"
+source = "Cartis, Gould and Toint, Section 6.2.1; corrected bounded-direction clauses of Lemma 6.2.1"
+
+[[node]]
+id = "lemma_6_2_1_first_bounded_directions"
+source = "Cartis, Gould and Toint, Section 6.2.1; corrected bounded-direction clauses of Lemma 6.2.1"
+
+[[node]]
+id = "lemma_6_2_1_second_bounded_directions"
+source = "Cartis, Gould and Toint, Section 6.2.1; corrected bounded-direction clauses of Lemma 6.2.1"

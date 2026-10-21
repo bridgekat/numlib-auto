@@ -1,0 +1,58 @@
+namespace = "Optimization"
+
+[[node]]
+id = "CubicRegularization.fderiv_cubicModel_apply_self"
+
+[[node]]
+id = "CubicRegularization.norm_step_le_of_relative_residual"
+
+[[node]]
+id = "CubicRegularization.HessianLipschitz.distance_le_gradient"
+
+[[node]]
+id = "CubicRegularization.ratio_ge_of_curvature_residual"
+
+[[node]]
+id = "CubicRegularization.localStepFactor"
+
+[[node]]
+id = "CubicRegularization.localQuadraticThreshold"
+
+[[node]]
+id = "CubicRegularization.localStepFactor_pos"
+
+[[node]]
+id = "CubicRegularization.localQuadraticThreshold_pos"
+
+[[node]]
+id = "CubicRegularization.localQuadraticThreshold_bounds"
+
+[[node]]
+id = "CubicRegularization.IsRun.local_step"
+
+[[node]]
+id = "CubicRegularization.IsRun.local_invariant"
+
+[[node]]
+id = "quadraticIterationBound"
+
+[[node]]
+id = "quadraticIterationBound_spec"
+
+[[node]]
+id = "le_double_exponential_of_quadratic_recurrence"
+
+[[node]]
+id = "quadratic_recurrence_meets_tolerance"
+
+[[node]]
+id = "ParameterUpdates.successCount_mono"
+
+[[node]]
+id = "ParameterUpdates.successCount_add_le"
+
+[[node]]
+id = "phase_entry_scale_bound"
+
+[[node]]
+id = "phase_entry_budget"

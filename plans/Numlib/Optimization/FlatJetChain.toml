@@ -1,0 +1,16 @@
+namespace = "Optimization.LowerBound"
+
+[[node]]
+id = "flatJet"
+
+[[node]]
+id = "endpointTaylor_flatJet"
+
+[[node]]
+id = "flatJet_compatible"
+
+[[node]]
+id = "abs_flatJet_le"
+
+[[node]]
+id = "exists_flatJet_chain"

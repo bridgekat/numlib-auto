@@ -1,0 +1,70 @@
+namespace = "Optimization.HigherOrderRegularization"
+
+[[node]]
+id = "TrialPrefix"
+
+[[node]]
+id = "TrialPrefix.step_ne_zero"
+
+[[node]]
+id = "TrialPrefix.predicted_decrease"
+
+[[node]]
+id = "TrialPrefix.predicted_pos"
+
+[[node]]
+id = "TrialPrefix.ratio_ge_of_sigma_ge"
+
+[[node]]
+id = "TrialPrefix.sigma_upper"
+
+[[node]]
+id = "TrialPrefix.accepted_decrease"
+
+[[node]]
+id = "TrialPrefix.objective_nonincrease"
+
+[[node]]
+id = "smallCurvatureDirections"
+
+[[node]]
+id = "mem_smallCurvatureDirections"
+
+[[node]]
+id = "directionSequence"
+
+[[node]]
+id = "directionSequence_zero"
+
+[[node]]
+id = "directionSequence_succ"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "ModelResiduals"
+
+[[node]]
+id = "Stationary"
+
+[[node]]
+id = "stationary_one_iff"
+
+[[node]]
+id = "Stationary.first"
+
+[[node]]
+id = "Stationary.second"
+
+[[node]]
+id = "Stationary.third"
+
+[[node]]
+id = "RunPrefix"
+
+[[node]]
+id = "IsRun"

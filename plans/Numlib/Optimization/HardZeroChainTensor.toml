@@ -1,0 +1,43 @@
+namespace = "Optimization.HardZeroChain"
+
+[[node]]
+id = "complementary_powers_le_sq_add_sq"
+
+[[node]]
+id = "sum_adjacent_powers_le"
+
+[[node]]
+id = "iteratedDeriv_affine"
+
+[[node]]
+id = "iteratedFDeriv_coordinate_product"
+
+[[node]]
+id = "adjacentProduct"
+
+[[node]]
+id = "adjacentProduct_apply"
+
+[[node]]
+id = "contDiff_adjacentProduct"
+
+[[node]]
+id = "norm_iteratedFDeriv_adjacentProduct_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_scalar_comp_le"
+
+[[node]]
+id = "uniform_chain_derivative_bounds"
+
+[[node]]
+id = "succ_mul_log_succ_le"
+
+[[node]]
+id = "uniform_chain_succ_derivative_bounds"
+
+[[node]]
+id = "uniform_chain_mixed_derivative_bounds"
+
+[[node]]
+id = "uniform_chain_derivative_lipschitz"

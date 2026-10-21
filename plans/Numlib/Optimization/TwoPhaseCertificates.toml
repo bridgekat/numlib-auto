@@ -1,0 +1,28 @@
+namespace = "Optimization.TwoPhaseTargets"
+
+[[node]]
+id = "lagrangian"
+
+[[node]]
+id = "targetMultiplier"
+
+[[node]]
+id = "multiplierScale"
+
+[[node]]
+id = "lagrangian_hasFDerivAt"
+
+[[node]]
+id = "fderiv_objective_eq_gap_smul"
+
+[[node]]
+id = "multiplierScale_targetMultiplier"
+
+[[node]]
+id = "scaled_lagrangian_criticality"
+
+[[node]]
+id = "fderiv_objective_eq_constraint"
+
+[[node]]
+id = "residualNorm_of_gap_zero"

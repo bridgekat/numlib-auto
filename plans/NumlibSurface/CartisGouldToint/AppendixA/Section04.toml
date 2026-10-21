@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.AppendixA.Section04"
+
+[[node]]
+id = "BanachHilbertSpaceConventions"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.4"

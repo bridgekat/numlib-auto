@@ -130,6 +130,91 @@ import NumlibSurface.Brezis.Chapter11.Section01
 import NumlibSurface.Brezis.Chapter11.Section02
 import NumlibSurface.Brezis.Chapter11.Section03
 import NumlibSurface.Brezis.Chapter11.Section04
+import NumlibSurface.CartisGouldToint
+import NumlibSurface.CartisGouldToint.AppendixA.Section01
+import NumlibSurface.CartisGouldToint.AppendixA.Section02
+import NumlibSurface.CartisGouldToint.AppendixA.Section03
+import NumlibSurface.CartisGouldToint.AppendixA.Section04
+import NumlibSurface.CartisGouldToint.AppendixA.Section05
+import NumlibSurface.CartisGouldToint.AppendixA.Section06
+import NumlibSurface.CartisGouldToint.AppendixA.Section07
+import NumlibSurface.CartisGouldToint.AppendixA.Section08
+import NumlibSurface.CartisGouldToint.AppendixA.Section08.FractionalFactorial
+import NumlibSurface.CartisGouldToint.AppendixA.Section09
+import NumlibSurface.CartisGouldToint.AppendixA.Section10
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter02
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter02.FiniteValley
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter02.FiniteValleySmooth
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter02.Profiles
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter03
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter04
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter09
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter10
+import NumlibSurface.CartisGouldToint.Chapter01.Section01
+import NumlibSurface.CartisGouldToint.Chapter01.Section01.OptimalityMeasures
+import NumlibSurface.CartisGouldToint.Chapter01.Section03
+import NumlibSurface.CartisGouldToint.Chapter01.Section04
+import NumlibSurface.CartisGouldToint.Chapter02.Section01
+import NumlibSurface.CartisGouldToint.Chapter02.Section02
+import NumlibSurface.CartisGouldToint.Chapter02.Section03
+import NumlibSurface.CartisGouldToint.Chapter02.Section04
+import NumlibSurface.CartisGouldToint.Chapter03.Section01
+import NumlibSurface.CartisGouldToint.Chapter03.Section02
+import NumlibSurface.CartisGouldToint.Chapter03.Section03
+import NumlibSurface.CartisGouldToint.Chapter03.Section04
+import NumlibSurface.CartisGouldToint.Chapter03.Section04.InexactRegularizedNewton
+import NumlibSurface.CartisGouldToint.Chapter03.Section05
+import NumlibSurface.CartisGouldToint.Chapter04.Section01
+import NumlibSurface.CartisGouldToint.Chapter04.Section01.Complexity
+import NumlibSurface.CartisGouldToint.Chapter04.Section02
+import NumlibSurface.CartisGouldToint.Chapter05.Section02
+import NumlibSurface.CartisGouldToint.Chapter05.Section03.FullRankResidual
+import NumlibSurface.CartisGouldToint.Chapter05.Section04
+import NumlibSurface.CartisGouldToint.Chapter05.Section04.Counterexample
+import NumlibSurface.CartisGouldToint.Chapter05.Section04.PhaseComplexity
+import NumlibSurface.CartisGouldToint.Chapter05.Section05.Bounds
+import NumlibSurface.CartisGouldToint.Chapter05.Section05.Complexity
+import NumlibSurface.CartisGouldToint.Chapter05.Section05.Decrease
+import NumlibSurface.CartisGouldToint.Chapter07.Section02.Targets
+import NumlibSurface.CartisGouldToint.Chapter08.Section01
+import NumlibSurface.CartisGouldToint.Chapter08.Section02
+import NumlibSurface.CartisGouldToint.Chapter09.Section01
+import NumlibSurface.CartisGouldToint.Chapter09.Section02
+import NumlibSurface.CartisGouldToint.Chapter09.Section03
+import NumlibSurface.CartisGouldToint.Chapter09.Section03.EarlyTermination
+import NumlibSurface.CartisGouldToint.Chapter09.Section03.HardCase
+import NumlibSurface.CartisGouldToint.Chapter09.Section03.HardCaseBounds
+import NumlibSurface.CartisGouldToint.Chapter09.Section04
+import NumlibSurface.CartisGouldToint.Chapter10.Section02.ResidualIdentity
+import NumlibSurface.CartisGouldToint.Chapter11.Section01
+import NumlibSurface.CartisGouldToint.Chapter11.Section01.SignedClassification
+import NumlibSurface.CartisGouldToint.Chapter11.Section01.SignedDefinite
+import NumlibSurface.CartisGouldToint.Chapter11.Section01.SignedDiagonal
+import NumlibSurface.CartisGouldToint.Chapter11.Section01.SignedRegularization
+import NumlibSurface.CartisGouldToint.Chapter11.Section02
+import NumlibSurface.CartisGouldToint.Chapter11.Section02.RadiusWeightLimits
+import NumlibSurface.CartisGouldToint.Chapter11.Section02.SecularLimits
+import NumlibSurface.CartisGouldToint.Chapter12.Section03
+import NumlibSurface.CartisGouldToint.Chapter13.Section01.ARqpIDACubicStop
+import NumlibSurface.CartisGouldToint.Chapter13.Section01.ARqpIDAJets
+import NumlibSurface.CartisGouldToint.Chapter13.Section01.ARqpIDARadii
+import NumlibSurface.CartisGouldToint.Chapter13.Section01.ARqpIDAShortCounterexample
+import NumlibSurface.CartisGouldToint.Chapter13.Section01.ARqpIDAUniformAccuracy
+import NumlibSurface.CartisGouldToint.Chapter13.Section02
+import NumlibSurface.CartisGouldToint.Chapter13.Section03
+import NumlibSurface.CartisGouldToint.Chapter13.Section03.ARqpEDA
+import NumlibSurface.CartisGouldToint.Chapter13.Section03.ARqpEDACounterexample
+import NumlibSurface.CartisGouldToint.Chapter13.Section03.ARqpEDACubicStop
+import NumlibSurface.CartisGouldToint.Chapter13.Section03.ARqpEDAShortCounterexample
+import NumlibSurface.CartisGouldToint.Chapter14.Section02
+import NumlibSurface.CartisGouldToint.Chapter14.Section02.SparseBox
+import NumlibSurface.CartisGouldToint.Chapter14.Section03
+import NumlibSurface.CartisGouldToint.Chapter14.Section03.BoundaryCounterexample
+import NumlibSurface.CartisGouldToint.Chapter14.Section03.BoundaryRegularization
+import NumlibSurface.CartisGouldToint.Chapter14.Section03.Curves
+import NumlibSurface.CartisGouldToint.Chapter14.Section03.ResidualJets
+import NumlibSurface.CartisGouldToint.Chapter14.Section03.Sufficiency
+import NumlibSurface.CartisGouldToint.Chapter14.Section03.TwoPhase
 import NumlibSurface.FongSaunders
 import NumlibSurface.FongSaunders.Section01
 import NumlibSurface.FongSaunders.Section02
@@ -453,6 +538,17 @@ import NumlibSurface.SaadSparse.Chapter14.Section04
 import NumlibSurface.SaadSparse.Chapter14.Section05
 import NumlibSurface.SaadSparse.Chapter14.Section06
 import NumlibSurface.SaadSparse.Common
+import NumlibSurface.CartisGouldToint.Chapter13.Section01.ARqpIDADecrease
+import NumlibSurface.CartisGouldToint.Chapter13.Section01.ARqpIDAComplexity
+import NumlibSurface.CartisGouldToint.Chapter13.Section03.ARqpEDAUniformAccuracy
+import NumlibSurface.CartisGouldToint.Chapter14.Section02.ModelBounds
+import NumlibSurface.CartisGouldToint.Chapter14.Section03.CostCrossover
+import NumlibSurface.CartisGouldToint.Chapter14.Section03.PhaseOneComplexity
+import NumlibSurface.CartisGouldToint.Chapter13.Section03.TransverseObjective
+import NumlibSurface.CartisGouldToint.Chapter14.Section02.TRDecreaseData
+import NumlibSurface.CartisGouldToint.Chapter14.Section02.TRDecreaseCounterexample
+import NumlibSurface.CartisGouldToint.Chapter13.Section03.ARqpEDACertificationCounterexample
+import NumlibSurface.CartisGouldToint.Chapter14.Section02.ARqpEDAUniv
 
 /-!
 # NumlibSurface
@@ -482,6 +578,11 @@ fifty, covering Chapters 1 to 6 and 8 to 12 apart from what needs Sobolev spaces
 root module is its index: the section-by-section outline, the ambient conventions, what is
 deferred, and the places where formalizing the book corrected it.
 
+`NumlibSurface.CartisGouldToint` is C. Cartis, N. I. M. Gould and P. L. Toint,
+*Evaluation Complexity of Algorithms for Nonconvex Optimization: Theory, Computation, and
+Perspectives* (SIAM, 2022), with plans covering all chapters and partial formalization tracked
+per numbered item. Its root module states the current scope and transcription corrections.
+
 ## How it is organized
 
 One module is one section of its book, at the book's own numbering: `SaadSparse.Chapter06.Section05`
@@ -502,6 +603,8 @@ ambiguously is collected separately, in `notes/book-errata.md`.
 
 ## References
 
+* C. Cartis, N. I. M. Gould and P. L. Toint, *Evaluation Complexity of Algorithms for Nonconvex
+  Optimization: Theory, Computation, and Perspectives*, SIAM, 2022.
 * K. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd
   edition, Springer, 2009.
 * D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU Journal for

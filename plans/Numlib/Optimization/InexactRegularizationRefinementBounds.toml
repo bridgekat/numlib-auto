@@ -1,0 +1,76 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "PointQuality"
+
+[[node]]
+id = "pointQuality_iff_of_le_two"
+
+[[node]]
+id = "pointQuality_iff_of_two_lt"
+
+[[node]]
+id = "PointQuality.of_criteria"
+
+[[node]]
+id = "not_criteria_of_not_pointQuality"
+
+[[node]]
+id = "refinementRadiusCoefficient"
+
+[[node]]
+id = "refinementAccuracyCoefficient"
+
+[[node]]
+id = "refinementThreshold"
+
+[[node]]
+id = "refinementRadiusCoefficient_pos"
+
+[[node]]
+id = "refinementAccuracyCoefficient_pos"
+
+[[node]]
+id = "refinementThreshold_pos"
+
+[[node]]
+id = "refinementThreshold_le_step"
+
+[[node]]
+id = "refinementThreshold_inspection_budget"
+
+[[node]]
+id = "Execution.trial_of_small_uniform_request"
+
+[[node]]
+id = "requestEnvelope"
+
+[[node]]
+id = "one_le_requestEnvelope"
+
+[[node]]
+id = "request_le_envelope"
+
+[[node]]
+id = "Execution.refinementCount_succ"
+
+[[node]]
+id = "refinementLogSlope"
+
+[[node]]
+id = "refinementLogConstant"
+
+[[node]]
+id = "refinementLogSlope_pos"
+
+[[node]]
+id = "refinementLogConstant_nonneg"
+
+[[node]]
+id = "geometric_exponent_lt_log_bound"
+
+[[node]]
+id = "Execution.refinement_count_before_pointQuality"
+
+[[node]]
+id = "refinement_bound_fixed_initialization"

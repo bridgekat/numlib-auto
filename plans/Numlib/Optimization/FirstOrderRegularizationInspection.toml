@@ -1,0 +1,17 @@
+[[node]]
+id = "Optimization.InexactRegularization.firstOrderCoefficientBound"
+
+[[node]]
+id = "Optimization.InexactRegularization.firstOrderCoefficientBound_pos"
+
+[[node]]
+id = "Optimization.InexactRegularization.norm_le_firstOrderCoefficientBound"
+
+[[node]]
+id = "Optimization.InexactRegularization.exists_firstOrderInspection_with_directions"
+
+[[node]]
+id = "Optimization.InexactRegularization.exists_firstOrderInspection_of_witnesses"
+
+[[node]]
+id = "Optimization.InexactRegularization.exists_firstOrderInspection"

@@ -1,0 +1,19 @@
+namespace = "Optimization.InexactTaylorModels"
+
+[[node]]
+id = "ApproximateJet"
+
+[[node]]
+id = "RequestedAccuracy"
+
+[[node]]
+id = "decrement_error_le"
+
+[[node]]
+id = "decrement_error_le_step_power"
+
+[[node]]
+id = "approximate_gap_certifies"
+
+[[node]]
+id = "true_decrease_of_inexact_acceptance"

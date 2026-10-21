@@ -1,0 +1,109 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "InspectedState"
+
+[[node]]
+id = "Path"
+
+[[node]]
+id = "Initialized"
+
+[[node]]
+id = "Path.nil"
+
+[[node]]
+id = "Path.nil_length"
+
+[[node]]
+id = "Path.nil_node"
+
+[[node]]
+id = "Path.single"
+
+[[node]]
+id = "Path.single_length"
+
+[[node]]
+id = "Path.single_node_zero"
+
+[[node]]
+id = "Path.single_node_one"
+
+[[node]]
+id = "Path.append"
+
+[[node]]
+id = "Path.append_length"
+
+[[node]]
+id = "Path.append_node_left"
+
+[[node]]
+id = "Path.append_node_right"
+
+[[node]]
+id = "Path.append_queries_left"
+
+[[node]]
+id = "Path.append_queries_right"
+
+[[node]]
+id = "Path.append_trial_left"
+
+[[node]]
+id = "Path.append_trial_right"
+
+[[node]]
+id = "Path.append_accepted_left"
+
+[[node]]
+id = "Path.append_accepted_right"
+
+[[node]]
+id = "Path.append_node_zero"
+
+[[node]]
+id = "Path.append_node_end"
+
+[[node]]
+id = "Path.toExecution"
+
+[[node]]
+id = "Path.toExecution_state"
+
+[[node]]
+id = "Path.toExecution_queries"
+
+[[node]]
+id = "Path.toExecution_inspection"
+
+[[node]]
+id = "Path.toExecution_trial"
+
+[[node]]
+id = "Path.toExecution_accepted"
+
+[[node]]
+id = "Path.ofExecution"
+
+[[node]]
+id = "Path.ofExecution_initialized"
+
+[[node]]
+id = "Path.functionQueries"
+
+[[node]]
+id = "Path.toExecution_functionQueries"
+
+[[node]]
+id = "Path.nil_functionQueries"
+
+[[node]]
+id = "Path.single_functionQueries"
+
+[[node]]
+id = "Path.functionQueries_length"
+
+[[node]]
+id = "Path.append_functionQueries_length"

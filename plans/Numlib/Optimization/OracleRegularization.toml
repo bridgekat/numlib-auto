@@ -1,0 +1,76 @@
+namespace = "Optimization.DerivativeOracle"
+
+[[node]]
+id = "RegularizationState"
+
+[[node]]
+id = "RegularizationState.step"
+
+[[node]]
+id = "RegularizationState.trial"
+
+[[node]]
+id = "RegularizationState.ratio"
+
+[[node]]
+id = "updatedSigma"
+
+[[node]]
+id = "updatedSigma_mem"
+
+[[node]]
+id = "updatedSigma_lower"
+
+[[node]]
+id = "RegularizationState.advance"
+
+[[node]]
+id = "replay"
+
+[[node]]
+id = "regularizationMethod"
+
+[[node]]
+id = "actualState"
+
+[[node]]
+id = "actualState_zero"
+
+[[node]]
+id = "regularizationMethod_query_succ"
+
+[[node]]
+id = "actualState_succ"
+
+[[node]]
+id = "actualState_cached"
+
+[[node]]
+id = "actualState_sigma_lower"
+
+[[node]]
+id = "actualState_point_queried"
+
+[[node]]
+id = "actualState_ratio"
+
+[[node]]
+id = "actualState_point_succ"
+
+[[node]]
+id = "actualState_sigma_succ"
+
+[[node]]
+id = "actualState_step"
+
+[[node]]
+id = "actualState_runPrefix"
+
+[[node]]
+id = "actualState_firstStationaryTime_le"
+
+[[node]]
+id = "regularizationParameters"
+
+[[node]]
+id = "regularizationCost"

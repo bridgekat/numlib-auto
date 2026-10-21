@@ -1,0 +1,32 @@
+namespace = "CartisGouldToint.Chapter11.Section02"
+
+[[node]]
+id = "norm_toEnergy_eq_weightedNorm"
+
+[[node]]
+id = "weightedNorm_pos_of_ne_zero"
+
+[[node]]
+id = "boundary_radius_weight_limits"
+
+[[node]]
+id = "regularized_multiplier_limit"
+
+[[node]]
+id = "superquadratic_multiplier_limit"
+
+[[node]]
+id = "eventually_regularized_positive"
+
+[[node]]
+id = "weightedNorm_inverse_pos"
+
+[[node]]
+id = "boundary_weight_fidelity"
+
+[[node]]
+id = "halving_radius_weight_limit"
+
+[[node]]
+id = "radiusWeightAsymptotics"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.2, (11.2.3)–(11.2.5)"

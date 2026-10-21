@@ -1,0 +1,91 @@
+namespace = "Optimization.HigherOrderRegularization.EmptyDirections"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "iteratedDeriv_objective"
+
+[[node]]
+id = "iteratedFDeriv_objective"
+
+[[node]]
+id = "taylor_objective"
+
+[[node]]
+id = "model_objective"
+
+[[node]]
+id = "exists_magnitude"
+
+[[node]]
+id = "magnitude"
+
+[[node]]
+id = "magnitude_spec"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "point_pos"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "point_succ"
+
+[[node]]
+id = "iteratedDeriv_model"
+
+[[node]]
+id = "iteratedFDeriv_model"
+
+[[node]]
+id = "objective_curvature"
+
+[[node]]
+id = "model_curvature"
+
+[[node]]
+id = "model_directions_empty"
+
+[[node]]
+id = "model_fderiv_zero"
+
+[[node]]
+id = "model_decrease"
+
+[[node]]
+id = "ratio_one"
+
+[[node]]
+id = "parameters"
+
+[[node]]
+id = "runPrefix"
+
+[[node]]
+id = "objective_nonneg"
+
+[[node]]
+id = "objective_smooth"
+
+[[node]]
+id = "iteratedFDeriv_three_objective"
+
+[[node]]
+id = "objective_lipschitz"
+
+[[node]]
+id = "initial_fderiv_norm"
+
+[[node]]
+id = "never_stationary"
+
+[[node]]
+id = "not_isRun"
+
+[[node]]
+id = "infinite_execution"

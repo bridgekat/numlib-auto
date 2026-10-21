@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.Chapter12.Section02"
+
+[[node]]
+id = "literal_arqp_equality_stop_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.2 and the literal claims of Lemma 12.2.10 and Theorem 12.2.14"

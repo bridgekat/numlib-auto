@@ -1,0 +1,14 @@
+[[node]]
+id = 'iteratedDeriv_quadratic_mul'
+
+[[node]]
+id = 'deriv_quadratic_rpow'
+
+[[node]]
+id = 'iteratedDeriv_two_quadratic_rpow'
+
+[[node]]
+id = 'iteratedDeriv_even_quadratic_half_pow'
+
+[[node]]
+id = 'monotone_iteratedDeriv_odd_quadratic_half_pow'

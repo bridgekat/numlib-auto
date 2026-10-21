@@ -1,0 +1,17 @@
+namespace = "CartisGouldToint.AppendixB.Chapter02"
+
+[[node]]
+id = "finite_valley_uniform_mixed_derivatives"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.3, full values and genuine derivative bounds for the actual corrected finite completion"
+
+[[node]]
+id = "finite_valley_uniform_hessian_bound"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.5, genuine full Euclidean Hessian bound for the actual corrected finite completion; left extension is affine as in B.2.24"
+
+[[node]]
+id = "finite_valley_uniform_gradient_lipschitz"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.5, full uniform global gradient Lipschitz conclusion for the actual corrected finite completion"
+
+[[node]]
+id = "finite_valley_first_local_ray_minimum"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.6, first LOCAL minimizer with every earlier nonnegative ray parameter excluded; does not imply global LineSearch.IsExact"

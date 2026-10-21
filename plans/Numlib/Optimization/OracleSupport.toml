@@ -1,0 +1,46 @@
+namespace = "Optimization.ZeroChains"
+
+[[node]]
+id = "_root_.InnerProductSpace.exists_unit_orthogonal_family"
+
+[[node]]
+id = "coordinateProjection"
+
+[[node]]
+id = "coordinateProjection_apply"
+
+[[node]]
+id = "coordinateProjection_single"
+
+[[node]]
+id = "adjoint_embedding_apply_coordinate"
+
+[[node]]
+id = "coordinateProjection_comp_adjoint_eq"
+
+[[node]]
+id = "coordinateProjection_eq_self_iff"
+
+[[node]]
+id = "TensorSupportedOn"
+
+[[node]]
+id = "tensorSupportedOn_iff"
+
+[[node]]
+id = "TensorSupportedOn.comp_eq"
+
+[[node]]
+id = "tensorSupportedOn_iteratedFDeriv"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.Reply.ext_iff"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.oracle_rotate_eq"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.oracle_rotate_eq_of_columns"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.Method.iterate_rotate_eq"

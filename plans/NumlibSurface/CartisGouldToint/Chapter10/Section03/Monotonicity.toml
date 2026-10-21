@@ -1,0 +1,14 @@
+namespace = "CartisGouldToint.Chapter10.Section03"
+
+[[node]]
+id = "IsTrustRegionFullMultiplier"
+
+[[node]]
+id = "IsTrustRegionFullMultiplier.energyConditions"
+
+[[node]]
+id = "isMinOn_full_trustRegion_iff"
+
+[[node]]
+id = "lemma_10_3_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 10.3.1"

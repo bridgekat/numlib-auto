@@ -1,0 +1,41 @@
+namespace = "CartisGouldToint.Chapter02.Section02"
+
+[[node]]
+id = "algorithm_2_2_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 2.2.1"
+
+[[node]]
+id = "exactLineSearchRun"
+source = "Cartis, Gould and Toint, Section 2.2, essential definitions and assumptions"
+
+[[node]]
+id = "lemma_2_2_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.2.1"
+
+[[node]]
+id = "theorem_2_2_2"
+kind = "theorem"
+desc = '''The printed universal SDBA bound needs correction: a tiny t_ini invalidates the claimed accepted-step lower bound independent of t_ini, and a nonpositive ceiling may give zero or negative function budgets. Retain this numbered node as wrong; implement the separately planned corrected theorem.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.2"
+wrong = '''Supplied transcription equations (2.2.6)–(2.2.9) omit the t_ini-limited accepted step and nonnegative ceiling/trial count corrections. For arbitrarily small t_ini the claimed universal per-step lower bound fails and its function budget can be zero or negative. Formalize theorem_2_2_2_corrected.'''
+
+[[node]]
+id = "theorem_2_2_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.3"
+
+[[node]]
+id = "theorem_2_2_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.4"
+
+[[node]]
+id = "theorem_2_2_5"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.5"
+
+[[node]]
+id = "theorem_2_2_2_corrected"
+source = "Cartis, Gould and Toint, correction to Theorem 2.2.2"
+
+[[node]]
+id = "backtracking_uniform_log_bound"
+source = "Cartis, Gould and Toint, corrected equation (2.2.6)"

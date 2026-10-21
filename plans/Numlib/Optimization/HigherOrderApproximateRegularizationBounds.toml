@@ -1,0 +1,94 @@
+namespace = "Optimization.HigherOrderApproximateRegularization"
+
+[[node]]
+id = "norm_derivative_sub_model_le"
+
+[[node]]
+id = "taylorDecrement_sub_model_le"
+
+[[node]]
+id = "ModelStep.gap_le"
+
+[[node]]
+id = "SatisfiesCriteria"
+
+[[node]]
+id = "not_satisfiesCriteria_iff"
+
+[[node]]
+id = "satisfiesCriteria_iff_isApproxMinimizer"
+
+[[node]]
+id = "transfer_of_true_gap_failure"
+
+[[node]]
+id = "factorial_sum_le_of_step_le_radius"
+
+[[node]]
+id = "factorial_sum_le_of_radius_le_step"
+
+[[node]]
+id = "power_lower_bound_of_step_le_radius"
+
+[[node]]
+id = "power_lower_bound_of_radius_le_step"
+
+[[node]]
+id = "root_mul_tolerance_le_of_power_bound"
+
+[[node]]
+id = "transferCoefficient"
+
+[[node]]
+id = "stepBoundExponent"
+
+[[node]]
+id = "stepBoundConstant"
+
+[[node]]
+id = "stepBoundConstant_pos"
+
+[[node]]
+id = "step_lower_bound_of_transfer"
+
+[[node]]
+id = "stepBoundConstant_le_one"
+
+[[node]]
+id = "step_lower_bound_of_one_le"
+
+[[node]]
+id = "regime_radii_of_unit_low_and_lower_high"
+
+[[node]]
+id = "step_lower_bound_of_true_gap_failure"
+
+[[node]]
+id = "complexityExponent"
+
+[[node]]
+id = "stepBoundExponent_mul_degree"
+
+[[node]]
+id = "toleranceMeasure"
+
+[[node]]
+id = "modelDecreaseConstant"
+
+[[node]]
+id = "toleranceMeasure_pos"
+
+[[node]]
+id = "modelDecreaseConstant_pos"
+
+[[node]]
+id = "predicted_decrease_of_step_lower_bound"
+
+[[node]]
+id = "predicted_decrease_of_true_gap_failure"
+
+[[node]]
+id = "ModelStep.taylorDecrement_pos"
+
+[[node]]
+id = "accepted_decrease_of_true_gap_failure"

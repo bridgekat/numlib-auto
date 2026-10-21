@@ -1,0 +1,50 @@
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.parameters"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.initialState"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.Invariant"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.initialState_invariant"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.exists_inspection"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.invariant_refine"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.freshValueTrial"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.freshValueTrial_queries"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.freshValueTrial_ratio"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.parameterUpdate_two"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.parameterUpdate_of_eq_two"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.exists_successor"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.Node"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.exists_isExecution_with_slope_bound"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.exists_isExecution"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.exists_isExecution_extension_with_slope_bound"
+
+[[node]]
+id = "Optimization.TransverseRegularizationContinuation.exists_isExecution_extension"

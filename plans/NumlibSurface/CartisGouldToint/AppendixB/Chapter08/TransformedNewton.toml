@@ -1,0 +1,8 @@
+namespace = "CartisGouldToint.AppendixB.Chapter08"
+
+[[node]]
+id = "transformedTrustRegionNewtonCorrection"
+
+[[node]]
+id = "lemma_B_8_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.8.2"

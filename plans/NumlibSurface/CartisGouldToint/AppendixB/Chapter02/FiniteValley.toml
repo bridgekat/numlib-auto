@@ -1,0 +1,29 @@
+namespace = "CartisGouldToint.AppendixB.Chapter02"
+
+[[node]]
+id = "finite_valley_c2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, equations (B.2.10)\u2013(B.2.24), corrected finite completion with rounded count and bounded right tail"
+
+[[node]]
+id = "finite_valley_uniform_lower_bound"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.4, uniform lower-bound conclusion for the corrected actual finite completion"
+
+[[node]]
+id = "finite_valley_uniform_scalar_derivatives"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.3, actual scalar derivative component for the corrected finite completion"
+
+[[node]]
+id = "finite_valley_nodal_gradient"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.2, actual nodal gradient component of the corrected finite construction"
+
+[[node]]
+id = "finite_valley_prescribed_step"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, prescribed source-cell step with parameter sqrt 2; no minimizer claim"
+
+[[node]]
+id = "finite_valley_first_tolerance"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, finite corrected count ceil(eps^-2), first actual gradient-tolerance index"
+
+[[node]]
+id = "finite_valley_not_global_exact"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, distinction between first local minimizer and global ray minimizer; actual eps=1/10,N=100 counterexample"

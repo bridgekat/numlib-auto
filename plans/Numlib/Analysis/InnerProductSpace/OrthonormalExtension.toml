@@ -1,0 +1,4 @@
+namespace = "InnerProductSpace"
+
+[[node]]
+id = "exists_orthonormal_extension_orthogonal"

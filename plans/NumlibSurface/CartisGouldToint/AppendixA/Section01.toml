@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.AppendixA.Section01"
+
+[[node]]
+id = "integerInterval"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.1"

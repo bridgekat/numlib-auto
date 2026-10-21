@@ -1,0 +1,7 @@
+namespace = "Constrained"
+
+[[node]]
+id = "exists_tangent_direction_nonpos_second_of_not_strict"
+
+[[node]]
+id = "isStrictLocalMinOn_of_posDef_comparison"

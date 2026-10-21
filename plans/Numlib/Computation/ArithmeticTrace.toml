@@ -1,0 +1,34 @@
+namespace = "ArithmeticTrace"
+
+[[node]]
+id = "Operation"
+
+[[node]]
+id = "Computation"
+
+[[node]]
+id = "add"
+
+[[node]]
+id = "sub"
+
+[[node]]
+id = "mul"
+
+[[node]]
+id = "div"
+
+[[node]]
+id = "Computation.count"
+
+[[node]]
+id = "value_pure"
+
+[[node]]
+id = "trace_pure"
+
+[[node]]
+id = "value_bind"
+
+[[node]]
+id = "trace_bind"

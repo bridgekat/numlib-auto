@@ -1,0 +1,31 @@
+namespace = "CurveTaylor"
+
+[[node]]
+id = "displacement"
+
+[[node]]
+id = "sum_compositionIndices_eq"
+
+[[node]]
+id = "multilinear_displacement"
+
+[[node]]
+id = "modelCoefficient"
+
+[[node]]
+id = "modelCoefficient_eq_coefficient"
+
+[[node]]
+id = "taylorModel_displacement"
+
+[[node]]
+id = "remainder_displacement_isLittleO"
+
+[[node]]
+id = "tendsto_objective_displacement_div_pow"
+
+[[node]]
+id = "coefficient_nonneg_of_isLocalMin"
+
+[[node]]
+id = "isOrderMinimizer_of_isLocalMin"

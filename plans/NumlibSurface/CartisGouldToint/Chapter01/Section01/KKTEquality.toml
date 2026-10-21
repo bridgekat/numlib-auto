@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.Chapter01.Section01"
+
+[[node]]
+id = "lagrangian"
+source = "Cartis, Gould and Toint, Section 1.1, essential definitions and assumptions"
+
+[[node]]
+id = "theorem_1_1_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.3"

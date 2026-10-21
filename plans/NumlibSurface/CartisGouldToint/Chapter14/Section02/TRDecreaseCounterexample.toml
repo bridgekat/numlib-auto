@@ -1,0 +1,11 @@
+namespace = "CartisGouldToint.Chapter14.Section02"
+
+[[node]]
+id = "coupledCubic_literal_tr_exponents"
+
+[[node]]
+id = "coupledCubic_completed_trace"
+
+[[node]]
+id = "literal_tr_decrease_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.2 counterexample to the literal TR row of Equation 14.2.12"

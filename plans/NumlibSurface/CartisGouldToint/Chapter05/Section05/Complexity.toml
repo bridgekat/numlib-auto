@@ -1,0 +1,18 @@
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.universalAvailable"
+
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.universalSameControls"
+
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.universalTolerancePower"
+
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.universalTolerancePower_eq"
+
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.universalEvaluationBudget"
+
+[[node]]
+id = "CartisGouldToint.Chapter05.Section05.theorem_5_5_7"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.5.7"

@@ -1,0 +1,83 @@
+namespace = "Hermite"
+
+[[node]]
+id = "unitNodes"
+
+[[node]]
+id = "unitRightBasis"
+
+[[node]]
+id = "coeff_taylor_unitRightBasis"
+
+[[node]]
+id = "unitRightCorrection"
+
+[[node]]
+id = "coeff_taylor_unitRightCorrection"
+
+[[node]]
+id = "exists_sum_smul_polynomial_derivative_bound"
+
+[[node]]
+id = "exists_unitRightCorrection_derivative_bound"
+
+[[node]]
+id = "iterate_derivative_comp_C_mul_X"
+
+[[node]]
+id = "intervalRightCorrection"
+
+[[node]]
+id = "eval_iterate_derivative_intervalRightCorrection"
+
+[[node]]
+id = "exists_intervalRightCorrection_top_derivative_bound"
+
+[[node]]
+id = "endpointTaylor"
+
+[[node]]
+id = "eval_iterate_derivative_endpointTaylor"
+
+[[node]]
+id = "normalizedDiscrepancy"
+
+[[node]]
+id = "intervalPolynomial"
+
+[[node]]
+id = "eval_iterate_derivative_unitRightCorrection"
+
+[[node]]
+id = "eval_iterate_derivative_intervalPolynomial_zero"
+
+[[node]]
+id = "eval_iterate_derivative_intervalPolynomial_right"
+
+[[node]]
+id = "abs_normalizedDiscrepancy_le"
+
+[[node]]
+id = "natDegree_intervalPolynomial_le"
+
+[[node]]
+id = "exists_endpointTaylor_derivative_bound"
+
+[[node]]
+id = "exists_intervalPolynomial_top_derivative_bound"
+
+[[node]]
+id = "exists_intervalPolynomial_lower_derivative_bound"
+
+[[node]]
+id = "interval_hermite_derivative_bounds"
+source = "Cartis–Gould–Toint, Theorem A.9.1"
+
+[[node]]
+id = "intervalNodes"
+
+[[node]]
+id = "intervalJet"
+
+[[node]]
+id = "intervalPolynomial_eq_interpolateJet"

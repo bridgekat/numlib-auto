@@ -1,0 +1,19 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsTridiagonal.pow_apply_eq_zero_of_lt_dist"
+
+[[node]]
+id = "IsTridiagonal.aeval_apply_eq_zero_of_natDegree_lt_dist"
+
+[[node]]
+id = "IsTridiagonal.apply_eq_zero_of_mem_krylov"
+
+[[node]]
+id = "IsTridiagonal.solution_coordinate_le"
+
+[[node]]
+id = "IsTridiagonal.inv_entry_le"
+
+[[node]]
+id = "PosDef.tridiagonal_inv_entry_le"

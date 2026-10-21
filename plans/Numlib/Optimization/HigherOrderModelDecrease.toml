@@ -1,0 +1,4 @@
+namespace = 'Optimization.HigherOrderRegularization.DiagonalLipschitz'
+
+[[node]]
+id = 'half_decrease_of_small_radius'

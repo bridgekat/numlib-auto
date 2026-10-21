@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.Chapter13.Section03"
+
+[[node]]
+id = "literal_arqpeda_long_step_sigma_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.5 (counterexample to the literal algorithm)"

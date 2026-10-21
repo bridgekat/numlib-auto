@@ -1,0 +1,30 @@
+[[node]]
+id = "LineSearch.IsExact"
+
+[[node]]
+id = "LineSearch.IsExact.nonneg"
+
+[[node]]
+id = "LineSearch.IsExact.le_trial"
+
+[[node]]
+id = "LineSearch.isExact_zero_iff"
+
+[[node]]
+id = "LineSearch.IsExact.deriv_eq_zero"
+
+[[node]]
+id = "Optimization.SmoothDescent.exactLineSearch_decrease"
+
+[[node]]
+id = "Optimization.SmoothDescent.IsExactSequence"
+
+[[node]]
+id = "Optimization.SmoothDescent.exists_stationary_of_exactLineSearch"
+
+
+[[node]]
+id = "Optimization.SmoothDescent.exactLineSearch_step_pos"
+
+[[node]]
+id = "Optimization.SmoothDescent.exactLineSearch_inner_eq_zero"

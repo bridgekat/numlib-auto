@@ -1,0 +1,7 @@
+namespace = "Optimization.RegularizedTaylorModel"
+
+[[node]]
+id = "taylorModel_eq_truncation_add"
+
+[[node]]
+id = "norm_sub_taylorModel_le_of_tail"

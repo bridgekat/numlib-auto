@@ -1,0 +1,37 @@
+namespace = "CartisGouldToint.Chapter11.Section01"
+
+[[node]]
+id = "signedRegularization_easy_radial"
+
+[[node]]
+id = "signedRegularization_easy_unique"
+
+[[node]]
+id = "signedRegularization_easy_necessary"
+
+[[node]]
+id = "existsUnique_signedRegularization_root"
+
+[[node]]
+id = "signedRegularization_hard_iff"
+
+[[node]]
+id = "signedRegularization_cases_iff"
+
+[[node]]
+id = "positiveDiagonalRegularization_iff"
+
+[[node]]
+id = "positiveDiagonalRegularization_unique"
+
+[[node]]
+id = "exists_signedRegularization_hard"
+
+[[node]]
+id = "existsUnique_positiveDiagonalRegularization_root"
+
+[[node]]
+id = "exists_signedRegularization_completion_iff"
+
+[[node]]
+id = "signedRegularization_hard_equality_iff"

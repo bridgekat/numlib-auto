@@ -1,0 +1,13 @@
+namespace = "Optimization"
+
+[[node]]
+id = "leastCurvature_sub_le"
+
+[[node]]
+id = "abs_leastCurvature_sub_le"
+
+[[node]]
+id = "lipschitzWith_leastCurvature"
+
+[[node]]
+id = "continuous_leastCurvature"

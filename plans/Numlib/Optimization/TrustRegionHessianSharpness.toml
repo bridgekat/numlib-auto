@@ -1,0 +1,19 @@
+namespace = "Optimization.TrustRegionHessianSharpness"
+
+[[node]]
+id = "wavy"
+
+[[node]]
+id = "wavy_contDiff"
+
+[[node]]
+id = "deriv_wavy"
+
+[[node]]
+id = "deriv_deriv_wavy"
+
+[[node]]
+id = "exists_scalar_chain"
+
+[[node]]
+id = "exists_sharp_firstOrder_family"

@@ -1,0 +1,70 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "Inspection.valid_radii"
+
+[[node]]
+id = "InnerResult.valid_radii"
+
+[[node]]
+id = "Inspection.passed_gap"
+
+[[node]]
+id = "Inspection.search_bounds"
+
+[[node]]
+id = "InnerResult.quality"
+
+[[node]]
+id = "InnerResult.decrement_pos"
+
+[[node]]
+id = "Inspection.true_quality"
+
+[[node]]
+id = "Transition.sigma_floor"
+
+[[node]]
+id = "Execution.sigma_floor"
+
+[[node]]
+id = "Transition.accuracy_only"
+
+[[node]]
+id = "Transition.rejected_cache"
+
+[[node]]
+id = "Transition.valid_radii"
+
+[[node]]
+id = "Execution.valid_radii"
+
+[[node]]
+id = "Transition.objective_nonincrease"
+
+[[node]]
+id = "Transition.request_bounds"
+
+[[node]]
+id = "Execution.request_bounds"
+
+[[node]]
+id = "Transition.accepted_is_trial"
+
+[[node]]
+id = "parameter_update_log_lower"
+
+[[node]]
+id = "Transition.log_step"
+
+[[node]]
+id = "Execution.trialCount"
+
+[[node]]
+id = "Execution.acceptedCount"
+
+[[node]]
+id = "Execution.log_budget"
+
+[[node]]
+id = "Execution.trial_count_le"

@@ -1,0 +1,43 @@
+namespace = "Optimization.SecularResolvent"
+
+[[node]]
+id = "spectralNormSq_mul_secondDeriv"
+
+[[node]]
+id = "deriv2_rpow_spectralNormSq"
+
+[[node]]
+id = "normSqResolvent_mul_secondDeriv"
+
+[[node]]
+id = "deriv2_rpow_normSqResolvent"
+
+[[node]]
+id = "contDiffAt_rpow_normSqResolvent"
+
+[[node]]
+id = "deriv_normSqResolvent_neg"
+
+[[node]]
+id = "deriv_rpow_normSqResolvent"
+
+[[node]]
+id = "deriv2_rpow_normSqResolvent_pos"
+
+[[node]]
+id = "deriv2_rpow_normSqResolvent_nonpos"
+
+[[node]]
+id = "deriv2_rpow_normSqResolvent_neg"
+
+[[node]]
+id = "strictConvexOn_rpow_normSqResolvent"
+
+[[node]]
+id = "concaveOn_rpow_normSqResolvent"
+
+[[node]]
+id = "strictConcaveOn_rpow_normSqResolvent"
+
+[[node]]
+id = "rpow_normSqResolvent_convexity"

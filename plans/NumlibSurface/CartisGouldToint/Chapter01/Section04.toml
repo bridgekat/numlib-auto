@@ -1,0 +1,20 @@
+namespace = "CartisGouldToint.Chapter01.Section04"
+
+[[node]]
+id = "objectiveAssumptions"
+source = "Cartis, Gould and Toint, Section 1.4, essential definitions and assumptions"
+
+[[node]]
+id = "objectiveAssumptionsNear"
+
+[[node]]
+id = "objectiveAssumptions_smooth_iff"
+
+[[node]]
+id = "objectiveAssumptions_boundedBelow_iff"
+
+[[node]]
+id = "objectiveAssumptions_derivativeLipschitz_iff"
+
+[[node]]
+id = "objectiveAssumptionsNear_univ_iff"

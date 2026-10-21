@@ -1,0 +1,133 @@
+namespace = "InverseSqrtTail"
+
+[[node]]
+id = "_root_.hasDerivAt_ite_le_of_eq"
+
+[[node]]
+id = "value"
+
+[[node]]
+id = "first"
+
+[[node]]
+id = "second"
+
+[[node]]
+id = "value_of_le_one"
+
+[[node]]
+id = "value_of_one_le"
+
+[[node]]
+id = "first_of_le_one"
+
+[[node]]
+id = "first_of_one_le"
+
+[[node]]
+id = "second_of_le_one"
+
+[[node]]
+id = "second_of_one_le"
+
+[[node]]
+id = "value_one"
+
+[[node]]
+id = "first_one"
+
+[[node]]
+id = "second_one"
+
+[[node]]
+id = "hasDerivAt_left_value"
+
+[[node]]
+id = "hasDerivAt_left_first"
+
+[[node]]
+id = "hasDerivAt_left_second"
+
+[[node]]
+id = "hasDerivAt_right_value"
+
+[[node]]
+id = "hasDerivAt_right_first"
+
+[[node]]
+id = "hasDerivAt_right_second"
+
+[[node]]
+id = "hasDerivAt_value"
+
+[[node]]
+id = "hasDerivAt_first"
+
+[[node]]
+id = "value_pos"
+
+[[node]]
+id = "value_nonneg"
+
+[[node]]
+id = "first_nonpos"
+
+[[node]]
+id = "abs_first_le"
+
+[[node]]
+id = "second_nonneg"
+
+[[node]]
+id = "abs_second_le"
+
+[[node]]
+id = "lipschitz_value"
+
+[[node]]
+id = "lipschitz_first"
+
+[[node]]
+id = "hasDerivWithinAt_second_left"
+
+[[node]]
+id = "hasDerivWithinAt_second_right"
+
+[[node]]
+id = "lipschitzOnWith_second_left"
+
+[[node]]
+id = "lipschitzOnWith_second_right"
+
+[[node]]
+id = "lipschitz_second"
+
+[[node]]
+id = "contDiff_value"
+
+[[node]]
+id = "antitoneOn_second"
+
+[[node]]
+id = "monotoneOn_first"
+
+[[node]]
+id = "first_add_le"
+
+[[node]]
+id = "taylor_upper"
+
+[[node]]
+id = "value_of_le_one_taylor"
+
+[[node]]
+id = "deriv_value"
+
+[[node]]
+id = "deriv_first"
+
+[[node]]
+id = "second_pos"
+
+[[node]]
+id = "first_neg_of_one_le"

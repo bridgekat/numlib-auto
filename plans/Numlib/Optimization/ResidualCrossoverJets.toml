@@ -1,0 +1,208 @@
+namespace = "Optimization.ResidualCrossoverJets"
+
+[[node]]
+id = "Line"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "feasible"
+
+[[node]]
+id = "neighborhood"
+
+[[node]]
+id = "slope"
+
+[[node]]
+id = "middleResidual"
+
+[[node]]
+id = "middleDerivative"
+
+[[node]]
+id = "middleSecondDerivative"
+
+[[node]]
+id = "rho"
+
+[[node]]
+id = "rho_natDegree_le"
+
+[[node]]
+id = "residual"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "objectivePolynomial"
+
+[[node]]
+id = "point_apply"
+
+[[node]]
+id = "point_coord"
+
+[[node]]
+id = "point_add"
+
+[[node]]
+id = "point_zero"
+
+[[node]]
+id = "point_sub"
+
+[[node]]
+id = "point_neg"
+
+[[node]]
+id = "point_smul"
+
+[[node]]
+id = "norm_point"
+
+[[node]]
+id = "norm_eq_abs_coord"
+
+[[node]]
+id = "point_mem_feasible"
+
+[[node]]
+id = "isClosed_feasible"
+
+[[node]]
+id = "convex_feasible"
+
+[[node]]
+id = "zero_mem_feasible"
+
+[[node]]
+id = "add_mem_feasible"
+
+[[node]]
+id = "feasibleBall_eq"
+
+[[node]]
+id = "objective_eq"
+
+[[node]]
+id = "contDiff_residual"
+
+[[node]]
+id = "contDiff_objective"
+
+[[node]]
+id = "objective_nonneg"
+
+[[node]]
+id = "rho_eval_zero"
+
+[[node]]
+id = "rho_eval_one"
+
+[[node]]
+id = "rho_eval_neg_one"
+
+[[node]]
+id = "rho_derivative_zero"
+
+[[node]]
+id = "rho_derivative_one"
+
+[[node]]
+id = "rho_derivative_neg_one"
+
+[[node]]
+id = "rho_secondDerivative_zero"
+
+[[node]]
+id = "rho_secondDerivative_one"
+
+[[node]]
+id = "rho_secondDerivative_neg_one"
+
+[[node]]
+id = "objectivePolynomial_derivative"
+
+[[node]]
+id = "objectivePolynomial_secondDerivative"
+
+[[node]]
+id = "fderiv_objective"
+
+[[node]]
+id = "secondFDeriv_objective"
+
+[[node]]
+id = "residual_norm_zero"
+
+[[node]]
+id = "residual_norm_one"
+
+[[node]]
+id = "residual_norm_neg_one"
+
+[[node]]
+id = "objective_eq_half_norm_sq"
+
+[[node]]
+id = "objective_point_zero"
+
+[[node]]
+id = "objective_point_one"
+
+[[node]]
+id = "objective_point_neg_one"
+
+[[node]]
+id = "fderiv_objective_zero"
+
+[[node]]
+id = "fderiv_objective_one"
+
+[[node]]
+id = "fderiv_objective_neg_one"
+
+[[node]]
+id = "secondFDeriv_objective_zero"
+
+[[node]]
+id = "secondFDeriv_objective_one"
+
+[[node]]
+id = "secondFDeriv_objective_neg_one"
+
+[[node]]
+id = "taylorDecrement_one_zero"
+
+[[node]]
+id = "taylorDecrement_two_zero"
+
+[[node]]
+id = "taylorDecrement_one_one"
+
+[[node]]
+id = "taylorDecrement_two_one"
+
+[[node]]
+id = "taylorDecrement_one_neg_one"
+
+[[node]]
+id = "taylorDecrement_two_neg_one"
+
+[[node]]
+id = "norm_coordinate"
+
+[[node]]
+id = "taylorGap_one"
+
+[[node]]
+id = "taylorGap_neg_one"
+
+[[node]]
+id = "exists_anchoredBoundedJets"
+
+[[node]]
+id = "exists_anchoredBoundedJets_sublevel"

@@ -1,0 +1,43 @@
+namespace = "Optimization.HardZeroChain"
+
+[[node]]
+id = "outgoing"
+
+[[node]]
+id = "incoming"
+
+[[node]]
+id = "outgoing_nonpos"
+
+[[node]]
+id = "incoming_nonpos"
+
+[[node]]
+id = "incoming_lt_neg_one"
+
+[[node]]
+id = "hasDerivAt_interaction"
+
+[[node]]
+id = "hasDerivAt_chain_line"
+
+[[node]]
+id = "gradient_chain_apply"
+
+[[node]]
+id = "coordinate_contribution_nonpos"
+
+[[node]]
+id = "gradient_chain_zero_le"
+
+[[node]]
+id = "gradient_chain_succ_le"
+
+[[node]]
+id = "gradient_chain_lt_neg_one"
+
+[[node]]
+id = "exists_gradient_chain_lt_neg_one_before"
+
+[[node]]
+id = "one_lt_norm_gradient_chain"

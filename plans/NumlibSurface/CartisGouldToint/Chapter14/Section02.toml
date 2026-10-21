@@ -1,0 +1,118 @@
+namespace = "CartisGouldToint.Chapter14.Section02"
+
+[[node]]
+id = "feasibleDisplacements"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations14.2.1–14.2.2"
+
+[[node]]
+id = "mem_feasibleDisplacements"
+
+[[node]]
+id = "zero_mem_feasibleDisplacements"
+
+[[node]]
+id = "constrainedTaylorGap"
+
+[[node]]
+id = "exists_eq_constrainedTaylorGap"
+
+[[node]]
+id = "constrainedTaylorGap_le_iff"
+
+[[node]]
+id = "constrainedTaylorGap_nonneg"
+
+[[node]]
+id = "constrainedTaylorGap_univ"
+
+[[node]]
+id = "exists_constrainedTaylorModel_minimum"
+
+[[node]]
+id = "IsConstrainedApproxOrderMinimizer"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation14.2.3"
+
+[[node]]
+id = "isConstrainedApproxOrderMinimizer_iff"
+
+[[node]]
+id = "IsConstrainedApproxOrderMinimizer.toIsApproxMinimizer"
+
+[[node]]
+id = "constrainedCompositeTaylorGap"
+
+[[node]]
+id = "IsConstrainedCompositeApproxOrderMinimizer"
+
+[[node]]
+id = "isConstrainedCompositeApproxOrderMinimizer_iff"
+
+[[node]]
+id = "feasibleSublevelSet"
+
+[[node]]
+id = "SmoothBoundedJetsOnLevelSet"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations14.2.8–14.2.10"
+
+[[node]]
+id = "SmoothBoundedJetsOnLevelSet.remainder"
+
+[[node]]
+id = "SimpleConstraintMethod"
+
+[[node]]
+id = "simpleConstraintExponent"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation14.2.12 andTheorem14.2.4 table"
+
+[[node]]
+id = "simpleConstraintDecreaseExponent"
+
+[[node]]
+id = "SparseFeasibleSet"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations14.2.14–14.2.21"
+
+[[node]]
+id = "mem_SparseFeasibleSet"
+
+[[node]]
+id = "isClosed_SparseFeasibleSet"
+
+[[node]]
+id = "SparseFeasibleSet_nonempty"
+
+[[node]]
+id = "mandatoryIndices"
+
+[[node]]
+id = "optionalSupports"
+
+[[node]]
+id = "optionalWeight"
+
+[[node]]
+id = "theorem_14_2_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.2.1"
+
+[[node]]
+id = "lemma_14_2_2"
+kind = "theorem"
+desc = '''Under appropriate smooth bounded jet assumptions, each accepted step of the seven simply constrained TR/AR/composite/IDA/EDA variants decreases its objective by≥κ_decr min_j ε_j^π_j. Use the radii1 onlyin the favorable convex first-order or unconstrained second-order cases; otherwise use positive radii lower bounds. Reconstruct exponent table from Theorem 14.2.4 because OCR duplicates anAR row.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.2"
+deps = ["SmoothBoundedJetsOnLevelSet", "simpleConstraintExponent"]
+
+wrong = "literal_tr_decrease_counterexample fixes q2, the actual three-dimensional Euclidean polynomial f(x,y,z)=x^2/2-z*y^2/2, the compact closed convex box [-2,2]^3, initial point(1,0,1), initial radius2, and all TR controls before every tolerance input. Actual bounded and anchored Lipschitz jets hold on the full initial feasible sublevel set against every point of the fixed open convex ball of radius5, with constants at least1, and f is bounded below by -4 on the full box. One fixed family of actual complete constrained TR executions has a finite first computed source stop. Its genuine rejection caches the retained point; every witness, trial endpoint, first-failure scan, selected-order Taylor prediction, ratio, and radius update is legal. First-order halvings have ratio3/4 and the separate x-to-zero reset has ratio1/2, so the actual source permits their radius contractions. For a=2^(-N-1), b=sqrt(a), epsilon1=a/2, epsilon2=b/2, the final accepted order-two y trial has ratio1 and actual decrease b*a^2/8, while the printed j+1 payment is min(epsilon1^2,epsilon2^3)=a^2/4. Its true constrained second-order gap fails both at that trial center and at the retained endpoint. The decrease/payment ratio b/2 tends to zero, so no positive coefficient fixed before the tolerance family works. The family of complete runs is quantified before that coefficient and the tolerance vector determines N uniquely. This refutes only the literal TR j+1 row in Equation14.2.12 and hence Lemma14.2.2 as printed; it does not refute the uniform q+1 bound or the complexity table of Theorem14.2.4, and makes no neighboring classification claim."
+
+[[node]]
+id = "lemma_14_2_3"
+kind = "theorem"
+desc = '''Simply constrained TR/AR variants and theirIDA/EDA versions satisfy k≤κ_uns|S_k|+κ_unc under the respective jet bounds. ForIDA/EDA the full number of accuracy-only iterations may need an additional tolerance-dependent log ari thm; distinguish trial count from all iterations before claimingε-independent constants. Prove from radius/regularization update bookkeeping.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.3"
+deps = ["SmoothBoundedJetsOnLevelSet"]
+
+[[node]]
+id = "theorem_14_2_4"
+wrong = 'literal_arqpeda_sc_uniform_certification_counterexample proves a full fixed-data counterexample to the ARqpEDA-SC observable termination and function-count row on the closed nonempty convex all-space feasible set in dimension two, p2 and q1. Genuine constrained coefficient witnesses, every selected radius search and completed inspection, translated model-gap witnesses, attained model minimizers and detailed inner executions, actual outer branches, complete initial state and oracle request/cache/query logs are embedded with identical data. Actual value and tensor query lists are unchanged, so the constraints are simple without an added oracle. The fixed objective has initial value1 and global lower bound0; actual f.D0pLaB.X holds on the entire initial feasible sublevel against every point of the one fixed open convex all-space ambient with constants4, and positive jet bounds follow from actual fderiv operator norms. The full initial state and all outer controls are fixed before every tolerance. Every incoming radius and every actual returned inner radius equals1, including discarded refinement calls; the selected post-halving inspection radii retain their real dyadic values, as required by the distinct Step1 and Step2 source notation. The same squared supplied-gradient fraction rule is used at every inner call. One already fixed chosenRun family defeats every real A,C and every minimum dyadic index M before selecting an arbitrarily small tolerance, at every actual stopping certificate, using the actual flattened value-query log. Hence no eventually uniform corrected three-halves function bound can guarantee the promised observable termination. This refutes that one table row and thus the combined theorem; no separate derivative-count failure, first-true-quality failure, other-row counterexample or neighboring classification is claimed.'
+kind = "theorem"
+desc = '''For closed nonempty simpleX, objective bounded below and the corresponding jet regularity, all seven algorithm complexities extend to constrained gap criteria. TR variants: O(max_j ε_j^(−q−1)); AR/IDA/EDA: O(max_j ε_j^(−(p+1)/(p−j+1))) in favorable cases q=1, Xconvex orq=2, X=R^n, otherwise O(max_j ε_j^(−j(p+1)/p)); composite AR: O(ε₁^(−(p+1)/p)) for q=1, h/Xconvex, otherwise O(max_j ε_j^(−j−1)). Retain exact logarithmic terms where present and state existential sharpness with the adapted algorithms.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.2.4"
+deps = ["lemma_14_2_2", "lemma_14_2_3", "Optimization.EvaluationComplexity.card_mul_le_gap", "CartisGouldToint.Chapter12.Section02.theorem_12_2_5", "CartisGouldToint.Chapter12.Section02.theorem_12_2_14", "CartisGouldToint.Chapter13.Section01.theorem_13_1_8", "CartisGouldToint.Chapter13.Section01.theorem_13_1_19", "CartisGouldToint.Chapter13.Section03.theorem_13_3_4", "CartisGouldToint.Chapter13.Section03.theorem_13_3_8", "CartisGouldToint.Chapter14.Section01.theorem_14_1_10"]

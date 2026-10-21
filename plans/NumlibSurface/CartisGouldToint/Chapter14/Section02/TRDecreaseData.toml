@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint.Chapter14.Section02"
+
+[[node]]
+id = "coupledCubic_box_subset_neighborhood"
+
+[[node]]
+id = "coupledCubic_initial_feasible"
+
+[[node]]
+id = "coupledCubic_smoothBoundedJets"
+
+[[node]]
+id = "coupledCubic_smoothBoundedJets_includeValue"

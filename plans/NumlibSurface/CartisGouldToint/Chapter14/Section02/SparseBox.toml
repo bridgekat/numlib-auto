@@ -1,0 +1,17 @@
+namespace = "CartisGouldToint.Chapter14.Section02"
+
+[[node]]
+id = "sparseBoxStep"
+
+[[node]]
+id = "sparseBoxStep_apply"
+
+[[node]]
+id = "sparseBoxStep_feasible"
+
+[[node]]
+id = "sparseBoxStep_isMinOn"
+
+[[node]]
+id = "lemma_14_2_5"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.5"

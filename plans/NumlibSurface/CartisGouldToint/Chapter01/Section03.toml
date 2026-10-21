@@ -1,0 +1,14 @@
+namespace = "CartisGouldToint.Chapter01.Section03"
+
+[[node]]
+id = "taylorModel"
+source = "Cartis, Gould and Toint, Section 1.3, essential definitions and assumptions"
+
+[[node]]
+id = "leastHessianEigenvalue"
+
+[[node]]
+id = "leastHessianEigenvalue_hasEigenvalue"
+
+[[node]]
+id = "le_leastHessianEigenvalue_iff"

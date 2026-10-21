@@ -1,0 +1,17 @@
+namespace = 'CartisGouldToint.Chapter12.Section02'
+
+[[node]]
+id = 'LipschitzDerivativeFamily.norm_iteratedFDeriv_le_constant'
+source = 'Cartis, Gould and Toint (2022), proof of Lemma 12.2.7'
+
+[[node]]
+id = 'LipschitzDerivativeFamily.norm_iteratedFDeriv_taylorModel_le'
+source = 'Cartis, Gould and Toint (2022), proof of Lemma 12.2.7, (12.2.40)'
+
+[[node]]
+id = 'lemma_12_2_7'
+source = 'Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.7'
+
+[[node]]
+id = 'lemma_12_2_8'
+source = 'Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.8'

@@ -1,0 +1,7 @@
+namespace = "Optimization.KrylovSubproblem"
+
+[[node]]
+id = "compressedHessian_adjoint_of_invariant"
+
+[[node]]
+id = "compressedHessian_shift_isPositive"

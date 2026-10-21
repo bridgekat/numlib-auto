@@ -1,0 +1,31 @@
+namespace = "Optimization.SteepestDescentValley"
+
+[[node]]
+id = "counterexampleParameters"
+
+[[node]]
+id = "counterexample_nodeX"
+
+[[node]]
+id = "counterexample_nodeY"
+
+[[node]]
+id = "counterexample_nodeValue"
+
+[[node]]
+id = "counterexampleTrial"
+
+[[node]]
+id = "counterexample_first_value"
+
+[[node]]
+id = "counterexample_trial_value"
+
+[[node]]
+id = "counterexample_trial_lt_first"
+
+[[node]]
+id = "counterexample_trial_on_ray"
+
+[[node]]
+id = "counterexample_not_global_exact"

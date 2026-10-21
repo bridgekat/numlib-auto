@@ -1,0 +1,112 @@
+namespace = "Optimization.InexactTrustRegion"
+
+[[node]]
+id = "Oracle"
+
+[[node]]
+id = "AccuracyParameters"
+
+[[node]]
+id = "Branch"
+
+[[node]]
+id = "Trace"
+
+[[node]]
+id = "coefficients"
+
+[[node]]
+id = "prediction"
+
+[[node]]
+id = "approximateGap"
+
+[[node]]
+id = "testRadius"
+
+[[node]]
+id = "AllPass"
+
+[[node]]
+id = "StepAccurate"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "Successful"
+
+[[node]]
+id = "scaledGap"
+
+[[node]]
+id = "LegalPrefix"
+
+[[node]]
+id = "LegalPrefix.radius_update_lower"
+
+[[node]]
+id = "LegalPrefix.radius_pos"
+
+[[node]]
+id = "LegalPrefix.testRadius_bounds"
+
+[[node]]
+id = "LegalPrefix.requests_pos"
+
+[[node]]
+id = "LegalPrefix.coefficients_cached"
+
+[[node]]
+id = "LegalPrefix.scaledGap_lower"
+
+[[node]]
+id = "LegalPrefix.predicted_ge_scaledGap"
+
+[[node]]
+id = "LegalPrefix.predicted_pos"
+
+[[node]]
+id = "LegalPrefix.accepted_decrease"
+
+[[node]]
+id = "LegalPrefix.objective_mono"
+
+[[node]]
+id = "LegalPrefix.accuracy_fixed"
+
+[[node]]
+id = "trials"
+
+[[node]]
+id = "successes"
+
+[[node]]
+id = "failures"
+
+[[node]]
+id = "refinements"
+
+[[node]]
+id = "trials_add_refinements"
+
+[[node]]
+id = "successes_add_failures"
+
+[[node]]
+id = "functionQueries"
+
+[[node]]
+id = "derivativeQueries"
+
+[[node]]
+id = "functionQueries_length"
+
+[[node]]
+id = "derivativeQueries_length"
+
+[[node]]
+id = "LegalPrefix.log_radius_budget"
+
+[[node]]
+id = "LegalPrefix.trial_count_le"

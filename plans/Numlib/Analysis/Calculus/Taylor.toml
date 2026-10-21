@@ -57,3 +57,6 @@ id = "norm_sub_sub_smul_apply_le_of_hasFDerivAt"
 
 [[node]]
 id = "isLittleO_taylor_two"
+
+[[node]]
+id = "integral_taylor_kernel"

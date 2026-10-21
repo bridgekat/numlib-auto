@@ -1,0 +1,7 @@
+namespace = "CartisGouldToint.Chapter10.Section02"
+
+[[node]]
+id = "lanczosStartingGradient_norm"
+
+[[node]]
+id = "lanczosDualResidualIdentity"

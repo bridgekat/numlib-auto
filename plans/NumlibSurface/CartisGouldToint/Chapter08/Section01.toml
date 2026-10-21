@@ -1,0 +1,30 @@
+namespace = "CartisGouldToint.Chapter08.Section01"
+
+[[node]]
+id = "quadraticModel"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.1"
+
+[[node]]
+id = "weightedNorm"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.1"
+
+[[node]]
+id = "trustRegionMinimizer"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.1"
+
+[[node]]
+id = "regularizedModel"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.1"
+
+[[node]]
+id = "regularizedMinimizer"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.1"
+
+[[node]]
+id = "weightedNorm_eq_energyNorm"
+
+[[node]]
+id = "quadraticModel_eq_quadratic"
+
+[[node]]
+id = "regularizedModel_eq_weightedPowerQuadratic"

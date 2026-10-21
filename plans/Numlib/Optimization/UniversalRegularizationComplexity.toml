@@ -1,0 +1,71 @@
+[[node]]
+id = "Optimization.ParameterUpdates.total_count_le_of_prefix_upper_bound"
+
+[[node]]
+id = "Optimization.UniversalRegularization.RunPrefix.success_count_le"
+
+[[node]]
+id = "Optimization.UniversalRegularization.RunPrefix.total_count_le"
+
+[[node]]
+id = "Optimization.UniversalRegularization.neg_log_toleranceRadius_le"
+
+[[node]]
+id = "Optimization.UniversalRegularization.ComplexityConstants"
+
+[[node]]
+id = "Optimization.UniversalRegularization.complexityConstants"
+
+[[node]]
+id = "Optimization.UniversalRegularization.tolerancePower"
+
+[[node]]
+id = "Optimization.UniversalRegularization.evaluationBudget"
+
+[[node]]
+id = "Optimization.UniversalRegularization.RunPrefix.explicit_count_le"
+
+[[node]]
+id = "Optimization.UniversalRegularization.le_decreaseSigma"
+
+[[node]]
+id = "Optimization.UniversalRegularization.complexityConstants_eq_of_parameters"
+
+[[node]]
+id = "Optimization.UniversalRegularization.two_le_evaluationBudget"
+
+[[node]]
+id = "Optimization.UniversalRegularization.Available"
+
+[[node]]
+id = "Optimization.UniversalRegularization.Available.exists_first_run"
+
+[[node]]
+id = "Optimization.UniversalRegularization.IsRun.evaluation_bounds"
+
+[[node]]
+id = "Optimization.UniversalRegularization.complexityConstants_signs"
+
+[[node]]
+id = "Optimization.UniversalRegularization.positiveComplexityConstants"
+
+[[node]]
+id = "Optimization.UniversalRegularization.evaluationBudget_le_positive"
+
+[[node]]
+id = "Optimization.UniversalRegularization.positiveComplexityConstants_signs"
+
+[[node]]
+id = "Optimization.UniversalRegularization.SameControls"
+
+[[node]]
+id = "Optimization.UniversalRegularization.SameControls.positiveComplexityConstants_eq"
+
+[[node]]
+id = "Optimization.UniversalRegularization.rpow_mul_abs_log_le"
+
+[[node]]
+id = "Optimization.UniversalRegularization.tolerancePower_bounds"
+
+[[node]]
+id = "Optimization.UniversalRegularization.evaluationBudget_le_power"

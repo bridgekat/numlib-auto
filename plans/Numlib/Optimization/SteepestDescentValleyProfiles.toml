@@ -1,0 +1,199 @@
+namespace = "Optimization.SteepestDescentValley"
+
+[[node]]
+id = "smoothStepPolynomial"
+
+[[node]]
+id = "smoothStep"
+
+[[node]]
+id = "slopeAdjustmentPolynomial"
+
+[[node]]
+id = "slopeAdjustment"
+
+[[node]]
+id = "smoothStep_eq"
+
+[[node]]
+id = "slopeAdjustment_eq"
+
+[[node]]
+id = "smoothStep_zero"
+
+[[node]]
+id = "smoothStep_one"
+
+[[node]]
+id = "slopeAdjustment_zero"
+
+[[node]]
+id = "slopeAdjustment_one"
+
+[[node]]
+id = "smoothStep_endpoint_jets"
+
+[[node]]
+id = "smoothStep_reflection"
+
+[[node]]
+id = "deriv_smoothStep"
+
+[[node]]
+id = "iteratedDeriv_two_smoothStep"
+
+[[node]]
+id = "smoothStep_nonneg"
+
+[[node]]
+id = "smoothStep_mem_Icc"
+
+[[node]]
+id = "abs_deriv_smoothStep_le"
+
+[[node]]
+id = "slopeAdjustment_sub_one"
+
+[[node]]
+id = "slopeAdjustment_le_one"
+
+[[node]]
+id = "slopeAdjustment_sub_smoothStep"
+
+[[node]]
+id = "slopeAdjustment_lt_smoothStep"
+
+[[node]]
+id = "stripPolynomial"
+
+[[node]]
+id = "strip"
+
+[[node]]
+id = "strip_eq"
+
+[[node]]
+id = "strip_eq_nonnegative_decomposition"
+
+[[node]]
+id = "strip_nonneg"
+
+[[node]]
+id = "strip_inner_jets"
+
+[[node]]
+id = "strip_outer_jets"
+
+[[node]]
+id = "strip_zero"
+
+[[node]]
+id = "strip_one"
+
+[[node]]
+id = "deriv_strip_outward"
+
+[[node]]
+id = "iteratedDeriv_two_strip_outward"
+
+[[node]]
+id = "stripWidthPolynomial"
+
+[[node]]
+id = "strip_eq_eval_widthPolynomial"
+
+[[node]]
+id = "deriv_strip_width"
+
+[[node]]
+id = "iteratedDeriv_two_strip_width"
+
+[[node]]
+id = "deriv_outward_deriv_strip_width"
+
+[[node]]
+id = "contDiff_strip"
+
+[[node]]
+id = "exists_strip_derivative_bound"
+
+[[node]]
+id = "fderiv_strip_apply"
+
+[[node]]
+id = "lower_strip_endpoint_jets"
+
+[[node]]
+id = "correctionPolynomial"
+
+[[node]]
+id = "correctionTailPolynomial"
+
+[[node]]
+id = "correctionCoefficient"
+
+[[node]]
+id = "correctionPolynomial_inner_jets"
+
+[[node]]
+id = "correctionPolynomial_outer_jets"
+
+[[node]]
+id = "contDiff_correctionCoefficient"
+
+[[node]]
+id = "correctionCoefficient_of_nonpos"
+
+[[node]]
+id = "correctionCoefficient_of_mem_Icc"
+
+[[node]]
+id = "correctionCoefficient_of_one_le"
+
+[[node]]
+id = "correction"
+
+[[node]]
+id = "correction_of_nonpos"
+
+[[node]]
+id = "correction_of_mem_Icc"
+
+[[node]]
+id = "correction_of_one_le"
+
+[[node]]
+id = "contDiff_correction"
+
+[[node]]
+id = "profile"
+
+[[node]]
+id = "profile_reflection"
+
+[[node]]
+id = "contDiff_profile"
+
+[[node]]
+id = "profile_core"
+
+[[node]]
+id = "profile_upper_strip"
+
+[[node]]
+id = "profile_lower_strip"
+
+[[node]]
+id = "profile_upper_plateau"
+
+[[node]]
+id = "profile_lower_plateau"
+
+[[node]]
+id = "profile_nonneg"
+
+[[node]]
+id = "movingProfile"
+
+[[node]]
+id = "contDiff_movingProfile"

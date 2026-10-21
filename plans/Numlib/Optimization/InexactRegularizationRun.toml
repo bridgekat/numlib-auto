@@ -1,0 +1,46 @@
+namespace = "Optimization.InexactRegularization"
+
+[[node]]
+id = "Parameters.withTolerances"
+
+[[node]]
+id = "Parameters.withTolerances_epsilon"
+
+[[node]]
+id = "Parameters.withTolerances_updates"
+
+[[node]]
+id = "Parameters.withTolerances_p"
+
+[[node]]
+id = "Parameters.withTolerances_q"
+
+[[node]]
+id = "Parameters.withTolerances_theta"
+
+[[node]]
+id = "Parameters.withTolerances_fraction"
+
+[[node]]
+id = "Parameters.withTolerances_kappaInitial"
+
+[[node]]
+id = "Parameters.withTolerances_kappaStep"
+
+[[node]]
+id = "Parameters.withTolerances_gammaAccuracy"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.prefix"
+
+[[node]]
+id = "Run.prefix_state"
+
+[[node]]
+id = "Run.prefix_trial"
+
+[[node]]
+id = "Run.prefix_accepted"

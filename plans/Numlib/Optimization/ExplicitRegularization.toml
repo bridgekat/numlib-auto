@@ -1,0 +1,55 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "Oracle"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "State"
+
+[[node]]
+id = "Inspection"
+
+[[node]]
+id = "ErrorCheck"
+
+[[node]]
+id = "Certified"
+
+[[node]]
+id = "certified_iff"
+
+[[node]]
+id = "ValueTrial"
+
+[[node]]
+id = "ValueTrial.ratio"
+
+[[node]]
+id = "ValueTrial.queries"
+
+[[node]]
+id = "ValueTrial.queries_length"
+
+[[node]]
+id = "refine"
+
+[[node]]
+id = "trialState"
+
+[[node]]
+id = "Transition"
+
+[[node]]
+id = "Execution"
+
+[[node]]
+id = "IsExecution"
+
+[[node]]
+id = "Execution.functionQueries"
+
+[[node]]
+id = "Execution.derivativeQueries"

@@ -1,0 +1,70 @@
+namespace = "Analysis.FlatGaussian"
+
+[[node]]
+id = "cutoff"
+
+[[node]]
+id = "cutoff_eq_zero"
+
+[[node]]
+id = "cutoff_eq_exp"
+
+[[node]]
+id = "cutoff_nonneg"
+
+[[node]]
+id = "cutoff_pos_iff"
+
+[[node]]
+id = "tendsto_polynomial_inv_mul_cutoff"
+
+[[node]]
+id = "hasDerivAt_polynomial_inv_mul_cutoff"
+
+[[node]]
+id = "contDiff_polynomial_inv_mul_cutoff"
+
+[[node]]
+id = "contDiff_cutoff"
+
+[[node]]
+id = "cutoffPolynomial"
+
+[[node]]
+id = "iteratedDeriv_cutoff"
+
+[[node]]
+id = "iteratedDeriv_cutoff_eq_zero"
+
+[[node]]
+id = "gaussian"
+
+[[node]]
+id = "contDiff_gaussian"
+
+[[node]]
+id = "integrable_gaussian"
+
+[[node]]
+id = "primitive"
+
+[[node]]
+id = "primitive_eq_interval"
+
+[[node]]
+id = "hasDerivAt_primitive"
+
+[[node]]
+id = "deriv_primitive"
+
+[[node]]
+id = "contDiff_primitive"
+
+[[node]]
+id = "primitive_pos"
+
+[[node]]
+id = "one_lt_deriv_primitive"
+
+[[node]]
+id = "primitive_le"

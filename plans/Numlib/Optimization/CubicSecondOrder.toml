@@ -1,0 +1,34 @@
+namespace = "Optimization.CubicRegularization"
+
+[[node]]
+id = "SecondOrderStationary"
+
+[[node]]
+id = "SecondOrderRun"
+
+[[node]]
+id = "HessianLipschitz.curried_bound"
+
+[[node]]
+id = "SecondOrderRun.accepted_curvature_bound"
+
+[[node]]
+id = "SecondOrderRun.stationary_of_step_eq_zero"
+
+[[node]]
+id = "SecondOrderRun.accepted_leastCurvature_bound"
+
+[[node]]
+id = "SecondOrderRun.step_norm_lower_bound"
+
+[[node]]
+id = "SecondOrderRun.accepted_joint_budget"
+
+[[node]]
+id = "SecondOrderRun.exists_stationary_with_cost"
+
+[[node]]
+id = "ModifiedRun"
+
+[[node]]
+id = "ModifiedRun.accepted_derivative_bound"

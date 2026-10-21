@@ -1,0 +1,21 @@
+namespace = "CartisGouldToint.Chapter13.Section01"
+
+[[node]]
+id = "literal_arqpida_short_step_jet_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, counterexample to literal Algorithm 13.1.2 and Lemma 13.1.16"
+
+[[node]]
+id = "literal_arqpida_short_step_length_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.17 and Equations 13.1.69, 13.1.70, 13.1.77, 13.1.80"
+
+[[node]]
+id = "TinyStep.literal_arqpida_tiny_step_decrease_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.18 and Equations 13.1.77, 13.1.82, 13.1.83"
+
+[[node]]
+id = "TinyStep.explicitTrial"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithms 13.1.2 and 13.3.2, Equations 13.3.13 and 13.3.18 (shared actual trial fixture)"
+
+[[node]]
+id = "TinyStep.explicitTrial_properties"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.7 and Equations 13.1.77, 13.1.82, 13.1.83 (shared fixture characterization)"

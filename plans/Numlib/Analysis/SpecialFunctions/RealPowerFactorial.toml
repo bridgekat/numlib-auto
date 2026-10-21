@@ -1,0 +1,31 @@
+namespace = "Real"
+
+[[node]]
+id = "powerFactorial"
+
+[[node]]
+id = "powerFactorial_pos"
+
+[[node]]
+id = "powerFactorial_natCast"
+
+[[node]]
+id = "powerFactorial_add_one"
+
+[[node]]
+id = "powerFactorial_sub_one"
+
+[[node]]
+id = "powerFactorial_sub_nat"
+
+[[node]]
+id = "powerFactorial_eq_one"
+
+[[node]]
+id = "powerFactorial_nat_add"
+
+[[node]]
+id = "div_powerFactorial_mul"
+
+[[node]]
+id = "div_powerFactorial_mul_mul"

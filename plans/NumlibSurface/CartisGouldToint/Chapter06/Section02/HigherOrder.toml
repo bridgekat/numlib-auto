@@ -1,0 +1,117 @@
+namespace = "CartisGouldToint.Chapter06.Section02"
+
+[[node]]
+id = "objectiveOnModelCriticality"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "objectiveOnModelCriticality_first"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "arpCCPrefix.directional_error"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "isCompact_modelRestrictedSteps_inter_unitBall"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "arpCCPrefix.zero_mem_modelRestrictedSteps"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "arpCCPrefix.objectiveOnModelCriticality_le"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "arpCCPrefix.restricted_unit_subset_model"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "arpCCPrefix.approximate_of_small_errors"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "arpCCPrefix.exists_large_error_of_not_approximate"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedErrorCoefficient"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedDecreaseConstant"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedDecreaseConstant_eq_factorial"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedDecreaseConstant_pos"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "arpCCPrefix.decrease_of_large_error"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "lemma_6_2_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 6.2.2"
+
+[[node]]
+id = "activeOrderMinimum"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "activeOrderMinimum_le"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "activeOrderMinimum_pos"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedToleranceFactor"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedToleranceFactor_first"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedToleranceFactor_second"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedToleranceFactor_third"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedToleranceFactor_pos"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedComplexityConstant"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "constrainedComplexityConstant_pos"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "arpCCPrefix.decrease_of_not_approximate"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "arpCCPrefix.evaluation_bounds"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "exists_arpCC_run_with_cost"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2.2, Lemmas 6.2.1–6.2.2 and Theorem 6.2.3"
+
+[[node]]
+id = "theorem_6_2_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 6.2.3"

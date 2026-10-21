@@ -1,0 +1,103 @@
+namespace = "Optimization.TransverseObjective"
+
+[[node]]
+id = "Plane"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "point_zero_coord"
+
+[[node]]
+id = "point_one_coord"
+
+[[node]]
+id = "point_zero"
+
+[[node]]
+id = "point_add"
+
+[[node]]
+id = "point_sub"
+
+[[node]]
+id = "point_smul"
+
+[[node]]
+id = "point_coords"
+
+[[node]]
+id = "norm_point_sq"
+
+[[node]]
+id = "abs_coordinate_le_norm"
+
+[[node]]
+id = "norm_proj_le_one"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "objective_point"
+
+[[node]]
+id = "contDiff_objective"
+
+[[node]]
+id = "objective_pos"
+
+[[node]]
+id = "objective_nonneg"
+
+[[node]]
+id = "objective_initial"
+
+[[node]]
+id = "fderiv_objective"
+
+[[node]]
+id = "secondFDeriv_objective"
+
+[[node]]
+id = "gradient_objective"
+
+[[node]]
+id = "objective_local"
+
+[[node]]
+id = "fderiv_objective_local"
+
+[[node]]
+id = "secondFDeriv_objective_local"
+
+[[node]]
+id = "lipschitz_jets"
+
+[[node]]
+id = "exactOracle"
+
+[[node]]
+id = "exactOracle_value"
+
+[[node]]
+id = "exactOracle_derivative"
+
+[[node]]
+id = "taylorDecrement_one_local"
+
+[[node]]
+id = "taylorDecrement_two_local"
+
+[[node]]
+id = "cubic_model_eq"
+
+[[node]]
+id = "gradient_initial"
+
+[[node]]
+id = "first_gap_initial"
+
+[[node]]
+id = "secondFDeriv_nonneg"

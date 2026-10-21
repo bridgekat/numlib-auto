@@ -1,0 +1,97 @@
+namespace = "Optimization.CoupledCubic.Continuation"
+
+[[node]]
+id = "State"
+
+[[node]]
+id = "State.location"
+
+[[node]]
+id = "direction"
+
+[[node]]
+id = "direction_spec"
+
+[[node]]
+id = "Passed"
+
+[[node]]
+id = "Terminal"
+
+[[node]]
+id = "selected"
+
+[[node]]
+id = "selected_bounds"
+
+[[node]]
+id = "selected_failure"
+
+[[node]]
+id = "trial"
+
+[[node]]
+id = "trial_spec"
+
+[[node]]
+id = "advanced"
+
+[[node]]
+id = "advanced_location"
+
+[[node]]
+id = "next"
+
+[[node]]
+id = "states"
+
+[[node]]
+id = "states_zero"
+
+[[node]]
+id = "states_succ"
+
+[[node]]
+id = "trace"
+
+[[node]]
+id = "trace_testRadius"
+
+[[node]]
+id = "stops_iff"
+
+[[node]]
+id = "prediction_pos"
+
+[[node]]
+id = "trace_ratio_ge_one"
+
+[[node]]
+id = "trace_point_succ"
+
+[[node]]
+id = "isRun"
+
+[[node]]
+id = "payment"
+
+[[node]]
+id = "payment_pos"
+
+[[node]]
+id = "decrease_gt_payment"
+
+[[node]]
+id = "exists_stop"
+
+[[node]]
+id = "states_after_stop"
+
+[[node]]
+id = "trace_after_stop"
+
+[[node]]
+id = "finite_run"
+
+[[node]]
+id = "exists_finite_continuation"

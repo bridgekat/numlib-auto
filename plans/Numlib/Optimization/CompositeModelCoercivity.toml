@@ -1,0 +1,16 @@
+namespace = "Optimization"
+
+[[node]]
+id = "CompositeTaylorModels.abs_model_le"
+
+[[node]]
+id = "CompositeTaylorModels.regularizedModel_eventually_ge"
+
+[[node]]
+id = "CompositeTaylorModels.continuous_regularizedModel"
+
+[[node]]
+id = "CompositeTaylorModels.isCompact_regularizedModel_sublevel"
+
+[[node]]
+id = "CompositeTaylorModels.exists_regularizedModel_minimizer"

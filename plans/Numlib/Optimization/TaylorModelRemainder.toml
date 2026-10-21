@@ -1,0 +1,14 @@
+[[node]]
+id = "sub_taylorModel_eq_integral_iteratedFDeriv_sub"
+
+[[node]]
+id = "norm_sub_taylorModel_le_holder"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_taylorModel_le_holder"
+
+[[node]]
+id = "norm_sub_taylorModel_le_holder_of_diagonal"
+
+[[node]]
+id = "norm_sub_taylorModel_le_of_lipschitz_diagonal"

@@ -1,0 +1,49 @@
+namespace = "Optimization.ExplicitRegularization"
+
+[[node]]
+id = "objective_decrement_error_le_step_power"
+
+[[node]]
+id = "ValueTrial.very_successful_of_step_accuracy"
+
+[[node]]
+id = "Execution.very_successful_of_large"
+
+[[node]]
+id = "Transition.sigma_le_gamma3"
+
+[[node]]
+id = "Execution.sigma_step_nonincrease_of_large"
+
+[[node]]
+id = "Execution.sigma_upper"
+
+[[node]]
+id = "_root_.Optimization.ExplicitTrustRegion.Oracle.derivative_norm_le"
+
+[[node]]
+id = "Execution.coefficient_norm_le"
+
+[[node]]
+id = "Inspection.errorCheck_of_uniform_request"
+
+[[node]]
+id = "Transition.radii_lower"
+
+[[node]]
+id = "Execution.radii_lower_of_bounds"
+
+[[node]]
+id = "Execution.inspection_radii_lower_of_bounds"
+
+[[node]]
+id = "Execution.inspection_radii_lower"
+
+[[node]]
+id = "Execution.stepAccurate_of_uniform_request"
+
+[[node]]
+id = "Execution.certified_of_uniform_request"
+
+[[node]]
+id = "Execution.trial_of_small_uniform_request"

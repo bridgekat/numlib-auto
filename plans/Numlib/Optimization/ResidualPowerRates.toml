@@ -1,0 +1,19 @@
+namespace = "Optimization"
+
+[[node]]
+id = "residual_polynomial_tolerance_identity"
+
+[[node]]
+id = "residual_polynomial_count_le"
+
+[[node]]
+id = "residual_geometric_count_le"
+
+[[node]]
+id = "residual_superlinear_count_le"
+
+[[node]]
+id = "MeasureDomination.implicit_recurrence_tendsto_zero"
+
+[[node]]
+id = "MeasureDomination.implicit_power_recurrence_q_superlinear"

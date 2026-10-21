@@ -1,0 +1,82 @@
+namespace = 'Optimization.ConstrainedRegularizationOperations'
+
+[[node]]
+id = 'coefficientGap'
+
+[[node]]
+id = 'coefficientGap_univ'
+
+[[node]]
+id = 'CoefficientWitness'
+
+[[node]]
+id = 'coefficientWitness_univ_iff'
+
+[[node]]
+id = 'RadiusSearch'
+
+[[node]]
+id = 'RadiusSearch.ofUnconstrained'
+
+[[node]]
+id = 'Inspection'
+
+[[node]]
+id = 'Inspection.ofUnconstrained'
+
+[[node]]
+id = 'Inspection.radii'
+
+[[node]]
+id = 'Inspection.direction'
+
+[[node]]
+id = 'Inspection.ofUnconstrained_radii'
+
+[[node]]
+id = 'Inspection.ofUnconstrained_direction'
+
+[[node]]
+id = 'GapWitness'
+
+[[node]]
+id = 'gapWitness_univ_iff'
+
+[[node]]
+id = 'InnerTransition'
+
+[[node]]
+id = 'InnerTransition.ofUnconstrained'
+
+[[node]]
+id = 'InnerTransition.feasible'
+
+[[node]]
+id = 'InnerExecution'
+
+[[node]]
+id = 'InnerExecution.ofUnconstrained'
+
+[[node]]
+id = 'InnerExecution.feasible'
+
+[[node]]
+id = 'InnerResult'
+
+[[node]]
+id = 'InnerResult.step'
+
+[[node]]
+id = 'InnerResult.feasible'
+
+[[node]]
+id = 'InnerResult.radii'
+
+[[node]]
+id = 'InnerResult.ofUnconstrained'
+
+[[node]]
+id = 'InnerResult.ofUnconstrained_step'
+
+[[node]]
+id = 'InnerResult.ofUnconstrained_radii'

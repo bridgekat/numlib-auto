@@ -1,0 +1,73 @@
+namespace = "Optimization.TwoPhaseTargets.BoundedBoundary"
+
+[[node]]
+id = "constraintSet"
+
+[[node]]
+id = "constraintSet_closed"
+
+[[node]]
+id = "constraintSet_convex"
+
+[[node]]
+id = "initial_mem"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "target"
+
+[[node]]
+id = "target_objective"
+
+[[node]]
+id = "target_deriv"
+
+[[node]]
+id = "target_iteratedDeriv_two"
+
+[[node]]
+id = "target_smooth"
+
+[[node]]
+id = "residual_objective_zero"
+
+[[node]]
+id = "residual_smooth"
+
+[[node]]
+id = "objective_bounds"
+
+[[node]]
+id = "criticality_le_univ"
+
+[[node]]
+id = "criticality_scalar"
+
+[[node]]
+id = "terminal_target_criticality"
+
+[[node]]
+id = "not_stationary_initial_terminal"
+
+[[node]]
+id = "inner_run"
+
+[[node]]
+id = "outer_run"
+
+[[node]]
+id = "phase_one_run"
+
+[[node]]
+id = "lagrangian_zero"
+
+[[node]]
+id = "returned_multiplier"
+
+[[node]]
+id = "terminal_lagrangian_criticality"
+
+[[node]]
+id = "fails_source_output"

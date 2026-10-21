@@ -1,0 +1,22 @@
+namespace = "Hermite"
+
+[[node]]
+id = "quinticResidual"
+
+[[node]]
+id = "quinticCoefficient"
+
+[[node]]
+id = "quinticPolynomial"
+
+[[node]]
+id = "natDegree_quinticPolynomial_le"
+
+[[node]]
+id = "iteratedDeriv_quinticPolynomial_endpoints"
+
+[[node]]
+id = "quinticResidual_eq_endpointTaylor_discrepancy"
+
+[[node]]
+id = "coeff_quinticPolynomial"

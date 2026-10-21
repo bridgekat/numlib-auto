@@ -1,0 +1,118 @@
+namespace = "FiniteDerivativeStencil"
+
+[[node]]
+id = "Tensor"
+
+[[node]]
+id = "Stencil"
+
+[[node]]
+id = "Stencil.fromOracle"
+
+[[node]]
+id = "Stencil.estimate"
+
+[[node]]
+id = "Stencil.fromOracle_eq_of_replies_eq"
+
+[[node]]
+id = "Stencil.PolynomialExact"
+
+[[node]]
+id = "Stencil.PolynomialExact.mono"
+
+[[node]]
+id = "Stencil.queries"
+
+[[node]]
+id = "Stencil.queries_length"
+
+[[node]]
+id = "Stencil.query_dist_le"
+
+[[node]]
+id = "Stencil.queries_approach"
+
+[[node]]
+id = "VerifiedScheme"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder_stencil"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder_multiplier"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder_self"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder_restrictOrder"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder_polynomialExact"
+
+[[node]]
+id = "VerifiedScheme.estimate_approach"
+
+[[node]]
+id = "requestedMesh"
+
+[[node]]
+id = "requestedMesh_pos"
+
+[[node]]
+id = "requestedMesh_le"
+
+[[node]]
+id = "requestedMesh_le_one"
+
+[[node]]
+id = "VerifiedScheme.oracle"
+
+[[node]]
+id = "VerifiedScheme.oracle_low"
+
+[[node]]
+id = "VerifiedScheme.oracle_high"
+
+[[node]]
+id = "VerifiedScheme.errorMultiplier"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder_oracle"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder_errorMultiplier"
+
+[[node]]
+id = "VerifiedScheme.errorMultiplier_nonneg"
+
+[[node]]
+id = "VerifiedScheme.oracle_accuracy"
+
+[[node]]
+id = "VerifiedScheme.batchCost"
+
+[[node]]
+id = "VerifiedScheme.batchQueries"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder_batchCost"
+
+[[node]]
+id = "VerifiedScheme.restrictOrder_batchQueries"
+
+[[node]]
+id = "VerifiedScheme.batchQueries_length"
+
+[[node]]
+id = "VerifiedScheme.expandedQueries"
+
+[[node]]
+id = "VerifiedScheme.expandedQueries_length"
+
+[[node]]
+id = "VerifiedScheme.expandedQueries_length_le"

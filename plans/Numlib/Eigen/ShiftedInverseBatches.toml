@@ -1,0 +1,43 @@
+namespace = "Krylov"
+
+[[node]]
+id = "shiftedInverseBatch"
+
+[[node]]
+id = "shiftedInversePower"
+
+[[node]]
+id = "shiftedInverseBatch_eq"
+
+[[node]]
+id = "shiftedInverseBatch_zero"
+
+[[node]]
+id = "shiftedInverseBatch_succ"
+
+[[node]]
+id = "shiftedInversePower_ne_zero"
+
+[[node]]
+id = "norm_shiftedInverseBatch"
+
+[[node]]
+id = "repr_shiftedInversePower"
+
+[[node]]
+id = "norm_shiftedInversePower_sq"
+
+[[node]]
+id = "repr_shiftedInverseBatch"
+
+[[node]]
+id = "repr_shiftedInverseBatch_ne_zero"
+
+[[node]]
+id = "norm_shiftedInversePower_le"
+
+[[node]]
+id = "abs_repr_shiftedInverseBatch_ge"
+
+[[node]]
+id = "inner_shiftedInverseBatch"

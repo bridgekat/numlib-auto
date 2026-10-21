@@ -1,0 +1,103 @@
+namespace = "Optimization.DerivativeOracle"
+
+[[node]]
+id = "Reply.support"
+
+[[node]]
+id = "Reply.mem_support"
+
+[[node]]
+id = "Reply.tensorSupportedOn"
+
+[[node]]
+id = "support_oracle"
+
+[[node]]
+id = "historySupport"
+
+[[node]]
+id = "mem_historySupport"
+
+[[node]]
+id = "historySupport_mono"
+
+[[node]]
+id = "historySupport_congr"
+
+[[node]]
+id = "initialFrame"
+
+[[node]]
+id = "FrameState"
+
+[[node]]
+id = "FrameState.Supported"
+
+[[node]]
+id = "FrameState.exists_next"
+
+[[node]]
+id = "FrameState.nextFrame"
+
+[[node]]
+id = "FrameState.advance"
+
+[[node]]
+id = "FrameState.nextFrame_spec"
+
+[[node]]
+id = "Method.frameRun"
+
+[[node]]
+id = "Method.frameRun_congr"
+
+[[node]]
+id = "Method.frameRun_supported"
+
+[[node]]
+id = "Method.frameRun_succ_spec"
+
+[[node]]
+id = "Method.frameRun_query_eq"
+
+[[node]]
+id = "Method.frameRun_columns"
+
+[[node]]
+id = "Method.frameRun_projection_eq"
+
+[[node]]
+id = "Method.frameRun_reply_eq"
+
+[[node]]
+id = "Method.frameRun_query_last"
+
+[[node]]
+id = "extendHistory"
+
+[[node]]
+id = "extendHistory_apply"
+
+[[node]]
+id = "Method.zeroRespectingTransform"
+
+[[node]]
+id = "Method.zeroRespectingTransform_next"
+
+[[node]]
+id = "Method.zeroRespectingTransform_isZeroRespecting"
+
+[[node]]
+id = "FrameState.trace"
+
+[[node]]
+id = "Method.frameRun_query_next_final"
+
+[[node]]
+id = "Method.frameRun_projected_trace"
+
+[[node]]
+id = "Method.frameRun_simulation"
+
+[[node]]
+id = "Method.exists_uniform_zeroRespecting_simulation"

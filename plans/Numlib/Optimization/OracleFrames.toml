@@ -1,0 +1,28 @@
+namespace = "Optimization.ZeroChains"
+
+[[node]]
+id = "exists_embedding_preserving_columns"
+
+[[node]]
+id = "adjoint_eq_of_columns_of_support"
+
+[[node]]
+id = "exists_embedding_extension"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.Reply.pullback"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.Reply.pullback_value"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.Reply.pullback_derivative"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.oracle_pullback"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.Reply.pullback_adjoint_eq"
+
+[[node]]
+id = "_root_.Optimization.DerivativeOracle.Method.exists_frame_extension_next"

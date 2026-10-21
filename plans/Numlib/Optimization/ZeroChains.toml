@@ -1,0 +1,100 @@
+namespace = "Optimization.ZeroChains"
+
+[[node]]
+id = "Space"
+
+[[node]]
+id = "coordinateSupport"
+
+[[node]]
+id = "mem_coordinateSupport"
+
+[[node]]
+id = "coordinateSupport_zero"
+
+[[node]]
+id = "mixedPartial"
+
+[[node]]
+id = "derivativeSupport"
+
+[[node]]
+id = "mem_derivativeSupport"
+
+[[node]]
+id = "not_mem_derivativeSupport_iff"
+
+[[node]]
+id = "derivativeSupport_zero"
+
+[[node]]
+id = "derivativeSupport_mono"
+
+[[node]]
+id = "mixedPartial_one"
+
+[[node]]
+id = "derivativeSupport_one"
+
+[[node]]
+id = "initialCoordinates"
+
+[[node]]
+id = "mem_initialCoordinates"
+
+[[node]]
+id = "coordinateSupport_subset_initial_iff"
+
+[[node]]
+id = "IsZeroChain"
+
+[[node]]
+id = "isZeroChain_zero_iff"
+
+[[node]]
+id = "IsZeroChain.mixedPartial_eq_zero"
+
+[[node]]
+id = "isZeroChain_iff"
+
+[[node]]
+id = "pullback"
+
+[[node]]
+id = "mixedPartial_pullback"
+
+[[node]]
+id = "rotate"
+
+[[node]]
+id = "mixedPartial_rotate"
+
+[[node]]
+id = "rescale"
+
+[[node]]
+id = "mixedPartial_rescale"
+
+[[node]]
+id = "derivativeSupport_rescale_subset"
+
+[[node]]
+id = "derivativeSupport_rescale"
+
+[[node]]
+id = "derivativeSupport_rescale_zero_output"
+
+[[node]]
+id = "derivativeSupport_rescale_zero_input"
+
+[[node]]
+id = "IsZeroChain.rescale"
+
+[[node]]
+id = "IsZeroRespecting"
+
+[[node]]
+id = "IsZeroRespecting.coordinate_eq_zero"
+
+[[node]]
+id = "IsZeroChain.support_iterate"

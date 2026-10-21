@@ -1,0 +1,16 @@
+namespace = "Matrix"
+
+[[node]]
+id = "offDiagonalRowSum"
+
+[[node]]
+id = "offDiagonalRowSum_nonneg"
+
+[[node]]
+id = "exists_row_abs_sub_le_of_mem_pencilSpectrum"
+
+[[node]]
+id = "pencil_row_interval"
+
+[[node]]
+id = "exists_row_interval_of_mem_pencilSpectrum"

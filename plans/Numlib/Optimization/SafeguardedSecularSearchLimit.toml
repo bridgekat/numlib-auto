@@ -1,0 +1,25 @@
+namespace = "Optimization.SafeguardedSecularSearch"
+
+[[node]]
+id = "trial_mono"
+
+[[node]]
+id = "Choice.trial_interval_nonempty"
+
+[[node]]
+id = "IsRun.tendsto_width"
+
+[[node]]
+id = "Brackets.dist_le_width"
+
+[[node]]
+id = "IsRun.tendsto_bounds_candidate"
+
+[[node]]
+id = "IsRun.exists_lower_or_width_lt"
+
+[[node]]
+id = "Brackets.midpoint_error"
+
+[[node]]
+id = "Brackets.midpoint_error_lt"

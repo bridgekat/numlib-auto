@@ -1,0 +1,41 @@
+[[node]]
+id = "contDiffAt_quadratic_rpow_zero"
+
+[[node]]
+id = "iteratedDeriv_mul_coord_zero"
+
+[[node]]
+id = "iteratedDeriv_sq_mul_deriv_zero"
+
+[[node]]
+id = "iteratedDeriv_quadratic_rpow_succ_succ"
+
+[[node]]
+id = "normRpowDerivativeBound"
+
+[[node]]
+id = "normRpowDerivativeBound_zero"
+
+[[node]]
+id = "normRpowDerivativeBound_one"
+
+[[node]]
+id = "normRpowDerivativeBound_succ_succ"
+
+[[node]]
+id = "normRpowDerivativeBound_nonneg"
+
+[[node]]
+id = "abs_iteratedDeriv_quadratic_rpow_zero_le"
+
+[[node]]
+id = "normRpow_add_smul_unit_eq_quadratic"
+
+[[node]]
+id = "abs_iteratedFDeriv_normRpow_unit_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_normRpow_unit_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_normRpow_le_coefficient"

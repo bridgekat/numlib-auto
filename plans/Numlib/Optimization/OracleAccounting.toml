@@ -1,0 +1,64 @@
+namespace = "Optimization.OracleAccounting"
+
+[[node]]
+id = "Event"
+
+[[node]]
+id = "queries"
+
+[[node]]
+id = "queries_nil"
+
+[[node]]
+id = "queries_query"
+
+[[node]]
+id = "queries_reuse"
+
+[[node]]
+id = "evaluations"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "iterations"
+
+[[node]]
+id = "internalOperations"
+
+[[node]]
+id = "CacheValid"
+
+[[node]]
+id = "cacheValid_nil"
+
+[[node]]
+id = "cacheValid_iteration"
+
+[[node]]
+id = "cacheValid_internal"
+
+[[node]]
+id = "cacheValid_query"
+
+[[node]]
+id = "cacheValid_reuse"
+
+[[node]]
+id = "evaluations_reuse"
+
+[[node]]
+id = "evaluations_internal"
+
+[[node]]
+id = "value_add_derivative_evaluations"
+
+[[node]]
+id = "firstHittingTime"
+
+[[node]]
+id = "firstHittingTime_eq_none"
+
+[[node]]
+id = "firstHittingTime_eq_some_iff"

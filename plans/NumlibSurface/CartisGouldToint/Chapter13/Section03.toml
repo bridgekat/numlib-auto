@@ -1,0 +1,81 @@
+namespace = "CartisGouldToint.Chapter13.Section03"
+
+[[node]]
+id = "ExplicitAccuracyOracle"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations13.3.1–13.3.4"
+
+[[node]]
+id = "algorithm_13_3_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 13.3.1"
+
+[[node]]
+id = "lemma_13_3_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.1"
+
+[[node]]
+id = "lemma_13_3_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.2"
+
+[[node]]
+id = "lemma_13_3_3"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.3"
+
+[[node]]
+id = "theorem_13_3_4"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.3.4"
+
+[[node]]
+id = "lemma_13_3_5"
+kind = "theorem"
+desc = '''Under f.D0pL, all ARqpEDAσ_k satisfy the IDA bound(13.1.77)with κ_i=1. The factor 2 retained in its numerator absorbs both inexact function errors.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.5"
+deps = ["algorithm_13_3_2"]
+
+wrong = "False for the literal Algorithm 13.3.2, whose inherited Step 2 permits long steps without the step-dependent derivative check while kappa_h and kappa_s are independent. The machine-checked theorem CartisGouldToint.Chapter13.Section03.literal_arqpeda_long_step_sigma_counterexample supplies a complete legal Euclidean p=q=1 execution with globally constant bounded-below objective f=0, all global derivative Lipschitz constants one, and a known-error oracle valid for every positive request. The initial derivative request and kappa_h are 64, while kappa_s=1/32 satisfies (13.3.13). The actual computed inspection selects d=1 and fails its half-threshold test despite true optimality; the actual inner execution returns the global model minimizer s=2 at sigma_0=32. The first trial makes both endpoint requests at common positive h_0=1 satisfying (13.3.18); both approximate values are exactly zero. Its ratio is zero, and the legal rejected update yields sigma_1=64, whereas the printed maximum with L_f,p=kappa_max=1 equals 32. This refutes only the all-iteration parameter assertion of Lemma 13.3.5; it does not refute Lemmas 13.3.6,13.3.7 or Theorem 13.3.8."
+
+[[node]]
+id = "lemma_13_3_6"
+kind = "theorem"
+desc = '''Under ARqpEDA reachability, the error check(13.3.17)and approximate gap tests imply true(ε,δ)-optimality. The h-threshold(13.1.78),κ_i=1, forces Step 1.5.1 certification rather than Step 5 refinement. Keep all algorithmic preconditions, not just the isolated sum inequality.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.6"
+deps = ["algorithm_13_3_2", "lemma_13_3_5", "Optimization.InexactTaylorModels.approximate_gap_certifies"]
+
+wrong = "False in part (ii) for the literal Algorithm 13.3.2, even for a bounded-below globally smooth objective with p=q=3. The machine-checked theorem CartisGouldToint.Chapter13.Section03.CubicStop.literal_arqpeda_cubic_stop_counterexample supplies an actual reachable EDA prefix and its actual Step 1.5.2 to Step 5 transition. Set B=2^100, H=2^-360, and b=2^-361. The bounded two-sine Euclidean objective has origin jets (0,b,0,-1/8), all source global Lipschitz constants one, and an all-point all-positive-request known-error oracle with exact function values. The legal kappa_s=1/16 satisfies (13.3.13), independently of kappa_h=B. A real first inner execution returns the global long model minimizer 3 at sigma=B; both endpoints are queried at common positive request 1 satisfying (13.3.18), and its actual ratio rejects, raising sigma to B^2. A genuine finite second inner execution returns a short step failing the literal q-checked derivative test, so actual Step 2 refinement restores incoming unit radii and contracts the tensor requests from B to H. The fresh H batch gives actual compact-gap fractional witnesses passing all orders at third radius 2^-190. The exact printed sigma_max is 16B, its (13.1.72) radius factor is 1/(6144B), and H satisfies the complete (13.1.78) threshold with every multiplier one. Nevertheless the literal (13.3.17) error sum fails, so the source branches to Step 5; the true cubic gap also violates approximate optimality at that inspected radius. Part (i), already proved by ARqpEDA.certified_quality, is unaffected. No failure of first attainment or of Theorem 13.3.8 is inferred."
+
+[[node]]
+id = "lemma_13_3_7"
+kind = "theorem"
+desc = '''Approximate p-model decrease(13.1.82)and true accepted objective decrease(13.1.83) hold for ARqpEDA,κ_i=1; use½η₁ factor and the prescribed radius families. Transfer model inequalities but reprove value-error bound.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.7"
+deps = ["lemma_13_3_5", "Optimization.InexactTaylorModels.true_decrease_of_inexact_acceptance"]
+
+wrong = "False for the literal q-checked Algorithm 13.3.2. The machine-checked theorem CartisGouldToint.Chapter13.Section03.literal_arqpeda_tiny_step_decrease_counterexample gives a complete legal Euclidean p=2,q=1 trial with a globally linear objective satisfying f.D0pL with all constants one and a known-error value/tensor oracle valid for every positive request. The exact gradient is one; the unchecked Hessian is (2^40-1)/2^20 at its allowed initial request. Twenty actual first-search halvings lead to the retained radius 2^-20, and the actual inner execution returns its global regularized-model minimizer with step norm 2^-20 and unit radii. The EDA constant kappa_s=1/16 satisfies (13.3.13); both endpoint calls use the positive common request 2^-26 satisfying (13.3.18), and both approximate values are exact. The actual ratio is 2^41/(2^40+1), so the trial is accepted and retains sigma=2. True approximate optimality fails at both states, and the prescribed radius conditions hold. The printed sigma_max equals 21, and the printed model lower bound (1/6)*(2/355)^(3/2) exceeds the actual decrement (2^40+1)/2^61. The actual objective decrease 2^-20 is also below eta1/2 times that printed bound, refuting both (13.1.82) and (13.1.83) in Lemma 13.3.7. This objective is not bounded below; the example makes no claim about Theorem 13.3.8 or Lemma 13.3.6."
+
+[[node]]
+id = "theorem_13_3_8"
+kind = "theorem"
+desc = '''For f.D0pL, f.Bb and model radius bounds(13.1.69–70), ARqpEDA certifies termination with function and derivative complexity O(max_j ε_j^(−π_j)),π_j=(p+1)/(p−j+1) for q≤2 andj(p+1)/p for q>2. Function calls≤AΔf/min ε_j^π_j+C; derivative calls additionally E|logε_min|+F. Repair missing denominators in the OCR from(13.1.82)and the proof of Theorem 13.1.19.'''
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.3.8"
+deps = ["lemma_13_3_6", "lemma_13_3_7"]
+wrong = "False for actual Algorithm 13.3.2 certification, even allowing arbitrary corrected tolerance-independent rate coefficients. The machine-checked theorem CartisGouldToint.Chapter13.Section03.literal_arqpeda_uniform_certification_counterexample uses one fixed Euclidean two-dimensional globally C2 objective with nonnegative values, initial value one and globally 4-Lipschitz exact derivative tensors through degree two, and one exact all-point all-positive-request known-error oracle. The companion transverse_arqpeda_algorithm, transverse_arqpeda_return_policy, transverse_arqpeda_higher_radius_policy and transverse_arqpeda_fixed_controls verify the actual full source algorithm, every selected inner return including discarded accuracy-refinement calls, unit returned radii satisfying (13.1.69), the empty higher-order range (13.1.70) for q=1, and unchanged outer controls when only tolerances are replaced. The entire initial state is fixed before all tolerances: point (0,1), parameter two, all derivative requests and radii one, freshness true and empty value cache; its true first-order unit gap is one half and exceeds every selected tolerance. Every actual inner call has the same admissible squared-gradient initialization rule mu=norm(true gradient)^2/100. For p=2,q=1 and epsilon_m=2^(-6m), a genuine finite prelude, transverse injection and common-window tail concatenate literal completed inspections, actual two-transition inner executions, all forced finite request refinements and actual accepted fresh two-value trials with exact cache/request continuity. The prefix extends to a call-qualified full IsExecution without assuming eventual certification. Its selected inspections cannot certify through the tail endpoint. Every eventual certificate therefore follows at least twice the actual tail count in genuine value queries, with tail count greater than 2^(10m)/16. On this single fixed run-selection family, every fixed real A,C is defeated at arbitrarily large m because epsilon_m^(-3/2)=2^(9m); no such pair guarantees certified termination within A*epsilon_m^(-3/2)+C calls. This refutes the function-count/termination assertion under the full global hypotheses and radius policies, rather than just printed constants, a local model estimate, an already-optimal initialization, or an available length substituted for actual queries."
+
+[[node]]
+id = "TRqEDA.algorithm"
+
+[[node]]
+id = "TRqEDA.algorithm.prefix"
+
+[[node]]
+id = "TRqEDA.algorithm.minimum_bounds"
+
+[[node]]
+id = "TRqEDA.algorithm.request_le_initial_bound"
+
+[[node]]
+id = "TRqEDA.sourceRadiusCoefficient"
+
+[[node]]
+id = "TRqEDA.algorithm.source_bounds"
+
+[[node]]
+id = "TRqEDA.algorithm.testRadius_lower"

@@ -1,0 +1,94 @@
+namespace = "Optimization.HardZeroChain"
+
+[[node]]
+id = "psi"
+
+[[node]]
+id = "phi"
+
+[[node]]
+id = "psi_eq_zero"
+
+[[node]]
+id = "psi_eq_exp"
+
+[[node]]
+id = "psi_eq_piecewise"
+
+[[node]]
+id = "contDiff_psi"
+
+[[node]]
+id = "iteratedDeriv_psi_eq_zero"
+
+[[node]]
+id = "psi_nonneg"
+
+[[node]]
+id = "psi_le_exp_one"
+
+[[node]]
+id = "psi_pos_iff"
+
+[[node]]
+id = "psi_one"
+
+[[node]]
+id = "monotone_psi"
+
+[[node]]
+id = "deriv_psi_nonneg"
+
+[[node]]
+id = "one_le_psi"
+
+[[node]]
+id = "interaction"
+
+[[node]]
+id = "interaction_eq_zero"
+
+[[node]]
+id = "interaction_eventuallyEq_zero"
+
+[[node]]
+id = "iteratedFDeriv_interaction_eq_zero"
+
+[[node]]
+id = "contDiff_interaction"
+
+[[node]]
+id = "iteratedFDeriv_interaction_apply_eq_zero"
+
+[[node]]
+id = "chain"
+
+[[node]]
+id = "chain_apply"
+
+[[node]]
+id = "contDiff_chain"
+
+[[node]]
+id = "chain_zero"
+
+[[node]]
+id = "isZeroChain"
+
+[[node]]
+id = "scalar_amplitude_lt_twelve"
+
+[[node]]
+id = "psi_mul_phi_le_twelve"
+
+[[node]]
+id = "interaction_lower_bound"
+
+[[node]]
+id = "chain_lower_bound"
+
+[[node]]
+id = "bddBelow_chain"
+
+[[node]]
+id = "chain_initial_gap"

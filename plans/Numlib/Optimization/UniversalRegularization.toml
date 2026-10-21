@@ -1,0 +1,103 @@
+namespace = "Optimization.UniversalRegularization"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "Stationary"
+
+[[node]]
+id = "ComputedStep"
+
+[[node]]
+id = "LongStep"
+
+[[node]]
+id = "Accepted"
+
+[[node]]
+id = "VerySuccessful"
+
+[[node]]
+id = "not_accepted_iff"
+
+[[node]]
+id = "LegalUpdate"
+
+[[node]]
+id = "observation"
+
+[[node]]
+id = "observation_zero"
+
+[[node]]
+id = "observation_succ"
+
+[[node]]
+id = "RunPrefix"
+
+[[node]]
+id = "IsRun"
+
+[[node]]
+id = "LegalUpdate.positive"
+
+[[node]]
+id = "RunPrefix.positive"
+
+[[node]]
+id = "ComputedStep.step_ne_zero"
+
+[[node]]
+id = "ComputedStep.predicted_decrease"
+
+[[node]]
+id = "ComputedStep.predicted_positive"
+
+[[node]]
+id = "IsRun.terminal"
+
+[[node]]
+id = "IsRun.first"
+
+[[node]]
+id = "OracleCall"
+
+[[node]]
+id = "derivativeCalls"
+
+[[node]]
+id = "processedTrialCalls"
+
+[[node]]
+id = "oracleCalls"
+
+[[node]]
+id = "evaluations"
+
+[[node]]
+id = "derivativeCalls_count"
+
+[[node]]
+id = "processedTrialCalls_count_active"
+
+[[node]]
+id = "evaluations_active"
+
+[[node]]
+id = "processedTrialCalls_count_value"
+
+[[node]]
+id = "evaluations_value"
+
+[[node]]
+id = "processedTrialCalls_count_high"
+
+[[node]]
+id = "evaluations_high"

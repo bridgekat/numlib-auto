@@ -1,0 +1,25 @@
+namespace = "Optimization.ExactLineSearchSharpness"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "grad"
+
+[[node]]
+id = "hasFDerivAt_objective"
+
+[[node]]
+id = "grad_lipschitz"
+
+[[node]]
+id = "iterate"
+
+[[node]]
+id = "iterate_isExact"
+
+[[node]]
+id = "gradient_large"
+
+[[node]]
+id = "exists_slow_exactLineSearch"

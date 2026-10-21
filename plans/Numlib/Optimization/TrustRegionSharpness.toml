@@ -1,0 +1,31 @@
+namespace = "Optimization.TrustRegion"
+
+[[node]]
+id = "sharpParameters"
+
+
+
+[[node]]
+id = "sharpRadius"
+
+
+[[node]]
+id = "quadratic_neg_identity_le"
+
+[[node]]
+id = "sharp_ratio_active"
+
+[[node]]
+id = "isRun_sharpChain"
+
+[[node]]
+id = "sharp_chain_length"
+
+[[node]]
+id = "exists_sharp_firstOrder_family"
+
+[[node]]
+id = "sharpRadiusWith"
+
+[[node]]
+id = "isRun_sharpChain_with_radius"

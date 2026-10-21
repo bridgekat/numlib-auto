@@ -1,0 +1,62 @@
+[[node]]
+id = "Optimization.InexactTaylorModels.smallRadiusDecrease_regularizedPolynomial"
+
+[[node]]
+id = "Optimization.InexactRegularization.exists_innerResult"
+
+[[node]]
+id = "Optimization.InexactRegularization.InnerResult.radii_bounds"
+
+[[node]]
+id = "Optimization.InexactRegularization.stepAccurate_of_uniform_request"
+
+[[node]]
+id = "Optimization.InexactRegularization.regularized_decrease_le_norm"
+
+[[node]]
+id = "Optimization.InexactRegularization.InnerResult.norm_lower"
+
+[[node]]
+id = "Optimization.InexactRegularization.Inspection.radii_lower"
+
+[[node]]
+id = "Optimization.InexactRegularization.Transition.radii_lower"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.radii_lower"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.inspection_radii_lower"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.prefix"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.prefix_state"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.prefix_trial"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.prefix_accepted"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.runningSigma"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.sigma_le_running"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.runningSigma_le_iff"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.runningSigma_zero"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.radii_lower_running"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.stepAccurate_of_uniform_request"
+
+[[node]]
+id = "Optimization.InexactRegularization.Execution.true_quality_of_uniform_accuracy"

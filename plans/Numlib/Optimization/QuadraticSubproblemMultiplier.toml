@@ -1,0 +1,10 @@
+namespace = "Optimization.QuadraticSubproblem"
+
+[[node]]
+id = "TrustRegionShiftConditions"
+
+[[node]]
+id = "TrustRegionShiftConditions.iff"
+
+[[node]]
+id = "isMinOn_ball_iff_exists_shiftConditions"

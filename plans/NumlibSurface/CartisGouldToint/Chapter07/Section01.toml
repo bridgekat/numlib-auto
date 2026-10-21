@@ -1,0 +1,62 @@
+namespace = "CartisGouldToint.Chapter07.Section01"
+
+[[node]]
+id = "generalFeasibleSet"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.1, (7.1.1) and following feasible-set definition"
+
+[[node]]
+id = "lagrangian"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.1, text preceding Theorem 7.1.1"
+
+[[node]]
+id = "theorem_7_1_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 7.1.1"
+
+[[node]]
+id = "IsScaledApproximateKKTPoint"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.1, (7.1.2)–(7.1.4)"
+
+[[node]]
+id = "mem_generalFeasibleSet"
+
+[[node]]
+id = "generalFeasibleSet_eq_inter"
+
+[[node]]
+id = "lagrangian_eq_sub_inner"
+
+[[node]]
+id = "lagrangian_eq_of_feasible"
+
+[[node]]
+id = "lagrangian_hasFDerivAt"
+
+[[node]]
+id = "multiplierScale"
+
+[[node]]
+id = "multiplierScale_eq_norm_augmented"
+
+[[node]]
+id = "multiplierScale_sq"
+
+[[node]]
+id = "one_le_multiplierScale"
+
+[[node]]
+id = "multiplierScale_pos"
+
+[[node]]
+id = "lagrangianCriticality"
+
+[[node]]
+id = "lagrangianCriticality_eq_feasibleCriticality"
+
+[[node]]
+id = "isScaledApproximateKKTPoint_iff"
+
+[[node]]
+id = "IsScaledApproximateKKTPoint.mono"
+
+[[node]]
+id = "isScaledApproximateKKTPoint_zero_iff"

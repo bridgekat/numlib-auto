@@ -1,0 +1,50 @@
+[[node]]
+id = "Optimization.UniversalRegularization.paymentCoefficient"
+
+[[node]]
+id = "Optimization.UniversalRegularization.paymentCoefficient_pos"
+
+[[node]]
+id = "Optimization.UniversalRegularization.radial_payment_lower"
+
+[[node]]
+id = "Optimization.UniversalRegularization.toleranceRadius"
+
+[[node]]
+id = "Optimization.UniversalRegularization.toleranceRadius_pos"
+
+[[node]]
+id = "Optimization.UniversalRegularization.toleranceRadius_le_first"
+
+[[node]]
+id = "Optimization.UniversalRegularization.toleranceRadius_le_second"
+
+[[node]]
+id = "Optimization.UniversalRegularization.tolerance_power_of_root"
+
+[[node]]
+id = "Optimization.UniversalRegularization.tolerance_scale_of_root"
+
+[[node]]
+id = "Optimization.UniversalRegularization.toleranceRadius_power"
+
+[[node]]
+id = "Optimization.UniversalRegularization.decreaseSigma"
+
+[[node]]
+id = "Optimization.UniversalRegularization.decreaseSigma_pos"
+
+[[node]]
+id = "Optimization.UniversalRegularization.RunPrefix.sigma_upper_radius"
+
+[[node]]
+id = "Optimization.UniversalRegularization.decreaseConstant"
+
+[[node]]
+id = "Optimization.UniversalRegularization.decreaseConstant_pos"
+
+[[node]]
+id = "Optimization.UniversalRegularization.decreaseConstant_eq_of_parameters"
+
+[[node]]
+id = "Optimization.UniversalRegularization.RunPrefix.successful_decrease"

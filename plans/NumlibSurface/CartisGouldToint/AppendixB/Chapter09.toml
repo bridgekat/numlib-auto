@@ -1,0 +1,27 @@
+namespace = "CartisGouldToint.AppendixB.Chapter09"
+
+[[node]]
+id = "factorizedDerivativeIdentity"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix to Chapter 9, proof of Corollary 9.1.1"
+
+[[node]]
+id = "regularizationShift_objective_identity"
+
+[[node]]
+id = "regularizationShift_gradient_identity"
+
+[[node]]
+id = "regularizationShift_gradient_norm_identity"
+
+[[node]]
+id = "regularizationShift_hessian_identity"
+
+[[node]]
+id = "regularizationShift_hessian_lower"
+
+[[node]]
+id = "regularizationShift_zero_derivatives"
+
+[[node]]
+id = "regularizationShiftResidualIdentities"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix to Chapter 9, proof of Theorem 9.3.2"

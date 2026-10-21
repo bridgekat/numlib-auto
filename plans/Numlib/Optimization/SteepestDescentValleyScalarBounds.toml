@@ -1,0 +1,46 @@
+namespace = "Optimization.SteepestDescentValley"
+
+[[node]]
+id = "lengthDrop_div_length_le_one"
+
+[[node]]
+id = "lengthDrop_div_length_sq_le_one"
+
+[[node]]
+id = "scalarWidth_cell_derivatives"
+
+[[node]]
+id = "scalarMidpoint_cell_derivatives"
+
+[[node]]
+id = "scalarWidth_exterior_derivatives"
+
+[[node]]
+id = "scalarMidpoint_exterior_derivatives"
+
+[[node]]
+id = "lengthDrop_mul_inv_pow_bounds"
+
+[[node]]
+id = "exists_width_midpoint_derivative_bound"
+
+[[node]]
+id = "deriv_quinticCell_objective"
+
+[[node]]
+id = "iteratedDeriv_two_quinticCell_objective"
+
+[[node]]
+id = "scalarObjective_cell_derivatives"
+
+[[node]]
+id = "scalarObjective_transition_derivatives"
+
+[[node]]
+id = "scalarObjective_left_derivatives"
+
+[[node]]
+id = "scalarObjective_right_derivatives"
+
+[[node]]
+id = "scalarObjective_derivatives_bound"

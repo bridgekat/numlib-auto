@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.AppendixA.Section10"
+
+[[node]]
+id = "lemma_A_10_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma A.10.1"
+
+[[node]]
+id = "factorial_series_auxiliary_bounds"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations A.34–A.36"

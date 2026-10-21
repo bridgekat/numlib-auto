@@ -1,0 +1,28 @@
+namespace = "Optimization.TransverseModelLowerBound"
+
+[[node]]
+id = "fderiv_model_eq_innerSL"
+
+[[node]]
+id = "norm_fderiv_model"
+
+[[node]]
+id = "fderiv_actual_model"
+
+[[node]]
+id = "norm_fderiv_actual_model"
+
+[[node]]
+id = "model_ge_linear_radial"
+
+[[node]]
+id = "radial_cubic_lower_bound"
+
+[[node]]
+id = "model_ge_neg_two_thirds"
+
+[[node]]
+id = "actual_model_ge"
+
+[[node]]
+id = "squaredSlope_fraction"

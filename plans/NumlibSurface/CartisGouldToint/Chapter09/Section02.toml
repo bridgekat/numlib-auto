@@ -1,0 +1,126 @@
+namespace = "CartisGouldToint.Chapter09.Section02"
+
+[[node]]
+id = "algorithm_9_2_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 9.2.1"
+
+[[node]]
+id = "secularClassifier"
+
+[[node]]
+id = "secularClassifier_eq_negative"
+
+[[node]]
+id = "secularClassifier_eq_lower"
+
+[[node]]
+id = "secularClassifier_eq_greater"
+
+[[node]]
+id = "secularClassifier_mem_N"
+
+[[node]]
+id = "secularClassifier_mem_L"
+
+[[node]]
+id = "secularClassifier_mem_G"
+
+[[node]]
+id = "secularSearchExecution"
+
+[[node]]
+id = "secularSearchExecution.brackets"
+
+[[node]]
+id = "secularSearchExecution_iff"
+
+[[node]]
+id = "secularSearchExecution.exists_first_lower"
+
+[[node]]
+id = "endpointGradient"
+
+[[node]]
+id = "endpoint_shift_posDef"
+
+[[node]]
+id = "endpoint_secularStep"
+
+[[node]]
+id = "endpoint_secularNorm"
+
+[[node]]
+id = "endpoint_secularRoot_iff"
+
+[[node]]
+id = "endpoint_classifierSpec"
+
+[[node]]
+id = "endpoint_secularClassifier"
+
+[[node]]
+id = "secular_endpoint_nontermination"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 9.2 finite-entry assertion; endpoint counterexample"
+
+[[node]]
+id = "secular_positive_spectrum"
+
+[[node]]
+id = "secularThreshold_le_of_posDef"
+
+[[node]]
+id = "secularThreshold_lt_of_posDef"
+
+[[node]]
+id = "secular_posDef_of_threshold_lt"
+
+[[node]]
+id = "secularData_eq_spectral_of_posDef"
+
+[[node]]
+id = "secularNorm_lt_of_lt"
+
+[[node]]
+id = "secularClassifier_spec_of_root"
+
+[[node]]
+id = "secularClassifier_spec_of_empty_lower"
+
+[[node]]
+id = "EigenvalueEstimate"
+
+[[node]]
+id = "eigenvalueEstimate_some_iff"
+
+[[node]]
+id = "EigenvalueEstimate.below_threshold"
+
+[[node]]
+id = "algorithm_9_2_1.isRun"
+
+[[node]]
+id = "algorithm_9_2_1.negative_candidate"
+
+[[node]]
+id = "algorithm_9_2_1.brackets_of_root"
+
+[[node]]
+id = "algorithm_9_2_1.exists_return_of_root"
+
+[[node]]
+id = "algorithm_9_2_1.brackets_of_empty_lower"
+
+[[node]]
+id = "algorithm_9_2_1.hard_case"
+
+[[node]]
+id = "algorithm_9_2_1.of_isRun"
+
+[[node]]
+id = "algorithm_9_2_1.negative_bounds"
+
+[[node]]
+id = "algorithm_9_2_1.greater_bounds"
+
+[[node]]
+id = "endpoint_algorithm_9_2_1"

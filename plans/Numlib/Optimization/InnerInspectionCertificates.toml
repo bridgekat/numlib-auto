@@ -1,0 +1,13 @@
+namespace = "Optimization.HigherOrderApproximateRegularization.InnerCertificates"
+
+[[node]]
+id = "PassedOrders"
+
+[[node]]
+id = "EpochInvariant"
+
+[[node]]
+id = "pass"
+
+[[node]]
+id = "halve"

@@ -1,0 +1,5 @@
+namespace = "CartisGouldToint.Chapter04.Section01"
+
+[[node]]
+id = "theorem_4_1_6"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.1.6"

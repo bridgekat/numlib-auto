@@ -1,0 +1,28 @@
+namespace = "Optimization.CoupledCubic"
+
+[[node]]
+id = "planeDecrement"
+
+[[node]]
+id = "planeDecrement_nonpos_of_nonpos"
+
+[[node]]
+id = "planeDecrement_le_positive"
+
+[[node]]
+id = "positiveDirection"
+
+[[node]]
+id = "norm_positiveDirection_le"
+
+[[node]]
+id = "positiveDirection_mem"
+
+[[node]]
+id = "taylorDecrement_le_positiveDirection"
+
+[[node]]
+id = "exists_positive_maximizer"
+
+[[node]]
+id = "reduction_ge_taylor"

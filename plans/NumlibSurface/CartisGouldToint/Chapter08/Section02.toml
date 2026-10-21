@@ -1,0 +1,137 @@
+namespace = "CartisGouldToint.Chapter08.Section02"
+
+[[node]]
+id = "secularData"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.2.1, (8.2.2), (8.2.4)–(8.2.7)"
+
+[[node]]
+id = "transformedSecularFunction"
+source = '''Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.2.1–8.2.2, (8.2.8)–(8.2.9), (8.2.16)–(8.2.19)'''
+
+[[node]]
+id = "lemma_8_2_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 8.2.1"
+
+[[node]]
+id = "theorem_8_2_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.2"
+
+[[node]]
+id = "lemma_8_2_3"
+kind = "theorem"
+desc = '''For λ>λs and nonzero g, first derivative of transformed π has sign −sign β. Second derivative≥0 for β>0 and≤0 for β∈[−1/2,0); strict convexity for β>0, strict concavity for −1/2<β<0. Endpoint β=−1/2 may be affine. Proof chain rule and weighted Cauchy–Schwarz using π′=−2Σγ²/(λ+λi)^3 and π″=6Σγ²/(λ+λi)^4.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 8.2.3"
+deps = ["CartisGouldToint.Chapter08.Section02.transformedSecularFunction"]
+wrong = '''Supplied transcription final sentence asserts strict second-derivative inequality for all g≠0 even at β=−1/2. In n=1, π(λ)^(-1/2)=(λ+λ1)/|γ1| is affine. Correct strictness exception and exclude g=0 for negative powers before clearing.'''
+
+[[node]]
+id = "corollary_8_2_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 8.2.4"
+
+[[node]]
+id = "theorem_8_2_5"
+kind = "theorem"
+desc = '''For λC>λs and λC+δ>λs, first Taylor tangent underestimates π^β for β>0 and overestimates it for β∈[−1/2,0). Strictness requires δ≠0, nonzero g and strict convexity/concavity; β=−1/2 affine cases give equality. Proof supporting-line inequalities from convex/concave derivative theory.'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.5"
+deps = ["CartisGouldToint.Chapter08.Section02.lemma_8_2_3"]
+wrong = '''Supplied transcription strictness whenever g≠0 is false when δ=0, and at β=−1/2 for single spectral component. Preserve non-strict statements, state corrected strictness separately, and record this source correction.'''
+
+[[node]]
+id = "theorem_8_2_6"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.6"
+
+[[node]]
+id = "theorem_8_2_7"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.7"
+
+[[node]]
+id = "theorem_8_2_8"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.8"
+
+[[node]]
+id = "toEuclideanLin_metric_shift"
+
+[[node]]
+id = "metric_shift_stationary_iff"
+
+[[node]]
+id = "secularHessian"
+
+[[node]]
+id = "secularHessian_isSymmetric"
+
+[[node]]
+id = "secularEigenvalues"
+
+[[node]]
+id = "secularThreshold"
+
+[[node]]
+id = "secularThreshold_add_eigenvalue_nonneg"
+
+[[node]]
+id = "secularStep"
+
+[[node]]
+id = "secularData_eq_weightedResolvent"
+
+[[node]]
+id = "secular_admissible"
+
+[[node]]
+id = "secularData_eq_resolvent"
+
+[[node]]
+id = "secularEigenvector"
+
+[[node]]
+id = "secularEigenvector_equation"
+
+[[node]]
+id = "secular_coordinate"
+
+[[node]]
+id = "secularData_eq_spectral"
+
+[[node]]
+id = "secularStep_stationary"
+
+[[node]]
+id = "lemma_8_2_1_of_eventual_boundary"
+
+[[node]]
+id = "secularTaylor"
+
+[[node]]
+id = "secularTaylor_eq"
+
+[[node]]
+id = "trustRegionSecularTarget"
+
+[[node]]
+id = "regularizationSecularTarget"
+
+[[node]]
+id = "transformedSecularFunction_eq_iff"
+
+[[node]]
+id = "secularEigenvector_orthonormal"
+
+[[node]]
+id = "transformedSecularFunction_eqOn"
+
+[[node]]
+id = "contDiffAt_transformedSecularFunction"
+
+[[node]]
+id = "lemma_8_2_3_corrected"
+
+[[node]]
+id = "theorem_8_2_5_corrected"
+
+
+[[node]]
+id = "secular_nonsingular_of_posDef"
+
+[[node]]
+id = "secularStep_eq_weightedResolventStep"

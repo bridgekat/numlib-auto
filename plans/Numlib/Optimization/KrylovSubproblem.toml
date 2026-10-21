@@ -1,0 +1,61 @@
+namespace = "Optimization.KrylovSubproblem"
+
+[[node]]
+id = "subspaceMinimizer_iff_reduced"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Section 10.1"
+
+[[node]]
+id = "lanczos_shifted_residual_norm"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, (B.10.1)–(B.10.2)"
+
+[[node]]
+id = "lanczos_subproblem_residual_bound"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Theorems 10.2.2 and 10.3.2"
+
+[[node]]
+id = "compressedHessian"
+
+[[node]]
+id = "compressedHessian_isSymmetric"
+
+[[node]]
+id = "quadratic_map"
+
+[[node]]
+id = "powerRegularizedQuadratic_map"
+
+[[node]]
+id = "quadratic_isMinOn_image_iff"
+
+[[node]]
+id = "powerRegularized_isMinOn_image_iff"
+
+[[node]]
+id = "image_closedBall"
+
+[[node]]
+id = "reduced_stationary_iff"
+
+[[node]]
+id = "lanczosStep"
+
+[[node]]
+id = "lanczosEmbedding"
+
+[[node]]
+id = "lanczosEmbedding_apply"
+
+[[node]]
+id = "range_lanczosEmbedding"
+
+[[node]]
+id = "lanczos_shifted_residual"
+
+[[node]]
+id = "fullSubspace_le_metric_orthogonal"
+
+[[node]]
+id = "grade_add_finrank_le_of_metric_orthogonal"
+
+[[node]]
+id = "lanczos_beta_le"

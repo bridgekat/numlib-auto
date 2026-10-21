@@ -1,0 +1,27 @@
+
+[[node]]
+id = "ContinuousLinearMap.norm_iteratedFDeriv_comp_sub_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_scalar_sub"
+
+[[node]]
+id = "ContinuousLinearMap.lipschitzWith_iteratedFDeriv_comp"
+
+[[node]]
+id = "ContinuousLinearMap.lipschitzWith_iteratedFDeriv_scalar_comp"
+
+[[node]]
+id = "lipschitzWith_iteratedFDeriv_add"
+
+[[node]]
+id = "iteratedDeriv_two_eq_of_hasDerivAt"
+
+[[node]]
+id = "ContinuousLinearMap.lipschitzWith_twoJets_scalar_comp"
+
+[[node]]
+id = "ContinuousLinearMap.fderiv_scalar_comp_apply"
+
+[[node]]
+id = "ContinuousLinearMap.secondFDeriv_scalar_comp_apply"

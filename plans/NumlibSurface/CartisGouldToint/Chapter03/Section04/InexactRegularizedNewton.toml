@@ -1,0 +1,33 @@
+namespace = "CartisGouldToint.Chapter03.Section04"
+
+[[node]]
+id = "inexactRegularizedNewtonStep"
+source = "Cartis, Gould and Toint, Section 3.4, essential definitions and assumptions"
+
+[[node]]
+id = "algorithm_3_4_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 3.4.2"
+
+[[node]]
+id = "lemma_3_4_7"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.7"
+
+[[node]]
+id = "lemma_3_4_8"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.8"
+
+[[node]]
+id = "lemma_3_4_9"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.9"
+
+[[node]]
+id = "lemma_3_4_10"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.10"
+
+[[node]]
+id = "theorem_3_4_11"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.4.11"
+
+[[node]]
+id = "theorem_3_4_12"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.4.12"

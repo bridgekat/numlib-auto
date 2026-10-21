@@ -1,0 +1,52 @@
+namespace = "Matrix"
+
+[[node]]
+id = "invertibleEuclideanEquiv"
+
+[[node]]
+id = "invertibleEuclideanEquiv_apply"
+
+[[node]]
+id = "invertibleEuclideanEquiv_symm_apply"
+
+[[node]]
+id = "factorScaling"
+
+[[node]]
+id = "factorScaling_posDef"
+
+[[node]]
+id = "factorCoordinates"
+
+[[node]]
+id = "factorCoordinates_apply"
+
+[[node]]
+id = "factorRecoveryMatrix"
+
+[[node]]
+id = "factorCoordinates_symm_apply"
+
+[[node]]
+id = "energyNorm_factorCoordinates"
+
+[[node]]
+id = "factorRecoveryMatrix_congruence"
+
+[[node]]
+id = "factorRecoveryMatrix_transpose"
+
+[[node]]
+id = "inner_factorCoordinates"
+
+[[node]]
+id = "inner_hessian_factorCoordinates"
+
+[[node]]
+id = "sqrt_mul_norm_le_energyNorm_diagonal"
+
+[[node]]
+id = "factorScaling_energyNorm_lower"
+
+[[node]]
+id = "factorScaling_energyNorm_lower_of_inverse_norm"

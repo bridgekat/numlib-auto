@@ -1,0 +1,16 @@
+namespace = "Real"
+
+[[node]]
+id = "sum_pos_pow_div_factorial_le"
+
+[[node]]
+id = "sum_pow_div_factorial_le_one_add_two_mul"
+
+[[node]]
+id = "sum_tail_pow_div_factorial_le"
+
+[[node]]
+id = "sum_pos_pow_div_factorial_le_two_mul_pow"
+
+[[node]]
+id = "sum_inv_factorial_lt_three"

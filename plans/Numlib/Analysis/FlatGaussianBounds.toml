@@ -1,0 +1,25 @@
+namespace = "Analysis.FlatGaussian"
+
+[[node]]
+id = "natDegree_cutoffPolynomial_le"
+
+[[node]]
+id = "coeffNorm_cutoffPolynomial_le"
+
+[[node]]
+id = "norm_iteratedDeriv_cutoff_le"
+
+[[node]]
+id = "norm_iteratedDeriv_gaussian_le"
+
+[[node]]
+id = "deriv_primitive_eq_gaussian"
+
+[[node]]
+id = "iteratedDeriv_primitive_succ"
+
+[[node]]
+id = "norm_iteratedDeriv_primitive_succ_le"
+
+[[node]]
+id = "norm_iteratedDeriv_primitive_le"

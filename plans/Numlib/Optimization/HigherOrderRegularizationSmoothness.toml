@@ -1,0 +1,7 @@
+namespace = "Optimization.HigherOrderRegularization"
+
+[[node]]
+id = "DiagonalLipschitz.operator_bound"
+
+[[node]]
+id = "DiagonalLipschitz.derivative_remainder"

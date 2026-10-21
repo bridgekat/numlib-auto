@@ -1,0 +1,37 @@
+namespace = "Krylov.PreconditionedLanczos"
+
+[[node]]
+id = "isSymmetric_energyEnd"
+
+[[node]]
+id = "Prefix.energy_state"
+
+[[node]]
+id = "Prefix.primal_eq_vec"
+
+[[node]]
+id = "Prefix.rho_eq_alpha"
+
+[[node]]
+id = "Prefix.gamma_zero"
+
+[[node]]
+id = "Prefix.gamma_succ"
+
+[[node]]
+id = "Prefix.residual_eq_w"
+
+[[node]]
+id = "Prefix.length_le_grade"
+
+[[node]]
+id = "Execution.residual_eq_zero_of_lt_budget"
+
+[[node]]
+id = "Prefix.grade_le_of_residual_eq_zero"
+
+[[node]]
+id = "Execution.length_eq_grade_of_grade_le_budget"
+
+[[node]]
+id = "Execution.length_eq_grade"

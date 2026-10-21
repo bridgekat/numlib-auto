@@ -1,0 +1,16 @@
+namespace = "Optimization.DerivativeOracle"
+
+[[node]]
+id = "firstStationaryTime_le_natCast_iff"
+
+[[node]]
+id = "rotationOrbit"
+
+[[node]]
+id = "rotate_mem_rotationOrbit"
+
+[[node]]
+id = "le_minimax_rotationOrbit"
+
+[[node]]
+id = "minimax_zeroRespecting_le_all"

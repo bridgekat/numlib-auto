@@ -1,0 +1,109 @@
+namespace = "Optimization.TransversePrelude"
+
+[[node]]
+id = "slope"
+
+[[node]]
+id = "slope_pos"
+
+[[node]]
+id = "antitoneOn_slope"
+
+[[node]]
+id = "slope_one"
+
+[[node]]
+id = "slope_le_half"
+
+[[node]]
+id = "slope_eq"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "step_minimizes"
+
+[[node]]
+id = "step_zero_coord"
+
+[[node]]
+id = "step_one_coord_pos"
+
+[[node]]
+id = "norm_step"
+
+[[node]]
+id = "step_eq_point"
+
+[[node]]
+id = "step_equation"
+
+[[node]]
+id = "step_one_coord_lt_one"
+
+[[node]]
+id = "norm_step_lt_one"
+
+[[node]]
+id = "step_ratio_ge_one"
+
+[[node]]
+id = "ordinate"
+
+[[node]]
+id = "ordinate_zero"
+
+[[node]]
+id = "ordinate_succ"
+
+[[node]]
+id = "point_ordinate_succ"
+
+[[node]]
+id = "one_le_ordinate"
+
+[[node]]
+id = "strictMono_ordinate"
+
+[[node]]
+id = "ordinate_succ_lt"
+
+[[node]]
+id = "slope_le_twice_step"
+
+[[node]]
+id = "ordinate_unbounded"
+
+[[node]]
+id = "slope_le_inv"
+
+[[node]]
+id = "exists_slope_le"
+
+[[node]]
+id = "crossingIndex"
+
+[[node]]
+id = "slope_crossingIndex_le"
+
+[[node]]
+id = "lt_slope_of_lt_crossingIndex"
+
+[[node]]
+id = "inv_sq_le_slope"
+
+[[node]]
+id = "seventeen_le_crossing"
+
+[[node]]
+id = "crossingIndex_pos"
+
+[[node]]
+id = "slope_short_increment_lower"
+
+[[node]]
+id = "crossing_window"
+
+[[node]]
+id = "second_crossing_le"

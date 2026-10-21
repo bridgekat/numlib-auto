@@ -1,0 +1,46 @@
+namespace = "Optimization.InexactTrustRegion"
+
+[[node]]
+id = "radiusRate"
+
+[[node]]
+id = "accuracyRate"
+
+[[node]]
+id = "accuracyRate_pos"
+
+[[node]]
+id = "accuracyRate_mul_pow_le_threshold"
+
+[[node]]
+id = "refinementBudget_le_log"
+
+[[node]]
+id = "successRate"
+
+[[node]]
+id = "successBudget_eq"
+
+[[node]]
+id = "trialBudget_le_rate"
+
+[[node]]
+id = "successEvaluationRate"
+
+[[node]]
+id = "functionRate"
+
+[[node]]
+id = "functionLogRate"
+
+[[node]]
+id = "functionOffsetRate"
+
+[[node]]
+id = "derivativeLogRate"
+
+[[node]]
+id = "derivativeOffsetRate"
+
+[[node]]
+id = "evaluationRates_pos"

@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint.Chapter06.Section03"
+
+[[node]]
+id = "IsApproximateConstrainedResidualMinimizer"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.3, (6.3.1)–(6.3.2)"
+
+[[node]]
+id = "algorithm_6_3_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 6.3.1"
+
+[[node]]
+id = "theorem_6_3_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 6.3.1"

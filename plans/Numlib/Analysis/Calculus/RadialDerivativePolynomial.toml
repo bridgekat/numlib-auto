@@ -1,0 +1,38 @@
+[[node]]
+id = "radialDerivativePolynomial"
+
+[[node]]
+id = "radialDerivativePolynomial_zero"
+
+[[node]]
+id = "radialDerivativePolynomial_succ"
+
+[[node]]
+id = "radialPolynomialODE"
+
+[[node]]
+id = "radialPolynomialODE_raise"
+
+[[node]]
+id = "radialDerivativePolynomial_ode"
+
+[[node]]
+id = "radialDerivativePolynomial_eval_one"
+
+[[node]]
+id = "radialDerivativePolynomial_eval_neg_one"
+
+[[node]]
+id = "radialDerivativePolynomial_ode_eval"
+
+[[node]]
+id = "fallingProduct_pos_of_lt"
+
+[[node]]
+id = "abs_radialDerivativePolynomial_eval_le"
+
+[[node]]
+id = "radialDerivativePolynomial_succ_succ"
+
+[[node]]
+id = "iteratedDeriv_quadratic_rpow_zero_eq_polynomial"

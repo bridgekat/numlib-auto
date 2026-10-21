@@ -1,0 +1,20 @@
+namespace = "CartisGouldToint.Chapter10.Section01"
+
+[[node]]
+id = "subspaceQuadraticProblems"
+source = 'Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 10.1.1, (10.1.1)–(10.1.6)'
+
+[[node]]
+id = "preconditionedKrylovSpace"
+source = 'Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 10.1.1, Krylov space and grade definitions'
+
+[[node]]
+id = "algorithm_10_1_1"
+source = 'Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 10.1.1'
+
+[[node]]
+id = "krylovMissesHardCaseEigenspace"
+source = 'Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 10.1.2'
+
+[[node]]
+id = "hardCaseEigenspace"

@@ -1,0 +1,53 @@
+namespace = "CartisGouldToint.Chapter14.Section03"
+
+[[node]]
+id = "twoPhasePhaseOneRadii"
+
+[[node]]
+id = "twoPhasePhaseOneRadii_zero"
+
+[[node]]
+id = "twoPhasePhaseOneRadii_of_pos"
+
+[[node]]
+id = "twoPhasePhaseOneTest"
+
+[[node]]
+id = "twoPhasePhaseOneTest.of_small"
+
+[[node]]
+id = "twoPhasePhaseOneTest.gaps"
+
+[[node]]
+id = "algorithm_14_3_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 14.3.2"
+
+[[node]]
+id = "twoPhaseScaledTargetGaps_iff"
+
+[[node]]
+id = "algorithm_14_3_2.order"
+
+[[node]]
+id = "algorithm_14_3_2.phase_one_feasible"
+
+[[node]]
+id = "algorithm_14_3_2.phase_one_radius"
+
+[[node]]
+id = "algorithm_14_3_2.phase_one_test"
+
+[[node]]
+id = "algorithm_14_3_2.phase_two_execution"
+
+[[node]]
+id = "algorithm_14_3_2.initial_radicand_nonneg"
+
+[[node]]
+id = "algorithm_14_3_2.phase_two_residual_bounds"
+
+[[node]]
+id = "algorithm_14_3_2.phase_two_gaps"
+
+[[node]]
+id = "twoPhaseEvaluations"

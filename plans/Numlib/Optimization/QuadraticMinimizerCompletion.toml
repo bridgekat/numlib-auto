@@ -1,0 +1,23 @@
+namespace = "Optimization.QuadraticSubproblem"
+
+[[node]]
+id = "exists_orthogonal_particular"
+
+[[node]]
+id = "eq_iff_kernel_completion"
+
+[[node]]
+id = "norm_le_of_orthogonal_particular"
+
+[[node]]
+id = "minimizer_eigenspace_completion"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Cartis–Gould–Toint, Corollaries 8.3.1–8.3.2"
+
+[[node]]
+id = "quadratic_eq_of_stationary"
+
+[[node]]
+id = "quadratic_kernel_completion_value"
+
+[[node]]
+id = "feasible_complementarity_iff"

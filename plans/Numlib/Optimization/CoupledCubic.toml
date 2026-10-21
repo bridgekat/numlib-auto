@@ -1,0 +1,106 @@
+namespace = "Optimization.CoupledCubic"
+
+[[node]]
+id = "Space"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "point_zero_coord"
+
+[[node]]
+id = "point_one_coord"
+
+[[node]]
+id = "point_two_coord"
+
+[[node]]
+id = "point_zero"
+
+[[node]]
+id = "point_add"
+
+[[node]]
+id = "point_sub"
+
+[[node]]
+id = "point_smul"
+
+[[node]]
+id = "point_coords"
+
+[[node]]
+id = "norm_sq_eq"
+
+[[node]]
+id = "norm_point_sq"
+
+[[node]]
+id = "abs_coordinate_le_norm"
+
+[[node]]
+id = "norm_point_le_iff"
+
+[[node]]
+id = "norm_point_x"
+
+[[node]]
+id = "norm_point_y"
+
+[[node]]
+id = "norm_point_z"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "objective_point"
+
+[[node]]
+id = "contDiff_objective"
+
+[[node]]
+id = "fderiv_objective"
+
+[[node]]
+id = "secondFDeriv_objective"
+
+[[node]]
+id = "taylorDecrement_one"
+
+[[node]]
+id = "taylorDecrement_two"
+
+[[node]]
+id = "reduction_eq"
+
+[[node]]
+id = "box"
+
+[[node]]
+id = "mem_box"
+
+[[node]]
+id = "point_mem_box"
+
+[[node]]
+id = "box_nonempty"
+
+[[node]]
+id = "isClosed_box"
+
+[[node]]
+id = "box_subset_closedBall"
+
+[[node]]
+id = "isCompact_box"
+
+[[node]]
+id = "convex_box"
+
+[[node]]
+id = "objective_lower_bound"
+
+[[node]]
+id = "exists_anchoredBoundedJets"

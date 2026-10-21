@@ -1,0 +1,21 @@
+namespace = "CartisGouldToint.Chapter09.Section04"
+
+[[node]]
+id = "trustRegionMultiplierBracket"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 9.4.1, (9.4.1)"
+
+[[node]]
+id = "trustRegionValueCertificates"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 9.4.2, (9.4.2)–(9.4.7)"
+
+[[node]]
+id = "weightedNorm_eq_norm_toEnergy"
+
+[[node]]
+id = "weightedNorm_rescale_boundary"
+
+[[node]]
+id = "trustRegion_value_antitone"
+
+[[node]]
+id = "trustRegion_value_le_rescale"

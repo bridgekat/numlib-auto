@@ -1,0 +1,69 @@
+namespace = "CartisGouldToint.Chapter05.Section03"
+
+[[node]]
+id = "measureDomination"
+source = "Cartis, Gould and Toint, Section 5.3, essential definitions and assumptions"
+
+[[node]]
+id = "measureDecreaseRuns"
+source = "Cartis, Gould and Toint, Section 5.3, essential definitions and assumptions"
+
+[[node]]
+id = "implicitGapRecurrence"
+source = "Cartis, Gould and Toint, Section 5.3, essential definitions and assumptions"
+
+[[node]]
+id = "lemma_5_3_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.3.1"
+
+[[node]]
+id = "theorem_5_3_2"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.2"
+
+[[node]]
+id = "theorem_5_3_3"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.3"
+
+[[node]]
+id = "theorem_5_3_4"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.4"
+
+[[node]]
+id = "theorem_5_3_5"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.5"
+
+[[node]]
+id = "lemma_5_3_6"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.3.6"
+
+[[node]]
+id = "theorem_5_3_7"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.7"
+
+[[node]]
+id = "theorem_5_3_8"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.8"
+
+[[node]]
+id = "theorem_5_3_9"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.9"
+
+[[node]]
+id = "theorem_5_3_3_gap"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.3"
+
+[[node]]
+id = "theorem_5_3_4_gap"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.4"
+
+[[node]]
+id = "theorem_5_3_5_gap"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.5"
+
+[[node]]
+id = "theorem_5_3_8_gap"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.8"
+
+[[node]]
+id = "theorem_5_3_9_gap"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.9"

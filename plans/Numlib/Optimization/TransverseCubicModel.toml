@@ -1,0 +1,67 @@
+namespace = "Optimization.TransverseCubicModel"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "model_zero"
+
+[[node]]
+id = "hasFDerivAt_model"
+
+[[node]]
+id = "fderiv_model_apply"
+
+[[node]]
+id = "minimizer_stationarity"
+
+[[node]]
+id = "minimizer_ne_zero"
+
+[[node]]
+id = "minimizer_first"
+
+[[node]]
+id = "minimizer_second"
+
+[[node]]
+id = "minimizer_second_pos"
+
+[[node]]
+id = "minimizer_transverse_bounds"
+
+[[node]]
+id = "minimizer_norm_sq_le"
+
+[[node]]
+id = "minimizer_norm_lt_one"
+
+[[node]]
+id = "actual_model_eq"
+
+[[node]]
+id = "actual_minimizer_model"
+
+[[node]]
+id = "norm_fderiv_objective_local"
+
+[[node]]
+id = "actual_minimizer_norm_lt_one"
+
+[[node]]
+id = "actual_minimizer_movement"
+
+[[node]]
+id = "value_le_taylor"
+
+[[node]]
+id = "actual_minimizer_ratio_ge_one"
+
+[[node]]
+id = "actual_minimizer_norm_fderiv_le"
+
+[[node]]
+id = "fderiv_objective_ne_zero_of_tail"
+
+[[node]]
+id = "exists_short_accepted_minimizer"

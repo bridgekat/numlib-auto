@@ -1,0 +1,19 @@
+namespace = "Optimization.CompositeTaylorModels"
+
+[[node]]
+id = "LipschitzSubadditiveComposition"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "decrement"
+
+[[node]]
+id = "model_error_le"
+
+[[node]]
+id = "first_model_min_of_convex_localMin"
+
+[[node]]
+id = "regularized_decrement_lower_bound"

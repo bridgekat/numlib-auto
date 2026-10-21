@@ -1,0 +1,94 @@
+namespace = "Optimization.ResidualRegularization"
+
+[[node]]
+id = "enabledMin"
+
+[[node]]
+id = "enabledMax"
+
+[[node]]
+id = "enabledMin_le_residual"
+
+[[node]]
+id = "enabledMin_le"
+
+[[node]]
+id = "enabledMin_pos"
+
+[[node]]
+id = "residual_le_enabledMax"
+
+[[node]]
+id = "le_enabledMax"
+
+[[node]]
+id = "mul_enabledMax"
+
+[[node]]
+id = "derivativeExponent"
+
+[[node]]
+id = "rootDecreaseCoefficient"
+
+[[node]]
+id = "rootDecrease"
+
+[[node]]
+id = "enabledMax_congr"
+
+[[node]]
+id = "initialResidualFactor"
+
+[[node]]
+id = "initialResidualFactor_eq"
+
+[[node]]
+id = "complexityConstant"
+
+[[node]]
+id = "toleranceFactor"
+
+[[node]]
+id = "complexityConstant_pos"
+
+[[node]]
+id = "root_budget_eq"
+
+[[node]]
+id = "toleranceFactor_one"
+
+[[node]]
+id = "toleranceFactor_two"
+
+[[node]]
+id = "toleranceFactor_three"
+
+[[node]]
+id = "initialResidualFactor_three"
+
+[[node]]
+id = "rootDecrease_pos"
+
+[[node]]
+id = "RunPrefix.root_decrease_from_derivative"
+
+[[node]]
+id = "uniform_root_decrease"
+
+[[node]]
+id = "RunPrefix.root_decrease_of_not_quality"
+
+[[node]]
+id = "RunPrefix.quality_evaluation_bounds"
+
+[[node]]
+id = "RunPrefix.exists_first_quality_of_attainment"
+
+[[node]]
+id = "RunPrefix.exists_first_quality_of_long_prefix"
+
+[[node]]
+id = "exists_first_quality_with_cost"
+
+[[node]]
+id = "exists_first_stop_with_cost"

@@ -1,0 +1,110 @@
+namespace = "CartisGouldToint.Chapter11.Section01"
+
+[[node]]
+id = "diagonalAndBandedScaling"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.1.1"
+
+[[node]]
+id = "modifiedAbsoluteScaling"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.1.2, (11.1.1)–(11.1.4)"
+
+[[node]]
+id = "spectralScalingEquivalence"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.1.2, (11.1.5)–(11.1.7)"
+
+[[node]]
+id = "indefiniteFactorScaling"
+source = '''Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 11.1.4, (11.1.15) and following text'''
+
+[[node]]
+id = "diagonalAndBandedScaling_spec"
+
+[[node]]
+id = "modifiedAbsoluteScaling_posDef"
+
+[[node]]
+id = "modifiedAbsoluteScaling_eigenvalues_ge"
+
+[[node]]
+id = "normalizedSpectralCurvature"
+
+[[node]]
+id = "normalizedSpectralCurvature_mem_Icc"
+
+[[node]]
+id = "spectralCoordinates"
+
+[[node]]
+id = "spectralDiagonal"
+
+[[node]]
+id = "spectralGradient"
+
+[[node]]
+id = "spectralCoordinates_symm_apply"
+
+[[node]]
+id = "spectralGradient_eq"
+
+[[node]]
+id = "spectralDiagonal_eq_congruence"
+
+[[node]]
+id = "weightedNorm_spectralCoordinates"
+
+[[node]]
+id = "weightedNorm_one"
+
+[[node]]
+id = "quadraticModel_spectralCoordinates"
+
+[[node]]
+id = "regularizedModel_spectralCoordinates"
+
+[[node]]
+id = "trustRegionMinimizer_spectralCoordinates"
+
+[[node]]
+id = "regularizedMinimizer_spectralCoordinates"
+
+[[node]]
+id = "indefiniteFactorScaling_posDef"
+
+[[node]]
+id = "indefiniteFactorCoordinates"
+
+[[node]]
+id = "indefiniteFactorGradient"
+
+[[node]]
+id = "indefiniteFactorDiagonal"
+
+[[node]]
+id = "indefiniteFactorCoordinates_apply"
+
+[[node]]
+id = "indefiniteFactorCoordinates_symm_apply"
+
+[[node]]
+id = "indefiniteFactorGradient_eq"
+
+[[node]]
+id = "weightedNorm_indefiniteFactorCoordinates"
+
+[[node]]
+id = "quadraticModel_indefiniteFactorCoordinates"
+
+[[node]]
+id = "regularizedModel_indefiniteFactorCoordinates"
+
+[[node]]
+id = "trustRegionMinimizer_indefiniteFactorCoordinates"
+
+[[node]]
+id = "regularizedMinimizer_indefiniteFactorCoordinates"
+
+[[node]]
+id = "indefiniteFactorScaling_uniform_lower"
+
+[[node]]
+id = "indefiniteFactorScaling_lower_of_inverse_norm"

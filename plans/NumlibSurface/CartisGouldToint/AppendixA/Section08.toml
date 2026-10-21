@@ -1,0 +1,40 @@
+namespace = "CartisGouldToint.AppendixA.Section08"
+
+[[node]]
+id = "fractionalFactorial"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.8 beforeTheoremA.8.3"
+
+[[node]]
+id = "taylorPolynomial"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equations A.10–A.12"
+
+[[node]]
+id = "theorem_A_8_1"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.1"
+
+[[node]]
+id = "theorem_A_8_2"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.2"
+
+[[node]]
+id = "theorem_A_8_3"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.3"
+
+[[node]]
+id = "corollary_A_8_4"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary A.8.4"
+
+[[node]]
+id = "theorem_A_8_5"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.5"
+
+[[node]]
+id = "tensor_operatorNorm_le_iff_unit"
+
+[[node]]
+id = "taylorPolynomial_iteratedFDeriv"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation A.11"
+
+[[node]]
+id = "fractionalFactorial_beta_kernel"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation A.16"
