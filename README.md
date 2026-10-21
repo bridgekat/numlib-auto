@@ -36,6 +36,23 @@ Examples that may go into the surface:
 - Specific variations of MINRES implementations, all satisfying the canonical specification in the backbone.
 - Lagrangian duality in $\mathbb R^n$.
 
+## Building
+
+To clone and build the repository, run the following commands:
+
+```bash
+git clone --recurse-submodules https://github.com/bridgekat/numlib-auto.git
+cd numlib-auto
+lake exe cache get
+lake build
+```
+
+To generate the dependency graph, run the additional commands:
+
+```bash
+lake exe tracker graph > graph.json
+```
+
 ## Contributing
 
 Both the backbone and the surface libraries are covered by structured plans in [`plans/`](plans/). They are TOML files that can either index into finished Lean code, or represent desired Lean modules/declarations not yet written.
