@@ -269,10 +269,8 @@ theorem norm_explicitStages_sub_le (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
   set x : ℝ := h₀ * L * tab.entrySum with hx
   have hx0 : 0 ≤ x := by
     have := tab.entrySum_nonneg
-    have := L.coe_nonneg
     have := hh.1.le.trans hh.2
     positivity
-  have hL : (0 : ℝ) ≤ L := L.coe_nonneg
   have hnode : ∀ i : Fin s, t + tab.c i * h ∈ Icc t₀ (t₀ + T + h₀) := fun i =>
     ⟨by nlinarith [ht.1, (hc i).1, hh.1], by nlinarith [ht.2, (hc i).2, hh.1, hh.2]⟩
   have key : ∀ m, ∀ i : Fin s, i.1 < m →
@@ -387,7 +385,6 @@ theorem isZeroStable_explicit (hex : tab.IsExplicit) (hc : ∀ i, tab.c i ∈ Ic
   refine OneStep.isZeroStable_of_lipschitzIncrement hT hh₀
     (tab.lipschitzIncrement_explicit hc hf) ?_ y₀
   have := tab.entrySum_nonneg
-  have := L.coe_nonneg
   positivity
 
 /-- **A consistent explicit Runge–Kutta method is convergent** ([quarteroni2000numerical] §11.8,
@@ -402,7 +399,6 @@ theorem isConvergentFor_explicit (hex : tab.IsExplicit) (hc : ∀ i, tab.c i ∈
   refine OneStep.isConvergentFor_of_isConsistentFor hT hh₀
     (tab.lipschitzIncrement_explicit hc hf) ?_ hcons
   have := tab.entrySum_nonneg
-  have := L.coe_nonneg
   positivity
 
 end Lipschitz
@@ -549,7 +545,6 @@ theorem exists_forall_norm_explicitStages_sub_le (hc : ∀ i, tab.c i ∈ Icc (0
     rw [dist_eq_norm] at this
     exact this.le
   have h3 : L * tab.entrySum * B * h ≤ ε / 2 := by
-    have hpos : 0 < 2 * (L * tab.entrySum * B + 1) := by positivity
     calc L * tab.entrySum * B * h
         ≤ L * tab.entrySum * B * (ε / (2 * (L * tab.entrySum * B + 1))) := by gcongr
       _ ≤ (L * tab.entrySum * B + 1) * (ε / (2 * (L * tab.entrySum * B + 1))) := by
@@ -1457,10 +1452,6 @@ theorem stabilityFunction_heun (z : ℂ) : heun.stabilityFunction z = 1 + z + z 
 the stability function of Crank–Nicolson. -/
 theorem stabilityFunction_implicitMidpoint {z : ℂ} (hz : z ≠ 2) :
     implicitMidpoint.stabilityFunction z = (1 + z / 2) / (1 - z / 2) := by
-  have hne : (1 : ℂ) - z / 2 ≠ 0 := by
-    intro h0
-    apply hz
-    linear_combination (-2 : ℂ) * h0
   have hinv : (1 - z • implicitMidpoint.complexA)⁻¹ = !![(1 - z / 2)⁻¹] := by
     refine Matrix.inv_eq_right_inv ?_
     ext i j
@@ -1685,7 +1676,6 @@ theorem hasOrderFor_two_of (tab : ButcherTableau 2) (hex : tab.IsExplicit) (hrow
   have hth := node_add_mem_Icc_of_lt (t₀ := t₀) hh hn
   set t := node t₀ h n with htdef
   have hsub : Icc t (t + h) ⊆ Icc t₀ (t₀ + T) := Icc_subset_Icc ht.1 hth.2
-  have hM₃0 : 0 ≤ M₃ := (norm_nonneg _).trans (hM₃ t ht)
   have hne : h ≠ 0 := hh.ne'
   set σ : ℝ := tab.c 1 * h with hσdef
   -- the stages
@@ -1850,7 +1840,6 @@ theorem exists_forall_norm_stage_sub_le
     rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hh20]
     have e2 : h ^ 2 * ‖q‖ ≤ h ^ 2 * R := mul_le_mul_of_nonneg_left hqR hh20
     have e3 : ‖ρ‖ ≤ γ * h ^ 2 := hρn.trans (mul_le_mul_of_nonneg_left hh32 hγ0)
-    have hring : h ^ 2 * R + γ * h ^ 2 = (R + γ) * h ^ 2 := by ring
     linarith
   have hgdn : ‖g + d‖ ≤ R + (2 * R + γ) := by
     refine (norm_add_le _ _).trans ?_
@@ -1907,15 +1896,9 @@ theorem exists_forall_norm_stage_sub_le
       have t1 : ‖B‖ * ‖d - h • a‖ * ‖g‖ ≤ M₂ * ((R + γ) * h ^ 2) * R :=
         mul_le_mul (mul_le_mul hBn hdan (norm_nonneg _) hM₂0) hgR (norm_nonneg _)
           (mul_nonneg hM₂0 (by positivity))
-      have t2 : ‖B‖ * ‖g‖ * ‖d - h • a‖ ≤ M₂ * R * ((R + γ) * h ^ 2) :=
-        mul_le_mul (mul_le_mul hBn hgR (norm_nonneg _) hM₂0) hdan (norm_nonneg _)
-          (mul_nonneg hM₂0 hR0)
       have t3 : ‖B‖ * ‖d‖ * ‖d‖ ≤ M₂ * ((2 * R + γ) * h) * ((2 * R + γ) * h) :=
         mul_le_mul (mul_le_mul hBn hdn (norm_nonneg _) hM₂0) hdn (norm_nonneg _)
           (mul_nonneg hM₂0 (mul_nonneg hK0 hh0.le))
-      have hring : M₂ * ((R + γ) * h ^ 2) * R + M₂ * R * ((R + γ) * h ^ 2)
-          + M₂ * ((2 * R + γ) * h) * ((2 * R + γ) * h)
-          = M₂ * (2 * R * (R + γ) + (2 * R + γ) ^ 2) * h ^ 2 := by ring
       linarith
     calc θ ^ 2 * h ^ 2 / 2 * ‖B (g + d) (g + d) - B g g - B (h • a) g - B g (h • a)‖
         ≤ θ ^ 2 * h ^ 2 / 2 * (M₂ * (2 * R * (R + γ) + (2 * R + γ) ^ 2) * h ^ 2) :=
@@ -1947,10 +1930,6 @@ theorem exists_forall_norm_stage_sub_le
         mul_le_mul (mul_le_mul (mul_le_mul hCn hgR' (norm_nonneg _) hM₃0) hgR' (norm_nonneg _)
           (mul_nonneg hM₃0 hRK0)) hdn (norm_nonneg _)
           (mul_nonneg (mul_nonneg hM₃0 hRK0) hRK0)
-      have hring : M₃ * ((2 * R + γ) * h) * (R + (2 * R + γ)) * (R + (2 * R + γ))
-          + M₃ * (R + (2 * R + γ)) * ((2 * R + γ) * h) * (R + (2 * R + γ))
-          + M₃ * (R + (2 * R + γ)) * (R + (2 * R + γ)) * ((2 * R + γ) * h)
-          = M₃ * (3 * (R + (2 * R + γ)) ^ 2 * (2 * R + γ)) * h := by ring
       linarith
     calc θ ^ 3 * h ^ 3 / 6 * ‖C (g + d) (g + d) (g + d) - C g g g‖
         ≤ θ ^ 3 * h ^ 3 / 6 * (M₃ * (3 * (R + (2 * R + γ)) ^ 2 * (2 * R + γ)) * h) :=
@@ -2004,8 +1983,6 @@ theorem exists_forall_norm_rk4_increment_sub_le
     le_trans (ContinuousLinearMap.opNorm_nonneg (G₁ (0 : X))) (hM₁ 0)
   have hM₂0 : (0 : ℝ) ≤ M₂ :=
     le_trans (ContinuousLinearMap.opNorm_nonneg (G₂ (0 : X))) (hM₂ 0)
-  have hM₃0 : (0 : ℝ) ≤ M₃ :=
-    le_trans (ContinuousLinearMap.opNorm_nonneg (G₃ (0 : X))) (hM₃ 0)
   obtain ⟨c₂, hc₂0, hc₂⟩ := exists_forall_norm_stage_sub_le hd1 hd2 hd3 hd4 hM₁ hM₂ hM₃ hM₄
     (M₀ + M₁ * M₀ + M₁ * (M₁ * M₀) + M₂ * (M₀ * M₀)) 0 (1 / 2) (by norm_num)
   obtain ⟨c₃, hc₃0, hc₃⟩ := exists_forall_norm_stage_sub_le hd1 hd2 hd3 hd4 hM₁ hM₂ hM₃ hM₄

@@ -1281,7 +1281,6 @@ theorem exists_forall_le_mul_add_of_forall_le_mul_add_div {ι : Type*} (N : ι �
             div_le_div_iff₀ (by positivity) (by positivity)]
           linarith
         have hNm := hN i m
-        have hN0 := hN i 0
         have hN1 := hN i (m + 1)
         have key : N i m ≤ h * N i (m + 1)
             + (A / h * (h / (2 * (A + 1))) * N i m + A / h * C'' * N i 0) := by
@@ -1303,7 +1302,6 @@ theorem exists_forall_le_mul_add_of_forall_le_mul_add_div {ι : Type*} (N : ι �
       refine ⟨C + C', by positivity, fun i ↦ ?_⟩
       have h1 := hC i
       have h2 := hC' i
-      have h3 := hN i 0
       nlinarith
 
 /-- **The interpolation inequality** of [brezis2011functional] §8.2, paragraph "The Sobolev
@@ -1530,7 +1528,6 @@ theorem exists_contDiff_mul {g : ℝ → ℝ} (hg : ContDiff ℝ ∞ g) {B : ℝ
         (hDp i hi').aestronglyMeasurable) (c := (((j : ℕ).choose i : ℕ) : ℝ) * B)
       (Eventually.of_forall fun x ↦ ?_)
     rw [abs_mul, abs_mul, abs_of_nonneg (Nat.cast_nonneg (α := ℝ) _)]
-    have hB0 : 0 ≤ B := (abs_nonneg _).trans (hGB 0 (Nat.zero_le _) 0)
     have := hGB (j - i) (by omega) x
     gcongr
   have hw : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn j ⇑((hL 0).toLp _) ⇑((hL j).toLp _) I :=

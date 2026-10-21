@@ -1,0 +1,9 @@
+[[node]]
+id = "IsIntervalPartition"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1"
+
+[[node]]
+id = "IsIntervalPartition.exists_mem_panel"
+
+[[node]]
+id = "IsIntervalPartition.node_eq_of_uniform"

@@ -222,7 +222,6 @@ theorem re_inner_residual_eq_zero_iff_forall_quadratic_add_real_smul_le (hA : A.
   · set c := RCLike.re (inner 𝕜 (b - A x) p) with hc
     set q := RCLike.re (inner 𝕜 (A p) p) with hq
     set s : ℝ := q + 1 with hs
-    have hspos : 0 < s := by linarith
     have ht := h (s⁻¹ * c)
     rw [hexp] at ht
     have hkey : c ^ 2 * (q / 2 + 1) ≤ 0 := by

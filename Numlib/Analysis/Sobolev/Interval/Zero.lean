@@ -2128,47 +2128,15 @@ variable {p : ℝ≥0∞} {I J : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
 closed set `K` with `K ∩ I ⊆ J`, then `u ∈ W_0^{m,p}(I)`: the one-dimensional, every-order
 version of `SobolevMultiIndexZero.mem_of_mem_restrict`. Test functions on `J` converging to
 `u|_J` are test functions on `I` converging to `u` in `W^{m,p}(I)`, because every component of
-the difference vanishes almost everywhere on `I ∖ J`
-(`SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl`). -/
+the difference vanishes almost everywhere on `I ∖ J`; the case `E = ℝ` of
+`SobolevMultiIndexZero.mem_of_mem_restrict`. -/
 theorem mem_of_restrictL_mem (h : J ≤ I) {u : SobolevIntervalLp m p I}
     (hu : SobolevMultiIndex.restrictL ℝ (Module.Basis.singleton Unit ℝ) m p volume h u
       ∈ SobolevIntervalLpZero m p J)
     {K : Set ℝ} (hK : IsClosed K) (hKI : K ∩ I ⊆ J)
     (hu0 : ∀ᵐ x ∂volume.restrict I, x ∉ K → fn u x = 0) :
-    u ∈ SobolevIntervalLpZero m p I := by
-  obtain ⟨w, φ, hφ, hw⟩ := SobolevMultiIndexZero.exists_seq_testFunction_tendsto hu
-  -- the test functions on `J`, read as test functions on `I`
-  obtain ⟨ψ, hψ⟩ : ∃ ψ : ℕ → 𝓓(I, ℝ), ∀ n, (ψ n : ℝ → ℝ) = φ n :=
-    ⟨fun n ↦ ⟨φ n, (φ n).contDiff, (φ n).hasCompactSupport, (φ n).tsupport_subset.trans h⟩,
-      fun _ ↦ rfl⟩
-  choose W hWT hW using fun n ↦ (ψ n).exists_mem_sobolevMultiIndex_testFunctions
-    (b := Module.Basis.singleton Unit ℝ) (k := m) (p := p) (μ := volume)
-  -- `u` and its derivatives vanish almost everywhere on `I ∖ J`
-  have hu0' : ∀ j : Fin (m + 1), ∀ᵐ x ∂volume.restrict I, x ∉ (J : Set ℝ) → deriv u j x = 0 :=
-    fun j ↦ by
-    filter_upwards [SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl u hK hu0
-      (derivIndex m j), ae_restrict_mem I.isOpen.measurableSet] with x hx hxI hxJ
-    exact hx fun hxK ↦ hxJ (hKI ⟨hxK, hxI⟩)
-  refine SobolevMultiIndexZero.isClosed.mem_of_tendsto (f := W) (b := atTop) ?_
-    (Eventually.of_forall fun n ↦ SobolevMultiIndexZero.testFunctions_le (hWT n))
-  refine tendsto_of_forall_tendsto_eLpNorm_deriv_sub fun j ↦ ?_
-  have key : ∀ n, eLpNorm (⇑(deriv (W n) j) - ⇑(deriv u j)) p (volume.restrict I)
-      = eLpNorm (⇑(deriv (w n) j) - ⇑(deriv (SobolevMultiIndex.restrictL ℝ
-        (Module.Basis.singleton Unit ℝ) m p volume h u) j)) p (volume.restrict J) := fun n ↦ by
-    have hc0 : ∀ x ∉ (J : Set ℝ), iteratedDeriv j (φ n) x = 0 := fun x hx ↦ by
-      rw [← TestFunction.iteratedDerivApply_coe]
-      exact ((φ n).iteratedFDerivApply j _).eq_zero_of_notMem hx
-    have hcW : ⇑(deriv (W n) j) =ᵐ[volume.restrict I] iteratedDeriv j (φ n) := by
-      have := deriv_ae_eq_iteratedDeriv_of_fn_ae_eq (hW n) j
-      rwa [hψ n] at this
-    have hcw : ⇑(deriv (w n) j) =ᵐ[volume.restrict J] iteratedDeriv j (φ n) :=
-      deriv_ae_eq_iteratedDeriv_of_fn_ae_eq (hφ n) j
-    rw [eLpNorm_congr_ae (hcW.sub (EventuallyEq.refl _ _)),
-      eLpNorm_sub_restrict_eq_of_eq_zero_compl h hc0 (hu0' j)]
-    exact eLpNorm_congr_ae (hcw.symm.sub
-      (SobolevMultiIndex.weakDeriv_restrictL h u (derivIndex m j)).symm)
-  simp_rw [key]
-  exact SobolevMultiIndex.tendsto_eLpNorm_weakDeriv_sub hw (derivIndex m j)
+    u ∈ SobolevIntervalLpZero m p I :=
+  SobolevMultiIndexZero.mem_of_mem_restrict h hu hK hKI hu0
 
 end SobolevIntervalLpZero
 
@@ -2196,7 +2164,6 @@ theorem _root_.mem_sobolevIntervalLpZero_higher_iff (hI : (I : Set ℝ).OrdConne
     fun h ↦ ?_⟩
   obtain ⟨v, hv, hvt⟩ := exists_cutoff_tendsto hp u
   refine SobolevMultiIndexZero.isClosed.mem_of_tendsto hvt (Eventually.of_forall fun n ↦ ?_)
-  have hR : 2 * ((n : ℝ) + 1) < 3 * ((n : ℝ) + 1) := by linarith
   -- the function of `ζ_n u`
   have hfn : fn (v n) =ᵐ[volume.restrict I] fun x ↦ cutoffFn n x * fn u x := by
     filter_upwards [hv n 0] with x hx

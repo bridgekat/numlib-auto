@@ -1,3 +1,4 @@
+import Numlib.Algebra.Polynomial.Derivative
 import Numlib.Analysis.Calculus.HermiteInterpolation
 import Numlib.Approximation.Interpolation
 
@@ -282,25 +283,13 @@ theorem eval_iterate_derivative_nodal {x : Fin n → ℝ} {m : Fin n → ℕ} (i
     (dvd_pow_self _ (by omega)).trans hdvd
   exact Polynomial.dvd_iff_isRoot.mp hone
 
-/-- The top iterated derivative of a monic polynomial is the factorial of its degree. -/
-private theorem iterate_derivative_of_monic {P : ℝ[X]} (hP : P.Monic) :
-    Polynomial.derivative^[P.natDegree] P = Polynomial.C (P.natDegree.factorial : ℝ) := by
-  have hle : (Polynomial.derivative^[P.natDegree] P).natDegree = 0 :=
-    Nat.le_zero.mp (by simpa using Polynomial.natDegree_iterate_derivative P P.natDegree)
-  have h0 : (Polynomial.derivative^[P.natDegree] P).coeff 0 = (P.natDegree.factorial : ℝ) := by
-    rw [Polynomial.coeff_iterate_derivative]
-    simp [hP.coeff_natDegree, Nat.descFactorial_self]
-  calc Polynomial.derivative^[P.natDegree] P
-      = Polynomial.C ((Polynomial.derivative^[P.natDegree] P).coeff 0) :=
-        Polynomial.eq_C_of_natDegree_eq_zero hle
-    _ = Polynomial.C ((P.natDegree.factorial : ℝ)) := by rw [h0]
-
 /-- The top iterated derivative of the nodal polynomial is `(∑ i, (m i + 1))!`. -/
 theorem iterate_derivative_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) {M : ℕ}
     (hM : ∑ i, (m i + 1) = M) :
     Polynomial.derivative^[M] (nodal x m) = Polynomial.C ((M.factorial : ℝ)) := by
   have hdeg : (nodal x m).natDegree = M := (natDegree_nodal x m).trans hM
-  simpa [hdeg] using iterate_derivative_of_monic (monic_nodal x m)
+  rw [Polynomial.iterate_derivative_eq_C_of_natDegree_eq hdeg, (monic_nodal x m).leadingCoeff,
+    mul_one]
 
 end Nodal
 

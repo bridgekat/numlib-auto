@@ -8,6 +8,7 @@ import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Topology.ContinuousMap.Weierstrass
 import Numlib.Analysis.Normed.Module.BestApprox
+import Numlib.LinearAlgebra.Matrix.Determinant.Basic
 
 /-!
 # Orthogonal polynomials of a measure
@@ -440,21 +441,40 @@ theorem exists_eq_sum_family (μ : Measure ℝ) {n : ℕ} {q : ℝ[X]} (hq : q.d
   obtain ⟨c, hc⟩ := hmem
   exact ⟨c, by simpa using hc.symm⟩
 
+/-- A family of pairwise orthogonal polynomials with one member of each degree is orthogonal to
+every polynomial of lower degree: such a polynomial is a linear combination of the members of
+lower degree. -/
+theorem integral_mul_of_degree_lt_of_orthogonal (hw : IsWeight μ) {q : ℕ → ℝ[X]}
+    (hdeg : ∀ n, (q n).degree = n)
+    (horth : ∀ m n, m < n → ∫ x, (q n).eval x * (q m).eval x ∂μ = 0) {n : ℕ} {p : ℝ[X]}
+    (hp : p.degree < n) : ∫ x, (q n).eval x * p.eval x ∂μ = 0 := by
+  have hunit : ∀ i, IsUnit (q i).leadingCoeff := fun i =>
+    isUnit_iff_ne_zero.2 (leadingCoeff_ne_zero.2 fun h => by
+      have := hdeg i
+      rw [h, degree_zero] at this
+      exact absurd this (by simp))
+  have hmem : p ∈ Polynomial.degreeLT ℝ n := Polynomial.mem_degreeLT.mpr hp
+  rw [← Polynomial.Sequence.span_degreeLT (⟨q, hdeg⟩ : Polynomial.Sequence ℝ)
+      (fun i _ => hunit i), show Set.Iio n = (↑(Finset.range n) : Set ℕ) by simp,
+    Submodule.mem_span_image_finset_iff_exists_fun'] at hmem
+  obtain ⟨c, hc⟩ := hmem
+  have hev : ∀ x : ℝ, (q n).eval x * p.eval x =
+      ∑ k ∈ Finset.range n, c k * ((q n).eval x * (q k).eval x) := by
+    intro x
+    rw [← hc]
+    simp only [eval_finsetSum, eval_smul, smul_eq_mul, Finset.mul_sum, mul_left_comm]
+  simp only [hev]
+  rw [integral_finsetSum _ fun k _ => (hw.integrable_eval_mul _ _).const_mul _]
+  refine Finset.sum_eq_zero fun k hk => ?_
+  rw [integral_const_mul, horth k n (Finset.mem_range.mp hk), mul_zero]
+
 /-- The family is orthogonal to every polynomial of lower degree. This is the form in which
 orthogonality is used: in the Gauss quadrature and best-approximation arguments the second factor is
 an arbitrary polynomial, not another member of the family. -/
 theorem integral_family_mul_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]}
-    (hq : q.degree < n) : ∫ x, (family μ n).eval x * q.eval x ∂μ = 0 := by
-  obtain ⟨c, rfl⟩ := exists_eq_sum_family μ hq
-  have hev : ∀ x : ℝ, (family μ n).eval x * (∑ k ∈ Finset.range n, c k • family μ k).eval x =
-      ∑ k ∈ Finset.range n, c k * ((family μ n).eval x * (family μ k).eval x) := by
-    intro x
-    simp only [eval_finsetSum, eval_smul, smul_eq_mul, Finset.mul_sum, mul_left_comm]
-  simp only [hev]
-  rw [integral_finsetSum _ fun k _ => ((hw.integrable_eval_mul _ _).const_mul _)]
-  refine Finset.sum_eq_zero fun k hk => ?_
-  rw [integral_const_mul, integral_family_mul_family hw (Nat.ne_of_gt (Finset.mem_range.mp hk)),
-    mul_zero]
+    (hq : q.degree < n) : ∫ x, (family μ n).eval x * q.eval x ∂μ = 0 :=
+  integral_mul_of_degree_lt_of_orthogonal hw (degree_family μ)
+    (fun _ _ hmn => integral_family_mul_family hw (Nat.ne_of_gt hmn)) hq
 
 /-- The expansion of a polynomial of degree `< n` in the orthogonal family, with the Fourier
 coefficients `⟪q, p_k⟫ / ‖p_k‖²` made explicit. -/
@@ -623,6 +643,26 @@ theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
         Finset.prod_image fun i _ j _ h =>
           (((family μ n).roots.toFinset).orderEmbOfFin hcard).strictMono.injective h
 
+/-- A root `x₀` of `family μ n` splits it as `(X - x₀) q` with `q ≠ 0` of degree `< n`, and
+orthogonality to `q` gives `∫ (X - x₀) q² dμ = 0`: the common step of
+`OrthogonalPolynomial.lt_root_family` and `OrthogonalPolynomial.root_family_lt`. -/
+private theorem exists_integral_X_sub_C_mul_sq_eq_zero (hw : IsWeight μ) {n : ℕ} {x₀ : ℝ}
+    (hx₀ : (family μ n).eval x₀ = 0) :
+    ∃ q : ℝ[X], q ≠ 0 ∧ ∫ t, ((X - C x₀) * q ^ 2).eval t ∂μ = 0 := by
+  obtain ⟨q, hq⟩ : ∃ q : ℝ[X], family μ n = (X - C x₀) * q :=
+    ⟨_, (mul_divByMonic_eq_iff_isRoot.mpr hx₀).symm⟩
+  have hq0 : q ≠ 0 := fun h => family_ne_zero μ n (by rw [hq, h, mul_zero])
+  have hqdeg : q.degree < n := by
+    have hnat : (family μ n).natDegree = n := natDegree_eq_of_degree_eq_some (degree_family μ n)
+    rw [hq, natDegree_mul (X_sub_C_ne_zero _) hq0, natDegree_X_sub_C] at hnat
+    exact (natDegree_lt_iff_degree_lt hq0).mp (by omega)
+  refine ⟨q, hq0, ?_⟩
+  rw [← integral_family_mul_of_degree_lt hw hqdeg]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
+  rw [hq]
+  simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
+  ring
+
 /-- **A root of an orthogonal polynomial is strictly to the right of a left bound of the weight.**
 If `μ`-almost every point is at least `a` and `x₀` is a root of `family μ n`, then `a < x₀`.
 
@@ -638,19 +678,7 @@ unbounded on the other side, such as the Laguerre weight on `(0, ∞)`, needs.
 Reference: [quarteroni2000numerical] §10.2; [kress1998numerical] §9.3. -/
 theorem lt_root_family (hw : IsWeight μ) {a : ℝ} (hae : ∀ᵐ t ∂μ, a ≤ t) {n : ℕ} {x₀ : ℝ}
     (hx₀ : (family μ n).eval x₀ = 0) : a < x₀ := by
-  obtain ⟨q, hq⟩ : ∃ q : ℝ[X], family μ n = (X - C x₀) * q :=
-    ⟨_, (mul_divByMonic_eq_iff_isRoot.mpr hx₀).symm⟩
-  have hq0 : q ≠ 0 := fun h => family_ne_zero μ n (by rw [hq, h, mul_zero])
-  have hqdeg : q.degree < n := by
-    have hnat : (family μ n).natDegree = n := natDegree_eq_of_degree_eq_some (degree_family μ n)
-    rw [hq, natDegree_mul (X_sub_C_ne_zero _) hq0, natDegree_X_sub_C] at hnat
-    exact (natDegree_lt_iff_degree_lt hq0).mp (by omega)
-  have hzero : ∫ t, ((X - C x₀) * q ^ 2).eval t ∂μ = 0 := by
-    rw [← integral_family_mul_of_degree_lt hw hqdeg]
-    refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
-    rw [hq]
-    simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
-    ring
+  obtain ⟨q, hq0, hzero⟩ := exists_integral_X_sub_C_mul_sq_eq_zero hw hx₀
   have hne : (X - C x₀) * q ^ 2 ≠ 0 := mul_ne_zero (X_sub_C_ne_zero _) (pow_ne_zero 2 hq0)
   by_contra h
   push Not at h
@@ -666,19 +694,7 @@ mirror image of `OrthogonalPolynomial.lt_root_family`.
 Reference: [quarteroni2000numerical] §10.2; [kress1998numerical] §9.3. -/
 theorem root_family_lt (hw : IsWeight μ) {b : ℝ} (hae : ∀ᵐ t ∂μ, t ≤ b) {n : ℕ} {x₀ : ℝ}
     (hx₀ : (family μ n).eval x₀ = 0) : x₀ < b := by
-  obtain ⟨q, hq⟩ : ∃ q : ℝ[X], family μ n = (X - C x₀) * q :=
-    ⟨_, (mul_divByMonic_eq_iff_isRoot.mpr hx₀).symm⟩
-  have hq0 : q ≠ 0 := fun h => family_ne_zero μ n (by rw [hq, h, mul_zero])
-  have hqdeg : q.degree < n := by
-    have hnat : (family μ n).natDegree = n := natDegree_eq_of_degree_eq_some (degree_family μ n)
-    rw [hq, natDegree_mul (X_sub_C_ne_zero _) hq0, natDegree_X_sub_C] at hnat
-    exact (natDegree_lt_iff_degree_lt hq0).mp (by omega)
-  have hzero : ∫ t, ((X - C x₀) * q ^ 2).eval t ∂μ = 0 := by
-    rw [← integral_family_mul_of_degree_lt hw hqdeg]
-    refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
-    rw [hq]
-    simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
-    ring
+  obtain ⟨q, hq0, hzero⟩ := exists_integral_X_sub_C_mul_sq_eq_zero hw hx₀
   have hne : (X - C x₀) * q ^ 2 ≠ 0 := mul_ne_zero (X_sub_C_ne_zero _) (pow_ne_zero 2 hq0)
   by_contra h
   push Not at h
@@ -1183,43 +1199,6 @@ theorem jacobiMatrix_isSymm (μ : Measure ℝ) (n : ℕ) : (jacobiMatrix μ n).I
   · simp only [jacobiMatrix_apply, h, Ne.symm h, ite_false]
     split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- The determinant of a bordered matrix whose last row and last column vanish outside their
-last two entries: Laplace expansion along the last row, then along the last column of the
-off-diagonal minor. -/
-private theorem det_succ_succ_of_last_row_col {R : Type*} [CommRing R] {n : ℕ}
-    (M : Matrix (Fin (n + 2)) (Fin (n + 2)) R)
-    (hrow : ∀ i : Fin n, M (Fin.last (n + 1)) (Fin.castSucc (Fin.castSucc i)) = 0)
-    (hcol : ∀ i : Fin n, M (Fin.castSucc (Fin.castSucc i)) (Fin.last (n + 1)) = 0) :
-    M.det = M (Fin.last (n + 1)) (Fin.last (n + 1)) *
-        (M.submatrix Fin.castSucc Fin.castSucc).det -
-      M (Fin.last (n + 1)) (Fin.castSucc (Fin.last n)) *
-        M (Fin.castSucc (Fin.last n)) (Fin.last (n + 1)) *
-        (M.submatrix (Fin.castSucc ∘ Fin.castSucc) (Fin.castSucc ∘ Fin.castSucc)).det := by
-  rw [Matrix.det_succ_row M (Fin.last (n + 1)), Fin.sum_univ_castSucc, Fin.sum_univ_castSucc]
-  simp only [hrow, mul_zero, zero_mul, Finset.sum_const_zero, zero_add, Fin.succAbove_last]
-  have hsign1 : ((-1 : R) ^ ((Fin.last (n + 1) : ℕ) + (Fin.last (n + 1) : ℕ))) = 1 := by
-    rw [Fin.val_last, ← two_mul, pow_mul]; simp
-  have hsign2 : ((-1 : R) ^ ((Fin.last (n + 1) : ℕ) + (Fin.castSucc (Fin.last n) : ℕ))) = -1 := by
-    rw [Fin.val_last, Fin.val_castSucc, Fin.val_last, show n + 1 + n = 2 * n + 1 by ring,
-      pow_succ, pow_mul]
-    simp
-  rw [hsign1, hsign2, one_mul]
-  -- expand the off-diagonal minor along its last column
-  rw [Matrix.det_succ_column (M.submatrix Fin.castSucc (Fin.castSucc (Fin.last n)).succAbove)
-    (Fin.last n), Fin.sum_univ_castSucc]
-  simp only [Matrix.submatrix_apply, Fin.succAbove_castSucc_self, Fin.succ_last, hcol, mul_zero,
-    zero_mul, Finset.sum_const_zero, zero_add, Fin.succAbove_last, Matrix.submatrix_submatrix]
-  have hsign3 : ((-1 : R) ^ ((Fin.last n : ℕ) + (Fin.last n : ℕ))) = 1 := by
-    rw [Fin.val_last, ← two_mul, pow_mul]; simp
-  rw [hsign3, one_mul]
-  have hsub : ((Fin.castSucc (Fin.last n)).succAbove ∘ Fin.castSucc : Fin n → Fin (n + 2)) =
-      Fin.castSucc ∘ Fin.castSucc := by
-    funext i
-    simp only [Function.comp_apply]
-    exact Fin.succAbove_castSucc_of_lt _ _ (Fin.castSucc_lt_last i)
-  rw [hsub]
-  ring
-
 /-- The characteristic matrix of the Jacobi matrix restricted to the leading rows and columns is
 the characteristic matrix of the smaller Jacobi matrix. -/
 private theorem charmatrix_jacobiMatrix_submatrix (μ : Measure ℝ) (n : ℕ) :
@@ -1248,7 +1227,7 @@ theorem charpoly_jacobiMatrix (hw : IsWeight μ) (n : ℕ) :
     have hβ : 0 ≤ beta μ m := (div_pos (normSq_pos hw _) (normSq_pos hw _)).le
     have hdet : ∀ k, (jacobiMatrix μ k).charpoly = (Matrix.charmatrix (jacobiMatrix μ k)).det :=
       fun k => rfl
-    rw [hdet, hdet, hdet, det_succ_succ_of_last_row_col]
+    rw [hdet, hdet, hdet, Matrix.det_succ_succ_of_last_row_col]
     · rw [charmatrix_jacobiMatrix_submatrix, ← Matrix.submatrix_submatrix,
         charmatrix_jacobiMatrix_submatrix, charmatrix_jacobiMatrix_submatrix]
       have h1 : Matrix.charmatrix (jacobiMatrix μ (m + 2)) (Fin.last (m + 1)) (Fin.last (m + 1)) =
@@ -1405,9 +1384,7 @@ theorem denseRange_toLpₗ (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a
       with x hsub hgx hpx hx
     rw [hsub, Pi.sub_apply, hgx, hpx, Real.norm_eq_abs, abs_sub_comm]
     exact hkey x hx
-  have hM1 : (0 : ℝ) < M + 1 := by linarith
   have hd : δ * (M + 1) = ε / 2 := by rw [hδ]; field_simp
-  have hMδ : M * δ < ε / 2 := by nlinarith
   have hdist : dist (BoundedContinuousFunction.toLp 2 μ ℝ g) (hw.toLpₗ p) ≤ M * δ := by
     rw [dist_eq_norm]; exact hbound
   linarith
@@ -1845,7 +1822,6 @@ theorem legendre_eval_one (n : ℕ) : (legendre n).eval 1 = 1 := by
     Finset.sum_eq_single 0]
   · rw [Nat.sub_zero, Nat.choose_zero_right, Function.iterate_zero_apply,
       iterate_derivative_X_sub_pow_self]
-    have h0 : ((2 : ℝ) ^ n * n !) ≠ 0 := legFac_ne_zero n
     simp only [one_smul, eval_mul, eval_natCast, eval_pow, eval_add, eval_X, eval_C, legFac]
     rw [show ((1 : ℝ) + 1) = 2 by norm_num]
     field_simp
@@ -1991,7 +1967,6 @@ private lemma legInt_sq_aux (n : ℕ) :
       rw [show j + 1 + 1 = j + 2 from rfl]
       push_cast
       have h3 : (2 * (j : ℝ) + 3) ≠ 0 := by positivity
-      have h5 : (2 * (j : ℝ) + 5) ≠ 0 := by positivity
       field_simp at h ⊢
       linarith
 
@@ -2042,33 +2017,6 @@ theorem legendreMeasure_compl_Icc : legendreMeasure (Set.Icc (-1 : ℝ) 1)ᶜ = 
 /-! ### Identifying a classical family with the monic family -/
 
 variable {μ : Measure ℝ}
-
-/-- A family of pairwise orthogonal polynomials with one member of each degree is orthogonal to
-every polynomial of lower degree: such a polynomial is a linear combination of the members of
-lower degree. -/
-theorem integral_mul_of_degree_lt_of_orthogonal (hw : IsWeight μ) {q : ℕ → ℝ[X]}
-    (hdeg : ∀ n, (q n).degree = n)
-    (horth : ∀ m n, m < n → ∫ x, (q n).eval x * (q m).eval x ∂μ = 0) {n : ℕ} {p : ℝ[X]}
-    (hp : p.degree < n) : ∫ x, (q n).eval x * p.eval x ∂μ = 0 := by
-  have hunit : ∀ i, IsUnit (q i).leadingCoeff := fun i =>
-    isUnit_iff_ne_zero.2 (leadingCoeff_ne_zero.2 fun h => by
-      have := hdeg i
-      rw [h, degree_zero] at this
-      exact absurd this (by simp))
-  have hmem : p ∈ Polynomial.degreeLT ℝ n := Polynomial.mem_degreeLT.mpr hp
-  rw [← Polynomial.Sequence.span_degreeLT (⟨q, hdeg⟩ : Polynomial.Sequence ℝ)
-      (fun i _ => hunit i), show Set.Iio n = (↑(Finset.range n) : Set ℕ) by simp,
-    Submodule.mem_span_image_finset_iff_exists_fun'] at hmem
-  obtain ⟨c, hc⟩ := hmem
-  have hev : ∀ x : ℝ, (q n).eval x * p.eval x =
-      ∑ k ∈ Finset.range n, c k * ((q n).eval x * (q k).eval x) := by
-    intro x
-    rw [← hc]
-    simp only [eval_finsetSum, eval_smul, smul_eq_mul, Finset.mul_sum, mul_left_comm]
-  simp only [hev]
-  rw [integral_finsetSum _ fun k _ => (hw.integrable_eval_mul _ _).const_mul _]
-  refine Finset.sum_eq_zero fun k hk => ?_
-  rw [integral_const_mul, horth k n (Finset.mem_range.mp hk), mul_zero]
 
 /-- **A pairwise orthogonal family with one member of each degree is the monic family of the
 weight, up to leading coefficients**: `family μ n = C (q n).leadingCoeff⁻¹ * q n`. The difference

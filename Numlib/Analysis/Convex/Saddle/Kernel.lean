@@ -1408,20 +1408,19 @@ variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module 
 /-- The lower simple extension of a finite concave-convex function on `C × D` is concave-convex on
 all of `U × X`. -/
 theorem concaveConvexFn_lowerSimpleExt (hC : Convex ℝ C)
-    (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x)) :
+    (hK : ConcaveConvexOn C D K) :
     ConcaveConvexFn (lowerSimpleExt C D K) := by
   constructor
   · intro x
     by_cases hx : x ∈ D
     · rw [lowerSimpleExt_slice₁_of_mem hx]
-      exact (concaveOn_iff_concaveFn C fun u => K (u, x)).1 (hconc x hx)
+      exact (concaveOn_iff_concaveFn C fun u => K (u, x)).1 (hK.concave_fst x hx)
     · rw [lowerSimpleExt_slice₁_of_notMem hx]
       exact (concaveFn_const ⊤).concaveRestrict hC
   · intro u
     by_cases hu : u ∈ C
     · rw [lowerSimpleExt_slice₂_of_mem hu]
-      exact (convexOn_iff_convexFn D fun x => K (u, x)).1 (hconv u hu)
+      exact (convexOn_iff_convexFn D fun x => K (u, x)).1 (hK.convex_snd u hu)
     · rw [lowerSimpleExt_slice₂_of_notMem hu]
       exact convexFn_const ⊥
 
@@ -1477,14 +1476,13 @@ kernel of exactly one equivalence class of closed proper concave-convex function
 class is the one attached to the lower simple extension of `K`. -/
 theorem exists_unique_saddleEquiv_class_of_finite (hC : Convex ℝ C)
     (hCne : C.Nonempty) (hDne : D.Nonempty)
-    (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x)) :
+    (hK : ConcaveConvexOn C D K) :
     ∃ M : U × X → EReal, (ClosedSaddleFn M ∧ ConcaveConvexFn M ∧ ProperSaddleFn M ∧
       kernel M = convexRestrict (ri (C ×ˢ D)) fun p => (K p : EReal)) ∧
       ∀ L : U × X → EReal, ClosedSaddleFn L → ConcaveConvexFn L → ProperSaddleFn L →
         (kernel L = convexRestrict (ri (C ×ˢ D)) (fun p => (K p : EReal)) ↔ SaddleEquiv M L) := by
   obtain ⟨M, ⟨hclM, hCCM, hpM, hkerM⟩, huniq⟩ :=
-    exists_unique_saddleEquiv_class_of_kernel (concaveConvexFn_lowerSimpleExt hC hconv hconc)
+    exists_unique_saddleEquiv_class_of_kernel (concaveConvexFn_lowerSimpleExt hC hK)
       (properSaddleFn_lowerSimpleExt hCne hDne) (simpleSaddleFn_lowerSimpleExt hCne hDne)
   rw [kernel_lowerSimpleExt hCne hDne] at hkerM
   refine ⟨M, ⟨hclM, hCCM, hpM, hkerM⟩, fun L hclL hCCL hpL => ?_⟩
@@ -1616,15 +1614,13 @@ variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module 
 all of `U × X`.
 
 Transported from `concaveConvexFn_lowerSimpleExt`: the swap exchanges the convexity and concavity
-hypotheses and negates each, which is exactly `ConvexOn.neg` and `ConcaveOn.neg`. -/
+hypotheses and negates each, which is `ConcaveConvexOn.swapReal`. -/
 theorem concaveConvexFn_upperSimpleExt (hD : Convex ℝ D)
-    (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x)) :
+    (hK : ConcaveConvexOn C D K) :
     ConcaveConvexFn (upperSimpleExt C D K) := by
   rw [upperSimpleExt_eq_saddleSwap]
   exact ConcaveConvexFn.saddleSwap
-    (concaveConvexFn_lowerSimpleExt hD (fun x hx => (hconc x hx).neg)
-      (fun u hu => (hconv u hu).neg))
+    (concaveConvexFn_lowerSimpleExt hD hK.swapReal)
 
 end UpperSimpleExtConvex
 
@@ -1964,15 +1960,14 @@ slices. -/
 theorem exists_unique_bifun_of_simpleExt (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)
-    (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hK : ConcaveConvexOn C D K)
     (hDne : D.Nonempty) (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
     ∃! F : Bifun U X, ConvexBifun F ∧ ClosedConvexBifun F ∧
       (fun p : U × Y => bracket Bx F p.1 p.2) = lowerSimpleExt C D K ∧
       (fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2)
         = upperSimpleExt C D K :=
-  exists_unique_bifun_of_closure_pair Bu Bx (concaveConvexFn_lowerSimpleExt hC hconv hconc)
+  exists_unique_bifun_of_closure_pair Bu Bx (concaveConvexFn_lowerSimpleExt hC hK)
     (partialCl₁_lowerSimpleExt hCcl hCne hcontC) (partialCl₂_upperSimpleExt hDcl hDne hcontD)
 
 end SimpleExtBifun

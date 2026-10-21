@@ -53,26 +53,20 @@ instance Submodule.finiteDimensional_span_range {ι : Type*} [Finite ι] (V : ι
 
 namespace LinearMap
 
-/-- An idempotent linear map fixes its range pointwise. -/
-private theorem apply_of_mem_range {P : E →ₗ[𝕜] E} (hP : IsIdempotentElem P) {y : E}
-    (hy : y ∈ LinearMap.range P) : P y = y := by
-  obtain ⟨z, rfl⟩ := hy
-  exact DFunLike.congr_fun hP z
-
 /-- A projector is determined by its range and its kernel. -/
 theorem IsIdempotentElem.ext_of_range_eq_of_ker_eq {P Q : E →ₗ[𝕜] E} (hP : IsIdempotentElem P)
     (hQ : IsIdempotentElem Q) (hr : LinearMap.range P = LinearMap.range Q)
     (hk : LinearMap.ker P = LinearMap.ker Q) : P = Q := by
   ext x
   have hmem : x - P x ∈ LinearMap.ker Q := by
-    rw [← hk, LinearMap.mem_ker, map_sub, apply_of_mem_range hP (LinearMap.mem_range_self P x),
-      sub_self]
+    rw [← hk, LinearMap.mem_ker, map_sub,
+      (LinearMap.IsIdempotentElem.mem_range_iff hP).1 (LinearMap.mem_range_self P x), sub_self]
   have h2 : Q x = Q (P x) := by
     have h := LinearMap.mem_ker.1 hmem
     rw [map_sub, sub_eq_zero] at h
     exact h
   have h3 : Q (P x) = P x := by
-    refine apply_of_mem_range hQ ?_
+    refine (LinearMap.IsIdempotentElem.mem_range_iff hQ).1 ?_
     rw [← hr]
     exact LinearMap.mem_range_self P x
   rw [h2, h3]
@@ -86,12 +80,12 @@ theorem IsIdempotentElem.apply_eq_iff {P : E →ₗ[𝕜] E} (hP : IsIdempotentE
   · rintro rfl
     refine ⟨hr ▸ LinearMap.mem_range_self P x, ?_⟩
     rw [← hk, LinearMap.mem_ker, map_sub,
-      apply_of_mem_range hP (LinearMap.mem_range_self P x), sub_self]
+      (LinearMap.IsIdempotentElem.mem_range_iff hP).1 (LinearMap.mem_range_self P x), sub_self]
   · rintro ⟨hy, hxy⟩
     have hyr : y ∈ LinearMap.range P := by rw [hr]; exact hy
     have hmem : x - y ∈ LinearMap.ker P := by rw [hk]; exact hxy
     have h := LinearMap.mem_ker.1 hmem
-    rw [map_sub, apply_of_mem_range hP hyr, sub_eq_zero] at h
+    rw [map_sub, (LinearMap.IsIdempotentElem.mem_range_iff hP).1 hyr, sub_eq_zero] at h
     exact h
 
 /-- A projector onto `K` orthogonal to `L` exists (uniquely) iff `K ⊓ Lᗮ = ⊥`, for
@@ -328,7 +322,6 @@ private theorem inner_eq_zero_of_norm_eq_one {P : E →L[𝕜] E} (hnorm : ‖P�
   have hθneg : θ < 0 := by rw [hθ]; simpa using inv_pos.2 hz2
   have hid : θ ^ 2 * ‖c‖ ^ 2 * ‖z‖ ^ 2 = -(θ * ‖c‖ ^ 2) := by
     rw [show θ ^ 2 * ‖c‖ ^ 2 * ‖z‖ ^ 2 = θ * ‖z‖ ^ 2 * (θ * ‖c‖ ^ 2) by ring, hθz, neg_one_mul]
-  have hkey : 0 ≤ θ * ‖c‖ ^ 2 := by linarith
   have hcsq : ‖c‖ ^ 2 ≤ 0 := by nlinarith
   have hc0 : ‖c‖ = 0 := by nlinarith [norm_nonneg c]
   exact norm_eq_zero.1 hc0

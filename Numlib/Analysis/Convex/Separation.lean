@@ -2,6 +2,7 @@ import Mathlib.Geometry.Convex.Cone.Pointed
 import Mathlib.Analysis.LocallyConvex.Separation
 import Mathlib.Topology.Instances.EReal.Lemmas
 import Numlib.Analysis.Convex.Epigraph
+import Numlib.Analysis.Convex.Homogeneous
 
 /-!
 # Separation theorems
@@ -656,20 +657,20 @@ theorem coe_halfSpaceCone : (halfSpaceCone f : Set E) = {x | f x ≤ 0} := rfl
 /-- A linear functional bounded above on a cone is nonpositive on it: otherwise scaling up a point
 where it is positive breaks the bound. -/
 theorem le_zero_of_isCone_of_forall_le {K : Set E} {u : ℝ}
-    (hcone : ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ K → a • x ∈ K) (h : ∀ x ∈ K, f x ≤ u) {x : E}
+    (hcone : IsCone K) (h : ∀ x ∈ K, f x ≤ u) {x : E}
     (hx : x ∈ K) : f x ≤ 0 := by
   by_contra hcon
   rw [not_le] at hcon
   have hpos : (0 : ℝ) < max u 0 + 1 := by linarith [le_max_right u 0]
   have ha : 0 < (max u 0 + 1) / f x := div_pos hpos hcon
-  have hk := h _ (hcone ha hx)
+  have hk := h _ (hcone.smul_mem ha hx)
   rw [map_smul, smul_eq_mul, div_mul_cancel₀ _ hcon.ne'] at hk
   linarith [le_max_left u 0]
 
 /-- A bound above for a linear functional on a nonempty cone is nonnegative: the functional comes
 arbitrarily close to `0` along any ray of the cone. -/
 theorem nonneg_of_isCone_of_forall_le {K : Set E} {u : ℝ}
-    (hcone : ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ K → a • x ∈ K) (h : ∀ x ∈ K, f x ≤ u)
+    (hcone : IsCone K) (h : ∀ x ∈ K, f x ≤ u)
     (hK : K.Nonempty) : 0 ≤ u := by
   obtain ⟨x, hx⟩ := hK
   by_contra hcon
@@ -683,7 +684,7 @@ theorem nonneg_of_isCone_of_forall_le {K : Set E} {u : ℝ}
     have ha : 0 < u / (2 * f x) := by
       rw [← neg_div_neg_eq]
       exact div_pos (by linarith) (by linarith)
-    have hk := h _ (hcone ha hx)
+    have hk := h _ (hcone.smul_mem ha hx)
     rw [map_smul, smul_eq_mul] at hk
     have hval : u / (2 * f x) * f x = u / 2 := by field_simp
     rw [hval] at hk
@@ -693,7 +694,7 @@ theorem nonneg_of_isCone_of_forall_le {K : Set E} {u : ℝ}
 separated by a hyperplane through the origin.** Both sets must be nonempty: on the line, the cone
 `{0}` and the empty set are properly separated at level `1` but not at level `0`. -/
 theorem SeparatesProperly.zero_of_isCone_left (h : SeparatesProperly f c s t)
-    (hcone : ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ s → a • x ∈ s) (hs : s.Nonempty) (ht : t.Nonempty) :
+    (hcone : IsCone s) (hs : s.Nonempty) (ht : t.Nonempty) :
     SeparatesProperly f 0 s t := by
   have hbdd : ∀ x ∈ s, f x ≤ c := fun x hx => h.le_of_mem_left hx
   have hle : ∀ x ∈ s, f x ≤ 0 := fun x hx => le_zero_of_isCone_of_forall_le hcone hbdd hx
@@ -707,7 +708,7 @@ theorem SeparatesProperly.zero_of_isCone_left (h : SeparatesProperly f c s t)
 
 /-- The same with the cone on the right. -/
 theorem SeparatesProperly.zero_of_isCone_right (h : SeparatesProperly f c s t)
-    (hcone : ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ t → a • x ∈ t) (hs : s.Nonempty) (ht : t.Nonempty) :
+    (hcone : IsCone t) (hs : s.Nonempty) (ht : t.Nonempty) :
     SeparatesProperly f 0 s t := by
   have h' := (h.symm.zero_of_isCone_left hcone ht hs).symm
   simpa using h'
@@ -844,18 +845,18 @@ theorem exists_ne_zero_forall_le_of_closure_ne_univ (hs₁ : Convex ℝ s) (hs�
 omit [IsTopologicalAddGroup E] [LocallyConvexSpace ℝ E] in
 /-- The closure of a cone is a cone. -/
 theorem smul_mem_closure_of_isCone {K : Set E}
-    (hcone : ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ K → a • x ∈ K) :
+    (hcone : IsCone K) :
     ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ closure K → a • x ∈ closure K := by
   intro a ha x hx
   have hmaps : MapsTo (fun y : E => a • y) K (closure K) := fun y hy =>
-    subset_closure (hcone ha hy)
+    subset_closure (hcone.smul_mem ha hy)
   have hcl := hmaps.closure (continuous_const.smul continuous_id) hx
   rwa [closure_closure] at hcl
 
 /-- A nonempty closed convex cone is the intersection of the homogeneous closed half-spaces
 containing it. -/
 theorem isClosed_convex_isCone_eq_iInter_halfSpaceCone {K : Set E} (hconv : Convex ℝ K)
-    (hcone : ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ K → a • x ∈ K) (hcl : IsClosed K) (hne : K.Nonempty) :
+    (hcone : IsCone K) (hcl : IsClosed K) (hne : K.Nonempty) :
     ⋂ (f : E →L[ℝ] ℝ) (_ : ∀ y ∈ K, f y ≤ 0), (halfSpaceCone f : Set E) = K := by
   ext x
   simp only [Set.mem_iInter, coe_halfSpaceCone, Set.mem_ofPred]
@@ -889,7 +890,7 @@ theorem closure_hull_eq_iInter_halfSpaceCone (S : Set E) :
 half-space, corrected for infinite dimensions exactly as
 `exists_ne_zero_forall_le_of_closure_ne_univ` is. -/
 theorem exists_ne_zero_forall_le_zero_of_closure_ne_univ {K : Set E} (hconv : Convex ℝ K)
-    (hcone : ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ K → a • x ∈ K) (hne : K.Nonempty)
+    (hcone : IsCone K) (hne : K.Nonempty)
     (h : closure K ≠ univ) : ∃ f : E →L[ℝ] ℝ, f ≠ 0 ∧ ∀ x ∈ K, f x ≤ 0 := by
   obtain ⟨a, ha⟩ := nonempty_compl.2 h
   obtain ⟨f, u, hfK, hfa⟩ := geometric_hahn_banach_closed_point hconv.closure isClosed_closure ha

@@ -122,7 +122,6 @@ pointwise estimate). -/
 theorem abs_integral_div_rpow_le (hab : a < b) (hμ1 : μ < 1) {M : ℝ}
     (hM : ∀ x ∈ Ioc a b, |φ x| ≤ M) :
     |∫ x in a..b, φ x / (x - a) ^ μ| ≤ M * (b - a) ^ (1 - μ) / (1 - μ) := by
-  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM b ⟨hab, le_rfl⟩)
   have hI : IntervalIntegrable (fun x => M * (x - a) ^ (-μ)) volume a b :=
     (intervalIntegrable_rpow_neg_sub hμ1).const_mul M
   have h := intervalIntegral.norm_integral_le_of_norm_le (μ := volume)
@@ -227,7 +226,6 @@ theorem abs_integral_taylorRemainder_div_rpow_le {ε : ℝ} (hε : 0 < ε) (hμ1
     (hM : ∀ x ∈ Icc a (a + ε), |iteratedDeriv (p + 1) φ x| ≤ M) :
     |∫ x in a..(a + ε), (φ x - taylorWithinEval φ p univ a x) / (x - a) ^ μ|
       ≤ ε ^ (p + 2 - μ) / ((p + 1).factorial * (p + 2 - μ)) * M := by
-  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM a ⟨le_rfl, by linarith⟩)
   have hI : IntervalIntegrable (fun x => M / (p + 1).factorial * ((x - a) ^ (p + 1) / (x - a) ^ μ))
       volume a (a + ε) := by
     refine IntervalIntegrable.const_mul ?_ _

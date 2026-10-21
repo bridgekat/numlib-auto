@@ -40,10 +40,10 @@ and `ConvexFn.iSup_extremePoints_add_coneHull` is the unconditional statement ke
 
 ## Implementation notes
 
-Maximisation is spelled `∀ z ∈ C, f z ≤ f x` rather than `IsMaxOn`, the form every proof consumes;
-`isMaxOn_iff` bridges. The lineality space `L` of `C` is quotiented out by intersecting with a
-complement `N` rather than by passing to `E ⧸ L`: `C = L + (C ∩ N)` holds for *any* `N`, so no
-inner product is needed where the book takes `N = L⊥`.
+A maximiser hypothesis is Mathlib's `IsMaxOn f C x`; `isMaxOn_iff` unfolds it to
+`∀ z ∈ C, f z ≤ f x`, the form the proofs consume. The lineality space `L` of `C` is quotiented
+out by intersecting with a complement `N` rather than by passing to `E ⧸ L`: `C = L + (C ∩ N)`
+holds for *any* `N`, so no inner product is needed where the book takes `N = L⊥`.
 
 ## References
 
@@ -63,7 +63,8 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal
 /-- **The maximum principle**: a convex function attaining its supremum over a convex `C ⊆ dom f`
 at a *relative interior* point of `C` is constant on `C`. -/
 theorem ConvexFn.eq_of_isMaxOn_mem_relint (hf : ConvexFn f) (hCdom : C ⊆ convexDom f) {z : E}
-    (hz : z ∈ ri C) (hmax : ∀ w ∈ C, f w ≤ f z) {x : E} (hx : x ∈ C) : f x = f z := by
+    (hz : z ∈ ri C) (hmax : IsMaxOn f C z) {x : E} (hx : x ∈ C) : f x = f z := by
+  rw [isMaxOn_iff] at hmax
   refine le_antisymm (hmax x hx) ?_
   by_contra hcon
   have hxlt : f x < f z := not_le.1 hcon
@@ -86,13 +87,13 @@ theorem ConvexFn.eq_of_isMaxOn_mem_relint (hf : ConvexFn f) (hCdom : C ⊆ conve
 /-- Every maximiser lies in a face of `C` on which `f` is constant, so the maximiser set is a union
 of faces: the maximum principle applied on the face whose relative interior contains it. -/
 theorem exists_isFace_forall_eq_of_isMaxOn [FiniteDimensional ℝ E] (hf : ConvexFn f)
-    (hC : Convex ℝ C) (hCdom : C ⊆ convexDom f) {z : E} (hz : z ∈ C) (hmax : ∀ w ∈ C, f w ≤ f z) :
+    (hC : Convex ℝ C) (hCdom : C ⊆ convexDom f) {z : E} (hz : z ∈ C) (hmax : IsMaxOn f C z) :
     ∃ C', IsFace C C' ∧ z ∈ C' ∧ ∀ x ∈ C', f x = f z := by
   obtain ⟨C', hface, hzri⟩ := exists_isFace_mem_relint hC hz
   have hsub : C' ⊆ C := hface.toIsExtreme.1
   exact ⟨C', hface, intrinsicInterior_subset hzri,
     fun x hx => hf.eq_of_isMaxOn_mem_relint (hsub.trans hCdom) hzri
-      (fun w hw => hmax w (hsub hw)) hx⟩
+      (hmax.of_subset hsub) hx⟩
 
 end Relint
 
@@ -115,11 +116,11 @@ theorem ConvexFn.iSup_convexHull (hf : ConvexFn f) (S : Set E) :
 /-- The convex hull creates no new maximisers either, because the *strict* sublevel set is convex
 too. -/
 theorem exists_eq_of_isMaxOn_convexHull (hf : ConvexFn f) {x : E} (hx : x ∈ convexHull ℝ S)
-    (hmax : ∀ z ∈ convexHull ℝ S, f z ≤ f x) : ∃ z ∈ S, f z = f x := by
+    (hmax : IsMaxOn f (convexHull ℝ S) x) : ∃ z ∈ S, f z = f x := by
   by_contra hcon
   push Not at hcon
   have hlt : S ⊆ {w : E | f w < f x} := fun z hz =>
-    lt_of_le_of_ne (hmax z (subset_convexHull ℝ S hz)) (hcon z hz)
+    lt_of_le_of_ne (hmax (subset_convexHull ℝ S hz)) (hcon z hz)
   exact absurd (convexHull_min hlt (hf.convex_lt (f x)) hx) (lt_irrefl (f x))
 
 end Hull
@@ -153,9 +154,10 @@ theorem ConvexFn.iSup_sdiff_relint (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl :
 
 /-- Attainment: a maximiser can be replaced by one on the relative boundary. -/
 theorem exists_notMem_relint_eq_of_isMaxOn (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsClosed C)
-    (hhalf : ¬ IsAffineHalf C) {x : E} (hx : x ∈ C) (hmax : ∀ z ∈ C, f z ≤ f x) :
+    (hhalf : ¬ IsAffineHalf C) {x : E} (hx : x ∈ C) (hmax : IsMaxOn f C x) :
     ∃ z ∈ C \ ri C, f z = f x := by
-  rw [← convexHull_sdiff_relint hC hCcl hhalf] at hx hmax
+  rw [← convexHull_sdiff_relint hC hCcl hhalf] at hmax
+  rw [← convexHull_sdiff_relint hC hCcl hhalf] at hx
   exact exists_eq_of_isMaxOn_convexHull hf hx hmax
 
 /-- The relative-boundary supremum under a hypothesis easier to check: a closed convex set of
@@ -302,7 +304,8 @@ point. No boundedness hypothesis is needed, but `f x ≠ ⊤` is: on `[0, ∞)` 
 and `⊤` beyond, `⊤` is a maximum yet the extreme point carries `0`. -/
 theorem exists_mem_extremePoints_eq_of_isMaxOn_of_containsNoLine (hf : ConvexFn f)
     (hC : Convex ℝ C) (hCcl : IsClosed C) (hnl : ContainsNoLine C) {x : E} (hx : x ∈ C)
-    (hxt : f x ≠ ⊤) (hmax : ∀ z ∈ C, f z ≤ f x) : ∃ z ∈ C.extremePoints ℝ, f z = f x := by
+    (hxt : f x ≠ ⊤) (hmax : IsMaxOn f C x) : ∃ z ∈ C.extremePoints ℝ, f z = f x := by
+  rw [isMaxOn_iff] at hmax
   rcases eq_or_ne (f x) ⊥ with hbot | hbot
   · obtain ⟨z, hz⟩ := extremePoints_nonempty_of_containsNoLine hC hCcl hnl ⟨x, hx⟩
     have hzle : f z ≤ ⊥ := hbot ▸ hmax z (extremePoints_subset hz)
@@ -314,7 +317,7 @@ theorem exists_mem_extremePoints_eq_of_isMaxOn_of_containsNoLine (hf : ConvexFn 
   have hsub : convexHull ℝ (C.extremePoints ℝ) ⊆ C := convexHull_min extremePoints_subset hC
   have hux : f u = f x := le_antisymm (hmax u (hsub hu)) hle
   obtain ⟨z, hz, hzu⟩ :=
-    exists_eq_of_isMaxOn_convexHull hf hu fun z hz => hux ▸ hmax z (hsub hz)
+    exists_eq_of_isMaxOn_convexHull hf hu (isMaxOn_iff.2 fun z hz => hux ▸ hmax z (hsub hz))
   exact ⟨z, hz, by rw [hzu, hux]⟩
 
 /-- **The extreme point principle** in representation form, with no boundedness hypothesis: the
@@ -355,14 +358,14 @@ theorem ConvexFn.iSup_extremePoints_inter_of_isCompl (hf : ConvexFn f) (hC : Con
 replaced by an extreme point of `C ∩ N`. -/
 theorem exists_mem_extremePoints_inter_eq_of_isMaxOn_of_isCompl (hf : ConvexFn f)
     (hC : Convex ℝ C) (hCcl : IsClosed C) (hray : BddAboveOnRays f C) {N : Submodule ℝ E}
-    (hN : IsCompl (linealitySubmodule C) N) {x : E} (hx : x ∈ C) (hmax : ∀ w ∈ C, f w ≤ f x) :
+    (hN : IsCompl (linealitySubmodule C) N) {x : E} (hx : x ∈ C) (hmax : IsMaxOn f C x) :
     ∃ z ∈ (C ∩ (N : Set E)).extremePoints ℝ, f z = f x := by
   obtain ⟨q, hq, hfq⟩ := hf.exists_mem_inter_eq_of_isCompl hray hN hx
   obtain ⟨z, hz, hzq⟩ := exists_mem_extremePoints_eq_of_isMaxOn_of_containsNoLine hf
     (hC.inter (Submodule.convex N)) (hCcl.inter (Submodule.closed_of_finiteDimensional N))
     (containsNoLine_inter_of_isCompl hC hCcl hN) hq
     (by rw [← hfq]; exact (mem_convexDom.1 (hray.subset_convexDom hx)).ne)
-    (fun w hw => by rw [← hfq]; exact hmax w hw.1)
+    (isMaxOn_iff.2 fun w hw => by rw [← hfq]; exact isMaxOn_iff.1 hmax w hw.1)
   exact ⟨z, hz, by rw [hzq, ← hfq]⟩
 
 end ExtremeUnbounded
@@ -437,9 +440,10 @@ theorem ConvexFn.iSup_extremePoints (hf : ConvexFn f) (hcomp : IsCompact C) (hco
 
 /-- A maximiser over a compact convex set is matched by an extreme point. -/
 theorem exists_mem_extremePoints_eq_of_isMaxOn (hf : ConvexFn f) (hcomp : IsCompact C)
-    (hconv : Convex ℝ C) {x : E} (hx : x ∈ C) (hmax : ∀ z ∈ C, f z ≤ f x) :
+    (hconv : Convex ℝ C) {x : E} (hx : x ∈ C) (hmax : IsMaxOn f C x) :
     ∃ z ∈ C.extremePoints ℝ, f z = f x := by
-  rw [← convexHull_extremePoints hcomp hconv] at hx hmax
+  rw [← convexHull_extremePoints hcomp hconv] at hmax
+  rw [← convexHull_extremePoints hcomp hconv] at hx
   exact exists_eq_of_isMaxOn_convexHull hf hx hmax
 
 /-- The "supremum is attained" clause: a convex function attains its supremum over a nonempty
@@ -451,7 +455,7 @@ theorem exists_mem_extremePoints_isMaxOn_of_isCompact (hf : ConvexFn f) (hp : Pr
   obtain ⟨x, hx, hxmax⟩ :=
       hcomp.exists_isMaxOn hne ((hf.continuousOn_relint_convexDom hp).mono hCri)
   obtain ⟨z, hz, hzx⟩ :=
-    exists_mem_extremePoints_eq_of_isMaxOn hf hcomp hconv hx fun w hw => isMaxOn_iff.1 hxmax w hw
+    exists_mem_extremePoints_eq_of_isMaxOn hf hcomp hconv hx hxmax
   exact ⟨z, hz, fun w hw => hzx ▸ isMaxOn_iff.1 hxmax w hw⟩
 
 end Extreme
@@ -466,7 +470,8 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 /-- At a point where `f` attains its supremum over `C`, every subgradient of `f` is normal to `C`.
 All that is needed is that `f x` be real. -/
 theorem mem_normalCone_of_mem_subdifferential_of_isMaxOn (hxb : f x ≠ ⊥) (hxt : f x ≠ ⊤)
-    (hmax : ∀ z ∈ C, f z ≤ f x) (hy : y ∈ subdifferential B f x) : y ∈ normalCone B C x := by
+    (hmax : IsMaxOn f C x) (hy : y ∈ subdifferential B f x) : y ∈ normalCone B C x := by
+  rw [isMaxOn_iff] at hmax
   intro z hz
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hxb (lt_top_iff_ne_top.2 hxt)
   have h2 : f x + ((B (z - x) y : ℝ) : EReal) ≤ f x := le_trans (hy z) (hmax z hz)
@@ -475,8 +480,9 @@ theorem mem_normalCone_of_mem_subdifferential_of_isMaxOn (hxb : f x ≠ ⊥) (hx
 
 /-- Non-vanishing clause: if `f` is not constant on `C`, no subgradient at a maximiser can be
 zero. -/
-theorem ne_zero_of_mem_subdifferential_of_isMaxOn (hmax : ∀ z ∈ C, f z ≤ f x) {z₀ : E}
+theorem ne_zero_of_mem_subdifferential_of_isMaxOn (hmax : IsMaxOn f C x) {z₀ : E}
     (hz₀ : z₀ ∈ C) (hne : f z₀ ≠ f x) (hy : y ∈ subdifferential B f x) : y ≠ 0 := by
+  rw [isMaxOn_iff] at hmax
   rintro rfl
   have hle : f x ≤ f z₀ := by simpa using hy z₀
   exact hne (le_antisymm (hmax z₀ hz₀) hle)

@@ -56,9 +56,8 @@ variable {𝕜 V W : Type*} [NontriviallyNormedField 𝕜]
 
 /-- A uniform bound on a ball around the origin bounds the operator norm. The factor `‖c‖` is
 unavoidable over a general nontrivially normed field, where the norm need not take the value `1`. -/
-private theorem opNorm_le_of_forall_norm_lt {c : 𝕜} (hc : 1 < ‖c‖) {f : V →L[𝕜] W} {r C : ℝ}
-    (hr : 0 < r) (hC : 0 ≤ C) (h : ∀ x : V, ‖x‖ < r → ‖f x‖ ≤ C) : ‖f‖ ≤ ‖c‖ / r * C := by
-  have hc0 : (0 : ℝ) < ‖c‖ := lt_trans one_pos hc
+theorem ContinuousLinearMap.opNorm_le_of_forall_norm_lt {c : 𝕜} (hc : 1 < ‖c‖) {f : V →L[𝕜] W}
+    {r C : ℝ} (hr : 0 < r) (hC : 0 ≤ C) (h : ∀ x : V, ‖x‖ < r → ‖f x‖ ≤ C) : ‖f‖ ≤ ‖c‖ / r * C := by
   refine ContinuousLinearMap.opNorm_le_of_shell hr (by positivity) hc fun x hx hlt => ?_
   refine (h x hlt).trans ?_
   calc C = ‖c‖ / r * C * (r / ‖c‖) := by field_simp
@@ -134,7 +133,6 @@ theorem tendsto_opNorm_comp_of_isCompactOperator [CompleteSpace V] {A : ℕ → 
     (hM : IsCompactOperator M) :
     Tendsto (fun n => ‖A n ∘L M‖) atTop (𝓝 0) := by
   obtain ⟨c, hc⟩ := NormedField.exists_one_lt_norm 𝕜
-  have hc0 : (0 : ℝ) < ‖c‖ := lt_trans one_pos hc
   have hMc : IsCompact (closure (M '' closedBall (0 : U) 1)) :=
     (isCompactOperator_iff_isCompact_closure_image_closedBall (M : U →ₗ[𝕜] V) one_pos).1 hM
   have hA0 : ∀ x, Tendsto (fun n => A n x) atTop (𝓝 (((0 : V →L[𝕜] W) : V → W) x)) := by
@@ -156,7 +154,8 @@ theorem tendsto_opNorm_comp_of_isCompactOperator [CompleteSpace V] {A : ℕ → 
     simp only [zero_apply, dist_zero_left] at hd
     rw [ContinuousLinearMap.comp_apply]
     exact hd.le
-  refine lt_of_le_of_lt (opNorm_le_of_forall_norm_lt hc one_pos (by positivity) hbound) ?_
+  refine lt_of_le_of_lt
+    (ContinuousLinearMap.opNorm_le_of_forall_norm_lt hc one_pos (by positivity) hbound) ?_
   have heq : ‖c‖ / 1 * (ε / (2 * ‖c‖)) = ε / 2 := by
     rw [div_one]
     field_simp
@@ -244,7 +243,7 @@ theorem exists_opNorm_le {ι W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜
   obtain ⟨r, hr, hrU⟩ := Metric.mem_nhds_iff.1 hU
   obtain ⟨M, hM⟩ := isBounded_iff_forall_norm_le.1 hcpt.isBounded
   refine ⟨‖c‖ / r * max M 0, fun i =>
-    opNorm_le_of_forall_norm_lt hc hr (le_max_right _ _) fun x hx => ?_⟩
+    ContinuousLinearMap.opNorm_le_of_forall_norm_lt hc hr (le_max_right _ _) fun x hx => ?_⟩
   exact (hM _ (subset_closure
     (mem_iUnion.2 ⟨i, ⟨x, hrU (mem_ball_zero_iff.2 hx), rfl⟩⟩))).trans (le_max_left _ _)
 
@@ -256,7 +255,6 @@ theorem tendsto_opNorm_sub_comp [CompleteSpace V] {K : ℕ → V →L[𝕜] V} {
     Tendsto (fun n => ‖(L - K n) ∘L K n‖) atTop (𝓝 0) := by
   obtain ⟨U, hU, hcpt⟩ := hK
   obtain ⟨c, hc⟩ := NormedField.exists_one_lt_norm 𝕜
-  have hc0 : (0 : ℝ) < ‖c‖ := lt_trans one_pos hc
   obtain ⟨r, hr, hrU⟩ := Metric.mem_nhds_iff.1 hU
   have hunif : TendstoUniformlyOn (fun n => (K n : V → V)) L atTop (closure (⋃ i, K i '' U)) :=
     tendstoUniformlyOn_of_tendsto_of_isCompact hL hcpt
@@ -273,7 +271,8 @@ theorem tendsto_opNorm_sub_comp [CompleteSpace V] {K : ℕ → V →L[𝕜] V} {
     have hd := hN n hn (K n x) hmem
     rw [dist_eq_norm] at hd
     simpa using hd.le
-  refine lt_of_le_of_lt (opNorm_le_of_forall_norm_lt hc hr (by positivity) hbound) ?_
+  refine lt_of_le_of_lt
+    (ContinuousLinearMap.opNorm_le_of_forall_norm_lt hc hr (by positivity) hbound) ?_
   have heq : ‖c‖ / r * (ε * r / (2 * ‖c‖)) = ε / 2 := by field_simp
   rw [heq]
   linarith

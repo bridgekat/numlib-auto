@@ -219,7 +219,6 @@ theorem trigInterpCLM_eq_sum_dirichletShiftCM (n : ℕ) (f : C(AddCircle (2 * π
         ∑ j : Fin (2 * n + 1),
           f (trigInterpNode (2 * π) n j) •
             dirichletShiftCM n ((j : ℕ) * (2 * π) / (2 * n + 1)) := by
-  have hN : (0 : ℝ) < 2 * (n : ℝ) + 1 := by positivity
   refine (eq_trigInterpCLM ?_ ?_).symm
   · exact Submodule.smul_mem _ _ (Submodule.sum_mem _ fun j _ =>
       Submodule.smul_mem _ _ (dirichletShiftCM_mem_trigPolyLE n _))
@@ -252,7 +251,6 @@ the other nodes, and the interpolation problem has only one such solution. -/
 theorem cardinalBasisCM_trigInterpNode (n : ℕ) (j : Fin (2 * n + 1)) :
     (isUnisolvent_trigPolyLE (2 * π) (injective_trigInterpNode (2 * π) n)).cardinalBasisCM j
       = (2 / (2 * (n : ℝ) + 1)) • dirichletShiftCM n ((j : ℕ) * (2 * π) / (2 * n + 1)) := by
-  have hN : (0 : ℝ) < 2 * (n : ℝ) + 1 := by positivity
   set h := isUnisolvent_trigPolyLE (2 * π) (injective_trigInterpNode (2 * π) n) with hh
   have hmem : (2 / (2 * (n : ℝ) + 1)) • dirichletShiftCM n ((j : ℕ) * (2 * π) / (2 * n + 1))
       ∈ trigPolyLE (2 * π) n :=
@@ -354,7 +352,6 @@ theorem norm_trigInterpCLM_le (n : ℕ) :
   have hMne : (M : ℝ) ≠ 0 := hM0.ne'
   have hlogM : 0 ≤ Real.log (M : ℝ) := by
     refine Real.log_nonneg ?_
-    have hnn : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
     rw [hMr]
     linarith
   rw [← hMr]
@@ -466,10 +463,9 @@ theorem norm_trigInterpCLM_le (n : ℕ) :
           = |Real.sin (π * ((c : ℝ) + δ))| := by
         have h := congrArg abs (hkernel ((c : ℝ) + δ))
         rwa [abs_mul, abs_mul, abs_two] at h
-      have hpos : 0 < |Real.sin (π * ((c : ℝ) + δ) / (M : ℝ))| := abs_pos.2 hsin
       rw [harg, ← hc, SineSum.term, eq_div_iff (by positivity)]
       field_simp
-      nlinarith [habs, hpos]
+      nlinarith [habs]
     rw [Finset.mul_sum]
     have hsum : ∑ j : Fin M, 2 / (M : ℝ) *
         |dirichletKernel n (t - ((j : ℕ) : ℝ) * (2 * π) / (M : ℝ))|

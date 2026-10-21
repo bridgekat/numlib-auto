@@ -234,3 +234,8 @@ id = "SobolevMultiIndex.integral_norm_gradFn_rpow_le"
 [[node]]
 id = "MeasureTheory.Lp.norm_rpow_eq_integral"
 
+[[node]]
+id = "sobolevSeminorm_congr_ae"
+
+[[node]]
+id = "ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport'"

@@ -91,11 +91,6 @@ meaningful when no eigenvalue of `A` is purely imaginary. -/
 noncomputable def matrixSign (A : Matrix n n ℂ) : Matrix n n ℂ :=
   pfc (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) A
 
-/-- A function that is locally constant off the imaginary axis is smooth there. -/
-private theorem contDiffAt_of_eventuallyEq_const {f : ℂ → ℂ} {μ c : ℂ} (h : f =ᶠ[𝓝 μ] fun _ => c)
-    (k : WithTop ℕ∞) : ContDiffAt ℂ k f μ :=
-  contDiffAt_const.congr_of_eventuallyEq h
-
 variable {A : Matrix n n ℂ}
 
 /-- **The spectral form of the sign** ([golub2013matrix] §9.4.1): with no purely imaginary
@@ -126,8 +121,8 @@ theorem matrixSign_sq (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) : matrixSign
     Complex.sign_re_eventuallyEq (hA μ (spectrum.mem_of_mem_roots_minpoly hμ))
   rw [sq, matrixSign]
   refine pfc_mul_pfc_eq_one (Algebra.IsIntegral.isIntegral _) (IsAlgClosed.splits _)
-    (fun μ hμ => contDiffAt_of_eventuallyEq_const (hev μ hμ) _)
-    (fun μ hμ => contDiffAt_of_eventuallyEq_const (hev μ hμ) _) fun μ hμ => ?_
+    (fun μ hμ => contDiffAt_const.congr_of_eventuallyEq (hev μ hμ))
+    (fun μ hμ => contDiffAt_const.congr_of_eventuallyEq (hev μ hμ)) fun μ hμ => ?_
   filter_upwards [hev μ hμ] with z hz
   simp only [Pi.mul_apply, hz]
   rcases lt_or_gt_of_ne (hA μ (spectrum.mem_of_mem_roots_minpoly hμ)) with h | h
@@ -162,7 +157,7 @@ theorem isUnit_add_matrixSign (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) : Is
     rw [show (fun z : ℂ => z + ((SignType.sign z.re : SignType) : ℂ)) =
         (fun z => z) + fun z => ((SignType.sign z.re : SignType) : ℂ) from rfl,
       pfc_add (f := fun z : ℂ => z) (fun μ _ => contDiffAt_id)
-        (fun μ hμ => contDiffAt_of_eventuallyEq_const (hev μ hμ) _),
+        (fun μ hμ => contDiffAt_const.congr_of_eventuallyEq (hev μ hμ)),
       pfc_id hI (IsAlgClosed.splits _), matrixSign]
   rw [h, ← spectrum.zero_notMem_iff ℂ, spectrum_pfc hI (IsAlgClosed.splits _)]
   rintro ⟨μ, hμ, h0⟩
@@ -387,9 +382,9 @@ theorem matrixSign_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spect
   rw [newtonSignIterate_eq_pfc hA, matrixSign, matrixSign,
     ← pfc_comp hI (IsAlgClosed.splits _) (fun μ hμ =>
       (signFun_spec k (hA μ (spectrum.mem_of_mem_roots_minpoly hμ))).1.of_le le_top) fun μ hμ =>
-      contDiffAt_of_eventuallyEq_const
+      contDiffAt_const.congr_of_eventuallyEq
         (Complex.sign_re_eventuallyEq
-          (signFun_re_ne_zero k (hA μ (spectrum.mem_of_mem_roots_minpoly hμ)))) _]
+          (signFun_re_ne_zero k (hA μ (spectrum.mem_of_mem_roots_minpoly hμ))))]
   refine pfc_congr_of_re_ne_zero hA fun z hz => ?_
   have := signFun_spec k hz
   rcases lt_or_gt_of_ne hz with h | h
@@ -534,7 +529,7 @@ theorem tendsto_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum
       fun μ hμ => contDiffAt_const.add (hpowsm _ μ hμ)
     have hsgn : ∀ μ ∈ (minpoly ℂ A).roots,
         ContDiffAt ℂ ⊤ (fun z => ((SignType.sign z.re : SignType) : ℂ)) μ := fun μ hμ =>
-      contDiffAt_of_eventuallyEq_const (Complex.sign_re_eventuallyEq (hsp μ hμ)) _
+      contDiffAt_const.congr_of_eventuallyEq (Complex.sign_re_eventuallyEq (hsp μ hμ))
     have hinv := pfc_inv hI hs (fun μ hμ => (hsm1 μ hμ).of_le le_top) hg
     rw [newtonSignIterate_eq_pfc hA, pfc_congr_of_re_ne_zero hA fun z hz => signFun_eq k hz]
     rw [show (fun z => ((SignType.sign z.re : SignType) : ℂ) * (1 + contraction z ^ 2 ^ k) *

@@ -713,7 +713,6 @@ theorem exists_hasWeakFDerivOn_indicator (u : SobolevEuclideanZero N 1 p Ω) :
       eLpNorm w p volume ≤ ∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω)
         (MultiIndexLE.single i)‖ := by
   classical
-  have hΩm := Ω.isOpen.measurableSet
   obtain ⟨w, hw, hwp, hwi, -⟩ := exists_hasWeakFDerivOn_fn (extendZeroL N p Ω u)
   simp only [Opens.coe_top, Measure.restrict_univ] at hwp hwi
   -- `w` vanishes almost everywhere off `Ω`
@@ -811,8 +810,6 @@ theorem exists_eLpNorm_fn_le_sum_of_measure_ne_top (hp' : p ≠ ⊤) (hN : 2 ≤
     refine ENNReal.ofReal_le_ofReal ?_
     rw [le_inv_comm₀ hP0 hcb0]
     linarith
-  have hqtop : (q : ℝ≥0∞) ≠ ⊤ := ENNReal.coe_ne_top
-  have hq'top : (q' : ℝ≥0∞) ≠ ⊤ := ENNReal.coe_ne_top
   -- the two powers of the measure of `Ω`
   obtain ⟨A, hA⟩ : ∃ A : ℝ≥0∞, A = volume (Ω : Set (EuclideanSpace ℝ (Fin N)))
     ^ (1 / p.toReal - 1 / (q' : ℝ≥0∞).toReal) := ⟨_, rfl⟩
@@ -930,18 +927,6 @@ theorem SobolevMultiIndex.mem_zero_of_fn_ae_eq_of_tsupport_subset (hp' : p ≠ �
     u ∈ SobolevMultiIndexZero F b k p Ω μ :=
   SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact hp' u hvc hvΩ
     (hu.mono fun x hx hxK ↦ by rw [hx]; exact image_eq_zero_of_notMem_tsupport hxK)
-
-omit [μ.IsAddHaarMeasure] [Fact (1 ≤ p)] in
-/-- A `C^k` function with compact support is the function of an element of `W^{k,p}(Ω)`: the
-`C^∞` case is `ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport`. -/
-theorem ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport' [μ.IsAddHaarMeasure] {v : E → F}
-    (hv : ContDiff ℝ k v) (hvc : HasCompactSupport v) :
-    ∃ u : SobolevMultiIndex F b k p Ω μ, SobolevMultiIndex.fn u =ᵐ[μ.restrict (Ω : Set E)] v := by
-  refine MemSobolevMultiIndex.exists_sobolevMultiIndex (MemSobolev.memSobolevMultiIndex ?_)
-  refine ⟨(hv.continuous.memLp_of_hasCompactSupport hvc).restrict _, fun n hn ↦ ⟨_,
-    ContDiffOn.hasWeakIteratedFDerivOn hv.contDiffOn (by exact_mod_cast hn), ?_⟩⟩
-  exact ((hv.continuous_iteratedFDeriv (m := n) (by exact_mod_cast hn)).memLp_of_hasCompactSupport
-    (hvc.iteratedFDeriv n)).restrict _
 
 /-- **Remark 18, and the book's definition of `W_0^{1,p}(Ω)` through `C_c^1(Ω)`**: a `C^k`
 function with compact support in `Ω` is the function of an element of `W_0^{k,p}(Ω)`,
@@ -1154,12 +1139,9 @@ theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_comp
     (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) : E → ℝ) =ᵐ[μ.restrict (Ω : Set E)]
       fun x ↦ deriv G (SobolevMultiIndex.fn u x)
         * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x := by
-  have h1 := (SobolevMultiIndex.hasWeakIteratedLineDerivOn v (MultiIndexLE.single i)).of_perm
-    (multiIndexTuple_single_perm (b : ι → E) i)
   have h2 := ((SobolevMultiIndex.hasWeakIteratedLineDerivOn u (MultiIndexLE.single i)).of_perm
     (multiIndexTuple_single_perm (b : ι → E) i)).contDiff_comp' hG hM
-  exact (ae_restrict_iff' Ω.isOpen.measurableSet).2
-    ((h1.congr_ae hv (Filter.EventuallyEq.refl _ _)).ae_eq h2)
+  exact SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn hv i h2
 
 /-- **The chain rule preserves `W_0^{1,p}(Ω)`**, `1 ≤ p < ∞`: for `G ∈ C^1(ℝ)` with `G 0 = 0`
 and `|G'| ≤ M`, and `u ∈ W_0^{1,p}(Ω)`, every element `v` of `W^{1,p}(Ω)` whose function is
@@ -1182,7 +1164,6 @@ theorem contDiff_comp_mem (hp' : p ≠ ⊤) {u : SobolevMultiIndex ℝ b 1 p Ω 
     v ∈ SobolevMultiIndexZero ℝ b 1 p Ω μ := by
   have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
-  have hΩm := Ω.isOpen.measurableSet
   have hG' : Continuous (deriv G) := hG.continuous_deriv le_rfl
   obtain ⟨w, φ, hφ, hw⟩ := exists_seq_testFunction_tendsto hu
   -- the test functions converge to `u` in `L^p(Ω)`, and almost everywhere along a subsequence
@@ -1327,12 +1308,9 @@ theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart
     (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) : E → ℝ) =ᵐ[μ.restrict (Ω : Set E)]
       {x | 0 < SobolevMultiIndex.fn u x}.indicator
         (SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)) := by
-  have h1 := (SobolevMultiIndex.hasWeakIteratedLineDerivOn v (MultiIndexLE.single i)).of_perm
-    (multiIndexTuple_single_perm (b : ι → E) i)
   have h2 := ((SobolevMultiIndex.hasWeakIteratedLineDerivOn u (MultiIndexLE.single i)).of_perm
     (multiIndexTuple_single_perm (b : ι → E) i)).posPart
-  exact (ae_restrict_iff' Ω.isOpen.measurableSet).2
-    ((h1.congr_ae hv (Filter.EventuallyEq.refl _ _)).ae_eq h2)
+  exact SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn hv i h2
 
 /-- **The positive part preserves `W_0^{1,p}(Ω)`**, `1 ≤ p < ∞`: for `u ∈ W_0^{1,p}(Ω)`, every
 element `v` of `W^{1,p}(Ω)` whose function is `u⁺ = max u 0` (one exists by
@@ -1840,28 +1818,28 @@ namespace SobolevMultiIndexZero
 open SobolevMultiIndex
 
 /-- **Transfer of membership in `W_0^{1,p}` from an open subset**: if `Ω' ⊆ Ω`, the restriction
-of `u ∈ W^{1,p}(Ω)` to `Ω'` lies in `W_0^{1,p}(Ω')`, and `u` vanishes almost everywhere on `Ω`
-outside a closed set `K` with `K ∩ Ω ⊆ Ω'`, then `u ∈ W_0^{1,p}(Ω)`. Test functions on `Ω'`
-converging to `u|_{Ω'}` are test functions on `Ω`, and they converge to `u` in `W^{1,p}(Ω)`
+of `u ∈ W^{k,p}(Ω)` to `Ω'` lies in `W_0^{k,p}(Ω')`, and `u` vanishes almost everywhere on `Ω`
+outside a closed set `K` with `K ∩ Ω ⊆ Ω'`, then `u ∈ W_0^{k,p}(Ω)`. Test functions on `Ω'`
+converging to `u|_{Ω'}` are test functions on `Ω`, and they converge to `u` in `W^{k,p}(Ω)`
 because every component of the difference vanishes almost everywhere on `Ω ∖ Ω'` — the weak
 derivatives of `u` vanish there by uniqueness of the weak derivative on the open set `Ω ∖ K`
 (`SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl`). This is the step "extend by
 zero to `Ω`" of the chart reductions of [brezis2011functional] Theorem 9.17 and Proposition
 9.18. -/
-theorem mem_of_mem_restrict (h : Ω' ≤ Ω) {u : SobolevMultiIndex F b 1 p Ω μ}
-    (hu : restrictL F b 1 p μ h u ∈ SobolevMultiIndexZero F b 1 p Ω' μ) {K : Set E}
+theorem mem_of_mem_restrict {k : ℕ} (h : Ω' ≤ Ω) {u : SobolevMultiIndex F b k p Ω μ}
+    (hu : restrictL F b k p μ h u ∈ SobolevMultiIndexZero F b k p Ω' μ) {K : Set E}
     (hK : IsClosed K) (hKΩ : K ∩ Ω ⊆ Ω')
     (hu0 : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∉ K → fn u x = 0) :
-    u ∈ SobolevMultiIndexZero F b 1 p Ω μ := by
+    u ∈ SobolevMultiIndexZero F b k p Ω μ := by
   obtain ⟨w, φ, hφ, hw⟩ := exists_seq_testFunction_tendsto hu
   -- the test functions on `Ω'`, read as test functions on `Ω`
   obtain ⟨ψ, hψ⟩ : ∃ ψ : ℕ → 𝓓(Ω, F), ∀ n, (ψ n : E → F) = φ n :=
     ⟨fun n ↦ ⟨φ n, (φ n).contDiff, (φ n).hasCompactSupport, (φ n).tsupport_subset.trans h⟩,
       fun _ ↦ rfl⟩
-  choose W hWT hW using fun n ↦ (ψ n).exists_mem_sobolevMultiIndex_testFunctions (b := b) (k := 1)
+  choose W hWT hW using fun n ↦ (ψ n).exists_mem_sobolevMultiIndex_testFunctions (b := b) (k := k)
     (p := p) (μ := μ)
   -- `u` and its derivatives vanish almost everywhere on `Ω ∖ Ω'`
-  have hu0' : ∀ α : MultiIndexLE ι 1, ∀ᵐ x ∂μ.restrict (Ω : Set E),
+  have hu0' : ∀ α : MultiIndexLE ι k, ∀ᵐ x ∂μ.restrict (Ω : Set E),
       x ∉ (Ω' : Set E) → weakDeriv u α x = 0 := fun α ↦ by
     filter_upwards [weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl u hK hu0 α, ae_restrict_mem
       Ω.isOpen.measurableSet] with x hx hxΩ hxΩ'
@@ -1870,25 +1848,19 @@ theorem mem_of_mem_restrict (h : Ω' ≤ Ω) {u : SobolevMultiIndex F b 1 p Ω �
     (Eventually.of_forall fun n ↦ testFunctions_le (hWT n))
   refine tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub fun α ↦ ?_
   -- the classical function `c n` carrying the component `α` of `W n` and of `w n`
-  have hc : ∀ n, ∃ c : E → F, (∀ x ∉ (Ω' : Set E), c x = 0) ∧
-      (weakDeriv (W n) α : E → F) =ᵐ[μ.restrict (Ω : Set E)] c ∧
-      (weakDeriv (w n) α : E → F) =ᵐ[μ.restrict (Ω' : Set E)] c := by
-    intro n
-    rcases MultiIndexLE.eq_zero_or_exists_eq_single α with rfl | ⟨i, rfl⟩
-    · refine ⟨φ n, fun x hx ↦ (φ n).eq_zero_of_notMem hx, ?_, hφ n⟩
-      rw [weakDeriv_zero, ← hψ n]
-      exact hW n
-    · refine ⟨fun x ↦ fderiv ℝ (φ n) x (b i), fun x hx ↦ ?_, ?_, ?_⟩
-      · dsimp only
-        rw [← (φ n).fderivApply_apply (b i) x]
-        exact ((φ n).fderivApply (b i)).eq_zero_of_notMem hx
-      · have := weakDeriv_single_ae_eq_testFunction (hW n) i
-        rwa [hψ n] at this
-      · exact weakDeriv_single_ae_eq_testFunction (hφ n) i
-  choose c hc0 hcW hcw using hc
+  set c : ℕ → E → F := fun n x ↦
+    iteratedFDeriv ℝ (∑ i, α.1 i) (φ n) x (multiIndexTuple (b : ι → E) α.1) with hcdef
+  have hc0 : ∀ n, ∀ x ∉ (Ω' : Set E), c n x = 0 := fun n x hx ↦
+    ((φ n).iteratedFDerivApply (∑ i, α.1 i) (multiIndexTuple (b : ι → E) α.1)).eq_zero_of_notMem
+      hx
+  have hcW : ∀ n, (weakDeriv (W n) α : E → F) =ᵐ[μ.restrict (Ω : Set E)] c n := fun n ↦ by
+    have := weakDeriv_ae_eq_iteratedFDeriv_of_fn_ae_eq (W n) (ψ n).contDiff (hW n) α
+    rwa [hψ n] at this
+  have hcw : ∀ n, (weakDeriv (w n) α : E → F) =ᵐ[μ.restrict (Ω' : Set E)] c n := fun n ↦
+    weakDeriv_ae_eq_iteratedFDeriv_of_fn_ae_eq (w n) (φ n).contDiff (hφ n) α
   have key : ∀ n, eLpNorm ((weakDeriv (W n) α : E → F) - (weakDeriv u α : E → F)) p
         (μ.restrict (Ω : Set E))
-      = eLpNorm ((weakDeriv (w n) α : E → F) - (weakDeriv (restrictL F b 1 p μ h u) α : E → F)) p
+      = eLpNorm ((weakDeriv (w n) α : E → F) - (weakDeriv (restrictL F b k p μ h u) α : E → F)) p
         (μ.restrict (Ω' : Set E)) := by
     intro n
     rw [eLpNorm_congr_ae ((hcW n).sub (EventuallyEq.refl _ _)),
@@ -2154,7 +2126,6 @@ theorem exists_oneSided_mollifiers :
       (∀ n, Integrable (ρ n) volume) ∧ (∀ n, ∫ x, ρ n x = 1) ∧
       (∀ n, tsupport (ρ n) ⊆ closedBall 0 (1 / ((n : ℝ) + 1))) ∧
       (∀ n x, x ∈ tsupport (ρ n) → 1 / (2 * ((n : ℝ) + 1)) ≤ x (Fin.last d)) := by
-  have hpos : ∀ n : ℕ, (0 : ℝ) < (n : ℝ) + 1 := fun n ↦ by positivity
   obtain ⟨c, hc⟩ : ∃ c : ℕ → EuclideanSpace ℝ (Fin (d + 1)),
       c = fun n : ℕ ↦ (3 / (4 * ((n : ℝ) + 1))) • EuclideanSpace.single (Fin.last d) (1 : ℝ) :=
     ⟨_, rfl⟩
@@ -2169,7 +2140,7 @@ theorem exists_oneSided_mollifiers :
       (φ n).rOut = 1 / (4 * ((n : ℝ) + 1)) :=
     ⟨fun n ↦ ⟨1 / (8 * ((n : ℝ) + 1)), 1 / (4 * ((n : ℝ) + 1)), by positivity, by
       rw [div_lt_div_iff_of_pos_left one_pos (by positivity) (by positivity)]
-      linarith [hpos n]⟩, fun n ↦ rfl⟩
+      linarith⟩, fun n ↦ rfl⟩
   have htsupp : ∀ n, tsupport ((φ n).normed volume) = closedBall (c n) (1 / (4 * ((n : ℝ) + 1))) :=
     fun n ↦ by rw [(φ n).tsupport_normed_eq, hφ n]
   refine ⟨fun n ↦ (φ n).normed volume, fun n ↦ (φ n).contDiff_normed,
@@ -3446,49 +3417,6 @@ theorem toDualL2_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace 
   rw [toDualL2_apply_inner, L2.inner_eq_integral_mul]
   rfl
 
-/-- **`H^1_0(Ω) ⊂ L²(Ω)` has dense range**: its range contains the test functions, which are
-dense in `L²(Ω)` (`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). -/
-theorem denseRange_fnL :
-    DenseRange (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
-      volume) := by
-  refine (Lp.dense_contDiff_tsupport_subset (F := ℝ) (μ := volume) (p := 2) Ω.isOpen
-    ENNReal.ofNat_ne_top).mono ?_
-  rintro f ⟨g, hfg, hgc, hgs, hgΩ⟩
-  obtain ⟨φ, hφ⟩ : ∃ φ : 𝓓(Ω, ℝ), (φ : EuclideanSpace ℝ (Fin N) → ℝ) = g :=
-    ⟨⟨g, hgs, hgc, hgΩ⟩, rfl⟩
-  obtain ⟨u, hu, hφu⟩ := φ.exists_mem_sobolevMultiIndex_testFunctions
-    (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (k := 1) (p := 2) (μ := volume)
-  refine ⟨⟨u, SobolevMultiIndexZero.testFunctions_le hu⟩, Lp.ext ?_⟩
-  rw [SobolevMultiIndexZero.fnL_apply]
-  refine hφu.trans ?_
-  rw [hφ]
-  exact hfg.symm
-
-/-- **`L²(Ω) ⊂ H^{-1}(Ω)` is injective**: a function of `L²(Ω)` whose integral against every
-test function vanishes is zero (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
-theorem toDualL2_injective : Function.Injective (toDualL2 N Ω) := by
-  refine (injective_iff_map_eq_zero _).2 fun f hf ↦ ?_
-  have hΩm := Ω.isOpen.measurableSet
-  have hloc : LocallyIntegrableOn (⇑f) Ω (volume : Measure (EuclideanSpace ℝ (Fin N))) :=
-    (Lp.memLp f).locallyIntegrableOn one_le_two
-  have key := Ω.isOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero (μ := volume) hloc
-    fun g hgs hgc hgΩ ↦ ?_
-  · refine Lp.ext ?_
-    filter_upwards [(ae_restrict_iff' hΩm).2 key, Lp.coeFn_zero ℝ 2
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))] with x hx hx0
-    rw [hx, hx0]
-    rfl
-  · obtain ⟨φ, hφ⟩ : ∃ φ : 𝓓(Ω, ℝ), (φ : EuclideanSpace ℝ (Fin N) → ℝ) = g :=
-      ⟨⟨g, hgs, hgc, hgΩ⟩, rfl⟩
-    obtain ⟨u, hu, hφu⟩ := φ.exists_mem_sobolevMultiIndex_testFunctions
-      (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (k := 1) (p := 2) (μ := volume)
-    have h1 := DFunLike.congr_fun hf ⟨u, SobolevMultiIndexZero.testFunctions_le hu⟩
-    rw [toDualL2_apply, zero_apply] at h1
-    rw [← setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
-      rw [image_eq_zero_of_notMem_tsupport fun h ↦ hx (hgΩ h), zero_smul], ← h1, ← hφ]
-    refine integral_congr_ae (hφu.mono fun x hx ↦ ?_)
-    simp only [smul_eq_mul, mul_comm, hx]
-
 /-- **A bounded linear map into the dual of a reflexive space whose range separates the points
 has dense range**: a functional on the dual vanishing on the range is, by reflexivity, evaluation
 at some `v`, which the range separates from `0` only if `v = 0`; a closed proper subspace would
@@ -3516,30 +3444,6 @@ theorem _root_.denseRange_of_forall_apply_eq_zero {X L : Type*} [NormedAddCommGr
   have hrange : Set.range j = ((LinearMap.range (j : L →ₗ[ℝ] StrongDual ℝ X)) : Set _) := by
     rw [LinearMap.coe_range, ContinuousLinearMap.coe_coe]
   rw [DenseRange, hrange, Submodule.dense_iff_topologicalClosure_eq_top, ← hM, hMtop]
-
-/-- **`L²(Ω) ⊂ H^{-1}(Ω)` has dense range**: `H^1_0(Ω)` is a Hilbert space, hence reflexive,
-and the range separates the points, since `∫_Ω f v = 0` for all `f ∈ L²(Ω)` gives, at `f = v`,
-`‖v‖_2 = 0` (`denseRange_of_forall_apply_eq_zero`). -/
-theorem denseRange_toDualL2 : DenseRange (toDualL2 N Ω) :=
-  denseRange_of_forall_apply_eq_zero _ fun v hv ↦ by
-    have h := hv (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
-      volume v)
-    rw [toDualL2_apply_inner, real_inner_self_eq_norm_sq] at h
-    exact SobolevMultiIndexZero.fnL_injective
-      ((norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 h)).trans (map_zero _).symm)
-
-/-- **The Gelfand triple `H^1_0(Ω) ⊂ L²(Ω) ⊂ H^{-1}(Ω)`** ([brezis2011functional] §9.4, "The Dual
-Space of `W_0^{1,p}(Ω)`", Notation): the inclusion `H^1_0(Ω) → L²(Ω)`
-(`SobolevMultiIndexZero.fnL`) and the inclusion `L²(Ω) → H^{-1}(Ω)`
-(`SobolevEuclideanZero.toDualL2`, `f ↦ (v ↦ ∫_Ω f v)`) are both injective with dense range —
-"these injections are continuous and dense". -/
-theorem gelfandTriple :
-    Function.Injective (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
-        1 2 Ω volume) ∧
-      DenseRange (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
-        volume) ∧
-      Function.Injective (toDualL2 N Ω) ∧ DenseRange (toDualL2 N Ω) :=
-  ⟨SobolevMultiIndexZero.fnL_injective, denseRange_fnL, toDualL2_injective, denseRange_toDualL2⟩
 
 /-! #### The triple `W_0^{1,p}(Ω) ⊂ L²(Ω) ⊂ W^{-1,p'}(Ω)` along a bounded inclusion into `L²` -/
 
@@ -3571,14 +3475,35 @@ theorem toDualL2_eq_toDualOfL2 :
       (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume) :=
   rfl
 
+/-- **`ι` sends each element of `W_0^{1,p}(Ω)` to its function**: `ι v = v` almost everywhere on
+`Ω` for every `v`. This is what makes a bounded map `ι : W_0^{1,p}(Ω) → L²(Ω)` the inclusion of
+the Gelfand triple; `SobolevMultiIndexZero.fnL` is one at `p = 2`
+(`SobolevEuclideanZero.isFnInclusion_fnL`). -/
+def IsFnInclusion (ι : SobolevEuclideanZero N 1 p Ω →L[ℝ]
+      Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) : Prop :=
+  ∀ v : SobolevEuclideanZero N 1 p Ω, (ι v : EuclideanSpace ℝ (Fin N) → ℝ)
+    =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+      SobolevMultiIndex.fn (v : SobolevEuclidean N 1 p Ω)
+
 variable {ι : SobolevEuclideanZero N 1 p Ω →L[ℝ]
   Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
+/-- `IsFnInclusion` unfolded. -/
+theorem isFnInclusion_iff : IsFnInclusion ι ↔ ∀ v : SobolevEuclideanZero N 1 p Ω,
+    (ι v : EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+      SobolevMultiIndex.fn (v : SobolevEuclidean N 1 p Ω) :=
+  Iff.rfl
+
+/-- The inclusion `H^1_0(Ω) ⊂ L²(Ω)` (`SobolevMultiIndexZero.fnL`) sends each element to its
+function. -/
+theorem isFnInclusion_fnL :
+    IsFnInclusion (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
+      volume) :=
+  fun _ ↦ Filter.EventuallyEq.rfl
+
 /-- `toDualOfL2 ι f v = ∫_Ω f v` when `ι v` is the function of `v`. -/
 theorem toDualOfL2_apply
-    (hι : ∀ v : SobolevEuclideanZero N 1 p Ω, (ι v : EuclideanSpace ℝ (Fin N) → ℝ)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-        SobolevMultiIndex.fn (v : SobolevEuclidean N 1 p Ω))
+    (hι : IsFnInclusion ι)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclideanZero N 1 p Ω) :
     toDualOfL2 ι f v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
@@ -3589,9 +3514,7 @@ theorem toDualOfL2_apply
 /-- **A bounded map `W_0^{1,p}(Ω) → L²(Ω)` sending each element to its function is injective**:
 the function determines the element (`SobolevMultiIndexZero.fnL_injective`). -/
 theorem injective_of_forall_ae_eq
-    (hι : ∀ v : SobolevEuclideanZero N 1 p Ω, (ι v : EuclideanSpace ℝ (Fin N) → ℝ)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-        SobolevMultiIndex.fn (v : SobolevEuclidean N 1 p Ω)) :
+    (hι : IsFnInclusion ι) :
     Function.Injective ι := fun u v huv ↦ by
   refine SobolevMultiIndexZero.fnL_injective (Lp.ext ?_)
   rw [SobolevMultiIndexZero.fnL_apply, SobolevMultiIndexZero.fnL_apply]
@@ -3601,9 +3524,7 @@ theorem injective_of_forall_ae_eq
 range**: its range contains the test functions, which are dense in `L²(Ω)`
 (`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). -/
 theorem denseRange_of_forall_ae_eq
-    (hι : ∀ v : SobolevEuclideanZero N 1 p Ω, (ι v : EuclideanSpace ℝ (Fin N) → ℝ)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-        SobolevMultiIndex.fn (v : SobolevEuclidean N 1 p Ω)) :
+    (hι : IsFnInclusion ι) :
     DenseRange ι := by
   refine (Lp.dense_contDiff_tsupport_subset (F := ℝ) (μ := volume) (p := 2) Ω.isOpen
     ENNReal.ofNat_ne_top).mono ?_
@@ -3621,9 +3542,7 @@ theorem denseRange_of_forall_ae_eq
 of `W_0^{1,p}(Ω)` to its function: a function of `L²(Ω)` whose integral against every test
 function vanishes is zero (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
 theorem toDualOfL2_injective
-    (hι : ∀ v : SobolevEuclideanZero N 1 p Ω, (ι v : EuclideanSpace ℝ (Fin N) → ℝ)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-        SobolevMultiIndex.fn (v : SobolevEuclidean N 1 p Ω)) :
+    (hι : IsFnInclusion ι) :
     Function.Injective (toDualOfL2 ι) := by
   refine (injective_iff_map_eq_zero _).2 fun f hf ↦ ?_
   have hΩm := Ω.isOpen.measurableSet
@@ -3652,9 +3571,7 @@ along any bounded inclusion `ι` sending each element of `W_0^{1,p}(Ω)` to its 
 range separates the points, since `⟪f, ι v⟫ = 0` for all `f ∈ L²(Ω)` gives, at `f = ι v`,
 `ι v = 0`, hence `v = 0` (`denseRange_of_forall_apply_eq_zero`). -/
 theorem denseRange_toDualOfL2 [NormedSpace.IsReflexive ℝ (SobolevEuclideanZero N 1 p Ω)]
-    (hι : ∀ v : SobolevEuclideanZero N 1 p Ω, (ι v : EuclideanSpace ℝ (Fin N) → ℝ)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-        SobolevMultiIndex.fn (v : SobolevEuclidean N 1 p Ω)) :
+    (hι : IsFnInclusion ι) :
     DenseRange (toDualOfL2 ι) :=
   denseRange_of_forall_apply_eq_zero _ fun v hv ↦ by
     have h := hv (ι v)
@@ -3675,15 +3592,44 @@ a bounded `Ω` for `p > 2`); the density of the second inclusion uses the reflex
 contains a complemented copy of `ℓ¹`, so its dual contains `ℓ^∞` and is not separable, while the
 range of a bounded map from the separable `L²(Ω)` is. -/
 theorem gelfandTriple_of_forall_ae_eq (hp : 1 < p) (hp' : p ≠ ⊤)
-    (hι : ∀ v : SobolevEuclideanZero N 1 p Ω, (ι v : EuclideanSpace ℝ (Fin N) → ℝ)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-        SobolevMultiIndex.fn (v : SobolevEuclidean N 1 p Ω)) :
+    (hι : IsFnInclusion ι) :
     Function.Injective ι ∧ DenseRange ι ∧
       Function.Injective (toDualOfL2 ι) ∧ DenseRange (toDualOfL2 ι) := by
   have : Fact (1 < p) := ⟨hp⟩
   have : Fact (p ≠ (⊤ : ℝ≥0∞)) := ⟨hp'⟩
   exact ⟨injective_of_forall_ae_eq hι, denseRange_of_forall_ae_eq hι, toDualOfL2_injective hι,
     denseRange_toDualOfL2 hι⟩
+
+/-- **`H^1_0(Ω) ⊂ L²(Ω)` has dense range**: its range contains the test functions, which are
+dense in `L²(Ω)` (`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). -/
+theorem denseRange_fnL :
+    DenseRange (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
+      volume) :=
+  denseRange_of_forall_ae_eq isFnInclusion_fnL
+
+/-- **`L²(Ω) ⊂ H^{-1}(Ω)` is injective**: a function of `L²(Ω)` whose integral against every
+test function vanishes is zero (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
+theorem toDualL2_injective : Function.Injective (toDualL2 N Ω) :=
+  toDualOfL2_injective isFnInclusion_fnL
+
+/-- **`L²(Ω) ⊂ H^{-1}(Ω)` has dense range**: `H^1_0(Ω)` is a Hilbert space, hence reflexive,
+and the range separates the points, since `∫_Ω f v = 0` for all `f ∈ L²(Ω)` gives, at `f = v`,
+`‖v‖_2 = 0` (`denseRange_of_forall_apply_eq_zero`). -/
+theorem denseRange_toDualL2 : DenseRange (toDualL2 N Ω) :=
+  denseRange_toDualOfL2 isFnInclusion_fnL
+
+/-- **The Gelfand triple `H^1_0(Ω) ⊂ L²(Ω) ⊂ H^{-1}(Ω)`** ([brezis2011functional] §9.4, "The Dual
+Space of `W_0^{1,p}(Ω)`", Notation): the inclusion `H^1_0(Ω) → L²(Ω)`
+(`SobolevMultiIndexZero.fnL`) and the inclusion `L²(Ω) → H^{-1}(Ω)`
+(`SobolevEuclideanZero.toDualL2`, `f ↦ (v ↦ ∫_Ω f v)`) are both injective with dense range —
+"these injections are continuous and dense". -/
+theorem gelfandTriple :
+    Function.Injective (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
+        1 2 Ω volume) ∧
+      DenseRange (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
+        volume) ∧
+      Function.Injective (toDualL2 N Ω) ∧ DenseRange (toDualL2 N Ω) :=
+  ⟨SobolevMultiIndexZero.fnL_injective, denseRange_fnL, toDualL2_injective, denseRange_toDualL2⟩
 
 end SobolevEuclideanZero
 
@@ -3928,7 +3874,6 @@ theorem lintegral_enorm_fderiv_pointCutoff_pow_le [Nontrivial E] (hη : ContDiff
     _ = ∑ k ∈ Finset.range (n + 1),
           ENNReal.ofReal ((((n : ℝ) + 1)⁻¹ * (2 * M)) ^ d) * μ (ball (0 : E) 1) := by
         refine Finset.sum_congr rfl fun k _ ↦ ?_
-        have h3 : (0 : ℝ) < 3 ^ k := by positivity
         rw [Measure.addHaar_ball μ _ (by positivity), ← mul_assoc, ← ENNReal.ofReal_mul
           (by positivity), ← mul_pow]
         congr 3
@@ -3946,13 +3891,11 @@ theorem tendsto_lintegral_enorm_fderiv_pointCutoff_pow (hη : ContDiff ℝ ∞ �
       (𝓝 0) := by
   have : Nontrivial E := Module.nontrivial_of_finrank_pos (R := ℝ) (M := E) (by omega)
   set d := finrank ℝ E with hddef
-  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
   -- the real bound `(n + 1) ((2M)/(n+1))^d = ((n+1)⁻¹)^(d-1) (2M)^d → 0`
   have hreal : Tendsto (fun n : ℕ ↦ ((n : ℝ) + 1) * (((n : ℝ) + 1)⁻¹ * (2 * M)) ^ d) atTop
       (𝓝 0) := by
     have he : ∀ n : ℕ, ((n : ℝ) + 1) * (((n : ℝ) + 1)⁻¹ * (2 * M)) ^ d
         = (1 / ((n : ℝ) + 1)) ^ (d - 1) * (2 * M) ^ d := fun n ↦ by
-      have hpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
       obtain ⟨e, he⟩ : ∃ e, d = e + 1 := ⟨d - 1, by omega⟩
       rw [he, Nat.add_sub_cancel, mul_pow, pow_succ, one_div]
       field_simp

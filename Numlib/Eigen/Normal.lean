@@ -574,11 +574,6 @@ private theorem toEuclideanLin_mul' (X Y : Matrix n n 𝕜) :
     toEuclideanLin (X * Y) = toEuclideanLin X * toEuclideanLin Y :=
   map_mul (toLpLinAlgEquiv (R := 𝕜) (n := n) 2) X Y
 
-private theorem commute_toEuclideanLin {A B : Matrix n n 𝕜} (hAB : Commute A B) :
-    Commute (toEuclideanLin A) (toEuclideanLin B) := by
-  change toEuclideanLin A * toEuclideanLin B = toEuclideanLin B * toEuclideanLin A
-  rw [← toEuclideanLin_mul', ← toEuclideanLin_mul', hAB.eq]
-
 private theorem star_toEuclideanLin (A : Matrix n n 𝕜) :
     star (toEuclideanLin A) = toEuclideanLin (star A) := by
   rw [LinearMap.star_eq_adjoint, Matrix.star_eq_conjTranspose,
@@ -723,7 +718,7 @@ theorem IsStarNormal.exists_unitary_conj_diagonal_of_commute [IsAlgClosed 𝕜] 
   obtain ⟨b, d, e, hd, he⟩ :=
     LinearMap.IsStarNormal.exists_orthonormalBasis_eigenvector_of_commute
       (isStarNormal_toEuclideanLin_iff.2 hA) (isStarNormal_toEuclideanLin_iff.2 hB)
-      (commute_toEuclideanLin hAB) finrank_euclideanSpace
+      (hAB.map (toLpLinAlgEquiv (R := 𝕜) (n := n) 2)) finrank_euclideanSpace
   exact exists_unitary_conj_diagonal_of_orthonormalBasis b hd he
 
 /-- **Commuting Hermitian matrices are simultaneously unitarily diagonalizable**, over any `RCLike`
@@ -736,7 +731,8 @@ theorem IsHermitian.exists_unitary_conj_diagonal_of_commute {A B : Matrix n n �
       star U * A * U = diagonal d ∧ star U * B * U = diagonal e := by
   obtain ⟨b, d, e, hd, he⟩ :=
     (isSymmetric_toEuclideanLin_iff.mpr hA).exists_orthonormalBasis_eigenvector_of_commute
-      (isSymmetric_toEuclideanLin_iff.mpr hB) (commute_toEuclideanLin hAB) finrank_euclideanSpace
+      (isSymmetric_toEuclideanLin_iff.mpr hB) (hAB.map (toLpLinAlgEquiv (R := 𝕜) (n := n) 2))
+      finrank_euclideanSpace
   exact exists_unitary_conj_diagonal_of_orthonormalBasis b hd he
 
 /-- A unitary diagonalization `Uᴴ A U = diagonal d` written as a sum of rank-one projectors onto
@@ -745,7 +741,6 @@ Property 1.5). -/
 theorem eq_sum_smul_vecMulVec_of_conj_eq_diagonal {U A : Matrix n n 𝕜}
     (hU : U ∈ unitaryGroup n 𝕜) {d : n → 𝕜} (hd : star U * A * U = diagonal d) :
     A = ∑ i, d i • vecMulVec (Uᵀ i) (star (Uᵀ i)) := by
-  have hstar : star U * U = 1 := (Unitary.mem_iff.1 hU).1
   have hstar' : U * star U = 1 := (Unitary.mem_iff.1 hU).2
   have hA : A = U * diagonal d * star U := by
     rw [← hd]

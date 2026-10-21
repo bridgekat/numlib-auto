@@ -540,7 +540,7 @@ theorem corollary_33_3_3 (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClose
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
     ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedConvexBifun F ∧
       bifunBracket F = lowerSimpleExt C D K ∧ adjointBracket F = upperSimpleExt C D K :=
-  exists_unique_bifun_of_simpleExt (pairing m) (pairing n) hC hCcl hDcl hCne hconv hconc hDne
+  exists_unique_bifun_of_simpleExt (pairing m) (pairing n) hC hCcl hDcl hCne ⟨hconc, hconv⟩ hDne
     hcontD hcontC
 
 /-- **Corollary 33.3.3**: that bifunction is `K̲ (u, ·)*`, and its bracket is `K̲` again. -/
@@ -549,7 +549,7 @@ theorem corollary_33_3_3_bracket (hC : Convex ℝ C) (hDcl : IsClosed D)
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D) :
     bifunBracket (bifunOfSaddleFn (lowerSimpleExt C D K)) = lowerSimpleExt C D K :=
-  (theorem_33_1_bracket_eq (concaveConvexFn_lowerSimpleExt hC hconv hconc)).trans
+  (theorem_33_1_bracket_eq (concaveConvexFn_lowerSimpleExt hC ⟨hconc, hconv⟩)).trans
     (partialCl₂_lowerSimpleExt hDcl hcontD)
 
 /-- **Corollary 33.3.3**: and its adjoint bracket is `K̄`. -/
@@ -560,7 +560,7 @@ theorem corollary_33_3_3_adjointBracket (hC : Convex ℝ C) (hCcl : IsClosed C) 
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
     adjointBracket (bifunOfSaddleFn (lowerSimpleExt C D K)) = upperSimpleExt C D K := by
   rw [theorem_33_2_first
-      (theorem_33_1_convexBifun (concaveConvexFn_lowerSimpleExt hC hconv hconc)),
+      (theorem_33_1_convexBifun (concaveConvexFn_lowerSimpleExt hC ⟨hconc, hconv⟩)),
     corollary_33_3_3_bracket hC hDcl hconv hconc hcontD]
   exact partialCl₁_lowerSimpleExt hCcl hCne hcontC
 

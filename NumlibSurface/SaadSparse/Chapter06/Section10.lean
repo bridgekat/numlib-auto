@@ -81,7 +81,7 @@ theorem arnoldiCoeff_eq_zero_of_adjoint_mem {s : ℕ}
     (h : i + s ≤ j) : arnoldiCoeff A v i j = 0 := by
   rw [arnoldiCoeff_eq A v hv]
   refine Arnoldi.coeff_eq_zero_of_adjoint_mem (op A) v
-    (fun x y => (LinearMap.adjoint_inner_right (op A) x y).symm) (fun w => ?_) h
+    (LinearMap.isAdjointPair_inner (op A)) (fun w => ?_) h
   rw [← krylov_eq]
   exact hs w
 

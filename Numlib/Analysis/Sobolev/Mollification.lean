@@ -200,6 +200,17 @@ theorem IsCompact.exists_contDiff_eqOn_one {K V : Set E} (hK : IsCompact K) (hV 
     closure_minimal (fun x hx hxW ↦ hx (hWf hxW)) hWopen.isClosed_compl
   exact this.trans (compl_subset_comm.2 hWsub)
 
+/-- **A smooth function equal to `1` on a compact `K` with compact support in an open `V ⊇ K`**:
+`IsCompact.exists_contDiff_eqOn_one` on the interior of a compact neighbourhood of `K` inside
+`V`. -/
+theorem IsCompact.exists_contDiff_eqOn_one_hasCompactSupport {K V : Set E} (hK : IsCompact K)
+    (hV : IsOpen V) (hKV : K ⊆ V) :
+    ∃ θ : E → ℝ, ContDiff ℝ ∞ θ ∧ EqOn θ 1 K ∧ HasCompactSupport θ ∧ tsupport θ ⊆ V := by
+  obtain ⟨L, hLc, hKL, hLV⟩ := exists_compact_between hK hV hKV
+  obtain ⟨θ, hθ, hθ1, hθL, -⟩ := hK.exists_contDiff_eqOn_one isOpen_interior hKL
+  exact ⟨θ, hθ, hθ1, hLc.of_isClosed_subset (isClosed_tsupport θ) (hθL.trans interior_subset),
+    hθL.trans (interior_subset.trans hLV)⟩
+
 end Exhaustion
 
 /-! ### The iterated derivative of a reflected translate -/
@@ -416,19 +427,35 @@ open ContinuousLinearMap
 variable [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
   {μ : Measure E} [μ.IsAddHaarMeasure] {y : Fin n → E} {f w : E → F} {p : ℝ≥0∞}
 
-/-- **Local approximation in `W^{k,p}` by smooth functions.** Let `w` be the weak derivative of `f`
-along a tuple `y` of directions on an open set `Ω`, with both `f` and `w` in `L^p_loc(Ω)` for some
-`p < ∞`, and let `V` be an open set whose closure is a compact subset of `Ω`. Then there are
-globally smooth functions `g 0, g 1, …`, themselves in `L^p(V)` together with their derivatives
-`∂^y (g j)`, such that `g j → f` and `∂^y (g j) → w` in `L^p(V)`.
+omit [CompleteSpace F] in
+/-- **Mollification by a normalized bump does not increase an `L^∞` bound**: if `‖h‖ ≤ M`
+almost everywhere, then `‖(φ.normed μ ⋆ h) x‖ ≤ M` at every point, `φ.normed μ` being a
+nonnegative kernel of integral one. -/
+theorem ContDiffBump.norm_convolution_normed_le_of_ae_norm_le (φ : ContDiffBump (0 : E))
+    {h : E → F} {M : ℝ} (hM : ∀ᵐ z ∂μ, ‖h z‖ ≤ M) (x : E) :
+    ‖(φ.normed μ ⋆[lsmul ℝ ℝ, μ] h) x‖ ≤ M := by
+  rw [convolution_def]
+  have hbound : ∀ᵐ t ∂μ, ‖lsmul ℝ ℝ (φ.normed μ t) (h (x - t))‖ ≤ φ.normed μ t * M := by
+    filter_upwards [(measurePreserving_sub_left_of_isAddRightInvariant μ x)
+      |>.quasiMeasurePreserving.tendsto_ae.eventually hM] with t ht
+    rw [lsmul_apply, norm_smul, Real.norm_eq_abs, abs_of_nonneg (φ.nonneg_normed t)]
+    exact mul_le_mul_of_nonneg_left ht (φ.nonneg_normed t)
+  refine (norm_integral_le_of_norm_le (φ.integrable_normed.mul_const M) hbound).trans (le_of_eq ?_)
+  rw [integral_mul_const, φ.integral_normed, one_mul]
+
+/-- **Local approximation in `W^{k,p}` by smooth functions, with an `L^∞` bound preserved.** Let
+`w` be the weak derivative of `f` along a tuple `y` of directions on an open set `Ω`, with both `f`
+and `w` in `L^p_loc(Ω)` for some `p < ∞`, and let `V` be an open set whose closure is a compact
+subset of `Ω`. Then there are globally smooth functions `g 0, g 1, …`, themselves in `L^p(V)`
+together with their derivatives `∂^y (g j)`, such that `g j → f` and `∂^y (g j) → w` in `L^p(V)`;
+and `‖g j x‖ ≤ M` for all `j` and `x` whenever `‖f‖ ≤ M` almost everywhere on `Ω`.
 
 The `g j` are the mollifications of a compactly supported truncation of `f`; the convergence is
 `ContDiffBump.tendsto_eLpNorm_convolution_sub`, and the identification of `∂^y (g j)` with the
-mollification of `w` on `V` is `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution`.
-
-This is the local, `L^p`-flavoured half of the Meyers-Serrin theorem `H = W`; what it does not do
-is patch the local approximations together over an exhaustion of `Ω`. -/
-theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm
+mollification of `w` on `V` is `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution`, and the
+bound is `ContDiffBump.norm_convolution_normed_le_of_ae_norm_le`. Without the bound, this is
+`HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm`. -/
+theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_and_norm_le
     (h : HasWeakIteratedLineDerivOn y f w Ω μ) (hf : LocallyMemLpOn f p Ω μ)
     (hw : LocallyMemLpOn w p Ω μ) (hp : 1 ≤ p) (hp' : p ≠ ⊤) {V : Set E} (hVo : IsOpen V)
     (hVc : IsCompact (closure V)) (hVΩ : closure V ⊆ (Ω : Set E)) :
@@ -436,7 +463,8 @@ theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm
       (∀ j, MemLp (fun x ↦ iteratedFDeriv ℝ n (g j) x y) p (μ.restrict V)) ∧
       Tendsto (fun j ↦ eLpNorm (fun x ↦ g j x - f x) p (μ.restrict V)) atTop (𝓝 0) ∧
       Tendsto (fun j ↦ eLpNorm (fun x ↦ iteratedFDeriv ℝ n (g j) x y - w x) p (μ.restrict V))
-        atTop (𝓝 0) := by
+        atTop (𝓝 0) ∧
+      ∀ M, 0 ≤ M → (∀ᵐ x ∂μ.restrict (Ω : Set E), ‖f x‖ ≤ M) → ∀ j x, ‖g j x‖ ≤ M := by
   obtain ⟨W, -, hWo, hVW, -, hWc, hWΩ, -⟩ := hVc.exists_pos_forall_closedBall_subset Ω.isOpen hVΩ
   obtain ⟨V', ε, hV'o, hVV', hε, -, -, hV'ball⟩ := hVc.exists_pos_forall_closedBall_subset hWo hVW
   set C : Set E := closure W with hCdef
@@ -481,7 +509,8 @@ theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm
       MemLp ((φ j).normed μ ⋆[lsmul ℝ ℝ, μ] c) p μ := fun j _ hc ↦
     MemLp.convolution hp (memLp_one_iff_integrable.2 (φ j).integrable_normed) hc
   refine ⟨g, fun j ↦ (φ j).hasCompactSupport_normed.contDiff_convolution_left _
-    (φ j).contDiff_normed hf'loc, fun j ↦ (hconvLp j f' hf'Lp).restrict V, fun j ↦ ?_, ?_, ?_⟩
+    (φ j).contDiff_normed hf'loc, fun j ↦ (hconvLp j f' hf'Lp).restrict V, fun j ↦ ?_, ?_, ?_,
+    fun M hM0 hM j x ↦ (φ j).norm_convolution_normed_le_of_ae_norm_le ?_ x⟩
   · refine ((hconvLp j w' hw'Lp).restrict V).ae_eq ?_
     filter_upwards [self_mem_ae_restrict hVo.measurableSet] with x hx
     exact (hderivEq j x hx).symm
@@ -500,6 +529,39 @@ theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm
     filter_upwards [self_mem_ae_restrict hVo.measurableSet] with x hx
     rw [hderivEq j x hx]
     simp [hw'def, Set.indicator_of_mem (hVC hx)]
+  · filter_upwards [(ae_restrict_iff' Ω.isOpen.measurableSet).1 hM] with z hz
+    by_cases hzC : z ∈ C
+    · rw [hf'def, Set.indicator_of_mem hzC]
+      exact hz (hWΩ hzC)
+    · rw [hf'def, Set.indicator_of_notMem hzC, norm_zero]
+      exact hM0
+
+/-- **Local approximation in `W^{k,p}` by smooth functions.** Let `w` be the weak derivative of `f`
+along a tuple `y` of directions on an open set `Ω`, with both `f` and `w` in `L^p_loc(Ω)` for some
+`p < ∞`, and let `V` be an open set whose closure is a compact subset of `Ω`. Then there are
+globally smooth functions `g 0, g 1, …`, themselves in `L^p(V)` together with their derivatives
+`∂^y (g j)`, such that `g j → f` and `∂^y (g j) → w` in `L^p(V)`.
+
+The `g j` are the mollifications of a compactly supported truncation of `f`; the convergence is
+`ContDiffBump.tendsto_eLpNorm_convolution_sub`, and the identification of `∂^y (g j)` with the
+mollification of `w` on `V` is `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution`
+(`HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_and_norm_le` also bounds the
+`g j`).
+
+This is the local, `L^p`-flavoured half of the Meyers-Serrin theorem `H = W`; what it does not do
+is patch the local approximations together over an exhaustion of `Ω`. -/
+theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm
+    (h : HasWeakIteratedLineDerivOn y f w Ω μ) (hf : LocallyMemLpOn f p Ω μ)
+    (hw : LocallyMemLpOn w p Ω μ) (hp : 1 ≤ p) (hp' : p ≠ ⊤) {V : Set E} (hVo : IsOpen V)
+    (hVc : IsCompact (closure V)) (hVΩ : closure V ⊆ (Ω : Set E)) :
+    ∃ g : ℕ → E → F, (∀ j, ContDiff ℝ ∞ (g j)) ∧ (∀ j, MemLp (g j) p (μ.restrict V)) ∧
+      (∀ j, MemLp (fun x ↦ iteratedFDeriv ℝ n (g j) x y) p (μ.restrict V)) ∧
+      Tendsto (fun j ↦ eLpNorm (fun x ↦ g j x - f x) p (μ.restrict V)) atTop (𝓝 0) ∧
+      Tendsto (fun j ↦ eLpNorm (fun x ↦ iteratedFDeriv ℝ n (g j) x y - w x) p (μ.restrict V))
+        atTop (𝓝 0) := by
+  obtain ⟨g, hgs, hgp, hgdp, hgt, hgdt, -⟩ :=
+    h.exists_seq_contDiff_tendsto_eLpNorm_and_norm_le hf hw hp hp' hVo hVc hVΩ
+  exact ⟨g, hgs, hgp, hgdp, hgt, hgdt⟩
 
 end Approximation
 
@@ -730,7 +792,6 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
   obtain ⟨V, ε, hVo, hKV, hε, hVc, hVΩ, -⟩ :=
     φ.hasCompactSupport.exists_pos_forall_closedBall_subset Ω.isOpen φ.tsupport_subset
   set Ω' : Opens E := ⟨V, hVo⟩ with hΩ'def
-  have hΩ'Ω : Ω' ≤ Ω := subset_closure.trans hVΩ
   set ψ : 𝓓(Ω', ℝ) := ⟨φ, φ.contDiff, φ.hasCompactSupport, hKV⟩ with hψdef
   have hcoe : (Ω' : Set E) = V := by rw [hΩ'def]; rfl
   have hψcoe : (ψ : E → ℝ) = (φ : E → ℝ) := by rw [hψdef]; rfl

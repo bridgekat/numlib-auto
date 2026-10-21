@@ -54,8 +54,10 @@ matrix is nonsingular exactly when its diagonal has no zero, the sentence openin
 
 The two Higham lemmas are over a linearly ordered field with the entrywise absolute value
 `Matrix.abs` of `Numlib/LinearAlgebra/Matrix/Order`, which is where their floating-point consumers
-(`Numlib/FloatingPoint/Substitution`) live; row diagonal dominance is spelled out as
-`∑_{j ≠ i} |u_ij| ≤ |u_ii|`, since `Matrix.IsDiagDominant` is stated for `RCLike` scalars. Both
+(`Numlib/FloatingPoint/Substitution`) live; row diagonal dominance there is
+`Matrix.IsAbsDiagDominant` of `Numlib/LinearAlgebra/Matrix/DiagDominant`,
+`∑_{j ≠ i} |u_ij| ≤ |u_ii|`, since `Matrix.IsDiagDominant` is stated with the norm of `RCLike`
+scalars (over `ℝ` the two agree, `Matrix.isDiagDominant_iff_isAbsDiagDominant`). Both
 proofs normalize `V = D⁻¹ U` implicitly, working with `|(U⁻¹)_{ik}| |u_kk| = |(V⁻¹)_{ik}|`, and
 the geometric sums `∑_{k ∈ s} 2^{#{l ∈ s | l < k}} = 2^{#s} - 1` over an arbitrary finset of a
 linear order (`Finset.sum_two_pow_card_filter_lt_add_one`) replace the book's
@@ -97,25 +99,10 @@ theorem sum_two_pow_card_filter_lt_add_one (s : Finset α) :
       card_insert_of_notMem has, pow_succ, mul_two]
 
 /-- `∑_{k ∈ s} 2^{#{l ∈ s | k < l}} + 1 = 2^{#s}`, the mirror image of
-`Finset.sum_two_pow_card_filter_lt_add_one`. -/
+`Finset.sum_two_pow_card_filter_lt_add_one`, of which it is the instance on the dual order. -/
 theorem sum_two_pow_card_filter_gt_add_one (s : Finset α) :
-    ∑ k ∈ s, (2 : R) ^ #(s.filter (k < ·)) + 1 = 2 ^ #s := by
-  induction s using Finset.induction_on_min with
-  | empty => simp
-  | insert a s ha ih =>
-    have has : a ∉ s := fun h => lt_irrefl a (ha a h)
-    have h1 : (insert a s).filter (a < ·) = s := by
-      ext x
-      simp only [mem_filter, mem_insert]
-      exact ⟨fun h => h.1.resolve_left (fun hx => lt_irrefl a (hx ▸ h.2)),
-        fun h => ⟨Or.inr h, ha x h⟩⟩
-    have h2 : ∀ k ∈ s, (insert a s).filter (k < ·) = s.filter (k < ·) := fun k hk => by
-      ext x
-      simp only [mem_filter, mem_insert]
-      exact ⟨fun h => ⟨h.1.resolve_left (fun hx => absurd (hx ▸ h.2) (not_lt.2 (ha k hk).le)),
-        h.2⟩, fun h => ⟨Or.inr h.1, h.2⟩⟩
-    rw [sum_insert has, h1, sum_congr rfl fun k hk => by rw [h2 k hk], add_assoc, ih,
-      card_insert_of_notMem has, pow_succ, mul_two]
+    ∑ k ∈ s, (2 : R) ^ #(s.filter (k < ·)) + 1 = 2 ^ #s :=
+  sum_two_pow_card_filter_lt_add_one (α := αᵒᵈ) s
 
 end Finset
 
@@ -604,7 +591,7 @@ end Higham
 section DiagDominant
 
 /-- Row diagonal dominance bounds every off-diagonal entry by the diagonal one. -/
-theorem abs_apply_le_abs_diag_of_sum_le (hdom : ∀ i, ∑ j ∈ univ.erase i, |U i j| ≤ |U i i|)
+theorem abs_apply_le_abs_diag_of_sum_le (hdom : U.IsAbsDiagDominant)
     {i j : n} (hij : j ≠ i) : |U i j| ≤ |U i i| :=
   (Finset.single_le_sum (f := fun j => |U i j|) (fun _ _ => abs_nonneg _)
     (mem_erase.2 ⟨hij, mem_univ j⟩)).trans (hdom i)
@@ -614,7 +601,7 @@ triangular `U` with nowhere-zero diagonal, the normalized inverse `|(U⁻¹)_ik|
 `|V⁻¹|` for `V = D⁻¹ U`) is at most `1`. By downward induction on `i`: `a_ik ≤ ∑_{i < j ≤ k}
 (|u_ij| / |u_ii|) a_jk ≤ ∑_{j ≠ i} |u_ij| / |u_ii| ≤ 1`. -/
 theorem abs_inv_apply_mul_abs_diag_le_one (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
-    (hdom : ∀ i, ∑ j ∈ univ.erase i, |U i j| ≤ |U i i|) (i k : n) :
+    (hdom : U.IsAbsDiagDominant) (i k : n) :
     |U⁻¹ i k| * |U k k| ≤ 1 := by
   rcases lt_trichotomy k i with hki | rfl | hik
   · rw [hU.inv hki, abs_zero, zero_mul]
@@ -646,7 +633,7 @@ between `i` and `j` inclusive (the book's `j - i + 1`; Higham states the weaker 
 Below the diagonal the entry is `0` (`Matrix.abs_inv_mul_abs_apply_of_lt`). This is the bound
 behind the "diagonally dominant" clause of [quarteroni2000numerical] §3.2.2. -/
 theorem abs_inv_mul_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular)
-    (hd : ∀ i, U i i ≠ 0) (hdom : ∀ i, ∑ j ∈ univ.erase i, |U i j| ≤ |U i i|) {i j : n}
+    (hd : ∀ i, U i i ≠ 0) (hdom : U.IsAbsDiagDominant) {i j : n}
     (hij : i ≤ j) : (U⁻¹.abs * U.abs) i j ≤ #{k | i ≤ k ∧ k ≤ j} := by
   rw [abs_inv_mul_abs_apply_eq_sum hU, Finset.card_eq_sum_ones, Nat.cast_sum, Nat.cast_one]
   refine Finset.sum_le_sum fun k hk => ?_
@@ -660,7 +647,7 @@ theorem abs_inv_mul_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular)
 /-- The row sums of `|U|` for a row diagonally dominant upper triangular `U`: at most `2 |u_kk|`,
 and exactly `|u_kk|` in the last row (which has no entry to the right of the diagonal). -/
 theorem sum_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular)
-    (hdom : ∀ i, ∑ j ∈ univ.erase i, |U i j| ≤ |U i i|) (k : n) :
+    (hdom : U.IsAbsDiagDominant) (k : n) :
     ∑ j, |U k j| ≤ |U k k| * if ∃ j, k < j then 2 else 1 := by
   rw [← Finset.add_sum_erase _ _ (mem_univ k)]
   split_ifs with h
@@ -676,7 +663,7 @@ triangular `U` with nowhere-zero diagonal, `∑_j (|U⁻¹| |U|)_ij ≤ 2 #{k | 
 the constant of [quarteroni2000numerical] §3.1.2. The proof is his:
 `|V⁻¹| |V| e ≤ |V⁻¹| (2, …, 2, 1)ᵀ` with the entries of `|V⁻¹|` at most `1`. -/
 theorem sum_abs_inv_mul_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular)
-    (hd : ∀ i, U i i ≠ 0) (hdom : ∀ i, ∑ j ∈ univ.erase i, |U i j| ≤ |U i i|) (i : n) :
+    (hd : ∀ i, U i i ≠ 0) (hdom : U.IsAbsDiagDominant) (i : n) :
     ∑ j, (U⁻¹.abs * U.abs) i j ≤ 2 * #{k | i < k} + 1 := by
   -- the sum as `∑_k |(U⁻¹)_ik| ∑_j |u_kj|`, restricted to `k ≥ i`
   have h1 : ∑ j, (U⁻¹.abs * U.abs) i j =
@@ -726,7 +713,7 @@ theorem sum_abs_inv_mul_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular
 /-- `‖|U⁻¹| |U|‖_∞ ≤ 2n - 1` for a row diagonally dominant upper triangular `U`
 ([higham2002accuracy] Lemma 8.8): every row sum of `|U⁻¹| |U|` is at most `2 card n - 1`. -/
 theorem sum_abs_inv_mul_abs_apply_le_of_isDiagDominant' (hU : U.IsUpperTriangular)
-    (hd : ∀ i, U i i ≠ 0) (hdom : ∀ i, ∑ j ∈ univ.erase i, |U i j| ≤ |U i i|) (i : n) :
+    (hd : ∀ i, U i i ≠ 0) (hdom : U.IsAbsDiagDominant) (i : n) :
     ∑ j, (U⁻¹.abs * U.abs) i j ≤ 2 * Fintype.card n - 1 := by
   refine (sum_abs_inv_mul_abs_apply_le_of_isDiagDominant hU hd hdom i).trans ?_
   have h : #{k | i < k} + 1 ≤ Fintype.card n := by

@@ -150,8 +150,8 @@ theorem exists_unitary_mul_mul_unitary_apply_eq_zero (A : Matrix (Fin M) (Fin N)
       rcases hij with hi | hj
       · rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | hi
         · exact Or.inl hi
-        · exact Or.inr (by have := j.isLt; omega)
-      · exact Or.inr (by have := j.isLt; omega)
+        · exact Or.inr (by omega)
+      · exact Or.inr (by omega)
     obtain ⟨P, hPh, hPu, hPB⟩ := bidiag_left_step (Uᴴ * A * V) hkN hB
     have hUP : (U * P)ᴴ * A * V = P * (Uᴴ * A * V) := by
       rw [conjTranspose_mul, hPh.eq]
@@ -162,7 +162,7 @@ theorem exists_unitary_mul_mul_unitary_apply_eq_zero (A : Matrix (Fin M) (Fin N)
       rw [hUP]
       refine hPB i j ?_ hne1 hne2
       rcases hij with hi | hj
-      · exact Or.inl (by have := i.isLt; omega)
+      · exact Or.inl (by omega)
       · exact Or.inr hj
     obtain ⟨W, hWu, hWB⟩ := bidiag_right_step (P * (Uᴴ * A * V)) hkM hPB
     refine ⟨U * P, mul_mem hU hPu, V * W, mul_mem hV hWu, fun i j hij hne1 hne2 => ?_⟩
@@ -184,11 +184,8 @@ theorem exists_unitary_mul_mul_unitary_isUpperBidiagonal (h : N ≤ M)
   intro i j hij
   rw [submatrix_apply, id]
   rcases hij with hji | ⟨l, hil, hlj⟩
-  · have h1 := Fin.lt_def.1 hji
-    exact hB _ _ (by simp; omega) (by simp; omega)
-  · have h1 := Fin.lt_def.1 hil
-    have h2 := Fin.lt_def.1 hlj
-    exact hB _ _ (by simp; omega) (by simp; omega)
+  · exact hB _ _ (by simp; omega) (by simp; omega)
+  · exact hB _ _ (by simp; omega) (by simp; omega)
 
 end Bidiagonal
 

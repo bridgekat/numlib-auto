@@ -232,7 +232,6 @@ theorem energyNorm_twoGrid_le {S : E →ₗ[𝕜] E} (hsm : IsSmootherWith A q S
   rw [he] at hmem ⊢
   have hnex : energyNorm A e ≤ energyNorm A v := by
     rw [← he]; exact energyNorm_coarseCorrection_le A hA Pr v
-  have hqnn : 0 ≤ q (A e) := hpq.q_nonneg _
   have hsq : energyNorm A e ^ 2 ≤ β * q (A e) ^ 2 :=
     energyNorm_sq_le_of_isApproximationWith (hA := hA) hβ.le hpq happ hmem
   have h1 := hsm e

@@ -85,14 +85,6 @@ theorem mem_greedyExcludedColors {v : V} {k : ℕ} :
   exact ⟨fun ⟨w, ⟨hlt, hadj⟩, hc⟩ => ⟨w, hlt, hadj, hc⟩,
     fun ⟨w, hlt, hadj, hc⟩ => ⟨w, ⟨hlt, hadj⟩, hc⟩⟩
 
-/-- Below the cardinality of a finite set of naturals there is a number the set misses. -/
-private theorem exists_le_card_notMem (t : Finset ℕ) : ∃ k ≤ #t, k ∉ t := by
-  by_contra! h
-  have hsub : range (#t + 1) ⊆ t := fun k hk => h k (by simpa [Nat.lt_succ_iff] using hk)
-  have := card_le_card hsub
-  rw [card_range] at this
-  omega
-
 /-- The greedy colour is the least natural number outside the excluded set. -/
 private theorem greedyColoring_eq_sInf (v : V) :
     G.greedyColoring v = sInf {k | k ∉ G.greedyExcludedColors v} := by

@@ -58,14 +58,11 @@ def numericalRange (T : E →ₗ[ℂ] E) : Set ℂ :=
 theorem mem_numericalRange {T : E →ₗ[ℂ] E} {z : ℂ} :
     z ∈ T.numericalRange ↔ ∃ x : E, x ≠ 0 ∧ inner ℂ x (T x) / inner ℂ x x = z := Iff.rfl
 
-private theorem inner_self_ne_zero_of_ne_zero {x : E} (hx : x ≠ 0) : (inner ℂ x x : ℂ) ≠ 0 :=
-  fun h => hx (inner_self_eq_zero.1 h)
-
 /-- The Rayleigh quotient of `c • T + b` is `c` times that of `T`, plus `b`. -/
 theorem inner_smul_add_smul_id_div (T : E →ₗ[ℂ] E) (c b : ℂ) {x : E} (hx : x ≠ 0) :
     inner ℂ x ((c • T + b • (LinearMap.id : E →ₗ[ℂ] E)) x) / inner ℂ x x
       = c * (inner ℂ x (T x) / inner ℂ x x) + b := by
-  have h := inner_self_ne_zero_of_ne_zero hx
+  have h := (inner_self_ne_zero (𝕜 := ℂ)).2 hx
   simp only [LinearMap.add_apply, LinearMap.smul_apply, LinearMap.id_apply, inner_add_right,
     inner_smul_right]
   field_simp
@@ -160,8 +157,8 @@ private theorem ofReal_mem_numericalRange (T : E →ₗ[ℂ] E) (h0 : (0 : ℂ) 
     (t : ℂ) ∈ T.numericalRange := by
   obtain ⟨x, hx, hqx⟩ := h0
   obtain ⟨z, hz, hqz⟩ := h1
-  have hxne := inner_self_ne_zero_of_ne_zero hx
-  have hzne := inner_self_ne_zero_of_ne_zero hz
+  have hxne := (inner_self_ne_zero (𝕜 := ℂ)).2 hx
+  have hzne := (inner_self_ne_zero (𝕜 := ℂ)).2 hz
   have hxx : (inner ℂ x (T x) : ℂ) = 0 := by simpa using (div_eq_iff hxne).1 hqx
   have hzz : (inner ℂ z (T z) : ℂ) = inner ℂ z z := by simpa using (div_eq_iff hzne).1 hqz
   obtain ⟨ζ, hζ, hζim⟩ :=
@@ -443,8 +440,7 @@ theorem norm_inner_pow_le {T : Module.End ℂ E} {c : ℝ} (hc : 0 ≤ c)
       simp [norm_le_zero_iff.1 h]
     rw [hT0]
     simp [zero_pow hk.ne']
-  · have hcne : (c : ℂ) ≠ 0 := Complex.ofReal_ne_zero.2 hcpos.ne'
-    have hnorm : ∀ y : E, ‖(inner ℂ y ((((c : ℂ))⁻¹ • T) y) : ℂ)‖ ≤ ‖y‖ ^ 2 := by
+  · have hnorm : ∀ y : E, ‖(inner ℂ y ((((c : ℂ))⁻¹ • T) y) : ℂ)‖ ≤ ‖y‖ ^ 2 := by
       intro y
       rw [LinearMap.smul_apply, inner_smul_right, norm_mul, norm_inv, Complex.norm_real,
         Real.norm_eq_abs, abs_of_pos hcpos]

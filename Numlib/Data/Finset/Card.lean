@@ -13,6 +13,9 @@ Counting the elements of a finite type that satisfy a predicate does not change 
 relabelled by an equivalence: `#{a | p (e a)} = #{b | p b}` (`Finset.card_filter_comp_equiv`). This
 is how counts of eigenvalues indexed in two different ways (by the index type of a matrix and by
 `Fin n` in sorted order) are identified.
+
+A finite set `t` of naturals misses some `k ≤ #t` (`Finset.exists_le_card_notMem`), which bounds
+the least natural number outside it.
 -/
 
 namespace Finset
@@ -30,5 +33,14 @@ theorem card_filter_lt_lt_of_lt {n : Type*} [Fintype n] [LinearOrder n] {a b : n
     exact hk.trans h
   · simp [h]
   · simp
+
+/-- Below the cardinality of a finite set of naturals there is a number the set misses: the
+`k + 1` numbers `0, …, k` do not all fit in a set of `k` elements. -/
+theorem exists_le_card_notMem (t : Finset ℕ) : ∃ k ≤ #t, k ∉ t := by
+  by_contra! h
+  have hsub : range (#t + 1) ⊆ t := fun k hk => h k (by simpa [Nat.lt_succ_iff] using hk)
+  have := card_le_card hsub
+  rw [card_range] at this
+  omega
 
 end Finset

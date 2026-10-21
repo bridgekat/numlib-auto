@@ -164,22 +164,6 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ} [IsContinuousInnerPairing B] [IsCompatiblePairing B]
   {f : E → EReal}
 
-omit [FiniteDimensional ℝ E] in
-/-- The constraint qualification: `w (z - ·)` is finite and continuous, so the conjugate of
-`f + w (z - ·)` splits and the subgradient sum rule applies. -/
-theorem isExactSum_quadFn_sub (hf : ClosedProperConvexFn f) (z : E) :
-    IsExactSum B f (fun x => quadFn B (z - x)) := by
-  obtain ⟨x₀, hx₀⟩ := hf.proper.convexDom_nonempty
-  exact (IsExactSum.of_continuousAt (convexFn_quadFn_sub z) (properConvex_quadFn_sub z) hf.convex
-    hf.proper (mem_convexDom.2 (lt_top_iff_ne_top.2 (quadFn_ne_top _))) hx₀
-    (continuous_quadFn_sub z).continuousAt).symm
-
-omit [FiniteDimensional ℝ E] in
-/-- The same at the origin: the conjugate of `f + w` splits. -/
-theorem isExactSum_quadFn (hf : ClosedProperConvexFn f) : IsExactSum B f (quadFn B) := by
-  have h := isExactSum_quadFn_sub (B := B) hf 0
-  rwa [quadFn_zero_sub] at h
-
 omit [FiniteDimensional ℝ E] [IsCompatiblePairing B] in
 /-- The Moreau objective of a closed proper convex function is closed proper convex. -/
 theorem closedProperConvexFn_moreauObj (hf : ClosedProperConvexFn f) (z : E) :

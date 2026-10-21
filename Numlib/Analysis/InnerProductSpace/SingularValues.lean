@@ -9,6 +9,7 @@ import Mathlib.Analysis.InnerProductSpace.ProdL2
 import Mathlib.Analysis.InnerProductSpace.SingularValues
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Numlib.Analysis.InnerProductSpace.Spectrum
+import Numlib.Analysis.Normed.Lp.ProdLp
 import Numlib.Eigen.MinMax
 
 /-!
@@ -57,9 +58,11 @@ stretches by at least `c` bounds a singular value from below, a subspace on whic
 at most `c` bounds one from above. The spectrum of the dilation, in particular, is read off by
 exhibiting such subspaces (a graph of `A` over a max–min subspace, and a product with the whole
 codomain), not by computing an eigenbasis. The dilation takes the adjoint as a second argument
-`Astar` with the hypothesis `∀ u x, ⟪Astar u, x⟫ = ⟪u, A x⟫`, as in `Numlib/Krylov/NormalEquations`,
-so that it needs neither completeness nor finite dimension; its block order (domain factor first)
-is that of the matrix `Matrix.hermitianDilation A = fromBlocks 0 Aᴴ A 0`.
+`Astar` with the hypothesis `LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar`,
+that is `⟪Astar u, x⟫ = ⟪u, A x⟫` (`LinearMap.isAdjointPair_inner_iff`), as in
+`Numlib/Krylov/NormalEquations`, so that it needs neither completeness nor finite dimension; its
+block order (domain factor first) is that of the matrix
+`Matrix.hermitianDilation A = fromBlocks 0 Aᴴ A 0`.
 
 ## References
 
@@ -106,22 +109,24 @@ theorem hermitianDilation_neg (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) 
 variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
 
 /-- The Hermitian dilation of a map with a given adjoint is symmetric. -/
-theorem isSymmetric_hermitianDilation (hadj : ∀ u x, inner 𝕜 (Astar u) x = inner 𝕜 u (A x)) :
+theorem isSymmetric_hermitianDilation
+    (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) :
     (hermitianDilation A Astar).IsSymmetric := by
   intro z w
   have h : inner 𝕜 (A z.fst) w.snd = inner 𝕜 z.fst (Astar w.snd) := by
-    rw [← inner_conj_symm, ← hadj, inner_conj_symm]
+    rw [← inner_conj_symm, ← hadj.inner_apply_eq, inner_conj_symm]
   simp only [hermitianDilation_apply, WithLp.prod_inner_apply, WithLp.ofLp_fst,
-    WithLp.ofLp_snd, hadj, h]
+    WithLp.ofLp_snd, hadj.inner_apply_eq, h]
   ring
 
 /-- The quadratic form of the Hermitian dilation: `re ⟪H (x, y), (x, y)⟫ = 2 re ⟪A x, y⟫`. -/
 theorem re_inner_hermitianDilation_apply_self
-    (hadj : ∀ u x, inner 𝕜 (Astar u) x = inner 𝕜 u (A x)) (z : WithLp 2 (E × F)) :
+    (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar)
+    (z : WithLp 2 (E × F)) :
     RCLike.re (inner 𝕜 (hermitianDilation A Astar z) z) =
       2 * RCLike.re (inner 𝕜 (A z.fst) z.snd) := by
   simp only [hermitianDilation_apply, WithLp.prod_inner_apply, WithLp.ofLp_fst,
-    WithLp.ofLp_snd, hadj, map_add]
+    WithLp.ofLp_snd, hadj.inner_apply_eq, map_add]
   rw [inner_re_symm z.snd]
   ring
 
@@ -604,7 +609,6 @@ theorem norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues {F₁ F₂ : 
     have : Nontrivial S := Module.finrank_pos_iff.1 hS1
     obtain ⟨⟨x, hxS⟩, hx0⟩ := exists_ne (0 : S)
     have hx0' : x ≠ 0 := fun h => hx0 (Subtype.ext h)
-    have hx := norm_pos_iff.2 hx0'
     have h1 := h x hxS
     have h2 := (LinearMap.toContinuousLinearMap Q₂).le_opNorm x
     rw [LinearMap.coe_toContinuousLinearMap'] at h2
@@ -621,12 +625,7 @@ variable (A : E →ₗ[𝕜] F)
 
 /-- The dilation of a map with its adjoint is symmetric. -/
 theorem isSymmetric_hermitianDilation_adjoint : (hermitianDilation A (adjoint A)).IsSymmetric :=
-  isSymmetric_hermitianDilation fun u x => adjoint_inner_left A x u
-
-/-- The dimension of the `L²` product. -/
-private theorem finrank_withLp_prod :
-    finrank 𝕜 (WithLp 2 (E × F)) = finrank 𝕜 E + finrank 𝕜 F :=
-  (WithLp.linearEquiv 2 𝕜 (E × F)).finrank_eq.trans Module.finrank_prod
+  isSymmetric_hermitianDilation (isAdjointPair_inner A)
 
 /-- The eigenvalues of the dilation lie below the singular values: the product of a min–max
 subspace of `A` at `i` with the whole codomain has dimension at least `finrank - i`, and on it
@@ -647,13 +646,13 @@ private theorem eigenvalues_hermitianDilation_le {N : ℕ}
     exact Prod.ext (Subtype.ext h'.1) h'.2
   have hS : N - (i : ℕ) ≤ finrank 𝕜 (range ψ) := by
     rw [finrank_range_of_inj hinj, Module.finrank_prod]
-    have := finrank_withLp_prod (𝕜 := 𝕜) (E := E) (F := F)
+    have := WithLp.finrank_prod 2 𝕜 E F
     omega
   obtain ⟨z, ⟨⟨x, y⟩, rfl⟩, hz0, hle⟩ :=
     A.isSymmetric_hermitianDilation_adjoint.exists_mem_ne_zero_le_rayleighQuotient hN i hS
   refine hle.trans ?_
   rw [rayleighQuotient, div_le_iff₀ (pow_pos (norm_pos_iff.2 hz0) 2),
-    re_inner_hermitianDilation_apply_self (fun u x => adjoint_inner_left A x u),
+    re_inner_hermitianDilation_apply_self (isAdjointPair_inner A),
     WithLp.prod_norm_sq_eq_of_L2, hψ]
   simp only [WithLp.toLp_fst, WithLp.toLp_snd]
   have h1 := re_inner_le_norm (𝕜 := 𝕜) (A x) y
@@ -683,7 +682,7 @@ private theorem singularValues_le_eigenvalues_hermitianDilation {N : ℕ}
     A.isSymmetric_hermitianDilation_adjoint.exists_mem_ne_zero_rayleighQuotient_le hN i hS
   refine le_trans ?_ hle
   rw [rayleighQuotient, le_div_iff₀ (pow_pos (norm_pos_iff.2 hz0) 2),
-    re_inner_hermitianDilation_apply_self (fun u x => adjoint_inner_left A x u),
+    re_inner_hermitianDilation_apply_self (isAdjointPair_inner A),
     WithLp.prod_norm_sq_eq_of_L2, hψ]
   simp only [WithLp.toLp_fst, WithLp.toLp_snd]
   rw [map_smul, inner_smul_left, RCLike.conj_ofReal, RCLike.re_ofReal_mul, inner_self_eq_norm_sq,
@@ -703,7 +702,7 @@ theorem eigenvalues_hermitianDilation {N : ℕ} (hN : finrank 𝕜 (WithLp 2 (E 
     (i : Fin N) :
     A.isSymmetric_hermitianDilation_adjoint.eigenvalues hN i =
       A.singularValues i - A.singularValues (N - 1 - i) := by
-  have hNEF := finrank_withLp_prod (𝕜 := 𝕜) (E := E) (F := F)
+  have hNEF := WithLp.finrank_prod 2 𝕜 E F
   have hneg : ∀ j : Fin N, (-A).isSymmetric_hermitianDilation_adjoint.eigenvalues hN j =
       -A.isSymmetric_hermitianDilation_adjoint.eigenvalues hN j.rev := by
     intro j
@@ -726,7 +725,6 @@ theorem eigenvalues_hermitianDilation {N : ℕ} (hN : finrank 𝕜 (WithLp 2 (E 
       rw [hneg, Fin.rev_rev, singularValues_neg, hrev] at h4
       linarith
   · -- `σ_i > 0` forces `σ_{N-1-i} = 0`
-    have hiE := A.lt_finrank_of_singularValues_pos hpos
     have hiF : (i : ℕ) < finrank 𝕜 F := by
       by_contra h
       rw [A.singularValues_of_finrank_codomain_le (not_lt.1 h)] at hpos

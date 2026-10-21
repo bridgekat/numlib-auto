@@ -135,7 +135,6 @@ theorem IsSymmetricCoercive.energyNorm_le_norm {A : E →L[𝕜] E}
       _ ≤ ‖A x‖ * ‖x‖ := norm_inner_le_norm _ _
       _ ≤ ‖A‖ * ‖x‖ * ‖x‖ := by gcongr; exact A.le_opNorm x
       _ = ‖A‖ * ‖x‖ ^ 2 := by ring
-  have h1 := energyNorm_nonneg (A : E →ₗ[𝕜] E) x
   have h2 : (0 : ℝ) ≤ Real.sqrt ‖A‖ * ‖x‖ := by positivity
   nlinarith
 

@@ -1,8 +1,4 @@
 [[node]]
-id = "MemSobolevMultiIndex.comp_diffeoOn_of_order"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.6, proof of Theorem 9.25 (the chart transport), at every order and exponent"
-
-[[node]]
 id = "higherReflection"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 9 (the higher-order extension); Lions–Magenes"
 

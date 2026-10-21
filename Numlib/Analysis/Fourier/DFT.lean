@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.Fourier.ZMod
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.RingTheory.RootsOfUnity.Complex
+import Numlib.Algebra.Field.GeomSum
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Approximation.TrapezoidExactness
 
@@ -230,12 +231,6 @@ private theorem inv_pow_mul_pow_pow_eq_one {a : ℂ} {n : ℕ} (h : a ^ n = 1) (
   rw [mul_pow, ← pow_mul, ← pow_mul, Nat.mul_comm i n, Nat.mul_comm j n, pow_mul, pow_mul, h1, h,
     one_pow, one_pow, one_mul]
 
-private theorem geom_sum_of_pow_eq_one {ζ : ℂ} {n : ℕ} (hζ : ζ ^ n = 1) :
-    ∑ l ∈ Finset.range n, ζ ^ l = if ζ = 1 then (n : ℂ) else 0 := by
-  rcases eq_or_ne ζ 1 with rfl | h
-  · simp
-  · rw [ite_eq_right h, geom_sum_eq h, hζ, sub_self, zero_div]
-
 /-- **The columns of the discrete Fourier transform matrix are orthogonal**: `(dft n)ᴴ * dft n` is
 `n` times the identity. This is the content of the inversion formula for the discrete Fourier
 transform ([han2009theoretical], Theorem 4.3.2). -/
@@ -257,7 +252,8 @@ theorem conjTranspose_dft_mul_dft (n : ℕ) :
       * Complex.exp (2 * π * I / n) ^ (k : ℕ) = 1 ↔ j = k := by
     rw [inv_pow, inv_mul_eq_one₀ (pow_ne_zero _ hne)]
     exact ⟨fun h => (Fin.val_inj).mp (hprim.pow_inj j.isLt k.isLt h), fun h => by rw [h]⟩
-  rw [hsum, geom_sum_of_pow_eq_one (inv_pow_mul_pow_pow_eq_one hprim.pow_eq_one (j : ℕ) (k : ℕ)),
+  rw [hsum,
+    geom_sum_eq_ite_of_pow_eq_one (inv_pow_mul_pow_pow_eq_one hprim.pow_eq_one (j : ℕ) (k : ℕ)),
     Matrix.smul_apply, Matrix.one_apply, smul_eq_mul]
   by_cases hjk : j = k
   · rw [ite_eq_left (hiff.mpr hjk), ite_eq_left hjk, mul_one]
@@ -425,19 +421,6 @@ theorem interp_def (N : ℕ) (m : ℤ) (f : ℝ → ℂ) (x : ℝ) :
       = ∑ k ∈ range N, coeff N m f k * Complex.exp ((((k : ℤ) + m : ℤ) : ℂ) * x * I) :=
   rfl
 
-/-- `N ∣ j − l ↔ j = l` for `j, l < N`. -/
-private theorem natCast_dvd_sub_iff {N j l : ℕ} (hj : j < N) (hl : l < N) :
-    (N : ℤ) ∣ ((j : ℤ) - l) ↔ j = l := by
-  constructor
-  · intro h
-    have habs : |((j : ℤ) - l)| < (N : ℤ) := by
-      rw [abs_lt]
-      constructor <;> omega
-    have := Int.eq_zero_of_abs_lt_dvd h habs
-    omega
-  · rintro rfl
-    simp
-
 /-- **Discrete orthogonality of the characters** at two nodes: `∑_{k < N} exp (i (j − l) x_k)` is
 `N` when `j = l` and `0` otherwise, for `j, l < N`. This is `Quadrature.sum_exp_angleNode` at
 `p = j − l`, where `N ∣ j − l` forces `j = l` because `|j − l| < N`. -/
@@ -446,8 +429,9 @@ theorem sum_exp_sub_angleNode {N : ℕ} (hN : 0 < N) {j l : ℕ} (hj : j < N) (h
       = if j = l then (N : ℂ) else 0 := by
   rw [sum_exp_angleNode hN]
   by_cases h : j = l
-  · rw [ite_eq_left ((natCast_dvd_sub_iff hj hl).mpr h), ite_eq_left h]
-  · rw [ite_eq_right fun hh => h ((natCast_dvd_sub_iff hj hl).mp hh), ite_eq_right h]
+  · rw [ite_eq_left (by simp [h]), ite_eq_left h]
+  · rw [ite_eq_right fun hh => h ((Nat.modEq_iff_dvd.2 hh).eq_of_lt_of_lt hl hj).symm,
+      ite_eq_right h]
 
 /-- **Discrete orthogonality of the exponentials** in the textbook's normalization
 ([quarteroni2000numerical] Lemma 10.1, (10.54)): with `h = 2 π / N`, for `0 ≤ j, l < N`,
@@ -544,8 +528,6 @@ theorem coeff_eq_dft_mulVec {N : ℕ} (m : ℤ) (f : ℝ → ℂ) (k : Fin N) :
     coeff N m f k = (N : ℂ)⁻¹ *
       ((dft N)ᴴ *ᵥ fun j : Fin N =>
         Complex.exp (2 * π * I / N) ^ (-(m * (j : ℕ))) * f (angleNode N j)) k := by
-  have hN : 0 < N := k.pos
-  have hN' : (N : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hN.ne'
   rw [conjTranspose_dft_mulVec_apply, coeff_def, ← Fin.sum_univ_eq_sum_range]
   congr 1
   refine Finset.sum_congr rfl fun j _ => ?_
@@ -564,7 +546,6 @@ theorem fourier_coe_two_pi (p : ℤ) (x : ℝ) :
   rw [fourier_coe_apply]
   congr 1
   have : (2 * π : ℂ) ≠ 0 := by
-    have := Real.pi_pos
     exact_mod_cast (by positivity : (2 * π : ℝ) ≠ 0)
   push_cast
   field_simp

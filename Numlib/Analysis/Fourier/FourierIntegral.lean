@@ -184,40 +184,49 @@ theorem fourierIntegral_comp_mul_left {a : ℝ} (ha : a ≠ 0) (f : ℝ → E) (
 
 /-! ### Parity -/
 
+/-- **The transform of a real function in real form**: for `f : ℝ → ℝ` integrable,
+`𝓕 f ν = ∫ f t cos (2 π ν t) dt - i ∫ f t sin (2 π ν t) dt`, by
+`e^{-2πiνt} = cos (2πνt) - i sin (2πνt)`. -/
+theorem fourierIntegral_ofReal_eq_integral_cos_sub_integral_sin {f : ℝ → ℝ} (hf : Integrable f)
+    (ν : ℝ) :
+    𝓕 (fun t => (f t : ℂ)) ν = ((∫ t, f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ)
+      - I * ((∫ t, f t * Real.sin (2 * π * ν * t) : ℝ) : ℂ) := by
+  rw [Real.fourier_real_eq_integral_exp_smul]
+  have hsplit : ∀ t : ℝ, Complex.exp (↑(-2 * π * t * ν) * I) • (f t : ℂ)
+      = ((f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ)
+        - I * ((f t * Real.sin (2 * π * ν * t) : ℝ) : ℂ) := by
+    intro t
+    rw [Complex.exp_mul_I, smul_eq_mul, ← Complex.ofReal_cos, ← Complex.ofReal_sin,
+      show -2 * π * t * ν = -(2 * π * ν * t) by ring, Real.cos_neg, Real.sin_neg]
+    push_cast
+    ring
+  have hcos : Integrable fun t => f t * Real.cos (2 * π * ν * t) :=
+    hf.mul_bdd (c := 1) (by fun_prop) (Eventually.of_forall fun t => by
+      simpa using Real.abs_cos_le_one _)
+  have hsin : Integrable fun t => f t * Real.sin (2 * π * ν * t) :=
+    hf.mul_bdd (c := 1) (by fun_prop) (Eventually.of_forall fun t => by
+      simpa using Real.abs_sin_le_one _)
+  have hcosC : Integrable fun t => ((f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ) := hcos.ofReal
+  have hsinC : Integrable fun t => ((f t * Real.sin (2 * π * ν * t) : ℝ) : ℂ) := hsin.ofReal
+  simp only [hsplit]
+  rw [integral_sub hcosC (hsinC.const_mul I), integral_const_mul, integral_complex_ofReal,
+    integral_complex_ofReal]
+
 /-- **The transform of a real even function is its cosine transform**: for `f : ℝ → ℝ` integrable
 and even, `𝓕 f ν = ∫ f t cos (2 π ν t) dt`. Expanding `e^{-2πiνt} = cos (2πνt) - i sin (2πνt)`,
 the sine term integrates to zero because its integrand is odd. -/
 theorem fourierIntegral_even_eq_integral_cos {f : ℝ → ℝ} (hf : Integrable f)
     (heven : ∀ t, f (-t) = f t) (ν : ℝ) :
     𝓕 (fun t => (f t : ℂ)) ν = ((∫ t, f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ) := by
-  rw [Real.fourier_real_eq_integral_exp_smul]
-  have hsplit : ∀ t : ℝ, Complex.exp (↑(-2 * π * t * ν) * I) • (f t : ℂ)
-      = ((f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ)
-        + I * ((f t * Real.sin (-2 * π * t * ν) : ℝ) : ℂ) := by
-    intro t
-    rw [Complex.exp_mul_I, smul_eq_mul, ← Complex.ofReal_cos, ← Complex.ofReal_sin,
-      show -2 * π * t * ν = -(2 * π * ν * t) by ring, Real.cos_neg]
-    push_cast
-    ring
-  have hcos : Integrable fun t => f t * Real.cos (2 * π * ν * t) :=
-    hf.mul_bdd (c := 1) (by fun_prop) (Eventually.of_forall fun t => by
-      simpa using Real.abs_cos_le_one _)
-  have hsin : Integrable fun t => f t * Real.sin (-2 * π * t * ν) :=
-    hf.mul_bdd (c := 1) (by fun_prop) (Eventually.of_forall fun t => by
-      simpa using Real.abs_sin_le_one _)
-  have hodd : ∫ t, f t * Real.sin (-2 * π * t * ν) = 0 := by
-    have h := MeasureTheory.integral_neg_eq_self (fun t => f t * Real.sin (-2 * π * t * ν)) volume
-    have h' : ∀ t, f (-t) * Real.sin (-2 * π * -t * ν) = -(f t * Real.sin (-2 * π * t * ν)) := by
+  have hodd : ∫ t, f t * Real.sin (2 * π * ν * t) = 0 := by
+    have h := MeasureTheory.integral_neg_eq_self (fun t => f t * Real.sin (2 * π * ν * t)) volume
+    have h' : ∀ t, f (-t) * Real.sin (2 * π * ν * -t) = -(f t * Real.sin (2 * π * ν * t)) := by
       intro t
-      rw [heven, show -2 * π * -t * ν = -(-2 * π * t * ν) by ring, Real.sin_neg]
+      rw [heven, show 2 * π * ν * -t = -(2 * π * ν * t) by ring, Real.sin_neg]
       ring
     simp only [h', integral_neg] at h
     linarith
-  have hcosC : Integrable fun t => ((f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ) := hcos.ofReal
-  have hsinC : Integrable fun t => ((f t * Real.sin (-2 * π * t * ν) : ℝ) : ℂ) := hsin.ofReal
-  simp only [hsplit]
-  rw [integral_add hcosC (hsinC.const_mul I), integral_const_mul, integral_complex_ofReal,
-    integral_complex_ofReal, hodd]
+  rw [fourierIntegral_ofReal_eq_integral_cos_sub_integral_sin hf, hodd]
   simp
 
 /-- **Parity, even case** ([quarteroni2000numerical] §10.11.1, property 4): the Fourier transform
@@ -239,21 +248,6 @@ integrable and odd, `𝓕 f ν = -i ∫ f t sin (2 π ν t) dt`; the cosine term
 theorem fourierIntegral_odd_eq_integral_sin {f : ℝ → ℝ} (hf : Integrable f)
     (hodd : ∀ t, f (-t) = -f t) (ν : ℝ) :
     𝓕 (fun t => (f t : ℂ)) ν = -I * ((∫ t, f t * Real.sin (2 * π * ν * t) : ℝ) : ℂ) := by
-  rw [Real.fourier_real_eq_integral_exp_smul]
-  have hsplit : ∀ t : ℝ, Complex.exp (↑(-2 * π * t * ν) * I) • (f t : ℂ)
-      = ((f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ)
-        - I * ((f t * Real.sin (2 * π * ν * t) : ℝ) : ℂ) := by
-    intro t
-    rw [Complex.exp_mul_I, smul_eq_mul, ← Complex.ofReal_cos, ← Complex.ofReal_sin,
-      show -2 * π * t * ν = -(2 * π * ν * t) by ring, Real.cos_neg, Real.sin_neg]
-    push_cast
-    ring
-  have hcos : Integrable fun t => f t * Real.cos (2 * π * ν * t) :=
-    hf.mul_bdd (c := 1) (by fun_prop) (Eventually.of_forall fun t => by
-      simpa using Real.abs_cos_le_one _)
-  have hsin : Integrable fun t => f t * Real.sin (2 * π * ν * t) :=
-    hf.mul_bdd (c := 1) (by fun_prop) (Eventually.of_forall fun t => by
-      simpa using Real.abs_sin_le_one _)
   have hzero : ∫ t, f t * Real.cos (2 * π * ν * t) = 0 := by
     have h := MeasureTheory.integral_neg_eq_self (fun t => f t * Real.cos (2 * π * ν * t)) volume
     have h' : ∀ t, f (-t) * Real.cos (2 * π * ν * -t) = -(f t * Real.cos (2 * π * ν * t)) := by
@@ -262,11 +256,7 @@ theorem fourierIntegral_odd_eq_integral_sin {f : ℝ → ℝ} (hf : Integrable f
       ring
     simp only [h', integral_neg] at h
     linarith
-  have hcosC : Integrable fun t => ((f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ) := hcos.ofReal
-  have hsinC : Integrable fun t => ((f t * Real.sin (2 * π * ν * t) : ℝ) : ℂ) := hsin.ofReal
-  simp only [hsplit]
-  rw [integral_sub hcosC (hsinC.const_mul I), integral_const_mul, integral_complex_ofReal,
-    integral_complex_ofReal, hzero]
+  rw [fourierIntegral_ofReal_eq_integral_cos_sub_integral_sin hf, hzero]
   simp
 
 /-- **Parity, odd case** ([quarteroni2000numerical] §10.11.1, property 4): the Fourier transform

@@ -365,7 +365,7 @@ theorem NoBreakdown.mono {m k : ℕ} (h : NoBreakdown A v₁ w₁ m) (hk : k ≤
 /-- The surface no-breakdown hypothesis is the backbone one. -/
 theorem NoBreakdown.toBiLanczos {m : ℕ} (h : NoBreakdown A v₁ w₁ m) :
     BiLanczos.NoBreakdown (op A) (op Aᴴ) v₁ w₁ m where
-  adjoint := inner_op_conjTranspose A
+  adjoint := LinearMap.isAdjointPair_inner_iff'.2 (inner_op_conjTranspose A)
   inner_start := h.inner_start
   delta_ne_zero j hj := by
     rw [← bilanczosDelta_eq]
@@ -928,7 +928,8 @@ theorem bilanczosWhat_eq_smul (j : ℕ) :
 consequences of this one identity. -/
 theorem polyForm_eq_moment (p q : 𝕜[X]) :
     polyForm A v₁ w₁ p q = BiLanczos.moment (op A) v₁ w₁ (p * q) :=
-  BiLanczos.polyForm_eq_moment (inner_op_conjTranspose A) p q
+  BiLanczos.polyForm_eq_moment (LinearMap.isAdjointPair_inner_iff'.2 (inner_op_conjTranspose A))
+    p q
 
 /-- **§7.1.2**: "`M_k` is a Hankel matrix, i.e., its coefficients `m_ij` are constant along
 anti-diagonals". The `LU` factorization `M_k = L_k U_k` that the Parlett–Taylor–Liu look-ahead
@@ -937,7 +938,8 @@ implementation pivots on is *not* formalized: neither Mathlib nor this library h
 theorem momentMatrix_apply_eq_of_add_eq {k : ℕ} {i j i' j' : Fin k}
     (hij : (i : ℕ) + (j : ℕ) = (i' : ℕ) + (j' : ℕ)) :
     momentMatrix A v₁ w₁ k i j = momentMatrix A v₁ w₁ k i' j' :=
-  BiLanczos.momentMatrix_apply_eq_of_add_eq (inner_op_conjTranspose A) hij
+  BiLanczos.momentMatrix_apply_eq_of_add_eq
+    (LinearMap.isAdjointPair_inner_iff'.2 (inner_op_conjTranspose A)) hij
 
 variable {A v₁ w₁}
 

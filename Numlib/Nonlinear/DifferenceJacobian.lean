@@ -90,7 +90,6 @@ theorem norm_differenceJacobian_col_sub_le {F : EuclideanSpace ℝ ι → Euclid
     simp only [smul_sub]
     rw [smul_smul, inv_mul_cancel₀ hj0, one_smul]
   rw [hkey, norm_smul, norm_inv, Real.norm_eq_abs]
-  have hpos : 0 < |h j| := abs_pos.2 hj0
   calc |h j|⁻¹ * ‖F (x + v) - F x - F' x v‖ ≤ |h j|⁻¹ * (L / 2 * |h j| ^ 2) := by gcongr
     _ = L / 2 * |h j| := by field_simp
 

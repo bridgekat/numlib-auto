@@ -107,11 +107,10 @@ theorem exists_tendsto_slope_of_convexOn [TopologicalSpace E] [ContinuousAdd E]
     refine ⟨ε, hε, fun t ht => hball ?_⟩
     simp only [Metric.mem_ball, Real.dist_eq, sub_zero, abs_lt]
     exact ⟨ht.1, ht.2⟩
-  have hx0 : f (x + (0 : ℝ) • y) = f x := by simp
   have hsec : ∀ s ∈ {t : ℝ | x + t • y ∈ S}, ∀ t ∈ {t : ℝ | x + t • y ∈ S}, s ≠ 0 → t ≠ 0 →
       s ≤ t → (f (x + s • y) - f x) / s ≤ (f (x + t • y) - f x) / t := by
     intro s hs t ht hs0 ht0 hst
-    simpa [hx0] using hg.secant_mono h0 hs ht hs0 ht0 hst
+    simpa using hg.secant_mono h0 hs ht hs0 ht0 hst
   have hmono : MonotoneOn (fun t : ℝ => (f (x + t • y) - f x) / t) (Ioo 0 δ) := by
     intro s hs t ht hst
     exact hsec s (hsub ⟨by linarith [hs.1], hs.2⟩) t (hsub ⟨by linarith [ht.1], ht.2⟩)
@@ -1186,8 +1185,6 @@ theorem hasSaddleGradientAt_of_subdifferential_eq_singleton (hCo : IsOpen C) (hC
     exact (real_inner_le_norm _ _).trans (mul_le_mul_of_nonneg_left hnorm (norm_nonneg _))
   have hn1 : ‖h.1‖ ≤ ‖h‖ := norm_fst_le h
   have hn2 : ‖h.2‖ ≤ ‖h‖ := norm_snd_le h
-  have hnn1 : 0 ≤ ‖h.1‖ * (c / 2) := by positivity
-  have hnn2 : 0 ≤ ‖h.2‖ * (c / 2) := by positivity
   have hbound : ‖h.1‖ * (c / 2) + ‖h.2‖ * (c / 2) ≤ c * ‖h‖ := by nlinarith
   have hpt : ((u, v) : U × X) + h = (u + h.1, v + h.2) := rfl
   rw [hpt, prodInnerL_apply, Real.norm_eq_abs, abs_le]

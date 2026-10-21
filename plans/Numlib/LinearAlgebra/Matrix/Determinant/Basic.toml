@@ -1,0 +1,4 @@
+namespace = "Matrix"
+
+[[node]]
+id = "det_succ_succ_of_last_row_col"

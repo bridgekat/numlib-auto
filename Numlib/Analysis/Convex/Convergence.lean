@@ -29,9 +29,10 @@ convergence theorems *need* the weakened form, their own hypotheses being about 
 * `exists_tendstoUniformlyOn_of_dense`, `exists_tendstoUniformlyOn_of_dense_relint` — convergence
   from a dense subset, with `tendstoUniformlyOn_of_tendsto`(`_relint`) for the case where the limit
   is already known and `eventually_forall_le_add_of_eventually_le`(`_relint`) for the eventual
-  upper bound. `uniformCauchySeqOn_of_dense` is the analytic core.
+  upper bound. `uniformCauchySeqOn_of_dense` is the analytic core, and
+  `uniformCauchySeqOn_of_equiLipschitz` its metric core, with the convexity stripped out.
 * `exists_subseq_tendstoUniformlyOn`, `exists_subseq_tendstoUniformlyOn_relint` — a uniformly
-  convergent subsequence.
+  convergent subsequence, from `exists_strictMono_tendsto_of_countable`.
 * `convexOn_ciSup` — a finite pointwise supremum of convex functions is convex.
 * `convexOn_chart`, `mem_relint_of_mem_interior_chart`, `mem_interior_chart_of_mem_relint`,
   `chart_subset_interior_chart`, `interior_chart_subset_closure_chart` — the chart bookkeeping.
@@ -193,7 +194,6 @@ theorem exists_forall_ge_of_isBounded (hU : IsOpen U) (hUc : Convex ℝ U)
     have h1 : (1 - δ / (δ + t)) * f i (x₀ + (δ / t) • (x₀ - x)) ≤ β₂ := by
       nlinarith
     linarith [hβ₁' i]
-  have hlampos : (0 : ℝ) < δ / (δ + t) := by positivity
   have hfx : (δ + t) * (β₁ - β₂) / δ ≤ f i x := by
     have h2 : (δ + t) * (β₁ - β₂) ≤ (δ + t) * (δ / (δ + t) * f i x) :=
       mul_le_mul_of_nonneg_left hstep hδt.le
@@ -248,6 +248,98 @@ theorem exists_forall_lipschitzOnWith_of_isCompact (hU : IsOpen U) (hUc : Convex
 
 end OpenConvex
 
+/-! ### Equi-Lipschitz plus a dense Cauchy set
+
+The metric core of the convergence theorems, with the convexity stripped out: on a compact `S`
+carrying a collar `S'` on which the sequence is equi-Lipschitz, pointwise Cauchy behaviour on a
+dense subset of `S` is already uniform Cauchy behaviour on `S`. -/
+
+section UniformCauchy
+
+variable {Ω : Type*} [PseudoMetricSpace Ω] {f : ℕ → Ω → ℝ} {A S S' : Set Ω} {ε : ℝ} {k : ℝ≥0}
+
+/-- **Equi-Lipschitz on a collar plus pointwise Cauchy on a dense subset gives uniform Cauchy.**
+`hcollar` is the only thing the ambient structure has to supply: every point of `A` within `ε` of
+`S` must lie in `S'`, the set on which the family is equi-Lipschitz. In the `interior` setting
+`S' = cthickening ε S`; in the relative setting it is `exists_isCompact_collar_relint`. -/
+theorem uniformCauchySeqOn_of_equiLipschitz (hS : IsCompact S) (hSS' : S ⊆ S') (hε : 0 < ε)
+    (hcollar : ∀ y ∈ A, ∀ x ∈ S, dist y x ≤ ε → y ∈ S')
+    (hdense : S ⊆ closure A) (hlip : ∀ i, LipschitzOnWith k (f i) S')
+    (hcau : ∀ z ∈ A, CauchySeq fun i => f i z) :
+    UniformCauchySeqOn f atTop S := by
+  classical
+  rw [Metric.uniformCauchySeqOn_iff]
+  intro δ hδ
+  have hknn : (0 : ℝ) ≤ (k : ℝ) := k.coe_nonneg
+  set ρ : ℝ := min ε (δ / (3 * ((k : ℝ) + 1))) with hρdef
+  have hρ : 0 < ρ := lt_min hε (by positivity)
+  have hkρ : (k : ℝ) * ρ < δ / 3 := by
+    have h1 : ρ ≤ δ / (3 * ((k : ℝ) + 1)) := min_le_right _ _
+    rw [le_div_iff₀ (by positivity : (0 : ℝ) < 3 * ((k : ℝ) + 1))] at h1
+    nlinarith [hρ]
+  have hcover : S ⊆ ⋃ z ∈ A ∩ S', ball z ρ := by
+    intro x hx
+    obtain ⟨z, hzA, hxz⟩ := Metric.mem_closure_iff.1 (hdense hx) ρ hρ
+    refine mem_biUnion ⟨hzA, hcollar z hzA x hx ?_⟩ (by rwa [mem_ball])
+    rw [dist_comm]
+    exact hxz.le.trans (min_le_left _ _)
+  obtain ⟨b, hbsub, hbfin, hbcover⟩ :=
+    hS.elim_finite_subcover_image (fun z (_ : z ∈ A ∩ S') => isOpen_ball) hcover
+  have hNex : ∀ z : Ω, ∃ N : ℕ, z ∈ b → ∀ m ≥ N, ∀ n ≥ N, dist (f m z) (f n z) < δ / 3 := by
+    intro z
+    by_cases hz : z ∈ b
+    · obtain ⟨N, hN⟩ := Metric.cauchySeq_iff.1 (hcau z (hbsub hz).1) (δ / 3) (by positivity)
+      exact ⟨N, fun _ => hN⟩
+    · exact ⟨0, fun h => absurd h hz⟩
+  choose Nf hNf using hNex
+  refine ⟨hbfin.toFinset.sup Nf, fun m hm n hn x hx => ?_⟩
+  obtain ⟨z, hzb, hxz⟩ := mem_iUnion₂.1 (hbcover hx)
+  have hNz : Nf z ≤ hbfin.toFinset.sup Nf := Finset.le_sup (hbfin.mem_toFinset.2 hzb)
+  have hmid : dist (f m z) (f n z) < δ / 3 := hNf z hzb m (hNz.trans hm) n (hNz.trans hn)
+  have hzS' : z ∈ S' := (hbsub hzb).2
+  have hxS' : x ∈ S' := hSS' hx
+  have hdxz : dist x z < ρ := by rwa [mem_ball] at hxz
+  have hkd : (k : ℝ) * dist x z ≤ (k : ℝ) * ρ := by
+    nlinarith [dist_nonneg (x := x) (y := z)]
+  have hd1 : dist (f m x) (f m z) ≤ (k : ℝ) * dist x z := (hlip m).dist_le_mul x hxS' z hzS'
+  have hd2 : dist (f n x) (f n z) ≤ (k : ℝ) * dist x z := (hlip n).dist_le_mul x hxS' z hzS'
+  have htri := dist_triangle4 (f m x) (f m z) (f n z) (f n x)
+  rw [dist_comm (f n z) (f n x)] at htri
+  linarith
+
+end UniformCauchy
+
+/-! ### Subsequences converging on a countable set -/
+
+section Subseq
+
+/-- **A pointwise bounded sequence of real functions has a subsequence converging at every point
+of a countable set.** The values at the points of `A` live in a compact box of `ℕ → ℝ`, which is
+sequentially compact because `ℕ → ℝ` is first countable; no diagonal argument is needed. -/
+theorem exists_strictMono_tendsto_of_countable {α : Type*} {A : Set α} (hA : A.Countable)
+    {f : ℕ → α → ℝ} (hbdd : ∀ x ∈ A, Bornology.IsBounded (Set.range fun i => f i x)) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ x ∈ A, ∃ L : ℝ, Tendsto (fun i => f (φ i) x) atTop (𝓝 L) := by
+  rcases A.eq_empty_or_nonempty with rfl | hne
+  · exact ⟨id, strictMono_id, fun x hx => absurd hx (notMem_empty x)⟩
+  obtain ⟨e, he⟩ := hA.exists_eq_range hne
+  have hmemA : ∀ n, e n ∈ A := fun n => he ▸ mem_range_self n
+  have hBex : ∀ n, ∃ B : ℝ, ∀ i, |f i (e n)| ≤ B := by
+    intro n
+    obtain ⟨B, hB⟩ := isBounded_iff_forall_norm_le.1 (hbdd (e n) (hmemA n))
+    exact ⟨B, fun i => by simpa [Real.norm_eq_abs] using hB _ (mem_range_self i)⟩
+  choose B hB using hBex
+  have hKcpt : IsCompact (Set.pi univ fun n => Icc (-(B n)) (B n)) :=
+    isCompact_univ_pi fun n => isCompact_Icc
+  have hmem : ∀ i, (fun n => f i (e n)) ∈ Set.pi univ fun n => Icc (-(B n)) (B n) :=
+    fun i n _ => Set.mem_Icc.2 (abs_le.1 (hB n i))
+  obtain ⟨u, -, φ, hφ, hlim⟩ := hKcpt.isSeqCompact hmem
+  refine ⟨φ, hφ, fun x hx => ?_⟩
+  rw [he] at hx
+  obtain ⟨n, rfl⟩ := hx
+  exact ⟨u n, tendsto_pi_nhds.1 hlim n⟩
+
+end Subseq
+
 /-! ### Convergence from a dense subset -/
 
 section Sequence
@@ -267,47 +359,12 @@ theorem uniformCauchySeqOn_of_dense (hU : IsOpen U) (hUc : Convex ℝ U)
     (hcau : ∀ x ∈ C', CauchySeq fun i => f i x)
     {S : Set W} (hS : IsCompact S) (hSU : S ⊆ U) :
     UniformCauchySeqOn f atTop S := by
-  classical
-  rw [Metric.uniformCauchySeqOn_iff]
-  intro ε hε
   obtain ⟨ε₀, hε₀, hcoll⟩ := hS.exists_cthickening_subset_open hU hSU
   obtain ⟨K, hK⟩ := exists_forall_lipschitzOnWith_of_isCompact hU hUc hf hC' hdense hab hbe
     (hS.cthickening (r := ε₀)) hcoll
-  have hKnn : (0 : ℝ) ≤ (K : ℝ) := K.coe_nonneg
-  set r : ℝ := min ε₀ (ε / (3 * ((K : ℝ) + 1))) with hrdef
-  have hr : 0 < r := lt_min hε₀ (by positivity)
-  have hKrlt : (K : ℝ) * r < ε / 3 := by
-    have h1 : r ≤ ε / (3 * ((K : ℝ) + 1)) := min_le_right _ _
-    rw [le_div_iff₀ (by positivity : (0 : ℝ) < 3 * ((K : ℝ) + 1))] at h1
-    nlinarith [hr]
-  have hcover : S ⊆ ⋃ z ∈ C' ∩ cthickening ε₀ S, ball z r := by
-    intro x hx
-    obtain ⟨z, hzC', hxz⟩ := Metric.mem_closure_iff.1 (hdense (hSU hx)) r hr
-    refine mem_biUnion ⟨hzC', ?_⟩ (by rwa [mem_ball])
-    exact Metric.mem_cthickening_of_dist_le z x ε₀ S hx
-      (by rw [dist_comm]; exact hxz.le.trans (min_le_left _ _))
-  obtain ⟨b, hbsub, hbfin, hbcover⟩ :=
-    hS.elim_finite_subcover_image (fun z (_ : z ∈ C' ∩ cthickening ε₀ S) => isOpen_ball) hcover
-  have hNex : ∀ z : W, ∃ N : ℕ, z ∈ b → ∀ m ≥ N, ∀ n ≥ N, dist (f m z) (f n z) < ε / 3 := by
-    intro z
-    by_cases hz : z ∈ b
-    · obtain ⟨N, hN⟩ := Metric.cauchySeq_iff.1 (hcau z (hbsub hz).1) (ε / 3) (by positivity)
-      exact ⟨N, fun _ => hN⟩
-    · exact ⟨0, fun h => absurd h hz⟩
-  choose Nf hNf using hNex
-  refine ⟨hbfin.toFinset.sup Nf, fun m hm n hn x hx => ?_⟩
-  obtain ⟨z, hzb, hxz⟩ := mem_iUnion₂.1 (hbcover hx)
-  have hNz : Nf z ≤ hbfin.toFinset.sup Nf := Finset.le_sup (hbfin.mem_toFinset.2 hzb)
-  have hmid : dist (f m z) (f n z) < ε / 3 := hNf z hzb m (hNz.trans hm) n (hNz.trans hn)
-  have hzS' : z ∈ cthickening ε₀ S := (hbsub hzb).2
-  have hxS' : x ∈ cthickening ε₀ S := Metric.self_subset_cthickening S hx
-  have hdxz : dist x z < r := by rwa [mem_ball] at hxz
-  have hKd : (K : ℝ) * dist x z ≤ (K : ℝ) * r := by nlinarith [dist_nonneg (x := x) (y := z)]
-  have hd1 : dist (f m x) (f m z) ≤ (K : ℝ) * dist x z := (hK m).dist_le_mul x hxS' z hzS'
-  have hd2 : dist (f n x) (f n z) ≤ (K : ℝ) * dist x z := (hK n).dist_le_mul x hxS' z hzS'
-  have htri := dist_triangle4 (f m x) (f m z) (f n z) (f n x)
-  rw [dist_comm (f n z) (f n x)] at htri
-  linarith
+  exact uniformCauchySeqOn_of_equiLipschitz hS (Metric.self_subset_cthickening S) hε₀
+    (fun y _ x hx hyx => Metric.mem_cthickening_of_dist_le y x ε₀ S hx hyx)
+    (fun x hx => hdense (hSU hx)) hK hcau
 
 /-- **Convergence from a dense subset**, in the interior form: a sequence of functions convex on
 an open convex set `U` which converges pointwise on a subset `C'` whose closure contains `U`
@@ -359,34 +416,6 @@ theorem tendstoUniformlyOn_of_tendsto (hU : IsOpen U) (hUc : Convex ℝ U)
   exact (huc hS hSU).congr_right fun x hx =>
     tendsto_nhds_unique (hg' x (hSU hx)) (hg x (hSU hx))
 
-/-- **An eventual upper bound**, in the interior form: if a sequence of functions convex on an
-open convex set `U` satisfies `limsup_i f i x ≤ g x` pointwise for a convex `g`, then on each
-compact
-`S ⊆ U` the bound `f i ≤ g + ε` holds for all large `i`. The `limsup` hypothesis is spelled as "for
-every `ε > 0`, eventually `f i x ≤ g x + ε`", which avoids the junk values `Filter.limsup` takes on
-unbounded sequences. -/
-theorem eventually_forall_le_add_of_eventually_le (hU : IsOpen U) (hUc : Convex ℝ U)
-    (hf : ∀ i, ConvexOn ℝ U (f i)) {g : W → ℝ} (hg : ConvexOn ℝ U g)
-    (hle : ∀ x ∈ U, ∀ δ > 0, ∀ᶠ i in atTop, f i x ≤ g x + δ)
-    {S : Set W} (hS : IsCompact S) (hSU : S ⊆ U) {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ i in atTop, ∀ x ∈ S, f i x ≤ g x + ε := by
-  have hmax : ∀ i, ConvexOn ℝ U fun x => f i x ⊔ g x := fun i => (hf i).sup hg
-  have hcv : ∀ x ∈ U, Tendsto (fun i => f i x ⊔ g x) atTop (𝓝 (g x)) := by
-    intro x hx
-    rw [Metric.tendsto_atTop]
-    intro δ hδ
-    obtain ⟨N, hN⟩ := Filter.eventually_atTop.1 (hle x hx (δ / 2) (by positivity))
-    refine ⟨N, fun n hn => ?_⟩
-    have h1 : g x ≤ f n x ⊔ g x := le_max_right _ _
-    have h2 : f n x ⊔ g x ≤ g x + δ / 2 := max_le (hN n hn) (by linarith)
-    rw [Real.dist_eq, abs_of_nonneg (by linarith)]
-    linarith
-  have huc := tendstoUniformlyOn_of_tendsto hU hUc hmax hcv hS hSU
-  filter_upwards [Metric.tendstoUniformlyOn_iff.1 huc ε hε] with i hi x hx
-  have h1 := hi x hx
-  rw [Real.dist_eq, abs_sub_comm, abs_of_nonneg (by simp)] at h1
-  exact (le_max_left (f i x) (g x)).trans (by linarith)
-
 /-- **Arzelà–Ascoli for convex functions**, in the interior form: a sequence of functions convex
 on an open convex set `U` whose values are bounded at each point of a subset `C'` with `U ⊆ cl C'`
 has a subsequence
@@ -402,34 +431,10 @@ theorem exists_subseq_tendstoUniformlyOn (hU : IsOpen U) (hUc : Convex ℝ U)
     (TopologicalSpace.IsSeparable.of_separableSpace C').exists_countable_dense_subset
   have hdense'' : U ⊆ closure C'' :=
     hdense.trans (closure_minimal hC''dense isClosed_closure)
-  rcases C''.eq_empty_or_nonempty with hempty | hne
-  · have hUempty : U = ∅ := by
-      rw [hempty, closure_empty] at hdense''
-      exact subset_empty_iff.1 hdense''
-    subst hUempty
-    refine ⟨id, fun _ => 0, strictMono_id, ⟨convex_empty, by simp⟩, by simp, fun S hS hSU => ?_⟩
-    rw [subset_empty_iff] at hSU
-    subst hSU
-    exact fun u hu => Filter.Eventually.of_forall (by simp)
-  obtain ⟨e, he⟩ := hC''cnt.exists_eq_range hne
-  have hmemC' : ∀ n, e n ∈ C' := fun n => hC''sub (he ▸ mem_range_self n)
-  have hBex : ∀ n, ∃ B : ℝ, ∀ i, |f i (e n)| ≤ B := by
-    intro n
-    obtain ⟨B, hB⟩ := isBounded_iff_forall_norm_le.1 (hbdd (e n) (hmemC' n))
-    exact ⟨B, fun i => by simpa [Real.norm_eq_abs] using hB _ (mem_range_self i)⟩
-  choose B hB using hBex
-  have hKcpt : IsCompact (Set.pi univ fun n => Icc (-(B n)) (B n)) :=
-    isCompact_univ_pi fun n => isCompact_Icc
-  have hmem : ∀ i, (fun n => f i (e n)) ∈ Set.pi univ fun n => Icc (-(B n)) (B n) :=
-    fun i n _ => Set.mem_Icc.2 (abs_le.1 (hB n i))
-  obtain ⟨u, -, φ, hφ, hlim⟩ := hKcpt.isSeqCompact hmem
-  have hptw : ∀ n, Tendsto (fun i => f (φ i) (e n)) atTop (𝓝 (u n)) :=
-    fun n => tendsto_pi_nhds.1 hlim n
+  obtain ⟨φ, hφ, hcv⟩ := exists_strictMono_tendsto_of_countable hC''cnt
+    fun x hx => hbdd x (hC''sub hx)
   obtain ⟨g, hgconv, hgU, huc⟩ := exists_tendstoUniformlyOn_of_dense hU hUc
-    (fun i => hf (φ i)) (hC''sub.trans hC') hdense'' fun x hx => by
-      rw [he] at hx
-      obtain ⟨n, rfl⟩ := hx
-      exact ⟨u n, hptw n⟩
+    (fun i => hf (φ i)) (hC''sub.trans hC') hdense'' hcv
   exact ⟨φ, g, hφ, hgconv, hgU, huc⟩
 
 end Sequence
@@ -742,6 +747,27 @@ theorem eventually_forall_le_add_of_eventually_le_relint (hC : Convex ℝ C)
   have h1 := hi x hx
   rw [Real.dist_eq, abs_sub_comm, abs_of_nonneg (by simp)] at h1
   exact (le_max_left (f i x) (g x)).trans (by linarith)
+
+/-- **An eventual upper bound**, in the interior form: if a sequence of functions convex on an
+open convex set `U` satisfies `limsup_i f i x ≤ g x` pointwise for a convex `g`, then on each
+compact
+`S ⊆ U` the bound `f i ≤ g + ε` holds for all large `i`. The `limsup` hypothesis is spelled as "for
+every `ε > 0`, eventually `f i x ≤ g x + ε`", which avoids the junk values `Filter.limsup` takes on
+unbounded sequences. The proof is the `_relint` form, an open convex set being its own relative
+interior. -/
+theorem eventually_forall_le_add_of_eventually_le {U : Set E} (hU : IsOpen U)
+    (hUc : Convex ℝ U) (hf : ∀ i, ConvexOn ℝ U (f i)) {g : E → ℝ} (hg : ConvexOn ℝ U g)
+    (hle : ∀ x ∈ U, ∀ δ > 0, ∀ᶠ i in atTop, f i x ≤ g x + δ)
+    {S : Set E} (hS : IsCompact S) (hSU : S ⊆ U) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ i in atTop, ∀ x ∈ S, f i x ≤ g x + ε := by
+  rcases U.eq_empty_or_nonempty with rfl | hne
+  · rw [subset_empty_iff] at hSU
+    subst hSU
+    simp
+  have hri : ri U = U := by
+    rw [intrinsicInterior_eq_interior (hU.affineSpan_eq_top hne), hU.interior_eq]
+  exact eventually_forall_le_add_of_eventually_le_relint hUc hf hg (by rwa [hri]) hS
+    (by rwa [hri]) hε
 
 /-- **Arzelà–Ascoli for convex functions**: a sequence of functions convex on `C` whose values are
 bounded

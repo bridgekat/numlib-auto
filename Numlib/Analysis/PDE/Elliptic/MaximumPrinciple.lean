@@ -17,13 +17,14 @@ forms of `Numlib/Analysis/PDE/Elliptic/Dirichlet.lean`.
 ## The shape of the statements
 
 A weak solution is an element `u` of `H^1(Ω)` with `laplaceForm Ω u φ = load Ω f φ` for every
-`φ` of a test space `V` (`H^1_0(Ω)` for the Dirichlet problem, all of `H^1(Ω)` for the Neumann
-problem), and "`u ∈ C(Ω̄)`" is a function `ũ : ℝ^N → ℝ`, continuous on `closure Ω`, with
-`SobolevMultiIndex.fn u =ᵐ[Ω] ũ`; the boundary values are the values of `ũ` on `frontier Ω`. The
-book's `sup_Γ u` and `sup_Ω f` are not formed: a bound `K` with `ũ ≤ K` on `frontier Ω` and
-`f ≤ K` almost everywhere on `Ω` is the hypothesis and `ũ ≤ K` on `Ω` the conclusion; lower bounds
-are the same statements for `-u`, `-f`, `-K`. Almost-everywhere bounds are upgraded to every
-point of the open `Ω` by continuity (`Elliptic.forall_le_of_ae_le_of_continuousOn`).
+`φ` of a test space `V` (`Elliptic.IsWeakSolution (laplaceForm Ω) V u f`; `V = H^1_0(Ω)` for
+the Dirichlet problem, all of `H^1(Ω)` for the Neumann problem), and "`u ∈ C(Ω̄)`" is a function
+`ũ : ℝ^N → ℝ`, continuous on `closure Ω`, with `SobolevMultiIndex.fn u =ᵐ[Ω] ũ`; the boundary
+values are the values of `ũ` on `frontier Ω`. The book's `sup_Γ u` and `sup_Ω f` are not formed:
+a bound `K` with `ũ ≤ K` on `frontier Ω` and `f ≤ K` almost everywhere on `Ω` is the hypothesis
+and `ũ ≤ K` on `Ω` the conclusion; lower bounds are the same statements for `-u`, `-f`, `-K`.
+Almost-everywhere bounds are upgraded to every point of the open `Ω` by continuity
+(`Elliptic.forall_le_of_ae_le_of_continuousOn`).
 
 ## The engine
 
@@ -165,8 +166,8 @@ theorem load_neg_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace 
 theorem forall_laplaceForm_neg_eq_load_neg (V : Submodule ℝ (SobolevEuclidean N 1 2 Ω))
     {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ V, laplaceForm Ω u φ = load Ω f φ) :
-    ∀ φ ∈ V, laplaceForm Ω (-u) φ = load Ω (-f) φ := fun φ hφ ↦ by
+    (heq : IsWeakSolution (laplaceForm Ω) V u f) :
+    IsWeakSolution (laplaceForm Ω) V (-u) (-f) := fun φ hφ ↦ by
   rw [laplaceForm_neg_apply, load_neg_apply, heq φ hφ]
 
 /-- `-f ≤ -K` almost everywhere when `K ≤ f` almost everywhere. -/
@@ -311,7 +312,7 @@ Proof: fix `K' > K`; the element `v` with function `G(u − K')` exists
 theorem le_of_forall_truncation_mem (V : Submodule ℝ (SobolevEuclidean N 1 2 Ω))
     {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ V, laplaceForm Ω u φ = load Ω f φ) {K : ℝ}
+    (heq : IsWeakSolution (laplaceForm Ω) V u f) {K : ℝ}
     (hf : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), f x ≤ K)
     (hV : ∀ K', K < K' → ∀ (G : ℝ → ℝ) (M : ℝ), IsStampacchiaTruncation G M →
       ∀ v : SobolevEuclidean N 1 2 Ω,
@@ -319,7 +320,6 @@ theorem le_of_forall_truncation_mem (V : Submodule ℝ (SobolevEuclidean N 1 2 �
           (fun x ↦ G (fn u x - K')) → v ∈ V) :
     ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), fn u x ≤ K := by
   obtain ⟨G, hG, -, -⟩ := exists_stampacchiaTruncation
-  have hΩm := Ω.isOpen.measurableSet
   -- for every `K' > K`, `u ≤ K'` almost everywhere
   have key : ∀ K', K < K' →
       ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), fn u x ≤ K' := by
@@ -419,7 +419,7 @@ on `closure Ω` and vanishes on `frontier Ω`, so its class lies in `H^1_0(Ω)` 
 (i) ⇒ (ii), which needs no regularity of `Ω`. -/
 theorem le_of_le_frontier {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω u φ = load Ω f φ)
+    (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ)
     (hc : ContinuousOn ũ (closure Ω)) {K : ℝ} (hΓ : ∀ x ∈ frontier (Ω : Set _), ũ x ≤ K)
@@ -442,7 +442,7 @@ theorem le_of_le_frontier {u : SobolevEuclidean N 1 2 Ω}
 `K ≤ ũ` on `Ω` — the upper bound applied to `-u`, `-f`, `-K`. -/
 theorem ge_of_ge_frontier {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω u φ = load Ω f φ)
+    (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ)
     (hc : ContinuousOn ũ (closure Ω)) {K : ℝ} (hΓ : ∀ x ∈ frontier (Ω : Set _), K ≤ ũ x)
@@ -458,7 +458,7 @@ theorem ge_of_ge_frontier {u : SobolevEuclidean N 1 2 Ω}
 `frontier Ω` and `f ≤ K₂` almost everywhere — the book's `u ≤ max {sup_Γ u, sup_Ω f}`. -/
 theorem le_max_of_isWeakSolution {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω u φ = load Ω f φ)
+    (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ)
     (hc : ContinuousOn ũ (closure Ω)) {K₁ K₂ : ℝ} (hΓ : ∀ x ∈ frontier (Ω : Set _), ũ x ≤ K₁)
@@ -476,7 +476,7 @@ everywhere on `Ω`. The boundary value `0` replaces `sup_Γ u`, which is why `K 
 form. -/
 theorem le_of_mem_zero {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω u φ = load Ω f φ) {K : ℝ}
+    (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f) {K : ℝ}
     (hK : 0 ≤ K) (hf : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), f x ≤ K) :
     ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), fn u x ≤ K := by
   refine le_of_forall_truncation_mem (SobolevEuclideanZero N 1 2 Ω) heq hf
@@ -488,7 +488,7 @@ theorem le_of_mem_zero {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclid
 and `K ≤ f` almost everywhere, `K ≤ fn u` almost everywhere on `Ω`. -/
 theorem ge_of_mem_zero {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω u φ = load Ω f φ) {K : ℝ}
+    (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f) {K : ℝ}
     (hK : K ≤ 0) (hf : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), K ≤ f x) :
     ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), K ≤ fn u x := by
   have h := le_of_mem_zero (neg_mem hu) (forall_laplaceForm_neg_eq_load_neg _ heq) (K := -K)
@@ -502,7 +502,7 @@ theorem ge_of_mem_zero {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclid
 ([brezis2011functional] Corollary 9.28, first assertion). -/
 theorem nonneg_of_nonneg_frontier {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω u φ = load Ω f φ)
+    (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ)
     (hc : ContinuousOn ũ (closure Ω)) (hΓ : ∀ x ∈ frontier (Ω : Set _), 0 ≤ ũ x)
@@ -515,7 +515,7 @@ theorem nonneg_of_nonneg_frontier {u : SobolevEuclidean N 1 2 Ω}
 `‖u‖_{L^∞(Ω)} ≤ max {‖u‖_{L^∞(Γ)}, ‖f‖_{L^∞(Ω)}}` ([brezis2011functional] Corollary 9.28). -/
 theorem abs_le_max_of_isWeakSolution {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω u φ = load Ω f φ)
+    (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ)
     (hc : ContinuousOn ũ (closure Ω)) {K₁ K₂ : ℝ} (hΓ : ∀ x ∈ frontier (Ω : Set _), |ũ x| ≤ K₁)
@@ -535,7 +535,7 @@ theorem abs_le_max_of_isWeakSolution {u : SobolevEuclidean N 1 2 Ω}
 /-- **Corollary 9.28, the case `f = 0`**: `|ũ| ≤ K` on `Ω` when `|ũ| ≤ K` on `frontier Ω` —
 "`‖u‖_{L^∞(Ω)} ≤ ‖u‖_{L^∞(Γ)}`" ([brezis2011functional] Corollary 9.28). -/
 theorem abs_le_of_load_eq_zero {u : SobolevEuclidean N 1 2 Ω}
-    (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω u φ = load Ω 0 φ)
+    (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u 0)
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ)
     (hc : ContinuousOn ũ (closure Ω)) {K : ℝ} (hK : 0 ≤ K)
@@ -552,7 +552,7 @@ theorem abs_le_of_load_eq_zero {u : SobolevEuclidean N 1 2 Ω}
 — "`‖u‖_{L^∞(Ω)} ≤ ‖f‖_{L^∞(Ω)}`" ([brezis2011functional] Corollary 9.28). -/
 theorem abs_le_of_eqOn_zero_frontier {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω u φ = load Ω f φ)
+    (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ)
     (hc : ContinuousOn ũ (closure Ω)) (hΓ : EqOn ũ 0 (frontier Ω)) {K : ℝ} (hK : 0 ≤ K)
@@ -626,7 +626,6 @@ theorem nonpos_ae_of_general_zero_drift_of_forall_mem (hN : N ≠ 0)
         v ∈ SobolevEuclideanZero N 1 2 Ω) :
     ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), fn u x ≤ 0 := by
   classical
-  have hΩm := Ω.isOpen.measurableSet
   have hα : 0 < α := hA.1
   obtain ⟨G, hGdef⟩ : ∃ G : ℝ → ℝ, G = stampacchiaTruncation := ⟨_, rfl⟩
   have hG : IsStampacchiaTruncation G 1 := hGdef ▸ isStampacchiaTruncation_stampacchiaTruncation
@@ -725,10 +724,6 @@ theorem nonpos_ae_of_general_zero_drift_of_forall_mem (hN : N ≠ 0)
           * weakDeriv u (MultiIndexLE.single i) x) * deriv G (fn u x) :=
       integral_nonneg fun x ↦ mul_nonneg (Finset.sum_nonneg fun i _ ↦ mul_self_nonneg _)
         (hG.deriv_nonneg _)
-    have hle : α * ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-        (∑ i : Fin N, weakDeriv u (MultiIndexLE.single i) x
-          * weakDeriv u (MultiIndexLE.single i) x) * deriv G (fn u x) ≤ 0 := by
-      linarith
     nlinarith
   have hae := (integral_eq_zero_iff_of_nonneg_ae (Eventually.of_forall fun x ↦
     mul_nonneg (Finset.sum_nonneg fun i _ ↦ mul_self_nonneg _) (hG.deriv_nonneg _)) hDint).1 hzero
@@ -1094,12 +1089,9 @@ theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart_sub_
     (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) : E → ℝ)
       =ᵐ[μ.restrict (Ω : Set E)] {x | l < SobolevMultiIndex.fn u x}.indicator
         (SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)) := by
-  have h1 := (SobolevMultiIndex.hasWeakIteratedLineDerivOn v (MultiIndexLE.single i)).of_perm
-    (multiIndexTuple_single_perm (b : ι → E) i)
   have h2 := ((SobolevMultiIndex.hasWeakIteratedLineDerivOn u (MultiIndexLE.single i)).of_perm
     (multiIndexTuple_single_perm (b : ι → E) i)).posPart_sub_const l
-  exact (ae_restrict_iff' Ω.isOpen.measurableSet).2
-    ((h1.congr_ae hv (Filter.EventuallyEq.refl _ _)).ae_eq h2)
+  exact SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn hv i h2
 
 /-- The partial derivatives of an element of `W^{1,p}(Ω)` vanish almost everywhere on each level
 set `{u = c}` (`HasWeakIteratedLineDerivOn.ae_eq_zero_of_eq_const`). -/
@@ -1151,7 +1143,6 @@ theorem exists_norm_indicator_bound (hN : 3 ≤ N) :
         ≤ C * gradNorm v
           * (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))) s).toReal ^ ((N : ℝ)⁻¹) := by
   have hN0 : (3 : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN
-  have hNpos : (0 : ℝ) < N := by linarith
   have h1 : (N : ℝ)⁻¹ ≤ (3 : ℝ)⁻¹ := by
     simpa [one_div] using one_div_le_one_div_of_le (show (0 : ℝ) < 3 by norm_num) hN0
   have hd : (0 : ℝ) < (2 : ℝ)⁻¹ - (N : ℝ)⁻¹ := by norm_num at h1 ⊢; linarith
@@ -1409,8 +1400,6 @@ theorem exists_measure_levelGradSet_ge (hN : 3 ≤ N) (hA : IsUniformlyElliptic 
     · rw [hfin]; exact le_top
     have key1 := gradNorm_sq_le_of_posPart hA ha₀ heq hf hl hvmem hv
     have key2 := hC v hvmem (levelGradSet u l) (measurableSet_levelGradSet u l) hfin
-    have hXnn : (0 : ℝ) ≤ (eLpNorm ((levelGradSet u l).indicator (fn v)) 2
-        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toReal := ENNReal.toReal_nonneg
     have htnn : (0 : ℝ) ≤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))
         (levelGradSet u l)).toReal ^ ((N : ℝ)⁻¹) := Real.rpow_nonneg ENNReal.toReal_nonneg _
     have h3 : (∑ i : Fin N, ‖a₁ i‖) * gradNorm v

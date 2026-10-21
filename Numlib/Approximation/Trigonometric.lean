@@ -174,7 +174,6 @@ form of the kernel from which the range and the idempotency of the projection ar
 theorem fourierKernel_eq_sum (n : ℕ) (x y : AddCircle (2 * π)) :
     fourierKernel n (x, y)
       = (2 * π)⁻¹ * ∑ m ∈ Finset.Icc (-(n : ℤ)) n, trigFun (2 * π) m x * trigFun (2 * π) m y := by
-  have hπ : (π : ℝ) ≠ 0 := Real.pi_ne_zero
   have h2 : (√2 : ℝ) * √2 = 2 := Real.mul_self_sqrt (by norm_num)
   induction x using QuotientAddGroup.induction_on with
   | _ u =>
@@ -210,7 +209,6 @@ theorem fourierProj_eq_sum (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) :
     fourierProj n f
       = ∑ m ∈ Finset.Icc (-(n : ℤ)) n,
           realFourierCoeff (f : AddCircle (2 * π) → ℝ) m • trigFun (2 * π) m := by
-  have hπ : (π : ℝ) ≠ 0 := Real.pi_ne_zero
   ext x
   have hcoe : ∀ m : ℤ, realFourierCoeff (f : AddCircle (2 * π) → ℝ) m
       = (2 * π)⁻¹ * ∫ y : AddCircle (2 * π), trigFun (2 * π) m y * f y := by
@@ -443,8 +441,6 @@ private theorem sum_pieces_le (n : ℕ) :
   have hnπ : (n : ℝ) * π / ((n : ℝ) + 1 / 2) ≤ π := by
     rw [div_le_iff₀ hc]
     nlinarith [Nat.cast_nonneg (α := ℝ) n]
-  have hn0 : (0 : ℝ) ≤ (n : ℝ) * π / ((n : ℝ) + 1 / 2) :=
-    div_nonneg (mul_nonneg (Nat.cast_nonneg n) hπ.le) hc.le
   have htail : (0 : ℝ) ≤ ∫ t in ((n : ℝ) * π / ((n : ℝ) + 1 / 2))..π, |dirichletKernel n t| :=
     intervalIntegral.integral_nonneg (μ := volume) hnπ fun _ _ => abs_nonneg _
   have hadj := intervalIntegral.integral_add_adjacent_intervals (μ := volume)
@@ -472,7 +468,6 @@ The Lebesgue constants are therefore unbounded, which is why the Fourier series 
 periodic function fails to converge uniformly. -/
 theorem log_le_lebesgueConstant (n : ℕ) :
     4 / π ^ 2 * Real.log n ≤ lebesgueConstant n := by
-  have hπ : (0 : ℝ) < π := Real.pi_pos
   have hsum : ∑ k ∈ Finset.Icc 1 n, 2 / ((k : ℝ) * π)
       = 2 / π * ∑ k ∈ Finset.Icc 1 n, ((k : ℝ))⁻¹ := by
     rw [Finset.mul_sum]

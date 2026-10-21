@@ -1,5 +1,6 @@
 import Mathlib.Combinatorics.SimpleGraph.Paths
 import Mathlib.Data.ENat.Lattice
+import Numlib.Combinatorics.SimpleGraph.Paths
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.Preconditioner.ILU
 
@@ -203,22 +204,6 @@ private theorem adjGraph_adj_iff (hsymm : A.IsPatternSymm) (i j : Fin n) :
     A.adjGraph.Adj i j ↔ i ≠ j ∧ A i j ≠ 0 :=
   adjGraph_adj_iff_of_forall_ne_zero fun i j => (hsymm i j).1
 
-/-- A path meets its first vertex only at the start: the part of it after an intermediate vertex `k`
-avoids `i`. -/
-private theorem notMem_support_dropUntil {V : Type*} [DecidableEq V] {G : SimpleGraph V}
-    {i j k : V} {w : G.Walk i j} (hp : w.IsPath) (hk : k ∈ w.support) (hki : k ≠ i) :
-    i ∉ (w.dropUntil k hk).support := by
-  intro hi
-  have hsupp : w.support = (w.takeUntil k hk).support ++ (w.dropUntil k hk).support.tail := by
-    conv_lhs => rw [← w.take_spec hk]
-    rw [SimpleGraph.Walk.support_append]
-  have hnd : ((w.takeUntil k hk).support ++ (w.dropUntil k hk).support.tail).Nodup := by
-    rw [← hsupp]
-    exact hp.support_nodup
-  refine List.disjoint_of_nodup_append hnd (SimpleGraph.Walk.start_mem_support _) ?_
-  rw [← SimpleGraph.Walk.cons_tail_support] at hi
-  exact (List.mem_cons.1 hi).resolve_left (Ne.symm hki)
-
 /-- **Half of Theorem 10.7**: a fill-path of length `ℓ` forces the level of fill to be at most
 `ℓ - 1`.
 
@@ -263,7 +248,7 @@ private theorem levelOfFill_add_one_le_length (hsymm : A.IsPatternSymm) :
     simp
   | succ m ih =>
     intro i j w hij hp hint hmi hmj
-    have hmn : m < n := by have := i.isLt; omega
+    have hmn : m < n := by omega
     obtain ⟨K, hK⟩ : ∃ K : Fin n, (K : ℕ) = m := ⟨⟨m, hmn⟩, rfl⟩
     have hKlti : K < i := by rw [Fin.lt_def, hK]; omega
     have hKltj : K < j := by rw [Fin.lt_def, hK]; omega
@@ -271,7 +256,7 @@ private theorem levelOfFill_add_one_le_length (hsymm : A.IsPatternSymm) :
     · have hKi : K ≠ i := ne_of_lt hKlti
       have hKj : K ≠ j := ne_of_lt hKltj
       have hjnot := SimpleGraph.Walk.endpoint_notMem_support_takeUntil hp hKmem hKj.symm
-      have hinot := notMem_support_dropUntil hp hKmem hKi
+      have hinot := SimpleGraph.Walk.start_notMem_support_dropUntil hp hKmem (Ne.symm hKi)
       have hint1 : ∀ v ∈ (w.takeUntil K hKmem).support, v ≠ i → v ≠ K → (v : ℕ) < m := by
         intro v hv hvi hvK
         have hvw : v ∈ w.support :=

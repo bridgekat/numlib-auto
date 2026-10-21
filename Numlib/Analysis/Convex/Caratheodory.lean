@@ -351,103 +351,130 @@ end GraphHull
 
 section Cone
 
-variable {E : Type*} [AddCommGroup E] [Module ℝ E]
+variable {E : Type*} [AddCommGroup E] [Module ℝ E] {ι : Type*}
 
-/-- The engine of the conical form of Carathéodory's theorem, as an induction on a cardinality
-bound: a conical representation over a linearly *dependent* finite set can be replaced by one over
-a strictly smaller set, by subtracting a multiple of the dependency just large enough to drive one
-positive coefficient to zero. -/
-private theorem exists_linearIndepOn_coneRepr_aux {S : Set E} :
-    ∀ (n : ℕ) (t : Finset E), t.card ≤ n → ↑t ⊆ S → ∀ w : E → ℝ, (∀ y ∈ t, 0 < w y) →
-      ∃ (t' : Finset E) (w' : E → ℝ), ↑t' ⊆ S ∧ (∀ y ∈ t', 0 < w' y) ∧
-        LinearIndepOn ℝ id (t' : Set E) ∧ ∑ y ∈ t', w' y • y = ∑ y ∈ t, w y • y := by
+/-- The elimination step behind Corollaries 17.1.1–17.1.3, run on an index set and carrying a real
+cost `c` that is not allowed to increase. `hpick` is the only place the conical and the affine
+applications differ: it asks that every non-trivial dependency among the `v i` be normalisable so
+that some coefficient is positive *and* the cost does not increase. For a conical representation
+the cost is `0` and only the sign matters; for an affine one the coefficients sum to zero, so a
+positive coefficient is automatic and the sign may be chosen by the cost. -/
+private theorem exists_subset_linearIndepOn_aux (v : ι → E) (c : ι → ℝ)
+    (hpick : ∀ (s : Finset ι) (mu : ι → ℝ), (∑ i ∈ s, mu i • v i = 0) → (∃ i ∈ s, mu i ≠ 0) →
+      ∃ nu : ι → ℝ, (∑ i ∈ s, nu i • v i = 0) ∧ (∃ i ∈ s, 0 < nu i) ∧
+        0 ≤ ∑ i ∈ s, nu i * c i) :
+    ∀ (n : ℕ) (t : Finset ι), t.card ≤ n → ∀ w : ι → ℝ, (∀ i ∈ t, 0 < w i) →
+      ∃ (t₂ : Finset ι) (w₂ : ι → ℝ), t₂ ⊆ t ∧ (∀ i ∈ t₂, 0 < w₂ i) ∧
+        LinearIndepOn ℝ v (t₂ : Set ι) ∧
+        ∑ i ∈ t₂, w₂ i • v i = ∑ i ∈ t, w i • v i ∧
+        ∑ i ∈ t₂, w₂ i * c i ≤ ∑ i ∈ t, w i * c i := by
   classical
   intro n
   induction n with
   | zero =>
-    intro t hcard hts w hw
-    have ht : t = ∅ := Finset.card_eq_zero.1 (Nat.le_zero.1 hcard)
+    intro t hcard w hw
+    have ht : t = (∅ : Finset ι) := Finset.card_eq_zero.1 (Nat.le_zero.1 hcard)
     subst ht
-    exact ⟨∅, w, by simp, by simp, by simp, rfl⟩
+    refine ⟨∅, w, Finset.Subset.refl _, by simp, ?_, rfl, le_rfl⟩
+    simp
   | succ n ih =>
-    intro t hcard hts w hw
-    by_cases hli : LinearIndepOn ℝ id (t : Set E)
-    · exact ⟨t, w, hts, hw, hli, rfl⟩
-    -- a non-trivial linear relation supported inside `t`
+    intro t hcard w hw
+    by_cases hli : LinearIndepOn ℝ v (t : Set ι)
+    · exact ⟨t, w, Finset.Subset.refl _, hw, hli, rfl, le_rfl⟩
     obtain ⟨fr, hfsupp, hfsum, hfne⟩ := linearDepOn_iff.1 hli
     rw [Finsupp.mem_supported] at hfsupp
-    simp only [id_eq] at hfsum
-    have hsub : fr.support ⊆ t := by
-      intro y hy
-      exact_mod_cast hfsupp hy
-    have hνsum : ∑ y ∈ t, fr y • y = 0 := by
-      rw [← Finset.sum_subset hsub fun y _ hy => by
-        rw [Finsupp.notMem_support_iff.1 hy, zero_smul]]
+    have hsub : fr.support ⊆ t := fun i hi => by exact_mod_cast hfsupp hi
+    have hfrt : ∑ i ∈ t, fr i • v i = 0 := by
+      rw [← Finset.sum_subset hsub fun i _ hi => by
+        rw [Finsupp.notMem_support_iff.1 hi, zero_smul]]
       exact hfsum
-    obtain ⟨y₂, hy₂⟩ := Finsupp.support_nonempty_iff.2 hfne
-    have hy₂t : y₂ ∈ t := hsub hy₂
-    have hy₂ne : fr y₂ ≠ 0 := Finsupp.mem_support_iff.1 hy₂
-    -- normalise the relation so that one coefficient is strictly positive
-    obtain ⟨mu, hmusum, y₀, hy₀t, hy₀pos⟩ :
-        ∃ mu : E → ℝ, (∑ y ∈ t, mu y • y = 0) ∧ ∃ y₀ ∈ t, 0 < mu y₀ := by
-      rcases lt_or_gt_of_ne hy₂ne with hneg | hpos
-      · refine ⟨fun y => -fr y, ?_, y₂, hy₂t, by linarith⟩
-        simp only [neg_smul, Finset.sum_neg_distrib, hνsum, neg_zero]
-      · exact ⟨fun y => fr y, hνsum, y₂, hy₂t, hpos⟩
-    -- the largest multiple of the relation that keeps every coefficient non-negative
-    set Pos : Finset E := t.filter (fun y => 0 < mu y) with hPosdef
+    obtain ⟨i₂, hi₂⟩ := Finsupp.support_nonempty_iff.2 hfne
+    obtain ⟨mu, hmusum, ⟨y₀, hy₀t, hy₀pos⟩, hmuc⟩ :=
+      hpick t (fun i => fr i) hfrt ⟨i₂, hsub hi₂, Finsupp.mem_support_iff.1 hi₂⟩
+    set Pos : Finset ι := t.filter (fun i => 0 < mu i) with hPosdef
     have hPosne : Pos.Nonempty := ⟨y₀, by simp [hPosdef, hy₀t, hy₀pos]⟩
-    obtain ⟨y₁, hy₁Pos, hy₁min⟩ := Finset.exists_min_image Pos (fun y => w y / mu y) hPosne
+    obtain ⟨y₁, hy₁Pos, hy₁min⟩ := Finset.exists_min_image Pos (fun i => w i / mu i) hPosne
     have hy₁t : y₁ ∈ t := (Finset.mem_filter.1 hy₁Pos).1
     have hy₁mu : 0 < mu y₁ := (Finset.mem_filter.1 hy₁Pos).2
     set lam : ℝ := w y₁ / mu y₁ with hlamdef
     have hlampos : 0 < lam := div_pos (hw y₁ hy₁t) hy₁mu
-    set w' : E → ℝ := fun y => w y - lam * mu y with hw'def
-    have hw'nonneg : ∀ y ∈ t, 0 ≤ w' y := by
-      intro y hy
-      by_cases hmy : 0 < mu y
-      · have hmem : y ∈ Pos := by simp [hPosdef, hy, hmy]
-        have hdiv := hy₁min y hmem
-        have hmul : lam * mu y ≤ w y := (le_div_iff₀ hmy).1 hdiv
-        simp only [hw'def]
+    set w₂ : ι → ℝ := fun i => w i - lam * mu i with hw₂def
+    have hw₂nonneg : ∀ i ∈ t, 0 ≤ w₂ i := by
+      intro i hi
+      by_cases hmi : 0 < mu i
+      · have hmem : i ∈ Pos := by simp [hPosdef, hi, hmi]
+        have hmul : lam * mu i ≤ w i := (le_div_iff₀ hmi).1 (hy₁min i hmem)
+        simp only [hw₂def]
         linarith
-      · push Not at hmy
-        have hle : lam * mu y ≤ 0 := mul_nonpos_of_nonneg_of_nonpos hlampos.le hmy
-        have hwy := hw y hy
-        simp only [hw'def]
+      · push Not at hmi
+        have hle : lam * mu i ≤ 0 := mul_nonpos_of_nonneg_of_nonpos hlampos.le hmi
+        have hwi := hw i hi
+        simp only [hw₂def]
         linarith
-    have hw'y₁ : w' y₁ = 0 := by
-      simp only [hw'def, hlamdef]
+    have hw₂y₁ : w₂ y₁ = 0 := by
+      simp only [hw₂def, hlamdef]
       rw [div_mul_cancel₀ _ hy₁mu.ne']
       ring
-    have hsum' : ∑ y ∈ t, w' y • y = ∑ y ∈ t, w y • y := by
-      have hsplit : ∑ y ∈ t, w' y • y
-          = (∑ y ∈ t, w y • y) - lam • ∑ y ∈ t, mu y • y := by
+    have hsumv : ∑ i ∈ t, w₂ i • v i = ∑ i ∈ t, w i • v i := by
+      have hsplit : ∑ i ∈ t, w₂ i • v i = (∑ i ∈ t, w i • v i) - lam • ∑ i ∈ t, mu i • v i := by
         rw [Finset.smul_sum, ← Finset.sum_sub_distrib]
-        refine Finset.sum_congr rfl fun y _ => ?_
-        simp only [hw'def, sub_smul, smul_smul]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        simp only [hw₂def, sub_smul, smul_smul]
       rw [hsplit, hmusum, smul_zero, sub_zero]
-    -- drop the coefficients that have become zero
-    set t' : Finset E := t.filter (fun y => 0 < w' y) with ht'def
-    have ht'sub : t' ⊆ t := Finset.filter_subset _ _
-    have ht'pos : ∀ y ∈ t', 0 < w' y := fun y hy => (Finset.mem_filter.1 hy).2
-    have ht'sum : ∑ y ∈ t', w' y • y = ∑ y ∈ t, w' y • y := by
-      refine Finset.sum_subset ht'sub fun y hy hy' => ?_
-      have hnp : ¬ (0 < w' y) := fun h => hy' (Finset.mem_filter.2 ⟨hy, h⟩)
-      have h0 : w' y = 0 := le_antisymm (not_lt.1 hnp) (hw'nonneg y hy)
-      rw [h0, zero_smul]
-    have hy₁notin : y₁ ∉ t' := by
-      simp [ht'def, hw'y₁]
-    have ht'card : t'.card ≤ n := by
-      have hss : t' ⊆ t.erase y₁ := fun y hy =>
-        Finset.mem_erase.2 ⟨fun h => hy₁notin (h ▸ hy), ht'sub hy⟩
+    have hsumc : ∑ i ∈ t, w₂ i * c i ≤ ∑ i ∈ t, w i * c i := by
+      have hsplit : ∑ i ∈ t, w₂ i * c i
+          = (∑ i ∈ t, w i * c i) - lam * ∑ i ∈ t, mu i * c i := by
+        rw [Finset.mul_sum, ← Finset.sum_sub_distrib]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        simp only [hw₂def]
+        ring
+      have hnn : 0 ≤ lam * ∑ i ∈ t, mu i * c i := mul_nonneg hlampos.le hmuc
+      rw [hsplit]
+      linarith
+    set t₂ : Finset ι := t.filter (fun i => 0 < w₂ i) with ht₂def
+    have ht₂sub : t₂ ⊆ t := Finset.filter_subset _ _
+    have ht₂pos : ∀ i ∈ t₂, 0 < w₂ i := fun i hi => (Finset.mem_filter.1 hi).2
+    have hzero : ∀ i ∈ t, i ∉ t₂ → w₂ i = 0 := by
+      intro i hi hi₂
+      have hnp : ¬ (0 < w₂ i) := fun h => hi₂ (Finset.mem_filter.2 ⟨hi, h⟩)
+      exact le_antisymm (not_lt.1 hnp) (hw₂nonneg i hi)
+    have ht₂sumv : ∑ i ∈ t₂, w₂ i • v i = ∑ i ∈ t, w₂ i • v i :=
+      Finset.sum_subset ht₂sub fun i hi hi₂ => by rw [hzero i hi hi₂, zero_smul]
+    have ht₂sumc : ∑ i ∈ t₂, w₂ i * c i = ∑ i ∈ t, w₂ i * c i :=
+      Finset.sum_subset ht₂sub fun i hi hi₂ => by rw [hzero i hi hi₂, zero_mul]
+    have hy₁notin : y₁ ∉ t₂ := by simp [ht₂def, hw₂y₁]
+    have ht₂card : t₂.card ≤ n := by
+      have hss : t₂ ⊆ t.erase y₁ := fun i hi =>
+        Finset.mem_erase.2 ⟨fun h => hy₁notin (h ▸ hi), ht₂sub hi⟩
       have h1 := Finset.card_le_card hss
       rw [Finset.card_erase_of_mem hy₁t] at h1
       have h2 : 0 < t.card := Finset.card_pos.2 ⟨y₁, hy₁t⟩
       omega
-    obtain ⟨t'', w'', hts'', hpos'', hli'', hsum''⟩ :=
-      ih t' ht'card (fun y hy => hts (ht'sub (by exact_mod_cast hy))) w' ht'pos
-    exact ⟨t'', w'', hts'', hpos'', hli'', by rw [hsum'', ht'sum, hsum']⟩
+    obtain ⟨t₃, w₃, ht₃sub, ht₃pos, ht₃li, ht₃v, ht₃c⟩ := ih t₂ ht₂card w₂ ht₂pos
+    refine ⟨t₃, w₃, ht₃sub.trans ht₂sub, ht₃pos, ht₃li, ?_, ?_⟩
+    · rw [ht₃v, ht₂sumv, hsumv]
+    · exact le_trans (le_trans ht₃c (le_of_eq ht₂sumc)) hsumc
+
+/-- **Carathéodory's elimination, indexed, conical form.** A non-negative combination
+`∑ i ∈ t, w i • v i` is thinned to a sub-*index set* on which the `v i` are linearly independent,
+keeping the value and strict positivity of the coefficients. Because the index set only shrinks, at
+most one generator is used per index — the "each belonging to a different `Cᵢ`" clause of the
+union form. -/
+theorem exists_subset_linearIndepOn_of_sum (v : ι → E) (t : Finset ι) (w : ι → ℝ)
+    (hw : ∀ i ∈ t, 0 < w i) :
+    ∃ (t' : Finset ι) (w' : ι → ℝ), t' ⊆ t ∧ (∀ i ∈ t', 0 < w' i) ∧
+      LinearIndepOn ℝ v (t' : Set ι) ∧ ∑ i ∈ t', w' i • v i = ∑ i ∈ t, w i • v i := by
+  have hpick : ∀ (s : Finset ι) (mu : ι → ℝ), (∑ i ∈ s, mu i • v i = 0) →
+      (∃ i ∈ s, mu i ≠ 0) → ∃ nu : ι → ℝ, (∑ i ∈ s, nu i • v i = 0) ∧ (∃ i ∈ s, 0 < nu i) ∧
+        0 ≤ ∑ i ∈ s, nu i * (0 : ℝ) := by
+    rintro s mu hsum ⟨i₀, hi₀s, hi₀⟩
+    rcases lt_or_gt_of_ne hi₀ with hneg | hpos
+    · refine ⟨fun i => -mu i, ?_, ⟨i₀, hi₀s, by linarith⟩, by simp⟩
+      simp only [neg_smul, Finset.sum_neg_distrib, hsum, neg_zero]
+    · exact ⟨mu, hsum, ⟨i₀, hi₀s, hpos⟩, by simp⟩
+  obtain ⟨t', w', hsub, hpos, hli, hv, -⟩ :=
+    exists_subset_linearIndepOn_aux v (fun _ => (0 : ℝ)) hpick t.card t le_rfl w hw
+  exact ⟨t', w', hsub, hpos, hli, hv⟩
 
 /-- **Carathéodory's theorem for convex cones.** A point of the cone generated by `S` is a
 non-negative combination of a *linearly independent* finite subset of `S`, with strictly positive
@@ -461,9 +488,8 @@ theorem exists_linearIndepOn_of_mem_coneHull {S : Set E} {x : E}
   obtain ⟨c, hcs, hc0, hcx⟩ := PointedCone.mem_hull_set.1 hx
   have hpos : ∀ y ∈ c.support, 0 < c y := fun y hy =>
     lt_of_le_of_ne (hc0 y) (Ne.symm (Finsupp.mem_support_iff.1 hy))
-  obtain ⟨t, w, hts, hw, hli, hsum⟩ :=
-    exists_linearIndepOn_coneRepr_aux c.support.card c.support le_rfl hcs c hpos
-  exact ⟨t, w, hts, hw, hli, by rw [hsum]; exact hcx⟩
+  obtain ⟨t, w, hsub, hw, hli, hsum⟩ := exists_subset_linearIndepOn_of_sum id c.support c hpos
+  exact ⟨t, w, (Finset.coe_subset.2 hsub).trans hcs, hw, hli, by simpa using hsum.trans hcx⟩
 
 variable [FiniteDimensional ℝ E]
 
@@ -739,116 +765,15 @@ end PointsDirections
 /-! ### Generators drawn from distinct members of a family
 
 Corollaries 17.1.1–17.1.3 all sharpen Carathéodory's theorem by insisting that the generators come
-from *different* members of a family. The whole content is the elimination step below, run on an
-**index set** rather than on a set of vectors: a representation `x = ∑ i ∈ t, w i • v i` indexed by
+from *different* members of a family. The whole content is the elimination step
+`exists_subset_linearIndepOn_aux` above, which runs on an **index set** rather than on a set of
+vectors: a representation `x = ∑ i ∈ t, w i • v i` indexed by
 `t : Finset ι` already carries at most one generator per index, so no coalescing is needed after
 the fact. -/
 
 section Indexed
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {ι : Type*}
-
-/-- The elimination step behind Corollaries 17.1.1–17.1.3, run on an index set and carrying a real
-cost `c` that is not allowed to increase. `hpick` is the only place the conical and the affine
-applications differ: it asks that every non-trivial dependency among the `v i` be normalisable so
-that some coefficient is positive *and* the cost does not increase. For a conical representation
-the cost is `0` and only the sign matters; for an affine one the coefficients sum to zero, so a
-positive coefficient is automatic and the sign may be chosen by the cost. -/
-private theorem exists_subset_linearIndepOn_aux (v : ι → E) (c : ι → ℝ)
-    (hpick : ∀ (s : Finset ι) (mu : ι → ℝ), (∑ i ∈ s, mu i • v i = 0) → (∃ i ∈ s, mu i ≠ 0) →
-      ∃ nu : ι → ℝ, (∑ i ∈ s, nu i • v i = 0) ∧ (∃ i ∈ s, 0 < nu i) ∧
-        0 ≤ ∑ i ∈ s, nu i * c i) :
-    ∀ (n : ℕ) (t : Finset ι), t.card ≤ n → ∀ w : ι → ℝ, (∀ i ∈ t, 0 < w i) →
-      ∃ (t₂ : Finset ι) (w₂ : ι → ℝ), t₂ ⊆ t ∧ (∀ i ∈ t₂, 0 < w₂ i) ∧
-        LinearIndepOn ℝ v (t₂ : Set ι) ∧
-        ∑ i ∈ t₂, w₂ i • v i = ∑ i ∈ t, w i • v i ∧
-        ∑ i ∈ t₂, w₂ i * c i ≤ ∑ i ∈ t, w i * c i := by
-  classical
-  intro n
-  induction n with
-  | zero =>
-    intro t hcard w hw
-    have ht : t = (∅ : Finset ι) := Finset.card_eq_zero.1 (Nat.le_zero.1 hcard)
-    subst ht
-    refine ⟨∅, w, Finset.Subset.refl _, by simp, ?_, rfl, le_rfl⟩
-    simp
-  | succ n ih =>
-    intro t hcard w hw
-    by_cases hli : LinearIndepOn ℝ v (t : Set ι)
-    · exact ⟨t, w, Finset.Subset.refl _, hw, hli, rfl, le_rfl⟩
-    obtain ⟨fr, hfsupp, hfsum, hfne⟩ := linearDepOn_iff.1 hli
-    rw [Finsupp.mem_supported] at hfsupp
-    have hsub : fr.support ⊆ t := fun i hi => by exact_mod_cast hfsupp hi
-    have hfrt : ∑ i ∈ t, fr i • v i = 0 := by
-      rw [← Finset.sum_subset hsub fun i _ hi => by
-        rw [Finsupp.notMem_support_iff.1 hi, zero_smul]]
-      exact hfsum
-    obtain ⟨i₂, hi₂⟩ := Finsupp.support_nonempty_iff.2 hfne
-    obtain ⟨mu, hmusum, ⟨y₀, hy₀t, hy₀pos⟩, hmuc⟩ :=
-      hpick t (fun i => fr i) hfrt ⟨i₂, hsub hi₂, Finsupp.mem_support_iff.1 hi₂⟩
-    set Pos : Finset ι := t.filter (fun i => 0 < mu i) with hPosdef
-    have hPosne : Pos.Nonempty := ⟨y₀, by simp [hPosdef, hy₀t, hy₀pos]⟩
-    obtain ⟨y₁, hy₁Pos, hy₁min⟩ := Finset.exists_min_image Pos (fun i => w i / mu i) hPosne
-    have hy₁t : y₁ ∈ t := (Finset.mem_filter.1 hy₁Pos).1
-    have hy₁mu : 0 < mu y₁ := (Finset.mem_filter.1 hy₁Pos).2
-    set lam : ℝ := w y₁ / mu y₁ with hlamdef
-    have hlampos : 0 < lam := div_pos (hw y₁ hy₁t) hy₁mu
-    set w₂ : ι → ℝ := fun i => w i - lam * mu i with hw₂def
-    have hw₂nonneg : ∀ i ∈ t, 0 ≤ w₂ i := by
-      intro i hi
-      by_cases hmi : 0 < mu i
-      · have hmem : i ∈ Pos := by simp [hPosdef, hi, hmi]
-        have hmul : lam * mu i ≤ w i := (le_div_iff₀ hmi).1 (hy₁min i hmem)
-        simp only [hw₂def]
-        linarith
-      · push Not at hmi
-        have hle : lam * mu i ≤ 0 := mul_nonpos_of_nonneg_of_nonpos hlampos.le hmi
-        have hwi := hw i hi
-        simp only [hw₂def]
-        linarith
-    have hw₂y₁ : w₂ y₁ = 0 := by
-      simp only [hw₂def, hlamdef]
-      rw [div_mul_cancel₀ _ hy₁mu.ne']
-      ring
-    have hsumv : ∑ i ∈ t, w₂ i • v i = ∑ i ∈ t, w i • v i := by
-      have hsplit : ∑ i ∈ t, w₂ i • v i = (∑ i ∈ t, w i • v i) - lam • ∑ i ∈ t, mu i • v i := by
-        rw [Finset.smul_sum, ← Finset.sum_sub_distrib]
-        refine Finset.sum_congr rfl fun i _ => ?_
-        simp only [hw₂def, sub_smul, smul_smul]
-      rw [hsplit, hmusum, smul_zero, sub_zero]
-    have hsumc : ∑ i ∈ t, w₂ i * c i ≤ ∑ i ∈ t, w i * c i := by
-      have hsplit : ∑ i ∈ t, w₂ i * c i
-          = (∑ i ∈ t, w i * c i) - lam * ∑ i ∈ t, mu i * c i := by
-        rw [Finset.mul_sum, ← Finset.sum_sub_distrib]
-        refine Finset.sum_congr rfl fun i _ => ?_
-        simp only [hw₂def]
-        ring
-      have hnn : 0 ≤ lam * ∑ i ∈ t, mu i * c i := mul_nonneg hlampos.le hmuc
-      rw [hsplit]
-      linarith
-    set t₂ : Finset ι := t.filter (fun i => 0 < w₂ i) with ht₂def
-    have ht₂sub : t₂ ⊆ t := Finset.filter_subset _ _
-    have ht₂pos : ∀ i ∈ t₂, 0 < w₂ i := fun i hi => (Finset.mem_filter.1 hi).2
-    have hzero : ∀ i ∈ t, i ∉ t₂ → w₂ i = 0 := by
-      intro i hi hi₂
-      have hnp : ¬ (0 < w₂ i) := fun h => hi₂ (Finset.mem_filter.2 ⟨hi, h⟩)
-      exact le_antisymm (not_lt.1 hnp) (hw₂nonneg i hi)
-    have ht₂sumv : ∑ i ∈ t₂, w₂ i • v i = ∑ i ∈ t, w₂ i • v i :=
-      Finset.sum_subset ht₂sub fun i hi hi₂ => by rw [hzero i hi hi₂, zero_smul]
-    have ht₂sumc : ∑ i ∈ t₂, w₂ i * c i = ∑ i ∈ t, w₂ i * c i :=
-      Finset.sum_subset ht₂sub fun i hi hi₂ => by rw [hzero i hi hi₂, zero_mul]
-    have hy₁notin : y₁ ∉ t₂ := by simp [ht₂def, hw₂y₁]
-    have ht₂card : t₂.card ≤ n := by
-      have hss : t₂ ⊆ t.erase y₁ := fun i hi =>
-        Finset.mem_erase.2 ⟨fun h => hy₁notin (h ▸ hi), ht₂sub hi⟩
-      have h1 := Finset.card_le_card hss
-      rw [Finset.card_erase_of_mem hy₁t] at h1
-      have h2 : 0 < t.card := Finset.card_pos.2 ⟨y₁, hy₁t⟩
-      omega
-    obtain ⟨t₃, w₃, ht₃sub, ht₃pos, ht₃li, ht₃v, ht₃c⟩ := ih t₂ ht₂card w₂ ht₂pos
-    refine ⟨t₃, w₃, ht₃sub.trans ht₂sub, ht₃pos, ht₃li, ?_, ?_⟩
-    · rw [ht₃v, ht₂sumv, hsumv]
-    · exact le_trans (le_trans ht₃c (le_of_eq ht₂sumc)) hsumc
 
 /-- A family of reals summing to zero over a `Finset`, not identically zero there, has a strictly
 positive member. This is what makes the sign of an *affine* dependency free to choose. -/
@@ -858,27 +783,6 @@ theorem exists_pos_of_sum_eq_zero {s : Finset ι} {g : ι → ℝ} (hsum : ∑ i
   push Not at hcon
   obtain ⟨i, his, hi⟩ := hne
   exact hi ((Finset.sum_eq_zero_iff_of_nonpos fun j hj => hcon j hj).1 hsum i his)
-
-/-- **Carathéodory's elimination, indexed, conical form.** A non-negative combination
-`∑ i ∈ t, w i • v i` is thinned to a sub-*index set* on which the `v i` are linearly independent,
-keeping the value and strict positivity of the coefficients. Because the index set only shrinks, at
-most one generator is used per index — the "each belonging to a different `Cᵢ`" clause of the
-union form. -/
-theorem exists_subset_linearIndepOn_of_sum (v : ι → E) (t : Finset ι) (w : ι → ℝ)
-    (hw : ∀ i ∈ t, 0 < w i) :
-    ∃ (t' : Finset ι) (w' : ι → ℝ), t' ⊆ t ∧ (∀ i ∈ t', 0 < w' i) ∧
-      LinearIndepOn ℝ v (t' : Set ι) ∧ ∑ i ∈ t', w' i • v i = ∑ i ∈ t, w i • v i := by
-  have hpick : ∀ (s : Finset ι) (mu : ι → ℝ), (∑ i ∈ s, mu i • v i = 0) →
-      (∃ i ∈ s, mu i ≠ 0) → ∃ nu : ι → ℝ, (∑ i ∈ s, nu i • v i = 0) ∧ (∃ i ∈ s, 0 < nu i) ∧
-        0 ≤ ∑ i ∈ s, nu i * (0 : ℝ) := by
-    rintro s mu hsum ⟨i₀, hi₀s, hi₀⟩
-    rcases lt_or_gt_of_ne hi₀ with hneg | hpos
-    · refine ⟨fun i => -mu i, ?_, ⟨i₀, hi₀s, by linarith⟩, by simp⟩
-      simp only [neg_smul, Finset.sum_neg_distrib, hsum, neg_zero]
-    · exact ⟨mu, hsum, ⟨i₀, hi₀s, hpos⟩, by simp⟩
-  obtain ⟨t', w', hsub, hpos, hli, hv, -⟩ :=
-    exists_subset_linearIndepOn_aux v (fun _ => (0 : ℝ)) hpick t.card t le_rfl w hw
-  exact ⟨t', w', hsub, hpos, hli, hv⟩
 
 /-- Linear independence over an index set bounds the size of the index set by the dimension. -/
 theorem card_le_finrank_of_linearIndepOn [FiniteDimensional ℝ E] {v : ι → E} {t : Finset ι}
@@ -1188,50 +1092,14 @@ theorem convHullFn_apply_fin {g : E → EReal} (hg : ∀ x, g x ≠ ⊥) (x : E)
         (∀ i, 0 ≤ w i) ∧ ∑ i, w i = 1 ∧ ∑ i, w i • p i = x ∧
           z = ∑ i, (w i : EReal) * g (p i)} := by
   classical
-  rw [convHullFn]
   refine le_antisymm (le_sInf ?_) ?_
   -- **`≤`**: the hull is below the value of every `n + 1`-point representation.
   · rintro z ⟨w, p, hw₀, hw₁, hwx, rfl⟩
-    by_cases htop : ∑ i, (w i : EReal) * g (p i) = ⊤
-    · rw [htop]; exact le_top
-    have hbot : ∀ i ∈ (Finset.univ : Finset (Fin (Module.finrank ℝ E + 1))),
-        (w i : EReal) * g (p i) ≠ ⊥ := fun i _ => EReal.coe_mul_ne_bot (hw₀ i) (hg (p i))
-    have hnetop := EReal.forall_ne_top_of_sum_ne_top Finset.univ _ hbot htop
-    set t' : Finset (Fin (Module.finrank ℝ E + 1)) :=
-      Finset.univ.filter (fun i => 0 < w i) with ht'def
-    have hsub : t' ⊆ Finset.univ := Finset.subset_univ _
-    have hzero : ∀ i ∈ (Finset.univ : Finset (Fin (Module.finrank ℝ E + 1))),
-        i ∉ t' → w i = 0 := by
-      intro i _ hi'
-      rcases eq_or_lt_of_le (hw₀ i) with h | h
-      · exact h.symm
-      · exact absurd (Finset.mem_filter.2 ⟨Finset.mem_univ i, h⟩) hi'
-    have hw₁' : ∑ i ∈ t', w i = 1 := by rw [Finset.sum_subset hsub hzero]; exact hw₁
-    have hwx' : ∑ i ∈ t', w i • p i = x := by
-      rw [Finset.sum_subset hsub fun i hi hi' => by rw [hzero i hi hi', zero_smul]]; exact hwx
-    obtain ⟨μ, hμ⟩ : ∃ μ : Fin (Module.finrank ℝ E + 1) → ℝ,
-        ∀ i ∈ t', g (p i) = (μ i : EReal) := by
-      refine ⟨fun i => (g (p i)).toReal, fun i hi => ?_⟩
-      have hpos : 0 < w i := (Finset.mem_filter.1 hi).2
-      have hne : g (p i) ≠ ⊤ := fun hcon =>
-        hnetop i (Finset.mem_univ i) (by rw [hcon, EReal.coe_mul_top_of_pos hpos])
-      exact (EReal.coe_toReal hne (hg (p i))).symm
-    have hcm := Finset.centerMass_mem_convexHull t'
-      (fun i hi => ((Finset.mem_filter.1 hi).2).le) (by rw [hw₁']; exact zero_lt_one)
-      (z := fun i => ((p i, μ i) : E × ℝ))
-      (fun i hi => mk_mem_epi.2 (le_of_eq (hμ i hi)))
-    rw [Finset.centerMass_eq_of_sum_1 _ _ hw₁'] at hcm
-    have hsplit : ∑ i ∈ t', w i • ((p i, μ i) : E × ℝ) = (x, ∑ i ∈ t', w i * μ i) := by
-      refine Prod.ext ?_ ?_
-      · rw [Prod.fst_sum]; simpa using hwx'
-      · rw [Prod.snd_sum]; simp [smul_eq_mul]
-    rw [hsplit] at hcm
-    refine (ofEpi_apply_le hcm).trans (le_of_eq ?_)
-    rw [EReal.coe_sum,
-      ← Finset.sum_subset hsub (fun i hi hi' => by rw [hzero i hi hi']; simp)]
-    exact Finset.sum_congr rfl fun i hi => by rw [hμ i hi, ← EReal.coe_mul]
+    rw [← convFn_const (ι := Fin (Module.finrank ℝ E + 1)) g]
+    exact convFn_le_sum (fun i _ => hg (p i)) (fun i _ => hw₀ i) hw₁ hwx
   -- **`≥`**: every point of the hull of `epi g` admits an `n + 1`-point representation.
-  · refine le_ofEpi fun ν hν => ?_
+  · rw [convHullFn]
+    refine le_ofEpi fun ν hν => ?_
     rw [convexHull_eq] at hν
     obtain ⟨κ, s, w, zz, hw₀, hw₁, hzz, hcm⟩ := hν
     set s' : Finset κ := s.filter (fun j => 0 < w j) with hs'def
@@ -1422,7 +1290,6 @@ private theorem sub_neg_of_mem_interior [IsCompatiblePairing B.flip] {x₀ : E}
         linarith
       · exact ⟨u, h⟩
     have hvne : v ≠ 0 := by rintro rfl; simp at hv
-    have hvnorm : (0 : ℝ) < ‖v‖ := norm_pos_iff.2 hvne
     have hcpos : (0 : ℝ) < ε / (2 * ‖v‖) := by positivity
     have hnorm : ε / (2 * ‖v‖) * ‖v‖ = ε / 2 := by field_simp
     have hmem : x₀ + (ε / (2 * ‖v‖)) • v ∈ Metric.ball x₀ ε := by

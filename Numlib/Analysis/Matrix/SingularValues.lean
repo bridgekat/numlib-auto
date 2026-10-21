@@ -311,8 +311,7 @@ theorem IsHermitian.eigenvalues₀_hermitianDilation {A : Matrix m n 𝕜}
       A.sortedSingularValues i - A.sortedSingularValues (Fintype.card (n ⊕ m) - 1 - i) := by
   have hN : finrank 𝕜 (WithLp 2 (EuclideanSpace 𝕜 n × EuclideanSpace 𝕜 m)) =
       Fintype.card (n ⊕ m) := by
-    rw [(WithLp.linearEquiv 2 𝕜 (EuclideanSpace 𝕜 n × EuclideanSpace 𝕜 m)).finrank_eq,
-      Module.finrank_prod, finrank_euclideanSpace, finrank_euclideanSpace, Fintype.card_sum]
+    rw [WithLp.finrank_prod, finrank_euclideanSpace, finrank_euclideanSpace, Fintype.card_sum]
   have hcp : (toEuclideanLin (hermitianDilation A)).charpoly =
       (LinearMap.hermitianDilation (toEuclideanLin A)
         (LinearMap.adjoint (toEuclideanLin A))).charpoly := by
@@ -398,8 +397,6 @@ theorem sum_sq_sortedSingularValues_sub_le (A E : Matrix m n 𝕜) :
   have hsum : ∑ k ∈ Finset.range p, d k * d k = ∑ k ∈ Finset.range p,
       ((A + E).sortedSingularValues k - A.sortedSingularValues k) ^ 2 :=
     Finset.sum_congr rfl fun k _ => by simp only [hd]; ring
-  have := hHW.trans_eq hF
-  rw [hL, hsum] at this
   linarith
 
 /-! ### The Eckart–Young theorem -/
@@ -1737,8 +1734,6 @@ theorem eq_svdTruncation_of_frobenius_norm_sub_sq_le (h : IsSVD C U σ V) {r : �
     nlinarith
   have hJpos : 0 ≤ ∑ i ∈ J, (1 - a i) := Finset.sum_nonneg fun i _ => by linarith [ha1 i]
   rw [hsplit, hC1P, hexp, hIco] at hle
-  have hprod : (σ (r - 1) ^ 2 - σ r ^ 2) * ∑ i ∈ J, (1 - a i) ≤ -‖(C - Ĉ) * P‖ ^ 2 := by
-    linarith
   have hX : ‖(C - Ĉ) * P‖ ^ 2 ≤ 0 := by nlinarith [mul_nonneg hgap2.le hJpos]
   have hJ0 : ∑ i ∈ J, (1 - a i) ≤ 0 :=
     le_of_not_gt fun hc => by nlinarith [mul_pos hgap2 hc, sq_nonneg ‖(C - Ĉ) * P‖]
@@ -2064,7 +2059,6 @@ private theorem frobenius_norm_mul_mul_sub_le {a b c d : Type*} [Fintype a] [Fin
     [Fintype c] [Fintype d] {C : Matrix b c 𝕜} {η : ℝ} (hC : ‖C‖ ≤ η) (X X' : Matrix a b 𝕜)
     (Y Y' : Matrix c d 𝕜) :
     ‖X * C * Y - X' * C * Y'‖ ≤ η * (‖X - X'‖ * ‖Y‖ + ‖X'‖ * ‖Y - Y'‖) := by
-  have hη : 0 ≤ η := (norm_nonneg _).trans hC
   rw [show X * C * Y - X' * C * Y' = (X - X') * C * Y + X' * C * (Y - Y') by
     simp only [Matrix.sub_mul, Matrix.mul_sub]; abel]
   refine (norm_add_le _ _).trans ?_
@@ -2137,16 +2131,6 @@ private theorem pairSylvester_fromRows (B₁ : Matrix k k 𝕜) (B₂ : Matrix q
     (B₂ * (fromRows P Q).toRows₁ - (fromRows P Q).toRows₂ * B₁) = _
   rw [toRows₁_fromRows, toRows₂_fromRows]
 
-/-- The sum of two stacked matrices is stacked blockwise. -/
-private theorem fromRows_add_fromRows {a b c : Type*} (P P' : Matrix a c 𝕜)
-    (Q Q' : Matrix b c 𝕜) : fromRows P Q + fromRows P' Q' = fromRows (P + P') (Q + Q') := by
-  ext (i | i) j <;> rfl
-
-/-- The difference of two stacked matrices is stacked blockwise. -/
-private theorem fromRows_sub_fromRows {a b c : Type*} (P P' : Matrix a c 𝕜)
-    (Q Q' : Matrix b c 𝕜) : fromRows P Q - fromRows P' Q' = fromRows (P - P') (Q - Q') := by
-  ext (i | i) j <;> rfl
-
 /-- **The coupled quadratic equations of a singular subspace pair**: if the singular values of
 `B₁₁` and `B₂₂` are `δ`-separated (and those of `B₁₁` are at least `δ` when `B₂₂` is not square),
 and `‖B₁₂‖² + ‖B₂₁‖² ≤ ε²` with `4 ε² < δ²`, there are `P`, `Q` with `‖[P; Q]‖ ≤ 2 ε / δ` solving
@@ -2183,8 +2167,8 @@ private theorem exists_pair_quadratic [DecidableEq k] [DecidableEq p] {B₁₁ :
     simp only [Matrix.zero_mul, neg_zero, fromRows_zero]
   have hφ : ∀ x y, ‖φ x - φ y‖ ≤ ε * (‖x‖ + ‖y‖) * ‖x - y‖ := by
     intro x y
-    rw [← fromRows_toRows x, ← fromRows_toRows y, hφ₁, hφ₁, fromRows_sub_fromRows,
-      fromRows_sub_fromRows, neg_sub_neg, neg_sub_neg, ← norm_neg (fromRows _ _),
+    rw [← fromRows_toRows x, ← fromRows_toRows y, hφ₁, hφ₁, fromRows_sub,
+      fromRows_sub, neg_sub_neg, neg_sub_neg, ← norm_neg (fromRows _ _),
       fromRows_neg, neg_sub, neg_sub]
     exact frobenius_norm_fromRows_quadratic_sub_le h₂₁ h₁₂ _ _ _ _
   have hg : ‖fromRows (-B₁₂ᴴ) (-B₂₁)‖ ≤ ε := by
@@ -2194,7 +2178,7 @@ private theorem exists_pair_quadratic [DecidableEq k] [DecidableEq p] {B₁₁ :
   obtain ⟨x, hx, hxn⟩ := (pairSylvester B₁₁ B₂₂).exists_apply_add_eq_of_quadratic_of_le_norm hδ
     hL hg hφ0 hφ (by nlinarith)
   rw [← fromRows_toRows x] at hx hxn
-  rw [pairSylvester_fromRows, hφ₁, fromRows_add_fromRows] at hx
+  rw [pairSylvester_fromRows, hφ₁, fromRows_add] at hx
   obtain ⟨e₁, e₂⟩ := fromRows_inj hx
   exact ⟨x.toRows₁, x.toRows₂, hxn, by rw [← e₁, sub_eq_add_neg], by rw [← e₂, sub_eq_add_neg]⟩
 

@@ -62,10 +62,6 @@ namespace FiniteDifference
 
 variable {N : ℕ}
 
-/-- A grid point `j : Fin N` witnesses `N ≠ 0`, which is what the group structure of `Fin N`
-needs. -/
-private theorem neZero_of_fin (j : Fin N) : NeZero N := ⟨fun h => (h ▸ j).elim0⟩
-
 /-! ### The periodic scheme, the Fourier modes and the amplification factors -/
 
 /-- **The explicit constant-coefficient scheme on the periodic grid** `Fin N` with stencil `c`:
@@ -76,7 +72,7 @@ noncomputable abbrev periodicScheme (c : Fin N → ℂ) : Matrix (Fin N) (Fin N)
 /-- The action of the periodic scheme: `(Q u) j = ∑ s, c s * u (j - s)`. -/
 theorem periodicScheme_mulVec_apply (c : Fin N → ℂ) (u : Fin N → ℂ) (j : Fin N) :
     (periodicScheme c *ᵥ u) j = ∑ s, c s * u (j - s) := by
-  have := neZero_of_fin j
+  have := NeZero.of_pos j.pos
   rw [mulVec, dotProduct]
   simp only [circulant_apply]
   exact (Equiv.sum_comp (Equiv.subLeft j) fun l => c (j - l) * u l).symm.trans
@@ -303,7 +299,6 @@ theorem norm_le_one_add_of_forall_norm_pow_le_of_mulVec_fourierMode {A : Matrix 
   set n : ℕ := ⌊T / Δt⌋₊ with hn
   have hx : (2 : ℝ) ≤ T / Δt := by rw [le_div_iff₀ hΔt]; linarith
   have hn2 : (2 : ℝ) ≤ n := by
-    have := Nat.floor_le (by positivity : (0 : ℝ) ≤ T / Δt)
     have h2 : (2 : ℕ) ≤ n := Nat.le_floor hx
     exact_mod_cast h2
   have hn0 : n ≠ 0 := by
@@ -529,7 +524,7 @@ theorem periodicBlockScheme_mulVec_modeTensor (G : Fin N → Matrix (Fin m) (Fin
     (v : Fin m → ℂ) :
     periodicBlockScheme G *ᵥ modeTensor N k v = modeTensor N k (amplificationMatrix G k *ᵥ v) := by
   ext ⟨j, p⟩
-  have := neZero_of_fin j
+  have := NeZero.of_pos j.pos
   rw [periodicBlockScheme_mulVec_apply, modeTensor, amplificationMatrix, sum_mulVec,
     Finset.sum_apply, Finset.mul_sum]
   refine (Equiv.sum_comp (Equiv.subLeft j)
@@ -614,7 +609,6 @@ private theorem sum_normSq_modeTensor (k : Fin N) (w : Fin m → ℂ) :
 private theorem sum_normSq_mulVec_le {M : Matrix (Fin m) (Fin m) ℂ} {ρ : ℝ}
     (hρ : ‖toEuclideanCLM (𝕜 := ℂ) M‖ ≤ ρ) (w : Fin m → ℂ) :
     (∑ p, ‖(M *ᵥ w) p‖ ^ 2) ≤ ρ ^ 2 * ∑ p, ‖w p‖ ^ 2 := by
-  have hρ0 : 0 ≤ ρ := le_trans (norm_nonneg _) hρ
   have h := (toEuclideanCLM (𝕜 := ℂ) M).le_opNorm (WithLp.toLp 2 w)
   rw [toEuclideanCLM_toLp] at h
   have h2 : ‖(WithLp.toLp 2 (M *ᵥ w) : EuclideanSpace ℂ (Fin m))‖
@@ -634,7 +628,6 @@ private theorem sum_normSq_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fin
     (∑ jp : Fin N × Fin m, ‖((periodicBlockScheme G ^ n) *ᵥ y) jp‖ ^ 2)
       ≤ ρ ^ 2 * ∑ jp : Fin N × Fin m, ‖y jp‖ ^ 2 := by
   have hNC : (N : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hN.ne'
-  have hNR : (0 : ℝ) < N := Nat.cast_pos.mpr hN
   set û : Fin N × Fin m → ℂ :=
     fun kp => ((Matrix.dft N)ᴴ *ᵥ fun j => y (j, kp.2)) kp.1 with hû
   set z : Fin N × Fin m → ℂ :=

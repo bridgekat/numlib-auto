@@ -43,9 +43,6 @@ id = "growthFactor_le_of_completePivoting"
 id = "schurComplementSingle_submatrix_ofSubtype"
 
 [[node]]
-id = "isLU_luLowerOfSchur_luUpperOfSchur'"
-
-[[node]]
 id = "norm_luLowerOfSchur_apply_le_one"
 
 [[node]]

@@ -94,7 +94,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {f : 𝕜 → 𝕜} {a : 𝕜}
 
 /-- On an open convex set where `f` is `C¹`, the difference quotient `dslope f a` is the segment
 average `b ↦ ∫₀¹ f'(a + t (b - a)) dt`. -/
-private theorem eqOn_dslope_integral_deriv_comp_segment {U : Set 𝕜} (hU : IsOpen U)
+theorem eqOn_dslope_integral_deriv_comp_segment {U : Set 𝕜} (hU : IsOpen U)
     (hUc : Convex ℝ U) {N : ℕ} (hN : 1 ≤ N) (hf : ContDiffOn 𝕜 N f U) (ha : a ∈ U) :
     EqOn (dslope f a) (fun b => ∫ t in (0 : ℝ)..1, deriv f (a + t • (b - a))) U := by
   intro b hb

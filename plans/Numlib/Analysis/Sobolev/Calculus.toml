@@ -94,6 +94,10 @@ id = "SobolevMultiIndex.norm_le_mul_norm_of_eLpNorm_le"
 id = "MemSobolevMultiIndex.comp_diffeoOn"
 
 [[node]]
+id = "MemSobolevMultiIndex.comp_diffeoOn_of_order"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.6, proof of Theorem 9.25 (the chart transport), at every order and exponent"
+
+[[node]]
 id = "SobolevMultiIndex.compDiffeo"
 
 [[node]]

@@ -851,7 +851,6 @@ theorem IsMMatrix.exists_isILU_isMMatrix {A : Matrix n n ℝ} (hA : A.IsMMatrix)
           fun i j hij hkj => hst.l_late i j hij (by omega),
           hst.l_pattern, hst.l_inv_nonneg, hst.l_unit, hst.m_mmatrix, hst.m_pattern,
           fun i j hji hkj => hst.m_lower i j hji (by
-            have := (e j).isLt
             omega),
           hst.res_nonneg, hst.res_pattern⟩
   obtain ⟨L, U, hst⟩ := key (Fintype.card n)

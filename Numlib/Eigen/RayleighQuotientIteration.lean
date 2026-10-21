@@ -114,13 +114,13 @@ theorem inner_sub_inner_smul (hyx : inner 𝕜 y x = 1) (v : E) :
 
 /-- The spectral projector commutes with `M`: `(1 - P) (M v) = M ((1 - P) v)`. -/
 theorem map_sub_inner_smul (hx : M x = l • x)
-    (hy : ∀ z, inner 𝕜 y (M z) = l * inner 𝕜 y z) (v : E) :
+    (hy : Module.End.IsLeftEigenvector M l y) (v : E) :
     M (v - inner 𝕜 y v • x) = M v - inner 𝕜 y (M v) • x := by
-  rw [map_sub, map_smul, hx, hy, smul_smul, mul_comm]
+  rw [map_sub, map_smul, hx, hy.inner_apply, smul_smul, mul_comm]
 
 /-- The complementary component of `(M - ρ) v` is `(M - ρ)` applied to that of `v`. -/
 theorem map_sub_inner_smul_sub_smul (hx : M x = l • x)
-    (hy : ∀ z, inner 𝕜 y (M z) = l * inner 𝕜 y z) (ρ : 𝕜) (v : E) :
+    (hy : Module.End.IsLeftEigenvector M l y) (ρ : 𝕜) (v : E) :
     M (v - inner 𝕜 y v • x) - ρ • (v - inner 𝕜 y v • x) =
       (M v - ρ • v) - inner 𝕜 y (M v - ρ • v) • x := by
   rw [map_sub_inner_smul hx hy, inner_sub_right, inner_smul_right, sub_smul, smul_sub,
@@ -186,7 +186,7 @@ theorem norm_le_two_mul_norm_map_sub_smul {K : ℝ} (hK0 : 0 ≤ K)
 /-- **A small residual forces a small complementary component**: for `ρ` within `1 / (2K)` of the
 eigenvalue, `‖v - ⟪y, v⟫ x‖ ≤ 2 K (1 + ‖x‖ ‖y‖) ‖M v - ρ v‖`. -/
 theorem norm_sub_inner_smul_le_norm_map_sub_smul (hx : M x = l • x)
-    (hy : ∀ z, inner 𝕜 y (M z) = l * inner 𝕜 y z) (hyx : inner 𝕜 y x = 1) {K : ℝ} (hK0 : 0 ≤ K)
+    (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖) {ρ : 𝕜}
     (hρ : 2 * K * ‖ρ - l‖ ≤ 1) (v : E) :
     ‖v - inner 𝕜 y v • x‖ ≤ 2 * K * (1 + ‖x‖ * ‖y‖) * ‖M v - ρ • v‖ := by
@@ -241,7 +241,7 @@ shifted operator `M - ρ` preserves the splitting `E = 𝕜 x ⊕ y ⊥`, it is 
 divides the eigen-component by `l - ρ`, which is of order `η`; so the component of `u` along `x`
 is of order `1 / η` while its complementary component is of order `η`. -/
 theorem norm_sub_inner_smul_le_sq_mul_norm (hx : M x = l • x)
-    (hy : ∀ z, inner 𝕜 y (M z) = l * inner 𝕜 y z) (hyx : inner 𝕜 y x = 1) {K C : ℝ}
+    (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K C : ℝ}
     (hK0 : 0 ≤ K) (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖)
     (hC : ∀ z, ‖M z - l • z‖ ≤ C * ‖z‖) {v : E} (hv : ‖v‖ = 1)
     (hη : 4 * ‖v - inner 𝕜 y v • x‖ ≤ 1) (hη' : 2 * K * C * ‖v - inner 𝕜 y v • x‖ ≤ 1)
@@ -267,7 +267,7 @@ theorem norm_sub_inner_smul_le_sq_mul_norm (hx : M x = l • x)
     rwa [hw'] at h
   -- the eigen-component of `u` is that of `v` divided by `l - ρ`
   have hPu : inner 𝕜 y v = (l - ρ) * inner 𝕜 y u := by
-    rw [← hu, inner_sub_right, inner_smul_right, hy, sub_mul]
+    rw [← hu, inner_sub_right, inner_smul_right, hy.inner_apply, sub_mul]
   have hPv : 1 - η ≤ ‖inner 𝕜 y v‖ * ‖x‖ := by
     have h := norm_le_norm_add_norm_sub' v (inner 𝕜 y v • x)
     rw [norm_smul, hv] at h
@@ -378,7 +378,7 @@ variable {M : E →ₗ[𝕜] E} {l : 𝕜} {x y : E}
 `2 K ‖ρ - l‖ ≤ 1` and `ρ ≠ l` then `(M - ρ) z = 0` forces `z = 0`, the complementary component
 of `z` vanishing by the resolvent bound and the eigen-component by `ρ ≠ l`. -/
 theorem eq_zero_of_map_sub_smul_eq_zero (hx : M x = l • x)
-    (hy : ∀ z, inner 𝕜 y (M z) = l * inner 𝕜 y z) (hyx : inner 𝕜 y x = 1) {K : ℝ} (hK0 : 0 ≤ K)
+    (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖) {ρ : 𝕜}
     (hρ : 2 * K * ‖ρ - l‖ ≤ 1) (hρl : ρ ≠ l) {z : E} (hz : M z - ρ • z = 0) : z = 0 := by
   have hw : z - inner 𝕜 y z • x = 0 := by
@@ -399,7 +399,7 @@ theorem eq_zero_of_map_sub_smul_eq_zero (hx : M x = l • x)
 /-- **In the basin the shifted operator is invertible unless the shift is the eigenvalue**, in
 finite dimension. -/
 theorem isUnit_sub_smul_one [FiniteDimensional 𝕜 E] (hx : M x = l • x)
-    (hy : ∀ z, inner 𝕜 y (M z) = l * inner 𝕜 y z) (hyx : inner 𝕜 y x = 1) {K : ℝ} (hK0 : 0 ≤ K)
+    (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖) {ρ : 𝕜}
     (hρ : 2 * K * ‖ρ - l‖ ≤ 1) (hρl : ρ ≠ l) : IsUnit (M - ρ • (1 : Module.End 𝕜 E)) := by
   rw [LinearMap.isUnit_iff_ker_eq_bot, LinearMap.ker_eq_bot']
@@ -411,7 +411,7 @@ complementary component `η` satisfying `4 η ≤ 1`, `2 K C η ≤ 1`, and with
 the Rayleigh shift `ρ = ⟪v, M v⟫`, the next iterate `rqiStep M v` is a unit vector whose
 complementary component is at most `4 K C η²`. -/
 theorem rqiStep_spec (hx : M x = l • x)
-    (hy : ∀ z, inner 𝕜 y (M z) = l * inner 𝕜 y z) (hyx : inner 𝕜 y x = 1) {K C : ℝ}
+    (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K C : ℝ}
     (hK0 : 0 ≤ K) (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖)
     (hC : ∀ z, ‖M z - l • z‖ ≤ C * ‖z‖) {v : E} (hv : ‖v‖ = 1)
     (hη : 4 * ‖v - inner 𝕜 y v • x‖ ≤ 1) (hη' : 2 * K * C * ‖v - inner 𝕜 y v • x‖ ≤ 1)
@@ -457,7 +457,7 @@ convergence is in fact cubic; the quadratic rate is what the nonsymmetric pertur
 gives, the Rayleigh quotient being only first-order accurate
 (`Krylov.norm_inner_map_sub_le`). -/
 theorem norm_rayleighQuotientIterate_sub_le (hx : M x = l • x)
-    (hy : ∀ z, inner 𝕜 y (M z) = l * inner 𝕜 y z) (hyx : inner 𝕜 y x = 1) {K C : ℝ}
+    (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K C : ℝ}
     (hK0 : 0 < K) (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖) (hC0 : 0 < C)
     (hC : ∀ z, ‖M z - l • z‖ ≤ C * ‖z‖) {v₀ : E} (hv₀ : ‖v₀‖ = 1)
     (hη : 4 * ‖v₀ - inner 𝕜 y v₀ • x‖ ≤ 1) (hη' : 4 * K * C * ‖v₀ - inner 𝕜 y v₀ • x‖ ≤ 1)
@@ -468,7 +468,6 @@ theorem norm_rayleighQuotientIterate_sub_le (hx : M x = l • x)
           inner 𝕜 y (rayleighQuotientIterate M v₀ k) • x‖ ≤
         (4 * K * C * ‖v₀ - inner 𝕜 y v₀ • x‖) ^ (2 ^ k) := by
   have hKC : 0 < 4 * K * C := by positivity
-  have hη0 : 0 ≤ ‖v₀ - inner 𝕜 y v₀ • x‖ := norm_nonneg _
   induction k with
   | zero =>
     rw [rayleighQuotientIterate_zero, hv₀, RCLike.ofReal_one, inv_one, one_smul, pow_zero,
@@ -488,8 +487,6 @@ theorem norm_rayleighQuotientIterate_sub_le (hx : M x = l • x)
         le_of_mul_le_mul_left h1 hKC
       linarith
     have hηk' : 2 * K * C * ‖v - inner 𝕜 y v • x‖ ≤ 1 := by
-      have h1 : 4 * K * C * ‖v - inner 𝕜 y v • x‖ ≤ 1 := (hwk.trans hpow).trans hη'
-      have h0 : 0 ≤ 2 * K * C * ‖v - inner 𝕜 y v • x‖ := by positivity
       linarith
     obtain ⟨hnorm, hstep⟩ := rqiStep_spec hx hy hyx hK0.le hK hC hvk hηk hηk' (hunit k)
     rw [rayleighQuotientIterate_succ, ← hvdef]
@@ -667,8 +664,6 @@ theorem abs_shiftedQrStep_last_le {T : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     have h := hC e
     rw [he1, mul_one] at h
     exact le_trans (norm_nonneg _) h
-  have ht0 : 0 ≤ t := abs_nonneg _
-  have hA'0 : 0 ≤ A' := by positivity
   have hη : ‖e - inner ℝ y e • x‖ ≤ A' * t := by
     have h := Krylov.norm_sub_inner_smul_le_norm_map_sub_smul hx hy' hyx hK0 hK (ρ := μ)
       (by rwa [Real.norm_eq_abs]) e
@@ -1016,7 +1011,6 @@ theorem exists_abs_isShiftedQrStep_last_le_sq {A : Matrix (Fin (N + 2)) (Fin (N 
   refine ⟨4 * K * C₀ ^ 2 * A' ^ 2, 1 / D, by positivity,
     fun Q T T' hQ hTQ hT hunit ht hd hstep => ?_⟩
   set t := |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| with htdef
-  have ht0 : 0 ≤ t := abs_nonneg _
   have hsub1 : 4 * A' * t ≤ 1 := by
     calc 4 * A' * t ≤ 4 * A' * (1 / D) := by gcongr
       _ ≤ 1 := by

@@ -90,7 +90,7 @@ variable (h : ℕ → ℕ → 𝕜)
 
 /-- The minimizers of the quasi-residual are exactly the solutions of the rotated triangular system
 `R_m y = g_m` ([saad2003iterative], (6.41)–(6.43)). -/
-theorem quasiResidual_isMinOn_iff (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
+theorem quasiResidual_isMinOn_iff (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρ : ∀ k < m, givensRho h k ≠ 0) (β : 𝕜) (y : Fin m → 𝕜) :
     IsMinOn (quasiResidual h β m) Set.univ y ↔
       (hessenbergSqOf (rotated h m) m).mulVec y = fun i : Fin m => gvec h β (i : ℕ) := by
@@ -111,7 +111,6 @@ theorem quasiResidual_isMinOn_iff (hh : ∀ i j, j + 1 < i → h i j = 0) {m : �
         (hessenbergSqOf (rotated h m) m).mulVec y) : EuclideanSpace 𝕜 (Fin m))‖ = 0 := by
       have h1 := hsplit y
       have h2 := quasiResidual_nonneg h β m y
-      have h3 := quasiResidual_nonneg h β m w
       have h4 : (0 : ℝ) ≤ ‖(WithLp.toLp 2 ((fun i : Fin m => gvec h β (i : ℕ)) -
           (hessenbergSqOf (rotated h m) m).mulVec y) : EuclideanSpace 𝕜 (Fin m))‖ := norm_nonneg _
       nlinarith
@@ -123,15 +122,12 @@ theorem quasiResidual_isMinOn_iff (hh : ∀ i j, j + 1 < i → h i j = 0) {m : �
       simp
     refine isMinOn_iff.mpr fun w _ => ?_
     have h1 := hsplit w
-    have h2 := quasiResidual_nonneg h β m y
     have h3 := quasiResidual_nonneg h β m w
-    have h4 : (0 : ℝ) ≤ ‖(WithLp.toLp 2 ((fun i : Fin m => gvec h β (i : ℕ)) -
-        (hessenbergSqOf (rotated h m) m).mulVec w) : EuclideanSpace 𝕜 (Fin m))‖ ^ 2 := sq_nonneg _
     nlinarith
 
 /-- [saad2003iterative], (7.18) and (6.42): the minimum value of the quasi-residual is `‖γ_m‖`,
 which by `Krylov.norm_gamma_eq_prod` is `|s_0 ⋯ s_{m-1}| ‖β‖`. No basis is involved. -/
-theorem quasiResidual_eq_norm_gamma (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
+theorem quasiResidual_eq_norm_gamma (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρ : ∀ k < m, givensRho h k ≠ 0) (β : 𝕜) {y : Fin m → 𝕜}
     (hy : IsMinOn (quasiResidual h β m) Set.univ y) :
     quasiResidual h β m y = ‖gamma h β m‖ := by
@@ -153,13 +149,6 @@ QGMRES and DQGMRES (Algorithms 6.12–6.13) and FGMRES (Algorithm 9.6) all satis
 own `z`, `v` and `h`. -/
 def IsQuasiMinResidualIterate (z : ℕ → E) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (x₀ : E) (m : ℕ) (x : E) : Prop :=
   ∃ y : Fin m → 𝕜, IsMinOn (quasiResidual h β m) Set.univ y ∧ x = x₀ + ∑ j, y j • z j
-
-/-- The norm of a combination of an orthonormal family is the Euclidean norm of its coefficients. -/
-private theorem norm_sum_smul_eq_of_orthonormal {ι : Type*} [Fintype ι] {v : ι → E}
-    (hv : Orthonormal 𝕜 v) (c : ι → 𝕜) :
-    ‖∑ i, c i • v i‖ = ‖(WithLp.toLp 2 c : EuclideanSpace 𝕜 ι)‖ := by
-  refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
-  rw [hv.norm_sum_smul_sq, EuclideanSpace.norm_sq_eq]
 
 /-- Cauchy–Schwarz: a combination of vectors of norm at most `1` obeys `‖∑ w_i v_i‖ ≤ √n ‖w‖₂`
 ([saad2003iterative], (6.51) and (7.83): `‖V_{m+1}‖₂ ≤ √(m+1)` for unit basis vectors). This is the
@@ -202,7 +191,7 @@ theorem norm_residual_le (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ =
     (hx : IsQuasiMinResidualIterate z h β x₀ m x) : ‖b - A x‖ ≤ C * ‖gamma h β m‖ := by
   obtain ⟨y, hy, rfl⟩ := hx
   refine (hv.norm_residual_le hr hC y).trans_eq ?_
-  rw [quasiResidual_eq_norm_gamma h hv.eq_zero_of_lt hρ β hy]
+  rw [quasiResidual_eq_norm_gamma h hv.isUpperHessenberg hρ β hy]
 
 /-- [saad2003iterative], Theorem 7.4 (and Theorem 6.11): if the residual basis satisfies `c ‖w‖₂ ≤
 ‖∑ w_i v_i‖ ≤ C ‖w‖₂` with `0 < c` then the quasi-minimal-residual iterate is within the
@@ -259,7 +248,7 @@ theorem isMinOn_norm_residual (hv : HessenbergRelation₂ A z v h) (hr : b - A x
   obtain ⟨y, hy, rfl⟩ := hx
   have hnorm : ∀ u : Fin m → 𝕜,
       ‖b - A (x₀ + ∑ j, u j • z j)‖ = quasiResidual h β m u := fun u => by
-    rw [hv.residual_eq hr m u, norm_sum_smul_eq_of_orthonormal hon, quasiResidual_def]
+    rw [hv.residual_eq hr m u, hon.norm_sum_smul_eq_norm_toLp, quasiResidual_def]
   refine ⟨?_, fun w hw => ?_⟩
   · have hmem : ∑ j, y j • z (j : ℕ) ∈
         Submodule.span 𝕜 (Set.range fun j : Fin m => z (j : ℕ)) :=
@@ -314,12 +303,7 @@ Its natural home is `Numlib/Krylov/Hessenberg`, beside
 theorem givensRho_ne_zero_of_subdiag_ne_zero {k : ℕ} (hk : h (k + 1) k ≠ 0) :
     givensRho h k ≠ 0 := by
   intro h0
-  have hsum : ‖rotated h k k k‖ ^ 2 + ‖rotated h k (k + 1) k‖ ^ 2 = 0 := by
-    rw [← givensRho_sq, h0]
-    ring
-  obtain ⟨-, h2⟩ := (add_eq_zero_iff_of_nonneg (by positivity) (by positivity)).mp hsum
-  have hd : rotated h k (k + 1) k = 0 :=
-    norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp h2)
+  have hd := (rotated_eq_zero_of_givensRho_eq_zero h h0).2
   rw [rotated_eq_of_le h k (k + 1) k le_rfl] at hd
   exact hk hd
 
@@ -403,32 +387,8 @@ theorem exists_norm_gamma_div_givensC_le (β : 𝕜) {ρF : ℕ → ℝ} (hρF0 
       | zero => rw [hρF0, show β = 0 from h0, norm_zero]
       | succ n => rw [hρF n, h0, norm_zero, zero_div]
     rw [hρm, h0, norm_zero, mul_zero]
-  have hpos : 0 < ‖gamma h β m‖ := norm_pos_iff.mpr h0
-  have hsum := inv_sq_norm_gamma_eq_sum h β hρF0 hρF h0
-  by_contra hcon
-  push Not at hcon
-  have hlt : ∀ i ∈ Finset.range (m + 1),
-      1 / ρF i ^ 2 < 1 / (((m : ℝ) + 1) * ‖gamma h β m‖ ^ 2) := by
-    intro i hi
-    have hi' : i ≤ m := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
-    have h1 := hcon i hi'
-    have hsq : Real.sqrt ((m : ℝ) + 1) ^ 2 = (m : ℝ) + 1 := Real.sq_sqrt (by positivity)
-    have hs0 : 0 ≤ Real.sqrt ((m : ℝ) + 1) * ‖gamma h β m‖ := by positivity
-    have h2 : ((m : ℝ) + 1) * ‖gamma h β m‖ ^ 2 < ρF i ^ 2 := by
-      nlinarith [mul_self_lt_mul_self hs0 h1, hsq]
-    exact one_div_lt_one_div_of_lt (by positivity) h2
-  have hkey : ∑ i ∈ Finset.range (m + 1), 1 / ρF i ^ 2
-      < ∑ _i ∈ Finset.range (m + 1), 1 / (((m : ℝ) + 1) * ‖gamma h β m‖ ^ 2) :=
-    Finset.sum_lt_sum_of_nonempty ⟨0, by simp⟩ hlt
-  rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul] at hkey
-  rw [← hsum] at hkey
-  have heq : ((m : ℝ) + 1) * (1 / (((m : ℝ) + 1) * ‖gamma h β m‖ ^ 2)) =
-      1 / ‖gamma h β m‖ ^ 2 := by
-    have hm1 : ((m : ℝ) + 1) ≠ 0 := by positivity
-    field_simp
-  push_cast at hkey
-  rw [heq] at hkey
-  exact lt_irrefl _ hkey
+  exact Real.exists_le_sqrt_mul_of_one_div_sq_eq_sum (norm_pos_iff.mpr h0)
+    (inv_sq_norm_gamma_eq_sum h β hρF0 hρF h0)
 
 end Harmonic
 
@@ -440,7 +400,8 @@ variable (h : ℕ → ℕ → 𝕜)
 
 /-- The Galerkin system in rotated coordinates: if `H_{m+1} y = β e₁` then `R̃_{m+1} y` is the
 truncated rotated right-hand side `(g_0, …, g_{m-1}, γ_m)`. -/
-private theorem rotated_mulVec_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j = 0) (β : 𝕜) {m : ℕ}
+private theorem rotated_mulVec_of_mulVec_eq
+    (hh : Matrix.IsUpperHessenberg (n := ℕ) h) (β : 𝕜) {m : ℕ}
     {w : Fin (m + 1) → 𝕜} (hw : (hessenbergSqOf h (m + 1)).mulVec w = firstVec β (m + 1))
     (i : Fin (m + 1)) :
     (hessenbergSqOf (rotated h m) (m + 1)).mulVec w i = gvecTrunc h β m (i : ℕ) := by
@@ -458,7 +419,7 @@ private theorem rotated_mulVec_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j =
 /-- The coordinate form of [saad2003iterative], (7.29): the quasi-minimal-residual coordinates at
 step `m + 1` are `|s_m|²` times the padded coordinates at step `m` plus `|c_m|²` times the Galerkin
 coordinates. -/
-private theorem coeff_eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
+private theorem coeff_eq_combination (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρ : ∀ k < m + 1, givensRho h k ≠ 0) (β : 𝕜) {y u w : Fin (m + 1) → 𝕜} {y' : Fin m → 𝕜}
     (hy : (hessenbergSqOf (rotated h (m + 1)) (m + 1)).mulVec y =
       fun i : Fin (m + 1) => gvec h β (i : ℕ))
@@ -486,7 +447,7 @@ private theorem coeff_eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0) {m 
         rw [Fin.val_castSucc, huc j, rotated_succ_eq_of_lt h hh m (j : ℕ) j.isLt (i : ℕ)]
     · rw [ite_eq_right hi]
       refine Finset.sum_eq_zero fun j _ => ?_
-      have him : (i : ℕ) = m := by have := i.isLt; omega
+      have him : (i : ℕ) = m := by omega
       rw [Fin.val_castSucc, him,
         rotated_eq_zero_of_lt h hh (m + 1) m (j : ℕ) (by omega) j.isLt, zero_mul]
   -- the Galerkin coordinates
@@ -499,7 +460,7 @@ private theorem coeff_eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0) {m 
       simp only [Matrix.mulVec, dotProduct, hessenbergSqOf, Matrix.of_apply]
       exact Finset.sum_congr rfl fun j _ => by
         rw [rotated_succ_apply, ite_eq_right (by omega), ite_eq_right (by omega)]
-    · have him : (i : ℕ) = m := by have := i.isLt; omega
+    · have him : (i : ℕ) = m := by omega
       rw [ite_eq_right hi]
       simp only [Matrix.mulVec, dotProduct, hessenbergSqOf, Matrix.of_apply]
       rw [Fin.sum_univ_castSucc]
@@ -530,7 +491,7 @@ private theorem coeff_eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0) {m 
   simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, hRu i, hRw i]
   by_cases hi : (i : ℕ) < m
   · rw [ite_eq_left hi, ite_eq_left hi, ← add_mul, had, one_mul]
-  · have him : (i : ℕ) = m := by have := i.isLt; omega
+  · have him : (i : ℕ) = m := by omega
     rw [ite_eq_right hi, ite_eq_right hi, mul_zero, zero_add, hlast, him]
 
 variable {h}
@@ -543,7 +504,7 @@ variable {A : E →ₗ[𝕜] E} {z v : ℕ → E} {b x₀ x x' xF : E} {β : �
 smoothing combinations `x^Q_{m+1} = |s_m|² x^Q_m + |c_m|² x^F_{m+1}` of the previous
 quasi-minimal-residual iterate and the Galerkin iterate at the current step — the identity that lets
 QMR be implemented as quasi-minimal residual smoothing of BCG. -/
-theorem eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0)
+theorem eq_combination (hh : Matrix.IsUpperHessenberg (n := ℕ) h)
     (hρ : ∀ k < m + 1, givensRho h k ≠ 0) {w : Fin (m + 1) → 𝕜}
     (hx : IsQuasiMinResidualIterate z h β x₀ (m + 1) x)
     (hx' : IsQuasiMinResidualIterate z h β x₀ m x')
@@ -576,7 +537,7 @@ theorem eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0)
 
 /-- The residual form of `Krylov.IsQuasiMinResidualIterate.eq_combination` ([saad2003iterative],
 (7.30) and (6.58)): `r^Q_{m+1} = |s_m|² r^Q_m + |c_m|² r^F_{m+1}`. -/
-theorem residual_eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0)
+theorem residual_eq_combination (hh : Matrix.IsUpperHessenberg (n := ℕ) h)
     (hρ : ∀ k < m + 1, givensRho h k ≠ 0) {w : Fin (m + 1) → 𝕜}
     (hx : IsQuasiMinResidualIterate z h β x₀ (m + 1) x)
     (hx' : IsQuasiMinResidualIterate z h β x₀ m x')

@@ -621,7 +621,8 @@ theorem convexAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     convexAdjointBifun Bu Bx A.indicatorBifun y v =
         -((adjointProcess Bu Bx A).indicatorBifun y v) := by
   rw [convexAdjointBifun_eq_neg_convexConj_graphFn, graphFn_indicatorBifun,
-    convexConj_indicatorFn_eq_indicatorFn_polarCone (fun a ha => A.smul_graph ha)
+    convexConj_indicatorFn_eq_indicatorFn_polarCone
+      (isCone_iff_smul_eq.2 fun a ha => A.smul_graph ha)
       ⟨0, A.zero_mem_graph⟩]
   congr 1
   by_cases h : ((-v, y) : V × Y) ∈ polarCone (prodPairing Bu Bx) (A.graph : Set (U × X))
@@ -737,7 +738,8 @@ theorem graph_coadjointProcess_adjointProcess_eq_closure (Bu : U →ₗ[ℝ] V �
     ((coadjointProcess Bx.flip Bu.flip (adjointProcess Bu Bx A)).graph : Set (U × X))
       = closure (A.graph : Set (U × X)) := by
   rw [graph_coadjointProcess_adjointProcess]
-  exact polarCone_polarCone A.convex_graph (fun a ha => A.smul_graph ha) ⟨0, A.zero_mem_graph⟩
+  exact polarCone_polarCone A.convex_graph (isCone_iff_smul_eq.2 fun a ha => A.smul_graph ha)
+    ⟨0, A.zero_mem_graph⟩
 
 /-- **A convex process is closed exactly when it is its own second adjoint.** -/
 theorem coadjointProcess_adjointProcess_eq_self_iff (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
@@ -1856,17 +1858,6 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-omit [Module ℝ U] [Module ℝ V] [AddCommGroup X] [Module ℝ X] [AddCommGroup Y]
-  [Module ℝ Y] in
-private theorem iSup_mem_neg (s : Set V) (f : V → EReal) :
-    ⨆ v ∈ -s, f v = ⨆ v ∈ s, f (-v) := by
-  refine le_antisymm (iSup₂_le fun v hv => ?_) (iSup₂_le fun v hv => ?_)
-  · rw [Set.mem_neg] at hv
-    exact le_iSup₂_of_le (-v) hv (le_of_eq (by rw [_root_.neg_neg]))
-  · refine le_iSup₂_of_le (-v) ?_ le_rfl
-    rw [Set.mem_neg, _root_.neg_neg]
-    exact hv
-
 /-- The second of the two extremum problems, in infimum-oriented form:
 `⟨u, A* x*⟩ = sup {⟨u, u*⟩ | u* ∈ A* x*}`, where `A*` is now the infimum-oriented adjoint
 `coadjointProcess`, whose values are the reflections of those of `adjointProcess`. -/
@@ -1875,7 +1866,7 @@ theorem iSup_coadjointProcess_eq_neg_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ
     ⨆ v ∈ (coadjointProcess Bu Bx A).eval y, ((Bu u v : ℝ) : EReal)
       = -(concaveBracket Bu (convexAdjointBifun Bu Bx A.indicatorBifun) u (-y)) := by
   rw [concaveBracket_convexAdjointBifun_indicatorBifun, coadjointProcess_eq_reflect_adjointProcess,
-    eval_reflect, iSup_mem_neg, EReal.neg_iInf]
+    eval_reflect, ← Set.image_neg_eq_neg, iSup_image, EReal.neg_iInf]
   refine iSup_congr fun v => ?_
   rw [EReal.neg_iInf]
   refine iSup_congr fun _ => ?_

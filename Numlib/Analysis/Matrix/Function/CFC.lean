@@ -59,7 +59,6 @@ theorem IsStarNormal.cfc_eq_pfc {A : Matrix n n ℂ} (hA : IsStarNormal A) (f : 
   set u : unitary (Matrix n n ℂ) := ⟨U, hU⟩
   set φ := Unitary.conjStarAlgAut ℂ (Matrix n n ℂ) u
   have hA' : A = φ (diagonal d) := by
-    have h1 : star U * U = 1 := (Unitary.mem_iff.1 hU).1
     have h2 : U * star U = 1 := (Unitary.mem_iff.1 hU).2
     rw [Unitary.conjStarAlgAut_apply, ← hd, ← star_eq_conjTranspose]
     change A = U * (star U * A * U) * star U

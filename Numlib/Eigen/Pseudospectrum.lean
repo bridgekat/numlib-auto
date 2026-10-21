@@ -12,6 +12,7 @@ import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.Topology.Algebra.Polynomial
+import Numlib.Topology.Separation.Regular
 
 /-!
 # Pseudospectra
@@ -612,7 +613,6 @@ theorem closedPseudospectrum_units_conj_subset (u : (E →L[𝕜] E)ˣ) (A : E �
     rw [← mul_apply_eq_comp, u.mul_inv, one_apply_eq_self]
   have hYX : ∀ v, Y (X v) = v := fun v => by
     rw [← mul_apply_eq_comp, u.inv_mul, one_apply_eq_self]
-  have hε : 0 ≤ ε := (norm_nonneg _).trans hle
   have hXw : 1 ≤ ‖Y‖ * ‖X w‖ := by
     calc (1 : ℝ) = ‖Y (X w)‖ := by rw [hYX, hw]
       _ ≤ ‖Y‖ * ‖X w‖ := le_opNorm _ _
@@ -695,7 +695,6 @@ theorem pseudospectralRadius_sub_one_div_le_norm_pow (hε : 0 < ε) (A : E →L[
   · have : (‖z‖ - 1) / ε ≤ 0 := div_nonpos_of_nonpos_of_nonneg (by linarith) hε.le
     linarith
   have hz0 : z ≠ 0 := by rintro rfl; rw [norm_zero] at h1; linarith
-  have hzn : 0 < ‖z‖ := norm_pos_iff.mpr hz0
   set r := ‖z‖⁻¹ with hr
   have hr0 : 0 ≤ r := by positivity
   have hr1 : r < 1 := inv_lt_one_of_one_lt₀ h1
@@ -786,41 +785,6 @@ private theorem finite_spectrum (A : E →L[ℂ] E) : (spectrum ℂ A).Finite :=
   rw [spectrum_eq]
   exact Module.End.finite_spectrum _
 
-/-- A connected component of a compact set `Λ` that misses a finite set `F ⊆ Λ` is contained in a
-relatively clopen part `C` of `Λ` that misses `F`: `Λ = C ∪ D` with `C`, `D` compact and disjoint,
-`z ∈ C`, `F ⊆ D`. -/
-private theorem exists_compact_split {Λ F : Set ℂ} (hΛ : IsCompact Λ) (hF : F.Finite)
-    (hFΛ : F ⊆ Λ) {z : ℂ} (hz : z ∈ Λ) (hK : ∀ μ ∈ F, μ ∉ connectedComponentIn Λ z) :
-    ∃ C D : Set ℂ, IsCompact C ∧ IsCompact D ∧ Disjoint C D ∧ C ∪ D = Λ ∧ z ∈ C ∧ F ⊆ D := by
-  have : CompactSpace Λ := isCompact_iff_compactSpace.mp hΛ
-  -- for each point of `F`, a clopen subset of `Λ` containing `z` and not that point
-  have hsep : ∀ μ : F, ∃ U : Set Λ, IsClopen U ∧ (⟨z, hz⟩ : Λ) ∈ U ∧
-      (⟨μ.1, hFΛ μ.2⟩ : Λ) ∉ U := by
-    intro μ
-    have hnot : (⟨μ.1, hFΛ μ.2⟩ : Λ) ∉ connectedComponent (⟨z, hz⟩ : Λ) := by
-      intro hmem
-      apply hK μ.1 μ.2
-      rw [connectedComponentIn_eq_image hz]
-      exact ⟨_, hmem, rfl⟩
-    rw [connectedComponent_eq_iInter_isClopen, mem_iInter] at hnot
-    push Not at hnot
-    obtain ⟨⟨U, hU, hzU⟩, hμU⟩ := hnot
-    exact ⟨U, hU, hzU, hμU⟩
-  choose U hU hzU hμU using hsep
-  have : Fintype F := hF.fintype
-  set V : Set Λ := ⋂ μ ∈ (Finset.univ : Finset F), U μ with hV
-  have hVc : IsClopen V := isClopen_biInter_finset fun μ _ => hU μ
-  refine ⟨(↑) '' V, (↑) '' Vᶜ, hVc.isClosed.isCompact.image continuous_subtype_val,
-    hVc.compl.isClosed.isCompact.image continuous_subtype_val, ?_, ?_, ?_, ?_⟩
-  · rw [Set.disjoint_left]
-    rintro _ ⟨a, ha, rfl⟩ ⟨b, hb, hab⟩
-    exact hb (Subtype.ext hab ▸ ha)
-  · rw [← image_union, union_compl_self, image_univ, Subtype.range_coe]
-  · exact ⟨⟨z, hz⟩, mem_iInter₂.mpr fun μ _ => hzU μ, rfl⟩
-  · intro μ hμ
-    refine ⟨⟨μ, hFΛ hμ⟩, fun hmem => ?_, rfl⟩
-    exact hμU ⟨μ, hμ⟩ (mem_iInter₂.mp hmem ⟨μ, hμ⟩ (Finset.mem_univ _))
-
 /-- [golub2013matrix] §7.9.3, "each connected component of `Λ_ε(A)` contains at least one eigenvalue
 of `A`": on a finite-dimensional complex normed space, for `ε ≥ 0` and `z ∈ Λ_ε(A)` there is an
 eigenvalue `μ ∈ σ(A)` in the connected component of `z` in `Λ_ε(A)`.
@@ -838,8 +802,8 @@ theorem exists_mem_spectrum_mem_connectedComponentIn (A : E →L[ℂ] E) {z : �
   have hε : 0 ≤ ε := let ⟨_, _, h⟩ := hz; (norm_nonneg _).trans h
   by_contra hK
   push Not at hK
-  obtain ⟨C, D, hC, hD, hCD, hΛ, hzC, hσD⟩ := exists_compact_split
-    (isCompact_closedPseudospectrum ε A) (finite_spectrum A)
+  obtain ⟨C, D, hC, hD, hCD, hΛ, hzC, hσD⟩ :=
+    (isCompact_closedPseudospectrum ε A).exists_compact_split_of_finite (finite_spectrum A)
     (spectrum_subset_closedPseudospectrum hε) hz hK
   obtain ⟨w, hw, hle⟩ := hz
   obtain ⟨B, hB, hzB⟩ := exists_hasEigenvalue_add_of_norm_sub_smul_le hw hle

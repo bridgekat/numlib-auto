@@ -433,16 +433,6 @@ theorem isExactOnMeasure_of_nodal_eq_lobattoNodal {n : ℕ} (hw : IsWeight μ)
 
 /-! ### Positivity of weights, and the weights through the Christoffel–Darboux kernel -/
 
-/-- The Lagrange basis polynomial at a node, as the erased nodal polynomial divided by the
-derivative of the nodal polynomial at the node. -/
-private theorem basis_eq_C_mul_nodal_erase {n : ℕ} (x : Fin n → ℝ) (j : Fin n) :
-    Lagrange.basis Finset.univ x j =
-      C ((derivative (Lagrange.nodal Finset.univ x)).eval (x j))⁻¹ *
-        Lagrange.nodal (Finset.univ.erase j) x := by
-  rw [Lagrange.basis_eq_prod_sub_inv_mul_nodal_div (Finset.mem_univ j),
-    Lagrange.nodalWeight_eq_eval_derivative_nodal (Finset.mem_univ j),
-    ← Lagrange.nodal_erase_eq_nodal_div (Finset.mem_univ j)]
-
 /-- **The weights of a rule whose nodal polynomial is `p_{n+2} + a p_{n+1} + b p_n`.** For an
 interpolatory rule with `n + 2` distinct nodes whose nodal polynomial `ω` is that combination,
 `p_{n+1}(x_j) ≠ 0` and `w_j = (‖p_{n+1}‖² - b ‖p_n‖²) / (p_{n+1}(x_j) ω'(x_j))`, provided the
@@ -465,8 +455,6 @@ theorem weight_eq_of_nodal_eq (hw : IsWeight μ) {n : ℕ} {x w : Fin (n + 2) �
   set E := Lagrange.nodal (Finset.univ.erase j) x with hE
   have hωE : Lagrange.nodal Finset.univ x = (X - C (x j)) * E :=
     Lagrange.nodal_eq_mul_nodal_erase (Finset.mem_univ j)
-  have hω' : (derivative (Lagrange.nodal Finset.univ x)).eval (x j) = E.eval (x j) :=
-    Lagrange.eval_nodal_derivative_eval_node_eq (Finset.mem_univ j)
   have hω'ne : (derivative (Lagrange.nodal Finset.univ x)).eval (x j) ≠ 0 := by
     have h := Lagrange.nodalWeight_ne_zero hx.injOn (Finset.mem_univ j)
     rw [Lagrange.nodalWeight_eq_eval_derivative_nodal (Finset.mem_univ j)] at h
@@ -507,7 +495,8 @@ theorem weight_eq_of_nodal_eq (hw : IsWeight μ) {n : ℕ} {x w : Fin (n + 2) �
     rw [h0, zero_mul] at hintE
     exact hb hintE.symm
   refine ⟨hpne, ?_⟩
-  rw [hint j, basis_eq_C_mul_nodal_erase x j]
+  rw [hint j, Lagrange.basis_eq_C_nodalWeight_mul_nodal_erase (Finset.mem_univ j),
+    Lagrange.nodalWeight_eq_eval_derivative_nodal (Finset.mem_univ j)]
   simp only [eval_mul, eval_C]
   rw [integral_const_mul, ← hE, ← hintE]
   field_simp
@@ -529,11 +518,6 @@ theorem gaussWeight_eq (hw : IsWeight μ) {N : ℕ} {x w : Fin (N + 1) → ℝ}
     have hj : j = 0 := Fin.ext (by omega)
     subst hj
     have h1 : family μ (0 + 1) = X - C (alpha μ 0) := family_one μ
-    have hx0 : x 0 = alpha μ 0 := by
-      have h := congrArg (fun p : ℝ[X] => p.eval (x 0)) hnodal
-      simp only [Lagrange.eval_nodal_at_node (Finset.mem_univ (0 : Fin (0 + 1))), h1, eval_sub,
-        eval_X, eval_C] at h
-      linarith
     refine ⟨by simp, ?_⟩
     rw [hint 0, h1, derivative_sub, derivative_X, derivative_C, sub_zero, eval_one,
       family_zero, eval_one, one_mul, div_one, normSq, family_zero]
@@ -1272,7 +1256,6 @@ theorem interpolate_eq_sum_cdt (hn : n ≠ 0) (f : ℝ → ℝ) :
   refine Finset.sum_congr rfl fun k _ => ?_
   have hk : (k : ℕ) ≤ n := Nat.lt_succ_iff.mp k.2
   set c : ℝ := ((2 : ℝ) ^ ((k : ℕ) - 1))⁻¹ with hc
-  have hc0 : c ≠ 0 := by positivity
   rw [OrthogonalPolynomial.family_chebyshevMeasure_eq]
   have e1 : discreteInner (fun j : Fin (n + 1) => lobattoWeight n j) (fun j => node n j) f
       (fun t => (Polynomial.C c * T ℝ k).eval t) =
@@ -1641,26 +1624,24 @@ private theorem derivative_lobattoNodal_legendreMeasure (m : ℕ) :
   congr 2
   field_simp
 
-/-- **The Legendre–Gauss–Lobatto weights**: for the rule of `Quadrature.exists_gaussLobatto` for the
-Legendre weight with `n + 1` nodes, `n ≥ 1`, every weight is `w_j = 2 / (n (n + 1) L_n(x̄_j)²)`,
-endpoints included. The Lobatto nodal polynomial is `p_{n+1} + b p_{n-1}` with
-`b = β_{n-1} - lc(L_{n-1})/lc(L_n)`, so `Quadrature.weight_eq_of_nodal_eq` gives
-`w_j = (‖p_n‖² - b ‖p_{n-1}‖²) / (p_n(x̄_j) ω̄'(x̄_j))`, and `ω̄' = (n + 1) p_n` by the Legendre
-differential equation.
-
-Reference: [quarteroni2000numerical] (10.34); Davis–Rabinowitz, *Methods of Numerical Integration*,
-§2.7. -/
-theorem legendreLobattoWeight_eq {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
+/-- The Christoffel–Darboux weights `Quadrature.weight_eq_of_nodal_eq` at the `m + 2`
+Legendre–Gauss–Lobatto nodes: the Lobatto nodal polynomial is `p_{m+2} + (β_m - c) p_m` with
+`c = lc(L_m)/lc(L_{m+1})`, so `p_{m+1}(x̄_j) ≠ 0` and
+`w_j = c ‖p_m‖² / (p_{m+1}(x̄_j) ω̄'(x̄_j))`. -/
+private theorem weight_eq_of_nodal_eq_lobattoNodal {m : ℕ} {x w : Fin (m + 1 + 1) → ℝ}
     (hx : Function.Injective x) (hint : IsInterpolatoryMeasure legendreMeasure w x)
-    (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal legendreMeasure n) (j : Fin (n + 1)) :
-    w j = 2 / ((n : ℝ) * ((n : ℝ) + 1) * (Polynomial.legendre n).eval (x j) ^ 2) := by
-  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+    (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal legendreMeasure (m + 1))
+    (j : Fin (m + 1 + 1)) :
+    (family legendreMeasure (m + 1)).eval (x j) ≠ 0 ∧
+      w j = (Polynomial.legendre m).leadingCoeff / (Polynomial.legendre (m + 1)).leadingCoeff *
+          normSq legendreMeasure m /
+        ((family legendreMeasure (m + 1)).eval (x j) *
+          (derivative (Lagrange.nodal Finset.univ x)).eval (x j)) := by
   have hw := isWeight_legendreMeasure
   have hlcm : (Polynomial.legendre m).leadingCoeff ≠ 0 :=
     leadingCoeff_ne_zero.mpr (Polynomial.legendre_ne_zero m)
   have hlcm1 : (Polynomial.legendre (m + 1)).leadingCoeff ≠ 0 :=
     leadingCoeff_ne_zero.mpr (Polynomial.legendre_ne_zero (m + 1))
-  have hlcsucc := leadingCoeff_legendre_succ m
   set c : ℝ := (Polynomial.legendre m).leadingCoeff / (Polynomial.legendre (m + 1)).leadingCoeff
     with hc
   have hc0 : c ≠ 0 := div_ne_zero hlcm hlcm1
@@ -1681,13 +1662,35 @@ theorem legendreLobattoWeight_eq {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) →
   rw [normSq_succ hw m, show beta legendreMeasure m * normSq legendreMeasure m -
     (beta legendreMeasure m - c) * normSq legendreMeasure m = c * normSq legendreMeasure m by ring]
     at hwj
+  exact ⟨hpne, hwj⟩
+
+/-- **The Legendre–Gauss–Lobatto weights**: for the rule of `Quadrature.exists_gaussLobatto` for the
+Legendre weight with `n + 1` nodes, `n ≥ 1`, every weight is `w_j = 2 / (n (n + 1) L_n(x̄_j)²)`,
+endpoints included. The Lobatto nodal polynomial is `p_{n+1} + b p_{n-1}` with
+`b = β_{n-1} - lc(L_{n-1})/lc(L_n)`, so `Quadrature.weight_eq_of_nodal_eq` gives
+`w_j = (‖p_n‖² - b ‖p_{n-1}‖²) / (p_n(x̄_j) ω̄'(x̄_j))`, and `ω̄' = (n + 1) p_n` by the Legendre
+differential equation.
+
+Reference: [quarteroni2000numerical] (10.34); Davis–Rabinowitz, *Methods of Numerical Integration*,
+§2.7. -/
+theorem legendreLobattoWeight_eq {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x) (hint : IsInterpolatoryMeasure legendreMeasure w x)
+    (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal legendreMeasure n) (j : Fin (n + 1)) :
+    w j = 2 / ((n : ℝ) * ((n : ℝ) + 1) * (Polynomial.legendre n).eval (x j) ^ 2) := by
+  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+  have hlcm : (Polynomial.legendre m).leadingCoeff ≠ 0 :=
+    leadingCoeff_ne_zero.mpr (Polynomial.legendre_ne_zero m)
+  have hlcm1 : (Polynomial.legendre (m + 1)).leadingCoeff ≠ 0 :=
+    leadingCoeff_ne_zero.mpr (Polynomial.legendre_ne_zero (m + 1))
+  have hlcsucc := leadingCoeff_legendre_succ m
+  obtain ⟨hpne, hwj⟩ := weight_eq_of_nodal_eq_lobattoNodal hx hint hnodal j
   rw [family_eq_legendre, eval_mul, eval_C] at hpne
   have hL : (Polynomial.legendre (m + 1)).eval (x j) ≠ 0 := fun h => hpne (by rw [h, mul_zero])
   have h2m : (2 * (m : ℝ) + 1) ≠ 0 := by positivity
   have hm1 : ((m : ℝ) + 1) ≠ 0 := by positivity
   have hm2 : ((m : ℝ) + 2) ≠ 0 := by positivity
   rw [hwj, hnodal, derivative_lobattoNodal_legendreMeasure, family_eq_legendre,
-    normSq_legendreMeasure, hc, hlcsucc]
+    normSq_legendreMeasure, hlcsucc]
   simp only [eval_mul, eval_C]
   push_cast
   field_simp
@@ -1701,28 +1704,8 @@ theorem legendre_eval_ne_zero_of_nodal_eq_lobattoNodal {n : ℕ} (hn : 1 ≤ n) 
     (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal legendreMeasure n) (j : Fin (n + 1)) :
     (Polynomial.legendre n).eval (x j) ≠ 0 := by
   obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
-  have hw := isWeight_legendreMeasure
-  have hlcm : (Polynomial.legendre m).leadingCoeff ≠ 0 :=
-    leadingCoeff_ne_zero.mpr (Polynomial.legendre_ne_zero m)
-  have hlcm1 : (Polynomial.legendre (m + 1)).leadingCoeff ≠ 0 :=
-    leadingCoeff_ne_zero.mpr (Polynomial.legendre_ne_zero (m + 1))
-  set c : ℝ := (Polynomial.legendre m).leadingCoeff / (Polynomial.legendre (m + 1)).leadingCoeff
-    with hc
-  have hc0 : c ≠ 0 := div_ne_zero hlcm hlcm1
-  have hnodal' : Lagrange.nodal Finset.univ x = family legendreMeasure (m + 2) +
-      C 0 * family legendreMeasure (m + 1) +
-        C (beta legendreMeasure m - c) * family legendreMeasure m := by
-    rw [hnodal, lobattoNodal_legendreMeasure_eq, three_term_recurrence hw m,
-      alpha_legendreMeasure, C_0, sub_zero, C_sub]
-    ring
-  have hb : normSq legendreMeasure (m + 1) - (beta legendreMeasure m - c) * normSq legendreMeasure m
-      ≠ 0 := by
-    rw [normSq_succ hw m, show beta legendreMeasure m * normSq legendreMeasure m -
-      (beta legendreMeasure m - c) * normSq legendreMeasure m =
-        c * normSq legendreMeasure m by ring]
-    exact mul_ne_zero hc0 (normSq_ne_zero hw m)
-  have hpne := (weight_eq_of_nodal_eq hw hx (w := fun i =>
-    ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂legendreMeasure) (fun _ => rfl) hnodal' hb j).1
+  have hpne := (weight_eq_of_nodal_eq_lobattoNodal hx (w := fun i =>
+    ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂legendreMeasure) (fun _ => rfl) hnodal j).1
   rw [family_eq_legendre, eval_mul, eval_C] at hpne
   exact fun h => hpne (by rw [h, mul_zero])
 
@@ -1800,7 +1783,6 @@ theorem interpolate_eq_sum_dlt {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → �
   have hlc : (Polynomial.legendre k).leadingCoeff ≠ 0 :=
     leadingCoeff_ne_zero.mpr (Polynomial.legendre_ne_zero k)
   set c : ℝ := ((Polynomial.legendre k).leadingCoeff)⁻¹ with hc
-  have hc0 : c ≠ 0 := inv_ne_zero hlc
   rw [family_eq_legendre]
   have e1 : discreteInner w x f (fun t => (C c * Polynomial.legendre k).eval t) =
       c * discreteInner w x f (fun t => (Polynomial.legendre k).eval t) := by

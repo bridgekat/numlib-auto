@@ -1521,8 +1521,6 @@ theorem exists_norm_sq_le :
       (u : SobolevEuclidean (d + 1) 1 2 Ω) := hcoer u
   have h2 := min_le_left c 1
   have h3 := min_le_right c 1
-  have h4 : 0 ≤ ‖u‖ ^ 2 := sq_nonneg _
-  have h5 : 0 ≤ ‖v‖ ^ 2 := sq_nonneg _
   nlinarith
 
 end dirichletPhaseSpace
@@ -2435,7 +2433,8 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 /-- **Membership in `D(−Δ)` through `H¹` derivatives**: if `v ∈ H¹₀(Ω)` and each `∂ᵢ v` is the
 function of some `Qᵢ ∈ H¹(Ω)`, then `f = fnL v` lies in `D(−Δ)` and `−Δ f = −∑ᵢ ∂ᵢ Qᵢ`. This is
 `mem_dirichletLaplacianDomain_of_sobolev_two` with the `H²` element replaced by the family of
-its first derivatives, the only thing the proof uses. -/
+its first derivatives, the only thing the proof uses
+(`Elliptic.dirichletForm_eq_load_neg_sum_weakDeriv`). -/
 theorem mem_dirichletLaplacianDomain_of_forall_ae_eq {v : SobolevEuclidean N 1 2 Ω}
     (hv : v ∈ SobolevEuclideanZero N 1 2 Ω) (Q : Fin N → SobolevEuclidean N 1 2 Ω)
     (hQ : ∀ i, ⇑(weakDeriv v (MultiIndexLE.single i))
@@ -2443,50 +2442,7 @@ theorem mem_dirichletLaplacianDomain_of_forall_ae_eq {v : SobolevEuclidean N 1 2
     fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v ∈ dirichletLaplacianDomain Ω
       ∧ dirichletLaplacianApply Ω (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v)
         = -∑ i, weakDeriv (Q i) (MultiIndexLE.single i) := by
-  -- the datum, as a function
-  have hg : ⇑(-∑ i, weakDeriv (Q i) (MultiIndexLE.single i))
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      fun x ↦ -∑ i, weakDeriv (Q i) (MultiIndexLE.single i) x := by
-    filter_upwards [Lp.coeFn_neg (∑ i, weakDeriv (Q i) (MultiIndexLE.single i)),
-      Lp.coeFn_finsetSum Finset.univ fun i ↦ weakDeriv (Q i) (MultiIndexLE.single i)] with x hx1 hx2
-    rw [hx1, Pi.neg_apply, hx2, Finset.sum_apply]
-  -- the equation against test functions
-  have heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω v Φ = load Ω (-∑ i, weakDeriv (Q i) (MultiIndexLE.single i)) Φ := by
-    intro Φ hΦ
-    obtain ⟨ψ, hψ⟩ := hΦ
-    rw [dirichletForm_apply_eq_of_ae_eq hQ hψ, load_apply_eq_of_ae_eq hg hψ]
-    have hterm : ∀ i, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-        fn (Q i) x * fderiv ℝ ψ x (EuclideanSpace.single i 1)
-        = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-          weakDeriv (Q i) (MultiIndexLE.single i) x * ψ x := by
-      intro i
-      have key := (weakDeriv_hasWeakIteratedLineDerivOn_single (Q i) i)
-        |>.integral_fderiv_mul_eq_of_eqOn ψ (fun _ _ ↦ rfl)
-      calc ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-            fn (Q i) x * fderiv ℝ ψ x (EuclideanSpace.single i 1)
-          = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-              fderiv ℝ ψ x (EuclideanSpace.single i 1) * fn (Q i) x :=
-            integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
-        _ = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-              ψ x * weakDeriv (Q i) (MultiIndexLE.single i) x := key
-        _ = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-              weakDeriv (Q i) (MultiIndexLE.single i) x * ψ x := by
-            congr 1
-            exact integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
-    simp only [hterm, Finset.sum_neg_distrib]
-    have hI : ∀ i, Integrable
-        (fun x ↦ weakDeriv (Q i) (MultiIndexLE.single i) x * ψ x)
-        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := fun i ↦ by
-      have := ((weakDeriv_hasWeakIteratedLineDerivOn_single (Q i) i)
-        |>.integrable_smul_weakDeriv ψ).integrableOn (s := (Ω : Set (EuclideanSpace ℝ (Fin N))))
-      exact this.congr (Eventually.of_forall fun x ↦ by simp only [smul_eq_mul]; ring)
-    rw [← integral_finsetSum _ fun i _ ↦ hI i, ← integral_neg]
-    exact integral_congr_ae (Eventually.of_forall fun x ↦ by
-      simp only [Finset.sum_mul, neg_mul])
-  have heq' : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω,
-      dirichletForm Ω v φ = load Ω (-∑ i, weakDeriv (Q i) (MultiIndexLE.single i)) φ :=
-    fun φ hφ ↦ dirichletForm_eq_load_of_forall_testFunctions heq hφ
+  have heq' := Elliptic.dirichletForm_eq_load_neg_sum_weakDeriv Q hQ
   exact ⟨⟨v, hv, rfl, _, heq'⟩, (eq_dirichletLaplacianApply hv rfl heq').symm⟩
 
 /-- **The inclusion `W^{1,p}(ℝ^N) → W_0^{1,p}(ℝ^N)`** as a bounded linear map, `p < ∞`: the two

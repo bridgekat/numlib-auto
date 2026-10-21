@@ -325,12 +325,6 @@ private theorem two_zpow_one_sub (hn : 1 ≤ n) :
   rw [show (1 - (n : ℤ)) = -((n - 1 : ℕ) : ℤ) by push_cast [Nat.cast_sub hn]; ring, zpow_neg,
     zpow_natCast]
 
-/-- The modulus of a polynomial attains its maximum over `[-1, 1]`. -/
-private theorem exists_isGreatest_abs_eval (p : ℝ[X]) :
-    ∃ M, IsGreatest ((fun t => |p.eval t|) '' Icc (-1 : ℝ) 1) M :=
-  (isCompact_Icc.image p.continuous.abs).exists_isGreatest
-    ((nonempty_Icc.mpr (by norm_num)).image _)
-
 /-- **§10.1.1, the minimax property of the Chebyshev polynomials.** For `n ≥ 1`,
 `‖2^{1-n} T_n‖_∞ = 2^{1-n}` and `‖2^{1-n} T_n‖_∞ ≤ min_{p ∈ ℙ_n^1} ‖p‖_∞`, where
 `ℙ_n^1 = {p = ∑_{k ≤ n} a_k x^k, a_n = 1}` is the set of monic polynomials of degree `n`. If
@@ -350,7 +344,9 @@ theorem chebyshev_minimax (hn : 1 ≤ n) :
       simp only [eval_mul, eval_C, abs_mul, abs_of_pos hc]
       exact mul_le_of_le_one_right hc.le (Chebyshev.abs_eval_T_real_le_one _ (abs_le.mpr hx))
   · intro p hp hpn
-    obtain ⟨M, hM⟩ := exists_isGreatest_abs_eval p
+    obtain ⟨M, hM⟩ : ∃ M, IsGreatest ((fun t => |p.eval t|) '' Icc (-1 : ℝ) 1) M :=
+      (isCompact_Icc.image p.continuous.abs).exists_isGreatest
+        ((nonempty_Icc.mpr (by norm_num)).image _)
     rw [hM.csSup_eq]
     by_contra hlt
     push Not at hlt

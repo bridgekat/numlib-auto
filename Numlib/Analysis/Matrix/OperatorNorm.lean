@@ -339,23 +339,6 @@ section BlockDiagonal
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {m' n' : ι → Type*} [∀ i, Fintype (m' i)]
   [∀ i, Fintype (n' i)] [∀ i, DecidableEq (n' i)]
 
-omit [Fintype ι] [∀ i, Fintype (m' i)] [∀ i, Fintype (n' i)] [∀ i, DecidableEq (n' i)] in
-/-- The diagonal block of a block diagonal matrix. -/
-private theorem blockDiagonal'_submatrix_mk {α : Type*} [Zero α] (M : ∀ i, Matrix (m' i) (n' i) α)
-    (i : ι) : (blockDiagonal' M).submatrix (Sigma.mk i) (Sigma.mk i) = M i := by
-  ext a b
-  simp [blockDiagonal'_apply_eq]
-
-omit [∀ i, Fintype (m' i)] [∀ i, DecidableEq (n' i)] in
-/-- A block diagonal matrix acts blockwise. -/
-private theorem blockDiagonal'_mulVec_apply (M : ∀ i, Matrix (m' i) (n' i) 𝕜)
-    (x : (Σ i, n' i) → 𝕜) (k : Σ i, m' i) :
-    (blockDiagonal' M *ᵥ x) k = (M k.1 *ᵥ fun b => x ⟨k.1, b⟩) k.2 := by
-  obtain ⟨i, a⟩ := k
-  simp only [mulVec, dotProduct, Fintype.sum_sigma, blockDiagonal'_apply']
-  rw [Finset.sum_eq_single i (fun j _ hj => by simp [Ne.symm hj]) (by simp)]
-  simp
-
 /-- **The induced `p`-norm of a block diagonal matrix is the largest induced `p`-norm of its
 blocks**, for every `p`: `‖diag(M₁, …, M_k)‖_p = maxᵢ ‖Mᵢ‖_p`. The lower bound is
 `Matrix.lpOpNorm_submatrix_le` along each block; the upper bound reads the `ℓ^p` norm on the sigma
@@ -373,7 +356,7 @@ theorem lpOpNorm_blockDiagonal' (M : ∀ i, Matrix (m' i) (n' i) 𝕜) :
         (blockDiagonal' M *ᵥ WithLp.ofLp x))) i) : PiLp p fun _ : m' i => 𝕜)
         = lpCLM p (M i) (WithLp.toLp p fun b => WithLp.ofLp x ⟨i, b⟩) := by
       ext a
-      simp [Sigma.curry, blockDiagonal'_mulVec_apply]
+      simp [Sigma.curry, blockDiagonal'_mulVec]
     rw [hx]
     calc ‖lpCLM p (M i) (WithLp.toLp p fun b => WithLp.ofLp x ⟨i, b⟩)‖
         ≤ lpOpNorm p (M i) * ‖(WithLp.toLp p fun b => WithLp.ofLp x ⟨i, b⟩
@@ -382,7 +365,7 @@ theorem lpOpNorm_blockDiagonal' (M : ∀ i, Matrix (m' i) (n' i) 𝕜) :
           (le_ciSup (Finite.bddAbove_range fun i => lpOpNorm p (M i)) i) (norm_nonneg _)
   · have h := lpOpNorm_submatrix_le p (blockDiagonal' M) (sigma_mk_injective (i := i))
       (sigma_mk_injective (i := i))
-    rwa [blockDiagonal'_submatrix_mk] at h
+    rwa [blockDiagonal'_submatrix_sigma_mk] at h
 
 /-- The induced `p`-norm of a diagonal matrix is the largest modulus of a diagonal entry:
 `‖diag(d)‖_p = maxᵢ |dᵢ|` for every `p`. Mathlib has the cases `p = 2`
@@ -1604,26 +1587,21 @@ theorem frobenius_norm_toBlocks_le {a b c d : Type*} [Fintype a] [Fintype b] [Fi
     refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_ <;>
     linarith
 
-/-- A sum over the image of an injection is at most the full sum of a nonnegative function. -/
-private theorem sum_comp_le_of_injective {α β : Type*} [Fintype α] [Fintype β] (F : β → ℝ)
-    {h : α → β} (hh : Function.Injective h) (hF : ∀ b, 0 ≤ F b) : ∑ a, F (h a) ≤ ∑ b, F b := by
-  classical
-  rw [← Finset.sum_image (f := F) (fun x _ y _ hxy => hh hxy)]
-  exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun _ _ _ => hF _
-
 /-- A submatrix along injective row and column maps has at most the Frobenius norm of the
 matrix: the Frobenius form of `Matrix.lpOpNorm_submatrix_le`. -/
 theorem frobenius_norm_submatrix_le {m' n' : Type*} [Fintype m'] [Fintype n']
     (E : Matrix m n 𝕜) {f : m' → m} {g : n' → n} (hf : Function.Injective f)
     (hg : Function.Injective g) : ‖E.submatrix f g‖ ≤ ‖E‖ := by
+  classical
   refine le_of_pow_le_pow_left₀ two_ne_zero (norm_nonneg _) ?_
   rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
   calc ∑ i, ∑ j, ‖E.submatrix f g i j‖ ^ 2 ≤ ∑ i, ∑ t, ‖E (f i) t‖ ^ 2 :=
         Finset.sum_le_sum fun i _ =>
-          sum_comp_le_of_injective (fun t => ‖E (f i) t‖ ^ 2) hg fun _ => sq_nonneg _
+          Finset.sum_le_sum_of_injOn g hg.injOn (Finset.subset_univ _) (fun _ _ => le_rfl)
+            fun _ _ _ => sq_nonneg _
     _ ≤ ∑ s, ∑ t, ‖E s t‖ ^ 2 :=
-        sum_comp_le_of_injective (fun s => ∑ t, ‖E s t‖ ^ 2) hf
-          fun _ => Finset.sum_nonneg fun _ _ => sq_nonneg _
+        Finset.sum_le_sum_of_injOn f hf.injOn (Finset.subset_univ _) (fun _ _ => le_rfl)
+          fun _ _ _ => Finset.sum_nonneg fun _ _ => sq_nonneg _
 
 /-- Reindexing does not change the Frobenius norm. -/
 theorem frobenius_norm_submatrix_equiv {m' n' : Type*} [Fintype m'] [Fintype n']
@@ -1774,41 +1752,6 @@ theorem frobenius_norm_sq_eq_trace_transpose (A : Matrix n n ℝ) :
   have h := frobenius_norm_sq_eq_trace (𝕜 := ℝ) A
   simpa [conjTranspose_eq_transpose_of_trivial] using h
 
-/-- **Projecting the rows off a line does not increase the Frobenius norm**: with
-`P = s sᵀ / (sᵀ s)` the orthogonal projector onto `span {s}`, `‖A (1 - P)‖_F ≤ ‖A‖_F`. This is
-Pythagoras, `‖A‖_F² = ‖A (1 - P)‖_F² + ‖A P‖_F²`, in the trace form `‖M‖_F² = tr(Mᵀ M)`, using
-that `P` is symmetric and idempotent. -/
-theorem frobenius_norm_mul_one_sub_le (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
-    ‖A * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ ≤ ‖A‖ := by
-  set P : Matrix n n ℝ := (1 / (s ⬝ᵥ s)) • vecMulVec s s with hPdef
-  have hss : s ⬝ᵥ s ≠ 0 := by
-    rw [dotProduct_self_eq_norm_sq]
-    exact pow_ne_zero _ (norm_ne_zero_iff.2 (by simpa using hs))
-  have hPt : Pᵀ = P := by
-    rw [hPdef, transpose_smul, transpose_vecMulVec]
-  have hPP : P * P = P := by
-    rw [hPdef, Matrix.smul_mul, Matrix.mul_smul, vecMulVec_mul_vecMulVec, vecMulVec_smul,
-      smul_smul, smul_smul]
-    congr 1
-    field_simp
-  have hQt : (1 - P)ᵀ = 1 - P := by rw [transpose_sub, transpose_one, hPt]
-  have hQQ : (1 - P) * (1 - P) = 1 - P := by
-    rw [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.one_mul,
-      Matrix.mul_one, hPP]
-    abel
-  -- the three squared norms as traces
-  have h1 : ‖A * (1 - P)‖ ^ 2 = trace (Aᵀ * A * (1 - P)) := by
-    rw [frobenius_norm_sq_eq_trace_transpose, transpose_mul, hQt, Matrix.mul_assoc,
-      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hQQ, ← Matrix.mul_assoc]
-  have h2 : ‖A * P‖ ^ 2 = trace (Aᵀ * A * P) := by
-    rw [frobenius_norm_sq_eq_trace_transpose, transpose_mul, hPt, Matrix.mul_assoc,
-      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hPP, ← Matrix.mul_assoc]
-  have h3 : ‖A‖ ^ 2 = trace (Aᵀ * A) := frobenius_norm_sq_eq_trace_transpose A
-  have hsum : ‖A * (1 - P)‖ ^ 2 + ‖A * P‖ ^ 2 = ‖A‖ ^ 2 := by
-    rw [h1, h2, h3, ← trace_add, ← Matrix.mul_add, sub_add_cancel, Matrix.mul_one]
-  have hle : ‖A * (1 - P)‖ ^ 2 ≤ ‖A‖ ^ 2 := by nlinarith [sq_nonneg ‖A * P‖]
-  exact le_of_sq_le_sq hle (norm_nonneg _)
-
 /-- **Pythagoras for the projector onto a line**: with `P = s sᵀ / (sᵀ s)`,
 `‖A (1 - P)‖_F² + ‖A P‖_F² = ‖A‖_F²`, in the trace form `‖M‖_F² = tr(Mᵀ M)`, since `P` is
 symmetric and idempotent. -/
@@ -1839,6 +1782,17 @@ theorem frobenius_norm_sq_mul_one_sub_add_sq_mul (A : Matrix n n ℝ) {s : n →
       trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hPP, ← Matrix.mul_assoc]
   have h3 : ‖A‖ ^ 2 = trace (Aᵀ * A) := frobenius_norm_sq_eq_trace_transpose A
   rw [h1, h2, h3, ← trace_add, ← Matrix.mul_add, sub_add_cancel, Matrix.mul_one]
+
+/-- **Projecting the rows off a line does not increase the Frobenius norm**: with
+`P = s sᵀ / (sᵀ s)` the orthogonal projector onto `span {s}`, `‖A (1 - P)‖_F ≤ ‖A‖_F`. This is
+Pythagoras, `‖A‖_F² = ‖A (1 - P)‖_F² + ‖A P‖_F²`
+(`Matrix.frobenius_norm_sq_mul_one_sub_add_sq_mul`). -/
+theorem frobenius_norm_mul_one_sub_le (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
+    ‖A * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ ≤ ‖A‖ := by
+  have hsum := frobenius_norm_sq_mul_one_sub_add_sq_mul A hs
+  have hle : ‖A * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ ^ 2 ≤ ‖A‖ ^ 2 := by
+    nlinarith [sq_nonneg ‖A * ((1 / (s ⬝ᵥ s)) • vecMulVec s s)‖]
+  exact le_of_sq_le_sq hle (norm_nonneg _)
 
 omit [DecidableEq n] in
 /-- The projector `P = s sᵀ / (sᵀ s)` fixes `s`. -/

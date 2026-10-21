@@ -1,4 +1,5 @@
 import Mathlib.Analysis.InnerProductSpace.Spectrum
+import Numlib.Analysis.InnerProductSpace.Spectrum
 import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Lanczos
 
@@ -434,15 +435,10 @@ section Eigenvalues
 
 variable {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E]
 
-private theorem iSup_eigenspace_eq_top (hA : A.IsSymmetric) :
-    (⨆ μ : 𝕜, Module.End.eigenspace A μ) = ⊤ :=
-  Submodule.orthogonal_eq_bot_iff.1
-    (LinearMap.IsSymmetric.orthogonalComplement_iSup_eigenspaces_eq_bot hA)
-
 private theorem le_iSup_eigenspace_of_forall (hA : A.IsSymmetric) {S : Finset 𝕜}
     (hS : ∀ μ : 𝕜, Module.End.eigenspace A μ ≠ ⊥ → μ ∈ S) :
     (⊤ : Submodule 𝕜 E) ≤ ⨆ μ ∈ S, Module.End.eigenspace A μ := by
-  rw [← iSup_eigenspace_eq_top hA]
+  rw [← hA.iSup_eigenspace_eq_top]
   refine iSup_le fun μ => ?_
   rcases eq_or_ne (Module.End.eigenspace A μ) ⊥ with h0 | h0
   · rw [h0]
@@ -453,7 +449,7 @@ private theorem le_iSup_eigenspace_of_forall (hA : A.IsSymmetric) {S : Finset �
 private theorem range_le_iSup_eigenspace (hA : A.IsSymmetric) {S : Finset 𝕜}
     (hS : ∀ μ : 𝕜, μ ≠ 0 → Module.End.eigenspace A μ ≠ ⊥ → μ ∈ S) :
     LinearMap.range A ≤ ⨆ μ ∈ S, Module.End.eigenspace A μ := by
-  rw [LinearMap.range_eq_map, ← iSup_eigenspace_eq_top hA, Submodule.map_iSup]
+  rw [LinearMap.range_eq_map, ← hA.iSup_eigenspace_eq_top, Submodule.map_iSup]
   refine iSup_le fun μ => ?_
   rcases eq_or_ne μ 0 with rfl | hμ
   · rw [Module.End.eigenspace_zero]
@@ -510,29 +506,8 @@ variable {A : E →ₗ[𝕜] E} {b : E} [FiniteDimensional 𝕜 (fullSubspace A 
 /-- Pythagoras in the Arnoldi basis: below the grade the Arnoldi vectors are orthonormal, so the
 norm of a combination is the Euclidean norm of its coefficient vector. -/
 private theorem norm_sum_smul_vec {N : ℕ} (hN : N ≤ grade A b) (c : Fin N → 𝕜) :
-    ‖∑ i, c i • Arnoldi.vec A b (i : ℕ)‖ = ‖(WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin N))‖ := by
-  have hinner : ∀ j : Fin N,
-      inner 𝕜 (Arnoldi.vec A b (j : ℕ)) (∑ i, c i • Arnoldi.vec A b (i : ℕ)) = c j := by
-    intro j
-    rw [inner_sum, Finset.sum_eq_single j]
-    · rw [inner_smul_right, inner_self_eq_norm_sq_to_K,
-        Arnoldi.norm_vec_eq_one_of_lt_grade A b (lt_of_lt_of_le j.isLt hN)]
-      norm_num
-    · intro i _ hij
-      rw [inner_smul_right, Arnoldi.inner_vec_eq_zero A b (fun hc => hij (Fin.ext hc.symm)),
-        mul_zero]
-    · intro hc
-      exact absurd (Finset.mem_univ _) hc
-  have hK : ((‖∑ i, c i • Arnoldi.vec A b (i : ℕ)‖ : ℝ) : 𝕜) ^ 2 = ((∑ i, ‖c i‖ ^ 2 : ℝ) : 𝕜) := by
-    rw [← inner_self_eq_norm_sq_to_K, sum_inner]
-    push_cast
-    exact Finset.sum_congr rfl fun i _ => by
-      rw [inner_smul_left, hinner i, RCLike.conj_mul]
-  have hsq : ‖∑ i, c i • Arnoldi.vec A b (i : ℕ)‖ ^ 2 = ∑ i, ‖c i‖ ^ 2 := by exact_mod_cast hK
-  have hrhs : ‖(WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin N))‖ ^ 2 = ∑ i, ‖c i‖ ^ 2 :=
-    EuclideanSpace.norm_sq_eq _
-  rw [← Real.sqrt_sq (norm_nonneg (∑ i, c i • Arnoldi.vec A b (i : ℕ))),
-    ← Real.sqrt_sq (norm_nonneg (WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin N))), hsq, hrhs]
+    ‖∑ i, c i • Arnoldi.vec A b (i : ℕ)‖ = ‖(WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin N))‖ :=
+  Krylov.norm_sum_smul_vec_eq A b c fun i hi => absurd (lt_of_lt_of_le i.isLt hN) (not_lt.2 hi)
 
 /-- [choi2006iterative], Lemma 2.31, `‖T̄_m‖ ≤ ‖A‖`, in the form that needs no norm on the space of
 operators: every bound `C` for `A` is a bound for the extended tridiagonal matrix `T̄_m`.  The
@@ -718,7 +693,7 @@ theorem apply_residual_minRes_eq (hA : A.IsSymmetric) {m : ℕ} (hm : m ≤ grad
     intro l hl
     rw [Finset.mem_range] at hl
     rw [rotated_eq_zero_of_lt (Arnoldi.coeff A (b - A x₀))
-      (fun i j hij => Arnoldi.coeff_eq_zero_of_lt A (b - A x₀) hij) m m l hl hl,
+      (Arnoldi.isUpperHessenberg_coeff A (b - A x₀)) m m l hl hl,
       map_zero, mul_zero, zero_smul]
   rw [hr, map_sum, Finset.sum_congr rfl fun i (_ : i ∈ Finset.univ) => step1 i, Finset.sum_comm,
     Finset.sum_congr rfl step2, Finset.sum_range_succ, Finset.sum_range_succ,

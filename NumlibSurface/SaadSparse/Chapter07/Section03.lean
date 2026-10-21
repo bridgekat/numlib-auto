@@ -159,7 +159,7 @@ theorem BCGNoBreakdown.mono {k : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m) (hk 
 /-- The surface no-breakdown hypothesis is the backbone one. -/
 theorem BCGNoBreakdown.toBCG (h : BCGNoBreakdown A b x₀ rs₀ m) :
     BCG.NoBreakdown (op A) (op Aᴴ) b x₀ rs₀ m where
-  adjoint := inner_op_conjTranspose A
+  adjoint := LinearMap.isAdjointPair_inner_iff'.2 (inner_op_conjTranspose A)
   inner_residual_ne_zero k hk := by
     have := h.inner_residual_ne_zero k hk
     rwa [bcg_eq] at this
@@ -343,8 +343,9 @@ private theorem gamma_succ_eq_givensC_mul {h : ℕ → ℕ → 𝕜}
     (hy : (Krylov.hessenbergSqOf h (m + 1)).mulVec y = Krylov.firstVec β (m + 1)) :
     Krylov.gamma h β (m + 1)
       = Krylov.givensC h m * -(h (m + 1) m * y ⟨m, Nat.lt_succ_self m⟩) := by
-  rw [Krylov.gamma_succ, ← Krylov.rotated_self_mul_eq_gamma h hh β hy, Krylov.givensS,
-    Krylov.givensC, Krylov.rotated_eq_of_le h m (m + 1) m le_rfl]
+  rw [Krylov.gamma_succ,
+    ← Krylov.rotated_self_mul_eq_gamma h (Matrix.isUpperHessenberg_iff_nat.2 hh) β hy,
+    Krylov.givensS, Krylov.givensC, Krylov.rotated_eq_of_le h m (m + 1) m le_rfl]
   ring
 
 /-- A nonvanishing rotated pivot makes rotation `m` nondegenerate. -/
@@ -364,7 +365,9 @@ private theorem givensC_ne_zero {h : ℕ → ℕ → 𝕜} (hh : ∀ i j : ℕ, 
     (hy : (Krylov.hessenbergSqOf h (m + 1)).mulVec y = Krylov.firstVec β (m + 1))
     (h0 : Krylov.gamma h β m ≠ 0) : Krylov.givensC h m ≠ 0 := by
   have hd : Krylov.rotated h m m m ≠ 0 := fun hc =>
-    h0 (by rw [← Krylov.rotated_self_mul_eq_gamma h hh β hy, hc, zero_mul])
+    h0 (by
+      rw [← Krylov.rotated_self_mul_eq_gamma h (Matrix.isUpperHessenberg_iff_nat.2 hh) β hy,
+        hc, zero_mul])
   exact div_ne_zero hd (RCLike.ofReal_ne_zero.2 (givensRho_ne_zero_of_rotated_self h hd))
 
 /-- The quasi-residual scalars vanish from the first vanishing one onwards. -/
@@ -668,7 +671,7 @@ theorem equation_7_29 {m : ℕ}
         + ((‖Chapter06.c (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜)
           • (b - op A (lanczosSolve A b x₀ w₁ (m + 1))) := by
   refine Krylov.IsQuasiMinResidualIterate.residual_eq_combination
-    (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hρ
+    (Matrix.isUpperHessenberg_iff_nat.2 fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hρ
     (w := lanczosSolveY A b x₀ w₁ (m + 1)) (qmr_isQuasiMinResidualIterate hR)
     (qmr_isQuasiMinResidualIterate hRm) ?_ (lanczosSolve_eq_add_sum A b x₀ w₁ (m + 1))
   rw [← T_eq_hessenbergSqOf]
@@ -689,7 +692,7 @@ theorem equation_7_30 {m : ℕ}
         + ((‖Chapter06.c (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜)
           • lanczosSolve A b x₀ w₁ (m + 1) := by
   refine Krylov.IsQuasiMinResidualIterate.eq_combination
-    (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hρ
+    (Matrix.isUpperHessenberg_iff_nat.2 fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hρ
     (w := lanczosSolveY A b x₀ w₁ (m + 1)) (qmr_isQuasiMinResidualIterate hR)
     (qmr_isQuasiMinResidualIterate hRm) ?_ (lanczosSolve_eq_add_sum A b x₀ w₁ (m + 1))
   rw [← T_eq_hessenbergSqOf]

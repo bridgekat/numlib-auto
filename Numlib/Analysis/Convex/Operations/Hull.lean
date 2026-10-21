@@ -178,6 +178,11 @@ theorem convFn_eq_convHullFn_iInf (f : ι → E → EReal) :
     (le_convFn (convexFn_convHullFn _) fun i =>
       (convHullFn_le _).trans fun x => iInf_le (fun j => f j x) i)
 
+/-- A constant family has the convex hull of its one function. -/
+theorem convFn_const [Nonempty ι] (g : E → EReal) : convFn (fun _ : ι => g) = convHullFn g := by
+  rw [convFn_eq_convHullFn_iInf]
+  simp
+
 /-- `convHullFn` is the one-element instance of `convFn`. -/
 theorem convFn_unit (g : E → EReal) : convFn (fun _ : Unit => g) = convHullFn g := by
   rw [convFn_eq_convHullFn_iInf]
@@ -389,6 +394,50 @@ section Formula
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {ι : Type*}
 
+/-- **The easy half of `convFn_apply`**: the convex hull of a family is below the value
+`∑ λ i * f i (x i)` of every representation of `x` as a convex combination of points `x i`, one per
+index. It needs no convexity, only that no `f i (x i)` in the sum is `⊥`. -/
+theorem convFn_le_sum {f : ι → E → EReal} {t : Finset ι} {w : ι → ℝ} {p : ι → E} {x : E}
+    (hf' : ∀ i ∈ t, f i (p i) ≠ ⊥) (hw₀ : ∀ i ∈ t, 0 ≤ w i) (hw₁ : ∑ i ∈ t, w i = 1)
+    (hwx : ∑ i ∈ t, w i • p i = x) : convFn f x ≤ ∑ i ∈ t, (w i : EReal) * f i (p i) := by
+  classical
+  by_cases htop : ∑ i ∈ t, (w i : EReal) * f i (p i) = ⊤
+  · rw [htop]; exact le_top
+  have hbot : ∀ i ∈ t, (w i : EReal) * f i (p i) ≠ ⊥ := fun i hi =>
+    EReal.coe_mul_ne_bot (hw₀ i hi) (hf' i hi)
+  have hnetop := EReal.forall_ne_top_of_sum_ne_top t _ hbot htop
+  -- discard the indices carrying zero weight, whose points need not lie in `dom (f i)`
+  set t' : Finset ι := t.filter (fun i => 0 < w i) with ht'def
+  have hsub : t' ⊆ t := Finset.filter_subset _ _
+  have hzero : ∀ i ∈ t, i ∉ t' → w i = 0 := by
+    intro i hi hi'
+    rcases eq_or_lt_of_le (hw₀ i hi) with h | h
+    · exact h.symm
+    · exact absurd (Finset.mem_filter.2 ⟨hi, h⟩) hi'
+  have hw₁' : ∑ i ∈ t', w i = 1 := by rw [Finset.sum_subset hsub hzero]; exact hw₁
+  have hwx' : ∑ i ∈ t', w i • p i = x := by
+    rw [Finset.sum_subset hsub fun i hi hi' => by rw [hzero i hi hi', zero_smul]]; exact hwx
+  obtain ⟨μ, hμ⟩ : ∃ μ : ι → ℝ, ∀ i ∈ t', f i (p i) = (μ i : EReal) := by
+    refine ⟨fun i => (f i (p i)).toReal, fun i hi => ?_⟩
+    have hpos : 0 < w i := (Finset.mem_filter.1 hi).2
+    have hne : f i (p i) ≠ ⊤ := fun hcon =>
+      hnetop i (hsub hi) (by rw [hcon, EReal.coe_mul_top_of_pos hpos])
+    exact (EReal.coe_toReal hne (hf' i (hsub hi))).symm
+  have hcm := Finset.centerMass_mem_convexHull t'
+    (fun i hi => ((Finset.mem_filter.1 hi).2).le) (by rw [hw₁']; exact zero_lt_one)
+    (z := fun i => ((p i, μ i) : E × ℝ))
+    (fun i hi => mem_iUnion.2 ⟨i, mk_mem_epi.2 (le_of_eq (hμ i hi))⟩)
+  rw [Finset.centerMass_eq_of_sum_1 _ _ hw₁'] at hcm
+  have hsplit : ∑ i ∈ t', w i • ((p i, μ i) : E × ℝ) = (x, ∑ i ∈ t', w i * μ i) := by
+    refine Prod.ext ?_ ?_
+    · rw [Prod.fst_sum]; simpa using hwx'
+    · rw [Prod.snd_sum]; simp [smul_eq_mul]
+  rw [hsplit] at hcm
+  refine (ofEpi_apply_le hcm).trans (le_of_eq ?_)
+  rw [EReal.coe_sum,
+    ← Finset.sum_subset hsub (fun i hi hi' => by rw [hzero i hi hi']; simp)]
+  exact Finset.sum_congr rfl fun i hi => by rw [hμ i hi, ← EReal.coe_mul]
+
 /-- The convex hull of a family of convex functions, none of which takes the value `⊥`, is given by
 the explicit formula
 
@@ -414,42 +463,7 @@ theorem convFn_apply {f : ι → E → EReal} (hf : ∀ i, ConvexFn (f i)) (hf' 
   refine le_antisymm (le_sInf ?_) ?_
   -- **`≤`**: the convex hull is below the value of every representation of `x`.
   · rintro z ⟨t, w, p, hw₀, hw₁, hwx, rfl⟩
-    by_cases htop : ∑ i ∈ t, (w i : EReal) * f i (p i) = ⊤
-    · rw [htop]; exact le_top
-    have hbot : ∀ i ∈ t, (w i : EReal) * f i (p i) ≠ ⊥ := fun i hi =>
-      EReal.coe_mul_ne_bot (hw₀ i hi) (hf' i (p i))
-    have hnetop := EReal.forall_ne_top_of_sum_ne_top t _ hbot htop
-    -- discard the indices carrying zero weight, whose points need not lie in `dom (f i)`
-    set t' : Finset ι := t.filter (fun i => 0 < w i) with ht'def
-    have hsub : t' ⊆ t := Finset.filter_subset _ _
-    have hzero : ∀ i ∈ t, i ∉ t' → w i = 0 := by
-      intro i hi hi'
-      rcases eq_or_lt_of_le (hw₀ i hi) with h | h
-      · exact h.symm
-      · exact absurd (Finset.mem_filter.2 ⟨hi, h⟩) hi'
-    have hw₁' : ∑ i ∈ t', w i = 1 := by rw [Finset.sum_subset hsub hzero]; exact hw₁
-    have hwx' : ∑ i ∈ t', w i • p i = x := by
-      rw [Finset.sum_subset hsub fun i hi hi' => by rw [hzero i hi hi', zero_smul]]; exact hwx
-    obtain ⟨μ, hμ⟩ : ∃ μ : ι → ℝ, ∀ i ∈ t', f i (p i) = (μ i : EReal) := by
-      refine ⟨fun i => (f i (p i)).toReal, fun i hi => ?_⟩
-      have hpos : 0 < w i := (Finset.mem_filter.1 hi).2
-      have hne : f i (p i) ≠ ⊤ := fun hcon =>
-        hnetop i (hsub hi) (by rw [hcon, EReal.coe_mul_top_of_pos hpos])
-      exact (EReal.coe_toReal hne (hf' i (p i))).symm
-    have hcm := Finset.centerMass_mem_convexHull t'
-      (fun i hi => ((Finset.mem_filter.1 hi).2).le) (by rw [hw₁']; exact zero_lt_one)
-      (z := fun i => ((p i, μ i) : E × ℝ))
-      (fun i hi => mem_iUnion.2 ⟨i, mk_mem_epi.2 (le_of_eq (hμ i hi))⟩)
-    rw [Finset.centerMass_eq_of_sum_1 _ _ hw₁'] at hcm
-    have hsplit : ∑ i ∈ t', w i • ((p i, μ i) : E × ℝ) = (x, ∑ i ∈ t', w i * μ i) := by
-      refine Prod.ext ?_ ?_
-      · rw [Prod.fst_sum]; simpa using hwx'
-      · rw [Prod.snd_sum]; simp [smul_eq_mul]
-    rw [hsplit] at hcm
-    refine (ofEpi_apply_le hcm).trans (le_of_eq ?_)
-    rw [EReal.coe_sum,
-      ← Finset.sum_subset hsub (fun i hi hi' => by rw [hzero i hi hi']; simp)]
-    exact Finset.sum_congr rfl fun i hi => by rw [hμ i hi, ← EReal.coe_mul]
+    exact convFn_le_sum (fun i _ => hf' i (p i)) hw₀ hw₁ hwx
   -- **`≥`**: every point of the convex hull of the union comes from a representation.
   · refine le_ofEpi fun ν hν => ?_
     rw [convexHull_eq] at hν

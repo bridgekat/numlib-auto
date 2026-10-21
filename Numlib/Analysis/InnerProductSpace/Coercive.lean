@@ -80,8 +80,8 @@ private theorem re_inner_apply_smul (A : E →ₗ[𝕜] E) (t : ℝ) (x : E) :
     RCLike.re_ofReal_mul]
   ring
 
-/-- The quadratic form of `A` at an eigenvector. -/
-private theorem re_inner_apply_self_of_eq_smul {A : E →ₗ[𝕜] E} {μ : 𝕜} {x : E} (h : A x = μ • x) :
+/-- The quadratic form of `A` at an eigenvector `A x = μ • x` is `re μ * ‖x‖ ^ 2`. -/
+theorem re_inner_apply_self_of_eq_smul {A : E →ₗ[𝕜] E} {μ : 𝕜} {x : E} (h : A x = μ • x) :
     RCLike.re (inner 𝕜 (A x) x) = RCLike.re μ * ‖x‖ ^ 2 := by
   rw [h, inner_smul_left, inner_self_eq_norm_sq_to_K, ← RCLike.ofReal_pow, RCLike.mul_re]
   simp
@@ -103,7 +103,7 @@ private theorem isCoerciveWith_of_forall_sphere {A : E →ₗ[𝕜] E} {c : ℝ}
   rwa [h4] at h3
 
 /-- `|re ⟪A x, x⟫| ≤ ‖A‖ ‖x‖²` for a bounded operator. -/
-private theorem abs_re_inner_apply_self_le (A : E →L[𝕜] E) (x : E) :
+theorem _root_.ContinuousLinearMap.abs_re_inner_apply_self_le (A : E →L[𝕜] E) (x : E) :
     |RCLike.re (inner 𝕜 (A x) x)| ≤ ‖A‖ * ‖x‖ ^ 2 :=
   calc |RCLike.re (inner 𝕜 (A x) x)| ≤ ‖inner 𝕜 (A x) x‖ := RCLike.abs_re_le_norm _
     _ ≤ ‖A x‖ * ‖x‖ := norm_inner_le_norm _ _
@@ -330,17 +330,55 @@ theorem IsSymmetric.isSymmetricBoundedBy_neg_norm_norm {A : E →L[𝕜] E}
     (hA : (A : E →ₗ[𝕜] E).IsSymmetric) : (A : E →ₗ[𝕜] E).IsSymmetricBoundedBy (-‖A‖) ‖A‖ := by
   refine ⟨hA, fun x => ?_, fun x => ?_⟩
   · rw [neg_mul]
-    exact (abs_le.1 (abs_re_inner_apply_self_le A x)).1
-  · exact (abs_le.1 (abs_re_inner_apply_self_le A x)).2
+    exact (abs_le.1 (A.abs_re_inner_apply_self_le x)).1
+  · exact (abs_le.1 (A.abs_re_inner_apply_self_le x)).2
 
-/-- The adjoint relation read the other way: if `⟪Astar u, x⟫ = ⟪u, A x⟫` for all `u`, `x`, then
-`⟪A x, u⟫ = ⟪x, Astar u⟫`. Mathlib's `LinearMap.adjoint_inner_right` is the case of the adjoint
-`A†`, which needs finite dimension; here `Astar` is any map with the adjoint property. -/
+/-- **Adjoint pairs for the inner products**: `A` and `Astar` are an adjoint pair for the inner
+products of `E` and `F` (`LinearMap.IsAdjointPair` of the flipped `innerₛₗ`, the form of
+Mathlib's `LinearMap.isAdjointPair_inner`) iff `⟪Astar u, x⟫ = ⟪u, A x⟫` for all `u`, `x`. Here
+`Astar` is any map with the adjoint property; the adjoint `A†` itself needs finite dimension. -/
+theorem isAdjointPair_inner_iff {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
+    {A : E → F} {Astar : F → E} :
+    IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar ↔
+      ∀ u x, inner 𝕜 (Astar u) x = inner 𝕜 u (A x) := by
+  simp only [IsAdjointPair, flip_apply, innerₛₗ_apply_apply]
+  exact ⟨fun h u x => (h x u).symm, fun h x u => (h u x).symm⟩
+
+/-- **Adjoint pairs for the inner products**, the relation moving `A` to the right:
+`⟪A x, u⟫ = ⟪x, Astar u⟫` for all `x`, `u`. -/
+theorem isAdjointPair_inner_iff' {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
+    {A : E → F} {Astar : F → E} :
+    IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar ↔
+      ∀ x u, inner 𝕜 (A x) u = inner 𝕜 x (Astar u) := by
+  rw [isAdjointPair_inner_iff]
+  refine ⟨fun h x u => ?_, fun h u x => ?_⟩
+  · rw [← inner_conj_symm, ← h, inner_conj_symm]
+  · rw [← inner_conj_symm, ← h, inner_conj_symm]
+
+/-- The adjoint relation of an adjoint pair for the inner products, `⟪Astar u, x⟫ = ⟪u, A x⟫`. -/
+theorem IsAdjointPair.inner_apply_eq {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
+    {A : E → F} {Astar : F → E}
+    (hadj : IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar) (u : F)
+    (x : E) : inner 𝕜 (Astar u) x = inner 𝕜 u (A x) :=
+  isAdjointPair_inner_iff.1 hadj u x
+
+/-- The adjoint relation read the other way: if `A` and `Astar` are an adjoint pair for the inner
+products, then `⟪A x, u⟫ = ⟪x, Astar u⟫`. Mathlib's `LinearMap.adjoint_inner_right` is the case
+of the adjoint `A†`, which needs finite dimension; here `Astar` is any map with the adjoint
+property. -/
 theorem inner_apply_eq_inner_apply_of_adjoint {F : Type*} [NormedAddCommGroup F]
     [InnerProductSpace 𝕜 F] {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
-    (hadj : ∀ u x, inner 𝕜 (Astar u) x = inner 𝕜 u (A x)) (x : E) (u : F) :
-    inner 𝕜 (A x) u = inner 𝕜 x (Astar u) := by
-  rw [← inner_conj_symm, ← hadj, inner_conj_symm]
+    (hadj : IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar) (x : E)
+    (u : F) : inner 𝕜 (A x) u = inner 𝕜 x (Astar u) := by
+  rw [← inner_conj_symm, ← hadj.inner_apply_eq, inner_conj_symm]
+
+/-- **An adjoint pair for the inner products, swapped**: if `Astar` is an adjoint of `A`, then `A`
+is an adjoint of `Astar`. -/
+theorem IsAdjointPair.swap_inner {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
+    {A : E → F} {Astar : F → E}
+    (h : IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar) :
+    IsAdjointPair (innerₛₗ 𝕜 (E := F)).flip (innerₛₗ 𝕜 (E := E)).flip Astar A :=
+  isAdjointPair_inner_iff.2 (isAdjointPair_inner_iff'.1 h)
 
 end LinearMap
 

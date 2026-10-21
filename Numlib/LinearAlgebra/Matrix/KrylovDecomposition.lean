@@ -158,7 +158,6 @@ theorem leading {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matrix (Fin k) (Fin k
     intro hai
     have hi' := mem_Ioi.1 hi
     rw [← hai, Fin.lt_def, Fin.val_castLE] at hi'
-    have := a.isLt
     omega
   mul_eq := by
     ext x a
@@ -307,7 +306,7 @@ theorem implicitQ {Q' : Matrix n (Fin (k + 1)) 𝕜} {H' : Matrix (Fin (k + 1)) 
       intro l hl
       rcases Nat.lt_or_ge (l : ℕ) (t + 1) with hlt | hge
       · exact ih l (by omega)
-      have htk : t < k := by have := l.isLt; omega
+      have htk : t < k := by omega
       set i : Fin k := ⟨t, htk⟩ with hi
       obtain rfl : l = i.succ := Fin.ext (by simp [hi]; omega)
       have ihc : ∀ l ∈ Iic i.castSucc, Q'.col l = d l • Q.col l ∧ star (d l) * d l = 1 :=

@@ -730,7 +730,6 @@ theorem le_max_abs_one_sub_mul {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) (t : ℝ
 theorem max_abs_one_sub_mul_optimal {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     max |1 - 2 / (a + b) * a| |1 - 2 / (a + b) * b| = (b - a) / (b + a) := by
   have hb : 0 < b := ha.trans_le hab
-  have hsum : (0 : ℝ) < a + b := by linarith
   have h1 : 1 - 2 / (a + b) * a = (b - a) / (b + a) := by field_simp; ring
   have h2 : 1 - 2 / (a + b) * b = -((b - a) / (b + a)) := by field_simp; ring
   rw [h1, h2, abs_neg, abs_of_nonneg (div_nonneg (by linarith) (by linarith)), max_self]
@@ -1181,30 +1180,11 @@ theorem energyNorm_mulVec_iterationOperator_lt (hA : A.PosDef) (hQ : (s.m + s.m�
   have h2 := pow_lt_pow_left₀ h (energyNorm_nonneg _ _) two_ne_zero
   rwa [energyNorm_toEuclideanCLM_complexify_sq hA, energyNorm_toEuclideanCLM_complexify_sq hA] at h2
 
-/-- **The uniform energy contraction, for real matrices**: under the hypotheses of
-`energyNorm_mulVec_iterationOperator_lt` there is `q < 1` with `‖G e‖_A² ≤ q² ‖e‖_A²` for every
-real `e`. -/
-theorem exists_energyNorm_mulVec_iterationOperator_le (hA : A.PosDef)
-    (hQ : (s.m + s.mᵀ - A).PosDef) :
-    ∃ q : ℝ, q < 1 ∧ ∀ e : n → ℝ, (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e)
-      ≤ q ^ 2 * ((A *ᵥ e) ⬝ᵥ e) := by
-  have hA' := hA.isSymmetricCoercive_toEuclideanCLM_complexify
-  have hQ' := hQ.isSymmetricCoercive_toEuclideanCLM_complexify.isCoercive
-  rw [← euclidean_m_add_adjoint_sub] at hQ'
-  obtain ⟨q, hq1, hq⟩ := exists_energyNorm_iterationOperator_apply_le s.euclidean hA' hQ'
-  refine ⟨max q 0, max_lt hq1 zero_lt_one, fun e => ?_⟩
-  have h := hq (toEuclideanComplex e)
-  rw [euclidean_iterationOperator, toEuclideanCLM_complexify_toEuclideanComplex] at h
-  have h' := h.trans (mul_le_mul_of_nonneg_right (le_max_left q 0) (energyNorm_nonneg _ _))
-  have h2 := pow_le_pow_left₀ (energyNorm_nonneg _ _) h' 2
-  rwa [energyNorm_toEuclideanCLM_complexify_sq hA, mul_pow,
-    energyNorm_toEuclideanCLM_complexify_sq hA] at h2
-
 /-- **The uniform energy contraction dominates the spectral radius**: under the hypotheses of
-`exists_energyNorm_mulVec_iterationOperator_le` there is `q < 1` with both `ρ(G) ≤ q` and
+`energyNorm_mulVec_iterationOperator_lt` there is `q < 1` with both `ρ(G) ≤ q` and
 `‖G e‖_A² ≤ q² ‖e‖_A²` for every real `e`. The operator-norm bound `‖G‖_A ≤ q` on the complex energy
 space (`exists_energyNorm_iterationOperator_apply_le`) gives `ρ(G) ≤ ‖G‖_A ≤ q`, and the bound on
-real vectors is read off it as in `exists_energyNorm_mulVec_iterationOperator_le`. -/
+real vectors is read off it. -/
 theorem exists_complexSpectralRadius_le_and_energyNorm_mulVec_le (hA : A.PosDef)
     (hQ : (s.m + s.mᵀ - A).PosDef) :
     ∃ q : ℝ, q < 1 ∧ (complexSpectralRadius s.iterationOperator).toReal ≤ q ∧
@@ -1239,6 +1219,16 @@ theorem exists_complexSpectralRadius_le_and_energyNorm_mulVec_le (hA : A.PosDef)
   have h2 := pow_le_pow_left₀ (energyNorm_nonneg _ _) h' 2
   rwa [energyNorm_toEuclideanCLM_complexify_sq hA, mul_pow,
     energyNorm_toEuclideanCLM_complexify_sq hA] at h2
+
+/-- **The uniform energy contraction, for real matrices**: under the hypotheses of
+`energyNorm_mulVec_iterationOperator_lt` there is `q < 1` with `‖G e‖_A² ≤ q² ‖e‖_A²` for every
+real `e` (the second half of `exists_complexSpectralRadius_le_and_energyNorm_mulVec_le`). -/
+theorem exists_energyNorm_mulVec_iterationOperator_le (hA : A.PosDef)
+    (hQ : (s.m + s.mᵀ - A).PosDef) :
+    ∃ q : ℝ, q < 1 ∧ ∀ e : n → ℝ, (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e)
+      ≤ q ^ 2 * ((A *ᵥ e) ⬝ᵥ e) := by
+  obtain ⟨q, hq1, -, hq⟩ := exists_complexSpectralRadius_le_and_energyNorm_mulVec_le s hA hQ
+  exact ⟨q, hq1, hq⟩
 
 /-- **`‖G e‖_A ≤ ρ(G) ‖e‖_A` for real matrices** ([quarteroni2000numerical] Property 4.1 and
 Corollary 4.1 in the generality of its closing remark: `A` positive definite and `M` symmetric,

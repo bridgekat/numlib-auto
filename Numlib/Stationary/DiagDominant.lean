@@ -593,27 +593,6 @@ theorem jacobi_spectralRadius_lt_one_of_col (A : Matrix n n ℂ) (hA : A.IsStric
         simp only [spectralRadius_eq_of_unital, hspec]
     _ < 1 := jacobi_spectralRadius_lt_one Aᵀ hAT hT
 
-omit [LinearOrder n] in
-/-- If every point of the spectrum has norm `< 1`, so has the spectral radius: the spectrum of a
-matrix over a field is finite, so the supremum is attained. -/
-private theorem spectralRadius_lt_one_of_forall_lt {M : Matrix n n ℂ}
-    (h : ∀ μ ∈ spectrum ℂ M, ‖μ‖ < 1) : spectralRadius ℂ M < 1 := by
-  classical
-  have hfin := M.finite_spectrum
-  rcases (spectrum ℂ M).eq_empty_or_nonempty with he | hne
-  · rw [spectralRadius_eq_of_unital]
-    refine lt_of_le_of_lt (iSup₂_le fun k hk => ?_) zero_lt_one
-    exact absurd (he ▸ hk) (Set.notMem_empty k)
-  · obtain ⟨μ₁, hμ₁⟩ := hne
-    have hmem : μ₁ ∈ hfin.toFinset := hfin.mem_toFinset.mpr hμ₁
-    have hne' : hfin.toFinset.Nonempty := ⟨μ₁, hmem⟩
-    refine spectralRadius_lt_one_of_forall_norm_le
-      (r := hfin.toFinset.sup' hne' fun μ => ‖μ‖)
-      (le_trans (norm_nonneg μ₁) (Finset.le_sup' (fun μ => ‖μ‖) hmem)) ?_ ?_
-    · rw [Finset.sup'_lt_iff]
-      exact fun μ hμ => h μ (hfin.mem_toFinset.mp hμ)
-    · exact fun μ hμ => Finset.le_sup' (fun μ => ‖μ‖) (hfin.mem_toFinset.mpr hμ)
-
 /-- **SOR under strict row dominance** ([quarteroni2000numerical] Property 4.3, last sentence): for
 a strictly row diagonally dominant `A` and `0 < ω ≤ 1`, `ρ(G_ω) < 1`.  The pencil argument of
 `Matrix.gaussSeidel_spectralRadius_lt_one`: an eigenpair `G_ω x = λ x` gives
@@ -628,7 +607,7 @@ theorem sorSplitting_spectralRadius_lt_one_of_le_one (A : Matrix n n ℂ)
   set hω : (ω : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hω0.ne'
   rcases isEmpty_or_nonempty n with _ | _
   · exact spectralRadius_lt_one_of_isEmpty _
-  refine spectralRadius_lt_one_of_forall_lt fun μ hμ => ?_
+  refine spectralRadius_lt_one_of_forall_norm_lt fun μ hμ => ?_
   by_contra hcon
   rw [not_lt] at hcon
   -- `(D + ω L) G_ω = (1 - ω) D - ω U`
@@ -654,7 +633,6 @@ theorem sorSplitting_spectralRadius_lt_one_of_le_one (A : Matrix n n ℂ)
   have hvipos : 0 < ‖v i‖ := norm_pos_iff.mpr hvi
   set s1 := ∑ j ∈ Finset.univ.filter (· < i), ‖A i j‖ with hs1
   set s2 := ∑ j ∈ Finset.univ.filter (i < ·), ‖A i j‖ with hs2
-  have hs1nn : 0 ≤ s1 := Finset.sum_nonneg fun _ _ => norm_nonneg _
   have hs2nn : 0 ≤ s2 := Finset.sum_nonneg fun _ _ => norm_nonneg _
   -- the scalar identity in row `i`
   have hrow : (μ - (1 - (ω : ℂ))) * (A i i * v i) =
@@ -703,7 +681,7 @@ hence nonsingular by Cor 4.8, whereas it annihilates the eigenvector. -/
 theorem IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one {A : Matrix n n ℂ}
     (hA : A.IsIrreduciblyDiagDominant) (h : IsUnit (diagPart A)) :
     spectralRadius ℂ (jacobiSplitting A h).iterationOperator < 1 := by
-  refine spectralRadius_lt_one_of_forall_lt fun μ hμ => ?_
+  refine spectralRadius_lt_one_of_forall_norm_lt fun μ hμ => ?_
   by_contra hge
   rw [not_lt] at hge
   have hpos : (0 : ℝ) < ‖μ‖ := lt_of_lt_of_le zero_lt_one hge
@@ -725,7 +703,7 @@ nonsingular by Cor 4.8. -/
 theorem IsIrreduciblyDiagDominant.gaussSeidel_spectralRadius_lt_one {A : Matrix n n ℂ}
     (hA : A.IsIrreduciblyDiagDominant) (h : IsUnit (diagPart A)) :
     spectralRadius ℂ (gaussSeidelSplitting A h).iterationOperator < 1 := by
-  refine spectralRadius_lt_one_of_forall_lt fun l hl => ?_
+  refine spectralRadius_lt_one_of_forall_norm_lt fun l hl => ?_
   by_contra hge
   rw [not_lt] at hge
   have hpos : (0 : ℝ) < ‖l‖ := lt_of_lt_of_le zero_lt_one hge
@@ -749,7 +727,7 @@ read by columns; [kress1998numerical], Problem 4.4).  The same pencil `λ (D + L
 theorem gaussSeidel_spectralRadius_lt_one_of_col (A : Matrix n n ℂ)
     (hA : A.IsStrictColDiagDominant) (h : IsUnit (diagPart A)) :
     spectralRadius ℂ (gaussSeidelSplitting A h).iterationOperator < 1 := by
-  refine spectralRadius_lt_one_of_forall_lt fun l hl => ?_
+  refine spectralRadius_lt_one_of_forall_norm_lt fun l hl => ?_
   by_contra hge
   rw [not_lt] at hge
   have hpos : (0 : ℝ) < ‖l‖ := lt_of_lt_of_le zero_lt_one hge

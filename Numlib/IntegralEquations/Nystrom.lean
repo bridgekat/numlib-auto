@@ -308,7 +308,6 @@ book's (12.4.3) is exactly the hypothesis `hW`. [han2009theoretical], §12.4.1. 
 theorem isCollectivelyCompact_nystromCLM (k : C(X × X, ℝ)) {W : ℝ}
     (hW : ∀ n, ∑ j, |w n j| ≤ W) :
     IsCollectivelyCompact (fun n => nystromCLM (w n) (x n) k) := by
-  have hW0 : 0 ≤ W := le_trans (Finset.sum_nonneg fun _ _ => abs_nonneg _) (hW 0)
   refine ⟨closedBall 0 1, closedBall_mem_nhds 0 one_pos, ?_⟩
   -- the pointwise bound `|K_n u t| ≤ W ‖k‖`, uniform in `n`, `u` and `t`
   have hbdd : ∀ n (u : C(X, ℝ)), ‖u‖ ≤ 1 → ∀ t s : X,

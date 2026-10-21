@@ -758,7 +758,6 @@ theorem exists_ball_inter_subset_openTriangle {P Q R : 𝔼₂}
       midpoint ℝ P Q + v ∈ openTriangle P Q R := by
   set M := triangleEquiv P Q R h with hM
   set C := ‖(M.symm : 𝔼₂ →L[ℝ] 𝔼₂)‖ with hC
-  have hC0 : 0 ≤ C := norm_nonneg _
   refine ⟨1 / (4 * (C + 1)), by positivity, fun v hv hpos ↦ ?_⟩
   set w := M.symm v with hw
   have hvw : v = w 0 • (Q - P) + w 1 • (R - P) := by
@@ -1136,65 +1135,54 @@ theorem mem_referenceTriangle_toLp {x y : ℝ} :
 theorem mem_closedReferenceTriangle_toLp {x y : ℝ} :
     (!₂[x, y] : 𝔼₂) ∈ closedReferenceTriangle ↔ 0 ≤ x ∧ 0 ≤ y ∧ x + y ≤ 1 := Iff.rfl
 
+/-- **The fundamental theorem of calculus along a coordinate line of the reference triangle**:
+for a curve `γ` with `γ' = e_i` running through the open triangle on `(0, L)` and through the
+closed one on `[0, L]`, `∫_0^L ∂ᵢFᵢ(γ t) dt = Fᵢ(γ L) − Fᵢ(γ 0)`. -/
+theorem integral_fderiv_comp_line {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F closedReferenceTriangle)
+    (hF' : ContDiffOnClosure ℝ 1 F referenceTriangle) (i : Fin 2) {γ : ℝ → 𝔼₂}
+    (hγc : Continuous γ) (hγ : ∀ t, HasDerivAt γ (EuclideanSpace.single i 1) t) {L : ℝ}
+    (hL : 0 ≤ L) (hmem : ∀ t ∈ Ioo 0 L, γ t ∈ (referenceTriangle : Set 𝔼₂))
+    (hmemc : ∀ t ∈ Icc 0 L, γ t ∈ closedReferenceTriangle) :
+    ∫ t in (0 : ℝ)..L, fderiv ℝ F (γ t) (EuclideanSpace.single i 1) i = F (γ L) i - F (γ 0) i := by
+  obtain ⟨C, hC⟩ := hF'.exists_norm_fderiv_le isBounded_referenceTriangle
+  refine intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le (f := fun t ↦ F (γ t) i) hL ?_ ?_ ?_
+  · exact (EuclideanSpace.proj i).continuous.comp_continuousOn
+      (hF.comp hγc.continuousOn fun t ht ↦ hmemc t ht)
+  · intro t ht
+    have hd : DifferentiableAt ℝ F (γ t) :=
+      (hF'.contDiffOn.differentiableOn one_ne_zero).differentiableAt
+        (referenceTriangle.isOpen.mem_nhds (hmem t ht))
+    exact (EuclideanSpace.proj i).hasFDerivAt.comp_hasDerivAt t
+      (hd.hasFDerivAt.comp_hasDerivAt t (hγ t))
+  · rw [intervalIntegrable_iff_integrableOn_Ioo_of_le hL]
+    refine Measure.integrableOn_of_bounded (M := C) (by simp)
+      ((measurable_fderiv_apply_apply F _ i).comp hγc.measurable).aestronglyMeasurable ?_
+    rw [ae_restrict_iff' measurableSet_Ioo]
+    exact Filter.Eventually.of_forall fun t ht ↦ norm_fderiv_apply_apply_le (hC _ (hmem t ht)) i i
+
 /-- **The fundamental theorem of calculus on a vertical slice of the reference triangle**:
 `∫_0^{1−x} ∂₁F₁(x, y) dy = F₁(x, 1 − x) − F₁(x, 0)` for `0 < x < 1`. -/
 theorem integral_fderiv_snd {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F closedReferenceTriangle)
     (hF' : ContDiffOnClosure ℝ 1 F referenceTriangle) {x : ℝ} (hx : x ∈ Ioo (0 : ℝ) 1) :
     ∫ y in (0 : ℝ)..(1 - x), fderiv ℝ F !₂[x, y] (EuclideanSpace.single 1 1) 1
-      = F !₂[x, 1 - x] 1 - F !₂[x, 0] 1 := by
-  obtain ⟨C, hC⟩ := hF'.exists_norm_fderiv_le isBounded_referenceTriangle
-  have hcont : Continuous fun y : ℝ ↦ (!₂[x, y] : 𝔼₂) :=
-    continuous_toLp₂ continuous_const continuous_id
-  refine intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le (f := fun y ↦ F !₂[x, y] 1)
-    (by linarith [hx.2]) ?_ ?_ ?_
-  · refine (EuclideanSpace.proj (1 : Fin 2)).continuous.comp_continuousOn
-      (hF.comp hcont.continuousOn fun y hy ↦ ?_)
-    exact mem_closedReferenceTriangle_toLp.2 ⟨hx.1.le, hy.1, by linarith [hy.2]⟩
-  · intro y hy
-    have hmem : (!₂[x, y] : 𝔼₂) ∈ (referenceTriangle : Set 𝔼₂) :=
-      mem_referenceTriangle_toLp.2 ⟨hx.1, hy.1, by linarith [hy.2]⟩
-    have hd : DifferentiableAt ℝ F !₂[x, y] :=
-      (hF'.contDiffOn.differentiableOn one_ne_zero).differentiableAt
-        (referenceTriangle.isOpen.mem_nhds hmem)
-    exact (EuclideanSpace.proj (1 : Fin 2)).hasFDerivAt.comp_hasDerivAt y
-      (hd.hasFDerivAt.comp_hasDerivAt y (hasDerivAt_toLp_snd x y))
-  · rw [intervalIntegrable_iff_integrableOn_Ioo_of_le (by linarith [hx.2])]
-    refine Measure.integrableOn_of_bounded (M := C) (by simp)
-      ((measurable_fderiv_apply_apply F _ 1).comp hcont.measurable).aestronglyMeasurable ?_
-    rw [ae_restrict_iff' measurableSet_Ioo]
-    refine Filter.Eventually.of_forall fun y hy ↦ ?_
-    exact norm_fderiv_apply_apply_le
-      (hC _ (mem_referenceTriangle_toLp.2 ⟨hx.1, hy.1, by linarith [hy.2]⟩)) 1 1
+      = F !₂[x, 1 - x] 1 - F !₂[x, 0] 1 :=
+  integral_fderiv_comp_line hF hF' 1 (γ := fun y ↦ !₂[x, y])
+    (continuous_toLp₂ continuous_const continuous_id)
+    (hasDerivAt_toLp_snd x) (by linarith [hx.2])
+    (fun y hy ↦ mem_referenceTriangle_toLp.2 ⟨hx.1, hy.1, by linarith [hy.2]⟩)
+    (fun y hy ↦ mem_closedReferenceTriangle_toLp.2 ⟨hx.1.le, hy.1, by linarith [hy.2]⟩)
 
 /-- **The fundamental theorem of calculus on a horizontal slice of the reference triangle**:
 `∫_0^{1−y} ∂₀F₀(x, y) dx = F₀(1 − y, y) − F₀(0, y)` for `0 < y < 1`. -/
 theorem integral_fderiv_fst {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F closedReferenceTriangle)
     (hF' : ContDiffOnClosure ℝ 1 F referenceTriangle) {y : ℝ} (hy : y ∈ Ioo (0 : ℝ) 1) :
     ∫ x in (0 : ℝ)..(1 - y), fderiv ℝ F !₂[x, y] (EuclideanSpace.single 0 1) 0
-      = F !₂[1 - y, y] 0 - F !₂[0, y] 0 := by
-  obtain ⟨C, hC⟩ := hF'.exists_norm_fderiv_le isBounded_referenceTriangle
-  have hcont : Continuous fun x : ℝ ↦ (!₂[x, y] : 𝔼₂) :=
-    continuous_toLp₂ continuous_id continuous_const
-  refine intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le (f := fun x ↦ F !₂[x, y] 0)
-    (by linarith [hy.2]) ?_ ?_ ?_
-  · refine (EuclideanSpace.proj (0 : Fin 2)).continuous.comp_continuousOn
-      (hF.comp hcont.continuousOn fun x hx ↦ ?_)
-    exact mem_closedReferenceTriangle_toLp.2 ⟨hx.1, hy.1.le, by linarith [hx.2]⟩
-  · intro x hx
-    have hmem : (!₂[x, y] : 𝔼₂) ∈ (referenceTriangle : Set 𝔼₂) :=
-      mem_referenceTriangle_toLp.2 ⟨hx.1, hy.1, by linarith [hx.2]⟩
-    have hd : DifferentiableAt ℝ F !₂[x, y] :=
-      (hF'.contDiffOn.differentiableOn one_ne_zero).differentiableAt
-        (referenceTriangle.isOpen.mem_nhds hmem)
-    exact (EuclideanSpace.proj (0 : Fin 2)).hasFDerivAt.comp_hasDerivAt x
-      (hd.hasFDerivAt.comp_hasDerivAt x (hasDerivAt_toLp_fst x y))
-  · rw [intervalIntegrable_iff_integrableOn_Ioo_of_le (by linarith [hy.2])]
-    refine Measure.integrableOn_of_bounded (M := C) (by simp)
-      ((measurable_fderiv_apply_apply F _ 0).comp hcont.measurable).aestronglyMeasurable ?_
-    rw [ae_restrict_iff' measurableSet_Ioo]
-    refine Filter.Eventually.of_forall fun x hx ↦ ?_
-    exact norm_fderiv_apply_apply_le
-      (hC _ (mem_referenceTriangle_toLp.2 ⟨hx.1, hy.1, by linarith [hx.2]⟩)) 0 0
+      = F !₂[1 - y, y] 0 - F !₂[0, y] 0 :=
+  integral_fderiv_comp_line hF hF' 0 (γ := fun x ↦ !₂[x, y])
+    (continuous_toLp₂ continuous_id continuous_const)
+    (fun x ↦ hasDerivAt_toLp_fst x y) (by linarith [hy.2])
+    (fun x hx ↦ mem_referenceTriangle_toLp.2 ⟨hx.1, hy.1, by linarith [hx.2]⟩)
+    (fun x hx ↦ mem_closedReferenceTriangle_toLp.2 ⟨hx.1, hy.1.le, by linarith [hx.2]⟩)
 
 /-- A coordinate of `F` along a continuous curve in the closed reference triangle is interval
 integrable on `[0, 1]`. -/
@@ -1902,15 +1890,17 @@ theorem integral_div_K_eq_sum_edgeTerm {F : 𝔼₂ → 𝔼₂}
   rfl
 
 open Classical in
-/-- **The sum of the interior edge terms vanishes**: the map `partner` is a fixed-point-free
-involution of the interior edges under which the edge term changes sign. -/
-theorem sum_edgeTerm_interior_eq_zero (F : 𝔼₂ → 𝔼₂) :
+/-- **A sum over the interior edges vanishes when the terms of partner edges cancel**: the map
+`partner` is a fixed-point-free involution of the interior edges. -/
+theorem sum_interior_eq_zero_of_add_partner {M : Type*} [AddCommMonoid M]
+    (g : 𝒯.elems → Fin 3 → M)
+    (hg : ∀ T a T' a', 𝒯.IsPartner T a T' a' → g T a + g T' a' = 0) :
     ∑ e ∈ Finset.univ.filter (fun e : 𝒯.elems × Fin 3 ↦ ¬ 𝒯.IsBoundaryEdge e.1 e.2),
-      𝒯.edgeTerm F e.1 e.2 = 0 := by
+      g e.1 e.2 = 0 := by
   classical
   refine Finset.sum_involution (fun e he ↦ partner e.1 e.2 (Finset.mem_filter.1 he).2)
     (fun e he ↦ ?_) (fun e he _ ↦ ?_) (fun e he ↦ ?_) (fun e he ↦ ?_)
-  · exact edgeTerm_add_edgeTerm_partner (isPartner_partner e.1 e.2 _)
+  · exact hg _ _ _ _ (isPartner_partner e.1 e.2 (Finset.mem_filter.1 he).2)
   · intro heq
     exact (isPartner_partner e.1 e.2 (Finset.mem_filter.1 he).2).1 (congrArg Prod.fst heq)
   · exact Finset.mem_filter.2 ⟨Finset.mem_univ _,
@@ -1921,6 +1911,22 @@ theorem sum_edgeTerm_interior_eq_zero (F : 𝔼₂ → 𝔼₂) :
       h1.symm.not_isBoundaryEdge
     obtain ⟨e1, e2⟩ := partner_unique h1.symm h2
     exact Prod.ext e1 e2
+
+open Classical in
+/-- **The sum of the interior edge terms vanishes**: the map `partner` is a fixed-point-free
+involution of the interior edges under which the edge term changes sign. -/
+theorem sum_edgeTerm_interior_eq_zero (F : 𝔼₂ → 𝔼₂) :
+    ∑ e ∈ Finset.univ.filter (fun e : 𝒯.elems × Fin 3 ↦ ¬ 𝒯.IsBoundaryEdge e.1 e.2),
+      𝒯.edgeTerm F e.1 e.2 = 0 :=
+  sum_interior_eq_zero_of_add_partner _ fun _ _ _ _ h ↦ edgeTerm_add_edgeTerm_partner h
+
+variable (𝒯) in
+/-- The integral over the domain is the sum of the integrals over the open elements. -/
+theorem setIntegral_eq_sum_K {A : 𝔼₂ → ℝ} (hA : IntegrableOn A (Ω : Set 𝔼₂)) :
+    ∫ x in (Ω : Set 𝔼₂), A x = ∑ T, ∫ x in 𝒯.K T, A x := by
+  rw [← setIntegral_congr_set 𝒯.ae_eq_iUnion_K]
+  exact integral_iUnion_fintype (fun T ↦ (𝒯.isOpen_K T).measurableSet) 𝒯.pairwise_disjoint_K
+    fun T ↦ hA.mono_set (𝒯.K_subset T)
 
 /-- **The divergence theorem on a triangulated domain** (decision B6): for `F ∈ C¹(Ω̄)`,
 `∫_Ω div F = ∫ ⟪F, ν⟫ dσ` with the surface measure `𝒯.boundaryMeasure` and the outward normal
@@ -1933,10 +1939,8 @@ theorem integral_div_eq {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F (closure 
     (hF' : ContDiffOnClosure ℝ 1 F (Ω : Set 𝔼₂)) :
     ∫ x in (Ω : Set 𝔼₂), div F x = ∫ x, ⟪F x, 𝒯.outwardNormal x⟫_ℝ ∂𝒯.boundaryMeasure := by
   classical
-  have h1 : ∫ x in (Ω : Set 𝔼₂), div F x = ∑ T, ∫ x in 𝒯.K T, div F x := by
-    rw [← setIntegral_congr_set 𝒯.ae_eq_iUnion_K]
-    exact integral_iUnion_fintype (fun T ↦ (𝒯.isOpen_K T).measurableSet) 𝒯.pairwise_disjoint_K
-      fun T ↦ (integrableOn_div hF' 𝒯.isBounded Ω.isOpen.measurableSet).mono_set (𝒯.K_subset T)
+  have h1 : ∫ x in (Ω : Set 𝔼₂), div F x = ∑ T, ∫ x in 𝒯.K T, div F x :=
+    𝒯.setIntegral_eq_sum_K (integrableOn_div hF' 𝒯.isBounded Ω.isOpen.measurableSet)
   have hint : ∀ e ∈ 𝒯.boundaryEdges, Integrable (fun x ↦ ⟪F x, 𝒯.outwardNormal x⟫_ℝ)
       (edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1))) := fun e he ↦ by
     have hc : ContinuousOn
@@ -2045,12 +2049,16 @@ theorem edgeMeasure_le_boundaryMeasure {T : 𝒯.elems} {a : Fin 3} (h : 𝒯.Is
 
 /-! ### The interior integrals over the elements -/
 
-/-- The integral over the domain is the sum of the integrals over the open elements. -/
-theorem setIntegral_eq_sum_K {A : 𝔼₂ → ℝ} (hA : IntegrableOn A (Ω : Set 𝔼₂)) :
-    ∫ x in (Ω : Set 𝔼₂), A x = ∑ T, ∫ x in 𝒯.K T, A x := by
-  rw [← setIntegral_congr_set 𝒯.ae_eq_iUnion_K]
-  exact integral_iUnion_fintype (fun T ↦ (𝒯.isOpen_K T).measurableSet) 𝒯.pairwise_disjoint_K
-    fun T ↦ hA.mono_set (𝒯.K_subset T)
+include 𝒯 in
+/-- A function continuous on `closure Ω` lies in every `L^p(Ω)`. -/
+theorem memLp_restrict_of_continuousOn {f : 𝔼₂ → ℝ} (hf : ContinuousOn f (closure (Ω : Set 𝔼₂)))
+    (q : ℝ≥0∞) : MemLp f q (volume.restrict (Ω : Set 𝔼₂)) := by
+  have : IsFiniteMeasure (volume.restrict (Ω : Set 𝔼₂)) :=
+    isFiniteMeasure_restrict.2 𝒯.isBounded.measure_lt_top.ne
+  obtain ⟨C, hC⟩ := 𝒯.isCompact_closure.exists_bound_of_continuousOn hf
+  refine MemLp.of_bound ((hf.mono subset_closure).aestronglyMeasurable Ω.isOpen.measurableSet) C ?_
+  filter_upwards [ae_restrict_mem Ω.isOpen.measurableSet] with x hx
+  exact hC x (subset_closure hx)
 
 include 𝒯 in
 /-- An `L^p(Ω)` function times a function continuous on `closure Ω` is integrable on `Ω`. -/
@@ -2059,11 +2067,7 @@ theorem integrableOn_mul_of_memLp_of_continuousOn {f g : 𝔼₂ → ℝ}
     IntegrableOn (fun x ↦ f x * g x) (Ω : Set 𝔼₂) := by
   have : IsFiniteMeasure (volume.restrict (Ω : Set 𝔼₂)) :=
     isFiniteMeasure_restrict.2 𝒯.isBounded.measure_lt_top.ne
-  obtain ⟨C, hC⟩ := 𝒯.isCompact_closure.exists_bound_of_continuousOn hg
-  refine (hf.integrable Fact.out).mul_bdd (c := C)
-    ((hg.mono subset_closure).aestronglyMeasurable Ω.isOpen.measurableSet) ?_
-  filter_upwards [ae_restrict_mem Ω.isOpen.measurableSet] with x hx
-  exact hC x (subset_closure hx)
+  exact (hf.integrable Fact.out).mul_of_top_left (𝒯.memLp_restrict_of_continuousOn hg ⊤)
 
 end Integrals
 

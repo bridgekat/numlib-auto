@@ -90,8 +90,7 @@ theorem norm_update_sub (Q : E →L[ℝ] E) (s y : E) : ‖update Q s y - Q‖ =
     real_inner_self_eq_norm_sq, abs_of_nonneg (by positivity)]
   rcases eq_or_ne s 0 with rfl | hs
   · simp
-  · have h : 0 < ‖s‖ := norm_pos_iff.2 hs
-    field_simp
+  · field_simp
 
 /-- **Least change in the operator norm** (Dennis–Schnabel §8.1): among all operators `Q'`
 satisfying the secant condition `Q' s = y`, Broyden's update is the closest to `Q`, since

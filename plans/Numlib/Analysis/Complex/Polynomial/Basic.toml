@@ -1,0 +1,4 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "roots_map_algebraMap_conj"

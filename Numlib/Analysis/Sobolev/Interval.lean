@@ -775,7 +775,6 @@ theorem SobolevInterval.norm_le_of_eq_integral (hab : a ≤ b)
     {w g : Lp ℝ 2 (volume.restrict (Ioo a b))}
     (hg : g =ᵐ[volume.restrict (Ioo a b)] fun x ↦ ∫ t in a..x, w t) :
     ‖g‖ ≤ (b - a) / Real.sqrt 2 * ‖w‖ := by
-  have hC : 0 ≤ (b - a) / Real.sqrt 2 := div_nonneg (sub_nonneg.2 hab) (Real.sqrt_nonneg _)
   rw [← pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero, norm_sq_eq_integral_sq,
     mul_pow, div_pow, Real.sq_sqrt zero_le_two]
   have hpt : ∀ᵐ x ∂(volume.restrict (Ioo a b)), |g x| ^ 2 ≤ (x - a) * ‖w‖ ^ 2 := by
@@ -890,7 +889,6 @@ theorem exists_testFunction_eLpNorm_sub_le_of_contDiff (hab : a < b) {g : ℝ �
   set r := (b - a) / 2 with hr
   have hr0 : 0 < r := by rw [hr]; linarith
   set η := (ε / (C + 1)) ^ 2 with hη
-  have hη0 : 0 < η := by positivity
   set δ := min (η / 4) (r / 4) with hδ
   have hδ0 : 0 < δ := lt_min (by positivity) (by positivity)
   have hδr : δ ≤ r / 4 := min_le_right _ _

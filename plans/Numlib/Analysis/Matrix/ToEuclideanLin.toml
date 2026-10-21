@@ -49,6 +49,12 @@ id = "toEuclideanLin_conjTranspose_inner_left"
 id = "toEuclideanLin_conjTranspose_inner_right"
 
 [[node]]
+id = "inner_toEuclideanLin_conjTranspose_mul_mul_apply"
+
+[[node]]
+id = "toQuadraticForm'_ofLp"
+
+[[node]]
 id = "ofLp_toEuclideanLin"
 
 [[node]]

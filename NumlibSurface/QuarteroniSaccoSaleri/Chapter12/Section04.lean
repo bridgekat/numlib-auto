@@ -507,7 +507,7 @@ theorem equation_12_57_le (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : equation_12_57
 /-- The dimension of `X_h^k` on `n` panels is `n k + 1` — the `n k + 1` nodal values of a
 continuous piecewise polynomial of degree `k`. The book's `dim V_h = n k - 1` for `X_h^{k,0}` is
 this minus the two endpoint values. -/
-theorem equation_12_57_finrank {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x)
+theorem equation_12_57_finrank {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x)
     (hn : 1 ≤ n) (k : ℕ) :
     Module.finrank ℝ (FiniteElement.lagrangeSpace zero_lt_one n x k) = n * k + 1 :=
   FiniteElement.finrank_lagrangeSpace zero_lt_one hx hn k
@@ -523,7 +523,7 @@ interpolant `Π_h^1 u` of the exact solution lies in `V_h = X_h^{1,0}`. Combined
 in the form of Theorem 12.3, `|u - u_h|_{H¹₀} ≤ C |u - Π_h^1 u|_{H¹₀}` with
 `C = α₀⁻¹(‖α‖_∞ + C_P² ‖γ‖_∞)`, which is the step that turns the estimate of the Galerkin error
 into an estimate of the interpolation error. -/
-theorem equation_12_58 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem equation_12_58 (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ} (hα₀ : 0 < α₀)
     (hα : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ α t)
     (hγ : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), 0 ≤ γ t)
@@ -542,7 +542,7 @@ finite element error satisfies `‖u - u_h‖_{H¹₀(0,1)} ≤ (M/α₀) C h �
 `s ≥ 2` with `l = min(k, s - 1)` and quotes the proof from [QV94] Theorem 6.2.1; the case
 `l = 1` is (12.58) together with the interpolation estimate (8.27), which is what
 `FiniteElement.seminorm_sub_lagrangeInterp_le` supplies. -/
-theorem property_12_1 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ}
+theorem property_12_1 (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ}
     (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
     (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ} (hα₀ : 0 < α₀)
     (hα : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ α t)
@@ -564,7 +564,7 @@ theorem property_12_1 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ}
 Aubin–Nitsche duality argument `EllipticInterval.galerkin_norm_sub_le_l2` — whose approximation
 hypothesis is met by the piecewise linear interpolant with `δ = h` — gains one power of `h` over
 the `H¹` estimate of `property_12_1`. The book quotes it from [QV94]. -/
-theorem property_12_1_l2 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ} (hh : 0 ≤ h)
+theorem property_12_1_l2 (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ} (hh : 0 ≤ h)
     (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
     (αL γL : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α : ℝ → ℝ}
     (hαL : αL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] α) (hα : ContDiffOn ℝ 1 α (Icc 0 1))
@@ -625,18 +625,18 @@ variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- **The shape functions (12.61)** of `X_h^1`: the continuous piecewise linear `φ_i` with
 `φ_i(x_j) = δ_{ij}`, as elements of `H^1(0, 1)`. -/
-noncomputable def equation_12_61 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) (i : ℕ) :
+noncomputable def equation_12_61 (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) (i : ℕ) :
     SobolevInterval 1 0 1 :=
   FiniteElement.hatFunction hx hn i
 
 /-- **The Lagrange interpolation property** `φ_i(x_j) = δ_{ij}` of (12.61). -/
-theorem equation_12_61_apply_node (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {i j : ℕ}
+theorem equation_12_61_apply_node (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {i j : ℕ}
     (hj : j ≤ n) : rep (equation_12_61 hx hn i) (x j) = if i = j then 1 else 0 :=
   FiniteElement.rep_hatFunction_node hx hn hj
 
 /-- **The support of `φ_i` is `I_{i-1} ∪ I_i`** (§12.4.5): `φ_i` vanishes on every other
 element of the partition. -/
-theorem equation_12_61_support (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {i k : ℕ}
+theorem equation_12_61_support (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {i k : ℕ}
     (hk : k < n) (h1 : i ≠ k) (h2 : i ≠ k + 1) {t : ℝ} (ht1 : x k ≤ t) (ht2 : t ≤ x (k + 1)) :
     rep (equation_12_61 hx hn i) t = 0 := by
   rw [equation_12_61, FiniteElement.rep_hatFunction hx hn i
@@ -645,12 +645,12 @@ theorem equation_12_61_support (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) 
 
 /-- **The shape functions span `X_h^1`**: they are a basis, the `n + 1` nodal values being the
 degrees of freedom (§12.4.5). -/
-noncomputable def equation_12_61_basis (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) :
+noncomputable def equation_12_61_basis (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) :
     Module.Basis (Fin (n + 1)) ℝ (FiniteElement.lagrangeSpace zero_lt_one n x 1) :=
   FiniteElement.hatBasis zero_lt_one hx hn
 
 /-- The coordinates in the shape function basis are the nodal values. -/
-theorem equation_12_61_basis_repr (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem equation_12_61_basis_repr (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (v : FiniteElement.lagrangeSpace zero_lt_one n x 1) (j : Fin (n + 1)) :
     (equation_12_61_basis hx hn).repr v j = rep (v : SobolevInterval 1 0 1) (x (j : ℕ)) :=
   FiniteElement.hatBasis_repr zero_lt_one hx hn v j
@@ -660,13 +660,13 @@ the element `I_i`, with its inverse `ξ(x) = (x - x_i)/(x_{i+1} - x_i)`. -/
 noncomputable def equation_12_62 (x : ℕ → ℝ) (i : ℕ) : ℝ → ℝ := FiniteElement.affineMap x i
 
 /-- (12.62) is inverted by the reference coordinate. -/
-theorem equation_12_62_refCoord (hx : Spline.IsPartition 0 1 n x) {i : ℕ} (hi : i < n) (t : ℝ) :
+theorem equation_12_62_refCoord (hx : IsIntervalPartition 0 1 n x) {i : ℕ} (hi : i < n) (t : ℝ) :
     equation_12_62 x i (FiniteElement.refCoord x i t) = t :=
   FiniteElement.affineMap_refCoord (hx.step i hi).ne t
 
 /-- **`φ_i = φ̂₀ ∘ ξ` and `φ_{i+1} = φ̂₁ ∘ ξ` on the element `I_i`** (§12.4.5), with the reference
 shape functions `φ̂₀(ξ) = 1 - ξ` and `φ̂₁(ξ) = ξ`. -/
-theorem equation_12_62_shape (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {k : ℕ} (hk : k < n)
+theorem equation_12_62_shape (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {k : ℕ} (hk : k < n)
     {t : ℝ} (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     rep (equation_12_61 hx hn k) t = FiniteElement.referenceHat 0 (FiniteElement.refCoord x k t) ∧
       rep (equation_12_61 hx hn (k + 1)) t
@@ -692,19 +692,19 @@ variable {n : ℕ} {x : ℕ → ℝ}
 even indices and their interior nodes the odd ones, `φ_i` is the continuous piecewise quadratic
 with `φ_i(x_j) = δ_{ij}` — two quadratic branches on the two adjacent elements for an even `i`,
 the bubble supported in a single element for an odd `i` — as an element of `H^1(0, 1)`. -/
-noncomputable def equation_12_63 (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 ≤ n) (i : ℕ) :
+noncomputable def equation_12_63 (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) (i : ℕ) :
     SobolevInterval 1 0 1 :=
   FiniteElement.quadraticShape zero_lt_one hx hn i
 
 /-- **The Lagrange interpolation property** `φ_i(x_j) = δ_{ij}` of (12.63)–(12.64). -/
-theorem equation_12_63_apply_node (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {i j : ℕ}
+theorem equation_12_63_apply_node (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {i j : ℕ}
     (hj : j ≤ 2 * n) : rep (equation_12_63 hx hn i) (x j) = if i = j then 1 else 0 :=
   FiniteElement.rep_quadraticShape_node zero_lt_one hx hn hj
 
 /-- **The support of the quadratic shape functions** (§12.4.5): `φ_i` vanishes on every element
 none of whose three nodes is `x_i`; in particular the bubble `φ_{2m+1}` is supported in the
 single element `[x_{2m}, x_{2m+2}]` to which its node belongs. -/
-theorem equation_12_63_support (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {i m : ℕ}
+theorem equation_12_63_support (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {i m : ℕ}
     (hm : m < n) (h0 : i ≠ 2 * m) (h1 : i ≠ 2 * m + 1) (h2 : i ≠ 2 * m + 2) {t : ℝ}
     (ht1 : x (2 * m) ≤ t) (ht2 : t ≤ x (2 * m + 2)) : rep (equation_12_63 hx hn i) t = 0 :=
   FiniteElement.rep_quadraticShape_eq_zero_of_panel zero_lt_one hx hn hm h0 h1 h2 ht1 ht2
@@ -712,7 +712,7 @@ theorem equation_12_63_support (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 �
 /-- **The shape functions span `X_h^2`**: they are a basis, the `2n + 1` nodal values being the
 degrees of freedom (§12.4.5); in particular `dim X_h^2 = 2n + 1`, the book's `nk + 1` at
 `k = 2`. -/
-noncomputable def equation_12_63_basis (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 ≤ n) :
+noncomputable def equation_12_63_basis (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) :
     Module.Basis (Fin (2 * n + 1)) ℝ
       (FiniteElement.lagrangeSpace zero_lt_one n (FiniteElement.evenNodes x) 2) :=
   FiniteElement.quadraticBasis zero_lt_one hx hn
@@ -722,7 +722,7 @@ noncomputable def equation_12_63_basis (hx : Spline.IsPartition 0 1 (2 * n) x) (
 under the affine map (12.62).  This needs the interior node `x_{2m+1}` to be the *midpoint* of
 the element, which (12.63)–(12.64) themselves do not: those formulas are the Lagrange basis of
 the three nodes of the element, whatever the interior one is. -/
-theorem equation_12_65 (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {m : ℕ} (hm : m < n)
+theorem equation_12_65 (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {m : ℕ} (hm : m < n)
     (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ} (h1 : x (2 * m) ≤ t)
     (h2 : t ≤ x (2 * m + 2)) :
     rep (equation_12_63 hx hn (2 * m)) t
@@ -737,7 +737,7 @@ theorem equation_12_65 (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {m
   FiniteElement.rep_quadraticShape_eq_referenceQuadratic zero_lt_one hx hn hm hmid h1 h2
 
 /-- **(12.57) at `k = 2`**: the interior quadratic shape functions lie in `X_h^{2,0}`. -/
-theorem equation_12_63_mem_zero (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {i : ℕ}
+theorem equation_12_63_mem_zero (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {i : ℕ}
     (h0 : i ≠ 0) (hi : i ≠ 2 * n) :
     equation_12_63 hx hn i
       ∈ FiniteElement.lagrangeSpaceZero zero_lt_one n (FiniteElement.evenNodes x) 2 :=
@@ -761,7 +761,7 @@ variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- **`A_fe` is tridiagonal for `k = 1`** (§12.4.5): `a_{ij} = 0` when `j ∉ {i - 1, i, i + 1}`,
 because the supports of `φ_i` and `φ_j` then meet in a null set. -/
-theorem equation_12_61_stiffness (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem equation_12_61_stiffness (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {i j : ℕ}
     (hij : i + 1 < j ∨ j + 1 < i) :
     FiniteElement.stiffnessMatrix 0 1 α β γ (fun k : ℕ ↦ equation_12_61 hx hn k) i j = 0 :=
@@ -769,7 +769,7 @@ theorem equation_12_61_stiffness (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n
 
 /-- **`A_fe` is tridiagonal**, in the sense of `Matrix.IsTridiagonal`, in the interior shape
 function basis of `V_h = X_h^{1,0}` (§12.4.5). -/
-theorem equation_12_61_stiffness_tridiagonal (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem equation_12_61_stiffness_tridiagonal (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) :
     (FiniteElement.stiffnessMatrix 0 1 α β γ
       fun k : Fin (n - 1) ↦ equation_12_61 hx hn ((k : ℕ) + 1)).IsTridiagonal :=
@@ -779,7 +779,7 @@ theorem equation_12_61_stiffness_tridiagonal (hx : Spline.IsPartition 0 1 n x) (
 `-u'' = f` on the uniform mesh of step `h = 1/n`, `K₂(A_fe) = cot²(π h/2)`, which the book quotes
 from [QV94] in the `O(h^{-2})` form; `Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two_le`
 gives `cot²(π h/2) ≤ 4/(π h)²`. -/
-theorem equation_12_61_stiffness_condNumber (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem equation_12_61_stiffness_condNumber (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
     ‖FiniteElement.stiffnessMatrix 0 1 (EllipticInterval.constLinf 0 1 1)
         (EllipticInterval.constLinf 0 1 0) (EllipticInterval.constLinf 0 1 0)

@@ -909,7 +909,6 @@ theorem one_add_sum_abs_sol_le (k : ℕ) :
               exact abs_add_le _ _
         _ = _ := by
             rw [sum_add_distrib, ← mul_sum, sum_range_reflect (fun i => |sol r k i|) k]
-    have h0 : 0 ≤ ∑ i ∈ range k, |sol r k i| := sum_nonneg fun i _ => abs_nonneg _
     calc 1 + (∑ i ∈ range k, |sol r (k + 1) i| + |alpha r k|)
         ≤ (1 + ∑ i ∈ range k, |sol r k i|) * (1 + |alpha r k|) := by
           nlinarith [abs_nonneg (alpha r k)]
@@ -1105,20 +1104,17 @@ private theorem sum_abs_revSol_le_aux (N l : ℕ) :
       rw [hsplit]
       linarith
 
-/-- `1 + ∑_{j<N} |α_j| ∏_{i<j} (1 + |α_i|) = ∏_{j<N} (1 + |α_j|)`. -/
-private theorem one_add_sum_mul_prod (a : ℕ → ℝ) (N : ℕ) :
-    1 + ∑ j ∈ range N, a j * ∏ i ∈ range j, (1 + a i) = ∏ j ∈ range N, (1 + a j) := by
-  induction N with
-  | zero => simp
-  | succ N ih => rw [sum_range_succ, prod_range_succ, ← add_assoc, ih]; ring
-
 /-- **The row sums of `U`** (the key estimate behind Cybenko's bound): the entries `l` of the
 reversed solutions `(ℰ_k y^{(k)}, 1)`, `k ≤ N`, have absolute sum at most `∏_{j<N} (1 + |α_j|)`. -/
 theorem sum_abs_revSol_le (N l : ℕ) :
     ∑ k ∈ range (N + 1), |revSol r k l| ≤ ∏ j ∈ range N, (1 + |alpha r j|) := by
   refine (sum_abs_revSol_le_aux N l).trans ?_
-  rw [← one_add_sum_mul_prod (fun j => |alpha r j|)]
-  gcongr with j
+  rw [prod_one_add_ordered]
+  gcongr with j hj
+  rw [show {i ∈ range N | i < j} = range j by
+    ext i
+    simp only [mem_filter, mem_range] at hj ⊢
+    omega]
   exact sum_abs_fwdSol_le j l
 
 /-- The column sums of `U`: `1 + ∑_i |y^{(k)}_i| ≤ ∏_{j<k} (1 + |α_j|)`, read on `revSol`. -/

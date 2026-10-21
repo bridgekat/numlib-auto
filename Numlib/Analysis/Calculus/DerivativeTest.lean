@@ -183,25 +183,6 @@ theorem ContDiffAt.deriv_deriv_comp_add_smul {f : E → ℝ} {x₀ : E} (hf : Co
   rw [h4.deriv, iteratedFDeriv_two_apply]
   simp
 
-/-- **The Laplacian is nonpositive at a local maximum** of a `C²` function on a
-finite-dimensional real inner product space: by `laplacian_eq_iteratedFDeriv_orthonormalBasis`,
-`Δ f x₀ = ∑ᵢ D²f (x₀) [bᵢ, bᵢ]`, and each term is the second derivative at `0` of the line
-restriction `s ↦ f (x₀ + s • bᵢ)`, which has a local maximum at `0` and is continuous there, so
-`IsLocalMax.deriv_deriv_nonpos` applies. -/
-theorem IsLocalMax.laplacian_nonpos [FiniteDimensional ℝ E] {f : E → ℝ} {x₀ : E}
-    (hmax : IsLocalMax f x₀) (hf : ContDiffAt ℝ 2 f x₀) : Δ f x₀ ≤ 0 := by
-  rw [laplacian_eq_iteratedFDeriv_orthonormalBasis f (stdOrthonormalBasis ℝ E)]
-  refine Finset.sum_nonpos fun i _ => ?_
-  rw [← hf.deriv_deriv_comp_add_smul]
-  have hline : Continuous fun s : ℝ ↦ x₀ + s • (stdOrthonormalBasis ℝ E) i := by fun_prop
-  have h0 : x₀ + (0 : ℝ) • (stdOrthonormalBasis ℝ E) i = x₀ := by simp
-  refine IsLocalMax.deriv_deriv_nonpos ?_ ?_
-  · have : IsLocalMax f ((fun s : ℝ ↦ x₀ + s • (stdOrthonormalBasis ℝ E) i) 0) := by
-      simpa only [h0] using hmax
-    exact IsLocalMax.comp_continuous (g := fun s : ℝ ↦ x₀ + s • (stdOrthonormalBasis ℝ E) i)
-      (b := 0) this hline.continuousAt
-  · exact hf.continuousAt.comp_of_eq hline.continuousAt h0
-
 /-- **The Hessian of a `C²` function is nonpositive at a local maximum**: `D²f(x₀)[v, v] ≤ 0`
 for every `v`, read as `fderiv (fderiv f) x₀ v v` — the second derivative at `0` of the line
 restriction `s ↦ f (x₀ + s v)` (`ContDiffAt.deriv_deriv_comp_add_smul`), which has a local
@@ -219,5 +200,16 @@ theorem IsLocalMax.fderiv_fderiv_apply_self_nonpos {f : E → ℝ} {x₀ : E} (h
     exact IsLocalMax.comp_continuous (g := fun s : ℝ ↦ x₀ + s • v) (b := 0) this
       hline.continuousAt
   · exact hf.continuousAt.comp_of_eq hline.continuousAt h0
+
+/-- **The Laplacian is nonpositive at a local maximum** of a `C²` function on a
+finite-dimensional real inner product space: by `laplacian_eq_iteratedFDeriv_orthonormalBasis`,
+`Δ f x₀ = ∑ᵢ D²f (x₀) [bᵢ, bᵢ]`, and each term is nonpositive
+(`IsLocalMax.fderiv_fderiv_apply_self_nonpos`). -/
+theorem IsLocalMax.laplacian_nonpos [FiniteDimensional ℝ E] {f : E → ℝ} {x₀ : E}
+    (hmax : IsLocalMax f x₀) (hf : ContDiffAt ℝ 2 f x₀) : Δ f x₀ ≤ 0 := by
+  rw [laplacian_eq_iteratedFDeriv_orthonormalBasis f (stdOrthonormalBasis ℝ E)]
+  refine Finset.sum_nonpos fun i _ => ?_
+  simpa only [iteratedFDeriv_two_apply, Matrix.cons_val_zero, Matrix.cons_val_one] using
+    hmax.fderiv_fderiv_apply_self_nonpos hf ((stdOrthonormalBasis ℝ E) i)
 
 end Laplacian

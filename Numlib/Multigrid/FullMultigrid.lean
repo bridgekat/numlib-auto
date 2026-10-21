@@ -44,7 +44,6 @@ theorem le_of_rec_of_half {a h : ℕ → ℝ} {c₁ c₂ ξ κ : ℝ} {μ : ℕ}
     a l ≤ ξ ^ μ / (1 - c₂ * ξ ^ μ) * c₁ * h l ^ κ := by
   have ht : (0 : ℝ) ≤ ξ ^ μ := pow_nonneg hξ μ
   have hden : (0 : ℝ) < 1 - c₂ * ξ ^ μ := by linarith
-  have hc₃ : (0 : ℝ) ≤ ξ ^ μ / (1 - c₂ * ξ ^ μ) := div_nonneg ht hden.le
   have hne : (1 : ℝ) - c₂ * ξ ^ μ ≠ 0 := ne_of_gt hden
   have hkey : ξ ^ μ * (1 + c₂ * (ξ ^ μ / (1 - c₂ * ξ ^ μ))) = ξ ^ μ / (1 - c₂ * ξ ^ μ) := by
     have hinv : (1 - c₂ * ξ ^ μ) * (1 - c₂ * ξ ^ μ)⁻¹ = 1 := mul_inv_cancel₀ hne
@@ -59,7 +58,6 @@ theorem le_of_rec_of_half {a h : ℕ → ℝ} {c₁ c₂ ξ κ : ℝ} {μ : ℕ}
     have : (0 : ℝ) < h 0 ^ κ := Real.rpow_pos_of_pos (hhpos 0) κ
     positivity
   | succ l ih =>
-    have hpos : (0 : ℝ) < h (l + 1) ^ κ := Real.rpow_pos_of_pos (hhpos (l + 1)) κ
     have hstep : c₂ * (2 : ℝ) ^ (-κ) * a l
         ≤ c₂ * (ξ ^ μ / (1 - c₂ * ξ ^ μ)) * c₁ * h (l + 1) ^ κ := by
       have h2 : (0 : ℝ) ≤ c₂ * (2 : ℝ) ^ (-κ) := by positivity

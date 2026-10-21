@@ -57,7 +57,6 @@ theorem pfc_conj {P : Matrix n n 𝕜} (hP : IsUnit P) (f : 𝕜 → 𝕜) (A : 
 theorem pfc_diagonal (f : 𝕜 → 𝕜) (d : n → 𝕜) : pfc f (diagonal d) = diagonal (f ∘ d) := by
   classical
   set s := (Finset.univ.image d).val
-  have hs : s.Nodup := Finset.nodup _
   have hmem : ∀ i, d i ∈ s := fun i => Finset.mem_image_of_mem d (Finset.mem_univ i)
   have hdiag : ∀ p : 𝕜[X], aeval (diagonal d) p = diagonal fun i => p.eval (d i) := fun p => by
     rw [← diagonalAlgHom_apply 𝕜, aeval_algHom_apply, aeval_pi_apply]

@@ -289,8 +289,6 @@ theorem norm_iterate_sub_le_and_frobenius_norm_le (h : LipschitzJacobianRoot F J
     set x : E := (iterate F x₀ Q₀ k).x with hx
     set Q : E →L[ℝ] E := (iterate F x₀ Q₀ k).Q with hQ
     set M : Matrix n n ℝ := (toEuclideanCLM (𝕜 := ℝ)).symm Q with hM
-    have hpow : (0 : ℝ) < 2 ^ k := by positivity
-    have ha0 : 0 ≤ ε / 2 ^ k := by positivity
     have haε : ε / 2 ^ k ≤ ε := div_le_self hε (one_le_pow₀ (by norm_num))
     have hsucc : ε / 2 ^ (k + 1) = ε / 2 ^ k / 2 := by rw [pow_succ, div_div]
     have h2k : (1 : ℝ) / 2 ^ (k + 1) = 1 / 2 ^ k / 2 := by rw [pow_succ, div_div]
@@ -307,7 +305,6 @@ theorem norm_iterate_sub_le_and_frobenius_norm_le (h : LipschitzJacobianRoot F J
     have hQJ : ‖Q - toEuclideanCLM (𝕜 := ℝ) (J z)‖ ≤ 2 * δ := by
       rw [hQ, iterate_Q_sub_eq, ← hQ, ← hM]
       exact (norm_toEuclideanCLM_le_frobenius_norm _).trans hM2
-    have hQJ0 : 0 ≤ ‖Q - toEuclideanCLM (𝕜 := ℝ) (J z)‖ := norm_nonneg _
     -- one step
     obtain ⟨-, hstep⟩ := norm_step_x_sub_le h e he hβ hxD (Q := Q) (by nlinarith)
     have hxk1 : (iterate F x₀ Q₀ (k + 1)).x = (step F ⟨x, Q⟩).x := by
@@ -378,13 +375,11 @@ theorem sq_norm_iterate_sub_apply_div_le (h : LipschitzJacobianRoot F J D z L) {
   have hM' : (toEuclideanCLM (𝕜 := ℝ)).symm (iterate F x₀ Q₀ (k + 1)).Q
       = broydenUpdate M (ofLp (x' - x)) (ofLp (F x' - F x)) := symm_iterate_succ_Q F x₀ Q₀ k
   rw [hM']
-  have hnn : 0 ≤ 2 * ‖M - J z‖ := by positivity
   have hL0 := h.nonneg
   by_cases hs : x' - x = 0
   · have hs0 : ofLp (x' - x) = 0 := by rw [hs]; rfl
     rw [hs0, hs, broydenUpdate_zero_left, map_zero, norm_zero, div_zero, sub_self, zero_add,
       zero_pow two_ne_zero]
-    have : 0 ≤ ‖x - z‖ + ‖x' - z‖ := by positivity
     positivity
   · have hs' : ofLp (x' - x) ≠ 0 := fun h0 => hs (by simpa using congrArg (toLp 2) h0)
     have key := sq_norm_sub_mulVec_div_le_broydenUpdate M (J z) (y := ofLp (F x' - F x)) hs'
@@ -532,7 +527,6 @@ theorem norm_iterate_succ_sub_le_mul (h : LipschitzJacobianRoot F J D z L) (e : 
   have hinv := norm_iterate_sub_le_and_frobenius_norm_le h e he hβ hε hβδ hLε hball hx₀ hQ₀
   have hL0 := h.nonneg
   have hβ0 : 0 ≤ β := le_trans (norm_nonneg _) hβ
-  have hδ0 : 0 ≤ δ := le_trans (norm_nonneg _) hQ₀
   set x : E := (iterate F x₀ Q₀ k).x with hx
   set x' : E := (iterate F x₀ Q₀ (k + 1)).x with hx'
   set Q : E →L[ℝ] E := (iterate F x₀ Q₀ k).Q with hQ
@@ -553,7 +547,6 @@ theorem norm_iterate_succ_sub_le_mul (h : LipschitzJacobianRoot F J D z L) (e : 
       nlinarith
     rw [hQ, hJs, iterate_Q_sub_eq]
     exact (norm_toEuclideanCLM_le_frobenius_norm _).trans (by linarith [(hinv k).2])
-  have hQJ0 : 0 ≤ ‖Q - Js‖ := norm_nonneg _
   obtain ⟨⟨e', he'Q, -⟩, hstep⟩ := norm_step_x_sub_le h e he hβ hxD (Q := Q) (by nlinarith)
   have hxk1 : x' = (step F ⟨x, Q⟩).x := by rw [hx', iterate_succ]
   -- `‖x' - z‖ ≤ ‖x - z‖ / 2`
@@ -590,7 +583,6 @@ theorem norm_iterate_succ_sub_le_mul (h : LipschitzJacobianRoot F J D z L) (e : 
       have : L / 2 * (‖x - z‖ + ‖x' - z‖) ≤ L * ‖x - z‖ := by
         linarith [mul_le_mul_of_nonneg_left hhalf hL0, mul_nonneg hL0 (norm_nonneg (x - z))]
       exact mul_le_mul_of_nonneg_right this (norm_nonneg _)
-    have hs0 : 0 ≤ ‖x' - x‖ := norm_nonneg _
     have hxz : 0 ≤ ‖x - z‖ := norm_nonneg _
     linarith [mul_le_mul_of_nonneg_left hs (add_nonneg hη0 (mul_nonneg hL0 hxz))]
   -- the lower bound `‖x' - z‖ ≤ β (‖F x'‖ + (L / 2) ‖x' - z‖²)`
@@ -611,13 +603,10 @@ theorem norm_iterate_succ_sub_le_mul (h : LipschitzJacobianRoot F J D z L) (e : 
     have h2 : β * (3 * L * ε) ≤ β * (2 * δ) := mul_le_mul_of_nonneg_left hLε hβ0
     linarith
   have hx'z : 0 ≤ ‖x' - z‖ := norm_nonneg _
-  have hxz : 0 ≤ ‖x - z‖ := norm_nonneg _
-  have hF0 : 0 ≤ ‖F x'‖ := norm_nonneg _
   -- `(5 / 6) ‖x' - z‖ ≤ β ‖F x'‖`
   have h56 : 5 / 6 * ‖x' - z‖ ≤ β * ‖F x'‖ := by
     have h1 : β * L * ‖x' - z‖ * ‖x' - z‖ ≤ 1 / 3 * ‖x' - z‖ :=
       mul_le_mul_of_nonneg_right (by linarith) hx'z
-    have h2 : β * (L / 2 * ‖x' - z‖ ^ 2) ≤ 1 / 6 * ‖x' - z‖ := by linarith
     linarith
   calc ‖x' - z‖ ≤ 6 / 5 * (β * ‖F x'‖) := by linarith
     _ ≤ 6 / 5 * (β * ((η + L * ‖x - z‖) * (2 * ‖x - z‖))) := by gcongr
@@ -659,7 +648,6 @@ theorem superlinear_of_le (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ]
   have hinv := norm_iterate_sub_le_and_frobenius_norm_le h e he hβ hε hβδ hLε hball hx₀ hQ₀
   have hL0 := h.nonneg
   have hβ0 : 0 ≤ β := le_trans (norm_nonneg _) hβ
-  have hδ0 : 0 ≤ δ := le_trans (norm_nonneg _) hQ₀
   -- every `Q_k` is invertible
   have hunit : ∀ k, ∃ e' : E ≃L[ℝ] E, (e' : E →L[ℝ] E) = (iterate F x₀ Q₀ k).Q := fun k => by
     have hxD : (iterate F x₀ Q₀ k).x ∈ D := hball (by
@@ -672,7 +660,6 @@ theorem superlinear_of_le (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ]
         nlinarith
       rw [iterate_Q_sub_eq]
       exact (norm_toEuclideanCLM_le_frobenius_norm _).trans (by linarith [(hinv k).2])
-    have hQJ0 : 0 ≤ ‖(iterate F x₀ Q₀ k).Q - toEuclideanCLM (𝕜 := ℝ) (J z)‖ := norm_nonneg _
     obtain ⟨⟨e', he', -⟩, -⟩ := norm_step_x_sub_le h e he hβ hxD (Q := (iterate F x₀ Q₀ k).Q)
       (by nlinarith)
     exact ⟨e', he'⟩

@@ -805,14 +805,6 @@ theorem equation_4_2_17 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
         (∀ i, 0 < d i) ∧ A.submatrix σ σ = L * diagonal d * Lᵀ := by
   obtain ⟨σ, Lf, d, hL, heq, -, hpos, hzero⟩ := hA.exists_perm_ldl_rank
   set h := A.rank_le_width
-  have key : ∀ f : Fin n → ℝ, (∀ k : Fin n, A.rank ≤ k → f k = 0) →
-      ∑ k, f k = ∑ k : Fin A.rank, f (Fin.castLE h k) := by
-    intro f hf
-    rw [show (∑ k : Fin A.rank, f (Fin.castLE h k)) = ∑ k ∈ univ.map (Fin.castLEEmb h), f k
-      from (Finset.sum_map univ (Fin.castLEEmb h) f).symm]
-    refine (Finset.sum_subset (subset_univ _) fun k _ hk => hf k ?_).symm
-    by_contra hlt
-    exact hk (mem_map.2 ⟨⟨k, not_le.1 hlt⟩, mem_univ _, Fin.ext rfl⟩)
   refine ⟨σ, Lf.submatrix id (Fin.castLE h), d ∘ Fin.castLE h, ⟨fun a b hab => ?_, fun a => ?_⟩,
     fun i => hpos _ (by rw [Fin.val_castLE]; exact i.isLt), ?_⟩
   · exact hL.isLowerTriangular (show Fin.castLE h a < Fin.castLE h b from hab)
@@ -823,7 +815,7 @@ theorem equation_4_2_17 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     ext i j
     rw [mul_diagonal_mul_transpose_apply, mul_diagonal_mul_transpose_apply]
     simp only [submatrix_apply, id, Function.comp_apply]
-    exact key _ fun k hk => by rw [hzero k hk]; ring
+    exact Fin.sum_eq_sum_castLE_of_forall_le h _ fun k hk => by rw [hzero k hk]; ring
 
 /-- **§4.2.8, the rank-one expansion**: `PAPᵀ = ∑_{j=1}^{r} d_j ℓ_j ℓ_jᵀ` with `ℓ_j` the `j`th
 column of the `L`-matrix of (4.2.17) — "a relatively cheap alternative to the SVD rank-1

@@ -384,7 +384,6 @@ theorem normedSpaceCore : NormedSpace.Core ℝ (HolderSpace Ω F j β) where
     constructor
     · intro h
       have hle := sum_norm_deriv_le_norm u
-      have hs := holderSeminorm_nonneg (β : ℝ) (u.deriv (Fin.last j))
       have h0 : ∑ i, ‖u.deriv i‖ = 0 :=
         le_antisymm (by linarith) (Finset.sum_nonneg fun _ _ ↦ norm_nonneg _)
       rw [Finset.sum_eq_zero_iff_of_nonneg fun _ _ ↦ norm_nonneg _] at h0
@@ -884,7 +883,6 @@ theorem exists_subseq_tendsto_toLower (hb : Bornology.IsBounded (Ω : Set E)) (h
     ∃ (φ : ℕ → ℕ) (w : HolderSpace Ω F j β'), StrictMono φ ∧
       Tendsto (fun n ↦ toLower hb hβ.le (u (φ n))) atTop (𝓝 w) := by
   have hβ0 : 0 < β := hβ'.trans hβ
-  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
   have hMn : ∀ n, ‖u n‖₊ ≤ M.toNNReal := fun n ↦
     NNReal.coe_le_coe.1 (by rw [coe_nnnorm]; exact (hM n).trans (Real.le_coe_toNNReal _))
   -- each entry is uniformly bounded and uniformly Hölder
@@ -965,7 +963,6 @@ theorem isCompactEmbedding_toLowerL (hb : Bornology.IsBounded (Ω : Set E)) (hβ
       ∀ u : HolderSpace Ω F j β, HolderWith (C * ‖u‖₊) θ (u.deriv i)) :
     IsCompactEmbedding (toLowerL Ω F j hb hβ.le).toLinearMap := by
   refine ⟨isContinuousEmbedding_toLowerL hb hβ.le, fun u ⟨M, hM⟩ ↦ ?_⟩
-  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
   obtain ⟨φ, w, hφ, hw⟩ := exists_subseq_tendsto_toLower hb hβ' hβ u hM fun i hi ↦ by
     obtain ⟨C, θ, hθ, hC⟩ := hlow i hi
     refine ⟨C * M.toNNReal, θ, hθ, fun n ↦ (hC (u n)).mono ?_⟩

@@ -1,2 +1,5 @@
 [[node]]
 id = "LinearMap.IsSymmetric.eigenvalues_eq_of_antitone"
+
+[[node]]
+id = "LinearMap.IsSymmetric.iSup_eigenspace_eq_top"

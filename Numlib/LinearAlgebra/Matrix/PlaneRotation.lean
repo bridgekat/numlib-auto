@@ -179,15 +179,6 @@ section Mul
 
 variable [Fintype n] [NonAssocSemiring R] {j k : n} (G : Matrix (Fin 2) (Fin 2) R)
 
-omit [DecidableEq n] in
-/-- A sum all of whose terms outside the pair `{j, k}` vanish. -/
-private theorem sum_eq_add_of_ne (hjk : j ≠ k) (f : n → R) (hf : ∀ r, r ≠ j → r ≠ k → f r = 0) :
-    ∑ r, f r = f j + f k := by
-  classical
-  rw [← Finset.sum_subset (Finset.subset_univ ({j, k} : Finset n))
-    (fun r _ hr => hf r (fun h => hr (by simp [h])) fun h => hr (by simp [h])),
-    Finset.sum_pair hjk]
-
 /-- The row `p` of an embedding against a vector: rows `j`, `k` combine the entries `j`, `k`. -/
 private theorem sum_planeEmbed_mul (hjk : j ≠ k) (f : n → R) (p : n) :
     ∑ r, planeEmbed j k G p r * f r =
@@ -196,12 +187,12 @@ private theorem sum_planeEmbed_mul (hjk : j ≠ k) (f : n → R) (p : n) :
       else f p := by
   by_cases hpj : p = j
   · subst hpj
-    rw [ite_eq_left rfl, sum_eq_add_of_ne hjk _ fun r hrj hrk => by
+    rw [ite_eq_left rfl, Fintype.sum_eq_add _ _ hjk fun r ⟨hrj, hrk⟩ => by
       simp [planeEmbed_apply, hrj, hrk]]
     simp [planeEmbed_apply, hjk.symm]
   by_cases hpk : p = k
   · subst hpk
-    rw [ite_eq_right hpj, ite_eq_left rfl, sum_eq_add_of_ne hjk _ fun r hrj hrk => by
+    rw [ite_eq_right hpj, ite_eq_left rfl, Fintype.sum_eq_add _ _ hjk fun r ⟨hrj, hrk⟩ => by
       simp [planeEmbed_apply, hrj, hrk, hpj]]
     simp [planeEmbed_apply, hjk.symm]
   · rw [ite_eq_right hpj, ite_eq_right hpk]
@@ -216,12 +207,12 @@ private theorem sum_mul_planeEmbed (hjk : j ≠ k) (f : n → R) (q : n) :
       else f q := by
   by_cases hqj : q = j
   · subst hqj
-    rw [ite_eq_left rfl, sum_eq_add_of_ne hjk _ fun r hrj hrk => by
+    rw [ite_eq_left rfl, Fintype.sum_eq_add _ _ hjk fun r ⟨hrj, hrk⟩ => by
       simp [planeEmbed_apply, hrj, hrk]]
     simp [planeEmbed_apply, hjk.symm]
   by_cases hqk : q = k
   · subst hqk
-    rw [ite_eq_right hqj, ite_eq_left rfl, sum_eq_add_of_ne hjk _ fun r hrj hrk => by
+    rw [ite_eq_right hqj, ite_eq_left rfl, Fintype.sum_eq_add _ _ hjk fun r ⟨hrj, hrk⟩ => by
       simp [planeEmbed_apply, hrj, hrk]]
     simp [planeEmbed_apply, hjk.symm]
   · rw [ite_eq_right hqj, ite_eq_right hqk]
@@ -483,7 +474,6 @@ The angle is `± arccos c`, with the sign of `s`. Upstreaming candidate (natural
 `Mathlib/Analysis/SpecialFunctions/Trigonometric/Inverse`). -/
 theorem _root_.Real.exists_cos_eq_sin_eq {c s : ℝ} (h : c ^ 2 + s ^ 2 = 1) :
     ∃ θ : ℝ, Real.cos θ = c ∧ Real.sin θ = s := by
-  have hc2 : c ^ 2 ≤ 1 := by nlinarith [sq_nonneg s]
   have hc1 : -1 ≤ c := by nlinarith
   have hc1' : c ≤ 1 := by nlinarith
   have hsq : √(1 - c ^ 2) = |s| := by
@@ -513,8 +503,8 @@ theorem givensPair_zero_zero : givensPair 0 0 = (1, 0) := by simp [givensPair]
 /-- `a ^ 2 + b ^ 2 > 0` unless both vanish. -/
 private theorem sq_add_sq_pos_of_not {a b : ℝ} (h : ¬(a = 0 ∧ b = 0)) : 0 < a ^ 2 + b ^ 2 := by
   rcases not_and_or.1 h with ha | hb
-  · have := sq_pos_of_ne_zero ha; positivity
-  · have := sq_pos_of_ne_zero hb; positivity
+  · positivity
+  · positivity
 
 /-- The Givens pair lies on the unit circle. -/
 theorem givensPair_sq_add_sq (a b : ℝ) :
@@ -750,7 +740,6 @@ private theorem one_sub_div_sq_pos {a b : ℝ} (h : |b| < |a|) : 0 < 1 - (b / a)
 theorem hyperbolicPair_sq_sub_sq {a b : ℝ} (h : |b| < |a|) :
     (hyperbolicPair a b).1 ^ 2 - (hyperbolicPair a b).2 ^ 2 = 1 ∧ 0 < (hyperbolicPair a b).1 := by
   have hpos := one_sub_div_sq_pos h
-  have hr : 0 < √(1 - (b / a) ^ 2) := Real.sqrt_pos.2 hpos
   have hsq : √(1 - (b / a) ^ 2) ^ 2 = 1 - (b / a) ^ 2 := Real.sq_sqrt hpos.le
   refine ⟨?_, by simp only [hyperbolicPair]; positivity⟩
   simp only [hyperbolicPair]
@@ -775,7 +764,6 @@ theorem hyperbolicRotation_hyperbolicPair_mulVec {j k : n} (hjk : j ≠ k)
   have hsqrt : √(1 - (x k / x j) ^ 2) = √(x j ^ 2 - x k ^ 2) / |x j| := by
     rw [show 1 - (x k / x j) ^ 2 = (x j ^ 2 - x k ^ 2) / |x j| ^ 2 by
       rw [sq_abs]; field_simp, Real.sqrt_div' _ (sq_nonneg _), Real.sqrt_sq (abs_nonneg _)]
-  have hr : 0 < √(x j ^ 2 - x k ^ 2) := Real.sqrt_pos.2 hD
   have hrr : √(x j ^ 2 - x k ^ 2) ^ 2 = x j ^ 2 - x k ^ 2 := Real.sq_sqrt hD.le
   rw [hyperbolicRotation, planeEmbed_mulVec_apply _ hjk, planeEmbed_mulVec_apply _ hjk]
   simp only [hjk.symm, ite_true, ite_false, hyperbolicPair, hsqrt, of_apply, cons_val',

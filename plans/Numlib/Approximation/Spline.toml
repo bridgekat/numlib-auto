@@ -1,10 +1,6 @@
 namespace = "Spline"
 
 [[node]]
-id = "IsPartition"
-source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1"
-
-[[node]]
 id = "splineSpace"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1"
 
@@ -142,12 +138,6 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.3 (with
 [[node]]
 id = "cubicInterp_affine"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7, property of parametric splines"
-
-[[node]]
-id = "IsPartition.exists_mem_panel"
-
-[[node]]
-id = "IsPartition.node_eq_of_uniform"
 
 [[node]]
 id = "truncPowFamily"

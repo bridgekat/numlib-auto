@@ -64,48 +64,10 @@ theorem IsExactSum.of_polyhedral_pair [IsCompatiblePairing B] [IsCompatiblePairi
     {x₀ : E} (hxf : x₀ ∈ convexDom f) (hxg : x₀ ∈ convexDom g) : IsExactSum B f g := by
   have hfc : ClosedProperConvexFn f := hf.closedProperConvexFn hpf
   have hgc : ClosedProperConvexFn g := hg.closedProperConvexFn hpg
-  have hup : ProperConvex (convexConj B f) := properConvex_convexConj hfc
-  have hvp : ProperConvex (convexConj B g) := properConvex_convexConj hgc
   -- the sum of the two dual epigraphs is polyhedral, hence closed
   have hclosed : IsClosed (epi (convexConj B f) + epi (convexConj B g)) :=
     Polyhedral.isClosed (Polyhedral.add (PolyhedralFn.convexConj hf) (PolyhedralFn.convexConj hg))
-  -- so that sum *is* the epigraph of the infimal convolute
-  have hepiEq : epi (infConv (convexConj B f) (convexConj B g)) = epi (convexConj B f)
-      + epi (convexConj B g) :=
-    epi_infConv_of_polyhedralFn (PolyhedralFn.convexConj hf) (PolyhedralFn.convexConj hg)
-  have hdomne : (convexDom (f + g)).Nonempty :=
-    ⟨x₀, by
-      rw [mem_convexDom, Pi.add_apply]
-      exact EReal.add_lt_top (mem_convexDom.1 hxf).ne (mem_convexDom.1 hxg).ne⟩
-  have hproper : ProperConvex (infConv (convexConj B f) (convexConj B g)) := by
-    refine ⟨?_, fun y hy => ?_⟩
-    · obtain ⟨p, hp⟩ := hup.convexDom_nonempty
-      obtain ⟨q, hq⟩ := hvp.convexDom_nonempty
-      exact ⟨p + q, by rw [convexDom_infConv]; exact Set.add_mem_add hp hq⟩
-    · have hle := convexConj_add_le_infConv B f g y
-      rw [hy, le_bot_iff] at hle
-      exact convexConj_ne_bot hdomne y hle
-  have hclosedFn : ClosedConvex (infConv (convexConj B f) (convexConj B g)) :=
-    (ClosedProperConvexFn.of_isClosed_epi
-      (convexFn_infConv (convexFn_convexConj B f) (convexFn_convexConj B g))
-      (by rw [hepiEq]; exact hclosed) hproper).closed
-  have hconjadd : convexConj B (f + g) = infConv (convexConj B f) (convexConj B g) := by
-    rw [convexConj_add_eq_convexCl_infConv hfc.convex hfc.closed hgc.convex hgc.closed]
-    exact hclosedFn
-  refine ⟨hpf, hpg, fun y => ?_⟩
-  rw [hconjadd]
-  rcases eq_top_or_lt_top (infConv (convexConj B f) (convexConj B g) y) with htop | htop
-  · exact ⟨y, 0, add_zero y, by rw [htop]; exact le_top⟩
-  obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hproper.ne_bot y) htop
-  have hmem : ((y, μ) : F × ℝ) ∈ epi (convexConj B f) + epi (convexConj B g) := by
-    rw [← hepiEq]; exact mk_mem_epi.2 hμ.le
-  obtain ⟨⟨y₁, a⟩, h₁, ⟨y₂, b⟩, h₂, heq⟩ := hmem
-  refine ⟨y₁, y₂, congrArg Prod.fst heq, ?_⟩
-  have hab : a + b = μ := congrArg Prod.snd heq
-  rw [hμ]
-  calc convexConj B f y₁ + convexConj B g y₂ ≤ ((a : ℝ) : EReal) + ((b : ℝ) : EReal) :=
-        add_le_add (mk_mem_epi.1 h₁) (mk_mem_epi.1 h₂)
-    _ = ((μ : ℝ) : EReal) := by rw [← EReal.coe_add, hab]
+  exact IsExactSum.of_isClosed_epi_add hfc hgc hxf hxg hclosed
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- An indicator function is absorbed by any function whose effective domain it contains. This is

@@ -240,13 +240,8 @@ theorem orthonormal_scaled (h : IsMultiresolutionAnalysis V φ) (j : ℤ) :
 /-- Each scaling space is the closed span of the scaling system of its level. -/
 theorem eq_topologicalClosure_span_scalingSystem (h : IsMultiresolutionAnalysis V φ) (j : ℤ) :
     V j = (Submodule.span ℝ (Set.range (scalingSystem φ j))).topologicalClosure := by
-  have himg : (Lp.dilationₗᵢ ((2 : ℝ) ^ j)
-      (zpow_ne_zero j two_ne_zero)).toLinearEquiv.toLinearMap ''
-        Set.range (translates φ) = Set.range (scalingSystem φ j) := by
-    rw [← Set.range_comp]
-    rfl
-  rw [h.eq_map_dilation j, h.eq_topologicalClosure_span, Haar.map_topologicalClosure,
-    Submodule.map_span, himg]
+  rw [h.eq_map_dilation j, h.eq_topologicalClosure_span]
+  exact Haar.map_topologicalClosure_span_range _ fun _ => rfl
 
 theorem scalingSystem_mem (h : IsMultiresolutionAnalysis V φ) (j k : ℤ) :
     scalingSystem φ j k ∈ V j := by
@@ -260,25 +255,9 @@ Proposition 4.5.2: the system is an orthonormal basis of `V j`.
 Reference: [han2009theoretical], Proposition 4.5.2. -/
 theorem hasSum_inner_smul (h : IsMultiresolutionAnalysis V φ) (j : ℤ)
     {f : Lp ℝ 2 (volume : Measure ℝ)} (hf : f ∈ V j) :
-    HasSum (fun k : ℤ => (inner ℝ (scalingSystem φ j k) f) • scalingSystem φ j k) f := by
-  have hmem : ∀ k : ℤ, scalingSystem φ j k ∈
-      (Submodule.span ℝ (Set.range (scalingSystem φ j))).topologicalClosure := fun k =>
-    Submodule.le_topologicalClosure _ (Submodule.subset_span (Set.mem_range_self k))
-  have hfK : f ∈ (Submodule.span ℝ (Set.range (scalingSystem φ j))).topologicalClosure := by
-    rw [← h.eq_topologicalClosure_span_scalingSystem j]; exact hf
-  set b := (h.orthonormal_scaled j).hilbertBasisTopologicalClosure with hbdef
-  have hbcoe : ∀ k : ℤ,
-      ((b k : (Submodule.span ℝ (Set.range (scalingSystem φ j))).topologicalClosure) :
-        Lp ℝ 2 (volume : Measure ℝ)) = scalingSystem φ j k := by
-    intro k
-    simp only [hbdef, Orthonormal.hilbertBasisTopologicalClosure]
-    rw [HilbertBasis.coe_mkOfOrthogonalEqBot]
-    rfl
-  have hsum := (b.hasSum_repr ⟨f, hfK⟩).mapL
-    (Submodule.span ℝ (Set.range (scalingSystem φ j))).topologicalClosure.subtypeL
-  refine hsum.congr_fun fun k => ?_
-  rw [ContinuousLinearMap.map_smul, Submodule.subtypeL_apply, hbcoe k,
-    HilbertBasis.repr_apply_apply, Submodule.coe_inner, hbcoe k]
+    HasSum (fun k : ℤ => (inner ℝ (scalingSystem φ j k) f) • scalingSystem φ j k) f :=
+  (h.orthonormal_scaled j).hasSum_inner_smul_of_mem
+    (h.eq_topologicalClosure_span_scalingSystem j ▸ hf)
 
 /-- The scaling function lies in `V 0`. -/
 theorem mem_zero (h : IsMultiresolutionAnalysis V φ) : φ ∈ V 0 := by
@@ -408,14 +387,9 @@ theorem completeSpace_V (h : IsMultiresolutionAnalysis V φ) (j : ℤ) : Complet
 theorem map_dilation_V (h : IsMultiresolutionAnalysis V φ) (i j : ℤ) :
     (V j).map (Lp.dilationₗᵢ ((2 : ℝ) ^ i)
         (zpow_ne_zero i two_ne_zero)).toLinearEquiv.toLinearMap = V (i + j) := by
-  have himg : (Lp.dilationₗᵢ ((2 : ℝ) ^ i)
-      (zpow_ne_zero i two_ne_zero)).toLinearEquiv.toLinearMap ''
-        Set.range (scalingSystem φ j) = Set.range (scalingSystem φ (i + j)) := by
-    rw [← Set.range_comp]
-    exact congrArg Set.range (funext fun k => dilationₗᵢ_scalingSystem φ i j k)
   rw [h.eq_topologicalClosure_span_scalingSystem j,
-    h.eq_topologicalClosure_span_scalingSystem (i + j), Haar.map_topologicalClosure,
-    Submodule.map_span, himg]
+    h.eq_topologicalClosure_span_scalingSystem (i + j)]
+  exact Haar.map_topologicalClosure_span_range _ (dilationₗᵢ_scalingSystem φ i j)
 
 theorem dilation_mem_V (h : IsMultiresolutionAnalysis V φ) {i j : ℤ}
     {y : Lp ℝ 2 (volume : Measure ℝ)} (hy : y ∈ V j) :

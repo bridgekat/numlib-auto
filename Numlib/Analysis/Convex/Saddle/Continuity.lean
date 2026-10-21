@@ -12,9 +12,9 @@ applied once in each variable and combined.
 
 ## Main definitions
 
-* `ConcaveConvexOn C D K` — `K : U × X → ℝ` is concave in its first argument on `C` for each point
-  of `D` and convex in its second on `D` for each point of `C`. Its two fields are exactly the
-  hypotheses the simple extensions of `Saddle/Kernel.lean` take.
+* `ConcaveConvexOn C D K` (from `Saddle/Defs.lean`) — `K : U × X → ℝ` is concave in its first
+  argument on `C` for each point of `D` and convex in its second on `D` for each point of `C`. It is
+  also the hypothesis the simple extensions of `Saddle/Kernel.lean` take.
 
 ## Main results
 
@@ -30,8 +30,6 @@ applied once in each variable and combined.
   `exists_subseq_tendstoUniformlyOn_prod` is the Arzelà–Ascoli form.
 * `exists_isCompact_mem_nhdsWithin_relint`, `exists_isCompact_collar_relint` — `ri C` is locally
   compact, and a compact subset of it has a compact relative collar.
-* `uniformCauchySeqOn_of_equiLipschitz` — the metric core of the convergence theorems, with the
-  convexity stripped out.
 
 ## Implementation notes
 
@@ -57,38 +55,6 @@ open Set Filter Topology Metric
 open scoped NNReal Pointwise
 
 namespace ConvexAnalysis
-
-/-! ### Concave-convex functions on a rectangle -/
-
-section Defs
-
-variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
-
-/-- `K` is **concave-convex on `C × D`**: concave in its first argument on `C` for each point of
-`D`, convex in its second on `D` for each point of `C`. The finite, set-relative form of
-`ConcaveConvexFn`, and the hypothesis the continuity theory runs on. -/
-structure ConcaveConvexOn (C : Set U) (D : Set X) (K : U × X → ℝ) : Prop where
-  /-- `K (·, x)` is concave on `C` for every `x ∈ D`. -/
-  concave_fst : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x)
-  /-- `K (u, ·)` is convex on `D` for every `u ∈ C`. -/
-  convex_snd : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x)
-
-variable {C : Set U} {D : Set X} {K : U × X → ℝ}
-
-/-- The concave slice, as a family of *convex* functions: the form the convex lemmas consume. -/
-theorem ConcaveConvexOn.convexOn_neg_fst (hK : ConcaveConvexOn C D K) {x : X} (hx : x ∈ D) :
-    ConvexOn ℝ C fun u => -K (u, x) :=
-  (hK.concave_fst x hx).neg
-
-/-- Negating a concave-convex function and swapping its arguments gives a concave-convex function
-of the swapped pair: `swapReal K = fun (x, w) => -K (w, x)` is concave-convex on `D × C`. Every
-statement about the concave variable is the corresponding statement about the convex variable,
-read at `swapReal K`. -/
-theorem ConcaveConvexOn.swapReal (hK : ConcaveConvexOn C D K) :
-    ConcaveConvexOn D C (ConvexAnalysis.swapReal K) :=
-  ⟨fun w hw => (hK.convex_snd w hw).neg, fun y hy => (hK.concave_fst y hy).neg⟩
-
-end Defs
 
 /-! ### Negation
 
@@ -474,67 +440,6 @@ theorem exists_isCompact_collar_relint (hC : Convex ℝ C) {S : Set E}
 
 end Collar
 
-/-! ### Equi-Lipschitz plus a dense Cauchy set
-
-The metric core of the convergence theorems, with the convexity stripped out: on a compact `S`
-carrying a collar `S'` on which the sequence is equi-Lipschitz, pointwise Cauchy behaviour on a
-dense subset of `S` is already uniform Cauchy behaviour on `S`. -/
-
-section UniformCauchy
-
-variable {Ω : Type*} [PseudoMetricSpace Ω] {f : ℕ → Ω → ℝ} {A S S' : Set Ω} {ε : ℝ} {k : ℝ≥0}
-
-/-- **Equi-Lipschitz on a collar plus pointwise Cauchy on a dense subset gives uniform Cauchy.**
-`hcollar` is the only thing the ambient structure has to supply: every point of `A` within `ε` of
-`S` must lie in `S'`, the set on which the family is equi-Lipschitz. In the `interior` setting
-`S' = cthickening ε S`; in the relative setting it is `exists_isCompact_collar_relint`. -/
-theorem uniformCauchySeqOn_of_equiLipschitz (hS : IsCompact S) (hSS' : S ⊆ S') (hε : 0 < ε)
-    (hcollar : ∀ y ∈ A, ∀ x ∈ S, dist y x ≤ ε → y ∈ S')
-    (hdense : S ⊆ closure A) (hlip : ∀ i, LipschitzOnWith k (f i) S')
-    (hcau : ∀ z ∈ A, CauchySeq fun i => f i z) :
-    UniformCauchySeqOn f atTop S := by
-  classical
-  rw [Metric.uniformCauchySeqOn_iff]
-  intro δ hδ
-  have hknn : (0 : ℝ) ≤ (k : ℝ) := k.coe_nonneg
-  set ρ : ℝ := min ε (δ / (3 * ((k : ℝ) + 1))) with hρdef
-  have hρ : 0 < ρ := lt_min hε (by positivity)
-  have hkρ : (k : ℝ) * ρ < δ / 3 := by
-    have h1 : ρ ≤ δ / (3 * ((k : ℝ) + 1)) := min_le_right _ _
-    rw [le_div_iff₀ (by positivity : (0 : ℝ) < 3 * ((k : ℝ) + 1))] at h1
-    nlinarith [hρ]
-  have hcover : S ⊆ ⋃ z ∈ A ∩ S', ball z ρ := by
-    intro x hx
-    obtain ⟨z, hzA, hxz⟩ := Metric.mem_closure_iff.1 (hdense hx) ρ hρ
-    refine mem_biUnion ⟨hzA, hcollar z hzA x hx ?_⟩ (by rwa [mem_ball])
-    rw [dist_comm]
-    exact hxz.le.trans (min_le_left _ _)
-  obtain ⟨b, hbsub, hbfin, hbcover⟩ :=
-    hS.elim_finite_subcover_image (fun z (_ : z ∈ A ∩ S') => isOpen_ball) hcover
-  have hNex : ∀ z : Ω, ∃ N : ℕ, z ∈ b → ∀ m ≥ N, ∀ n ≥ N, dist (f m z) (f n z) < δ / 3 := by
-    intro z
-    by_cases hz : z ∈ b
-    · obtain ⟨N, hN⟩ := Metric.cauchySeq_iff.1 (hcau z (hbsub hz).1) (δ / 3) (by positivity)
-      exact ⟨N, fun _ => hN⟩
-    · exact ⟨0, fun h => absurd h hz⟩
-  choose Nf hNf using hNex
-  refine ⟨hbfin.toFinset.sup Nf, fun m hm n hn x hx => ?_⟩
-  obtain ⟨z, hzb, hxz⟩ := mem_iUnion₂.1 (hbcover hx)
-  have hNz : Nf z ≤ hbfin.toFinset.sup Nf := Finset.le_sup (hbfin.mem_toFinset.2 hzb)
-  have hmid : dist (f m z) (f n z) < δ / 3 := hNf z hzb m (hNz.trans hm) n (hNz.trans hn)
-  have hzS' : z ∈ S' := (hbsub hzb).2
-  have hxS' : x ∈ S' := hSS' hx
-  have hdxz : dist x z < ρ := by rwa [mem_ball] at hxz
-  have hkd : (k : ℝ) * dist x z ≤ (k : ℝ) * ρ := by
-    nlinarith [dist_nonneg (x := x) (y := z)]
-  have hd1 : dist (f m x) (f m z) ≤ (k : ℝ) * dist x z := (hlip m).dist_le_mul x hxS' z hzS'
-  have hd2 : dist (f n x) (f n z) ≤ (k : ℝ) * dist x z := (hlip n).dist_le_mul x hxS' z hzS'
-  have htri := dist_triangle4 (f m x) (f m z) (f n z) (f n x)
-  rw [dist_comm (f n z) (f n x)] at htri
-  linarith
-
-end UniformCauchy
-
 /-! ### Convergence
 
 Both are the one-variable statements with the compact set replaced by a compact *rectangle*: the
@@ -675,38 +580,11 @@ theorem exists_subseq_tendstoUniformlyOn_prod (hC : Convex ℝ C) (hD : Convex �
   have hbddA : ∀ p ∈ A, Bornology.IsBounded (Set.range fun i => K i p) := fun p hp => by
     have h := hAsub hp
     exact hbdd p.1 h.1 p.2 h.2
-  rcases A.eq_empty_or_nonempty with rfl | hne
-  · rw [closure_empty] at hAdense
-    have hempty : ri C ×ˢ ri D = ∅ := Set.subset_empty_iff.1 hAdense
-    refine ⟨id, fun _ => 0, strictMono_id,
-      ⟨fun _ _ => concaveOn_const _ (Convex.relint hC),
-        fun _ _ => convexOn_const _ (Convex.relint hD)⟩,
-      fun p hp => absurd hp (hempty ▸ notMem_empty p), fun S hS hSC T hT hTD => ?_⟩
-    have : S ×ˢ T = ∅ :=
-      Set.subset_empty_iff.1 fun p hp => hempty ▸ Set.mem_prod.2 ⟨hSC hp.1, hTD hp.2⟩
-    rw [this]
-    exact fun u hu => Filter.Eventually.of_forall (by simp)
-  obtain ⟨e, he⟩ := hAcnt.exists_eq_range hne
-  have hmemA : ∀ n, e n ∈ A := fun n => he ▸ mem_range_self n
-  have hBex : ∀ n, ∃ B : ℝ, ∀ i, |K i (e n)| ≤ B := by
-    intro n
-    obtain ⟨B, hB⟩ := isBounded_iff_forall_norm_le.1 (hbddA (e n) (hmemA n))
-    exact ⟨B, fun i => by simpa [Real.norm_eq_abs] using hB _ (mem_range_self i)⟩
-  choose B hB using hBex
-  have hKcpt : IsCompact (Set.pi univ fun n => Icc (-(B n)) (B n)) :=
-    isCompact_univ_pi fun n => isCompact_Icc
-  have hmem : ∀ i, (fun n => K i (e n)) ∈ Set.pi univ fun n => Icc (-(B n)) (B n) :=
-    fun i n _ => Set.mem_Icc.2 (abs_le.1 (hB n i))
-  obtain ⟨w, -, φ, hφ, hlim⟩ := hKcpt.isSeqCompact hmem
-  have hptw : ∀ n, Tendsto (fun i => K (φ i) (e n)) atTop (𝓝 (w n)) :=
-    fun n => tendsto_pi_nhds.1 hlim n
+  obtain ⟨φ, hφ, hcv⟩ := exists_strictMono_tendsto_of_countable hAcnt hbddA
   obtain ⟨L, hLcc, hLtend, huc⟩ := exists_tendstoUniformlyOn_prod_of_dense hC hD
     (fun i => hK (φ i)) hC' hCdense hD' hDdense
     (fun u hu x hx => (hbdd u hu x hx).subset (by rintro _ ⟨i, rfl⟩; exact ⟨φ i, rfl⟩)) hA hAdense
-    fun p hp => by
-      rw [he] at hp
-      obtain ⟨n, rfl⟩ := hp
-      exact ⟨w n, hptw n⟩
+    hcv
   exact ⟨φ, L, hφ, hLcc, hLtend, huc⟩
 
 end Convergence

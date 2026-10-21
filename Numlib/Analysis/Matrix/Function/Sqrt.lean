@@ -143,8 +143,6 @@ theorem newtonSqrtIterate_eq_mul_newtonSignIterate {A : Matrix n n ℂ}
     rfl
   | succ k ih =>
     set S := newtonSignIterate R k
-    have hSu := (isUnit_newtonSignIterate hR k).1
-    have hSdet := (isUnit_iff_isUnit_det S).mp hSu
     have hc : Commute R S := commute_newtonSignIterate R k
     change (2 : ℂ)⁻¹ • (newtonSqrtIterate A k + (newtonSqrtIterate A k)⁻¹ * A) = _
     rw [ih, newtonSignIterate_succ, mul_smul_comm, mul_add, mul_inv_rev, ← hsq, sq]

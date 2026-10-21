@@ -2,9 +2,6 @@
 # superseded.
 
 [[node]]
-id = "sobolevSeminorm_congr_ae"
-
-[[node]]
 id = "MemSobolev.sobolevSeminorm_ne_top"
 
 [[node]]

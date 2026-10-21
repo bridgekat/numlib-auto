@@ -72,51 +72,6 @@ open Pointwise
 
 namespace ConvexAnalysis
 
-/-! ### `EReal` bookkeeping -/
-
-section ERealAux
-
-private theorem coe_sub_add (r : ℝ) {a b : EReal} (ha : a ≠ ⊥) (hb : b ≠ ⊥) :
-    (r : EReal) - (a + b) = ((r : EReal) - b) - a := by
-  have h : -(a + b) = -b + -a := by
-    rw [add_comm a b]
-    exact EReal.neg_add (.inl hb) (.inr ha)
-  change (r : EReal) + -(a + b) = ((r : EReal) + -b) + -a
-  rw [h, ← add_assoc]
-
-private theorem add_coe_ne_top {a : EReal} (ha : a ≠ ⊤) (c : ℝ) : a + (c : EReal) ≠ ⊤ := by
-  induction a with
-  | bot => simp
-  | coe p => rw [← EReal.coe_add]; exact EReal.coe_ne_top _
-  | top => exact absurd rfl ha
-
-private theorem sub_sub_eq_add_sub {a b c : EReal} (ha : a ≠ ⊥) (hc : c ≠ ⊤) :
-    b - (a - c) = (b + c) - a := by
-  have h : -(a - c) = c - a := EReal.neg_sub_comm (.inl ha) (.inr hc)
-  change b + -(a - c) = b + c + -a
-  rw [h]
-  change b + (c + -a) = b + c + -a
-  rw [← add_assoc]
-
-/-- Negation distributes over a sum of two negatives, provided neither original summand is `⊥`:
-the concave sum `-(-a + -b)` agrees with the convex one `a + b` away from `⊥`. This is not
-`EReal.neg_add`, whose second side condition fails when both summands are `⊤` — and that case is
-genuinely fine here, since `-(⊥ + ⊥) = ⊤ = ⊤ + ⊤`. -/
-private theorem neg_add_neg' {a b : EReal} (ha : a ≠ ⊥) (hb : b ≠ ⊥) :
-    -(-a + -b) = a + b := by
-  rcases eq_or_ne a ⊤ with rfl | hat
-  · rw [EReal.neg_top, EReal.bot_add, EReal.neg_bot,
-      EReal.top_add_of_ne_bot hb]
-  · rcases eq_or_ne b ⊤ with rfl | hbt
-    · rw [EReal.neg_top, EReal.add_bot, EReal.neg_bot,
-        EReal.add_top_of_ne_bot ha]
-    · rw [EReal.neg_add (.inl (by rw [Ne, EReal.neg_eq_bot_iff]; exact hat))
-        (.inl (by rw [Ne, EReal.neg_eq_top_iff]; exact ha)), neg_neg]
-      change a + -(-b) = a + b
-      rw [neg_neg]
-
-end ERealAux
-
 /-! ### Infimal and supremal convolution of bifunctions -/
 
 section InfConvBifunDefs
@@ -336,7 +291,7 @@ theorem concaveAdjointBifun_supConvBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) 
       = concaveBracket Bu G₁ u + concaveBracket Bu G₂ u := by
     funext y
     rw [concaveBracket_supConvBifun, Pi.add_apply,
-      neg_add_neg' (hex.properConvex_left.ne_bot y) (hex.properConvex_right.ne_bot y)]
+      EReal.neg_neg_add_neg (hex.properConvex_left.ne_bot y) (hex.properConvex_right.ne_bot y)]
   funext x
   rw [concaveAdjointBifun_eq_convexConj_concaveBracket, hsum, hex.convexConj_add,
     ← funext (concaveAdjointBifun_eq_convexConj_concaveBracket Bu Bx G₁ u),
@@ -416,7 +371,7 @@ theorem convexConj_imageBifun_eq_iSup (hbF : ∀ u x, F u x ≠ ⊥) (hbf : ∀ 
     intro u
     have hbody : ∀ x : X, ((Bx x y : ℝ) : EReal) - (f u + F u x)
         = (((Bx x y : ℝ) : EReal) - F u x) + -(f u) := fun x => by
-      rw [coe_sub_add _ (hbf u) (hbF u x), sub_eq_add_neg]
+      rw [EReal.sub_add_eq_sub_sub_swap _ (hbf u) (hbF u x), sub_eq_add_neg]
     rw [iSup_congr hbody, ← EReal.iSup_add, ← sub_eq_add_neg]
     rfl
   rw [convexConj_apply]
@@ -828,7 +783,7 @@ theorem concaveImageBifun_convexAdjointBifun_ne_top (Bu : U →ₗ[ℝ] V →ₗ
     rw [hr, ← EReal.coe_sub, add_left_comm, ← EReal.coe_add]
     congr 2
     ring
-  exact ne_top_of_le_ne_top (add_coe_ne_top hF _) (iSup_le hbound)
+  exact ne_top_of_le_ne_top (EReal.add_ne_top hF (EReal.coe_ne_top _)) (iSup_le hbound)
 
 /-- **The "by definition" identity behind `⟨Ff, g*⟩ = ⟨f, F* g*⟩`**: `⟨F⁎* f*, g⟩` on the sup side
 is minus `⟨f, F* g*⟩` on the inf side.
@@ -860,7 +815,7 @@ theorem fenchelSup_imageBifun_lowerAdjointBifun (hf : ProperConvex f) {u₀ : U}
         (.inr (concaveImageBifun_convexAdjointBifun_ne_top Bu Bx hF hgb hgt v)),
       concaveImageBifun_apply, EReal.iSup_sub_of_ne_bot _ (hane v)]
   rw [hL, hR, iSup_comm]
-  exact iSup_congr fun v => iSup_congr fun y => sub_sub_eq_add_sub (hane v) (hcne y v)
+  exact iSup_congr fun v => iSup_congr fun y => EReal.sub_sub_eq_add_sub (hane v) (hcne y v)
 
 omit [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X] in
 /-- If `f` and `F` are both finite at some common `u₀`, the image `Ff` is not identically `⊤`. -/

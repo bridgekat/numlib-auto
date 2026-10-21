@@ -62,7 +62,6 @@ theorem norm_apply_le {C : F →ₗ[𝕜] F} {d : ℝ} (hC : C.IsSymmetricBounde
     nlinarith [h1, h2, hu2]
   rcases eq_or_ne (C u) 0 with h0 | h0
   · rw [h0, norm_zero]; positivity
-  have hCu : 0 < ‖C u‖ := norm_pos_iff.2 h0
   have hkey := hpol u (((‖u‖ / ‖C u‖ : ℝ) : 𝕜) • C u)
   have hnormz : ‖((‖u‖ / ‖C u‖ : ℝ) : 𝕜) • C u‖ = ‖u‖ := by
     rw [norm_smul, RCLike.norm_ofReal, abs_of_pos (by positivity)]
@@ -256,7 +255,6 @@ theorem kantorovich_inequality {lmin lmax : ℝ} (hl : 0 < lmin)
       (lmax + lmin) ^ 2 / (4 * lmax * lmin) * ‖x‖ ^ 4 := by
   rcases eq_or_ne x 0 with rfl | hx
   · simp
-  have hxpos : 0 < ‖x‖ := norm_pos_iff.2 hx
   have hx2 : (0 : ℝ) < ‖x‖ ^ 2 := by positivity
   have hll : lmin ≤ lmax := by
     nlinarith [hA.le_re_inner x, hA.re_inner_le x, hx2]
@@ -359,12 +357,10 @@ theorem energyNorm_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lmin)
       exact norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 h2)
     rw [steepestDescentStep, step1_of_residual_eq_zero h0 rfl, hd0]
     simp [energyNorm]
-  have hrpos : 0 < ‖b - A x‖ := norm_pos_iff.2 h0
   have hr2 : (0 : ℝ) < ‖b - A x‖ ^ 2 := by positivity
   have hll : lmin ≤ lmax := by
     nlinarith [hA.le_re_inner (b - A x), hA.re_inner_le (b - A x), hr2]
   have hlmax : 0 < lmax := lt_of_lt_of_le hl hll
-  have hspos : (0 : ℝ) < lmax + lmin := by linarith
   set q : ℝ := RCLike.re (inner 𝕜 (A (b - A x)) (b - A x)) with hqdef
   have hqpos : 0 < q := lt_of_lt_of_le (by positivity) (hA.le_re_inner (b - A x))
   set a : ℝ := ‖b - A x‖ ^ 2 / q with hadef
@@ -441,8 +437,7 @@ theorem norm_residual_minResStep_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     have hz : ‖b - A (minResStep (A : E →ₗ[𝕜] E) b x)‖ ^ 2 = 0 :=
       le_antisymm (by simpa using hsq) (sq_nonneg _)
     rw [pow_eq_zero_iff two_ne_zero |>.1 hz, mul_zero]
-  · have hrpos : 0 < ‖b - A x‖ := lt_of_le_of_ne (norm_nonneg _) (Ne.symm hr0)
-    have hR2 : (0 : ℝ) < ‖b - A x‖ ^ 2 := by positivity
+  · have hR2 : (0 : ℝ) < ‖b - A x‖ ^ 2 := by positivity
     have hknn : 0 ≤ 1 - c ^ 2 / ‖A‖ ^ 2 := by
       nlinarith [hsq, sq_nonneg ‖b - A (minResStep (A : E →ₗ[𝕜] E) b x)‖, hR2]
     have hfin := Real.sqrt_le_sqrt hsq
@@ -465,7 +460,6 @@ theorem norm_residual_minResStep_sq_eq (x : E) :
   rcases eq_or_ne (A (b - A x)) 0 with h0 | h0
   · simp [minResStep, step1, h0]
   have hApos : (0 : ℝ) < ‖A (b - A x)‖ ^ 2 := by positivity
-  have hrpos : (0 : ℝ) < ‖b - A x‖ ^ 2 := by positivity
   have hden : inner 𝕜 (A (b - A x)) (A (b - A x)) = ((‖A (b - A x)‖ ^ 2 : ℝ) : 𝕜) := by
     rw [inner_self_eq_norm_sq_to_K, RCLike.ofReal_pow]
   have hstep : b - A (minResStep A b x)
@@ -647,7 +641,7 @@ theorem steepestDescentFactor_mem_Ico [Nontrivial E] {lmin lmax : ℝ} (hl : 0 <
     (hA : A.IsSymmetricBoundedBy lmin lmax) :
     0 ≤ (lmax - lmin) / (lmax + lmin) ∧ (lmax - lmin) / (lmax + lmin) < 1 := by
   obtain ⟨v, hv⟩ := exists_ne (0 : E)
-  have hv2 : (0 : ℝ) < ‖v‖ ^ 2 := by have := norm_pos_iff.2 hv; positivity
+  have hv2 : (0 : ℝ) < ‖v‖ ^ 2 := by positivity
   have hll : lmin ≤ lmax := by nlinarith [hA.le_re_inner v, hA.re_inner_le v]
   have hs : 0 < lmax + lmin := by linarith
   exact ⟨div_nonneg (by linarith) hs.le, by rw [div_lt_one hs]; linarith⟩

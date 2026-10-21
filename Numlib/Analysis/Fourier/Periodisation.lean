@@ -89,7 +89,9 @@ private theorem isAddFundamentalDomain_Ioc_zero {T : ℝ} (hT : 0 < T) :
   simpa using isAddFundamentalDomain_Ioc hT 0
 
 omit [NormedSpace ℝ E] in
-private theorem lintegral_periodise_enorm {T : ℝ} (hT : 0 < T) (g : ℝ → E) :
+/-- The `lintegral` form of `integral_periodise`, which needs no integrability: the integrals of
+`‖g (· + n T)‖ₑ` over one period add up to the integral of `‖g‖ₑ` over `ℝ`. -/
+theorem tsum_setLIntegral_Ioc_enorm_add_mul {T : ℝ} (hT : 0 < T) (g : ℝ → E) :
     ∑' n : ℤ, ∫⁻ x in Ioc (0 : ℝ) T, ‖g (x + n * T)‖ₑ = ∫⁻ x, ‖g x‖ₑ := by
   rw [(isAddFundamentalDomain_Ioc_zero hT).lintegral_eq_tsum'' (fun x => ‖g x‖ₑ),
     ← (zmultiplesEquivInt hT).tsum_eq
@@ -105,7 +107,7 @@ theorem integral_periodise {T : ℝ} (hT : 0 < T) {g : ℝ → E} (hg : Integrab
     (hg.aestronglyMeasurable.comp_measurePreserving
       (measurePreserving_add_right volume ((n : ℝ) * T))).restrict
   have hfin : ∑' n : ℤ, ∫⁻ x in Ioc (0 : ℝ) T, ‖g (x + n * T)‖ₑ ≠ ⊤ := by
-    rw [lintegral_periodise_enorm hT g]
+    rw [tsum_setLIntegral_Ioc_enorm_add_mul hT g]
     exact hg.2.ne
   simp only [periodise_apply]
   rw [integral_tsum hmeas hfin,

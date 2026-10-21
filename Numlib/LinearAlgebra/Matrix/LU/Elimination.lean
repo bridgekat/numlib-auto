@@ -416,7 +416,7 @@ both sides, and must be: it is `det A / det A(< N - 1)`, which vanishes for a si
 submatrices are units and whose last pivot is `0`. -/
 theorem gemStage_pivots_ne_zero_iff :
     (∀ (m : ℕ) (hm : m < N), m + 1 < N → gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0) ↔
-      ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k) := by
+      A.HasUnitStrictLeadingPrincipalSubmatrices := by
   constructor
   · intro hpiv k
     have h := isLU_gemLower_gemStage A hpiv
@@ -565,7 +565,7 @@ factorization, so the packed entries agree with the factors of
 `Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix` by strong induction along
 the order of `min i j`. -/
 theorem luPacked_eq {L U : Matrix n n K} (h : IsLU A L U)
-    (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) (m : n) :
+    (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) (m : n) :
     ∀ i j, min i j = m → (i ≤ j → luPacked A i j = U i j) ∧ (j < i → luPacked A i j = L i j) := by
   induction m using WellFoundedLT.induction with
   | ind m ih =>
@@ -591,7 +591,7 @@ theorem luPacked_eq {L U : Matrix n n K} (h : IsLU A L U)
 
 /-- **Correctness of the Doolittle factorization**: with nonsingular strict leading principal
 submatrices, `A = luLower A * luUpper A` is the LU factorization of `A`. -/
-theorem isLU_luLower_luUpper (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
+theorem isLU_luLower_luUpper (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) :
     IsLU A (luLower A) (luUpper A) := by
   obtain ⟨L, U, h⟩ := exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix hA
   have hL : luLower A = L := by
@@ -641,13 +641,10 @@ noncomputable def croutUpper : Matrix n n K := (luLower Aᵀ)ᵀ
 /-- **The Crout factorization**: with nonsingular strict leading principal submatrices,
 `A = croutLower A * croutUpper A` with `croutLower A` lower triangular and `croutUpper A` unit
 upper triangular. -/
-theorem croutLower_mul_croutUpper (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
+theorem croutLower_mul_croutUpper (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) :
     croutLower A * croutUpper A = A ∧ (croutLower A).IsLowerTriangular ∧
       (croutUpper A)ᵀ.IsUnitLowerTriangular := by
-  have hAT : ∀ k, IsUnit (Aᵀ.strictLeadingPrincipalSubmatrix k) := fun k => by
-    rw [strictLeadingPrincipalSubmatrix_transpose, isUnit_transpose]
-    exact hA k
-  have h := isLU_luLower_luUpper Aᵀ hAT
+  have h := isLU_luLower_luUpper Aᵀ hA.transpose
   refine ⟨?_, h.isUpperTriangular.transpose, ?_⟩
   · rw [croutLower, croutUpper, ← transpose_mul, h.mul_eq, transpose_transpose]
   · rw [croutUpper, transpose_transpose]

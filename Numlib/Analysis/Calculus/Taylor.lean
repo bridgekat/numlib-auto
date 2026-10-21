@@ -23,6 +23,9 @@ intermediate point lies in the *open* interval; that is what lets
 expansion, and a `uIcc` formulation of the primitive would not do. For a function that is `C^{n+1}`
 on all of `ℝ` the ball disappears (`abs_sub_sum_taylor_le_of_contDiff`), and `abs_taylor_one`,
 `abs_taylor_two`, `abs_taylor_three` are its first three orders written out.
+Where only the third derivative is controlled, and only by a Lipschitz bound at the centre,
+`abs_sub_taylor_three_le_of_lipschitz` bounds the order-three remainder by `M (y - x)⁴/24` through
+the integral remainder and the first two moments of the order-two kernel `(y - t)²/2`.
 
 ## Expansions of a curve in a normed space
 
@@ -111,7 +114,6 @@ theorem abs_sub_sum_taylor_le_of_contDiffOn {M : ℝ}
     (hM : ∀ t ∈ uIcc x₀ x, |iteratedDeriv (n + 1) f t| ≤ M) :
     |f x - ∑ k ∈ range (n + 1), (x - x₀) ^ k / k ! * iteratedDeriv k f x₀|
       ≤ M * |x - x₀| ^ (n + 1) / (n + 1)! := by
-  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM x₀ left_mem_uIcc)
   rcases eq_or_ne x₀ x with rfl | hne
   · rw [Finset.sum_range_succ', sub_self]
     simp
@@ -223,6 +225,118 @@ theorem abs_taylor_three {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 4 g)
           rw [show (3 : ℕ) + 1 = 4 from rfl, ← abs_pow,
             abs_of_nonneg (by positivity : (0 : ℝ) ≤ h ^ 4)]]
         norm_num
+
+/-- The order-two Taylor kernel integrates to `(y - x)³/6` over `x..y`, in either orientation. -/
+private theorem integral_sub_sq_div_two (x y : ℝ) :
+    ∫ t in x..y, (y - t) ^ 2 / 2 = (y - x) ^ 3 / 6 := by
+  have hF : ∀ t ∈ uIcc x y, HasDerivAt (fun s : ℝ => -((y - s) ^ 3 / 6)) ((y - t) ^ 2 / 2) t := by
+    intro t _
+    have h : HasDerivAt (fun s : ℝ => -((y - s) ^ 3 / 6)) (-(3 * (y - t) ^ 2 * (-1) / 6)) t :=
+      ((((hasDerivAt_id t).const_sub y).pow 3).div_const 6).neg
+    convert h using 1
+    ring
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hF
+    (Continuous.intervalIntegrable (by fun_prop) _ _)]
+  ring
+
+/-- The first moment of the order-two Taylor kernel: `∫_x^y (y - t)²/2 · (t - x) dt =
+(y - x)⁴/24`, in either orientation. -/
+private theorem integral_sub_sq_div_two_mul_sub (x y : ℝ) :
+    ∫ t in x..y, (y - t) ^ 2 / 2 * (t - x) = (y - x) ^ 4 / 24 := by
+  have hF : ∀ t ∈ uIcc x y, HasDerivAt
+      (fun s : ℝ => (y - x) ^ 2 * (s - x) ^ 2 / 4 - (y - x) * (s - x) ^ 3 / 3 + (s - x) ^ 4 / 8)
+      ((y - t) ^ 2 / 2 * (t - x)) t := by
+    intro t _
+    have h : HasDerivAt
+        (fun s : ℝ => (y - x) ^ 2 * (s - x) ^ 2 / 4 - (y - x) * (s - x) ^ 3 / 3 + (s - x) ^ 4 / 8)
+        ((y - x) ^ 2 * (2 * (t - x) ^ 1 * 1) / 4 - (y - x) * (3 * (t - x) ^ 2 * 1) / 3
+          + 4 * (t - x) ^ 3 * 1 / 8) t :=
+      ((((((hasDerivAt_id t).sub_const x).pow 2).const_mul ((y - x) ^ 2)).div_const 4).sub
+        (((((hasDerivAt_id t).sub_const x).pow 3).const_mul (y - x)).div_const 3)).add
+        ((((hasDerivAt_id t).sub_const x).pow 4).div_const 8)
+    convert h using 1
+    ring
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hF
+    (Continuous.intervalIntegrable (by fun_prop) _ _)]
+  ring
+
+/-- **Taylor's theorem of order three with a Lipschitz third derivative**: for `u` of class `C³`
+on the closed interval between `x` and `y`, whose third derivative there differs from its value at
+`x` by at most `M |t - x|`, the order-three Taylor polynomial at `x` approximates `u y` to within
+`M (y - x)⁴/24`. This is the integral remainder (12.21) of [quarteroni2000numerical] Remark 12.2,
+bounded by `M ∫_0^{|y - x|} s (|y - x| - s)²/2 ds`. -/
+theorem abs_sub_taylor_three_le_of_lipschitz {u : ℝ → ℝ} {M x y : ℝ} (hne : x ≠ y)
+    (hM : 0 ≤ M) (hu : ContDiffOn ℝ 3 u (uIcc x y)) (hx : ContDiffAt ℝ 3 u x)
+    (hlip : ∀ t ∈ uIoo x y,
+      |iteratedDerivWithin 3 u (uIcc x y) t - iteratedDeriv 3 u x| ≤ M * |t - x|) :
+    |u y - (u x + (y - x) * iteratedDeriv 1 u x + (y - x) ^ 2 / 2 * iteratedDeriv 2 u x
+        + (y - x) ^ 3 / 6 * iteratedDeriv 3 u x)| ≤ M * (y - x) ^ 4 / 24 := by
+  have hud : UniqueDiffOn ℝ (uIcc x y) := uniqueDiffOn_uIcc hne
+  have hu' : ContDiffOn ℝ ((2 : ℕ) + 1 : ℕ) u (uIcc x y) := by exact_mod_cast hu
+  have hDcont : ContinuousOn (iteratedDerivWithin 3 u (uIcc x y)) (uIcc x y) :=
+    hu.continuousOn_iteratedDerivWithin (by norm_num) hud
+  have hD1 : IntervalIntegrable
+      (fun t => (y - t) ^ 2 / 2 * iteratedDerivWithin 3 u (uIcc x y) t)
+      MeasureTheory.volume x y :=
+    (ContinuousOn.mul (by fun_prop) hDcont).intervalIntegrable
+  have hD2 : IntervalIntegrable
+      (fun t : ℝ => (y - t) ^ 2 / 2 * iteratedDeriv 3 u x) MeasureTheory.volume x y :=
+    Continuous.intervalIntegrable (by fun_prop) _ _
+  have hT : u y - taylorWithinEval u 2 (uIcc x y) x y
+      = ∫ t in x..y, (y - t) ^ 2 / 2 * iteratedDerivWithin 3 u (uIcc x y) t := by
+    rw [taylor_integral_remainder hu']
+    exact intervalIntegral.integral_congr fun t _ => by norm_num
+  have hP : taylorWithinEval u 2 (uIcc x y) x y
+      = u x + (y - x) * iteratedDeriv 1 u x + (y - x) ^ 2 / 2 * iteratedDeriv 2 u x := by
+    rw [taylorWithinEval_eq_sum_of_contDiffAt hne (hx.of_le (by norm_num)),
+      Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_one]
+    norm_num [iteratedDeriv_zero]
+  have hsplit : u y - (u x + (y - x) * iteratedDeriv 1 u x + (y - x) ^ 2 / 2 * iteratedDeriv 2 u x
+        + (y - x) ^ 3 / 6 * iteratedDeriv 3 u x)
+      = ∫ t in x..y, (y - t) ^ 2 / 2 * (iteratedDerivWithin 3 u (uIcc x y) t
+          - iteratedDeriv 3 u x) := by
+    have h2 : ∫ t in x..y, (y - t) ^ 2 / 2 * iteratedDeriv 3 u x
+        = (y - x) ^ 3 / 6 * iteratedDeriv 3 u x := by
+      rw [intervalIntegral.integral_mul_const, integral_sub_sq_div_two]
+    rw [show (fun t => (y - t) ^ 2 / 2 * (iteratedDerivWithin 3 u (uIcc x y) t
+          - iteratedDeriv 3 u x))
+        = (fun t => (y - t) ^ 2 / 2 * iteratedDerivWithin 3 u (uIcc x y) t
+          - (y - t) ^ 2 / 2 * iteratedDeriv 3 u x) from funext fun t => by ring,
+      intervalIntegral.integral_sub hD1 hD2, ← hT, h2, hP]
+    ring
+  rw [hsplit, ← Real.norm_eq_abs]
+  have hae : ∀ᵐ t ∂MeasureTheory.volume.restrict (Set.uIoc x y), ‖(y - t) ^ 2 / 2
+      * (iteratedDerivWithin 3 u (uIcc x y) t - iteratedDeriv 3 u x)‖
+      ≤ (y - t) ^ 2 / 2 * (M * |t - x|) := by
+    filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_uIoc,
+      MeasureTheory.ae_restrict_of_ae (MeasureTheory.volume.ae_ne (x ⊔ y))] with t ht htne
+    have ht' : t ∈ uIoo x y := ⟨ht.1, lt_of_le_of_ne ht.2 htne⟩
+    rw [Real.norm_eq_abs, abs_mul, abs_of_nonneg (by positivity : (0 : ℝ) ≤ (y - t) ^ 2 / 2)]
+    exact mul_le_mul_of_nonneg_left (hlip t ht') (by positivity)
+  have hgint : IntervalIntegrable (fun t => (y - t) ^ 2 / 2 * (M * |t - x|))
+      MeasureTheory.volume x y :=
+    Continuous.intervalIntegrable (by fun_prop) _ _
+  refine (intervalIntegral.norm_integral_le_abs_of_norm_le hae hgint).trans_eq ?_
+  rcases lt_or_gt_of_ne hne with hxy | hxy
+  · have he : EqOn (fun t : ℝ => (y - t) ^ 2 / 2 * (M * |t - x|))
+        (fun t : ℝ => M * ((y - t) ^ 2 / 2 * (t - x))) (uIcc x y) := fun t ht => by
+      rw [uIcc_of_le hxy.le] at ht
+      simp only
+      rw [abs_of_nonneg (by linarith [ht.1] : (0 : ℝ) ≤ t - x)]
+      ring
+    rw [intervalIntegral.integral_congr he, intervalIntegral.integral_const_mul,
+      integral_sub_sq_div_two_mul_sub, abs_of_nonneg (mul_nonneg hM (by positivity))]
+    ring
+  · have he : EqOn (fun t : ℝ => (y - t) ^ 2 / 2 * (M * |t - x|))
+        (fun t : ℝ => -M * ((y - t) ^ 2 / 2 * (t - x))) (uIcc x y) := fun t ht => by
+      rw [uIcc_of_ge hxy.le] at ht
+      simp only
+      rw [abs_of_nonpos (by linarith [ht.2] : t - x ≤ (0 : ℝ))]
+      ring
+    rw [intervalIntegral.integral_congr he, intervalIntegral.integral_const_mul, abs_mul,
+      integral_sub_sq_div_two_mul_sub, abs_neg, abs_of_nonneg hM,
+      abs_of_nonneg (by positivity : (0 : ℝ) ≤ (y - x) ^ 4 / 24)]
+    ring
 
 end Scalar
 

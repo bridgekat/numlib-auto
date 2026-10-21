@@ -2,6 +2,9 @@
 id = "Elliptic.contDiff_fderiv_fderiv_apply"
 
 [[node]]
+id = "Elliptic.tsupport_laplacianRep_subset"
+
+[[node]]
 id = "Elliptic.laplacianRep_props"
 
 [[node]]

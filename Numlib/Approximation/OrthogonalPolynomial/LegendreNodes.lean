@@ -397,7 +397,6 @@ theorem legendreLobattoWeight_le_of_near_one {N : ℕ} (hN : 1 ≤ N) {x w : Fin
   have hsmall : ∀ k ≤ M, (k : ℝ) ^ 2 * (1 - x j) ≤ 1 / 2 := by
     intro k hk
     have hkR : (k : ℝ) ≤ M := by exact_mod_cast hk
-    have hk0 : (0 : ℝ) ≤ k := by positivity
     have hpi := pi_le_four
     have hpi2 : π ^ 2 ≤ 16 := by nlinarith [pi_pos]
     have h1 : (k : ℝ) ^ 2 ≤ (N : ℝ) ^ 2 / 256 := by
@@ -410,7 +409,6 @@ theorem legendreLobattoWeight_le_of_near_one {N : ℕ} (hN : 1 ≤ N) {x w : Fin
       _ = 81 / 512 := by field_simp; ring
       _ ≤ 1 / 2 := by norm_num
   have hK := Polynomial.le_eval_legendreKernelOne M hxj hsmall
-  have hKpos : 0 < (Polynomial.legendreKernelOne M).eval (x j) := lt_of_lt_of_le (by positivity) hK
   have hdeg : (Polynomial.legendreKernelOne M * Polynomial.legendreKernelOne M).degree ≤
       ((2 * N - 1 : ℕ) : WithBot ℕ) := by
     refine (degree_mul_le _ _).trans ?_
@@ -422,7 +420,6 @@ theorem legendreLobattoWeight_le_of_near_one {N : ℕ} (hN : 1 ≤ N) {x w : Fin
   have hbound := weight_mul_eval_sq_le_of_isExactOnMeasure hw hexact hdeg j
   rw [integral_legendreMeasure, Polynomial.integral_legendreKernelOne_sq] at hbound
   -- `w_j ≤ ((M+1)²/2) / K(x_j)² ≤ 8/(M+1)²`
-  have hM1 : (0 : ℝ) < (M : ℝ) + 1 := by positivity
   have hw8 : w j ≤ 8 / ((M : ℝ) + 1) ^ 2 := by
     have hKsq : ((M : ℝ) + 1) ^ 4 / 16 ≤ (Polynomial.legendreKernelOne M).eval (x j) ^ 2 := by
       calc ((M : ℝ) + 1) ^ 4 / 16 = (((M : ℝ) + 1) ^ 2 / 4) ^ 2 := by ring

@@ -119,18 +119,6 @@ section Parlett
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {n : Type*} [Fintype n]
   [LinearOrder n] [LocallyFiniteOrder n]
 
-/-- The `(i, j)` entry, `i < j`, of the commutator identity `F T = T F` for upper triangular `F`,
-`T`, with the terms `k = i` and `k = j` split off. -/
-private theorem commute_apply_of_isUpperTriangular {F T : Matrix n n 𝕜} (hF : F.IsUpperTriangular)
-    (hT : T.IsUpperTriangular) (hc : Commute T F) {i j : n} (hij : i < j) :
-    F i j * (T j j - T i i) =
-      T i j * (F j j - F i i) + ∑ k ∈ Ioo i j, (T i k * F k j - F i k * T k j) := by
-  have h := congrFun (congrFun hc.eq i) j
-  rw [hT.mul_apply hF i j, hF.mul_apply hT i j, Icc_eq_cons_Ioc hij.le,
-    sum_cons, sum_cons, Ioc_eq_cons_Ioo hij, sum_cons, sum_cons] at h
-  rw [sum_sub_distrib, ← sub_eq_zero, ← neg_eq_zero, ← sub_eq_zero.mpr h]
-  ring
-
 /-- **The Parlett recurrence** ([golub2013matrix] (9.1.11)): for upper triangular `T`, `F = f(T)`
 and `i < j` with `t_ii ≠ t_jj`,
 `f_ij = t_ij (f_jj - f_ii)/(t_jj - t_ii) + ∑_{i<k<j} (t_ik f_kj - f_ik t_kj)/(t_jj - t_ii)`. -/
@@ -139,7 +127,7 @@ theorem pfc_apply_eq_parlett {T : Matrix n n 𝕜} (hT : T.IsUpperTriangular) (f
     pfc f T i j = T i j * (pfc f T j j - pfc f T i i) / (T j j - T i i) +
       ∑ k ∈ Ioo i j, (T i k * pfc f T k j - pfc f T i k * T k j) / (T j j - T i i) := by
   have hd : T j j - T i i ≠ 0 := sub_ne_zero.mpr hne.symm
-  have h := commute_apply_of_isUpperTriangular (hT.pfc f) hT (commute_pfc T f) hij
+  have h := IsUpperTriangular.apply_mul_sub_eq_of_commute (hT.pfc f) hT (commute_pfc T f) hij
   rw [← Finset.sum_div, ← add_div, eq_div_iff hd, h]
 
 end Parlett

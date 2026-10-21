@@ -207,13 +207,13 @@ variable [Fintype n] [DecidableEq n] {A : Matrix n n ℝ}
 
 omit [Fintype n] in
 /-- `1 + A` is entrywise nonnegative when `A` is. -/
-private theorem entrywiseNonneg_one_add (hA : ∀ i j, 0 ≤ A i j) :
+private theorem entrywiseNonneg_one_add (hA : A.EntrywiseNonneg) :
     (1 + A : Matrix n n ℝ).EntrywiseNonneg :=
   EntrywiseNonneg.add entrywiseNonneg_one hA
 
 omit [Fintype n] in
 /-- The identity is entrywise below `1 + A` when `A` is nonnegative. -/
-private theorem one_entrywiseLE_one_add (hA : ∀ i j, 0 ≤ A i j) :
+private theorem one_entrywiseLE_one_add (hA : A.EntrywiseNonneg) :
     (1 : Matrix n n ℝ) ≤ₑ 1 + A := fun i j => by
   rw [Matrix.add_apply]
   exact le_add_of_nonneg_right (hA i j)
@@ -226,7 +226,7 @@ private theorem self_entrywiseLE_one_add (A : Matrix n n ℝ) :
   exact le_add_of_nonneg_left (by simpa using entrywiseNonneg_one (α := ℝ) (n := n) i j)
 
 /-- The powers of `1 + A` increase entrywise, because `1 + A` dominates the identity. -/
-private theorem one_add_pow_entrywiseLE_succ (hA : ∀ i j, 0 ≤ A i j) (k : ℕ) :
+private theorem one_add_pow_entrywiseLE_succ (hA : A.EntrywiseNonneg) (k : ℕ) :
     (1 + A : Matrix n n ℝ) ^ k ≤ₑ (1 + A) ^ (k + 1) := by
   have h := EntrywiseLE.mul_of_entrywiseNonneg_left
     ((entrywiseNonneg_one_add hA).pow k) (one_entrywiseLE_one_add hA)
@@ -234,7 +234,7 @@ private theorem one_add_pow_entrywiseLE_succ (hA : ∀ i j, 0 ≤ A i j) (k : �
   exact h
 
 /-- A positive entry of `A ^ k` is a positive entry of `(1 + A) ^ k`. -/
-private theorem pow_entrywiseLE_one_add_pow (hA : ∀ i j, 0 ≤ A i j) (k : ℕ) :
+private theorem pow_entrywiseLE_one_add_pow (hA : A.EntrywiseNonneg) (k : ℕ) :
     A ^ k ≤ₑ (1 + A : Matrix n n ℝ) ^ k :=
   EntrywiseLE.pow hA (self_entrywiseLE_one_add A) k
 
@@ -257,17 +257,17 @@ private theorem reach_zero (i : n) : reach A i 0 = {i} := by
   · subst h; simp
   · simp [h, Ne.symm h]
 
-private theorem reach_subset_succ (hA : ∀ i j, 0 ≤ A i j) (i : n) (k : ℕ) :
+private theorem reach_subset_succ (hA : A.EntrywiseNonneg) (i : n) (k : ℕ) :
     reach A i k ⊆ reach A i (k + 1) := fun j hj =>
   mem_reach.2 ((mem_reach.1 hj).trans_le (one_add_pow_entrywiseLE_succ hA k i j))
 
-private theorem reach_mono (hA : ∀ i j, 0 ≤ A i j) (i : n) {k l : ℕ} (hkl : k ≤ l) :
+private theorem reach_mono (hA : A.EntrywiseNonneg) (i : n) {k l : ℕ} (hkl : k ≤ l) :
     reach A i k ⊆ reach A i l :=
   monotone_nat_of_le_succ (fun k => reach_subset_succ hA i k) hkl
 
 /-- One step of the reach recursion: `reach A i (k + 1)` is the set of indices adjacent, for `1 +
 A`, to some index of `reach A i k`. -/
-private theorem mem_reach_succ_iff (hA : ∀ i j, 0 ≤ A i j) (i : n) (k : ℕ) (l : n) :
+private theorem mem_reach_succ_iff (hA : A.EntrywiseNonneg) (i : n) (k : ℕ) (l : n) :
     l ∈ reach A i (k + 1) ↔ ∃ j ∈ reach A i k, 0 < (1 + A) j l := by
   have hB := entrywiseNonneg_one_add hA
   have hBk := hB.pow k
@@ -282,7 +282,7 @@ private theorem mem_reach_succ_iff (hA : ∀ i j, 0 ≤ A i j) (i : n) (k : ℕ)
     exact ⟨j, Finset.mem_univ j, mul_pos (mem_reach.1 hj) hjl⟩
 
 /-- Two consecutive reach sets that agree make the whole sequence constant from then on. -/
-private theorem reach_add_eq (hA : ∀ i j, 0 ≤ A i j) (i : n) {k : ℕ}
+private theorem reach_add_eq (hA : A.EntrywiseNonneg) (i : n) {k : ℕ}
     (heq : reach A i (k + 1) = reach A i k) (mm : ℕ) : reach A i (k + mm) = reach A i k := by
   induction mm with
   | zero => rfl
@@ -348,15 +348,6 @@ open scoped Matrix.Norms.L2Operator
 
 variable [Fintype n] [DecidableEq n] {A : Matrix n n ℝ}
 
-omit [DecidableEq n] in
-/-- An entrywise positive matrix sends a nonzero nonnegative vector to a positive one. -/
-private theorem mulVec_pos_of_entrywisePos {P : Matrix n n ℝ} (hP : ∀ i j, 0 < P i j)
-    {w : n → ℝ} (hw : ∀ i, 0 ≤ w i) (hwne : w ≠ 0) (i : n) : 0 < (P *ᵥ w) i := by
-  obtain ⟨j, hj⟩ := Function.ne_iff.1 hwne
-  rw [mulVec_apply_eq_sum]
-  exact Finset.sum_pos' (fun k _ => mul_nonneg (hP i k).le (hw k))
-    ⟨j, Finset.mem_univ j, mul_pos (hP i j) ((hw j).lt_of_ne' hj)⟩
-
 /-- An eigenvector of `A` for `r` is an eigenvector of `(1 + A) ^ k` for `(1 + r) ^ k`. -/
 private theorem mulVec_one_add_pow_of_mulVec_eq {z : n → ℝ} {r : ℝ} (h : A *ᵥ z = r • z) (k : ℕ) :
     ((1 + A) ^ k) *ᵥ z = (1 + r) ^ k • z := by
@@ -370,7 +361,7 @@ omit [DecidableEq n] in
 /-- **Subinvariance.** The entrywise modulus of a complex eigenvector for an eigenvalue of maximal
 modulus is a nonzero nonnegative real vector `z` with `ρ • z ≤ A *ᵥ z`, because the triangle
 inequality applied to `μ v = A v` reads `|μ| |v| ≤ A |v|` entrywise. -/
-private theorem exists_subinvariant [Nonempty n] (hA : ∀ i j, 0 ≤ A i j) :
+private theorem exists_subinvariant [Nonempty n] (hA : A.EntrywiseNonneg) :
     ∃ z : n → ℝ, (∀ i, 0 ≤ z i) ∧ z ≠ 0 ∧
       ∀ i, (complexSpectralRadius A).toReal * z i ≤ (A *ᵥ z) i := by
   obtain ⟨μ, v, hv0, heig, hμ⟩ := exists_eigenvector_norm_eq_complexSpectralRadius A
@@ -392,7 +383,7 @@ positive and `t • u ≤ A *ᵥ u` for a nonnegative `t`, then `t ≤ ρ(A)`.
 
 Iterating gives `t ^ k • u ≤ A ^ k *ᵥ u`, hence `t ^ k ≤ ‖A ^ k‖`, and Gelfand's formula finishes
 it. -/
-private theorem le_complexSpectralRadius_of_pos [Nonempty n] (hA : ∀ i j, 0 ≤ A i j) {t : ℝ}
+private theorem le_complexSpectralRadius_of_pos [Nonempty n] (hA : A.EntrywiseNonneg) {t : ℝ}
     (ht : 0 ≤ t) {u : n → ℝ} (hu : ∀ i, 0 < u i) (hle : ∀ i, t * u i ≤ (A *ᵥ u) i) :
     t ≤ (complexSpectralRadius A).toReal := by
   classical
@@ -453,7 +444,6 @@ theorem IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius [Nonempty 
     ∃ x : n → ℝ, (∀ i, 0 < x i) ∧ A *ᵥ x = (complexSpectralRadius A).toReal • x := by
   classical
   set ρ := (complexSpectralRadius A).toReal with hρdef
-  have hρ0 : 0 ≤ ρ := ENNReal.toReal_nonneg
   set P : Matrix n n ℝ := (1 + A) ^ (Fintype.card n - 1) with hPdef
   have hPpos : ∀ i j, 0 < P i j := hA.entrywisePos_one_add_pow
   obtain ⟨z, hz0, hzne, hsub⟩ := exists_subinvariant hA.nonneg
@@ -462,14 +452,14 @@ theorem IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius [Nonempty 
     have hw0 : ∀ i, 0 ≤ (A *ᵥ z - ρ • z) i := fun i => by
       simpa [sub_nonneg] using hsub i
     have hwne : A *ᵥ z - ρ • z ≠ 0 := fun h => hne (sub_eq_zero.mp h)
-    have hupos : ∀ i, 0 < (P *ᵥ z) i := mulVec_pos_of_entrywisePos hPpos hz0 hzne
+    have hupos : ∀ i, 0 < (P *ᵥ z) i := mulVec_pos_of_forall_pos hPpos hz0 hzne
     have hcomm : P * A = A * P :=
       Commute.pow_left (Commute.add_left (Commute.one_left A) (Commute.refl A)) _
     have hPwEq : P *ᵥ (A *ᵥ z - ρ • z) = A *ᵥ (P *ᵥ z) - ρ • (P *ᵥ z) := by
       rw [mulVec_sub, mulVec_smul, mulVec_mulVec, hcomm, ← mulVec_mulVec]
     have hstrict : ∀ i, ρ * (P *ᵥ z) i < (A *ᵥ (P *ᵥ z)) i := by
       intro i
-      have h := mulVec_pos_of_entrywisePos hPpos hw0 hwne i
+      have h := mulVec_pos_of_forall_pos hPpos hw0 hwne i
       rw [hPwEq] at h
       simpa [sub_pos] using h
     set ε : ℝ := Finset.univ.inf' Finset.univ_nonempty
@@ -491,7 +481,7 @@ theorem IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius [Nonempty 
   refine ⟨z, fun i => ?_, hkey⟩
   have h1 : P *ᵥ z = (1 + ρ) ^ (Fintype.card n - 1) • z :=
     mulVec_one_add_pow_of_mulVec_eq hkey _
-  have h2 : 0 < (P *ᵥ z) i := mulVec_pos_of_entrywisePos hPpos hz0 hzne i
+  have h2 : 0 < (P *ᵥ z) i := mulVec_pos_of_forall_pos hPpos hz0 hzne i
   rw [h1] at h2
   simp only [Pi.smul_apply, smul_eq_mul] at h2
   rcases (hz0 i).lt_or_eq with h | h
@@ -542,7 +532,7 @@ theorem IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one [Nonempty 
       rw [this]
       exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self x)
     · exfalso
-      have hpos := mulVec_pos_of_entrywisePos (hA.entrywisePos_one_add_pow) hnn hzz i₀
+      have hpos := mulVec_pos_of_forall_pos (hA.entrywisePos_one_add_pow) hnn hzz i₀
       rw [mulVec_one_add_pow_of_mulVec_eq heig] at hpos
       simp only [Pi.smul_apply, smul_eq_mul, Pi.sub_apply, Pi.smul_apply, smul_eq_mul] at hpos
       rw [hzero] at hpos

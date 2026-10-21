@@ -287,8 +287,10 @@ private theorem tendsto_abs_eigenVal (hK : IsCompactOperator T) :
   have hne : ψ N ≠ ψ (N + 1) := fun he => by simpa using hψ.injective he
   exact absurd hlt (not_lt.2 (hsep _ _ hne))
 
-private theorem orthogonal_ne_bot (hfin : ¬ FiniteDimensional 𝕜 E)
-    {S : Submodule 𝕜 E} [FiniteDimensional 𝕜 S] : Sᗮ ≠ ⊥ := by
+/-- In an infinite-dimensional inner product space the orthogonal complement of a
+finite-dimensional submodule is nontrivial. -/
+theorem _root_.Submodule.orthogonal_ne_bot_of_not_finiteDimensional
+    (hfin : ¬ FiniteDimensional 𝕜 E) {S : Submodule 𝕜 E} [FiniteDimensional 𝕜 S] : Sᗮ ≠ ⊥ := by
   intro h
   have htop : S = ⊤ := by
     have h2 : Sᗮᗮ = S := Submodule.orthogonal_orthogonal S
@@ -313,7 +315,7 @@ private theorem exists_isTopEigenpair_eigenSpace [CompleteSpace E]
     refine ⟨⟨⊥, inferInstance, hS⟩, hinv,
       IsSymmetric.exists_isTopEigenpair hT hK hinv ?_ ?_⟩
     · rw [hS]; exact Submodule.isClosed_orthogonal _
-    · rw [hS]; exact orthogonal_ne_bot hfin
+    · rw [hS]; exact Submodule.orthogonal_ne_bot_of_not_finiteDimensional hfin
   | succ n ih =>
     obtain ⟨⟨S, hSfin, hSeq⟩, hinvn, hstepn⟩ := ih
     have _ : FiniteDimensional 𝕜 S := hSfin
@@ -330,7 +332,7 @@ private theorem exists_isTopEigenpair_eigenSpace [CompleteSpace E]
     refine ⟨⟨_, inferInstance, hS'⟩, hinv,
       IsSymmetric.exists_isTopEigenpair hT hK hinv ?_ ?_⟩
     · rw [hS']; exact Submodule.isClosed_orthogonal _
-    · rw [hS']; exact orthogonal_ne_bot hfin
+    · rw [hS']; exact Submodule.orthogonal_ne_bot_of_not_finiteDimensional hfin
 
 private theorem orthogonal_span_range_le (T : E →L[𝕜] E) (n : ℕ) :
     (Submodule.span 𝕜 (Set.range (eigenVec T)))ᗮ ≤ eigenSpace T n := by

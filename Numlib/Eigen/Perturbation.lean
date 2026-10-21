@@ -208,13 +208,9 @@ theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ
     intro i
     have hfi := hfree ((hA.eigenvalues hn i : ℝ) : 𝕜) (hA.hasEigenvalue_eigenvalues hn i)
     rwa [RCLike.ofReal_re, Set.mem_Ioo, not_and_or, not_lt, not_lt] at hfi
-  have hab1 := hαβ.1
-  have hab2 := hαβ.2
   have h := hA.quadratic_nonneg hn hx α β fun i => by
     rcases hout i with h | h
-    · have h1 : hA.eigenvalues hn i - α ≤ 0 := by linarith
-      have h2 : hA.eigenvalues hn i - β ≤ 0 := by linarith
-      nlinarith
+    · nlinarith
     · exact mul_nonneg (by linarith) (by linarith)
   nlinarith [h]
 
@@ -257,9 +253,7 @@ theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜}
   · have h := hA.quadratic_nonneg hn hx (RCLike.re μ) b fun i => by
       rcases hout i with h | h | h
       · rw [h]; simp
-      · have h1 : hA.eigenvalues hn i - RCLike.re μ ≤ 0 := by linarith
-        have h2 : hA.eigenvalues hn i - b ≤ 0 := by linarith
-        nlinarith
+      · nlinarith
       · exact mul_nonneg (by linarith) (by linarith)
     rw [← hθ] at h
     rw [neg_le, le_div_iff₀ (by linarith : (0 : ℝ) < b - θ)]
@@ -267,9 +261,7 @@ theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜}
   · have h := hA.quadratic_nonneg hn hx (RCLike.re μ) a fun i => by
       rcases hout i with h | h | h
       · rw [h]; simp
-      · have h1 : hA.eigenvalues hn i - RCLike.re μ ≤ 0 := by linarith
-        have h2 : hA.eigenvalues hn i - a ≤ 0 := by linarith
-        nlinarith
+      · nlinarith
       · exact mul_nonneg (by linarith) (by linarith)
     rw [← hθ] at h
     rw [le_div_iff₀ (by linarith : (0 : ℝ) < θ - a)]
@@ -527,6 +519,25 @@ theorem eigenvalueCondNumber_eq_one_of_isStarNormal [FiniteDimensional 𝕜 E]
     inner_self_eq_norm_sq_to_K, norm_pow, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg u)]
   field_simp
 
+/-! ### Left eigenvectors -/
+
+/-- `w` is a **left eigenvector** of `A` for `l`: `⟪w, A y⟫ = l ⟪w, y⟫` for every `y`, that is
+`A† w = conj l • w` wherever the adjoint exists. Stated without the adjoint, so that neither
+completeness nor finite dimension is needed; `w = 0` is allowed, and the statements that need
+`w ≠ 0` assume it separately. -/
+def IsLeftEigenvector (A : E →ₗ[𝕜] E) (l : 𝕜) (w : E) : Prop :=
+  ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y
+
+/-- Unfolding `Module.End.IsLeftEigenvector`. -/
+theorem isLeftEigenvector_iff {A : E →ₗ[𝕜] E} {l : 𝕜} {w : E} :
+    IsLeftEigenvector A l w ↔ ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y :=
+  Iff.rfl
+
+/-- The defining identity of a left eigenvector, at a vector. -/
+theorem IsLeftEigenvector.inner_apply {A : E →ₗ[𝕜] E} {l : 𝕜} {w : E}
+    (h : IsLeftEigenvector A l w) (y : E) : (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y :=
+  h y
+
 /-! ### First-order perturbation of a simple eigenvalue
 
 Along a differentiable branch of eigenpairs of `A + t B` the eigenvalue moves at the rate `⟪w, B u⟫
@@ -543,9 +554,9 @@ branch `t ↦ (μ t, u t)` of eigenpairs of `A + t B` — the eigen-relation nee
 eigenvector of `A` for `λ = μ 0` not orthogonal to `u 0`, the eigenvalue's derivative at `0` is
 `⟪w, B (u 0)⟫ / ⟪w, u 0⟫`.
 
-The left-eigenvector hypothesis is stated as `⟪w, A y⟫ = λ ⟪w, y⟫` for every `y`, which is what the
-proof tests the differentiated eigenvalue equation against; it is equivalent to `A† w = conj λ • w`
-in finite dimension, and needs no adjoint to state.
+The left-eigenvector hypothesis `Module.End.IsLeftEigenvector` is `⟪w, A y⟫ = λ ⟪w, y⟫` for every
+`y`, which is what the proof tests the differentiated eigenvalue equation against; it is equivalent
+to `A† w = conj λ • w` in finite dimension, and needs no adjoint to state.
 
 Differentiating `A (u t) + t B (u t) = μ t • u t` at `t = 0` gives `A u' + B (u 0) = μ 0 • u' + μ' •
 u 0`, and testing against `w` cancels the two terms carrying the unknown `u'`. -/
@@ -553,9 +564,10 @@ theorem deriv_eigenvalue_perturbation {A B : E →L[𝕜] E} {u : 𝕜 → E}
     {mu : 𝕜 → 𝕜} {u' : E} {mu' lam : 𝕜} {w : E}
     (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
     (heig : ∀ᶠ t in nhds 0, A (u t) + t • B (u t) = mu t • u t)
-    (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = lam * inner 𝕜 w y) (hlam : mu 0 = lam)
+    (hw : IsLeftEigenvector (A : E →ₗ[𝕜] E) lam w) (hlam : mu 0 = lam)
     (hne : (inner 𝕜 w (u 0) : 𝕜) ≠ 0) :
     mu' = inner 𝕜 w (B (u 0)) / inner 𝕜 w (u 0) := by
+  have hw' (y : E) : (inner 𝕜 w (A y) : 𝕜) = lam * inner 𝕜 w y := hw.inner_apply y
   have h1 : HasDerivAt (fun t : 𝕜 => A (u t)) (A u') 0 := by
     simpa [Function.comp_def] using A.hasFDerivAt.comp_hasDerivAt (0 : 𝕜) hu
   have h2 : HasDerivAt (fun t : 𝕜 => B (u t)) (B u') 0 := by
@@ -571,7 +583,7 @@ theorem deriv_eigenvalue_perturbation {A B : E →L[𝕜] E} {u : 𝕜 → E}
   have hderiv : A u' + B (u 0) = mu 0 • u' + mu' • u 0 :=
     hf.unique (HasDerivAt.smul hmu hu)
   have htest := congrArg (fun y : E => (inner 𝕜 w y : 𝕜)) hderiv
-  simp only [inner_add_right, inner_smul_right, hw u', hlam] at htest
+  simp only [inner_add_right, inner_smul_right, hw' u', hlam] at htest
   have hmul : (inner 𝕜 w (B (u 0)) : 𝕜) = mu' * inner 𝕜 w (u 0) := by
     linear_combination htest
   rw [hmul, mul_div_assoc, div_self hne, mul_one]
@@ -585,10 +597,9 @@ theorem norm_deriv_eigenvalue_perturbation_le {A B : E →L[𝕜] E} {u : 𝕜 �
     {mu : 𝕜 → 𝕜} {u' : E} {mu' lam : 𝕜} {w : E}
     (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
     (heig : ∀ᶠ t in nhds 0, A (u t) + t • B (u t) = mu t • u t)
-    (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = lam * inner 𝕜 w y) (hlam : mu 0 = lam)
+    (hw : IsLeftEigenvector (A : E →ₗ[𝕜] E) lam w) (hlam : mu 0 = lam)
     (hne : (inner 𝕜 w (u 0) : 𝕜) ≠ 0) :
     ‖mu'‖ ≤ ‖B‖ * eigenvalueCondNumber 𝕜 (u 0) w := by
-  have hpos : (0 : ℝ) < ‖(inner 𝕜 w (u 0) : 𝕜)‖ := norm_pos_iff.2 hne
   have hnum : ‖(inner 𝕜 w (B (u 0)) : 𝕜)‖ ≤ ‖B‖ * (‖u 0‖ * ‖w‖) := by
     calc ‖(inner 𝕜 w (B (u 0)) : 𝕜)‖ ≤ ‖w‖ * ‖B (u 0)‖ := norm_inner_le_norm w (B (u 0))
       _ ≤ ‖w‖ * (‖B‖ * ‖u 0‖) := by
@@ -622,7 +633,7 @@ the same test: the second component `r` of `F' ⁻¹ (1, 0, 0)` satisfies `r ⟪
 The normalization carried along the branch is `⟪w, v t⟫ = ⟪w, u⟫`, which is what makes the branch
 unique; it is the second component of the local inverse's defining equation. -/
 theorem hasDerivAt_eigenvalue_perturbation [FiniteDimensional 𝕜 E] {A B : E →L[𝕜] E} {l : 𝕜}
-    {u w : E} (hAu : A u = l • u) (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y)
+    {u w : E} (hAu : A u = l • u) (hw : IsLeftEigenvector (A : E →ₗ[𝕜] E) l w)
     (hne : (inner 𝕜 w u : 𝕜) ≠ 0)
     (hsimple : ∀ z : E, A z = l • z → ∃ c : 𝕜, z = c • u) :
     ∃ (mu : 𝕜 → 𝕜) (v : 𝕜 → E) (v' : E), mu 0 = l ∧ v 0 = u ∧
@@ -630,6 +641,7 @@ theorem hasDerivAt_eigenvalue_perturbation [FiniteDimensional 𝕜 E] {A B : E �
       HasDerivAt v v' 0 ∧
       HasDerivAt mu (inner 𝕜 w (B u) / inner 𝕜 w u) 0 := by
   classical
+  have hw' (y : E) : (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y := hw.inner_apply y
   have : CompleteSpace E := FiniteDimensional.complete 𝕜 E
   set π₁ : (𝕜 × 𝕜 × E) →L[𝕜] 𝕜 := ContinuousLinearMap.fst 𝕜 𝕜 (𝕜 × E) with hπ₁
   set π₂ : (𝕜 × 𝕜 × E) →L[𝕜] 𝕜 :=
@@ -682,7 +694,7 @@ theorem hasDerivAt_eigenvalue_perturbation [FiniteDimensional 𝕜 E] {A B : E �
       simpa using congrArg (fun z : 𝕜 × 𝕜 × E => z.2.2) hx
     rw [e1, zero_smul, add_zero, sub_eq_zero] at e3
     have e5 : (inner 𝕜 w (A x.2.2 - l • x.2.2) : 𝕜) = inner 𝕜 w (x.2.1 • u) := by rw [e3]
-    rw [inner_sub_right, inner_smul_right, inner_smul_right, hw, e2] at e5
+    rw [inner_sub_right, inner_smul_right, inner_smul_right, hw', e2] at e5
     have e6 : x.2.1 = 0 := by
       have hz : x.2.1 * (inner 𝕜 w u : 𝕜) = 0 := by rw [← e5]; ring
       rcases mul_eq_zero.1 hz with h | h
@@ -751,7 +763,7 @@ theorem hasDerivAt_eigenvalue_perturbation [FiniteDimensional 𝕜 E] {A B : E �
       simpa using congrArg (fun z : 𝕜 × 𝕜 × E => z.2.2) hsymm
     rw [f1, one_smul] at f3
     have f4 := congrArg (fun y : E => (inner 𝕜 w y : 𝕜)) f3
-    simp only [inner_add_right, inner_sub_right, inner_smul_right, hw, f2, inner_zero_right] at f4
+    simp only [inner_add_right, inner_sub_right, inner_smul_right, hw', f2, inner_zero_right] at f4
     have f5 : (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).2.1 * (inner 𝕜 w u : 𝕜)
         = inner 𝕜 w (B u) := by linear_combination -f4
     rw [eq_div_iff hne]
@@ -1141,7 +1153,7 @@ eigenspace that is only a line. This is why the hypothesis `hne` of
 `Module.End.hasDerivAt_eigenvalue_perturbation` is automatic at an algebraically simple eigenvalue.
 -/
 theorem inner_ne_zero_of_finrank_maxGenEigenspace_eq_one {A : E →ₗ[𝕜] E} {l : 𝕜} {u w : E}
-    (hAu : A u = l • u) (hu : u ≠ 0) (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y)
+    (hAu : A u = l • u) (hu : u ≠ 0) (hw : IsLeftEigenvector A l w)
     (hw0 : w ≠ 0) (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace A l) = 1) :
     (inner 𝕜 w u : 𝕜) ≠ 0 := by
   intro hwu
@@ -1157,7 +1169,7 @@ theorem inner_ne_zero_of_finrank_maxGenEigenspace_eq_one {A : E →ₗ[𝕜] E} 
   have hrange_le : LinearMap.range B ≤ (𝕜 ∙ w)ᗮ := by
     rintro _ ⟨y, rfl⟩
     rw [Submodule.mem_orthogonal_singleton_iff_inner_right, hBapply, inner_sub_right,
-      inner_smul_right, hw, sub_self]
+      inner_smul_right, hw.inner_apply, sub_self]
   have hrange : LinearMap.range B = (𝕜 ∙ w)ᗮ := by
     refine Submodule.eq_of_le_of_finrank_le hrange_le ?_
     have h1 := LinearMap.finrank_range_add_finrank_ker B
@@ -1186,7 +1198,7 @@ nonzero eigenvector `u` and any nonzero left eigenvector `w`. This is the branch
 [quarteroni2000numerical] Theorem 5.4 presupposes when it calls `λ` simple. -/
 theorem hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one {A B : E →L[𝕜] E} {l : 𝕜}
     {u w : E} (hAu : A u = l • u) (hu : u ≠ 0)
-    (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y) (hw0 : w ≠ 0)
+    (hw : IsLeftEigenvector (A : E →ₗ[𝕜] E) l w) (hw0 : w ≠ 0)
     (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace (A : E →ₗ[𝕜] E) l) = 1) :
     ∃ (mu : 𝕜 → 𝕜) (v : 𝕜 → E) (v' : E), mu 0 = l ∧ v 0 = u ∧
       (∀ᶠ t in nhds (0 : 𝕜), A (v t) + t • B (v t) = mu t • v t) ∧

@@ -310,11 +310,6 @@ theorem form_isBoundedWith (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) :
   have hu1 := SobolevInterval.norm_deriv_le u 1
   have hv0 := SobolevInterval.norm_deriv_le v 0
   have hv1 := SobolevInterval.norm_deriv_le v 1
-  have hα := norm_nonneg α
-  have hβ := norm_nonneg β
-  have hγ := norm_nonneg γ
-  have hu := norm_nonneg u
-  have hv := norm_nonneg v
   calc |pairing a b (mulL α) 1 1 u v + pairing a b (mulL β) 1 0 u v + pairing a b (mulL γ) 0 0 u v|
       ≤ |pairing a b (mulL α) 1 1 u v| + |pairing a b (mulL β) 1 0 u v|
         + |pairing a b (mulL γ) 0 0 u v| := abs_add_three _ _ _
@@ -339,13 +334,6 @@ theorem abs_form_le_seminorm (hab : a < b) (α β γ : Lp ℝ ⊤ (volume.restri
   have h3 := abs_pairing_mulL_le γ 0 0 u v
   have hu0 := norm_deriv_zero_le hab hu
   have hv0 := norm_deriv_zero_le hab hv
-  have hα := norm_nonneg α
-  have hβ := norm_nonneg β
-  have hγ := norm_nonneg γ
-  have hCP : 0 ≤ (b - a) / Real.sqrt 2 := by
-    have := hab.le; positivity
-  have hu1 := norm_nonneg (deriv u 1)
-  have hv1 := norm_nonneg (deriv v 1)
   simp only [seminorm_apply]
   have e : deriv u (Fin.last 1) = deriv u 1 := rfl
   have e' : deriv v (Fin.last 1) = deriv v 1 := rfl
@@ -400,7 +388,6 @@ theorem form_isCoerciveWith_restrict (hab : a < b) (α γ : Lp ℝ ⊤ (volume.r
         ≤ (Real.sqrt (1 + (b - a) ^ 2 / 2) * seminorm 1 a b v) ^ 2 := by gcongr
       _ = (1 + (b - a) ^ 2 / 2) * seminorm 1 a b v ^ 2 := by
           rw [mul_pow, Real.sq_sqrt (by positivity)]
-  have hpos : 0 < 1 + (b - a) ^ 2 / 2 := by positivity
   calc α₀ / (1 + (b - a) ^ 2 / 2) * ‖(v : SobolevInterval 1 a b)‖ ^ 2
       ≤ α₀ / (1 + (b - a) ^ 2 / 2) * ((1 + (b - a) ^ 2 / 2) * seminorm 1 a b v ^ 2) := by
         gcongr
@@ -447,7 +434,6 @@ theorem seminorm_le_of_isGalerkinSolution (hab : a < b) (α γ : Lp ℝ ⊤ (vol
     {K : Submodule ℝ (SobolevInterval 1 a b)} (hK : K ≤ SobolevIntervalZero a b)
     {u : SobolevInterval 1 a b} (hu : IsGalerkinSolution (form a b α 0 γ) (load a b f) K u) :
     seminorm 1 a b u ≤ (b - a) / Real.sqrt 2 / α₀ * ‖f‖ := by
-  have hCP : 0 ≤ (b - a) / Real.sqrt 2 := by have := hab.le; positivity
   have h1 := form_isCoerciveWith_seminorm α γ hα hγ u
   rw [hu.2 u hu.1] at h1
   have h2 := (abs_load_le f u).trans (mul_le_mul_of_nonneg_left
@@ -459,7 +445,6 @@ theorem seminorm_le_of_isGalerkinSolution (hab : a < b) (α γ : Lp ℝ ⊤ (vol
   rcases eq_or_lt_of_le (norm_nonneg (deriv u 1)) with h0 | h0
   · rw [← h0]; positivity
   · rw [div_mul_eq_mul_div, le_div_iff₀ hα₀]
-    have := norm_nonneg f
     nlinarith
 
 open SobolevInterval in
@@ -739,7 +724,6 @@ theorem form_isCoerciveWith_seminorm_of_le (hab : a < b)
     rw [neg_mul, neg_add_eq_sub, ← integral_const_mul, ← integral_sub i3 (i4.const_mul _)]
     refine integral_nonneg_of_ae ?_
     filter_upwards [hcond] with x hx
-    have := mul_self_nonneg (rep v x)
     simp only [Pi.zero_apply]
     nlinarith
   linarith
@@ -1092,13 +1076,10 @@ theorem galerkin_norm_sub_le_l2 (hab : a < b) (αL γL : Lp ℝ ⊤ (volume.rest
           + A₁ * ((b - a) / Real.sqrt 2 / α₀)))
       * δ * seminorm 1 a b (u - uh) := by
   set CP := (b - a) / Real.sqrt 2 with hCP
-  have hCP0 : 0 ≤ CP := by have := hab.le; positivity
   set Ms := ‖αL‖ + CP ^ 2 * ‖γL‖ with hMs
   set Creg := CP ^ 2 / α₀ + CP / α₀ + α₀⁻¹ * (‖γL‖ * (CP ^ 2 / α₀) + 1 + A₁ * (CP / α₀))
     with hCreg
   have hA₁0 : 0 ≤ A₁ := (abs_nonneg _).trans (hA₁ a (left_mem_Icc.2 hab.le))
-  have hCreg0 : 0 ≤ Creg := by positivity
-  have hMs0 : 0 ≤ Ms := by positivity
   have hαae : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ αL x := by
     filter_upwards [hαL, ae_restrict_mem measurableSet_Ioo] with x hx hxI
     rw [hx]; exact hαpos x (Ioo_subset_Icc_self hxI)
@@ -1142,8 +1123,6 @@ theorem galerkin_norm_sub_le_l2 (hab : a < b) (αL γL : Lp ℝ ⊤ (volume.rest
         _ = CP ^ 2 / α₀ * ‖e₀‖ := by ring
     have hb2 : ‖deriv Φ 2‖ ≤ α₀⁻¹ * (‖γL‖ * (CP ^ 2 / α₀) + 1 + A₁ * (CP / α₀)) * ‖e₀‖ := by
       refine hΦ2.trans ?_
-      have := norm_nonneg e₀
-      have hγ0 := norm_nonneg γL
       calc α₀⁻¹ * (‖γL‖ * ‖deriv φ 0‖ + ‖e₀‖ + A₁ * seminorm 1 a b φ)
           ≤ α₀⁻¹ * (‖γL‖ * (CP ^ 2 / α₀ * ‖e₀‖) + ‖e₀‖ + A₁ * (CP / α₀ * ‖e₀‖)) := by
             gcongr
@@ -1161,7 +1140,6 @@ theorem galerkin_norm_sub_le_l2 (hab : a < b) (αL γL : Lp ℝ ⊤ (volume.rest
       _ = Ms * Creg * δ * seminorm 1 a b e * ‖e₀‖ := by ring
   rcases eq_or_lt_of_le (norm_nonneg e₀) with h0 | h0
   · rw [← h0]
-    have := apply_nonneg (seminorm 1 a b) e
     positivity
   · rw [sq] at hsq
     exact le_of_mul_le_mul_right hsq h0

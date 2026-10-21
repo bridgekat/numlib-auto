@@ -306,13 +306,12 @@ theorem abs_jacobiTan_le_one : |jacobiTan A j k| ≤ 1 := by
     rw [abs_le]
     constructor <;> linarith
   · set θ := (A k k - A j j) / (2 * A j k) with hθdef
-    have hθ' : θ < 0 := lt_of_not_ge hθ
     have hnn : (0 : ℝ) ≤ θ ^ 2 + 1 := by positivity
     have hsq := Real.sq_sqrt hnn
     have hle : -θ ≤ Real.sqrt (θ ^ 2 + 1) := by
       nlinarith [Real.sqrt_nonneg (θ ^ 2 + 1), hsq]
     have hge : Real.sqrt (θ ^ 2 + 1) ≤ 1 - θ := by
-      nlinarith [Real.sqrt_nonneg (θ ^ 2 + 1), hsq, hθ']
+      nlinarith [Real.sqrt_nonneg (θ ^ 2 + 1), hsq]
     rw [abs_le]
     constructor <;> linarith
 
@@ -376,7 +375,6 @@ theorem jacobiTanSmall_eq_neg_jacobiTan : jacobiTanSmall A j k = -jacobiTan A j 
     rw [hsq', div_eq_iff hd]
     nlinarith [hsq]
   · set η := (A k k - A j j) / (2 * A j k) with hη
-    have hθ' : η < 0 := lt_of_not_ge hθ
     have hnn : (0 : ℝ) ≤ 1 + η ^ 2 := by positivity
     have hsq := Real.sq_sqrt hnn
     have hs := Real.sqrt_nonneg (1 + η ^ 2)
@@ -450,7 +448,6 @@ theorem transpose_jacobiRotation_mul_self (hjk : j ≠ k) :
 omit [Fintype n] [DecidableEq n] in
 /-- The Jacobi cosine is positive. -/
 theorem jacobiCos_pos : 0 < jacobiCos A j k := by
-  have h : (0 : ℝ) < 1 + jacobiTan A j k ^ 2 := by positivity
   rw [jacobiCos]
   positivity
 

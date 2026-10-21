@@ -585,7 +585,6 @@ theorem Lp.isCompact_closure_image_restrictCLM_convolutionCLM [FiniteDimensional
   have hK1 : MemLp K 1 μ := memLp_one_iff_integrable.2 hK
   obtain ⟨C, hC⟩ := hB.exists_norm_le
   set C₀ := max C 0 with hC₀
-  have hC₀0 : 0 ≤ C₀ := le_max_right _ _
   have hC' : ∀ u ∈ B, ‖u‖ ≤ C₀ := fun u hu => (hC u hu).trans (le_max_left _ _)
   refine Lp.isCompact_closure_image_restrictCLM_of_uniform_translate hp ?_ ?_ hΩ
   · -- `K ⋆ B` is bounded

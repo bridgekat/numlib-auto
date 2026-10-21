@@ -141,6 +141,26 @@ theorem satisfiesRootCondition_of_roots {P : K[X]} (hP : P ≠ 0) (h1 : ∀ r �
 
 end Roots
 
+/-- `(X - a)(X - b)` with distinct roots `a ≠ b` in the closed unit disc satisfies the root
+condition. -/
+theorem satisfiesRootCondition_X_sub_C_mul_X_sub_C {a b : K} (hab : a ≠ b) (ha : ‖a‖ ≤ 1)
+    (hb : ‖b‖ ≤ 1) : ((X - C a) * (X - C b)).SatisfiesRootCondition := by
+  classical
+  have hne : ((X - C a) * (X - C b) : K[X]) ≠ 0 :=
+    mul_ne_zero (X_sub_C_ne_zero _) (X_sub_C_ne_zero _)
+  refine satisfiesRootCondition_of_roots hne ?_ ?_
+  · intro r hr
+    rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.mem_add, Multiset.mem_singleton,
+      Multiset.mem_singleton] at hr
+    rcases hr with rfl | rfl
+    exacts [ha, hb]
+  · intro r hr _
+    rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.mem_add, Multiset.mem_singleton,
+      Multiset.mem_singleton] at hr
+    rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.count_add, Multiset.count_singleton,
+      Multiset.count_singleton]
+    rcases hr with rfl | rfl <;> simp [hab, hab.symm]
+
 /-- **From Schur stability to the root condition**: if `P = c (X - 1) Q` with `c ≠ 0` and every
 complex root of `Q` has modulus `< 1` (`Polynomial.IsSchurStable`), then `P`, read in `ℂ[X]`,
 satisfies the root condition — its roots lie in the closed unit disc and the only one of modulus
@@ -191,19 +211,7 @@ theorem satisfiesRootCondition_X_sq_sub_one :
     simp only [Polynomial.map_sub, Polynomial.map_pow, map_X, Polynomial.map_one, map_neg, map_one]
     ring
   rw [hfac]
-  have hne : ((X - C 1) * (X - C (-1)) : ℂ[X]) ≠ 0 :=
-    mul_ne_zero (X_sub_C_ne_zero _) (X_sub_C_ne_zero _)
-  refine satisfiesRootCondition_of_roots hne ?_ ?_
-  · intro r hr
-    rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.mem_add, Multiset.mem_singleton,
-      Multiset.mem_singleton] at hr
-    rcases hr with rfl | rfl <;> simp
-  · intro r hr _
-    rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.mem_add, Multiset.mem_singleton,
-      Multiset.mem_singleton] at hr
-    rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.count_add, Multiset.count_singleton,
-      Multiset.count_singleton]
-    rcases hr with rfl | rfl <;> norm_num
+  exact satisfiesRootCondition_X_sub_C_mul_X_sub_C (by norm_num) (by simp) (by simp)
 
 /-- `X^p (X - 1)`, read in `ℂ[X]`, satisfies the root condition: the roots are `0`, of
 multiplicity `p`, and `1`, simple. -/
@@ -292,8 +300,7 @@ theorem tendsto_chooseMulPow_of_norm_lt_one {r : 𝕜} (hr : ‖r‖ < 1) (s : �
     refine tendsto_const_nhds.congr' ?_
     filter_upwards [eventually_gt_atTop s] with n hn
     rw [Pi.single_eq_of_ne hn.ne']
-  · have hr' : 0 < ‖r‖ := norm_pos_iff.2 hr0
-    have h := (tendsto_pow_const_mul_const_pow_of_abs_lt_one s
+  · have h := (tendsto_pow_const_mul_const_pow_of_abs_lt_one s
       (by rwa [abs_of_nonneg (norm_nonneg r)])).div_const (‖r‖ ^ s)
     rw [zero_div] at h
     rw [tendsto_zero_iff_norm_tendsto_zero]

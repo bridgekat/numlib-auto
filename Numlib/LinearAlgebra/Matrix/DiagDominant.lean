@@ -26,7 +26,9 @@ without importing the theory of stationary iterations.
   every row `i`, and the same by columns.
 * `Matrix.IsDiagDominant`, `Matrix.IsColDiagDominant`: the weak forms `∑_{j ≠ i} |a_ij| ≤ |a_ii|`
   of [quarteroni2000numerical] Definition 1.24, which the strict and the irreducible forms both
-  imply.
+  imply; `Matrix.IsAbsDiagDominant` is the weak row form with the absolute value of a
+  lattice-ordered group in place of the norm, for the ordered fields of the floating-point
+  analyses.
 * `Matrix.IsIrreduciblyDiagDominant`, `Matrix.IsIrreduciblyColDiagDominant`: [saad2003iterative]
   Definition 4.5, the irreducible relaxation — weak dominance in every row, strict dominance in at
   least one, and a strongly connected nonzero pattern (`Matrix.IsPatternIrreducible` of
@@ -280,6 +282,24 @@ def IsDiagDominant (A : Matrix n n 𝕜) : Prop :=
 `∑_{i ≠ j} |a_ij| ≤ |a_jj|` for every column `j`. -/
 def IsColDiagDominant (A : Matrix n n 𝕜) : Prop :=
   ∀ j, ∑ i ∈ Finset.univ.erase j, ‖A i j‖ ≤ ‖A j j‖
+
+/-- **Weak row diagonal dominance, measured with the absolute value** of a linearly ordered
+scalar ring: `∑_{j ≠ i} |a_ij| ≤ |a_ii|` for every row `i` ([quarteroni2000numerical]
+Definition 1.24). It is `Matrix.IsDiagDominant`, which is stated with the norm of `RCLike`
+scalars, for the ordered fields of the floating-point analyses; over `ℝ` the two agree
+(`Matrix.isDiagDominant_iff_isAbsDiagDominant`). -/
+def IsAbsDiagDominant {m R : Type*} [Fintype m] [DecidableEq m] [Lattice R] [AddCommGroup R]
+    (A : Matrix m m R) : Prop :=
+  ∀ i, ∑ j ∈ Finset.univ.erase i, |A i j| ≤ |A i i|
+
+/-- Weak row dominance with the absolute value, unfolded. -/
+theorem isAbsDiagDominant_iff {m R : Type*} [Fintype m] [DecidableEq m] [Lattice R]
+    [AddCommGroup R] {A : Matrix m m R} :
+    A.IsAbsDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, |A i j| ≤ |A i i| := Iff.rfl
+
+/-- Over `ℝ`, weak row dominance with the norm is weak row dominance with the absolute value. -/
+theorem isDiagDominant_iff_isAbsDiagDominant {A : Matrix n n ℝ} :
+    A.IsDiagDominant ↔ A.IsAbsDiagDominant := Iff.rfl
 
 variable {A : Matrix n n 𝕜}
 
@@ -568,7 +588,6 @@ theorem IsColDiagDominant.sum_norm_sub_le (hA : A.IsColDiagDominant) {p j : n} (
   set x := ‖A p j‖
   set y := ‖A j p‖
   set t := x / a with ht
-  have ht0 : 0 ≤ t := div_nonneg (norm_nonneg _) ha.le
   have hat : a * t = x := by rw [ht, mul_div_cancel₀ _ ha.ne']
   -- the two dominance inequalities, restricted to `T`
   have hSj : (∑ i ∈ T, ‖A i j‖) + x ≤ ‖A j j‖ := by

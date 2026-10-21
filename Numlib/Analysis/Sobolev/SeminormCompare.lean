@@ -35,7 +35,7 @@ a finite linear combination.
 
 ## Main results
 
-* `sobolevSeminorm_congr_ae`, `MemSobolev.sobolevSeminorm_ne_top`, `sobolevSeminorm_add_le`,
+* `MemSobolev.sobolevSeminorm_ne_top`, `sobolevSeminorm_add_le`,
   `sobolevSeminorm_sub_le`, `sobolevSeminorm_const_smul`, `sobolevSeminorm_sum_smul_le`,
   `MemSobolev.finsetSum`: the algebra of the tensor seminorm on `W^{k,p}(Ω)`;
   `MemSobolev.sobolevNorm_le_sum_sobolevSeminorm`: the norm is at most the sum of the seminorms
@@ -68,22 +68,6 @@ section Algebra
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
   [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   [CompleteSpace F] {Ω : Opens E} {μ : Measure E} {k : ℕ} {p : ℝ≥0∞} {f g : E → F}
-
-/-- The Sobolev seminorm only sees the function up to a null set of `Ω`: the chosen weak
-derivatives of two almost everywhere equal functions are almost everywhere equal, or both
-absent. -/
-theorem sobolevSeminorm_congr_ae (hfg : f =ᵐ[μ.restrict (Ω : Set E)] g) :
-    sobolevSeminorm f k p Ω μ = sobolevSeminorm g k p Ω μ := by
-  by_cases h : ∃ w, HasWeakIteratedFDerivOn k f w Ω μ
-  · obtain ⟨w, hw⟩ := h
-    unfold sobolevSeminorm
-    rw [eLpNorm_congr_ae
-        ((ae_restrict_iff' Ω.isOpen.measurableSet).2 hw.weakIteratedFDeriv_ae_eq),
-      eLpNorm_congr_ae ((ae_restrict_iff' Ω.isOpen.measurableSet).2
-        (hw.congr_ae hfg (Filter.EventuallyEq.refl _ _)).weakIteratedFDeriv_ae_eq)]
-  · have h' : ¬ ∃ w, HasWeakIteratedFDerivOn k g w Ω μ := fun ⟨w, hw⟩ ↦
-      h ⟨w, hw.congr_ae hfg.symm (Filter.EventuallyEq.refl _ _)⟩
-    simp only [sobolevSeminorm, weakIteratedFDeriv, dite_eq_right h, dite_eq_right h']
 
 /-- The Sobolev seminorm of a function of `W^{k,p}(Ω)` is finite. -/
 theorem MemSobolev.sobolevSeminorm_ne_top (hf : MemSobolev f k p Ω μ) :

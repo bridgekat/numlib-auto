@@ -248,7 +248,6 @@ theorem integral_chebyshevOrthonormal_mul (m n : ℕ) :
     (∫ t : Set.Icc (-1 : ℝ) 1,
         chebyshevOrthonormal m t * chebyshevOrthonormal n t ∂chebyshevMeasureIcc)
       = if m = n then 1 else 0 := by
-  have hπ : (0 : ℝ) < π := pi_pos
   simp only [chebyshevOrthonormal_apply]
   rw [integral_chebyshevMeasureIcc fun y =>
     (chebyshevCoeff m * (T ℝ m).eval y) * (chebyshevCoeff n * (T ℝ n).eval y)]
@@ -360,7 +359,6 @@ integrates to over a full one. -/
 theorem integral_abs_chebyshevKernel_le (N : ℕ) (θ : ℝ) :
     (1 / π * ∫ φ in (0 : ℝ)..π, |dirichletKernel N (θ - φ) + dirichletKernel N (θ + φ)|)
       ≤ lebesgueConstant N := by
-  have hπ : (0 : ℝ) < π := pi_pos
   have hcont : Continuous fun u : ℝ => |dirichletKernel N u| :=
     (continuous_dirichletKernel N).abs
   have hper : Function.Periodic (fun u : ℝ => |dirichletKernel N u|) (2 * π) := fun u => by
@@ -416,7 +414,6 @@ Lebesgue constant. -/
 theorem integral_abs_chebyshevKernel_zero (N : ℕ) :
     (1 / π * ∫ φ in (0 : ℝ)..π, |dirichletKernel N (0 - φ) + dirichletKernel N (0 + φ)|)
       = lebesgueConstant N := by
-  have hπ : (0 : ℝ) < π := pi_pos
   have hval : ∀ φ : ℝ, |dirichletKernel N (0 - φ) + dirichletKernel N (0 + φ)|
       = 2 * |dirichletKernel N φ| := by
     intro φ

@@ -113,13 +113,6 @@ theorem strongDualAnnihilator_inf_of_isClosed_sup [CompleteSpace E] {G L : Submo
   rw [← sub_add_cancel f ψ]
   exact add_mem_sup h1 h2
 
-/-- A unimodular scalar rotating a given scalar onto the nonnegative real axis. -/
-private theorem exists_norm_eq_one_mul_eq_norm (z : 𝕜) : ∃ c : 𝕜, ‖c‖ = 1 ∧ c * z = ‖z‖ := by
-  rcases eq_or_ne z 0 with rfl | hz
-  · exact ⟨1, norm_one, by simp⟩
-  refine ⟨(‖z‖ : 𝕜) / z, ?_, div_mul_cancel₀ _ hz⟩
-  rw [norm_div, RCLike.norm_ofReal, abs_norm, div_self (norm_ne_zero_iff.2 hz)]
-
 open scoped ComplexOrder in
 /-- **The separation step of Theorem 2.16** ([brezis2011functional], formula (25)). Let `G`, `L`
 be subspaces of a normed space over `RCLike 𝕜`, `Y := closure (G + L)`, and suppose
@@ -169,8 +162,8 @@ theorem closedBall_inter_topologicalClosure_sup_subset_closure_add (G L : Submod
   have hsum : ∀ a ∈ (G : Set E) ∩ closedBall 0 1, ∀ b ∈ (L : Set E) ∩ closedBall 0 1,
       ‖f₀ a‖ + ‖f₀ b‖ ≤ 1 := by
     intro a ha b hb
-    obtain ⟨c, hc1, hc⟩ := exists_norm_eq_one_mul_eq_norm (f₀ a)
-    obtain ⟨d, hd1, hd⟩ := exists_norm_eq_one_mul_eq_norm (f₀ b)
+    obtain ⟨c, hc1, hc⟩ := RCLike.exists_norm_eq_mul_self (f₀ a)
+    obtain ⟨d, hd1, hd⟩ := RCLike.exists_norm_eq_mul_self (f₀ b)
     have hca : c • a ∈ (G : Set E) ∩ closedBall 0 1 := by
       refine ⟨G.smul_mem c ha.1, ?_⟩
       rw [mem_closedBall_zero_iff, norm_smul, hc1, one_mul]
@@ -180,7 +173,7 @@ theorem closedBall_inter_topologicalClosure_sup_subset_closure_add (G L : Submod
       rw [mem_closedBall_zero_iff, norm_smul, hd1, one_mul]
       exact mem_closedBall_zero_iff.1 hb.2
     have := hf₀K _ (subset_closure ⟨c • a, hca, d • b, hdb, rfl⟩)
-    rwa [map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul, hc, hd, ← RCLike.ofReal_add,
+    rwa [map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul, ← hc, ← hd, ← RCLike.ofReal_add,
       RCLike.norm_ofReal, abs_of_nonneg (by positivity)] at this
   -- hence `‖f₀|_G‖ + ‖f₀|_L‖ ≤ 1`
   have hL' : ∀ a ∈ (G : Set E) ∩ closedBall 0 1, ‖f₀.comp L.subtypeL‖ ≤ 1 - ‖f₀ a‖ := by

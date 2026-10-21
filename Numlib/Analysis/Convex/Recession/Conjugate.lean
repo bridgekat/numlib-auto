@@ -216,7 +216,7 @@ theorem polarCone_recessionConeFn (hf : ClosedProperConvexFn f) :
   rw [recessionConeFn_eq_polarCone_convexDom_convexConj (B := B) hf, ← polarCone_hull B.flip,
     ← hK]
   exact polarCone_polarCone (B := B.flip) (K : ConvexCone ℝ F).convex
-    (smul_coe_pointedCone K) ⟨0, K.zero_mem⟩
+    (isCone_coe_pointedCone K) ⟨0, K.zero_mem⟩
 
 end RecessionPolarBipolar
 
@@ -267,7 +267,7 @@ theorem zero_mem_interior_iff_polarCone_eq_zero {D : Set F} (hD : Convex ℝ D) 
     have hbip : closure ((PointedCone.hull ℝ D : PointedCone ℝ F) : Set F) = Set.univ := by
       have h := polarCone_polarCone (B := B.flip)
         (K := ((PointedCone.hull ℝ D : PointedCone ℝ F) : Set F))
-        hconv (smul_coe_pointedCone _) ⟨0, Submodule.zero_mem _⟩
+        hconv (isCone_coe_pointedCone _) ⟨0, Submodule.zero_mem _⟩
       rw [polarCone_hull, hpol] at h
       rw [← h]
       ext x'

@@ -223,8 +223,6 @@ theorem integral_rpowReg_le {w : 𝔼 → 𝔼} (hw : ContDiff ℝ 1 w) (hwc : H
       ≤ max (N * M₁) (p * M₀) * ((∫ x in (Ω : Set 𝔼), (|u x| + ε) ^ p)
         + ∫ x in (Ω : Set 𝔼), (|u x| + ε) ^ (p - 1) * ‖fderiv ℝ u x‖) := by
   have hp0 : 0 ≤ p := zero_le_one.trans hp
-  have hM₀0 : 0 ≤ M₀ := (norm_nonneg _).trans (hM₀ 0)
-  have hM₁0 : 0 ≤ M₁ := (norm_nonneg _).trans (hM₁ 0)
   have hφ : ContDiff ℝ 1 (Real.rpowReg p ε) := Real.contDiff_rpowReg hε
   have hφu : ContDiff ℝ 1 (fun x ↦ Real.rpowReg p ε (u x)) := hφ.comp hu
   have hF : ContDiff ℝ 1 (fun x ↦ Real.rpowReg p ε (u x) • w x) := hφu.smul hw
@@ -341,8 +339,6 @@ theorem integral_abs_rpow_le_of_contDiff {w : 𝔼 → 𝔼} (hw : ContDiff ℝ 
     (Real.norm_eq_abs (u x) ▸ hK x hx).trans (le_max_left _ _)
   have hK₂ : ∀ x ∈ closure (Ω : Set 𝔼), ‖fderiv ℝ u x‖ ≤ max K' 0 := fun x hx ↦
     (hK' x hx).trans (le_max_left _ _)
-  have hK₁0 : 0 ≤ max K 0 := le_max_right _ _
-  have hK₂0 : 0 ≤ max K' 0 := le_max_right _ _
   -- the sequence `ε n = 1/(n+1)`
   set ε : ℕ → ℝ := fun n ↦ 1 / ((n : ℝ) + 1) with hε
   have hεpos : ∀ n, 0 < ε n := fun n ↦ by positivity
@@ -443,8 +439,6 @@ theorem eLpNorm_le_of_contDiff (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fa
     exact Real.rpow_sub_one_mul_le_add (abs_nonneg _) (norm_nonneg _) hP1
   have htot : ∫ x, |u x| ^ p.toReal ∂B.σ
       ≤ max (N * M₁) (p.toReal * M₀) * (2 + (N : ℝ) ^ p.toReal) * ‖U‖ ^ p.toReal := by
-    have hN : 0 ≤ (N : ℝ) ^ p.toReal := by positivity
-    have hU0 : 0 ≤ ‖U‖ ^ p.toReal := by positivity
     calc ∫ x, |u x| ^ p.toReal ∂B.σ
         ≤ max (N * M₁) (p.toReal * M₀) * ((∫ x in (Ω : Set 𝔼), |u x| ^ p.toReal)
           + ∫ x in (Ω : Set 𝔼), |u x| ^ (p.toReal - 1) * ‖fderiv ℝ u x‖) := hnec
@@ -666,7 +660,6 @@ theorem traceL_ae_eq_of_continuousOn (hw : B.HasTransversalField) (hp : p ≠ �
     have hMtop : B.σ univ ^ p.toReal⁻¹ ≠ ⊤ :=
       ENNReal.rpow_ne_top_of_nonneg (by positivity) (measure_ne_top _ _)
     set M := (B.σ univ ^ p.toReal⁻¹).toReal with hM
-    have hM0 : 0 ≤ M := ENNReal.toReal_nonneg
     have hδ : 0 < ε / (M + 1) := by positivity
     obtain ⟨n₀, hn₀⟩ := eventually_atTop.1 (Metric.tendstoUniformlyOn_iff.1 hunif _ hδ)
     refine ⟨n₀, fun n hn ↦ ?_⟩
@@ -962,7 +955,6 @@ theorem integral_abs_traceL_rpow_le (hw : B.HasTransversalField) (p : ℝ≥0∞
       rw [Lp.norm_def, fnL_apply]
     rw [hfn] at h2
     set a := ‖fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume u‖ with ha
-    have ha0 : 0 ≤ a := norm_nonneg _
     have hg0 : 0 ≤ gradNorm u := gradNorm_nonneg u
     calc ∫ x, |(B.traceL hw p hp u : 𝔼 → ℝ) x| ^ p.toReal ∂B.σ
         = ∫ x, |v x| ^ p.toReal ∂B.σ := e0
@@ -1065,16 +1057,9 @@ theorem isCompactOperator_traceL (hw : B.HasTransversalField) (p : ℝ≥0∞) [
           have := mul_le_mul_of_nonneg_left hgrad (Real.rpow_nonneg ht0 (p.toReal - 1))
           linarith
       _ = g ‖fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume (a - b)‖ := (hg _).symm
-  -- sequential compactness of the closure of the image of the unit ball
-  refine (isCompactOperator_iff_isCompact_closure_image_closedBall
-    (B.traceL hw p hp).toLinearMap one_pos).2 ?_
-  refine IsSeqCompact.isCompact fun {y} hy ↦ ?_
-  have hy' : ∀ n : ℕ, ∃ v : SobolevEuclidean N 1 p Ω, ‖v‖ ≤ 1 ∧
-      dist (y n) (B.traceL hw p hp v) < 1 / (n + 1) := by
-    intro n
-    obtain ⟨z, ⟨v, hv, rfl⟩, hz⟩ := Metric.mem_closure_iff.1 (hy n) (1 / (n + 1)) (by positivity)
-    exact ⟨v, mem_closedBall_zero_iff.1 hv, hz⟩
-  choose v hv hvy using hy'
+  -- the image of a sequence of the unit ball has a convergent subsequence
+  refine isCompactOperator_of_forall_exists_subseq_tendsto (T := (B.traceL hw p hp).toLinearMap)
+    fun v hv ↦ ?_
   obtain ⟨φ, w, hφ, hw'⟩ := hR.exists_subseq_tendsto v ⟨1, hv⟩
   have hcauchy : CauchySeq fun n ↦ B.traceL hw p hp (v (φ n)) := by
     rw [cauchySeq_iff_tendsto_dist_atTop_0]
@@ -1090,15 +1075,7 @@ theorem isCompactOperator_traceL (hw : B.HasTransversalField) (p : ℝ≥0∞) [
     exact squeeze_zero (fun _ ↦ dist_nonneg)
       (fun mn ↦ key (v (φ mn.1)) (v (φ mn.2)) (hv _) (hv _)) hgb
   obtain ⟨z, hz⟩ := cauchySeq_tendsto_of_complete hcauchy
-  refine ⟨z, isClosed_closure.mem_of_tendsto hz (.of_forall fun n ↦
-    subset_closure (mem_image_of_mem _ (mem_closedBall_zero_iff.2 (hv _)))), φ, hφ,
-    hz.congr_dist ?_⟩
-  refine squeeze_zero (g := fun n : ℕ ↦ 1 / ((n : ℝ) + 1)) (fun n ↦ dist_nonneg) (fun n ↦ ?_)
-    tendsto_one_div_add_atTop_nhds_zero_nat
-  rw [dist_comm]
-  refine (hvy (φ n)).le.trans (one_div_le_one_div_of_le (by positivity) ?_)
-  have : (n : ℝ) ≤ (φ n : ℝ) := by exact_mod_cast hφ.le_apply
-  linarith
+  exact ⟨φ, z, hφ, hz⟩
 
 
 end Compact

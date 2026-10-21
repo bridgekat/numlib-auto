@@ -199,7 +199,7 @@ omit [FiniteDimensional ℝ F] [IsCompatiblePairing B.flip] in
 /-- The dual infimum is not `⊥`: its negative is the primal infimum, which is bounded above by a
 finite value. -/
 theorem iInf_mem_neg_polarCone_convexConj_ne_bot (hcof : Cofinite h) (hdom : convexDom h = univ)
-    (hconv : Convex ℝ K) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (z : E) (z' : F) :
+    (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (z : E) (z' : F) :
     (⨅ w ∈ -(polarCone B K),
       convexConj B (fun x => h (z + x) - ((B x z' : ℝ) : EReal)) w) ≠ ⊥ := by
   obtain ⟨x₀, hx₀⟩ := hne
@@ -218,7 +218,7 @@ cone, the primal infimum over `K` and the dual infimum over `K* = -K°` add to `
 of `K` is not needed for the identity. -/
 theorem iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing (hcof : Cofinite h)
     (hdom : convexDom h = univ)
-    (hconv : Convex ℝ K) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (z : E) (z' : F) :
+    (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (z : E) (z' : F) :
     (⨅ x ∈ K, (h (z + x) - ((B x z' : ℝ) : EReal)))
         + (⨅ w ∈ -(polarCone B K), (convexConj B h (z' + w) - ((B z w : ℝ) : EReal)))
       = ((B z z' : ℝ) : EReal) := by
@@ -241,7 +241,7 @@ theorem iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing (hcof : Cofinite h)
 omit [FiniteDimensional ℝ F] [IsCompatiblePairing B.flip] in
 /-- The dual infimum is attained. Only finiteness of `h` is used here, not co-finiteness. -/
 theorem exists_iInf_mem_neg_polarCone_eq_of_cofinite (hcof : Cofinite h) (hdom : convexDom h = univ)
-    (hconv : Convex ℝ K) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (z : E) (z' : F) :
+    (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (z : E) (z' : F) :
     ∃ w ∈ -(polarCone B K), convexConj B h (z' + w) - ((B z w : ℝ) : EReal)
       = ⨅ v ∈ -(polarCone B K), (convexConj B h (z' + v) - ((B z v : ℝ) : EReal)) := by
   have hex := isExactSum_comp_add_sub_pairing_indicatorFn (B := B) hcof hdom hconv hne z z'
@@ -251,7 +251,7 @@ theorem exists_iInf_mem_neg_polarCone_eq_of_cofinite (hcof : Cofinite h) (hdom :
 
 /-- The dual infimum is finite, being attained where the objective is. -/
 theorem exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite (hcof : Cofinite h)
-    (hdom : convexDom h = univ) (hconv : Convex ℝ K) (hK : ∀ a : ℝ, 0 < a → a • K = K)
+    (hdom : convexDom h = univ) (hconv : Convex ℝ K) (hK : IsCone K)
     (hne : K.Nonempty) (z : E) (z' : F) :
     ∃ r : ℝ, (⨅ w ∈ -(polarCone B K), (convexConj B h (z' + w) - ((B z w : ℝ) : EReal)))
       = (r : EReal) := by
@@ -263,7 +263,7 @@ theorem exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite (hcof : Cofinite h)
 /-- The primal infimum is finite, being the negative of the dual infimum up to the constant
 `⟨z, z*⟩`. -/
 theorem exists_iInf_mem_eq_coe_of_cofinite (hcof : Cofinite h) (hdom : convexDom h = univ)
-    (hconv : Convex ℝ K) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (z : E) (z' : F) :
+    (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (z : E) (z' : F) :
     ∃ s : ℝ, (⨅ x ∈ K, (h (z + x) - ((B x z' : ℝ) : EReal))) = (s : EReal) := by
   obtain ⟨r, hr⟩ :=
     exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite (B := B) hcof hdom hconv hK hne z z'
@@ -275,7 +275,7 @@ theorem exists_iInf_mem_eq_coe_of_cofinite (hcof : Cofinite h) (hdom : convexDom
 /-- The primal infimum is attained; this is where co-finiteness of `h` and closedness of `K` are
 used. -/
 theorem exists_iInf_mem_eq_of_cofinite (hcof : Cofinite h) (hdom : convexDom h = univ)
-    (hconv : Convex ℝ K) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (hcl : IsClosed K)
+    (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (hcl : IsClosed K)
     (z : E) (z' : F) :
     ∃ x ∈ K, h (z + x) - ((B x z' : ℝ) : EReal)
       = ⨅ u ∈ K, (h (z + u) - ((B u z' : ℝ) : EReal)) := by

@@ -361,14 +361,15 @@ private theorem integral_sq_sub_linear_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x
 `f'(t) - f'(s) = ∫_s^t g` on `[a, b]` and `g` square integrable, `F` the restriction of `f` and `G`
 any function agreeing on `[a, b]` with the piecewise linear interpolant
 `Π_h^1 f = piecewiseLinearInterpCLM n x F`: `∫_a^b |f - G|² ≤ h⁴ ∫_a^b g²`. -/
-theorem integral_sq_sub_piecewiseLinearInterpCLM_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
-    (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b) {h : ℝ}
+theorem integral_sq_sub_piecewiseLinearInterpCLM_le
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) {h : ℝ}
     (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ h) {f g : ℝ → ℝ} (hf : ContDiff ℝ 1 f)
     (hg : IntervalIntegrable g volume a b) (hg2 : IntervalIntegrable (fun t => g t ^ 2) volume a b)
     (hfg : ∀ s ∈ Icc a b, ∀ t ∈ Icc a b, deriv f t - deriv f s = ∫ r in s..t, g r)
     {F : C(Icc a b, ℝ)} (hF : ∀ t, F t = f t) {G : ℝ → ℝ}
     (hG : ∀ t : Icc a b, G t = piecewiseLinearInterpCLM n x F t) :
     ∫ t in a..b, (f t - G t) ^ 2 ≤ h ^ 4 * ∫ t in a..b, g t ^ 2 := by
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
   have hab : a ≤ b := (x 0).2.1.trans (x 0).2.2
   have hsub : ∀ j, ∀ s ∈ Icc (x j : ℝ) (x (j + 1) : ℝ), s ∈ Icc a b := fun j s hs =>
     ⟨(x j).2.1.trans hs.1, hs.2.trans (x (j + 1)).2.2⟩
@@ -393,11 +394,11 @@ theorem integral_sq_sub_piecewiseLinearInterpCLM_le (hstep : ∀ i ≤ n, (x i :
       = ∑ j ∈ Finset.range (n + 1), ∫ t in (x j : ℝ)..(x (j + 1) : ℝ), (f t - G t) ^ 2 := by
     rw [sum_integral_adjacent_intervals (a := fun j => (x j : ℝ)) fun j hj =>
       hint j (Nat.lt_succ_iff.1 hj)]
-    simp only [hfirst, hlast]
+    simp only [hx.first, hx.last]
   have hsplit' : ∫ t in a..b, g t ^ 2
       = ∑ j ∈ Finset.range (n + 1), ∫ t in (x j : ℝ)..(x (j + 1) : ℝ), g t ^ 2 := by
     rw [sum_integral_adjacent_intervals (a := fun j => (x j : ℝ)) fun j _ => hg2.mono_set (hsub' j)]
-    simp only [hfirst, hlast]
+    simp only [hx.first, hx.last]
   rw [hsplit, hsplit', Finset.mul_sum]
   refine Finset.sum_le_sum fun j hj => ?_
   have hj : j ≤ n := Nat.lt_succ_iff.1 (Finset.mem_range.1 hj)
@@ -411,14 +412,15 @@ derivative of the interpolant on the panel `j` being the difference quotient
 `(f (x (j+1)) - f (x j))/(x (j+1) - x j)`, satisfy
 `∑_j ∫_{x_j}^{x_{j+1}} |f' - (Π_h^1 f)'|² ≤ h² ∫_a^b g²`. -/
 theorem integral_sq_deriv_sub_piecewiseLinearInterpCLM_le
-    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
-    (hlast : (x (n + 1) : ℝ) = b) {h : ℝ} (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ h)
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) {h : ℝ}
+    (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ h)
     {f g : ℝ → ℝ} (hf : ContDiff ℝ 1 f) (hg : IntervalIntegrable g volume a b)
     (hg2 : IntervalIntegrable (fun t => g t ^ 2) volume a b)
     (hfg : ∀ s ∈ Icc a b, ∀ t ∈ Icc a b, deriv f t - deriv f s = ∫ r in s..t, g r) :
     ∑ j ∈ Finset.range (n + 1), ∫ t in (x j : ℝ)..(x (j + 1) : ℝ),
         (deriv f t - (f (x (j + 1)) - f (x j)) / ((x (j + 1) : ℝ) - (x j : ℝ))) ^ 2
       ≤ h ^ 2 * ∫ t in a..b, g t ^ 2 := by
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
   have hab : a ≤ b := (x 0).2.1.trans (x 0).2.2
   have hsub' : ∀ j, [[(x j : ℝ), (x (j + 1) : ℝ)]] ⊆ [[a, b]] := fun j => by
     rw [uIcc_of_le hab]; exact uIcc_subset_Icc (x j).2 (x (j + 1)).2
@@ -427,7 +429,7 @@ theorem integral_sq_deriv_sub_piecewiseLinearInterpCLM_le
   have hsplit' : ∫ t in a..b, g t ^ 2
       = ∑ j ∈ Finset.range (n + 1), ∫ t in (x j : ℝ)..(x (j + 1) : ℝ), g t ^ 2 := by
     rw [sum_integral_adjacent_intervals (a := fun j => (x j : ℝ)) fun j _ => hg2.mono_set (hsub' j)]
-    simp only [hfirst, hlast]
+    simp only [hx.first, hx.last]
   rw [hsplit', Finset.mul_sum]
   refine Finset.sum_le_sum fun j hj => ?_
   have hj : j ≤ n := Nat.lt_succ_iff.1 (Finset.mem_range.1 hj)

@@ -4,6 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix`, beside a future SVD.
 -/
 import Numlib.Analysis.Matrix.SingularValues
+import Numlib.LinearAlgebra.Matrix.DotProduct
 import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 
 /-!
@@ -132,14 +133,6 @@ private theorem gram_mul_eq_diagonal (hQ : Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂ = 1) 
   rw [ite_eq_left (lt_of_lt_of_le j.isLt hnm)]
   simp [sq]
 
-/-- A column of a matrix whose Gram diagonal entry vanishes is zero. -/
-private theorem apply_eq_zero_of_gram_apply_eq_zero {m n : Type*} [Fintype m] {W : Matrix m n 𝕜}
-    {j : n} (h : (Wᴴ * W) j j = 0) (k : m) : W k j = 0 := by
-  have h0 : star (fun k => W k j) ⬝ᵥ (fun k => W k j) = 0 := by
-    rw [← h, mul_apply]
-    rfl
-  exact congrFun (dotProduct_star_self_eq_zero.1 h0) k
-
 /-- **The thin CS decomposition** ([golub2013matrix] Theorem 2.5.2, without its hypothesis
 `m₂ ≥ n₁`): if `Q₁ᴴ Q₁ + Q₂ᴴ Q₂ = 1` and `n₁ ≤ m₁`, then `[Q₁; Q₂]` has a thin CS decomposition.
 Following the book: an SVD `U₁ᴴ Q₁ V = diag(c)` has `1 ≥ c₀ ≥ ⋯ ≥ 0`; the columns of `Q₂ V` are
@@ -164,7 +157,8 @@ theorem exists_isThinCSD (Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₂ : Matr
     nlinarith [hs.nonneg j]
   -- a column of `W` with `c_j = 1` vanishes
   have hWz : ∀ j : Fin n₁, c j = 1 → ∀ k, W k j = 0 := fun j hj =>
-    apply_eq_zero_of_gram_apply_eq_zero (by rw [hWW, diagonal_apply_eq, hj]; simp)
+    apply_eq_zero_of_conjTranspose_mul_self_apply_self_eq_zero
+      (by rw [hWW, diagonal_apply_eq, hj]; simp)
   -- at most `m₂` of the cosines differ from `1`
   have hcard : Fintype.card {j : Fin n₁ // c j ≠ 1} ≤ m₂ := by
     have h := rank_le_card_height W
@@ -283,8 +277,7 @@ theorem exists_isThinCSD (Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₂ : Matr
       have hf : ((f jr : Fin m₂) : ℕ) = j - p := rfl
       by_cases hij : (j : ℕ) = i + p
       · rw [ite_eq_left hij, ite_eq_left (Fin.ext (by rw [hf]; omega)), mul_one]
-      · rw [ite_eq_right hij, ite_eq_right (fun h => hij (by
-          have := congrArg Fin.val h; rw [hf] at this; omega)), mul_zero]
+      · rw [ite_eq_right hij, ite_eq_right (fun h => hij (by omega)), mul_zero]
 
 end Thin
 
@@ -377,8 +370,6 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
   have hV₁ := hc.mem_unitaryGroup_right
   have hU₁ : star U₁ * U₁ = 1 := mem_unitaryGroup_iff'.1 hc.mem_unitaryGroup_left₁
   have hU₂ : star U₂ * U₂ = 1 := mem_unitaryGroup_iff'.1 hc.mem_unitaryGroup_left₂
-  have hs0 : ∀ i < p, s i = 0 := fun i hi => by simp [hsdef, hc.eq_zero_of_lt i hi]
-  have hc1 : ∀ i < p, c i = 1 := fun i hi => by simp [hcdef, hc.eq_zero_of_lt i hi]
   have hcs : ∀ i, star (c i) * c i + star (s i) * s i = 1 := fun i => by
     simp only [hcdef, hsdef, RCLike.star_def, RCLike.conj_ofReal]
     rw [← RCLike.ofReal_mul, ← RCLike.ofReal_mul, ← RCLike.ofReal_add, ← sq, ← sq,
@@ -413,30 +404,27 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
       hσdef]
     by_cases hpa : p ≤ (a : ℕ)
     · have hk : (a : ℕ) - p < m₂ := by
-        have := a.isLt; have := min_le_right n₁ m₂; omega
+        have := min_le_right n₁ m₂; omega
       rw [dite_eq_left ⟨hpa, hk⟩]
       by_cases hb : (b : ℕ) = a - p
       · rw [ite_eq_left ⟨hpa, a.isLt, hb⟩, ite_eq_left hb.symm,
-          ite_eq_left (by have := a.isLt; omega),
+          ite_eq_left (by omega),
           Nat.sub_add_cancel hpa]
         simp only [hcdef, hsdef, RCLike.star_def, RCLike.conj_ofReal]
         ring
-      · rw [ite_eq_right (fun h => hb h.2.2), ite_eq_right (fun h => by have := a.isLt; omega),
+      · rw [ite_eq_right (fun h => hb h.2.2), ite_eq_right (fun h => by omega),
           ite_eq_right (fun h => hb h.symm)]
         simp
     · rw [dite_eq_right (fun h => hpa h.1), ite_eq_right (fun h => hpa h.1),
-        ite_eq_right (fun h => by have := a.isLt; omega)]
+        ite_eq_right (fun h => by omega)]
       simp
   have t2 : T₁ᴴ * T₁ + T₂ᴴ * T₂ = 1 := by
-    have hmin1 := min_le_left n₁ m₂
     have hmin2 := min_le_right n₁ m₂
     set ρ : ℕ → ℕ := fun j => if j < n₁ - p then j + p else j - q + p with hρdef
     set τ : ℕ → 𝕜 := fun j => if j < n₁ - p then s (j + p) else if n₁ - p + q ≤ j then 1 else 0
       with hτdef
     have hcol : ∀ (i : Fin m₁) (j : Fin n₂), T₁ i j = if (i : ℕ) = ρ j then τ j else 0 := by
       intro i j
-      have := i.isLt
-      have := j.isLt
       rw [hT₁, hρdef, hτdef]
       simp only [csdUpperRight, of_apply]
       split_ifs <;> first | rfl | (exfalso; omega) | congr 1
@@ -460,8 +448,6 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
     rw [hT₂, conjTranspose_rectDiagonal_mul_self]
     ext b b'
     rw [add_apply, hsum, diagonal_apply, one_apply]
-    have := b.isLt
-    have := b'.isLt
     by_cases hbb : b = b'
     · subst hbb
       rw [ite_eq_left rfl, ite_eq_left rfl]

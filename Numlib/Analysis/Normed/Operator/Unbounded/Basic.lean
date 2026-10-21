@@ -270,7 +270,6 @@ theorem exists_dist_le_of_ball_subset_closure_image (A : E →ₗ.[𝕜] F) {c :
     rintro rfl
     simp only [norm_zero] at hts
     exact absurd hts (not_lt.2 (by positivity))
-  have htpos : 0 < ‖t‖ := norm_pos_iff.2 ht0
   have hmem : t • y ∈ _root_.closure ((fun u : A.domain => A u) '' {u | ‖(u : E)‖ < 1}) := by
     refine h ?_
     rw [mem_ball_zero_iff, norm_smul]
@@ -312,6 +311,13 @@ theorem IsClosed.ball_subset_image_of_ball_subset_closure_image [CompleteSpace E
 end DenselyNormedField
 
 end LinearPMap
+
+/-- The range of a linear map restricted to the whole space, as a `LinearPMap`, is its range. -/
+theorem LinearMap.range_toPMap_top {R E F : Type*} [Ring R] [AddCommGroup E] [Module R E]
+    [AddCommGroup F] [Module R F] (f : E →ₗ[R] F) :
+    LinearMap.range (f.toPMap ⊤).toFun = LinearMap.range f := by
+  change LinearMap.range (f.comp (⊤ : Submodule R E).subtype) = LinearMap.range f
+  rw [LinearMap.range_comp, Submodule.range_subtype, ← LinearMap.range_eq_map]
 
 namespace ContinuousLinearMap
 

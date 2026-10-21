@@ -265,6 +265,14 @@ namespace SesqForm₂
 
 variable {U : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U] (a : SesqForm₂ 𝕜 U V)
 
+/-- `‖a u v‖ ≤ M ‖u‖ ‖v‖`: the two-space analogue of `SesqForm.IsBoundedWith`. -/
+def IsBoundedWith (M : ℝ) : Prop := ∀ u v, ‖a u v‖ ≤ M * ‖u‖ * ‖v‖
+
+/-- A one-space form is bounded with constant `M` exactly when it is so as a two-space form. -/
+theorem _root_.SesqForm.isBoundedWith_iff_sesqForm₂ {a : SesqForm 𝕜 V} {M : ℝ} :
+    a.IsBoundedWith M ↔ SesqForm₂.IsBoundedWith (a : SesqForm₂ 𝕜 V V) M :=
+  Iff.rfl
+
 /-- The inf–sup (Babuška–Brezzi) condition with constant `α`, in operator-norm form: `α ‖u‖ ≤ ‖a u‖
 = sup_{v ≠ 0} |a u v| / ‖v‖` ([han2009theoretical], (8.7.2) and (9.2.3)).  For a one-space form it
 is weaker than coercivity; together with `IsNondegenerate` it is what makes the two-space problem `a

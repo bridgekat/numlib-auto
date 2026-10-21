@@ -100,7 +100,6 @@ theorem Integrable.memLp_of_bound {f : α → G} (hf : Integrable f μ) {C : ℝ
     rw [show (1 : ℝ) = (1 : ℝ≥0∞).toReal by simp]
     exact ENNReal.toReal_mono hq' hq
   set C' : ℝ := max C 0 with hC'
-  have hC'0 : 0 ≤ C' := le_max_right _ _
   have hbd : ∀ᵐ x ∂μ, ‖f x‖ ≤ C' := hC.mono fun x hx ↦ hx.trans (le_max_left _ _)
   rw [← integrable_norm_rpow_iff hf.1 hq0 hq']
   have hmeas : AEStronglyMeasurable (fun x ↦ ‖f x‖ ^ q.toReal) μ :=
@@ -342,7 +341,6 @@ theorem SchwartzMap.integrable_norm_iteratedFDeriv_mul_norm {V : Type*} [NormedA
     [NormedSpace ℝ V] (g : 𝓢(E, V)) (j : ℕ) {f : E → F} (hf : MemLp f p μ) :
     Integrable (fun x ↦ ‖iteratedFDeriv ℝ j (g : E → V) x‖ * ‖f x‖) μ := by
   have := ENNReal.HolderConjugate.inv_one_sub_inv' hp.out
-  have : Fact (1 ≤ (1 - p⁻¹)⁻¹) := by simp [fact_iff]
   have hint : Integrable (fun x ↦ ‖iteratedFDeriv ℝ j (g : E → V) x‖) μ := by
     simpa using g.integrable_pow_mul_iteratedFDeriv μ 0 j
   have hmem : MemLp (fun x ↦ ‖iteratedFDeriv ℝ j (g : E → V) x‖) (1 - p⁻¹)⁻¹ μ :=
@@ -763,7 +761,6 @@ of `TemperedDistribution.one_add_rpow_half_eq_add`. -/
 theorem besselPotential_one_eq (f : 𝓢'(E, F)) :
     besselPotential E F 1 f =
       besselPotential E F (-1) f - (((2 * π) ^ 2 : ℝ)⁻¹ : ℂ) • besselPotential E F (-1) (Δ f) := by
-  have hπ : ((2 * π) ^ 2 : ℝ) ≠ 0 := by positivity
   have h₁ : (fun x : E ↦ Complex.ofReal ((1 + ‖x‖ ^ 2) ^ (-1 / 2 : ℝ))).HasTemperateGrowth := by
     fun_prop
   have h₂ : (fun x : E ↦

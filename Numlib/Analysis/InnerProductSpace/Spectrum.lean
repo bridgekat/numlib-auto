@@ -15,6 +15,8 @@ Mathlib's `LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues` says that t
 Read backwards (`LinearMap.IsSymmetric.eigenvalues_eq_of_antitone`), it identifies the eigenvalues
 with any antitone list of the roots, which is how a spectrum computed by other means (for instance
 the squares of the singular values from a matrix SVD) is matched with Mathlib's.
+`LinearMap.IsSymmetric.iSup_eigenspace_eq_top` restates Mathlib's
+`LinearMap.IsSymmetric.orthogonalComplement_iSup_eigenspaces_eq_bot` as "the eigenspaces span".
 -/
 
 open Module
@@ -38,5 +40,12 @@ theorem IsSymmetric.eigenvalues_eq_of_antitone {E : Type*}
   apply List.mergeSort_of_pairwise
   simp_rw [decide_eq_true_eq, ← List.sortedGE_iff_pairwise]
   exact hd.sortedGE_ofFn
+
+/-- **The eigenspaces of a symmetric operator on a finite-dimensional space span it**: the
+`⊤` form of Mathlib's `LinearMap.IsSymmetric.orthogonalComplement_iSup_eigenspaces_eq_bot`. -/
+theorem IsSymmetric.iSup_eigenspace_eq_top {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E] {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) :
+    (⨆ μ : 𝕜, Module.End.eigenspace T μ) = ⊤ :=
+  Submodule.orthogonal_eq_bot_iff.1 hT.orthogonalComplement_iSup_eigenspaces_eq_bot
 
 end LinearMap

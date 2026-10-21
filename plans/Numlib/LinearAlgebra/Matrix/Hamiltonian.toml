@@ -44,3 +44,6 @@ id = "orthoSymplecticGroup"
 
 [[node]]
 id = "IsHamiltonian.transpose_mul_mul_of_mem_orthoSymplecticGroup"
+
+[[node]]
+id = "card_le_of_transpose_mul_J_mul_eq_zero"

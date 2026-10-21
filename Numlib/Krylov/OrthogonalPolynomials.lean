@@ -795,19 +795,6 @@ private theorem tridiag_castLE (h : m + 1 ≤ k) (i j : Fin (m + 1)) :
     tridiag A b k (Fin.castLE h i) (Fin.castLE h j) = tridiag A b (m + 1) i j := by
   rw [tridiag_apply, tridiag_apply, Fin.val_castLE, Fin.val_castLE]
 
-/-- A sum over `Fin k` whose summand vanishes past the first `m + 1` indices collapses to a sum over
-`Fin (m + 1)`. -/
-private theorem sum_eq_sum_castLE (h : m + 1 ≤ k) (F : Fin k → ℝ)
-    (hF : ∀ i : Fin k, m + 1 ≤ (i : ℕ) → F i = 0) :
-    ∑ i : Fin k, F i = ∑ j : Fin (m + 1), F (Fin.castLE h j) := by
-  have hmap : ∑ j : Fin (m + 1), F (Fin.castLE h j) =
-      ∑ i ∈ Finset.univ.map (Fin.castLEEmb h), F i :=
-    (Finset.sum_map Finset.univ (Fin.castLEEmb h) F).symm
-  rw [hmap]
-  refine (Finset.sum_subset (Finset.subset_univ _) fun x _ hx => hF x ?_).symm
-  by_contra hlt
-  exact hx (Finset.mem_map.2 ⟨⟨x, by omega⟩, Finset.mem_univ _, Fin.ext rfl⟩)
-
 variable (h : m + 1 ≤ k) {y : Fin k → ℝ} {z : Fin (m + 1) → ℝ}
   (hy : ∀ j : Fin (m + 1), y (Fin.castLE h j) = z j)
   (hy0 : ∀ i : Fin k, m + 1 ≤ (i : ℕ) → y i = 0)
@@ -818,14 +805,14 @@ with `T_{m+1} z`. -/
 private theorem mulVec_castLE (i : Fin (m + 1)) :
     (tridiag A b k).mulVec y (Fin.castLE h i) = (tridiag A b (m + 1)).mulVec z i := by
   simp only [Matrix.mulVec, dotProduct]
-  rw [sum_eq_sum_castLE h _ fun j hj => by rw [hy0 j hj, mul_zero]]
+  rw [Fin.sum_eq_sum_castLE_of_forall_le h _ fun j hj => by rw [hy0 j hj, mul_zero]]
   exact Finset.sum_congr rfl fun j _ => by rw [tridiag_castLE, hy]
 
 /-- Row `m + 1` of `T_k` sees the padding through the single entry `β_m`. -/
 private theorem mulVec_of_val_eq {i : Fin k} (hi : (i : ℕ) = m + 1) :
     (tridiag A b k).mulVec y i = beta A b m * z (Fin.last m) := by
   simp only [Matrix.mulVec, dotProduct]
-  rw [sum_eq_sum_castLE h _ fun j hj => by rw [hy0 j hj, mul_zero]]
+  rw [Fin.sum_eq_sum_castLE_of_forall_le h _ fun j hj => by rw [hy0 j hj, mul_zero]]
   rw [Finset.sum_eq_single (Fin.last m)]
   · rw [hy, tridiag_apply, Fin.val_castLE, Fin.val_last, ite_eq_right (by omega),
       ite_eq_right (by omega), ite_eq_left (by omega)]
@@ -911,8 +898,8 @@ theorem persistence (h : m + 1 ≤ k) {θ : ℝ} {z : EuclideanSpace ℝ (Fin (m
     have hsq : ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin k))‖ ^ 2 = 1 ^ 2 := by
       have e1 : ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin k))‖ ^ 2 =
           ∑ j : Fin (m + 1), WithLp.ofLp z j ^ 2 := by
-        rw [EuclideanSpace.real_norm_sq_eq,
-          sum_eq_sum_castLE h _ fun i hi => by rw [WithLp.ofLp_toLp, hy0 i hi]; ring]
+        rw [EuclideanSpace.real_norm_sq_eq, Fin.sum_eq_sum_castLE_of_forall_le h _
+          fun i hi => by rw [WithLp.ofLp_toLp, hy0 i hi]; ring]
         exact Finset.sum_congr rfl fun j _ => by rw [WithLp.ofLp_toLp, hy]
       rw [e1, ← EuclideanSpace.real_norm_sq_eq z, hz]
     exact (pow_left_inj₀ (norm_nonneg _) zero_le_one two_ne_zero).1 hsq

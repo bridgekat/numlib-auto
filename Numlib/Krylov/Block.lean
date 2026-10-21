@@ -1,4 +1,5 @@
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
+import Numlib.Analysis.InnerProductSpace.Orthonormal
 import Numlib.Krylov.Hessenberg
 
 /-!
@@ -306,9 +307,10 @@ namespace BlockArnoldi
 /-! ### Gram–Schmidt with breakdown
 
 The block Arnoldi vectors are `gramSchmidtNormed` of the block Krylov sequence, hence `0` from the
-first linear dependence onwards. These auxiliary lemmas are the hypothesis-free facts about
-`gramSchmidtNormed` that survive breakdown; they are stated for an arbitrary sequence because
-nothing about the Krylov structure enters. -/
+first linear dependence onwards. The hypothesis-free facts about `gramSchmidtNormed` that survive
+breakdown are `InnerProductSpace.inner_gramSchmidtNormed_eq_zero` and its companions in
+`Numlib/Analysis/InnerProductSpace/GramSchmidt`; the two auxiliary lemmas below are stated for an
+arbitrary sequence because nothing about the Krylov structure enters. -/
 
 section GramSchmidtAux
 
@@ -318,65 +320,13 @@ private theorem inner_eq_zero_of_mem_span {s : Set E} {x y : E}
     inner 𝕜 x y = 0 :=
   Submodule.inner_left_of_mem_orthogonal hy (Submodule.mem_orthogonal_span.2 hx)
 
-/-- Pythagoras for an orthonormal family: the norm of a combination is the `ℓ²` norm of the
-coefficient vector. -/
-private theorem norm_sum_smul_eq {n : ℕ} {u : Fin n → E} (hu : Orthonormal 𝕜 u) (c : Fin n → 𝕜) :
-    ‖∑ i, c i • u i‖ = ‖(WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin n))‖ := by
-  have hK : ((‖∑ i, c i • u i‖ : ℝ) : 𝕜) ^ 2 = ((∑ i, ‖c i‖ ^ 2 : ℝ) : 𝕜) := by
-    rw [← inner_self_eq_norm_sq_to_K, sum_inner]
-    push_cast
-    refine Finset.sum_congr rfl fun i _ => ?_
-    rw [inner_smul_left, hu.inner_right_sum c (Finset.mem_univ i), RCLike.conj_mul]
-  have hsq : ‖∑ i, c i • u i‖ ^ 2 = ∑ i, ‖c i‖ ^ 2 := by exact_mod_cast hK
-  have hrhs : ‖(WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin n))‖ ^ 2 = ∑ i, ‖c i‖ ^ 2 :=
-    EuclideanSpace.norm_sq_eq _
-  rw [← Real.sqrt_sq (norm_nonneg (∑ i, c i • u i)),
-    ← Real.sqrt_sq (norm_nonneg (WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin n))), hsq, hrhs]
-
 variable (f : ℕ → E)
-
-/-- Distinct Gram–Schmidt vectors are orthogonal at every pair of indices and with no hypothesis:
-past breakdown they are `0`, and the inner product vanishes for that reason. -/
-private theorem inner_gsn_eq_zero {i j : ℕ} (h : i ≠ j) :
-    inner 𝕜 (gramSchmidtNormed 𝕜 f i) (gramSchmidtNormed 𝕜 f j) = 0 := by
-  simp [gramSchmidtNormed, inner_smul_left, inner_smul_right, gramSchmidt_orthogonal 𝕜 f h]
 
 /-- The Gram–Schmidt flag: the first `n` normalized vectors span the first `n` entries of `f`. -/
 private theorem span_gsn_Iio (n : ℕ) :
     Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n) =
       Submodule.span 𝕜 (f '' Set.Iio n) :=
   (span_gramSchmidtNormed f (Set.Iio n)).trans (span_gramSchmidt_Iio 𝕜 f n)
-
-/-- What is left of `x` after subtracting its expansion in the first `n` Gram–Schmidt vectors is
-orthogonal to all of them. -/
-private theorem sub_sum_inner_smul_gsn_mem_orthogonal (x : E) (n : ℕ) :
-    x - ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i ∈
-      (Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n))ᗮ := by
-  refine Submodule.mem_orthogonal_span.2 ?_
-  rintro _ ⟨k, hk, rfl⟩
-  rw [inner_sub_right, inner_sum, Finset.sum_eq_single k]
-  · rcases eq_or_ne (gramSchmidtNormed 𝕜 f k) 0 with h0 | h0
-    · simp [h0]
-    · rw [inner_smul_right, inner_self_eq_norm_sq_to_K, gramSchmidtNormed_unit_length' h0]
-      simp
-  · intro i _ hik
-    rw [inner_smul_right, inner_gsn_eq_zero f (Ne.symm hik), mul_zero]
-  · intro hk'
-    exact absurd (Finset.mem_range.2 hk) hk'
-
-/-- Every element of the span of the first `n` Gram–Schmidt vectors is its own orthonormal expansion
-in them; the vectors that vanish after breakdown contribute nothing. -/
-private theorem eq_sum_inner_smul_gsn {x : E} {n : ℕ}
-    (hx : x ∈ Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n)) :
-    x = ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i := by
-  have hy : x - ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x •
-      gramSchmidtNormed 𝕜 f i ∈ Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n) :=
-    Submodule.sub_mem _ hx (Submodule.sum_mem _ fun i hi => Submodule.smul_mem _ _
-      (Submodule.subset_span ⟨i, Finset.mem_range.1 hi, rfl⟩))
-  have h0 := Submodule.inner_right_of_mem_orthogonal hy
-    (sub_sum_inner_smul_gsn_mem_orthogonal f x n)
-  rw [inner_self_eq_zero, sub_eq_zero] at h0
-  exact h0
 
 end GramSchmidtAux
 
@@ -408,7 +358,7 @@ theorem norm_vec_eq_one_of_ne_zero {k : ℕ} (h : vec A v k ≠ 0) : ‖vec A v 
 /-- Distinct block Arnoldi vectors are orthogonal, at every pair of indices and with no hypothesis:
 past breakdown they are `0`. -/
 theorem inner_vec_eq_zero {i j : ℕ} (h : i ≠ j) : inner 𝕜 (vec A v i) (vec A v j) = 0 :=
-  inner_gsn_eq_zero _ h
+  inner_gramSchmidtNormed_eq_zero _ h
 
 /-- [saad2003iterative], §6.12: the block Arnoldi vectors that survive the process are orthonormal.
 -/
@@ -463,7 +413,7 @@ theorem coeff_eq_zero_of_lt {i k : ℕ} (h : k + p < i) : coeff A v i k = 0 := b
 /-- [saad2003iterative], (6.129): `A v_k = ∑_{i ≤ k + p} h_{ik} v_i`. -/
 theorem apply_vec (k : ℕ) :
     A (vec A v k) = ∑ i ∈ Finset.range (k + p + 1), coeff A v i k • vec A v i :=
-  eq_sum_inner_smul_gsn (blockSeq A v) (apply_vec_mem A v k)
+  eq_sum_inner_smul_gramSchmidtNormed (blockSeq A v) (apply_vec_mem A v k)
 
 /-- [saad2003iterative], (6.129)–(6.130): the block Arnoldi vectors satisfy the band Hessenberg
 relation of bandwidth `p`, `A V_m = V_{m+p} H̄_m`. -/
@@ -638,7 +588,7 @@ theorem norm_residual_eq (hon : Orthonormal 𝕜 fun i : Fin (m + p) => vec A v 
       ‖(WithLp.toLp 2 (firstBlockVec g p (m + p) - (hessenberg A v m).mulVec y) :
         EuclideanSpace 𝕜 (Fin (m + p)))‖ := by
   rw [residual_eq A v hr y]
-  exact norm_sum_smul_eq hon _
+  exact hon.norm_sum_smul_eq_norm_toLp _
 
 /-- Block FOM ([saad2003iterative], §6.12): the Galerkin condition over `x₀ + span {v_0, …,
 v_{m-1}}` is the small square band system `H_m y = E₁ g`. -/

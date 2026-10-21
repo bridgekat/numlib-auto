@@ -259,9 +259,6 @@ id = "SobolevEuclideanZero.norm_extendZeroL_le"
 id = "SobolevMultiIndex.mem_zero_of_fn_ae_eq_of_tsupport_subset"
 
 [[node]]
-id = "ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport'"
-
-[[node]]
 id = "TestFunction.setIntegral_mul_fderiv_eq_neg"
 
 [[node]]
@@ -499,3 +496,12 @@ id = "SobolevEuclideanZero.exists_eq_sub_of_nonneg"
 
 [[node]]
 id = "SobolevEuclidean.norm_le_of_fn_ae_eq_posPart"
+
+[[node]]
+id = "SobolevEuclideanZero.IsFnInclusion"
+
+[[node]]
+id = "SobolevEuclideanZero.isFnInclusion_iff"
+
+[[node]]
+id = "SobolevEuclideanZero.isFnInclusion_fnL"

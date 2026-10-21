@@ -8,6 +8,7 @@ import Mathlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 import Mathlib.Analysis.Complex.Basic
 import Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff
 import Mathlib.Analysis.Distribution.TestFunction
+import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.Calculus.IteratedFDeriv
 
 /-!
@@ -324,15 +325,8 @@ theorem mulContDiff_coe (φ : 𝓓(Ω, ℝ)) {g : E → ℝ} (hg : ContDiff ℝ 
 /-- `φ c` is `C^1` on the whole space for a test function `φ` on `Ω` and a `c` of class `C^1`
 on `Ω`: it is `C^1` on `Ω` and vanishes on the open complement of the support of `φ`. -/
 theorem contDiff_mul_of_contDiffOn (φ : 𝓓(Ω, ℝ)) {c : E → ℝ}
-    (hc : ContDiffOn ℝ 1 c Ω) : ContDiff ℝ 1 fun x ↦ φ x * c x := by
-  rw [contDiff_iff_contDiffAt]
-  intro x
-  by_cases hx : x ∈ (Ω : Set E)
-  · exact (φ.contDiff.of_le (by simp)).contDiffAt.mul (hc.contDiffAt (Ω.isOpen.mem_nhds hx))
-  · have hx' : x ∉ tsupport φ := fun h ↦ hx (φ.tsupport_subset h)
-    refine (contDiffAt_const (c := (0 : ℝ))).congr_of_eventuallyEq ?_
-    filter_upwards [(isClosed_tsupport φ).isOpen_compl.mem_nhds hx'] with y hy
-    rw [image_eq_zero_of_notMem_tsupport hy, zero_mul]
+    (hc : ContDiffOn ℝ 1 c Ω) : ContDiff ℝ 1 fun x ↦ φ x * c x :=
+  (φ.contDiff.of_le (by simp)).mul_contDiffOn_of_tsupport_subset Ω.isOpen hc φ.tsupport_subset
 
 end TestFunction
 

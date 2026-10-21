@@ -1,5 +1,6 @@
 import Mathlib.Algebra.Order.Star.Real
 import Mathlib.Data.Matrix.ColumnRowPartitioned
+import Numlib.Analysis.InnerProductSpace.Basic
 import Numlib.LinearAlgebra.Matrix.GSVD
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 
@@ -276,15 +277,6 @@ end Tikhonov
 
 section Discrepancy
 
-/-- Pythagoras for a difference of orthogonal vectors, in squared form. -/
-private theorem norm_sub_sq_of_inner_eq_zero {E : Type*} [NormedAddCommGroup E]
-    [InnerProductSpace 𝕜 E] (x y : E) (h : (inner 𝕜 x y : 𝕜) = 0) :
-    ‖x - y‖ ^ 2 = ‖x‖ ^ 2 + ‖y‖ ^ 2 := by
-  have h' : (inner 𝕜 x (-y) : 𝕜) = 0 := by rw [inner_neg_right, h, neg_zero]
-  have key := norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero (𝕜 := 𝕜) x (-y) h'
-  rw [← sub_eq_add_neg, norm_neg] at key
-  rw [pow_two, pow_two, pow_two, key]
-
 /-- **The Tikhonov solution is a correction of the least-squares solution**: since `Aᴴ y` and
 `Aᴴ A A⁺ y` agree, `(α + Aᴴ A)⁻¹ Aᴴ = A⁺ - α (α + Aᴴ A)⁻¹ A⁺`. -/
 theorem tikhonov_eq_pinv_sub (α : ℝ) (hα : 0 < α) :
@@ -401,8 +393,8 @@ theorem norm_sq_toEuclideanLin_tikhonov_sub (α : ℝ) (hα : 0 < α) (yδ : Euc
         (toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ (toEuclideanLin A.pinv yδ))) : 𝕜) = 0 := by
     rw [inner_smul_right, ← inner_conj_symm, A.inner_toEuclideanLin_sub_pinv yδ _, map_zero,
       mul_zero]
-  rw [hres, norm_sub_sq_of_inner_eq_zero (𝕜 := 𝕜) _ _ hperp, norm_smul, mul_pow,
-    RCLike.norm_ofReal, abs_of_pos hα,
+  rw [hres, norm_sub_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero (𝕜 := 𝕜) _ _ hperp, norm_smul,
+    mul_pow, RCLike.norm_ofReal, abs_of_pos hα,
     A.norm_sq_toEuclideanLin_inv_smul_one_add_gram α hα, Finset.mul_sum]
   congr 1
   refine Finset.sum_congr rfl fun i _ => ?_
@@ -431,7 +423,7 @@ theorem exists_discrepancy_tikhonov (yδ : EuclideanSpace 𝕜 m) {δ : ℝ}
   have hδ0 : 0 < δ := lt_of_le_of_lt (norm_nonneg _) hd
   have hsplit : ‖yδ‖ ^ 2 = ‖toEuclideanLin A (toEuclideanLin A.pinv yδ)‖ ^ 2
       + ‖toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ‖ ^ 2 := by
-    have key := norm_sub_sq_of_inner_eq_zero (𝕜 := 𝕜)
+    have key := norm_sub_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero (𝕜 := 𝕜)
       (toEuclideanLin A (toEuclideanLin A.pinv yδ))
       (toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ)
       (A.inner_toEuclideanLin_sub_pinv yδ _)
@@ -512,8 +504,6 @@ theorem exists_discrepancy_tikhonov (yδ : EuclideanSpace 𝕜 m) {δ : ℝ}
     · have hne : ∀ t ∈ Set.Ici (0 : ℝ), t + A.colSingularValues i ^ 2 ≠ 0 := by
         intro t ht
         simp only [Set.mem_Ici] at ht
-        have hp : (0 : ℝ) < A.colSingularValues i ^ 2 :=
-          pow_pos (lt_of_le_of_ne (A.colSingularValues_nonneg i) (Ne.symm hσ)) 2
         positivity
       exact (((continuousOn_id.mul continuousOn_const).div
         (continuousOn_id.add continuousOn_const) hne).pow 2).mul continuousOn_const
@@ -888,7 +878,6 @@ theorem eq_toEuclideanLin_generalFormTikhonov_iff (A : Matrix m n 𝕜) (B : Mat
       0 < ‖toEuclideanLin A v‖ ^ 2 + α * ‖toEuclideanLin B v‖ ^ 2 := by
     intro v hv
     by_contra hle'
-    have hle := not_lt.1 hle'
     have hA : ‖toEuclideanLin A v‖ ^ 2 = 0 := by
       nlinarith [sq_nonneg ‖toEuclideanLin A v‖, sq_nonneg ‖toEuclideanLin B v‖]
     have hB : ‖toEuclideanLin B v‖ ^ 2 = 0 := by

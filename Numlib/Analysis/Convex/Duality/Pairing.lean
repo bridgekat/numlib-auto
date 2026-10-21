@@ -107,8 +107,6 @@ theorem convexFn_affineFn (y : F) (c : ℝ) : ConvexFn (affineFn B y c) := by
     LinearMap.add_apply, LinearMap.smul_apply, LinearMap.smul_apply, smul_eq_mul, smul_eq_mul]
   have h1 : a * (B x y - c) ≤ a * μ := mul_le_mul_of_nonneg_left hx ha
   have h2 : b * (B x' y - c) ≤ b * ν := mul_le_mul_of_nonneg_left hx' hb
-  have e1 : a * (B x y - c) = a * B x y - a * c := by ring
-  have e2 : b * (B x' y - c) = b * B x' y - b * c := by ring
   have h3 : a * c + b * c = c := by linear_combination c * hab
   linarith
 

@@ -169,7 +169,6 @@ theorem one_add_gamma {u : K} {n : ℕ} (h : (n : K) * u < 1) :
 /-- More roundings cannot help: `γ_n` increases with `n` below the breakdown point. -/
 theorem gamma_mono {u : K} (hu : 0 ≤ u) {m n : ℕ} (hmn : m ≤ n) (h : (n : K) * u < 1) :
     gamma u m ≤ gamma u n := by
-  have hmnn : (0 : K) ≤ (m : K) * u := mul_nonneg (by positivity) hu
   have hcast : (m : K) * u ≤ (n : K) * u :=
     mul_le_mul_of_nonneg_right (Nat.cast_le.2 hmn) hu
   rw [gamma_def, gamma_def, div_le_div_iff₀ (by linarith) (by linarith)]
@@ -193,7 +192,6 @@ theorem gamma_lt_one {u : K} {k : ℕ} (h : 2 * ((k : K) * u) < 1) : gamma u k <
 theorem gamma_div_one_sub_gamma {u : K} {k : ℕ} (h : 2 * ((k : K) * u) < 1) :
     gamma u k / (1 - gamma u k) = k * u / (1 - 2 * (k * u)) := by
   have h1 : (1 : K) - k * u ≠ 0 := by linarith
-  have h2 : (1 : K) - 2 * (k * u) ≠ 0 := by linarith
   have : 1 - gamma u k = (1 - 2 * (k * u)) / (1 - k * u) := by
     rw [gamma_def]
     field_simp
@@ -245,7 +243,6 @@ theorem abs_prod_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {n : ℕ} (hnu 
   have hnn : ∀ i, (0 : K) ≤ (1 + δ i) ^ (ρ i) := fun i => hpos.le.trans (hfac i).1
   -- hence the product lies in `[(1 - u)^n, ((1 - u)^n)⁻¹]`
   have hppos : (0 : K) < (1 - u) ^ n := pow_pos hpos n
-  have hple : (1 - u) ^ n ≤ 1 := pow_le_one₀ (by linarith) (by linarith)
   have hlow : (1 - u) ^ n ≤ ∏ i, (1 + δ i) ^ (ρ i) := by
     calc (1 - u) ^ n = ∏ _i : Fin n, (1 - u) := by simp
       _ ≤ ∏ i, (1 + δ i) ^ (ρ i) :=
@@ -375,7 +372,6 @@ private theorem add_add_mul_div_le {x y : K} (hx : 0 ≤ x) (hy : 0 ≤ y) (h : 
     x / (1 - x) + y / (1 - y) + x / (1 - x) * (y / (1 - y)) ≤ (x + y) / (1 - (x + y)) := by
   have h1 : (0 : K) < 1 - x := by linarith
   have h2 : (0 : K) < 1 - y := by linarith
-  have h3 : (0 : K) < 1 - (x + y) := by linarith
   rw [← sub_nonneg]
   have heq : (x + y) / (1 - (x + y))
       - (x / (1 - x) + y / (1 - y) + x / (1 - x) * (y / (1 - y)))
@@ -428,7 +424,6 @@ private theorem add_add_mul_div_le_div {x y : K} (hx : 0 ≤ x) (hy : 0 ≤ y) (
       ≤ (x + 2 * y) / (1 - (x + 2 * y)) := by
   have h1 : (0 : K) < 1 - x := by linarith
   have h2 : (0 : K) < 1 - y := by linarith
-  have h3 : (0 : K) < 1 - (x + 2 * y) := by linarith
   rw [← sub_nonneg]
   have heq : (x + 2 * y) / (1 - (x + 2 * y))
       - (x / (1 - x) + y / (1 - y) + (x + 2 * y) / (1 - (x + 2 * y)) * (y / (1 - y)))
@@ -460,7 +455,6 @@ theorem IsRelPert.trans {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + j : ℕ) :
   have hkn : (0 : K) ≤ (k : K) * u := mul_nonneg (by positivity) hu
   have hjn : (0 : K) ≤ (j : K) * u := mul_nonneg (by positivity) hu
   have hk : (k : K) * u < 1 := by rw [hcast] at h; linarith
-  have hj : (j : K) * u < 1 := by rw [hcast] at h; linarith
   have hgk : 0 ≤ gamma u k := gamma_nonneg hu hk
   refine ⟨θ₁ + θ₂ + θ₁ * θ₂, ?_, by ring⟩
   calc |θ₁ + θ₂ + θ₁ * θ₂| ≤ |θ₁ + θ₂| + |θ₁ * θ₂| := abs_add_le _ _
@@ -492,9 +486,6 @@ theorem IsRelPert.div {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + 2 * j : ℕ)
   obtain ⟨θ₂, hθ₂, rfl⟩ := h₂
   have hcast : ((k + 2 * j : ℕ) : K) * u = (k : K) * u + 2 * ((j : K) * u) := by push_cast; ring
   have hkn : (0 : K) ≤ (k : K) * u := mul_nonneg (by positivity) hu
-  have hjn : (0 : K) ≤ (j : K) * u := mul_nonneg (by positivity) hu
-  have hj2 : 2 * ((j : K) * u) < 1 := by rw [hcast] at h; linarith
-  have hj : (j : K) * u < 1 := by linarith
   have hgj : gamma u j < 1 := by
     rw [gamma_def, div_lt_one (by linarith)]
     linarith
@@ -516,8 +507,6 @@ theorem IsRelPert.div {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + 2 * j : ℕ)
       linarith [neg_le_of_abs_le hθ₂]
     have hmul : gamma u (k + 2 * j) * (1 - gamma u j)
         ≤ gamma u (k + 2 * j) * (1 + θ₂) := mul_le_mul_of_nonneg_left hlow hgnn
-    have hexpand : gamma u (k + 2 * j) * (1 - gamma u j)
-        = gamma u (k + 2 * j) - gamma u (k + 2 * j) * gamma u j := by ring
     linarith
   · rw [show (1 : K) + ((1 + θ₁) / (1 + θ₂) - 1) = (1 + θ₁) / (1 + θ₂) by ring,
       div_mul_div_comm]
@@ -564,9 +553,6 @@ theorem abs_one_add_div_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {k : ℕ
     (h : ((k + 1 : ℕ) : K) * u < 1) {θ δ : K} (hθ : |θ| ≤ gamma u k) (hδ : |δ| ≤ u) :
     |(1 + θ) / (1 + δ) - 1| ≤ gamma u (k + 1) := by
   have hcast : ((k + 1 : ℕ) : K) * u = (k : K) * u + u := by push_cast; ring
-  have hku : (k : K) * u < 1 := by
-    rw [hcast] at h
-    linarith
   have hu1 : u < 1 := by
     have : (0 : K) ≤ (k : K) * u := mul_nonneg (by positivity) hu
     rw [hcast] at h
@@ -591,6 +577,15 @@ theorem abs_one_add_div_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {k : ℕ
   calc |θ - δ| ≤ gamma u k + u := hnum
     _ ≤ gamma u (k + 1) * (1 - u) := hscalar
     _ ≤ gamma u (k + 1) * (1 + δ) := mul_le_mul_of_nonneg_left hlow hg1
+
+/-- A rounding read backwards costs `γ₁`: if `|δ| ≤ u < 1` then `|δ / (1 + δ)| ≤ γ₁`, so that
+`y = x (1 + δ)` gives `x = y (1 - δ / (1 + δ))`. -/
+theorem abs_div_one_add_le_gamma_one {u δ : K} (hu : u < 1) (hδ : |δ| ≤ u) :
+    |δ / (1 + δ)| ≤ gamma u 1 := by
+  have hd : (0 : K) < 1 + δ := by linarith [neg_le_of_abs_le hδ]
+  have hu1 : (0 : K) < 1 - u := by linarith
+  rw [gamma_one_eq, abs_div, abs_of_pos hd, div_le_div_iff₀ hd hu1]
+  nlinarith [neg_le_of_abs_le hδ, le_of_abs_le hδ, abs_nonneg δ]
 
 /-! ### Relative perturbations, one operation at a time -/
 

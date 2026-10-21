@@ -74,7 +74,8 @@ theorem coe_hull_epi_sub_subset_epi_dirDeriv (hf : ConvexFn f) (hr : f x = (r : 
   have hisCone : ∀ a : ℝ, 0 < a → a • epi (dirDeriv f x) = epi (dirDeriv f x) :=
     (posHomogeneous_iff_isCone_epi (f := dirDeriv f x)).1 (posHomogeneous_dirDeriv f x)
   have hadd : ∀ p ∈ epi (dirDeriv f x), ∀ q ∈ epi (dirDeriv f x), p + q ∈ epi (dirDeriv f x) :=
-    (convex_iff_add_mem_of_isCone hisCone).1 (convexFn_dirDeriv hf ht hb).convex_epi
+    (convex_iff_add_mem_of_isCone (isCone_iff_smul_eq.2 hisCone)).1
+      (convexFn_dirDeriv hf ht hb).convex_epi
   have hzero : (0 : E × ℝ) ∈ epi (dirDeriv f x) := by
     change dirDeriv f x (0 : E × ℝ).1 ≤ (((0 : E × ℝ).2 : ℝ) : EReal)
     simp [dirDeriv_zero ht hb]
@@ -619,7 +620,7 @@ theorem normalCone_setOf_le_eq_closure_coe_hull_subdifferential [IsCompatiblePai
     have h := polarCone_polarCone (B := B.flip)
       (K := (PointedCone.hull ℝ (subdifferential B f x) : Set F))
       ((PointedCone.hull ℝ (subdifferential B f x) : ConvexCone ℝ F).convex)
-      (fun a ha => smul_coe_pointedCone _ a ha) ⟨0, Submodule.zero_mem _⟩
+      (isCone_coe_pointedCone _) ⟨0, Submodule.zero_mem _⟩
     rw [polarCone_hull, LinearMap.flip_flip] at h
     exact h.symm
   refine subset_antisymm ?_ ?_

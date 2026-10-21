@@ -343,20 +343,8 @@ theorem integral_inner_apply_le (h : IsSolution Ω u₀ u) {g : ℝ → ℝ}
   have hT : ∀ T : ℝ, 0 < T → ∫ t in (0 : ℝ)..T, g t ≤ 1 / 2 * ‖u₀‖ ^ 2 := fun T hT ↦ by
     have := (h.energy hg hT).2
     nlinarith [norm_nonneg (u T)]
-  have hb : Tendsto (fun n : ℕ ↦ (n : ℝ) + 1) atTop atTop :=
-    tendsto_natCast_atTop_atTop.atTop_add tendsto_const_nhds
-  have hfi : ∀ n : ℕ, IntegrableOn g (Ioc 0 ((n : ℝ) + 1)) := fun n ↦
-    (h.energy hg (by positivity)).1
-  have hgi : IntegrableOn g (Ioi 0) := by
-    refine integrableOn_Ioi_of_intervalIntegral_norm_bounded (1 / 2 * ‖u₀‖ ^ 2) 0 hfi hb
-      (Eventually.of_forall fun n ↦ ?_)
-    have hn : (0 : ℝ) ≤ n + 1 := by positivity
-    refine (le_of_eq ?_).trans (hT ((n : ℝ) + 1) (by positivity))
-    rw [intervalIntegral.integral_of_le hn, intervalIntegral.integral_of_le hn]
-    exact setIntegral_congr_fun measurableSet_Ioc fun t ht ↦ Real.norm_of_nonneg (hg0 t ht.1)
-  refine ⟨hgi, ?_⟩
-  refine le_of_tendsto (intervalIntegral_tendsto_integral_Ioi 0 hgi hb)
-    (Eventually.of_forall fun n ↦ hT ((n : ℝ) + 1) (by positivity))
+  exact integrableOn_Ioi_and_integral_le_of_forall_integral_le hg0
+    (fun T hT ↦ (h.energy hg hT).1) hT
 
 end IsSolution
 

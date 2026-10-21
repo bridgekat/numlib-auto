@@ -156,7 +156,6 @@ theorem forall_le_add_integral_abs_iff_exists_multiplier {g : ℝ} (hg : 0 < g)
     have h2 := hu ((2 : ℝ) • u)
     rw [hj0, zero_sub, map_neg, map_neg] at h0
     rw [hj2, e2] at h2
-    have h23 : A u + g * ∫ x, |T u x| ∂μ = ℓ u := by linarith
     have h24 : ∀ w, ℓ w ≤ A w + g * ∫ x, |T w x| ∂μ := by
       intro w
       have h5 := hu (u + w)

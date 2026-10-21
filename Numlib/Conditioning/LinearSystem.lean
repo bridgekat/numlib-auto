@@ -230,8 +230,7 @@ theorem exists_optimal_perturbation (A : E →L[𝕜] E) (b y : E) {α β : ℝ}
     · rw [norm_neg, backwardError_def]
       simp only [map_zero, sub_zero, norm_zero, mul_zero, zero_add]
       field_simp
-  · have hyn : 0 < ‖y‖ := norm_pos_iff.mpr hy
-    set D : ℝ := α * ‖A‖ * ‖y‖ + β * ‖b‖ with hDdef
+  · set D : ℝ := α * ‖A‖ * ‖y‖ + β * ‖b‖ with hDdef
     set ω : ℝ := β * ‖b‖ / D with hωdef
     have hDne : D ≠ 0 := ne_of_gt hpos
     have hω0 : 0 ≤ ω := by rw [hωdef]; positivity
@@ -240,7 +239,6 @@ theorem exists_optimal_perturbation (A : E →L[𝕜] E) (b y : E) {α β : ℝ}
       ring
     have hc0 : 0 ≤ (1 - ω) / ‖y‖ ^ 2 := by
       rw [hω1]
-      have : 0 ≤ α * ‖A‖ * ‖y‖ := by positivity
       positivity
     refine ⟨(innerSL 𝕜 y).smulRight ((((1 - ω) / ‖y‖ ^ 2 : ℝ) : 𝕜) • (b - A y)),
       ((-ω : ℝ) : 𝕜) • (b - A y), ?_, ?_, ?_⟩
@@ -686,7 +684,6 @@ theorem relative_error_le_of_norm_le_mul (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜
   have e1 : ‖ΔA‖ / N ≤ γ := (div_le_iff₀ hN0).2 hΔA
   have e2 : ‖Δb‖ / ‖b‖ ≤ γ := (div_le_iff₀ hbn).2 hΔb
   have h1 : ‖ΔA‖ / N + ‖Δb‖ / ‖b‖ ≤ 2 * γ := by linarith
-  have hpos : 0 < 1 - M * ‖ΔA‖ := by linarith
   have hpos' : 0 < 1 - γ * (N * M) := by linarith
   calc N * M / (1 - M * ‖ΔA‖) * (‖ΔA‖ / N + ‖Δb‖ / ‖b‖)
       ≤ N * M / (1 - γ * (N * M)) * (2 * γ) :=
@@ -709,7 +706,6 @@ theorem norm_add_div_le_of_norm_le_mul (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] 
   have hxn : 0 < ‖x‖ := norm_pos_iff.2 hx0
   set k := condNumber (A : E →L[𝕜] E) with hk
   have hpos : 0 < 1 - γ * k := by linarith
-  have hk0 : 0 ≤ k := condNumber_nonneg _
   have hy' : ‖y‖ ≤ ‖y - x‖ + ‖x‖ := by simpa using norm_add_le (y - x) x
   rw [div_le_iff₀ hxn] at h ⊢
   calc ‖y‖ ≤ ‖y - x‖ + ‖x‖ := hy'
@@ -843,7 +839,6 @@ of operators). -/
 theorem norm_error_le_of_norm_mul_sub_one_lt [CompleteSpace E] (A : E ≃L[𝕜] E) (C : E →L[𝕜] E)
     (hr : ‖(A : E →L[𝕜] E) * C - 1‖ < 1) {b x : E} (hx : A x = b) (y : E) :
     ‖y - x‖ ≤ ‖b - A y‖ * ‖C‖ / (1 - ‖(A : E →L[𝕜] E) * C - 1‖) := by
-  have hpos : 0 < 1 - ‖(A : E →L[𝕜] E) * C - 1‖ := by linarith
   rcases subsingleton_or_nontrivial E with hE | hE
   · rw [Subsingleton.elim (y - x) 0, norm_zero]
     positivity

@@ -249,6 +249,25 @@ theorem eq_zero_of_isCoercive_of_apply_mem_orthogonal (hA : A.IsCoercive) {z : E
   have hz2 : ‖z‖ ^ 2 = 0 := le_antisymm (by nlinarith) (sq_nonneg _)
   exact norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 hz2)
 
+/-- **The Galerkin problem is solvable as soon as the compression is injective**: if the
+compression `P_K A|_K` of `A` to a finite-dimensional `K` is injective, it is surjective, so the
+projected equation `P_K A z = P_K r₀` has a solution `z`, and `x₀ + z` solves the Galerkin
+problem. -/
+theorem exists_isGalerkin_of_injective_compression [FiniteDimensional 𝕜 K]
+    (hinj : Function.Injective
+      ((K.orthogonalProjectionOnto : E →ₗ[𝕜] K).comp (A.comp K.subtype))) :
+    ∃ x, IsGalerkin A b x₀ K x := by
+  obtain ⟨z, hz⟩ :=
+    (LinearMap.injective_iff_surjective.1 hinj) (K.orthogonalProjectionOnto (b - A x₀))
+  have hz' : K.starProjection (A (z : E)) = K.starProjection (b - A x₀) := by
+    rw [Submodule.starProjection_apply, Submodule.starProjection_apply]
+    exact congrArg Subtype.val hz
+  refine ⟨x₀ + (z : E), by simp, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩
+  have h1 : inner 𝕜 w (A (z : E)) = inner 𝕜 w (b - A x₀) := by
+    rw [← Submodule.inner_starProjection_right hw (A (z : E)), hz',
+      Submodule.inner_starProjection_right hw]
+  rw [map_add, ← sub_sub, inner_sub_right, h1, sub_self]
+
 /-- [saad2003iterative], Prop 5.1 (i): Galerkin with coercive `A` is uniquely solvable. -/
 theorem existsUnique_isGalerkin_of_isCoercive (hA : A.IsCoercive) [FiniteDimensional 𝕜 K] :
     ∃! x, IsGalerkin A b x₀ K x := by
@@ -264,18 +283,8 @@ theorem existsUnique_isGalerkin_of_isCoercive (hA : A.IsCoercive) [FiniteDimensi
       exact congrArg Subtype.val hz
     refine Subtype.ext (hKL _ z.2 ((Submodule.mem_orthogonal _ _).2 fun w hw => ?_))
     rw [← Submodule.inner_starProjection_right hw (A (z : E)), hz', inner_zero_right]
-  obtain ⟨z, hz⟩ :=
-    (LinearMap.injective_iff_surjective.1 hinj) (K.orthogonalProjectionOnto (b - A x₀))
-  have hz' : K.starProjection (A (z : E)) = K.starProjection (b - A x₀) := by
-    rw [Submodule.starProjection_apply, Submodule.starProjection_apply]
-    exact congrArg Subtype.val hz
-  have hgal : IsGalerkin A b x₀ K (x₀ + (z : E)) := by
-    refine ⟨by simp, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩
-    have h1 : inner 𝕜 w (A (z : E)) = inner 𝕜 w (b - A x₀) := by
-      rw [← Submodule.inner_starProjection_right hw (A (z : E)), hz',
-        Submodule.inner_starProjection_right hw]
-    rw [map_add, ← sub_sub, inner_sub_right, h1, sub_self]
-  exact ⟨x₀ + (z : E), hgal, fun y hy => hy.eq_of_forall hgal hKL⟩
+  obtain ⟨x, hgal⟩ := exists_isGalerkin_of_injective_compression b x₀ K hinj
+  exact ⟨x, hgal, fun y hy => hy.eq_of_forall hgal hKL⟩
 
 /-- **Well-posedness of the general Petrov–Galerkin step** ([saad2003iterative], Prop 5.1): if the
 trial and test spaces have the same finite dimension and `A` maps `K` injectively modulo `Lᗮ`, then

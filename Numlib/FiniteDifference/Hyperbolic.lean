@@ -5,6 +5,7 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.PDE.Transport
 import Numlib.FiniteDifference.Derivative
 import Numlib.FiniteDifference.VonNeumann
+import Numlib.Topology.Algebra.Module.ContinuousLinearMap.RestrictScalars
 
 /-!
 # Finite difference schemes for the linear transport equation
@@ -369,7 +370,6 @@ theorem abs_truncationError_forwardEulerCentred_le (hu : ContDiff ℝ 3 u₀)
   have hu2 : ContDiff ℝ 2 u₀ := hu.of_le (by norm_num)
   have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
   have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
-  have hM₃0 : 0 ≤ M₃ := (abs_nonneg _).trans (hM₃ 0)
   have hR := abs_timeRemainder_one_le hu2 hM₂ a Δt ξ
   have hQ := abs_spaceRemainder_two_left_le hu hM₃ hΔx ξ
   have hP := abs_spaceRemainder_two_right_le hu hM₃ hΔx ξ
@@ -405,8 +405,6 @@ theorem abs_truncationError_laxFriedrichs_le (hu : ContDiff ℝ 3 u₀)
   have hu2 : ContDiff ℝ 2 u₀ := hu.of_le (by norm_num)
   have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
   have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
-  have hM₂0 : 0 ≤ M₂ := (abs_nonneg _).trans (hM₂ 0)
-  have hM₃0 : 0 ≤ M₃ := (abs_nonneg _).trans (hM₃ 0)
   have hR := abs_timeRemainder_one_le hu2 hM₂ a Δt ξ
   have hQ := abs_spaceRemainder_two_left_le hu hM₃ hΔx ξ
   have hP := abs_spaceRemainder_two_right_le hu hM₃ hΔx ξ
@@ -511,7 +509,6 @@ theorem abs_truncationError_laxWendroff_le (hu : ContDiff ℝ 4 u₀)
   have hu3 : ContDiff ℝ 3 u₀ := hu.of_le (by norm_num)
   have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
   have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
-  have hM₃0 : 0 ≤ M₃ := (abs_nonneg _).trans (hM₃ 0)
   have hM₄0 : 0 ≤ M₄ := (abs_nonneg _).trans (hM₄ 0)
   have hE : |u₀ (ξ - a * Δt) - u₀ ξ + a * Δt * deriv u₀ ξ
       - (a * Δt) ^ 2 / 2 * iteratedDeriv 2 u₀ ξ| ≤ M₃ * |a * Δt| ^ 3 / 6 := by
@@ -972,7 +969,6 @@ theorem norm_amplificationFactor_laxWendroff_le_one_iff (hN : 2 ≤ N) (a lam : 
     linarith
   · intro h k
     have hsq := norm_amplificationFactor_laxWendroff_sq a lam k
-    have hcos : Real.cos (gridPhase N k) ≤ 1 := Real.cos_le_one _
     have habs : (lam * a) ^ 2 ≤ 1 := by nlinarith [abs_nonneg (lam * a), sq_abs (lam * a)]
     have hnn := norm_nonneg (amplificationFactor (Stencil.toPeriodic N (laxWendroff a lam)) k)
     have h3 : 0 ≤ (lam * a) ^ 2 * (1 - (lam * a) ^ 2) * (1 - Real.cos (gridPhase N k)) ^ 2 :=
@@ -1148,14 +1144,6 @@ noncomputable def forwardEulerCentredFamily (a lam : ℝ) (m : ℕ) :
   (toEuclideanCLM (𝕜 := ℂ)
     (periodicScheme (Stencil.toPeriodic (m + 8) (forwardEulerCentred a lam)))).restrictScalars ℝ
 
-/-- Restricting scalars commutes with powers. -/
-private theorem restrictScalars_pow {N : ℕ}
-    (A : EuclideanSpace ℂ (Fin N) →L[ℂ] EuclideanSpace ℂ (Fin N)) (n : ℕ) :
-    (A.restrictScalars ℝ) ^ n = (A ^ n).restrictScalars ℝ := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [pow_succ, pow_succ, ih]; rfl
-
 /-- On a grid of at least eight points the `⌊N/4⌋`-th phase lies in `(π/4, π/2]`, so its sine
 squared exceeds `1/2`. -/
 private theorem half_lt_sin_sq_gridPhase (m : ℕ) :
@@ -1259,8 +1247,8 @@ theorem forwardEulerCentred_not_isStableFamily {a lam : ℝ} (ha : a ≠ 0) (hla
     nlinarith [norm_nonneg (FiniteDifference.amplificationFactor
       (Stencil.toPeriodic N (forwardEulerCentred a lam)) (⟨N / 4, by omega⟩ : Fin N))]
   have hlow : ρ ^ n ≤ ‖forwardEulerCentredFamily a lam m ^ n‖ := by
-    rw [forwardEulerCentredFamily, restrictScalars_pow, ContinuousLinearMap.norm_restrictScalars,
-      ← map_pow]
+    rw [forwardEulerCentredFamily, ← ContinuousLinearMap.restrictScalars_pow,
+      ContinuousLinearMap.norm_restrictScalars, ← map_pow]
     exact le_trans (pow_le_pow_left₀ hρ0 hgam n)
       (norm_amplificationFactor_pow_le _ ⟨N / 4, by omega⟩ n)
   have hcast : ((N : ℕ) : ℝ) = (m : ℝ) + 8 := by rw [hNdef]; push_cast; ring
@@ -1953,7 +1941,6 @@ theorem abs_residual_upwind_le_of_isModifiedSolution_third (hD : HasPartialDeriv
           + Δt ^ 3 / 24 + lam * a * Δx ^ 4 / (24 * Δt)) := by
   have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
   have hlam0 : 0 < lam := by rw [hlam]; positivity
-  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0 0 (by omega) 0 0)
   rw [upwind_eq_of_pos ha]
   refine (abs_residual_threePoint_le_of_isModifiedSolution hD hΔt hΔx hlam (by ring) (by ring)
     ?_ ?_ hv hM x t).trans ?_
@@ -2200,8 +2187,6 @@ theorem abs_residual_newmark_le {u : ℝ → ℝ → ℝ} {D : ℕ → ℕ → �
               (add_le_add hE1 (habs _ _ _ hep))) (habs _ _ _ heq))) (habs _ _ _ he1))) habs')
       _ ≤ M * ((1 / 6 + 3 / 2 * γ ^ 2 * |β|) * Δt ^ 2
           + γ ^ 2 * (|β| + |1 / 2 - β|) / 12 * Δx ^ 2) * Δt := by
-          have hbe : (0 : ℝ) ≤ |β| := abs_nonneg β
-          have hbe' : (0 : ℝ) ≤ |1 / 2 - β| := abs_nonneg (1 / 2 - β)
           have hd : (0 : ℝ) ≤ Δt - Δt ^ 2 := by nlinarith
           have hd2 : (0 : ℝ) ≤ Δt ^ 3 - Δt ^ 4 := by nlinarith
           have k1 : (0 : ℝ) ≤ γ ^ 2 * |β| * M * Δx ^ 2 * (Δt - Δt ^ 2) :=
@@ -2246,7 +2231,6 @@ theorem abs_residual_newmark_le {u : ℝ → ℝ → ℝ} {D : ℕ → ℕ → �
             ((abs_sub _ _).trans (add_le_add heps (habs _ _ hep))) (habs _ _ heq)))
             (habs _ _ he1))
       _ ≤ M * ((1 / 6 + γ ^ 2 / 4) * Δt ^ 2 + γ ^ 2 / 12 * Δx ^ 2) * Δt := by
-          have h3 : Δt ^ 3 ≤ Δt ^ 2 := by nlinarith
           nlinarith [mul_nonneg hM0 (sq_nonneg Δx), mul_nonneg hM0 (sq_nonneg Δt),
             mul_nonneg (mul_nonneg hM0 (sq_nonneg γ)) (sq_nonneg Δx),
             mul_nonneg (mul_nonneg hM0 (sq_nonneg γ)) (sq_nonneg Δt),
@@ -2346,7 +2330,6 @@ theorem leapFrogEnergy_succ (hA : A.IsSymmetric) (h : IsLeapFrogOp A Δt u) (n :
     have e2 : ⟪u (n + 1), u n⟫ = ⟪u n, u (n + 1)⟫ := real_inner_comm _ _
     have e3 : ⟪u (n + 2), u (n + 2)⟫ = ‖u (n + 2)‖ ^ 2 := real_inner_self_eq_norm_sq _
     have e4 : ⟪u n, u n⟫ = ‖u n‖ ^ 2 := real_inner_self_eq_norm_sq _
-    have e5 : ⟪u (n + 1), u (n + 2)⟫ = ⟪u (n + 2), u (n + 1)⟫ := real_inner_comm _ _
     linarith
   have hcross : ⟪u (n + 2) - u n, u (n + 2) - (2 : ℝ) • u (n + 1) + u n⟫
       = -(Δt ^ 2 * (⟪A (u (n + 1)), u (n + 2)⟫ - ⟪A (u (n + 1)), u n⟫)) := by
@@ -2383,7 +2366,6 @@ theorem abs_leapFrogEnergy_sub_le (hA : A.IsSymmetricBoundedBy 0 lmax) {kap : �
     ring
   have hcs := two_mul_abs_inner_le hA (1 / (2 * kap)) D (u n)
   have hbd : ⟪A D, D⟫ ≤ lmax * ‖D‖ ^ 2 := by simpa using hA.re_inner_le D
-  have hsq : (0 : ℝ) ≤ ‖D‖ ^ 2 := sq_nonneg _
   have hDt : (0 : ℝ) ≤ Δt ^ 2 := sq_nonneg _
   have habs : (0 : ℝ) < 1 / (2 * kap) := by positivity
   rw [abs_of_pos habs] at hcs
@@ -2425,15 +2407,11 @@ theorem leapFrog_stability (hA : A.IsSymmetricBoundedBy 0 lmax) {kap : ℝ} (hka
   have h0 := abs_leapFrogEnergy_sub_le hA hkap hCFL u 0
   have hE := leapFrogEnergy_eq_zero hA.isSymmetric h n
   rw [abs_le] at hn h0
-  have hpos : (0 : ℝ) ≤ ‖u (0 + 1) - u 0‖ ^ 2 + Δt ^ 2 * ⟪A (u 0), u 0⟫ := by
-    have hq := hA.le_re_inner (u 0)
-    simp only [zero_mul, RCLike.re_to_real] at hq
-    positivity
   have h1 : (0 : ℝ) < 1 - kap := by linarith
   rw [div_mul_eq_mul_div, le_div_iff₀ h1]
   have e1 : u (0 + 1) = u 1 := rfl
-  rw [e1] at h0 hpos
-  nlinarith [hn.1, hn.2, h0.1, h0.2, hE, hpos]
+  rw [e1] at h0
+  nlinarith [hn.1, hn.2, h0.1, h0.2, hE]
 
 /-! #### Newmark -/
 
@@ -2530,8 +2508,6 @@ theorem newmarkEnergy_succ_le (hA : A.IsSymmetricBoundedBy 0 lmax) (hth : 1 / 2 
   have h1 : 0 ≤ (2 * θ - 1) * ⟪A (u (n + 1) - u n), u (n + 1) - u n⟫ :=
     mul_nonneg (by linarith) hpos
   have h2 : 0 ≤ Δt ^ 2 * (2 * β - θ) * (θ - 1 / 2) * ‖A (u (n + 1) - u n)‖ ^ 2 := by
-    have hc : (0 : ℝ) ≤ Δt ^ 2 * (2 * β - θ) * (θ - 1 / 2) :=
-      mul_nonneg (mul_nonneg (sq_nonneg _) (by linarith)) (by linarith)
     positivity
   linarith
 
@@ -2551,8 +2527,6 @@ theorem newmark_stability (hA : A.IsSymmetricBoundedBy 0 lmax) (hth : 1 / 2 ≤ 
       ≤ ‖v 0‖ ^ 2 + ⟪A (u 0), u 0⟫ + Δt ^ 2 * (2 * β - θ) / 2 * ‖A (u 0)‖ ^ 2 := by
   have hmono := newmarkEnergy_le hA hth hbt h n
   have hextra : 0 ≤ Δt ^ 2 * (2 * β - θ) / 2 * ‖A (u n)‖ ^ 2 := by
-    have hc : (0 : ℝ) ≤ Δt ^ 2 * (2 * β - θ) / 2 :=
-      div_nonneg (mul_nonneg (sq_nonneg _) (by linarith)) (by norm_num)
     positivity
   simp only [newmarkEnergy] at hmono
   linarith

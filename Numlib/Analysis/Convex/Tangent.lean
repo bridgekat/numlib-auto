@@ -232,7 +232,6 @@ theorem exists_isTangentAt_lt_of_zero_mem_interior (hC : Convex ℝ C) (hCcl : I
     refine hg0 (ContinuousLinearMap.ext fun x => ?_)
     rcases eq_or_ne x 0 with rfl | hx
     · simp
-    have hxn : 0 < ‖x‖ := norm_pos_iff.2 hx
     have h1 := hgmax _ (hball (smul_div_norm_mem_closedBall hx hr (abs_of_pos hr)))
     have h2 := hgmax _
       (hball (smul_div_norm_mem_closedBall hx hr (by rw [abs_neg, abs_of_pos hr])))

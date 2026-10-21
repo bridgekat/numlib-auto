@@ -545,7 +545,7 @@ Lemma 8.8 (`Matrix.sum_abs_inv_mul_abs_apply_le_of_isDiagDominant'`); the bound 
 `n`, better than the `2^{n-i+1}` the book's sentence suggests. -/
 theorem abs_sub_le_of_roundsBackSubst_of_isDiagDominant {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card n : K) * m.u < 1) {U : Matrix n n K} (hU : U.IsUpperTriangular)
-    (hd : ∀ i, U i i ≠ 0) (hdom : ∀ i, ∑ j ∈ univ.erase i, |U i j| ≤ |U i i|) {x b xhat : n → K}
+    (hd : ∀ i, U i i ≠ 0) (hdom : U.IsAbsDiagDominant) {x b xhat : n → K}
     (hx : U *ᵥ x = b) (h : RoundsBackSubst m U b xhat) {c : K} (hc : ∀ j, |xhat j| ≤ c) (i : n) :
     |x i - xhat i| ≤ (2 * Fintype.card n - 1) * gamma m.u (Fintype.card n) * c := by
   obtain ⟨ΔU, hΔ, hxhat⟩ := exists_roundsBackSubst_eq hu hcard hU hd h

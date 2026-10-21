@@ -249,6 +249,9 @@ id = "MemSobolevMultiIndex.exists_hasWeakIteratedLineDerivOn_single"
 id = "SobolevEuclidean.memSobolevMultiIndex_one_of_forall"
 
 [[node]]
+id = "SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn"
+
+[[node]]
 id = "SobolevEuclidean.weakDeriv_single_ae_eq"
 
 [[node]]

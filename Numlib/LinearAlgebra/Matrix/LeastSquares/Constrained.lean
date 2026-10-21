@@ -593,7 +593,6 @@ theorem isLSESolution_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm : n 
     intro y'
     constructor
     · intro hc j hj
-      have hjl := j.isLt
       obtain ⟨k, hkdef⟩ : ∃ k : Fin p, (k : ℕ) = j - (n - p) := ⟨⟨j - (n - p), by omega⟩, rfl⟩
       have hk : (k : ℕ) + (n - p) < n := by omega
       have hkj : (⟨(k : ℕ) + (n - p), hk⟩ : Fin n) = j := Fin.ext (by simp only; omega)
@@ -607,7 +606,7 @@ theorem isLSESolution_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm : n 
       exact congrArg (fun i => WithLp.ofLp dt i) (Fin.ext (by simp only; omega))
     · intro hc
       ext k
-      have hk : (k : ℕ) + (n - p) < n := by have := k.isLt; omega
+      have hk : (k : ℕ) + (n - p) < n := by omega
       simp only [ofLp_toEuclideanLin]
       rw [shiftedRectDiagonal_mulVec _ _ _ _ hk, hc _ (Nat.le_add_left _ _)]
       have hnlt : ¬ ((k : ℕ) + (n - p) < n - p) := by omega
@@ -691,9 +690,8 @@ theorem penaltyLSE_sub_eq_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm 
     conjTranspose_shiftedRectDiagonal_mulVec, lseGSVDCoeff, penaltyGSVDCoeff, ← hbt, ← hdt]
   by_cases hi : (i : ℕ) < n - p
   · obtain ⟨hα1, hβ0⟩ := hpure i hi
-    have hn : ¬ (n - p ≤ (i : ℕ) ∧ (i : ℕ) - (n - p) < p) := fun hh => by omega
     simp [hi, hα1, hβ0]
-  · have hn : n - p ≤ (i : ℕ) ∧ (i : ℕ) - (n - p) < p := ⟨by omega, by have := i.isLt; omega⟩
+  · have hn : n - p ≤ (i : ℕ) ∧ (i : ℕ) - (n - p) < p := ⟨by omega, by omega⟩
     simp only [hn, hi, and_self, ↓reduceDIte, ↓reduceDIte]
     have hb : ((β i : ℝ) : 𝕜) ≠ 0 := RCLike.ofReal_ne_zero.2 (hβ i (by omega))
     have hd : ((α i : ℝ) : 𝕜) ^ 2 + (μ : 𝕜) * ((β i : ℝ) : 𝕜) ^ 2 ≠ 0 := by
@@ -734,7 +732,7 @@ theorem tendsto_penaltyLSE (hnm : n ≤ m₁) (hB : LinearIndependent 𝕜 B)
       have hr' := ((RCLike.continuous_ofReal (K := 𝕜)).tendsto 0).comp hr
       rw [RCLike.ofReal_zero] at hr'
       have := hr'.const_mul ((α i : 𝕜) * ((β i : 𝕜) * bt ⟨i, lt_of_lt_of_le i.isLt hnm⟩
-        - (α i : 𝕜) * dt ⟨i - (n - p), by have := i.isLt; omega⟩))
+        - (α i : 𝕜) * dt ⟨i - (n - p), by omega⟩))
       rw [mul_zero] at this
       refine this.congr fun μ => ?_
       simp only [Function.comp_apply]

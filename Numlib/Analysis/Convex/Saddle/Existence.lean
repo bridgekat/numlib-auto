@@ -474,12 +474,11 @@ omit [FiniteDimensional ℝ V] [NormedAddCommGroup X] [NormedSpace ℝ X]
 structural description. -/
 theorem saddleStructure_lowerSimpleExt (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hDne : D.Nonempty)
-    (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hK : ConcaveConvexOn C D K)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
     SaddleStructure (lowerSimpleExt C D K) :=
-  (closedSaddleFn_iff_saddleStructure (concaveConvexFn_lowerSimpleExt hC hconv hconc)
+  (closedSaddleFn_iff_saddleStructure (concaveConvexFn_lowerSimpleExt hC hK)
       (properSaddleFn_lowerSimpleExt hCne hDne)).1
     (closedSaddleFn_of_mem_saddleClass_simpleExt hCcl hDcl hCne hDne hcontD hcontC
       (mem_saddleClass_left (partialCl₂_upperSimpleExt hDcl hDne hcontD)))
@@ -490,13 +489,12 @@ omit [FiniteDimensional ℝ V] [NormedAddCommGroup X] [NormedSpace ℝ X]
 `C × D`. -/
 theorem maximin_lowerSimpleExt (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hDne : D.Nonempty)
-    (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hK : ConcaveConvexOn C D K)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
     maximin (lowerSimpleExt C D K) = ⨆ u ∈ C, ⨅ x ∈ D, ((K (u, x) : ℝ) : EReal) := by
-  rw [maximin_eq_biSup_biInf (concaveConvexFn_lowerSimpleExt hC hconv hconc)
-      (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC)
+  rw [maximin_eq_biSup_biInf (concaveConvexFn_lowerSimpleExt hC hK)
+      (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hK hcontD hcontC)
       (properSaddleFn_lowerSimpleExt hCne hDne),
     dom₁_lowerSimpleExt (K := K) hDne, dom₂_lowerSimpleExt (K := K) hCne]
   exact iSup_congr fun u => iSup_congr fun hu => iInf_congr fun x => iInf_congr fun hx =>
@@ -508,13 +506,12 @@ omit [FiniteDimensional ℝ V] [NormedAddCommGroup X] [NormedSpace ℝ X]
 `C × D`. -/
 theorem minimax_lowerSimpleExt (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hDne : D.Nonempty)
-    (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hK : ConcaveConvexOn C D K)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
     minimax (lowerSimpleExt C D K) = ⨅ x ∈ D, ⨆ u ∈ C, ((K (u, x) : ℝ) : EReal) := by
-  rw [minimax_eq_biInf_biSup (concaveConvexFn_lowerSimpleExt hC hconv hconc)
-      (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC)
+  rw [minimax_eq_biInf_biSup (concaveConvexFn_lowerSimpleExt hC hK)
+      (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hK hcontD hcontC)
       (properSaddleFn_lowerSimpleExt hCne hDne),
     dom₁_lowerSimpleExt (K := K) hDne, dom₂_lowerSimpleExt (K := K) hCne]
   exact iInf_congr fun x => iInf_congr fun hx => iSup_congr fun u => iSup_congr fun hu =>
@@ -527,14 +524,13 @@ with the membership `K₁ ∈ Ω (F)` that the results above consume. -/
 theorem exists_bifunSaddleClass_lowerSimpleExt (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)
-    (hDne : D.Nonempty) (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hDne : D.Nonempty) (hK : ConcaveConvexOn C D K)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
     ∃ F : Bifun U X, ConvexBifun F ∧ ClosedConvexBifun F ∧
       lowerSimpleExt C D K ∈ bifunSaddleClass Bu Bx F := by
   obtain ⟨F, ⟨hFconv, hFcl, hbr1, hbr2⟩, -⟩ := exists_unique_bifun_of_simpleExt Bu Bx hC hCcl
-    hDcl hCne hconv hconc hDne hcontD hcontC
+    hDcl hCne hK hDne hcontD hcontC
   refine ⟨F, hFconv, hFcl, ?_⟩
   rw [bifunSaddleClass, hbr1, hbr2]
   exact mem_saddleClass_left (partialCl₂_upperSimpleExt hDcl hDne hcontD)
@@ -556,15 +552,14 @@ saddle-value, `sup inf = inf sup` over `C × D`, because its extrema over the wh
 restricted ones. -/
 theorem biSup_biInf_eq_biInf_biSup_of_hasSaddleValue_lowerSimpleExt (hC : Convex ℝ C)
     (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty) (hDne : D.Nonempty)
-    (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hK : ConcaveConvexOn C D K)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C)
     (hsv : HasSaddleValue (lowerSimpleExt C D K)) :
     (⨆ u ∈ C, ⨅ x ∈ D, ((K (u, x) : ℝ) : EReal))
       = ⨅ x ∈ D, ⨆ u ∈ C, ((K (u, x) : ℝ) : EReal) := by
-  rwa [hasSaddleValue_iff, maximin_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC,
-    minimax_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC] at hsv
+  rwa [hasSaddleValue_iff, maximin_lowerSimpleExt hC hCcl hDcl hCne hDne hK hcontD hcontC,
+    minimax_lowerSimpleExt hC hCcl hDcl hCne hDne hK hcontD hcontC] at hsv
 
 /-- The half where `D` is bounded: a finite continuous concave-convex function on a product of
 nonempty closed convex sets, one of them bounded, has `sup inf = inf sup` over `C × D`. The lower
@@ -574,20 +569,19 @@ theorem biSup_biInf_eq_biInf_biSup_of_isBounded_right (Bu : U →ₗ[ℝ] V →�
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hB : Bx.SeparatingRight)
     (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)
-    (hDne : D.Nonempty) (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hDne : D.Nonempty) (hK : ConcaveConvexOn C D K)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C)
     (hbd : Bornology.IsBounded D) :
     (⨆ u ∈ C, ⨅ x ∈ D, ((K (u, x) : ℝ) : EReal))
       = ⨅ x ∈ D, ⨆ u ∈ C, ((K (u, x) : ℝ) : EReal) := by
   obtain ⟨F, hFconv, hFcl, hmem⟩ := exists_bifunSaddleClass_lowerSimpleExt Bu Bx hC hCcl hDcl
-    hCne hDne hconv hconc hcontD hcontC
-  refine biSup_biInf_eq_biInf_biSup_of_hasSaddleValue_lowerSimpleExt hC hCcl hDcl hCne hDne hconv
-    hconc hcontD hcontC ?_
+    hCne hDne hK hcontD hcontC
+  refine biSup_biInf_eq_biInf_biSup_of_hasSaddleValue_lowerSimpleExt hC hCcl hDcl hCne hDne hK
+    hcontD hcontC ?_
   exact hasSaddleValue_of_isBounded_dom₂ Bu Bx hB hFconv hFcl hmem
-    (concaveConvexFn_lowerSimpleExt hC hconv hconc) (properSaddleFn_lowerSimpleExt hCne hDne)
-    (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC)
+    (concaveConvexFn_lowerSimpleExt hC hK) (properSaddleFn_lowerSimpleExt hCne hDne)
+    (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hK hcontD hcontC)
     (by rw [dom₂_lowerSimpleExt (K := K) hCne]; exact hbd)
 
 /-- The half where `C` is bounded. -/
@@ -595,20 +589,19 @@ theorem biSup_biInf_eq_biInf_biSup_of_isBounded_left (Bu : U →ₗ[ℝ] V →�
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hB : Bu.SeparatingLeft)
     (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)
-    (hDne : D.Nonempty) (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hDne : D.Nonempty) (hK : ConcaveConvexOn C D K)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C)
     (hbd : Bornology.IsBounded C) :
     (⨆ u ∈ C, ⨅ x ∈ D, ((K (u, x) : ℝ) : EReal))
       = ⨅ x ∈ D, ⨆ u ∈ C, ((K (u, x) : ℝ) : EReal) := by
   obtain ⟨F, hFconv, hFcl, hmem⟩ := exists_bifunSaddleClass_lowerSimpleExt Bu Bx hC hCcl hDcl
-    hCne hDne hconv hconc hcontD hcontC
-  refine biSup_biInf_eq_biInf_biSup_of_hasSaddleValue_lowerSimpleExt hC hCcl hDcl hCne hDne hconv
-    hconc hcontD hcontC ?_
+    hCne hDne hK hcontD hcontC
+  refine biSup_biInf_eq_biInf_biSup_of_hasSaddleValue_lowerSimpleExt hC hCcl hDcl hCne hDne hK
+    hcontD hcontC ?_
   exact hasSaddleValue_of_isBounded_dom₁ Bu Bx hB hFconv hFcl hmem
-    (concaveConvexFn_lowerSimpleExt hC hconv hconc) (properSaddleFn_lowerSimpleExt hCne hDne)
-    (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC)
+    (concaveConvexFn_lowerSimpleExt hC hK) (properSaddleFn_lowerSimpleExt hCne hDne)
+    (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hK hcontD hcontC)
     (by rw [dom₁_lowerSimpleExt (K := K) hDne]; exact hbd)
 
 /-- **The minimax theorem**: a finite continuous concave-convex function on a product of nonempty
@@ -619,19 +612,18 @@ theorem exists_saddlePoint_of_isBounded (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hBu : Bu.SeparatingLeft) (hBx : Bx.SeparatingRight)
     (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)
-    (hDne : D.Nonempty) (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
-    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hDne : D.Nonempty) (hK : ConcaveConvexOn C D K)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C)
     (hbdC : Bornology.IsBounded C) (hbdD : Bornology.IsBounded D) :
     ∃ q : U × Y, q.1 ∈ C ∧ q.2 ∈ D ∧
       (∀ u ∈ C, K (u, q.2) ≤ K q) ∧ ∀ x ∈ D, K q ≤ K (q.1, x) := by
   obtain ⟨F, hFconv, hFcl, hmem⟩ := exists_bifunSaddleClass_lowerSimpleExt Bu Bx hC hCcl hDcl
-    hCne hDne hconv hconc hcontD hcontC
+    hCne hDne hK hcontD hcontC
   have hp : ProperSaddleFn (lowerSimpleExt C D K) := properSaddleFn_lowerSimpleExt hCne hDne
   obtain ⟨q, hq⟩ := exists_isSaddlePoint_of_isBounded_domSaddle Bu Bx hBu hBx hFconv hFcl hmem
-    (concaveConvexFn_lowerSimpleExt hC hconv hconc) hp
-    (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC)
+    (concaveConvexFn_lowerSimpleExt hC hK) hp
+    (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hK hcontD hcontC)
     (by rw [dom₁_lowerSimpleExt (K := K) hDne]; exact hbdC)
     (by rw [dom₂_lowerSimpleExt (K := K) hCne]; exact hbdD)
   obtain ⟨hq₁, hq₂⟩ := hq.mem_domSaddle hp
@@ -656,11 +648,6 @@ section GraphSubdifferential
 variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-private theorem add_coe_right_inj {a b : EReal} {r : ℝ} :
-    a + (r : EReal) = b + (r : EReal) ↔ a = b :=
-  ⟨fun h => le_antisymm ((EReal.addLECancellable_coe r).add_le_add_iff_right.1 h.le)
-      ((EReal.addLECancellable_coe r).add_le_add_iff_right.1 h.ge), fun h => by rw [h]⟩
-
 /-- The arithmetic behind that identification: with `e = c - d`, the equations `-b = e - a` and
 `a - c = b - d` say the same thing, both reducing to `a + d = b + c`. -/
 private theorem neg_eq_coe_sub_iff_sub_coe_eq_sub_coe (a b : EReal) (c d e : ℝ)
@@ -677,7 +664,7 @@ private theorem neg_eq_coe_sub_iff_sub_coe_eq_sub_coe (a b : EReal) (c d e : ℝ
   refine ⟨fun h => ?_, fun h => ?_⟩
   · rw [← h]
     exact hkey
-  · exact add_coe_right_inj.1 (hkey.trans h.symm)
+  · exact EReal.add_coe_right_cancel (hkey.trans h.symm)
 
 /-- Membership in the subdifferential of the class `Ω (F)` is membership in the subdifferential
 of the graph function `f` of `F`, with the pair `(u*, v)` **partially inverted** to `(-u*, v)`. No

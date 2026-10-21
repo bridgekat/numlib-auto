@@ -73,4 +73,34 @@ theorem PosDef.exists_isUnit_conj_eq_one {B : Matrix n n 𝕜} (hB : B.PosDef) :
 
 end RCLike
 
+/-! ### The spectrum of a positive definite complex matrix -/
+
+section Complex
+
+open scoped ComplexOrder
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- The eigenvalues of a positive definite complex matrix lie in the open right half-plane:
+`μ v = M v` with `v ≠ 0` gives `0 < vᴴ M v = μ vᴴ v`, and `vᴴ v > 0`. -/
+theorem PosDef.re_pos_of_mem_spectrum {M : Matrix n n ℂ} (hM : M.PosDef) {μ : ℂ}
+    (hμ : μ ∈ spectrum ℂ M) : 0 < μ.re := by
+  rw [spectrum.mem_iff, isUnit_iff_isUnit_det, isUnit_iff_ne_zero, not_not,
+    ← exists_mulVec_eq_zero_iff] at hμ
+  obtain ⟨v, hv0, hv⟩ := hμ
+  have hMv : M *ᵥ v = μ • v := by
+    rw [sub_mulVec, sub_eq_zero, Algebra.algebraMap_eq_smul_one, smul_mulVec, one_mulVec] at hv
+    exact hv.symm
+  have h1 := hM.dotProduct_mulVec_pos hv0
+  have h2 := PosDef.one.dotProduct_mulVec_pos hv0
+  rw [hMv, dotProduct_smul, smul_eq_mul] at h1
+  rw [one_mulVec] at h2
+  obtain ⟨hre1, him1⟩ := Complex.lt_def.1 h1
+  obtain ⟨hre2, him2⟩ := Complex.lt_def.1 h2
+  simp only [Complex.zero_re, Complex.zero_im, Complex.mul_re] at hre1 hre2 him2
+  rw [← him2, mul_zero, sub_zero] at hre1
+  exact pos_of_mul_pos_left hre1 hre2.le
+
+end Complex
+
 end Matrix

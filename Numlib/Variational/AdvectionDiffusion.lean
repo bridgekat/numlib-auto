@@ -117,7 +117,6 @@ theorem localPeclet_nonneg {β h ε : ℝ} (hh : 0 ≤ h) (hε : 0 ≤ ε) : 0 �
 theorem localPeclet_pos {β h ε : ℝ} (hβ : β ≠ 0) (hh : 0 < h) (hε : 0 < ε) :
     0 < localPeclet β h ε := by
   unfold localPeclet
-  have : 0 < |β| := abs_pos.2 hβ
   positivity
 
 /-- For a positive advection coefficient, `|β| h = 2 ε Pe`. -/
@@ -371,7 +370,6 @@ theorem centredSolution_oscillates {Pe : ℝ} (hPe : 1 < Pe) {n : ℕ} (hn : n �
     ring
   rw [e]
   have h1 : 0 < (-centredRatio Pe) ^ i := pow_pos (by linarith) i
-  have h2 : 0 < (centredSolution n Pe 1 - centredSolution n Pe 0) ^ 2 := by positivity
   positivity
 
 /-- **The centred scheme is monotone when the local Péclet number is below `1`**, matching the
@@ -700,7 +698,6 @@ theorem stabilizedPeclet_phiUpwind_pos {Pe : ℝ} (hPe : 0 < Pe) :
 ([quarteroni2000numerical] §12.5.2), since `1 + φ^SG(Pe) = Pe coth Pe`. -/
 theorem stabilizedPeclet_phiSG_eq_tanh {Pe : ℝ} (hPe : 0 < Pe) :
     stabilizedPeclet phiSG Pe = Real.tanh Pe := by
-  have hsinh : 0 < Real.sinh Pe := Real.sinh_pos_iff.2 hPe
   rw [stabilizedPeclet, one_add_phiSG hPe.ne', Real.tanh_eq_sinh_div_cosh, div_div_eq_mul_div,
     div_eq_div_iff (by positivity) (Real.cosh_pos Pe).ne']
   ring
@@ -748,7 +745,6 @@ choices. -/
 theorem viscosity_pos {ε β h : ℝ} {φ : ℝ → ℝ} (hε : 0 < ε)
     (hφ : 0 ≤ φ (localPeclet β h ε)) : 0 < viscosity ε β h φ := by
   rw [viscosity]
-  have : (0 : ℝ) < 1 + φ (localPeclet β h ε) := by linarith
   positivity
 
 /-- **The centred scheme with numerical viscosity**, [quarteroni2000numerical] (12.79) with
@@ -870,7 +866,6 @@ theorem centredRatio_stabilizedPeclet_phiSG {Pe : ℝ} (hPe : 0 < Pe) :
   have hEE : Real.exp (2 * Pe) = Real.exp Pe * Real.exp Pe := by
     rw [← Real.exp_add]
     ring_nf
-  have hs : Real.exp Pe + (Real.exp Pe)⁻¹ ≠ 0 := by positivity
   rw [stabilizedPeclet_phiSG_eq_tanh hPe, centredRatio, div_eq_iff h1, Real.tanh_eq, Real.exp_neg,
     hEE]
   field_simp
@@ -1138,7 +1133,7 @@ the upwind-stabilized Galerkin error satisfies
 `w = Π_h^1 ů` (`FiniteElement.lagrangeInterp`), the interpolation estimate (8.27)
 `FiniteElement.seminorm_sub_lagrangeInterp_le`, and `ε φ^{UP}(Pe)/ε_h ≤ Pe = |β| h/(2ε)`. -/
 theorem seminorm_sub_stabilized_le_upwind (hab : a < b) {n : ℕ} {x : ℕ → ℝ}
-    (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {ε β h : ℝ} (hε : 0 < ε)
+    (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {ε β h : ℝ} (hε : 0 < ε)
     (hmesh : ∀ k < n, x (k + 1) - x k ≤ h) {ℓ : SobolevInterval 1 a b →L[ℝ] ℝ}
     {u uh : SobolevInterval 1 a b} (U : SobolevInterval 2 a b)
     (hU : SobolevInterval.inclusionCLM 1 a b U = u) (hu : u ∈ SobolevIntervalZero a b)
@@ -1168,9 +1163,6 @@ theorem seminorm_sub_stabilized_le_upwind (hab : a < b) {n : ℕ} {x : ℕ → �
     have h1 := FiniteElement.seminorm_sub_lagrangeInterp_le hab hx hn hmesh U
     rwa [hU] at h1
   -- the two constants
-  have hCP : 0 ≤ (b - a) / Real.sqrt 2 := by
-    have := hab.le
-    positivity
   have hc1 : 1 + (viscosity ε β h phiUpwind + (b - a) / Real.sqrt 2 * |β|)
         / viscosity ε β h phiUpwind ≤ 2 + (b - a) / Real.sqrt 2 * |β| / ε := by
     rw [add_div, div_self hεh.ne', ← add_assoc]
@@ -1193,7 +1185,6 @@ theorem seminorm_sub_stabilized_le_upwind (hab : a < b) {n : ℕ} {x : ℕ → �
     apply_nonneg _ _
   have h4 : 0 ≤ 1 + (viscosity ε β h phiUpwind + (b - a) / Real.sqrt 2 * |β|)
       / viscosity ε β h phiUpwind := by positivity
-  have h5 : 0 ≤ ε * phiUpwind (localPeclet β h ε) / viscosity ε β h phiUpwind := by positivity
   refine key.trans ?_
   have hA : (1 + (viscosity ε β h phiUpwind + (b - a) / Real.sqrt 2 * |β|)
         / viscosity ε β h phiUpwind)
@@ -1205,7 +1196,6 @@ theorem seminorm_sub_stabilized_le_upwind (hab : a < b) {n : ℕ} {x : ℕ → �
       ≤ |β| / (2 * ε) * h * SobolevInterval.seminorm 1 a b u :=
     mul_le_mul_of_nonneg_right hc2 h1
   have hbeta : 0 ≤ |β| / (2 * ε) := by positivity
-  have hba : (0 : ℝ) ≤ b - a := by linarith
   have ha0 : 0 ≤ 2 + (b - a) / Real.sqrt 2 * |β| / ε := by positivity
   calc (1 + (viscosity ε β h phiUpwind + (b - a) / Real.sqrt 2 * |β|)
           / viscosity ε β h phiUpwind)
@@ -1261,7 +1251,7 @@ solution (12.70) at every node.  The proof is the chain
 `FiniteElement.galerkin_iff_centredScheme` (the Galerkin system is the centred difference scheme
 at the viscosity `ε_h`), `AdvectionDiffusion.viscosityScheme_iff_galerkinStencil` and
 `AdvectionDiffusion.sg_nodal_exact`. -/
-theorem rep_eq_exactSolution_of_galerkin_sg (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem rep_eq_exactSolution_of_galerkin_sg (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (huni : ∀ k < n, x (k + 1) - x k = meshWidth n) {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β)
     {uh : SobolevInterval 1 0 1} (huh : uh ∈ FiniteElement.lagrangeSpace zero_lt_one n x 1)
     (huh0 : SobolevInterval.rep uh 0 = 0) (huh1 : SobolevInterval.rep uh 1 = 1)
@@ -1309,7 +1299,7 @@ interpolation error of (8.27).  The statement is written for the unlifted pair `
 `u` the exact solution (12.70) with `u(0) = 0`, `u(1) = 1`, and `u_h ∈ X_h^1` the stabilized
 Galerkin solution with the same boundary values — which is the same inequality: the lifting
 `ū(x) = x` cancels in `ů - ů_h = u - u_h`, and `|ů|_{H²} = |u|_{H²}` because `ū` is affine. -/
-theorem seminorm_sub_stabilized_le_sg (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem seminorm_sub_stabilized_le_sg (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (huni : ∀ k < n, x (k + 1) - x k = meshWidth n) {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β)
     {u uh : SobolevInterval 1 0 1} (U : SobolevInterval 2 0 1)
     (hU : SobolevInterval.inclusionCLM 1 0 1 U = u)
@@ -1343,7 +1333,7 @@ Scharfetter–Gummel consistency defect is second order in `h` where the upwind 
 (`seminorm_sub_stabilized_le_upwind`) is only first order, which is what upgrades the rate of
 (12.85) to that of (12.86). -/
 theorem seminorm_sub_stabilized_le_sg_quadratic (hab : a < b)
-    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {ε β h : ℝ} (hε : 0 < ε)
+    (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {ε β h : ℝ} (hε : 0 < ε)
     (hmesh : ∀ m < n, x (2 * m + 2) - x (2 * m) ≤ h)
     {ℓ : SobolevInterval 1 a b →L[ℝ] ℝ} {u uh : SobolevInterval 1 a b}
     (U : SobolevInterval 3 a b)
@@ -1375,9 +1365,6 @@ theorem seminorm_sub_stabilized_le_sg_quadratic (hab : a < b)
     have h1 := FiniteElement.seminorm_sub_quadraticInterp_le hab hx hn hmesh U
     rwa [hU] at h1
   -- the two constants
-  have hCP : 0 ≤ (b - a) / Real.sqrt 2 := by
-    have := hab.le
-    positivity
   have hc1 : 1 + (viscosity ε β h phiSG + (b - a) / Real.sqrt 2 * |β|)
         / viscosity ε β h phiSG ≤ 2 + (b - a) / Real.sqrt 2 * |β| / ε := by
     rw [add_div, div_self hεh.ne', ← add_assoc]

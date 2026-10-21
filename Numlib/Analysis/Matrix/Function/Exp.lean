@@ -429,7 +429,6 @@ theorem l2_opNorm_exp_smul_add_sub_le {A Q : Matrix n n ℂ}
   -- Gronwall for `φ(s) = e^{-αs} ‖e^{s(A+E)}‖`
   set φ : ℝ → ℝ := fun s => Real.exp (-(α * s)) * ‖exp (s • (A + E))‖
   have hφc : Continuous φ := by
-    have := (hcont (A + E)).norm
     fun_prop
   have hφ : ∀ s ∈ Set.Icc 0 t, φ s ≤ M t + M t * ‖E‖ * ∫ r in (0 : ℝ)..s, φ r := by
     intro s hs

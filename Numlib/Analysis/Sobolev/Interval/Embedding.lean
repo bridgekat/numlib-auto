@@ -388,7 +388,6 @@ theorem abs_rep_le (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p 
     · obtain rfl : I = Opens.Ioo a b := Opens.ext h
       rw [closure_coe_Ioo hab] at hx
       refine (abs_rep_le_of_bounded hab u hx).trans ?_
-      have hba : 0 < b - a := sub_pos.2 hab
       calc (b - a) ^ (-p.toReal⁻¹) * ‖deriv u 0‖ + (b - a) ^ (1 - p.toReal⁻¹) * ‖deriv u 1‖
           ≤ (b - a) ^ (-p.toReal⁻¹) * ‖u‖ + (b - a) ^ (1 - p.toReal⁻¹) * ‖u‖ := by
             gcongr
@@ -1420,7 +1419,6 @@ theorem norm_equiv_of_bounded (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)] :
     ∃ C₁ C₂ : ℝ, 0 < C₁ ∧ 0 < C₂ ∧ ∀ u : SobolevIntervalLp 1 p (Opens.Ioo a b),
       ‖u‖ ≤ C₁ * (‖deriv u 1‖ + ‖toLpOfBounded p hab q u‖) ∧
         ‖deriv u 1‖ + ‖toLpOfBounded p hab q u‖ ≤ C₂ * ‖u‖ := by
-  have hba : 0 < b - a := sub_pos.2 hab
   have hemb := embeddingConst_pos p (Opens.Ioo a b)
   refine ⟨(b - a) ^ p.toReal⁻¹ * ((b - a) ^ (-q.toReal⁻¹) + (b - a) ^ (1 - p.toReal⁻¹)) + 1,
     1 + (b - a) ^ q.toReal⁻¹ * embeddingConst p (Opens.Ioo a b), by positivity, by positivity,
@@ -1756,7 +1754,6 @@ theorem exists_subseq_tendsto_of_bounded_one (hab : a < b)
   have hcl : Icc a b ⊆ closure ((Opens.Ioo a b : Opens ℝ) : Set ℝ) := by rw [closure_coe_Ioo hab]
   have ha : a ∈ Icc a b := left_mem_Icc.2 hab.le
   have hb : b ∈ Icc a b := right_mem_Icc.2 hab.le
-  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
   -- the nondecreasing parts `v_n(x) = ∫_a^x |u_n'|` and `w_n = v_n - ũ_n`
   obtain ⟨v, hv⟩ : ∃ v : ℕ → ℝ → ℝ, v = fun n x ↦ ∫ t in a..x, |deriv (u n) 1 t| := ⟨_, rfl⟩
   obtain ⟨w, hw⟩ : ∃ w : ℕ → ℝ → ℝ, w = fun n x ↦ v n x - rep (u n) x := ⟨_, rfl⟩

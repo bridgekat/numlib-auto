@@ -7,6 +7,7 @@ import Mathlib.Topology.Algebra.Order.Floor
 import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.MetricSpace.Contracting
 import Mathlib.Topology.UniformSpace.HeineCantor
+import Numlib.Nonlinear.Nemytskii
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 
 /-!
@@ -747,18 +748,13 @@ theorem hasFDerivAt_urysohn {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     refine ⟨ε / (b - a + 1), div_pos hε (by linarith), ?_⟩
     rw [div_mul_eq_mul_div, div_le_iff₀ (by linarith)]
     nlinarith
-  -- `kz` is uniformly continuous on a compact tube around the graph of `u`
-  set S : Set (Icc a b × Icc a b × ℝ) :=
-    univ ×ˢ univ ×ˢ Icc (-(‖u‖ + 1)) (‖u‖ + 1) with hSdef
-  have hmemS : ∀ (x y : Icc a b) (t : ℝ), |t| ≤ ‖u‖ + 1 → (x, y, t) ∈ S := by
-    intro x y t ht
-    simp only [hSdef, Set.mem_prod, Set.mem_univ, true_and, Set.mem_Icc]
-    exact abs_le.1 ht
-  have hScomp : IsCompact S := isCompact_univ.prod (isCompact_univ.prod isCompact_Icc)
-  obtain ⟨δ₀, hδ₀, hδ⟩ := Metric.uniformContinuousOn_iff.mp
-    (hScomp.uniformContinuousOn_of_continuous kz.continuous.continuousOn) ε' hε'pos
-  filter_upwards [Metric.ball_mem_nhds u (lt_min hδ₀ one_pos)] with v hv
-  have hvun : ‖v - u‖ < min δ₀ 1 := by
+  -- the uniform linearization estimate of the kernel in its last argument
+  obtain ⟨δ, hδ, hlin⟩ := Nemytskii.exists_abs_sub_sub_mul_le
+    (f := k.comp ⟨fun p : (Icc a b × Icc a b) × ℝ => (p.1.1, p.1.2, p.2), by fun_prop⟩)
+    (fz := kz.comp ⟨fun p : (Icc a b × Icc a b) × ℝ => (p.1.1, p.1.2, p.2), by fun_prop⟩)
+    (fun p z => hk p.1 p.2 z) ‖u‖ hε'pos
+  filter_upwards [Metric.ball_mem_nhds u hδ] with v hv
+  have hvun : ‖v - u‖ < δ := by
     rw [← dist_eq_norm]; exact Metric.mem_ball.mp hv
   have hd : ∀ y : Icc a b, |v y - u y| ≤ ‖v - u‖ := fun y => by
     have h := (v - u).norm_coe_le_norm y
@@ -767,51 +763,10 @@ theorem hasFDerivAt_urysohn {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
   have hkey : ∀ x y : Icc a b,
       |k (x, y, v y) - k (x, y, u y) - kz (x, y, u y) * (v y - u y)| ≤ ε' * ‖v - u‖ := by
     intro x y
-    have hy1 : |v y - u y| ≤ ‖v - u‖ := hd y
-    have hy1' := abs_le.1 hy1
     have huy : |u y| ≤ ‖u‖ := by
       have h := u.norm_coe_le_norm y; rwa [Real.norm_eq_abs] at h
-    have hvu1 : ‖v - u‖ ≤ 1 := (hvun.trans_le (min_le_right _ _)).le
-    have hsub : ∀ t ∈ uIcc (u y) (v y), |t - u y| ≤ ‖v - u‖ := by
-      intro t ht
-      have h1 : uIcc (u y) (v y) ⊆ Icc (u y - ‖v - u‖) (u y + ‖v - u‖) :=
-        Set.uIcc_subset_Icc ⟨by linarith [norm_nonneg (v - u)], by
-          linarith [norm_nonneg (v - u)]⟩ ⟨by linarith [hy1'.1], by linarith [hy1'.2]⟩
-      have h2 := Set.mem_Icc.1 (h1 ht)
-      exact abs_le.2 ⟨by linarith [h2.1], by linarith [h2.2]⟩
-    have hR : ∀ t ∈ uIcc (u y) (v y), |t| ≤ ‖u‖ + 1 := by
-      intro t ht
-      have h1 := hsub t ht
-      have h2 := abs_sub_abs_le_abs_sub t (u y)
-      linarith
-    have hbnd : ∀ t ∈ uIcc (u y) (v y), ‖kz (x, y, t) - kz (x, y, u y)‖ ≤ ε' := by
-      intro t ht
-      have hdist : dist ((x, y, t) : Icc a b × Icc a b × ℝ) (x, y, u y) < δ₀ := by
-        have hde : dist ((x, y, t) : Icc a b × Icc a b × ℝ) (x, y, u y) = |t - u y| := by
-          simp [Prod.dist_eq, Real.dist_eq]
-        rw [hde]
-        exact lt_of_le_of_lt (hsub t ht) (hvun.trans_le (min_le_left _ _))
-      have h := hδ _ (hmemS x y t (hR t ht)) _ (hmemS x y (u y) (by linarith)) hdist
-      rw [Real.dist_eq] at h
-      rw [Real.norm_eq_abs]
-      exact h.le
-    have hderiv : ∀ t ∈ uIcc (u y) (v y),
-        HasDerivWithinAt (fun z => k (x, y, z) - kz (x, y, u y) * z)
-          (kz (x, y, t) - kz (x, y, u y)) (uIcc (u y) (v y)) t := by
-      intro t _
-      have h1 : HasDerivAt (fun z : ℝ => kz (x, y, u y) * z) (kz (x, y, u y)) t := by
-        simpa using (hasDerivAt_id t).const_mul (kz (x, y, u y))
-      exact ((hk x y t).sub h1).hasDerivWithinAt
-    have hmv := (convex_uIcc (u y) (v y)).norm_image_sub_le_of_norm_hasDerivWithin_le
-      hderiv hbnd Set.left_mem_uIcc Set.right_mem_uIcc
-    have hmv2 : |k (x, y, v y) - kz (x, y, u y) * v y
-        - (k (x, y, u y) - kz (x, y, u y) * u y)| ≤ ε' * |v y - u y| := by
-      simpa [Real.norm_eq_abs] using hmv
-    calc |k (x, y, v y) - k (x, y, u y) - kz (x, y, u y) * (v y - u y)|
-        = |k (x, y, v y) - kz (x, y, u y) * v y
-            - (k (x, y, u y) - kz (x, y, u y) * u y)| := by congr 1; ring
-      _ ≤ ε' * |v y - u y| := hmv2
-      _ ≤ ε' * ‖v - u‖ := mul_le_mul_of_nonneg_left hy1 hε'pos.le
+    exact (hlin (x, y) (u y) (v y) huy ((hd y).trans_lt hvun)).trans
+      (mul_le_mul_of_nonneg_left (hd y) hε'pos.le)
   -- the error of the linearisation, as one integral
   have hvalue : ∀ x : Icc a b,
       (urysohn hab k v - urysohn hab k u - fredholm hab (urysohnDerivKernel kz u) (v - u)) x
@@ -1014,7 +969,6 @@ theorem norm_iterate_volterra_sub_le {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M 
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (u v : C(Icc a b, ℝ)) (m : ℕ) :
     ‖(volterra hab k)^[m] u - (volterra hab k)^[m] v‖
       ≤ ((M : ℝ) * (b - a)) ^ m / m ! * ‖u - v‖ := by
-  have hba : (0 : ℝ) ≤ b - a := sub_nonneg.2 hab
   rw [ContinuousMap.norm_le _ (by positivity)]
   intro t
   have hnn : (0 : ℝ) ≤ (M : ℝ) * ((t : ℝ) - a) := by
@@ -1045,7 +999,6 @@ theorem exists_contractingWith_iterate_volterra {k : C(Icc a b × Icc a b × ℝ
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) :
     ∃ m : ℕ, 0 < m ∧
       ContractingWith (((M : ℝ) * (b - a)) ^ m / m !).toNNReal ((volterra hab k)^[m]) := by
-  have hba : (0 : ℝ) ≤ b - a := sub_nonneg.2 hab
   have htend := FloorSemiring.tendsto_pow_div_factorial_atTop ((M : ℝ) * (b - a))
   obtain ⟨m, hm⟩ := ((htend.eventually_lt_const one_pos).and (Filter.eventually_gt_atTop 0)).exists
   have hnn : (0 : ℝ) ≤ ((M : ℝ) * (b - a)) ^ m / m ! := by positivity
@@ -1054,12 +1007,6 @@ theorem exists_contractingWith_iterate_volterra {k : C(Icc a b × Icc a b × ℝ
     exact hm.1
   · rw [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal _ hnn]
     exact norm_iterate_volterra_sub_le hab hk u v m
-
-/-- A power of a bounded operator acts as the iterate of its underlying function, which is what lets
-a contraction statement about the iterates be read as one about the powers. -/
-private theorem coe_clm_pow (L : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)) (n : ℕ) :
-    ⇑(L ^ n) = (⇑L)^[n] :=
-  hom_coe_pow _ rfl (fun _ _ => rfl) _ _
 
 /-- The kernel of a linear operator is Lipschitz in its last argument, with constant `‖k‖`. -/
 theorem lipschitzWith_mulKernel (k : C(Icc a b × Icc a b, ℝ)) (x y : Icc a b) :
@@ -1074,7 +1021,6 @@ Exercise 2.3.4): `‖L ^ m‖ ≤ (‖k‖ (b - a)) ^ m / m !`, so the powers of
 `λ - L` is invertible for every nonzero `λ`. -/
 theorem norm_volterraCLM_pow_le (k : C(Icc a b × Icc a b, ℝ)) (m : ℕ) :
     ‖volterraCLM hab k ^ m‖ ≤ (‖k‖ * (b - a)) ^ m / m ! := by
-  have hba : (0 : ℝ) ≤ b - a := sub_nonneg.2 hab
   have hzero : (volterra hab (mulKernel k))^[m] 0 = 0 := by
     induction m with
     | zero => rfl
@@ -1086,7 +1032,7 @@ theorem norm_volterraCLM_pow_le (k : C(Icc a b × Icc a b, ℝ)) (m : ℕ) :
   have h := norm_iterate_volterra_sub_le hab (lipschitzWith_mulKernel k) u 0 m
   rw [hzero, sub_zero, sub_zero, coe_nnnorm] at h
   have hiter : (volterraCLM hab k ^ m) u = (volterra hab (mulKernel k))^[m] u := by
-    rw [coe_clm_pow, coe_volterraCLM]
+    rw [FunLike.coe_pow_eq_iterate, coe_volterraCLM]
   rw [hiter]
   exact h
 
@@ -1332,7 +1278,6 @@ theorem contractingWith_volterra_bielecki (hab : a ≤ b) {k : C(Icc a b × Icc 
             (Continuous.intervalIntegrable (by fun_prop) _ _) hstep
       _ = (M : ℝ) * ‖u - v‖ * ((Real.exp (β * ((t : ℝ) - a)) - 1) / β) := by
           rw [intervalIntegral.integral_const_mul, integral_exp_mul_sub hβ0.ne']
-  have hMv : (0 : ℝ) ≤ (M : ℝ) * ‖u - v‖ := mul_nonneg M.coe_nonneg (norm_nonneg _)
   have hexpt : (0 : ℝ) < Real.exp (-(β * ((t : ℝ) - a))) := Real.exp_pos _
   have hcancel : Real.exp (-(β * ((t : ℝ) - a))) * Real.exp (β * ((t : ℝ) - a)) = 1 := by
     rw [← Real.exp_add]; simp

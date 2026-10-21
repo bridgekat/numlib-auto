@@ -186,15 +186,6 @@ variable {π : n → ι} {A : Matrix n n 𝕜}
 private theorem toEuclideanLin_apply_eq_sum_mul (M : Matrix n n 𝕜) (v : EuclideanSpace 𝕜 n)
     (k : n) : toEuclideanLin M v k = ∑ j, M k j * v j := rfl
 
-omit [Fintype n] [DecidableEq n] in
-/-- Entries of a finite sum in `EuclideanSpace` are the sums of the entries. -/
-private theorem euclideanSpace_sum_apply {κ : Type*} (s : Finset κ)
-    (f : κ → EuclideanSpace 𝕜 n) (j : n) : (∑ i ∈ s, f i) j = ∑ i ∈ s, f i j := by
-  classical
-  induction s using Finset.induction with
-  | empty => simp
-  | insert a s ha ih => rw [Finset.sum_insert ha, Finset.sum_insert ha, PiLp.add_apply, ih]
-
 /-- The restriction of `v` to the `i`-th block: the entries of `v` on the block, zero elsewhere. -/
 private def blockRestrict (π : n → ι) (i : ι) (v : EuclideanSpace 𝕜 n) : EuclideanSpace 𝕜 n :=
   WithLp.toLp 2 fun j => if π j = i then v j else 0
@@ -212,8 +203,7 @@ omit [Fintype n] [DecidableEq n] in
 private theorem sum_blockRestrict [Fintype ι] (v : EuclideanSpace 𝕜 n) :
     ∑ i, blockRestrict π i v = v := by
   refine PiLp.ext fun j => ?_
-  rw [euclideanSpace_sum_apply]
-  simp
+  simp [WithLp.ofLp_sum]
 
 /-- On a vector supported in the `i`-th block, a row of that block sees only the block diagonal. -/
 private theorem blockDiag_apply_of_eq {i : ι} {v : EuclideanSpace 𝕜 n}

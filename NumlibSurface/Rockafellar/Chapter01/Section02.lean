@@ -22,8 +22,9 @@ things.
 * `IsCone` — the book's *cone*: closed under **positive** scalar multiplication, with the origin
   free to belong or not. Deliberately not Mathlib's `PointedCone`, which contains `0` by
   definition; the cones produced by Corollaries 2.6.2 and 2.6.3 need not contain the origin.
-  `isCone_iff_smul_set_eq` bridges to the backbone's `∀ a > 0, a • s = s`, and `toPointedCone`
-  bridges to Mathlib when `0 ∈ K`, which is the hypothesis of Theorem 2.7.
+  `isCone_iff_smul_set_eq` gives the set form `∀ a > 0, a • K = K`; `IsCone` is definitionally
+  the backbone's `ConvexAnalysis.IsCone`. `toPointedCone` bridges to Mathlib when `0 ∈ K`, which
+  is the hypothesis of Theorem 2.7.
 * `posCombinations` — the *positive linear combinations* of a set, the object of Corollaries 2.6.1
   and 2.6.2.
 
@@ -61,20 +62,11 @@ Corollaries 2.6.2 and 2.6.3 produce cones that need not contain the origin. -/
 def IsCone (K : Set (Rn n)) : Prop :=
   ∀ l : ℝ, 0 < l → ∀ x ∈ K, l • x ∈ K
 
-/-- `IsCone` in the backbone's spelling `∀ a > 0, a • s = s`, which is the hypothesis of
-`smul_mem_iff_of_isCone` and `convex_iff_add_mem_of_isCone`. -/
-theorem isCone_iff_smul_set_eq (K : Set (Rn n)) : IsCone K ↔ ∀ a : ℝ, 0 < a → a • K = K := by
-  constructor
-  · intro h a ha
-    refine Set.Subset.antisymm ?_ ?_
-    · rintro _ ⟨x, hx, rfl⟩
-      exact h a ha x hx
-    · intro x hx
-      refine ⟨a⁻¹ • x, h a⁻¹ (by positivity) x hx, ?_⟩
-      simp [smul_smul, mul_inv_cancel₀ ha.ne']
-  · intro h l hl x hx
-    rw [← h l hl]
-    exact ⟨x, hx, rfl⟩
+/-- `IsCone` in the set form `∀ a > 0, a • K = K`, the form in which Theorem 31.4 and
+`posHomogeneous_iff_isCone_epi` state it; `ConvexAnalysis.isCone_iff_smul_eq`. `IsCone` is
+definitionally the backbone's `ConvexAnalysis.IsCone`, which surface proofs pass it as. -/
+theorem isCone_iff_smul_set_eq (K : Set (Rn n)) : IsCone K ↔ ∀ a : ℝ, 0 < a → a • K = K :=
+  ConvexAnalysis.isCone_iff_smul_eq
 
 /-! ### Intersections: Theorems 2.1 and 2.5 -/
 
@@ -214,9 +206,9 @@ theorem theorem_2_6 (K : Set (Rn n)) :
       (∀ x ∈ K, ∀ y ∈ K, x + y ∈ K) ∧ ∀ l : ℝ, 0 < l → ∀ x ∈ K, l • x ∈ K := by
   constructor
   · rintro ⟨hK, hconv⟩
-    exact ⟨(convex_iff_add_mem_of_isCone ((isCone_iff_smul_set_eq K).1 hK)).1 hconv, hK⟩
+    exact ⟨(convex_iff_add_mem_of_isCone hK).1 hconv, hK⟩
   · rintro ⟨hadd, hsmul⟩
-    exact ⟨hsmul, (convex_iff_add_mem_of_isCone ((isCone_iff_smul_set_eq K).1 hsmul)).2 hadd⟩
+    exact ⟨hsmul, (convex_iff_add_mem_of_isCone hsmul).2 hadd⟩
 
 /-- Rockafellar's **positive linear combinations** of `S`: the sums `λ₁x₁ + ⋯ + λ_m x_m` with
 `m ≥ 1`, every `λᵢ > 0` and every `xᵢ ∈ S`. The index is an arbitrary non-empty finite type rather
@@ -352,7 +344,7 @@ theorem theorem_2_7_least (K : Set (Rn n)) :
 smallest subspace is `K - K`. -/
 theorem theorem_2_7_sub {K : Set (Rn n)} (hK : IsCone K) (hconv : Convex ℝ K)
     (h0 : (0 : Rn n) ∈ K) : (Submodule.span ℝ K : Set (Rn n)) = K - K :=
-  span_eq_sub_of_isCone ((isCone_iff_smul_set_eq K).1 hK) hconv h0
+  span_eq_sub_of_isCone hK hconv h0
 
 /-- **Theorem 2.7**, first half continued: that smallest subspace is `aff K`. This is
 the last sentence of the book's proof — the affine hull of a set containing `0` is a subspace, by

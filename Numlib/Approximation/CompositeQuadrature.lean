@@ -148,20 +148,6 @@ theorem abs_sub_panelSum_le {α β : ℝ} (hαβ : α ≤ β) (hg : ContinuousOn
         exact mul_le_mul_of_nonneg_left (hbound i) (hω i)
     _ = (β - α) * ε := by rw [← Finset.sum_mul, hωsum, one_mul]
 
-/-- The breakpoints of a partition of `[a, b]` lie in `[a, b]`. -/
-private theorem mem_Icc_of_partition {N : ℕ} {t : ℕ → ℝ} (ht0 : t 0 = a) (htN : t N = b)
-    (htmono : ∀ j < N, t j ≤ t (j + 1)) {j : ℕ} (hj : j ≤ N) : t j ∈ Icc a b := by
-  have hmono : ∀ q, q ≤ N → ∀ p, p ≤ q → t p ≤ t q := by
-    intro q
-    induction q with
-    | zero => intro _ p hp; rw [Nat.le_zero.mp hp]
-    | succ k ih =>
-      intro hk p hp
-      rcases Nat.eq_or_lt_of_le hp with hpk | hpk
-      · rw [hpk]
-      · exact (ih (by omega) p (by omega)).trans (htmono k (by omega))
-  exact ⟨ht0 ▸ hmono j hj 0 (Nat.zero_le _), htN ▸ hmono N le_rfl j hj⟩
-
 /-- **The Riemann sum bound for a composite rule.** The panel rule has nonnegative weights summing
 to one and nodes inside its panel; the partition `t` of `[a, b]` has `N` panels of length at most
 `h`; and `ε` bounds the oscillation of the integrand over distances at most `h`. Then the composite
@@ -178,7 +164,11 @@ theorem abs_sub_compositeSum_le {N : ℕ} {t : ℕ → ℝ} (hg : ContinuousOn g
     (hosc : ∀ u ∈ Icc a b, ∀ v ∈ Icc a b, |u - v| ≤ h → |g u - g v| ≤ ε) :
     |(∫ x in a..b, g x) - ∑ j ∈ Finset.range N, (t (j + 1) - t j) * ∑ i, ω i * g (y j i)|
       ≤ (b - a) * ε := by
-  have hmem : ∀ j ≤ N, t j ∈ Icc a b := fun j hj => mem_Icc_of_partition ht0 htN htmono hj
+  have hmono : MonotoneOn t (Iic N) := monotoneOn_of_le_succ ordConnected_Iic fun j _ _ hj => by
+    simp only [Order.succ_eq_add_one, mem_Iic] at hj ⊢
+    exact htmono j hj
+  have hmem : ∀ j ≤ N, t j ∈ Icc a b := fun j hj =>
+    ⟨ht0 ▸ hmono (Nat.zero_le N) hj (Nat.zero_le j), htN ▸ hmono hj self_mem_Iic hj⟩
   have hsub : ∀ j < N, Icc (t j) (t (j + 1)) ⊆ Icc a b := fun j hj =>
     Icc_subset_Icc (hmem j hj.le).1 (hmem (j + 1) hj).2
   have hsplit : (∫ x in a..b, g x) = ∑ j ∈ Finset.range N, ∫ x in (t j)..(t (j + 1)), g x := by
@@ -216,7 +206,6 @@ theorem tendsto_compositeSum (hab : a ≤ b) (hg : ContinuousOn g (Icc a b)) {N 
   rw [Metric.tendsto_atTop]
   intro ε hε
   set ε' := ε / (b - a + 1) with hε'def
-  have hba : 0 ≤ b - a := by linarith
   have hε' : 0 < ε' := by positivity
   obtain ⟨δ, hδ, hδg⟩ := Metric.uniformContinuousOn_iff.mp
     ((isCompact_Icc (a := a) (b := b)).uniformContinuousOn_of_continuous hg) ε' hε'
@@ -237,10 +226,45 @@ theorem tendsto_compositeSum (hab : a ≤ b) (hg : ContinuousOn g (Icc a b)) {N 
   refine hbound.trans_lt ?_
   have hpos : (0 : ℝ) < b - a + 1 := by linarith
   rw [hε'def, mul_div_assoc', div_lt_iff₀ hpos]
-  have : ε * (b - a + 1) = (b - a) * ε + ε := by ring
   linarith
 
 end RiemannSum
+
+/-- **Collecting panel errors into one derivative value.** If `G` is continuous on `[a, b]`,
+`u, v ∈ [a, b]`, `κ < 0` and each of the `N ≥ 1` panel errors `e j` lies between `G v * κ` and
+`G u * κ`, then `∑ⱼ e j = N κ G(ξ)` for some `ξ ∈ [a, b]`: the sum lies between `G v * (N κ)` and
+`G u * (N κ)`, and the intermediate value theorem between `u` and `v` supplies `ξ`. This is the
+last step of every composite error formula in mean value form, applied with `G` the derivative
+that bounds the panel errors through its extreme values `G u` and `G v`. -/
+theorem exists_sum_eq_mul_of_forall_mem {a b u v κ : ℝ} {G : ℝ → ℝ}
+    (hG : ContinuousOn G (Set.Icc a b)) (hu : u ∈ Set.Icc a b) (hv : v ∈ Set.Icc a b)
+    (hκ : κ < 0) {N : ℕ} (hN : 0 < N) {e : ℕ → ℝ}
+    (he : ∀ j < N, G v * κ ≤ e j ∧ e j ≤ G u * κ) :
+    ∃ ξ ∈ Set.Icc a b, ∑ j ∈ Finset.range N, e j = N * κ * G ξ := by
+  set S : ℝ := N * κ with hS
+  have hSneg : S < 0 := mul_neg_of_pos_of_neg (Nat.cast_pos.mpr hN) hκ
+  have hsum : ∀ c : ℝ, ∑ _j ∈ Finset.range N, c * κ = c * S := fun c => by
+    rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul, hS]
+    ring
+  have hlow : G v * S ≤ ∑ j ∈ Finset.range N, e j := by
+    rw [← hsum]
+    exact Finset.sum_le_sum fun j hj => (he j (Finset.mem_range.mp hj)).1
+  have hhigh : ∑ j ∈ Finset.range N, e j ≤ G u * S := by
+    rw [← hsum]
+    exact Finset.sum_le_sum fun j hj => (he j (Finset.mem_range.mp hj)).2
+  have hcmem : (∑ j ∈ Finset.range N, e j) / S ∈ Set.uIcc (G u) (G v) := by
+    have h1 : G u ≤ (∑ j ∈ Finset.range N, e j) / S := by
+      rw [le_div_iff_of_neg hSneg]
+      linarith [hhigh]
+    have h2 : (∑ j ∈ Finset.range N, e j) / S ≤ G v := by
+      rw [div_le_iff_of_neg hSneg]
+      linarith [hlow]
+    exact Set.mem_uIcc_of_le h1 h2
+  have huv : Set.uIcc u v ⊆ Set.Icc a b := Set.uIcc_subset_Icc hu hv
+  obtain ⟨ξ, hξ, hξval⟩ := intermediate_value_uIcc (hG.mono huv) hcmem
+  refine ⟨ξ, huv hξ, ?_⟩
+  rw [hξval, mul_comm]
+  exact (div_mul_cancel₀ _ hSneg.ne).symm
 
 section Trapezoid
 
@@ -284,8 +308,6 @@ theorem sub_trapezoid_eq_integral_peanoKernel {α β : ℝ}
       = ∫ t in α..β, (t - α) * (t - β) / 2 * g'' t := by
   have hcg' : ContinuousOn g' (Set.uIcc α β) := fun x hx =>
     (hg' x hx).continuousAt.continuousWithinAt
-  have hcg : ContinuousOn g (Set.uIcc α β) := fun x hx =>
-    (hg x hx).continuousAt.continuousWithinAt
   have hφ : ∀ x ∈ Set.uIcc α β,
       HasDerivAt (fun t => (t - α) * (t - β) / 2) (x - (α + β) / 2) x := by
     intro x _
@@ -339,7 +361,6 @@ theorem sub_composite_trapezoid_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h 
     (hg' : ∀ x ∈ Set.Icc a b, HasDerivAt g' (g'' x) x) (hg'' : ContinuousOn g'' (Set.Icc a b)) :
     ∃ ξ ∈ Set.Icc a b,
       (∫ t in a..b, g t) - trapezoidSum g a h N = -(h ^ 2 * (b - a) / 12) * g'' ξ := by
-  have hNR : (0 : ℝ) < N := Nat.cast_pos.mpr hN
   have hhpos : 0 < h := by rw [hh]; positivity
   set x : ℕ → ℝ := fun j => a + j * h with hxdef
   have hx0 : x 0 = a := by simp [hxdef]
@@ -351,7 +372,7 @@ theorem sub_composite_trapezoid_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h 
     intro j; rw [hxdef]; push_cast; ring
   have hxmono : ∀ j : ℕ, x j ≤ x (j + 1) := fun j => by linarith [hxstep j, hhpos]
   have hxmem : ∀ j ≤ N, x j ∈ Set.Icc a b := fun j hj =>
-    mem_Icc_of_partition hx0 hxN (fun j _ => hxmono j) hj
+    ⟨hx0 ▸ monotone_nat_of_le_succ hxmono (Nat.zero_le j), hxN ▸ monotone_nat_of_le_succ hxmono hj⟩
   have hxsub : ∀ j < N, Set.Icc (x j) (x (j + 1)) ⊆ Set.Icc a b := fun j hj =>
     Set.Icc_subset_Icc (hxmem j hj.le).1 (hxmem (j + 1) hj).2
   have huIcc : ∀ j : ℕ, Set.uIcc (x j) (x (j + 1)) = Set.Icc (x j) (x (j + 1)) := fun j =>
@@ -389,12 +410,6 @@ theorem sub_composite_trapezoid_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h 
     ⟨a, Set.left_mem_Icc.2 hab.le⟩ hg''
   obtain ⟨v, hv, hmax⟩ := (isCompact_Icc (a := a) (b := b)).exists_isMaxOn
     ⟨a, Set.left_mem_Icc.2 hab.le⟩ hg''
-  set S : ℝ := -(h ^ 2 * (b - a) / 12) with hS
-  have hSneg : S < 0 := by
-    have h2 : 0 < h ^ 2 := pow_pos hhpos 2
-    have hba : 0 < b - a := by linarith
-    rw [hS]
-    nlinarith
   have hpanelint : ∀ j < N, IntervalIntegrable
       (fun t => (t - x j) * (t - x (j + 1)) / 2 * g'' t) volume (x j) (x (j + 1)) := by
     intro j hj
@@ -438,33 +453,13 @@ theorem sub_composite_trapezoid_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h 
           mul_le_mul_of_nonpos_left (hmin (hxsub j hj ht)) (hkerneg j t ht)
       rw [intervalIntegral.integral_mul_const, hkerval j] at this
       linarith
-  -- sum the bounds
+  -- sum the bounds and apply the intermediate value theorem
   have hNh : (N : ℝ) * h = b - a := by rw [hh]; field_simp
-  have hsumS : ∑ _j ∈ Finset.range N, (-h ^ 3 / 12) = S := by
-    rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul, hS, ← hNh]
-    ring
-  set E : ℝ := (∫ t in a..b, g t) - trapezoidSum g a h N with hE
-  have hlow : g'' v * S ≤ E := by
-    rw [hsplit, ← hsumS, Finset.mul_sum]
-    exact Finset.sum_le_sum fun j hj => (hbound j (Finset.mem_range.mp hj)).1
-  have hhigh : E ≤ g'' u * S := by
-    rw [hsplit, ← hsumS, Finset.mul_sum]
-    exact Finset.sum_le_sum fun j hj => (hbound j (Finset.mem_range.mp hj)).2
-  -- the intermediate value theorem
-  have hcmem : E / S ∈ Set.uIcc (g'' u) (g'' v) := by
-    have h1 : g'' u ≤ E / S := by
-      rw [le_div_iff_of_neg hSneg]
-      linarith [hhigh]
-    have h2 : E / S ≤ g'' v := by
-      rw [div_le_iff_of_neg hSneg]
-      linarith [hlow]
-    exact Set.mem_uIcc_of_le h1 h2
-  have huv : Set.uIcc u v ⊆ Set.Icc a b := Set.uIcc_subset_Icc hu hv
-  obtain ⟨ξ, hξ, hξval⟩ := intermediate_value_uIcc (hg''.mono huv) hcmem
-  refine ⟨ξ, huv hξ, ?_⟩
-  have hSne : S ≠ 0 := ne_of_lt hSneg
-  rw [hξval, mul_comm]
-  exact (div_mul_cancel₀ E hSne).symm
+  obtain ⟨ξ, hξ, hE⟩ := exists_sum_eq_mul_of_forall_mem hg'' hu hv
+    (by have := pow_pos hhpos 3; linarith) hN hbound
+  refine ⟨ξ, hξ, ?_⟩
+  rw [hsplit, hE, ← hNh]
+  ring
 
 end Trapezoid
 
@@ -518,8 +513,6 @@ theorem tendsto_uniformMesh {N : ℕ → ℕ} {hs : ℕ → ℝ} {m : ℕ} {ω :
         hs n * ∑ i, ω i * g (a + j * hs n + c i * hs n)) atTop (𝓝 (∫ t in a..b, g t)) := by
   have hsnn : ∀ n, 0 ≤ hs n := fun n => by
     rw [hhs n]
-    have : (0 : ℝ) ≤ (N n : ℝ) := Nat.cast_nonneg _
-    have hba : 0 ≤ b - a := by linarith
     positivity
   have hmain := tendsto_compositeSum (a := a) (b := b) hab hg (N := N)
     (t := fun n j => a + j * hs n) (hs := hs) (fun n => by simp)
@@ -712,9 +705,7 @@ theorem abs_sub_trapezoidSum_add_le (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h
     (hM : ∀ t ∈ Set.Icc a b, |g₄ t| ≤ M) :
     |(∫ t in a..b, g t) - trapezoidSum g a h N + h ^ 2 / 12 * (g' b - g' a)|
       ≤ (b - a) * h ^ 4 * M / 720 := by
-  have hNR : (0 : ℝ) < N := Nat.cast_pos.mpr hN
   have hhpos : 0 < h := by rw [hh]; positivity
-  have hM0 : 0 ≤ M := le_trans (abs_nonneg _) (hM a (Set.left_mem_Icc.2 hab.le))
   have hcg'' : ContinuousOn g'' (Set.Icc a b) := fun y hy =>
     (hg'' y hy).continuousAt.continuousWithinAt
   set x : ℕ → ℝ := fun j => a + j * h with hxdef
@@ -725,10 +716,9 @@ theorem abs_sub_trapezoidSum_add_le (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h
     ring
   have hxstep : ∀ j : ℕ, x (j + 1) - x j = h := by
     intro j; rw [hxdef]; push_cast; ring
-  have hxsucc : ∀ j : ℕ, x (j + 1) = x j + h := fun j => by linarith [hxstep j]
   have hxmono : ∀ j : ℕ, x j ≤ x (j + 1) := fun j => by linarith [hxstep j, hhpos]
   have hxmem : ∀ j ≤ N, x j ∈ Set.Icc a b := fun j hj =>
-    mem_Icc_of_partition hx0 hxN (fun j _ => hxmono j) hj
+    ⟨hx0 ▸ monotone_nat_of_le_succ hxmono (Nat.zero_le j), hxN ▸ monotone_nat_of_le_succ hxmono hj⟩
   have hxsub : ∀ j < N, Set.Icc (x j) (x (j + 1)) ⊆ Set.Icc a b := fun j hj =>
     Set.Icc_subset_Icc (hxmem j hj.le).1 (hxmem (j + 1) hj).2
   have huIcc : ∀ j : ℕ, Set.uIcc (x j) (x (j + 1)) = Set.Icc (x j) (x (j + 1)) := fun j =>
@@ -983,18 +973,7 @@ theorem integral_simpsonKernel_left {α β : ℝ} :
 panel, so the whole kernel integrates to `-(β - α)⁵/2880`. -/
 theorem integral_simpsonKernel_right {α β : ℝ} :
     (∫ t in (α + β) / 2..β, (t - β) ^ 3 * (3 * t - β - 2 * α) / 72) = -(β - α) ^ 5 / 5760 := by
-  have hF : ∀ y ∈ Set.uIcc ((α + β) / 2) β,
-      HasDerivAt (fun t : ℝ => (t - β) ^ 5 / 120 - (α - β) * (t - β) ^ 4 / 144)
-        ((y - β) ^ 3 * (3 * y - β - 2 * α) / 72) y := by
-    intro y _
-    have h : HasDerivAt (fun t : ℝ => (t - β) ^ 5 / 120 - (α - β) * (t - β) ^ 4 / 144)
-        (5 * (y - β) ^ 4 * 1 / 120 - (α - β) * (4 * (y - β) ^ 3 * 1) / 144) y :=
-      ((((hasDerivAt_id y).sub_const β).pow 5).div_const 120).sub
-        (((((hasDerivAt_id y).sub_const β).pow 4).const_mul (α - β)).div_const 144)
-    convert h using 1
-    ring
-  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hF
-    (Continuous.intervalIntegrable (by fun_prop) _ _)]
+  rw [intervalIntegral.integral_symm, add_comm α β, integral_simpsonKernel_left]
   ring
 
 /-- An integral against a nonpositive kernel is bounded above by the kernel's integral times a
@@ -1102,7 +1081,6 @@ theorem sub_composite_simpson_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = 
     (hg₃ : ∀ x ∈ Set.Icc a b, HasDerivAt g₃ (g₄ x) x) (hc₄ : ContinuousOn g₄ (Set.Icc a b)) :
     ∃ ξ ∈ Set.Icc a b,
       (∫ t in a..b, g t) - simpsonSum g a h N = -(h ^ 4 * (b - a) / 2880) * g₄ ξ := by
-  have hNR : (0 : ℝ) < N := Nat.cast_pos.mpr hN
   have hhpos : 0 < h := by rw [hh]; positivity
   set x : ℕ → ℝ := fun j => a + j * h with hxdef
   have hx0 : x 0 = a := by simp [hxdef]
@@ -1114,7 +1092,7 @@ theorem sub_composite_simpson_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = 
     intro j; rw [hxdef]; push_cast; ring
   have hxmono : ∀ j : ℕ, x j ≤ x (j + 1) := fun j => by linarith [hxstep j, hhpos]
   have hxmem : ∀ j ≤ N, x j ∈ Set.Icc a b := fun j hj =>
-    mem_Icc_of_partition hx0 hxN (fun j _ => hxmono j) hj
+    ⟨hx0 ▸ monotone_nat_of_le_succ hxmono (Nat.zero_le j), hxN ▸ monotone_nat_of_le_succ hxmono hj⟩
   have hxsub : ∀ j < N, Set.Icc (x j) (x (j + 1)) ⊆ Set.Icc a b := fun j hj =>
     Set.Icc_subset_Icc (hxmem j hj.le).1 (hxmem (j + 1) hj).2
   -- the extreme values of the fourth derivative
@@ -1122,12 +1100,6 @@ theorem sub_composite_simpson_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = 
     ⟨a, Set.left_mem_Icc.2 hab.le⟩ hc₄
   obtain ⟨v, hv, hmax⟩ := (isCompact_Icc (a := a) (b := b)).exists_isMaxOn
     ⟨a, Set.left_mem_Icc.2 hab.le⟩ hc₄
-  set S : ℝ := -(h ^ 4 * (b - a) / 2880) with hS
-  have hSneg : S < 0 := by
-    have h4 : 0 < h ^ 4 := pow_pos hhpos 4
-    have hba : 0 < b - a := by linarith
-    rw [hS]
-    nlinarith
   -- the two sided bound on one panel
   have hbound : ∀ j < N,
       g₄ v * (-h ^ 5 / 2880) ≤ (∫ t in (x j)..(x (j + 1)), g t)
@@ -1164,33 +1136,13 @@ theorem sub_composite_simpson_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = 
           - h / 6 * (g (x j) + 4 * g (x j + h / 2) + g (x (j + 1)))) := by
     rw [hsimp, ← hx0, ← hxN, ← intervalIntegral.sum_integral_adjacent_intervals hint,
       ← Finset.sum_sub_distrib]
-  -- sum the panel bounds
+  -- sum the panel bounds and apply the intermediate value theorem
   have hNh : (N : ℝ) * h = b - a := by rw [hh]; field_simp
-  have hsumS : ∑ _j ∈ Finset.range N, (-h ^ 5 / 2880) = S := by
-    rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul, hS, ← hNh]
-    ring
-  set E : ℝ := (∫ t in a..b, g t) - simpsonSum g a h N with hE
-  have hlow : g₄ v * S ≤ E := by
-    rw [hsplit, ← hsumS, Finset.mul_sum]
-    exact Finset.sum_le_sum fun j hj => (hbound j (Finset.mem_range.mp hj)).1
-  have hhigh : E ≤ g₄ u * S := by
-    rw [hsplit, ← hsumS, Finset.mul_sum]
-    exact Finset.sum_le_sum fun j hj => (hbound j (Finset.mem_range.mp hj)).2
-  -- the intermediate value theorem
-  have hcmem : E / S ∈ Set.uIcc (g₄ u) (g₄ v) := by
-    have h1 : g₄ u ≤ E / S := by
-      rw [le_div_iff_of_neg hSneg]
-      linarith [hhigh]
-    have h2 : E / S ≤ g₄ v := by
-      rw [div_le_iff_of_neg hSneg]
-      linarith [hlow]
-    exact Set.mem_uIcc_of_le h1 h2
-  have huv : Set.uIcc u v ⊆ Set.Icc a b := Set.uIcc_subset_Icc hu hv
-  obtain ⟨ξ, hξ, hξval⟩ := intermediate_value_uIcc (hc₄.mono huv) hcmem
-  refine ⟨ξ, huv hξ, ?_⟩
-  have hSne : S ≠ 0 := ne_of_lt hSneg
-  rw [hξval, mul_comm]
-  exact (div_mul_cancel₀ E hSne).symm
+  obtain ⟨ξ, hξ, hE⟩ := exists_sum_eq_mul_of_forall_mem hc₄ hu hv
+    (by have := pow_pos hhpos 5; linarith) hN hbound
+  refine ⟨ξ, hξ, ?_⟩
+  rw [hsplit, hE, ← hNh]
+  ring
 
 /-- **The Simpson panel error bound.**  If `g` has four derivatives on the panel `[α, β]` and
 `|g⁗| ≤ M` there, then Simpson's rule on that panel is in error by at most `M (β - α)⁵/2880`.
@@ -1338,7 +1290,6 @@ theorem norm_sub_simpsonSum_le {a b h M : ℝ} (hab : a < b) {N : ℕ} (hN : 0 <
   have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM a ⟨le_rfl, hab.le⟩)
   have hhpos : 0 < h := by
     rw [hh]; exact div_pos (by linarith) (Nat.cast_pos.mpr hN)
-  have hba : 0 < b - a := by linarith
   have hgint : IntervalIntegrable g volume a b := by
     refine ContinuousOn.intervalIntegrable fun y hy => ?_
     rw [Set.uIcc_of_le hab.le] at hy
@@ -1412,7 +1363,6 @@ theorem tendsto_circleTrapezoid (v : C(AddCircle T, ℝ)) :
     have h := AddCircle.intervalIntegral_preimage T 0 v
     rwa [zero_add] at h
   rw [← hint, ← Filter.tendsto_add_atTop_iff_nat 1]
-  have hstep : ∀ n : ℕ, (0 : ℝ) < (n : ℝ) + 1 := fun n => by positivity
   have hmesh : ∀ n j : ℕ,
       ((j : ℝ) + 1) * (T / ((n : ℝ) + 1)) - (j : ℝ) * (T / ((n : ℝ) + 1)) = T / ((n : ℝ) + 1) :=
     fun n j => by ring

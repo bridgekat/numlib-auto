@@ -201,6 +201,12 @@ id = "load_smul"
 id = "load_sub"
 
 [[node]]
+id = "IsWeakSolution"
+
+[[node]]
+id = "isWeakSolution_iff"
+
+[[node]]
 id = "loadL_apply"
 
 [[node]]

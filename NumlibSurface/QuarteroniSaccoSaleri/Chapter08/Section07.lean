@@ -45,7 +45,7 @@ spline of vector-valued data, and its affine equivariance `Spline.cubicInterpVec
 Points of the plane are `EuclideanSpace ℝ (Fin 2)`, so that the length of a segment is the
 Euclidean distance `dist`; the parametric spline is taken with the natural end conditions, which
 the book does not fix, and its parameter partition is `0 = t₀ < t₁ < ⋯ < t_n = T`
-(`Spline.IsPartition 0 T n t`). Bézier and B-spline curves take control points in an arbitrary
+(`IsIntervalPartition 0 T n t`). Bézier and B-spline curves take control points in an arbitrary
 real vector space `E`, as the backbone does; the book's plane is the case
 `E = EuclideanSpace ℝ (Fin 2)`. The Bernstein polynomial `b_{n,k}` is Mathlib's
 `bernsteinPolynomial ℝ n k`, and `𝒫_n` on `[0, 1]` is `polyLE (Icc 0 1) n`.
@@ -80,7 +80,7 @@ theorem parametricCubicSpline_apply (t : ℕ → ℝ) (n : ℕ) (P : ℕ → Euc
 
 /-- **The parametric spline passes through the points**: `S₃(t_i) = P_i` for `i = 0, …, n`. -/
 theorem parametricCubicSpline_apply_node {T : ℝ} {t : ℕ → ℝ} {n : ℕ}
-    (ht : Spline.IsPartition 0 T n t) (hn : 1 ≤ n) (P : ℕ → EuclideanSpace ℝ (Fin 2)) {i : ℕ}
+    (ht : IsIntervalPartition 0 T n t) (hn : 1 ≤ n) (P : ℕ → EuclideanSpace ℝ (Fin 2)) {i : ℕ}
     (hi : i ≤ n) :
     parametricCubicSpline t n P (t i) = P i := by
   ext j
@@ -110,7 +110,7 @@ theorem cumulativeLength_succ (P : ℕ → EuclideanSpace ℝ (Fin 2)) (i : ℕ)
 `T = t_n`, as soon as consecutive points are distinct (so that every `l_i > 0`). -/
 theorem isPartition_cumulativeLength {n : ℕ} {P : ℕ → EuclideanSpace ℝ (Fin 2)}
     (hP : ∀ k < n, P k ≠ P (k + 1)) :
-    Spline.IsPartition 0 (cumulativeLength P n) n (cumulativeLength P) where
+    IsIntervalPartition 0 (cumulativeLength P n) n (cumulativeLength P) where
   step k hk := by
     rw [cumulativeLength, cumulativeLength, Finset.sum_range_succ]
     exact lt_add_of_pos_right _ (dist_pos.mpr (hP k hk))

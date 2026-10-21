@@ -183,11 +183,6 @@ private theorem eval_shifted (k : ℕ) (hαβ : α < β) (γ t : ℝ) :
 private theorem cast_negOnePow_ne_zero (m : ℤ) : ((m.negOnePow : ℤ) : ℝ) ≠ 0 := by
   rcases Int.isUnit_iff.1 (Units.isUnit m.negOnePow) with h | h <;> rw [h] <;> norm_num
 
-private theorem abs_eval_T_neg (k : ℕ) (z : ℝ) :
-    |(Polynomial.Chebyshev.T ℝ (k : ℤ)).eval (-z)|
-      = |(Polynomial.Chebyshev.T ℝ (k : ℤ)).eval z| := by
-  simp [T_eval_neg, abs_mul]
-
 /-- **The bridge to the backbone**: the book's `Ĉ_k` of (6.113) is the backbone's
 `Polynomial.Chebyshev.shifted`. The two affine maps differ by a sign and `T_k(-x)` is
 `(-1)^k T_k(x)`, so the sign cancels in the quotient. -/
@@ -238,7 +233,7 @@ theorem theorem_6_25_value (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α 
       1 / |(C k).eval (1 + 2 * (γ - β) / (β - α))| := by
   rw [Chat_eq_shifted k hαβ γ, sSup_abs_eval_shifted k hαβ hγ,
     show (1 : ℝ) + 2 * (γ - β) / (β - α) = -((β + α - 2 * γ) / (β - α)) from shift_neg hαβ γ,
-    abs_eval_T_neg]
+    Polynomial.Chebyshev.abs_eval_T_neg]
 
 /-- **Theorem 6.25**, the corollary formula: with `μ = (α + β)/2` the midpoint of the interval,
 the minimum is `1 / |C_k(2(γ - μ)/(β - α))|`. -/

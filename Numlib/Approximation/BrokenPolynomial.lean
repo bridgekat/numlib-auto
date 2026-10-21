@@ -276,21 +276,6 @@ instance : Inner ℝ (BrokenPolynomial x r) :=
 theorem inner_def (v w : BrokenPolynomial x r) :
     ⟪v, w⟫ = ∑ i, ∫ s in x i.castSucc..x i.succ, (v i).eval s * (w i).eval s := rfl
 
-/-- A polynomial whose square integrates to zero over a nondegenerate interval is zero. -/
-private theorem eq_zero_of_integral_sq_eq_zero {u v : ℝ} (huv : u < v) {p : ℝ[X]}
-    (h : ∫ s in u..v, p.eval s * p.eval s = 0) : p = 0 := by
-  by_contra hp
-  -- a nonzero polynomial does not vanish on the whole interval
-  have hroot : ∃ c ∈ Icc u v, p.eval c ≠ 0 := by
-    by_contra hall
-    push Not at hall
-    exact hp (p.eq_zero_of_infinite_isRoot ((Icc_infinite huv).mono fun c hc => hall c hc))
-  obtain ⟨c, hc, hc0⟩ := hroot
-  have hpos : 0 < ∫ s in u..v, p.eval s * p.eval s :=
-    integral_pos huv (p.continuous.mul p.continuous).continuousOn
-      (fun s _ => mul_self_nonneg _) ⟨c, hc, mul_self_pos.2 hc0⟩
-  exact hpos.ne' h
-
 instance [hx : Fact (StrictMono x)] : InnerProductSpace.Core ℝ (BrokenPolynomial x r) where
   toInner := inferInstance
   conj_inner_symm v w := by
@@ -317,7 +302,7 @@ instance [hx : Fact (StrictMono x)] : InnerProductSpace.Core ℝ (BrokenPolynomi
         mul_self_nonneg _
     refine BrokenPolynomial.ext fun i => ?_
     rw [zero_apply]
-    exact eq_zero_of_integral_sq_eq_zero (hx.out (Fin.castSucc_lt_succ (i := i)))
+    exact Polynomial.eq_zero_of_integral_mul_self_eq_zero (hx.out (Fin.castSucc_lt_succ (i := i)))
       ((Finset.sum_eq_zero_iff_of_nonneg hnonneg).1 hv i (Finset.mem_univ i))
 
 instance [Fact (StrictMono x)] : NormedAddCommGroup (BrokenPolynomial x r) :=
@@ -554,8 +539,8 @@ theorem glue_smul (c : ℝ) (v : BrokenPolynomial x r) (t : ℝ) : glue (c • v
 
 /-- A strictly increasing `x : Fin (n + 1) → ℝ`, continued to `ℕ`, is a partition of
 `[x 0, x n]` in the sense of `Numlib/Approximation/Spline`. -/
-theorem isPartition_extendFin (hx : StrictMono x) :
-    IsPartition (x 0) (x (Fin.last n)) n (extendFin x) where
+theorem isIntervalPartition_extendFin (hx : StrictMono x) :
+    IsIntervalPartition (x 0) (x (Fin.last n)) n (extendFin x) where
   step j hj := by
     rw [extendFin_of_lt x (by omega), extendFin_of_lt x (by omega)]
     exact hx (Fin.mk_lt_mk.2 (Nat.lt_succ_self j))
@@ -578,7 +563,7 @@ private theorem polyExt_eval_eq_of_mem_continuous {v : BrokenPolynomial x r}
 subspace is the panel polynomial `v_i`. -/
 theorem glue_eq_of_mem (hx : StrictMono x) {v : BrokenPolynomial x r} (hv : v ∈ continuous x r)
     (i : Fin n) {t : ℝ} (ht : t ∈ Icc (x i.castSucc) (x i.succ)) : glue v t = (v i).eval t := by
-  have h := panelGlue_eq_of_mem (isPartition_extendFin hx)
+  have h := panelGlue_eq_of_mem (isIntervalPartition_extendFin hx)
     (Q := fun i t => (polyExt v (i - 1)).eval t) (polyExt_eval_eq_of_mem_continuous hv)
     (i := (i : ℕ) + 1) (by omega) i.2 (Icc_subset_extPanel _ (by
       rw [Nat.add_sub_cancel, extendFin_of_lt x (by omega), extendFin_of_lt x (by omega)]
@@ -594,8 +579,8 @@ theorem continuous_glue (hx : StrictMono x) {v : BrokenPolynomial x r} (hv : v �
       change (polyExt v _).eval t = 0
       rw [polyExt, dite_eq_right (Nat.not_lt_zero _), eval_zero]
     rw [this]; exact continuous_const
-  · exact continuous_panelGlue (isPartition_extendFin hx) hn (polyExt_eval_eq_of_mem_continuous hv)
-      fun i _ _ => (Polynomial.continuous _).continuousOn
+  · exact continuous_panelGlue (isIntervalPartition_extendFin hx) hn
+      (polyExt_eval_eq_of_mem_continuous hv) fun i _ _ => (Polynomial.continuous _).continuousOn
 
 /-- **The gluing map** of the continuous subspace: the continuous function on `[x 0, x n]` equal to
 `v_i` on the panel `[x i, x (i+1)]`, as a linear map. -/
@@ -637,7 +622,7 @@ representation with traces and jumps. -/
 theorem toContinuousMap_range_eq_splineSpace (hx : StrictMono x) (hn : 0 < n) :
     LinearMap.range (toContinuousMap hx (r := r))
       = splineSpace (x 0) (x (Fin.last n)) n (extendFin x) r 0 := by
-  have hpart := isPartition_extendFin hx
+  have hpart := isIntervalPartition_extendFin hx
   ext f
   rw [LinearMap.mem_range, mem_splineSpace_iff]
   constructor
@@ -726,7 +711,7 @@ theorem memLp_stepFun (v : BrokenPolynomial x r) :
 theorem integral_stepFun_sq (hx : StrictMono x) (v : BrokenPolynomial x r) :
     ∫ t in Ioo (x 0) (x (Fin.last n)), stepFun v t ^ 2
       = ∑ i, ∫ s in x i.castSucc..x i.succ, (v i).eval s ^ 2 := by
-  have hpart := isPartition_extendFin hx
+  have hpart := isIntervalPartition_extendFin hx
   have hle : x 0 ≤ x (Fin.last n) := hx.monotone (Fin.zero_le _)
   have hint : IntegrableOn (fun t => stepFun v t ^ 2) (Ioo (x 0) (x (Fin.last n))) :=
     (memLp_two_iff_integrable_sq (memLp_stepFun v).aestronglyMeasurable).1 (memLp_stepFun v)

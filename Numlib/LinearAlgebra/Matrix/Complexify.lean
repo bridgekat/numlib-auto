@@ -10,6 +10,7 @@ import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.LinearAlgebra.Eigenspace.Matrix
+import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.LinearAlgebra.Matrix.PosDef
@@ -320,6 +321,40 @@ theorem mem_spectrum_affine_iff {Y : Matrix n n ℂ} {c d : ℂ} (hd : d ≠ 0) 
   have hu := isUnit_smul_iff (Units.mk0 d hd) (algebraMap ℂ (Matrix n n ℂ) ((μ - c) / d) - Y)
   rw [Units.smul_def, Units.val_mk0] at hu
   rw [spectrum.mem_iff, spectrum.mem_iff, key, hu]
+
+/-- **The spectral radius of a complex matrix is attained**, when the spectrum is nonempty: the
+spectrum is finite, so some eigenvalue `μ₀` has maximal modulus and `ρ(M) = ‖μ₀‖`. -/
+theorem exists_norm_eq_spectralRadius (M : Matrix n n ℂ) (hne : (spectrum ℂ M).Nonempty) :
+    ∃ μ₀ ∈ spectrum ℂ M, spectralRadius ℂ M = ENNReal.ofReal ‖μ₀‖ ∧
+      ∀ μ ∈ spectrum ℂ M, ‖μ‖ ≤ ‖μ₀‖ := by
+  classical
+  have hfin := M.finite_spectrum
+  obtain ⟨μ₁, hμ₁⟩ := hne
+  have hne' : hfin.toFinset.Nonempty := ⟨μ₁, hfin.mem_toFinset.mpr hμ₁⟩
+  obtain ⟨μ₀, hmem₀, hsup⟩ := Finset.exists_mem_eq_sup' hne' fun μ => ‖μ‖
+  have hmem₀' : μ₀ ∈ spectrum ℂ M := hfin.mem_toFinset.mp hmem₀
+  have hmax : ∀ μ ∈ spectrum ℂ M, ‖μ‖ ≤ ‖μ₀‖ := fun μ hμ => by
+    rw [← hsup]
+    exact Finset.le_sup' (fun μ => ‖μ‖) (hfin.mem_toFinset.mpr hμ)
+  rw [spectralRadius_eq_of_unital]
+  refine ⟨μ₀, hmem₀', le_antisymm (iSup₂_le fun μ hμ => ?_)
+    (le_iSup₂_of_le μ₀ hmem₀' ?_), hmax⟩
+  · rw [← ENNReal.ofReal_coe_nnreal, coe_nnnorm]
+    exact ENNReal.ofReal_le_ofReal (hmax μ hμ)
+  · rw [← ENNReal.ofReal_coe_nnreal, coe_nnnorm]
+
+/-- If every eigenvalue of a complex matrix has modulus `< 1`, so has the spectral radius: the
+finite-spectrum form of Mathlib's `spectrum.spectralRadius_lt_of_forall_lt`, needing no norm on the
+matrices and no nontriviality. -/
+theorem spectralRadius_lt_one_of_forall_norm_lt {M : Matrix n n ℂ}
+    (h : ∀ μ ∈ spectrum ℂ M, ‖μ‖ < 1) : spectralRadius ℂ M < 1 := by
+  rcases (spectrum ℂ M).eq_empty_or_nonempty with he | hne
+  · rw [spectralRadius_eq_of_unital]
+    refine lt_of_le_of_lt (iSup₂_le fun k hk => ?_) zero_lt_one
+    exact absurd (he ▸ hk) (Set.notMem_empty k)
+  · obtain ⟨μ₀, hμ₀, hρ, -⟩ := exists_norm_eq_spectralRadius M hne
+    rw [hρ, ENNReal.ofReal_lt_one]
+    exact h μ₀ hμ₀
 
 /-- **Spectral mapping for affine images of a real matrix**: for `d ≠ 0`,
 `σ(c I + d X) = c + d σ(X)`. This is what every relaxation argument uses — JOR
@@ -752,7 +787,6 @@ the supremum norm. -/
 theorem tendsto_pow_rpow_linfty_opNorm (A : Matrix n n ℝ) :
     Tendsto (fun k : ℕ => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop
       (𝓝 (complexSpectralRadius A).toReal) := by
-  have _ : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
   have hnorm : ∀ k : ℕ, ‖(complexify A) ^ k‖ = ‖A ^ k‖ := fun k => by
     rw [← complexify_pow, linfty_opNorm_complexify]
   have hgel := spectrum.pow_norm_pow_one_div_tendsto_nhds_spectralRadius (complexify A)
@@ -1177,7 +1211,6 @@ theorem exists_limsup_norm_pow_mulVec_rpow_eq [Nonempty n] (G : Matrix n n ℝ) 
   have hfa : ∃ᶠ k : ℕ in atTop, (c / D) ^ (1 / k : ℝ) * ρ ≤ a k := by
     refine (hfreq.and_eventually (eventually_ge_atTop 1)).mono ?_
     rintro k ⟨hk, hk1⟩
-    have hkne : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
     have hstep : c / D * ρ ^ k ≤ ‖(WithLp.toLp 2 (G ^ k *ᵥ d₀) : EuclideanSpace ℝ n)‖ / D := by
       rw [div_mul_eq_mul_div, div_le_div_iff_of_pos_right hD]
       exact hk

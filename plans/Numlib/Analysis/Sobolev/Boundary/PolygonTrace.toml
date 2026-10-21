@@ -164,9 +164,6 @@ id = "Triangulation.glueDeriv_ae_eq"
 id = "Triangulation.memLp_glueDeriv"
 
 [[node]]
-id = "Triangulation.memLp_restrict_of_continuousOn"
-
-[[node]]
 id = "Triangulation.hasWeakIteratedLineDerivOn_glueDeriv"
 
 [[node]]

@@ -28,7 +28,9 @@ normed field `𝕜`.
   derivative of the previous one and the last continuous, is the chain of iterated derivatives
   of a `C^n` function.
 * `iteratedDeriv_comp_congr`: the jets of a composition depend only on the jets of the factors
-  (the formal content of Faà di Bruno's formula).
+  (the formal content of Faà di Bruno's formula), through
+  `FormalMultilinearSeries.taylorComp_congr`: the Taylor composition at order `n` reads only the
+  terms of order `≤ n`.
 -/
 
 open Polynomial
@@ -123,8 +125,10 @@ section Composition
 
 /-- The Faà di Bruno composition of two Taylor series at order `n` reads only the terms of order
 `≤ n`. -/
-private theorem taylorComp_congr {𝕜 : Type*} [NontriviallyNormedField 𝕜]
-    {q q' p p' : FormalMultilinearSeries 𝕜 𝕜 𝕜} {n : ℕ} (hq : ∀ k ≤ n, q k = q' k)
+theorem FormalMultilinearSeries.taylorComp_congr {𝕜 E F G : Type*} [NontriviallyNormedField 𝕜]
+    [NormedAddCommGroup E] [NormedSpace 𝕜 E] [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+    [NormedAddCommGroup G] [NormedSpace 𝕜 G] {q q' : FormalMultilinearSeries 𝕜 F G}
+    {p p' : FormalMultilinearSeries 𝕜 E F} {n : ℕ} (hq : ∀ k ≤ n, q k = q' k)
     (hp : ∀ k ≤ n, p k = p' k) : q.taylorComp p n = q'.taylorComp p' n := by
   refine Finset.sum_congr rfl fun c _ => ?_
   simp only [FormalMultilinearSeries.compAlongOrderedFinpartition]
@@ -148,7 +152,7 @@ theorem iteratedDeriv_comp_congr {𝕜 : Type*} [NontriviallyNormedField 𝕜] {
   rw [iteratedDeriv_eq_iteratedFDeriv, iteratedDeriv_eq_iteratedFDeriv,
     iteratedFDeriv_comp hg hf le_rfl, iteratedFDeriv_comp hg' hf' le_rfl]
   congr 1
-  refine taylorComp_congr (fun k hk => ?_) (fun k hk => ?_)
+  refine FormalMultilinearSeries.taylorComp_congr (fun k hk => ?_) (fun k hk => ?_)
   · ext
     simp only [ftaylorSeries, iteratedFDeriv_apply_eq_iteratedDeriv_mul_prod]
     rw [hgg k hk, hx]

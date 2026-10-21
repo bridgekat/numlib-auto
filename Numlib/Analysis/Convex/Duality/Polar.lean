@@ -45,13 +45,13 @@ function or the gauge and are proved in `Recession/Conjugate.lean`, `Duality/Hom
 
 ## Implementation notes
 
-Every bipolar statement takes `Convex ℝ K`, `∀ a > 0, a • K = K` and `K.Nonempty` separately,
-because that is the generality in which the separation argument runs; a `PointedCone ℝ E` supplies
-all three, and each statement has a `_pointedCone` companion. `K°° = cl K`, not `K°° = K`, is the
-theorem, and nonemptiness of `K` is genuinely needed: `∅° = F`, and `F°` is the kernel of the
-pairing rather than `cl ∅ = ∅`. The adjunction `L ⊆ K° ↔ K ⊆ L°` makes `K ↦ K°°` a
-`ClosureOperator (Set E)`, with the `OrderDual` on the *codomain* rather than the domain because
-the indicator embedding `s ↦ δ(· ∣ s)` is antitone.
+Every bipolar statement takes `Convex ℝ K`, `IsCone K` and `K.Nonempty` separately, because that
+is the generality in which the separation argument runs; a `PointedCone ℝ E` supplies all three
+(`isCone_coe_pointedCone` gives the second), and each statement has a `_pointedCone` companion.
+`K°° = cl K`, not `K°° = K`, is the theorem, and nonemptiness of `K` is genuinely needed: `∅° = F`,
+and `F°` is the kernel of the pairing rather than `cl ∅ = ∅`. The adjunction `L ⊆ K° ↔ K ⊆ L°`
+makes `K ↦ K°°` a `ClosureOperator (Set E)`, with the `OrderDual` on the *codomain* rather than the
+domain because the indicator embedding `s ↦ δ(· ∣ s)` is antitone.
 
 Two Mathlib objects are close but different. `PointedCone.dual` is the *inner* dual, so
 `K° = -(Kᵛ)` (`polarPointedCone_eq_dual_neg`); the bipolar theorem proved here asks for
@@ -139,7 +139,7 @@ theorem polarSet_iUnion {ι : Sort*} (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (u : 
 
 /-- **For a cone the two polars coincide**, because the half-space `{x | ⟨x, y⟩ ≤ 1}` contains a
 cone exactly when `{x | ⟨x, y⟩ ≤ 0}` does. -/
-theorem polarCone_eq_polarSet_of_isCone (hK : ∀ a : ℝ, 0 < a → a • K = K) :
+theorem polarCone_eq_polarSet_of_isCone (hK : IsCone K) :
     polarCone B K = polarSet B K := by
   refine subset_antisymm polarCone_subset_polarSet fun y hy x hx => ?_
   by_contra hcon
@@ -330,6 +330,18 @@ theorem smul_coe_submodule (M : Submodule ℝ E) {a : ℝ} (ha : 0 < a) :
 theorem smul_polarCone (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (K : Set E) (a : ℝ) (ha : 0 < a) :
     a • polarCone B K = polarCone B K := smul_coe_pointedCone (polarPointedCone B K) a ha
 
+/-- A pointed cone is a cone. -/
+theorem isCone_coe_pointedCone (K : PointedCone ℝ E) : IsCone (K : Set E) :=
+  fun _ ha _ hx => K.smul_mem ha.le hx
+
+/-- A submodule is a cone. -/
+theorem isCone_coe_submodule (M : Submodule ℝ E) : IsCone (M : Set E) :=
+  fun a _ _ hx => M.smul_mem a hx
+
+/-- The polar cone is a cone. -/
+theorem isCone_polarCone (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (K : Set E) : IsCone (polarCone B K) :=
+  isCone_coe_pointedCone (polarPointedCone B K)
+
 /-- **Negating the cone negates its polar**: `(-K)° = -(K°)`. With the bipolar theorem this makes
 the dual cone `K* = -K°` an involution (`neg_polarCone_neg_polarCone`). -/
 theorem polarCone_neg (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (K : Set E) :
@@ -426,15 +438,16 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 
 /-- **The indicator functions of a nonempty convex cone and of its polar are conjugate** to each
 other. -/
-theorem convexConj_indicatorFn_eq_indicatorFn_polarCone (hK : ∀ a : ℝ, 0 < a → a • K = K)
+theorem convexConj_indicatorFn_eq_indicatorFn_polarCone (hK : IsCone K)
     (hne : K.Nonempty) : convexConj B (indicatorFn K) = indicatorFn (polarCone B K) := by
   obtain ⟨x₀, hx₀⟩ := hne
   rw [← supportSet_indicatorFn]
-  exact convexConj_eq_indicatorFn_of_posHomogeneous (posHomogeneous_indicatorFn.2 hK)
+  exact convexConj_eq_indicatorFn_of_posHomogeneous
+    (posHomogeneous_indicatorFn.2 (isCone_iff_smul_eq.1 hK))
     ⟨x₀, by rw [indicatorFn_of_mem hx₀]; simp⟩
 
 /-- **The support function of a nonempty convex cone is the indicator of its polar.** -/
-theorem supportFn_eq_indicatorFn_polarCone (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) :
+theorem supportFn_eq_indicatorFn_polarCone (hK : IsCone K) (hne : K.Nonempty) :
     supportFn B K = indicatorFn (polarCone B K) := by
   rw [supportFn_eq_convexConj_indicatorFn]
   exact convexConj_indicatorFn_eq_indicatorFn_polarCone hK hne
@@ -505,7 +518,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 A point outside `cl K` is strongly separated from it by a continuous linear functional; because
 `cl K` is a nonempty cone, that functional is `≤ 0` on it and the separating constant is
 nonnegative, so the `y` representing it lies in `K°` and detects the point. -/
-theorem polarCone_polarCone (hconv : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K)
+theorem polarCone_polarCone (hconv : Convex ℝ K) (hcone : IsCone K)
     (hne : K.Nonempty) :
     polarCone B.flip (polarCone B K) = closure K := by
   have hmem : ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ K → a • x ∈ K :=
@@ -529,7 +542,7 @@ theorem polarCone_polarCone (hconv : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a �
 /-- For a nonempty *closed* convex cone the polarity correspondence is an involution:
 `K°° = K`. -/
 theorem polarCone_polarCone_of_isClosed (hconv : Convex ℝ K)
-    (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (hcl : IsClosed K) :
+    (hcone : IsCone K) (hne : K.Nonempty) (hcl : IsClosed K) :
     polarCone B.flip (polarCone B K) = K :=
   (polarCone_polarCone hconv hcone hne).trans hcl.closure_eq
 
@@ -538,38 +551,38 @@ the previous statement are supplied by the bundling. -/
 theorem polarCone_polarCone_pointedCone (K : PointedCone ℝ E) (hcl : IsClosed (K : Set E)) :
     polarCone B.flip (polarCone B (K : Set E)) = (K : Set E) :=
   polarCone_polarCone_of_isClosed (K : ConvexCone ℝ E).convex
-    (smul_coe_pointedCone K) ⟨0, K.zero_mem⟩ hcl
+    (isCone_coe_pointedCone K) ⟨0, K.zero_mem⟩ hcl
 
 theorem polarCone_polarCone_pointedCone_eq_closure (K : PointedCone ℝ E) :
     polarCone B.flip (polarCone B (K : Set E)) = closure (K : Set E) :=
-  polarCone_polarCone (K : ConvexCone ℝ E).convex (smul_coe_pointedCone K) ⟨0, K.zero_mem⟩
+  polarCone_polarCone (K : ConvexCone ℝ E).convex (isCone_coe_pointedCone K) ⟨0, K.zero_mem⟩
 
 /-- The bipolar theorem in its dual-cone form: `K** = K` for a nonempty closed convex cone, where
 `K* = -K°` is the dual cone. -/
 theorem neg_polarCone_neg_polarCone (hconv : Convex ℝ K)
-    (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (hcl : IsClosed K) :
+    (hcone : IsCone K) (hne : K.Nonempty) (hcl : IsClosed K) :
     -(polarCone B.flip (-(polarCone B K))) = K := by
   rw [polarCone_neg, neg_neg, polarCone_polarCone_of_isClosed hconv hcone hne hcl]
 
 theorem neg_polarCone_neg_polarCone_pointedCone (K : PointedCone ℝ E)
     (hcl : IsClosed (K : Set E)) :
     -(polarCone B.flip (-(polarCone B (K : Set E)))) = (K : Set E) :=
-  neg_polarCone_neg_polarCone (K : ConvexCone ℝ E).convex (smul_coe_pointedCone K)
+  neg_polarCone_neg_polarCone (K : ConvexCone ℝ E).convex (isCone_coe_pointedCone K)
     ⟨0, K.zero_mem⟩ hcl
 
 /-- The conjugacy of indicators in the remaining direction: for a nonempty closed convex cone the
 indicator of `K°` conjugates back to the indicator of `K`. -/
 theorem convexConj_indicatorFn_polarCone (hconv : Convex ℝ K)
-    (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (hcl : IsClosed K) :
+    (hcone : IsCone K) (hne : K.Nonempty) (hcl : IsClosed K) :
     convexConj B.flip (indicatorFn (polarCone B K)) = indicatorFn K := by
-  rw [convexConj_indicatorFn_eq_indicatorFn_polarCone (B := B.flip) (smul_polarCone B K)
+  rw [convexConj_indicatorFn_eq_indicatorFn_polarCone (B := B.flip) (isCone_polarCone B K)
       (polarCone_nonempty B K),
     polarCone_polarCone_of_isClosed hconv hcone hne hcl]
 
 theorem convexConj_indicatorFn_polarCone_pointedCone (K : PointedCone ℝ E)
     (hcl : IsClosed (K : Set E)) :
     convexConj B.flip (indicatorFn (polarCone B (K : Set E))) = indicatorFn (K : Set E) :=
-  convexConj_indicatorFn_polarCone (K : ConvexCone ℝ E).convex (smul_coe_pointedCone K)
+  convexConj_indicatorFn_polarCone (K : ConvexCone ℝ E).convex (isCone_coe_pointedCone K)
     ⟨0, K.zero_mem⟩ hcl
 
 end BipolarCone
@@ -690,7 +703,7 @@ theorem convexConj_partialAffineFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (L : Su
     convexConj B (partialAffineFn B L a b α)
       = partialAffineFn B.flip (polarSubmodule B L) b a (-α - B a b) := by
   have hcone : convexConj B (indicatorFn (L : Set E)) = indicatorFn (polarCone B (L : Set E)) :=
-    convexConj_indicatorFn_eq_indicatorFn_polarCone (fun _ hc => smul_coe_submodule L hc)
+    convexConj_indicatorFn_eq_indicatorFn_polarCone (isCone_coe_submodule L)
       ⟨0, L.zero_mem⟩
   have hfun : partialAffineFn B L a b α
       = fun x : E => indicatorFn (L : Set E) (x - a) + ((B x b : ℝ) : EReal) + (α : EReal) := by
@@ -722,7 +735,7 @@ theorem polarCone_setOf_forall_le_zero {ι : Sort*} (a : ι → E) :
   rw [← polarCone_hull_range B a]
   exact polarCone_polarCone
     ((PointedCone.hull ℝ (Set.range a) : ConvexCone ℝ E)).convex
-    (smul_coe_pointedCone _) ⟨0, (PointedCone.hull ℝ (Set.range a)).zero_mem⟩
+    (isCone_coe_pointedCone _) ⟨0, (PointedCone.hull ℝ (Set.range a)).zero_mem⟩
 
 end ExamplesTopology
 

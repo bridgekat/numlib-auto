@@ -89,7 +89,6 @@ theorem strictConvexOn_norm_sq : StrictConvexOn ℝ (Set.univ : Set H) fun v : H
   have hdiff : ‖x - y‖ ^ 2 = ‖x‖ ^ 2 - 2 * inner ℝ x y + ‖y‖ ^ 2 := norm_sub_sq_real x y
   have hpos : 0 < a * b * ‖x - y‖ ^ 2 := by
     have hne : x - y ≠ 0 := sub_ne_zero.2 hxy
-    have : 0 < ‖x - y‖ := norm_pos_iff.2 hne
     positivity
   have hkey : a * ‖x‖ ^ 2 + b * ‖y‖ ^ 2 - ‖a • x + b • y‖ ^ 2 = a * b * ‖x - y‖ ^ 2 := by
     have hb' : b = 1 - a := by linarith

@@ -554,7 +554,6 @@ theorem LocalBounds.tendsto_iterate (hα : f α = 0) (hb : LocalBounds f α ε m
     (hs : IsAdmissible α ε (xm1, x₀)) :
     (∀ k, iterate f xm1 x₀ k ∈ Metric.ball α ε) ∧ Tendsto (iterate f xm1 x₀) atTop (𝓝 α) := by
   have hCε' : M₂ / m₁ * ε ≤ 1 := hCε.trans (by norm_num)
-  have hC : 0 < M₂ / m₁ := div_pos hM₂ hm₁
   by_cases hall : ∀ k, IsAdmissible α ε ((step f)^[k] (xm1, x₀))
   · -- every pair admissible: Fibonacci decay
     set E : ℕ → ℝ := fun k => M₂ / m₁ * |((step f)^[k] (xm1, x₀)).1 - α| with hE
@@ -626,7 +625,7 @@ theorem exists_ball_tendsto_iterate (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α
   set m₁ := |deriv f α| / 2 with hm₁def
   set M₂ := |iteratedDeriv 2 f α| / 2 + 1 with hM₂def
   have hm₁ : 0 < m₁ := half_pos (abs_pos.2 hf')
-  have hM₁ : 0 < 3 * |deriv f α| / 2 := by have := abs_pos.2 hf'; positivity
+  have hM₁ : 0 < 3 * |deriv f α| / 2 := by positivity
   have hM₂ : 0 < M₂ := by rw [hM₂def]; positivity
   have hC : 0 < M₂ / m₁ := by positivity
   set ε := min δ (1 / (2 * (M₂ / m₁))) with hεdef
@@ -650,15 +649,15 @@ theorem exists_ball_convergesWithOrder_goldenRatio (hα : f α = 0) (hf : ContDi
     (hf' : deriv f α ≠ 0) (hf'' : iteratedDeriv 2 f α ≠ 0) :
     ∃ ε > 0, ∀ xm1 ∈ Metric.ball α ε, ∀ x₀ ∈ Metric.ball α ε, xm1 ≠ x₀ → xm1 ≠ α → x₀ ≠ α →
       ConvergesWithOrder (iterate f xm1 x₀) α Real.goldenRatio := by
-  have hη : 0 < |iteratedDeriv 2 f α| / 4 := by have := abs_pos.2 hf''; positivity
+  have hη : 0 < |iteratedDeriv 2 f α| / 4 := by positivity
   obtain ⟨δ, hδ, hb⟩ := exists_localBounds hf hf' hη
   set m₁ := |deriv f α| / 2 with hm₁def
   set M₁ := 3 * |deriv f α| / 2 with hM₁def
   set m₂ := |iteratedDeriv 2 f α| / 2 - |iteratedDeriv 2 f α| / 4 with hm₂def
   set M₂ := |iteratedDeriv 2 f α| / 2 + |iteratedDeriv 2 f α| / 4 with hM₂def
   have hm₁ : 0 < m₁ := half_pos (abs_pos.2 hf')
-  have hM₁ : 0 < M₁ := by have := abs_pos.2 hf'; positivity
-  have hm₂ : 0 < m₂ := by have := abs_pos.2 hf''; simp only [hm₂def]; linarith
+  have hM₁ : 0 < M₁ := by positivity
+  have hm₂ : 0 < m₂ := by simp only [hm₂def]; linarith
   have hM₂ : 0 < M₂ := by rw [hM₂def]; positivity
   have hC : 0 < M₂ / m₁ := by positivity
   set ε := min δ (1 / (2 * (M₂ / m₁))) with hεdef
@@ -1120,7 +1119,6 @@ theorem le_abs_newton_two_of_mul_neg {α m u v : ℝ} (hα : f α = 0) (huv : u 
     nlinarith [mul_nonneg (sq_nonneg (v - α)) (sub_nonneg.2 hsq2),
       mul_nonneg (sq_nonneg (u - α)) (sub_nonneg.2 hsq1),
       mul_nonneg (neg_nonneg.2 hsign.le) (sub_nonneg.2 hsq3)]
-  have h1 : 0 ≤ m * |v - u| := by positivity
   nlinarith [abs_nonneg ((v - α) * gv - (u - α) * gu), sq_abs ((v - α) * gv - (u - α) * gu)]
 
 /-- **Regula falsi converges linearly** ([quarteroni2000numerical] §6.2.2, "the Regula Falsi method
@@ -1168,7 +1166,6 @@ theorem convergesWithOrder_one_iterate (hf : ContinuousOn f (uIcc xm1 x₀)) (h 
     obtain ⟨z, hzI, hz⟩ := isCompact_uIcc.exists_isMinOn nonempty_uIcc hgc.abs
     exact ⟨|dslope f β z|, abs_pos.2 (hgne z hzI), fun x hx => hz hx⟩
   obtain ⟨Mg, hMg⟩ := isCompact_uIcc.exists_bound_of_continuousOn hgc
-  have hMg0 : 0 ≤ Mg := le_trans (norm_nonneg _) (hMg β hαI)
   -- the `C¹` bound for `g` near the root
   have hC2 : ContDiffAt ℝ (1 + 1 : ℕ) f β := by simpa using hC
   have hgC1 : ContDiffAt ℝ 1 (dslope f β) β := ContDiffAt.dslope_same (n := 1) hC2
@@ -1183,7 +1180,6 @@ theorem convergesWithOrder_one_iterate (hf : ContinuousOn f (uIcc xm1 x₀)) (h 
     intro a ha
     rw [abs_sub_le_iff]
     constructor <;> linarith [ha.1, ha.2, hαI.1, hαI.2]
-  have hxpos : 0 < |xm1 - x₀| := abs_pos.2 (sub_ne_zero.2 hxne)
   refine ⟨M₂ / m * |xm1 - x₀|, by positivity, ?_⟩
   by_cases hroot : ∃ k, f (iterate f xm1 x₀ k) = 0
   · -- an iterate is an exact root: the method stalls there
@@ -1256,7 +1252,7 @@ theorem convergesWithOrder_one_iterate (hf : ContinuousOn f (uIcc xm1 x₀)) (h 
         refine le_trans hbound ?_
         have hmax : 4 * Mg / δ ≤ M₂ := le_max_right _ _
         have hkey : 4 * Mg / δ * (δ / 2) = 2 * Mg := by field_simp; ring
-        nlinarith [hvu, hmax, hM₂pos, hMg0]
+        nlinarith [hvu, hmax, hM₂pos]
     -- the error recursion
     have hstep := Secant.abs_sub_root_le hα huv hua hva hmpos hden hnum
     rw [iterate_succ, secantPoint]
@@ -1835,7 +1831,6 @@ was available, since there both factors could be taken small). -/
 theorem tendsto_zero_of_le_half {E : ℕ → ℝ} (hE : ∀ k, 0 ≤ E k)
     (hrec : ∀ k, E (k + 3) ≤ E k / 2) : Tendsto E atTop (𝓝 0) := by
   set C := max (E 0) (max (E 1) (E 2)) with hC
-  have hC0 : 0 ≤ C := (hE 0).trans (le_max_left _ _)
   have key : ∀ j i, i < 3 → E (3 * j + i) ≤ C / 2 ^ j := by
     intro j
     induction j with
@@ -1900,7 +1895,6 @@ theorem exists_le_mul_rpow_tribonacci {e : ℕ → ℝ} {c C : ℝ} (hc : 0 < c)
   have hp1 : 1 < p := Real.one_lt_tribonacci
   have hp2 : p < 2 := Real.tribonacci_lt_two
   have hp0 : 0 < p := lt_trans one_pos hp1
-  have hA0 : 0 < 2 - p := by linarith
   have hB0 : 0 < (p - 1) / p := by positivity
   have hAB : (2 - p) + (p - 1) / p < 1 := by
     have h : (1 : ℝ) - (2 - p) - (p - 1) / p = (p - 1) ^ 2 / p := by field_simp; ring
@@ -1985,9 +1979,6 @@ theorem exists_ball_convergesWithOrder (hα : f α = 0) (hf : ContDiffAt ℝ 3 f
     ∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε, ∀ x₁ ∈ Metric.ball α ε, ∀ x₂ ∈ Metric.ball α ε,
       x₀ ≠ x₁ → x₀ ≠ x₂ → x₁ ≠ x₂ → x₀ ≠ α → x₁ ≠ α → x₂ ≠ α →
       ConvergesWithOrder (iterate f x₀ x₁ x₂) α Real.tribonacci := by
-  have hA : 0 < |deriv f α| := abs_pos.2 hf'
-  have hT : 0 < |iteratedDeriv 3 f α| := abs_pos.2 hf3
-  have hB : 0 ≤ |iteratedDeriv 2 f α| := abs_nonneg _
   set η : ℝ := min (|deriv f α| / 8) (|iteratedDeriv 3 f α| / 12) with hηdef
   have hη : 0 < η := lt_min (by positivity) (by positivity)
   have hηA : 8 * η ≤ |deriv f α| := by
@@ -2007,8 +1998,6 @@ theorem exists_ball_convergesWithOrder (hα : f α = 0) (hf : ContDiffAt ℝ 3 f
   have hMeq : |iteratedDeriv 3 f α| / 6 + η ≤ M * (|deriv f α| / 2) := hMeq'.ge
   have hmeq : m * (3 * |deriv f α| / 2) ≤ |iteratedDeriv 3 f α| / 6 - η := hmeq'.le
   obtain ⟨δ, hδ, hdata⟩ := exists_localData hf hη
-  have hBη : 0 < |iteratedDeriv 2 f α| / 2 + η := by positivity
-  have hAη : 0 < |deriv f α| + η := by positivity
   set c₁ : ℝ := |deriv f α| / (16 * (|iteratedDeriv 2 f α| / 2 + η)) with hc₁
   set c₂ : ℝ := |deriv f α| ^ 2 / (32 * ((|deriv f α| + η) * (|iteratedDeriv 2 f α| / 2 + η)))
     with hc₂
@@ -2037,7 +2026,6 @@ theorem exists_ball_convergesWithOrder (hα : f α = 0) (hf : ContDiffAt ℝ 3 f
       linarith
   have hMε : M * ε ^ 2 ≤ 1 / 2 := by
     have h := (le_div_iff₀ (by positivity : (0:ℝ) < 2 * M)).1 (hεc₃.trans_eq hc₃)
-    have hMe : 0 ≤ M * ε := mul_nonneg hM0.le hε.le
     calc M * ε ^ 2 = M * ε * ε := by ring
       _ ≤ M * ε * 1 := by gcongr
       _ = M * ε := by ring

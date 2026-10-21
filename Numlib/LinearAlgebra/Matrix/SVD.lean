@@ -1177,7 +1177,7 @@ theorem conjTranspose_shiftedRectDiagonal_mul_self (k : ℕ) (σ : ℕ → 𝕜)
       · exact fun h => absurd (Finset.mem_univ _) h
     · rw [ite_eq_right hc]
       refine Finset.sum_eq_zero fun i _ => ?_
-      have : ¬ (j : ℕ) = i + k := fun h => hc ⟨by omega, by have := i.isLt; omega⟩
+      have : ¬ (j : ℕ) = i + k := fun h => hc ⟨by omega, by omega⟩
       rw [ite_eq_right this, star_zero, zero_mul]
   · rw [ite_eq_right hjl]
     refine Finset.sum_eq_zero fun i _ => ?_
@@ -1220,7 +1220,7 @@ theorem conjTranspose_shiftedRectDiagonal_mulVec (k : ℕ) (σ : ℕ → 𝕜) (
     · exact fun h' => absurd (Finset.mem_univ _) h'
   · refine Finset.sum_eq_zero fun j _ => ?_
     rw [conjTranspose_apply, shiftedRectDiagonal_apply,
-      ite_eq_right (fun hij => h ⟨by omega, by have := j.isLt; omega⟩), star_zero, zero_mul]
+      ite_eq_right (fun hij => h ⟨by omega, by omega⟩), star_zero, zero_mul]
 
 /-- For `n ≤ m`, the product of a square matrix with a tall rectangular diagonal matrix only sees
 the first `n` columns of the square matrix: `W Σ = W₁ diag(σ)`. -/
@@ -1796,11 +1796,6 @@ section Uniqueness
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- The `n × n` diagonal matrix of real entries `d` is Hermitian. -/
-private theorem isHermitian_diagonal_ofReal {n : Type*} [DecidableEq n] (d : n → ℝ) :
-    (diagonal fun i => ((d i : ℝ) : 𝕜)).IsHermitian :=
-  isHermitian_diagonal_iff.2 fun i => RCLike.conj_ofReal (d i)
-
 /-- **The singular values from a unitary diagonalization of the Gram matrix**: if
 `Aᴴ A = U diag(dᵢ²) Uᴴ` with `U` unitary and `d ≥ 0`, then the singular values of `A` are the `dᵢ`,
 up to a relabelling `e`. The characteristic polynomial of `Aᴴ A` is that of `diag(dᵢ²)`, so the
@@ -1887,7 +1882,8 @@ theorem singularValues_eq_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (
   have hTsym := T.isSymmetric_adjoint_comp_self
   have hn : Module.finrank 𝕜 (EuclideanSpace 𝕜 (Fin n)) = n := finrank_euclideanSpace_fin
   have hDsym : (toEuclideanLin (diagonal fun j => ((d j : ℝ) : 𝕜))).IsSymmetric :=
-    isSymmetric_toEuclideanLin_iff.2 (isHermitian_diagonal_ofReal d)
+    isSymmetric_toEuclideanLin_iff.2
+      (isHermitian_diagonal_iff.2 fun i => RCLike.conj_ofReal (d i))
   have hTT : LinearMap.adjoint T ∘ₗ T = toEuclideanLin (Aᴴ * A) := by
     rw [toEuclideanLin_mul, toEuclideanLin_conjTranspose_eq_adjoint]
   have hchar : (LinearMap.adjoint T ∘ₗ T).charpoly

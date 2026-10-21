@@ -1176,19 +1176,23 @@ theorem ConvexFn.lscHull_eq_of_mem_relint_convexDom (hf : ConvexFn f) {x : E}
   rw [← hkey] at hmem
   exact hmem.2
 
+/-- `dom (lsc f)` is squeezed between `dom f` and its closure, so the two domains have the same
+closure and the same relative interior. Properness is not needed. -/
+theorem ConvexFn.relint_convexDom_lscHull (hf : ConvexFn f) :
+    ri (convexDom (lscHull f)) = ri (convexDom f) :=
+  (Convex.closure_eq_iff_relint_eq (convexFn_lscHull hf).convex_convexDom
+      hf.convex_convexDom).1
+    (Convex.closure_eq_of_relint_subset_of_subset_closure hf.convex_convexDom
+      (intrinsicInterior_subset.trans (convexDom_subset_convexDom_lscHull f))
+      (convexDom_lscHull_subset_closure_convexDom f))
+
 /-- The lower semicontinuous hull of a *proper* convex function is nowhere `−∞`. This is what makes
 `convexCl f` the hull rather than the constant `⊥`, and it is finite-dimensional. -/
 theorem ConvexFn.lscHull_ne_bot (hf : ConvexFn f) (hp : ProperConvex f)
     (x : E) : lscHull f x ≠ ⊥ := by
   intro hbot
   have hgp : ¬ ProperConvex (lscHull f) := fun hpr => hpr.ne_bot x hbot
-  have hcl : closure (convexDom (lscHull f)) = closure (convexDom f) :=
-    Convex.closure_eq_of_relint_subset_of_subset_closure hf.convex_convexDom
-      (intrinsicInterior_subset.trans (convexDom_subset_convexDom_lscHull f))
-      (convexDom_lscHull_subset_closure_convexDom f)
-  have hdom : ri (convexDom (lscHull f)) = ri (convexDom f) :=
-    (Convex.closure_eq_iff_relint_eq (convexFn_lscHull hf).convex_convexDom
-        hf.convex_convexDom).1 hcl
+  have hdom : ri (convexDom (lscHull f)) = ri (convexDom f) := hf.relint_convexDom_lscHull
   obtain ⟨z, hz⟩ := Convex.relint_nonempty hf.convex_convexDom hp.convexDom_nonempty
   have h1 : lscHull f z = ⊥ :=
     (convexFn_lscHull hf).eq_bot_of_mem_relint_convexDom hgp (by rw [hdom]; exact hz)
@@ -1257,11 +1261,7 @@ closure and the same relative interior. -/
 theorem ConvexFn.relint_convexDom_convexCl (hf : ConvexFn f) (hp : ProperConvex f) :
     ri (convexDom (convexCl f)) = ri (convexDom f) := by
   rw [hf.convexCl_eq_lscHull hp]
-  exact (Convex.closure_eq_iff_relint_eq (convexFn_lscHull hf).convex_convexDom
-      hf.convex_convexDom).1
-    (Convex.closure_eq_of_relint_subset_of_subset_closure hf.convex_convexDom
-      (intrinsicInterior_subset.trans (convexDom_subset_convexDom_lscHull f))
-      (convexDom_lscHull_subset_closure_convexDom f))
+  exact hf.relint_convexDom_lscHull
 
 /-- The companion statement for *interiors*: `dom (cl f)` has the same plain interior as `dom f`,
 not only the same relative interior. The inclusion `⊇` is `cl f ≤ f`; for `⊆`,
@@ -1337,29 +1337,11 @@ principle replaces Mathlib's `Convex.combo_interior_closure_mem_interior`. -/
 theorem ConvexFn.tendsto_lscHull_along_segment_relint (hf : ConvexFn f) {x : E}
     (hx : x ∈ ri (convexDom f)) (y : E) :
     Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (lscHull f y)) := by
-  rw [tendsto_order]
-  refine ⟨fun b hb => ?_, fun b hb => ?_⟩
-  · filter_upwards [(tendsto_segment x y).eventually (lowerSemicontinuous_lscHull f y b hb)]
-      with a ha
-    exact lt_of_lt_of_le ha (lscHull_le f _)
-  · obtain ⟨β, hβ1, hβ2⟩ := EReal.lt_iff_exists_real_btwn.1 hb
-    obtain ⟨γ, hγ1, hγ2⟩ := EReal.lt_iff_exists_real_btwn.1 hβ2
-    have hβγ : β < γ := by exact_mod_cast hγ1
-    have hyβ : ((y, β) : E × ℝ) ∈ closure (epi f) := by
-      rw [← epi_lscHull]; exact hβ1.le
-    obtain ⟨α, hα, -⟩ :=
-      EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 (intrinsicInterior_subset hx))
-    have hxα : ((x, α) : E × ℝ) ∈ ri (epi f) := by rw [hf.relint_epi]; exact ⟨hx, hα⟩
-    filter_upwards [(tendsto_affine_nhdsLT_one α β).eventually_lt_const hβγ,
-      eventually_mem_Ico_nhdsLT_one] with a hlt ha
-    have hcombo := Convex.segment_mem_relint hf.convex_epi hxα hyβ ha.1 ha.2
-    have hpair : (1 - a) • ((x, α) : E × ℝ) + a • (y, β)
-        = ((1 - a) • x + a • y, (1 - a) * α + a * β) := by
-      simp [smul_eq_mul]
-    rw [hpair] at hcombo
-    have hle : f ((1 - a) • x + a • y) ≤ (((1 - a) * α + a * β : ℝ) : EReal) :=
-      mk_mem_epi.1 (intrinsicInterior_subset hcombo)
-    exact lt_of_le_of_lt hle (lt_trans (by exact_mod_cast hlt) hγ2)
+  obtain ⟨α, hα, -⟩ :=
+    EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 (intrinsicInterior_subset hx))
+  have hxα : ((x, α) : E × ℝ) ∈ ri (epi f) := by rw [hf.relint_epi]; exact ⟨hx, hα⟩
+  exact tendsto_lscHull_along_segment_of_combo_mem fun _ hyβ a ha0 ha1 =>
+    intrinsicInterior_subset (Convex.segment_mem_relint hf.convex_epi hxα hyβ ha0 ha1)
 
 /-- The same limit for `convexCl`. Properness is what rules out the exceptional branch of
 `convexCl`; compare `convexCl_eq_limit_along_segment`, which has to assume it directly. -/

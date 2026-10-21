@@ -6,6 +6,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
+import Numlib.Analysis.SpecialFunctions.Log.Deriv
 
 /-!
 # A logarithmic bound for Lebesgue-type sums of reciprocal sines
@@ -99,7 +100,6 @@ theorem term_nonneg (M : ℕ) (δ : ℝ) (k : ℤ) : 0 ≤ term M δ k :=
 
 /-- Every term is at most `1`, because `|sin (M u)| ≤ M |sin u|`. -/
 theorem term_le_one {M : ℕ} (hM : 0 < M) (δ : ℝ) (k : ℤ) : term M δ k ≤ 1 := by
-  have hMr : (0 : ℝ) < M := Nat.cast_pos.2 hM
   rcases eq_or_lt_of_le (abs_nonneg (Real.sin (π * ((k : ℝ) + δ) / M))) with h | h
   · rw [term, ← h, mul_zero, div_zero]; norm_num
   · rw [term, div_le_one (by positivity)]
@@ -133,22 +133,6 @@ theorem sum_range_shift (M : ℕ) (δ : ℝ) (c : ℤ) :
     rw [← key (-(i : ℤ) - 1), show -(i : ℤ) - 1 + 1 = -(i : ℤ) by ring]
     exact ih
 
-/-- The power series of `log ((1 + w) / (1 - w))` has nonnegative terms for `0 ≤ w < 1`, so it
-dominates the sum of its first two: `2 w + (2/3) w³ ≤ log (1 + w) - log (1 - w)`. -/
-private theorem add_le_log_sub_log {w : ℝ} (hw0 : 0 ≤ w) (hw1 : w < 1) :
-    2 * w + 2 / 3 * w ^ 3 ≤ Real.log (1 + w) - Real.log (1 - w) := by
-  have habs : |w| < 1 := by rwa [abs_of_nonneg hw0]
-  have hsum := Real.hasSum_log_sub_log_of_abs_lt_one habs
-  have hnn : ∀ k : ℕ, 0 ≤ (2 : ℝ) * (1 / (2 * (k : ℝ) + 1)) * w ^ (2 * k + 1) := by
-    intro k
-    have hk : (0 : ℝ) ≤ 1 / (2 * (k : ℝ) + 1) := by positivity
-    have : (0 : ℝ) ≤ w ^ (2 * k + 1) := pow_nonneg hw0 _
-    positivity
-  have h := sum_le_hasSum (Finset.range 2) (fun i _ => hnn i) hsum
-  refine le_trans (le_of_eq ?_) h
-  rw [Finset.sum_range_succ, Finset.sum_range_one]
-  norm_num
-
 /-- For `0 < h ≤ π/6`, `h ≤ sin h + (sin h)³ / 3`. -/
 private theorem le_sin_add_sin_cube_div {h : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6) :
     h ≤ Real.sin h + Real.sin h ^ 3 / 3 := by
@@ -160,7 +144,6 @@ private theorem le_sin_add_sin_cube_div {h : ℝ} (hh0 : 0 < h) (hh : h ≤ π /
   have hcube : h ^ 3 ≤ 0.45 * h := by nlinarith
   have h1 : 0.925 * h ≤ Real.sin h := by linarith
   have h2 : (0.925 * h) ^ 3 ≤ Real.sin h ^ 3 := pow_le_pow_left₀ (by positivity) h1 3
-  have h3 : (0.925 * h) ^ 3 = 0.791453125 * h ^ 3 := by ring
   nlinarith [pow_pos hh0 3]
 
 /-- **The midpoint bound for the cosecant.** For `0 < h ≤ π/6` and `h < φ < π - h`,
@@ -170,7 +153,6 @@ private theorem two_mul_div_sin_le {h φ : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6
     (hφ1 : h < φ) (hφ2 : φ < π - h) :
     2 * h / Real.sin φ
       ≤ Real.log (Real.tan ((φ + h) / 2)) - Real.log (Real.tan ((φ - h) / 2)) := by
-  have hpi := Real.pi_pos
   set A := (φ + h) / 2 with hA
   set B := (φ - h) / 2 with hB
   have hB0 : 0 < B := by rw [hB]; linarith
@@ -200,7 +182,7 @@ private theorem two_mul_div_sin_le {h φ : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6
     by rw [← Real.log_div htanA.ne' htanB.ne', hratio,
       Real.log_div (by linarith) (by linarith)]
   rw [hlog]
-  refine le_trans ?_ (add_le_log_sub_log hw0 hw1)
+  refine le_trans ?_ (Real.two_mul_add_le_log_sub_log hw0 hw1)
   have hle : h ≤ Real.sin h + Real.sin h ^ 3 / 3 := le_sin_add_sin_cube_div hh0 hh
   have hs2 : Real.sin φ ^ 2 ≤ 1 := by nlinarith [Real.sin_le_one φ, Real.neg_one_le_sin φ]
   have hnum : 0 ≤ 2 * Real.sin h * Real.sin φ ^ 2 + 2 / 3 * Real.sin h ^ 3
@@ -258,7 +240,6 @@ theorem sum_term_le {M : ℕ} (hM : 3 ≤ M) {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 
     rw [Real.sin_pi_div_six] at h
     linarith
   have hMr3 : (3 : ℝ) ≤ (M : ℝ) := by exact_mod_cast hM
-  have hM0 : (0 : ℝ) < (M : ℝ) := by linarith
   set q : ℝ := π / (2 * (M : ℝ)) with hq
   have hq0 : 0 < q := by rw [hq]; positivity
   have hqM : 2 * (M : ℝ) * q = π := by rw [hq]; field_simp

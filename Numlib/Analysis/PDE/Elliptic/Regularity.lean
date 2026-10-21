@@ -502,7 +502,6 @@ theorem tendsto_integral_diffQuot_neg_smul {u : E → F} (hu : LocallyIntegrable
   -- a bound on the gradient of `φ`
   obtain ⟨M, hM⟩ := (φ.hasCompactSupport.fderiv ℝ).exists_bound_of_continuous
     (φ.contDiff.continuous_fderiv (by simp))
-  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
   have hlip : ∀ x z : E, ‖(φ : E → ℝ) z - φ x‖ ≤ M * ‖z - x‖ := fun x z ↦
     Convex.norm_image_sub_le_of_norm_fderiv_le (fun _ _ ↦ (φ.contDiff.differentiable
       (by simp)).differentiableAt) (fun x _ ↦ hM x) convex_univ (mem_univ x) (mem_univ z)
@@ -1561,8 +1560,8 @@ it holds for every `φ ∈ H^1_0(Ω)`, both sides being continuous in `φ`. On `
 since `C_c^∞(ℝ^N)` is dense in `H^1(ℝ^N)`" of [brezis2011functional] §9.6. -/
 theorem dirichletForm_eq_load_of_forall_testFunctions {V : SobolevEuclidean N 1 2 Ω}
     {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (h : ∀ φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω V φ = load Ω G φ)
+    (h : IsWeakSolution (dirichletForm Ω)
+      (testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume) V G)
     {φ : SobolevEuclidean N 1 2 Ω} (hφ : φ ∈ SobolevEuclideanZero N 1 2 Ω) :
     dirichletForm Ω V φ = load Ω G φ := by
   have hker : testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume
@@ -1636,12 +1635,8 @@ theorem exists_sobolevEuclidean_of_forall_testFunction {v g : EuclideanSpace ℝ
       simpa [EuclideanSpace.basisFun_toBasis_apply] using hwv i, hwvp i⟩⟩
   obtain ⟨V, hV⟩ := hmem.exists_sobolevMultiIndex
   have hVd : ∀ i, ⇑(weakDeriv V (MultiIndexLE.single i))
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] wv i := fun i ↦ by
-    have h1 := ((hasWeakIteratedLineDerivOn V (MultiIndexLE.single i)).of_perm
-      (multiIndexTuple_single_perm ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis :
-        Fin N → EuclideanSpace ℝ (Fin N)) i)).congr_ae hV (EventuallyEq.refl _ _)
-    rw [EuclideanSpace.basisFun_toBasis_apply] at h1
-    exact (ae_restrict_iff' Ω.isOpen.measurableSet).2 (h1.ae_eq (hwv i))
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] wv i := fun i ↦
+    SobolevEuclidean.weakDeriv_single_ae_eq V hV (hwv i)
   refine ⟨V, hg.toLp g, hV, hVd, hg.coeFn_toLp, ?_⟩
   rintro Φ ⟨ψ, hψ⟩
   rw [dirichletForm_apply_eq_of_ae_eq hVd hψ, load_apply_eq_of_ae_eq hg.coeFn_toLp hψ]
@@ -1652,8 +1647,9 @@ theorem exists_sobolevEuclidean_of_forall_testFunction {v g : EuclideanSpace ℝ
 `∑ᵢ ∫_Ω ∂ᵢU ∂ᵢψ = ∫_Ω F ψ` for every test function `ψ` on `Ω`. -/
 theorem forall_testFunction_of_forall_testFunctions {U : SobolevEuclidean N 1 2 Ω}
     {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (h : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω U Φ = load Ω F Φ) (ψ : 𝓓(Ω, ℝ)) :
+    (h : IsWeakSolution (dirichletForm Ω)
+      (testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume) U F)
+    (ψ : 𝓓(Ω, ℝ)) :
     ∑ i, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
       weakDeriv U (MultiIndexLE.single i) x * fderiv ℝ ψ x (EuclideanSpace.single i 1)
       = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), F x * ψ x := by
@@ -1717,16 +1713,6 @@ theorem _root_.MeasureTheory.LocallyMemLpOn.locallyIntegrableOn_of_le {p : ℝ�
     ⟨by rw [Measure.restrict_apply_univ]; exact hkc.measure_lt_top⟩
   exact (hu.memLp_restrict_of_compact_subset hp' hk hkc).integrable hp
 
-omit [MeasurableSpace E] [BorelSpace E] in
-/-- A smooth function equal to `1` on a compact subset `K` of `Ω`, with compact support in `Ω`. -/
-theorem exists_contDiff_eqOn_one_hasCompactSupport {K : Set E} (hK : IsCompact K)
-    (hKΩ : K ⊆ Ω) :
-    ∃ θ : E → ℝ, ContDiff ℝ ∞ θ ∧ EqOn θ 1 K ∧ HasCompactSupport θ ∧ tsupport θ ⊆ Ω := by
-  obtain ⟨L, hLc, hKL, hLΩ⟩ := exists_compact_between hK Ω.isOpen hKΩ
-  obtain ⟨θ, hθ, hθ1, hθL, -⟩ := hK.exists_contDiff_eqOn_one isOpen_interior hKL
-  exact ⟨θ, hθ, hθ1, hLc.of_isClosed_subset (isClosed_tsupport θ) (hθL.trans interior_subset),
-    hθL.trans (interior_subset.trans hLΩ)⟩
-
 end Interior
 
 section InteriorEuclidean
@@ -1742,7 +1728,7 @@ partial derivatives `w i ∈ L²_loc(Ω)`, let `f ∈ L²_loc(Ω)`, and let
 for every open `ω` with compact closure in `Ω`.
 
 The proof is the book's: for such an `ω`, a smooth `θ` equal to `1` on `closure ω` with compact
-support in `Ω` (`Elliptic.exists_contDiff_eqOn_one_hasCompactSupport`); `θu` extended by zero
+support in `Ω` (`IsCompact.exists_contDiff_eqOn_one_hasCompactSupport`); `θu` extended by zero
 lies in `H^1(ℝ^N)` (`HasWeakIteratedLineDerivOn.indicator_mul`) and solves
 `−Δ(θu) = θf − 2∇θ·∇u − (Δθ)u ∈ L²(ℝ^N)` against the test functions
 (`Elliptic.sum_integral_indicator_cutoff_eq`), hence against all of `H^1(ℝ^N)` by density
@@ -1762,7 +1748,7 @@ theorem regularity_interior {u f : EuclideanSpace ℝ (Fin N) → ℝ}
   have hul : LocallyIntegrableOn u Ω volume := hu.locallyIntegrableOn_of_le one_le_two h2
   have hfl : LocallyIntegrableOn f Ω volume := hf.locallyIntegrableOn_of_le one_le_two h2
   -- the cut-off and its derivatives
-  obtain ⟨θ, hθ, hθ1, hθc, hθΩ⟩ := exists_contDiff_eqOn_one_hasCompactSupport hVc hVΩ
+  obtain ⟨θ, hθ, hθ1, hθc, hθΩ⟩ := hVc.exists_contDiff_eqOn_one_hasCompactSupport Ω.isOpen hVΩ
   have hθ' : IsSobolevCutoff Ω θ := IsSobolevCutoff.of_hasCompactSupport hθ hθc hθΩ
   have hdθ : ∀ i, ContDiff ℝ ∞ fun x ↦ fderiv ℝ θ x (EuclideanSpace.single i 1) := fun i ↦
     hθ'.contDiff_fderiv_apply _
@@ -2407,9 +2393,7 @@ theorem normal_bound_le {α M₀ M nu ng : ℝ} (hα : 0 < α) (hM₀ : 0 ≤ M�
   have hαi : 0 ≤ α⁻¹ := inv_nonneg.2 hα.le
   rw [mul_assoc]
   refine mul_le_mul_of_nonneg_left ?_ hαi
-  have hC₁ : 0 ≤ α⁻¹ * (1 + (d + 1) ^ 2 * M) := by positivity
-  nlinarith [hsum, h1, mul_nonneg hM hng, mul_nonneg (mul_nonneg hM₀ hC₁) hnu,
-    mul_nonneg (mul_nonneg hM₀ hC₁) hng, mul_nonneg hM hnu, sq_nonneg ((d : ℝ) + 1)]
+  nlinarith [hsum, h1, mul_nonneg hM hng, mul_nonneg hM hnu, sq_nonneg ((d : ℝ) + 1)]
 
 /-- **`H²` regularity on an open set invariant under the tangential translations, for a
 variable-coefficient elliptic form** — [brezis2011functional] Theorem 9.25, case B
@@ -2467,7 +2451,6 @@ theorem exists_sobolevEuclidean_two_of_tangential
     have h1 : 0 ≤ (d + 1 : ℝ) ^ 2 * M := by positivity
     have h2 : (d + 1 : ℝ) ^ 2 * M * gradNorm u ≤ (d + 1) ^ 2 * M * ‖u‖ :=
       mul_le_mul_of_nonneg_left this h1
-    have h3 : 0 ≤ α⁻¹ := inv_nonneg.2 hα0.le
     nlinarith [norm_nonneg g, norm_nonneg u, mul_nonneg h1 (norm_nonneg g)]
   -- the second derivatives other than `∂_N ∂_N`
   have hsec :=
@@ -2699,7 +2682,6 @@ theorem forall_testFunction_deriv {u f : EuclideanSpace ℝ (Fin N) → ℝ}
     ∑ i, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
       v i j x * fderiv ℝ φ x (EuclideanSpace.single i 1)
       = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), g j x * φ x := by
-  have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin N))) := Ω.isOpen.measurableSet
   -- `v i j` is a weak derivative of `w i` along `e_j`
   have hvij : ∀ i,
       HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1] (w i) (v i j) Ω volume := by
@@ -2923,7 +2905,6 @@ theorem regularity_interior_higher (m : ℕ) : ∀ {u f : EuclideanSpace ℝ (Fi
   | succ m ih =>
     intro u f w hu hw hf heq
     have h2 : (2 : ℝ≥0∞) ≠ ⊤ := ENNReal.ofNat_ne_top
-    have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin N))) := Ω.isOpen.measurableSet
     -- the inductive hypothesis: `u ∈ H^{m+2}_loc`
     have hu2 := ih hu hw (hf.mono_order (Nat.le_succ m)) heq
     have hul : LocallyIntegrableOn u Ω volume :=
@@ -2934,8 +2915,7 @@ theorem regularity_interior_higher (m : ℕ) : ∀ {u f : EuclideanSpace ℝ (Fi
     -- the cut-off, supported in `V' ⋐ Ω`
     obtain ⟨V', -, hV'o, hVV', -, hV'c, hV'Ω, -⟩ :=
       hVc.exists_pos_forall_closedBall_subset Ω.isOpen hVΩ
-    obtain ⟨θ, hθ, hθ1, hθc, hθV'⟩ := exists_contDiff_eqOn_one_hasCompactSupport (Ω := ⟨V', hV'o⟩)
-      hVc hVV'
+    obtain ⟨θ, hθ, hθ1, hθc, hθV'⟩ := hVc.exists_contDiff_eqOn_one_hasCompactSupport hV'o hVV'
     have hθΩ : tsupport θ ⊆ Ω := hθV'.trans (subset_closure.trans hV'Ω)
     have hθ' : IsSobolevCutoff Ω θ := IsSobolevCutoff.of_hasCompactSupport hθ hθc hθΩ
     have hV'Ω' : (⟨V', hV'o⟩ : Opens (EuclideanSpace ℝ (Fin N))) ≤ Ω := subset_closure.trans hV'Ω
@@ -3355,8 +3335,9 @@ theorem mem_zero_of_fn_ae_eq_contDiff_mul (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpa
 with the partial derivatives of `u` as functions. -/
 theorem forall_testFunction_weakDeriv_of_forall_testFunctions {u : SobolevEuclidean N 1 2 Ω}
     {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω u Φ = load Ω F Φ) (φ : 𝓓(Ω, ℝ)) :
+    (heq : IsWeakSolution (dirichletForm Ω)
+      (testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume) u F)
+    (φ : 𝓓(Ω, ℝ)) :
     ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
       ∑ i, weakDeriv u (MultiIndexLE.single i) x * fderiv ℝ φ x (EuclideanSpace.single i 1)
       = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), F x * φ x := by
@@ -3403,26 +3384,23 @@ theorem memLp_boundaryDatum (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N)
     hb _ hΔ.continuous hΔc (memLp u)
   exact (h1.sub (h2'.const_mul 2)).sub h3
 
-/-- **The boundary piece `v = θ u` of a weak solution** ([brezis2011functional] §9.6, case C₂:
-"`v = θᵢ u ∈ H^1_0(Ω ∩ Uᵢ)` is a weak solution in `Ω ∩ Uᵢ` of `−Δv = g`"): let `Ω' ≤ Ω`, let
-`θ` be smooth with compact support and `tsupport θ ∩ Ω ⊆ Ω'`, let `u ∈ H^1_0(Ω)` satisfy
-`∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements `Φ`. Then there are `v ∈ H^1_0(Ω')` with
-function `θ u` and `G ∈ L²(Ω')` with `∫_{Ω'} ∇v · ∇Ψ = ∫_{Ω'} G Ψ` for all `Ψ ∈ H^1_0(Ω')`.
-
-`v` is `θ ū` restricted to `Ω'`, for the zero extension `ū ∈ H^1(ℝ^N)` of `u`
-(`Elliptic.mem_zero_of_fn_ae_eq_contDiff_mul`); the datum is `G = θ F − 2∇θ·∇u − (Δθ)u`
-(`Elliptic.sum_integral_cutoff_eq`). -/
-theorem exists_boundary_piece (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
+/-- **The boundary piece `v = θ u` of a weak solution, with its datum**
+(`Elliptic.exists_boundary_piece` with the datum `G = θ F − 2∇θ·∇u − (Δθ)u` made explicit). -/
+theorem exists_boundary_piece_ae_eq (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
     (hθΩ' : tsupport θ ∩ Ω ⊆ Ω') {u : SobolevEuclidean N 1 2 Ω}
     (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
     {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω u Φ = load Ω F Φ) :
+    (heq : IsWeakSolution (dirichletForm Ω)
+      (testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume) u F) :
     ∃ (v : SobolevEuclidean N 1 2 Ω')
       (G : Lp ℝ 2 (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N))))),
       v ∈ SobolevEuclideanZero N 1 2 Ω' ∧
       fn v =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] (fun x ↦ θ x * fn u x) ∧
+      ⇑G =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] (fun x ↦ θ x * F x
+        - 2 * ∑ i, fderiv ℝ θ x (EuclideanSpace.single i 1) * weakDeriv u (MultiIndexLE.single i) x
+        - (∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
+          (EuclideanSpace.single i 1)) * fn u x) ∧
       ∀ Ψ ∈ SobolevEuclideanZero N 1 2 Ω', dirichletForm Ω' v Ψ = load Ω' G Ψ := by
   have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin N))) := Ω.isOpen.measurableSet
   have hθtop : IsSobolevCutoff (⊤ : Opens (EuclideanSpace ℝ (Fin N))) θ :=
@@ -3438,7 +3416,7 @@ theorem exists_boundary_piece (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin 
   have hPd := weakDeriv_boundaryPiece_of_ops hΩ' hθtop hP
   have hgp := memLp_boundaryDatum hΩ' hθ hθc u F
   refine ⟨P ⟨u, hu⟩, hgp.toLp _, mem_zero_of_fn_ae_eq_contDiff_mul hΩ' hθ hθΩ' hPfn ⟨u, hu⟩,
-    hPfn ⟨u, hu⟩, fun Ψ hΨ ↦ ?_⟩
+    hPfn ⟨u, hu⟩, hgp.coeFn_toLp, fun Ψ hΨ ↦ ?_⟩
   refine dirichletForm_eq_load_of_forall_testFunctions (fun Φ hΦ ↦ ?_) hΨ
   obtain ⟨ψ, hψ⟩ := hΦ
   rw [dirichletForm_apply_eq_of_ae_eq (hPd ⟨u, hu⟩) hψ, load_apply_eq_of_ae_eq hgp.coeFn_toLp hψ]
@@ -3465,6 +3443,30 @@ theorem exists_boundary_piece (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin 
       rw [this, mul_zero]
   simp only [hsub, hsub'] at hcut
   exact hcut
+
+/-- **The boundary piece `v = θ u` of a weak solution** ([brezis2011functional] §9.6, case C₂:
+"`v = θᵢ u ∈ H^1_0(Ω ∩ Uᵢ)` is a weak solution in `Ω ∩ Uᵢ` of `−Δv = g`"): let `Ω' ≤ Ω`, let
+`θ` be smooth with compact support and `tsupport θ ∩ Ω ⊆ Ω'`, let `u ∈ H^1_0(Ω)` satisfy
+`∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements `Φ`. Then there are `v ∈ H^1_0(Ω')` with
+function `θ u` and `G ∈ L²(Ω')` with `∫_{Ω'} ∇v · ∇Ψ = ∫_{Ω'} G Ψ` for all `Ψ ∈ H^1_0(Ω')`.
+
+`v` is `θ ū` restricted to `Ω'`, for the zero extension `ū ∈ H^1(ℝ^N)` of `u`
+(`Elliptic.mem_zero_of_fn_ae_eq_contDiff_mul`); the datum is `G = θ F − 2∇θ·∇u − (Δθ)u`
+(`Elliptic.sum_integral_cutoff_eq`). -/
+theorem exists_boundary_piece (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
+    (hθΩ' : tsupport θ ∩ Ω ⊆ Ω') {u : SobolevEuclidean N 1 2 Ω}
+    (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
+    {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (heq : IsWeakSolution (dirichletForm Ω)
+      (testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume) u F) :
+    ∃ (v : SobolevEuclidean N 1 2 Ω')
+      (G : Lp ℝ 2 (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N))))),
+      v ∈ SobolevEuclideanZero N 1 2 Ω' ∧
+      fn v =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] (fun x ↦ θ x * fn u x) ∧
+      ∀ Ψ ∈ SobolevEuclideanZero N 1 2 Ω', dirichletForm Ω' v Ψ = load Ω' G Ψ := by
+  obtain ⟨v, G, hv, hvfn, -, hvG⟩ := exists_boundary_piece_ae_eq hΩ' hθ hθc hθΩ' hu heq
+  exact ⟨v, G, hv, hvfn, hvG⟩
 
 end BoundaryPiece
 
@@ -3523,16 +3525,44 @@ def chartDatum (H : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
     (g : EuclideanSpace ℝ (Fin N) → ℝ) (y : EuclideanSpace ℝ (Fin N)) : ℝ :=
   g (H y) * |(fderiv ℝ H y).det|
 
+/-- The Jacobian determinant of a `C^{n+1}` local diffeomorphism is `C^n` where it does not
+vanish. -/
+theorem contDiffOn_abs_det_fderiv_of_order (n : ℕ)
+    {H : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
+    {s : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (hH : ContDiffOn ℝ (n + 1) H s)
+    (hdet : ∀ y ∈ s, (fderiv ℝ H y).det ≠ 0) :
+    ContDiffOn ℝ n (fun y ↦ |(fderiv ℝ H y).det|) s := by
+  have hdH : ContDiffOn ℝ n (fderiv ℝ H) s := hH.fderiv_of_isOpen hs (m := n) (by norm_cast)
+  have h1 : ContDiffOn ℝ n (fun y ↦ (fderiv ℝ H y).det) s :=
+    (ContinuousLinearMap.contDiff_det.of_le (by simp)).comp_contDiffOn hdH
+  intro y hy
+  exact (contDiffAt_abs (hdet y hy)).comp_contDiffWithinAt y (h1 y hy)
+
+/-- The coefficients of the transferred equation are `C^n` where `H` is `C^{n+1}` with
+nonvanishing Jacobian and maps into a set on which `J` is `C^{n+1}`. -/
+theorem contDiffOn_chartCoeff_of_order (n : ℕ)
+    {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
+    {s t : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (ht : IsOpen t)
+    (hH : ContDiffOn ℝ (n + 1) H s) (hJ : ContDiffOn ℝ (n + 1) J t) (hHs : MapsTo H s t)
+    (hdet : ∀ y ∈ s, (fderiv ℝ H y).det ≠ 0) (k l : Fin N) :
+    ContDiffOn ℝ n (chartCoeff H J k l) s := by
+  have hdJ : ContDiffOn ℝ n (fderiv ℝ J) t := hJ.fderiv_of_isOpen ht (m := n) (by norm_cast)
+  have hJH : ∀ j i, ContDiffOn ℝ n (fun y ↦ fderiv ℝ J (H y) (EuclideanSpace.single j 1) i) s := by
+    intro j i
+    have h1 : ContDiffOn ℝ n (fun y ↦ fderiv ℝ J (H y)) s :=
+      hdJ.comp (hH.of_le (by exact_mod_cast Nat.le_succ n)) hHs
+    have h2 : ContDiffOn ℝ n (fun y ↦ fderiv ℝ J (H y) (EuclideanSpace.single j 1)) s :=
+      h1.clm_apply contDiffOn_const
+    exact (EuclideanSpace.proj i).contDiff.comp_contDiffOn h2
+  exact (ContDiffOn.sum fun j _ ↦ (hJH j k).mul (hJH j l)).mul
+    (contDiffOn_abs_det_fderiv_of_order n hs hH hdet)
+
 /-- The Jacobian determinant of a `C²` local diffeomorphism is `C¹` where it does not vanish. -/
 theorem contDiffOn_abs_det_fderiv {H : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (hH : ContDiffOn ℝ 2 H s)
     (hdet : ∀ y ∈ s, (fderiv ℝ H y).det ≠ 0) :
-    ContDiffOn ℝ 1 (fun y ↦ |(fderiv ℝ H y).det|) s := by
-  have hdH : ContDiffOn ℝ 1 (fderiv ℝ H) s := hH.fderiv_of_isOpen hs (m := 1) (by norm_num)
-  have h1 : ContDiffOn ℝ 1 (fun y ↦ (fderiv ℝ H y).det) s :=
-    (ContinuousLinearMap.contDiff_det.of_le (by simp)).comp_contDiffOn hdH
-  intro y hy
-  refine (contDiffAt_abs (hdet y hy)).comp_contDiffWithinAt y (h1 y hy)
+    ContDiffOn ℝ 1 (fun y ↦ |(fderiv ℝ H y).det|) s :=
+  contDiffOn_abs_det_fderiv_of_order 1 hs (by convert hH using 1; norm_num) hdet
 
 /-- The coefficients are `C¹` where `H` is `C²` with nonvanishing Jacobian and maps into a set on
 which `J` is `C²`. -/
@@ -3540,17 +3570,9 @@ theorem contDiffOn_chartCoeff {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpa
     {s t : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (ht : IsOpen t)
     (hH : ContDiffOn ℝ 2 H s) (hJ : ContDiffOn ℝ 2 J t) (hHs : MapsTo H s t)
     (hdet : ∀ y ∈ s, (fderiv ℝ H y).det ≠ 0) (k l : Fin N) :
-    ContDiffOn ℝ 1 (chartCoeff H J k l) s := by
-  have hdJ : ContDiffOn ℝ 1 (fderiv ℝ J) t := hJ.fderiv_of_isOpen ht (m := 1) (by norm_num)
-  have hJH : ∀ j i, ContDiffOn ℝ 1 (fun y ↦ fderiv ℝ J (H y) (EuclideanSpace.single j 1) i) s := by
-    intro j i
-    have h1 : ContDiffOn ℝ 1 (fun y ↦ fderiv ℝ J (H y)) s :=
-      hdJ.comp (hH.of_le (by norm_num)) hHs
-    have h2 : ContDiffOn ℝ 1 (fun y ↦ fderiv ℝ J (H y) (EuclideanSpace.single j 1)) s :=
-      h1.clm_apply contDiffOn_const
-    exact (EuclideanSpace.proj i).contDiff.comp_contDiffOn h2
-  exact (ContDiffOn.sum fun j _ ↦ (hJH j k).mul (hJH j l)).mul
-    (contDiffOn_abs_det_fderiv hs hH hdet)
+    ContDiffOn ℝ 1 (chartCoeff H J k l) s :=
+  contDiffOn_chartCoeff_of_order 1 hs ht (by convert hH using 1; norm_num)
+    (by convert hJ using 1; norm_num) hHs hdet k l
 
 end ChartCoeff
 
@@ -3684,7 +3706,6 @@ theorem chartCoeff_elliptic {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace
     have h1 := h.det_fderiv_invFun_mul_det_fderiv hy
     rw [← hA, ← hB] at h1
     have hB' : |B.det| ≤ D := hB ▸ hD _ (h.bijOn.mapsTo hy)
-    have hBpos : 0 < |B.det| := abs_pos.2 (left_ne_zero_of_mul_eq_one h1)
     have hAB : |B.det| * |A.det| = 1 := by rw [← abs_mul, h1, abs_one]
     rw [div_le_iff₀ (by positivity)]
     calc (1 : ℝ) = |B.det| * |A.det| := hAB.symm
@@ -4096,6 +4117,32 @@ theorem memLp_chartDatum (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     (fun y hy ↦ by rw [abs_abs]; exact hD y hy) h1
   exact this.ae_eq (Eventually.of_forall fun y ↦ by simp only [chartDatum]; ring)
 
+/-- **Lemma 9.8, typed, with the transferred datum made explicit**: `Elliptic.transfer_chart`
+together with `G̃ = (G ∘ H) |det DH|` almost everywhere (`Elliptic.chartDatum`). -/
+theorem transfer_chart_ae_eq (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
+    {v : SobolevEuclidean N 1 2 Ω} (hv : v ∈ SobolevEuclideanZero N 1 2 Ω)
+    {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (heq : ∀ Ψ ∈ SobolevEuclideanZero N 1 2 Ω, dirichletForm Ω v Ψ = load Ω G Ψ) :
+    ∃ (w : SobolevEuclidean N 1 2 Ω')
+      (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))))
+      (G' : Lp ℝ 2 (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N))))),
+      w ∈ SobolevEuclideanZero N 1 2 Ω' ∧
+      fn w =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] (fun y ↦ fn v (H y)) ∧
+      (∀ k l, ⇑(A k l) =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))]
+        chartCoeff H J k l) ∧
+      ⇑G' =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] chartDatum H G ∧
+      ∀ Ψ ∈ SobolevEuclideanZero N 1 2 Ω', generalForm Ω' A 0 0 w Ψ = load Ω' G' Ψ := by
+  obtain ⟨w, hw⟩ : ∃ w, w = SobolevEuclidean.compDiffeoL h v := ⟨_, rfl⟩
+  refine ⟨w, fun k l ↦ (memLp_top_chartCoeff h k l).toLp _, (memLp_chartDatum h G).toLp _,
+    hw ▸ compDiffeoL_mem_zero h hv, hw ▸ fn_compDiffeoL h v,
+    fun k l ↦ (memLp_top_chartCoeff h k l).coeFn_toLp, (memLp_chartDatum h G).coeFn_toLp,
+    fun Ψ hΨ ↦ ?_⟩
+  refine generalForm_eq_load_of_forall_testFunctions (fun Φ hΦ ↦ ?_) hΨ
+  obtain ⟨ψ, hψ⟩ := hΦ
+  rw [generalForm_zero_zero_apply_eq_of_ae_eq (fun k l ↦ (memLp_top_chartCoeff h k l).coeFn_toLp)
+    w hψ, load_apply_eq_of_ae_eq (memLp_chartDatum h G).coeFn_toLp hψ]
+  exact sum_integral_chartCoeff_eq h heq hw ψ
+
 /-- **Lemma 9.8, typed** ([brezis2011functional] §9.6): let `H : Ω' → Ω` be a `C¹`
 diffeomorphism with bounded Jacobians and inverse `J`, and let `v ∈ H^1_0(Ω)` satisfy
 `∫_Ω ∇v · ∇Ψ = ∫_Ω G Ψ` for all `Ψ ∈ H^1_0(Ω)`. Then `w = v ∘ H ∈ H^1_0(Ω')` and
@@ -4114,15 +4161,8 @@ theorem transfer_chart (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
       (∀ k l, ⇑(A k l) =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))]
         chartCoeff H J k l) ∧
       ∀ Ψ ∈ SobolevEuclideanZero N 1 2 Ω', generalForm Ω' A 0 0 w Ψ = load Ω' G' Ψ := by
-  obtain ⟨w, hw⟩ : ∃ w, w = SobolevEuclidean.compDiffeoL h v := ⟨_, rfl⟩
-  refine ⟨w, fun k l ↦ (memLp_top_chartCoeff h k l).toLp _, (memLp_chartDatum h G).toLp _,
-    hw ▸ compDiffeoL_mem_zero h hv, hw ▸ fn_compDiffeoL h v,
-    fun k l ↦ (memLp_top_chartCoeff h k l).coeFn_toLp, fun Ψ hΨ ↦ ?_⟩
-  refine generalForm_eq_load_of_forall_testFunctions (fun Φ hΦ ↦ ?_) hΨ
-  obtain ⟨ψ, hψ⟩ := hΦ
-  rw [generalForm_zero_zero_apply_eq_of_ae_eq (fun k l ↦ (memLp_top_chartCoeff h k l).coeFn_toLp)
-    w hψ, load_apply_eq_of_ae_eq (memLp_chartDatum h G).coeFn_toLp hψ]
-  exact sum_integral_chartCoeff_eq h heq hw ψ
+  obtain ⟨w, A, G', hw, hwfn, hA, -, hwG⟩ := transfer_chart_ae_eq h hv heq
+  exact ⟨w, A, G', hw, hwfn, hA, hwG⟩
 
 end ChartTyped
 
@@ -4637,159 +4677,7 @@ theorem memSobolevMultiIndex_two_comp_chart (h : IsDiffeoOnWithBoundedJacobian H
 end Retransfer
 
 
-/-! ### Case C₂: a boundary piece `θᵢ u` is in `H²(Ω)` -/
-
-section BoundaryPieceTwo
-
-variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
-
-open SobolevMultiIndex EuclideanSpace
-
-/-- **A boundary piece of a weak solution is in `H²(Ω)`** — [brezis2011functional] §9.6, proof of
-Theorem 9.25, case C₂: for a `C²` chart `H : Q → U` of `Ω`, a smooth `θ` with compact support in
-`U`, and `u ∈ H^1_0(Ω)` with `∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements `Φ`, the
-function `θ u` lies in `H²(Ω)`.
-
-The steps of the book: `v = θ u ∈ H^1_0(Ω ∩ U)` solves `−Δv = g` there
-(`Elliptic.exists_boundary_piece`); `w = v ∘ H ∈ H^1_0(Q₊)` solves the transferred elliptic
-equation (`Elliptic.transfer_chart`, Lemma 9.8) and vanishes off the compact `H⁻¹(supp θ) ⊆ Q`;
-the method of translations on the half space gives `w ∈ H²(Q₊)`
-(`Elliptic.memSobolevMultiIndex_two_of_tangential_of_compact`); returning to `Ω ∩ U'` for an open
-`U'` with `supp θ ⊆ U' ⋐ U` gives `θ u ∈ H²(Ω ∩ U')`
-(`Elliptic.memSobolevMultiIndex_two_comp_chart`), and the zero extension across the edge of the
-chart (`MemSobolevMultiIndex.indicator_smul_of_tsupport_subset`) gives `θ u ∈ H²(Ω)`. -/
-theorem memSobolevMultiIndex_two_boundary_piece (c : ContDiffChart 2 (Ω : Set _))
-    {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
-    (hθU : tsupport θ ⊆ c.U) {u : SobolevEuclidean (d + 1) 1 2 Ω}
-    (hu : u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
-    {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω u Φ = load Ω F Φ) :
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-      (fun x ↦ θ x * fn u x) 2 2 Ω volume := by
-  -- the open sets: `Ω ∩ U`, a smaller `Ω ∩ U'` with `supp θ ⊆ U' ⋐ U`, `Q₊`, and the half space
-  obtain ⟨L, hL, hθL, hLU⟩ := exists_compact_between hθc c.isOpen_U hθU
-  obtain ⟨Ω₁, hΩ₁⟩ : ∃ Ω₁ : Opens (EuclideanSpace ℝ (Fin (d + 1))),
-    Ω₁ = ⟨c.U ∩ Ω, c.isOpen_U.inter Ω.isOpen⟩ := ⟨_, rfl⟩
-  obtain ⟨Ω₂, hΩ₂⟩ : ∃ Ω₂ : Opens (EuclideanSpace ℝ (Fin (d + 1))),
-    Ω₂ = ⟨interior L ∩ Ω, isOpen_interior.inter Ω.isOpen⟩ := ⟨_, rfl⟩
-  obtain ⟨Qp, hQp⟩ : ∃ Qp : Opens (EuclideanSpace ℝ (Fin (d + 1))),
-    Qp = ⟨unitChartCubePos d, isOpen_unitChartCubePos⟩ := ⟨_, rfl⟩
-  have hΩ₁s : (Ω₁ : Set (EuclideanSpace ℝ (Fin (d + 1)))) = c.U ∩ Ω := by rw [hΩ₁]; rfl
-  have hΩ₂s : (Ω₂ : Set (EuclideanSpace ℝ (Fin (d + 1)))) = interior L ∩ Ω := by rw [hΩ₂]; rfl
-  have hQps : (Qp : Set (EuclideanSpace ℝ (Fin (d + 1)))) = unitChartCubePos d := by rw [hQp]; rfl
-  have hΩ₁Ω : Ω₁ ≤ Ω := by rw [hΩ₁]; exact inter_subset_right
-  have hΩ₂Ω₁ : Ω₂ ≤ Ω₁ := by
-    rw [hΩ₁, hΩ₂]
-    exact inter_subset_inter_left _ (interior_subset.trans hLU)
-  have hΩ₂Ω : Ω₂ ≤ Ω := hΩ₂Ω₁.trans hΩ₁Ω
-  have hLc : IsCompact (closure (interior L)) :=
-    hL.of_isClosed_subset isClosed_closure (closure_minimal interior_subset hL.isClosed)
-  -- the boundary piece `v = θ u ∈ H^1_0(Ω ∩ U)` and its equation
-  have hθΩ₁ : tsupport θ ∩ Ω ⊆ Ω₁ := by
-    rw [hΩ₁s]
-    exact inter_subset_inter_left _ hθU
-  obtain ⟨v, G, hv, hvfn, hveq⟩ := exists_boundary_piece hΩ₁Ω hθ hθc hθΩ₁ hu heq
-  -- the chart as a diffeomorphism `Q₊ → Ω ∩ U`, and the transfer
-  obtain ⟨M, h⟩ := c.isDiffeoOnWithBoundedJacobian_pos (by norm_num) Ω.isOpen
-  have h' : IsDiffeoOnWithBoundedJacobian c.toFun c.invFun (Qp : Set _) (Ω₁ : Set _) M := by
-    rw [hQps, hΩ₁s]; exact h
-  obtain ⟨w, A, G', hw, hwfn, hAa, hweq⟩ := transfer_chart h' hv hveq
-  -- `w` vanishes off the compact `K = H⁻¹(supp θ) ⊆ Q`
-  obtain ⟨K, hK⟩ : ∃ K : Set (EuclideanSpace ℝ (Fin (d + 1))), K = c.invFun '' tsupport θ :=
-    ⟨_, rfl⟩
-  have hKc : IsCompact K := by
-    rw [hK]
-    exact hθc.image_of_continuousOn (c.contDiffOn_invFun.continuousOn.mono
-      (hθU.trans subset_closure))
-  have hKQ : K ⊆ unitChartCube d := by
-    rw [hK]
-    exact (c.mapsTo_invFun.mono_left hθU).image_subset
-  have hwK : ∀ᵐ y ∂volume.restrict (Qp : Set (EuclideanSpace ℝ (Fin (d + 1)))),
-      y ∉ K → fn w y = 0 := by
-    filter_upwards [hwfn, h'.ae_comp_restrict hvfn, self_mem_ae_restrict Qp.isOpen.measurableSet]
-      with y hy1 hy2 hyQ hyK
-    rw [hy1]
-    rw [hy2]
-    have hθy : θ (c.toFun y) = 0 := by
-      by_contra hne
-      refine hyK ?_
-      rw [hK]
-      refine ⟨c.toFun y, subset_tsupport _ hne, ?_⟩
-      rw [hQps] at hyQ
-      exact c.invFun_toFun (unitChartCubePos_subset hyQ)
-    rw [hθy, zero_mul]
-  -- `H²` on `Q₊` by the method of translations on the half space
-  obtain ⟨M₀, hM₀⟩ := c.isDiffeoOnWithBoundedJacobian (by norm_num)
-  have hH2 : ContDiffOn ℝ 2 c.toFun (unitChartCube d) := c.contDiffOn.mono subset_closure
-  have hJ2 : ContDiffOn ℝ 2 c.invFun c.U := c.contDiffOn_invFun.mono subset_closure
-  have ha : ∀ k l, ContDiffOn ℝ 1 (chartCoeff c.toFun c.invFun k l) (unitChartCube d) :=
-    contDiffOn_chartCoeff isOpen_unitChartCube c.isOpen_U hH2 hJ2 c.mapsTo
-      (fun y hy ↦ hM₀.det_fderiv_ne_zero hy)
-  obtain ⟨α, hα0, hell⟩ := chartCoeff_elliptic h'
-  have hQphalf : Qp ≤ upperHalfSpaceOpens d := by
-    rw [hQp]
-    exact fun y hy ↦ hy.2
-  have hQΩ' : unitChartCube d ∩ (upperHalfSpaceOpens d : Set _) ⊆ Qp := by
-    rw [hQps]
-    exact fun y hy ↦ hy
-  have hw2 := memSobolevMultiIndex_two_of_tangential_of_compact
-    (fun j hj t ↦ upperHalfSpaceOpens_isTranslationInvariant j hj t) hQphalf isOpen_unitChartCube
-    hQΩ' hAa ha hα0 hell hKc hKQ hw hwK hweq
-  -- back to `Ω ∩ U'` through the restricted chart
-  have hΩ₂Ω₁' : (Ω₂ : Set (EuclideanSpace ℝ (Fin (d + 1))))
-      ⊆ (Ω₁ : Set (EuclideanSpace ℝ (Fin (d + 1)))) := hΩ₂Ω₁
-  have hres := h'.restrict_target Ω₂.isOpen hΩ₂Ω₁'
-  obtain ⟨Ω₃, hΩ₃⟩ : ∃ Ω₃ : Opens (EuclideanSpace ℝ (Fin (d + 1))),
-    Ω₃ = ⟨c.invFun '' Ω₂, hres.isOpen_source⟩ := ⟨_, rfl⟩
-  have hΩ₃s : (Ω₃ : Set _) = c.invFun '' Ω₂ := by rw [hΩ₃]; rfl
-  have hres' : IsDiffeoOnWithBoundedJacobian c.toFun c.invFun (Ω₃ : Set _) (Ω₂ : Set _) M := by
-    rw [hΩ₃s]; exact hres
-  have hΩ₃Qp : Ω₃ ≤ Qp := by
-    change (Ω₃ : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ (Qp : Set (EuclideanSpace ℝ (Fin (d + 1))))
-    rw [hΩ₃s]
-    exact h'.symm.image_subset hΩ₂Ω₁'
-  have hΩ₂K : (Ω₂ : Set _) ⊆ closure (interior L) := by
-    rw [hΩ₂s]
-    exact inter_subset_left.trans subset_closure
-  have hKU : closure (interior L) ⊆ c.U :=
-    (closure_minimal interior_subset hL.isClosed).trans hLU
-  have hback := memSobolevMultiIndex_two_comp_chart hres' c.isOpen_U hJ2 hLc hΩ₂K hKU
-    (hw2.mono_set hΩ₃Qp)
-  -- `fn w ∘ J = θ u` on `Ω ∩ U'`
-  have hθu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-      (fun x ↦ θ x * fn u x) 2 2 Ω₂ volume := by
-    refine hback.congr_ae ?_
-    have h1 := h'.symm.ae_comp_restrict hwfn
-    have h2 := hvfn
-    filter_upwards [ae_restrict_of_ae_restrict_of_subset hΩ₂Ω₁' h1,
-      ae_restrict_of_ae_restrict_of_subset hΩ₂Ω₁' h2,
-      self_mem_ae_restrict Ω₂.isOpen.measurableSet] with x hx1 hx2 hxΩ₂
-    rw [hx1]
-    rw [h'.invOn.2 (hΩ₂Ω₁' hxΩ₂), hx2]
-  -- zero extension across the edge of the chart
-  obtain ⟨η, hη, hη1, hηc, hηL⟩ := exists_contDiff_eqOn_one_hasCompactSupport (Ω := ⟨interior L,
-    isOpen_interior⟩) (hθc : IsCompact (tsupport θ)) hθL
-  have hηΩ₂ : tsupport η ∩ Ω ⊆ Ω₂ := by
-    rw [hΩ₂s]
-    exact inter_subset_inter_left _ hηL
-  have hext := MemSobolevMultiIndex.indicator_smul_of_tsupport_subset one_le_two hΩ₂Ω hη hηc hηΩ₂
-    hθu
-  refine hext.congr_ae ?_
-  filter_upwards [self_mem_ae_restrict Ω.isOpen.measurableSet] with x hxΩ
-  by_cases hx : x ∈ (Ω₂ : Set (EuclideanSpace ℝ (Fin (d + 1))))
-  · rw [Set.indicator_of_mem hx, smul_eq_mul]
-    by_cases hxθ : x ∈ tsupport θ
-    · rw [hη1 hxθ, Pi.one_apply, one_mul]
-    · rw [image_eq_zero_of_notMem_tsupport hxθ, zero_mul, mul_zero]
-  · rw [Set.indicator_of_notMem hx]
-    have hxθ : x ∉ tsupport θ := fun hxθ ↦ hx (by rw [hΩ₂s]; exact ⟨hθL hxθ, hxΩ⟩)
-    rw [image_eq_zero_of_notMem_tsupport hxθ, zero_mul]
-
-end BoundaryPieceTwo
-
-
-/-! ### The interior piece `θ₀ u`, and the assembly of Theorem 9.25 -/
+/-! ### The interior piece `θ₀ u` -/
 
 section InteriorPiece
 
@@ -4845,8 +4733,8 @@ theorem memSobolevMultiIndex_two_interior_piece {θ : EuclideanSpace ℝ (Fin N)
       (EuclideanSpace.single i 1)| ≤ C)
     (u : SobolevEuclidean N 1 2 Ω)
     {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω u Φ = load Ω F Φ) :
+    (heq : IsWeakSolution (dirichletForm Ω)
+      (testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume) u F) :
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
       (fun x ↦ θ x * fn u x) 2 2 Ω volume := by
   have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin N))) := Ω.isOpen.measurableSet
@@ -4901,91 +4789,6 @@ theorem memSobolevMultiIndex_two_interior_piece {θ : EuclideanSpace ℝ (Fin N)
   rw [hx, Set.indicator_of_mem hxΩ]
 
 end InteriorPiece
-
-section Assembly
-
-variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
-
-open SobolevMultiIndex
-
-/-- **[brezis2011functional] Theorem 9.25 (regularity for the Dirichlet problem), the `H²`
-membership**: let `Ω ⊆ ℝ^N` be open of class `C²` with bounded boundary, and let `u ∈ H^1_0(Ω)`
-satisfy `∫_Ω ∇u · ∇Φ = ∫_Ω g Φ` for all `Φ ∈ H^1_0(Ω)` with `g ∈ L²(Ω)`. Then `u ∈ H²(Ω)`. (For
-the book's `−Δu + u = f`, take `g = f − u`.)
-
-The proof of the book: a finite atlas of charts `Hᵢ : Q → Uᵢ` covering the compact `Γ = ∂Ω`
-(`IsContDiffChartDomain.exists_finite_atlas`), a partition of unity `θ₀, θᵢ` subordinate to it
-(Lemma 9.3, `IsCompact.exists_contDiff_partitionOfUnity`), and `u = θ₀ u + ∑ᵢ θᵢ u` with the
-interior piece `θ₀ u ∈ H²(Ω)` by case A (`Elliptic.memSobolevMultiIndex_two_interior_piece`) and
-each boundary piece `θᵢ u ∈ H²(Ω)` by cases B and C₂
-(`Elliptic.memSobolevMultiIndex_two_boundary_piece`). -/
-theorem regularity_dirichlet_mem
-    (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
-    {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
-    {g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (heq : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω u Φ = load Ω g Φ) :
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) 2 2 Ω volume := by
-  have heq' : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω u Φ = load Ω g Φ := fun Φ hΦ ↦
-    heq Φ (SobolevMultiIndexZero.testFunctions_le hΦ)
-  -- the finite atlas and the partition of unity
-  have hΓc : IsCompact (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
-    Metric.isCompact_of_isClosed_isBounded isClosed_frontier hΓ
-  obtain ⟨k, c, hcov⟩ := hΩ.exists_finite_atlas hΓ
-  obtain ⟨θ₀, θ, hθ₀, hθ, hθ₀01, -, hsum, hθc, hθU, hθ₀Γ⟩ :=
-    hΓc.exists_contDiff_partitionOfUnity (fun i ↦ (c i).isOpen_U) hcov
-  -- the boundary pieces
-  have hbdry : ∀ i, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-      (fun x ↦ θ i x * fn u x) 2 2 Ω volume := fun i ↦
-    memSobolevMultiIndex_two_boundary_piece (c i) (hθ i) (hθc i) (hθU i) hu heq'
-  -- the interior piece: `θ₀ = 1 − G` with `G = ∑ᵢ θᵢ` smooth and compactly supported
-  obtain ⟨G, hG⟩ : ∃ G : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, G = fun x ↦ ∑ i, θ i x := ⟨_, rfl⟩
-  have hGs : ContDiff ℝ ∞ G := by
-    rw [hG]
-    exact ContDiff.sum fun i _ ↦ hθ i
-  have hGc : HasCompactSupport G := by
-    refine (isCompact_iUnion fun i ↦ hθc i).of_isClosed_subset (isClosed_tsupport G) ?_
-    refine closure_minimal ?_ (isClosed_iUnion_of_finite fun i ↦ isClosed_tsupport (θ i))
-    rw [hG]
-    exact (Finset.support_sum _ _).trans (Set.iUnion₂_subset fun i _ ↦
-      subset_closure.trans (Set.subset_iUnion (fun i ↦ tsupport (θ i)) i))
-  have hθ₀eq : θ₀ = fun x ↦ 1 - G x := funext fun x ↦ by
-    rw [hG]
-    linarith [hsum x]
-  have hdθ₀ : ∀ x, fderiv ℝ θ₀ x = -fderiv ℝ G x := fun x ↦ by
-    rw [hθ₀eq, fderiv_const_sub]
-  obtain ⟨M₁, hM₁⟩ := (hGc.fderiv ℝ).exists_bound_of_continuous (hGs.continuous_fderiv (by simp))
-  have hθ₀cut : IsSobolevCutoff Ω θ₀ :=
-    ⟨hθ₀, ⟨max 1 M₁, fun x ↦ ⟨(abs_le.2 ⟨by linarith [(hθ₀01 x).1], (hθ₀01 x).2⟩).trans
-      (le_max_left _ _), by
-        rw [hdθ₀ x, norm_neg]
-        exact (hM₁ x).trans (le_max_right _ _)⟩⟩, hθ₀Γ⟩
-  obtain ⟨hΔc, hΔs, -⟩ := laplacianRep_props hGs hGc
-  obtain ⟨M₂, hM₂⟩ := hΔs.exists_bound_of_continuous hΔc.continuous
-  have hΔθ₀ : ∀ x, ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ₀ z (EuclideanSpace.single i 1)) x
-      (EuclideanSpace.single i 1)
-      = -∑ i, fderiv ℝ (fun z ↦ fderiv ℝ G z (EuclideanSpace.single i 1)) x
-        (EuclideanSpace.single i 1) := fun x ↦ by
-    rw [← Finset.sum_neg_distrib]
-    refine Finset.sum_congr rfl fun i _ ↦ ?_
-    have : (fun z ↦ fderiv ℝ θ₀ z (EuclideanSpace.single i 1))
-        = fun z ↦ -(fderiv ℝ G z (EuclideanSpace.single i 1)) := funext fun z ↦ by
-      rw [hdθ₀ z, neg_apply]
-    rw [this, fderiv_fun_neg, neg_apply]
-  have hΔb : ∀ x, |∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ₀ z (EuclideanSpace.single i 1)) x
-      (EuclideanSpace.single i 1)| ≤ M₂ := fun x ↦ by
-    rw [hΔθ₀ x, abs_neg, ← Real.norm_eq_abs]
-    exact hM₂ x
-  have hint := memSobolevMultiIndex_two_interior_piece hθ₀cut hΔb u heq'
-  -- the sum `u = θ₀ u + ∑ᵢ θᵢ u`
-  have htot := hint.add (MemSobolevMultiIndex.finset_sum Finset.univ
-    (f := fun i x ↦ θ i x * fn u x) fun i _ ↦ hbdry i)
-  refine htot.congr_ae (Eventually.of_forall fun x ↦ ?_)
-  simp only [Pi.add_apply, Finset.sum_apply]
-  rw [← Finset.sum_mul, ← add_mul, hsum x, one_mul]
-
-end Assembly
 
 
 /-! ### The estimate `‖u‖_{H²} ≤ C ‖f‖₂`, by the closed graph theorem -/
@@ -5078,57 +4881,6 @@ theorem dirichletForm_eq_load_sub_of_isGalerkinSolution_laplace
   linarith
 
 end ClosedGraph
-
-section Main
-
-variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
-
-open SobolevMultiIndex
-
-/-- **[brezis2011functional] Theorem 9.25 (regularity for the Dirichlet problem), the `H²`
-clause.** Let `Ω ⊆ ℝ^N` be open of class `C²` with bounded boundary. There is a constant `C`
-such that for every `f ∈ L²(Ω)`, the weak solution `u ∈ H^1_0(Ω)` of `−Δu + u = f`
-(`∫_Ω ∇u · ∇φ + ∫_Ω u φ = ∫_Ω f φ` for all `φ ∈ H^1_0(Ω)`) lies in `H²(Ω)`, and every
-`U ∈ H²(Ω)` with function `u` has `‖U‖_{H²(Ω)} ≤ C ‖f‖_{L²(Ω)}`.
-
-The membership is `Elliptic.regularity_dirichlet_mem` (the localisation of the book's proof:
-case A for the interior piece, cases B and C₂ through the charts for the boundary pieces), and the
-constant comes from the closed graph theorem applied to the map `f ↦ U ∈ H²(Ω)`
-(`Elliptic.exists_norm_le_of_forall_exists_sobolev_two`). -/
-theorem regularity_dirichlet
-    (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
-    ∃ C : ℝ, 0 ≤ C ∧
-      ∀ (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
-        (u : SobolevEuclidean (d + 1) 1 2 Ω),
-        IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero (d + 1) 1 2 Ω) u →
-        MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) 2 2 Ω
-          volume ∧
-        ∀ U : SobolevEuclidean (d + 1) 2 2 Ω,
-          fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn u →
-          ‖U‖ ≤ C * ‖f‖ := by
-  have hmem : ∀ (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
-      (u : SobolevEuclidean (d + 1) 1 2 Ω),
-      IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero (d + 1) 1 2 Ω) u →
-      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) 2 2 Ω
-        volume := fun f u hu ↦
-    regularity_dirichlet_mem hΩ hΓ hu.1 (dirichletForm_eq_load_sub_of_isGalerkinSolution_laplace hu)
-  obtain ⟨S, hS⟩ : ∃ S : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →L[ℝ]
-      SobolevEuclidean (d + 1) 1 2 Ω, S = (SobolevEuclideanZero (d + 1) 1 2 Ω).subtypeL ∘L
-        solutionMap Ω (laplaceForm Ω) laplaceForm_restrict_isCoercive := ⟨_, rfl⟩
-  have hSf : ∀ f, IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero (d + 1) 1 2 Ω)
-      (S f) := fun f ↦ by
-    rw [hS]
-    exact isGalerkinSolution_solutionMap Ω (laplaceForm Ω) laplaceForm_restrict_isCoercive f
-  obtain ⟨C, hC0, hC⟩ := exists_norm_le_of_forall_exists_sobolev_two (S := S) fun f ↦
-    (hmem f (S f) (hSf f)).exists_sobolevMultiIndex
-  refine ⟨C, hC0, fun f u hu ↦ ⟨hmem f u hu, fun U hU ↦ hC f U (hU.trans ?_)⟩⟩
-  have : u = S f := by
-    rw [hS]
-    exact eq_solutionMap_of_isGalerkinSolution Ω (laplaceForm Ω) laplaceForm_restrict_isCoercive hu
-  rw [this]
-
-end Main
 
 
 /-! ### Lemma 9.7: tangential derivatives of an `H² ∩ H^1_0` function are in `H^1_0` -/
@@ -5300,11 +5052,9 @@ open SobolevMultiIndex
 /-- **`H^k` is preserved by the inverse chart, at every order** ([brezis2011functional] §9.6,
 proof of Theorem 9.25, "by returning to `Ω ∩ Uᵢ`"): for a `C¹` diffeomorphism `H : Ω' → Ω` with
 bounded Jacobians and inverse `J`, with `J` of class `C^k` on an open set `V` containing a
-compact `K ⊇ Ω`, and `w ∈ H^k(Ω')`, the composite `w ∘ J ∈ H^k(Ω)`. Induction on `k`: the chain
-rule `∂ᵢ(w ∘ J) = ∑_l (∂_i J)_l · (∂_l w ∘ J)` (`HasWeakFDerivOn.comp_diffeoOn`), the inductive
-hypothesis for `∂_l w ∘ J`, and the multiplier `(∂_i J)_l`, `C^{k-1}` on `V` and equal on `Ω` to
-a compactly supported one (`MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact`). The case
-`k = 2` is `Elliptic.memSobolevMultiIndex_two_comp_chart`. -/
+compact `K ⊇ Ω`, and `w ∈ H^k(Ω')`, the composite `w ∘ J ∈ H^k(Ω)`. The case `p = 2` of
+`MemSobolevMultiIndex.comp_diffeoOn_of_order`. The case `k = 2` is
+`Elliptic.memSobolevMultiIndex_two_comp_chart`. -/
 theorem memSobolevMultiIndex_comp_chart_of_order (k : ℕ) :
     ∀ {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {M : ℝ}
     {Ω' Ω : Opens (EuclideanSpace ℝ (Fin N))}, IsDiffeoOnWithBoundedJacobian H J Ω' Ω M →
@@ -5314,76 +5064,8 @@ theorem memSobolevMultiIndex_comp_chart_of_order (k : ℕ) :
     ∀ {w : EuclideanSpace ℝ (Fin N) → ℝ},
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis w k 2 Ω' volume →
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fun x ↦ w (J x)) k 2 Ω
-      volume := by
-  induction k with
-  | zero =>
-    intro H J M Ω' Ω h V hV hJ K hK hΩK hKV w hw
-    rw [memSobolevMultiIndex_zero_iff] at hw ⊢
-    obtain ⟨D, -, hD⟩ := h.symm.exists_abs_det_fderiv_invFun_le
-    refine h.symm.memLp_comp hD Ω.isOpen subset_rfl ?_
-    rw [h.symm.bijOn.image_eq]
-    exact hw
-  | succ k ih =>
-    intro H J M Ω' Ω h V hV hJ K hK hΩK hKV w hw
-    have hΩV : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ V := hΩK.trans hKV
-    -- the cut-off equal to `1` on `K` with support in `V`
-    obtain ⟨χ, hχ, hχ1, hχc, hχV⟩ :=
-      exists_contDiff_eqOn_one_hasCompactSupport (Ω := ⟨V, hV⟩) hK hKV
-    -- the coefficients `c i l = (∂ᵢJ)_l`, `C^k` on `V`, and their compactly supported versions
-    obtain ⟨c, hc⟩ : ∃ c : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ,
-      c = fun i l x ↦ fderiv ℝ J x (EuclideanSpace.single i 1) l := ⟨_, rfl⟩
-    have hdJ : ContDiffOn ℝ k (fderiv ℝ J) V := hJ.fderiv_of_isOpen hV (m := k) (by norm_cast)
-    have hcV : ∀ i l, ContDiffOn ℝ k (c i l) V := fun i l ↦ by
-      rw [hc]
-      exact (EuclideanSpace.proj l).contDiff.comp_contDiffOn (hdJ.clm_apply contDiffOn_const)
-    have hmult : ∀ i l, IsContDiffConstOffCompact k fun x ↦ χ x * c i l x := fun i l ↦
-      IsContDiffConstOffCompact.of_hasCompactSupport
-        ((hχ.of_le (by simp)).mul_contDiffOn_of_tsupport_subset hV (hcV i l) hχV)
-        hχc.mul_right
-    -- `w ∈ H^k(Ω')`, its partial derivatives `g l ∈ H^k(Ω')`, and a tensor weak derivative `Dw`
-    obtain ⟨hw1, hwd⟩ := memSobolevMultiIndex_succ_iff.1 hw
-    choose g hg hgp using hwd
-    simp only [EuclideanSpace.basisFun_toBasis_apply] at hg
-    have hw1' : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis w 1 2 Ω' volume :=
-      hw.mono_order (by omega)
-    obtain ⟨u, hu⟩ : ∃ u : SobolevEuclidean N 1 2 Ω',
-      fn u =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] w :=
-      hw1'.exists_sobolevMultiIndex
-    obtain ⟨Dw, hDw, -, hDwi, -⟩ := exists_hasWeakFDerivOn_fn u
-    have hDw' : HasWeakFDerivOn w Dw Ω' volume :=
-      HasWeakIteratedFDerivOn.congr_ae hDw hu (EventuallyEq.refl _ _)
-    have hDwg : ∀ l, (fun y ↦ Dw y (EuclideanSpace.single l 1))
-        =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] g l := by
-      intro l
-      have h1 := (weakDeriv_hasWeakIteratedLineDerivOn_single u l).congr_ae hu
-        (EventuallyEq.refl _ _)
-      have h2 := (ae_restrict_iff' Ω'.isOpen.measurableSet).2 (h1.ae_eq (hg l))
-      have h3 := hDwi l
-      rw [EuclideanSpace.basisFun_toBasis_apply] at h3
-      exact h3.trans h2
-    -- the composite: `H^k` by the inductive hypothesis, and the derivatives
-    have hcomp := hDw'.comp_diffeoOn h.symm
-    have hJk : ContDiffOn ℝ k J V := hJ.of_le (by exact_mod_cast Nat.le_succ k)
-    refine memSobolevMultiIndex_succ_iff.2 ⟨ih h hV hJk hK hΩK hKV hw1, fun i ↦ ?_⟩
-    rw [EuclideanSpace.basisFun_toBasis_apply]
-    refine ⟨fun x ↦ ∑ l, χ x * c i l x * g l (J x), ?_, ?_⟩
-    · have h1 := (hcomp : HasWeakIteratedFDerivOn 1 _ _ Ω volume).lineDeriv
-        ![EuclideanSpace.single i 1]
-      refine h1.congr_ae (EventuallyEq.refl _ _) ?_
-      have hae : ∀ l, ∀ᵐ x ∂volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))),
-          Dw (J x) (EuclideanSpace.single l 1) = g l (J x) := fun l ↦
-        h.symm.ae_comp_restrict (hDwg l)
-      filter_upwards [ae_all_iff.2 hae, self_mem_ae_restrict Ω.isOpen.measurableSet] with x hx hxΩ
-      simp only [continuousMultilinearCurryFin1_symm_apply, Matrix.cons_val_zero,
-        ContinuousLinearMap.comp_apply]
-      rw [ContinuousLinearMap.apply_eq_sum_single (Dw (J x))
-        (fderiv ℝ J x (EuclideanSpace.single i 1))]
-      refine Finset.sum_congr rfl fun l _ ↦ ?_
-      rw [hx l, hc, hχ1 (hΩK hxΩ), Pi.one_apply, one_mul]
-    · refine MemSobolevMultiIndex.sum_mul_of_isContDiffConstOffCompact Finset.univ
-        (c := fun l x ↦ χ x * c i l x) (f := fun l x ↦ g l (J x)) (fun l _ ↦ hmult i l)
-        fun l _ ↦ ?_
-      exact ih h hV hJk hK hΩK hKV (hgp l)
+      volume :=
+  MemSobolevMultiIndex.comp_diffeoOn_of_order k
 
 end RetransferHigher
 
@@ -5422,7 +5104,6 @@ theorem forall_testFunction_deriv_general {g gj : EuclideanSpace ℝ (Fin N) →
       a k l x * v k x * fderiv ℝ φ x (EuclideanSpace.single l 1)
       = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (gj x + ∑ k, ∑ l, q k l x) * φ x := by
   have h2 : (2 : ℝ≥0∞) ≠ ⊤ := ENNReal.ofNat_ne_top
-  have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin N))) := Ω.isOpen.measurableSet
   -- the product rule: `∂_j (a_{kℓ} w_k) = (∂_j a_{kℓ}) w_k + a_{kℓ} v_k`
   have hprod : ∀ k l, HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1]
       (fun x ↦ a k l x * w k x)
@@ -6661,143 +6342,6 @@ end CylinderRegularityHigher
 
 
 
-/-! ### Lemma 9.8 at higher order: the coefficients are `C^n` for a `C^{n+1}` chart -/
-
-section ChartCoeffHigher
-
-variable {N : ℕ}
-
-/-- The Jacobian determinant of a `C^{n+1}` local diffeomorphism is `C^n` where it does not
-vanish. -/
-theorem contDiffOn_abs_det_fderiv_of_order (n : ℕ)
-    {H : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
-    {s : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (hH : ContDiffOn ℝ (n + 1) H s)
-    (hdet : ∀ y ∈ s, (fderiv ℝ H y).det ≠ 0) :
-    ContDiffOn ℝ n (fun y ↦ |(fderiv ℝ H y).det|) s := by
-  have hdH : ContDiffOn ℝ n (fderiv ℝ H) s := hH.fderiv_of_isOpen hs (m := n) (by norm_cast)
-  have h1 : ContDiffOn ℝ n (fun y ↦ (fderiv ℝ H y).det) s :=
-    (ContinuousLinearMap.contDiff_det.of_le (by simp)).comp_contDiffOn hdH
-  intro y hy
-  exact (contDiffAt_abs (hdet y hy)).comp_contDiffWithinAt y (h1 y hy)
-
-/-- The coefficients of the transferred equation are `C^n` where `H` is `C^{n+1}` with
-nonvanishing Jacobian and maps into a set on which `J` is `C^{n+1}`. -/
-theorem contDiffOn_chartCoeff_of_order (n : ℕ)
-    {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
-    {s t : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (ht : IsOpen t)
-    (hH : ContDiffOn ℝ (n + 1) H s) (hJ : ContDiffOn ℝ (n + 1) J t) (hHs : MapsTo H s t)
-    (hdet : ∀ y ∈ s, (fderiv ℝ H y).det ≠ 0) (k l : Fin N) :
-    ContDiffOn ℝ n (chartCoeff H J k l) s := by
-  have hdJ : ContDiffOn ℝ n (fderiv ℝ J) t := hJ.fderiv_of_isOpen ht (m := n) (by norm_cast)
-  have hJH : ∀ j i, ContDiffOn ℝ n (fun y ↦ fderiv ℝ J (H y) (EuclideanSpace.single j 1) i) s := by
-    intro j i
-    have h1 : ContDiffOn ℝ n (fun y ↦ fderiv ℝ J (H y)) s :=
-      hdJ.comp (hH.of_le (by exact_mod_cast Nat.le_succ n)) hHs
-    have h2 : ContDiffOn ℝ n (fun y ↦ fderiv ℝ J (H y) (EuclideanSpace.single j 1)) s :=
-      h1.clm_apply contDiffOn_const
-    exact (EuclideanSpace.proj i).contDiff.comp_contDiffOn h2
-  exact (ContDiffOn.sum fun j _ ↦ (hJH j k).mul (hJH j l)).mul
-    (contDiffOn_abs_det_fderiv_of_order n hs hH hdet)
-
-end ChartCoeffHigher
-
-/-! ### The boundary piece and the transfer, with their data made explicit -/
-
-section BoundaryPieceData
-
-variable {N : ℕ} {Ω' Ω : Opens (EuclideanSpace ℝ (Fin N))}
-  {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {M : ℝ}
-
-open SobolevMultiIndex
-
-/-- **The boundary piece `v = θ u` of a weak solution, with its datum**
-(`Elliptic.exists_boundary_piece` with the datum `G = θ F − 2∇θ·∇u − (Δθ)u` made explicit). -/
-theorem exists_boundary_piece_ae_eq (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
-    (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
-    (hθΩ' : tsupport θ ∩ Ω ⊆ Ω') {u : SobolevEuclidean N 1 2 Ω}
-    (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
-    {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω u Φ = load Ω F Φ) :
-    ∃ (v : SobolevEuclidean N 1 2 Ω')
-      (G : Lp ℝ 2 (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N))))),
-      v ∈ SobolevEuclideanZero N 1 2 Ω' ∧
-      fn v =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] (fun x ↦ θ x * fn u x) ∧
-      ⇑G =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] (fun x ↦ θ x * F x
-        - 2 * ∑ i, fderiv ℝ θ x (EuclideanSpace.single i 1) * weakDeriv u (MultiIndexLE.single i) x
-        - (∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
-          (EuclideanSpace.single i 1)) * fn u x) ∧
-      ∀ Ψ ∈ SobolevEuclideanZero N 1 2 Ω', dirichletForm Ω' v Ψ = load Ω' G Ψ := by
-  have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin N))) := Ω.isOpen.measurableSet
-  have hθtop : IsSobolevCutoff (⊤ : Opens (EuclideanSpace ℝ (Fin N))) θ :=
-    IsSobolevCutoff.of_hasCompactSupport hθ hθc (subset_univ _)
-  obtain ⟨P, hP⟩ : ∃ P : SobolevEuclideanZero N 1 2 Ω →L[ℝ] SobolevEuclidean N 1 2 Ω',
-      ∀ z, P z = restrictL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 volume
-        (le_top (a := Ω')) (extendZeroMulL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 volume
-          hθtop (SobolevEuclideanZero.extendZeroL N 2 Ω z)) :=
-    ⟨(restrictL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 volume (le_top (a := Ω'))) ∘L
-      (extendZeroMulL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 volume hθtop) ∘L
-      (SobolevEuclideanZero.extendZeroL N 2 Ω), fun _ ↦ rfl⟩
-  have hPfn := fn_boundaryPiece_of_ops hΩ' hθtop hP
-  have hPd := weakDeriv_boundaryPiece_of_ops hΩ' hθtop hP
-  have hgp := memLp_boundaryDatum hΩ' hθ hθc u F
-  refine ⟨P ⟨u, hu⟩, hgp.toLp _, mem_zero_of_fn_ae_eq_contDiff_mul hΩ' hθ hθΩ' hPfn ⟨u, hu⟩,
-    hPfn ⟨u, hu⟩, hgp.coeFn_toLp, fun Ψ hΨ ↦ ?_⟩
-  refine dirichletForm_eq_load_of_forall_testFunctions (fun Φ hΦ ↦ ?_) hΨ
-  obtain ⟨ψ, hψ⟩ := hΦ
-  rw [dirichletForm_apply_eq_of_ae_eq (hPd ⟨u, hu⟩) hψ, load_apply_eq_of_ae_eq hgp.coeFn_toLp hψ]
-  have hwd : ∀ i, HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] (fn u)
-      (weakDeriv u (MultiIndexLE.single i)) Ω volume := fun i ↦
-    weakDeriv_hasWeakIteratedLineDerivOn_single u i
-  have hcut := sum_integral_cutoff_eq (fun i ↦ EuclideanSpace.single i 1)
-    ((memLp u).locallyIntegrableOn one_le_two) ((Lp.memLp F).locallyIntegrableOn one_le_two) hwd
-    (forall_testFunction_weakDeriv_of_forall_testFunctions heq) hθ (ψ.ofLE hΩ')
-  simp only [TestFunction.ofLE_coe] at hcut
-  -- the integrals over `Ω` are integrals over `Ω'`
-  have hsub : ∀ (F' : EuclideanSpace ℝ (Fin N) → ℝ),
-      ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), F' x * ψ x
-        = ∫ x in (Ω' : Set (EuclideanSpace ℝ (Fin N))), F' x * ψ x := fun F' ↦
-    setIntegral_eq_of_subset_of_forall_sdiff_eq_zero hΩm hΩ' fun x hx ↦ by
-      rw [ψ.eq_zero_of_notMem hx.2, mul_zero]
-  have hsub' : ∀ (F' : EuclideanSpace ℝ (Fin N) → ℝ) (i : Fin N),
-      ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), F' x * fderiv ℝ ψ x (EuclideanSpace.single i 1)
-        = ∫ x in (Ω' : Set (EuclideanSpace ℝ (Fin N))),
-          F' x * fderiv ℝ ψ x (EuclideanSpace.single i 1) := fun F' i ↦
-    setIntegral_eq_of_subset_of_forall_sdiff_eq_zero hΩm hΩ' fun x hx ↦ by
-      have := (ψ.fderivApply (EuclideanSpace.single i 1)).eq_zero_of_notMem hx.2
-      rw [TestFunction.fderivApply_apply] at this
-      rw [this, mul_zero]
-  simp only [hsub, hsub'] at hcut
-  exact hcut
-
-/-- **Lemma 9.8, typed, with the transferred datum made explicit**: `Elliptic.transfer_chart`
-together with `G̃ = (G ∘ H) |det DH|` almost everywhere (`Elliptic.chartDatum`). -/
-theorem transfer_chart_ae_eq (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
-    {v : SobolevEuclidean N 1 2 Ω} (hv : v ∈ SobolevEuclideanZero N 1 2 Ω)
-    {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (heq : ∀ Ψ ∈ SobolevEuclideanZero N 1 2 Ω, dirichletForm Ω v Ψ = load Ω G Ψ) :
-    ∃ (w : SobolevEuclidean N 1 2 Ω')
-      (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))))
-      (G' : Lp ℝ 2 (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N))))),
-      w ∈ SobolevEuclideanZero N 1 2 Ω' ∧
-      fn w =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] (fun y ↦ fn v (H y)) ∧
-      (∀ k l, ⇑(A k l) =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))]
-        chartCoeff H J k l) ∧
-      ⇑G' =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] chartDatum H G ∧
-      ∀ Ψ ∈ SobolevEuclideanZero N 1 2 Ω', generalForm Ω' A 0 0 w Ψ = load Ω' G' Ψ := by
-  obtain ⟨w, hw⟩ : ∃ w, w = SobolevEuclidean.compDiffeoL h v := ⟨_, rfl⟩
-  refine ⟨w, fun k l ↦ (memLp_top_chartCoeff h k l).toLp _, (memLp_chartDatum h G).toLp _,
-    hw ▸ compDiffeoL_mem_zero h hv, hw ▸ fn_compDiffeoL h v,
-    fun k l ↦ (memLp_top_chartCoeff h k l).coeFn_toLp, (memLp_chartDatum h G).coeFn_toLp,
-    fun Ψ hΨ ↦ ?_⟩
-  refine generalForm_eq_load_of_forall_testFunctions (fun Φ hΦ ↦ ?_) hΨ
-  obtain ⟨ψ, hψ⟩ := hΦ
-  rw [generalForm_zero_zero_apply_eq_of_ae_eq (fun k l ↦ (memLp_top_chartCoeff h k l).coeFn_toLp)
-    w hψ, load_apply_eq_of_ae_eq (memLp_chartDatum h G).coeFn_toLp hψ]
-  exact sum_integral_chartCoeff_eq h heq hw ψ
-
-end BoundaryPieceData
-
 
 
 /-! ### Case C₂, higher order: a boundary piece `θᵢ u` is in `H^{m+2}(Ω)` -/
@@ -6835,7 +6379,7 @@ smooth `θ` with compact support in `U`, and `u ∈ H^1_0(Ω) ∩ H^{m+1}(Ω)` w
 `∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements `Φ` and `F ∈ H^m(Ω)`, the function
 `θ u` lies in `H^{m+2}(Ω)`.
 
-The steps of the `H²` case (`Elliptic.memSobolevMultiIndex_two_boundary_piece`) one order up:
+The steps of the book's `H²` case, one order up:
 the datum `G = θ F − 2∇θ·∇u − (Δθ) u` of `v = θ u` lies in `H^m(Ω ∩ U)`; its transfer
 `(G ∘ H) |det DH|` lies in `H^m(Q₊)` (`Elliptic.memSobolevMultiIndex_comp_chart_of_order` on a
 smaller half cylinder containing the support, and a cut-off); the higher-order theorem on the
@@ -6851,8 +6395,8 @@ theorem memSobolevMultiIndex_boundary_piece_of_order (m : ℕ) (c : ContDiffChar
     {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     (hF : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (⇑F) m 2 Ω
       volume)
-    (heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω u Φ = load Ω F Φ) :
+    (heq : IsWeakSolution (dirichletForm Ω)
+      (testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume) u F) :
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
       (fun x ↦ θ x * fn u x) (m + 2) 2 Ω volume := by
   have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) := Ω.isOpen.measurableSet
@@ -6985,10 +6529,10 @@ theorem memSobolevMultiIndex_boundary_piece_of_order (m : ℕ) (c : ContDiffChar
       hQ'L₂ hL₂Q (hGm.mono_set hΩ₃Ω₁)
     -- the cut-offs `χ₂ = 1` on `K` with support in `interior L₂`, `χ₃ = 1` on `L₂` with support
     -- in `Q`
-    obtain ⟨χ₂, hχ₂, hχ₂1, hχ₂c, hχ₂L⟩ := exists_contDiff_eqOn_one_hasCompactSupport
-      (Ω := ⟨interior L₂, isOpen_interior⟩) hKc hKL₂
-    obtain ⟨χ₃, hχ₃, hχ₃1, hχ₃c, hχ₃Q⟩ := exists_contDiff_eqOn_one_hasCompactSupport
-      (Ω := ⟨unitChartCube d, isOpen_unitChartCube⟩) hL₂ hL₂Q
+    obtain ⟨χ₂, hχ₂, hχ₂1, hχ₂c, hχ₂L⟩ := hKc.exists_contDiff_eqOn_one_hasCompactSupport
+      isOpen_interior hKL₂
+    obtain ⟨χ₃, hχ₃, hχ₃1, hχ₃c, hχ₃Q⟩ := hL₂.exists_contDiff_eqOn_one_hasCompactSupport
+      isOpen_unitChartCube hL₂Q
     have hχ₂Qp : tsupport χ₂ ∩ Qp ⊆ Q' := by
       rw [hQ's]
       rintro y ⟨hy1, hy2⟩
@@ -7056,8 +6600,8 @@ theorem memSobolevMultiIndex_boundary_piece_of_order (m : ℕ) (c : ContDiffChar
       self_mem_ae_restrict Ω₂.isOpen.measurableSet] with x hx1 hx2 hxΩ₂
     rw [hx1, h'.invOn.2 (hΩ₂Ω₁' hxΩ₂), hx2]
   -- zero extension across the edge of the chart
-  obtain ⟨η, hη, hη1, hηc, hηL⟩ := exists_contDiff_eqOn_one_hasCompactSupport (Ω := ⟨interior L,
-    isOpen_interior⟩) (hθc : IsCompact (tsupport θ)) hθL
+  obtain ⟨η, hη, hη1, hηc, hηL⟩ :=
+    (hθc : IsCompact (tsupport θ)).exists_contDiff_eqOn_one_hasCompactSupport isOpen_interior hθL
   have hηΩ₂ : tsupport η ∩ Ω ⊆ Ω₂ := by
     rw [hΩ₂s]
     exact inter_subset_inter_left _ hηL
@@ -7077,6 +6621,170 @@ theorem memSobolevMultiIndex_boundary_piece_of_order (m : ℕ) (c : ContDiffChar
 end BoundaryPieceHigher
 
 
+/-! ### Theorem 9.25, the `H²` clause: case C₂ and the assembly -/
+
+section BoundaryPieceTwo
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+open SobolevMultiIndex EuclideanSpace
+
+/-- **A boundary piece of a weak solution is in `H²(Ω)`** — [brezis2011functional] §9.6, proof of
+Theorem 9.25, case C₂: for a `C²` chart `H : Q → U` of `Ω`, a smooth `θ` with compact support in
+`U`, and `u ∈ H^1_0(Ω)` with `∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements `Φ`, the
+function `θ u` lies in `H²(Ω)`. The case `m = 0` of
+`Elliptic.memSobolevMultiIndex_boundary_piece_of_order`. -/
+theorem memSobolevMultiIndex_two_boundary_piece (c : ContDiffChart 2 (Ω : Set _))
+    {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
+    (hθU : tsupport θ ⊆ c.U) {u : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hu : u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
+    {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (heq : IsWeakSolution (dirichletForm Ω)
+      (testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume) u F) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (fun x ↦ θ x * fn u x) 2 2 Ω volume :=
+  memSobolevMultiIndex_boundary_piece_of_order 0 (c.ofLE (by norm_num)) hθ hθc hθU hu
+    (memSobolevMultiIndex u) (memSobolevMultiIndex_zero_iff.2 (Lp.memLp F)) heq
+
+end BoundaryPieceTwo
+
+section Assembly
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+open SobolevMultiIndex
+
+/-- **[brezis2011functional] Theorem 9.25 (regularity for the Dirichlet problem), the `H²`
+membership**: let `Ω ⊆ ℝ^N` be open of class `C²` with bounded boundary, and let `u ∈ H^1_0(Ω)`
+satisfy `∫_Ω ∇u · ∇Φ = ∫_Ω g Φ` for all `Φ ∈ H^1_0(Ω)` with `g ∈ L²(Ω)`. Then `u ∈ H²(Ω)`. (For
+the book's `−Δu + u = f`, take `g = f − u`.)
+
+The proof of the book: a finite atlas of charts `Hᵢ : Q → Uᵢ` covering the compact `Γ = ∂Ω`
+(`IsContDiffChartDomain.exists_finite_atlas`), a partition of unity `θ₀, θᵢ` subordinate to it
+(Lemma 9.3, `IsCompact.exists_contDiff_partitionOfUnity`), and `u = θ₀ u + ∑ᵢ θᵢ u` with the
+interior piece `θ₀ u ∈ H²(Ω)` by case A (`Elliptic.memSobolevMultiIndex_two_interior_piece`) and
+each boundary piece `θᵢ u ∈ H²(Ω)` by cases B and C₂
+(`Elliptic.memSobolevMultiIndex_two_boundary_piece`). -/
+theorem regularity_dirichlet_mem
+    (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
+    {g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (heq : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) u g) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) 2 2 Ω volume := by
+  have heq' : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
+      dirichletForm Ω u Φ = load Ω g Φ := fun Φ hΦ ↦
+    heq Φ (SobolevMultiIndexZero.testFunctions_le hΦ)
+  -- the finite atlas and the partition of unity
+  have hΓc : IsCompact (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+    Metric.isCompact_of_isClosed_isBounded isClosed_frontier hΓ
+  obtain ⟨k, c, hcov⟩ := hΩ.exists_finite_atlas hΓ
+  obtain ⟨θ₀, θ, hθ₀, hθ, hθ₀01, -, hsum, hθc, hθU, hθ₀Γ⟩ :=
+    hΓc.exists_contDiff_partitionOfUnity (fun i ↦ (c i).isOpen_U) hcov
+  -- the boundary pieces
+  have hbdry : ∀ i, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (fun x ↦ θ i x * fn u x) 2 2 Ω volume := fun i ↦
+    memSobolevMultiIndex_two_boundary_piece (c i) (hθ i) (hθc i) (hθU i) hu heq'
+  -- the interior piece: `θ₀ = 1 − G` with `G = ∑ᵢ θᵢ` smooth and compactly supported
+  obtain ⟨G, hG⟩ : ∃ G : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, G = fun x ↦ ∑ i, θ i x := ⟨_, rfl⟩
+  have hGs : ContDiff ℝ ∞ G := by
+    rw [hG]
+    exact ContDiff.sum fun i _ ↦ hθ i
+  have hGc : HasCompactSupport G := by
+    refine (isCompact_iUnion fun i ↦ hθc i).of_isClosed_subset (isClosed_tsupport G) ?_
+    refine closure_minimal ?_ (isClosed_iUnion_of_finite fun i ↦ isClosed_tsupport (θ i))
+    rw [hG]
+    exact (Finset.support_sum _ _).trans (Set.iUnion₂_subset fun i _ ↦
+      subset_closure.trans (Set.subset_iUnion (fun i ↦ tsupport (θ i)) i))
+  have hθ₀eq : θ₀ = fun x ↦ 1 - G x := funext fun x ↦ by
+    rw [hG]
+    linarith [hsum x]
+  have hdθ₀ : ∀ x, fderiv ℝ θ₀ x = -fderiv ℝ G x := fun x ↦ by
+    rw [hθ₀eq, fderiv_const_sub]
+  obtain ⟨M₁, hM₁⟩ := (hGc.fderiv ℝ).exists_bound_of_continuous (hGs.continuous_fderiv (by simp))
+  have hθ₀cut : IsSobolevCutoff Ω θ₀ :=
+    ⟨hθ₀, ⟨max 1 M₁, fun x ↦ ⟨(abs_le.2 ⟨by linarith [(hθ₀01 x).1], (hθ₀01 x).2⟩).trans
+      (le_max_left _ _), by
+        rw [hdθ₀ x, norm_neg]
+        exact (hM₁ x).trans (le_max_right _ _)⟩⟩, hθ₀Γ⟩
+  obtain ⟨hΔc, hΔs, -⟩ := laplacianRep_props hGs hGc
+  obtain ⟨M₂, hM₂⟩ := hΔs.exists_bound_of_continuous hΔc.continuous
+  have hΔθ₀ : ∀ x, ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ₀ z (EuclideanSpace.single i 1)) x
+      (EuclideanSpace.single i 1)
+      = -∑ i, fderiv ℝ (fun z ↦ fderiv ℝ G z (EuclideanSpace.single i 1)) x
+        (EuclideanSpace.single i 1) := fun x ↦ by
+    rw [← Finset.sum_neg_distrib]
+    refine Finset.sum_congr rfl fun i _ ↦ ?_
+    have : (fun z ↦ fderiv ℝ θ₀ z (EuclideanSpace.single i 1))
+        = fun z ↦ -(fderiv ℝ G z (EuclideanSpace.single i 1)) := funext fun z ↦ by
+      rw [hdθ₀ z, neg_apply]
+    rw [this, fderiv_fun_neg, neg_apply]
+  have hΔb : ∀ x, |∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ₀ z (EuclideanSpace.single i 1)) x
+      (EuclideanSpace.single i 1)| ≤ M₂ := fun x ↦ by
+    rw [hΔθ₀ x, abs_neg, ← Real.norm_eq_abs]
+    exact hM₂ x
+  have hint := memSobolevMultiIndex_two_interior_piece hθ₀cut hΔb u heq'
+  -- the sum `u = θ₀ u + ∑ᵢ θᵢ u`
+  have htot := hint.add (MemSobolevMultiIndex.finset_sum Finset.univ
+    (f := fun i x ↦ θ i x * fn u x) fun i _ ↦ hbdry i)
+  refine htot.congr_ae (Eventually.of_forall fun x ↦ ?_)
+  simp only [Pi.add_apply, Finset.sum_apply]
+  rw [← Finset.sum_mul, ← add_mul, hsum x, one_mul]
+
+end Assembly
+
+section Main
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+open SobolevMultiIndex
+
+/-- **[brezis2011functional] Theorem 9.25 (regularity for the Dirichlet problem), the `H²`
+clause.** Let `Ω ⊆ ℝ^N` be open of class `C²` with bounded boundary. There is a constant `C`
+such that for every `f ∈ L²(Ω)`, the weak solution `u ∈ H^1_0(Ω)` of `−Δu + u = f`
+(`∫_Ω ∇u · ∇φ + ∫_Ω u φ = ∫_Ω f φ` for all `φ ∈ H^1_0(Ω)`) lies in `H²(Ω)`, and every
+`U ∈ H²(Ω)` with function `u` has `‖U‖_{H²(Ω)} ≤ C ‖f‖_{L²(Ω)}`.
+
+The membership is `Elliptic.regularity_dirichlet_mem` (the localisation of the book's proof:
+case A for the interior piece, cases B and C₂ through the charts for the boundary pieces), and the
+constant comes from the closed graph theorem applied to the map `f ↦ U ∈ H²(Ω)`
+(`Elliptic.exists_norm_le_of_forall_exists_sobolev_two`). -/
+theorem regularity_dirichlet
+    (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+        (u : SobolevEuclidean (d + 1) 1 2 Ω),
+        IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero (d + 1) 1 2 Ω) u →
+        MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) 2 2 Ω
+          volume ∧
+        ∀ U : SobolevEuclidean (d + 1) 2 2 Ω,
+          fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn u →
+          ‖U‖ ≤ C * ‖f‖ := by
+  have hmem : ∀ (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+      (u : SobolevEuclidean (d + 1) 1 2 Ω),
+      IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero (d + 1) 1 2 Ω) u →
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) 2 2 Ω
+        volume := fun f u hu ↦
+    regularity_dirichlet_mem hΩ hΓ hu.1 (dirichletForm_eq_load_sub_of_isGalerkinSolution_laplace hu)
+  obtain ⟨S, hS⟩ : ∃ S : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →L[ℝ]
+      SobolevEuclidean (d + 1) 1 2 Ω, S = (SobolevEuclideanZero (d + 1) 1 2 Ω).subtypeL ∘L
+        solutionMap Ω (laplaceForm Ω) laplaceForm_restrict_isCoercive := ⟨_, rfl⟩
+  have hSf : ∀ f, IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero (d + 1) 1 2 Ω)
+      (S f) := fun f ↦ by
+    rw [hS]
+    exact isGalerkinSolution_solutionMap Ω (laplaceForm Ω) laplaceForm_restrict_isCoercive f
+  obtain ⟨C, hC0, hC⟩ := exists_norm_le_of_forall_exists_sobolev_two (S := S) fun f ↦
+    (hmem f (S f) (hSf f)).exists_sobolevMultiIndex
+  refine ⟨C, hC0, fun f u hu ↦ ⟨hmem f u hu, fun U hU ↦ hC f U (hU.trans ?_)⟩⟩
+  have : u = S f := by
+    rw [hS]
+    exact eq_solutionMap_of_isGalerkinSolution Ω (laplaceForm Ω) laplaceForm_restrict_isCoercive hu
+  rw [this]
+
+end Main
+
+
 
 /-! ### The interior piece `θ₀ u` at higher order -/
 
@@ -7085,14 +6793,6 @@ section InteriorPieceHigher
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
-
-/-- The support of the Laplacian `∑ᵢ ∂ᵢ∂ᵢθ` of a smooth `θ` lies in the support of `θ`. -/
-theorem tsupport_laplacianRep_subset {θ : EuclideanSpace ℝ (Fin N) → ℝ} :
-    tsupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
-      (EuclideanSpace.single i 1)) ⊆ tsupport θ := by
-  refine closure_minimal ((Finset.support_sum _ _).trans ?_) (isClosed_tsupport θ)
-  refine Set.iUnion₂_subset fun i _ ↦ subset_closure.trans ?_
-  exact (tsupport_fderiv_apply_subset ℝ _).trans (tsupport_fderiv_apply_subset ℝ _)
 
 /-- The Laplacian of a smooth function constant off a compact set has compact support. -/
 theorem hasCompactSupport_laplacianRep {θ : EuclideanSpace ℝ (Fin N) → ℝ}
@@ -7125,8 +6825,8 @@ theorem memSobolevMultiIndex_interior_piece_of_order (m : ℕ)
       volume)
     {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (hF : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (⇑F) m 2 Ω volume)
-    (heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω u Φ = load Ω F Φ) :
+    (heq : IsWeakSolution (dirichletForm Ω)
+      (testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume) u F) :
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
       (fun x ↦ θ x * fn u x) (m + 2) 2 Ω volume := by
   have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin N))) := Ω.isOpen.measurableSet
@@ -7241,7 +6941,7 @@ theorem regularity_dirichlet_higher_mem (m : ℕ) :
     ∀ {u : SobolevEuclidean (d + 1) 1 2 Ω}, u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω →
     ∀ {g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))},
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (⇑g) m 2 Ω volume →
-    (∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω u Φ = load Ω g Φ) →
+    IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) u g →
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) (m + 2) 2 Ω
       volume := by
   induction m with
@@ -7458,7 +7158,6 @@ theorem exists_contDiffOn_infty_of_forall_memSobolevMultiIndex
         EqOn (iteratedFDeriv ℝ j ũ) G Ω := fun k ↦ by
     refine exists_contDiffOn_of_memSobolevMultiIndex k hΩ hΓ (m := k + (d + 1)) ?_ (hu _)
     push_cast
-    have : (0 : ℝ) ≤ d := Nat.cast_nonneg d
     linarith
   choose v hvc hvk hvae hvG using hrep
   -- the representatives agree on `Ω`

@@ -47,9 +47,11 @@ coordinatewise (`PiLp.norm_le_norm_of_forall_norm_le`):
   (`SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single`), membership of `W^{1,p}(Ω)` from the
   `N` partial derivatives and their uniqueness
   (`SobolevEuclidean.memSobolevMultiIndex_one_of_forall`,
-  `SobolevEuclidean.weakDeriv_single_ae_eq`), their identification with the classical ones for a
-  `C¹` representative (`SobolevEuclidean.weakDeriv_single_ae_eq_fderiv`), and the restricted
-  pointwise gradient `u ↦ ∇u|_S` as a bounded linear map `W^{1,p}(Ω) → L^p(S; ℝ^N)`
+  `SobolevEuclidean.weakDeriv_single_ae_eq`, the standard-basis case of
+  `SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn`), their identification
+  with the classical ones for a `C¹` representative
+  (`SobolevEuclidean.weakDeriv_single_ae_eq_fderiv`), and the restricted pointwise gradient
+  `u ↦ ∇u|_S` as a bounded linear map `W^{1,p}(Ω) → L^p(S; ℝ^N)`
   (`SobolevEuclidean.gradFnL`).
 
 The predicate-level cut-off theory — locality, `C_c^1` test functions, cut-off functions and the
@@ -644,7 +646,6 @@ theorem mem_zero_of_ae_eq_zero_compl_isCompact (hp' : p ≠ ⊤) (u : SobolevMul
       _ = (C * (D * (e i + e j))).toReal := by
           rw [hCdef, Finset.sum_mul, ENNReal.toReal_sum fun β _ ↦ hne β]
   -- the sequence is Cauchy
-  have hCD : C * D ≠ ⊤ := ENNReal.mul_ne_top hCtop hDtop
   have hcauchy : CauchySeq w := by
     refine Metric.cauchySeq_iff'.2 fun ε hε ↦ ?_
     set c : ℝ := (C * D).toReal with hcdef
@@ -882,31 +883,39 @@ theorem toLowerOrder_smul (hk : k' ≤ k) (c : ℝ) (u : SobolevMultiIndex F b k
     toLowerOrder F b p Ω μ hk (c • u) = c • toLowerOrder F b p Ω μ hk u :=
   rfl
 
-/-- Forgetting components does not increase the `ℓ^p` norm. -/
-theorem norm_toLowerOrder_le [Fact (1 ≤ p)] (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ) :
-    ‖toLowerOrder F b p Ω μ hk u‖ ≤ ‖u‖ := by
+/-- **The `ℓ^p` norm is monotone under an injective reindexing of the components**: if the
+components of `v ∈ W^{k',p}(Ω)` are components of `u ∈ W^{k,p}(Ω)` read along an injection of
+the multi-indices, then `‖v‖ ≤ ‖u‖`. -/
+theorem norm_le_norm_of_injective [Fact (1 ≤ p)] {u : SobolevMultiIndex F b k p Ω μ}
+    {v : SobolevMultiIndex F b k' p Ω μ} {e : MultiIndexLE ι k' → MultiIndexLE ι k}
+    (he : Function.Injective e) (h : ∀ α, weakDeriv v α = weakDeriv u (e α)) : ‖v‖ ≤ ‖u‖ := by
   classical
   rw [← Submodule.norm_coe, ← Submodule.norm_coe]
   rcases eq_or_ne p ⊤ with rfl | hp
   · rw [PiLp.norm_eq_ciSup, PiLp.norm_eq_ciSup]
     refine ciSup_le fun α ↦ ?_
+    rw [show (v : SobolevMultiIndexTuple F ι k' ⊤ Ω μ) α = weakDeriv u (e α) from h α]
     exact le_ciSup (Finite.bddAbove_range fun β : MultiIndexLE ι k ↦
-      ‖(u : SobolevMultiIndexTuple F ι k ⊤ Ω μ) β‖) (⟨α.1, α.2.trans hk⟩ : MultiIndexLE ι k)
+      ‖(u : SobolevMultiIndexTuple F ι k ⊤ Ω μ) β‖) (e α)
   · have hP : 0 < p.toReal :=
       ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
     rw [PiLp.norm_eq_sum hP, PiLp.norm_eq_sum hP]
     refine Real.rpow_le_rpow (Finset.sum_nonneg fun _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _)
       ?_ (by positivity)
-    calc ∑ α : MultiIndexLE ι k',
-          ‖(toLowerOrder F b p Ω μ hk u : SobolevMultiIndexTuple F ι k' p Ω μ) α‖ ^ p.toReal
-        = ∑ β ∈ Finset.univ.image
-            (fun α : MultiIndexLE ι k' ↦ (⟨α.1, α.2.trans hk⟩ : MultiIndexLE ι k)),
-            ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) β‖ ^ p.toReal := by
-          rw [Finset.sum_image (MultiIndexLE.castLE_injective hk).injOn]
-          rfl
+    calc ∑ α : MultiIndexLE ι k', ‖(v : SobolevMultiIndexTuple F ι k' p Ω μ) α‖ ^ p.toReal
+        = ∑ β ∈ Finset.univ.image e, ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) β‖ ^ p.toReal := by
+          rw [Finset.sum_image he.injOn]
+          exact Finset.sum_congr rfl fun α _ ↦ by
+            rw [show (v : SobolevMultiIndexTuple F ι k' p Ω μ) α = weakDeriv u (e α) from h α]
+            rfl
       _ ≤ ∑ β : MultiIndexLE ι k, ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) β‖ ^ p.toReal :=
           Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
             fun _ _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _
+
+/-- Forgetting components does not increase the `ℓ^p` norm. -/
+theorem norm_toLowerOrder_le [Fact (1 ≤ p)] (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ) :
+    ‖toLowerOrder F b p Ω μ hk u‖ ≤ ‖u‖ :=
+  norm_le_norm_of_injective (MultiIndexLE.castLE_injective hk) (weakDeriv_toLowerOrder hk u)
 
 variable (F b p Ω μ) in
 /-- **The inclusion `W^{k,p}(Ω) → W^{k',p}(Ω)`, `k' ≤ k`, as a bounded linear map** of norm at most
@@ -941,35 +950,6 @@ theorem toLowerOrderL_injective [Fact (1 ≤ p)] [FiniteDimensional ℝ E] [Bore
   have h1 : fn (toLowerOrderL F b p Ω μ hk u) = fn (toLowerOrderL F b p Ω μ hk v) :=
     congrArg fn huv
   exact ext_of_fn_ae_eq (by rw [show fn u = fn v from h1])
-
-/-- **The `ℓ^p` norm is monotone under an injective reindexing of the components**: if the
-components of `v ∈ W^{k',p}(Ω)` are components of `u ∈ W^{k,p}(Ω)` read along an injection of
-the multi-indices, then `‖v‖ ≤ ‖u‖`. -/
-theorem norm_le_norm_of_injective [Fact (1 ≤ p)] {u : SobolevMultiIndex F b k p Ω μ}
-    {v : SobolevMultiIndex F b k' p Ω μ} {e : MultiIndexLE ι k' → MultiIndexLE ι k}
-    (he : Function.Injective e) (h : ∀ α, weakDeriv v α = weakDeriv u (e α)) : ‖v‖ ≤ ‖u‖ := by
-  classical
-  rw [← Submodule.norm_coe, ← Submodule.norm_coe]
-  rcases eq_or_ne p ⊤ with rfl | hp
-  · rw [PiLp.norm_eq_ciSup, PiLp.norm_eq_ciSup]
-    refine ciSup_le fun α ↦ ?_
-    rw [show (v : SobolevMultiIndexTuple F ι k' ⊤ Ω μ) α = weakDeriv u (e α) from h α]
-    exact le_ciSup (Finite.bddAbove_range fun β : MultiIndexLE ι k ↦
-      ‖(u : SobolevMultiIndexTuple F ι k ⊤ Ω μ) β‖) (e α)
-  · have hP : 0 < p.toReal :=
-      ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
-    rw [PiLp.norm_eq_sum hP, PiLp.norm_eq_sum hP]
-    refine Real.rpow_le_rpow (Finset.sum_nonneg fun _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _)
-      ?_ (by positivity)
-    calc ∑ α : MultiIndexLE ι k', ‖(v : SobolevMultiIndexTuple F ι k' p Ω μ) α‖ ^ p.toReal
-        = ∑ β ∈ Finset.univ.image e, ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) β‖ ^ p.toReal := by
-          rw [Finset.sum_image he.injOn]
-          exact Finset.sum_congr rfl fun α _ ↦ by
-            rw [show (v : SobolevMultiIndexTuple F ι k' p Ω μ) α = weakDeriv u (e α) from h α]
-            rfl
-      _ ≤ ∑ β : MultiIndexLE ι k, ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) β‖ ^ p.toReal :=
-          Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
-            fun _ _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _
 
 section PartialDeriv
 
@@ -1243,6 +1223,23 @@ theorem SobolevEuclidean.memSobolevMultiIndex_one_of_forall {F : EuclideanSpace 
     exact h'.of_perm (multiIndexTuple_single_perm
       ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) i).symm
 
+/-- **Uniqueness of the partial derivatives along a basis**: if the function of
+`v ∈ W^{1,p}(Ω)` is almost everywhere `f` on `Ω` and `g` is a weak derivative of `f` along `b i`,
+then `∂_i v` is almost everywhere `g`. `SobolevEuclidean.weakDeriv_single_ae_eq` is the case of
+the standard basis of `ℝ^N`. -/
+theorem SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn {E : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [FiniteDimensional ℝ E]
+    [BorelSpace E] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞}
+    {Ω : Opens E} {μ : Measure E} {v : SobolevMultiIndex ℝ b 1 p Ω μ} {f g : E → ℝ}
+    (hv : SobolevMultiIndex.fn v =ᵐ[μ.restrict (Ω : Set E)] f) (i : ι)
+    (hg : HasWeakIteratedLineDerivOn ![b i] f g Ω μ) :
+    (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) : E → ℝ)
+      =ᵐ[μ.restrict (Ω : Set E)] g :=
+  (ae_restrict_iff' Ω.isOpen.measurableSet).2
+    ((((SobolevMultiIndex.hasWeakIteratedLineDerivOn v (MultiIndexLE.single i)).of_perm
+      (multiIndexTuple_single_perm (b : ι → E) i)).congr_ae hv
+        (Filter.EventuallyEq.refl _ _)).ae_eq hg)
+
 omit [Fact (1 ≤ p)] in
 /-- **Uniqueness of the partial derivatives**: if `fn u` is almost everywhere `F` on `Ω` and
 `G` is a weak derivative of `F` along `e_j` on `Ω`, then `∂_j u` is almost everywhere `G`. -/
@@ -1252,9 +1249,8 @@ theorem SobolevEuclidean.weakDeriv_single_ae_eq (u : SobolevEuclidean N 1 p Ω)
     (hG : HasWeakIteratedLineDerivOn ![EuclideanSpace.single j (1 : ℝ)] F G Ω volume) :
     weakDeriv u (MultiIndexLE.single j) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       G :=
-  (ae_restrict_iff' Ω.isOpen.measurableSet).2
-    (((SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single u j).congr_ae hF
-      (EventuallyEq.refl _ _)).ae_eq hG)
+  SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn hF j
+    (by rw [EuclideanSpace.basisFun_toBasis_apply]; exact hG)
 
 omit [Fact (1 ≤ p)] in
 /-- The partial derivatives of an element `U` of `W^{1,p}(Ω)` whose function is a `C¹` function

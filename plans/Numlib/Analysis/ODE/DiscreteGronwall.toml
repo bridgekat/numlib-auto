@@ -7,10 +7,10 @@ id = "discrete_sum"
 id = "discrete_sum_of_le"
 
 [[node]]
-id = "discrete_sum_const"
+id = "discrete_sum_const_of_le"
 
 [[node]]
-id = "discrete_sum_const_of_le"
+id = "discrete_sum_const"
 
 [[node]]
 id = "norm_discrete_sum"

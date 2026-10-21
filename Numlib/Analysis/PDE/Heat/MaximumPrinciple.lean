@@ -84,6 +84,16 @@ theorem IsTruncation.abs_le (hG : IsTruncation G) (s : ℝ) : |G s| ≤ |s| := b
 theorem IsTruncation.le_self (hG : IsTruncation G) {s : ℝ} (hs : 0 ≤ s) : G s ≤ s :=
   (le_abs_self _).trans ((hG.abs_le s).trans_eq (abs_of_nonneg hs))
 
+/-- `|G(s − K)| ≤ |s|` for `K ≥ 0`: the shift only moves the argument towards the region where
+`G` vanishes. -/
+theorem IsTruncation.abs_apply_sub_le (hG : IsTruncation G) {K : ℝ} (hK : 0 ≤ K) (s : ℝ) :
+    |G (s - K)| ≤ |s| := by
+  rcases le_or_gt (s - K) 0 with hs | hs
+  · rw [hG.eq_zero_of_nonpos _ hs, abs_zero]
+    exact abs_nonneg _
+  · rw [abs_of_pos (hG.pos_of_pos _ hs)]
+    exact (hG.le_self hs.le).trans ((sub_le_self _ hK).trans (le_abs_self _))
+
 /-- **The primitive `H(s) = ∫₀ˢ G`** of a truncation ([brezis2011functional], proof of
 Theorem 10.3). -/
 def truncationPrimitive (G : ℝ → ℝ) (s : ℝ) : ℝ := ∫ σ in (0 : ℝ)..s, G σ
@@ -174,7 +184,6 @@ theorem truncationPrimitive_sub_le_sq (hG : IsTruncation G) {K : ℝ} (hK : 0 �
   · rw [truncationPrimitive_of_nonpos hG hs]
     positivity
   · refine (truncationPrimitive_le_sq hG _).trans ?_
-    have : 0 ≤ s := by linarith
     nlinarith
 
 /-! ### The truncation functional `Φ(v) = ∫_Ω H(v − K)` on `L²(Ω)` -/
@@ -242,11 +251,7 @@ theorem memLp_truncation_sub (hG : IsTruncation G) {K : ℝ} (hK : 0 ≤ K)
     ((Lp.aestronglyMeasurable v).sub aestronglyMeasurable_const)) (c := 1)
     (Eventually.of_forall fun x ↦ ?_)
   rw [one_mul]
-  rcases le_or_gt (v x - K) 0 with hs | hs
-  · rw [hG.eq_zero_of_nonpos _ hs, abs_zero]
-    exact abs_nonneg _
-  · rw [abs_of_pos (hG.pos_of_pos _ hs)]
-    exact (hG.le_self hs.le).trans ((sub_le_self _ hK).trans (le_abs_self _))
+  exact hG.abs_apply_sub_le hK (v x)
 
 variable (Ω) in
 /-- **The truncation `G(v − K)` as an element of `L²(Ω)`**, the book's `G(u(t) − K)`. -/
@@ -269,11 +274,7 @@ theorem norm_truncationL2_le (hG : IsTruncation G) {K : ℝ} (hK : 0 ≤ K)
   refine Lp.norm_le_norm_of_ae_le ?_
   filter_upwards [coeFn_truncationL2 hG hK v] with x hx
   rw [hx, Real.norm_eq_abs, Real.norm_eq_abs]
-  rcases le_or_gt (v x - K) 0 with hs | hs
-  · rw [hG.eq_zero_of_nonpos _ hs, abs_zero]
-    exact abs_nonneg _
-  · rw [abs_of_pos (hG.pos_of_pos _ hs)]
-    exact (hG.le_self hs.le).trans ((sub_le_self _ hK).trans (le_abs_self _))
+  exact hG.abs_apply_sub_le hK (v x)
 
 /-- **The key estimate** `|Φ(v + w) − Φ(v) − ⟪G(v − K), w⟫| ≤ ‖w‖²` ([brezis2011functional],
 proof of Theorem 10.3, the differentiation of `φ`): integrate the pointwise second-order bound

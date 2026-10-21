@@ -113,49 +113,23 @@ variable {G F : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] [FiniteDimensi
 
 /-- **Approximate identities converge in `L^p`**: if the kernels `ρ n` are nonnegative,
 integrable, of integral `1`, supported in balls of radii `r n → 0`, and the convolutions
-`ρ n ⋆ f` exist, then `ρ n ⋆ f → f` in `L^p` for `f ∈ L^p`, `1 ≤ p < ∞`. The bound
-`MeasureTheory.eLpNorm_convolution_sub_rpow_le` is the `ρ n`-average of the translation errors
-`‖f(· − t) − f‖_p^p` over `‖t‖ ≤ r n`, which is small by the continuity of translation
-`MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate`. `ContDiffBump.tendsto_eLpNorm_convolution_sub`
-is the special case of normalized bumps; the general form is what the one-sided mollifiers
-`ρ_n(x) = n^N ρ(nx)`, `supp ρ ⊆ {1/2 < x_N < 1}`, of [brezis2011functional] §9.4, proof of
-Proposition 9.18 (iii) ⇒ (i), need. -/
+`ρ n ⋆ f` exist, then `ρ n ⋆ f → f` in `L^p` for `f ∈ L^p`, `1 ≤ p < ∞`. It is the case of
+`MeasureTheory.tendsto_eLpNorm_convolution_sub` in which the supports shrink to `0` through balls
+of radii `r n → 0`; the proof only turns that support condition into the `smallSets` one.
+`ContDiffBump.tendsto_eLpNorm_convolution_sub` is the special case of normalized bumps; the
+general form is what the one-sided mollifiers `ρ_n(x) = n^N ρ(nx)`, `supp ρ ⊆ {1/2 < x_N < 1}`, of
+[brezis2011functional] §9.4, proof of Proposition 9.18 (iii) ⇒ (i), need. -/
 theorem MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support {ι : Type*}
     {l : Filter ι} {ρ : ι → G → ℝ} {r : ι → ℝ} (hρ₀ : ∀ i t, 0 ≤ ρ i t)
     (hρ : ∀ i, Integrable (ρ i) μ) (hρ₁ : ∀ i, ∫ t, ρ i t ∂μ = 1)
     (hsupp : ∀ i, Function.support (ρ i) ⊆ closedBall 0 (r i)) (hr : Tendsto r l (𝓝 0))
     (hp : 1 ≤ p) (hp' : p ≠ ⊤) (hf : MemLp f p μ) :
     Tendsto (fun i ↦ eLpNorm (ρ i ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] f - f) p μ) l (𝓝 0) := by
-  have hq1 : (1 : ℝ) ≤ p.toReal := by
-    rw [← ENNReal.toReal_one]
-    exact ENNReal.toReal_mono hp' hp
-  have hq0 : (0 : ℝ) < p.toReal := lt_of_lt_of_le one_pos hq1
-  rw [ENNReal.tendsto_nhds_zero]
-  intro ε hε
-  have hnhds : {t : G | eLpNorm (fun x ↦ f (x - t) - f x) p μ < ε} ∈ 𝓝 (0 : G) :=
-    hf.tendsto_eLpNorm_sub_translate hp hp' (Iio_mem_nhds hε)
-  obtain ⟨δ, hδ, hδsub⟩ := Metric.mem_nhds_iff.1 hnhds
+  refine tendsto_eLpNorm_convolution_sub (Eventually.of_forall hρ₀) (Eventually.of_forall hρ)
+    (Eventually.of_forall hρ₁) (tendsto_smallSets_iff.2 fun t ht ↦ ?_) hp hp' hf
+  obtain ⟨δ, hδ, hδsub⟩ := Metric.mem_nhds_iff.1 ht
   filter_upwards [hr (Iio_mem_nhds hδ)] with i hi
-  have hkey : eLpNorm (ρ i ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] f - f) p μ ^ p.toReal
-      ≤ ε ^ p.toReal := by
-    refine (eLpNorm_convolution_sub_rpow_le hp hp' hf (hρ₀ i) (hρ i) (hρ₁ i)).trans ?_
-    have hpt : ∀ t : G, ‖ρ i t‖ₑ * eLpNorm (fun x ↦ f (x - t) - f x) p μ ^ p.toReal
-        ≤ ‖ρ i t‖ₑ * ε ^ p.toReal := by
-      intro t
-      by_cases ht : t ∈ ball (0 : G) δ
-      · gcongr
-        exact (hδsub ht).le
-      · have h0 : ρ i t = 0 := by
-          rw [← Function.notMem_support]
-          intro hmem
-          exact ht (closedBall_subset_ball (show r i < δ from hi) (hsupp i hmem))
-        simp [h0]
-    calc ∫⁻ t, ‖ρ i t‖ₑ * eLpNorm (fun x ↦ f (x - t) - f x) p μ ^ p.toReal ∂μ
-        ≤ ∫⁻ t, ‖ρ i t‖ₑ * ε ^ p.toReal ∂μ := lintegral_mono hpt
-      _ = ε ^ p.toReal := by
-          rw [lintegral_mul_const'' _ (hρ i).aestronglyMeasurable.enorm,
-            lintegral_enorm_eq_one (hρ₀ i) (hρ i) (hρ₁ i), one_mul]
-  exact (ENNReal.rpow_le_rpow_iff hq0).1 hkey
+  exact (hsupp i).trans ((closedBall_subset_ball hi).trans hδsub)
 
 end ApproximateIdentity
 
@@ -204,22 +178,6 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [CompleteSpace F] {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E} {n : ℕ} {y : Fin n → E}
   {f w : E → F} {p : ℝ≥0∞}
 
-omit [CompleteSpace F] in
-/-- **Mollification by a normalized bump does not increase an `L^∞` bound**: if `‖h‖ ≤ M`
-almost everywhere, then `‖(φ.normed μ ⋆ h) x‖ ≤ M` at every point, `φ.normed μ` being a
-nonnegative kernel of integral one. -/
-theorem ContDiffBump.norm_convolution_normed_le_of_ae_norm_le (φ : ContDiffBump (0 : E))
-    {h : E → F} {M : ℝ} (hM : ∀ᵐ z ∂μ, ‖h z‖ ≤ M) (x : E) :
-    ‖(φ.normed μ ⋆[lsmul ℝ ℝ, μ] h) x‖ ≤ M := by
-  rw [convolution_def]
-  have hbound : ∀ᵐ t ∂μ, ‖lsmul ℝ ℝ (φ.normed μ t) (h (x - t))‖ ≤ φ.normed μ t * M := by
-    filter_upwards [(measurePreserving_sub_left_of_isAddRightInvariant μ x)
-      |>.quasiMeasurePreserving.tendsto_ae.eventually hM] with t ht
-    rw [lsmul_apply, norm_smul, Real.norm_eq_abs, abs_of_nonneg (φ.nonneg_normed t)]
-    exact mul_le_mul_of_nonneg_left ht (φ.nonneg_normed t)
-  refine (norm_integral_le_of_norm_le (φ.integrable_normed.mul_const M) hbound).trans (le_of_eq ?_)
-  rw [integral_mul_const, φ.integral_normed, one_mul]
-
 /-- **The local approximation with an `L^∞` bound preserved**: the local approximation
 `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm` of
 `Numlib/Analysis/Sobolev/Mollification.lean` — on an open `V` with compact closure in `Ω`, smooth
@@ -242,77 +200,9 @@ theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_of_ae_nor
       Tendsto (fun j ↦ eLpNorm (fun x ↦ g j x - f x) p (μ.restrict V)) atTop (𝓝 0) ∧
       Tendsto (fun j ↦ eLpNorm (fun x ↦ iteratedFDeriv ℝ n (g j) x y - w x) p (μ.restrict V))
         atTop (𝓝 0) := by
-  obtain ⟨W, -, hWo, hVW, -, hWc, hWΩ, -⟩ := hVc.exists_pos_forall_closedBall_subset Ω.isOpen hVΩ
-  obtain ⟨V', ε, hV'o, hVV', hε, -, -, hV'ball⟩ := hVc.exists_pos_forall_closedBall_subset hWo hVW
-  set C : Set E := closure W with hCdef
-  have hCmeas : MeasurableSet C := hWc.isClosed.measurableSet
-  have hWC : W ⊆ interior C := interior_maximal subset_closure hWo
-  have hVC : V ⊆ C := (subset_closure.trans hVW).trans subset_closure
-  set f' : E → F := C.indicator f with hf'def
-  set w' : E → F := C.indicator w with hw'def
-  have hf'Lp : MemLp f' p μ :=
-    (memLp_indicator_iff_restrict hCmeas).2 (hf.memLp_restrict_of_compact_subset hp' hWΩ hWc)
-  have hw'Lp : MemLp w' p μ :=
-    (memLp_indicator_iff_restrict hCmeas).2 (hw.memLp_restrict_of_compact_subset hp' hWΩ hWc)
-  have hf'loc : LocallyIntegrable f' μ := hf'Lp.locallyIntegrable hp
-  have hf'M : ∀ᵐ z ∂μ, ‖f' z‖ ≤ M := by
-    filter_upwards [(ae_restrict_iff' Ω.isOpen.measurableSet).1 hM] with z hz
-    by_cases hzC : z ∈ C
-    · rw [hf'def, Set.indicator_of_mem hzC]
-      exact hz (hWΩ hzC)
-    · rw [hf'def, Set.indicator_of_notMem hzC, norm_zero]
-      exact hM0
-  have hint : HasWeakIteratedLineDerivOn y f' w' ⟨interior C, isOpen_interior⟩ μ :=
-    (h.mono (interior_subset.trans hWΩ)).congr_ae
-      (Filter.eventually_of_mem (self_mem_ae_restrict isOpen_interior.measurableSet)
-        fun z hz ↦ (Set.indicator_of_mem (interior_subset hz) f).symm)
-      (Filter.eventually_of_mem (self_mem_ae_restrict isOpen_interior.measurableSet)
-        fun z hz ↦ (Set.indicator_of_mem (interior_subset hz) w).symm)
-  set φ : ℕ → ContDiffBump (0 : E) := fun j ↦
-    ⟨ε / (2 * (j + 2)), ε / (j + 2), by positivity, by
-      apply div_lt_div_of_pos_left hε (by positivity)
-      nlinarith [(Nat.cast_nonneg j : (0:ℝ) ≤ j)]⟩ with hφdef
-  have hrOut : ∀ j, (φ j).rOut = ε / (j + 2) := fun j ↦ rfl
-  have hrOutle : ∀ j, (φ j).rOut ≤ ε := fun j ↦ by
-    rw [hrOut]
-    rw [div_le_iff₀ (by positivity)]
-    nlinarith [(Nat.cast_nonneg j : (0:ℝ) ≤ j)]
-  have htend : Tendsto (fun j ↦ (φ j).rOut) atTop (𝓝 0) := by
-    simp only [hrOut]
-    exact tendsto_const_nhds.div_atTop
-      (tendsto_atTop_add_const_right _ 2 tendsto_natCast_atTop_atTop)
-  set g : ℕ → E → F := fun j ↦ (φ j).normed μ ⋆[lsmul ℝ ℝ, μ] f' with hgdef
-  have hball : ∀ j, ∀ x ∈ V, closedBall x (φ j).rOut ⊆ interior C := fun j x hx ↦
-    ((closedBall_subset_closedBall (hrOutle j)).trans
-      (hV'ball x (hVV' (subset_closure hx)))).trans hWC
-  have hderivEq : ∀ j, ∀ x ∈ V, iteratedFDeriv ℝ n (g j) x y
-      = ((φ j).normed μ ⋆[lsmul ℝ ℝ, μ] w') x := fun j x hx ↦
-    hint.iteratedFDeriv_convolution (φ j).contDiff_normed
-      (le_of_eq ((φ j).tsupport_normed_eq (μ := μ))) (hball j x hx)
-  have hconvLp : ∀ (j : ℕ) (c : E → F), MemLp c p μ →
-      MemLp ((φ j).normed μ ⋆[lsmul ℝ ℝ, μ] c) p μ := fun j _ hc ↦
-    MemLp.convolution hp (memLp_one_iff_integrable.2 (φ j).integrable_normed) hc
-  refine ⟨g, fun j ↦ (φ j).hasCompactSupport_normed.contDiff_convolution_left _
-    (φ j).contDiff_normed hf'loc, fun j ↦ (hconvLp j f' hf'Lp).restrict V, fun j ↦ ?_,
-    fun j x ↦ (φ j).norm_convolution_normed_le_of_ae_norm_le hf'M x, ?_, ?_⟩
-  · refine ((hconvLp j w' hw'Lp).restrict V).ae_eq ?_
-    filter_upwards [self_mem_ae_restrict hVo.measurableSet] with x hx
-    exact (hderivEq j x hx).symm
-  · refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
-      (ContDiffBump.tendsto_eLpNorm_convolution_sub htend hp hp' hf'Lp)
-      (fun _ ↦ zero_le) (fun j ↦ ?_)
-    refine le_trans (le_of_eq (eLpNorm_congr_ae ?_))
-      (eLpNorm_mono_measure _ Measure.restrict_le_self)
-    filter_upwards [self_mem_ae_restrict hVo.measurableSet] with x hx
-    simp [hgdef, hf'def, Set.indicator_of_mem (hVC hx)]
-  · refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
-      (ContDiffBump.tendsto_eLpNorm_convolution_sub htend hp hp' hw'Lp)
-      (fun _ ↦ zero_le) (fun j ↦ ?_)
-    refine le_trans (le_of_eq (eLpNorm_congr_ae ?_))
-      (eLpNorm_mono_measure _ Measure.restrict_le_self)
-    filter_upwards [self_mem_ae_restrict hVo.measurableSet] with x hx
-    rw [hderivEq j x hx]
-    simp [hw'def, Set.indicator_of_mem (hVC hx)]
+  obtain ⟨g, hgs, hgp, hgdp, hgt, hgdt, hgM⟩ :=
+    h.exists_seq_contDiff_tendsto_eLpNorm_and_norm_le hf hw hp hp' hVo hVc hVΩ
+  exact ⟨g, hgs, hgp, hgdp, hgM M hM0 hM, hgt, hgdt⟩
 
 end BoundedApprox
 
@@ -512,7 +402,6 @@ norm of the function, on the whole space: Young's inequality order by order. -/
 theorem MemSobolev.sobolevNorm_convolution_le {k : ℕ} (hv : MemSobolev v k p ⊤ μ) {ρ : E → ℝ}
     (hρ : Integrable ρ μ) (hp : 1 ≤ p) :
     sobolevNorm (ρ ⋆[lsmul ℝ ℝ, μ] v) k p ⊤ μ ≤ eLpNorm ρ 1 μ * sobolevNorm v k p ⊤ μ := by
-  have hρ1 : MemLp ρ 1 μ := memLp_one_iff_integrable.2 hρ
   have hterm : ∀ m ≤ k, eLpNorm (weakIteratedFDeriv m (ρ ⋆[lsmul ℝ ℝ, μ] v) ⊤ μ) p
       (μ.restrict ((⊤ : Opens E) : Set E))
       ≤ eLpNorm ρ 1 μ
@@ -1334,24 +1223,18 @@ theorem ContinuousLinearMap.norm_le_sum_norm_apply_single {G : Type*} [NormedAdd
         rw [Finset.sum_mul]
         exact Finset.sum_congr rfl fun i _ ↦ mul_comm _ _
 
-/-- **Proposition 9.3, (i) ⇒ (iii), on `W^{1,p}(ℝ^N)`**: for `u ∈ W^{1,p}(ℝ^N)`, `1 ≤ p < ∞`,
-and every `a ∈ ℝ^N`, `‖u(· + a) − u‖_{L^p} ≤ ‖a‖ ∑_i ‖∂_i u‖_{L^p}` — the book's
-`‖τ_h u − u‖_{L^p(ℝ^N)} ≤ |h| ‖∇u‖_{L^p(ℝ^N)}`, with the gradient measured by the `ℓ¹` sum of
-its components (the operator norm of the derivative tensor is at most that sum,
-`ContinuousLinearMap.norm_le_sum_norm_apply_single`). This is the uniform translation modulus
-that the Kolmogorov–Riesz–Fréchet theorem needs of a bounded set of `W^{1,p}(ℝ^N)`; see
-`SobolevEuclidean.eLpNorm_fn_sub_translate_le_gradNorm` for the form with `gradNorm`. -/
-theorem SobolevEuclidean.eLpNorm_fn_sub_translate_le (hp' : p ≠ ⊤) (u : SobolevEuclidean N 1 p ⊤)
-    (a : EuclideanSpace ℝ (Fin N)) :
-    eLpNorm (fun x ↦ fn u (x + a) - fn u x) p volume
-      ≤ ‖a‖ₑ * ∑ i, ENNReal.ofReal ‖weakDeriv u (MultiIndexLE.single i)‖ := by
+/-- The tensor weak derivative of `u ∈ W^{1,p}(ℝ^N)` is bounded in `L^p` by the `ℓ¹` sum of the
+`L^p` norms of the partial derivatives: the operator norm of the derivative tensor is at most the
+sum of the norms of its values on the standard basis. -/
+theorem SobolevEuclidean.eLpNorm_le_sum_of_hasWeakFDerivOn (u : SobolevEuclidean N 1 p ⊤)
+    {w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ}
+    (hw : HasWeakFDerivOn (fn u) w ⊤ volume) :
+    eLpNorm w p volume ≤ ∑ i, ENNReal.ofReal ‖weakDeriv u (MultiIndexLE.single i)‖ := by
   classical
   have hp : 1 ≤ p := Fact.out
-  have hf : MemSobolev (fn u) 1 p ⊤ volume := (memSobolevMultiIndex u).memSobolev
-  obtain ⟨w, hw, hwp⟩ := hf.exists_hasWeakFDerivOn
-  rw [Measure.restrict_coe_top] at hwp
-  refine (hw.eLpNorm_sub_translate_le_univ hf.memLp_top hwp hp hp' a).trans
-    (mul_le_mul' le_rfl ?_)
+  have hwm : AEStronglyMeasurable w volume :=
+    (locallyIntegrableOn_univ.1 (by simpa using hw.locallyIntegrableOn_weakDeriv)
+      |>.aestronglyMeasurable)
   -- the components of `w` are the partial derivatives
   have hcomp : ∀ i, (fun x ↦ w x (EuclideanSpace.single i 1))
       =ᵐ[volume] weakDeriv u (MultiIndexLE.single i) := by
@@ -1376,7 +1259,7 @@ theorem SobolevEuclidean.eLpNorm_fn_sub_translate_le (hp' : p ≠ ⊤) (u : Sobo
     exact Finset.sum_congr rfl fun i _ ↦ by rw [hx i]
   calc eLpNorm w p volume
       ≤ eLpNorm (fun x ↦ ∑ i, ‖weakDeriv u (MultiIndexLE.single i) x‖) p volume :=
-        eLpNorm_mono_ae hwp.aestronglyMeasurable hbound
+        eLpNorm_mono_ae hwm hbound
     _ = eLpNorm (∑ i, fun x ↦ ‖weakDeriv u (MultiIndexLE.single i) x‖) p volume := by
         congr 1
         funext x
@@ -1390,6 +1273,26 @@ theorem SobolevEuclidean.eLpNorm_fn_sub_translate_le (hp' : p ≠ ⊤) (u : Sobo
             Lp.aestronglyMeasurable (weakDeriv u (MultiIndexLE.single i))
         rw [eLpNorm_norm _ hm, Lp.norm_def, ENNReal.ofReal_toReal (Lp.eLpNorm_ne_top _),
           eLpNorm_restrict_coe_top]
+
+/-- **Proposition 9.3, (i) ⇒ (iii), on `W^{1,p}(ℝ^N)`**: for `u ∈ W^{1,p}(ℝ^N)`, `1 ≤ p < ∞`,
+and every `a ∈ ℝ^N`, `‖u(· + a) − u‖_{L^p} ≤ ‖a‖ ∑_i ‖∂_i u‖_{L^p}` — the book's
+`‖τ_h u − u‖_{L^p(ℝ^N)} ≤ |h| ‖∇u‖_{L^p(ℝ^N)}`, with the gradient measured by the `ℓ¹` sum of
+its components (the operator norm of the derivative tensor is at most that sum,
+`ContinuousLinearMap.norm_le_sum_norm_apply_single`). This is the uniform translation modulus
+that the Kolmogorov–Riesz–Fréchet theorem needs of a bounded set of `W^{1,p}(ℝ^N)`; see
+`SobolevEuclidean.eLpNorm_fn_sub_translate_le_gradNorm` for the form with `gradNorm`. -/
+theorem SobolevEuclidean.eLpNorm_fn_sub_translate_le (hp' : p ≠ ⊤) (u : SobolevEuclidean N 1 p ⊤)
+    (a : EuclideanSpace ℝ (Fin N)) :
+    eLpNorm (fun x ↦ fn u (x + a) - fn u x) p volume
+      ≤ ‖a‖ₑ * ∑ i, ENNReal.ofReal ‖weakDeriv u (MultiIndexLE.single i)‖ := by
+  classical
+  have hp : 1 ≤ p := Fact.out
+  have hf : MemSobolev (fn u) 1 p ⊤ volume := (memSobolevMultiIndex u).memSobolev
+  obtain ⟨w, hw, hwp⟩ := hf.exists_hasWeakFDerivOn
+  rw [Measure.restrict_coe_top] at hwp
+  refine (hw.eLpNorm_sub_translate_le_univ hf.memLp_top hwp hp hp' a).trans
+    (mul_le_mul' le_rfl ?_)
+  exact SobolevEuclidean.eLpNorm_le_sum_of_hasWeakFDerivOn u hw
 
 /-- **Proposition 9.3, (i) ⇒ (iii), on `W^{1,p}(ℝ^N)`, with the gradient norm**: for
 `u ∈ W^{1,p}(ℝ^N)`, `1 ≤ p < ∞`, `‖u(· + a) − u‖_{L^p} ≤ N ‖a‖ ‖∇u‖` with
@@ -1438,7 +1341,6 @@ theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt
     ‖∫ x in (Ω : Set E), fderiv ℝ φ x y • u x ∂μ‖ₑ
       ≤ C * ‖y‖ₑ * eLpNorm φ q (μ.restrict (Ω : Set E)) := by
   have hp : 1 ≤ p := ENNReal.HolderConjugate.one_le p q
-  have hΩm : MeasurableSet (Ω : Set E) := Ω.isOpen.measurableSet
   have huloc : LocallyIntegrableOn u Ω μ := hu.locallyIntegrableOn hp
   -- two relatively compact open neighbourhoods of the support of `φ`
   obtain ⟨W, -, hWo, hφW, -, hWc, hWΩ, -⟩ :=
@@ -1656,9 +1558,6 @@ theorem HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae (h : HasWeakFDerivOn 
   -- the truncations
   have hu' : Integrable (C.indicator u) μ :=
     (integrable_indicator_iff hCm).2 (h.locallyIntegrableOn.integrableOn_compact_subset hCΩ hCc)
-  have hw' : Integrable (C.indicator w) μ :=
-    (integrable_indicator_iff hCm).2
-      (h.locallyIntegrableOn_weakDeriv.integrableOn_compact_subset hCΩ hCc)
   have hint : HasWeakFDerivOn (C.indicator u) (C.indicator w) ⟨interior C, isOpen_interior⟩ μ :=
     (HasWeakIteratedFDerivOn.mono h (interior_subset.trans hCΩ)).congr_ae
       (Filter.eventually_of_mem (self_mem_ae_restrict isOpen_interior.measurableSet)
@@ -1762,7 +1661,6 @@ theorem HasWeakFDerivOn.eLpNorm_sub_translate_le_top (h : HasWeakFDerivOn u w Ω
       rintro _ ⟨t, ht, rfl⟩
       simpa using hUK x hx t ht
     obtain ⟨C, φ, hCc, hCΩ, -, -, hgs, hgd, hgt⟩ := h.exists_seq_contDiffBump_tendsto_ae hKc hKΩ
-    have hCm : MeasurableSet C := hCc.isClosed.measurableSet
     -- the gradient bound on `K`
     have hwC : ∀ᵐ z ∂μ, ‖C.indicator w z‖ ≤ M := by
       filter_upwards [(ae_restrict_iff' hΩm).1 hwM] with z hz

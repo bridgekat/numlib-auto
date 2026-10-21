@@ -132,6 +132,13 @@ theorem toEuclideanLin_conjTranspose_inner_right {m : Type*} [Fintype m] [Decida
     inner 𝕜 x (toEuclideanLin Aᴴ y) = inner 𝕜 (toEuclideanLin A x) y := by
   rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.adjoint_inner_right]
 
+/-- The quadratic form of a congruence `Xᴴ A X` at `y` is that of `A` at `X y`. -/
+theorem inner_toEuclideanLin_conjTranspose_mul_mul_apply {m : Type*} [Fintype m] [DecidableEq m]
+    (A : Matrix m m 𝕜) (X : Matrix m n 𝕜) (y : EuclideanSpace 𝕜 n) :
+    inner 𝕜 (toEuclideanLin (Xᴴ * A * X) y) y =
+      inner 𝕜 (toEuclideanLin A (toEuclideanLin X y)) (toEuclideanLin X y) := by
+  rw [toEuclideanLin_mul_apply, toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose_inner_left]
+
 /-- Over a field with trivial star (`ℝ`), the adjoint of `toEuclideanLin A` is `toEuclideanLin Aᵀ`,
 for rectangular matrices too: `Matrix.toEuclideanLin_conjTranspose_eq_adjoint` with `Aᴴ = Aᵀ`. -/
 theorem toEuclideanLin_transpose_eq_adjoint [TrivialStar 𝕜] {m : Type*} [Fintype m]
@@ -216,6 +223,13 @@ theorem toEuclideanLin_apply_eq_sum [Fintype m] [DecidableEq m] (V : Matrix n m 
   simp [toLpLin_apply, mulVec, dotProduct, mul_comm]
 
 end Coordinates
+
+/-- Mathlib's quadratic form `x ↦ x ⬝ᵥ A x` of a real matrix is the quadratic form of its Euclidean
+operator. -/
+theorem toQuadraticForm'_ofLp (A : Matrix n n ℝ) (x : EuclideanSpace ℝ n) :
+    Matrix.toQuadraticForm' A (WithLp.ofLp x) = RCLike.re (inner ℝ (toEuclideanLin A x) x) := by
+  rw [Matrix.toQuadraticForm', LinearMap.BilinMap.toQuadraticMap_apply, toLinearMap₂'_apply',
+    RCLike.re_to_real, EuclideanSpace.inner_eq_star_dotProduct, ofLp_toEuclideanLin, star_trivial]
 
 section Columns
 

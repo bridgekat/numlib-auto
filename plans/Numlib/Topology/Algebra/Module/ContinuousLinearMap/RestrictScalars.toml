@@ -1,0 +1,4 @@
+namespace = "ContinuousLinearMap"
+
+[[node]]
+id = "restrictScalars_pow"

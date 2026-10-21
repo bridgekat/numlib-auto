@@ -11,7 +11,8 @@ polynomial identification that gives each its meaning ([saad2003iterative] §7.4
 line the same).
 
 As for `BCG` in `Numlib/Krylov/BiLanczos`, the operator is `A : E →ₗ[𝕜] E` on an inner product
-space and its adjoint is a second operator `B` with `⟪A x, y⟫ = ⟪x, B y⟫`, taken as data.
+space and its adjoint is a second operator `B` with `⟪A x, y⟫ = ⟪x, B y⟫`, taken as data
+(`LinearMap.IsAdjointPair`, `LinearMap.isAdjointPair_inner_iff'`).
 
 ## Main definitions
 
@@ -296,7 +297,7 @@ variable {A b x₀ rs₀}
 
 section Polynomial
 
-variable {B : E →ₗ[𝕜] E} (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
+variable {B : E →ₗ[𝕜] E} (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B)
 include hB
 
 /-- The numerator of the BCG `α_j`: `⟪r*_j, r_j⟫ = ⟪r*₀, φ_j²(A) r₀⟫`. -/
@@ -565,7 +566,8 @@ variable {B : E →ₗ[𝕜] E}
 
 /-- **Only the leading coefficient survives**: for `deg q ≤ j` and `v` orthogonal to
 `𝒦_j(B, r*₀)`, `⟪r*₀, q(A) v⟫ = q_j ⟪B^j r*₀, v⟫`. -/
-private theorem inner_aeval_eq_coeff_mul (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
+private theorem inner_aeval_eq_coeff_mul
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B)
     {j : ℕ} {p : 𝕜[X]} (hp : p.natDegree ≤ j) {v : E}
     (hv : ∀ u ∈ Krylov.subspace B rs₀ j, inner 𝕜 u v = 0) :
     inner 𝕜 rs₀ (aeval A p v) = p.coeff j * inner 𝕜 ((B ^ j) rs₀) v := by

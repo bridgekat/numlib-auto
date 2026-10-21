@@ -39,6 +39,14 @@ theorem contDiff_fderiv_fderiv_apply {θ : E → ℝ} (hθ : ContDiff ℝ ∞ θ
 
 variable {N : ℕ}
 
+/-- The support of the Laplacian `∑ᵢ ∂ᵢ∂ᵢθ` of a function `θ` lies in the support of `θ`. -/
+theorem tsupport_laplacianRep_subset {θ : EuclideanSpace ℝ (Fin N) → ℝ} :
+    tsupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
+      (EuclideanSpace.single i 1)) ⊆ tsupport θ := by
+  refine closure_minimal ((Finset.support_sum _ _).trans ?_) (isClosed_tsupport θ)
+  refine Set.iUnion₂_subset fun i _ ↦ subset_closure.trans ?_
+  exact (tsupport_fderiv_apply_subset ℝ _).trans (tsupport_fderiv_apply_subset ℝ _)
+
 /-- The Laplacian `Δθ = ∑ᵢ ∂ᵢ∂ᵢθ` of a smooth compactly supported `θ` is smooth, compactly
 supported, with support inside the support of `θ`. -/
 theorem laplacianRep_props {θ : EuclideanSpace ℝ (Fin N) → ℝ} (hθ : ContDiff ℝ ∞ θ)
@@ -48,14 +56,10 @@ theorem laplacianRep_props {θ : EuclideanSpace ℝ (Fin N) → ℝ} (hθ : Cont
     HasCompactSupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
       (EuclideanSpace.single i 1)) ∧
     tsupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
-      (EuclideanSpace.single i 1)) ⊆ tsupport θ := by
-  have hsub : tsupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
-      (EuclideanSpace.single i 1)) ⊆ tsupport θ := by
-    refine closure_minimal ((Finset.support_sum _ _).trans ?_) (isClosed_tsupport θ)
-    refine Set.iUnion₂_subset fun i _ ↦ subset_closure.trans ?_
-    exact (tsupport_fderiv_apply_subset ℝ _).trans (tsupport_fderiv_apply_subset ℝ _)
-  refine ⟨ContDiff.sum fun i _ ↦ contDiff_fderiv_fderiv_apply hθ _,
-    hθc.of_isClosed_subset (isClosed_tsupport _) hsub, hsub⟩
+      (EuclideanSpace.single i 1)) ⊆ tsupport θ :=
+  ⟨ContDiff.sum fun _ _ ↦ contDiff_fderiv_fderiv_apply hθ _,
+    hθc.of_isClosed_subset (isClosed_tsupport _) tsupport_laplacianRep_subset,
+    tsupport_laplacianRep_subset⟩
 
 end Elliptic
 

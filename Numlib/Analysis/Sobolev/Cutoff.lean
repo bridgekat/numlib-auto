@@ -45,7 +45,9 @@ finite-dimensional real normed space with an additive Haar measure:
   places `θ u` in `W^{k,p}(E)` for a test function `θ` on `Ω`;
 * **the abstract extension predicate** `HasSobolevExtensionOn S` / `IsSobolevExtensionDomain N p Ω`
   ("a bounded linear extension operator `W^{1,p}(Ω) → W^{1,p}(ℝ^N)` exists on `S`"), under which
-  the embedding and compactness theorems on a domain are stated once.
+  the embedding and compactness theorems on a domain are stated once;
+* **almost everywhere invariance**: the Sobolev seminorm and norm see the function only up to a
+  null set of `Ω` (`sobolevSeminorm_congr_ae`, `sobolevNorm_congr_ae`).
 
 The typed operators between the spaces — restriction `SobolevMultiIndex.restrictL`, the zero
 extension `extendZeroMulL`, the inclusions `toLpₗ`, `toLowerExponentL`, `toLowerOrderL`, the
@@ -1226,22 +1228,30 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure]
 
 omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
+/-- The Sobolev seminorm only sees the function up to a null set of `Ω`: the chosen weak
+derivatives of two almost everywhere equal functions are almost everywhere equal, or both
+absent. -/
+theorem sobolevSeminorm_congr_ae {k : ℕ} {f g : E → F} (hfg : f =ᵐ[μ.restrict (Ω : Set E)] g) :
+    sobolevSeminorm f k p Ω μ = sobolevSeminorm g k p Ω μ := by
+  by_cases h : ∃ w, HasWeakIteratedFDerivOn k f w Ω μ
+  · obtain ⟨w, hw⟩ := h
+    unfold sobolevSeminorm
+    rw [eLpNorm_congr_ae
+        ((ae_restrict_iff' Ω.isOpen.measurableSet).2 hw.weakIteratedFDeriv_ae_eq),
+      eLpNorm_congr_ae ((ae_restrict_iff' Ω.isOpen.measurableSet).2
+        (hw.congr_ae hfg (Filter.EventuallyEq.refl _ _)).weakIteratedFDeriv_ae_eq)]
+  · have h' : ¬ ∃ w, HasWeakIteratedFDerivOn k g w Ω μ := fun ⟨w, hw⟩ ↦
+      h ⟨w, hw.congr_ae hfg.symm (Filter.EventuallyEq.refl _ _)⟩
+    simp only [sobolevSeminorm, weakIteratedFDeriv, dite_eq_right h, dite_eq_right h']
+
+omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
 /-- The Sobolev norm only sees the function up to a null set of `Ω`: the chosen weak derivatives
 of two almost everywhere equal functions are almost everywhere equal, or both absent. -/
 theorem sobolevNorm_congr_ae {k : ℕ} {f g : E → F} (hfg : f =ᵐ[μ.restrict (Ω : Set E)] g) :
     sobolevNorm f k p Ω μ = sobolevNorm g k p Ω μ := by
   have key : ∀ n : ℕ, eLpNorm (weakIteratedFDeriv n f Ω μ) p (μ.restrict (Ω : Set E))
-      = eLpNorm (weakIteratedFDeriv n g Ω μ) p (μ.restrict (Ω : Set E)) := by
-    intro n
-    by_cases h : ∃ w, HasWeakIteratedFDerivOn n f w Ω μ
-    · obtain ⟨w, hw⟩ := h
-      rw [eLpNorm_congr_ae
-          ((ae_restrict_iff' Ω.isOpen.measurableSet).2 hw.weakIteratedFDeriv_ae_eq),
-        eLpNorm_congr_ae ((ae_restrict_iff' Ω.isOpen.measurableSet).2
-          (hw.congr_ae hfg (Filter.EventuallyEq.refl _ _)).weakIteratedFDeriv_ae_eq)]
-    · have h' : ¬ ∃ w, HasWeakIteratedFDerivOn n g w Ω μ := fun ⟨w, hw⟩ ↦
-        h ⟨w, hw.congr_ae hfg.symm (Filter.EventuallyEq.refl _ _)⟩
-      simp only [weakIteratedFDeriv, dite_eq_right h, dite_eq_right h']
+      = eLpNorm (weakIteratedFDeriv n g Ω μ) p (μ.restrict (Ω : Set E)) := fun _ ↦
+    sobolevSeminorm_congr_ae hfg
   rcases eq_or_ne p ⊤ with rfl | hp
   · simp only [sobolevNorm, key, ↓reduceIte]
   · simp only [sobolevNorm, hp, key, ↓reduceIte]
@@ -1348,15 +1358,23 @@ theorem ofReal_norm_le_sobolevNorm_of_order {k : ℕ} (hp' : p ≠ ⊤)
     _ = _ := by rw [Finset.sum_mul]
 
 omit [Fact (1 ≤ p)] in
+/-- A `C^k` function with compact support is the function of an element of `W^{k,p}(Ω)`: the
+`C^∞` case is `ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport`. -/
+theorem _root_.ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport' {k : ℕ} {v : E → F}
+    (hv : ContDiff ℝ k v) (hvc : HasCompactSupport v) :
+    ∃ u : SobolevMultiIndex F b k p Ω μ, SobolevMultiIndex.fn u =ᵐ[μ.restrict (Ω : Set E)] v := by
+  refine MemSobolevMultiIndex.exists_sobolevMultiIndex (MemSobolev.memSobolevMultiIndex ?_)
+  refine ⟨(hv.continuous.memLp_of_hasCompactSupport hvc).restrict _, fun n hn ↦ ⟨_,
+    ContDiffOn.hasWeakIteratedFDerivOn hv.contDiffOn (by exact_mod_cast hn), ?_⟩⟩
+  exact ((hv.continuous_iteratedFDeriv (m := n) (by exact_mod_cast hn)).memLp_of_hasCompactSupport
+    (hvc.iteratedFDeriv n)).restrict _
+
+omit [Fact (1 ≤ p)] in
 /-- A smooth compactly supported function is the function of an element of `W^{k,p}(Ω)`. -/
 theorem _root_.ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport {k : ℕ} {v : E → F}
     (hv : ContDiff ℝ ∞ v) (hvc : HasCompactSupport v) :
-    ∃ u : SobolevMultiIndex F b k p Ω μ, fn u =ᵐ[μ.restrict (Ω : Set E)] v := by
-  refine MemSobolevMultiIndex.exists_sobolevMultiIndex (MemSobolev.memSobolevMultiIndex ?_)
-  refine ⟨(hv.continuous.memLp_of_hasCompactSupport hvc).restrict _, fun n _ ↦ ⟨_,
-    ContDiffOn.hasWeakIteratedFDerivOn hv.contDiffOn (by simp), ?_⟩⟩
-  exact ((hv.continuous_iteratedFDeriv (m := n) (by simp)).memLp_of_hasCompactSupport
-    (hvc.iteratedFDeriv n)).restrict _
+    ∃ u : SobolevMultiIndex F b k p Ω μ, fn u =ᵐ[μ.restrict (Ω : Set E)] v :=
+  (hv.of_le (by simp)).exists_sobolevMultiIndex_of_hasCompactSupport' hvc
 
 /-- **A smooth function is the function of an element of `W^{k,p}(Ω)` for a bounded open `Ω`**:
 multiply it by a smooth compactly supported cutoff equal to `1` on `closure Ω`. -/

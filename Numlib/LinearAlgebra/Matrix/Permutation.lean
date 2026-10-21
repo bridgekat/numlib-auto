@@ -363,7 +363,6 @@ theorem cyclicShift_pow_mulVec_apply {n : ℕ} (φ : R) (x : Fin n → R) {k : �
   induction k generalizing i with
   | zero => simp
   | succ k ih =>
-    have hi := i.is_lt
     rw [pow_succ', ← mulVec_mulVec, cyclicShift_mulVec_apply]
     split_ifs with h0 h1 h1
     · omega

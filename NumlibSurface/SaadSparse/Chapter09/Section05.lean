@@ -122,11 +122,11 @@ theorem isGalerkin_adjoint_comp_iff_isMinResidual (A : Matrix (Fin n) (Fin n) �
     rintro _ ⟨w, hw, rfl⟩
     have h := (Submodule.mem_orthogonal _ _).1 horth w hw
     rwa [LinearMap.comp_apply, ← map_sub,
-      ← LinearMap.inner_apply_eq_inner_apply_of_adjoint (Chapter08.inner_op_conjTranspose A)] at h
+      ← Chapter07.inner_op_conjTranspose A] at h
   · refine ⟨hmem, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩
     have h := (Submodule.mem_orthogonal _ _).1 horth (op A w) (Submodule.mem_map_of_mem hw)
     rwa [LinearMap.comp_apply, ← map_sub,
-      ← LinearMap.inner_apply_eq_inner_apply_of_adjoint (Chapter08.inner_op_conjTranspose A)]
+      ← Chapter07.inner_op_conjTranspose A]
 
 /-- **CGNE's optimality over an arbitrary subspace.** If `u` is a Galerkin iterate for
 `A Aᴴ u = b` over `u₀ + K` and `x = x₀ + Aᴴ (u - u₀)`, then `x` minimizes the *error*
@@ -150,7 +150,7 @@ theorem isMinError_of_isGalerkin_comp_adjoint (A : Matrix (Fin n) (Fin n) 𝕜)
   have h2 : op A x₀ = (op A ∘ₗ op Aᴴ) u₀ := by rw [hx₀, LinearMap.comp_apply]
   have hA : op A ((xstar - x₀) - op Aᴴ (u - u₀)) = b - (op A ∘ₗ op Aᴴ) u := by
     rw [map_sub, map_sub, hstar, h1, h2]; abel
-  rw [← LinearMap.inner_apply_eq_inner_apply_of_adjoint (Chapter08.inner_op_conjTranspose A), hA,
+  rw [← Chapter07.inner_op_conjTranspose A, hA,
     ← inner_conj_symm,
     (Submodule.mem_orthogonal _ _).1 hu.orth z hz, map_zero]
 
@@ -281,7 +281,8 @@ theorem pcgnr_isMinResidual (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c
     rw [op_mul_apply, ← map_sub]
   have hcoer' : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x)
       ≤ RCLike.re (inner 𝕜 (op (Aᴴ * A) x) x) := fun x => by
-    rw [op_mul, Krylov.inner_adjoint_comp_self (Chapter08.inner_op_conjTranspose A) x,
+    rw [op_mul, Krylov.inner_adjoint_comp_self
+      (LinearMap.isAdjointPair_inner_iff.2 (Chapter08.inner_op_conjTranspose A)) x,
       RCLike.ofReal_re]
     exact hcoer x
   have h := pcg_isGalerkinIterate (A := Aᴴ * A) (M := M) hM (isSymmetric_conjTranspose_mul A)
@@ -422,7 +423,8 @@ theorem pcgne_isMinError (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : 
   have hres : b - op (A * Aᴴ) u₀ = b - op A x₀ := by rw [op_mul_apply, hu₀]
   have hcoer' : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x)
       ≤ RCLike.re (inner 𝕜 (op (A * Aᴴ) x) x) := fun x => by
-    rw [op_mul, Krylov.inner_adjoint_comp_self (Chapter07.inner_op_conjTranspose A) x,
+    rw [op_mul, Krylov.inner_adjoint_comp_self
+      (LinearMap.isAdjointPair_inner_iff.2 (Chapter07.inner_op_conjTranspose A)) x,
       RCLike.ofReal_re]
     exact hcoer x
   have h := pcg_isGalerkinIterate (A := A * Aᴴ) (M := M) hM (isSymmetric_mul_conjTranspose A)

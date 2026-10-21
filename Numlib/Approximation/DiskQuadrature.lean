@@ -70,16 +70,8 @@ noncomputable def unitIntervalMeasure : Measure ℝ := volume.restrict (Set.Ioo 
 
 /-- Lebesgue measure on `(0, 1)` has finite moments and infinite support, so Gauss quadrature
 applies to it. -/
-theorem isWeight_unitIntervalMeasure : IsWeight unitIntervalMeasure := by
-  constructor
-  · intro n
-    exact ((continuous_pow n).continuousOn.integrableOn_Icc
-      (a := (0 : ℝ)) (b := 1)).mono_set Set.Ioo_subset_Icc_self
-  · intro s hs hzero
-    rw [unitIntervalMeasure, Measure.restrict_apply hs.measurableSet.compl] at hzero
-    rw [show sᶜ ∩ Set.Ioo (0 : ℝ) 1 = Set.Ioo (0 : ℝ) 1 \ s by ext x; simp [and_comm],
-      measure_sdiff_null (hs.measure_zero volume), Real.volume_Ioo] at hzero
-    norm_num at hzero
+theorem isWeight_unitIntervalMeasure : IsWeight unitIntervalMeasure :=
+  isWeight_volume_restrict_Ioo zero_lt_one
 
 /-- If a polynomial is nonnegative on `(0, 1)` and its integral there vanishes, it vanishes almost
 everywhere on `(0, 1)`. -/

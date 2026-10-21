@@ -147,7 +147,6 @@ theorem PolyhedralFn.convexConj (hf : PolyhedralFn f) : PolyhedralFn (convexConj
           LinearMap.add_apply, LinearMap.smul_apply, smul_eq_mul] at hkey
         have hcancel : t * (B d.1 q.1 - d.2) = |A| + 1 := by
           rw [ht, div_mul_cancel₀ _ (ne_of_gt hlam)]
-        have hexp : t * (B d.1 q.1 - d.2) = t * B d.1 q.1 - t * d.2 := by ring
         have habs : -A ≤ |A| := neg_le_abs A
         rw [hA] at habs
         linarith

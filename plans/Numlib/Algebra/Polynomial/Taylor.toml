@@ -1,0 +1,4 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "taylor_comp_C_mul_X"

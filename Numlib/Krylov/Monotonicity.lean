@@ -83,7 +83,6 @@ division occurs. -/
 theorem backwardError_antitone {x : ℕ → E} (hx : ∀ k, IsMinResidualIterate A b 0 k (x k))
     {normA α β : ℝ} (hα : 0 ≤ α) (hβ : 0 < β) (hnormA : 0 ≤ normA) (hb : b ≠ 0) :
     Antitone fun k => ‖b - A (x k)‖ / (α * normA * ‖x k‖ + β * ‖b‖) := by
-  have hbpos : 0 < ‖b‖ := norm_pos_iff.2 hb
   have hmono : Monotone fun k => ‖x k‖ := norm_monotone hA hx
   intro i j hij
   have hden : ∀ k : ℕ, 0 < α * normA * ‖x k‖ + β * ‖b‖ := by

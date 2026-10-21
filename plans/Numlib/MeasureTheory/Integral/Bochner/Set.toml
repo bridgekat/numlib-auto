@@ -1,0 +1,4 @@
+namespace = "MeasureTheory"
+
+[[node]]
+id = "sum_setIntegral_le_setIntegral_of_pairwiseDisjoint"

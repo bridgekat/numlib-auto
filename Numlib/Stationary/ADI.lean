@@ -99,7 +99,6 @@ theorem norm_sub_smul_sq_add_le_norm_add_smul_sq {A : E →ₗ[𝕜] E} {c : ℝ
 theorem norm_sub_smul_lt_norm_add_smul {A : E →ₗ[𝕜] E} {c : ℝ} (hA : A.IsCoerciveWith c)
     (hc : 0 < c) {r : ℝ} (hr : 0 < r) {x : E} (hx : x ≠ 0) :
     ‖A x - (r : 𝕜) • x‖ < ‖A x + (r : 𝕜) • x‖ := by
-  have hx' : (0 : ℝ) < ‖x‖ := norm_pos_iff.2 hx
   have h := norm_sub_smul_sq_add_le_norm_add_smul_sq hA hr x
   have hpos : (0 : ℝ) < 4 * r * c * ‖x‖ ^ 2 := by positivity
   have hlt : ‖A x - (r : 𝕜) • x‖ ^ 2 < ‖A x + (r : 𝕜) • x‖ ^ 2 := by linarith
@@ -145,7 +144,6 @@ theorem norm_cayley_apply_sq_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     have h := norm_sub_smul_sq_add_le_norm_add_smul_sq hA hr x
     simp only [ContinuousLinearMap.coe_coe] at h
     rwa [hsum] at h
-  have hd : (0 : ℝ) < ‖A‖ + r := by positivity
   have hnormS : ‖A + (r : 𝕜) • (1 : E →L[𝕜] E)‖ ≤ ‖A‖ + r := by
     refine (norm_add_le _ _).trans ?_
     have hone : ‖(1 : E →L[𝕜] E)‖ ≤ 1 := ContinuousLinearMap.norm_id_le
@@ -178,7 +176,6 @@ theorem norm_cayley_lt_one {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     rw [hz, norm_zero]
     exact zero_lt_one
   · obtain ⟨v, hv⟩ := exists_ne (0 : E)
-    have hv' : (0 : ℝ) < ‖v‖ := norm_pos_iff.2 hv
     have hcA : c ≤ ‖A‖ := by
       have h1 : c * ‖v‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A v) v) := hA v
       have h2 : RCLike.re (inner 𝕜 (A v) v) ≤ ‖A‖ * ‖v‖ ^ 2 :=
@@ -187,7 +184,6 @@ theorem norm_cayley_lt_one {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
           _ ≤ ‖A‖ * ‖v‖ * ‖v‖ := by gcongr; exact A.le_opNorm v
           _ = ‖A‖ * ‖v‖ ^ 2 := by ring
       exact le_of_mul_le_mul_right (by linarith) (by positivity : (0 : ℝ) < ‖v‖ ^ 2)
-    have hd : (0 : ℝ) < ‖A‖ + r := by positivity
     have hq0 : (0 : ℝ) ≤ 1 - 4 * r * c / (‖A‖ + r) ^ 2 := by
       rw [sub_nonneg, div_le_one (by positivity)]
       nlinarith [sq_nonneg (‖A‖ - r), norm_nonneg A]
@@ -371,6 +367,65 @@ theorem peacemanRachfordSplitting_const (b : E) :
 
 end Splitting
 
+/-! ### The two-parameter sweep -/
+
+section Two
+
+variable (H V : E →L[𝕜] E) (r₁ r₂ : ℝ)
+
+/-- The Peaceman–Rachford sweep with two parameters: the composition of `(H + r₁) x_{k+1/2} = (r₁ -
+V) x_k + b` and `(V + r₂) x_{k+1} = (r₂ - H) x_{k+1/2} + b` has the iteration operator
+`(V + r₂)⁻¹ (H - r₂) (H + r₁)⁻¹ (V - r₁)` ([quarteroni2000numerical] (4.50) with `A₁ = H`, `A₂ = V`
+and `α_i = 1 / r_i`; the sign convention `1 - α A = -α (A - 1/α)` cancels between the two factors).
+`Stationary.peacemanRachford` is the diagonal `r₁ = r₂` (`Stationary.peacemanRachfordTwo_self`). -/
+noncomputable def peacemanRachfordTwo : E →L[𝕜] E :=
+  Ring.inverse (V + (r₂ : 𝕜) • 1) * (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) *
+    (V - (r₁ : 𝕜) • 1)
+
+/-- The affine part of the two-parameter Peaceman–Rachford sweep, `(V + r₂)⁻¹ (1 - (H - r₂)(H +
+r₁)⁻¹) b` ([quarteroni2000numerical] §4.3.6, the vector `f`). -/
+noncomputable def peacemanRachfordTwoConst (b : E) : E :=
+  Ring.inverse (V + (r₂ : 𝕜) • 1) ((1 - (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1)) b)
+
+/-- The two half-steps of the two-parameter sweep, written as such: solve `(H + r₁) x_{k+1/2} =
+(r₁ - V) x_k + b`, then `(V + r₂) x_{k+1} = (r₂ - H) x_{k+1/2} + b`. -/
+noncomputable def peacemanRachfordTwoSweep (b x : E) : E :=
+  Ring.inverse (V + (r₂ : 𝕜) • 1)
+    (((r₂ : 𝕜) • 1 - H) (Ring.inverse (H + (r₁ : 𝕜) • 1) (((r₁ : 𝕜) • 1 - V) x + b)) + b)
+
+/-- The two half-steps, composed, are the affine step of `Stationary.peacemanRachfordTwo`. -/
+theorem peacemanRachfordTwo_step_eq (b x : E) :
+    step (peacemanRachfordTwo H V r₁ r₂) (peacemanRachfordTwoConst H V r₁ r₂ b) x
+      = peacemanRachfordTwoSweep H V r₁ r₂ b x := by
+  simp only [step, peacemanRachfordTwo, peacemanRachfordTwoConst, peacemanRachfordTwoSweep,
+    mul_apply_eq_comp, sub_apply, smul_apply, one_apply_eq_self, map_add, map_sub, map_smul]
+  module
+
+/-- With equal parameters the two-parameter sweep is the one-parameter one. -/
+theorem peacemanRachfordTwo_self (r : ℝ) :
+    peacemanRachfordTwo H V r r = peacemanRachford H V r := rfl
+
+/-- With equal parameters the affine part of the two-parameter sweep is the one-parameter one. -/
+theorem peacemanRachfordTwoConst_self (r : ℝ) (b : E) :
+    peacemanRachfordTwoConst H V r r b = peacemanRachfordConst H V r b := rfl
+
+/-- Conjugating the two-parameter sweep operator by `V + r₂` turns it into the product of the two
+Cayley transforms `(H - r₂)(H + r₁)⁻¹` and `(V - r₁)(V + r₂)⁻¹`. -/
+theorem peacemanRachfordTwo_conj (hV : IsUnit (V + (r₂ : 𝕜) • (1 : E →L[𝕜] E))) :
+    (V + (r₂ : 𝕜) • 1) * peacemanRachfordTwo H V r₁ r₂ * Ring.inverse (V + (r₂ : 𝕜) • 1)
+      = ((H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1)) *
+        ((V - (r₁ : 𝕜) • 1) * Ring.inverse (V + (r₂ : 𝕜) • 1)) := by
+  rw [peacemanRachfordTwo]
+  calc (V + (r₂ : 𝕜) • 1) *
+        (Ring.inverse (V + (r₂ : 𝕜) • 1) * (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) *
+          (V - (r₁ : 𝕜) • 1)) * Ring.inverse (V + (r₂ : 𝕜) • 1)
+      = ((V + (r₂ : 𝕜) • 1) * Ring.inverse (V + (r₂ : 𝕜) • 1)) *
+          ((H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) * (V - (r₁ : 𝕜) • 1) *
+            Ring.inverse (V + (r₂ : 𝕜) • 1)) := by noncomm_ring
+    _ = _ := by rw [Ring.mul_inverse_cancel _ hV, one_mul]; noncomm_ring
+
+end Two
+
 /-! ### Convergence -/
 
 section Convergence
@@ -383,15 +438,8 @@ transforms, of `H` and of `V`. -/
 theorem peacemanRachford_conj (hV : IsUnit (V + (r : 𝕜) • (1 : E →L[𝕜] E))) :
     (V + (r : 𝕜) • 1) * peacemanRachford H V r * Ring.inverse (V + (r : 𝕜) • 1)
       = ((H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1)) *
-        ((V - (r : 𝕜) • 1) * Ring.inverse (V + (r : 𝕜) • 1)) := by
-  rw [peacemanRachford]
-  calc (V + (r : 𝕜) • 1) *
-        (Ring.inverse (V + (r : 𝕜) • 1) * (H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1) *
-          (V - (r : 𝕜) • 1)) * Ring.inverse (V + (r : 𝕜) • 1)
-      = ((V + (r : 𝕜) • 1) * Ring.inverse (V + (r : 𝕜) • 1)) *
-          ((H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1) * (V - (r : 𝕜) • 1) *
-            Ring.inverse (V + (r : 𝕜) • 1)) := by noncomm_ring
-    _ = _ := by rw [Ring.mul_inverse_cancel _ hV, one_mul]; noncomm_ring
+        ((V - (r : 𝕜) • 1) * Ring.inverse (V + (r : 𝕜) • 1)) :=
+  peacemanRachfordTwo_conj H V r r hV
 
 /-- The convergence theorem [saad2003iterative] asserts in §4.3 without proof, in its sharp operator
 form: the sweep operator conjugated by `V + r` — the product of the two Cayley transforms — is a
@@ -506,65 +554,6 @@ theorem tendsto_peacemanRachford (hH : (H : E →ₗ[𝕜] E).IsCoercive)
   exact mul_le_mul_of_nonneg_right (norm_pow_conj_le hP k) (norm_nonneg _)
 
 end Convergence
-
-/-! ### The two-parameter sweep -/
-
-section Two
-
-variable (H V : E →L[𝕜] E) (r₁ r₂ : ℝ)
-
-/-- The Peaceman–Rachford sweep with two parameters: the composition of `(H + r₁) x_{k+1/2} = (r₁ -
-V) x_k + b` and `(V + r₂) x_{k+1} = (r₂ - H) x_{k+1/2} + b` has the iteration operator
-`(V + r₂)⁻¹ (H - r₂) (H + r₁)⁻¹ (V - r₁)` ([quarteroni2000numerical] (4.50) with `A₁ = H`, `A₂ = V`
-and `α_i = 1 / r_i`; the sign convention `1 - α A = -α (A - 1/α)` cancels between the two factors).
-`Stationary.peacemanRachford` is the diagonal `r₁ = r₂` (`Stationary.peacemanRachfordTwo_self`). -/
-noncomputable def peacemanRachfordTwo : E →L[𝕜] E :=
-  Ring.inverse (V + (r₂ : 𝕜) • 1) * (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) *
-    (V - (r₁ : 𝕜) • 1)
-
-/-- The affine part of the two-parameter Peaceman–Rachford sweep, `(V + r₂)⁻¹ (1 - (H - r₂)(H +
-r₁)⁻¹) b` ([quarteroni2000numerical] §4.3.6, the vector `f`). -/
-noncomputable def peacemanRachfordTwoConst (b : E) : E :=
-  Ring.inverse (V + (r₂ : 𝕜) • 1) ((1 - (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1)) b)
-
-/-- The two half-steps of the two-parameter sweep, written as such: solve `(H + r₁) x_{k+1/2} =
-(r₁ - V) x_k + b`, then `(V + r₂) x_{k+1} = (r₂ - H) x_{k+1/2} + b`. -/
-noncomputable def peacemanRachfordTwoSweep (b x : E) : E :=
-  Ring.inverse (V + (r₂ : 𝕜) • 1)
-    (((r₂ : 𝕜) • 1 - H) (Ring.inverse (H + (r₁ : 𝕜) • 1) (((r₁ : 𝕜) • 1 - V) x + b)) + b)
-
-/-- The two half-steps, composed, are the affine step of `Stationary.peacemanRachfordTwo`. -/
-theorem peacemanRachfordTwo_step_eq (b x : E) :
-    step (peacemanRachfordTwo H V r₁ r₂) (peacemanRachfordTwoConst H V r₁ r₂ b) x
-      = peacemanRachfordTwoSweep H V r₁ r₂ b x := by
-  simp only [step, peacemanRachfordTwo, peacemanRachfordTwoConst, peacemanRachfordTwoSweep,
-    mul_apply_eq_comp, sub_apply, smul_apply, one_apply_eq_self, map_add, map_sub, map_smul]
-  module
-
-/-- With equal parameters the two-parameter sweep is the one-parameter one. -/
-theorem peacemanRachfordTwo_self (r : ℝ) :
-    peacemanRachfordTwo H V r r = peacemanRachford H V r := rfl
-
-/-- With equal parameters the affine part of the two-parameter sweep is the one-parameter one. -/
-theorem peacemanRachfordTwoConst_self (r : ℝ) (b : E) :
-    peacemanRachfordTwoConst H V r r b = peacemanRachfordConst H V r b := rfl
-
-/-- Conjugating the two-parameter sweep operator by `V + r₂` turns it into the product of the two
-Cayley transforms `(H - r₂)(H + r₁)⁻¹` and `(V - r₁)(V + r₂)⁻¹`. -/
-theorem peacemanRachfordTwo_conj (hV : IsUnit (V + (r₂ : 𝕜) • (1 : E →L[𝕜] E))) :
-    (V + (r₂ : 𝕜) • 1) * peacemanRachfordTwo H V r₁ r₂ * Ring.inverse (V + (r₂ : 𝕜) • 1)
-      = ((H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1)) *
-        ((V - (r₁ : 𝕜) • 1) * Ring.inverse (V + (r₂ : 𝕜) • 1)) := by
-  rw [peacemanRachfordTwo]
-  calc (V + (r₂ : 𝕜) • 1) *
-        (Ring.inverse (V + (r₂ : 𝕜) • 1) * (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) *
-          (V - (r₁ : 𝕜) • 1)) * Ring.inverse (V + (r₂ : 𝕜) • 1)
-      = ((V + (r₂ : 𝕜) • 1) * Ring.inverse (V + (r₂ : 𝕜) • 1)) *
-          ((H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) * (V - (r₁ : 𝕜) • 1) *
-            Ring.inverse (V + (r₂ : 𝕜) • 1)) := by noncomm_ring
-    _ = _ := by rw [Ring.mul_inverse_cancel _ hV, one_mul]; noncomm_ring
-
-end Two
 
 /-! ### The spectral bounds for symmetric positive definite `H` and `V`
 

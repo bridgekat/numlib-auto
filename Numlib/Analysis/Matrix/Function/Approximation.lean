@@ -90,7 +90,6 @@ theorem l2_opNorm_pfc_sub_le_of_conj_jordanForm {ι : Type*} [Finite ι] [Decida
       (e i : ℝ) * (‖iteratedDeriv r f (μ i) - iteratedDeriv r g (μ i)‖ / r.factorial) ≤ M) :
     ‖pfc f A - pfc g A‖ ≤ ‖P‖ * ‖P⁻¹‖ * M := by
   have := Fintype.ofFinite ι
-  have hint : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral A
   have hroot : ∀ z ∈ (minpoly ℂ A).roots, z ∈ spectrum ℂ A := fun z hz =>
     spectrum.mem_of_mem_roots_minpoly hz
   rw [← pfc_sub (fun z hz => (hf z (hroot z hz)).contDiffAt)
@@ -132,7 +131,6 @@ private theorem pfc_sub_eq_unitary_conj {A Q : Matrix (Fin N) (Fin N) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin N) ℂ) {Ω : Set ℂ} (hAΩ : spectrum ℂ A ⊆ Ω) {f g : ℂ → ℂ}
     (hf : AnalyticOnNhd ℂ f Ω) (hg : AnalyticOnNhd ℂ g Ω) :
     pfc f A - pfc g A = Q * pfc (f - g) (star Q * A * Q) * star Q := by
-  have hint : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral A
   have hroot : ∀ z ∈ (minpoly ℂ A).roots, z ∈ Ω := fun z hz =>
     hAΩ (spectrum.mem_of_mem_roots_minpoly hz)
   have hQi : Q⁻¹ = star Q := inv_eq_left_inv (mem_unitaryGroup_iff'.1 hQ)
@@ -247,7 +245,6 @@ private theorem norm_pfc_apply_le {T : Matrix (Fin N) (Fin N) ℂ} (hT : T.IsUpp
           obtain ⟨r', hr', rfl⟩ := Finset.mem_map.1 hr
           rw [Finset.mem_range] at hr' ⊢
           have hc := Fin.card_Ioo i j
-          have := j.isLt
           have : (i : ℕ) < j := hij
           simp only [addRightEmbedding_apply]
           omega

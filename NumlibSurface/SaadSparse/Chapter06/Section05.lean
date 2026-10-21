@@ -284,7 +284,7 @@ include hh
 theorem Rbar_eq_zero_of_lt {m : ℕ} {i : Fin (m + 1)} {j : Fin m} (hij : (j : ℕ) < (i : ℕ)) :
     Rbar h m i j = 0 := by
   rw [Rbar_apply]
-  exact Krylov.rotated_eq_zero_of_lt h hh m i j j.isLt hij
+  exact Krylov.rotated_eq_zero_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh) m i j j.isLt hij
 
 /-- (6.39): the last row of `R̄_m` vanishes. -/
 theorem Rbar_last_row {m : ℕ} (j : Fin m) : Rbar h m (Fin.last m) j = 0 :=
@@ -293,18 +293,19 @@ theorem Rbar_last_row {m : ℕ} (j : Fin m) : Rbar h m (Fin.last m) j = 0 :=
 /-- `R_m` is upper triangular. -/
 theorem R_isUpperTriangular (m : ℕ) : (R h m).IsUpperTriangular := by
   rw [R_eq]
-  exact Krylov.hessenbergSqOf_rotated_isUpperTriangular h hh (by omega)
+  exact Krylov.hessenbergSqOf_rotated_isUpperTriangular h (Matrix.isUpperHessenberg_iff_nat.2 hh)
+      (by omega)
 
 /-- (6.37): the diagonal entry `r_{ii}` of `R_m` is the nonnegative real `ρ_i`. Over `ℂ` this is
 the §6.5.9 statement that the diagonal of `R_m` is real and nonnegative. -/
 theorem R_diag {m : ℕ} (i : Fin m) : R h m i i = ((Krylov.givensRho h i : ℝ) : 𝕜) := by
   rw [R_apply]
-  exact Krylov.rotated_diag h hh i.isLt
+  exact Krylov.rotated_diag h (Matrix.isUpperHessenberg_iff_nat.2 hh) i.isLt
 
 /-- `R_m` is nonsingular as soon as no rotation has degenerated. -/
 theorem isUnit_R {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho h k ≠ 0) : IsUnit (R h m) := by
   rw [R_eq]
-  exact Krylov.isUnit_hessenbergSqOf_rotated_self h hh hρ
+  exact Krylov.isUnit_hessenbergSqOf_rotated_self h (Matrix.isUpperHessenberg_iff_nat.2 hh) hρ
 
 /-- `R_m` is nonsingular exactly when no rotation among the first `m` has degenerated: the
 diagonal of the triangular factor is `ρ_0, …, ρ_{m-1}`. -/
@@ -365,7 +366,8 @@ theorem norm_sq_firstVec_sub_mulVec {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho
         EuclideanSpace 𝕜 (Fin (m + 1)))‖ ^ 2 =
       ‖γ h β m‖ ^ 2 +
         ‖(WithLp.toLp 2 (g h β m - R h m *ᵥ y) : EuclideanSpace 𝕜 (Fin m))‖ ^ 2 := by
-  rw [Krylov.norm_sq_firstVec_sub_mulVec_eq h hh hρ β y, R_eq, g_eq, add_comm]
+  rw [Krylov.norm_sq_firstVec_sub_mulVec_eq h (Matrix.isUpperHessenberg_iff_nat.2 hh)
+      hρ β y, R_eq, g_eq, add_comm]
 
 /-- **Proposition 6.9(2)** at the level of a coefficient function: `y = R_m⁻¹ g_m` minimizes
 `‖β e_1 - H̄_m y‖₂`, and is the only minimizer, as soon as `R_m` is nonsingular. This is (6.43):
@@ -399,7 +401,7 @@ theorem Rbar_succ_submatrix {m : ℕ} :
     (Rbar h (m + 1)).submatrix Fin.castSucc Fin.castSucc = Rbar h m := by
   ext i j
   rw [Matrix.submatrix_apply, Rbar_apply, Rbar_apply, Fin.val_castSucc, Fin.val_castSucc,
-    Krylov.rotated_succ_eq_of_lt h hh m (j : ℕ) j.isLt (i : ℕ)]
+    Krylov.rotated_succ_eq_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh) m (j : ℕ) j.isLt (i : ℕ)]
 
 /-- (6.41): with `R_m y = g_m` the least-squares residual `β e_1 - H̄_m y` is
 `Q_mᴴ (γ_{m+1} e_{m+1})`. -/
@@ -1399,7 +1401,7 @@ theorem equation_6_56 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ
     (hH : IsUnit (Krylov.hessenbergSqOf h (m + 1))) :
     γ h β (m + 1) • u (m + 1) = c h m • (b - op A (iomOfBasis x₀ u h β (m + 1))) := by
   have hg : Krylov.rotated h m m m * iomOfBasisY h β (m + 1) (Fin.last m) = γ h β m :=
-    Krylov.rotated_self_mul_eq_gamma h hu.eq_zero_of_lt β (hessenbergSqOf_mulVec_iomOfBasisY hH)
+    Krylov.rotated_self_mul_eq_gamma h hu.isUpperHessenberg β (hessenbergSqOf_mulVec_iomOfBasisY hH)
   have hsub : Krylov.rotated h m (m + 1) m = h (m + 1) m :=
     Krylov.rotated_eq_of_le h m (m + 1) m le_rfl
   have key : γ h β (m + 1)
@@ -1594,7 +1596,7 @@ private theorem rotated_of_col_lt {h : ℕ → ℕ → 𝕜} (hh : ∀ i j : ℕ
   | succ M ih =>
     intro hM i
     rcases Nat.lt_or_ge j M with hjM | hjM
-    · rw [Krylov.rotated_succ_eq_of_lt h hh M j hjM i]
+    · rw [Krylov.rotated_succ_eq_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh) M j hjM i]
       exact ih (by omega) i
     · have hMj : M = j := by omega
       subst hMj
@@ -1617,7 +1619,8 @@ theorem sum_R_smul_dqgmresP {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {k m :
       Krylov.rotated h ((j : ℕ) + 1) i (j : ℕ) • dqgmresP u h k i = 0 := by
     intro i _ hi
     rw [Finset.mem_range, not_lt] at hi
-    rw [Krylov.rotated_eq_zero_of_lt h hh ((j : ℕ) + 1) i (j : ℕ) (Nat.lt_succ_self _)
+    rw [Krylov.rotated_eq_zero_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh)
+        ((j : ℕ) + 1) i (j : ℕ) (Nat.lt_succ_self _)
       (by omega), zero_smul]
   have hsub : Finset.range ((j : ℕ) + 1) ⊆ Finset.range m := by
     intro i hi
@@ -1770,11 +1773,13 @@ theorem R_mulVec_eq_Rtilde_mulVec_add (h : ℕ → ℕ → 𝕜)
     have h1 : ∀ j : Fin m, R h (m + 1) (Fin.last m) j.castSucc * v j.castSucc = 0 := by
       intro j
       rw [R_apply, Fin.val_last, Fin.val_castSucc,
-        Krylov.rotated_eq_zero_of_lt h hh (m + 1) m (j : ℕ) (by omega) j.isLt, zero_mul]
+        Krylov.rotated_eq_zero_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh)
+            (m + 1) m (j : ℕ) (by omega) j.isLt, zero_mul]
     have h2 : ∀ j : Fin m, Rtilde h (m + 1) (Fin.last m) j.castSucc * v j.castSucc = 0 := by
       intro j
       rw [Rtilde_apply, Nat.add_sub_cancel, Fin.val_last, Fin.val_castSucc,
-        Krylov.rotated_eq_zero_of_lt h hh m m (j : ℕ) j.isLt j.isLt, zero_mul]
+        Krylov.rotated_eq_zero_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh)
+            m m (j : ℕ) j.isLt j.isLt, zero_mul]
     rw [Finset.sum_congr rfl (fun j _ => h1 j), Finset.sum_congr rfl (fun j _ => h2 j)]
     rw [R_apply, Rtilde_apply, Nat.add_sub_cancel, Fin.val_last,
       Krylov.rotated_succ_self h m]
@@ -1858,10 +1863,12 @@ theorem isUnit_Rtilde_of_fomDefined {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b 
     (hH : FOMDefined A b x₀ (m + 1)) :
     IsUnit (Rtilde (arnoldiCoeff A (v₁ A b x₀)) (m + 1)) := by
   rw [Rtilde, Nat.add_sub_cancel]
-  refine Krylov.isUnit_hessenbergSqOf_rotated _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)
+  refine Krylov.isUnit_hessenbergSqOf_rotated _
+    (Matrix.isUpperHessenberg_iff_nat.2 (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀))
     (le_refl (m + 1)) fun j hj => ?_
   rcases Nat.lt_or_ge j m with h1 | h1
-  · rw [Krylov.rotated_diag _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) h1]
+  · rw [Krylov.rotated_diag _
+      (Matrix.isUpperHessenberg_iff_nat.2 (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)) h1]
     have hρ : Krylov.givensRho (arnoldiCoeff A (v₁ A b x₀)) j ≠ 0 := by
       rw [arnoldiCoeff_v₁]
       exact Krylov.givensRho_arnoldi_ne_zero (by rw [← grade_v₁]; omega)
@@ -1918,7 +1925,8 @@ theorem R_mulVec_snoc (h : ℕ → ℕ → 𝕜) (hh : ∀ i j : ℕ, j + 1 < i 
   · rw [Pi.single_eq_same, g_apply, Fin.val_last, sub_self]
     refine Finset.sum_eq_zero fun j _ => ?_
     rw [R_apply, Fin.val_last, Fin.val_castSucc,
-      Krylov.rotated_eq_zero_of_lt h hh (m + 1) m (j : ℕ) (by omega) j.isLt, zero_mul]
+      Krylov.rotated_eq_zero_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh)
+          (m + 1) m (j : ℕ) (by omega) j.isLt, zero_mul]
   · have hlt : (i : ℕ) < m := by
       have := i.isLt
       have : (i : ℕ) ≠ m := fun hc => hi (Fin.ext (by simpa using hc))
@@ -1929,7 +1937,8 @@ theorem R_mulVec_snoc (h : ℕ → ℕ → 𝕜) (hh : ∀ i j : ℕ, j + 1 < i 
         = R h m ⟨(i : ℕ), hlt⟩ j * yp j := by
       intro j
       rw [Fin.snoc_castSucc, R_apply, R_apply, Fin.val_castSucc,
-        Krylov.rotated_succ_eq_of_lt h hh m (j : ℕ) j.isLt (i : ℕ)]
+        Krylov.rotated_succ_eq_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh)
+            m (j : ℕ) j.isLt (i : ℕ)]
     rw [Finset.sum_congr rfl fun j _ => hrow j]
     have hval := congrFun hyp ⟨(i : ℕ), hlt⟩
     simp only [Matrix.mulVec, dotProduct] at hval
@@ -2360,7 +2369,8 @@ private theorem sub_snoc_eq_smul (h : ℕ → ℕ → ℝ) (hh : ∀ i j : ℕ, 
         (y - (Fin.snoc yp (0 : ℝ) : Fin (m + 1) → ℝ)) j.castSucc = 0 := by
       intro j
       rw [R_apply, Fin.val_last, Fin.val_castSucc,
-        Krylov.rotated_eq_zero_of_lt h hh (m + 1) m (j : ℕ) (by omega) j.isLt, zero_mul]
+        Krylov.rotated_eq_zero_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh)
+            (m + 1) m (j : ℕ) (by omega) j.isLt, zero_mul]
     rw [Finset.sum_congr rfl fun j _ => hz j, Finset.sum_const_zero, zero_add, R_apply,
       Fin.val_last] at hlast
     rw [hlast, hgv]

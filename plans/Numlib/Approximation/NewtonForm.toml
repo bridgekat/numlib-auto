@@ -1,9 +1,6 @@
 namespace = "DividedDifference"
 
 [[node]]
-id = "_root_.Polynomial.iterate_derivative_eq_C_of_natDegree_le"
-
-[[node]]
 id = "_root_.Lagrange.interpolate_map"
 
 [[node]]

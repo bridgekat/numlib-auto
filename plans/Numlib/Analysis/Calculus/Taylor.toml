@@ -26,6 +26,9 @@ id = "abs_taylor_two"
 id = "abs_taylor_three"
 
 [[node]]
+id = "abs_sub_taylor_three_le_of_lipschitz"
+
+[[node]]
 id = "hasDerivWithinAt_comp_const_sub_Icc"
 
 [[node]]

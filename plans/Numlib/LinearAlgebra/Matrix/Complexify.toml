@@ -145,6 +145,12 @@ id = "IsTridiagonal.complexify"
 id = "spectrum_complexify_affine"
 
 [[node]]
+id = "exists_norm_eq_spectralRadius"
+
+[[node]]
+id = "spectralRadius_lt_one_of_forall_norm_lt"
+
+[[node]]
 id = "complexSpectralRadius_affine_le"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.6"
 

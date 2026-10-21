@@ -35,33 +35,16 @@ noncomputable def condNumber (a : R) : ℝ := ‖a‖ * ‖Ring.inverse a‖
 /-- Notation `κ a` for the condition number. -/
 scoped notation "κ" => NormedRing.condNumber
 
-/-- A two-sided inverse computes `Ring.inverse`. -/
-private theorem inverse_eq_of_mul_eq_one {M₀ : Type*} [MonoidWithZero M₀] {a b : M₀}
-    (h₁ : a * b = 1) (h₂ : b * a = 1) : Ring.inverse a = b :=
-  Ring.inverse_unit (⟨a, b, h₁, h₂⟩ : M₀ˣ)
-
-section Smul
-
-variable {𝕜 : Type*} [NormedField 𝕜] [NormedAlgebra 𝕜 R]
-
-private theorem isUnit_smul {c : 𝕜} (hc : c ≠ 0) {a : R} (ha : IsUnit a) : IsUnit (c • a) :=
-  ⟨⟨c • a, c⁻¹ • Ring.inverse a,
-    by rw [smul_mul_smul_comm, Ring.mul_inverse_cancel a ha, mul_inv_cancel₀ hc, one_smul],
-    by rw [smul_mul_smul_comm, Ring.inverse_mul_cancel a ha, inv_mul_cancel₀ hc, one_smul]⟩, rfl⟩
-
-private theorem isUnit_smul_iff {c : 𝕜} (hc : c ≠ 0) (a : R) : IsUnit (c • a) ↔ IsUnit a :=
-  ⟨fun h ↦ by simpa [inv_smul_smul₀ hc] using isUnit_smul (inv_ne_zero hc) h, isUnit_smul hc⟩
-
-private theorem inverse_smul {c : 𝕜} (hc : c ≠ 0) (a : R) :
-    Ring.inverse (c • a) = c⁻¹ • Ring.inverse a := by
+/-- **`Ring.inverse` of a nonzero scalar multiple**: `(c • a)⁻¹ = c⁻¹ • a⁻¹`, the junk value `0`
+included. -/
+theorem _root_.Ring.inverse_smul {𝕜 A : Type*} [Field 𝕜] [Ring A] [Algebra 𝕜 A] {c : 𝕜}
+    (hc : c ≠ 0) (a : A) : Ring.inverse (c • a) = c⁻¹ • Ring.inverse a := by
   by_cases ha : IsUnit a
-  · exact inverse_eq_of_mul_eq_one
-      (by rw [smul_mul_smul_comm, Ring.mul_inverse_cancel a ha, mul_inv_cancel₀ hc, one_smul])
-      (by rw [smul_mul_smul_comm, Ring.inverse_mul_cancel a ha, inv_mul_cancel₀ hc, one_smul])
-  · rw [Ring.inverse_non_unit _ ((isUnit_smul_iff hc a).not.mpr ha), Ring.inverse_non_unit _ ha,
-      smul_zero]
-
-end Smul
+  · exact Ring.inverse_unit (⟨c • a, c⁻¹ • Ring.inverse a,
+      by rw [smul_mul_smul_comm, Ring.mul_inverse_cancel a ha, mul_inv_cancel₀ hc, one_smul],
+      by rw [smul_mul_smul_comm, Ring.inverse_mul_cancel a ha, inv_mul_cancel₀ hc, one_smul]⟩ : Aˣ)
+  · rw [Ring.inverse_non_unit (c • a) ((isUnit_smul_iff (Units.mk0 c hc) a).not.mpr ha),
+      Ring.inverse_non_unit _ ha, smul_zero]
 
 /-- The junk value: a singular `a` gets condition number `0`, not `∞`. Guard against it with
 `IsUnit a` rather than with a positivity test on `κ`. -/
@@ -92,7 +75,7 @@ measures the sensitivity of the solution to a *relative* perturbation of the dat
 theorem condNumber_smul {𝕜 : Type*} [NormedField 𝕜] [NormedAlgebra 𝕜 R] {c : 𝕜} (hc : c ≠ 0)
     (a : R) : condNumber (c • a) = condNumber a := by
   have hc' : ‖c‖ ≠ 0 := norm_ne_zero_iff.mpr hc
-  rw [condNumber, condNumber, inverse_smul hc, norm_smul, norm_smul, norm_inv]
+  rw [condNumber, condNumber, Ring.inverse_smul hc, norm_smul, norm_smul, norm_inv]
   field_simp
 
 /-- Conditioning is submultiplicative: a product is no worse conditioned than the product of the
@@ -117,7 +100,8 @@ variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] 
 /-- `Ring.inverse` of the underlying map of a continuous linear equivalence is the inverse map. -/
 theorem ring_inverse_coe (e : E ≃L[𝕜] E) :
     Ring.inverse (e : E →L[𝕜] E) = (e.symm : E →L[𝕜] E) :=
-  NormedRing.inverse_eq_of_mul_eq_one (by ext x; simp) (by ext x; simp)
+  Ring.inverse_unit (⟨(e : E →L[𝕜] E), (e.symm : E →L[𝕜] E), by ext x; simp, by ext x; simp⟩ :
+    (E →L[𝕜] E)ˣ)
 
 /-- For an invertible operator presented as a continuous linear equivalence the condition number
 is `‖e‖ ‖e⁻¹‖` with the genuine inverse map: the junk value of `Ring.inverse` never arises. -/

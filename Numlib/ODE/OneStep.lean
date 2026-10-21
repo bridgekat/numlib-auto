@@ -757,7 +757,6 @@ theorem norm_lte_heun_le
         (h / 2) • (f (t + h) (y (t + h)) - f (t + h) (y t + h • f t (y t))) := by
     simp only [heun, smul_smul, div_eq_mul_inv, smul_add, smul_sub]; abel
   rw [e]
-  have hL : (0 : ℝ) ≤ L := L.coe_nonneg
   calc h⁻¹ * ‖(y (t + h) - y t - (h / 2) • (f t (y t) + f (t + h) (y (t + h)))) +
         (h / 2) • (f (t + h) (y (t + h)) - f (t + h) (y t + h • f t (y t)))‖
       ≤ h⁻¹ * (M₃ * h ^ 3 / 12 + h / 2 * (L * (M₂ * h ^ 2 / 2))) := by
@@ -932,9 +931,6 @@ theorem norm_sub_le_forwardEuler (hf : ∀ s ∈ Icc t₀ (t₀ + T), LipschitzW
           h * (h / 2 * M) + (1 + h * L) * ‖y (node t₀ h m) - u m‖ := by
         nlinarith [mul_le_mul_of_nonneg_left hlip hh.le, mul_le_mul_of_nonneg_left hτ hh.le]
       refine hstep.trans ?_
-      have hpow : 0 ≤ (1 + h * L) ^ m - 1 := by
-        have : 1 ≤ (1 + h * L) ^ m := one_le_pow₀ (by linarith [mul_nonneg hh.le L.coe_nonneg])
-        linarith
       calc h * (h / 2 * M) + (1 + h * L) * ‖y (node t₀ h m) - u m‖
           ≤ h * (h / 2 * M) + (1 + h * L) * (((1 + h * L) ^ m - 1) / L * (M / 2 * h)) := by
             gcongr
@@ -947,7 +943,6 @@ theorem norm_sub_le_forwardEuler (hf : ∀ s ∈ Icc t₀ (t₀ + T), LipschitzW
           gcongr
           linarith [Real.add_one_le_exp (h * L)]
       _ = Real.exp (L * (n * h)) := by rw [← Real.exp_nat_mul]; ring_nf
-  have hpos : 0 ≤ M / 2 * h := by positivity
   gcongr
 
 end Orders
@@ -1204,10 +1199,6 @@ theorem isOrbit_crankNicolson_testField (hne : (h : ℂ) * lam ≠ 2) (u₀ : �
       fun n => ((1 + h * lam / 2) / (1 - h * lam / 2)) ^ n * u₀ := by
   rw [isOrbit_ofIncrement_iff]
   intro n
-  have hne' : (1 : ℂ) - h * lam / 2 ≠ 0 := by
-    intro h0
-    apply hne
-    linear_combination (-2 : ℂ) * h0
   simp only [crankNicolson, testField, Complex.real_smul, pow_succ]
   push_cast
   field_simp

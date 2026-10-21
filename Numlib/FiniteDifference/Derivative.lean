@@ -220,6 +220,34 @@ private theorem exists_eq_add_div_two {g : ℝ → ℝ} {a b s t : ℝ}
   obtain ⟨ξ, hξ, hgξ⟩ := intermediate_value_uIcc (hg.mono hsub) hmem
   exact ⟨ξ, hsub hξ, hgξ⟩
 
+/-- **Taylor expansions to both sides of `x`**: for `f` of class `C^{n+1}` on `[x - h, x + h]`
+there are `ξ ∈ (x - h, x)` and `η ∈ (x, x + h)` with
+`f (x + h) = ∑_{k ≤ n} hᵏ/k! f⁽ᵏ⁾(x) + f⁽ⁿ⁺¹⁾(η) h^{n+1}/(n+1)!` and
+`f (x - h) = ∑_{k ≤ n} (-h)ᵏ/k! f⁽ᵏ⁾(x) + f⁽ⁿ⁺¹⁾(ξ) (-h)^{n+1}/(n+1)!`: the two Lagrange
+remainders behind the two-point forms of the centred difference errors. -/
+theorem exists_taylor_add_sub {n : ℕ} (hh : 0 < h)
+    (hf : ContDiffOn ℝ (n + 1) f (Icc (x - h) (x + h))) :
+    ∃ ξ ∈ Ioo (x - h) x, ∃ η ∈ Ioo x (x + h),
+      f (x + h) = ∑ k ∈ range (n + 1), h ^ k / k ! * iteratedDeriv k f x
+          + iteratedDeriv (n + 1) f η * h ^ (n + 1) / (n + 1)! ∧
+      f (x - h) = ∑ k ∈ range (n + 1), (-h) ^ k / k ! * iteratedDeriv k f x
+          + iteratedDeriv (n + 1) f ξ * (-h) ^ (n + 1) / (n + 1)! := by
+  have hx : ContDiffAt ℝ (n + 1) f x := contDiffAt_of_mem_Ioo hf ⟨by linarith, by linarith⟩
+  have hnep : x ≠ x + h := by linarith
+  have hnem : x ≠ x - h := by linarith
+  have hfp : ContDiffOn ℝ (n + 1) f (uIcc x (x + h)) :=
+    hf.mono (by rw [Set.uIcc_of_le (by linarith)]; exact Icc_subset_Icc (by linarith) le_rfl)
+  have hfm : ContDiffOn ℝ (n + 1) f (uIcc x (x - h)) :=
+    hf.mono (by rw [Set.uIcc_of_ge (by linarith)]; exact Icc_subset_Icc le_rfl (by linarith))
+  obtain ⟨η, hη, hTp⟩ := exists_taylorWithinEval_add_iteratedDeriv_mul hnep hfp
+  obtain ⟨ξ, hξ, hTm⟩ := exists_taylorWithinEval_add_iteratedDeriv_mul hnem hfm
+  rw [uIoo_of_le (by linarith)] at hη
+  rw [uIoo_of_ge (by linarith)] at hξ
+  rw [taylorWithinEval_eq_sum_of_contDiffAt hnep (hx.of_le (by exact_mod_cast n.le_succ))] at hTp
+  rw [taylorWithinEval_eq_sum_of_contDiffAt hnem (hx.of_le (by exact_mod_cast n.le_succ))] at hTm
+  simp only [add_sub_cancel_left, sub_sub_cancel_left] at hTp hTm
+  exact ⟨ξ, hξ, η, hη, hTp, hTm⟩
+
 /-- **The centred difference error in two-point form**: for `f` of class `C³` on
 `[x - h, x + h]`, `f'(x) - (f (x + h) - f (x - h))/(2h) = -(h²/12)(f'''(ξ) + f'''(η))` with
 `ξ ∈ (x - h, x)` and `η ∈ (x, x + h)`, the two Lagrange remainders of the Taylor expansions at
@@ -229,21 +257,9 @@ theorem deriv_sub_centredDiff_eq_two_points (hh : 0 < h)
     ∃ ξ ∈ Ioo (x - h) x, ∃ η ∈ Ioo x (x + h),
       deriv f x - centredDiff f h x
         = -(h ^ 2 / 12) * (iteratedDeriv 3 f ξ + iteratedDeriv 3 f η) := by
-  have hx : ContDiffAt ℝ 3 f x := contDiffAt_of_mem_Ioo hf ⟨by linarith, by linarith⟩
-  have hnep : x ≠ x + h := by linarith
-  have hnem : x ≠ x - h := by linarith
-  have hfp : ContDiffOn ℝ (2 + 1) f (uIcc x (x + h)) :=
-    hf.mono (by rw [Set.uIcc_of_le (by linarith)]; exact Icc_subset_Icc (by linarith) le_rfl)
-  have hfm : ContDiffOn ℝ (2 + 1) f (uIcc x (x - h)) :=
-    hf.mono (by rw [Set.uIcc_of_ge (by linarith)]; exact Icc_subset_Icc le_rfl (by linarith))
-  obtain ⟨η, hη, hTp⟩ := exists_taylorWithinEval_add_iteratedDeriv_mul hnep hfp
-  obtain ⟨ξ, hξ, hTm⟩ := exists_taylorWithinEval_add_iteratedDeriv_mul hnem hfm
-  rw [uIoo_of_le (by linarith)] at hη
-  rw [uIoo_of_ge (by linarith)] at hξ
-  rw [taylorWithinEval_eq_sum_of_contDiffAt hnep (hx.of_le (by norm_num))] at hTp
-  rw [taylorWithinEval_eq_sum_of_contDiffAt hnem (hx.of_le (by norm_num))] at hTm
-  simp only [sum_range_succ, sum_range_zero, Nat.factorial, iteratedDeriv_zero, iteratedDeriv_one,
-    add_sub_cancel_left, sub_sub_cancel_left] at hTp hTm
+  obtain ⟨ξ, hξ, η, hη, hTp, hTm⟩ := exists_taylor_add_sub (n := 2) hh hf
+  simp only [sum_range_succ, sum_range_zero, Nat.factorial, iteratedDeriv_zero,
+    iteratedDeriv_one] at hTp hTm
   refine ⟨ξ, hξ, η, hη, ?_⟩
   rw [centredDiff_apply, hTp, hTm]
   field_simp
@@ -272,21 +288,9 @@ theorem iteratedDeriv_two_sub_secondCentredDiff_eq_two_points (hh : 0 < h)
     ∃ ξ ∈ Ioo (x - h) x, ∃ η ∈ Ioo x (x + h),
       iteratedDeriv 2 f x - secondCentredDiff f h x
         = -(h ^ 2 / 24) * (iteratedDeriv 4 f ξ + iteratedDeriv 4 f η) := by
-  have hx : ContDiffAt ℝ 4 f x := contDiffAt_of_mem_Ioo hf ⟨by linarith, by linarith⟩
-  have hnep : x ≠ x + h := by linarith
-  have hnem : x ≠ x - h := by linarith
-  have hfp : ContDiffOn ℝ (3 + 1) f (uIcc x (x + h)) :=
-    hf.mono (by rw [Set.uIcc_of_le (by linarith)]; exact Icc_subset_Icc (by linarith) le_rfl)
-  have hfm : ContDiffOn ℝ (3 + 1) f (uIcc x (x - h)) :=
-    hf.mono (by rw [Set.uIcc_of_ge (by linarith)]; exact Icc_subset_Icc le_rfl (by linarith))
-  obtain ⟨η, hη, hTp⟩ := exists_taylorWithinEval_add_iteratedDeriv_mul hnep hfp
-  obtain ⟨ξ, hξ, hTm⟩ := exists_taylorWithinEval_add_iteratedDeriv_mul hnem hfm
-  rw [uIoo_of_le (by linarith)] at hη
-  rw [uIoo_of_ge (by linarith)] at hξ
-  rw [taylorWithinEval_eq_sum_of_contDiffAt hnep (hx.of_le (by norm_num))] at hTp
-  rw [taylorWithinEval_eq_sum_of_contDiffAt hnem (hx.of_le (by norm_num))] at hTm
-  simp only [sum_range_succ, sum_range_zero, Nat.factorial, iteratedDeriv_zero, iteratedDeriv_one,
-    add_sub_cancel_left, sub_sub_cancel_left] at hTp hTm
+  obtain ⟨ξ, hξ, η, hη, hTp, hTm⟩ := exists_taylor_add_sub (n := 3) hh hf
+  simp only [sum_range_succ, sum_range_zero, Nat.factorial, iteratedDeriv_zero,
+    iteratedDeriv_one] at hTp hTm
   refine ⟨ξ, hξ, η, hη, ?_⟩
   rw [secondCentredDiff_apply, hTp, hTm]
   field_simp
@@ -399,7 +403,6 @@ theorem compactError_expansion (hf : ContDiffAt ℝ 7 f x) :
     (hcont.mono (Metric.closedBall_subset_ball (by linarith)))
   have hM' : ∀ t ∈ Metric.ball x (ε / 2), |iteratedDeriv (6 + 1) f t| ≤ M := fun t ht =>
     hM t (Metric.ball_subset_closedBall ht)
-  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM x (Metric.mem_closedBall_self (by positivity)))
   have hf7' : ContDiffOn ℝ (6 + 1) f (Metric.ball x (ε / 2)) :=
     hf7.mono (Metric.ball_subset_ball (by linarith))
   -- the derivative is `C⁶` on the ball, with the same seventh derivative
@@ -921,7 +924,6 @@ theorem derivMatrix_node_self_of_pos_of_lt (hn : n ≠ 0) {j : Fin (n + 1)} (hj0
     rwa [node_eq_neg_one hn] at this
   have h1 : 1 - node n j ^ 2 ≠ 0 := by nlinarith
   have hn' : (n : ℝ) ≠ 0 := by exact_mod_cast hn
-  have hj1 : ((-1 : ℝ) ^ (j : ℕ)) ≠ 0 := pow_ne_zero _ (by norm_num)
   rw [div_eq_div_iff (by positivity) (by positivity)]
   linear_combination 2 * h
 

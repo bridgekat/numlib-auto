@@ -48,8 +48,9 @@ interface.
   `memSobolevMultiIndex_succ_iff`; the tangential derivative of `P_a u` is `P_a (∂_i u)` and the
   normal one is `P_{aλ} (∂_N u)` with the coefficients `a_j λ_j`, which satisfy the Vandermonde
   conditions one order lower.
-* **Transport along a `C^k` chart** (`MemSobolevMultiIndex.comp_diffeoOn_of_order`): `H^k` is
-  preserved by composition with a `C^k` diffeomorphism, by induction on `k` with the chain rule
+* **Transport along a `C^k` chart** (`MemSobolevMultiIndex.comp_diffeoOn_of_order` of
+  `Numlib/Analysis/Sobolev/Calculus.lean`): `H^k` is preserved by composition with a `C^k`
+  diffeomorphism, by induction on `k` with the chain rule
   `∂_i (w ∘ J) = ∑_l (∂_i J)_l (∂_l w) ∘ J` and the Leibniz rule for a `C^1` multiplier
   (`HasWeakIteratedLineDerivOn.mul_contDiffOn_one`, from the `C_c^1` test functions of Remark 1).
 * **The closed graph theorem** (`SobolevMultiIndex.exists_continuousLinearMap_of_order` of
@@ -82,128 +83,6 @@ open scoped ContDiff Distributions ENNReal NNReal Topology RealInnerProductSpace
 noncomputable section
 
 
-/-! ### Multipliers at every order -/
-
-section Multiplier
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
-  [FiniteDimensional ℝ E] [BorelSpace E] {ι : Type*} [Fintype ι] [LinearOrder ι]
-  {b : Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E}
-  [μ.IsAddHaarMeasure]
-
-omit [MeasurableSpace E] [BorelSpace E] in
-/-- A smooth function equal to `1` on a compact subset `K` of an open `V`, with compact support in
-`V`. -/
-theorem ExtensionHigher.exists_contDiff_eqOn_one_hasCompactSupport {K V : Set E}
-    (hK : IsCompact K) (hV : IsOpen V) (hKV : K ⊆ V) :
-    ∃ θ : E → ℝ, ContDiff ℝ ∞ θ ∧ EqOn θ 1 K ∧ HasCompactSupport θ ∧ tsupport θ ⊆ V := by
-  obtain ⟨L, hLc, hKL, hLV⟩ := exists_compact_between hK hV hKV
-  obtain ⟨θ, hθ, hθ1, hθL, -⟩ := hK.exists_contDiff_eqOn_one isOpen_interior hKL
-  exact ⟨θ, hθ, hθ1, hLc.of_isClosed_subset (isClosed_tsupport θ) (hθL.trans interior_subset),
-    hθL.trans (interior_subset.trans hLV)⟩
-
-end Multiplier
-
-/-! ### Transport along a `C^k` diffeomorphism at every order -/
-
-section Transport
-
-variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
-
-open SobolevMultiIndex
-
-/-- **`W^{k,p}` is preserved by a `C^k` diffeomorphism, at every order and exponent**: for a `C¹`
-diffeomorphism `H : Ω' → Ω` with bounded Jacobians and inverse `J`, with `J` of class `C^k` on an
-open set `V` containing a compact `K ⊇ Ω`, and `w ∈ W^{k,p}(Ω')`, the composite
-`w ∘ J ∈ W^{k,p}(Ω)`. Induction on `k`: the chain rule
-`∂ᵢ (w ∘ J) = ∑_l (∂_i J)_l · (∂_l w ∘ J)` (`HasWeakFDerivOn.comp_diffeoOn`), the inductive
-hypothesis for `∂_l w ∘ J`, and the multiplier `(∂_i J)_l`, `C^{k-1}` on `V` and equal on `Ω` to
-a compactly supported one
-(`MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact`). This is the
-`H^k` statement `memSobolevMultiIndex_comp_chart_of_order` of
-`Numlib/Analysis/PDE/Elliptic/Regularity.lean` at every exponent
-([brezis2011functional] §9.6, proof of Theorem 9.25, "by returning to `Ω ∩ Uᵢ`"). -/
-theorem MemSobolevMultiIndex.comp_diffeoOn_of_order (k : ℕ) :
-    ∀ {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {M : ℝ}
-    {Ω' Ω : Opens (EuclideanSpace ℝ (Fin N))}, IsDiffeoOnWithBoundedJacobian H J Ω' Ω M →
-    ∀ {V : Set (EuclideanSpace ℝ (Fin N))}, IsOpen V → ContDiffOn ℝ k J V →
-    ∀ {K : Set (EuclideanSpace ℝ (Fin N))}, IsCompact K →
-    (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ K → K ⊆ V →
-    ∀ {w : EuclideanSpace ℝ (Fin N) → ℝ},
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis w k p Ω' volume →
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fun x ↦ w (J x)) k p Ω
-      volume := by
-  induction k with
-  | zero =>
-    intro H J M Ω' Ω h V hV hJ K hK hΩK hKV w hw
-    rw [memSobolevMultiIndex_zero_iff] at hw ⊢
-    obtain ⟨D, -, hD⟩ := h.symm.exists_abs_det_fderiv_invFun_le
-    refine h.symm.memLp_comp hD Ω.isOpen subset_rfl ?_
-    rw [h.symm.bijOn.image_eq]
-    exact hw
-  | succ k ih =>
-    intro H J M Ω' Ω h V hV hJ K hK hΩK hKV w hw
-    have hΩV : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ V := hΩK.trans hKV
-    -- the cut-off equal to `1` on `K` with support in `V`
-    obtain ⟨χ, hχ, hχ1, hχc, hχV⟩ :=
-      ExtensionHigher.exists_contDiff_eqOn_one_hasCompactSupport hK hV hKV
-    -- the coefficients `c i l = (∂ᵢJ)_l`, `C^k` on `V`, and their compactly supported versions
-    obtain ⟨c, hc⟩ : ∃ c : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ,
-      c = fun i l x ↦ fderiv ℝ J x (EuclideanSpace.single i 1) l := ⟨_, rfl⟩
-    have hdJ : ContDiffOn ℝ k (fderiv ℝ J) V := hJ.fderiv_of_isOpen hV (m := k) (by norm_cast)
-    have hcV : ∀ i l, ContDiffOn ℝ k (c i l) V := fun i l ↦ by
-      rw [hc]
-      exact (EuclideanSpace.proj l).contDiff.comp_contDiffOn (hdJ.clm_apply contDiffOn_const)
-    have hmult : ∀ i l, IsContDiffConstOffCompact k fun x ↦ χ x * c i l x := fun i l ↦
-      IsContDiffConstOffCompact.of_hasCompactSupport
-        ((hχ.of_le (by simp)).mul_contDiffOn_of_tsupport_subset hV (hcV i l) hχV)
-        hχc.mul_right
-    -- `w ∈ W^{k,p}(Ω')`, its partial derivatives `g l ∈ W^{k,p}(Ω')`, and a tensor derivative `Dw`
-    obtain ⟨hw1, hwd⟩ := memSobolevMultiIndex_succ_iff.1 hw
-    choose g hg hgp using hwd
-    simp only [EuclideanSpace.basisFun_toBasis_apply] at hg
-    have hw1' : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis w 1 p Ω' volume :=
-      hw.mono_order (by omega)
-    obtain ⟨u, hu⟩ : ∃ u : SobolevEuclidean N 1 p Ω',
-      fn u =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] w :=
-      hw1'.exists_sobolevMultiIndex
-    obtain ⟨Dw, hDw, -, hDwi, -⟩ := exists_hasWeakFDerivOn_fn u
-    have hDw' : HasWeakFDerivOn w Dw Ω' volume :=
-      HasWeakIteratedFDerivOn.congr_ae hDw hu (EventuallyEq.refl _ _)
-    have hDwg : ∀ l, (fun y ↦ Dw y (EuclideanSpace.single l 1))
-        =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] g l := by
-      intro l
-      have h1 := (SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single u l).congr_ae hu
-        (EventuallyEq.refl _ _)
-      have h2 := (ae_restrict_iff' Ω'.isOpen.measurableSet).2 (h1.ae_eq (hg l))
-      have h3 := hDwi l
-      rw [EuclideanSpace.basisFun_toBasis_apply] at h3
-      exact h3.trans h2
-    -- the composite: `W^{k,p}` by the inductive hypothesis, and the derivatives
-    have hcomp := hDw'.comp_diffeoOn h.symm
-    have hJk : ContDiffOn ℝ k J V := hJ.of_le (by exact_mod_cast Nat.le_succ k)
-    refine memSobolevMultiIndex_succ_iff.2 ⟨ih h hV hJk hK hΩK hKV hw1, fun i ↦ ?_⟩
-    rw [EuclideanSpace.basisFun_toBasis_apply]
-    refine ⟨fun x ↦ ∑ l, χ x * c i l x * g l (J x), ?_, ?_⟩
-    · have h1 := (hcomp : HasWeakIteratedFDerivOn 1 _ _ Ω volume).lineDeriv
-        ![EuclideanSpace.single i 1]
-      refine h1.congr_ae (EventuallyEq.refl _ _) ?_
-      have hae : ∀ l, ∀ᵐ x ∂volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))),
-          Dw (J x) (EuclideanSpace.single l 1) = g l (J x) := fun l ↦
-        h.symm.ae_comp_restrict (hDwg l)
-      filter_upwards [ae_all_iff.2 hae, self_mem_ae_restrict Ω.isOpen.measurableSet] with x hx hxΩ
-      simp only [continuousMultilinearCurryFin1_symm_apply, Matrix.cons_val_zero,
-        ContinuousLinearMap.comp_apply]
-      rw [ContinuousLinearMap.apply_eq_sum_single (Dw (J x))
-        (fderiv ℝ J x (EuclideanSpace.single i 1))]
-      refine Finset.sum_congr rfl fun l _ ↦ ?_
-      rw [hx l, hc, hχ1 (hΩK hxΩ), Pi.one_apply, one_mul]
-    · refine MemSobolevMultiIndex.sum_mul_of_isContDiffConstOffCompact Finset.univ
-        (c := fun l x ↦ χ x * c i l x) (f := fun l x ↦ g l (J x)) (fun l _ ↦ hmult i l)
-        fun l _ ↦ ?_
-      exact ih h hV hJk hK hΩK hKV (hgp l)
-
-end Transport
 
 /-! ### The two halves of an open set, and the maps `scaleLast l` between them -/
 

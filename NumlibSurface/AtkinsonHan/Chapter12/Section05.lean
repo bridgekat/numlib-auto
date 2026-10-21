@@ -228,7 +228,7 @@ theorem example_12_5_2 {g : Set.Icc a b × Set.Icc a b → ℝ}
   set P : ℕ → C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ) :=
     fun n => piecewiseLinearInterpCLM (N n) (y n) with hPdef
   have hnormP : ∀ n, ‖P n‖ = 1 := fun n =>
-    norm_piecewiseLinearInterpCLM (hstep n) (hfirst n) (hlast n)
+    norm_piecewiseLinearInterpCLM ⟨fun i hi => hstep n i (by omega), hfirst n, hlast n⟩
   have hCp : ∀ n, ‖P n‖ ≤ 1 := fun n => le_of_eq (hnormP n)
   have hPconv : ∀ v : C(Set.Icc a b, ℝ), Tendsto (fun n => P n v) atTop (𝓝 v) :=
     tendsto_piecewiseLinearInterpCLM hstep hfirst hlast hmesh hh
@@ -249,8 +249,8 @@ theorem example_12_5_2 {g : Set.Icc a b × Set.Icc a b → ℝ}
   have hcons : ‖admissibleKernelCLM (hg.mul_continuousMap l) u - productCLM hg l (P n) u‖
       ≤ rowBound (iccMeasure a b) g * (h n ^ 2 / 8 * M₂) :=
     norm_admissibleKernelCLM_sub_productCLM_le hg l (P n) u hM0 fun x =>
-      norm_sub_piecewiseLinearInterpCLM_le (hstep n) (hfirst n) (hlast n) (hG x)
-        (f := prodFactor l x u) (fun t => hGval x t) (hmesh n) (hM₂ x)
+      norm_sub_piecewiseLinearInterpCLM_le ⟨fun i hi => hstep n i (by omega), hfirst n, hlast n⟩
+        (hG x) (f := prodFactor l x u) (fun t => hGval x t) (hmesh n) (hM₂ x)
   calc ‖u - un‖
       ≤ c * ‖admissibleKernelCLM (hg.mul_continuousMap l) u - productCLM hg l (P n) u‖ :=
         herr f u un hu hun

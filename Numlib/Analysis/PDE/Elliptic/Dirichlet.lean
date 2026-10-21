@@ -439,6 +439,25 @@ theorem load_sub (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ 
     (v : SobolevEuclidean N 1 2 Ω) : load Ω (f - g) v = load Ω f v - load Ω g v := by
   simp only [load_apply_inner, inner_sub_left]
 
+variable {Ω} in
+/-- **A weak solution with test space `V`** of the problem with form `a` and datum `f`: `u ∈ H^1(Ω)`
+with `a(u, φ) = ∫_Ω f φ` for every `φ ∈ V`. For `a = laplaceForm Ω` and `V = H^1_0(Ω)` this is the
+weak Dirichlet problem for `-Δu + u = f` ([brezis2011functional] §9.5, (34)), for
+`a = dirichletForm Ω` the one for `-Δu = f`; a boundary condition, if any, is a separate
+hypothesis on `u`. -/
+def IsWeakSolution (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω))
+    (V : Submodule ℝ (SobolevEuclidean N 1 2 Ω)) (u : SobolevEuclidean N 1 2 Ω)
+    (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) : Prop :=
+  ∀ φ ∈ V, a u φ = load Ω f φ
+
+variable {Ω} in
+/-- `IsWeakSolution` unfolded. -/
+theorem isWeakSolution_iff {a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω)}
+    {V : Submodule ℝ (SobolevEuclidean N 1 2 Ω)} {u : SobolevEuclidean N 1 2 Ω}
+    {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} :
+    IsWeakSolution a V u f ↔ ∀ φ ∈ V, a u φ = load Ω f φ :=
+  Iff.rfl
+
 /-- **The load restricted to a subspace `K` of `H^1(Ω)`, as a continuous linear map of `f`**:
 `loadL Ω K f v = ∫_Ω f v` for `v ∈ K`. It is what makes the solution operator of the weak
 Dirichlet problem a continuous linear map of `f`. -/
@@ -1145,7 +1164,6 @@ theorem generalForm_isCoerciveWith_of_nonneg {R : ℝ} (hR : 0 ≤ R)
           (v : SobolevEuclidean (d + 1) 1 2 Ω') (MultiIndexLE.single i)‖ ^ 2 := by
           rw [mul_pow, Real.sq_sqrt (by positivity), gradNorm_eq_sqrt,
             Real.sq_sqrt (Finset.sum_nonneg fun i _ ↦ sq_nonneg _)]
-  have hpos : 0 < 1 + (2 * R) ^ 2 := by positivity
   calc α / (1 + (2 * R) ^ 2) * ‖(v : SobolevEuclidean (d + 1) 1 2 Ω')‖ ^ 2
       ≤ α / (1 + (2 * R) ^ 2) * ((1 + (2 * R) ^ 2) * ∑ i, ‖SobolevMultiIndex.weakDeriv
           (v : SobolevEuclidean (d + 1) 1 2 Ω') (MultiIndexLE.single i)‖ ^ 2) :=
@@ -1373,13 +1391,8 @@ theorem weakDeriv_single_ae_eq_fderiv_of_contDiffOn (hu : ContDiffOn ℝ 1 u Ω)
     (i : Fin N) :
     (SobolevMultiIndex.weakDeriv U (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ)
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-        fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1) := by
-  have h1 := ((SobolevMultiIndex.hasWeakIteratedLineDerivOn U (MultiIndexLE.single i)).of_perm
-    (multiIndexTuple_single_perm ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → _)
-      i)).congr_ae hU (Filter.EventuallyEq.refl _ _)
-  rw [EuclideanSpace.basisFun_toBasis_apply] at h1
-  exact (ae_restrict_iff' Ω.isOpen.measurableSet).2
-    (h1.ae_eq (hu.hasWeakIteratedLineDerivOn_single Ω i))
+        fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1) :=
+  SobolevEuclidean.weakDeriv_single_ae_eq U hU (hu.hasWeakIteratedLineDerivOn_single Ω i)
 
 /-- **The form of `-Δ + 1` against a test function, for a `C²` function**: if `U ∈ H^1(Ω)` has the
 `C²` function `u` on `Ω` as its function and `V` has the test function `φ` as its function, then
@@ -1681,7 +1694,6 @@ theorem generalForm_eq_integral_of_contDiffOn (hu : ContDiffOn ℝ 2 u Ω)
           (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
         + (∑ i : Fin N, b i x * fderiv ℝ u x (EuclideanSpace.single i 1)) + c x * u x) * φ x := by
   have hΩo := Ω.isOpen
-  have hΩm := hΩo.measurableSet
   have hu1 : ContDiffOn ℝ 1 u Ω := hu.of_le (by norm_num)
   have hUd := weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω hu1 hU
   have hVd : ∀ j : Fin N,

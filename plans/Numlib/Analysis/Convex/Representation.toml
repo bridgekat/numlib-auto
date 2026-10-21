@@ -34,9 +34,6 @@ id = 'containsNoLine_inter_of_isCompl'
 id = 'extremeDirections_subset_extremeDirections_recessionCone'
 
 [[node]]
-id = 'exists_notMem_relint_mem_segment_of_isBounded'
-
-[[node]]
 id = 'exists_notMem_relint_mem_segment_of_not_convex'
 
 [[node]]

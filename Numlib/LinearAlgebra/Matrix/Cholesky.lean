@@ -191,6 +191,11 @@ theorem PosDef.isUnit_strictLeadingPrincipalSubmatrix (k : n) :
     IsUnit (A.strictLeadingPrincipalSubmatrix k) :=
   (hA.strictLeadingPrincipalSubmatrix k).isUnit
 
+/-- A positive definite matrix satisfies the hypothesis of the LU existence theorem. -/
+theorem PosDef.hasUnitStrictLeadingPrincipalSubmatrices :
+    A.HasUnitStrictLeadingPrincipalSubmatrices :=
+  hA.isUnit_strictLeadingPrincipalSubmatrix
+
 end Leading
 
 /-! ### The Hermitian `L D Lᴴ` factorization -/
@@ -234,7 +239,7 @@ factorization is Hermitian: `M = Lᴴᵀ` (so that `Mᵀ = Lᴴ`) and `D` is rea
 of the factorization is a second factorization of `A`, and `Matrix.existsUnique_isLDM` identifies
 the two. -/
 theorem IsLDM.eq_of_isHermitian (h : IsLDM A L D M) (hA : A.IsHermitian)
-    (hlead : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) : M = Lᴴᵀ ∧ D = Dᴴ := by
+    (hlead : A.HasUnitStrictLeadingPrincipalSubmatrices) : M = Lᴴᵀ ∧ D = Dᴴ := by
   have h' := h.conjTranspose
   rw [hA.eq] at h'
   obtain ⟨LDM₀, -, huniq⟩ := existsUnique_isLDM hlead
@@ -250,7 +255,7 @@ theorem IsLDM.eq_of_isHermitian (h : IsLDM A L D M) (hA : A.IsHermitian)
 principal submatrices ([golub2013matrix] Theorem 4.1.3; unique by `Matrix.existsUnique_isLDM`),
 from `Matrix.existsUnique_isLDM`. -/
 theorem exists_isLDM_conjTranspose_of_isHermitian (hA : A.IsHermitian)
-    (hlead : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) : ∃ L D, IsLDM A L D Lᴴᵀ := by
+    (hlead : A.HasUnitStrictLeadingPrincipalSubmatrices) : ∃ L D, IsLDM A L D Lᴴᵀ := by
   obtain ⟨⟨L, D, M⟩, h, -⟩ := existsUnique_isLDM hlead
   obtain ⟨hM, -⟩ := h.eq_of_isHermitian hA hlead
   exact ⟨L, D, hM ▸ h⟩
@@ -950,9 +955,9 @@ end Factor
 section PivotedLDL
 
 /-- For a unit lower triangular `L`, the entry of `L D Lᴴ` at a least index `i` is `d i`. -/
-private theorem mul_diagonal_mul_conjTranspose_apply_of_le {n : ℕ}
+private theorem mul_diagonal_mul_conjTranspose_apply_of_isBot {n : ℕ}
     {L : Matrix (Fin n) (Fin n) 𝕜} (hL : L.IsUnitLowerTriangular) (d : Fin n → 𝕜) {i : Fin n}
-    (hi : ∀ k, i ≤ k) : (L * diagonal d * Lᴴ) i i = d i := by
+    (hi : IsBot i) : (L * diagonal d * Lᴴ) i i = d i := by
   rw [mul_apply, Finset.sum_eq_single i]
   · rw [mul_diagonal, conjTranspose_apply, hL.diag_eq_one, star_one, mul_one, one_mul]
   · intro k _ hki
@@ -1007,7 +1012,7 @@ theorem PosSemidef.exists_perm_ldl_antitone :
         (fun i' => Fin.cases (motive := fun _ => 𝕜) (c i' / α) (fun j' => L' i' j') j) i with hLd
     have hd0 : ∀ (h : 0 < m), d' ⟨0, h⟩ ≤ α := fun h => by
       have e1 := congrFun (congrFun heq ⟨0, h⟩) ⟨0, h⟩
-      rw [mul_diagonal_mul_conjTranspose_apply_of_le hL' _
+      rw [mul_diagonal_mul_conjTranspose_apply_of_isBot hL' _
         (fun k => Fin.le_def.2 (Nat.zero_le _))] at e1
       have e2 : RCLike.re ((d' ⟨0, h⟩ : ℝ) : 𝕜) = RCLike.re (S (σ' ⟨0, h⟩) (σ' ⟨0, h⟩)) := by
         rw [← e1]

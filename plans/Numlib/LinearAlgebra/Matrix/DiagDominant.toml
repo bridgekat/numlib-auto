@@ -76,6 +76,12 @@ id = "IsDiagDominant"
 id = "IsColDiagDominant"
 
 [[node]]
+id = "IsAbsDiagDominant"
+
+[[node]]
+id = "isDiagDominant_iff_isAbsDiagDominant"
+
+[[node]]
 id = "IsStrictDiagDominant.isDiagDominant"
 
 [[node]]

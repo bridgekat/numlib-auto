@@ -99,7 +99,6 @@ theorem ConvexOn.add_lineDeriv_le (hf : ConvexOn ℝ K f) {A : V →L[ℝ] ℝ} 
     rw [hpt] at hconv
     simp only [smul_eq_mul] at hconv ⊢
     rw [inv_mul_le_iff₀ ht.1]
-    have hexp : (1 - t) * f u + t * f v - f u = t * (f v - f u) := by ring
     linarith
   have hmain := le_of_tendsto hslope hle
   linarith

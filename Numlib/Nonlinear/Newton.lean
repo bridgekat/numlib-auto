@@ -721,7 +721,6 @@ theorem majorant_sq_div (u : ℝ) (k : ℕ) :
     (majorant u k - majorant u (k + 1)) ^ 2 / (2 * majorant u (k + 1))
       = majorant u (k + 1) - majorant u (k + 2) := by
   have h0 := majorant_ne_zero u k
-  have h1 := majorant_ne_zero u (k + 1)
   rw [majorant_sub_succ u (k + 1), majorant_sub_succ u k, majorant_succ u k]
   field_simp
   ring
@@ -753,7 +752,6 @@ theorem majorant_sub_le_pow {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
   | succ k ih =>
     have hs := majorant_pos u k
     have hx : 0 ≤ majorant u k - u := by linarith [le_majorant hu hu1 k]
-    have hb : (0 : ℝ) ≤ (1 - u) ^ 2 ^ k := pow_nonneg (by linarith) _
     have hm : (0 : ℝ) < (2 : ℝ) ^ k := by positivity
     have hlow : (1 / 2 : ℝ) ^ k ≤ majorant u k := inv_two_pow_le_majorant u k
     have hinv : (1 : ℝ) ≤ (2 : ℝ) ^ k * majorant u k := by
@@ -767,7 +765,7 @@ theorem majorant_sub_le_pow {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
     have hexp : (2 : ℝ) ^ (k + 1) = 2 * 2 ^ k := by ring
     rw [majorant_succ_sub, hsplit, div_le_div_iff₀ (by linarith) (by positivity), hexp]
     nlinarith [mul_le_mul_of_nonneg_right hsq hs.le,
-      mul_nonneg (mul_nonneg (sq_nonneg (majorant u k - u)) hm.le) (sub_nonneg.2 hinv), hb]
+      mul_nonneg (mul_nonneg (sq_nonneg (majorant u k - u)) hm.le) (sub_nonneg.2 hinv)]
 
 /-- The Kantorovich uniqueness recursion in the majorant variable: the majorant sequence shifted by
 `u` obeys `(u + s_k) ^ 2 / (2 s_k) = u + s_{k+1}`, which is why a second zero at distance `t** = (1
@@ -970,10 +968,7 @@ private theorem kantorovich_invariant {Fn : E → F} {F' : E → E →L[𝕜] F}
       rw [iterate_succ Fn F' x₀ (k + 1), step_sub_self ek1 hek1, norm_neg]
       exact ContinuousLinearMap.le_opNorm (ek1.symm : F →L[𝕜] E)
         (Fn (iterate Fn F' x₀ (k + 1)))
-    have hs0 := majorant_pos u k
     have hs1 := majorant_pos u (k + 1)
-    have hdiff : 0 ≤ majorant u k - majorant u (k + 1) := by
-      linarith [majorant_succ_le hu0 hu1 k]
     calc ‖iterate Fn F' x₀ (k + 2) - iterate Fn F' x₀ (k + 1)‖
         ≤ ‖(ek1.symm : F →L[𝕜] E)‖ * ‖Fn (iterate Fn F' x₀ (k + 1))‖ := hnext
       _ ≤ (β / majorant u (k + 1)) *
@@ -996,7 +991,6 @@ private theorem norm_iterate_sub_iterate_le {Fn : E → F} {F' : E → E →L[�
     (hu0 : 0 ≤ u) (hu1 : u ≤ 1) (hueta : 2 * (β * L * η) = 1 - u ^ 2)
     (hr : (1 - u) / (β * L) ≤ r) {k m : ℕ} (hkm : k ≤ m) :
     ‖iterate Fn F' x₀ m - iterate Fn F' x₀ k‖ ≤ (majorant u k - u) / (β * L) := by
-  have hA : (0 : ℝ) < β * L := mul_pos hβ hL
   have hd : ∀ j, ‖iterate Fn F' x₀ (j + 1) - iterate Fn F' x₀ j‖
       ≤ (majorant u j - majorant u (j + 1)) / (β * L) := fun j =>
     (kantorovich_invariant hβ hL e he hβ' hη' hF hLip hu0 hu1 hueta hr j).2
@@ -1433,16 +1427,13 @@ theorem kantorovich_of_closedBall_step {Fn : E → F} {F' : E → E →L[𝕜] F
   have hrad : (0 : ℝ) ≤ 1 - 2 * (β * L * η) := by linarith
   have hu2 : Real.sqrt (1 - 2 * (β * L * η)) ^ 2 = 1 - 2 * (β * L * η) := Real.sq_sqrt hrad
   have hu0 : (0 : ℝ) ≤ Real.sqrt (1 - 2 * (β * L * η)) := Real.sqrt_nonneg _
-  have hu1 : Real.sqrt (1 - 2 * (β * L * η)) ≤ 1 := by nlinarith
   set u := Real.sqrt (1 - 2 * (β * L * η)) with hudef
   clear_value u
-  have hueta : 2 * (β * L * η) = 1 - u ^ 2 := by linarith
   have hu2pos : (0 : ℝ) < 1 + u ^ 2 := by positivity
-  have hu2le : u ^ 2 ≤ 1 := by nlinarith
   set x₁ := step Fn F' x₀ with hx1def
   have hρ : (1 - u) / (β * L) - η = (1 - u) ^ 2 / (2 * (β * L)) := by
     field_simp
-    nlinarith [hueta]
+    nlinarith
   have hρ0 : (0 : ℝ) ≤ (1 - u) / (β * L) - η := by
     rw [hρ]; exact div_nonneg (sq_nonneg _) (by linarith)
   have hx1D : x₁ ∈ D := hsub (Metric.mem_closedBall_self hρ0)
@@ -1493,7 +1484,7 @@ theorem kantorovich_of_closedBall_step {Fn : E → F} {F' : E → E →L[𝕜] F
   have hβ₁Lη : β₁ * L * η = (1 - u ^ 2) / (1 + u ^ 2) := by
     rw [hβ₁def, hs1def]
     field_simp
-    linarith [hueta]
+    linarith
   have hβ₁Lη₁ : β₁ * L * η₁ = (β₁ * L * η) ^ 2 / 2 := by rw [hη₁def]; ring
   clear_value η₁ β₁
   have hqle : β₁ * L * η ≤ 1 := by

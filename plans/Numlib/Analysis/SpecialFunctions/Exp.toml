@@ -1,0 +1,4 @@
+namespace = "Real"
+
+[[node]]
+id = "tendsto_prod_one_sub_of_tendsto_sum"

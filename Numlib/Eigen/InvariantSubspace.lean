@@ -380,6 +380,36 @@ private theorem schur_scaling {T : Matrix (Fin n) (Fin n) 𝕜} (hTu : T.IsUpper
     refine frobenius_norm_diagonal_mul_mul_inv_le (fun i j hji => ?_) hμ
     simp [strictUpper_apply, not_lt.2 hji]
 
+/-- The power bound shared by the two halves of [golub2013matrix] Lemma 7.3.2: if
+`B = Q (Δ⁻¹ Y Δ) Qᴴ` with `Q` unitary, `‖Δ‖₂ ≤ a` for some `a ≥ 1`, `‖Δ⁻¹‖₂ ≤ 1` and
+`‖Y‖₂ ≤ c`, then `‖B^k‖₂ ≤ a c^k`. -/
+private theorem lpOpNorm_pow_le_of_eq_conj {B Q Δ Δi Y : Matrix (Fin n) (Fin n) 𝕜}
+    (hQ : Q ∈ unitaryGroup (Fin n) 𝕜) (hΔ : Δ * Δi = 1) (hΔ' : Δi * Δ = 1)
+    (hB : B = Q * (Δi * Y * Δ) * star Q) {a c : ℝ} (ha : 1 ≤ a) (hc : 0 ≤ c)
+    (hΔn : lpOpNorm 2 Δ ≤ a) (hΔin : lpOpNorm 2 Δi ≤ 1) (hY : lpOpNorm 2 Y ≤ c) (k : ℕ) :
+    lpOpNorm 2 (B ^ k) ≤ a * c ^ k := by
+  rcases k with _ | k
+  · rw [pow_zero, pow_zero, mul_one]
+    refine le_trans ?_ ha
+    rw [lpOpNorm, lpCLM_one]; exact ContinuousLinearMap.norm_id_le
+  have hQQ : Q * star Q = 1 := mem_unitaryGroup_iff.1 hQ
+  have hQQ' : star Q * Q = 1 := mem_unitaryGroup_iff'.1 hQ
+  have hBk : B ^ (k + 1) = Q * (Δi * Y ^ (k + 1) * Δ) * star Q := by
+    rw [hB]
+    exact (Units.conj_pow ⟨Q, star Q, hQQ, hQQ'⟩ (Δi * Y * Δ) (k + 1)).trans
+      (congrArg (Q * · * star Q) (Units.conj_pow ⟨Δi, Δ, hΔ', hΔ⟩ Y (k + 1)))
+  rw [hBk, lpOpNorm_two_unitary_conj hQ]
+  calc lpOpNorm 2 (Δi * Y ^ (k + 1) * Δ)
+      ≤ lpOpNorm 2 Δi * lpOpNorm 2 (Y ^ (k + 1)) * lpOpNorm 2 Δ :=
+        (lpOpNorm_mul_le 2 _ _).trans (mul_le_mul_of_nonneg_right (lpOpNorm_mul_le 2 _ _)
+          (lpOpNorm_nonneg _ _))
+    _ ≤ 1 * c ^ (k + 1) * a := by
+        have hYk := (lpOpNorm_pow_le 2 Y (k + 1)).trans
+          (pow_le_pow_left₀ (lpOpNorm_nonneg _ _) hY (k + 1))
+        exact mul_le_mul (mul_le_mul hΔin hYk (lpOpNorm_nonneg _ _) zero_le_one) hΔn
+          (lpOpNorm_nonneg _ _) (mul_nonneg zero_le_one (pow_nonneg hc _))
+    _ = _ := by ring
+
 /-- **Powers from a Schur form** ([golub2013matrix] Lemma 7.3.2, (7.3.15)): if `Q` is unitary,
 `Qᴴ A Q = T` is upper triangular with strictly upper part `N` and `μ ≥ 0`, then
 `‖A^k‖₂ ≤ (1 + μ)^{n-1} (max_i |t_ii| + ‖N‖_F / (1 + μ))^k` for every `k`.
@@ -393,44 +423,25 @@ theorem l2_opNorm_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
       (1 + μ) ^ (n - 1) * ((⨆ i, ‖T i i‖) + ‖strictUpper T‖ / (1 + μ)) ^ k := by
   have h1 : (1 : ℝ) ≤ 1 + μ := by linarith
   have hsup0 : 0 ≤ ⨆ i, ‖T i i‖ := Real.iSup_nonneg fun _ => norm_nonneg _
-  rcases k with _ | k
-  · rw [pow_zero, pow_zero, mul_one]
-    refine le_trans ?_ (one_le_pow₀ h1)
-    rw [lpOpNorm, lpCLM_one]; exact ContinuousLinearMap.norm_id_le
   obtain ⟨hΔ, hΔ', hΔn, hΔin, hY, hM⟩ := schur_scaling hTu hμ
   set d : Fin n → 𝕜 := fun i => (((1 + μ) ^ (i : ℕ) : ℝ) : 𝕜)
   set Δ := diagonal d
   set Δi := diagonal fun i => (d i)⁻¹
   set Y := Δ * T * Δi with hYdef
   have hQQ : Q * star Q = 1 := mem_unitaryGroup_iff.1 hQ
-  have hQQ' : star Q * Q = 1 := mem_unitaryGroup_iff'.1 hQ
   have hA : A = Q * T * star Q := by
     rw [← hT]; simp only [← Matrix.mul_assoc, hQQ, Matrix.one_mul]
     rw [Matrix.mul_assoc, hQQ, Matrix.mul_one]
   have hTY : T = Δi * Y * Δ := by
     simp only [hYdef, ← Matrix.mul_assoc, hΔ', Matrix.one_mul]
     rw [Matrix.mul_assoc, hΔ', Matrix.mul_one]
-  have hAk : A ^ (k + 1) = Q * (Δi * Y ^ (k + 1) * Δ) * star Q := by
-    rw [hA, hTY]
-    exact (Units.conj_pow ⟨Q, star Q, hQQ, hQQ'⟩ (Δi * Y * Δ) (k + 1)).trans
-      (congrArg (Q * · * star Q) (Units.conj_pow ⟨Δi, Δ, hΔ', hΔ⟩ Y (k + 1)))
-  rw [hAk, lpOpNorm_two_unitary_conj hQ]
   have hYn : lpOpNorm 2 Y ≤ (⨆ i, ‖T i i‖) + ‖strictUpper T‖ / (1 + μ) := by
     rw [hY]
     refine (lpOpNorm_add_le 2 _ _).trans (add_le_add ?_ hM)
     refine lpOpNorm_diagonal_le 2 hsup0 fun i => ?_
     exact le_ciSup (Finite.bddAbove_range fun i => ‖T i i‖) i
-  calc lpOpNorm 2 (Δi * Y ^ (k + 1) * Δ)
-      ≤ lpOpNorm 2 Δi * lpOpNorm 2 (Y ^ (k + 1)) * lpOpNorm 2 Δ :=
-        (lpOpNorm_mul_le 2 _ _).trans (mul_le_mul_of_nonneg_right (lpOpNorm_mul_le 2 _ _)
-          (lpOpNorm_nonneg _ _))
-    _ ≤ 1 * ((⨆ i, ‖T i i‖) + ‖strictUpper T‖ / (1 + μ)) ^ (k + 1) * (1 + μ) ^ (n - 1) := by
-        have hYk := (lpOpNorm_pow_le 2 Y (k + 1)).trans
-          (pow_le_pow_left₀ (lpOpNorm_nonneg _ _) hYn (k + 1))
-        have hX0 : 0 ≤ (⨆ i, ‖T i i‖) + ‖strictUpper T‖ / (1 + μ) := by positivity
-        exact mul_le_mul (mul_le_mul hΔin hYk (lpOpNorm_nonneg _ _) zero_le_one) hΔn
-          (lpOpNorm_nonneg _ _) (mul_nonneg zero_le_one (pow_nonneg hX0 _))
-    _ = _ := by ring
+  exact lpOpNorm_pow_le_of_eq_conj hQ hΔ hΔ' (by rw [hA, hTY]) (one_le_pow₀ h1) (by positivity) hΔn
+    hΔin hYn k
 
 /-- **Powers of the inverse from a Schur form** ([golub2013matrix] Lemma 7.3.2, (7.3.16)): in the
 setting of `Matrix.l2_opNorm_pow_le_of_schur`, if `(1 + μ) m > ‖N‖_F` for `m = min_i |t_ii|`,
@@ -448,10 +459,6 @@ theorem l2_opNorm_inv_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
   have hm0 : 0 ≤ m := Real.iInf_nonneg fun _ => norm_nonneg _
   have hc : 0 < m - ‖strictUpper T‖ / (1 + μ) := by
     rw [sub_pos, div_lt_iff₀ (by linarith)]; linarith
-  rcases k with _ | k
-  · rw [pow_zero, pow_zero, mul_one]
-    refine le_trans ?_ (one_le_pow₀ h1)
-    rw [lpOpNorm, lpCLM_one]; exact ContinuousLinearMap.norm_id_le
   obtain ⟨hΔ, hΔ', hΔn, hΔin, hY, hM⟩ := schur_scaling hTu hμ
   set d : Fin n → 𝕜 := fun i => (((1 + μ) ^ (i : ℕ) : ℝ) : 𝕜)
   set Δ := diagonal d
@@ -493,20 +500,8 @@ theorem l2_opNorm_inv_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
     rw [hA, hTY, Matrix.mul_inv_rev, Matrix.mul_inv_rev, Matrix.mul_inv_rev,
       Matrix.mul_inv_rev, hsQinv, hQinv, hΔinv, hΔiinv]
     simp only [Matrix.mul_assoc]
-  have hAk : (Q * (Δi * Y⁻¹ * Δ) * star Q) ^ (k + 1) = Q * (Δi * Y⁻¹ ^ (k + 1) * Δ) * star Q :=
-    (Units.conj_pow ⟨Q, star Q, hQQ, hQQ'⟩ (Δi * Y⁻¹ * Δ) (k + 1)).trans
-      (congrArg (Q * · * star Q) (Units.conj_pow ⟨Δi, Δ, hΔ', hΔ⟩ Y⁻¹ (k + 1)))
-  rw [hAinv, hAk, lpOpNorm_two_unitary_conj hQ]
-  calc lpOpNorm 2 (Δi * Y⁻¹ ^ (k + 1) * Δ)
-      ≤ lpOpNorm 2 Δi * lpOpNorm 2 (Y⁻¹ ^ (k + 1)) * lpOpNorm 2 Δ :=
-        (lpOpNorm_mul_le 2 _ _).trans (mul_le_mul_of_nonneg_right (lpOpNorm_mul_le 2 _ _)
-          (lpOpNorm_nonneg _ _))
-    _ ≤ 1 * (1 / (m - ‖strictUpper T‖ / (1 + μ))) ^ (k + 1) * (1 + μ) ^ (n - 1) := by
-        have hYk := (lpOpNorm_pow_le 2 Y⁻¹ (k + 1)).trans
-          (pow_le_pow_left₀ (lpOpNorm_nonneg _ _) hYinv' (k + 1))
-        exact mul_le_mul (mul_le_mul hΔin hYk (lpOpNorm_nonneg _ _) zero_le_one) hΔn
-          (lpOpNorm_nonneg _ _) (mul_nonneg zero_le_one (pow_nonneg (one_div_pos.2 hc).le _))
-    _ = _ := by ring
+  exact lpOpNorm_pow_le_of_eq_conj hQ hΔ hΔ' hAinv (one_le_pow₀ h1) (one_div_pos.2 hc).le hΔn
+    hΔin hYinv' k
 
 end Matrix
 
@@ -691,7 +686,6 @@ theorem norm_eq_gap_graph_div (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K] 
     ‖X‖ = K.gap (K.graph X) / Real.sqrt (1 - K.gap (K.graph X) ^ 2) := by
   rw [gap_graph]
   set t := ‖X‖
-  have hs : 0 < Real.sqrt (1 + t ^ 2) := Real.sqrt_pos.2 (by positivity)
   have hs2 : Real.sqrt (1 + t ^ 2) ^ 2 = 1 + t ^ 2 := Real.sq_sqrt (by positivity)
   have h1 : 1 - (t / Real.sqrt (1 + t ^ 2)) ^ 2 = (1 / Real.sqrt (1 + t ^ 2)) ^ 2 := by
     rw [div_pow, div_pow, hs2]; field_simp; ring
@@ -1219,19 +1213,6 @@ private theorem toEuclideanLin_fromBlocks_apply {p q : Type*} [Fintype p] [Finty
         (toEuclideanLin M₂₁ u + toEuclideanLin M₂₂ w) := by
   ext (i | i) <;> simp [toEuclideanLin_apply, fromBlocks_mulVec]
 
-/-- The powers of a block upper triangular matrix are block upper triangular, with the powers
-of the diagonal blocks on the diagonal. -/
-private theorem exists_fromBlocks_pow {p q : Type*} [Fintype p] [Fintype q] [DecidableEq p]
-    [DecidableEq q] (M₁₁ : Matrix p p ℂ) (M₁₂ : Matrix p q ℂ) (M₂₂ : Matrix q q ℂ) (k : ℕ) :
-    ∃ Y, fromBlocks M₁₁ M₁₂ 0 M₂₂ ^ k = fromBlocks (M₁₁ ^ k) Y 0 (M₂₂ ^ k) := by
-  induction k with
-  | zero => exact ⟨0, by rw [pow_zero, pow_zero, pow_zero, fromBlocks_one]⟩
-  | succ k ih =>
-    obtain ⟨Y, hY⟩ := ih
-    refine ⟨M₁₁ ^ k * M₁₂ + Y * M₂₂, ?_⟩
-    rw [pow_succ, hY, fromBlocks_multiply, pow_succ, pow_succ]
-    simp
-
 private theorem norm_toEuclideanLin_le_lpOpNorm {p q : Type*} [Fintype p] [Fintype q]
     [DecidableEq q] (M : Matrix p q ℂ) (y : EuclideanSpace ℂ q) :
     ‖toEuclideanLin M y‖ ≤ lpOpNorm 2 M * ‖y‖ :=
@@ -1344,7 +1325,7 @@ private theorem gap_subspaceIterate_le_of_blocks {T₁₁ : Matrix (Fin r) (Fin 
       rw [hfinD']
       omega
   -- the power of `B` on the two blocks
-  obtain ⟨Y, hY⟩ := exists_fromBlocks_pow T₁₁ T₁₂ T₂₂ k
+  obtain ⟨Y, hY⟩ := exists_fromBlocks_zero₂₁_pow_eq T₁₁ T₁₂ T₂₂ k
   have hBk : ∀ u w, (B ^ k) (blk u w) = blk (toEuclideanLin (T₁₁ ^ k) u +
       toEuclideanLin Y w) (toEuclideanLin (T₂₂ ^ k) w) := fun u w => by
     rw [hB, ← toEuclideanLin_pow, hY, toEuclideanLin_fromBlocks_apply, map_zero,
@@ -1455,7 +1436,6 @@ theorem gap_subspaceIterate_le_of_schur {n r : ℕ} {A Q : Matrix (Fin n) (Fin n
   have : Nonempty (Fin (n - r)) := ⟨⟨0, hsp0⟩⟩
   have h1μ : 0 < 1 + μ := by linarith
   have hb0 : 0 ≤ b := (norm_nonneg _).trans (hb ⟨0, hsp0⟩)
-  have ha0 : 0 < a := lt_of_le_of_lt hb0 hab
   -- `T₁₁` is invertible and the spectra are disjoint
   have hT₁₁u : IsUnit T₁₁ := by
     rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hT₁₁, isUnit_iff_ne_zero,

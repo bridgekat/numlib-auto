@@ -247,7 +247,6 @@ theorem continuous_integral_mul (u : C(X, ℝ)) :
   filter_upwards [Metric.ball_mem_nhds x₀ hδ] with x hx
   rw [Real.dist_eq]
   have hlt : (∫ y, |k (x, y) - k (x₀, y)| ∂μ) < ε / (‖u‖ + 1) := hδk x x₀ hx
-  have hnn : (0 : ℝ) ≤ ∫ y, |k (x, y) - k (x₀, y)| ∂μ := integral_nonneg fun _ => abs_nonneg _
   calc |(∫ y, k (x, y) * u y ∂μ) - ∫ y, k (x₀, y) * u y ∂μ|
       ≤ (∫ y, |k (x, y) - k (x₀, y)| ∂μ) * ‖u‖ := hk.abs_integral_mul_sub_le u x x₀
     _ ≤ ε / (‖u‖ + 1) * ‖u‖ := mul_le_mul_of_nonneg_right hlt.le (norm_nonneg u)
@@ -408,7 +407,6 @@ compactness specialize to `IntegralOperator.kernelCLM`. Condition (A₁) is the 
 of `k` on the compact `X × X`. -/
 theorem isAdmissibleKernel_of_continuousMap (k : C(X × X, ℝ)) :
     IsAdmissibleKernel μ fun p => k p := by
-  have hmnn : (0 : ℝ) ≤ μ.real univ := measureReal_nonneg
   refine ⟨fun x => integrable_kernel_row μ k x, ⟨‖k‖ * μ.real univ, ?_⟩, ?_⟩
   · rintro _ ⟨x, rfl⟩
     have h1 : ∫ y, |k (x, y)| ∂μ ≤ ∫ _y : X, ‖k‖ ∂μ :=
@@ -435,7 +433,7 @@ theorem isAdmissibleKernel_of_continuousMap (k : C(X × X, ℝ)) :
       _ = μ.real univ * (ε / (μ.real univ + 1)) := by simp [integral_const, smul_eq_mul]
       _ < ε := by
           rw [mul_div_assoc', div_lt_iff₀ (by positivity)]
-          nlinarith [hε, hmnn]
+          nlinarith [hε]
 
 /-- The operator of an admissible continuous kernel is `IntegralOperator.kernelCLM`. -/
 theorem admissibleKernelCLM_eq_kernelCLM (k : C(X × X, ℝ)) :
@@ -528,7 +526,6 @@ theorem norm_admissibleKernelCLM (hk : IsAdmissibleKernel μ k) :
   refine Real.iSup_le (fun x₀ => ?_) (norm_nonneg _)
   refine le_of_forall_pos_le_add fun ε hε => ?_
   set M : ℝ := μ.real univ with hM
-  have hMnn : (0 : ℝ) ≤ M := measureReal_nonneg
   set δ : ℝ := ε / (3 * (M + 1)) with hδdef
   have hδ : 0 < δ := by positivity
   obtain ⟨g, hgapprox, hgint⟩ :=
@@ -596,7 +593,7 @@ theorem norm_admissibleKernelCLM (hk : IsAdmissibleKernel μ k) :
           nlinarith [norm_nonneg (admissibleKernelCLM hk), norm_nonneg w]
   have hδM : δ * M ≤ ε / 3 := by
     rw [hδdef, div_mul_eq_mul_div, div_le_div_iff₀ (by positivity) (by norm_num)]
-    nlinarith [hε.le, hMnn]
+    nlinarith [hε.le]
   linarith
 
 end Approximation
@@ -631,7 +628,6 @@ theorem IsAdmissibleKernel.mul_continuousMap (hk : IsAdmissibleKernel μ k) (g :
           rw [mul_comm]
           exact mul_le_mul_of_nonneg_left (hk.le_rowBound x) (norm_nonneg g)
   · intro ε hε
-    have hgnn : (0 : ℝ) ≤ ‖g‖ := norm_nonneg g
     have hMnn : (0 : ℝ) ≤ rowBound μ k := hk.rowBound_nonneg
     obtain ⟨δ₁, hδ₁, hδ₁k⟩ := hk.exists_delta (ε / (2 * (‖g‖ + 1))) (by positivity)
     obtain ⟨δ₂, hδ₂, hδ₂g⟩ := Metric.uniformContinuous_iff.1
@@ -665,7 +661,6 @@ theorem IsAdmissibleKernel.mul_continuousMap (hk : IsAdmissibleKernel μ k) (g :
     have hI2 : Integrable (fun y => |k (z, y)| * (ε / (2 * (rowBound μ k + 1)))) μ :=
       (hk.integrable_row z).abs.mul_const _
     have hA : (0 : ℝ) ≤ ∫ y, |k (x, y) - k (z, y)| ∂μ := integral_nonneg fun _ => abs_nonneg _
-    have hB : (0 : ℝ) ≤ ∫ y, |k (z, y)| ∂μ := integral_nonneg fun _ => abs_nonneg _
     have hAlt : (∫ y, |k (x, y) - k (z, y)| ∂μ) < ε / (2 * (‖g‖ + 1)) := hδ₁k x z hx1
     have hBle : (∫ y, |k (z, y)| ∂μ) ≤ rowBound μ k := hk.le_rowBound z
     calc ∫ y, |k (x, y) * g (x, y) - k (z, y) * g (z, y)| ∂μ
@@ -680,7 +675,7 @@ theorem IsAdmissibleKernel.mul_continuousMap (hk : IsAdmissibleKernel μ k) (g :
           have h1 : (∫ y, |k (x, y) - k (z, y)| ∂μ) * ‖g‖ < ε / 2 := by
             rw [div_mul_eq_div_div] at hAlt
             have hlt := (lt_div_iff₀ hg1).1 hAlt
-            nlinarith [hA, hgnn, hlt]
+            nlinarith [hA, hlt]
           have h2 : (∫ y, |k (z, y)| ∂μ) * (ε / (2 * (rowBound μ k + 1))) ≤ ε / 2 := by
             have hc : (0 : ℝ) ≤ ε / (2 * (rowBound μ k + 1)) := by positivity
             have := mul_le_mul_of_nonneg_right hBle hc

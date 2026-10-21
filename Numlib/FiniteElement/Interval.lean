@@ -154,7 +154,7 @@ which therefore lies in `X_h^k`. This is
 `memSobolevInterval_of_piecewise_contDiffOn` applied panel by panel, the panel derivatives being
 the derivatives of the panel polynomials. -/
 theorem exists_mem_lagrangeSpace {n k : ℕ} {x : ℕ → ℝ} (hab : a < b)
-    (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+    (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {f : C(Icc a b, ℝ)} (hf : f ∈ Spline.splineSpace a b n x k 0) :
     ∃ u : SobolevInterval 1 a b, SobolevInterval.toContinuousMap hab u = f := by
   obtain ⟨N, rfl⟩ : ∃ N, n = N + 1 := ⟨n - 1, by omega⟩
@@ -172,7 +172,7 @@ theorem exists_mem_lagrangeSpace {n k : ℕ} {x : ℕ → ℝ} (hab : a < b)
   have hsubI : ∀ j : Fin (N + 1), Icc (x (j : ℕ)) (x ((j : ℕ) + 1)) ⊆ Icc a b :=
     fun j ↦ hx.Icc_subset j.isLt
   have hymono : StrictMono y := fun i j hij ↦
-    hx.lt (Fin.lt_def.1 hij) (by have := j.isLt; omega)
+    hx.lt (Fin.lt_def.1 hij) (by omega)
   have hy0 : y 0 = a := by simpa [hy] using hx.first
   have hylast : y (Fin.last (N + 1)) = b := by simpa [hy] using hx.last
   have hg' : ∀ j : Fin (N + 1), ContDiffOn ℝ 1 g (Ioo (y j.castSucc) (y j.succ)) := fun j ↦
@@ -219,7 +219,7 @@ theorem coe_toSplineSpace (hab : a < b) {n k : ℕ} {x : ℕ → ℝ} (u : lagra
 /-- **`X_h^k` and the spline space are isomorphic**, by the embedding `H^1(a, b) ↪ C([a, b], ℝ)`
 restricted to `X_h^k`. -/
 noncomputable def lagrangeSpaceEquiv {n : ℕ} {x : ℕ → ℝ} (hab : a < b)
-    (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
+    (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
     lagrangeSpace hab n x k ≃ₗ[ℝ] Spline.splineSpace a b n x k 0 :=
   LinearEquiv.ofBijective (toSplineSpace hab n x k)
     ⟨fun u v huv ↦
@@ -233,13 +233,13 @@ number of nodal values of a continuous piecewise polynomial of degree `k` on `n`
 `Spline.finrank_splineSpace` at smoothness `r = 0`, transported by
 `FiniteElement.lagrangeSpaceEquiv`. -/
 theorem finrank_lagrangeSpace {n : ℕ} {x : ℕ → ℝ} (hab : a < b)
-    (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
+    (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
     Module.finrank ℝ (lagrangeSpace hab n x k) = n * k + 1 := by
   rw [(lagrangeSpaceEquiv hab hx hn k).finrank_eq, Spline.finrank_splineSpace hx hn (Nat.zero_le k)]
   simp
 
 theorem finiteDimensional_lagrangeSpace {n : ℕ} {x : ℕ → ℝ} (hab : a < b)
-    (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
+    (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
     FiniteDimensional ℝ (lagrangeSpace hab n x k) := by
   have h : FiniteDimensional ℝ (Spline.splineSpace a b n x k 0) :=
     Spline.finiteDimensional_splineSpace hx hn
@@ -329,7 +329,7 @@ section Partition
 variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- On the panel `k` the staircases of index at most `k` have already risen to `1`. -/
-theorem hatStep_eq_one (hx : Spline.IsPartition a b n x) {k i : ℕ} (hk : k < n) (hi : i ≤ k)
+theorem hatStep_eq_one (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n) (hi : i ≤ k)
     {t : ℝ} (ht : x k ≤ t) : hatStep n x i t = 1 := by
   rcases Nat.eq_zero_or_pos i with rfl | hi1
   · simp
@@ -340,7 +340,7 @@ theorem hatStep_eq_one (hx : Spline.IsPartition a b n x) {k i : ℕ} (hk : k < n
       ((hx.mono (by omega) (by omega)).trans ht)
 
 /-- On the panel `k` the staircases of index at least `k + 2` have not yet started. -/
-theorem hatStep_eq_zero (hx : Spline.IsPartition a b n x) {k i : ℕ} (hi : k + 2 ≤ i)
+theorem hatStep_eq_zero (hx : IsIntervalPartition a b n x) {k i : ℕ} (hi : k + 2 ≤ i)
     {t : ℝ} (ht : t ≤ x (k + 1)) : hatStep n x i t = 0 := by
   rcases lt_or_ge n i with h | h
   · rw [hatStep_of_lt x h]
@@ -352,7 +352,7 @@ theorem hatStep_eq_zero (hx : Spline.IsPartition a b n x) {k i : ℕ} (hi : k + 
 
 /-- **The descending branch of the hat**: on the panel `[x_k, x_{k+1}]`, `φ_k` is
 `(x_{k+1} - t)/(x_{k+1} - x_k)`. -/
-theorem hatFun_eq_of_left (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
+theorem hatFun_eq_of_left (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
     (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x k t = (x (k + 1) - t) / (x (k + 1) - x k) := by
   have hlt := hx.step k hk
@@ -365,7 +365,7 @@ theorem hatFun_eq_of_left (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < 
 
 /-- **The ascending branch of the hat**: on the panel `[x_k, x_{k+1}]`, `φ_{k+1}` is
 `(t - x_k)/(x_{k+1} - x_k)`. -/
-theorem hatFun_eq_of_right (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
+theorem hatFun_eq_of_right (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
     (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x (k + 1) t = (t - x k) / (x (k + 1) - x k) := by
   have hkn : k + 1 ≤ n := hk
@@ -375,7 +375,7 @@ theorem hatFun_eq_of_right (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k <
 
 /-- **The local support of the hat functions** ([quarteroni2000numerical] §12.4.5): only `φ_k`
 and `φ_{k+1}` are nonzero on the panel `[x_k, x_{k+1}]`. -/
-theorem hatFun_eq_zero_of_panel (hx : Spline.IsPartition a b n x) {k i : ℕ} (hk : k < n)
+theorem hatFun_eq_zero_of_panel (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n)
     (h1 : i ≠ k) (h2 : i ≠ k + 1) {t : ℝ} (ht1 : x k ≤ t) (ht2 : t ≤ x (k + 1)) :
     hatFun n x i t = 0 := by
   rcases lt_or_gt_of_ne h1 with h | h
@@ -384,7 +384,7 @@ theorem hatFun_eq_zero_of_panel (hx : Spline.IsPartition a b n x) {k i : ℕ} (h
 
 /-- **The Lagrange interpolation property** `φ_i(x_j) = δ_{ij}` of
 [quarteroni2000numerical] (12.61). -/
-theorem hatFun_apply_node (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {i j : ℕ} (hj : j ≤ n) :
+theorem hatFun_apply_node (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {i j : ℕ} (hj : j ≤ n) :
     hatFun n x i (x j) = if i = j then 1 else 0 := by
   rcases lt_or_ge j n with hjn | hjn
   · have hlt := hx.step j hjn
@@ -508,7 +508,7 @@ section Partition
 variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- The panels are disjoint, so on the panel `k` every other ramp derivative vanishes. -/
-theorem rampDerivFun_eq_zero_of_ne (hx : Spline.IsPartition a b n x) {k j : ℕ} (hk : k < n)
+theorem rampDerivFun_eq_zero_of_ne (hx : IsIntervalPartition a b n x) {k j : ℕ} (hk : k < n)
     (hj : j ≤ n) (hjk : j ≠ k) {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) :
     rampDerivFun x j t = 0 := by
   refine rampDerivFun_of_notMem fun htj ↦ ?_
@@ -518,7 +518,7 @@ theorem rampDerivFun_eq_zero_of_ne (hx : Spline.IsPartition a b n x) {k j : ℕ}
   · exact absurd (ht.2.trans_le (hx.mono (by omega) hj : x (k + 1) ≤ x j)) (not_lt.2 htj.1.le)
 
 /-- On the panel `k` only the staircase of index `k + 1` has a nonzero derivative. -/
-theorem hatStepDeriv_eq_zero_of_ne (hx : Spline.IsPartition a b n x) {k i : ℕ} (hk : k < n)
+theorem hatStepDeriv_eq_zero_of_ne (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n)
     (hik : i ≠ k + 1) {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) : hatStepDeriv n x i t = 0 := by
   rcases Nat.eq_zero_or_pos i with rfl | hi
   · simp [hatStepDeriv]
@@ -539,19 +539,19 @@ theorem hatStepDeriv_eq {n : ℕ} {x : ℕ → ℝ} {k : ℕ} (hk : k < n) {t : 
   exact rampDerivFun_of_mem ht
 
 /-- **The descending slope**: on the panel `(x_k, x_{k+1})`, `φ_k' = -1/h_k`. -/
-theorem hatDerivFun_eq_of_left (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
+theorem hatDerivFun_eq_of_left (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
     (ht : t ∈ Ioo (x k) (x (k + 1))) :
     hatDerivFun n x k t = -(x (k + 1) - x k)⁻¹ := by
   rw [hatDerivFun, hatStepDeriv_eq_zero_of_ne hx hk (by omega) ht, hatStepDeriv_eq hk ht, zero_sub]
 
 /-- **The ascending slope**: on the panel `(x_k, x_{k+1})`, `φ_{k+1}' = 1/h_k`. -/
-theorem hatDerivFun_eq_of_right (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
+theorem hatDerivFun_eq_of_right (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
     (ht : t ∈ Ioo (x k) (x (k + 1))) :
     hatDerivFun n x (k + 1) t = (x (k + 1) - x k)⁻¹ := by
   rw [hatDerivFun, hatStepDeriv_eq hk ht, hatStepDeriv_eq_zero_of_ne hx hk (by omega) ht, sub_zero]
 
 /-- The derivatives of the other hat functions vanish on the panel `k`. -/
-theorem hatDerivFun_eq_zero_of_panel (hx : Spline.IsPartition a b n x) {k i : ℕ} (hk : k < n)
+theorem hatDerivFun_eq_zero_of_panel (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n)
     (h1 : i ≠ k) (h2 : i ≠ k + 1) {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) :
     hatDerivFun n x i t = 0 := by
   rw [hatDerivFun, hatStepDeriv_eq_zero_of_ne hx hk h2 ht,
@@ -560,7 +560,7 @@ theorem hatDerivFun_eq_zero_of_panel (hx : Spline.IsPartition a b n x) {k i : �
 /-- On a panel the hat function is affine, with slope the value of `FiniteElement.hatDerivFun`
 there. This is the single fact behind the membership in the spline space, the smoothness on the
 open panels and the identification of the classical derivative. -/
-theorem exists_affine_hatFun (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n) (i : ℕ) :
+theorem exists_affine_hatFun (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) (i : ℕ) :
     ∃ c d : ℝ, (∀ t ∈ Icc (x k) (x (k + 1)), hatFun n x i t = c * t + d) ∧
       ∀ t ∈ Ioo (x k) (x (k + 1)), hatDerivFun n x i t = c := by
   have hlt := hx.step k hk
@@ -583,7 +583,7 @@ theorem exists_affine_hatFun (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k
 
 /-- Inside a panel the classical derivative of the hat function is
 `FiniteElement.hatDerivFun`. -/
-theorem deriv_hatFun_eq (hx : Spline.IsPartition a b n x) {k i : ℕ} (hk : k < n) {t : ℝ}
+theorem deriv_hatFun_eq (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n) {t : ℝ}
     (ht : t ∈ Ioo (x k) (x (k + 1))) : deriv (hatFun n x i) t = hatDerivFun n x i t := by
   obtain ⟨c, d, hcd, hc⟩ := exists_affine_hatFun hx hk i
   have hev : hatFun n x i =ᶠ[nhds t] fun s ↦ c * s + d :=
@@ -592,7 +592,7 @@ theorem deriv_hatFun_eq (hx : Spline.IsPartition a b n x) {k i : ℕ} (hk : k < 
   simp
 
 /-- The hat function is `C¹` on each open panel. -/
-theorem contDiffOn_hatFun_panel (hx : Spline.IsPartition a b n x) {k i : ℕ} (hk : k < n) :
+theorem contDiffOn_hatFun_panel (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n) :
     ContDiffOn ℝ 1 (hatFun n x i) (Ioo (x k) (x (k + 1))) := by
   obtain ⟨c, d, hcd, -⟩ := exists_affine_hatFun hx hk i
   exact ((contDiff_const.mul contDiff_id).add contDiff_const).contDiffOn.congr
@@ -600,10 +600,11 @@ theorem contDiffOn_hatFun_panel (hx : Spline.IsPartition a b n x) {k i : ℕ} (h
 
 /-! ### The hat function as an element of `H^1(a, b)` -/
 
-/-- The classical derivative of the hat function agrees almost everywhere on `(a, b)` with
-`FiniteElement.hatDerivFun`: they differ only at the finitely many nodes. -/
-theorem ae_deriv_hatFun_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
-    deriv (hatFun n x i) =ᵐ[volume.restrict (Ioo a b)] hatDerivFun n x i := by
+/-- **Almost every point of `(a, b)` lies inside a panel** `(x_k, x_{k+1})`, `k < n`: the
+points outside are the finitely many nodes. -/
+theorem _root_.IsIntervalPartition.ae_mem_Ioo_panel (hx : IsIntervalPartition a b n x)
+    (hn : 1 ≤ n) :
+    ∀ᵐ t ∂(volume.restrict (Ioo a b)), ∃ k < n, t ∈ Ioo (x k) (x (k + 1)) := by
   have hfin : ∀ᵐ t : ℝ, t ∉ x '' Iic n := by
     rw [ae_iff]
     have hset : {t : ℝ | ¬ t ∉ x '' Iic n} = x '' Iic n := by ext t; simp
@@ -611,25 +612,30 @@ theorem ae_deriv_hatFun_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (i :
     exact ((Set.finite_Iic n).image x).measure_zero volume
   refine (ae_restrict_iff' measurableSet_Ioo).2 ?_
   filter_upwards [hfin] with t ht htI
-  obtain ⟨j, hj1, hjn, hjmem, -⟩ := hx.exists_mem_panel hn (Ioo_subset_Icc_self htI)
+  obtain ⟨p, hp1, hpn, hpmem, -⟩ := hx.exists_mem_panel hn (Ioo_subset_Icc_self htI)
   have hne : ∀ m ≤ n, t ≠ x m := fun m hm hcon ↦ ht ⟨m, hm, hcon.symm⟩
-  obtain ⟨k, rfl⟩ : ∃ k, j = k + 1 := ⟨j - 1, by omega⟩
-  have hk : k < n := by omega
-  have htk : t ∈ Ioo (x k) (x (k + 1)) := by
-    simp only [Nat.add_sub_cancel] at hjmem
-    exact ⟨lt_of_le_of_ne hjmem.1 (Ne.symm (hne k (by omega))),
-      lt_of_le_of_ne hjmem.2 (hne (k + 1) (by omega))⟩
+  obtain ⟨k, rfl⟩ : ∃ k, p = k + 1 := ⟨p - 1, by omega⟩
+  refine ⟨k, by omega, ?_⟩
+  simp only [Nat.add_sub_cancel] at hpmem
+  exact ⟨lt_of_le_of_ne hpmem.1 (Ne.symm (hne k (by omega))),
+    lt_of_le_of_ne hpmem.2 (hne (k + 1) (by omega))⟩
+
+/-- The classical derivative of the hat function agrees almost everywhere on `(a, b)` with
+`FiniteElement.hatDerivFun`: they differ only at the finitely many nodes. -/
+theorem ae_deriv_hatFun_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
+    deriv (hatFun n x i) =ᵐ[volume.restrict (Ioo a b)] hatDerivFun n x i := by
+  filter_upwards [hx.ae_mem_Ioo_panel hn] with t ⟨k, hk, htk⟩
   exact deriv_hatFun_eq hx hk htk
 
 /-- **The hat function has the weak derivative `FiniteElement.hatDerivFun`**: it is continuous
 and piecewise `C¹` with bounded panel derivatives, so
 `memSobolevInterval_of_piecewise_contDiffOn` applies. -/
-theorem hasWeakDerivOn_hatFun (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
+theorem hasWeakDerivOn_hatFun (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
     HasWeakDerivOn (hatFun n x i) (hatDerivFun n x i) (TopologicalSpace.Opens.Ioo a b) := by
   obtain ⟨N, rfl⟩ : ∃ N, n = N + 1 := ⟨n - 1, by omega⟩
   set y : Fin (N + 2) → ℝ := fun j ↦ x (j : ℕ) with hy
   have hymono : StrictMono y := fun i j hij ↦
-    hx.lt (Fin.lt_def.1 hij) (by have := j.isLt; omega)
+    hx.lt (Fin.lt_def.1 hij) (by omega)
   have hy0 : y 0 = a := by simpa [hy] using hx.first
   have hylast : y (Fin.last (N + 1)) = b := by simpa [hy] using hx.last
   have hg' : ∀ j : Fin (N + 1), ContDiffOn ℝ 1 (hatFun (N + 1) x i)
@@ -651,7 +657,7 @@ theorem hasWeakDerivOn_hatFun (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (
 `FiniteElement.hatDerivFun`. Building it with `SobolevInterval.mk` rather than through an
 existence statement makes both components available definitionally, which is what the stiffness
 and mass integrals need. -/
-noncomputable def hatFunction (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
+noncomputable def hatFunction (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
     SobolevInterval 1 a b :=
   SobolevInterval.mk ![(memLp_hatFun n x i).toLp _, (memLp_hatDerivFun n x i).toLp _]
     (fun j ↦ by
@@ -662,37 +668,37 @@ noncomputable def hatFunction (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (
           (memLp_hatFun n x i).coeFn_toLp.symm (memLp_hatDerivFun n x i).coeFn_toLp.symm))
 
 /-- The function of the hat element is `FiniteElement.hatFun` almost everywhere. -/
-theorem coeFn_deriv_hatFunction_zero (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
+theorem coeFn_deriv_hatFunction_zero (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
     ⇑(SobolevInterval.deriv (hatFunction hx hn i) 0)
       =ᵐ[volume.restrict (Ioo a b)] hatFun n x i :=
   (memLp_hatFun n x i).coeFn_toLp
 
 /-- **The weak derivative of the hat element is `±1/h`**: it is
 `FiniteElement.hatDerivFun` almost everywhere. -/
-theorem coeFn_deriv_hatFunction_one (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
+theorem coeFn_deriv_hatFunction_one (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
     ⇑(SobolevInterval.deriv (hatFunction hx hn i) 1)
       =ᵐ[volume.restrict (Ioo a b)] hatDerivFun n x i :=
   (memLp_hatDerivFun n x i).coeFn_toLp
 
 /-- A node of the partition lies in `[a, b]`. -/
-theorem node_mem_Icc (hx : Spline.IsPartition a b n x) {j : ℕ} (hj : j ≤ n) : x j ∈ Icc a b :=
+theorem node_mem_Icc (hx : IsIntervalPartition a b n x) {j : ℕ} (hj : j ≤ n) : x j ∈ Icc a b :=
   Set.mem_Icc.2 ⟨hx.left_le hj, hx.le_right hj⟩
 
 /-- The continuous representative of the hat element is `FiniteElement.hatFun`. -/
-theorem rep_hatFunction (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (i : ℕ) {t : ℝ}
+theorem rep_hatFunction (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) {t : ℝ}
     (ht : t ∈ Icc a b) : SobolevInterval.rep (hatFunction hx hn i) t = hatFun n x i t :=
   SobolevInterval.rep_eq_of_continuousOn (hx.lt_of_pos hn) _
     (continuous_hatFun n x i).continuousOn (coeFn_deriv_hatFunction_zero hx hn i) ht
 
 /-- **`φ_i(x_j) = δ_{ij}`** for the hat elements of `H^1(a, b)`. -/
-theorem rep_hatFunction_node (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {i j : ℕ}
+theorem rep_hatFunction_node (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {i j : ℕ}
     (hj : j ≤ n) :
     SobolevInterval.rep (hatFunction hx hn i) (x j) = if i = j then 1 else 0 := by
   rw [rep_hatFunction hx hn i (node_mem_Icc hx hj)]
   exact hatFun_apply_node hx hn hj
 
 /-- **The hat elements lie in `X_h^1`**: they are continuous and affine on every panel. -/
-theorem hatFunction_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem hatFunction_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : ℕ) : hatFunction hx hn i ∈ lagrangeSpace hab n x 1 := by
   refine ⟨hatFun n x i, ?_, fun t ↦ rep_hatFunction hx hn i t.2, fun j hj ↦ ?_⟩
   · rw [Nat.cast_zero]
@@ -702,7 +708,7 @@ theorem hatFunction_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition a b
     fun t ht ↦ by simpa using hcd t ht⟩
 
 /-- **The interior hat elements lie in `X_h^{1,0}`**: they vanish at both endpoints. -/
-theorem hatFunction_mem_lagrangeSpaceZero (hab : a < b) (hx : Spline.IsPartition a b n x)
+theorem hatFunction_mem_lagrangeSpaceZero (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) {i : ℕ} (h0 : i ≠ 0) (hi : i ≠ n) :
     hatFunction hx hn i ∈ lagrangeSpaceZero hab n x 1 := by
   refine ⟨hatFunction_mem_lagrangeSpace hab hx hn i,
@@ -717,13 +723,13 @@ theorem hatFunction_mem_lagrangeSpaceZero (hab : a < b) (hx : Spline.IsPartition
     simp [hi]
 
 /-- The hat functions as elements of `X_h^1`, indexed by the `n + 1` nodes. -/
-noncomputable def hatElem (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+noncomputable def hatElem (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n + 1)) : lagrangeSpace hab n x 1 :=
   ⟨hatFunction hx hn (i : ℕ), hatFunction_mem_lagrangeSpace hab hx hn (i : ℕ)⟩
 
 /-- The hat functions are linearly independent: evaluating a vanishing combination at the node
 `x_j` returns its `j`-th coefficient. -/
-theorem linearIndependent_hatElem (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) :
+theorem linearIndependent_hatElem (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     LinearIndependent ℝ (hatElem hab hx hn) := by
   rw [Fintype.linearIndependent_iff]
   intro g hg j
@@ -739,7 +745,7 @@ theorem linearIndependent_hatElem (hab : a < b) (hx : Spline.IsPartition a b n x
 
 /-- **The hat basis of `X_h^1`** ([quarteroni2000numerical] (12.61)): the `n + 1` shape
 functions `φ_0, …, φ_n` are a basis, the nodal values being the degrees of freedom. -/
-noncomputable def hatBasis (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) :
+noncomputable def hatBasis (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     Module.Basis (Fin (n + 1)) ℝ (lagrangeSpace hab n x 1) :=
   haveI := finiteDimensional_lagrangeSpace hab hx hn 1
   basisOfLinearIndependentOfCardEqFinrank (linearIndependent_hatElem hab hx hn)
@@ -747,13 +753,12 @@ noncomputable def hatBasis (hab : a < b) (hx : Spline.IsPartition a b n x) (hn :
 
 /-- The hat basis consists of the hat functions. -/
 @[simp]
-theorem hatBasis_apply (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem hatBasis_apply (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n + 1)) : hatBasis hab hx hn i = hatElem hab hx hn i := by
-  have := finiteDimensional_lagrangeSpace hab hx hn 1
   rw [hatBasis, coe_basisOfLinearIndependentOfCardEqFinrank]
 
 /-- **The coordinates in the hat basis are the nodal values.** -/
-theorem hatBasis_repr (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem hatBasis_repr (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (v : lagrangeSpace hab n x 1) (j : Fin (n + 1)) :
     (hatBasis hab hx hn).repr v j
       = SobolevInterval.rep (v : SobolevInterval 1 a b) (x (j : ℕ)) := by
@@ -770,7 +775,7 @@ theorem hatBasis_repr (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 �
 
 /-- **Every element of `X_h^1` is the combination of the hat functions with its nodal values**,
 `v_h = ∑_i v_h(x_i) φ_i` ([quarteroni2000numerical] §12.4.5). -/
-theorem eq_sum_hatFunction (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem eq_sum_hatFunction (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (v : lagrangeSpace hab n x 1) :
     (v : SobolevInterval 1 a b) = ∑ i : Fin (n + 1),
       SobolevInterval.rep (v : SobolevInterval 1 a b) (x (i : ℕ)) • hatFunction hx hn (i : ℕ) := by
@@ -782,63 +787,74 @@ theorem eq_sum_hatFunction (hab : a < b) (hx : Spline.IsPartition a b n x) (hn :
   rw [hatBasis_repr hab hx hn v i]
 
 /-- The interior hat functions `φ_1, …, φ_{n-1}`, a family in `X_h^{1,0}`. -/
-noncomputable def hatElemZero (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+noncomputable def hatElemZero (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n - 1)) : lagrangeSpaceZero hab n x 1 :=
   ⟨hatFunction hx hn ((i : ℕ) + 1), hatFunction_mem_lagrangeSpaceZero hab hx hn (by omega)
     (by have := i.isLt; omega)⟩
 
-/-- The interior hat functions are linearly independent. -/
-theorem linearIndependent_hatElemZero (hab : a < b) (hx : Spline.IsPartition a b n x)
-    (hn : 1 ≤ n) : LinearIndependent ℝ (hatElemZero hab hx hn) := by
+/-- The interior hat functions `φ_1, …, φ_{n-1}` are linearly independent in `H^1(a, b)`:
+evaluating a vanishing combination at the node `x_j` returns its `j`-th coefficient. -/
+theorem linearIndependent_hatFunction_succ (hab : a < b) (hx : IsIntervalPartition a b n x)
+    (hn : 1 ≤ n) : LinearIndependent ℝ fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1) := by
   rw [Fintype.linearIndependent_iff]
   intro g hg j
   have hjn : (j : ℕ) + 1 ≤ n := by have := j.isLt; omega
-  have hsub : (∑ i, g i • hatFunction hx hn ((i : ℕ) + 1)) = 0 := by
-    have := congrArg (Subtype.val) hg
-    simpa [hatElemZero] using this
-  have hval := congrArg (SobolevInterval.evalCLM hab ⟨_, node_mem_Icc hx hjn⟩) hsub
+  have hval := congrArg (SobolevInterval.evalCLM hab ⟨_, node_mem_Icc hx hjn⟩) hg
   simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.evalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
     (rep_hatFunction_node hx hn (i := (i : ℕ) + 1) (j := (j : ℕ) + 1) hjn)] at hval
   simpa [Fin.val_inj] using hval
 
-/-- The interior hat functions span `X_h^{1,0}`: an element of `X_h^{1,0}` is the combination of
-all the hat functions with its nodal values, and the two endpoint values vanish. -/
-theorem top_le_span_hatElemZero (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) :
-    ⊤ ≤ Submodule.span ℝ (Set.range (hatElemZero hab hx hn)) := by
-  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
-  rintro v -
-  have hrepr := eq_sum_hatFunction hab hx hn ⟨(v : SobolevInterval 1 a b), v.2.1⟩
+/-- The interior hat functions are linearly independent. -/
+theorem linearIndependent_hatElemZero (hab : a < b) (hx : IsIntervalPartition a b n x)
+    (hn : 1 ≤ n) : LinearIndependent ℝ (hatElemZero hab hx hn) :=
+  (linearIndependent_hatFunction_succ hab hx hn).of_comp (lagrangeSpaceZero hab n x 1).subtype
+
+/-- **Every element of `X_h^{1,0}` is the combination of the interior hat functions with its
+nodal values.** -/
+theorem eq_sum_hatFunction_zero (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
+    {v : SobolevInterval 1 a b} (hv : v ∈ lagrangeSpaceZero hab n x 1) :
+    v = ∑ i : Fin (n - 1),
+      SobolevInterval.rep v (x ((i : ℕ) + 1)) • hatFunction hx hn ((i : ℕ) + 1) := by
+  obtain ⟨m, hm⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+  subst hm
+  have hrepr := eq_sum_hatFunction hab hx hn ⟨v, hv.1⟩
   rw [Fin.sum_univ_succ, Fin.sum_univ_castSucc] at hrepr
   simp only [Fin.val_zero, Fin.val_succ, Fin.val_castSucc, Fin.val_last] at hrepr
-  have hc0 : SobolevInterval.rep (v : SobolevInterval 1 a b) (x 0) = 0 := by
-    rw [hx.first]; exact SobolevIntervalZero.rep_left_eq_zero hab v.2.2
-  have hcl : SobolevInterval.rep (v : SobolevInterval 1 a b) (x (m + 1)) = 0 := by
-    rw [hx.last]; exact SobolevIntervalZero.rep_right_eq_zero hab v.2.2
+  have hc0 : SobolevInterval.rep v (x 0) = 0 := by
+    rw [hx.first]; exact SobolevIntervalZero.rep_left_eq_zero hab hv.2
+  have hcl : SobolevInterval.rep v (x (m + 1)) = 0 := by
+    rw [hx.last]; exact SobolevIntervalZero.rep_right_eq_zero hab hv.2
   rw [hc0, hcl] at hrepr
-  simp only [zero_smul, zero_add, add_zero] at hrepr
-  have hv : v = ∑ i : Fin m,
+  simpa using hrepr
+
+/-- The interior hat functions span `X_h^{1,0}`: an element of `X_h^{1,0}` is the combination of
+all the hat functions with its nodal values, and the two endpoint values vanish. -/
+theorem top_le_span_hatElemZero (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
+    ⊤ ≤ Submodule.span ℝ (Set.range (hatElemZero hab hx hn)) := by
+  rintro v -
+  have hv : v = ∑ i : Fin (n - 1),
       SobolevInterval.rep (v : SobolevInterval 1 a b) (x ((i : ℕ) + 1))
         • hatElemZero hab hx hn i :=
-    Subtype.ext (hrepr.trans (by simp [hatElemZero]))
+    Subtype.ext ((eq_sum_hatFunction_zero hab hx hn v.2).trans (by simp [hatElemZero]))
   rw [hv]
   exact Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
 
 /-- **The interior hat basis of `X_h^{1,0}`** ([quarteroni2000numerical] (12.57)): the `n - 1`
 shape functions attached to the interior nodes. -/
-noncomputable def hatBasisZero (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) :
+noncomputable def hatBasisZero (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     Module.Basis (Fin (n - 1)) ℝ (lagrangeSpaceZero hab n x 1) :=
   Module.Basis.mk (linearIndependent_hatElemZero hab hx hn) (top_le_span_hatElemZero hab hx hn)
 
 /-- The interior hat basis consists of the interior hat functions. -/
 @[simp]
-theorem hatBasisZero_apply (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem hatBasisZero_apply (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n - 1)) : hatBasisZero hab hx hn i = hatElemZero hab hx hn i :=
   congrFun (Module.Basis.coe_mk _ _) i
 
 /-- **`dim X_h^{1,0} = n - 1`** ([quarteroni2000numerical] §12.4.5, the book's `N = nk - 1` at
 `k = 1`). -/
-theorem finrank_lagrangeSpaceZero_one (hab : a < b) (hx : Spline.IsPartition a b n x)
+theorem finrank_lagrangeSpaceZero_one (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) : Module.finrank ℝ (lagrangeSpaceZero hab n x 1) = n - 1 := by
   rw [Module.finrank_eq_card_basis (hatBasisZero hab hx hn), Fintype.card_fin]
 
@@ -954,7 +970,7 @@ variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- **The hat functions on one panel**: on `[x_k, x_{k+1}]`, `φ_i` is the combination of the two
 panel ramps with its nodal values `δ_{ik}` and `δ_{i,k+1}`. -/
-theorem hatFun_eq_panel (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n) (i : ℕ) {t : ℝ}
+theorem hatFun_eq_panel (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) (i : ℕ) {t : ℝ}
     (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x i t = (if i = k then (1 : ℝ) else 0) * ((x (k + 1) - t) / (x (k + 1) - x k))
       + (if i = k + 1 then (1 : ℝ) else 0) * ((t - x k) / (x (k + 1) - x k)) := by
@@ -969,7 +985,7 @@ theorem hatFun_eq_panel (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n)
 
 /-- **The derivative of the hat functions on one panel**: on `(x_k, x_{k+1})`, `φ_i'` is the
 difference quotient of its two nodal values. -/
-theorem hatDerivFun_eq_panel (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n) (i : ℕ)
+theorem hatDerivFun_eq_panel (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) (i : ℕ)
     {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) :
     hatDerivFun n x i t = ((if i = k + 1 then (1 : ℝ) else 0) - (if i = k then (1 : ℝ) else 0))
       / (x (k + 1) - x k) := by
@@ -982,13 +998,8 @@ theorem hatDerivFun_eq_panel (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k
   · rw [hatDerivFun_eq_zero_of_panel hx hk hik hik' ht]
     simp [hik, hik']
 
-/-- Interval integrals over a panel do not see the endpoints. -/
-private theorem integral_congr_Ioo {u v : ℝ} (huv : u ≤ v) {f g : ℝ → ℝ}
-    (h : EqOn f g (Ioo u v)) : ∫ t in u..v, f t = ∫ t in u..v, g t :=
-  intervalIntegral.integral_congr_Ioo huv h
-
 /-- **The panel mass integral** `∫_{x_k}^{x_{k+1}} φ_i φ_j`. -/
-theorem integral_panel_hat_mul_hat (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n)
+theorem integral_panel_hat_mul_hat (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     (i j : ℕ) :
     ∫ t in (x k)..(x (k + 1)), hatFun n x i t * hatFun n x j t
       = ((if i = k then (1 : ℝ) else 0) * (if j = k then (1 : ℝ) else 0)
@@ -1010,14 +1021,15 @@ theorem integral_panel_hat_mul_hat (hx : Spline.IsPartition a b n x) {k : ℕ} (
     integral_panel_affine_mul hlt]
 
 /-- **The panel advection integral** `∫_{x_k}^{x_{k+1}} φ_i' φ_j`. -/
-theorem integral_panel_hatDeriv_mul_hat (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n)
+theorem integral_panel_hatDeriv_mul_hat (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     (i j : ℕ) :
     ∫ t in (x k)..(x (k + 1)), hatDerivFun n x i t * hatFun n x j t
       = ((if i = k + 1 then (1 : ℝ) else 0) - (if i = k then (1 : ℝ) else 0))
         * ((if j = k then (1 : ℝ) else 0) + (if j = k + 1 then (1 : ℝ) else 0)) / 2 := by
   have hlt := hx.step k hk
   have hne : x (k + 1) - x k ≠ 0 := by linarith
-  rw [integral_congr_Ioo hlt.le (f := fun t ↦ hatDerivFun n x i t * hatFun n x j t)
+  rw [intervalIntegral.integral_congr_Ioo_of_le hlt.le
+    (f := fun t ↦ hatDerivFun n x i t * hatFun n x j t)
     (g := fun t ↦ (((if i = k + 1 then (1 : ℝ) else 0) - (if i = k then (1 : ℝ) else 0))
         / (x (k + 1) - x k))
       * ((if j = k then (1 : ℝ) else 0) * ((x (k + 1) - t) / (x (k + 1) - x k))
@@ -1029,7 +1041,7 @@ theorem integral_panel_hatDeriv_mul_hat (hx : Spline.IsPartition a b n x) {k : �
   field_simp
 
 /-- **The panel stiffness integral** `∫_{x_k}^{x_{k+1}} φ_i' φ_j'`. -/
-theorem integral_panel_hatDeriv_mul_hatDeriv (hx : Spline.IsPartition a b n x) {k : ℕ}
+theorem integral_panel_hatDeriv_mul_hatDeriv (hx : IsIntervalPartition a b n x) {k : ℕ}
     (hk : k < n) (i j : ℕ) :
     ∫ t in (x k)..(x (k + 1)), hatDerivFun n x i t * hatDerivFun n x j t
       = ((if i = k + 1 then (1 : ℝ) else 0) - (if i = k then (1 : ℝ) else 0))
@@ -1037,7 +1049,8 @@ theorem integral_panel_hatDeriv_mul_hatDeriv (hx : Spline.IsPartition a b n x) {
         / (x (k + 1) - x k) := by
   have hlt := hx.step k hk
   have hne : x (k + 1) - x k ≠ 0 := by linarith
-  rw [integral_congr_Ioo hlt.le (f := fun t ↦ hatDerivFun n x i t * hatDerivFun n x j t)
+  rw [intervalIntegral.integral_congr_Ioo_of_le hlt.le
+    (f := fun t ↦ hatDerivFun n x i t * hatDerivFun n x j t)
     (g := fun _ ↦ (((if i = k + 1 then (1 : ℝ) else 0) - (if i = k then (1 : ℝ) else 0))
         / (x (k + 1) - x k))
       * (((if j = k + 1 then (1 : ℝ) else 0) - (if j = k then (1 : ℝ) else 0))
@@ -1061,7 +1074,6 @@ theorem abs_rampFun_le_one (x : ℕ → ℝ) (j : ℕ) (t : ℝ) : |rampFun x j 
   · rw [rampFun, h, div_zero]
     norm_num
   · have h1 : min (max (t - x j) 0) (x (j + 1) - x j) ≤ x (j + 1) - x j := min_le_right _ _
-    have h2 : (0 : ℝ) ≤ min (max (t - x j) 0) (x (j + 1) - x j) := le_min hm0 h.le
     rw [rampFun, abs_of_nonneg (by positivity), div_le_one h]
     exact h1
 
@@ -1137,7 +1149,7 @@ section PanelSum
 variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- **The panel value of the elliptic form on two hat functions**, for constant coefficients. -/
-theorem integral_panel_hatFormIntegrand (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n)
+theorem integral_panel_hatFormIntegrand (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     (ε β γ : ℝ) (i j : ℕ) :
     ∫ t in (x k)..(x (k + 1)), hatFormIntegrand n x ε β γ i j t
       = ε * (((if i = k + 1 then (1 : ℝ) else 0) - (if i = k then (1 : ℝ) else 0))
@@ -1164,14 +1176,14 @@ theorem integral_panel_hatFormIntegrand (hx : Spline.IsPartition a b n x) {k : �
     integral_panel_hatDeriv_mul_hat hx hk, integral_panel_hat_mul_hat hx hk]
 
 /-- A panel on which neither hat function is supported contributes nothing. -/
-theorem integral_panel_hatFormIntegrand_eq_zero (hx : Spline.IsPartition a b n x) {k : ℕ}
+theorem integral_panel_hatFormIntegrand_eq_zero (hx : IsIntervalPartition a b n x) {k : ℕ}
     (hk : k < n) (ε β γ : ℝ) {i j : ℕ} (h : (i ≠ k ∧ i ≠ k + 1) ∨ (j ≠ k ∧ j ≠ k + 1)) :
     ∫ t in (x k)..(x (k + 1)), hatFormIntegrand n x ε β γ i j t = 0 := by
   rw [integral_panel_hatFormIntegrand hx hk]
   rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> simp [h1, h2]
 
 /-- The integral over `(a, b)` is the sum of the panel integrals. -/
-theorem integral_Ioo_eq_sum_panels (hx : Spline.IsPartition a b n x) {F : ℝ → ℝ}
+theorem integral_Ioo_eq_sum_panels (hx : IsIntervalPartition a b n x) {F : ℝ → ℝ}
     (hF : ∀ k, IntervalIntegrable F volume (x k) (x (k + 1))) :
     ∫ t in Ioo a b, F t = ∑ k ∈ Finset.range n, ∫ t in (x k)..(x (k + 1)), F t := by
   rw [intervalIntegral.sum_integral_adjacent_intervals (a := x) fun k _ ↦ hF k,
@@ -1213,7 +1225,7 @@ variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- The elliptic form with constant coefficients, on two hat functions, is the integral of
 `FiniteElement.hatFormIntegrand`. -/
-theorem form_apply_hatFunction (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (ε β γ : ℝ)
+theorem form_apply_hatFunction (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (ε β γ : ℝ)
     (i j : ℕ) :
     EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
         (hatFunction hx hn j) (hatFunction hx hn i)
@@ -1229,7 +1241,7 @@ theorem form_apply_hatFunction (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) 
 
 /-- The elliptic form with constant coefficients, on two hat functions, is the sum of its panel
 contributions. -/
-theorem form_apply_hatFunction_eq_sum (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem form_apply_hatFunction_eq_sum (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (ε β γ : ℝ) (i j : ℕ) :
     EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
         (hatFunction hx hn j) (hatFunction hx hn i)
@@ -1242,7 +1254,7 @@ theorem form_apply_hatFunction_eq_sum (hx : Spline.IsPartition a b n x) (hn : 1 
 mesh of step `h`, the value `a(φ_j, φ_i)` at an interior node `i` is `2ε/h + 2γh/3` on the
 diagonal, `-ε/h - β/2 + γh/6` at `j = i - 1` and `-ε/h + β/2 + γh/6` at `j = i + 1`, and
 vanishes otherwise. -/
-theorem form_apply_hatFunction_uniform (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem form_apply_hatFunction_uniform (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β γ : ℝ) {i j : ℕ}
     (hi1 : 1 ≤ i) (hi2 : i < n) :
     EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
@@ -1295,26 +1307,12 @@ variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- **The supports of two hat functions more than one node apart meet in a null set**: all three
 products entering the elliptic form vanish almost everywhere. -/
-theorem ae_hat_products_eq_zero (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {i j : ℕ}
+theorem ae_hat_products_eq_zero (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {i j : ℕ}
     (hij : i + 1 < j ∨ j + 1 < i) :
     ∀ᵐ t ∂(volume.restrict (Ioo a b)),
       hatDerivFun n x j t * hatDerivFun n x i t = 0 ∧
         hatDerivFun n x j t * hatFun n x i t = 0 ∧ hatFun n x j t * hatFun n x i t = 0 := by
-  have hfin : ∀ᵐ t : ℝ, t ∉ x '' Iic n := by
-    rw [ae_iff]
-    have hset : {t : ℝ | ¬ t ∉ x '' Iic n} = x '' Iic n := by ext t; simp
-    rw [hset]
-    exact ((Set.finite_Iic n).image x).measure_zero volume
-  refine (ae_restrict_iff' measurableSet_Ioo).2 ?_
-  filter_upwards [hfin] with t ht htI
-  obtain ⟨p, hp1, hpn, hpmem, -⟩ := hx.exists_mem_panel hn (Ioo_subset_Icc_self htI)
-  have hne : ∀ m ≤ n, t ≠ x m := fun m hm hcon ↦ ht ⟨m, hm, hcon.symm⟩
-  obtain ⟨k, rfl⟩ : ∃ k, p = k + 1 := ⟨p - 1, by omega⟩
-  have hk : k < n := by omega
-  have htk : t ∈ Ioo (x k) (x (k + 1)) := by
-    simp only [Nat.add_sub_cancel] at hpmem
-    exact ⟨lt_of_le_of_ne hpmem.1 (Ne.symm (hne k (by omega))),
-      lt_of_le_of_ne hpmem.2 (hne (k + 1) (by omega))⟩
+  filter_upwards [hx.ae_mem_Ioo_panel hn] with t ⟨k, hk, htk⟩
   rcases (by omega : (i ≠ k ∧ i ≠ k + 1) ∨ (j ≠ k ∧ j ≠ k + 1)) with ⟨h1, h2⟩ | ⟨h1, h2⟩
   · rw [hatFun_eq_zero_of_panel hx hk h1 h2 htk.1.le htk.2.le,
       hatDerivFun_eq_zero_of_panel hx hk h1 h2 htk]
@@ -1325,7 +1323,7 @@ theorem ae_hat_products_eq_zero (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
 
 /-- **The elliptic form vanishes on two hat functions more than one node apart**, for arbitrary
 `L^∞` coefficients. -/
-theorem form_apply_hatFunction_eq_zero (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem form_apply_hatFunction_eq_zero (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {i j : ℕ} (hij : i + 1 < j ∨ j + 1 < i) :
     EllipticInterval.form a b α β γ (hatFunction hx hn j) (hatFunction hx hn i) = 0 := by
   have hz : ∫ _t in Ioo a b, (0 : ℝ) = 0 := by simp
@@ -1345,14 +1343,14 @@ theorem form_apply_hatFunction_eq_zero (hx : Spline.IsPartition a b n x) (hn : 1
 
 /-- **Sparsity of the stiffness matrix** ([quarteroni2000numerical] §12.4.5): in the hat basis,
 `a_{ij} = 0` whenever `j ∉ {i - 1, i, i + 1}`, so `A_fe` is tridiagonal. -/
-theorem stiffnessMatrix_eq_zero_of_lt (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem stiffnessMatrix_eq_zero_of_lt (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {i j : ℕ} (hij : i + 1 < j ∨ j + 1 < i) :
     stiffnessMatrix a b α β γ (fun k : ℕ ↦ hatFunction hx hn k) i j = 0 :=
   form_apply_hatFunction_eq_zero hx hn α β γ hij
 
 /-- **The stiffness matrix in the interior hat basis is tridiagonal**
 ([quarteroni2000numerical] §12.4.5). -/
-theorem isTridiagonal_stiffnessMatrix (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem isTridiagonal_stiffnessMatrix (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) :
     (stiffnessMatrix a b α β γ fun k : Fin (n - 1) ↦ hatFunction hx hn ((k : ℕ) + 1))
       |>.IsTridiagonal := by
@@ -1374,7 +1372,7 @@ variable {n : ℕ} {x : ℕ → ℝ}
 assembled by Program 95): in the interior hat basis of `X_h^{1,0}` with constant coefficients,
 `A_fe = (ε/h) tridiag(-1, 2, -1) + (β/2) tridiag(-1, 0, 1) + (γ h/6) tridiag(1, 4, 1)`. For
 `β = γ = 0` this is `ε h` times the centred finite difference matrix. -/
-theorem stiffnessMatrix_uniform_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
+theorem stiffnessMatrix_uniform_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β γ : ℝ) :
     (stiffnessMatrix a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
         fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1))
@@ -1392,7 +1390,7 @@ theorem stiffnessMatrix_uniform_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤
 
 /-- **The mass matrix on a uniform mesh** ([quarteroni2000numerical] §13.3): `M = (h/6)
 tridiag(1, 4, 1)`, that is `∫ φ_i² = 2h/3` and `∫ φ_i φ_{i±1} = h/6`. -/
-theorem massMatrix_uniform_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
+theorem massMatrix_uniform_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
     (massMatrix a b fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1))
       = (h / 6) • Matrix.symmTridiagonalToeplitz (n - 1) 1 4 := by
@@ -1406,30 +1404,20 @@ section PosDef
 variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- The interior hat functions as a family in `H^1_0(a, b)`. -/
-noncomputable def hatElemH0 (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+noncomputable def hatElemH0 (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n - 1)) : SobolevIntervalZero a b :=
   ⟨hatFunction hx hn ((i : ℕ) + 1),
     (hatFunction_mem_lagrangeSpaceZero hab hx hn (by omega) (by have := i.isLt; omega)).2⟩
 
 /-- The interior hat functions are linearly independent in `H^1_0(a, b)`. -/
-theorem linearIndependent_hatElemH0 (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) :
-    LinearIndependent ℝ (hatElemH0 hab hx hn) := by
-  rw [Fintype.linearIndependent_iff]
-  intro g hg j
-  have hjn : (j : ℕ) + 1 ≤ n := by have := j.isLt; omega
-  have hsub : (∑ i, g i • hatFunction hx hn ((i : ℕ) + 1)) = 0 := by
-    have := congrArg (Subtype.val) hg
-    simpa [hatElemH0] using this
-  have hval := congrArg (SobolevInterval.evalCLM hab ⟨_, node_mem_Icc hx hjn⟩) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.evalCLM_apply] at hval
-  rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
-    (rep_hatFunction_node hx hn (i := (i : ℕ) + 1) (j := (j : ℕ) + 1) hjn)] at hval
-  simpa [Fin.val_inj] using hval
+theorem linearIndependent_hatElemH0 (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
+    LinearIndependent ℝ (hatElemH0 hab hx hn) :=
+  (linearIndependent_hatFunction_succ hab hx hn).of_comp (SobolevIntervalZero a b).subtype
 
 /-- **The stiffness matrix is symmetric positive definite** ([quarteroni2000numerical] §12.4.4):
 for `β = 0`, `α ≥ α₀ > 0` and `γ ≥ 0` the form is symmetric and coercive on `H^1_0(a, b)`, and
 the interior hat functions are linearly independent. -/
-theorem stiffnessMatrix_posDef (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem stiffnessMatrix_posDef (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α₀ : ℝ} (hα₀ : 0 < α₀)
     (hα : ∀ᵐ t ∂(volume.restrict (Ioo a b)), α₀ ≤ α t)
     (hγ : ∀ᵐ t ∂(volume.restrict (Ioo a b)), 0 ≤ γ t) :
@@ -1459,7 +1447,7 @@ variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- **The model stiffness matrix** `-u'' = f` on a uniform mesh: `A_fe = h⁻¹ tridiag(-1, 2, -1)`,
 which is `h` times the centred finite difference matrix. -/
-theorem stiffnessMatrix_model_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
+theorem stiffnessMatrix_model_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
     (stiffnessMatrix a b (constLinf a b 1) (constLinf a b 0) (constLinf a b 0)
         fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1))
@@ -1471,7 +1459,7 @@ theorem stiffnessMatrix_model_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n
 ([quarteroni2000numerical] §12.4.5): `K₂(A_fe) = cot²(π/(2n))`, the scaling `h⁻¹` cancelling
 between `A_fe` and its inverse; in terms of the mesh size `h = (b - a)/n` this is the growth
 `O(h⁻²)` that the book quotes from [QV94]. -/
-theorem condNumber_stiffnessMatrix_model (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
+theorem condNumber_stiffnessMatrix_model (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
     ‖stiffnessMatrix a b (constLinf a b 1) (constLinf a b 0) (constLinf a b 0)
         fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1)‖
@@ -1507,27 +1495,9 @@ section Centred
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **Every element of `X_h^{1,0}` is the combination of the interior hat functions with its
-nodal values.** -/
-theorem eq_sum_hatFunction_zero (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
-    {v : SobolevInterval 1 a b} (hv : v ∈ lagrangeSpaceZero hab n x 1) :
-    v = ∑ i : Fin (n - 1),
-      SobolevInterval.rep v (x ((i : ℕ) + 1)) • hatFunction hx hn ((i : ℕ) + 1) := by
-  obtain ⟨m, hm⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
-  subst hm
-  have hrepr := eq_sum_hatFunction hab hx hn ⟨v, hv.1⟩
-  rw [Fin.sum_univ_succ, Fin.sum_univ_castSucc] at hrepr
-  simp only [Fin.val_zero, Fin.val_succ, Fin.val_castSucc, Fin.val_last] at hrepr
-  have hc0 : SobolevInterval.rep v (x 0) = 0 := by
-    rw [hx.first]; exact SobolevIntervalZero.rep_left_eq_zero hab hv.2
-  have hcl : SobolevInterval.rep v (x (m + 1)) = 0 := by
-    rw [hx.last]; exact SobolevIntervalZero.rep_right_eq_zero hab hv.2
-  rw [hc0, hcl] at hrepr
-  simpa using hrepr
-
 /-- **The Galerkin equation at an interior node on a uniform mesh** is the centred finite
 difference stencil ([quarteroni2000numerical] (12.75)). -/
-theorem form_sum_hatFunction_uniform (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
+theorem form_sum_hatFunction_uniform (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β : ℝ) (u : ℕ → ℝ) {i : ℕ}
     (hi1 : 1 ≤ i) (hi2 : i < n) :
     EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b 0)
@@ -1572,7 +1542,7 @@ theorem form_sum_hatFunction_uniform (hx : Spline.IsPartition a b n x) (hn : 1 �
 function with nodal values `u_j` is a Galerkin solution of the homogeneous problem on
 `X_h^{1,0}` exactly when `(ε/h)(-u_{i-1} + 2u_i - u_{i+1}) + (β/2)(u_{i+1} - u_{i-1}) = 0` at
 every interior node. -/
-theorem galerkin_iff_centredScheme (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem galerkin_iff_centredScheme (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β : ℝ) (u : ℕ → ℝ) :
     (∀ v ∈ lagrangeSpaceZero hab n x 1,
         EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b 0)
@@ -1649,7 +1619,7 @@ section Reference
 variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- **`φ_k = φ̂₀ ∘ ξ` on the panel `I_k`** ([quarteroni2000numerical] §12.4.5). -/
-theorem hatFun_eq_referenceHat_zero (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n)
+theorem hatFun_eq_referenceHat_zero (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     {t : ℝ} (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x k t = referenceHat 0 (refCoord x k t) := by
   have hne : x (k + 1) - x k ≠ 0 := by have := hx.step k hk; linarith
@@ -1659,7 +1629,7 @@ theorem hatFun_eq_referenceHat_zero (hx : Spline.IsPartition a b n x) {k : ℕ} 
   ring
 
 /-- **`φ_{k+1} = φ̂₁ ∘ ξ` on the panel `I_k`** ([quarteroni2000numerical] §12.4.5). -/
-theorem hatFun_eq_referenceHat_one (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n)
+theorem hatFun_eq_referenceHat_one (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     {t : ℝ} (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x (k + 1) t = referenceHat 1 (refCoord x k t) := by
   rw [hatFun_eq_of_right hx hk h1 h2]
@@ -1692,19 +1662,19 @@ variable {n : ℕ} {x : ℕ → ℝ}
 /-- **The piecewise linear interpolant** `Π_h^1 u` of [quarteroni2000numerical] §8.3, as an
 element of `H^1(a, b)`: the combination of the hat functions with the nodal values of the
 continuous representative of `u`. -/
-noncomputable def lagrangeInterp (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+noncomputable def lagrangeInterp (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (u : SobolevInterval 1 a b) : SobolevInterval 1 a b :=
   ∑ i ∈ Finset.range (n + 1), SobolevInterval.rep u (x i) • hatFunction hx hn i
 
 /-- The interpolant lies in `X_h^1`. -/
-theorem lagrangeInterp_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition a b n x)
+theorem lagrangeInterp_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) :
     lagrangeInterp hx hn u ∈ lagrangeSpace hab n x 1 :=
   Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _
     (hatFunction_mem_lagrangeSpace hab hx hn i)
 
 /-- **A combination of the hat functions takes the prescribed values at the nodes**. -/
-theorem rep_sum_hatFunction (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem rep_sum_hatFunction (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (c : ℕ → ℝ) {j : ℕ} (hj : j ≤ n) :
     SobolevInterval.rep (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) (x j) = c j := by
   have h : SobolevInterval.rep (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) (x j)
@@ -1717,13 +1687,13 @@ theorem rep_sum_hatFunction (hab : a < b) (hx : Spline.IsPartition a b n x) (hn 
   simp [Finset.sum_ite_eq' (Finset.range (n + 1)) j, Nat.lt_succ_iff.2 hj]
 
 /-- **The interpolant matches `u` at the nodes**. -/
-theorem rep_lagrangeInterp_node (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem rep_lagrangeInterp_node (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (u : SobolevInterval 1 a b) {j : ℕ} (hj : j ≤ n) :
     SobolevInterval.rep (lagrangeInterp hx hn u) (x j) = SobolevInterval.rep u (x j) :=
   rep_sum_hatFunction hab hx hn _ hj
 
 /-- **A combination of the hat functions lies in `X_h^1`**. -/
-theorem sum_hatFunction_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition a b n x)
+theorem sum_hatFunction_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) (c : ℕ → ℝ) :
     (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) ∈ lagrangeSpace hab n x 1 :=
   Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _
@@ -1731,7 +1701,7 @@ theorem sum_hatFunction_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition
 
 /-- **The interpolant of an element of `H^1_0(a, b)` lies in `X_h^{1,0}`**: it vanishes at both
 endpoints because `u` does. -/
-theorem lagrangeInterp_mem_lagrangeSpaceZero (hab : a < b) (hx : Spline.IsPartition a b n x)
+theorem lagrangeInterp_mem_lagrangeSpaceZero (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) {u : SobolevInterval 1 a b} (hu : u ∈ SobolevIntervalZero a b) :
     lagrangeInterp hx hn u ∈ lagrangeSpaceZero hab n x 1 := by
   refine ⟨lagrangeInterp_mem_lagrangeSpace hab hx hn u,
@@ -1751,7 +1721,7 @@ noncomputable def diffQuotFun (n : ℕ) (x : ℕ → ℝ) (f : ℝ → ℝ) : �
   fun t ↦ ∑ i ∈ Finset.range (n + 1), f (x i) * hatDerivFun n x i t
 
 /-- On the panel `k` the difference quotient is `(f(x_{k+1}) - f(x_k))/h_k`. -/
-theorem diffQuotFun_eq (hx : Spline.IsPartition a b n x) {k : ℕ} (hk : k < n) (f : ℝ → ℝ)
+theorem diffQuotFun_eq (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) (f : ℝ → ℝ)
     {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) :
     diffQuotFun n x f t = (f (x (k + 1)) - f (x k)) / (x (k + 1) - x k) := by
   rw [diffQuotFun, Finset.sum_congr rfl fun i _ ↦ congrArg (f (x i) * ·)
@@ -1774,7 +1744,7 @@ theorem measurable_diffQuotFun (n : ℕ) (x : ℕ → ℝ) (f : ℝ → ℝ) :
   Finset.measurable_sum _ fun i _ ↦ measurable_const.mul (measurable_hatDerivFun n x i)
 
 /-- The weak derivative of the interpolant is the difference quotient of the representative. -/
-theorem coeFn_deriv_lagrangeInterp (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem coeFn_deriv_lagrangeInterp (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (u : SobolevInterval 1 a b) :
     ⇑(SobolevInterval.deriv (lagrangeInterp hx hn u) 1)
       =ᵐ[volume.restrict (Ioo a b)] diffQuotFun n x (SobolevInterval.rep u) := by
@@ -1806,7 +1776,7 @@ theorem coeFn_deriv_lagrangeInterp (hx : Spline.IsPartition a b n x) (hn : 1 ≤
 `|u - Π_h^1 u|_{H¹(a,b)} ≤ h |u|_{H²(a,b)}`. This is chapter 8's
 `integral_sq_deriv_sub_piecewiseLinearInterpCLM_le` read through the weak derivative of
 `FiniteElement.lagrangeInterp`, which is the panelwise difference quotient. -/
-theorem seminorm_sub_lagrangeInterp_le (hab : a < b) (hx : Spline.IsPartition a b n x)
+theorem seminorm_sub_lagrangeInterp_le (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) {h : ℝ} (hmesh : ∀ k < n, x (k + 1) - x k ≤ h) (u : SobolevInterval 2 a b) :
     SobolevInterval.seminorm 1 a b (SobolevInterval.inclusionCLM 1 a b u
         - lagrangeInterp hx hn (SobolevInterval.inclusionCLM 1 a b u))
@@ -1857,7 +1827,8 @@ theorem seminorm_sub_lagrangeInterp_le (hab : a < b) (hx : Spline.IsPartition a 
   have hmesh' : ∀ j ≤ N, (y (j + 1) : ℝ) - (y j : ℝ) ≤ h := fun j hj ↦ by
     rw [hyval j (by omega), hyval (j + 1) (by omega)]
     exact hmesh j (by omega)
-  have key := integral_sq_deriv_sub_piecewiseLinearInterpCLM_le hstep hfirst hlast hmesh' hf
+  have key := integral_sq_deriv_sub_piecewiseLinearInterpCLM_le
+    ⟨fun i hi ↦ hstep i (by omega), hfirst, hlast⟩ hmesh' hf
     (SobolevInterval.intervalIntegrable_deriv hab.le u (Fin.last 2))
     (SobolevInterval.intervalIntegrable_deriv_sq hab.le u (Fin.last 2)) hftc'
   -- the square of the seminorm
@@ -1884,7 +1855,7 @@ theorem seminorm_sub_lagrangeInterp_le (hab : a < b) (hx : Spline.IsPartition a 
     have hjn : j < N + 1 := Finset.mem_range.1 hj
     have hlt := hx.step j hjn
     rw [hyval j (by omega), hyval (j + 1) (by omega)]
-    refine integral_congr_Ioo hlt.le fun t ht ↦ ?_
+    refine intervalIntegral.integral_congr_Ioo_of_le hlt.le fun t ht ↦ ?_
     rw [diffQuotFun_eq hx hjn f ht]
   -- take square roots
   have h0 : 0 ≤ h := by
@@ -1904,7 +1875,7 @@ theorem seminorm_sub_lagrangeInterp_le (hab : a < b) (hx : Spline.IsPartition a 
 `Φ ∈ H²(a, b)` whose inclusion lies in `H^1_0(a, b)` is approximated in the `H^1` seminorm to
 within `h ‖Φ‖_{H²}` by an element of `X_h^{1,0}`, namely its piecewise linear interpolant. -/
 theorem exists_mem_lagrangeSpaceZero_seminorm_sub_le (hab : a < b)
-    (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ} (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
+    (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ} (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
     (Φ : SobolevInterval 2 a b)
     (hΦ : SobolevInterval.inclusionCLM 1 a b Φ ∈ SobolevIntervalZero a b) :
     ∃ v ∈ lagrangeSpaceZero hab n x 1,
@@ -2192,7 +2163,7 @@ variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- On the element `[x_{2m}, x_{2m+2}]` the shape function at its left endpoint is the local
 Lagrange basis function `φ̂₀` of [quarteroni2000numerical] (12.63). -/
-theorem quadShapeFun_even_left (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ} (hm : m < n)
+theorem quadShapeFun_even_left (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ} (hm : m < n)
     {t : ℝ} (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
     quadShapeFun n x (2 * m) t
       = quadLagrangeFun (x (2 * m)) (x (2 * m + 1)) (x (2 * m + 2)) t := by
@@ -2216,7 +2187,7 @@ theorem quadShapeFun_midpoint {m : ℕ} (hm : m < n) {t : ℝ} (h1 : x (2 * m) �
 
 /-- On the element `[x_{2m}, x_{2m+2}]` the shape function at its right endpoint is `φ̂₂`
 of [quarteroni2000numerical] (12.63). -/
-theorem quadShapeFun_even_right (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ} (hm : m < n)
+theorem quadShapeFun_even_right (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ} (hm : m < n)
     {t : ℝ} (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
     quadShapeFun n x (2 * m + 2) t
       = quadLagrangeFun (x (2 * m + 2)) (x (2 * m)) (x (2 * m + 1)) t := by
@@ -2232,7 +2203,7 @@ theorem quadShapeFun_even_right (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ
 /-- **The local support of the quadratic shape functions** ([quarteroni2000numerical] §12.4.5):
 on the element `[x_{2m}, x_{2m+2}]` only the three shape functions of its own nodes are
 nonzero. -/
-theorem quadShapeFun_eq_zero_of_panel (hx : Spline.IsPartition a b (2 * n) x) {m i : ℕ}
+theorem quadShapeFun_eq_zero_of_panel (hx : IsIntervalPartition a b (2 * n) x) {m i : ℕ}
     (hm : m < n) (hne0 : i ≠ 2 * m) (hne1 : i ≠ 2 * m + 1) (hne2 : i ≠ 2 * m + 2)
     {t : ℝ} (ht1 : x (2 * m) ≤ t) (ht2 : t ≤ x (2 * m + 2)) : quadShapeFun n x i t = 0 := by
   rcases lt_or_ge (2 * n) i with hi | hi
@@ -2266,7 +2237,7 @@ theorem quadShapeFun_eq_zero_of_panel (hx : Spline.IsPartition a b (2 * n) x) {m
 
 /-- **The Lagrange interpolation property `φ_i(x_l) = δ_{il}` on one element**
 ([quarteroni2000numerical] §12.4.5). -/
-theorem quadShapeFun_apply_node_of_panel (hx : Spline.IsPartition a b (2 * n) x) {m i l : ℕ}
+theorem quadShapeFun_apply_node_of_panel (hx : IsIntervalPartition a b (2 * n) x) {m i l : ℕ}
     (hm : m < n) (hl1 : 2 * m ≤ l) (hl2 : l ≤ 2 * m + 2) :
     quadShapeFun n x i (x l) = if i = l then 1 else 0 := by
   have h01 : x (2 * m) < x (2 * m + 1) := hx.step _ (by omega)
@@ -2301,7 +2272,7 @@ theorem quadShapeFun_apply_node_of_panel (hx : Spline.IsPartition a b (2 * n) x)
 
 /-- **The Lagrange interpolation property** `φ_i(x_l) = δ_{il}` of
 [quarteroni2000numerical] (12.63)-(12.64). -/
-theorem quadShapeFun_apply_node (hx : Spline.IsPartition a b (2 * n) x) {i l : ℕ}
+theorem quadShapeFun_apply_node (hx : IsIntervalPartition a b (2 * n) x) {i l : ℕ}
     (hl : l ≤ 2 * n) (hn : 1 ≤ n) : quadShapeFun n x i (x l) = if i = l then 1 else 0 := by
   rcases lt_or_ge l (2 * n) with hlt | hge
   · exact quadShapeFun_apply_node_of_panel hx (m := l / 2) (by omega) (by omega) (by omega)
@@ -2323,8 +2294,8 @@ theorem evenNodes_succ (x : ℕ → ℝ) (k : ℕ) : evenNodes x (k + 1) = x (2 
   simp only [evenNodes, Nat.mul_succ]
 
 /-- The even-indexed nodes of a partition into `2n` panels form a partition into `n` elements. -/
-theorem isPartition_evenNodes {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition a b (2 * n) x) :
-    Spline.IsPartition a b n (evenNodes x) where
+theorem isIntervalPartition_evenNodes {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition a b (2 * n) x) :
+    IsIntervalPartition a b n (evenNodes x) where
   step j hj := by
     rw [evenNodes_apply, evenNodes_succ]
     exact hx.lt (by omega) (by omega)
@@ -2343,7 +2314,7 @@ theorem quadShapeCM_apply (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t :
 `[x_{2m}, x_{2m+2}]` the shape function is one of the three local Lagrange polynomials, or
 zero. -/
 theorem quadShapeCM_mem_splineSpace {n : ℕ} {x : ℕ → ℝ}
-    (hx : Spline.IsPartition a b (2 * n) x) (i : ℕ) :
+    (hx : IsIntervalPartition a b (2 * n) x) (i : ℕ) :
     quadShapeCM a b n x i ∈ Spline.splineSpace a b n (evenNodes x) 2 0 := by
   refine ⟨quadShapeFun n x i, ?_, fun t ↦ rfl, fun m hm ↦ ?_⟩
   · rw [Nat.cast_zero]
@@ -2379,27 +2350,27 @@ elements of `H^1(a, b)`: the unique element whose continuous representative is
 mesh, the even-indexed ones being the endpoints of the `n` elements and the odd-indexed ones
 their interior nodes; `φ_i(x_j) = δ_{ij}`
 (`FiniteElement.rep_quadraticShape_node`). -/
-noncomputable def quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+noncomputable def quadraticShape (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (i : ℕ) : SobolevInterval 1 a b :=
-  (exists_mem_lagrangeSpace hab (isPartition_evenNodes hx) hn
+  (exists_mem_lagrangeSpace hab (isIntervalPartition_evenNodes hx) hn
     (quadShapeCM_mem_splineSpace hx i)).choose
 
 /-- The continuous representative of the quadratic shape element is
 `FiniteElement.quadShapeFun`. -/
-theorem toContinuousMap_quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+theorem toContinuousMap_quadraticShape (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (i : ℕ) :
     SobolevInterval.toContinuousMap hab (quadraticShape hab hx hn i) = quadShapeCM a b n x i :=
-  (exists_mem_lagrangeSpace hab (isPartition_evenNodes hx) hn
+  (exists_mem_lagrangeSpace hab (isIntervalPartition_evenNodes hx) hn
     (quadShapeCM_mem_splineSpace hx i)).choose_spec
 
 /-- The continuous representative of the quadratic shape element, pointwise. -/
-theorem rep_quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n)
+theorem rep_quadraticShape (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n)
     (i : ℕ) {t : ℝ} (ht : t ∈ Icc a b) :
     SobolevInterval.rep (quadraticShape hab hx hn i) t = quadShapeFun n x i t :=
   congrArg (fun f : C(Icc a b, ℝ) ↦ f ⟨t, ht⟩) (toContinuousMap_quadraticShape hab hx hn i)
 
 /-- **The quadratic shape elements lie in `X_h^2`.** -/
-theorem quadraticShape_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+theorem quadraticShape_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (i : ℕ) :
     quadraticShape hab hx hn i ∈ lagrangeSpace hab n (evenNodes x) 2 := by
   rw [mem_lagrangeSpace_iff, toContinuousMap_quadraticShape]
@@ -2407,7 +2378,7 @@ theorem quadraticShape_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition 
 
 /-- **`φ_i(x_j) = δ_{ij}`** for the quadratic shape elements of `H^1(a, b)`
 ([quarteroni2000numerical] (12.63)-(12.64)). -/
-theorem rep_quadraticShape_node (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+theorem rep_quadraticShape_node (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) {i l : ℕ} (hl : l ≤ 2 * n) :
     SobolevInterval.rep (quadraticShape hab hx hn i) (x l) = if i = l then 1 else 0 := by
   have hmem : x l ∈ Icc a b := Set.mem_Icc.2 ⟨hx.left_le (by omega), hx.le_right (by omega)⟩
@@ -2418,7 +2389,7 @@ theorem rep_quadraticShape_node (hab : a < b) (hx : Spline.IsPartition a b (2 * 
 `φ_i` vanishes on every element none of whose three nodes is `x_i`; in particular the bubble
 `φ_{2m+1}` is supported in the single element `[x_{2m}, x_{2m+2}]`. -/
 theorem rep_quadraticShape_eq_zero_of_panel (hab : a < b)
-    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {m i : ℕ} (hm : m < n)
+    (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {m i : ℕ} (hm : m < n)
     (hne0 : i ≠ 2 * m) (hne1 : i ≠ 2 * m + 1) (hne2 : i ≠ 2 * m + 2) {t : ℝ}
     (ht1 : x (2 * m) ≤ t) (ht2 : t ≤ x (2 * m + 2)) :
     SobolevInterval.rep (quadraticShape hab hx hn i) t = 0 := by
@@ -2429,14 +2400,14 @@ theorem rep_quadraticShape_eq_zero_of_panel (hab : a < b)
   exact quadShapeFun_eq_zero_of_panel hx hm hne0 hne1 hne2 ht1 ht2
 
 /-- The quadratic shape functions as elements of `X_h^2`, indexed by the `2n + 1` nodes. -/
-noncomputable def quadraticElem (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+noncomputable def quadraticElem (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (i : Fin (2 * n + 1)) : lagrangeSpace hab n (evenNodes x) 2 :=
   ⟨quadraticShape hab hx hn (i : ℕ), quadraticShape_mem_lagrangeSpace hab hx hn (i : ℕ)⟩
 
 /-- The quadratic shape functions are linearly independent: evaluating a vanishing combination
 at the node `x_j` returns its `j`-th coefficient. -/
 theorem linearIndependent_quadraticElem (hab : a < b)
-    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) :
+    (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) :
     LinearIndependent ℝ (quadraticElem hab hx hn) := by
   rw [Fintype.linearIndependent_iff]
   intro g hg j
@@ -2455,19 +2426,18 @@ theorem linearIndependent_quadraticElem (hab : a < b)
 /-- **The nodal basis of `X_h^2`** ([quarteroni2000numerical] (12.63)-(12.64)): the `2n + 1`
 shape functions attached to the nodes of the quadratic mesh are a basis of `X_h^2`, the nodal
 values being the degrees of freedom. -/
-noncomputable def quadraticBasis (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+noncomputable def quadraticBasis (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) : Module.Basis (Fin (2 * n + 1)) ℝ (lagrangeSpace hab n (evenNodes x) 2) :=
-  haveI := finiteDimensional_lagrangeSpace hab (isPartition_evenNodes hx) hn 2
+  haveI := finiteDimensional_lagrangeSpace hab (isIntervalPartition_evenNodes hx) hn 2
   basisOfLinearIndependentOfCardEqFinrank (linearIndependent_quadraticElem hab hx hn)
     (by
-      rw [Fintype.card_fin, finrank_lagrangeSpace hab (isPartition_evenNodes hx) hn 2]
+      rw [Fintype.card_fin, finrank_lagrangeSpace hab (isIntervalPartition_evenNodes hx) hn 2]
       ring)
 
 /-- The quadratic basis consists of the quadratic shape functions. -/
 @[simp]
-theorem quadraticBasis_apply (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n)
+theorem quadraticBasis_apply (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n)
     (i : Fin (2 * n + 1)) : quadraticBasis hab hx hn i = quadraticElem hab hx hn i := by
-  have := finiteDimensional_lagrangeSpace hab (isPartition_evenNodes hx) hn 2
   rw [quadraticBasis, coe_basisOfLinearIndependentOfCardEqFinrank]
 
 /-! ### The quadratic reference element -/
@@ -2508,7 +2478,7 @@ theorem quadRef_aux_two {p q t : ℝ} (hpq : p ≠ q) :
 
 /-- **`φ_{2m} = φ̂₀ ∘ ξ` on the element `I_m`** ([quarteroni2000numerical] (12.65)): the reference
 shape functions of `X_h^2` describe the element only when its interior node is the midpoint. -/
-theorem quadShapeFun_eq_referenceQuadratic_zero (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ}
+theorem quadShapeFun_eq_referenceQuadratic_zero (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ}
     (hm : m < n) (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
     (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
     quadShapeFun n x (2 * m) t = referenceQuadratic 0 (refCoord (evenNodes x) m t) := by
@@ -2519,7 +2489,7 @@ theorem quadShapeFun_eq_referenceQuadratic_zero (hx : Spline.IsPartition a b (2 
   exact quadRef_aux_zero hne
 
 /-- **`φ_{2m+1} = φ̂₁ ∘ ξ` on the element `I_m`** ([quarteroni2000numerical] (12.65)). -/
-theorem quadShapeFun_eq_referenceQuadratic_one (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ}
+theorem quadShapeFun_eq_referenceQuadratic_one (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ}
     (hm : m < n) (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
     (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
     quadShapeFun n x (2 * m + 1) t = referenceQuadratic 1 (refCoord (evenNodes x) m t) := by
@@ -2530,7 +2500,7 @@ theorem quadShapeFun_eq_referenceQuadratic_one (hx : Spline.IsPartition a b (2 *
   exact quadRef_aux_one hne
 
 /-- **`φ_{2m+2} = φ̂₂ ∘ ξ` on the element `I_m`** ([quarteroni2000numerical] (12.65)). -/
-theorem quadShapeFun_eq_referenceQuadratic_two (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ}
+theorem quadShapeFun_eq_referenceQuadratic_two (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ}
     (hm : m < n) (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
     (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
     quadShapeFun n x (2 * m + 2) t = referenceQuadratic 2 (refCoord (evenNodes x) m t) := by
@@ -2545,7 +2515,7 @@ theorem quadShapeFun_eq_referenceQuadratic_two (hx : Spline.IsPartition a b (2 *
 (12.65) under the affine map (12.62)** ([quarteroni2000numerical] §12.4.5), for a mesh whose
 interior nodes are the midpoints of the elements. -/
 theorem rep_quadraticShape_eq_referenceQuadratic (hab : a < b)
-    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {m : ℕ} (hm : m < n)
+    (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {m : ℕ} (hm : m < n)
     (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
     (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
     SobolevInterval.rep (quadraticShape hab hx hn (2 * m)) t
@@ -2568,7 +2538,7 @@ theorem rep_quadraticShape_eq_referenceQuadratic (hab : a < b)
 /-- **The interior quadratic shape elements lie in `X_h^{2,0}`** ([quarteroni2000numerical]
 (12.57) at `k = 2`): they vanish at both endpoints. -/
 theorem quadraticShape_mem_lagrangeSpaceZero (hab : a < b)
-    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {i : ℕ} (h0 : i ≠ 0) (hi : i ≠ 2 * n) :
+    (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {i : ℕ} (h0 : i ≠ 0) (hi : i ≠ 2 * n) :
     quadraticShape hab hx hn i ∈ lagrangeSpaceZero hab n (evenNodes x) 2 := by
   refine ⟨quadraticShape_mem_lagrangeSpace hab hx hn i,
     SobolevIntervalZero.mem_of_rep_eq_zero hab _ ?_ ?_⟩
@@ -2591,7 +2561,7 @@ variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- **The nodal values are the degrees of freedom of `X_h^1`**: two continuous piecewise linear
 functions with the same values at the nodes are equal ([quarteroni2000numerical] §12.4.5). -/
-theorem eq_of_rep_node_eq (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem eq_of_rep_node_eq (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {v w : SobolevInterval 1 a b} (hv : v ∈ lagrangeSpace hab n x 1)
     (hw : w ∈ lagrangeSpace hab n x 1)
     (h : ∀ i ≤ n, SobolevInterval.rep v (x i) = SobolevInterval.rep w (x i)) : v = w := by
@@ -2611,12 +2581,12 @@ variable {n : ℕ} {x : ℕ → ℝ}
 /-- **The piecewise quadratic interpolant** `Π_h^2 u` of [quarteroni2000numerical] §8.3 and
 §12.4.5, as an element of `H^1(a, b)`: the combination of the quadratic shape functions with the
 nodal values of the continuous representative of `u`. -/
-noncomputable def quadraticInterp (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+noncomputable def quadraticInterp (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) : SobolevInterval 1 a b :=
   ∑ i ∈ Finset.range (2 * n + 1), SobolevInterval.rep u (x i) • quadraticShape hab hx hn i
 
 /-- **A combination of the quadratic shape functions has the expected representative**. -/
-theorem rep_sum_quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n)
+theorem rep_sum_quadraticShape (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n)
     (c : ℕ → ℝ) {t : ℝ} (ht : t ∈ Icc a b) :
     SobolevInterval.rep (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) t
       = ∑ i ∈ Finset.range (2 * n + 1), c i * quadShapeFun n x i t := by
@@ -2631,14 +2601,14 @@ theorem rep_sum_quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n
 
 /-- The representative of the quadratic interpolant is the nodal combination of the shape
 functions. -/
-theorem rep_quadraticInterp (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n)
+theorem rep_quadraticInterp (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n)
     (u : SobolevInterval 1 a b) {t : ℝ} (ht : t ∈ Icc a b) :
     SobolevInterval.rep (quadraticInterp hab hx hn u) t
       = ∑ i ∈ Finset.range (2 * n + 1), SobolevInterval.rep u (x i) * quadShapeFun n x i t :=
   rep_sum_quadraticShape hab hx hn _ ht
 
 /-- **The quadratic interpolant matches `u` at the nodes**. -/
-theorem rep_quadraticInterp_node (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+theorem rep_quadraticInterp_node (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) {l : ℕ} (hl : l ≤ 2 * n) :
     SobolevInterval.rep (quadraticInterp hab hx hn u) (x l) = SobolevInterval.rep u (x l) := by
   have hmem : x l ∈ Icc a b := ⟨hx.left_le hl, hx.le_right hl⟩
@@ -2648,7 +2618,7 @@ theorem rep_quadraticInterp_node (hab : a < b) (hx : Spline.IsPartition a b (2 *
   simp [Finset.sum_ite_eq' (Finset.range (2 * n + 1)) l, Nat.lt_succ_iff.2 hl]
 
 /-- **The quadratic interpolant lies in `X_h^2`.** -/
-theorem quadraticInterp_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+theorem quadraticInterp_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) :
     quadraticInterp hab hx hn u ∈ lagrangeSpace hab n (evenNodes x) 2 :=
   Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _
@@ -2656,7 +2626,7 @@ theorem quadraticInterp_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition
 
 /-- **The quadratic interpolant of an element of `H^1_0(a, b)` lies in `X_h^{2,0}`.** -/
 theorem quadraticInterp_mem_lagrangeSpaceZero (hab : a < b)
-    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {u : SobolevInterval 1 a b}
+    (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {u : SobolevInterval 1 a b}
     (hu : u ∈ SobolevIntervalZero a b) :
     quadraticInterp hab hx hn u ∈ lagrangeSpaceZero hab n (evenNodes x) 2 := by
   refine ⟨quadraticInterp_mem_lagrangeSpace hab hx hn u,
@@ -2698,7 +2668,7 @@ theorem quadElemPoly_eval (x : ℕ → ℝ) (c : ℕ → ℝ) (m : ℕ) (t : ℝ
 
 /-- **The local Lagrange interpolant takes the nodal values at the three nodes of its
 element.** -/
-theorem quadElemPoly_eval_node (hx : Spline.IsPartition a b (2 * n) x) (c : ℕ → ℝ) {m l : ℕ}
+theorem quadElemPoly_eval_node (hx : IsIntervalPartition a b (2 * n) x) (c : ℕ → ℝ) {m l : ℕ}
     (hm : m < n) (hl1 : 2 * m ≤ l) (hl2 : l ≤ 2 * m + 2) :
     (quadElemPoly x c m).eval (x l) = c l := by
   have h01 : x (2 * m) < x (2 * m + 1) := hx.step _ (by omega)
@@ -2715,7 +2685,7 @@ theorem quadElemPoly_eval_node (hx : Spline.IsPartition a b (2 * n) x) (c : ℕ 
     ring
 
 /-- **On an element the quadratic interpolant is the local Lagrange polynomial.** -/
-theorem rep_quadraticInterp_eq_eval (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+theorem rep_quadraticInterp_eq_eval (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) {m : ℕ} (hm : m < n) {t : ℝ}
     (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
     SobolevInterval.rep (quadraticInterp hab hx hn u) t
@@ -2751,7 +2721,7 @@ theorem rep_quadraticInterp_eq_eval (hab : a < b) (hx : Spline.IsPartition a b (
 `FiniteElement.quadElemPoly`: inside an element the continuous representative of `Π_h^2 u` *is*
 that polynomial (`FiniteElement.rep_quadraticInterp_eq_eval`), so the weak derivative of the
 interpolant is its classical derivative there, by `SobolevInterval.ae_deriv_rep_eq`. -/
-theorem seminorm_sub_quadraticInterp_le (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+theorem seminorm_sub_quadraticInterp_le (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) {h : ℝ} (hmesh : ∀ m < n, x (2 * m + 2) - x (2 * m) ≤ h)
     (u : SobolevInterval 3 a b) :
     SobolevInterval.seminorm 1 a b
@@ -2885,10 +2855,6 @@ theorem seminorm_sub_quadraticInterp_le (hab : a < b) (hx : Spline.IsPartition a
     rw [← hsplitD, ← hsplitG, Finset.mul_sum]
     exact Finset.sum_le_sum fun m hm ↦ hpanel m (Finset.mem_range.1 hm)
   -- take square roots
-  have h0 : 0 ≤ h := by
-    have e1 := hstep 0 hn
-    have e2 := hmesh 0 hn
-    linarith
   have hsq : SobolevInterval.seminorm 1 a b (u₁ - w) ^ 2
       ≤ (h ^ 2 * SobolevInterval.seminorm 3 a b u) ^ 2 := by
     rw [SobolevInterval.seminorm_sq_eq_integral hab.le,

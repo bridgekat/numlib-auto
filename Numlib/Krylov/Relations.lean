@@ -52,8 +52,6 @@ theorem smoothing_eq (horth : inner 𝕜 r s = 0) :
 private theorem norm_smoothing_sq (hs : s ≠ 0) (hr : r ≠ 0) (horth : inner 𝕜 r s = 0) :
     ‖s + (smoothingCoeff s r : 𝕜) • (r - s)‖ ^ 2
       = ‖s‖ ^ 2 * ‖r‖ ^ 2 / (‖r‖ ^ 2 + ‖s‖ ^ 2) := by
-  have ha : (0 : ℝ) < ‖s‖ ^ 2 := by positivity
-  have hb : (0 : ℝ) < ‖r‖ ^ 2 := by positivity
   have hsr : inner 𝕜 s r = (0 : 𝕜) := inner_eq_zero_symm.1 horth
   set t : ℝ := ‖s‖ ^ 2 / (‖r‖ ^ 2 + ‖s‖ ^ 2) with htdef
   have h0 : inner 𝕜 (((1 - t : ℝ) : 𝕜) • s) (((t : ℝ) : 𝕜) • r) = (0 : 𝕜) := by
@@ -78,8 +76,6 @@ theorem inv_sq_norm_smoothing {s r : E} (hs : s ≠ 0) (hr : r ≠ 0)
     let s' := s + (smoothingCoeff s r : 𝕜) • (r - s)
     1 / ‖s'‖ ^ 2 = 1 / ‖s‖ ^ 2 + 1 / ‖r‖ ^ 2 := by
   intro s'
-  have ha : (0 : ℝ) < ‖s‖ ^ 2 := by positivity
-  have hb : (0 : ℝ) < ‖r‖ ^ 2 := by positivity
   have hn : ‖s'‖ ^ 2 = ‖s‖ ^ 2 * ‖r‖ ^ 2 / (‖r‖ ^ 2 + ‖s‖ ^ 2) := norm_smoothing_sq hs hr horth
   rw [hn]
   field_simp
@@ -339,6 +335,37 @@ private theorem galerkin_residual_eq_zero_of_minRes (hG : IsMinResidualIterate A
   exact inner_self_eq_zero.1
     (IsPetrovGalerkin.inner_residual_eq_zero hF hFmem)
 
+/-- **A harmonic sum has a small term**: if `1 / a² = ∑_{i ≤ m} 1 / ρᵢ²` with `a > 0`, then some
+`ρᵢ` is at most `√(m + 1) a`, because a sum of `m + 1` terms is at least `m + 1` times its
+smallest. This is the counting step of [saad2003iterative], Proposition 6.15 (Galerkin versus
+minimal residuals, `Krylov.exists_norm_residual_galerkin_le`) and Proposition 7.5 (Galerkin versus
+quasi-minimal residuals, `Krylov.exists_norm_gamma_div_givensC_le`). -/
+theorem _root_.Real.exists_le_sqrt_mul_of_one_div_sq_eq_sum {a : ℝ} (ha : 0 < a) {ρ : ℕ → ℝ}
+    {m : ℕ} (hsum : 1 / a ^ 2 = ∑ i ∈ Finset.range (m + 1), 1 / ρ i ^ 2) :
+    ∃ i ≤ m, ρ i ≤ Real.sqrt (m + 1) * a := by
+  by_contra hcon
+  push Not at hcon
+  have hlt : ∀ i ∈ Finset.range (m + 1), 1 / ρ i ^ 2 < 1 / (((m : ℝ) + 1) * a ^ 2) := by
+    intro i hi
+    have hi' : i ≤ m := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+    have h1 := hcon i hi'
+    have hsq : Real.sqrt ((m : ℝ) + 1) ^ 2 = (m : ℝ) + 1 := Real.sq_sqrt (by positivity)
+    have hs0 : 0 ≤ Real.sqrt ((m : ℝ) + 1) * a := by positivity
+    have h2 : ((m : ℝ) + 1) * a ^ 2 < ρ i ^ 2 := by
+      nlinarith [mul_self_lt_mul_self hs0 h1, hsq]
+    exact one_div_lt_one_div_of_lt (by positivity) h2
+  have hkey : ∑ i ∈ Finset.range (m + 1), 1 / ρ i ^ 2
+      < ∑ _i ∈ Finset.range (m + 1), 1 / (((m : ℝ) + 1) * a ^ 2) :=
+    Finset.sum_lt_sum_of_nonempty ⟨0, by simp⟩ hlt
+  rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul] at hkey
+  rw [← hsum] at hkey
+  have hne : ((m : ℝ) + 1) ≠ 0 := by positivity
+  have heq : ((m : ℝ) + 1) * (1 / (((m : ℝ) + 1) * a ^ 2)) = 1 / a ^ 2 := by
+    field_simp
+  push_cast at hkey
+  rw [heq] at hkey
+  exact lt_irrefl _ hkey
+
 /-- [saad2003iterative], Prop 6.15: `min_{i ≤ m} ‖r_i^F‖ ≤ √(m+1) ‖r_m^G‖`. -/
 theorem exists_norm_residual_galerkin_le {m : ℕ} {xG : E} {xF : ℕ → E}
     (hG : IsMinResidualIterate A b x₀ m xG) (hF : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xF i)) :
@@ -347,31 +374,8 @@ theorem exists_norm_residual_galerkin_le {m : ℕ} {xG : E} {xF : ℕ → E}
   · refine ⟨m, le_rfl, ?_⟩
     rw [galerkin_residual_eq_zero_of_minRes hG h0 (hF m le_rfl), h0]
     simp
-  have hpos : 0 < ‖b - A xG‖ := norm_pos_iff.2 h0
-  have hsum := inv_sq_norm_residual_minRes_eq_sum hG hF h0
-  by_contra hcon
-  push Not at hcon
-  have hlt : ∀ i ∈ Finset.range (m + 1),
-      1 / ‖b - A (xF i)‖ ^ 2 < 1 / (((m : ℝ) + 1) * ‖b - A xG‖ ^ 2) := by
-    intro i hi
-    have hi' : i ≤ m := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
-    have h1 := hcon i hi'
-    have hsq : Real.sqrt ((m : ℝ) + 1) ^ 2 = (m : ℝ) + 1 := Real.sq_sqrt (by positivity)
-    have hs0 : 0 ≤ Real.sqrt ((m : ℝ) + 1) * ‖b - A xG‖ := by positivity
-    have h2 : ((m : ℝ) + 1) * ‖b - A xG‖ ^ 2 < ‖b - A (xF i)‖ ^ 2 := by
-      nlinarith [mul_self_lt_mul_self hs0 h1, hsq]
-    exact one_div_lt_one_div_of_lt (by positivity) h2
-  have hkey : ∑ i ∈ Finset.range (m + 1), 1 / ‖b - A (xF i)‖ ^ 2
-      < ∑ _i ∈ Finset.range (m + 1), 1 / (((m : ℝ) + 1) * ‖b - A xG‖ ^ 2) :=
-    Finset.sum_lt_sum_of_nonempty ⟨0, by simp⟩ hlt
-  rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul] at hkey
-  rw [← hsum] at hkey
-  have hne : ((m : ℝ) + 1) ≠ 0 := by positivity
-  have heq : ((m : ℝ) + 1) * (1 / (((m : ℝ) + 1) * ‖b - A xG‖ ^ 2)) = 1 / ‖b - A xG‖ ^ 2 := by
-    field_simp
-  push_cast at hkey
-  rw [heq] at hkey
-  exact lt_irrefl _ hkey
+  exact Real.exists_le_sqrt_mul_of_one_div_sq_eq_sum (norm_pos_iff.2 h0)
+    (inv_sq_norm_residual_minRes_eq_sum hG hF h0)
 
 /-- Iterate relation ([saad2003iterative], (6.74)): `x_m^G = s_m² x_{m-1}^G + c_m² x_m^F` with `c_m²
 = ‖r_m^G‖² / ‖r_m^F‖²`. -/
@@ -400,8 +404,6 @@ theorem minRes_eq_combination {m : ℕ} {xG xG' xF : E}
       = ‖b - A xG‖ ^ 2 * ‖b - A xF‖ ^ 2 / (‖b - A xF‖ ^ 2 + ‖b - A xG‖ ^ 2) := by
     rw [hxG', residual_smoothing_step]
     exact norm_smoothing_sq hG0 h0 horth
-  have hb : (0 : ℝ) < ‖b - A xF‖ ^ 2 := by positivity
-  have ha : (0 : ℝ) < ‖b - A xG‖ ^ 2 := by positivity
   have hcoef : ‖b - A xG'‖ ^ 2 / ‖b - A xF‖ ^ 2
       = ‖b - A xG‖ ^ 2 / (‖b - A xF‖ ^ 2 + ‖b - A xG‖ ^ 2) := by
     rw [hns]
@@ -409,26 +411,6 @@ theorem minRes_eq_combination {m : ℕ} {xG xG' xF : E}
   rw [hcoef, hxG', smoothingCoeff_eq horth]
   push_cast
   module
-
-/-- The Galerkin iterate over `x₀ + K` exists as soon as the compression `P_K A|_K` of `A` to a
-finite-dimensional `K` is injective: injective is then surjective, so the projected equation `P_K A
-z = P_K r₀` has a solution, and `x₀ + z` is the iterate. This is the half of
-`Krylov.existsUnique_isGalerkinIterate_iff_isUnit` that does not need coordinates. -/
-private theorem exists_isGalerkin_of_injective_compression {K : Submodule 𝕜 E}
-    [FiniteDimensional 𝕜 K]
-    (hinj : Function.Injective
-      ((K.orthogonalProjectionOnto : E →ₗ[𝕜] K).comp (A.comp K.subtype))) :
-    ∃ x, IsGalerkin A b x₀ K x := by
-  obtain ⟨z, hz⟩ :=
-    (LinearMap.injective_iff_surjective.1 hinj) (K.orthogonalProjectionOnto (b - A x₀))
-  have hz' : K.starProjection (A (z : E)) = K.starProjection (b - A x₀) := by
-    rw [Submodule.starProjection_apply, Submodule.starProjection_apply]
-    exact congrArg Subtype.val hz
-  refine ⟨x₀ + (z : E), by simp, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩
-  have h1 : inner 𝕜 w (A (z : E)) = inner 𝕜 w (b - A x₀) := by
-    rw [← Submodule.inner_starProjection_right hw (A (z : E)), hz',
-      Submodule.inner_starProjection_right hw]
-  rw [map_add, ← sub_sub, inner_sub_right, h1, sub_self]
 
 /-- [brown1991theoretical] ([saad2003iterative], Prop 6.17): the minimal-residual iteration
 stagnates at step `m + 1` (`‖r_{m+1}^G‖ = ‖r_m^G‖ ≠ 0`) iff no Galerkin iterate exists at step `m +
@@ -452,7 +434,7 @@ theorem norm_residual_minRes_eq_iff_not_exists_galerkin {m : ℕ}
         (((subspace A (b - A x₀) (m + 1)).orthogonalProjectionOnto :
             E →ₗ[𝕜] subspace A (b - A x₀) (m + 1)).comp
           (A.comp (subspace A (b - A x₀) (m + 1)).subtype)) := by
-      exact fun hinj => hno (exists_isGalerkin_of_injective_compression hinj)
+      exact fun hinj => hno (exists_isGalerkin_of_injective_compression _ _ _ hinj)
     obtain ⟨z, hzmem, hzne⟩ := (Submodule.ne_bot_iff _).1
       (fun h => hTinj (LinearMap.ker_eq_bot.1 h))
     have hstar : (subspace A (b - A x₀) (m + 1)).starProjection (A (z : E)) = 0 := by
@@ -575,8 +557,6 @@ theorem smul_combination_eq {S rho : ℝ} (hS : 0 < S) (hr : 0 < rho) (u v : E) 
       = (((S + 1 / rho)⁻¹ : ℝ) : 𝕜) • (u + ((1 / rho : ℝ) : 𝕜) • v) := by
   have hS0 : S ≠ 0 := ne_of_gt hS
   have hr0 : rho ≠ 0 := ne_of_gt hr
-  have hd : rho + S⁻¹ ≠ 0 := ne_of_gt (by have h := inv_pos.2 hS; linarith)
-  have hd2 : S + 1 / rho ≠ 0 := ne_of_gt (by have h := one_div_pos.2 hr; linarith)
   have e1 : (1 - S⁻¹ / (rho + S⁻¹)) * S⁻¹ = (S + 1 / rho)⁻¹ := by
     field_simp
     ring

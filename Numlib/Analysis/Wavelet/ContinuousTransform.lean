@@ -257,7 +257,6 @@ theorem discrete_two_one_ae_eq_scalingSystem (ψ : Lp ℝ 2 (volume : Measure �
   rw [scalingSystem, hdt]
   simp only [translates] at htt ⊢
   rw [htt, discrete_apply _ two_pos]
-  have h2j : (0 : ℝ) < 2 ^ j := zpow_pos two_pos j
   rw [abs_of_pos (zpow_pos two_pos _), ← Real.sqrt_eq_rpow, zpow_neg, Real.sqrt_inv]
   push_cast
   congr 3

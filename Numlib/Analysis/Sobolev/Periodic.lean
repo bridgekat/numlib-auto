@@ -355,13 +355,10 @@ private theorem norm_invWeightLp (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k) :
       (((k : ℝ) ^ (2 * s))⁻¹ * (2 * zetaReal (2 * s))) := hasSum_norm_invWeightSeq_sq hs hk
   rw [lp.norm_eq_sqrt_tsum_norm_sq, h.tsum_eq, Real.sqrt_mul (by positivity), hsqrt]
 
-private theorem injective_mul_natCast {k : ℕ} (hk : 0 < k) :
-    Function.Injective fun j : ℤ => j * (k : ℤ) :=
-  fun _ _ hab => mul_right_cancel₀ (by exact_mod_cast hk.ne') hab
-
 private theorem summable_norm_toLp_mul_sq {k : ℕ} (hk : 0 < k) (φ : PeriodicSobolev s) :
     Summable fun j : ℤ => ‖(toLp s φ : ℤ → ℂ) (j * k)‖ ^ 2 :=
-  (lp.hasSum_norm_sq (toLp s φ)).summable.comp_injective (injective_mul_natCast hk)
+  (lp.hasSum_norm_sq (toLp s φ)).summable.comp_injective
+    (mul_left_injective₀ (Int.natCast_ne_zero.2 hk.ne'))
 
 /-- The weighted coefficients read along the multiples of `k`, as an element of `ℓ²(ℤ, ℂ)`: a
 subfamily of a square-summable family, so square summable, with a norm no larger. -/
@@ -379,10 +376,25 @@ private theorem norm_subLp_le {k : ℕ} (hk : 0 < k) (φ : PeriodicSobolev s) :
   have hle : ‖subLp hk φ‖ ^ 2 ≤ ‖φ‖ ^ 2 := by
     rw [← h₁.tsum_eq, ← norm_toLp φ, ← h₂.tsum_eq]
     refine le_trans (le_of_eq (tsum_congr fun j => ?_))
-      (tsum_comp_le_tsum_of_inj h₂.summable (fun _ => by positivity) (injective_mul_natCast hk))
+      (tsum_comp_le_tsum_of_inj h₂.summable (fun _ => by positivity)
+        (mul_left_injective₀ (Int.natCast_ne_zero.2 hk.ne')))
     rw [subLp_apply]
     rfl
   nlinarith [norm_nonneg (subLp hk φ), norm_nonneg φ]
+
+/-- The product of the inverse weights and the coefficients along the multiples of `k` is the
+sequence `j ↦ ‖a_{j k}‖`, `j ≠ 0`. -/
+private theorem norm_invWeightLp_mul_norm_subLp (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k)
+    (φ : PeriodicSobolev s) (j : ℤ) :
+    ‖(invWeightLp hs hk : ℤ → ℂ) j‖ * ‖(subLp hk φ : ℤ → ℂ) j‖
+      = if j = 0 then (0 : ℝ) else ‖coeff φ (j * k)‖ := by
+  rcases eq_or_ne j 0 with rfl | hj
+  · simp [invWeightLp, invWeightSeq]
+  · rw [ite_eq_right hj]
+    change ‖invWeightSeq s k j‖ * ‖toLp s φ (j * k)‖ = _
+    rw [invWeightSeq, ite_eq_right hj, norm_inv, Complex.norm_real,
+      Real.norm_of_nonneg (periodicSobolevWeight_pos s _).le, norm_toLp_apply,
+      inv_mul_cancel_left₀ (periodicSobolevWeight_ne_zero s _)]
 
 /-- **Cauchy–Schwarz along the multiples of `k`.** For `s > 1/2` the coefficients `a_{j k}` with
 `j ≠ 0` are absolutely summable, with `∑_{j ≠ 0} ‖a_{j k}‖ ≤ k^{-s} √(2 ζ(2 s)) ‖φ‖`. At `k = 1`
@@ -392,14 +404,7 @@ theorem summable_norm_coeff_mul (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k) (φ : Pe
   have hpq : ((2 : ℝ≥0∞).toReal).HolderConjugate ((2 : ℝ≥0∞).toReal) := by
     simpa using Real.HolderConjugate.two_two
   obtain ⟨hsum, -⟩ := lp.tsum_mul_le_mul_norm hpq (invWeightLp hs hk) (subLp hk φ)
-  refine hsum.congr fun j => ?_
-  rcases eq_or_ne j 0 with rfl | hj
-  · simp [invWeightLp, invWeightSeq]
-  · rw [ite_eq_right hj]
-    change ‖invWeightSeq s k j‖ * ‖toLp s φ (j * k)‖ = _
-    rw [invWeightSeq, ite_eq_right hj, norm_inv, Complex.norm_real,
-      Real.norm_of_nonneg (periodicSobolevWeight_pos s _).le, norm_toLp_apply,
-      inv_mul_cancel_left₀ (periodicSobolevWeight_ne_zero s _)]
+  exact hsum.congr (norm_invWeightLp_mul_norm_subLp hs hk φ)
 
 /-- The bound of `summable_norm_coeff_mul`: the tail along the multiples of `k` is at most
 `k^{-s} SQRT(2 zeta(2 s))` times the norm. -/
@@ -409,17 +414,7 @@ theorem tsum_norm_coeff_mul_le (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k) (φ : Per
   have hpq : ((2 : ℝ≥0∞).toReal).HolderConjugate ((2 : ℝ≥0∞).toReal) := by
     simpa using Real.HolderConjugate.two_two
   obtain ⟨-, hle⟩ := lp.tsum_mul_le_mul_norm hpq (invWeightLp hs hk) (subLp hk φ)
-  have hprod : ∀ j : ℤ, ‖(invWeightLp hs hk : ℤ → ℂ) j‖ * ‖(subLp hk φ : ℤ → ℂ) j‖
-      = if j = 0 then (0 : ℝ) else ‖coeff φ (j * k)‖ := by
-    intro j
-    rcases eq_or_ne j 0 with rfl | hj
-    · simp [invWeightLp, invWeightSeq]
-    · rw [ite_eq_right hj]
-      change ‖invWeightSeq s k j‖ * ‖toLp s φ (j * k)‖ = _
-      rw [invWeightSeq, ite_eq_right hj, norm_inv, Complex.norm_real,
-        Real.norm_of_nonneg (periodicSobolevWeight_pos s _).le, norm_toLp_apply,
-        inv_mul_cancel_left₀ (periodicSobolevWeight_ne_zero s _)]
-  rw [funext hprod, norm_invWeightLp hs hk] at hle
+  rw [funext (norm_invWeightLp_mul_norm_subLp hs hk φ), norm_invWeightLp hs hk] at hle
   exact hle.trans (mul_le_mul_of_nonneg_left (norm_subLp_le hk φ) (by positivity))
 
 /-! ### The Sobolev embedding into the continuous functions -/
@@ -924,7 +919,8 @@ theorem trapezoidSum_eval (hs : 1 / 2 < s) {T : ℝ} (hT : T ≠ 0) {k : ℕ} (h
     rw [← Finset.mul_sum, sum_periodicChar hT hk m, hgdef]
     by_cases hd : (k : ℤ) ∣ m <;> simp [hd, mul_comm]
   have hgsum : ∑' m : ℤ, g m = ∑' j : ℤ, coeff φ (j * k) := by
-    refine ((injective_mul_natCast hk).tsum_eq hsub).symm.trans (tsum_congr fun j => ?_)
+    refine ((mul_left_injective₀ (Int.natCast_ne_zero.2 hk.ne')).tsum_eq hsub).symm.trans
+      (tsum_congr fun j => ?_)
     simp only [hgdef]
     rw [ite_eq_left (dvd_mul_left (k : ℤ) j)]
   rw [trapezoidSum, ← hstep.tsum_eq, tsum_mul_left, hgsum]
@@ -954,7 +950,7 @@ theorem norm_intervalIntegral_sub_trapezoidSum_le (hs : 1 / 2 < s) {T : ℝ} (hT
   have htailsum : Summable fun j : ℤ => (if j = 0 then (0 : ℂ) else coeff φ (j * k)) :=
     Summable.of_norm htailnorm
   have hS : Summable fun j : ℤ => coeff φ (j * k) :=
-    (summable_coeff hs φ).comp_injective (injective_mul_natCast hk)
+    (summable_coeff hs φ).comp_injective (mul_left_injective₀ (Int.natCast_ne_zero.2 hk.ne'))
   have hsplit : ∑' j : ℤ, coeff φ (j * k)
       = coeff φ 0 + ∑' j : ℤ, (if j = 0 then (0 : ℂ) else coeff φ (j * k)) := by
     refine hS.hasSum.unique ?_

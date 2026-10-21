@@ -317,8 +317,6 @@ theorem norm_inner_self_sub_le {A : Module.End 𝕜 E} {M : ℝ} (hM : 0 ≤ M)
           add_le_add (add_le_add hA1 (hA2.trans (by gcongr))) hA3
       _ = (M + ‖lam‖) * ‖v - b‖ * (2 + ‖v - b‖) := by ring
   refine hbound.trans ?_
-  have h0 : (0 : ℝ) ≤ ‖v - b‖ := norm_nonneg _
-  have hMl : 0 ≤ M + ‖lam‖ := by positivity
   gcongr
 
 /-- The span of a subfamily of an eigenbasis is invariant under the operator. -/
@@ -2016,17 +2014,6 @@ section LeadingPrincipal
 
 variable {𝕜 : Type*} [RCLike 𝕜] {N : ℕ}
 
-/-- Summing a function that vanishes from `m` on over `Fin N` is summing over `Fin m`. -/
-private theorem sum_castLE {M : Type*} [AddCommMonoid M] {m : ℕ} (hm : m ≤ N) (F : Fin N → M)
-    (hF : ∀ l : Fin N, m ≤ (l : ℕ) → F l = 0) :
-    ∑ l, F l = ∑ l : Fin m, F (Fin.castLE hm l) := by
-  have h := Finset.sum_map Finset.univ (Fin.castLEEmb hm) F
-  simp only [Fin.coe_castLEEmb] at h
-  rw [← h]
-  refine (Finset.sum_subset (Finset.subset_univ _) fun l _ hl => hF l ?_).symm
-  by_contra hlt
-  exact hl (Finset.mem_map.2 ⟨⟨l, not_le.1 hlt⟩, Finset.mem_univ _, Fin.ext rfl⟩)
-
 /-- **The general-position hypothesis of `Matrix.tendsto_qrIterate` is the LU condition on the
 inverse eigenvector matrix** ([golub1989matrix] Theorem 7.3.1; the hypothesis
 [quarteroni2000numerical] Property 5.9 omits): for an invertible `X` with columns `x_j` and the
@@ -2044,9 +2031,11 @@ theorem disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal {X : Matrix (Fin 
         ((X⁻¹).submatrix (Fin.castLE hm) (Fin.castLE hm) *ᵥ fun i => v (Fin.castLE hm i)) i := by
     intro v hv i
     simp only [mulVec, dotProduct, submatrix_apply]
-    exact sum_castLE hm _ fun l hl => by rw [hv l hl, mul_zero]
-  have hmemJ : ∀ i : Fin m, (Fin.castLE hm i : Fin N) ∈ {i : Fin N | (i : ℕ) < m} := fun i => by
-    simp
+    rw [Fin.sum_castLE_eq_sum_ite hm (fun l => X⁻¹ (Fin.castLE hm i) l * v l)]
+    refine Finset.sum_congr rfl fun l _ => ?_
+    split_ifs with hl
+    · rfl
+    · rw [hv l (not_lt.1 hl), mul_zero]
   rw [span_euclideanCol_eq_map X, Submodule.disjoint_def]
   constructor
   · intro hdisj

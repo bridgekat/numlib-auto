@@ -74,19 +74,6 @@ theorem apply_le_of_reflTransGen {β : Type*} [Preorder β] {b : α → β}
   | refl => exact le_rfl
   | tail _ hstep ih => exact ih.trans (hb _ _ hstep)
 
-/-- Reading a pair `(a, p)` with `p < K` as the number `p + K * a` loses nothing. -/
-private theorem eq_of_add_mul_eq {K a p a' p' : ℕ} (hp : p < K) (hp' : p' < K)
-    (h : p + K * a = p' + K * a') : a = a' ∧ p = p' := by
-  have hK : 0 < K := lt_of_le_of_lt (Nat.zero_le _) hp
-  have ha : a = a' := by
-    have h1 : (p + K * a) / K = a := by
-      rw [Nat.add_mul_div_left _ _ hK, Nat.div_eq_of_lt hp, zero_add]
-    have h2 : (p' + K * a') / K = a' := by
-      rw [Nat.add_mul_div_left _ _ hK, Nat.div_eq_of_lt hp', zero_add]
-    rw [← h1, ← h2, h]
-  subst ha
-  exact ⟨rfl, Nat.add_right_cancel h⟩
-
 /-- **A topological ordering of the strongly connected components** of a relation on a finite type:
 a rank `b : α → ℕ` that never decreases along `r` and whose fibres are exactly the strongly
 connected components. -/
@@ -156,7 +143,9 @@ theorem exists_rank_stronglyConnected [Finite α] (r : α → α → Prop) :
   · change q i + (Fintype.card α + 1) * (L i).card = q j + (Fintype.card α + 1) * (L j).card ↔ _
     constructor
     · intro h
-      exact hqinj i j (eq_of_add_mul_eq (hqlt i) (hqlt j) h).2
+      refine hqinj i j ?_
+      simpa [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (hqlt i), Nat.mod_eq_of_lt (hqlt j)] using
+        congrArg (· % (Fintype.card α + 1)) h
     · intro h
       rw [hqeq i j h, hLeq i j h]
 

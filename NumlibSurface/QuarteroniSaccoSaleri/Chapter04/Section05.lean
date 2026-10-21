@@ -147,7 +147,7 @@ backbone's `BiLanczos.NoBreakdown … m` for `A` and its adjoint `Aᵀ`. -/
 theorem noBreakdown_of (hz : inner ℝ z₁ v₁ = 1) {m : ℕ}
     (hγ : ∀ j < m, blGamma A v₁ z₁ (j + 1) ≠ 0) :
     BiLanczos.NoBreakdown (toEuclideanLin A) (toEuclideanLin Aᵀ) v₁ z₁ m where
-  adjoint := inner_toEuclideanLin_transpose A
+  adjoint := LinearMap.isAdjointPair_inner_iff'.2 (inner_toEuclideanLin_transpose A)
   inner_start := hz
   delta_ne_zero j hj := by
     rw [← (biLanczos_eq A v₁ z₁ (j + 1)).2.2.2.2.2]

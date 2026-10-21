@@ -661,7 +661,6 @@ theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc (hA : A.IsSymmetri
     (hC.eigenvalues hm) (lam i') (fun j hj => hθ j (Finset.mem_Iio.1 hj)) hlohi hhi k
   set M : ℝ := (∏ j ∈ Finset.Iio i, (hC.eigenvalues hm j - lo) / (hC.eigenvalues hm j - lam i')) /
     (T ℝ k).eval ((2 * lam i' - hi - lo) / (hi - lo)) with hMdef
-  have hM0 : (0 : ℝ) ≤ M := le_trans (abs_nonneg _) (hqb lo ⟨le_rfl, hlohi.le⟩)
   -- the competitor vector and its eigenbasis coordinates
   set qc : 𝕜[X] := q.map (algebraMap ℝ 𝕜) with hqc
   set x := aeval A qc v with hx
@@ -719,7 +718,6 @@ theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc (hA : A.IsSymmetri
     exact Finset.single_le_sum (f := fun j => ‖b.repr x j‖ ^ 2) (fun _ _ => sq_nonneg _)
       (Finset.mem_univ i')
   have hcpos : (0 : ℝ) < ‖(inner 𝕜 (b i') v : 𝕜)‖ ^ 2 := by
-    have := norm_pos_iff.2 hv
     positivity
   have hlo : lo < lam i' := lt_trans hlohi hhi
   have hCD : (lam i' - lo) * M ^ 2 * ∑ j ∈ Finset.Ioi i', ‖b.repr v j‖ ^ 2 ≤
@@ -755,7 +753,7 @@ the ones before it and from the one after it, and the spectrum below it is not a
 is `Lanczos.tan_angle_le_of_mem_Icc` with the interval `[λ_n, λ_{i+1}]`, which is the smallest one
 containing the eigenvalues after the `i`-th. -/
 theorem tan_angle_le (i iS last : Fin n) (hiS : (i : ℕ) + 1 = (iS : ℕ))
-    (hlast : ∀ j : Fin n, j ≤ last) {v : E}
+    (hlast : IsTop last) {v : E}
     (hv : (inner 𝕜 (b i) v : 𝕜) ≠ 0)
     (hgap : lam iS < lam i) (hspread : lam last < lam iS)
     (hsep : ∀ j : Fin n, j < i → lam i < lam j)
@@ -772,7 +770,6 @@ theorem tan_angle_le (i iS last : Fin n) (hiS : (i : ℕ) + 1 = (iS : ℕ))
   refine tan_angle_le_of_mem_Icc b hb i hv hspread hgap (fun j hj => ⟨?_, ?_⟩) hsep hm
   · exact hlam (hlast j)
   · refine hlam ?_
-    have h1 := Fin.lt_def.1 hj
     rw [Fin.le_def, ← hiS]
     omega
 
@@ -794,8 +791,8 @@ This is `Lanczos.eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc` with the
 theorem eigenvalues_sub_eigenvalues_compression_le (hA : A.IsSymmetric)
     {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
-    (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : ∀ j : Fin n, first ≤ j)
-    (hlast : ∀ j : Fin n, j ≤ last) (hv : (inner 𝕜 (b i') v : 𝕜) ≠ 0)
+    (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : IsBot first)
+    (hlast : IsTop last) (hv : (inner 𝕜 (b i') v : 𝕜) ≠ 0)
     (hgap : lam iS < lam i') (hspread : lam last < lam iS)
     (hθ : ∀ j : Fin m, j < i →
       lam i' < (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j)
@@ -817,7 +814,6 @@ theorem eigenvalues_sub_eigenvalues_compression_le (hA : A.IsSymmetric)
     hspread hgap (fun j hj => ⟨?_, ?_⟩) hθ hk) ?_
   · exact hlam (hlast j)
   · refine hlam ?_
-    have h1 := Fin.lt_def.1 hj
     rw [Fin.le_def, ← hiS]
     omega
   · refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
@@ -843,8 +839,8 @@ really has dimension `m`, that is, that the Lanczos process has not yet broken d
 `Lanczos.kaniel_paige_saad_eigenvectorBasis` is the special case of Mathlib's eigenbasis. -/
 theorem kaniel_paige_saad [FiniteDimensional 𝕜 E] (hA : A.IsSymmetric) {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
-    (hii : (i : ℕ) = (i' : ℕ)) (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : ∀ j : Fin n, first ≤ j)
-    (hlast : ∀ j : Fin n, j ≤ last) (hv : (inner 𝕜 (b i') v : 𝕜) ≠ 0)
+    (hii : (i : ℕ) = (i' : ℕ)) (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : IsBot first)
+    (hlast : IsTop last) (hv : (inner 𝕜 (b i') v : 𝕜) ≠ 0)
     (hgap : lam iS < lam i') (hspread : lam last < lam iS)
     (hθ : ∀ j : Fin m, j < i →
       lam i' < (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j)
@@ -875,8 +871,8 @@ end Eigenbasis
 theorem kaniel_paige_saad_eigenvectorBasis {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ}
     (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
-    (hii : (i : ℕ) = (i' : ℕ)) (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : ∀ j : Fin n, first ≤ j)
-    (hlast : ∀ j : Fin n, j ≤ last)
+    (hii : (i : ℕ) = (i' : ℕ)) (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : IsBot first)
+    (hlast : IsTop last)
     (hv : (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) ≠ 0)
     (hgap : hA.eigenvalues hn iS < hA.eigenvalues hn i')
     (hspread : hA.eigenvalues hn last < hA.eigenvalues hn iS)
@@ -1136,7 +1132,7 @@ private theorem sub_le_eigenvalues_compression_of_poly {p : ℕ} (v : Fin p → 
         t * ‖(Submodule.span 𝕜 (b '' {j | (j : ℕ) < p})).starProjection x‖)
     {k d : ℕ} (hd : Module.finrank 𝕜 (Krylov.blockSubspace A v k) = d) (i : Fin d)
     (i' first last : Fin n) (hii : (i : ℕ) = i') (hip : (i' : ℕ) < p)
-    (hfirst : ∀ j : Fin n, first ≤ j) (hlast : ∀ j : Fin n, j ≤ last)
+    (hfirst : IsBot first) (hlast : IsTop last)
     (q : ℝ[X]) (hq : q.degree < k) {M : ℝ}
     (hqM : ∀ j : Fin n, p ≤ (j : ℕ) → |q.eval (lam j)| ≤ M)
     (hq1 : ∀ j : Fin n, (j : ℕ) ≤ i' → 1 ≤ |q.eval (lam j)|) :
@@ -1296,7 +1292,7 @@ theorem kaniel_paige_saad {p : ℕ} (v : Fin p → E) (hv : LinearIndependent �
         t * ‖(Submodule.span 𝕜 (b '' {j | (j : ℕ) < p})).starProjection x‖)
     {k d : ℕ} (hd : Module.finrank 𝕜 (Krylov.blockSubspace A v (k + 1)) = d) (i : Fin d)
     (i' iP first last : Fin n) (hii : (i : ℕ) = i') (hiP : (i' : ℕ) < iP) (hP : (iP : ℕ) = p)
-    (hfirst : ∀ j : Fin n, first ≤ j) (hlast : ∀ j : Fin n, j ≤ last) :
+    (hfirst : IsBot first) (hlast : IsTop last) :
     lam i' - (lam first - lam last) *
         (t / (T ℝ k).eval (1 + 2 * ((lam i' - lam iP) / (lam iP - lam last)))) ^ 2 ≤
         (compression.isSymmetric A (Krylov.blockSubspace A v (k + 1)) hA).eigenvalues hd i ∧
@@ -1401,7 +1397,7 @@ theorem kaniel_paige_saad_eigenvectorBasis {A : E →ₗ[𝕜] E} [FiniteDimensi
         t * ‖(Submodule.span 𝕜 (hA.eigenvectorBasis hn '' {j | (j : ℕ) < p})).starProjection x‖)
     {k d : ℕ} (hd : Module.finrank 𝕜 (Krylov.blockSubspace A v (k + 1)) = d) (i : Fin d)
     (i' iP first last : Fin n) (hii : (i : ℕ) = i') (hiP : (i' : ℕ) < iP) (hP : (iP : ℕ) = p)
-    (hfirst : ∀ j : Fin n, first ≤ j) (hlast : ∀ j : Fin n, j ≤ last) :
+    (hfirst : IsBot first) (hlast : IsTop last) :
     hA.eigenvalues hn i' - (hA.eigenvalues hn first - hA.eigenvalues hn last) *
         (t / (T ℝ k).eval (1 + 2 * ((hA.eigenvalues hn i' - hA.eigenvalues hn iP) /
           (hA.eigenvalues hn iP - hA.eigenvalues hn last)))) ^ 2 ≤
@@ -1525,7 +1521,6 @@ theorem norm_sub_starProjection_le_of_mem_closedBall (hu : ∀ k, A (u k) = lam 
     ‖u i - (subspace A v m).starProjection (u i)‖ ≤
       (∑ k ∈ Finset.univ.erase i, ‖α k‖ / ‖α i‖) * (ρ / ‖lam i - c‖) ^ (m - 1) := by
   have hci : lam i - c ≠ 0 := sub_ne_zero.2 hc
-  have hcnorm : (0 : ℝ) < ‖lam i - c‖ := norm_pos_iff.2 hci
   have hev : ∀ z : 𝕜, ((C (lam i - c)⁻¹ * (X - C c)) ^ (m - 1) : 𝕜[X]).eval z
       = ((lam i - c)⁻¹ * (z - c)) ^ (m - 1) := by
     intro z; simp

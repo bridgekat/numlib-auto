@@ -21,10 +21,12 @@ The named shapes of band width one, on a matrix indexed by a linearly ordered ty
   bare `LinearOrder` on the index type, as "no index lies strictly between the two", which on
   `Fin n` is the usual condition on the difference of the indices
   (`Matrix.isUpperHessenberg_iff_fin`, `Matrix.isLowerHessenberg_iff_fin`,
-  `Matrix.isTridiagonal_iff_fin`).
+  `Matrix.isTridiagonal_iff_fin`; on `ℕ`, `Matrix.isUpperHessenberg_iff_nat`).
 * `Matrix.IsUpperHessenbergRect`: the rectangular `(m + 1) × m` form of the same condition, as in
   the matrix `H̄ₘ` of the Arnoldi process; it is an abbreviation for lower bandwidth `1` in the
   rectangular vocabulary of `Numlib/LinearAlgebra/Matrix/Band`.
+* `Matrix.IsUpperHessenbergInCols A k`: `A` on `Fin N` vanishes below the first subdiagonal in
+  the columns `j < k`, the invariant of the Householder reductions to Hessenberg form.
 * `Matrix.IsUpperBidiagonal`, `Matrix.IsLowerBidiagonal`: the two bidiagonal shapes, the shape of
   the Golub–Kahan bidiagonalization and of the factors of a tridiagonal matrix.
 * `Matrix.tridiagonalOf b d c`: the tridiagonal matrix `tridiag(b, d, c)` with the given
@@ -206,6 +208,18 @@ theorem isUpperHessenberg_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
     A.IsUpperHessenberg ↔ ∀ i j : Fin N, (j : ℕ) + 1 < (i : ℕ) → A i j = 0 := by
   rw [isUpperHessenberg_iff_hasLowerBandwidth_one, hasLowerBandwidth_iff_fin]
 
+/-- On `ℕ`, upper Hessenberg is the condition `H i j = 0` for `j + 1 < i`: the form in which the
+`ℕ`-indexed coefficient arrays of the Krylov methods state it. -/
+theorem isUpperHessenberg_iff_nat {H : Matrix ℕ ℕ R} :
+    H.IsUpperHessenberg ↔ ∀ i j : ℕ, j + 1 < i → H i j = 0 :=
+  forall₂_congr fun i j => imp_congr_left
+    ⟨fun ⟨k, hjk, hki⟩ => by omega, fun h => ⟨j + 1, by omega, h⟩⟩
+
+/-- An upper Hessenberg array on `ℕ` vanishes at `(i, j)` whenever `j + 1 < i`. -/
+theorem IsUpperHessenberg.eq_zero_of_add_one_lt {H : Matrix ℕ ℕ R} (hH : H.IsUpperHessenberg)
+    (i j : ℕ) (h : j + 1 < i) : H i j = 0 :=
+  isUpperHessenberg_iff_nat.1 hH i j h
+
 /-- Upper bandwidth `1` is the lower Hessenberg shape. -/
 theorem isLowerHessenberg_iff_hasUpperBandwidth_one :
     A.IsLowerHessenberg ↔ A.HasUpperBandwidth 1 := by
@@ -244,6 +258,37 @@ theorem IsUpperBidiagonal.hasBandwidth (hB : A.IsUpperBidiagonal) :
     (isTridiagonal_iff_hasBandwidth_one.1 hB.isTridiagonal).2⟩
 
 end Bandwidth
+
+/-! ### Matrices upper Hessenberg in their leading columns -/
+
+section InCols
+
+variable {N : ℕ}
+
+/-- A square matrix over `Fin N` is **upper Hessenberg in its first `k` columns** when it vanishes
+below the first subdiagonal in the columns `j < k`. It is the loop invariant of the Householder
+reductions to Hessenberg and to tridiagonal form, which reach `Matrix.IsUpperHessenberg` at
+`k = N - 2` (`Matrix.IsUpperHessenbergInCols.isUpperHessenberg`). -/
+def IsUpperHessenbergInCols [Zero R] (A : Matrix (Fin N) (Fin N) R) (k : ℕ) : Prop :=
+  ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0
+
+/-- Upper Hessenberg in the first `k` columns, unfolded. -/
+theorem isUpperHessenbergInCols_iff [Zero R] {A : Matrix (Fin N) (Fin N) R} {k : ℕ} :
+    A.IsUpperHessenbergInCols k ↔ ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0 :=
+  Iff.rfl
+
+/-- Every matrix is upper Hessenberg in its first `0` columns. -/
+theorem isUpperHessenbergInCols_zero [Zero R] (A : Matrix (Fin N) (Fin N) R) :
+    A.IsUpperHessenbergInCols 0 :=
+  fun _ _ hj => absurd hj (Nat.not_lt_zero _)
+
+/-- Upper Hessenberg in the first `N - 2` columns (or more) is upper Hessenberg: the columns
+`N - 2` and `N - 1` have no entry below the first subdiagonal. -/
+theorem IsUpperHessenbergInCols.isUpperHessenberg [Zero R] {A : Matrix (Fin N) (Fin N) R} {k : ℕ}
+    (h : A.IsUpperHessenbergInCols k) (hk : N - 2 ≤ k) : A.IsUpperHessenberg :=
+  fun i j ⟨l, hjl, hli⟩ => h i j (by omega) (by omega)
+
+end InCols
 
 section Products
 

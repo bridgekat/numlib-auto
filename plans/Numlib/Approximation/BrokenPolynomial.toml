@@ -97,7 +97,7 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.4.1, λ_max �
 id = "glue"
 
 [[node]]
-id = "isPartition_extendFin"
+id = "isIntervalPartition_extendFin"
 
 [[node]]
 id = "glue_eq_of_mem"

@@ -260,7 +260,6 @@ theorem exists_seminorm_forall_mulVec_le_complex (A : Matrix n n ℂ) {ε : ℝ}
       ∀ x, p (A *ᵥ x) ≤ ((spectralRadius ℂ A).toReal + ε) * p x := by
   classical
   exact
-    have : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
     exists_seminorm_forall_mulVec_le_of_tendsto A
       (spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius A) hε
 

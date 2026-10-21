@@ -155,7 +155,7 @@ theorem equation_12_2_5 {a b : ℝ} (hab : a ≤ b) {μ : ℝ} (hμ : μ ≠ 0)
     exact h0.eventually (eventually_lt_nhds (by norm_num))
   filter_upwards [hsmall] with n hn
   have hidem : IsIdempotentElem (piecewiseLinearInterpCLM (N n) (y n)) :=
-    isIdempotentElem_piecewiseLinearInterpCLM (hstep n) (hfirst n) (hlast n)
+    isIdempotentElem_piecewiseLinearInterpCLM ⟨fun i hi => hstep n i (by omega), hfirst n, hlast n⟩
   obtain ⟨e', he'coe, he'norm, huniq⟩ := theorem_12_1_2 hμ hidem e he (by rw [← hA]; linarith)
   have hb1 : ‖(e'.symm : C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ))‖ ≤ 2 * A := by
     refine he'norm.trans ?_
@@ -163,7 +163,8 @@ theorem equation_12_2_5 {a b : ℝ} (hab : a ≤ b) {μ : ℝ} (hμ : μ ≠ 0)
     nlinarith [norm_nonneg (K - piecewiseLinearInterpCLM (N n) (y n) ∘L K)]
   refine ⟨huniq, fun g M f u un hg hu hM hueq hun => ?_⟩
   have hb2 : ‖u - piecewiseLinearInterpCLM (N n) (y n) u‖ ≤ h n ^ 2 / 8 * M :=
-    norm_sub_piecewiseLinearInterpCLM_le (hstep n) (hfirst n) (hlast n) hg hu (hmesh n) hM
+    norm_sub_piecewiseLinearInterpCLM_le ⟨fun i hi => hstep n i (by omega), hfirst n, hlast n⟩ hg hu
+      (hmesh n) hM
   have hkey := (equation_12_1_24 hidem he'coe hueq hun).2
   calc ‖u - un‖
       ≤ ‖μ‖ * ‖(e'.symm : C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ))‖ *
@@ -714,7 +715,8 @@ theorem equation_12_2_19 (hab : a ≤ b) {μ : ℝ} (hμ : μ ≠ 0)
       ≤ √(b - a) * (h n ^ 2 / 8 * M₂) := by
     refine (norm_sub_piecewiseLinearProjCLM_le hab (N n) (y n) uc).trans ?_
     exact mul_le_mul_of_nonneg_left
-      (norm_sub_piecewiseLinearInterpCLM_le (hstep n) (hfirst n) (hlast n) hg huc (hmesh n) hM₂)
+      (norm_sub_piecewiseLinearInterpCLM_le ⟨fun i hi => hstep n i (by omega), hfirst n, hlast n⟩
+        hg huc (hmesh n) hM₂)
       (Real.sqrt_nonneg _)
   have hkey := (equation_12_1_24 (isIdempotentElem_piecewiseLinearProjCLM a b (N n) (y n))
     he'coe hu hun).2

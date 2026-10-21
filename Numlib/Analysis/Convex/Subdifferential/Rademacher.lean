@@ -370,7 +370,6 @@ theorem normalCone_innerₗ_closedBall {x : E} (hx : ‖x‖ = 1) :
   · rintro ⟨lam, hlam, rfl⟩ z hz
     have hcs : (inner ℝ z x : ℝ) ≤ ‖z‖ * ‖x‖ := real_inner_le_norm z x
     rw [hx, mul_one] at hcs
-    have hzx : (inner ℝ z x : ℝ) ≤ 1 := le_trans hcs hz
     simp only [real_inner_smul_right]
     rw [hxx]
     nlinarith

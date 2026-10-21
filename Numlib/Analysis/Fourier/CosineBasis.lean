@@ -83,6 +83,18 @@ theorem integral_cos_int_mul (m : ℤ) :
     rw [intervalIntegral.integral_comp_mul_left (fun x => Real.cos x) hm0, integral_cos]
     simp [Real.sin_int_mul_pi, hm]
 
+/-- `∫_0^π cos ((j + k) x) dx` is `π` at `j = k = 0` and `0` otherwise. -/
+private theorem integral_cos_nat_add_nat_mul (j k : ℕ) :
+    ∫ x in (0 : ℝ)..π, Real.cos (((j : ℤ) + k : ℤ) * x) = if j = 0 ∧ k = 0 then π else 0 := by
+  rw [integral_cos_int_mul]
+  exact if_congr (by omega) rfl rfl
+
+/-- `∫_0^π cos ((j - k) x) dx` is `π` at `j = k` and `0` otherwise. -/
+private theorem integral_cos_nat_sub_nat_mul (j k : ℕ) :
+    ∫ x in (0 : ℝ)..π, Real.cos (((j : ℤ) - k : ℤ) * x) = if j = k then π else 0 := by
+  rw [integral_cos_int_mul]
+  exact if_congr (by omega) rfl rfl
+
 /-- **The half-range cosine system is orthogonal on `[0, π]`**, with `π` and `π/2` as the squared
 norms of the constant and of the higher cosines. -/
 theorem integral_cos_nat_mul_cos_nat_mul (j k : ℕ) :
@@ -103,23 +115,13 @@ theorem integral_cos_nat_mul_cos_nat_mul (j k : ℕ) :
   have hi2 : IntervalIntegrable (fun x => Real.cos (((j : ℤ) - k : ℤ) * x)) volume 0 π :=
     (Real.continuous_cos.comp (by fun_prop)).intervalIntegrable _ _
   rw [intervalIntegral.integral_div, intervalIntegral.integral_add hi1 hi2,
-    integral_cos_int_mul, integral_cos_int_mul]
+    integral_cos_nat_add_nat_mul, integral_cos_nat_sub_nat_mul]
   by_cases hjk : j = k
   · subst hjk
     by_cases hj : j = 0
     · subst hj; norm_num
-    · have h1 : ((j : ℤ) + j) ≠ 0 := by
-        have hj' : (j : ℤ) ≠ 0 := Int.natCast_ne_zero.2 hj
-        omega
-      simp [h1, hj]
-  · have h1 : ((j : ℤ) + k : ℤ) ≠ 0 := by
-      have hj' : (0 : ℤ) ≤ j := Int.natCast_nonneg j
-      have hk' : (0 : ℤ) ≤ k := Int.natCast_nonneg k
-      have : (j : ℤ) ≠ k := by exact_mod_cast fun h => hjk (Nat.cast_injective h)
-      omega
-    have h2 : ((j : ℤ) - k : ℤ) ≠ 0 := by
-      simpa [sub_eq_zero, Nat.cast_inj] using hjk
-    simp [h1, h2, hjk]
+    · simp [hj]
+  · simp [hjk, show ¬(j = 0 ∧ k = 0) by omega]
 
 /-- **The half-range sine system is orthogonal on `[0, π]`**, with `π/2` for the squared norm of
 every sine of nonzero frequency; the frequency `0` contributes the zero function. It rests on the
@@ -143,23 +145,13 @@ theorem integral_sin_nat_mul_sin_nat_mul (j k : ℕ) :
   have hi2 : IntervalIntegrable (fun x => Real.cos (((j : ℤ) + k : ℤ) * x)) volume 0 π :=
     (Real.continuous_cos.comp (by fun_prop)).intervalIntegrable _ _
   rw [intervalIntegral.integral_div, intervalIntegral.integral_sub hi1 hi2,
-    integral_cos_int_mul, integral_cos_int_mul]
+    integral_cos_nat_sub_nat_mul, integral_cos_nat_add_nat_mul]
   by_cases hjk : j = k
   · subst hjk
     by_cases hj : j = 0
     · subst hj; norm_num
-    · have h1 : ((j : ℤ) + j) ≠ 0 := by
-        have hj' : (j : ℤ) ≠ 0 := Int.natCast_ne_zero.2 hj
-        omega
-      simp [h1, hj]
-  · have h1 : ((j : ℤ) + k : ℤ) ≠ 0 := by
-      have hj' : (0 : ℤ) ≤ j := Int.natCast_nonneg j
-      have hk' : (0 : ℤ) ≤ k := Int.natCast_nonneg k
-      have : (j : ℤ) ≠ k := by exact_mod_cast fun h => hjk (Nat.cast_injective h)
-      omega
-    have h2 : ((j : ℤ) - k : ℤ) ≠ 0 := by
-      simpa [sub_eq_zero, Nat.cast_inj] using hjk
-    simp [h1, h2, hjk]
+    · simp [hj]
+  · simp [hjk, show ¬(j = 0 ∧ k = 0) by omega]
 
 /-- The raw cosine system `x ↦ cos (k x)` on `[0, π]`. -/
 noncomputable def cosMap (k : ℕ) : C(Icc (0 : ℝ) π, ℝ) := ⟨fun x => Real.cos (k * x), by fun_prop⟩
@@ -176,7 +168,6 @@ theorem cosNorm_of_ne_zero {k : ℕ} (hk : k ≠ 0) : cosNorm k = √(2 / π) :=
 
 /-- The normalizing constants are nonzero, so `cosFun` and `cosMap` span the same space. -/
 theorem cosNorm_ne_zero (k : ℕ) : cosNorm k ≠ 0 := by
-  have hπ : (0 : ℝ) < π := Real.pi_pos
   rcases eq_or_ne k 0 with hk | hk
   · subst hk; rw [cosNorm_zero]; positivity
   · rw [cosNorm_of_ne_zero hk]; positivity

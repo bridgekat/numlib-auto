@@ -295,7 +295,7 @@ variable {n : ℕ} {x : ℕ → ℝ}
 
 /-- The mass matrix of §13.3 is the Gram matrix of the interior hat functions of the uniform
 mesh, `M = (h/6) tridiag(1, 4, 1)` with `h = 1/n`. -/
-theorem massMatrix_eq_gram (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem massMatrix_eq_gram (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (huni : ∀ k < n, x (k + 1) - x k = 1 / (n : ℝ)) :
     massMatrix n
       = FiniteElement.massMatrix 0 1 fun i : Fin (n - 1) ↦ FiniteElement.hatFunction hx hn
@@ -312,7 +312,7 @@ theorem massMatrix_eq_gram (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
 
 **Erratum**: the hint of Exercise 13.2 prints `m_ij = (h/6)·{1/2 (i ≠ j), 1 (i = j)}`; the
 correct values are those above. -/
-theorem massMatrix_apply_eq_integral (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem massMatrix_apply_eq_integral (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (huni : ∀ k < n, x (k + 1) - x k = 1 / (n : ℝ)) (i j : Fin (n - 1)) :
     massMatrix n i j = ∫ t in Set.Ioo (0 : ℝ) 1,
       FiniteElement.hatFun n x ((j : ℕ) + 1) t * FiniteElement.hatFun n x ((i : ℕ) + 1) t := by
@@ -325,7 +325,7 @@ theorem massMatrix_apply_eq_integral (hx : Spline.IsPartition 0 1 n x) (hn : 1 �
 applied to `∫₀¹ φ_j φ_i` gives `h ∑_k φ_j(x_k) φ_i(x_k) = h δ_{ij}`, so the lumped mass matrix is
 `M̃ = h · I`, which is nonsingular; the exact integrals are those of
 `massMatrix_apply_eq_integral`. -/
-theorem exercise_13_2 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ}
+theorem exercise_13_2 (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ}
     (hxu : ∀ k ≤ n, x k = (k : ℝ) * h) (i j : Fin (n - 1)) :
     Quadrature.trapezoidSum (fun t ↦ FiniteElement.hatFun n x ((j : ℕ) + 1) t
         * FiniteElement.hatFun n x ((i : ℕ) + 1) t) 0 h n
@@ -412,7 +412,7 @@ noncomputable def heatStiffnessMatrix (ν : ℝ) (n : ℕ) :
 
 /-- The stiffness matrix of §13.3 is the Gram matrix of the interior hat functions for the heat
 form `a(u, v) = ν ∫ u' v'` on the uniform mesh. -/
-theorem heatStiffnessMatrix_eq_gram {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x)
+theorem heatStiffnessMatrix_eq_gram {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x)
     (hn : 1 ≤ n) (huni : ∀ k < n, x (k + 1) - x k = 1 / (n : ℝ)) (ν : ℝ) :
     heatStiffnessMatrix ν n
       = FiniteElement.stiffnessMatrix 0 1 (EllipticInterval.constLinf 0 1 ν)

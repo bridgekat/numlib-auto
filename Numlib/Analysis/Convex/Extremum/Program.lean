@@ -179,27 +179,6 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 variable {ι κ : Type*} [Fintype ι] [Fintype κ]
 variable {f₀ : E → EReal} {f : ι → E → EReal} {b : κ → E →ᵃ[ℝ] ℝ}
 
-omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [Fintype ι] [Fintype κ] in
-private theorem add_neg_coe_lt_zero_iff {u : EReal} {a : ℝ} :
-    u + ((-a : ℝ) : EReal) < 0 ↔ u < (a : EReal) := by
-  induction u with
-  | bot => simp
-  | top => simp
-  | coe r =>
-    rw [← EReal.coe_add, ← EReal.coe_zero, EReal.coe_lt_coe_iff,
-      EReal.coe_lt_coe_iff]
-    constructor <;> intro h <;> linarith
-
-omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [Fintype ι] [Fintype κ] in
-private theorem add_neg_coe_lt_top_iff {u : EReal} {a : ℝ} :
-    u + ((-a : ℝ) : EReal) < ⊤ ↔ u < ⊤ := by
-  induction u with
-  | bot => simp
-  | top => simp
-  | coe r =>
-    rw [← EReal.coe_add]
-    exact iff_of_true (EReal.coe_lt_top _) (EReal.coe_lt_top _)
-
 /-- **Existence of Kuhn–Tucker coefficients under Slater's condition.** If the optimal value is
 not `-∞` and the program has a feasible solution in `ri C`, `C = dom f₀`, satisfying *strictly*
 every constraint of the first family, then a vector of Kuhn–Tucker coefficients exists. -/
@@ -231,18 +210,21 @@ theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Pro
   have hgproper : ∀ i', ProperConvex (g i') := by
     rintro (_ | i)
     · refine ⟨⟨z, ?_⟩, fun x => ?_⟩
-      · exact mem_convexDom.2 (add_neg_coe_lt_top_iff.2 (mem_convexDom.1 hzC))
+      · exact mem_convexDom.2 (EReal.add_lt_top (mem_convexDom.1 hzC).ne (EReal.coe_ne_top _))
       · exact EReal.add_ne_bot_iff.2 ⟨hp₀.ne_bot x, EReal.coe_ne_bot _⟩
     · exact hp i
   have hgdom : ∀ i', ri (convexDom f₀) ⊆ convexDom (g i') := by
     rintro (_ | i) x hx
     · exact mem_convexDom.2
-        (add_neg_coe_lt_top_iff.2 (mem_convexDom.1 (intrinsicInterior_subset hx)))
+        (EReal.add_lt_top (mem_convexDom.1 (intrinsicInterior_subset hx)).ne (EReal.coe_ne_top _))
     · exact hsub i (intrinsicInterior_subset hx)
   -- the strict system is unsolvable, so the theorem of the alternative produces multipliers
   have hnoalt : ¬ ∃ x ∈ convexDom f₀, (∀ i', g i' x < 0) ∧ ∀ j, b j x ≤ 0 := by
     rintro ⟨x, _, hxg, hxb⟩
-    have hx0 : f₀ x < (α : EReal) := add_neg_coe_lt_zero_iff.1 (hxg none)
+    have hx0 : f₀ x < (α : EReal) := by
+      have h : f₀ x + ((-α : ℝ) : EReal) < 0 := hxg none
+      rwa [EReal.coe_neg, ← sub_eq_add_neg,
+        EReal.sub_lt_iff (.inl (EReal.coe_ne_bot _)) (.inl (EReal.coe_ne_top _)), zero_add] at h
     have hxfeas : x ∈ feasibleSet f b := ⟨fun i => (hxg (some i)).le, hxb⟩
     have hle : (α : EReal) ≤ f₀ x := hα ▸ optimalValue_le (f₀ := f₀) hxfeas
     exact absurd (lt_of_le_of_lt hle hx0) (lt_irrefl _)

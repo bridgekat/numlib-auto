@@ -447,7 +447,6 @@ count `(i + 1) + (n - i) > n` against the span of the eigenvectors for the eigen
 theorem exists_mem_ne_zero_rayleighQuotient_le (i : Fin n) {S : Submodule 𝕜 E}
     (hS : (i : ℕ) + 1 ≤ Module.finrank 𝕜 S) :
     ∃ x ∈ S, x ≠ 0 ∧ T.rayleighQuotient x ≤ hT.eigenvalues hn i := by
-  have hi := i.isLt
   have hW : Module.finrank 𝕜 (hT.eigenvectorSpan hn (Finset.Ici i)) = n - (i : ℕ) := by
     rw [hT.finrank_eigenvectorSpan hn, Fin.card_Ici]
   have hlt : Module.finrank 𝕜 E <
@@ -660,7 +659,6 @@ theorem eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
   have h1 : RCLike.re (inner 𝕜 ((A - B) x) x) ≤ ‖(A - B) x‖ * ‖x‖ := re_inner_le_norm _ _
   have h2 : ‖(A - B) x‖ * ‖x‖ ≤ C * ‖x‖ * ‖x‖ :=
     mul_le_mul_of_nonneg_right (hC x) (norm_nonneg x)
-  have h3 : C * ‖x‖ ^ 2 = C * ‖x‖ * ‖x‖ := by ring
   rw [LinearMap.sub_apply, inner_sub_left, map_sub] at h1
   rw [LinearMap.sub_apply] at h2
   linarith

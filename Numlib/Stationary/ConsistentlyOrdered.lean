@@ -269,15 +269,6 @@ end Blocks
 
 section SOR
 
-omit [LinearOrder n] in
-/-- Multiplication by a nonzero scalar does not affect invertibility. -/
-private theorem isUnit_smul_iff {c : ℂ} (hc : c ≠ 0) (M : Matrix n n ℂ) :
-    IsUnit (c • M) ↔ IsUnit M := by
-  have hc' : IsUnit (algebraMap ℂ (Matrix n n ℂ) c) := (isUnit_iff_ne_zero.mpr hc).map _
-  have hsm : c • M = algebraMap ℂ (Matrix n n ℂ) c * M := by
-    rw [Algebra.algebraMap_eq_smul_one, smul_mul_assoc, one_mul]
-  rw [hsm, ← hc'.unit_spec, Units.isUnit_units_mul]
-
 /-- The pencil identity behind Young's theory: `λ 1 - G_ω` is `(D - ω E)⁻¹ D` times the pencil `(λ +
 ω - 1) 1 - ω (λ L + U)`, in which the parameter `λ` appears only in front of `L`. -/
 theorem smul_one_sub_sor_iterationOperator (A : Matrix n n ℂ) (h : IsUnit (diagPart A)) {ω : ℂ}
@@ -360,8 +351,8 @@ theorem IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor {A : Matrix n n ℂ}
     rw [hl', hr', e1, e2, e3]
   have hkey : l ∈ spectrum ℂ (sorSplitting A h hω).iterationOperator ↔
       ν ∈ spectrum ℂ (α • jacobiLower A + α⁻¹ • jacobiUpper A) := by
-    rw [mem_spectrum_sor_iff A h hω l, hmat, isUnit_smul_iff hωα, spectrum.mem_iff,
-      Algebra.algebraMap_eq_smul_one]
+    rw [mem_spectrum_sor_iff A h hω l, hmat, ← Units.smul_mk0 hωα, isUnit_smul_iff,
+      spectrum.mem_iff, Algebra.algebraMap_eq_smul_one]
   rw [hkey, hA α hα, jacobiLower_add_jacobiUpper A h]
   have hν2 : ν ^ 2 = μ ^ 2 := by
     rw [hν, div_pow, mul_pow, hα2, hrel]
@@ -427,8 +418,6 @@ one is `(ω r/2 + √((ω r/2)² - (ω - 1)))²`. -/
 theorem youngRadius_of_le {ω r : ℝ} (ht : 0 ≤ ω * r) (h : ω - 1 ≤ (ω * r / 2) ^ 2) :
     youngRadius ω r = (ω * r / 2 + Real.sqrt ((ω * r / 2) ^ 2 - (ω - 1))) ^ 2 := by
   refine max_eq_left ?_
-  have hd : 0 ≤ (ω * r / 2) ^ 2 - (ω - 1) := by linarith
-  have hs := Real.sq_sqrt hd
   nlinarith [Real.sqrt_nonneg ((ω * r / 2) ^ 2 - (ω - 1)), ht]
 
 /-- When the discriminant is negative the two roots of Young's quadratic are a conjugate pair of
@@ -510,8 +499,6 @@ private theorem norm_le_young_aux {ω t : ℝ} (ht : 0 ≤ t) {l : ℂ}
   · refine le_trans (le_of_eq hlz) (le_max_of_le_left ?_)
     have habs : |t ^ 2 - (ω - 1)| = t ^ 2 - (ω - 1) := abs_of_nonneg hdpos
     have hsq := Real.sq_sqrt hdpos
-    have hre2 : (z - (t : ℂ)).re ^ 2 ≤ t ^ 2 - (ω - 1) := by
-      nlinarith [sq_nonneg (z - (t : ℂ)).im, hsum, habs]
     have hrele : (z - (t : ℂ)).re ≤ Real.sqrt (t ^ 2 - (ω - 1)) := by
       nlinarith [Real.sqrt_nonneg (t ^ 2 - (ω - 1)),
         sq_nonneg ((z - (t : ℂ)).re - Real.sqrt (t ^ 2 - (ω - 1))),
@@ -558,11 +545,9 @@ theorem exists_norm_eq_youngRadius {ω r : ℝ} (hω : 0 ≤ ω) (hr : 0 ≤ r) 
     ∃ l : ℂ, (l + (ω : ℂ) - 1) ^ 2 = l * (ω : ℂ) ^ 2 * ((r : ℝ) : ℂ) ^ 2 ∧
       ‖l‖ = youngRadius ω r := by
   have ht : 0 ≤ ω * r := mul_nonneg hω hr
-  have h2t : ω * r = 2 * (ω * r / 2) := by ring
   rcases le_or_gt (ω - 1) ((ω * r / 2) ^ 2) with hcase | hcase
   · have hd : 0 ≤ (ω * r / 2) ^ 2 - (ω - 1) := by linarith
     have hs2 := Real.sq_sqrt hd
-    have hs0 := Real.sqrt_nonneg ((ω * r / 2) ^ 2 - (ω - 1))
     have hE : (ω * r / 2 + Real.sqrt ((ω * r / 2) ^ 2 - (ω - 1))) ^ 2 + (ω - 1) =
         2 * (ω * r / 2) * (ω * r / 2 + Real.sqrt ((ω * r / 2) ^ 2 - (ω - 1))) := by
       linear_combination hs2
@@ -609,38 +594,6 @@ defining a spectral radius are compared with real bounds. -/
 private theorem coe_nnnorm_eq_ofReal (z : ℂ) : ((‖z‖₊ : ℝ≥0) : ℝ≥0∞) = ENNReal.ofReal ‖z‖ := by
   rw [← coe_nnnorm, ENNReal.ofReal_coe_nnreal]
 
-omit [LinearOrder n] in
-/-- A complex square matrix on a nonempty index type has a nonempty spectrum: its characteristic
-polynomial has positive degree, hence a root. -/
-private theorem spectrum_nonempty [Nonempty n] (M : Matrix n n ℂ) : (spectrum ℂ M).Nonempty := by
-  have hdeg : M.charpoly.degree ≠ 0 := by
-    rw [Matrix.charpoly_degree_eq_dim]
-    have : 0 < Fintype.card n := Fintype.card_pos
-    exact_mod_cast this.ne'
-  obtain ⟨μ, hμ⟩ := IsAlgClosed.exists_root M.charpoly hdeg
-  exact ⟨μ, Matrix.mem_spectrum_iff_isRoot_charpoly.mpr hμ⟩
-
-omit [LinearOrder n] in
-/-- The spectral radius of a complex matrix with nonempty spectrum is attained. -/
-private theorem exists_norm_eq_spectralRadius (M : Matrix n n ℂ) (hne : (spectrum ℂ M).Nonempty) :
-    ∃ μ₀ ∈ spectrum ℂ M, spectralRadius ℂ M = ENNReal.ofReal ‖μ₀‖ ∧
-      ∀ μ ∈ spectrum ℂ M, ‖μ‖ ≤ ‖μ₀‖ := by
-  classical
-  have hfin := M.finite_spectrum
-  obtain ⟨μ₁, hμ₁⟩ := hne
-  have hne' : hfin.toFinset.Nonempty := ⟨μ₁, hfin.mem_toFinset.mpr hμ₁⟩
-  obtain ⟨μ₀, hmem₀, hsup⟩ := Finset.exists_mem_eq_sup' hne' fun μ => ‖μ‖
-  have hmem₀' : μ₀ ∈ spectrum ℂ M := hfin.mem_toFinset.mp hmem₀
-  have hmax : ∀ μ ∈ spectrum ℂ M, ‖μ‖ ≤ ‖μ₀‖ := fun μ hμ => by
-    rw [← hsup]
-    exact Finset.le_sup' (fun μ => ‖μ‖) (hfin.mem_toFinset.mpr hμ)
-  rw [spectralRadius_eq_of_unital]
-  refine ⟨μ₀, hmem₀', le_antisymm (iSup₂_le fun μ hμ => ?_)
-    (le_iSup₂_of_le μ₀ hmem₀' ?_), hmax⟩
-  · rw [coe_nnnorm_eq_ofReal]
-    exact ENNReal.ofReal_le_ofReal (hmax μ hμ)
-  · rw [coe_nnnorm_eq_ofReal]
-
 /-- Every nonzero eigenvalue of the SOR iteration matrix of a consistently ordered matrix comes from
 an eigenvalue of the Jacobi matrix through Young's relation. -/
 theorem IsConsistentlyOrdered.exists_mem_spectrum_jacobi {A : Matrix n n ℂ}
@@ -677,7 +630,8 @@ theorem IsConsistentlyOrdered.spectralRadius_sor_eq {A : Matrix n n ℂ} [Nonemp
         (spectralRadius ℂ (jacobiSplitting A h).iterationOperator).toReal) := by
   rw [← sorSplitting_iterationOperator_eq A h (Complex.ofReal_ne_zero.mpr hω.ne')]
   obtain ⟨μ₀, hμ₀, hρ, hmax⟩ :=
-    exists_norm_eq_spectralRadius _ (spectrum_nonempty (jacobiSplitting A h).iterationOperator)
+    exists_norm_eq_spectralRadius (jacobiSplitting A h).iterationOperator
+      (spectrum.nonempty_of_isAlgClosed_of_finiteDimensional ℂ _)
   have htoReal : (spectralRadius ℂ (jacobiSplitting A h).iterationOperator).toReal = ‖μ₀‖ := by
     rw [hρ, ENNReal.toReal_ofReal (norm_nonneg _)]
   rw [htoReal, spectralRadius_eq_of_unital]
@@ -769,7 +723,6 @@ theorem youngRadius_optimalRelaxation_le (hr0 : 0 ≤ r) (hr1 : r < 1) {ω : ℝ
   have hc1 := one_le_optimalRelaxation hr0 hr1
   have hc2 := optimalRelaxation_lt_two hr0 hr1
   have hsq := sq_optimalRelaxation hr0 hr1
-  have hcpos : 0 < optimalRelaxation r := by linarith
   have hr2 : optimalRelaxation r ^ 2 * r ^ 2 = 4 * (optimalRelaxation r - 1) := by
     linear_combination 4 * hsq
   rw [youngRadius_optimalRelaxation hr0 hr1]
@@ -778,11 +731,7 @@ theorem youngRadius_optimalRelaxation_le (hr0 : 0 ≤ r) (hr1 : r < 1) {ω : ℝ
     have hfac : 0 ≤ (optimalRelaxation r - ω) *
         (optimalRelaxation r - (optimalRelaxation r - 1) * ω) :=
       mul_nonneg (by linarith) (by nlinarith)
-    have hid : optimalRelaxation r ^ 2 * ((ω * r / 2) ^ 2 - (ω - 1)) =
-        (optimalRelaxation r - ω) *
-          (optimalRelaxation r - (optimalRelaxation r - 1) * ω) := by
-      linear_combination (ω ^ 2 / 4) * hr2
-    have hd : 0 ≤ (ω * r / 2) ^ 2 - (ω - 1) := by nlinarith [pow_pos hcpos 2]
+    have hd : 0 ≤ (ω * r / 2) ^ 2 - (ω - 1) := by nlinarith
     rw [youngRadius_of_le (by positivity) (by linarith)]
     -- the dominant root is at least `(ω_opt r / 2)²`
     have hkey : optimalRelaxation r * r / 2 ≤
@@ -792,10 +741,6 @@ theorem youngRadius_optimalRelaxation_le (hr0 : 0 ≤ r) (hr1 : r < 1) {ω : ℝ
       · have hpos : 0 < optimalRelaxation r * r / 2 - ω * r / 2 := by linarith
         have hfac2 : 0 ≤ (2 - optimalRelaxation r) * (optimalRelaxation r - ω) :=
           mul_nonneg (by linarith) (by linarith)
-        have hid2 : optimalRelaxation r * ((ω * r / 2) ^ 2 - (ω - 1) -
-            (optimalRelaxation r * r / 2 - ω * r / 2) ^ 2) =
-            (2 - optimalRelaxation r) * (optimalRelaxation r - ω) := by
-          linear_combination ((2 * ω - optimalRelaxation r) / 4) * hr2
         have hsqle : (optimalRelaxation r * r / 2 - ω * r / 2) ^ 2 ≤
             (ω * r / 2) ^ 2 - (ω - 1) := by nlinarith
         have hmono := Real.sqrt_le_sqrt hsqle
@@ -853,7 +798,6 @@ theorem IsConsistentlyOrdered.isMinOn_complexSpectralRadius_sor
   have hr0 : 0 ≤ r := ENNReal.toReal_nonneg
   have hr1 : r < 1 := toReal_spectralRadius_lt_one hlt
   have hc1 := one_le_optimalRelaxation hr0 hr1
-  have hc2 := optimalRelaxation_lt_two hr0 hr1
   rw [isMinOn_iff]
   intro ω hω
   rw [hA.spectralRadius_sor_eq h hreal (by linarith : (0:ℝ) < optimalRelaxation r),
@@ -907,8 +851,9 @@ theorem IsConsistentlyOrdered.spectralRadius_jacobi_lt_one_of_sor
   rw [hA.spectralRadius_sor_eq h hreal hω0, ENNReal.ofReal_lt_one] at hsor
   by_contra hcon
   rw [not_lt] at hcon
-  obtain ⟨μ₀, -, hρ, -⟩ := exists_norm_eq_spectralRadius _
-    (spectrum_nonempty (jacobiSplitting A h).iterationOperator)
+  obtain ⟨μ₀, -, hρ, -⟩ := exists_norm_eq_spectralRadius
+    (jacobiSplitting A h).iterationOperator
+    (spectrum.nonempty_of_isAlgClosed_of_finiteDimensional ℂ _)
   rw [hρ, ENNReal.one_le_ofReal] at hcon
   rw [hρ, ENNReal.toReal_ofReal (norm_nonneg _)] at hsor
   exact absurd hsor (not_lt.2 (one_le_youngRadius hω0 hω2 hcon))

@@ -233,7 +233,7 @@ def equation_12_72 (ε β : ℝ) (n : ℕ) (x : ℕ → ℝ) (uh : SobolevInterv
 `(ε/h)(-u_{i-1} + 2u_i - u_{i+1}) + (β/2)(u_{i+1} - u_{i-1}) = 0` at the interior nodes, which by
 `equation_12_77` is the centred finite difference scheme; in terms of the local Péclet number
 `Pe = |β| h/(2ε)` it is `(Pe - 1) u_{i+1} + 2 u_i - (Pe + 1) u_{i-1} = 0` for `β > 0`. -/
-theorem equation_12_75 (ε β : ℝ) {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x)
+theorem equation_12_75 (ε β : ℝ) {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x)
     (hn : 1 ≤ n) {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (u : ℕ → ℝ)
     (hu0 : u 0 = 0) (hun : u n = 1) :
     equation_12_72 ε β n x
@@ -470,7 +470,7 @@ interpolation error.  The statement is written for the unlifted pair `u`, `u_h`,
 same inequality: `ů - ů_h = u - u_h` and `|ů|_{H²} = |u|_{H²}` because the lifting `ū(x) = x`
 is affine.  The upwind clause of the theorem is `theorem_12_4_upwind`, and the `k = 2` clause
 (12.86) is `equation_12_86`. -/
-theorem theorem_12_4 {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem theorem_12_4 {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (huni : ∀ k < n, x (k + 1) - x k = AdvectionDiffusion.meshWidth n) {ε β : ℝ} (hε : 0 < ε)
     (hβ : 0 < β) {u uh : SobolevInterval 1 0 1} (U : SobolevInterval 2 0 1)
     (hU : SobolevInterval.inclusionCLM 1 0 1 U = u)
@@ -487,7 +487,7 @@ the solution of the lifted problem `a(ů, v) = ℓ(v)` on `X_h^{1,0}` and `ů_h`
 upwind-stabilized problem (12.84) with the same right-hand side,
 `|ů - ů_h|_{H¹(0,1)} ≤ C h (|ů|_{H¹(0,1)} + |ů|_{H²(0,1)})` with
 `C = 2 + C_P |β|/ε + |β|/(2ε)` and `C_P = 1/√2`, independent of `h` and of `ů`. -/
-theorem theorem_12_4_upwind {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+theorem theorem_12_4_upwind {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     {ε β h : ℝ} (hε : 0 < ε) (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
     {ℓ : SobolevInterval 1 0 1 →L[ℝ] ℝ} {u uh : SobolevInterval 1 0 1} (U : SobolevInterval 2 0 1)
     (hU : SobolevInterval.inclusionCLM 1 0 1 U = u) (hu : u ∈ SobolevIntervalZero 0 1)
@@ -513,7 +513,7 @@ Galerkin solution of (12.84) satisfies
 one power of `h` over (12.85) comes from two places at once: the `P_2` interpolation estimate
 `|ů - Π_h^2 ů|_{H¹} ≤ h² |ů|_{H³}` of (8.26), and `φ^{SG}(Pe) ≤ Pe²/3`, which makes the
 stabilization term `O(h²)` where the upwind one is `O(h)`. -/
-theorem equation_12_86 {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 ≤ n)
+theorem equation_12_86 {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n)
     {ε β h : ℝ} (hε : 0 < ε) (hmesh : ∀ m < n, x (2 * m + 2) - x (2 * m) ≤ h)
     {ℓ : SobolevInterval 1 0 1 →L[ℝ] ℝ} {u uh : SobolevInterval 1 0 1}
     (U : SobolevInterval 3 0 1)

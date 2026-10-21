@@ -307,7 +307,6 @@ theorem pow_one_add_norm_sq_le (ξ : E) :
       ≤ (1 + Fintype.card ι) * max 1 (⟪ξ, b i₀⟫ ^ 2) := by
     have h1 : (1 : ℝ) ≤ max 1 (⟪ξ, b i₀⟫ ^ 2) := le_max_left _ _
     have h2 : ⟪ξ, b i₀⟫ ^ 2 ≤ max 1 (⟪ξ, b i₀⟫ ^ 2) := le_max_right _ _
-    have h3 : (0 : ℝ) ≤ Fintype.card ι := Nat.cast_nonneg _
     nlinarith
   have hmaxk : (max 1 (⟪ξ, b i₀⟫ ^ 2)) ^ k ≤ 1 + (⟪ξ, b i₀⟫ ^ 2) ^ k := by
     rcases le_total (⟪ξ, b i₀⟫ ^ 2) 1 with h | h

@@ -11,6 +11,7 @@ import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 import Mathlib.Combinatorics.SimpleGraph.Maps
 import Mathlib.LinearAlgebra.Matrix.Irreducible.Defs
 import Mathlib.LinearAlgebra.Matrix.Permutation
+import Numlib.Combinatorics.Quiver.Path
 
 /-!
 # The pattern of a matrix and the graphs it defines
@@ -168,13 +169,6 @@ def adjHom {i j : n} (h : A i j ≠ 0) : @Quiver.Hom n A.adjQuiver i j :=
 /-- An arrow of the adjacency quiver witnesses a nonzero entry. -/
 theorem apply_ne_zero_of_adjHom {i j : n} (e : @Quiver.Hom n A.adjQuiver i j) : A i j ≠ 0 :=
   norm_pos_iff.1 e.down
-
-/-- A prefunctor preserves the length of a path. -/
-private theorem length_mapPath {U W : Type*} [Quiver U] [Quiver W] (F : U ⥤q W) {a b : U}
-    (p : Path a b) : (F.mapPath p).length = p.length := by
-  induction p with
-  | nil => rfl
-  | cons _ _ ih => simp [Prefunctor.mapPath_cons, Path.length_cons, ih]
 
 end Normed
 
@@ -420,7 +414,7 @@ private theorem isPatternIrreducible_of_submatrix {σ : Equiv.Perm n}
     obtain ⟨p, hp⟩ := h.exists_pos_length_path i j
     refine ⟨@Prefunctor.mapPath n (A.submatrix σ σ).adjQuiver n A.adjQuiver
       (submatrixPrefunctor A σ) i j p, ?_⟩
-    rwa [@length_mapPath n n (A.submatrix σ σ).adjQuiver A.adjQuiver
+    rwa [@Prefunctor.length_mapPath n n (A.submatrix σ σ).adjQuiver A.adjQuiver
       (submatrixPrefunctor A σ) i j p]
   refine isPatternIrreducible_iff.2 fun a b => ?_
   have h' := key (σ.symm a) (σ.symm b)

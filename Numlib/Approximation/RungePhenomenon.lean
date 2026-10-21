@@ -391,7 +391,6 @@ theorem sum_log_abs_sub_ge {n : ℕ} (hn : Odd n) (hn200 : 200 ≤ n) :
     rw [hmul]
     have : (n : ℝ) / 10 = -(-h)⁻¹ := by rw [hh]; field_simp
     rw [this]
-    have hneg : (-h)⁻¹ < 0 := inv_lt_zero.mpr (neg_neg_iff_pos.mpr hpos)
     nlinarith
   -- the right Riemann sum
   have hR : (n / 10) * ((1 / 10) * Real.log (1 / 10) - 1 / 10)
@@ -434,7 +433,6 @@ theorem sum_log_abs_sub_ge {n : ℕ} (hn : Odd n) (hn200 : 200 ≤ n) :
     have hG := primitive_log_nonpos hc0 hc1
     have : (n : ℝ) / 10 = h⁻¹ := by rw [hh]; field_simp
     rw [this]
-    have hinvpos : 0 < h⁻¹ := inv_pos.mpr hpos
     nlinarith
   have hlog10 : Real.log (1 / 10) = -Real.log 10 := by
     rw [one_div, Real.log_inv]

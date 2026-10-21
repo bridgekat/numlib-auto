@@ -9,6 +9,7 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Numlib.Analysis.SpecialFunctions.Trigonometric.CosSum
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # The Dirichlet kernel and pointwise convergence of Fourier series
@@ -103,7 +104,6 @@ theorem abs_dirichletKernel_le (n : ℕ) (t : ℝ) : |dirichletKernel n t| ≤ (
     calc ∑ j ∈ Finset.Icc 1 n, |Real.cos (j * t)|
         ≤ ∑ _j ∈ Finset.Icc 1 n, (1 : ℝ) := Finset.sum_le_sum fun j _ => Real.abs_cos_le_one _
       _ = (n : ℝ) := by simp
-  have h1 : |(1 : ℝ) / 2| = 1 / 2 := by norm_num
   linarith
 
 /-- The telescoping identity behind the closed form of the Dirichlet kernel, Lagrange's
@@ -171,14 +171,6 @@ theorem integral_dirichletKernel_neg_pi_pi (n : ℕ) :
     mul_add, integral_dirichletKernel_neg, integral_dirichletKernel]
   norm_num
 
-private theorem integral_fold_neg {H : ℝ → ℝ} (h₁ : IntervalIntegrable H volume (-π) 0)
-    (h₂ : IntervalIntegrable H volume 0 π) :
-    ∫ t in -π..π, H t = ∫ t in (0 : ℝ)..π, (H t + H (-t)) := by
-  have h₃ : IntervalIntegrable (fun t => H (-t)) volume 0 π := by
-    simpa using ((IntervalIntegrable.iff_comp_neg (a := -π) (b := 0)).mp h₁).symm
-  rw [intervalIntegral.integral_add h₂ h₃, intervalIntegral.integral_comp_neg H, neg_zero,
-    add_comm, intervalIntegral.integral_add_adjacent_intervals h₁ h₂]
-
 /-! ### The partial sums of a Fourier series -/
 
 /-- The cosine coefficient `a_j = (1 / π) ∫_{-π}^{π} f t cos (j t) dt` of the Fourier series of a `2
@@ -196,12 +188,6 @@ Fourier series of a `2 π`-periodic `f : ℝ → ℝ` ([han2009theoretical], (4.
 noncomputable def fourierPartialSum (f : ℝ → ℝ) (n : ℕ) (x : ℝ) : ℝ :=
   fourierCoeffCos f 0 / 2 + ∑ j ∈ Finset.Icc 1 n,
     (fourierCoeffCos f j * Real.cos (j * x) + fourierCoeffSin f j * Real.sin (j * x))
-
-private theorem intervalIntegral_periodic_shift {G : ℝ → ℝ} (hG : Function.Periodic G (2 * π))
-    (c : ℝ) : ∫ t in (c + -π)..(c + π), G t = ∫ t in -π..π, G t := by
-  have h := hG.intervalIntegral_add_eq (c + -π) (-π)
-  rw [show c + -π + 2 * π = c + π by ring, show -π + 2 * π = π by ring] at h
-  exact h
 
 section Periodic
 
@@ -285,7 +271,8 @@ theorem fourierPartialSum_eq_integral (n : ℕ) (x : ℝ) :
         = ∫ t in -π..π, (fun u => f u * dirichletKernel n (u - x)) (x + t) :=
       intervalIntegral.integral_congr fun t _ => by simp
     rw [e0, intervalIntegral.integral_comp_add_left (fun u => f u * dirichletKernel n (u - x)) x]
-    exact intervalIntegral_periodic_shift hper x
+    have h := hper.intervalIntegral_add_eq (x + -π) (-π)
+    rwa [show x + -π + 2 * π = x + π by ring, show -π + 2 * π = π by ring] at h
   rw [hshift, hstep]
   field_simp
 
@@ -392,7 +379,7 @@ theorem tendsto_fourierPartialSum_of_dini {x L : ℝ}
       ((hshift _ _).mul_continuousOn hDc.continuousOn)
       ((hDc.intervalIntegrable _ _).const_mul _)]
     congr 1
-    rw [integral_fold_neg (hI (-π) 0) (hI 0 π)]
+    rw [intervalIntegral.integral_fold_neg (hI (-π) 0) (hI 0 π)]
     refine intervalIntegral.integral_congr fun t _ => ?_
     simp only [dirichletKernel_neg, show ∀ s : ℝ, x + -s = x - s from fun s => by ring]
     ring

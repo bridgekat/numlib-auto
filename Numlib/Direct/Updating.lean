@@ -1,5 +1,6 @@
 import Mathlib.Algebra.Lie.Classical
 import Mathlib.Data.Matrix.ColumnRowPartitioned
+import Numlib.Data.Fin.SuccPred
 import Numlib.Data.Matrix.Mul
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
@@ -256,7 +257,7 @@ theorem exists_rotations_triangularize_of_hessenberg {H : Matrix (Fin M) (Fin N)
       · refine ⟨c, s, hcs, fun t' ht' i l hi hl => ?_⟩
         rcases Nat.lt_succ_iff_lt_or_eq.1 ht' with ht' | rfl
         · exact hz t' ht' i l hi hl
-        · exact absurd ⟨by have := i.isLt; omega, by have := l.isLt; omega⟩ hb
+        · exact absurd ⟨by omega, by omega⟩ hb
   obtain ⟨c, s, hcs, hz⟩ := key (min N (M - 1) - a)
   exact ⟨c, s, hcs, hasLowerBandwidthRect_zero_of_adjacentRotations hH ha
     (fun j => !![c j, s j; -s j, c j]) (fun t => (adjacentRotationProd a t c s)ᵀ * H)
@@ -323,23 +324,6 @@ theorem exists_isQR_rankOne_update {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQ
       (mem_orthogonalGroup_iff' (Fin n) ℝ).1 hP, Matrix.mul_one, Matrix.mul_add, h.mul_eq,
       mul_vecMulVec, mulVec_mulVec, (mem_orthogonalGroup_iff (Fin n) ℝ).1 hQ, one_mulVec]
 
-/-- The index `k.succAbove j` is `j` or `j + 1`. -/
-private theorem val_succAbove_le (k : Fin (n + 1)) (j : Fin n) : (k.succAbove j : ℕ) ≤ j + 1 := by
-  unfold Fin.succAbove
-  split_ifs <;> simp
-
-private theorem le_val_succAbove (k : Fin (n + 1)) (j : Fin n) : (j : ℕ) ≤ k.succAbove j := by
-  unfold Fin.succAbove
-  split_ifs <;> simp
-
-private theorem val_succAbove_of_lt {k : Fin (n + 1)} {j : Fin n} (h : (j : ℕ) < k) :
-    (k.succAbove j : ℕ) = j := by
-  rw [Fin.succAbove_of_castSucc_lt _ _ (by simpa [Fin.lt_def] using h), Fin.val_castSucc]
-
-private theorem val_succAbove_of_le {k : Fin (n + 1)} {j : Fin n} (h : (k : ℕ) ≤ j) :
-    (k.succAbove j : ℕ) = j + 1 := by
-  rw [Fin.succAbove_of_le_castSucc _ _ (by simpa [Fin.le_def] using h), Fin.val_succ]
-
 /-- **Deleting a column leaves a Hessenberg matrix** ([golub2013matrix] §6.5.2): if `A = Q R` and
 `Ã = A.submatrix id k.succAbove` is `A` with its `k`-th column deleted, then `Qᴴ Ã` is `R` with
 its `k`-th column deleted, which is upper Hessenberg and still triangular in its first `k`
@@ -355,9 +339,9 @@ theorem IsQR.conjTranspose_mul_deleteColumn {A : Matrix (Fin m) (Fin (n + 1)) �
   · rw [← h.conjTranspose_mul_eq]
     ext i j
     simp [mul_apply]
-  · have := val_succAbove_le k j
+  · have := Fin.val_succAbove_le k j
     omega
-  · rw [val_succAbove_of_lt hjk]
+  · rw [Fin.val_succAbove_of_lt hjk]
     exact hij
 
 /-- **QR after deleting a column** ([golub2013matrix] §6.5.2, `Q₁ = Q G_k ⋯ G_{n−1}`): if `A = Q R`
@@ -395,7 +379,7 @@ theorem IsQR.conjTranspose_mul_insertColumn {A : Matrix (Fin m) (Fin n) 𝕜} {Q
   refine ⟨e, fun i j hij hjk => ?_⟩
   obtain ⟨j, rfl⟩ := Fin.exists_succAbove_eq hjk
   rw [e, of_apply, Fin.insertNth_apply_succAbove]
-  exact h.apply_eq_zero i j (by have := le_val_succAbove k j; omega)
+  exact h.apply_eq_zero i j (by have := Fin.le_val_succAbove k j; omega)
 
 /-- **QR after inserting a column** ([golub2013matrix] §6.5.2, the rotations `J_{m−1}, …, J_{k+1}`):
 if `A = Q R` and `Ã` is `A` with `z` inserted as column `k`, there is a sweep of rotations in the
@@ -428,15 +412,15 @@ theorem IsQR.exists_insertColumn {A : Matrix (Fin m) (Fin n) ℝ} {Q R} (h : IsQ
     rw [e, mul_of_insertNth, of_apply]
     obtain rfl | ⟨j, rfl⟩ := Fin.eq_self_or_eq_succAbove k j
     · rw [Fin.insertNth_apply_same]
-      exact hz i (by omega) (by have := i.isLt; omega)
+      exact hz i (by omega) (by omega)
     · rw [Fin.insertNth_apply_succAbove]
       rw [adjacentRotationProd_eq_prodFwd]
       refine prodFwd_adjacentEmbed_mul_apply_eq_zero h.hasLowerBandwidthRect
         (fun j => !![c j, -s j; s j, c j]) k (m - 1 - k) ?_
       rcases lt_or_ge (j : ℕ) k with hjk | hjk
-      · rw [val_succAbove_of_lt hjk] at hij
+      · rw [Fin.val_succAbove_of_lt hjk] at hij
         exact Or.inr ⟨by omega, hjk⟩
-      · rw [val_succAbove_of_le hjk] at hij
+      · rw [Fin.val_succAbove_of_le hjk] at hij
         exact Or.inl (by omega)
   have := isQR_conjTranspose_mul (mul_mem h.mem_unitaryGroup (transpose_mem_unitaryGroup_iff.2 hP))
     (by rw [e']; exact hT)
@@ -449,24 +433,6 @@ end QR
 section ConsDiag
 
 variable {α : Type*} {m n p : ℕ}
-
-/-! The tuple lemmas `Fin.insertNth_apply_same` and `Fin.insertNth_apply_succAbove` do not fire
-on a tuple of rows given as a `Matrix`, whose type is not syntactically a function type; these are
-their row forms (those of `Fin.cons` are `Matrix.cons_rows_zero` and `Matrix.cons_rows_succ`). -/
-
-@[simp]
-private theorem insertNth_rows_same (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α)
-    (k : Fin (m + 1)) (j : Fin n) :
-    (Fin.insertNth k w A : Fin (m + 1) → Fin n → α) k j = w j := by
-  have h := Fin.insertNth_apply_same (α := fun _ => Fin n → α) k w (fun i => A i)
-  exact congrFun h j
-
-@[simp]
-private theorem insertNth_rows_succAbove (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α)
-    (k : Fin (m + 1)) (i : Fin m) (j : Fin n) :
-    (Fin.insertNth k w A : Fin (m + 1) → Fin n → α) (k.succAbove i) j = A i j := by
-  have h := Fin.insertNth_apply_succAbove (α := fun _ => Fin n → α) k w (fun i => A i) i
-  exact congrFun h j
 
 /-- **Moving an inserted row to the top**: with `σ = (Fin.cycleRange k)⁻¹` (`σ 0 = k`,
 `σ (j + 1) = k.succAbove j`), the rows of `Fin.insertNth k w A` permuted by `σ` are `[wᵀ; A]`
@@ -908,10 +874,6 @@ theorem sq_lt_sq_of_posDef_transpose_mul_self_sub {n : Type*} [Fintype n] [Linea
     rw [mul_pow, mul_assoc, ← mul_pow, hkk, one_pow, mul_one]
   rw [e]
   nlinarith [sq_nonneg (z k * R⁻¹ k k), pow_pos hr 2]
-
-/-- The column `k` of a product, as the action on the column. -/
-private theorem mul_apply_eq_mulVec {ι κ : Type*} [Fintype ι] (E : Matrix ι ι ℝ)
-    (M : Matrix ι κ ℝ) (i : ι) (k : κ) : (E * M) i k = (E *ᵥ fun r => M r k) i := rfl
 
 /-- **Cholesky downdating by hyperbolic rotations** ([golub2013matrix] §6.5.4, "The theorem
 provides the key step in an induction proof that the factorization (6.5.12) exists"): if

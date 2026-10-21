@@ -318,7 +318,6 @@ theorem norm_sq_le_sum_norm_strainL_sq {R : ℝ} (hR : 0 ≤ R)
     ‖v‖ ^ 2 ≤ 2 * (1 + (2 * R) ^ 2) * ∑ i, ∑ j, ‖strainL i j v‖ ^ 2 := by
   have h1 := norm_sq_le_sum_norm_partialL_sq hR hΩ v
   have h2 := korn_first v
-  have h3 : 0 ≤ 1 + (2 * R) ^ 2 := by positivity
   nlinarith
 
 end SobolevEuclideanZeroVec

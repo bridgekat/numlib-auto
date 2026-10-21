@@ -58,7 +58,6 @@ theorem abs_schurComplementSingle_le {A : Matrix n n ℝ} {p : n} {α μ₀ : �
     (hμ₀ : 0 < μ₀) (hA : ∀ i j, |A i j| ≤ μ₀) (hp : α * μ₀ ≤ |A p p|)
     (i j : {i : n // i ≠ p}) :
     |A.schurComplementSingle p i j| ≤ (1 + α⁻¹) * μ₀ := by
-  have hαμ : 0 < α * μ₀ := mul_pos hα hμ₀
   rw [schurComplementSingle_apply]
   calc |A i.1 j.1 - A i.1 p * (A p p)⁻¹ * A p j.1|
       ≤ |A i.1 j.1| + |A i.1 p * (A p p)⁻¹ * A p j.1| := abs_sub _ _
@@ -136,7 +135,6 @@ theorem abs_schurComplement_two_le {A : Matrix n n ℝ} (hA : A.IsSymm) {p q : n
       refine (abs_sub _ _).trans (add_le_add ?_ ?_) <;> rw [abs_mul]
       · exact mul_le_mul hpp (hAμ _ _) (abs_nonneg _) hαμ
       · exact mul_le_mul (hAμ _ _) (hAμ _ _) (abs_nonneg _) hμ₀.le
-    have hs : 0 ≤ α * μ₀ * μ₀ + μ₀ * μ₀ := by positivity
     calc _ ≤ |A i p * (A q q * A p j - A p q * A q j)| +
           |A i q * (A p p * A q j - A q p * A p j)| := abs_add_le _ _
       _ ≤ μ₀ * (α * μ₀ * μ₀ + μ₀ * μ₀) + μ₀ * (α * μ₀ * μ₀ + μ₀ * μ₀) := by

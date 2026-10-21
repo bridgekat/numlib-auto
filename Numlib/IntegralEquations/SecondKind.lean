@@ -478,23 +478,6 @@ theorem tendsto_twoGridIterate {μ : 𝕜} (hμ : μ ≠ 0) {e : X ≃L[𝕜] X}
 
 /-! ### A collective compactness estimate that belongs upstream -/
 
-/-- A uniform bound on a ball around the origin bounds the operator norm.  The factor `‖c‖` is
-unavoidable over a general nontrivially normed field, where the norm need not take the value `1`.
-
-This repeats a private helper of `Numlib.Analysis.Normed.Operator.CollectivelyCompact`, and should
-disappear when `eventually_forall_opNorm_sub_comp_lt` moves there. -/
-private theorem opNorm_le_of_forall_norm_lt {c : 𝕜} (hc : 1 < ‖c‖) {F : X →L[𝕜] X} {r C : ℝ}
-    (hr : 0 < r) (hC : 0 ≤ C) (hb : ∀ x : X, ‖x‖ < r → ‖F x‖ ≤ C) : ‖F‖ ≤ ‖c‖ / r * C := by
-  have hc0 : (0 : ℝ) < ‖c‖ := lt_trans one_pos hc
-  refine ContinuousLinearMap.opNorm_le_of_shell hr (by positivity) hc fun x hx _ => ?_
-  refine (hb x ‹_›).trans ?_
-  calc C = ‖c‖ / r * C * (r / ‖c‖) := by field_simp
-    _ ≤ ‖c‖ / r * C * ‖x‖ := mul_le_mul_of_nonneg_left hx (by positivity)
-
-/-- `a / b ≤ c / d` from `a ≤ c` and `0 < d ≤ b`. -/
-private theorem div_le_div_aux {a b c d : ℝ} (hc : 0 ≤ c) (hac : a ≤ c) (hd : 0 < d)
-    (hdb : d ≤ b) : a / b ≤ c / d := by gcongr
-
 /-- **Uniform smallness of `(L - Kₘ) Kₙ` in the fine index**: for a collectively compact family
 converging pointwise to `L`, the norm `‖(L - Kₘ) ∘ Kₙ‖` is eventually below any given `ε > 0` for
 *every* `n` at once, and not only along the diagonal `n = m`.
@@ -510,7 +493,6 @@ theorem eventually_forall_opNorm_sub_comp_lt [CompleteSpace X] {K : ℕ → X �
     ∀ᶠ m in atTop, ∀ n, ‖(L - K m) ∘L K n‖ < ε := by
   obtain ⟨U, hU, hcpt⟩ := hK
   obtain ⟨c, hc⟩ := NormedField.exists_one_lt_norm 𝕜
-  have hc0 : (0 : ℝ) < ‖c‖ := lt_trans one_pos hc
   obtain ⟨r, hr, hrU⟩ := Metric.mem_nhds_iff.1 hU
   have hunif : TendstoUniformlyOn (fun n => (K n : X → X)) L atTop
       (closure (⋃ i, K i '' U)) := tendstoUniformlyOn_of_tendsto_of_isCompact hL hcpt
@@ -524,7 +506,8 @@ theorem eventually_forall_opNorm_sub_comp_lt [CompleteSpace X] {K : ℕ → X �
     have hd := hN m hm (K n x) hmem
     rw [dist_eq_norm] at hd
     simpa using hd.le
-  refine lt_of_le_of_lt (opNorm_le_of_forall_norm_lt hc hr (by positivity) hbound) ?_
+  refine lt_of_le_of_lt
+    (ContinuousLinearMap.opNorm_le_of_forall_norm_lt hc hr (by positivity) hbound) ?_
   have heq : ‖c‖ / r * (ε * r / (2 * ‖c‖)) = ε / 2 := by field_simp
   rw [heq]
   linarith
@@ -576,7 +559,7 @@ theorem eventually_norm_twoGridOperator_lt_one [CompleteSpace X] {μ : 𝕜} (h�
   have hemB : ‖(em.symm : X →L[𝕜] X)‖ ≤ B := by
     refine hemnorm.trans ?_
     rw [hA, ← hB]
-    exact div_le_div_aux hnum0 (by linarith [mul_le_mul_of_nonneg_left (hC m) hA0]) hhalf
+    exact div_le_div₀ hnum0 (by linarith [mul_le_mul_of_nonneg_left (hC m) hA0]) hhalf
       (by linarith)
   refine ⟨em, hem, fun n hn => ?_⟩
   have hsplit : ‖((K n - K m) ∘L K n : X →L[𝕜] X)‖ ≤ 2 * ε := by

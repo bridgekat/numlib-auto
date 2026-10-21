@@ -136,7 +136,7 @@ private theorem re_inner_eq_rayleighQuotient_mul (T : E →L[𝕜] E) {x : E} (h
 
 omit [CompleteSpace E] in
 /-- The Rayleigh quotient over the nonzero vectors is bounded below. -/
-private theorem bddBelow_rayleighQuotient_subtype (T : E →L[𝕜] E) :
+theorem bddBelow_rayleighQuotient_subtype (T : E →L[𝕜] E) :
     BddBelow (Set.range fun x : { x : E // x ≠ 0 } => T.rayleighQuotient x) :=
   ⟨-‖T‖, by
     rintro _ ⟨x, rfl⟩
@@ -144,7 +144,7 @@ private theorem bddBelow_rayleighQuotient_subtype (T : E →L[𝕜] E) :
 
 omit [CompleteSpace E] in
 /-- The Rayleigh quotient over the nonzero vectors is bounded above. -/
-private theorem bddAbove_rayleighQuotient_subtype (T : E →L[𝕜] E) :
+theorem bddAbove_rayleighQuotient_subtype (T : E →L[𝕜] E) :
     BddAbove (Set.range fun x : { x : E // x ≠ 0 } => T.rayleighQuotient x) :=
   ⟨‖T‖, by
     rintro _ ⟨x, rfl⟩
@@ -154,7 +154,7 @@ private theorem bddAbove_rayleighQuotient_subtype (T : E →L[𝕜] E) :
 `c * ‖x‖ ^ 2 ≤ re ⟪T x, x⟫`, is in the resolvent set: `T - t • 1` is then coercive with
 constant `c - t`, hence invertible by the Lax–Milgram criterion
 `ContinuousLinearMap.isUnit_of_forall_le_norm_inner_map`. No symmetry is needed. -/
-private theorem ofReal_notMem_spectrum_of_lt (T : E →L[𝕜] E) {c t : ℝ}
+theorem ofReal_notMem_spectrum_of_lt (T : E →L[𝕜] E) {c t : ℝ}
     (hc : ∀ x, c * ‖x‖ ^ 2 ≤ re ⟪T x, x⟫_𝕜) (ht : t < c) : (t : 𝕜) ∉ spectrum 𝕜 T := by
   rw [spectrum.mem_iff, not_not, Algebra.algebraMap_eq_smul_one]
   have hpos : (0 : ℝ) < c - t := sub_pos.2 ht
@@ -276,27 +276,17 @@ theorem ofReal_iSup_rayleighQuotient_mem_spectrum [Nontrivial E] (hT : IsSelfAdj
     nlinarith [pow_pos hc0 2]
   exact absurd (h4.trans_lt h5) (lt_irrefl _)
 
-omit [CompleteSpace E] in
-/-- The supremum of the negatives of a bounded-below real family is the negative of its
-infimum. -/
-private theorem ciSup_neg_eq_neg_ciInf {ι : Type*} [Nonempty ι] {f : ι → ℝ}
-    (hf : BddBelow (Set.range f)) : ⨆ i, -f i = -⨅ i, f i := by
-  rw [iSup, iInf, ← Set.neg_range, csSup_neg (Set.range_nonempty f) hf]
-
 /-- **The infimum of the Rayleigh quotient of a self-adjoint operator belongs to its spectrum**
 ([brezis2011functional] Proposition 6.9, `m ∈ σ(T)`), on a nontrivial Hilbert space: this is
 `M ∈ σ(-T)` for the self-adjoint operator `-T`, whose Rayleigh quotient is `-T.rayleighQuotient`.
 -/
 theorem ofReal_iInf_rayleighQuotient_mem_spectrum [Nontrivial E] (hT : IsSelfAdjoint T) :
     ((⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x : ℝ) : 𝕜) ∈ spectrum 𝕜 T := by
-  have : Nonempty { x : E // x ≠ 0 } := by
-    obtain ⟨x, hx⟩ := exists_ne (0 : E)
-    exact ⟨⟨x, hx⟩⟩
   have h := hT.neg.ofReal_iSup_rayleighQuotient_mem_spectrum
   have heq : (⨆ x : { x : E // x ≠ 0 }, (-T).rayleighQuotient x)
       = -⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x := by
     simp_rw [ContinuousLinearMap.rayleighQuotient_neg_apply]
-    exact ciSup_neg_eq_neg_ciInf (bddBelow_rayleighQuotient_subtype T)
+    rw [iSup, iInf, ← Set.neg_range, Real.sSup_neg]
   rw [heq, ofReal_neg, ← spectrum.neg_eq, Set.neg_mem_neg] at h
   exact h
 

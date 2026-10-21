@@ -1,6 +1,19 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
+id = 'IsCone'
+source = 'Rockafellar, Convex Analysis, §2'
+
+[[node]]
+id = 'isCone_iff_smul_eq'
+
+[[node]]
+id = 'IsCone.smul_set_eq'
+
+[[node]]
+id = 'IsCone.smul_mem'
+
+[[node]]
 id = 'convex_iff_add_mem_of_isCone'
 
 [[node]]

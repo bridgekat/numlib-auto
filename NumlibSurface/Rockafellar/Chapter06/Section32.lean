@@ -87,7 +87,7 @@ interior point can be prolonged past itself inside `C` (Theorem 6.4), which exhi
 proper convex combination of `x` and a further point of `C`. -/
 theorem theorem_32_1 (hf : ConvexFn f) (hCdom : C ⊆ convexDom f) {z : Rn n} (hz : z ∈ ri C)
     (hmax : ∀ w ∈ C, f w ≤ f z) {x : Rn n} (hx : x ∈ C) : f x = f z :=
-  hf.eq_of_isMaxOn_mem_relint hCdom hz hmax hx
+  hf.eq_of_isMaxOn_mem_relint hCdom hz (isMaxOn_iff.2 hmax) hx
 
 /-- **Theorem 32.1**: "`f` is actually constant throughout `C`", stated as constancy rather than as
 "every value equals the maximum". -/
@@ -127,7 +127,7 @@ theorem corollary_32_1_1 (hf : ConvexFn f) (hC : Convex ℝ C) (hCdom : C ⊆ co
     maximumSet f C = ⋃₀ {C' | IsFace C C' ∧ C' ⊆ maximumSet f C} := by
   refine Set.Subset.antisymm (fun x hx => ?_) (Set.sUnion_subset fun C' hC' => hC'.2)
   obtain ⟨C', hface, hxC', hconst⟩ :=
-    exists_isFace_forall_eq_of_isMaxOn hf hC hCdom hx.1 hx.2
+    exists_isFace_forall_eq_of_isMaxOn hf hC hCdom hx.1 (isMaxOn_iff.2 hx.2)
   refine ⟨C', ⟨hface, fun y hy => ⟨hface.toIsExtreme.1 hy, fun w hw => ?_⟩⟩, hxC'⟩
   rw [hconst y hy]
   exact hx.2 w hw
@@ -150,7 +150,7 @@ strictly below its maximum throughout `S` stays below it throughout `conv S`. -/
 theorem theorem_32_2_attained (hf : ConvexFn f) {S : Set (Rn n)} {x : Rn n}
     (hx : x ∈ convexHull ℝ S) (hmax : ∀ z ∈ convexHull ℝ S, f z ≤ f x) :
     ∃ z ∈ S, f z = f x :=
-  exists_eq_of_isMaxOn_convexHull hf hx hmax
+  exists_eq_of_isMaxOn_convexHull hf hx (isMaxOn_iff.2 hmax)
 
 /-- **Corollary 32.2.1**: for a closed convex `C` that is not an affine set
 or half of one, the supremum over `C` is already the supremum over the relative boundary.
@@ -168,7 +168,7 @@ attainment clause read through Theorem 18.4. -/
 theorem corollary_32_2_1_attained (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsClosed C)
     (hhalf : ¬ IsAffineHalf C) {x : Rn n} (hx : x ∈ C) (hmax : ∀ z ∈ C, f z ≤ f x) :
     ∃ z ∈ C \ ri C, f z = f x :=
-  exists_notMem_relint_eq_of_isMaxOn hf hC hCcl hhalf hx hmax
+  exists_notMem_relint_eq_of_isMaxOn hf hC hCcl hhalf hx (isMaxOn_iff.2 hmax)
 
 /-! ### Theorem 32.3: the extreme point principle -/
 
@@ -214,7 +214,7 @@ theorem theorem_32_3_attained (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsCl
     (hmax : ∀ w ∈ C, f w ≤ f x) :
     ∃ z ∈ (C ∩ ((linealitySubmodule C)ᗮ : Set (Rn n))).extremePoints ℝ, f z = f x :=
   exists_mem_extremePoints_inter_eq_of_isMaxOn_of_isCompl hf hC hCcl
-    ((bddAboveOnRays_iff hCdom).2 hray) (Submodule.isCompl_orthogonal _) hx hmax
+    ((bddAboveOnRays_iff hCdom).2 hray) (Submodule.isCompl_orthogonal _) hx (isMaxOn_iff.2 hmax)
 
 /-- **Corollary 32.3.1**: if the supremum of a convex function over a closed convex set containing
 no lines is attained at all, it is attained at an extreme point. No boundedness is needed — a finite
@@ -223,7 +223,7 @@ theorem corollary_32_3_1 (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsClosed 
     (hCdom : C ⊆ convexDom f) (hnl : ContainsNoLine C) {x : Rn n} (hx : x ∈ C)
     (hmax : ∀ z ∈ C, f z ≤ f x) : ∃ z ∈ C.extremePoints ℝ, f z = f x :=
   exists_mem_extremePoints_eq_of_isMaxOn_of_containsNoLine hf hC hCcl hnl hx
-    (mem_convexDom.1 (hCdom hx)).ne hmax
+    (mem_convexDom.1 (hCdom hx)).ne (isMaxOn_iff.2 hmax)
 
 /-- **Corollary 32.3.2**: a convex function attains its supremum relative to a non-empty closed
 bounded convex `C ⊆ ri (dom f)` at an extreme point of `C`. `C ⊆ ri (dom f)` makes `f` continuous
@@ -378,14 +378,15 @@ nor `x ∈ ri (dom f)` appears. -/
 theorem theorem_32_4_normal (hfin : ∀ z ∈ C, f z ≠ ⊥ ∧ f z ≠ ⊤) {x : Rn n} (hx : x ∈ C)
     (hmax : ∀ z ∈ C, f z ≤ f x) {y : Rn n} (hy : y ∈ subdifferential (pairing n) f x) :
     y ∈ normalCone (pairing n) C x :=
-  mem_normalCone_of_mem_subdifferential_of_isMaxOn (hfin x hx).1 (hfin x hx).2 hmax hy
+  mem_normalCone_of_mem_subdifferential_of_isMaxOn (hfin x hx).1 (hfin x hx).2 (isMaxOn_iff.2 hmax)
+    hy
 
 /-- **Theorem 32.4**: the vector is **non-zero**. Rockafellar's argument is that `inf f < f x`
 because `f` is not constant on `C`, hence `0 ∉ ∂f(x)`; here the witness of non-constancy is passed
 directly, since a set on which `f` is not constant supplies one at every one of its points. -/
 theorem theorem_32_4_ne_zero {x : Rn n} (hmax : ∀ z ∈ C, f z ≤ f x) {z₀ : Rn n} (hz₀ : z₀ ∈ C)
     (hne : f z₀ ≠ f x) {y : Rn n} (hy : y ∈ subdifferential (pairing n) f x) : y ≠ 0 :=
-  ne_zero_of_mem_subdifferential_of_isMaxOn hmax hz₀ hne hy
+  ne_zero_of_mem_subdifferential_of_isMaxOn (isMaxOn_iff.2 hmax) hz₀ hne hy
 
 /-- **Corollary 32.4.1**: for a proper convex `f` and a non-empty `S` on which `f` is not constant,
 if the supremum of `f` relative to `S` is attained at `x ∈ ri (dom f)`, then every `x* ∈ ∂f(x)` is
@@ -398,9 +399,10 @@ theorem corollary_32_4_1 (hp : ProperConvex f) {S : Set (Rn n)} {x : Rn n}
     (hmax : ∀ z ∈ S, f z ≤ f x) {z₀ : Rn n} (hz₀ : z₀ ∈ S) (hne : f z₀ ≠ f x)
     {y : Rn n} (hy : y ∈ subdifferential (pairing n) f x) :
     y ≠ 0 ∧ ∀ z ∈ S, pairing n z y ≤ pairing n x y := by
-  refine ⟨ne_zero_of_mem_subdifferential_of_isMaxOn hmax hz₀ hne hy, fun z hz => ?_⟩
+  refine ⟨ne_zero_of_mem_subdifferential_of_isMaxOn (isMaxOn_iff.2 hmax) hz₀ hne hy,
+    fun z hz => ?_⟩
   exact le_of_mem_normalCone (mem_normalCone_of_mem_subdifferential_of_isMaxOn (hp.ne_bot x)
-    (mem_convexDom.1 (intrinsicInterior_subset hxri)).ne hmax hy) hz
+    (mem_convexDom.1 (intrinsicInterior_subset hxri)).ne (isMaxOn_iff.2 hmax) hy) hz
 
 /-- **§32**: the vectors normal to the Euclidean unit ball at a boundary
 point `x` are exactly the `λx` with `λ ≥ 0`.

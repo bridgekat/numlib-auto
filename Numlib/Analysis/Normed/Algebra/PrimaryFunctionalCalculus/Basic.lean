@@ -1,5 +1,6 @@
 import Mathlib.FieldTheory.IsAlgClosed.Spectrum
 import Mathlib.FieldTheory.Minpoly.Field
+import Numlib.Algebra.Polynomial.Taylor
 import Numlib.Analysis.Calculus.HermiteInterpolation
 
 /-!
@@ -24,6 +25,8 @@ The Jordan-form, power-series and Cauchy-integral definitions of `f(A)` are theo
   minimal polynomial does not split.
 * `spectralIdempotent a μ`: the spectral idempotent (Frobenius covariant, Riesz projection) of `a`
   at `μ`, as a polynomial in `a`.
+* `ContDiffOnSpectrum f a`: `f` is `C^{m_λ - 1}` at every eigenvalue `λ` of index `m_λ`, the
+  smoothness hypothesis of the algebraic rules below.
 
 ## Main results
 
@@ -234,13 +237,31 @@ theorem pfc_pow [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).
     pfc (fun z : 𝕜 => z ^ n) a = a ^ n := by
   simpa using pfc_polynomial ha hs ((X : 𝕜[X]) ^ n)
 
+/-- `f` is **`C^{m_λ - 1}` at the eigenvalues of `a`**: at every root `λ` of the minimal
+polynomial of `a`, `f` is `C^{m_λ - 1}`, `m_λ` the multiplicity of `λ` (the index of the
+eigenvalue). This is the smoothness under which `pfc · a` is an algebra homomorphism (`pfc_add`,
+`pfc_mul`, `pfc_inv`) and composes (`pfc_comp`): it makes the jets `f⁽ʲ⁾(λ)`, `j < m_λ`, on which
+`pfc f a` depends (`pfc_congr`) behave as derivatives. -/
+def ContDiffOnSpectrum (f : 𝕜 → 𝕜) (a : A) : Prop :=
+  ∀ μ ∈ (minpoly 𝕜 a).roots, ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ
+
+/-- `ContDiffOnSpectrum` unfolded. -/
+theorem contDiffOnSpectrum_iff {f : 𝕜 → 𝕜} :
+    ContDiffOnSpectrum f a ↔
+      ∀ μ ∈ (minpoly 𝕜 a).roots, ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ :=
+  Iff.rfl
+
+open scoped ContDiff in
+/-- A function that is `C^∞` at every eigenvalue is `C^{m_λ - 1}` there. -/
+theorem ContDiffOnSpectrum.of_contDiffAt {f : 𝕜 → 𝕜}
+    (h : ∀ μ ∈ (minpoly 𝕜 a).roots, ContDiffAt 𝕜 ∞ f μ) : ContDiffOnSpectrum f a :=
+  fun μ hμ => (h μ hμ).of_le (WithTop.coe_le_coe.2 le_top)
+
 /-- **Linearity** of `pfc` on functions that are `C^{m_λ - 1}` at every eigenvalue `λ`. The
 smoothness is needed: with Mathlib's junk derivatives, `(f + g)⁽ʲ⁾` need not be `f⁽ʲ⁾ + g⁽ʲ⁾`. -/
 theorem pfc_add {f g : 𝕜 → 𝕜}
-    (hf : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ)
-    (hg : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) g μ) :
+    (hf : ContDiffOnSpectrum f a)
+    (hg : ContDiffOnSpectrum g a) :
     pfc (f + g) a = pfc f a + pfc g a := by
   classical
   rw [pfc_def, pfc_def, pfc_def, ← map_add, ← interpolateJet_add,
@@ -258,14 +279,10 @@ theorem pfc_const_smul (c : 𝕜) (f : 𝕜 → 𝕜) : pfc (c • f) a = c • 
   rw [pfc_def, pfc_def, h, interpolateJet_smul, map_smul]
 
 theorem pfc_sub {f g : 𝕜 → 𝕜}
-    (hf : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ)
-    (hg : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) g μ) :
+    (hf : ContDiffOnSpectrum f a)
+    (hg : ContDiffOnSpectrum g a) :
     pfc (f - g) a = pfc f a - pfc g a := by
-  have hg' : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) ((-1 : 𝕜) • g) μ :=
-    fun μ hμ => (hg μ hμ).const_smul (-1 : 𝕜)
+  have hg' : ContDiffOnSpectrum ((-1 : 𝕜) • g) a := fun μ hμ => (hg μ hμ).const_smul (-1 : 𝕜)
   rw [sub_eq_add_neg, ← neg_one_smul 𝕜 g, pfc_add hf hg', pfc_const_smul, neg_one_smul,
     ← sub_eq_add_neg]
 
@@ -303,10 +320,8 @@ theorem AlgHom.map_pfc {B : Type*} [Ring B] [Algebra 𝕜 B] (φ : A →ₐ[𝕜
 Leibniz rule for jets (`Hermite.taylorJet_mul`) and products of interpolants
 (`Hermite.IsJetInterpolant.mul`). -/
 theorem pfc_mul [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) {f g : 𝕜 → 𝕜}
-    (hf : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ)
-    (hg : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) g μ) :
+    (hf : ContDiffOnSpectrum f a)
+    (hg : ContDiffOnSpectrum g a) :
     pfc (f * g) a = pfc f a * pfc g a := by
   classical
   have hP := (isJetInterpolant_interpolateJet (minpoly 𝕜 a).roots (taylorJet f)).mul
@@ -322,10 +337,8 @@ theorem pfc_mul [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).
 /-- Functions whose product is `1` near every eigenvalue give inverse elements. -/
 theorem pfc_mul_pfc_eq_one [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits)
     {f g : 𝕜 → 𝕜}
-    (hf : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ)
-    (hg : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) g μ)
+    (hf : ContDiffOnSpectrum f a)
+    (hg : ContDiffOnSpectrum g a)
     (hfg : ∀ μ ∈ (minpoly 𝕜 a).roots, (f * g) =ᶠ[nhds μ] fun _ => 1) :
     pfc f a * pfc g a = 1 := by
   rw [← pfc_mul ha hs hf hg, pfc_congr (g := fun _ => (1 : 𝕜))
@@ -335,13 +348,10 @@ theorem pfc_mul_pfc_eq_one [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpo
 invertible with inverse `(1/f)(a)` ([golub2013matrix] §9.1's rational functions). -/
 theorem pfc_inv [CharZero 𝕜] (ha : IsIntegral 𝕜 a)
     (hs : (minpoly 𝕜 a).Splits) {f : 𝕜 → 𝕜}
-    (hf : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ)
+    (hf : ContDiffOnSpectrum f a)
     (h0 : ∀ μ ∈ (minpoly 𝕜 a).roots, f μ ≠ 0) :
     IsUnit (pfc f a) ∧ pfc (fun z => (f z)⁻¹) a = Ring.inverse (pfc f a) := by
-  have hg : ∀ μ ∈ (minpoly 𝕜 a).roots,
-      ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) (fun z => (f z)⁻¹) μ :=
-    fun μ hμ => (hf μ hμ).inv (h0 μ hμ)
+  have hg : ContDiffOnSpectrum (fun z => (f z)⁻¹) a := fun μ hμ => (hf μ hμ).inv (h0 μ hμ)
   have h1 := pfc_mul_pfc_eq_one ha hs hf hg fun μ hμ =>
     ((hf μ hμ).continuousAt.eventually_ne (h0 μ hμ)).mono fun z hz => mul_inv_cancel₀ hz
   have h2 : pfc (fun z => (f z)⁻¹) a * pfc f a = 1 := (commute_pfc_pfc a f _).eq.symm.trans h1
@@ -576,14 +586,6 @@ theorem pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq (ha : IsIntegral 𝕜
   rw [Finset.sum_eq_single 0 (fun j _ hj => ?_) (by simp [hm])]
   · simp [taylorJet, Filter.EventuallyEq.iteratedDeriv_eq 0 (h l hl')]
   · simp [taylorJet, Filter.EventuallyEq.iteratedDeriv_eq j (h l hl'), iteratedDeriv_const, hj]
-
-omit [DecidableEq 𝕜] in
-private theorem taylor_comp_C_mul_X (q : 𝕜[X]) (s l : 𝕜) :
-    taylor l (q.comp (C s * X)) = (taylor (s * l) q).comp (C s * X) := by
-  simp only [taylor_apply, comp_assoc, mul_comp, C_comp, X_comp, add_comp]
-  congr 1
-  rw [map_mul]
-  ring
 
 omit [DecidableEq 𝕜] in
 private theorem aeval_smul_eq_aeval_comp (a : A) (s : 𝕜) (q : 𝕜[X]) :

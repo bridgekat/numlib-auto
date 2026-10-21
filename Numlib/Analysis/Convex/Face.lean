@@ -34,6 +34,10 @@ Extreme points and exposed faces are Mathlib's `Set.extremePoints` and `IsExpose
 * `exists_isFace_mem_relint`, `eq_iUnion_relint_isFace`, `IsFace.relint_pairwise_disjoint`,
   `IsFace.relint_maximal` — the relative interiors of the nonempty faces partition `C`, and are
   exactly the maximal relatively open convex subsets of `C` ([rockafellar1970convex] Theorem 18.2).
+* `exists_notMem_relint_mem_segment_of_isBounded` — the analytic core of the segment theorem: if
+  the line through a relative interior point `x` of a closed set, in a direction of its affine
+  hull, meets the set in a bounded set, then `x` lies on a segment joining two relative boundary
+  points.
 * `exists_notMem_relint_mem_segment` — in a compact set of positive dimension, every relative
   interior point lies on a segment joining two relative boundary points.
 * `convexHull_extremePoints` — **Minkowski's theorem**: a compact convex set is the convex hull of
@@ -313,42 +317,32 @@ section Bounded
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] {C : Set E}
 
 omit [FiniteDimensional ℝ E] in
-/-- For a compact set of positive dimension, a relative interior point lies on a segment joining
-two points that are not relative interior points. The general statement asks instead that `C` be a
-closed convex set which is neither an affine set nor a closed half of one; compactness is cruder
-but is all Minkowski's theorem needs. Convexity of `C` is never used. -/
-theorem exists_notMem_relint_mem_segment (hcomp : IsCompact C) (hdim : vectorSpan ℝ C ≠ ⊥)
-    {x : E} (hx : x ∈ ri C) :
+/-- **The analytic core of the segment theorem.** If the line through a relative interior point `x`
+of a closed set `C`, in a direction of the affine hull of `C`, meets `C` in a bounded set, then `x`
+lies on a segment joining the two ends of that intersection, neither of which is a relative
+interior point. Convexity of `C` is not used. -/
+theorem exists_notMem_relint_mem_segment_of_isBounded {x d : E} (hCcl : IsClosed C) (hd0 : d ≠ 0)
+    (hd : d ∈ vectorSpan ℝ C) (hx : x ∈ ri C)
+    (hbdd : Bornology.IsBounded {t : ℝ | x + t • d ∈ C}) :
     ∃ a ∈ C, ∃ b ∈ C, a ∉ ri C ∧ b ∉ ri C ∧ x ∈ segment ℝ a b := by
-  obtain ⟨d, hdmem, hdne⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hdim
-  have hdnorm : 0 < ‖d‖ := norm_pos_iff.2 hdne
+  have hdnorm : 0 < ‖d‖ := norm_pos_iff.2 hd0
   have hxC : x ∈ C := intrinsicInterior_subset hx
   set T : Set ℝ := {t : ℝ | x + t • d ∈ C} with hTdef
   have hline : ∀ t : ℝ, x + t • d ∈ affineSpan ℝ C := by
     intro t
     have hv : t • d ∈ (affineSpan ℝ C).direction := by
       rw [direction_affineSpan]
-      exact Submodule.smul_mem _ t hdmem
+      exact Submodule.smul_mem _ t hd
     have hmem := AffineSubspace.vadd_mem_of_mem_direction hv (subset_affineSpan ℝ C hxC)
     rwa [vadd_eq_add, add_comm] at hmem
-  -- the parameter set is compact
   have hcont : Continuous fun t : ℝ => x + t • d := by fun_prop
-  have hTclosed : IsClosed T := hcomp.isClosed.preimage hcont
-  obtain ⟨R, hR⟩ := (Metric.isBounded_iff_subset_closedBall x).1 hcomp.isBounded
-  have hTsub : T ⊆ Set.Icc (-(R / ‖d‖)) (R / ‖d‖) := by
-    intro t ht
-    have hmem : x + t • d ∈ Metric.closedBall x R := hR ht
-    rw [Metric.mem_closedBall, dist_eq_norm] at hmem
-    have he : x + t • d - x = t • d := by module
-    rw [he, norm_smul, Real.norm_eq_abs] at hmem
-    exact Set.mem_Icc.2 (abs_le.1 ((le_div_iff₀ hdnorm).2 hmem))
-  have hTcomp : IsCompact T := isCompact_Icc.of_isClosed_subset hTclosed hTsub
+  have hTclosed : IsClosed T := hCcl.preimage hcont
+  have hTcomp : IsCompact T := Metric.isCompact_of_isClosed_isBounded hTclosed hbdd
   have hT0 : (0 : ℝ) ∈ T := by
     change x + (0 : ℝ) • d ∈ C
     simpa using hxC
   obtain ⟨tp, htp⟩ := hTcomp.exists_isGreatest ⟨0, hT0⟩
   obtain ⟨tm, htm⟩ := hTcomp.exists_isLeast ⟨0, hT0⟩
-  -- `x` is strictly inside the parameter interval, because `x ∈ ri C`
   obtain ⟨hxA, ε, hε, hball⟩ := mem_intrinsicInterior_iff.1 hx
   set s : ℝ := ε / (2 * ‖d‖) with hsdef
   have hspos : 0 < s := by positivity
@@ -366,19 +360,16 @@ theorem exists_notMem_relint_mem_segment (hcomp : IsCompact C) (hdim : vectorSpa
   have htmneg : tm < 0 := by
     have hle := htm.2 (hsT (-s) (by rw [abs_neg, abs_of_pos hspos]))
     linarith
-  have hlt : tm < tp := lt_trans htmneg htppos
   have hgap : (0 : ℝ) < tp - tm := by linarith
   refine ⟨x + tm • d, htm.1, x + tp • d, htp.1, ?_, ?_, ?_⟩
-  · -- the lower endpoint is not a relative interior point
-    intro hari
+  · intro hari
     obtain ⟨μ, hμ, hw⟩ := exists_one_lt_smul_mem_of_mem_relint hari (hline tp)
     have heq : (1 - μ) • (x + tp • d) + μ • (x + tm • d)
         = x + ((1 - μ) * tp + μ * tm) • d := by module
     rw [heq] at hw
     have hmem : (1 - μ) * tp + μ * tm ∈ T := hw
     nlinarith [htm.2 hmem, mul_pos (sub_pos.2 hμ) hgap]
-  · -- the upper endpoint is not a relative interior point
-    intro hbri
+  · intro hbri
     obtain ⟨μ, hμ, hw⟩ := exists_one_lt_smul_mem_of_mem_relint hbri (hline tm)
     have heq : (1 - μ) • (x + tm • d) + μ • (x + tp • d)
         = x + ((1 - μ) * tm + μ * tp) • d := by module
@@ -388,6 +379,24 @@ theorem exists_notMem_relint_mem_segment (hcomp : IsCompact C) (hdim : vectorSpa
   · refine ⟨tp / (tp - tm), -tm / (tp - tm), div_nonneg htppos.le hgap.le,
       div_nonneg (neg_nonneg.2 htmneg.le) hgap.le, by field_simp; ring, ?_⟩
     match_scalars <;> field_simp <;> ring
+
+omit [FiniteDimensional ℝ E] in
+/-- For a compact set of positive dimension, a relative interior point lies on a segment joining
+two points that are not relative interior points. The general statement asks instead that `C` be a
+closed convex set which is neither an affine set nor a closed half of one; compactness is cruder
+but is all Minkowski's theorem needs. Convexity of `C` is never used. -/
+theorem exists_notMem_relint_mem_segment (hcomp : IsCompact C) (hdim : vectorSpan ℝ C ≠ ⊥)
+    {x : E} (hx : x ∈ ri C) :
+    ∃ a ∈ C, ∃ b ∈ C, a ∉ ri C ∧ b ∉ ri C ∧ x ∈ segment ℝ a b := by
+  obtain ⟨d, hdmem, hdne⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hdim
+  refine exists_notMem_relint_mem_segment_of_isBounded hcomp.isClosed hdne hdmem hx ?_
+  obtain ⟨R, hR⟩ := (Metric.isBounded_iff_subset_closedBall x).1 hcomp.isBounded
+  refine (Metric.isBounded_Icc (-(R / ‖d‖)) (R / ‖d‖)).subset fun t ht => ?_
+  have hmem : x + t • d ∈ Metric.closedBall x R := hR ht
+  rw [Metric.mem_closedBall, dist_eq_norm] at hmem
+  have he : x + t • d - x = t • d := by module
+  rw [he, norm_smul, Real.norm_eq_abs] at hmem
+  exact Set.mem_Icc.2 (abs_le.1 ((le_div_iff₀ (norm_pos_iff.2 hdne)).2 hmem))
 
 /-- The induction behind Minkowski's theorem: a compact set of dimension at most `n` that is convex
 lies in the convex hull of its extreme points. -/

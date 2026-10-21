@@ -172,42 +172,27 @@ open Stationary
 variable {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
 variable {𝕜 : Type*} [Field 𝕜]
 
-/-- A triangular matrix whose diagonal entries are nonzero is a unit. -/
-private theorem isUnit_of_isLowerTriangular {M : Matrix n n 𝕜} (hM : M.IsLowerTriangular)
-    (hd : ∀ i, M i i ≠ 0) : IsUnit M := by
-  rw [isUnit_iff_isUnit_det, det_of_isLowerTriangular M hM, isUnit_iff_ne_zero]
-  exact Finset.prod_ne_zero_iff.mpr fun i _ => hd i
-
-/-- An upper triangular matrix whose diagonal entries are nonzero is a unit. -/
-private theorem isUnit_of_isUpperTriangular {M : Matrix n n 𝕜} (hM : M.IsUpperTriangular)
-    (hd : ∀ i, M i i ≠ 0) : IsUnit M := by
-  rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hM, isUnit_iff_ne_zero]
-  exact Finset.prod_ne_zero_iff.mpr fun i _ => hd i
-
 /-- The generic shape of every `M` below: a scaled diagonal plus a scaled strictly triangular part
 is a unit as soon as the scaling of the diagonal and the diagonal of `A` are nonzero. -/
 theorem isUnit_smul_diagPart_add_smul_strictLower (A : Matrix n n 𝕜) {c d : 𝕜} (hc : c ≠ 0)
     (h : IsUnit (diagPart A)) : IsUnit (c • diagPart A + d • strictLower A) := by
-  refine isUnit_of_isLowerTriangular (fun i j hij => ?_) fun i => ?_
-  · have hij' : i < j := OrderDual.toDual_lt_toDual.mp hij
+  have hT : (c • diagPart A + d • strictLower A).IsLowerTriangular := fun i j hij => by
+    have hij' : i < j := OrderDual.toDual_lt_toDual.mp hij
     simp [hij'.ne, asymm hij']
-  · simpa using mul_ne_zero hc ((isUnit_diagPart_iff A).mp h i)
+  have hd : ∀ i, (c • diagPart A + d • strictLower A) i i ≠ 0 := fun i => by
+    simpa using mul_ne_zero hc ((isUnit_diagPart_iff A).mp h i)
+  convert (hT.isUnit_iff).2 hd
 
 /-- The upper triangular counterpart of `Matrix.isUnit_smul_diagPart_add_smul_strictLower`, used for
 the backward sweeps. -/
 theorem isUnit_smul_diagPart_add_smul_strictUpper (A : Matrix n n 𝕜) {c d : 𝕜} (hc : c ≠ 0)
     (h : IsUnit (diagPart A)) : IsUnit (c • diagPart A + d • strictUpper A) := by
-  refine isUnit_of_isUpperTriangular (fun i j hij => ?_) fun i => ?_
-  · have hij' : j < i := hij
+  have hT : (c • diagPart A + d • strictUpper A).IsUpperTriangular := fun i j hij => by
+    have hij' : j < i := hij
     simp [hij'.ne', asymm hij']
-  · simpa using mul_ne_zero hc ((isUnit_diagPart_iff A).mp h i)
-
-omit [LinearOrder n] in
-/-- A nonzero scalar multiple of a unit matrix is a unit. -/
-private theorem isUnit_smul {c : 𝕜} (hc : c ≠ 0) {M : Matrix n n 𝕜} (hM : IsUnit M) :
-    IsUnit (c • M) := by
-  rw [isUnit_iff_isUnit_det, det_smul, isUnit_iff_ne_zero] at *
-  exact mul_ne_zero (pow_ne_zero _ hc) hM
+  have hd : ∀ i, (c • diagPart A + d • strictUpper A) i i ≠ 0 := fun i => by
+    simpa using mul_ne_zero hc ((isUnit_diagPart_iff A).mp h i)
+  convert (hT.isUnit_iff).2 hd
 
 /-- `D + ω L`, [saad2003iterative] `D - ω E`, is invertible as soon as the diagonal of `A` is, for
 every `ω`: it is lower triangular with the diagonal of `A` on its diagonal.  This is the matrix
@@ -285,30 +270,37 @@ noncomputable def sorSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {
   ⟨ω⁻¹ • diagPart A + strictLower A, by
     simpa using isUnit_smul_diagPart_add_smul_strictLower (d := 1) A (inv_ne_zero hω) h⟩
 
+omit [LinearOrder n] in
+/-- The iteration operator of a relaxed triangular splitting: if `A = D + L + U` with `D` the
+diagonal part and `m = ω⁻¹ D + L`, then `G = (D + ω L)⁻¹ ((1 - ω) D - ω U)`. This is the computation
+shared by the forward and the backward SOR splittings, which differ only in the triangle `L`
+absorbed into the sweep. -/
+private theorem iterationOperator_eq_of_m_eq_smul_diagPart_add {A L U : Matrix n n 𝕜}
+    (s : Splitting A) {ω : 𝕜} (hω : ω ≠ 0) (hA : diagPart A + L + U = A)
+    (hm : s.m = ω⁻¹ • diagPart A + L) :
+    s.iterationOperator = (diagPart A + ω • L)⁻¹ * ((1 - ω) • diagPart A - ω • U) := by
+  generalize diagPart A = D at hA hm ⊢
+  subst hA
+  have hMdet : IsUnit s.m.det := (isUnit_iff_isUnit_det _).mp s.isUnit
+  have h1 : D + ω • L = ω • s.m := by
+    rw [hm, smul_add, smul_smul, mul_inv_cancel₀ hω, one_smul]
+  have h2 : (1 - ω) • D - ω • U = ω • s.n := by
+    rw [Splitting.n, hm, smul_sub, smul_add, smul_smul, mul_inv_cancel₀ hω, one_smul]
+    module
+  have h3 : (ω • s.m)⁻¹ = ω⁻¹ • s.m⁻¹ := by
+    refine inv_eq_left_inv ?_
+    rw [smul_mul_smul_comm, inv_mul_cancel₀ hω, nonsing_inv_mul _ hMdet, one_smul]
+  rw [Splitting.iterationOperator_eq, h1, h2, h3, smul_mul_smul_comm, inv_mul_cancel₀ hω,
+    one_smul, nonsing_inv_eq_ringInverse]
+
 /-- The SOR iteration matrix `(D - ωE)⁻¹ (ωF + (1 - ω) D)`, with `D` the diagonal part of `A` and
 `-E`, `-F` its strictly lower and strictly upper parts ([saad2003iterative], (4.14)). -/
 theorem sorSplitting_iterationOperator (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {ω : 𝕜}
     (hω : ω ≠ 0) :
     (sorSplitting A h hω).iterationOperator =
-      (diagPart A + ω • strictLower A)⁻¹ * ((1 - ω) • diagPart A - ω • strictUpper A) := by
-  set M : Matrix n n 𝕜 := ω⁻¹ • diagPart A + strictLower A with hM
-  have hMdet : IsUnit M.det := (isUnit_iff_isUnit_det _).mp (sorSplitting A h hω).isUnit
-  have h1 : diagPart A + ω • strictLower A = ω • M := by
-    rw [hM, smul_add, smul_smul, mul_inv_cancel₀ hω, one_smul]
-  have key : ∀ x : 𝕜, (1 - ω) * x = ω * (ω⁻¹ * x - x) := fun x => by
-    rw [mul_sub, ← mul_assoc, mul_inv_cancel₀ hω, one_mul, sub_mul, one_mul]
-  have h2 : (1 - ω) • diagPart A - ω • strictUpper A = ω • (M - A) := by
-    ext i j
-    rcases lt_trichotomy i j with hlt | rfl | hlt
-    · simp [hM, hlt, hlt.ne, asymm hlt]
-    · simpa [hM] using key (A i i)
-    · simp [hM, hlt, hlt.ne', asymm hlt]
-  have h3 : (ω • M)⁻¹ = ω⁻¹ • M⁻¹ := by
-    refine inv_eq_left_inv ?_
-    rw [smul_mul_smul_comm, inv_mul_cancel₀ hω, nonsing_inv_mul _ hMdet, one_smul]
-  rw [Splitting.iterationOperator_eq, h1, h2, h3, smul_mul_smul_comm, inv_mul_cancel₀ hω,
-    one_smul, nonsing_inv_eq_ringInverse]
-  rfl
+      (diagPart A + ω • strictLower A)⁻¹ * ((1 - ω) • diagPart A - ω • strictUpper A) :=
+  iterationOperator_eq_of_m_eq_smul_diagPart_add _ hω (diagPart_add_strictLower_add_strictUpper A)
+    rfl
 
 /-- SSOR (symmetric successive over-relaxation), one forward SOR sweep followed by a backward one:
 `M = (1/(ω(2-ω))) (D - ωE) D⁻¹ (D - ωF)`, in [saad2003iterative] letters `A = D - E - F`
@@ -323,8 +315,8 @@ noncomputable def ssorSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) 
       rw [nonsing_inv_eq_ringInverse]; exact h.ringInverse
     have hu3 : IsUnit (diagPart A + ω • strictUpper A) := by
       simpa using isUnit_smul_diagPart_add_smul_strictUpper A (c := 1) (d := ω) one_ne_zero h
-    exact isUnit_smul (inv_ne_zero (mul_ne_zero hω (sub_ne_zero_of_ne hω2.symm)))
-      ((hu1.mul hu2).mul hu3)⟩
+    exact (isUnit_smul_iff (Units.mk0 _
+      (inv_ne_zero (mul_ne_zero hω (sub_ne_zero_of_ne hω2.symm)))) _).2 ((hu1.mul hu2).mul hu3)⟩
 
 /-- Gauss–Seidel is SOR with `ω = 1`. -/
 theorem sorSplitting_one (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
@@ -348,26 +340,9 @@ noncomputable def backwardSorSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPa
 theorem backwardSorSplitting_iterationOperator (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     {ω : 𝕜} (hω : ω ≠ 0) :
     (backwardSorSplitting A h hω).iterationOperator =
-      (diagPart A + ω • strictUpper A)⁻¹ * ((1 - ω) • diagPart A - ω • strictLower A) := by
-  set M : Matrix n n 𝕜 := ω⁻¹ • diagPart A + strictUpper A with hM
-  have hMdet : IsUnit M.det :=
-    (isUnit_iff_isUnit_det _).mp (backwardSorSplitting A h hω).isUnit
-  have h1 : diagPart A + ω • strictUpper A = ω • M := by
-    rw [hM, smul_add, smul_smul, mul_inv_cancel₀ hω, one_smul]
-  have key : ∀ x : 𝕜, (1 - ω) * x = ω * (ω⁻¹ * x - x) := fun x => by
-    rw [mul_sub, ← mul_assoc, mul_inv_cancel₀ hω, one_mul, sub_mul, one_mul]
-  have h2 : (1 - ω) • diagPart A - ω • strictLower A = ω • (M - A) := by
-    ext i j
-    rcases lt_trichotomy i j with hlt | rfl | hlt
-    · simp [hM, hlt, hlt.ne, asymm hlt]
-    · simpa [hM] using key (A i i)
-    · simp [hM, hlt, hlt.ne', asymm hlt]
-  have h3 : (ω • M)⁻¹ = ω⁻¹ • M⁻¹ := by
-    refine inv_eq_left_inv ?_
-    rw [smul_mul_smul_comm, inv_mul_cancel₀ hω, nonsing_inv_mul _ hMdet, one_smul]
-  rw [Splitting.iterationOperator_eq, h1, h2, h3, smul_mul_smul_comm, inv_mul_cancel₀ hω,
-    one_smul, nonsing_inv_eq_ringInverse]
-  rfl
+      (diagPart A + ω • strictUpper A)⁻¹ * ((1 - ω) • diagPart A - ω • strictLower A) :=
+  iterationOperator_eq_of_m_eq_smul_diagPart_add _ hω
+    (by rw [add_right_comm]; exact diagPart_add_strictLower_add_strictUpper A) rfl
 
 /-- Backward Gauss–Seidel is backward SOR with `ω = 1`. -/
 theorem backwardSorSplitting_one (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :

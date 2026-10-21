@@ -449,13 +449,12 @@ theorem IsGSVD.ker_inf_ker (h : IsGSVD A B U₁ U₂ X α β) :
   have hcard : Fintype.card {i : Fin n // r ≤ (i : ℕ)} = n - r := by
     rw [← Fintype.card_fin (n - r)]
     exact Fintype.card_congr
-      { toFun := fun i => ⟨i.1 - r, by have := i.1.isLt; have := i.2; omega⟩
-        invFun := fun k => ⟨⟨k + r, by have := k.isLt; omega⟩, by
+      { toFun := fun i => ⟨i.1 - r, by omega⟩
+        invFun := fun k => ⟨⟨k + r, by omega⟩, by
           change r ≤ (k : ℕ) + r; omega⟩
         left_inv := fun i => by
           apply Subtype.ext; apply Fin.ext
           simp only
-          have := i.2
           omega
         right_inv := fun k => by
           apply Fin.ext
@@ -612,7 +611,7 @@ theorem IsGSVD.rank_eq_and_ne_zero (h : IsGSVD A B U₁ U₂ X α β)
   have hDB := h.star_mul_mul₂
   rw [hrn] at hDB
   -- the row `j − (n − m₂)` of `D_B` vanishes
-  set k : Fin m₂ := ⟨j - (n - m₂), by have := j.isLt; omega⟩
+  set k : Fin m₂ := ⟨j - (n - m₂), by omega⟩
   have hrow : Pi.single k 1 ᵥ* (star U₂ * B * X) = 0 ᵥ* (star U₂ * B * X) := by
     rw [hDB, zero_vecMul]
     ext l

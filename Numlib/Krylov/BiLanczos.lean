@@ -14,8 +14,9 @@ conj β_{j+1} w_{j+1} = Aᴴ w_j - conj α_j w_j - conj δ_j w_{j-1},
 
 with `α_j = ⟪w_j, A v_j⟫`, `δ_{j+1} = |⟪ŵ_{j+1}, v̂_{j+1}⟫|^{1/2}` and `β_{j+1} = ⟪ŵ_{j+1},
 v̂_{j+1}⟫ / δ_{j+1}`, the normalization that keeps `⟪w_j, v_j⟫ = 1`. The adjoint enters as a second
-operator `B` with `⟪A x, y⟫ = ⟪x, B y⟫`, taken as data because the ambient space is neither assumed
-complete nor finite-dimensional.
+operator `B` with `⟪A x, y⟫ = ⟪x, B y⟫` (an adjoint pair for the inner products,
+`LinearMap.IsAdjointPair`, `LinearMap.isAdjointPair_inner_iff'`), taken as data because the ambient
+space is neither assumed complete nor finite-dimensional.
 
 The main results are [saad2003iterative] Prop 7.1: the two families are biorthogonal
 (`BiLanczos.inner_vec_dualVec`, from `BiLanczos.inner_eq_ite_of_threeTerm`, the biorthogonality of
@@ -412,7 +413,7 @@ w₁)`, runs without breakdown through step `m`. -/
 structure NoBreakdown (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (m : ℕ) : Prop where
   /-- `B` is the adjoint of `A`. It is taken as data because the ambient space is assumed neither
   complete nor finite-dimensional. -/
-  adjoint : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)
+  adjoint : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B
   /-- The starting pair is normalized: `⟪w₁, v₁⟫ = 1`. -/
   inner_start : inner 𝕜 w₁ v₁ = 1
   /-- No breakdown occurs before step `m`. -/
@@ -424,12 +425,14 @@ theorem NoBreakdown.mono {m n : ℕ} (h : NoBreakdown A B v₁ w₁ m) (hnm : n 
   ⟨h.adjoint, h.inner_start, fun j hj => h.delta_ne_zero j (hj.trans_le hnm)⟩
 
 /-- Moving `A` across the inner product, with `B` its adjoint. -/
-theorem inner_apply_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (x y : E) :
-    inner 𝕜 x (A y) = inner 𝕜 (B x) y := by
-  rw [← inner_conj_symm x (A y), hB y x, inner_conj_symm (B x) y]
+theorem inner_apply_eq
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B) (x y : E) :
+    inner 𝕜 x (A y) = inner 𝕜 (B x) y :=
+  (hB.inner_apply_eq x y).symm
 
 /-- Moving a power of `A` across the inner product: `B^k` is the adjoint of `A^k`. -/
-theorem inner_pow_apply_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (k : ℕ) (x y : E) :
+theorem inner_pow_apply_eq
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B) (k : ℕ) (x y : E) :
     inner 𝕜 ((B ^ k) x) y = inner 𝕜 x ((A ^ k) y) := by
   induction k generalizing x with
   | zero => simp
@@ -442,7 +445,8 @@ theorem inner_pow_apply_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y
 polynomial with conjugated coefficients evaluated at the adjoint `B`.  Over `ℝ` it says that the
 transpose of `p(A)` is `p(Aᵀ)`; it is what turns a bilinear expression in `p(A) v` and `q(B) w`
 into one in `(q̄ p)(A) v` and `w`. -/
-theorem inner_aeval_map_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (p : Polynomial 𝕜)
+theorem inner_aeval_map_eq
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B) (p : Polynomial 𝕜)
     (x y : E) :
     inner 𝕜 (Polynomial.aeval B (p.map (starRingEnd 𝕜)) x)
         y = inner 𝕜 x (Polynomial.aeval A p y) := by
@@ -463,7 +467,7 @@ theorem inner_aeval_map_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y
 
 /-- **The step that removes the transpose**: with `B` the adjoint of `A`, a bilinear expression in
 `p(A) v` and `q̄(B) w` is one in `(q p)(A) v` and `w`. -/
-theorem inner_aeval_map_aeval (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
+theorem inner_aeval_map_aeval (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B)
     (p q : Polynomial 𝕜) (v w : E) :
     inner 𝕜 (Polynomial.aeval B (q.map (starRingEnd 𝕜)) w) (Polynomial.aeval A p v) =
       inner 𝕜 w (Polynomial.aeval A (q * p) v) := by
@@ -481,7 +485,8 @@ for `i, j < m`, and the `m`-th vectors (in a run that stops, the residuals) are 
 opposite family: `⟪w_i, v_m⟫ = 0 = ⟪w_m, v_i⟫` for `i < m`. Only the product `β_{j+1} γ_{j+1}` is
 fixed by `⟪w_{j+1}, v_{j+1}⟫ = 1`; Saad's choice `|β_{j+1}| = |γ_{j+1}|` and Golub–Van Loan's
 `β_{j+1} = ‖v̂_{j+1}‖` both fit. Induction on `m`, moving `A` across the inner product. -/
-theorem inner_eq_ite_of_threeTerm (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
+theorem inner_eq_ite_of_threeTerm
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B)
     {v w : ℕ → E} {α β γ : ℕ → 𝕜} {m : ℕ}
     (hv : ∀ j < m, A (v j) = γ j • (if j = 0 then 0 else v (j - 1)) + α j • v j +
       β (j + 1) • v (j + 1))
@@ -781,18 +786,6 @@ private theorem pow_apply_mem_span {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {
     rw [hpow]
     exact map_span_le h hk ⟨_, ih (by omega), rfl⟩
 
-/-- [saad2003iterative], Prop 7.1: the primal vectors are a basis of `𝒦_m(A, v₁)`. -/
-theorem span_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
-    Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio m) = Krylov.subspace A v₁ m := by
-  refine le_antisymm (Submodule.span_le.2 ?_) ?_
-  · rintro _ ⟨i, hi, rfl⟩
-    exact Krylov.subspace_mono A v₁ (Nat.succ_le_of_lt hi) (vec_mem_subspace A B v₁ w₁ i)
-  · rw [Krylov.subspace_eq_span_image_Iio, Submodule.span_le]
-    rintro _ ⟨k, hk, rfl⟩
-    have hk' : k < m := hk
-    exact Submodule.span_mono (Set.image_mono (Set.Iio_subset_Iio (by omega)))
-      (pow_apply_mem_span h hk'.le)
-
 /-- `m` good steps produce `v_0, …, v_m`, one vector more than `BiLanczos.span_vec` accounts for,
 and they span `𝒦_{m+1}(A, v₁)`. This is the form the lucky-breakdown statement of
 [saad2003iterative], §7.1.2 needs: at a breakdown after step `m` there is no `NoBreakdown (m+1)` to
@@ -807,6 +800,13 @@ theorem span_vec_succ {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
     have hk' : k < m + 1 := hk
     exact Submodule.span_mono (Set.image_mono (Set.Iio_subset_Iio (by omega)))
       (pow_apply_mem_span h (by omega))
+
+/-- [saad2003iterative], Prop 7.1: the primal vectors are a basis of `𝒦_m(A, v₁)`. -/
+theorem span_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
+    Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio m) = Krylov.subspace A v₁ m := by
+  rcases m with _ | m
+  · simp
+  · exact span_vec_succ (h.mono m.le_succ)
 
 /-- The lucky breakdown of [saad2003iterative], §7.1.2: if the primal recurrence terminates,
 `v̂_{m+1} = 0`, then `A` maps the span of `v_0, …, v_m` into itself — the last three-term relation
@@ -928,24 +928,28 @@ variable {A B v₁ w₁}
 
 /-- The form of [saad2003iterative], (7.7) is a *moment functional*: `⟨p, q⟩ = L(p q)`. Everything
 else about the form follows from this one identity. -/
-theorem polyForm_eq_moment (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (p q : 𝕜[X]) :
+theorem polyForm_eq_moment
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B) (p q : 𝕜[X]) :
     polyForm A B v₁ w₁ p q = moment A v₁ w₁ (p * q) := by
   rw [polyForm, inner_aeval_map_eq hB, moment, mul_comm, map_mul, Module.End.mul_apply]
 
 /-- The form of [saad2003iterative], (7.7) is symmetric, `⟨p, q⟩ = ⟨q, p⟩`, because it depends only
 on the product `p q`. -/
-theorem polyForm_comm (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (p q : 𝕜[X]) :
+theorem polyForm_comm
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B) (p q : 𝕜[X]) :
     polyForm A B v₁ w₁ p q = polyForm A B v₁ w₁ q p := by
   rw [polyForm_eq_moment hB, polyForm_eq_moment hB, mul_comm]
 
 /-- The entries of the moment matrix are the moments: `(M_k)_{ij} = L(x^{i+j})`. -/
-theorem momentMatrix_apply (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (k : ℕ) (i j : Fin k) :
+theorem momentMatrix_apply
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B) (k : ℕ) (i j : Fin k) :
     momentMatrix A B v₁ w₁ k i j = moment A v₁ w₁ (X ^ ((i : ℕ) + (j : ℕ))) := by
   rw [momentMatrix, Matrix.of_apply, polyForm_eq_moment hB, ← pow_add]
 
 /-- [saad2003iterative], §7.1.2: the moment matrix is a *Hankel* matrix, constant along
 antidiagonals, because `⟨x^i, x^j⟩ = L(x^{i+j})` depends on `i` and `j` only through `i + j`. -/
-theorem momentMatrix_apply_eq_of_add_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) {k : ℕ}
+theorem momentMatrix_apply_eq_of_add_eq
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B) {k : ℕ}
     {i j i' j' : Fin k} (h : (i : ℕ) + (j : ℕ) = (i' : ℕ) + (j' : ℕ)) :
     momentMatrix A B v₁ w₁ k i j = momentMatrix A B v₁ w₁ k i' j' := by
   rw [momentMatrix_apply hB, momentMatrix_apply hB, h]
@@ -1178,10 +1182,6 @@ theorem aeval_dualPoly (j : ℕ) :
 theorem aeval_dualVhatPoly (j : ℕ) :
     Polynomial.aeval B (dualVhatPoly A B v₁ w₁ j) w₁ = dualVhat A B v₁ w₁ j := by
   rw [dualVhatPoly, aeval_step, aeval_dualPoly, (aeval_dualPoly_aux A B v₁ w₁ j).2, dualVhat_eq]
-
-private theorem map_conj_map_conj (p : 𝕜[X]) :
-    (p.map (starRingEnd 𝕜)).map (starRingEnd 𝕜) = p :=
-  Polynomial.ext fun k => by rw [coeff_map, coeff_map, RCLike.conj_conj]
 
 private theorem dualPolyScalar_step (j : ℕ) :
     (starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)))⁻¹ * dualPolyScalar A B v₁ w₁ j =
@@ -1536,7 +1536,8 @@ theorem residual_eq (k : ℕ) :
 
 /-- Telescoping the shadow recurrence: `α_k ⟪p*_k, A y⟫ = ⟪r*_k, y⟫ - ⟪r*_{k+1}, y⟫`, the only way
 `B` enters the shadow residuals. -/
-theorem mul_inner_dualDirection_apply (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (k : ℕ)
+theorem mul_inner_dualDirection_apply
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B) (k : ℕ)
     (y : E) :
     alpha A B b x₀ rs₀ k * inner 𝕜 (dualDirection A B b x₀ rs₀ k) (A y) =
       inner 𝕜 (dualResidual A B b x₀ rs₀ k) y -
@@ -1604,7 +1605,7 @@ variable {A B : E →ₗ[𝕜] E} {b x₀ rs₀ : E}
 of `A`, and neither denominator of [saad2003iterative], Alg 7.3 vanishes before step `m`. -/
 structure NoBreakdown (A B : E →ₗ[𝕜] E) (b x₀ rs₀ : E) (m : ℕ) : Prop where
   /-- `B` is the adjoint of `A`. -/
-  adjoint : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)
+  adjoint : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B
   /-- The numerator of `α_k` does not vanish. -/
   inner_residual_ne_zero : ∀ k < m,
     inner 𝕜 (dualResidual A B b x₀ rs₀ k) (residual A B b x₀ rs₀ k) ≠ 0
@@ -1938,12 +1939,6 @@ open BiLanczos
 
 namespace QMR
 
-private theorem range_eq_image_Iio {α : Type*} (f : ℕ → α) (m : ℕ) :
-    Set.range (fun j : Fin m => f (j : ℕ)) = f '' Set.Iio m := by
-  ext x
-  simp only [Set.mem_range, Set.mem_image, Set.mem_Iio, Fin.exists_iff]
-  tauto
-
 /-- The quasi-residual `β e₁ - T̄_m y` of the two-sided Lanczos relation ([saad2003iterative],
 (7.13)): the coordinate vector, in the basis `v_0, …, v_m`, of the residual of `x₀ + V_m y` when `b
 - A x₀ = β v₁`. -/
@@ -1989,8 +1984,8 @@ theorem norm_quasiResidual_eq_norm_gamma {m : ℕ} {β : 𝕜}
     (hρ : ∀ k < m, givensRho (BiLanczos.coeff A B v₁ w₁) k ≠ 0) {y : Fin m → 𝕜}
     (hy : IsMinOn (fun z => ‖quasiResidual A B v₁ w₁ β m z‖) Set.univ y) :
     ‖quasiResidual A B v₁ w₁ β m y‖ = ‖gamma (BiLanczos.coeff A B v₁ w₁) β m‖ := by
-  have hh : ∀ i j, j + 1 < i → BiLanczos.coeff A B v₁ w₁ i j = 0 := fun _ _ hij =>
-    BiLanczos.coeff_eq_zero_of_lt A B v₁ w₁ hij
+  have hh : Matrix.IsUpperHessenberg (n := ℕ) (BiLanczos.coeff A B v₁ w₁) :=
+    Matrix.isUpperHessenberg_iff_nat.2 fun _ _ hij => BiLanczos.coeff_eq_zero_of_lt A B v₁ w₁ hij
   have hsplit : ∀ z : Fin m → 𝕜, ‖quasiResidual A B v₁ w₁ β m z‖ ^ 2 =
       ‖(WithLp.toLp 2 ((fun i : Fin m => gvec (BiLanczos.coeff A B v₁ w₁) β (i : ℕ)) -
           (hessenbergSqOf (rotated (BiLanczos.coeff A B v₁ w₁) m) m).mulVec z) :
@@ -2039,7 +2034,7 @@ theorem norm_residual_le (hs : NoSeriousBreakdown A B v₁ w₁) {m : ℕ}
     rw [hr] at hmem
     exact Krylov.subspace_smul A v₁ β m hmem
   have hmem : xG - x₀ ∈ Submodule.span 𝕜 (Set.range fun j : Fin m => vec A B v₁ w₁ (j : ℕ)) := by
-    rw [range_eq_image_Iio, span_vec hnb]
+    rw [Set.range_comp', Fin.range_val, span_vec hnb]
     exact hmem0
   obtain ⟨zG, hzG⟩ := (Submodule.mem_span_range_iff_exists_fun 𝕜).1 hmem
   have hxGeq : xG = x₀ + ∑ j, zG j • vec A B v₁ w₁ (j : ℕ) := by rw [hzG]; abel

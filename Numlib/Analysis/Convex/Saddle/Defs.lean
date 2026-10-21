@@ -27,6 +27,8 @@ first.
 * `bracket Bx F`, `concaveBracket Bu G` — `⟨Fu, y⟩` and its concave counterpart `⟨u, G y⟩`;
   `partialConj₂ Bx f` is the uncurried reading of the first.
 * `bifunOfSaddle Bx K` — the convex bifunction `F u = K (u, ·)*` attached to a saddle-function.
+* `ConcaveConvexOn C D K` — the finite, set-relative form: `K : U × X → ℝ` concave in its first
+  argument on `C` and convex in its second on `D`.
 * `saddleSwap K = fun (x, u) => -K (u, x)` — the involution exchanging the two variables and the
   roles of `cl₁` and `cl₂`, bundled as the order isomorphism `saddleSwapOrderIso` onto the order
   dual.
@@ -292,6 +294,39 @@ theorem swapReal_apply (K : U × X → ℝ) (q : X × U) : swapReal K q = -K (q.
   rw [← EReal.neg_bot, EReal.neg_lt_neg_iff]
 
 end Swap
+
+/-! ### Concave-convex functions on a rectangle -/
+
+section ConcaveConvexOn
+
+variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
+
+/-- `K` is **concave-convex on `C × D`**: concave in its first argument on `C` for each point of
+`D`, convex in its second on `D` for each point of `C`. The finite, set-relative form of
+`ConcaveConvexFn`, the hypothesis the continuity theory runs on, and that of the simple-extension
+theorems of `Kernel.lean` and `Existence.lean`. -/
+structure ConcaveConvexOn (C : Set U) (D : Set X) (K : U × X → ℝ) : Prop where
+  /-- `K (·, x)` is concave on `C` for every `x ∈ D`. -/
+  concave_fst : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x)
+  /-- `K (u, ·)` is convex on `D` for every `u ∈ C`. -/
+  convex_snd : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x)
+
+variable {C : Set U} {D : Set X} {K : U × X → ℝ}
+
+/-- The concave slice, as a family of *convex* functions: the form the convex lemmas consume. -/
+theorem ConcaveConvexOn.convexOn_neg_fst (hK : ConcaveConvexOn C D K) {x : X} (hx : x ∈ D) :
+    ConvexOn ℝ C fun u => -K (u, x) :=
+  (hK.concave_fst x hx).neg
+
+/-- Negating a concave-convex function and swapping its arguments gives a concave-convex function
+of the swapped pair: `swapReal K = fun (x, w) => -K (w, x)` is concave-convex on `D × C`. Every
+statement about the concave variable is the corresponding statement about the convex variable,
+read at `swapReal K`. -/
+theorem ConcaveConvexOn.swapReal (hK : ConcaveConvexOn C D K) :
+    ConcaveConvexOn D C (ConvexAnalysis.swapReal K) :=
+  ⟨fun w hw => (hK.convex_snd w hw).neg, fun y hy => (hK.concave_fst y hy).neg⟩
+
+end ConcaveConvexOn
 
 section SwapConvex
 

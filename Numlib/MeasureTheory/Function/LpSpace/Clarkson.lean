@@ -109,7 +109,6 @@ Theorem 4.10, inequality (9)). It is `Real.rpow_add_rpow_le_rpow_sq_add_sq` foll
 convexity of `t ↦ t ^ (p / 2)`. -/
 theorem clarkson_pointwise_of_two_le {p : ℝ} (hp : 2 ≤ p) (a b : ℝ) :
     |(a + b) / 2| ^ p + |(a - b) / 2| ^ p ≤ (|a| ^ p + |b| ^ p) / 2 := by
-  have hp0 : (0:ℝ) < p := by linarith
   have h1 : (1:ℝ) ≤ p / 2 := by linarith
   have hsq : |(a + b) / 2| ^ 2 + |(a - b) / 2| ^ 2 = (1 / 2) * a ^ 2 + (1 / 2) * b ^ 2 := by
     rw [sq_abs, sq_abs]; ring
@@ -146,7 +145,6 @@ theorem two_mul_rpow_add_rpow_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.HolderConju
     congr 1
     ring
   rw [hsplit, ← hpq']
-  have h2pos : (0:ℝ) < 2 ^ (p / q) := by positivity
   calc 2 * (2 ^ (p / q) * (1 / 2 * |x| ^ q + 1 / 2 * |y| ^ q) ^ (p / q))
       ≤ 2 * (2 ^ (p / q) * (1 / 2 * |x| ^ p + 1 / 2 * |y| ^ p)) := by gcongr
     _ = 2 ^ (p / q) * (|x| ^ p + |y| ^ p) := by ring
@@ -199,7 +197,6 @@ theorem monotoneOn_one_add_rpow_sub_sub_one_rpow {p : ℝ} (hp : 2 ≤ p) :
 theorem hasDerivAt_one_add_rpow_add_one_sub_rpow {p : ℝ} (hp : 2 ≤ p) {x : ℝ} (hx : x ∈ Ioo 0 1) :
     HasDerivAt (fun x : ℝ => (1 + x ^ (1 / p)) ^ p + (1 - x ^ (1 / p)) ^ p)
       ((1 + x ^ (-(1 / p))) ^ (p - 1) - (x ^ (-(1 / p)) - 1) ^ (p - 1)) x := by
-  have hp0 : (0:ℝ) < p := by linarith
   have hp1 : (1:ℝ) ≤ p := by linarith
   obtain ⟨hx0, hx1⟩ := hx
   set u : ℝ := x ^ (1 / p) with hu
@@ -235,7 +232,6 @@ theorem antitoneOn_deriv_one_add_rpow_add_one_sub_rpow {p : ℝ} (hp : 2 ≤ p) 
     AntitoneOn (fun x : ℝ => (1 + x ^ (-(1 / p))) ^ (p - 1) - (x ^ (-(1 / p)) - 1) ^ (p - 1))
       (Ioo 0 1) := by
   intro x hx y hy hxy
-  have hp0 : (0:ℝ) < p := by linarith
   have hneg : -(1 / p) ≤ 0 := by rw [neg_nonpos]; positivity
   have h1 : ∀ z ∈ Ioo (0:ℝ) 1, 1 ≤ z ^ (-(1 / p)) := fun z hz =>
     Real.one_le_rpow_of_pos_of_le_one_of_nonpos hz.1 hz.2.le hneg
@@ -254,7 +250,6 @@ theorem one_add_rpow_add_one_sub_rpow_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.Hol
   have hp0 : (0:ℝ) < p := by linarith
   have hq0 : (0:ℝ) < q := hpq.symm.pos
   have hpq' : p / q = p - 1 := hpq.div_conj_eq_sub_one
-  have hp1 : (0:ℝ) < p - 1 := by linarith
   rcases hr.1.eq_or_lt with rfl | hr0
   · simp [Real.zero_rpow hq0.ne']
     norm_num
@@ -316,7 +311,6 @@ with conjugate exponent `q` and `x ∈ (0, 1)`,
 theorem clarkson_one_var_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.HolderConjugate q) {x : ℝ}
     (hx : x ∈ Ioo 0 1) :
     (1 + x ^ (1 / p)) ^ p + (1 - x ^ (1 / p)) ^ p ≤ 2 * (1 + x ^ (q / p)) ^ (p / q) := by
-  have hp0 : (0:ℝ) < p := by linarith
   have hr : x ^ (1 / p) ∈ Icc (0:ℝ) 1 :=
     ⟨Real.rpow_nonneg hx.1.le _, (Real.rpow_lt_one hx.1.le hx.2 (by positivity)).le⟩
   have h := one_add_rpow_add_one_sub_rpow_le hp hpq hr
@@ -350,7 +344,6 @@ theorem abs_add_rpow_add_abs_sub_rpow_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.Hol
   -- the core inequality at `r = y / x`, multiplied by `x ^ p`
   have hr : y / x ∈ Icc (0:ℝ) 1 := ⟨by positivity, (div_le_one hx0).2 hxy⟩
   have h := one_add_rpow_add_one_sub_rpow_le hp hpq hr
-  have hxp : 0 < x ^ p := Real.rpow_pos_of_pos hx0 _
   have hxpq : x ^ p = (x ^ q) ^ (p / q) := by
     rw [← Real.rpow_mul hx0.le, mul_div_cancel₀ _ hq0.ne']
   calc (x + y) ^ p + (x - y) ^ p
@@ -543,7 +536,6 @@ theorem eLpNorm_add_rpow_add_eLpNorm_sub_rpow_le_of_le_two [p.HolderConjugate q]
   have hQ2 : (2:ℝ) ≤ Q := by
     rw [hPQ.conjugate_eq, le_div_iff₀ (by linarith)]
     linarith
-  have hQP : Q / P = Q - 1 := hPQ.symm.div_conj_eq_sub_one
   have hs0 : 0 < P / Q := by positivity
   have hs1 : P / Q ≤ 1 := by rw [hPQ.div_conj_eq_sub_one]; linarith
   have hQs : Q * (P / Q) = P := mul_div_cancel₀ _ hQ0.ne'
@@ -666,7 +658,6 @@ theorem uniformConvexSpace_of_one_lt_of_ne_top [Fact (1 ≤ p)] (hp : 1 < p) (hp
   have hε'0 : 0 < ε' := lt_min hε two_pos
   have hε'2 : ε' ≤ 2 := min_le_right _ _
   have hε'ε : ε' ≤ ε := min_le_left _ _
-  have hp0 : p ≠ 0 := (zero_lt_one.trans hp).ne'
   have hP1 : 1 < p.toReal := by
     rw [← ENNReal.toReal_one]
     exact (ENNReal.toReal_lt_toReal (by simp) hp').2 hp

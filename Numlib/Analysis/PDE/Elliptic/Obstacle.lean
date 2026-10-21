@@ -239,7 +239,7 @@ theorem IsObstacleSolution.dirichletForm_le_load_of_le {ψ : SobolevEuclidean (d
 `IsObstacleSolution.dirichletForm_le_load_of_le`. -/
 theorem IsObstacleSolution.dirichletForm_sub_le {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (hψ : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω ψ Φ = load Ω q Φ)
+    (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u)
     {θ : SobolevEuclidean (d + 1) 1 2 Ω} (hθ : θ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
@@ -327,7 +327,7 @@ theorem IsObstacleSolution.truncation_step
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (hψ : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω ψ Φ = load Ω q Φ)
+    (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u)
     {Φ : SobolevEuclidean (d + 1) 1 2 Ω} (hΦ : Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
@@ -396,7 +396,7 @@ open SobolevMultiIndex
 /-- `∫_Ω ∇u · ∇Φ = ∫_Ω ∇z · ∇Φ + ∫_Ω q Φ` for `z = u − ψ`, `−Δψ = q` weakly and `Φ ∈ H¹₀(Ω)`. -/
 theorem dirichletForm_eq_dirichletForm_sub_add_load {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (hψ : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω ψ Φ = load Ω q Φ)
+    (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
     {u z : SobolevEuclidean (d + 1) 1 2 Ω} (hz : z = u - ψ)
     {Φ : SobolevEuclidean (d + 1) 1 2 Ω} (hΦ : Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω) :
     dirichletForm Ω u Φ = dirichletForm Ω z Φ + load Ω q Φ := by
@@ -440,7 +440,7 @@ theorem IsObstacleSolution.dirichletForm_sub_le_load_sup_zero
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (hψ : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω ψ Φ = load Ω q Φ)
+    (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u)
     {Φ : SobolevEuclidean (d + 1) 1 2 Ω} (hΦ : Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
@@ -533,7 +533,7 @@ theorem IsObstacleSolution.dirichletForm_le_load_sup
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (hψ : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω ψ Φ = load Ω q Φ)
+    (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u)
     {Φ : SobolevEuclidean (d + 1) 1 2 Ω} (hΦ : Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
@@ -584,7 +584,7 @@ theorem IsObstacleSolution.abs_dirichletForm_sub_load_le_of_nonneg
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (hψ : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω ψ Φ = load Ω q Φ)
+    (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u)
     {Φ : SobolevEuclidean (d + 1) 1 2 Ω} (hΦ : Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
@@ -605,7 +605,7 @@ theorem IsObstacleSolution.abs_dirichletForm_sub_load_le
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (hψ : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω ψ Φ = load Ω q Φ)
+    (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u)
     {Φ : SobolevEuclidean (d + 1) 1 2 Ω} (hΦ : Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω) :
@@ -638,7 +638,7 @@ theorem IsObstacleSolution.exists_dirichletForm_eq_load
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (hψ : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω ψ Φ = load Ω q Φ)
+    (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u) :
     ∃ h : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
@@ -858,7 +858,6 @@ theorem regularity_obstacle_sobolev_two {R : ℝ} (hR : 0 ≤ R)
       filter_upwards [hwψ] with x hx
       rw [hx]
       exact le_max_left _ _)
-  have hK0 : (0 : ℝ) ≤ 1 + (2 * R) ^ 2 := by positivity
   have hu2 : ‖weakDeriv u 0‖ ≤ 2 * (1 + (2 * R) ^ 2) * (‖Ψ‖ + ‖f‖) :=
     (norm_weakDeriv_le u 0).trans
       (hu1.trans (mul_le_mul_of_nonneg_left (by linarith) (by positivity)))
@@ -868,8 +867,7 @@ theorem regularity_obstacle_sobolev_two {R : ℝ} (hR : 0 ≤ R)
   calc C₀ * (‖f‖ + 2 * ‖f ⊔ -sobolevLaplacianL Ω Ψ - f‖ + ‖weakDeriv u 0‖)
       ≤ C₀ * ((3 + 2 * ((d : ℝ) + 1) + 2 * (1 + (2 * R) ^ 2)) * (‖f‖ + ‖Ψ‖)) :=
         mul_le_mul_of_nonneg_left (by
-          linarith [mul_nonneg hd1 hf0, mul_nonneg hK0 hf0, mul_nonneg hK0 hΨ0,
-            mul_nonneg hd1 hΨ0]) hC₀
+          linarith [mul_nonneg hd1 hf0, mul_nonneg hd1 hΨ0]) hC₀
     _ = C₀ * (3 + 2 * ((d : ℝ) + 1) + 2 * (1 + (2 * R) ^ 2)) * (‖f‖ + ‖Ψ‖) := by ring
 
 end APriori

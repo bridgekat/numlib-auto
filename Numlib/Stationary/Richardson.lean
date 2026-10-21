@@ -219,7 +219,6 @@ theorem complexSpectralRadius_one_sub_smul_optimal_eq_condNumber {M : Matrix n n
   rw [complexSpectralRadius_one_sub_smul_optimal_eq (hM.spectrum_complexify_subset hsub) hmin hmax
     hpos, condNumber_eq_div_of_spectrum hM hsub hmin hmax hpos]
   congr 1
-  have hle : lmin ≤ lmax := (hsub hmin).2
   field_simp
 
 /-- **(4.29) of [quarteroni2000numerical], the optimal parameter**: `2/(lmin + lmax) = 2 ‖M⁻¹‖₂ /
@@ -231,7 +230,6 @@ theorem two_div_add_eq_mul_norm_inv_div_condNumber {M : Matrix n n ℝ} (hM : M.
     2 / (lmin + lmax) = 2 * ‖M⁻¹‖ / (κ M + 1) := by
   rw [condNumber_eq_div_of_spectrum hM hsub hmin hmax hpos,
     l2_opNorm_inv_eq_of_spectrum hM hsub hmin hpos]
-  have hle : lmin ≤ lmax := (hsub hmin).2
   field_simp
   ring
 

@@ -44,6 +44,9 @@ id = "Submodule.inner_starProjection_right"
 id = "Submodule.mem_orthogonal_span"
 
 [[node]]
+id = "exists_isGalerkin_of_injective_compression"
+
+[[node]]
 id = "existsUnique_isGalerkin_of_isCoercive"
 
 [[node]]

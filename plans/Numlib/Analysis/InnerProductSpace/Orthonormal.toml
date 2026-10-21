@@ -1,2 +1,5 @@
 [[node]]  # moved by a2
 id = "Orthonormal.norm_sum_smul_sq"
+
+[[node]]
+id = "Orthonormal.norm_sum_smul_eq_norm_toLp"

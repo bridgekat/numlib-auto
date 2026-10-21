@@ -115,55 +115,6 @@ theorem hasDerivAt_mul_mul_conj (g : 𝓢(ℝ, ℂ)) (t : ℝ) :
   push_cast
   ring
 
-/-- **Integration by parts on the whole line.** For a Schwartz function `g`,
-
-`∫ (‖g t‖² + 2t Re(g'(t) conj(g(t)))) dt = 0`,
-
-because the integrand is the derivative of `t ↦ t g(t) conj(g(t))`, which is integrable and tends
-to `0` at both ends of the line. -/
-theorem integral_norm_sq_add_two_mul_re (g : 𝓢(ℝ, ℂ)) :
-    ∫ t : ℝ, (‖g t‖ ^ 2 + 2 * t * (deriv (g : ℝ → ℂ) t * conj (g t)).re) = 0 := by
-  set F : ℝ → ℂ := fun s : ℝ => (s : ℂ) * (g s * conj (g s)) with hF
-  set u : ℝ → ℝ := fun t => ‖g t‖ ^ 2 + 2 * t * (deriv (g : ℝ → ℂ) t * conj (g t)).re with hu
-  have hderiv : ∀ t, HasDerivAt F ((u t : ℂ)) t := hasDerivAt_mul_mul_conj g
-  have hbound : Integrable u := by
-    refine Integrable.add (integrable_norm_sq g) ?_
-    obtain ⟨C, hC0, hC⟩ := (derivCLM ℝ (F := ℂ) g).decay 0 0
-    simp only [norm_iteratedFDeriv_zero, pow_zero, one_mul, derivCLM_apply] at hC
-    refine Integrable.mono' ((g.integrable_pow_mul volume 1).const_mul (2 * C))
-      (by fun_prop) ?_
-    filter_upwards with t
-    have hre : |(deriv (g : ℝ → ℂ) t * conj (g t)).re| ≤ ‖deriv (g : ℝ → ℂ) t‖ * ‖g t‖ := by
-      calc |(deriv (g : ℝ → ℂ) t * conj (g t)).re|
-          ≤ ‖deriv (g : ℝ → ℂ) t * conj (g t)‖ := Complex.abs_re_le_norm _
-        _ = ‖deriv (g : ℝ → ℂ) t‖ * ‖g t‖ := by rw [norm_mul, RCLike.norm_conj]
-    calc ‖2 * t * (deriv (g : ℝ → ℂ) t * conj (g t)).re‖
-        = 2 * ‖t‖ * |(deriv (g : ℝ → ℂ) t * conj (g t)).re| := by
-          rw [Real.norm_eq_abs, abs_mul, abs_mul]
-          norm_num
-      _ ≤ 2 * ‖t‖ * (‖deriv (g : ℝ → ℂ) t‖ * ‖g t‖) := by gcongr
-      _ ≤ 2 * ‖t‖ * (C * ‖g t‖) := by gcongr; exact hC t
-      _ = 2 * C * (‖t‖ ^ 1 * ‖g t‖) := by rw [pow_one]; ring
-  have hFint : Integrable fun t : ℝ => ((u t : ℂ)) := hbound.ofReal
-  have htop : Tendsto F atTop (𝓝 0) :=
-    (tendsto_mul_mul_conj g).mono_left (by rw [cocompact_eq_atBot_atTop]; exact le_sup_right)
-  have hbot : Tendsto F atBot (𝓝 0) :=
-    (tendsto_mul_mul_conj g).mono_left (by rw [cocompact_eq_atBot_atTop]; exact le_sup_left)
-  have h1 : ∫ t in Ioi (0 : ℝ), ((u t : ℂ)) = 0 - F 0 :=
-    integral_Ioi_of_hasDerivAt_of_tendsto' (fun x _ => hderiv x) hFint.integrableOn htop
-  have h2 : ∫ t in Iic (0 : ℝ), ((u t : ℂ)) = F 0 - 0 :=
-    integral_Iic_of_hasDerivAt_of_tendsto' (fun x _ => hderiv x) hFint.integrableOn hbot
-  have h3 : ∫ t : ℝ, ((u t : ℂ)) = 0 := by
-    rw [← intervalIntegral.integral_Iic_add_Ioi (b := (0 : ℝ)) hFint.integrableOn
-      hFint.integrableOn, h1, h2]
-    ring
-  rw [integral_complex_ofReal] at h3
-  exact_mod_cast h3
-
-/-- The Schwartz map `derivCLM ℝ g` is the derivative of `g` as a function. -/
-theorem coe_derivCLM (g : 𝓢(ℝ, ℂ)) : ((derivCLM ℝ (F := ℂ) g : 𝓢(ℝ, ℂ)) : ℝ → ℂ)
-    = deriv (g : ℝ → ℂ) := funext fun t => derivCLM_apply ℝ g t
-
 /-- `t ↦ 2t Re(g'(t) conj(g(t)))` is integrable: `‖g'‖` is bounded and `‖t‖ ‖g t‖` is
 integrable. -/
 theorem integrable_two_mul_re (g : 𝓢(ℝ, ℂ)) :
@@ -183,6 +134,38 @@ theorem integrable_two_mul_re (g : 𝓢(ℝ, ℂ)) :
     _ ≤ 2 * ‖t‖ * (‖deriv (g : ℝ → ℂ) t‖ * ‖g t‖) := by gcongr
     _ ≤ 2 * ‖t‖ * (C * ‖g t‖) := by gcongr; exact hC t
     _ = 2 * C * (‖t‖ ^ 1 * ‖g t‖) := by rw [pow_one]; ring
+
+/-- **Integration by parts on the whole line.** For a Schwartz function `g`,
+
+`∫ (‖g t‖² + 2t Re(g'(t) conj(g(t)))) dt = 0`,
+
+because the integrand is the derivative of `t ↦ t g(t) conj(g(t))`, which is integrable and tends
+to `0` at both ends of the line. -/
+theorem integral_norm_sq_add_two_mul_re (g : 𝓢(ℝ, ℂ)) :
+    ∫ t : ℝ, (‖g t‖ ^ 2 + 2 * t * (deriv (g : ℝ → ℂ) t * conj (g t)).re) = 0 := by
+  set F : ℝ → ℂ := fun s : ℝ => (s : ℂ) * (g s * conj (g s)) with hF
+  set u : ℝ → ℝ := fun t => ‖g t‖ ^ 2 + 2 * t * (deriv (g : ℝ → ℂ) t * conj (g t)).re with hu
+  have hderiv : ∀ t, HasDerivAt F ((u t : ℂ)) t := hasDerivAt_mul_mul_conj g
+  have hbound : Integrable u := (integrable_norm_sq g).add (integrable_two_mul_re g)
+  have hFint : Integrable fun t : ℝ => ((u t : ℂ)) := hbound.ofReal
+  have htop : Tendsto F atTop (𝓝 0) :=
+    (tendsto_mul_mul_conj g).mono_left (by rw [cocompact_eq_atBot_atTop]; exact le_sup_right)
+  have hbot : Tendsto F atBot (𝓝 0) :=
+    (tendsto_mul_mul_conj g).mono_left (by rw [cocompact_eq_atBot_atTop]; exact le_sup_left)
+  have h1 : ∫ t in Ioi (0 : ℝ), ((u t : ℂ)) = 0 - F 0 :=
+    integral_Ioi_of_hasDerivAt_of_tendsto' (fun x _ => hderiv x) hFint.integrableOn htop
+  have h2 : ∫ t in Iic (0 : ℝ), ((u t : ℂ)) = F 0 - 0 :=
+    integral_Iic_of_hasDerivAt_of_tendsto' (fun x _ => hderiv x) hFint.integrableOn hbot
+  have h3 : ∫ t : ℝ, ((u t : ℂ)) = 0 := by
+    rw [← intervalIntegral.integral_Iic_add_Ioi (b := (0 : ℝ)) hFint.integrableOn
+      hFint.integrableOn, h1, h2]
+    ring
+  rw [integral_complex_ofReal] at h3
+  exact_mod_cast h3
+
+/-- The Schwartz map `derivCLM ℝ g` is the derivative of `g` as a function. -/
+theorem coe_derivCLM (g : 𝓢(ℝ, ℂ)) : ((derivCLM ℝ (F := ℂ) g : 𝓢(ℝ, ℂ)) : ℝ → ℂ)
+    = deriv (g : ℝ → ℂ) := funext fun t => derivCLM_apply ℝ g t
 
 /-- `t ↦ |t| ‖g t‖ ‖g'(t)‖` is integrable. -/
 theorem integrable_abs_mul_norm_mul_norm_deriv (g : 𝓢(ℝ, ℂ)) :

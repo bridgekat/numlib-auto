@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.LinearAlgebra.Charpoly.Basic
 import Mathlib.LinearAlgebra.Eigenspace.Charpoly
+import Numlib.LinearAlgebra.Matrix.Companion
 import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
@@ -120,49 +121,48 @@ theorem wielandtDeflate_wielandtDeflate (A : E →ₗ[𝕜] E) (u v u' v' : E) (
       = A x - (σ * inner 𝕜 v x) • u - (σ' * inner 𝕜 v' x) • u' := by
   simp
 
-section Spectrum
+section Line
 
-variable [FiniteDimensional 𝕜 E]
+variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
 
-omit [FiniteDimensional 𝕜 E] in
 /-- The scalar shift `t - B` maps the line through an eigenvector of `B` into itself. -/
-private theorem span_le_comap_of_apply_eq_smul {B : E →ₗ[𝕜] E} {u : E} {m : 𝕜}
-    (hu : B u = m • u) (t : 𝕜) :
-    (𝕜 ∙ u) ≤ (𝕜 ∙ u).comap (algebraMap 𝕜 (E →ₗ[𝕜] E) t - B) := by
+private theorem span_le_comap_of_apply_eq_smul {B : V →ₗ[K] V} {u : V} {m : K}
+    (hu : B u = m • u) (t : K) :
+    (K ∙ u) ≤ (K ∙ u).comap (algebraMap K (V →ₗ[K] V) t - B) := by
   rintro x hx
   obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.1 hx
   refine Submodule.mem_span_singleton.2 ⟨c * t - c * m, ?_⟩
   simp only [sub_apply, Algebra.algebraMap_eq_smul_one, smul_apply, map_smul, hu, sub_smul]
   module
 
-omit [FiniteDimensional 𝕜 E] in
 /-- On the line through an eigenvector, `t - B` is multiplication by `t - m`, so its determinant
 there is `t - m`. -/
-private theorem det_restrict_span {B : E →ₗ[𝕜] E} {u : E} {m : 𝕜} (hu : B u = m • u)
-    (hu0 : u ≠ 0) (t : 𝕜)
-    (h : ∀ x ∈ (𝕜 ∙ u), (algebraMap 𝕜 (E →ₗ[𝕜] E) t - B) x ∈ (𝕜 ∙ u)) :
-    ((algebraMap 𝕜 (E →ₗ[𝕜] E) t - B).restrict h).det = t - m := by
-  have hrestrict : (algebraMap 𝕜 (E →ₗ[𝕜] E) t - B).restrict h = (t - m) • LinearMap.id := by
+private theorem det_restrict_span {B : V →ₗ[K] V} {u : V} {m : K} (hu : B u = m • u)
+    (hu0 : u ≠ 0) (t : K)
+    (h : ∀ x ∈ (K ∙ u), (algebraMap K (V →ₗ[K] V) t - B) x ∈ (K ∙ u)) :
+    ((algebraMap K (V →ₗ[K] V) t - B).restrict h).det = t - m := by
+  have hrestrict : (algebraMap K (V →ₗ[K] V) t - B).restrict h = (t - m) • LinearMap.id := by
     ext x
     obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.1 x.2
-    have hx : (x : E) = c • u := hc.symm
+    have hx : (x : V) = c • u := hc.symm
     simp only [coe_restrict_apply, sub_apply, Algebra.algebraMap_eq_smul_one, smul_apply, hx,
       map_smul, hu, id_coe, _root_.id, Submodule.coe_smul]
     module
   rw [hrestrict, LinearMap.det_smul, LinearMap.det_id, mul_one,
     finrank_span_singleton hu0, pow_one]
 
-/-- Two operators differing by an operator with range in the line `𝕜 ∙ u`, and having `u` as an
+variable [FiniteDimensional K V] in
+/-- Two operators differing by an operator with range in the line `K ∙ u`, and having `u` as an
 eigenvector with respective eigenvalues `l` and `m`, have characteristic polynomials related by
 `charpoly A * (X - C m) = charpoly B * (X - C l)`. This is the whole of Wielandt's theorem. -/
-private theorem eval_charpoly_mul_of_sub_mem_span {A B : E →ₗ[𝕜] E} {u : E} {l m : 𝕜}
+theorem eval_charpoly_mul_of_sub_mem_span {A B : V →ₗ[K] V} {u : V} {l m : K}
     (hA : A u = l • u) (hB : B u = m • u) (hu0 : u ≠ 0)
-    (hAB : ∀ x, A x - B x ∈ 𝕜 ∙ u) (t : 𝕜) :
+    (hAB : ∀ x, A x - B x ∈ K ∙ u) (t : K) :
     A.charpoly.eval t * (t - m) = B.charpoly.eval t * (t - l) := by
   have hqA := span_le_comap_of_apply_eq_smul hA t
   have hqB := span_le_comap_of_apply_eq_smul hB t
-  have hquot : (𝕜 ∙ u).mapQ (𝕜 ∙ u) (algebraMap 𝕜 (E →ₗ[𝕜] E) t - A) hqA
-      = (𝕜 ∙ u).mapQ (𝕜 ∙ u) (algebraMap 𝕜 (E →ₗ[𝕜] E) t - B) hqB := by
+  have hquot : (K ∙ u).mapQ (K ∙ u) (algebraMap K (V →ₗ[K] V) t - A) hqA
+      = (K ∙ u).mapQ (K ∙ u) (algebraMap K (V →ₗ[K] V) t - B) hqB := by
     refine Submodule.linearMap_qext _ (LinearMap.ext fun x => ?_)
     simp only [comp_apply, Submodule.mkQ_apply, Submodule.mapQ_apply]
     rw [Submodule.Quotient.eq]
@@ -171,6 +171,12 @@ private theorem eval_charpoly_mul_of_sub_mem_span {A B : E →ₗ[𝕜] E} {u : 
     LinearMap.det_eq_det_mul_det _ _ hqA, LinearMap.det_eq_det_mul_det _ _ hqB,
     det_restrict_span hA hu0, det_restrict_span hB hu0, hquot]
   ring
+
+end Line
+
+section Spectrum
+
+variable [FiniteDimensional 𝕜 E]
 
 /-- **Wielandt's theorem** ([saad2011numerical], Thm 4.2), with multiplicities: deflating the
 eigenpair `(l, u)` with the shift `σ` replaces one copy of `l` in the characteristic polynomial by
@@ -318,13 +324,6 @@ section Charpoly
 
 variable {N : ℕ}
 
-/-- The characteristic matrix of a principal submatrix along `Fin.succ` is the principal submatrix
-of the characteristic matrix. -/
-private theorem charmatrix_submatrix_succ (M : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) :
-    (charmatrix M).submatrix Fin.succ Fin.succ = charmatrix (M.submatrix Fin.succ Fin.succ) := by
-  ext i j
-  simp [charmatrix_apply, diagonal_apply, Fin.succ_inj]
-
 /-- The characteristic polynomial of a matrix whose first column is `l e₀` factors as `(X - l)`
 times that of the trailing principal submatrix: Laplace expansion along the first column. -/
 theorem charpoly_eq_mul_charpoly_submatrix_succ_of_col_zero
@@ -333,7 +332,8 @@ theorem charpoly_eq_mul_charpoly_submatrix_succ_of_col_zero
   have hcol : ∀ i, M i 0 = (Pi.single (0 : Fin (N + 1)) l : Fin (N + 1) → 𝕜) i := fun i =>
     congrFun hM i
   rw [charpoly, det_succ_column_zero, Fin.sum_univ_succ, Finset.sum_eq_zero, add_zero]
-  · rw [charmatrix_apply_eq, hcol, Pi.single_eq_same, Fin.succAbove_zero, charmatrix_submatrix_succ]
+  · rw [charmatrix_apply_eq, hcol, Pi.single_eq_same, Fin.succAbove_zero,
+      ← charmatrix_submatrix _ (Fin.succ_injective _)]
     simp [charpoly]
   · intro i _
     rw [charmatrix_apply, hcol, Pi.single_eq_of_ne (Fin.succ_ne_zero i), map_zero, sub_zero,

@@ -497,7 +497,6 @@ private theorem sin_arctan_div {a b : ℝ} (hb : 0 < b) :
   have h : Real.sqrt (1 + (a / b) ^ 2) = Real.sqrt (a ^ 2 + b ^ 2) / b := by
     rw [show 1 + (a / b) ^ 2 = (a ^ 2 + b ^ 2) / b ^ 2 by field_simp; ring,
       Real.sqrt_div' _ (sq_nonneg b), Real.sqrt_sq hb.le]
-  have hs : 0 < Real.sqrt (a ^ 2 + b ^ 2) := Real.sqrt_pos.2 (by positivity)
   rw [Real.sin_arctan, h]
   field_simp
 
@@ -507,7 +506,6 @@ private theorem cos_arctan_div {a b : ℝ} (hb : 0 < b) :
   have h : Real.sqrt (1 + (a / b) ^ 2) = Real.sqrt (a ^ 2 + b ^ 2) / b := by
     rw [show 1 + (a / b) ^ 2 = (a ^ 2 + b ^ 2) / b ^ 2 by field_simp; ring,
       Real.sqrt_div' _ (sq_nonneg b), Real.sqrt_sq hb.le]
-  have hs : 0 < Real.sqrt (a ^ 2 + b ^ 2) := Real.sqrt_pos.2 (by positivity)
   rw [Real.cos_arctan, h]
   field_simp
 
@@ -534,7 +532,6 @@ private theorem abs_arctan_div_sub_le {a b a' b' c ε r : ℝ} (hb : 0 < b) (hb'
   have hU0 : 0 < U := Real.sqrt_pos.2 (by positivity)
   have hU'0 : 0 < U' := Real.sqrt_pos.2 (by positivity)
   have hU2 : U ^ 2 = a ^ 2 + b ^ 2 := Real.sq_sqrt (by positivity)
-  have hU'2 : U' ^ 2 = a' ^ 2 + b' ^ 2 := Real.sq_sqrt (by positivity)
   have hD2 : D ^ 2 = (a' - a) ^ 2 + (b' - b) ^ 2 := Real.sq_sqrt (by positivity)
   have hD0 : 0 ≤ D := Real.sqrt_nonneg _
   have hDU : D < U := hd.trans_lt ((mul_lt_mul_of_pos_right hεc hr).trans_le hu)
@@ -550,7 +547,7 @@ private theorem abs_arctan_div_sub_le {a b a' b' c ε r : ℝ} (hb : 0 < b) (hb'
     field_simp
     ring
   -- `cos θ > 0`
-  have hdot : 0 < a' * a + b' * b := by nlinarith [hD2, hU2, hU'2, mul_self_lt_mul_self hD0 hDU]
+  have hdot : 0 < a' * a + b' * b := by nlinarith [hD2, hU2, mul_self_lt_mul_self hD0 hDU]
   have hcos0 : 0 < Real.cos θ := by rw [hcos]; positivity
   have hθlt : |θ| < Real.pi / 2 := by
     have h1 := Real.neg_pi_div_two_lt_arctan (a' / b')
@@ -728,15 +725,6 @@ theorem isMinOn_pencil_residual {A B : Matrix n n ℝ} (hB : B.PosDef)
 
 /-! ### Simultaneous diagonalization by congruence -/
 
-omit [Fintype n] in
-/-- A Hermitian diagonal matrix has a real diagonal. -/
-private theorem exists_real_of_diagonal_isHermitian {d : n → 𝕜}
-    (h : (diagonal d).IsHermitian) : ∃ a : n → ℝ, d = fun i => (a i : 𝕜) := by
-  refine ⟨fun i => RCLike.re (d i), funext fun i => ?_⟩
-  have := congrFun (congrFun h i) i
-  simp only [conjTranspose_apply, diagonal_apply_eq] at this
-  exact (RCLike.conj_eq_iff_re.1 this).symm
-
 /-- The key step of [golub2013matrix] Theorem 8.7.1: if `C` is positive semidefinite, `D` is
 Hermitian and `ker C ≤ ker D`, then one invertible congruence diagonalizes both. `C = V diag(d) Vᴴ`;
 `W = V diag(w)` with `w_i = d_i^{-1/2}` (or `1` where `d_i = 0`) makes `Wᴴ C W = P` a diagonal
@@ -853,7 +841,9 @@ theorem exists_isUnit_conj_diagonal_of_posSemidef_combination {A B : Matrix n n 
     intro X M d hM h
     have hh : (diagonal d).IsHermitian := by
       rw [← h, star_eq_conjTranspose]; exact isHermitian_conjTranspose_mul_mul X hM
-    obtain ⟨a, rfl⟩ := exists_real_of_diagonal_isHermitian hh
+    obtain ⟨a, rfl⟩ : ∃ a : n → ℝ, d = fun i => (a i : 𝕜) :=
+      ⟨fun i => RCLike.re (d i), funext fun i =>
+        (RCLike.conj_eq_iff_re.1 (isHermitian_diagonal_iff.1 hh i).star_eq).symm⟩
     exact ⟨a, h⟩
   rcases eq_or_ne μ 0 with rfl | hμ0
   · have hCB : C = B := by simp [hCdef]

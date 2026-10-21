@@ -257,7 +257,8 @@ Aᴴ)`, and it is what turns `α_j = (φ_j(A) r_0, φ_j(Aᴴ) r*_0)/(A π_j(A) r
 theorem inner_aeval_conjTranspose_aeval (p q : 𝕜[X]) (v w : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 (aeval (op Aᴴ) (q.map (starRingEnd 𝕜)) w) (aeval (op A) p v)
       = inner 𝕜 w (aeval (op A) (q * p) v) := by
-  rw [BiLanczos.inner_aeval_map_eq (inner_op_conjTranspose A) q, map_mul, Module.End.mul_apply]
+  rw [BiLanczos.inner_aeval_map_eq (LinearMap.isAdjointPair_inner_iff'.2 (inner_op_conjTranspose A))
+    q, map_mul, Module.End.mul_apply]
 
 /-- **(7.40)–(7.45)**: Algorithm 7.6 computes the *squared* BCG polynomials.  Its vectors are
 `r_j = φ_j²(A) r_0`, `p_j = π_j²(A) r_0`, `u_j = φ_j(A) π_j(A) r_0` and `q_j = φ_{j+1}(A) π_j(A)
@@ -277,7 +278,7 @@ theorem cgs_residual_eq (j : ℕ) :
         cgsAlpha A b x₀ rs₀ j = bcgAlpha A b x₀ rs₀ j ∧
         cgsBeta A b x₀ rs₀ j = bcgBeta A b x₀ rs₀ j := by
   rw [cgsQ_eq, cgsAlpha_eq, cgsBeta_eq, cgs_eq]
-  exact CGS.residual_eq_aeval_sq (inner_op_conjTranspose A) j
+  exact CGS.residual_eq_aeval_sq (LinearMap.isAdjointPair_inner_iff'.2 (inner_op_conjTranspose A)) j
 
 end CGS
 
@@ -1292,7 +1293,8 @@ private theorem rotated_of_col_lt {j : ℕ} : ∀ M, j + 1 ≤ M → ∀ i,
     intro hM i
     rcases Nat.lt_or_ge j M with hjM | hjM
     · rw [Krylov.rotated_succ_eq_of_lt _
-        (fun i j hij => tfqmrH_eq_zero_of_succ_lt A b x₀ rs₀ hij) M j hjM i]
+        (Matrix.isUpperHessenberg_iff_nat.2 fun i j hij => tfqmrH_eq_zero_of_succ_lt A b x₀ rs₀ hij)
+        M j hjM i]
       exact ih (by omega) i
     · have hMj : M = j := by omega
       subst hMj
@@ -1304,8 +1306,8 @@ private theorem sum_R_smul_dqgmresP {m : ℕ} (h : TFQMRNoBreakdown A b x₀ rs�
     ∑ i : Fin m, Chapter06.R (tfqmrH A b x₀ rs₀) m i j
         • Chapter06.dqgmresP (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀) 1 (i : ℕ)
       = tfqmrU A b x₀ rs₀ (j : ℕ) := by
-  have hhess : ∀ i j : ℕ, j + 1 < i → tfqmrH A b x₀ rs₀ i j = 0 :=
-    fun i j hij => tfqmrH_eq_zero_of_succ_lt A b x₀ rs₀ hij
+  have hhess : Matrix.IsUpperHessenberg (n := ℕ) (tfqmrH A b x₀ rs₀) :=
+    Matrix.isUpperHessenberg_iff_nat.2 fun i j hij => tfqmrH_eq_zero_of_succ_lt A b x₀ rs₀ hij
   have hlow : ∀ i j : ℕ, i < j → tfqmrH A b x₀ rs₀ i j = 0 :=
     fun i j hij => tfqmrH_eq_zero_of_lt A b x₀ rs₀ hij
   have hjm : (j : ℕ) < m := j.isLt

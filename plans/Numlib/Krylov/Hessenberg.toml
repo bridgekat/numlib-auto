@@ -8,6 +8,9 @@ id = "Krylov.HessenbergRelation"
 id = "Krylov.HessenbergRelation₂"
 
 [[node]]
+id = "Krylov.HessenbergRelation₂.isUpperHessenberg"
+
+[[node]]
 id = "Krylov.HessenbergRelation₂.apply_sum"
 
 [[node]]

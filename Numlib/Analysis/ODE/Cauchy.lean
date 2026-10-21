@@ -216,8 +216,6 @@ theorem isLiapunovStable_of_lipschitz (hT : 0 ≤ T) {L : ℝ≥0}
   have h1 : ‖δ₀‖ ≤ max ‖δ₀‖ ‖δ s‖ := le_max_left _ _
   have h2 : ∀ t ∈ Icc t₀ (t₀ + T), ‖δ t‖ ≤ max ‖δ₀‖ ‖δ s‖ := fun t ht =>
     (hmax ht : ‖δ t‖ ≤ ‖δ s‖).trans (le_max_right _ _)
-  have hε'0 : 0 ≤ max ‖δ₀‖ ‖δ s‖ := (norm_nonneg _).trans h1
-  have hs0 : 0 ≤ t - t₀ := sub_nonneg.2 ht.1
   have hsT : t - t₀ ≤ T := by linarith [ht.2]
   calc ‖y t - z t‖ ≤ (1 + (t - t₀)) * max ‖δ₀‖ ‖δ s‖ * Real.exp (L * (t - t₀)) :=
         norm_sub_le_of_lipschitz hf h1 h2 hy hz ht
@@ -331,7 +329,6 @@ theorem dist_iterate_picardMap_le (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
     (hlip : ∀ t ∈ Icc a b, LipschitzWith K (f t)) (α β : C(Icc a b, E)) (n : ℕ) :
     dist ((picardMap hab ht₀ hf y₀)^[n] α) ((picardMap hab ht₀ hf y₀)^[n] β) ≤
       (K * (b - a)) ^ n / n.factorial * dist α β := by
-  have hba : 0 ≤ b - a := sub_nonneg.2 hab
   rw [ContinuousMap.dist_le (by positivity)]
   intro t
   refine (dist_iterate_picardMap_apply_le hab ht₀ hf y₀ hlip α β n t).trans ?_
@@ -348,7 +345,6 @@ theorem exists_contractingWith_iterate_picardMap (hab : a ≤ b) (ht₀ : t₀ �
     ∃ (n : ℕ) (C : ℝ≥0), ContractingWith C (picardMap hab ht₀ hf y₀)^[n] := by
   obtain ⟨n, hn⟩ := ((FloorSemiring.tendsto_pow_div_factorial_atTop ((K : ℝ) * (b - a))).eventually
     (gt_mem_nhds zero_lt_one)).exists
-  have hba : 0 ≤ b - a := sub_nonneg.2 hab
   have h0 : (0 : ℝ) ≤ ((K : ℝ) * (b - a)) ^ n / n.factorial := by positivity
   exact ⟨n, ⟨_, h0⟩, hn, LipschitzWith.of_dist_le_mul fun α β =>
     dist_iterate_picardMap_le hab ht₀ hf y₀ hlip α β n⟩

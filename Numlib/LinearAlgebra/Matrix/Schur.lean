@@ -14,6 +14,7 @@ import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.LinearAlgebra.Matrix.Rank
+import Numlib.Data.Fin.Sum
 import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.Similar
 
@@ -321,21 +322,6 @@ theorem schurEigenvector_ne_zero (T : Matrix (Fin N) (Fin N) K) (k : Fin N) :
     schurEigenvector T k ≠ 0 := fun h => by
   simpa using congrFun h k
 
-/-- A sum over the indices below `k` is a sum over `Fin k`. -/
-private theorem sum_filter_lt_eq_sum_castLE {k : ℕ} (hk : k ≤ N) (g : Fin N → K) :
-    ∑ j ∈ Finset.univ.filter (fun j : Fin N => (j : ℕ) < k), g j
-      = ∑ j : Fin k, g (Fin.castLE hk j) := by
-  rw [show (∑ j : Fin k, g (Fin.castLE hk j)) = ∑ j ∈ Finset.univ.map (Fin.castLEEmb hk), g j from
-    (Finset.sum_map Finset.univ (Fin.castLEEmb hk) g).symm]
-  congr 1
-  ext j
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_map, Fin.castLEEmb_apply]
-  constructor
-  · intro hj
-    exact ⟨⟨j, hj⟩, Fin.ext rfl⟩
-  · rintro ⟨i, rfl⟩
-    exact i.isLt
-
 /-- The leading block of an upper triangular matrix, shifted by a scalar, is upper triangular. -/
 private theorem isUpperTriangular_submatrix_castLE_sub {T : Matrix (Fin N) (Fin N) K}
     (hT : T.IsUpperTriangular) {k : ℕ} (hk : k ≤ N) (c : K) :
@@ -395,7 +381,7 @@ theorem mulVec_schurEigenvector {T : Matrix (Fin N) (Fin N) K}
   -- the indices above `k`: the leading block
   have hhead : ∑ j ∈ Finset.univ.filter (fun j : Fin N => (j : ℕ) < k),
       T i j * schurEigenvector T k j = ∑ j : Fin k, T i (Fin.castLE hle j) * y₁ j := by
-    rw [sum_filter_lt_eq_sum_castLE hle]
+    rw [Finset.sum_filter, ← Fin.sum_castLE_eq_sum_ite hle]
     exact Finset.sum_congr rfl fun j _ => by rw [hy _ (by simp)]; rfl
   rw [htail, hhead]
   rcases lt_trichotomy i k with hik | rfl | hik

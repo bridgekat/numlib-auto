@@ -1,5 +1,6 @@
 import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Sobolev.Periodic
+import Numlib.Topology.Algebra.InfiniteSum.Group
 
 /-!
 # Aliasing: the error of the discrete Fourier coefficients
@@ -109,7 +110,6 @@ theorem le_two_mul_abs_of_not_mem_window {N : ℕ} {k : ℤ} (hk : k ∉ window 
 theorem mul_abs_le_two_mul_abs_add_mul {N : ℕ} {k j : ℤ} (hk : k ∈ window N) (hj : j ≠ 0) :
     (N : ℤ) * |j| ≤ 2 * |k + j * N| := by
   have h1 := two_mul_abs_le_of_mem_window hk
-  have hN : (0 : ℤ) ≤ N := Int.natCast_nonneg N
   have h2 := le_abs_self (k + j * N)
   have h3 := neg_le_abs (k + j * N)
   have h4 := le_abs_self k
@@ -118,8 +118,7 @@ theorem mul_abs_le_two_mul_abs_add_mul {N : ℕ} {k j : ℤ} (hk : k ∈ window 
   · have hj1 : 1 ≤ j := by omega
     rw [abs_of_nonneg hj0]
     nlinarith
-  · have hj1 : j ≤ -1 := by omega
-    rw [abs_of_neg hj0]
+  · rw [abs_of_neg hj0]
     nlinarith
 
 /-- The aliased frequencies are nonzero. -/
@@ -145,7 +144,6 @@ theorem existsUnique_mem_window_dvd {N : ℕ} (hN : 0 < N) (m : ℤ) :
   · rintro k ⟨hk, hdvd⟩
     rw [mem_window] at hk
     obtain ⟨c, hc⟩ := hdvd
-    have hk' : k - m₀ = (m - m₀) - N * c := by linarith
     have : (m - m₀) % N = k - m₀ := by
       rw [show m - m₀ = (k - m₀) + N * c by linarith, Int.add_mul_emod_self_left,
         Int.emod_eq_of_lt] <;> omega
@@ -223,12 +221,6 @@ theorem windowTailNormSq_le (N : ℕ) (φ : PeriodicSobolev s) : windowTailNormS
   hasSum_le (fun m => by split_ifs <;> [positivity; exact le_rfl])
     (summable_ite_window N φ).hasSum (hasSum_norm_sq φ)
 
-private theorem injective_add_mul {N : ℕ} (hN : 0 < N) (k : ℤ) :
-    Function.Injective fun j : ℤ => k + j * N := by
-  intro a b hab
-  have : a * (N : ℤ) = b * N := by simpa using hab
-  exact mul_right_cancel₀ (by exact_mod_cast hN.ne') this
-
 private theorem summable_aliasNormSq_term {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s) (k : ℤ) :
     Summable fun j : ℤ => if j = 0 then (0 : ℝ)
       else (periodicSobolevWeight s (k + j * N) * ‖coeff φ (k + j * N)‖) ^ 2 :=
@@ -236,7 +228,8 @@ private theorem summable_aliasNormSq_term {N : ℕ} (hN : 0 < N) (φ : PeriodicS
     (fun j => by
       simp only [Function.comp_apply]
       split_ifs <;> [positivity; exact le_rfl])
-    ((hasSum_norm_sq φ).summable.comp_injective (injective_add_mul hN k))
+    ((hasSum_norm_sq φ).summable.comp_injective
+      ((add_right_injective k).comp (mul_left_injective₀ (by exact_mod_cast hN.ne'))))
 
 /-- The aliased energy is nonnegative. -/
 theorem aliasNormSq_nonneg (N : ℕ) (φ : PeriodicSobolev s) (k : ℤ) : 0 ≤ aliasNormSq N φ k :=
@@ -280,12 +273,12 @@ private theorem tsum_invWeight_sq_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) {k 
   exact hasSum_le (invWeight_sq_le (by linarith) hN hk)
     (summable_invWeight_sq hs hN hk).hasSum h
 
-private theorem sqrt_bound (s : ℝ) {N : ℕ} (hN : 0 < N) :
-    √((((N : ℝ) / 2) ^ (2 * s))⁻¹ * (2 * zetaReal (2 * s)))
-      = ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) := by
-  have hpos : (0 : ℝ) < (N : ℝ) / 2 := by positivity
-  rw [Real.sqrt_mul (by positivity), ← Real.rpow_neg hpos.le, Real.sqrt_eq_rpow,
-    ← Real.rpow_mul hpos.le]
+/-- `√((N/2)^{-2s} a) = (N/2)^{-s} √a`. -/
+private theorem sqrt_bound (s : ℝ) (N : ℕ) (a : ℝ) :
+    √((((N : ℝ) / 2) ^ (2 * s))⁻¹ * a) = ((N : ℝ) / 2) ^ (-s) * √a := by
+  have hpos : (0 : ℝ) ≤ (N : ℝ) / 2 := by positivity
+  rw [Real.sqrt_mul (by positivity), ← Real.rpow_neg hpos, Real.sqrt_eq_rpow,
+    ← Real.rpow_mul hpos]
   congr 2
   ring
 
@@ -325,7 +318,7 @@ theorem summable_norm_coeff_add_mul_and_tsum_le (hs : 1 / 2 < s) {N : ℕ} (hN :
     (by simpa only [Real.rpow_two] using hsy)
   simp only [Real.rpow_two, hprod] at hsum hle
   refine ⟨hsum, hle.trans ?_⟩
-  rw [← Real.sqrt_eq_rpow, ← Real.sqrt_eq_rpow, hysq, ← sqrt_bound s hN]
+  rw [← Real.sqrt_eq_rpow, ← Real.sqrt_eq_rpow, hysq, ← sqrt_bound s N]
   exact mul_le_mul_of_nonneg_right (Real.sqrt_le_sqrt (tsum_invWeight_sq_le hs hN hk))
     (Real.sqrt_nonneg _)
 
@@ -407,21 +400,23 @@ private theorem sum_window_sqrt_le (N : ℕ) {t : ℤ → ℝ} (ht : ∀ k, 0 �
     Real.sqrt_nonneg (t k))]
   exact Real.sqrt_le_sqrt h
 
+/-- The bounds of `summable_norm_coeff_add_mul_and_tsum_le`, summed over the window. -/
+private theorem sum_window_mul_sqrt_aliasNormSq_le {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s) :
+    ∑ k ∈ window N, ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * √(aliasNormSq N φ k)
+      ≤ ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * (√(N : ℝ) * √(windowTailNormSq N φ)) := by
+  rw [← Finset.mul_sum]
+  refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+  rw [← sum_window_aliasNormSq hN φ]
+  exact sum_window_sqrt_le N (aliasNormSq_nonneg N φ)
+
 /-- **The `ℓ¹` aliasing bound**: `∑_{k ∈ W} ‖∑_{j ≠ 0} a_{k + jN}‖ ≤ (N/2)^{-s} √(2 ζ(2s)) √N
 √(windowTailNormSq N φ)`. -/
 theorem sum_window_norm_aliasTail_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     ∑ k ∈ window N, ‖aliasTail N φ k‖
       ≤ ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * (√(N : ℝ) * √(windowTailNormSq N φ)) := by
-  calc ∑ k ∈ window N, ‖aliasTail N φ k‖
-      ≤ ∑ k ∈ window N, ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * √(aliasNormSq N φ k) :=
-        Finset.sum_le_sum fun k hk => norm_aliasTail_le hs hN φ hk
-    _ = ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * ∑ k ∈ window N, √(aliasNormSq N φ k) := by
-        rw [Finset.mul_sum]
-    _ ≤ _ := by
-        refine mul_le_mul_of_nonneg_left ?_ (by positivity)
-        rw [← sum_window_aliasNormSq hN φ]
-        exact sum_window_sqrt_le N (aliasNormSq_nonneg N φ)
+  exact (Finset.sum_le_sum fun k hk => norm_aliasTail_le hs hN φ hk).trans
+    (sum_window_mul_sqrt_aliasNormSq_le hN φ)
 
 /-- **The `ℓ¹` tail outside the window**: `∑_{m ∉ W} ‖a_m‖ ≤ (N/2)^{-s} √(2 ζ(2s)) √N
 √(windowTailNormSq N φ)`, by tiling the complement of the window with the aliasing tails. -/
@@ -454,12 +449,7 @@ theorem tsum_norm_coeff_notMem_window_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
         Finset.sum_congr rfl hterm
     _ ≤ ∑ k ∈ window N, ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * √(aliasNormSq N φ k) :=
         Finset.sum_le_sum fun k hk => (summable_norm_coeff_add_mul_and_tsum_le hs hN φ hk).2
-    _ = ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * ∑ k ∈ window N, √(aliasNormSq N φ k) := by
-        rw [Finset.mul_sum]
-    _ ≤ _ := by
-        refine mul_le_mul_of_nonneg_left ?_ (by positivity)
-        rw [← sum_window_aliasNormSq hN φ]
-        exact sum_window_sqrt_le N (aliasNormSq_nonneg N φ)
+    _ ≤ _ := sum_window_mul_sqrt_aliasNormSq_le hN φ
 
 /-- Outside the window `|m| ≥ N/2`, so `‖a_m‖² ≤ (N/2)^{-2s} (w(m) ‖a_m‖)²`. -/
 private theorem norm_coeff_sq_le_of_not_mem_window (hs : 0 ≤ s) {N : ℕ} (hN : 0 < N)
@@ -485,21 +475,31 @@ private theorem norm_coeff_sq_le_of_not_mem_window (hs : 0 ≤ s) {N : ℕ} (hN 
     _ ≤ _ := mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right hpow (by positivity))
         (by positivity)
 
-/-- **The `ℓ²` tail outside the window**: `∑_{m ∉ W} ‖a_m‖² ≤ (N/2)^{-2s} windowTailNormSq N φ`. -/
-theorem tsum_norm_coeff_sq_notMem_window_le (hs : 0 ≤ s) {N : ℕ} (hN : 0 < N)
-    (φ : PeriodicSobolev s) :
-    ∑' m : ℤ, (if m ∈ window N then (0 : ℝ) else ‖coeff φ m‖ ^ 2)
-      ≤ (((N : ℝ) / 2) ^ (2 * s))⁻¹ * windowTailNormSq N φ := by
+/-- A family bounded off the window by `C` times the weighted energy sums, outside the window, to
+at most `C · windowTailNormSq N φ`. -/
+private theorem tsum_ite_window_le_mul_windowTailNormSq {N : ℕ} (φ : PeriodicSobolev s) {C : ℝ}
+    {g : ℤ → ℝ} (hg : ∀ m, 0 ≤ g m)
+    (hle : ∀ m ∉ window N, g m ≤ C * (periodicSobolevWeight s m * ‖coeff φ m‖) ^ 2) :
+    ∑' m : ℤ, (if m ∈ window N then (0 : ℝ) else g m) ≤ C * windowTailNormSq N φ := by
   rw [windowTailNormSq, ← tsum_mul_left]
-  have hle : ∀ m : ℤ, (if m ∈ window N then (0 : ℝ) else ‖coeff φ m‖ ^ 2)
-      ≤ (((N : ℝ) / 2) ^ (2 * s))⁻¹ * (if m ∈ window N then (0 : ℝ)
+  have hle' : ∀ m : ℤ, (if m ∈ window N then (0 : ℝ) else g m)
+      ≤ C * (if m ∈ window N then (0 : ℝ)
         else (periodicSobolevWeight s m * ‖coeff φ m‖) ^ 2) := by
     intro m
     split_ifs with hm
     · simp
-    · exact norm_coeff_sq_le_of_not_mem_window hs hN φ hm
-  exact hasSum_le hle (Summable.of_nonneg_of_le (fun m => by split_ifs <;> positivity) hle
-    ((summable_ite_window N φ).mul_left _)).hasSum ((summable_ite_window N φ).mul_left _).hasSum
+    · exact hle m hm
+  exact hasSum_le hle'
+    (Summable.of_nonneg_of_le (fun m => by split_ifs <;> [exact le_rfl; exact hg m]) hle'
+      ((summable_ite_window N φ).mul_left _)).hasSum ((summable_ite_window N φ).mul_left _).hasSum
+
+/-- **The `ℓ²` tail outside the window**: `∑_{m ∉ W} ‖a_m‖² ≤ (N/2)^{-2s} windowTailNormSq N φ`. -/
+theorem tsum_norm_coeff_sq_notMem_window_le (hs : 0 ≤ s) {N : ℕ} (hN : 0 < N)
+    (φ : PeriodicSobolev s) :
+    ∑' m : ℤ, (if m ∈ window N then (0 : ℝ) else ‖coeff φ m‖ ^ 2)
+      ≤ (((N : ℝ) / 2) ^ (2 * s))⁻¹ * windowTailNormSq N φ :=
+  tsum_ite_window_le_mul_windowTailNormSq φ (fun m => by positivity)
+    fun m hm => norm_coeff_sq_le_of_not_mem_window hs hN φ hm
 
 end PeriodicSobolev
 
@@ -636,24 +636,6 @@ open Complex DFT
 
 variable {s : ℝ}
 
-/-- A summable real family, split into a finite set of indices and the rest. -/
-private theorem tsum_eq_sum_add_tsum_ite {g : ℤ → ℝ} (hg : Summable g) (F : Finset ℤ) :
-    ∑' m, g m = ∑ m ∈ F, g m + ∑' m, (if m ∈ F then (0 : ℝ) else g m) := by
-  have h1 : Summable fun m => if m ∈ F then g m else 0 :=
-    summable_of_ne_finset_zero (s := F) fun m hm => by simp [hm]
-  have h2 : Summable fun m => if m ∈ F then (0 : ℝ) else g m := by
-    refine (hg.indicator (↑F)ᶜ).congr fun m => ?_
-    by_cases hm : m ∈ F <;> simp [hm]
-  calc ∑' m, g m
-      = ∑' m, ((if m ∈ F then g m else 0) + (if m ∈ F then (0 : ℝ) else g m)) :=
-        tsum_congr fun m => by split_ifs <;> simp
-    _ = (∑' m, if m ∈ F then g m else 0) + ∑' m, (if m ∈ F then (0 : ℝ) else g m) :=
-        h1.tsum_add h2
-    _ = _ := by
-        rw [tsum_eq_sum (s := F) fun m hm => by simp [hm]]
-        congr 1
-        exact Finset.sum_congr rfl fun m hm => by simp [hm]
-
 /-- The `ℓ²` norm of the interpolation-error coefficients splits into the aliasing errors over the
 window and the tail outside it. -/
 theorem tsum_norm_interpErrorCoeff_sq (hs : 1 / 2 < s) (N : ℕ) (φ : PeriodicSobolev s) :
@@ -675,7 +657,7 @@ theorem tsum_norm_interpErrorCoeff_sq (hs : 1 / 2 < s) (N : ℕ) (φ : PeriodicS
       h1).of_nonneg_of_le (fun m => by positivity) fun m => ?_
     rw [norm_interpErrorCoeff]
     split_ifs <;> simp
-  rw [tsum_eq_sum_add_tsum_ite hsum (window N)]
+  rw [hsum.tsum_eq_sum_add_tsum_ite (window N)]
   congr 1
   · exact Finset.sum_congr rfl fun m hm => by rw [norm_interpErrorCoeff, ite_eq_left hm]
   · refine tsum_congr fun m => ?_
@@ -737,15 +719,9 @@ theorem sqrt_intervalIntegral_norm_eval_sub_interp_sq_le (hs : 1 / 2 < s) {N : �
     (mul_le_mul_of_nonneg_left (windowTailNormSq_le N φ) (by positivity))
   have hsqrt : √(2 * π * ((((N : ℝ) / 2) ^ (2 * s))⁻¹ * (1 + 2 * zetaReal (2 * s))) * ‖φ‖ ^ 2)
       = √(2 * π * (1 + 2 * zetaReal (2 * s))) * (2 : ℝ) ^ s * (N : ℝ) ^ (-s) * ‖φ‖ := by
-    have hpos : (0 : ℝ) < (N : ℝ) / 2 := by positivity
-    have hinv : √((((N : ℝ) / 2) ^ (2 * s))⁻¹) = ((N : ℝ) / 2) ^ (-s) := by
-      rw [← Real.rpow_neg hpos.le, Real.sqrt_eq_rpow, ← Real.rpow_mul hpos.le]
-      congr 1
-      ring
     rw [show 2 * π * ((((N : ℝ) / 2) ^ (2 * s))⁻¹ * (1 + 2 * zetaReal (2 * s))) * ‖φ‖ ^ 2
-        = (2 * π * (1 + 2 * zetaReal (2 * s))) * ((((N : ℝ) / 2) ^ (2 * s))⁻¹ * ‖φ‖ ^ 2) by ring,
-      Real.sqrt_mul (by positivity : (0 : ℝ) ≤ 2 * π * (1 + 2 * zetaReal (2 * s))),
-      Real.sqrt_mul (by positivity : (0 : ℝ) ≤ (((N : ℝ) / 2) ^ (2 * s))⁻¹), hinv,
+        = (((N : ℝ) / 2) ^ (2 * s))⁻¹ * (2 * π * (1 + 2 * zetaReal (2 * s)) * ‖φ‖ ^ 2) by ring,
+      sqrt_bound, Real.sqrt_mul (by positivity : (0 : ℝ) ≤ 2 * π * (1 + 2 * zetaReal (2 * s))),
       Real.sqrt_sq (norm_nonneg _), div_two_rpow_neg s hN]
     ring
   rw [← hsqrt]
@@ -772,7 +748,7 @@ theorem norm_eval_sub_interp_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : Pe
   have h2 : ∑' m : ℤ, ‖interpErrorCoeff N φ m‖
       = ∑ m ∈ window N, ‖aliasTail N φ m‖
         + ∑' m : ℤ, (if m ∈ window N then (0 : ℝ) else ‖coeff φ m‖) := by
-    rw [tsum_eq_sum_add_tsum_ite hsum (window N)]
+    rw [hsum.tsum_eq_sum_add_tsum_ite (window N)]
     congr 1
     · exact Finset.sum_congr rfl fun m hm => by rw [norm_interpErrorCoeff, ite_eq_left hm]
     · refine tsum_congr fun m => ?_
@@ -788,7 +764,6 @@ theorem norm_eval_sub_interp_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : Pe
     rw [div_two_rpow_neg s hN, Real.sqrt_eq_rpow, mul_assoc, ← Real.rpow_add (by positivity)]
     congr 2
     ring
-  have hC : (0 : ℝ) ≤ ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * √(N : ℝ) := by positivity
   calc ‖∑' m : ℤ, interpErrorCoeff N φ m • fourier m (x : AddCircle (2 * π))‖
       ≤ ∑' m : ℤ, ‖interpErrorCoeff N φ m‖ := h1
     _ = _ := h2
@@ -845,7 +820,6 @@ variable {s : ℝ}
 theorem intervalIntegral_eval_mul_conj_exp (hs : 1 / 2 < s) (φ : PeriodicSobolev s) (q : ℤ) :
     ∫ x in (0 : ℝ)..2 * π, eval (2 * π) φ x * conj (Complex.exp ((q : ℂ) * x * I))
       = 2 * π * coeff φ q := by
-  have hper := eval_periodic (T := 2 * π) (Fact.out : (0 : ℝ) < 2 * π).ne' φ
   have h := fourierCoeff_lift_eval (T := 2 * π) hs φ q
   rw [fourierCoeff_eq_intervalIntegral _ _ 0, zero_add] at h
   have hπ : (2 * π : ℂ) ≠ 0 := by exact_mod_cast Real.two_pi_pos.ne'
@@ -944,13 +918,7 @@ theorem norm_intervalIntegral_sub_discreteInner_le (hs : 1 / 2 < s) {N : ℕ} (h
       (mul_le_mul_of_nonneg_left (windowTailNormSq_le N φ)
         (mul_nonneg (by positivity) (mul_nonneg two_pos.le (zetaReal_nonneg _))))
     refine (Real.sqrt_le_sqrt h).trans (le_of_eq ?_)
-    have hpos : (0 : ℝ) < (N : ℝ) / 2 := by positivity
-    have hinv : √((((N : ℝ) / 2) ^ (2 * s))⁻¹) = ((N : ℝ) / 2) ^ (-s) := by
-      rw [← Real.rpow_neg hpos.le, Real.sqrt_eq_rpow, ← Real.rpow_mul hpos.le]
-      congr 1
-      ring
-    rw [Real.sqrt_mul (mul_nonneg (by positivity) (mul_nonneg two_pos.le (zetaReal_nonneg _))),
-      Real.sqrt_mul (by positivity : (0 : ℝ) ≤ (((N : ℝ) / 2) ^ (2 * s))⁻¹), hinv,
+    rw [mul_assoc, sqrt_bound, Real.sqrt_mul (mul_nonneg two_pos.le (zetaReal_nonneg _)),
       Real.sqrt_sq (norm_nonneg _), div_two_rpow_neg s hN]
     ring
   have hpar : √(∑ q ∈ window N, ‖c q‖ ^ 2)
@@ -1099,7 +1067,7 @@ theorem norm_incl_sub_trigInterp_le (hs : 1 / 2 < s) {r : ℝ} (hr : 0 ≤ r) (h
   set ψ := incl hrs φ - trigInterp r n φ with hψ
   have hsum := hasSum_norm_sq ψ
   rw [coeff_incl_sub_trigInterp hs hrs n φ] at hsum
-  have hsplit := tsum_eq_sum_add_tsum_ite hsum.summable (window (2 * n + 1))
+  have hsplit := hsum.summable.tsum_eq_sum_add_tsum_ite (window (2 * n + 1))
   -- the window part
   have hwin : ∑ m ∈ window (2 * n + 1),
       (periodicSobolevWeight r m * ‖interpErrorCoeff (2 * n + 1) φ m‖) ^ 2
@@ -1119,19 +1087,9 @@ theorem norm_incl_sub_trigInterp_le (hs : 1 / 2 < s) {r : ℝ} (hr : 0 ≤ r) (h
   have hout : ∑' m : ℤ, (if m ∈ window (2 * n + 1) then (0 : ℝ)
       else (periodicSobolevWeight r m * ‖interpErrorCoeff (2 * n + 1) φ m‖) ^ 2)
       ≤ ((n : ℝ) + 1) ^ (2 * (r - s)) * windowTailNormSq (2 * n + 1) φ := by
-    rw [windowTailNormSq, ← tsum_mul_left]
-    have hle : ∀ m : ℤ, (if m ∈ window (2 * n + 1) then (0 : ℝ)
-        else (periodicSobolevWeight r m * ‖interpErrorCoeff (2 * n + 1) φ m‖) ^ 2)
-        ≤ ((n : ℝ) + 1) ^ (2 * (r - s)) * (if m ∈ window (2 * n + 1) then (0 : ℝ)
-          else (periodicSobolevWeight s m * ‖coeff φ m‖) ^ 2) := by
-      intro m
-      split_ifs with hm
-      · simp
-      · rw [norm_interpErrorCoeff, ite_eq_right hm, mul_pow, mul_pow, ← mul_assoc]
-        exact mul_le_mul_of_nonneg_right (weight_sq_le_of_not_mem_window hrs hm)
-          (by positivity)
-    exact hasSum_le hle (Summable.of_nonneg_of_le (fun m => by split_ifs <;> positivity) hle
-      ((summable_ite_window _ φ).mul_left _)).hasSum ((summable_ite_window _ φ).mul_left _).hasSum
+    refine tsum_ite_window_le_mul_windowTailNormSq φ (fun m => by positivity) fun m hm => ?_
+    rw [norm_interpErrorCoeff, ite_eq_right hm, mul_pow, mul_pow, ← mul_assoc]
+    exact mul_le_mul_of_nonneg_right (weight_sq_le_of_not_mem_window hrs hm) (by positivity)
   have hout2 : ((n : ℝ) + 1) ^ (2 * (r - s)) ≤ (n : ℝ) ^ (2 * (r - s)) :=
     Real.rpow_le_rpow_of_nonpos hnpos (by linarith) (by linarith)
   -- the rates

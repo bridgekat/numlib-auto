@@ -1,0 +1,4 @@
+namespace = "ContinuousMap"
+
+[[node]]
+id = "exists_norm_le_one_apply_eq"

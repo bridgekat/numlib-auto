@@ -19,6 +19,9 @@ id = 'exists_forall_abs_le_of_isCompact'
 id = 'exists_forall_lipschitzOnWith_of_isCompact'
 
 [[node]]
+id = 'uniformCauchySeqOn_of_equiLipschitz'
+
+[[node]]
 id = 'uniformCauchySeqOn_of_dense'
 
 [[node]]

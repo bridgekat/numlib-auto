@@ -20,8 +20,9 @@ of [golub2013matrix] §12.2.10, Fact 2).
 * `Matrix.roots_charpoly_diagonal`, `Matrix.charpoly_unitary_conj`: the roots of the
   characteristic polynomial of a diagonal matrix are its entries, and a unitary conjugation keeps
   the characteristic polynomial — the two steps from a unitary diagonalization to a spectrum;
-  `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`, `Uᴴ A U = diag(λ)` for Mathlib's
-  eigenvector unitary, and its real form `Matrix.IsHermitian.transpose_eigenvectorUnitary_mul_mul`.
+  `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`, `Uᴴ A U = diag(λ)`, and
+  `Matrix.IsHermitian.eq_conj_diagonal`, `A = U diag(λ) Uᴴ`, for Mathlib's eigenvector unitary, and
+  the real form `Matrix.IsHermitian.transpose_eigenvectorUnitary_mul_mul`.
 * `Matrix.trace_add_pow_odd_eq_zero`: if `A² = B² = 1` and `tr A = tr B = 0`, the odd powers of
   `A + B` are traceless.
 * `Fintype.map_neg_eq_of_sum_pow_odd`: over a field of characteristic zero, a finite family whose
@@ -72,6 +73,16 @@ theorem IsHermitian.star_eigenvectorUnitary_mul_mul {A : Matrix n n 𝕜} (hA : 
     star (hA.eigenvectorUnitary : Matrix n n 𝕜) * A * (hA.eigenvectorUnitary : Matrix n n 𝕜) =
       diagonal (RCLike.ofReal ∘ hA.eigenvalues) := by
   simpa [Unitary.conjStarAlgAut_apply] using hA.conjStarAlgAut_star_eigenvectorUnitary
+
+/-- **The spectral decomposition of a Hermitian matrix**, unfolded the other way:
+`A = U diag(λ) Uᴴ` for the eigenvector unitary `U` (Mathlib's `Matrix.IsHermitian.spectral_theorem`
+without the algebra automorphism). -/
+theorem IsHermitian.eq_conj_diagonal {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    A = (hA.eigenvectorUnitary : Matrix n n 𝕜) * diagonal (fun i => ((hA.eigenvalues i : ℝ) : 𝕜))
+      * (hA.eigenvectorUnitary : Matrix n n 𝕜)ᴴ := by
+  conv_lhs => rw [hA.spectral_theorem]
+  rw [Unitary.conjStarAlgAut_apply, star_eq_conjTranspose]
+  rfl
 
 /-- The real form of `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`: `Qᵀ A Q = diag(λ)`. -/
 theorem IsHermitian.transpose_eigenvectorUnitary_mul_mul {A : Matrix n n ℝ} (hA : A.IsHermitian) :

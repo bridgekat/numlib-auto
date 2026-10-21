@@ -1759,7 +1759,8 @@ private theorem unsym_biorth {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt
   have hinner := EuclideanSpace.inner_toLp_toLp_real (ι := Fin n)
   obtain ⟨I1, I2, -⟩ := BiLanczos.inner_eq_ite_of_threeTerm (A := Matrix.toEuclideanLin A)
     (B := Matrix.toEuclideanLin Aᵀ)
-    (fun x y => (Matrix.toEuclideanLin_transpose_inner_right A x y).symm)
+    (LinearMap.isAdjointPair_inner_iff'.2 fun x y =>
+      (Matrix.toEuclideanLin_transpose_inner_right A x y).symm)
     (v := v) (w := w) (α := st.alpha) (β := β') (γ := γ') (m := st.k)
     (fun j hj => by
       rw [hvo j hj, hvp j hj, hvn j hj, hγ', Function.update_of_ne hj.ne,

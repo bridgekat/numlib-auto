@@ -367,17 +367,6 @@ theorem mem_kuhnTucker_iff_forall_le :
   · rintro ⟨ht, hb, hall⟩
     exact ⟨ht, hb, le_antisymm (iInf_add_infBifun_le B F v) (le_iInf hall)⟩
 
-/-- Moving a real constant across an `EReal` inequality. -/
-private theorem coe_add_neg_le_iff {c p : ℝ} {w : EReal} :
-    (c : EReal) + ((-p : ℝ) : EReal) ≤ w ↔ (c : EReal) ≤ (p : EReal) + w := by
-  induction w with
-  | bot => simp
-  | coe q =>
-      rw [← EReal.coe_add, ← EReal.coe_add, EReal.coe_le_coe_iff,
-        EReal.coe_le_coe_iff]
-      constructor <;> intro h <;> linarith
-  | top => simp
-
 /-- When the optimal value is finite, the Kuhn–Tucker vectors are exactly the `v` with
 `-v ∈ ∂(inf F)(0)`. The subgradient inequality at `0` in the direction `-v` says precisely that no
 perturbation is worth buying at the price `v`. -/
@@ -387,8 +376,8 @@ theorem mem_kuhnTucker_iff_neg_mem_subdifferential (ht : infBifun F 0 ≠ ⊤) (
   have hiff : ∀ u : U, (infBifun F 0 ≤ ((B u v : ℝ) : EReal) + infBifun F u)
       ↔ (infBifun F 0 + ((B (u - 0) (-v) : ℝ) : EReal) ≤ infBifun F u) := by
     intro u
-    rw [sub_zero, map_neg, hc]
-    exact coe_add_neg_le_iff.symm
+    rw [sub_zero, map_neg, hc, EReal.coe_neg, ← sub_eq_add_neg,
+      EReal.sub_le_iff_le_add (.inl (EReal.coe_ne_bot _)) (.inl (EReal.coe_ne_top _)), add_comm]
   rw [mem_kuhnTucker_iff_forall_le, mem_subdifferential]
   exact ⟨fun h u => (hiff u).1 (h.2.2 u), fun h => ⟨ht, hb, fun u => (hiff u).2 (h u)⟩⟩
 

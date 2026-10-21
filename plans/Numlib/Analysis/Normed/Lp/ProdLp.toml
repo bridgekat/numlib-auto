@@ -1,0 +1,4 @@
+namespace = "WithLp"
+
+[[node]]
+id = "finrank_prod"

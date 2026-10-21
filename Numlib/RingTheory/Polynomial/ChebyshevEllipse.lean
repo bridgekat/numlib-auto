@@ -269,11 +269,7 @@ theorem norm_eval_le_of_forall_mem_ellipse {p : ℂ[X]} {c d : ℂ} {ρ C : ℝ}
   have hbdry : ∀ u : ℂ, ‖u‖ = ρ ∨ ‖u‖ = ρ⁻¹ → ‖p.eval (c + d * Complex.joukowski u)‖ ≤ C := by
     rintro u (hu | hu)
     · exact hC _ (Set.mem_ellipse.2 ⟨u, hu, rfl⟩)
-    · have hu0 : u ≠ 0 := by
-        intro h
-        rw [h, norm_zero] at hu
-        exact hinv0.ne hu
-      refine hC _ (Set.mem_ellipse.2 ⟨u⁻¹, ?_, ?_⟩)
+    · refine hC _ (Set.mem_ellipse.2 ⟨u⁻¹, ?_, ?_⟩)
       · rw [norm_inv, hu, inv_inv]
       · rw [Complex.joukowski_inv]
   rcases eq_or_lt_of_le hw2 with h2 | h2
@@ -367,7 +363,6 @@ theorem zarantonello (k : ℕ) {ρ : ℝ} (hρ : 0 < ρ) {γ : ℂ} (hγ : ρ < 
     rintro rfl
     simp only [norm_zero] at hγ
     linarith
-  have hnorm : 0 < ‖γ‖ := hρ.trans hγ
   have hmem : (ρ : ℂ) ∈ Metric.sphere (0 : ℂ) ρ := by
     simp [abs_of_pos hρ]
   have hne : (Metric.sphere (0 : ℂ) ρ).Nonempty := ⟨(ρ : ℂ), hmem⟩

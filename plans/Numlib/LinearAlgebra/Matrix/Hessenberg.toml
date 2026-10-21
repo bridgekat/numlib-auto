@@ -63,6 +63,18 @@ id = "IsLowerBidiagonal"
 id = "isUpperHessenberg_iff_fin"
 
 [[node]]
+id = "isUpperHessenberg_iff_nat"
+
+[[node]]
+id = "IsUpperHessenberg.eq_zero_of_add_one_lt"
+
+[[node]]
+id = "IsUpperHessenbergInCols"
+
+[[node]]
+id = "IsUpperHessenbergInCols.isUpperHessenberg"
+
+[[node]]
 id = "isTridiagonal_iff_fin"
 
 [[node]]

@@ -219,11 +219,6 @@ open scoped Matrix.Norms.Frobenius
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
   {d : m → ℝ} {t : n ⊕ Unit → ℝ} {A : Matrix m n 𝕜} {b : m → 𝕜}
 
-/-- `(u vᴴ) w = (vᴴ w) u`, entrywise. -/
-private theorem vecMulVec_mulVec_apply {ι κ : Type*} [Fintype κ] (u : ι → 𝕜) (v w : κ → 𝕜)
-    (i : ι) : (vecMulVec u v *ᵥ w) i = u i * (v ⬝ᵥ w) := by
-  simp [mulVec, dotProduct, vecMulVec_apply, Finset.mul_sum, mul_assoc]
-
 /-- **Every feasible perturbation leaves a null vector with nonzero last entry**: if
 `ran (b + r) ⊆ ran (A + E)`, then `C + D [E | r] T` annihilates a unit vector `w` with
 `w_last ≠ 0` — namely `T⁻¹ [x; −1]` normalized, for `(A + E) x = b + r` ((6.3.5)). -/
@@ -309,8 +304,8 @@ private theorem exists_rankOne_perturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j,
   have hnull : tlsWeighted d t (A + E) (replicateCol Unit b + R) *ᵥ w = 0 := by
     rw [tlsWeighted_add, hER, add_mulVec]
     funext i
-    simp only [ΔC, neg_mulVec, Pi.add_apply, Pi.neg_apply, vecMulVec_mulVec_apply, hww, mul_one,
-      Pi.zero_apply]
+    simp only [ΔC, neg_mulVec, Pi.add_apply, Pi.neg_apply, vecMulVec_mulVec, Pi.smul_apply,
+      op_smul_eq_mul, hww, mul_one, Pi.zero_apply]
     exact add_neg_cancel _
   set c : 𝕜 := (t (Sum.inr ()) : 𝕜) * w (Sum.inr ())
   have hc : c ≠ 0 := mul_ne_zero (ht' _) hα
@@ -441,7 +436,6 @@ theorem not_isTLSSolution_of_forall_last_eq_zero (hd : ∀ i, d i ≠ 0) (ht : �
           refine (norm_add_le _ _).trans (add_le_add le_rfl ?_)
           rw [norm_smul, RCLike.norm_ofReal, abs_of_pos hε0]
       _ ≤ σmin + δ := by
-          have hc : 0 ≤ c := norm_nonneg _
           have : ε * c ≤ δ := by
             rw [hε, div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
             nlinarith
@@ -656,22 +650,6 @@ section Feasible
 variable {m n k : Type*} [Fintype m] [Fintype n] [Fintype k] [DecidableEq m] [DecidableEq n]
   [DecidableEq k]
 
-omit [Fintype m] [DecidableEq m] [DecidableEq n] [DecidableEq k] in
-/-- A range inclusion `ran N ⊆ ran M` is the solvability of `M X = N`. -/
-private theorem exists_mul_eq_of_range_le {M : Matrix m n 𝕜} {N : Matrix m k 𝕜}
-    (h : LinearMap.range N.mulVecLin ≤ LinearMap.range M.mulVecLin) : ∃ X, M * X = N := by
-  classical
-  have hc : ∀ j, ∃ x, M *ᵥ x = N *ᵥ Pi.single j 1 := fun j => by
-    obtain ⟨x, hx⟩ := h (LinearMap.mem_range_self N.mulVecLin (Pi.single j 1))
-    exact ⟨x, hx⟩
-  choose x hx using hc
-  refine ⟨of fun i j => x j i, ?_⟩
-  ext r j
-  have := congrFun (hx j) r
-  rw [mulVec_single_one, col_apply] at this
-  rw [← this]
-  rfl
-
 /-- A solvable problem has a weighted matrix of rank at most the number of unknowns:
 `[M | M X] = M [1 | X]`. -/
 private theorem rank_tlsWeighted_le_of_mul_eq {d : m → ℝ} {t : n ⊕ k → ℝ} {M : Matrix m n 𝕜}
@@ -728,13 +706,6 @@ open scoped Matrix.Norms.Frobenius
 variable {m n k : ℕ} {d : Fin m → ℝ} {t : Fin n ⊕ Fin k → ℝ} {A : Matrix (Fin m) (Fin n) 𝕜}
   {B : Matrix (Fin m) (Fin k) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜} {σ : ℕ → ℝ}
   {V : Matrix (Fin (n + k)) (Fin (n + k)) 𝕜}
-
-/-- Reindexing the columns of a left factor moves to the rows of the right factor. -/
-private theorem submatrix_id_mul_eq {l p q r : Type*} [Fintype p] [Fintype q] (M : Matrix l p 𝕜)
-    (e : q ≃ p) (N : Matrix q r 𝕜) : M.submatrix id e * N = M * N.submatrix e.symm id := by
-  ext i j
-  simp only [mul_apply, submatrix_apply, id_eq]
-  exact Fintype.sum_equiv e _ _ fun x => by rw [Equiv.symm_apply_apply]
 
 /-- The consequences of the generic condition `σ_n(C₁) > σ_{n+1}(C)` of [golub2013matrix]
 Theorem 6.3.1: `1 ≤ n ≤ m`, the gap `σ_{n+1}(C) < σ_n(C)` (column interlacing,
@@ -909,7 +880,8 @@ private theorem add_mul_eq_iff (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
       ← submatrix_mul _ _ _ id _ Function.bijective_id,
       mem_unitaryGroup_iff'.1 hC.mem_unitaryGroup_right,
       submatrix_one _ fun a b hab => Fin.ext (by simpa [Fin.ext_iff] using hab)]
-  rw [mul_eq_iff_tlsWeighted_mul_tlsNull_eq_zero hd ht, h, submatrix_id_mul_eq,
+  rw [mul_eq_iff_tlsWeighted_mul_tlsNull_eq_zero hd ht, h, ← submatrix_id_id (tlsNull t X),
+    submatrix_id_mul_right,
     svdTruncation_mul_eq_zero_iff hC hnm (pos_of_generic hC hσ), ← exists_eq_mul_iff ht hV]
   constructor
   · intro hY
@@ -950,7 +922,7 @@ private theorem rank_submatrix_tlsWeighted_le {E : Matrix (Fin m) (Fin n) 𝕜}
     {R : Matrix (Fin m) (Fin k) 𝕜}
     (h : LinearMap.range (B + R).mulVecLin ≤ LinearMap.range (A + E).mulVecLin) :
     ((tlsWeighted d t (A + E) (B + R)).submatrix id finSumFinEquiv.symm).rank ≤ n := by
-  obtain ⟨X, hX⟩ := exists_mul_eq_of_range_le h
+  obtain ⟨X, hX⟩ := exists_mul_eq_of_range_mulVecLin_le h
   rw [show ((tlsWeighted d t (A + E) (B + R)).submatrix id finSumFinEquiv.symm).rank =
     (tlsWeighted d t (A + E) (B + R)).rank from
       rank_submatrix _ (Equiv.refl _) finSumFinEquiv.symm]

@@ -2,6 +2,8 @@ import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Mathlib.Analysis.SpecialFunctions.Gaussian.GaussianIntegral
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Orthogonality
 import Mathlib.MeasureTheory.Integral.IntegralEqImproper
+import Numlib.Algebra.Polynomial.Derivative
+import Numlib.Analysis.SpecialFunctions.PolynomialExp
 import Numlib.Approximation.OrthogonalPolynomial
 
 /-!
@@ -556,38 +558,6 @@ theorem laguerre_eq_deriv_exp_mul (n : ℕ) (x : ℝ) :
 
 /-! #### Orthogonality -/
 
-/-- A polynomial times `e^{-x}` is integrable on `(0, ∞)`: each monomial is a Gamma integrand. -/
-private theorem integrableOn_eval_mul_exp_neg (p : ℝ[X]) :
-    IntegrableOn (fun x => p.eval x * exp (-x)) (Ioi 0) := by
-  have hmono : ∀ i : ℕ, IntegrableOn (fun x : ℝ => x ^ i * exp (-x)) (Ioi 0) := by
-    intro i
-    have h := Real.GammaIntegral_convergent (s := (i : ℝ) + 1) (by positivity)
-    refine (h.congr_fun (fun x hx => ?_) measurableSet_Ioi)
-    simp only [add_sub_cancel_right, rpow_natCast]
-    ring
-  have heq : (fun x => p.eval x * exp (-x)) =
-      fun x => ∑ i ∈ Finset.range (p.natDegree + 1), p.coeff i * (x ^ i * exp (-x)) := by
-    funext x
-    rw [eval_eq_sum_range, Finset.sum_mul]
-    exact Finset.sum_congr rfl fun i _ => by ring
-  rw [heq]
-  exact integrable_finsetSum _ fun i _ => (hmono i).const_mul _
-
-/-- A polynomial times `e^{-x}` tends to `0` at `+∞`. -/
-private theorem tendsto_eval_mul_exp_neg_atTop (p : ℝ[X]) :
-    Tendsto (fun x => p.eval x * exp (-x)) atTop (𝓝 0) := by
-  have heq : (fun x => p.eval x * exp (-x)) =
-      fun x => ∑ i ∈ Finset.range (p.natDegree + 1), p.coeff i * (x ^ i * exp (-x)) := by
-    funext x
-    rw [eval_eq_sum_range, Finset.sum_mul]
-    exact Finset.sum_congr rfl fun i _ => by ring
-  rw [heq]
-  have h : Tendsto (fun x => ∑ i ∈ Finset.range (p.natDegree + 1),
-      p.coeff i * (x ^ i * exp (-x))) atTop (𝓝 (∑ i ∈ Finset.range (p.natDegree + 1),
-      p.coeff i * 0)) :=
-    tendsto_finsetSum _ fun i _ => (tendsto_pow_mul_exp_neg_atTop_nhds_zero i).const_mul _
-  simpa using h
-
 /-- **One integration by parts on `(0, ∞)`**: for polynomials `p`, `q` with `q(0) = 0`,
 `∫_0^∞ p e^{-x} (T q) = -∫_0^∞ p' e^{-x} q`, since `e^{-x} T q = (e^{-x} q)'` and the boundary
 terms vanish. -/
@@ -612,8 +582,8 @@ private theorem integral_eval_mul_exp_neg_mul_lagT {p q : ℝ[X]} (hq : q.eval 0
     refine ((p.continuous.mul (continuous_neg.rexp.mul q.continuous)).tendsto 0).mono_left
       nhdsWithin_le_nhds
   have hinfty : Tendsto ((fun y => p.eval y) * fun y => exp (-y) * q.eval y) atTop (𝓝 0) := by
-    refine (tendsto_eval_mul_exp_neg_atTop (p * q)).congr fun x => ?_
-    simp only [Pi.mul_apply, eval_mul]
+    refine (p * q).tendsto_div_exp_atTop.congr fun x => ?_
+    simp only [Pi.mul_apply, eval_mul, div_eq_mul_inv, ← Real.exp_neg]
     ring
   have h := integral_Ioi_mul_deriv_eq_deriv_mul hu hv hint1 hint2 hzero hinfty
   rw [h, hq]
@@ -653,16 +623,6 @@ private theorem integral_eval_mul_laguerre_mul_exp_neg (p : ℝ[X]) (n : ℕ) :
   refine setIntegral_congr_fun measurableSet_Ioi fun x _ => ?_
   ring
 
-/-- The `n`-th derivative of a polynomial of degree `n` is the constant `n!` times its leading
-coefficient. -/
-private theorem iterate_derivative_natDegree_eq_C {p : ℝ[X]} {n : ℕ} (hp : p.natDegree = n) :
-    derivative^[n] p = C ((n ! : ℝ) * p.leadingCoeff) := by
-  have hdeg : (derivative^[n] p).natDegree ≤ 0 := by
-    have := natDegree_iterate_derivative p n
-    rwa [hp, Nat.sub_self] at this
-  rw [eq_C_of_natDegree_le_zero hdeg, coeff_iterate_derivative, zero_add, Nat.descFactorial_self,
-    leadingCoeff, hp, nsmul_eq_mul]
-
 /-- **Orthogonality of the Laguerre polynomials** on `(0, ∞)` for the weight `e^{-x}`, with the
 norms `∫_0^∞ ℒ_n² e^{-x} = (n!)²`.
 
@@ -682,7 +642,7 @@ theorem integral_laguerre_mul_laguerre (n m : ℕ) :
     simp
   split_ifs with h
   · subst h
-    rw [integral_eval_mul_laguerre_mul_exp_neg, iterate_derivative_natDegree_eq_C
+    rw [integral_eval_mul_laguerre_mul_exp_neg, iterate_derivative_eq_C_of_natDegree_eq
       (natDegree_laguerre n), leadingCoeff_laguerre]
     simp only [eval_C]
     rw [integral_const_mul, integral_exp_neg_mul_pow n]
@@ -961,58 +921,6 @@ theorem physHermite_eq_deriv_gaussian (n : ℕ) (x : ℝ) :
 
 /-! #### Orthogonality -/
 
-/-- A polynomial times `e^{-x²}` is integrable on `ℝ`. -/
-private theorem integrable_eval_mul_exp_neg_sq (p : ℝ[X]) :
-    Integrable fun x => p.eval x * exp (-x ^ 2) := by
-  have hmono : ∀ i : ℕ, Integrable fun x : ℝ => x ^ i * exp (-x ^ 2) := by
-    intro i
-    have h := integrable_rpow_mul_exp_neg_mul_sq (b := 1) one_pos (s := i) (by
-      exact_mod_cast (by omega : -1 < (i : ℤ)))
-    refine h.congr (Eventually.of_forall fun x => ?_)
-    simp [rpow_natCast]
-  have heq : (fun x => p.eval x * exp (-x ^ 2)) =
-      fun x => ∑ i ∈ Finset.range (p.natDegree + 1), p.coeff i * (x ^ i * exp (-x ^ 2)) := by
-    funext x
-    rw [eval_eq_sum_range, Finset.sum_mul]
-    exact Finset.sum_congr rfl fun i _ => by ring
-  rw [heq]
-  exact integrable_finsetSum _ fun i _ => (hmono i).const_mul _
-
-/-- `x^i e^{-x²}` tends to `0` at `+∞`. -/
-private theorem tendsto_pow_mul_exp_neg_sq_atTop (i : ℕ) :
-    Tendsto (fun x : ℝ => x ^ i * exp (-x ^ 2)) atTop (𝓝 0) := by
-  have hhalf : Tendsto (fun x : ℝ => (1 / 2) * x) atTop atTop :=
-    Tendsto.const_mul_atTop (by norm_num) tendsto_id
-  have hexp : Tendsto (fun x : ℝ => exp (-(1 / 2) * x)) atTop (𝓝 0) := by
-    have := tendsto_exp_neg_atTop_nhds_zero.comp hhalf
-    refine this.congr fun x => ?_
-    simp only [Function.comp_apply, neg_mul]
-  have h := (rpow_mul_exp_neg_mul_sq_isLittleO_exp_neg one_pos (i : ℝ)).trans_tendsto hexp
-  refine h.congr' (Eventually.of_forall fun x => ?_)
-  simp [rpow_natCast]
-
-/-- A polynomial times `e^{-x²}` tends to `0` at `+∞`. -/
-private theorem tendsto_eval_mul_exp_neg_sq_atTop (p : ℝ[X]) :
-    Tendsto (fun x => p.eval x * exp (-x ^ 2)) atTop (𝓝 0) := by
-  have heq : (fun x => p.eval x * exp (-x ^ 2)) =
-      fun x => ∑ i ∈ Finset.range (p.natDegree + 1), p.coeff i * (x ^ i * exp (-x ^ 2)) := by
-    funext x
-    rw [eval_eq_sum_range, Finset.sum_mul]
-    exact Finset.sum_congr rfl fun i _ => by ring
-  rw [heq]
-  have h : Tendsto (fun x => ∑ i ∈ Finset.range (p.natDegree + 1),
-      p.coeff i * (x ^ i * exp (-x ^ 2))) atTop (𝓝 (∑ i ∈ Finset.range (p.natDegree + 1),
-      p.coeff i * 0)) :=
-    tendsto_finsetSum _ fun i _ => (tendsto_pow_mul_exp_neg_sq_atTop i).const_mul _
-  simpa using h
-
-/-- A polynomial times `e^{-x²}` tends to `0` at `-∞`, by symmetry. -/
-private theorem tendsto_eval_mul_exp_neg_sq_atBot (p : ℝ[X]) :
-    Tendsto (fun x => p.eval x * exp (-x ^ 2)) atBot (𝓝 0) := by
-  have h := (tendsto_eval_mul_exp_neg_sq_atTop (p.comp (-X))).comp tendsto_neg_atBot_atTop
-  refine h.congr fun x => ?_
-  simp [eval_comp]
-
 /-- **One integration by parts on `ℝ`**: for polynomials `p`, `q`,
 `∫ p e^{-x²} (S q) = ∫ p' e^{-x²} q`, since `e^{-x²} S q = -(e^{-x²} q)'` and the boundary terms
 vanish. -/
@@ -1082,7 +990,7 @@ theorem integral_physHermite_mul_physHermite (n m : ℕ) :
     simp
   split_ifs with h
   · subst h
-    rw [integral_eval_mul_physHermite_mul_exp_neg_sq, iterate_derivative_natDegree_eq_C
+    rw [integral_eval_mul_physHermite_mul_exp_neg_sq, iterate_derivative_eq_C_of_natDegree_eq
       (natDegree_physHermite n), leadingCoeff_physHermite]
     simp only [eval_C]
     rw [integral_const_mul]
@@ -1248,7 +1156,6 @@ theorem leadingCoeff_legendre_succ (n : ℕ) :
         ← C_eq_natCast, ← C_ofNat, ← C_ofNat, ← C_mul, ← C_add, leadingCoeff_C, mul_one]
     have h := congrArg leadingCoeff hrec
     rw [hlhs, hrhs] at h
-    have hpos : ((n : ℝ) + 2) ≠ 0 := by positivity
     push_cast
     field_simp
     linear_combination h

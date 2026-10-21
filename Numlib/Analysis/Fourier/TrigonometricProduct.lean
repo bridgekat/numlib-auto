@@ -68,7 +68,6 @@ theorem trigFun_eq_reFourier (T : ℝ) (m : ℤ) : trigFun T m = reFourier T (tr
 combination of `trigFun T m` and `trigFun T (-m)`. -/
 theorem reFourier_mem_trigPolyLE (c : ℂ) {m : ℤ} {n : ℕ} (hm : m.natAbs ≤ n) :
     reFourier T c m ∈ trigPolyLE T n := by
-  have h2 : (0 : ℝ) < √2 := Real.sqrt_pos.2 (by norm_num)
   rcases lt_trichotomy m 0 with hneg | rfl | hpos
   · have key : reFourier T c m
         = (c.re / √2) • trigFun T (-m) + (c.im / √2) • trigFun T m := by
@@ -164,8 +163,6 @@ theorem sinPair_mem_trigPolyLE (T u v : ℝ) : sinPair T u v ∈ trigPolyLE T 1 
 /-- The value of `sinPair` at a real representative is the product of the two sines. -/
 theorem sinPair_coe (u v x : ℝ) :
     sinPair T u v (x : AddCircle T) = Real.sin (π * (x - u) / T) * Real.sin (π * (x - v) / T) := by
-  have h2 : (0 : ℝ) < √2 := Real.sqrt_pos.2 (by norm_num)
-  have hsq : √2 * √2 = 2 := Real.mul_self_sqrt (by norm_num)
   have hprod : Real.sin (π * (x - u) / T) * Real.sin (π * (x - v) / T)
       = (Real.cos (π * (u - v) / T) - Real.cos (2 * π * x / T - π * (u + v) / T)) / 2 := by
     have e1 : π * (x - v) / T - π * (x - u) / T = π * (u - v) / T := by

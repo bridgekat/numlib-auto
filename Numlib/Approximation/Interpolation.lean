@@ -9,6 +9,7 @@ import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.Topology.TietzeExtension
 import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Analysis.SpecialFunctions.SineSum
+import Numlib.Approximation.Partition
 import Numlib.Approximation.Unisolvent
 
 /-!
@@ -270,6 +271,13 @@ theorem eq_basis_of_eval {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
     split_ifs with hji
     · rw [hji, Lagrange.eval_basis_self hvs hi]
     · rw [Lagrange.eval_basis_of_ne (Ne.symm hji) hj]
+
+/-- The Lagrange basis polynomial is the nodal polynomial of the other nodes scaled by the nodal
+weight: `ℓ_i = w_i ∏_{j ≠ i} (X - v j)`. -/
+theorem basis_eq_C_nodalWeight_mul_nodal_erase {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
+    {s : Finset ι} {v : ι → F} {i : ι} (hi : i ∈ s) :
+    Lagrange.basis s v i = C (Lagrange.nodalWeight s v i) * Lagrange.nodal (s.erase i) v := by
+  rw [Lagrange.basis_eq_prod_sub_inv_mul_nodal_div hi, ← Lagrange.nodal_erase_eq_nodal_div hi]
 
 /-- The Lagrange basis polynomial of an affine image of nodes is the basis polynomial of the
 nodes composed with the affine map: `l_i(c + h t) = φ_i(t)` for `x_i = c + h v_i`, `h ≠ 0`. -/
@@ -910,8 +918,6 @@ theorem piecewiseLinearInterpCLM_apply_of_mem (hstep : ∀ i ≤ n, (x i : ℝ) 
       (piecewiseLinearInterpCLM.le_node_of_le hstep (by omega) (by omega)).trans h1
     have hmax : max ((t : ℝ) - (x i : ℝ)) 0 = (t : ℝ) - (x i : ℝ) := by
       refine max_eq_left ?_
-      have : (x i : ℝ) ≤ (t : ℝ) :=
-        (piecewiseLinearInterpCLM.le_node_of_le hstep (by omega) (by omega)).trans h1
       linarith
     have hmin : min ((t : ℝ) - (x i : ℝ)) ((x (i + 1) : ℝ) - (x i : ℝ))
         = (x (i + 1) : ℝ) - (x i : ℝ) := min_eq_right (by linarith)
@@ -973,34 +979,42 @@ theorem piecewiseLinearInterpCLM_apply_node (hstep : ∀ i ≤ n, (x i : ℝ) < 
 
 /-- The piecewise-linear interpolation operator is a projection. -/
 theorem isIdempotentElem_piecewiseLinearInterpCLM
-    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
-    (hlast : (x (n + 1) : ℝ) = b) : IsIdempotentElem (piecewiseLinearInterpCLM n x) := by
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) :
+    IsIdempotentElem (piecewiseLinearInterpCLM n x) := by
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
   have h : ∀ f, piecewiseLinearInterpCLM n x (piecewiseLinearInterpCLM n x f)
       = piecewiseLinearInterpCLM n x f := by
     intro f
     refine ContinuousMap.ext fun t => ?_
-    obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
+    obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hx.first hx.last t
     rw [piecewiseLinearInterpCLM_apply_of_mem hstep _ hj h1 h2,
       piecewiseLinearInterpCLM_apply_of_mem hstep f hj h1 h2,
       piecewiseLinearInterpCLM_apply_node hstep f (by omega),
       piecewiseLinearInterpCLM_apply_node hstep f (by omega)]
   exact ContinuousLinearMap.ext h
 
+/-- On the subinterval `[x j, x (j + 1)]` the piecewise-linear interpolant is a convex
+combination `(1 - θ) f (x j) + θ f (x (j + 1))`, `θ ∈ [0, 1]`, of the two node values. -/
+theorem exists_piecewiseLinearInterpCLM_apply_eq (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
+    (f : C(Set.Icc a b, ℝ)) {j : ℕ} (hj : j ≤ n) {t : Set.Icc a b}
+    (h1 : (x j : ℝ) ≤ (t : ℝ)) (h2 : (t : ℝ) ≤ (x (j + 1) : ℝ)) :
+    ∃ θ ∈ Set.Icc (0 : ℝ) 1,
+      piecewiseLinearInterpCLM n x f t = (1 - θ) * f (x j) + θ * f (x (j + 1)) := by
+  have hd : (0 : ℝ) < (x (j + 1) : ℝ) - (x j : ℝ) := sub_pos.mpr (hstep j hj)
+  refine ⟨((t : ℝ) - (x j : ℝ)) / ((x (j + 1) : ℝ) - (x j : ℝ)),
+    ⟨div_nonneg (by linarith) hd.le, (div_le_one hd).mpr (by linarith)⟩, ?_⟩
+  rw [piecewiseLinearInterpCLM_apply_of_mem hstep f hj h1 h2]
+  ring
+
 /-- The piecewise-linear interpolant never exceeds the function in sup norm: on each subinterval its
 value is a convex combination of two values of the function. -/
 theorem norm_piecewiseLinearInterpCLM_apply_le
-    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
-    (hlast : (x (n + 1) : ℝ) = b) (f : C(Set.Icc a b, ℝ)) :
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (f : C(Set.Icc a b, ℝ)) :
     ‖piecewiseLinearInterpCLM n x f‖ ≤ ‖f‖ := by
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
   refine (ContinuousMap.norm_le _ (norm_nonneg f)).mpr fun t => ?_
-  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
-  have hd : (0 : ℝ) < (x (j + 1) : ℝ) - (x j : ℝ) := sub_pos.mpr (hstep j hj)
-  set θ : ℝ := ((t : ℝ) - (x j : ℝ)) / ((x (j + 1) : ℝ) - (x j : ℝ)) with hθ
-  have hθ0 : 0 ≤ θ := div_nonneg (by linarith) hd.le
-  have hθ1 : θ ≤ 1 := (div_le_one hd).mpr (by linarith)
-  have hval : piecewiseLinearInterpCLM n x f t = (1 - θ) * f (x j) + θ * f (x (j + 1)) := by
-    rw [piecewiseLinearInterpCLM_apply_of_mem hstep f hj h1 h2, ← hθ]
-    ring
+  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hx.first hx.last t
+  obtain ⟨θ, ⟨hθ0, hθ1⟩, hval⟩ := exists_piecewiseLinearInterpCLM_apply_eq hstep f hj h1 h2
   have hb1 : |f (x j)| ≤ ‖f‖ := by simpa using f.norm_coe_le_norm (x j)
   have hb2 : |f (x (j + 1))| ≤ ‖f‖ := by simpa using f.norm_coe_le_norm (x (j + 1))
   rw [Real.norm_eq_abs, hval]
@@ -1016,17 +1030,17 @@ onto the continuous piecewise-linear functions of the partition, which is what m
 constant the best possible.
 
 Reference: [han2009theoretical], Exercise 3.6.6. -/
-theorem norm_piecewiseLinearInterpCLM (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
-    (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b) :
+theorem norm_piecewiseLinearInterpCLM (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) :
     ‖piecewiseLinearInterpCLM n x‖ = 1 := by
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
   have hne : Nonempty (Set.Icc a b) := ⟨x 0⟩
   have hone : ‖(1 : C(Set.Icc a b, ℝ))‖ = 1 := by simp
   refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun f => ?_) ?_
   · rw [one_mul]
-    exact norm_piecewiseLinearInterpCLM_apply_le hstep hfirst hlast f
+    exact norm_piecewiseLinearInterpCLM_apply_le hx f
   · have hfix : piecewiseLinearInterpCLM n x 1 = 1 := by
       refine ContinuousMap.ext fun t => ?_
-      obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
+      obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hx.first hx.last t
       rw [piecewiseLinearInterpCLM_apply_of_mem hstep 1 hj h1 h2]
       simp
     have := (piecewiseLinearInterpCLM n x).le_opNorm (1 : C(Set.Icc a b, ℝ))
@@ -1045,20 +1059,21 @@ affine function through the two node values, hence the Lagrange interpolant at t
 (v - u)²/4` finishes it.
 
 Reference: [han2009theoretical], (3.2.9); [kress1998numerical], §8.3. -/
-theorem norm_sub_piecewiseLinearInterpCLM_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
-    (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b) {g : ℝ → ℝ}
+theorem norm_sub_piecewiseLinearInterpCLM_le
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) {g : ℝ → ℝ}
     (hg : ContDiff ℝ ((2 : ℕ) : WithTop ℕ∞) g) {f : C(Set.Icc a b, ℝ)}
     (hf : ∀ t : Set.Icc a b, f t = g (t : ℝ)) {h M : ℝ}
     (hmesh : ∀ i ≤ n, (x (i + 1) : ℝ) - (x i : ℝ) ≤ h)
     (hM : ∀ t ∈ Set.Icc a b, |iteratedDeriv 2 g t| ≤ M) :
     ‖f - piecewiseLinearInterpCLM n x f‖ ≤ h ^ 2 / 8 * M := by
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
   classical
   have hM0 : 0 ≤ M := le_trans (abs_nonneg _) (hM (x 0) (x 0).2)
   have hh0 : 0 ≤ h := le_trans (sub_nonneg.mpr (hstep 0 (Nat.zero_le n)).le)
     (hmesh 0 (Nat.zero_le n))
   rw [ContinuousMap.norm_le _ (by positivity)]
   intro t
-  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
+  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hx.first hx.last t
   have huv : (x j : ℝ) < (x (j + 1) : ℝ) := hstep j hj
   -- the two nodes of the subinterval
   have hnodeinj : Function.Injective ![(x j : ℝ), (x (j + 1) : ℝ)] := by
@@ -1111,7 +1126,6 @@ theorem norm_sub_piecewiseLinearInterpCLM_le (hstep : ∀ i ≤ n, (x i : ℝ) <
     ring
   -- the two bounds
   have hprod : |((t : ℝ) - (x j : ℝ)) * ((t : ℝ) - (x (j + 1) : ℝ))| ≤ h ^ 2 / 4 := by
-    have hvu : (0 : ℝ) ≤ (x (j + 1) : ℝ) - (x j : ℝ) := sub_nonneg.mpr huv.le
     have hd : (x (j + 1) : ℝ) - (x j : ℝ) ≤ h := hmesh j hj
     have hsq : ((x (j + 1) : ℝ) - (x j : ℝ)) ^ 2 ≤ h ^ 2 := by nlinarith
     have hnonpos : ((t : ℝ) - (x j : ℝ)) * ((t : ℝ) - (x (j + 1) : ℝ)) ≤ 0 :=
@@ -1139,23 +1153,17 @@ the same convex combination of `f(t) - f(x j)` and `f(t) - f(x (j+1))`, and both
 
 Reference: [han2009theoretical], (3.2.8); [kress1998numerical], §8.3. -/
 theorem norm_sub_piecewiseLinearInterpCLM_le_modulus
-    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
-    (hlast : (x (n + 1) : ℝ) = b) (f : C(Set.Icc a b, ℝ)) {h : ℝ}
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (f : C(Set.Icc a b, ℝ)) {h : ℝ}
     (hmesh : ∀ i ≤ n, (x (i + 1) : ℝ) - (x i : ℝ) ≤ h) :
     ‖f - piecewiseLinearInterpCLM n x f‖ ≤ f.modulusOfContinuity h := by
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
   have hne : Nonempty (Set.Icc a b) := ⟨x 0⟩
   have hh0 : 0 ≤ h := le_trans (sub_nonneg.mpr (hstep 0 (Nat.zero_le n)).le)
     (hmesh 0 (Nat.zero_le n))
   rw [ContinuousMap.norm_le _ (f.modulusOfContinuity_nonneg hh0)]
   intro t
-  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
-  have hd : (0 : ℝ) < (x (j + 1) : ℝ) - (x j : ℝ) := sub_pos.mpr (hstep j hj)
-  set θ : ℝ := ((t : ℝ) - (x j : ℝ)) / ((x (j + 1) : ℝ) - (x j : ℝ)) with hθ
-  have hθ0 : 0 ≤ θ := div_nonneg (by linarith) hd.le
-  have hθ1 : θ ≤ 1 := (div_le_one hd).mpr (by linarith)
-  have hval : piecewiseLinearInterpCLM n x f t = (1 - θ) * f (x j) + θ * f (x (j + 1)) := by
-    rw [piecewiseLinearInterpCLM_apply_of_mem hstep f hj h1 h2, ← hθ]
-    ring
+  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hx.first hx.last t
+  obtain ⟨θ, ⟨hθ0, hθ1⟩, hval⟩ := exists_piecewiseLinearInterpCLM_apply_eq hstep f hj h1 h2
   have e1 : |f t - f (x j)| ≤ f.modulusOfContinuity h := by
     refine ContinuousMap.le_modulusOfContinuity f ?_
     rw [Subtype.dist_eq, Real.dist_eq, abs_of_nonneg (by linarith)]
@@ -1200,7 +1208,8 @@ theorem tendsto_piecewiseLinearInterpCLM {N : ℕ → ℕ} {y : ℕ → ℕ → 
   rw [tendsto_iff_norm_sub_tendsto_zero]
   refine squeeze_zero (fun n => norm_nonneg _) (fun n => ?_) hmod
   rw [norm_sub_rev]
-  exact norm_sub_piecewiseLinearInterpCLM_le_modulus (hstep n) (hfirst n) (hlast n) f (hmesh n)
+  exact norm_sub_piecewiseLinearInterpCLM_le_modulus
+    ⟨fun i hi => hstep n i (by omega), hfirst n, hlast n⟩ f (hmesh n)
 
 end PiecewiseLinear
 
@@ -1657,7 +1666,6 @@ theorem abs_sub_piecewisePolyInterpCLM_apply_le_of_osc (h : IsPanelNodes n m x n
     (hω : ∀ s : Set.Icc a b, (x k : ℝ) ≤ (s : ℝ) → (s : ℝ) ≤ (x (k + 1) : ℝ) →
       |f s - f (x k)| ≤ ω) :
     |f t - piecewisePolyInterpCLM n m x node f t| ≤ (1 + Λ) * ω := by
-  have hΛ0 : 0 ≤ Λ := hΛ.nonneg h
   have hω0 : 0 ≤ ω := le_trans (abs_nonneg _) (hω (x k) le_rfl (h.step k hk).le)
   set ℓ : Fin (m + 1) → ℝ :=
     fun i => (Lagrange.basis Finset.univ (fun p => ((node k p : ℝ))) i).eval ((t : ℝ)) with hℓ
@@ -1734,7 +1742,6 @@ theorem tendsto_piecewisePolyInterpCLM {N : ℕ → ℕ} {y : ℕ → ℕ → Se
     (hh : Tendsto hs atTop (𝓝 0)) (f : C(Set.Icc a b, ℝ)) :
     Tendsto (fun p => piecewisePolyInterpCLM (N p) m (y p) (nd p) f) atTop (𝓝 f) := by
   have hne : Nonempty (Set.Icc a b) := ⟨y 0 0⟩
-  have hΛ0 : 0 ≤ Λ := (hΛ 0).nonneg (h 0)
   have hh0 : ∀ p, 0 ≤ hs p := fun p =>
     le_trans (sub_nonneg.mpr ((h p).step 0 (Nat.zero_le _)).le) (hmesh p 0 (Nat.zero_le _))
   have hhw : Tendsto hs atTop (𝓝[≥] (0 : ℝ)) :=
@@ -1878,8 +1885,7 @@ noncomputable def chebNode (n : ℕ) (j : Fin (n + 1)) : ℝ := Real.cos (chebAn
 theorem chebAngle_mem (n j : ℕ) (hj : j ≤ n) : chebAngle n j ∈ Ioo 0 π := by
   have hpi := Real.pi_pos
   constructor
-  · have : (0:ℝ) < 2 * (j:ℝ) + 1 := by positivity
-    exact div_pos (by positivity) (by positivity)
+  · exact div_pos (by positivity) (by positivity)
   · rw [chebAngle, div_lt_iff₀ (by positivity)]
     have : (j:ℝ) ≤ n := by exact_mod_cast hj
     nlinarith
@@ -1895,7 +1901,6 @@ theorem chebNode_injective (n : ℕ) : Function.Injective (chebNode n) := by
   have hj := chebAngle_mem n j (Nat.lt_succ_iff.1 j.2)
   have : chebAngle n i = chebAngle n j :=
     Real.injOn_cos ⟨hi.1.le, hi.2.le⟩ ⟨hj.1.le, hj.2.le⟩ hij
-  have hpi := Real.pi_pos
   have h2 : ((i:ℕ):ℝ) = ((j:ℕ):ℝ) := by
     simp only [chebAngle] at this
     field_simp at this
@@ -1906,7 +1911,6 @@ theorem chebNode_injective (n : ℕ) : Function.Injective (chebNode n) := by
 /-- The Chebyshev nodes are the zeros of `T_{n+1}`. -/
 theorem eval_chebyshevT_chebNode (n : ℕ) (j : Fin (n + 1)) :
     (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval (chebNode n j) = 0 := by
-  have hpi := Real.pi_pos
   rw [chebNode, chebAngle, Chebyshev.T_real_cos, Real.cos_eq_zero_iff]
   refine ⟨(j : ℕ), ?_⟩
   have h : ((n : ℝ) + 1) ≠ 0 := by positivity
@@ -1940,7 +1944,6 @@ theorem chebyshevT_eq_nodal (n : ℕ) :
 /-- `sin ((n + 1) θ_j) = (-1)^j` at the angle of the `j`-th Chebyshev node. -/
 theorem sin_succ_mul_chebAngle (n j : ℕ) :
     Real.sin (((n : ℝ) + 1) * chebAngle n j) = (-1) ^ j := by
-  have hpi := Real.pi_pos
   have h : ((n : ℝ) + 1) * chebAngle n j = (j : ℝ) * π + π / 2 := by
     rw [chebAngle]
     field_simp
@@ -1974,7 +1977,6 @@ theorem eval_basis_chebNode (n : ℕ) (j : Fin (n + 1)) {t : ℝ} (ht : t ≠ ch
       = (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval t * ((-1) ^ (j : ℕ) * Real.sin (chebAngle n j)) := by
   set D := (Polynomial.derivative (Lagrange.nodal Finset.univ (chebNode n))).eval (chebNode n j)
     with hD
-  have hs := sin_chebAngle_pos n j (Nat.lt_succ_iff.1 j.2)
   have hkey := eval_derivative_nodal_chebNode n j
   have hsign : ((-1 : ℝ)) ^ (j : ℕ) * (-1) ^ (j : ℕ) = 1 := by
     rw [← pow_add, ← two_mul, pow_mul]
@@ -2041,8 +2043,6 @@ theorem abs_eval_basis_chebNode_le (n : ℕ) (j : Fin (n + 1)) {θ : ℝ} (hθ :
   set B := (chebAngle n j + θ) / 2 with hB
   have hsA : Real.sin A ≠ 0 := sin_half_sub_chebAngle_ne_zero n j hθ hne
   have hsB : 0 < Real.sin B := sin_half_add_chebAngle_pos n j hθ
-  have hAA : 0 < |Real.sin A| := abs_pos.2 hsA
-  have hBB : 0 < |Real.sin B| := abs_pos.2 hsB.ne'
   have hdiff : |Real.cos θ - chebNode n j| = 2 * (|Real.sin A| * |Real.sin B|) := by
     have h : Real.cos θ - chebNode n j = 2 * Real.sin B * Real.sin A := by
       rw [chebNode, Real.cos_sub_cos, hA, hB]
@@ -2100,7 +2100,6 @@ The evaluation point is written as `cos θ` with `θ ∈ [0, π]`. -/
 theorem sum_abs_eval_basis_chebNode_le (n : ℕ) {θ : ℝ} (hθ : θ ∈ Icc 0 π) :
     ∑ j : Fin (n + 1), |(Lagrange.basis Finset.univ (chebNode n) j).eval (Real.cos θ)|
       ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 2) := by
-  have hpi := Real.pi_pos
   have hlog : 0 ≤ Real.log (2 * (n : ℝ) + 2) :=
     Real.log_nonneg (by linarith [Nat.cast_nonneg (α := ℝ) n])
   have hone : (1 : ℝ) ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 2) := by
@@ -2117,7 +2116,6 @@ theorem sum_abs_eval_basis_chebNode_le (n : ℕ) {θ : ℝ} (hθ : θ ∈ Icc 0 
   · refine le_trans (le_of_eq ?_) hone
     simp [Lagrange.basis]
   -- the general case
-  have hN : (0 : ℝ) < (n : ℝ) + 1 := by positivity
   set N : ℕ := n + 1 with hNdef
   set M : ℕ := 2 * N with hMdef
   have hM3 : 3 ≤ M := by omega
@@ -2245,17 +2243,12 @@ private theorem prod_range_sub_cast (m : ℕ) : ∏ j ∈ range m, ((m : ℝ) - 
   rw [Finset.prod_congr rfl h, ← Nat.cast_prod, ← Nat.descFactorial_eq_prod_range,
     Nat.descFactorial_self]
 
-/-- `∏_{i<k} (i + 1) = k !`, over `ℝ`. -/
-private theorem prod_range_add_one_cast (k : ℕ) : ∏ i ∈ range k, ((i : ℝ) + 1) = (k ! : ℝ) := by
-  rw [← Finset.prod_range_add_one_eq_factorial k, Nat.cast_prod]
-  exact Finset.prod_congr rfl fun i _ => by push_cast; ring
-
 /-- `∏_{m < j ≤ n} (j − m) = (n − m)!`, over `ℝ`. -/
 private theorem prod_Ico_sub_cast {m n : ℕ} :
     ∏ j ∈ Ico (m + 1) (n + 1), ((j : ℝ) - m) = ((n - m)! : ℝ) := by
   rw [Finset.prod_Ico_eq_prod_range]
   simp only [Nat.add_sub_add_right]
-  rw [← prod_range_add_one_cast (n - m)]
+  rw [← Finset.prod_range_add_one_eq_factorial (n - m), Nat.cast_prod]
   exact Finset.prod_congr rfl fun i _ => by push_cast; ring
 
 /-- The product of the distances from `m` to the other integers `0, …, n`, with the vanishing
@@ -2399,7 +2392,6 @@ private theorem two_pow_div_le_of_centralBinom {n : ℕ} (hn : 1 ≤ n) :
     rw [pow_succ, pow_mul]
     norm_num
     ring
-  have hc0 : (0 : ℝ) ≤ ((Nat.centralBinom n : ℕ) : ℝ) := Nat.cast_nonneg _
   have h4 : (0 : ℝ) < (4 : ℝ) ^ n := by positivity
   have h2p : (0 : ℝ) < (2 : ℝ) ^ n := by positivity
   have h2n1 : (0 : ℝ) < 2 * (n : ℝ) - 1 := by linarith
@@ -2414,7 +2406,7 @@ private theorem two_pow_div_le_of_centralBinom {n : ℕ} (hn : 1 ≤ n) :
       ≤ (2 * (n : ℝ) * ((Nat.centralBinom n : ℕ) : ℝ)) * (2 * (n : ℝ) - 1) :=
     mul_le_mul_of_nonneg_right hcb2 h2n1.le
   have e2 : (2 * (n : ℝ) * ((Nat.centralBinom n : ℕ) : ℝ)) * (2 * (n : ℝ) - 1)
-      ≤ ((Nat.centralBinom n : ℕ) : ℝ) * (8 * (n : ℝ) ^ 2) := by nlinarith [hc0, hn0]
+      ≤ ((Nat.centralBinom n : ℕ) : ℝ) * (8 * (n : ℝ) ^ 2) := by nlinarith [hn0]
   nlinarith [e1, e2, h2p]
 
 /-- **The equispaced Lebesgue function is exponentially large** (Schönhage;
@@ -2437,7 +2429,6 @@ theorem two_pow_div_le_sum_abs_eval_basis_equispaced {a b : ℝ} (hab : a < b) {
           (a + (b - a) / (2 * n))| := by
   have hn0 : (0 : ℝ) < n := by exact_mod_cast hn
   have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
-  have hba : (0 : ℝ) < b - a := by linarith
   have hc : (b - a) / (n : ℝ) ≠ 0 := ne_of_gt (by positivity)
   have hval : ∀ i : Fin (n + 1),
       |(Lagrange.basis univ (fun j : Fin (n + 1) => a + ((j : ℕ) : ℝ) * (b - a) / n) i).eval

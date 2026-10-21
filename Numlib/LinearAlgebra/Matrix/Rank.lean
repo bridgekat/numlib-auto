@@ -9,6 +9,7 @@ import Mathlib.LinearAlgebra.Dimension.Constructions
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Rank
 import Numlib.Data.Matrix.Mul
+import Numlib.Data.Subtype
 import Numlib.LinearAlgebra.Matrix.BlockDiagonal
 
 /-!
@@ -36,7 +37,8 @@ classical characterization of the rank as the largest order of a nonvanishing mi
 * `Matrix.rank_add_le`, subadditivity, and the rank factorization
   `Matrix.rank_le_iff_exists_mul` (`rank A ≤ r ↔ A = B C` through `K^r`) with its generator form
   `Matrix.rank_le_iff_exists_mul_transpose`; `Matrix.rank_le_card_add_card_of_forall_ne_zero`, the
-  rank bound of a matrix supported on a few rows and columns.
+  rank bound of a matrix supported on a few rows and columns; `Matrix.rank_eq_zero_iff`; and
+  `Matrix.exists_mul_eq_of_range_mulVecLin_le`, `ran N ⊆ ran M ⇒ ∃ X, M X = N`.
 * `Matrix.rank_toBlock_mono`: a block of a block has smaller rank; `Matrix.rank_submatrix_one_mul`:
   padding with zero rows does not change the rank.
 * **The nullity theorem** (Fiedler–Markham; Strang–Nguyen): for invertible `A`,
@@ -303,6 +305,31 @@ theorem rank_le_card_add_card_of_forall_ne_zero [Finite m] (A : Matrix m n K)
   rw [hA]
   exact (rank_add_le A₁ A₂).trans (add_le_add h₁ h₂)
 
+/-- A matrix has rank zero exactly when it vanishes. -/
+theorem rank_eq_zero_iff [Finite m] {A : Matrix m n K} : A.rank = 0 ↔ A = 0 := by
+  classical
+  have := Fintype.ofFinite m
+  refine ⟨fun h => ?_, fun h => h ▸ rank_zero⟩
+  rw [rank, Submodule.finrank_eq_zero, LinearMap.range_eq_bot] at h
+  exact toLin'.injective (h.trans (map_zero toLin').symm)
+
+/-- A range inclusion `ran N ⊆ ran M` makes `M X = N` solvable: each column of `N` is `M` applied
+to some vector. -/
+theorem exists_mul_eq_of_range_mulVecLin_le {k : Type*} [Fintype k] {M : Matrix m n K}
+    {N : Matrix m k K} (h : LinearMap.range N.mulVecLin ≤ LinearMap.range M.mulVecLin) :
+    ∃ X, M * X = N := by
+  classical
+  have hc : ∀ j, ∃ x, M *ᵥ x = N *ᵥ Pi.single j 1 := fun j => by
+    obtain ⟨x, hx⟩ := h (LinearMap.mem_range_self N.mulVecLin (Pi.single j 1))
+    exact ⟨x, hx⟩
+  choose x hx using hc
+  refine ⟨of fun i j => x j i, ?_⟩
+  ext r j
+  have := congrFun (hx j) r
+  rw [mulVec_single_one, col_apply] at this
+  rw [← this]
+  rfl
+
 end Factorization
 
 /-! ### Ranks of blocks and of padded matrices -/
@@ -348,21 +375,6 @@ section Nullity
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-omit [Fintype n] [DecidableEq n] in
-/-- A vector vanishing outside `r` is the extension by zero of its restriction to `r`. -/
-private theorem extend_val_comp_val {r : n → Prop} {z : n → K} (hz : ∀ i, ¬ r i → z i = 0) :
-    Function.extend (Subtype.val : {i // r i} → n) (z ∘ Subtype.val) 0 = z := by
-  funext i
-  by_cases hi : r i
-  · exact Subtype.val_injective.extend_apply _ _ ⟨i, hi⟩
-  · rw [Function.extend_apply' _ _ _ (fun ⟨a, ha⟩ => hi (ha ▸ a.2)), hz i hi, Pi.zero_apply]
-
-omit [Fintype n] [DecidableEq n] in
-/-- An extension by zero vanishes outside the range. -/
-private theorem extend_val_apply_of_not {r : n → Prop} (x : {i // r i} → K) {i : n}
-    (hi : ¬ r i) : Function.extend (Subtype.val : {i // r i} → n) x 0 i = 0 := by
-  rw [Function.extend_apply' _ _ _ (fun ⟨a, ha⟩ => hi (ha ▸ a.2)), Pi.zero_apply]
-
 omit [DecidableEq n] in
 /-- A block applied to a vector is the matrix applied to its extension by zero, restricted. -/
 private theorem toBlock_mulVec (M : Matrix n n K) (p q : n → Prop) [DecidablePred q]
@@ -381,9 +393,9 @@ private theorem mem_ker_toBlock_of_mem_ker_toBlock {A B : Matrix n n K} (hAB : A
   have hz : ∀ i, ¬ p' i → (B *ᵥ Function.extend Subtype.val x 0) i = 0 := fun i hi => by
     have := congrFun hx ⟨i, not_not.1 ((not_congr (hp i)).1 hi)⟩
     rwa [toBlock_mulVec] at this
-  rw [toBlock_mulVec, extend_val_comp_val hz, mulVec_mulVec, hAB, one_mulVec]
+  rw [toBlock_mulVec, Function.extend_val_comp_val hz, mulVec_mulVec, hAB, one_mulVec]
   funext i
-  exact extend_val_apply_of_not x ((hq i).1 i.2)
+  exact Function.extend_val_apply' ((hq i).1 i.2)
 
 /-- **The nullity theorem, kernel form** (Fiedler–Markham 1986, cited by [golub2013matrix]
 §12.2): for an invertible `A` and index predicates `p`, `q`, the null spaces of `A⁻¹[p, q]` and of
@@ -416,7 +428,7 @@ theorem finrank_ker_toBlock_inv {A : Matrix n n K} (hA : IsUnit A) (p q : n → 
     change (A⁻¹ *ᵥ Function.extend Subtype.val
       ((A *ᵥ Function.extend Subtype.val (y : {j // ¬ p j} → K) 0) ∘ Subtype.val) 0)
         ∘ Subtype.val = (y : {j // ¬ p j} → K)
-    rw [extend_val_comp_val hvan, mulVec_mulVec, h2, one_mulVec]
+    rw [Function.extend_val_comp_val hvan, mulVec_mulVec, h2, one_mulVec]
     funext j
     exact Subtype.val_injective.extend_apply _ _ j
   · ext x : 2
@@ -428,7 +440,7 @@ theorem finrank_ker_toBlock_inv {A : Matrix n n K} (hA : IsUnit A) (p q : n → 
     change (A *ᵥ Function.extend Subtype.val
       ((A⁻¹ *ᵥ Function.extend Subtype.val (x : {j // q j} → K) 0) ∘ Subtype.val) 0)
         ∘ Subtype.val = (x : {j // q j} → K)
-    rw [extend_val_comp_val hvan, mulVec_mulVec, h1, one_mulVec]
+    rw [Function.extend_val_comp_val hvan, mulVec_mulVec, h1, one_mulVec]
     funext j
     exact Subtype.val_injective.extend_apply _ _ j
 

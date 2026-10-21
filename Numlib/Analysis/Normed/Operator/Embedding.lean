@@ -107,6 +107,32 @@ theorem isContinuousEmbedding_iff_continuous {ι : V →ₗ[𝕜] W} :
   ⟨fun h ↦ ⟨h.injective, h.continuous⟩,
     fun ⟨hi, hc⟩ ↦ ⟨hi, ‖(⟨ι, hc⟩ : V →L[𝕜] W)‖, (⟨ι, hc⟩ : V →L[𝕜] W).le_opNorm⟩⟩
 
+/-- **The sequential criterion for a compact operator**: a linear map `T` that sends every
+sequence of the closed unit ball to a sequence with a convergent subsequence is a compact
+operator. A point of the closure of the image of the ball is within `1 / (n + 1)` of some `T vₙ`,
+`‖vₙ‖ ≤ 1`, and a convergent subsequence of `T vₙ` gives one of the original sequence. -/
+theorem isCompactOperator_of_forall_exists_subseq_tendsto {T : V →ₗ[𝕜] W}
+    (h : ∀ u : ℕ → V, (∀ n, ‖u n‖ ≤ 1) →
+      ∃ (φ : ℕ → ℕ) (w : W), StrictMono φ ∧ Tendsto (fun n ↦ T (u (φ n))) atTop (𝓝 w)) :
+    IsCompactOperator T := by
+  rw [isCompactOperator_iff_isCompact_closure_image_closedBall T one_pos]
+  refine IsSeqCompact.isCompact fun {y} hy ↦ ?_
+  have hy' : ∀ n : ℕ, ∃ v : V, ‖v‖ ≤ 1 ∧ dist (y n) (T v) < 1 / (n + 1) := by
+    intro n
+    obtain ⟨z, ⟨v, hv, rfl⟩, hz⟩ := Metric.mem_closure_iff.1 (hy n) (1 / (n + 1)) (by positivity)
+    exact ⟨v, mem_closedBall_zero_iff.1 hv, hz⟩
+  choose v hv hvy using hy'
+  obtain ⟨φ, w, hφ, hw⟩ := h v hv
+  refine ⟨w, isClosed_closure.mem_of_tendsto hw (.of_forall fun n ↦
+    subset_closure (mem_image_of_mem _ (mem_closedBall_zero_iff.2 (hv _)))),
+    φ, hφ, hw.congr_dist ?_⟩
+  refine squeeze_zero (g := fun n : ℕ ↦ 1 / ((n : ℝ) + 1)) (fun n ↦ dist_nonneg) (fun n ↦ ?_)
+    tendsto_one_div_add_atTop_nhds_zero_nat
+  rw [dist_comm]
+  refine (hvy (φ n)).le.trans (one_div_le_one_div_of_le (by positivity) ?_)
+  have : (n : ℝ) ≤ (φ n : ℝ) := by exact_mod_cast hφ.le_apply
+  linarith
+
 /-- **A compact embedding is exactly an injective compact operator.** The sequential condition —
 every bounded sequence of `V` has a subsequence whose image converges in `W` — is the sequential
 form of the compactness of the closure of the image of a ball, which is `IsCompactOperator`; the
@@ -119,24 +145,7 @@ theorem isCompactEmbedding_iff_isCompactOperator {ι : V →ₗ[𝕜] W} :
     IsCompactEmbedding ι ↔ Function.Injective ι ∧ IsCompactOperator ι := by
   constructor
   · rintro ⟨hc, hs⟩
-    refine ⟨hc.injective, ?_⟩
-    rw [isCompactOperator_iff_isCompact_closure_image_closedBall ι one_pos]
-    refine IsSeqCompact.isCompact fun {y} hy ↦ ?_
-    have hy' : ∀ n : ℕ, ∃ v : V, ‖v‖ ≤ 1 ∧ dist (y n) (ι v) < 1 / (n + 1) := by
-      intro n
-      obtain ⟨z, ⟨v, hv, rfl⟩, hz⟩ := Metric.mem_closure_iff.1 (hy n) (1 / (n + 1)) (by positivity)
-      exact ⟨v, mem_closedBall_zero_iff.1 hv, hz⟩
-    choose v hv hvy using hy'
-    obtain ⟨φ, w, hφ, hw⟩ := hs v ⟨1, hv⟩
-    refine ⟨w, isClosed_closure.mem_of_tendsto hw (.of_forall fun n ↦
-      subset_closure (mem_image_of_mem _ (mem_closedBall_zero_iff.2 (hv _)))),
-      φ, hφ, hw.congr_dist ?_⟩
-    refine squeeze_zero (g := fun n : ℕ ↦ 1 / ((n : ℝ) + 1)) (fun n ↦ dist_nonneg) (fun n ↦ ?_)
-      tendsto_one_div_add_atTop_nhds_zero_nat
-    rw [dist_comm]
-    refine (hvy (φ n)).le.trans (one_div_le_one_div_of_le (by positivity) ?_)
-    have : (n : ℝ) ≤ (φ n : ℝ) := by exact_mod_cast hφ.le_apply
-    linarith
+    exact ⟨hc.injective, isCompactOperator_of_forall_exists_subseq_tendsto fun v hv ↦ hs v ⟨1, hv⟩⟩
   · rintro ⟨hi, hK⟩
     refine ⟨⟨hi, ‖(⟨ι, hK.continuous⟩ : V →L[𝕜] W)‖, (⟨ι, hK.continuous⟩ : V →L[𝕜] W).le_opNorm⟩,
       fun u ⟨M, hM⟩ ↦ ?_⟩

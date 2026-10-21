@@ -124,12 +124,6 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ} [IsCompatiblePairing Bx.flip]
   {G : Bifun Y V}
 
-/-- Negating a sum whose second summand is finite. -/
-private theorem neg_neg_add_coe {a : EReal} {c : ℝ} :
-    -(-a + (c : EReal)) = a + ((-c : ℝ) : EReal) := by
-  rw [EReal.neg_add (.inr (EReal.coe_ne_top _)) (.inr (EReal.coe_ne_bot _)),
-    neg_neg, sub_eq_add_neg, ← EReal.coe_neg]
-
 /-- The dual of `convexCl_infBifun_zero_eq_iSup_convexAdjointBifun`: the concave closure of the dual
 perturbation function at the origin is the optimal value of the doubly-adjoint program. -/
 theorem concaveCl_supBifun_zero_eq_infBifun_concaveAdjointBifun (hG : ConcaveBifun G) :
@@ -145,7 +139,8 @@ theorem concaveCl_supBifun_zero_eq_infBifun_concaveAdjointBifun (hG : ConcaveBif
       rw [LinearMap.flip_apply, LinearMap.flip_apply, map_zero, LinearMap.zero_apply, sub_zero]
     have h2 : (Bx (-x) q.1 - Bu (0 : U) q.2 : ℝ) = -(Bx x q.1) := by
       rw [map_zero, LinearMap.zero_apply, sub_zero, map_neg, LinearMap.neg_apply]
-    rw [h1, h2, neg_neg_add_coe]
+    rw [h1, h2, EReal.neg_add (.inr (EReal.coe_ne_top _)) (.inr (EReal.coe_ne_bot _)), neg_neg,
+      sub_eq_add_neg, ← EReal.coe_neg]
   rw [concaveCl_apply, neg_supBifun,
     convexCl_infBifun_zero_eq_iSup_convexAdjointBifun (Bu := Bx.flip) Bu.flip hneg, EReal.neg_iSup,
     iInf_congr hpt]
@@ -614,12 +609,6 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDim
   [AddCommGroup V] [Module ℝ V] [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {F : Bifun U X}
 
-/-- Negating a sum whose first summand is finite. -/
-private theorem neg_coe_add {c : ℝ} {w : EReal} :
-    -(((c : ℝ) : EReal) + w) = ((-c : ℝ) : EReal) - w := by
-  rw [EReal.neg_add (.inl (EReal.coe_ne_bot _)) (.inl (EReal.coe_ne_top _)),
-    ← EReal.coe_neg]
-
 omit [FiniteDimensional ℝ U] [IsCompatiblePairing Bu] in
 /-- The dual objective, negated, is the conjugate of the perturbation function at the reflected
 point: `-(F* 0)(v) = (inf F)*(-v)`. -/
@@ -627,7 +616,8 @@ theorem neg_convexAdjointBifun_zero_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     -(convexAdjointBifun Bu Bx F 0 v) = convexConj Bu (infBifun F) (-v) := by
   rw [convexAdjointBifun_zero_apply, EReal.neg_iInf, convexConj_apply]
   refine iSup_congr fun u => ?_
-  rw [neg_coe_add, map_neg]
+  rw [EReal.neg_add (.inl (EReal.coe_ne_bot _)) (.inl (EReal.coe_ne_top _)), ← EReal.coe_neg,
+    map_neg]
 
 omit [FiniteDimensional ℝ U] [IsCompatiblePairing Bu] in
 /-- The dual objective is `-∞` at `v` exactly when the conjugate of the perturbation function is

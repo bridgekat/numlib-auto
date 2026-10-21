@@ -338,7 +338,6 @@ private theorem exists_bound {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ
   push Not at hcon
   choose v hv1 hv2 using fun n : ℕ => hcon ((n : ℝ) + 1) (by positivity)
   obtain ⟨c, hc⟩ := NormedField.exists_one_lt_norm 𝕜
-  have hc0 : (0 : ℝ) < ‖c‖ := lt_trans one_pos hc
   have hvbig : ∀ n : ℕ, (n : ℝ) + 1 < ‖v n‖ := by
     intro n
     refine lt_of_le_of_lt ?_ (hv2 n)
@@ -438,7 +437,6 @@ theorem isClosed_range_smul_sub {K : X →L[𝕜] X} (hK : IsCompactOperator K) 
     intro n
     rw [map_sub, ha' n, hr' n, sub_zero]
   obtain ⟨B, hB⟩ := isBounded_iff_forall_norm_le.1 (Metric.isBounded_range_of_tendsto _ hlim)
-  have hB0 : 0 ≤ B := le_trans (norm_nonneg (y 0)) (hB _ ⟨0, rfl⟩)
   have hbdd : ∀ n, ‖a n - r n‖ ≤ C * (1 + B) := by
     intro n
     refine le_trans (hC (a n - r n) fun t ht => hrmin n t ht) ?_

@@ -85,7 +85,6 @@ theorem coeFn_sinLp (k : ℕ) : (sinLp k : Icc (0 : ℝ) π → ℝ) =ᵐ[halfRa
 
 /-- The inner products of the half-range sine system: it is orthonormal. -/
 theorem inner_sinLp (j k : ℕ) : inner ℝ (sinLp j) (sinLp k) = if j = k then 1 else 0 := by
-  have hπ : (0 : ℝ) < π := Real.pi_pos
   rw [MeasureTheory.L2.inner_def]
   have key : ∫ x, inner ℝ ((sinLp j : Icc (0 : ℝ) π → ℝ) x) ((sinLp k : Icc (0 : ℝ) π → ℝ) x)
         ∂halfRangeMeasure

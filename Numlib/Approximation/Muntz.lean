@@ -1,8 +1,10 @@
 import Mathlib.Analysis.SpecialFunctions.Integrability.Basic
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Function.L2Space
+import Numlib.Algebra.Order.BigOperators.Ring.Finset
 import Numlib.Analysis.InnerProductSpace.GramDeterminant
 import Numlib.Analysis.Normed.Module.BestApprox
+import Numlib.Analysis.SpecialFunctions.Exp
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.LinearAlgebra.Matrix.Cauchy
 
@@ -209,29 +211,6 @@ theorem dist_sq_powerL2 {n : ℕ} (l : Fin n → ℝ) (a : ℝ) (hl : ∀ i, -(1
 
 /-! #### The Müntz products -/
 
-/-- The Weierstrass product inequality, `1 - ∑ bᵢ ≤ ∏ (1 - bᵢ)` for `bᵢ ∈ [0, 1]`. -/
-private theorem one_sub_sum_le_prod_one_sub (b : ℕ → ℝ) (hb0 : ∀ i, 0 ≤ b i) (hb1 : ∀ i, b i ≤ 1)
-    (n : ℕ) : 1 - ∑ i ∈ Finset.range n, b i ≤ ∏ i ∈ Finset.range n, (1 - b i) := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [Finset.prod_range_succ, Finset.sum_range_succ]
-    have hS : 0 ≤ ∑ i ∈ Finset.range n, b i := Finset.sum_nonneg fun i _ ↦ hb0 i
-    nlinarith [ih, hb0 n, hb1 n]
-
-/-- If `∑ bᵢ` diverges and `bᵢ ≤ 1` then `∏ (1 - bᵢ) → 0`, by `1 - x ≤ exp (-x)`. -/
-private theorem tendsto_prod_one_sub {b : ℕ → ℝ} (hb1 : ∀ i, b i ≤ 1)
-    (hdiv : Tendsto (fun n ↦ ∑ i ∈ Finset.range n, b i) atTop atTop) :
-    Tendsto (fun n ↦ ∏ i ∈ Finset.range n, (1 - b i)) atTop (𝓝 0) := by
-  refine squeeze_zero (fun n ↦ Finset.prod_nonneg fun i _ ↦ by linarith [hb1 i])
-    (g := fun n ↦ Real.exp (-∑ i ∈ Finset.range n, b i)) (fun n ↦ ?_) ?_
-  · calc ∏ i ∈ Finset.range n, (1 - b i) ≤ ∏ i ∈ Finset.range n, Real.exp (-b i) :=
-          Finset.prod_le_prod₀ (fun i _ ↦ by linarith [hb1 i])
-            (fun i _ ↦ by linarith [Real.add_one_le_exp (-b i)])
-      _ = Real.exp (-∑ i ∈ Finset.range n, b i) := by
-          rw [← Real.exp_sum, Finset.sum_neg_distrib]
-  · exact Real.tendsto_exp_atBot.comp (tendsto_neg_atBot_iff.2 hdiv)
-
 section Products
 
 variable {a : ℝ} {l : ℕ → ℝ} {i : ℕ}
@@ -268,7 +247,6 @@ private theorem tendsto_muntzProd (ha : 0 ≤ a) (hl : ∀ j, 0 < l j)
     refine (summable_nat_add_iff I).1 (Summable.of_nonneg_of_le (fun k ↦ by
       have := hl (k + I); positivity) (fun k ↦ ?_) (hsum.mul_left (2 / (2 * a + 1))))
     have h1 : (0:ℝ) < l (k + I) := hl (k + I)
-    have h4 : (0:ℝ) < l (k + I) + a + 1 := by linarith
     have key : (2 / (2 * a + 1)) * b k = 2 / (l (k + I) + a + 1) := by
       rw [hbdef]; field_simp
     rw [key, inv_eq_one_div, ← sub_nonneg,
@@ -276,7 +254,7 @@ private theorem tendsto_muntzProd (ha : 0 ≤ a) (hl : ∀ j, 0 < l j)
         = (l (k + I) - a - 1) / (l (k + I) * (l (k + I) + a + 1)) by field_simp; ring]
     exact div_nonneg (by linarith [hlI k]) (by positivity)
   have hprod : Tendsto (fun n ↦ ∏ k ∈ Finset.range n, (1 - b k)) atTop (𝓝 0) :=
-    tendsto_prod_one_sub hb1 hdiv
+    Real.tendsto_prod_one_sub_of_tendsto_sum hb1 hdiv
   have hshift : ∀ n, (∏ i ∈ Finset.range (n + I), ((a - l i) / (a + l i + 1)) ^ 2)
       = (∏ i ∈ Finset.range I, ((a - l i) / (a + l i + 1)) ^ 2)
         * (∏ k ∈ Finset.range n, (1 - b k)) ^ 2 := by
@@ -336,10 +314,10 @@ private theorem muntzProd_bddBelow (ha : 0 ≤ a) (hl : ∀ j, 0 < l j)
       have h1 : ∑ k ∈ Finset.range m, b (k + J) ≤ 1 / 2 :=
         le_trans (((summable_nat_add_iff J).2 hbsum).sum_le_tsum (Finset.range m)
           (fun k _ ↦ hb0 _)) hJ
-      have h2 := one_sub_sum_le_prod_one_sub (fun k ↦ b (k + J)) (fun k ↦ hb0 _)
-        (fun k ↦ by
+      have h2 := Finset.one_sub_sum_le_prod_one_sub (Finset.range m) (fun k ↦ b (k + J))
+        (fun k _ ↦ hb0 _) (fun k _ ↦ by
           rw [hbdef, div_le_one (by have := hl (k + J); positivity)]
-          linarith [hI (k + J) (le_trans hJI (Nat.le_add_left _ _))]) m
+          linarith [hI (k + J) (le_trans hJI (Nat.le_add_left _ _))])
       linarith
     rw [hkey]
     have hB : (1:ℝ) / 4 ≤ (∏ k ∈ Finset.range m, (1 - b (k + J))) ^ 2 := by nlinarith [hlow]
@@ -359,7 +337,7 @@ private theorem toLpₗ_X_pow (m : ℕ) :
     isWeight_unit.toLpₗ (Polynomial.X ^ m) = powerL2 (m : ℝ) := by
   refine Lp.ext ?_
   filter_upwards [isWeight_unit.coeFn_toLpₗ (Polynomial.X ^ m),
-    coeFn_powerL2 (l := (m : ℝ)) (by have : (0 : ℝ) ≤ m := Nat.cast_nonneg m; linarith)]
+    coeFn_powerL2 (l := (m : ℝ)) (by linarith)]
     with t h1 h2
   rw [h1, h2, Polynomial.eval_pow, Polynomial.eval_X, Real.rpow_natCast]
 

@@ -104,6 +104,20 @@ theorem WeakSeqTendsto.of_tendsto {u : ℕ → V} {w : V} (h : Tendsto u atTop (
     WeakSeqTendsto u w :=
   fun ℓ => (ℓ.continuous.tendsto w).comp h
 
+/-- In a real Hilbert space weak sequential convergence is convergence of the inner products
+against every fixed vector: every bounded functional is `⟪·, y⟫` for some `y`, by the Riesz
+representation theorem (`InnerProductSpace.toDual`). -/
+theorem weakSeqTendsto_iff_forall_tendsto_inner {H : Type*} [NormedAddCommGroup H]
+    [InnerProductSpace ℝ H] [CompleteSpace H] {u : ℕ → H} {w : H} :
+    WeakSeqTendsto u w ↔
+      ∀ y : H, Tendsto (fun n => inner ℝ (u n) y) atTop (𝓝 (inner ℝ w y)) := by
+  refine ⟨fun h y => ?_, fun h ℓ => ?_⟩
+  · simpa only [innerSL_apply_apply, real_inner_comm y] using h (innerSL ℝ y)
+  · have := h ((InnerProductSpace.toDual ℝ H).symm ℓ)
+    simp only [real_inner_comm ((InnerProductSpace.toDual ℝ H).symm ℓ),
+      InnerProductSpace.toDual_symm_apply] at this
+    exact this
+
 /-- **Bounded sequences have weakly convergent subsequences.** This is the property that the direct
 method of the calculus of variations needs of the underlying space, and, for a Banach space, it is
 equivalent to reflexivity by the theorems of Eberlein–Šmulian and Kakutani; it is the form in which

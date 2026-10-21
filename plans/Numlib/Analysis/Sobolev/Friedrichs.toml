@@ -71,9 +71,6 @@ id = "HasWeakFDerivOn.ae_eq_const_of_isPreconnected"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 7"
 
 [[node]]
-id = "ContDiffBump.norm_convolution_normed_le_of_ae_norm_le"
-
-[[node]]
 id = "MeasureTheory.integrable_smul_smul_sub_prod"
 
 [[node]]
@@ -163,3 +160,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 [[node]]
 id = "HasWeakFDerivOn.exists_ball_hasFDerivAt_ae_eq_of_continuousOn"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 2"
+
+[[node]]
+id = "SobolevEuclidean.eLpNorm_le_sum_of_hasWeakFDerivOn"

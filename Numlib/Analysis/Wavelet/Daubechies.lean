@@ -684,11 +684,6 @@ private theorem pairing_right (u₀ u₁ u₂ : ℝ) {y : ℝ} (hy0 : 1 / 2 ≤ 
 
 /-! ### Injectivity of the transposes, and the span of `w(0), w(1/2), w(1)` -/
 
-private theorem eq_zero_of_mul_eq_zero {u c : ℝ} (hc : c ≠ 0) (h : u * c = 0) : u = 0 := by
-  rcases mul_eq_zero.mp h with h' | h'
-  · exact h'
-  · exact absurd h' hc
-
 private theorem covector_left_eq_zero {u₀ u₁ u₂ : ℝ}
     (e1 : (1 + √3) / 4 * u₀ + (3 - √3) / 4 * u₁ = 0)
     (e2 : (3 + √3) / 4 * u₁ + (1 - √3) / 4 * u₂ = 0)
@@ -699,10 +694,10 @@ private theorem covector_left_eq_zero {u₀ u₁ u₂ : ℝ}
     linear_combination ((1 + √3) / 4) * e2 - ((3 + √3) / 4) * e3
   have hu2 : u₂ = 0 := by linarith
   have hu1 : u₁ = 0 :=
-    eq_zero_of_mul_eq_zero (c := (3 + √3) / 4) (by intro hc; nlinarith)
+    (mul_eq_zero_iff_right (b := (3 + √3) / 4) (by intro hc; nlinarith)).1
       (by linear_combination e2 - ((1 - √3) / 4) * hu2)
   have hu0 : u₀ = 0 :=
-    eq_zero_of_mul_eq_zero (c := (1 + √3) / 4) (by intro hc; nlinarith)
+    (mul_eq_zero_iff_right (b := (1 + √3) / 4) (by intro hc; nlinarith)).1
       (by linear_combination e1 - ((3 - √3) / 4) * hu1)
   exact ⟨hu0, hu1, hu2⟩
 
@@ -716,10 +711,10 @@ private theorem covector_right_eq_zero {u₀ u₁ u₂ : ℝ}
     linear_combination ((1 + √3) / 4) * e1 - ((3 + √3) / 4) * e2
   have hu1 : u₁ = 0 := by linarith
   have hu0 : u₀ = 0 :=
-    eq_zero_of_mul_eq_zero (c := (3 + √3) / 4) (by intro hc; nlinarith)
+    (mul_eq_zero_iff_right (b := (3 + √3) / 4) (by intro hc; nlinarith)).1
       (by linear_combination e1 - ((1 - √3) / 4) * hu1)
   have hu2 : u₂ = 0 :=
-    eq_zero_of_mul_eq_zero (c := (1 - √3) / 4) (by intro hc; nlinarith)
+    (mul_eq_zero_iff_right (b := (1 - √3) / 4) (by intro hc; nlinarith)).1
       (by linear_combination e3 - ((3 + √3) / 4) * hu1)
   exact ⟨hu0, hu1, hu2⟩
 
@@ -744,10 +739,10 @@ private theorem covector_eq_zero {u₀ u₁ u₂ : ℝ} (h0 : pairing u₀ u₁ 
     · exact absurd h (by intro hc; linarith)
     · exact h
   have hu1 : u₁ = 0 :=
-    eq_zero_of_mul_eq_zero (c := (1 + √3) / 2) (by intro hc; nlinarith)
+    (mul_eq_zero_iff_right (b := (1 + √3) / 2) (by intro hc; nlinarith)).1
       (by linear_combination h0 - ((1 - √3) / 2) * hu2)
   have hu0 : u₀ = 0 :=
-    eq_zero_of_mul_eq_zero (c := (1 + √3) / 2) (by intro hc; nlinarith)
+    (mul_eq_zero_iff_right (b := (1 + √3) / 2) (by intro hc; nlinarith)).1
       (by linear_combination h1 - ((1 - √3) / 2) * hu1)
   exact ⟨hu0, hu1, hu2⟩
 
@@ -767,7 +762,6 @@ private theorem pairing_dyadic : ∀ (n m : ℕ), m < 2 ^ n → ∀ u₀ u₁ u�
     intro m hm u₀ u₁ u₂ h
     have hpow : (0 : ℝ) < 2 ^ n := by positivity
     have hsplit : (2 : ℝ) ^ (n + 1) = 2 * 2 ^ n := by ring
-    have hmnn : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
     rcases le_or_gt (m + 1) (2 ^ n) with hcase | hcase
     · have hmn : m < 2 ^ n := by omega
       have hmr : (m : ℝ) + 1 ≤ 2 ^ n := by exact_mod_cast hcase
@@ -787,7 +781,6 @@ private theorem pairing_dyadic : ∀ (n m : ℕ), m < 2 ^ n → ∀ u₀ u₁ u�
     · have hmn : m - 2 ^ n < 2 ^ n := by omega
       have hmr : ((m - 2 ^ n : ℕ) : ℝ) + 1 ≤ 2 ^ n := by
         have hnat : (m - 2 ^ n) + 1 ≤ 2 ^ n := by
-          have h2 : 2 ^ (n + 1) = 2 * 2 ^ n := by ring
           omega
         exact_mod_cast hnat
       have hcast : (m : ℝ) = ((m - 2 ^ n : ℕ) : ℝ) + 2 ^ n := by
@@ -795,7 +788,6 @@ private theorem pairing_dyadic : ∀ (n m : ℕ), m < 2 ^ n → ∀ u₀ u₁ u�
         rw [show ((m : ℕ) : ℝ) = (((m - 2 ^ n) + 2 ^ n : ℕ) : ℝ) by rw [← hnat]]
         push_cast
         ring
-      have hmnn' : (0 : ℝ) ≤ ((m - 2 ^ n : ℕ) : ℝ) := Nat.cast_nonneg _
       obtain ⟨a0, a1, a2⟩ := ih (m - 2 ^ n) hmn ((3 + √3) / 4 * u₀ + (1 - √3) / 4 * u₁)
         ((1 + √3) / 4 * u₀ + (3 - √3) / 4 * u₁) ((3 + √3) / 4 * u₁ + (1 - √3) / 4 * u₂)
         (by
@@ -824,7 +816,6 @@ private theorem exists_pairing_ne_zero {u₀ u₁ u₂ : ℝ} (hu : ¬(u₀ = 0 
   have hmle : a * 2 ^ n ≤ ((⌈a * 2 ^ n⌉₊ : ℕ) : ℝ) := Nat.le_ceil _
   have hmlt : ((⌈a * 2 ^ n⌉₊ : ℕ) : ℝ) < a * 2 ^ n + 1 :=
     Nat.ceil_lt_add_one (by positivity)
-  have hmb : ((⌈a * 2 ^ n⌉₊ : ℕ) : ℝ) + 1 ≤ b * 2 ^ n := by nlinarith
   have hmn : ⌈a * 2 ^ n⌉₊ < 2 ^ n := by
     have h1 : ((⌈a * 2 ^ n⌉₊ : ℕ) : ℝ) < ((2 ^ n : ℕ) : ℝ) := by push_cast; nlinarith
     exact_mod_cast h1
@@ -839,7 +830,6 @@ private theorem exists_pairing_ne_zero {u₀ u₁ u₂ : ℝ} (hu : ¬(u₀ = 0 
 private theorem exists_ne_zero {p q : ℝ} (hpq : p < q) (hp : 0 ≤ p) (hq : q ≤ 3) :
     ∃ y ∈ Icc p q, scalingFun y ≠ 0 := by
   have hr0 : (0 : ℝ) ≤ (p + q) / 2 := by linarith
-  have hr3 : (p + q) / 2 < 3 := by linarith
   obtain ⟨k, hk⟩ : ∃ k : ℕ, ⌊(p + q) / 2⌋₊ = k := ⟨_, rfl⟩
   have hjle : (k : ℝ) ≤ (p + q) / 2 := hk ▸ Nat.floor_le hr0
   have hjlt : (p + q) / 2 < (k : ℝ) + 1 := hk ▸ Nat.lt_floor_add_one _

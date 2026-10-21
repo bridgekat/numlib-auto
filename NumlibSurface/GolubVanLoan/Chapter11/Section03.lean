@@ -2609,7 +2609,7 @@ theorem cgnr_isMinResidual_of_injective {m : ℕ} {A : Matrix (Fin m) (Fin n) �
       (Krylov.subspace (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A)
         (toEuclideanLin Aᵀ (b - toEuclideanLin A x₀)) k)
       (CG.iterate (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A) (toEuclideanLin Aᵀ b) x₀ k).x := by
-  have hadj := inner_transpose_apply A
+  have hadj := LinearMap.isAdjointPair_inner_iff.2 (inner_transpose_apply A)
   have hS := Krylov.adjoint_comp_isSymmetricCoercive_of_injective hadj hA
   exact (Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual hadj b x₀ k _).1
     (CG.isGalerkinIterate _ x₀ hS k)
@@ -2639,13 +2639,14 @@ theorem cgne_isMinError_of_injective_transpose {m : ℕ} {A : Matrix (Fin m) (Fi
       (Krylov.subspace (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A)
         (toEuclideanLin Aᵀ (b - toEuclideanLin A (toEuclideanLin Aᵀ y₀))) k)
       (toEuclideanLin Aᵀ (CG.iterate (toEuclideanLin A ∘ₗ toEuclideanLin Aᵀ) b y₀ k).x) := by
-  have hadj := inner_transpose_apply A
+  have hadj := LinearMap.isAdjointPair_inner_iff.2 (inner_transpose_apply A)
   -- `AAᵀ` is symmetric positive definite: `(Aᵀ)ᵀ = A` is the adjoint of `Aᵀ`
   have hadj' : ∀ (u : 𝔼 n) (v : 𝔼 m), ⟪toEuclideanLin A u, v⟫ = ⟪u, toEuclideanLin Aᵀ v⟫ :=
     fun u v => by
       have := inner_transpose_apply Aᵀ u v
       rwa [transpose_transpose] at this
-  have hS := Krylov.adjoint_comp_isSymmetricCoercive_of_injective hadj' hA
+  have hS := Krylov.adjoint_comp_isSymmetricCoercive_of_injective
+    (LinearMap.isAdjointPair_inner_iff.2 hadj') hA
   have h := Krylov.isMinError_of_isGalerkinIterate_comp_adjoint hadj b (toEuclideanLin Aᵀ y₀)
     rfl hxs (CG.isGalerkinIterate b y₀ hS k)
   rwa [← map_add, add_sub_cancel] at h

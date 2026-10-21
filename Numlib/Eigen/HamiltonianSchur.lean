@@ -291,15 +291,6 @@ theorem riccati_of_hamiltonianSchur {A F G T R Q₁ Q₂ : Matrix l l ℝ}
     simp only [Matrix.mul_assoc]
     abel
 
-/-- A Householder reflector (or the identity) carries a real vector to a multiple of a coordinate
-vector. -/
-private theorem exists_orthogonal_mulVec_eq_smul_single (v : l → ℝ) (i : l) :
-    ∃ P ∈ orthogonalGroup l ℝ, ∃ β : ℝ, P *ᵥ v = β • Pi.single i 1 := by
-  by_cases hv : v = 0
-  · exact ⟨1, one_mem _, 0, by simp [hv]⟩
-  exact ⟨_, householder_householderVec_mem_unitaryGroup hv i, _,
-    householder_mulVec_eq_smul_single hv i⟩
-
 /-- **Any vector is carried to a multiple of a coordinate vector by an orthogonal symplectic
 matrix** ([golub2013matrix] §7.8.1, the Householder–Givens–Householder reduction): for
 `x : l ⊕ l → ℝ` and any `i₀ : l` there is an orthogonal symplectic `Q` with
@@ -310,7 +301,7 @@ reduces the top half, and `diag(±1, ±1)` fixes the sign; the norm is preserved
 theorem exists_orthogonalSymplectic_mulVec_eq (x : l ⊕ l → ℝ) (i₀ : l) :
     ∃ Q ∈ orthoSymplecticGroup l ℝ, Qᵀ *ᵥ x = ‖WithLp.toLp 2 x‖ • Pi.single (Sum.inl i₀) 1 := by
   -- step 1: the bottom half
-  obtain ⟨P₁, hP₁, β, hβ⟩ := exists_orthogonal_mulVec_eq_smul_single (x ∘ Sum.inr) i₀
+  obtain ⟨P₁, hP₁, -, β, hβ⟩ := exists_mem_unitaryGroup_mulVec_eq_smul_single (x ∘ Sum.inr) i₀
   set D₁ := fromBlocks P₁ 0 0 P₁
   have hD₁ := fromBlocks_diagonal_mem_orthoSymplecticGroup hP₁
   set y := D₁ *ᵥ x with hy
@@ -335,7 +326,7 @@ theorem exists_orthogonalSymplectic_mulVec_eq (x : l ⊕ l → ℝ) (i₀ : l) :
         smul_zero] at this
       exact this
   -- step 3: the top half
-  obtain ⟨P₂, hP₂, γ, hγ⟩ := exists_orthogonal_mulVec_eq_smul_single (z ∘ Sum.inl) i₀
+  obtain ⟨P₂, hP₂, -, γ, hγ⟩ := exists_mem_unitaryGroup_mulVec_eq_smul_single (z ∘ Sum.inl) i₀
   set D₂ := fromBlocks P₂ 0 0 P₂
   have hD₂ := fromBlocks_diagonal_mem_orthoSymplecticGroup hP₂
   have hw : D₂ *ᵥ z = γ • Pi.single (Sum.inl i₀) 1 := by
@@ -479,60 +470,6 @@ private theorem cplx_mulVec (M : Matrix ι ι ℝ) (x : ι → ℝ) :
     cplx (M *ᵥ x) = M.complexify *ᵥ cplx x :=
   (complexify_mulVec_ofReal M x).symm
 
-omit [DecidableEq ι] in
-/-- An invariant real subspace has a matrix of orthonormal columns spanning it, on which the
-matrix acts through its compression `X₀ᵀ M X₀`. -/
-private theorem exists_orthonormal_cols (M : Matrix ι ι ℝ) (X : Submodule ℝ (ι → ℝ))
-    (hinv : ∀ x ∈ X, M *ᵥ x ∈ X) {d : ℕ} (hd : Module.finrank ℝ X = d) :
-    ∃ X₀ : Matrix ι (Fin d) ℝ, X₀ᵀ * X₀ = 1 ∧ M * X₀ = X₀ * (X₀ᵀ * M * X₀) ∧
-      ∀ j, (fun r => X₀ r j) ∈ X := by
-  set e : (ι → ℝ) ≃ₗ[ℝ] EuclideanSpace ℝ ι := (WithLp.linearEquiv 2 ℝ (ι → ℝ)).symm
-  set XE := X.map (e : (ι → ℝ) →ₗ[ℝ] EuclideanSpace ℝ ι)
-  have hdE : Module.finrank ℝ XE = d := (LinearEquiv.finrank_map_eq e X).trans hd
-  set b := (stdOrthonormalBasis ℝ XE).reindex (finCongr hdE)
-  set X₀ : Matrix ι (Fin d) ℝ := of fun r j => WithLp.ofLp ((b j : XE) : EuclideanSpace ℝ ι) r
-    with hX₀
-  have hmemE : ∀ y : ι → ℝ, y ∈ X ↔ e y ∈ XE := fun y =>
-    ⟨fun h => Submodule.mem_map_of_mem h, fun h => by
-      obtain ⟨z, hz, hze⟩ := Submodule.mem_map.1 h
-      rw [← e.injective hze]; exact hz⟩
-  have hcol : ∀ j, (fun r => X₀ r j) ∈ X := fun j => by
-    rw [hmemE]
-    exact (b j).2
-  have horth : X₀ᵀ * X₀ = 1 := by
-    ext i j
-    have h := orthonormal_iff_ite.1 b.orthonormal i j
-    rw [Submodule.coe_inner, PiLp.inner_apply] at h
-    simp only [transpose_apply, mul_apply, hX₀, of_apply, one_apply]
-    rw [← h]
-    refine Finset.sum_congr rfl fun r _ => ?_
-    simp [mul_comm]
-  refine ⟨X₀, horth, ?_, hcol⟩
-  · -- every vector of `X` is a combination of the columns
-    have hspan : ∀ y ∈ X, ∃ c : Fin d → ℝ, y = X₀ *ᵥ c := by
-      intro y hy
-      refine ⟨fun i => inner ℝ (b i : EuclideanSpace ℝ ι) (e y), ?_⟩
-      have h := b.sum_repr' ⟨e y, (hmemE y).1 hy⟩
-      have h2 := congrArg (fun v : XE => WithLp.ofLp (v : EuclideanSpace ℝ ι)) h
-      simp only [Submodule.coe_sum, Submodule.coe_smul, WithLp.ofLp_sum, WithLp.ofLp_smul,
-        Submodule.coe_inner] at h2
-      ext r
-      have h3 := congrFun h2 r
-      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul] at h3
-      rw [mulVec, dotProduct]
-      simp only [hX₀, of_apply]
-      rw [← show WithLp.ofLp (e y) r = y r from rfl, ← h3]
-      exact Finset.sum_congr rfl fun i _ => mul_comm _ _
-    choose c hc using fun j => hspan _ (hinv _ (hcol j))
-    set C : Matrix (Fin d) (Fin d) ℝ := of fun i j => c j i
-    have hMX : M * X₀ = X₀ * C := by
-      ext r j
-      have := congrFun (hc j) r
-      simp only [mulVec, dotProduct] at this
-      simp only [mul_apply, C, of_apply]
-      exact this
-    rw [Matrix.mul_assoc, hMX, ← Matrix.mul_assoc X₀ᵀ, horth, Matrix.one_mul]
-
 /-- The compression of a real matrix to orthonormal columns whose complexifications lie in the
 stable spectral subspace has only stable eigenvalues. -/
 private theorem re_neg_of_cols {M : Matrix ι ι ℝ} {d : ℕ} {X₀ : Matrix ι (Fin d) ℝ}
@@ -572,36 +509,6 @@ private theorem re_neg_of_cols {M : Matrix ι ι ℝ} {d : ℕ} {X₀ : Matrix �
   exact hy0 ((Submodule.mem_bot ℂ).1 this)
 
 end StableSubspace
-
-section Isotropic
-
-/-- An isotropic family of orthonormal vectors in the symplectic space `ℝ^{l ⊕ l}` has at most
-`card l` members: the columns of `X₀` and of `J X₀` are orthonormal and mutually orthogonal. -/
-private theorem card_le_of_isotropic {k : Type*} [Fintype k] [DecidableEq k]
-    {X₀ : Matrix (l ⊕ l) k ℝ} (h1 : X₀ᵀ * X₀ = 1) (h2 : X₀ᵀ * J l ℝ * X₀ = 0) :
-    Fintype.card k ≤ Fintype.card l := by
-  set Y := J l ℝ * X₀
-  have hY : Yᵀ * Y = 1 := by
-    rw [transpose_mul, J_transpose, Matrix.mul_assoc, ← Matrix.mul_assoc (-J l ℝ),
-      Matrix.neg_mul, J_squared, neg_neg, Matrix.one_mul, h1]
-  have hrX : Fintype.card k ≤ X₀ᵀ.rank := by
-    have := rank_mul_le_left X₀ᵀ X₀
-    rwa [h1, rank_one] at this
-  have hrY : Fintype.card k ≤ Y.rank := by
-    have := rank_mul_le_left Yᵀ Y
-    rwa [hY, rank_one, rank_transpose] at this
-  have h0 : X₀ᵀ * Y = 0 := by rw [← Matrix.mul_assoc, h2]
-  have hle : LinearMap.range Y.mulVecLin ≤ LinearMap.ker X₀ᵀ.mulVecLin := by
-    rintro _ ⟨v, rfl⟩
-    rw [LinearMap.mem_ker, mulVecLin_apply, mulVecLin_apply, mulVec_mulVec, h0, zero_mulVec]
-  have hker := LinearMap.finrank_range_add_finrank_ker X₀ᵀ.mulVecLin
-  have hrY' : Y.rank ≤ Module.finrank ℝ (LinearMap.ker X₀ᵀ.mulVecLin) :=
-    Submodule.finrank_mono hle
-  rw [Module.finrank_fintype_fun_eq_card, Fintype.card_sum] at hker
-  change X₀ᵀ.rank + _ = _ at hker
-  omega
-
-end Isotropic
 
 section HamiltonianSchur
 
@@ -664,10 +571,10 @@ private theorem exists_stable_lagrangian {M : Matrix (Fin n ⊕ Fin n) (Fin n �
       ∀ X : Submodule ℝ (Fin n ⊕ Fin n → ℝ), (∀ x ∈ X, N *ᵥ x ∈ X) →
         (∀ x ∈ X, cplx x ∈ specSub N fun μ => μ.re < 0) → Module.finrank ℝ X ≤ n := by
     intro N hN X hinv hsub
-    obtain ⟨X₀, h1, hMX, hcol⟩ := exists_orthonormal_cols N X hinv rfl
+    obtain ⟨X₀, h1, hMX, hcol⟩ := exists_orthonormal_cols_of_invariant N X hinv rfl
     have hst := re_neg_of_cols h1 hMX fun j => hsub _ (hcol j)
     have hlag := hN.isotropic_of_mul_eq_mul_of_stable hMX hst
-    have := card_le_of_isotropic h1 hlag
+    have := card_le_of_transpose_mul_J_mul_eq_zero h1 hlag
     simpa using this
   have hs : Module.finrank ℝ Xs ≤ n :=
     hbound M hM Xs (fun x hx => mulVec_mem_realSub hx) fun x hx => hx
@@ -683,7 +590,7 @@ private theorem exists_stable_lagrangian {M : Matrix (Fin n ⊕ Fin n) (Fin n �
   rw [htop, finrank_top, Module.finrank_fintype_fun_eq_card, Fintype.card_sum,
     Fintype.card_fin] at hsum
   have hd : Module.finrank ℝ Xs = n := by omega
-  obtain ⟨X₀, h1, hMX, hcol⟩ := exists_orthonormal_cols M Xs
+  obtain ⟨X₀, h1, hMX, hcol⟩ := exists_orthonormal_cols_of_invariant M Xs
     (fun x hx => mulVec_mem_realSub hx) hd
   have hst := re_neg_of_cols h1 hMX fun j => hcol j
   exact ⟨X₀, h1, hM.isotropic_of_mul_eq_mul_of_stable hMX hst, hMX, hst⟩

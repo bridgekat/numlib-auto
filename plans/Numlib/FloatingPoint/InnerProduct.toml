@@ -76,3 +76,6 @@ source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 8.4"
 
 [[node]]
 id = "roundsRunningDiff_exact_iff"
+
+[[node]]
+id = "_root_.Fintype.exists_sum_mul_eq_of_abs_le"

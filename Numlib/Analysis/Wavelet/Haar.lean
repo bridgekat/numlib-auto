@@ -77,7 +77,7 @@ theorem ae_comp_const_mul (hc : c ≠ 0) {g g' : ℝ → ℝ} (h : g =ᵐ[volume
   h.comp_tendsto (qmp_const_mul hc).tendsto_ae
 
 /-- The `L²` seminorm of `x ↦ g (c * x)`, for `c ≠ 0`. -/
-private theorem eLpNorm_comp_const_mul (hc : c ≠ 0) {g : ℝ → ℝ}
+theorem _root_.MeasureTheory.eLpNorm_comp_const_mul (hc : c ≠ 0) {g : ℝ → ℝ}
     (hg : AEStronglyMeasurable g volume) :
     eLpNorm (fun x => g (c * x)) 2 volume
       = ENNReal.ofReal |c⁻¹| ^ (1 / 2 : ℝ) * eLpNorm g 2 volume := by
@@ -397,25 +397,30 @@ theorem map_topologicalClosure
     Submodule.map_coe]
   exact D.toHomeomorph.image_closure _
 
+/-- The image of the closed span of a family under a surjective linear isometry `D` is the closed
+span of the image family `g = D ∘ f`. -/
+theorem map_topologicalClosure_span_range
+    (D : Lp ℝ 2 (volume : Measure ℝ) ≃ₗᵢ[ℝ] Lp ℝ 2 (volume : Measure ℝ)) {ι : Type*}
+    {f g : ι → Lp ℝ 2 (volume : Measure ℝ)} (hfg : ∀ i, D (f i) = g i) :
+    (Submodule.span ℝ (Set.range f)).topologicalClosure.map D.toLinearEquiv.toLinearMap
+      = (Submodule.span ℝ (Set.range g)).topologicalClosure := by
+  have himg : D.toLinearEquiv.toLinearMap '' Set.range f = Set.range g := by
+    rw [← Set.range_comp]
+    exact congrArg Set.range (funext hfg)
+  rw [map_topologicalClosure, Submodule.map_span, himg]
+
 /-- [han2009theoretical], Theorem 4.4.1 (2), scale invariance: `V j` is the image of `V 0` under the
 dilation by `2 ^ j`. -/
 theorem V_eq_map_dilation (j : ℤ) :
     V j = (V 0).map
-      (Lp.dilationₗᵢ ((2 : ℝ) ^ j) (zpow_ne_zero j two_ne_zero)).toLinearEquiv.toLinearMap := by
-  have himg : (Lp.dilationₗᵢ ((2 : ℝ) ^ j)
-      (zpow_ne_zero j two_ne_zero)).toLinearEquiv.toLinearMap ''
-        Set.range (scalingFun 0) = Set.range (scalingFun j) := by
-    rw [← Set.range_comp]
-    exact congrArg Set.range (funext fun k => (scalingFun_eq_dilation j k).symm)
-  simp only [V]
-  rw [map_topologicalClosure, Submodule.map_span, himg]
+      (Lp.dilationₗᵢ ((2 : ℝ) ^ j) (zpow_ne_zero j two_ne_zero)).toLinearEquiv.toLinearMap :=
+  (map_topologicalClosure_span_range _ fun k => (scalingFun_eq_dilation j k).symm).symm
 
 /-- The two-scale relation: a scaling function of level `j` is the normalized sum of the two scaling
 functions of level `j + 1` supported on its two halves. -/
 theorem scalingFun_two_scale (j k : ℤ) :
     scalingFun j k = (√2)⁻¹ • (scalingFun (j + 1) (2 * k) + scalingFun (j + 1) (2 * k + 1)) := by
   have ht : (0 : ℝ) < 2 ^ (-(j + 1)) := by positivity
-  have hs2 : (0 : ℝ) < √2 := Real.sqrt_pos.mpr (by norm_num)
   have hstep : (2 : ℝ) ^ (-(j + 1)) * 2 = 2 ^ (-j) := by
     rw [← zpow_add_one₀ (two_ne_zero' ℝ)]
     congr 1
@@ -552,7 +557,6 @@ private theorem exists_step_approx (g : ℝ → ℝ) (hgc : Continuous g) (hgs :
     refine ⟨⌈(2 : ℝ) ^ j * (R₀ + 1)⌉, (le_mul_zpow_neg_iff j _ _).mpr (Int.le_ceil _), ?_⟩
     refine (mul_zpow_neg_le_iff j _ _).mpr ?_
     have h := Int.ceil_lt_add_one ((2 : ℝ) ^ j * (R₀ + 1))
-    have h2 : (2 : ℝ) ^ j * (R₀ + 2) = 2 ^ j * (R₀ + 1) + 2 ^ j := by ring
     linarith
   refine ⟨j, M, ?_⟩
   -- the pointwise bound
@@ -579,12 +583,8 @@ private theorem exists_step_approx (g : ℝ → ℝ) (hgc : Continuous g) (hgs :
         rw [stepFun_apply, hsum, Set.indicator_of_mem ((mem_dyadic_iff_floor j _ x).mpr rfl)]
       have hxd : x ∈ dyadic j ⌊(2 : ℝ) ^ j * x⌋ := (mem_dyadic_iff_floor j _ x).mpr rfl
       rw [dyadic, Set.mem_Ico] at hxd
-      have hexp : ((⌊(2 : ℝ) ^ j * x⌋ : ℝ) + 1) * 2 ^ (-j)
-          = (⌊(2 : ℝ) ^ j * x⌋ : ℝ) * 2 ^ (-j) + 2 ^ (-j) := by ring
       have hdist : dist x ((⌊(2 : ℝ) ^ j * x⌋ : ℝ) * 2 ^ (-j)) < η := by
         rw [Real.dist_eq, abs_of_nonneg (by linarith [hxd.1])]
-        have h2 := hxd.2
-        rw [hexp] at h2
         linarith
       have hgd := huc hdist
       rw [Real.dist_eq] at hgd
@@ -850,7 +850,6 @@ theorem waveletFun_eq_sub_indicator (j k : ℤ) :
           (volume_dyadic_ne_top (j + 1) (2 * k)) (√((2 : ℝ) ^ j)) -
         indicatorConstLp 2 (measurableSet_dyadic (j + 1) (2 * k + 1))
           (volume_dyadic_ne_top (j + 1) (2 * k + 1)) (√((2 : ℝ) ^ j)) := by
-  have hs2 : (0 : ℝ) < √2 := Real.sqrt_pos.mpr (by norm_num)
   have hconst : (√2)⁻¹ * √((2 : ℝ) ^ (j + 1)) = √((2 : ℝ) ^ j) := by
     rw [zpow_add_one₀ (two_ne_zero' ℝ), Real.sqrt_mul (by positivity)]
     field_simp

@@ -1,0 +1,8 @@
+[[node]]
+id = "integral_cos_int_mul_neg_pi_pi"
+
+[[node]]
+id = "integral_exp_I_int_mul"
+
+[[node]]
+id = "integral_norm_sq_trigPoly"

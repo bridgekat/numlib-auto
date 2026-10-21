@@ -1,3 +1,4 @@
+import Mathlib.Order.Filter.AtTopBot.Interval
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Normed.Module.BestApprox
 
@@ -84,22 +85,13 @@ continuous periodic functions, whose norm is the Lebesgue constant `O(log n)`. -
 theorem norm_trigProjCLM_le_one (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) : ‖trigProjCLM T n‖ ≤ 1 :=
   starProjection_norm_le _
 
-/-- The symmetric blocks of frequencies are cofinal among the finite sets of integers. -/
-private theorem tendsto_finset_Icc_neg_atTop :
-    Tendsto (fun n : ℕ => Finset.Icc (-(n : ℤ)) (n : ℤ)) atTop atTop := by
-  refine tendsto_atTop_finset_of_monotone (fun p q hpq m hm => ?_) fun m => ⟨m.natAbs, ?_⟩
-  · rw [Finset.mem_Icc] at hm ⊢
-    exact ⟨le_trans (neg_le_neg (Nat.cast_le.2 hpq)) hm.1, hm.2.trans (Nat.cast_le.2 hpq)⟩
-  · rw [Finset.mem_Icc]
-    omega
-
 /-- The `L²` error of the Fourier partial sum tends to zero: this is Parseval's identity read along
 the symmetric blocks of frequencies. -/
 theorem tendsto_norm_sub_trigPartialSum (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     Tendsto (fun n => ‖f - trigPartialSum n f‖) atTop (𝓝 0) := by
   have hpart : Tendsto (fun n : ℕ => ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ),
       realFourierCoeff (f : AddCircle T → ℝ) m ^ 2) atTop (𝓝 (‖f‖ ^ 2)) :=
-    (hasSum_sq_realFourierCoeff f).comp tendsto_finset_Icc_neg_atTop
+    (hasSum_sq_realFourierCoeff f).comp (Finset.tendsto_Icc_neg (R := ℤ))
   have hsq : Tendsto (fun n => ‖f - trigPartialSum n f‖ ^ 2) atTop (𝓝 0) := by
     have := tendsto_const_nhds (x := ‖f‖ ^ 2) (f := atTop (α := ℕ)) |>.sub hpart
     rw [sub_self] at this

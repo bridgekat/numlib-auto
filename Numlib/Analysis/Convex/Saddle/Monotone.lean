@@ -343,8 +343,7 @@ theorem isMaximalMonotoneRel_setOf_hasSaddleGradientAt
       {r : (U × X) × (U × X) | HasSaddleGradientAt K (-r.2.1, r.2.2) r.1} := by
   have hcont : Continuous K := continuous_iff_continuousAt.2 fun p => (hdiff p).continuousAt
   obtain ⟨F, hFconv, hFcl, hFmem⟩ := exists_bifunSaddleClass_lowerSimpleExt (innerₗ U) (innerₗ X)
-    (convex_univ) isClosed_univ isClosed_univ Set.univ_nonempty Set.univ_nonempty
-    (fun u _ => hK.convex_snd u (Set.mem_univ _)) (fun x _ => hK.concave_fst x (Set.mem_univ _))
+    (convex_univ) isClosed_univ isClosed_univ Set.univ_nonempty Set.univ_nonempty hK
     (fun u _ => (hcont.comp (continuous_const.prodMk continuous_id)).continuousOn)
     (fun x _ => (hcont.comp (continuous_id.prodMk continuous_const)).continuousOn)
   have hproper := properSaddleFn_lowerSimpleExt (C := (Set.univ : Set U))

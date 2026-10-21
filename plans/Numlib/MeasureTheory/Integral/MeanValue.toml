@@ -1,0 +1,4 @@
+namespace = "MeasureTheory"
+
+[[node]]
+id = "exists_integral_eq_mul_integral"

@@ -37,4 +37,7 @@ id = "EntrywiseNonneg.mulVec_mono"
 id = "EntrywiseLE.mulVec_le_of_nonneg"
 
 [[node]]
+id = "mulVec_pos_of_forall_pos"
+
+[[node]]
 id = "abs_add_mul_add_sub_mul_entrywiseLE"

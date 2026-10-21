@@ -27,6 +27,8 @@ Cholesky to `Numlib/LinearAlgebra/Matrix/Cholesky`.
   `Matrix.strictLeadingPrincipalSubmatrix A k = A.toBlock (· < k) (· < k)` and
   `Matrix.leadingPrincipalMinor`: the leading principal submatrices, indexed by the subtypes
   `{i // i ≤ k}` and `{i // i < k}` of a finite linear order, with no arithmetic on indices.
+* `Matrix.HasUnitStrictLeadingPrincipalSubmatrices A`: every `A(< k, < k)` is nonsingular, the
+  hypothesis of the LU existence and uniqueness theorem.
 * `Matrix.IsLU A L U`; `Matrix.IsLDM A L D M`, the `L D Mᵀ` factorization (and `L D Lᵀ` when
   `M = L`).
 * `Matrix.IsBlockUnitLowerTriangular b L`, `Matrix.IsBlockLU b A L U`: block unit lower
@@ -173,6 +175,40 @@ theorem isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit [CommRing R] {A 
   · have : IsEmpty {i // i < k} := ⟨fun i => hne ⟨i.1, mem_filter.2 ⟨mem_univ _, i.2⟩⟩⟩
     rw [isUnit_iff_isUnit_det, det_isEmpty]
     exact isUnit_one
+
+/-- `A.HasUnitStrictLeadingPrincipalSubmatrices`: every strict leading principal submatrix
+`A(< k, < k)` is nonsingular. As `k` ranges over `n` these are the leading principal submatrices
+of orders `0, …, N - 1`, so this is the hypothesis of the existence and uniqueness theorem for the
+LU factorization ([quarteroni2000numerical] Theorem 3.4, "`A_i` nonsingular for
+`i = 1, …, n - 1`"; `Matrix.existsUnique_isLU_iff`). -/
+def HasUnitStrictLeadingPrincipalSubmatrices [Semiring R] (A : Matrix n n R) : Prop :=
+  ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)
+
+/-- Unfolding `Matrix.HasUnitStrictLeadingPrincipalSubmatrices`. -/
+theorem hasUnitStrictLeadingPrincipalSubmatrices_iff [Semiring R] {A : Matrix n n R} :
+    A.HasUnitStrictLeadingPrincipalSubmatrices ↔
+      ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k) :=
+  Iff.rfl
+
+/-- The strict leading principal submatrix `A(< k, < k)` is nonsingular. -/
+theorem HasUnitStrictLeadingPrincipalSubmatrices.isUnit [Semiring R] {A : Matrix n n R}
+    (h : A.HasUnitStrictLeadingPrincipalSubmatrices) (k : n) :
+    IsUnit (A.strictLeadingPrincipalSubmatrix k) :=
+  h k
+
+/-- Nonsingular leading principal submatrices give nonsingular strict ones
+(`Matrix.isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit`). -/
+theorem HasUnitStrictLeadingPrincipalSubmatrices.of_forall_isUnit [CommRing R]
+    {A : Matrix n n R} (h : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k)) :
+    A.HasUnitStrictLeadingPrincipalSubmatrices :=
+  isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit h
+
+/-- The strict leading principal submatrices of `Aᵀ` are the transposes of those of `A`. -/
+theorem HasUnitStrictLeadingPrincipalSubmatrices.transpose [CommRing R] {A : Matrix n n R}
+    (h : A.HasUnitStrictLeadingPrincipalSubmatrices) :
+    Aᵀ.HasUnitStrictLeadingPrincipalSubmatrices := fun k => by
+  rw [strictLeadingPrincipalSubmatrix_transpose, isUnit_transpose]
+  exact h k
 
 end LeadingPrincipal
 
@@ -591,11 +627,9 @@ theorem IsBlockLU.blockBidiagonal_of_blockTridiagonal {N m : ℕ} {b : Fin N →
   constructor
   · intro i j hij
     have hp : ∀ x y : Fin N, b x ≤ b j → b y ≤ b x → b y ≤ b j := fun _ _ hx hyx => hyx.trans hx
-    have hLp : IsUnit (L.toBlock (b · ≤ b j) (b · ≤ b j)) :=
-      (h.toBlock hp).isBlockUnitLowerTriangular.isUnit
     have hUp : IsUnit (U.toBlock (b · ≤ b j) (b · ≤ b j)) := by
       have hmul := (h.toBlock hp).mul_eq
-      rw [isUnit_iff_isUnit_det] at hLp ⊢
+      rw [isUnit_iff_isUnit_det]
       have hAp := hlead (b j)
       rw [isUnit_iff_isUnit_det, ← hmul, det_mul] at hAp
       exact isUnit_of_mul_isUnit_right hAp
@@ -609,7 +643,7 @@ theorem IsBlockLU.blockBidiagonal_of_blockTridiagonal {N m : ℕ} {b : Fin N →
     rw [toBlock_apply, mul_apply] at hentry
     rw [hentry]
     refine Finset.sum_eq_zero fun x _ => ?_
-    rw [toBlock_apply, htriL i x.1 (by have := Fin.le_def.1 x.2; omega), zero_mul]
+    rw [toBlock_apply, htriL i x.1 (by omega), zero_mul]
   · intro i j hij
     have hp : ∀ x y : Fin N, b x ≤ b i → b y ≤ b x → b y ≤ b i := fun _ _ hx hyx => hyx.trans hx
     have hLp : IsUnit (L.toBlock (b · ≤ b i) (b · ≤ b i)) :=
@@ -624,7 +658,7 @@ theorem IsBlockLU.blockBidiagonal_of_blockTridiagonal {N m : ℕ} {b : Fin N →
     rw [toBlock_apply, mul_apply] at hentry
     rw [hentry]
     refine Finset.sum_eq_zero fun x _ => ?_
-    rw [toBlock_apply, htriU x.1 j (by have := Fin.le_def.1 x.2; omega), mul_zero]
+    rw [toBlock_apply, htriU x.1 j (by omega), mul_zero]
 
 end BlockTridiagonal
 
@@ -964,7 +998,7 @@ variable [LinearOrder n] [Fintype n] {K : Type*} [Field K]
 leading principal submatrices. -/
 theorem forall_isUnit_toBlock_id_iff {A : Matrix n n K} :
     (∀ a ∈ Set.range (id : n → n), IsUnit (A.toBlock (id · < a) (id · < a))) ↔
-      ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k) := by
+      A.HasUnitStrictLeadingPrincipalSubmatrices := by
   simp only [Set.range_id, Set.mem_univ, true_implies, id]
   exact Iff.rfl
 
@@ -972,7 +1006,7 @@ theorem forall_isUnit_toBlock_id_iff {A : Matrix n n K} :
 half; [higham2002accuracy] Theorem 9.1): if the strict leading principal submatrices are
 nonsingular, `A` has a unit lower LU factorization. -/
 theorem exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix {A : Matrix n n K}
-    (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) : ∃ L U, IsLU A L U := by
+    (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) : ∃ L U, IsLU A L U := by
   obtain ⟨L, U, h⟩ :=
     exists_isBlockLU_of_forall_isUnit (b := id) (forall_isUnit_toBlock_id_iff.2 hA)
   exact ⟨L, U, isBlockLU_id_iff.1 h⟩
@@ -981,7 +1015,7 @@ theorem exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix {A : Matrix
 half): two unit lower LU factorizations of a matrix with nonsingular strict leading principal
 submatrices coincide. -/
 theorem IsLU.unique {A L₁ U₁ L₂ U₂ : Matrix n n K} (h₁ : IsLU A L₁ U₁) (h₂ : IsLU A L₂ U₂)
-    (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) : L₁ = L₂ ∧ U₁ = U₂ :=
+    (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) : L₁ = L₂ ∧ U₁ = U₂ :=
   IsBlockLU.unique (b := id) (forall_isUnit_toBlock_id_iff.2 hA) (isBlockLU_id_iff.2 h₁)
     (isBlockLU_id_iff.2 h₂)
 
@@ -990,7 +1024,7 @@ LU factorization of `A` exists and is unique if and only if the strict leading p
 submatrices of `A` (the book's `A_i`, `i = 1, …, n - 1`) are nonsingular. -/
 theorem existsUnique_isLU_iff (A : Matrix n n K) :
     (∃! LU : Matrix n n K × Matrix n n K, IsLU A LU.1 LU.2) ↔
-      ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k) := by
+      A.HasUnitStrictLeadingPrincipalSubmatrices := by
   rw [← forall_isUnit_toBlock_id_iff, ← existsUnique_isBlockLU_iff]
   exact existsUnique_congr fun LU => isBlockLU_id_iff.symm
 
@@ -1173,7 +1207,7 @@ the last is nonzero (`Matrix.IsLU.diag_upper_ne_zero_of_lt`), and a vanishing la
 with a zero last row. Uniqueness follows from the uniqueness of the LU factorization, since
 `L (D Mᵀ)` is one. The book says "all the principal minors"; its proof uses the leading ones. -/
 theorem existsUnique_isLDM {A : Matrix n n K}
-    (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
+    (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) :
     ∃! LDM : Matrix n n K × Matrix n n K × Matrix n n K, IsLDM A LDM.1 LDM.2.1 LDM.2.2 := by
   obtain ⟨L, U, hLU⟩ := exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix hA
   have hrow : ∀ i j, U i i = 0 → U i j = 0 := fun i j hi => by
@@ -1230,7 +1264,7 @@ nonsingular strict leading principal submatrices, the two unit triangular factor
 factorization coincide, since transposing `A = L D Mᵀ` gives the second factorization
 `A = M D Lᵀ`. -/
 theorem IsLDM.eq_of_isSymm {A L D M : Matrix n n K} (h : IsLDM A L D M) (hs : A.IsSymm)
-    (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) : M = L := by
+    (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) : M = L := by
   have h' : IsLDM A M D L := ⟨h.isUnitLowerTriangular_right, h.isDiag,
     h.isUnitLowerTriangular_left, by
       rw [← hs.eq, ← h.mul_eq, transpose_mul, transpose_mul, transpose_transpose,
@@ -1285,12 +1319,14 @@ noncomputable def luUpperOfSchur (A : Matrix n n K) (p : n)
     (U' : Matrix {i // i ≠ p} {i // i ≠ p} K) : Matrix n n K :=
   of fun i j => if hi : i = p then A p j else if hj : j = p then 0 else U' ⟨i, hi⟩ ⟨j, hj⟩
 
-/-- **One step of Gaussian elimination as a factorization step**: if `p` is the first index,
-`a_pp ≠ 0` and the Schur complement of `A` at `p` has the LU factorization `L' U'`, then `A` has
-the LU factorization `Matrix.luLowerOfSchur A p L' * Matrix.luUpperOfSchur A p U'`
-([quarteroni2000numerical] §3.8.1, "if `A₁₁` were a scalar"). -/
-theorem isLU_luLowerOfSchur_luUpperOfSchur {A : Matrix n n K} {p : n} (hp : ∀ i, p ≤ i)
-    (hpp : A p p ≠ 0) {L' U' : Matrix {i // i ≠ p} {i // i ≠ p} K}
+/-- **One step of Gaussian elimination as a factorization step**, with a zero pivot allowed when its
+whole column vanishes: if `p` is the first index, `a_pp ≠ 0` or column `p` is zero, and the Schur
+complement of `A` at `p` has the LU factorization `L' U'`, then `A` has the LU factorization
+`Matrix.luLowerOfSchur A p L' * Matrix.luUpperOfSchur A p U'`. For a zero column the multipliers
+`a_ip / a_pp` are `0` (junk division), which is what lets pivoting skip a zero column; the case
+`a_pp ≠ 0` is `Matrix.isLU_luLowerOfSchur_luUpperOfSchur`. -/
+theorem isLU_luLowerOfSchur_luUpperOfSchur' {A : Matrix n n K} {p : n} (hp : ∀ i, p ≤ i)
+    (hpp : A p p = 0 → ∀ i, A i p = 0) {L' U' : Matrix {i // i ≠ p} {i // i ≠ p} K}
     (h : IsLU (A.schurComplementSingle p) L' U') :
     IsLU A (luLowerOfSchur A p L') (luUpperOfSchur A p U') where
   isUnitLowerTriangular := by
@@ -1333,13 +1369,26 @@ theorem isLU_luLowerOfSchur_luUpperOfSchur {A : Matrix n n K} {p : n} (hp : ∀ 
     · subst hi
       simp [hLpp, hLpx, hUpj]
     rcases eq_or_ne j p with hj | hj
-    · subst hj
-      simp [hLxp i hi, hUpj, hUxp, div_mul_cancel₀ _ hpp]
+    · rcases eq_or_ne (A p p) 0 with h0 | h0
+      · subst hj
+        simp [hLxp i hi, hUpj, hUxp, hpp h0]
+      · subst hj
+        simp [hLxp i hi, hUpj, hUxp, div_mul_cancel₀ _ h0]
     have hS := congrFun (congrFun h.mul_eq ⟨i, hi⟩) ⟨j, hj⟩
     rw [mul_apply, schurComplementSingle_apply] at hS
     simp only [hLxp i hi, hUpj, hLxx i hi, hUxj _ j hj]
     rw [hS, div_eq_mul_inv]
     ring
+
+/-- **One step of Gaussian elimination as a factorization step**: if `p` is the first index,
+`a_pp ≠ 0` and the Schur complement of `A` at `p` has the LU factorization `L' U'`, then `A` has
+the LU factorization `Matrix.luLowerOfSchur A p L' * Matrix.luUpperOfSchur A p U'`
+([quarteroni2000numerical] §3.8.1, "if `A₁₁` were a scalar"). -/
+theorem isLU_luLowerOfSchur_luUpperOfSchur {A : Matrix n n K} {p : n} (hp : ∀ i, p ≤ i)
+    (hpp : A p p ≠ 0) {L' U' : Matrix {i // i ≠ p} {i // i ≠ p} K}
+    (h : IsLU (A.schurComplementSingle p) L' U') :
+    IsLU A (luLowerOfSchur A p L') (luUpperOfSchur A p U') :=
+  isLU_luLowerOfSchur_luUpperOfSchur' hp (fun h0 => absurd h0 hpp) h
 
 /-- The existence half of [quarteroni2000numerical] Property 3.2 for rows, by induction on the
 number of indices: the Schur complement at the first index of a nonsingular weakly row dominant
@@ -1440,7 +1489,7 @@ variable {K : Type*} [Field K]
 bandwidth `p`. Without the nonsingularity the claim fails: Example 3.3's `D = !![0, 1; 0, 2]` is
 upper triangular and factors as `L_β U_β` with `L_β = !![1, 0; β, 1]` for every `β`. -/
 theorem IsLU.hasLowerBandwidth {A L U : Matrix n n K} (h : IsLU A L U)
-    (hA' : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) {p : ℕ}
+    (hA' : A.HasUnitStrictLeadingPrincipalSubmatrices) {p : ℕ}
     (hA : A.HasLowerBandwidth p) : L.HasLowerBandwidth p := by
   intro i j
   induction j using WellFoundedLT.induction generalizing i with
@@ -1464,7 +1513,7 @@ def envelope [Zero R] (A : Matrix n n R) : Set (n × n) :=
 /-- Below the diagonal, `L` vanishes wherever the row of `A` vanishes up to that column: by
 induction on the column, `l_ij u_jj = a_ij - ∑_{r<j} l_ir u_rj = 0`, and `u_jj ≠ 0`. -/
 theorem IsLU.lower_apply_eq_zero_of_forall_le {A L U : Matrix n n K} (h : IsLU A L U)
-    (hA' : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) {i j : n} (hij : j < i)
+    (hA' : A.HasUnitStrictLeadingPrincipalSubmatrices) {i j : n} (hij : j < i)
     (hz : ∀ r ≤ j, A i r = 0) : L i j = 0 := by
   induction j using WellFoundedLT.induction with
   | ind j ih =>
@@ -1482,7 +1531,7 @@ have the same envelope. Below the first nonzero `a_{i j₀}` of a row every `l_i
 a_{i j₀} ≠ 0`. For a symmetric positive definite `A` with Cholesky factor `H`, `Hᵀ = L D^{1/2}`
 has the pattern of `L`, which is the book's `E(A) = E(H + Hᵀ)`. -/
 theorem IsLU.envelope_eq {A L U : Matrix n n K} (h : IsLU A L U)
-    (hA' : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) : L.envelope = A.envelope := by
+    (hA' : A.HasUnitStrictLeadingPrincipalSubmatrices) : L.envelope = A.envelope := by
   ext ⟨i, j⟩
   simp only [envelope, Set.mem_ofPred_eq]
   constructor

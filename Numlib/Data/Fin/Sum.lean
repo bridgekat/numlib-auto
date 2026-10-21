@@ -23,11 +23,13 @@ Ways of cutting `Fin` into a head and a tail, each the form some matrix argument
   `j + 1` indices, read through `Fin.castLE`, plus the sum over the indices after `j`.
 * `Fin.sum_castLE_eq_sum_ite`: a sum over `Fin k` read through `Fin.castLE` into `Fin a` is the sum
   over `Fin a` of the terms below `k`.
+* `Fin.sum_eq_sum_castLE_of_forall_le`: a sum over `Fin k` of a function vanishing from `m` on is
+  the sum over `Fin m`, read through `Fin.castLE`.
 * `Fin.sum_dite_lt`: a sum over `Fin a` of a function given on `Fin k`, `k ≤ a`, and extended by
   zero is the sum over `Fin k` — the padding of a coefficient vector to more entries.
 
-The three sum lemmas are the additive forms of `Fin.prod_eq_prod_castLE_mul_prod_Ioi`,
-`Fin.prod_castLE_eq_prod_ite` and `Fin.prod_dite_lt`.
+The four sum lemmas are the additive forms of `Fin.prod_eq_prod_castLE_mul_prod_Ioi`,
+`Fin.prod_castLE_eq_prod_ite`, `Fin.prod_eq_prod_castLE_of_forall_le` and `Fin.prod_dite_lt`.
 -/
 
 open Finset
@@ -140,6 +142,19 @@ theorem Fin.prod_castLE_eq_prod_ite {M : Type*} [CommMonoid M] {k a : ℕ} (hk :
   ext j
   simp only [Finset.mem_range, Finset.mem_filter]
   omega
+
+/-- A product over `Fin k` of a function equal to `1` from index `m` on is the product over the
+first `m` indices, read through `Fin.castLE`. -/
+@[to_additive /-- A sum over `Fin k` of a function vanishing from index `m` on is the sum over the
+first `m` indices, read through `Fin.castLE`. -/]
+theorem Fin.prod_eq_prod_castLE_of_forall_le {M : Type*} [CommMonoid M] {m k : ℕ} (h : m ≤ k)
+    (g : Fin k → M) (hg : ∀ i : Fin k, m ≤ (i : ℕ) → g i = 1) :
+    ∏ i, g i = ∏ j : Fin m, g (Fin.castLE h j) := by
+  rw [Fin.prod_castLE_eq_prod_ite h]
+  refine prod_congr rfl fun i _ => ?_
+  split_ifs with hi
+  · rfl
+  · exact hg i (not_lt.1 hi)
 
 /-- A product over `Fin a` of a function given on the first `k ≤ a` indices and extended by `1` is
 the product over `Fin k`. -/

@@ -194,7 +194,6 @@ theorem kroneckerSum_hasLowerBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
   simp only [finProdFinEquiv_apply_val] at hIJ
   rw [kroneckerSumFin, submatrix_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply,
     kroneckerSum_apply]
-  have hi := i.is_lt
   have hjj : (j : ℕ) ≠ j' := by
     intro h
     rw [h] at hIJ

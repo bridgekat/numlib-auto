@@ -9,6 +9,7 @@ import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Analysis.Normed.Unbundled.AlgebraNorm
 import Mathlib.FieldTheory.IsAlgClosed.Spectrum
+import Mathlib.RingTheory.Artinian.Module
 import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
@@ -203,7 +204,8 @@ theorem exists_norm_pow_le_of_spectralRadius_lt (a : A) {r : NNReal}
   · have := hN n hn
     nlinarith
 
-private theorem spectralRadius_lt_one_of_norm_pow_lt_one {a : A} {n : ℕ} (h : ‖a ^ n‖ < 1) :
+/-- If some power of `a` is a contraction, `ρ(a) < 1`: `ρ(a)ⁿ = ρ(aⁿ) ≤ ‖aⁿ‖ < 1`. -/
+theorem spectralRadius_lt_one_of_norm_pow_lt_one {a : A} {n : ℕ} (h : ‖a ^ n‖ < 1) :
     spectralRadius ℂ a < 1 := by
   have hn : n ≠ 0 := by rintro rfl; simp at h
   rcases lt_or_ge (spectralRadius ℂ a) 1 with h' | hc
@@ -341,32 +343,13 @@ for the norm the algebra carries as a normed algebra.  The norm is bundled as an
 rather than supplied as an instance, because a second `NormedRing` instance on the same type would
 bring its own ring structure, unrelated to the one the spectrum is computed from.
 
-No analysis enters: in finite dimension an element that is a zero divisor on neither side is a
-unit, and submultiplicativity of `N` makes `μ • 1 - a` such an element as soon as `N a < ‖μ‖`. -/
+No analysis enters: a finite-dimensional algebra is Artinian, so an element that is not a right
+zero divisor is a unit (`IsArtinianRing.isUnit_iff_isRightRegular`), and submultiplicativity of
+`N` makes `μ • 1 - a` such an element as soon as `N a < ‖μ‖`. -/
 
 section AlgebraNorm
 
 variable {𝕜 B : Type*} [NormedField 𝕜] [Ring B] [Algebra 𝕜 B]
-
-/-- In a finite-dimensional algebra an element that is a zero divisor on neither side is a unit:
-both multiplications by it are injective, hence surjective. -/
-private theorem isUnit_of_mul_ne_zero [FiniteDimensional 𝕜 B] {x : B}
-    (hl : ∀ y : B, y ≠ 0 → x * y ≠ 0) (hr : ∀ y : B, y ≠ 0 → y * x ≠ 0) : IsUnit x := by
-  have hL : Function.Surjective (LinearMap.mulLeft 𝕜 x) :=
-    LinearMap.injective_iff_surjective.mp <|
-      (injective_iff_map_eq_zero _).mpr fun y hy => by by_contra hy0; exact hl y hy0 hy
-  have hR : Function.Surjective (LinearMap.mulRight 𝕜 x) :=
-    LinearMap.injective_iff_surjective.mp <|
-      (injective_iff_map_eq_zero _).mpr fun y hy => by by_contra hy0; exact hr y hy0 hy
-  obtain ⟨y, hy⟩ := hL 1
-  obtain ⟨z, hz⟩ := hR 1
-  rw [LinearMap.mulLeft_apply] at hy
-  rw [LinearMap.mulRight_apply] at hz
-  refine ⟨⟨x, y, hy, ?_⟩, rfl⟩
-  calc y * x = z * x * (y * x) := by rw [hz, one_mul]
-    _ = z * (x * y * x) := by simp only [mul_assoc]
-    _ = z * x := by rw [hy, one_mul]
-    _ = 1 := hz
 
 /-- **The spectral radius is at most any algebra norm**: `ρ(a) ≤ N a` for every algebra norm `N`
 on a finite-dimensional algebra over a normed field.
@@ -382,18 +365,8 @@ theorem spectralRadius_le_algebraNorm [FiniteDimensional 𝕜 B] (N : AlgebraNor
   refine iSup₂_le fun μ hμ => ?_
   have hle : ‖μ‖ ≤ N a := by
     by_contra hcon
-    have hlt : N a < ‖μ‖ := not_le.mp hcon
     have hpos : ∀ y : B, y ≠ 0 → 0 < N y := fun y hy =>
       lt_of_le_of_ne (apply_nonneg N y) fun h => hy (eq_zero_of_map_eq_zero N h.symm)
-    have hleft : ∀ y : B, (‖μ‖ - N a) * N y ≤ N ((algebraMap 𝕜 B μ - a) * y) := by
-      intro y
-      have hsplit : algebraMap 𝕜 B μ * y = (algebraMap 𝕜 B μ - a) * y + a * y := by noncomm_ring
-      have h1 : N (algebraMap 𝕜 B μ * y) ≤ N ((algebraMap 𝕜 B μ - a) * y) + N (a * y) := by
-        rw [hsplit]; exact map_add_le_add N _ _
-      have h2 : N (algebraMap 𝕜 B μ * y) = ‖μ‖ * N y := by
-        rw [← Algebra.smul_def]; exact map_smul_eq_mul N _ _
-      have h3 : N (a * y) ≤ N a * N y := map_mul_le_mul N _ _
-      nlinarith
     have hright : ∀ y : B, (‖μ‖ - N a) * N y ≤ N (y * (algebraMap 𝕜 B μ - a)) := by
       intro y
       have hsplit : y * algebraMap 𝕜 B μ = y * (algebraMap 𝕜 B μ - a) + y * a := by noncomm_ring
@@ -403,14 +376,13 @@ theorem spectralRadius_le_algebraNorm [FiniteDimensional 𝕜 B] (N : AlgebraNor
         rw [← Algebra.commutes, ← Algebra.smul_def]; exact map_smul_eq_mul N _ _
       have h3 : N (y * a) ≤ N y * N a := map_mul_le_mul N _ _
       nlinarith
-    refine spectrum.mem_iff.mp hμ
-      (isUnit_of_mul_ne_zero (𝕜 := 𝕜) (fun y hy h0 => ?_) fun y hy h0 => ?_)
-    · have h := hleft y
-      rw [h0, map_zero] at h
-      nlinarith [hpos y hy]
-    · have h := hright y
-      rw [h0, map_zero] at h
-      nlinarith [hpos y hy]
+    have : IsArtinianRing B := IsArtinianRing.of_finite 𝕜 B
+    refine spectrum.mem_iff.mp hμ (IsArtinianRing.isUnit_iff_isRightRegular.mpr
+      (isRightRegular_iff_left_eq_zero_of_mul.mpr fun y h0 => ?_))
+    by_contra hy
+    have h := hright y
+    rw [h0, map_zero] at h
+    nlinarith [hpos y hy]
   calc (‖μ‖₊ : ℝ≥0∞) = ENNReal.ofReal ‖μ‖ := (ofReal_norm μ).symm
     _ ≤ ENNReal.ofReal (N a) := ENNReal.ofReal_le_ofReal hle
 

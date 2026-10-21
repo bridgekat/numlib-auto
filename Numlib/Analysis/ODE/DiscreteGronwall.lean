@@ -83,19 +83,6 @@ theorem discrete_sum_of_le {φ k p : ℕ → ℝ} {g₀ : ℝ} {N : ℕ} (hg₀ 
     · exact hnn
   exact (hle n hn).trans (discrete_sum hg₀ hk hp hsum n)
 
-/-- The constant-coefficient discrete Gronwall lemma, in the shape of the estimates of
-[quarteroni2000numerical] Theorems 11.1 and 11.2: if `0 ≤ g₀`, `0 ≤ h`, `0 ≤ δ`, `0 ≤ Λ` and
-`φ n ≤ g₀ + n * h * δ + h * Λ * ∑ s ∈ range n, φ s` for every `n`, then
-`φ n ≤ (g₀ + n * h * δ) * exp (n * h * Λ)` for every `n`. This is `discrete_sum` with
-`p s = h * δ`, `k s = h * Λ` and the constant sums evaluated. -/
-theorem discrete_sum_const {φ : ℕ → ℝ} {g₀ h δ Λ : ℝ} (hg₀ : 0 ≤ g₀) (hh : 0 ≤ h) (hδ : 0 ≤ δ)
-    (hΛ : 0 ≤ Λ) (hφ : ∀ n, φ n ≤ g₀ + n * h * δ + h * Λ * ∑ s ∈ range n, φ s) (n : ℕ) :
-    φ n ≤ (g₀ + n * h * δ) * exp (n * h * Λ) := by
-  have key := discrete_sum (φ := φ) (k := fun _ => h * Λ) (p := fun _ => h * δ) hg₀
-    (fun _ => mul_nonneg hh hΛ) (fun _ => mul_nonneg hh hδ) (fun m => by
-      simpa [sum_const, card_range, nsmul_eq_mul, mul_sum, mul_assoc] using hφ m) n
-  simpa [sum_const, card_range, nsmul_eq_mul, mul_assoc, mul_comm, mul_left_comm] using key
-
 /-- The constant-coefficient discrete Gronwall lemma on a finite horizon: if `0 ≤ g₀`, `0 ≤ h`,
 `0 ≤ δ`, `0 ≤ Λ` and `φ n ≤ g₀ + n * h * δ + h * Λ * ∑ s ∈ range n, φ s` for every `n ≤ N`, then
 `φ n ≤ (g₀ + n * h * δ) * exp (n * h * Λ)` for every `n ≤ N`. -/
@@ -107,6 +94,16 @@ theorem discrete_sum_const_of_le {φ : ℕ → ℝ} {g₀ h δ Λ : ℝ} {N : �
     (fun _ => mul_nonneg hh hΛ) (fun _ => mul_nonneg hh hδ) (fun m hm => by
       simpa [sum_const, card_range, nsmul_eq_mul, mul_sum, mul_assoc] using hφ m hm) hn
   simpa [sum_const, card_range, nsmul_eq_mul, mul_assoc, mul_comm, mul_left_comm] using key
+
+/-- The constant-coefficient discrete Gronwall lemma, in the shape of the estimates of
+[quarteroni2000numerical] Theorems 11.1 and 11.2: if `0 ≤ g₀`, `0 ≤ h`, `0 ≤ δ`, `0 ≤ Λ` and
+`φ n ≤ g₀ + n * h * δ + h * Λ * ∑ s ∈ range n, φ s` for every `n`, then
+`φ n ≤ (g₀ + n * h * δ) * exp (n * h * Λ)` for every `n`. The finite-horizon form
+`discrete_sum_const_of_le` at the horizon `N = n`. -/
+theorem discrete_sum_const {φ : ℕ → ℝ} {g₀ h δ Λ : ℝ} (hg₀ : 0 ≤ g₀) (hh : 0 ≤ h) (hδ : 0 ≤ δ)
+    (hΛ : 0 ≤ Λ) (hφ : ∀ n, φ n ≤ g₀ + n * h * δ + h * Λ * ∑ s ∈ range n, φ s) (n : ℕ) :
+    φ n ≤ (g₀ + n * h * δ) * exp (n * h * Λ) :=
+  discrete_sum_const_of_le hg₀ hh hδ hΛ (fun m _ => hφ m) le_rfl
 
 variable {E : Type*} [SeminormedAddGroup E]
 

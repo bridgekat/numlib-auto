@@ -8,6 +8,12 @@ id = "Matrix.geom_sum_eq_sub_pow_mul"
 id = "Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff"
 
 [[node]]
+id = "Matrix.IsZMatrix"
+
+[[node]]
+id = "Matrix.isZMatrix_iff"
+
+[[node]]
 id = "Matrix.IsMMatrix"
 
 [[node]]
@@ -100,3 +106,6 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 11.5.2'
 
 [[node]]
 id = "Matrix.IsStieltjes.isSymm"
+
+[[node]]
+id = "Matrix.IsMMatrix.isZMatrix"

@@ -92,6 +92,12 @@ id = "SesqForm₂"
 id = "SesqForm₂.InfSupWith"
 
 [[node]]
+id = "SesqForm₂.IsBoundedWith"
+
+[[node]]
+id = "SesqForm.isBoundedWith_iff_sesqForm₂"
+
+[[node]]
 id = "SesqForm₂.IsNondegenerate"
 
 [[node]]

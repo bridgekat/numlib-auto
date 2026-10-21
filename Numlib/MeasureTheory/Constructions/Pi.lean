@@ -73,6 +73,15 @@ theorem MeasureTheory.lintegral_fin_succ_eq' {j : ℕ} {H : (Fin (j + 1) → ℝ
   simp only [MeasurableEquiv.piFinSuccAbove_symm_apply, Fin.insertNthEquiv_zero]
   rfl
 
+/-- **Fubini for one more coordinate**: an integral over `ℝ^{j+1}` is the integral over the last
+`j` coordinates of the integral over the first, the coordinates being read as `Fin.cons s t`; the
+mirror of `MeasureTheory.lintegral_fin_succ_eq'`, by Tonelli. -/
+theorem MeasureTheory.lintegral_fin_succ_eq {j : ℕ} {H : (Fin (j + 1) → ℝ) → ℝ≥0∞}
+    (hH : Measurable H) :
+    ∫⁻ y, H y = ∫⁻ t : Fin j → ℝ, ∫⁻ s : ℝ, H (Fin.cons s t) := by
+  rw [lintegral_fin_succ_eq' hH]
+  exact lintegral_lintegral_swap (hH.comp measurable_fin_cons_prod).aemeasurable
+
 /-- The integral over `ℝ^0` is evaluation at the unique point. -/
 theorem MeasureTheory.lintegral_fin_zero (H : (Fin 0 → ℝ) → ℝ≥0∞) :
     ∫⁻ t : Fin 0 → ℝ, H t = H (Fin.elim0) := by

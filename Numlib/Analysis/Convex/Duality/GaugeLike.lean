@@ -410,8 +410,6 @@ theorem coe_add_mul_le_of_convex (hg : ConvexFn g) (hnb : ∀ z, g z ≠ ⊥) (h
   rw [hv, EReal.coe_le_coe_iff]
   have hlv : l * v = t₂ / t * v := by rw [hl]
   have hkey : (r - c₀) * t ≤ t₂ * (v - c₀) := by
-    have h1 : (1 - l) * c₀ + l * v - c₀ = l * (v - c₀) := by ring
-    have h2 : r - c₀ ≤ l * (v - c₀) := by linarith [hb]
     have h3 : (r - c₀) * t ≤ l * (v - c₀) * t := by nlinarith
     have h4 : l * (v - c₀) * t = t₂ * (v - c₀) := by
       rw [hl]; field_simp

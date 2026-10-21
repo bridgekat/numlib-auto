@@ -30,7 +30,7 @@ directions. The *exposed* representation is in `Exposed.lean`.
 * `exists_notMem_relint_mem_segment_of_not_isAffineHalf` — in a closed convex set that is neither
   an affine set nor a closed half of one, every relative interior point lies on a segment joining
   two relative boundary points ([rockafellar1970convex] Theorem 18.4). The analytic core is
-  `exists_notMem_relint_mem_segment_of_isBounded`, the geometric input
+  `exists_notMem_relint_mem_segment_of_isBounded` of `Face.lean`, the geometric input
   `exists_notMem_relint_mem_segment_of_not_convex`, and `isAffineHalf_of_convex_sdiff_relint`
   identifies the exceptions.
 * `convexHullPD_extremePoints_extremeDirections` — the **Minkowski–Klee representation**: a closed
@@ -611,7 +611,6 @@ theorem forall_add_smul_mem_of_subset_relint (hC : Convex ℝ C) (hCcl : IsClose
     rwa [hval] at hw
   -- `J` contains a small positive and a small negative parameter
   obtain ⟨-, ε, hε, hball⟩ := mem_intrinsicInterior_iff.1 (hsub hx)
-  have hdnorm : 0 < ‖d‖ := norm_pos_iff.2 hd0
   have hsmall : ∀ s : ℝ, |s| * ‖d‖ < ε → s ∈ J := by
     intro s hs
     refine hball _ (hline s) ?_
@@ -674,70 +673,6 @@ section Segment
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {C : Set E} {x d : E}
-
-omit [FiniteDimensional ℝ E] in
-/-- **The analytic core of the segment theorem.** If the line through a relative interior point `x`
-of a closed set `C`, in a direction of the affine hull of `C`, meets `C` in a bounded set, then `x`
-lies on a segment joining the two ends of that intersection, neither of which is a relative
-interior point. Convexity of `C` is not used. -/
-theorem exists_notMem_relint_mem_segment_of_isBounded (hCcl : IsClosed C) (hd0 : d ≠ 0)
-    (hd : d ∈ vectorSpan ℝ C) (hx : x ∈ ri C)
-    (hbdd : IsBounded {t : ℝ | x + t • d ∈ C}) :
-    ∃ a ∈ C, ∃ b ∈ C, a ∉ ri C ∧ b ∉ ri C ∧ x ∈ segment ℝ a b := by
-  have hdnorm : 0 < ‖d‖ := norm_pos_iff.2 hd0
-  have hxC : x ∈ C := intrinsicInterior_subset hx
-  set T : Set ℝ := {t : ℝ | x + t • d ∈ C} with hTdef
-  have hline : ∀ t : ℝ, x + t • d ∈ affineSpan ℝ C := by
-    intro t
-    have hv : t • d ∈ (affineSpan ℝ C).direction := by
-      rw [direction_affineSpan]
-      exact Submodule.smul_mem _ t hd
-    have hmem := AffineSubspace.vadd_mem_of_mem_direction hv (subset_affineSpan ℝ C hxC)
-    rwa [vadd_eq_add, add_comm] at hmem
-  have hcont : Continuous fun t : ℝ => x + t • d := by fun_prop
-  have hTclosed : IsClosed T := hCcl.preimage hcont
-  have hTcomp : IsCompact T := Metric.isCompact_of_isClosed_isBounded hTclosed hbdd
-  have hT0 : (0 : ℝ) ∈ T := by
-    change x + (0 : ℝ) • d ∈ C
-    simpa using hxC
-  obtain ⟨tp, htp⟩ := hTcomp.exists_isGreatest ⟨0, hT0⟩
-  obtain ⟨tm, htm⟩ := hTcomp.exists_isLeast ⟨0, hT0⟩
-  obtain ⟨hxA, ε, hε, hball⟩ := mem_intrinsicInterior_iff.1 hx
-  set s : ℝ := ε / (2 * ‖d‖) with hsdef
-  have hspos : 0 < s := by positivity
-  have hsT : ∀ u : ℝ, |u| ≤ s → u ∈ T := by
-    intro u hu
-    refine hball _ (hline u) ?_
-    have he : x + u • d - x = u • d := by module
-    rw [dist_eq_norm, he, norm_smul, Real.norm_eq_abs]
-    have hprod : |u| * ‖d‖ ≤ s * ‖d‖ := by nlinarith
-    have hs' : s * ‖d‖ = ε / 2 := by
-      rw [hsdef]
-      field_simp
-    linarith [hs' ▸ hprod]
-  have htppos : 0 < tp := lt_of_lt_of_le hspos (htp.2 (hsT s (le_of_eq (abs_of_pos hspos))))
-  have htmneg : tm < 0 := by
-    have hle := htm.2 (hsT (-s) (by rw [abs_neg, abs_of_pos hspos]))
-    linarith
-  have hgap : (0 : ℝ) < tp - tm := by linarith
-  refine ⟨x + tm • d, htm.1, x + tp • d, htp.1, ?_, ?_, ?_⟩
-  · intro hari
-    obtain ⟨μ, hμ, hw⟩ := exists_one_lt_smul_mem_of_mem_relint hari (hline tp)
-    have heq : (1 - μ) • (x + tp • d) + μ • (x + tm • d)
-        = x + ((1 - μ) * tp + μ * tm) • d := by module
-    rw [heq] at hw
-    have hmem : (1 - μ) * tp + μ * tm ∈ T := hw
-    nlinarith [htm.2 hmem, mul_pos (sub_pos.2 hμ) hgap]
-  · intro hbri
-    obtain ⟨μ, hμ, hw⟩ := exists_one_lt_smul_mem_of_mem_relint hbri (hline tm)
-    have heq : (1 - μ) • (x + tm • d) + μ • (x + tp • d)
-        = x + ((1 - μ) * tm + μ * tp) • d := by module
-    rw [heq] at hw
-    have hmem : (1 - μ) * tm + μ * tp ∈ T := hw
-    nlinarith [htp.2 hmem, mul_pos (sub_pos.2 hμ) hgap]
-  · refine ⟨tp / (tp - tm), -tm / (tp - tm), div_nonneg htppos.le hgap.le,
-      div_nonneg (neg_nonneg.2 htmneg.le) hgap.le, by field_simp; ring, ?_⟩
-    match_scalars <;> field_simp <;> ring
 
 /-- **The segment theorem** in the form the proof produces: if the relative boundary of a closed
 convex set `C` is *not convex*, then every relative interior point of `C` lies on a segment joining

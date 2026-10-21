@@ -552,7 +552,7 @@ private theorem polyhedral_neg_set {S : Set (Rn n)} (hS : Polyhedral S) : Polyhe
 preserves polyhedrality. -/
 private theorem polyhedral_neg_polarCone {K : Set (Rn n)} (hK : Polyhedral K)
     (hcone : ∀ a : ℝ, 0 < a → a • K = K) : Polyhedral (-(polarCone (pairing n) K)) := by
-  rw [polarCone_eq_polarSet_of_isCone hcone]
+  rw [polarCone_eq_polarSet_of_isCone (isCone_iff_smul_eq.2 hcone)]
   exact polyhedral_neg_set (corollary_19_2_2 hK)
 
 /-- **Theorem 31.4** under condition **(a)**: for a closed proper
@@ -567,7 +567,8 @@ theorem theorem_31_4_a {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f) (
     (hxf : x₀ ∈ ri (convexDom f)) (hxK : x₀ ∈ ri K) :
     (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w) :=
   iInf_mem_eq_neg_iInf_mem_neg_polarCone
-    (isExactSum_indicatorFn_of_relint (B := pairing n) hf hpf hK hxf hxK) hcone hne
+    (isExactSum_indicatorFn_of_relint (B := pairing n) hf hpf hK hxf hxK)
+      (isCone_iff_smul_eq.2 hcone) hne
 
 /-- **Theorem 31.4**: under (a) the infimum of `f*` over `K*` is attained. Specialises
 `exists_mem_neg_polarCone_convexConj_eq_iInf`. -/
@@ -577,7 +578,8 @@ theorem theorem_31_4_a_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : Conv
     ∃ y ∈ -(polarCone (pairing n) K), convexConj (pairing n) f y
       = ⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w :=
   exists_mem_neg_polarCone_convexConj_eq_iInf
-    (isExactSum_indicatorFn_of_relint (B := pairing n) hf hpf hK hxf hxK) hcone hne
+    (isExactSum_indicatorFn_of_relint (B := pairing n) hf hpf hK hxf hxK)
+      (isCone_iff_smul_eq.2 hcone) hne
 
 /-- **Theorem 31.4**, the polyhedral strengthening of (a): "if `K` is polyhedral, `ri K` and `ri K*`
 can be replaced by `K` and `K*` in (a) and (b)". -/
@@ -587,7 +589,8 @@ theorem theorem_31_4_a_polyhedral {f : Rn n → EReal} {K : Set (Rn n)} (hf : Co
     {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hxK : x₀ ∈ K) :
     (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w) :=
   iInf_mem_eq_neg_iInf_mem_neg_polarCone
-    (isExactSum_indicatorFn_of_polyhedral (B := pairing n) hf hpf hK hxf hxK) hcone hne
+    (isExactSum_indicatorFn_of_polyhedral (B := pairing n) hf hpf hK hxf hxK)
+      (isCone_iff_smul_eq.2 hcone) hne
 
 /-- **Theorem 31.4**: under the polyhedral form of (a) the dual infimum is still attained. -/
 theorem theorem_31_4_a_polyhedral_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f)
@@ -597,7 +600,8 @@ theorem theorem_31_4_a_polyhedral_attained {f : Rn n → EReal} {K : Set (Rn n)}
     ∃ y ∈ -(polarCone (pairing n) K), convexConj (pairing n) f y
       = ⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w :=
   exists_mem_neg_polarCone_convexConj_eq_iInf
-    (isExactSum_indicatorFn_of_polyhedral (B := pairing n) hf hpf hK hxf hxK) hcone hne
+    (isExactSum_indicatorFn_of_polyhedral (B := pairing n) hf hpf hK hxf hxK)
+      (isCone_iff_smul_eq.2 hcone) hne
 
 /-- **Theorem 31.4** under condition **(b)**: the same equality, with
 `ri (dom f*)` meeting `ri K*`.
@@ -615,8 +619,8 @@ theorem theorem_31_4_b {f : Rn n → EReal} {K : Set (Rn n)} (hf : ClosedProperC
     isExactSum_indicatorFn_of_relint (B := (pairing n).flip) (convexFn_convexConj (pairing n) f)
       (properConvex_convexConj (B := pairing n) hf) (convex_neg_polarCone (pairing n) K) hyf hyK
   have h := iInf_mem_eq_neg_iInf_mem_neg_polarCone hex
-    (fun a ha => smul_neg_polarCone (pairing n) K a ha) (neg_polarCone_nonempty (pairing n) K)
-  rw [neg_polarCone_neg_polarCone hK hcone hne hcl,
+    (isCone_iff_smul_eq.2 (smul_neg_polarCone (pairing n) K)) (neg_polarCone_nonempty (pairing n) K)
+  rw [neg_polarCone_neg_polarCone hK (isCone_iff_smul_eq.2 hcone) hne hcl,
     show convexConj (pairing n).flip (convexConj (pairing n) f)
         = f from convexBiconj_eq_self hf.convex hf.closed]
     at h
@@ -632,7 +636,7 @@ theorem theorem_31_4_b_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : Clos
   exists_mem_eq_iInf_of_isExactSum_convexConj (convexBiconj_eq_self hf.convex hf.closed)
     (isExactSum_indicatorFn_of_relint (B := (pairing n).flip) (convexFn_convexConj (pairing n) f)
       (properConvex_convexConj (B := pairing n) hf) (convex_neg_polarCone (pairing n) K) hyf hyK)
-    hK hcone hne hcl
+    hK (isCone_iff_smul_eq.2 hcone) hne hcl
 
 /-- **Theorem 31.4**, the polyhedral strengthening of (b): `ri K*` becomes `K*`. Polyhedrality of
 `K` is what makes `K*` polyhedral (`polyhedral_neg_polarCone`), and a polyhedral set is closed, so
@@ -646,8 +650,9 @@ theorem theorem_31_4_b_polyhedral {f : Rn n → EReal} {K : Set (Rn n)} (hf : Cl
     isExactSum_indicatorFn_of_polyhedral (B := (pairing n).flip) (convexFn_convexConj (pairing n) f)
       (properConvex_convexConj (B := pairing n) hf) (polyhedral_neg_polarCone hK hcone) hyf hyK
   have h := iInf_mem_eq_neg_iInf_mem_neg_polarCone hex
-    (fun a ha => smul_neg_polarCone (pairing n) K a ha) (neg_polarCone_nonempty (pairing n) K)
-  rw [neg_polarCone_neg_polarCone hK.convex hcone hne (Polyhedral.isClosed hK),
+    (isCone_iff_smul_eq.2 (smul_neg_polarCone (pairing n) K)) (neg_polarCone_nonempty (pairing n) K)
+  rw [neg_polarCone_neg_polarCone hK.convex
+    (isCone_iff_smul_eq.2 hcone) hne (Polyhedral.isClosed hK),
     show convexConj (pairing n).flip (convexConj (pairing n) f)
         = f from convexBiconj_eq_self hf.convex hf.closed]
     at h
@@ -663,7 +668,7 @@ theorem theorem_31_4_b_polyhedral_attained {f : Rn n → EReal} {K : Set (Rn n)}
     (isExactSum_indicatorFn_of_polyhedral (B := (pairing n).flip)
         (convexFn_convexConj (pairing n) f)
       (properConvex_convexConj (B := pairing n) hf) (polyhedral_neg_polarCone hK hcone) hyf hyK)
-    hK.convex hcone hne (Polyhedral.isClosed hK)
+    hK.convex (isCone_iff_smul_eq.2 hcone) hne (Polyhedral.isClosed hK)
 
 /-- **Theorem 31.4**, the optimality conditions: for `x ∈ K` and `x* ∈ K*`,
 the primal and dual values agree — `f(x) = -f*(x*)` — exactly when `x* ∈ ∂f(x)` and
@@ -887,7 +892,8 @@ theorem corollary_31_4_3 {h : Rn n → EReal} (hcof : Cofinite h) (hdom : convex
         + (⨅ w ∈ -(polarCone (pairing n) K),
             (convexConj (pairing n) h (z' + w) - ((pairing n z w : ℝ) : EReal)))
       = ((pairing n z z' : ℝ) : EReal) :=
-  iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing hcof hdom hconv hcone hne z z'
+  iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing hcof hdom hconv
+    (isCone_iff_smul_eq.2 hcone) hne z z'
 
 /-- **Corollary 31.4.3**: the first infimum is finite. -/
 theorem corollary_31_4_3_iInf_eq_coe {h : Rn n → EReal} (hcof : Cofinite h)
@@ -895,7 +901,7 @@ theorem corollary_31_4_3_iInf_eq_coe {h : Rn n → EReal} (hcof : Cofinite h)
     {K : Set (Rn n)} (hconv : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
     (z z' : Rn n) :
     ∃ s : ℝ, (⨅ x ∈ K, (h (z + x) - ((pairing n x z' : ℝ) : EReal))) = (s : EReal) :=
-  exists_iInf_mem_eq_coe_of_cofinite hcof hdom hconv hcone hne z z'
+  exists_iInf_mem_eq_coe_of_cofinite hcof hdom hconv (isCone_iff_smul_eq.2 hcone) hne z z'
 
 /-- **Corollary 31.4.3**: the second infimum is finite. -/
 theorem corollary_31_4_3_iInf_dual_eq_coe {h : Rn n → EReal} (hcof : Cofinite h)
@@ -903,7 +909,8 @@ theorem corollary_31_4_3_iInf_dual_eq_coe {h : Rn n → EReal} (hcof : Cofinite 
     (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (z z' : Rn n) :
     ∃ r : ℝ, (⨅ w ∈ -(polarCone (pairing n) K),
       (convexConj (pairing n) h (z' + w) - ((pairing n z w : ℝ) : EReal))) = (r : EReal) :=
-  exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite hcof hdom hconv hcone hne z z'
+  exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite hcof hdom hconv
+    (isCone_iff_smul_eq.2 hcone) hne z z'
 
 /-- **Corollary 31.4.3**: the first infimum is attained. This is the clause that needs `K`
 closed. -/
@@ -912,7 +919,7 @@ theorem corollary_31_4_3_attained {h : Rn n → EReal} (hcof : Cofinite h) (hdom
     (hcl : IsClosed K) (z z' : Rn n) :
     ∃ x ∈ K, h (z + x) - ((pairing n x z' : ℝ) : EReal)
       = ⨅ u ∈ K, (h (z + u) - ((pairing n u z' : ℝ) : EReal)) :=
-  exists_iInf_mem_eq_of_cofinite hcof hdom hconv hcone hne hcl z z'
+  exists_iInf_mem_eq_of_cofinite hcof hdom hconv (isCone_iff_smul_eq.2 hcone) hne hcl z z'
 
 /-- **Corollary 31.4.3**: the second infimum is attained. Co-finiteness is not needed for this half,
 nor is closedness of `K`. -/
@@ -923,7 +930,7 @@ theorem corollary_31_4_3_dual_attained {h : Rn n → EReal} (hcof : Cofinite h)
       convexConj (pairing n) h (z' + w) - ((pairing n z w : ℝ) : EReal)
         = ⨅ v ∈ -(polarCone (pairing n) K),
             (convexConj (pairing n) h (z' + v) - ((pairing n z v : ℝ) : EReal)) :=
-  exists_iInf_mem_neg_polarCone_eq_of_cofinite hcof hdom hconv hcone hne z z'
+  exists_iInf_mem_neg_polarCone_eq_of_cofinite hcof hdom hconv (isCone_iff_smul_eq.2 hcone) hne z z'
 
 /-! ### Theorem 31.5 (Moreau), proximations, and the two corollaries
 

@@ -678,7 +678,6 @@ theorem exists_subseq_tendsto_rep_of_bounded (hI : (I : Set ℝ).OrdConnected)
   have hp1 : (1 : ℝ≥0∞) ≤ p := Fact.out
   have hq1 : Fact (1 ≤ q) := ⟨ENNReal.HolderConjugate.one_le q p⟩
   have hqt : Fact (q ≠ ⊤) := ⟨hq⟩
-  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
   -- the empty interval
   rcases (I : Set ℝ).eq_empty_or_nonempty with hI0 | hne
   · refine ⟨0, id, strictMono_id, fun R ↦ ?_, fun f ↦ ?_⟩

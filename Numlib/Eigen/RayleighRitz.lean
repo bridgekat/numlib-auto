@@ -446,44 +446,6 @@ theorem compression_residual_le {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E} [K
   rw [compression.apply_sub_smul_orthogonalProjection A K hu, norm_neg]
   exact hγ _ (K.sub_starProjection_mem_orthogonal u)
 
-/-- The residual of the *whole* eigenvector, rather than of its projection: under the hypotheses of
-`compression_residual_le`, `‖(A_K - μ) u‖ ≤ √(|μ|² + γ²) ‖(1 - P_K) u‖`, where `A_K` is read as the
-operator `P_K A P_K` on the whole space.  The extra `|μ|²` is exactly the term `-μ (1 - P_K) u`,
-which is orthogonal to the residual of `compression_residual_le`, so the constant `√(|μ|² + γ²)` is
-what the Pythagorean identity gives and cannot be improved by this argument. -/
-theorem compression_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E} [K.HasOrthogonalProjection]
-    {γ : ℝ} (hγ : ∀ x ∈ Kᗮ, ‖K.starProjection (A x)‖ ≤ γ * ‖x‖) {μ : 𝕜} {u : E}
-    (hu : A u = μ • u) :
-    ‖K.starProjection (A (K.starProjection u)) - μ • u‖
-      ≤ Real.sqrt (‖μ‖ ^ 2 + γ ^ 2) * ‖u - K.starProjection u‖ := by
-  have hle : ‖K.starProjection (A (K.starProjection u)) - μ • K.starProjection u‖
-      ≤ γ * ‖u - K.starProjection u‖ := by
-    rw [← coe_compression_sub_smul A K μ u]
-    exact compression_residual_le hγ hu
-  have hrmem : K.starProjection (A (K.starProjection u)) - μ • K.starProjection u ∈ K :=
-    Submodule.sub_mem _ (K.starProjection_apply_mem _)
-      (Submodule.smul_mem _ _ (K.starProjection_apply_mem u))
-  have hqmem : (-μ) • (u - K.starProjection u) ∈ Kᗮ :=
-    Submodule.smul_mem _ _ (K.sub_starProjection_mem_orthogonal u)
-  have hsplit : K.starProjection (A (K.starProjection u)) - μ • u
-      = (K.starProjection (A (K.starProjection u)) - μ • K.starProjection u)
-        + (-μ) • (u - K.starProjection u) := by module
-  have hpyth : ‖K.starProjection (A (K.starProjection u)) - μ • u‖ ^ 2
-      = ‖K.starProjection (A (K.starProjection u)) - μ • K.starProjection u‖ ^ 2
-        + ‖μ‖ ^ 2 * ‖u - K.starProjection u‖ ^ 2 := by
-    rw [hsplit]
-    simp only [pow_two]
-    rw [norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _
-      (Submodule.inner_right_of_mem_orthogonal hrmem hqmem), norm_smul, norm_neg]
-    ring
-  have hb : (0 : ℝ) ≤ ‖u - K.starProjection u‖ := norm_nonneg _
-  have hsq : ‖K.starProjection (A (K.starProjection u)) - μ • u‖ ^ 2
-      ≤ (Real.sqrt (‖μ‖ ^ 2 + γ ^ 2) * ‖u - K.starProjection u‖) ^ 2 := by
-    rw [mul_pow, Real.sq_sqrt (by positivity)]
-    nlinarith [hpyth, hle, norm_nonneg
-      (K.starProjection (A (K.starProjection u)) - μ • K.starProjection u)]
-  exact le_of_sq_le_sq hsq (by positivity)
-
 /-! ### The oblique residual bounds
 
 An oblique projection method takes a search subspace `K` and a test subspace `L`, and its
@@ -563,6 +525,22 @@ theorem compressionBy_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E}
     nlinarith [hpyth, hle, norm_nonneg (v - μ • K.starProjection u),
       norm_nonneg (u - K.starProjection u)]
   exact le_of_sq_le_sq hsq (by positivity)
+
+/-- The residual of the *whole* eigenvector, rather than of its projection: under the hypotheses of
+`compression_residual_le`, `‖(A_K - μ) u‖ ≤ √(|μ|² + γ²) ‖(1 - P_K) u‖`, where `A_K` is read as the
+operator `P_K A P_K` on the whole space.  The extra `|μ|²` is exactly the term `-μ (1 - P_K) u`,
+which is orthogonal to the residual of `compression_residual_le`, so the constant `√(|μ|² + γ²)` is
+what the Pythagorean identity gives and cannot be improved by this argument. -/
+theorem compression_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E} [K.HasOrthogonalProjection]
+    {γ : ℝ} (hγ : ∀ x ∈ Kᗮ, ‖K.starProjection (A x)‖ ≤ γ * ‖x‖) {μ : 𝕜} {u : E}
+    (hu : A u = μ • u) :
+    ‖K.starProjection (A (K.starProjection u)) - μ • u‖
+      ≤ Real.sqrt (‖μ‖ ^ 2 + γ ^ 2) * ‖u - K.starProjection u‖ :=
+  compressionBy_residual_le' (Q := (K.orthogonalProjectionOnto : E →ₗ[𝕜] K))
+    (fun x => K.orthogonalProjectionOnto_mem_subspace_eq_self x) (fun x hx => by
+      rw [map_sub, map_smul, ContinuousLinearMap.coe_coe,
+        K.orthogonalProjectionOnto_apply_of_mem_orthogonal hx, smul_zero, sub_zero]
+      exact hγ x hx) hu
 
 /-! ### The shifted quadratic form
 
@@ -805,8 +783,7 @@ theorem mul_norm_le_norm_sub_smul [FiniteDimensional 𝕜 E] {n : ℕ} {T : E �
     · rw [hzero i hi]
       simp
     · have h := hsep i hi
-      have habs : (0 : ℝ) ≤ |hT.eigenvalues hn i - lam| := abs_nonneg _
-      have hsq2 : δ ^ 2 ≤ |hT.eigenvalues hn i - lam| ^ 2 := by nlinarith [h, hδ0, habs]
+      have hsq2 : δ ^ 2 ≤ |hT.eigenvalues hn i - lam| ^ 2 := by nlinarith [h, hδ0]
       exact mul_le_mul_of_nonneg_right hsq2 (sq_nonneg _)
   exact le_of_sq_le_sq hsq (norm_nonneg _)
 
@@ -963,9 +940,8 @@ theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {K :
   set W := Module.End.eigenspace (compression A K) (θ : 𝕜) with hWdef
   set y : K := K.orthogonalProjectionOnto u with hydef
   set p : K := W.starProjection y with hpdef
-  have hkey : δ * ‖y - p‖ ≤ γ * ‖u - K.starProjection u‖ := haux.trans hres
   have hsqkey : ‖y - p‖ ^ 2 * δ ^ 2 ≤ γ ^ 2 * ‖u - K.starProjection u‖ ^ 2 := by
-    nlinarith [hkey, mul_nonneg hδ0.le (norm_nonneg (y - p)), norm_nonneg (y - p),
+    nlinarith [mul_nonneg hδ0.le (norm_nonneg (y - p)), norm_nonneg (y - p),
       norm_nonneg (u - K.starProjection u)]
   have hsin : K.sinAngle u * ‖u‖ = ‖u - K.starProjection u‖ := K.sinAngle_mul_norm u
   have hcoe : ‖y - p‖ = ‖K.starProjection u - (p : E)‖ := by
@@ -1155,7 +1131,6 @@ theorem charpoly_compression_isMinOn {m : ℕ} (hm : m ≤ grade A b) :
     simp only [pow_two]
     exact norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _
       (Submodule.inner_left_of_mem_orthogonal hmem (aeval_charpoly_mem_orthogonal A b hm))
-  have hnn := sq_nonneg ‖aeval A (p - c) b‖
   exact le_of_sq_le_sq (by nlinarith) (norm_nonneg _)
 
 end Charpoly

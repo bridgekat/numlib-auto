@@ -207,8 +207,6 @@ theorem integral_eq_zero_of_truncation {μ : Measure ℝ} {α γ f u₀ u₁ v�
     exact mul_nonpos_of_nonpos_of_nonneg (by linarith) (truncation_nonneg _)
   have iB : Integrable (fun x ↦ γ x * (u₀ x - K) * v₀ x) μ :=
     (i2.sub (i4.const_mul K)).congr (Eventually.of_forall fun x ↦ by simp only [Pi.sub_apply]; ring)
-  have iC : Integrable (fun x ↦ (f x - K * γ x) * v₀ x) μ :=
-    (i3.sub (i4.const_mul K)).congr (Eventually.of_forall fun x ↦ by simp only [Pi.sub_apply]; ring)
   have eB : ∫ x, γ x * (u₀ x - K) * v₀ x ∂μ
       = (∫ x, γ x * u₀ x * v₀ x ∂μ) - K * ∫ x, γ x * v₀ x ∂μ := by
     rw [← integral_const_mul, ← integral_sub i2 (i4.const_mul K)]

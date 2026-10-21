@@ -281,6 +281,10 @@ theorem coeff_eq_zero_of_lt {i j : ℕ} (h : j + 1 < i) : coeff A b i j = 0 := b
     (map_subspace_le A b (j + 1) ⟨_, vec_mem_subspace A b j, rfl⟩) ?_
   exact Submodule.orthogonal_le (subspace_mono A b (by omega)) (vec_mem_orthogonal A b i)
 
+/-- The Arnoldi coefficients are upper Hessenberg, as an `ℕ`-indexed array. -/
+theorem isUpperHessenberg_coeff : Matrix.IsUpperHessenberg (n := ℕ) (coeff A b) :=
+  Matrix.isUpperHessenberg_iff_nat.2 fun _ _ hij => coeff_eq_zero_of_lt A b hij
+
 /-- Arnoldi relation `A v_j = ∑_{i ≤ j+1} h i j v_i` ([saad2003iterative], (6.9)). -/
 theorem apply_vec (j : ℕ) :
     A (vec A b j) = ∑ i ∈ Finset.range (j + 2), coeff A b i j • vec A b i := by
@@ -321,7 +325,8 @@ theorem w_eq_sub_starProjection (j : ℕ) :
 generalizing Lanczos tridiagonality: if `A` has an adjoint `B` (`⟪A x, y⟫ = ⟪x, B y⟫`) with `B v ∈
 𝒦_s(A, v)` for every `v`, then `h i j = 0` for `i + s ≤ j`. (Prop 6.22 itself draws from this the
 equivalence of DIOM(s) with FOM.) -/
-theorem coeff_eq_zero_of_adjoint_mem {B : E →ₗ[𝕜] E} (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
+theorem coeff_eq_zero_of_adjoint_mem {B : E →ₗ[𝕜] E}
+    (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B)
     {s : ℕ} (hs : ∀ v, B v ∈ subspace A v s) {i j : ℕ} (h : i + s ≤ j) : coeff A b i j = 0 := by
   have hle : subspace A (vec A b i) s ≤ subspace A b j := by
     rw [subspace, Submodule.span_le]
@@ -330,7 +335,7 @@ theorem coeff_eq_zero_of_adjoint_mem {B : E →ₗ[𝕜] E} (hB : ∀ x y, inner
     exact subspace_mono A b (by omega)
       (pow_apply_mem_subspace_of_mem A b (vec_mem_subspace A b i) k)
   have hconj : coeff A b i j = starRingEnd 𝕜 (inner 𝕜 (vec A b j) (B (vec A b i))) := by
-    rw [coeff, ← hB, inner_conj_symm]
+    rw [coeff, ← LinearMap.inner_apply_eq_inner_apply_of_adjoint hB, inner_conj_symm]
   rw [hconj, Submodule.inner_left_of_mem_orthogonal (hle (hs (vec A b i)))
     (vec_mem_orthogonal A b j), map_zero]
 

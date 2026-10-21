@@ -249,9 +249,8 @@ theorem backSubst_error_of_diagDominant [NeZero n] (hn : (n : ℝ) * m.u < 1)
   have hu := u_lt_one_of_mul_lt_one hn
   have hcard : (Fintype.card (Fin n) : ℝ) * m.u < 1 := by rwa [Fintype.card_fin]
   have hd := (hU.isUnit_iff).1 hUu
-  have hdom' : ∀ i, ∑ j ∈ univ.erase i, |U i j| ≤ |U i i| := fun i => by
-    simpa [Real.norm_eq_abs] using hdom i
-  have h := abs_sub_le_of_roundsBackSubst_of_isDiagDominant hu hcard hU hd hdom' hx h
+  have h := abs_sub_le_of_roundsBackSubst_of_isDiagDominant hu hcard hU hd
+    (isDiagDominant_iff_isAbsDiagDominant.1 hdom) hx h
     (c := ‖xhat‖) (fun j => by simpa [Real.norm_eq_abs] using norm_le_pi_norm xhat j) i
   rwa [Fintype.card_fin, gamma_def] at h
 

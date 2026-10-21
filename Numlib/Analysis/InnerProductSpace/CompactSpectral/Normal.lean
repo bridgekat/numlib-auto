@@ -314,7 +314,6 @@ theorem IsStarNormal.closure_numericalRange_eq_closure_convexHull_spectrum (hT :
     · ext i
       rw [← inner_conj_symm u, Complex.ofReal_pow, ← Complex.conj_mul']
     · exact Complex.ofReal_pow _ _
-  have hu2 : 0 < ‖u‖ ^ 2 := by positivity
   -- `φ z = ‖u‖⁻² ∑ |uᵢ|² φ (λᵢ) ≤ c`
   have hz' : ⟪u, T u⟫_ℂ / ⟪u, u⟫_ℂ = ((‖u‖ ^ 2)⁻¹ : ℝ) • ⟪u, T u⟫_ℂ := by
     rw [inner_self_eq_norm_sq_to_K, div_eq_inv_mul, Complex.real_smul, Complex.ofReal_inv,

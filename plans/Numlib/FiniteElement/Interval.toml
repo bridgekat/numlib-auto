@@ -198,3 +198,9 @@ id = "rep_quadraticInterp_eq_eval"
 
 [[node]]
 id = "seminorm_sub_quadraticInterp_le"
+
+[[node]]
+id = "_root_.IsIntervalPartition.ae_mem_Ioo_panel"
+
+[[node]]
+id = "linearIndependent_hatFunction_succ"

@@ -5,6 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.Block`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.UnitaryGroup
 
@@ -31,6 +32,10 @@ general rules behind the triangular, banded and trapezoidal shapes of
   trapezoidal shapes of rectangular factorizations.
 * `Matrix.fromBlocks_submatrix_sum_map`: reindexing a `2 × 2` block matrix by `Sum.map` on both
   sides reindexes each block.
+* `Matrix.exists_fromBlocks_zero₂₁_pow_eq`: the powers of a `2 × 2` block upper triangular matrix
+  are block upper triangular with the powers of the diagonal blocks.
+* `Matrix.fromRows_add`, `Matrix.fromRows_sub`: matrices partitioned by rows add and subtract
+  blockwise (the companions of Mathlib's `Matrix.fromRows_neg`).
 * `Matrix.conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup`: two column blocks of a
   unitary matrix are orthonormal to each other, `(V(:, f))ᴴ V(:, g) = I(f, g)`; its row form is
   `Matrix.submatrix_mul_conjTranspose_submatrix_of_mem_unitaryGroup`.
@@ -128,6 +133,39 @@ theorem fromBlocks_submatrix_sum_map (A : Matrix n l α) (B : Matrix n m α) (C 
   ext (i | i) (j | j) <;> rfl
 
 end Reindex
+
+/-! ### Powers of a block upper triangular matrix -/
+
+/-- **The powers of a `2 × 2` block upper triangular matrix** are block upper triangular, with the
+powers of the diagonal blocks on the diagonal: the block form of `Matrix.BlockTriangular.pow`. -/
+theorem exists_fromBlocks_zero₂₁_pow_eq {p q R : Type*} [Fintype p] [Fintype q] [DecidableEq p]
+    [DecidableEq q] [Semiring R] (M₁₁ : Matrix p p R) (M₁₂ : Matrix p q R) (M₂₂ : Matrix q q R)
+    (k : ℕ) : ∃ Y, fromBlocks M₁₁ M₁₂ 0 M₂₂ ^ k = fromBlocks (M₁₁ ^ k) Y 0 (M₂₂ ^ k) := by
+  induction k with
+  | zero => exact ⟨0, by rw [pow_zero, pow_zero, pow_zero, fromBlocks_one]⟩
+  | succ k ih =>
+    obtain ⟨Y, hY⟩ := ih
+    refine ⟨M₁₁ ^ k * M₁₂ + Y * M₂₂, ?_⟩
+    rw [pow_succ, hY, fromBlocks_multiply, pow_succ, pow_succ]
+    simp
+
+/-! ### Sums of matrices partitioned by rows -/
+
+section FromRows
+
+variable {m₁ m₂ n α : Type*}
+
+/-- The sum of two matrices partitioned by rows is partitioned by rows, blockwise. -/
+theorem fromRows_add [Add α] (A₁ B₁ : Matrix m₁ n α) (A₂ B₂ : Matrix m₂ n α) :
+    fromRows A₁ A₂ + fromRows B₁ B₂ = fromRows (A₁ + B₁) (A₂ + B₂) := by
+  ext (i | i) j <;> rfl
+
+/-- The difference of two matrices partitioned by rows is partitioned by rows, blockwise. -/
+theorem fromRows_sub [Sub α] (A₁ B₁ : Matrix m₁ n α) (A₂ B₂ : Matrix m₂ n α) :
+    fromRows A₁ A₂ - fromRows B₁ B₂ = fromRows (A₁ - B₁) (A₂ - B₂) := by
+  ext (i | i) j <;> rfl
+
+end FromRows
 
 /-! ### Leading and trailing indices of `Fin N` -/
 
@@ -248,8 +286,9 @@ section ConsDiag
 
 variable {α : Type*} {m n p : ℕ}
 
-/-! The tuple lemmas `Fin.cons_zero` and `Fin.cons_succ` do not fire on a tuple of rows given as a
-`Matrix`, whose type is not syntactically a function type; these are their row forms. -/
+/-! The tuple lemmas `Fin.cons_zero`, `Fin.cons_succ`, `Fin.insertNth_apply_same` and
+`Fin.insertNth_apply_succAbove` do not fire on a tuple of rows given as a `Matrix`, whose type is
+not syntactically a function type; these are their row forms. -/
 
 /-- The first row of `Fin.cons w A` is `w`. -/
 @[simp]
@@ -260,6 +299,24 @@ theorem cons_rows_zero (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α) (j : F
 @[simp]
 theorem cons_rows_succ (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α) (i : Fin m)
     (j : Fin n) : (Fin.cons w A : Fin (m + 1) → Fin n → α) i.succ j = A i j := rfl
+
+/-- The inserted row of `Fin.insertNth k w A` is `w`: the row form of `Fin.insertNth_apply_same`,
+which does not fire on a tuple of rows given as a `Matrix`. -/
+@[simp]
+theorem insertNth_rows_same (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α)
+    (k : Fin (m + 1)) (j : Fin n) :
+    (Fin.insertNth k w A : Fin (m + 1) → Fin n → α) k j = w j := by
+  have h := Fin.insertNth_apply_same (α := fun _ => Fin n → α) k w (fun i => A i)
+  exact congrFun h j
+
+/-- The other rows of `Fin.insertNth k w A` are the rows of `A`: the row form of
+`Fin.insertNth_apply_succAbove`. -/
+@[simp]
+theorem insertNth_rows_succAbove (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α)
+    (k : Fin (m + 1)) (i : Fin m) (j : Fin n) :
+    (Fin.insertNth k w A : Fin (m + 1) → Fin n → α) (k.succAbove i) j = A i j := by
+  have h := Fin.insertNth_apply_succAbove (α := fun _ => Fin n → α) k w (fun i => A i) i
+  exact congrFun h j
 
 /-- **The block diagonal matrix `diag(a, Q)`** on `Fin (m + 1) × Fin (n + 1)`: `a` in the corner
 `(0, 0)`, `Q` on the trailing block, zero elsewhere ([golub2013matrix] §6.5.3, `diag(1, Q)`). -/

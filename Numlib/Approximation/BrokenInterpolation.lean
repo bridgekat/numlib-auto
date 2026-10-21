@@ -77,6 +77,37 @@ theorem intervalIntegrable_panel (hx : Monotone x) {g : ℝ → ℝ}
     IntervalIntegrable g volume (x i.castSucc) (x i.succ) :=
   hg.mono_set (uIcc_panel_subset hx i)
 
+/-- The product of a function interval integrable on `[x 0, x n]` with the piece `vᵢ` of a broken
+polynomial is interval integrable on the panel `Iᵢ`. -/
+theorem intervalIntegrable_mul_eval_panel (hx : Monotone x) {g : ℝ → ℝ}
+    (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) (v : BrokenPolynomial x r)
+    (i : Fin n) :
+    IntervalIntegrable (fun s => g s * (v i).eval s) volume (x i.castSucc) (x i.succ) :=
+  (intervalIntegrable_panel hx hg i).mul_continuousOn (v i).continuous.continuousOn
+
+/-- The difference of a function interval integrable on `[x 0, x n]` and the piece `vᵢ` of a
+broken polynomial is interval integrable on the panel `Iᵢ`. -/
+theorem intervalIntegrable_sub_eval_panel (hx : Monotone x) {g : ℝ → ℝ}
+    (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) (v : BrokenPolynomial x r)
+    (i : Fin n) :
+    IntervalIntegrable (fun s => g s - (v i).eval s) volume (x i.castSucc) (x i.succ) :=
+  (intervalIntegrable_panel hx hg i).sub ((v i).continuous.intervalIntegrable _ _)
+
+/-- For `g` and `g²` interval integrable on `[x 0, x n]`, `(g - vᵢ)²` is interval integrable on
+the panel `Iᵢ`. -/
+theorem intervalIntegrable_sub_eval_sq_panel (hx : Monotone x) {g : ℝ → ℝ}
+    (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
+    (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume (x 0) (x (Fin.last n)))
+    (v : BrokenPolynomial x r) (i : Fin n) :
+    IntervalIntegrable (fun s => (g s - (v i).eval s) ^ 2) volume (x i.castSucc) (x i.succ) := by
+  have : (fun s => (g s - (v i).eval s) ^ 2)
+      = fun s => g s ^ 2 - 2 * (g s * (v i).eval s) + (v i).eval s ^ 2 := by
+    funext s; ring
+  rw [this]
+  exact ((intervalIntegrable_panel hx hg2 i).sub
+    ((intervalIntegrable_mul_eval_panel hx hg v i).const_mul 2)).add
+    (((v i).continuous.pow 2).intervalIntegrable _ _)
+
 /-- **An integral over `[x 0, x n]` is the sum of the panel integrals.** -/
 theorem integral_eq_sum_panels (hx : Monotone x) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) :
@@ -179,9 +210,8 @@ theorem pairing_add (hx : Monotone x) {g : ℝ → ℝ}
     pairing g (v + w) = pairing g v + pairing g w := by
   simp only [pairing_def, add_apply, eval_add, mul_add, ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
-  exact integral_add ((intervalIntegrable_panel hx hg i).mul_continuousOn
-    (v i).continuous.continuousOn) ((intervalIntegrable_panel hx hg i).mul_continuousOn
-    (w i).continuous.continuousOn)
+  exact integral_add (intervalIntegrable_mul_eval_panel hx hg v i)
+    (intervalIntegrable_mul_eval_panel hx hg w i)
 
 theorem pairing_smul (g : ℝ → ℝ) (c : ℝ) (v : BrokenPolynomial x r) :
     pairing g (c • v) = c * pairing g v := by
@@ -204,9 +234,8 @@ theorem pairing_add_left (hx : Monotone x) {g₁ g₂ : ℝ → ℝ}
     pairing (fun s => g₁ s + g₂ s) v = pairing g₁ v + pairing g₂ v := by
   simp only [pairing_def, add_mul, ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
-  exact integral_add ((intervalIntegrable_panel hx hg₁ i).mul_continuousOn
-    (v i).continuous.continuousOn) ((intervalIntegrable_panel hx hg₂ i).mul_continuousOn
-    (v i).continuous.continuousOn)
+  exact integral_add (intervalIntegrable_mul_eval_panel hx hg₁ v i)
+    (intervalIntegrable_mul_eval_panel hx hg₂ v i)
 
 theorem pairing_sub_left (hx : Monotone x) {g₁ g₂ : ℝ → ℝ}
     (hg₁ : IntervalIntegrable g₁ volume (x 0) (x (Fin.last n)))
@@ -214,9 +243,8 @@ theorem pairing_sub_left (hx : Monotone x) {g₁ g₂ : ℝ → ℝ}
     pairing (fun s => g₁ s - g₂ s) v = pairing g₁ v - pairing g₂ v := by
   simp only [pairing_def, sub_mul, ← Finset.sum_sub_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
-  exact integral_sub ((intervalIntegrable_panel hx hg₁ i).mul_continuousOn
-    (v i).continuous.continuousOn) ((intervalIntegrable_panel hx hg₂ i).mul_continuousOn
-    (v i).continuous.continuousOn)
+  exact integral_sub (intervalIntegrable_mul_eval_panel hx hg₁ v i)
+    (intervalIntegrable_mul_eval_panel hx hg₂ v i)
 
 theorem pairing_smul_left (g : ℝ → ℝ) (c : ℝ) (v : BrokenPolynomial x r) :
     pairing (fun s => c * g s) v = c * pairing g v := by
@@ -284,21 +312,9 @@ theorem sqrt_sum_integral_sub_sq_le {g : ℝ → ℝ}
     √(∑ i, ∫ s in x i.castSucc..x i.succ, (g s - (v i).eval s) ^ 2)
       ≤ √(∑ i, ∫ s in x i.castSucc..x i.succ, (g s - (w i).eval s) ^ 2) + ‖w - v‖ := by
   have hm : Monotone x := hx.out.monotone
-  have hη : ∀ i, IntervalIntegrable (fun s => g s - (w i).eval s) volume
-      (x i.castSucc) (x i.succ) :=
-    fun i => (intervalIntegrable_panel hm hg i).sub ((w i).continuous.intervalIntegrable _ _)
-  have hη2 : ∀ i, IntervalIntegrable (fun s => (g s - (w i).eval s) ^ 2) volume
-      (x i.castSucc) (x i.succ) := fun i => by
-    have : (fun s => (g s - (w i).eval s) ^ 2)
-        = fun s => g s ^ 2 - 2 * (g s * (w i).eval s) + (w i).eval s ^ 2 := by
-      funext s; ring
-    rw [this]
-    exact ((intervalIntegrable_panel hm hg2 i).sub
-      (((intervalIntegrable_panel hm hg i).mul_continuousOn
-        (w i).continuous.continuousOn).const_mul 2)).add
-      (((w i).continuous.pow 2).intervalIntegrable _ _)
   have h := sqrt_sum_integral_add_sq_le hm (f := fun i s => g s - (w i).eval s)
-    (g := fun i s => (w i).eval s - (v i).eval s) hη hη2
+    (g := fun i s => (w i).eval s - (v i).eval s) (intervalIntegrable_sub_eval_panel hm hg w)
+    (intervalIntegrable_sub_eval_sq_panel hm hg hg2 w)
     (fun i => ((w i).continuous.sub (v i).continuous).intervalIntegrable _ _)
     (fun i => (((w i).continuous.sub (v i).continuous).pow 2).intervalIntegrable _ _)
   have e1 : ∑ i, ∫ s in x i.castSucc..x i.succ, ((w i).eval s - (v i).eval s) ^ 2
@@ -591,19 +607,8 @@ theorem norm_sub_le_sqrt_add_sqrt {g : ℝ → ℝ}
     ‖v - w‖ ≤ √(∑ i, ∫ s in x i.castSucc..x i.succ, (g s - (v i).eval s) ^ 2)
       + √(∑ i, ∫ s in x i.castSucc..x i.succ, (g s - (w i).eval s) ^ 2) := by
   have hm : Monotone x := hx.out.monotone
-  have hη : ∀ w : BrokenPolynomial x r, ∀ i, IntervalIntegrable (fun s => g s - (w i).eval s) volume
-      (x i.castSucc) (x i.succ) :=
-    fun w i => (intervalIntegrable_panel hm hg i).sub ((w i).continuous.intervalIntegrable _ _)
-  have hη2 : ∀ w : BrokenPolynomial x r, ∀ i, IntervalIntegrable (fun s => (g s - (w i).eval s) ^ 2)
-      volume (x i.castSucc) (x i.succ) := fun w i => by
-    have : (fun s => (g s - (w i).eval s) ^ 2)
-        = fun s => g s ^ 2 - 2 * (g s * (w i).eval s) + (w i).eval s ^ 2 := by
-      funext s; ring
-    rw [this]
-    exact ((intervalIntegrable_panel hm hg2 i).sub
-      (((intervalIntegrable_panel hm hg i).mul_continuousOn
-        (w i).continuous.continuousOn).const_mul 2)).add
-      (((w i).continuous.pow 2).intervalIntegrable _ _)
+  have hη := intervalIntegrable_sub_eval_panel hm hg (r := r)
+  have hη2 := intervalIntegrable_sub_eval_sq_panel hm hg hg2 (r := r)
   have hη2' : ∀ i, IntervalIntegrable (fun s => ((v i).eval s - g s) ^ 2)
       volume (x i.castSucc) (x i.succ) := fun i => by
     have : (fun s => ((v i).eval s - g s) ^ 2) = fun s => (g s - (v i).eval s) ^ 2 := by
@@ -747,7 +752,6 @@ theorem integral_derivative_sq_le_panel {u w : ℝ} (huw : u < w) {p : ℝ[X]} (
       mul_inv_cancel₀ hk0.ne', mul_one]
   have hM := Polynomial.integral_derivative_sq_le (N := r) hqdeg
   rw [e1, e2] at hM
-  have hP : 0 ≤ ∫ s in u..w, p.eval s ^ 2 := integral_nonneg huw.le fun _ _ => sq_nonneg _
   have hwu : w - u = 2 * k := by rw [hk]; ring
   rw [hwu]
   have : (2 * (r : ℝ) * (r + 1) / (2 * k)) ^ 2 = ((r : ℝ) * (r + 1)) ^ 2 * k⁻¹ * k⁻¹ := by
@@ -832,8 +836,7 @@ theorem sum_integral_sub_proj_mul_eval_eq_zero {g : ℝ → ℝ}
   rw [← sub_eq_zero.2 h.symm, ← Finset.sum_sub_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   have hc : Continuous fun s => (proj x r g i).eval s * (v i).eval s := by fun_prop
-  rw [← integral_sub ((intervalIntegrable_panel hm hg i).mul_continuousOn
-    (v i).continuous.continuousOn) (hc.intervalIntegrable _ _)]
+  rw [← integral_sub (intervalIntegrable_mul_eval_panel hm hg v i) (hc.intervalIntegrable _ _)]
   exact integral_congr fun s _ => by ring
 
 /-- **Panelwise orthogonality**: `∫_{Iᵢ} (g - (P g)ᵢ) q = 0` for every polynomial `q` of degree at
@@ -921,6 +924,47 @@ section ProjEstimates
 variable [hx : Fact (StrictMono x)] {node : Fin n → Fin (r + 1) → ℝ}
 
 open SobolevInterval in
+/-- The square-root form of `sum_integral_sq_sub_interp_le_seminorm`:
+`√(∑ᵢ ∫ (f - (I f)ᵢ)²) ≤ h^{r+1} |U|_{H^{r+1}}`. -/
+theorem sqrt_sum_integral_sq_sub_interp_le_seminorm (hn : 0 < n) (hnode : IsNodes x r node)
+    {h : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h)
+    (U : SobolevInterval (r + 1) (x 0) (x (Fin.last n))) {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Icc (x 0) (x (Fin.last n))))
+    (hU : fn U =ᵐ[volume.restrict (Ioo (x 0) (x (Fin.last n)))] f) :
+    √(∑ i, ∫ s in x i.castSucc..x i.succ, (f s - (interp hnode f i).eval s) ^ 2)
+      ≤ h ^ (r + 1) * seminorm (r + 1) (x 0) (x (Fin.last n)) U := by
+  have hh : 0 ≤ h :=
+    (sub_nonneg.2 (hx.out (Fin.castSucc_lt_succ (i := ⟨0, hn⟩))).le).trans (hmesh ⟨0, hn⟩)
+  calc √(∑ i, ∫ s in x i.castSucc..x i.succ, (f s - (interp hnode f i).eval s) ^ 2)
+      ≤ √(h ^ (2 * (r + 1)) * seminorm (r + 1) (x 0) (x (Fin.last n)) U ^ 2) :=
+        Real.sqrt_le_sqrt (sum_integral_sq_sub_interp_le_seminorm hx.out hn hnode hmesh U hf hU)
+    _ = h ^ (r + 1) * seminorm (r + 1) (x 0) (x (Fin.last n)) U := by
+        rw [Real.sqrt_mul (by positivity), pow_mul', Real.sqrt_sq (by positivity),
+          Real.sqrt_sq (apply_nonneg _ _)]
+
+open SobolevInterval in
+/-- The square-root form of `sum_integral_sq_deriv_sub_interp_le_seminorm`:
+`√(∑ᵢ ∫ (U' - (I f)ᵢ')²) ≤ h^r |U|_{H^{r+1}}`. -/
+theorem sqrt_sum_integral_sq_deriv_sub_interp_le_seminorm (hn : 0 < n)
+    (hnode : IsNodes x r node) {h : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h)
+    (U : SobolevInterval (r + 1) (x 0) (x (Fin.last n))) {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Icc (x 0) (x (Fin.last n))))
+    (hU : fn U =ᵐ[volume.restrict (Ioo (x 0) (x (Fin.last n)))] f) :
+    √(∑ i, ∫ s in x i.castSucc..x i.succ,
+        (SobolevInterval.deriv U 1 s - (derivative (interp hnode f i)).eval s) ^ 2)
+      ≤ h ^ r * seminorm (r + 1) (x 0) (x (Fin.last n)) U := by
+  have hh : 0 ≤ h :=
+    (sub_nonneg.2 (hx.out (Fin.castSucc_lt_succ (i := ⟨0, hn⟩))).le).trans (hmesh ⟨0, hn⟩)
+  calc √(∑ i, ∫ s in x i.castSucc..x i.succ,
+        (SobolevInterval.deriv U 1 s - (derivative (interp hnode f i)).eval s) ^ 2)
+      ≤ √(h ^ (2 * r) * seminorm (r + 1) (x 0) (x (Fin.last n)) U ^ 2) :=
+        Real.sqrt_le_sqrt (sum_integral_sq_deriv_sub_interp_le_seminorm hx.out hn hnode hmesh U hf
+          hU)
+    _ = h ^ r * seminorm (r + 1) (x 0) (x (Fin.last n)) U := by
+        rw [Real.sqrt_mul (by positivity), pow_mul', Real.sqrt_sq (by positivity),
+          Real.sqrt_sq (apply_nonneg _ _)]
+
+open SobolevInterval in
 /-- **The `L²` estimate of the projection error**: for `U ∈ H^{r+1}(x 0, x n)` with continuous
 representative `f` and a partition of mesh at most `h` carrying a node system of degree `r`,
 `√(∑ᵢ ∫ (f - (P f)ᵢ)²) ≤ h^{r+1} |U|_{H^{r+1}}`: the projection is at least as good as the
@@ -933,20 +977,12 @@ theorem sqrt_sum_integral_sq_sub_proj_le_seminorm (hn : 0 < n) (hnode : IsNodes 
     √(∑ i, ∫ s in x i.castSucc..x i.succ, (f s - (proj x r f i).eval s) ^ 2)
       ≤ h ^ (r + 1) * seminorm (r + 1) (x 0) (x (Fin.last n)) U := by
   have hab : x 0 < x (Fin.last n) := hx.out (Fin.pos_iff_ne_zero.2 (Fin.ne_of_val_ne hn.ne'))
-  have hh : 0 ≤ h :=
-    (sub_nonneg.2 (hx.out (Fin.castSucc_lt_succ (i := ⟨0, hn⟩))).le).trans (hmesh ⟨0, hn⟩)
   have hfi : IntervalIntegrable f volume (x 0) (x (Fin.last n)) :=
     (hf.mono (uIcc_of_le hab.le).le).intervalIntegrable
   have hfi2 : IntervalIntegrable (fun s => f s ^ 2) volume (x 0) (x (Fin.last n)) :=
     ((hf.mono (uIcc_of_le hab.le).le).pow 2).intervalIntegrable
-  calc √(∑ i, ∫ s in x i.castSucc..x i.succ, (f s - (proj x r f i).eval s) ^ 2)
-      ≤ √(∑ i, ∫ s in x i.castSucc..x i.succ, (f s - (interp hnode f i).eval s) ^ 2) :=
-        Real.sqrt_le_sqrt (sum_integral_sq_sub_proj_le hfi hfi2 _)
-    _ ≤ √(h ^ (2 * (r + 1)) * seminorm (r + 1) (x 0) (x (Fin.last n)) U ^ 2) :=
-        Real.sqrt_le_sqrt (sum_integral_sq_sub_interp_le_seminorm hx.out hn hnode hmesh U hf hU)
-    _ = h ^ (r + 1) * seminorm (r + 1) (x 0) (x (Fin.last n)) U := by
-        rw [Real.sqrt_mul (by positivity), pow_mul', Real.sqrt_sq (by positivity),
-          Real.sqrt_sq (apply_nonneg _ _)]
+  exact (Real.sqrt_le_sqrt (sum_integral_sq_sub_proj_le hfi hfi2 _)).trans
+    (sqrt_sum_integral_sq_sub_interp_le_seminorm hn hnode hmesh U hf hU)
 
 open SobolevInterval in
 /-- **The `H¹` estimate of the projection error**: on a partition with `hmin ≤ h_i ≤ h`,
@@ -965,8 +1001,6 @@ theorem sqrt_sum_integral_sq_deriv_sub_proj_le_seminorm (hn : 0 < n) (hnode : Is
       ≤ h ^ r * (1 + 4 * r * (r + 1) * (h / hmin)) * seminorm (r + 1) (x 0) (x (Fin.last n)) U := by
   have hab : x 0 < x (Fin.last n) := hx.out (Fin.pos_iff_ne_zero.2 (Fin.ne_of_val_ne hn.ne'))
   have hm : Monotone x := hx.out.monotone
-  have hh : 0 ≤ h :=
-    (sub_nonneg.2 (hx.out (Fin.castSucc_lt_succ (i := ⟨0, hn⟩))).le).trans (hmesh ⟨0, hn⟩)
   have hfi : IntervalIntegrable f volume (x 0) (x (Fin.last n)) :=
     (hf.mono (uIcc_of_le hab.le).le).intervalIntegrable
   have hfi2 : IntervalIntegrable (fun s => f s ^ 2) volume (x 0) (x (Fin.last n)) :=
@@ -978,23 +1012,11 @@ theorem sqrt_sum_integral_sq_deriv_sub_proj_le_seminorm (hn : 0 < n) (hnode : Is
   set I := interp hnode f with hI
   set P := proj x r f with hP
   -- the interpolation errors
-  have hEI : √(∑ i, ∫ s in x i.castSucc..x i.succ, (f s - (I i).eval s) ^ 2) ≤ h ^ (r + 1) * S := by
-    calc √(∑ i, ∫ s in x i.castSucc..x i.succ, (f s - (I i).eval s) ^ 2)
-        ≤ √(h ^ (2 * (r + 1)) * S ^ 2) :=
-          Real.sqrt_le_sqrt (sum_integral_sq_sub_interp_le_seminorm hx.out hn hnode hmesh U hf hU)
-      _ = h ^ (r + 1) * S := by
-          rw [Real.sqrt_mul (by positivity), pow_mul', Real.sqrt_sq (by positivity),
-            Real.sqrt_sq hS0]
+  have hEI : √(∑ i, ∫ s in x i.castSucc..x i.succ, (f s - (I i).eval s) ^ 2) ≤ h ^ (r + 1) * S :=
+    sqrt_sum_integral_sq_sub_interp_le_seminorm hn hnode hmesh U hf hU
   have hEI' : √(∑ i, ∫ s in x i.castSucc..x i.succ,
-      (SobolevInterval.deriv U 1 s - (derivative (I i)).eval s) ^ 2) ≤ h ^ r * S := by
-    calc √(∑ i, ∫ s in x i.castSucc..x i.succ,
-          (SobolevInterval.deriv U 1 s - (derivative (I i)).eval s) ^ 2)
-        ≤ √(h ^ (2 * r) * S ^ 2) :=
-          Real.sqrt_le_sqrt (sum_integral_sq_deriv_sub_interp_le_seminorm hx.out hn hnode hmesh U hf
-            hU)
-      _ = h ^ r * S := by
-          rw [Real.sqrt_mul (by positivity), pow_mul', Real.sqrt_sq (by positivity),
-            Real.sqrt_sq hS0]
+      (SobolevInterval.deriv U 1 s - (derivative (I i)).eval s) ^ 2) ≤ h ^ r * S :=
+    sqrt_sum_integral_sq_deriv_sub_interp_le_seminorm hn hnode hmesh U hf hU
   have hEP : √(∑ i, ∫ s in x i.castSucc..x i.succ, (f s - (P i).eval s) ^ 2) ≤ h ^ (r + 1) * S :=
     sqrt_sum_integral_sq_sub_proj_le_seminorm hn hnode hmesh U hf hU
   -- `‖I - P‖ ≤ 2 h^{r+1} S`
@@ -1028,7 +1050,6 @@ theorem sqrt_sum_integral_sq_deriv_sub_proj_le_seminorm (hn : 0 < n) (hnode : Is
     Finset.sum_congr rfl fun i _ => integral_congr fun s _ => by
       simp only [sub_apply, derivative_sub, eval_sub]; ring
   rw [e] at htri
-  have hρ : 0 ≤ 2 * r * (r + 1) / hmin * (2 * (h ^ (r + 1) * S)) := by positivity
   calc √(∑ i, ∫ s in x i.castSucc..x i.succ,
           (SobolevInterval.deriv U 1 s - (derivative (P i)).eval s) ^ 2)
       ≤ h ^ r * S + 2 * r * (r + 1) / hmin * (2 * (h ^ (r + 1) * S)) := by
@@ -1056,8 +1077,6 @@ theorem sum_mul_sq_sub_eval_le {f g : ℝ → ℝ} (hf : ContinuousOn f (Icc (x 
         + 2 * h * ∑ i, ∫ s in x i.castSucc..x i.succ, (g s - (derivative (P i)).eval s) ^ 2) := by
   have hm : Monotone x := hx.out.monotone
   have hlt : ∀ i : Fin n, x i.castSucc < x i.succ := fun i => hx.out (Fin.castSucc_lt_succ (i := i))
-  have hIcc : ∀ i : Fin n, [[x i.castSucc, x i.succ]] ⊆ Icc (x 0) (x (Fin.last n)) := fun i =>
-    (uIcc_panel_subset hm i).trans (uIcc_of_le (hm (Fin.zero_le _))).le
   have hpanel : ∀ i : Fin n, c i * (f (y i) - (P i).eval (y i)) ^ 2
       ≤ C * (2 / hmin * (∫ s in x i.castSucc..x i.succ, (f s - (P i).eval s) ^ 2)
         + 2 * h * ∫ s in x i.castSucc..x i.succ, (g s - (derivative (P i)).eval s) ^ 2) := by

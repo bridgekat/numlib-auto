@@ -369,16 +369,8 @@ theorem IsClassicalSolution.iteratedLaplacian_eq_zero_frontier (hΩ : IsOpen Ω)
       (prod_mono subset_closure Ioo_subset_Icc_self) ?_
     rw [closure_prod_eq, closure_Ioo hT.ne]
   -- `∂ₜ^j u (x, 0) = 0`, by continuity from the lateral boundary
-  have hzero : timeDeriv^[j] u (x, 0) = 0 := by
-    have h1 : EqOn (fun s ↦ timeDeriv^[j] u (x, s)) 0 (Ioo 0 T) := by
-      rw [timeDeriv_iterate_slice]
-      exact iterate_deriv_eq_zero_of_eqOn isOpen_Ioo (fun t ht ↦ hΓ x hx t ht) j
-    have h2 : EqOn (fun s ↦ timeDeriv^[j] u (x, s)) 0 (Icc 0 T) := by
-      rw [← closure_Ioo hT.ne]
-      exact h1.of_subset_closure ((contDiff_timeDeriv_iterate hsmooth j).continuous.comp
-        (continuous_const.prodMk continuous_id)).continuousOn continuousOn_const subset_closure
-        subset_rfl
-    exact h2 (left_mem_Icc.2 hT.le)
+  have hzero : timeDeriv^[j] u (x, 0) = 0 :=
+    timeDeriv_iterate_apply_zero_eq_zero hT hsmooth (hΓ x hx) j
   have h3 := hcl (x := (x, 0)) ⟨frontier_subset_closure hx, left_mem_Icc.2 hT.le⟩
   rw [hzero, Pi.smul_apply, smul_eq_mul, eq_comm, mul_eq_zero,
     or_iff_right (pow_ne_zero j hν)] at h3

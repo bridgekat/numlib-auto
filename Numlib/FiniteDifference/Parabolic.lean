@@ -745,7 +745,6 @@ theorem forwardEuler_heat_tendsto_of_le (m : ℕ) {ν h Δt : ℝ} (hν : 0 < ν
         ((1 - Δt • ((ν / h ^ 2) • symmTridiagonalToeplitz m (-1) 2)) ^ k) *ᵥ u₀) atTop (𝓝 0) := by
   refine (forwardEuler_heat_tendsto_iff m hν hh hΔt).2 ?_ u₀
   set x : ℝ := (m : ℝ) * Real.pi / (2 * ((m : ℝ) + 1)) with hx
-  have hm1 : (0 : ℝ) < (m : ℝ) + 1 := by positivity
   have hx0 : 0 ≤ x := by positivity
   have hxlt : x < Real.pi / 2 := by
     rw [hx, div_lt_div_iff₀ (by positivity) (by norm_num)]
@@ -753,7 +752,6 @@ theorem forwardEuler_heat_tendsto_of_le (m : ℕ) {ν h Δt : ℝ} (hν : 0 < ν
   have hcos : 0 < Real.cos x :=
     Real.cos_pos_of_mem_Ioo ⟨by linarith [Real.pi_pos], hxlt⟩
   have hsq : Real.sin x ^ 2 < 1 := by nlinarith [Real.sin_sq_add_cos_sq x]
-  have hfac : 0 < 4 * ν / h ^ 2 := by positivity
   have h1 : Δt * (4 * ν / h ^ 2 * Real.sin x ^ 2)
       ≤ h ^ 2 / (2 * ν) * (4 * ν / h ^ 2 * Real.sin x ^ 2) :=
     mul_le_mul_of_nonneg_right hle (by positivity)

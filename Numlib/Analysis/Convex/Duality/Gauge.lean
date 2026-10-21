@@ -626,7 +626,7 @@ theorem polarCone_recessionCone [TopologicalSpace F] [IsTopologicalAddGroup F]
   have h := polarCone_polarCone (B := B.flip)
     (K := (PointedCone.hull ℝ (polarSet B C) : Set F))
     ((PointedCone.hull ℝ (polarSet B C) : ConvexCone ℝ F).convex)
-    (smul_coe_pointedCone _) ⟨0, (PointedCone.hull ℝ (polarSet B C)).zero_mem⟩
+    (isCone_coe_pointedCone _) ⟨0, (PointedCone.hull ℝ (polarSet B C)).zero_mem⟩
   rwa [LinearMap.flip_flip] at h
 
 /-- **The lineality space of a closed convex set containing the origin is the annihilator of its
@@ -667,11 +667,7 @@ theorem polarCone_linealitySpace [TopologicalSpace F] [IsTopologicalAddGroup F]
   have h := polarCone_polarCone (B := B.flip)
     (K := (Submodule.span ℝ (polarSet B C) : Set F))
     (Submodule.span ℝ (polarSet B C)).convex
-    (fun a ha => by
-      ext z
-      exact ⟨fun ⟨w, hw, hwz⟩ => hwz ▸ Submodule.smul_mem _ a hw,
-        fun hz => ⟨a⁻¹ • z, Submodule.smul_mem _ _ hz, smul_inv_smul₀ ha.ne' z⟩⟩)
-    ⟨0, (Submodule.span ℝ (polarSet B C)).zero_mem⟩
+    (isCone_coe_submodule _) ⟨0, (Submodule.span ℝ (polarSet B C)).zero_mem⟩
   rwa [LinearMap.flip_flip] at h
 
 end RecessionLineality
@@ -858,8 +854,6 @@ theorem setOf_convexConj_le_subset_smul_polarSet (hnn : ∀ x, 0 ≤ f x) (hα :
   rw [map_smul, smul_eq_mul, inv_mul_le_iff₀ (by positivity : (0 : ℝ) < 2 * α), mul_one]
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
     (fun h => by simpa [h] using hnn x) (lt_of_le_of_lt hx' (EReal.coe_lt_top α))
-  have hr0 : (0 : ℝ) ≤ r := by
-    have := hnn x; rw [hr] at this; exact EReal.coe_nonneg.1 this
   have hrα : r ≤ α := by rw [hr] at hx'; exact EReal.coe_le_coe_iff.1 hx'
   have hsub := le_trans (sub_le_convexConj B f x y) hy'
   rw [hr, ← EReal.coe_sub, EReal.coe_le_coe_iff] at hsub
@@ -1208,7 +1202,6 @@ theorem polarFn_apply_eq (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) (y : F) :
     with hT
   have hTS : T ⊆ polarFnSet B f y := by
     intro μ hμ x ν hν
-    have hν0 : (0 : ℝ) ≤ ν := EReal.coe_nonneg.1 (le_trans (hnn x) hν)
     have hle : (μ : EReal) * f x ≤ (μ : EReal) * (ν : EReal) :=
       mul_le_mul_of_nonneg_left hν (EReal.coe_nonneg.2 hμ.1)
     have := le_trans (hμ.2 x) (add_le_add (le_refl (1 : EReal)) hle)
@@ -2008,8 +2001,6 @@ theorem IsNorm.level_one (hk : IsNorm k) :
   · intro x
     obtain ⟨c, hc⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hk.toIsGauge.ne_bot x)
       (lt_top_iff_ne_top.2 (hk.ne_top x))
-    have hc0 : (0 : ℝ) ≤ c := by
-      have := hk.nonneg x; rw [hc] at this; exact EReal.coe_nonneg.1 this
     refine ⟨max c 1, le_trans zero_le_one (le_max_right c 1), ?_⟩
     have hmax : (0 : ℝ) < max c 1 := lt_of_lt_of_le zero_lt_one (le_max_right c 1)
     rw [mem_smul_set_iff_inv_smul_mem₀ hmax.ne']

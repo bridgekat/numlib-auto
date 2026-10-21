@@ -87,10 +87,10 @@ private theorem contDiffAt_dslope_exp : ContDiffAt ℂ ⊤ (dslope Complex.exp 0
   obtain ⟨p, hp⟩ := (analyticAt_cexp (z := 0))
   exact (hp.has_fpower_series_dslope_fslope).analyticAt.contDiffAt
 
-/-- A matrix with spectrum `{0}` and exponential `1` is `0`: `e^N - 1 = N u` with
-`u = pfc ((e^z - 1)/z) N` invertible. -/
-private theorem eq_zero_of_exp_eq_one {N : Matrix n n ℂ} (hN : spectrum ℂ N ⊆ {0})
-    (h1 : NormedSpace.exp N = 1) : N = 0 := by
+/-- **A nilpotent matrix with exponential `1` is `0`**: if the spectrum of `N` is in `{0}` and
+`e^N = 1`, then `N = 0`, since `e^N - 1 = N u` with `u = pfc ((e^z - 1)/z) N` invertible. -/
+theorem eq_zero_of_spectrum_subset_zero_of_exp_eq_one {N : Matrix n n ℂ}
+    (hN : spectrum ℂ N ⊆ {0}) (h1 : NormedSpace.exp N = 1) : N = 0 := by
   have hI : IsIntegral ℂ N := Algebra.IsIntegral.isIntegral _
   have hs := IsAlgClosed.splits (minpoly ℂ N)
   have hroot : ∀ μ ∈ (minpoly ℂ N).roots, μ = 0 := fun μ hμ =>
@@ -161,7 +161,7 @@ theorem existsUnique_exp_eq_of_abs_im_lt {A : Matrix n n ℂ} (hA : spectrum ℂ
       mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp ?_)]
     rw [← hX]
     exact Matrix.isUnit_exp X
-  have := eq_zero_of_exp_eq_one hNs hexpN
+  have := eq_zero_of_spectrum_subset_zero_of_exp_eq_one hNs hexpN
   exact (sub_eq_zero.mp this)
 
 /-- **Real logarithms** ([golub2013matrix] §9.4.4): if every real eigenvalue of a real matrix `B` is

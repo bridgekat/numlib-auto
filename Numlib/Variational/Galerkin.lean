@@ -81,7 +81,7 @@ variable {X : Type*} [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 /-- A pointwise quasi-optimality bound `‖u* - u‖ ≤ C ‖u* - w‖`, valid for every `w` in the trial
 space, gives the same bound against the distance from `u*` to that space.  No sign hypothesis on `C`
 is needed: testing at `w = u` makes a negative constant force `u = u*`. -/
-private theorem norm_sub_le_mul_infDist {K : Submodule 𝕜 X} {C : ℝ} {ustar u : X} (hu : u ∈ K)
+theorem norm_sub_le_mul_infDist {K : Submodule 𝕜 X} {C : ℝ} {ustar u : X} (hu : u ∈ K)
     (h : ∀ w ∈ K, ‖ustar - u‖ ≤ C * ‖ustar - w‖) :
     ‖ustar - u‖ ≤ C * Metric.infDist ustar (K : Set X) := by
   rcases le_or_gt C 0 with hC | hC
@@ -116,7 +116,7 @@ theorem tendsto_infDist_of_monotone_dense {K : ℕ → Submodule 𝕜 X} (hmono 
 with dense union, gives convergence of the discrete solutions.  This is the common core of
 [han2009theoretical], Cor 9.1.4 and Cor 9.2.3: the approximation error tends to zero by
 `tendsto_infDist_of_monotone_dense`, and quasi-optimality transports that to the error itself. -/
-private theorem tendsto_of_forall_norm_sub_le {K : ℕ → Submodule 𝕜 X} (hmono : Monotone K)
+theorem tendsto_of_forall_norm_sub_le {K : ℕ → Submodule 𝕜 X} (hmono : Monotone K)
     (hdense : Dense (⋃ n, (K n : Set X))) {C : ℝ} {uN : ℕ → X} {ustar : X}
     (hmem : ∀ n, uN n ∈ K n) (h : ∀ n, ∀ w ∈ K n, ‖ustar - uN n‖ ≤ C * ‖ustar - w‖) :
     Filter.Tendsto uN Filter.atTop (nhds ustar) := by
@@ -500,7 +500,7 @@ any `u` that happens to solve the discrete problem.  That is why the unused-vari
 switched off here. -/
 theorem norm_sub_le [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {M α : ℝ} (hα : 0 < α) (hM0 : 0 ≤ M)
-    (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (hinf : DiscreteInfSup a K L α)
+    (hM : a.IsBoundedWith M) (hinf : DiscreteInfSup a K L α)
     (hN : IsPetrovGalerkinSolution a ℓ K L u) {ustar : U} (hstar : ∀ v, a ustar v = ℓ v) {w : U}
     (hw : w ∈ K) : ‖ustar - u‖ ≤ (1 + M / α) * ‖ustar - w‖ := by
   -- the restricted functionals of `u - w` and of `ustar - w` agree on `L`
@@ -531,7 +531,7 @@ Petrov–Galerkin solutions converge.  The hypothesis `hM0 : 0 ≤ M` was added,
 `IsPetrovGalerkinSolution.norm_sub_le`. -/
 theorem tendsto {K : ℕ → Submodule 𝕜 U} {L : ℕ → Submodule 𝕜 V} [∀ n, FiniteDimensional 𝕜 (K n)]
     [∀ n, FiniteDimensional 𝕜 (L n)] (hdim : ∀ n, Module.finrank 𝕜 (K n) = Module.finrank 𝕜 (L n))
-    {M α : ℝ} (hα : 0 < α) (hM0 : 0 ≤ M) (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖)
+    {M α : ℝ} (hα : 0 < α) (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M)
     (hinf : ∀ n, DiscreteInfSup a (K n) (L n) α) (hmono : Monotone K)
     (hdense : Dense (⋃ n, (K n : Set U))) {uN : ℕ → U}
     (hN : ∀ n, IsPetrovGalerkinSolution a ℓ (K n) (L n) (uN n)) {ustar : U}
@@ -545,7 +545,7 @@ section Projector
 
 /-- A bound `M` on the form bounds the restricted functional `a u ·` on the test space. -/
 private theorem norm_comp_subtypeL_le {M : ℝ} (hM0 : 0 ≤ M)
-    (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (u : U) :
+    (hM : a.IsBoundedWith M) (u : U) :
     ‖(a u).comp L.subtypeL‖ ≤ M * ‖u‖ :=
   ContinuousLinearMap.opNorm_le_bound _ (mul_nonneg hM0 (norm_nonneg _)) fun v => hM u (v : V)
 
@@ -574,7 +574,7 @@ private theorem eq_projFun (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L
 /-- The bound `‖P_N u‖ ≤ (M / α) ‖u‖` on the projector, before it is bundled as an operator. -/
 private theorem norm_projFun_le (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {M : ℝ} (hM0 : 0 ≤ M)
-    (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (u : U) :
+    (hM : a.IsBoundedWith M) (u : U) :
     ‖projFun a K L hdim hα hinf u‖ ≤ M / α * ‖u‖ := by
   have hspec := projFun_spec hdim hα hinf u
   have heq : (a (projFun a K L hdim hα hinf u)).comp L.subtypeL = (a u).comp L.subtypeL := by
@@ -667,7 +667,7 @@ theorem projection_apply_eq_of_isPetrovGalerkinSolution
 the ratio of the boundedness constant of the form to the discrete inf–sup constant. -/
 theorem norm_projection_le (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {M : ℝ} (hM0 : 0 ≤ M)
-    (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) : ‖projection a K L hdim hα hinf‖ ≤ M / α :=
+    (hM : a.IsBoundedWith M) : ‖projection a K L hdim hα hinf‖ ≤ M / α :=
   ContinuousLinearMap.opNorm_le_bound _ (div_nonneg hM0 hα.le)
     (norm_projFun_le hdim hα hinf hM0 hM)
 
@@ -685,7 +685,7 @@ holds vacuously.  When `K ≠ ⊥` the two constants automatically satisfy `α �
 the bound is indeed stronger than Babuška's. -/
 theorem norm_sub_le_div_mul_infDist (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) (hK : K ≠ ⊥) {M : ℝ} (hM0 : 0 ≤ M)
-    (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (hN : IsPetrovGalerkinSolution a ℓ K L u) {ustar : U}
+    (hM : a.IsBoundedWith M) (hN : IsPetrovGalerkinSolution a ℓ K L u) {ustar : U}
     (hstar : ∀ v, a ustar v = ℓ v) :
     ‖ustar - u‖ ≤ M / α * Metric.infDist ustar (K : Set U) := by
   have hMa : 0 ≤ M / α := div_nonneg hM0 hα.le

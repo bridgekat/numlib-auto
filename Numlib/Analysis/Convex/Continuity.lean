@@ -499,8 +499,7 @@ theorem ConvexFn.recessionFn_ne_top_of_uniformContinuous (hf : ConvexFn f) (hp :
   rcases eq_or_ne y 0 with rfl | hy
   · rw [recessionFn_apply_zero hp]
     simp
-  · have hyn : 0 < ‖y‖ := norm_pos_iff.2 hy
-    have hcpos : 0 < δ / (2 * ‖y‖) := by positivity
+  · have hcpos : 0 < δ / (2 * ‖y‖) := by positivity
     have hnorm : ‖(δ / (2 * ‖y‖)) • y‖ < δ := by
       rw [norm_smul, Real.norm_eq_abs, abs_of_pos hcpos,
         show δ / (2 * ‖y‖) * ‖y‖ = δ / 2 by field_simp]

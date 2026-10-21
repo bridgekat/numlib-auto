@@ -511,9 +511,6 @@ theorem IsMaximalMonotone.tendsto_resolvent_apply [CompleteSpace H] (hA : A.IsMa
           exact hA.norm_sub_resolvent_apply_le hc' ⟨v₁, hv₁⟩
     _ < ε / 3 + ε / 3 + ε / 3 := by
         rw [norm_sub_rev v₁ v]
-        have : c * ‖A ⟨v₁, hv₁⟩‖ ≤ c * (‖A ⟨v₁, hv₁⟩‖ + 1) := by
-          gcongr
-          linarith
         gcongr
         linarith
     _ = ε := by ring

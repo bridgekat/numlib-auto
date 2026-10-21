@@ -6,7 +6,8 @@ import Numlib.LinearAlgebra.Matrix.Bidiagonal
 # Golub–Kahan bidiagonalization
 
 For `A : E →ₗ[𝕜] F` between two inner product spaces and an operator `Astar : F →ₗ[𝕜] E` that is its
-adjoint (`hadj : ∀ u x, ⟪Astar u, x⟫ = ⟪u, A x⟫`, a hypothesis as in
+adjoint (`hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar`, that is
+`⟪Astar u, x⟫ = ⟪u, A x⟫` (`LinearMap.isAdjointPair_inner_iff`), a hypothesis as in
 `Numlib/Krylov/NormalEquations`, so that neither completeness nor finite dimension is needed), the
 Golub–Kahan process builds orthonormal `v_j ∈ E`, `u_j ∈ F` and nonnegative reals `α_j`, `β_j` with
 
@@ -371,12 +372,12 @@ theorem grade_comp_adjoint_add_finrank [FiniteDimensional 𝕜 (fullSubspace (As
   rw [← hk]
   exact h
 
-variable {A Astar} (hadj : ∀ u x, inner 𝕜 (Astar u) x = inner 𝕜 u (A x))
+variable {A Astar} (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar)
 include hadj
 
 private theorem inner_leftVec_apply_rightVec_of_add_two_le {i j : ℕ} (h : i + 2 ≤ j) :
     inner 𝕜 (leftVec A Astar v i) (A (rightVec A Astar v j)) = 0 := by
-  rw [← hadj]
+  rw [← hadj.inner_apply_eq]
   exact Submodule.inner_right_of_mem_orthogonal
     (subspace_mono (Astar ∘ₗ A) v h (adjoint_apply_leftVec_mem A Astar v i))
     (Arnoldi.vec_mem_orthogonal _ _ j)
@@ -387,17 +388,18 @@ private theorem inner_rightVec_adjoint_apply_leftVec_of_gt {i j : ℕ} (h : i < 
     Submodule.inner_left_of_mem_orthogonal
       (subspace_mono (A ∘ₗ Astar) (A v) (by omega : i + 1 ≤ j) (apply_rightVec_mem A Astar v i))
       (Arnoldi.vec_mem_orthogonal _ _ j)
-  rw [← inner_conj_symm, hadj, h0, map_zero]
+  rw [← inner_conj_symm, hadj.inner_apply_eq, h0, map_zero]
 
 /-- `⟪u_j, A v_{j+1}⟫ = β_j`. -/
 theorem inner_leftVec_apply_rightVec_succ (j : ℕ) :
     inner 𝕜 (leftVec A Astar v j) (A (rightVec A Astar v (j + 1))) = (beta A Astar v j : 𝕜) := by
-  rw [← hadj, ← inner_conj_symm, inner_rightVec_adjoint_apply_leftVec, RCLike.conj_ofReal]
+  rw [← hadj.inner_apply_eq, ← inner_conj_symm, inner_rightVec_adjoint_apply_leftVec,
+    RCLike.conj_ofReal]
 
 /-- `⟪v_j, Astar u_j⟫ = α_j`. -/
 theorem inner_rightVec_adjoint_apply_leftVec_self (j : ℕ) :
     inner 𝕜 (rightVec A Astar v j) (Astar (leftVec A Astar v j)) = (alpha A Astar v j : 𝕜) := by
-  rw [← inner_conj_symm, hadj, inner_leftVec_apply_rightVec, RCLike.conj_ofReal]
+  rw [← inner_conj_symm, hadj.inner_apply_eq, inner_leftVec_apply_rightVec, RCLike.conj_ofReal]
 
 /-- The recurrence (10.4.2) of [golub2013matrix] (`0`-based):
 `A v_{j+1} = β_j u_j + α_{j+1} u_{j+1}`. -/
@@ -575,7 +577,7 @@ theorem finrank_fullSubspace_inf_ker_le_one :
     obtain ⟨w, rfl⟩ := LinearMap.mem_range.1 hz
     have e1 : inner 𝕜 x v = 0 := by rw [← inner_conj_symm, hx, map_zero]
     have e2 : inner 𝕜 x (Astar w) = 0 := by
-      rw [← inner_conj_symm, hadj, hxA', inner_zero_right, map_zero]
+      rw [← inner_conj_symm, hadj.inner_apply_eq, hxA', inner_zero_right, map_zero]
     have hxx : inner 𝕜 x x = 0 := by
       nth_rewrite 2 [← hyz]
       rw [inner_add_right, inner_smul_right, e1, e2, mul_zero, add_zero]
@@ -615,8 +617,7 @@ theorem residual_eq {u : F} (hu : ‖u‖ = 1) {b : F} {x₀ : E} {β : 𝕜} (h
     b - A (x₀ + ∑ j, y j • leftVec Astar A u j) =
       ∑ i : Fin (k + 1), (firstVec β (k + 1) -
         ((bidiagLower Astar A u k).map (algebraMap ℝ 𝕜)) *ᵥ y) i • rightVec Astar A u i := by
-  have hrel := hessenbergRelation₂ (A := Astar) (Astar := A) u
-    (LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj)
+  have hrel := hessenbergRelation₂ (A := Astar) (Astar := A) u hadj.swap_inner
   have hu0 : u ≠ 0 := by
     rintro rfl
     simp at hu
@@ -822,7 +823,8 @@ theorem mul_rightMatrix (k : ℕ) :
       have hl' : (l : ℕ) ≠ 0 := fun h => hl (Fin.ext h)
       rw [ite_eq_right (by simpa using hl'), ite_eq_right (by simp), RCLike.ofReal_zero, mul_zero]
   | succ j =>
-    rw [apply_rightVec v (fun u x => toEuclideanLin_conjTranspose_inner_left A x u),
+    rw [apply_rightVec v (LinearMap.isAdjointPair_inner_iff.2 fun u x =>
+        toEuclideanLin_conjTranspose_inner_left A x u),
       Fintype.sum_eq_add ⟨j, by omega⟩ ⟨j + 1, hj⟩
       (fun h => by simpa using congrArg Fin.val h) (fun l hl => by
         have h1 : (l : ℕ) ≠ j := fun h => hl.1 (Fin.ext h)
@@ -843,7 +845,8 @@ theorem conjTranspose_mul_leftMatrix (k : ℕ) :
     rw [ofLp_toEuclideanLin]
     rfl
   rw [hl, Matrix.mul_apply,
-    adjoint_apply_leftVec v (fun u x => toEuclideanLin_conjTranspose_inner_left A x u),
+    adjoint_apply_leftVec v (LinearMap.isAdjointPair_inner_iff.2 fun u x =>
+      toEuclideanLin_conjTranspose_inner_left A x u),
     Fintype.sum_eq_add j.castSucc j.succ Fin.castSucc_lt_succ.ne (fun l hl => by
       have h1 : (l : ℕ) ≠ j := fun h => hl.1 (Fin.ext h)
       have h2 : (l : ℕ) ≠ j + 1 := fun h => hl.2 (Fin.ext h)

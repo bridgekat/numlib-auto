@@ -4,6 +4,15 @@ namespace = "InnerProductSpace"
 id = "eq_gramSchmidtNormed_of_re_inner_pos"
 
 [[node]]
+id = "inner_gramSchmidtNormed_eq_zero"
+
+[[node]]
+id = "sub_sum_inner_smul_gramSchmidtNormed_mem_orthogonal"
+
+[[node]]
+id = "eq_sum_inner_smul_gramSchmidtNormed"
+
+[[node]]
 id = "exists_norm_eq_one_smul_gramSchmidtNormed"
 
 [[node]]

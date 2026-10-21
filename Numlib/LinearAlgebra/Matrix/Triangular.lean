@@ -51,7 +51,9 @@ The vocabulary of triangular matrices beyond Mathlib's `Matrix.IsUpperTriangular
   `Matrix.charpoly_of_isUpperTriangular`; `Matrix.IsUpperTriangular.spectrum_eq`,
   `Matrix.IsLowerTriangular.spectrum_eq`: over a field the spectrum of a triangular matrix is the
   set of its diagonal entries.
-* Entries of products: `Matrix.IsUpperTriangular.mul_apply` (a sum over the indices between),
+* Entries of products: `Matrix.IsUpperTriangular.mul_apply` (a sum over the indices between)
+  and the Parlett identity `Matrix.IsUpperTriangular.apply_mul_sub_eq_of_commute` for commuting
+  upper triangular matrices,
   `Matrix.IsUpperTriangular.pow_apply_self` (each with its lower twin),
   `Matrix.mul_transpose_apply_of_lower`, `Matrix.transpose_mul_apply_of_upper` and
   `Matrix.mul_mul_transpose_apply_of_isDiag` (the entries of `G Hᵀ`, `Gᵀ H` and `L D Lᵀ`, sums
@@ -385,6 +387,23 @@ theorem mul_mul_transpose_apply_of_isDiag {L D : Matrix n n R} (hL : L.IsLowerTr
   simp only [hLD]
 
 end Diag
+
+open Finset in
+/-- **The Parlett identity for commuting upper triangular matrices**: the `(i, j)` entry, `i < j`,
+of `T F = F T` with the terms `k = i` and `k = j` split off,
+`f_ij (t_jj - t_ii) = t_ij (f_jj - f_ii) + ∑_{i<k<j} (t_ik f_kj - f_ik t_kj)`. For `F = f(T)` it
+is the Parlett recurrence `Matrix.pfc_apply_eq_parlett` of
+`Numlib/Analysis/Matrix/Function/Triangular.lean`. -/
+theorem IsUpperTriangular.apply_mul_sub_eq_of_commute [Fintype n] [CommRing R]
+    [LocallyFiniteOrder n] {F T : Matrix n n R} (hF : F.IsUpperTriangular)
+    (hT : T.IsUpperTriangular) (hc : Commute T F) {i j : n} (hij : i < j) :
+    F i j * (T j j - T i i) =
+      T i j * (F j j - F i i) + ∑ k ∈ Ioo i j, (T i k * F k j - F i k * T k j) := by
+  have h := congrFun (congrFun hc.eq i) j
+  rw [hT.mul_apply hF i j, hF.mul_apply hT i j, Icc_eq_cons_Ioc hij.le,
+    sum_cons, sum_cons, Ioc_eq_cons_Ioo hij, sum_cons, sum_cons] at h
+  rw [sum_sub_distrib, ← sub_eq_zero, ← neg_eq_zero, ← sub_eq_zero.mpr h]
+  ring
 
 /-- The diagonal of a power of an upper triangular matrix. -/
 theorem IsUpperTriangular.pow_apply_self [Fintype n] [Semiring R] {M : Matrix n n R}

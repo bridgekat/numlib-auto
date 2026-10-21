@@ -29,6 +29,16 @@ which gives `signVariations_mod_two_eq_roots_countP_pos_mod_two` and the clause
 
 open Filter Topology
 
+/-- Two nonzero elements of a linearly ordered ring have the same sign iff their product is
+positive. -/
+theorem sign_eq_sign_iff_mul_pos {α : Type*} [Ring α] [LinearOrder α] [IsStrictOrderedRing α]
+    {u v : α} (hu : u ≠ 0) (hv : v ≠ 0) : SignType.sign u = SignType.sign v ↔ 0 < u * v := by
+  rcases lt_or_gt_of_ne hu with hu' | hu' <;> rcases lt_or_gt_of_ne hv with hv' | hv'
+  · simp [sign_neg hu', sign_neg hv', mul_pos_of_neg_of_neg hu' hv']
+  · simp [sign_neg hu', sign_pos hv', (mul_neg_of_neg_of_pos hu' hv').not_gt]
+  · simp [sign_pos hu', sign_neg hv', (mul_neg_of_pos_of_neg hu' hv').not_gt]
+  · simp [sign_pos hu', sign_pos hv', mul_pos hu' hv']
+
 namespace Polynomial
 
 section Semiring
@@ -110,15 +120,6 @@ section Real
 
 variable {P : ℝ[X]}
 
-/-- Two nonzero reals have the same sign iff their product is positive. -/
-private theorem sign_eq_sign_iff_of_ne_zero {u v : ℝ} (hu : u ≠ 0) (hv : v ≠ 0) :
-    SignType.sign u = SignType.sign v ↔ 0 < u * v := by
-  rcases lt_or_gt_of_ne hu with hu' | hu' <;> rcases lt_or_gt_of_ne hv with hv' | hv'
-  · simp [sign_neg hu', sign_neg hv', mul_pos_of_neg_of_neg hu' hv']
-  · simp [sign_neg hu', sign_pos hv', (mul_neg_of_neg_of_pos hu' hv').not_gt]
-  · simp [sign_pos hu', sign_neg hv', (mul_neg_of_pos_of_neg hu' hv').not_gt]
-  · simp [sign_pos hu', sign_pos hv', mul_pos hu' hv']
-
 /-- **A real polynomial with no positive root has leading and trailing coefficients of the same
 sign.** The values `P.eval x`, `x > 0`, have a constant sign by the intermediate value theorem; it
 is the sign of the leading coefficient for large `x` and, writing `P = X ^ t Q` with
@@ -148,7 +149,7 @@ theorem sign_leadingCoeff_eq_sign_trailingCoeff_of_forall_pos (hP : P ≠ 0)
     conv_lhs => rw [hQ]
     simp
   have hsign₀ : SignType.sign (P.eval x₀) = SignType.sign P.trailingCoeff := by
-    rw [sign_eq_sign_iff_of_ne_zero (h x₀ hx₀pos) htc, hPx, mul_assoc]
+    rw [sign_eq_sign_iff_mul_pos (h x₀ hx₀pos) htc, hPx, mul_assoc]
     exact mul_pos (pow_pos hx₀pos _) hx₀
   -- the sign of `P` for large `x` is that of the leading coefficient
   have hlc : P.leadingCoeff ≠ 0 := leadingCoeff_ne_zero.2 hP
@@ -170,10 +171,10 @@ theorem sign_leadingCoeff_eq_sign_trailingCoeff_of_forall_pos (hP : P ≠ 0)
       obtain ⟨x₁, hx₁, hx₁'⟩ := ((eventually_gt_atTop 0).and hev).exists
       exact ⟨x₁, hx₁, hx₁'⟩
   have hsign₁ : SignType.sign (P.eval x₁) = SignType.sign P.leadingCoeff :=
-    (sign_eq_sign_iff_of_ne_zero (h x₁ hx₁pos) hlc).2 hx₁
+    (sign_eq_sign_iff_mul_pos (h x₁ hx₁pos) hlc).2 hx₁
   -- no sign change between `x₀` and `x₁` without a root
   have hsame : SignType.sign (P.eval x₀) = SignType.sign (P.eval x₁) := by
-    rw [sign_eq_sign_iff_of_ne_zero (h x₀ hx₀pos) (h x₁ hx₁pos)]
+    rw [sign_eq_sign_iff_mul_pos (h x₀ hx₀pos) (h x₁ hx₁pos)]
     by_contra hcon
     have hneg : P.eval x₀ * P.eval x₁ < 0 :=
       lt_of_le_of_ne (not_lt.1 hcon) (mul_ne_zero (h x₀ hx₀pos) (h x₁ hx₁pos))

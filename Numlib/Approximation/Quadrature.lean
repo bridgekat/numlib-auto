@@ -5,9 +5,11 @@ import Mathlib.Topology.ContinuousMap.Weierstrass
 import Mathlib.Topology.TietzeExtension
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
+import Numlib.MeasureTheory.Integral.MeanValue
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.OrthogonalPolynomial
+import Numlib.Topology.TietzeExtension
 
 /-!
 # Numerical quadrature
@@ -129,30 +131,6 @@ section Norm
 
 variable {X : Type*} [TopologicalSpace X] [CompactSpace X] [T2Space X]
 
-/-- A continuous function of norm at most `1` with prescribed values of modulus at most `1` at
-finitely many distinct points: the values already are a continuous function on the finite, hence
-discrete, set of nodes, and the Tietze extension theorem extends it with values in `[-1, 1]`. -/
-private theorem exists_norm_le_one_apply_eq {n : ℕ} {x : Fin n → X} (hx : Function.Injective x)
-    (σ : Fin n → ℝ) (hσ : ∀ i, |σ i| ≤ 1) : ∃ f : C(X, ℝ), ‖f‖ ≤ 1 ∧ ∀ i, f (x i) = σ i := by
-  classical
-  have hclosed : IsClosed (Set.range x) := (Set.finite_range x).isClosed
-  let g : C((Set.range x : Set X), ℝ) :=
-    ⟨fun u => σ (Classical.choose u.2), continuous_of_discreteTopology⟩
-  have hg : ∀ (u : (Set.range x : Set X)) (i : Fin n), (u : X) = x i → g u = σ i := by
-    intro u i hu
-    exact congrArg σ (hx ((Classical.choose_spec u.2).trans hu))
-  have hmem : ∀ u : (Set.range x : Set X), g u ∈ Set.Icc (-1 : ℝ) 1 := fun u =>
-    Set.mem_Icc.mpr (abs_le.mp (hσ (Classical.choose u.2)))
-  obtain ⟨f, hfmem, hfeq⟩ :=
-    ContinuousMap.exists_restrict_eq_forall_mem_of_closed g hmem ⟨0, by norm_num⟩ hclosed
-  refine ⟨f, ?_, fun i => ?_⟩
-  · rw [ContinuousMap.norm_le _ zero_le_one]
-    exact fun u => Real.norm_eq_abs _ ▸ abs_le.2 ⟨(hfmem u).1, (hfmem u).2⟩
-  · have hcongr := congrArg
-      (fun h : C((Set.range x : Set X), ℝ) => h ⟨x i, Set.mem_range_self i⟩) hfeq
-    simp only [ContinuousMap.restrict_apply] at hcongr
-    rw [hcongr, hg _ i rfl]
-
 /-- **The norm of a quadrature rule is the absolute sum of its weights.** The nodes must be
 distinct: otherwise the rule with weights `1` and `-1` at one repeated node is the zero functional.
 
@@ -179,7 +157,7 @@ theorem norm_functional {n : ℕ} (w : Fin n → ℝ) {x : Fin n → X} (hx : Fu
       by_cases hi : 0 ≤ w i
       · simp [hσdef, hi, abs_of_nonneg hi]
       · simp [hσdef, hi, abs_of_neg (not_le.mp hi)]
-    obtain ⟨f, hfnorm, hfnode⟩ := exists_norm_le_one_apply_eq hx σ hσabs
+    obtain ⟨f, hfnorm, hfnode⟩ := ContinuousMap.exists_norm_le_one_apply_eq hx σ hσabs
     have hval : functional w x f = ∑ i, |w i| := by
       rw [functional_apply]
       exact Finset.sum_congr rfl fun i _ => by rw [hfnode i, hσmul i]
@@ -816,9 +794,6 @@ theorem isExactOnMeasure_volume_Icc_of_affine {a b : ℝ} (hab : a < b) {w x : F
     IsExactOnMeasure (volume.restrict (Set.Icc a b)) (fun i => (b - a) / 2 * w i)
       (fun i => (b - a) / 2 * x i + (a + b) / 2) r := by
   intro p hp
-  have hc : (b - a) / 2 ≠ 0 := by
-    have : 0 < b - a := sub_pos.mpr hab
-    positivity
   have hcomp : ∀ t : ℝ, p.eval ((b - a) / 2 * t + (a + b) / 2) =
       (p.comp (C ((b - a) / 2) * X + C ((a + b) / 2))).eval t := fun t => by simp [eval_comp]
   have hdeg : (p.comp (C ((b - a) / 2) * X + C ((a + b) / 2))).degree ≤ r := by
@@ -1188,88 +1163,6 @@ private theorem integrable_of_continuous_of_compl_eq_zero [IsFiniteMeasure μ] {
     exact hsupp
   filter_upwards [hae] with t ht
   exact hC _ ⟨t, ht, rfl⟩
-
-/-- A function of constant sign on a carrier `s` of `μ` whose integral vanishes is `μ`-almost
-everywhere zero. -/
-private theorem ae_eq_zero_of_integral_eq_zero {s : Set ℝ} (hsupp : μ sᶜ = 0) {g : ℝ → ℝ}
-    (hg : Integrable g μ) (hsign : (∀ t ∈ s, 0 ≤ g t) ∨ ∀ t ∈ s, g t ≤ 0)
-    (h0 : ∫ t, g t ∂μ = 0) : g =ᵐ[μ] 0 := by
-  have hae : ∀ᵐ t ∂μ, t ∈ s := by
-    rw [MeasureTheory.ae_iff]; exact hsupp
-  rcases hsign with hs | hs
-  · exact (integral_eq_zero_iff_of_nonneg_ae (by filter_upwards [hae] with t ht using hs t ht)
-      hg).mp h0
-  · have h := (integral_eq_zero_iff_of_nonneg_ae (f := fun t => -g t)
-      (by filter_upwards [hae] with t ht using neg_nonneg.mpr (hs t ht)) hg.neg).mp
-      (by rw [integral_neg, h0, neg_zero])
-    filter_upwards [h] with t ht
-    simpa using ht
-
-/-- **A mean value theorem for integrals with a moving point.** Let `ω` be of constant sign on a
-convex carrier `s` of `μ`, and let `e` be such that every `t ∈ s` has some `ξ_t ∈ s` with
-`e t = D ξ_t * ω t`, for a function `D` continuous on `s`. Then `∫ e ∂μ = D ξ * ∫ ω ∂μ` for one
-`ξ ∈ s`.
-
-For `e = D * ω` with `ξ_t = t` this is the first mean value theorem for integrals; the point of the
-statement is that `t ↦ ξ_t` need not be measurable, which is the situation of every interpolation
-remainder. If `∫ ω ∂μ = 0` then `ω`, and with it `e`, vanishes almost everywhere, and any `ξ`
-works. Otherwise put `c = ∫ e ∂μ / ∫ ω ∂μ`: were `D - c` of one strict sign on `s`, the function
-`e - c ω = (D ξ_t - c) ω` would be of constant sign with zero integral, hence almost everywhere
-zero, and so would `ω` be; so `D` takes values on both sides of `c` on `s`, and the intermediate
-value theorem finishes. -/
-private theorem exists_integral_eq_mul_integral {s : Set ℝ} (hs : Convex ℝ s) (hne : s.Nonempty)
-    (hsupp : μ sᶜ = 0) {e ω D : ℝ → ℝ} (he : Integrable e μ) (hω : Integrable ω μ)
-    (hD : ContinuousOn D s) (hsign : (∀ t ∈ s, 0 ≤ ω t) ∨ ∀ t ∈ s, ω t ≤ 0)
-    (hpt : ∀ t ∈ s, ∃ ξ ∈ s, e t = D ξ * ω t) :
-    ∃ ξ ∈ s, ∫ t, e t ∂μ = D ξ * ∫ t, ω t ∂μ := by
-  have hae : ∀ᵐ t ∂μ, t ∈ s := by
-    rw [MeasureTheory.ae_iff]; exact hsupp
-  choose! ξ hξ heq using hpt
-  by_cases hI : ∫ t, ω t ∂μ = 0
-  · obtain ⟨t₀, ht₀⟩ := hne
-    refine ⟨t₀, ht₀, ?_⟩
-    rw [hI, mul_zero]
-    refine integral_eq_zero_of_ae ?_
-    filter_upwards [ae_eq_zero_of_integral_eq_zero hsupp hω hsign hI, hae] with t ht hts
-    simp only [heq t hts, ht, Pi.zero_apply, mul_zero]
-  set c : ℝ := (∫ t, e t ∂μ) / ∫ t, ω t ∂μ with hc
-  have hce : ∫ t, e t ∂μ = c * ∫ t, ω t ∂μ := by rw [hc, div_mul_cancel₀ _ hI]
-  -- `D - c` cannot keep one strict sign `σ` on `s`
-  have key : ∀ σ : ℝ, (∀ ξ' ∈ s, 0 < σ * (D ξ' - c)) → False := by
-    intro σ hpos
-    have hg : Integrable (fun t => σ * (e t - c * ω t)) μ :=
-      (he.sub (hω.const_mul c)).const_mul σ
-    have hg0 : ∫ t, σ * (e t - c * ω t) ∂μ = 0 := by
-      rw [integral_const_mul, integral_sub he (hω.const_mul c), integral_const_mul, hce, sub_self,
-        mul_zero]
-    have hgt : ∀ t ∈ s, σ * (e t - c * ω t) = σ * (D (ξ t) - c) * ω t := fun t ht => by
-      rw [heq t ht]; ring
-    have hgsign : (∀ t ∈ s, 0 ≤ σ * (e t - c * ω t)) ∨ ∀ t ∈ s, σ * (e t - c * ω t) ≤ 0 := by
-      rcases hsign with h | h
-      · exact Or.inl fun t ht => by
-          rw [hgt t ht]; exact mul_nonneg (hpos _ (hξ t ht)).le (h t ht)
-      · exact Or.inr fun t ht => by
-          rw [hgt t ht]; exact mul_nonpos_of_nonneg_of_nonpos (hpos _ (hξ t ht)).le (h t ht)
-    refine hI (integral_eq_zero_of_ae ?_)
-    filter_upwards [ae_eq_zero_of_integral_eq_zero hsupp hg hgsign hg0, hae] with t ht hts
-    have h := hgt t hts
-    rw [ht, Pi.zero_apply] at h
-    rw [Pi.zero_apply]
-    exact (mul_eq_zero.mp h.symm).resolve_left (hpos _ (hξ t hts)).ne'
-  have hA : ∃ ξ₁ ∈ s, D ξ₁ ≤ c := by
-    by_contra h
-    push Not at h
-    exact key 1 fun ξ' hξ' => by linarith [h ξ' hξ']
-  have hB : ∃ ξ₂ ∈ s, c ≤ D ξ₂ := by
-    by_contra h
-    push Not at h
-    exact key (-1) fun ξ' hξ' => by linarith [h ξ' hξ']
-  obtain ⟨ξ₁, hξ₁, h₁⟩ := hA
-  obtain ⟨ξ₂, hξ₂, h₂⟩ := hB
-  have hsub : Set.uIcc ξ₁ ξ₂ ⊆ s := hs.ordConnected.uIcc_subset hξ₁ hξ₂
-  obtain ⟨ξ₀, hξ₀, hξ₀eq⟩ :=
-    intermediate_value_uIcc (hD.mono hsub) (Set.mem_uIcc.mpr (Or.inl ⟨h₁, h₂⟩))
-  exact ⟨ξ₀, hsub hξ₀, by rw [hce, hξ₀eq]⟩
 
 /-- Finitely many nodes of a convex set `s`, together with a point `t` of `s`, lie in a compact
 interval contained in `s`. -/
@@ -1929,18 +1822,9 @@ theorem integral_truncPow_flip {a b t : ℝ} {m : ℕ} (hat : a ≤ t) (htb : t 
     rw [Set.uIcc_of_le htb] at hx
     simp [truncPow, hx.1]
   have e3 : (∫ x in t..b, (x - t) ^ m) = (b - t) ^ (m + 1) / ((m : ℝ) + 1) := by
-    have hD : ∀ x ∈ Set.uIcc t b,
-        HasDerivAt (fun s : ℝ => (s - t) ^ (m + 1) / ((m : ℝ) + 1)) ((x - t) ^ m) x := by
-      intro x _
-      have h : HasDerivAt (fun s : ℝ => (s - t) ^ (m + 1) / ((m : ℝ) + 1))
-          (((m + 1 : ℕ) : ℝ) * (x - t) ^ m * 1 / ((m : ℝ) + 1)) x :=
-        (((hasDerivAt_id x).sub_const t).pow (m + 1)).div_const _
-      convert h using 1
-      have hm : ((m : ℝ) + 1) ≠ 0 := by positivity
-      push_cast
-      field_simp
-    rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hD
-      (Continuous.intervalIntegrable (by fun_prop) _ _)]
+    have h := intervalIntegral.integral_comp_sub_right (a := t) (b := b) (fun x : ℝ => x ^ m) t
+    simp only [sub_self] at h
+    rw [h, integral_pow]
     simp
   rw [← intervalIntegral.integral_add_adjacent_intervals
     (intervalIntegrable_truncPow_flip m t a t) (intervalIntegrable_truncPow_flip m t t b),
@@ -2030,18 +1914,9 @@ theorem error_eq_integral_peanoKernel {a b : ℝ} {n m : ℕ} (hab : a ≤ b) {w
   -- the moments of the shifted monomials
   have hpow : ∀ k : ℕ, (∫ t in a..b, (t - a) ^ k) = (b - a) ^ (k + 1) / ((k : ℝ) + 1) := by
     intro k
-    have hD : ∀ x ∈ Set.uIcc a b,
-        HasDerivAt (fun s : ℝ => (s - a) ^ (k + 1) / ((k : ℝ) + 1)) ((x - a) ^ k) x := by
-      intro x _
-      have h : HasDerivAt (fun s : ℝ => (s - a) ^ (k + 1) / ((k : ℝ) + 1))
-          (((k + 1 : ℕ) : ℝ) * (x - a) ^ k * 1 / ((k : ℝ) + 1)) x :=
-        (((hasDerivAt_id x).sub_const a).pow (k + 1)).div_const _
-      convert h using 1
-      have hk : ((k : ℝ) + 1) ≠ 0 := by positivity
-      push_cast
-      field_simp
-    rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hD
-      (Continuous.intervalIntegrable (by fun_prop) _ _)]
+    have h := intervalIntegral.integral_comp_sub_right (a := a) (b := b) (fun x : ℝ => x ^ k) a
+    simp only [sub_self] at h
+    rw [h, integral_pow]
     simp
   -- exactness, applied to the Taylor polynomial of `F` at `a`
   have hkey : (∑ k ∈ Finset.range (m + 1), F k a * (b - a) ^ (k + 1) / ((k + 1).factorial : ℝ))
@@ -2156,8 +2031,6 @@ theorem abs_error_le_integral_abs_peanoKernel {a b : ℝ} {n m : ℕ} (hab : a �
     |(∫ t in a..b, F 0 t) - ∑ i, w i * F 0 (z i)|
       ≤ (∫ t in a..b, |peanoKernel a b w z m t|) * M := by
   have huIcc : Set.uIcc a b = Set.Icc a b := Set.uIcc_of_le hab
-  have hint : IntervalIntegrable (F (m + 1)) volume a b :=
-    ContinuousOn.intervalIntegrable (by rw [huIcc]; exact hc)
   -- the kernel is integrable on the panel: on it, it is the closed form
   have hclosed : ∀ t ∈ Set.uIcc a b, peanoKernel a b w z m t
       = (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ)
@@ -2179,7 +2052,6 @@ theorem abs_error_le_integral_abs_peanoKernel {a b : ℝ} {n m : ℕ} (hab : a �
         rw [Finset.sum_apply]
       rwa [hfun] at h
     exact hbase.congr fun t ht => (hclosed t (Set.uIoc_subset_uIcc ht)).symm
-  have hMnn : 0 ≤ M := le_trans (abs_nonneg _) (hM a (Set.left_mem_Icc.2 hab))
   have habs : IntervalIntegrable (fun t => |peanoKernel a b w z m t|) volume a b := hKint.abs
   have hprod : IntervalIntegrable
       (fun t => |peanoKernel a b w z m t * F (m + 1) t|) volume a b := by

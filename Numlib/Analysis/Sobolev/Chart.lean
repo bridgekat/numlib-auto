@@ -817,7 +817,6 @@ theorem IsBoundaryGraphAt.exists_contDiffChart (hg : ContDiff ℝ n g) (hΩ : Is
   have hΨ'Ψ : ∀ x, Ψ' (Ψ x) = x := graphUnstraighten_graphStraighten T g
   have hΨd : ContDiff ℝ n Ψ := contDiff_graphStraighten T g hg
   have hΨ'd : ContDiff ℝ n Ψ' := contDiff_graphUnstraighten T g hg
-  have hΨc : Continuous Ψ := hΨd.continuous
   have hΨ'c : Continuous Ψ' := hΨ'd.continuous
   set y₀ := Ψ x₀ with hy₀def
   have hy₀ : y₀ (Fin.last d) = 0 := by

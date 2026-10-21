@@ -313,16 +313,11 @@ theorem schurComplementSingle_transpose (A : Matrix n n K) (p : n) :
 
 variable [Fintype n] [DecidableEq n]
 
-/-- A sum over the indices other than `p`, read as a sum over the subtype. -/
-private theorem sum_subtype_ne (p : n) (f : n → K) :
-    ∑ j : {x : n // x ≠ p}, f j.1 = ∑ x ∈ Finset.univ.erase p, f x := by
-  have h : ∀ x : n, x ∈ Finset.univ.erase p ↔ x ≠ p := fun x => by simp
-  exact (Finset.sum_subtype _ h f).symm
-
 /-- The row of a matrix-vector product, with the pivot term separated off. -/
 private theorem sum_ne_eq_mulVec_sub (A : Matrix n n K) (X : n → K) (p t : n) :
     ∑ j : {x : n // x ≠ p}, A t j.1 * X j.1 = (A *ᵥ X) t - A t p * X p := by
-  rw [sum_subtype_ne p fun j => A t j * X j, Matrix.mulVec_apply_eq_sum,
+  rw [← Finset.sum_subtype (p := fun x => x ≠ p) (Finset.univ.erase p) (fun x => by simp)
+      fun j => A t j * X j, Matrix.mulVec_apply_eq_sum,
     ← Finset.add_sum_erase _ (fun j => A t j * X j) (Finset.mem_univ p)]
   ring
 

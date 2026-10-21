@@ -18,10 +18,11 @@ The least-squares counterpart of the Chebyshev min–max problem of
 Chebyshev minimizes the sup norm on an interval, the kernel polynomial minimizes the quadratic form
 of a symmetric bilinear form `B` on `ℝ[X]`.
 
-Everything is stated for a family `q : ℕ → ℝ[X]` with `deg (q i) = i` which is orthonormal for `B`,
-so that `q 0, …, q k` is a basis of the polynomials of degree at most `k`. No measure theory
-appears: the weighted form `B p r = ∫ p r w` is one instance, but nothing in the proofs uses the
-integral, and the discrete forms arising from a spectral measure are covered by the same statements.
+Everything is stated for a family `q : ℕ → ℝ[X]` with `deg (q i) = i` which is orthonormal for `B`
+(`LinearMap.BilinForm.IsOrthonormal`), so that `q 0, …, q k` is a basis of the polynomials of
+degree at most `k`. No measure theory appears: the weighted form `B p r = ∫ p r w` is one
+instance, but nothing in the proofs uses the integral, and the discrete forms arising from a
+spectral measure are covered by the same statements.
 Positive semidefiniteness is not assumed: on the polynomials of degree at most `k` it is a
 consequence of orthonormality (`Polynomial.bilinForm_self_nonneg_of_degree_le`).
 
@@ -33,6 +34,9 @@ formula.
 ## Main results
 
 * `isLeast_of_inner_eq_one`: the minimum-norm point of an affine hyperplane.
+* `LinearMap.BilinForm.IsOrthonormal`: `B (v i) (v j) = if i = j then 1 else 0`, and on the span
+  of such a family `B` is the dot product of the coefficients
+  (`LinearMap.BilinForm.IsOrthonormal.apply_sum_smul_sum_smul`).
 * `Polynomial.kernelPolynomial`: `(∑_{i ≤ k} q i γ ^ 2)⁻¹ • ∑_{i ≤ k} q i γ • q i`.
 * `Polynomial.bilinForm_kernelPolynomial_le`: it minimizes `B p p` over the admissible `p`.
 * `Polynomial.bilinForm_kernelPolynomial_mul_X`: the residual polynomials are orthogonal for the
@@ -64,6 +68,40 @@ theorem isLeast_of_inner_eq_one {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGro
     calc (1 : ℝ) = ‖inner 𝕜 y x‖ := by rw [hx, norm_one]
       _ ≤ ‖y‖ * ‖x‖ := norm_inner_le_norm y x
       _ = ‖x‖ * ‖y‖ := mul_comm _ _
+
+namespace LinearMap.BilinForm
+
+variable {R M ι : Type*} [CommSemiring R] [AddCommMonoid M] [Module R M] [DecidableEq ι]
+
+/-- A family `v` is **orthonormal** for a bilinear form `B`: `B (v i) (v j)` is `1` for `i = j`
+and `0` otherwise. For the inner product of a real inner product space this is Mathlib's
+`Orthonormal` (`orthonormal_iff_ite`); here `B` need not be positive or symmetric. -/
+def IsOrthonormal (B : LinearMap.BilinForm R M) (v : ι → M) : Prop :=
+  ∀ i j, B (v i) (v j) = if i = j then 1 else 0
+
+/-- `IsOrthonormal` unfolded. -/
+theorem isOrthonormal_iff {B : LinearMap.BilinForm R M} {v : ι → M} :
+    B.IsOrthonormal v ↔ ∀ i j, B (v i) (v j) = if i = j then 1 else 0 :=
+  Iff.rfl
+
+namespace IsOrthonormal
+
+variable {B : LinearMap.BilinForm R M} {v : ι → M}
+
+/-- The values of `B` on an orthonormal family. -/
+theorem apply (h : B.IsOrthonormal v) (i j : ι) : B (v i) (v j) = if i = j then 1 else 0 :=
+  h i j
+
+/-- On the span of an orthonormal family the form is the dot product of the coefficients. -/
+theorem apply_sum_smul_sum_smul (h : B.IsOrthonormal v) (s : Finset ι) (c d : ι → R) :
+    B (∑ i ∈ s, c i • v i) (∑ j ∈ s, d j • v j) = ∑ i ∈ s, c i * d i := by
+  simp only [map_sum, map_smul, LinearMap.sum_apply, LinearMap.smul_apply, smul_eq_mul, h.apply,
+    mul_ite, mul_one, mul_zero, Finset.sum_ite_eq']
+  exact Finset.sum_congr rfl fun i hi => by simp [hi, mul_comm]
+
+end IsOrthonormal
+
+end LinearMap.BilinForm
 
 namespace Polynomial
 
@@ -132,16 +170,6 @@ section Bilin
 
 variable {B : LinearMap.BilinForm ℝ ℝ[X]} {q : ℕ → ℝ[X]}
 
-/-- The quadratic form of `B` on the span of an orthonormal family is a sum of products of the
-coefficients. -/
-private theorem bilinForm_sum_smul (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0)
-    (k : ℕ) (c d : ℕ → ℝ) :
-    B (∑ i ∈ Finset.range (k + 1), c i • q i) (∑ j ∈ Finset.range (k + 1), d j • q j) =
-      ∑ i ∈ Finset.range (k + 1), c i * d i := by
-  simp only [map_sum, map_smul, LinearMap.sum_apply, LinearMap.smul_apply, smul_eq_mul, horth,
-    mul_ite, mul_one, mul_zero, Finset.sum_ite_eq']
-  exact Finset.sum_congr rfl fun i hi => by simp [Finset.mem_range.mp hi, mul_comm]
-
 /-- Evaluating a combination of the family. -/
 private theorem eval_sum_smul (γ : ℝ) (k : ℕ) (c : ℕ → ℝ) :
     (∑ i ∈ Finset.range (k + 1), c i • q i).eval γ =
@@ -152,10 +180,10 @@ private theorem eval_sum_smul (γ : ℝ) (k : ℕ) (c : ℕ → ℝ) :
 positive semidefinite: the quadratic form is a sum of squares. This is why no positivity hypothesis
 on `B` appears anywhere in this file. -/
 theorem bilinForm_self_nonneg_of_degree_le
-    (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
+    (horth : B.IsOrthonormal q) (hdeg : ∀ i, (q i).degree = i)
     {k : ℕ} {p : ℝ[X]} (hp : p.degree ≤ k) : 0 ≤ B p p := by
   obtain ⟨c, rfl⟩ := exists_sum_smul_of_degree_le hdeg k hp
-  rw [bilinForm_sum_smul horth]
+  rw [horth.apply_sum_smul_sum_smul]
   exact Finset.sum_nonneg fun i _ => mul_self_nonneg (c i)
 
 /-- The kernel polynomial written as a combination of `q 0, …, q k`. -/
@@ -200,11 +228,11 @@ theorem kernelPolynomial_eval {γ : ℝ} {k : ℕ}
 /-- The quadratic form at the kernel polynomial is the reciprocal of the normalizing sum, which is
 [saad2003iterative] minimum value. -/
 theorem bilinForm_kernelPolynomial_self
-    (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) {γ : ℝ} {k : ℕ}
+    (horth : B.IsOrthonormal q) {γ : ℝ} {k : ℕ}
     (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2 ≠ 0) :
     B (kernelPolynomial q γ k) (kernelPolynomial q γ k) =
       (∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2)⁻¹ := by
-  rw [kernelPolynomial_eq, bilinForm_sum_smul horth]
+  rw [kernelPolynomial_eq, horth.apply_sum_smul_sum_smul]
   exact sum_inv_mul_mul rfl hS
 
 /-! ### The minimization -/
@@ -225,7 +253,7 @@ at most `k` taking the value `1` at `γ`, it minimizes the quadratic form of `B`
 value is `(∑_{i ≤ k} q i γ ^ 2)⁻¹`. Expand a competitor in the orthonormal family and apply
 `isLeast_of_inner_eq_one` to the vector of values `q i γ`. -/
 theorem bilinForm_kernelPolynomial_le
-    (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
+    (horth : B.IsOrthonormal q) (hdeg : ∀ i, (q i).degree = i)
     {γ : ℝ} {k : ℕ} (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2 ≠ 0) :
     IsLeast {r : ℝ | ∃ p : ℝ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ B p p = r}
       (∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2)⁻¹ := by
@@ -243,7 +271,7 @@ theorem bilinForm_kernelPolynomial_le
   have hinner := (inner_toLp (n := k + 1) (fun i => (q i).eval γ) c).trans
     ((eval_sum_smul (q := q) γ k c).symm.trans hpγ)
   have hle := (isLeast_of_inner_eq_one hy0).2 ⟨_, hinner, rfl⟩
-  rw [bilinForm_sum_smul horth]
+  rw [horth.apply_sum_smul_sum_smul]
   have hsq : ∑ i ∈ Finset.range (k + 1), c i * c i = ∑ i ∈ Finset.range (k + 1), c i ^ 2 :=
     Finset.sum_congr rfl fun i _ => sq (c i) ▸ rfl
   rw [hsq, ← hxnorm, ← hynorm]
@@ -256,32 +284,12 @@ theorem bilinForm_kernelPolynomial_le
 
 /-! ### The normal equations -/
 
-/-- If `0 ≤ 2 t a + t ^ 2 c` for every real `t` and `0 ≤ c`, then `a = 0`: the first-order condition
-at an interior minimum of a real quadratic. -/
-private theorem eq_zero_of_forall_nonneg {a c : ℝ} (hc : 0 ≤ c)
-    (h : ∀ t : ℝ, 0 ≤ 2 * t * a + t ^ 2 * c) : a = 0 := by
-  have key : ∀ a' : ℝ, (∀ t : ℝ, 0 ≤ 2 * t * a' + t ^ 2 * c) → a' ≤ 0 := by
-    intro a' h'
-    by_contra hpos
-    rw [not_le] at hpos
-    have hc1 : (0 : ℝ) < c + 1 := by linarith
-    have hs : 0 < a' / (c + 1) := div_pos hpos hc1
-    have h1 := h' (-(a' / (c + 1)))
-    have h2 : 2 * a' ≤ a' / (c + 1) * c := by nlinarith
-    have h3 : a' / (c + 1) * c < a' := by
-      rw [div_mul_eq_mul_div, div_lt_iff₀ hc1]
-      nlinarith
-    linarith
-  refine le_antisymm (key a h) (neg_nonpos.mp (key (-a) fun t => ?_))
-  have h' := h (-t)
-  nlinarith [h']
-
 /-- The residual polynomials are orthogonal for the shifted form: with `R = kernelPolynomial q 0 k`,
 `B (X * p) R = 0` for every `p` of degree less than `k`. These are the normal equations of the
 least-squares problem, read off the optimality of `R` by varying along the admissible directions `X
 * p`, which are exactly the directions preserving both `deg ≤ k` and the value `1` at `0`. -/
 theorem bilinForm_kernelPolynomial_mul_X (hsymm : B.IsSymm)
-    (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
+    (horth : B.IsOrthonormal q) (hdeg : ∀ i, (q i).degree = i)
     {k : ℕ} (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval 0 ^ 2 ≠ 0)
     {p : ℝ[X]} (hp : p.degree < (k : WithBot ℕ)) :
     B (X * p) (kernelPolynomial q 0 k) = 0 := by
@@ -296,8 +304,14 @@ theorem bilinForm_kernelPolynomial_mul_X (hsymm : B.IsSymm)
     exact_mod_cast (by omega : 1 + p.natDegree ≤ k)
   have hdeval : (X * p).eval 0 = 0 := by rw [eval_mul, eval_X, zero_mul]
   have hmin := (bilinForm_kernelPolynomial_le horth hdeg hS).2
-  refine eq_zero_of_forall_nonneg
-    (bilinForm_self_nonneg_of_degree_le horth hdeg hddeg) fun t => ?_
+  -- the quadratic `t ↦ B (R + t X p) (R + t X p) - B R R` is nonnegative, so its discriminant
+  -- `(2 B (X p) R) ^ 2` is nonpositive
+  suffices h : ∀ t : ℝ,
+      0 ≤ B (X * p) (X * p) * (t * t) + 2 * B (X * p) (kernelPolynomial q 0 k) * t + 0 by
+    have hd := discrim_le_zero h
+    rw [discrim] at hd
+    nlinarith [sq_nonneg (B (X * p) (kernelPolynomial q 0 k))]
+  intro t
   have hadm : (kernelPolynomial q 0 k + t • (X * p)).degree ≤ (k : WithBot ℕ) :=
     (degree_add_le _ _).trans
       (max_le (kernelPolynomial_degree_le hdeg 0 k) ((degree_smul_le _ _).trans hddeg))
@@ -315,18 +329,13 @@ theorem bilinForm_kernelPolynomial_mul_X (hsymm : B.IsSymm)
 
 /-! ### The geometric bound -/
 
-/-- The image of a compact interval under `|p|` is bounded above. -/
-private theorem bddAbove_image_abs_eval (p : ℝ[X]) (a b : ℝ) :
-    BddAbove ((fun t => |p.eval t|) '' Set.Icc a b) :=
-  (isCompact_Icc.image p.continuous.abs).bddAbove
-
 /-- The geometric bound of [saad2003iterative] §12.3.3 for `0 < α < β`. A form "supported on `[α,
 β]`" — meaning `B p p ≤ (sup_{[α,β]} |p|) ^ 2 * B 1 1`, which the weighted form `B p r = ∫_α^β p r
 w` with `w ≥ 0` satisfies by monotonicity of the integral — makes the least-squares residual
 polynomial decay geometrically, because `(1 - X / θ) ^ k` with `θ = (α + β) / 2` is an admissible
 competitor whose sup on `[α, β]` is at most `((β - α) / (β + α)) ^ k`. -/
 theorem bilinForm_kernelPolynomial_le_pow
-    (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
+    (horth : B.IsOrthonormal q) (hdeg : ∀ i, (q i).degree = i)
     {α β : ℝ} (hα : 0 < α) (hαβ : α < β)
     (hB : ∀ p : ℝ[X], B p p ≤ sSup ((fun t => |p.eval t|) '' Set.Icc α β) ^ 2 * B 1 1)
     {k : ℕ} (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval 0 ^ 2 ≠ 0) :
@@ -355,7 +364,7 @@ theorem bilinForm_kernelPolynomial_le_pow
     rw [hform, abs_div, abs_of_pos hθpos, div_le_iff₀ hθpos, hprod, abs_le]
     exact ⟨by linarith [ht.2], by linarith [ht.1]⟩
   have hsupnonneg : 0 ≤ sSup ((fun t => |P.eval t|) '' Set.Icc α β) :=
-    le_csSup_of_le (bddAbove_image_abs_eval P α β)
+    le_csSup_of_le (isCompact_Icc.image P.continuous.abs).bddAbove
       ⟨α, Set.left_mem_Icc.mpr hαβ.le, rfl⟩ (abs_nonneg _)
   have hB11 : 0 ≤ B 1 1 :=
     bilinForm_self_nonneg_of_degree_le horth hdeg

@@ -273,10 +273,6 @@ section Complex
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℂ F]
 
-/-- On a trivial space every continuous linear operator is `0 = 1`. -/
-private theorem subsingleton_clm [Subsingleton F] : Subsingleton (F →L[ℂ] F) :=
-  ⟨fun _ _ => by ext x; exact Subsingleton.elim _ _⟩
-
 /-- Neumann: a spectral radius `ρ(G) < 1` makes `1 - G` invertible, so the affine iteration has the
 unique fixed point `(1 - G)⁻¹ f`.  The Banach-algebra form
 `_root_.isUnit_one_sub_of_spectralRadius_lt_one` assumes `NormOneClass`, which `F →L[ℂ] F` satisfies
@@ -284,8 +280,7 @@ only for nontrivial `F`; on a trivial `F` every operator is a unit anyway. -/
 theorem isUnit_one_sub_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     (hG : spectralRadius ℂ G < 1) : IsUnit (1 - G) := by
   rcases subsingleton_or_nontrivial F with _ | _
-  · have := subsingleton_clm (F := F)
-    exact isUnit_of_subsingleton _
+  · exact isUnit_of_subsingleton _
   · exact _root_.isUnit_one_sub_of_spectralRadius_lt_one hG
 
 /-- [saad2003iterative], Thm 4.1 (⇒), in any complex Banach space: a spectral radius `ρ(G) < 1`
@@ -313,8 +308,7 @@ theorem spectralRadius_lt_one_of_forall_tendsto [FiniteDimensional ℂ F] (G : F
     (h : ∀ x₀, Tendsto (fun k => (G ^ k) x₀) atTop (𝓝 0)) : spectralRadius ℂ G < 1 := by
   have : CompleteSpace F := FiniteDimensional.complete ℂ F
   rcases subsingleton_or_nontrivial F with _ | _
-  · have := subsingleton_clm (F := F)
-    simp
+  · simp
   · refine (spectralRadius_lt_one_iff_tendsto_pow G).mpr ?_
     -- In finite dimension, evaluation at a basis is a closed embedding, so pointwise
     -- convergence of `G ^ k` upgrades to convergence in the operator norm.
@@ -398,8 +392,7 @@ theorem limsup_norm_pow_apply_rpow_le_spectralRadius [CompleteSpace F] (G : F �
       exact (hnn k).trans hk⟩
   have hρtop : spectralRadius ℂ G ≠ ⊤ := by
     rcases subsingleton_or_nontrivial F with hF | hF
-    · have := subsingleton_clm (F := F)
-      simp
+    · simp
     · exact ((spectralRadius_le_nnnorm G).trans_lt ENNReal.coe_lt_top).ne
   refine le_of_forall_gt_imp_ge_of_dense fun c hc => ?_
   have hc0 : (0 : ℝ) < c := lt_of_le_of_lt ENNReal.toReal_nonneg hc

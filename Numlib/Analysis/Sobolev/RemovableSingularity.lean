@@ -422,7 +422,6 @@ theorem hasWeakFDerivOn_of_hasFDerivAt_compl_singleton (hf : LocallyIntegrableOn
     rw [mul_zero] at h
     refine h.congr' ?_
     filter_upwards [self_mem_nhdsWithin] with δ hδ
-    have hne : δ ≠ 0 := ne_of_gt hδ
     simp only [Function.comp_apply]
     rw [mul_inv, ← mul_assoc, ← mul_assoc]
     norm_num
@@ -543,7 +542,6 @@ theorem tendsto_inv_mul_setIntegral_norm_ball_zero (hd : 1 ≤ finrank ℝ E) {f
   have hsd : -(finrank ℝ E : ℝ) < s := by linarith
   have hq : 0 < (finrank ℝ E : ℝ) + s - 1 := by linarith
   set C' : ℝ := max C 0 with hC'def
-  have hC' : 0 ≤ C' := le_max_right _ _
   have hle' : ∀ x ∈ ball (0 : E) R, ‖f x‖ ≤ C' * ‖x‖ ^ s := fun x hx ↦
     le_trans (hle x hx)
       (mul_le_mul_of_nonneg_right (le_max_left _ _) (Real.rpow_nonneg (norm_nonneg x) s))

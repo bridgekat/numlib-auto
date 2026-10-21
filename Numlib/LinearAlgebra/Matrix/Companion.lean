@@ -77,16 +77,16 @@ theorem companion_submatrix_castSucc :
     omega
   · simp [h0]
 
-/-- The characteristic matrix of a principal submatrix is the principal submatrix of the
-characteristic matrix. -/
-private theorem charmatrix_submatrix_castSucc (A : Matrix (Fin (n + 1)) (Fin (n + 1)) R) :
-    charmatrix (A.submatrix Fin.castSucc Fin.castSucc)
-      = (charmatrix A).submatrix Fin.castSucc Fin.castSucc := by
+/-- The characteristic matrix of a principal submatrix along an injective map is the principal
+submatrix of the characteristic matrix (`Matrix.charmatrix_reindex` for an equivalence). -/
+theorem charmatrix_submatrix {m l : Type*} [Fintype m] [DecidableEq m] [Fintype l]
+    [DecidableEq l] (A : Matrix l l R) {f : m → l} (hf : Function.Injective f) :
+    charmatrix (A.submatrix f f) = (charmatrix A).submatrix f f := by
   ext i j
   rw [submatrix_apply, charmatrix_apply, charmatrix_apply, submatrix_apply]
   rcases eq_or_ne i j with rfl | h
   · rw [diagonal_apply_eq, diagonal_apply_eq]
-  · rw [diagonal_apply_ne _ h, diagonal_apply_ne _ (Fin.castSucc_injective _ |>.ne h)]
+  · rw [diagonal_apply_ne _ h, diagonal_apply_ne _ (hf.ne h)]
 
 /-- The minor of the characteristic matrix of the companion matrix obtained by deleting the first
 row and the last column: `-1` on the diagonal, `X` just above it, `0` elsewhere. -/
@@ -148,8 +148,8 @@ theorem charpoly_companion {p : R[X]} (hp : p.Monic) {n : ℕ} (hn : p.natDegree
     have h0l : (0 : Fin (k + 1)) ≠ Fin.last k := Fin.ne_of_val_ne (by simpa using hk.ne)
     rw [Finset.sum_eq_add 0 (Fin.last k) h0l]
     · rw [Fin.succAbove_last, Fin.succAbove_zero, det_charmatrix_companion_submatrix_succ_castSucc,
-        ← charmatrix_submatrix_castSucc, companion_submatrix_castSucc, ← charpoly, hrec,
-        charmatrix_apply_ne _ _ _ h0l,
+        ← charmatrix_submatrix _ (Fin.castSucc_injective _), companion_submatrix_castSucc,
+        ← charpoly, hrec, charmatrix_apply_ne _ _ _ h0l,
         charmatrix_apply_eq, companion_zero_apply, Fin.val_last, Nat.sub_self, map_neg, neg_neg,
         show companion p (k + 1) (Fin.last k) (Fin.last k) = 0 by
           obtain ⟨k', rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
@@ -161,9 +161,8 @@ theorem charpoly_companion {p : R[X]} (hp : p.Monic) {n : ℕ} (hn : p.natDegree
     · intro i _ ⟨hi0, hil⟩
       have hi : ∃ j : Fin k, i = j.succ := ⟨i.pred hi0, (Fin.succ_pred i hi0).symm⟩
       obtain ⟨j, rfl⟩ := hi
-      rw [charmatrix_apply_ne _ _ _ hil, companion_succ_apply_of_ne _ (by
-        have := Fin.val_ne_iff.2 hil; simp at this ⊢; omega), map_zero, neg_zero, mul_zero,
-        zero_mul]
+      rw [charmatrix_apply_ne _ _ _ hil, companion_succ_apply_of_ne _ (by simp; omega), map_zero,
+        neg_zero, mul_zero, zero_mul]
     · exact fun h => absurd (Finset.mem_univ _) h
     · exact fun h => absurd (Finset.mem_univ _) h
 

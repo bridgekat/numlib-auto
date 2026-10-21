@@ -472,7 +472,6 @@ private theorem mvl_scalar (p q : ℕ) (hpq : 1 ≤ p + q) {x y β : ℝ} (hx0 :
       rw [← Real.exp_nat_mul]; norm_num
     have h3 := Real.exp_one_lt_d9
     nlinarith [Real.exp_pos (1 / 2)]
-  have hexp1 : 1 ≤ Real.exp x := Real.one_le_exp hx0
   set s : ℝ := (1 / 2) ^ (p + q)
   have hs0 : 0 ≤ s := by positivity
   have hxs : x ^ (p + q + 1) ≤ x * s := by

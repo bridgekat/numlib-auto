@@ -470,7 +470,7 @@ theorem isCone_relint (hK : IsCone C) (hC : Convex ℝ C) : IsCone (ri C) := by
 /-- **Rockafellar, §6 (p. 50).** The closure of a convex cone is a convex cone. Convexity is not
 used on either side. -/
 theorem isCone_closure (hK : IsCone C) : IsCone (closure C) := by
-  rw [isCone_iff_smul_set_eq] at hK ⊢
+  rw [isCone_iff_smul_set_eq]
   exact smul_closure_eq_of_isCone hK
 
 end Rockafellar

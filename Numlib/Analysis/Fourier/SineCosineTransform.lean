@@ -404,7 +404,6 @@ private theorem sum_dct1Weight_mul_cos (hm : 0 < m) (p : ℤ) :
         * Real.cos (p * (j : ℕ) * π / m) = if (2 * m : ℤ) ∣ p then (m : ℝ) else 0 := by
   have hfull := sum_range_cos_int_mul hm p
   obtain ⟨m, rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
-  have hm' : ((m + 1 : ℕ) : ℝ) ≠ 0 := by positivity
   rw [sum_range_two_mul_succ] at hfull
   -- the reflected terms of the full period repeat the first half
   have hrefl : ∀ i ∈ range m, Real.cos (p * ((2 * m + 1 - i : ℕ) : ℝ) * π / ((m + 1 : ℕ) : ℝ))
@@ -443,7 +442,6 @@ private theorem sum_dct1Weight_mul_cos (hm : 0 < m) (p : ℤ) :
 sum of `cos ((k ∓ l) j π / m)`, whose weighted sums are exact trapezoidal rules. -/
 theorem dct1_mul_self (hm : 0 < m) :
     dct1 m * dct1 m = ((m : ℝ) / 2) • (1 : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ) := by
-  have hm' : (m : ℝ) ≠ 0 := by positivity
   ext k l
   set w : Fin (m + 1) → ℝ := fun j => if (j : ℕ) = 0 ∨ (j : ℕ) = m then 1 / 2 else 1 with hw
   have hentry : (dct1 m * dct1 m) k l = w l / 2 *

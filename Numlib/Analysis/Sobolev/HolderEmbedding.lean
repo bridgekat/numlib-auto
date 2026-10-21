@@ -180,12 +180,6 @@ theorem SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_rep (k : �
       heq₀.of_subset_closure ((continuousMultilinearCurryFin0 ℝ _ ℝ).continuous.comp_continuousOn
         (hGc u 0).continuousOn) (hũc u).continuousOn subset_closure subset_rfl
     exact heq x.2
-  have hΦeq : ∀ u v : SobolevEuclidean N m p Ω, fn u =ᵐ[volume.restrict
-      (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn v → Φ u = Φ v := fun u v huv ↦
-    ext_of_eqOn fun x hx ↦ by
-      rw [hΦval, hΦval]
-      exact SobolevEuclidean.eqOn_closure_of_ae_eq (hũc u) (hũc v) (hũae u)
-        (huv.trans (hũae v)) (subset_closure hx)
   have hΦadd : ∀ u v, Φ (u + v) = Φ u + Φ v := fun u v ↦ ext_of_eqOn fun x hx ↦ by
     rw [coe_add, hΦval, hΦval, hΦval]
     have h1 : fn (u + v) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
@@ -387,7 +381,6 @@ theorem SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_eq_one (k :
       ∀ i : Fin (k + 1), (i : ℕ) < k →
         ∃ C θᵢ : ℝ≥0, 0 < θᵢ ∧ ∀ u, HolderWith (C * ‖u‖₊) θᵢ ((T u).deriv i) := by
   have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
-  have hp0 : (0 : ℝ) < p := zero_lt_one.trans_le (by exact_mod_cast hp1)
   -- `m = ℓ + k + 1` with `ℓ = N/p`
   obtain ⟨ℓ, rfl⟩ : ∃ ℓ, m = ℓ + k + 1 := by
     refine ⟨m - k - 1, ?_⟩

@@ -219,22 +219,28 @@ theorem hasDerivAt_kernel_line (p : ℝ) (ξ η : F) (t : ℝ) :
   rw [derivWeight]
   ring
 
-/-- The bound on the derivative of the kernel:
-`|p (1 + ‖ζ‖²)^{p/2 − 1} ⟪ζ, η⟫| ≤ p (1 + ‖ζ‖²)^{(p−1)/2} ‖η‖`, since `‖ζ‖ ≤ (1 + ‖ζ‖²)^{1/2}`. -/
-theorem abs_derivWeight_mul_inner_le {p : ℝ} (hp : 0 ≤ p) (ζ η : F) :
-    |p * derivWeight p ζ * ⟪ζ, η⟫_ℝ| ≤ p * kernelBound p ‖ζ‖ * ‖η‖ := by
+omit [InnerProductSpace ℝ F] in
+/-- `(1 + ‖ζ‖²)^{p/2 − 1} ‖ζ‖ ≤ (1 + ‖ζ‖²)^{(p−1)/2}`. -/
+theorem derivWeight_mul_norm_le (p : ℝ) (ζ : F) :
+    derivWeight p ζ * ‖ζ‖ ≤ kernelBound p ‖ζ‖ := by
   have hw := derivWeight_pos p ζ
   have hnorm : ‖ζ‖ ≤ (1 + ‖ζ‖ ^ 2) ^ (1 / 2 : ℝ) := by
     rw [← Real.sqrt_eq_rpow]
     calc ‖ζ‖ = √(‖ζ‖ ^ 2) := (Real.sqrt_sq (norm_nonneg _)).symm
       _ ≤ √(1 + ‖ζ‖ ^ 2) := Real.sqrt_le_sqrt (by linarith)
-  have hkey : derivWeight p ζ * ‖ζ‖ ≤ kernelBound p ‖ζ‖ := by
-    calc derivWeight p ζ * ‖ζ‖ ≤ derivWeight p ζ * (1 + ‖ζ‖ ^ 2) ^ (1 / 2 : ℝ) :=
-          mul_le_mul_of_nonneg_left hnorm hw.le
-      _ = kernelBound p ‖ζ‖ := by
-        rw [derivWeight, kernelBound, ← Real.rpow_add (by positivity)]
-        congr 1
-        ring
+  calc derivWeight p ζ * ‖ζ‖ ≤ derivWeight p ζ * (1 + ‖ζ‖ ^ 2) ^ (1 / 2 : ℝ) :=
+        mul_le_mul_of_nonneg_left hnorm hw.le
+    _ = kernelBound p ‖ζ‖ := by
+      rw [derivWeight, kernelBound, ← Real.rpow_add (by positivity)]
+      congr 1
+      ring
+
+/-- The bound on the derivative of the kernel:
+`|p (1 + ‖ζ‖²)^{p/2 − 1} ⟪ζ, η⟫| ≤ p (1 + ‖ζ‖²)^{(p−1)/2} ‖η‖`, since `‖ζ‖ ≤ (1 + ‖ζ‖²)^{1/2}`. -/
+theorem abs_derivWeight_mul_inner_le {p : ℝ} (hp : 0 ≤ p) (ζ η : F) :
+    |p * derivWeight p ζ * ⟪ζ, η⟫_ℝ| ≤ p * kernelBound p ‖ζ‖ * ‖η‖ := by
+  have hw := derivWeight_pos p ζ
+  have hkey := derivWeight_mul_norm_le p ζ
   calc |p * derivWeight p ζ * ⟪ζ, η⟫_ℝ| = p * derivWeight p ζ * |⟪ζ, η⟫_ℝ| := by
         rw [abs_mul, abs_of_nonneg (by positivity)]
     _ ≤ p * derivWeight p ζ * (‖ζ‖ * ‖η‖) :=
@@ -459,22 +465,6 @@ theorem hasDerivAt_energy_line [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p ≠ �
         gcongr
         exact (mem_ball_zero_iff.1 ht).le
       _ = ‖G x‖ + ‖H x‖ := by rw [one_mul]
-
-omit [InnerProductSpace ℝ F] in
-/-- `(1 + ‖ζ‖²)^{p/2 − 1} ‖ζ‖ ≤ (1 + ‖ζ‖²)^{(p−1)/2}`. -/
-theorem derivWeight_mul_norm_le (p : ℝ) (ζ : F) :
-    derivWeight p ζ * ‖ζ‖ ≤ kernelBound p ‖ζ‖ := by
-  have hw := derivWeight_pos p ζ
-  have hnorm : ‖ζ‖ ≤ (1 + ‖ζ‖ ^ 2) ^ (1 / 2 : ℝ) := by
-    rw [← Real.sqrt_eq_rpow]
-    calc ‖ζ‖ = √(‖ζ‖ ^ 2) := (Real.sqrt_sq (norm_nonneg _)).symm
-      _ ≤ √(1 + ‖ζ‖ ^ 2) := Real.sqrt_le_sqrt (by linarith)
-  calc derivWeight p ζ * ‖ζ‖ ≤ derivWeight p ζ * (1 + ‖ζ‖ ^ 2) ^ (1 / 2 : ℝ) :=
-        mul_le_mul_of_nonneg_left hnorm hw.le
-    _ = kernelBound p ‖ζ‖ := by
-      rw [derivWeight, kernelBound, ← Real.rpow_add (by positivity)]
-      congr 1
-      ring
 
 omit [InnerProductSpace ℝ F] in
 /-- **The bound `(1 + ‖G‖²)^{(p−1)/2}` lies in `L^{p'}`** for `G ∈ L^p`, `p'` the conjugate

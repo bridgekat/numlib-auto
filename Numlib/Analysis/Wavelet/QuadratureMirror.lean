@@ -1,4 +1,5 @@
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
+import Numlib.Analysis.MeanInequalities
 
 /-!
 # Quadrature mirror filters and the two-channel decomposition
@@ -81,14 +82,6 @@ theorem qmfHigh_sub_two_mul (p : ℤ → ℝ) (k l : ℤ) :
 
 /-! ### Summability -/
 
-private theorem summable_mul_of_summable_sq {f g : ℤ → ℝ} (hf : Summable fun k => f k ^ 2)
-    (hg : Summable fun k => g k ^ 2) : Summable fun k => f k * g k := by
-  refine Summable.of_abs (Summable.of_nonneg_of_le (fun k => abs_nonneg _) (fun k => ?_)
-    ((hf.add hg).div_const 2))
-  rw [abs_mul]
-  nlinarith [sq_nonneg (|f k| - |g k|), abs_nonneg (f k), abs_nonneg (g k), sq_abs (f k),
-    sq_abs (g k)]
-
 namespace IsQMFCoeff
 
 /-- The squares of the coefficients of a quadrature mirror filter sum to one. -/
@@ -164,7 +157,7 @@ theorem hasSum_low_high (hp : IsQMFCoeff p) (l m : ℤ) :
       ring
     rw [e1, e2, hA, qmfHigh_sub_two_mul, show (1 : ℤ) + 2 * m - k = 1 - k + 2 * m by ring]
     ring
-  obtain ⟨a, ha⟩ := summable_mul_of_summable_sq (hp.summable_low_sq l) (hp.summable_high_sq m)
+  obtain ⟨a, ha⟩ := Real.summable_mul_of_summable_sq (hp.summable_low_sq l) (hp.summable_high_sq m)
   have hτ : HasSum (fun k : ℤ => -(p (k - 2 * l) * qmfHigh p (k - 2 * m))) a :=
     ((Equiv.hasSum_iff (Equiv.subLeft (1 + 2 * m + 2 * l))).mpr ha).congr_fun fun k => by
       simpa only [Function.comp_apply, Equiv.subLeft_apply] using (hneg k).symm

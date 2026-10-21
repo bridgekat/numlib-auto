@@ -633,8 +633,6 @@ private theorem imMap_apply {X : Type*} [TopologicalSpace X] (P : C(X, ℂ)) (x 
     imMap X P x = (P x).im :=
   rfl
 
-private theorem sqrt_two_ne_zero : (√2 : ℝ) ≠ 0 := Real.sqrt_ne_zero'.mpr (by norm_num)
-
 /-- The real and imaginary parts of a complex exponential are real trigonometric polynomials. -/
 private theorem reMap_imMap_fourier_mem (n : ℤ) :
     reMap (AddCircle T) (fourier n) ∈ span ℝ (range (trigFun T)) ∧
@@ -645,14 +643,14 @@ private theorem reMap_imMap_fourier_mem (n : ℤ) :
     intro m hm
     ext x
     rw [reMap_apply, ContinuousMap.smul_apply, trigFun_apply, trigWeight_of_pos hm, re_ofReal_mul,
-      smul_eq_mul, inv_mul_cancel_left₀ sqrt_two_ne_zero]
+      smul_eq_mul, inv_mul_cancel_left₀ (by positivity : (√2 : ℝ) ≠ 0)]
   have him : ∀ m : ℤ, 0 < m →
       imMap (AddCircle T) (fourier m) = (√2 : ℝ)⁻¹ • trigFun T (-m) := by
     intro m hm
     ext x
     rw [imMap_apply, ContinuousMap.smul_apply, trigFun_apply, trigWeight_of_neg (by omega),
       mul_assoc, re_ofReal_mul, fourier_neg, smul_eq_mul, Complex.I_mul_re, Complex.conj_im,
-      neg_neg, inv_mul_cancel_left₀ sqrt_two_ne_zero]
+      neg_neg, inv_mul_cancel_left₀ (by positivity : (√2 : ℝ) ≠ 0)]
   have hconj : ∀ m : ℤ, reMap (AddCircle T) (fourier (-m)) = reMap (AddCircle T) (fourier m) ∧
       imMap (AddCircle T) (fourier (-m)) = -imMap (AddCircle T) (fourier m) := by
     refine fun m => ⟨?_, ?_⟩

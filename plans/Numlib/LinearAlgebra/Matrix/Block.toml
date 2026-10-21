@@ -10,10 +10,19 @@ id = "mul_apply_eq_zero_of_lt"
 id = "mul_submatrix_sigmaMk_eq_sum"
 
 [[node]]
+id = "exists_fromBlocks_zero₂₁_pow_eq"
+
+[[node]]
 id = "blockVec"
 
 [[node]]
 id = "consDiag"
+
+[[node]]
+id = "insertNth_rows_same"
+
+[[node]]
+id = "insertNth_rows_succAbove"
 
 [[node]]
 id = "blockEquiv_symm_apply_of_lt"

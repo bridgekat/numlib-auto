@@ -452,9 +452,9 @@ theorem abs_sub_le_of_roundsDot {m : RoundingModel K} (hu : m.u < 1)
       _ ≤ gamma m.u (n + 1) * ∑ i, |x i| * |y i| := mul_le_mul_of_nonneg_right hstep hD0
 
 /-- The elementary redistribution behind the backward form of an error bound: a residual `r` no
-larger than `c ∑ |aᵢ| |bᵢ|` is realised by a componentwise perturbation of `a` of relative size `c`.
--/
-private theorem exists_dot_eq_of_abs_le {c r : K} (hc : 0 ≤ c) {a b : ι → K}
+larger than `c ∑ |aᵢ| |bᵢ|` is realised by a componentwise perturbation of `a` of relative size `c`:
+`∑ dᵢ bᵢ = r` with `|dᵢ| ≤ c |aᵢ|`. -/
+theorem _root_.Fintype.exists_sum_mul_eq_of_abs_le {c r : K} (hc : 0 ≤ c) {a b : ι → K}
     (h : |r| ≤ c * ∑ i, |a i| * |b i|) :
     ∃ d : ι → K, (∀ i, |d i| ≤ c * |a i|) ∧ ∑ i, d i * b i = r := by
   have hS0 : (0 : K) ≤ ∑ i, |a i| * |b i| :=
@@ -500,8 +500,8 @@ theorem exists_roundsDot_eq_dotProduct_add {m : RoundingModel K} (hu : m.u < 1)
     ∃ dx : ι → K, (∀ i, |dx i| ≤ gamma m.u (Fintype.card ι) * |x i|) ∧ s = (x + dx) ⬝ᵥ y := by
   have hbound := abs_sub_le_of_roundsDot hu hcard h
   obtain ⟨d, hd, hsum⟩ :=
-    exists_dot_eq_of_abs_le (c := gamma m.u (Fintype.card ι)) (r := s - x ⬝ᵥ y) (a := x) (b := y)
-      (gamma_nonneg m.u_nonneg hcard) hbound
+    Fintype.exists_sum_mul_eq_of_abs_le (c := gamma m.u (Fintype.card ι)) (r := s - x ⬝ᵥ y) (a := x)
+      (b := y) (gamma_nonneg m.u_nonneg hcard) hbound
   refine ⟨d, hd, ?_⟩
   have hexp : (x + d) ⬝ᵥ y = x ⬝ᵥ y + ∑ i, d i * y i := by
     rw [add_dotProduct]

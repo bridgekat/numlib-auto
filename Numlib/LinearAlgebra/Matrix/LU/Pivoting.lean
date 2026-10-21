@@ -160,63 +160,6 @@ theorem ofSubtype_ne_apply_self [DecidableEq n] (p : n) (σ : Equiv.Perm {i : n 
     Equiv.Perm.ofSubtype σ p = p :=
   Equiv.Perm.ofSubtype_apply_of_not_mem (p := fun i => i ≠ p) _ (not_not.2 rfl)
 
-variable [LinearOrder n] [Fintype n]
-
-/-- `Matrix.isLU_luLowerOfSchur_luUpperOfSchur` with a zero pivot allowed when its whole column
-vanishes: the multipliers `a_ip / a_pp` are then `0` (junk division), and the bordered
-factorization is still one. This is what lets pivoting skip a zero column. -/
-theorem isLU_luLowerOfSchur_luUpperOfSchur' {A : Matrix n n K} {p : n} (hp : ∀ i, p ≤ i)
-    (hpp : A p p = 0 → ∀ i, A i p = 0) {L' U' : Matrix {i // i ≠ p} {i // i ≠ p} K}
-    (h : IsLU (A.schurComplementSingle p) L' U') :
-    IsLU A (luLowerOfSchur A p L') (luUpperOfSchur A p U') := by
-  rcases eq_or_ne (A p p) 0 with h0 | h0
-  swap
-  · exact isLU_luLowerOfSchur_luUpperOfSchur hp h0 h
-  have hcol := hpp h0
-  refine ⟨⟨fun i j hij => ?_, fun i => ?_⟩, fun i j hij => ?_, ?_⟩
-  · have hij' : i < j := OrderDual.toDual_lt_toDual.1 hij
-    simp only [luLowerOfSchur, of_apply]
-    split_ifs with hi hj hj
-    · exact absurd (hj ▸ hij') (hi ▸ lt_irrefl _)
-    · rfl
-    · exact absurd (hj ▸ hij') (not_lt.2 (hp i))
-    · exact h.isUnitLowerTriangular.isLowerTriangular
-        (OrderDual.toDual_lt_toDual.2 (Subtype.mk_lt_mk.2 hij'))
-  · simp only [luLowerOfSchur, of_apply]
-    split_ifs with hi
-    · rfl
-    · exact h.isUnitLowerTriangular.diag_eq_one _
-  · simp only [luUpperOfSchur, of_apply]
-    split_ifs with hi hj
-    · exact absurd (hi ▸ hij) (not_lt.2 (hp j))
-    · rfl
-    · exact h.isUpperTriangular (Subtype.mk_lt_mk.2 hij)
-  · have hLpp : luLowerOfSchur A p L' p p = 1 := by simp [luLowerOfSchur]
-    have hLpx : ∀ x : {x // x ≠ p}, luLowerOfSchur A p L' p x = 0 := fun x => by
-      simp [luLowerOfSchur, x.2]
-    have hLxp : ∀ i, i ≠ p → luLowerOfSchur A p L' i p = A i p / A p p := fun i hi => by
-      simp [luLowerOfSchur, hi]
-    have hLxx : ∀ i (hi : i ≠ p) (x : {x // x ≠ p}), luLowerOfSchur A p L' i x = L' ⟨i, hi⟩ x :=
-      fun i hi x => by simp [luLowerOfSchur, hi, x.2]
-    have hUpj : ∀ j, luUpperOfSchur A p U' p j = A p j := fun j => by simp [luUpperOfSchur]
-    have hUxp : ∀ x : {x // x ≠ p}, luUpperOfSchur A p U' x p = 0 := fun x => by
-      simp [luUpperOfSchur, x.2]
-    have hUxj : ∀ (x : {x // x ≠ p}) j (hj : j ≠ p), luUpperOfSchur A p U' x j = U' x ⟨j, hj⟩ :=
-      fun x j hj => by simp [luUpperOfSchur, x.2, hj]
-    ext i j
-    rw [mul_apply, sum_eq_add_sum_subtype_ne p]
-    rcases eq_or_ne i p with hi | hi
-    · subst hi
-      simp [hLpp, hLpx, hUpj]
-    rcases eq_or_ne j p with hj | hj
-    · subst hj
-      simp [hLxp i hi, hUpj, hUxp, hcol]
-    have hS := congrFun (congrFun h.mul_eq ⟨i, hi⟩) ⟨j, hj⟩
-    rw [mul_apply, schurComplementSingle_apply] at hS
-    simp only [hLxp i hi, hUpj, hLxx i hi, hUxj _ j hj]
-    rw [hS, div_eq_mul_inv]
-    ring
-
 end Perm
 
 /-! ### Existence of `P A = L U` and `P A Q = L U` -/
@@ -1177,7 +1120,7 @@ strict leading principal submatrices of `P A` are nonsingular, then `L` is the m
 and `U` the last stage of `Matrix.gemStage` on `P A`, by uniqueness of the factorization. -/
 theorem IsLU.eq_of_permMatrix_mul {K : Type*} [Field K] {σ : Equiv.Perm (Fin N)}
     {A L U : Matrix (Fin N) (Fin N) K} (h : IsLU (σ.permMatrix K * A) L U)
-    (hA : ∀ k, IsUnit ((σ.permMatrix K * A).strictLeadingPrincipalSubmatrix k)) :
+    (hA : (σ.permMatrix K * A).HasUnitStrictLeadingPrincipalSubmatrices) :
     L = gemLower (σ.permMatrix K * A) ∧ U = gemStage (σ.permMatrix K * A) N :=
   h.unique (isLU_gemLower_gemStage _ ((gemStage_pivots_ne_zero_iff _).2 hA)) hA
 
@@ -2461,7 +2404,6 @@ theorem gemPivotStage_partialPivotRow_hasBandwidth_invariant (hp : A.HasLowerBan
       rw [h1 i P (by omega)]
       exact hp i P (by omega)
     have hrp : (r : ℕ) ≤ k + p := partialPivotRow_le_add M P p hcol
-    have hkr : k ≤ (r : ℕ) := le_partialPivotRow M P
     have hM'_of : ∀ i : Fin N, i ≠ P → i ≠ r → ∀ j, M' i j = M i j := fun i hiP hir j => by
       simp [hM', Equiv.swap_apply_of_ne_of_ne hiP hir]
     have hM'P : ∀ j, M' P j = M r j := fun j => by simp [hM']
@@ -2700,7 +2642,6 @@ theorem gemPivotStage_partialPivotRow_multiplier_eq_zero (hp : A.HasLowerBandwid
     have hrp : ((partialPivotRow (gemPivotStage A partialPivotRow k).1 ⟨k, hk⟩ : Fin N) : ℕ) ≤
         k + p := partialPivotRow_le_add _ ⟨k, hk⟩ p hcol
     have hne1 : i ≠ ⟨k, hk⟩ := fun e => by
-      have : (i : ℕ) = k := Fin.ext_iff.1 e
       omega
     have hne2 : i ≠ partialPivotRow (gemPivotStage A partialPivotRow k).1 ⟨k, hk⟩ := fun e => by
       rw [e] at hi
@@ -2858,7 +2799,6 @@ noncomputable def wilkinsonGrowthBound (n : ℕ) : ℝ :=
 
 /-- Every factor of Wilkinson's product is at least one. -/
 theorem one_le_wilkinsonFactor (t : ℕ) : (1 : ℝ) ≤ ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ := by
-  have ht : (0 : ℝ) ≤ (t : ℝ) := Nat.cast_nonneg t
   calc (1 : ℝ) = (1 : ℝ) ^ ((t : ℝ) + 1)⁻¹ := (Real.one_rpow _).symm
     _ ≤ ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ :=
         Real.rpow_le_rpow zero_le_one (by linarith) (by positivity)
@@ -2982,15 +2922,13 @@ theorem log_absGemPivot_le (hA : A.HasDominantPivots) {r : ℕ} (hr : r < N)
       set Ts := ∑ t ∈ Finset.range s, Real.log ((t : ℝ) + 2) / (2 * ((t : ℝ) + 1)) with hTd
       set c := Real.log ((s : ℝ) + 2) with hcd
       have hGm : ((s : ℝ) + 2) * m = ((s : ℝ) + 2) * (G - G') := by rw [hsplit]; ring
-      have step1 : ((s : ℝ) + 2) * G' - ((s : ℝ) + 2) / 2 * c ≤ ((s : ℝ) + 1) * G := by
-        linarith [hPk, hGm]
       have step2 := _root_.mul_le_mul_of_nonneg_left IH hS2.le
       have hcdiv : ((s : ℝ) + 1) * (((s : ℝ) + 1 + 1) * (c / (2 * ((s : ℝ) + 1)))) =
           ((s : ℝ) + 2) * c / 2 := by
         field_simp
         ring
       refine le_of_mul_le_mul_left ?_ hS1
-      nlinarith [step1, step2, hcdiv]
+      nlinarith [step2, hcdiv]
   have hr1 : (0 : ℝ) < (r : ℝ) + 1 := by positivity
   have hcast : ((r + 1 : ℕ) : ℝ) = (r : ℝ) + 1 := by push_cast; ring
   have hfin := hclaim r 0 (by omega)

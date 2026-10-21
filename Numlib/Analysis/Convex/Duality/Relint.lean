@@ -161,6 +161,67 @@ theorem mk_mem_linealitySpace_epi_convexConj_of_relint [IsCompatiblePairing B]
     exact hc
   rw [map_neg, hx']
 
+omit [FiniteDimensional ℝ F] in
+/-- **A closed sum of conjugate epigraphs makes the sum exact.** Once `epi f* + epi g*` is closed it
+is the epigraph of `f* □ g*`, which is then closed and equal to `(f + g)*`, and the splitting of
+each of its points is the attainment `IsExactSum` asks for. The two constraint qualifications, a
+common relative interior point (`IsExactSum.of_relint_closed`) and polyhedrality
+(`IsExactSum.of_polyhedral_pair`), are two ways of making that sum closed. -/
+theorem IsExactSum.of_isClosed_epi_add [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
+    (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn g)
+    {x₀ : E} (hxf : x₀ ∈ convexDom f) (hxg : x₀ ∈ convexDom g)
+    (hclosed : IsClosed (epi (convexConj B f) + epi (convexConj B g))) :
+    IsExactSum B f g := by
+  have hup : ProperConvex (convexConj B f) := properConvex_convexConj hf
+  have hvp : ProperConvex (convexConj B g) := properConvex_convexConj hg
+  -- a closed sum of epigraphs is an epigraph, namely that of the infimal convolution
+  have hmono : ∀ (y : F) (μ ν : ℝ), (y, μ) ∈ epi (convexConj B f) + epi (convexConj B g) → μ ≤ ν →
+      (y, ν) ∈ epi (convexConj B f) + epi (convexConj B g) := by
+    rintro y μ ν ⟨⟨y₁, a⟩, h₁, ⟨y₂, b⟩, h₂, heq⟩ hμν
+    have hy : y₁ + y₂ = y := congrArg Prod.fst heq
+    have hab : a + b = μ := congrArg Prod.snd heq
+    refine ⟨(y₁, a), h₁, (y₂, b + (ν - μ)), mk_mem_epi.2 ?_, ?_⟩
+    · exact (mk_mem_epi.1 h₂).trans (by exact_mod_cast (by linarith : b ≤ b + (ν - μ)))
+    · change ((y₁, a) : F × ℝ) + (y₂, b + (ν - μ)) = (y, ν)
+      rw [Prod.mk_add_mk, hy, show a + (b + (ν - μ)) = ν by linarith]
+  have hepiEq : epi (infConv (convexConj B f) (convexConj B g)) = epi (convexConj B f)
+      + epi (convexConj B g) :=
+    epi_infConv (IsEpiLike.of_isClosed hmono hclosed)
+  -- properness of the infimal convolution, from properness of `(f + g)*`
+  have hdomne : (convexDom (f + g)).Nonempty :=
+    ⟨x₀, by
+      rw [mem_convexDom, Pi.add_apply]
+      exact EReal.add_lt_top (mem_convexDom.1 hxf).ne (mem_convexDom.1 hxg).ne⟩
+  have hproper : ProperConvex (infConv (convexConj B f) (convexConj B g)) := by
+    refine ⟨?_, fun y hy => ?_⟩
+    · obtain ⟨p, hp⟩ := hup.convexDom_nonempty
+      obtain ⟨q, hq⟩ := hvp.convexDom_nonempty
+      exact ⟨p + q, by rw [convexDom_infConv]; exact Set.add_mem_add hp hq⟩
+    · have hle := convexConj_add_le_infConv B f g y
+      rw [hy, le_bot_iff] at hle
+      exact convexConj_ne_bot hdomne y hle
+  have hclosedFn : ClosedConvex (infConv (convexConj B f) (convexConj B g)) :=
+    (ClosedProperConvexFn.of_isClosed_epi
+      (convexFn_infConv (convexFn_convexConj B f) (convexFn_convexConj B g))
+      (by rw [hepiEq]; exact hclosed) hproper).closed
+  have hconjadd : convexConj B (f + g) = infConv (convexConj B f) (convexConj B g) := by
+    rw [convexConj_add_eq_convexCl_infConv hf.convex hf.closed hg.convex hg.closed]
+    exact hclosedFn
+  refine ⟨hf.proper, hg.proper, fun y => ?_⟩
+  rw [hconjadd]
+  rcases eq_top_or_lt_top (infConv (convexConj B f) (convexConj B g) y) with htop | htop
+  · exact ⟨y, 0, add_zero y, by rw [htop]; exact le_top⟩
+  obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hproper.ne_bot y) htop
+  have hmem : ((y, μ) : F × ℝ) ∈ epi (convexConj B f) + epi (convexConj B g) := by
+    rw [← hepiEq]; exact mk_mem_epi.2 hμ.le
+  obtain ⟨⟨y₁, a⟩, h₁, ⟨y₂, b⟩, h₂, heq⟩ := hmem
+  refine ⟨y₁, y₂, congrArg Prod.fst heq, ?_⟩
+  have hab : a + b = μ := congrArg Prod.snd heq
+  rw [hμ]
+  calc convexConj B f y₁ + convexConj B g y₂ ≤ ((a : ℝ) : EReal) + ((b : ℝ) : EReal) :=
+        add_le_add (mk_mem_epi.1 h₁) (mk_mem_epi.1 h₂)
+    _ = ((μ : ℝ) : EReal) := by rw [← EReal.coe_add, hab]
+
 /-- **Two closed proper convex functions add exactly as soon as their effective domains have a
 common relative interior point.**
 
@@ -197,55 +258,48 @@ theorem IsExactSum.of_relint_closed [IsCompatiblePairing B] [IsCompatiblePairing
   have hclosed : IsClosed (epi (convexConj B f) + epi (convexConj B g)) :=
     Convex.isClosed_add (convexFn_convexConj B f).convex_epi hucpc.isClosed_epi hune
       (convexFn_convexConj B g).convex_epi hvcpc.isClosed_epi hvne hrec
-  -- a closed sum of epigraphs is an epigraph, namely that of the infimal convolution
-  have hmono : ∀ (y : F) (μ ν : ℝ), (y, μ) ∈ epi (convexConj B f) + epi (convexConj B g) → μ ≤ ν →
-      (y, ν) ∈ epi (convexConj B f) + epi (convexConj B g) := by
-    rintro y μ ν ⟨⟨y₁, a⟩, h₁, ⟨y₂, b⟩, h₂, heq⟩ hμν
-    have hy : y₁ + y₂ = y := congrArg Prod.fst heq
-    have hab : a + b = μ := congrArg Prod.snd heq
-    refine ⟨(y₁, a), h₁, (y₂, b + (ν - μ)), mk_mem_epi.2 ?_, ?_⟩
-    · exact (mk_mem_epi.1 h₂).trans (by exact_mod_cast (by linarith : b ≤ b + (ν - μ)))
-    · change ((y₁, a) : F × ℝ) + (y₂, b + (ν - μ)) = (y, ν)
-      rw [Prod.mk_add_mk, hy, show a + (b + (ν - μ)) = ν by linarith]
-  have hepiEq : epi (infConv (convexConj B f) (convexConj B g)) = epi (convexConj B f)
-      + epi (convexConj B g) :=
-    epi_infConv (IsEpiLike.of_isClosed hmono hclosed)
-  -- properness of the infimal convolution, from properness of `(f + g)*`
-  have hdomne : (convexDom (f + g)).Nonempty :=
-    ⟨x₀, by
-      rw [mem_convexDom, Pi.add_apply]
-      exact EReal.add_lt_top (mem_convexDom.1 hx₀f).ne (mem_convexDom.1 hx₀g).ne⟩
-  have hproper : ProperConvex (infConv (convexConj B f) (convexConj B g)) := by
-    refine ⟨?_, fun y hy => ?_⟩
-    · obtain ⟨p, hp⟩ := hup.convexDom_nonempty
-      obtain ⟨q, hq⟩ := hvp.convexDom_nonempty
-      exact ⟨p + q, by rw [convexDom_infConv]; exact Set.add_mem_add hp hq⟩
-    · have hle := convexConj_add_le_infConv B f g y
-      rw [hy, le_bot_iff] at hle
-      exact convexConj_ne_bot hdomne y hle
-  have hclosedFn : ClosedConvex (infConv (convexConj B f) (convexConj B g)) :=
-    (ClosedProperConvexFn.of_isClosed_epi
-      (convexFn_infConv (convexFn_convexConj B f) (convexFn_convexConj B g))
-      (by rw [hepiEq]; exact hclosed) hproper).closed
-  have hconjadd : convexConj B (f + g) = infConv (convexConj B f) (convexConj B g) := by
-    rw [convexConj_add_eq_convexCl_infConv hf.convex hf.closed hg.convex hg.closed]
-    exact hclosedFn
-  refine ⟨hf.proper, hg.proper, fun y => ?_⟩
-  rw [hconjadd]
-  rcases eq_top_or_lt_top (infConv (convexConj B f) (convexConj B g) y) with htop | htop
-  · exact ⟨y, 0, add_zero y, by rw [htop]; exact le_top⟩
-  obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hproper.ne_bot y) htop
-  have hmem : ((y, μ) : F × ℝ) ∈ epi (convexConj B f) + epi (convexConj B g) := by
-    rw [← hepiEq]; exact mk_mem_epi.2 hμ.le
-  obtain ⟨⟨y₁, a⟩, h₁, ⟨y₂, b⟩, h₂, heq⟩ := hmem
-  refine ⟨y₁, y₂, congrArg Prod.fst heq, ?_⟩
-  have hab : a + b = μ := congrArg Prod.snd heq
-  rw [hμ]
-  calc convexConj B f y₁ + convexConj B g y₂ ≤ ((a : ℝ) : EReal) + ((b : ℝ) : EReal) :=
-        add_le_add (mk_mem_epi.1 h₁) (mk_mem_epi.1 h₂)
-    _ = ((μ : ℝ) : EReal) := by rw [← EReal.coe_add, hab]
+  exact IsExactSum.of_isClosed_epi_add hf hg hx₀f hx₀g hclosed
 
 end Sum
+
+/-! ### Conjugates of functions recovered along segments -/
+
+section SegmentConj
+
+open Filter Topology
+
+variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
+  {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ}
+
+/-- **A minorant recovered along segments has the same conjugate.** If `ψ ≤ φ` and, for every
+`x`, `φ` tends to `ψ x` along the segment from one fixed `x₀` to `x`, then `φ* = ψ*`: every affine
+minorant of `φ` passes to the limit along those segments. This is the engine of
+`convexConj_add_eq_convexConj_convexCl_add_convexCl` and
+`convexConj_compLin_eq_convexConj_compLin_convexCl`. -/
+theorem convexConj_eq_of_le_of_tendsto {φ ψ : E → EReal} (hle : ψ ≤ φ) {x₀ : E}
+    (hlim : ∀ x, Tendsto (fun a : ℝ => φ ((1 - a) • x₀ + a • x)) (𝓝[<] (1 : ℝ)) (𝓝 (ψ x))) :
+    convexConj B φ = convexConj B ψ := by
+  refine funext fun y => le_antisymm (convexConj_antitone B hle y) ?_
+  have key : ∀ c : ℝ, convexConj B φ y ≤ (c : EReal) → convexConj B ψ y ≤ (c : EReal) := by
+    intro c hc
+    rw [convexConj_le_coe_iff] at hc ⊢
+    intro x
+    have hlin : ∀ a : ℝ, B ((1 - a) • x₀ + a • x) y = (1 - a) * B x₀ y + a * B x y := by
+      intro a
+      rw [map_add, map_smul, map_smul]
+      simp
+    have hL : Tendsto (fun a : ℝ => affineFn B y c ((1 - a) • x₀ + a • x))
+        (𝓝[<] (1 : ℝ)) (𝓝 (affineFn B y c x)) := by
+      simp only [affineFn_eq_coe, hlin]
+      exact EReal.tendsto_coe.2
+        ((tendsto_affine_nhdsLT_one (B x₀ y) (B x y)).sub tendsto_const_nhds)
+    exact le_of_tendsto_of_tendsto' hL (hlim x) fun a => hc _
+  by_contra hcon
+  rw [not_le] at hcon
+  obtain ⟨c, h1, h2⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
+  exact absurd (key c h1.le) (not_le.2 h2)
+
+end SegmentConj
 
 /-! ### Dropping closedness from the constraint qualifications -/
 
@@ -310,33 +364,11 @@ theorem convexConj_add_eq_convexConj_convexCl_add_convexCl (hf : ConvexFn f) (hp
     convexConj B (f + g) = convexConj B (convexCl f + convexCl g) := by
   have hclf : ProperConvex (convexCl f) := hf.properConvex_convexCl hpf
   have hclg : ProperConvex (convexCl g) := hg.properConvex_convexCl hpg
-  have hmono : convexCl f + convexCl g ≤ f + g :=
-      fun x => add_le_add (convexCl_le f x) (convexCl_le g x)
-  refine funext fun y => le_antisymm (convexConj_antitone B hmono y) ?_
-  have key : ∀ c : ℝ, convexConj B (f + g) y ≤ (c : EReal) →
-      convexConj B (convexCl f + convexCl g) y ≤ (c : EReal) := by
-    intro c hc
-    rw [convexConj_le_coe_iff] at hc ⊢
-    intro x
-    have hlin : ∀ a : ℝ, B ((1 - a) • x₀ + a • x) y = (1 - a) * B x₀ y + a * B x y := by
-      intro a
-      rw [map_add, map_smul, map_smul]
-      simp
-    have hL : Tendsto (fun a : ℝ => affineFn B y c ((1 - a) • x₀ + a • x))
-        (𝓝[<] (1 : ℝ)) (𝓝 (affineFn B y c x)) := by
-      simp only [affineFn_eq_coe, hlin]
-      exact EReal.tendsto_coe.2
-        ((tendsto_affine_nhdsLT_one (B x₀ y) (B x y)).sub tendsto_const_nhds)
-    have hR : Tendsto (fun a : ℝ => (f + g) ((1 - a) • x₀ + a • x))
-        (𝓝[<] (1 : ℝ)) (𝓝 ((convexCl f + convexCl g) x)) := by
-      have hcont : ContinuousAt (fun p : EReal × EReal => p.1 + p.2) (convexCl f x, convexCl g x) :=
-        EReal.continuousAt_add (Or.inr (hclg.ne_bot x)) (Or.inl (hclf.ne_bot x))
-      exact hcont.tendsto.comp ((hsf x).prodMk_nhds (hsg x))
-    exact le_of_tendsto_of_tendsto' hL hR fun a => hc _
-  by_contra hcon
-  rw [not_le] at hcon
-  obtain ⟨c, h1, h2⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
-  exact absurd (key c h1.le) (not_le.2 h2)
+  refine convexConj_eq_of_le_of_tendsto (x₀ := x₀)
+    (fun x => add_le_add (convexCl_le f x) (convexCl_le g x)) fun x => ?_
+  have hcont : ContinuousAt (fun p : EReal × EReal => p.1 + p.2) (convexCl f x, convexCl g x) :=
+    EReal.continuousAt_add (Or.inr (hclg.ne_bot x)) (Or.inl (hclf.ne_bot x))
+  exact hcont.tendsto.comp ((hsf x).prodMk_nhds (hsg x))
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
 /-- Exactness passes from the closures to the functions themselves, as soon as the sum has not
@@ -393,32 +425,10 @@ does need `E` finite-dimensional. -/
 theorem convexConj_compLin_eq_convexConj_compLin_convexCl (A : E →ₗ[ℝ] G) {x₀ : E}
     (hs : TendstoConvexClAlongSegment g (A x₀)) :
     convexConj B (compLin g A) = convexConj B (compLin (convexCl g) A) := by
-  have hmono : compLin (convexCl g) A ≤ compLin g A := fun x => convexCl_le g (A x)
-  refine funext fun y => le_antisymm (convexConj_antitone B hmono y) ?_
-  have key : ∀ c : ℝ, convexConj B (compLin g A) y ≤ (c : EReal) →
-      convexConj B (compLin (convexCl g) A) y ≤ (c : EReal) := by
-    intro c hc
-    rw [convexConj_le_coe_iff] at hc ⊢
-    intro x
-    have hlin : ∀ a : ℝ, B ((1 - a) • x₀ + a • x) y = (1 - a) * B x₀ y + a * B x y := by
-      intro a
-      rw [map_add, map_smul, map_smul]
-      simp
-    have hL : Tendsto (fun a : ℝ => affineFn B y c ((1 - a) • x₀ + a • x))
-        (𝓝[<] (1 : ℝ)) (𝓝 (affineFn B y c x)) := by
-      simp only [affineFn_eq_coe, hlin]
-      exact EReal.tendsto_coe.2
-        ((tendsto_affine_nhdsLT_one (B x₀ y) (B x y)).sub tendsto_const_nhds)
-    have hR : Tendsto (fun a : ℝ => compLin g A ((1 - a) • x₀ + a • x))
-        (𝓝[<] (1 : ℝ)) (𝓝 (compLin (convexCl g) A x)) := by
-      have hmap : ∀ a : ℝ, A ((1 - a) • x₀ + a • x) = (1 - a) • A x₀ + a • A x := fun a => by
-        rw [map_add, map_smul, map_smul]
-      simpa only [compLin_apply, hmap] using hs (A x)
-    exact le_of_tendsto_of_tendsto' hL hR fun a => hc _
-  by_contra hcon
-  rw [not_le] at hcon
-  obtain ⟨c, h1, h2⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
-  exact absurd (key c h1.le) (not_le.2 h2)
+  refine convexConj_eq_of_le_of_tendsto (x₀ := x₀) (fun x => convexCl_le g (A x)) fun x => ?_
+  have hmap : ∀ a : ℝ, A ((1 - a) • x₀ + a • x) = (1 - a) • A x₀ + a • A x := fun a => by
+    rw [map_add, map_smul, map_smul]
+  simpa only [compLin_apply, hmap] using hs (A x)
 
 /-- **A *proper convex* `g` pulls back exactly along a linear map whose range meets `ri (dom g)`.**
 Closedness is not needed; the reduction to `IsExactImage.of_relint_closed` is

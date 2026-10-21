@@ -475,29 +475,14 @@ theorem mem_homCone_iff :
   · exact ⟨q.1.1, ha, (mem_smul_epi_levelOneLift ha).2 ⟨rfl, hq⟩⟩
 
 /-- The generated cone is a cone: it is invariant under multiplication by positive scalars. -/
-theorem smul_homCone (hc : 0 < a) (f : E → EReal) : a • homCone f = homCone f := by
-  ext q
-  simp only [Set.mem_smul_set_iff_inv_smul_mem₀ hc.ne', mem_homCone_iff_exists]
-  constructor
-  · rintro (h | ⟨b, hb, hq⟩)
-    · left
-      have : a • (a⁻¹ • q) = a • (0 : (ℝ × E) × ℝ) := by rw [h]
-      rwa [smul_inv_smul₀ hc.ne', smul_zero] at this
-    · right
-      refine ⟨a * b, mul_pos hc hb, ?_⟩
-      have : a • (a⁻¹ • q) ∈ a • (b • epi (levelOneLift f)) := Set.smul_mem_smul_set hq
-      rwa [smul_inv_smul₀ hc.ne', smul_smul] at this
-  · rintro (rfl | ⟨b, hb, hq⟩)
-    · exact Or.inl (smul_zero _)
-    · refine Or.inr ⟨a⁻¹ * b, mul_pos (inv_pos.2 hc) hb, ?_⟩
-      rw [← smul_smul]
-      exact Set.smul_mem_smul_set hq
+theorem smul_homCone (hc : 0 < a) (f : E → EReal) : a • homCone f = homCone f :=
+  smul_zero_union_iUnion_smul hc _
 
 /-- The generated cone is convex: for a cone it is enough to check closure under addition, and
 that is `a • S + b • S = (a + b) • S` for convex `S`. -/
 theorem convex_homCone (hf : ConvexFn f) : Convex ℝ (homCone f) := by
   have hS : Convex ℝ (epi (levelOneLift f)) := (convexFn_levelOneLift hf).convex_epi
-  rw [convex_iff_add_mem_of_isCone fun c hc => smul_homCone hc f]
+  rw [convex_iff_add_mem_of_isCone (isCone_iff_smul_eq.2 fun c hc => smul_homCone hc f)]
   intro p hp q hq
   rw [mem_homCone_iff_exists] at hp hq ⊢
   rcases hp with rfl | ⟨a, ha, hp⟩
@@ -629,8 +614,8 @@ noncomputable def homEpiCone (hf : ConvexFn f) : ConvexCone ℝ ((ℝ × E) × �
     rw [← posHomogeneous_iff_isCone_epi.1 (posHomogeneous_hom f) c hc]
     exact Set.smul_mem_smul_set hq
   add_mem' p hp q hq :=
-    (convex_iff_add_mem_of_isCone
-      (posHomogeneous_iff_isCone_epi.1 (posHomogeneous_hom f))).1 (convexFn_hom hf).convex_epi
+    (convex_iff_add_mem_of_isCone (isCone_iff_smul_eq.2
+      (posHomogeneous_iff_isCone_epi.1 (posHomogeneous_hom f)))).1 (convexFn_hom hf).convex_epi
       p hp q hq
 
 /-- The carrier of `homEpiCone` is the epigraph of `hom f`. -/

@@ -84,7 +84,6 @@ private theorem sSup_abs_eval_shifted_le (m : ℕ) :
   have hκ : 1 < lmax / lmin := (one_lt_div hl).2 hll
   have harg : (lmax / lmin + 1) / (lmax / lmin - 1) = (lmax + lmin) / (lmax - lmin) := by
     have h2 : lmax - lmin ≠ 0 := sub_ne_zero.mpr hll.ne'
-    have h3 : lmax / lmin - 1 ≠ 0 := sub_ne_zero.mpr hκ.ne'
     field_simp
   rw [← harg]
   exact one_div_eval_T_le_two_mul_pow hκ m

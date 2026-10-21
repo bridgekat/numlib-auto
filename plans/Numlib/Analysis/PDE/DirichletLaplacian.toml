@@ -214,4 +214,7 @@ id = "dirichletLaplacian_exists_sobolev_of_powDomain_of_last"
 id = "Elliptic.dirichletForm_eq_load_neg_sobolevLaplacianL"
 
 [[node]]
+id = "Elliptic.dirichletForm_eq_load_neg_sum_weakDeriv"
+
+[[node]]
 id = "Elliptic.norm_sobolevLaplacianL_le"

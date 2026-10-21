@@ -51,6 +51,12 @@ theorem inner_op_conjTranspose (A : Matrix (Fin n) (Fin n) 𝕜) (u v : 𝔼) :
     inner 𝕜 (op Aᴴ u) v = inner 𝕜 u (op A v) :=
   inner_conjTranspose A u v
 
+/-- `A` and `Aᴴ` are an adjoint pair for the inner products: `inner_op_conjTranspose` as the
+backbone's `LinearMap.IsAdjointPair`. -/
+private theorem isAdjointPair_op (A : Matrix (Fin n) (Fin n) 𝕜) :
+    LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip (op A) (op Aᴴ) :=
+  LinearMap.isAdjointPair_inner_iff.2 (inner_op_conjTranspose A)
+
 /-- A matrix product acts as the composite of the two actions. -/
 private theorem op_mul (B C : Matrix (Fin n) (Fin n) 𝕜) : op (B * C) = op B ∘ₗ op C :=
   Matrix.toEuclideanLin_mul B C
@@ -64,13 +70,14 @@ theorem krylov_conjTranspose_mul (B C : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) 
 under which CGNR is well defined. -/
 theorem isSymmetricCoercive_normal {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : Function.Injective (op A)) : (op Aᴴ ∘ₗ op A).IsSymmetricCoercive :=
-  Krylov.adjoint_comp_isSymmetricCoercive_of_injective (inner_op_conjTranspose A) hA
+  Krylov.adjoint_comp_isSymmetricCoercive_of_injective (isAdjointPair_op A) hA
 
 /-- `A Aᴴ` is symmetric positive definite as soon as `Aᴴ` is nonsingular, which is the
 hypothesis under which CGNE is well defined. -/
 theorem isSymmetricCoercive_normal' {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : Function.Injective (op Aᴴ)) : (op A ∘ₗ op Aᴴ).IsSymmetricCoercive :=
-  Krylov.adjoint_comp_isSymmetricCoercive_of_injective (Chapter07.inner_op_conjTranspose A) hA
+  Krylov.adjoint_comp_isSymmetricCoercive_of_injective
+    (LinearMap.isAdjointPair_inner_iff.2 (Chapter07.inner_op_conjTranspose A)) hA
 
 /-! ### Algorithm 8.4: CGNR -/
 
@@ -159,12 +166,12 @@ holds of it. -/
 theorem cgnr_eq (i : ℕ) :
     (cgnr A b x₀ i).x = (CG.iterate (op Aᴴ ∘ₗ op A) (op Aᴴ b) x₀ i).x := by
   rw [cgnr_eq_iterate]
-  exact Krylov.CGNR.iterate_x_eq (op A) (op Aᴴ) b x₀ (inner_op_conjTranspose A) i
+  exact Krylov.CGNR.iterate_x_eq (op A) (op Aᴴ) b x₀ (isAdjointPair_op A) i
 
 /-- The `r` field of Algorithm 8.4 is the true residual `b - A x_i`. -/
 theorem cgnr_residual_eq (i : ℕ) : (cgnr A b x₀ i).r = b - op A (cgnr A b x₀ i).x := by
   rw [cgnr_eq_iterate]
-  exact Krylov.CGNR.residual_eq (op A) (op Aᴴ) b x₀ (inner_op_conjTranspose A) i
+  exact Krylov.CGNR.residual_eq (op A) (op Aᴴ) b x₀ (isAdjointPair_op A) i
 
 end CGNR
 
@@ -255,7 +262,7 @@ theorem cgne_eq {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x�
       (cgne A b x₀ i).r = (CG.iterate (op A ∘ₗ op Aᴴ) b u₀ i).r ∧
       (cgne A b x₀ i).p = op Aᴴ (CG.iterate (op A ∘ₗ op Aᴴ) b u₀ i).p := by
   obtain ⟨hx, hr, hp⟩ :=
-    Krylov.CGNE.iterate_eq (op A) (op Aᴴ) b x₀ (inner_op_conjTranspose A) hu₀ i
+    Krylov.CGNE.iterate_eq (op A) (op Aᴴ) b x₀ (isAdjointPair_op A) hu₀ i
   rw [cgne_eq_iterate]
   refine ⟨?_, hr, hp⟩
   rw [hx, map_sub, hu₀]
@@ -277,7 +284,7 @@ theorem cgnr_isMinResidual (hA : Function.Injective (op A)) (m : ℕ) :
       (cgnr A b x₀ m).x := by
   have hgal := CG.isGalerkinIterate (op Aᴴ b) x₀ (isSymmetricCoercive_normal hA) m
   rw [cgnr_eq, krylov_conjTranspose_mul]
-  exact (Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual (inner_op_conjTranspose A) b x₀ m
+  exact (Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual (isAdjointPair_op A) b x₀ m
     _).1 hgal
 
 /-- **Saad §8.3.2**, the optimality of CGNE: `x_m` minimizes the *error* `‖x_* - x‖₂` over the
@@ -289,7 +296,7 @@ theorem cgne_isMinError (hA : Function.Injective (op Aᴴ))
     IsMinError xstar x₀ (Chapter06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m) (cgne A b x₀ m).x := by
   have hgal := CG.isGalerkinIterate b u₀ (isSymmetricCoercive_normal' hA) m
   rw [(cgne_eq b x₀ hu₀ m).1, krylov_conjTranspose_mul]
-  exact Krylov.isMinError_of_isGalerkinIterate_comp_adjoint (inner_op_conjTranspose A) b x₀
+  exact Krylov.isMinError_of_isGalerkinIterate_comp_adjoint (isAdjointPair_op A) b x₀
     hu₀.symm hstar hgal
 
 /-- **Saad §8.3**, the section's closing observation: `Aᴴ 𝒦_m(A Aᴴ, r_0) = 𝒦_m(Aᴴ A, Aᴴ r_0)`.
@@ -314,13 +321,13 @@ theorem cgnr_norm_residual_le {smin smax : ℝ} (hs : 0 < smin) (hss : smin ≤ 
     ‖b - op A (cgnr A b x₀ m).x‖
       ≤ 2 * ((smax / smin - 1) / (smax / smin + 1)) ^ m * ‖b - op A x₀‖ := by
   have hB : (op Aᴴ ∘ₗ op A).IsSymmetricBoundedBy (smin ^ 2) (smax ^ 2) :=
-    Krylov.adjoint_comp_isSymmetricBoundedBy (inner_op_conjTranspose A)
+    Krylov.adjoint_comp_isSymmetricBoundedBy (isAdjointPair_op A)
       (fun x => by
         nlinarith [hmin x, norm_nonneg (op A x), mul_nonneg hs.le (norm_nonneg x)])
       (fun x => by nlinarith [hmax x, norm_nonneg (op A x), norm_nonneg x])
   have hx := cgnr_isMinResidual b x₀ hA m
   rw [krylov_conjTranspose_mul] at hx
-  exact Krylov.IsMinResidual.norm_residual_le_of_adjoint_comp (inner_op_conjTranspose A) hs hss hB
+  exact Krylov.IsMinResidual.norm_residual_le_of_adjoint_comp (isAdjointPair_op A) hs hss hB
     hstar hx
 
 end Optimality

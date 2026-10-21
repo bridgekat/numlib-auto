@@ -1259,7 +1259,6 @@ private theorem rho_succ_eq_div (hA : A.IsSymmetricCoercive) (m : ℕ)
       inner 𝕜 (A (iterate A b x₀ (m + 1)).r) (iterate A b x₀ (m + 1)).r /
         inner 𝕜 (A (iterate A b x₀ (m + 1)).p) (iterate A b x₀ (m + 1)).p := by
   have hS := inner_apply_residual_self_ne_zero b x₀ hA hm1
-  have hQ := inner_apply_direction_self_ne_zero b x₀ hA hm1
   have hg := gamma_ne_zero b x₀ hA hm
   have ha := alpha_ne_zero b x₀ hA hm
   have hK := alpha_mul_inner_apply_direction_succ b x₀ hA m

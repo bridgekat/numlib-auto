@@ -232,7 +232,6 @@ theorem abs_householderAxis_apply_self (x : ι → ℝ) (i : ι) :
     |householderAxis x i i| = |x i| + ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := by
   rw [householderAxis_apply_self]
   set N := ‖(toLp 2 x : EuclideanSpace ℝ ι)‖
-  have hN : 0 ≤ N := norm_nonneg _
   have h1 : phase (x i) * (x i + phase (x i) * N) = |x i| + N := by
     rw [mul_add, phase_mul_self_real, ← mul_assoc, phase_mul_phase, one_mul]
   have h2 : |phase (x i) * (x i + phase (x i) * N)| = |x i + phase (x i) * N| := by
@@ -383,7 +382,6 @@ theorem RoundsHouseholderVector.isRelPert {m : RoundingModel ℝ}
     · have hAB : 2 / (householderAxis x i ⬝ᵥ householderAxis x i) =
           1 / (σ * N * (x i + σ * N)) := by
         rw [hvv]
-        have h2ne : (σ * N) * (x i + σ * N) ≠ 0 := mul_ne_zero (mul_ne_zero hσne hNpos.ne') hwne
         field_simp
       rw [hAB]
       exact h9
@@ -631,9 +629,6 @@ theorem RoundsHouseholderVectorParlett.isReflectorPert {m : RoundingModel ℝ}
     have hk1 : 1 ≤ k := by
       obtain ⟨j, -, -⟩ := Finset.exists_ne_zero_of_sum_ne_zero hσpos.ne'
       exact Fintype.card_pos_iff.2 ⟨j⟩
-    have hNpos : 0 < N := lt_of_le_of_ne hN0 fun h => by
-      rw [← h, mul_zero] at hN2
-      nlinarith [mul_self_nonneg (x i)]
     have hxN : x i < N := by
       by_contra hc
       have hc' := not_lt.1 hc
@@ -1014,8 +1009,6 @@ theorem exists_eq_mulVec_add_of_step {P Q : Matrix ι ι ℝ} (hP : P ∈ Matrix
         ((1 + ε) ^ (k + 1) - 1) * ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := by
   have hPQ : P * Q ∈ Matrix.orthogonalGroup ι ℝ := mul_mem hP hQ
   set e := y' - P *ᵥ y with he
-  have hx0 : 0 ≤ ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := norm_nonneg _
-  have hpow : 0 ≤ (1 + ε) ^ k := by positivity
   refine ⟨dx + (P * Q)ᵀ *ᵥ e, ?_, ?_⟩
   · calc y' = P *ᵥ y + e := by rw [he]; abel
       _ = (P * Q) *ᵥ (x + dx) + (P * Q) *ᵥ ((P * Q)ᵀ *ᵥ e) := by
@@ -1218,8 +1211,6 @@ theorem exists_eq_prodRev_mul_add_mul_prodFwd_rect {L : ℕ → Matrix ι ι ℝ
     have hLr := prodRev_mem_orthogonalGroup (r := r + 1) fun k _ => hL k
     have hRr := prodFwd_mem_orthogonalGroup (r := r + 1) fun k _ => hR k
     set F := A (r + 1) - L r * A r * R r with hF
-    have hA0 : 0 ≤ ‖A 0‖ := norm_nonneg _
-    have hpow : 0 ≤ (1 + ε) ^ r := by positivity
     refine ⟨E + (prodRev L (r + 1))ᵀ * F * (prodFwd R (r + 1))ᵀ, ?_, ?_⟩
     · have hFeq : prodRev L (r + 1) * ((prodRev L (r + 1))ᵀ * F * (prodFwd R (r + 1))ᵀ) *
           prodFwd R (r + 1) = F := by
@@ -1316,7 +1307,6 @@ theorem frobenius_norm_sub_mul_mul_le_of_col_of_row {P : Matrix ι ι ℝ}
   have hBCP : ‖B - C * P‖ ≤ ε * ‖C‖ := frobenius_norm_le_of_forall_row_le hε0 hrow
   have hPA : ‖P * A‖ = ‖A‖ := by
     simpa using frobenius_norm_orthogonal_mul_mul_orthogonal hP A (one_mem _)
-  have hA0 : 0 ≤ ‖A‖ := norm_nonneg _
   have hC : ‖C‖ ≤ (1 + ε) * ‖A‖ := by
     calc ‖C‖ = ‖P * A + (C - P * A)‖ := by congr 1; abel
       _ ≤ ‖P * A‖ + ‖C - P * A‖ := norm_add_le _ _
@@ -1594,29 +1584,6 @@ private theorem mul_one_sub_smul_vecMulVec_extendByZero_apply (β : ℝ) (v : {i
   rw [transpose_mul, transpose_one_sub_smul_vecMulVec]
   exact one_sub_smul_vecMulVec_extendByZero_mul_apply β v Mᵀ a i
 
-/-- A matrix supported on the block has the Frobenius norm of its block. -/
-private theorem frobenius_norm_eq_submatrix {M : Matrix ι ι ℝ}
-    (h : ∀ i j, ¬ (p i ∧ p j) → M i j = 0) :
-    ‖M‖ = ‖M.submatrix (Subtype.val : {i // p i} → ι) (Subtype.val : {i // p i} → ι)‖ := by
-  have hsq : ‖M‖ ^ 2 =
-      ‖M.submatrix (Subtype.val : {i // p i} → ι) (Subtype.val : {i // p i} → ι)‖ ^ 2 := by
-    rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq,
-      ← Fintype.sum_subtype_add_sum_subtype p]
-    have h2 : ∑ r : {i // ¬ p i}, ∑ j, ‖M r j‖ ^ 2 = 0 :=
-      Finset.sum_eq_zero fun r _ => Finset.sum_eq_zero fun j _ => by
-        rw [h r j fun h => r.2 h.1]
-        simp
-    rw [h2, add_zero]
-    refine Finset.sum_congr rfl fun a _ => ?_
-    rw [← Fintype.sum_subtype_add_sum_subtype p]
-    have h3 : ∑ s : {i // ¬ p i}, ‖M a s‖ ^ 2 = 0 :=
-      Finset.sum_eq_zero fun s _ => by
-        rw [h a s fun h => s.2 h.2]
-        simp
-    rw [h3, add_zero]
-    rfl
-  exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hsq
-
 /-- Conjugation by the extended reflector, off the block in both indices. -/
 private theorem conj_extendByZero_apply_of_not_of_not (β : ℝ) (v : {i // p i} → ℝ)
     (M : Matrix ι ι ℝ) {i j : ι} (hi : ¬ p i) (hj : ¬ p j) :
@@ -1674,14 +1641,6 @@ private theorem smul_vecMulVec_single_add_apply {a b : ι} (h : b ≠ a) (δ : �
   by_cases h1 : i = a <;> by_cases h2 : j = b <;> by_cases h3 : i = b <;>
     by_cases h4 : j = a <;> simp_all
 
-/-- The Euclidean norm of a standard basis vector is one. -/
-private theorem norm_toLp_single_one (a : ι) :
-    ‖(toLp 2 (Pi.single a (1 : ℝ)) : EuclideanSpace ℝ ι)‖ = 1 := by
-  have h : ‖(toLp 2 (Pi.single a (1 : ℝ)) : EuclideanSpace ℝ ι)‖ ^ 2 = 1 ^ 2 := by
-    rw [← dotProduct_self_eq_norm_sq]
-    simp
-  exact (pow_left_inj₀ (norm_nonneg _) zero_le_one two_ne_zero).1 h
-
 /-- `‖δ (e_a e_bᵀ + e_b e_aᵀ)‖_F ≤ 2 |δ|`. -/
 private theorem frobenius_norm_smul_vecMulVec_single_add_le (δ : ℝ) (a b : ι) :
     ‖δ • (vecMulVec (Pi.single a (1 : ℝ)) (Pi.single b 1) +
@@ -1689,7 +1648,7 @@ private theorem frobenius_norm_smul_vecMulVec_single_add_le (δ : ℝ) (a b : ι
   rw [norm_smul, Real.norm_eq_abs]
   have e1 := frobenius_norm_vecMulVec_le (Pi.single a (1 : ℝ)) (Pi.single b 1)
   have e2 := frobenius_norm_vecMulVec_le (Pi.single b (1 : ℝ)) (Pi.single a 1)
-  rw [norm_toLp_single_one, norm_toLp_single_one] at e1 e2
+  simp only [PiLp.toLp_single, PiLp.norm_single, norm_one] at e1 e2
   have := norm_add_le (vecMulVec (Pi.single a (1 : ℝ)) (Pi.single b 1))
     (vecMulVec (Pi.single b (1 : ℝ)) (Pi.single a 1))
   have hδ := abs_nonneg δ
@@ -1904,7 +1863,6 @@ private theorem abs_sub_mul_one_add_sub_le {u γA γC X Y ph p τh τ δ : ℝ} 
     (hAC : γA ≤ γC) (hX : 0 ≤ X) (hY : 0 ≤ Y) (hp : |ph - p| ≤ γA * X) (hτ : |τh - τ| ≤ γC * Y)
     (hpX : |p| ≤ X) (hτY : |τ| ≤ Y) (hδ : |δ| ≤ u) :
     |(ph - τh) * (1 + δ) - (p - τ)| ≤ (γC * (1 + u) + u) * (X + Y) := by
-  have hu : 0 ≤ u := (abs_nonneg _).trans hδ
   have hγC : 0 ≤ γC := hγA.trans hAC
   have h4 : γA * X ≤ γC * X := mul_le_mul_of_nonneg_right hAC hX
   have hph : |ph| ≤ (1 + γC) * X := by
@@ -2196,7 +2154,7 @@ theorem RoundsHessenbergStepOf.apply_eq_zero {k : ℕ} {hk : k + 1 < N}
     {App : ℝ → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) →
       ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → Prop} {A B : Matrix (Fin N) (Fin N) ℝ}
     (h : RoundsHessenbergStepOf hk Refl App A B)
-    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) (i j : Fin N)
+    (hA : A.IsUpperHessenbergInCols k) (i j : Fin N)
     (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 := by
   obtain ⟨vhat, βhat, C, -, hcol, hCA, -, hBC⟩ := h
   rw [hBC i j hj]
@@ -2230,7 +2188,7 @@ theorem RoundsHessenbergStepOf.frobenius_norm_sub_le {u : ℝ} {K k : ℕ} {hk :
         EuclideanSpace ℝ {i : Fin N // k + 1 ≤ (i : ℕ)})‖ ≤
         ε * ‖(toLp 2 b : EuclideanSpace ℝ {i : Fin N // k + 1 ≤ (i : ℕ)})‖)
     {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStepOf hk Refl App A B)
-    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) :
+    (hA : A.IsUpperHessenbergInCols k) :
     ∃ P ∈ Matrix.orthogonalGroup (Fin N) ℝ, Pᵀ = P ∧
       (∀ i j : Fin N, (i : ℕ) < k + 1 → P i j = (1 : Matrix (Fin N) (Fin N) ℝ) i j) ∧
       ‖B - P * A * P‖ ≤ ((1 + ε) ^ 2 - 1) * ‖A‖ := by
@@ -2252,11 +2210,11 @@ theorem RoundsHessenbergStepOf.frobenius_norm_sub_le {u : ℝ} {K k : ℕ} {hk :
     rw [col_sub_mul]
     rcases lt_or_ge (j : ℕ) k with hj | hj
     · have hzero : (fun b : {i : Fin N // k + 1 ≤ (i : ℕ)} => A.col j b) = 0 := funext fun b => by
-        rw [col_apply, hA b j hj (by have := b.2; omega), Pi.zero_apply]
+        rw [col_apply, hA b j hj (by omega), Pi.zero_apply]
       refine norm_sub_one_sub_smul_vecMulVec_extendByZero_mulVec_le hε0 (y := 0)
         (fun r _ => hCA r j (Or.inr hj)) (fun a => ?_) ?_
       · change |C a j - _| ≤ _
-        rw [hCA a j (Or.inr hj), hA a j hj (by have := a.2; omega), hzero]
+        rw [hCA a j (Or.inr hj), hA a j hj (by omega), hzero]
         simp
       · rw [hzero]
         simp
@@ -2300,25 +2258,20 @@ the reduced columns and, from a matrix reduced in the columns `< k`, is within
 theorem exists_hessenbergReduce_eq_of_forall_step {Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ}
     {ε : ℝ} (hε0 : 0 ≤ ε) (hr : ((2 * (N - 2) : ℕ) : ℝ) * ε < 1)
     (hz : ∀ k, k < N - 2 →
-      (∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → Ahat k i j = 0) →
-      ∀ i j : Fin N, (j : ℕ) < k + 1 → (j : ℕ) + 1 < (i : ℕ) → Ahat (k + 1) i j = 0)
+      (Ahat k).IsUpperHessenbergInCols k → (Ahat (k + 1)).IsUpperHessenbergInCols (k + 1))
     (hb : ∀ k, k < N - 2 →
-      (∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → Ahat k i j = 0) →
+      (Ahat k).IsUpperHessenbergInCols k →
       ∃ P ∈ Matrix.orthogonalGroup (Fin N) ℝ, Pᵀ = P ∧
         ‖Ahat (k + 1) - P * Ahat k * P‖ ≤ ((1 + ε) ^ 2 - 1) * ‖Ahat k‖) :
     (Ahat (N - 2)).IsUpperHessenberg ∧ ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ,
       ∃ E : Matrix (Fin N) (Fin N) ℝ, Ahat (N - 2) = Qᵀ * (Ahat 0 + E) * Q ∧
         ‖E‖ ≤ gamma ε (2 * (N - 2)) * ‖Ahat 0‖ := by
-  have hhess : ∀ k, k ≤ N - 2 → ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) →
-      Ahat k i j = 0 := by
+  have hhess : ∀ k, k ≤ N - 2 → (Ahat k).IsUpperHessenbergInCols k := by
     intro k
     induction k with
-    | zero => intro _ i j hj; omega
+    | zero => exact fun _ => isUpperHessenbergInCols_zero _
     | succ k ih => exact fun hk => hz k (by omega) (ih (by omega))
-  refine ⟨fun i j ⟨l, hjl, hli⟩ => hhess (N - 2) le_rfl i j (by omega) (by
-    have := Fin.lt_def.1 hjl
-    have := Fin.lt_def.1 hli
-    omega), ?_⟩
+  refine ⟨(hhess (N - 2) le_rfl).isUpperHessenberg le_rfl, ?_⟩
   have hε'0 : 0 ≤ (1 + ε) ^ 2 - 1 := by nlinarith
   obtain ⟨Q, hQ, E, hE, hEn⟩ := exists_eq_transpose_mul_add_mul_of_forall_step hε'0 (N - 2)
     fun k hk => hb k hk (hhess k hk.le)
@@ -2350,7 +2303,7 @@ def RoundsHessenbergReducePert (m : RoundingModel ℝ) (K : ℕ) (A : Matrix (Fi
 columns `j < k`, then `B` does in the columns `j < k + 1`. -/
 theorem RoundsHessenbergStepPert.apply_eq_zero {m : RoundingModel ℝ} {K k : ℕ}
     {hk : k + 1 < N} {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStepPert m K hk A B)
-    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) (i j : Fin N)
+    (hA : A.IsUpperHessenbergInCols k) (i j : Fin N)
     (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 :=
   RoundsHessenbergStepOf.apply_eq_zero h hA i j hj hij
 
@@ -2363,7 +2316,7 @@ block. -/
 theorem RoundsHessenbergStepPert.frobenius_norm_sub_le {m : RoundingModel ℝ} {K : ℕ}
     (hcard : ((3 * K + N + 3 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
     {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStepPert m K hk A B)
-    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) :
+    (hA : A.IsUpperHessenbergInCols k) :
     ∃ P ∈ Matrix.orthogonalGroup (Fin N) ℝ, Pᵀ = P ∧
       (∀ i j : Fin N, (i : ℕ) < k + 1 → P i j = (1 : Matrix (Fin N) (Fin N) ℝ) i j) ∧
       ‖B - P * A * P‖ ≤ ((1 + 3 * gamma m.u (3 * K + N + 3)) ^ 2 - 1) * ‖A‖ := by
@@ -2424,7 +2377,7 @@ def RoundsHessenbergReduce (m : RoundingModel ℝ) (A : Matrix (Fin N) (Fin N) �
 column `k`. -/
 theorem RoundsHessenbergStep.apply_eq_zero {m : RoundingModel ℝ} {k : ℕ} {hk : k + 1 < N}
     {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStep m hk A B)
-    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) (i j : Fin N)
+    (hA : A.IsUpperHessenbergInCols k) (i j : Fin N)
     (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 :=
   RoundsHessenbergStepOf.apply_eq_zero h hA i j hj hij
 
@@ -2437,7 +2390,7 @@ orthogonal `P`, the identity on the rows `≤ k`, with `‖B - P A P‖_F ≤ ((
 theorem RoundsHessenbergStep.frobenius_norm_sub_le {m : RoundingModel ℝ}
     (hcard : ((13 * N + 27 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
     {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStep m hk A B)
-    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) :
+    (hA : A.IsUpperHessenbergInCols k) :
     ∃ P ∈ Matrix.orthogonalGroup (Fin N) ℝ, Pᵀ = P ∧
       (∀ i j : Fin N, (i : ℕ) < k + 1 → P i j = (1 : Matrix (Fin N) (Fin N) ℝ) i j) ∧
       ‖B - P * A * P‖ ≤ ((1 + 3 * gamma m.u (13 * N + 27)) ^ 2 - 1) * ‖A‖ := by
@@ -2552,7 +2505,7 @@ subdiagonal in the columns `< k`, then `B` does in the columns `< k + 1`. -/
 theorem RoundsTridiagonalizeStepPert.apply_eq_zero {m : RoundingModel ℝ} {K k : ℕ}
     {hk : k + 1 < N} {A B : Matrix (Fin N) (Fin N) ℝ}
     (h : RoundsTridiagonalizeStepPert m K hk A B)
-    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) (i j : Fin N)
+    (hA : A.IsUpperHessenbergInCols k) (i j : Fin N)
     (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 := by
   obtain ⟨vhat, βhat, σhat, νhat, -, -, -, -, -, hB0, -, hcopy⟩ := h
   rcases Nat.lt_succ_iff_lt_or_eq.1 hj with hjk | hjk
@@ -2571,7 +2524,7 @@ the computed norm (`P x = ‖x‖₂ e_{k+1}` against `ν̂`), everything else e
 theorem RoundsTridiagonalizeStepPert.frobenius_norm_sub_le {m : RoundingModel ℝ} {K : ℕ}
     (hcard : ((6 * K + 2 * N + 8 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
     {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsTridiagonalizeStepPert m K hk A B)
-    (hAs : Aᵀ = A) (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) :
+    (hAs : Aᵀ = A) (hA : A.IsUpperHessenbergInCols k) :
     ∃ P ∈ Matrix.orthogonalGroup (Fin N) ℝ, Pᵀ = P ∧
       ‖B - P * A * P‖ ≤ (9 * gamma m.u (6 * K + 2 * N + 8) + 2 * gamma m.u (N + 1)) * ‖A‖ := by
   obtain ⟨vhat, βhat, σhat, νhat, ⟨v, β, hPorth, hPx, hβv, hβ, hv⟩, hσ, hν, hB1, hB2, hB0,
@@ -2592,7 +2545,6 @@ theorem RoundsTridiagonalizeStepPert.frobenius_norm_sub_le {m : RoundingModel �
   have hk1v : (k1 : ℕ) = k + 1 := rfl
   have hkT : ¬ k + 1 ≤ (kk : ℕ) := by omega
   have hkk1 : kk ≠ k1 := fun h => by
-    have := congrArg Fin.val h
     omega
   -- the exact reflector, extended by the identity
   set P := 1 - β • vecMulVec (extendByZero (fun i : Fin N => k + 1 ≤ (i : ℕ)) v)
@@ -2615,7 +2567,7 @@ theorem RoundsTridiagonalizeStepPert.frobenius_norm_sub_le {m : RoundingModel �
       ((1 - β • vecMulVec v v) *ᵥ fun b : {i : Fin N // k + 1 ≤ (i : ℕ)} => A b j) a = 0 :=
     fun a j hj => by
     have : (fun b : {i : Fin N // k + 1 ≤ (i : ℕ)} => A b j) = 0 := funext fun b => by
-      rw [hA b j hj (by have := b.2; omega), Pi.zero_apply]
+      rw [hA b j hj (by omega), Pi.zero_apply]
     rw [this, mulVec_zero, Pi.zero_apply]
   -- the error splits into the trailing block and the two subdiagonal entries
   set δ := νhat - nx with hδ_def
@@ -2706,7 +2658,8 @@ theorem RoundsTridiagonalizeStepPert.frobenius_norm_sub_le {m : RoundingModel �
       ((mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) hu0).trans_lt hcard) hσ hν hxA
   have hD₂n : ‖D₂‖ ≤ 2 * |δ| := frobenius_norm_smul_vecMulVec_single_add_le δ k1 kk
   have hD₁n : ‖D₁‖ ≤ 9 * gamma m.u (6 * K + 2 * N + 8) * ‖A‖ := by
-    rw [frobenius_norm_eq_submatrix (p := fun i : Fin N => k + 1 ≤ (i : ℕ)) hD₁out, hD₁in]
+    rw [frobenius_norm_eq_submatrix_val (p := fun i : Fin N => k + 1 ≤ (i : ℕ))
+      (q := fun i : Fin N => k + 1 ≤ (i : ℕ)) hD₁out, hD₁in]
     refine hBT.trans (mul_le_mul (mul_le_mul_of_nonneg_left
       (gamma_mono hu0 (by omega) hcard) (by norm_num))
       (Matrix.frobenius_norm_submatrix_le A Subtype.val_injective Subtype.val_injective)
@@ -2755,9 +2708,9 @@ theorem exists_roundsTridiagonalizePert_eq {m : RoundingModel ℝ} {K : ℕ}
     hzN i j (by omega) hij
   refine ⟨hsN, fun i j hij => ?_, ?_⟩
   · rcases hij with ⟨l, hjl, hli⟩ | ⟨l, hil, hlj⟩
-    · exact hlow i j (by have := Fin.lt_def.1 hjl; have := Fin.lt_def.1 hli; omega)
+    · exact hlow i j (by omega)
     · rw [← congrFun (congrFun hsN i) j, transpose_apply]
-      exact hlow j i (by have := Fin.lt_def.1 hil; have := Fin.lt_def.1 hlj; omega)
+      exact hlow j i (by omega)
   obtain ⟨Q, hQ, E, hE, hEn⟩ := exists_eq_transpose_mul_add_mul_of_forall_step hε0 (N - 2)
     fun k hk => by
       exact (hstep k hk).frobenius_norm_sub_le hcard (hinv k hk.le).1 (hinv k hk.le).2
@@ -2885,7 +2838,6 @@ theorem frobenius_norm_sub_le_of_roundsTwoSidedSolve {m : RoundingModel ℝ} (hu
     rwa [hinvT, transpose_transpose, hnormT, hnormH] at this
   -- the sizes of `Y` and `C`
   have hHi : 0 ≤ ‖H⁻¹‖ := norm_nonneg _
-  have hA0 : 0 ≤ ‖A‖ := norm_nonneg _
   have hYle : ‖Y‖ ≤ ‖H⁻¹‖ * ‖A‖ + θ * ‖Y‖ := by
     calc ‖Y‖ = ‖H⁻¹ᵀ * A + (Y - H⁻¹ᵀ * A)‖ := by congr 1; abel
       _ ≤ ‖H⁻¹ᵀ * A‖ + ‖Y - H⁻¹ᵀ * A‖ := norm_add_le _ _
@@ -2924,8 +2876,6 @@ theorem frobenius_norm_sub_le_of_roundsTwoSidedSolve {m : RoundingModel ℝ} (hu
   have hθ1θ : 0 ≤ θ * (1 - θ) := mul_nonneg hθ0 h1θ.le
   have e1 : (1 - θ) ^ 2 * ‖C - H⁻¹ᵀ * A * H⁻¹‖ ≤ (1 - θ) ^ 2 * (θ * ‖C‖ + θ * Z) :=
     mul_le_mul_of_nonneg_left hE hsq.le
-  have e2 : (1 - θ) ^ 2 * (θ * ‖C‖ + θ * Z) =
-      θ * (1 - θ) * ((1 - θ) * ‖C‖) + θ * (1 - θ) * ((1 - θ) * Z) := by ring
   have e3 : θ * (1 - θ) * ((1 - θ) * ‖C‖) ≤ θ * (1 - θ) * Z :=
     mul_le_mul_of_nonneg_left hC'' hθ1θ
   have e4 : θ * (1 - θ) * Z ≤ θ * S := by

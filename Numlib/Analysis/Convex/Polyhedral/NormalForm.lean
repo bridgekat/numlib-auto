@@ -140,7 +140,6 @@ private theorem affine_le_iff_of_neg {A b c μ : ℝ} (hc : c < 0) :
     A + μ * c ≤ b ↔ (-c)⁻¹ * A - (-c)⁻¹ * b ≤ μ := by
   have hc' : (0 : ℝ) < -c := by linarith
   have hcne : c ≠ 0 := ne_of_lt hc
-  have hne : (-c) ≠ 0 := ne_of_gt hc'
   constructor
   · intro h
     have h1 : (-c)⁻¹ * (A - b) ≤ (-c)⁻¹ * (μ * (-c)) := by

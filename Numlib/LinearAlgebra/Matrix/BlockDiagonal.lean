@@ -55,6 +55,13 @@ theorem reindex_toSquareBlock_blockDiagonal' (M : ∀ i, Matrix (m i) (m i) R) (
   ext a b
   exact blockDiagonal'_apply_eq M k a b
 
+/-- The diagonal block of a block diagonal matrix, cut out along `Sigma.mk i` on both sides. -/
+@[simp]
+theorem blockDiagonal'_submatrix_sigma_mk {n : ι → Type*} (M : ∀ i, Matrix (m i) (n i) R)
+    (i : ι) : (blockDiagonal' M).submatrix (Sigma.mk i) (Sigma.mk i) = M i := by
+  ext a b
+  exact blockDiagonal'_apply_eq M i a b
+
 end Zero
 
 section CommRing
@@ -108,10 +115,11 @@ end Shift
 
 section Semiring
 
-variable [Fintype ι] [DecidableEq ι] [∀ i, Fintype (m i)] [NonUnitalNonAssocSemiring R]
+variable [Fintype ι] [DecidableEq ι] {n : ι → Type*} [∀ i, Fintype (n i)]
+  [NonUnitalNonAssocSemiring R]
 
-/-- A block diagonal matrix acts on a vector blockwise. -/
-theorem blockDiagonal'_mulVec (M : ∀ i, Matrix (m i) (m i) R) (v : (i : ι) × m i → R)
+/-- A block diagonal matrix acts on a vector blockwise; the blocks may be rectangular. -/
+theorem blockDiagonal'_mulVec (M : ∀ i, Matrix (m i) (n i) R) (v : (i : ι) × n i → R)
     (i : ι) (a : m i) :
     (blockDiagonal' M *ᵥ v) ⟨i, a⟩ = (M i *ᵥ fun b => v ⟨i, b⟩) a := by
   simp only [mulVec, dotProduct]

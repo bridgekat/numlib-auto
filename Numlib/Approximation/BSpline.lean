@@ -479,7 +479,6 @@ theorem nform_one (hx : StrictMono x) (i : ℕ) (t : ℝ) : nform x 1 i t = bspl
   have hw2 : weight x (i + 1) 1 t = (t - x (i + 1)) / (x (i + 1 + 1) - x (i + 1)) := by
     simp [weight, h12.ne']
   rw [hw1, hw2]
-  have h02 : x i < x (i + 1 + 1) := h01.trans h12
   simp only [mem_Ioc, mem_Ico]
   rcases lt_trichotomy t (x i) with h | rfl | h
   · simp [not_le.mpr h, not_lt.mpr h.le, not_le.mpr (h.trans h01), not_lt.mpr (h.trans h01).le]
@@ -544,6 +543,16 @@ theorem contDiff_bspline (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) :
   rw [this]
   exact contDiff_const.mul (ContDiff.sum fun j _ => (contDiff_truncPow_flip _ hk).div_const _)
 
+/-- For strictly increasing knots and `1 ≤ k`, `B_{i,k}` agrees with a polynomial of degree at
+most `k` on each closed knot interval `[x_j, x_{j+1}]`: `exists_eqOn_bspline` extended to the
+right endpoint by continuity. -/
+theorem exists_eqOn_Icc_bspline (hx : StrictMono x) (hk : 1 ≤ k) (i j : ℕ) :
+    ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn (bspline x k i) p.eval (Icc (x j) (x (j + 1))) := by
+  obtain ⟨p, hpd, hpe⟩ := exists_eqOn_bspline (k := k) (i := i) hx.monotone j
+  refine ⟨p, hpd, hpe.of_subset_closure (contDiff_bspline hx hk i).continuous.continuousOn
+    p.continuous.continuousOn Ico_subset_Icc_self ?_⟩
+  rw [closure_Ico (hx (Nat.lt_succ_self j)).ne]
+
 /-- **A B-spline is a spline** ([quarteroni2000numerical] §8.6.2): for strictly increasing knots
 with the data knots `x_k = a < ⋯ < x_{n+k} = b` and `1 ≤ k`, the restriction of `B_{i,k}` to
 `[a, b]` lies in `S_k = S_k^{k-1}` of the partition `j ↦ x (j + k)`. -/
@@ -551,13 +560,11 @@ theorem bspline_mem_splineSpace {a b : ℝ} (hx : StrictMono x) (hk : 1 ≤ k) (
     (ContinuousMap.mk _ (contDiff_bspline hx hk i).continuous).restrict (Icc a b) ∈
       Spline.splineSpace a b n (fun j => x (j + k)) k (k - 1) := by
   refine ⟨bspline x k i, (contDiff_bspline hx hk i).contDiffOn, fun _ => rfl, fun j hj => ?_⟩
-  obtain ⟨p, hpd, hpe⟩ := exists_eqOn_bspline (k := k) (i := i) hx.monotone (j + k)
+  obtain ⟨p, hpd, hpe⟩ := exists_eqOn_Icc_bspline hx hk i (j + k)
   refine ⟨p, hpd, ?_⟩
-  have hlt : x (j + k) < x (j + k + 1) := hx (Nat.lt_succ_self _)
   change EqOn _ _ (Icc (x (j + k)) (x (j + 1 + k)))
   rw [show j + 1 + k = j + k + 1 by omega]
-  exact hpe.of_subset_closure (contDiff_bspline hx hk i).continuous.continuousOn
-    p.continuous.continuousOn Ico_subset_Icc_self (by rw [closure_Ico hlt.ne])
+  exact hpe
 
 /-! ### The derivative recursion and linear independence -/
 
@@ -809,7 +816,7 @@ theorem exists_basis_bspline (hx : StrictMono x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
       (Spline.splineSpace (x k) (x (n + k)) n (fun j => x (j + k)) k (k - 1)),
       ∀ (i : Fin (n + k)) (t : Icc (x k) (x (n + k))),
         (B i : C(Icc (x k) (x (n + k)), ℝ)) t = bspline x k i t := by
-  have hp : Spline.IsPartition (x k) (x (n + k)) n fun j => x (j + k) :=
+  have hp : IsIntervalPartition (x k) (x (n + k)) n fun j => x (j + k) :=
     ⟨fun j _ => hx (by omega), by simp, rfl⟩
   set v : Fin (n + k) → Spline.splineSpace (x k) (x (n + k)) n (fun j => x (j + k)) k (k - 1) :=
     fun i => ⟨(ContinuousMap.mk _ (contDiff_bspline hx hk i).continuous).restrict _,
@@ -955,10 +962,7 @@ theorem exists_eq_smul_bspline (hx : StrictMono x) (hk : 1 ≤ k) {s : ℝ → �
   have hBp : ∀ j, i ≤ j → j ≤ i + k →
       ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn (bspline x k i) p.eval (Icc (x j) (x (j + 1))) := by
     intro j _ _
-    obtain ⟨p, hpd, hpe⟩ := exists_eqOn_bspline (k := k) (i := i) hx.monotone j
-    refine ⟨p, hpd, hpe.of_subset_closure (contDiff_bspline hx hk i).continuous.continuousOn
-      p.continuous.continuousOn Ico_subset_Icc_self ?_⟩
-    rw [closure_Ico (hx (Nat.lt_succ_self j)).ne]
+    exact exists_eqOn_Icc_bspline hx hk i j
   obtain ⟨c', hc'0, hc's⟩ :=
     exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn hx hk (contDiff_bspline hx hk i) hB0 hBp
   -- the B-spline's coefficients are not all zero
@@ -986,7 +990,7 @@ theorem exists_eq_smul_bspline (hx : StrictMono x) (hk : 1 ≤ k) {s : ℝ → �
   refine ⟨l, funext fun t => ?_⟩
   rw [Pi.smul_apply, smul_eq_mul]
   by_cases ht : t ∈ Icc (x i) (x (i + k + 1))
-  · have hpart : Spline.IsPartition (x i) (x (i + k + 1)) (k + 1) fun m => x (i + m) :=
+  · have hpart : IsIntervalPartition (x i) (x (i + k + 1)) (k + 1) fun m => x (i + m) :=
       ⟨fun j _ => hx (by omega), rfl, rfl⟩
     obtain ⟨m, hm1, hmk, htm, -⟩ := hpart.exists_mem_panel (by omega) ht
     obtain ⟨m, rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
@@ -1395,19 +1399,6 @@ theorem bspline_eq_mul_newtonOn {v : ℕ → ℝ} (hv : StrictMono v) (hk : 1 �
   rw [bspline_eq_mul_newton_truncPow hv hk i t,
     DividedDifference.newton_shift_eq_newtonOn v _ (k + 1) i, ← Nat.add_assoc]
 
-/-- Erasing the right endpoint of an index interval. -/
-private theorem erase_Icc_top (i m : ℕ) :
-    (Finset.Icc i (m + 1)).erase (m + 1) = Finset.Icc i m := by
-  ext c
-  simp only [Finset.mem_erase, Finset.mem_Icc]
-  omega
-
-/-- Erasing the left endpoint of an index interval. -/
-private theorem erase_Icc_bot (i m : ℕ) : (Finset.Icc i m).erase i = Finset.Icc (i + 1) m := by
-  ext c
-  simp only [Finset.mem_erase, Finset.mem_Icc]
-  omega
-
 /-- The index shift carries the original index interval onto the inserted one with the new index
 removed. -/
 theorem map_insertShift (hij : i ≤ j) (hjk : j ≤ i + k) :
@@ -1456,8 +1447,10 @@ theorem bspline_eq_insert_comb_of_mem (hx : StrictMono x) (hk : 1 ≤ k)
     (hY.injective.injOn.mono (Set.subset_univ _) : Set.InjOn Y (T : Set ℕ)) hpT hqT hrT hb g
   -- identify the three index sets
   have hTq : T.erase (i + k + 2) = Finset.Icc i (i + k + 1) := by
-    rw [hT, show i + k + 2 = (i + k + 1) + 1 from rfl, erase_Icc_top]
-  have hTr : T.erase i = Finset.Icc (i + 1) (i + k + 2) := erase_Icc_bot _ _
+    rw [hT, show i + k + 2 = (i + k + 1) + 1 from rfl, Finset.Icc_erase_right,
+      Finset.Ico_add_one_right_eq_Icc]
+  have hTr : T.erase i = Finset.Icc (i + 1) (i + k + 2) := by
+    rw [hT, Finset.Icc_erase_left, Finset.Icc_add_one_left_eq_Ioc]
   have hTp : T.erase (j + 1) = (Finset.Icc i (i + k + 1)).map
       ⟨insertShift j, insertShift_injective j⟩ := (map_insertShift hij hjk).symm
   have hYx : Y ∘ insertShift j = x := funext fun m => insertKnot_insertShift x j y m

@@ -54,16 +54,6 @@ variable {n : ℕ}
 
 /-! ### §7.1.1 Eigenvalues and invariant subspaces -/
 
-/-- The spectrum of a complex matrix of positive size is nonempty. -/
-private theorem spectrum_nonempty [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
-    (spectrum ℂ A).Nonempty := by
-  have hdeg : A.charpoly.degree ≠ 0 := by
-    rw [Polynomial.degree_eq_natDegree A.charpoly_monic.ne_zero, A.charpoly_natDegree_eq_dim,
-      Fintype.card_fin]
-    exact_mod_cast NeZero.ne n
-  obtain ⟨z, hz⟩ := IsAlgClosed.exists_root A.charpoly hdeg
-  exact ⟨z, Matrix.mem_spectrum_iff_isRoot_charpoly.2 hz⟩
-
 /-- **§7.1.1, determinant and trace.** If `λ(A) = {λ₁, …, λₙ}` (with multiplicity) then
 `det(A) = λ₁ λ₂ ⋯ λₙ` and `tr(A) = λ₁ + ⋯ + λₙ`: the eigenvalues counted with multiplicity are the
 roots of the characteristic polynomial. -/
@@ -103,7 +93,7 @@ theorem spectralAbscissa_eq (A : Matrix (Fin n) (Fin n) ℂ) :
 theorem spectralAbscissa_mem [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ μ ∈ spectrum ℂ A, μ.re = spectralAbscissa A :=
   exists_mem_spectrum_re_eq_spectralAbscissa (Matrix.finite_spectrum A).isCompact
-    (spectrum_nonempty A)
+    (spectrum.nonempty_of_isAlgClosed_of_finiteDimensional ℂ A)
 
 /-- **(7.1.4), the numerical range** (field of values) `W(A) = {xᴴ A x : ‖x‖₂ = 1}`. Its agreement
 with the backbone's operator numerical range, defined by Rayleigh quotients of nonzero vectors, is

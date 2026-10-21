@@ -35,17 +35,6 @@ section Legendre
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal} {x : E}
   {y : StrongDual ℝ E}
 
-private theorem eq_coe_of_coe_add_eq_coe {c : EReal} {r s : ℝ}
-    (h : ((r : ℝ) : EReal) + c = ((s : ℝ) : EReal)) : c = ((s - r : ℝ) : EReal) := by
-  rcases eq_or_ne c ⊤ with rfl | hct
-  · simp at h
-  rcases eq_or_ne c ⊥ with rfl | hcb
-  · simp at h
-  obtain ⟨t, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hcb (lt_top_iff_ne_top.2 hct)
-  rw [← EReal.coe_add, EReal.coe_eq_coe_iff] at h
-  rw [EReal.coe_eq_coe_iff]
-  linarith
-
 /-- A function is finite wherever it has a gradient. -/
 theorem HasGradientAtFn.exists_coe (h : HasGradientAtFn f y x) :
     ∃ r : ℝ, f x = ((r : ℝ) : EReal) := by
@@ -62,7 +51,7 @@ theorem HasGradientAtFn.add_convexConj_eq (hf : ConvexFn f) (h : HasGradientAtFn
 theorem convexConj_eq_of_hasGradientAtFn (hf : ConvexFn f) (h : HasGradientAtFn f y x) {r : ℝ}
     (hr : f x = ((r : ℝ) : EReal)) :
     convexConj (topDualPairing ℝ E).flip f y = ((y x - r : ℝ) : EReal) :=
-  eq_coe_of_coe_add_eq_coe (by rw [← hr]; exact h.add_convexConj_eq hf)
+  EReal.eq_coe_sub_of_add_coe_eq_coe (by rw [add_comm, ← hr]; exact h.add_convexConj_eq hf)
 
 /-- **Well-definedness**: `⟨x, y⟩ - f x` is the same for every `x` with `∇f x = y`, because it is
 `f* y`. So `∇f` need not be one-to-one for `g` to be single-valued. -/

@@ -41,7 +41,7 @@ here with the equally spaced nodes; the space `X_h^k` is the spline space of smo
 ## Conventions
 
 The breakpoints are a sequence `x : ℕ → Icc a b` of points of `[a, b]` with
-`Spline.IsPartition a b K (fun j => (x j : ℝ))`: `a = x 0 < x 1 < ⋯ < x K = b`, `K ≥ 1`
+`IsIntervalPartition a b K (fun j => (x j : ℝ))`: `a = x 0 < x 1 < ⋯ < x K = b`, `K ≥ 1`
 subintervals; the book's `n` (the local degree) is written `k ≥ 1` throughout, as the book does
 from (8.22) on. The mesh `h = max_j h_j` enters as a bound `h_j ≤ h` for every `j`, which is what
 the estimates use. A function `f ∈ C^{k+1}([a, b])` is a function `ℝ → ℝ` of class `C^{k+1}` on an
@@ -84,7 +84,7 @@ theorem equispacedPanelNodes_val (x : ℕ → Icc a b) (k j : ℕ) (i : Fin (k +
 `a = x 0 < ⋯ < x K = b` with `K ≥ 1` and a degree `k ≥ 1`, the nodes of every subinterval lie in
 it, are distinct, and start and end at its endpoints — `IsPanelNodes (K - 1) k x node` of
 `Numlib/Approximation/Interpolation`, whose panels are numbered `0, …, K - 1`. -/
-theorem isPanelNodes_equispacedPanelNodes (hx : Spline.IsPartition a b K fun j => (x j : ℝ))
+theorem isPanelNodes_equispacedPanelNodes (hx : IsIntervalPartition a b K fun j => (x j : ℝ))
     (hK : 1 ≤ K) (hk : 1 ≤ k) : IsPanelNodes (K - 1) k x (equispacedPanelNodes x k) where
   step i hi := hx.step i (by omega)
   first := hx.first
@@ -119,7 +119,7 @@ noncomputable def piecewiseLagrangeInterp (x : ℕ → Icc a b) (K k : ℕ) :
 /-- **`Π_h^k f` on a subinterval** (§8.3): "the piecewise interpolation polynomial `Π_h^k f`
 coincides on each `I_j` with the interpolating polynomial of `f|_{I_j}` at the `k + 1` nodes
 `x_j^{(i)}`" — `piecewisePolyInterpCLM_apply_of_mem`. -/
-theorem piecewiseLagrangeInterp_apply_of_mem (hx : Spline.IsPartition a b K fun j => (x j : ℝ))
+theorem piecewiseLagrangeInterp_apply_of_mem (hx : IsIntervalPartition a b K fun j => (x j : ℝ))
     (hK : 1 ≤ K) (hk : 1 ≤ k) (f : C(Icc a b, ℝ)) {j : ℕ} (hj : j < K) {t : Icc a b}
     (h1 : (x j : ℝ) ≤ t) (h2 : (t : ℝ) ≤ x (j + 1)) :
     piecewiseLagrangeInterp x K k f t
@@ -164,7 +164,7 @@ theorem mem_equation_8_22_iff (v : C(Icc a b, ℝ)) :
 a polynomial of degree `≤ k` on every subinterval (`piecewiseLagrangeInterp_apply_of_mem`), and an
 element of `X_h^k` is its own Lagrange interpolant on every subinterval
 (`Lagrange.eq_interpolate_of_eval_eq`), hence is reproduced by `Π_h^k`. -/
-theorem range_piecewiseLagrangeInterp (hx : Spline.IsPartition a b K fun j => (x j : ℝ))
+theorem range_piecewiseLagrangeInterp (hx : IsIntervalPartition a b K fun j => (x j : ℝ))
     (hK : 1 ≤ K) (hk : 1 ≤ k) :
     LinearMap.range (piecewiseLagrangeInterp x K k : C(Icc a b, ℝ) →ₗ[ℝ] C(Icc a b, ℝ))
       = equation_8_22 a b K x k := by
@@ -200,7 +200,7 @@ of length at most `h`, `k ≥ 1`, and `f` of class `C^{k+1}` on an open set `U �
 
 Theorem 8.2 on each subinterval (`exists_sub_piecewisePolyInterpCLM_apply_eq_of_contDiffOn`),
 the nodal polynomial of a subinterval being bounded by `h^{k+1}` there. -/
-theorem equation_8_23_of_forall_le (hx : Spline.IsPartition a b K fun j => (x j : ℝ))
+theorem equation_8_23_of_forall_le (hx : IsIntervalPartition a b K fun j => (x j : ℝ))
     (hK : 1 ≤ K) (hk : 1 ≤ k) {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) {f : ℝ → ℝ}
     {U : Set ℝ} (hU : IsOpen U) (hUsub : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((k + 1 : ℕ) : WithTop ℕ∞) f U) {F : C(Icc a b, ℝ)}
@@ -241,7 +241,7 @@ of the restriction `F` of `f` satisfies
 `‖F - Π_h^k F‖_∞ ≤ C h^{k+1} ‖f^{(k+1)}‖_∞` with `C = 1/(k+1)!`,
 
 where `‖f^{(k+1)}‖_∞ = max_{[a,b]} |f^{(k+1)}|`. -/
-theorem equation_8_23 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
+theorem equation_8_23 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
     {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U)
     (hUsub : Icc a b ⊆ U) (hf : ContDiffOn ℝ ((k + 1 : ℕ) : WithTop ℕ∞) f U) {F : C(Icc a b, ℝ)}
     (hF : ∀ t, F t = f t) :
@@ -262,7 +262,7 @@ theorem equation_8_23 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK :
 /-- Inside a subinterval `I_j`, the `m`-th derivative of `Π_h^k F` (extended to `ℝ` by its
 endpoint values) is the `m`-th derivative of the Lagrange interpolant of `F` on `I_j`. -/
 theorem iteratedDeriv_IccExtend_piecewiseLagrangeInterp
-    (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
+    (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
     (F : C(Icc a b, ℝ)) (m : ℕ) {j : ℕ} (hj : j < K) {t : ℝ}
     (ht : t ∈ Ioo (x j : ℝ) (x (j + 1) : ℝ)) :
     iteratedDeriv m (IccExtend hx.le (piecewiseLagrangeInterp x K k F)) t
@@ -289,7 +289,7 @@ derivative of the piecewise interpolant inside the subintervals. For `m ≤ k` t
 weak derivative agreeing almost everywhere with the derivative of the `C^k` representative
 (`SobolevInterval.exists_contDiff_ae_eq`); for `m = k + 1` the derivative of the interpolant
 vanishes and the two sides are equal. -/
-theorem theorem_8_3_sq (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K)
+theorem theorem_8_3_sq (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K)
     (hk : 1 ≤ k) {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h)
     (u : SobolevInterval (k + 1) a b) {F : C(Icc a b, ℝ)}
     (hF : SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] IccExtend hx.le F) {m : ℕ}
@@ -379,7 +379,7 @@ theorem theorem_8_3_sq (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK 
           rw [SobolevInterval.seminorm_sq_eq_integral hab.le]
 
 /-- The mesh bound `h` of a partition with at least one subinterval is nonnegative. -/
-theorem mesh_nonneg (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) {h : ℝ}
+theorem mesh_nonneg (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) {h : ℝ}
     (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) : 0 ≤ h :=
   (sub_pos.mpr (hx.step 0 hK)).le.trans (hmesh 0 hK)
 
@@ -395,7 +395,7 @@ derivative of the piecewise interpolant inside the subintervals (for `m ≤ 1` i
 norm of `(f - Π_h^k f)^{(m)}` itself), and the right side the `H^{k+1}(a, b)` seminorm of `f`.
 The book proves the case `k = 1` and refers to Quarteroni–Valli for the general one; here it is
 `theorem_8_3_sq`, the panelwise estimate of `Numlib/Approximation/SobolevInterpolation`. -/
-theorem theorem_8_3 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
+theorem theorem_8_3 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
     {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) (u : SobolevInterval (k + 1) a b)
     {F : C(Icc a b, ℝ)} (hF : SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] IccExtend hx.le F)
     {m : ℕ} (hm : m ≤ k + 1) :
@@ -418,7 +418,7 @@ theorem theorem_8_3 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK : 1
 `theorem_8_3`, `‖f - Π_h^k f‖_{L²(a,b)} ≤ h^{k+1} ‖f^{(k+1)}‖_{L²(a,b)}`, the left side written
 as `√(∫_a^b |f - Π_h^k F|²)` with `f` the element of `H^{k+1}(a, b)` itself:
 `integral_sq_sub_piecewisePolyInterpCLM_le_seminorm`. -/
-theorem theorem_8_3_L2 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
+theorem theorem_8_3_L2 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
     {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) (u : SobolevInterval (k + 1) a b)
     {F : C(Icc a b, ℝ)}
     (hF : SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] IccExtend hx.le F) :
@@ -453,7 +453,7 @@ theorem theorem_8_3_L2 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK 
 `‖f - Π_h^1 f‖_{L²(a,b)} ≤ C₁ h² ‖f''‖_{L²(a,b)}`:
 
 Theorem 8.3 with `k = 1` and `m = 0`, in the form `theorem_8_3_L2`. -/
-theorem equation_8_27 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) {h : ℝ}
+theorem equation_8_27 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) {h : ℝ}
     (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) (u : SobolevInterval 2 a b) {F : C(Icc a b, ℝ)}
     (hF : SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] IccExtend hx.le F) :
     √(∫ t in a..b,
@@ -469,7 +469,7 @@ theorem equation_8_27 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK :
 the left side being `√(∑_{j<K} ∫_{x_j}^{x_{j+1}} |f' - (Π_h^1 F)'|²)` with `f'` the weak derivative
 and `(Π_h^1 F)'` the slope of the interpolant on each subinterval: Theorem 8.3 with `k = 1` and
 `m = 1`. -/
-theorem equation_8_27_deriv (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K)
+theorem equation_8_27_deriv (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K)
     {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) (u : SobolevInterval 2 a b)
     {F : C(Icc a b, ℝ)}
     (hF : SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] IccExtend hx.le F) :

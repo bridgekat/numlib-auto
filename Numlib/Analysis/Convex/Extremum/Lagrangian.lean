@@ -91,12 +91,6 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
   [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] {f : E → EReal}
 
-/-- `EReal.neg_coe_sub` with the difference read as a sum. -/
-private theorem neg_coe_sub_eq {c : ℝ} {w : EReal} :
-    -(((c : ℝ) : EReal) - w) = w + ((-c : ℝ) : EReal) := by
-  rw [EReal.neg_coe_sub]
-  rfl
-
 /-- **Fenchel–Moreau at the origin.** For a convex `f`, the closure at `0` is the supremum over the
 dual variable of the infimum of `x ↦ ⟨x, y⟩ + f x`. Everything below rests on this computation. -/
 theorem convexCl_zero_eq_iSup_iInf (hf : ConvexFn f) :
@@ -109,7 +103,7 @@ theorem convexCl_zero_eq_iSup_iInf (hf : ConvexFn f) :
       EReal.neg_iSup]
     refine iInf_congr fun x => ?_
     have hb : (B x (-y) : ℝ) = -(B x y) := by rw [map_neg]
-    rw [neg_coe_sub_eq, hb, add_comm]
+    rw [EReal.neg_coe_sub, hb, EReal.coe_neg, sub_eq_add_neg, add_comm]
   rw [← convexBiconj_eq_convexCl (B := B) hf, convexBiconj_apply, iSup_congr hterm]
   exact hsurj.iSup_comp fun y : F => ⨅ x : E, (((B x y : ℝ) : EReal) + f x)
 

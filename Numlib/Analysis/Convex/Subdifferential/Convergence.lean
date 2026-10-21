@@ -72,7 +72,6 @@ theorem supportFn_closedBall {ε : ℝ} (hε : 0 ≤ ε) (y : E) :
     · have h0 : (0 : E) ∈ Metric.closedBall (0 : E) ε := Metric.mem_closedBall_self hε
       have h := le_supportFn (B := innerₗ E) h0 (0 : E)
       simpa using h
-    have hy' : 0 < ‖y‖ := norm_pos_iff.2 hy
     have hmem : (ε / ‖y‖) • y ∈ Metric.closedBall (0 : E) ε := by
       have hpos : (0 : ℝ) ≤ ε / ‖y‖ := by positivity
       rw [Metric.mem_closedBall, dist_zero_right, norm_smul, Real.norm_eq_abs,

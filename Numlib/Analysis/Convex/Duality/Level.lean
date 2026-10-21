@@ -95,25 +95,11 @@ theorem epi_subset_posHomGenCone (f : E → EReal) : epi f ⊆ posHomGenCone f :
   mem_posHomGenCone_iff_exists.2 (Or.inr ⟨1, one_pos, by rwa [one_smul]⟩)
 
 theorem smul_posHomGenCone (ha : 0 < a) (f : E → EReal) :
-    a • posHomGenCone f = posHomGenCone f := by
-  ext q
-  simp only [Set.mem_smul_set_iff_inv_smul_mem₀ ha.ne', mem_posHomGenCone_iff_exists]
-  constructor
-  · rintro (h | ⟨b, hb, hq⟩)
-    · left
-      have hz : a • (a⁻¹ • q) = a • (0 : E × ℝ) := by rw [h]
-      rwa [smul_inv_smul₀ ha.ne', smul_zero] at hz
-    · refine Or.inr ⟨a * b, mul_pos ha hb, ?_⟩
-      have hmem : a • (a⁻¹ • q) ∈ a • (b • epi f) := Set.smul_mem_smul_set hq
-      rwa [smul_inv_smul₀ ha.ne', smul_smul] at hmem
-  · rintro (rfl | ⟨b, hb, hq⟩)
-    · exact Or.inl (smul_zero _)
-    · refine Or.inr ⟨a⁻¹ * b, mul_pos (inv_pos.2 ha) hb, ?_⟩
-      rw [← smul_smul]
-      exact Set.smul_mem_smul_set hq
+    a • posHomGenCone f = posHomGenCone f :=
+  smul_zero_union_iUnion_smul ha _
 
 theorem convex_posHomGenCone (hf : ConvexFn f) : Convex ℝ (posHomGenCone f) := by
-  rw [convex_iff_add_mem_of_isCone fun c hc => smul_posHomGenCone hc f]
+  rw [convex_iff_add_mem_of_isCone (isCone_iff_smul_eq.2 fun c hc => smul_posHomGenCone hc f)]
   intro p hp q hq
   rw [mem_posHomGenCone_iff_exists] at hp hq ⊢
   rcases hp with rfl | ⟨a, ha, hp⟩

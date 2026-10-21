@@ -220,7 +220,6 @@ theorem norm_iteratedFDeriv_smul_le_const_mul_sum {ψ : E → ℝ} (hψ : ContDi
       ≤ ((k + 1) * 2 ^ k * M) * ∑ s ∈ Finset.range (k + 1), ‖iteratedFDeriv ℝ s h x‖ := by
   have hM0 : 0 ≤ M := le_trans (norm_nonneg _) (hM 0 (Nat.zero_le k) x)
   set H : ℝ := ∑ s ∈ Finset.range (k + 1), ‖iteratedFDeriv ℝ s h x‖ with hHdef
-  have hH0 : 0 ≤ H := Finset.sum_nonneg fun _ _ ↦ norm_nonneg _
   have hHle : ∀ s ≤ k, ‖iteratedFDeriv ℝ s h x‖ ≤ H := fun s hs ↦
     Finset.single_le_sum (f := fun s ↦ ‖iteratedFDeriv ℝ s h x‖) (fun _ _ ↦ norm_nonneg _)
       (Finset.mem_range.2 (Nat.lt_succ_of_le hs))

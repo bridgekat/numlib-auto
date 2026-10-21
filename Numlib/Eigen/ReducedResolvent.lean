@@ -471,8 +471,7 @@ variable [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] {A : Module.End 𝕜 E} {
 omit [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] in
 /-- A left eigenvector for `l` is orthogonal to every generalized eigenvector for an eigenvalue
 `μ ≠ l`: testing `(A - μ)^k z = 0` against `w` multiplies `⟪w, z⟫` by `(l - μ)^k ≠ 0`. -/
-theorem inner_eq_zero_of_mem_iSup_maxGenEigenspace {w : E}
-    (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y) {z : E}
+theorem inner_eq_zero_of_mem_iSup_maxGenEigenspace {w : E} (hw : IsLeftEigenvector A l w) {z : E}
     (hz : z ∈ A.spectralSubspace (· ≠ l)) : (inner 𝕜 w z : 𝕜) = 0 := by
   have hpow : ∀ (μ : 𝕜) (k : ℕ) (y : E),
       (inner 𝕜 w (((A - μ • (1 : Module.End 𝕜 E)) ^ k) y) : 𝕜) = (l - μ) ^ k * inner 𝕜 w y := by
@@ -482,7 +481,7 @@ theorem inner_eq_zero_of_mem_iSup_maxGenEigenspace {w : E}
     | succ k ih =>
       intro y
       rw [pow_succ, Module.End.mul_apply, ih, LinearMap.sub_apply, LinearMap.smul_apply,
-        Module.End.one_apply, inner_sub_right, inner_smul_right, hw, pow_succ]
+        Module.End.one_apply, inner_sub_right, inner_smul_right, hw.inner_apply, pow_succ]
       ring
   have hle : A.spectralSubspace (· ≠ l) ≤ (𝕜 ∙ w)ᗮ := by
     refine iSup₂_le fun μ hμ z hz => ?_
@@ -501,7 +500,7 @@ vanishes; the denominator is nonzero by
 `⟪w, v t⟫ = ⟪w, u⟫` of the branch of `Module.End.hasDerivAt_eigenvalue_perturbation` with the
 projector normalization `P (v t) = u` of `Module.End.deriv_eigenvector_perturbation`. -/
 theorem spectralProjector_apply_of_finrank_eq_one {u w : E} (hAu : A u = l • u) (hu : u ≠ 0)
-    (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y) (hw0 : w ≠ 0)
+    (hw : IsLeftEigenvector A l w) (hw0 : w ≠ 0)
     (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace A l) = 1) (x : E) :
     A.spectralProjector (· = l) x = ((inner 𝕜 w x : 𝕜) / inner 𝕜 w u) • u := by
   have hne := inner_ne_zero_of_finrank_maxGenEigenspace_eq_one hAu hu hw hw0 hsimple

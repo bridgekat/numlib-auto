@@ -334,8 +334,6 @@ theorem exists_re_inner_smul_ge_of_norm_inner_ge (T : H →L[ℂ] H) {α : ℝ} 
   have hwW : w ∈ closure W := subset_closure (div_inner_mem_numericalRange T hu)
   have h1 := hvar w hwW
   rw [zero_sub, inner_neg_left, inner_sub_right, real_inner_self_eq_norm_sq, Complex.inner] at h1
-  -- `re (conj p * w) ≥ ‖p‖ ^ 2`
-  have h2 : ‖p‖ ^ 2 ≤ (w * starRingEnd ℂ p).re := by linarith
   have huu : ⟪u, u⟫_ℂ = ((‖u‖ ^ 2 : ℝ) : ℂ) := by
     rw [inner_self_eq_norm_sq_to_K]
     norm_cast
@@ -353,8 +351,7 @@ theorem exists_re_inner_smul_ge_of_norm_inner_ge (T : H →L[ℂ] H) {α : ℝ} 
   rw [h3]
   have h4 : ‖p‖ ≤ ‖p‖⁻¹ * (w * starRingEnd ℂ p).re := by
     rw [← div_eq_inv_mul, le_div_iff₀ hp0]
-    nlinarith [h2]
-  have hu2 : 0 ≤ ‖u‖ ^ 2 := sq_nonneg _
+    nlinarith
   calc α * ‖u‖ ^ 2 ≤ ‖p‖ * ‖u‖ ^ 2 := by gcongr
     _ ≤ ‖p‖⁻¹ * (w * starRingEnd ℂ p).re * ‖u‖ ^ 2 := by gcongr
 

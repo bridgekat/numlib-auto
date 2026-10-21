@@ -96,7 +96,7 @@ theorem polarCone_anti_rn {K L : Set (Rn n)} (h : K ⊆ L) :
 Rockafellar's "cone", closure under *positive* scalar multiplication. -/
 theorem polarCone_eq_polarSet_rn {K : Set (Rn n)} (hK : ∀ a : ℝ, 0 < a → a • K = K) :
     polarCone (pairing n) K = polarSet (pairing n) K :=
-  polarCone_eq_polarSet_of_isCone hK
+  polarCone_eq_polarSet_of_isCone (isCone_iff_smul_eq.2 hK)
 
 /-- The bipolar of a set, with the `.flip` the backbone statement carries rewritten away;
 `flip_pairing` says that `⟨·, ·⟩` on `ℝⁿ` is its own flip. -/
@@ -148,7 +148,7 @@ by the bundling. -/
 theorem theorem_14_1_conj (K : PointedCone ℝ (Rn n)) :
     convexConj (pairing n) (indicatorFn (K : Set (Rn n)))
       = indicatorFn (polarCone (pairing n) (K : Set (Rn n))) :=
-  convexConj_indicatorFn_eq_indicatorFn_polarCone (smul_coe_pointedCone K) ⟨0, K.zero_mem⟩
+  convexConj_indicatorFn_eq_indicatorFn_polarCone (isCone_coe_pointedCone K) ⟨0, K.zero_mem⟩
 
 /-- **Theorem 14.1**, third assertion, in the remaining direction: `δ(· | K°)*` is
 `δ(· | K)` for a non-empty closed convex cone. -/

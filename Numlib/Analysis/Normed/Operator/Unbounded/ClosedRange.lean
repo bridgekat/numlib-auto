@@ -561,12 +561,6 @@ namespace ContinuousLinearMap
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- The range of a linear map restricted to the whole space, as a `LinearPMap`, is its range. -/
-private theorem range_toPMap_top (f : E →ₗ[𝕜] F) :
-    LinearMap.range (f.toPMap ⊤).toFun = LinearMap.range f := by
-  change LinearMap.range (f.comp (⊤ : Submodule 𝕜 E).subtype) = LinearMap.range f
-  rw [LinearMap.range_comp, Submodule.range_subtype, ← LinearMap.range_eq_map]
-
 /-- The whole space is a dense subspace. -/
 private theorem dense_top : Dense (((⊤ : Submodule 𝕜 E) : Submodule 𝕜 E) : Set E) := by
   rw [Submodule.top_coe]
@@ -577,8 +571,8 @@ private theorem dense_top : Dense (((⊤ : Submodule 𝕜 E) : Submodule 𝕜 E)
 theorem isClosed_range_strongDualMap_iff [CompleteSpace E] [CompleteSpace F] (T : E →L[𝕜] F) :
     IsClosed (Set.range T.strongDualMap) ↔ IsClosed (Set.range T) := by
   have := (T.isClosed_toPMap (p := ⊤) isClosed_univ).isClosed_range_strongDualAdjoint_iff dense_top
-  rwa [T.toPMap_strongDualAdjoint dense_top, range_toPMap_top, range_toPMap_top,
-    LinearMap.coe_range, LinearMap.coe_range, coe_coe, coe_coe] at this
+  rwa [T.toPMap_strongDualAdjoint dense_top, LinearMap.range_toPMap_top,
+    LinearMap.range_toPMap_top, LinearMap.coe_range, LinearMap.coe_range, coe_coe, coe_coe] at this
 
 /-- **`R(T) = N(T*)^⊥` for a bounded operator with closed range** ([brezis2011functional],
 Theorem 2.19 (i) ⇒ (iii)), the shape of the Fredholm alternative `R(I - T) = N(I - T*)^⊥`
@@ -599,10 +593,11 @@ theorem range_strongDualMap_eq_annihilator_ker [CompleteSpace E] [CompleteSpace 
       T.ker.strongDualAnnihilator := by
   have h' : IsClosed ((LinearMap.range ((T : E →ₗ[𝕜] F).toPMap ⊤).toFun : Submodule 𝕜 F) :
       Set F) := by
-    rwa [range_toPMap_top, LinearMap.coe_range, coe_coe]
+    rwa [LinearMap.range_toPMap_top, LinearMap.coe_range, coe_coe]
   have := (T.isClosed_toPMap (p := ⊤)
     isClosed_univ).range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range dense_top h'
-  rwa [T.toPMap_strongDualAdjoint dense_top, range_toPMap_top, LinearMap.toPMap_ker, top_inf_eq]
+  rwa [T.toPMap_strongDualAdjoint dense_top, LinearMap.range_toPMap_top, LinearMap.toPMap_ker,
+    top_inf_eq]
     at this
 
 /-- **Theorem 2.20 for a bounded operator** ([brezis2011functional]): `T : E →L[𝕜] F` between
@@ -612,7 +607,8 @@ theorem range_eq_top_iff_exists_norm_le_norm_strongDualMap [CompleteSpace E] [Co
     Function.Surjective T ↔ ∃ C : ℝ, ∀ v : StrongDual 𝕜 F, ‖v‖ ≤ C * ‖T.strongDualMap v‖ := by
   have := (T.isClosed_toPMap (p := ⊤)
     isClosed_univ).range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint dense_top
-  rw [T.toPMap_strongDualAdjoint dense_top, range_toPMap_top, LinearMap.range_eq_top, coe_coe]
+  rw [T.toPMap_strongDualAdjoint dense_top, LinearMap.range_toPMap_top, LinearMap.range_eq_top,
+    coe_coe]
     at this
   rw [this]
   simp only [LinearMap.toPMap_domain, LinearMap.toPMap_apply, coe_coe, Subtype.forall,
@@ -628,7 +624,8 @@ theorem range_strongDualMap_eq_top_iff_exists_norm_le_norm [CompleteSpace E] [Co
     Function.Surjective T.strongDualMap ↔ ∃ C : ℝ, ∀ u, ‖u‖ ≤ C * ‖T u‖ := by
   have := (T.isClosed_toPMap (p := ⊤)
     isClosed_univ).range_strongDualAdjoint_eq_top_iff_exists_norm_le_norm dense_top
-  rw [T.toPMap_strongDualAdjoint dense_top, range_toPMap_top, LinearMap.range_eq_top, coe_coe]
+  rw [T.toPMap_strongDualAdjoint dense_top, LinearMap.range_toPMap_top, LinearMap.range_eq_top,
+    coe_coe]
     at this
   rw [this]
   simp only [LinearMap.toPMap_domain, LinearMap.toPMap_apply, coe_coe, Subtype.forall,

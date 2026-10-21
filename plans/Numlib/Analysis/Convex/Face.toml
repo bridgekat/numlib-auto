@@ -37,6 +37,9 @@ id = 'IsFace.relint_pairwise_disjoint'
 id = 'IsFace.relint_maximal'
 
 [[node]]
+id = 'exists_notMem_relint_mem_segment_of_isBounded'
+
+[[node]]
 id = 'exists_notMem_relint_mem_segment'
 
 [[node]]

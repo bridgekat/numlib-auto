@@ -336,10 +336,6 @@ noncomputable def remainderConst (q : ℕ) : ℝ :=
 /-- The remainder constant is nonnegative. -/
 theorem remainderConst_nonneg (q : ℕ) : 0 ≤ M.remainderConst q := by
   unfold remainderConst
-  have h1 : 0 ≤ ∑ j : Fin (M.p + 1), |M.a j| * (j : ℝ) ^ (q + 1) :=
-    Finset.sum_nonneg fun j _ => by positivity
-  have h2 : 0 ≤ ∑ j : Fin (M.p + 1), |M.b j| * (j : ℝ) ^ q :=
-    Finset.sum_nonneg fun j _ => by positivity
   positivity
 
 /-- **The algebraic identity behind the Taylor expansion of `L`**: if `w(t + s)` and `w'(t + s)`
@@ -422,7 +418,6 @@ theorem opL_eq_sum_add_remainder
     (hh : 0 < h) (ht : t - M.p * h ∈ Icc a b) (hth : t + h ∈ Icc a b) :
     ‖M.opL h (y 0) t - ∑ m ∈ range (q + 1), (h ^ m / m.factorial * M.taylorCoeff m) • y m t‖ ≤
       K * M.remainderConst q * h ^ (q + 1) := by
-  have hK0 : 0 ≤ K := (norm_nonneg _).trans (hK _ hth)
   have htmem : t ∈ Icc a b := ⟨by nlinarith [ht.1, hh], by linarith [hth.2]⟩
   have hmem : ∀ j : Fin (M.p + 1), t + -(j * h) ∈ Icc a b := fun j => by
     have hj : (j : ℝ) ≤ M.p := by exact_mod_cast Nat.lt_succ_iff.1 j.2
@@ -592,7 +587,6 @@ theorem isConsistentFor_of_orderCondition (h0 : M.orderCondition 0) (h1 : M.orde
     have h2' : 0 ≤ ∑ j : Fin (M.p + 1), |M.b j| := Finset.sum_nonneg fun j _ => abs_nonneg _
     have := abs_nonneg M.bm1
     simp only [A]; linarith
-  have hA : 0 < A := by linarith
   set ε' : ℝ := ε / (2 * A)
   have hε' : 0 < ε' := by positivity
   obtain ⟨η, hη, hη'⟩ :=
@@ -1046,12 +1040,8 @@ theorem norm_sub_le_of_satisfiesRootCondition (hroot : M.SatisfiesRootCondition)
   obtain ⟨M₀, hM₀, hM⟩ := M.toLinearRecurrenceZero.norm_le_of_satisfiesRootCondition_smul_of_le
     (Nat.succ_pos _) hE (V := E)
   set β : ℝ := |M.bm1| + ∑ j, |M.b j| with hβ
-  have hβ0 : 0 ≤ β := (abs_nonneg _).trans M.abs_bm1_le
-  have hL : (0 : ℝ) ≤ L := L.coe_nonneg
   set c₁ : ℝ := β * L * (M.p + 2) with hc₁
-  have hc₁0 : 0 ≤ c₁ := by positivity
   set c : ℝ := M₀ * c₁ with hc
-  have hc0 : 0 ≤ c := by positivity
   set Q : ℝ := 2 * c with hQ
   refine ⟨1 / (Q + 1), by positivity, 2 * M₀ * Real.exp (T * Q), by positivity,
     fun h hh ε₀ ε₁ hε₀ hε₁ δ u z hu hz h0 hδ => ?_⟩
@@ -1178,7 +1168,6 @@ theorem norm_sub_le_of_satisfiesRootCondition (hroot : M.SatisfiesRootCondition)
   simp only [mul_zero, add_zero] at key
   refine key.trans ?_
   have hnh : (n : ℝ) * h ≤ T := mul_le_of_le_gridCount hT hh0 hn
-  have hQ0 : 0 ≤ Q := by positivity
   calc 2 * M₀ * (ε₀ + T * ε₁) * Real.exp (n * h * Q)
       ≤ 2 * M₀ * (ε₀ + T * ε₁) * Real.exp (T * Q) := by
         gcongr
@@ -2062,21 +2051,8 @@ theorem bdf_satisfiesRootCondition (k : Fin 6) (hk : k ≤ 2) : (bdf k).Satisfie
       rw [bdf_zero_eq, orderCondition_zero]; unfold ofOneStep; simp)
   · change (bdf 1).SatisfiesRootCondition
     rw [SatisfiesRootCondition, rho_bdf_one_map]
-    have hne : ((X - C 1) * (X - C (1 / 3)) : ℂ[X]) ≠ 0 :=
-      mul_ne_zero (X_sub_C_ne_zero _) (X_sub_C_ne_zero _)
-    refine Polynomial.satisfiesRootCondition_of_roots hne ?_ ?_
-    · intro r hr
-      rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.mem_add, Multiset.mem_singleton,
-        Multiset.mem_singleton] at hr
-      rcases hr with rfl | rfl <;> norm_num
-    · intro r hr h1
-      rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.mem_add, Multiset.mem_singleton,
-        Multiset.mem_singleton] at hr
-      rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.count_add, Multiset.count_singleton,
-        Multiset.count_singleton]
-      rcases hr with rfl | rfl
-      · norm_num
-      · norm_num at h1
+    exact Polynomial.satisfiesRootCondition_X_sub_C_mul_X_sub_C (by norm_num) (by simp)
+      (by norm_num)
   · change (bdf 2).SatisfiesRootCondition
     rw [SatisfiesRootCondition, rho_bdf_two_map]
     set rp : ℂ := 7 / 22 + (Real.sqrt 39 / 22 : ℝ) * Complex.I with hrp
@@ -2750,34 +2726,33 @@ def pad (q : ℕ) (_hq : M.p ≤ q) : LinearMultistep :=
 /-- The padded method has the same `b_{-1}`. -/
 @[simp] theorem pad_bm1 (q : ℕ) (hq : M.p ≤ q) : (M.pad q hq).bm1 = M.bm1 := rfl
 
+/-- Padding a coefficient vector by zeros multiplies its polynomial by a power of `X`:
+`X^{q - p} ∑_{j ≤ p} c_j X^{p - j} = ∑_{i ≤ q} c'_i X^{q - i}`, with `c'` the extension of `c` by
+zeros; the common step of `rho_pad` and `sigma_pad`. -/
+private theorem X_pow_mul_sum_eq_sum_pad {p q : ℕ} (hq : p ≤ q) (c : Fin (p + 1) → ℝ) :
+    X ^ (q - p) * ∑ j : Fin (p + 1), C (c j) * X ^ (p - j)
+      = ∑ i : Fin (q + 1), C (if h : (i : ℕ) < p + 1 then c ⟨i, h⟩ else 0) * X ^ (q - i) := by
+  rw [Finset.mul_sum, Finset.sum_congr rfl fun j _ => show X ^ (q - p) * (C (c j) * X ^ (p - j)) =
+      C (c j) * X ^ (q - j) by
+    have := j.is_lt
+    rw [mul_left_comm, ← pow_add, show q - p + (p - j) = q - j by omega],
+    ← Fin.sum_dite_lt (Nat.succ_le_succ hq) fun j => C (c j) * X ^ (q - j)]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  split_ifs <;> first | rfl | simp
+
 /-- The first characteristic polynomial of the padded method is `X^{q - p} ρ`. -/
 theorem rho_pad (q : ℕ) (hq : M.p ≤ q) : (M.pad q hq).rho = X ^ (q - M.p) * M.rho := by
   unfold rho pad
   dsimp only
-  rw [mul_sub, ← pow_add, show q - M.p + (M.p + 1) = q + 1 by omega, Finset.mul_sum]
-  congr 1
-  rw [Finset.sum_congr rfl fun j _ => show X ^ (q - M.p) * (C (M.a j) * X ^ (M.p - j)) =
-      C (M.a j) * X ^ (q - j) by
-    have := j.is_lt
-    rw [mul_left_comm, ← pow_add, show q - M.p + (M.p - j) = q - j by omega],
-    ← Fin.sum_dite_lt (Nat.succ_le_succ hq) fun j => C (M.a j) * X ^ (q - j)]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  split_ifs <;> first | rfl | simp
+  rw [mul_sub, ← pow_add, show q - M.p + (M.p + 1) = q + 1 by omega,
+    X_pow_mul_sum_eq_sum_pad hq]
 
 /-- The second characteristic polynomial of the padded method is `X^{q - p} σ`. -/
 theorem sigma_pad (q : ℕ) (hq : M.p ≤ q) : (M.pad q hq).sigma = X ^ (q - M.p) * M.sigma := by
   unfold sigma pad
   dsimp only
   rw [mul_add, mul_left_comm (X ^ (q - M.p)) (C M.bm1), ← pow_add,
-    show q - M.p + (M.p + 1) = q + 1 by omega, Finset.mul_sum]
-  congr 1
-  rw [Finset.sum_congr rfl fun j _ => show X ^ (q - M.p) * (C (M.b j) * X ^ (M.p - j)) =
-      C (M.b j) * X ^ (q - j) by
-    have := j.is_lt
-    rw [mul_left_comm, ← pow_add, show q - M.p + (M.p - j) = q - j by omega],
-    ← Fin.sum_dite_lt (Nat.succ_le_succ hq) fun j => C (M.b j) * X ^ (q - j)]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  split_ifs <;> first | rfl | simp
+    show q - M.p + (M.p + 1) = q + 1 by omega, X_pow_mul_sum_eq_sum_pad hq]
 
 /-- Padding an Adams-type method keeps `a = e₀`. -/
 theorem pad_a_single (q : ℕ) (hq : M.p ≤ q) (ha : M.a = Pi.single 0 1) :
@@ -2977,7 +2952,6 @@ theorem norm_iterate_correct_sub_le (hL : LipschitzWith L (f (t + h))) (hh : 0 �
     ‖(PC.correct f h t G)^[k] v₀ - w‖ ≤ (h * |PC.bm1| * L) ^ k * ‖v₀ - w‖ +
       h * ‖τ‖ * ∑ i ∈ range k, (h * |PC.bm1| * L) ^ i := by
   set c : ℝ := h * |PC.bm1| * L with hc
-  have hc0 : 0 ≤ c := by positivity
   have hstep : ∀ v : E, ‖PC.correct f h t G v - w‖ ≤ c * ‖v - w‖ + h * ‖τ‖ := by
     intro v
     have e : PC.correct f h t G v - w = (h * PC.bm1) • (f (t + h) v - f (t + h) w) - h • τ := by
@@ -3070,9 +3044,6 @@ theorem hasOrderFor_of (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t
   set β : ℝ := |PC.bm1| * L with hβ
   have hβ0 : 0 ≤ β := by positivity
   set K : ℝ := β ^ PC.m * cp + cc * ∑ i ∈ range PC.m, β ^ i with hK
-  have hK0 : 0 ≤ K := by
-    have : 0 ≤ ∑ i ∈ range PC.m, β ^ i := Finset.sum_nonneg fun _ _ => pow_nonneg hβ0 _
-    positivity
   refine IsBigO.of_bound K ?_
   filter_upwards [Ioc_mem_nhdsGT (lt_min (lt_min hh₁ hh₂) zero_lt_one)] with h hh
   have hh0 : 0 < h := hh.1
@@ -3115,8 +3086,6 @@ theorem hasOrderFor_of (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t
       pow_le_pow_of_le_one hh0.le hh1 (min_le_left _ _)
     have hS : ∑ i ∈ range PC.m, (h * |PC.bm1| * L) ^ i ≤ ∑ i ∈ range PC.m, β ^ i :=
       Finset.sum_le_sum fun i _ => hβh i
-    have hS0 : 0 ≤ ∑ i ∈ range PC.m, (h * |PC.bm1| * L) ^ i :=
-      Finset.sum_nonneg fun _ _ => by positivity
     calc ‖PC.lte f h y (node t₀ h n)‖
         ≤ (h * |PC.bm1| * L) ^ PC.m * ‖PC.toPredictor.lte h y (node t₀ h n)‖ +
           ‖PC.toCorrector.lte h y (node t₀ h n)‖ *
@@ -3128,7 +3097,6 @@ theorem hasOrderFor_of (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t
           ring
       _ ≤ β ^ PC.m * cp * h ^ min qc (qp + PC.m) +
           cc * (∑ i ∈ range PC.m, β ^ i) * h ^ min qc (qp + PC.m) := by
-          have : 0 ≤ ∑ i ∈ range PC.m, β ^ i := Finset.sum_nonneg fun _ _ => pow_nonneg hβ0 _
           gcongr
       _ = K * h ^ min qc (qp + PC.m) := by rw [hK]; ring
   · positivity

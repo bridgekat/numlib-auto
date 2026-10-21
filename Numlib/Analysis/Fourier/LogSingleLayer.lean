@@ -9,6 +9,7 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.SpecialFunctions.Integrals.LogTrigonometric
 import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
+import Numlib.Analysis.SpecialFunctions.Integrals.Basic
 
 /-!
 # The logarithmic single layer operator on the circle and its Fourier multipliers
@@ -304,23 +305,6 @@ theorem intervalIntegrable_logChord_mul {f : ℝ → ℝ} (hf : Continuous f) :
     IntervalIntegrable (fun y => logChord y * f y) volume 0 (2 * π) :=
   intervalIntegrable_logChord.mul_continuousOn hf.continuousOn
 
-private theorem integral_cos_nat_mul {m : ℕ} (hm : m ≠ 0) :
-    ∫ y in (0 : ℝ)..(2 * π), Real.cos ((m : ℝ) * y) = 0 := by
-  have hm' : (m : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hm
-  rw [intervalIntegral.integral_comp_mul_left (f := Real.cos) hm', integral_cos, mul_zero,
-    Real.sin_zero, show (m : ℝ) * (2 * π) = ((2 * m : ℕ) : ℝ) * π by push_cast; ring,
-    Real.sin_nat_mul_pi]
-  simp
-
-private theorem integral_sin_nat_mul (m : ℕ) :
-    ∫ y in (0 : ℝ)..(2 * π), Real.sin ((m : ℝ) * y) = 0 := by
-  rcases eq_or_ne m 0 with rfl | hm
-  · simp
-  · have hm' : (m : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hm
-    rw [intervalIntegral.integral_comp_mul_left (f := Real.sin) hm', integral_sin, mul_zero,
-      Real.cos_zero, Real.cos_nat_mul_two_pi]
-    simp
-
 /-- The `m`-th cosine Fourier coefficient of `logChord` over `[0, 2 π]` is `-π / max 1 m`. The
 normalizing factor `e^(-1/2)` inside the logarithm is exactly what makes the value at `m = 0` agree
 with the value at `m = 1`. -/
@@ -347,7 +331,7 @@ theorem integral_logChord_mul_cos (m : ℕ) :
       intervalIntegral.integral_const, smul_eq_mul, sub_zero,
       show max 1 0 = 1 from max_eq_left (Nat.zero_le 1), Nat.cast_one, div_one]
     ring
-  · rw [hsplit _ (by fun_prop), integral_cos_nat_mul hm, integral_log_sin_half_mul_cos hm,
+  · rw [hsplit _ (by fun_prop), integral_cos_nat_mul_eq_zero hm, integral_log_sin_half_mul_cos hm,
       mul_zero, zero_add, max_eq_right (Nat.one_le_iff_ne_zero.2 hm)]
 
 /-- The `m`-th sine Fourier coefficient of `logChord` over `[0, 2 π]` vanishes. -/
@@ -365,7 +349,7 @@ theorem integral_logChord_mul_sin (m : ℕ) :
         + Real.log (Real.sin (y / 2)) * Real.sin ((m : ℝ) * y) from
     funext fun y => by rw [logChord]; ring,
     intervalIntegral.integral_add h1 h2, intervalIntegral.integral_const_mul,
-    integral_sin_nat_mul, integral_log_sin_half_mul_sin, mul_zero, add_zero]
+    integral_sin_nat_mul_eq_zero, integral_log_sin_half_mul_sin, mul_zero, add_zero]
 
 /-- **The kernel of the logarithmic single layer operator** of the unit circle,
 `-(1 / π) log |2 e^(-1/2) sin ((t - s) / 2)|`, where `|2 sin ((t - s) / 2)| = |e^(i t) - e^(i s)|`
@@ -432,21 +416,22 @@ private theorem logSingleLayer_eq_of_periodic {φ : ℝ → ℝ}
   rw [show t - 2 * π + 2 * π = t by ring, zero_add] at this
   exact this
 
-/-- **The logarithmic single layer operator multiplies the cosine mode `cos (m ·)` by
-`1 / max 1 m`.** -/
-theorem logSingleLayer_cos (m : ℕ) (t : ℝ) :
-    logSingleLayer (fun s => Real.cos ((m : ℝ) * s)) t = Real.cos ((m : ℝ) * t) / max 1 m := by
-  have hper : Function.Periodic (fun s => Real.cos ((m : ℝ) * s)) (2 * π) := by
+/-- **The logarithmic single layer operator multiplies the shifted cosine mode `cos (m · + c)` by
+`1 / max 1 m`**; the cosine and sine modes are `c = 0` and `c = -π/2`. -/
+theorem logSingleLayer_cos_add (m : ℕ) (c t : ℝ) :
+    logSingleLayer (fun s => Real.cos ((m : ℝ) * s + c)) t
+      = Real.cos ((m : ℝ) * t + c) / max 1 m := by
+  have hper : Function.Periodic (fun s => Real.cos ((m : ℝ) * s + c)) (2 * π) := by
     intro s
-    change Real.cos ((m : ℝ) * (s + 2 * π)) = Real.cos ((m : ℝ) * s)
-    rw [show (m : ℝ) * (s + 2 * π) = (m : ℝ) * s + (m : ℕ) * (2 * π) by ring,
+    change Real.cos ((m : ℝ) * (s + 2 * π) + c) = Real.cos ((m : ℝ) * s + c)
+    rw [show (m : ℝ) * (s + 2 * π) + c = ((m : ℝ) * s + c) + (m : ℕ) * (2 * π) by ring,
       Real.cos_add_nat_mul_two_pi]
   rw [logSingleLayer_eq_of_periodic hper t]
-  have hexp : ∀ y : ℝ, logChord y * Real.cos ((m : ℝ) * (t - y))
-      = Real.cos ((m : ℝ) * t) * (logChord y * Real.cos ((m : ℝ) * y))
-        + Real.sin ((m : ℝ) * t) * (logChord y * Real.sin ((m : ℝ) * y)) := by
+  have hexp : ∀ y : ℝ, logChord y * Real.cos ((m : ℝ) * (t - y) + c)
+      = Real.cos ((m : ℝ) * t + c) * (logChord y * Real.cos ((m : ℝ) * y))
+        + Real.sin ((m : ℝ) * t + c) * (logChord y * Real.sin ((m : ℝ) * y)) := by
     intro y
-    rw [show (m : ℝ) * (t - y) = (m : ℝ) * t - (m : ℝ) * y by ring, Real.cos_sub]
+    rw [show (m : ℝ) * (t - y) + c = ((m : ℝ) * t + c) - (m : ℝ) * y by ring, Real.cos_sub]
     ring
   rw [intervalIntegral.integral_congr (fun y _ => hexp y),
     intervalIntegral.integral_add
@@ -454,33 +439,21 @@ theorem logSingleLayer_cos (m : ℕ) (t : ℝ) :
       ((intervalIntegrable_logChord_mul (by fun_prop)).const_mul _),
     intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul,
     integral_logChord_mul_cos, integral_logChord_mul_sin, mul_zero, add_zero]
-  have hmax : (0 : ℝ) < ((max 1 m : ℕ) : ℝ) :=
-    Nat.cast_pos.2 (lt_of_lt_of_le Nat.zero_lt_one (le_max_left 1 m))
   field_simp
+
+/-- **The logarithmic single layer operator multiplies the cosine mode `cos (m ·)` by
+`1 / max 1 m`.** -/
+theorem logSingleLayer_cos (m : ℕ) (t : ℝ) :
+    logSingleLayer (fun s => Real.cos ((m : ℝ) * s)) t = Real.cos ((m : ℝ) * t) / max 1 m := by
+  simpa using logSingleLayer_cos_add m 0 t
 
 /-- **The logarithmic single layer operator multiplies the sine mode `sin (m ·)` by
 `1 / max 1 m`.** -/
 theorem logSingleLayer_sin (m : ℕ) (t : ℝ) :
     logSingleLayer (fun s => Real.sin ((m : ℝ) * s)) t = Real.sin ((m : ℝ) * t) / max 1 m := by
-  have hper : Function.Periodic (fun s => Real.sin ((m : ℝ) * s)) (2 * π) := by
-    intro s
-    change Real.sin ((m : ℝ) * (s + 2 * π)) = Real.sin ((m : ℝ) * s)
-    rw [show (m : ℝ) * (s + 2 * π) = (m : ℝ) * s + (m : ℕ) * (2 * π) by ring,
-      Real.sin_add_nat_mul_two_pi]
-  rw [logSingleLayer_eq_of_periodic hper t]
-  have hexp : ∀ y : ℝ, logChord y * Real.sin ((m : ℝ) * (t - y))
-      = Real.sin ((m : ℝ) * t) * (logChord y * Real.cos ((m : ℝ) * y))
-        - Real.cos ((m : ℝ) * t) * (logChord y * Real.sin ((m : ℝ) * y)) := by
-    intro y
-    rw [show (m : ℝ) * (t - y) = (m : ℝ) * t - (m : ℝ) * y by ring, Real.sin_sub]
-    ring
-  rw [intervalIntegral.integral_congr (fun y _ => hexp y),
-    intervalIntegral.integral_sub
-      ((intervalIntegrable_logChord_mul (by fun_prop)).const_mul _)
-      ((intervalIntegrable_logChord_mul (by fun_prop)).const_mul _),
-    intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul,
-    integral_logChord_mul_cos, integral_logChord_mul_sin, mul_zero, sub_zero]
-  field_simp
+  have h := logSingleLayer_cos_add m (-(π / 2)) t
+  simp only [← sub_eq_add_neg, Real.cos_sub_pi_div_two] at h
+  exact h
 
 /-! ### The integer Fourier modes -/
 

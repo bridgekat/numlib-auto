@@ -280,8 +280,9 @@ section Lebesgue
 
 variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- Turn a uniform bound `r ≤ C ‖u - q‖` over a nonempty set into a bound by the distance. -/
-private theorem le_mul_infDist {C r : ℝ} {u : V} {S : Set V} (hC : 0 ≤ C) (hS : S.Nonempty)
+/-- Turn a uniform bound `r ≤ C ‖u - q‖` over a nonempty set into a bound by the distance:
+`r ≤ C dist(u, S)`. -/
+theorem Metric.le_mul_infDist {C r : ℝ} {u : V} {S : Set V} (hC : 0 ≤ C) (hS : S.Nonempty)
     (h : ∀ q ∈ S, r ≤ C * ‖u - q‖) : r ≤ C * Metric.infDist u S := by
   rcases hC.lt_or_eq with hC' | hC'
   · refine (div_le_iff₀' hC').1 ((Metric.le_infDist hS).2 fun q hq => ?_)
@@ -292,18 +293,14 @@ private theorem le_mul_infDist {C r : ℝ} {u : V} {S : Set V} (hC : 0 ≤ C) (h
     rw [← hC'] at this ⊢
     simpa using this
 
-/-- A bounded projection acts as the identity on its range. -/
-private theorem apply_of_mem_range {P : V →L[𝕜] V} (hP : IsIdempotentElem P) {q : V}
-    (hq : q ∈ LinearMap.range (P : V →ₗ[𝕜] V)) : P q = q := by
-  obtain ⟨y, rfl⟩ := hq
-  simpa using DFunLike.congr_fun hP y
-
 /-- Pointwise form: `‖u - P u‖ ≤ (1 + ‖P‖) ‖u - q‖` for every `q` in the range of `P`. -/
 theorem norm_sub_apply_le_of_isIdempotentElem_of_mem (P : V →L[𝕜] V) (hP : IsIdempotentElem P)
     (u : V) {q : V} (hq : q ∈ LinearMap.range (P : V →ₗ[𝕜] V)) :
     ‖u - P u‖ ≤ (1 + ‖P‖) * ‖u - q‖ := by
   have key : u - P u = (u - q) - P (u - q) := by
-    rw [map_sub, apply_of_mem_range hP hq]; abel
+    rw [map_sub, show P q = q from
+      (LinearMap.IsIdempotentElem.mem_range_iff
+        (ContinuousLinearMap.IsIdempotentElem.toLinearMap hP)).1 hq]; abel
   rw [key]
   refine (norm_sub_le _ _).trans ?_
   rw [add_mul, one_mul]
@@ -316,17 +313,19 @@ quasi-optimality constant. This is the abstract form of the estimates [han2009th
 (3.7.11), (3.7.14) and (3.7.21) make for particular projection methods. -/
 theorem norm_sub_apply_le_of_isIdempotentElem (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u : V) :
     ‖u - P u‖ ≤ (1 + ‖P‖) * Metric.infDist u (LinearMap.range (P : V →ₗ[𝕜] V) : Set V) :=
-  le_mul_infDist (by positivity) ⟨0, zero_mem _⟩ fun _ hq =>
+  Metric.le_mul_infDist (by positivity) ⟨0, zero_mem _⟩ fun _ hq =>
     norm_sub_apply_le_of_isIdempotentElem_of_mem P hP u hq
 
 /-- Sharper form `‖u - P u‖ ≤ ‖1 - P‖ dist(u, S)`. -/
 theorem norm_sub_apply_le_of_isIdempotentElem' (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u : V) :
     ‖u - P u‖ ≤ ‖(1 : V →L[𝕜] V) - P‖ *
       Metric.infDist u (LinearMap.range (P : V →ₗ[𝕜] V) : Set V) := by
-  refine le_mul_infDist (norm_nonneg _) ⟨0, zero_mem _⟩ fun q hq => ?_
+  refine Metric.le_mul_infDist (norm_nonneg _) ⟨0, zero_mem _⟩ fun q hq => ?_
   have key : u - P u = ((1 : V →L[𝕜] V) - P) (u - q) := by
     change u - P u = (u - q) - P (u - q)
-    rw [map_sub, apply_of_mem_range hP hq]; abel
+    rw [map_sub, show P q = q from
+      (LinearMap.IsIdempotentElem.mem_range_iff
+        (ContinuousLinearMap.IsIdempotentElem.toLinearMap hP)).1 hq]; abel
   rw [key]
   exact ((1 : V →L[𝕜] V) - P).le_opNorm _
 

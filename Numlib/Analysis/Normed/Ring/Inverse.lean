@@ -44,8 +44,9 @@ namespace NormedRing
 
 /-- The Neumann bound without assuming `‖1‖ = 1`; only `‖1‖ ≤ 1` is used.  This form applies to
 rings of continuous linear maps, which are not `NormOneClass` when the space is trivial. -/
-private theorem norm_inverse_one_sub_le' {R : Type*} [NormedRing R] [HasSummableGeomSeries R]
-    (h₁ : ‖(1 : R)‖ ≤ 1) {t : R} (h : ‖t‖ < 1) : ‖Ring.inverse (1 - t)‖ ≤ 1 / (1 - ‖t‖) := by
+theorem norm_inverse_one_sub_le_of_norm_one_le {R : Type*} [NormedRing R]
+    [HasSummableGeomSeries R] (h₁ : ‖(1 : R)‖ ≤ 1) {t : R} (h : ‖t‖ < 1) :
+    ‖Ring.inverse (1 - t)‖ ≤ 1 / (1 - ‖t‖) := by
   rw [← geom_series_eq_inverse t h, one_div]
   have := tsum_geometric_le_of_norm_lt_one t h
   linarith
@@ -67,7 +68,7 @@ variable [NormOneClass R] [CompleteSpace R]
 /-- Geometric series theorem with the explicit bound `‖(1 - t)⁻¹‖ ≤ 1 / (1 - ‖t‖)`. -/
 theorem norm_inverse_one_sub_le {t : R} (h : ‖t‖ < 1) :
     ‖Ring.inverse (1 - t)‖ ≤ 1 / (1 - ‖t‖) :=
-  norm_inverse_one_sub_le' norm_one.le h
+  norm_inverse_one_sub_le_of_norm_one_le norm_one.le h
 
 omit [NormOneClass R] [CompleteSpace R] in
 private theorem commute_one_sub_geom_sum (t : R) (m : ℕ) :
@@ -253,20 +254,10 @@ private theorem norm_neg_inv_mul_lt_one {x : Rˣ} {t : R} (h : ‖t‖ < ‖(↑
 private theorem inverse_add_eq (x : Rˣ) {t : R} (h : ‖t‖ < ‖(↑x⁻¹ : R)‖⁻¹) :
     Ring.inverse ((x : R) + t)
       = Ring.inverse (1 - -((↑x⁻¹ : R) * t)) * (↑x⁻¹ : R) := by
-  have hs : IsUnit (1 - -((↑x⁻¹ : R) * t)) := isUnit_one_sub_of_norm_lt_one
-    (norm_neg_inv_mul_lt_one h)
-  have hfac : (x : R) + t = (x : R) * (1 - -((↑x⁻¹ : R) * t)) := by
-    rw [sub_neg_eq_add, mul_add, mul_one, ← mul_assoc, Units.mul_inv, one_mul]
-  have hunit : IsUnit ((x : R) + t) := isUnit_add_of_norm_lt x t h
-  have h₁ : ((x : R) + t) * (Ring.inverse (1 - -((↑x⁻¹ : R) * t)) * (↑x⁻¹ : R)) = 1 := by
-    rw [hfac, mul_assoc, ← mul_assoc _ (Ring.inverse _), Ring.mul_inverse_cancel _ hs, one_mul,
-      Units.mul_inv]
-  calc Ring.inverse ((x : R) + t)
-      = Ring.inverse ((x : R) + t) *
-          (((x : R) + t) * (Ring.inverse (1 - -((↑x⁻¹ : R) * t)) * (↑x⁻¹ : R))) := by
-        rw [h₁, mul_one]
-    _ = Ring.inverse (1 - -((↑x⁻¹ : R) * t)) * (↑x⁻¹ : R) := by
-        rw [← mul_assoc, Ring.inverse_mul_cancel _ hunit, one_mul]
+  have h' : ‖Ring.inverse (x : R) * t‖ < 1 := by
+    rw [Ring.inverse_unit]
+    exact (norm_mul_le _ _).trans_lt (norm_inv_mul_lt_one h)
+  simpa only [Ring.inverse_unit] using NormedRing.inverse_add_eq_mul x.isUnit h'
 
 /-- Perturbation bound for the inverse: `‖(x + t)⁻¹‖ ≤ ‖x⁻¹‖ / (1 - ‖x⁻¹‖ ‖t‖)`. -/
 theorem norm_inverse_add_le (x : Rˣ) (t : R) (h : ‖t‖ < ‖(↑x⁻¹ : R)‖⁻¹) :
@@ -360,7 +351,7 @@ theorem exists_symm_norm_le_of_add (e : E ≃L[𝕜] F) (t : E →L[𝕜] F)
       _ ≤ (1 / (1 - ‖(e.symm : F →L[𝕜] E)‖ * ‖t‖)) * ‖(e.symm : F →L[𝕜] E)‖ := by
           refine mul_le_mul_of_nonneg_right ?_ (norm_nonneg _)
           rw [hvinv]
-          exact (NormedRing.norm_inverse_one_sub_le' hone hnu1).trans
+          exact (NormedRing.norm_inverse_one_sub_le_of_norm_one_le hone hnu1).trans
             (one_div_one_sub_le_one_div_one_sub (by rwa [norm_neg]) h)
       _ = ‖(e.symm : F →L[𝕜] E)‖ / (1 - ‖(e.symm : F →L[𝕜] E)‖ * ‖t‖) := by ring
   · have hsub : (↑v⁻¹ : E →L[𝕜] E).comp (e.symm : F →L[𝕜] E) - (e.symm : F →L[𝕜] E)

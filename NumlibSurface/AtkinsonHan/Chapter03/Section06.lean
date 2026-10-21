@@ -375,8 +375,8 @@ theorem example_3_6_6 {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
     (hlast : (x (n + 1) : ℝ) = b) :
     IsProjectionOperator (piecewiseLinearInterpCLM n x) ∧
       ‖piecewiseLinearInterpCLM n x‖ = 1 :=
-  ⟨isIdempotentElem_piecewiseLinearInterpCLM hstep hfirst hlast,
-    norm_piecewiseLinearInterpCLM hstep hfirst hlast⟩
+  ⟨isIdempotentElem_piecewiseLinearInterpCLM ⟨fun i hi => hstep i (by omega), hfirst, hlast⟩,
+    norm_piecewiseLinearInterpCLM ⟨fun i hi => hstep i (by omega), hfirst, hlast⟩⟩
 
 /-- **Example 3.6.8.**  The Fourier projection `𝓕ₙ` is a projection operator on `C_p(2π)` whose
 range is the space `𝕋ₙ` of trigonometric polynomials of degree at most `n`, and whose operator

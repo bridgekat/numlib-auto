@@ -250,7 +250,7 @@ private theorem isMinResidualIterate_of_rotated_mulVec (A : Matrix (Fin n) (Fin 
           ‖b - toEuclideanLin A x₀‖ k| := by
   set T := toEuclideanLin A
   set h := Arnoldi.coeff T (b - T x₀)
-  have hh : ∀ i j, j + 1 < i → h i j = 0 := fun i j hij => Arnoldi.coeff_eq_zero_of_lt _ _ hij
+  have hh : Matrix.IsUpperHessenberg (n := ℕ) h := Arnoldi.isUpperHessenberg_coeff _ _
   have hρ : ∀ l < k, givensRho h l ≠ 0 := fun l hl => givensRho_arnoldi_ne_zero (by omega)
   have hsq := norm_sq_firstVec_sub_mulVec_eq h hh hρ (‖b - T x₀‖ : ℝ)
   have hzero : ‖(WithLp.toLp 2 ((fun i : Fin k => gvec h (‖b - T x₀‖ : ℝ) (i : ℕ)) -
@@ -411,8 +411,7 @@ theorem symmlq_minNorm_solution {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
         ‖(WithLp.toLp 2 ((givensQ (Arnoldi.coeff (toEuclideanLin A) r₀) m)ᵀ *ᵥ Fin.snoc w 0) :
             EuclideanSpace ℝ (Fin (m + 1)))‖ ≤
           ‖(WithLp.toLp 2 y' : EuclideanSpace ℝ (Fin (m + 1)))‖ := by
-  have hh : ∀ i j, j + 1 < i → Arnoldi.coeff (toEuclideanLin A) r₀ i j = 0 :=
-    fun i j hij => Arnoldi.coeff_eq_zero_of_lt _ _ hij
+  have hh := Arnoldi.isUpperHessenberg_coeff (toEuclideanLin A) r₀
   have hρ : ∀ l < m, givensRho (Arnoldi.coeff (toEuclideanLin A) r₀) l ≠ 0 := fun l hl => by
     have := givensRho_arnoldi_ne_zero (A := toEuclideanLin A) (b := r₀) (x₀ := 0) (k := l)
       (by simpa using (show l + 1 < grade (toEuclideanLin A) r₀ by omega))
@@ -477,7 +476,8 @@ theorem equation_11_4_6 (A : Matrix (Fin m) (Fin n) ℝ) (u₁ : EuclideanSpace 
         GolubKahan.rightVec (toEuclideanLin Aᵀ) (toEuclideanLin A) u₁ i) := by
   refine ⟨fun y => ?_, fun hk => ?_, fun hk => ?_⟩
   · have hrel := GolubKahan.hessenbergRelation₂ (A := toEuclideanLin Aᵀ)
-      (Astar := toEuclideanLin A) u₁ (fun u x => inner_toEuclideanLin_transpose' A u x)
+      (Astar := toEuclideanLin A) u₁
+      (LinearMap.isAdjointPair_inner_iff.2 fun u x => inner_toEuclideanLin_transpose' A u x)
     rw [bidiagLower_eq_hessenbergOf]
     exact hrel.apply_sum k y
   · exact (Arnoldi.orthonormal _ _).comp (Fin.castLE hk) (Fin.castLE_injective hk)
@@ -537,7 +537,7 @@ theorem equation_11_4_7 (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ
           EuclideanSpace ℝ (Fin (k + 1)))‖ := by
     intro y
     have hres := GolubKahan.residual_eq (A := T) (Astar := toEuclideanLin Aᵀ)
-      (fun u x => (real_inner_comm _ _).trans
+      (LinearMap.isAdjointPair_inner_iff.2 fun u x => (real_inner_comm _ _).trans
         ((inner_toEuclideanLin_transpose' A x u).symm.trans (real_inner_comm _ _))) hu hr k y
     rw [hres, map_algebraMap_real, norm_sum_smul_of_orthonormal hon]
   refine ⟨hred, fun y hy => ⟨?_, fun x hx => ?_⟩⟩
@@ -683,7 +683,7 @@ theorem equation_11_4_9 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpac
       (b - toEuclideanLin A x₀)) k) k).IsUpperTriangular ∧
     ∀ j < k, rotated (Arnoldi.coeff (toEuclideanLin A) (b - toEuclideanLin A x₀)) k k j = 0 := by
   set h := Arnoldi.coeff (toEuclideanLin A) (b - toEuclideanLin A x₀)
-  have hh : ∀ i j, j + 1 < i → h i j = 0 := fun i j hij => Arnoldi.coeff_eq_zero_of_lt _ _ hij
+  have hh : Matrix.IsUpperHessenberg (n := ℕ) h := Arnoldi.isUpperHessenberg_coeff _ _
   exact ⟨givensQ_mem_unitaryGroup h k fun l hl => givensRho_arnoldi_ne_zero (by omega),
     givensQ_mul_hessenbergOf h k, hessenbergSqOf_rotated_isUpperTriangular h hh (by omega),
     fun j hj => rotated_last_row h hh k j hj⟩
@@ -2092,9 +2092,9 @@ theorem bicg_inner_eq_poly (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin 
             (WithLp.toLp 2 b) (WithLp.toLp 2 x₀) (WithLp.toLp 2 rt₀) k ^ 2)
           (WithLp.toLp 2 b - toEuclideanLin A (WithLp.toLp 2 x₀)))) := by
   obtain ⟨h1, h2, h3, h4, -⟩ := equation_11_4_14 A b x₀ rt₀ k
-  have hB : ∀ x y : EuclideanSpace ℝ (Fin n),
-      inner ℝ (toEuclideanLin A x) y = inner ℝ x (toEuclideanLin Aᵀ y) :=
-    inner_toEuclideanLin_transpose A
+  have hB : LinearMap.IsAdjointPair (innerₛₗ ℝ).flip (innerₛₗ ℝ).flip (toEuclideanLin A)
+      (toEuclideanLin Aᵀ) :=
+    LinearMap.isAdjointPair_inner_iff'.2 (inner_toEuclideanLin_transpose A)
   set T := toEuclideanLin A
   set ψ := BCG.residualPoly T (toEuclideanLin Aᵀ) (WithLp.toLp 2 b) (WithLp.toLp 2 x₀)
     (WithLp.toLp 2 rt₀) k
@@ -2135,7 +2135,8 @@ theorem cgs_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n �
       (CGS.step (toEuclideanLin A) (WithLp.toLp 2 rt₀)) CGSState.toState (cgsStep_exact A rt₀) k
     simp only [cgs, Id.run_bind, residual_init_exact, h]
     simp only [CGS.iterate, CGSState.toState, WithLp.toLp_sub, toEuclideanLin_toLp]
-  obtain ⟨h1, h2, -⟩ := CGS.residual_eq_aeval_sq (inner_toEuclideanLin_transpose A) k
+  obtain ⟨h1, h2, -⟩ := CGS.residual_eq_aeval_sq
+    (LinearMap.isAdjointPair_inner_iff'.2 (inner_toEuclideanLin_transpose A)) k
     (b := WithLp.toLp 2 b) (x₀ := WithLp.toLp 2 x₀) (rs₀ := WithLp.toLp 2 rt₀)
   exact ⟨hs, by rw [← h1, ← hs]; rfl, by rw [← h2, ← hs]; rfl⟩
 

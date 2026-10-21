@@ -6,6 +6,7 @@ import Mathlib.Topology.Algebra.Polynomial
 import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.ContinuousMap.Polynomial
 import Mathlib.Topology.Order.IntermediateValue
+import Numlib.Topology.ContinuousMap.Compact
 import Numlib.Topology.Order.IntermediateValue
 import Numlib.Analysis.Fourier.TrigonometricProduct
 import Numlib.Analysis.Normed.Module.BestApprox
@@ -313,17 +314,6 @@ theorem isBestApprox_of_equioscillates {X : Set ℝ} [CompactSpace X] {n : ℕ} 
 
 /-! ### The extreme set of a best approximation, and uniqueness -/
 
-/-- On a compact nonempty space the maximum modulus of a continuous function is attained. -/
-private theorem exists_abs_eq_norm {X : Type*} [TopologicalSpace X] [CompactSpace X]
-    [Nonempty X] (g : C(X, ℝ)) :
-    ∃ t : X, |g t| = ‖g‖ := by
-  obtain ⟨t, -, hmax⟩ := isCompact_univ.exists_isMaxOn Set.univ_nonempty
-    (continuous_abs.comp g.continuous).continuousOn
-  refine ⟨t, le_antisymm (by simpa using g.norm_coe_le_norm t) ?_⟩
-  rw [ContinuousMap.norm_le _ (abs_nonneg _)]
-  intro u
-  simpa using hmax (Set.mem_univ u)
-
 /-- **A direction of improvement.** If some `q` has the same strict sign as `g` at every point where
 `|g|` attains its maximum, then `g - λ q` is strictly smaller than `g` in sup norm for all small `λ
 > 0`: away from the extreme set there is room to spare, and at the extreme set the correction has
@@ -357,7 +347,8 @@ private theorem exists_norm_sub_smul_lt {X : Type*} [TopologicalSpace X] [Compac
   have hlamq : lam * ‖q‖ < min δ ‖g‖ := by
     rw [hlamdef, div_mul_eq_mul_div, div_lt_iff₀ (by positivity)]
     nlinarith [norm_nonneg q]
-  obtain ⟨t, ht⟩ := exists_abs_eq_norm (g - lam • q)
+  obtain ⟨t, ht⟩ := (g - lam • q).exists_norm_apply_eq_norm
+  rw [Real.norm_eq_abs] at ht
   rw [← ht]
   have happ : (g - lam • q) t = g t - lam * q t := by simp
   have hqt : |q t| ≤ ‖q‖ := by simpa using q.norm_coe_le_norm t
@@ -964,12 +955,11 @@ private theorem exists_maximal_equioscillates {X : Set ℝ} [CompactSpace X] [No
     {g : C(X, ℝ)} (hcon : ¬ Equioscillates g (n + 2)) :
     ∃ m : ℕ, 1 ≤ m ∧ m ≤ n + 1 ∧ Equioscillates g m ∧ ∀ k, m < k → ¬ Equioscillates g k := by
   classical
-  obtain ⟨t₀, ht₀⟩ := exists_abs_eq_norm g
+  obtain ⟨t₀, ht₀⟩ := g.exists_norm_apply_eq_norm
+  rw [Real.norm_eq_abs] at ht₀
   have halt1 : Equioscillates g 1 := by
     refine equioscillates_of_alternating (w := fun _ : Fin 1 => t₀) (c := g t₀) ?_ ht₀ ?_
     · intro a b hab
-      have ha := a.isLt
-      have hb := b.isLt
       exact absurd (Fin.lt_def.mp hab) (by omega)
     · intro i
       have hi : (i : ℕ) = 0 := by have := i.isLt; omega
@@ -1044,14 +1034,11 @@ private theorem exists_separators_of_not_equioscillates {X : Set ℝ} [CompactSp
   have hzstrict : ∀ i j : Fin m, i < j → (z i : ℝ) < (z j : ℝ) := by
     intro a b hab
     refine lt_of_le_of_ne (hzmono a b hab.le) fun heq => ?_
-    have hb := b.isLt
     have ha1 : (a : ℕ) + 1 < m := by
-      have := Fin.lt_def.mp hab
       omega
     have h1 : (z a : ℝ) ≤ (z ⟨(a : ℕ) + 1, ha1⟩ : ℝ) := hzmono _ _ (by simp [Fin.le_def])
     have h2 : (z ⟨(a : ℕ) + 1, ha1⟩ : ℝ) ≤ (z b : ℝ) := hzmono _ _ (by
       simp only [Fin.le_def]
-      have := Fin.lt_def.mp hab
       omega)
     have h3 : z ⟨(a : ℕ) + 1, ha1⟩ = z a := Subtype.ext (le_antisymm (heq ▸ h2) h1)
     have h5 : g (z ⟨(a : ℕ) + 1, ha1⟩) = g (z a) := by rw [h3]

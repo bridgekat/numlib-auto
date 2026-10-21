@@ -163,7 +163,6 @@ theorem abs_sineSeriesDerivX_le (hν : 0 ≤ ν) (m : ℕ) {p : ℝ × ℝ} (hp 
     have : 0 ≤ ν * ((j : ℝ) + 1) ^ 2 * p.2 := by positivity
     exact Real.exp_le_one_iff.2 (by linarith)
   have hs := Real.abs_sin_le_one (((j : ℝ) + 1) * p.1 + m * (π / 2))
-  have h0 : 0 ≤ |b j| * ((j : ℝ) + 1) ^ m := by positivity
   calc |b j| * Real.exp (-ν * ((j : ℝ) + 1) ^ 2 * p.2) * ((j : ℝ) + 1) ^ m *
         |Real.sin (((j : ℝ) + 1) * p.1 + m * (π / 2))|
       ≤ |b j| * 1 * ((j : ℝ) + 1) ^ m * 1 := by gcongr
@@ -179,7 +178,6 @@ theorem abs_sineSeriesDerivT_le (hν : 0 ≤ ν) (m : ℕ) {p : ℝ × ℝ} (hp 
     have : 0 ≤ ν * ((j : ℝ) + 1) ^ 2 * p.2 := by positivity
     exact Real.exp_le_one_iff.2 (by linarith)
   have hs := Real.abs_sin_le_one (((j : ℝ) + 1) * p.1)
-  have h0 : 0 ≤ |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ m := by positivity
   calc |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ m * Real.exp (-ν * ((j : ℝ) + 1) ^ 2 * p.2) *
         |Real.sin (((j : ℝ) + 1) * p.1)|
       ≤ |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ m * 1 * 1 := by gcongr

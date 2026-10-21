@@ -150,7 +150,6 @@ theorem IsSchurCohnPair.step {A B c : ℝ} (hc : c ≠ 0) (hAB : |B| < |A|)
     rw [← hSdef, ← hTdef] at hkey
     have hns : Complex.normSq qs ≤ Complex.normSq (z * q) := by
       rw [← Complex.sq_norm, ← Complex.sq_norm]
-      have : ‖qs‖ ≤ ‖z * q‖ := hqs.trans hzq
       nlinarith [norm_nonneg qs, norm_nonneg (z * q)]
     have hTS : Complex.normSq T ≤ Complex.normSq S := by nlinarith
     have hnTS : ‖T‖ ≤ ‖S‖ := by

@@ -734,7 +734,7 @@ theorem corollary_34_5_1 (hC : Convex ℝ C) (hCne : C.Nonempty) (hDne : D.Nonem
       ∀ L : Rn m × Rn n → EReal, ClosedSaddleFn L → ConcaveConvexFn L → ProperSaddleFn L →
         (kernel L = ConvexAnalysis.convexRestrict (ri (C ×ˢ D)) (fun p => (K p : EReal)) ↔
           SaddleEquiv M L) :=
-  exists_unique_saddleEquiv_class_of_finite hC hCne hDne hconv hconc
+  exists_unique_saddleEquiv_class_of_finite hC hCne hDne ⟨hconc, hconv⟩
 
 end Cor3451
 

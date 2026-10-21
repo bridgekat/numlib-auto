@@ -139,7 +139,7 @@ private theorem one_lt_abs_shift {a b γ : ℝ} (hab : a < b) (hγ : γ ∉ Set.
       linarith) (neg_le_abs _)
 
 /-- `|T_m|` is unchanged by a sign change of its argument, `T_m` being even or odd with `m`. -/
-private theorem abs_eval_T_neg (m : ℕ) (z : ℝ) :
+theorem abs_eval_T_neg (m : ℕ) (z : ℝ) :
     |(T ℝ (m : ℤ)).eval (-z)| = |(T ℝ (m : ℤ)).eval z| := by
   simp [T_eval_neg, abs_mul]
 
@@ -156,8 +156,10 @@ theorem shifted_eval_self (m : ℕ) {a b γ : ℝ} (hab : a < b) (hγ : γ ∉ S
   rw [eval_shifted m hab, div_self hTne]
 
 /-- The extremal property of `T_m` outside `[-1, 1]`: a real polynomial of degree at most `m`
-bounded by `1` on `[-1, 1]` is bounded by `|T_m|` at any point of absolute value at least `1`. -/
-private theorem eval_le_abs_eval_T {m : ℕ} {P : ℝ[X]} (hdeg : P.degree ≤ m)
+bounded by `1` on `[-1, 1]` is bounded by `|T_m|` at any point of absolute value at least `1`
+(`eval_iterate_derivative_le_of_forall_abs_le_one` at order `0` on `[1, ∞)`, and its reflection
+on `(-∞, -1]`). -/
+theorem eval_le_abs_eval_T {m : ℕ} {P : ℝ[X]} (hdeg : P.degree ≤ m)
     (hbnd : ∀ y ∈ Set.Icc (-1 : ℝ) 1, |P.eval y| ≤ 1) {z : ℝ} (hz : 1 ≤ |z|) :
     P.eval z ≤ |(T ℝ (m : ℤ)).eval z| := by
   rcases le_or_gt 1 z with hz1 | hz1
@@ -182,12 +184,6 @@ private theorem eval_le_abs_eval_T {m : ℕ} {P : ℝ[X]} (hdeg : P.degree ≤ m
       _ ≤ |(T ℝ (m : ℤ)).eval (-z)| := le_abs_self _
       _ = |(T ℝ (m : ℤ)).eval z| := abs_eval_T_neg m z
 
-/-- The modulus of a polynomial attains a maximum on a nonempty compact interval. -/
-private theorem exists_isGreatest_abs_eval (p : ℝ[X]) {a b : ℝ} (hab : a ≤ b) :
-    ∃ M, IsGreatest ((fun t => |p.eval t|) '' Set.Icc a b) M :=
-  (isCompact_Icc.image p.continuous.abs).exists_isGreatest
-    ((Set.nonempty_Icc.mpr hab).image _)
-
 /-- Lower bound (general normalization point `γ ∉ [a, b]`): every polynomial of degree `≤ m`
 with `p γ = 1` has sup over `[a, b]` at least `1 / |T_m((b + a - 2γ)/(b - a))|`. -/
 theorem one_div_eval_T_le_sSup_abs_eval (m : ℕ) {a b γ : ℝ} (hab : a < b)
@@ -195,7 +191,8 @@ theorem one_div_eval_T_le_sSup_abs_eval (m : ℕ) {a b γ : ℝ} (hab : a < b)
     1 / |(T ℝ m).eval ((b + a - 2 * γ) / (b - a))| ≤
       sSup ((fun t => |p.eval t|) '' Set.Icc a b) := by
   have hba : b - a ≠ 0 := sub_ne_zero.mpr hab.ne'
-  obtain ⟨M, hMmem, hMub⟩ := exists_isGreatest_abs_eval p hab.le
+  obtain ⟨M, hMmem, hMub⟩ := (isCompact_Icc.image p.continuous.abs).exists_isGreatest
+    ((Set.nonempty_Icc.mpr hab.le).image _)
   rw [IsGreatest.csSup_eq ⟨hMmem, hMub⟩]
   have hMle : ∀ t ∈ Set.Icc a b, |p.eval t| ≤ M := fun t ht => hMub ⟨t, ht, rfl⟩
   have hMnonneg : 0 ≤ M := by
@@ -308,7 +305,6 @@ theorem one_div_eval_T_le_two_mul_pow {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
   have hs : Real.sqrt κ ^ 2 = κ := Real.sq_sqrt (by linarith)
   have hs1 : 1 < Real.sqrt κ := by nlinarith [Real.sqrt_nonneg κ]
   have hsm1 : Real.sqrt κ - 1 ≠ 0 := by linarith
-  have hsp1 : Real.sqrt κ + 1 ≠ 0 := by linarith
   have hx1 : (1 : ℝ) ≤ (κ + 1) / (κ - 1) := by
     rw [le_div_iff₀ hk1]; linarith
   have hsq : Real.sqrt (((κ + 1) / (κ - 1)) ^ 2 - 1) = 2 * Real.sqrt κ / (κ - 1) := by
@@ -321,10 +317,6 @@ theorem one_div_eval_T_le_two_mul_pow {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
       = (Real.sqrt κ + 1) / (Real.sqrt κ - 1) := by
     rw [hsq, ← add_div, div_eq_div_iff hk1.ne' hsm1]
     linear_combination 2 * hs
-  have hwpos : (0 : ℝ) < ((Real.sqrt κ + 1) / (Real.sqrt κ - 1)) ^ m := by
-    have : (0 : ℝ) < (Real.sqrt κ + 1) / (Real.sqrt κ - 1) := by
-      apply div_pos <;> linarith
-    positivity
   have hT : ((Real.sqrt κ + 1) / (Real.sqrt κ - 1)) ^ m / 2 ≤ (T ℝ (m : ℤ)).eval
       ((κ + 1) / (κ - 1)) := by
     have h := half_pow_le_eval_T hx1 m
@@ -368,7 +360,6 @@ theorem one_div_eval_T_eq_two_mul_pow_div {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
     rw [hsq, ← sub_div, hc, div_eq_div_iff hk1.ne' hsp1]
     linear_combination (-2) * hs
   rw [eval_T_eq_half_add_pow hx1, hw, hw', inv_pow, pow_mul, ← pow_mul, mul_comm 2 m, pow_mul]
-  have hcm : 0 < c ^ m := pow_pos hcpos m
   field_simp
 
 /-! ### Uniqueness of the constrained Chebyshev minimizer -/
@@ -652,7 +643,6 @@ theorem exists_eval_zero_eq_one_abs_le_of_union_Icc {a b c d : ℝ} (hab : a < b
       refine one_le_eval_T ?_ k
       rw [le_div_iff₀ (by linarith : (0 : ℝ) < κ - 1)]
       linarith
-    have hsqrtα : 0 < Real.sqrt |b * c| := Real.sqrt_pos.mpr hα0
     have hsqrtκ : Real.sqrt κ = Real.sqrt |a * d| / Real.sqrt |b * c| := by
       rw [hκ, Real.sqrt_div hβ0.le]
     have hratio : (Real.sqrt κ - 1) / (Real.sqrt κ + 1)

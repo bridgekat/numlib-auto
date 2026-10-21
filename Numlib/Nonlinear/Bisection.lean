@@ -106,7 +106,6 @@ theorem bracket_sub (f : ℝ → ℝ) (a b : ℝ) (k : ℕ) :
 theorem bracket_fst_le_snd (hab : a ≤ b) (k : ℕ) : (bracket f a b k).1 ≤ (bracket f a b k).2 := by
   have := bracket_sub f a b k
   have hpos : 0 ≤ (b - a) / 2 ^ k := by
-    have : 0 ≤ b - a := sub_nonneg.2 hab
     positivity
   linarith
 

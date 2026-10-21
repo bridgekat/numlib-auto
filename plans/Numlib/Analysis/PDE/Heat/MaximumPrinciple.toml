@@ -17,6 +17,9 @@ id = "IsTruncation.abs_le"
 id = "IsTruncation.le_self"
 
 [[node]]
+id = "IsTruncation.abs_apply_sub_le"
+
+[[node]]
 id = "truncationPrimitive"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Theorem 10.3, `H(s) = ∫₀ˢ G`"
 

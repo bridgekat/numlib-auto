@@ -227,12 +227,6 @@ private theorem inertia_neg_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
   rw [inertia_eq_eigenvalues₀]
   rfl
 
-/-- The quadratic form of `Xᴴ A X` at `y` is that of `A` at `X y`. -/
-private theorem inner_toEuclideanLin_conj (A X : Matrix n n 𝕜) (y : EuclideanSpace 𝕜 n) :
-    inner 𝕜 (toEuclideanLin (Xᴴ * A * X) y) y =
-      inner 𝕜 (toEuclideanLin A (toEuclideanLin X y)) (toEuclideanLin X y) := by
-  rw [toEuclideanLin_mul_apply, toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose_inner_left]
-
 /-- Half of Sylvester's law: an injective congruence does not increase the positive and negative
 counts. -/
 private theorem inertia_conj_le {A : Matrix n n 𝕜} (hA : A.IsHermitian) {X : Matrix n n 𝕜}
@@ -240,7 +234,7 @@ private theorem inertia_conj_le {A : Matrix n n 𝕜} (hA : A.IsHermitian) {X : 
     (isHermitian_conjTranspose_mul_mul X hA).inertia.1 ≤ hA.inertia.1 ∧
       (isHermitian_conjTranspose_mul_mul X hA).inertia.2.2 ≤ hA.inertia.2.2 := by
   rw [inertia_pos_eq, inertia_pos_eq, inertia_neg_eq, inertia_neg_eq]
-  have hq := fun y => congrArg RCLike.re (inner_toEuclideanLin_conj A X y)
+  have hq := fun y => congrArg RCLike.re (inner_toEuclideanLin_conjTranspose_mul_mul_apply A X y)
   exact ⟨(isSymmetric_toEuclideanLin_iff.mpr hA).card_neg_eigenvalues_le_of_re_inner_eq
       finrank_euclideanSpace _ finrank_euclideanSpace hX hq,
     (isSymmetric_toEuclideanLin_iff.mpr hA).card_pos_eigenvalues_le_of_re_inner_eq
@@ -321,12 +315,6 @@ theorem eigenvalues₀_sub_smul_one {A : Matrix n n 𝕜} (hA : A.IsHermitian) (
   change hTμ.eigenvalues _ k = hT.eigenvalues _ k - μ
   linarith
 
-/-- The quadratic form of a real matrix is the quadratic form of its Euclidean operator. -/
-private theorem toQuadraticForm'_toLp (A : Matrix n n ℝ) (x : EuclideanSpace ℝ n) :
-    Matrix.toQuadraticForm' A (WithLp.ofLp x) = RCLike.re (inner ℝ (toEuclideanLin A x) x) := by
-  rw [Matrix.toQuadraticForm', LinearMap.BilinMap.toQuadraticMap_apply, toLinearMap₂'_apply',
-    RCLike.re_to_real, EuclideanSpace.inner_eq_star_dotProduct, ofLp_toEuclideanLin, star_trivial]
-
 /-- **Bridge to Mathlib's signature** at `𝕜 = ℝ`: the positive count of the inertia of a real
 symmetric `A` is `QuadraticForm.sigPos` of the quadratic form `x ↦ x ⬝ᵥ A x`. Both are the largest
 dimension of a subspace on which the form is positive definite
@@ -346,14 +334,14 @@ theorem inertia_pos_eq_sigPos {A : Matrix n n ℝ} (hA : A.IsHermitian) :
     rintro ⟨_, x, hx, rfl⟩ hx0
     rw [QuadraticMap.restrict_apply]
     change 0 < Matrix.toQuadraticForm' A (WithLp.ofLp x)
-    rw [toQuadraticForm'_toLp]
+    rw [toQuadraticForm'_ofLp]
     exact hS x hx fun h => hx0 (by simp [h])
   · rintro ⟨V, rfl, hV⟩
     refine ⟨V.map e.symm.toLinearMap, LinearEquiv.finrank_map_eq e.symm V, ?_⟩
     rintro _ ⟨v, hv, rfl⟩ hx0
     have := hV ⟨v, hv⟩ fun h => hx0 (by rw [show v = 0 from congrArg Subtype.val h, map_zero])
     rw [QuadraticMap.restrict_apply] at this
-    rw [← toQuadraticForm'_toLp]
+    rw [← toQuadraticForm'_ofLp]
     exact this
 
 /-- **Bridge to Mathlib's signature**, negative part: the negative count of the inertia of a real

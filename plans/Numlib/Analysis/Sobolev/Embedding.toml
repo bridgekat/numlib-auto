@@ -66,9 +66,6 @@ id = "HasWeakFDerivOn.exists_seq_contDiff_hasCompactSupport_tendsto_top"
 id = "HasWeakFDerivOn.memLp_of_eq"
 
 [[node]]
-id = "SobolevEuclidean.eLpNorm_le_sum_of_hasWeakFDerivOn"
-
-[[node]]
 id = "SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le"
 
 [[node]]
@@ -289,9 +286,6 @@ id = "iteratedFDeriv_fun_sum_smul_const_of_contDiffAt"
 
 [[node]]
 id = "ContDiff.enorm_le_lintegral_fderiv_line"
-
-[[node]]
-id = "MeasureTheory.lintegral_fin_succ_eq"
 
 [[node]]
 id = "EuclideanSpace.stdVec"

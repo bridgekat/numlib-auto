@@ -4,8 +4,8 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.SpecialFunctions.Integrals`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.RingTheory.RootsOfUnity.Complex
+import Numlib.Analysis.Fourier.TrigonometricPolynomial
 
 /-!
 # The periodic trapezoidal rule is exact on trigonometric polynomials
@@ -22,8 +22,8 @@ what the integral sees.
 
 ## Main results
 
-* `Quadrature.sum_exp_angleNode` and `Quadrature.integral_exp_angle` — the two orthogonality
-  relations.
+* `Quadrature.sum_exp_angleNode` — the discrete orthogonality relation; the continuous one is
+  `integral_exp_I_int_mul`.
 * `Quadrature.trapezoid_eq_integral_of_expSum` — exactness on any finite combination of characters
   of degree less than `N`.
 * `Quadrature.trapezoid_eq_integral_cos_pow_mul_sin_pow` — exactness on `cos^a θ sin^b θ` when
@@ -72,22 +72,6 @@ theorem sum_exp_angleNode {N : ℕ} (hN : 0 < N) (p : ℤ) :
   · have hz1 : z ≠ 1 := fun h => hdvd ((hprim.zpow_eq_one_iff_dvd p).1 h)
     rw [ite_eq_right hdvd, geom_sum_eq hz1, hzN, sub_self, zero_div]
 
-/-- **Continuous orthogonality of the characters**: over one period `exp (i p θ)` integrates to
-`2 π` when `p = 0` and to `0` otherwise. -/
-theorem integral_exp_angle (p : ℤ) :
-    (∫ θ in (0 : ℝ)..(2 * π), Complex.exp (p * θ * I)) = if p = 0 then (2 * π : ℂ) else 0 := by
-  rcases eq_or_ne p 0 with rfl | hp
-  · simp
-  · have hc : ((p : ℂ) * I) ≠ 0 :=
-      mul_ne_zero (Int.cast_ne_zero.2 hp) Complex.I_ne_zero
-    rw [ite_eq_right hp,
-      intervalIntegral.integral_congr (g := fun θ : ℝ => Complex.exp (((p : ℂ) * I) * θ))
-        fun θ _ => by simp only []; congr 1; ring,
-      integral_exp_mul_complex hc]
-    have h2 : (p : ℂ) * I * ((2 * π : ℝ) : ℂ) = (p : ℂ) * (2 * π * I) := by push_cast; ring
-    rw [h2, Complex.exp_int_mul_two_pi_mul_I]
-    simp
-
 /-- **Exactness of the trapezoidal rule on a trigonometric polynomial** of degree less than `N`,
 written as a finite combination `∑ i ∈ s, c i * exp (i p_i θ)` of characters with `|p i| < N`. -/
 theorem trapezoid_eq_integral_of_expSum {ι : Type*} {N : ℕ} (hN : 0 < N) {s : Finset ι}
@@ -104,8 +88,10 @@ theorem trapezoid_eq_integral_of_expSum {ι : Type*} {N : ℕ} (hN : 0 < N) {s :
     Continuous.intervalIntegrable (by fun_prop) _ _)]
   rw [Finset.mul_sum]
   refine Finset.sum_congr rfl fun i hi => ?_
-  rw [← Finset.mul_sum, sum_exp_angleNode hN,
-    intervalIntegral.integral_const_mul, integral_exp_angle]
+  rw [← Finset.mul_sum, sum_exp_angleNode hN, intervalIntegral.integral_const_mul,
+    intervalIntegral.integral_congr (g := fun θ : ℝ => Complex.exp (I * p i * θ))
+      fun θ _ => by simp only []; congr 1; ring,
+    integral_exp_I_int_mul]
   by_cases h0 : p i = 0
   · rw [ite_eq_left h0, ite_eq_left ((hdvd i hi).2 h0)]
     push_cast
@@ -188,8 +174,6 @@ theorem trapezoid_eq_integral_cos_pow_mul_sin_pow {N a b : ℕ} (hN : a + b < N)
     rw [Finset.mem_product, Finset.mem_range, Finset.mem_range] at hq
     have h1 : (q.1 : ℤ) ≤ a := by exact_mod_cast Nat.lt_succ_iff.mp hq.1
     have h2 : (q.2 : ℤ) ≤ b := by exact_mod_cast Nat.lt_succ_iff.mp hq.2
-    have h3 : (0 : ℤ) ≤ q.1 := Int.natCast_nonneg _
-    have h4 : (0 : ℤ) ≤ q.2 := Int.natCast_nonneg _
     have h5 : (a : ℤ) + b < N := by exact_mod_cast hN
     rw [abs_lt]
     constructor <;> omega

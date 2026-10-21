@@ -76,16 +76,6 @@ Steffensen's, *Interpolation*, §19. The book prints the value of the `n`-th div
 
 open Polynomial Finset
 
-/-- The top iterated derivative of a polynomial of degree at most `k` is the constant
-`k! · (coefficient of X^k)`. -/
-theorem Polynomial.iterate_derivative_eq_C_of_natDegree_le {R : Type*} [CommSemiring R] {p : R[X]}
-    {k : ℕ} (hp : p.natDegree ≤ k) :
-    derivative^[k] p = C ((k.factorial : R) * p.coeff k) := by
-  have h0 : (derivative^[k] p).natDegree = 0 :=
-    Nat.le_zero.mp ((natDegree_iterate_derivative p k).trans (by omega))
-  rw [eq_C_of_natDegree_eq_zero h0, coeff_iterate_derivative, zero_add, Nat.descFactorial_self,
-    nsmul_eq_mul]
-
 /-- Reindexing a Lagrange interpolant along an embedding of the index set. -/
 theorem Lagrange.interpolate_map {F : Type*} [Field F] {ι κ : Type*} [DecidableEq ι]
     [DecidableEq κ] (e : κ ↪ ι) (t : Finset κ) (v r : ι → F) :
@@ -326,24 +316,13 @@ theorem interpolate_eq_sum_newtonOn_mul_nodal [LinearOrder ι] (hvs : Set.InjOn 
         ite_eq_right (not_lt.mpr (hlt j hj).le)]
 
 /-- **The reversed Newton formula**: the same expansion built from the largest node down,
-`Π_s f = ∑_{j ∈ s} f[v i : i ∈ s, j ≤ i] · ∏_{i ∈ s, j < i} (X - v i)`. -/
+`Π_s f = ∑_{j ∈ s} f[v i : i ∈ s, j ≤ i] · ∏_{i ∈ s, j < i} (X - v i)`; it is
+`interpolate_eq_sum_newtonOn_mul_nodal` for the reversed order. -/
 theorem interpolate_eq_sum_newtonOn_mul_nodal' [LinearOrder ι] (hvs : Set.InjOn v s)
     (f : F → F) :
     (Lagrange.interpolate s v fun i => f (v i))
       = ∑ j ∈ s, C (newtonOn (s.filter (j ≤ ·)) v f) * Lagrange.nodal (s.filter (j < ·)) v := by
-  induction s using Finset.induction_on_min with
-  | empty => simp
-  | insert a t hlt ih =>
-    have ha : a ∉ t := fun h => lt_irrefl a (hlt a h)
-    have hvt : Set.InjOn v t := hvs.mono (Finset.coe_subset.mpr (subset_insert a t))
-    rw [interpolate_insert_eq_newtonOn hvs ha, ih hvt, Finset.sum_insert ha, add_comm]
-    congr 1
-    · rw [Finset.filter_insert, ite_eq_left le_rfl, Finset.filter_insert,
-        ite_eq_right (lt_irrefl a), Finset.filter_true_of_mem fun x hx => (hlt x hx).le,
-        Finset.filter_true_of_mem fun x hx => hlt x hx]
-    · refine Finset.sum_congr rfl fun j hj => ?_
-      rw [Finset.filter_insert, ite_eq_right (not_le.mpr (hlt j hj)), Finset.filter_insert,
-        ite_eq_right (not_lt.mpr (hlt j hj).le)]
+  exact interpolate_eq_sum_newtonOn_mul_nodal (ι := ιᵒᵈ) hvs f
 
 /-- The nodes below `j` and the nodes above `l ≥ j` all differ from `j`. -/
 private theorem filter_lt_union_filter_lt_subset [LinearOrder ι] {j l : ι} (hjl : j ≤ l) :
@@ -479,7 +458,6 @@ theorem newtonOn_inv_sub (hvs : Set.InjOn v s) (hne : s.Nonempty) {z : F}
     · obtain ⟨i, hi, j, hj, hij⟩ := Finset.one_lt_card.mp
         (lt_of_le_of_ne hne.card_pos (Ne.symm hcard))
       have hzi : z - v i ≠ 0 := sub_ne_zero.mpr (hz i hi)
-      have hzj : z - v j ≠ 0 := sub_ne_zero.mpr (hz j hj)
       have hvij : v i - v j ≠ 0 := sub_ne_zero.mpr fun h => hij (hvs hi hj h)
       have hPi : ∏ k ∈ s.erase i, (z - v k) ≠ 0 :=
         Finset.prod_ne_zero_iff.mpr fun k hk => sub_ne_zero.mpr (hz k (mem_of_mem_erase hk))
@@ -578,7 +556,7 @@ theorem map_suffixEmb_univ_eq_filter (k : Fin (m + 1)) :
     exact Nat.le_add_right _ _
   · intro hi
     rw [Fin.le_def] at hi
-    refine ⟨⟨i - k, by have := k.isLt; have := i.isLt; omega⟩, Fin.ext ?_⟩
+    refine ⟨⟨i - k, by omega⟩, Fin.ext ?_⟩
     change (k : ℕ) + ((i : ℕ) - k) = i
     omega
 
@@ -1075,7 +1053,6 @@ private lemma exists_confluent_eq_of_continuousOn {f : ℝ → ℝ}
   by_cases h0 : v 0 = v (Fin.last (m + 1))
   · exact ⟨v 0, ⟨le_rfl, hle⟩, by rw [confluent_succ, ite_eq_left h0]⟩
   have hab : v 0 < v (Fin.last (m + 1)) := lt_of_le_of_ne hle h0
-  have hba : (0 : ℝ) < v (Fin.last (m + 1)) - v 0 := sub_pos.mpr hab
   have hm3 : (0 : ℝ) < (m : ℝ) + 3 := by positivity
   -- a strictly increasing grid inside `[v 0, v (last)]`
   set g : Fin (m + 2) → ℝ :=

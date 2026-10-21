@@ -377,7 +377,6 @@ theorem antitone_along_of_liminf_lt_top (hf : ConvexFn f) (x y : E)
   replace hq := EReal.coe_lt_coe_iff.1 hq
   rcases h12.eq_or_lt with rfl | hlt
   · exact lt_of_le_of_lt hμ (by exact_mod_cast hq)
-  have hc0 : (0 : ℝ) < |α - μ| + 1 := by positivity
   have hp0 : (0 : ℝ) < q - μ := by linarith
   obtain ⟨l, hlα, hlB⟩ := (hfreq.and_eventually (eventually_ge_atTop
     (max (a₂ + 1) (a₁ + (a₂ - a₁) * (|α - μ| + 1) / (q - μ))))).exists
@@ -1037,7 +1036,6 @@ theorem eventually_smulRight_lt (hp : ProperConvex f) {θ : ℝ} (hθ : θ • y
     exact h0.eventually_lt_const one_pos
   filter_upwards [hcont.eventually_lt_const hβγ', hpos, hlt] with a hva hapos haθ
   have hid : a * a⁻¹ = 1 := mul_inv_cancel₀ hapos.ne'
-  have hinvpos : (0 : ℝ) < a⁻¹ := inv_pos.2 hapos
   have hnn : 0 ≤ a⁻¹ - θ := by nlinarith
   have harg : θ • y + (a⁻¹ - θ) • y = a⁻¹ • y := by
     rw [← add_smul]

@@ -185,6 +185,17 @@ theorem coe_sum (t : Finset κ) (r : κ → ℝ) :
   | empty => simp
   | cons i t hi ih => rw [Finset.sum_cons, Finset.sum_cons, EReal.coe_add, ih]
 
+/-- **A difference of finite sums is the sum of the differences**, provided no subtrahend is `⊥`:
+the `Finset` form of Mathlib's `EReal.add_sub_add_comm`. The minuends are arbitrary. -/
+theorem sum_sub_sum (t : Finset κ) (a v : κ → EReal) (hv : ∀ j ∈ t, v j ≠ ⊥) :
+    ∑ j ∈ t, a j - ∑ j ∈ t, v j = ∑ j ∈ t, (a j - v j) := by
+  induction t using Finset.cons_induction with
+  | empty => simp
+  | cons j t hj ih =>
+    rw [Finset.sum_cons, Finset.sum_cons, Finset.sum_cons, ← ih fun k hk => hv k (by simp [hk])]
+    exact EReal.add_sub_add_comm (.inl (hv j (by simp)))
+      (.inr (sum_ne_bot fun k hk => hv k (by simp [hk])))
+
 /-- A non-negative real multiple of an `EReal` other than `⊥` is not `⊥`. The coefficient `0` is
 harmless because `EReal` obeys Rockafellar's convention `0 · ∞ = 0`. -/
 theorem coe_mul_ne_bot {a : ℝ} (ha : 0 ≤ a) {z : EReal} (hz : z ≠ ⊥) : (a : EReal) * z ≠ ⊥ := by
@@ -354,6 +365,43 @@ special case of Mathlib's `EReal.neg_add`. -/
 theorem neg_add_of_ne_bot {u v : EReal} (hu : u ≠ ⊥) (hv : v ≠ ⊥) : -(u + v) = -u + -v :=
   (EReal.neg_add (.inl hu) (.inr hv)).trans (sub_eq_add_neg _ _)
 
+/-- Negation distributes over a sum of two negatives, provided neither original summand is `⊥`:
+the concave sum `-(-a + -b)` agrees with the convex one `a + b` away from `⊥`. This is not
+`EReal.neg_add`, whose second side condition fails when both summands are `⊤` — and that case is
+genuinely fine here, since `-(⊥ + ⊥) = ⊤ = ⊤ + ⊤`. -/
+theorem neg_neg_add_neg {a b : EReal} (ha : a ≠ ⊥) (hb : b ≠ ⊥) :
+    -(-a + -b) = a + b := by
+  rcases eq_or_ne a ⊤ with rfl | hat
+  · rw [EReal.neg_top, EReal.bot_add, EReal.neg_bot,
+      EReal.top_add_of_ne_bot hb]
+  · rcases eq_or_ne b ⊤ with rfl | hbt
+    · rw [EReal.neg_top, EReal.add_bot, EReal.neg_bot,
+        EReal.add_top_of_ne_bot ha]
+    · rw [EReal.neg_add (.inl (by rw [Ne, EReal.neg_eq_bot_iff]; exact hat))
+        (.inl (by rw [Ne, EReal.neg_eq_top_iff]; exact ha)), neg_neg]
+      change a + -(-b) = a + b
+      rw [neg_neg]
+
+/-- Subtracting a sum subtracts its terms one at a time, provided neither is `⊥`: the `EReal`
+form of `sub_add_eq_sub_sub_swap`. The minuend is arbitrary. -/
+protected theorem sub_add_eq_sub_sub_swap (c : EReal) {a b : EReal} (ha : a ≠ ⊥) (hb : b ≠ ⊥) :
+    c - (a + b) = c - b - a := by
+  have h : -(a + b) = -b + -a := by
+    rw [add_comm a b]
+    exact EReal.neg_add (.inl hb) (.inr ha)
+  change c + -(a + b) = (c + -b) + -a
+  rw [h, ← add_assoc]
+
+/-- Subtracting a difference adds its subtrahend back: the `EReal` form of `sub_sub_eq_add_sub`,
+provided `a ≠ ⊥` and `c ≠ ⊤`, which rule out both `∞ - ∞` collisions in `a - c`. -/
+protected theorem sub_sub_eq_add_sub {a b c : EReal} (ha : a ≠ ⊥) (hc : c ≠ ⊤) :
+    b - (a - c) = (b + c) - a := by
+  have h : -(a - c) = c - a := neg_sub_comm (.inl ha) (.inr hc)
+  change b + -(a - c) = b + c + -a
+  rw [h]
+  change b + (c + -a) = b + c + -a
+  rw [← add_assoc]
+
 /-- A positive real scalar commutes with a supremum. -/
 theorem coe_mul_iSup {a : ℝ} (ha : 0 < a) {ι : Sort*} (u : ι → EReal) :
     (a : EReal) * ⨆ i, u i = ⨆ i, (a : EReal) * u i := by
@@ -463,6 +511,22 @@ theorem add_coe_right_cancel {u v : EReal} {r : ℝ} (h : u + (r : EReal) = v + 
   rw [← EReal.add_sub_cancel_right (a := u) (b := r),
     ← EReal.add_sub_cancel_right (a := v) (b := r), h]
 
+/-- **A real summand moves across an equation with a real right-hand side**: `S + k = m` forces
+`S` to be the real number `m - k`. -/
+theorem eq_coe_sub_of_add_coe_eq_coe {S : EReal} {k m : ℝ} (h : S + (k : EReal) = (m : EReal)) :
+    S = ((m - k : ℝ) : EReal) := by
+  induction S with
+  | bot =>
+      rw [EReal.bot_add] at h
+      exact absurd h.symm (EReal.coe_ne_bot m)
+  | coe s =>
+      rw [← EReal.coe_add, EReal.coe_eq_coe_iff] at h
+      rw [EReal.coe_eq_coe_iff]
+      linarith
+  | top =>
+      rw [EReal.top_add_of_ne_bot (EReal.coe_ne_bot k)] at h
+      exact absurd h.symm (EReal.coe_ne_top m)
+
 /-- The set-indexed form of `EReal.iInf_add_coe`. -/
 theorem biInf_add_coe {α : Type*} (s : Set α) (u : α → EReal) (r : ℝ) :
     (⨅ a ∈ s, u a) + (r : EReal) = ⨅ a ∈ s, (u a + (r : EReal)) := by
@@ -497,6 +561,39 @@ theorem biSup_add_biSup {α β : Type*} {s : Set α} {t : Set β} {u : α → ER
   refine iSup_congr fun a => iSup_congr fun _ => ?_
   rw [add_comm (u a), biSup_add_of_ne_bot hv]
   exact iSup_congr fun _ => iSup_congr fun _ => add_comm _ _
+
+/-- **The supremum over a product set of a separable sum decouples** coordinate by coordinate:
+`⨆ x ∈ Set.univ.pi C, ∑ i ∈ t, u i (x i) = ∑ i ∈ t, ⨆ z ∈ C i, u i z`. The values are only asked
+to avoid `⊥` *on the sets*; nonemptiness is needed only for the empty `Finset`, where the
+supremum of the constant `0` has to be `0` rather than `⊥`. -/
+theorem biSup_sum_univ_pi {ι α : Type*} {C : ι → Set α} (hne : ∀ i, (C i).Nonempty)
+    (u : ι → α → EReal) (hu : ∀ i, ∀ z ∈ C i, u i z ≠ ⊥) (t : Finset ι) :
+    (⨆ x ∈ Set.univ.pi C, ∑ i ∈ t, u i (x i)) = ∑ i ∈ t, ⨆ z ∈ C i, u i z := by
+  classical
+  obtain ⟨x₀, hx₀⟩ : (Set.univ.pi C).Nonempty := Set.univ_pi_nonempty_iff.2 hne
+  induction t using Finset.cons_induction with
+  | empty =>
+    simp only [Finset.sum_empty]
+    exact le_antisymm (iSup₂_le fun _ _ => le_rfl)
+      (le_iSup₂_of_le (f := fun x (_ : x ∈ Set.univ.pi C) => (0 : EReal)) x₀ hx₀ le_rfl)
+  | cons i t hi ih =>
+    have hgne : ∀ x ∈ Set.univ.pi C, (∑ j ∈ t, u j (x j)) ≠ ⊥ := fun x hx =>
+      sum_ne_bot fun j _ => hu j (x j) (hx j (Set.mem_univ j))
+    have key : (⨆ x ∈ Set.univ.pi C, (u i (x i) + ∑ j ∈ t, u j (x j)))
+        = (⨆ z ∈ C i, u i z) + ⨆ x ∈ Set.univ.pi C, ∑ j ∈ t, u j (x j) := by
+      rw [biSup_add_biSup (hu i) hgne]
+      refine le_antisymm (iSup₂_le fun x hx => ?_) (iSup₂_le fun z hz => iSup₂_le fun x hx => ?_)
+      · exact le_iSup₂_of_le (x i) (hx i (Set.mem_univ i)) (le_iSup₂_of_le x hx le_rfl)
+      · refine le_iSup₂_of_le (Function.update x i z) (fun j _ => ?_) ?_
+        · rcases eq_or_ne j i with rfl | hj
+          · rw [Function.update_self]; exact hz
+          · rw [Function.update_of_ne hj]; exact hx j (Set.mem_univ j)
+        · have hsum : ∑ j ∈ t, u j (Function.update x i z j) = ∑ j ∈ t, u j (x j) :=
+            Finset.sum_congr rfl fun j hj => by
+              rw [Function.update_of_ne (ne_of_mem_of_not_mem hj hi)]
+          rw [Function.update_self, hsum]
+    simp only [Finset.sum_cons]
+    rw [key, ih]
 
 /-- A *real* constant may be moved in and out of an infimum from the **left**. The mirror of
 `EReal.iInf_add_coe`, which has it on the right. -/

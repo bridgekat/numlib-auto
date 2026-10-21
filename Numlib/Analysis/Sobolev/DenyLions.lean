@@ -221,10 +221,9 @@ theorem _root_.MultiIndexLE.sum_univ_succ {M : Type*} [AddCommMonoid M]
       · rintro ⟨β, rfl⟩
         intro h
         change ∑ i, β.1 i = k + 1 at h
-        have := β.2
         omega
       · intro h
-        exact ⟨⟨α.1, by have := α.2; omega⟩, rfl⟩
+        exact ⟨⟨α.1, by omega⟩, rfl⟩
     rw [← himage, Finset.sum_image (MultiIndexLE.castLE_injective (Nat.le_succ k)).injOn]
   · exact Finset.sum_subtype (p := fun α : MultiIndexLE ι (k + 1) ↦ ∑ i, α.1 i = k + 1) _
       (fun _ ↦ by simp) f

@@ -314,14 +314,6 @@ private theorem finite_of_sub_eq {a b c d : EReal} (ha : a ≠ ⊥) (hb : b ≠ 
   induction a <;> induction b <;> induction c <;> induction d <;>
     simp_all [← EReal.coe_sub]
 
-private theorem finite_of_add_eq {a d p : EReal} (ha : a ≠ ⊥) (hd : d ≠ ⊥) (hp : p ≠ ⊤)
-    (h : a + d = p) : a ≠ ⊤ ∧ d ≠ ⊤ := by
-  induction a <;> induction d <;> simp_all
-
-private theorem finite_of_add_eq' {b c p : EReal} (hb : b ≠ ⊤) (hc : c ≠ ⊤) (hp : p ≠ ⊥)
-    (h : b + c = p) : b ≠ ⊥ ∧ c ≠ ⊥ := by
-  induction b <;> induction c <;> simp_all
-
 /-- Squeezed between `p ≤ a + d` and `b + c ≤ p`, the equality `a - b = c - d` says exactly that
 both squeezes are tight. -/
 private theorem sub_eq_sub_iff_of_le {a b c d p : EReal} (ha : a ≠ ⊥) (hb : b ≠ ⊤) (hc : c ≠ ⊤)
@@ -342,8 +334,8 @@ private theorem sub_eq_sub_iff_of_le {a b c d p : EReal} (ha : a ≠ ⊥) (hb : 
       EReal.coe_eq_coe_iff]
     constructor <;> linarith
   · rintro ⟨e1, e2⟩
-    obtain ⟨hat, hdt⟩ := finite_of_add_eq ha hd (EReal.coe_ne_top π) e1
-    obtain ⟨hbb, hcb⟩ := finite_of_add_eq' hb hc (EReal.coe_ne_bot π) e2
+    obtain ⟨hat, hdt⟩ := (EReal.add_ne_top_iff_ne_top₂ ha hd).1 (e1 ▸ EReal.coe_ne_top π)
+    obtain ⟨hbb, hcb⟩ := EReal.add_ne_bot_iff.1 (e2 ▸ EReal.coe_ne_bot π)
     obtain ⟨α, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top ha (lt_top_iff_ne_top.2 hat)
     obtain ⟨β, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hbb (lt_top_iff_ne_top.2 hb)
     obtain ⟨γ, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hcb (lt_top_iff_ne_top.2 hc)
@@ -541,7 +533,7 @@ source both proofs share: `inf h = -h*(0)` applied to `h = f + δ(· | K)`, with
 split at the origin and the conjugate of an indicator evaluating the second factor. The `0 - y`
 produced by the splitting is the sign flip turning `K°` into `K*`. -/
 theorem iInf_add_indicatorFn_eq_neg_iInf_convexConj_add_indicatorFn
-    (hex : IsExactSum B f (indicatorFn K)) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) :
+    (hex : IsExactSum B f (indicatorFn K)) (hK : IsCone K) (hne : K.Nonempty) :
     (⨅ z, (f + indicatorFn K) z) = -(⨅ w, (convexConj B f + indicatorFn (-(polarCone B K))) w) := by
   rw [iInf_eq_neg_convexConj_zero B, hex.convexConj_add_apply 0,
     ← (neg_surjective (G := F)).iInf_comp]
@@ -552,7 +544,7 @@ theorem iInf_add_indicatorFn_eq_neg_iInf_convexConj_add_indicatorFn
 
 /-- The same in constrained notation: `inf {f x | x ∈ K} = -inf {f*(y) | y ∈ K*}`. -/
 theorem iInf_mem_eq_neg_iInf_mem_neg_polarCone (hex : IsExactSum B f (indicatorFn K))
-    (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) :
+    (hK : IsCone K) (hne : K.Nonempty) :
     (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone B K), convexConj B f w) := by
   rw [iInf_mem_eq_iInf_add_indicatorFn f K hex.properConvex_left.ne_bot,
     iInf_mem_eq_iInf_add_indicatorFn (convexConj B f)
@@ -627,7 +619,7 @@ theorem convexConj_le_convexConj_of_mem_subdifferential_of_pairing_eq_zero (hp :
 /-- **The dual value read at the origin**: `(f + δ(·|K))* 0` *is* the dual infimum
 `inf {f*(y) | y ∈ K*}`. This is what turns exactness of the sum into attainment. -/
 theorem convexConj_add_indicatorFn_zero_eq_iInf_mem_neg_polarCone
-    (hex : IsExactSum B f (indicatorFn K)) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) :
+    (hex : IsExactSum B f (indicatorFn K)) (hK : IsCone K) (hne : K.Nonempty) :
     convexConj B (f + indicatorFn K) 0 = ⨅ w ∈ -(polarCone B K), convexConj B f w := by
   rw [convexConj_apply_zero, ← iInf_mem_eq_iInf_add_indicatorFn f K hex.properConvex_left.ne_bot,
     iInf_mem_eq_neg_iInf_mem_neg_polarCone hex hK hne, neg_neg]
@@ -637,7 +629,7 @@ infimum is attained. It is read straight off `IsExactSum`: the splitting `0 = y�
 origin already is a minimising `y₁ ∈ K*`, since the second conjugate factor is the indicator of
 `K°`. The degenerate branch `y₂ ∉ K°` forces the dual infimum to `⊤`, attained at the origin. -/
 theorem exists_mem_neg_polarCone_convexConj_eq_iInf (hex : IsExactSum B f (indicatorFn K))
-    (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) :
+    (hK : IsCone K) (hne : K.Nonempty) :
     ∃ y ∈ -(polarCone B K), convexConj B f y = ⨅ w ∈ -(polarCone B K), convexConj B f w := by
   obtain ⟨y₁, y₂, hsum, hle⟩ := hex.exact_le 0
   rw [convexConj_indicatorFn_eq_indicatorFn_polarCone hK hne,
@@ -659,7 +651,7 @@ theorem exists_mem_neg_polarCone_convexConj_eq_iInf (hex : IsExactSum B f (indic
 /-- The two infima *added* rather than negated: when the dual infimum is finite the duality
 equation says the two values sum to zero. -/
 theorem iInf_mem_add_iInf_mem_neg_polarCone_eq_zero (hex : IsExactSum B f (indicatorFn K))
-    (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
+    (hK : IsCone K) (hne : K.Nonempty)
     (hbot : (⨅ w ∈ -(polarCone B K), convexConj B f w) ≠ ⊥)
     (htop : (⨅ w ∈ -(polarCone B K), convexConj B f w) ≠ ⊤) :
     (⨅ z ∈ K, f z) + (⨅ w ∈ -(polarCone B K), convexConj B f w) = 0 := by
@@ -685,7 +677,7 @@ theorem neg_polarCone_coe_submodule (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (M : S
 theorem iInf_mem_submodule_eq_neg_iInf_mem_polarCone {M : Submodule ℝ E}
     (hex : IsExactSum B f (indicatorFn (M : Set E))) :
     (⨅ z ∈ (M : Set E), f z) = -(⨅ w ∈ polarCone B (M : Set E), convexConj B f w) := by
-  have h := iInf_mem_eq_neg_iInf_mem_neg_polarCone hex (fun _ ha => smul_coe_submodule M ha)
+  have h := iInf_mem_eq_neg_iInf_mem_neg_polarCone hex (isCone_coe_submodule M)
     ⟨0, M.zero_mem⟩
   rwa [neg_polarCone_coe_submodule] at h
 
@@ -725,12 +717,12 @@ is attained. `convexBiconj B f = f` is taken as a hypothesis rather than derived
 statement stays free of a compatibility assumption on the `F` side. -/
 theorem exists_mem_eq_iInf_of_isExactSum_convexConj (hbi : convexBiconj B f = f)
     (hex : IsExactSum B.flip (convexConj B f) (indicatorFn (-(polarCone B K))))
-    (hconv : Convex ℝ K) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
+    (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty)
     (hcl : IsClosed K) :
     ∃ x ∈ K, f x = ⨅ z ∈ K, f z := by
   have hbi' : convexConj B.flip (convexConj B f) = f := hbi
   have h := exists_mem_neg_polarCone_convexConj_eq_iInf (B := B.flip) (K := -(polarCone B K)) hex
-    (fun a ha => smul_neg_polarCone B K a ha) (neg_polarCone_nonempty B K)
+    (isCone_iff_smul_eq.2 (smul_neg_polarCone B K)) (neg_polarCone_nonempty B K)
   rwa [neg_polarCone_neg_polarCone hconv hK hne hcl, hbi'] at h
 
 end ConeClosed

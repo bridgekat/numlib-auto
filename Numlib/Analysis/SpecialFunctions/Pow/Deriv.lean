@@ -4,6 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.SpecialFunctions.Pow.Deriv`, beside the derivatives of `rpow`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.SpecialFunctions.Pow.Deriv
 
 /-!
@@ -17,6 +18,9 @@ satisfies `0 ≤ φ_ε t ≤ (|t| + ε)^p` and `|φ_ε' t| ≤ p (|t| + ε)^{p�
 It is what makes Nečas's proof of the trace inequality work at `p = 1`
 (`Numlib/Analysis/Sobolev/Boundary/Trace.lean`): the divergence theorem is applied to
 `φ_ε(u) w`, and the bounds above survive the passage to the limit.
+
+The file also records the mean value bound `A ^ q - B ^ q ≤ q A ^ (q - 1) (A - B)` for `q ≥ 1`,
+`0 < B < A` (`Real.rpow_sub_rpow_le`), which sizes the panels of a graded mesh.
 -/
 
 open Filter Topology
@@ -134,5 +138,26 @@ theorem tendsto_rpowReg (hp : 0 < p) (t : ℝ) :
   have := h1.sub h2
   rw [sub_zero, h3] at this
   exact this
+
+/-- **The mean value bound for a real power**: for `q ≥ 1` and `0 < B < A`,
+`A ^ q - B ^ q ≤ q A ^ (q - 1) (A - B)`.
+
+The hypothesis `0 < B` is what makes `y ↦ y ^ q` differentiable on `[B, A]`. -/
+theorem rpow_sub_rpow_le {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 < B) (hBA : B < A) :
+    A ^ q - B ^ q ≤ q * A ^ (q - 1) * (A - B) := by
+  have hderiv : ∀ s ∈ Set.Icc B A, HasDerivAt (fun y : ℝ => y ^ q) (q * s ^ (q - 1)) s :=
+    fun s _ => hasDerivAt_rpow_const (Or.inr hq)
+  obtain ⟨ξ, hξ, hξeq⟩ := exists_hasDerivAt_eq_slope (fun y : ℝ => y ^ q)
+    (fun s => q * s ^ (q - 1)) hBA
+    (fun s hs => (hderiv s hs).continuousAt.continuousWithinAt)
+    (fun s hs => hderiv s (Set.Ioo_subset_Icc_self hs))
+  have hsub : (0 : ℝ) < A - B := by linarith
+  have hξA : ξ ^ (q - 1) ≤ A ^ (q - 1) :=
+    rpow_le_rpow (hB.trans hξ.1).le hξ.2.le (by linarith)
+  rw [eq_div_iff (ne_of_gt hsub)] at hξeq
+  have hq0 : (0 : ℝ) ≤ q := by linarith
+  have hkey : 0 ≤ q * (A ^ (q - 1) - ξ ^ (q - 1)) * (A - B) :=
+    mul_nonneg (mul_nonneg hq0 (by linarith)) hsub.le
+  linarith [hkey, hξeq]
 
 end Real

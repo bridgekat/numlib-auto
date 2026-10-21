@@ -413,7 +413,6 @@ theorem norm_step_error_le_of_abs_le {A ΔA W : Matrix (Fin n) (Fin n) ℝ}
   have hAd : IsUnit A.det := (isUnit_iff_isUnit_det A).1 hA
   set θ : ℝ := γ * ‖A⁻¹.abs * W‖ with hθ
   have hθ0 : 0 ≤ θ := mul_nonneg hγ (norm_nonneg _)
-  have hu1 : u < 1 := by linarith
   -- the error identity, solved for `x - ŷ` with `A⁻¹`
   have hid := step_error hx hr hz hy
   set v : Fin n → ℝ := ΔA *ᵥ (x - xhat) - ξ - ΔA *ᵥ η - ΔA *ᵥ (x - yhat) with hv
@@ -501,12 +500,6 @@ theorem norm_step_error_le_of_abs_le {A ΔA W : Matrix (Fin n) (Fin n) ℝ}
     · rw [norm_smul, Real.norm_of_nonneg hγ, hθ, mul_assoc]
       exact mul_le_mul_of_nonneg_left (hmv _ _) hγ
   -- collect
-  have hN0 : 0 ≤ ‖x - xhat‖ := norm_nonneg _
-  have hN'0 : 0 ≤ ‖x - yhat‖ := norm_nonneg _
-  have hX0 : 0 ≤ ‖x‖ := norm_nonneg _
-  have hη0 : 0 ≤ ‖η‖ := norm_nonneg _
-  have hσ0 : 0 ≤ α * ‖A⁻¹.abs * A.abs‖ * ‖x - xhat‖ := by positivity
-  have hφ0 : 0 ≤ β * ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖ := by positivity
   have hen' := mul_le_mul_of_nonneg_left hen (by linarith : (0 : ℝ) ≤ 1 - u)
   have hηn2 : (1 - u) * ‖η‖ ≤ u * (‖x‖ + ‖x - yhat‖) := by linarith
   have hηn' := mul_le_mul_of_nonneg_left hηn2 (by linarith : (0 : ℝ) ≤ 1 + θ)
@@ -571,7 +564,6 @@ theorem exists_mixed_residual_eq_add {m m' : RoundingModel ℝ} (hu' : m'.u < 1)
         + (2 * (1 + m.u) * gamma m'.u (n + 1)) • (A.abs *ᵥ |x|) := by
   obtain ⟨ξ', hs, hξ'⟩ := exists_roundsAffineStep_residual_eq_add hu' hcard' hx hres
   have hu0 := m.u_nonneg
-  have hγ0 := gamma_nonneg m'.u_nonneg hcard'
   refine ⟨rhat - (b - A *ᵥ xhat), by abel, Pi.le_def.2 fun i => ?_⟩
   have h1 : |rhat i - s i| ≤ m.u * |s i| := m.abs_sub_le (hround i)
   have h2 : |(b - A *ᵥ xhat) i| ≤ (A.abs *ᵥ |x - xhat|) i := by
@@ -587,9 +579,6 @@ theorem exists_mixed_residual_eq_add {m m' : RoundingModel ℝ} (hu' : m'.u < 1)
       simp only [Pi.sub_apply, hsi]; ring
     rw [this]
     exact abs_add_le _ _
-  have hAe : 0 ≤ (A.abs *ᵥ |x - xhat|) i :=
-    (entrywiseNonneg_abs A).mulVec_nonneg (abs_nonneg _) i
-  have hAx : 0 ≤ (A.abs *ᵥ |x|) i := (entrywiseNonneg_abs A).mulVec_nonneg (abs_nonneg _) i
   simp only [Pi.abs_apply, Pi.add_apply, Pi.smul_apply, smul_eq_mul] at *
   nlinarith
 
@@ -802,8 +791,6 @@ theorem norm_sub_le_of_forall_roundsStepLUMixed [NeZero n] {m m' : RoundingModel
   have hρ0 : 0 ≤ ρ := by rw [hρ]; positivity
   have hφ0 : 0 ≤ φ := by
     rw [hφ]
-    have : 0 ≤ 2 * (1 + m.u) * gamma m'.u (n + 1) * ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖
-        + m.u * (1 + θ) * ‖x‖ := by positivity
     positivity
   have hrec : ∀ k, ‖x - xs (k + 1)‖ ≤ ρ * ‖x - xs k‖ + φ := fun k => by
     have h := norm_sub_le_of_roundsStepLUMixed hcard hcard' hA hx hLU hd (hstep k)
@@ -822,7 +809,6 @@ theorem norm_sub_le_of_forall_roundsStepLUMixed [NeZero n] {m m' : RoundingModel
     refine hγ.trans ?_
     push_cast
     nlinarith [(by positivity : (0 : ℝ) ≤ n + 1)]
-  have hX : 0 ≤ ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖ := norm_nonneg _
   have h1 : 2 * (1 + m.u) * gamma m'.u (n + 1) * ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖
       ≤ 2 * (1 + m.u) * (2 * (n + 1) * m.u ^ 2) * ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖ := by
     gcongr

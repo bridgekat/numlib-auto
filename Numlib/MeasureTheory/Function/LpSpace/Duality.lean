@@ -453,7 +453,6 @@ theorem eLpNorm_rnDeriv_dualToSignedMeasure_le [Fact (1 ≤ q)] [p.HolderConjuga
   set u₀ := (dualToSignedMeasure hp φ).rnDeriv μ with hu₀_def
   have hu₀m : Measurable u₀ := SignedMeasure.measurable_rnDeriv _ _
   have hu₀ : Integrable u₀ μ := SignedMeasure.integrable_rnDeriv _ _
-  have hp1 : 1 ≤ p := Fact.out
   by_cases hq : q = ∞
   · -- the case `q = ∞`, `p = 1`: the sets `{‖u₀‖ > ‖φ‖}` are null
     have hp1' : p = 1 := (ENNReal.HolderConjugate.eq_top_iff_eq_one q p).1 hq
@@ -822,11 +821,7 @@ theorem norm_toDualCLM_apply [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] 
             ((ae_norm_le_norm_top u).mono fun x hx => by rwa [norm_norm])))
         fun A hA hAfin => ?_))
     -- the test function `1_A · conj u / ‖u‖`
-    have hg_bound : ∀ x, ‖A.indicator (extremal (⇑u) 1) x‖ ≤ 1 := fun x =>
-      (norm_indicator_le_norm_self _ _).trans (norm_extremal_one_le _ x)
     set g : α → 𝕜 := A.indicator (extremal (⇑u) 1) with hg_def
-    have hg_meas : AEStronglyMeasurable g μ :=
-      (aestronglyMeasurable_extremal (Lp.aestronglyMeasurable u) 1).indicator hA
     have hg_mem : MemLp g p μ := by
       rw [hp1, memLp_one_iff_integrable, hg_def, integrable_indicator_iff hA]
       exact Measure.integrableOn_of_bounded hAfin.ne

@@ -165,7 +165,6 @@ theorem exists_roundsAffineStep_eq_add {m : RoundingModel K} (hu : m.u < 1)
     gamma_mul_one_add_add_le hu0 hu hcard
   have hun : m.u ≤ gamma m.u (n + 1) :=
     le_trans (le_gamma_one hu0 hu) (gamma_mono hu0 (Nat.le_add_left 1 n) hcard)
-  have hgn : 0 ≤ gamma m.u n := gamma_nonneg hu0 hcard'
   have hci : 0 ≤ |c i| := abs_nonneg _
   have hbound : |(y - (G *ᵥ x + c)) i| ≤ m.u * ((1 + gamma m.u n) * P + |c i|)
       + gamma m.u n * P := by

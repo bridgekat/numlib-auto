@@ -1,0 +1,4 @@
+namespace = "TensorProduct"
+
+[[node]]
+id = "finrank_range_map"

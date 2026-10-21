@@ -498,22 +498,8 @@ theorem sum_edgeIntegral_interior_eq_zero (f : 𝒯.elems → 𝔼₂ → ℝ) (
     (hf : ∀ (T : 𝒯.elems) (a : Fin 3) (T' : 𝒯.elems) (a' : Fin 3), 𝒯.IsPartner T a T' a' →
       f T =ᵐ[edgeMeasure (T.1 a) (T.1 (a + 1))] f T') :
     ∑ e ∈ Finset.univ.filter (fun e : 𝒯.elems × Fin 3 ↦ ¬ 𝒯.IsBoundaryEdge e.1 e.2),
-      𝒯.edgeIntegral f i e.1 e.2 = 0 := by
-  classical
-  refine Finset.sum_involution (fun e he ↦ partner e.1 e.2 (Finset.mem_filter.1 he).2)
-    (fun e he ↦ ?_) (fun e he _ ↦ ?_) (fun e he ↦ ?_) (fun e he ↦ ?_)
-  · have h1 := isPartner_partner e.1 e.2 (Finset.mem_filter.1 he).2
-    exact edgeIntegral_add_partner h1 (hf _ _ _ _ h1) i
-  · intro heq
-    exact (isPartner_partner e.1 e.2 (Finset.mem_filter.1 he).2).1 (congrArg Prod.fst heq)
-  · exact Finset.mem_filter.2 ⟨Finset.mem_univ _,
-      (isPartner_partner e.1 e.2 (Finset.mem_filter.1 he).2).symm.not_isBoundaryEdge⟩
-  · have he' := (Finset.mem_filter.1 he).2
-    have h1 := isPartner_partner e.1 e.2 he'
-    have h2 := isPartner_partner (partner e.1 e.2 he').1 (partner e.1 e.2 he').2
-      h1.symm.not_isBoundaryEdge
-    obtain ⟨e1, e2⟩ := partner_unique h1.symm h2
-    exact Prod.ext e1 e2
+      𝒯.edgeIntegral f i e.1 e.2 = 0 :=
+  sum_interior_eq_zero_of_add_partner _ fun _ _ _ _ h ↦ edgeIntegral_add_partner h (hf _ _ _ _ h) i
 
 /-- **The sum of all edge integrals is the sum over the boundary edges** when the functions of
 partner elements agree on their common edge. -/
@@ -959,17 +945,6 @@ theorem memLp_glueDeriv (v : ∀ T : 𝒯.elems, SobolevEuclidean 2 1 1 (𝒯.Ko
   rw [memLp_indicator_iff_restrict (𝒯.isOpen_K T).measurableSet,
     Measure.restrict_restrict (𝒯.isOpen_K T).measurableSet, inter_eq_left.2 (𝒯.K_subset T)]
   exact hv T
-
-include 𝒯 in
-/-- A function continuous on `closure Ω` lies in every `L^p(Ω)`. -/
-theorem memLp_restrict_of_continuousOn {f : 𝔼₂ → ℝ} (hf : ContinuousOn f (closure (Ω : Set 𝔼₂)))
-    (q : ℝ≥0∞) : MemLp f q (volume.restrict (Ω : Set 𝔼₂)) := by
-  have : IsFiniteMeasure (volume.restrict (Ω : Set 𝔼₂)) :=
-    isFiniteMeasure_restrict.2 𝒯.isBounded.measure_lt_top.ne
-  obtain ⟨C, hC⟩ := 𝒯.isCompact_closure.exists_bound_of_continuousOn hf
-  refine MemLp.of_bound ((hf.mono subset_closure).aestronglyMeasurable Ω.isOpen.measurableSet) C ?_
-  filter_upwards [ae_restrict_mem Ω.isOpen.measurableSet] with x hx
-  exact hC x (subset_closure hx)
 
 /-- **The glued derivative is a weak derivative on `Ω`** of a function `u` continuous on `Ω̄`
 whose restriction to each element is (the function of) `v_T ∈ W^{1,1}(K_T)`: for a test function

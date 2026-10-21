@@ -727,7 +727,7 @@ theorem posHomogeneous_lscHull (hf : PosHomogeneous f) : PosHomogeneous (lscHull
   rw [posHomogeneous_iff_isCone_epi] at hf ⊢
   intro a ha
   rw [epi_lscHull]
-  exact smul_closure_eq_of_isCone hf a ha
+  exact smul_closure_eq_of_isCone (isCone_iff_smul_eq.2 hf) a ha
 
 /-- **The closure of a positively homogeneous function is positively homogeneous.** The improper
 branch is a case rather than an exclusion: there `cl f` is the constant `⊥`, and `a * ⊥ = ⊥` for
@@ -916,14 +916,15 @@ section SegmentLimit
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] {f : E → EReal}
 
-/-- **The lower semicontinuous hull of `f` at `y` is the limit of `f` along the segment running
-from `x` to `y`**, provided the segment starts at an *interior* point of `epi f`. The classical
-hypothesis is `x ∈ ri (dom f)`, which says that the vertical line over `x` meets `ri (epi f)`;
-relative interiors are finite-dimensional, so the general statement uses `interior (epi f)`
-instead. In finite dimensions `interior (epi f)` may be
-empty when `ri (epi f)` is not, so this is a restriction as well as a generalisation. -/
-theorem tendsto_lscHull_along_segment (hf : ConvexFn f) {x : E} {α : ℝ}
-    (hx : (x, α) ∈ interior (epi f)) (y : E) :
+/-- The common core of the limit formulas along a segment: if every combination
+`(1 - a) • (x, α) + a • (y, β)` with `0 ≤ a < 1` of `(x, α)` and a point `(y, β)` of `cl (epi f)`
+lies in `epi f`, then `f` tends to `lscHull f y` along the segment from `x` to `y`. Lower
+semicontinuity of the hull gives the lower half; the combinations give the upper half.
+`tendsto_lscHull_along_segment` supplies the hypothesis from an interior point of `epi f`, and
+`ConvexFn.tendsto_lscHull_along_segment_relint` from a relative interior one. -/
+theorem tendsto_lscHull_along_segment_of_combo_mem {x y : E} {α : ℝ}
+    (hcombo : ∀ β : ℝ, ((y, β) : E × ℝ) ∈ closure (epi f) → ∀ a : ℝ, 0 ≤ a → a < 1 →
+      (1 - a) • ((x, α) : E × ℝ) + a • (y, β) ∈ epi f) :
     Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (lscHull f y)) := by
   rw [tendsto_order]
   constructor
@@ -939,15 +940,25 @@ theorem tendsto_lscHull_along_segment (hf : ConvexFn f) {x : E} {α : ℝ}
       rw [← epi_lscHull]; exact hβ1.le
     filter_upwards [(tendsto_affine_nhdsLT_one α β).eventually_lt_const hβγ,
       eventually_mem_Ico_nhdsLT_one] with a hlt ha
-    have hcombo := hf.convex_epi.combo_interior_closure_mem_interior hx hyβ
-      (by linarith [ha.2] : (0 : ℝ) < 1 - a) ha.1 (by ring)
+    have hmem := hcombo β hyβ a ha.1 ha.2
     have hpair : (1 - a) • ((x, α) : E × ℝ) + a • (y, β)
         = ((1 - a) • x + a • y, (1 - a) * α + a * β) := by
       simp [smul_eq_mul]
-    rw [hpair] at hcombo
-    have hle : f ((1 - a) • x + a • y) ≤ (((1 - a) * α + a * β : ℝ) : EReal) :=
-      mk_mem_epi.1 (interior_subset hcombo)
+    rw [hpair] at hmem
+    have hle : f ((1 - a) • x + a • y) ≤ (((1 - a) * α + a * β : ℝ) : EReal) := mk_mem_epi.1 hmem
     exact lt_of_le_of_lt hle (lt_trans (by exact_mod_cast hlt) hγ2)
+
+/-- **The lower semicontinuous hull of `f` at `y` is the limit of `f` along the segment running
+from `x` to `y`**, provided the segment starts at an *interior* point of `epi f`. The classical
+hypothesis is `x ∈ ri (dom f)`, which says that the vertical line over `x` meets `ri (epi f)`;
+relative interiors are finite-dimensional, so the general statement uses `interior (epi f)`
+instead. In finite dimensions `interior (epi f)` may be
+empty when `ri (epi f)` is not, so this is a restriction as well as a generalisation. -/
+theorem tendsto_lscHull_along_segment (hf : ConvexFn f) {x : E} {α : ℝ}
+    (hx : (x, α) ∈ interior (epi f)) (y : E) :
+    Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (lscHull f y)) :=
+  tendsto_lscHull_along_segment_of_combo_mem fun _ hyβ a ha0 ha1 => interior_subset
+    (hf.convex_epi.combo_interior_closure_mem_interior hx hyβ (by linarith) ha0 (by ring))
 
 /-- The same limit formula for `convexCl`. The exceptional branch has to be ruled out by hand, and
 it genuinely can occur: for the function that is `⊥` on a closed ball and `⊤` outside it,

@@ -147,8 +147,6 @@ theorem norm_sub_le_of_isGalerkinSolution {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xh
   have hcea := IsGalerkinSolution.norm_sub_le hc₀ hM ha (huh i) hu hw
   have h1 := norm_sub_le_of_fn_ae_eq hC u w hũ hfw
   have h2 := toReal_sobolevNorm_sub_globalInterp_le hc₁ hũk (hest i ũ hũk hũc)
-  have hS0 : 0 ≤ (sobolevSeminorm ũ (k + 1) 2 Ω volume).toReal := ENNReal.toReal_nonneg
-  have hh0 : 0 ≤ (𝒯 i).meshSize := (𝒯 i).meshSize_nonneg
   calc ‖u - uh i‖ ≤ M / c₀ * ‖u - w‖ := hcea
     _ ≤ max (M / c₀) 0 * ‖u - w‖ :=
         mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _)
@@ -296,7 +294,6 @@ theorem norm_sub_le_of_isGalerkinSolution_dirichletForm {k s : ℕ} (hs : 1 ≤ 
     ENNReal.toReal_mono hfin
       (eLpNorm_weakIteratedFDeriv_le_sobolevNorm (by simp) (by simp) le_rfl)
   have hh0 : 0 ≤ (𝒯 i).meshSize := (𝒯 i).meshSize_nonneg
-  have hα : (0 : ℝ) < 1 + (2 * R) ^ 2 := by positivity
   have hcc : 1 / (1 + (2 * R) ^ 2)⁻¹ * (c / (1 + (2 * R) ^ 2)) = c := by
     field_simp
   rw [hcc]

@@ -262,15 +262,15 @@ theorem measurableSet_meshPanel (x : ℕ → Set.Icc a b) (i : ℕ) :
 /-- **Every point of `[a, b)` lies in a panel.**  The endpoint `b` lies in none of them, which is
 why the statement excludes it; it is a null set, so nothing is lost in `L²`. -/
 theorem exists_mem_meshPanel {n : ℕ} {x : ℕ → Set.Icc a b}
-    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
-    (hlast : (x (n + 1) : ℝ) = b) {t : Set.Icc a b} (ht : (t : ℝ) ≠ b) :
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) {t : Set.Icc a b} (ht : (t : ℝ) ≠ b) :
     ∃ j ≤ n, t ∈ meshPanel x j := by
-  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
+  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hx.first hx.last t
   rcases lt_or_eq_of_le h2 with h | h
   · exact ⟨j, hj, ⟨h1, h⟩⟩
   · have hjn : j ≠ n := by
       rintro rfl
-      exact ht (by rw [h, hlast])
+      exact ht (by rw [h, hx.last])
     exact ⟨j + 1, by omega, ⟨h.ge, h ▸ hstep (j + 1) (by omega)⟩⟩
 
 /-- **The panels of an increasing partition are pairwise disjoint.** -/
@@ -291,10 +291,10 @@ partition sum back to the function, because the panels are disjoint and cover `[
 complement in `[a, b]` is a null set.  This is what makes a panel-by-panel trial space contain the
 global objects built from it. -/
 theorem sum_iccIndicatorLp_meshPanel {n : ℕ} {x : ℕ → Set.Icc a b}
-    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
-    (hlast : (x (n + 1) : ℝ) = b) (g : C(Set.Icc a b, ℝ)) :
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (g : C(Set.Icc a b, ℝ)) :
     ∑ i ∈ Finset.range (n + 1), iccIndicatorLp a b (measurableSet_meshPanel x i) g
       = iccToLp a b g := by
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
   have hab : a ≤ b := (x 0).2.1.trans (x 0).2.2
   refine Lp.ext ?_
   have hall : ∀ᵐ t ∂(iccMeasure a b), ∀ i ∈ Finset.range (n + 1),
@@ -305,7 +305,7 @@ theorem sum_iccIndicatorLp_meshPanel {n : ℕ} {x : ℕ → Set.Icc a b}
       (fun i => iccIndicatorLp a b (measurableSet_meshPanel x i) g), hall, coeFn_iccToLp g,
     ae_ne_iccMeasure (⟨b, ⟨hab, le_rfl⟩⟩ : Set.Icc a b)] with t hsum hind htoLp htb
   rw [hsum, htoLp]
-  obtain ⟨j, hj, hmem⟩ := exists_mem_meshPanel hstep hfirst hlast htb
+  obtain ⟨j, hj, hmem⟩ := exists_mem_meshPanel hx htb
   rw [Finset.sum_congr rfl hind, Finset.sum_eq_single j
     (fun i hi hij => Set.indicator_of_notMem (notMem_meshPanel_of_mem hstep
       (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)) hj hij hmem) _)
@@ -372,10 +372,10 @@ theorem iccIndicatorLp_mem_discPiecewiseLinearLp {n : ℕ} {x : ℕ → Set.Icc 
 space**, which is the inclusion of the continuous piecewise linear functions in the discontinuous
 ones: on each panel the interpolant is the affine function through the two node values. -/
 theorem iccToLp_piecewiseLinearInterpCLM_mem_disc {n : ℕ} {x : ℕ → Set.Icc a b}
-    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
-    (hlast : (x (n + 1) : ℝ) = b) (f : C(Set.Icc a b, ℝ)) :
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (f : C(Set.Icc a b, ℝ)) :
     iccToLp a b (piecewiseLinearInterpCLM n x f) ∈ discPiecewiseLinearLp a b n x := by
-  rw [← sum_iccIndicatorLp_meshPanel hstep hfirst hlast]
+  have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
+  rw [← sum_iccIndicatorLp_meshPanel hx]
   refine Submodule.sum_mem _ fun i hi => ?_
   have hin : i ≤ n := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
   have hd : (x (i + 1) : ℝ) - (x i : ℝ) ≠ 0 := sub_ne_zero.2 (hstep i hin).ne'
@@ -423,12 +423,11 @@ With `norm_sub_piecewiseLinearInterpCLM_le` this is the `𝒪(h²)` order on `C�
 [han2009theoretical], §12.3.1, Example 12.3.2 asserts for the discontinuous piecewise linear
 Galerkin method. -/
 theorem norm_sub_discPiecewiseLinearProjCLM_le (hab : a ≤ b) {n : ℕ} {x : ℕ → Set.Icc a b}
-    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
-    (hlast : (x (n + 1) : ℝ) = b) (f : C(Set.Icc a b, ℝ)) :
+    (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (f : C(Set.Icc a b, ℝ)) :
     ‖iccToLp a b f - discPiecewiseLinearProjCLM a b n x (iccToLp a b f)‖
       ≤ √(b - a) * ‖f - piecewiseLinearInterpCLM n x f‖ :=
   norm_sub_starProjection_le_of_iccToLp_mem hab (discPiecewiseLinearLp a b n x) f
-    (iccToLp_piecewiseLinearInterpCLM_mem_disc hstep hfirst hlast f)
+    (iccToLp_piecewiseLinearInterpCLM_mem_disc hx f)
 
 /-! ### Pointwise convergence -/
 
@@ -452,7 +451,6 @@ theorem tendsto_starProjection_of_piecewiseLinearInterpCLM_mem (hab : a ≤ b)
     (hmesh : ∀ n, ∀ i ≤ N n, (y n (i + 1) : ℝ) - (y n i : ℝ) ≤ h n)
     (hh : Tendsto h atTop (𝓝 0)) (u : Lp ℝ 2 (IntegralOperator.iccMeasure a b)) :
     Tendsto (fun n => (V n).starProjection u) atTop (𝓝 u) := by
-  have hs0 : (0 : ℝ) ≤ √(b - a) := Real.sqrt_nonneg _
   refine Metric.tendsto_atTop.2 fun ε hε => ?_
   -- a continuous function close to `u` in `L²`
   obtain ⟨v, hv⟩ := Metric.denseRange_iff.1
@@ -534,7 +532,8 @@ theorem tendsto_discPiecewiseLinearProjCLM (hab : a ≤ b) {N : ℕ → ℕ} {y 
     (hh : Tendsto h atTop (𝓝 0)) (u : Lp ℝ 2 (IntegralOperator.iccMeasure a b)) :
     Tendsto (fun n => discPiecewiseLinearProjCLM a b (N n) (y n) u) atTop (𝓝 u) :=
   tendsto_starProjection_of_piecewiseLinearInterpCLM_mem hab
-    (fun m f => iccToLp_piecewiseLinearInterpCLM_mem_disc (hstep m) (hfirst m) (hlast m) f)
+    (fun m f => iccToLp_piecewiseLinearInterpCLM_mem_disc
+      ⟨fun i hi => hstep m i (by omega), hfirst m, hlast m⟩ f)
     hstep hfirst hlast hmesh hh u
 
 /-! ### Kernel operators against a projection -/
@@ -597,8 +596,7 @@ This is the estimate that [han2009theoretical], §12.3.1, Example 12.3.2 states 
 self-adjoint (`isSelfAdjoint_discPiecewiseLinearProjCLM`) and an operator and its adjoint have the
 same norm, which is equation (12.3.13) there. -/
 theorem norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le (hab : a ≤ b) {n : ℕ}
-    {x : ℕ → Set.Icc a b} (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
-    (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b)
+    {x : ℕ → Set.Icc a b} (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ))
     {k : C(Set.Icc a b × Set.Icc a b, ℝ)}
     (hk : MemLp k 2 ((iccMeasure a b).prod (iccMeasure a b)))
     {G : Set.Icc a b → ℝ → ℝ} (hG : ∀ z, ContDiff ℝ ((2 : ℕ) : WithTop ℕ∞) (G z))
@@ -607,8 +605,6 @@ theorem norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le (hab : a ≤ b) 
     (hM : ∀ z : Set.Icc a b, ∀ t ∈ Set.Icc a b, |iteratedDeriv 2 (G z) t| ≤ M) :
     ‖l2KernelCLM hk ∘L (1 - discPiecewiseLinearProjCLM a b n x)‖ ≤ (b - a) * (h ^ 2 / 8 * M) := by
   have hM0 : 0 ≤ M := le_trans (abs_nonneg _) (hM (x 0) (x 0) (x 0).2)
-  have hh0 : 0 ≤ h := le_trans (sub_nonneg.mpr (hstep 0 (Nat.zero_le n)).le)
-    (hmesh 0 (Nat.zero_le n))
   have hsa : IsSelfAdjoint (1 - discPiecewiseLinearProjCLM a b n x) :=
     IsSelfAdjoint.sub (IsSelfAdjoint.one _) (isSelfAdjoint_discPiecewiseLinearProjCLM a b n x)
   have key := norm_l2KernelCLM_comp_le hab hk hsa
@@ -620,7 +616,7 @@ theorem norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le (hab : a ≤ b) 
           - discPiecewiseLinearProjCLM a b n x (iccToLp a b (k.curry z)) := by
       simp
     rw [hsub]
-    refine (norm_sub_discPiecewiseLinearProjCLM_le hab hstep hfirst hlast _).trans ?_
+    refine (norm_sub_discPiecewiseLinearProjCLM_le hab hx _).trans ?_
     gcongr
-    exact norm_sub_piecewiseLinearInterpCLM_le hstep hfirst hlast (hG z) (fun t => hGk z t) hmesh
+    exact norm_sub_piecewiseLinearInterpCLM_le hx (hG z) (fun t => hGk z t) hmesh
       (hM z)

@@ -39,6 +39,15 @@ id = 'polarSet_smul'
 id = 'polarCone_add'
 
 [[node]]
+id = 'isCone_coe_pointedCone'
+
+[[node]]
+id = 'isCone_coe_submodule'
+
+[[node]]
+id = 'isCone_polarCone'
+
+[[node]]
 id = 'convexConj_indicatorFn_eq_indicatorFn_polarCone'
 
 [[node]]

@@ -70,16 +70,6 @@ theorem LinearMap.IsCoerciveWith.isStronglyMonotoneWith {A : E →ₗ[𝕜] E} {
 
 end StronglyMonotone
 
-/-- Scaling by a positive constant preserves lower semicontinuity on a set. -/
-private theorem lowerSemicontinuousOn_const_mul {α : Type*} [TopologicalSpace α] {j : α → ℝ}
-    {K : Set α} {θ : ℝ} (hθ : 0 < θ) (hj : LowerSemicontinuousOn j K) :
-    LowerSemicontinuousOn (fun v => θ * j v) K := by
-  intro x hx y hy
-  have hy' : y / θ < j x := by rwa [div_lt_iff₀ hθ, mul_comm]
-  filter_upwards [hj x hx (y / θ) hy'] with x' hx'
-  rw [gt_iff_lt, div_lt_iff₀ hθ, mul_comm] at hx'
-  exact hx'
-
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
 /-- **The elliptic variational inequality.**  `IsVariationalInequalitySolution A j f K u` says that
@@ -458,7 +448,6 @@ theorem existsUnique_isVariationalInequalitySolution_on {K : Set V} (hKne : K.No
     {j : V → ℝ} (hj : ConvexOn ℝ K j) (hjlsc : LowerSemicontinuousOn j K) (f : V) :
     ∃! u, IsVariationalInequalitySolution A j f K u := by
   -- replace `L` by `L' = max L 1 > 0`, so that the damping parameter `θ = c / L'²` makes sense
-  have hL' : (0 : ℝ) < max L 1 := lt_of_lt_of_le one_pos (le_max_right _ _)
   have hlip' : ∀ x ∈ K, ∀ y ∈ K, ‖A x - A y‖ ≤ max L 1 * ‖x - y‖ := fun x hx y hy =>
     (hlip x hx y hy).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _))
   have hθ : 0 < c / max L 1 ^ 2 := by positivity
@@ -466,7 +455,6 @@ theorem existsUnique_isVariationalInequalitySolution_on {K : Set V} (hKne : K.No
       + (c / max L 1 ^ 2) ^ 2 * max L 1 ^ 2) := Real.sqrt_nonneg _
   have hk1 : Real.sqrt (1 - 2 * (c / max L 1 ^ 2) * c
       + (c / max L 1 ^ 2) ^ 2 * max L 1 ^ 2) < 1 := by
-    have hne : (max L 1 : ℝ) ^ 2 ≠ 0 := by positivity
     have heq : 1 - 2 * (c / max L 1 ^ 2) * c + (c / max L 1 ^ 2) ^ 2 * max L 1 ^ 2
         = 1 - c ^ 2 / max L 1 ^ 2 := by field_simp; ring
     have hpos : (0 : ℝ) < c ^ 2 / max L 1 ^ 2 := by positivity
@@ -484,7 +472,8 @@ theorem existsUnique_isVariationalInequalitySolution_on {K : Set V} (hKne : K.No
   have hjθ : ConvexOn ℝ K (fun v => c / max L 1 ^ 2 * j v) := by
     simpa only [smul_eq_mul] using ConvexOn.smul hθ.le hj
   have hjθlsc : LowerSemicontinuousOn (fun v => c / max L 1 ^ 2 * j v) K :=
-    lowerSemicontinuousOn_const_mul hθ hjlsc
+    (continuous_const_mul _).comp_lowerSemicontinuousOn hjlsc
+      fun _ _ h => mul_le_mul_of_nonneg_left h hθ.le
   choose P hP _ using fun y : V => existsUnique_id hKne hKcl hKcv hjθ hjθlsc y
   have hmaps : Set.MapsTo (fun u => P (u - (c / max L 1 ^ 2) • (A u - f))) K K :=
     fun u _ => (hP _).1

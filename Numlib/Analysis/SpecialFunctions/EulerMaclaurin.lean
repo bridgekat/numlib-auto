@@ -412,7 +412,6 @@ theorem trapezoidSum_eq_integral_add_sum_add_mul {a b : ℝ} (hab : a < b) {k : 
               * (iteratedDeriv (2 * i - 1) f b - iteratedDeriv (2 * i - 1) f a)
           + ((bernoulli (2 * k + 2) : ℚ) : ℝ) / (2 * k + 2)! * ((b - a) / m) ^ (2 * k + 2)
               * (b - a) * iteratedDeriv (2 * k + 2) f η := by
-  have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
   set h : ℝ := (b - a) / m with hh
   have hpos : 0 < h := by rw [hh]; positivity
   have hmh : (m : ℝ) * h = b - a := by rw [hh]; field_simp
@@ -424,7 +423,6 @@ theorem trapezoidSum_eq_integral_add_sum_add_mul {a b : ℝ} (hab : a < b) {k : 
   have hxmem : ∀ j ≤ m, x j ∈ Icc a b := by
     intro j hj
     have hj' : (j : ℝ) ≤ m := by exact_mod_cast hj
-    have h0 : (0 : ℝ) ≤ j := Nat.cast_nonneg _
     refine ⟨by simp only [hxdef]; nlinarith, ?_⟩
     simp only [hxdef]
     have : (j : ℝ) * h ≤ m * h := mul_le_mul_of_nonneg_right hj' hpos.le
@@ -529,7 +527,6 @@ theorem _root_.bernoulli_eq_tsum_two_div_pow {j : ℕ} (hj : 0 < j) :
   have hsq : ((-1 : ℝ) ^ i) * (-1) ^ i = 1 := by
     rw [← pow_add, ← two_mul]
     exact (even_two_mul i).neg_one_pow
-  have hπ : (0 : ℝ) < Real.pi := Real.pi_pos
   have hfac : ((2 * (i + 1))! : ℝ) ≠ 0 := by positivity
   field_simp
   linear_combination (-(((bernoulli (2 * (i + 1)) : ℚ) : ℝ) * 2 ^ (2 * (i + 1)))) * hsq

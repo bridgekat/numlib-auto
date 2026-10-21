@@ -648,7 +648,6 @@ theorem HasSegmentProperty.exists_translateApprox
       (ContinuousOn ũ (closure (Ω : Set 𝔼)) →
         Continuous Fs ∧ ∀ z ∈ closure (Ω : Set 𝔼), dist (Fs z) (ũ z) < ε) := by
   classical
-  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
   -- Step 0: the finite cover of the frontier and the partition of unity
   have hK : IsCompact (frontier (Ω : Set 𝔼)) :=
     hb.isCompact_closure.of_isClosed_subset isClosed_frontier frontier_subset_closure

@@ -248,6 +248,21 @@ theorem EntrywiseNonneg.mulVec_mono [Fintype n] {A : Matrix m n α} {x y : n →
 
 end Semiring
 
+section StrictSemiring
+
+variable [Semiring α] [PartialOrder α] [IsStrictOrderedRing α]
+
+/-- A matrix with positive entries maps a nonzero nonnegative vector to an entrywise positive
+one. -/
+theorem mulVec_pos_of_forall_pos [Fintype n] {P : Matrix m n α} (hP : ∀ i j, 0 < P i j)
+    {w : n → α} (hw : 0 ≤ w) (hwne : w ≠ 0) (i : m) : 0 < (P *ᵥ w) i := by
+  obtain ⟨j, hj⟩ := Function.ne_iff.1 hwne
+  rw [Matrix.mulVec_apply_eq_sum]
+  exact Finset.sum_pos' (fun k _ => mul_nonneg (hP i k).le (hw k))
+    ⟨j, Finset.mem_univ j, mul_pos (hP i j) ((hw j).lt_of_ne' hj)⟩
+
+end StrictSemiring
+
 /-! ### The absolute value of a product -/
 
 section Ring
@@ -319,8 +334,6 @@ theorem abs_add_mul_add_sub_mul_entrywiseLE {X ΔX P : Matrix l p α} {Y ΔY Q :
   have a2 := h2 i j
   have a3 := h3 i j
   simp only [Matrix.add_apply, Matrix.smul_apply, smul_eq_mul] at e1 e2 a1 a2 a3 ⊢
-  have hc : ((1 + a) * (1 + b) - 1) * (P * Q) i j =
-      b * (P * Q) i j + a * (P * Q) i j + a * b * (P * Q) i j := by ring
   linarith
 
 end CommRing

@@ -18,6 +18,7 @@ The elementary identities of the Frobenius norm (Mathlib's scoped `Matrix.Norms.
 (`Matrix.frobenius_norm_sq_eq_trace`), `|aᵢⱼ| ≤ ‖A‖_F` (`Matrix.norm_entry_le_frobenius_norm`), and
 the sums of the squared Euclidean norms of the columns and of the rows
 (`Matrix.frobenius_norm_sq_eq_sum_norm_sq_col`, `Matrix.frobenius_norm_sq_eq_sum_norm_sq_row`).
+A matrix supported on a block has the norm of the block (`Matrix.frobenius_norm_eq_submatrix_val`).
 -/
 
 open Finset
@@ -67,5 +68,28 @@ theorem frobenius_norm_sq_eq_sum_norm_sq_row (A : Matrix m n 𝕜) :
     ‖A‖ ^ 2 = ∑ i, ‖(WithLp.toLp 2 (A i) : EuclideanSpace 𝕜 n)‖ ^ 2 := by
   rw [frobenius_norm_sq_eq_sum_sq]
   exact Finset.sum_congr rfl fun i _ => by rw [EuclideanSpace.norm_sq_eq]
+
+/-- A matrix supported on the block `p × q` has the Frobenius norm of that block. -/
+theorem frobenius_norm_eq_submatrix_val {p : m → Prop} {q : n → Prop} [DecidablePred p]
+    [DecidablePred q] {A : Matrix m n 𝕜} (h : ∀ i j, ¬ (p i ∧ q j) → A i j = 0) :
+    ‖A‖ = ‖A.submatrix (Subtype.val : {i // p i} → m) (Subtype.val : {j // q j} → n)‖ := by
+  have hsq : ‖A‖ ^ 2 =
+      ‖A.submatrix (Subtype.val : {i // p i} → m) (Subtype.val : {j // q j} → n)‖ ^ 2 := by
+    rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq,
+      ← Fintype.sum_subtype_add_sum_subtype p]
+    have h2 : ∑ r : {i // ¬ p i}, ∑ j, ‖A r j‖ ^ 2 = 0 :=
+      Finset.sum_eq_zero fun r _ => Finset.sum_eq_zero fun j _ => by
+        rw [h r j fun h => r.2 h.1]
+        simp
+    rw [h2, add_zero]
+    refine Finset.sum_congr rfl fun a _ => ?_
+    rw [← Fintype.sum_subtype_add_sum_subtype q]
+    have h3 : ∑ s : {j // ¬ q j}, ‖A a s‖ ^ 2 = 0 :=
+      Finset.sum_eq_zero fun s _ => by
+        rw [h a s fun h => s.2 h.2]
+        simp
+    rw [h3, add_zero]
+    rfl
+  exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hsq
 
 end Matrix

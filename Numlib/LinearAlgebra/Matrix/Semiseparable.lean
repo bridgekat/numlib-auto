@@ -222,9 +222,6 @@ theorem IsQuasiseparable.add_diagonal {A : Matrix n n K} (h : A.IsQuasiseparable
   rw [h₁, h₂]
   exact h k
 
-private theorem nat_mul_le_one {a b : ℕ} (ha : a ≤ 1) (hb : b ≤ 1) : a * b ≤ 1 :=
-  (Nat.mul_le_mul ha hb).trans_eq (one_mul 1)
-
 omit [LinearOrder n] in
 /-- The rank of a block of a Hadamard product. -/
 private theorem rank_toBlock_hadamard_le (A B : Matrix n n K) (p q : n → Prop) [DecidablePred q] :
@@ -235,14 +232,14 @@ private theorem rank_toBlock_hadamard_le (A B : Matrix n n K) (p q : n → Prop)
 (12.2.7)), by `rank (X ⊙ Y) ≤ rank X * rank Y` on each block. -/
 theorem IsQuasiseparable.hadamard {A B : Matrix n n K} (hA : A.IsQuasiseparable)
     (hB : B.IsQuasiseparable) : (A ⊙ B).IsQuasiseparable := fun k =>
-  ⟨(rank_toBlock_hadamard_le A B _ _).trans (nat_mul_le_one (hA k).1 (hB k).1),
-    (rank_toBlock_hadamard_le A B _ _).trans (nat_mul_le_one (hA k).2 (hB k).2)⟩
+  ⟨(rank_toBlock_hadamard_le A B _ _).trans (mul_le_one' (hA k).1 (hB k).1),
+    (rank_toBlock_hadamard_le A B _ _).trans (mul_le_one' (hA k).2 (hB k).2)⟩
 
 /-- Hadamard products of semiseparable matrices are semiseparable. -/
 theorem IsSemiseparable.hadamard {A B : Matrix n n K} (hA : A.IsSemiseparable)
     (hB : B.IsSemiseparable) : (A ⊙ B).IsSemiseparable := fun k =>
-  ⟨(rank_toBlock_hadamard_le A B _ _).trans (nat_mul_le_one (hA k).1 (hB k).1),
-    (rank_toBlock_hadamard_le A B _ _).trans (nat_mul_le_one (hA k).2 (hB k).2)⟩
+  ⟨(rank_toBlock_hadamard_le A B _ _).trans (mul_le_one' (hA k).1 (hB k).1),
+    (rank_toBlock_hadamard_le A B _ _).trans (mul_le_one' (hA k).2 (hB k).2)⟩
 
 end Classes
 
@@ -618,15 +615,6 @@ private theorem card_lt_add_card_le (k : n) :
   rw [Fintype.card_subtype, Fintype.card_subtype, ← card_univ]
   omega
 
-/-- A matrix of rank zero vanishes. -/
-private theorem apply_eq_zero_of_rank_eq_zero {m n' : Type*} [Finite m] [Fintype n']
-    {B : Matrix m n' K} (h : B.rank = 0) (i : m) (j : n') : B i j = 0 := by
-  have := Fintype.ofFinite m
-  by_contra hne
-  have := card_le_rank_of_det_submatrix_ne_zero (A := B) (r := fun _ : Fin 1 => i)
-    (c := fun _ => j) (by simpa [det_fin_one] using hne)
-  omega
-
 /-- The lower maximal blocks of the inverse of a tridiagonal matrix have rank at most one. -/
 private theorem rank_toBlock_inv_le_one_of_isTridiagonal {A : Matrix n n K} (hA : IsUnit A)
     (hT : A.IsTridiagonal) (k : n) : (A⁻¹.toBlock (k ≤ ·) (· ≤ k)).rank ≤ 1 := by
@@ -757,7 +745,7 @@ private theorem hasLowerBandwidth_inv_of_isGeneratorRepresentableOfOrder
     have : min n (j + 1) = j + 1 := by omega
     have : min n (j + 1 + p) = j + 1 + p := by omega
     omega
-  exact apply_eq_zero_of_rank_eq_zero h0 ⟨i, by simp; omega⟩ ⟨j, by simp⟩
+  exact congrFun (congrFun (rank_eq_zero_iff.1 h0) ⟨i, by simp; omega⟩) ⟨j, by simp⟩
 
 /-- **The inverse of a `{p, q}`-generator representable matrix is banded** ([golub2013matrix]
 §12.2.8): lower bandwidth `p` and upper bandwidth `q`. By the nullity theorem, the block of
@@ -1103,7 +1091,7 @@ theorem IsLU.isSemiseparable_upper {A L U : Matrix n n K} (h : IsLU A L U)
 when the leading principal submatrices are nonsingular: a lower maximal block of `L` is
 `A[≥ k, ≤ k] U[≤ k, ≤ k]⁻¹`. Without the hypothesis the claim fails for singular `A`. -/
 theorem IsLU.isSemiseparable_lower {A L U : Matrix n n K} (h : IsLU A L U)
-    (hA : A.IsSemiseparable) (hk : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
+    (hA : A.IsSemiseparable) (hk : A.HasUnitStrictLeadingPrincipalSubmatrices) :
     L.IsSemiseparable := by
   refine fun k => ⟨?_, rank_toBlock_le_one_of_isLowerTriangular
     h.isUnitLowerTriangular.isLowerTriangular k⟩
@@ -1759,7 +1747,6 @@ theorem exists_orthogonalHessenberg_eq_prod_planeReflector
           (by rw [transpose_apply]; exact hdiag j hj) hij
         rwa [transpose_apply] at this
       · have hi : (i : ℕ) < N := by
-          have := j.2; have := i.2
           by_contra h; exact hij (Fin.ext (by omega))
         exact apply_eq_zero_of_mul_transpose h1 (hdiag i hi) (Ne.symm hij)
   have hdetX : X.det = X (Fin.last N) (Fin.last N) := by

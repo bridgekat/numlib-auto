@@ -45,7 +45,6 @@ theorem exists_apply_add_eq_of_quadratic (L : F ≃L[𝕜] F) {δ γ η : ℝ} (
     ∃ x, L x + φ x = g ∧ ‖x‖ ≤ 2 * γ / δ := by
   -- Work with `η₊ = max η 0`, for which the Lipschitz hypothesis still holds.
   set η' := max η 0 with hη'
-  have hη'0 : 0 ≤ η' := le_max_right _ _
   have hφ' : ∀ x y, ‖φ x - φ y‖ ≤ η' * (‖x‖ + ‖y‖) * ‖x - y‖ := fun x y =>
     (hφ x y).trans (by gcongr; exact le_max_left _ _)
   have hγ : 0 ≤ γ := (norm_nonneg g).trans hg

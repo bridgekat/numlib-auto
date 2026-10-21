@@ -1,0 +1,16 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "integrableOn_eval_mul_exp_neg"
+
+[[node]]
+id = "integrable_eval_mul_exp_neg_sq"
+
+[[node]]
+id = "_root_.Real.tendsto_pow_mul_exp_neg_sq_atTop_nhds_zero"
+
+[[node]]
+id = "tendsto_eval_mul_exp_neg_sq_atTop"
+
+[[node]]
+id = "tendsto_eval_mul_exp_neg_sq_atBot"

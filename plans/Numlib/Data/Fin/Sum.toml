@@ -1,2 +1,8 @@
 [[node]]  # added by ls1
 id = "Fin.sum_castLE_eq_sum_ite"
+
+[[node]]
+id = "Fin.prod_eq_prod_castLE_of_forall_le"
+
+[[node]]
+id = "Fin.sum_eq_sum_castLE_of_forall_le"

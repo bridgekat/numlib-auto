@@ -14,6 +14,7 @@ import Mathlib.MeasureTheory.Function.LpOrder
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.AbsolutelyContinuousFun
 import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Mathlib.Topology.Algebra.Polynomial
 import Mathlib.Topology.Order.IntermediateValue
 
 /-!
@@ -28,7 +29,8 @@ interval `(a, b)`, none of which is about any particular numerical method:
   `MeasureTheory.IntegrableOn.intervalIntegrable_of_Ioo`), two functions agreeing on `(a, b)`, or
   almost everywhere on it, have the same interval integrals (`intervalIntegral.integral_congr_Ioo`,
   `intervalIntegral.integral_congr_ae_Ioo_of_mem`), and `∫_a^b F = ∫_{(a, b)} F`
-  (`intervalIntegral.integral_eq_setIntegral_Ioo`);
+  (`intervalIntegral.integral_eq_setIntegral_Ioo`); an integral over `[-a, a]` folds onto
+  `[0, a]` (`intervalIntegral.integral_fold_neg`);
 * a function continuous on `[a, b]` is essentially bounded and square integrable on `(a, b)`
   (`ContinuousOn.memLp_top_restrict_Ioo`, `ContinuousOn.memLp_two_restrict_Ioo`), integrable
   against an `L²` function (`MeasureTheory.integrableOn_continuousOn_mul`), and determined on
@@ -58,7 +60,9 @@ interval `(a, b)`, none of which is about any particular numerical method:
   (`intervalIntegral.integral_pos_of_continuousOn_of_nonneg`);
 * an interval-integrable nonnegative weight is within any `L¹` distance of a continuous
   nonnegative function (`intervalIntegral.exists_continuous_nonneg_integral_abs_sub_le`), which is
-  how an integral-form Gronwall lemma with an integrable weight follows from the continuous one.
+  how an integral-form Gronwall lemma with an integrable weight follows from the continuous one;
+* a real polynomial whose square integrates to zero over a nondegenerate interval is zero
+  (`Polynomial.eq_zero_of_integral_mul_self_eq_zero`).
 -/
 
 open Filter MeasureTheory Set Topology intervalIntegral
@@ -122,6 +126,18 @@ theorem integral_eq_setIntegral_Ioo (hab : a ≤ b) (F : ℝ → ℝ) :
   rw [intervalIntegral.integral_of_le hab, integral_Ioc_eq_integral_Ioo]
 
 end intervalIntegral
+
+/-! ### Symmetric intervals -/
+
+/-- **Folding a symmetric interval onto its right half**: `∫_{-a}^{a} H = ∫_0^a (H t + H (-t))`. -/
+theorem intervalIntegral.integral_fold_neg {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {H : ℝ → E} {a : ℝ} (h₁ : IntervalIntegrable H volume (-a) 0)
+    (h₂ : IntervalIntegrable H volume 0 a) :
+    ∫ t in -a..a, H t = ∫ t in (0 : ℝ)..a, (H t + H (-t)) := by
+  have h₃ : IntervalIntegrable (fun t => H (-t)) volume 0 a := by
+    simpa using ((IntervalIntegrable.iff_comp_neg (a := -a) (b := 0)).mp h₁).symm
+  rw [intervalIntegral.integral_add h₂ h₃, intervalIntegral.integral_comp_neg H, neg_zero,
+    add_comm, intervalIntegral.integral_add_adjacent_intervals h₁ h₂]
 
 /-! ### Continuous functions on `[a, b]` in `Lp(a, b)` -/
 
@@ -552,7 +568,6 @@ theorem exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos (hab : a < b)
     (hK : ContinuousOn K (Icc a b)) (hf : ContinuousOn f (Icc a b))
     (hKnp : ∀ t ∈ Icc a b, K t ≤ 0) (hKneg : (∫ t in a..b, K t) < 0) :
     ∃ ξ ∈ Ioo a b, ∫ t in a..b, K t * f t = f ξ * ∫ t in a..b, K t := by
-  have hKint : IntervalIntegrable K volume a b := hK.intervalIntegrable_of_Icc hab.le
   obtain ⟨ξ, hξ, h⟩ := exists_mem_Ioo_integral_mul_eq_mul_integral (K := fun t => -K t) hab
     hK.neg hf (fun t ht => neg_nonneg.2 (hKnp t ht)) (by rw [integral_neg]; linarith)
   refine ⟨ξ, hξ, ?_⟩
@@ -760,3 +775,20 @@ theorem lintegral_enorm_rpow_le_of_hasDerivAt {f f' : ℝ → ℝ} (hf : ∀ s, 
           rw [ENNReal.rpow_add _ _ ht0 ENNReal.ofReal_ne_top, ENNReal.rpow_one]
         rw [e]
         ring
+
+/-! ### Polynomials -/
+
+/-- A polynomial whose square integrates to zero over a nondegenerate interval is zero. -/
+theorem Polynomial.eq_zero_of_integral_mul_self_eq_zero {u v : ℝ} (huv : u < v) {p : Polynomial ℝ}
+    (h : ∫ s in u..v, p.eval s * p.eval s = 0) : p = 0 := by
+  by_contra hp
+  -- a nonzero polynomial does not vanish on the whole interval
+  have hroot : ∃ c ∈ Icc u v, p.eval c ≠ 0 := by
+    by_contra hall
+    push Not at hall
+    exact hp (p.eq_zero_of_infinite_isRoot ((Icc_infinite huv).mono fun c hc => hall c hc))
+  obtain ⟨c, hc, hc0⟩ := hroot
+  have hpos : 0 < ∫ s in u..v, p.eval s * p.eval s :=
+    integral_pos huv (p.continuous.mul p.continuous).continuousOn
+      (fun s _ => mul_self_nonneg _) ⟨c, hc, mul_self_pos.2 hc0⟩
+  exact hpos.ne' h

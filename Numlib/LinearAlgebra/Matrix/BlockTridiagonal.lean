@@ -571,7 +571,7 @@ theorem IsBlockLU.toBlock_recurrence_of_blockTridiagonal (h : IsBlockLU b A L U)
   obtain ⟨hLbd, hUbd⟩ := IsBlockLU.blockBidiagonal_of_blockTridiagonal h htriL htriU hlead
   have hsuper : ∀ {i j : Fin N}, ((b i : ℕ) + 1 = b j ∨ ∀ x, b i ≤ b x) → U i j = A i j := by
     rintro i j (hij | hmin)
-    · exact upper_apply_eq h fun j' hj' => hUbd j' j (by have := Fin.lt_def.1 hj'; omega)
+    · exact upper_apply_eq h fun j' hj' => hUbd j' j (by omega)
     · exact upper_apply_eq h fun j' hj' => absurd (hmin j') (not_le.2 hj')
   refine ⟨fun k hk => ?_, fun k l hkl => ?_, fun k l hkl => ?_, fun k l hkl => ?_⟩
   · ext i j
@@ -583,9 +583,8 @@ theorem IsBlockLU.toBlock_recurrence_of_blockTridiagonal (h : IsBlockLU b A L U)
     refine Finset.sum_subset (filter_subset _ _) fun x _ hx => ?_
     have hxk : b x ≠ k := by simpa using hx
     rcases lt_or_gt_of_ne hxk with hlt | hgt
-    · rw [hLbd i.1 x (by rw [i.2]; have := Fin.lt_def.1 hlt; omega), zero_mul]
-    · rcases eq_or_lt_of_le (show l ≤ b x from Fin.le_def.2 (by
-        have := Fin.lt_def.1 hgt; omega)) with heq | hlt'
+    · rw [hLbd i.1 x (by rw [i.2]; omega), zero_mul]
+    · rcases eq_or_lt_of_le (show l ≤ b x from Fin.le_def.2 (by omega)) with heq | hlt'
       · rw [h.blockTriangular (show b j.1 < b x by
           rw [j.2, ← heq]; exact Fin.lt_def.2 (by omega)), mul_zero]
       · rw [h.isBlockUnitLowerTriangular.blockTriangular
@@ -603,10 +602,9 @@ theorem IsBlockLU.toBlock_recurrence_of_blockTridiagonal (h : IsBlockLU b A L U)
       rcases lt_or_gt_of_ne hxk with hlt | hgt
       · have hne : i.1 ≠ x := fun hij => by
           rw [← hij, i.2] at hlt; exact absurd (Fin.lt_def.1 hlt) (by omega)
-        rw [hLbd i.1 x (by rw [i.2]; have := Fin.lt_def.1 hlt; omega), one_apply_ne hne,
+        rw [hLbd i.1 x (by rw [i.2]; omega), one_apply_ne hne,
           zero_mul]
-      · rcases eq_or_lt_of_le (show l ≤ b x from Fin.le_def.2 (by
-          have := Fin.lt_def.1 hgt; omega)) with heq | hlt'
+      · rcases eq_or_lt_of_le (show l ≤ b x from Fin.le_def.2 (by omega)) with heq | hlt'
         · rw [h.isBlockUnitLowerTriangular.apply_eq_one_of_eq i.1 x (by rw [i.2, ← heq])]
         · have hne : i.1 ≠ x := fun hij => by
             rw [← hij, i.2] at hlt'; exact absurd hlt' (lt_irrefl _)

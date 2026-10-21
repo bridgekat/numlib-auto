@@ -150,3 +150,12 @@ id = "Triangulation.setIntegral_eq_sum_K"
 
 [[node]]
 id = "Triangulation.integrableOn_mul_of_memLp_of_continuousOn"
+
+[[node]]
+id = "Triangulation.memLp_restrict_of_continuousOn"
+
+[[node]]
+id = "Triangulation.sum_interior_eq_zero_of_add_partner"
+
+[[node]]
+id = "EuclideanSpace.integral_fderiv_comp_line"

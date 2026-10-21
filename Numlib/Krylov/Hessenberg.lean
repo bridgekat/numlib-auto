@@ -97,6 +97,10 @@ variable {A : E →ₗ[𝕜] F} {z : ℕ → E} {v : ℕ → F} {h : ℕ → ℕ
   (hv : HessenbergRelation₂ A z v h)
 include hv
 
+/-- The coefficients of a two-family relation are upper Hessenberg, as an `ℕ`-indexed array. -/
+theorem isUpperHessenberg : Matrix.IsUpperHessenberg (n := ℕ) h :=
+  Matrix.isUpperHessenberg_iff_nat.2 hv.eq_zero_of_lt
+
 /-- The matrix `H̄_m` cut out of the coefficients of a two-family relation is upper Hessenberg. -/
 theorem hessenbergOf_isUpperHessenbergRect (m : ℕ) : (hessenbergOf h m).IsUpperHessenbergRect :=
   fun i j hij => hv.eq_zero_of_lt i j hij
@@ -332,13 +336,13 @@ private theorem coeff_eq_zero_of_mem_orthogonal {m : ℕ} (hm : m ≤ grade A r)
 theorem residual_coeff_eq_zero {m : ℕ} (hm : m ≤ grade A r) (y : Fin m → 𝕜)
     (i : Fin (m + 1)) (hi : grade A r ≤ (i : ℕ)) :
     (firstVec (‖r‖ : 𝕜) (m + 1) - (Arnoldi.hessenberg A r m).mulVec y) i = 0 := by
-  have him : (i : ℕ) = m := by have := i.isLt; omega
+  have him : (i : ℕ) = m := by omega
   have hmv : ∀ j : Fin m, Arnoldi.coeff A r (i : ℕ) (j : ℕ) = 0 := by
     intro j
     rw [him]
     rcases Nat.lt_or_ge ((j : ℕ) + 1) m with hj | hj
     · exact Arnoldi.coeff_eq_zero_of_lt A r hj
-    · have hjm : (j : ℕ) + 1 = m := by have := j.isLt; omega
+    · have hjm : (j : ℕ) + 1 = m := by omega
       have h0 := (Arnoldi.coeff_succ_self_eq_zero_iff A r (j : ℕ)).mpr
         (show grade A r ≤ (j : ℕ) + 1 by omega)
       rwa [hjm] at h0
@@ -624,7 +628,7 @@ theorem givensRho_sq (k : ℕ) :
   Real.sq_sqrt (by positivity)
 
 /-- `ρ_k = 0` exactly when the two entries being rotated both vanish. -/
-private theorem rotated_eq_zero_of_givensRho_eq_zero {k : ℕ} (hρ : givensRho h k = 0) :
+theorem rotated_eq_zero_of_givensRho_eq_zero {k : ℕ} (hρ : givensRho h k = 0) :
     rotated h k k k = 0 ∧ rotated h k (k + 1) k = 0 := by
   have hsum : ‖rotated h k k k‖ ^ 2 + ‖rotated h k (k + 1) k‖ ^ 2 = 0 := by
     rw [← givensRho_sq, hρ]
@@ -685,7 +689,7 @@ theorem rotated_eq_of_le (k i j : ℕ) (hi : k + 1 ≤ i) : rotated h k i j = h 
       exact ih i (by omega)
 
 /-- After `k` rotations the first `k` columns are upper triangular. -/
-theorem rotated_eq_zero_of_lt (hh : ∀ i j, j + 1 < i → h i j = 0) (k i j : ℕ) (hj : j < k)
+theorem rotated_eq_zero_of_lt (hh : Matrix.IsUpperHessenberg (n := ℕ) h) (k i j : ℕ) (hj : j < k)
     (hij : j < i) : rotated h k i j = 0 := by
   induction k generalizing i with
   | zero => omega
@@ -707,7 +711,7 @@ theorem rotated_eq_zero_of_lt (hh : ∀ i j, j + 1 < i → h i j = 0) (k i j : �
             exact this
           · rw [ite_eq_right (by omega), ite_eq_right (by omega),
               rotated_eq_of_le h j i j (by omega)]
-            exact hh i j (by omega)
+            exact hh.eq_zero_of_add_one_lt i j (by omega)
 
 /-- When `h` itself vanishes strictly above the diagonal — a lower bidiagonal coefficient array, for
 instance — column `j` stays zero above the diagonal until rotation `j` reaches it: `rotated h k i j
@@ -764,7 +768,8 @@ theorem rotated_eq_zero_of_add_two_lt (hh : ∀ i j, i + 1 < j → h i j = 0) (k
     · exact ih i j hij
 
 /-- Columns `j < k` are not changed by rotation `k`, for Hessenberg `h`. -/
-theorem rotated_succ_eq_of_lt (hh : ∀ i j, j + 1 < i → h i j = 0) (k j : ℕ) (hj : j < k) (i : ℕ) :
+theorem rotated_succ_eq_of_lt
+    (hh : Matrix.IsUpperHessenberg (n := ℕ) h) (k j : ℕ) (hj : j < k) (i : ℕ) :
     rotated h (k + 1) i j = rotated h k i j := by
   rw [rotated_succ_apply]
   split_ifs with h1 h2
@@ -1218,7 +1223,7 @@ theorem givensQ_mulVec_firstVec (β : 𝕜) (m : ℕ) :
     rw [ite_eq_right hi, this, gvecTrunc_self]
 
 /-- The last row of `R̄_m` vanishes. -/
-theorem rotated_last_row (hh : ∀ i j, j + 1 < i → h i j = 0) (m j : ℕ) (hj : j < m) :
+theorem rotated_last_row (hh : Matrix.IsUpperHessenberg (n := ℕ) h) (m j : ℕ) (hj : j < m) :
     rotated h m m j = 0 :=
   rotated_eq_zero_of_lt h hh m m j hj hj
 
@@ -1235,7 +1240,7 @@ theorem givensRho_ne_zero_of_rotated_ne_zero {k : ℕ} (hk : rotated h k k k ≠
     givensRho h k ≠ 0 := fun h0 => hk (rotated_eq_zero_of_givensRho_eq_zero h h0).1
 
 /-- The diagonal of the triangular factor is `ρ_0, …, ρ_{n-1}` ([saad2003iterative], (6.37)). -/
-theorem rotated_diag (hh : ∀ i j, j + 1 < i → h i j = 0) {n j : ℕ} (hj : j < n) :
+theorem rotated_diag (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {n j : ℕ} (hj : j < n) :
     rotated h n j j = (givensRho h j : 𝕜) := by
   induction n with
   | zero => omega
@@ -1249,28 +1254,28 @@ theorem rotated_diag (hh : ∀ i j, j + 1 < i → h i j = 0) {n j : ℕ} (hj : j
 
 /-- The square block of `H̄^{(n)}` is upper triangular as soon as its size does not exceed `n + 1`:
 the first `n` columns have been triangularized and column `n` sits on the diagonal. -/
-theorem hessenbergSqOf_rotated_isUpperTriangular (hh : ∀ i j, j + 1 < i → h i j = 0) {n N : ℕ}
+theorem hessenbergSqOf_rotated_isUpperTriangular
+    (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {n N : ℕ}
     (hN : N ≤ n + 1) : (hessenbergSqOf (rotated h n) N).IsUpperTriangular := by
   intro i j hij
   have h1 : (j : ℕ) < (i : ℕ) := hij
-  have h2 := i.isLt
   exact rotated_eq_zero_of_lt h hh n i j (by omega) h1
 
 /-- The determinant of the triangular factor is the product of its diagonal. -/
-theorem det_hessenbergSqOf_rotated (hh : ∀ i j, j + 1 < i → h i j = 0) {n N : ℕ}
+theorem det_hessenbergSqOf_rotated (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {n N : ℕ}
     (hN : N ≤ n + 1) :
     (hessenbergSqOf (rotated h n) N).det = ∏ j : Fin N, rotated h n (j : ℕ) (j : ℕ) :=
   Matrix.det_of_isUpperTriangular (hessenbergSqOf_rotated_isUpperTriangular h hh hN)
 
 /-- The triangular factor is nonsingular exactly when its diagonal has no zero. -/
-theorem isUnit_hessenbergSqOf_rotated (hh : ∀ i j, j + 1 < i → h i j = 0) {n N : ℕ}
+theorem isUnit_hessenbergSqOf_rotated (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {n N : ℕ}
     (hN : N ≤ n + 1) (hd : ∀ j < N, rotated h n j j ≠ 0) :
     IsUnit (hessenbergSqOf (rotated h n) N) := by
   rw [Matrix.isUnit_iff_isUnit_det, det_hessenbergSqOf_rotated h hh hN, isUnit_iff_ne_zero]
   exact Finset.prod_ne_zero_iff.mpr fun j _ => hd (j : ℕ) j.isLt
 
 /-- `R_m` is nonsingular when no rotation degenerates. -/
-theorem isUnit_hessenbergSqOf_rotated_self (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
+theorem isUnit_hessenbergSqOf_rotated_self (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρ : ∀ k < m, givensRho h k ≠ 0) : IsUnit (hessenbergSqOf (rotated h m) m) :=
   isUnit_hessenbergSqOf_rotated h hh (by omega) fun j hj => by
     rw [rotated_diag h hh hj]
@@ -1281,7 +1286,7 @@ theorem isUnit_hessenbergSqOf_rotated_self (hh : ∀ i j, j + 1 < i → h i j = 
 /-- [saad2003iterative], (6.41): the `m` rotations are an isometry taking the least-squares residual
 `β e₁ - H̄_m y` to `(g_m - R_m y, γ_m)`, so its square norm splits into the part the triangular
 system can annihilate and the fixed remainder `|γ_m|²`. -/
-theorem norm_sq_firstVec_sub_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
+theorem norm_sq_firstVec_sub_mulVec_eq (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρ : ∀ k < m, givensRho h k ≠ 0) (β : 𝕜) (y : Fin m → 𝕜) :
     ‖(WithLp.toLp 2 (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) :
         EuclideanSpace 𝕜 (Fin (m + 1)))‖ ^ 2 =
@@ -1309,7 +1314,8 @@ theorem norm_sq_firstVec_sub_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j = 0) {
   · simp [hlast]
 
 /-- When rotation `m` degenerates, row `m` of `R_{m+1}` vanishes: its diagonal entry is `ρ_m`. -/
-theorem rotated_succ_row_eq_zero_of_givensRho_eq_zero (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
+theorem rotated_succ_row_eq_zero_of_givensRho_eq_zero
+    (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρm : givensRho h m = 0) {j : ℕ} (hj : j ≤ m) : rotated h (m + 1) m j = 0 := by
   rcases Nat.lt_or_ge j m with hjm | hjm
   · exact rotated_eq_zero_of_lt h hh (m + 1) m j (by omega) hjm
@@ -1339,7 +1345,6 @@ private theorem norm_sq_split_aux {N : ℕ} (F : Fin (N + 2) → 𝕜) (G : Fin 
   have h2 : ∑ i : Fin (N + 1), ‖F i.castSucc‖ ^ 2 =
       ∑ i : Fin (N + 1), (‖G i‖ ^ 2 + (if (i : ℕ) = N then C else 0)) :=
     Finset.sum_congr rfl fun i _ => hterm i
-  have h3 : ∑ _i : Fin (N + 1), (0 : ℝ) = 0 := by simp
   have h4 : ∑ i : Fin (N + 1), (if (i : ℕ) = N then C else 0) = C := by
     rw [Finset.sum_eq_single (Fin.last N)]
     · simp
@@ -1355,7 +1360,8 @@ private theorem norm_sq_split_aux {N : ℕ} (F : Fin (N + 2) → 𝕜) (G : Fin 
 /-- The breakdown analogue of `norm_sq_firstVec_sub_mulVec_eq`: if rotation `m` degenerates (`ρ_m =
 0`, so both entries it acts on already vanish) then the first `m` rotations still split the
 least-squares residual of step `m + 1`, but the remainder is `|γ_m|`, not `|γ_{m+1}| = 0`. -/
-theorem norm_sq_firstVec_sub_mulVec_eq_of_breakdown (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
+theorem norm_sq_firstVec_sub_mulVec_eq_of_breakdown
+    (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρ : ∀ k < m, givensRho h k ≠ 0) (hρm : givensRho h m = 0) (β : 𝕜) (y : Fin (m + 1) → 𝕜) :
     ‖(WithLp.toLp 2 (firstVec β (m + 2) - (hessenbergOf h (m + 1)).mulVec y) :
         EuclideanSpace 𝕜 (Fin (m + 2)))‖ ^ 2 =
@@ -1368,16 +1374,16 @@ theorem norm_sq_firstVec_sub_mulVec_eq_of_breakdown (hh : ∀ i j, j + 1 < i →
     intro j
     rcases Nat.lt_or_ge (j : ℕ) m with hj | hj
     · exact rotated_eq_zero_of_lt h hh m m (j : ℕ) hj hj
-    · have hjm : (j : ℕ) = m := by have := j.isLt; omega
+    · have hjm : (j : ℕ) = m := by omega
       rw [hjm]; exact ha
   have hrowB : ∀ j : Fin (m + 1), rotated h m (m + 1) (j : ℕ) = 0 := by
     intro j
     rcases Nat.lt_or_ge (j : ℕ) m with hj | hj
     · exact rotated_eq_zero_of_lt h hh m (m + 1) (j : ℕ) hj (by omega)
-    · have hjm : (j : ℕ) = m := by have := j.isLt; omega
+    · have hjm : (j : ℕ) = m := by omega
       rw [hjm]; exact hb
   have hrowC : ∀ j : Fin (m + 1), rotated h (m + 1) m (j : ℕ) = 0 := fun j =>
-    rotated_succ_row_eq_zero_of_givensRho_eq_zero h hh hρm (by have := j.isLt; omega)
+    rotated_succ_row_eq_zero_of_givensRho_eq_zero h hh hρm (by omega)
   have hgvecm : gvec h β m = 0 := gvec_eq_zero_of_givensRho_eq_zero h hρm β
   have hsub : ∀ i j : ℕ, i < m → rotated h (m + 1) i j = rotated h m i j := by
     intro i j hi
@@ -1405,7 +1411,7 @@ theorem norm_sq_firstVec_sub_mulVec_eq_of_breakdown (hh : ∀ i j, j + 1 < i →
         exact Finset.sum_congr rfl fun j _ => by rw [hsub (i : ℕ) (j : ℕ) hi]
       rw [Fin.val_castSucc, gvecTrunc_of_lt h β hi, hrot, ite_eq_right (by omega), add_zero]
       rfl
-    · have him : (i : ℕ) = m := by have := i.isLt; omega
+    · have him : (i : ℕ) = m := by omega
       have hz1 : (hessenbergOf (rotated h m) (m + 1)).mulVec y i.castSucc = 0 := by
         simp only [Matrix.mulVec, dotProduct, hessenbergOf, Matrix.of_apply]
         exact Finset.sum_eq_zero fun j _ => by
@@ -1462,7 +1468,7 @@ theorem mulVec_rotated_eq_zero_of_mulVec_eq_zero {m : ℕ} {y : Fin (m + 1) → 
 
 /-- [saad2003iterative], Prop 6.7 in coordinates: if `H_{m+1} y = β e₁` then the rectangular
 residual `β e₁ - H̄_{m+1} y` is carried by its last entry alone. -/
-theorem firstVec_sub_mulVec_apply_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j = 0) (β : 𝕜)
+theorem firstVec_sub_mulVec_apply_of_mulVec_eq (hh : Matrix.IsUpperHessenberg (n := ℕ) h) (β : 𝕜)
     {m : ℕ} {y : Fin (m + 1) → 𝕜}
     (hy : (hessenbergSqOf h (m + 1)).mulVec y = firstVec β (m + 1)) (l : Fin (m + 2)) :
     (firstVec β (m + 2) - (hessenbergOf h (m + 1)).mulVec y) l =
@@ -1477,7 +1483,7 @@ theorem firstVec_sub_mulVec_apply_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i 
           have := j.isLt
           have : (j : ℕ) ≠ m := fun hc => hj (Fin.ext hc)
           omega
-        rw [hh (m + 1) (j : ℕ) (by omega), zero_mul]
+        rw [hh.eq_zero_of_add_one_lt (m + 1) (j : ℕ) (by omega), zero_mul]
       · intro hc; exact absurd (Finset.mem_univ _) hc
     rw [Pi.sub_apply, hfv, hmv, ite_eq_left hl, zero_sub]
   · have hlm : (l : ℕ) < m + 1 := by have := l.isLt; omega
@@ -1488,7 +1494,7 @@ theorem firstVec_sub_mulVec_apply_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i 
 
 /-- The Galerkin residual in coordinates: `‖β e₁ - H̄_{m+1} y‖₂ = |h_{m+1,m} y_m|`
 ([saad2003iterative], (6.18)). -/
-theorem norm_firstVec_sub_mulVec_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j = 0) (β : 𝕜)
+theorem norm_firstVec_sub_mulVec_of_mulVec_eq (hh : Matrix.IsUpperHessenberg (n := ℕ) h) (β : 𝕜)
     {m : ℕ} {y : Fin (m + 1) → 𝕜}
     (hy : (hessenbergSqOf h (m + 1)).mulVec y = firstVec β (m + 1)) :
     ‖(WithLp.toLp 2 (firstVec β (m + 2) - (hessenbergOf h (m + 1)).mulVec y) :
@@ -1510,7 +1516,7 @@ theorem norm_firstVec_sub_mulVec_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j
 
 /-- [saad2003iterative], (6.43): if `H_{m+1} y = β e₁` then the last of the rotated equations reads
 `r_mm y_m = γ_m`. -/
-theorem rotated_self_mul_eq_gamma (hh : ∀ i j, j + 1 < i → h i j = 0) (β : 𝕜) {m : ℕ}
+theorem rotated_self_mul_eq_gamma (hh : Matrix.IsUpperHessenberg (n := ℕ) h) (β : 𝕜) {m : ℕ}
     {y : Fin (m + 1) → 𝕜}
     (hy : (hessenbergSqOf h (m + 1)).mulVec y = firstVec β (m + 1)) :
     rotated h m m m * y ⟨m, Nat.lt_succ_self m⟩ = gamma h β m := by
@@ -1540,7 +1546,7 @@ theorem rotated_self_mul_eq_gamma (hh : ∀ i j, j + 1 < i → h i j = 0) (β : 
 
 open scoped Matrix in
 /-- `R̄_mᴴ z` sees only the first `m` entries of `z`: the last row of `R̄_m` vanishes. -/
-theorem conjTranspose_hessenbergOf_rotated_mulVec (hh : ∀ i j, j + 1 < i → h i j = 0) (m : ℕ)
+theorem conjTranspose_hessenbergOf_rotated_mulVec (hh : Matrix.IsUpperHessenberg (n := ℕ) h) (m : ℕ)
     (z : Fin (m + 1) → 𝕜) :
     (hessenbergOf (rotated h m) m)ᴴ *ᵥ z =
       (hessenbergSqOf (rotated h m) m)ᴴ *ᵥ fun i => z i.castSucc := by
@@ -1555,7 +1561,7 @@ when no rotation degenerates, `y = Q_mᴴ [w; 0]` with `R_mᴴ w = c` solves the
 system `H̄_mᴴ y = c` and has the least norm among its solutions. The Givens QR factorization of
 `H̄_m`, transposed, is `H̄_mᴴ Q_mᴴ = R̄_mᴴ = [R_mᴴ | 0]` (`Krylov.givensQ_mul_hessenbergOf`); every
 solution is `Q_mᴴ [w; t]` for some `t`, since `R_mᴴ` is nonsingular, and `Q_m` is unitary. -/
-theorem conjTranspose_hessenbergOf_mulVec_givensQ_snoc (hh : ∀ i j, j + 1 < i → h i j = 0)
+theorem conjTranspose_hessenbergOf_mulVec_givensQ_snoc (hh : Matrix.IsUpperHessenberg (n := ℕ) h)
     {m : ℕ} (hρ : ∀ l < m, givensRho h l ≠ 0) {c w : Fin m → 𝕜}
     (hw : (hessenbergSqOf (rotated h m) m)ᴴ *ᵥ w = c) :
     (hessenbergOf h m)ᴴ *ᵥ ((givensQ h m)ᴴ *ᵥ Fin.snoc w 0) = c ∧
@@ -1650,8 +1656,7 @@ private theorem minres_rotated_of_givensRho_ne_zero {m : ℕ} (hm : m ≤ grade 
         (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
             (fun i : Fin m => gvec (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) (i : ℕ)) ∧
           x = x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j := by
-  have hh : ∀ i j : ℕ, j + 1 < i → Arnoldi.coeff A (b - A x₀) i j = 0 :=
-    fun i j hij => Arnoldi.coeff_eq_zero_of_lt A (b - A x₀) hij
+  have hh := Arnoldi.isUpperHessenberg_coeff A (b - A x₀)
   obtain ⟨y, hy⟩ := (mem_subspace_iff_exists_coeffs A (b - A x₀) m _).mp hx.mem
   have hxe : x = x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j := by rw [← hy]; abel
   rw [hxe] at hx
@@ -1692,8 +1697,7 @@ private theorem minres_rotated_of_breakdown {m : ℕ} (hm : m ≤ grade A (b - A
     ∃ y : Fin m → 𝕜, (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
         (fun i : Fin m => gvec (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) i) ∧
       x = x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j := by
-  have hh : ∀ i j : ℕ, j + 1 < i → Arnoldi.coeff A (b - A x₀) i j = 0 :=
-    fun i j hij => Arnoldi.coeff_eq_zero_of_lt A (b - A x₀) hij
+  have hh := Arnoldi.isUpperHessenberg_coeff A (b - A x₀)
   obtain ⟨k, hk, hρk⟩ : ∃ k, k < m ∧ givensRho (Arnoldi.coeff A (b - A x₀)) k = 0 := by
     by_contra hcon
     exact hρ fun k hkm hc => hcon ⟨k, hkm, hc⟩
@@ -1738,12 +1742,12 @@ private theorem minres_rotated_of_breakdown {m : ℕ} (hm : m ≤ grade A (b - A
         simpa [Matrix.mulVec, dotProduct, hessenbergSqOf] using h5
       simp only [Matrix.mulVec, dotProduct, hessenbergSqOf, Matrix.of_apply]
       rw [e1, e2, e3]
-    · have hik : (i : ℕ) = k := by have := i.isLt; omega
+    · have hik : (i : ℕ) = k := by omega
       simp only [Matrix.mulVec, dotProduct, hessenbergSqOf, Matrix.of_apply, hik,
         gvec_eq_zero_of_givensRho_eq_zero (Arnoldi.coeff A (b - A x₀)) hρk]
       exact Finset.sum_eq_zero fun j _ => by
         rw [rotated_succ_row_eq_zero_of_givensRho_eq_zero (Arnoldi.coeff A (b - A x₀)) hh hρk
-          (by have := j.isLt; omega), zero_mul]
+          (by omega), zero_mul]
   have hsplit : ∀ w : Fin (k + 1) → 𝕜,
       ‖(WithLp.toLp 2 (firstVec (‖b - A x₀‖ : 𝕜) (k + 1 + 1) -
           (Arnoldi.hessenberg A (b - A x₀) (k + 1)).mulVec w) :
@@ -1823,8 +1827,7 @@ theorem givensQ_mulVec_firstVec_sub_mulVec {m : ℕ} {y : Fin m → 𝕜}
         if (i : ℕ) = m then gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m else 0 := by
   set h := Arnoldi.coeff A (b - A x₀) with hh
   set β : 𝕜 := ((‖b - A x₀‖ : ℝ) : 𝕜) with hβ
-  have hzero : ∀ i j : ℕ, j + 1 < i → h i j = 0 :=
-    fun i j hij => Arnoldi.coeff_eq_zero_of_lt A (b - A x₀) hij
+  have hzero : Matrix.IsUpperHessenberg (n := ℕ) h := Arnoldi.isUpperHessenberg_coeff A (b - A x₀)
   funext i
   rw [Matrix.mulVec_sub, Pi.sub_apply, givensQ_mulVec_firstVec, Arnoldi.hessenberg_eq,
     Matrix.mulVec_mulVec, givensQ_mul_hessenbergOf]
@@ -1833,7 +1836,7 @@ theorem givensQ_mulVec_firstVec_sub_mulVec {m : ℕ} {y : Fin m → 𝕜}
   · have hval : (hessenbergOf (rotated h m) m).mulVec y i =
         (hessenbergSqOf (rotated h m) m).mulVec y ⟨(i : ℕ), hi⟩ := rfl
     rw [ite_eq_left hi, hval, hy, ite_eq_right (by omega : ¬(i : ℕ) = m), sub_self]
-  · have him : (i : ℕ) = m := by have := i.isLt; omega
+  · have him : (i : ℕ) = m := by omega
     have hlast : (hessenbergOf (rotated h m) m).mulVec y i = 0 := by
       simp only [Matrix.mulVec, dotProduct, hessenbergOf, Matrix.of_apply, him]
       exact Finset.sum_eq_zero fun j _ => by
@@ -1902,8 +1905,7 @@ grade`). -/
 theorem isUnit_hessenbergSq_iff_givensC_ne_zero {m : ℕ} (hm : m + 1 ≤ grade A (b - A x₀)) :
     IsUnit (Arnoldi.hessenbergSq A (b - A x₀) (m + 1)) ↔
       givensC (Arnoldi.coeff A (b - A x₀)) m ≠ 0 := by
-  have hh : ∀ i j : ℕ, j + 1 < i → Arnoldi.coeff A (b - A x₀) i j = 0 :=
-    fun i j hij => Arnoldi.coeff_eq_zero_of_lt A (b - A x₀) hij
+  have hh := Arnoldi.isUpperHessenberg_coeff A (b - A x₀)
   have hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0 :=
     fun k hk => givensRho_arnoldi_ne_zero (by omega)
   rw [Arnoldi.hessenbergSq_eq, ne_eq, givensC_eq_zero_iff]
@@ -1945,8 +1947,7 @@ theorem IsGalerkinIterate.norm_residual_eq_div_norm_givensC {m : ℕ}
     (hm : m + 1 ≤ grade A (b - A x₀)) {xF xG : E} (hF : IsGalerkinIterate A b x₀ (m + 1) xF)
     (hG : IsMinResidualIterate A b x₀ (m + 1) xG) :
     ‖b - A xF‖ = ‖b - A xG‖ / ‖givensC (Arnoldi.coeff A (b - A x₀)) m‖ := by
-  have hh : ∀ i j : ℕ, j + 1 < i → Arnoldi.coeff A (b - A x₀) i j = 0 :=
-    fun i j hij => Arnoldi.coeff_eq_zero_of_lt A (b - A x₀) hij
+  have hh := Arnoldi.isUpperHessenberg_coeff A (b - A x₀)
   obtain ⟨y, hy, hxF⟩ := (isGalerkinIterate_iff_exists_mulVec_eq hm xF).mp hF
   rw [Arnoldi.hessenbergSq_eq] at hy
   have hkey := rotated_self_mul_eq_gamma (Arnoldi.coeff A (b - A x₀)) hh (‖b - A x₀‖ : 𝕜) hy

@@ -269,7 +269,7 @@ theorem mem_ker_mulVecLin_jordanBlock_zero_pow {k : ℕ} {v : Fin n → K} :
   simp only [LinearMap.mem_ker, mulVecLin_apply, funext_iff, Pi.zero_apply]
   constructor
   · intro h j hj
-    have hlt : (j : ℕ) - k < n := by have := j.isLt; omega
+    have hlt : (j : ℕ) - k < n := by omega
     rw [← jordanBlock_zero_pow_mulVec_apply k v ⟨(j : ℕ) - k, hlt⟩ j (Nat.sub_add_cancel hj)]
     exact h _
   · intro h i
@@ -835,13 +835,6 @@ private theorem hasEigenvalue_endOf_iff (A : Matrix (Fin n) (Fin n) K) (μ : K) 
   simp only [Module.End.mem_eigenspace_iff, endOf, Matrix.toLin_eq_toLin', Matrix.toLin'_apply]
   tauto
 
-omit [IsAlgClosed K] in
-/-- The number of basis vectors of a basis of `Fin n → K` is `n`. -/
-private theorem card_eq_of_basis {ι : Type*} [Fintype ι] (b : Basis ι K (Fin n → K)) :
-    Fintype.card ι = n := by
-  have h := Module.finrank_eq_card_basis b
-  simpa using h.symm
-
 /-- **The Jordan canonical form of a matrix**: over an algebraically closed field every square
 matrix is similar to a block diagonal matrix whose diagonal blocks are Jordan blocks, that is, to a
 `Matrix.jordanForm` with its blocks laid out consecutively along the diagonal by
@@ -854,7 +847,8 @@ theorem exists_conj_jordanForm (A : Matrix (Fin n) (Fin n) K) :
   classical
   obtain ⟨p, e, μ, b, hepos, hb⟩ := Module.End.exists_basis_toMatrix_eq_jordanForm (endOf A)
   have he : ∑ i, e i = n := by
-    simpa [Fintype.card_sigma] using card_eq_of_basis b
+    simpa [Fintype.card_sigma] using
+      (Module.finrank_eq_card_basis b).symm.trans (Module.finrank_fin_fun K)
   obtain ⟨P, hP, hPA⟩ :=
     exists_isUnit_conj_toMatrix A b (finSigmaFinEquiv.trans (finCongr he))
   exact ⟨p, e, μ, he, P, hepos, hP, by rw [hPA, hb]⟩
@@ -887,7 +881,8 @@ theorem exists_conj_blockDiagonal'_jordanForm (A : Matrix (Fin n) (Fin n) K) :
   obtain ⟨q, ν, d, e, b, hinj, heig, hepos, hb⟩ :=
     Module.End.exists_basis_toMatrix_eq_blockDiagonal'_jordanForm (endOf A)
   obtain ⟨σ, -⟩ : ∃ σ : ((i : Fin q) × (j : Fin (d i)) × Fin (e i j)) ≃ Fin n, True :=
-    ⟨(Fintype.equivFinOfCardEq (card_eq_of_basis b)), trivial⟩
+    ⟨(Fintype.equivFinOfCardEq
+      ((Module.finrank_eq_card_basis b).symm.trans (Module.finrank_fin_fun K))), trivial⟩
   obtain ⟨P, hP, hPA⟩ := exists_isUnit_conj_toMatrix A b σ
   exact ⟨q, ν, d, e, σ, P, hinj,
     fun μ => (hasEigenvalue_endOf_iff A μ).symm.trans (heig μ), hepos, hP, by rw [hPA, hb]⟩
@@ -950,12 +945,6 @@ private theorem jordanForm_transpose_succ (i : ι) (j : ℕ) (hj : j + 1 < e i) 
       Pi.single_eq_of_ne (fun h => hi (congrArg Sigma.fst h)),
       Pi.single_eq_of_ne (fun h => hi (congrArg Sigma.fst h)), mul_zero, add_zero]
 
-/-- Column `c` of `A * X` is `A` applied to column `c` of `X`. -/
-private theorem transpose_mul_apply {m : Type*} [Fintype m]
-    (A X : Matrix m m R) (c : m) : (A * X)ᵀ c = A *ᵥ Xᵀ c := by
-  funext r
-  simp [mul_apply, mulVec, dotProduct]
-
 /-- **The principal-vector recursion** ([quarteroni2000numerical] (1.8)): if `X⁻¹ A X` is the
 Jordan form `blockDiagonal' (fun i => jordanBlock (e i) (μ i))` with `X` nonsingular, then the
 columns `x_{i,j}` of `X` satisfy `A x_{i,0} = μ_i x_{i,0}` and `A x_{i,j+1} = μ_i x_{i,j+1} +
@@ -970,8 +959,8 @@ theorem mulVec_eq_of_conj_jordanForm [Fintype ι]
   have hAX : A * X = X * jordanForm e μ := by
     rw [← h, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
       mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hX), Matrix.one_mul]
-  have hcol : ∀ c, A *ᵥ Xᵀ c = X *ᵥ (jordanForm e μ)ᵀ c := fun c => by
-    rw [← transpose_mul_apply, hAX, transpose_mul_apply]
+  have hcol : ∀ c, A *ᵥ Xᵀ c = X *ᵥ (jordanForm e μ)ᵀ c := fun c =>
+    col_mul_eq_mulVec_col.symm.trans ((congrArg (col · c) hAX).trans col_mul_eq_mulVec_col)
   refine ⟨fun i h0 => ?_, fun i j hj => ?_⟩
   · rw [hcol, jordanForm_transpose_zero, mulVec_smul, mulVec_single_one]
     rfl

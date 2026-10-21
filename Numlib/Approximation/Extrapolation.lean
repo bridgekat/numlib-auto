@@ -325,16 +325,6 @@ theorem table_succ (f : ℝ → ℝ) (a b : ℝ) (m q : ℕ) :
   simp only [table, Richardson.table, one_div_pow]
   field_simp
 
-/-- Splitting a sum over `2N` terms into its even and odd terms. -/
-private theorem sum_range_two_mul (g : ℕ → ℝ) (N : ℕ) :
-    ∑ j ∈ Finset.range (2 * N), g j = ∑ i ∈ Finset.range N, (g (2 * i) + g (2 * i + 1)) := by
-  induction N with
-  | zero => simp
-  | succ N ih =>
-    rw [show 2 * (N + 1) = 2 * N + 1 + 1 by ring, Finset.sum_range_succ, Finset.sum_range_succ,
-      ih, Finset.sum_range_succ]
-    ring
-
 /-- **The first extrapolated column is composite Simpson**:
 `A_{m+1,1} = S_{2^m}`, i.e. `(4 T_{2N} - T_N)/3 = S_N`, by reindexing the `2N`-panel trapezoidal
 sum by parity.
@@ -342,18 +332,11 @@ sum by parity.
 Reference: [quarteroni2000numerical], §9.6.1 ("`T_1` is Simpson"). -/
 theorem table_one_eq_simpsonSum (f : ℝ → ℝ) (a b : ℝ) (m : ℕ) :
     table f a b (m + 1) 1 = simpsonSum f a ((b - a) / 2 ^ m) (2 ^ m) := by
-  rw [table_succ, Nat.add_sub_cancel, table_zero, table_zero, zero_add, pow_one]
-  set h : ℝ := (b - a) / 2 ^ m with hh
-  have h2 : (b - a) / (2 : ℝ) ^ (m + 1) = h / 2 := by rw [hh, pow_succ]; ring
-  rw [h2, show (2 : ℕ) ^ (m + 1) = 2 * 2 ^ m by ring, trapezoidSum, trapezoidSum, simpsonSum,
-    sum_range_two_mul, Finset.mul_sum, ← Finset.sum_sub_distrib, Finset.sum_div]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  push_cast
-  have e1 : a + (2 * (i : ℝ) + 1) * (h / 2) = a + i * h + h / 2 := by ring
-  have e2 : a + (2 * (i : ℝ) + 1 + 1) * (h / 2) = a + (i + 1) * h := by ring
-  have e3 : a + 2 * (i : ℝ) * (h / 2) = a + i * h := by ring
-  rw [e1, e2, e3]
-  ring
+  rw [table_succ, Nat.add_sub_cancel, table_zero, table_zero, zero_add, pow_one,
+    simpsonSum_eq_trapezoidSum]
+  have h2 : (b - a) / (2 : ℝ) ^ (m + 1) = (b - a) / 2 ^ m / 2 := by rw [pow_succ]; ring
+  rw [h2, show (2 : ℕ) ^ (m + 1) = 2 * 2 ^ m by ring]
+  norm_num
 
 /-- The Euler–Maclaurin coefficients of the trapezoidal rule as a Richardson expansion in `h²`:
 `α 0 = ∫_a^b f` and `α i = B_{2i}/(2i)! (f^{(2i-1)}(b) - f^{(2i-1)}(a))` for `i ≥ 1`. -/
@@ -376,7 +359,6 @@ theorem hasExpansion_trapezoidSum {a b : ℝ} (hab : a < b) {k : ℕ} {f : ℝ �
   obtain ⟨M, hM⟩ := (isCompact_Icc (a := a) (b := b)).exists_bound_of_continuousOn
     ((hf.continuousOn_iteratedDeriv_of_isOpen hU le_rfl).mono hUab)
   refine ⟨|((bernoulli (2 * k + 2) : ℚ) : ℝ)| / (2 * k + 2)! * (b - a) * M, fun m => ?_⟩
-  have h2m : (0 : ℝ) < 2 ^ m := by positivity
   set h : ℝ := (b - a) / 2 ^ m with hh
   have h4 : (4 : ℝ) ^ m = (2 ^ m) ^ 2 := by
     rw [← pow_mul, mul_comm, pow_mul]
@@ -404,7 +386,6 @@ theorem hasExpansion_trapezoidSum {a b : ℝ} (hab : a < b) {k : ℕ} {f : ℝ �
   dsimp only
   rw [hh2, hsum, heq]
   have hMη : |iteratedDeriv (2 * k + 2) f η| ≤ M := hM η (Ioo_subset_Icc_self hη)
-  have hM0 : 0 ≤ M := (abs_nonneg _).trans hMη
   rw [show (∫ t in a..b, f t) + ∑ i ∈ Finset.Icc 1 k, ((bernoulli (2 * i) : ℚ) : ℝ) / (2 * i)!
       * h ^ (2 * i) * (iteratedDeriv (2 * i - 1) f b - iteratedDeriv (2 * i - 1) f a)
       + ((bernoulli (2 * k + 2) : ℚ) : ℝ) / (2 * k + 2)! * h ^ (2 * k + 2) * (b - a)

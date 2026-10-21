@@ -22,10 +22,11 @@ one of `Aᴴ` per step, never forming a product — identified with the correspo
 The operator may be rectangular, `A : E →ₗ F`, throughout — the general lemmas, the two
 optimality properties, the convergence bound and the two recurrences — as in [golub2013matrix]
 §11.3.9 and Figure 11.3.1: CGNR is the normal-equation method for full-rank least squares, CGNE
-for consistent underdetermined systems. The adjoint enters as a *hypothesis*
-`∀ u v, ⟪Aᴴ u, v⟫ = ⟪u, A v⟫` on a second operator rather than as `LinearMap.adjoint A`, so that the
-module needs neither finite-dimensionality nor completeness; `LinearMap.adjoint_inner_left` and
-`ContinuousLinearMap.adjoint_inner_left` supply the hypothesis where those are available.
+for consistent underdetermined systems. The adjoint enters as a *hypothesis*, that `A` and a second
+operator `Aᴴ` are an adjoint pair for the inner products (`LinearMap.IsAdjointPair` of the flipped
+`innerₛₗ`, that is `∀ u v, ⟪Aᴴ u, v⟫ = ⟪u, A v⟫`, `LinearMap.isAdjointPair_inner_iff`), rather than
+as `LinearMap.adjoint A`, so that the module needs neither finite-dimensionality nor completeness;
+`LinearMap.isAdjointPair_inner` supplies the hypothesis where the adjoint is available.
 -/
 
 open Krylov
@@ -39,7 +40,7 @@ section Adjoint
 
 variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
 
-variable (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v))
+variable (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar)
 include hadj
 
 /-- The quadratic form of `Aᴴ A` is the squared norm of `A`: `⟪Aᴴ A x, x⟫ = ‖A x‖²`. This one
@@ -47,7 +48,7 @@ identity is what turns every statement about the energy norm of `Aᴴ A` into a 
 residual norm of `A`. -/
 theorem inner_adjoint_comp_self (x : E) :
     inner 𝕜 ((Astar ∘ₗ A) x) x = ((‖A x‖ ^ 2 : ℝ) : 𝕜) := by
-  rw [LinearMap.comp_apply, hadj, inner_self_eq_norm_sq_to_K]
+  rw [LinearMap.comp_apply, hadj.inner_apply_eq, inner_self_eq_norm_sq_to_K]
   push_cast
   ring
 
@@ -59,7 +60,7 @@ theorem energyNorm_adjoint_comp (x : E) : energyNorm (Astar ∘ₗ A) x = ‖A x
 /-- `Aᴴ A` is symmetric, whatever `A` is. -/
 theorem adjoint_comp_isSymmetric : (Astar ∘ₗ A).IsSymmetric := by
   intro x y
-  rw [LinearMap.comp_apply, LinearMap.comp_apply, hadj,
+  rw [LinearMap.comp_apply, LinearMap.comp_apply, hadj.inner_apply_eq,
     ← LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj]
 
 /-- `Aᴴ A` is coercive with constant `c` as soon as `A` is bounded below by `√c`, that is `c ‖x‖² ≤
@@ -108,7 +109,7 @@ end Adjoint
 section Optimality
 
 variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
-  (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (b : F) (x₀ : E)
+  (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) (b : F) (x₀ : E)
 include hadj
 
 omit hadj in
@@ -185,7 +186,7 @@ end Optimality
 section Convergence
 
 variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
-  (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v))
+  (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar)
 include hadj
 
 /-- The CG convergence bound transported to CGNR: with singular values in `[σmin, σmax]`, a
@@ -280,7 +281,8 @@ theorem step_p (s : State E F) :
 CG ones for `Aᴴ A x = Aᴴ b`, the CG residual is `Aᴴ` of the CGNR residual, and the CGNR residual is
 the true residual `b - A x`.  Everything proved of `CG.iterate` — the orthogonality relations,
 finite termination, the Chebyshev bounds — therefore holds of CGNR. -/
-theorem iterate_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (k : ℕ) :
+theorem iterate_eq
+    (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) (k : ℕ) :
     (iterate A Astar b x₀ k).x = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).x ∧
       Astar (iterate A Astar b x₀ k).r = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).r ∧
       (iterate A Astar b x₀ k).p = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).p ∧
@@ -293,7 +295,7 @@ theorem iterate_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner �
     obtain ⟨hx, hr, hp, hres⟩ := ih
     have hq : inner 𝕜 ((Astar ∘ₗ A) (iterate A Astar b x₀ k).p) (iterate A Astar b x₀ k).p
         = inner 𝕜 (A (iterate A Astar b x₀ k).p) (A (iterate A Astar b x₀ k).p) := by
-      rw [LinearMap.comp_apply, hadj]
+      rw [LinearMap.comp_apply, hadj.inner_apply_eq]
     have halpha : alpha A Astar (iterate A Astar b x₀ k)
         = CG.alpha (Astar ∘ₗ A) (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k) := by
       rw [alpha, CG.alpha, ← hr, ← hp, hq]
@@ -310,12 +312,14 @@ theorem iterate_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner �
     · rw [iterate_succ, step_r, step_x, hres, map_add, map_smul, sub_sub]
 
 /-- [saad2003iterative], Algorithm 8.4 computes the CG iterates of the normal equations. -/
-theorem iterate_x_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (k : ℕ) :
+theorem iterate_x_eq
+    (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) (k : ℕ) :
     (iterate A Astar b x₀ k).x = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).x :=
   (iterate_eq A Astar b x₀ hadj k).1
 
 /-- The CGNR state's residual field is the true residual `b - A x`. -/
-theorem residual_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) (k : ℕ) :
+theorem residual_eq
+    (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) (k : ℕ) :
     (iterate A Astar b x₀ k).r = b - A (iterate A Astar b x₀ k).x :=
   (iterate_eq A Astar b x₀ hadj k).2.2.2
 
@@ -377,7 +381,8 @@ theorem step_p (s : State E F) :
 /-- CGNE is CG on `A Aᴴ u = b` read through `x = Aᴴ u`: for any `u₀` with `Aᴴ u₀ = x₀`, the CGNE
 iterate is `Aᴴ` of the CG iterate, the CGNE direction is `Aᴴ` of the CG direction, and the two
 residuals agree.  This is [saad2003iterative], Algorithm 8.5 (Craig's method). -/
-theorem iterate_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) {u₀ : F}
+theorem iterate_eq
+    (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) {u₀ : F}
     (hu₀ : Astar u₀ = x₀) (k : ℕ) :
     (iterate A Astar b x₀ k).x = Astar (CG.iterate (A ∘ₗ Astar) b u₀ k).x ∧
       (iterate A Astar b x₀ k).r = (CG.iterate (A ∘ₗ Astar) b u₀ k).r ∧
@@ -413,7 +418,8 @@ theorem iterate_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner �
         map_smul]
 
 /-- Craig's method computes `Aᴴ` of the CG iterates of `A Aᴴ u = b`. -/
-theorem iterate_x_eq (hadj : ∀ (u : F) (v : E), inner 𝕜 (Astar u) v = inner 𝕜 u (A v)) {u₀ : F}
+theorem iterate_x_eq
+    (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) {u₀ : F}
     (hu₀ : Astar u₀ = x₀) (k : ℕ) :
     (iterate A Astar b x₀ k).x = Astar (CG.iterate (A ∘ₗ Astar) b u₀ k).x :=
   (iterate_eq A Astar b x₀ hadj hu₀ k).1

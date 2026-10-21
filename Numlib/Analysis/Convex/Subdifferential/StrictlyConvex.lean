@@ -211,7 +211,6 @@ theorem mem_subdifferential_endpoints_of_le_combo (hp : ProperConvex f) (hx₁ :
     (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1)
     (hle : a * (f x₁).toReal + b * (f x₂).toReal ≤ (f (a • x₁ + b • x₂)).toReal) :
     v ∈ subdifferential B f x₁ ∧ v ∈ subdifferential B f x₂ := by
-  have hcomb : a • x₁ + b • x₂ ∈ convexDom f := mem_convexDom_of_mem_subdifferential hp hv
   have hs₁ := sub_le_of_mem_subdifferential hp hv hx₁
   have hs₂ := sub_le_of_mem_subdifferential hp hv hx₂
   rw [show x₁ - (a • x₁ + b • x₂) = -(a • x₁ + b • x₂ - x₁) by abel, map_neg,

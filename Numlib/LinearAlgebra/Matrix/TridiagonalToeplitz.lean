@@ -225,7 +225,6 @@ theorem sineVec_apply (k j : Fin n) :
 /-- The angle `θ_k = (k + 1)π / (n + 1)` is positive, which is why every discrete sine vector is
 nonzero. -/
 theorem angle_pos (n : ℕ) (k : Fin n) : 0 < (((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1) := by
-  have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
   positivity
 
 /-- The angle `θ_k = (k + 1)π / (n + 1)` is below `π`, which is why the `n` eigenvalues `b + 2 a cos
@@ -714,6 +713,12 @@ theorem posDef_symmTridiagonalToeplitz (n : ℕ) {a b : ℝ} (h : 2 * |a| < b) :
   refine (isSymmetricBoundedBy_symmTridiagonalToeplitz n a b).isSymmetricCoercive ?_
   nlinarith [Real.cos_le_one (π / ((n : ℝ) + 1)), abs_nonneg a]
 
+/-- The half-angle `π / (2(n + 1))` of the model problem has positive sine. -/
+private theorem sin_half_angle_pos (n : ℕ) : 0 < Real.sin (π / (2 * ((n : ℝ) + 1))) := by
+  refine Real.sin_pos_of_pos_of_lt_pi (by positivity) ?_
+  rw [div_lt_iff₀ (by positivity)]
+  nlinarith [Real.pi_pos]
+
 /-- The one-dimensional model Laplacian `tridiag(-1, 2, -1)` is positive definite: its eigenvalues
 are `2 - 2 cos θ_k = 4 sin²(θ_k / 2)`, which lie in `(0, 4)`.  Its diagonal dominance is not strict,
 so what does the work is `cos(π/(n+1)) < 1`. -/
@@ -721,11 +726,7 @@ theorem posDef_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
     (symmTridiagonalToeplitz n (-1) 2).PosDef := by
   rw [posDef_iff_isSymmetricCoercive]
   refine (isSymmetricBoundedBy_symmTridiagonalToeplitz n (-1) 2).isSymmetricCoercive ?_
-  have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
-  have hhalf : 0 < Real.sin (π / (2 * ((n : ℝ) + 1))) := by
-    refine Real.sin_pos_of_pos_of_lt_pi (by positivity) ?_
-    rw [div_lt_iff₀ (by positivity)]
-    nlinarith [Real.pi_pos]
+  have hhalf := sin_half_angle_pos n
   have hcos : Real.cos (π / ((n : ℝ) + 1)) = 1 - 2 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
     rw [← Real.cos_two_mul_eq_one_sub]
     congr 1
@@ -924,12 +925,6 @@ theorem isMMatrix_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
 section SpectralNorm
 
 open scoped Matrix.Norms.L2Operator
-
-/-- The half-angle `π / (2(n + 1))` of the model problem has positive sine. -/
-private theorem sin_half_angle_pos (n : ℕ) : 0 < Real.sin (π / (2 * ((n : ℝ) + 1))) := by
-  refine Real.sin_pos_of_pos_of_lt_pi (by positivity) ?_
-  rw [div_lt_iff₀ (by positivity)]
-  nlinarith [Real.pi_pos]
 
 /-- The half-angle `π / (2(n + 1))` of the model problem has nonnegative cosine (it vanishes at
 `n = 0`). -/
@@ -1357,7 +1352,6 @@ theorem cornerTridiagonal_one_one_mulVec_cosineIIVec (k : Fin n) :
       Real.cos_sub, Real.cos_add, Real.sin_nat_mul_pi]
     ring
   funext i
-  have hi := i.isLt
   rw [cornerTridiagonal, add_mulVec, Pi.add_apply, mulVec_diagonal,
     symmTridiagonalToeplitz_mulVec_apply_of_forall_eq 1 0
       (g := fun m : ℕ => Real.cos ((2 * (m : ℝ) - 1) * (θ / 2))) hv, Pi.smul_apply, smul_eq_mul,

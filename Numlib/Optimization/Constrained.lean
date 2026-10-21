@@ -8,6 +8,7 @@ import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.LinearAlgebra.Matrix.ToLin
 import Numlib.Analysis.Calculus.Taylor
 import Numlib.Analysis.Convex.Extremum.Lagrangian
+import Numlib.Analysis.Convex.Function
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.LinearInequalities
 import Numlib.Analysis.Convex.Extremum.Program
@@ -165,11 +166,6 @@ theorem lagrangian_hasFDerivAt {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {h :
 
 /-! ### Lagrange multipliers at a regular local minimizer -/
 
-/-- A vanishing combination of linearly independent functionals has zero coefficients. -/
-private theorem coeff_eq_zero_of_sum_smul_eq_zero {σ : Type*} [Fintype σ] {φ : σ → E →L[ℝ] ℝ}
-    (hφ : LinearIndependent ℝ φ) {c : σ → ℝ} (hc : ∑ s, c s • φ s = 0) : ∀ s, c s = 0 :=
-  Fintype.linearIndependent_iff.1 hφ c hc
-
 /-- [quarteroni2000numerical] Property 7.11, first part, with the regularity hypothesis the book
 omits (without it multipliers need not exist: `min x` subject to `x² = 0`): at a regular local
 minimizer `x` of `f` on the equality constraints there is a unique multiplier vector `λ` with
@@ -192,7 +188,7 @@ theorem existsUnique_multipliers_of_isLocalMinOn [CompleteSpace E] {f : E → �
   have hΛ₀ : Λ₀ ≠ 0 := by
     rintro rfl
     rw [zero_smul, add_zero] at hsum
-    exact hne (Prod.ext (funext fun i => coeff_eq_zero_of_sum_smul_eq_zero hx.2 hsum i) rfl)
+    exact hne (Prod.ext (funext fun i => Fintype.linearIndependent_iff.1 hx.2 _ hsum i) rfl)
   have hnorm : f' x + ∑ i, (Λ i / Λ₀) • h' i x = 0 := by
     have h1 : ∑ i, (Λ i / Λ₀) • h' i x = Λ₀⁻¹ • ∑ i, Λ i • h' i x := by
       rw [Finset.smul_sum]
@@ -203,7 +199,7 @@ theorem existsUnique_multipliers_of_isLocalMinOn [CompleteSpace E] {f : E → �
   have h2 : ∑ j, (l j - Λ j / Λ₀) • h' j x = 0 := by
     simp only [sub_smul, Finset.sum_sub_distrib, sub_eq_zero]
     exact add_left_cancel (hl.trans hnorm.symm)
-  exact sub_eq_zero.1 (coeff_eq_zero_of_sum_smul_eq_zero hx.2 h2 i)
+  exact sub_eq_zero.1 (Fintype.linearIndependent_iff.1 hx.2 _ h2 i)
 
 /-! ### The second-order sufficient condition -/
 
@@ -386,7 +382,7 @@ theorem kkt_multipliers_unique {f' : E → E →L[ℝ] ℝ} {h : ι → E → �
     rw [← e]
     simp only [sub_smul, Finset.sum_sub_distrib]
     abel
-  have hzero := coeff_eq_zero_of_sum_smul_eq_zero hx.2.2 hsum
+  have hzero := Fintype.linearIndependent_iff.1 hx.2.2 _ hsum
   refine ⟨funext fun i => sub_eq_zero.1 (hzero (Sum.inl i)), funext fun j => ?_⟩
   by_cases hj : j ∈ activeSet g x
   · exact sub_eq_zero.1 (hzero (Sum.inr ⟨j, hj⟩))
@@ -615,17 +611,6 @@ theorem exists_kkt_of_isLocalMinOn [FiniteDimensional ℝ E] {f : E → ℝ} {f'
 /-! ### Sufficiency for convex programs -/
 
 omit [Fintype ι] in
-/-- A finite sum of functions convex on `C` is convex on `C`. -/
-private theorem convexOn_sum {C : Set E} {φ : κ → E → ℝ} (hC : Convex ℝ C)
-    (hφ : ∀ j, ConvexOn ℝ C (φ j)) : ConvexOn ℝ C fun y => ∑ j, φ j y := by
-  have h : ConvexOn ℝ C (∑ j, φ j) :=
-    Finset.sum_induction φ (ConvexOn ℝ C) (fun _ _ => ConvexOn.add) (convexOn_const 0 hC)
-      fun j _ => hφ j
-  convert h using 1
-  funext y
-  simp [Finset.sum_apply]
-
-omit [Fintype ι] in
 /-- Sufficiency of the Kuhn–Tucker conditions for a convex program, the engine behind
 [quarteroni2000numerical] Property 7.15. Let `C` be convex, `S ⊆ C`, `x ∈ S`, `f` convex on `C`,
 and let each `y ↦ μ_j g_j y` be convex on `C` (so `g_j` convex where `μ_j > 0`, concave where
@@ -644,7 +629,7 @@ theorem isMinOn_of_lagrangian_convexOn {f : E → ℝ} {f' : E → E →L[ℝ] �
     (hvi : ∀ y ∈ C, 0 ≤ f' x (y - x) + ∑ j, μ j * g' j x (y - x)) :
     IsMinOn f S x := by
   set Λ : E → ℝ := fun y => f y + ∑ j, μ j * g j y with hΛ
-  have hΛconv : ConvexOn ℝ C Λ := hf.add (convexOn_sum hf.1 hg)
+  have hΛconv : ConvexOn ℝ C Λ := hf.add (ConvexOn.sum hf.1 fun j _ => hg j)
   have hΛ' : HasFDerivAt Λ (f' x + ∑ j, μ j • g' j x) x :=
     hf'.add (HasFDerivAt.fun_sum (u := Finset.univ) fun j _ => (hg' j).const_mul (μ j))
   have hΛx : Λ x = f x := by
@@ -829,7 +814,6 @@ theorem mem_and_eq_zero_and_le_of_clusterPt {f : E → ℝ} {h : E → F} {Ω : 
     have hmax := le_max_right 0 (fstar - (f xbar - 1) + Λ * (‖h xbar‖ + 1))
     have hmax0 := le_max_left 0 (fstar - (f xbar - 1) + Λ * (‖h xbar‖ + 1))
     have h5 : (‖h xbar‖ / 2) ^ 2 ≤ ‖h (xk (φ n))‖ ^ 2 := by
-      have : 0 ≤ ‖h xbar‖ / 2 := by positivity
       nlinarith
     have h6 : Λ * ‖h (xk (φ n))‖ ≤ Λ * (‖h xbar‖ + 1) :=
       mul_le_mul_of_nonneg_left hn2.le hΛ

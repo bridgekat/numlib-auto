@@ -22,6 +22,9 @@ id = "coeff_eq_zero_of_adjoint_mem"
 id = "coeff_eq_zero_of_lt"
 
 [[node]]
+id = "isUpperHessenberg_coeff"
+
+[[node]]
 id = "coeff_succ_self"
 
 [[node]]

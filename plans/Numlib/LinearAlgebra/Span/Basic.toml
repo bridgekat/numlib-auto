@@ -1,0 +1,4 @@
+namespace = "Submodule"
+
+[[node]]
+id = "span_range_smul_of_ne_zero"

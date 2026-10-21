@@ -72,7 +72,7 @@ theorem gramSchmidt_mem_orthogonal (f : ι → E) (j : ι) :
 
 /-- `⟪gramSchmidt f j, f j⟫ = ‖gramSchmidt f j‖²`: the Gram–Schmidt vector is the orthogonal
 component of `f j`. -/
-private theorem inner_gramSchmidt_self (f : ι → E) (j : ι) :
+theorem inner_gramSchmidt_self (f : ι → E) (j : ι) :
     inner 𝕜 (gramSchmidt 𝕜 f j) (f j) = ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) ^ 2 := by
   conv_lhs => rw [gramSchmidt_def'' 𝕜 f j]
   rw [inner_add_right, inner_sum, inner_self_eq_norm_sq_to_K]
@@ -149,9 +149,7 @@ private theorem eq_one_of_norm_eq_one_of_mul_ofReal_pos {w : 𝕜} (hw : ‖w‖
   rw [mul_comm, RCLike.pos_iff, RCLike.re_ofReal_mul, RCLike.im_ofReal_mul] at hpos
   obtain ⟨h1, h2⟩ := hpos
   have hr0 : r ≠ 0 := by rintro rfl; simp at h1
-  have hrpos : 0 < r := hr.lt_of_ne (Ne.symm hr0)
   have him : RCLike.im w = 0 := (mul_eq_zero.1 h2).resolve_left hr0
-  have hre : 0 < RCLike.re w := by nlinarith
   have hsq : RCLike.re w * RCLike.re w + RCLike.im w * RCLike.im w = 1 := by
     rw [← RCLike.norm_sq_eq_def, hw]; norm_num
   refine RCLike.ext ?_ ?_
@@ -176,6 +174,57 @@ theorem eq_gramSchmidtNormed_of_re_inner_pos {f u : ι → E} (hu : Orthonormal 
     have := congrArg (starRingEnd 𝕜) hconj
     rwa [RCLike.conj_conj, map_one] at this
   rw [hue, hε1, one_smul]
+
+/-! ### Gram–Schmidt with breakdown
+
+`gramSchmidtNormed` is `0` from the first linear dependence onwards. The following facts hold with
+no independence hypothesis: past breakdown the vectors vanish and contribute nothing. -/
+
+section Breakdown
+
+/-- **Distinct normalized Gram–Schmidt vectors are orthogonal**, at every pair of indices and with
+no hypothesis: past breakdown they are `0`, and the inner product vanishes for that reason. -/
+theorem inner_gramSchmidtNormed_eq_zero (f : ι → E) {i j : ι} (h : i ≠ j) :
+    inner 𝕜 (gramSchmidtNormed 𝕜 f i) (gramSchmidtNormed 𝕜 f j) = 0 := by
+  simp [gramSchmidtNormed, inner_smul_left, inner_smul_right, gramSchmidt_orthogonal 𝕜 f h]
+
+/-- What is left of `x` after subtracting its expansion in the first `n` normalized Gram–Schmidt
+vectors is orthogonal to all of them, breakdown included. -/
+theorem sub_sum_inner_smul_gramSchmidtNormed_mem_orthogonal (f : ℕ → E) (x : E) (n : ℕ) :
+    x - ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i ∈
+      (Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n))ᗮ := by
+  refine (Submodule.mem_orthogonal _ _).2 fun u hu => ?_
+  induction hu using Submodule.span_induction with
+  | mem z hz =>
+    obtain ⟨k, hk, rfl⟩ := hz
+    rw [inner_sub_right, inner_sum, Finset.sum_eq_single k]
+    · rcases eq_or_ne (gramSchmidtNormed 𝕜 f k) 0 with h0 | h0
+      · simp [h0]
+      · rw [inner_smul_right, inner_self_eq_norm_sq_to_K, gramSchmidtNormed_unit_length' h0]
+        simp
+    · intro i _ hik
+      rw [inner_smul_right, inner_gramSchmidtNormed_eq_zero f (Ne.symm hik), mul_zero]
+    · intro hk'
+      exact absurd (Finset.mem_range.2 hk) hk'
+  | zero => simp
+  | add z w _ _ hz hw => rw [inner_add_left, hz, hw, add_zero]
+  | smul c z _ hz => rw [inner_smul_left, hz, mul_zero]
+
+/-- Every element of the span of the first `n` normalized Gram–Schmidt vectors is its own
+orthonormal expansion in them, breakdown included: the vectors that vanish contribute nothing. -/
+theorem eq_sum_inner_smul_gramSchmidtNormed (f : ℕ → E) {x : E} {n : ℕ}
+    (hx : x ∈ Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n)) :
+    x = ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i := by
+  have hy : x - ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x •
+      gramSchmidtNormed 𝕜 f i ∈ Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n) :=
+    Submodule.sub_mem _ hx (Submodule.sum_mem _ fun i hi => Submodule.smul_mem _ _
+      (Submodule.subset_span ⟨i, Finset.mem_range.1 hi, rfl⟩))
+  have h0 := Submodule.inner_right_of_mem_orthogonal hy
+    (sub_sum_inner_smul_gramSchmidtNormed_mem_orthogonal f x n)
+  rw [inner_self_eq_zero, sub_eq_zero] at h0
+  exact h0
+
+end Breakdown
 
 section LinearIsometry
 

@@ -133,7 +133,6 @@ some row `i > j` below them: the last pivot divides nothing. -/
 theorem RoundsLU.abs_mul_sub_apply_le (hu : m.u < 1) (hcard : (Fintype.card n : K) * m.u < 1)
     (h : RoundsLU m A L U) (hd : ∀ j i, j < i → U j j ≠ 0) (i j : n) :
     |(L * U) i j - A i j| ≤ gamma m.u (Fintype.card n) * (L.abs * U.abs) i j := by
-  have hγ := gamma_nonneg m.u_nonneg hcard
   rw [h.isLU_mul.apply_eq_sum i j, h.abs_mul_abs_apply i j]
   rcases le_or_gt i j with hij | hji
   · -- the entry `u_ij`
@@ -628,7 +627,6 @@ theorem RoundsCholesky.abs_transpose_mul_sub_apply_le_of_le (hu : m.u < 1)
     have : (Fintype.card n : K) * m.u ≤ ((Fintype.card n + 1 : ℕ) : K) * m.u := by
       push_cast; nlinarith [m.u_nonneg]
     linarith
-  have hγ := gamma_nonneg m.u_nonneg hcard
   have hmonon := gamma_mono m.u_nonneg (Nat.le_succ (Fintype.card n)) hcard
   rw [h.transpose_mul_apply i j, h.abs_transpose_mul_abs_apply i j, min_eq_left hij,
     Matrix.sum_filter_le_eq_add, Matrix.sum_filter_le_eq_add]
@@ -983,7 +981,6 @@ private theorem gamma_add_one_add_mul_one_add_mul_one_add_sub_one_le {u : K} (hu
   have c := gamma_add_gamma_add_mul_le hu (j := k + 1) (k := k + 1 + k) (hle _ (by omega))
   rw [show k + 1 + (k + 1 + k) = 3 * k + 2 by ring] at c
   have gk := gamma_nonneg hu (hle k (by omega))
-  have g1 := gamma_nonneg hu (hle 1 (by omega))
   have gk1 := gamma_nonneg hu (hle (k + 1) (by omega))
   have g2k1 := gamma_nonneg hu (hle (k + 1 + k) (by omega))
   have s1 : (1 + gamma u k) * (1 + gamma u 1) ≤ 1 + gamma u (k + 1) := by
@@ -1362,12 +1359,10 @@ theorem RoundsThomas.abs_alpha_add_mul_sub_le (hu : m.u < 1) (h : RoundsThomas m
     rw [hα']
     field_simp
     ring
-  rw [hkey, gamma_one_eq]
   have h1 : |α (i + 1) * (δ₂ / (1 + δ₂))| ≤ m.u / (1 - m.u) * |α (i + 1)| := by
-    rw [abs_mul, abs_div, abs_of_pos hd, mul_comm]
-    refine mul_le_mul_of_nonneg_right ?_ (abs_nonneg _)
-    rw [div_le_div_iff₀ hd hu1]
-    nlinarith [neg_le_of_abs_le hδ₂, le_of_abs_le hδ₂, abs_nonneg δ₂, m.u_nonneg]
+    rw [abs_mul, mul_comm, ← gamma_one_eq]
+    exact mul_le_mul_of_nonneg_right (abs_div_one_add_le_gamma_one hu hδ₂) (abs_nonneg _)
+  rw [hkey, gamma_one_eq]
   have h2 : |β (i + 1) * c i * δ₁| ≤ m.u / (1 - m.u) * (|β (i + 1)| * |c i|) := by
     rw [abs_mul, abs_mul, mul_comm]
     refine mul_le_mul_of_nonneg_right (hδ₁.trans ?_) (mul_nonneg (abs_nonneg _) (abs_nonneg _))
@@ -1386,15 +1381,13 @@ theorem RoundsThomas.abs_beta_mul_alpha_sub_le (hu : m.u < 1) (h : RoundsThomas 
     |β (i + 1) * α i - b (i + 1)| ≤ gamma m.u 1 * (|β (i + 1)| * |α i|) := by
   obtain ⟨ε, hε, hβ⟩ := (h.beta_succ i).exists_delta
   have hd : (0 : K) < 1 + ε := by linarith [neg_le_of_abs_le hε]
-  have hu1 : (0 : K) < 1 - m.u := by linarith
   have hkey : β (i + 1) * α i - b (i + 1) = β (i + 1) * α i * (ε / (1 + ε)) := by
     rw [hβ]
     field_simp
     ring
-  rw [hkey, gamma_one_eq, abs_mul, abs_mul, abs_div, abs_of_pos hd, mul_comm]
-  refine mul_le_mul_of_nonneg_right ?_ (mul_nonneg (abs_nonneg _) (abs_nonneg _))
-  rw [div_le_div_iff₀ hd hu1]
-  nlinarith [neg_le_of_abs_le hε, le_of_abs_le hε, abs_nonneg ε, m.u_nonneg]
+  rw [hkey, abs_mul, abs_mul, mul_comm]
+  exact mul_le_mul_of_nonneg_right (abs_div_one_add_le_gamma_one hu hε)
+    (mul_nonneg (abs_nonneg _) (abs_nonneg _))
 
 /-- **[higham2002accuracy] (9.20)**, the backward error of the Thomas factorization: the
 bidiagonal factors built from the computed multipliers and pivots satisfy `L̂ Û = A + ΔA` with

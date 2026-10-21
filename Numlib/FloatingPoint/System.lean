@@ -143,7 +143,6 @@ theorem exists_int_mul_zpow_sub_abs_lt [Archimedean K] {β : ℕ} (hβ : 2 ≤ �
     push_cast at this
     exact lt_of_not_ge this
   refine ⟨m, k, ?_⟩
-  have hpos : (0 : K) < (β : K) ^ k := pow_pos hβ0 k
   have hkey : (m : K) * (β : K) ^ (-(k : ℤ)) - x
       = ((m : K) - x * (β : K) ^ k) * ((β : K)⁻¹) ^ k := by
     rw [zpow_neg, zpow_natCast, inv_pow]

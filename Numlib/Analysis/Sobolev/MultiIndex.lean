@@ -236,7 +236,6 @@ theorem eq_zero_or_exists_eq_single (α : MultiIndexLE ι 1) : α = 0 ∨ ∃ i,
   push Not at h
   obtain ⟨i, hi⟩ := h
   refine ⟨i, Subtype.ext (funext fun j ↦ ?_)⟩
-  have hle : ∑ j, (α : ι → ℕ) j ≤ 1 := α.2
   have hsingle : (α : ι → ℕ) i ≤ ∑ j, (α : ι → ℕ) j :=
     Finset.single_le_sum (fun _ _ ↦ Nat.zero_le _) (Finset.mem_univ i)
   have hαi : (α : ι → ℕ) i = 1 := by omega
@@ -303,7 +302,6 @@ theorem exists_eq_addSingle (β : MultiIndexLE ι (k + 1))
         = ∑ x, β.1 x := by
       rw [← Finset.sum_add_distrib]
       exact Finset.sum_congr rfl fun x _ ↦ tsub_add_cancel_of_le (hle x)
-    have h2 := β.2
     simp only [Finset.sum_pi_single', Finset.mem_univ, ite_true] at hsum
     change ∑ x, (β.1 x - (Pi.single i 1 : ι → ℕ) x) ≤ k
     omega
@@ -480,7 +478,6 @@ noncomputable def basisCoordProd (b : Basis ι ℝ E) {n : ℕ} (m : Fin n → �
 @[simp]
 theorem basisCoordProd_apply (b : Basis ι ℝ E) {n : ℕ} (m : Fin n → ι) (y : Fin n → E) :
     basisCoordProd b m y = ∏ j, b.repr (y j) (m j) := by
-  have := b.finiteDimensional_of_finite
   rw [basisCoordProd, ContinuousMultilinearMap.compContinuousLinearMap_apply,
     ContinuousMultilinearMap.mkPiAlgebra_apply]
   simp

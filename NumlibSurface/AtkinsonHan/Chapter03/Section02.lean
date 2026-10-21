@@ -361,7 +361,8 @@ theorem equation_3_2_8 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (h
       = ‖(f - piecewiseLinearInterpCLM n x f) t‖ := by simp [Real.norm_eq_abs]
     _ ≤ ‖f - piecewiseLinearInterpCLM n x f‖ := ContinuousMap.norm_coe_le_norm _ t
     _ ≤ f.modulusOfContinuity h :=
-        norm_sub_piecewiseLinearInterpCLM_le_modulus hstep hfirst hlast f hmesh
+        norm_sub_piecewiseLinearInterpCLM_le_modulus
+          ⟨fun i hi => hstep i (by omega), hfirst, hlast⟩ f hmesh
 
 /-- **(3.2.9).** For `f ∈ C²[a, b]` the piecewise linear interpolant on a partition of mesh at most
 `h` differs from `f` by at most `h² max |f''| / 8`.
@@ -378,7 +379,8 @@ theorem equation_3_2_9 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (h
       = ‖(f - piecewiseLinearInterpCLM n x f) t‖ := by simp [Real.norm_eq_abs]
     _ ≤ ‖f - piecewiseLinearInterpCLM n x f‖ := ContinuousMap.norm_coe_le_norm _ t
     _ ≤ h ^ 2 / 8 * M :=
-        norm_sub_piecewiseLinearInterpCLM_le hstep hfirst hlast hg hf hmesh hM
+        norm_sub_piecewiseLinearInterpCLM_le ⟨fun i hi => hstep i (by omega), hfirst, hlast⟩ hg hf
+          hmesh hM
 
 end PiecewiseLinear
 

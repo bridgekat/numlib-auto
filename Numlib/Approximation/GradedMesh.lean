@@ -1,4 +1,5 @@
 import Mathlib.Analysis.SpecialFunctions.Pow.Deriv
+import Numlib.Analysis.SpecialFunctions.Pow.Deriv
 import Numlib.Approximation.Interpolation
 
 /-!
@@ -60,33 +61,12 @@ mean value theorem gives nothing.
 /-! ### Two bounds on a real power
 
 Both compare `A ^ q - B ^ q` with `A - B` for an exponent `q ≥ 1`.  The first is the mean value
-theorem; the second trades the sharp factor `q A^{q-1}` for the cruder `q`, and in exchange holds
-also at `B = 0`, where `y ↦ y ^ q` is not differentiable for `q < 1` and where the panel of a
-graded mesh that touches the singularity lives. -/
+theorem (`Real.rpow_sub_rpow_le`, in `Numlib/Analysis/SpecialFunctions/Pow/Deriv`); the second
+trades the sharp factor `q A^{q-1}` for the cruder `q`, and in exchange holds also at `B = 0`,
+where `y ↦ y ^ q` is not differentiable for `q < 1` and where the panel of a graded mesh that
+touches the singularity lives. -/
 
 namespace Real
-
-/-- **The mean value bound for a real power**: for `q ≥ 1` and `0 < B < A`,
-`A ^ q - B ^ q ≤ q A ^ (q - 1) (A - B)`.
-
-The hypothesis `0 < B` is what makes `y ↦ y ^ q` differentiable on `[B, A]`; see
-`Real.rpow_sub_rpow_le_mul_sub` for a cruder bound that survives at `B = 0`. -/
-private theorem rpow_sub_rpow_le {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 < B) (hBA : B < A) :
-    A ^ q - B ^ q ≤ q * A ^ (q - 1) * (A - B) := by
-  have hderiv : ∀ s ∈ Set.Icc B A, HasDerivAt (fun y : ℝ => y ^ q) (q * s ^ (q - 1)) s :=
-    fun s _ => hasDerivAt_rpow_const (Or.inr hq)
-  obtain ⟨ξ, hξ, hξeq⟩ := exists_hasDerivAt_eq_slope (fun y : ℝ => y ^ q)
-    (fun s => q * s ^ (q - 1)) hBA
-    (fun s hs => (hderiv s hs).continuousAt.continuousWithinAt)
-    (fun s hs => hderiv s (Set.Ioo_subset_Icc_self hs))
-  have hsub : (0 : ℝ) < A - B := by linarith
-  have hξA : ξ ^ (q - 1) ≤ A ^ (q - 1) :=
-    rpow_le_rpow (hB.trans hξ.1).le hξ.2.le (by linarith)
-  rw [eq_div_iff (ne_of_gt hsub)] at hξeq
-  have hq0 : (0 : ℝ) ≤ q := by linarith
-  have hkey : 0 ≤ q * (A ^ (q - 1) - ξ ^ (q - 1)) * (A - B) :=
-    mul_nonneg (mul_nonneg hq0 (by linarith)) hsub.le
-  linarith [hkey, hξeq]
 
 /-- **A bound on `A ^ q - B ^ q` valid down to `B = 0`**: for `q ≥ 1` and `0 ≤ B < A ≤ 1`,
 `A ^ q - B ^ q ≤ q (A - B)`.
@@ -187,7 +167,6 @@ theorem isPanelNodes_graded {m N : ℕ} {q : ℝ} (hq1 : 1 ≤ q) {μ : Fin (m +
     rw [hx j (by omega), hx (j + 1) (by omega)]
     refine Real.rpow_lt_rpow (by positivity) ?_ hq0
     push_cast
-    have : (0 : ℝ) ≤ (j : ℝ) := Nat.cast_nonneg j
     gcongr
     linarith
   have hμmem : ∀ i : Fin (m + 1), μ i ∈ Set.Icc (0 : ℝ) 1 := by
@@ -254,13 +233,11 @@ theorem norm_sub_piecewisePolyInterpCLM_le_graded {m : ℕ} {γ q H c : ℝ} (h�
     ∃ C : ℝ, ∀ N : ℕ,
       ‖u - piecewisePolyInterpCLM N m (x N) (node N) u‖ ≤ C / ((N : ℝ) + 1) ^ (m + 1) := by
   classical
-  have hm0 : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
   have hq1 : (1 : ℝ) ≤ q := by
     have h2 : (1 : ℝ) < ((m : ℝ) + 1) / γ := by
       rw [lt_div_iff₀ hγ0]
       linarith
     linarith
-  have hq0 : (0 : ℝ) < q := lt_of_lt_of_le zero_lt_one hq1
   have hqγ : ((m : ℝ) + 1) ≤ q * γ := by
     rw [div_le_iff₀ hγ0] at hq
     linarith
@@ -291,7 +268,6 @@ theorem norm_sub_piecewisePolyInterpCLM_le_graded {m : ℕ} {γ q H c : ℝ} (h�
   refine ⟨Cst, fun N => ?_⟩
   have hn0 : (0 : ℝ) < (N : ℝ) + 1 := by positivity
   have hnN : (1 : ℝ) ≤ (N : ℝ) + 1 := by
-    have : (0 : ℝ) ≤ (N : ℝ) := Nat.cast_nonneg N
     linarith
   have hnodes := hnodes N
   have hΛb := hΛb N
@@ -326,7 +302,6 @@ theorem norm_sub_piecewisePolyInterpCLM_le_graded {m : ℕ} {γ q H c : ℝ} (h�
             linarith
         _ = 1 / ((N : ℝ) + 1) ^ (m + 1) := by rw [Real.rpow_natCast, div_pow, one_pow]
     refine (abs_sub_piecewisePolyInterpCLM_apply_le_of_osc hnodes hΛb u hk h1 h2 hosc).trans ?_
-    have hxγ0 : (0 : ℝ) ≤ ((x N 1 : ℝ)) ^ γ := Real.rpow_nonneg (x N 1).2.1 γ
     calc (1 + Λ) * (H * ((x N 1 : ℝ)) ^ γ)
         ≤ (1 + Λ) * (H * (1 / ((N : ℝ) + 1) ^ (m + 1))) := by gcongr
       _ = (1 + Λ) * H / ((N : ℝ) + 1) ^ (m + 1) := by ring
@@ -391,8 +366,6 @@ theorem norm_sub_piecewisePolyInterpCLM_le_graded {m : ℕ} {γ q H c : ℝ} (h�
       (A := ((k : ℝ) + 1) / ((N : ℝ) + 1)) (B := (k : ℝ) / ((N : ℝ) + 1)) hq1 hqγ hn0 hB0
       hBA' hA1' hABeq hA2B'
     rw [← hxk, ← hxk1] at hgraded
-    have hpanel0 : (0 : ℝ) ≤ ((x N (k + 1) : ℝ) - (x N k : ℝ)) ^ (m + 1) :=
-      pow_nonneg (by linarith [hnodes.step k hk]) _
     rw [hξeq, abs_mul, abs_div, abs_of_pos hfact0]
     calc |iteratedDeriv (m + 1) U ξ| / ((m + 1).factorial : ℝ)
           * |∏ i, ((t : ℝ) - ((node N k i : ℝ)))|
@@ -458,18 +431,16 @@ theorem isPanelNodes_gradedSym (hab : a < b) (hr : 0 < r) (hN : N + 1 = 2 * r) (
     IsPanelNodes N m x node := by
   have hr0 : (0 : ℝ) < (r : ℝ) := by exact_mod_cast hr
   have hq0 : (0 : ℝ) < q := lt_of_lt_of_le zero_lt_one hq1
-  have hS0 : (0 : ℝ) < (b - a) / 2 := by linarith
   -- the left half increases
   have hstepL : ∀ j < r, (x j : ℝ) < (x (j + 1) : ℝ) := by
     intro j hj
     rw [hxL j (by omega), hxL (j + 1) (by omega)]
     have hlt : ((j : ℝ) / r) ^ q < (((j : ℝ) + 1) / r) ^ q := by
       refine Real.rpow_lt_rpow (by positivity) ?_ hq0
-      have : (0 : ℝ) ≤ (j : ℝ) := Nat.cast_nonneg j
       gcongr
       linarith
     push_cast
-    nlinarith [hlt, hS0]
+    nlinarith [hlt]
   -- the reflection identities for a panel of the right half
   have hrefl : ∀ j, r ≤ j → j ≤ N →
       (x j : ℝ) = a + b - (x (2 * r - 1 - j + 1) : ℝ) ∧
@@ -669,7 +640,6 @@ theorem norm_sub_piecewisePolyInterpCLM_le_gradedSym {a b : ℝ} {m r N : ℕ} {
         / (r : ℝ) ^ (m + 1) := by
   have hr0 : (0 : ℝ) < (r : ℝ) := by exact_mod_cast hr
   have hr1 : (1 : ℝ) ≤ (r : ℝ) := by exact_mod_cast hr
-  have hm0 : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
   have hS0 : (0 : ℝ) < (b - a) / 2 := by linarith
   have hSγ0 : (0 : ℝ) ≤ ((b - a) / 2) ^ γ := Real.rpow_nonneg hS0.le γ
   have hq1 : (1 : ℝ) ≤ q := by
@@ -677,7 +647,6 @@ theorem norm_sub_piecewisePolyInterpCLM_le_gradedSym {a b : ℝ} {m r N : ℕ} {
       rw [lt_div_iff₀ hγ0]
       linarith
     linarith
-  have hq0 : (0 : ℝ) < q := lt_of_lt_of_le zero_lt_one hq1
   have hqγ : ((m : ℝ) + 1) ≤ q * γ := by
     rw [div_le_iff₀ hγ0] at hq
     linarith

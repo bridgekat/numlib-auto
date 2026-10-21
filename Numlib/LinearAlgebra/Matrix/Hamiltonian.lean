@@ -5,6 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.SymplecticGroup`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Algebra.Lie.Classical
+import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.LinearAlgebra.SymplecticGroup
 import Mathlib.LinearAlgebra.UnitaryGroup
 import Numlib.LinearAlgebra.Matrix.Symmetric
@@ -46,6 +47,8 @@ under `J ↦ -J`.
   matrices, which form the submonoid `Matrix.orthoSymplecticGroup`; orthogonal symplectic
   similarity `Qᵀ M Q` preserves both structures
   (`Matrix.IsHamiltonian.transpose_mul_mul_of_mem_orthoSymplecticGroup`).
+* `Matrix.card_le_of_transpose_mul_J_mul_eq_zero`: an orthonormal isotropic family in `K^{l ⊕ l}`
+  has at most `card l` members.
 
 ## References
 
@@ -68,12 +71,12 @@ private theorem transpose_transpose_mul_mul_of_transpose_eq_neg {X : Matrix (l �
 
 variable [DecidableEq l]
 
-/-- `J Jᵀ = I`. -/
-private theorem J_mul_transpose_J : J l R * (J l R)ᵀ = 1 := by
+/-- `J Jᵀ = I`: the symplectic form `J` is orthogonal. -/
+theorem J_mul_transpose_J : J l R * (J l R)ᵀ = 1 := by
   rw [J_transpose, Matrix.mul_neg, J_squared, neg_neg]
 
-/-- `Jᵀ J = I`. -/
-private theorem transpose_J_mul_J : (J l R)ᵀ * J l R = 1 := by
+/-- `Jᵀ J = I`: the symplectic form `J` is orthogonal. -/
+theorem transpose_J_mul_J : (J l R)ᵀ * J l R = 1 := by
   rw [J_transpose, Matrix.neg_mul, J_squared, neg_neg]
 
 /-- `J X Jᵀ = Y ↔ J X = Y J`, since `J` is orthogonal. -/
@@ -86,7 +89,7 @@ private theorem J_mul_mul_transpose_J_eq_iff {X Y : Matrix (l ⊕ l) (l ⊕ l) R
     rw [h, Matrix.mul_assoc, J_mul_transpose_J, Matrix.mul_one]
 
 /-- For a symplectic `S`, `J S⁻¹ = Sᵀ J`. -/
-private theorem J_mul_inv_of_mem_symplecticGroup {S : Matrix (l ⊕ l) (l ⊕ l) R}
+theorem J_mul_inv_of_mem_symplecticGroup {S : Matrix (l ⊕ l) (l ⊕ l) R}
     (hS : S ∈ symplecticGroup l R) : J l R * S⁻¹ = Sᵀ * J l R := by
   rw [SymplecticGroup.inv_eq_symplectic_inv S hS, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
     Matrix.mul_neg, J_squared, neg_neg, Matrix.one_mul]
@@ -383,5 +386,34 @@ theorem mem_orthoSymplecticGroup_iff_fromBlocks {Q : Matrix (l ⊕ l) (l ⊕ l) 
       ∃ Q₁ Q₂ : Matrix l l R, Q = fromBlocks Q₁ Q₂ (-Q₂) Q₁ ∧
         (Q₁ᵀ * Q₂).IsSymm ∧ Q₁ᵀ * Q₁ + Q₂ᵀ * Q₂ = 1 :=
   mem_orthogonalGroup_symplecticGroup_iff
+
+/-! ### Isotropic families -/
+
+/-- **An orthonormal isotropic family in `K^{l ⊕ l}` has at most `card l` members**: if
+`X₀ᵀ X₀ = 1` and `X₀ᵀ J X₀ = 0`, the columns of `X₀` and of `J X₀` are independent and mutually
+orthogonal, so `2 card k ≤ 2 card l`. -/
+theorem card_le_of_transpose_mul_J_mul_eq_zero {K k : Type*} [Field K] [Fintype k] [DecidableEq k]
+    {X₀ : Matrix (l ⊕ l) k K} (h1 : X₀ᵀ * X₀ = 1) (h2 : X₀ᵀ * J l K * X₀ = 0) :
+    Fintype.card k ≤ Fintype.card l := by
+  set Y := J l K * X₀
+  have hY : Yᵀ * Y = 1 := by
+    rw [transpose_mul, J_transpose, Matrix.mul_assoc, ← Matrix.mul_assoc (-J l K),
+      Matrix.neg_mul, J_squared, neg_neg, Matrix.one_mul, h1]
+  have hrX : Fintype.card k ≤ X₀ᵀ.rank := by
+    have := rank_mul_le_left X₀ᵀ X₀
+    rwa [h1, rank_one] at this
+  have hrY : Fintype.card k ≤ Y.rank := by
+    have := rank_mul_le_left Yᵀ Y
+    rwa [hY, rank_one, rank_transpose] at this
+  have h0 : X₀ᵀ * Y = 0 := by rw [← Matrix.mul_assoc, h2]
+  have hle : LinearMap.range Y.mulVecLin ≤ LinearMap.ker X₀ᵀ.mulVecLin := by
+    rintro _ ⟨v, rfl⟩
+    rw [LinearMap.mem_ker, mulVecLin_apply, mulVecLin_apply, mulVec_mulVec, h0, zero_mulVec]
+  have hker := LinearMap.finrank_range_add_finrank_ker X₀ᵀ.mulVecLin
+  have hrY' : Y.rank ≤ Module.finrank K (LinearMap.ker X₀ᵀ.mulVecLin) :=
+    Submodule.finrank_mono hle
+  rw [Module.finrank_fintype_fun_eq_card, Fintype.card_sum] at hker
+  change X₀ᵀ.rank + _ = _ at hker
+  omega
 
 end Matrix

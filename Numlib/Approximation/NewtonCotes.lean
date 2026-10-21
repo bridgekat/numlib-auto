@@ -422,7 +422,6 @@ theorem sub_composite_midpoint_eq (hab : a < b) {m : ℕ} (hm : 0 < m) {H : ℝ}
     (hH : H = (b - a) / m) (hg : ∀ x ∈ Icc a b, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Icc a b, HasDerivAt g' (g'' x) x) (hg'' : ContinuousOn g'' (Icc a b)) :
     ∃ ξ ∈ Icc a b, (∫ t in a..b, g t) - midpointSum g a H m = (b - a) / 24 * H ^ 2 * g'' ξ := by
-  have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
   have hHpos : 0 < H := by rw [hH]; positivity
   set x : ℕ → ℝ := fun j => a + j * H with hxdef
   have hx0 : x 0 = a := by simp [hxdef]
@@ -793,6 +792,17 @@ theorem openNewtonCotes_eq_sum_integral_basis (hab : a < b) (f : ℝ → ℝ) :
   exact Finset.sum_congr rfl fun i _ => by
     rw [integral_basis_eq_mul_openNewtonCotesWeight hab i]; ring
 
+/-- The integral of a Lagrange interpolant is the rule whose weights are the integrals of the
+basis polynomials: `∫_u^w Π r = ∑ᵢ (∫_u^w ℓᵢ) r i`. -/
+theorem integral_eval_interpolate (v r : Fin (n + 1) → ℝ) (u w : ℝ) :
+    (∫ t in u..w, (Lagrange.interpolate Finset.univ v r).eval t)
+      = ∑ i, (∫ t in u..w, (Lagrange.basis Finset.univ v i).eval t) * r i := by
+  simp only [Lagrange.interpolate_apply, Polynomial.eval_finsetSum, Polynomial.eval_mul,
+    Polynomial.eval_C]
+  rw [integral_finsetSum fun i _ =>
+    ((Polynomial.continuous _).const_mul _).intervalIntegrable _ _]
+  exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul]; ring
+
 /-- A Lagrange quadrature formula integrates the polynomials of degree at most `n` exactly: such a
 polynomial is its own interpolant. -/
 theorem integral_eq_sum_integral_basis_mul {v : Fin (n + 1) → ℝ} (hv : Function.Injective v)
@@ -804,11 +814,7 @@ theorem integral_eq_sum_integral_basis_mul {v : Fin (n + 1) → ℝ} (hv : Funct
     exact lt_of_le_of_lt hp (by exact_mod_cast Nat.lt_succ_self n)
   have heq := Lagrange.eq_interpolate hv.injOn hdeg
   conv_lhs => rw [heq]
-  simp only [Lagrange.interpolate_apply, Polynomial.eval_finsetSum, Polynomial.eval_mul,
-    Polynomial.eval_C]
-  rw [integral_finsetSum fun i _ =>
-    ((Polynomial.continuous _).const_mul _).intervalIntegrable _ _]
-  exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul]; ring
+  exact integral_eval_interpolate v _ u w
 
 /-- **Exactness of the closed rule to degree `n`**: for `0 < n`, `a < b` and a polynomial `p` of
 degree at most `n`, `∫_a^b p = closedNewtonCotes n p a b`.
@@ -817,7 +823,6 @@ Reference: [quarteroni2000numerical], §9.1 and §9.3. -/
 theorem integral_eq_closedNewtonCotes_of_degree_le (hn : 0 < n) (hab : a < b) {p : ℝ[X]}
     (hp : p.degree ≤ n) :
     (∫ t in a..b, p.eval t) = closedNewtonCotes n (fun t => p.eval t) a b := by
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
   have hinj : Function.Injective fun k : Fin (n + 1) => a + k * ((b - a) / n) := by
     intro k l hkl
     have : (k : ℝ) = l := by
@@ -883,9 +888,7 @@ theorem closedNewtonCotes_node_mem (hn : 0 < n) (hab : a ≤ b) (i : Fin (n + 1)
     a + i * ((b - a) / n) ∈ Icc a b := by
   have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
   have hi : (i : ℝ) ≤ n := by exact_mod_cast Nat.lt_succ_iff.mp i.2
-  have h0 : (0 : ℝ) ≤ (i : ℕ) := Nat.cast_nonneg _
   have hh : 0 ≤ (b - a) / n := by
-    have : 0 ≤ b - a := by linarith
     positivity
   refine ⟨by nlinarith, ?_⟩
   have : (i : ℝ) * ((b - a) / n) ≤ n * ((b - a) / n) := mul_le_mul_of_nonneg_right hi hh
@@ -895,7 +898,6 @@ theorem closedNewtonCotes_node_mem (hn : 0 < n) (hab : a ≤ b) (i : Fin (n + 1)
 /-- The nodes of the closed rule are distinct. -/
 theorem closedNewtonCotes_node_injective (hn : 0 < n) (hab : a < b) :
     Function.Injective fun k : Fin (n + 1) => a + k * ((b - a) / n) := by
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
   intro k l hkl
   have : (k : ℝ) = l := by
     have h := hkl
@@ -943,9 +945,7 @@ theorem openNewtonCotes_node_mem (hab : a ≤ b) (i : Fin (n + 1)) :
     a + ((i : ℕ) + 1) * ((b - a) / (n + 2)) ∈ Icc a b := by
   have hnR : (0 : ℝ) < (n : ℝ) + 2 := by positivity
   have hi : ((i : ℕ) : ℝ) ≤ n := by exact_mod_cast Nat.lt_succ_iff.mp i.2
-  have h0 : (0 : ℝ) ≤ ((i : ℕ) : ℝ) := Nat.cast_nonneg _
   have hh : 0 ≤ (b - a) / ((n : ℝ) + 2) := by
-    have : 0 ≤ b - a := by linarith
     positivity
   refine ⟨by nlinarith, ?_⟩
   have h1 : (((i : ℕ) : ℝ) + 1) * ((b - a) / ((n : ℝ) + 2))
@@ -981,7 +981,6 @@ Reference: [quarteroni2000numerical], Theorem 9.2 (the degree of exactness `n + 
 theorem integral_eq_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b)
     {p : ℝ[X]} (hp : p.degree ≤ n + 1) :
     (∫ t in a..b, p.eval t) = closedNewtonCotes n (fun t => p.eval t) a b := by
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
   set c : ℝ := (a + b) / 2 with hc
   set r : ℝ[X] := (X - C c) ^ (n + 1) with hr
   set q : ℝ[X] := p - C (p.coeff (n + 1)) * r with hq
@@ -1361,7 +1360,6 @@ theorem intNodal_eval_add_eval_add_one_pos (hn : Even n) {l : ℕ} (hl : 4 * l +
     push_cast at this hlt htl
     linarith
   have ht0 : -1 < t := by
-    have : (0 : ℝ) ≤ ((2 * l : ℕ) : ℝ) := Nat.cast_nonneg _
     linarith
   have hlt' := abs_intNodal_eval_add_one_lt ht0 hn' hpos.ne'
   rw [abs_of_pos hpos] at hlt'
@@ -1586,7 +1584,6 @@ theorem intNodal_eval_mul_neg_one_pow_pos_of_neg {t : ℝ} (ht : t < 0) :
     rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
   rw [intNodal_eval, hcard, ← Finset.prod_mul_distrib]
   refine Finset.prod_pos fun i _ => ?_
-  have : (0 : ℝ) ≤ ((i : ℕ) : ℝ) := Nat.cast_nonneg _
   nlinarith
 
 /-- `W(x) = ∫_0^x π_{n+1} > 0` beyond the last node, for even `n`: `W(n) = 0` and the integrand is
@@ -1728,8 +1725,7 @@ theorem integral_intNodal_neg_one_mul_nonneg :
           rw [integral_const_mul, pow_succ]; ring
         rw [hrw]
         exact integral_nonneg hx1 fun t ht => ih t ht.1 (by linarith [ht.2])
-      have hsum := add_nonneg hterm1 hterm2
-      linarith [hsum]
+      linarith
     intro x hx1 hx2
     rcases le_or_gt x ((p : ℝ) + 1) with hx | hx
     · exact hmain x hx1 hx
@@ -1771,7 +1767,6 @@ positive. Integrating by parts, `M̃_n = -∫_{-1}^{n+1} W̃` because `W̃(-1) =
 `W̃(n + 1) = 0` (`integral_intNodal_neg_one_eq_zero_of_even`), and `W̃ ≤ 0` by
 `integral_intNodal_neg_one_mul_nonneg`, strictly on the first panel. -/
 theorem openNewtonCotesM_pos (hn : Even n) : 0 < openNewtonCotesM n := by
-  have hnR : (0 : ℝ) ≤ n := Nat.cast_nonneg _
   set W : ℝ → ℝ := fun y => ∫ s in (-1 : ℝ)..y, (intNodal n).eval s with hW
   have hWd : ∀ t : ℝ, HasDerivAt W ((intNodal n).eval t) t := fun t =>
     ((Polynomial.continuous _).integral_hasStrictDerivAt (-1) t).hasDerivAt
@@ -1812,7 +1807,6 @@ theorem openNewtonCotesM_pos (hn : Even n) : 0 < openNewtonCotesM n := by
 `[-1, n]` is nonnegative by `integral_intNodal_neg_one_mul_nonneg`, and the last panel `[n, n + 1]`
 contributes a positive amount because `π_{n+1} > 0` beyond its last node. -/
 theorem openNewtonCotesK_pos (hn : Odd n) : 0 < openNewtonCotesK n := by
-  have hnR : (0 : ℝ) ≤ n := Nat.cast_nonneg _
   have hhead : 0 ≤ ∫ t in (-1 : ℝ)..(n : ℝ), (intNodal n).eval t := by
     have h := integral_intNodal_neg_one_mul_nonneg n (n : ℝ) (by linarith) (by linarith)
     rwa [hn.add_one.neg_one_pow, one_mul] at h
@@ -1855,38 +1849,32 @@ theorem exists_contDiff_iteratedDeriv_eq (k : ℕ) {ψ : ℝ → ℝ} (hψ : Con
 /-- The nodes of the closed rule, `ℕ`-indexed, are distinct. -/
 private theorem node_injective (hn : 0 < n) (hab : a < b) {j k : ℕ}
     (h : a + j * ((b - a) / n) = a + k * ((b - a) / n)) : j = k := by
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
   have hpos : (b - a) / n ≠ 0 := by positivity
   exact_mod_cast mul_right_cancel₀ hpos (by linarith : (j : ℝ) * ((b - a) / n) = k * ((b - a) / n))
 
-/-- **The error of the closed rule with even `n` is nonpositive for an integrand with
-nonnegative `(n+2)`-nd derivative.** This is the sign half of the error formula, proved on the
-divided-difference route: `f - Π_n f = φ ω` with `φ(x) = f[x_0, …, x_n, x]`, made `C¹` across the
-nodes as an iterated `dslope`; integrating by parts against `W(x) = ∫_a^x ω ≥ 0`, which vanishes
-at both endpoints, gives `∫_a^b (f - Π_n f) = -∫_a^b φ' W`; and `φ'(x) = f[x_0, …, x_n, x, x]`
-is the leading coefficient of a Hermite interpolant of `f`, hence a value of `f^{(n+2)}/(n+2)!`
-by Rolle's theorem with multiplicities. -/
-theorem sub_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b)
-    (hf : ContDiff ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f) (hf' : ∀ t, 0 ≤ iteratedDeriv (n + 2) f t) :
-    (∫ t in a..b, f t) - closedNewtonCotes n f a b ≤ 0 := by
+/-- **The sign of the integral of an interpolation error.** Let `x 0, …, x n` be distinct nodes in
+`[a, b]`, `ω(t) = ∏_{j ≤ n} (t - x_j)` their nodal polynomial, and suppose its primitive
+`W(t) = ∫_a^t ω` vanishes at `b` and has the sign `σ` on `[a, b]` (`0 ≤ σ W`). For `f` of class
+`C^{n+2}` with `f^{(n+2)} ≥ 0` the integral of the interpolation error `f - Π_n f` then has the
+opposite sign: `σ ∫_a^b (f - Π_n f) ≤ 0`.
+
+This is the divided-difference route of Steffensen: `f - Π_n f = φ ω` with
+`φ(x) = f[x_0, …, x_n, x]`, made `C¹` across the nodes as an iterated `dslope`; integrating by
+parts against `W`, which vanishes at both endpoints, gives `∫_a^b (f - Π_n f) = -∫_a^b φ' W`; and
+`φ'(x) = f[x_0, …, x_n, x, x]` is the leading coefficient of a Hermite interpolant of `f`, hence a
+value of `f^{(n+2)}/(n+2)!` by Rolle's theorem with multiplicities. It is the common core of
+`sub_closedNewtonCotes_nonpos_of_even` (`σ = 1`) and `sub_openNewtonCotes_nonneg_of_even`
+(`σ = -1`). -/
+theorem mul_integral_sub_interpolate_nonpos (hab : a < b)
+    (hf : ContDiff ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f) (hf' : ∀ t, 0 ≤ iteratedDeriv (n + 2) f t)
+    {x : ℕ → ℝ} (hx : Function.Injective x) (hxmem : ∀ k ≤ n, x k ∈ Icc a b) {σ : ℝ}
+    (hWb : ∫ s in a..b, ∏ j ∈ Finset.range (n + 1), (s - x j) = 0)
+    (hWσ : ∀ t ∈ Icc a b, 0 ≤ σ * ∫ s in a..t, ∏ j ∈ Finset.range (n + 1), (s - x j)) :
+    σ * ∫ t in a..b, (f t - (Lagrange.interpolate Finset.univ (fun i : Fin (n + 1) => x i)
+      fun i => f (x i)).eval t) ≤ 0 := by
   classical
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
-  set h : ℝ := (b - a) / n with hh
-  have hpos : 0 < h := by rw [hh]; positivity
-  have hnh : (n : ℝ) * h = b - a := by rw [hh]; field_simp
-  set x : ℕ → ℝ := fun k => a + k * h with hxdef
   set v : Fin (n + 1) → ℝ := fun i => x i with hvdef
-  have hv : Function.Injective v := fun i j hij => Fin.ext (node_injective hn0 hab hij)
-  have hxa : x 0 = a := by simp [hxdef]
-  have hxb : x n = b := by simp only [hxdef]; linarith
-  have hxmem : ∀ k ≤ n, x k ∈ Icc a b := by
-    intro k hk
-    have hk' : (k : ℝ) ≤ n := by exact_mod_cast hk
-    have h0 : (0 : ℝ) ≤ k := Nat.cast_nonneg _
-    refine ⟨by simp only [hxdef]; nlinarith, ?_⟩
-    simp only [hxdef]
-    have : (k : ℝ) * h ≤ n * h := mul_le_mul_of_nonneg_right hk' hpos.le
-    linarith
+  have hv : Function.Injective v := fun i j hij => Fin.ext (hx hij)
   set P : ℝ[X] := Lagrange.interpolate Finset.univ v fun i => f (v i) with hP
   set g₀ : ℝ → ℝ := fun t => f t - P.eval t with hg₀
   have hg₀node : ∀ k ≤ n, g₀ (x k) = 0 := by
@@ -1894,16 +1882,6 @@ theorem sub_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n) (hab : 
     have : x k = v ⟨k, Nat.lt_succ_of_le hk⟩ := rfl
     simp only [hg₀, this, hP, Lagrange.eval_interpolate_at_node _ hv.injOn (Finset.mem_univ _),
       sub_self]
-  -- the error is the integral of `f - Π_n f`
-  have hE : (∫ t in a..b, f t) - closedNewtonCotes n f a b = ∫ t in a..b, g₀ t := by
-    have hNC : closedNewtonCotes n f a b = ∫ t in a..b, P.eval t := by
-      rw [closedNewtonCotes_eq_sum_integral_basis hn0 hab]
-      simp only [hP, Lagrange.interpolate_apply, eval_finsetSum, eval_mul, eval_C]
-      rw [integral_finsetSum fun i _ =>
-        ((Polynomial.continuous _).const_mul _).intervalIntegrable _ _]
-      exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul]; ring
-    rw [hNC, ← integral_sub ((hf.continuous).intervalIntegrable _ _)
-      ((Polynomial.continuous _).intervalIntegrable _ _)]
   -- the divided difference `f[x_0, …, x_n, ·]`, smooth across the nodes as an iterated `dslope`
   let G : ℕ → ℝ → ℝ := fun k => Nat.rec g₀ (fun k Gk => dslope Gk (x k)) k
   have hGsucc : ∀ k, G (k + 1) = dslope (G k) (x k) := fun k => rfl
@@ -1928,7 +1906,7 @@ theorem sub_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n) (hab : 
     | succ k ih =>
       intro hk t ht
       have hGk0 : G k (x k) = 0 := by
-        rw [ih (by omega) (x k) fun j hj hjk => absurd (node_injective hn0 hab hjk) (by omega)]
+        rw [ih (by omega) (x k) fun j hj hjk => absurd (hx hjk) (by omega)]
         rw [hg₀node k (by omega), zero_div]
       rw [hGsucc, dslope_of_ne _ (ht k (Nat.lt_succ_self k)), slope_def_field, hGk0, sub_zero,
         ih (by omega) t fun j hj => ht j (Nat.lt_succ_of_lt hj), Finset.prod_range_succ, div_div]
@@ -1960,44 +1938,7 @@ theorem sub_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n) (hab : 
   set W : ℝ → ℝ := fun t => ∫ s in a..t, ω s with hW
   have hWd : ∀ t, HasDerivAt W (ω t) t := fun t =>
     (hωc.integral_hasStrictDerivAt a t).hasDerivAt
-  -- `W` is the scaled reference primitive `h^{n+2} ∫_0^{(t - a)/h} π_{n+1}`
-  have hωπ : ∀ s : ℝ, ω (h * s + a) = h ^ (n + 1) * (intNodal n).eval s := by
-    intro s
-    simp only [hω, hxdef, intNodal_eval_eq_prod_range]
-    have e : ∀ j ∈ Finset.range (n + 1), h * s + a - (a + j * h) = h * (s - j) := fun j _ => by
-      ring
-    rw [Finset.prod_congr rfl e, Finset.prod_mul_distrib, Finset.prod_const, Finset.card_range]
-  have hWval : ∀ t, W t = h ^ (n + 2) * ∫ s in (0 : ℝ)..((t - a) / h), (intNodal n).eval s := by
-    intro t
-    have hcov := integral_comp_mul_add (fun s => ω s) (a := 0) (b := (t - a) / h) hpos.ne' a
-    simp only [mul_zero, zero_add, smul_eq_mul] at hcov
-    rw [mul_div_cancel₀ _ hpos.ne', sub_add_cancel] at hcov
-    have hI : (∫ s in (0 : ℝ)..((t - a) / h), ω (h * s + a))
-        = h ^ (n + 1) * ∫ s in (0 : ℝ)..((t - a) / h), (intNodal n).eval s := by
-      rw [← integral_const_mul]
-      exact integral_congr fun s _ => hωπ s
-    rw [hI] at hcov
-    calc W t = h * (h⁻¹ * W t) := by field_simp
-      _ = h * (h ^ (n + 1) * ∫ s in (0 : ℝ)..((t - a) / h), (intNodal n).eval s) := by
-          rw [← hcov]
-      _ = _ := by ring
-  have hWnn : ∀ t ∈ Icc a b, 0 ≤ W t := by
-    intro t ht
-    rw [hWval]
-    refine mul_nonneg (by positivity) (integral_intNodal_nonneg_of_even hn ?_ ?_)
-    · exact div_nonneg (by linarith [ht.1]) hpos.le
-    · rw [div_le_iff₀ hpos]
-      linarith [ht.2]
   have hWa : W a = 0 := by simp [hW]
-  have hWb : W b = 0 := by
-    have hba : (b - a) / h = n := by
-      have : b - a ≠ 0 := by linarith
-      rw [hh]
-      field_simp
-    rw [hWval, hba]
-    have := newtonCotesK_eq_zero_of_even hn
-    rw [newtonCotesK] at this
-    rw [this, mul_zero]
   -- integration by parts
   have hparts := integral_mul_deriv_eq_deriv_mul (a := a) (b := b) (u := φ) (u' := D) (v := W)
     (v' := ω) (fun t _ => hφD t) (fun t _ => hWd t) (hDc.intervalIntegrable _ _)
@@ -2059,18 +2000,104 @@ theorem sub_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n) (hab : 
     have hfac : (0 : ℝ) < (n + 2).factorial := by positivity
     have := hf' ξ
     exact (mul_nonneg_iff_of_pos_left hfac).1 (by linarith)
-  -- hence `∫ φ' W ≥ 0`, and the error is `-∫ φ' W`
-  have hint : 0 ≤ ∫ t in a..b, D t * W t := by
+  have hWb' : W b = 0 := hWb
+  -- hence `σ ∫ φ' W ≥ 0`, and the error is `-∫ φ' W`
+  have hint : 0 ≤ σ * ∫ t in a..b, D t * W t := by
+    rw [← integral_const_mul]
     refine integral_nonneg_of_ae_restrict hab.le ?_
-    have hfin : ∀ᵐ t ∂volume, t ∉ Set.range v :=
-      (Set.finite_range v).countable.ae_notMem volume
+    have hfinset : ((({a, b} : Set ℝ) ∪ Set.range v)).Finite :=
+      ((Set.finite_singleton b).insert a).union (Set.finite_range v)
+    have hfin : ∀ᵐ t ∂volume, t ∉ (({a, b} : Set ℝ) ∪ Set.range v) :=
+      hfinset.countable.ae_notMem volume
     filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Icc,
       MeasureTheory.ae_restrict_of_ae hfin] with t ht htv
-    have hta : t ≠ a := fun h => htv ⟨0, by simp [hvdef, hxdef, h]⟩
-    have htb : t ≠ b := fun h => htv ⟨Fin.last n, by simp only [hvdef, Fin.val_last, hxb, h]⟩
-    exact mul_nonneg (hDnn t ⟨lt_of_le_of_ne ht.1 (Ne.symm hta), lt_of_le_of_ne ht.2 htb⟩ htv)
-      (hWnn t ht)
-  rw [hE, integral_congr fun t _ => hφω t, hparts, hWa, hWb]
+    have hta : t ≠ a := fun he => htv (Or.inl (by simp [he]))
+    have htb : t ≠ b := fun he => htv (Or.inl (by simp [he]))
+    have htv' : t ∉ Set.range v := fun hr => htv (Or.inr hr)
+    have hDt := hDnn t ⟨lt_of_le_of_ne ht.1 (Ne.symm hta), lt_of_le_of_ne ht.2 htb⟩ htv'
+    have hWt : 0 ≤ σ * W t := hWσ t ht
+    exact (mul_nonneg hDt hWt).trans_eq (by ring)
+  change σ * ∫ t in a..b, g₀ t ≤ 0
+  rw [integral_congr fun t _ => hφω t, hparts, hWa, hWb']
+  nlinarith [hint]
+
+/-- **The error of the closed rule with even `n` is nonpositive for an integrand with
+nonnegative `(n+2)`-nd derivative.** This is the sign half of the error formula, proved on the
+divided-difference route: `f - Π_n f = φ ω` with `φ(x) = f[x_0, …, x_n, x]`, made `C¹` across the
+nodes as an iterated `dslope`; integrating by parts against `W(x) = ∫_a^x ω ≥ 0`, which vanishes
+at both endpoints, gives `∫_a^b (f - Π_n f) = -∫_a^b φ' W`; and `φ'(x) = f[x_0, …, x_n, x, x]`
+is the leading coefficient of a Hermite interpolant of `f`, hence a value of `f^{(n+2)}/(n+2)!`
+by Rolle's theorem with multiplicities; this is `Quadrature.mul_integral_sub_interpolate_nonpos`
+with `σ = 1`, `W ≥ 0` being `Quadrature.integral_intNodal_nonneg_of_even`. -/
+theorem sub_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b)
+    (hf : ContDiff ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f) (hf' : ∀ t, 0 ≤ iteratedDeriv (n + 2) f t) :
+    (∫ t in a..b, f t) - closedNewtonCotes n f a b ≤ 0 := by
+  classical
+  set h : ℝ := (b - a) / n with hh
+  have hpos : 0 < h := by rw [hh]; positivity
+  have hnh : (n : ℝ) * h = b - a := by rw [hh]; field_simp
+  set x : ℕ → ℝ := fun k => a + k * h with hxdef
+  have hx : Function.Injective x := fun j k hjk => node_injective hn0 hab hjk
+  have hxmem : ∀ k ≤ n, x k ∈ Icc a b := by
+    intro k hk
+    have hk' : (k : ℝ) ≤ n := by exact_mod_cast hk
+    refine ⟨by simp only [hxdef]; nlinarith, ?_⟩
+    simp only [hxdef]
+    have : (k : ℝ) * h ≤ n * h := mul_le_mul_of_nonneg_right hk' hpos.le
+    linarith
+  -- the error is the integral of `f - Π_n f`
+  have hE : (∫ t in a..b, f t) - closedNewtonCotes n f a b
+      = ∫ t in a..b, (f t - (Lagrange.interpolate Finset.univ (fun i : Fin (n + 1) => x i)
+          fun i => f (x i)).eval t) := by
+    have hNC : closedNewtonCotes n f a b = ∫ t in a..b,
+        (Lagrange.interpolate Finset.univ (fun i : Fin (n + 1) => x i) fun i => f (x i)).eval t :=
+      (closedNewtonCotes_eq_sum_integral_basis hn0 hab f).trans
+        (integral_eval_interpolate _ _ a b).symm
+    rw [hNC, ← integral_sub ((hf.continuous).intervalIntegrable _ _)
+      ((Polynomial.continuous _).intervalIntegrable _ _)]
+  -- the nodal polynomial and its primitive `W`
+  set ω : ℝ → ℝ := fun t => ∏ j ∈ Finset.range (n + 1), (t - x j) with hω
+  set W : ℝ → ℝ := fun t => ∫ s in a..t, ω s with hW
+  -- `W` is the scaled reference primitive `h^{n+2} ∫_0^{(t - a)/h} π_{n+1}`
+  have hωπ : ∀ s : ℝ, ω (h * s + a) = h ^ (n + 1) * (intNodal n).eval s := by
+    intro s
+    simp only [hω, hxdef, intNodal_eval_eq_prod_range]
+    have e : ∀ j ∈ Finset.range (n + 1), h * s + a - (a + j * h) = h * (s - j) := fun j _ => by
+      ring
+    rw [Finset.prod_congr rfl e, Finset.prod_mul_distrib, Finset.prod_const, Finset.card_range]
+  have hWval : ∀ t, W t = h ^ (n + 2) * ∫ s in (0 : ℝ)..((t - a) / h), (intNodal n).eval s := by
+    intro t
+    have hcov := integral_comp_mul_add (fun s => ω s) (a := 0) (b := (t - a) / h) hpos.ne' a
+    simp only [mul_zero, zero_add, smul_eq_mul] at hcov
+    rw [mul_div_cancel₀ _ hpos.ne', sub_add_cancel] at hcov
+    have hI : (∫ s in (0 : ℝ)..((t - a) / h), ω (h * s + a))
+        = h ^ (n + 1) * ∫ s in (0 : ℝ)..((t - a) / h), (intNodal n).eval s := by
+      rw [← integral_const_mul]
+      exact integral_congr fun s _ => hωπ s
+    rw [hI] at hcov
+    calc W t = h * (h⁻¹ * W t) := by field_simp
+      _ = h * (h ^ (n + 1) * ∫ s in (0 : ℝ)..((t - a) / h), (intNodal n).eval s) := by
+          rw [← hcov]
+      _ = _ := by ring
+  have hWnn : ∀ t ∈ Icc a b, 0 ≤ W t := by
+    intro t ht
+    rw [hWval]
+    refine mul_nonneg (by positivity) (integral_intNodal_nonneg_of_even hn ?_ ?_)
+    · exact div_nonneg (by linarith [ht.1]) hpos.le
+    · rw [div_le_iff₀ hpos]
+      linarith [ht.2]
+  have hWb : W b = 0 := by
+    have hba : (b - a) / h = n := by
+      have : b - a ≠ 0 := by linarith
+      rw [hh]
+      field_simp
+    rw [hWval, hba]
+    have := newtonCotesK_eq_zero_of_even hn
+    rw [newtonCotesK] at this
+    rw [this, mul_zero]
+  have hgen := mul_integral_sub_interpolate_nonpos (σ := 1) hab hf hf' hx hxmem hWb
+    fun t ht => by rw [one_mul]; exact hWnn t ht
+  rw [hE]
   linarith
 
 /-- The Peano kernel of the closed rule with even `n`, at order `n + 1`: the notation for the
@@ -2158,29 +2185,20 @@ theorem peanoKernel_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n)
     exact le_of_tendsto hlim (eventually_nhdsWithin_of_forall hIoo)
   exact hIoo t ⟨hta, htb⟩
 
-/-- **The kernel integral is the error at one monomial**: for even `n > 0`,
-`∫_a^b K_{n+1} = M_n/(n + 2)! · h^{n+3}`, `h = (b - a)/n`. Peano's theorem at
-`x^{n+2}/(n+2)!` identifies `∫ K_{n+1}` with the error at that monomial; since the rule is exact to
-degree `n + 1` and `x^{n+2} = ω_{n+1}(x)(x - b) + (\text{degree} ≤ n + 1)`, that error is
-`∫_a^b ω_{n+1}(x)(x - b) dx`, which the substitution `x = a + τ h`, `t = n - τ` turns into
-`h^{n+3} ∫_0^n t π_{n+1}(t) dt`.
-
-Reference: [quarteroni2000numerical], the computation after (9.23). -/
-theorem integral_peanoKernel_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) :
-    (∫ t in a..b, peanoKernel a b (fun i : Fin (n + 1) => (b - a) / n * newtonCotesWeight n i)
-        (fun i : Fin (n + 1) => a + i * ((b - a) / n)) (n + 1) t)
-      = newtonCotesM n / (n + 2).factorial * ((b - a) / n) ^ (n + 3) := by
+/-- **The kernel integral of a rule exact to degree `n + 1` is its error at `x^{n+2}/(n+2)!`**:
+`∫_a^b K_{n+1} = ((n + 2)!)⁻¹ ∫_a^b ω(t) (t - b) dt` with `ω = ∏ᵢ (X - zᵢ)` the nodal polynomial,
+by Peano's theorem at `x^{n+2}/(n+2)!`: `x^{n+2} - ω(x)(x - b)` has degree at most `n + 1`, so the
+rule integrates it exactly, and `ω` vanishes at the nodes. The common step of
+`integral_peanoKernel_closedNewtonCotes_of_even` and `integral_peanoKernel_openNewtonCotes_of_even`.
+-/
+theorem integral_peanoKernel_eq_integral_nodal_mul (hab : a ≤ b) {w z : Fin (n + 1) → ℝ}
+    (hzmem : ∀ i, z i ∈ Icc a b)
+    (hexact : ∀ p : ℝ[X], p.degree ≤ ((n + 1 : ℕ) : WithBot ℕ) →
+      (∫ t in a..b, p.eval t) = ∑ i, w i * p.eval (z i)) :
+    (∫ t in a..b, peanoKernel a b w z (n + 1) t)
+      = ((n + 1 + 1).factorial : ℝ)⁻¹ *
+        ∫ t in a..b, (∏ i : Fin (n + 1), (X - C (z i))).eval t * (t - b) := by
   classical
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
-  set h : ℝ := (b - a) / n with hh
-  have hpos : 0 < h := by rw [hh]; positivity
-  have hnh : (n : ℝ) * h = b - a := by rw [hh]; field_simp
-  set w' : Fin (n + 1) → ℝ := fun i => h * newtonCotesWeight n i with hw'
-  set z : Fin (n + 1) → ℝ := fun i => a + i * h with hz
-  have hzmem : ∀ i, z i ∈ Icc a b := fun i => closedNewtonCotes_node_mem hn0 hab.le i
-  have hexact : ∀ p : ℝ[X], p.degree ≤ ((n + 1 : ℕ) : WithBot ℕ) →
-      (∫ t in a..b, p.eval t) = ∑ i, w' i * p.eval (z i) :=
-    closedNewtonCotes_exact_aux hn hn0 hab
   -- Peano's theorem at `q = x^{n+2}/(n+2)!`
   set c : ℝ := ((n + 1 + 1).factorial : ℝ)⁻¹ with hc
   set q : ℝ[X] := C c * X ^ (n + 1 + 1) with hq
@@ -2197,7 +2215,7 @@ theorem integral_peanoKernel_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < 
       coeff_X_pow]
     simp only [ite_true, mul_one, hc]
     field_simp
-  have hpeano := error_eq_integral_peanoKernel (F := F) (m := n + 1) hab.le hzmem hFd
+  have hpeano := error_eq_integral_peanoKernel (F := F) (m := n + 1) hab hzmem hFd
     (by rw [hFtop]; exact continuousOn_const) hexact
   rw [hFtop] at hpeano
   simp only [mul_one] at hpeano
@@ -2231,18 +2249,44 @@ theorem integral_peanoKernel_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < 
     (by fun_prop : Continuous fun t => ω.eval t * (t - b)).intervalIntegrable _ _
   have hrint : IntervalIntegrable (fun t => r.eval t) volume a b :=
     (Polynomial.continuous _).intervalIntegrable _ _
-  have hlhs : (∫ t in a..b, F 0 t) - ∑ i, w' i * F 0 (z i)
+  have hlhs : (∫ t in a..b, F 0 t) - ∑ i, w i * F 0 (z i)
       = c * ∫ t in a..b, ω.eval t * (t - b) := by
     have h1 : (∫ t in a..b, F 0 t)
         = c * ((∫ t in a..b, ω.eval t * (t - b)) + ∫ t in a..b, r.eval t) := by
       rw [← integral_add hωint hrint, ← integral_const_mul]
       exact integral_congr fun t _ => hsplit t
-    have h2 : ∑ i, w' i * F 0 (z i) = c * ∑ i, w' i * r.eval (z i) := by
+    have h2 : ∑ i, w i * F 0 (z i) = c * ∑ i, w i * r.eval (z i) := by
       rw [Finset.mul_sum]
       exact Finset.sum_congr rfl fun i _ => by rw [hsplit, hωz]; ring
     rw [h1, h2, ← hrexact]
     ring
-  rw [hlhs]
+  exact hlhs
+
+/-- **The kernel integral is the error at one monomial**: for even `n > 0`,
+`∫_a^b K_{n+1} = M_n/(n + 2)! · h^{n+3}`, `h = (b - a)/n`. Peano's theorem at
+`x^{n+2}/(n+2)!` identifies `∫ K_{n+1}` with the error at that monomial; since the rule is exact to
+degree `n + 1` and `x^{n+2} = ω_{n+1}(x)(x - b) + (\text{degree} ≤ n + 1)`, that error is
+`∫_a^b ω_{n+1}(x)(x - b) dx`, which the substitution `x = a + τ h`, `t = n - τ` turns into
+`h^{n+3} ∫_0^n t π_{n+1}(t) dt`.
+
+Reference: [quarteroni2000numerical], the computation after (9.23). -/
+theorem integral_peanoKernel_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) :
+    (∫ t in a..b, peanoKernel a b (fun i : Fin (n + 1) => (b - a) / n * newtonCotesWeight n i)
+        (fun i : Fin (n + 1) => a + i * ((b - a) / n)) (n + 1) t)
+      = newtonCotesM n / (n + 2).factorial * ((b - a) / n) ^ (n + 3) := by
+  classical
+  set h : ℝ := (b - a) / n with hh
+  have hpos : 0 < h := by rw [hh]; positivity
+  have hnh : (n : ℝ) * h = b - a := by rw [hh]; field_simp
+  set w' : Fin (n + 1) → ℝ := fun i => h * newtonCotesWeight n i with hw'
+  set z : Fin (n + 1) → ℝ := fun i => a + i * h with hz
+  have hzmem : ∀ i, z i ∈ Icc a b := fun i => closedNewtonCotes_node_mem hn0 hab.le i
+  have hexact : ∀ p : ℝ[X], p.degree ≤ ((n + 1 : ℕ) : WithBot ℕ) →
+      (∫ t in a..b, p.eval t) = ∑ i, w' i * p.eval (z i) :=
+    closedNewtonCotes_exact_aux hn hn0 hab
+  rw [integral_peanoKernel_eq_integral_nodal_mul hab.le hzmem hexact]
+  set c : ℝ := ((n + 1 + 1).factorial : ℝ)⁻¹ with hc
+  set ω : ℝ[X] := ∏ i : Fin (n + 1), (X - C (z i)) with hω
   -- the substitution `x = a + τ h`, `t = n - τ`
   have hωπ : ∀ s : ℝ, ω.eval (h * s + a) = h ^ (n + 1) * (intNodal n).eval s := by
     intro s
@@ -2291,7 +2335,6 @@ theorem exists_sub_closedNewtonCotes_eq_of_even (hn : Even n) (hn0 : 0 < n) (hab
     ∃ ξ ∈ Ioo a b, (∫ t in a..b, f t) - closedNewtonCotes n f a b
       = newtonCotesM n / (n + 2).factorial * ((b - a) / n) ^ (n + 3)
         * iteratedDeriv (n + 2) f ξ := by
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
   set w' : Fin (n + 1) → ℝ := fun i => (b - a) / n * newtonCotesWeight n i with hw'
   set z : Fin (n + 1) → ℝ := fun i => a + i * ((b - a) / n) with hz
   set K : ℝ → ℝ := peanoKernel a b w' z (n + 1) with hK
@@ -2331,7 +2374,6 @@ Reference: [quarteroni2000numerical], Theorem 9.2 ("the degree of exactness is e
 `n + 1`"). -/
 theorem not_integral_eq_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) :
     (∫ t in a..b, t ^ (n + 2)) ≠ closedNewtonCotes n (fun t => t ^ (n + 2)) a b := by
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
   have hcd : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) (fun t : ℝ => t ^ (n + 2)) univ :=
     (contDiff_id.pow _).contDiffOn
   obtain ⟨ξ, -, hξ⟩ := exists_sub_closedNewtonCotes_eq_of_even hn hn0 hab isOpen_univ
@@ -2346,7 +2388,6 @@ theorem not_integral_eq_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (h
   intro heq
   rw [heq, sub_self] at hξ
   have hM := newtonCotesM_neg hn hn0
-  have hfac : (0 : ℝ) < (n + 2).factorial := by positivity
   have hpow : (0 : ℝ) < ((b - a) / n) ^ (n + 3) := by positivity
   have : newtonCotesM n / (n + 2).factorial * ((b - a) / n) ^ (n + 3) * (n + 2).factorial
       = newtonCotesM n * ((b - a) / n) ^ (n + 3) := by field_simp
@@ -2363,7 +2404,6 @@ theorem integral_sub_closedNewtonCotes_pow_eq (hn : 0 < n) (hab : a < b) :
     (∫ t in a..b, t ^ (n + 1)) - closedNewtonCotes n (fun t => t ^ (n + 1)) a b
       = ((b - a) / n) ^ (n + 2) * newtonCotesK n := by
   classical
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
   set h : ℝ := (b - a) / n with hh
   have hpos : 0 < h := by rw [hh]; positivity
   have hnh : (n : ℝ) * h = b - a := by rw [hh]; field_simp
@@ -2436,13 +2476,9 @@ Reference: [quarteroni2000numerical], Theorem 9.2 ("the degree of exactness is t
 theorem not_integral_eq_closedNewtonCotes_of_odd (hn : Odd n) (hab : a < b) :
     (∫ t in a..b, t ^ (n + 1)) ≠ closedNewtonCotes n (fun t => t ^ (n + 1)) a b := by
   have hn0 : 0 < n := hn.pos
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
   have h := integral_sub_closedNewtonCotes_pow_eq hn0 hab
   have hK := newtonCotesK_neg hn
   have hpow : (0 : ℝ) < ((b - a) / n) ^ (n + 2) := by
-    have : (0 : ℝ) < (b - a) / n := by
-      have : (0 : ℝ) < b - a := by linarith
-      positivity
     positivity
   intro heq
   rw [heq, sub_self] at h
@@ -2466,7 +2502,6 @@ theorem abs_sub_closedNewtonCotes_le_of_contDiffOn (hn : 0 < n) (hab : a < b) {U
       ≤ M / (n + 1).factorial * ((b - a) / n) ^ (n + 2)
         * ∫ s in (0 : ℝ)..(n : ℝ), |(intNodal n).eval s| := by
   classical
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
   set h : ℝ := (b - a) / n with hh
   have hpos : 0 < h := by rw [hh]; positivity
   have hnh : (n : ℝ) * h = b - a := by rw [hh]; field_simp
@@ -2479,16 +2514,12 @@ theorem abs_sub_closedNewtonCotes_le_of_contDiffOn (hn : 0 < n) (hab : a < b) {U
   have hfc : ContinuousOn f (Icc a b) := (hf.continuousOn).mono hUab
   -- the error is the integral of the interpolation error
   have hE : (∫ t in a..b, f t) - closedNewtonCotes n f a b = ∫ t in a..b, (f t - P.eval t) := by
-    have hNC : closedNewtonCotes n f a b = ∫ t in a..b, P.eval t := by
-      rw [closedNewtonCotes_eq_sum_integral_basis hn hab]
-      simp only [hP, Lagrange.interpolate_apply, eval_finsetSum, eval_mul, eval_C]
-      rw [integral_finsetSum fun i _ =>
-        ((Polynomial.continuous _).const_mul _).intervalIntegrable _ _]
-      exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul]; ring
+    have hNC : closedNewtonCotes n f a b = ∫ t in a..b, P.eval t :=
+      (closedNewtonCotes_eq_sum_integral_basis hn hab f).trans
+        (integral_eval_interpolate _ _ a b).symm
     rw [hNC, ← integral_sub (hfc.intervalIntegrable_of_Icc hab.le)
       ((Polynomial.continuous _).intervalIntegrable _ _)]
   -- the pointwise bound
-  have hMnn : 0 ≤ M := le_trans (abs_nonneg _) (hM a (left_mem_Icc.2 hab.le))
   have hbound : ∀ t ∈ Icc a b,
       |f t - P.eval t| ≤ M / (n + 1).factorial * |ω t| := by
     intro t ht
@@ -2563,7 +2594,8 @@ The route is the same: `f - Π_n f = φ ω` with `φ(x) = f[x_0, …, x_n, x]`, 
 nodes as an iterated `dslope`; integrating by parts against `W(x) = ∫_a^x ω`, which vanishes at
 both endpoints of `[a, b]` because the nodal polynomial of the open rule is odd about the
 midpoint for even `n`, gives `∫_a^b (f - Π_n f) = -∫_a^b φ' W`; and `φ'(x) = f[x_0, …, x_n, x, x]`
-is a value of `f^{(n+2)}/(n+2)!`. The sign is opposite to the closed case because here `W ≤ 0`
+is a value of `f^{(n+2)}/(n+2)!` — `Quadrature.mul_integral_sub_interpolate_nonpos` with
+`σ = -1`. The sign is opposite to the closed case because here `W ≤ 0`
 (`Quadrature.integral_intNodal_neg_one_mul_nonneg`). -/
 theorem sub_openNewtonCotes_nonneg_of_even (hn : Even n) (hab : a < b)
     (hf : ContDiff ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f) (hf' : ∀ t, 0 ≤ iteratedDeriv (n + 2) f t) :
@@ -2573,89 +2605,27 @@ theorem sub_openNewtonCotes_nonneg_of_even (hn : Even n) (hab : a < b)
   have hpos : 0 < h := by rw [hh]; positivity
   have hnh : ((n : ℝ) + 2) * h = b - a := by rw [hh]; field_simp
   set x : ℕ → ℝ := fun k => a + ((k : ℝ) + 1) * h with hxdef
-  set v : Fin (n + 1) → ℝ := fun i => x i with hvdef
-  have hv : Function.Injective v := fun i j hij => Fin.ext (open_node_injective hab hij)
+  have hx : Function.Injective x := fun j k hjk => open_node_injective hab hjk
   have hxmem : ∀ k ≤ n, x k ∈ Icc a b := by
     intro k hk
     have hk' : (k : ℝ) ≤ n := by exact_mod_cast hk
-    have h0 : (0 : ℝ) ≤ k := Nat.cast_nonneg _
     refine ⟨by simp only [hxdef]; nlinarith, ?_⟩
     simp only [hxdef]
     have hle : ((k : ℝ) + 1) * h ≤ ((n : ℝ) + 2) * h := by nlinarith
     linarith
-  set P : ℝ[X] := Lagrange.interpolate Finset.univ v fun i => f (v i) with hP
-  set g₀ : ℝ → ℝ := fun t => f t - P.eval t with hg₀
-  have hg₀node : ∀ k ≤ n, g₀ (x k) = 0 := by
-    intro k hk
-    have hxv : x k = v ⟨k, Nat.lt_succ_of_le hk⟩ := rfl
-    simp only [hg₀, hxv, hP, Lagrange.eval_interpolate_at_node _ hv.injOn (Finset.mem_univ _),
-      sub_self]
   -- the error is the integral of `f - Π_n f`
-  have hE : (∫ t in a..b, f t) - openNewtonCotes n f a b = ∫ t in a..b, g₀ t := by
-    have hNC : openNewtonCotes n f a b = ∫ t in a..b, P.eval t := by
-      rw [openNewtonCotes_eq_sum_integral_basis hab]
-      simp only [hP, Lagrange.interpolate_apply, eval_finsetSum, eval_mul, eval_C]
-      rw [integral_finsetSum fun i _ =>
-        ((Polynomial.continuous _).const_mul _).intervalIntegrable _ _]
-      exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul]; ring
+  have hE : (∫ t in a..b, f t) - openNewtonCotes n f a b
+      = ∫ t in a..b, (f t - (Lagrange.interpolate Finset.univ (fun i : Fin (n + 1) => x i)
+          fun i => f (x i)).eval t) := by
+    have hNC : openNewtonCotes n f a b = ∫ t in a..b,
+        (Lagrange.interpolate Finset.univ (fun i : Fin (n + 1) => x i) fun i => f (x i)).eval t :=
+      (openNewtonCotes_eq_sum_integral_basis hab f).trans
+        (integral_eval_interpolate _ _ a b).symm
     rw [hNC, ← integral_sub ((hf.continuous).intervalIntegrable _ _)
       ((Polynomial.continuous _).intervalIntegrable _ _)]
-  -- the divided difference `f[x_0, …, x_n, ·]`, smooth across the nodes as an iterated `dslope`
-  let G : ℕ → ℝ → ℝ := fun k => Nat.rec g₀ (fun k Gk => dslope Gk (x k)) k
-  have hGsucc : ∀ k, G (k + 1) = dslope (G k) (x k) := fun k => rfl
-  have hGsmooth : ∀ k ≤ n + 1, ContDiff ℝ ((n + 2 - k : ℕ) : WithTop ℕ∞) (G k) := by
-    intro k
-    induction k with
-    | zero =>
-      intro _
-      exact hf.sub (contDiff_eval P _)
-    | succ k ih =>
-      intro hk
-      have e : n + 2 - k = (n + 2 - (k + 1)) + 1 := by omega
-      have hik := ih (by omega)
-      rw [e] at hik
-      rw [hGsucc]
-      exact hik.dslope (x k)
-  have hGeq : ∀ k ≤ n + 1, ∀ t, (∀ j < k, t ≠ x j) →
-      G k t = g₀ t / ∏ j ∈ Finset.range k, (t - x j) := by
-    intro k
-    induction k with
-    | zero => intro _ t _; change g₀ t = _; simp
-    | succ k ih =>
-      intro hk t ht
-      have hGk0 : G k (x k) = 0 := by
-        rw [ih (by omega) (x k) fun j hj hjk => absurd (open_node_injective hab hjk) (by omega)]
-        rw [hg₀node k (by omega), zero_div]
-      rw [hGsucc, dslope_of_ne _ (ht k (Nat.lt_succ_self k)), slope_def_field, hGk0, sub_zero,
-        ih (by omega) t fun j hj => ht j (Nat.lt_succ_of_lt hj), Finset.prod_range_succ, div_div]
-  set φ : ℝ → ℝ := G (n + 1) with hφ
-  have hφC1 : ContDiff ℝ 1 φ := by
-    have hs := hGsmooth (n + 1) le_rfl
-    rwa [show n + 2 - (n + 1) = 1 by omega] at hs
-  set D : ℝ → ℝ := deriv φ with hD
-  have hφD : ∀ t, HasDerivAt φ (D t) t := fun t =>
-    (hφC1.differentiable one_ne_zero t).hasDerivAt
-  have hDc : Continuous D := hφC1.continuous_deriv le_rfl
   -- the nodal polynomial and its primitive `W`
   set ω : ℝ → ℝ := fun t => ∏ j ∈ Finset.range (n + 1), (t - x j) with hω
-  have hωc : Continuous ω := by fun_prop
-  have hφω : ∀ t, g₀ t = φ t * ω t := by
-    intro t
-    by_cases hnode : ∃ j < n + 1, t = x j
-    · obtain ⟨j, hj, rfl⟩ := hnode
-      rw [hg₀node j (by omega), hω]
-      simp only
-      rw [Finset.prod_eq_zero (Finset.mem_range.2 hj) (sub_self _), mul_zero]
-    · push Not at hnode
-      have hne : ω t ≠ 0 := by
-        simp only [hω]
-        exact Finset.prod_ne_zero_iff.2 fun j hj => sub_ne_zero.2 (hnode j (Finset.mem_range.1 hj))
-      rw [hφ, hGeq (n + 1) le_rfl t hnode]
-      simp only [hω] at hne ⊢
-      rw [div_mul_cancel₀ _ hne]
   set W : ℝ → ℝ := fun t => ∫ s in a..t, ω s with hW
-  have hWd : ∀ t, HasDerivAt W (ω t) t := fun t =>
-    (hωc.integral_hasStrictDerivAt a t).hasDerivAt
   -- `W` is the scaled reference primitive `h^{n+2} ∫_{-1}^{(t - a - h)/h} π_{n+1}`
   have hωπ : ∀ s : ℝ, ω (h * s + (a + h)) = h ^ (n + 1) * (intNodal n).eval s := by
     intro s
@@ -2691,91 +2661,17 @@ theorem sub_openNewtonCotes_nonneg_of_even (hn : Even n) (hab : a < b)
       linarith [ht.1]
     · rw [div_le_iff₀ hpos]
       nlinarith [ht.2]
-  have hWa : W a = 0 := by simp [hW]
   have hWb : W b = 0 := by
     have hba : (b - a - h) / h = (n : ℝ) + 1 := by
       field_simp
       linarith
     rw [hWval, hba, integral_intNodal_neg_one_eq_zero_of_even hn, mul_zero]
-  -- integration by parts
-  have hparts := integral_mul_deriv_eq_deriv_mul (a := a) (b := b) (u := φ) (u' := D) (v := W)
-    (v' := ω) (fun t _ => hφD t) (fun t _ => hWd t) (hDc.intervalIntegrable _ _)
-    (hωc.intervalIntegrable _ _)
-  -- `φ' ≥ 0` away from the nodes: it is a Hermite coefficient, a value of `f^{(n+2)}/(n+2)!`
-  have hDnn : ∀ t ∈ Ioo a b, t ∉ Set.range v → 0 ≤ D t := by
-    intro t ht htv
-    have hopen : IsOpen (Set.range v)ᶜ := (Set.finite_range v).isClosed.isOpen_compl
-    have hφloc : φ =ᶠ[𝓝 t] fun y => DividedDifference.newton f (Fin.snoc v y) := by
-      filter_upwards [hopen.mem_nhds htv] with y hy
-      have hy' : Function.Injective (Fin.snoc v y : Fin (n + 2) → ℝ) :=
-        Fin.snoc_injective_iff.2 ⟨hv, hy⟩
-      rw [DividedDifference.eval_interpolate_snoc_sub f hy', hφ, hGeq (n + 1) le_rfl y
-        fun j hj hyj => hy ⟨⟨j, hj⟩, hyj.symm⟩]
-      congr 1
-      exact (Fin.prod_univ_eq_prod_range (fun j => y - x j) (n + 1)).symm
-    have hdiff : DifferentiableAt ℝ f t :=
-      hf.differentiable (by exact_mod_cast Nat.succ_ne_zero (n + 1)) t
-    have hnd := DividedDifference.hasDerivAt_newton_snoc hv htv hdiff
-    have hDt : D t = (Hermite.interpolate (Fin.snoc v t) (Fin.snoc (fun _ => 0) 1) f).coeff
-        (n + 2) := (hφD t).unique (hnd.congr_of_eventuallyEq hφloc)
-    -- Rolle with multiplicities for `f - H`
-    set w : Fin (n + 2) → ℝ := Fin.snoc v t with hw
-    set μ : Fin (n + 2) → ℕ := Fin.snoc (fun _ => 0) 1 with hμ
-    set H : ℝ[X] := Hermite.interpolate w μ f with hH
-    have hwinj : Function.Injective w := Fin.snoc_injective_iff.2 ⟨hv, htv⟩
-    have hwmem : ∀ i, w i ∈ Icc a b := by
-      intro i
-      refine Fin.lastCases ?_ (fun j => ?_) i
-      · simp only [hw, Fin.snoc_last]
-        exact Ioo_subset_Icc_self ht
-      · simp only [hw, Fin.snoc_castSucc]
-        exact hxmem j (Nat.lt_succ_iff.1 j.2)
-    have hμsum : ∑ i, (μ i + 1) = n + 1 + 2 := by
-      rw [Fin.sum_univ_castSucc]
-      simp [hμ, Fin.snoc_castSucc, Fin.snoc_last]
-    have hHdeg : H.natDegree ≤ n + 2 := by
-      have hd := Hermite.degree_interpolate_lt hwinj μ f
-      rw [hμsum] at hd
-      exact natDegree_le_of_degree_le (Order.le_of_lt_succ (by exact_mod_cast hd))
-    set g : ℝ → ℝ := f - fun y => H.eval y with hg
-    have hgC : ContDiff ℝ ((n + 1 + 1 : ℕ) : WithTop ℕ∞) g := hf.sub (contDiff_eval H _)
-    have hzero : ∀ i, ∀ j ≤ μ i, iteratedDeriv j g (w i) = 0 := by
-      intro i j hj
-      have hj2 : j ≤ n + 2 := by
-        have hle : μ i ≤ 1 := by
-          refine Fin.lastCases ?_ (fun k => ?_) i <;> simp [hμ, Fin.snoc_last, Fin.snoc_castSucc]
-        omega
-      rw [hg, iteratedDeriv_sub (hf.contDiffAt.of_le (by exact_mod_cast hj2))
-        (contDiff_eval H _).contDiffAt]
-      simp only [Polynomial.iteratedDeriv_eval]
-      rw [Hermite.eval_iterate_derivative_interpolate hwinj i hj, sub_self]
-    obtain ⟨ξ, hξ, hξ0⟩ := Hermite.exists_iteratedDeriv_eq_zero (N := n + 1) hgC hwinj hwmem
-      hμsum hzero
-    rw [hg, iteratedDeriv_sub hf.contDiffAt (contDiff_eval H _).contDiffAt] at hξ0
-    simp only [Polynomial.iteratedDeriv_eval,
-      Polynomial.iterate_derivative_eq_C_of_natDegree_le hHdeg, eval_C] at hξ0
-    rw [hDt]
-    have hfac : (0 : ℝ) < (n + 2).factorial := by positivity
-    have hfξ := hf' ξ
-    exact (mul_nonneg_iff_of_pos_left hfac).1 (by linarith)
-  -- hence `∫ φ' W ≤ 0`, and the error is `-∫ φ' W`
-  have hint : (∫ t in a..b, D t * W t) ≤ 0 := by
-    rw [← neg_nonneg, ← integral_neg]
-    refine integral_nonneg_of_ae_restrict hab.le ?_
-    have hfinset : ((({a, b} : Set ℝ) ∪ Set.range v)).Finite :=
-      ((Set.finite_singleton b).insert a).union (Set.finite_range v)
-    have hfin : ∀ᵐ t ∂volume, t ∉ (({a, b} : Set ℝ) ∪ Set.range v) :=
-      hfinset.countable.ae_notMem volume
-    filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Icc,
-      MeasureTheory.ae_restrict_of_ae hfin] with t ht htv
-    have hta : t ≠ a := fun he => htv (Or.inl (by simp [he]))
-    have htb : t ≠ b := fun he => htv (Or.inl (by simp [he]))
-    have htv' : t ∉ Set.range v := fun hr => htv (Or.inr hr)
-    have hDt := hDnn t ⟨lt_of_le_of_ne ht.1 (Ne.symm hta), lt_of_le_of_ne ht.2 htb⟩ htv'
-    have hWt := hWnp t ht
-    change (0 : ℝ) ≤ -(D t * W t)
-    nlinarith
-  rw [hE, integral_congr fun t _ => hφω t, hparts, hWa, hWb]
+  have hgen := mul_integral_sub_interpolate_nonpos (σ := -1) hab hf hf' hx hxmem hWb
+    fun t ht => by
+      have := hWnp t ht
+      change 0 ≤ -1 * W t
+      linarith
+  rw [hE]
   linarith
 
 /-- The exactness of the open rule with even `n` to degree `n + 1`, in the summation form that
@@ -2890,68 +2786,9 @@ theorem integral_peanoKernel_openNewtonCotes_of_even (hn : Even n) (hab : a < b)
   have hexact : ∀ p : ℝ[X], p.degree ≤ ((n + 1 : ℕ) : WithBot ℕ) →
       (∫ t in a..b, p.eval t) = ∑ i, w' i * p.eval (z i) :=
     openNewtonCotes_exact_aux hn hab
-  -- Peano's theorem at `q = x^{n+2}/(n+2)!`
+  rw [integral_peanoKernel_eq_integral_nodal_mul hab.le hzmem hexact]
   set c : ℝ := ((n + 1 + 1).factorial : ℝ)⁻¹ with hc
-  set q : ℝ[X] := C c * X ^ (n + 1 + 1) with hq
-  have hqnat : q.natDegree ≤ n + 1 + 1 := natDegree_C_mul_X_pow_le c (n + 1 + 1)
-  set F : ℕ → ℝ → ℝ := fun k t => (derivative^[k] q).eval t with hF
-  have hFd : ∀ k ≤ n + 1, ∀ t ∈ Icc a b, HasDerivAt (F k) (F (k + 1) t) t := by
-    intro k _ t _
-    have := (derivative^[k] q).hasDerivAt t
-    simpa only [hF, Function.iterate_succ_apply'] using this
-  have hFtop : F (n + 1 + 1) = fun _ => 1 := by
-    funext t
-    change (derivative^[n + 1 + 1] q).eval t = 1
-    rw [Polynomial.iterate_derivative_eq_C_of_natDegree_le hqnat, eval_C, hq, coeff_C_mul,
-      coeff_X_pow]
-    simp only [ite_true, mul_one, hc]
-    field_simp
-  have hpeano := error_eq_integral_peanoKernel (F := F) (m := n + 1) hab.le hzmem hFd
-    (by rw [hFtop]; exact continuousOn_const) hexact
-  rw [hFtop] at hpeano
-  simp only [mul_one] at hpeano
-  rw [← hpeano]
-  -- the error at `x^{n+2}`
   set ω : ℝ[X] := ∏ i : Fin (n + 1), (X - C (z i)) with hω
-  have hωmonic : ω.Monic := monic_prod_of_monic _ _ fun i _ => monic_X_sub_C (z i)
-  have hωnat : ω.natDegree = n + 1 := by
-    rw [hω, natDegree_prod _ _ fun i _ => (monic_X_sub_C (z i)).ne_zero]
-    simp
-  have hωz : ∀ i, ω.eval (z i) = 0 := fun i => by
-    rw [hω, eval_prod]
-    exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp)
-  set r : ℝ[X] := X ^ (n + 1 + 1) - ω * (X - C b) with hr
-  have hrdeg : r.degree ≤ ((n + 1 : ℕ) : WithBot ℕ) := by
-    have hmon : (ω * (X - C b)).Monic := hωmonic.mul (monic_X_sub_C b)
-    have hdeg : (ω * (X - C b)).natDegree = n + 1 + 1 := by
-      rw [natDegree_mul hωmonic.ne_zero (monic_X_sub_C b).ne_zero, hωnat, natDegree_X_sub_C]
-    have h1 : (X ^ (n + 1 + 1) : ℝ[X]).degree = (ω * (X - C b)).degree := by
-      rw [degree_X_pow, degree_eq_natDegree hmon.ne_zero, hdeg]
-    have hlt := degree_sub_lt_left h1 (by simp) (by rw [leadingCoeff_X_pow, hmon.leadingCoeff])
-    rw [degree_X_pow] at hlt
-    exact Order.le_of_lt_succ (by exact_mod_cast hlt)
-  have hsplit : ∀ t, F 0 t = c * (ω.eval t * (t - b) + r.eval t) := by
-    intro t
-    simp only [hF, Function.iterate_zero, id, hq, eval_mul, eval_C, eval_pow, eval_X, hr,
-      eval_sub]
-    ring
-  have hrexact := hexact r hrdeg
-  have hωint : IntervalIntegrable (fun t => ω.eval t * (t - b)) volume a b :=
-    (by fun_prop : Continuous fun t => ω.eval t * (t - b)).intervalIntegrable _ _
-  have hrint : IntervalIntegrable (fun t => r.eval t) volume a b :=
-    (Polynomial.continuous _).intervalIntegrable _ _
-  have hlhs : (∫ t in a..b, F 0 t) - ∑ i, w' i * F 0 (z i)
-      = c * ∫ t in a..b, ω.eval t * (t - b) := by
-    have h1 : (∫ t in a..b, F 0 t)
-        = c * ((∫ t in a..b, ω.eval t * (t - b)) + ∫ t in a..b, r.eval t) := by
-      rw [← integral_add hωint hrint, ← integral_const_mul]
-      exact integral_congr fun t _ => hsplit t
-    have h2 : ∑ i, w' i * F 0 (z i) = c * ∑ i, w' i * r.eval (z i) := by
-      rw [Finset.mul_sum]
-      exact Finset.sum_congr rfl fun i _ => by rw [hsplit, hωz]; ring
-    rw [h1, h2, ← hrexact]
-    ring
-  rw [hlhs]
   -- the substitution `x = a + (τ + 1) h`
   have hωπ : ∀ s : ℝ, ω.eval (h * s + (a + h)) = h ^ (n + 1) * (intNodal n).eval s := by
     intro s
@@ -3030,9 +2867,6 @@ theorem exists_sub_openNewtonCotes_eq_of_even (hn : Even n) (hab : a < b) {U : S
     have hM := openNewtonCotesM_pos hn
     have hfac : (0 : ℝ) < (n + 2).factorial := by positivity
     have hpow : (0 : ℝ) < ((b - a) / ((n : ℝ) + 2)) ^ (n + 3) := by
-      have : (0 : ℝ) < (b - a) / ((n : ℝ) + 2) := by
-        have : (0 : ℝ) < b - a := by linarith
-        positivity
       positivity
     exact mul_pos (div_pos hM hfac) hpow
   obtain ⟨ξ, hξ, hξval⟩ := exists_mem_Ioo_integral_mul_eq_mul_integral hab
@@ -3055,9 +2889,7 @@ private theorem mesh_mem (hab : a ≤ b) {m : ℕ} (hm : 0 < m) {j : ℕ} (hj : 
     a + j * ((b - a) / m) ∈ Icc a b := by
   have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
   have hj' : (j : ℝ) ≤ m := by exact_mod_cast hj
-  have h0 : (0 : ℝ) ≤ j := Nat.cast_nonneg _
   have hH : 0 ≤ (b - a) / m := by
-    have : 0 ≤ b - a := by linarith
     positivity
   refine ⟨by nlinarith, ?_⟩
   have : (j : ℝ) * ((b - a) / m) ≤ m * ((b - a) / m) := mul_le_mul_of_nonneg_right hj' hH
@@ -3081,7 +2913,6 @@ theorem exists_sub_compositeNewtonCotes_eq_of_even (hn : Even n) (hn0 : 0 < n) (
       = (b - a) / (n + 2).factorial * (newtonCotesM n / (n : ℝ) ^ (n + 3))
         * ((b - a) / m) ^ (n + 2) * iteratedDeriv (n + 2) f ξ := by
   have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
-  have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
   set H : ℝ := (b - a) / m with hH
   have hHpos : 0 < H := by rw [hH]; positivity
   have hmH : (m : ℝ) * H = b - a := by rw [hH]; field_simp
@@ -3124,7 +2955,6 @@ theorem exists_sub_compositeNewtonCotes_eq_of_even (hn : Even n) (hn0 : 0 < n) (
   obtain ⟨η, hη, hsum⟩ := exists_sum_mul_eq_of_forall_mem hab.le hcont
     (fun j hj => hxsub j hj (hξmem j hj)) c
   refine ⟨η, hη, ?_⟩
-  have hn' : (n : ℝ) ≠ 0 := hnR.ne'
   rw [hsplit, hsum, hc, ← hmH, div_pow]
   field_simp
   ring
@@ -3140,10 +2970,8 @@ theorem abs_sub_compositeNewtonCotes_le (hn : 0 < n) (hw : ∀ i, 0 ≤ newtonCo
     (hosc : ∀ u ∈ Icc a b, ∀ v ∈ Icc a b, |u - v| ≤ (b - a) / m → |f u - f v| ≤ ε) :
     |(∫ t in a..b, f t) - compositeNewtonCotes n f a b m| ≤ (b - a) * ε := by
   have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
-  have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
   set H : ℝ := (b - a) / m with hH
   have hHnn : 0 ≤ H := by
-    have : 0 ≤ b - a := by linarith
     rw [hH]; positivity
   have hmH : (m : ℝ) * H = b - a := by rw [hH]; field_simp
   have hbound := abs_sub_compositeSum_le (g := f) (N := m) (t := fun j => a + j * H) hf
@@ -3164,7 +2992,6 @@ theorem abs_sub_compositeNewtonCotes_le (hn : 0 < n) (hw : ∀ i, 0 ≤ newtonCo
     push_cast
     ring_nf
   · have hi : (i : ℝ) ≤ n := by exact_mod_cast Nat.lt_succ_iff.mp i.2
-    have h0 : (0 : ℝ) ≤ (i : ℕ) := Nat.cast_nonneg _
     have hHn : 0 ≤ H / n := by positivity
     refine ⟨by nlinarith, ?_⟩
     have : (i : ℝ) * (H / n) ≤ n * (H / n) := mul_le_mul_of_nonneg_right hi hHn
@@ -3218,7 +3045,6 @@ theorem abs_sub_compositeNewtonCotes_le_of_contDiffOn (hn : 0 < n) (hab : a < b)
     |(∫ t in a..b, f t) - compositeNewtonCotes n f a b m|
       ≤ (b - a) / n * (M / (n + 1).factorial) * ((b - a) / m / n) ^ (n + 1)
         * ∫ s in (0 : ℝ)..(n : ℝ), |(intNodal n).eval s| := by
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
   have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
   set H : ℝ := (b - a) / m with hH
   have hHpos : 0 < H := by rw [hH]; positivity
@@ -3233,7 +3059,6 @@ theorem abs_sub_compositeNewtonCotes_le_of_contDiffOn (hn : 0 < n) (hab : a < b)
   have hxmem : ∀ j ≤ m, x j ∈ Icc a b := by
     intro j hj
     have hj' : (j : ℝ) ≤ m := by exact_mod_cast hj
-    have h0 : (0 : ℝ) ≤ j := Nat.cast_nonneg _
     refine ⟨by simp only [hxdef]; nlinarith, ?_⟩
     simp only [hxdef]
     nlinarith
@@ -3286,7 +3111,6 @@ theorem tendsto_compositeNewtonCotes_of_contDiffOn (hn : 0 < n) (hab : a < b) {U
     (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) :
     Tendsto (fun m => compositeNewtonCotes n f a b m) atTop (𝓝 (∫ t in a..b, f t)) := by
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
   obtain ⟨M, hM⟩ := (isCompact_Icc (a := a) (b := b)).exists_bound_of_continuousOn
     ((hf.continuousOn_iteratedDeriv_of_isOpen hU le_rfl).mono hUab)
   set C : ℝ := ∫ s in (0 : ℝ)..(n : ℝ), |(intNodal n).eval s| with hC
@@ -3623,7 +3447,6 @@ theorem sub_correctedTrapezoidSum_eq (hab : a < b) {m : ℕ} (hm : 0 < m) {g g' 
     (hg₃ : ∀ x ∈ Icc a b, HasDerivAt g₃ (g₄ x) x) (hc₄ : ContinuousOn g₄ (Icc a b)) :
     ∃ ξ ∈ Icc a b, (∫ t in a..b, g t) - correctedTrapezoidSum g g' a b m
       = (b - a) * ((b - a) / m) ^ 4 / 720 * g₄ ξ := by
-  have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
   set H : ℝ := (b - a) / m with hH
   have hHpos : 0 < H := by rw [hH]; positivity
   have hmH : (m : ℝ) * H = b - a := by rw [hH]; field_simp

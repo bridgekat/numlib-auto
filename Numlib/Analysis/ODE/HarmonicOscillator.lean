@@ -44,7 +44,6 @@ theorem eq_zero_of_hasDerivWithinAt_oscillator {a b : ℝ → ℝ} {lam : ℝ} (
       (fun x hx ↦ ((hE x hx.1).mono Icc_subset_Ici_self).derivWithin
         (uniqueDiffOn_Icc hpos x ⟨hx.1, hx.2.le⟩)) t (right_mem_Icc.2 ht)
   rw [ha0, hb0] at hconst
-  have h2 : lam * a t ^ 2 ≤ 0 := by nlinarith [sq_nonneg (b t)]
   have h3 : a t ^ 2 ≤ 0 := by nlinarith
   exact pow_eq_zero_iff (n := 2) (by norm_num) |>.1 (le_antisymm h3 (sq_nonneg _))
 

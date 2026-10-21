@@ -440,9 +440,9 @@ theorem corollary_16_4_2_add {K L : Set (Rn n)} (hKne : K.Nonempty) (hLne : L.No
   have hKL : ∀ a : ℝ, 0 < a → a • (K + L) = K + L := fun a ha => by
     rw [hdist, hK a ha, hL a ha]
   have h := corollary_16_4_1_add K L
-  rw [supportFn_eq_indicatorFn_polarCone hKL (hKne.add hLne),
-    supportFn_eq_indicatorFn_polarCone hK hKne,
-    supportFn_eq_indicatorFn_polarCone hL hLne, indicatorFn_add] at h
+  rw [supportFn_eq_indicatorFn_polarCone (isCone_iff_smul_eq.2 hKL) (hKne.add hLne),
+    supportFn_eq_indicatorFn_polarCone (isCone_iff_smul_eq.2 hK) hKne,
+    supportFn_eq_indicatorFn_polarCone (isCone_iff_smul_eq.2 hL) hLne, indicatorFn_add] at h
   ext y
   have hy := congrFun h y
   constructor

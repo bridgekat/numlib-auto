@@ -288,7 +288,6 @@ theorem gap_eq_max_norm_orthogonal_mul :
   set a := ‖Lᗮ.starProjection * K.starProjection‖
   set b := ‖Kᗮ.starProjection * L.starProjection‖
   have ha : 0 ≤ a := norm_nonneg _
-  have hb : 0 ≤ b := norm_nonneg _
   refine ContinuousLinearMap.opNorm_le_bound _ (ha.trans (le_max_left a b)) fun x => ?_
   have hA : ‖K.starProjection (x - L.starProjection x)‖ ≤ a * ‖x - L.starProjection x‖ := by
     refine K.norm_starProjection_le_of_mem_orthogonal L ha (fun u hu => ?_)

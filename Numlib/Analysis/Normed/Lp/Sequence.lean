@@ -1486,7 +1486,6 @@ theorem not_separableSpace_top {α : Type*} [Infinite α] {E : Type*} [NormedAdd
   intro h
   classical
   obtain ⟨e, he⟩ := exists_ne (0 : E)
-  have he0 : 0 < ‖e‖ := norm_pos_iff.2 he
   -- the indicator sequences
   set ind : Set α → lp (fun _ : α => E) ∞ := fun A =>
     ⟨fun i => if i ∈ A then e else 0, memℓp_infty ⟨‖e‖, by

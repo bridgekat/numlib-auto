@@ -16,6 +16,7 @@ import Mathlib.LinearAlgebra.Matrix.Basis
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Matrix.DotProduct
+import Numlib.Analysis.Complex.Polynomial.Basic
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 
 /-!
@@ -44,6 +45,8 @@ two*, and that is exactly where the `2 × 2` blocks come from.
 * `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular` ([golub2013matrix] Theorem 7.4.1): the
   matrix form, `Qᵀ A Q` quasi upper triangular for an orthogonal `Q`;
   `LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular` is the operator form.
+* `Matrix.exists_orthonormal_cols_of_invariant`: an invariant real subspace has orthonormal
+  columns `X₀` on which the matrix acts through its compression, `M X₀ = X₀ (X₀ᵀ M X₀)`.
 * `Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`: the sharper form
   of [quarteroni2000numerical] Property 5.8, in which no `2 × 2` diagonal block has a real
   eigenvalue, so that the `2 × 2` blocks carry exactly the pairs of complex conjugate eigenvalues.
@@ -588,6 +591,63 @@ theorem exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks {N : �
       (fun h => hne (Subtype.ext h)) μ ?_
     linear_combination hμ
 
+/-! ### Orthonormal columns for an invariant subspace -/
+
+/-- **An invariant real subspace has orthonormal columns**: if `X ≤ ℝ^ι` is `M`-invariant of
+dimension `d`, some `X₀ : Matrix ι (Fin d) ℝ` with `X₀ᵀ X₀ = 1` has its columns in `X` (so they
+span it), and `M` acts on them through the compression `X₀ᵀ M X₀`: `M X₀ = X₀ (X₀ᵀ M X₀)`. -/
+theorem exists_orthonormal_cols_of_invariant {ι : Type*} [Fintype ι] (M : Matrix ι ι ℝ)
+    (X : Submodule ℝ (ι → ℝ)) (hinv : ∀ x ∈ X, M *ᵥ x ∈ X) {d : ℕ}
+    (hd : Module.finrank ℝ X = d) :
+    ∃ X₀ : Matrix ι (Fin d) ℝ, X₀ᵀ * X₀ = 1 ∧ M * X₀ = X₀ * (X₀ᵀ * M * X₀) ∧
+      ∀ j, (fun r => X₀ r j) ∈ X := by
+  set e : (ι → ℝ) ≃ₗ[ℝ] EuclideanSpace ℝ ι := (WithLp.linearEquiv 2 ℝ (ι → ℝ)).symm
+  set XE := X.map (e : (ι → ℝ) →ₗ[ℝ] EuclideanSpace ℝ ι)
+  have hdE : Module.finrank ℝ XE = d := (LinearEquiv.finrank_map_eq e X).trans hd
+  set b := (stdOrthonormalBasis ℝ XE).reindex (finCongr hdE)
+  set X₀ : Matrix ι (Fin d) ℝ := of fun r j => WithLp.ofLp ((b j : XE) : EuclideanSpace ℝ ι) r
+    with hX₀
+  have hmemE : ∀ y : ι → ℝ, y ∈ X ↔ e y ∈ XE := fun y =>
+    ⟨fun h => Submodule.mem_map_of_mem h, fun h => by
+      obtain ⟨z, hz, hze⟩ := Submodule.mem_map.1 h
+      rw [← e.injective hze]; exact hz⟩
+  have hcol : ∀ j, (fun r => X₀ r j) ∈ X := fun j => by
+    rw [hmemE]
+    exact (b j).2
+  have horth : X₀ᵀ * X₀ = 1 := by
+    ext i j
+    have h := orthonormal_iff_ite.1 b.orthonormal i j
+    rw [Submodule.coe_inner, PiLp.inner_apply] at h
+    simp only [transpose_apply, mul_apply, hX₀, of_apply, one_apply]
+    rw [← h]
+    refine Finset.sum_congr rfl fun r _ => ?_
+    simp [mul_comm]
+  refine ⟨X₀, horth, ?_, hcol⟩
+  · -- every vector of `X` is a combination of the columns
+    have hspan : ∀ y ∈ X, ∃ c : Fin d → ℝ, y = X₀ *ᵥ c := by
+      intro y hy
+      refine ⟨fun i => inner ℝ (b i : EuclideanSpace ℝ ι) (e y), ?_⟩
+      have h := b.sum_repr' ⟨e y, (hmemE y).1 hy⟩
+      have h2 := congrArg (fun v : XE => WithLp.ofLp (v : EuclideanSpace ℝ ι)) h
+      simp only [Submodule.coe_sum, Submodule.coe_smul, WithLp.ofLp_sum, WithLp.ofLp_smul,
+        Submodule.coe_inner] at h2
+      ext r
+      have h3 := congrFun h2 r
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul] at h3
+      rw [mulVec, dotProduct]
+      simp only [hX₀, of_apply]
+      rw [← show WithLp.ofLp (e y) r = y r from rfl, ← h3]
+      exact Finset.sum_congr rfl fun i _ => mul_comm _ _
+    choose c hc using fun j => hspan _ (hinv _ (hcol j))
+    set C : Matrix (Fin d) (Fin d) ℝ := of fun i j => c j i
+    have hMX : M * X₀ = X₀ * C := by
+      ext r j
+      have := congrFun (hc j) r
+      simp only [mulVec, dotProduct] at this
+      simp only [mul_apply, C, of_apply]
+      exact this
+    rw [Matrix.mul_assoc, hMX, ← Matrix.mul_assoc X₀ᵀ, horth, Matrix.one_mul]
+
 end Matrix
 
 /-! ### The quasi upper triangular shape -/
@@ -729,7 +789,7 @@ theorem isQuasiUpperTriangular_iff_fin {T : Matrix (Fin N) (Fin N) R} :
       have a1 := hPmono (show (j : ℕ) ≤ j + 1 by omega)
       have a2 := hPmono (show (j : ℕ) + 1 ≤ j + 1 + 1 by omega)
       have a3 := hPmono (show (j : ℕ) + 1 + 1 ≤ i by omega)
-      have hN : (j : ℕ) + 2 < N := by have := i.isLt; omega
+      have hN : (j : ℕ) + 2 < N := by omega
       rcases hsub j hN with h0 | h0
       · exact hns j (by omega) (by omega) h0
       · exact hns (j + 1) hN (by omega) h0
@@ -801,10 +861,10 @@ open Complex Polynomial
 private noncomputable def circlePair (θ : ℝ) : Multiset ℂ := {exp (θ * I), exp (-θ * I)}
 
 open scoped Matrix.Norms.L2Operator in
-/-- The eigenvalues of a real orthogonal matrix lie on the unit circle: its complexification is a
-unitary element of the C⋆-algebra of complex matrices (`spectrum.norm_eq_one_of_unitary`). -/
-private theorem norm_eq_one_of_mem_roots_charpoly {N : ℕ} {H : Matrix (Fin N) (Fin N) ℝ}
-    (hH : H ∈ orthogonalGroup (Fin N) ℝ) {z : ℂ}
+/-- **The eigenvalues of a real orthogonal matrix lie on the unit circle**: its complexification
+is a unitary element of the C⋆-algebra of complex matrices (`spectrum.norm_eq_one_of_unitary`). -/
+theorem norm_eq_one_of_mem_orthogonalGroup_of_mem_roots_charpoly {N : ℕ}
+    {H : Matrix (Fin N) (Fin N) ℝ} (hH : H ∈ orthogonalGroup (Fin N) ℝ) {z : ℂ}
     (hz : z ∈ (H.map (algebraMap ℝ ℂ)).charpoly.roots) : ‖z‖ = 1 := by
   set A := H.map (algebraMap ℝ ℂ) with hA
   have hAA : star A * A = 1 := by
@@ -814,14 +874,6 @@ private theorem norm_eq_one_of_mem_roots_charpoly {N : ℕ} {H : Matrix (Fin N) 
   refine spectrum.norm_eq_one_of_unitary (mem_unitaryGroup_iff'.2 hAA) ?_
   rw [Matrix.mem_spectrum_iff_isRoot_charpoly]
   exact (mem_roots A.charpoly_monic.ne_zero).1 hz
-
-/-- The roots of the complexification of a real polynomial are closed under conjugation. -/
-private theorem roots_map_conj {p : ℝ[X]} :
-    (p.map (algebraMap ℝ ℂ)).roots.map (starRingEnd ℂ) = (p.map (algebraMap ℝ ℂ)).roots := by
-  rw [roots_map_of_injective_of_card_eq_natDegree (starRingEnd ℂ).injective
-    (splits_iff_card_roots.1 (IsAlgClosed.splits _)), Polynomial.map_map]
-  congr 2
-  exact RingHom.ext fun x => by simp
 
 /-- A conjugation-invariant multiset of unit complex numbers with even size and product `1` is a
 union of conjugate pairs `{e^{iθ}, e^{−iθ}}`. -/
@@ -924,14 +976,14 @@ theorem exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup {m : ℕ}
     splits_iff_card_roots.1 (IsAlgClosed.splits _)
   have hconj : A.charpoly.roots.map (starRingEnd ℂ) = A.charpoly.roots := by
     rw [hmap]
-    exact roots_map_conj
+    exact roots_map_algebraMap_conj _
   have hprod : A.charpoly.roots.prod = 1 := by
     rw [← det_eq_prod_roots_charpoly, hA, ← RingHom.mapMatrix_apply, ← RingHom.map_det, hdet,
       map_one]
   have hcard : Multiset.card A.charpoly.roots = 2 * m := by
     rw [hsplit, charpoly_natDegree_eq_dim, Fintype.card_fin]
   obtain ⟨T, hT, hTs⟩ := exists_circlePairs A.charpoly.roots hconj
-    (fun z hz => norm_eq_one_of_mem_roots_charpoly hO hz) hprod ⟨m, by omega⟩
+    (fun z hz => norm_eq_one_of_mem_orthogonalGroup_of_mem_roots_charpoly hO hz) hprod ⟨m, by omega⟩
   have hTm : Multiset.card T = m := by omega
   set l := T.toList with hl
   have hlen : l.length = m := by rw [hl, Multiset.length_toList, hTm]

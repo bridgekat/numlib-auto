@@ -7,6 +7,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Analysis.Normed.Module.FiniteDimension
 import Numlib.Eigen.MinMax
+import Numlib.LinearAlgebra.Span.Basic
 
 /-!
 # The power method and subspace iteration
@@ -323,7 +324,6 @@ private theorem exists_norm_pow_apply_le_of_pow_sub_smul_eq_zero {μ : 𝕜} {r 
     induction k with
     | zero => simpa using hDw
     | succ k ihk =>
-      have hrk : (0 : ℝ) < r ^ k := pow_pos hr0 k
       have hstep : ‖(A ^ (k + 1)) w‖ ≤ ‖μ‖ * ‖(A ^ k) w‖ + C * r ^ k := by
         rw [pow_succ, Module.End.mul_apply, hAw, map_add, map_smul]
         calc ‖μ • (A ^ k) w + (A ^ k) ((A - μ • (1 : Module.End 𝕜 E)) w)‖
@@ -389,7 +389,6 @@ private theorem mem_tendstoZero {l : 𝕜} {v : E} :
 private theorem norm_inv_pow_smul_pow_apply_le {l : 𝕜} {x : E} {C r : ℝ} (hl : l ≠ 0)
     (hC : ∀ k, ‖(A ^ k) x‖ ≤ C * r ^ k) (k : ℕ) :
     ‖(l ^ k)⁻¹ • (A ^ k) x‖ ≤ C * (r / ‖l‖) ^ k := by
-  have hl0 : (0 : ℝ) < ‖l‖ := norm_pos_iff.mpr hl
   calc ‖(l ^ k)⁻¹ • (A ^ k) x‖ = (‖l‖ ^ k)⁻¹ * ‖(A ^ k) x‖ := by
         rw [norm_smul, norm_inv, norm_pow]
     _ ≤ (‖l‖ ^ k)⁻¹ * (C * r ^ k) := by gcongr; exact hC k
@@ -413,19 +412,35 @@ private theorem mem_tendstoZero_of_mem_maxGenEigenspace {l μ : 𝕜} {x : E}
   exact mem_tendstoZero.mpr (tendsto_inv_pow_smul_pow_apply_of_norm_le hl
     (le_trans (norm_nonneg μ) hμr.le) (by linarith) hC)
 
+/-- `l` is **strictly dominant** for `A`: every eigenvalue of `A` other than `l` has strictly
+smaller modulus. This is the hypothesis of the convergence theorems of the power method; it asks
+neither that `l` itself be an eigenvalue nor for a uniform gap below `‖l‖`. -/
+def _root_.Module.End.IsStrictlyDominant (A : Module.End 𝕜 E) (l : 𝕜) : Prop :=
+  ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖
+
+/-- Unfolding `Module.End.IsStrictlyDominant`. -/
+theorem _root_.Module.End.isStrictlyDominant_iff {A : Module.End 𝕜 E} {l : 𝕜} :
+    A.IsStrictlyDominant l ↔ ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖ :=
+  Iff.rfl
+
+/-- Every other eigenvalue of `A` is smaller in modulus than a strictly dominant `l`. -/
+theorem _root_.Module.End.IsStrictlyDominant.norm_lt {A : Module.End 𝕜 E} {l μ : 𝕜}
+    (h : A.IsStrictlyDominant l) (hμ : μ ≠ l) (hev : A.HasEigenvalue μ) : ‖μ‖ < ‖l‖ :=
+  h μ hμ hev
+
 /-- The subdominant part of the orbit is negligible after scaling by `λ^k`: this is the only
 analytic input to the convergence theorem, and it holds under the strict dominance `‖μ‖ < ‖λ‖` with
 no uniform gap. -/
 theorem tendsto_inv_pow_smul_pow_apply_of_mem_iSup {l : 𝕜} {w : E} (hl : l ≠ 0)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
-    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) :
+    (hdom : A.IsStrictlyDominant l) :
     Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) w) atTop (𝓝 0) := by
   have key : A.spectralSubspace (· ≠ l) ≤ tendstoZero A l := by
     refine iSup₂_le fun μ hμ => ?_
     rcases eq_or_ne (A.maxGenEigenspace μ) ⊥ with h | h
     · rw [h]; exact bot_le
     · exact fun x hx => mem_tendstoZero_of_mem_maxGenEigenspace hx hl
-        (hdom μ hμ (Module.End.HasUnifEigenvalue.lt zero_lt_one h))
+        (hdom.norm_lt hμ (Module.End.HasUnifEigenvalue.lt zero_lt_one h))
   exact mem_tendstoZero.mp (key hw)
 
 /-! ### Convergence of the power method -/
@@ -461,7 +476,7 @@ that `λ^{-k} A^k x₀` converges to the spectral projection of `x₀`; the spli
 `Krylov.eq_of_add_eq_add_mem_maxGenEigenspace`. -/
 theorem powerIterate_tendsto {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
-    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
+    (hdom : A.IsStrictlyDominant l) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) x₀) atTop (𝓝 u) := by
   subst hx₀
   have h := tendsto_inv_pow_smul_pow_apply_of_mem_iSup hl hw hdom
@@ -489,17 +504,15 @@ private theorem norm_ofReal_norm_div_pow (hl : l ≠ 0) (k : ℕ) :
   have hl0 : (0 : ℝ) < ‖l‖ := norm_pos_iff.mpr hl
   rw [norm_pow, norm_div, RCLike.norm_ofReal, abs_of_pos hl0, div_self hl0.ne', one_pow]
 
-/-- Convergence of the normalized power iterate, after dividing out the unimodular factor
-`(λ/‖λ‖)^k`: the limit is the normalized eigenvector `‖u‖⁻¹ • u`. -/
-theorem tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
-    (hw : w ∈ A.spectralSubspace (· ≠ l))
-    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
+/-- Normalizing turns convergence of the scaled iterates `λ^{-k} A^k x₀ → u ≠ 0` into convergence
+of the normalized iterates, after dividing out the unimodular factor `(λ/‖λ‖)^k`. -/
+private theorem tendsto_smul_powerIterate_of_tendsto {x₀ : E} (hl : l ≠ 0) (hu0 : u ≠ 0)
+    (hzt : Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) x₀) atTop (𝓝 u)) :
     Tendsto (fun k => (((‖l‖ : 𝕜) / l) ^ k) • powerIterate A x₀ k) atTop
       (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) := by
   have hl0 : (0 : ℝ) < ‖l‖ := norm_pos_iff.mpr hl
   have hlk : ∀ k : ℕ, (l ^ k) ≠ 0 := fun k => pow_ne_zero k hl
   set z : ℕ → E := fun k => (l ^ k)⁻¹ • (A ^ k) x₀ with hz
-  have hzt : Tendsto z atTop (𝓝 u) := powerIterate_tendsto hl hu hw hdom hx₀
   have hApp : ∀ k, (A ^ k) x₀ = l ^ k • z k := fun k => by
     rw [hz]; rw [smul_smul, mul_inv_cancel₀ (hlk k), one_smul]
   have heq : ∀ k, (((‖l‖ : 𝕜) / l) ^ k) • powerIterate A x₀ k = (‖z k‖ : 𝕜)⁻¹ • z k := by
@@ -515,13 +528,22 @@ theorem tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
     exact (RCLike.continuous_ofReal.tendsto _).comp hzt.norm
   simpa only [heq] using hnorm.smul hzt
 
+/-- Convergence of the normalized power iterate, after dividing out the unimodular factor
+`(λ/‖λ‖)^k`: the limit is the normalized eigenvector `‖u‖⁻¹ • u`. -/
+theorem tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
+    (hw : w ∈ A.spectralSubspace (· ≠ l))
+    (hdom : A.IsStrictlyDominant l) (hx₀ : x₀ = u + w) :
+    Tendsto (fun k => (((‖l‖ : 𝕜) / l) ^ k) • powerIterate A x₀ k) atTop
+      (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) :=
+  tendsto_smul_powerIterate_of_tendsto hl hu0 (powerIterate_tendsto hl hu hw hdom hx₀)
+
 /-- **Essential convergence** of the normalized power iterates, in the sense of [saad2011numerical],
 §5.1: there is a sequence of scalars of modulus one whose products with the iterates converge to the
 normalized eigenvector. `Krylov.tendsto_smul_powerIterate` is the same statement with the sequence
 named. -/
 theorem exists_norm_eq_one_tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
     (hu0 : u ≠ 0) (hw : w ∈ A.spectralSubspace (· ≠ l))
-    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
+    (hdom : A.IsStrictlyDominant l) (hx₀ : x₀ = u + w) :
     ∃ c : ℕ → 𝕜, (∀ k, ‖c k‖ = 1) ∧
       Tendsto (fun k => c k • powerIterate A x₀ k) atTop (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) :=
   ⟨fun k => ((‖l‖ : 𝕜) / l) ^ k, norm_ofReal_norm_div_pow hl,
@@ -531,7 +553,7 @@ theorem exists_norm_eq_one_tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (
 so `x_k` becomes an approximate eigenvector for `λ`. -/
 theorem tendsto_norm_sub_smul_powerIterate {x₀ : E} (hA : Continuous A) (hl : l ≠ 0)
     (hu : A u = l • u) (hu0 : u ≠ 0) (hw : w ∈ A.spectralSubspace (· ≠ l))
-    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
+    (hdom : A.IsStrictlyDominant l) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => ‖A (powerIterate A x₀ k) - l • powerIterate A x₀ k‖) atTop (𝓝 0) := by
   have hres : Continuous fun v : E => A v - l • v := hA.sub (continuous_const_smul l)
   have hlim := (hres.tendsto _).comp (tendsto_smul_powerIterate hl hu hu0 hw hdom hx₀)
@@ -616,7 +638,7 @@ eigenvector for `l`, and `l^{-k} A^k x₀ → u`. The power method converges fro
 component `u` is nonzero, and the exceptional set is the hyperplane `u = 0`. -/
 theorem exists_eq_add_tendsto [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] (hl : l ≠ 0)
     (hss : A.maxGenEigenspace l = A.eigenspace l)
-    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (x₀ : E) :
+    (hdom : A.IsStrictlyDominant l) (x₀ : E) :
     ∃ u w, A u = l • u ∧ w ∈ A.spectralSubspace (· ≠ l) ∧ x₀ = u + w ∧
       Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) x₀) atTop (𝓝 u) := by
   obtain ⟨u, hu, w, hw, huw⟩ := exists_eq_add_mem_maxGenEigenspace A l x₀
@@ -654,14 +676,6 @@ private theorem sub_smul_one_apply (μ : 𝕜) (x : E) :
     (A - μ • (1 : Module.End 𝕜 E)) x = A x - μ • x := by
   simp
 
-private theorem eq_zero_of_isUnit_apply_eq_zero {M : Module.End 𝕜 E} (hM : IsUnit M) {y : E}
-    (hy : M y = 0) : y = 0 := by
-  obtain ⟨v, rfl⟩ := hM
-  have h : ((v⁻¹ : (Module.End 𝕜 E)ˣ) : Module.End 𝕜 E) ((v : Module.End 𝕜 E) y) = y := by
-    rw [← Module.End.mul_apply, v.inv_mul, Module.End.one_apply]
-  rw [hy, map_zero] at h
-  exact h.symm
-
 private theorem commute_inverse_sub_smul_one
     (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (μ : 𝕜) :
     Commute (Ring.inverse (A - σ • (1 : Module.End 𝕜 E))) (A - μ • (1 : Module.End 𝕜 E)) := by
@@ -691,7 +705,8 @@ theorem maxGenEigenspace_eq_bot_of_isUnit (hσ : IsUnit (A - σ • (1 : Module.
     A.maxGenEigenspace σ = ⊥ := by
   refine le_bot_iff.1 fun x hx => ?_
   obtain ⟨N, hN⟩ := (Module.End.mem_maxGenEigenspace A σ x).1 hx
-  exact Submodule.mem_bot _ |>.2 (eq_zero_of_isUnit_apply_eq_zero (hσ.pow N) hN)
+  exact Submodule.mem_bot _ |>.2
+    (((Module.End.isUnit_iff _).1 (hσ.pow N)).injective (hN.trans (map_zero _).symm))
 
 /-- The generalized eigenspaces are carried along too: a generalized eigenvector of `A` for `μ ≠ σ`
 is a generalized eigenvector of the shifted inverse for `(μ - σ)⁻¹`, of the same index. -/
@@ -757,8 +772,8 @@ theorem tendsto_smul_inverseIterate {l : 𝕜} {u w x₀ : E}
   set B : Module.End 𝕜 E := Ring.inverse (A - σ • (1 : Module.End 𝕜 E)) with hB
   have hlσ : l ≠ σ := by
     rintro rfl
-    refine hu0 (eq_zero_of_isUnit_apply_eq_zero hσ ?_)
-    rw [sub_smul_one_apply, hu, sub_self]
+    refine hu0 (((Module.End.isUnit_iff _).1 hσ).injective ?_)
+    rw [map_zero, sub_smul_one_apply, hu, sub_self]
   have hlσ0 : l - σ ≠ 0 := sub_ne_zero.2 hlσ
   have hl' : (l - σ)⁻¹ ≠ 0 := inv_ne_zero hlσ0
   have hu' : B u = (l - σ)⁻¹ • u := inverse_apply_eq_smul hσ hlσ hu
@@ -769,7 +784,7 @@ theorem tendsto_smul_inverseIterate {l : 𝕜} {u w x₀ : E}
     · refine le_trans (maxGenEigenspace_le_maxGenEigenspace_inverse hσ hμσ) ?_
       exact le_iSup₂ (f := fun ν (_ : ν ≠ (l - σ)⁻¹) => B.maxGenEigenspace ν) _
         (fun h => hμ (by simpa [sub_left_inj] using inv_inj.1 h))
-  have hdom' : ∀ ν, ν ≠ (l - σ)⁻¹ → B.HasEigenvalue ν → ‖ν‖ < ‖(l - σ)⁻¹‖ := by
+  have hdom' : B.IsStrictlyDominant (l - σ)⁻¹ := by
     intro ν hν hνe
     obtain ⟨hν0, hA⟩ := hasEigenvalue_of_hasEigenvalue_inverse hσ hνe
     have hμ : σ + ν⁻¹ ≠ l := by
@@ -917,17 +932,6 @@ time. What the QR algorithm and orthogonal iteration need instead is the *gap*
 `‖P_M - P_{A^k S}‖`, which bounds the distance to `A^k S` of **every** vector of `M` at once
 (`Submodule.sinAngle_le_gap`) and is therefore strictly stronger. -/
 
-private theorem span_range_smul_eq {ι : Type*} (c : ι → 𝕜) (hc : ∀ j, c j ≠ 0) (v : ι → E) :
-    Submodule.span 𝕜 (Set.range fun j => c j • v j) = Submodule.span 𝕜 (Set.range v) := by
-  refine le_antisymm (Submodule.span_le.2 ?_) (Submodule.span_le.2 ?_)
-  · rintro _ ⟨j, rfl⟩
-    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩)
-  · rintro _ ⟨j, rfl⟩
-    have hvj : v j = (c j)⁻¹ • (c j • v j) := by
-      rw [smul_smul, inv_mul_cancel₀ (hc j), one_smul]
-    rw [hvj]
-    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩)
-
 /-- **The gap form of the subspace-iteration bound**, in the form the proof consumes: no spectrum,
 no algebraically closed field and no finite dimension of the ambient space.
 
@@ -971,7 +975,8 @@ theorem gap_subspaceIterate_le {ι : Type*} [Finite ι] {M : Submodule 𝕜 E}
   have hspan : ∀ k, subspaceIterate A S k = Submodule.span 𝕜 (Set.range (w k)) := by
     intro k
     rw [subspaceIterate, hS, Submodule.map_span, ← Set.range_comp]
-    exact (span_range_smul_eq _ (fun j => inv_ne_zero (pow_ne_zero k (hl0 j))) _).symm
+    exact (Submodule.span_range_smul_of_ne_zero _
+      (fun j => inv_ne_zero (pow_ne_zero k (hl0 j))) _).symm
   obtain ⟨κ, hκ, hκb⟩ := hxli.exists_forall_sum_norm_le
   have main : ∀ k, κ * (max C 0 * (r / ρ) ^ k) ≤ 1 / 2 →
       M.gap (subspaceIterate A S k) ≤ 3 * (κ * (max C 0 * (r / ρ) ^ k)) := fun k hk =>
@@ -1294,7 +1299,7 @@ theorem tendsto_inner_apply_of_tendsto_smul {A : Module.End 𝕜 E} (hA : Contin
 theorem tendsto_inner_powerIterate {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜} {u w x₀ : E}
     (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
-    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
+    (hdom : A.IsStrictlyDominant l) (hx₀ : x₀ = u + w) :
     Tendsto (fun k => (inner 𝕜 (powerIterate A x₀ k) (A (powerIterate A x₀ k)) : 𝕜)) atTop
       (𝓝 l) := by
   obtain ⟨c, hc, hlim⟩ := exists_norm_eq_one_tendsto_smul_powerIterate hl hu hu0 hw hdom hx₀
@@ -1335,24 +1340,9 @@ theorem tendsto_smul_powerIterate_of_mem_iSup {A : Module.End 𝕜 E} (hA : Cont
       exact (tendsto_pow_atTop_nhds_zero_of_lt_one (div_nonneg hr0 hl0.le)
         ((div_lt_one hl0).mpr hrl)).const_mul C
   -- normalizing
-  have hApp : ∀ k, (A ^ k) x₀ = l ^ k • z k := fun k => by
-    rw [hz, smul_smul, mul_inv_cancel₀ (pow_ne_zero k hl), one_smul]
   have hcnorm : ∀ k, ‖((‖l‖ : 𝕜) / l) ^ k‖ = 1 := fun k => by
     rw [norm_pow, norm_div, RCLike.norm_ofReal, abs_norm, div_self hl0.ne', one_pow]
-  have heq : ∀ k, ((‖l‖ : 𝕜) / l) ^ k • powerIterate A x₀ k = (‖z k‖ : 𝕜)⁻¹ • z k := by
-    intro k
-    rw [powerIterate_eq_smul, hApp k, norm_smul, norm_pow, smul_smul, smul_smul]
-    congr 1
-    have h1 : ((‖l‖ : 𝕜)) ≠ 0 := RCLike.ofReal_ne_zero.mpr hl0.ne'
-    push_cast
-    rw [div_pow]
-    field_simp
-  have hnorm : Tendsto (fun k => ((‖z k‖ : 𝕜))⁻¹) atTop (𝓝 ((‖u‖ : 𝕜)⁻¹)) := by
-    refine Tendsto.inv₀ ?_ (RCLike.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hu0))
-    exact (RCLike.continuous_ofReal.tendsto _).comp hzt.norm
-  have hlim : Tendsto (fun k => ((‖l‖ : 𝕜) / l) ^ k • powerIterate A x₀ k) atTop
-      (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) := by
-    simpa only [heq] using hnorm.smul hzt
+  have hlim := tendsto_smul_powerIterate_of_tendsto hl hu0 hzt
   refine ⟨hlim, ?_⟩
   have hun : ‖u‖ ≠ 0 := norm_ne_zero_iff.mpr hu0
   refine tendsto_inner_apply_of_tendsto_smul hA (u := (‖u‖ : 𝕜)⁻¹ • u) ?_ ?_ hcnorm hlim
@@ -1530,7 +1520,6 @@ theorem exists_norm_sub_smul_powerIterate_le_of_eigenbasis {ι : Type*} [Fintype
   refine ⟨h, ?_⟩
   rcases eq_or_ne ((A ^ k) x₀) 0 with h0 | h0
   · rw [(powerIterate_eq_zero_iff A x₀ k).2 h0, Submodule.sinAngle_zero]
-    have hmul := (norm_nonneg _).trans h
     rw [(powerIterate_eq_zero_iff A x₀ k).2 h0, smul_zero, zero_sub, norm_neg, hx1] at h
     linarith
   have hne : α i₀ * l i₀ ^ k ≠ 0 := mul_ne_zero hα (pow_ne_zero k hl₀)
@@ -1583,7 +1572,6 @@ theorem exists_norm_inner_powerIterate_sub_le_of_eigenbasis {ι : Type*} [Fintyp
   have heq : (inner 𝕜 q (A q) : 𝕜) - l i₀ = inner 𝕜 (w - u) (A w) + inner 𝕜 u (A (w - u)) := by
     rw [← hinv, ← hval, hsplit]
   rw [heq]
-  have hnA : 0 ≤ ‖A'‖ := norm_nonneg _
   calc ‖(inner 𝕜 (w - u) (A w) : 𝕜) + inner 𝕜 u (A (w - u))‖
       ≤ ‖w - u‖ * ‖A w‖ + ‖u‖ * ‖A (w - u)‖ :=
         (norm_add_le _ _).trans (add_le_add (norm_inner_le_norm _ _) (norm_inner_le_norm _ _))

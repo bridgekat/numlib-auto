@@ -451,9 +451,6 @@ theorem sobolevSeminorm_sub_nodalInterp_comp_affine_le {Khat : Opens 𝔼}
     abs_det_rpow_half_mul_rpow_neg_half T
   have hA0 : 0 ≤ ‖(T.symm : 𝔼 →L[ℝ] 𝔼)‖ ^ m * |LinearMap.det (T : 𝔼 →ₗ[ℝ] 𝔼)| ^ (1 / 2 : ℝ) := by
     positivity
-  have hB0 : 0 ≤ ‖(T : 𝔼 →L[ℝ] 𝔼)‖ ^ (k + 1)
-      * |LinearMap.det (T : 𝔼 →ₗ[ℝ] 𝔼)| ^ (-(1 / 2 : ℝ)) := by
-    positivity
   have hreal : ‖(T.symm : 𝔼 →L[ℝ] 𝔼)‖ ^ m * |LinearMap.det (T : 𝔼 →ₗ[ℝ] 𝔼)| ^ (1 / 2 : ℝ)
       * (c₀ * (‖(T : 𝔼 →L[ℝ] 𝔼)‖ ^ (k + 1) * |LinearMap.det (T : 𝔼 →ₗ[ℝ] 𝔼)| ^ (-(1 / 2 : ℝ))))
       ≤ c₀ * Metric.diam (Khat : Set 𝔼) ^ m / ρhat ^ (k + 1) * Metric.diam (K : Set 𝔼) ^ (k + 1)

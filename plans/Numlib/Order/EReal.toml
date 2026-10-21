@@ -43,6 +43,9 @@ id = 'coe_le_coe_mul_iff'
 id = 'coe_sum'
 
 [[node]]
+id = 'sum_sub_sum'
+
+[[node]]
 id = 'coe_mul_ne_bot'
 
 [[node]]
@@ -91,6 +94,15 @@ id = 'neg_coe_sub'
 id = 'neg_sub_comm'
 
 [[node]]
+id = 'neg_neg_add_neg'
+
+[[node]]
+id = 'sub_add_eq_sub_sub_swap'
+
+[[node]]
+id = 'sub_sub_eq_add_sub'
+
+[[node]]
 id = 'coe_mul_iSup'
 
 [[node]]
@@ -118,6 +130,9 @@ id = 'biSup_add_coe'
 id = 'add_coe_right_cancel'
 
 [[node]]
+id = 'eq_coe_sub_of_add_coe_eq_coe'
+
+[[node]]
 id = 'biInf_add_coe'
 
 [[node]]
@@ -125,6 +140,9 @@ id = 'biSup_add_of_ne_bot'
 
 [[node]]
 id = 'biSup_add_biSup'
+
+[[node]]
+id = 'biSup_sum_univ_pi'
 
 [[node]]
 id = 'coe_add_iInf'

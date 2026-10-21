@@ -6,3 +6,6 @@ id = "Real.sum_rpow_le_card_rpow_mul_sum"
 
 [[node]]
 id = "Real.rpow_sub_one_mul_le_add"
+
+[[node]]
+id = "Real.rpow_le_tangent"

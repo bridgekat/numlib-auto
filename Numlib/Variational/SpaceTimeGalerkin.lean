@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.SpaceTime
+import Numlib.Analysis.SpecialFunctions.Sqrt
 import Numlib.Analysis.PDE.Transport
 import Numlib.Approximation.BrokenInterpolation
 import Numlib.Variational.Evolution
@@ -269,15 +270,11 @@ section TimeDependent
 
 variable {a₀ : ℝ → ℝ → ℝ}
 
-/-- `E + √B ≤ √2 √(E² + B)` for `E, B ≥ 0`. -/
+/-- `E + √B ≤ √2 √(E² + B)` for `E, B ≥ 0`: `Real.sqrt_add_sqrt_le_sqrt_two_mul` at `p = E²`. -/
 private theorem add_sqrt_le_sqrt_two_mul_sqrt {E B : ℝ} (hE : 0 ≤ E) (hB : 0 ≤ B) :
     E + √B ≤ √2 * √(E ^ 2 + B) := by
-  have hsq : (E + √B) ^ 2 ≤ (√2 * √(E ^ 2 + B)) ^ 2 := by
-    rw [mul_pow, Real.sq_sqrt (by norm_num), Real.sq_sqrt (add_nonneg (sq_nonneg E) hB), add_sq,
-      Real.sq_sqrt hB]
-    nlinarith [sq_nonneg (E - √B), Real.sq_sqrt hB]
-  exact (pow_le_pow_iff_left₀ (add_nonneg hE (Real.sqrt_nonneg _))
-    (mul_nonneg (Real.sqrt_nonneg _) (Real.sqrt_nonneg _)) two_ne_zero).1 hsq
+  have h := Real.sqrt_add_sqrt_le_sqrt_two_mul (sq_nonneg E) hB
+  rwa [Real.sqrt_sq hE] at h
 
 /-- `√(e² + c) ≤ e + d` for `e, d ≥ 0` and `c ≤ d²`. -/
 private theorem sqrt_sq_add_le {e c d : ℝ} (he : 0 ≤ e) (hd : 0 ≤ d) (hcd : c ≤ d ^ 2) :
@@ -535,7 +532,6 @@ theorem cG_error_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
     rw [Real.le_sqrt (by norm_num) (by norm_num)]; norm_num
   have hΦeq : Φ = h ^ r * (A * M + h * (M' + A₀ * M)) := by rw [hΦ, pow_succ]; ring
   have hpow : h ^ (r + 1) = h ^ r * h := pow_succ h r
-  have hsq2 : 0 ≤ √2 := Real.sqrt_nonneg 2
   calc √(∑ i, ∫ s in x i.castSucc..x i.succ,
           (u s t - ((uh t : BrokenPolynomial x r) i).eval s) ^ 2) + √B
       ≤ h ^ (r + 1) * M + E + √B := add_le_add hEt le_rfl
@@ -861,7 +857,6 @@ theorem dg_defect_le (hn : 0 < n) (ha : IntervalIntegrable a volume (x 0) (x (Fi
   have hac : ContinuousOn a (Icc (x 0) (x (Fin.last n))) := fun s hs =>
     (hd s hs).continuousAt.continuousWithinAt
   have hh : 0 ≤ h := (sub_nonneg.2 (hle ⟨0, hn⟩)).trans (hmesh ⟨0, hn⟩)
-  have hEu0 : 0 ≤ Eu := (Real.sqrt_nonneg _).trans hEu
   -- `ux` is square integrable on every panel
   have hae : ∀ i : Fin n, ux =ᵐ[volume.restrict (Ι (x i.castSucc) (x i.succ))] g := fun i => by
     rw [uIoc_of_le (hle i), Filter.EventuallyEq, ae_restrict_iff' measurableSet_Ioc]
@@ -1210,7 +1205,6 @@ theorem sum_mul_sq_sub_proj_le (hn : 0 < n) {A : ℝ} (hA0 : 0 ≤ A)
   have hh : 0 ≤ h :=
     (sub_nonneg.2 (hx.out (Fin.castSucc_lt_succ (i := ⟨0, hn⟩))).le).trans (hmesh ⟨0, hn⟩)
   set S := SobolevInterval.seminorm (r + 1) (x 0) (x (Fin.last n)) U with hS
-  have hS0 : 0 ≤ S := apply_nonneg _ _
   set P := proj x r u with hP
   have hg := SobolevInterval.intervalIntegrable_deriv hab.le U 1
   have hg2 := SobolevInterval.intervalIntegrable_deriv_sq hab.le U 1
@@ -1238,7 +1232,6 @@ theorem sum_mul_sq_sub_proj_le (hn : 0 < n) {A : ℝ} (hA0 : 0 ≤ A)
     rw [← Real.sq_sqrt hnn]
     exact pow_le_pow_left₀ (Real.sqrt_nonneg _) h1 2
   refine htr.trans ?_
-  have hρ : 0 ≤ h / hmin := div_nonneg hh h0.le
   calc A * (2 / hmin * (∑ i, ∫ s in x i.castSucc..x i.succ, (u s - (P i).eval s) ^ 2)
         + 2 * h * ∑ i, ∫ s in x i.castSucc..x i.succ,
           (SobolevInterval.deriv U 1 s - (derivative (P i)).eval s) ^ 2)
@@ -1267,10 +1260,6 @@ def dgConst (r : ℕ) (A A' A₀ μ₀ T M h hmin : ℝ) : ℝ :=
     + (8 + 2 / μ₀) * (2 * h * M ^ 2 + T * (h * ((A₀ + A' + A' * h * (2 * r * (r + 1) / hmin)) * M)
         ^ 2 / μ₀ + 2 * (2 * A * M ^ 2 * (h / hmin + (1 + 4 * r * (r + 1) * (h / hmin)) ^ 2))))
 
-
-/-- `(p + q)² ≤ 2 p² + 2 q²`. -/
-private theorem add_sq_le_two_mul {p q : ℝ} : (p + q) ^ 2 ≤ 2 * p ^ 2 + 2 * q ^ 2 := by
-  nlinarith [sq_nonneg (p - q)]
 
 /-- `c (j + (p - q))² ≤ 2 c j² + 4 c p² + 4 c q²` for `c ≥ 0`. -/
 private theorem mul_sq_add_sub_le {c j p q : ℝ} (hc : 0 ≤ c) :
@@ -1303,7 +1292,6 @@ private theorem dg_final {Y₀ L Yi P Q G e0 w μ₀ T t : ℝ} (hμ : 0 < μ₀
   have h4 : (2 / μ₀ + 6) * w ≤ (2 / μ₀ + 6) * (e0 + T * G) :=
     mul_le_mul_of_nonneg_left (hw.trans (by linarith)) h1
   have h5 : (2 / μ₀ + 6) * e0 ≤ (2 / μ₀ + 6) * (2 * Yi + 2 * P) := mul_le_mul_of_nonneg_left he0 h1
-  have h6 : (2 / μ₀ + 6) * (e0 + T * G) = (2 / μ₀ + 6) * e0 + (2 / μ₀ + 6) * (T * G) := by ring
   have h7 : (16 + 4 / μ₀) * Yi + (2 * P + T * (2 * P + 10 * Q) + (8 + 2 / μ₀) * (2 * P + T * G))
       = 2 * P + 2 * (2 * Yi + 2 * P) + 2 * (T * G) + T * (2 * P + 10 * Q)
         + ((2 / μ₀ + 6) * (2 * Yi + 2 * P) + (2 / μ₀ + 6) * (T * G)) := by ring
@@ -1396,15 +1384,10 @@ theorem dG_error_sq_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
       (continuousWithinAt_id.prodMk continuousWithinAt_const) fun z hz => Set.mk_mem_prod hz ht
   -- the constants
   set ρ : ℝ := h / hmin with hρ
-  have hρ0 : 0 ≤ ρ := div_nonneg hh h0.le
   set K : ℝ := 2 * r * (r + 1) / hmin with hK
-  have hK0 : 0 ≤ K := by positivity
   set Ktr : ℝ := 2 * A * M ^ 2 * (ρ + (1 + 4 * r * (r + 1) * ρ) ^ 2) with hKtr
-  have hKtr0 : 0 ≤ Ktr := by positivity
   set Φ₀ : ℝ := (A₀ + A' + A' * h * K) * M with hΦ₀
-  have hΦ₀0 : 0 ≤ Φ₀ := by positivity
   set Φ : ℝ := (A₀ + A' + A' * h * K) * (h ^ (r + 1) * M) with hΦ
-  have hΦ0 : 0 ≤ Φ := by positivity
   have hΦeq : Φ = h ^ (r + 1) * Φ₀ := by rw [hΦ, hΦ₀]; ring
   set gconst : ℝ := Φ ^ 2 / μ₀ + 2 * (h ^ (2 * r + 1) * Ktr) with hgconst
   have hgconst0 : 0 ≤ gconst := by positivity
@@ -1500,8 +1483,6 @@ theorem dG_error_sq_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
     rw [hsplit] at hcoer
     have hΦ' : (A₀ + A' + A' * h * K) * (h ^ (r + 1) * M) * ‖e s‖ = Φ * ‖e s‖ := by rw [hΦ]
     rw [hΦ', hsplit'] at hdef
-    have hjump0 : 0 ≤ a (x 0) * jump (e s) ⟨0, hn⟩ ^ 2 :=
-      mul_nonneg (hapos _ (left_mem_Icc.2 hab.le)) (sq_nonneg _)
     rw [hgconst]
     linarith
   have hstab := he.norm_sq_add_integral_le_integral (w := w) (g := fun _ => gconst) hwc
@@ -1538,7 +1519,7 @@ theorem dG_error_sq_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
           + ‖W τ - uh τ‖) ^ 2 :=
           pow_le_pow_left₀ (Real.sqrt_nonneg _) htri 2
       _ ≤ 2 * √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (W τ i).eval s) ^ 2) ^ 2
-          + 2 * ‖W τ - uh τ‖ ^ 2 := add_sq_le_two_mul
+          + 2 * ‖W τ - uh τ‖ ^ 2 := add_sq_le.trans_eq (mul_add _ _ _)
       _ ≤ 2 * P + 2 * ‖e τ‖ ^ 2 := by
           rw [Real.sq_sqrt hY0, hne]
           linarith only [hY]
@@ -1632,7 +1613,6 @@ theorem dG_error_sq_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
       rw [Finset.mul_sum]
       exact Finset.sum_congr rfl fun i _ => by ring
     have hnorm : 2 * ‖e τ‖ ^ 2 = 2 / μ₀ * (μ₀ * ‖e τ‖ ^ 2) := by field_simp
-    have hμ' : 0 ≤ 2 / μ₀ := by positivity
     have hkey : 2 * ‖e τ‖ ^ 2
         + 2 * (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n), a (x i.castSucc) * jump (e τ) i ^ 2)
         + 2 * (a (x 0) * jump (e τ) ⟨0, hn⟩ ^ 2) ≤ (2 / μ₀ + 6) * w τ := by
@@ -1696,7 +1676,7 @@ theorem dG_error_sq_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
           pow_le_pow_left₀ (norm_nonneg _) htri 2
       _ ≤ 2 * √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2) ^ 2
           + 2 * √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (W 0 i).eval s) ^ 2) ^ 2 :=
-          add_sq_le_two_mul
+          add_sq_le.trans_eq (mul_add _ _ _)
       _ ≤ 2 * (∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2) + 2 * P := by
           rw [Real.sq_sqrt hX0, Real.sq_sqrt hY0]
           linarith only [hY]
@@ -1727,24 +1707,6 @@ theorem dG_error_sq_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
     ring
   rw [hgconst, hΦsq, hQ, hP, hKtr, hΦ₀, hK, hρ, dgConst]
   ring
-
-/-- `√(p + q) ≤ √p + √q` for `p, q ≥ 0`. -/
-private theorem sqrt_add_le_sqrt_add_sqrt {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
-    √(p + q) ≤ √p + √q := by
-  calc √(p + q) ≤ √((√p + √q) ^ 2) := by
-        refine Real.sqrt_le_sqrt ?_
-        rw [add_sq, Real.sq_sqrt hp, Real.sq_sqrt hq]
-        nlinarith [mul_nonneg (Real.sqrt_nonneg p) (Real.sqrt_nonneg q)]
-    _ = √p + √q := Real.sqrt_sq (by positivity)
-
-/-- `√p + √q ≤ √2 √(p + q)` for `p, q ≥ 0`. -/
-private theorem sqrt_add_sqrt_le_sqrt_two_mul {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
-    √p + √q ≤ √2 * √(p + q) := by
-  have hsq : (√p + √q) ^ 2 ≤ (√2 * √(p + q)) ^ 2 := by
-    rw [mul_pow, Real.sq_sqrt (by norm_num), Real.sq_sqrt (add_nonneg hp hq), add_sq,
-      Real.sq_sqrt hp, Real.sq_sqrt hq]
-    nlinarith [sq_nonneg (√p - √q), Real.sq_sqrt hp, Real.sq_sqrt hq]
-  exact (pow_le_pow_iff_left₀ (by positivity) (by positivity) two_ne_zero).1 hsq
 
 /-- **The error estimate of the discontinuous Galerkin method for the transport equation**
 ([quarteroni2000numerical] §13.10.1, quoted there from Quarteroni–Valli §14.3.3 without proof):
@@ -1801,10 +1763,7 @@ theorem dG_error_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
   have hh : 0 ≤ h := (sub_nonneg.2 (hle ⟨0, hn⟩)).trans (hmesh ⟨0, hn⟩)
   have hT0 : (0 : ℝ) ∈ Icc 0 T := ⟨le_rfl, hT.le⟩
   obtain ⟨U₀, hU₀, hU₀M⟩ := hreg 0 hT0
-  have hM : 0 ≤ M := (apply_nonneg _ _).trans hU₀M
   have hA0 : 0 ≤ A := (abs_nonneg _).trans (hA (x 0) (left_mem_Icc.2 hab.le))
-  have hA'0 : 0 ≤ A' := (abs_nonneg _).trans (hA' (x 0) (left_mem_Icc.2 hab.le))
-  have hA₀0 : 0 ≤ A₀ := (abs_nonneg _).trans (hA₀ 0 hT0 (x 0) (left_mem_Icc.2 hab.le))
   have key := dG_error_sq_le hn hT ha ha₀ hd hd' hμ hμ₀ hapos hA hA' hA₀ huc2 hux hut hutc2 hpde
     hin hreg hnode hmesh h0 hminle hfh huh ht
   -- nonnegativity of the pieces
@@ -1846,13 +1805,16 @@ theorem dG_error_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
           + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
               a (x i.castSucc) * jump (uh τ) i ^ 2)
           + a (x 0) * (traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2)) :=
-        sqrt_add_sqrt_le_sqrt_two_mul hY₀ hI
+        Real.sqrt_add_sqrt_le_sqrt_two_mul hY₀ hI
     _ ≤ √2 * √((16 + 4 / μ₀) * (∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2)
           + dgConst r A A' A₀ μ₀ T M h hmin * h ^ (2 * r + 1)) :=
         mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt key) (Real.sqrt_nonneg _)
     _ ≤ √2 * (√((16 + 4 / μ₀) * (∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2))
           + √(dgConst r A A' A₀ μ₀ T M h hmin * h ^ (2 * r + 1))) :=
-        mul_le_mul_of_nonneg_left (sqrt_add_le_sqrt_add_sqrt (by positivity) (by positivity))
+        mul_le_mul_of_nonneg_left (by
+          simp only [Real.sqrt_eq_rpow]
+          exact Real.rpow_add_le_add_rpow (by positivity) (by positivity) (by norm_num)
+            (by norm_num))
           (Real.sqrt_nonneg _)
     _ = √2 * (√(16 + 4 / μ₀) * √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2)
           + √(dgConst r A A' A₀ μ₀ T M h hmin) * (h ^ r * √h)) := by

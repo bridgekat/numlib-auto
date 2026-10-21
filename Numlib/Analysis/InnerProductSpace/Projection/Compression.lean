@@ -119,17 +119,13 @@ result about `compressionBy` applies to it. -/
 theorem eq_compressionBy :
     compression A K = compressionBy (K.orthogonalProjectionOnto : E →ₗ[𝕜] K) A := rfl
 
-/-- The orthogonal projection fixes the elements of `K`. -/
-private theorem orthogonalProjectionOnto_eq_self :
-    ∀ x : K, (K.orthogonalProjectionOnto : E →ₗ[𝕜] K) x = x :=
-  K.orthogonalProjectionOnto_mem_subspace_eq_self
-
 /-- The orthogonal compression: `p(A_K) x = p(A) x` when the Krylov sequence of `x` up to degree
 `deg p` stays in `K` (e.g. `K = 𝒦_{m+1}(A, x)`, `deg p ≤ m`). -/
 theorem aeval_apply_of_forall_pow_mem (p : 𝕜[X]) {x : K}
     (hx : ∀ i ≤ p.natDegree, (A ^ i) (x : E) ∈ K) :
     (aeval (compression A K) p x : E) = aeval A p (x : E) :=
-  compressionBy.aeval_apply_of_forall_pow_mem _ (orthogonalProjectionOnto_eq_self K) A p hx
+  compressionBy.aeval_apply_of_forall_pow_mem _ K.orthogonalProjectionOnto_mem_subspace_eq_self A p
+    hx
 
 /-- On `K` the compression carries the same sesquilinear form as `A`: the projection is invisible
 against a test vector taken from `K`. This is the Galerkin (Rayleigh–Ritz) characterization of the

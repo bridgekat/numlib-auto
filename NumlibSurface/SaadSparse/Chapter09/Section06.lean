@@ -168,7 +168,8 @@ theorem equation_9_29 (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)�
     intro i j hij
     refine Arnoldi.coeff_eq_zero_of_adjoint_mem _ b
       (B := (2 : 𝕜) • (LinearMap.id : hM.EnergySpace →ₗ[𝕜] hM.EnergySpace)
-        - hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A)) (fun x y => ?_) (s := 2) (fun v => ?_) hij
+        - hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A)) (LinearMap.isAdjointPair_inner_iff'.2 fun x y => ?_)
+        (s := 2) (fun v => ?_) hij
     · rw [LinearMap.sub_apply, LinearMap.smul_apply, LinearMap.id_apply]
       exact hadj x y
     · have h0 : v ∈ Krylov.subspace (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A)) v 2 :=

@@ -41,3 +41,6 @@ id = "Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup"
 
 [[node]]  # added by eig1: the triangular factor is block triangular for any monotone index
 id = "Matrix.IsUpperTriangular.blockTriangular_of_monotone"
+
+[[node]]
+id = "Matrix.exists_orthonormal_cols_of_invariant"

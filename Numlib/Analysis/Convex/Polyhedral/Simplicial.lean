@@ -62,7 +62,6 @@ theorem exists_polyhedral_mem_nhds_subset_ball (x : E) {ε : ℝ} (hε : 0 < ε)
     apply div_pos hε
     linarith
   have hcN : c * N < ε := by
-    have h1 : c * N ≤ c * (1 + N) := by nlinarith
     have h2 : c * (1 + N) = ε / 2 := by
       rw [hc]
       field_simp

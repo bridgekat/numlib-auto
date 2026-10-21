@@ -673,7 +673,6 @@ theorem dfpUpdate_posDef {B : Matrix n n ℝ} (hB : B.PosDef) {s y : n → ℝ} 
     fun z hz => ?_
   rw [star_trivial]
   set ρ : ℝ := 1 / (y ⬝ᵥ s) with hρ
-  have hρ0 : 0 < ρ := by positivity
   set N : Matrix n n ℝ := 1 - ρ • vecMulVec s y with hN
   have hNt : (1 - ρ • vecMulVec y s)ᵀ = N := by
     rw [transpose_sub, transpose_one, transpose_smul, transpose_vecMulVec]

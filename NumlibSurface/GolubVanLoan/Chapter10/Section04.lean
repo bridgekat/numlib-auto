@@ -305,7 +305,7 @@ theorem bidiag_transpose_mul_bidiag (k : ℕ) :
         GolubKahan.bidiag (toEuclideanLin A) (toEuclideanLin Aᵀ) v k =
       Lanczos.tridiag (toEuclideanLin (Aᵀ * A)) v k := by
   have h := GolubKahan.bidiag_conjTranspose_mul_bidiag (A := toEuclideanLin A)
-    (Astar := toEuclideanLin Aᵀ) v (fun u x => by
+    (Astar := toEuclideanLin Aᵀ) v (LinearMap.isAdjointPair_inner_iff.2 fun u x => by
       have := toEuclideanLin_conjTranspose_inner_left A x u
       rwa [conjTranspose_eq_transpose_of_trivial] at this) k
   rw [conjTranspose_eq_transpose_of_trivial] at h
@@ -757,9 +757,10 @@ theorem bidiagLoop_spec {m n : ℕ} (B : Matrix (Fin m) (Fin n) ℝ) {v₀ : Fin
         s.u j = (GolubKahan.leftVec T Ts q j).ofLp ∧ s.alpha j = GolubKahan.alpha T Ts q j ∧
         s.beta j = GolubKahan.beta T Ts q j := by
   intro s T Ts q
-  have hadj : ∀ u x, inner ℝ (Ts u) x = inner ℝ u (T x) := fun u x => by
-    have := Matrix.toEuclideanLin_conjTranspose_inner_left B x u
-    rwa [conjTranspose_eq_transpose_of_trivial] at this
+  have hadj : LinearMap.IsAdjointPair (innerₛₗ ℝ).flip (innerₛₗ ℝ).flip T Ts :=
+    LinearMap.isAdjointPair_inner_iff.2 fun u x => by
+      have := Matrix.toEuclideanLin_conjTranspose_inner_left B x u
+      rwa [conjTranspose_eq_transpose_of_trivial] at this
   have hTx : ∀ x, (T x).ofLp = B *ᵥ x.ofLp := fun x => rfl
   have hTsx : ∀ x, (Ts x).ofLp = Bᵀ *ᵥ x.ofLp := fun x => rfl
   have hq0 : q ≠ 0 := by
@@ -959,8 +960,9 @@ theorem lanczos_jordanWielandt {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
           (if (j : ℕ) % 2 = 0 then GolubKahan.alpha (toEuclideanLin A) (toEuclideanLin Aᵀ) v (j / 2)
             else GolubKahan.beta (toEuclideanLin A) (toEuclideanLin Aᵀ) v (j / 2))
         else 0 := by
-  have hadj : ∀ u x, inner ℝ (toEuclideanLin Aᵀ u) x = inner ℝ u (toEuclideanLin A x) :=
-    fun u x => by
+  have hadj : LinearMap.IsAdjointPair (innerₛₗ ℝ).flip (innerₛₗ ℝ).flip (toEuclideanLin A)
+      (toEuclideanLin Aᵀ) :=
+    LinearMap.isAdjointPair_inner_iff.2 fun u x => by
       have := Matrix.toEuclideanLin_conjTranspose_inner_left A x u
       rwa [conjTranspose_eq_transpose_of_trivial] at this
   set e := (PiLp.sumPiLpEquivProdLpPiLp (𝕜 := ℝ) 2 (fun _ : Fin n ⊕ Fin m => ℝ)).symm with he

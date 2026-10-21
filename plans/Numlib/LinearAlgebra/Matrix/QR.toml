@@ -17,6 +17,9 @@ id = "householder_mulVec_eq_smul_single"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (1.21)-(1.22) and (1.24)-(1.26)"
 
 [[node]]
+id = "exists_mem_unitaryGroup_mulVec_eq_smul_single"
+
+[[node]]
 id = "exists_unitary_mul_upperTriangular"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (1.27)-(1.28)"
 

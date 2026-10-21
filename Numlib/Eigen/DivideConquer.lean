@@ -3,6 +3,7 @@ Copyright (c) 2026 Numlib contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.Data.Fin.Tuple.Sort
+import Mathlib.Data.Matrix.PEquiv
 import Numlib.Eigen.InverseEigenvalue
 import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.PlaneRotation
@@ -372,7 +373,7 @@ theorem eigenvalues₀_diagonal_add_rankOne_strictInterlace {d : Fin N → ℝ} 
   have hq := re_inner_toEuclideanLin_smul_vecMulVec ρ z
   -- the eigenvalue indices in `Fin (Fintype.card (Fin N))`
   have hidx : ∀ i j : Fin N, (hij : (j : ℕ) = i + 1) →
-      (⟨(Fin.cast (Fintype.card_fin N).symm i : ℕ) + 1, by have := j.isLt; simp; omega⟩ :
+      (⟨(Fin.cast (Fintype.card_fin N).symm i : ℕ) + 1, by simp; omega⟩ :
         Fin (Fintype.card (Fin N))) = Fin.cast (Fintype.card_fin N).symm j := fun i j hij => by
     ext; simp [hij]
   have hsD : ∀ k : Fin N, hTD.eigenvalues finrank_euclideanSpace
@@ -388,7 +389,7 @@ theorem eigenvalues₀_diagonal_add_rankOne_strictInterlace {d : Fin N → ℝ} 
       ⟨hTM.sub hTD, fun x => by rw [hsub, hq x]; positivity⟩
     have h := (hTD.eigenvalues_le_of_isPositive_sub_of_finrank_range_le hTM
       finrank_euclideanSpace hpos (r := 1) (by rwa [hsub])
-      (Fin.cast (Fintype.card_fin N).symm i) (by have := j.isLt; simp; omega)).1
+      (Fin.cast (Fintype.card_fin N).symm i) (by simp; omega)).1
     rw [hidx i j hij, hsD] at h
     exact lt_of_le_of_ne h (hne j i)
   · have h := hTM.eigenvalues_le_of_re_inner_le hTD finrank_euclideanSpace (fun x => by
@@ -404,7 +405,7 @@ theorem eigenvalues₀_diagonal_add_rankOne_strictInterlace {d : Fin N → ℝ} 
         nlinarith [sq_nonneg ‖star z ⬝ᵥ WithLp.ofLp x‖]⟩
     have h := (hTM.eigenvalues_le_of_isPositive_sub_of_finrank_range_le hTD
       finrank_euclideanSpace hpos (r := 1) (by rwa [hsub'])
-      (Fin.cast (Fintype.card_fin N).symm i) (by have := j.isLt; simp; omega)).1
+      (Fin.cast (Fintype.card_fin N).symm i) (by simp; omega)).1
     rw [hidx i j hij, hsD] at h
     exact lt_of_le_of_ne h (hne i j).symm
 
@@ -425,22 +426,6 @@ private theorem planeRotation_mul_diagonal_comm {d : Fin N → ℝ} {j k : Fin N
   rw [mul_diagonal, diagonal_mul, planeRotation_apply hjk]
   split_ifs <;> subst_vars <;>
     first | ring1 | (rw [hd]; try ring1)
-
-/-- The conjugation `Pᵀ M P` by the permutation matrix `P i j = [i = σ j]` permutes rows and
-columns by `σ`. -/
-private theorem transpose_permMatrix_mul_mul (σ : Fin N ≃ Fin N) (M : Matrix (Fin N) (Fin N) ℝ) :
-    (Matrix.of fun i j => if i = σ j then (1 : ℝ) else 0)ᵀ * M *
-        Matrix.of (fun i j => if i = σ j then (1 : ℝ) else 0) =
-      M.submatrix σ σ := by
-  ext a b
-  simp [mul_apply, transpose_apply, ite_mul, mul_ite, Finset.sum_ite_eq']
-
-/-- The transpose of the permutation matrix `P i j = [i = σ j]` permutes the entries of a vector by
-`σ`. -/
-private theorem transpose_permMatrix_mulVec (σ : Fin N ≃ Fin N) (w : Fin N → ℝ) :
-    (Matrix.of fun i j => if i = σ j then (1 : ℝ) else 0)ᵀ *ᵥ w = w ∘ σ := by
-  ext a
-  simp [mulVec, dotProduct, transpose_apply, ite_mul, Finset.sum_ite_eq']
 
 /-- The first move of [golub2013matrix] Theorem 8.4.4, repeated: rotations in the planes of
 repeated diagonal entries leave `D` alone and, applied to `z`, leave at most one nonzero entry of
@@ -548,17 +533,20 @@ theorem exists_orthogonal_deflation (d z : Fin N → ℝ) :
       rw [hcount, Fin.card_Iio] at h1
       omega
   -- the permutation matrix
-  obtain ⟨P, hP⟩ : ∃ P : Matrix (Fin N) (Fin N) ℝ,
-      P = Matrix.of fun i j => if i = σ j then 1 else 0 := ⟨_, rfl⟩
+  obtain ⟨P, hP⟩ : ∃ P : Matrix (Fin N) (Fin N) ℝ, P = σ.symm.toPEquiv.toMatrix := ⟨_, rfl⟩
+  have hPt : Pᵀ = σ.toPEquiv.toMatrix := by
+    rw [hP, ← PEquiv.toMatrix_symm, ← Equiv.toPEquiv_symm, Equiv.symm_symm]
+  have hconj (M : Matrix (Fin N) (Fin N) ℝ) : Pᵀ * M * P = M.submatrix σ σ := by
+    rw [hPt, hP, PEquiv.toMatrix_toPEquiv_mul, PEquiv.mul_toMatrix_toPEquiv, Equiv.symm_symm,
+      submatrix_submatrix]
+    rfl
   have hPP : Pᵀ * P = 1 := by
-    have := transpose_permMatrix_mul_mul σ 1
-    rw [Matrix.mul_one, submatrix_one_equiv, ← hP] at this
-    exact this
+    rw [← Matrix.mul_one Pᵀ, hconj, submatrix_one_equiv]
   have hPo : P ∈ orthogonalGroup (Fin N) ℝ := (mem_orthogonalGroup_iff' (Fin N) ℝ).2 hPP
   refine ⟨V * P, mul_mem hV hPo, d ∘ σ, r, hr, ?_, fun i j hij hjr => ?_, fun i j hri hij => ?_,
     fun i => ?_⟩
   · rw [transpose_mul, show Pᵀ * Vᵀ * diagonal d * (V * P) = Pᵀ * (Vᵀ * diagonal d * V) * P by
-      simp only [Matrix.mul_assoc], hVD, hP, transpose_permMatrix_mul_mul, submatrix_diagonal_equiv]
+      simp only [Matrix.mul_assoc], hVD, hconj, submatrix_diagonal_equiv]
   · -- two active indices: equal first components, decreasing `d`, and distinct values
     have hj := (hactive j).mpr hjr
     have hi := (hactive i).mpr (lt_trans (Fin.lt_def.mp hij) hjr)
@@ -588,7 +576,7 @@ theorem exists_orthogonal_deflation (d z : Fin N → ℝ) :
     · exact absurd h (lt_irrefl _)
     · simp only [Function.comp_apply]
       linarith
-  · rw [transpose_mul, ← mulVec_mulVec, hP, transpose_permMatrix_mulVec, Function.comp_apply]
+  · rw [transpose_mul, ← mulVec_mulVec, hPt, PEquiv.toMatrix_toPEquiv_mulVec, Function.comp_apply]
     exact hactive i
 
 end Deflation

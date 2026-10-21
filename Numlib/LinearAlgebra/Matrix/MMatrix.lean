@@ -155,6 +155,18 @@ theorem EntrywiseNonneg.complexSpectralRadius_lt_one_iff {B : Matrix n n ℝ}
     have := (hlim.comp (tendsto_add_atTop_nat 1)).sub hlim
     simpa [Function.comp_def, sum_range_succ] using this
 
+omit [Fintype n] [DecidableEq n] in
+/-- A **Z-matrix** is a square matrix whose off-diagonal entries are all nonpositive (the term of
+Mathlib's `Mathlib/LinearAlgebra/Matrix/ZMatrix`, which has no predicate for it). The M-matrices
+`Matrix.IsMMatrix` are the Z-matrices that are invertible with an entrywise nonnegative inverse. -/
+def IsZMatrix {α : Type*} [Zero α] [LE α] (A : Matrix n n α) : Prop :=
+  ∀ i j, i ≠ j → A i j ≤ 0
+
+omit [Fintype n] [DecidableEq n] in
+/-- The Z-matrix condition, unfolded. -/
+theorem isZMatrix_iff {α : Type*} [Zero α] [LE α] {A : Matrix n n α} :
+    A.IsZMatrix ↔ ∀ i j, i ≠ j → A i j ≤ 0 := Iff.rfl
+
 /-- **M-matrix** ([saad2003iterative], Definition 1.30): the off-diagonal entries are nonpositive,
 the matrix is invertible, and the inverse is entrywise nonnegative. [saad2003iterative] definition
 also lists `0 < A i i`, which follows: see `Matrix.IsMMatrix.diag_pos`. -/
@@ -165,6 +177,10 @@ structure IsMMatrix (A : Matrix n n ℝ) : Prop where
   isUnit : IsUnit A
   /-- The inverse is entrywise nonnegative. -/
   inv_entrywiseNonneg : A⁻¹.EntrywiseNonneg
+
+/-- An M-matrix is a Z-matrix. -/
+theorem IsMMatrix.isZMatrix {A : Matrix n n ℝ} (hA : A.IsMMatrix) : A.IsZMatrix :=
+  hA.offDiag_nonpos
 
 namespace IsMMatrix
 
@@ -207,7 +223,7 @@ private theorem one_sub_diagInv_mul_apply (A : Matrix n n ℝ) (i j : n) :
 
 /-- The Jacobi operator `1 - D⁻¹ A` of a matrix with positive diagonal and nonpositive off-diagonal
 entries is entrywise nonnegative. -/
-private theorem entrywiseNonneg_one_sub_diagInv_mul (hoff : ∀ i j, i ≠ j → A i j ≤ 0)
+private theorem entrywiseNonneg_one_sub_diagInv_mul (hoff : A.IsZMatrix)
     (hdiag : ∀ i, 0 < A i i) :
     ((1 : Matrix n n ℝ) - diagonal (fun i => (A i i)⁻¹) * A).EntrywiseNonneg := by
   refine entrywiseNonneg_iff.2 fun i j => ?_
@@ -243,7 +259,7 @@ Both directions are the nonnegative Neumann criterion
 `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff` applied to `B = 1 - D⁻¹ A`, whose
 complement is `1 - B = D⁻¹ A`: nonsingularity of `D⁻¹ A` is nonsingularity of `A`, and `(D⁻¹ A)⁻¹ =
 A⁻¹ D` is entrywise nonnegative exactly when `A⁻¹` is, the diagonal being positive. -/
-theorem isMMatrix_iff_complexSpectralRadius_lt_one (hoff : ∀ i j, i ≠ j → A i j ≤ 0)
+theorem isMMatrix_iff_complexSpectralRadius_lt_one (hoff : A.IsZMatrix)
     (hdiag : ∀ i, 0 < A i i) :
     A.IsMMatrix
       ↔ ((1 : Matrix n n ℝ) - diagonal (fun i => (A i i)⁻¹) * A).complexSpectralRadius < 1 := by
@@ -289,7 +305,7 @@ denominator that increases with it. Monotonicity of the spectral radius
 This is what makes the *dropping* step of an incomplete factorization legitimate: discarding a
 nonpositive off-diagonal entry moves the matrix up in the entrywise order. -/
 theorem IsMMatrix.of_entrywiseLE (hA : A.IsMMatrix) (hAB : A ≤ₑ B)
-    (hoff : ∀ i j, i ≠ j → B i j ≤ 0) : B.IsMMatrix := by
+    (hoff : B.IsZMatrix) : B.IsMMatrix := by
   have hdiagA : ∀ i, 0 < A i i := hA.diag_pos
   have hdiagB : ∀ i, 0 < B i i := fun i => (hdiagA i).trans_le (hAB i i)
   refine (isMMatrix_iff_complexSpectralRadius_lt_one hoff hdiagB).2 ?_
@@ -435,7 +451,7 @@ the off-diagonal contributions are nonpositive, and the nonnegative Jacobi opera
 has `B w = w - D⁻¹ (A w) < w` entrywise, so `ρ(B) < 1` by
 `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_of_mulVec_lt` and
 `Matrix.isMMatrix_iff_complexSpectralRadius_lt_one` concludes. -/
-theorem isMMatrix_iff_exists_pos_mulVec_pos {A : Matrix n n ℝ} (hoff : ∀ i j, i ≠ j → A i j ≤ 0) :
+theorem isMMatrix_iff_exists_pos_mulVec_pos {A : Matrix n n ℝ} (hoff : A.IsZMatrix) :
     A.IsMMatrix ↔ ∃ w : n → ℝ, (∀ i, 0 < w i) ∧ ∀ i, 0 < (A *ᵥ w) i := by
   constructor
   · intro hA
@@ -473,14 +489,14 @@ theorem isMMatrix_iff_exists_pos_mulVec_pos {A : Matrix n n ℝ} (hoff : ∀ i j
 off-diagonal entries and positive row sums is an M-matrix. For such a matrix positive row sums are
 exactly strict row diagonal dominance with a positive diagonal, the book's hypothesis
 (`Matrix.IsStrictDiagDominant.isMMatrix`). The M-criterion with `w = 1`. -/
-theorem isMMatrix_of_forall_sum_pos {A : Matrix n n ℝ} (hoff : ∀ i j, i ≠ j → A i j ≤ 0)
+theorem isMMatrix_of_forall_sum_pos {A : Matrix n n ℝ} (hoff : A.IsZMatrix)
     (hsum : ∀ i, 0 < ∑ j, A i j) : A.IsMMatrix :=
   (isMMatrix_iff_exists_pos_mulVec_pos hoff).2
     ⟨1, fun _ => zero_lt_one, fun i => by simpa [mulVec_apply_eq_sum] using hsum i⟩
 
 /-- For a row with nonpositive off-diagonal entries, the off-diagonal absolute row sum is the
 negative of the off-diagonal row sum. -/
-private theorem sum_erase_norm_eq_neg_sum {A : Matrix n n ℝ} (hoff : ∀ i j, i ≠ j → A i j ≤ 0)
+private theorem sum_erase_norm_eq_neg_sum {A : Matrix n n ℝ} (hoff : A.IsZMatrix)
     (i : n) : ∑ j ∈ univ.erase i, ‖A i j‖ = -∑ j ∈ univ.erase i, A i j := by
   rw [← sum_neg_distrib]
   exact sum_congr rfl fun j hj => by
@@ -489,7 +505,7 @@ private theorem sum_erase_norm_eq_neg_sum {A : Matrix n n ℝ} (hoff : ∀ i j, 
 /-- **[quarteroni2000numerical] Property 1.20**: a strictly row diagonally dominant matrix with
 positive diagonal and nonpositive off-diagonal entries is an M-matrix. -/
 theorem IsStrictDiagDominant.isMMatrix {A : Matrix n n ℝ} (hA : A.IsStrictDiagDominant)
-    (hdiag : ∀ i, 0 < A i i) (hoff : ∀ i j, i ≠ j → A i j ≤ 0) : A.IsMMatrix := by
+    (hdiag : ∀ i, 0 < A i i) (hoff : A.IsZMatrix) : A.IsMMatrix := by
   refine isMMatrix_of_forall_sum_pos hoff fun i => ?_
   have h := hA i
   rw [sum_erase_norm_eq_neg_sum hoff, Real.norm_eq_abs, abs_of_pos (hdiag i)] at h
@@ -503,7 +519,7 @@ w_{i₀} ∑_j a_{i₀ j} ≤ 0`, the first inequality because the off-diagonal 
 and `w_j ≥ w_{i₀}`, the second because the row sum is nonnegative by weak dominance. The M-criterion
 then applies. -/
 theorem isMMatrix_of_isDiagDominant_of_isUnit {A : Matrix n n ℝ} (hA : A.IsDiagDominant)
-    (hu : IsUnit A) (hdiag : ∀ i, 0 < A i i) (hoff : ∀ i j, i ≠ j → A i j ≤ 0) : A.IsMMatrix := by
+    (hu : IsUnit A) (hdiag : ∀ i, 0 < A i i) (hoff : A.IsZMatrix) : A.IsMMatrix := by
   cases isEmpty_or_nonempty n
   · exact (isMMatrix_iff_exists_pos_mulVec_pos hoff).2
       ⟨0, fun i => isEmptyElim i, fun i => isEmptyElim i⟩
@@ -539,7 +555,7 @@ nonsingularity (`Matrix.IsIrreduciblyDiagDominant.isUnit`) and weak dominance, a
 `Matrix.isMMatrix_of_isDiagDominant_of_isUnit` does the rest. -/
 theorem isMMatrix_of_isIrreduciblyDiagDominant {A : Matrix n n ℝ}
     (hA : A.IsIrreduciblyDiagDominant) (hdiag : ∀ i, 0 < A i i)
-    (hoff : ∀ i j, i ≠ j → A i j ≤ 0) : A.IsMMatrix :=
+    (hoff : A.IsZMatrix) : A.IsMMatrix :=
   isMMatrix_of_isDiagDominant_of_isUnit hA.isDiagDominant hA.isUnit hdiag hoff
 
 /-- A real matrix that is positive definite in the sense of [quarteroni2000numerical] Definition
@@ -552,7 +568,7 @@ because the first form only involves off-diagonal entries (the parts have disjoi
 the second is nonnegative; so `w ≥ 0`, and then `w > 0` since a vanishing `w_i` would make
 `(A w)_i ≤ 0`. The M-criterion concludes. No spectral theory is involved. -/
 theorem isMMatrix_of_forall_dotProduct_mulVec_pos {A : Matrix n n ℝ}
-    (hpd : ∀ x : n → ℝ, x ≠ 0 → 0 < x ⬝ᵥ (A *ᵥ x)) (hoff : ∀ i j, i ≠ j → A i j ≤ 0) :
+    (hpd : ∀ x : n → ℝ, x ≠ 0 → 0 < x ⬝ᵥ (A *ᵥ x)) (hoff : A.IsZMatrix) :
     A.IsMMatrix := by
   have hu : IsUnit A := by
     rw [isUnit_iff_isUnit_det, isUnit_iff_ne_zero]
@@ -619,7 +635,7 @@ nonpositive off-diagonal entries is an M-matrix. The symmetry is not used; see
 `Matrix.isMMatrix_of_forall_dotProduct_mulVec_pos`. The model Laplacian `tridiag(-1, 2, -1)`, its
 Kronecker sums and the five-point Laplacian are the instances. -/
 theorem IsMMatrix.of_posDef_of_offDiag_nonpos {A : Matrix n n ℝ} (hA : A.PosDef)
-    (hoff : ∀ i j, i ≠ j → A i j ≤ 0) : A.IsMMatrix :=
+    (hoff : A.IsZMatrix) : A.IsMMatrix :=
   isMMatrix_of_forall_dotProduct_mulVec_pos
     (fun x hx => by simpa using hA.dotProduct_mulVec_pos hx) hoff
 
@@ -728,7 +744,7 @@ entrywise is symmetric with nonpositive off-diagonal entries, then `B` is Stielt
 (`Matrix.IsMMatrix.of_entrywiseLE`). In particular zeroing a symmetric set of off-diagonal entries,
 the dropping step of incomplete Cholesky, leaves a Stieltjes matrix. -/
 theorem IsStieltjes.of_entrywiseLE [Finite n] {A B : Matrix n n ℝ} (hA : A.IsStieltjes)
-    (hAB : A ≤ₑ B) (hB : B.IsSymm) (hoff : ∀ i j, i ≠ j → B i j ≤ 0) : B.IsStieltjes := by
+    (hAB : A ≤ₑ B) (hB : B.IsSymm) (hoff : B.IsZMatrix) : B.IsStieltjes := by
   classical
   have := Fintype.ofFinite n
   exact isStieltjes_iff_isMMatrix_isSymm.2 ⟨hA.isMMatrix.of_entrywiseLE hAB hoff, hB⟩

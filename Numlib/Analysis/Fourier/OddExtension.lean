@@ -159,13 +159,19 @@ theorem oddPeriodicExtend_of_mem (hπ : v ⟨π, right_mem_Icc.2 Real.pi_pos.le�
     exact hπ.symm
   · rw [oddPeriodicExtend_of_mem_Ico ⟨by linarith [hx.1, Real.pi_pos], hlt⟩, oddReflect_of_mem hx]
 
-/-- The extension is continuous when `v` vanishes at both ends. -/
-theorem continuous_oddPeriodicExtend (h0 : v ⟨0, left_mem_Icc.2 Real.pi_pos.le⟩ = 0)
-    (hπ : v ⟨π, right_mem_Icc.2 Real.pi_pos.le⟩ = 0) : Continuous (oddPeriodicExtend v) := by
-  refine (AddCircle.liftIco_continuous ?_ (continuous_oddReflect h0).continuousOn).comp
-    (AddCircle.continuous_mk' _)
+/-- The extension, as a function on the circle `AddCircle (2 π)`, is continuous when `v` vanishes
+at both ends. -/
+theorem continuous_liftIco_oddReflect (h0 : v ⟨0, left_mem_Icc.2 Real.pi_pos.le⟩ = 0)
+    (hπ : v ⟨π, right_mem_Icc.2 Real.pi_pos.le⟩ = 0) :
+    Continuous (AddCircle.liftIco (2 * π) (-π) (oddReflect v)) := by
+  refine AddCircle.liftIco_continuous ?_ (continuous_oddReflect h0).continuousOn
   rw [show -π + 2 * π = π by ring, oddReflect_neg_pi hπ, oddReflect_of_mem (right_mem_Icc.2
     Real.pi_pos.le), hπ]
+
+/-- The extension is continuous when `v` vanishes at both ends. -/
+theorem continuous_oddPeriodicExtend (h0 : v ⟨0, left_mem_Icc.2 Real.pi_pos.le⟩ = 0)
+    (hπ : v ⟨π, right_mem_Icc.2 Real.pi_pos.le⟩ = 0) : Continuous (oddPeriodicExtend v) :=
+  (continuous_liftIco_oddReflect h0 hπ).comp (AddCircle.continuous_mk' _)
 
 /-- The extension is odd when `v` vanishes at both ends. -/
 theorem oddPeriodicExtend_neg (h0 : v ⟨0, left_mem_Icc.2 Real.pi_pos.le⟩ = 0)
@@ -307,10 +313,8 @@ theorem exists_mem_span_sinMap_norm_sub_lt {v : C(Icc (0 : ℝ) π, ℝ)}
     (h0 : v ⟨0, left_mem_Icc.2 Real.pi_pos.le⟩ = 0)
     (hπ : v ⟨π, right_mem_Icc.2 Real.pi_pos.le⟩ = 0) {ε : ℝ} (hε : 0 < ε) :
     ∃ p ∈ span ℝ (range sinMap), ‖v - p‖ < ε := by
-  set F : C(AddCircle (2 * π), ℝ) := ⟨AddCircle.liftIco (2 * π) (-π) (oddReflect v), by
-    refine AddCircle.liftIco_continuous ?_ (continuous_oddReflect h0).continuousOn
-    rw [show -π + 2 * π = π by ring, oddReflect_neg_pi hπ,
-      oddReflect_of_mem (right_mem_Icc.2 Real.pi_pos.le), hπ]⟩ with hF
+  set F : C(AddCircle (2 * π), ℝ) :=
+    ⟨AddCircle.liftIco (2 * π) (-π) (oddReflect v), continuous_liftIco_oddReflect h0 hπ⟩ with hF
   have hFx : ∀ x : ℝ, F (x : AddCircle (2 * π)) = oddPeriodicExtend v x := fun x => rfl
   obtain ⟨P, hP, hPF⟩ := exists_mem_span_trigFun_norm_sub_lt F hε
   refine ⟨oddPartRestrict P, ?_, ?_⟩

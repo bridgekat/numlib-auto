@@ -422,7 +422,6 @@ theorem eLpNorm_le_of_reflected {p : ℝ≥0∞} (hp : 1 ≤ p)
     exact hBm.comp_measurePreserving
       ((measurePreserving_hyperplaneReflection v).restrict_preimage_emb
         (measurableEmbedding_hyperplaneReflection v) _)
-  have hB' := (aestronglyMeasurable_indicator_iff isOpen_negHalf.measurableSet).2 hBσ
   have heq : G =ᵐ[volume.restrict (V : Set E)] (posHalf v V : Set E).indicator A
       + ((V : Set E) ∩ {x | ⟪x, v⟫ < 0}).indicator (B ∘ hyperplaneReflection v) := by
     filter_upwards [ae_restrict_mem V.isOpen.measurableSet,
@@ -676,9 +675,6 @@ theorem HasWeakFDerivOn.evenReflection (hv : ‖v‖ = 1)
     rw [hσL]
     exact ContinuousLinearMap.opNorm_comp_linearIsometryEquiv _ _
   -- the reflected function and derivative lie in `L^p(V)`, hence are locally integrable
-  have hurm : AEStronglyMeasurable (_root_.evenReflection v u) (volume.restrict (V : Set E)) :=
-    aestronglyMeasurable_of_reflected hv0 hV (fun x _ hx ↦ evenReflection_of_nonneg v hx)
-      (fun x _ hx ↦ evenReflection_of_neg v hx) hum hum
   have hurp : MemLp (_root_.evenReflection v u) p (volume.restrict (V : Set E)) := by
     refine (eLpNorm_le_of_reflected hv0 hV (fun x _ hx ↦ evenReflection_of_nonneg v hx)
       (fun x _ hx ↦ evenReflection_of_neg v hx) hp hum).trans_lt ?_
@@ -748,8 +744,6 @@ theorem HasWeakFDerivOn.evenReflection (hv : ‖v‖ = 1)
     rw [hθ', fderiv_cutoffTestFunction_apply ψ n x, hψd, inner_hyperplaneReflection, hψx]
     ring
   -- the identities of the weak derivative on `V₊` for the two cut-offs
-  have hu' : HasWeakIteratedFDerivOn 1 u
-      (fun x ↦ (continuousMultilinearCurryFin1 ℝ E F).symm (w x)) (posHalf v V) volume := hu
   have I1 : ∀ n : ℕ, ∫ x in (posHalf v V : Set E), fderiv ℝ (θ n) x y • u x
       = -∫ x in (posHalf v V : Set E), θ n x • w x y := fun n : ℕ ↦
     hu.integral_smul_eq (θ n) y
@@ -1479,7 +1473,6 @@ theorem Real.mul_rpow_sub_one_mul_le {P : ℝ} (hP : 1 < P) {a b : ℝ} (ha : 0 
   have h := Real.young_inequality_of_nonneg hb (Real.rpow_nonneg ha (P - 1)) hpq
   rw [← Real.rpow_mul ha, hpq.sub_one_mul_conj] at h
   have hQ : 0 < Real.conjExponent P := hpq.symm.pos
-  have hP0 : 0 < P := hpq.pos
   have e : P / Real.conjExponent P = P - 1 := hpq.div_conj_eq_sub_one
   calc P * (a ^ (P - 1) * b) = P * (b * a ^ (P - 1)) := by ring
     _ ≤ P * (b ^ P / P + a ^ P / Real.conjExponent P) := by gcongr
@@ -1598,7 +1591,6 @@ theorem lintegral_enorm_lastZero_rpow_le_of_contDiff (hp : 1 ≤ p) (hp' : p ≠
             ‖fderiv ℝ u x (EuclideanSpace.single (Fin.last d) 1)‖ₑ ^ p.toReal := by
   set e : EuclideanSpace ℝ (Fin (d + 1)) := EuclideanSpace.single (Fin.last d) 1 with hedef
   set g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ := fun x ↦ fderiv ℝ u x e with hgdef
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
   have hP1 : 1 ≤ p.toReal := by
     rw [← ENNReal.toReal_one]
     exact ENNReal.toReal_mono hp' hp

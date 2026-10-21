@@ -106,7 +106,6 @@ variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {a : ℝ}
 multiplication. -/
 theorem convexConj_smul (ha : 0 < a) (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
     convexConj B (fun x => (a : EReal) * f x) = smulRight (convexConj B f) a := by
-  have ha0 : a ≠ 0 := ha.ne'
   funext y
   refine EReal.eq_of_forall_le_coe_iff fun c => ?_
   rw [convexConj_le_coe_iff, smulRight_apply_pos ha, EReal.coe_mul_le_coe_iff ha,

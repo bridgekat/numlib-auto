@@ -133,7 +133,7 @@ theorem mem_subspace (h : IsArnoldiDecomposition A q H r) (hH : H.IsUnreducedUpp
     intro j hj
     rcases Nat.lt_or_ge (j : ℕ) (t + 1) with hlt | hge
     · exact subspace_mono A (q 0) (by omega) (ih j (by omega))
-    have htk : t < k := by have := j.isLt; omega
+    have htk : t < k := by omega
     set i : Fin k := ⟨t, htk⟩ with hi
     obtain rfl : j = i.succ := Fin.ext (by simp [hi]; omega)
     have hne := hH.apply_succ_castSucc_ne_zero i
@@ -529,12 +529,7 @@ theorem Matrix.exists_isUpperHessenberg_conj_lastCol {j : ℕ}
     (C : Matrix (Fin (j + 1)) (Fin (j + 1)) 𝕜) (u : Fin (j + 1) → 𝕜) :
     ∃ Z ∈ unitaryGroup (Fin (j + 1)) 𝕜, (star Z * C * Z).IsUpperHessenberg ∧
       ∃ τ : 𝕜, star Z *ᵥ u = Pi.single (Fin.last j) τ := by
-  obtain ⟨P, hP, hPH, α, hPu⟩ : ∃ P ∈ unitaryGroup (Fin (j + 1)) 𝕜, Pᴴ = P ∧
-      ∃ α : 𝕜, P *ᵥ u = α • Pi.single 0 1 := by
-    by_cases hu : u = 0
-    · exact ⟨1, one_mem _, conjTranspose_one, 0, by rw [hu, mulVec_zero, zero_smul]⟩
-    · exact ⟨_, householder_householderVec_mem_unitaryGroup hu 0, isHermitian_householder _, _,
-        householder_mulVec_eq_smul_single hu 0⟩
+  obtain ⟨P, hP, hPH, α, hPu⟩ := exists_mem_unitaryGroup_mulVec_eq_smul_single u 0
   set B := Pᴴ * Cᴴ * P with hB
   have hQ := hessenbergQ_mem_unitaryGroup B
   set W := P * hessenbergQ B with hWdef
@@ -549,7 +544,7 @@ theorem Matrix.exists_isUpperHessenberg_conj_lastCol {j : ℕ}
     have hQe : (hessenbergQ B)ᴴ *ᵥ Pi.single 0 1 = Pi.single 0 1 := by
       conv_lhs => rw [← hessenbergQ_mulVec_single_zero B]
       rw [mulVec_mulVec, ← star_eq_conjTranspose, (mem_unitaryGroup_iff').1 hQ, one_mulVec]
-    rw [hWdef, conjTranspose_mul, ← mulVec_mulVec, hPH, hPu, mulVec_smul, hQe]
+    rw [hWdef, conjTranspose_mul, ← mulVec_mulVec, hPH.eq, hPu, mulVec_smul, hQe]
   refine ⟨W.submatrix id Fin.rev, ?_, ?_, α, ?_⟩
   · rw [mem_unitaryGroup_iff', star_eq_conjTranspose, conjTranspose_submatrix,
       ← submatrix_mul _ _ _ id _ Function.bijective_id, ← star_eq_conjTranspose,
@@ -564,7 +559,7 @@ theorem Matrix.exists_isUpperHessenberg_conj_lastCol {j : ℕ}
     rw [hconj, isUpperHessenberg_iff_fin]
     intro a b hab
     rw [submatrix_apply, conjTranspose_apply, (isUpperHessenberg_iff_fin.1 hG) _ _
-      (by have := a.isLt; have := b.isLt; simp only [Fin.val_rev]; omega), star_zero]
+      (by simp only [Fin.val_rev]; omega), star_zero]
   · ext i
     have := congrFun hWu (Fin.rev i)
     change (Wᴴ *ᵥ u) (Fin.rev i) = _

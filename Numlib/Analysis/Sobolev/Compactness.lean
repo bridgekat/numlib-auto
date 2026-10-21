@@ -153,7 +153,6 @@ theorem SobolevEuclidean.exists_forall_eLpNorm_fn_sub_translate_le {p' : ℝ≥0
   refine ⟨θ, A ^ θ * B ^ (1 - θ), hθpos,
     ENNReal.mul_ne_top (ENNReal.rpow_ne_top_of_nonneg hθ0 hAt)
       (ENNReal.rpow_ne_top_of_nonneg (by linarith) hBt), fun v hv h ↦ ?_⟩
-  have hM0 : 0 ≤ M := (norm_nonneg v).trans hv
   have hg : AEStronglyMeasurable (fn v) volume := (SobolevEuclidean.memLp_fn v).aestronglyMeasurable
   have hgh : AEStronglyMeasurable (fun x ↦ fn v (x + h)) volume :=
     hg.comp_quasiMeasurePreserving (measurePreserving_add_right volume h).quasiMeasurePreserving
@@ -585,7 +584,6 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_self {d : ℕ} {p : ℝ≥0}
       fun u ↦ SobolevMultiIndex.memLp u) := by
   rcases lt_or_ge p ((d + 1 : ℕ) : ℝ≥0) with hpN | hpN
   · have hp0 : 0 < p := zero_lt_one.trans_le (by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p))
-    have hN0 : (0 : ℝ) < ((d + 1 : ℕ) : ℝ) := by positivity
     obtain ⟨p', hp'⟩ : ∃ p' : ℝ≥0, (p' : ℝ)⁻¹ = p⁻¹ - ((d + 1 : ℕ) : ℝ)⁻¹ :=
       ⟨(p⁻¹ - ((d + 1 : ℕ) : ℝ≥0)⁻¹)⁻¹, by
         rw [NNReal.coe_inv, NNReal.coe_sub (by
@@ -1029,6 +1027,36 @@ end SobolevMultiIndex
 
 end LowerOrderAbstract
 
+section LowerOrderOfFnL
+
+open SobolevMultiIndex
+
+variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **`W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` from `W^{1,p}(Ω) ⊂⊂ L^p(Ω)`**: if the map
+`SobolevMultiIndex.fnL` from `W^{1,p}(Ω)` to `L^p(Ω)` is a compact embedding, then so is every
+inclusion `SobolevMultiIndex.toLowerOrderL` of `W^{k+1,p}(Ω)` into `W^{k,p}(Ω)`. Induction on
+`k`, the step being `SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` for the
+operators forgetting the top components and the partial derivatives. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isCompactEmbedding_fnL
+    (hc : IsCompactEmbedding
+      (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume).toLinearMap) (k : ℕ) :
+    IsCompactEmbedding (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω
+      volume (Nat.le_succ k)).toLinearMap := by
+  induction k with
+  | zero =>
+    exact isCompactEmbedding_of_forall_weakDeriv_eq_fnL (weakDeriv_toLowerOrderL_zero)
+      (isContinuousEmbedding_toLowerOrderL (Nat.zero_le 1)) hc
+  | succ k ih =>
+    exact isCompactEmbedding_of_forall_weakDeriv_eq (weakDeriv_toLowerOrderL (Nat.le_succ (k + 1)))
+      (weakDeriv_toLowerOrderL (Nat.le_succ k))
+      (weakDeriv_partialDerivL (F := ℝ) (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis)
+        (p := p) (Ω := Ω) (μ := volume))
+      (norm_toLowerOrderL_apply_le _) (norm_partialDerivL_apply_le)
+      (isContinuousEmbedding_toLowerOrderL (Nat.le_succ (k + 1))) ih
+
+end LowerOrderOfFnL
+
 section RellichLower
 
 open SobolevMultiIndex
@@ -1047,19 +1075,9 @@ theorem SobolevEuclidean.isCompactEmbedding_toLower_of_lt
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hd : p ≠ 1 ∨ 1 ≤ d)
     (k : ℕ) :
     IsCompactEmbedding (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p Ω
-      volume (Nat.le_succ k)).toLinearMap := by
-  induction k with
-  | zero =>
-    exact isCompactEmbedding_of_forall_weakDeriv_eq_fnL (weakDeriv_toLowerOrderL_zero)
-      (isContinuousEmbedding_toLowerOrderL (Nat.zero_le 1))
-      (SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one hΩ hb hd)
-  | succ k ih =>
-    exact isCompactEmbedding_of_forall_weakDeriv_eq (weakDeriv_toLowerOrderL (Nat.le_succ (k + 1)))
-      (weakDeriv_toLowerOrderL (Nat.le_succ k))
-      (weakDeriv_partialDerivL (F := ℝ) (b := (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis)
-        (p := p) (Ω := Ω) (μ := volume))
-      (norm_toLowerOrderL_apply_le _) (norm_partialDerivL_apply_le)
-      (isContinuousEmbedding_toLowerOrderL (Nat.le_succ (k + 1))) ih
+      volume (Nat.le_succ k)).toLinearMap :=
+  SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isCompactEmbedding_fnL
+    (SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one hΩ hb hd) k
 
 end RellichLower
 
@@ -1318,19 +1336,9 @@ theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionD
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (k : ℕ) :
     IsCompactEmbedding (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω
       volume (Nat.le_succ k)).toLinearMap := by
-  induction k with
-  | zero =>
-    have hc := SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain hΩ hμ
-    rw [toLpₗ_self] at hc
-    exact isCompactEmbedding_of_forall_weakDeriv_eq_fnL (weakDeriv_toLowerOrderL_zero)
-      (isContinuousEmbedding_toLowerOrderL (Nat.zero_le 1)) hc
-  | succ k ih =>
-    exact isCompactEmbedding_of_forall_weakDeriv_eq (weakDeriv_toLowerOrderL (Nat.le_succ (k + 1)))
-      (weakDeriv_toLowerOrderL (Nat.le_succ k))
-      (weakDeriv_partialDerivL (F := ℝ) (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis)
-        (p := p) (Ω := Ω) (μ := volume))
-      (norm_toLowerOrderL_apply_le _) (norm_partialDerivL_apply_le)
-      (isContinuousEmbedding_toLowerOrderL (Nat.le_succ (k + 1))) ih
+  have hc := SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain hΩ hμ
+  rw [toLpₗ_self] at hc
+  exact SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isCompactEmbedding_fnL hc k
 
 end CompactLower
 
@@ -1796,19 +1804,9 @@ theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top
     (hΩ : IsSobolevExtensionDomain N ⊤ Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (k : ℕ) :
     IsCompactEmbedding (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis ⊤ Ω
-      volume (Nat.le_succ k)).toLinearMap := by
-  induction k with
-  | zero =>
-    exact isCompactEmbedding_of_forall_weakDeriv_eq_fnL (weakDeriv_toLowerOrderL_zero)
-      (isContinuousEmbedding_toLowerOrderL (Nat.zero_le 1))
-      (SobolevEuclidean.isCompactEmbedding_fnL_top hΩ hb)
-  | succ k ih =>
-    exact isCompactEmbedding_of_forall_weakDeriv_eq (weakDeriv_toLowerOrderL (Nat.le_succ (k + 1)))
-      (weakDeriv_toLowerOrderL (Nat.le_succ k))
-      (weakDeriv_partialDerivL (F := ℝ) (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis)
-        (p := ⊤) (Ω := Ω) (μ := volume))
-      (norm_toLowerOrderL_apply_le _) (norm_partialDerivL_apply_le)
-      (isContinuousEmbedding_toLowerOrderL (Nat.le_succ (k + 1))) ih
+      volume (Nat.le_succ k)).toLinearMap :=
+  SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isCompactEmbedding_fnL
+    (SobolevEuclidean.isCompactEmbedding_fnL_top hΩ hb) k
 
 /-- **`W^{k,∞}(Ω) ⊂⊂ W^{l,∞}(Ω)` for `l < k` on a bounded `W^{1,∞}`-extension domain**
 (Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 7.3.9 at `p = ∞`): the inclusion

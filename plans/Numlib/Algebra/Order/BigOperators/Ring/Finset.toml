@@ -1,0 +1,4 @@
+namespace = "Finset"
+
+[[node]]
+id = "one_sub_sum_le_prod_one_sub"

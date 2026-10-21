@@ -5,6 +5,7 @@ Natural home: `Mathlib.Analysis.MeanInequalitiesPow` for the power-sum inequalit
 `Mathlib.Analysis.SpecialFunctions.Pow.Real` for the elementary bound.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.MeanInequalities
 import Mathlib.Analysis.MeanInequalitiesPow
 
 /-!
@@ -15,6 +16,10 @@ import Mathlib.Analysis.MeanInequalitiesPow
   (`Real.rpow_arith_mean_le_arith_mean_rpow`), the crude form of the comparison between the
   `ℓ^1` and the `ℓ^r` norms that the `p`-Laplacian energy and the `W^{1,p}` gradient norms use.
 * `Real.one_add_rpow_le`: `(1 + t)^r ≤ 2^r (1 + t^r)` for `t ≥ 0`, `r ≥ 0`.
+* `Real.summable_mul_of_summable_sq`: the product of two square-summable real families is
+  summable, by `|a b| ≤ (a² + b²) / 2`.
+* `Real.rpow_le_tangent`: for `0 ≤ α ≤ 1` the concave power `u ↦ u ^ α` lies below its tangent
+  line at `s > 0`, `u ^ α ≤ α s ^ (α - 1) u + (1 - α) s ^ α` (weighted AM–GM).
 -/
 
 namespace Real
@@ -36,7 +41,6 @@ theorem sum_rpow_le_card_rpow_mul_sum {ι : Type*} (s : Finset ι) {a : ι → �
     rw [Finset.mul_sum]
   rw [hsum, hsum', Real.mul_rpow (by positivity) (Finset.sum_nonneg ha),
     Real.inv_rpow hn.le] at hmean
-  have hpos : 0 < (s.card : ℝ) ^ r := by positivity
   have hle : (s.card : ℝ)⁻¹ * ∑ i ∈ s, a i ^ r ≤ ∑ i ∈ s, a i ^ r := by
     have h1 : (s.card : ℝ)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (by exact_mod_cast hs.card_pos)
     have h2 : 0 ≤ ∑ i ∈ s, a i ^ r := Finset.sum_nonneg fun i hi ↦ Real.rpow_nonneg (ha i hi) r
@@ -65,12 +69,36 @@ theorem one_add_rpow_le {t p : ℝ} (ht : 0 ≤ t) (hp : 0 ≤ p) :
       · rw [max_eq_left h, Real.one_rpow]
         linarith [Real.rpow_nonneg ht p]
 
+/-- The product of two square-summable real families is summable: `|f k g k| ≤ (f k² + g k²) / 2`
+(the case `p = q = 2` of `Real.summable_mul_of_Lp_Lq_of_nonneg`, without the signs). -/
+theorem summable_mul_of_summable_sq {ι : Type*} {f g : ι → ℝ} (hf : Summable fun k => f k ^ 2)
+    (hg : Summable fun k => g k ^ 2) : Summable fun k => f k * g k := by
+  refine Summable.of_abs (Summable.of_nonneg_of_le (fun k => abs_nonneg _) (fun k => ?_)
+    ((hf.add hg).div_const 2))
+  rw [abs_mul]
+  nlinarith [sq_nonneg (|f k| - |g k|), abs_nonneg (f k), abs_nonneg (g k), sq_abs (f k),
+    sq_abs (g k)]
+
+/-- The tangent line to the concave power `u ↦ u ^ α` at `u = s`: `u^α ≤ α s^{α-1} u +
+(1 - α) s^α`. It is the weighted arithmetic–geometric mean inequality, and it is what replaces
+Jensen's inequality in Hölder-type estimates. -/
+theorem rpow_le_tangent {u s α : ℝ} (hu : 0 ≤ u) (hs : 0 < s) (hα0 : 0 ≤ α)
+    (hα1 : α ≤ 1) : u ^ α ≤ α * s ^ (α - 1) * u + (1 - α) * s ^ α := by
+  have h := Real.geom_mean_le_arith_mean2_weighted hα0 (by linarith : (0 : ℝ) ≤ 1 - α)
+    (div_nonneg hu hs.le) zero_le_one (by ring)
+  rw [Real.one_rpow, mul_one, mul_one, Real.div_rpow hu hs.le] at h
+  have hsα : (0 : ℝ) < s ^ α := Real.rpow_pos_of_pos hs α
+  have hmul := mul_le_mul_of_nonneg_right h hsα.le
+  rw [div_mul_cancel₀ _ hsα.ne'] at hmul
+  refine hmul.trans_eq ?_
+  rw [Real.rpow_sub hs, Real.rpow_one]
+  field_simp
+
 end Real
 
 /-- `a^{p−1} b ≤ a^p + b^p` for `a, b ≥ 0` and `p ≥ 1` (the crude Young inequality). -/
 theorem Real.rpow_sub_one_mul_le_add {a b p : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hp : 1 ≤ p) :
     a ^ (p - 1) * b ≤ a ^ p + b ^ p := by
-  have hp0 : 0 < p := zero_lt_one.trans_le hp
   rcases le_total a b with hab | hab
   · calc a ^ (p - 1) * b ≤ b ^ (p - 1) * b :=
           mul_le_mul_of_nonneg_right (Real.rpow_le_rpow ha hab (by linarith)) hb

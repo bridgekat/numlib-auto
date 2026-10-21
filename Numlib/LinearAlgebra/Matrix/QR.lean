@@ -297,22 +297,14 @@ theorem householderVec_apply_eq_zero {x : n → 𝕜} {r i : n} (hri : r ≠ i) 
     householderVec x i r = 0 :=
   normalize_apply_eq_zero (by rw [householderAxis_apply_of_ne x hri, h])
 
-omit [Fintype n] in
-private theorem star_single_one (i : n) :
-    star (Pi.single i 1 : n → 𝕜) = (Pi.single i 1 : n → 𝕜) := by
-  funext r
-  rcases eq_or_ne r i with rfl | h
-  · simp
-  · simp [Pi.single_eq_of_ne h]
-
 /-- `⟪v, x⟫` for the Householder axis `v` is the nonnegative real `‖x‖² + ‖x‖ |x i|`. -/
 private theorem star_householderAxis_dotProduct (x : n → 𝕜) (i : n) :
     star (householderAxis x i) ⬝ᵥ x
       = (((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ ^ 2
           + ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ * ‖x i‖ : ℝ)) : 𝕜) := by
-  rw [householderAxis, star_add, add_dotProduct, star_smul, smul_dotProduct, star_single_one,
-    single_dotProduct, star_dotProduct_self, RCLike.star_def, map_mul, RCLike.conj_ofReal,
-    smul_eq_mul]
+  rw [householderAxis, star_add, add_dotProduct, star_smul, smul_dotProduct,
+    ← Pi.single_star, star_one, single_dotProduct, star_dotProduct_self, RCLike.star_def, map_mul,
+    RCLike.conj_ofReal, smul_eq_mul]
   push_cast
   linear_combination
     ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) * conj_phase_mul_self (x i)
@@ -382,6 +374,15 @@ theorem householder_mulVec_eq_smul_single {x : n → 𝕜} (hx : x ≠ 0) (i : n
   rw [householderVec, householder_normalize_mulVec hv, ← hd, div_self hvv, one_smul,
     householderAxis]
   module
+
+/-- **Some unitary Hermitian matrix carries a vector to a multiple of a coordinate vector**: the
+reflector of `Matrix.householder_mulVec_eq_smul_single`, or `1` when the vector is `0`. -/
+theorem exists_mem_unitaryGroup_mulVec_eq_smul_single (x : n → 𝕜) (i : n) :
+    ∃ P ∈ unitaryGroup n 𝕜, P.IsHermitian ∧ ∃ α : 𝕜, P *ᵥ x = α • Pi.single i 1 := by
+  by_cases hx : x = 0
+  · exact ⟨1, one_mem _, isHermitian_one, 0, by rw [hx, mulVec_zero, zero_smul]⟩
+  · exact ⟨_, householder_householderVec_mem_unitaryGroup hx i, isHermitian_householder _, _,
+      householder_mulVec_eq_smul_single hx i⟩
 
 /-- **A unitary matrix with a prescribed column**: every unit vector `x` is the `i`-th column of a
 unitary matrix, the multiple `-α P` of the reflector `P` that sends `x` to `-α eᵢ`, where
@@ -708,7 +709,7 @@ private theorem triangular_step (X : Matrix (Fin N) (Fin M) 𝕜) (k : ℕ)
       ∀ (i : Fin N) (j : Fin M), (j : ℕ) < k + 1 → (j : ℕ) < (i : ℕ) → (P' * X) i j = 0 := by
   by_cases hkM : k < M
   swap
-  · exact ⟨P, hP, fun i j hj hij => hT i j (by have := j.isLt; omega) hij⟩
+  · exact ⟨P, hP, fun i j hj hij => hT i j (by omega) hij⟩
   by_cases hkN : k < N
   swap
   · refine ⟨P, hP, fun i j hj hij => ?_⟩
@@ -1011,25 +1012,10 @@ theorem IsThinQR.linearIndependent_iff_isUnit (h : IsThinQR A Q R) :
     LinearIndependent 𝕜 Aᵀ ↔ IsUnit R :=
   ⟨h.isUnit_of_linearIndependent, h.linearIndependent⟩
 
-/-- In the `RCLike` order a positive scalar is the cast of a positive real. -/
-private theorem pos_iff_exists_ofReal {z : 𝕜} : 0 < z ↔ ∃ r : ℝ, 0 < r ∧ z = (r : 𝕜) := by
-  constructor
-  · intro hz
-    obtain ⟨hre, him⟩ := RCLike.pos_iff.1 hz
-    exact ⟨RCLike.re z, hre, RCLike.ext (by simp) (by simp [him])⟩
-  · rintro ⟨r, hr, rfl⟩
-    exact RCLike.pos_iff.2 ⟨by simpa using hr, by simp⟩
-
-private theorem pos_mul_inv {a b : 𝕜} (ha : 0 < a) (hb : 0 < b) : 0 < b * a⁻¹ := by
-  obtain ⟨ra, hra, rfl⟩ := pos_iff_exists_ofReal.1 ha
-  obtain ⟨rb, hrb, rfl⟩ := pos_iff_exists_ofReal.1 hb
-  refine pos_iff_exists_ofReal.2 ⟨rb * ra⁻¹, by positivity, ?_⟩
-  rw [RCLike.ofReal_mul, RCLike.ofReal_inv]
-
-/-- A unitary upper triangular matrix with positive diagonal is the identity.  This is the
+/-- **A unitary upper triangular matrix with positive diagonal is the identity.** This is the
 flag-uniqueness argument of `Numlib.Analysis.InnerProductSpace.GramSchmidt` at matrix level, and it
 is what makes the QR factorization with a positive diagonal unique. -/
-private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin N) (Fin N) 𝕜}
+theorem IsUpperTriangular.eq_one_of_conjTranspose_mul_self_eq_one {S : Matrix (Fin N) (Fin N) 𝕜}
     (hS : S.IsUpperTriangular) (hu : Sᴴ * S = 1) (hd : ∀ j, 0 < S j j) : S = 1 := by
   have key : ∀ m : ℕ, ∀ j : Fin N, (j : ℕ) = m →
       ∀ i : Fin N, S i j = if i = j then 1 else 0 := by
@@ -1041,7 +1027,7 @@ private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin N) (Fin 
         intro i hi
         have h1 : (Sᴴ * S) i j = 0 := by
           rw [hu, one_apply, ite_eq_right fun h => by rw [h] at hi; omega]
-        rw [mul_apply] at h1
+        rw [Matrix.mul_apply] at h1
         have h2 : ∀ r : Fin N, Sᴴ i r * S r j = if r = i then S i j else 0 := by
           intro r
           rw [conjTranspose_apply, ih (i : ℕ) (by omega) i rfl r]
@@ -1058,7 +1044,7 @@ private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin N) (Fin 
         · exact hS h
       have hdiag : star (S j j) * S j j = 1 := by
         have h1 : (Sᴴ * S) j j = 1 := by rw [hu, one_apply, ite_eq_left rfl]
-        rw [mul_apply] at h1
+        rw [Matrix.mul_apply] at h1
         have h2 : ∀ r : Fin N, Sᴴ j r * S r j = if r = j then star (S j j) * S j j else 0 := by
           intro r
           rw [conjTranspose_apply]
@@ -1069,8 +1055,8 @@ private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin N) (Fin 
           Finset.sum_ite_eq' Finset.univ j fun _ => star (S j j) * S j j] at h1
         simpa using h1
       have hjj : S j j = 1 := by
-        obtain ⟨r, hr, hrz⟩ := pos_iff_exists_ofReal.1 (hd j)
-        rw [hrz] at hdiag ⊢
+        obtain ⟨r, hr, hrz⟩ := RCLike.pos_iff_exists_ofReal.1 (hd j)
+        rw [← hrz] at hdiag ⊢
         rw [RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← RCLike.ofReal_one,
           RCLike.ofReal_inj] at hdiag
         have hr1 : r = 1 := by nlinarith
@@ -1121,14 +1107,14 @@ theorem IsThinQR.unique {A Q₁ Q₂ : Matrix m (Fin N) 𝕜} {R₁ R₂ : Matri
       _ = (R₁ j j)⁻¹ := by rw [h1, mul_one]
   have hSd : ∀ j, 0 < (R₂ * R₁⁻¹) j j := fun j => by
     rw [hR₂.mul_apply_self hinvUT j, hinvdiag j]
-    exact pos_mul_inv (hd₁ j) (hd₂ j)
+    exact mul_pos (hd₂ j) (RCLike.inv_pos_of_pos (hd₁ j))
   have hSu : (R₂ * R₁⁻¹)ᴴ * (R₂ * R₁⁻¹) = 1 := by
     have h : (R₂ * R₁⁻¹)ᴴ * (R₂ * R₁⁻¹) = (R₁⁻¹)ᴴ * (R₂ᴴ * R₂ * R₁⁻¹) := by
       rw [conjTranspose_mul]; noncomm_ring
     have h2 : (R₁⁻¹)ᴴ * (R₁ᴴ * R₁ * R₁⁻¹) = (R₁ * R₁⁻¹)ᴴ * (R₁ * R₁⁻¹) := by
       rw [conjTranspose_mul]; noncomm_ring
     rw [h, ← hRR, h2, mul_nonsing_inv R₁ hdet, conjTranspose_one, mul_one]
-  have hS1 : R₂ * R₁⁻¹ = 1 := eq_one_of_isUpperTriangular_of_unitary hSUT hSu hSd
+  have hS1 : R₂ * R₁⁻¹ = 1 := hSUT.eq_one_of_conjTranspose_mul_self_eq_one hSu hSd
   have hR : R₂ = R₁ := by
     calc R₂ = R₂ * (R₁⁻¹ * R₁) := by rw [nonsing_inv_mul R₁ hdet, mul_one]
       _ = R₂ * R₁⁻¹ * R₁ := by rw [mul_assoc]
@@ -1311,7 +1297,7 @@ diagonal. -/
 theorem gramSchmidtR_apply_self_pos (hA : LinearIndependent 𝕜 Aᵀ) (j : Fin N) :
     0 < gramSchmidtR A j j := by
   rw [gramSchmidtR_apply_self]
-  exact pos_iff_exists_ofReal.2
+  exact RCLike.pos_iff_exists_ofReal.2
     ⟨‖gramSchmidt 𝕜 (fun j => WithLp.toLp 2 (A.col j)) j‖,
       norm_pos_iff.2 (gramSchmidt_ne_zero j (linearIndependent_toLp_col hA)), rfl⟩
 
@@ -1824,7 +1810,7 @@ private theorem hessenbergStep_apply_eq_zero {B : Matrix (Fin N) (Fin N) 𝕜} {
   by_cases hk : k < N
   swap
   · rw [hessenbergStep, hessenbergReflector_of_le B (not_lt.1 hk), one_mul, mul_one]
-    exact hB i j (by have := i.isLt; omega) hij
+    exact hB i j (by omega) hij
   rw [hessenbergStep, hessenbergReflector_of_lt B hk,
     mul_householder_apply_of_apply_eq_zero (householderTail_apply_of_lt _ (by omega)),
     householder_mul_apply]
@@ -1852,7 +1838,7 @@ subdiagonal. -/
 theorem isUpperHessenberg_hessenbergReduce : (hessenbergReduce A).IsUpperHessenberg := by
   rw [isUpperHessenberg_iff_fin]
   intro i j hij
-  exact hessenbergIter_apply_eq_zero A (N - 2) i j (by have := i.isLt; omega) hij
+  exact hessenbergIter_apply_eq_zero A (N - 2) i j (by omega) hij
 
 /-- The Householder reduction of a Hermitian matrix is Hermitian, being a unitary conjugate of it
 ([quarteroni2000numerical] Remark 5.4). -/
@@ -2011,8 +1997,6 @@ theorem hasLowerBandwidthRect_zero_of_adjacentRotations [NonAssocSemiring α]
           · exact ih₂ i l hil hl
           · exact ih₁ i l (by omega)
   intro i l hil
-  have hi := i.isLt
-  have hl := l.isLt
   exact (key _ le_rfl).2 i l (by omega) (by omega)
 
 end AdjacentSweep

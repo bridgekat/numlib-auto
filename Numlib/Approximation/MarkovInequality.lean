@@ -291,7 +291,6 @@ theorem integral_derivative_sq_le {N : ℕ} {p : ℝ[X]} (hp : p.natDegree ≤ N
   have hderdeg : (derivative p).natDegree ≤ N - 1 :=
     (natDegree_derivative_le p).trans (Nat.sub_le_sub_right hp 1)
   set S := ∑ k ∈ Finset.range (N + 1), |legendreCoeff p k| with hS
-  have hS0 : 0 ≤ S := Finset.sum_nonneg fun k _ => abs_nonneg _
   have hSsq := sq_sum_abs_legendreCoeff_le hp
   rw [← hS] at hSsq
   -- Parseval for `p'`, term by term
@@ -305,7 +304,6 @@ theorem integral_derivative_sq_le {N : ℕ} {p : ℝ[X]} (hp : p.natDegree ≤ N
     have h2 : legendreCoeff (derivative p) j ^ 2 ≤ ((2 * (j : ℝ) + 1) * S) ^ 2 := by
       rw [← sq_abs]
       exact pow_le_pow_left₀ (abs_nonneg _) h 2
-    have h2j : (0 : ℝ) < 2 * (j : ℝ) + 1 := by positivity
     calc legendreCoeff (derivative p) j ^ 2 * (2 / (2 * (j : ℝ) + 1))
         ≤ ((2 * (j : ℝ) + 1) * S) ^ 2 * (2 / (2 * (j : ℝ) + 1)) := by gcongr
       _ = 2 * (2 * (j : ℝ) + 1) * S ^ 2 := by field_simp
@@ -455,7 +453,6 @@ theorem integral_derivative_derivative_legendre_sq_ge {N : ℕ} (hN : 2 ≤ N) :
     pow_le_pow_left₀ (by positivity) hD 2
   have hkey : (m ^ 2 / 6) ^ 2 ≤ m * E :=
     hD2.trans (hcs.trans (mul_le_mul_of_nonneg_right hxle hE0))
-  have hmpos : 0 < m := by linarith
-  nlinarith [hkey, hmpos]
+  nlinarith [hkey]
 
 end Polynomial

@@ -726,7 +726,6 @@ theorem HasSobolevExtensionOn.exists_forall_norm_toContinuousMapOnL_sub_le
     rw [hK₁]
     exact ENNReal.mul_ne_top (morreyConst_ne_top _ _) (by simp)
   have hp0 : (0 : ℝ) < p := lt_of_le_of_lt (Nat.cast_nonneg N) hp
-  have hα0 : (0 : ℝ) ≤ 1 - N / (p : ℝ) := sub_nonneg.2 ((div_le_one hp0).2 hp.le)
   refine ⟨K₁.toReal * C₀, by positivity, fun u x y ↦ ?_⟩
   simp only [HasSobolevExtensionOn.toContinuousMapOnL_apply]
   have h1 : ‖SobolevEuclidean.contRep hp (hS.choose u) x
@@ -1468,7 +1467,6 @@ theorem isContDiffDomain_ball (c : EuclideanSpace ℝ (Fin (d + 1))) {r : ℝ} (
     have h6 : y (Fin.last d) + r < r / 2 := by
       rw [← h5]
       exact (le_abs_self _).trans_lt ((EuclideanSpace.abs_apply_last_le _).trans_lt h2)
-    have h7 : y (Fin.last d) < 0 := by linarith
     have hs : ‖EuclideanSpace.init y‖ ^ 2 ≤ r ^ 2 / 4 := by
       have : ‖EuclideanSpace.init y‖ ^ 2 < (r / 2) ^ 2 := by
         gcongr
@@ -1487,7 +1485,6 @@ theorem isContDiffDomain_ball (c : EuclideanSpace ℝ (Fin (d + 1))) {r : ℝ} (
         nlinarith
       linarith
     · intro h
-      have hlt : ‖x - c‖ ^ 2 < r ^ 2 := by linarith
       nlinarith [norm_nonneg (x - c)]
   ext x
   simp only [mem_inter_iff, mem_ofPred_eq]
@@ -1655,7 +1652,6 @@ theorem SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_isBounded
     ∃ C : ℝ, 0 ≤ C ∧ ∀ u : SobolevEuclidean N 1 p Ω, ‖u‖ ≤ C * (gradNorm u
       + (eLpNorm (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toReal) := by
   have hp1 : (1 : ℝ≥0∞) ≤ p := Fact.out
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp1).ne'
   have hq0 : q ≠ 0 := (zero_lt_one.trans_le hq).ne'
   -- the `L^q` norm is finite
   have hBt : ∀ u : SobolevEuclidean N 1 p Ω,

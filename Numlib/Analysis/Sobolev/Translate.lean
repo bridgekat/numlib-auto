@@ -124,19 +124,30 @@ theorem IsTranslationInvariant.measurePreserving [μ.IsAddRightInvariant]
   rwa [hΩ.preimage_eq] at this
 
 omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
+/-- The translate of a function locally integrable on `Ω` is locally integrable on `Ω − h`. -/
+theorem LocallyIntegrableOn.comp_add_right_of_preimage [μ.IsAddRightInvariant] [ProperSpace E]
+    {Ω' : Opens E} {u : E → F} (hu : LocallyIntegrableOn u Ω μ)
+    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
+    LocallyIntegrableOn (fun x ↦ u (x + h)) Ω' μ := by
+  rw [locallyIntegrableOn_iff Ω.isOpen.isLocallyClosed] at hu
+  rw [locallyIntegrableOn_iff Ω'.isOpen.isLocallyClosed]
+  intro k hk hkc
+  have hk' : (· + h) '' k ⊆ (Ω : Set E) := by
+    rintro _ ⟨x, hx, rfl⟩
+    have := hk hx
+    rw [hΩ'] at this
+    exact this
+  have := hu ((· + h) '' k) hk' (hkc.image (continuous_id.add continuous_const))
+  exact ((measurePreserving_add_right μ h).integrableOn_image
+    (MeasurableEquiv.addRight h).measurableEmbedding).1 this
+
+omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
 /-- A translate of a locally integrable function on an invariant open set is locally integrable
 there. -/
 theorem LocallyIntegrableOn.comp_add_right [μ.IsAddRightInvariant] [ProperSpace E] {u : E → F}
     (hu : LocallyIntegrableOn u Ω μ) (hΩ : IsTranslationInvariant (Ω : Set E) h) :
-    LocallyIntegrableOn (fun x ↦ u (x + h)) Ω μ := by
-  rw [locallyIntegrableOn_iff Ω.isOpen.isLocallyClosed] at hu ⊢
-  intro k hk hkc
-  have hk' : (· + h) '' k ⊆ (Ω : Set E) := by
-    rintro _ ⟨x, hx, rfl⟩
-    exact hΩ.mem (hk hx)
-  have := hu ((· + h) '' k) hk' (hkc.image (continuous_id.add continuous_const))
-  exact ((measurePreserving_add_right μ h).integrableOn_image
-    (MeasurableEquiv.addRight h).measurableEmbedding).1 this
+    LocallyIntegrableOn (fun x ↦ u (x + h)) Ω μ :=
+  LocallyIntegrableOn.comp_add_right_of_preimage hu hΩ.preimage_eq.symm
 
 omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
 /-- A translate of an `L^p(Ω)` function on an invariant open set is in `L^p(Ω)`, with the same
@@ -385,24 +396,6 @@ def TestFunction.compSubRightOfPreimage (φ : 𝓓(Ω', F))
     have := φ.tsupport_subset hx
     rw [hΩ'] at this
     simpa using this
-
-omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- The translate of a function locally integrable on `Ω` is locally integrable on `Ω − h`. -/
-theorem LocallyIntegrableOn.comp_add_right_of_preimage [μ.IsAddRightInvariant] [ProperSpace E]
-    {u : E → F} (hu : LocallyIntegrableOn u Ω μ)
-    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
-    LocallyIntegrableOn (fun x ↦ u (x + h)) Ω' μ := by
-  rw [locallyIntegrableOn_iff Ω.isOpen.isLocallyClosed] at hu
-  rw [locallyIntegrableOn_iff Ω'.isOpen.isLocallyClosed]
-  intro k hk hkc
-  have hk' : (· + h) '' k ⊆ (Ω : Set E) := by
-    rintro _ ⟨x, hx, rfl⟩
-    have := hk hx
-    rw [hΩ'] at this
-    exact this
-  have := hu ((· + h) '' k) hk' (hkc.image (continuous_id.add continuous_const))
-  exact ((measurePreserving_add_right μ h).integrableOn_image
-    (MeasurableEquiv.addRight h).measurableEmbedding).1 this
 
 omit [NormedSpace ℝ E] in
 /-- The translation `x ↦ x + h` carries `μ.restrict (Ω − h)` to `μ.restrict Ω`. -/

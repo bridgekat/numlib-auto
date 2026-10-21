@@ -5,6 +5,8 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Analysis.Fourier.TrigonometricPolynomial
+import Numlib.Analysis.MeanInequalities
 import Numlib.Approximation.Chebyshev
 
 /-!
@@ -199,8 +201,6 @@ theorem sum_sin_mul_sin_angle (n : ℕ) :
   have hprod : ∀ k : ℕ, Real.sin (((k : ℝ) + 1) * θ) * Real.sin (((k : ℝ) + 2) * θ)
       = (Real.cos θ - Real.cos ((2 * ((k : ℝ) + 1) + 1) * θ)) / 2 := by
     intro k
-    have h1 : ((k : ℝ) + 1) * θ = ((2 * ((k : ℝ) + 1) + 1) * θ - θ) / 2 +
-        ((2 * ((k : ℝ) + 1) + 1) * θ + θ) / 2 - ((k : ℝ) + 2) * θ := by ring
     have hc : Real.cos (((k : ℝ) + 2) * θ - ((k : ℝ) + 1) * θ)
         - Real.cos (((k : ℝ) + 2) * θ + ((k : ℝ) + 1) * θ)
         = 2 * (Real.sin (((k : ℝ) + 1) * θ) * Real.sin (((k : ℝ) + 2) * θ)) := by
@@ -298,22 +298,6 @@ theorem kernel_eq_sum (n : ℕ) (r : ℝ) :
 
 /-! ### The moments of the kernel -/
 
-private theorem integral_cos_intCast (m : ℤ) :
-    (∫ r in -π..π, Real.cos ((m : ℝ) * r)) = if m = 0 then 2 * π else 0 := by
-  by_cases hm : m = 0
-  · rw [ite_eq_left hm, hm]
-    simp only [Int.cast_zero, zero_mul, Real.cos_zero, intervalIntegral.integral_const,
-      smul_eq_mul, mul_one]
-    ring
-  · have hm' : (m : ℝ) ≠ 0 := Int.cast_ne_zero.2 hm
-    rw [ite_eq_right hm, intervalIntegral.integral_comp_mul_left Real.cos hm',
-      integral_cos, smul_eq_mul]
-    have h1 : Real.sin ((m : ℝ) * π) = 0 := Real.sin_int_mul_pi m
-    have h2 : Real.sin ((m : ℝ) * -π) = 0 := by
-      rw [show (m : ℝ) * -π = -((m : ℝ) * π) by ring, Real.sin_neg, h1, neg_zero]
-    rw [h1, h2]
-    ring
-
 private theorem integral_cos_intCast_mul_cos (m : ℤ) :
     (∫ r in -π..π, Real.cos ((m : ℝ) * r) * Real.cos r)
       = (if m + 1 = 0 then π else 0) + (if m - 1 = 0 then π else 0) := by
@@ -328,7 +312,8 @@ private theorem integral_cos_intCast_mul_cos (m : ℤ) :
     fun j => (Real.continuous_cos.comp (continuous_const.mul continuous_id)).intervalIntegrable _ _
   simp only [hsplit]
   rw [intervalIntegral.integral_div, intervalIntegral.integral_add (hi (m + 1)) (hi (m - 1)),
-    integral_cos_intCast (m + 1), integral_cos_intCast (m - 1)]
+    integral_cos_int_mul_neg_pi_pi (m + 1),
+    integral_cos_int_mul_neg_pi_pi (m - 1)]
   split_ifs <;> ring
 
 /-- The inner sum `∑_{l ≤ n} c_k c_l [l = k + 1]` collapses, and summing over `k` gives
@@ -374,7 +359,7 @@ theorem integral_kernel (n : ℕ) : (∫ r in -π..π, kernel n r) = 2 * π := b
         coeff n k * coeff n l * Real.cos (((k : ℝ) - (l : ℝ)) * r))
         = coeff n k * coeff n l * (if (k : ℤ) - (l : ℤ) = 0 then 2 * π else 0) := by
       intro l
-      rw [intervalIntegral.integral_const_mul, ← hcast k l, integral_cos_intCast]
+      rw [intervalIntegral.integral_const_mul, ← hcast k l, integral_cos_int_mul_neg_pi_pi]
     rw [Finset.sum_congr rfl fun l _ => hterm l,
       Finset.sum_eq_single k (fun l _ hlk => by
         rw [ite_eq_right (by omega : (k : ℤ) - (l : ℤ) ≠ 0), mul_zero])
@@ -456,7 +441,6 @@ private theorem sin_sq_half (y : ℝ) : Real.sin (y / 2) ^ 2 = (1 - Real.cos y) 
 period, because `|sin (r/2)| ≥ |r| / π` there. -/
 private theorem sq_le_one_sub_cos {r : ℝ} (hr : |r| ≤ π) :
     r ^ 2 ≤ π ^ 2 * ((1 - Real.cos r) / 2) := by
-  have hpi := Real.pi_pos
   have habs : (0 : ℝ) ≤ |r| := abs_nonneg r
   have h3 : 2 / π * (|r| / 2) ≤ Real.sin (|r| / 2) :=
     Real.mul_le_sin (by linarith) (by linarith)
@@ -594,7 +578,6 @@ noncomputable def sinCM (m : ℤ) : C(AddCircle (2 * π), ℝ) :=
 theorem cosCM_coe (m : ℤ) (x : ℝ) :
     cosCM m ((x : ℝ) : AddCircle (2 * π)) = Real.cos ((m : ℝ) * x) := by
   have h2 : (√2 : ℝ) ≠ 0 := by positivity
-  have h2' : (√2 : ℝ) * (√2 : ℝ) = 2 := Real.mul_self_sqrt (by norm_num)
   rcases lt_trichotomy m 0 with hm | hm | hm
   · rw [cosCM, ite_eq_right hm.ne, abs_of_neg hm, ContinuousMap.smul_apply, smul_eq_mul,
       trigFun_coe_of_pos (by omega : (0 : ℤ) < -m) x]
@@ -790,21 +773,6 @@ theorem abs_sub_approx_le {g : ℝ → ℝ} (hc : Continuous g) (hp : Function.P
         intervalIntegral.integral_congr fun r _ => by
           rw [abs_mul, abs_of_nonneg (kernel_nonneg n r)]
 
-/-- The tangent line to the concave power `u ↦ u ^ α` at `u = s`: `u^α ≤ α s^{α-1} u +
-(1 - α) s^α`. It is the weighted arithmetic–geometric mean inequality, and it is what replaces
-Jensen's inequality in the Hölder estimate below. -/
-private theorem rpow_le_tangent {u s α : ℝ} (hu : 0 ≤ u) (hs : 0 < s) (hα0 : 0 ≤ α)
-    (hα1 : α ≤ 1) : u ^ α ≤ α * s ^ (α - 1) * u + (1 - α) * s ^ α := by
-  have h := Real.geom_mean_le_arith_mean2_weighted hα0 (by linarith : (0 : ℝ) ≤ 1 - α)
-    (div_nonneg hu hs.le) zero_le_one (by ring)
-  rw [Real.one_rpow, mul_one, mul_one, Real.div_rpow hu hs.le] at h
-  have hsα : (0 : ℝ) < s ^ α := Real.rpow_pos_of_pos hs α
-  have hmul := mul_le_mul_of_nonneg_right h hsα.le
-  rw [div_mul_cancel₀ _ hsα.ne'] at hmul
-  refine hmul.trans_eq ?_
-  rw [Real.rpow_sub hs, Real.rpow_one]
-  field_simp
-
 /-- **The Fejér–Korovkin error for a Hölder function.** If `|g u - g v| ≤ M |u - v|^α` for some
 `0 < α ≤ 1`, then the trigonometric polynomial `approx n g` of degree at most `n` approximates `g`
 to within `M (π sin (π / (2 n + 4)))^α` uniformly. -/
@@ -832,7 +800,7 @@ theorem abs_sub_approx_le_of_holder {g : ℝ → ℝ} (hc : Continuous g)
     refine mul_le_mul_of_nonneg_left ?_ hM
     have habs : |x - (x - r)| = |r| := by rw [show x - (x - r) = r by ring]
     rw [habs]
-    exact rpow_le_tangent (abs_nonneg r) hs hα0 hα1
+    exact Real.rpow_le_tangent (abs_nonneg r) hs hα0 hα1
   have hmono := intervalIntegral.integral_mono_on (by linarith : (-π : ℝ) ≤ π) hf hgb hle
   have hi1 : IntervalIntegrable
       (fun r : ℝ => M * (α * s ^ (α - 1)) * (kernel n r * |r|)) volume (-π) π :=
@@ -854,7 +822,6 @@ theorem abs_sub_approx_le_of_holder {g : ℝ → ℝ} (hc : Continuous g)
   rw [hcalc] at hmono
   have hmoment := integral_abs_mul_kernel_le n
   have hcoef : (0 : ℝ) ≤ M * (α * s ^ (α - 1)) := by
-    have : (0 : ℝ) < s ^ (α - 1) := Real.rpow_pos_of_pos hs _
     positivity
   have hstep : M * (α * s ^ (α - 1)) * (∫ r in -π..π, |r| * kernel n r)
       ≤ M * (α * s ^ (α - 1)) * (2 * π * s) := mul_le_mul_of_nonneg_left hmoment hcoef

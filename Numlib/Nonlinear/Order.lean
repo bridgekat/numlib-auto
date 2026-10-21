@@ -803,7 +803,6 @@ theorem tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity {m : ℕ} (hm : 2
         ‖(h (x + f x) - h x) / (x - α) ^ q‖ ≤ (K : ℝ) * |x - α| * |h x| := by
       filter_upwards [self_mem_nhdsWithin, nhdsWithin_le_nhds ht, nhdsWithin_le_nhds (hy ht)]
         with x hx hxt hyt
-      have he : |x - α| ≠ 0 := abs_ne_zero.2 (sub_ne_zero.2 hx)
       have hK' := hK.dist_le_mul (x + f x) hyt x hxt
       rw [Real.dist_eq, Real.dist_eq, add_sub_cancel_left] at hK'
       rw [Real.norm_eq_abs, abs_div, abs_pow,
@@ -826,14 +825,13 @@ theorem tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity {m : ℕ} (hm : 2
   refine hlim.congr' ?_
   filter_upwards [self_mem_nhdsWithin, nhdsWithin_le_nhds hh_ne] with x hx hhx
   have he : x - α ≠ 0 := sub_ne_zero.2 hx
-  have hw' : (x - α) ^ q * h x ≠ 0 := mul_ne_zero (pow_ne_zero _ he) hhx
   -- the identity `f (x + f x) - f x = e ^ (q + 1) * (e ^ q * B x)`
   have hyα : x + f x - α = (x - α) * (1 + (x - α) ^ q * h x) := by rw [hfh x]; ring
   have hD : f (x + f x) - f x = (x - α) ^ (q + 1) * ((x - α) ^ q *
       (((1 + (x - α) ^ q * h x) ^ (q + 1) - 1) / ((x - α) ^ q * h x) * h x * h (x + f x) +
         (h (x + f x) - h x) / (x - α) ^ q)) := by
     rw [hfh (x + f x), hyα, hfh x, mul_pow]
-    generalize x - α = e at he hw' ⊢
+    generalize x - α = e at he ⊢
     field_simp
     ring
   have hS : (steffensenStep f x - α) / (x - α) =

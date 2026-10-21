@@ -359,10 +359,8 @@ theorem IsClassicalSolutionIccWith.two_mul_integral_mul_le (hν : 0 < ν)
       rw [hid]
       nlinarith [hcs, sq_nonneg (2 * ν * energy u s - energy f s / (2 * ν))]
     nlinarith [hsq, hS]
-  have hgrad : 0 ≤ ∫ x in (0 : ℝ)..1, ux x s ^ 2 := integral_nonneg zero_le_one fun x _ =>
-    sq_nonneg _
   rw [hsplit, hibp]
-  nlinarith [hpoin, hyoung, hν, hgrad]
+  nlinarith [hpoin, hyoung, hν]
 
 /-- **The a priori energy estimate** ([quarteroni2000numerical] (13.7)): for a classical
 solution of the heat equation on `[0, 1] × [0, T]` with `ν > 0`,

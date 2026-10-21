@@ -17,4 +17,7 @@ id = "measurable_comp_succAbove"
 id = "MeasureTheory.lintegral_fin_succ_eq'"
 
 [[node]]
+id = "MeasureTheory.lintegral_fin_succ_eq"
+
+[[node]]
 id = "MeasureTheory.lintegral_fin_zero"

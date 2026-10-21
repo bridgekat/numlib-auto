@@ -940,7 +940,7 @@ theorem isSelfAdjoint_discGalerkinProj (n : ℕ) : IsSelfAdjoint (discGalerkinPr
 theorem norm_expKernelCLM_comp_sub_discGalerkinProj_le {n : ℕ} (hn : 0 < n) :
     ‖expKernelCLM ∘L (1 - discGalerkinProj n)‖ ≤ (1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1 := by
   have key := norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le (a := 0) (b := 1)
-    zero_le_one (unitMesh_step hn) (unitMesh_first n) (unitMesh_last hn)
+    zero_le_one ⟨fun i hi => unitMesh_step hn i (by omega), unitMesh_first n, unitMesh_last hn⟩
     (memLp_prod_iccMeasure expKernel) (G := fun z t => Real.exp ((z : ℝ) * t))
     (fun _ => Real.contDiff_exp.comp (contDiff_const.mul contDiff_id))
     (fun _ _ => rfl) (unitMesh_mesh hn) (M := Real.exp 1) ?_
@@ -1014,13 +1014,15 @@ theorem norm_sub_discGalerkinProj_expSolution_le {n : ℕ} (hn : 0 < n) :
     ‖expSolution - discGalerkinProj n expSolution‖ ≤ (1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1 := by
   have hiter : iteratedDeriv 2 Real.exp = Real.exp := by
     simpa using iteratedDeriv_exp_const_mul 2 1
-  have hinterp := norm_sub_piecewiseLinearInterpCLM_le (unitMesh_step hn) (unitMesh_first n)
-    (unitMesh_last hn) (g := Real.exp) Real.contDiff_exp (f := expSolutionFun) (fun _ => rfl)
+  have hinterp := norm_sub_piecewiseLinearInterpCLM_le
+    ⟨fun i hi => unitMesh_step hn i (by omega), unitMesh_first n, unitMesh_last hn⟩
+    (g := Real.exp) Real.contDiff_exp (f := expSolutionFun) (fun _ => rfl)
     (unitMesh_mesh hn) (M := Real.exp 1) (fun t ht => by
       rw [hiter, abs_of_pos (Real.exp_pos t)]
       exact Real.exp_le_exp.2 ht.2)
-  refine (norm_sub_discPiecewiseLinearProjCLM_le (a := 0) (b := 1) zero_le_one (unitMesh_step hn)
-    (unitMesh_first n) (unitMesh_last hn) expSolutionFun).trans ?_
+  refine (norm_sub_discPiecewiseLinearProjCLM_le (a := 0) (b := 1) zero_le_one
+    ⟨fun i hi => unitMesh_step hn i (by omega), unitMesh_first n, unitMesh_last hn⟩
+    expSolutionFun).trans ?_
   rw [show (1 : ℝ) - 0 = 1 by ring, Real.sqrt_one, one_mul]
   exact hinterp
 

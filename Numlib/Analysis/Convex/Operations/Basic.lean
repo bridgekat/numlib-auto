@@ -160,7 +160,6 @@ theorem ConvexFn.add {f g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g)
   refine hsum.trans ?_
   have h1 : a * (p₁ + p₂) ≤ a * μ := mul_le_mul_of_nonneg_left hx' ha
   have h2 : b * (q₁ + q₂) ≤ b * ν := mul_le_mul_of_nonneg_left hy' hb
-  have h3 : a * p₁ + b * q₁ + (a * p₂ + b * q₂) = a * (p₁ + p₂) + b * (q₁ + q₂) := by ring
   exact_mod_cast (by linarith : a * p₁ + b * q₁ + (a * p₂ + b * q₂) ≤ a * μ + b * ν)
 
 /-- A finite sum of convex functions, none of which takes the value `⊥`, is convex. -/

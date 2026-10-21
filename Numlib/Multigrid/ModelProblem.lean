@@ -180,20 +180,22 @@ theorem sineVec_coarse (j q : Fin m) :
   congr 1
   field_simp
 
+/-- The angle of the alias `2m - j` is `π - θ_j`. -/
+theorem angle_aliasIndex (j : Fin m) :
+    (((aliasIndex j : ℕ) : ℝ) + 1) * π / (((2 * m + 1 : ℕ) : ℝ) + 1) = π - modeAngle m j := by
+  have hj : (j : ℕ) ≤ 2 * m := by have := j.isLt; omega
+  rw [aliasIndex, modeAngle, Fin.val_mk, Nat.cast_sub hj]
+  push_cast
+  field_simp
+  ring
+
 /-- The alias `2m - j` of the fine mode `j` is the fine mode with the signs alternated, because
 its angle is `π - θ`. -/
 theorem sineVec_aliasIndex (j : Fin m) (i : Fin (2 * m + 1)) :
     sineVec (2 * m + 1) (aliasIndex j) i =
       (-1) ^ (i : ℕ) * sineVec (2 * m + 1) (fineIndex j) i := by
-  rw [sineVec_fineIndex, sineVec_apply, aliasIndex]
-  have hj : (j : ℕ) ≤ 2 * m := by have := j.isLt; omega
-  have hang : ((((2 * m - j : ℕ) : ℕ) : ℝ) + 1) * π / (((2 * m + 1 : ℕ) : ℝ) + 1)
-      = π - modeAngle m j := by
-    rw [Nat.cast_sub hj, modeAngle]
-    push_cast
-    field_simp
-    ring
-  rw [hang, show ((((i : ℕ) : ℝ) + 1) * (π - modeAngle m j))
+  rw [sineVec_fineIndex, sineVec_apply, angle_aliasIndex]
+  rw [show ((((i : ℕ) : ℝ) + 1) * (π - modeAngle m j))
       = (((i : ℕ) + 1 : ℕ) : ℝ) * π - (((i : ℕ) : ℝ) + 1) * modeAngle m j by push_cast; ring,
     Real.sin_sub, Real.sin_nat_mul_pi, Real.cos_nat_mul_pi]
   ring
@@ -226,7 +228,7 @@ private theorem coarseAt_sineVec (j : Fin m) {K : ℕ} (hK : K ≤ m + 1) :
     · have hkm : k = m := by omega
       subst hkm
       have hsum : coarseAt (sineVec k j) (k + 1) = 0 :=
-        Finset.sum_eq_zero fun b _ => ite_eq_right fun h => by have := b.isLt; omega
+        Finset.sum_eq_zero fun b _ => ite_eq_right fun h => by omega
       rw [hsum, modeAngle]
       have hrw : ((k + 1 : ℕ) : ℝ) * (2 * ((((j : ℕ) : ℝ) + 1) * π / (2 * k + 2)))
           = (((j : ℕ) + 1 : ℕ) : ℝ) * π := by
@@ -323,13 +325,7 @@ theorem fullWeighting_mulVec_sineVec_aliasIndex (j : Fin m) :
       -(Real.sin (modeAngle m j / 2) ^ 2) • sineVec m j := by
   funext q
   rw [fullWeighting_mulVec_sineVec_apply, Pi.smul_apply, smul_eq_mul, sineVec_coarse]
-  have hj : (j : ℕ) ≤ 2 * m := by have := j.isLt; omega
-  have h : (((aliasIndex j : ℕ) : ℝ) + 1) * π / (((2 * m + 1 : ℕ) : ℝ) + 1)
-      = π - modeAngle m j := by
-    rw [aliasIndex, modeAngle, Fin.val_mk, Nat.cast_sub hj]
-    push_cast
-    field_simp
-    ring
+  have h := angle_aliasIndex j
   set θ := modeAngle m j
   have hc : Real.cos ((π - θ) / 2) = Real.sin (θ / 2) := by
     rw [show (π - θ) / 2 = π / 2 - θ / 2 by ring, Real.cos_pi_div_two_sub]
@@ -407,13 +403,7 @@ private theorem symmTridiagonalToeplitz_mulVec_sineVec_aliasIndex (j : Fin m) :
       (4 * Real.cos (modeAngle m j / 2) ^ 2) • sineVec (2 * m + 1) (aliasIndex j) := by
   rw [symmTridiagonalToeplitz_mulVec_sineVec]
   congr 1
-  have hj : (j : ℕ) ≤ 2 * m := by have := j.isLt; omega
-  have h : (((aliasIndex j : ℕ) : ℝ) + 1) * π / (((2 * m + 1 : ℕ) : ℝ) + 1)
-      = π - modeAngle m j := by
-    rw [aliasIndex, modeAngle, Fin.val_mk, Nat.cast_sub hj]
-    push_cast
-    field_simp
-    ring
+  have h := angle_aliasIndex j
   rw [h, Real.cos_pi_sub, cos_eq_cos_sq_half_sub]
   linear_combination (-2 : ℝ) * Real.sin_sq_add_cos_sq (modeAngle m j / 2)
 

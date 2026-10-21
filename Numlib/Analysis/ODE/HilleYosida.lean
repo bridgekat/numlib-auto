@@ -718,7 +718,6 @@ theorem hasDerivWithinAt_Icc_of_tendstoUniformlyOn {ι : Type*} {l : Filter ι} 
     rw [Metric.tendsto_nhds]
     intro ε hε
     have hε' : 0 < ε / (b - a + 1) := by
-      have : 0 ≤ b - a := by linarith
       positivity
     filter_upwards [hF', Metric.tendstoUniformlyOn_iff.1 hg _ hε'] with i hF'i hi
     have hii : IntervalIntegrable (F' i) MeasureTheory.volume a t :=

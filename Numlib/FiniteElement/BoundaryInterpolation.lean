@@ -1,5 +1,6 @@
 import Numlib.Analysis.Sobolev.Boundary.PolygonTrace
 import Numlib.Approximation.SobolevInterpolation
+import Numlib.MeasureTheory.Integral.Bochner.Set
 
 /-!
 # The `L²(∂Ω)` error of the linear interpolant on a polygon
@@ -36,16 +37,6 @@ noncomputable section
 /-- `ℝ²`, locally. -/
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- A finite sum of integrals of a nonnegative function over pairwise disjoint measurable subsets
-of `J` is at most the integral over `J`. -/
-private theorem sum_setIntegral_le_of_pairwiseDisjoint {ι : Type*} (S : Finset ι) {I : ι → Set ℝ}
-    {J : Set ℝ} {F : ℝ → ℝ} (hI : ∀ e ∈ S, MeasurableSet (I e)) (hIJ : ∀ e ∈ S, I e ⊆ J)
-    (hdisj : (S : Set ι).PairwiseDisjoint I) (hF : IntegrableOn F J) (hF0 : ∀ x, 0 ≤ F x) :
-    ∑ e ∈ S, ∫ x in I e, F x ≤ ∫ x in J, F x := by
-  rw [← integral_biUnion_finset S hI hdisj fun e he ↦ hF.mono_set (hIJ e he)]
-  exact setIntegral_mono_set hF (Eventually.of_forall hF0)
-    (LE.le.eventuallySubset (iUnion₂_subset hIJ))
-
 /-- **The one-panel affine interpolation estimate** on a sub-interval `[s, t] ⊆ [0, 1]` for the
 `C¹` representative `f` of an element `U ∈ H²(0, 1)`: `∫_s^t (f − G)² ≤ (t − s)⁴ ∫_s^t |U''|²`
 when `G` is the affine interpolant of `f` at `s` and `t`
@@ -74,7 +65,8 @@ theorem integral_sq_sub_affine_le (U : SobolevInterval 2 0 1) {f : ℝ → ℝ} 
     rw [uIcc_of_le hst.le, uIcc_of_le zero_le_one]
     exact Icc_subset_Icc hs ht
   let F : C(Icc s t, ℝ) := ⟨fun r ↦ f r, hf.continuous.comp continuous_subtype_val⟩
-  refine integral_sq_sub_piecewiseLinearInterpCLM_le hstep hx0 hx1 hmesh hf
+  refine integral_sq_sub_piecewiseLinearInterpCLM_le ⟨fun i hi ↦ hstep i (by omega), hx0, hx1⟩
+    hmesh hf
     ((SobolevInterval.intervalIntegrable_deriv zero_le_one U _).mono_set hsub)
     ((SobolevInterval.intervalIntegrable_deriv_sq zero_le_one U _).mono_set hsub)
     (fun r hr r' hr' ↦ hfU r ⟨hs.trans hr.1, hr.2.trans ht⟩ r' ⟨hs.trans hr'.1, hr'.2.trans ht⟩)
@@ -352,7 +344,7 @@ theorem integral_sq_sub_globalInterp_boundaryMeasure_le {κ : Type*} [Fintype κ
     _ ≤ ∑ j, 𝒯.meshSize ^ 4 * ‖Q j - P j‖⁻¹ ^ 3
           * ∫ r in Ioo (0 : ℝ) 1, SobolevInterval.deriv (Us j) (Fin.last 2) r ^ 2 := by
         refine Finset.sum_le_sum fun j _ ↦ mul_le_mul_of_nonneg_left ?_ (by positivity)
-        refine sum_setIntegral_le_of_pairwiseDisjoint _ (fun e _ ↦ measurableSet_Ioo)
+        refine sum_setIntegral_le_setIntegral_of_pairwiseDisjoint _ (fun e _ ↦ measurableSet_Ioo)
           (fun e _ ↦ Ioo_subset_Ioo (hs e) (ht e)) ?_
           ((memLp_two_iff_integrable_sq (Lp.aestronglyMeasurable _)).1 (Lp.memLp _))
           (fun x ↦ sq_nonneg _)
@@ -404,8 +396,6 @@ theorem norm_traceL_sub_globalInterp_le (hI : 𝒯.InteriorEdgesSubset) {κ : Ty
     filter_upwards [hγ] with x hx
     rw [hx, Pi.sub_apply]
     ring
-  have hS0 : 0 ≤ ∑ k, ‖Q k - P k‖⁻¹ ^ 3 * SobolevInterval.seminorm 2 0 1 (Us k) ^ 2 :=
-    Finset.sum_nonneg fun k _ ↦ by positivity
   calc ‖(𝒯.traceFamily hI).traceL 2 ENNReal.ofNat_ne_top w‖
       = Real.sqrt (‖(𝒯.traceFamily hI).traceL 2 ENNReal.ofNat_ne_top w‖ ^ 2) :=
         (Real.sqrt_sq (norm_nonneg _)).symm

@@ -1222,7 +1222,6 @@ theorem exists_forall_setIntegral_sq_add_sq_le {u f : ℝ → ℝ} (hu : ContDif
     ∃ K : ℝ, ∀ n : ℕ, ∫ x in Icc (-((n : ℝ) + 1)) ((n : ℝ) + 1),
       (u x ^ 2 + _root_.deriv u x ^ 2) ≤ K := by
   obtain ⟨C, hC0, hC⟩ := exists_abs_deriv_cutoffFn_le
-  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0)
   refine ⟨(∫ x, f x ^ 2) + 16 * C ^ 2 * M ^ 2, fun n ↦ ?_⟩
   set η := cutoffFn n with hηdef
   set R : ℝ := 2 * ((n : ℝ) + 1) with hRdef
@@ -1230,9 +1229,7 @@ theorem exists_forall_setIntegral_sq_add_sq_le {u f : ℝ → ℝ} (hu : ContDif
   -- smoothness facts
   have hηc : ContDiff ℝ 1 η := (contDiff_cutoffFn n).of_le (by simp)
   have hηd : Differentiable ℝ η := hηc.differentiable one_ne_zero
-  have hη' : Continuous (_root_.deriv η) := hηc.continuous_deriv le_rfl
   have hηs : HasCompactSupport η := hasCompactSupport_cutoffFn n
-  have hη0 : ∀ x, R ≤ |x| → η x = 0 := fun x hx ↦ cutoffFn_of_le_abs hx
   have hη1 : ∀ x, |x| ≤ (n : ℝ) + 1 → η x = 1 := fun x hx ↦ cutoffFn_of_abs_le hx
   have hu1 : Differentiable ℝ u := hu.differentiable (by norm_num)
   have hu' : ContDiff ℝ 1 (_root_.deriv u) := by
@@ -1350,7 +1347,6 @@ theorem exists_forall_setIntegral_sq_add_sq_le {u f : ℝ → ℝ} (hu : ContDif
   rw [hL, hR] at hamgm
   -- the bound on `∫ η'² u²`
   have hE : ∫ x, _root_.deriv η x ^ 2 * u x ^ 2 ≤ 4 * C ^ 2 * M ^ 2 := by
-    have hR0 : 0 ≤ R := by positivity
     have hsub : ∫ x, _root_.deriv η x ^ 2 * u x ^ 2
         = ∫ x in Icc (-R) R, _root_.deriv η x ^ 2 * u x ^ 2 := by
       refine (setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ ?_).symm
@@ -1380,7 +1376,6 @@ theorem exists_forall_setIntegral_sq_add_sq_le {u f : ℝ → ℝ} (hu : ContDif
           rw [hRdef]; field_simp; ring
       _ ≤ 4 * C ^ 2 * M ^ 2 := by
           rw [div_le_iff₀ hn1]
-          have : 1 ≤ (n : ℝ) + 1 := by linarith [(n.cast_nonneg : (0 : ℝ) ≤ n)]
           nlinarith [mul_nonneg (mul_nonneg (by norm_num : (0:ℝ) ≤ 4) (sq_nonneg C)) (sq_nonneg M)]
   -- the bound on `∫ η² f²`
   have hF : ∫ x, η x ^ 2 * f x ^ 2 ≤ ∫ x, f x ^ 2 := by

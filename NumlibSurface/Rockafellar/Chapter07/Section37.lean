@@ -569,7 +569,7 @@ theorem corollary_37_3_2_right (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : I
     (⨆ u ∈ C, ⨅ v ∈ D, ((K (u, v) : ℝ) : EReal))
       = ⨅ v ∈ D, ⨆ u ∈ C, ((K (u, v) : ℝ) : EReal) :=
   biSup_biInf_eq_biInf_biSup_of_isBounded_right (pairing m) (pairing n)
-    (separatingRight_pairing n) hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC hbd
+    (separatingRight_pairing n) hC hCcl hDcl hCne hDne ⟨hconc, hconv⟩ hcontD hcontC hbd
 
 /-- **Corollary 37.3.2**, the half where `C` is bounded. Same divergences as
 `corollary_37_3_2_right`. -/
@@ -582,7 +582,7 @@ theorem corollary_37_3_2_left (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : Is
     (⨆ u ∈ C, ⨅ v ∈ D, ((K (u, v) : ℝ) : EReal))
       = ⨅ v ∈ D, ⨆ u ∈ C, ((K (u, v) : ℝ) : EReal) :=
   biSup_biInf_eq_biInf_biSup_of_isBounded_left (pairing m) (pairing n)
-    (separatingLeft_pairing m) hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC hbd
+    (separatingLeft_pairing m) hC hCcl hDcl hCne hDne ⟨hconc, hconv⟩ hcontD hcontC hbd
 
 end Cor3732
 
@@ -935,7 +935,7 @@ theorem corollary_37_6_2 (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClose
     ∃ q : Rn m × Rn n, q.1 ∈ C ∧ q.2 ∈ D ∧
       (∀ u ∈ C, K (u, q.2) ≤ K q) ∧ ∀ v ∈ D, K q ≤ K (q.1, v) :=
   exists_saddlePoint_of_isBounded (pairing m) (pairing n) (separatingLeft_pairing m)
-    (separatingRight_pairing n) hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC hbdC hbdD
+    (separatingRight_pairing n) hC hCcl hDcl hCne hDne ⟨hconc, hconv⟩ hcontD hcontC hbdC hbdD
 
 end Cor3762
 

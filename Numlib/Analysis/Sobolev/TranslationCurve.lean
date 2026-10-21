@@ -508,7 +508,6 @@ theorem eventually_norm_translateCurve_sub_sub_smul_le (hp : p ≠ ⊤)
   filter_upwards [Metric.ball_mem_nhds (0 : ℝ) hδ] with h hh
   rw [Metric.mem_ball, dist_zero_right, Real.norm_eq_abs, lt_min_iff] at hh
   rw [Real.norm_eq_abs h]
-  have hN : (0 : ℝ) ≤ N := Nat.cast_nonneg N
   have e1 : (N + 1) * ‖u - v‖ ≤ ε / 3 := by
     calc (N + 1) * ‖u - v‖ ≤ (N + 1) * (ε / (3 * (N + 1))) := by gcongr
       _ = ε / 3 := by field_simp

@@ -23,7 +23,9 @@ quotes.
 
 ## Main definitions
 
-* `Spline.IsPartition a b n x`: `a = x 0 < x 1 < ⋯ < x n = b`.
+All of them are over a partition `IsIntervalPartition a b n x`, `a = x 0 < x 1 < ⋯ < x n = b`
+(`Numlib/Approximation/Partition`).
+
 * `Spline.splineSpace a b n x k r : Submodule ℝ C(Icc a b, ℝ)`, the splines of degree `k` and
   smoothness `C^r`. The book's `S_k` is `r = k - 1`; its `X_h^k` (the range of the piecewise
   polynomial interpolation operator of `Numlib/Approximation/Interpolation`) is `r = 0`; and `r = k`
@@ -84,95 +86,6 @@ open scoped Topology
 namespace Spline
 
 variable {a b : ℝ} {n k r : ℕ} {x : ℕ → ℝ}
-
-/-! ### Partitions -/
-
-/-- The nodes of [quarteroni2000numerical] Definition 8.1: `a = x 0 < x 1 < ⋯ < x n = b`, `n`
-panels and `n + 1` nodes; only `x 0, …, x n` are ever used. -/
-structure IsPartition (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) : Prop where
-  /-- Consecutive nodes increase. -/
-  step : ∀ j < n, x j < x (j + 1)
-  /-- The first node is `a`. -/
-  first : x 0 = a
-  /-- The last node is `b`. -/
-  last : x n = b
-
-namespace IsPartition
-
-variable (hx : IsPartition a b n x)
-include hx
-
-/-- The nodes are monotone along the used range. -/
-theorem mono {i j : ℕ} (hij : i ≤ j) (hj : j ≤ n) : x i ≤ x j := by
-  induction j, hij using Nat.le_induction with
-  | base => exact le_rfl
-  | succ m hm ih => exact (ih (by omega)).trans (hx.step m (by omega)).le
-
-/-- The nodes are strictly monotone along the used range. -/
-theorem lt {i j : ℕ} (hij : i < j) (hj : j ≤ n) : x i < x j := by
-  obtain ⟨m, rfl⟩ : ∃ m, j = m + 1 := ⟨j - 1, by omega⟩
-  exact (hx.mono (by omega) (by omega)).trans_lt (hx.step m (by omega))
-
-/-- `a ≤ x i` for `i ≤ n`. -/
-theorem left_le {i : ℕ} (hi : i ≤ n) : a ≤ x i := hx.first ▸ hx.mono (Nat.zero_le i) hi
-
-/-- `x i ≤ b` for `i ≤ n`. -/
-theorem le_right {i : ℕ} (hi : i ≤ n) : x i ≤ b := hx.last ▸ hx.mono hi le_rfl
-
-/-- The endpoints are ordered. -/
-theorem le : a ≤ b := hx.last ▸ hx.left_le le_rfl
-
-/-- The endpoints are strictly ordered when there is at least one panel. -/
-theorem lt_of_pos (hn : 1 ≤ n) : a < b := hx.first ▸ hx.last ▸ hx.lt hn le_rfl
-
-/-- A panel lies inside `[a, b]`. -/
-theorem Icc_subset {i : ℕ} (hi : i < n) : Icc (x i) (x (i + 1)) ⊆ Icc a b :=
-  Icc_subset_Icc (hx.left_le hi.le) (hx.le_right hi)
-
-/-- Every point of `[a, b]` lies in a panel `[x (i - 1), x i]` with `1 ≤ i ≤ n`, which can be
-chosen so that `x (i - 1) < t` unless `t = a` (and then `i = 1`). -/
-theorem exists_mem_panel (hn : 1 ≤ n) {t : ℝ} (ht : t ∈ Icc a b) :
-    ∃ i, 1 ≤ i ∧ i ≤ n ∧ t ∈ Icc (x (i - 1)) (x i) ∧ (x (i - 1) < t ∨ i = 1) := by
-  classical
-  set S : Finset ℕ := (Finset.range n).filter fun j => x j < t with hS
-  rcases S.eq_empty_or_nonempty with hS0 | hS0
-  · have hta : t = a := by
-      refine le_antisymm ?_ ht.1
-      by_contra h
-      have : 0 ∈ S := Finset.mem_filter.mpr ⟨Finset.mem_range.mpr hn, by
-        rw [hx.first]; exact lt_of_not_ge h⟩
-      simp [hS0] at this
-    refine ⟨1, le_rfl, hn, ⟨?_, ?_⟩, Or.inr rfl⟩
-    · simpa [hx.first] using ht.1
-    · rw [hta, ← hx.first]; exact (hx.step 0 hn).le
-  · set m := S.max' hS0 with hm
-    have hmS : m ∈ S := S.max'_mem _
-    obtain ⟨hmr, hmt⟩ := Finset.mem_filter.mp hmS
-    have hmn : m < n := Finset.mem_range.mp hmr
-    refine ⟨m + 1, by omega, hmn, ⟨by simpa using hmt.le, ?_⟩, Or.inl (by simpa using hmt)⟩
-    by_contra h
-    push Not at h
-    have hm1 : m + 1 < n := by
-      by_contra h'
-      have : m + 1 = n := by omega
-      rw [this, hx.last] at h
-      exact absurd ht.2 (not_le.mpr h)
-    have := S.le_max' _ (Finset.mem_filter.mpr ⟨Finset.mem_range.mpr hm1, h⟩)
-    omega
-
-/-- **The nodes of a uniform mesh** are `x_i = a + i h`. -/
-theorem node_eq_of_uniform {h : ℝ} (huni : ∀ j < n, x (j + 1) - x j = h) {i : ℕ} (hi : i ≤ n) :
-    x i = a + i * h := by
-  induction i with
-  | zero => simp [hx.first]
-  | succ m ih =>
-      have hstep := huni m (by omega)
-      have hm := ih (by omega)
-      push_cast
-      rw [show x (m + 1) = x m + h by linarith, hm]
-      ring
-
-end IsPartition
 
 /-! ### The spline space -/
 
@@ -319,8 +232,8 @@ theorem monomialCM_mem_polyLE (a b : ℝ) {i : ℕ} (hi : i ≤ k) :
 /-- **A truncated power at an interior breakpoint is a spline**: `(t - x j)_+^s` with `r < s ≤ k`
 and `0 < j < n` lies in `S_k^r`, being `C^{s-1}` (`contDiff_max_sub_pow`) and a polynomial on
 either side of `x j`. -/
-theorem truncPowCM_mem_splineSpace (hx : IsPartition a b n x) {j s : ℕ} (hjn : j < n) (hrs : r < s)
-    (hsk : s ≤ k) : truncPowCM a b (x j) s ∈ splineSpace a b n x k r := by
+theorem truncPowCM_mem_splineSpace (hx : IsIntervalPartition a b n x) {j s : ℕ} (hjn : j < n)
+    (hrs : r < s) (hsk : s ≤ k) : truncPowCM a b (x j) s ∈ splineSpace a b n x k r := by
   obtain ⟨s, rfl⟩ : ∃ s', s = s' + 1 := ⟨s - 1, by omega⟩
   refine ⟨fun t => max (t - x j) 0 ^ (s + 1),
     ((contDiff_max_sub_pow (x j) s).of_le (by exact_mod_cast (by omega : r ≤ s))).contDiffOn,
@@ -355,7 +268,8 @@ noncomputable def truncPowFamily (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) (k r : 
   | Sum.inr (j, s) => truncPowCM a b (x (j + 1)) (r + 1 + s)
 
 /-- Every member of the truncated-power family is a spline. -/
-theorem truncPowFamily_mem_splineSpace (hx : IsPartition a b n x) (i : TruncPowIndex n k r) :
+theorem truncPowFamily_mem_splineSpace (hx : IsIntervalPartition a b n x)
+    (i : TruncPowIndex n k r) :
     truncPowFamily a b n x k r i ∈ splineSpace a b n x k r := by
   rcases i with i | ⟨j, s⟩
   · exact polyLE_le_splineSpace a b n x k r (monomialCM_mem_polyLE a b (Nat.lt_succ_iff.mp i.2))
@@ -438,7 +352,7 @@ independence half): on the first panel only the monomials survive, so their coef
 then, panel by panel, only the truncated powers at breakpoints to the left survive, and the
 coefficients of the powers at the newest breakpoint vanish because `(t - x_j)^s`, `r < s ≤ k`, are
 independent polynomials. -/
-theorem linearIndependent_truncPow (hx : IsPartition a b n x) (hn : 1 ≤ n) :
+theorem linearIndependent_truncPow (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     LinearIndependent ℝ (truncPowFamily a b n x k r) := by
   classical
   rw [Fintype.linearIndependent_iff]
@@ -456,7 +370,7 @@ theorem linearIndependent_truncPow (hx : IsPartition a b n x) (hn : 1 ≤ n) :
   have hvan : ∀ (i : ℕ) (j : Fin (n - 1)) (s : Fin (k - r)) (t : ℝ), i ≤ n → t ≤ x i →
       i ≤ (j : ℕ) + 1 → max (t - x (j + 1)) 0 ^ (r + 1 + s) = 0 := by
     intro i j s t hi ht hij
-    rw [max_eq_right (sub_nonpos.mpr (ht.trans (hx.mono hij (by have := j.2; omega)))),
+    rw [max_eq_right (sub_nonpos.mpr (ht.trans (hx.mono hij (by omega)))),
       zero_pow (by omega)]
   -- the monomial coefficients vanish
   have hmono : ∀ i, g (Sum.inl i) = 0 := by
@@ -485,7 +399,7 @@ theorem linearIndependent_truncPow (hx : IsPartition a b n x) (hn : 1 ≤ n) :
     induction m using Nat.strong_induction_on with
     | _ m ih =>
     intro j hjm s
-    have hj : (j : ℕ) + 1 < n := by have := j.2; omega
+    have hj : (j : ℕ) + 1 < n := by omega
     have hpoly : (∑ s : Fin (k - r), C (g (Sum.inr (j, s))) * (X - C (x (j + 1))) ^ (r + 1 + s))
         = 0 := by
       refine eq_zero_of_eval_eq_zero_on_Icc (hx.step (j + 1) hj) fun t ht => ?_
@@ -527,7 +441,7 @@ spanning half): a spline is its first panel polynomial `p_0` plus, at each inter
 contact with zero at `x_j` (`iterate_derivative_eval_eq_zero_of_eqOn`) and is therefore a
 combination of `(t - x_j)^s`, `r < s ≤ k`, which continued by zero to the left is a combination of
 the truncated powers. -/
-theorem span_truncPow_eq_splineSpace (hx : IsPartition a b n x) (hn : 1 ≤ n) :
+theorem span_truncPow_eq_splineSpace (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     Submodule.span ℝ (Set.range (truncPowFamily a b n x k r)) = splineSpace a b n x k r := by
   classical
   refine le_antisymm (Submodule.span_le.mpr ?_) fun f hf => ?_
@@ -547,7 +461,7 @@ theorem span_truncPow_eq_splineSpace (hx : IsPartition a b n x) (hn : 1 ≤ n) :
   have hdiff : ∀ j : Fin (n - 1), ∀ t, (p (j + 1) - p j).eval t =
       ∑ s : Fin (k - r), c (Sum.inr (j, s)) * (t - x (j + 1)) ^ (r + 1 + s) := by
     intro j t
-    have hj : (j : ℕ) + 1 < n := by have := j.2; omega
+    have hj : (j : ℕ) + 1 < n := by omega
     rw [eval_eq_sum_Ioc_of_iterate_derivative_eq_zero (k := k) (r := r)
       ((natDegree_sub_le _ _).trans (max_le (hdeg _ hj) (hdeg _ (by omega)))), sum_Ioc_eq_sum_fin]
     intro m hm
@@ -591,7 +505,7 @@ theorem span_truncPow_eq_splineSpace (hx : IsPartition a b n x) (hn : 1 ≤ n) :
           rw [max_eq_left (sub_nonneg.mpr ((hx.mono (by omega) hmn.le).trans hti.1))]
         · refine Finset.sum_eq_zero fun s _ => ?_
           rw [max_eq_right (sub_nonpos.mpr (hti.2.trans (hx.mono (by omega)
-            (by have := j.2; omega)))), zero_pow (by omega), mul_zero]
+            (by omega)))), zero_pow (by omega), mul_zero]
       simp_rw [this]
       rw [Fin.sum_univ_eq_sum_range (fun j => if j < m then (p (j + 1)).eval (t : ℝ) -
         (p j).eval (t : ℝ) else 0) (n - 1), ← Finset.sum_filter]
@@ -616,13 +530,13 @@ theorem card_truncPowIndex (hn : 1 ≤ n) (hrk : r ≤ k) :
 /-- **The dimension of the spline space** ([quarteroni2000numerical] Definition 8.1,
 `dim S_k = n + k`, and (8.43)): `dim S_k^r = n (k - r) + r + 1`; for `r = k - 1` this is `n + k`,
 for `r = 0` it is `n k + 1`. -/
-theorem finrank_splineSpace (hx : IsPartition a b n x) (hn : 1 ≤ n) (hrk : r ≤ k) :
+theorem finrank_splineSpace (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (hrk : r ≤ k) :
     Module.finrank ℝ (splineSpace a b n x k r) = n * (k - r) + r + 1 := by
   rw [← span_truncPow_eq_splineSpace hx hn, finrank_span_eq_card (linearIndependent_truncPow hx hn),
     card_truncPowIndex hn hrk]
 
 /-- The spline space of a partition is finite-dimensional. -/
-theorem finiteDimensional_splineSpace (hx : IsPartition a b n x) (hn : 1 ≤ n) :
+theorem finiteDimensional_splineSpace (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     FiniteDimensional ℝ (splineSpace a b n x k r) := by
   rw [← span_truncPow_eq_splineSpace hx hn]
   exact FiniteDimensional.span_of_finite ℝ (Set.finite_range _)
@@ -631,7 +545,7 @@ theorem finiteDimensional_splineSpace (hx : IsPartition a b n x) (hn : 1 ≤ n) 
 `S_k = S_k^{k-1}` indexed by `Fin (n + k)` whose first `k + 1` vectors are the monomials
 `1, t, …, t^k` and whose remaining `n - 1` vectors are the truncated powers `(t - x_j)_+^k`,
 `j = 1, …, n - 1`. -/
-theorem exists_basis_truncPow (hx : IsPartition a b n x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
+theorem exists_basis_truncPow (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
     ∃ B : Module.Basis (Fin (n + k)) ℝ (splineSpace a b n x k (k - 1)),
       (∀ i : Fin (n + k), (i : ℕ) ≤ k → ∀ t : Icc a b,
         (B i : C(Icc a b, ℝ)) t = (t : ℝ) ^ (i : ℕ)) ∧
@@ -639,20 +553,20 @@ theorem exists_basis_truncPow (hx : IsPartition a b n x) (hn : 1 ≤ n) (hk : 1 
         (B i : C(Icc a b, ℝ)) t = Quadrature.truncPow k (t : ℝ) (x (i - k)) := by
   classical
   set φ : TruncPowIndex n k (k - 1) → Fin (n + k) := fun i => match i with
-    | Sum.inl i => ⟨i, by have := i.2; omega⟩
-    | Sum.inr (j, _) => ⟨k + 1 + j, by have := j.2; omega⟩ with hφ
+    | Sum.inl i => ⟨i, by omega⟩
+    | Sum.inr (j, _) => ⟨k + 1 + j, by omega⟩ with hφ
   have hφb : Function.Bijective φ := by
     constructor
     · rintro (i | ⟨j, s⟩) (i' | ⟨j', s'⟩) h <;> simp only [hφ, Fin.mk.injEq] at h
       · exact congrArg Sum.inl (Fin.ext h)
       · omega
       · omega
-      · have hs : s = s' := Fin.ext (by have := s.2; have := s'.2; omega)
+      · have hs : s = s' := Fin.ext (by omega)
         rw [hs, show j = j' from Fin.ext (by omega)]
     · intro i
       by_cases hi : (i : ℕ) ≤ k
       · exact ⟨Sum.inl ⟨i, by omega⟩, Fin.ext rfl⟩
-      · exact ⟨Sum.inr (⟨i - k - 1, by have := i.2; omega⟩, ⟨0, by omega⟩), Fin.ext (by
+      · exact ⟨Sum.inr (⟨i - k - 1, by omega⟩, ⟨0, by omega⟩), Fin.ext (by
           simp only [hφ]; omega)⟩
   set e : TruncPowIndex n k (k - 1) ≃ Fin (n + k) := Equiv.ofBijective φ hφb with he
   set B₀ := Module.Basis.span (linearIndependent_truncPow (k := k) (r := k - 1) hx hn) with hB₀
@@ -666,7 +580,7 @@ theorem exists_basis_truncPow (hx : IsPartition a b n x) (hn : 1 ≤ n) (hk : 1 
       rw [Equiv.symm_apply_eq]; exact Fin.ext rfl
     rw [hBval, this]
     rfl
-  · have : e.symm i = Sum.inr (⟨i - k - 1, by have := i.2; omega⟩, ⟨0, by omega⟩) := by
+  · have : e.symm i = Sum.inr (⟨i - k - 1, by omega⟩, ⟨0, by omega⟩) := by
       rw [Equiv.symm_apply_eq]
       exact Fin.ext (by simp only [he, Equiv.ofBijective_apply, hφ]; omega)
     rw [hBval, this]
@@ -705,7 +619,7 @@ theorem Icc_subset_extPanel (i : ℕ) : Icc (x (i - 1)) (x i) ⊆ extPanel n x i
   fun _ ht => ⟨fun _ => ht.1, fun _ => ht.2⟩
 
 /-- The panel index of a point of the `i`-th half-open panel is `i`. -/
-theorem panelIndex_eq (hx : IsPartition a b n x) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) {t : ℝ}
+theorem panelIndex_eq (hx : IsIntervalPartition a b n x) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) {t : ℝ}
     (ht1 : 1 < i → x (i - 1) ≤ t) (ht2 : i < n → t < x i) : panelIndex n x t = i := by
   classical
   have : ((Finset.Ico 1 n).filter fun j => x j ≤ t) = Finset.Ico 1 i := by
@@ -724,7 +638,7 @@ theorem panelIndex_eq (hx : IsPartition a b n x) {i : ℕ} (hi1 : 1 ≤ i) (hin 
 
 /-- On the `i`-th extended panel the glued function is `Q i`, provided the panel functions agree
 at the interior nodes. -/
-theorem panelGlue_eq_of_mem (hx : IsPartition a b n x) {Q : ℕ → ℝ → ℝ}
+theorem panelGlue_eq_of_mem (hx : IsIntervalPartition a b n x) {Q : ℕ → ℝ → ℝ}
     (hQ : ∀ i, 1 ≤ i → i < n → Q i (x i) = Q (i + 1) (x i)) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n)
     {t : ℝ} (ht : t ∈ extPanel n x i) : panelGlue n x Q t = Q i t := by
   by_cases h : i < n ∧ t = x i
@@ -736,8 +650,8 @@ theorem panelGlue_eq_of_mem (hx : IsPartition a b n x) {Q : ℕ → ℝ → ℝ}
 
 /-- Every real number has an extended panel that is a neighbourhood of it, or is an interior node
 `x i` with the union of the two adjacent extended panels a neighbourhood of it. -/
-theorem IsPartition.exists_extPanel_mem_nhds (hx : IsPartition a b n x) (hn : 1 ≤ n) (t : ℝ) :
-    ∃ i, 1 ≤ i ∧ i ≤ n ∧ t ∈ extPanel n x i ∧ (extPanel n x i ∈ 𝓝 t ∨
+theorem _root_.IsIntervalPartition.exists_extPanel_mem_nhds (hx : IsIntervalPartition a b n x)
+    (hn : 1 ≤ n) (t : ℝ) : ∃ i, 1 ≤ i ∧ i ≤ n ∧ t ∈ extPanel n x i ∧ (extPanel n x i ∈ 𝓝 t ∨
       (t = x i ∧ i < n ∧ extPanel n x i ∪ extPanel n x (i + 1) ∈ 𝓝 t)) := by
   rcases le_or_gt t a with hta | hat
   · refine ⟨1, le_rfl, hn, ⟨fun h => absurd h (lt_irrefl _), fun _ => hta.trans ?_⟩, Or.inl ?_⟩
@@ -776,7 +690,7 @@ theorem IsPartition.exists_extPanel_mem_nhds (hx : IsPartition a b n x) (hn : 1 
 /-- **Differentiability of a glued function.** If the panel functions `Q i` have derivatives
 `Q' i` on their extended panels, and both the `Q i` and the `Q' i` agree at the interior nodes,
 then the glued function is differentiable everywhere with derivative the glued `Q'`. -/
-theorem hasDerivAt_panelGlue (hx : IsPartition a b n x) (hn : 1 ≤ n) {Q Q' : ℕ → ℝ → ℝ}
+theorem hasDerivAt_panelGlue (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {Q Q' : ℕ → ℝ → ℝ}
     (hQ : ∀ i, 1 ≤ i → i < n → Q i (x i) = Q (i + 1) (x i))
     (hQ' : ∀ i, 1 ≤ i → i < n → Q' i (x i) = Q' (i + 1) (x i))
     (hd : ∀ i, 1 ≤ i → i ≤ n → ∀ t ∈ extPanel n x i, HasDerivAt (Q i) (Q' i t) t) (t : ℝ) :
@@ -795,7 +709,7 @@ theorem hasDerivAt_panelGlue (hx : IsPartition a b n x) (hn : 1 ≤ n) {Q Q' : �
 
 /-- **Continuity of a glued function.** If the panel functions are continuous on their extended
 panels and agree at the interior nodes, the glued function is continuous. -/
-theorem continuous_panelGlue (hx : IsPartition a b n x) (hn : 1 ≤ n) {Q : ℕ → ℝ → ℝ}
+theorem continuous_panelGlue (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {Q : ℕ → ℝ → ℝ}
     (hQ : ∀ i, 1 ≤ i → i < n → Q i (x i) = Q (i + 1) (x i))
     (hc : ∀ i, 1 ≤ i → i ≤ n → ContinuousOn (Q i) (extPanel n x i)) :
     Continuous (panelGlue n x Q) := by
@@ -1282,8 +1196,8 @@ end Dominance
 def panelLength (x : ℕ → ℝ) (i : ℕ) : ℝ := x i - x (i - 1)
 
 /-- The panel lengths of a partition are positive. -/
-theorem IsPartition.panelLength_pos (hx : IsPartition a b n x) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) :
-    0 < panelLength x i :=
+theorem _root_.IsIntervalPartition.panelLength_pos (hx : IsIntervalPartition a b n x) {i : ℕ}
+    (hi1 : 1 ≤ i) (hin : i ≤ n) : 0 < panelLength x i :=
   sub_pos.mpr (hx.lt (by omega) hin)
 
 /-- **The interior moment equation** at the node `x i` ([quarteroni2000numerical] (8.47)):
@@ -1305,7 +1219,7 @@ theorem isMomentEq_iff {f M : ℕ → ℝ} {i : ℕ} (h1 : x (i - 1) < x i) (h2 
   have ha : x i - x (i - 1) ≠ 0 := sub_ne_zero.mpr h1.ne'
   have hb : x (i + 1) - x i ≠ 0 := sub_ne_zero.mpr h2.ne'
   have hab : x i - x (i - 1) + (x (i + 1) - x i) ≠ 0 := by
-    have := sub_pos.mpr h1; have := sub_pos.mpr h2; linarith
+    linarith
   have hc : 6 / (x i - x (i - 1) + (x (i + 1) - x i)) ≠ 0 := div_ne_zero (by norm_num) hab
   have key : (x i - x (i - 1)) / (x i - x (i - 1) + (x (i + 1) - x i)) * M (i - 1) + 2 * M i
       + (x (i + 1) - x i) / (x i - x (i - 1) + (x (i + 1) - x i)) * M (i + 1)
@@ -1326,7 +1240,7 @@ noncomputable def cubicSplineFun (n : ℕ) (x f M : ℕ → ℝ) : ℝ → ℝ :
 
 section CubicSplineFun
 
-variable (hx : IsPartition a b n x) {f M : ℕ → ℝ}
+variable (hx : IsIntervalPartition a b n x) {f M : ℕ → ℝ}
 include hx
 
 /-- The panel cubics agree at the interior nodes. -/
@@ -1471,7 +1385,7 @@ theorem eq_of_hasDerivWithinAt_Icc {u v t d d' : ℝ} {g : ℝ → ℝ} (huv : u
 /-- **The M-continuity system is necessary** ([quarteroni2000numerical] (8.47)): a `C²` function
 on `[a, b]` which is the panel cubic `panelCubic x f M i` on every panel has moments satisfying the
 interior moment equations, because its one-sided slopes at every interior node agree. -/
-theorem moment_eq_of_contDiffOn (hx : IsPartition a b n x) {s : ℝ → ℝ}
+theorem moment_eq_of_contDiffOn (hx : IsIntervalPartition a b n x) {s : ℝ → ℝ}
     (hs : ContDiffOn ℝ 2 s (Icc a b)) {f M : ℕ → ℝ}
     (hpanel : ∀ i, 1 ≤ i → i ≤ n → EqOn s (panelCubic x f M i) (Icc (x (i - 1)) (x i)))
     {i : ℕ} (hi1 : 1 ≤ i) (hin : i < n) : IsMomentEq x f M i := by
@@ -1599,7 +1513,7 @@ theorem panelCubicPoly_congr {f g M N : ℕ → ℝ} {i : ℕ} (hf0 : f (i - 1) 
 /-- **A cubic spline is the panel cubic of its values and moments on every panel**
 ([quarteroni2000numerical] (8.46) integrated): on `[x (i - 1), x i]` it agrees with
 `panelCubic x (fun i => s (x i)) (moment a b x s) i`. -/
-theorem IsCubicSpline.eqOn_panelCubic (hx : IsPartition a b n x) {s : ℝ → ℝ}
+theorem IsCubicSpline.eqOn_panelCubic (hx : IsIntervalPartition a b n x) {s : ℝ → ℝ}
     (hs : IsCubicSpline a b n x s) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) :
     EqOn s (panelCubic x (fun i => s (x i)) (moment a b x s) i) (Icc (x (i - 1)) (x i)) := by
   obtain ⟨p, hpd, hpe⟩ := hs.piecewise i hi1 hin
@@ -1623,7 +1537,7 @@ theorem IsCubicSpline.eqOn_panelCubic (hx : IsPartition a b n x) {s : ℝ → �
   rfl
 
 /-- **An interpolatory cubic spline is the panel cubic of its data and moments on every panel.** -/
-theorem IsCubicInterp.eqOn_panelCubic (hx : IsPartition a b n x) {f : ℕ → ℝ} {s : ℝ → ℝ}
+theorem IsCubicInterp.eqOn_panelCubic (hx : IsIntervalPartition a b n x) {f : ℕ → ℝ} {s : ℝ → ℝ}
     (hs : IsCubicInterp a b n x f s) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) :
     EqOn s (panelCubic x f (moment a b x s) i) (Icc (x (i - 1)) (x i)) := by
   refine (hs.toIsCubicSpline.eqOn_panelCubic hx hi1 hin).trans fun t _ => ?_
@@ -1632,8 +1546,8 @@ theorem IsCubicInterp.eqOn_panelCubic (hx : IsPartition a b n x) {f : ℕ → �
 
 /-- **An interpolatory cubic spline is the glued cubic spline of its data and moments** on
 `[a, b]`. -/
-theorem IsCubicInterp.eqOn_cubicSplineFun (hx : IsPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ}
-    {s : ℝ → ℝ} (hs : IsCubicInterp a b n x f s) :
+theorem IsCubicInterp.eqOn_cubicSplineFun (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
+    {f : ℕ → ℝ} {s : ℝ → ℝ} (hs : IsCubicInterp a b n x f s) :
     EqOn s (cubicSplineFun n x f (moment a b x s)) (Icc a b) := by
   intro t ht
   obtain ⟨i, hi1, hin, hti, -⟩ := hx.exists_mem_panel hn ht
@@ -1641,15 +1555,15 @@ theorem IsCubicInterp.eqOn_cubicSplineFun (hx : IsPartition a b n x) (hn : 1 ≤
 
 /-- **The moments of an interpolatory cubic spline satisfy the M-continuity system**
 ([quarteroni2000numerical] (8.47)) at every interior node. -/
-theorem IsCubicInterp.isMomentEq (hx : IsPartition a b n x) {f : ℕ → ℝ} {s : ℝ → ℝ}
+theorem IsCubicInterp.isMomentEq (hx : IsIntervalPartition a b n x) {f : ℕ → ℝ} {s : ℝ → ℝ}
     (hs : IsCubicInterp a b n x f s) {i : ℕ} (hi1 : 1 ≤ i) (hin : i < n) :
     IsMomentEq x f (moment a b x s) i :=
   moment_eq_of_contDiffOn hx hs.contDiffOn (fun _ hi1 hin => hs.eqOn_panelCubic hx hi1 hin) hi1 hin
 
 /-- Two glued cubic splines with the same data and the same moments at the nodes agree on
 `[a, b]`. -/
-theorem cubicSplineFun_eqOn_of_moment_eq (hx : IsPartition a b n x) (hn : 1 ≤ n) {f M N : ℕ → ℝ}
-    (hMN : ∀ i ≤ n, M i = N i) :
+theorem cubicSplineFun_eqOn_of_moment_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
+    {f M N : ℕ → ℝ} (hMN : ∀ i ≤ n, M i = N i) :
     EqOn (cubicSplineFun n x f M) (cubicSplineFun n x f N) (Icc a b) := by
   intro t ht
   obtain ⟨i, hi1, hin, hti, -⟩ := hx.exists_mem_panel hn ht
@@ -1667,7 +1581,7 @@ def HasClosure (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) (lam0 mun d0 dn : ℝ) (s
 
 section Closure
 
-variable (hx : IsPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ} {lam0 mun d0 dn : ℝ}
+variable (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ} {lam0 mun d0 dn : ℝ}
 include hx hn
 
 /-- **The full moment system is the interior moment equations plus the closure rows**: for a
@@ -1820,7 +1734,7 @@ noncomputable def clampedInterp (n : ℕ) (x f : ℕ → ℝ) (f'0 f'n : ℝ) : 
 
 section CubicInterp
 
-variable (hx : IsPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ} {lam0 mun d0 dn : ℝ}
+variable (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ} {lam0 mun d0 dn : ℝ}
   (hl0 : 0 ≤ lam0) (hl1 : lam0 ≤ 1) (hm0 : 0 ≤ mun) (hm1 : mun ≤ 1)
 include hx hl0 hl1 hm0 hm1
 
@@ -1877,7 +1791,7 @@ end CubicInterp
 
 section NaturalClamped
 
-variable (hx : IsPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ}
+variable (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ}
 include hx hn
 
 /-- The natural spline is `C²` on `ℝ`. -/
@@ -2096,7 +2010,7 @@ noncomputable def cardinalBasis (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : ℝ → 
 
 section Cardinal
 
-variable (hx : IsPartition a b n x) (hn : 1 ≤ n)
+variable (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
 include hx hn
 
 /-- The cardinal functions at the nodes: `φ_i(x_j) = δ_ij` for `i, j ≤ n`, and `φ_{n+1}`, `φ_{n+2}`
@@ -2259,7 +2173,7 @@ end C2
 
 section Holladay
 
-variable (hx : IsPartition a b n x) (hn : 1 ≤ n) {f s g : ℝ → ℝ}
+variable (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {f s g : ℝ → ℝ}
   (hf : ContDiffOn ℝ 2 f (Icc a b)) (hs : IsCubicInterp a b n x (fun i => f (x i)) s)
   (hg : IsCubicSpline a b n x g)
 include hx hn hf hs hg
@@ -2396,15 +2310,18 @@ theorem integral_sub_deriv2_mul_deriv2_eq_zero
   · rw [h0, h1]; ring
 
 omit hg in
-/-- **The minimum-norm property for a natural or clamped interpolatory spline**
-([quarteroni2000numerical] Property 8.2, Holladay): `∫_a^b s''² ≤ ∫_a^b f''²`, from
-`∫ f''² = ∫ s''² + ∫ (f'' - s'')² + 2 ∫ (f'' - s'') s''` and the orthogonality identity. -/
-theorem integral_sq_deriv2_le_of_end
+/-- **Pythagoras for a natural or clamped interpolatory spline**:
+`∫_a^b f''² = ∫_a^b (f'' - s'')² + ∫_a^b s''²`, from
+`∫ f''² = ∫ (f'' - s'')² + ∫ s''² + 2 ∫ (f'' - s'') s''` and the orthogonality identity
+`integral_sub_deriv2_mul_deriv2_eq_zero`. -/
+theorem integral_sq_deriv2_eq_add
     (hend : (iteratedDerivWithin 2 s (Icc a b) a = 0 ∧ iteratedDerivWithin 2 s (Icc a b) b = 0) ∨
       (derivWithin s (Icc a b) a = derivWithin f (Icc a b) a ∧
         derivWithin s (Icc a b) b = derivWithin f (Icc a b) b)) :
-    ∫ t in a..b, iteratedDerivWithin 2 s (Icc a b) t ^ 2
-      ≤ ∫ t in a..b, iteratedDerivWithin 2 f (Icc a b) t ^ 2 := by
+    ∫ t in a..b, iteratedDerivWithin 2 f (Icc a b) t ^ 2
+      = (∫ t in a..b, (iteratedDerivWithin 2 f (Icc a b) t
+            - iteratedDerivWithin 2 s (Icc a b) t) ^ 2)
+        + ∫ t in a..b, iteratedDerivWithin 2 s (Icc a b) t ^ 2 := by
   have hab := hx.lt_of_pos hn
   have hF2c := continuousOn_iteratedDerivWithin_two hab hf
   have hS2c := continuousOn_iteratedDerivWithin_two hab hs.contDiffOn
@@ -2426,6 +2343,19 @@ theorem integral_sq_deriv2_le_of_end
     · exact hint _ ((hF2c.sub hS2c).pow 2)
     · exact hint _ (hS2c.pow 2)
   rw [hexp, horth, mul_zero, add_zero]
+
+omit hg in
+/-- **The minimum-norm property for a natural or clamped interpolatory spline**
+([quarteroni2000numerical] Property 8.2, Holladay): `∫_a^b s''² ≤ ∫_a^b f''²`, by
+`integral_sq_deriv2_eq_add`. -/
+theorem integral_sq_deriv2_le_of_end
+    (hend : (iteratedDerivWithin 2 s (Icc a b) a = 0 ∧ iteratedDerivWithin 2 s (Icc a b) b = 0) ∨
+      (derivWithin s (Icc a b) a = derivWithin f (Icc a b) a ∧
+        derivWithin s (Icc a b) b = derivWithin f (Icc a b) b)) :
+    ∫ t in a..b, iteratedDerivWithin 2 s (Icc a b) t ^ 2
+      ≤ ∫ t in a..b, iteratedDerivWithin 2 f (Icc a b) t ^ 2 := by
+  have hab := hx.lt_of_pos hn
+  rw [integral_sq_deriv2_eq_add hx hn hf hs hend]
   have : 0 ≤ ∫ t in a..b, (iteratedDerivWithin 2 f (Icc a b) t
       - iteratedDerivWithin 2 s (Icc a b) t) ^ 2 :=
     intervalIntegral.integral_nonneg hab.le fun t _ => sq_nonneg _
@@ -2444,27 +2374,13 @@ theorem eqOn_of_integral_sq_deriv2_eq
   have hab := hx.lt_of_pos hn
   have hF2c := continuousOn_iteratedDerivWithin_two hab hf
   have hS2c := continuousOn_iteratedDerivWithin_two hab hs.contDiffOn
-  have horth := integral_sub_deriv2_mul_deriv2_eq_zero hx hn hf hs hend
   have hint : ∀ g : ℝ → ℝ, ContinuousOn g (Icc a b) →
       IntervalIntegrable g MeasureTheory.volume a b :=
     fun g hg => hg.intervalIntegrable_of_Icc hab.le
   -- the integral of `(f'' - s'')²` vanishes
   have hzero : ∫ t in a..b, (iteratedDerivWithin 2 f (Icc a b) t
       - iteratedDerivWithin 2 s (Icc a b) t) ^ 2 = 0 := by
-    have hexp : ∫ t in a..b, iteratedDerivWithin 2 f (Icc a b) t ^ 2
-        = (∫ t in a..b, (iteratedDerivWithin 2 f (Icc a b) t
-              - iteratedDerivWithin 2 s (Icc a b) t) ^ 2)
-          + (∫ t in a..b, iteratedDerivWithin 2 s (Icc a b) t ^ 2)
-          + 2 * ∫ t in a..b, (iteratedDerivWithin 2 f (Icc a b) t
-              - iteratedDerivWithin 2 s (Icc a b) t) * iteratedDerivWithin 2 s (Icc a b) t := by
-      rw [← intervalIntegral.integral_const_mul, ← intervalIntegral.integral_add,
-        ← intervalIntegral.integral_add]
-      · exact intervalIntegral.integral_congr fun t _ => by ring
-      · exact hint _ (((hF2c.sub hS2c).pow 2).add (hS2c.pow 2))
-      · exact hint _ (continuousOn_const.mul ((hF2c.sub hS2c).mul hS2c))
-      · exact hint _ ((hF2c.sub hS2c).pow 2)
-      · exact hint _ (hS2c.pow 2)
-    rw [horth] at hexp
+    have hexp := integral_sq_deriv2_eq_add hx hn hf hs hend
     linarith
   -- hence `f'' = s''` on `[a, b]`
   have hFS : EqOn (iteratedDerivWithin 2 f (Icc a b)) (iteratedDerivWithin 2 s (Icc a b))
@@ -2521,7 +2437,8 @@ end Holladay
 
 section HolladayNamed
 
-variable (hx : IsPartition a b n x) (hn : 1 ≤ n) {f : ℝ → ℝ} (hf : ContDiffOn ℝ 2 f (Icc a b))
+variable (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {f : ℝ → ℝ}
+  (hf : ContDiffOn ℝ 2 f (Icc a b))
 include hx hn
 
 /-- The natural interpolatory spline of `f` is an interpolatory cubic spline of its nodal values
@@ -2830,7 +2747,7 @@ theorem eq_of_degree_le_three_of_deriv {p q : ℝ[X]} (hp : p.degree ≤ 3) (hq 
 
 /-- **A cubic spline is a single cubic across the node `x i` iff its third derivative has no jump
 there**: `(M_i - M_{i-1})/h_i = (M_{i+1} - M_i)/h_{i+1}` in terms of the moments. -/
-theorem IsCubicSpline.exists_eqOn_Icc_two_iff (hx : IsPartition a b n x) {s : ℝ → ℝ}
+theorem IsCubicSpline.exists_eqOn_Icc_two_iff (hx : IsIntervalPartition a b n x) {s : ℝ → ℝ}
     (hs : IsCubicSpline a b n x s) {i : ℕ} (hi1 : 1 ≤ i) (hin : i < n) :
     (∃ p : ℝ[X], p.degree ≤ 3 ∧ EqOn s p.eval (Icc (x (i - 1)) (x (i + 1)))) ↔
       (moment a b x s i - moment a b x s (i - 1)) / panelLength x i
@@ -2886,7 +2803,7 @@ def IsNotAKnot (n : ℕ) (x : ℕ → ℝ) (s : ℝ → ℝ) : Prop :=
 
 section NotAKnot
 
-variable (hx : IsPartition a b n x) (hn : 3 ≤ n) {f : ℕ → ℝ}
+variable (hx : IsIntervalPartition a b n x) (hn : 3 ≤ n) {f : ℕ → ℝ}
 include hx hn
 
 /-- The not-a-knot closure of an interpolatory cubic spline, in terms of its moments:
@@ -2928,7 +2845,7 @@ end NotAKnot
 
 section NotAKnotExistence
 
-variable {m : ℕ} (hx : IsPartition a b (m + 2) x) (hm : 1 ≤ m) {f : ℕ → ℝ}
+variable {m : ℕ} (hx : IsIntervalPartition a b (m + 2) x) (hm : 1 ≤ m) {f : ℕ → ℝ}
 include hx hm
 
 omit hx hm in
@@ -2971,7 +2888,7 @@ theorem notAKnot_reduced_iff (M : ℕ → ℝ)
             * ((f (m + 2) - f (m + 1)) / panelLength x (m + 2)
               - (f (m + 1) - f m) / panelLength x (m + 1))))
     ↔ ∀ i, 1 ≤ i → i < m + 2 → IsMomentEq x f M i := by
-  have hx' : IsPartition (x 1) (x (m + 1)) m fun i => x (i + 1) :=
+  have hx' : IsIntervalPartition (x 1) (x (m + 1)) m fun i => x (i + 1) :=
     ⟨fun j hj => hx.step (j + 1) (by omega), rfl, rfl⟩
   have h1 := hx.panelLength_pos le_rfl (by omega)
   have h2 := hx.panelLength_pos (i := 2) (by omega) (by omega)
@@ -2987,7 +2904,6 @@ theorem notAKnot_reduced_iff (M : ℕ → ℝ)
         * (6 / (panelLength x 1 + panelLength x 2)
           * ((f 2 - f 1) / panelLength x 2 - (f 1 - f 0) / panelLength x 1))
       ↔ IsMomentEq x f M 1 := by
-    have hc : 2 * panelLength x 2 / (2 * panelLength x 2 + panelLength x 1) ≠ 0 := by positivity
     simp only [IsMomentEq, Nat.sub_self, hM0]
     rw [← sub_eq_zero, ← sub_eq_zero (a := _ / _ * _ + _ + _)]
     have key : panelLength x 1 / (panelLength x 1 + panelLength x (1 + 1))
@@ -3184,7 +3100,8 @@ one interpolatory cubic spline of the data whose cubic pieces coincide on the fi
 last two panels. Eliminating `M_0` and `M_n` through the not-a-knot conditions turns the moment
 system into the strictly diagonally dominant reduced system `notAKnot_reduced_iff`. For `n = 2`
 the two conditions coincide and the spline is not unique, which is why `3 ≤ n` is needed. -/
-theorem existsUnique_isCubicInterp_notAKnot (hx : IsPartition a b n x) (hn : 3 ≤ n) (f : ℕ → ℝ) :
+theorem existsUnique_isCubicInterp_notAKnot (hx : IsIntervalPartition a b n x) (hn : 3 ≤ n)
+    (f : ℕ → ℝ) :
     (∃ s, IsCubicInterp a b n x f s ∧ IsNotAKnot n x s) ∧
       ∀ s₁ s₂, IsCubicInterp a b n x f s₁ → IsNotAKnot n x s₁ →
         IsCubicInterp a b n x f s₂ → IsNotAKnot n x s₂ → EqOn s₁ s₂ (Icc a b) := by
@@ -3312,7 +3229,7 @@ end Periodic
 
 section PeriodicSpline
 
-variable (hx : IsPartition a b n x) (hn : 2 ≤ n) {f : ℕ → ℝ}
+variable (hx : IsIntervalPartition a b n x) (hn : 2 ≤ n) {f : ℕ → ℝ}
 include hx hn
 
 /-- **The cyclic system is the interior moment equations plus the periodicity of `s'`**: for the
@@ -3389,7 +3306,7 @@ def IsPeriodicEnd (a b : ℝ) (s : ℝ → ℝ) : Prop :=
 
 /-- The derivative within `[a, b]` of an interpolatory cubic spline at `a` is the slope of its
 first panel cubic. -/
-theorem IsCubicInterp.derivWithin_left (hx : IsPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ}
+theorem IsCubicInterp.derivWithin_left (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ}
     {s : ℝ → ℝ} (hs : IsCubicInterp a b n x f s) :
     derivWithin s (Icc a b) a = panelCubicD1 x f (moment a b x s) 1 (x 0) := by
   have := (derivWithin_eq_of_eqOn_Icc_of_contDiffOn hs.contDiffOn (u := x 0) (v := x 1)
@@ -3400,7 +3317,7 @@ theorem IsCubicInterp.derivWithin_left (hx : IsPartition a b n x) (hn : 1 ≤ n)
 
 /-- The derivative within `[a, b]` of an interpolatory cubic spline at `b` is the slope of its
 last panel cubic. -/
-theorem IsCubicInterp.derivWithin_right (hx : IsPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ}
+theorem IsCubicInterp.derivWithin_right (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {f : ℕ → ℝ}
     {s : ℝ → ℝ} (hs : IsCubicInterp a b n x f s) :
     derivWithin s (Icc a b) b = panelCubicD1 x f (moment a b x s) n (x n) := by
   have hlt : x (n - 1) < x n := hx.lt (Nat.sub_one_lt_of_le hn le_rfl) le_rfl
@@ -3415,7 +3332,7 @@ interpolating the values `f_i` has `s'(a) = f'₀` and `s'(b) = f'_n` (derivativ
 its moments satisfy `2 M₀ + M₁ = (6/h₁)((f₁ - f₀)/h₁ - f'₀)` and
 `M_{n-1} + 2 M_n = (6/h_n)(f'_n - (f_n - f_{n-1})/h_n)`, by the one-sided slope formulas
 `IsCubicInterp.derivWithin_left` and `IsCubicInterp.derivWithin_right`. -/
-theorem IsCubicInterp.hasClosure_of_derivWithin (hx : IsPartition a b n x) (hn : 1 ≤ n)
+theorem IsCubicInterp.hasClosure_of_derivWithin (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {f : ℕ → ℝ} {s : ℝ → ℝ} (hs : IsCubicInterp a b n x f s) {f'0 f'n : ℝ}
     (h0 : derivWithin s (Icc a b) a = f'0) (h1 : derivWithin s (Icc a b) b = f'n) :
     HasClosure a b n x 1 1 (6 / (x 1 - x 0) * ((f 1 - f 0) / (x 1 - x 0) - f'0))
@@ -3437,7 +3354,8 @@ with `k = 3`): for `n ≥ 2` panels there is exactly one interpolatory cubic spl
 `s'(a) = s'(b)` and `s''(a) = s''(b)`. Its moments satisfy `M_0 = M_n` and the cyclic system
 `periodicMomentMatrix`, which is strictly diagonally dominant. (The remaining condition of (8.44),
 `s(a) = s(b)`, holds exactly when `f 0 = f n`.) -/
-theorem existsUnique_isCubicInterp_periodic (hx : IsPartition a b n x) (hn : 2 ≤ n) (f : ℕ → ℝ) :
+theorem existsUnique_isCubicInterp_periodic (hx : IsIntervalPartition a b n x) (hn : 2 ≤ n)
+    (f : ℕ → ℝ) :
     (∃ s, IsCubicInterp a b n x f s ∧ IsPeriodicEnd a b s) ∧
       ∀ s₁ s₂, IsCubicInterp a b n x f s₁ → IsPeriodicEnd a b s₁ →
         IsCubicInterp a b n x f s₂ → IsPeriodicEnd a b s₂ → EqOn s₁ s₂ (Icc a b) := by
@@ -3652,7 +3570,6 @@ private theorem abs_interior_residual_le (hf : ContDiff ℝ 4 f)
         - 6 / (u + v) * ((f (c + u) - f c) / u - (f c - f (c - v)) / v)|
       ≤ 3 / 4 * hm ^ 2 * K := by
   have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK c hc)
-  have huv : (0 : ℝ) < u + v := by linarith
   obtain ⟨e1, E1⟩ := abs_taylor_pair hf hK (w := u) hc hcu
   obtain ⟨e2, E2⟩ := abs_taylor_pair hf hK (w := -v) hc (by rw [← sub_eq_add_neg]; exact hcv)
   rw [← sub_eq_add_neg] at e2 E2
@@ -3801,7 +3718,7 @@ end Residual
 
 /-- **The second derivative of the interpolatory cubic spline is linear on every panel**, taking
 the moments at the two ends ([quarteroni2000numerical] (8.46)). -/
-theorem iteratedDeriv_two_cubicInterp_eq_of_mem (hx : IsPartition a b n x) (hn : 1 ≤ n)
+theorem iteratedDeriv_two_cubicInterp_eq_of_mem (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {f : ℕ → ℝ} {lam0 mun d0 dn : ℝ} (hl0 : 0 ≤ lam0) (hl1 : lam0 ≤ 1) (hm0 : 0 ≤ mun)
     (hm1 : mun ≤ 1) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) {t : ℝ}
     (ht : t ∈ Icc (x (i - 1)) (x i)) :
@@ -3820,8 +3737,8 @@ theorem iteratedDeriv_two_cubicInterp_eq_of_mem (hx : IsPartition a b n x) (hn :
     panelCubicD2_apply _ _ _ (hx.lt (by omega) hin)]
 
 /-- The second derivative of the clamped spline is linear on every panel. -/
-private theorem iteratedDeriv_two_clampedInterp_eq_of_mem (hx : IsPartition a b n x) (hn : 1 ≤ n)
-    {f : ℕ → ℝ} (f'0 f'n : ℝ) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) {t : ℝ}
+private theorem iteratedDeriv_two_clampedInterp_eq_of_mem (hx : IsIntervalPartition a b n x)
+    (hn : 1 ≤ n) {f : ℕ → ℝ} (f'0 f'n : ℝ) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) {t : ℝ}
     (ht : t ∈ Icc (x (i - 1)) (x i)) :
     iteratedDeriv 2 (clampedInterp n x f f'0 f'n) t
       = iteratedDeriv 2 (clampedInterp n x f f'0 f'n) (x (i - 1)) * (x i - t)
@@ -3834,7 +3751,8 @@ section Bounds
 
 open scoped Matrix.Norms.Operator
 
-variable (hx : IsPartition a b n x) (hn : 1 ≤ n) {f : ℝ → ℝ} {K hm : ℝ} (hf : ContDiff ℝ 4 f)
+variable (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {f : ℝ → ℝ} {K hm : ℝ}
+  (hf : ContDiff ℝ 4 f)
   (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 f y| ≤ K)
   (hmesh : ∀ i, 1 ≤ i → i ≤ n → panelLength x i ≤ hm)
 include hx hn hf hK hmesh
@@ -4079,7 +3997,6 @@ theorem norm_deriv_sub_clampedInterp_le {t : ℝ} (ht : t ∈ Icc a b) :
     Icc_subset_Icc (hx.left_le (by omega)) (hx.le_right hin)
   have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK a ⟨le_rfl, hx.le⟩)
   have hmesh' : x i - x (i - 1) ≤ hm := by simpa [panelLength] using hmesh i hi1 hin
-  have hm0 : (0 : ℝ) ≤ hm := le_trans (by linarith) hmesh'
   set s := clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b) with hs
   have hs2 : ContDiff ℝ 2 s := contDiff_clampedInterp hx hn _ _
   have hf2 : ContDiff ℝ 2 f := hf.of_le (by norm_num)

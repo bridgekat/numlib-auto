@@ -139,39 +139,6 @@ section Support
 
 variable {ι E F : Type*} [Fintype ι] [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-omit [Fintype ι] [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F] in
-/-- The supremum over a product set of a sum indexed by a `Finset`, decoupled coordinate by
-coordinate. The values are only asked to avoid `⊥` *on the sets*; nonemptiness is needed only for
-the empty `Finset`, where the supremum of the constant `0` has to be `0` rather than `⊥`. -/
-private theorem biSup_sum_univ_pi {C : ι → Set E} (hne : ∀ i, (C i).Nonempty) (u : ι → E → EReal)
-    (hu : ∀ i, ∀ z ∈ C i, u i z ≠ ⊥) (t : Finset ι) :
-    (⨆ x ∈ univ.pi C, ∑ i ∈ t, u i (x i)) = ∑ i ∈ t, ⨆ z ∈ C i, u i z := by
-  classical
-  obtain ⟨x₀, hx₀⟩ : (univ.pi C).Nonempty := Set.univ_pi_nonempty_iff.2 hne
-  induction t using Finset.cons_induction with
-  | empty =>
-    simp only [Finset.sum_empty]
-    exact le_antisymm (iSup₂_le fun _ _ => le_rfl)
-      (le_iSup₂_of_le (f := fun x (_ : x ∈ univ.pi C) => (0 : EReal)) x₀ hx₀ le_rfl)
-  | cons i t hi ih =>
-    have hgne : ∀ x ∈ univ.pi C, (∑ j ∈ t, u j (x j)) ≠ ⊥ := fun x hx =>
-      EReal.sum_ne_bot fun j _ => hu j (x j) (hx j (mem_univ j))
-    have key : (⨆ x ∈ univ.pi C, (u i (x i) + ∑ j ∈ t, u j (x j)))
-        = (⨆ z ∈ C i, u i z) + ⨆ x ∈ univ.pi C, ∑ j ∈ t, u j (x j) := by
-      rw [EReal.biSup_add_biSup (hu i) hgne]
-      refine le_antisymm (iSup₂_le fun x hx => ?_) (iSup₂_le fun z hz => iSup₂_le fun x hx => ?_)
-      · exact le_iSup₂_of_le (x i) (hx i (mem_univ i)) (le_iSup₂_of_le x hx le_rfl)
-      · refine le_iSup₂_of_le (Function.update x i z) (fun j _ => ?_) ?_
-        · rcases eq_or_ne j i with rfl | hj
-          · rw [Function.update_self]; exact hz
-          · rw [Function.update_of_ne hj]; exact hx j (mem_univ j)
-        · have hsum : ∑ j ∈ t, u j (Function.update x i z j) = ∑ j ∈ t, u j (x j) :=
-            Finset.sum_congr rfl fun j hj => by
-              rw [Function.update_of_ne (ne_of_mem_of_not_mem hj hi)]
-          rw [Function.update_self, hsum]
-    simp only [Finset.sum_cons]
-    rw [key, ih]
-
 /-- **The support function of a product set is the sum of the support functions of its factors**,
 with no hypothesis. If some factor is empty both sides are `⊥`. -/
 theorem supportFn_univ_pi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (C : ι → Set E) (y : ι → F) :
@@ -183,7 +150,7 @@ theorem supportFn_univ_pi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (C : ι → Set 
       rw [piPairing_apply, EReal.coe_sum]
     rw [supportFn_apply]
     simp only [hcoe, supportFn_apply]
-    exact biSup_sum_univ_pi hne (fun i z => ((B z (y i) : ℝ) : EReal))
+    exact EReal.biSup_sum_univ_pi hne (fun i z => ((B z (y i) : ℝ) : EReal))
       (fun i z _ => EReal.coe_ne_bot _) Finset.univ
   · simp only [not_forall, Set.not_nonempty_iff_eq_empty] at hne
     obtain ⟨i₀, hi₀⟩ := hne
@@ -198,57 +165,6 @@ end Support
 
 The other half of the finite-product dictionary. `⟨x, y⟩ - ∑ fᵢ (xᵢ)` splits as
 `∑ (⟨xᵢ, yᵢ⟩ - fᵢ (xᵢ))` only once the `⊤` case is disposed of, which `⊥` absorbing does. -/
-
-section SeparableAux
-
-/-- A supremum is unchanged by restricting to a set off which the function is `⊥`. -/
-private theorem iSup_eq_biSup_of_notMem {α : Type*} {s : Set α} {w : α → EReal}
-    (h : ∀ a ∉ s, w a = ⊥) : (⨆ a, w a) = ⨆ a ∈ s, w a := by
-  refine le_antisymm (iSup_le fun a => ?_) (iSup₂_le fun a _ => le_iSup w a)
-  by_cases ha : a ∈ s
-  · exact le_iSup₂_of_le a ha le_rfl
-  · rw [h a ha]
-    exact bot_le
-
-/-- A `Finset` sum with a `⊥` term is `⊥`: on `EReal` addition, `⊥` absorbs `⊤`. -/
-private theorem sum_eq_bot_of_mem {ι : Type*} {v : ι → EReal} {t : Finset ι} {j : ι} (hj : j ∈ t)
-    (h : v j = ⊥) : (∑ k ∈ t, v k) = ⊥ := by
-  classical
-  rw [← Finset.add_sum_erase t v hj, h, EReal.bot_add]
-
-/-- A real minuend distributes over a two-term subtrahend, provided neither term is `⊥`. Both `⊤`
-cases come out `⊥` on each side, which is why no finiteness is needed. -/
-private theorem coe_add_sub_add (a b : ℝ) {p q : EReal} (hp : p ≠ ⊥) (hq : q ≠ ⊥) :
-    ((a + b : ℝ) : EReal) - (p + q) = (((a : ℝ) : EReal) - p) + (((b : ℝ) : EReal) - q) := by
-  induction p with
-  | bot => exact absurd rfl hp
-  | top =>
-    rw [EReal.top_add_of_ne_bot hq, EReal.sub_top, EReal.sub_top,
-      EReal.bot_add]
-  | coe r =>
-    induction q with
-    | bot => exact absurd rfl hq
-    | top =>
-      rw [EReal.add_top_of_ne_bot (EReal.coe_ne_bot r), EReal.sub_top,
-        EReal.sub_top, EReal.add_bot]
-    | coe s =>
-      simp only [← EReal.coe_add, ← EReal.coe_sub]
-      rw [EReal.coe_eq_coe_iff]
-      ring
-
-/-- The `Finset` form of `coe_add_sub_add`: a real minuend distributes over a finite sum of
-subtrahends none of which is `⊥`. -/
-private theorem coe_sum_sub_sum {ι : Type*} (c : ι → ℝ) (v : ι → EReal) (t : Finset ι)
-    (hv : ∀ j, v j ≠ ⊥) :
-    ((∑ j ∈ t, c j : ℝ) : EReal) - ∑ j ∈ t, v j
-      = ∑ j ∈ t, (((c j : ℝ) : EReal) - v j) := by
-  induction t using Finset.cons_induction with
-  | empty => simp
-  | cons j t hj ih =>
-    rw [Finset.sum_cons, Finset.sum_cons, Finset.sum_cons, ← ih]
-    exact coe_add_sub_add (c j) (∑ k ∈ t, c k) (hv j) (EReal.sum_ne_bot fun k _ => hv k)
-
-end SeparableAux
 
 section Separable
 
@@ -274,25 +190,26 @@ theorem convexConj_piFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : ι → E → 
     exact EReal.coe_ne_bot _
   have hcoord : ∀ i, convexConj B (f i) (y i)
       = ⨆ z ∈ convexDom (f i), (((B z (y i) : ℝ) : EReal) - f i z) :=
-    fun i => iSup_eq_biSup_of_notMem (hoff i)
+    fun i => by rw [convexConj_apply, iSup_split _ (· ∈ convexDom (f i)),
+      iSup₂_eq_bot.2 (hoff i), sup_bot_eq]
   have hsplit : ∀ x : ι → E, ((piPairing B x y : ℝ) : EReal) - (∑ i, f i (x i))
       = ∑ i, (((B (x i) (y i) : ℝ) : EReal) - f i (x i)) := by
     intro x
-    rw [piPairing_apply]
-    exact coe_sum_sub_sum (fun i => B (x i) (y i)) (fun i => f i (x i)) Finset.univ
-      fun i => hbot i (x i)
+    rw [piPairing_apply, EReal.coe_sum]
+    exact EReal.sum_sub_sum Finset.univ _ (fun i => f i (x i)) fun i _ => hbot i (x i)
   have hprod : convexConj (piPairing B) (fun x => ∑ i, f i (x i)) y
       = ⨆ x ∈ univ.pi fun i => convexDom (f i), ∑ i,
           (((B (x i) (y i) : ℝ) : EReal) - f i (x i)) := by
     rw [convexConj_apply]
     simp only [hsplit]
-    refine iSup_eq_biSup_of_notMem fun x hx => ?_
+    rw [iSup_split _ (· ∈ univ.pi fun i => convexDom (f i)),
+      sup_eq_left.2 (iSup₂_le fun x hx => ?_)]
     obtain ⟨i₀, -, hi₀⟩ : ∃ i₀ ∈ (univ : Set ι), x i₀ ∉ convexDom (f i₀) := by
       simpa [Set.mem_pi] using hx
-    exact sum_eq_bot_of_mem (Finset.mem_univ i₀) (hoff i₀ (x i₀) hi₀)
+    exact (WithBot.sum_eq_bot_iff.2 ⟨i₀, Finset.mem_univ i₀, hoff i₀ (x i₀) hi₀⟩).le.trans bot_le
   rw [hprod]
   simp only [hcoord]
-  exact biSup_sum_univ_pi (fun i => (hf i).convexDom_nonempty)
+  exact EReal.biSup_sum_univ_pi (fun i => (hf i).convexDom_nonempty)
     (fun i z => ((B z (y i) : ℝ) : EReal) - f i z) hval Finset.univ
 
 end Separable

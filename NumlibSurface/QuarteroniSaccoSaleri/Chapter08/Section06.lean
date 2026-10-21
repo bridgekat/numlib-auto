@@ -92,7 +92,7 @@ by divided differences, the B-spline basis).
 
 ## Conventions
 
-The nodes are `x : ℕ → ℝ` with `Spline.IsPartition a b n x`: `a = x 0 < x 1 < ⋯ < x n = b`, `n`
+The nodes are `x : ℕ → ℝ` with `IsIntervalPartition a b n x`: `a = x 0 < x 1 < ⋯ < x n = b`, `n`
 panels `[x (i-1), x i]`, `1 ≤ i ≤ n`, of lengths `h_i = x i - x (i-1)`. A spline is a function
 `s : ℝ → ℝ` considered on `[a, b]`; its derivatives at a point of `[a, b]` are the derivatives
 within `[a, b]`, `derivWithin s (Icc a b)` and `iteratedDerivWithin 2 s (Icc a b)`, so that the
@@ -135,7 +135,7 @@ theorem mem_definition_8_1_iff (v : C(Icc a b, ℝ)) :
 /-- **Definition 8.1, `dim 𝒮_k = n + k`**: for `n ≥ 1` panels and `k ≥ 1`, the space of splines of
 degree `k` has dimension `n + k` — the book's count (8.43), `(k + 1) n - k (n - 1)`.
 `Spline.finrank_splineSpace` with `r = k - 1`: `n (k - (k - 1)) + (k - 1) + 1`. -/
-theorem definition_8_1_finrank (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
+theorem definition_8_1_finrank (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
     Module.finrank ℝ (definition_8_1 a b n x k) = n + k := by
   rw [definition_8_1, Spline.finrank_splineSpace hx hn (Nat.sub_le k 1)]
   obtain ⟨m, rfl⟩ : ∃ m, k = m + 1 := ⟨k - 1, by omega⟩
@@ -180,7 +180,7 @@ theorem equation_8_45_two_iff :
 
 /-- **The natural end conditions are the closure `λ₀ = μ_n = d₀ = d_n = 0` of (8.48)**: for a
 partition of `[a, b]`, `s''(a) = s''(b) = 0` is `Spline.HasClosure a b n x 0 0 0 0 s`. -/
-theorem equation_8_45_two_iff_hasClosure (hx : Spline.IsPartition a b n x) :
+theorem equation_8_45_two_iff_hasClosure (hx : IsIntervalPartition a b n x) :
     equation_8_45 a b 2 s ↔ Spline.HasClosure a b n x 0 0 0 0 s := by
   rw [equation_8_45_two_iff, Spline.HasClosure]
   simp only [Spline.moment, hx.first, hx.last, zero_mul, add_zero, zero_add, mul_eq_zero,
@@ -192,7 +192,7 @@ the number of internal nodes, form a basis of `𝒮_k[a, b]`, so that every `s_k
 `k + 1` vectors are the monomials and whose remaining `n - 1` vectors are the truncated powers
 `(x - x_j)_+^k = Quadrature.truncPow k x (x j)`, `j = 1, …, n - 1`.
 `Spline.exists_basis_truncPow`. -/
-theorem exercise_8_10 (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
+theorem exercise_8_10 (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
     ∃ B : Module.Basis (Fin (n + k)) ℝ (definition_8_1 a b n x k),
       (∀ i : Fin (n + k), (i : ℕ) ≤ k → ∀ t : Icc a b,
         (B i : C(Icc a b, ℝ)) t = (t : ℝ) ^ (i : ℕ)) ∧
@@ -245,7 +245,7 @@ theorem mem_definition_8_1_three_of_isCubicSpline (hs : Spline.IsCubicSpline a b
 
 section Cubic
 
-variable (hx : Spline.IsPartition a b n x)
+variable (hx : IsIntervalPartition a b n x)
 include hx
 
 /-- **(8.46).** Let `s₃` be the cubic spline interpolating the values `f_i` at the nodes, and
@@ -730,7 +730,7 @@ the plan node `property_8_3`), and for the natural spline the `O(h⁴)` rate fai
 backbone bounds are `Spline.norm_sub_clampedInterp_le`, `Spline.norm_deriv_sub_clampedInterp_le`
 and `Spline.norm_deriv2_sub_clampedInterp_le`; `IsCubicInterpSpline.eqOn_clampedInterp` identifies
 any clamped interpolatory cubic spline with `Spline.clampedInterp` on `[a, b]`. -/
-theorem property_8_3_weak {f : ℝ → ℝ} {K hm : ℝ} (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+theorem property_8_3_weak {f : ℝ → ℝ} {K hm : ℝ} (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (hf : ContDiff ℝ 4 f) (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 f y| ≤ K)
     (hmesh : ∀ i, 1 ≤ i → i ≤ n → Spline.panelLength x i ≤ hm) :
     (∀ t ∈ Icc a b, |f t - Spline.clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b) t|

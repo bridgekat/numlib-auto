@@ -294,7 +294,7 @@ theorem example_1_2_conj (M : Submodule ℝ E) :
     conjugate (indicatorFn (M : Set E)) =
       indicatorFn (M.strongDualAnnihilator : Set (StrongDual ℝ E)) := by
   rw [conjugate_eq_convexConj,
-    convexConj_indicatorFn_eq_indicatorFn_polarCone (fun _ ha => smul_coe_submodule M ha)
+    convexConj_indicatorFn_eq_indicatorFn_polarCone (isCone_coe_submodule M)
       ⟨0, M.zero_mem⟩, polarCone_dualPairing_eq.1 M]
 
 /-- **Example 2.** For a linear subspace `M ⊆ E`, `(I_M)** = I_{(M^⊥)^⊥}`. -/
@@ -302,7 +302,7 @@ theorem example_1_2_biconj (M : Submodule ℝ E) :
     biconjugate (indicatorFn (M : Set E)) =
       indicatorFn (M.strongDualAnnihilator.strongDualCoannihilator : Set E) := by
   rw [biconjugate_eq_convexConj, example_1_2_conj,
-    convexConj_indicatorFn_eq_indicatorFn_polarCone (fun _ ha => smul_coe_submodule _ ha)
+    convexConj_indicatorFn_eq_indicatorFn_polarCone (isCone_coe_submodule _)
       ⟨0, Submodule.zero_mem _⟩, polarCone_dualPairing_eq.2]
 
 /-- **Example 2, the conclusion.** For a *closed* linear subspace `M ⊆ E`, writing
@@ -515,7 +515,7 @@ theorem example_1_4 {φ : E → ℝ} (hφ : ConvexOn ℝ univ φ) (hc : Continuo
   · have h := iInf_mem_submodule_eq_neg_iInf_mem_polarCone hex
     rw [hpol] at h
     exact h
-  · have h := exists_mem_neg_polarCone_convexConj_eq_iInf hex (fun _ ha => smul_coe_submodule M ha)
+  · have h := exists_mem_neg_polarCone_convexConj_eq_iInf hex (isCone_coe_submodule M)
       ⟨0, M.zero_mem⟩
     rw [neg_polarCone_coe_submodule, hpol] at h
     exact h

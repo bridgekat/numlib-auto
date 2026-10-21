@@ -14,6 +14,7 @@ import Mathlib.LinearAlgebra.TensorProduct.Matrix
 import Mathlib.LinearAlgebra.TensorProduct.RightExactness
 import Mathlib.LinearAlgebra.UnitaryGroup
 import Mathlib.RingTheory.Flat.Basic
+import Numlib.LinearAlgebra.Dimension.Constructions
 import Numlib.LinearAlgebra.Matrix.Permutation
 
 /-!
@@ -718,22 +719,6 @@ section Rank
 
 variable {K : Type*} [Field K]
 
-/-- Over a field, the range of `f ⊗ g` has dimension `dim range f · dim range g`. -/
-private theorem finrank_range_tensorProduct_map {M N P Q : Type*} [AddCommGroup M] [Module K M]
-    [AddCommGroup N] [Module K N] [AddCommGroup P] [Module K P] [AddCommGroup Q] [Module K Q]
-    (f : M →ₗ[K] P) (g : N →ₗ[K] Q) :
-    Module.finrank K (LinearMap.range (TensorProduct.map f g))
-      = Module.finrank K (LinearMap.range f) * Module.finrank K (LinearMap.range g) := by
-  have h : TensorProduct.map f g = TensorProduct.map (LinearMap.range f).subtype
-      (LinearMap.range g).subtype ∘ₗ TensorProduct.map f.rangeRestrict g.rangeRestrict := by
-    rw [← TensorProduct.map_comp, LinearMap.subtype_comp_rangeRestrict,
-      LinearMap.subtype_comp_rangeRestrict]
-  rw [h, LinearMap.range_comp_of_range_eq_top _ (LinearMap.range_eq_top.2
-      (TensorProduct.map_surjective f.surjective_rangeRestrict g.surjective_rangeRestrict)),
-    LinearMap.finrank_range_of_inj (TensorProduct.map_injective_of_flat_flat _ _
-      (Submodule.injective_subtype _) (Submodule.injective_subtype _)),
-    Module.finrank_tensorProduct]
-
 /-- The rank of a Kronecker product is the product of the ranks ([golub2013matrix] §12.3.1). -/
 theorem rank_kronecker {m₁ n₁ m₂ n₂ : Type*} [Finite m₁] [Fintype n₁] [Finite m₂] [Fintype n₂]
     (B : Matrix m₁ n₁ K) (C : Matrix m₂ n₂ K) : (B ⊗ₖ C).rank = B.rank * C.rank := by
@@ -742,7 +727,7 @@ theorem rank_kronecker {m₁ n₁ m₂ n₂ : Type*} [Finite m₁] [Fintype n₁
     C.rank_eq_finrank_range_toLin (Pi.basisFun K m₂) (Pi.basisFun K n₂),
     (B ⊗ₖ C).rank_eq_finrank_range_toLin ((Pi.basisFun K m₁).tensorProduct (Pi.basisFun K m₂))
       ((Pi.basisFun K n₁).tensorProduct (Pi.basisFun K n₂)), toLin_kronecker]
-  exact finrank_range_tensorProduct_map _ _
+  exact TensorProduct.finrank_range_map _ _
 
 /-- The rank of a Hadamard product is at most the product of the ranks. -/
 theorem rank_hadamard_le {m n : Type*} [Finite m] [Fintype n] (A B : Matrix m n K) :
