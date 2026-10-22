@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v5
@@ -61,4 +61,3 @@ jobs:
           blueprint: false
           build-page: false # `docs/` is ours, not a Jekyll site
           references: references/references.bib
-          use-github-cache: false # Fix: sometimes this leads to incomplete API docs
