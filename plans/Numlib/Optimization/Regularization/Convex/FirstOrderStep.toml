@@ -1,0 +1,16 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "norm_first_error_le_on"
+
+[[node]]
+id = "norm_model_first_error_le_on"
+
+[[node]]
+id = "ScaledRun.trial_criticality_le"
+
+[[node]]
+id = "ScaledRun.step_lower"
+
+[[node]]
+id = "ScaledRun.successful_decrease"

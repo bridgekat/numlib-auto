@@ -242,21 +242,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "arpFirstOrderConvexRun"
-kind = "definition"
-desc = '''
-Define the set of finite traces satisfying Algorithm 6.2.2, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
-
-Algorithm 6.2.2: Adaptive-regularization algorithm with pth-order models and convex constraints for a first-order approximate minimizer (ARp1-CC)
-
-This algorithm is the same as Algorithm 6.2.1 with \( {\epsilon }_2 = {\epsilon }_3 = \infty \) , but replacing the model-minimization stopping rule (6.2.10) in Step 2 by
-
-\[
-{\omega }_{{m}_k,\mathcal{M},1}\left( {s}_k\right)  \leq  {\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p}.\tag{6.2.29}
-\]
-
-Notice that (6.2.29) is the obvious extension of (4.1.11) to the constrained model. The importance of this simple change is obvious in the following result.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2"
 
 [[node]]
@@ -522,28 +507,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_6_2_4"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 6.2.4: Bounds on the successful function decrease for ARp1-CC
-
-Suppose that C.CNe and f.DpL.C hold and that iteration \( k \) of the ARp1-CC algorithm is successful. Then
-
-\[
-f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_1{\left\lbrack  {\omega }_{f,\mathcal{C},1}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p}},\tag{6.2.30}
-\]
-
-where \( {\kappa }_1 \) is given by (4.1.32).
-
-Referenced equation payloads:
-
-Equation (4.1.32):
-\[
-{\kappa }_{1}\overset{\text{ def }}{ = }\frac{{\eta }_{1}{\sigma }_{\min }}{\left( {p + 1}\right) !}{\left( \frac{p!}{{L}_{f, p} + {\sigma }_{\max } + {\theta }_{1}p!}\right) }^{\frac{p + 1}{p}}.\tag{4.1.32}
-\]
-'''
-deps = ["lemma_6_2_1", "lemma_4_1_4", "theorem_4_1_5", "theorem_6_2_3", "arpConvexRun", "arpFirstOrderConvexRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 6.2.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8288)"
 
 [[node]]
@@ -598,3 +561,11 @@ Equation (4.1.46):
 '''
 deps = ["lemma_5_1_2", "lemma_6_2_4", "lemma_5_1_4", "theorem_5_1_7", "arpConvexRun", "arpFirstOrderConvexRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 6.2.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8326)"
+
+[[node]]
+id = "arpFirstOrderConvexSettings"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm6.2.2"
+
+[[node]]
+id = "arpFirstOrderConvexData"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm6.2.2"

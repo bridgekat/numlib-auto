@@ -1,0 +1,10 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "ScaledRun"
+
+[[node]]
+id = "ScaledRun.mem"
+
+[[node]]
+id = "ScaledRun.parameter_le"
