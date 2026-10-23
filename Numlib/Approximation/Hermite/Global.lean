@@ -29,11 +29,13 @@ theorem initialPolynomial_iteratedDeriv_top (p : ℕ) (a : ℕ → ℝ) (t : ℝ
   have hdeg : (initialPolynomial p a).natDegree ≤ p := by
     apply natDegree_le_iff_coeff_eq_zero.mpr
     intro n hn
-    exact coeff_eq_zero_of_degree_lt ((initialPolynomial_degree_lt p a).trans_le (by exact_mod_cast hn))
+    exact coeff_eq_zero_of_degree_lt ((initialPolynomial_degree_lt p a).trans_le
+      (by exact_mod_cast hn))
   have htop := natDegree_iterate_derivative (initialPolynomial p a) p
   have hzero : (derivative^[p] (initialPolynomial p a)).natDegree = 0 := by omega
   calc
-    _ = (derivative^[p] (initialPolynomial p a)).eval t := congrFun (Polynomial.iteratedDeriv_eval _ p) t
+    _ = (derivative^[p] (initialPolynomial p a)).eval t :=
+      congrFun (Polynomial.iteratedDeriv_eval _ p) t
     _ = (derivative^[p] (initialPolynomial p a)).eval 0 := by
       rw [eq_C_of_natDegree_eq_zero hzero]
       simp only [eval_C]
@@ -131,7 +133,8 @@ noncomputable def extendRight (p : ℕ) (f : ℝ → ℝ) (Q : ℝ[X]) (a b : �
   (Iic a).piecewise f (fun t => intervalTail p Q (b - a) (t - a))
 
 private theorem extendRight_matching {p : ℕ} {f : ℝ → ℝ} {Q : ℝ[X]} {a b : ℝ}
-    (hab : a ≤ b) (hjet : ∀ j ≤ p, iteratedDeriv j f a = iteratedDeriv j (fun t => Q.eval t) 0) :
+    (hab : a ≤ b)
+    (hjet : ∀ j ≤ p, iteratedDeriv j f a = iteratedDeriv j (fun t => Q.eval t) 0) :
     ∀ j ≤ p, iteratedDeriv j f a =
       iteratedDeriv j (fun t => intervalTail p Q (b - a) (t - a)) a := by
   intro j hj
@@ -254,7 +257,8 @@ theorem extendRight_tail {p : ℕ} {f : ℝ → ℝ} {Q : ℝ[X]} {a b t : ℝ}
     (hjet : ∀ j ≤ p, iteratedDeriv j f a = iteratedDeriv j (fun t => Q.eval t) 0)
     {j : ℕ} (hj : j ≤ p) (ht : b ≤ t) :
     iteratedDeriv j (extendRight p f Q a b) t =
-      iteratedDeriv j (taylorTail p (fun i => iteratedDeriv i (fun z => Q.eval z) (b - a)) b) t := by
+      iteratedDeriv j
+        (taylorTail p (fun i => iteratedDeriv i (fun z => Q.eval z) (b - a)) b) t := by
   rw [extendRight_iteratedDeriv hf hab.le hjet hj,
     piecewise_eq_of_notMem (Iic a) _ _ (not_le_of_gt (hab.trans_le ht)),
     intervalTail_right p Q hj (sub_le_sub_right ht a),
@@ -341,7 +345,7 @@ theorem extendRight_bound_prefix {p : ℕ} {f : ℝ → ℝ} {Q : ℝ[X]} {a b :
     (hf : ContDiff ℝ p f) (hab : a ≤ b)
     (hjet : ∀ j ≤ p, iteratedDeriv j f a = iteratedDeriv j (fun t => Q.eval t) 0)
     {B : ℝ} (hfB : ∀ j ≤ p, ∀ t ≤ a, |iteratedDeriv j f t| ≤ B)
-    (hQB : ∀ j ≤ p, ∀ t ∈ Icc 0 (b-a), |iteratedDeriv j (fun z => Q.eval z) t| ≤ B) :
+    (hQB : ∀ j ≤ p, ∀ t ∈ Icc 0 (b - a), |iteratedDeriv j (fun z => Q.eval z) t| ≤ B) :
     ∀ j ≤ p, ∀ t ≤ b, |iteratedDeriv j (extendRight p f Q a b) t| ≤ B := by
   intro j hj t ht
   by_cases hta : t ≤ a
@@ -473,7 +477,8 @@ noncomputable def flatJet (a : ℝ) (j : ℕ) : ℝ := if j = 0 then a else 0
   · intro j hj _hjp
     simp [flatJet, show j ≠ 0 by omega]
 
-/-- A sufficiently wide interval from a flat jet satisfies the normalized endpoint residual bound. -/
+/-- A sufficiently wide interval from a flat jet satisfies the normalized
+endpoint residual bound. -/
 theorem flatJet_residual {p : ℕ} {a : ℕ → ℝ} {W κ : ℝ}
     (hW : 1 ≤ W) (hκ : 1 ≤ κ) (ha : ∀ j ≤ p, |a j| ≤ κ * W) :
     ∀ j ≤ p, |a j - (derivative^[j] (initialPolynomial p (flatJet (a 0)))).eval W| ≤
@@ -492,7 +497,8 @@ theorem flatJet_residual {p : ℕ} {a : ℕ → ℝ} {W κ : ℝ}
 /-- Uniform Hermite interpolation on the whole real line. The constants precede
 all interpolation data, including the number and positions of the nodes. -/
 theorem exists_uniform_interpolant (p : ℕ) (κ : ℝ) (hκ : 0 ≤ κ) :
-    ∃ (L : ℝ) (hL : 0 < L), ∃ B > 0, ∀ n : ℕ, 0 < n → ∀ x : ℕ → ℝ, ∀ a : ℕ → ℕ → ℝ,
+    ∃ (L : ℝ) (hL : 0 < L), ∃ B > 0, ∀ n : ℕ, 0 < n →
+      ∀ x : ℕ → ℝ, ∀ a : ℕ → ℕ → ℝ,
       (∀ i j, i < j → j ≤ n → x i < x j) →
       (∀ k < n, ∀ j ≤ p,
         |a (k+1) j - (derivative^[j] (initialPolynomial p (a k))).eval (x (k+1)-x k)| ≤
@@ -523,7 +529,10 @@ theorem exists_uniform_interpolant (p : ℕ) (κ : ℝ) (hκ : 0 ≤ κ) :
     have hq := (H₀ _ (hs (n-1) hn1) (a (n-1)) (a n)
       (by simpa only [hn2] using hres (n-1) hn1)).2
       (hg.1 (n-1) hn1) (by simpa only [hn2] using hg.2 (n-1) hn1)
-      j hj (x n-x (n-1)) ⟨(by simpa only [hn2] using (hs (n-1) hn1).le),(by simpa only [hn2] using (le_rfl : x n-x (n-1) ≤ x n-x (n-1)))⟩
+      j hj (x n-x (n-1))
+      ⟨(by simpa only [hn2] using (hs (n-1) hn1).le),
+        (by simpa only [hn2] using
+          (le_rfl : x n-x (n-1) ≤ x n-x (n-1)))⟩
     simp only [hn2] at hq
     have he := endpointPolynomial_right (p := p) (s := x n-x (n-1))
       (by simpa only [hn2] using (hs (n-1) hn1).ne') (a (n-1)) (a n) hj
@@ -537,7 +546,8 @@ theorem exists_uniform_interpolant (p : ℕ) (κ : ℝ) (hκ : 0 ≤ κ) :
     intro j hj
     have ht : |a 0 j|+|a n j| ≤ ∑ i ∈ Finset.range (p+1), (|a 0 i|+|a n i|) :=
       Finset.single_le_sum (fun (i : ℕ) (_hi : i ∈ Finset.range (p+1)) =>
-        add_nonneg (abs_nonneg (a 0 i)) (abs_nonneg (a n i))) (by simpa using (show j < p+1 by omega))
+        add_nonneg (abs_nonneg (a 0 i)) (abs_nonneg (a n i)))
+        (by simpa using (show j < p+1 by omega))
     constructor <;> dsimp [W] <;> linarith [abs_nonneg (a 0 j),abs_nonneg (a n j)]
   have hWK : good → W ≤ K := by
     intro hg
