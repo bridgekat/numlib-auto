@@ -1,0 +1,32 @@
+namespace = "InexactRegularization.Explicit"
+desc = "Current failed checks yield actual decrease budgets and literal EDA stopping with a coarse q+1 rate, without an effective-margin assumption."
+
+[[node]]
+id = "currentReferenceCoefficient"
+
+[[node]]
+id = "currentDecreaseCoefficient"
+
+[[node]]
+id = "currentReferenceCoefficient_pos"
+
+[[node]]
+id = "currentDecreaseCoefficient_pos"
+
+[[node]]
+id = "Run.computed_decrement_lower_current"
+
+[[node]]
+id = "Run.function_decrease_uniform_current"
+
+[[node]]
+id = "Run.successful_card_le_current"
+
+[[node]]
+id = "Run.iterations_le_current"
+
+[[node]]
+id = "exists_stopping_current"
+
+[[node]]
+id = "evaluation_complexity_current"

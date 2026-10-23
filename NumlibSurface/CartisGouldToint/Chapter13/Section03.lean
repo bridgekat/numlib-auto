@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.Explicit.CurrentBudget
 import Numlib.Optimization.Regularization.Inexact.Explicit.Complexity
 import Numlib.Optimization.HighOrder.CriticalityRadius
 import Numlib.Optimization.Regularization.Inexact.Explicit.Stopping
@@ -367,5 +368,46 @@ theorem theorem_13_3_8_effective_margin {n p q : ℕ}
   exact TaylorModel.criticality_unit_le_of_radius f (D.point K)
     (by unfold modelOrder; omega) (by unfold modelOrder; omega)
     (hlegal a).1 (hlegal a).2 (hopt a)
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion EvaluationComplexity InexactRegularization
+
+/-- An unconditional literal-stopping companion to Theorem13.3.8, with the coarser
+`epsilon_min^(-(q+1))` rate. Every computed trial obeys the current-reference
+comparison, so no extra theta-versus-zeta margin is required. The positive
+coefficient is fixed before all accuracies and data. Both objective evaluations
+per trial and every initialized derivative evaluation are counted. The original
+sharper p-dependent rate remains a separate target. -/
+theorem theorem_13_3_8_current_check {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (P : InexactRegularization.Explicit.Settings p q) (x₀ : EuclideanSpace ℝ (Fin n))
+    (hf : ContDiff ℝ p f) {L flow : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ i f u - iteratedFDeriv ℝ i f v‖ ≤ L * ‖u - v‖)
+    (hlow : ∀ x, flow ≤ f x) :
+    let M := executionTensorCap P.toSettings L
+    let S := executionParameterCap P.toSettings L
+    ∃ c > 0, ∀ (ε : Fin q → ℝ)
+      (D : InexactRegularization.Explicit.ExecutionData (EuclideanSpace ℝ (Fin n)) q),
+      D.point 0 = x₀ →
+      (∀ N, (∀ k < N, ¬InexactRegularization.Explicit.StopsAt P ε D k) →
+        arqpedaRun f P ε D N) →
+      ∃ K, InexactRegularization.Explicit.StopsAt P ε D K ∧ arqpedaRun f P ε D K ∧
+        (∀ k < K, ¬InexactRegularization.Explicit.StopsAt P ε D k) ∧
+        (∀ a, 0 < D.checkedRadius K a ∧ D.checkedRadius K a ≤ 1) ∧
+        (∀ a, TaylorModel.criticality f (modelOrder a) (D.point K)
+          (D.checkedRadius K a) ≤ ε a * D.checkedRadius K a ^ modelOrder a /
+            (modelOrder a).factorial) ∧
+        ((2 * (successfulIterations D.trials K).card) : ℝ) ≤
+          2 * trialCountFactor P.toSettings * ((f x₀ - flow) /
+            (c * (minimumAccuracy P.order_pos ε) ^ (q + 1))) +
+            2 * |trialCountOffset P.toSettings S| + 2 ∧
+        (derivativeEvaluations D.trials D.ratio P.eta1 K : ℝ) ≤
+          (f x₀ - flow) / (c * (minimumAccuracy P.order_pos ε) ^ (q + 1)) +
+            accuracyCountSlope P.toSettings * |Real.log (minimumAccuracy P.order_pos ε)| +
+            accuracyCountOffset P.toSettings M S + 1 :=
+  InexactRegularization.Explicit.evaluation_complexity_current f P x₀ hf hL hlip hlow
 
 end CartisGouldToint
