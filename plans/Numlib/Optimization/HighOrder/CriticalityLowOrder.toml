@@ -1,0 +1,37 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "secondOrderKernel"
+
+[[node]]
+id = "mem_secondOrderKernel"
+
+[[node]]
+id = "hessian_apply_eq_zero_of_quadratic_eq_zero"
+
+[[node]]
+id = "mem_secondOrderKernel_iff_diagonal"
+
+[[node]]
+id = "projectedThirdDerivative"
+
+[[node]]
+id = "projectedThirdDerivative_apply"
+
+[[node]]
+id = "decrement_three_smul_of_mem_kernel"
+
+[[node]]
+id = "cubic_abs_le_criticality"
+
+[[node]]
+id = "projectedThirdDerivative_diagonalNorm_le"
+
+[[node]]
+id = "projectedThirdDerivative_zero_of_tendsto"
+
+[[node]]
+id = "third_derivative_zero_on_kernel_of_tendsto"
+
+[[node]]
+id = "first_second_order_of_criticality_two_eq_zero"

@@ -1,0 +1,25 @@
+namespace = "ContinuousMultilinearMap"
+
+[[node]]
+id = "diagonalNorm"
+
+[[node]]
+id = "diagonalNorm_bddAbove"
+
+[[node]]
+id = "diagonalNorm_nonneg"
+
+[[node]]
+id = "abs_apply_le_diagonalNorm"
+
+[[node]]
+id = "diagonalNorm_le"
+
+[[node]]
+id = "diagonalNorm_eq_sSup_sphere"
+
+[[node]]
+id = "diagonalNorm_comp_starProjection"
+
+[[node]]
+id = "diagonalNorm_eq_zero_iff"

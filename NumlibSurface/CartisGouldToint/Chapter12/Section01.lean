@@ -1,4 +1,5 @@
 import Numlib.Optimization.HighOrder.Criticality
+import Numlib.Optimization.HighOrder.CriticalityLowOrder
 import Numlib.Optimization.HighOrder.CriticalityApproximate
 import Numlib.Optimization.HighOrder.CriticalityStability
 import Numlib.Optimization.HighOrder.CriticalityLocalMin
@@ -170,5 +171,66 @@ theorem theorem_12_1_8 {n j : ℕ} (hj : 0 < j)
     have hb := TaylorModel.value_ge_of_criticality hj Metric.isOpen_ball hf.contDiffOn x
       hδ.le hball hL hlip' hcrit hd
     simpa only [hLzero, zero_mul, zero_div, sub_zero] using hb
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Theorem 12.1.3 (relating old and new criticality measures).**
+First-order criticality is exactly the radius times the gradient norm. Zero quadratic
+criticality implies zero gradient and positive semidefinite Hessian, with the bound for
+every actual Hessian eigenvalue. The third derivative projected orthogonally onto the
+common first/second-order kernel obeys (12.1.13), and the stated vanishing criticality
+ratio gives all three orders of necessary optimality conditions.
+
+The tensor norm is the diagonal definition in the first equality of (A.7), expressed
+on the closed unit ball. The actual orthogonal projection is applied in every tensor
+argument. Under the source positive semidefiniteness hypothesis, the linear common
+kernel equals the homogeneous-kernel intersection (A.8), as included explicitly below.
+The quadratic-form and ball formulations also cover dimension zero. -/
+theorem theorem_12_1_3 {n : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    (_hf1 : ContDiffAt ℝ 1 f x) :
+    (∀ δ : ℝ, 0 < δ →
+      ‖gradient f x‖ = highOrderCriticality f 1 x δ / δ ∧
+      (highOrderCriticality f 1 x δ = 0 ↔ gradient f x = 0)) ∧
+    (ContDiffAt ℝ 2 f x → ∀ δ : ℝ, 0 < δ →
+      highOrderCriticality f 2 x δ = 0 → gradient f x = 0 ∧
+      (∀ v, 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => v)) ∧
+      (∀ (μ : ℝ) (v : EuclideanSpace ℝ (Fin n)), v ≠ 0 →
+        TaylorModel.hessianOperator f x v = μ • v → 0 ≤ μ)) ∧
+    (ContDiffAt ℝ 3 f x → gradient f x = 0 →
+      (∀ v, 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => v)) →
+      (∀ v, v ∈ TaylorModel.secondOrderKernel f x ↔
+        iteratedFDeriv ℝ 1 f x (fun _ => v) = 0 ∧
+        iteratedFDeriv ℝ 2 f x (fun _ => v) = 0) ∧
+      (∀ δ : ℝ, 0 < δ →
+        ContinuousMultilinearMap.diagonalNorm (TaylorModel.projectedThirdDerivative f x) ≤
+          highOrderCriticality f 3 x δ / (δ ^ 3 / 6)) ∧
+      (Filter.Tendsto (fun δ : ℝ => highOrderCriticality f 3 x δ / δ ^ 3)
+        (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) →
+        gradient f x = 0 ∧ (∀ v, 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => v)) ∧
+        (∀ v, iteratedFDeriv ℝ 1 f x (fun _ => v) = 0 →
+          iteratedFDeriv ℝ 2 f x (fun _ => v) = 0 →
+          iteratedFDeriv ℝ 3 f x (fun _ => v) = 0))) := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro δ hδ
+    change ‖gradient f x‖ = TaylorModel.criticality f 1 x δ / δ ∧
+      (TaylorModel.criticality f 1 x δ = 0 ↔ gradient f x = 0)
+    rw [TaylorModel.criticality_one f x hδ]
+    constructor
+    · field_simp
+    · simp [hδ.ne']
+  · intro _hf2 δ hδ hc
+    exact TaylorModel.first_second_order_of_criticality_two_eq_zero f x hδ hc
+  · intro hf3 hg hp
+    have hf2 : ContDiffAt ℝ 2 f x := hf3.of_le (by norm_num)
+    refine ⟨fun v => TaylorModel.mem_secondOrderKernel_iff_diagonal hf2 hp,
+      fun δ hδ => TaylorModel.projectedThirdDerivative_diagonalNorm_le f x hδ, ?_⟩
+    intro hlim
+    refine ⟨hg, hp, ?_⟩
+    intro v h1 h2
+    exact TaylorModel.third_derivative_zero_on_kernel_of_tendsto f x hlim v
+      ((TaylorModel.mem_secondOrderKernel_iff_diagonal hf2 hp).2 ⟨h1,h2⟩)
 
 end CartisGouldToint

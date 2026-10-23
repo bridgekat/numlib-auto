@@ -1,7 +1,7 @@
 namespace = "CartisGouldToint"
 
 # Planning conventions for the remaining declarations:
-# High-order necessary, sufficient, approximate, and stable optimality conditions. Define actual Taylor models from iterated Frechet derivatives and criticality by optimization over a compact ball. The Euclidean Hessian uses the self-adjoint operator associated with the second derivative; cubic norms are multilinear operator norms restricted to the stated subspaces. Theorem 12.1.5 is false as transcribed and is recorded with a counterexample, pending a corrected source statement.
+# High-order necessary, sufficient, approximate, and stable optimality conditions. Define actual Taylor models from iterated Frechet derivatives and criticality by optimization over a compact ball. The Euclidean Hessian uses the self-adjoint operator associated with the second derivative; cubic norms use the diagonal definition in the first equality of (A.7), applied to the actual orthogonally projected derivative tensors; its closed-unit-ball and unit-sphere forms are proved equal for positive tensor order in nonzero dimension. Theorem 12.1.5 is false as transcribed and is recorded with a counterexample, pending a corrected source statement.
 
 [[node]]
 id = "highOrderCriticality"
@@ -73,40 +73,7 @@ deps = ["orderedCompositions"]
 
 [[node]]
 id = "theorem_12_1_3"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 12.1.3: Relating the old and new criticality measures
-
-Suppose that \( f \) is continuously differentiable. Then
-
-(i) for any \( \delta  > 0 \) and any \( x \in  {\mathbb{R}}^n \) , we have
-
-\[
-\begin{Vmatrix}{{\nabla }_x^{1}f\left( x\right) }\end{Vmatrix} = \frac{{\phi }_{f,1}^{\delta }\left( x\right) }{\delta },\tag{12.1.12}
-\]
-
-and so \( {\phi }_{f,1}^{\delta }\left( x\right)  = 0 \) if and only if \( {\nabla }_x^{1}f\left( x\right)  = 0 \) ;
-
-(ii) if \( f \in  {C}^2 \) , then if
-
-\[
-{\phi }_{f,2}^{\delta }\left( x\right)  = 0\text{ for some }\delta  > 0 \Rightarrow  {\nabla }_{x}^{1}f\left( x\right)  = 0\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( x\right) }\right\rbrack   \geq  0,
-\]
-
-and so any such \( x \) is a first- and second-order minimizer; and
-
-(iii) if \( f \in  {C}^{3},\mathcal{M}\left( x\right) \overset{\text{ def }}{ = }{\ker }^{1}\left\lbrack  {{\nabla }_{x}^{1}f\left( x\right) }\right\rbrack   \cap  {\ker }^{2}\left\lbrack  {{\nabla }_{x}^{2}f\left( x\right) }\right\rbrack  ,{P}_{\mathcal{M}\left( x\right) } \) is the exact orthogonal projection onto that subspace, and \( x \) satisfies the first- and second-order conditions exactly (i.e., \( {\nabla }_x^{1}f\left( x\right)  = 0 \) and \( {\nabla }_x^{2}f\left( x\right) \) is positive semidefinite), then
-
-\[
-\begin{Vmatrix}{{P}_{\mathcal{M}\left( x\right) }\left\lbrack  {{\nabla }_x^{3}f\left( x\right) }\right\rbrack  }\end{Vmatrix} \leq  \frac{{\phi }_{f,3}^{\delta }\left( x\right) }{\left( {\delta }^3/3!\right) },\tag{12.1.13}
-\]
-
-and so \( x \) is also a third-order minimizer provided that \( {\phi }_{f,3}^{\delta }\left( x\right) /{\delta }^3 \rightarrow  0 \) as \( \delta  \rightarrow  0 \) .
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.3 (OCR Markdown line 11547)"
-deps = ["highOrderCriticality"]
 
 [[node]]
 id = "theorem_12_1_4"
