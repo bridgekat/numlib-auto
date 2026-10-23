@@ -1,0 +1,34 @@
+namespace = "ShiftedNewton.Sharpness"
+
+[[node]]
+id = "value"
+
+[[node]]
+id = "first"
+
+[[node]]
+id = "second"
+
+[[node]]
+id = "horizon"
+
+[[node]]
+id = "horizon_pos"
+
+[[node]]
+id = "value_bounds"
+
+[[node]]
+id = "half_lt_value"
+
+[[node]]
+id = "terminal_first_le"
+
+[[node]]
+id = "accuracy_lt_first"
+
+[[node]]
+id = "spectral_max"
+
+[[node]]
+id = "shifted_step_bounds"

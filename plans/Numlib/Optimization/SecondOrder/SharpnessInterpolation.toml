@@ -1,0 +1,31 @@
+namespace = "ShiftedNewton.Sharpness"
+
+[[node]]
+id = "jet"
+
+[[node]]
+id = "value_succ"
+
+[[node]]
+id = "initialPolynomial_jet"
+
+[[node]]
+id = "residual_zero_bound"
+
+[[node]]
+id = "residual_one_bound"
+
+[[node]]
+id = "residual_two_bound"
+
+[[node]]
+id = "residual_le_scaled_step"
+
+[[node]]
+id = "residual_formulas"
+
+[[node]]
+id = "jet_bound"
+
+[[node]]
+id = "history_interpolation_data"

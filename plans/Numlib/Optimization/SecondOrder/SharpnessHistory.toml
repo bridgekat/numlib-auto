@@ -1,0 +1,25 @@
+namespace = "ShiftedNewton.Sharpness"
+
+[[node]]
+id = "history"
+
+[[node]]
+id = "history_point_zero"
+
+[[node]]
+id = "history_point_succ"
+
+[[node]]
+id = "history_value"
+
+[[node]]
+id = "history_first"
+
+[[node]]
+id = "history_second"
+
+[[node]]
+id = "next_history_step_bounds"
+
+[[node]]
+id = "history_step_bounds"

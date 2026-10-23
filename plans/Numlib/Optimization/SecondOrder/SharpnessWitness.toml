@@ -1,0 +1,16 @@
+namespace = "ShiftedNewton.Sharpness"
+
+[[node]]
+id = "exists_uniform_history_constant"
+
+[[node]]
+id = "derivative_lipschitz_of_bounded_jets"
+
+[[node]]
+id = "exists_uniform_slow_objective_sqrt"
+
+[[node]]
+id = "horizon_sqrt"
+
+[[node]]
+id = "exists_uniform_slow_objective"

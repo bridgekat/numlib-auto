@@ -1,4 +1,4 @@
-import Numlib.Optimization.SecondOrder.OracleMethod
+import Numlib.Optimization.SecondOrder.SharpnessWitness
 import Numlib.Optimization.SecondOrder.QuadraticConvergence
 
 /-!
@@ -82,5 +82,28 @@ abbrev secondOrderOracleMethod := ShiftedNewton.ScalarMethod
 spectral conditions to every nonterminated execution on the source objective
 class. It assumes no progress, trajectory support, stopping time or complexity. -/
 abbrev secondOrderOracleMethodClass := ShiftedNewton.IsScalarMethodClass
+
+/-- **Oracle-controller companion to Theorem 3.5.4.** Every deterministic
+second-order oracle-history method
+satisfying the primitive class conditions has an actual bounded smooth objective
+whose first successful gradient test is exactly at `ceil(ε ^ (-3/2))`. The global
+value, gradient and Hessian bounds are fixed before both accuracy and method.
+The source proof's terminal value bound `[1/2, 1]` overlooks ceiling rounding;
+the construction uses the correct positive terminal value, preserving the full
+controller-class conclusion. Rejected off-trajectory oracle interactions are
+not represented by this controller interface, so the full source method class
+requires a separate interactive-oracle formulation. -/
+theorem theorem_3_5_4_oracle_controller {κrg κlambda : ℝ}
+    (hg0 : 0 ≤ κrg) (hg1 : κrg < 1) (hl : 1 < κlambda) :
+    ∃ (L : ℝ) (hL : 0 < L), ∃ (B : ℝ) (hB : 0 < B),
+      ∀ ε : ℝ, 0 < ε → ε < 1 → ∀ (κrs : ℝ) (M : secondOrderOracleMethod),
+      secondOrderOracleMethodClass M ε κrg κrs κlambda →
+      ∃ f : ℝ → ℝ, ContDiff ℝ 2 f ∧ ShiftedNewton.ScalarObjectiveClass f ∧
+        LipschitzWith ⟨L, hL.le⟩ (iteratedDeriv 2 f) ∧
+        LipschitzWith ⟨max B L, hB.le.trans (le_max_left _ _)⟩ (deriv f) ∧
+        (∀ j ≤ 2, ∀ x, |iteratedDeriv j f x| ≤ B) ∧ f 0 = 1 ∧
+        (∀ k < ⌈ε ^ (-(3 / 2 : ℝ))⌉₊, ε < |deriv f (M.iterates f k)|) ∧
+        |deriv f (M.iterates f ⌈ε ^ (-(3 / 2 : ℝ))⌉₊)| ≤ ε :=
+  ShiftedNewton.Sharpness.exists_uniform_slow_objective hg0 hg1 hl
 
 end CartisGouldToint
