@@ -6,20 +6,9 @@ Appendix A.9: Hermite interpolation with constants uniform over interval length,
 
 [[node]]
 id = "hermiteEndpointPolynomial"
-kind = "definition"
-desc = '''
-For p:natural, s>0 and real endpoint jets a,b indexed by j<=p, define the unique polynomial pi of degree <=2p+1 satisfying pi^(j)(0)=a_j and pi^(j)(s)=b_j. Construct using Polynomial.interpolateJet on endpoint multiplicities p+1 with normalized jet coefficients a_j/j!,b_j/j!, and provide endpoint and degree characterization lemmas. The source says degree 2p+1, which must mean at most when data are degenerate.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.9, equations (A.23)--(A.26)"
 
 [[node]]
 id = "theorem_A_9_1"
-kind = "theorem"
-desc = '''
-For every p:natural and kappa>=0 there is L>=0 depending only on p,kappa such that: for every s>0 and endpoint jets a,b satisfying |b_j-sum_{i=j}^p a_i*s^(i-j)/(i-j)!|<=kappa*s^(p-j+1) for all j<=p, the pth derivative of hermiteEndpointPolynomial p s a b is L-Lipschitz on [0,s]. Furthermore there is B>=0 depending only on p,kappa such that if additionally |a_j|<=kappa for all j<=p and s<=kappa, then |pi^(j)(t)|<=B for all j<=p and t in [0,s]. State both uniform choices before quantifying over s,a,b. This is (A.30),(A.31); coefficient-matrix inverse estimates provide the constants.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.9.1"
-deps = ["hermiteEndpointPolynomial", "theorem_A_8_5"]
 
 [[node]]
 id = "theorem_A_9_2"
@@ -29,3 +18,6 @@ For p>0 and kappa>=0 choose L>=0 uniformly in the number and location of interpo
 '''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.9.2, equation (A.32)"
 deps = ["theorem_A_9_1"]
+
+[[node]]
+id = "hermiteEndpointPolynomial_spec"

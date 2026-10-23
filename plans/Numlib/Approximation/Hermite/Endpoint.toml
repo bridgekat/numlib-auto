@@ -1,0 +1,78 @@
+namespace = "Hermite"
+
+desc = "Canonical two-endpoint Hermite interpolation at arbitrary order, exact jets and degree, rescaling by normalized endpoint residuals, and uniform bounds chosen before interval and jet data."
+
+[[node]]
+id = "endpointPolynomial"
+
+[[node]]
+id = "endpointPolynomial_zero"
+
+[[node]]
+id = "endpointPolynomial_right"
+
+[[node]]
+id = "endpointPolynomial_degree_lt"
+
+[[node]]
+id = "endpointBasis"
+
+[[node]]
+id = "unitResidualPolynomial"
+
+[[node]]
+id = "unitResidualPolynomial_zero"
+
+[[node]]
+id = "unitResidualPolynomial_one"
+
+[[node]]
+id = "unitResidualPolynomial_uniform_bound"
+
+[[node]]
+id = "initialPolynomial"
+
+[[node]]
+id = "initialPolynomial_zero"
+
+[[node]]
+id = "initialPolynomial_degree_lt"
+
+[[node]]
+id = "initialPolynomial_uniform_bound"
+
+[[node]]
+id = "iterate_derivative_comp_scale"
+
+[[node]]
+id = "residualScaledPolynomial"
+
+[[node]]
+id = "residualScaledPolynomial_derivative"
+
+[[node]]
+id = "endpointPolynomial_eq_of_jets"
+
+[[node]]
+id = "unitResidualPolynomial_degree_lt"
+
+[[node]]
+id = "residualScaledPolynomial_natDegree_le"
+
+[[node]]
+id = "endpointResidual"
+
+[[node]]
+id = "endpointPolynomial_eq_residualScaled"
+
+[[node]]
+id = "endpointResidual_abs_le"
+
+[[node]]
+id = "endpointPolynomial_uniform_bounds"
+
+[[node]]
+id = "initialPolynomial_eval"
+
+[[node]]
+id = "endpointPolynomial_natDegree_le"
