@@ -1,0 +1,7 @@
+namespace = "RegularizedTrustRegion"
+
+[[node]]
+id = "Run.secondOrder_successful_card_le_of_initial_gradient"
+
+[[node]]
+id = "Run.secondOrder_successful_card_le_with_gap"

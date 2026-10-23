@@ -29,34 +29,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_3_4_6"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 3.4.6: Second-order complexity of the TR \( \epsilon \) algorithm
-
-Suppose that f.Bb and f.HL hold. Then there exist positive constants \( {\kappa }_{\mathrm{TR\varepsilon }}^s,{\kappa }_{\mathrm{TR\varepsilon }}^A \) , \( {\kappa }_{\mathrm{TR}\epsilon }^C \) , and \( {\kappa }_{\mathrm{TR}\epsilon }^D \) such that, for any \( \left( {{\epsilon }_1,{\epsilon }_2}\right)  \in  (0,1{\rbrack }^2 \) , the \( \mathrm{TR}\epsilon \) algorithm (p. 76) with \( {\epsilon }_{ * } = {\epsilon }_2 \) requires at most
-
-\[
-{\# }_{\mathrm{{TR}}\epsilon ,2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR\epsilon }}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\mathrm{{low}}}}{\min \left\lbrack  {{\epsilon }_{1}^{2}{\epsilon }_{2}^{-1},{\epsilon }_{2}^{3}}\right\rbrack  } + {\kappa }_{\mathrm{{TR\epsilon }}}^{D}\left| {\log {\epsilon }_{2}}\right|  + {\kappa }_{\mathrm{{TR\epsilon }}}^{C} = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-2}{\epsilon }_{2},{\epsilon }_{2}^{-3}}\right\rbrack  }\right)\tag{3.4.23}
-\]
-
-evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{TR}}\epsilon ,2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\min \left\lbrack  {{\epsilon }_{1}^{2}{\epsilon }_{2}^{-1},{\epsilon }_{2}^{3}}\right\rbrack  } + 1 = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-2}{\epsilon }_{2},{\epsilon }_{2}^{-3}}\right\rbrack  }\right)\tag{3.4.24}
-\]
-
-evaluations of \( {\nabla }_x^{1}f \) and \( {\nabla }_x^{2}f \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_2 \) (i.e.,(3.4.4) is satisfied).
-
-Referenced equation payloads:
-
-Equation (3.4.4):
-\[
-\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\;\text{ and }\;{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   \geq   - {\epsilon }_{2},\tag{3.4.4}
-\]
-'''
-deps = ["lemma_3_4_4", "lemma_2_3_1", "trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.4.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3789)"
 
 [[node]]
@@ -177,7 +149,7 @@ source = "Cartis–Gould–Toint Section3.4, actual model and exact source coeff
 
 [[node]]
 id = "theorem_3_4_6_corrected"
-source = "Cartis–Gould–Toint Theorem3.4.6 companion for the literal current-curvature boundary rule, with twice the leading coefficient and +2 initialized derivative allowance; original exact constants remain open."
+source = "Cartis–Gould–Toint Theorem3.4.6 companion for the literal current-curvature boundary rule, with twice the leading coefficient and +2 initialized derivative allowance; explicit proof constants, separate from the canonical existential theorem."
 
 [[node]]
 id = "irnModel"

@@ -1,0 +1,4 @@
+namespace = "Descent"
+
+[[node]]
+id = "exists_lt_of_gradient_ne_zero"
