@@ -295,3 +295,7 @@ source = "Cartis, Gould and Toint, Algorithm13.1.1 actual accepted/rejected/accu
 [[node]]
 id = "trqidaSettings"
 source = "Cartis, Gould and Toint, Algorithm13.1.1 accuracy-independent initialization settings and Theorem13.1.8."
+
+[[node]]
+id = "lemma_13_1_15_corrected"
+source = "Cartis, Gould and Toint, Lemma13.1.15 with corrected guarded parameter cap inherited from13.1.14; original literal node remains open. Includes zero-oracle case."

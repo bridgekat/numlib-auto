@@ -8,7 +8,7 @@ import Numlib.Optimization.TrustRegion.Inexact.Acceptance
 import Numlib.Optimization.TrustRegion.Inexact.Radius
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
-import Numlib.Optimization.Regularization.Inexact.SharpOutcomes
+import Numlib.Optimization.Regularization.Inexact.RunVerified
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -712,5 +712,32 @@ theorem lemma_13_1_12 {n p q : ℕ}
       exact Or.inr ⟨hs, d, fun a => ⟨(hd a).1, (hd a).2.1, (hd a).2.2,
         (hr a).2.1, (hr a).2.2⟩⟩
   · exact fun k hk hselected => h.trial_of_stepTwo_accuracy hM hjet hk hselected
+
+/-- **Corrected Lemma 13.1.15.** A genuine all-passing Step1 check gives the true
+approximate-optimality conditions when (13.1.78) holds. The zero-error oracle
+case needs no request bound. The uniform parameter cap uses the documented
+`max(kappa_s,kappa_h)` repair of Lemma13.1.14 under the literal short-step guard. -/
+theorem lemma_13_1_15_corrected {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+    (N : ℕ) (h : InexactRegularization.Run f P ε D N)
+    {k : ℕ} (hk : k ≤ N) (hselected : D.selected k = none)
+    {H : ℝ} (hH : 0 ≤ H)
+    (haccuracy : ∀ i, 1 ≤ i → i ≤ p → D.accuracy k i ≤ H)
+    (hsmall : P.errorBound = 0 ∨ H ≤ InexactRegularization.verificationThreshold q P.zeta
+      (InexactRegularization.stepRadiusCoefficient P.zeta P.theta
+        (L + P.errorBound * P.initialCap) (InexactRegularization.executionParameterCap P L))
+      P.errorBound (minimumAccuracy P.order_pos ε)) :
+    InexactRegularization.OptimalityAt f ε (D.point k) (D.checkedRadius k) := by
+  have hM : 1 ≤ L + P.errorBound * P.initialCap := hL.trans
+    (le_add_of_nonneg_right (mul_nonneg P.errorBound_nonneg P.initialCap_nonneg))
+  exact h.passing_optimality_of_cap hM hH
+    (fun k hk => h.parameter_le hf (zero_le_one.trans hL) (hlip p le_rfl) hk)
+    (fun k hk i hi hip => h.tensor_norm_le (zero_le_one.trans hL)
+      (fun j hj => hlip j hj.le) hk (by omega) hip)
+    hk hselected haccuracy hsmall
 
 end CartisGouldToint
