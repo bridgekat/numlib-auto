@@ -10,21 +10,11 @@ deps = ["orderedCompositions"]
 
 [[node]]
 id = "leastSquaresMerit"
-kind = "definition"
-desc = '''
-For c:R^n→R^m and f:R^n→R define ν(x)=||c(x)||²/2, r(x,t)=(c(x),f(x)−t), and μ(x,t)=||r(x,t)||²/2. Generalize to residual map r in LENq-SC. Keep the parameter t explicit in derivatives and level sets.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.3"
-deps = []
 
 [[node]]
 id = "lenqscRun"
-kind = "definition"
-desc = '''
-Algorithm 14.3.1 LENq-SC local rules for minimizing ||r(x)|| over X: inner minimization of ||r||²/2 using the selected SC algorithm; target εk=β^k ε0, β∈(0,1); termination and continuation tests are exactly (14.3.18)–(14.3.23). Inputs include the choice of an inner algorithm, its operational run and call counters; its generic decrease/complexity assumptions are explicit hypotheses of later theorems rather than built-in conclusions.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.3"
-deps = ["leastSquaresMerit", "constrainedCriticality"]
 
 [[node]]
 id = "tpqpgcRun"
@@ -81,6 +71,7 @@ The LENq-SC algorithm terminates at a point satisfying (14.3.18) after at most \
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.3 (OCR Markdown line 16961)"
 deps = ["lenqscRun"]
+wrong = "The unrounded real iteration bound can be smaller than one although an inner call is required. With r(x)=1/2 on R, X=R, q=1, epsilon0=1/4, epsilon1=1/2, beta=1/4, the initial primal test fails and one exact inner call returns zero true criticality, whereas the printed bound equals 1/2. Formal actual-run counterexample and natural-ceiling companion are provided."
 
 [[node]]
 id = "theorem_14_3_4"
@@ -318,3 +309,11 @@ to compute a point \( {x}_{\epsilon } \) such that either (14.3.41) holds, or (1
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.9 (OCR Markdown line 17583)"
 deps = ["lemma_14_3_5", "lemma_14_3_7", "lemma_14_3_8"]
+
+[[node]]
+id = "theorem_14_3_3_corrected"
+source = "Cartis, Gould and Toint, Theorem 14.3.3 with explicit natural ceiling of the printed real logarithmic expression"
+
+[[node]]
+id = "theorem_14_3_3_counterexample"
+source = "Actual constant-residual one-call counterexample to the literal unrounded iteration count in Theorem 14.3.3"

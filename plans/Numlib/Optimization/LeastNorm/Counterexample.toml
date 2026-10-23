@@ -1,0 +1,22 @@
+namespace = "LeastNorm.Counterexample"
+
+[[node]]
+id = "residual"
+
+[[node]]
+id = "innerCall"
+
+[[node]]
+id = "constant_criticality"
+
+[[node]]
+id = "inner_sound"
+
+[[node]]
+id = "one_iteration"
+
+[[node]]
+id = "first_target_one"
+
+[[node]]
+id = "printed_iteration_bound_false"

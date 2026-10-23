@@ -1,0 +1,34 @@
+namespace = "LeastNorm"
+
+[[node]]
+id = "merit"
+
+[[node]]
+id = "InnerSound"
+
+[[node]]
+id = "TargetAt"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.residual_gt"
+
+[[node]]
+id = "Run.residual_contracts"
+
+[[node]]
+id = "Run.restrict"
+
+[[node]]
+id = "Run.residual_le_geometric"
+
+[[node]]
+id = "Run.nonterminal_index_lt_budget"
+
+[[node]]
+id = "Run.iterations_le_budget"
+
+[[node]]
+id = "exists_first_target"
