@@ -1,4 +1,4 @@
-import Numlib.Optimization.Regularization.Universal.Threshold
+import Numlib.Optimization.Regularization.Universal.Parameter
 
 /-!
 # Universal regularization with real powers
@@ -74,7 +74,9 @@ theorem lemma_5_5_3 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
 /-- **Lemma5.5.4.** The source accuracy thresholds imply the step-dependent
 threshold and hence a very successful trial whenever its literal stopping test
 fails. The optional second-order threshold is disabled explicitly for first
-order; the two maxima combine to the four-term maximum in(5.5.29). -/
+order; the two maxima combine to the four-term maximum in(5.5.29).
+The accuracy-power denominators require p+β>1, and p+β>2 when the
+second-order test is enabled; the printed formulas are undefined at equality. -/
 theorem lemma_5_5_4 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {P : UniversalRegularization.Settings p} {ε1 : ℝ} {ε2 : Option ℝ}
     {x s : EuclideanSpace ℝ (Fin n)} {σ H β : ℝ}
@@ -106,4 +108,32 @@ theorem lemma_5_5_4 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     fun e he => (le_max_left _ _).trans (hsecond e he)
   exact ⟨max_le hθ1 hκ, hθ2, h.very_successful hf hH hβ hβ1 hholder ha har hσ hp
     (fun e he => (ha2 e he).le) hθ1 hθ2 hκ⟩
+/-- **Lemma5.5.5.** Every actual parameter satisfies the exact three-term or
+five-term accuracy-dependent maximum, according to the enabled tests. The fixed
+constants also give the single-power and two-power caps. As in Lemma5.5.4,
+accuracy-power denominators are restricted to their positive domain. -/
+theorem lemma_5_5_5 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {P : UniversalRegularization.Settings p} {ε1 : ℝ} {ε2 : Option ℝ}
+    {D : UniversalRegularization.Data (EuclideanSpace ℝ (Fin n))} {N k : ℕ}
+    {H β : ℝ} (hf : ContDiff ℝ p f) (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
+    (hholder : ∀ y z,
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ H * ‖y - z‖ ^ β)
+    (ha : 1 < (p : ℝ) + β) (har : (p : ℝ) + β ≤ P.r)
+    (h : universalArpRun f P ε1 ε2 D N) (hk : k ≤ N)
+    (ha2 : ∀ e ∈ ε2, 2 < (p : ℝ) + β) :
+    D.parameter k ≤ max P.sigmaInitial
+      (P.gamma3 * UniversalRegularization.accuracyThreshold P H β ε1 ε2) ∧
+    (ε2 = none → D.parameter k ≤ UniversalRegularization.uniformCapOne P H β *
+      ε1 ^ (((p : ℝ) + β - P.r) / ((p : ℝ) + β - 1))) ∧
+    (∀ e ∈ ε2, D.parameter k ≤ UniversalRegularization.uniformCapTwo P H β *
+      max (ε1 ^ (((p : ℝ) + β - P.r) / ((p : ℝ) + β - 1)))
+        (e ^ (((p : ℝ) + β - P.r) / ((p : ℝ) + β - 2)))) := by
+  refine ⟨h.parameter_le hf hH hβ hβ1 hholder ha har hk ha2,?_,?_⟩
+  · intro he
+    subst ε2
+    exact h.parameter_le_uniform_one hf hH hβ hβ1 hholder ha har hk
+  · intro e he
+    have heq := Option.mem_def.mp he
+    subst ε2
+    exact h.parameter_le_uniform_two hf hH hβ hβ1 hholder (ha2 e (by simp)) har hk
 end CartisGouldToint

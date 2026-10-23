@@ -1,0 +1,37 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "firstThreshold"
+
+[[node]]
+id = "secondThreshold"
+
+[[node]]
+id = "accuracyThreshold"
+
+[[node]]
+id = "Run.very_successful_of_threshold"
+
+[[node]]
+id = "Run.parameter_succ_le"
+
+[[node]]
+id = "Run.parameter_le"
+
+[[node]]
+id = "uniformCapOne"
+
+[[node]]
+id = "uniformCapTwo"
+
+[[node]]
+id = "one_le_accuracy_power"
+
+[[node]]
+id = "max_scaled_le"
+
+[[node]]
+id = "Run.parameter_le_uniform_one"
+
+[[node]]
+id = "Run.parameter_le_uniform_two"
