@@ -274,19 +274,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_3_2_5"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.2.5: Lower bound for the trust-region radius (second order)
-
-Suppose that f.HBa and f.HL hold and that the TR2 algorithm with \( {\epsilon }_2 \in  (0,1\rbrack \) has not terminated at or before iteration \( {k}_{\epsilon } \) . Then there exists a constant \( {\kappa }_{\Delta } \in  \left( {0,1}\right) \) such that, for all \( k \in  \left\lbrack  {0 : {k}_{\epsilon }}\right\rbrack \) ,
-
-\[
-{\Delta }_k \geq  {\kappa }_{\Delta }\min \left\lbrack  {{\epsilon }_1,{\epsilon }_2}\right\rbrack  .\tag{3.2.17}
-\]
-'''
-deps = ["lemma_2_3_3", "lemma_3_2_4", "tr2Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.2.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2799)"
 
 [[node]]
@@ -341,3 +328,9 @@ id = "tr2SuccessfulConstant"
 
 [[node]]
 id = "tr2LogConstant"
+
+[[node]]
+id = "tr2LeastEigenpair"
+
+[[node]]
+id = "tr2FiniteRun"

@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.SecondOrder.Finite
 import Numlib.Optimization.TrustRegion.Eigenpoint
 import Numlib.Optimization.TrustRegion.SecondOrder.FirstOrder
 import NumlibSurface.CartisGouldToint.Chapter02.Section03
@@ -184,4 +185,32 @@ theorem theorem_3_2_1 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ 
         exact add_le_add (div_le_div_of_nonneg_right hlogs hlog.le) le_rfl
       exact hF.trans (by linarith)
   · exact ⟨hD,hD⟩
+/-- A certified least eigenpair for the actual Hessian; the Rayleigh comparison
+quantifies over every unit direction. -/
+abbrev tr2LeastEigenpair {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [CompleteSpace E] (f : E → ℝ) (x : E) (μ : ℝ) (u : E) : Prop :=
+  SecondOrderTrustRegion.IsLeastEigenpair f x μ u
+
+/-- The operational TR2 branch with both finite stopping tolerances. -/
+abbrev tr2FiniteRun {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [CompleteSpace E] (f : E → ℝ) (x s sC sE u : ℕ → E) (μ Δ ρ : ℕ → ℝ)
+    (η₁ η₂ γ₁ γ₂ γ₃ ε₁ ε₂ : ℝ) (N : ℕ) : Prop :=
+  SecondOrderTrustRegion.Run f x s sC sE u μ Δ ρ η₁ η₂ γ₁ γ₂ γ₃ ε₁ ε₂ N
+
+/-- **Lemma 3.2.5.** The actual finite-tolerance TR2 radius stays above
+(3.2.17), with the exact printed accuracy-independent constant. A prefix of
+`N` trials gives the bound also at its endpoint, even if that endpoint terminates. -/
+theorem lemma_3_2_5 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [CompleteSpace E] {f : E → ℝ} {x s sC sE u : ℕ → E} {μ Δ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ ε₁ ε₂ H L : ℝ} {N : ℕ}
+    (h : tr2FiniteRun f x s sC sE u μ Δ ρ η₁ η₂ γ₁ γ₂ γ₃ ε₁ ε₂ N)
+    (hf : ContDiff ℝ 2 f) (hH : 1 ≤ H) (hL : 0 < L) (hε₂ : ε₂ ≤ 1)
+    (hbound : ∀ y, ‖SecondOrderTrustRegion.hessian f y‖ ≤ H)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖) :
+    ∃ κΔ ∈ Set.Ioo (0 : ℝ) 1,
+      κΔ = min (γ₁ * (1 - η₂) / max (4 * H) (L / 3)) (Δ 0) ∧
+      ∀ i ≤ N, κΔ * min ε₁ ε₂ ≤ Δ i := by
+  exact ⟨_, h.radiusConstant_mem_Ioo hH hL.le, rfl,
+    fun _ hi => h.radius_lower hf hH hL hε₂ hbound hlip hi⟩
+
 end CartisGouldToint

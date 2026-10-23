@@ -1,0 +1,29 @@
+namespace = "SecondOrderTrustRegion"
+
+[[node]]
+id = "IsLeastEigenpair"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "exists_modelStep"
+
+[[node]]
+id = "secondOrderRadiusConstant"
+
+[[node]]
+id = "Run.firstOrderTrial"
+
+[[node]]
+id = "Run.denominator_pos"
+
+[[node]]
+id = "Run.very_successful"
+
+[[node]]
+id = "Run.radiusConstant_mem_Ioo"
+
+[[node]]
+id = "Run.radius_lower"
+
