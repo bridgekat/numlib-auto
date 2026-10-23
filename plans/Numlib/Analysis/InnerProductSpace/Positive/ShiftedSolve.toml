@@ -1,0 +1,7 @@
+namespace = "LinearMap"
+
+[[node]]
+id = "norm_le_norm_of_shifted_solve"
+
+[[node]]
+id = "norm_lt_norm_of_shifted_solve"
