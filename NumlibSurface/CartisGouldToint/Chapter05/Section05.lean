@@ -1,4 +1,4 @@
-import Numlib.Optimization.Regularization.Universal.Parameter
+import Numlib.Optimization.Regularization.Universal.Decrease
 
 /-!
 # Universal regularization with real powers
@@ -136,4 +136,34 @@ theorem lemma_5_5_5 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     have heq := Option.mem_def.mp he
     subst ε2
     exact h.parameter_le_uniform_two hf hH hβ hβ1 hholder (ha2 e (by simp)) har hk
+/-- **Lemma5.5.6.** Each actual successful iteration has the exact source
+first-order decrease, or the minimum of the two displayed accuracy powers when
+second-order accuracy is enabled. All cap and decrease coefficients are fixed
+before the requested accuracies and are the source finite-factorial expressions. -/
+theorem lemma_5_5_6 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {P : UniversalRegularization.Settings p} {ε1 : ℝ} {ε2 : Option ℝ}
+    {D : UniversalRegularization.Data (EuclideanSpace ℝ (Fin n))} {N k : ℕ}
+    {H β : ℝ} (hf : ContDiff ℝ p f) (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
+    (hholder : ∀ y z,
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ H * ‖y - z‖ ^ β)
+    (ha : 1 < (p : ℝ) + β) (har : (p : ℝ) + β ≤ P.r)
+    (h : universalArpRun f P ε1 ε2 D N) (hk : k < N)
+    (ha2 : ∀ e ∈ ε2, 2 < (p : ℝ) + β)
+    (hs : P.eta1 ≤ UniversalRegularization.ratio f p D k ∧
+      UniversalRegularization.LengthChecks f P ε2 D k) :
+    (ε2 = none → UniversalRegularization.decreaseCoefficientOne P H β *
+      ε1 ^ (((p : ℝ) + β) / ((p : ℝ) + β - 1)) ≤
+        f (D.point k) - f (D.point (k + 1))) ∧
+    (∀ e ∈ ε2, UniversalRegularization.decreaseCoefficientTwo P H β *
+      min (ε1 ^ (((p : ℝ) + β) / ((p : ℝ) + β - 1)))
+        (e ^ (((p : ℝ) + β) / ((p : ℝ) + β - 2))) ≤
+          f (D.point k) - f (D.point (k + 1))) := by
+  constructor
+  · intro he
+    subst ε2
+    exact h.successful_decrease_one hf hH hβ hβ1 hholder ha har hk hs
+  · intro e he
+    have heq := Option.mem_def.mp he
+    subst ε2
+    exact h.successful_decrease_two hf hH hβ hβ1 hholder (ha2 e (by simp)) har hk hs
 end CartisGouldToint

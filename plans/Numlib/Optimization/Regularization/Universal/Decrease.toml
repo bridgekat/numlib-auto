@@ -1,0 +1,22 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "uniformCapOne_pos"
+
+[[node]]
+id = "uniformCapTwo_pos"
+
+[[node]]
+id = "Run.accepted_decrease"
+
+[[node]]
+id = "decreaseCoefficientOne"
+
+[[node]]
+id = "decreaseCoefficientTwo"
+
+[[node]]
+id = "Run.successful_decrease_one"
+
+[[node]]
+id = "Run.successful_decrease_two"

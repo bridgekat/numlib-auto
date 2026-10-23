@@ -26,55 +26,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_5_5_6"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 5.5.6: Lower bound on successful iterations
-
-Suppose that f.DpH holds. Then, on each successful iteration \( k \) of the ARp-H algorithm up to termination, we have the following:
-
-(i) If \( {\epsilon }_2 = \infty \) and \( r \geq  p + {\beta }_p > 1 \) , then
-
-\[
-f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_{H,1}{\epsilon }_1^{\frac{p + {\beta }_p}{p + {\beta }_p - 1}},
-\]
-
-where
-
-\[
-{\kappa }_{H,1}\overset{\text{ def }}{ = }\frac{{\eta }_{1}}{r!}{\left( \frac{{\alpha }_{1}^{r}}{{\sigma }_{H,1}}\right) }^{\frac{1}{r - 1}}\;\text{ and }\;{\sigma }_{H,1}\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},{\gamma }_{3}{\theta }_{1}\left( {r - 1}\right) !,{\gamma }_{3}{\kappa }_{\beta ,1}}\right\rbrack  ,
-\]
-
-with \( {\kappa }_{\beta ,1} \) defined as in (5.5.28).
-
-(ii) If \( {\epsilon }_2 < \infty \) and \( r \geq  p + {\beta }_p > 2 \) , then
-
-\[
-f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_{H,2}\min \left\lbrack  {{\epsilon }_1^{\frac{p + {\beta }_p}{p + {\beta }_p - 1}},{\epsilon }_2^{\frac{p + {\beta }_p}{p + {\beta }_p - 2}}}\right\rbrack  ,\tag{5.5.44}
-\]
-
-where
-
-\[
-{\kappa }_{H,2}\overset{\text{ def }}{ = }\frac{{\eta }_{1}}{r!}\min \left\lbrack  {{\left( \frac{{\alpha }_{1}^{r}}{{\sigma }_{H}}\right) }^{\frac{1}{r - 1}},{\left( \frac{{\alpha }_{2}^{r}}{{\sigma }_{H}^{2}}\right) }^{\frac{1}{r - 2}}}\right\rbrack\tag{5.5.45}
-\]
-
-and \( {\sigma }_H \) is defined as in (5.5.42).
-
-Referenced equation payloads:
-
-Equation (5.5.28):
-\[
-{\kappa }_{\beta ,1}\overset{\text{ def }}{ = }{\left( \frac{\left( {r - 1}\right) !}{3}\right) }^{\frac{p + {\beta }_{p} - r}{p + {\beta }_{p} - 1}}{\kappa }_{\beta }^{\frac{r - 1}{p + {\beta }_{p} - 1}}\tag{5.5.28}
-\]
-
-Equation (5.5.42):
-\[
-{\sigma }_{H}\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},{\gamma }_{3}{\theta }_{1}\left( {r - 1}\right) !,{\gamma }_{3}{\theta }_{2}\left( {r - 2}\right) !,{\gamma }_{3}{\kappa }_{\beta ,1},{\gamma }_{3}{\kappa }_{\beta ,2}}\right\rbrack  .\tag{5.5.42}
-\]
-'''
-deps = ["lemma_5_5_1", "universalArpRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7536)"
 
 [[node]]

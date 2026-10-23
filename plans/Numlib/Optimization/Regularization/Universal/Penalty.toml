@@ -1,0 +1,19 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "penalty_lower"
+
+[[node]]
+id = "penalty_lower_accuracy"
+
+[[node]]
+id = "penalty_lower_scale"
+
+[[node]]
+id = "accuracy_power_identity"
+
+[[node]]
+id = "accuracy_scale_le"
+
+[[node]]
+id = "parameter_accuracy_le"
