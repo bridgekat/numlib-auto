@@ -500,6 +500,29 @@ theorem true_first_stopping_index {q : ℕ} {f : ℝ → ℝ} (P : Parameters q)
     · rw [criticality_lower_of_matches h le_rfl (lt_of_le_of_ne (modelOrder_le a) ha) hε.le]
       positivity
 
+/-- At every preterminal point the genuine order-`q` measure fails its
+accuracy requirement for every positive radius, including radii other than the
+algorithm's current optimality radius. -/
+theorem not_approximate_at_any_radius {q : ℕ} {f : ℝ → ℝ} (P : Parameters q)
+    {ε : ℝ} (hε : 0 < ε)
+    (hacc : ∀ a, P.accuracy a = ((modelOrder a).factorial : ℝ) * ε)
+    (h : MatchesJets f q ε (length q ε)) {k : ℕ} (hk : k < length q ε)
+    {δ : ℝ} (hδ : 0 < δ) :
+    ¬∀ a, TaylorModel.criticality f (modelOrder a) (point ε k) δ ≤
+      P.accuracy a * δ ^ modelOrder a / (modelOrder a).factorial := by
+  intro ht
+  have hh := ht (topIndex P.order_pos)
+  have hc : 0 ≤ ε * weight (length q ε) k :=
+    mul_nonneg hε.le (by linarith [(weight_mem_Icc (length_pos q hε) hk.le).1])
+  rw [hacc, modelOrder_topIndex,
+    criticality_top_of_matches P.order_pos h hk.le hc hδ.le] at hh
+  have hf : (q.factorial : ℝ) ≠ 0 := by positivity
+  have heq : (q.factorial : ℝ) * ε * δ ^ q / q.factorial = ε * δ ^ q := by field_simp
+  rw [heq] at hh
+  have hp : 0 < ε * δ ^ q := by positivity
+  have hw := one_lt_weight hk
+  nlinarith
+
 /-- Every trial succeeds, so the actual initialized counts are exactly `K+1`. -/
 theorem initialized_counts {q : ℕ} (P : Parameters q) (K : ℕ) :
     functionEvaluations K = K + 1 ∧ derivativeEvaluations P (fun _ => 1) K = K + 1 := by
