@@ -1,0 +1,17 @@
+[[node]]
+id = "FirstOrderRegularization.actualRatio"
+
+[[node]]
+id = "FirstOrderRegularization.constant_run_of_backtracking"
+
+[[node]]
+id = "FirstOrderRegularization.Run.functionEvaluations"
+
+[[node]]
+id = "FirstOrderRegularization.Run.gradientEvaluations"
+
+[[node]]
+id = "FirstOrderRegularization.Run.gradientEvaluations_eq_of_all_successful"
+
+[[node]]
+id = "FirstOrderRegularization.exists_slow_run"

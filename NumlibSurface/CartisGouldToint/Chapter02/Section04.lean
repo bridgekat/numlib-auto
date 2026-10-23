@@ -1,5 +1,6 @@
 import NumlibSurface.CartisGouldToint.Chapter02.Section03
 import Numlib.Optimization.Regularization.FirstOrder
+import Numlib.Optimization.Regularization.FirstOrder.Sharpness
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -110,5 +111,29 @@ theorem theorem_2_4_4 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
       _ = _ := by dsimp [κS]; ring
   · simpa [κS, M, successfulIterations] using
       add_le_add (hK.successful_card_le hL (hlow _)) (le_rfl : (1 : ℝ) ≤ 1)
+
+/-- **Theorem 2.4.5 (slow AR1 convergence).** With parameters fixed before the
+accuracy is chosen, AR1 can require at least `ε⁻²` objective and gradient evaluations
+on a nonnegative `C¹` objective with uniformly Lipschitz gradient and bounded initial
+gap. The actual ratios are all at least `η₂`, and the regularization parameter stays
+at its positive floor. The explicit one-dimensional plateau objective gives
+`N = ceil(ε⁻²)` iterations; both evaluation counts are `N + 1`, including initialization
+and the terminal gradient test. -/
+theorem theorem_2_4_5 {η₁ η₂ γ₁ γ₂ γ₃ σmin : ℝ}
+    (hσ : 0 < σmin) (hη₁ : 0 < η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂ < 1)
+    (hγ₁0 : 0 < γ₁) (hγ₁1 : γ₁ < 1) (hγ₂ : 1 < γ₂) (hγ₃ : γ₂ < γ₃) :
+    ∃ L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
+      ∃ (f g : ℝ → ℝ) (x : ℕ → ℝ) (ρ : ℕ → ℝ) (N : ℕ),
+        ContDiff ℝ 1 f ∧ (∀ y, HasFDerivAt f (innerSL ℝ (g y)) y) ∧
+        (∀ y z, ‖g y - g z‖ ≤ L * ‖y - z‖) ∧
+        (∀ y, 0 ≤ f y) ∧ f (x 0) ≤ 8 / σmin ∧ x 0 = 0 ∧
+        N = ⌈1 / ε ^ 2⌉₊ ∧
+        FirstOrderRegularization.Run f g x (fun _ => σmin) ρ η₁ η₂ γ₁ γ₂ γ₃ σmin ε N ∧
+        (∀ i < N, η₂ ≤ ρ i) ∧ ‖g (x N)‖ = ε ∧ (1 / ε ^ 2 : ℝ) ≤ N ∧
+        FirstOrderRegularization.Run.functionEvaluations N = N + 1 ∧
+        FirstOrderRegularization.Run.gradientEvaluations ρ η₁ N = N + 1 ∧
+        (1 / ε ^ 2 : ℝ) ≤ FirstOrderRegularization.Run.functionEvaluations N ∧
+        (1 / ε ^ 2 : ℝ) ≤ FirstOrderRegularization.Run.gradientEvaluations ρ η₁ N :=
+  FirstOrderRegularization.exists_slow_run hσ hη₁ hη hη₂ hγ₁0 hγ₁1 hγ₂ hγ₃
 
 end CartisGouldToint

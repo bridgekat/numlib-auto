@@ -22,15 +22,4 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_2_4_5"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 2.4.5: Slow first-order convergence of the AR1 algorithm
-
-The AR1 algorithm (p. 42) applied to minimize a function \( f \) satisfying f.Bb and f.gL may require as many as \( {\epsilon }^{-2} \) evaluations of \( f\left( x\right) \) and \( {\nabla }_x^{1}f\left( x\right) \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
-
-Thus far, the reader may be unconvinced by the hyperbole with which we started the section. There seems little to choose between linesearch methods such as the SDBA algorithm, trust-region ones like the TR1 algorithm, and the much-heralded AR1 regularization algorithm that we have just encountered. Each of these appears to require at most \( \mathcal{O}\left( {\epsilon }^{-2}\right) \) evaluations to find an \( \epsilon \) -first-order approximate minimizer, and for each there are examples for which this pessimistic bound may be achieved. The most important lessons here are more how each of these methods is structured, and the different tricks at our disposal for analyzing them. Fear not - significant differences that justify our interest will start to emerge from the next chapter onward.
-'''
-deps = ["lemma_2_3_1", "ar1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.4.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2319)"
