@@ -1,0 +1,28 @@
+namespace = "Composite"
+
+[[node]]
+id = "norm_le_sqrt_dim_mul"
+
+[[node]]
+id = "norm_sub_eval_le_componentwise"
+
+[[node]]
+id = "abs_sub_taylorModel_le"
+
+[[node]]
+id = "regularizedModel"
+
+[[node]]
+id = "ModelTrace"
+
+[[node]]
+id = "ModelTrace.model_decrease"
+
+[[node]]
+id = "ModelTrace.denominator_pos"
+
+[[node]]
+id = "ModelTrace.very_successful"
+
+[[node]]
+id = "ModelTrace.parameter_le"

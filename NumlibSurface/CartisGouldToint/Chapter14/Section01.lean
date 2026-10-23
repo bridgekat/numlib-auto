@@ -1,6 +1,7 @@
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.Composite.Optimality
+import Numlib.Optimization.Composite.Regularization
 import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
@@ -73,5 +74,38 @@ theorem lemma_14_1_1 {n m : ℕ}
   have hm := Composite.taylorModel_one_isMinOn_of_isMinOn
     (hf.differentiable (by norm_num) x) (hc.differentiable (by norm_num) x) hh hconv hmin
   exact ⟨hm, fun _ hδ => Composite.criticality_eq_zero_of_model_min f c h 1 x hδ.le hm⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The ARqpC model, actual ratio and parameter updates used in Lemma 14.1.6.
+Step stationarity and stopping tests are unnecessary for this parameter bound. -/
+abbrev compositeModelTrace {E F : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+    (f : E → ℝ) (c : E → F) (h : F → ℝ) (p : ℕ)
+    (x s : ℕ → E) (σ ρ : ℕ → ℝ) (η₁ η₂ γ₁ γ₂ γ₃ σmin : ℝ) (N : ℕ) : Prop :=
+  Composite.ModelTrace f c h p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N
+
+/-- **Lemma 14.1.6.** The parameter bound (14.1.26) with exactly the
+combined Lipschitz constant (14.1.27). Residual smoothness is componentwise,
+which accounts for the square-root dimension factor. Writing the model degree
+as `p+1` covers every positive degree and preserves the source's finite smoothness. -/
+theorem lemma_14_1_6 {n m p N : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {h : EuclideanSpace ℝ (Fin m) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin Lf Lc : ℝ} {Lh : NNReal}
+    (ht : compositeModelTrace f c h (p + 1) x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (hf : ContDiff ℝ (p + 1) f) (hLf : 0 ≤ Lf) (hLc : 0 ≤ Lc)
+    (hc : ∀ i, ContDiff ℝ (p + 1) (fun z => c z i))
+    (hlipf : ∀ y z, ‖iteratedFDeriv ℝ (p + 1) f y - iteratedFDeriv ℝ (p + 1) f z‖ ≤
+      Lf * ‖y - z‖)
+    (hlipc : ∀ i y z, ‖iteratedFDeriv ℝ (p + 1) (fun w => c w i) y -
+      iteratedFDeriv ℝ (p + 1) (fun w => c w i) z‖ ≤ Lc * ‖y - z‖)
+    (hh : LipschitzWith Lh h) :
+    ∀ i ≤ N, σ i ≤ max (σ 0) (γ₃ * (Lf + Real.sqrt m * (Lh : ℝ) * Lc) / (1 - η₂)) :=
+  fun _ hi => ht.parameter_le hf hLf hLc hc hlipf hlipc hh hi
 
 end CartisGouldToint

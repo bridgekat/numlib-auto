@@ -97,26 +97,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_14_1_6"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 14.1.6: Upper bound on the regularization parameter for the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm
-
-Suppose that f.DpL, c.DpL, and h.L hold. Then, for all \( k \geq  0 \) ,
-
-\[
-{\sigma }_{k} \leq  {\sigma }_{\max }\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},\frac{{\gamma }_{3}{L}_{w, p}}{1 - {\eta }_{2}}}\right\rbrack  ,\tag{14.1.26}
-\]
-
-where
-
-\[
-{L}_{w, p}\overset{\text{ def }}{ = }{L}_{f, p} + \sqrt{m}{L}_{h,0}{L}_{c, p}.\tag{14.1.27}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.6 (OCR Markdown line 15983)"
-deps = ["lemma_14_1_5"]
 
 [[node]]
 id = "lemma_14_1_7"
@@ -262,3 +243,6 @@ id = "compositeTaylorModel"
 
 [[node]]
 id = "compositeTaylorModel_zero"
+
+[[node]]
+id = "compositeModelTrace"
