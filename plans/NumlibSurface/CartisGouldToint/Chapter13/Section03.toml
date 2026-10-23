@@ -9,7 +9,7 @@ kind = "definition"
 desc = '''
 Algorithm 13.3.1 with its actual computed polynomial and known unit tensor-error bounds. Step 1 approximates each computed criticality measure, branches on the failed positive-order test, and certifies termination only after the finite total budget comparison (13.3.8). Step 2 compares the selected computed decrement and checks step-scaled derivative requests. Step 3 uses both approximate objective values, each with absolute error at most h0 and h0 at most κs times the computed decrement; κs is at most one quarter of min(η1,1−η2). Preserve radius updates, point acceptance, and geometric accuracy reduction with point/radius unchanged. Derive true optimality, acceptance and evaluation counts.
 '''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 13.3"
+source = "Cartis, Gould and Toint, Algorithm13.3.1, full primitive computed-check/error-budget/objective-ratio/request-update trace, including first selected failing order and reuse after rejection. Step0 excludes initial function evaluation; derivative counters include initialization."
 deps = ["explicitAccuracyVerifier", "trqidaRun"]
 
 [[node]]

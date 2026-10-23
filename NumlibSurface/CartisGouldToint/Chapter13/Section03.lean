@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.Inexact.Explicit.Run
 import Numlib.Optimization.TrustRegion.Inexact.FunctionDecrease
 import Numlib.Optimization.Regularization.Inexact.GuardedCounterexample.PrintedConstants
 import Numlib.Optimization.Regularization.Inexact.Explicit.CurrentBudget
@@ -473,4 +474,17 @@ theorem lemma_13_3_2 {n q : ℕ}
   simp only [mul_one] at hκupper
   exact ⟨h.model_decrease hf hL hlip hκ.1 hκupper hk.le hT,
     fun ha => h.function_decrease hf hL hlip hκ.1 hκupper hκs hpoint hk hT ha⟩
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The actual TRqEDA execution of Algorithm13.3.1: computed ordered checks,
+explicit stopping budget, two approximate objective values, actual ratio and
+radius/point/request updates, and the specified reuse after rejection.
+Step0 excludes an initial function evaluation; derivatives are initialized. -/
+abbrev trqedaRun {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (P : InexactTrustRegion.Explicit.Settings q) (ε : Fin q → ℝ)
+    (D : InexactTrustRegion.Explicit.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+    (N : ℕ) : Prop := InexactTrustRegion.Explicit.Run f P ε D N
+
 end CartisGouldToint

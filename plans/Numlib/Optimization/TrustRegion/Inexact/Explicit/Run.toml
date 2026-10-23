@@ -1,0 +1,38 @@
+namespace = "InexactTrustRegion.Explicit"
+desc = "Actual computed checks, finite stopping budget, inexact function ratios and primitive updates define TRqEDA executions; true optimality and uniform logarithmic accuracy budgets are derived."
+
+[[node]]
+id = "Settings"
+
+[[node]]
+id = "ExecutionData"
+
+[[node]]
+id = "PassingAt"
+
+[[node]]
+id = "StopsAt"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.accuracy_updates"
+
+[[node]]
+id = "Run.accuracy_bounds"
+
+[[node]]
+id = "Run.radius_floor"
+
+[[node]]
+id = "Run.stopped_optimality"
+
+[[node]]
+id = "Run.accuracyCap_updates"
+
+[[node]]
+id = "Run.tensor_norm_le"
+
+[[node]]
+id = "Run.accuracy_branch_large"
