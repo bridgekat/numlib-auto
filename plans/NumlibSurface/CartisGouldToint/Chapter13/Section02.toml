@@ -2,6 +2,7 @@ namespace = "CartisGouldToint"
 
 [[node]]
 id = "theorem_13_2_1"
+wrong = "The literal minimum of inverse tolerance powers is false even for one fixed globally bounded C2 objective with globally Lipschitz zeroth, first and second derivatives. Formal theorem_13_2_1_counterexample constructs a bounded Hermite extension agreeing on x>=3 with f(x)=exp(-x)*(3*pi+sin(2*pi*x)). At node k+3 its actual value, first and second derivatives are (3m_k,-m_k,-m_k), m_k=pi*exp(-(k+3)). With fixed legal settings, exact derivative oracles of degrees0..2 (o=q=p=2), unit radii and steps, expansion factor gamma3=2, epsilon1=1/2 and epsilon2=m_N, every finite N-prefix is an actual TRqIDA Run. The first-order computed check passes, the second-order direction is the exact unit-ball Taylor maximizer, all trials have true ratio2*(1-exp(-1))>1, and every produced point through N fails true second-order criticality at every positive radius. Actual initialized objective and each derivative count are N+1; singleton exact-oracle batches give precisely3*(N+1) distinct order-point events. The printed min_j epsilon_j^(-3) is identically8, but for every coefficient and every sufficiently small second-tolerance neighborhood with first tolerance fixed at1/2 a genuine execution exceeds that bound. Thus no tolerance-independent Big-O bound of the printed form exists. The corrected fixed-cost companions retain the maximum; no artificial oracle padding or tolerance-dependent objective family is used."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -38,3 +39,6 @@ source = "Cartis, Gould and Toint, Theorem13.2.1, corrected uniform-cost trust-r
 [[node]]
 id = "theorem_13_2_1_uniform_regularization"
 source = "Cartis, Gould and Toint, Theorem13.2.1, corrected uniform-cost regularization companion"
+
+[[node]]
+id = "theorem_13_2_1_counterexample"

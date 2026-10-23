@@ -1,0 +1,40 @@
+namespace = "OracleSimulation.MinRateCounterexample"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "requested"
+
+[[node]]
+id = "exactJet"
+
+[[node]]
+id = "trials"
+
+[[node]]
+id = "requested_pos"
+
+[[node]]
+id = "requested_le_one"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "ordered_checks"
+
+[[node]]
+id = "true_second_failure"
+
+[[node]]
+id = "function_evaluations"
+
+[[node]]
+id = "derivative_evaluations"
+
+[[node]]
+id = "selected_second"
+
+[[node]]
+id = "requested_lt_one"

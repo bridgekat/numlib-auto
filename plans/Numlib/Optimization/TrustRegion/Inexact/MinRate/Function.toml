@@ -1,0 +1,55 @@
+namespace = "OracleSimulation.MinRateCounterexample"
+
+[[node]]
+id = "tail"
+
+[[node]]
+id = "first"
+
+[[node]]
+id = "second"
+
+[[node]]
+id = "third"
+
+[[node]]
+id = "tail_smooth"
+
+[[node]]
+id = "hasDerivAt_tail"
+
+[[node]]
+id = "hasDerivAt_first"
+
+[[node]]
+id = "hasDerivAt_second"
+
+[[node]]
+id = "tail_derivatives"
+
+[[node]]
+id = "trig_combination"
+
+[[node]]
+id = "tail_derivative_bound"
+
+[[node]]
+id = "tail_second_lipschitz"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "objective_spec"
+
+[[node]]
+id = "node"
+
+[[node]]
+id = "magnitude"
+
+[[node]]
+id = "magnitude_pos"
+
+[[node]]
+id = "node_jets"

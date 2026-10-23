@@ -209,6 +209,9 @@ Let \( 1 \leq  q \leq  p \leq  r \) . If \( {\epsilon }_j = \epsilon  \in  \left
 \]
 
 iterations and evaluations of \( f \) and of its derivatives of orders one up to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^{{\delta }_{\epsilon , j}}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon , j}^j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) and some \( {\delta }_{\epsilon } \in  (0,1{\rbrack }^q \) .
+
+
+Remaining formalization prerequisites: r is the integer smoothness order, with 1 <= q <= p <= r; it is not a real regularization exponent. The existing arbitrary-order Hermite gluing theorem can provide genuine C^r objectives with Lipschitz actual derivatives through order r, but a complete witness still needs the source slowly varying linear jets f_k^(1)=-(epsilon^q+omega_k)/q!, higher jets zero, gamma=q*(r/p-1), step lengths proportional to (epsilon^q+omega_k)^(1/p), and uniform order-r Hermite residual bounds before epsilon. Construct the actual ARqp traces with all inherited and returned radii proportional to epsilon, prove each actual Taylor criticality test of the regularized model on those radii (rather than assume local-minimum radius conclusions), and derive strict failure through the first endpoint and the exact epsilon^(-q*(p+1)/p) horizon. Preserve every q including1/2, every r>=p, global lower and derivative-Lipschitz bounds uniformly before epsilon, genuine model comparisons/acceptance updates, and actual initialized per-order evaluation events. Existing unit-radius lower bounds in Theorem12.2.15 and Corollary12.2.16 do not supply this different radius and additional-smoothness construction. The original numbered result remains open; no mathematical counterexample to it has been established.
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.17 (OCR Markdown line 13262)"
 deps = ["arqpRun"]

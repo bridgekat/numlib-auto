@@ -1,0 +1,37 @@
+namespace = "OracleSimulation.MinRateCounterexample"
+
+[[node]]
+id = "printedRate"
+
+[[node]]
+id = "printedRate_eq_eight"
+
+[[node]]
+id = "primitiveCalls"
+
+[[node]]
+id = "primitiveCalls_eq"
+
+[[node]]
+id = "oracleEvents"
+
+[[node]]
+id = "node_strictMono"
+
+[[node]]
+id = "oracleEvents_card"
+
+[[node]]
+id = "primitiveCalls_eq_event_card"
+
+[[node]]
+id = "arbitrarily_many_calls"
+
+[[node]]
+id = "no_printed_oracle_bound"
+
+[[node]]
+id = "no_earlier_target"
+
+[[node]]
+id = "verified_counterexample"

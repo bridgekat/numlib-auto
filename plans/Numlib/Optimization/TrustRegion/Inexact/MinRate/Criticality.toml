@@ -1,0 +1,46 @@
+namespace = "OracleSimulation.MinRateCounterexample"
+
+[[node]]
+id = "node_succ"
+
+[[node]]
+id = "magnitude_succ"
+
+[[node]]
+id = "magnitude_antitone"
+
+[[node]]
+id = "magnitude_lt_half"
+
+[[node]]
+id = "objective_value"
+
+[[node]]
+id = "taylor_two"
+
+[[node]]
+id = "taylor_one"
+
+[[node]]
+id = "decrement_two"
+
+[[node]]
+id = "decrement_one"
+
+[[node]]
+id = "criticality_one"
+
+[[node]]
+id = "criticality_two"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "ratio_gt_one"
+
+[[node]]
+id = "actual_ratio"
+
+[[node]]
+id = "magnitude_lt_quarter"

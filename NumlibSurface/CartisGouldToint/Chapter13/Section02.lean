@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.Inexact.MinRate.Counterexample
 import Numlib.Optimization.Regularization.Inexact.OracleSimulation.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.OracleSimulation.Complexity
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -6,9 +7,10 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 # Fixed-cost low-order oracle complexity
 
 These corrected companions require a uniform bound on the finite lower-order
-call batches and use the worst tolerance. The literal source theorem remains
-open: finite work alone gives no accuracy-independent stencil cost, and its
-printed minima of inverse tolerance powers have the wrong extremum.
+call batches and use the worst tolerance. The literal minima of inverse
+tolerance powers are refuted by a single fixed objective and its actual
+exact-oracle executions. The valid fixed-cost
+companions use the maximum of the inverse tolerance powers.
 -/
 
 namespace CartisGouldToint
@@ -72,5 +74,39 @@ theorem theorem_13_2_1_uniform_regularization {n p q : ℕ} (f : EuclideanSpace 
               (derivativeEvaluations D.trials D.ratio P.eta1 K)) batch : ℝ) ≤
             κ * minimumAccuracy P.order_pos ε ^ (-InexactRegularization.oracleRateExponent p q) :=
   InexactRegularization.lowOrderOracle_complexity f P x₀ hf hL hlip hlow o C ho
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open OracleSimulation.MinRateCounterexample InexactTrustRegion
+
+/-- The literal minimum rate in Theorem13.2.1 fails for one fixed objective.
+Both derivative oracles through order two are exact, and every primitive batch
+contains one genuine requested-order oracle call. The actual unit-step
+executions need unbounded work as the second tolerance tends to zero, while
+the printed minimum of inverse third powers remains eight. -/
+theorem theorem_13_2_1_counterexample : ∃ L B : ℝ, 1 ≤ L ∧ 0 < B ∧
+    ContDiff ℝ 2 objective ∧ (∀ x, |objective x| ≤ B) ∧
+    (∀ j, j ≤ 2 → ∀ x y,
+      ‖iteratedFDeriv ℝ j objective x - iteratedFDeriv ℝ j objective y‖ ≤
+        L * ‖x - y‖) ∧
+    (∀ N a, 0 < requested N a ∧ requested N a < 1) ∧
+    (∀ N, InexactTrustRegion.Run objective settings (requested N)
+      exactJet (trials N) (fun _ => 1) node (fun _ => 1) (fun _ => 1)
+        (fun _ => 1) (fun _ => ratio) (fun _ _ => 1 / 32) N) ∧
+    (∀ N k, k ≤ N →
+      TaylorModel.decrement objective 1 (node k) 1 ≤ 1 / 2 * requested N 0 ∧
+      TaylorModel.decrement objective 2 (node k) 1 =
+        TaylorModel.criticality objective 2 (node k) 1 ∧
+      (1 / 2 : ℝ) * requested N 1 / 2 <
+        TaylorModel.decrement objective 2 (node k) 1) ∧
+    (∀ N k, k ≤ N → ∀ δ : Fin 2 → ℝ, (∀ a, 0 < δ a ∧ δ a ≤ 1) →
+      ¬∀ a : Fin 2, TaylorModel.criticality objective (modelOrder a) (node k) (δ a) ≤
+        requested N a * δ a ^ modelOrder a / (modelOrder a).factorial) ∧
+    (∀ N, primitiveCalls N = (oracleEvents N).card ∧ primitiveCalls N = 3 * (N + 1)) ∧
+    (∀ N, printedRate N = 8) ∧
+    (∀ κ bar : ℝ, 0 < bar → ∃ N : ℕ, requested N 1 < bar ∧
+      κ * printedRate N < (primitiveCalls N : ℝ)) :=
+  verified_counterexample
 
 end CartisGouldToint
