@@ -1,0 +1,19 @@
+namespace = "QuadraticTrustRegion"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "IsCauchyPoint"
+
+[[node]]
+id = "exists_cauchyPoint"
+
+[[node]]
+id = "inner_operator_le"
+
+[[node]]
+id = "cauchy_decrease"
+
+[[node]]
+id = "predicted_decrease_pos"

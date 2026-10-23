@@ -1,4 +1,5 @@
 import Numlib.Optimization.EvaluationComplexity.ParameterUpdates
+import Numlib.Optimization.TrustRegion.Cauchy
 
 /-!
 # Cartis–Gould–Toint, Section 2.3: trust-region iteration counts
@@ -39,5 +40,27 @@ theorem lemma_2_3_1 {Δ ρ : ℕ → ℝ} {η₁ η₂ γ₁ γ₂ γ₃ Δmin :
     (h.gamma1_pos.trans_le h.gamma1_le_gamma2) h.gamma2_lt_one hmin hminpos
     (fun _ hi hs => h.successful_le hi hs)
     (fun _ hi hu => h.unsuccessful_le hi hu)
+
+/-- A Cauchy step minimizes the actual quadratic model along the feasible
+negative-gradient ray, including the zero-gradient case. -/
+abbrev cauchyPoint {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (f₀ : ℝ) (g : E) (B : E →L[ℝ] E) (Δ : ℝ) (s : E) : Prop :=
+  QuadraticTrustRegion.IsCauchyPoint f₀ g B Δ s
+
+/-- **Lemma 2.3.2.** The actual Cauchy minimizer gives the quadratic model
+reduction (2.3.12). A positive trust-region radius and a nonzero gradient make
+the acceptance-ratio denominator strictly positive for every permitted trial
+step (2.3.4). Symmetry of `B` is unnecessary for this bound. -/
+theorem lemma_2_3_2 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    {f₀ Δ : ℝ} {g sC s : E} {B : E →L[ℝ] E}
+    (hΔ : 0 < Δ) (hc : cauchyPoint f₀ g B Δ sC)
+    (hs : QuadraticTrustRegion.model f₀ g B s ≤
+      QuadraticTrustRegion.model f₀ g B sC) :
+    (1 / 2 : ℝ) * ‖g‖ * min (‖g‖ / (1 + ‖B‖)) Δ ≤
+        QuadraticTrustRegion.model f₀ g B 0 - QuadraticTrustRegion.model f₀ g B sC ∧
+      (g ≠ 0 → 0 < QuadraticTrustRegion.model f₀ g B 0 -
+        QuadraticTrustRegion.model f₀ g B s) :=
+  ⟨QuadraticTrustRegion.cauchy_decrease hΔ.le hc,
+    fun hg => QuadraticTrustRegion.predicted_decrease_pos hΔ hg hc hs⟩
 
 end CartisGouldToint

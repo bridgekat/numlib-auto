@@ -6,11 +6,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "cauchyPoint"
-kind = "definition"
-desc = '''
-For gradient g, symmetric B, Δ>0, let q(s)=f₀+⟪g,s⟫+½⟪s,Bs⟫. A Cauchy point is s=−t g, where t minimizes q(−t g) over 0≤t≤Δ/||g||, with s=0 if g=0. Use an existence-and-specification interface for this scalar minimizer, not a free decrease inequality.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 2.3"
 
 [[node]]
@@ -96,28 +91,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_2_3_2"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 2.3.2: Model decrease at the Cauchy point
-
-Suppose that \( {m}_k\left( s\right) \) is quadratic. Then
-
-\[
-{m}_k\left( 0\right)  - {m}_k\left( {s}_k^c\right)  \geq  \frac{1}{2}\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix}\min \left\lbrack  {\frac{\begin{Vmatrix}{\nabla }_x^{1}f\left( {x}_k\right) \end{Vmatrix}}{1 + \begin{Vmatrix}{B}_k\end{Vmatrix}},{\Delta }_k}\right\rbrack\tag{2.3.12}
-\]
-
-and the ratio (2.3.6) is well defined as long as \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \neq  0 \) .
-
-Referenced equation payloads:
-
-Equation (2.3.6):
-\[
-{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{m}_k\left( 0\right)  - {m}_k\left( {s}_k\right) }.\tag{2.3.6}
-\]
-'''
-deps = ["successfulIterations", "cauchyPoint", "tr1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.3.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1847)"
 
 [[node]]
