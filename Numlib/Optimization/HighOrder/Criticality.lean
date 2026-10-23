@@ -17,6 +17,10 @@ nonnegative. Zero criticality is characterized by nonpositive feasible decrement
 Vanishing cubic criticality implies vanishing quadratic criticality. The proof uses
 nonnegativity of each cubic line restriction, which forces its linear coefficient to
 vanish; averaging the two endpoint values then controls the quadratic coefficient.
+
+Successive Taylor models differ by their highest homogeneous term. Its operator-norm
+bound controls the change in criticality and yields cascading approximate optimality
+when the radius is sufficiently small.
 -/
 
 open Set
@@ -155,4 +159,77 @@ theorem quadratic_nonneg_of_cubic_nonneg (g : E) (H : E →L[ℝ] E)
     nlinarith
   obtain ⟨ha,hb⟩ := cubic_nonneg_on_unit_interval hc
   linarith
+end TaylorModel
+
+namespace TaylorModel
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F]
+/-- Successive Taylor models differ by their highest-degree term. -/
+theorem eval_succ_sub_eval (f : E → F) (p : ℕ) (x s : E) :
+    eval f (p + 1) x s - eval f p x s =
+      (((p + 1).factorial : ℝ)⁻¹) • iteratedFDeriv ℝ (p + 1) f x (fun _ => s) := by
+  rw [eval_eq_sum, eval_eq_sum, Finset.sum_range_succ]
+  abel
+/-- The difference of successive Taylor models is controlled by the highest derivative. -/
+theorem norm_eval_succ_sub_eval_le (f : E → F) (p : ℕ) (x s : E) :
+    ‖eval f (p + 1) x s - eval f p x s‖ ≤
+      ‖iteratedFDeriv ℝ (p + 1) f x‖ * ‖s‖ ^ (p + 1) / (p + 1).factorial := by
+  rw [eval_succ_sub_eval, norm_smul]
+  have hnorm : ‖((p + 1).factorial : ℝ)⁻¹‖ = ((p + 1).factorial : ℝ)⁻¹ := by
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  rw [hnorm]
+  have hmap : ‖iteratedFDeriv ℝ (p + 1) f x (fun _ => s)‖ ≤
+      ‖iteratedFDeriv ℝ (p + 1) f x‖ * ‖s‖ ^ (p + 1) := by
+    simpa using (iteratedFDeriv ℝ (p + 1) f x).le_opNorm (fun _ => s)
+  calc ((p + 1).factorial : ℝ)⁻¹ * ‖iteratedFDeriv ℝ (p + 1) f x (fun _ => s)‖ ≤
+      ((p + 1).factorial : ℝ)⁻¹ *
+        (‖iteratedFDeriv ℝ (p + 1) f x‖ * ‖s‖ ^ (p + 1)) := by gcongr
+    _ = _ := by ring
+variable [ProperSpace E]
+/-- Successive Taylor criticality measures differ by at most the highest-order term bound. -/
+theorem criticality_le_succ_add (f : E → ℝ) (p : ℕ) (x : E) {δ : ℝ} (hδ : 0 ≤ δ) :
+    criticality f p x δ ≤ criticality f (p + 1) x δ +
+      ‖iteratedFDeriv ℝ (p + 1) f x‖ * δ ^ (p + 1) / (p + 1).factorial := by
+  obtain ⟨s, hs, heq⟩ := exists_decrement_eq_criticality f p x hδ
+  have hnext := decrement_le_criticality f (p + 1) x hs
+  have hbound := norm_eval_succ_sub_eval_le f p x s
+  rw [Real.norm_eq_abs] at hbound
+  have hdiff : decrement f p x s - decrement f (p + 1) x s =
+      eval f (p + 1) x s - eval f p x s := by rw [decrement_eq, decrement_eq]; ring
+  have hpow : ‖s‖ ^ (p + 1) ≤ δ ^ (p + 1) := pow_le_pow_left₀ (norm_nonneg s) hs _
+  have hterm : ‖iteratedFDeriv ℝ (p + 1) f x‖ * ‖s‖ ^ (p + 1) / (p + 1).factorial ≤
+      ‖iteratedFDeriv ℝ (p + 1) f x‖ * δ ^ (p + 1) / (p + 1).factorial := by gcongr
+  have hupper := (abs_le.1 hbound).2
+  rw [← heq]
+  linarith
+end TaylorModel
+namespace TaylorModel
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [ProperSpace E]
+/-- A sufficiently small radius transfers a higher-order criticality tolerance to the
+preceding order. The multiplied radius condition permits a zero highest derivative,
+when the smallness restriction is automatic. -/
+theorem criticality_cascade (f : E → ℝ) (p : ℕ) (hp : 1 ≤ p) (x : E)
+    {δ ε εprev : ℝ} (hδ : 0 ≤ δ) (hδ1 : δ ≤ 1) (hε : 0 ≤ ε) (hεprev : ε ≤ εprev)
+    (hsmall : 2 * δ * ‖iteratedFDeriv ℝ (p + 1) f x‖ ≤ (p + 1 : ℕ) * ε)
+    (hcrit : criticality f (p + 1) x δ ≤ ε * δ ^ (p + 1) / (p + 1).factorial) :
+    criticality f p x δ ≤ εprev * δ ^ p / p.factorial := by
+  have hj : (2 : ℝ) ≤ (p + 1 : ℕ) := by exact_mod_cast Nat.succ_le_succ hp
+  have heδ : ε * δ ≤ ε := mul_le_of_le_one_right hε hδ1
+  have hje : 2 * ε ≤ (p + 1 : ℕ) * ε := mul_le_mul_of_nonneg_right hj hε
+  have hcoef : (ε + ‖iteratedFDeriv ℝ (p + 1) f x‖) * δ ≤ (p + 1 : ℕ) * εprev := by
+    have hnext : (p + 1 : ℕ) * ε ≤ (p + 1 : ℕ) * εprev := by gcongr
+    nlinarith
+  calc criticality f p x δ ≤ criticality f (p + 1) x δ +
+        ‖iteratedFDeriv ℝ (p + 1) f x‖ * δ ^ (p + 1) / (p + 1).factorial :=
+      criticality_le_succ_add f p x hδ
+    _ ≤ ε * δ ^ (p + 1) / (p + 1).factorial +
+        ‖iteratedFDeriv ℝ (p + 1) f x‖ * δ ^ (p + 1) / (p + 1).factorial :=
+      add_le_add hcrit le_rfl
+    _ = (δ ^ p / ((p + 1).factorial : ℝ)) *
+        ((ε + ‖iteratedFDeriv ℝ (p + 1) f x‖) * δ) := by rw [pow_succ]; ring
+    _ ≤ (δ ^ p / ((p + 1).factorial : ℝ)) * ((p + 1 : ℕ) * εprev) :=
+      mul_le_mul_of_nonneg_left hcoef (by positivity)
+    _ = εprev * δ ^ p / p.factorial := by
+      rw [Nat.factorial_succ, Nat.cast_mul]
+      field_simp
 end TaylorModel

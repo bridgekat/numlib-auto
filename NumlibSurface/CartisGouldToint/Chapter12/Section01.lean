@@ -1,4 +1,5 @@
 import Numlib.Optimization.HighOrder.Criticality
+import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
 # Cartis–Gould–Toint, Section 12.1: high-order criticality
@@ -25,4 +26,43 @@ theorem highOrderCriticality_eq_zero_iff {E : Type*}
       ∀ s : E, ‖s‖ ≤ δ → TaylorModel.decrement f j x s ≤ 0 :=
   TaylorModel.criticality_eq_zero_iff f j x hδ
 
+end CartisGouldToint
+
+namespace CartisGouldToint
+/-- **Theorem 12.1.7 (cascading approximate optimality).** An order-`j` Taylor criticality
+bound implies the preceding-order bound when the radius satisfies the stated smallness
+condition. The source radius restriction after (12.1.31) is included as
+`2 * δ * ‖D^j f(x)‖ ≤ j * εj`, together with `δ ≤ 1`.
+
+For a positive derivative norm this is equivalent to the printed quotient bound. When
+the tensor vanishes it imposes no extra restriction, avoiding division by zero; Lean's
+value for division by zero would otherwise turn the printed positive-radius condition
+into an unintended impossible hypothesis. -/
+theorem theorem_12_1_7 {n j : ℕ} (hj : 2 ≤ j)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    {δ εj εprev : ℝ} (hε0 : 0 < εj) (_hε1 : εj ≤ 1) (hδ0 : 0 < δ) (hδ1 : δ ≤ 1)
+    (hεprev : εj ≤ εprev)
+    (hsmall : 2 * δ * ‖iteratedFDeriv ℝ j f x‖ ≤ (j : ℝ) * εj)
+    (hcrit : highOrderCriticality f j x δ ≤ εj * δ ^ j / j.factorial) :
+    highOrderCriticality f (j - 1) x δ ≤ εprev * δ ^ (j - 1) / (j - 1).factorial := by
+  cases j with
+  | zero => omega
+  | succ p =>
+    have hp : 1 ≤ p := by omega
+    exact TaylorModel.criticality_cascade f p hp x hδ0.le hδ1 hε0.le hεprev hsmall hcrit
+end CartisGouldToint
+namespace CartisGouldToint
+/-- The literal quotient-radius formulation of **Theorem 12.1.7** when the derivative
+norm in the denominator is positive. The multiplied formulation also covers a zero tensor. -/
+theorem theorem_12_1_7_of_radius_le {n j : ℕ} (hj : 2 ≤ j)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    {δ εj εprev : ℝ} (hε0 : 0 < εj) (hε1 : εj ≤ 1) (hδ0 : 0 < δ)
+    (hεprev : εj ≤ εprev) (hD : 0 < ‖iteratedFDeriv ℝ j f x‖)
+    (hsmall : δ ≤ min 1 ((j : ℝ) * εj / (2 * ‖iteratedFDeriv ℝ j f x‖)))
+    (hcrit : highOrderCriticality f j x δ ≤ εj * δ ^ j / j.factorial) :
+    highOrderCriticality f (j - 1) x δ ≤ εprev * δ ^ (j - 1) / (j - 1).factorial := by
+  apply theorem_12_1_7 hj f x hε0 hε1 hδ0 (le_min_iff.mp hsmall).1 hεprev _ hcrit
+  have hmul := (le_div_iff₀ (show 0 < 2 * ‖iteratedFDeriv ℝ j f x‖ by positivity)).1
+    (le_min_iff.mp hsmall).2
+  nlinarith
 end CartisGouldToint

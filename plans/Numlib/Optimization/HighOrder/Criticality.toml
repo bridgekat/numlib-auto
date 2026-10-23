@@ -32,3 +32,15 @@ id = "criticality_two_eq_zero_of_three"
 
 [[node]]
 id = "quadratic_nonneg_of_cubic_nonneg"
+
+[[node]]
+id = "eval_succ_sub_eval"
+
+[[node]]
+id = "norm_eval_succ_sub_eval_le"
+
+[[node]]
+id = "criticality_le_succ_add"
+
+[[node]]
+id = "criticality_cascade"
