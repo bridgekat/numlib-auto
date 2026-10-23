@@ -122,38 +122,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_7_2_2"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 7.2.2: Evaluation complexity of Phase 1 of Algorithm 7.2.1
-
-Suppose that C.CNe and \( {\Phi }_{\ell } \) .DpL.C hold. Then Phase 1 of Algorithm 7.2.1 (TPp-GC) terminates at a point \( {x}_{\epsilon } \) for which either
-
-\[
-\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\text{ or }{\omega }_{{\Phi }_{\ell },\mathcal{C},1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_{1}{\begin{Vmatrix}c\left( {x}_{\epsilon }\right) \end{Vmatrix}}^{\ell  - 1}
-\]
-
-after at most
-
-\[
-{\# }_{\mathrm{{ARpLE}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARpLE}},1}^{A}\frac{\max \left\lbrack  {{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{\frac{1}{{2}^{i}}},{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{1 - \frac{\ell  - 1}{p}}}\right\rbrack  }{\min \left\lbrack  {{\theta }^{\frac{1}{{2}^{i}}}{\epsilon }_{0}^{\frac{1}{{2}^{i}}},{\epsilon }_{1}^{\frac{p + 1}{p}}}\right\rbrack  } + {\kappa }_{\mathrm{{ARpLE}} = }^{C}\mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{0}^{-\frac{1}{{2}^{i}}},{\epsilon }_{1}^{-\frac{p + 1}{p}}}\right\rbrack  }\right)
-\]
-
-(7.2.23)
-
-evaluations of \( c \) and
-
-\[
-{\# }_{\mathrm{{ARpLE},1}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARpLE},1}}^{S}\frac{\max \left\lbrack  {{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{\frac{1}{{2}^{i}}},{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{1 - \frac{\ell  - 1}{p}}}\right\rbrack  }{\min \left\lbrack  {{\theta }^{\frac{1}{{2}^{i}}}{\epsilon }_{0}^{\frac{1}{{2}^{i}}},{\epsilon }_{1}^{\frac{p + 1}{p}}}\right\rbrack  } = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{0}^{-\frac{1}{{2}^{i}}},{\epsilon }_{1}^{-\frac{p + 1}{p}}}\right\rbrack  }\right)
-\]
-
-(7.2.24)
-
-evaluations of its derivatives, where the constants \( {\kappa }_{\mathrm{ARPLE},1}^S,{\kappa }_{\mathrm{ARPLE},1}^A \) , and \( {\kappa }_{\mathrm{ARpLE}}^C \) are as for Theorem 6.3.1.
-'''
-deps = ["theorem_6_3_1", "theorem_6_2_3", "targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
-source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8872)"
+source = "Cartis, Gould and Toint, Lemma 7.2.2, exact Phase1 bounds (7.2.23) and (7.2.24), with complete source constants and actual per-order initialized derivative schedules"
 
 [[node]]
 id = "lemma_7_2_3"

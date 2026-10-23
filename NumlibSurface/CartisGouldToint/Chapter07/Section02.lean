@@ -1,3 +1,5 @@
+import NumlibSurface.CartisGouldToint.Chapter06.Section03
+import Numlib.Optimization.Regularization.Convex.LeastSquares.PhaseOneComplexity
 import Numlib.Optimization.Constrained.TwoPhase.Geometry
 import Numlib.Optimization.Constrained.TwoPhase.Uniform
 import Numlib.Optimization.Constrained.TwoPhase.Termination
@@ -165,5 +167,67 @@ theorem lemma_7_2_5 {n m p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
               L * ‖x - y‖) ∧
         (∀ k < N, ∀ i ≤ D.length k, (D.inner k).parameter i ≤ σmax) :=
   Constrained.TwoPhase.exists_uniform_bounds hS hCS hC P hmu hlip hfb
+
+/-- **Lemma7.2.2.** Phase1 reaches its first literal residual or normalized
+constrained-criticality stop with the complete printed source constants. The
+derivative bound has no additive offset; the initialized and terminal sites
+are paid by the remaining preterminal residual budget. -/
+theorem lemma_7_2_2 {n m p a : ℕ}
+    {c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {C S : Set (EuclideanSpace ℝ (Fin n))}
+    (P : arpFirstOrderConvexSettings p) (ℓ : ℝ) (_hℓ : 1 < ℓ)
+    (hchoice : (ℓ = (p : ℝ) ∧ Real.logb 2 (p : ℝ) < a) ∨
+      ∃ o : ℕ, Odd o ∧ Even p ∧ p = o * 2 ^ a ∧
+        ℓ = 1 + (o : ℝ) * ((2 : ℝ) ^ a - 1))
+    (hclosed : IsClosed C) (hS : IsOpen S)
+    (hCS : C ⊆ S) (hC : Convex ℝ C)
+    (hf : ContDiffOn ℝ p (LeastSquares.powerObjective c ℓ) S) {L β : ℝ} (hL : 0 < L)
+    (hlip : ∀ y ∈ C, ∀ z ∈ C,
+      ‖iteratedFDeriv ℝ p (LeastSquares.powerObjective c ℓ) y -
+        iteratedFDeriv ℝ p (LeastSquares.powerObjective c ℓ) z‖ ≤ L * ‖y - z‖)
+    (hβ : 0 < β) (hβ1 : β < 1) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κC > 0,
+      κS = max (1 / (1 - β ^ (1 / (2 : ℝ) ^ a)))
+        ((2 : ℝ) ^ a / β ^ ((ℓ - 1) * ((p + 1 : ℕ) : ℝ) / p) *
+          ((p + 1).factorial / (P.eta1 * P.sigmaMin) *
+            ((L + ConvexRegularization.parameterCap P L + P.theta * p.factorial) /
+              p.factorial) ^
+              (((p + 1 : ℕ) : ℝ) / p))) ∧
+      κA = κS * (1 + |Real.log P.gamma1| / Real.log P.gamma2) ∧
+      κC = |Real.log P.gamma1| / Real.log P.gamma2 +
+        Real.log (ConvexRegularization.parameterCap P L / P.sigmaInitial) /
+          Real.log P.gamma2 + 2 ∧
+      ∀ (ε₀ ε₁ θ : ℝ), 0 < θ → θ < 1 → 0 < ε₀ →
+        ∀ (D : arpFirstOrderConvexData (EuclideanSpace ℝ (Fin n))),
+        (∀ N, (∀ i < N,
+            ¬arpLeastEuclideanConvexStop c ℓ C (θ * ε₀) ε₁ (D.point i)) →
+          arpLeastEuclideanConvexRun c ℓ C P (θ * ε₀) ε₁ D N) →
+        ∃ K, arpLeastEuclideanConvexStop c ℓ C (θ * ε₀) ε₁ (D.point K) ∧
+          arpLeastEuclideanConvexRun c ℓ C P (θ * ε₀) ε₁ D K ∧
+          (∀ i < K, ¬arpLeastEuclideanConvexStop c ℓ C (θ * ε₀) ε₁ (D.point i)) ∧
+          (ConvexRegularization.functionEvaluations K : ℝ) ≤
+            κA * max (‖c (D.point 0)‖ ^ (1 / (2 : ℝ) ^ a))
+              (‖c (D.point 0)‖ ^ (1 - (ℓ - 1) / p)) /
+            min (θ ^ (1 / (2 : ℝ) ^ a) * ε₀ ^ (1 / (2 : ℝ) ^ a))
+              (ε₁ ^ (((p + 1 : ℕ) : ℝ) / p)) + κC ∧
+          ∀ j : ℕ, 1 ≤ j → j ≤ p →
+            (ConvexLeastSquares.derivativeEvaluations c (θ * ε₀) P D K j : ℝ) ≤
+            κS * max (‖c (D.point 0)‖ ^ (1 / (2 : ℝ) ^ a))
+              (‖c (D.point 0)‖ ^ (1 - (ℓ - 1) / p)) /
+              min (θ ^ (1 / (2 : ℝ) ^ a) * ε₀ ^ (1 / (2 : ℝ) ^ a))
+              (ε₁ ^ (((p + 1 : ℕ) : ℝ) / p)) := by
+  have H := LeastSquares.cascadingExponent_choices P.order_pos
+  have hg : 0 ≤ LeastSquares.cascadingExponent p ℓ a 1 := by
+    rcases hchoice with ⟨rfl, hlog⟩ | ⟨o, ho, heven, hfac, rfl⟩
+    · exact (H.1 a hlog).le
+    · exact (H.2.1 o a ho heven hfac).1.symm.le
+  obtain ⟨κS, hκS, κA, hκA, κC, hκC, heq, hA, hCst, Hrun⟩ :=
+    ConvexLeastSquares.exists_uniform_complexity_without_offset P ℓ a hclosed hS hCS hC
+      hf hL hlip hβ hβ1 hg
+  refine ⟨κS, hκS, κA, hκA, κC, hκC, heq, hA, hCst, ?_⟩
+  intro ε₀ ε₁ θ hθ _hθ1 hε₀ D hprefix
+  simpa only [LeastSquares.lowerBudget, LeastSquares.lowerAccuracyFactor,
+    Bool.false_eq_true, ite_false, Real.mul_rpow hθ.le hε₀.le] using
+      Hrun (θ * ε₀) ε₁ D hprefix
 
 end CartisGouldToint

@@ -1,0 +1,4 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "firstDecreaseCoefficient_le_one"

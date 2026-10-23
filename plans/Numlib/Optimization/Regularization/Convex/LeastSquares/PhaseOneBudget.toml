@@ -1,0 +1,10 @@
+namespace = "ConvexLeastSquares"
+
+[[node]]
+id = "dyadic_order_pos"
+
+[[node]]
+id = "lowerDecreaseCoefficient_le_half"
+
+[[node]]
+id = "Run.derivative_count_le"
