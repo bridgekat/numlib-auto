@@ -1,0 +1,40 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "rootStepExponent"
+
+[[node]]
+id = "evaluationExponent"
+
+[[node]]
+id = "evaluationExponent_eq"
+
+[[node]]
+id = "accuracyFactor"
+
+[[node]]
+id = "accuracyFactor_pos"
+
+[[node]]
+id = "accuracyFactor_le"
+
+[[node]]
+id = "rootStepCoefficient"
+
+[[node]]
+id = "rootStepCoefficient_pos"
+
+[[node]]
+id = "orderDecreaseCoefficient"
+
+[[node]]
+id = "commonDecreaseCoefficient"
+
+[[node]]
+id = "commonDecreaseCoefficient_pos"
+
+[[node]]
+id = "commonDecreaseCoefficient_le"
+
+[[node]]
+id = "pow_lower_of_root_step"
