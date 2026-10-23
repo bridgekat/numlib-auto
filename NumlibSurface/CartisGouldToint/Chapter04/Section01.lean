@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.Sharpness.Witness
 import Numlib.Optimization.Regularization.HighOrder.EmptyDirections
 import Numlib.Analysis.Calculus.Gradient
 import Numlib.Optimization.Regularization.HighOrder.Step
@@ -188,5 +189,89 @@ theorem theorem_4_1_5_nonempty_guard_counterexample :
       SecondOrderTrustRegion.IsLeastEigenpair f 1 0 1 ∧
       (∀ σ : ℝ, 0 ≤ σ → ¬ ∃ s : ℝ, model f 3 1 σ s < model f 3 1 σ 0) :=
   exists_stuck_execution
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open HighOrderRegularization HighOrderRegularization.Sharpness
+
+/-- **Theorem 4.1.6.** All three sharp evaluation lower bounds, with uniform
+objective and highest-derivative Lipschitz budgets chosen before the accuracies.
+The actual algorithm settings are fixed: `σ=p!/(p²+1)`, `σmin=σ`, unit model
+termination tolerances and legal constant update settings. First-order models
+allow every `p≥1`, second-order models every `p≥2`, and third-order models `p≥3`.
+
+Each witness follows genuine model derivative tests, objective-based ratios and
+parameter updates, and its actual evaluation counters are `N+1`, where `N` is at
+least the printed inverse-accuracy rate or maximum of rates. The third-order
+terminal derivative bound holds in every unit direction, hence on `Zε`. Its
+terminal inherited set is nonempty; failure of the weaker repaired stopping test
+before `N` and the terminal nonempty guard make it a literal algorithm execution
+as well. The construction bounds the true final jet change in the Hermite
+residuals rather than treating that change as zero. -/
+theorem theorem_4_1_6 (p : ℕ) :
+    (1 ≤ p →
+      ∃ L B : ℝ, 1 ≤ L ∧ 0 < B ∧
+        ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
+        ∃ f : ℝ → ℝ,
+          let N := length p 1 ε
+          let x := iterate p 1 ε
+          ContDiff ℝ p f ∧ (∀ z, |f z| ≤ B) ∧
+          (∀ z w, ‖iteratedFDeriv ℝ p f z - iteratedFDeriv ℝ p f w‖ ≤
+            L * ‖z - w‖) ∧
+          FirstOrderRun f p x (fun _ => step p 1 ε)
+            (fun _ => parameter p) (fun _ => 1)
+            (1 / 4) (3 / 4) (1 / 2) 2 3 (parameter p) 1 ε ⊤ ⊤ N ∧
+          ‖fderiv ℝ f (x N)‖ = ε ∧
+          rate p 1 ε ≤ (N : ℝ) ∧
+          functionEvaluations N = N + 1 ∧
+          derivativeEvaluations (fun _ => 1) (1 / 4) N = N + 1) ∧
+    (2 ≤ p →
+      ∃ L B : ℝ, 1 ≤ L ∧ 0 < B ∧
+        ∀ ε₁ ε₂ : ℝ, 0 < ε₁ → ε₁ ≤ 1 → 0 < ε₂ → ε₂ ≤ 1 →
+        ∃ r : ℕ, 0 < r ∧ r ≤ 2 ∧ ∃ f : ℝ → ℝ,
+          let ε := selectedAccuracy r ε₁ ε₂ 1
+          let N := length p r ε
+          let x := iterate p r ε
+          ContDiff ℝ p f ∧ (∀ z, |f z| ≤ B) ∧
+          (∀ z w, ‖iteratedFDeriv ℝ p f z - iteratedFDeriv ℝ p f w‖ ≤
+            L * ‖z - w‖) ∧
+          SecondOrderRun f p x (fun _ => step p r ε) (fun _ => 1)
+            (fun k => iteratedDeriv 2 f (x k)) (fun _ => parameter p) (fun _ => 1)
+            (1 / 4) (3 / 4) (1 / 2) 2 3 (parameter p) 1 1 ε₁ ε₂ ⊤ N ∧
+          ‖fderiv ℝ f (x N)‖ ≤ ε₁ ∧ -ε₂ ≤ iteratedDeriv 2 f (x N) ∧
+          max (rate p 1 ε₁) (rate p 2 ε₂) ≤ (N : ℝ) ∧
+          functionEvaluations N = N + 1 ∧
+          derivativeEvaluations (fun _ => 1) (1 / 4) N = N + 1) ∧
+    (3 ≤ p →
+      ∃ L B : ℝ, 1 ≤ L ∧ 0 < B ∧
+        ∀ ε₁ ε₂ ε₃ : ℝ, 0 < ε₁ → ε₁ ≤ 1 → 0 < ε₂ → ε₂ ≤ 1 →
+          0 < ε₃ → ε₃ ≤ 1 →
+        ∃ r : ℕ, 0 < r ∧ r ≤ 3 ∧ ∃ f : ℝ → ℝ,
+          let ε := selectedAccuracy r ε₁ ε₂ ε₃
+          let N := length p r ε
+          let x := iterate p r ε
+          let M := directions f p r ε ε₂
+          ContDiff ℝ p f ∧ (∀ z, |f z| ≤ B) ∧
+          (∀ z w, ‖iteratedFDeriv ℝ p f z - iteratedFDeriv ℝ p f w‖ ≤
+            L * ‖z - w‖) ∧
+          FiniteRun f p x (fun _ => step p r ε) (fun _ => 1)
+            (fun k => iteratedDeriv 2 f (x k)) (fun _ => parameter p) (fun _ => 1) M
+            (1 / 4) (3 / 4) (1 / 2) 2 3 (parameter p) 1 1 1 ε₁ ε₂ ε₃ N ∧
+          finiteStop f (x N) (iteratedDeriv 2 f (x N)) (M N) ε₁ ε₂ ε₃ ∧
+          (M N).Nonempty ∧
+          HighOrderRegularization.EmptyDirections.literalStop f (x N) (M N) ε₁ ε₂ ε₃ ∧
+          (∀ k < N, ¬HighOrderRegularization.EmptyDirections.literalStop
+            f (x k) (M k) ε₁ ε₂ ε₃) ∧
+          ‖fderiv ℝ f (x N)‖ ≤ ε₁ ∧ -ε₂ ≤ iteratedDeriv 2 f (x N) ∧
+          (∀ v : ℝ, ‖v‖ = 1 →
+            |iteratedFDeriv ℝ 2 f (x N) (fun _ => v)| ≤ ε₂ ∧
+            |iteratedFDeriv ℝ 3 f (x N) (fun _ => v)| ≤ ε₃) ∧
+          max (max (rate p 1 ε₁) (rate p 2 ε₂)) (rate p 3 ε₃) ≤ (N : ℝ) ∧
+          functionEvaluations N = N + 1 ∧
+          derivativeEvaluations (fun _ => 1) (1 / 4) N = N + 1) :=
+  ⟨fun hp => exists_first_order_witness hp,
+    fun hp => exists_second_order_witness hp,
+    fun hp => exists_third_order_witness hp⟩
 
 end CartisGouldToint

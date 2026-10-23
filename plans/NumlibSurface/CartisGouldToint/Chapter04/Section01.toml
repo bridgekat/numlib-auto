@@ -346,34 +346,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_4_1_6"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 4.1.6: Slow convergence of the \( \mathrm{AR}p \) algorithm when finding first- to third-order critical points
-
-The ARp algorithm (p. 100) applied to minimize a function \( f \) satisfying f.Bb and f.DpL may require
-
-\[
-{\epsilon }_1^{-\frac{p + 1}{p}}
-\]
-
-iterations and evaluations of \( f \) and its derivatives of order 1 to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) . It may also require
-
-\[
-\max \left\lbrack  {{\epsilon }_1^{-\frac{p + 1}{p}},{\epsilon }_2^{-\frac{p + 1}{p - 1}}}\right\rbrack
-\]
-
-iterations and evaluations of \( f \) and its derivatives of order 1 to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_2 \) . Finally, it may require
-
-\[
-\max \left\lbrack  {{\epsilon }_1^{-\frac{p + 1}{p}},{\epsilon }_2^{-\frac{p + 1}{p - 1}},{\epsilon }_3^{-\frac{p + 1}{p - 2}}}\right\rbrack
-\]
-
-iterations and evaluations of \( f \) and its derivatives of order 1 to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1,{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_2 \) , and \( \left| {{\nabla }_x^{3}f\left( {x}_{\epsilon }\right) {\left\lbrack  d\right\rbrack  }^3}\right|  \leq  {\epsilon }_3 \) for all \( d \in  {\mathcal{Z}}_{\epsilon } = \left\{  {d : \parallel d\parallel  = 1}\right. \) and \( \left. {\left| {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) {\left\lbrack  d\right\rbrack  }^2}\right|  \leq  {\epsilon }_2}\right\} \) .
-'''
-deps = ["theorem_3_2_2", "theorem_2_2_3", "theorem_2_3_8", "theorem_4_1_5", "taylorModel", "arpRun", "objectiveRegularity"]
-source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.1.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4988)"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.1.6; all three branches and actual finite executions."
 
 [[node]]
 id = "arpModel"

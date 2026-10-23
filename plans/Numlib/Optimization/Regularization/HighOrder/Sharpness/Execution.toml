@@ -1,0 +1,79 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "length"
+
+[[node]]
+id = "iterate"
+
+[[node]]
+id = "directions"
+
+[[node]]
+id = "derivative_eq_accuracy"
+
+[[node]]
+id = "first_norm_eq_accuracy"
+
+[[node]]
+id = "leastEigenpair"
+
+[[node]]
+id = "directional_abs_eq_accuracy"
+
+[[node]]
+id = "directions_succ"
+
+[[node]]
+id = "directions_update"
+
+[[node]]
+id = "firstOrderRun_of_matches"
+
+[[node]]
+id = "selectedAccuracy"
+
+[[node]]
+id = "selectedAccuracy_pos"
+
+[[node]]
+id = "selectedAccuracy_le_one"
+
+[[node]]
+id = "secondOrderRun_of_matches"
+
+[[node]]
+id = "one_mem_directions_third"
+
+[[node]]
+id = "finiteRun_of_matches"
+
+[[node]]
+id = "terminal_derivatives"
+
+[[node]]
+id = "terminal_directions_nonempty"
+
+[[node]]
+id = "terminal_stop"
+
+[[node]]
+id = "derivativeEvaluations_one"
+
+[[node]]
+id = "exists_uniform_objectives_actual"
+
+[[node]]
+id = "exists_uniform_objectives_orders"
+
+[[node]]
+id = "terminal_first_order"
+
+[[node]]
+id = "terminal_second_order"
+
+[[node]]
+id = "literalStop_imp_finiteStop"
+
+[[node]]
+id = "literalStop_of_finiteStop_of_nonempty"

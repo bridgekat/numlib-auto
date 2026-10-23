@@ -1,0 +1,31 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "rate"
+
+[[node]]
+id = "rate_one"
+
+[[node]]
+id = "rate_two"
+
+[[node]]
+id = "rate_three"
+
+[[node]]
+id = "length_eq_ceil_rate"
+
+[[node]]
+id = "exists_maximizing_order_two"
+
+[[node]]
+id = "exists_maximizing_order_three"
+
+[[node]]
+id = "exists_first_order_witness"
+
+[[node]]
+id = "exists_second_order_witness"
+
+[[node]]
+id = "exists_third_order_witness"
