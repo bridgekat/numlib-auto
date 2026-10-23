@@ -59,6 +59,33 @@ theorem unsuccessful_le (h : TrustRegionRadiusUpdates δ ρ η₁ η₂ γ₁ γ
     simpa [h₂, hu] using h.update i hi
   exact hh.2
 
+/-- A permitted update never contracts by more than the factor `γ₁`. -/
+theorem gamma1_mul_le (h : TrustRegionRadiusUpdates δ ρ η₁ η₂ γ₁ γ₂ γ₃ k)
+    {i : ℕ} (hi : i < k) : γ₁ * δ i ≤ δ (i + 1) := by
+  have hu := h.update i hi
+  have hp := (h.pos (show i ≤ k by omega)).le
+  split_ifs at hu with h₂ h₁
+  · exact (mul_le_of_le_one_left hp (h.gamma1_le_gamma2.trans h.gamma2_lt_one.le)).trans hu.1
+  · exact (mul_le_mul_of_nonneg_right h.gamma1_le_gamma2 hp).trans hu.1
+  · exact hu.1
+
+/-- If every radius below a threshold gives a very successful iteration, the
+radius stays above the smaller of its initial value and `γ₁` times that threshold. -/
+theorem min_initial_threshold_le
+    (h : TrustRegionRadiusUpdates δ ρ η₁ η₂ γ₁ γ₂ γ₃ k) {threshold : ℝ}
+    (hgood : ∀ i < k, δ i < threshold → η₂ ≤ ρ i)
+    {i : ℕ} (hi : i ≤ k) : min (δ 0) (γ₁ * threshold) ≤ δ i := by
+  induction i with
+  | zero => exact min_le_left _ _
+  | succ i ih =>
+    by_cases hsmall : δ i < threshold
+    · have hu := h.update i (by omega)
+      rw [ite_eq_left (hgood i (by omega) hsmall)] at hu
+      exact (ih (by omega)).trans hu.1
+    · exact (min_le_right _ _).trans
+        ((mul_le_mul_of_nonneg_left (le_of_not_gt hsmall) h.gamma1_pos.le).trans
+          (h.gamma1_mul_le (by omega)))
+
 end TrustRegionRadiusUpdates
 
 /-- The regularization-parameter component of an algorithm trace of length `k`. -/

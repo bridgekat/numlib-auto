@@ -14,3 +14,24 @@ id = "RegularizationParameterUpdates.min_le"
 
 [[node]]
 id = "RegularizationParameterUpdates.le_max_initial_threshold"
+
+[[node]]
+id = "TrustRegionRadiusUpdates.successful_le"
+
+[[node]]
+id = "TrustRegionRadiusUpdates.unsuccessful_le"
+
+[[node]]
+id = "TrustRegionRadiusUpdates.gamma1_mul_le"
+
+[[node]]
+id = "TrustRegionRadiusUpdates.min_initial_threshold_le"
+
+[[node]]
+id = "RegularizationParameterUpdates.pos"
+
+[[node]]
+id = "RegularizationParameterUpdates.successful_ge"
+
+[[node]]
+id = "RegularizationParameterUpdates.unsuccessful_ge"

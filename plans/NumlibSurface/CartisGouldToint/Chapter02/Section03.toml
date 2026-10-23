@@ -10,79 +10,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "tr1Run"
-kind = "definition"
-desc = '''
-Define the set of finite traces satisfying Algorithm 2.3.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
-
-Algorithm 2.3.1: Trust-region algorithm with a first-order model (TR1)
-
-Step 0: Initialization. An initial point \( {x}_0 \) , an accuracy level \( \epsilon  > 0 \) , and an initial trust-region radius \( {\Delta }_0 > 0 \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1 \) , and \( {\gamma }_2 \) are also given and satisfy
-
-\[
-0 < {\eta }_{1} \leq  {\eta }_{2} < 1\text{ and }0 < {\gamma }_{1} \leq  {\gamma }_{2} < 1 < {\gamma }_{3}\tag{2.3.3}
-\]
-
-Compute \( f\left( {x}_0\right) \) and \( {\nabla }_{x}f\left( {x}_0\right) \) , and set \( k = 0 \) .
-
-Step 1: Test for termination. If \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  \epsilon \) , terminate with the \( \epsilon \) - approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-
-Step 2: Step computation. Compute a step \( {s}_k \in  {\mathcal{B}}_{{\Delta }_k} \) such that
-
-\[
-{m}_k\left( {s}_k\right)  \leq  {m}_k\left( {s}_k^{\mathrm{C}}\right) ,\tag{2.3.4}
-\]
-
-where \( {m}_k \) is given by (2.3.1) and
-
-\[
-{s}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = } - {t}_{k}^{\mathrm{C}}{\nabla }_{x}^{1}f\left( {x}_{k}\right) \;\text{ with }\;{t}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = }\underset{t \geq  0,{x}_{k} - t{\nabla }_{x}^{1}f\left( {x}_{k}\right)  \in  {\mathcal{R}}_{k}}{\arg \min }{m}_{k}\left( {-t{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\right) .
-\]
-
-(2.3.5)
-
-Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) and define
-
-\[
-{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{m}_k\left( 0\right)  - {m}_k\left( {s}_k\right) }.\tag{2.3.6}
-\]
-
-If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_{x}f\left( {x}_{k + 1}\right) \) . Otherwise, define \( {x}_{k + 1} = {x}_k \) .
-
-Step 4: Trust-region radius update. Set
-
-\[
-{\Delta }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {{\Delta }_{k},{\gamma }_{3}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\gamma }_{2}{\Delta }_{k},{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) , \\  \left\lbrack  {{\gamma }_{1}{\Delta }_{k},{\gamma }_{2}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.\tag{2.3.7}
-\]
-
-Increment \( k \) by one and go to Step 1.
-
-Reasonable values for the constants in (2.3.3) might be, for example, \( {\eta }_1 = {0.01} \) , \( {\eta }_2 = {0.9},{\gamma }_1 = {\gamma }_2 = {0.5} \) , and \( {\gamma }_3 = 2 \) . The step \( {s}_k^c \) in (2.3.5) is referred to as the Cauchy step and the point \( {x}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = }{x}_{k} + {s}_{k}^{\mathrm{C}} \) as the Cauchy point. We note that the condition (2.3.4) may be relaxed to require instead that merely
-
-\[
-{m}_k\left( 0\right)  - {m}_k\left( {s}_k\right)  \geq  \kappa \left( {{m}_k\left( 0\right)  - {m}_k\left( {s}_k^{ \circ  }\right) }\right)\tag{2.3.8}
-\]
-
-for some \( \kappa  \in  (0,1\rbrack \) , without affecting the results below.
-
-The key difference between this method and those considered in Section 2.2 is that here one minimizes a (possibly crude) approximate quadratic model of the objective function along the steepest-descent direction (see (2.3.5)) instead of considering the true objective function itself.
-
-For convenience, here and for many algorithms to come, we define
-
-\[
-\mathcal{S}\overset{\text{ def }}{ = }\left\{  {k \in  {\mathbb{N}}^{0} \mid  {\rho }_{k} \geq  {\eta }_{1}}\right\}  \;\text{ and }\;\mathcal{U}\overset{\text{ def }}{ = }{\mathbb{N}}^{0} \smallsetminus  \mathcal{S},\tag{2.3.9}
-\]
-
-the sets of successful and unsuccessful iterations, respectively, and
-
-\[
-{\mathcal{S}}_{k}\overset{\text{ def }}{ = }\left\{  {j \in  \left\lbrack  {0 : k}\right\rbrack   \mid  {\rho }_{j} \geq  {\eta }_{1}}\right\}  \;\text{ and }\;{\mathcal{U}}_{k}\overset{\text{ def }}{ = }\left\lbrack  {0 : k}\right\rbrack   \smallsetminus  {\mathcal{S}}_{k},\tag{2.3.10}
-\]
-
-the corresponding sets up to iteration \( k \) . Notice that \( {x}_{k + 1} = {x}_k + {s}_k \) for \( k \in  \mathcal{S} \) , while \( {x}_{k + 1} = {x}_k \) for \( k \in  \mathcal{U} \) .
-
-For future reference, we now state a property of the TR1 algorithm that solely depends on the mechanism (2.3.7) to update the trust-region radius.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 2.3"
 
 [[node]]
@@ -95,107 +22,22 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_2_3_3"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 2.3.3: Condition for a successful iteration
-
-Suppose that f.gL and m.HBa hold and that
-
-\[
-{\Delta }_k < \frac{\left( {1 - {\eta }_2}\right) \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix}}{2\left( {{L}_{f,1} + {\kappa }_B}\right) }.\tag{2.3.15}
-\]
-
-Then \( {\rho }_k \geq  {\eta }_2 \) , iteration \( k \) is successful, and \( {\Delta }_{k + 1} \geq  {\Delta }_k \) .
-'''
-deps = ["successfulIterations", "cauchyPoint", "tr1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.3.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1901)"
 
 [[node]]
 id = "lemma_2_3_4"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 2.3.4: Lower bound for the trust-region radius
-
-Suppose that f.gL and m.HBa hold. Then we have that
-
-\[
-{\Delta }_k \geq  \frac{{\gamma }_1\left( {1 - {\eta }_2}\right) }{2\left( {{L}_{f,1} + {\kappa }_B}\right) }\min \left\lbrack  {1,\frac{{\Delta }_0}{\begin{Vmatrix}{\nabla }_x^{1}f\left( {x}_0\right) \end{Vmatrix}}}\right\rbrack  \mathop{\min }\limits_{i \in  \left\lbrack  {0 : k}\right\rbrack  }\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_i\right) }\end{Vmatrix}\tag{2.3.17}
-\]
-
-for all \( k \geq  0 \) .
-'''
-deps = ["lemma_2_3_3", "successfulIterations", "cauchyPoint", "tr1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.3.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1939)"
 
 [[node]]
 id = "lemma_2_3_5"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 2.3.5: Model decrease (TR1)
-
-Suppose that f.gL and m.HBa hold. Then we have that, for all \( k \geq  0 \) ,
-
-\[
-{m}_{k}\left( {x}_{k}\right)  - {m}_{k}\left( {{x}_{k} + {s}_{k}}\right)  \geq  {\kappa }_{\text{ decr }}\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix}\mathop{\min }\limits_{{i \in  \left\lbrack  {0 : k}\right\rbrack  }}\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{i}\right) }\end{Vmatrix},\tag{2.3.19}
-\]
-
-where
-
-\[
-{\kappa }_{\text{ decr }}\overset{\text{ def }}{ = }\frac{1}{2}\min \left\lbrack  {\frac{1}{1 + {\kappa }_{B}},\frac{{\gamma }_{1}\left( {1 - {\eta }_{2}}\right) }{2\left( {{L}_{f,1} + {\kappa }_{B}}\right) }\min \left\lbrack  {1,\frac{{\Delta }_{0}}{\begin{Vmatrix}{\nabla }_{x}^{1}f\left( {x}_{0}\right) \end{Vmatrix}}}\right\rbrack  }\right\rbrack  .\tag{2.3.20}
-\]
-'''
-deps = ["successfulIterations", "cauchyPoint", "tr1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.3.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1975)"
 
 [[node]]
 id = "lemma_2_3_6"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 2.3.6: Bound on the number of successful TR1 iterations
-
-Suppose that f.Bb, f.gL, and m.HBa hold. Then there exists a positive constant \( {\kappa }_{\mathrm{TR1}}^s \) such that, for any \( \epsilon  > 0 \) , the TR1 algorithm (p. 35) requires at most
-
-\[
-{\# }_{\mathrm{{TR1}}}^{SI}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR1}}}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }^{2}}
-\]
-
-successful iterations before an iterate \( {x}_{\epsilon } \) is computed for which \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
-'''
-deps = ["lemma_2_3_1", "successfulIterations", "cauchyPoint", "tr1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.3.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1993)"
 
 [[node]]
 id = "theorem_2_3_7"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 2.3.7: Complexity of the first-order trust-region algorithm
-
-Suppose that f.Bb, f.gL, and m.HBa hold. Then there exist positive constants \( {\kappa }_{\mathrm{TR}1}^S \) (see Lemma 2.3.6), \( {\kappa }_{\mathrm{TR}1}^A,{\kappa }_{\mathrm{TR}1}^B \) , and \( {\kappa }_{\mathrm{TR}1}^C \) such that the TR1 algorithm (p. 35) requires at most
-
-\[
-{\# }_{\mathrm{{TRI}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TRI}}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }^{2}} + {\kappa }_{\mathrm{{TRI}}}^{B}\left| {\log \epsilon }\right|  + {\kappa }_{\mathrm{{TRI}}}^{C} = \mathcal{O}\left( {\epsilon }^{-2}\right)
-\]
-
-function evaluations and at most
-
-\[
-{\# }_{\mathrm{{TR1}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR1}}}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }^{2}} + 1 = \mathcal{O}\left( {\epsilon }^{-2}\right)
-\]
-
-gradient evaluations to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
-'''
-deps = ["lemma_2_3_6", "lemma_2_3_1", "theorem_2_2_3", "successfulIterations", "cauchyPoint", "tr1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.3.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2031)"
 
 [[node]]
@@ -210,3 +52,6 @@ The TR1 algorithm (p. 35) applied to a function \( f \) satisfying f.Bb, f.gL, a
 '''
 deps = ["theorem_2_3_7", "lemma_2_3_2", "lemma_2_3_4", "lemma_2_3_1", "successfulIterations", "cauchyPoint", "tr1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.3.8 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2075)"
+
+[[node]]
+id = "tr1SuccessfulConstant"

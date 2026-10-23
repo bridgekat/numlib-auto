@@ -1,0 +1,73 @@
+namespace = "FirstOrderTrustRegion"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "prefixMinimum"
+
+[[node]]
+id = "prefixMinimum_le"
+
+[[node]]
+id = "le_prefixMinimum"
+
+[[node]]
+id = "radiusConstant"
+
+[[node]]
+id = "decreaseConstant"
+
+[[node]]
+id = "decreaseConstant_pos"
+
+[[node]]
+id = "Run.restrict"
+
+[[node]]
+id = "Run.denominator_pos"
+
+[[node]]
+id = "Run.model_decrease"
+
+[[node]]
+id = "Run.model_error"
+
+[[node]]
+id = "Run.very_successful"
+
+[[node]]
+id = "Run.radius_le_next_of_very_successful"
+
+[[node]]
+id = "Run.radius_lower_of_gradient_lower"
+
+[[node]]
+id = "Run.radius_lower"
+
+[[node]]
+id = "Run.radius_lower_prefixMinimum"
+
+[[node]]
+id = "Run.model_decrease_prefixMinimum"
+
+[[node]]
+id = "Run.successful_decrease"
+
+[[node]]
+id = "Run.objective_eq_of_unsuccessful"
+
+[[node]]
+id = "Run.successful_card_le"
+
+[[node]]
+id = "Run.radius_floor"
+
+[[node]]
+id = "Run.radius_floor_log_le"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "exists_termination"
