@@ -1,0 +1,4 @@
+namespace = "QuadraticOptimality"
+
+[[node]]
+id = "exists_cubic_regularized_min"

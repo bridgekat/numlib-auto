@@ -10,6 +10,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "corollary_10_2_3"
+wrong = "The ordinary integer ceiling in the printed bound may be negative because theta1 in (9.3.14) is only required positive. A genuine two-dimensional symmetric swap Hessian, nonzero first-coordinate gradient, identity metric, sigma=1 and r=3 has actual global cubic minima in every Lanczos subspace and the ambient space. Its true maximum shifted condition number is greater than one. corollary_10_2_3_counterexample chooses a permitted positive tolerance for which the displayed ceiling plus one equals -1, excluding every iteration. The separately proved natural-ceiling companion supplies the nonnegative budget."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -34,3 +35,7 @@ deps = ["theorem_10_2_2"]
 [[node]]
 id = "corollary_10_2_3_corrected"
 source = "Cartis, Gould and Toint, Corollary 10.2.3 with natural ceiling; literal integer-ceiling target remains open. All printed constants retained, actual largest generalized eigenvalue and condition maximum."
+
+[[node]]
+id = "corollary_10_2_3_counterexample"
+source = "Cartis, Gould and Toint, Corollary 10.2.3, ordinary integer ceiling and unrestricted positive theta1 in (9.3.14)"

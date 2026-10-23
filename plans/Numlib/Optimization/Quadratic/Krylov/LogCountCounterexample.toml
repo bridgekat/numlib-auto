@@ -1,0 +1,31 @@
+namespace = "QuadraticKrylov.LogCountCounterexample"
+
+[[node]]
+id = "E"
+
+[[node]]
+id = "A"
+
+[[node]]
+id = "g"
+
+[[node]]
+id = "A_apply"
+
+[[node]]
+id = "A_symmetric"
+
+[[node]]
+id = "g_ne"
+
+[[node]]
+id = "A_ne"
+
+[[node]]
+id = "two_le_grade"
+
+[[node]]
+id = "U"
+
+[[node]]
+id = "actual_family_negative_budget"

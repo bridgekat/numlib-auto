@@ -1,3 +1,4 @@
+import Numlib.Optimization.Quadratic.Krylov.LogCountCounterexample
 import NumlibSurface.CartisGouldToint.Chapter10.Section01
 import Numlib.Optimization.Quadratic.Krylov.RegularizationMonotonicity
 import Numlib.Optimization.Quadratic.Optimality.RegularizationMetric
@@ -189,3 +190,34 @@ theorem corollary_10_2_3_corrected (hnpos : 0 < n) (hH : H.toLinearMap.IsSymmetr
     exact he.symm.trans_le hhit
 
 end CartisGouldToint
+
+open QuadraticKrylov.LogCountCounterexample Krylov Lanczos in
+/-- **Counterexample to Corollary10.2.3.** With the identity metric, the actual
+symmetric two-dimensional swap Hessian, nonzero gradient, sigma one and cubic
+penalty, genuine minimizers exist at every actual Lanczos dimension. A permitted
+positive tolerance makes the literal integer-ceiling upper bound minus one, so
+no iteration fits the displayed bound. The natural-ceiling companion above
+remains valid. -/
+theorem CartisGouldToint.corollary_10_2_3_counterexample :
+    ∃ (G : ℕ) (Y : (i : Fin (G + 1)) → EuclideanSpace ℝ (Fin (i.val + 1))) (x : E),
+      G + 1 = grade A.toLinearMap g ∧
+      (∀ z, QuadraticOptimality.regularized A g 1 3 x ≤
+        QuadraticOptimality.regularized A g 1 3 z) ∧
+      (∀ i w, QuadraticOptimality.regularized
+        (Matrix.toEuclideanLin (tridiag A.toLinearMap g (i.val + 1))).toContinuousLinearMap
+        (‖g‖ • PiLp.single 2 (0 : Fin (i.val + 1)) (1 : ℝ)) 1 3 (Y i) ≤
+        QuadraticOptimality.regularized
+        (Matrix.toEuclideanLin (tridiag A.toLinearMap g (i.val + 1))).toContinuousLinearMap
+        (‖g‖ • PiLp.single 2 (0 : Fin (i.val + 1)) (1 : ℝ)) 1 3 w) ∧
+      let shifts := fun i => (1 : ℝ) * ‖Y i‖ ^ ((3 : ℝ) - 2)
+      let K := maxCondition A.toLinearMap g G shifts
+      let t := (1 : ℝ) * ‖x‖ ^ ((3 : ℝ) - 2)
+      ∃ θ > 0,
+        (⌈Real.log (4 * ‖A‖ * K / θ * (t / 1) ^ (1 / ((3 : ℝ) - 2)) *
+          ((U + t) / ‖g‖) ^ 2) /
+          Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉ : ℤ) + 1 = -1 ∧
+        ¬∃ i : Fin (G + 1), ((i.val + 1 : ℕ) : ℤ) ≤ min
+          ((⌈Real.log (4 * ‖A‖ * K / θ * (t / 1) ^ (1 / ((3 : ℝ) - 2)) *
+            ((U + t) / ‖g‖) ^ 2) /
+            Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉ : ℤ) + 1) (G + 1) :=
+  QuadraticKrylov.LogCountCounterexample.actual_family_negative_budget
