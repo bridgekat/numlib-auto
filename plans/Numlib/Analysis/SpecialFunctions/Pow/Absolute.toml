@@ -1,0 +1,25 @@
+namespace = "Real"
+
+[[node]]
+id = "iteratedDeriv_abs_pow_of_pos"
+
+[[node]]
+id = "iteratedDeriv_abs_pow_of_neg"
+
+[[node]]
+id = "abs_iteratedDeriv_abs_pow_of_ne_zero"
+
+[[node]]
+id = "iteratedDeriv_abs_pow_zero"
+
+[[node]]
+id = "abs_iteratedDeriv_abs_pow"
+
+[[node]]
+id = "contDiff_abs_pow"
+
+[[node]]
+id = "abs_sub_iteratedDeriv_abs_pow_le"
+
+[[node]]
+id = "hasDerivAt_iteratedDeriv_abs_pow"
