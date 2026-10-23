@@ -1,5 +1,5 @@
 import Numlib.Approximation.Hermite.Quintic
-import Numlib.Optimization.SteepestDescent.Exact.CorridorGradient
+import Numlib.Optimization.SteepestDescent.Exact.CorridorGlobalCounterexample
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -15,6 +15,13 @@ jets are bounded as well.
 
 The remaining construction uses the book's global rounding convention: its
 canonical iteration horizon is the natural floor of the inverse-square rate.
+
+The global exact-line-search reading of Lemma B.2.6 is false for this actual
+construction: at accuracy one quarter, a farther point on the first positive
+negative-gradient ray has strictly smaller value than the prescribed endpoint.
+`lemma_B_2_6_counterexample` proves failure of the global minimum in (2.2.26).
+The source proof's separate first-local-minimum property remains a planned
+companion; neither that property nor Lemma B.2.2 supplies a global SDEX execution.
 
 -/
 
@@ -180,5 +187,23 @@ theorem lemma_B_2_2 (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1) :
   · change ‖gradient (ExactSteepestDescent.Corridor.euclideanObjective P)
       (ExactSteepestDescent.Corridor.gridPoint P ⌊ε^(-(2 : ℝ))⌋₊)‖ = P.accuracy
     simpa only [hN] using (ExactSteepestDescent.Corridor.gradient_first_stop P).2
+
+/-- **Counterexample to the global exact-line-search reading of Lemma B.2.6.**
+For the actual canonical source objective at accuracy one quarter, the first
+prescribed step is not a global minimizer on its positive negative-gradient ray.
+The first-local-minimum property asserted at the end of the source proof is a
+separate claim, and does not imply the SDEX contract (2.2.26). -/
+theorem lemma_B_2_6_counterexample :
+    ¬IsMinOn (fun α : ℝ => sdexCounterexample (1/4) (by norm_num) (by norm_num)
+      (0 - α • gradient (sdexCounterexample (1/4) (by norm_num) (by norm_num)) 0))
+      (Ici 0) (Real.sqrt 2) := by
+  have h := ExactSteepestDescent.Corridor.globalCounterexample_not_global_line_minimum
+  rw [ExactSteepestDescent.Corridor.globalCounterexampleParameters_canonical] at h
+  change ¬IsMinOn (ExactSteepestDescent.Corridor.initialRayObjective
+    (ExactSteepestDescent.Corridor.Parameters.ofAccuracy (1/4) (by norm_num) (by norm_num)))
+    (Ici 0) (Real.sqrt 2) at h
+  unfold ExactSteepestDescent.Corridor.initialRayObjective at h
+  rw [ExactSteepestDescent.Corridor.gridPoint_zero] at h
+  exact h
 
 end CartisGouldToint

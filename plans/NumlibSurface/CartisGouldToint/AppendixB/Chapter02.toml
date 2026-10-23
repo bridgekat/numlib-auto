@@ -34,10 +34,14 @@ id = "lemma_B_2_5"
 id = "lemma_B_2_6"
 kind = "theorem"
 desc = '''
-For every k<N in sdexCounterexampleData, the prescribed positive step reaches (x_{k+1},y_{k+1}), the first local minimizer of fSDEX along the ray from (x_k,y_k) in direction -gradient fSDEX(x_k,y_k). State a positive step parameter alpha_k, strict negativity of the one-variable derivative for 0<=alpha<alpha_k, derivative zero at alpha_k, and local minimality at alpha_k. Use (B.2.32)--(B.2.36) for the decreasing segment and the neighboring extension to prove local minimality, not mere zero derivative.
+Lemma B.2.6: Linesearches are exact.
+The iterate (x_{k+1},y_{k+1}) is the first minimizer along the steepest-descent direction from (x_k,y_k).
+
+The surrounding source explicitly claims this realizes SDEX, whose (2.2.26) requires a global ray minimizer. That reading is false for the actual printed corridor; preserve the original as wrong and the first-local-minimum proof target separately.
 '''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.6"
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.6 and equation (2.2.26)"
 deps = ["sdexCounterexampleData", "lemma_B_2_2"]
+wrong = "The canonical epsilon=1/4,N=16 construction has first prescribed ray value (62401/16384)/sqrt2, while the later positive ray parameter (49/4)*sqrt2 reaches (x16,x16) and value (1061/512)/sqrt2, strictly smaller. lemma_B_2_6_counterexample proves not IsMinOn on the full nonnegative negative-gradient ray, using the actual canonical objective and gradient. Only the separate first local minimum is supported by the printed proof; it does not imply global exact line search. No counterexample to the existential Theorem2.2.5 is claimed."
 
 [[node]]
 id = "quinticHermite_endpoints"
@@ -60,3 +64,15 @@ id = "contDiff_sdexCounterexample"
 
 [[node]]
 id = "sdexCorridor"
+
+[[node]]
+id = "lemma_B_2_6_first_local"
+kind = "theorem"
+desc = '''
+For every k<N in sdexCounterexampleData, the prescribed positive step reaches (x_{k+1},y_{k+1}), the first local minimizer of fSDEX along the ray from (x_k,y_k) in direction -gradient fSDEX(x_k,y_k). State a positive step parameter alpha_k, strict negativity of the one-variable derivative for 0<=alpha<alpha_k, derivative zero at alpha_k, and local minimality at alpha_k. Use (B.2.32)--(B.2.36) for the decreasing segment and the neighboring extension to prove local minimality, not mere zero derivative.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.6"
+deps = ["sdexCounterexampleData", "lemma_B_2_2"]
+
+[[node]]
+id = "lemma_B_2_6_counterexample"

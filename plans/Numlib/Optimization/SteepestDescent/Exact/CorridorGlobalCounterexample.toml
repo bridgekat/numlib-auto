@@ -1,0 +1,43 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "scalarObjective_node"
+
+[[node]]
+id = "residualCorridor_node"
+
+[[node]]
+id = "objective_node"
+
+[[node]]
+id = "objective_node_exterior"
+
+[[node]]
+id = "globalCounterexampleParameters"
+
+[[node]]
+id = "globalCounterexample_first_value"
+
+[[node]]
+id = "globalCounterexample_later_value"
+
+[[node]]
+id = "initialRayObjective"
+
+[[node]]
+id = "initialRayObjective_first"
+
+[[node]]
+id = "globalCounterexample_far_on_ray"
+
+[[node]]
+id = "globalCounterexample_initialRay_first"
+
+[[node]]
+id = "globalCounterexample_initialRay_far"
+
+[[node]]
+id = "globalCounterexample_not_global_line_minimum"
+
+[[node]]
+id = "globalCounterexampleParameters_canonical"
