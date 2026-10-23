@@ -1,4 +1,5 @@
 import Numlib.Optimization.HighOrder.ConstrainedCriticality
+import Numlib.Optimization.Sparse.BoxLinear
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -9,6 +10,12 @@ closed ball. No convexity or connectivity of the closed feasible set is required
 Theorem 14.2.1 retains the additive criticality allowance and the local Lipschitz
 neighborhood. The unindexed radius in (14.2.6) is the optimality radius `δ_j` from its
 hypothesis and from (14.2.7).
+
+In Lemma 14.2.5, (14.2.18) and (14.2.19) must minimize the linear objective `g·d`
+(or maximize its negative): the printed maximization contradicts the displayed optimizer,
+the proof, and the subsequent TR1-SP algorithm. For one coordinate with `x=0`, `g=1`, `δ=1` and budget `k=1`, the formula
+gives `d=-1`, whereas `d=1` has the larger linear value. The sparse problem below uses
+minimization.
 -/
 
 namespace CartisGouldToint
@@ -63,5 +70,54 @@ theorem theorem_14_2_1 {n j : ℕ} (hj : 0 < j)
     have hb := TaylorModel.value_ge_of_constrainedCriticality hj hX Metric.isOpen_ball
       hf.contDiffOn x hδ.le hball hL hlip' hcrit hfeas hd
     simpa only [hLzero, zero_mul, zero_div, sub_zero] using hb
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- A global solution of the corrected sparse linear box problem (14.2.18).
+The norm on `Fin n → ℝ` is the infinity norm; the support count is the actual count of
+nonzero coordinates of the next iterate `x+d`. The objective is the actual linear form. -/
+def sparseStepProblem {n : ℕ} (x g : Fin n → ℝ) (k : ℕ) (δ : ℝ) (d : Fin n → ℝ) : Prop :=
+  ‖d‖ ≤ δ ∧ (SparseBox.support (fun i => x i + d i)).card ≤ k ∧
+    ∀ s : Fin n → ℝ, ‖s‖ ≤ δ → (SparseBox.support (fun i => x i + s i)).card ≤ k →
+      SparseBox.objective g d ≤ SparseBox.objective g s
+
+/-- **Lemma 14.2.5 (optimal sparse solution of the box problem).**
+The finite knapsack has an optimum, and every optimal binary support selection produces
+an actual sparse box optimizer. The three sums reproduce (14.2.20), while the binary
+cardinality sum and gain reproduce (14.2.21). This includes vanishing coefficients and
+ties without a uniqueness claim. A nonnegative radius also covers the zero-radius case.
+
+The source's `max g·d` in (14.2.18) must be `min g·d`, consistently with its displayed
+step, proof and algorithm. The coefficient vector is arbitrary, so it can in particular
+be the gradient specified in the source. -/
+theorem lemma_14_2_5 {n : ℕ} (x g : Fin n → ℝ) (k : ℕ) {δ : ℝ}
+    (hδ : 0 ≤ δ) (hx : (SparseBox.support x).card ≤ k) :
+    (∃ R : Finset (Fin n), SparseBox.IsOptimalSelection x g k δ R) ∧
+    (∀ R : Finset (Fin n), SparseBox.IsOptimalSelection x g k δ R →
+      sparseStepProblem x g k δ (SparseBox.step x g δ R) ∧
+      SparseBox.step x g δ R =
+        (∑ i ∈ SparseBox.forced x δ, Pi.single i (-δ * Real.sign (g i))) -
+        (∑ i ∈ SparseBox.support x \ SparseBox.forced x δ, Pi.single i (x i)) -
+        (∑ i ∈ (SparseBox.forced x δ)ᶜ,
+          Pi.single i (SparseBox.binary R i * (δ * Real.sign (g i) - x i))) ∧
+      (∀ i, SparseBox.binary R i = 0 ∨ SparseBox.binary R i = 1) ∧
+      (∑ i ∈ (SparseBox.forced x δ)ᶜ, SparseBox.binary R i) ≤
+        ((k - (SparseBox.forced x δ).card : ℕ) : ℝ) ∧
+      SparseBox.selectionGain x g δ R =
+        ∑ i ∈ (SparseBox.forced x δ)ᶜ,
+          SparseBox.binary R i * (δ * |g i| - x i * g i)) := by
+  refine ⟨SparseBox.exists_optimalSelection x g k δ, ?_⟩
+  intro R hR
+  obtain ⟨hfeas, hmin⟩ := SparseBox.step_isMinOn hδ hx hR
+  refine ⟨?_, SparseBox.step_eq_sub_sums x g δ R, SparseBox.binary_values R, ?_,
+    SparseBox.selectionGain_eq_binary_sum hR.1⟩
+  · have hf := (SparseBox.admissible_iff_norm hδ).mp hfeas
+    refine ⟨hf.1, hf.2, ?_⟩
+    intro s hs hcard
+    exact hmin ((SparseBox.admissible_iff_norm hδ).mpr ⟨hs, hcard⟩)
+  · rw [SparseBox.sum_binary hR.1]
+    exact_mod_cast hR.1.2
 
 end CartisGouldToint

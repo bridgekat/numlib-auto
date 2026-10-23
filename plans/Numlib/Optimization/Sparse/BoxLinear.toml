@@ -1,0 +1,100 @@
+namespace = "SparseBox"
+
+[[node]]
+id = "support"
+
+[[node]]
+id = "mem_support"
+
+[[node]]
+id = "forced"
+
+[[node]]
+id = "mem_forced"
+
+[[node]]
+id = "Admissible"
+
+[[node]]
+id = "box_iff_norm_le"
+
+[[node]]
+id = "admissible_iff_norm"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "gain"
+
+[[node]]
+id = "selectionGain"
+
+[[node]]
+id = "Selection"
+
+[[node]]
+id = "IsOptimalSelection"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "sign_endpoint_value"
+
+[[node]]
+id = "sign_endpoint_abs_le"
+
+[[node]]
+id = "endpoint_le_mul"
+
+[[node]]
+id = "forced_subset_support"
+
+[[node]]
+id = "forced_subset_new_support"
+
+[[node]]
+id = "forced_card_le"
+
+[[node]]
+id = "exists_optimalSelection"
+
+[[node]]
+id = "step_admissible"
+
+[[node]]
+id = "selection_of_admissible"
+
+[[node]]
+id = "baseline"
+
+[[node]]
+id = "objective_step"
+
+[[node]]
+id = "baseline_sub_gain_le_objective"
+
+[[node]]
+id = "step_isMinOn"
+
+[[node]]
+id = "binary"
+
+[[node]]
+id = "binary_values"
+
+[[node]]
+id = "step_eq_coordinate"
+
+[[node]]
+id = "sum_binary"
+
+[[node]]
+id = "selectionGain_eq_binary_sum"
+
+[[node]]
+id = "sum_single_apply"
+
+[[node]]
+id = "step_eq_sub_sums"

@@ -9,12 +9,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "sparseStepProblem"
-kind = "definition"
-desc = '''
-Problem (14.2.18) maximizes the linear Taylor decrement on ||d||_∞≤δ with ||x+d||_0≤n_nz, for a feasible sparse x. Define Aδ(x)={i:|xi|>δ}, its complement, the component gains vi and wi from (14.2.19)–(14.2.20), and the binary-cardinality selection problem (14.2.21). Keep the box norm and exact support cardinality; ties may give multiple maximizers.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.2"
-deps = []
 
 [[node]]
 id = "theorem_14_2_1"
@@ -93,27 +88,4 @@ deps = ["lemma_14_2_3", "theorem_12_2_14", "theorem_13_1_19", "theorem_13_3_8", 
 
 [[node]]
 id = "lemma_14_2_5"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 14.2.5: Optimal sparse solution of problem (14.2.18)
-
-Suppose that \( x \in  \mathcal{X} \) . Then the solution to problem (14.2.18) is given by
-
-\[
-{d}^{ * } =  - \delta \mathop{\sum }\limits_{{i \in  {\mathcal{A}}_{\delta }\left( x\right) }}\operatorname{sign}\left( {\left\lbrack  g\right\rbrack  }_{i}\right) {e}_{i} - \mathop{\sum }\limits_{{i \in  \mathcal{A}\left( x\right)  \smallsetminus  {\mathcal{A}}_{\delta }\left( x\right) }}{\left\lbrack  x\right\rbrack  }_{i}{e}_{i} - \mathop{\sum }\limits_{{i \in  {\mathcal{A}}_{\delta }^{c}\left( x\right) }}{\tau }_{i}\left( {\delta \operatorname{sign}\left( {\left\lbrack  g\right\rbrack  }_{i}\right)  - {\left\lbrack  x\right\rbrack  }_{i}}\right) {e}_{i},
-\]
-
-(14.2.20)
-
-where \( g = {\nabla }_x^{1}f\left( x\right) ,\mathcal{A}\left( x\right) \) is defined as in (14.2.15), \( {\mathcal{A}}_{\delta }\left( x\right) \overset{\text{ def }}{ = }\left\{  {i \in  \left\lbrack  {1 : n}\right\rbrack  \left| \right| \left| {\left\lbrack  x\right\rbrack  }_{i}\right|  > }\right. \; \delta \} ,{\mathcal{A}}_{\delta }^{c}\left( x\right) \overset{\text{ def }}{ = }\left\lbrack  {1 : n}\right\rbrack   \smallsetminus  {\mathcal{A}}_{\delta }\left( x\right) \) , and the binary variables \( {\tau }_i \) solve the \( 0 - 1 \) knapsack \( {\text{ problem }}^{105} \) given by
-
-\[
-\mathop{\max }\limits_{{\tau  \in  \{ 0,1{\} }^{n - \left| {{\mathcal{A}}_{\delta }\left( x\right) }\right| }}}\mathop{\sum }\limits_{{i \in  {\mathcal{A}}_{\delta }^{c}\left( x\right) }}{\tau }_{i}\left( {\delta \left| {\left\lbrack  g\right\rbrack  }_{i}\right|  - {\left\lbrack  x\right\rbrack  }_{i}{\left\lbrack  g\right\rbrack  }_{i}}\right) \text{ such that }\mathop{\sum }\limits_{{i \in  {\mathcal{A}}_{\delta }^{c}\left( x\right) }}{\tau }_{i} \leq  {n}_{\mathbf{{nz}}} - \left| {{\mathcal{A}}_{\delta }\left( x\right) }\right| .
-\]
-
-(14.2.21)
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.5 (OCR Markdown line 16435)"
-deps = ["sparseStepProblem"]
