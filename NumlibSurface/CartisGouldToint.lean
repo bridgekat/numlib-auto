@@ -11,12 +11,15 @@ import NumlibSurface.CartisGouldToint.Chapter01.Section01
 import NumlibSurface.CartisGouldToint.Chapter02.Section02
 import NumlibSurface.CartisGouldToint.Chapter02.Section03
 import NumlibSurface.CartisGouldToint.Chapter02.Section04
+import NumlibSurface.CartisGouldToint.Chapter03.Section01
 import NumlibSurface.CartisGouldToint.Chapter03.Section02
 import NumlibSurface.CartisGouldToint.Chapter03.Section03
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import NumlibSurface.CartisGouldToint.Chapter04.Section02
 import NumlibSurface.CartisGouldToint.Chapter05.Section01
 import NumlibSurface.CartisGouldToint.Chapter07.Section01
+import NumlibSurface.CartisGouldToint.Chapter08.Section01
+import NumlibSurface.CartisGouldToint.Chapter08.Section02
 import NumlibSurface.CartisGouldToint.Chapter12.Section01
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 import NumlibSurface.CartisGouldToint.Chapter13.Section01
@@ -82,6 +85,17 @@ recorded on the relevant plan nodes. In particular:
   The corrected actual derivative preserves Lemma 3.3.8's printed bound.
   In Theorem 3.3.9, the derivative budget is `+2`, as its proof and one part
   of its inconsistent display state: one final successful trial and initialization.
+* The nonempty-direction guard in Algorithm 4.1.1 can prevent termination at a
+  stationary point, where no strictly improving model step exists. Theorem 4.1.5
+  is marked incorrect as written; its corrected companion removes this guard.
+* The short-step accuracy guard in Algorithm 13.1.2 makes the printed parameter
+  bounds in Lemmas 13.1.14 and 13.3.5 false when the initial accuracy cap exceeds
+  the step-accuracy coefficient. Formal one-trial counterexamples use the zero
+  objective and raise the parameter from 32 to 64, above the printed bounds 60
+  and 32. Corrected bounds use `max(κs,κh)`; the printed constants are recovered
+  under `κh≤κs`. The final Step 2 derivative range is repaired from `1:q` to
+  `1:p`, as required by its referenced equation (13.1.46). The literal short-step
+  guard is retained despite conflicting preceding prose.
 * The norm constant in (B.4.3), part of Lemma B.4.1, fails already in dimension two.
   It remains marked incorrect rather than being represented by a false axiom.
 

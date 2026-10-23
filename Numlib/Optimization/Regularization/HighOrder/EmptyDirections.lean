@@ -148,8 +148,10 @@ theorem no_next_improvement {f : ℝ → ℝ}
 /-- A one-step accepted trajectory from zero to one. -/
 def point (k : ℕ) : ℝ := if k = 0 then 0 else 1
 
+/-- The counterexample starts at the origin. -/
 @[simp] theorem point_zero : point 0 = 0 := rfl
 
+/-- All later counterexample iterates equal the stationary endpoint. -/
 @[simp] theorem point_succ (k : ℕ) : point (k + 1) = 1 := by simp [point]
 
 /-- The true acceptance ratio is two for the prescribed objective and derivative values. -/

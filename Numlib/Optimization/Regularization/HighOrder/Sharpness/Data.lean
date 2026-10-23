@@ -40,6 +40,7 @@ theorem matchesJets_iff {f : ℝ → ℝ} {p r N : ℕ} {A t : ℝ} :
     MatchesJets f p r N A t ↔
       ∀ k ≤ N, ∀ j ≤ p, iteratedDeriv j f (point t k) = jet p r N A t k j := Iff.rfl
 
+/-- The sharpness grid starts at the origin. -/
 @[simp] theorem point_zero (t : ℝ) : point t 0 = 0 := by simp [point]
 
 /-- Each step has the stated grid spacing. -/

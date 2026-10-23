@@ -89,7 +89,7 @@ theorem norm_second_le {a : ℝ} (ha : 4 ≤ a) (s : E) :
   by_cases hs : s = 0
   · subst s
     rw [second_zero a (by linarith)]
-    simp only [ContinuousLinearMap.opNorm_zero, norm_zero,
+    simp only [norm_zero,
       Real.zero_rpow (by linarith : a - 2 ≠ 0), mul_zero, le_refl]
   have hr : 0 < ‖s‖ := norm_pos_iff.mpr hs
   have hpow : ‖s‖ ^ (a - 4) * ‖s‖ ^ 2 = ‖s‖ ^ (a - 2) := by
