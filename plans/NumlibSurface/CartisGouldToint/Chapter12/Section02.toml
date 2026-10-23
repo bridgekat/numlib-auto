@@ -71,6 +71,7 @@ where \( {\sigma }_{\max } \) is given by (4.1.19).
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.11 (OCR Markdown line 12812)"
 deps = ["arqpRun"]
+wrong = "Formal arqpNonterminationLowerBoundsCounterexample supplies a full actual ARqpRun through2trials for p=q=1, f(x)=x^2/2, epsilon=9/10,zeta=1/2,theta=9/10,sigma=sigmaMin=1,Lf=1,eta1=1/4,eta2=3/4,gamma3=3,x0=3/4 and step=-1/1000000. Positive-fraction model solves use mu=1/1000000 and satisfy the actual unit-radius Taylor tests. Both trials are very successful and the next literal check still selects a trial with no zero-decrease exit, although its true criticality is already <=epsilon. Printed sigmaMax=12 is retained. The printed obstruction has left side9/100 but right side13/1000000. Nontermination of the relative-direction test does not imply failure of the true epsilon certificate. The before_certificate companion is valid."
 
 [[node]]
 id = "lemma_12_2_12"
@@ -92,6 +93,7 @@ where \( {\kappa }_{\delta ,\min } \) is defined as in (12.2.51) and \( {\sigma 
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.12 (OCR Markdown line 12864)"
 deps = ["lemma_12_2_11"]
+wrong = "Formal arqpNonterminationLowerBoundsCounterexample supplies a full actual ARqpRun through2trials for p=q=1, f(x)=x^2/2, epsilon=9/10,zeta=1/2,theta=9/10,sigma=sigmaMin=1,Lf=1,eta1=1/4,eta2=3/4,gamma3=3,x0=3/4 and step=-1/1000000. Positive-fraction model solves use mu=1/1000000 and satisfy the actual unit-radius Taylor tests. Both trials are very successful and the next literal check still selects a trial with no zero-decrease exit, although its true criticality is already <=epsilon. Printed sigmaMax=12 is retained. All low-order radii equal1 and the high-order floor hypothesis is vacuous. The exact printed p=q=j=1 lower bound is9/2600, strictly greater than the actual norm1/1000000. The before-certificate corrected companion remains valid."
 
 [[node]]
 id = "lemma_12_2_13"
@@ -128,6 +130,7 @@ f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\eta }_1{\kappa }_{\D
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.13 (OCR Markdown line 12910)"
 deps = ["lemma_12_2_12"]
+wrong = "Formal arqpNonterminationLowerBoundsCounterexample supplies a full actual ARqpRun through2trials for p=q=1, f(x)=x^2/2, epsilon=9/10,zeta=1/2,theta=9/10,sigma=sigmaMin=1,Lf=1,eta1=1/4,eta2=3/4,gamma3=3,x0=3/4 and step=-1/1000000. Positive-fraction model solves use mu=1/1000000 and satisfy the actual unit-radius Taylor tests. Both trials are very successful and the next literal check still selects a trial with no zero-decrease exit, although its true criticality is already <=epsilon. Printed sigmaMax=12 is retained. The exact p=q=1 coefficient is kappaDeltaM=1/135200. The printed model floor81/13520000 exceeds the actual prediction3/4000000. Its accepted-function floor81/54080000 also exceeds the actual objective drop3/4000000-1/2000000000000."
 
 [[node]]
 id = "theorem_12_2_14"
@@ -261,4 +264,8 @@ source = "Cartis, Gould and Toint, Lemma12.2.12, safe common radius coefficient;
 
 [[node]]
 id = "lemma_12_2_11_before_certificate"
-source = "Cartis, Gould and Toint, Lemma12.2.11 under failure of the true approximate-criticality certificate; literal nontermination target remains open."
+source = "Cartis, Gould and Toint, Lemma12.2.11 under failure of the true approximate-criticality certificate; literal nontermination assertion is refuted by arqpNonterminationLowerBoundsCounterexample."
+
+[[node]]
+id = "arqpNonterminationLowerBoundsCounterexample"
+source = "Cartis, Gould and Toint, Lemmas12.2.11--13, formal source counterexample"

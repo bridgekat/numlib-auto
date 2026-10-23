@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.ObstructionCounterexample
 import Numlib.Optimization.Regularization.HighOrder.Sharpness.CriticalityWitness
 import Numlib.Optimization.Regularization.HighOrder.CriticalityComplexity
 import Numlib.Optimization.Regularization.HighOrder.RunTarget
@@ -703,5 +704,42 @@ theorem corollary_12_2_16 {p q : ℕ}
           ε ^ (-((p + 1 : ℕ) : ℝ) / (p - q + 1 : ℕ)) ≤
             (HighOrderRegularization.Sharpness.criticalityDerivativeEvaluations q j N : ℝ) :=
   HighOrderRegularization.Sharpness.exists_low_order_criticality_witness hq hqp hq2
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion HighOrderRegularization.ObstructionCounterexample
+
+/-- Formal counterexample to the literal nontermination-based bounds in
+Lemmas12.2.11--13. The quadratic objective, actual positive-fraction model solves,
+ordered Taylor checks, objective ratios and parameter/radius updates satisfy
+all primitive ARqp rules. The next relative check still selects a trial although
+the true certificate already holds. Every printed bound fails with its own
+larger parameter cap; the detailed-solver certificate-attainment proof remains valid. -/
+theorem arqpNonterminationLowerBoundsCounterexample :
+    let f := objective
+    let P := settings
+    let D := data
+    let S := max (D.parameter 0) (P.gamma3 * (1 : ℝ) / (1 - P.eta2))
+    let κ := P.sigmaMin / 2 * ((1 - P.theta) / (2 * (1 + S))) ^ 2
+    ContDiff ℝ 1 f ∧
+    (∀ x y, ‖iteratedFDeriv ℝ 1 f x - iteratedFDeriv ℝ 1 f y‖ ≤ (1 : ℝ) * ‖x - y‖) ∧
+    (∀ x, 0 ≤ f x) ∧
+    HighOrderRegularization.Run f P (fun _ => 9 / 10) D 2 ∧
+    P.eta1 ≤ D.ratio 0 ∧ D.selected 1 ≠ none ∧
+    HighOrderRegularization.model f 1 (D.point 1) (D.parameter 1) 0 ≠
+      HighOrderRegularization.model f 1 (D.point 1) (D.parameter 1) (D.step 1) ∧
+    S = 12 ∧ TaylorModel.criticality f 1 (D.point 1) 1 ≤ (9 : ℝ) / 10 ∧
+    (¬∃ a : Fin 1, (1 - P.theta) * (9 / 10 : ℝ) * D.radius 1 a ^ modelOrder a /
+        (modelOrder a).factorial ≤
+      (1 + S) * ∑ i ∈ Finset.range (modelOrder a), D.radius 1 a ^ (i + 1) *
+        ‖D.step 0‖ ^ (1 - (i + 1) + 1) / (i + 1).factorial) ∧
+    ‖D.step 0‖ < (1 - P.theta) / (2 * (1 + S)) * (9 / 10 : ℝ) ∧
+    TaylorModel.decrement f 1 (D.point 0) (D.step 0) < κ * (9 / 10 : ℝ) ^ 2 ∧
+    f (D.point 0) - f (D.point 1) < P.eta1 * κ * (9 / 10 : ℝ) ^ 2 := by
+  exact ⟨objective_regularity.1, objective_regularity.2.1, objective_regularity.2.2,
+    run, successful_nontermination.1, successful_nontermination.2.1,
+    successful_nontermination.2.2, printed_cap, next_true_optimality,
+    obstruction_fails, step_bound_fails, decrease_bounds_fail.1, decrease_bounds_fail.2⟩
 
 end CartisGouldToint

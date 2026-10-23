@@ -1,0 +1,64 @@
+namespace = "HighOrderRegularization.ObstructionCounterexample"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "deriv_objective"
+
+[[node]]
+id = "decrement_one"
+
+[[node]]
+id = "criticality_one"
+
+[[node]]
+id = "model_formula"
+
+[[node]]
+id = "deriv_model"
+
+[[node]]
+id = "step_computation"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "data"
+
+[[node]]
+id = "point_mem"
+
+[[node]]
+id = "ratio_lower"
+
+[[node]]
+id = "check"
+
+[[node]]
+id = "modelTrace"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "objective_regularity"
+
+[[node]]
+id = "successful_nontermination"
+
+[[node]]
+id = "printed_cap"
+
+[[node]]
+id = "obstruction_fails"
+
+[[node]]
+id = "next_true_optimality"
+
+[[node]]
+id = "step_bound_fails"
+
+[[node]]
+id = "decrease_bounds_fail"

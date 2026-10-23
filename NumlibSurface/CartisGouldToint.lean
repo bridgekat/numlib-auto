@@ -163,10 +163,11 @@ recorded on the relevant plan nodes. In particular:
   model solve and a legal small radius refutes the displayed coefficient.
   The optional detailed solver's convex unit-radius choice excludes that run;
   the lemma does not impose it. A separate companion uses both value errors.
-* Lemma 12.2.11's proved obstruction assumes failure of the true optimality
-  certificate. The original statement based on observable nontermination
-  remains open. Theorem 12.2.14 only promises to produce a certified iterate,
-  and its proved complexity bound preserves that conclusion.
+* The nontermination lower bounds in Lemmas 12.2.11--13 fail for an actual
+  quadratic-objective run with tiny positive-fraction model solves. Its literal
+  relative checks still select trials although true criticality already passes.
+  The valid companions require failure of the true optimality certificate.
+  The detailed-solver certificate-attainment complexity proof remains valid.
 
 No claim of completeness is made for the open analytic estimates, algorithm
 complexity theorems or sharpness constructions.
