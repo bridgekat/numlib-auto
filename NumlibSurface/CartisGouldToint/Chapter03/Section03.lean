@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Cubic.SecondOrder
 import Numlib.Optimization.Regularization.Cubic.ModifiedGradient
 import Numlib.Optimization.Regularization.Cubic.FirstOrder
 import Numlib.Optimization.Regularization.Cubic.Sharpness
@@ -203,5 +204,32 @@ theorem lemma_3_3_7 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
   rw [hstep i hi, ite_eq_left hs, EuclideanSpace.norm_gradient_eq]
   rw [EuclideanSpace.norm_gradient_eq] at hstat
   exact h.step_length_lower_of_modified hf hL (by linarith) hlip hi hstat
+
+/-- The finite-second-order AR2 model test (3.3.6) on the actual cubic-model
+Hessian, expressed equivalently on every unit direction. -/
+abbrev ar2SecondOrderStationary {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] (f : E → ℝ) (x s : E) (σ θ₂ : ℝ) : Prop :=
+  CubicRegularization.SecondOrderStationary f x s σ θ₂
+
+/-- **Lemma 3.3.8.** The actual model curvature test and the accepted-step
+rule imply (3.3.25) for the least actual Hessian eigenvalue at the next iterate.
+The proof differentiates the cubic penalty genuinely, including at a zero step.
+The source's unnumbered Hessian formula after (3.3.2) omits a factor `1/2`;
+the corrected derivative gives precisely the printed bound (3.3.25). -/
+theorem lemma_3_3_8 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin L θ₂ μ : ℝ} {N i : ℕ}
+    (h : ar2ModelTrace f x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L) (hθ : 0 < θ₂)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖)
+    (hstep : ∀ j < N, x (j + 1) = if η₁ ≤ ρ j then x j + s j else x j)
+    (hi : i < N) (hs : η₁ ≤ ρ i)
+    (hstat : ar2SecondOrderStationary f (x i) (s i) (σ i) θ₂)
+    (u : EuclideanSpace ℝ (Fin n))
+    (hleast : SecondOrderTrustRegion.IsLeastEigenpair f (x (i + 1)) μ u) (hμ : μ < 0) :
+    |μ| / (L + θ₂ + max (σ 0) (γ₃ * L / (1 - η₂))) ≤ ‖s i‖ := by
+  have he := hleast.eigenvector
+  rw [hstep i hi, ite_eq_left hs] at he
+  exact h.step_length_lower_secondOrder hf hL hθ hlip hi hstat u hleast.unit he hμ
 
 end CartisGouldToint

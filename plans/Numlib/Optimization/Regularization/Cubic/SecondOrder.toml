@@ -1,0 +1,40 @@
+namespace = "CubicRegularization"
+
+[[node]]
+id = "penaltySecondDerivative"
+
+[[node]]
+id = "penaltySecondDerivative_zero"
+
+[[node]]
+id = "norm_derivative_apply"
+
+[[node]]
+id = "penaltySecondDerivative_apply"
+
+[[node]]
+id = "hasFDerivAt_norm_smul_inner_zero"
+
+[[node]]
+id = "hasFDerivAt_penaltyGradient"
+
+[[node]]
+id = "hasFDerivAt_fderiv_model"
+
+[[node]]
+id = "fderiv_fderiv_model"
+
+[[node]]
+id = "norm_penaltySecondDerivative_le"
+
+[[node]]
+id = "SecondOrderStationary"
+
+[[node]]
+id = "trial_curvature_lower"
+
+[[node]]
+id = "secondOrderStationary_iff_leastEigenvalue"
+
+[[node]]
+id = "ModelTrace.step_length_lower_secondOrder"

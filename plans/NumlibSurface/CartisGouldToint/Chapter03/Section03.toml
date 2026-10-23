@@ -185,21 +185,11 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 id = "lemma_3_3_7"
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.3.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3333)"
 
+# The unnumbered model Hessian display after (3.3.2) is missing a factor 1/2.
+# The actual derivative of σ||s||³/6 has penalty Hessian coefficient σ/2 and
+# operator norm at most σ||s||, giving the unchanged printed bound (3.3.25).
 [[node]]
 id = "lemma_3_3_8"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.3.8: Lower bound on the length of the step (second order)
-
-Suppose that f.HL holds. Then, if iteration \( k \) of the AR2 algorithm with \( {\epsilon }_2 \in  (0,1\rbrack \) is successful and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{k + 1}\right) }\right\rbrack   < 0 \) , one has that
-
-\[
-\begin{Vmatrix}{s}_k\end{Vmatrix} \geq  \frac{1}{{L}_{f,2} + {\theta }_2 + {\sigma }_{\max }}\left| {{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{k + 1}\right) }\right\rbrack  }\right| .\tag{3.3.25}
-\]
-'''
-deps = ["ar2Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.3.8 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3361)"
 
 [[node]]
@@ -248,3 +238,6 @@ id = "ar2ModelTrace"
 
 [[node]]
 id = "ar2FirstOrderRun"
+
+[[node]]
+id = "ar2SecondOrderStationary"
