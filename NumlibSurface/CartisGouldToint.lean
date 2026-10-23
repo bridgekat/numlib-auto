@@ -33,6 +33,7 @@ import NumlibSurface.CartisGouldToint.Chapter10.Section03
 import NumlibSurface.CartisGouldToint.Chapter12.Section01
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 import NumlibSurface.CartisGouldToint.Chapter13.Section01
+import NumlibSurface.CartisGouldToint.Chapter13.Section02
 import NumlibSurface.CartisGouldToint.Chapter13.Section03
 import NumlibSurface.CartisGouldToint.Chapter14.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
@@ -147,6 +148,11 @@ recorded on the relevant plan nodes. In particular:
   phase-one return, inner solve and target reset pass every merit stopping check.
   The first Lagrangian bound forces the multiplier to zero, where a feasible
   tangent direction refutes the printed second-order bound.
+
+* Lemma 5.3.6(ii)'s final positive gap need only exceed `Γ_square`.
+  A smooth quadratic with final positive gap `9/16` and threshold `1/4`
+  refutes the printed unnormalized lower bound one. Its corrected companion
+  retains all three convergence regimes and exact finite attainment.
 
 * Theorem 5.3.9's current-measure convergence claim fails for a smooth objective
   and a continuous measure on the Euclidean plane: all trials can satisfy the

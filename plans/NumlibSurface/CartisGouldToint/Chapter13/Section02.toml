@@ -36,18 +36,8 @@ deps = ["theorem_13_1_8", "theorem_13_1_19"]
 
 [[node]]
 id = "theorem_13_2_1_uniform_trustRegion"
-kind = "theorem"
-desc = """
-Corrected TRqIDA cost-transfer companion. A uniform primitive stencil cap C is fixed before every accuracy and actual execution. Every actual objective or positive-order derivative evaluation is simulated by a finite list of calls labeled with degrees at most o<=q. Summing those actual batches, then applying the completed genuine TRqIDA certificate/evaluation theorem and absorbing logarithmic overhead, gives a fixed kappa times epsilon_min^(-(q+1)) bound. This is conditional cost transfer for a uniformly bounded scheme; no finite-difference construction is asserted, and the literal theorem remains open.
-"""
 source = "Cartis, Gould and Toint, Theorem13.2.1, corrected uniform-cost trust-region companion"
-deps = ["theorem_13_1_8"]
 
 [[node]]
 id = "theorem_13_2_1_uniform_regularization"
-kind = "theorem"
-desc = """
-Corrected ARqpIDA cost-transfer companion with uniform primitive stencil cap fixed before accuracy/execution. Actual finite batches of lower-degree calls inherit a genuine first Taylor-criticality certificate from the complete operational theorem. Their summed costs are bounded by fixed kappa times epsilon_min^(-R), with R=(p+1)/(p-q+1) for q<=2 and R=q(p+1)/p otherwise. Worst-component rate normalization and logarithmic absorption are proved. No derivative-approximation construction is claimed; unrestricted finite schemes and the literal best-component extrema stay open.
-"""
 source = "Cartis, Gould and Toint, Theorem13.2.1, corrected uniform-cost regularization companion"
-deps = ["theorem_13_1_19"]

@@ -409,6 +409,7 @@ import Numlib.Analysis.SpecialFunctions.Pow.Absolute
 import Numlib.Analysis.SpecialFunctions.Pow.Cascading
 import Numlib.Analysis.SpecialFunctions.Pow.Deriv
 import Numlib.Analysis.SpecialFunctions.Pow.Differences
+import Numlib.Analysis.SpecialFunctions.Pow.ExplicitRecurrence
 import Numlib.Analysis.SpecialFunctions.Pow.GeometricBudget
 import Numlib.Analysis.SpecialFunctions.Pow.ImplicitRecurrence
 import Numlib.Analysis.SpecialFunctions.Pow.MixedSum
@@ -718,6 +719,7 @@ import Numlib.Nonlinear.Secant
 import Numlib.ODE.Multistep
 import Numlib.ODE.OneStep
 import Numlib.ODE.RungeKutta
+import Numlib.Optimization.Composite.ConvexRadius
 import Numlib.Optimization.Composite.DerivativeBounds
 import Numlib.Optimization.Composite.ModelCriticality
 import Numlib.Optimization.Composite.ModelError
@@ -728,6 +730,10 @@ import Numlib.Optimization.Composite.Origin
 import Numlib.Optimization.Composite.OuterCounterexample
 import Numlib.Optimization.Composite.Perturbation
 import Numlib.Optimization.Composite.Regularization
+import Numlib.Optimization.Composite.Run
+import Numlib.Optimization.Composite.RunConsequences
+import Numlib.Optimization.Composite.RunStepPowers
+import Numlib.Optimization.Composite.StepPowers
 import Numlib.Optimization.Composite.TaylorDecrease
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained.Equality
@@ -735,6 +741,8 @@ import Numlib.Optimization.Constrained.Inequality
 import Numlib.Optimization.Constrained.LagrangianStability
 import Numlib.Optimization.Constrained.Optimality
 import Numlib.Optimization.Constrained.Restriction
+import Numlib.Optimization.Constrained.TargetCounterexample
+import Numlib.Optimization.Constrained.TargetCriticality
 import Numlib.Optimization.Constrained.TargetMerit
 import Numlib.Optimization.Constrained
 import Numlib.Optimization.Descent.LowerPoint
@@ -742,7 +750,9 @@ import Numlib.Optimization.Descent
 import Numlib.Optimization.EvaluationComplexity.AccuracyUpdates
 import Numlib.Optimization.EvaluationComplexity.Decrease
 import Numlib.Optimization.EvaluationComplexity.Density
+import Numlib.Optimization.EvaluationComplexity.OracleSimulation.Counts
 import Numlib.Optimization.EvaluationComplexity.ParameterUpdates
+import Numlib.Optimization.EvaluationComplexity.Points
 import Numlib.Optimization.EvaluationComplexity.TrialCounting
 import Numlib.Optimization.EvaluationComplexity.TrialParameterBounds
 import Numlib.Optimization.EvaluationComplexity.TrialRadius
@@ -764,6 +774,7 @@ import Numlib.Optimization.HighOrder.ModelSolve.Halving
 import Numlib.Optimization.HighOrder.ModelSolve.Reductions
 import Numlib.Optimization.HighOrder.ModelSolve.Sharp
 import Numlib.Optimization.HighOrder.ModelSolve.Uniform
+import Numlib.Optimization.HighOrder.ModelSolve.UnitCriticality
 import Numlib.Optimization.HighOrder.RestrictedCriticality
 import Numlib.Optimization.HighOrder.StepCoefficient
 import Numlib.Optimization.HighOrder.StepLower
@@ -801,7 +812,9 @@ import Numlib.Optimization.MeasureDomination.Linear
 import Numlib.Optimization.MeasureDomination.Polynomial
 import Numlib.Optimization.MeasureDomination.Regularization
 import Numlib.Optimization.MeasureDomination.Superlinear
+import Numlib.Optimization.MeasureDomination.ThresholdCounterexample
 import Numlib.Optimization.MeasureDomination.TrustRegion
+import Numlib.Optimization.MeasureDomination.TrustRegionRates
 import Numlib.Optimization.Newton.Sharpness
 import Numlib.Optimization.Quadratic.HardCase.Classification
 import Numlib.Optimization.Quadratic.HardCase.Iteration
@@ -856,6 +869,7 @@ import Numlib.Optimization.Regularization.HighOrder.Run
 import Numlib.Optimization.Regularization.HighOrder.RunBounds
 import Numlib.Optimization.Regularization.HighOrder.RunBudget
 import Numlib.Optimization.Regularization.HighOrder.RunTarget
+import Numlib.Optimization.Regularization.HighOrder.Sharpness.CriticalityModel
 import Numlib.Optimization.Regularization.HighOrder.Sharpness.Data
 import Numlib.Optimization.Regularization.HighOrder.Sharpness.Execution
 import Numlib.Optimization.Regularization.HighOrder.Sharpness.Model
@@ -866,6 +880,12 @@ import Numlib.Optimization.Regularization.Inexact.Complexity
 import Numlib.Optimization.Regularization.Inexact.ComplexityConstants
 import Numlib.Optimization.Regularization.Inexact.CriticalityError
 import Numlib.Optimization.Regularization.Inexact.ExecutionBounds
+import Numlib.Optimization.Regularization.Inexact.Explicit.Accuracy
+import Numlib.Optimization.Regularization.Inexact.Explicit.Budget
+import Numlib.Optimization.Regularization.Inexact.Explicit.Caps
+import Numlib.Optimization.Regularization.Inexact.Explicit.Complexity
+import Numlib.Optimization.Regularization.Inexact.Explicit.Constants
+import Numlib.Optimization.Regularization.Inexact.Explicit.Counting
 import Numlib.Optimization.Regularization.Inexact.Explicit.Decrease
 import Numlib.Optimization.Regularization.Inexact.Explicit.Obstruction
 import Numlib.Optimization.Regularization.Inexact.Explicit.Radius
@@ -873,7 +893,10 @@ import Numlib.Optimization.Regularization.Inexact.Explicit.Run
 import Numlib.Optimization.Regularization.Inexact.Explicit.Selection
 import Numlib.Optimization.Regularization.Inexact.Explicit.StepPowers
 import Numlib.Optimization.Regularization.Inexact.Explicit.Stopping
+import Numlib.Optimization.Regularization.Inexact.Explicit.Termination
 import Numlib.Optimization.Regularization.Inexact.ModelDecrease
+import Numlib.Optimization.Regularization.Inexact.OracleSimulation.Complexity
+import Numlib.Optimization.Regularization.Inexact.OracleSimulation.Rates
 import Numlib.Optimization.Regularization.Inexact.Parameter
 import Numlib.Optimization.Regularization.Inexact.ParameterCounterexample
 import Numlib.Optimization.Regularization.Inexact.ParameterFunctionCounterexample
@@ -907,6 +930,7 @@ import Numlib.Optimization.Regularization.ModelCriticality
 import Numlib.Optimization.Regularization.ModelLipschitz
 import Numlib.Optimization.Regularization.ModelMinimum
 import Numlib.Optimization.Regularization.ModelSharp
+import Numlib.Optimization.Regularization.Monomial
 import Numlib.Optimization.SecondOrder.QuadraticConvergence
 import Numlib.Optimization.SecondOrder.ShiftedNewton
 import Numlib.Optimization.Sharpness.Curvature
@@ -928,6 +952,7 @@ import Numlib.Optimization.TrustRegion.Inexact.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.Decrease
 import Numlib.Optimization.TrustRegion.Inexact.FunctionRadius
 import Numlib.Optimization.TrustRegion.Inexact.FunctionValues
+import Numlib.Optimization.TrustRegion.Inexact.OracleSimulation.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.Radius
 import Numlib.Optimization.TrustRegion.Inexact.RadiusConsequences
 import Numlib.Optimization.TrustRegion.Inexact.Run
