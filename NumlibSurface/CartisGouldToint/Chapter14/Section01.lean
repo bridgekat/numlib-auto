@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.FunctionDecreaseCounterexample
 import Numlib.Optimization.Composite.Sharpness
 import Numlib.Optimization.Composite.ZeroReturnCounterexample
 import Numlib.Optimization.Composite.Complexity
@@ -393,7 +394,6 @@ theorem theorem_14_1_10_detailed_solver {n m p q : ℕ} (P : Composite.Settings 
     exact Composite.complexity_general P f c hf hcv hLf
       (mul_nonneg (Real.sqrt_nonneg _) hLc) hh hlipf hlipv hlow
 
-
 /-- **Counterexample to literal Lemma 14.1.4.** Legal outer Step2 exits for a
 convex outer function and q=1. The sole produced point has no certifying radius.
 The positive global-gap condition of detailed Algorithm 14.1.2 excludes it. -/
@@ -436,7 +436,6 @@ theorem theorem_14_1_10_counterexample :
         (fun _ : ℝ => (0 : ℝ)) abs (fun _ => 1 / 2) z δ :=
   Composite.ZeroReturnCounterexample.verified_counterexample
 
-
 /-- **Corollary 14.1.11.** For every p≥1, fixed legal settings and uniform
 problem constants precede accuracy. A genuine bounded smooth scalar objective,
 zero residual and nonzero convex outer function admit actual ARqpC executions
@@ -475,5 +474,34 @@ theorem corollary_14_1_11 {p : ℕ} (hp : 1 ≤ p) :
     Composite.exists_first_order_sharpness hp⟩
   intro j hj x y
   simp
+
+/-- **Counterexample to literal Lemma 14.1.9.** An actual accepted detailed-solver
+trial decreases the full composite objective and increases its smooth scalar
+part f. It is the last trial before the successful endpoint check. The printed
+statement requires only nontermination before this trial, and imposes no failure
+of the next-iterate test. A valid decrease statement concerns w=f+h∘c.
+-/
+theorem lemma_14_1_9_counterexample :
+    let f := Composite.FunctionDecreaseCounterexample.f
+    let c := Composite.FunctionDecreaseCounterexample.c
+    let settings := Composite.FunctionDecreaseCounterexample.settings
+    let data := Composite.FunctionDecreaseCounterexample.data
+    ContDiff ℝ 1 f ∧ ContDiff ℝ 1 c ∧
+    (∀ x y, ‖iteratedFDeriv ℝ 1 f x - iteratedFDeriv ℝ 1 f y‖ ≤ 1 * ‖x - y‖) ∧
+    (∀ x y, ‖iteratedFDeriv ℝ 1 c x - iteratedFDeriv ℝ 1 c y‖ ≤ 1 * ‖x - y‖) ∧
+    (∀ x, 0 ≤ f x + |c x|) ∧
+    LipschitzWith 1 (abs : ℝ → ℝ) ∧ ConvexOn ℝ Set.univ (abs : ℝ → ℝ) ∧
+    (∀ u v : ℝ, |u + v| ≤ |u| + |v|) ∧ |(0 : ℝ)| = 0 ∧
+    Composite.Run f c abs settings (fun _ : Fin 1 => 1 / 4) data 1 ∧
+    settings.eta1 ≤ data.ratio 0 ∧
+    max settings.sigmaInitial
+      (settings.gamma3 * (1 + 1 * 1) / (1 - settings.eta2)) = 24 ∧
+    settings.sigmaMin / (2 : ℕ).factorial *
+      ((1 - settings.theta) / (3 * (1 : ℕ).factorial * (1 + (24 : ℝ)))) ^ 2 =
+        1 / 90000 ∧
+    f 0 + |c 0| - (f 1 + |c 1|) = 1 / 2 ∧ f 0 - f 1 = -(1 / 2) ∧
+    ¬settings.eta1 * (1 / 90000 : ℝ) * (1 / 4 : ℝ) ^ 2 ≤
+      f (data.point 0) - f (data.point 1) :=
+  Composite.FunctionDecreaseCounterexample.verified_counterexample
 
 end CartisGouldToint

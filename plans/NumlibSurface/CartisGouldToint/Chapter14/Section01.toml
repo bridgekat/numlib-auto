@@ -101,6 +101,7 @@ deps = ["lemma_14_1_7"]
 
 [[node]]
 id = "lemma_14_1_9"
+wrong = "The literal Equation14.1.33 claims decrease of f rather than the full composite objective w. Formal lemma_14_1_9_counterexample has f(x)=x/2,c(x)=x-1,h=abs,p=q=1,sigma=1/2,epsilon=1/4,unit radii and a genuine global model minimizing step1. The actual detailed run has ratio1, legal constant parameter updates, initial criticality1/2 and terminal criticality0. Its full objective decreases by1/2 while f increases by1/2, violating the printed positive bound. The trial is the final accepted trial before the endpoint check; the literal numbered statement includes every trial before termination and does not assume failure of the next-iterate test. Valid full-objective decrease and rate results remain in RunBudget and the detailed-solver complexity companion."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -211,3 +212,7 @@ source = "Counterexample to literal Lemma14.1.4 via permitted outer Algorithm14.
 [[node]]
 id = "theorem_14_1_10_counterexample"
 source = "Counterexample to literal Theorem14.1.10 via permitted outer zero exit, including convex unit-radius policy"
+
+[[node]]
+id = "lemma_14_1_9_counterexample"
+source = "Counterexample to literal Lemma14.1.9, Equation14.1.33: genuine accepted composite step increases f while decreasing w"
