@@ -1,0 +1,13 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "exists_first_trial_stop_one"
+
+[[node]]
+id = "log_le_inverse_power"
+
+[[node]]
+id = "detailed_bound_le_envelope_one"
+
+[[node]]
+id = "exists_uniform_complexity_one"

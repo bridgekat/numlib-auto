@@ -30,35 +30,12 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_5_5_7"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 5.5.7: Complexity of finding first- and second-order critical points by the \( \mathrm{AR}p - \mathrm{H} \) algorithm
-
-Suppose that \( \mathbf{f}.\mathbf{Bb} \) and \( \mathbf{f}.\mathbf{DpH} \) hold and that \( r \geq  p + {\beta }_p \) . Then there exist positive constants \( {\kappa }_{\mathrm{ARP} - \mathrm{H}}^S,{\kappa }_{\mathrm{ARP} - \mathrm{H}}^A,{\kappa }_{\mathrm{ARP} - \mathrm{H},1}^B,{\kappa }_{\mathrm{ARP} - \mathrm{H},2}^B \) and \( {\kappa }_{\mathrm{ARP} - \mathrm{H}}^C \) for which the \( \mathrm{ARp} - \mathrm{H} \) algorithm (p. 161) requires at most
-
-\[
-{\# }_{\mathrm{{ARp}} - \mathrm{H},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARp}}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\min \left\lbrack  {{\epsilon }_{1}^{\frac{p + {\beta }_{p}}{p + {\beta }_{p} - 1}},{\epsilon }_{2}^{\frac{p + {\beta }_{p}}{p + {\beta }_{p} - 2}}}\right\rbrack  } + {\kappa }_{\mathrm{{ARp}} - \mathrm{H},1}^{B}\left| {\log {\epsilon }_{1}}\right|  + {\kappa }_{\mathrm{{ARp}} - \mathrm{H},2}^{B}\left| {\log {\epsilon }_{2}}\right|  + {\kappa }_{\mathrm{{ARp}} - \mathrm{H}}^{C}
-\]
-
-\[
-= \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_1^{-\frac{p + {\beta }_p}{p + {\beta }_p - 1}},{\epsilon }_2^{-\frac{p + {\beta }_p}{p + {\beta }_p - 2}}}\right\rbrack  }\right)
-\]
-
-(5.5.52)
-
-evaluations of \( f \) and its derivatives of order one and (when \( {\epsilon }_2 < \infty \) ) two and at most
-
-\[
-{\# }_{{}_{\mathtt{{AR}}\mathtt{p} - \mathtt{H},2}}^{D}\overset{\text{ def }}{ = }{\kappa }_{{}_{\mathtt{{AR}}\mathtt{p} - \mathtt{H}}}^{s}\frac{f\left( {x}_{0}\right)  - {f}_{{}_{\mathtt{A}\mathtt{p}\mathtt{r}}}}{\min \left\lbrack  {{\epsilon }_{1}^{\frac{p + {\beta }_{{}_{p}}}{p + {\beta }_{{}_{p}} - 1}},{\epsilon }_{2}^{\frac{p + {\beta }_{{}_{p}}}{p + {\beta }_{{}_{p}} - 2}}}\right\rbrack  } + 1 = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-\frac{p + {\beta }_{{}_{p}}}{p + {\beta }_{{}_{p}} - 1}},{\epsilon }_{2}^{-\frac{p + {\beta }_{{}_{p}}}{p + {\beta }_{{}_{p}} - 2}}}\right\rbrack  }\right)
-\]
-
-evaluations of derivatives of the remaining orders up to \( p \) of \( f \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_2 \) .
-'''
-deps = ["lemma_5_5_6", "lemma_2_4_1", "theorem_4_1_5", "theorem_1_1_2", "universalArpRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.5.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7652)"
 
 [[node]]
 id = "theorem_5_5_7_two"
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.5.7, finite second-order accuracy branch"
+
+[[node]]
+id = "theorem_5_5_7_one"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.5.7, disabled second-order test"

@@ -1,4 +1,4 @@
-import Numlib.Optimization.Regularization.Universal.Complexity
+import Numlib.Optimization.Regularization.Universal.FirstComplexity
 
 /-!
 # Universal regularization with real powers
@@ -173,6 +173,71 @@ tests through `checkAt_guarantee`. All three initialized evaluation schedules
 satisfy the displayed bounds, including the remaining-derivative `+1`.
 The uniform reciprocal-accuracy envelope is exactly the maximum of the two
 printed negative powers by `reciprocal_accuracy_eq_rate`.
-The first-order-only branch is retained separately in the original plan. -/
+The first-order-only branch is supplied by `theorem_5_5_7_one`. -/
 alias theorem_5_5_7_two := UniversalRegularization.exists_uniform_complexity_two
+/-- First-order-only evaluation counts with the second-order test explicitly disabled. -/
+alias theorem_5_5_7_one := UniversalRegularization.exists_uniform_complexity_one
+
+section FullUniversalComplexity
+open UniversalRegularization
+
+/-- **Theorem5.5.7.** Both optional-second-test branches have fixed positive
+constants before every requested accuracy and every actual execution. The
+literal first check supplies the true derivative output conditions through
+`checkAt_guarantee`. The three initialized evaluation schedules obey the printed
+powers and logarithms, and their common uniform envelope is the stated rate.
+As required by the printed denominators, the first branch has p+β>1 and the
+enabled second-order branch has p+β>2. -/
+theorem theorem_5_5_7 {n p : ℕ} (P : Settings p)
+    {f : EuclideanSpace ℝ (Fin n) → ℝ} (hf : ContDiff ℝ p f) {H β flow : ℝ}
+    (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
+    (hholder : ∀ y z,
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ H * ‖y - z‖ ^ β)
+    (ha : 1 < (p : ℝ) + β) (har : (p : ℝ) + β ≤ P.r) (hlow : ∀ x, flow ≤ f x) :
+    (∃ κS > 0, ∃ κA > 0, ∃ κB1 > 0, ∃ κC > 0, ∃ κO > 0,
+      ∀ ε1 : ℝ, 0 < ε1 → ε1 ≤ 1 → ∀ D : Data (EuclideanSpace ℝ (Fin n)),
+      (∀ N, (¬Stops f ε1 none (D.point 0) ∧
+        ∀ i < N, ¬Stops f ε1 none (D.point i + D.step i)) →
+          Run f P ε1 none D N ∧
+            Step f P none (D.point N) (D.step N) (D.parameter N)) →
+      ∃ K, checkAt f ε1 none D K ∧
+        (∀ i < K, ¬checkAt f ε1 none D i) ∧
+        (K ≠ 0 → Run f P ε1 none D (K - 1) ∧
+          Step f P none (D.point (K - 1)) (D.step (K - 1)) (D.parameter (K - 1))) ∧
+        (functionEvaluations K : ℝ) ≤
+          κA * (f (D.point 0) - flow) / (ε1 ^ (((p : ℝ) + β) / ((p : ℝ) + β - 1))) + κB1
+            * |Real.log ε1| + κC ∧
+        (lowDerivativeEvaluations K : ℝ) ≤
+          κA * (f (D.point 0) - flow) / (ε1 ^ (((p : ℝ) + β) / ((p : ℝ) + β - 1))) + κB1
+            * |Real.log ε1| + κC ∧
+        (highDerivativeEvaluations f P none D K : ℝ) ≤
+          κS * (f (D.point 0) - flow) / (ε1 ^ (((p : ℝ) + β) / ((p : ℝ) + β - 1))) + 1 ∧
+        max (max (functionEvaluations K : ℝ) (lowDerivativeEvaluations K : ℝ))
+          (highDerivativeEvaluations f P none D K : ℝ) ≤
+            κO * (f (D.point 0) - flow + 1) / (ε1 ^ (((p : ℝ) + β) / ((p : ℝ) + β - 1)))) ∧
+    (2 < (p : ℝ) + β →
+    (∃ κS > 0, ∃ κA > 0, ∃ κB1 > 0, ∃ κB2 > 0, ∃ κC > 0, ∃ κO > 0,
+      ∀ ε1 ε2 : ℝ, 0 < ε1 → ε1 ≤ 1 → 0 < ε2 → ε2 ≤ 1 → ∀ D : Data (EuclideanSpace ℝ (Fin n)),
+      (∀ N, (¬Stops f ε1 (some ε2) (D.point 0) ∧
+        ∀ i < N, ¬Stops f ε1 (some ε2) (D.point i + D.step i)) →
+          Run f P ε1 (some ε2) D N ∧
+            Step f P (some ε2) (D.point N) (D.step N) (D.parameter N)) →
+      ∃ K, checkAt f ε1 (some ε2) D K ∧
+        (∀ i < K, ¬checkAt f ε1 (some ε2) D i) ∧
+        (K ≠ 0 → Run f P ε1 (some ε2) D (K - 1) ∧
+          Step f P (some ε2) (D.point (K - 1)) (D.step (K - 1)) (D.parameter (K - 1))) ∧
+        (functionEvaluations K : ℝ) ≤
+          κA * (f (D.point 0) - flow) / accuracyFactor ((p : ℝ) + β) ε1 ε2 +
+            κB1 * |Real.log ε1| + κB2 * |Real.log ε2| + κC ∧
+        (lowDerivativeEvaluations K : ℝ) ≤
+          κA * (f (D.point 0) - flow) / accuracyFactor ((p : ℝ) + β) ε1 ε2 +
+            κB1 * |Real.log ε1| + κB2 * |Real.log ε2| + κC ∧
+        (highDerivativeEvaluations f P (some ε2) D K : ℝ) ≤
+          κS * (f (D.point 0) - flow) / accuracyFactor ((p : ℝ) + β) ε1 ε2 + 1 ∧
+        max (max (functionEvaluations K : ℝ) (lowDerivativeEvaluations K : ℝ))
+          (highDerivativeEvaluations f P (some ε2) D K : ℝ) ≤
+            κO * (f (D.point 0) - flow + 1) / accuracyFactor ((p : ℝ) + β) ε1 ε2)) := by
+  exact ⟨exists_uniform_complexity_one P hf hH hβ hβ1 hholder ha har hlow,
+    fun ha2 => exists_uniform_complexity_two P hf hH hβ hβ1 hholder ha2 har hlow⟩
+end FullUniversalComplexity
 end CartisGouldToint

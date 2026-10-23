@@ -1,0 +1,10 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "decreaseCoefficientOne_pos"
+
+[[node]]
+id = "Run.successful_card_le_one"
+
+[[node]]
+id = "Run.iterations_le_one"
