@@ -1,0 +1,32 @@
+namespace = "QuadraticSecular.PencilBasis"
+
+
+[[node]]
+id = "transformed_eq"
+
+[[node]]
+id = "contDiffAt_transformed"
+
+[[node]]
+id = "strictAntiOn_transformed"
+
+[[node]]
+id = "strictMonoOn_transformed"
+
+[[node]]
+id = "strictConvexOn_transformed"
+
+[[node]]
+id = "concaveOn_transformed"
+
+[[node]]
+id = "strictConcaveOn_transformed"
+
+[[node]]
+id = "transformed_tendsto_zero"
+
+[[node]]
+id = "transformed_tendsto_atTop"
+
+[[node]]
+id = "transformed_right_limit"

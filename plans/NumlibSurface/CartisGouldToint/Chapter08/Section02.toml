@@ -23,47 +23,11 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "corollary_8_2_4"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Corollary 8.2.4: Monotonicity of transformed secular function
-
-The transformed secular function (8.2.17) is strictly decreasing from \( \pi \left( {{\lambda }_s;\beta }\right) \) to zero and strictly convex for \( \lambda  \in  \left( {{\lambda }_s,\infty }\right) \) when \( \beta  > 0 \) and strictly increasing from \( \pi \left( {{\lambda }_s;\beta }\right) \) to infinity and concave for \( \lambda  \in  \left( {{\lambda }_s,\infty }\right) \) when \( \beta  \in  \lbrack  - 1/2,0) \) .
-
-Documented source/OCR correction and formalization requirements: Missing hypothesis correction: require g≠0 for strict monotonicity and the stated endpoint-at-infinity limits. Convexity is strict for β>0. Concavity at β=−1/2 is not strict in general. Endpoint values at λs mean one-sided limits.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 8.2.4 (OCR Markdown line 9674)"
-deps = ["lemma_8_2_3"]
 
 [[node]]
 id = "theorem_8_2_5"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 8.2.5: Lower and upper first-order Taylor estimates of \( \pi \left( {\lambda ;\beta }\right) \)
-
-[Appendix to Chapter 8, p. 476]: Let \( \pi \left( {\lambda ;\beta }\right) \) be the transformed secular function (8.2.17). Suppose that the value \( {\lambda }_c \) and perturbation \( \delta \) satisfy \( {\lambda }_c > {\lambda }_s \) and \( \delta  > {\lambda }_s - {\lambda }_c \) . Let \( {t}_1\left( {\delta ;\beta }\right)  = \pi \left( {{\lambda }_c;\beta }\right)  + {\pi }^{\left( 1\right) }\left( {{\lambda }_c;\beta }\right) \delta \) be the first-order Taylor series approximation to \( \pi \left( {{\lambda }_c + \delta ;\beta }\right) \) . Then
-
-(i) for \( \beta  > 0 \) ,
-
-\[
-\pi \left( {{\lambda }_c + \delta ;\beta }\right)  \geq  {t}_1\left( {\delta ;\beta }\right)\tag{8.2.20}
-\]
-
-(ii) otherwise, for \( \beta  \in  \lbrack  - 1/2,0) \) ,
-
-\[
-\pi \left( {{\lambda }_c + \delta ;\beta }\right)  \leq  {t}_1\left( {\delta ;\beta }\right) .\tag{8.2.21}
-\]
-
-The inequalities in (8.2.20) and (8.2.21) are strict whenever \( g \neq  0 \) .
-
-Documented source/OCR correction and formalization requirements: Strictness correction: weak Taylor inequalities hold as written on the positive-base domain (g≠0 when β<0). Strictness also needs δ≠0. At β=−1/2 strictness additionally needs non-affinity, e.g. two distinct active eigenvalues; otherwise the transformed secular function can be affine and equality holds for all δ.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.5 (OCR Markdown line 9688)"
-deps = ["lemma_8_2_3"]
 
 [[node]]
 id = "theorem_8_2_6"
@@ -149,4 +113,9 @@ deps = ["regularizationSubproblemModel"]
 [[node]]
 id = "secularTaylorPolynomial"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation (8.2.12)"
+
+
+[[node]]
+id = "transformedFirstTaylorPolynomial"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.2, Equation (8.2.20)"
 

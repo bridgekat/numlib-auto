@@ -1,0 +1,23 @@
+namespace = "QuadraticSecular.PencilBasis"
+
+
+[[node]]
+id = "firstTaylor"
+
+[[node]]
+id = "firstTaylor_remainder"
+
+[[node]]
+id = "transformed_zero"
+
+[[node]]
+id = "firstTaylor_zero"
+
+[[node]]
+id = "firstTaylor_zero_step"
+
+[[node]]
+id = "firstTaylor_lower_pos_exponent"
+
+[[node]]
+id = "firstTaylor_upper_neg_exponent"

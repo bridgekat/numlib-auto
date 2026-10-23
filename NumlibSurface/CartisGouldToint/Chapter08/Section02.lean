@@ -1,4 +1,4 @@
-import Numlib.Optimization.Quadratic.Secular.Transform
+import Numlib.Optimization.Quadratic.Secular.FirstTaylor
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
 
 /-!
@@ -106,5 +106,68 @@ theorem lemma_8_2_3 {n : ℕ} [NeZero n]
           B.eigenvalue i ≠ B.eigenvalue j) →
           iteratedDeriv 2 (transformedSecularFunction H M g β) z < 0))) :=
   B.transformed_derivative_signs g β hz
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Corollary 8.2.4, with the necessary nonzero-gradient hypothesis. Positive
+powers are strictly decreasing to zero and strictly convex; powers in `[−1/2,0)`
+are strictly increasing to infinity and concave. Lower-endpoint values mean the
+extended-real right-hand limits asserted here, including a singular pencil. -/
+theorem corollary_8_2_4 {n : ℕ} [NeZero n]
+    {H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
+    (B : QuadraticSecular.PencilBasis (ι := Fin n) H M)
+    {g : EuclideanSpace ℝ (Fin n)} (hg : g ≠ 0) (β : ℝ) :
+    (β ≠ 0 → ∃ l : EReal,
+      Tendsto (fun z => (transformedSecularFunction H M g β z : EReal))
+        (𝓝[Set.Ioi B.edge] B.edge) (𝓝 l)) ∧
+    (0 < β → StrictAntiOn (transformedSecularFunction H M g β) (Set.Ioi B.edge) ∧
+      StrictConvexOn ℝ (Set.Ioi B.edge) (transformedSecularFunction H M g β) ∧
+      Tendsto (transformedSecularFunction H M g β) atTop (𝓝 0)) ∧
+    (-(1 / 2 : ℝ) ≤ β → β < 0 →
+      StrictMonoOn (transformedSecularFunction H M g β) (Set.Ioi B.edge) ∧
+      ConcaveOn ℝ (Set.Ioi B.edge) (transformedSecularFunction H M g β) ∧
+      Tendsto (transformedSecularFunction H M g β) atTop atTop) :=
+  ⟨fun hβ => B.transformed_right_limit hg hβ,
+    fun hβ => ⟨B.strictAntiOn_transformed hg hβ, B.strictConvexOn_transformed hg hβ,
+      B.transformed_tendsto_zero g hβ⟩,
+    fun hβlow hβ => ⟨B.strictMonoOn_transformed hg hβ, B.concaveOn_transformed hg hβ hβlow,
+      B.transformed_tendsto_atTop hg hβ⟩⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The actual first-order Taylor approximation used in (8.2.20)–(8.2.21). -/
+noncomputable abbrev transformedFirstTaylorPolynomial {n : ℕ}
+    (H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
+    (g : EuclideanSpace ℝ (Fin n)) (β z δ : ℝ) : ℝ :=
+  QuadraticSecular.PencilBasis.firstTaylor H M g β z δ
+
+/-- Theorem 8.2.5, with both necessary strictness corrections. Both displacement
+signs are included. A zero displacement gives equality. At exponent `−1/2`,
+strictness additionally requires two distinct active eigenvalues; an interior
+negative exponent already suffices. Positive exponents include the constant
+zero-gradient case, while negative powers require the positive-base domain. -/
+theorem theorem_8_2_5 {n : ℕ} [NeZero n]
+    {H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
+    (B : QuadraticSecular.PencilBasis (ι := Fin n) H M)
+    (g : EuclideanSpace ℝ (Fin n)) (β : ℝ)
+    {z δ : ℝ} (hz : B.edge < z) (hzδ : B.edge < z + δ) :
+    (0 < β → transformedFirstTaylorPolynomial H M g β z δ ≤
+        transformedSecularFunction H M g β (z + δ) ∧
+      (g ≠ 0 → δ ≠ 0 → transformedFirstTaylorPolynomial H M g β z δ <
+        transformedSecularFunction H M g β (z + δ))) ∧
+    (β < 0 → -(1 / 2 : ℝ) ≤ β → g ≠ 0 →
+      transformedSecularFunction H M g β (z + δ) ≤
+        transformedFirstTaylorPolynomial H M g β z δ ∧
+      (δ ≠ 0 → (-(1 / 2 : ℝ) < β ∨
+        ∃ i j, inner ℝ g (B.basis i) ≠ 0 ∧ inner ℝ g (B.basis j) ≠ 0 ∧
+          B.eigenvalue i ≠ B.eigenvalue j) →
+        transformedSecularFunction H M g β (z + δ) <
+          transformedFirstTaylorPolynomial H M g β z δ)) :=
+  ⟨fun hβ => B.firstTaylor_lower_pos_exponent g hβ hz hzδ,
+    fun hβ hβlow hg => B.firstTaylor_upper_neg_exponent hg hβ hβlow hz hzδ⟩
 
 end CartisGouldToint
