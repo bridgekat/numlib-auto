@@ -72,57 +72,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_5_3_5"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 5.3.5: Complexity for measure-dominated problems (adaptive regularization-like methods, \( \nu  > \mu \) )
-
-[Appendix to Chapter 5, p. 467]: Suppose that the objective function \( f \) is \( \psi \) - dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that an \( \mathrm{AR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( \nu  > \mu \) . Then the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge sublinearly to zero, and there exist positive constants \( {\kappa }_{\mathrm{AR},\mathrm{gap},3}^B \) , \( {\kappa }_{\mathrm{AR},\mathrm{gap},3}^C,{\kappa }_{\mathrm{AR},\mathrm{gap},3}^E \) , and \( {\kappa }_{\mathrm{AR},\mathrm{gap},3}^F \) such that the algorithm needs at most
-
-\[
-{\# }_{\mathrm{{AR}},\mathrm{{gap}},3}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},3}^{B}{\epsilon }^{-\frac{\nu  - \mu }{\mu }} + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},3}^{C} = \mathcal{O}\left( {\epsilon }^{-\frac{\nu  - \mu }{\mu }}\right)\tag{5.3.24}
-\]
-
-iterations and evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{AR}},\mathrm{{gap}},3}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},3}^{E}{\epsilon }^{-\frac{\nu  - \mu }{\mu }} + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},3}^{F} = \mathcal{O}\left( {\epsilon }^{-\frac{\nu  - \mu }{\mu }}\right)\tag{5.3.25}
-\]
-
-successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - {f}_{ * } \leq  \epsilon \) . Moreover, the optimality measures \( {\left\{  \psi \left( {x}_k\right) \right\}  }_{k \in  \mathcal{S}} \) also converge to zero sublinearly, and there exist positive constants \( {\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{B}},{\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{C}},{\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{C}} \; {\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{E}} \) , and \( {\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{F}} \) such that the algorithm needs at most
-
-\[
-{\# }_{\mathrm{{AR}},\mathrm{{dom}},3}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},3}^{B}{\epsilon }^{-\left( {\nu  - \mu }\right) } + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},3}^{C} = \mathcal{O}\left( {\epsilon }^{-\left( {\nu  - \mu }\right) }\right)\tag{5.3.26}
-\]
-
-iterations and evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{AR}},\mathrm{{dom}},3}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},3}^{E}{\epsilon }^{-\left( {\nu  - \mu }\right) } + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},3}^{F} = \mathcal{O}\left( {\epsilon }^{-\left( {\nu  - \mu }\right) }\right)\tag{5.3.27}
-\]
-
-successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \psi \left( {x}_{\epsilon }\right)  \leq  \epsilon \) .
-
-It is also interesting to consider the effect of the dependence of \( \nu \) on the degree of the model \( p \) on the evaluation complexity. Table 5.3.1 gives the relevant orders for a few low-degree cases when using the ARp algorithm and recalling (5.3.6)-(5.3.8). We see that these dominated complexity bounds are always better—and often substantially so-than the traditional \( \mathcal{O}\left( {\epsilon }^{-\nu }\right) \) one predicted by Theorem 4.1.5 (p. 107). The case of full-rank nonlinear least-squares is emblematic, since Theorem 5.3.3 implies that the ARp algorithm will converge superlinearly to zero on such problems using at most \( \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right) \) function and derivative evaluations.
-
-<table><tr><td>\( \mu \)</td><td>\( q \)</td><td>\( \nu \)</td><td>\( p = 1 \)</td><td>\( p = 2 \)</td><td>\( p = 3 \)</td><td>\( p = 4 \)</td></tr><tr><td rowspan="3">1</td><td>1</td><td>\( \frac{p + 1}{p} \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1/2}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1/3}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1/4}\right) \)</td></tr><tr><td>2</td><td>\( \frac{p + 1}{p - 1} \)</td><td>-</td><td>\( \mathcal{O}\left( {\epsilon }^{-2}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-2/3}\right) \)</td></tr><tr><td>3</td><td>\( \frac{p + 1}{p - 2} \)</td><td>-</td><td>-</td><td>\( \mathcal{O}\left( {\epsilon }^{-3}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-3/2}\right) \)</td></tr><tr><td rowspan="3">2</td><td>1</td><td>\( \frac{p + 1}{p} \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right| \right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right| \right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right| \right) \)</td></tr><tr><td>2</td><td>\( \frac{p + 1}{p - 1} \)</td><td>-</td><td>\( \mathcal{O}\left( {\epsilon }^{-1}\right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right| \right) \)</td></tr><tr><td>3</td><td>\( \frac{p + 1}{p - 1} \)</td><td>-</td><td>-</td><td>\( \mathcal{O}\left( {\epsilon }^{-2}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1/2}\right) \)</td></tr></table>
-
-Table 5.3.1. Evaluation-complexity bounds for reducing the gap below \( \epsilon \) (Theorems5.3.3,5.3.4, and 5.3.5) when using the \( \mathrm{AR}p \) algorithm and the measure \( {\phi }_q \) given by (5.3.6)-(5.3.8) for \( q \leq  3 \) to approximately minimize a \( \mu \) -dominated function.
-
-Referenced equation payloads:
-
-Equation (5.3.6):
-\[
-{\psi }_{1}\left( x\right)  = \begin{Vmatrix}{{\nabla }_{x}^{1}f\left( x\right) }\end{Vmatrix}\;\text{ with }\;\nu  = \frac{p + 1}{p}\text{ and }{\kappa }_{\nu } = {\kappa }_{1}.\tag{5.3.6}
-\]
-
-Equation (5.3.8):
-\[
-{\psi }_{3}\left( x\right)  = \mathop{\max }\limits_{{d \in  {\mathcal{M}}_{k + 1}}}\left| {{\nabla }_{x}^{3}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^{3}}\right| \text{ with }\nu  = \frac{p + 1}{p - 2}\text{ and }{\kappa }_{\nu } = {\kappa }_{3}.\tag{5.3.8}
-\]
-'''
-deps = ["theorem_4_1_5", "theorem_5_3_3", "lemma_2_3_5", "lemma_2_3_1", "lemma_5_3_1", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6424)"
 
 [[node]]
@@ -437,3 +386,6 @@ id = "measureDerivativeEvaluations"
 
 [[node]]
 id = "measureLogarithmicComplexity"
+
+[[node]]
+id = "measurePolynomialComplexity"

@@ -1,3 +1,4 @@
+import Numlib.Optimization.MeasureDomination.Polynomial
 import Numlib.Optimization.MeasureDomination.Linear
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Optimization.MeasureDomination.Regularization
@@ -110,5 +111,39 @@ theorem theorem_5_3_4 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
       measureLogarithmicComplexity (fun k => ψ (x k)) S :=
   ⟨hr.successful_tendsto_zero hd, hr.successful_linear hd heq,
     hr.gap_logarithmic hd heq, hr.measure_logarithmic hd heq⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Four positive constants before every accuracy bound the initialized function and derivative
+counts by affine functions of epsilon^(-q), at the first actual target-reaching iterate. -/
+def measurePolynomialComplexity (q : ℝ) (target : ℕ → ℝ) (S : Set ℕ) : Prop :=
+  MeasureDomination.PowerCost q target S
+
+/-- **Theorem 5.3.5.** Both actual successful gaps and measures converge with sublinear
+upper envelopes, and their initialized evaluation costs have the exact exponents
+(ν−μ)/μ and ν−μ from (5.3.24)–(5.3.27). A finite prefix does not affect the measure
+upper rate, which is expressed from the second successful point onward. Faster
+convergence and finite attainment are included. All constants precede every accuracy. -/
+theorem theorem_5_3_5 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
+    {fstar μ κψ ν κν κR κA : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    (hd : measureDominated f ψ fstar μ κψ) (hr : arMeasureRun f ψ x S ν κν κR κA)
+    (hμν : μ < ν) :
+    Tendsto (successfulObjectiveGap f fstar x S) atTop (𝓝 0) ∧
+      ((∀ j, successfulObjectiveGap f fstar x S j = 0) ∨
+        ∃ t : ℕ → ℝ, (∀ j, 0 < t j) ∧
+          (∀ j, successfulObjectiveGap f fstar x S j ≤ t j) ∧ Tendsto t atTop (𝓝 0) ∧
+          Tendsto (fun j => t (j + 1) / t j) atTop (𝓝 1)) ∧
+      Tendsto (fun j => ψ (x (measureSuccessIndex S j))) atTop (𝓝 0) ∧
+      ((∀ j, ψ (x (measureSuccessIndex S (j + 1))) = 0) ∨
+        ∃ t : ℕ → ℝ, (∀ j, 0 < t j) ∧
+          (∀ j, ψ (x (measureSuccessIndex S (j + 1))) ≤ t j) ∧ Tendsto t atTop (𝓝 0) ∧
+          Tendsto (fun j => t (j + 1) / t j) atTop (𝓝 1)) ∧
+      measurePolynomialComplexity ((ν - μ) / μ) (fun k => objectiveGap f fstar (x k)) S ∧
+      measurePolynomialComplexity (ν - μ) (fun k => ψ (x k)) S :=
+  ⟨hr.successful_tendsto_zero hd, hr.successful_sublinear_envelope hd hμν,
+    hr.successful_measure_tendsto_zero hd, hr.measure_sublinear_envelope hd hμν,
+    hr.gap_power_cost hd hμν, hr.measure_power_cost hd hμν⟩
 
 end CartisGouldToint

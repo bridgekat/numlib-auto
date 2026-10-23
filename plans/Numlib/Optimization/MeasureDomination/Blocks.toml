@@ -1,0 +1,16 @@
+namespace = "MeasureDomination"
+
+[[node]]
+id = "ARRun.next_success_point"
+
+[[node]]
+id = "ARRun.successful_measure_decrease"
+
+[[node]]
+id = "ARRun.first_measure_block"
+
+[[node]]
+id = "ARRun.successful_measure_le"
+
+[[node]]
+id = "ARRun.successful_measure_tendsto_zero"
