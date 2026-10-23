@@ -1,0 +1,7 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "exists_uniform_good_objectives"
+
+[[node]]
+id = "exists_good_criticality_witness"

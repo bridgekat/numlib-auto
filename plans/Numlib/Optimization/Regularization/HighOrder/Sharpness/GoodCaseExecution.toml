@@ -1,0 +1,16 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "good_optimalityCheck_of_matches"
+
+[[node]]
+id = "good_modelTrace_of_matches"
+
+[[node]]
+id = "goodSettings"
+
+[[node]]
+id = "goodData"
+
+[[node]]
+id = "goodRun_of_matches"

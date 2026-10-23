@@ -1,0 +1,40 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "goodScale"
+
+[[node]]
+id = "goodAmplitude"
+
+[[node]]
+id = "goodParameter"
+
+[[node]]
+id = "goodStep"
+
+[[node]]
+id = "goodScale_pos"
+
+[[node]]
+id = "goodScale_le_one"
+
+[[node]]
+id = "goodAmplitude_pos"
+
+[[node]]
+id = "goodParameter_pos"
+
+[[node]]
+id = "cancellationAmplitude_goodParameter"
+
+[[node]]
+id = "goodStep_pos"
+
+[[node]]
+id = "goodStep_le_scale"
+
+[[node]]
+id = "goodAmplitude_step_power"
+
+[[node]]
+id = "good_model_test_bound"

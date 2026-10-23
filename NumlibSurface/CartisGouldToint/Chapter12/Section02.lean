@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.Sharpness.GoodCaseWitness
 import Numlib.Optimization.Regularization.HighOrder.ZeroReturn
 import Numlib.Optimization.Regularization.HighOrder.ObstructionCounterexample
 import Numlib.Optimization.Regularization.HighOrder.Sharpness.CriticalityWitness
@@ -725,7 +726,8 @@ theorem arqpNonterminationLowerBoundsCounterexample :
     let S := max (D.parameter 0) (P.gamma3 * (1 : ℝ) / (1 - P.eta2))
     let κ := P.sigmaMin / 2 * ((1 - P.theta) / (2 * (1 + S))) ^ 2
     ContDiff ℝ 1 f ∧
-    (∀ x y, ‖iteratedFDeriv ℝ 1 f x - iteratedFDeriv ℝ 1 f y‖ ≤ (1 : ℝ) * ‖x - y‖) ∧
+    (∀ x y,
+      ‖iteratedFDeriv ℝ 1 f x - iteratedFDeriv ℝ 1 f y‖ ≤ (1 : ℝ) * ‖x - y‖) ∧
     (∀ x, 0 ≤ f x) ∧
     HighOrderRegularization.Run f P (fun _ => 9 / 10) D 2 ∧
     P.eta1 ≤ D.ratio 0 ∧ D.selected 1 ≠ none ∧
@@ -770,5 +772,42 @@ theorem arqpOuterZeroExitCounterexample :
     RegularizationZeroReturn.derivative_lipschitz, HighOrderRegularization.ZeroReturn.actual_exit,
     fun _ hδ => HighOrderRegularization.ZeroReturn.no_produced_certificate hδ,
     RegularizationZeroReturn.not_positive_fraction⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+open HighOrderRegularization.Sharpness InexactTrustRegion
+
+/-- **Theorem12.2.15**, every criticality order. Fixed settings and uniform
+regularity constants precede accuracy. A literal ARqp execution uses actual
+positive-fraction model solves and unit radii, fails the requested criticality
+at every earlier iterate, and passes at its final point. Its iteration and
+objective and derivative evaluation counts attain the exact source rate. -/
+theorem theorem_12_2_15 {p q : ℕ} (hq : 0 < q) (hqp : q ≤ p) :
+    ∃ L B : ℝ, 1 ≤ L ∧ 0 < B ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 →
+      ∃ f : ℝ → ℝ,
+        let N := horizon p (root p q ε)
+        let t := goodStep p q ε
+        let D := goodData p q N hq t
+        ContDiff ℝ p f ∧ (∀ x, |f x| ≤ B) ∧
+        (∀ j ≤ p, ∀ x y,
+          ‖iteratedFDeriv ℝ j f x - iteratedFDeriv ℝ j f y‖ ≤ L * ‖x - y‖) ∧
+        HighOrderRegularization.Run f (goodSettings hq hqp) (fun _ => ε) D N ∧
+        StrictMono D.point ∧
+        (∀ k, ∀ a : Fin q, D.radius k a = 1 ∧ D.solvedRadius k a = 1) ∧
+        D.selected N = none ∧
+        (∀ a : Fin q, TaylorModel.criticality f (modelOrder a) (D.point N) 1 ≤
+          ε / (modelOrder a).factorial) ∧
+        (∀ k < N, ε / q.factorial < TaylorModel.criticality f q (D.point k) 1) ∧
+        ε ^ (-((p + 1 : ℕ) : ℝ) / (p - q + 1 : ℕ)) ≤ (N : ℝ) ∧
+        HighOrderRegularization.functionEvaluations N = N + 1 ∧
+        ∀ j, 1 ≤ j → j ≤ p →
+          criticalityDerivativeEvaluations q j N =
+            (derivativeEvaluationNodes D.selected j N).card ∧
+          criticalityDerivativeEvaluations q j N = N + (if j ≤ q then 1 else 0) ∧
+          ε ^ (-((p + 1 : ℕ) : ℝ) / (p - q + 1 : ℕ)) ≤
+            (criticalityDerivativeEvaluations q j N : ℝ) :=
+  HighOrderRegularization.Sharpness.exists_good_criticality_witness hq hqp
 
 end CartisGouldToint

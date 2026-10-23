@@ -188,22 +188,7 @@ source = "Theorem 12.2.14: qth-order complexity for the ARqp algorithm with the 
 
 [[node]]
 id = "theorem_12_2_15"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 12.2.15: Slow qth-order convergence of the ARqp algorithm (good case)
-
-Suppose that the choice \( {\delta }_{{s}_k, j} = 1 \) is possible (and made) for all \( k \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) and that \( {\epsilon }_j = \epsilon  \leq  \frac{1}{2} \) for all \( j \) . Then the ARqp algorithm applied to minimize a function \( f \) satisfying \( f.{Bb} \) and \( F.{D1pL} \) may require
-
-\[
-{\epsilon }^{-\frac{p + 1}{p - q + 1}}
-\]
-
-iterations and evaluations of \( f \) and of its derivatives of order one up to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^1\left( {x}_{\epsilon }\right)  \leq  \epsilon /j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.15 (OCR Markdown line 13054)"
-deps = ["arqpRun"]
 
 [[node]]
 id = "corollary_12_2_16"
