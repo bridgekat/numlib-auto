@@ -1,0 +1,600 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 6, Section 2.
+
+Use the corrected signed criticality measures from Section 6.1. The algorithm maintains x_k and x_k+s_k in C and uses model criticality measures on translated feasible sets. f.DpL.C is ContDiff on an open neighborhood of C and a D^p Lipschitz bound for x,y∈C; C need not be bounded. ARp1-CC is the first-order variant with its distinct step test.
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+#### 6.2.1 The ARp-CC algorithm
+
+The resulting ARp-CC algorithm is the obvious generalization of the ARp algorithm (p. 100) to cope with convex constraints. Progress at the \( k \) th iteration is ensured by computing a step \( {s}_k \) to approximately minimize the model \( {m}_k\left( s\right) \) defined in (4.1.2) within the region \( {x}_k + s \in  \mathcal{C} \) . To be precise, consider the model counterpart of the special feasible sets (6.1.2), (6.1.8), and (6.1.10), namely,
+
+\[
+\begin{gathered}{\mathcal{M}}_{k}^{0}\left( s\right) \overset{\text{ def }}{ = }\mathcal{C}\left( {{x}_{k} + s}\right) \\ {\mathcal{M}}_{k}^{1}\left( s\right) \overset{\text{ def }}{ = }\left\{  {d \in  {\mathcal{M}}_{k}^{0}\left( s\right) \left| \right| \left\langle  {d,{\nabla }_{s}^{1}{m}_{k}\left( s\right) }\right\rangle   \mid   \leq  {\theta }_{1}{\epsilon }_{1}}\right\}\end{gathered}\tag{6.2.1}
+\]
+
+and
+
+\[
+{\mathcal{M}}_{k}^{2}\left( s\right) \overset{\text{ def }}{ = }\left\{  {d \in  {\mathcal{M}}_{k}^{1}\left( s\right) \left| \right| \left\langle  {d,{\nabla }_{s}^{2}{m}_{k}\left( s\right) d}\right\rangle   \mid   \leq  {\theta }_{2}{\epsilon }_{2}}\right\}\tag{6.2.2}
+\]
+
+for given \( {\theta }_1,{\theta }_2 > 0 \) . We stop as soon as all of the approximate first- to third-order criticality measures,
+
+\[
+{\omega }_{{m}_{k},\mathcal{M},1}\left( s\right) \overset{\text{ def }}{ = } - \mathop{\min }\limits_{{d \in  {\mathcal{M}}_{k}^{0}\left( s\right)  \cap  \mathcal{B}}}\left\langle  {d,{\nabla }_{s}^{1}{m}_{k}\left( s\right) }\right\rangle   \geq  0,\tag{6.2.3}
+\]
+
+\[
+{\omega }_{{m}_{k},\mathcal{M},2}\left( s\right) \overset{\text{ def }}{ = } - \mathop{\min }\limits_{{d \in  {\mathcal{M}}_{k}^{1}\left( s\right)  \cap  \mathcal{B}}}\left\langle  {d,{\nabla }_{s}^{2}{m}_{k}\left( s\right) d}\right\rangle   \geq  0\tag{6.2.4}
+\]
+
+and
+
+\[
+{\omega }_{{m}_{k},\mathcal{M},3}\left( s\right) \overset{\text{ def }}{ = } - \mathop{\min }\limits_{{d \in  {\mathcal{M}}_{k}^{2}\left( s\right)  \cap  \mathcal{B}}}{\nabla }_{s}^{3}{m}_{k}\left( s\right) {\left\lbrack  d\right\rbrack  }^{3} \geq  0,\tag{6.2.5}
+\]
+
+are sufficiently small. Notice that these are appropriate variants of (6.1.5), (6.1.7), and (6.1.9) for the model, and in particular, these will all be small in the neighbourhood of any third-order critical point or global minimizer of \( {m}_k\left( s\right) \) .
+
+We state the algorithm formally on the following page. But before we do so, it is important to recognize that we are making the tacit assumption that computing the criticality measures for the objective function \( f \) in the previous section and those for the model \( {m}_k \) here is easy. In particular, it requires that ensuring feasibility does not constitute a significant cost. The measures themselves only depend on \( f \) and its derivatives at the current iterate (a cost that we shall consider), but they also require that we maintain feasibility with respect to \( \mathcal{C} \) (a cost that we shall discount). For some convex regions (e.g., when the minimization variables have lower and upper bounds or must stay inside a hypersphere), this is a reasonable assumption, but for others it might not be. We will make this distinction more precise in Section 14.2, where we refer to such constraints as simple. The abstract setting " \( x \in  \mathcal{C} \) " is usually realized either by consulting an inclusion oracle (to answer the question "is \( x \) in \( \mathcal{C} \) or not?") or by requiring a means to find the projection \( {P}_{\mathcal{C}}\left\lbrack  x\right\rbrack \) of any \( x \) into \( \mathcal{C} \) , that is, to compute
+
+\[
+{P}_{\mathcal{C}}\left\lbrack  x\right\rbrack   = \underset{y \in  \mathcal{C}}{\arg \min }\parallel x - y\parallel\tag{6.2.6}
+\]
+
+---
+
+\( {}^{45} \) This need not always be the case; some sets \( \mathcal{C} \) are special [288].
+
+\( {}^{46} \) Although other norms may change constants in the stated complexity bounds.
+
+---
+
+the set \( \mathcal{C} \) may have either a geometric or an algebraic description. If convex constraints are so expensive to evaluate that we cannot discount the cost of the inclusion oracle or projection, then we may be forced instead to consider them as general constraints, a topic that we shall not embrace until our next chapter.
+
+Algorithm 6.2.1: Adaptive-regularization algorithm with \( p \) th-order models and convex constraints (ARp-CC)
+
+Step 0: Initialization. An initial point \( {x}_0 \in  \mathcal{C} \) ; accuracy thresholds \( {\epsilon }_1 > 0 \) , \( {\epsilon }_2 > 0,{\epsilon }_3 > 0,{\tau }_1 \in  \left( {0,1}\right) ,{\tau }_2 \in  \left( {0,1}\right) \) ; and an initial regularization parameter \( {\sigma }_0 > 0 \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1,{\gamma }_2,{\gamma }_3,{\theta }_1,{\theta }_2,{\theta }_3 \) , and \( {\sigma }_{\min } \) are also given and satisfy
+
+\[
+\begin{gathered}{\sigma }_{\min } \in  \left( {0,{\sigma }_0}\right\rbrack  ,{\theta }_1,{\theta }_2,{\theta }_3 \in  \left( {0,1}\right) ,0 < {\eta }_1 \leq  {\eta }_2 < 1 \\ 0 < {\gamma }_1 < 1 < {\gamma }_2 < {\gamma }_3 \\ \frac{1}{2}\left\lbrack  {1 + {\tau }_{1}}\right\rbrack   \leq  {\theta }_{1} < 1,\text{ and }\frac{1}{2}\left\lbrack  {1 + {\tau }_{2}}\right\rbrack   \leq  {\theta }_{2} < 1.\end{gathered}\tag{6.2.7}
+\]
+
+Compute \( f\left( {x}_0\right) \) , and set \( k = 0 \) .
+
+Step 1: Test for termination. If \( {\epsilon }_2 = {\epsilon }_3 = \infty \) and
+
+\[
+{\omega }_{f,\mathcal{C},1}\left( {x}_k\right)  \leq  {\epsilon }_1\tag{6.2.8}
+\]
+
+terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+If \( {\epsilon }_2 < \infty \) and \( {\epsilon }_3 = \infty ,\left( {6.2.8}\right) \) holds, and
+
+\[
+{\omega }_{f,\mathcal{C},2}\left( {{x}_k,{\epsilon }_1}\right)  \leq  {\epsilon }_2\tag{6.2.9}
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) . If \( {\epsilon }_3 < \infty ,\left( {6.2.8}\right) \) and (6.2.9) hold, and
+
+\[
+{\omega }_{f,\mathcal{C},3}\left( {{x}_k,{\epsilon }_1,{\epsilon }_2}\right)  \leq  {\epsilon }_3
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2,{\epsilon }_3}\right) \) -approximate third-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+Step 2: Step computation. Compute a step \( {s}_k \in  \mathcal{C}\left( {x}_k\right) \) such that
+
+\[
+{m}_k\left( {s}_k\right)  < {m}_k\left( 0\right)
+\]
+
+where \( {m}_k\left( s\right) \) is given by (4.1.2), and
+
+\[
+{\omega }_{{m}_k,\mathcal{M},1}\left( {s}_k\right)  \leq  {\theta }_1{\epsilon }_1\tag{6.2.10}
+\]
+
+and, if \( {\epsilon }_2 < \infty \) ,
+
+\[
+{\omega }_{{m}_k,\mathcal{M},2}\left( {s}_k\right)  \leq  {\theta }_2{\epsilon }_2\tag{6.2.11}
+\]
+
+and, if also \( {\epsilon }_3 < \infty \) ,
+
+\[
+{\omega }_{{m}_k,\mathcal{M},3}\left( {s}_k\right)  \leq  {\theta }_3{\epsilon }_3\tag{6.2.12}
+\]
+
+Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) , and define
+
+\[
+{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f, p}\left( {{x}_k,0}\right)  - {T}_{f, p}\left( {{x}_k,{s}_k}\right) }.
+\]
+
+If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
+
+Step 4: Regularization parameter update. Set
+
+\[
+{\sigma }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {\max \left( {{\sigma }_{\min },{\gamma }_{1}{\sigma }_{k}}\right) ,{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\sigma }_{k},{\gamma }_{2}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) \\  \left\lbrack  {{\gamma }_{2}{\sigma }_{k},{\gamma }_{3}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.
+\]
+
+Increment \( k \) by one and go to Step 1 .
+
+#### 6.2.2 Complexity of finding approximate first- to third-order minimizers over convex sets
+
+Much of the analysis follows the same pattern as that given in Section 4.1.2 for the unconstrained case. We do need, however, to adjust the objective boundedness and Lipschitz assumptions that we rely on.
+
+f.bB.C
+
+\( f\left( x\right) \) is bounded below on \( \mathcal{C} \) ; that is, there exists a constant \( {f}_{\text{ low }} \) such that, for all \( x \in  \mathcal{C} \) ,
+
+\[
+f\left( x\right)  \geq  {f}_{\text{ low }}.
+\]
+
+f.DpL.C
+
+\( f\left( x\right) \) is \( p \) -times continuously differentiable on an open set \( {}^a\mathcal{D} \) containing \( \mathcal{C} \) , and its \( p \) th-order derivative tensor \( {\nabla }_x^{p}f\left( x\right) \) is Lipschitz continuous on \( \mathcal{C} \) ; that is, there exists a constant \( {L}_{f, p} \geq  0 \) such that
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{p}f\left( x\right)  - {\nabla }_x^{p}f\left( y\right) }\end{Vmatrix} \leq  {L}_{f, p}\parallel x - y\parallel
+\]
+
+for all \( x, y \in  \mathcal{C} \) .
+
+\( {}^a \) The set \( \mathcal{D} \) is a convenience; we could instead have relied on properties in \( \mathcal{C} \) had we used Jordan's definition of continuity rather than Weierstrass's.
+
+Lemmas 4.1.1 and (under f.DpL.C) 4.1.2 continue to hold, so we turn to deriving useful lower bounds on the step generated by the algorithm.
+'''
+
+[[node]]
+id = "arpConvexRun"
+kind = "definition"
+desc = '''
+Define the set of finite traces satisfying Algorithm 6.2.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
+
+Algorithm 6.2.1: Adaptive-regularization algorithm with \( p \) th-order models and convex constraints (ARp-CC)
+
+Step 0: Initialization. An initial point \( {x}_0 \in  \mathcal{C} \) ; accuracy thresholds \( {\epsilon }_1 > 0 \) , \( {\epsilon }_2 > 0,{\epsilon }_3 > 0,{\tau }_1 \in  \left( {0,1}\right) ,{\tau }_2 \in  \left( {0,1}\right) \) ; and an initial regularization parameter \( {\sigma }_0 > 0 \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1,{\gamma }_2,{\gamma }_3,{\theta }_1,{\theta }_2,{\theta }_3 \) , and \( {\sigma }_{\min } \) are also given and satisfy
+
+\[
+\begin{gathered}{\sigma }_{\min } \in  \left( {0,{\sigma }_0}\right\rbrack  ,{\theta }_1,{\theta }_2,{\theta }_3 \in  \left( {0,1}\right) ,0 < {\eta }_1 \leq  {\eta }_2 < 1 \\ 0 < {\gamma }_1 < 1 < {\gamma }_2 < {\gamma }_3 \\ \frac{1}{2}\left\lbrack  {1 + {\tau }_{1}}\right\rbrack   \leq  {\theta }_{1} < 1,\text{ and }\frac{1}{2}\left\lbrack  {1 + {\tau }_{2}}\right\rbrack   \leq  {\theta }_{2} < 1.\end{gathered}\tag{6.2.7}
+\]
+
+Compute \( f\left( {x}_0\right) \) , and set \( k = 0 \) .
+
+Step 1: Test for termination. If \( {\epsilon }_2 = {\epsilon }_3 = \infty \) and
+
+\[
+{\omega }_{f,\mathcal{C},1}\left( {x}_k\right)  \leq  {\epsilon }_1\tag{6.2.8}
+\]
+
+terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+If \( {\epsilon }_2 < \infty \) and \( {\epsilon }_3 = \infty ,\left( {6.2.8}\right) \) holds, and
+
+\[
+{\omega }_{f,\mathcal{C},2}\left( {{x}_k,{\epsilon }_1}\right)  \leq  {\epsilon }_2\tag{6.2.9}
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) . If \( {\epsilon }_3 < \infty ,\left( {6.2.8}\right) \) and (6.2.9) hold, and
+
+\[
+{\omega }_{f,\mathcal{C},3}\left( {{x}_k,{\epsilon }_1,{\epsilon }_2}\right)  \leq  {\epsilon }_3
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2,{\epsilon }_3}\right) \) -approximate third-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+Step 2: Step computation. Compute a step \( {s}_k \in  \mathcal{C}\left( {x}_k\right) \) such that
+
+\[
+{m}_k\left( {s}_k\right)  < {m}_k\left( 0\right)
+\]
+
+where \( {m}_k\left( s\right) \) is given by (4.1.2), and
+
+\[
+{\omega }_{{m}_k,\mathcal{M},1}\left( {s}_k\right)  \leq  {\theta }_1{\epsilon }_1\tag{6.2.10}
+\]
+
+and, if \( {\epsilon }_2 < \infty \) ,
+
+\[
+{\omega }_{{m}_k,\mathcal{M},2}\left( {s}_k\right)  \leq  {\theta }_2{\epsilon }_2\tag{6.2.11}
+\]
+
+and, if also \( {\epsilon }_3 < \infty \) ,
+
+\[
+{\omega }_{{m}_k,\mathcal{M},3}\left( {s}_k\right)  \leq  {\theta }_3{\epsilon }_3\tag{6.2.12}
+\]
+
+Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) , and define
+
+\[
+{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f, p}\left( {{x}_k,0}\right)  - {T}_{f, p}\left( {{x}_k,{s}_k}\right) }.
+\]
+
+If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
+
+Step 4: Regularization parameter update. Set
+
+\[
+{\sigma }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {\max \left( {{\sigma }_{\min },{\gamma }_{1}{\sigma }_{k}}\right) ,{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\sigma }_{k},{\gamma }_{2}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) \\  \left\lbrack  {{\gamma }_{2}{\sigma }_{k},{\gamma }_{3}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.
+\]
+
+Increment \( k \) by one and go to Step 1 .
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2"
+
+[[node]]
+id = "arpFirstOrderConvexRun"
+kind = "definition"
+desc = '''
+Define the set of finite traces satisfying Algorithm 6.2.2, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
+
+Algorithm 6.2.2: Adaptive-regularization algorithm with pth-order models and convex constraints for a first-order approximate minimizer (ARp1-CC)
+
+This algorithm is the same as Algorithm 6.2.1 with \( {\epsilon }_2 = {\epsilon }_3 = \infty \) , but replacing the model-minimization stopping rule (6.2.10) in Step 2 by
+
+\[
+{\omega }_{{m}_k,\mathcal{M},1}\left( {s}_k\right)  \leq  {\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p}.\tag{6.2.29}
+\]
+
+Notice that (6.2.29) is the obvious extension of (4.1.11) to the constrained model. The importance of this simple change is obvious in the following result.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2"
+
+[[node]]
+id = "lemma_6_2_1"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 6.2.1: Lower bounds on the length of the step for ARp-CC
+
+Suppose that C.CNe and f.DpL.C hold. Then on every successful iteration \( k \) of the ARp-CC algorithm (p. 180), if \( {\omega }_{f,\mathcal{C},1}\left( {x}_{k + 1}\right)  > {\epsilon }_1 \) , the step \( {s}_k \) calculated in Step 2 satisfies
+
+\[
+{\begin{Vmatrix}{s}_k\end{Vmatrix}}^p > \frac{p!\left( {1 - {\theta }_1}\right) }{{L}_{f, p} + {\sigma }_{\max }}{\epsilon }_1,\tag{6.2.13}
+\]
+
+where \( {\sigma }_{\max } \) is given by (4.1.19). If additionally \( {\epsilon }_2 < \infty \) and \( {\omega }_{k + 1,2} > {\epsilon }_2 \) , where
+
+\[
+{\omega }_{k + 1,2}\overset{\text{ def }}{ = } - \mathop{\min }\limits_{{d \in  {\mathcal{M}}_{k}^{1}\left( {s}_{k}\right)  \cap  \mathcal{B}}}{\nabla }_{x}^{2}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^{2} \geq  0,\tag{6.2.14}
+\]
+
+then
+
+\[
+{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - 1} > \frac{\left( {p - 1}\right) !\left( {1 - {\theta }_2}\right) }{{L}_{f, p} + {\sigma }_{\max }}{\epsilon }_{2}.\tag{6.2.15}
+\]
+
+Furthermore, if \( {\epsilon }_3 < \infty \) and if \( {\omega }_{k + 1,3} > {\epsilon }_3 \) , where
+
+\[
+{\omega }_{k + 1,3}\overset{\text{ def }}{ = } - \mathop{\min }\limits_{{d \in  {\mathcal{M}}_{k}^{2}\left( {s}_{k}\right)  \cap  \mathcal{B}}}{\nabla }_{x}^{3}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^{3} \geq  0,\tag{6.2.16}
+\]
+
+then
+
+\[
+{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - 2} > \frac{\left( {p - 2}\right) !\left( {1 - {\theta }_3}\right) }{{L}_{f, p} + {\sigma }_{\max }}{\epsilon }_{3}.\tag{6.2.17}
+\]
+
+Moreover, for any \( d \in  {\mathcal{C}}^1\left( {{x}_{k + 1},{\epsilon }_1}\right) \) ,
+
+\[
+\left| {{\nabla }_s^1{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^1}\right|  \leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{p!}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^p + {\tau }_1{\epsilon }_1,\tag{6.2.18}
+\]
+
+while for any \( d \in  {\mathcal{C}}^2\left( {{x}_{k + 1},{\epsilon }_1,{\epsilon }_2}\right) \) ,
+
+\[
+\left| {{\nabla }_s^2{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^2}\right|  \leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{\left( {p - 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - 1} + {\tau }_2{\epsilon }_{2}.\tag{6.2.19}
+\]
+
+in the above statement involve \( f \) , while the constraint sets are based on the model \( {m}_k \) .
+
+We note, for clarity, that the objective functions in the definitions of \( {\omega }_{k + 1,2} \) and \( {\omega }_{k + 1,3} \) Proof. The fact that \( k \in  \mathcal{S} \) and the definition of the trial point give that \( {x}_{k + 1} = \; {x}_k + {s}_k \) . Clearly,
+
+\[
+\begin{gathered}\left| {{\nabla }_x^{j}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^j - {\nabla }_s^j{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^j}\right|  =  \mid  \left\lbrack  {{\nabla }_x^{j}f\left( {x}_{k + 1}\right)  - {\nabla }_s^j{T}_{f, p}\left( {{x}_k,{s}_k}\right) \rbrack {\left\lbrack  d\right\rbrack  }^j}\right. \\ + \frac{{\sigma }_k}{\left( {p + 1}\right) !}{\nabla }_s^j\left( {-{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + 1}}\right) {\left\lbrack  d\right\rbrack  }^j \\ \leq  \left| {\left\lbrack  {{\nabla }_x^{j}f\left( {x}_{k + 1}\right)  - {\nabla }_s^j{T}_{f, p}\left( {{x}_k,{s}_k}\right) }\right\rbrack  {\left\lbrack  d\right\rbrack  }^j}\right| \\ + \frac{{\sigma }_k}{\left( {p + 1}\right) !}\left| {{\nabla }_s^j\left( {-{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + 1}}\right) {\left\lbrack  d\right\rbrack  }^j}\right|\end{gathered}\tag{6.2.20}
+\]
+
+for all \( d \in  \mathcal{B} \) , where here and hereafter \( j \in  \left\lbrack  {1 : q}\right\rbrack \) with \( q = 1 \) if \( {\epsilon }_2 = {\epsilon }_3 = \infty , q = 2 \) if \( {\epsilon }_2 < \infty \) and \( {\epsilon }_3 = \infty \) , and \( q = 3 \) otherwise. Furthermore, for all \( d \in  \mathcal{B} \) , we have that both
+
+\[
+\begin{gathered}\left| {\left\lbrack  {{\nabla }_x^{j}f\left( {x}_{k + 1}\right)  - {\nabla }_s^j{T}_{f, p}\left( {{x}_k,{s}_k}\right) }\right\rbrack  {\left\lbrack  d\right\rbrack  }^j}\right|  \leq  \begin{Vmatrix}{{\nabla }_x^{j}f\left( {x}_{k + 1}\right)  - {\nabla }_s^j{T}_{f, p}\left( {{x}_k,{s}_k}\right) }\end{Vmatrix} \\ \leq  \frac{{L}_{f, p}}{\left( {p - j + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - j + 1}\end{gathered}\tag{6.2.21}
+\]
+
+and
+
+\[
+\begin{gathered}\left| {{\nabla }_s^j\left( {-{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + 1}}\right) {\left\lbrack  d\right\rbrack  }^j}\right|  \leq  \begin{Vmatrix}{{\nabla }_s^j\left( {-{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + 1}}\right) }\end{Vmatrix} \\ \leq  \frac{\left( {p + 1}\right) !}{\left( {p - j + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - j + 1}\end{gathered}\tag{6.2.22}
+\]
+
+where we used the definition of the norm (A.7); the Taylor-series error bound (A.20), which relies on f.DpL.C; and Lemma B.4.1 (p. 461) with \( \beta  = 1 \) . Combining (6.2.20)- (6.2.22) and using the guaranteed upper bound (4.1.19) on \( {\sigma }_k \) , it follows that, for all \( d \in  \mathcal{B} \) ,
+
+\[
+\left| {{\nabla }_x^{j}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^j - {\nabla }_s^j{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^j}\right|  \leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{\left( {p - j + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - j + 1}.\tag{6.2.23}
+\]
+
+When \( j = 1 \) , we deduce from (6.2.23) that
+
+\[
+{\omega }_{f,\mathcal{C},1}\left( {x}_{k + 1}\right)  =  - \mathop{\min }\limits_{d \in  \mathcal{C}\left( {x}_{k + 1}\right)  \cap  \mathcal{B}}{\nabla }_x^{1}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^1
+\]
+
+\[
+\leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{p!}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^p - \mathop{\min }\limits_{d \in  \mathcal{C}\left( {x}_{k + 1}\right)  \cap  \mathcal{B}}{\nabla }_s^1{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^1
+\]
+
+\[
+= \frac{{L}_{f, p} + {\sigma }_{\max }}{p!}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^p - \mathop{\min }\limits_{d \in  {\mathcal{M}}_k^0\left( {s}_k\right)  \cap  \mathcal{B}}\left\langle  {d,{\nabla }_s^1{m}_k\left( {s}_k\right) }\right\rangle
+\]
+
+\[
+= \frac{{L}_{f, p} + {\sigma }_{\max }}{p!}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^p + {\omega }_{{m}_k,\mathcal{M},1}\left( {s}_k\right) ,
+\]
+
+since \( \left\langle  {d,{\nabla }_x^{1}f\left( {x}_{k + 1}\right) }\right\rangle   = {\nabla }_x^{1}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^1,\left\langle  {d,{\nabla }_s^1{m}_k\left( {s}_k\right) }\right\rangle   = {\nabla }_s^1{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^1 \) , and \( {\mathcal{M}}_k^0\left( {s}_k\right)  \equiv \; \mathcal{C}\left( {x}_{k + 1}\right) \) . The desired bound (6.2.13) then follows by combining this inequality with the requirement (6.2.10) and the assumption \( {\omega }_{f,\mathcal{C},1}\left( {x}_{k + 1}\right)  > {\epsilon }_1 \) and rearranging terms.
+
+When \( j = 2 \) and 3,(6.2.23) together with (6.2.11) and (6.2.12) gives that
+
+\[
+- \mathop{\min }\limits_{d \in  {\mathcal{M}}_k^{j - 1}\left( {s}_k\right)  \cap  \mathcal{B}}{\nabla }_x^{j}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^j \leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{\left( {p - j + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - j + 1} - \mathop{\min }\limits_{d \in  {\mathcal{M}}_k^{j - 1}\left( {s}_k\right)  \cap  \mathcal{B}}{\nabla }_s^j{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^j
+\]
+
+\[
+= \frac{{L}_{f, p} + {\sigma }_{\max }}{\left( {p - j + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - j + 1} + {\omega }_{{m}_k,\mathcal{M}, j}\left( {s}_k\right)
+\]
+
+\[
+\leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{\left( {p - j + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - j + 1} + {\theta }_j{\epsilon }_j,
+\]
+
+which, together with the assumptions \( {\omega }_{k + 1,2}\left( {x}_{k + 1}\right)  > {\epsilon }_2 \) and \( {\omega }_{k + 1,3}\left( {x}_{k + 1}\right)  > {\epsilon }_3 \) , gives (6.2.15) and (6.2.17).
+
+For any \( d \in  {\mathcal{C}}^1\left( {{x}_{k + 1},{\epsilon }_1}\right) \) ,(6.2.23) with \( j = 1 \) , using (6.1.8), leads to
+
+\[
+\left| {{\nabla }_s^j{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^1}\right|  \leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{p!}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^p + \left| {{\nabla }_x^{1}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^1}\right|
+\]
+
+\[
+\leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{p!}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^p + {\tau }_1{\epsilon }_1
+\]
+
+which is (6.2.18).
+
+Similarly, if \( d \in  {\mathcal{C}}^2\left( {{x}_{k + 1},{\epsilon }_1,{\epsilon }_2}\right) ,\left( {6.2.23}\right) \) with \( j = 2 \) , using (6.1.10), gives
+
+\[
+\left| {{\nabla }_s^j{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^2}\right|  \leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{\left( {p - 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - 1} + \left| {{\nabla }_x^{2}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^2}\right|
+\]
+
+\[
+\leq  \frac{{L}_{f, p} + {\sigma }_{\max }}{\left( {p - 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - 1} + {\tau }_2{\epsilon }_2
+\]
+
+which is (6.2.19).
+
+Lemma 6.2.1 then leads directly to the following guaranteed reduction in the objective function following a successful step of the ARp-CC algorithm; the proof is identical to that of Lemma 4.1.4.
+
+Referenced equation payloads:
+
+Equation (4.1.19):
+\[
+{\sigma }_{k} \leq  {\sigma }_{\max }\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},\frac{{\gamma }_{3}{L}_{f, p}}{1 - {\eta }_{2}}}\right\rbrack  .\tag{4.1.19}
+\]
+
+Equation (6.1.8):
+\[
+{\mathcal{C}}^{1}\left( {x,\alpha }\right) \overset{\text{ def }}{ = }\left\{  {d \in  \mathcal{C}\left( x\right) \left| \right| \left\langle  {d,{\nabla }_{x}^{1}f\left( x\right) }\right\rangle   \mid   \leq  {\tau }_{1}\alpha }\right\}\tag{6.1.8}
+\]
+
+Equation (6.1.10):
+\[
+{\mathcal{C}}^{2}\left( {x,{\alpha }_{1},{\alpha }_{2}}\right) \overset{\text{ def }}{ = }\left\{  {d \in  {\mathcal{C}}^{1}\left( {x,{\alpha }_{1}}\right) \left| \right| \left\langle  {d,{\nabla }_{x}^{2}f\left( x\right) d}\right\rangle   \mid   \leq  {\tau }_{2}{\alpha }_{2}}\right\}\tag{6.1.10}
+\]
+
+Equation (6.2.10):
+\[
+{\omega }_{{m}_k,\mathcal{M},1}\left( {s}_k\right)  \leq  {\theta }_1{\epsilon }_1\tag{6.2.10}
+\]
+
+Equation (6.2.11):
+\[
+{\omega }_{{m}_k,\mathcal{M},2}\left( {s}_k\right)  \leq  {\theta }_2{\epsilon }_2\tag{6.2.11}
+\]
+
+Equation (6.2.12):
+\[
+{\omega }_{{m}_k,\mathcal{M},3}\left( {s}_k\right)  \leq  {\theta }_3{\epsilon }_3\tag{6.2.12}
+\]
+'''
+deps = ["lemma_4_1_4", "arpConvexRun", "arpFirstOrderConvexRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 6.2.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7994)"
+
+[[node]]
+id = "lemma_6_2_2"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 6.2.2: Bounds on the successful function decrease for \( {\mathrm{AR}}_P - \mathrm{CC} \)
+
+Suppose that C.CNe and f.DpL.C hold and that iteration \( k \) of the ARp-CC algorithm is successful. Then if \( {\omega }_{f,\mathcal{C},1}\left( {x}_{k + 1}\right)  > {\epsilon }_1 \) , then
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  > {\kappa }_1^{cc}{\epsilon }_1^{\frac{p + 1}{p}},
+\]
+
+where
+
+\[
+{\kappa }_{1}^{cc}\overset{\text{ def }}{ = }\frac{{\eta }_{1}{\sigma }_{\min }}{p!}{\left( \frac{p!\left( {1 - {\theta }_{1}}\right) }{{L}_{f, p} + {\sigma }_{\max }}\right) }^{\frac{p + 1}{p}}.
+\]
+
+If additionally \( {\epsilon }_2 < \infty \) and \( {\omega }_{k + 1,2} > {\epsilon }_2 \) , then
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  > {\kappa }_2^{cc}{\epsilon }_2^{\frac{p + 1}{p - 1}},
+\]
+
+where
+
+\[
+{\kappa }_{2}^{\mathrm{{CC}}}\overset{\text{ def }}{ = }\frac{{\eta }_{1}{\sigma }_{\min }}{p!}{\left( \frac{\left( {p - 1}\right) !\left( {1 - {\theta }_{2}}\right) }{{L}_{f, p} + {\sigma }_{\max }}\right) }^{\frac{p + 1}{p - 1}}
+\]
+
+and \( {\omega }_{k + 1,2} \) is defined in (6.2.14), and if \( {\epsilon }_3 < \infty \) and \( {\omega }_{k + 1,3} > {\epsilon }_3 \) , then
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  > {\kappa }_3^{cc}{\epsilon }_3^{\frac{p + 1}{p - 2}},
+\]
+
+where
+
+\[
+{\kappa }_{3}^{\mathrm{{CC}}}\overset{\text{ def }}{ = }\frac{{\eta }_{1}{\sigma }_{\min }}{p!}{\left( \frac{\left( {p - 2}\right) !\left( {1 - {\theta }_{3}}\right) }{{L}_{f, p} + {\sigma }_{\max }}\right) }^{\frac{p + 1}{p - 2}}
+\]
+
+and \( {\omega }_{k + 1,3} \) is defined by (6.2.16).
+
+We are now ready to establish an evaluation-complexity bound for the ARp-CC algorithm.
+
+Referenced equation payloads:
+
+Equation (6.2.14):
+\[
+{\omega }_{k + 1,2}\overset{\text{ def }}{ = } - \mathop{\min }\limits_{{d \in  {\mathcal{M}}_{k}^{1}\left( {s}_{k}\right)  \cap  \mathcal{B}}}{\nabla }_{x}^{2}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^{2} \geq  0,\tag{6.2.14}
+\]
+
+Equation (6.2.16):
+\[
+{\omega }_{k + 1,3}\overset{\text{ def }}{ = } - \mathop{\min }\limits_{{d \in  {\mathcal{M}}_{k}^{2}\left( {s}_{k}\right)  \cap  \mathcal{B}}}{\nabla }_{x}^{3}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^{3} \geq  0,\tag{6.2.16}
+\]
+'''
+deps = ["arpConvexRun", "arpFirstOrderConvexRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 6.2.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8126)"
+
+[[node]]
+id = "theorem_6_2_3"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 6.2.3: Complexity of finding first- to third-order critical points by the ARp-CC algorithm
+
+Suppose that C.CNe, f.DpL.C, and f.bB.C hold. Then there exist positive constants \( {\kappa }_{\mathrm{ARpCC}}^S,{\kappa }_{\mathrm{ARpCC}}^A \) , and \( {\kappa }_{\mathrm{ARpCC}}^C \) such that, for any \( \left( {{\epsilon }_1,{\epsilon }_2,{\epsilon }_3}\right)  \in  \left( {0,1}\right\rbrack  {}^3 \) , the ARp-CC algorithm (p. 180) requires at most
+
+\[
+{\# }_{\mathsf{{ARpCC},3}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathsf{{ARpCC}}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\mathsf{{low}}}}{\min \left\lbrack  {{\epsilon }_{1}^{\frac{p + 1}{p}},{\epsilon }_{2}^{\frac{p + 1}{p - 1}},{\epsilon }_{3}^{\frac{p + 1}{p - 2}}}\right\rbrack  } + {\kappa }_{\mathsf{{ARpCC}}}^{C} = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-\frac{p + 1}{p}},{\epsilon }_{2}^{-\frac{p + 1}{p - 1}},{\epsilon }_{3}^{-\frac{p + 1}{p - 2}}}\right\rbrack  }\right)
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{ARpCC}},3}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARpCC}}}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\mathrm{{low}}}}{\min \left\lbrack  {{\epsilon }_{1}^{\frac{p + 1}{p}},{\epsilon }_{2}^{\frac{p + 1}{p - 1}},{\epsilon }_{3}^{\frac{p + 1}{p - 2}}}\right\rbrack  } + 2 = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-\frac{p + 1}{p}},{\epsilon }_{2}^{-\frac{p + 1}{p - 1}},{\epsilon }_{3}^{-\frac{p + 1}{p - 2}}}\right\rbrack  }\right)
+\]
+
+evaluations of derivatives of order one to \( p \) of \( f \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\omega }_{f,\mathcal{C},1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_1,{\omega }_{f,\mathcal{C},2}\left( {{x}_{\epsilon },{\epsilon }_1}\right)  \leq  {\epsilon }_2 \) , and \( {\omega }_{f,\mathcal{C},3}\left( {{x}_{\epsilon },{\epsilon }_1,{\epsilon }_2}\right)  \leq  {\epsilon }_3 \) .
+'''
+deps = ["theorem_4_1_5", "lemma_6_2_2", "lemma_4_1_4", "theorem_5_1_7", "arpConvexRun", "arpFirstOrderConvexRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 6.2.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8168)"
+
+[[node]]
+id = "lemma_6_2_4"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 6.2.4: Bounds on the successful function decrease for ARp1-CC
+
+Suppose that C.CNe and f.DpL.C hold and that iteration \( k \) of the ARp1-CC algorithm is successful. Then
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_1{\left\lbrack  {\omega }_{f,\mathcal{C},1}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p}},\tag{6.2.30}
+\]
+
+where \( {\kappa }_1 \) is given by (4.1.32).
+
+Referenced equation payloads:
+
+Equation (4.1.32):
+\[
+{\kappa }_{1}\overset{\text{ def }}{ = }\frac{{\eta }_{1}{\sigma }_{\min }}{\left( {p + 1}\right) !}{\left( \frac{p!}{{L}_{f, p} + {\sigma }_{\max } + {\theta }_{1}p!}\right) }^{\frac{p + 1}{p}}.\tag{4.1.32}
+\]
+'''
+deps = ["lemma_6_2_1", "lemma_4_1_4", "theorem_4_1_5", "theorem_6_2_3", "arpConvexRun", "arpFirstOrderConvexRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 6.2.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8288)"
+
+[[node]]
+id = "theorem_6_2_5"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 6.2.5: Complexity of finding first-order critical points by the ARp1-CC algorithm
+
+Suppose that C.CNe, f.DpL.C, and f.bB.C hold. Then there exist positive constants \( {\kappa }_{\text{ ARpiCC }}^{s},{\kappa }_{\text{ ARp1CC }}^{A} \) , and \( {\kappa }_{\text{ ARp }}^{C} \) such that, for any \( {\epsilon }_1 \in  (0,1\rbrack \) , the ARp1-CC algorithm (p. 180) requires at most
+
+\[
+{\# }_{\mathrm{{ARp1CC}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARp1CC}}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{1}^{\frac{p + 1}{p}}} + {\kappa }_{\mathrm{{ARp}}}^{C} = \mathcal{O}\left( {\epsilon }_{1}^{-\frac{p + 1}{p}}\right)
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{ARp1CC}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARp1CC}}}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{1}^{\frac{p + 1}{p}}} + 2 = \mathcal{O}\left( {\epsilon }_{1}^{-\frac{p + 1}{p}}\right)
+\]
+
+evaluations of derivatives of order one to \( p \) of \( f \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\omega }_{f,\mathcal{C},1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_1 \) .
+
+For completeness, in the preceding statement,
+
+\[
+{\kappa }_{\mathrm{{ARp1CC}}}^{\mathrm{S}}\overset{\text{ def }}{ = }\frac{\left( {p + 1}\right) !}{{\eta }_{1}{\sigma }_{\min }}{\left( \frac{{L}_{f, p} + {\sigma }_{\max } + {\theta }_{1}p!}{p!}\right) }^{\frac{p + 1}{p}},
+\]
+
+where \( {\sigma }_{\max } \) is given by (4.1.19);
+
+\[
+{\kappa }_{\mathrm{{AR}}\mathrm{p}1\mathrm{{CC}}}^{\mathrm{A}}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}}\mathrm{p}1\mathrm{{CC}}}^{\mathrm{S}}\left( {1 + \frac{\left| \log {\gamma }_{1}\right| }{\log {\gamma }_{2}}}\right) ;
+\]
+
+and \( {\kappa }_{\mathrm{ARp}}^{\mathrm{C}} \) is given by (4.1.46).
+
+The importance of this result is not so much in itself, but in the impact it has on the convexly constrained least-squares problem, as we shall now see.
+
+Referenced equation payloads:
+
+Equation (4.1.19):
+\[
+{\sigma }_{k} \leq  {\sigma }_{\max }\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},\frac{{\gamma }_{3}{L}_{f, p}}{1 - {\eta }_{2}}}\right\rbrack  .\tag{4.1.19}
+\]
+
+Equation (4.1.46):
+\[
+{\kappa }_{\mathrm{{ARp}}}^{\mathrm{C}}\overset{\text{ def }}{ = }\frac{1}{\log {\gamma }_{2}}\left\{  {\left| {\log {\gamma }_{1}}\right|  + \log \left( \frac{{\sigma }_{\max }}{{\sigma }_{0}}\right) }\right\}   + 2,\tag{4.1.46}
+\]
+'''
+deps = ["lemma_5_1_2", "lemma_6_2_4", "lemma_5_1_4", "theorem_5_1_7", "arpConvexRun", "arpFirstOrderConvexRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 6.2.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8326)"

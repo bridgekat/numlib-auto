@@ -1,0 +1,519 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 5, Section 5.
+
+The universal ARp-H model uses a general power r>p, while actual derivative smoothness is Hölder with exponent β_p∈[0,1] as specified. Preserve the modified sufficient decrease and step checks; they are needed to adapt σ without knowing the smoothness. Constants and powers depend on whether r≤p+β_p or r>p+β_p.
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+#### 5.5.1 Introduction
+
+The aim of this section is twofold. Firstly, we are interested in seeing if decoupling, and varying, the power of the regularization term in the model (4.1.2) from its underlying Taylor series might improve the worst-case complexity bound of the ensuing variant of the \( \mathrm{AR}p \) algorithm. That is, instead of (4.1.2) we shall calculate a step \( {s}_k \) from the current iterate \( {x}_k \) by approximately minimizing the local model
+
+\[
+{m}_k\left( s\right)  = {T}_p\left( {{x}_k, s}\right)  + \frac{{\sigma }_k}{r!}\parallel s{\parallel }^r,\tag{5.5.1}
+\]
+
+where \( {T}_p\left( {{x}_k, s}\right) \) is the \( p \) th-order Taylor polynomial (4.1.1) of the objective function \( f \) at \( {x}_k \) , the power \( r > p \geq  1 \) , and \( {}^{44} \)
+
+\[
+r!\overset{\text{ def }}{ = }\mathop{\prod }\limits_{{\ell  = 1}}^{{\lfloor r\rfloor }}\left( {\ell  + r-\lfloor r\rfloor }\right) .\tag{5.5.2}
+\]
+
+---
+
+\( {}^{43} \) It turns out that \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{ * }\right) }\right\rbrack   \approx  {0.3994} \) , the Lipschitz constant of the Hessian on \( {\left\lbrack  -{1.5},{1.5}\right\rbrack  }^2 \) (a box containing all iterates from the standard starting point \( \left( {-{1.2},1}\right) \) ) is bounded above by 5000, and, if the algorithm’s constant are chosen as \( {\sigma }_{\min } = {0.001},{\eta }_2 = {0.95},{\gamma }_3 = 2,{\sigma }_0 = 1 \) , and \( {\theta }_1 = {0.1} \) , then \( {\sigma }_{\max } \approx  2 \times  {10}^5,{q}_{ * } \approx  {1.9968} \times  {10}^{-5},\frac{1}{2}{\zeta }_{ * } \approx  {6.4619} \times  {10}^{-7} \) , and the maximum distance from \( {x}_{ * } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( x\right) }\end{Vmatrix} \leq  \frac{1}{2}{\zeta }_{ * } \) is approximately \( {7.1440} \times  {10}^{-7} \) , which is clearly smaller than \( {q}_{ * } \) . The condition (5.4.18) is thus verified whenever \( \epsilon  < \frac{1}{2}{\zeta }_{ * } \) .
+
+---
+
+Just as for the \( \mathrm{AR}p \) algorithm, the parameter \( {\sigma }_k > 0 \) may need to be adjusted to ensure sufficient decrease in \( f \) occurs when the model value is decreased.
+
+Secondly, we shall not assume that the level of smoothness of the objective is known, or indeed that derivatives above a certain order are smooth at all. We aim to capture this by making, throughout this section, the following assumption.
+
+f.DpH
+
+\( f\left( x\right) \) is \( p \) -times continuously differentiable in \( {\mathbb{R}}^n \) and its \( p \) th-order derivative tensor \( {\nabla }_x^{p}f\left( x\right) \) is Hölder continuous on \( {\mathbb{R}}^n \) ; that is, there exists a constant \( {H}_{f, p} \geq  0 \) and an exponent \( {\beta }_p \in  \left\lbrack  {0,1}\right\rbrack \) such that
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{p}f\left( x\right)  - {\nabla }_x^{p}f\left( y\right) }\end{Vmatrix} \leq  {H}_{f, p}\parallel x - y{\parallel }^{{\beta }_p}\tag{5.5.3}
+\]
+
+for all \( x, y \in  {\mathbb{R}}^n \) , where the norm on the left-hand side of (5.5.3) is the tensor norm (A.7).
+
+If \( {\beta }_p = 1 \) , f.DpH coincides with f.DpL. If \( p = 1 \) , we only allow \( {\beta }_1 \in  (0,1\rbrack \) in f.DpH, for reasons that we shall explain later. If \( {\beta }_p > 1 \) in (5.5.3), the resulting class of objectives is restricted to multivariate polynomials of degree \( p \) , and consequently, for simplicity, we exclude this special case.
+
+Our interest in loosening the requirement from Lipschitz to Hölder continuity of derivatives arises both as a result of the needs of some engineering applications - such as flows in gas pipelines [175, Sect. 17] and properties of nonlinear PDE problems [32]- and in its own right in optimization theory, as a bridging case between smooth and nonsmooth classes of problems [296,302]. In particular, a zero Hölder exponent for a Hölder-continuous derivative corresponds to a bounded derivative, an exponent in \( \left( {0,1}\right) \) corresponds to a continuous but not necessarily differentiable derivative, while an exponent of 1 coincides with a Lipschitz-continuous derivative that is also absolutely continuous and thus may be differentiated again almost everywhere. For functions with Hölder-continuous gradients, methods have already been devised-and their complexity analyzed-both from the perspective of a weaker set of assumptions and as an attempt to have a "smooth" transition between smooth and nonsmooth (albeit convex) problem classes, without knowing a priori the level of smoothness of the gradient (i.e., the Hölder exponent) [302]; in addition, lower bounds on the worst-case complexity are known [296].
+
+#### 5.5.2 The ARp-H algorithm and its complexity
+
+We now introduce the ARp-H algorithm, a modification of the ARp regularization algorithm (p. 100) that ensures the computed steps are "sufficiently long" and that makes the algorithm robust to the value of the regularization power and adaptable to changes in smoothness of the objective. The algorithm is designed to find both a first- and, if required, second-order approximate minimizer, and in view of this we clearly require \( p \geq  1 \) in the first case and \( p \geq  2 \) for the second. It is intended for functions \( f \) that satisfy f.DpH, but crucially no a priori knowledge of the Hölder exponent \( {\beta }_p \) is required.
+
+---
+
+\( {}^{44} \) The definition (5.5.2) coincides with the traditional factorial when \( r \) is an integer. Moreover, the standard identity \( r! = r\left( {r - 1}\right) \) ! holds for all \( r \geq  1 \) .
+
+---
+
+Algorithm 5.5.1: Universal adaptive-regularization algorithm with \( p \) th-order models (ARp-H)
+
+Step 0: Initialization. An initial point \( {x}_0 \) , accuracy thresholds \( {\epsilon }_1 \in  (0,1\rbrack ,{\epsilon }_2 \in \; (0,1\rbrack  \cup  \{ \infty \} \) , and an initial regularization parameter \( {\sigma }_0 > 0 \) are given. An integer degree \( p \geq  1\left( {p \geq  2}\right. \) if \( \left. {{\epsilon }_2 < \infty }\right) \) and a real regularization power \( r > p \) are specified. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1,{\gamma }_2,{\gamma }_3,{\theta }_1,{\theta }_2,{\alpha }_1 \) , and \( {\alpha }_2 \) are also given and satisfy
+
+\[
+{\alpha }_1 \in  \left( {0,\frac{1}{3}\min \left\lbrack  {1,\left( {r - 1}\right) !}\right\rbrack  }\right\rbrack  ,{\alpha }_2 \in  \left( {0,\frac{1}{3}\min \left\lbrack  {1,\left( {r - 2}\right) !}\right\rbrack  }\right\rbrack  ,
+\]
+
+\[
+{\theta }_{1} \in  (0,1\rbrack ,\;{\theta }_{2} \in  (0,1\rbrack ,\;0 < {\eta }_{1} \leq  {\eta }_{2} < 1,\;\text{ and }\;0 < {\gamma }_{1} < 1 < {\gamma }_{2} < {\gamma }_{3}.
+\]
+
+Compute \( f\left( {x}_0\right) \) and set \( k = 0 \) . Check for termination as in Step 2 below with \( {s}_0 = 0 \) . If termination fails, compute all unavailable derivatives \( {\nabla }_x^{j}f\left( {x}_0\right) \) for orders \( j \leq  p \) .
+
+Step 1: Step computation. Compute a step \( {s}_k \) such that
+
+\[
+{m}_k\left( {s}_k\right)  < {m}_k\left( 0\right)\tag{5.5.4}
+\]
+
+where \( {m}_k\left( s\right) \) is given by (5.5.1);
+
+\[
+\begin{Vmatrix}{{\nabla }_s^1{m}_k\left( {s}_k\right) }\end{Vmatrix} \leq  {\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 1}\tag{5.5.5}
+\]
+
+and, if \( {\epsilon }_2 < \infty \) ,
+
+\[
+{\lambda }_{\min }\left\lbrack  {{\nabla }_s^2{m}_k\left( {s}_k\right) }\right\rbrack   \geq   - {\theta }_2{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 2}.\tag{5.5.6}
+\]
+
+Step 2: Test for termination. If \( {\epsilon }_2 = \infty \) , compute \( {\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) \) , and if
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) }\end{Vmatrix} \leq  {\epsilon }_1,\tag{5.5.7}
+\]
+
+terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k + {s}_k \) .
+
+If \( {\epsilon }_2 < \infty \) , compute both \( {\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) \) and \( {\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) \) , and if (5.5.7) holds and
+
+\[
+{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) }\right\rbrack   > {\epsilon }_2,\tag{5.5.8}
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate strict local minimizer \( {x}_{\epsilon } = {x}_k + {s}_k \) . If (5.5.7) holds and (5.5.8) fails but
+
+\[
+{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) }\right\rbrack   \geq   - {\epsilon }_2,
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k + \; {s}_k \) .
+
+Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) and define
+
+\[
+{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f, p}\left( {{x}_k,0}\right)  - {T}_{f, p}\left( {{x}_k,{s}_k}\right) }.\tag{5.5.9}
+\]
+
+If \( {\rho }_k \geq  {\eta }_1 \) , then check whether
+
+\[
+{\sigma }_k{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 1} \geq  {\alpha }_1\begin{Vmatrix}{{\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) }\end{Vmatrix},\tag{5.5.10}
+\]
+
+and if \( {\epsilon }_2 < \infty \) , check also whether
+
+\[
+{\sigma }_k{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 2} \geq   - {\alpha }_2{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) }\right\rbrack  .\tag{5.5.11}
+\]
+
+If \( {\rho }_k \geq  {\eta }_1,\left( {5.5.10}\right) \) , and (5.5.11) hold, define \( {x}_{k + 1} = {x}_k + {s}_k \) , and compute all unavailable derivatives \( {\nabla }_x^{j}f\left( {x}_{k + 1}\right) \) for orders \( j \leq  p \) . Otherwise, define \( {x}_{k + 1} = {x}_k \) .
+
+Step 4: Regularization parameter update. Set
+
+\[
+{\sigma }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {{\gamma }_{1}{\sigma }_{k},{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2},\left( {5.5.10}\right) ,\text{ and (5.5.11) hold, } \\  \left\lbrack  {{\sigma }_{k},{\gamma }_{2}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) ,\left( {5.5.10}\right) ,\text{ and (5.5.11) hold, } \\  \left\lbrack  {{\gamma }_{2}{\sigma }_{k},{\gamma }_{3}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}\text{ and (5.5.10) or (5.5.11) fails. } \end{array}\right.
+\]
+
+Increment \( k \) by one and go to Step 1.
+
+The design of the ARp-H algorithm clearly exhibits many similarities with its predecessor, \( \mathrm{AR}p \) , when \( r = p + 1 \) in (5.5.1). However, there are three main differences in addition to the flexible regularization power. Firstly, no explicit lower bound \( {\sigma }_{\min } > 0 \) on \( {\sigma }_k \) is imposed, as we required for the \( \mathrm{AR}p \) and earlier algorithms. In principle, this might allow the algorithm to take steps that are asymptotically closer to those from a pure Newton method, but actually conditions (5.5.10) and (5.5.11) may implicitly provide a lower bound on \( {\sigma }_k \) . Secondly, we check whether termination occurs at each trial point, not just on successful iterations. Finally, even when the candidate step \( {s}_k \) provides sufficient decrease according to (5.5.9), we only allow the algorithm to accept the step if it is appropriately long according to the recipes (5.5.10) and possibly (5.5.11). If either (5.5.10) or (5.5.11) fails or \( {\rho }_k \leq  {\eta }_1 \) , the parameter \( {\sigma }_k \) is increased. These two additional ingredients - the gradient and Hessian calculation at each trial point and the steplength condition - are directly related to trying to achieve universality of the ARp-H algorithm. Here, universality [302] refers to algorithms that are invariant to the regularization power (in our case, so long as \( r \geq  p + 1 \) ) and applicable to different levels of smoothness in the objective (that are unknown a priori) while maintaining good or even optimal worst-case evaluation complexity.
+
+We turn as always to a worst-case evaluation-complexity analysis of the algorithm. The first ingredient is a by now familiar sufficient-decrease result.
+'''
+
+[[node]]
+id = "universalArpRun"
+kind = "definition"
+desc = '''
+Define the set of finite traces satisfying Algorithm 5.5.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
+
+Algorithm 5.5.1: Universal adaptive-regularization algorithm with \( p \) th-order models (ARp-H)
+
+Step 0: Initialization. An initial point \( {x}_0 \) , accuracy thresholds \( {\epsilon }_1 \in  (0,1\rbrack ,{\epsilon }_2 \in \; (0,1\rbrack  \cup  \{ \infty \} \) , and an initial regularization parameter \( {\sigma }_0 > 0 \) are given. An integer degree \( p \geq  1\left( {p \geq  2}\right. \) if \( \left. {{\epsilon }_2 < \infty }\right) \) and a real regularization power \( r > p \) are specified. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1,{\gamma }_2,{\gamma }_3,{\theta }_1,{\theta }_2,{\alpha }_1 \) , and \( {\alpha }_2 \) are also given and satisfy
+
+\[
+{\alpha }_1 \in  \left( {0,\frac{1}{3}\min \left\lbrack  {1,\left( {r - 1}\right) !}\right\rbrack  }\right\rbrack  ,{\alpha }_2 \in  \left( {0,\frac{1}{3}\min \left\lbrack  {1,\left( {r - 2}\right) !}\right\rbrack  }\right\rbrack  ,
+\]
+
+\[
+{\theta }_{1} \in  (0,1\rbrack ,\;{\theta }_{2} \in  (0,1\rbrack ,\;0 < {\eta }_{1} \leq  {\eta }_{2} < 1,\;\text{ and }\;0 < {\gamma }_{1} < 1 < {\gamma }_{2} < {\gamma }_{3}.
+\]
+
+Compute \( f\left( {x}_0\right) \) and set \( k = 0 \) . Check for termination as in Step 2 below with \( {s}_0 = 0 \) . If termination fails, compute all unavailable derivatives \( {\nabla }_x^{j}f\left( {x}_0\right) \) for orders \( j \leq  p \) .
+
+Step 1: Step computation. Compute a step \( {s}_k \) such that
+
+\[
+{m}_k\left( {s}_k\right)  < {m}_k\left( 0\right)\tag{5.5.4}
+\]
+
+where \( {m}_k\left( s\right) \) is given by (5.5.1);
+
+\[
+\begin{Vmatrix}{{\nabla }_s^1{m}_k\left( {s}_k\right) }\end{Vmatrix} \leq  {\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 1}\tag{5.5.5}
+\]
+
+and, if \( {\epsilon }_2 < \infty \) ,
+
+\[
+{\lambda }_{\min }\left\lbrack  {{\nabla }_s^2{m}_k\left( {s}_k\right) }\right\rbrack   \geq   - {\theta }_2{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 2}.\tag{5.5.6}
+\]
+
+Step 2: Test for termination. If \( {\epsilon }_2 = \infty \) , compute \( {\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) \) , and if
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) }\end{Vmatrix} \leq  {\epsilon }_1,\tag{5.5.7}
+\]
+
+terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k + {s}_k \) .
+
+If \( {\epsilon }_2 < \infty \) , compute both \( {\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) \) and \( {\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) \) , and if (5.5.7) holds and
+
+\[
+{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) }\right\rbrack   > {\epsilon }_2,\tag{5.5.8}
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate strict local minimizer \( {x}_{\epsilon } = {x}_k + {s}_k \) . If (5.5.7) holds and (5.5.8) fails but
+
+\[
+{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) }\right\rbrack   \geq   - {\epsilon }_2,
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k + \; {s}_k \) .
+
+Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) and define
+
+\[
+{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f, p}\left( {{x}_k,0}\right)  - {T}_{f, p}\left( {{x}_k,{s}_k}\right) }.\tag{5.5.9}
+\]
+
+If \( {\rho }_k \geq  {\eta }_1 \) , then check whether
+
+\[
+{\sigma }_k{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 1} \geq  {\alpha }_1\begin{Vmatrix}{{\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) }\end{Vmatrix},\tag{5.5.10}
+\]
+
+and if \( {\epsilon }_2 < \infty \) , check also whether
+
+\[
+{\sigma }_k{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 2} \geq   - {\alpha }_2{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) }\right\rbrack  .\tag{5.5.11}
+\]
+
+If \( {\rho }_k \geq  {\eta }_1,\left( {5.5.10}\right) \) , and (5.5.11) hold, define \( {x}_{k + 1} = {x}_k + {s}_k \) , and compute all unavailable derivatives \( {\nabla }_x^{j}f\left( {x}_{k + 1}\right) \) for orders \( j \leq  p \) . Otherwise, define \( {x}_{k + 1} = {x}_k \) .
+
+Step 4: Regularization parameter update. Set
+
+\[
+{\sigma }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {{\gamma }_{1}{\sigma }_{k},{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2},\left( {5.5.10}\right) ,\text{ and (5.5.11) hold, } \\  \left\lbrack  {{\sigma }_{k},{\gamma }_{2}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) ,\left( {5.5.10}\right) ,\text{ and (5.5.11) hold, } \\  \left\lbrack  {{\gamma }_{2}{\sigma }_{k},{\gamma }_{3}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}\text{ and (5.5.10) or (5.5.11) fails. } \end{array}\right.
+\]
+
+Increment \( k \) by one and go to Step 1.
+
+The design of the ARp-H algorithm clearly exhibits many similarities with its predecessor, \( \mathrm{AR}p \) , when \( r = p + 1 \) in (5.5.1). However, there are three main differences in addition to the flexible regularization power. Firstly, no explicit lower bound \( {\sigma }_{\min } > 0 \) on \( {\sigma }_k \) is imposed, as we required for the \( \mathrm{AR}p \) and earlier algorithms. In principle, this might allow the algorithm to take steps that are asymptotically closer to those from a pure Newton method, but actually conditions (5.5.10) and (5.5.11) may implicitly provide a lower bound on \( {\sigma }_k \) . Secondly, we check whether termination occurs at each trial point, not just on successful iterations. Finally, even when the candidate step \( {s}_k \) provides sufficient decrease according to (5.5.9), we only allow the algorithm to accept the step if it is appropriately long according to the recipes (5.5.10) and possibly (5.5.11). If either (5.5.10) or (5.5.11) fails or \( {\rho }_k \leq  {\eta }_1 \) , the parameter \( {\sigma }_k \) is increased. These two additional ingredients - the gradient and Hessian calculation at each trial point and the steplength condition - are directly related to trying to achieve universality of the ARp-H algorithm. Here, universality [302] refers to algorithms that are invariant to the regularization power (in our case, so long as \( r \geq  p + 1 \) ) and applicable to different levels of smoothness in the objective (that are unknown a priori) while maintaining good or even optimal worst-case evaluation complexity.
+
+We turn as always to a worst-case evaluation-complexity analysis of the algorithm. The first ingredient is a by now familiar sufficient-decrease result.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.5"
+
+[[node]]
+id = "lemma_5_5_1"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.5.1: Sufficient decrease
+
+Each iteration of the ARp-H algorithm guarantees the decrease
+
+\[
+f\left( {x}_k\right)  - {T}_p\left( {{x}_k,{s}_k}\right)  \geq  \frac{{\sigma }_k}{r!}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r}.\tag{5.5.12}
+\]
+'''
+deps = ["universalArpRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7194)"
+
+[[node]]
+id = "lemma_5_5_2"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.5.2: Lower bound on the step
+
+Suppose that f.DpH holds. Then on each iteration of the ARp-H algorithm, the step \( {s}_k \) calculated in Step 1 satisfies
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) }\end{Vmatrix} \leq  \frac{{H}_{f, p}}{\left( {p + {\beta }_p - 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + {\beta }_p - 1} + \frac{{\sigma }_k}{\left( {r - 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 1} + {\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 1}.
+\]
+
+(5.5.13)
+
+If additionally \( {\epsilon }_2 < \infty \) , then
+
+\[
+- {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) }\right\rbrack   \leq  \frac{{H}_{f, p}}{\left( {p + {\beta }_p - 2}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + {\beta }_p - 2} + \frac{{\sigma }_k}{\left( {r - 2}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 2} + {\theta }_2{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 2}.
+\]
+
+(5.5.14)
+'''
+deps = ["universalArpRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7216)"
+
+[[node]]
+id = "lemma_5_5_3"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.5.3: Successful iterations
+
+Suppose that \( r \geq  p + {\beta }_p \) and f.DpH hold. (i) If \( {\epsilon }_2 = \infty \) and
+
+\[
+{\sigma }_k \geq  \max \left\lbrack  {{\theta }_1\left( {r - 1}\right) !,{\kappa }_{\beta }{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + {\beta }_p - r}}\right\rbrack  ,\tag{5.5.18}
+\]
+
+where
+
+\[
+{\kappa }_{\beta }\overset{\text{ def }}{ = }\frac{r!{H}_{f, p}}{\left( {p + {\beta }_{p} - 1}\right) !\left( {1 - {\eta }_{2}}\right) },\tag{5.5.19}
+\]
+
+then \( {\rho }_k \geq  {\eta }_2 \) and (5.5.10) hold, and so iteration \( k \) is very successful.
+
+(ii) If \( {\epsilon }_2 < \infty \) and
+
+\[
+{\sigma }_k \geq  \max \left\lbrack  {{\theta }_1\left( {r - 1}\right) !,{\theta }_2\left( {r - 2}\right) !,{\kappa }_{\beta }{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + {\beta }_p - r}}\right\rbrack  ,\tag{5.5.20}
+\]
+
+then additionally (5.5.11) holds, and again iteration \( k \) is very successful.
+
+Referenced equation payloads:
+
+Equation (5.5.10):
+\[
+{\sigma }_k{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 1} \geq  {\alpha }_1\begin{Vmatrix}{{\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) }\end{Vmatrix},\tag{5.5.10}
+\]
+
+Equation (5.5.11):
+\[
+{\sigma }_k{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 2} \geq   - {\alpha }_2{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) }\right\rbrack  .\tag{5.5.11}
+\]
+'''
+deps = ["universalArpRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7284)"
+
+[[node]]
+id = "lemma_5_5_4"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.5.4: A lower bound on \( {\sigma }_k \) to ensure success
+
+Suppose that \( r \geq  p + {\beta }_p \) , that \( \mathbf{f}.\mathbf{DpH} \) holds, and that the \( \mathrm{AR}p - \mathrm{H} \) algorithm has not terminated. (i) If \( {\epsilon }_2 = \infty \) and
+
+\[
+{\sigma }_k \geq  \max \left\lbrack  {{\theta }_1\left( {r - 1}\right) !,{\kappa }_{\beta ,1}{\epsilon }_1^{\frac{p + {\beta }_p - r}{p + {\beta }_p - 1}}}\right\rbrack  ,\tag{5.5.27}
+\]
+
+where
+
+\[
+{\kappa }_{\beta ,1}\overset{\text{ def }}{ = }{\left( \frac{\left( {r - 1}\right) !}{3}\right) }^{\frac{p + {\beta }_{p} - r}{p + {\beta }_{p} - 1}}{\kappa }_{\beta }^{\frac{r - 1}{p + {\beta }_{p} - 1}}\tag{5.5.28}
+\]
+
+and \( {\kappa }_{\beta } \) is defined by (5.5.19), then (5.5.18) holds, and consequently iteration \( k \) is very successful.
+
+(ii) If \( {\epsilon }_2 < \infty \) and
+
+\[
+{\sigma }_k \geq  \max \left\lbrack  {{\theta }_1\left( {r - 1}\right) !,{\theta }_2\left( {r - 2}\right) !,{\kappa }_{\beta ,1}{\epsilon }_1^{\frac{p + {\beta }_p - r}{p + {\beta }_p - 1}},{\kappa }_{\beta ,2}{\epsilon }_2^{\frac{p + {\beta }_p - r}{p + {\beta }_p - 2}}}\right\rbrack  ,\tag{5.5.29}
+\]
+
+where
+
+\[
+{\kappa }_{\beta ,2}\overset{\text{ def }}{ = }{\left( \frac{\left( {r - 2}\right) !}{3}\right) }^{\frac{p + {\beta }_{p} - r}{p + {\beta }_{p} - 2}}{\kappa }_{\beta }^{\frac{r - 2}{p + {\beta }_{p} - 2}},\tag{5.5.30}
+\]
+
+then (5.5.20) holds, and once again iteration \( k \) is very successful.
+
+Referenced equation payloads:
+
+Equation (5.5.18):
+\[
+{\sigma }_k \geq  \max \left\lbrack  {{\theta }_1\left( {r - 1}\right) !,{\kappa }_{\beta }{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + {\beta }_p - r}}\right\rbrack  ,\tag{5.5.18}
+\]
+
+Equation (5.5.19):
+\[
+{\kappa }_{\beta }\overset{\text{ def }}{ = }\frac{r!{H}_{f, p}}{\left( {p + {\beta }_{p} - 1}\right) !\left( {1 - {\eta }_{2}}\right) },\tag{5.5.19}
+\]
+
+Equation (5.5.20):
+\[
+{\sigma }_k \geq  \max \left\lbrack  {{\theta }_1\left( {r - 1}\right) !,{\theta }_2\left( {r - 2}\right) !,{\kappa }_{\beta }{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + {\beta }_p - r}}\right\rbrack  ,\tag{5.5.20}
+\]
+'''
+deps = ["lemma_5_5_3", "universalArpRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7384)"
+
+[[node]]
+id = "lemma_5_5_5"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.5.5: An upper bound on \( {\sigma }_k \)
+
+Suppose that f.DpH holds, \( r \geq  p + {\beta }_p \) , and the ARp-H algorithm has not terminated. Then
+
+\[
+{\sigma }_k \leq  \max \left\lbrack  {{\sigma }_0,{\gamma }_3{\theta }_1\left( {r - 1}\right) !,{\gamma }_3{\kappa }_{\beta ,1}{\epsilon }_1^{\frac{p + {\beta }_p - r}{p + {\beta }_p - 1}}}\right\rbrack\tag{5.5.39}
+\]
+
+if \( {\epsilon }_2 = \infty \) , and
+
+\[
+{\sigma }_k \leq  \max \left\lbrack  {{\sigma }_0,{\gamma }_3{\theta }_1\left( {r - 1}\right) !,{\gamma }_3{\theta }_2\left( {r - 2}\right) !,{\gamma }_3{\kappa }_{\beta ,1}{\epsilon }_1^{\frac{p + {\beta }_p - r}{p + {\beta }_p - 1}},{\gamma }_3{\kappa }_{\beta ,2}{\epsilon }_2^{\frac{p + {\beta }_p - r}{p + {\beta }_p - 2}}}\right\rbrack\tag{5.5.40}
+\]
+
+if \( {\epsilon }_2 < \infty \) , and where \( {\kappa }_{\beta ,1} \) and \( {\kappa }_{\beta ,2} \) are defined as in (5.5.28) and (5.5.30), respectively. Furthermore, if \( {\epsilon }_2 < \infty \) , then
+
+\[
+{\sigma }_k \leq  {\sigma }_H\max \left\lbrack  {{\epsilon }_1^{\frac{p + {\beta }_p - r}{p + {\beta }_p - 1}},{\epsilon }_2^{\frac{p + {\beta }_p - r}{p + {\beta }_p - 2}}}\right\rbrack  ,\tag{5.5.41}
+\]
+
+where
+
+\[
+{\sigma }_{H}\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},{\gamma }_{3}{\theta }_{1}\left( {r - 1}\right) !,{\gamma }_{3}{\theta }_{2}\left( {r - 2}\right) !,{\gamma }_{3}{\kappa }_{\beta ,1},{\gamma }_{3}{\kappa }_{\beta ,2}}\right\rbrack  .\tag{5.5.42}
+\]
+
+Referenced equation payloads:
+
+Equation (5.5.28):
+\[
+{\kappa }_{\beta ,1}\overset{\text{ def }}{ = }{\left( \frac{\left( {r - 1}\right) !}{3}\right) }^{\frac{p + {\beta }_{p} - r}{p + {\beta }_{p} - 1}}{\kappa }_{\beta }^{\frac{r - 1}{p + {\beta }_{p} - 1}}\tag{5.5.28}
+\]
+
+Equation (5.5.30):
+\[
+{\kappa }_{\beta ,2}\overset{\text{ def }}{ = }{\left( \frac{\left( {r - 2}\right) !}{3}\right) }^{\frac{p + {\beta }_{p} - r}{p + {\beta }_{p} - 2}}{\kappa }_{\beta }^{\frac{r - 2}{p + {\beta }_{p} - 2}},\tag{5.5.30}
+\]
+'''
+deps = ["lemma_5_5_4", "universalArpRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7492)"
+
+[[node]]
+id = "lemma_5_5_6"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.5.6: Lower bound on successful iterations
+
+Suppose that f.DpH holds. Then, on each successful iteration \( k \) of the ARp-H algorithm up to termination, we have the following:
+
+(i) If \( {\epsilon }_2 = \infty \) and \( r \geq  p + {\beta }_p > 1 \) , then
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_{H,1}{\epsilon }_1^{\frac{p + {\beta }_p}{p + {\beta }_p - 1}},
+\]
+
+where
+
+\[
+{\kappa }_{H,1}\overset{\text{ def }}{ = }\frac{{\eta }_{1}}{r!}{\left( \frac{{\alpha }_{1}^{r}}{{\sigma }_{H,1}}\right) }^{\frac{1}{r - 1}}\;\text{ and }\;{\sigma }_{H,1}\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},{\gamma }_{3}{\theta }_{1}\left( {r - 1}\right) !,{\gamma }_{3}{\kappa }_{\beta ,1}}\right\rbrack  ,
+\]
+
+with \( {\kappa }_{\beta ,1} \) defined as in (5.5.28).
+
+(ii) If \( {\epsilon }_2 < \infty \) and \( r \geq  p + {\beta }_p > 2 \) , then
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_{H,2}\min \left\lbrack  {{\epsilon }_1^{\frac{p + {\beta }_p}{p + {\beta }_p - 1}},{\epsilon }_2^{\frac{p + {\beta }_p}{p + {\beta }_p - 2}}}\right\rbrack  ,\tag{5.5.44}
+\]
+
+where
+
+\[
+{\kappa }_{H,2}\overset{\text{ def }}{ = }\frac{{\eta }_{1}}{r!}\min \left\lbrack  {{\left( \frac{{\alpha }_{1}^{r}}{{\sigma }_{H}}\right) }^{\frac{1}{r - 1}},{\left( \frac{{\alpha }_{2}^{r}}{{\sigma }_{H}^{2}}\right) }^{\frac{1}{r - 2}}}\right\rbrack\tag{5.5.45}
+\]
+
+and \( {\sigma }_H \) is defined as in (5.5.42).
+
+Referenced equation payloads:
+
+Equation (5.5.28):
+\[
+{\kappa }_{\beta ,1}\overset{\text{ def }}{ = }{\left( \frac{\left( {r - 1}\right) !}{3}\right) }^{\frac{p + {\beta }_{p} - r}{p + {\beta }_{p} - 1}}{\kappa }_{\beta }^{\frac{r - 1}{p + {\beta }_{p} - 1}}\tag{5.5.28}
+\]
+
+Equation (5.5.42):
+\[
+{\sigma }_{H}\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},{\gamma }_{3}{\theta }_{1}\left( {r - 1}\right) !,{\gamma }_{3}{\theta }_{2}\left( {r - 2}\right) !,{\gamma }_{3}{\kappa }_{\beta ,1},{\gamma }_{3}{\kappa }_{\beta ,2}}\right\rbrack  .\tag{5.5.42}
+\]
+'''
+deps = ["lemma_5_5_1", "universalArpRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7536)"
+
+[[node]]
+id = "theorem_5_5_7"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.5.7: Complexity of finding first- and second-order critical points by the \( \mathrm{AR}p - \mathrm{H} \) algorithm
+
+Suppose that \( \mathbf{f}.\mathbf{Bb} \) and \( \mathbf{f}.\mathbf{DpH} \) hold and that \( r \geq  p + {\beta }_p \) . Then there exist positive constants \( {\kappa }_{\mathrm{ARP} - \mathrm{H}}^S,{\kappa }_{\mathrm{ARP} - \mathrm{H}}^A,{\kappa }_{\mathrm{ARP} - \mathrm{H},1}^B,{\kappa }_{\mathrm{ARP} - \mathrm{H},2}^B \) and \( {\kappa }_{\mathrm{ARP} - \mathrm{H}}^C \) for which the \( \mathrm{ARp} - \mathrm{H} \) algorithm (p. 161) requires at most
+
+\[
+{\# }_{\mathrm{{ARp}} - \mathrm{H},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARp}}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\min \left\lbrack  {{\epsilon }_{1}^{\frac{p + {\beta }_{p}}{p + {\beta }_{p} - 1}},{\epsilon }_{2}^{\frac{p + {\beta }_{p}}{p + {\beta }_{p} - 2}}}\right\rbrack  } + {\kappa }_{\mathrm{{ARp}} - \mathrm{H},1}^{B}\left| {\log {\epsilon }_{1}}\right|  + {\kappa }_{\mathrm{{ARp}} - \mathrm{H},2}^{B}\left| {\log {\epsilon }_{2}}\right|  + {\kappa }_{\mathrm{{ARp}} - \mathrm{H}}^{C}
+\]
+
+\[
+= \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_1^{-\frac{p + {\beta }_p}{p + {\beta }_p - 1}},{\epsilon }_2^{-\frac{p + {\beta }_p}{p + {\beta }_p - 2}}}\right\rbrack  }\right)
+\]
+
+(5.5.52)
+
+evaluations of \( f \) and its derivatives of order one and (when \( {\epsilon }_2 < \infty \) ) two and at most
+
+\[
+{\# }_{{}_{\mathtt{{AR}}\mathtt{p} - \mathtt{H},2}}^{D}\overset{\text{ def }}{ = }{\kappa }_{{}_{\mathtt{{AR}}\mathtt{p} - \mathtt{H}}}^{s}\frac{f\left( {x}_{0}\right)  - {f}_{{}_{\mathtt{A}\mathtt{p}\mathtt{r}}}}{\min \left\lbrack  {{\epsilon }_{1}^{\frac{p + {\beta }_{{}_{p}}}{p + {\beta }_{{}_{p}} - 1}},{\epsilon }_{2}^{\frac{p + {\beta }_{{}_{p}}}{p + {\beta }_{{}_{p}} - 2}}}\right\rbrack  } + 1 = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-\frac{p + {\beta }_{{}_{p}}}{p + {\beta }_{{}_{p}} - 1}},{\epsilon }_{2}^{-\frac{p + {\beta }_{{}_{p}}}{p + {\beta }_{{}_{p}} - 2}}}\right\rbrack  }\right)
+\]
+
+evaluations of derivatives of the remaining orders up to \( p \) of \( f \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_2 \) .
+'''
+deps = ["lemma_5_5_6", "lemma_2_4_1", "theorem_4_1_5", "theorem_1_1_2", "universalArpRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.5.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7652)"

@@ -1,0 +1,255 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 1, Section 1.
+
+Keep all necessary orders and sufficiency clauses in separate helper lemmas under the numbered result. Mathlib Analysis.Calculus.LocalExtr.Basic already has IsLocalMin.fderiv_eq_zero. Equality and inequality constraint qualifications are unspecified in the source; use the explicit sufficient LICQ (surjective equality Jacobian / linearly independent active constraint gradients) and document this specialization. Source (1.1.15) and (1.1.18) require d≠0; otherwise strict positivity is impossible at zero. Theorem 1.1.2's converse as stated is false on a general closed convex set: record the incorrect converse separately and prove a corrected tangent-cone version. Its necessary conditions remain unchanged.
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+#### 1.1.1 Introduction
+
+The focus of this book is on finite-dimensional continuous optimization problems, that is, on finding a small or large value of a function \( f \) that depends on parameters \( x \in  {\mathbb{R}}^n \) and where \( x \) is allowed to take any value from within a continuous domain of interest, the feasible set. Since there is no loss in doing so, we shall concentrate on minimization, because to maximize we simply need to minimize \( - f \) . We are especially interested in nonconvex problems, informally those problems that potentially admit local minimizers, since these lie at the heart of applications from many branches of science, engineering, economics, and planning. Although ideally we would like to find the smallest value (the global minimum), this unfortunately is beyond our current expertise and indeed there are strong theoretical reasons why the problem will remain intractable in general. Thus we shall content ourselves with local minimization, that is to say with trying to find a value of \( x \) , a local minimizer, for which all adjacent feasible points have a larger value of \( f \) . It is perhaps disappointing to discover that even this more modest goal may be beyond us, and we will have to lower our sights further. In particular, while we can easily identify, using calculus, conditions that must be satisfied at a local minimizer, these necessary "optimality" conditions need not be sufficient. Indeed, the same conditions might actually be satisfied by a maximizer or some other deviant point. Fortunately, the difference between (second-order) necessary and sufficient conditions is rather minor, so we would be unlucky in practice to be misled.
+
+Thus our hunt will be to try to find a value (or values) of \( x \) that satisfies necessary local optimality conditions. We will consider these in detail in Section 1.1.2. Notice that there is then a tacit assumption that a calculus-based approach is warranted; this may not be the case if the functions that define our problem are not differentiable.
+
+For some problems, any possible value of \( x \) is allowed. These are generally known as unconstrained optimization problems, and the least-squares fitting of a model to experimental data is a good example. But for the vast majority of examples that arise in practice, some values of \( x \) are clearly "off limits," and most real-life examples involve constraints. Sometimes these constraints are very simple—the values of the variables \( x \) are not allowed to be negative-while in other applications the constraints are formidable. Some restrictions are defined by physical equations \( c\left( x\right)  = 0 \) , while others permit a range of values \( c\left( x\right)  \geq  0 \) -we arbitrarily categorize constrained optimization problems by whether they are equality or inequality constrained, but in practice they may actually be both, in which case a hybrid approach may be necessary. There is actually a vast amassed knowledge of methods/algorithms \( {}^1 \) for solving optimization problems, often backed by a reassuring guarantee of convergence under reasonable assumptions.
+
+#### 1.1.2 Problem classes and optimality conditions
+
+Necessary optimality conditions are fundamentally important in what we study in this book. They translate the statement that \( {x}_{ * } \) is a local minimizer of \( f \) over some domain into a set of verifiable conditions that must be achieved. Sufficient optimality conditions assert that if a set of conditions occur, \( f \) must be a local minimizer within the domain of interest.
+
+Almost everything we discuss in this book concerns continuous functions. If \( \mathcal{S} \) is an open subset of \( {\mathbb{R}}^n \) , we let \( {C}^0\left( \mathcal{S}\right) \) be the set of functions that are continuous throughout \( \mathcal{S} \) ; the set \( {C}^0 \) in which \( \mathcal{S} \) is omitted consists of functions that are continuous everywhere. Likewise, the sets \( {C}^1\left( \mathcal{S}\right) ,{C}^2\left( \mathcal{S}\right) \) , and more generally \( {C}^p\left( \mathcal{S}\right) \) contain functions that are continuously differentiable, twice continuously differentiable, and \( p \) -times continuously differentiable throughout \( \mathcal{S} \) , respectively.
+
+##### 1.1.2.1 Functions and their derivatives
+
+At various stages, we will be concerned with an objective function \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) and a vector of constraint functions \( c : {\mathbb{R}}^n \rightarrow  {\mathbb{R}}^m \) , where \( n \) and \( m \) are positive integers. Often \( f \) and \( c \) are assumed to be continuously differentiable over a set of interest, and we then denote the gradient and Jacobian by \( {\nabla }_x^{1}f\left( x\right) \) and \( {\nabla }_x^{1}c\left( x\right) \) , respectively, where the component \( {\left\lbrack  {\nabla }_x^{1}f\left( x\right) \right\rbrack  }_j = \partial f\left( x\right) /\partial {x}_j \) denotes the usual first-order partial derivative of \( f \) with respect to \( {x}_j \) and \( {\left\lbrack  {\nabla }_x^{1}c\left( x\right) \right\rbrack  }_{i, j} = \partial {c}_i\left( x\right) /\partial {x}_j \) for \( 1 \leq  i \leq  m \) and \( 1 \leq  j \leq  n \) . When \( f \) and \( c \) are required to be twice continuously differentiable, we denote their (symmetric) Hessian matrices by \( {\nabla }_x^{2}f\left( x\right) \) and \( {\nabla }_x^2{c}_i\left( x\right) ,1 \leq  i \leq  m \) , where here the components \( {\left\lbrack  {\nabla }_x^{2}f\left( x\right) \right\rbrack  }_{{j}_1,{j}_2} = {\partial }^{2}f\left( x\right) /\partial {x}_{{j}_1}\partial {x}_{{j}_2} \) and \( {\left\lbrack  {\nabla }_x^2{c}_i\left( x\right) \right\rbrack  }_{{j}_1,{j}_2} = {\partial }^2{c}_i\left( x\right) /\partial {x}_{{j}_1}\partial {x}_{{j}_2} \) for \( 1 \leq  {j}_1,{j}_2 \leq \; n \) . When constraints are present, we will encounter the Lagrangian function
+
+\[
+\mathcal{L}\left( {x, y}\right) \overset{\text{ def }}{ = }f\left( x\right)  - \mathop{\sum }\limits_{{i = 1}}^{m}{y}_{i}{c}_{i}\left( x\right) ,\tag{1.1.1}
+\]
+
+along with its gradient
+
+\[
+{\nabla }_x^1\mathcal{L}\left( {x, y}\right)  = {\nabla }_x^{1}f\left( x\right)  - \mathop{\sum }\limits_{i = 1}^m{y}_i{\nabla }_x^1{c}_i\left( x\right)  \equiv  {\nabla }_x^{1}f\left( x\right)  - {\left( {\nabla }_x^{1}c\left( x\right) \right) }^{T}y
+\]
+
+and its Hessian
+
+\[
+{\nabla }_x^2\mathcal{L}\left( {x, y}\right)  = {\nabla }_x^{2}f\left( x\right)  - \mathop{\sum }\limits_{i = 1}^m{y}_i{\nabla }_x^2{c}_i\left( x\right) .
+\]
+
+More generally, the \( p \) th derivative of \( f \) at \( x \) is denoted by \( {\nabla }_x^{p}f\left( x\right) \) and is a cubical, symmetric tensor of order \( p \) whose components are \( {\left\lbrack  {\nabla }_x^{p}f\left( x\right) \right\rbrack  }_{{j}_1,\ldots ,{j}_p} = {\partial }^{p}f\left( x\right) /\partial {x}_{{j}_1}\ldots \partial {x}_{{j}_p} \) for \( 1 \leq  {j}_1,\ldots ,{j}_p \leq  n \) . For such a tensor, the product
+
+\[
+{\left\lbrack  {\nabla }_{x}^{p}f\left( x\right) \left\lbrack  {v}_{1},\ldots ,{v}_{q}\right\rbrack  \right\rbrack  }_{{j}_{q + 1},\ldots ,{j}_{p}}\overset{\text{ def }}{ = }\mathop{\sum }\limits_{{{j}_{1} = 1}}^{n}\cdots \mathop{\sum }\limits_{{{j}_{q} = 1}}^{n}{\left\lbrack  {\nabla }_{x}^{p}f\left( x\right) \right\rbrack  }_{{j}_{1},{j}_{2},\ldots ,{j}_{p}}{\left\lbrack  {v}_{1}\right\rbrack  }_{{j}_{1}}\cdots {\left\lbrack  {v}_{q}\right\rbrack  }_{{j}_{q}}\tag{1.1.2}
+\]
+
+is the result of applying \( {\nabla }_x^{p}f\left( x\right) \) to the vectors \( {v}_1,\ldots ,{v}_q \) , where \( q \leq  p \) , for \( 1 \leq  {j}_{q + 1},\ldots ,{j}_p \; \leq  n \) , and is itself a cubical, symmetric tensor of dimension \( p - q \) . By convention, we write \( {\nabla }_x^{0}f\left( x\right)  = f\left( x\right) \) .
+
+---
+
+\( {}^1 \) We use the terms methods and algorithms interchangeably throughout, although computer science purists argue that an algorithm must terminate but a method might not.
+
+---
+
+For a real, sufficiently differentiable univariate function (i.e., a function of a single variable) \( \phi ,{\phi }^{\left( p\right) } \) denotes its \( p \) th derivative and \( {\phi }^{\left( 0\right) } \) is a synonym for \( \phi \) .
+
+##### 1.1.2.2 Unconstrained problems
+
+Unconstrained minimization will be the focus of much of this book. The aim is to find a point \( {x}_{ * } \) that satisfies necessary local optimality conditions for the problem
+
+\[
+\mathop{\operatorname{minimize}}\limits_{{x \in  {\mathbb{R}}^{n}}}f\left( x\right) ,\tag{1.1.3}
+\]
+
+in which \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) is a continuous function. In the unconstrained case, both first-and second-order necessary and sufficient conditions will undoubtedly be familiar to our readers. The third-order necessary condition is less well known; indeed it is stated in terms of the third-order tensor product (1.1.2) for which
+
+\[
+{\nabla }_x^{3}f\left( x\right) {\left\lbrack  d\right\rbrack  }^3 \equiv  {\nabla }_x^{3}f\left( x\right) \left\lbrack  {d, d, d}\right\rbrack   = \mathop{\sum }\limits_{i = 1}^n\mathop{\sum }\limits_{j = 1}^n\mathop{\sum }\limits_{k = 1}^n{\left\lbrack  {\nabla }_x^{3}f\left( x\right) \right\rbrack  }_{i, j, k}{\left\lbrack  d\right\rbrack  }_i{\left\lbrack  d\right\rbrack  }_j{\left\lbrack  d\right\rbrack  }_k
+\]
+
+involving \( {\nabla }_x^{3}f\left( {x}_{ * }\right) \) ; we will return to both this and to why even higher order conditions become increasingly computationally unwieldy in Section 12.1.
+'''
+
+[[node]]
+id = "lagrangian"
+kind = "definition"
+desc = '''
+For f:E→ℝ and c:E→EuclideanSpace ℝ (Fin m), define lagrangian f c x y = f x − ⟪y,c x⟫. Componentwise this is f x − ∑i,y_i c_i(x); use the minus multiplier convention throughout.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 1.1"
+
+[[node]]
+id = "feasibleDisplacements"
+kind = "definition"
+desc = '''
+For C:Set E and x:E, define feasibleDisplacements C x = {d | x+d∈C}, exactly (1.1.7). This is a translated set of displacements, not the tangent cone; 0 belongs iff x∈C.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 1.1"
+
+[[node]]
+id = "theorem_1_1_1"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 1.1.1: Unconstrained optimality conditions
+
+Let \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \in  {C}^1 \) , and suppose that \( {x}_{ * } \in  {\mathbb{R}}^n \) is a local minimizer of \( f \) . Then
+
+\[
+{\nabla }_x^{1}f\left( {x}_{ * }\right)  = 0.\tag{1.1.4}
+\]
+
+If \( f \in  {C}^2 \) , then \( {\nabla }_x^{2}f\left( {x}_{ * }\right) \) is positive semidefinite, while if \( f \in  {C}^3,{\nabla }_x^{3}f\left( {x}_{ * }\right) {\left\lbrack  d\right\rbrack  }^3 = 0 \) for all vectors \( d \) for which \( {\nabla }_x^{2}f\left( {x}_{ * }\right) d = 0 \) . Conversely, if, for a given \( {x}_{ * } \in  {\mathbb{R}}^n \) , (1.1.4) holds and \( {\nabla }_x^{2}f\left( {x}_{ * }\right) \) is positive definite, then \( {x}_{ * } \) is a strict local minimizer of \( f \in  {C}^2 \) .
+'''
+deps = ["lagrangian", "feasibleDisplacements"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 747)"
+
+[[node]]
+id = "theorem_1_1_2"
+kind = "theorem"
+desc = '''
+Semantic specification: Implement the three NECESSARY conditions exactly. The printed converse is false for general C; it is recorded separately as wrong. A separate corrected theorem uses the closed tangent cone in its positivity hypothesis. Do not prove the printed false converse from impossible assumptions.
+
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 1.1.2: Convexly constrained optimality conditions
+
+Let \( \mathcal{C} \) be a nonempty, closed, convex set; let \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \in  {C}^1\left( \mathcal{S}\right) \) , where the open set \( \mathcal{S} \) contains \( \mathcal{C} \) ; and suppose that \( {x}_{ * } \) is a local minimizer of \( f \) within \( \mathcal{C} \) . Then
+
+\[
+\left\langle  {d,{\nabla }_{x}^{1}f\left( {x}_{ * }\right) }\right\rangle   \geq  0\text{ for all }d \in  \mathcal{C}\left( {x}_{ * }\right) ,\tag{1.1.6}
+\]
+
+where
+
+\[
+\mathcal{C}\left( x\right) \overset{\text{ def }}{ = }\left\{  {d \in  {\mathbb{R}}^{n} \mid  x + d \in  \mathcal{C}}\right\}  .\tag{1.1.7}
+\]
+
+If \( f \in  {C}^2\left( \mathcal{S}\right) \) , then
+
+\[
+\left\langle  {d,{\nabla }_{x}^{2}f\left( {x}_{ * }\right) d}\right\rangle   \geq  0\text{ for all }d \in  \mathcal{C}\left( {x}_{ * }\right) \text{ for which }\left\langle  {d,{\nabla }_{x}^{1}f\left( {x}_{ * }\right) }\right\rangle   = 0,\tag{1.1.8}
+\]
+
+while if \( f \in  {C}^3\left( \mathcal{S}\right) \) , then
+
+\[
+\begin{gathered}{\nabla }_{x}^{3}f\left( {x}_{ * }\right) {\left\lbrack  d\right\rbrack  }^{3} \geq  0\text{ for all }d \in  \mathcal{C}\left( {x}_{ * }\right) \text{ for which } \\ \left\langle  {d,{\nabla }_{x}^{1}f\left( {x}_{ * }\right) }\right\rangle   = 0\text{ and }\left\langle  {d,{\nabla }_{x}^{2}f\left( {x}_{ * }\right) d}\right\rangle   = 0.\end{gathered}\tag{1.1.9}
+\]
+
+Conversely, if, for a given \( {x}_{ * } \in  \mathcal{C} \) ,(1.1.6) holds and
+
+\[
+\left\langle  {d,{\nabla }_{x}^{2}f\left( {x}_{ * }\right) d}\right\rangle   > 0\text{ for all }d \neq  0 \in  \mathcal{C}\left( {x}_{ * }\right) \text{ for which }\left\langle  {d,{\nabla }_{x}^{1}f\left( {x}_{ * }\right) }\right\rangle   = 0\text{ , }
+\]
+
+then \( {x}_{ * } \) is a strict local minimizer of \( f \in  {C}^2\left( \mathcal{S}\right) \) .
+'''
+deps = ["theorem_1_1_1", "lagrangian", "feasibleDisplacements"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 781)"
+
+[[node]]
+id = "theorem_1_1_2_source_converse"
+kind = "theorem"
+desc = '''
+The uncorrected converse of Theorem 1.1.2: first-order inequality on C(x*) and strict Hessian positivity for nonzero feasible displacements orthogonal to grad f imply strict local minimality. This is false for arbitrary closed convex C.
+'''
+deps = ["feasibleDisplacements"]
+wrong = '''
+Counterexample: C={(u,v)∈ℝ²|v≥u⁴}, x*=0, f(u,v)=v−u². C is nonempty, closed and convex; grad f(0)=(0,1), hence the first-order inequality holds. The only d∈C with grad f(0)·d=0 is d=0, so strict positivity on nonzero such d holds vacuously. Yet f(t,t⁴)=t⁴−t²<0=f(0) for 0<|t|<1.
+'''
+source = "Cartis–Gould–Toint, Theorem 1.1.2, converse"
+
+[[node]]
+id = "theorem_1_1_2_tangentCone_sufficient"
+kind = "theorem"
+desc = '''
+Corrected sufficient clause: let C be closed convex, x*∈C, f C² on an open neighborhood, and ⟪grad f x*,y−x*⟫≥0 for all y∈C. Let T be the closure of {t • (y−x*) | t≥0, y∈C}. If D²f(x*)[d,d]>0 for every nonzero d∈T with ⟪grad f x*,d⟫=0, then x* is a strict local minimizer of f on C. This explicitly strengthens the faulty source condition from actual displacements to the closed tangent cone; prove by compactness of normalized feasible displacements and a second-order Taylor contradiction.
+'''
+deps = ["feasibleDisplacements"]
+source = "Cartis–Gould–Toint, Theorem 1.1.2, corrected converse"
+
+[[node]]
+id = "theorem_1_1_3"
+kind = "theorem"
+desc = '''
+Semantic specification: Use explicit LICQ for the unspecified constraint qualification and require d≠0 in (1.1.15); both necessary and sufficient statements must be exposed with their own regularity assumptions.
+
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 1.1.3: Equality-constrained optimality conditions
+
+Let \( \mathcal{S} \) be an open set containing the feasible region \( \{ x \mid  c\left( x\right)  = 0\} \) , let \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) and \( c : {\mathbb{R}}^n \rightarrow  {\mathbb{R}}^m \in  {C}^1\left( \mathcal{S}\right) \) , suppose that \( {x}_{ * } \in  {\mathbb{R}}^n \) is a local minimizer of \( f\left( x\right) \) subject to \( c\left( x\right)  = 0 \) , and suppose that a constraint qualification is satisfied at \( {x}_{ * } \) . Then there exist Lagrange multipliers \( {y}_{ * } \in  {\mathbb{R}}^m \) for which
+
+\[
+{\nabla }_{x}^{1}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right)  = 0\text{ and }c\left( {x}_{ * }\right)  = 0.\tag{1.1.13}
+\]
+
+If \( f, c \in  {C}^2\left( \mathcal{S}\right) \) , then
+
+\[
+\left\langle  {d,{\nabla }_{x}^{2}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) d}\right\rangle   \geq  0\text{ for all }d\text{ such that }{\nabla }_{x}^{1}c\left( {x}_{ * }\right) d = 0\text{ . }\tag{1.1.14}
+\]
+
+Conversely, if, for given \( {x}_{ * } \in  {\mathbb{R}}^n,{y}_{ * } \in  {\mathbb{R}}^m \) , and \( f, c \in  {C}^2\left( \mathcal{S}\right) \) ,(1.1.13) holds and
+
+\[
+\left\langle  {d,{\nabla }_{x}^{2}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) d}\right\rangle   > 0\text{ for all }d\text{ such that }{\nabla }_{x}^{1}c\left( {x}_{ * }\right) d = 0,\tag{1.1.15}
+\]
+
+then \( {x}_{ * } \) is a strict local minimizer of \( f\left( x\right) \) subject to \( c\left( x\right)  = 0 \) .
+'''
+deps = ["lagrangian", "feasibleDisplacements"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 863)"
+
+[[node]]
+id = "theorem_1_1_4"
+kind = "theorem"
+desc = '''
+Semantic specification: Use linear independence of the active gradients for the unspecified constraint qualification and require d≠0 in (1.1.18). Preserve nonnegative multipliers and componentwise feasibility, stationarity and complementarity.
+
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 1.1.4: Inequality-constrained optimality conditions
+
+Let \( \mathcal{S} \) be an open set containing the feasible region \( \{ x \mid  c\left( x\right)  \geq  0\} \) , let \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) and \( c : {\mathbb{R}}^n \rightarrow  {\mathbb{R}}^m \in  {C}^1\left( \mathcal{S}\right) \) , suppose that \( {x}_{ * } \in  {\mathbb{R}}^n \) is a local minimizer of \( f\left( x\right) \) subject to \( c\left( x\right)  \geq  0 \) , and suppose that a constraint qualification is satisfied at \( {x}_{ * } \) . Then there exist Lagrange multipliers \( {y}_{ * } \in  {\mathbb{R}}^m \) for which
+
+\[
+{\nabla }_{x}^{1}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right)  = 0, c\left( {x}_{ * }\right)  \geq  0,{y}_{ * } \geq  0,\text{ and }\left\langle  {{y}_{ * }, c\left( {x}_{ * }\right) }\right\rangle   = 0.\tag{1.1.16}
+\]
+
+If \( f, c \in  {C}^2\left( \mathcal{S}\right) \) , then
+
+\[
+\left\langle  {d,{\nabla }_{x}^{2}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) d}\right\rangle   \geq  0\text{ for all }d \in  {\mathcal{N}}_{ + },\tag{1.1.17}
+\]
+
+where
+
+\[
+{\mathcal{N}}_{ + } = \left\{  {d \in  {\mathbb{R}}^{n} \mid  \begin{array}{l} \left\langle  {d,{\nabla }_{x}^{1}{c}_{i}\left( {x}_{ * }\right) }\right\rangle   = 0\text{ for all }i \in  \mathcal{A}\left( {x}_{ * }\right) \text{ with }{\left\lbrack  {y}_{ * }\right\rbrack  }_{i} > 0\text{ and } \\  \left\langle  {d,{\nabla }_{x}^{1}{c}_{i}\left( {x}_{ * }\right) }\right\rangle   \geq  0\text{ for all }i \in  \mathcal{A}\left( {x}_{ * }\right) \text{ with }{\left\lbrack  {y}_{ * }\right\rbrack  }_{i} = 0 \end{array}}\right\}  .
+\]
+
+Conversely, if, for given \( {x}_{ * } \in  {\mathbb{R}}^n,{y}_{ * } \in  {\mathbb{R}}^m \) , and \( f, c \in  {C}^2\left( \mathcal{S}\right) \) ,(1.1.16) holds and
+
+\[
+\left\langle  {d,{\nabla }_{x}^{2}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) d}\right\rangle   > 0\text{ for all }d \in  {\mathcal{N}}_{ + },\tag{1.1.18}
+\]
+
+then \( {x}_{ * } \) is a strict local minimizer of \( f\left( x\right) \) subject to \( c\left( x\right)  \geq  0 \) .
+'''
+deps = ["theorem_1_1_2", "theorem_1_1_1", "lagrangian", "feasibleDisplacements"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 903)"

@@ -1,0 +1,416 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 5, Section 1.
+
+Φ_ℓ(x)=||r(x)||^ℓ/ℓ, with ℓ>0 and Euclidean residual norm; ℓ=1 is a Euclidean norm, not an l¹ norm. Lemma 5.1.1 has two branches (positive even integer ℓ, or real ℓ>2p), both retained. Lemma 5.1.5 assumes p>0 because the book uses ℕ for positive integers and ℕ⁰ for nonnegative integers; zero does not admit an odd positive factor. Mathlib Nat.ordProj_mul_ordCompl_eq_self, Nat.not_dvd_ordCompl and Nat.factorization provide a short implementation of odd factorization and uniqueness. Cascading fractional powers are nonnegative Real.rpow, with exact dyadic exponents.
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+#### 5.1.1 Introduction
+
+In our experience, a large proportion of practical unconstrained optimization problems arise from fitting models to data. More specifically, given a vector \( r\left( x\right) \) of parameterized residual functions \( {r}_i : {\mathbb{R}}^n \rightarrow  \mathbb{R}, i \in  \left\lbrack  {1 : m}\right\rbrack \) , the parameters \( x \) are chosen to make an appropriate norm of \( r\left( x\right) \) as small as possible - each residual typically measures the discrepancy between a modeled quantity (using the model parameters \( x \) ) and a physical observation of the same quantity. Although other norms may arise, the majority prefer the Euclidean norm, or a weighted version thereof [164]. Thus the problem of concern is \( {\text{ to }}^{34} \)
+
+\[
+\mathop{\operatorname{minimize}}\limits_{{x \in  {\mathbb{R}}^{n}}}{\Phi }_{1}\left( x\right) \overset{\text{ def }}{ = }\parallel r\left( x\right) \parallel .\tag{5.1.1}
+\]
+
+However, because the Euclidean norm is not everywhere smooth, while its square is, it is usually considered convenient to solve the equivalent least-squares problem, that is,
+
+\[
+\mathop{\operatorname{minimize}}\limits_{{x \in  {\mathbb{R}}^{n}}}{\Phi }_{2}\left( x\right) \overset{\text{ def }}{ = }\frac{1}{2}\parallel r\left( x\right) {\parallel }^{2} = \frac{1}{2}\mathop{\sum }\limits_{{i = 1}}^{m}{r}_{i}^{2}\left( x\right) ,\tag{5.1.2}
+\]
+
+instead. Such a justification is somewhat spurious since, for smooth \( r \) , the only point of derivative discontinuity of \( {\Phi }_1\left( x\right) \) occurs if by chance \( r\left( x\right)  = 0 \) , and, as we will shortly see, it is possible to check separately for this possibility.
+
+Least-squares problems are classified as either linear-in which the parameters may simply be found by solving a suitable system of linear equations - or nonlinear-in the case when at least one of the residuals is a nonlinear function. A least-squares fit is often justified by the assumption that modeling errors are normally distributed, an assumption that is partially justified by the central-limit theorem. For linear models, normally distributed errors lead to the least-squares formulation via maximum likelihood estimation. The formulation above assumes that variances are equal, but this is not a restriction since unequal variances may be included either implicitly (via a weighted Euclidean norm) or explicitly (by weighting the residuals).
+
+Examples of problems of this kind abound [226, Chap. 12]. These range throughout experimental science (computational physics, chemistry, biology, and earth sciences), engineering (in disciplines such as transportation, aerospace, and power systems), and finance (pricing and hedging of financial derivatives). Specific applications arise in exploration seismology, NMR spectroscopy, and piezoelectric crystal identification (used in ultrasound for imaging) in medicine; selection of satellite image sensor characteristics, powering internet mapping services; data assimilation for weather forecasting and climate modeling; and building neural networks for artificial intelligence, to mention but a few.
+
+The reader may well have noticed that there is nothing sacred about the least-squares reformulation of (5.1.1); indeed the problem is also equivalent to minimizing
+
+\[
+{\Phi }_{\ell }\left( x\right) \overset{\text{ def }}{ = }\frac{1}{\ell }\parallel r\left( x\right) {\parallel }^{\ell }\tag{5.1.3}
+\]
+
+for any positive integer \( \ell \) chosen so that \( {\Phi }_{\ell } \) inherits the smoothness of \( r \) . The following lemma indicates when this is the case, allowing us to focus on (5.1.3) rather than \( {\Phi }_2\left( x\right) \) when it is advantageous to do so.
+
+---
+
+\( {}^{34} \) Please be aware that we are using the Euclidean norm \( \parallel  \cdot  \parallel  = \parallel  \cdot  {\parallel }_2 \) throughout, not the one-norm \( \parallel  \cdot  {\parallel }_1! \)
+
+---
+'''
+
+[[node]]
+id = "residualPowerObjective"
+kind = "definition"
+desc = '''
+For residual r:E→F and ℓ:ℝ with 0<ℓ, define Φ_ℓ x=||r x||^ℓ/ℓ using Real.rpow. For positive integer ℓ this agrees with the natural power. Φ₁=||r|| and Φ₂=½||r||². The residual zero case must be handled before division by ||r|| in normalized criticality tests.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.1"
+
+[[node]]
+id = "arpLeastEuclideanRun"
+kind = "definition"
+desc = '''
+Define the set of finite traces satisfying Algorithm 5.1.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
+
+Algorithm 5.1.1: Adaptive-regularization algorithm with \( p \) th-order
+                models for least Euclidean norm problems (ARpLE)
+Apply Algorithm 4.1.1 (ARp,on p. 100) to \( f\left( x\right)  = {\Phi }_{\ell }\left( x\right) \) for a given \( \ell  \geq  2 \) using
+the model
+                 \[{m}_k\left( s\right)  = {T}_{{\Phi }_{\ell },p}\left( {{x}_k,s}\right)  + \frac{{\sigma }_k}{\left( {p + 1}\right) !}\parallel s{\parallel }^{p + 1},\] (5.1.8)
+
+but replace the termination tests (Step 1) with the following:
+Step 1: Test for termination. If
+                              \[\begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_0,\] (5.1.9)
+
+     terminate with the \( {\epsilon }_0 \) -approximate global minimizer \( {x}_{\epsilon } = {x}_k \) .
+     If \( {\epsilon }_2 = {\epsilon }_3 = \infty \) and
+                              \[{\psi }_{\ell ,1}\left( {x}_k\right)  \leq  {\epsilon }_1\] (5.1.10)
+     terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+     If \( {\epsilon }_2 < \infty ,\left( {5.1.10}\right) \) holds,and
+                              \[{\psi }_{\ell ,2}\left( {x}_k\right)  > {\epsilon }_2\] (5.1.11)
+
+     terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate strict local minimizer \( {x}_{\epsilon } = {x}_k \) .
+     If \( {\epsilon }_2 < \infty \) and \( {\epsilon }_3 = \infty ,\left( {5.1.10}\right) \) holds,and (5.1.11) fails but
+                             \[{\psi }_{\ell ,2}\left( {x}_k\right)  \geq   - {\epsilon }_2\] (5.1.12)
+
+     terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+     If \( {\epsilon }_3 < \infty ,\left( {5.1.10}\right) ,\left( {5.1.12}\right) \) ,and \( {\mathcal{M}}_k \neq  \varnothing \) hold,where \( {\mathcal{M}}_k \) is defined as in
+     (4.1.14), and
+                             \[{\psi }_{\ell ,3}\left( {{x}_k,d}\right)  \leq  {\epsilon }_3\] (5.1.13)
+     and
+                             \[{\psi }_{\ell ,2}\left( {{x}_k,d}\right)  \leq  {\epsilon }_2\] (5.1.14)
+     for all \( d \in  {\mathcal{M}}_k \) ,terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2,{\epsilon }_3}\right) \) -approximate third-order min-
+     imizer \( {x}_{\epsilon } = {x}_k \) .
+```
+
+Just as when we applied ARp to general objectives, the third-order conditions (5.1.13) and (5.1.14) differ from the requirement (5.1.6) in that the latter can only be guaranteed along directions of small curvature for the model, namely, those in \( {\mathcal{M}}_k \) . Again, we will be able to show that at termination, \( {\mathcal{M}}_k \subseteq  {\mathcal{Z}}_{\epsilon } \) , where \( {\mathcal{Z}}_{\epsilon } \) is defined as in (5.1.7), and so model directions of small curvature also lead to small curvature for the true objective.
+
+Given \( p \) , we will consider the choice of \( \ell \) in some detail in Section 5.1.3. For the time being, it suffices to say that if one wishes to obtain a first-, second-, or third-order approximate minimizer, it is clear that \( p \) should be at least 1,2, or 3 (respectively). If \( p \) is a multiple of 1,2, or 6, then \( \ell  = p,\frac{1}{2}p \) , and \( \frac{1}{3}p \) (respectively) is reasonable. The larger the \( p \) , the better the (order of) worst-case evaluation complexity, but at the cost of more expensive subproblem solves.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.1"
+
+[[node]]
+id = "lemma_5_1_1"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.1.1: Smoothness of \( {\Phi }_{\ell } \)
+
+Suppose \( r\left( x\right)  \in  {C}^p \) . Then \( {\Phi }_{\ell } \in  {C}^p \) if \( \ell \) is either an even integer or a real \( \ell  > {2p} \) .
+'''
+deps = ["theorem_4_1_5", "lemma_4_1_4", "residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5362)"
+
+[[node]]
+id = "lemma_5_1_2"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.1.2: Bounds on the successful function decrease for \( \mathrm{AR}p\mathrm{LE} \)
+
+Suppose that \( {\Phi }_{\ell } \) .DpL holds and that iteration \( k \) of the ARpLE algorithm is successful. Then there are constants \( {\kappa }_1,{\kappa }_2,{\kappa }_3 > 0 \) such that
+
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{\ell } - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\ell } \geq  {\kappa }_1\ell {\left\lbrack  {\psi }_{\ell ,1}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p}}{\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p}},\tag{5.1.15}
+\]
+
+together with
+
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{\ell } - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\ell } \geq  {\kappa }_2\ell \max {\left\lbrack  0, - {\psi }_{\ell ,2}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p - 1}}{\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 1}}
+\]
+
+(5.1.16)
+
+---
+
+\( {}^{36} \) We do provide details for the \( \ell  = 2 \) case in Lemma 14.3.6 (p. 416), but, as predicted, even here the details are cumbersome.
+
+\( {}^{37} \) See also Lemma 14.3.6 (p. 416) in a slightly more general context.
+
+---
+
+when \( {\epsilon }_2 < \infty \) , and additionally
+
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{\ell } - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\ell } \geq  {\kappa }_3\ell {\left\lbrack  {\psi }_{\ell ,3}\left( {x}_{k + 1}, d\right) \right\rbrack  }^{\frac{p + 1}{p - 2}}{\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 2}}\tag{5.1.17}
+\]
+
+for all \( d \) in the set \( {\mathcal{M}}_{k + 1} \) given by (4.1.14) when \( {\epsilon }_3 < \infty \) . Moreover, for any such \( d \) ,
+
+\[
+{\psi }_{\ell ,2}\left( {{x}_{k + 1}, d}\right) {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\ell  - 1} \leq  \frac{1}{{\kappa }_{s2}}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p - 1}\text{ , where }{\kappa }_{s2}\overset{\text{ def }}{ = }\frac{\left( {p - 1}\right) !}{{L}_{{\Phi }_{\ell }, p} + {\sigma }_{\max } + {\theta }_{2}\left( {p - 1}\right) !}\text{ . }
+\]
+
+(5.1.18)
+
+Referenced equation payloads:
+
+Equation (4.1.14):
+\[
+{\mathcal{M}}_{k + 1}\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{s}^{2}{m}_{k}\left( {s}_{k}\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\theta }_{2}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p - 1}}\right\}   \neq  \varnothing .\tag{4.1.14}
+\]
+'''
+deps = ["lemma_4_1_4", "residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5524)"
+
+[[node]]
+id = "lemma_5_1_3"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.1.3: Cascading differences
+
+[Appendix to Chapter 5, p. 463]: Suppose that \( a \geq  b \geq  0 \) . Then
+
+\[
+{a}^{1/{2}^i} - {b}^{1/{2}^i} \geq  \frac{{a}^{\ell } - {b}^{\ell }}{{2}^i\ell {a}^{\frac{{2}^i - 1}{{2}^i} + \ell  - 1}}
+\]
+
+for all integers \( i \geq  0 \) and \( \ell  \geq  1 \) .
+
+Next, we combine the two previous results to obtain more useful bounds on the guaranteed residual decrease following successful iterations.
+'''
+deps = ["residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5566)"
+
+[[node]]
+id = "lemma_5_1_4"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.1.4: Improved bounds on the function decrease for ARpLE
+
+Suppose that \( {\Phi }_{\ell } \) .DPL holds, that iteration \( k \) of the ARpLE algorithm is successful, and that
+
+\[
+\begin{Vmatrix}{r\left( {x}_{k + 1}\right) }\end{Vmatrix} > \beta \begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix}\tag{5.1.19}
+\]
+
+for some constant \( \beta  \in  \left( {0,1}\right) \) . Then, for any integer \( i \geq  0 \) , there are constants \( {\kappa }_{r1} \) , \( {\kappa }_{r2},{\kappa }_{r3} > 0 \) such that
+
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r1}\frac{{\left\lbrack  {\psi }_{\ell ,1}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p}}}{{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{{\iota }_1\left( {p,\ell , i}\right) }},\tag{5.1.20}
+\]
+
+where
+
+\[
+{\iota }_{1}\left( {p,\ell , i}\right) \overset{\text{ def }}{ = }\frac{{2}^{i} - 1}{{2}^{i}} - \frac{\ell  - 1}{p}\text{ and }{\kappa }_{r1}\overset{\text{ def }}{ = }\frac{{\kappa }_{1}{\beta }^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p}}}{{2}^{i}},\tag{5.1.21}
+\]
+
+together with
+
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r2}\frac{\max {\left\lbrack  0, - {\psi }_{\ell ,2}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p - 1}}}{{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{{\iota }_2\left( {p,\ell , i}\right) }},\tag{5.1.22}
+\]
+
+where
+
+\[
+{\iota }_{2}\left( {p,\ell , i}\right) \overset{\text{ def }}{ = }\frac{{2}^{i} - 1}{{2}^{i}} - 2\frac{\ell  - 1}{p - 1}\text{ and }{\kappa }_{r2}\overset{\text{ def }}{ = }\frac{{\kappa }_{2}{\beta }^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 1}}}{{2}^{i}}\tag{5.1.23}
+\]
+
+when \( {\epsilon }_2 < \infty \) , and additionally
+
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r3}\frac{{\left\lbrack  {\psi }_{\ell ,3}\left( {x}_{k + 1}, d\right) \right\rbrack  }^{\frac{p + 1}{p - 2}}}{{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{{\iota }_3\left( {p,\ell , i}\right) }}\tag{5.1.24}
+\]
+
+for all \( d \) in the set \( {\mathcal{M}}_{k + 1} \) given by (4.1.14), where
+
+\[
+{\iota }_{3}\left( {p,\ell , i}\right) \overset{\text{ def }}{ = }\frac{{2}^{i} - 1}{{2}^{i}} - 3\frac{\ell  - 1}{p - 2}\text{ and }{\kappa }_{r3}\overset{\text{ def }}{ = }\frac{{\kappa }_{3}{\beta }^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 2}}}{{2}^{i}}\tag{5.1.25}
+\]
+
+when \( {\epsilon }_3 < \infty \) . By contrast, if
+
+\[
+\begin{Vmatrix}{r\left( {x}_{k + 1}\right) }\end{Vmatrix} \leq  \beta \begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix},\tag{5.1.26}
+\]
+
+then
+
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r0}{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r0}{\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i},\tag{5.1.27}
+\]
+
+where
+
+\[
+{\kappa }_{r0}\overset{\text{ def }}{ = }1 - {\beta }^{1/{2}^{i}}.\tag{5.1.28}
+\]
+
+Referenced equation payloads:
+
+Equation (4.1.14):
+\[
+{\mathcal{M}}_{k + 1}\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{s}^{2}{m}_{k}\left( {s}_{k}\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\theta }_{2}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p - 1}}\right\}   \neq  \varnothing .\tag{4.1.14}
+\]
+'''
+deps = ["lemma_5_1_3", "residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5578)"
+
+[[node]]
+id = "lemma_5_1_5"
+kind = "theorem"
+desc = '''
+Semantic specification: Exact Lean content: for p:ℕ with 0<p, ∃! z:ℕ×ℕ, Odd z.1 ∧ 0<z.1 ∧ p=z.1*2^z.2. Prove both existence and uniqueness; source ℕ excludes 0. No analytic prerequisites are needed.
+
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.1.5: Odd factorization of a positive integer
+
+[Appendix to Chapter 5, p. 464]: Let \( p \in  \mathbb{N} \) . Then \( p \) may be expressed uniquely as the product of an odd natural number and a power of 2 , i.e.,
+
+\[
+p = o \cdot  {2}^i\tag{5.1.31}
+\]
+
+for some odd positive integer \( o \) and \( i \in  {\mathbb{N}}^0 \) .
+'''
+deps = ["residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5682)"
+
+[[node]]
+id = "lemma_5_1_6"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.1.6: Good exponents of \( \begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix} \) in residual-decrease bounds
+
+Let \( p \in  \mathbb{N} \) . If
+
+\[
+\ell  = p\text{ and }i > {\log }_{2}p\tag{5.1.38}
+\]
+
+then the exponent (5.1.21) of \( \begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix} \) in (5.1.20) is strictly positive. If \( p \) is even and
+
+\[
+\ell  = 1 + o \cdot  \left( {{2}^{i} - 1}\right) ,\text{ where }p = o \cdot  {2}^{i},\tag{5.1.39}
+\]
+
+then the same exponent is zero and \( \ell  > 1 \) . If \( p \) is even and
+
+\[
+\ell  = \frac{1}{2}p\text{ and }i > {\log }_{2}\left( {p - 1}\right) ,\tag{5.1.40}
+\]
+
+then (5.1.21) and the exponent (5.1.23) of \( \begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix} \) in (5.1.22) are both strictly positive. If \( p - 1 \) is divisible by four and
+
+\[
+\ell  = 1 + {o}_{2} \cdot  \left( {{2}^{i} - 1}\right) ,\text{ where }p - 1 = {o}_{2} \cdot  {2}^{i + 1},\tag{5.1.41}
+\]
+
+then (5.1.23) is zero,(5.1.21) is strictly positive, and \( \ell  > 1 \) . If \( p \) is a multiple of three and
+
+\[
+\ell  = \frac{1}{3}p\text{ and }i > {\log }_{2}\left( {p - 2}\right) ,\tag{5.1.42}
+\]
+
+then (5.1.21),(5.1.23), and the exponent (5.1.25) of \( \begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix} \) in (5.1.24) are all strictly positive. If the power of two in the prime factorization of \( p - 2 \) is positive and even and
+
+\[
+\ell  = 1 + {o}_{3} \cdot  \mathop{\sum }\limits_{{k = 0}}^{{j - 1}}{2}^{2k},\text{ where }p - 2 = {o}_{3} \cdot  {2}^{i}\text{ and }j = \lfloor i/2\rfloor ,\tag{5.1.43}
+\]
+
+then (5.1.25) is zero,(5.1.21) and (5.1.23) are strictly positive, and \( \ell  > 1 \) .
+
+Referenced equation payloads:
+
+Equation (5.1.20):
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r1}\frac{{\left\lbrack  {\psi }_{\ell ,1}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p}}}{{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{{\iota }_1\left( {p,\ell , i}\right) }},\tag{5.1.20}
+\]
+
+Equation (5.1.21):
+\[
+{\iota }_{1}\left( {p,\ell , i}\right) \overset{\text{ def }}{ = }\frac{{2}^{i} - 1}{{2}^{i}} - \frac{\ell  - 1}{p}\text{ and }{\kappa }_{r1}\overset{\text{ def }}{ = }\frac{{\kappa }_{1}{\beta }^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p}}}{{2}^{i}},\tag{5.1.21}
+\]
+
+Equation (5.1.22):
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r2}\frac{\max {\left\lbrack  0, - {\psi }_{\ell ,2}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p - 1}}}{{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{{\iota }_2\left( {p,\ell , i}\right) }},\tag{5.1.22}
+\]
+
+Equation (5.1.23):
+\[
+{\iota }_{2}\left( {p,\ell , i}\right) \overset{\text{ def }}{ = }\frac{{2}^{i} - 1}{{2}^{i}} - 2\frac{\ell  - 1}{p - 1}\text{ and }{\kappa }_{r2}\overset{\text{ def }}{ = }\frac{{\kappa }_{2}{\beta }^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 1}}}{{2}^{i}}\tag{5.1.23}
+\]
+
+Equation (5.1.24):
+\[
+{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r3}\frac{{\left\lbrack  {\psi }_{\ell ,3}\left( {x}_{k + 1}, d\right) \right\rbrack  }^{\frac{p + 1}{p - 2}}}{{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{{\iota }_3\left( {p,\ell , i}\right) }}\tag{5.1.24}
+\]
+
+Equation (5.1.25):
+\[
+{\iota }_{3}\left( {p,\ell , i}\right) \overset{\text{ def }}{ = }\frac{{2}^{i} - 1}{{2}^{i}} - 3\frac{\ell  - 1}{p - 2}\text{ and }{\kappa }_{r3}\overset{\text{ def }}{ = }\frac{{\kappa }_{3}{\beta }^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 2}}}{{2}^{i}}\tag{5.1.25}
+\]
+'''
+deps = ["residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5796)"
+
+[[node]]
+id = "theorem_5_1_7"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.1.7: Complexity of finding first- to third-order critical points of \( \parallel r\left( x\right) \parallel \) by the \( {ARpLE} \) algorithm
+
+Suppose that \( i \geq  0 \) and \( \ell  > 1 \) satisfy either (5.1.42) or (5.1.43) for an appropriate \( p \) , that \( {\Phi }_{\ell }.D\mathbf{pL} \) holds, and that \( \beta  \in  \left( {0,1}\right) \) is a fixed, problem-independent constant. Then there exist positive constants \( {\kappa }_{\mathrm{ARpLE},3}^s,{\kappa }_{\mathrm{ARpLE},3}^A \) , and \( {\kappa }_{\mathrm{ARpLE}}^C \) such that, for any \( \left( {{\epsilon }_0,{\epsilon }_1,{\epsilon }_2,{\epsilon }_3}\right)  \in  (0,1{\rbrack }^4 \) , the \( \mathrm{AR}p\mathrm{LE} \) algorithm (p. 123) requires at most
+
+\[
+{\# }_{\mathsf{{ARPLE},3}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathsf{{ARPLE},3}}^{C}\frac{\max \left\lbrack  {{\begin{Vmatrix}r\left( {x}_{0}\right) \end{Vmatrix}}^{\frac{1}{{2}^{4}}},{\begin{Vmatrix}r\left( {x}_{0}\right) \end{Vmatrix}}^{1 - \frac{\ell  - 1}{p}},{\begin{Vmatrix}r\left( {x}_{0}\right) \end{Vmatrix}}^{1 - 2\frac{\ell  - 1}{p - 1}},{\begin{Vmatrix}r\left( {x}_{0}\right) \end{Vmatrix}}^{1 - 3\frac{\ell  - 1}{p - 2}}}\right\rbrack  }{\min \left\lbrack  {{\epsilon }_{0}^{\frac{1}{{2}^{4}}},{\epsilon }_{1}^{\frac{p + 1}{p}},{\epsilon }_{2}^{\frac{p + 1}{p - 1}},{\epsilon }_{3}^{\frac{p + 1}{p - 2}}}\right\rbrack  } + {\kappa }_{\mathsf{{ARPLE}}}^{C}
+\]
+
+\[
+= \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_0^{-\frac{1}{{2}^{ * }}},{\epsilon }_1^{-\frac{p + 1}{p}},{\epsilon }_2^{-\frac{p + 1}{p - 1}},{\epsilon }_3^{-\frac{p + 1}{p - 2}}}\right\rbrack  }\right)
+\]
+
+(5.1.44)evaluations of \( r \) and at most
+
+\[
+{\# }_{\mathtt{{ARplE}},3}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathtt{{ARplE}},3}^{S}\frac{\max \left\lbrack  {{\begin{Vmatrix}r\left( {x}_{0}\right) \end{Vmatrix}}^{\frac{1}{{2}^{s}}},{\begin{Vmatrix}r\left( {x}_{0}\right) \end{Vmatrix}}^{1 - \frac{\varepsilon  - 1}{p}},{\begin{Vmatrix}r\left( {x}_{0}\right) \end{Vmatrix}}^{1 - 2\frac{\varepsilon  - 1}{p - 1}},{\begin{Vmatrix}r\left( {x}_{0}\right) \end{Vmatrix}}^{1 - 3\frac{\varepsilon  - 1}{p - 2}}}\right\rbrack  }{\min \left\lbrack  {{\epsilon }_{0}^{\frac{1}{{2}^{s}}},{\epsilon }_{1}^{\frac{p + 1}{p}},{\epsilon }_{2}^{\frac{p + 1}{p - 1}},{\epsilon }_{3}^{\frac{p + 1}{p - 2}}}\right\rbrack  } + 2
+\]
+
+\[
+= \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_0^{-\frac{1}{{2}^{ * }}},{\epsilon }_1^{-\frac{p + 1}{p}},{\epsilon }_2^{-\frac{p + 1}{p - 1}},{\epsilon }_3^{-\frac{p + 1}{p - 2}}}\right\rbrack  }\right)
+\]
+
+(5.1.45)
+
+evaluations of derivatives of order one to \( p \) of \( r \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{r\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) or (together) \( {\psi }_{\ell ,1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_1,{\psi }_{\ell ,2}\left( {x}_{\epsilon }\right)  \geq   - {\epsilon }_2 \) , and \( {\psi }_{\ell ,3}\left( {{x}_{\epsilon }, d}\right)  \leq  {\epsilon }_3 \) for all \( d \in  {\mathcal{M}}_{\epsilon } \) , where \( {\mathcal{M}}_{\epsilon } \subseteq  {\mathcal{Z}}_{\epsilon } = \left\{  {d : \parallel d\parallel  = 1}\right. \) and \( \left. {{\psi }_{\ell ,2}\left( {{x}_{\epsilon }, d}\right)  \leq  {\epsilon }_2}\right\} \) .
+
+Referenced equation payloads:
+
+Equation (5.1.42):
+\[
+\ell  = \frac{1}{3}p\text{ and }i > {\log }_{2}\left( {p - 2}\right) ,\tag{5.1.42}
+\]
+
+Equation (5.1.43):
+\[
+\ell  = 1 + {o}_{3} \cdot  \mathop{\sum }\limits_{{k = 0}}^{{j - 1}}{2}^{2k},\text{ where }p - 2 = {o}_{3} \cdot  {2}^{i}\text{ and }j = \lfloor i/2\rfloor ,\tag{5.1.43}
+\]
+'''
+deps = ["lemma_4_1_4", "lemma_5_1_3", "lemma_2_4_1", "theorem_4_1_5", "residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.1.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5840)"

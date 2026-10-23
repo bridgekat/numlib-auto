@@ -1,0 +1,523 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 3, Section 4.
+
+This section has two independent algorithms, TRε (Algorithm 3.4.1, a radius tied to ε) and iRN (Algorithm 3.4.2). Preserve their separate parameter sets and inexact step conditions. Do not conflate an ε-dependent algorithm with the accuracy-independent model parameters in the universal AR family.
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+Thus far in our journey of discovery, the best-known bound for the number of evaluations to find an \( {\epsilon }_1 \) -approximate first-order minimizer that we have exhibited is \( \mathcal{O}\left( {\epsilon }_1^{-3/2}\right) \) , which is achieved by the AR2 algorithm. The same algorithm also achieves the best-known \( \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_1^{-3/2},{\epsilon }_2^{-3}}\right\rbrack  }\right) \) bound for the number of evaluations to find an \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer among the methods that we have described.
+
+Leaving aside the question of whether there are methods that achieve better, or even optimal, bounds, it is of interest to know at least if the AR2 algorithm is alone. Encouraged by the improved complexity of the AR2 algorithm compared to its predecessors, complexity-efficient variants of more traditional approaches, such as those based on trust-region and quadratic regularization-Levenberg-Morrison-Marquardt-type methods-have been developed, often with the additional intention of promoting good performance in practice. This is the focus of this section.
+
+#### 3.4.1 TR \( \epsilon \) , a tolerance-dependent trust-region variant
+
+The first variant was introduced by Curtis, Robinson, Royer, and Wright [136] and is a simple modification of the TR2 algorithm that satisfies the best-known first-order complexity bound - and second-order bound when the first- and second-order criticality tolerances \( {\epsilon }_1 \) and \( {\epsilon }_2 \) are suitably coupled. The method introduces a small regularization term in the trust-region subproblem and the step calculation. The subproblem approximately solved on each iteration of TR \( \epsilon \) uses the model
+
+\[
+\begin{gathered}{m}_{k}\left( s\right) \overset{\text{ def }}{ = }f\left( {x}_{k}\right)  + \left\langle  {{\nabla }_{x}^{1}f\left( {x}_{k}\right) , s}\right\rangle   + \frac{1}{2}\left\langle  {s,{\nabla }_{x}^{2}f\left( {x}_{k}\right) s}\right\rangle   + \frac{1}{2}{\epsilon }_{ * }\parallel s{\parallel }^{2} \\ = {T}_{f,2}\left( {{x}_k, s}\right)  + \frac{1}{2}{\epsilon }_{ * }{\begin{Vmatrix}s\end{Vmatrix}}^2,\end{gathered}\tag{3.4.1}
+\]
+
+where \( {\epsilon }_{ * } > 0 \) is a fixed regularization weight, reminiscent of the lower bound \( {\sigma }_{\min } \) in the AR2 algorithm. The model (3.4.2) is then approximately minimized over a trust-region ball:
+
+\[
+\mathop{\min }\limits_{{s \in  {\mathbb{R}}^{n}}}{m}_{k}\left( s\right) \text{ subject to }{x}_{k} + s \in  {R}_{k} = \left\{  {s : \parallel s\parallel  \leq  {\Delta }_{k}}\right\}  .\tag{3.4.2}
+\]
+
+We formally state the TR \( \epsilon \) algorithm as follows.
+
+Algorithm 3.4.1: Trust-region algorithm with a regularized second-order model (TRE)
+
+Step 0: Initialization. An initial point \( {x}_0 \) , accuracy thresholds \( {\epsilon }_1 \in  (0,1\rbrack ,{\epsilon }_2 \in \; (0,1\rbrack \) , a regularization threshold \( {\epsilon }_{ * } \in  (0,1\rbrack \) , and an initial trust-region radius \( {\Delta }_0 > {\epsilon }_{ * } \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1,{\gamma }_2 \) , and \( {\theta }_1 \) are also given and satisfy
+
+\[
+0 < {\eta }_{1} \leq  {\eta }_{2} < 1,\;{\theta }_{1} > 0,\text{ and }0 < {\gamma }_{1} \leq  {\gamma }_{2} < 1 < {\gamma }_{3}.
+\]
+
+Compute \( f\left( {x}_0\right) ,{\nabla }_x^{1}f\left( {x}_0\right) \) , and \( {\nabla }_x^{2}f\left( {x}_0\right) \) , and set \( k = 0 \) .
+
+Step 1: Test for termination. If \( {\epsilon }_2 =  + \infty \) and \( {\epsilon }_{ * } = \sqrt{{\epsilon }_1} \) , then if
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1\tag{3.4.3}
+\]
+
+terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+If \( {\epsilon }_2 < \infty \) and \( {\epsilon }_{ * } = {\epsilon }_2 \) , then if
+
+\[
+\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\;\text{ and }\;{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   \geq   - {\epsilon }_{2},\tag{3.4.4}
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+Step 2: Step computation. Compute a step \( {s}_k \in  {\mathcal{B}}_{{\Delta }_k} \) such that \( {m}_k\left( {s}_k\right)  < \; {m}_k\left( 0\right) \) , and whenever \( \begin{Vmatrix}{s}_k\end{Vmatrix} < {\Delta }_k \) ensure also that
+
+\[
+\begin{Vmatrix}{{\nabla }_s^1{m}_k\left( {s}_k\right) }\end{Vmatrix} \leq  \frac{1}{2}{\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{2}.\tag{3.4.5}
+\]
+
+If \( {\epsilon }_2 <  + \infty \) and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   <  - {\epsilon }_2 \) , calculate \( {s}_k \) such that \( \begin{Vmatrix}{s}_k\end{Vmatrix} = {\Delta }_k \) .
+
+Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) and define
+
+\[
+{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{f\left( {x}_k\right)  - {T}_{f,2}\left( {{x}_k,{s}_k}\right) }.\tag{3.4.6}
+\]
+
+If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_x^{1}f\left( {x}_{k + 1}\right) \) and \( {\nabla }_x^{2}f\left( {x}_{k + 1}\right) \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
+
+Step 4: Trust-region radius update. Set
+
+\[
+{\Delta }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {{\Delta }_{k},{\gamma }_{3}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\gamma }_{2}{\Delta }_{k},{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) , \\  \left\lbrack  {{\gamma }_{1}{\Delta }_{k},{\gamma }_{2}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.
+\]
+
+Increment \( k \) by one and go to Step 1.
+
+Clearly the global minimizer of (3.4.2), or even a nonzero local minimizer, satisfies the step conditions in Step 2 of the TR \( \epsilon \) algorithm. Furthermore, in the case when \( {\epsilon }_2 <  + \infty \) , \( {\epsilon }_{ * } = {\epsilon }_2 \) , and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   >  - {\epsilon }_2 \) in Step 2 of TR \( \epsilon \) , the requirement that \( \begin{Vmatrix}{s}_k\end{Vmatrix} = {\Delta }_k \) can be achieved by a variant of the eigenpoint condition of the TR2 algorithm, namely, (3.2.5) with \( {T}_{f,2} \) replaced by the regularized model \( {m}_k \) of the TR \( \epsilon \) algorithm. \( {}^{20} \)
+
+As for the TR2 and AR2 algorithms, we define successful and unsuccessful iterations by (2.3.9)-(2.3.10) and note that Lemma 2.3.1 still applies to the TR \( \epsilon \) algorithm because it uses the same updating rules for \( {\Delta }_k \) as did the TR2 algorithm.
+
+We now proceed to analyze the evaluation complexity of the TR \( \epsilon \) algorithm, and we will see that we will follow common paths to both the TR2 and AR2 algorithms. Firstly, a familiar bound on the model decrease, similar to that for the AR2 algorithm, is derived.
+'''
+
+[[node]]
+id = "trEpsilonRun"
+kind = "definition"
+desc = '''
+Define the set of finite traces satisfying Algorithm 3.4.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
+
+Algorithm 3.4.1: Trust-region algorithm with a regularized second-order model (TRE)
+
+Step 0: Initialization. An initial point \( {x}_0 \) , accuracy thresholds \( {\epsilon }_1 \in  (0,1\rbrack ,{\epsilon }_2 \in \; (0,1\rbrack \) , a regularization threshold \( {\epsilon }_{ * } \in  (0,1\rbrack \) , and an initial trust-region radius \( {\Delta }_0 > {\epsilon }_{ * } \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1,{\gamma }_2 \) , and \( {\theta }_1 \) are also given and satisfy
+
+\[
+0 < {\eta }_{1} \leq  {\eta }_{2} < 1,\;{\theta }_{1} > 0,\text{ and }0 < {\gamma }_{1} \leq  {\gamma }_{2} < 1 < {\gamma }_{3}.
+\]
+
+Compute \( f\left( {x}_0\right) ,{\nabla }_x^{1}f\left( {x}_0\right) \) , and \( {\nabla }_x^{2}f\left( {x}_0\right) \) , and set \( k = 0 \) .
+
+Step 1: Test for termination. If \( {\epsilon }_2 =  + \infty \) and \( {\epsilon }_{ * } = \sqrt{{\epsilon }_1} \) , then if
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1\tag{3.4.3}
+\]
+
+terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+If \( {\epsilon }_2 < \infty \) and \( {\epsilon }_{ * } = {\epsilon }_2 \) , then if
+
+\[
+\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\;\text{ and }\;{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   \geq   - {\epsilon }_{2},\tag{3.4.4}
+\]
+
+terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+Step 2: Step computation. Compute a step \( {s}_k \in  {\mathcal{B}}_{{\Delta }_k} \) such that \( {m}_k\left( {s}_k\right)  < \; {m}_k\left( 0\right) \) , and whenever \( \begin{Vmatrix}{s}_k\end{Vmatrix} < {\Delta }_k \) ensure also that
+
+\[
+\begin{Vmatrix}{{\nabla }_s^1{m}_k\left( {s}_k\right) }\end{Vmatrix} \leq  \frac{1}{2}{\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{2}.\tag{3.4.5}
+\]
+
+If \( {\epsilon }_2 <  + \infty \) and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   <  - {\epsilon }_2 \) , calculate \( {s}_k \) such that \( \begin{Vmatrix}{s}_k\end{Vmatrix} = {\Delta }_k \) .
+
+Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) and define
+
+\[
+{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{f\left( {x}_k\right)  - {T}_{f,2}\left( {{x}_k,{s}_k}\right) }.\tag{3.4.6}
+\]
+
+If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_x^{1}f\left( {x}_{k + 1}\right) \) and \( {\nabla }_x^{2}f\left( {x}_{k + 1}\right) \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
+
+Step 4: Trust-region radius update. Set
+
+\[
+{\Delta }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {{\Delta }_{k},{\gamma }_{3}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\gamma }_{2}{\Delta }_{k},{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) , \\  \left\lbrack  {{\gamma }_{1}{\Delta }_{k},{\gamma }_{2}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.
+\]
+
+Increment \( k \) by one and go to Step 1.
+
+Clearly the global minimizer of (3.4.2), or even a nonzero local minimizer, satisfies the step conditions in Step 2 of the TR \( \epsilon \) algorithm. Furthermore, in the case when \( {\epsilon }_2 <  + \infty \) , \( {\epsilon }_{ * } = {\epsilon }_2 \) , and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   >  - {\epsilon }_2 \) in Step 2 of TR \( \epsilon \) , the requirement that \( \begin{Vmatrix}{s}_k\end{Vmatrix} = {\Delta }_k \) can be achieved by a variant of the eigenpoint condition of the TR2 algorithm, namely, (3.2.5) with \( {T}_{f,2} \) replaced by the regularized model \( {m}_k \) of the TR \( \epsilon \) algorithm. \( {}^{20} \)
+
+As for the TR2 and AR2 algorithms, we define successful and unsuccessful iterations by (2.3.9)-(2.3.10) and note that Lemma 2.3.1 still applies to the TR \( \epsilon \) algorithm because it uses the same updating rules for \( {\Delta }_k \) as did the TR2 algorithm.
+
+We now proceed to analyze the evaluation complexity of the TR \( \epsilon \) algorithm, and we will see that we will follow common paths to both the TR2 and AR2 algorithms. Firstly, a familiar bound on the model decrease, similar to that for the AR2 algorithm, is derived.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 3.4"
+
+[[node]]
+id = "inexactRegularizedNewtonRun"
+kind = "definition"
+desc = '''
+Define the set of finite traces satisfying Algorithm 3.4.2, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
+
+Algorithm 3.4.2: Inexact regularized Newton algorithm (iRN).
+Step 0: Initialization. An initial point \( {x}_0 \) and accuracy thresholds \( {\epsilon }_1 \in  (0,1\rbrack \)
+     and \( {\epsilon }_2 > 0 \) are given. The constants \( \eta ,{\gamma }_1 \) ,and \( {\gamma }_2 \) and the lower and upper
+     regularization bounds \( {\sigma }_{\min } \) and \( {\sigma }_{\max } \) ,respectively,are also given and satisfy
+                 \[0 < {\sigma }_{\min } \leq  {\sigma }_{\max },0 < \eta  < 1,\text{ and }1 < {\gamma }_{1} \leq  {\gamma }_{2}\]
+     Compute \( f\left( {x}_0\right) ,{\nabla }_x^{1}f\left( {x}_0\right) \) ,and \( {\nabla }_x^{2}f\left( {x}_0\right) \) ,and set \( k = 0,{\sigma }_0^{\mathrm{L}} = 0 \) ,and \( {\sigma }_0^{\mathrm{U}} \in \)
+     \( \left\lbrack  {{\sigma }_{\min },{\sigma }_{\max }}\right\rbrack \) .
+Step 1: First-order test for termination. If \( {\epsilon }_2 =  + \infty \) ,then if
+                               \[\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1\]
+     terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+Step 2: Step computation. Compute a step and multiplier pair \( \left( {{s}_k,{\lambda }_k}\right) \) for
+     which the conditions (3.4.28)-(3.4.30) are satisfied. If \( {\epsilon }_2 <  + \infty \) ,also require
+     that \( {s}_k \) satisfy (3.4.32).
+Step 3: Second-order test for termination. If \( {\epsilon }_2 < \infty \) and
+                 \[\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{Q}_{k}^{T}{\nabla }_{x}^{2}f\left( {x}_{k}\right) {Q}_{k}}\right\rbrack   > {\epsilon }_{2},\]
+     where \( {Q}_k \) is the same as in (3.4.32),terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate
+     strict local minimizer \( {x}_{\epsilon } = {x}_k \) . Otherwise,if
+            \[\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{Q}_{k}^{T}{\nabla }_{x}^{2}f\left( {x}_{k}\right) {Q}_{k}}\right\rbrack   \geq   - {\epsilon }_{2},\] (3.4.34)
+     terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+Step 4: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) ,and define
+                          \[{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{\begin{Vmatrix}{s}_k\end{Vmatrix}}^3}.\] (3.4.35)
+
+     If \( {\rho }_k \geq  \eta \) ,then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_x^{1}f\left( {x}_{k + 1}\right) \) and
+     \( {\nabla }_x^{2}f\left( {x}_{k + 1}\right) \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
+Step 5: Regularization parameter update. If \( {\rho }_k \geq  \eta \) ,set
+                          \[{\sigma }_{k + 1}^{\mathrm{L}} = 0\text{ and }{\sigma }_{k + 1}^{\mathrm{U}} = {\sigma }_{k}^{\mathrm{U}}.\]
+     Otherwise,if \( {\lambda }_k < {\sigma }_{\min }\begin{Vmatrix}{s}_k\end{Vmatrix} \) ,set
+                  \[{\sigma }_{k + 1}^{\mathrm{L}} \in  \left\lbrack  {{\sigma }_{\min },{\sigma }_{\max }}\right\rbrack  \text{ and }{\sigma }_{k + 1}^{\mathrm{U}} \in  \left\lbrack  {{\sigma }_{k + 1}^{\mathrm{L}},{\sigma }_{\max }}\right\rbrack  \text{ . }\]
+     Otherwise, set
+                      \[{\sigma }_{k + 1}^{\mathrm{L}} = {\gamma }_{1}\frac{{\lambda }_{k}}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}\text{ and }{\sigma }_{k + 1}^{\mathrm{U}} = {\gamma }_{2}\frac{{\lambda }_{k}}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}.\] (3.4.36)
+
+     Increment \( k \) by one and go to Step 1.
+```
+
+One ingredient that is atypical of traditional trust-region methods is the measure of progress (3.4.35). This attempts to ensure a decrease in the model that is typical of cubic-regularization methods such as AR2, and which, as we have already mentioned, is another crucial ingredient for achieving good first-order complexity. \( {}^{22} \) Just as in our earlier algorithms, we denote successful iterations as \( \mathcal{S} = \left\{  {k \mid  {\rho }_k \geq  \eta }\right\} \) , and the remaining (unsuccessful) ones belong to the set \( \mathcal{U} \) .
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 3.4"
+
+[[node]]
+id = "lemma_3_4_1"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 3.4.1: Decrease in the Taylor-series model
+
+At every iteration \( k \) of the TR \( \epsilon \) algorithm, one has that
+
+\[
+{T}_{f,2}\left( {{x}_k,0}\right)  - {T}_{f,2}\left( {{x}_k,{s}_k}\right)  \geq  \frac{1}{2}{\epsilon }_{ * }{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{2}.\tag{3.4.7}
+\]
+'''
+deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3581)"
+
+[[node]]
+id = "lemma_3_4_2"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 3.4.2: Lower bound on the trust-region radius
+
+Suppose that f.HL holds, as well as that, in the TR \( \epsilon \) algorithm,
+
+\[
+{\Delta }_k < \frac{3\left( {1 - {\eta }_2}\right) }{{L}_{f,2}}{\epsilon }_{ * }.\tag{3.4.8}
+\]
+
+Then \( {\rho }_k \geq  {\eta }_2 \) , iteration \( k \) is successful, and \( {\Delta }_{k + 1} \geq  {\Delta }_k \) . Furthermore, for all iterations of the TR \( \epsilon \) algorithm, we have
+
+\[
+{\Delta }_k \geq  \frac{\left( {1 - {\eta }_2}\right) {\gamma }_1}{{L}_{f,2}}{\epsilon }_{ * }.\tag{3.4.9}
+\]
+
+---
+
+\( {}^{20} \) Note that in this case, \( \begin{Vmatrix}{s}_k\end{Vmatrix} = \begin{Vmatrix}{{t}_k^E{u}_k}\end{Vmatrix} = {t}_k^E \) , where \( {u}_k \) is normalized. Also, \( {m}_k{\left( t{u}_k\right) }^{\prime \prime } = \; {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   + {\epsilon }_{ * } < 0 \) and so the model along \( t > 0 \) is concave and achieves its minimum on the boundary of the trust-region constraint.
+
+---
+'''
+deps = ["lemma_3_2_5", "trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3599)"
+
+[[node]]
+id = "lemma_3_4_3"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 3.4.3: Lower bound on the length of the strictly feasible step
+
+Suppose that f.HL holds. Then, if iteration \( k \) of the TR \( \epsilon \) algorithm is successful and \( \begin{Vmatrix}{s}_k\end{Vmatrix} < {\Delta }_k \) , we have that
+
+\[
+\begin{Vmatrix}{s}_k\end{Vmatrix} \geq  \frac{1}{\sqrt{1 + 2\left( {{L}_{f,2} + {\theta }_1}\right) }}\min \left\lbrack  {{\epsilon }_{ * },\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{k + 1}\right) }\end{Vmatrix}{\epsilon }_{ * }^{-1}}\right\rbrack  .\tag{3.4.10}
+\]
+'''
+deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3629)"
+
+[[node]]
+id = "lemma_3_4_4"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 3.4.4: Lower bound on the function decrease
+
+Suppose that f.HL holds. Then, on each successful iteration \( k \) of the TR \( \epsilon \) algorithm, we have the sufficient function decrease
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_{\Delta f}\min \left\lbrack  {{\epsilon }_{ * }^3,{\begin{Vmatrix}{\nabla }_x^{1}f\left( {x}_{k + 1}\right) \end{Vmatrix}}^2{\epsilon }_{ * }^{-1}}\right\rbrack\tag{3.4.13}
+\]
+
+whenever \( {x}_{k + 1} \) is in the interior of the trust-region ball and
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_{\Delta f}{\epsilon }_{ * }^3\tag{3.4.14}
+\]
+
+when \( {x}_{k + 1} \) is on the trust-region boundary, where
+
+\[
+{\kappa }_{\Delta f}\overset{\text{ def }}{ = }\frac{{\eta }_{1}}{2}\min \left\lbrack  {\frac{{\gamma }_{1}^{2}{\left( 1 - {\eta }_{2}\right) }^{2}}{{L}_{f,2}^{2}},\frac{1}{1 + 2\left( {{L}_{f,2} + {\theta }_{1}}\right) }}\right\rbrack  .\tag{3.4.15}
+\]
+'''
+deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3687)"
+
+[[node]]
+id = "theorem_3_4_5"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 3.4.5: First-order complexity of the TR \( \epsilon \) algorithm
+
+Suppose that f.Bb and f.HL hold. Then there exist positive constants \( {\kappa }_{\text{ TRe }}^{s},{\kappa }_{\text{ TRe }}^{A} \) , \( {\kappa }_{\mathrm{TR}\epsilon }^B \) , and \( {\kappa }_{\mathrm{TR}\epsilon }^C \) such that, for any \( {\epsilon }_1 \in  (0,1\rbrack \) , the TR \( \epsilon \) algorithm (p. 76) with \( {\epsilon }_{ * } = \sqrt{{\epsilon }_1} \) and \( {\epsilon }_2 =  + \infty \) requires at most
+
+\[
+{\# }_{\mathrm{{TR}}\epsilon ,1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}\epsilon }^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{1}^{3/2}} + {\kappa }_{\mathrm{{TR}}\epsilon }^{B}\left| {\log {\epsilon }_{1}}\right|  + {\kappa }_{\mathrm{{TR}}\epsilon }^{C} = \mathcal{O}\left( {\epsilon }_{1}^{-3/2}\right)\tag{3.4.16}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{TR}}\epsilon ,1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}\epsilon }^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{1}^{3/2}} + 2 = \mathcal{O}\left( {\epsilon }_{1}^{-3/2}\right)\tag{3.4.17}
+\]
+
+evaluations of \( {\nabla }_x^{1}f \) and \( {\nabla }_x^{2}f \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) (i.e., (3.4.3) is satisfied).
+
+Referenced equation payloads:
+
+Equation (3.4.3):
+\[
+\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1\tag{3.4.3}
+\]
+'''
+deps = ["lemma_3_4_4", "lemma_2_3_1", "trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.4.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3725)"
+
+[[node]]
+id = "theorem_3_4_6"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 3.4.6: Second-order complexity of the TR \( \epsilon \) algorithm
+
+Suppose that f.Bb and f.HL hold. Then there exist positive constants \( {\kappa }_{\mathrm{TR\varepsilon }}^s,{\kappa }_{\mathrm{TR\varepsilon }}^A \) , \( {\kappa }_{\mathrm{TR}\epsilon }^C \) , and \( {\kappa }_{\mathrm{TR}\epsilon }^D \) such that, for any \( \left( {{\epsilon }_1,{\epsilon }_2}\right)  \in  (0,1{\rbrack }^2 \) , the \( \mathrm{TR}\epsilon \) algorithm (p. 76) with \( {\epsilon }_{ * } = {\epsilon }_2 \) requires at most
+
+\[
+{\# }_{\mathrm{{TR}}\epsilon ,2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR\epsilon }}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\mathrm{{low}}}}{\min \left\lbrack  {{\epsilon }_{1}^{2}{\epsilon }_{2}^{-1},{\epsilon }_{2}^{3}}\right\rbrack  } + {\kappa }_{\mathrm{{TR\epsilon }}}^{D}\left| {\log {\epsilon }_{2}}\right|  + {\kappa }_{\mathrm{{TR\epsilon }}}^{C} = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-2}{\epsilon }_{2},{\epsilon }_{2}^{-3}}\right\rbrack  }\right)\tag{3.4.23}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{TR}}\epsilon ,2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\min \left\lbrack  {{\epsilon }_{1}^{2}{\epsilon }_{2}^{-1},{\epsilon }_{2}^{3}}\right\rbrack  } + 1 = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-2}{\epsilon }_{2},{\epsilon }_{2}^{-3}}\right\rbrack  }\right)\tag{3.4.24}
+\]
+
+evaluations of \( {\nabla }_x^{1}f \) and \( {\nabla }_x^{2}f \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_2 \) (i.e.,(3.4.4) is satisfied).
+
+Referenced equation payloads:
+
+Equation (3.4.4):
+\[
+\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\;\text{ and }\;{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   \geq   - {\epsilon }_{2},\tag{3.4.4}
+\]
+'''
+deps = ["lemma_3_4_4", "lemma_2_3_1", "trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.4.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3789)"
+
+[[node]]
+id = "lemma_3_4_7"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 3.4.7: Lower bound on the multiplier
+
+Suppose that f.HL holds. If
+
+\[
+{\lambda }_k \geq  \left( {{2\eta } + {\kappa }_2 + {L}_{f,2}}\right) \begin{Vmatrix}{s}_k\end{Vmatrix}\tag{3.4.37}
+\]
+
+at iteration \( k \) of the iRN algorithm, then \( {\rho }_k \geq  \eta \) and the iteration is successful.
+'''
+deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3946)"
+
+[[node]]
+id = "lemma_3_4_8"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 3.4.8: Upper bound on the upper regularization parameter
+
+Suppose that f.HL holds. Then, for all \( k \geq  0 \) , the iRN algorithm ensures that
+
+\[
+{\sigma }_{\mathbf{k}}^{U} \leq  {\sigma }_{\max }^{U}\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{\max },{\gamma }_{2}\left( {{2\eta } + {\kappa }_{2} + {L}_{f,2}}\right) }\right\rbrack  .\tag{3.4.38}
+\]
+'''
+deps = ["lemma_3_4_7", "lemma_3_3_3", "trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.8 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3990)"
+
+[[node]]
+id = "lemma_3_4_9"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 3.4.9: Lower bound on the length of the step
+
+Suppose that f.HL holds. Then, if iteration \( k \) of the iRN algorithm is successful,
+
+\[
+{\begin{Vmatrix}{s}_k\end{Vmatrix}}^2 \geq  \frac{2}{{L}_{f,2} + 4{\sigma }_{\max }^U + 2{\kappa }_3}\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{k + 1}\right) }\end{Vmatrix},\tag{3.4.39}
+\]
+
+where \( {\sigma }_{\max }^U \) is defined as in (3.4.38). If (3.4.32) holds,
+
+\[
+\begin{Vmatrix}{s}_k\end{Vmatrix} \geq   - \frac{1}{{\kappa }_4 + {\sigma }_{\max }^U}{\lambda }_{\min }\left\lbrack  {{Q}_k^T{\nabla }_x^{2}f\left( {x}_k\right) {Q}_k}\right\rbrack  .\tag{3.4.40}
+\]
+
+Referenced equation payloads:
+
+Equation (3.4.32):
+\[
+{\lambda }_{\min }\left\lbrack  {{Q}_k^T{\nabla }_s^{2}m\left( {s}_k\right) {Q}_k}\right\rbrack   \geq   - {\kappa }_4\begin{Vmatrix}{s}_k\end{Vmatrix}\tag{3.4.32}
+\]
+
+Equation (3.4.38):
+\[
+{\sigma }_{\mathbf{k}}^{U} \leq  {\sigma }_{\max }^{U}\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{\max },{\gamma }_{2}\left( {{2\eta } + {\kappa }_{2} + {L}_{f,2}}\right) }\right\rbrack  .\tag{3.4.38}
+\]
+'''
+deps = ["lemma_3_3_3", "trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.9 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4008)"
+
+[[node]]
+id = "lemma_3_4_10"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 3.4.10: Bound on unsuccessful iterations
+
+Suppose that algorithm iRN is used. Then, between any two consecutive successful iterations, \( {k}_i,{k}_{i + 1} \in  \mathcal{S} \) , for any \( i \geq  0 \) , there are at most
+
+\[
+{k}_{i + 1} - {k}_i - 1 \leq  \frac{1}{\log {\gamma }_1}\log \left( \frac{{\sigma }_{\max }^U}{{\sigma }_{\min }}\right)  + 1\tag{3.4.42}
+\]
+
+unsuccessful iterations.
+'''
+deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.10 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4056)"
+
+[[node]]
+id = "theorem_3_4_11"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 3.4.11: First-order complexity of the iRN algorithm
+
+[Appendix to Chapter 3, p. 456]: Suppose that f.Bb and f.HL hold. Then there exist positive constants \( {\kappa }_{\mathrm{iRN}}^s,{\kappa }_{\mathrm{iRN}}^A,{\kappa }_{\mathrm{iRN}}^B \) , and \( {\kappa }_{\mathrm{iRN}}^C \) such that, for any \( {\epsilon }_1 \in  (0,1\rbrack \) , the iRN algorithm (p. 84) with \( {\epsilon }_2 =  + \infty \) requires at most
+
+\[
+{\# }_{\mathrm{{iRN}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{iRN}}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\mathrm{{low}}}}{{\epsilon }_{1}^{3/2}} + {\kappa }_{\mathrm{{iRN}}}^{B} = \mathcal{O}\left( {\epsilon }_{1}^{-3/2}\right)\tag{3.4.43}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{IRN}},1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{IRN}}}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\mathrm{{low}}}}{{\epsilon }_{1}^{3/2}} + 2 = \mathcal{O}\left( {\epsilon }_{1}^{-3/2}\right)\tag{3.4.44}
+\]
+
+evaluations of \( {\nabla }_x^{1}f \) and \( {\nabla }_x^{2}f \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) .
+
+We can do much the same for second-order criticality.
+'''
+deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.4.11 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4082)"
+
+[[node]]
+id = "theorem_3_4_12"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 3.4.12: Second-order complexity of the iRN algorithm
+
+[Appendix to Chapter 3, p. 457]: Suppose that f.Bb and f.HL hold. Then there exist positive constants \( {\kappa }_{\mathrm{iRN}}^T,{\kappa }_{\mathrm{iRN}}^C \) , and \( {\kappa }_{\mathrm{iRN}}^D \) such that, for any \( \left( {{\epsilon }_1,{\epsilon }_2}\right)  \in  (0,1{\rbrack }^2 \) , the iRN algorithm (p. 84) requires at most
+
+\[
+{\# }_{\mathrm{{iRN}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{iRN}}}^{C}\frac{f\left( {x}_{0}\right)  - {f}_{\mathrm{{low}}}}{\min \left\lbrack  {{\epsilon }_{1}^{3/2},{\epsilon }_{2}^{3}}\right\rbrack  } + {\kappa }_{\mathrm{{iRN}}}^{D} = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-3/2},{\epsilon }_{2}^{-3}}\right\rbrack  }\right)\tag{3.4.45}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{IRN}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{IRN}}}^{T}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\min \left\lbrack  {{\epsilon }_{1}^{3/2},{\epsilon }_{2}^{3}}\right\rbrack  } + 2 = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-3/2},{\epsilon }_{2}^{-3}}\right\rbrack  }\right)\tag{3.4.46}
+\]
+
+evaluations of \( {\nabla }_x^{1}f \) and \( {\nabla }_x^{2}f \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) and \( {\lambda }_{\min }\left\lbrack  {{Q}_{\epsilon }^T{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) {Q}_{\epsilon }}\right\rbrack   \geq   - {\epsilon }_2 \) , where \( {Q}_{\epsilon } = {Q}_k \) is as defined in (3.4.32) at the terminating iteration \( k \) .
+
+Having derived satisfactory iteration-complexity bounds, a few remarks concerning the theoretical aspects of the above development are now in order.
+
+Firstly, conditions (3.4.28)-(3.4.32) can be shown to hold when minimizing problem (3.4.27) with respect to \( s \) over increasing (Krylov) subspaces containing \( {\nabla }_x^{1}f\left( {x}_k\right) \lbrack {139} \) , Appendix B].
+
+Secondly, the matrix \( {Q}_k \) in (3.4.32) may be a basis for the subspace in which model problem (3.4.27) is considered, and the second-order criticality condition can then only be achieved for the objective within this subspace. If the intent is to guarantee approximate local convexity for \( f \) , one needs to ensure model minimization over the whole of \( {\mathbb{R}}^n \) , asymptotically or at least during the final iteration.
+
+Finally, the iRN algorithm allows \( {\sigma }_k^{\mathrm{L}} = 0 \) , for example, by setting it as such on successful iterations. This allows \( {\lambda }_k = 0 \) , which corresponds to allowing pure Newton steps \( {s}_k \) to be calculated (provided that \( {Q}_k \) is a basis for a full-dimensional subspace).
+
+Referenced equation payloads:
+
+Equation (3.4.27):
+\[
+\begin{gathered}\mathop{\min }\limits_{{\left( {s,\lambda }\right)  \in  {\mathbb{R}}^{n} \times  {\mathbb{R}}_{ + }}}{m}_{k}\left( s\right) \overset{\text{ def }}{ = }f\left( {x}_{k}\right)  + \left\langle  {{\nabla }_{x}^{1}f\left( {x}_{k}\right) , s}\right\rangle   + \frac{1}{2}\left\langle  {s,\left( {{\nabla }_{x}^{2}f\left( {x}_{k}\right)  + {\lambda I}}\right) s}\right\rangle \\ \text{ subject to }{\sigma }_{k}^{\mathrm{L}}\parallel s\parallel  \leq  \lambda  \leq  {\sigma }_{k}^{\mathrm{U}}\parallel s\parallel\end{gathered}\tag{3.4.27}
+\]
+
+Equation (3.4.28):
+\[
+{\sigma }_k^{\mathrm{L}}\begin{Vmatrix}{s}_k\end{Vmatrix} \leq  {\lambda }_k \leq  {\sigma }_k^{\mathrm{U}}\begin{Vmatrix}{s}_k\end{Vmatrix}.\tag{3.4.28}
+\]
+
+Equation (3.4.32):
+\[
+{\lambda }_{\min }\left\lbrack  {{Q}_k^T{\nabla }_s^{2}m\left( {s}_k\right) {Q}_k}\right\rbrack   \geq   - {\kappa }_4\begin{Vmatrix}{s}_k\end{Vmatrix}\tag{3.4.32}
+\]
+'''
+deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.4.12 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4100)"

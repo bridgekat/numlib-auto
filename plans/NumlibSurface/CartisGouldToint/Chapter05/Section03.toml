@@ -1,0 +1,677 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 5, Section 3.
+
+For domination require a specified attained global minimum value f_* and nonnegative ψ, with f(x)−f_*≤κψ ψ(x)^μ, μ≥1, κψ>0. The ARψ,ν and TRψ,ν classes have different decrease tests (new-point versus historical minimum measure). In rates, handle finite attainment of zero separately; do not divide by zero gaps. The Υ subscript in OCR (5.3.14) is corrupt: use Υ_{κν/κψ^(ν/μ),ν/μ}(Γ₀,ε), the hitting time of κ t_(n+1)^τ+t_(n+1)=t_n. Equation (5.3.94) in its proof means (5.3.9). Logarithmic complexity claims are for sufficiently small ε, with explicit positive domain thresholds or truncated logs. Keep linear-rate upper bounds as upper rates; do not assert equality of asymptotic orders for every algorithm.
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+There is another class of structured problems where complexity results can be improved substantially: the class of "measure-dominated" problems. While, as we will see, this class is somewhat restrictive, its associated complexity analysis provides significantly better bounds than what we have seen so far. Moreover, by introducing an additional assumption on the global behaviour of the objective function, it also provides a stepping stone to the well-mannered world of convex problems. This, we feel, is enough to justify our interest.
+
+Consider an unconstrained optimization problem with global minimum value \( {f}_{ * } \) and some nonnegative optimality measure \( \psi \left( x\right) \) ; typical examples of the latter when searching for first- or second-order minimizers are \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( x\right) }\end{Vmatrix} \) and \( \min \left\lbrack  {0, - {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( x\right) }\right\rbrack  }\right\rbrack \) . We say that \( f \) is measure dominated of level \( {}^{39}\mu \) for a real \( \mu  \geq  1 \) if there is a constant \( {\kappa }_{\psi } > 0 \) for which
+
+\[
+f\left( x\right)  - {f}_{ * } \leq  {\kappa }_{\psi }{\left\lbrack  \psi \left( x\right) \right\rbrack  }^{\mu }\tag{5.3.1}
+\]
+
+for all \( x \in  {\mathbb{R}}^n \) . When \( \psi \left( x\right)  = \parallel g\left( x\right) \parallel \) and \( \mu  \in  \left\lbrack  {1,2}\right\rbrack \) , the requirement (5.3.1) is sometimes known as the Polyak-Lojasiewicz property \( \left\lbrack  {{275},{317}}\right\rbrack \) or gradient domination [305]. The restriction \( \mu  \in  \left\lbrack  {1,2}\right\rbrack \) in this case is motivated by considering the univariate situation (see [160] for details).
+
+Because it is simple to do so, we discuss domination for more general optimality measures \( \psi \left( x\right) \) . A related but different approach is taken in [135], which we briefly discuss in the notes of this section.
+
+#### 5.3.1 Some examples
+
+As we intimated above, many problems are not measure dominated. For instance, functions having saddle points or local but nonglobal minimizers are not measure dominated of level \( \mu \) for any \( \mu \) when \( \psi \left( x\right)  = \begin{Vmatrix}{{\nabla }_x^{1}f\left( x\right) }\end{Vmatrix} \) . However, there exist interesting classes of functions which are measure dominated. Perhaps the most frequently occurring are nonlinear least-squares problems with uniform full rank. Indeed, more generally, if, as in Section 5.1, we consider minimizing
+
+\[
+{\Phi }_{\ell }\left( x\right)  = \frac{1}{\ell }\parallel r\left( x\right) {\parallel }^{\ell },\text{ where }r : {\mathbb{R}}^{n} \rightarrow  {\mathbb{R}}^{m}\text{ is continuously differentiable, }
+\]
+
+and assume, as in Section 5.1.5, that condition (5.1.62) holds, \( {}^{40} \) then it follows from (5.1.63) and (5.1.64) that \( \min {\Phi }_{\ell }\left( x\right)  = 0 \) and
+
+\[
+\begin{Vmatrix}{{\nabla }_x^1{\Phi }_{\ell }\left( x\right) }\end{Vmatrix} \geq  {\psi }_{\min }\parallel r\left( x\right) {\parallel }^{\ell  - 1}.\tag{5.3.2}
+\]
+
+Hence \( {\Phi }_{\ell }\left( x\right) \) is measure dominated of level \( \mu  = \ell /\left( {\ell  - 1}\right) \) for \( \psi \left( x\right)  = \begin{Vmatrix}{{\nabla }_x^1{\Phi }_{\ell }\left( x\right) }\end{Vmatrix} \) , since
+
+\[
+{\Phi }_{\ell }\left( x\right)  - \min {\Phi }_{\ell }\left( x\right)  = {\Phi }_{\ell }\left( x\right)  = \frac{1}{\ell }\parallel r\left( x\right) {\parallel }^{\ell } \leq  \frac{1}{\ell }{\left( \frac{1}{{\psi }_{\min }}\right) }^{\ell /\left( {\ell  - 1}\right) }{\begin{Vmatrix}{\nabla }_x^1{\Phi }_{\ell }\left( x\right) \end{Vmatrix}}^{\ell /\left( {\ell  - 1}\right) }.\tag{5.3.3}
+\]
+
+---
+
+\( {}^{39} \) Other authors use the term "degree" instead of "level," but we prefer the latter here in order to avoid confusion with the notion of a model's degree.
+
+\( {}^{40} \) That is, the smallest singular value of the Jacobian of \( r\left( x\right) \) is bounded away from zero at all points \( x \) encountered by the algorithm; see the discussion on p. 136.
+
+---
+
+Another class of measure-dominated problems includes those involving convex continuously differentiable functions on the bounded domain \( \left\{  {x \in  {\mathbb{R}}^n \mid  \parallel x\parallel  \leq  {\kappa }_u}\right\} \) for some \( {\kappa }_u > 0 \) . For then
+
+\[
+f\left( x\right)  - {f}_{ * } \leq  \left\langle  {{\nabla }_x^{1}f\left( x\right) , x - {x}_{ * }}\right\rangle   \leq  2{\kappa }_u\begin{Vmatrix}{{\nabla }_x^{1}f\left( x\right) }\end{Vmatrix}
+\]
+
+from (1.2.1) (p. 11), and \( f \) is measure dominated of level one with \( \psi \left( x\right)  = \begin{Vmatrix}{{\nabla }_x^{1}f\left( x\right) }\end{Vmatrix} \) . In the same vein, if \( f \) is strongly convex, then one can verify from the definition (1.2.2) (p. 11) that
+
+\[
+f\left( z\right)  - f\left( x\right)  \geq  \left\langle  {z - x,{\nabla }_x^{1}f\left( x\right) }\right\rangle   + \frac{1}{2}{\lambda }_{\mathrm{L}}\parallel z - x{\parallel }^2
+\]
+
+\[
+\geq  \min \left\langle  {z - x,{\nabla }_x^{1}f\left( x\right) }\right\rangle   + \frac{1}{2}{\lambda }_{\mathrm{L}}\parallel z - x{\parallel }^2
+\]
+
+\[
+=  - \frac{1}{2{\lambda }_{\mathrm{L}}}{\begin{Vmatrix}{\nabla }_x^{1}f\left( x\right) \end{Vmatrix}}^2
+\]
+
+and thus, if \( z \) is a global minimizer of \( f \) , that
+
+\[
+f\left( x\right)  - {f}_{ * } \leq  \frac{1}{2{\lambda }_{\mathrm{L}}}{\begin{Vmatrix}{\nabla }_x^{1}f\left( x\right) \end{Vmatrix}}^2,
+\]
+
+where \( {\lambda }_{\mathrm{L}} > 0 \) is the constant defining the strong convexity of \( f \) . The function \( f \) is now measure dominated of level two with \( \psi \left( x\right)  = \begin{Vmatrix}{{\nabla }_x^{1}f\left( x\right) }\end{Vmatrix} \) .
+
+Finally, we note that measure-dominated functions for measures differing from the gradient also exist. For instance, the function \( f\left( x\right)  = \parallel x{\parallel }^{2i}\left( {i \geq  2}\right) \) is measure dominated of level one for the optimality measure \( \psi \left( x\right)  = {\phi }_{f,2}^1\left( x\right) \) , where, as we shall see in Section 12.1.3 (p. 278) of Chapter 12,
+
+\[
+{\phi }_{f,2}^{1}\left( x\right) \overset{\text{ def }}{ = }f\left( x\right)  - \mathop{\min }\limits_{{\parallel d\parallel  \leq  1}}{T}_{f,2}\left( {x, d}\right)
+\]
+
+and \( {T}_{f,2}\left( {x, d}\right)  = f\left( x\right)  + \left\langle  {{\nabla }_x^{1}f\left( x\right) , d}\right\rangle   + \frac{1}{2}\left\langle  {d,{\nabla }_x^{2}f\left( x\right) d}\right\rangle \) is the second-degree Taylor expansion (4.1.1) of \( f \) around \( x \) within the domain \( \mathcal{D} = \{ x \mid  \parallel x\parallel  \leq  1 + 2\left( {i - 1}\right) \} \) . Indeed,
+
+\[
+{\nabla }_{x}^{1}f\left( x\right)  = {2i}\parallel x{\parallel }^{{2i} - 2}x\text{ and }{\nabla }_{x}^{2}f\left( x\right)  = {2i}\parallel x{\parallel }^{{2i} - 2}I + {4i}\left( {i - 1}\right) \parallel x{\parallel }^{{2i} - 4}x{x}^{T}
+\]
+
+so that
+
+\[
+{T}_{f,2}\left( {x, d}\right)  = \parallel x{\parallel }^{2i} + {2i}\parallel x{\parallel }^{{2i} - 2}{x}^{T}d + i\parallel x{\parallel }^{{2i} - 2}\parallel d{\parallel }^2 + {2i}\left( {i - 1}\right) \parallel x{\parallel }^{{2i} - 4}{\left( {x}^{T}d\right) }^2,
+\]
+
+and it is easy to verify that \( {T}_{f,2}\left( {x, d}\right) \) is convex and attains its minimum value
+
+\[
+{T}_{f,2}\left( {x,{d}_{ * }}\right)  = \left( {1 - \frac{i}{1 + 2\left( {i - 1}\right) }}\right) \parallel x{\parallel }^{2i}\;\text{ for }\;{d}_{ * } =  - \frac{x}{1 + 2\left( {i - 1}\right) }.
+\]
+
+We therefore obtain that
+
+\[
+{\phi }_{f,2}^1\left( x\right)  = {T}_{f,2}\left( {x,0}\right)  - {T}_{f,2}\left( {x,{d}_{ * }}\right)  = \frac{i}{1 + 2\left( {i - 1}\right) }f\left( x\right)  = \frac{i}{1 + 2\left( {i - 1}\right) }\left( {f\left( x\right)  - {f}_{ * }}\right)
+\]
+
+if \( x \in  \mathcal{D} \) , and (5.3.1) holds for \( \psi \left( x\right)  = {\phi }_{f,2}^1\left( x\right) ,\mu  = 1 \) , and \( {\kappa }_{\psi } = \frac{1 + 2\left( {i - 1}\right) }{i} \) within \( \mathcal{D} \) .
+
+#### 5.3.2 Applying adaptive regularization-like methods
+
+We now examine what can be said of the rate at which the objective-function gap
+
+\[
+{\Gamma }_k = f\left( {x}_k\right)  - {f}_{ * }\tag{5.3.4}
+\]
+
+converges to zero for iterates \( \left\{  {x}_k\right\} \) generated by our two favourite classes of optimization methods, those broadly based on adaptive regularization and those on trust-region globalization.
+
+Consider first the case of our archetypal adaptive-regularization methods. These derive a bound on the minimal decrease at successful iterations from the inequalities
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\eta }_1\left\lbrack  {{T}_{f, p}\left( {{x}_k,0}\right)  - {T}_{f, p}\left( {{x}_k,{s}_k}\right) }\right\rbrack   \geq  {\eta }_1{\sigma }_{\min }{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + 1}
+\]
+
+and then compute a lower bound on \( \begin{Vmatrix}{s}_k\end{Vmatrix} \) that depends on the value of the chosen optimality measure at \( {x}_{k + 1} \) . The proofs of Lemmas 2.4.3 (p. 45) and 3.3.8 (p. 73) illustrate this fact for AR1 and AR2. It is even more obvious for the ARp algorithm (p. 100), for which a minimal decrease per successful iteration of the form
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_{\nu }{\left\lbrack  \psi \left( {x}_{k + 1}\right) \right\rbrack  }^{\nu }\tag{5.3.5}
+\]
+
+is guaranteed by Lemma 4.1.4 (p. 106). In particular, we have the following three cases:
+
+1. Condition (4.1.31) ensures that (5.3.5) holds for
+
+\[
+{\psi }_{1}\left( x\right)  = \begin{Vmatrix}{{\nabla }_{x}^{1}f\left( x\right) }\end{Vmatrix}\;\text{ with }\;\nu  = \frac{p + 1}{p}\text{ and }{\kappa }_{\nu } = {\kappa }_{1}.\tag{5.3.6}
+\]
+
+2. Condition (4.1.33) ensures that (5.3.5) holds for
+
+\[
+{\psi }_{2}\left( x\right)  = \max \left( {0, - {\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k + 1}\right) }\right\rbrack  }\right) \;\text{ with }\;\nu  = \frac{p + 1}{p - 1}\text{ and }{\kappa }_{\nu } = {\kappa }_{2}\tag{5.3.7}
+\]
+
+3. Condition (4.1.35) ensures that (5.3.5) holds for
+
+\[
+{\psi }_{3}\left( x\right)  = \mathop{\max }\limits_{{d \in  {\mathcal{M}}_{k + 1}}}\left| {{\nabla }_{x}^{3}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^{3}}\right| \text{ with }\nu  = \frac{p + 1}{p - 2}\text{ and }{\kappa }_{\nu } = {\kappa }_{3}.\tag{5.3.8}
+\]
+
+For full generality, we let \( \mathrm{AR}\psi ,\nu \) be the class of monotonic minimization algorithms for which (a) the decrease (5.3.5) is guaranteed for each \( k \) in an infinite subset \( \mathcal{S} \) of the iterations,(b) \( {x}_{k + 1} = {x}_k \) for all \( k \notin  \mathcal{S} \) , and (c) \( {\mathcal{S}}_k = \mathcal{S} \cap  \left\lbrack  {0 : k}\right\rbrack \) is dense enough in \( \left\lbrack  {0 : k}\right\rbrack \) in the sense that
+
+\[
+k \leq  {\kappa }_{\mathrm{R}}^{\mathcal{S}}\left| {\mathcal{S}}_k\right|  + {\kappa }_{\mathrm{A}}^{\mathcal{S}}\tag{5.3.9}
+\]
+
+for some \( {\kappa }_{\mathrm{R}}^{\mathcal{S}} \geq  1 \) and \( {\kappa }_{\mathrm{A}}^{\mathcal{S}} \geq  0 \) . These properties are obviously satisfied by the \( \mathrm{AR}p \) algorithm, but also by other variants discussed in Section 3.4. In particular, (5.3.9) is a generic version of the crucial bound (2.4.8) from Lemma 2.4.1 (p. 44).
+
+As the next lemma shows, the combination of these decrease properties and corresponding \( \psi \) -domination for \( \mathrm{AR}\psi ,\nu \) algorithms has profound consequences for the rate of decrease of the objective-function gap.
+'''
+
+[[node]]
+id = "measureDominated"
+kind = "definition"
+desc = '''
+Given f:E→ℝ, attained global minimum value f_*, ψ:E→ℝ nonnegative, μ≥1, κψ>0, define ψ-domination by ∀x,f x−f_*≤κψ*(ψ x)^μ. Define Γ_k=f(x_k)−f_*≥0. Use Real.rpow for nonintegral powers; no convergence rate is part of domination.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.3"
+
+[[node]]
+id = "arMeasureRun"
+kind = "definition"
+desc = '''
+A monotonic ARψ,ν trace has ν≥1, κν>0, infinite successful set S, x_(k+1)=x_k for k∉S, and f(x_k)−f(x_(k+1))≥κν*(ψ(x_(k+1)))^ν for k∈S; constants κ_R≥1,κ_A≥0 satisfy the prefix-density bound N≤κ_R*card(S∩{0,...,N−1})+κ_A (with the source index translation documented). No gap-rate inequality is assumed.
+'''
+deps = ["measureDominated"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.3"
+
+[[node]]
+id = "trMeasureRun"
+kind = "definition"
+desc = '''
+A monotonic TRψ,ν trace has ν≥1, κν>0, infinite successful set S before possible termination, x_(k+1)=x_k off S, the same density bound as ARψ,ν, and f(x_k)−f(x_(k+1))≥κν*min_{0≤i≤k}(ψ(x_i)^ν) for k∈S, exactly (5.3.28). The run terminates if ψ(x_k)=0. Use finite traces and continued traces consistently so termination does not conflict with an infinite S.
+'''
+deps = ["measureDominated"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.3"
+
+[[node]]
+id = "implicitGapHittingTime"
+kind = "definition"
+desc = '''
+For κ>0,τ>0,t₀>0 define t_(n+1) as the unique positive u solving κ*u^τ+u=t_n. Define Υ_(κ,τ)(t₀,ε) as the least k with t_k≤ε, ε>0. Prove existence/uniqueness and finite hitting time from continuity, strict monotonicity and convergence to zero; these conclusions must not be assumed in the definition.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.3"
+
+[[node]]
+id = "lemma_5_3_1"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.3.1: Gap-decrease rates for measure-dominated problems (adaptive regularization-like methods)
+
+Suppose that the objective function \( f \) is \( \psi \) -dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that an AR \( \psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . Then we have that
+
+\[
+{\Gamma }_{k + 1} \leq  {\Gamma }_k{\left( 1 + \frac{{\kappa }_{\nu }}{{\kappa }_{\psi }^{\nu /\mu }}{\Gamma }_{k + 1}^{\frac{\nu  - \mu }{\mu }}\right) }^{-1}\tag{5.3.10}
+\]
+
+for every \( k \in  \mathcal{S} \) , and \( {}^a \)
+
+(i) if \( \nu  < \mu \) , the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge superlinearly to zero;
+
+(ii) if \( \nu  = \mu \) , the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge linearly to zero with factor \( {\left( 1 + {\kappa }_{\nu }/{\kappa }_{\psi }\right) }^{-1} \) ; and
+
+(iii) if \( \nu  > \mu \) , the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge sublinearly to zero.
+
+\( {}^a \) Convergence rates are discussed in Section A.3.
+'''
+deps = ["measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.3.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6276)"
+
+[[node]]
+id = "theorem_5_3_2"
+kind = "theorem"
+desc = '''
+Semantic specification: Correct the destroyed Υ subscript in (5.3.14) to (κν/κψ^(ν/μ),ν/μ). Handle Γ₀=0 as immediate termination and Γ₀>0 by the recurrence. Bound successful and total iterations separately.
+
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.2: Complexity of reducing the gap (implicit)
+
+Suppose that the objective function \( f \) is \( \psi \) -dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that an \( \mathrm{AR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . Then the algorithm needs at most
+
+\[
+{\# }_{\text{ ARp, gap, }0}^{\text{ SI }}\overset{\text{ def }}{ = }\Upsilon \underset{{\kappa }_{\psi }^{\nu /\mu }}{\xrightarrow[]{{\kappa }_{\nu }}}\mathop{\sum }\limits_{\mu }\left( {{\Gamma }_{0},\epsilon }\right)\tag{5.3.14}
+\]
+
+successful iterations (and derivative evaluations) and at most
+
+\[
+{\# }_{\mathrm{{ARp}},\mathrm{{gap}},0}^{F}\overset{\text{ def }}{ = }{\kappa }_{R}^{\mathcal{S}}\Upsilon \frac{{\kappa }_{\nu }}{{\kappa }_{\psi }^{\nu /\mu },\frac{\nu }{\mu }}\left( {{\Gamma }_{0},\epsilon }\right)  + {\kappa }_{A}^{\mathcal{S}}\tag{5.3.15}
+\]
+
+iterations and evaluations of \( f \) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - \; {f}_{ * } \leq  \epsilon \) .
+'''
+deps = ["lemma_5_3_1", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6340)"
+
+[[node]]
+id = "theorem_5_3_3"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.3: Complexity for measure-dominated problems (adaptive regularization-like methods, \( \nu  < \mu \) )
+
+[Appendix to Chapter 5, p. 464]: Suppose that the objective function \( f \) is \( \psi \) - dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that an \( \mathrm{AR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( 1 \leq  \nu  < \mu \) . Then the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge superlinearly to zero, and there exist positive constants \( {\kappa }_{\mathrm{AR},\mathrm{gap},1}^B \) , \( {\kappa }_{\mathrm{AR},\mathrm{gap},1}^C,{\kappa }_{\mathrm{AR},\mathrm{gap},1}^E \) , and \( {\kappa }_{\mathrm{AR},\mathrm{gap},1}^F \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{gap}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},1}^{B}\log \left( \left| {\log \left( \epsilon \right) }\right| \right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},1}^{C} = \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right)\tag{5.3.16}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{gap}},1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},1}^{E}\log \left( \left| {\log \left( \epsilon \right) }\right| \right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},1}^{F} = \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right)\tag{5.3.17}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - {f}_{ * } \leq  \epsilon \) . Moreover, there exist constants \( {\kappa }_{\mathrm{{AR}},\text{ dom, }1}^{B},{\kappa }_{\mathrm{{AR}},\text{ dom, }1}^{C},{\kappa }_{\mathrm{{AR}},\text{ dom, }1}^{E} \) , and \( {\kappa }_{\mathrm{{AR}},\text{ dom,1 }}^{F} \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{dom}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},1}^{B}\log \left( \left| {\log \left( {\kappa }_{\nu }\right)  + \nu \log \left( \epsilon \right) }\right| \right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},1}^{C} = \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right)\tag{5.3.18}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{dom}},1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},1}^{E}\log \left( \left| {\log \left( {\kappa }_{\nu }\right)  + \nu \log \left( \epsilon \right) }\right| \right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},1}^{F} = \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right)\tag{5.3.19}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \psi \left( {x}_{\epsilon }\right)  \leq  \epsilon \) .
+'''
+deps = ["measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6362)"
+
+[[node]]
+id = "theorem_5_3_4"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.4: Complexity for measure-dominated problems (adaptive regularization-like methods, \( \nu  = \mu \) )
+
+[Appendix to Chapter 5, p. 467]: Suppose that the objective function \( f \) is \( \psi \) - dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that an \( \mathrm{AR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( \nu  = \mu \) . Then the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge linearly to zero with factor \( {\left( 1 + \left( {\kappa }_{\nu }/{\kappa }_{\psi }\right) \right) }^{-1} \) , and there exist positive constants \( {\kappa }_{\mathrm{AR},\mathrm{gap},2}^{\mathrm{B}},{\kappa }_{\mathrm{AR},\mathrm{gap},2}^{\mathrm{C}},{\kappa }_{\mathrm{AR},\mathrm{gap},2}^{\mathrm{E}} \) , and \( {\kappa }_{\mathrm{AR},\mathrm{gap},2}^{\mathrm{F}} \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{gap}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},2}^{B}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},2}^{C} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.20}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{gap}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},2}^{E}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},2}^{F} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.21}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - {f}_{ * } \leq  \epsilon \) . Moreover, there exist positive constants \( {\kappa }_{\mathrm{{AR}},\text{ dom, }2}^{B},{\kappa }_{\mathrm{{AR}},\text{ dom, }2}^{C} \) , \( {\kappa }_{\mathrm{{AR}},\text{ dom, }2}^{E} \) , and \( {\kappa }_{\mathrm{{AR}},\text{ dom, }2}^{F} \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{dom}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},2}^{B}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},2}^{C} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.22}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{dom}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},2}^{E}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},2}^{F} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.23}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \psi \left( {x}_{\epsilon }\right)  \leq  \epsilon \) .
+'''
+deps = ["measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6394)"
+
+[[node]]
+id = "theorem_5_3_5"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.5: Complexity for measure-dominated problems (adaptive regularization-like methods, \( \nu  > \mu \) )
+
+[Appendix to Chapter 5, p. 467]: Suppose that the objective function \( f \) is \( \psi \) - dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that an \( \mathrm{AR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( \nu  > \mu \) . Then the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge sublinearly to zero, and there exist positive constants \( {\kappa }_{\mathrm{AR},\mathrm{gap},3}^B \) , \( {\kappa }_{\mathrm{AR},\mathrm{gap},3}^C,{\kappa }_{\mathrm{AR},\mathrm{gap},3}^E \) , and \( {\kappa }_{\mathrm{AR},\mathrm{gap},3}^F \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{gap}},3}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},3}^{B}{\epsilon }^{-\frac{\nu  - \mu }{\mu }} + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},3}^{C} = \mathcal{O}\left( {\epsilon }^{-\frac{\nu  - \mu }{\mu }}\right)\tag{5.3.24}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{gap}},3}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},3}^{E}{\epsilon }^{-\frac{\nu  - \mu }{\mu }} + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},3}^{F} = \mathcal{O}\left( {\epsilon }^{-\frac{\nu  - \mu }{\mu }}\right)\tag{5.3.25}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - {f}_{ * } \leq  \epsilon \) . Moreover, the optimality measures \( {\left\{  \psi \left( {x}_k\right) \right\}  }_{k \in  \mathcal{S}} \) also converge to zero sublinearly, and there exist positive constants \( {\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{B}},{\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{C}},{\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{C}} \; {\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{E}} \) , and \( {\kappa }_{\mathrm{{AR}},\text{ dom, }3}^{\mathrm{F}} \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{dom}},3}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},3}^{B}{\epsilon }^{-\left( {\nu  - \mu }\right) } + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},3}^{C} = \mathcal{O}\left( {\epsilon }^{-\left( {\nu  - \mu }\right) }\right)\tag{5.3.26}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{dom}},3}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},3}^{E}{\epsilon }^{-\left( {\nu  - \mu }\right) } + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},3}^{F} = \mathcal{O}\left( {\epsilon }^{-\left( {\nu  - \mu }\right) }\right)\tag{5.3.27}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \psi \left( {x}_{\epsilon }\right)  \leq  \epsilon \) .
+
+It is also interesting to consider the effect of the dependence of \( \nu \) on the degree of the model \( p \) on the evaluation complexity. Table 5.3.1 gives the relevant orders for a few low-degree cases when using the ARp algorithm and recalling (5.3.6)-(5.3.8). We see that these dominated complexity bounds are always better—and often substantially so-than the traditional \( \mathcal{O}\left( {\epsilon }^{-\nu }\right) \) one predicted by Theorem 4.1.5 (p. 107). The case of full-rank nonlinear least-squares is emblematic, since Theorem 5.3.3 implies that the ARp algorithm will converge superlinearly to zero on such problems using at most \( \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right) \) function and derivative evaluations.
+
+<table><tr><td>\( \mu \)</td><td>\( q \)</td><td>\( \nu \)</td><td>\( p = 1 \)</td><td>\( p = 2 \)</td><td>\( p = 3 \)</td><td>\( p = 4 \)</td></tr><tr><td rowspan="3">1</td><td>1</td><td>\( \frac{p + 1}{p} \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1/2}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1/3}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1/4}\right) \)</td></tr><tr><td>2</td><td>\( \frac{p + 1}{p - 1} \)</td><td>-</td><td>\( \mathcal{O}\left( {\epsilon }^{-2}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-2/3}\right) \)</td></tr><tr><td>3</td><td>\( \frac{p + 1}{p - 2} \)</td><td>-</td><td>-</td><td>\( \mathcal{O}\left( {\epsilon }^{-3}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-3/2}\right) \)</td></tr><tr><td rowspan="3">2</td><td>1</td><td>\( \frac{p + 1}{p} \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right| \right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right| \right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right| \right) \)</td></tr><tr><td>2</td><td>\( \frac{p + 1}{p - 1} \)</td><td>-</td><td>\( \mathcal{O}\left( {\epsilon }^{-1}\right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right) \)</td><td>\( \mathcal{O}\left( \left| {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right| \right) \)</td></tr><tr><td>3</td><td>\( \frac{p + 1}{p - 1} \)</td><td>-</td><td>-</td><td>\( \mathcal{O}\left( {\epsilon }^{-2}\right) \)</td><td>\( \mathcal{O}\left( {\epsilon }^{-1/2}\right) \)</td></tr></table>
+
+Table 5.3.1. Evaluation-complexity bounds for reducing the gap below \( \epsilon \) (Theorems5.3.3,5.3.4, and 5.3.5) when using the \( \mathrm{AR}p \) algorithm and the measure \( {\phi }_q \) given by (5.3.6)-(5.3.8) for \( q \leq  3 \) to approximately minimize a \( \mu \) -dominated function.
+
+Referenced equation payloads:
+
+Equation (5.3.6):
+\[
+{\psi }_{1}\left( x\right)  = \begin{Vmatrix}{{\nabla }_{x}^{1}f\left( x\right) }\end{Vmatrix}\;\text{ with }\;\nu  = \frac{p + 1}{p}\text{ and }{\kappa }_{\nu } = {\kappa }_{1}.\tag{5.3.6}
+\]
+
+Equation (5.3.8):
+\[
+{\psi }_{3}\left( x\right)  = \mathop{\max }\limits_{{d \in  {\mathcal{M}}_{k + 1}}}\left| {{\nabla }_{x}^{3}f\left( {x}_{k + 1}\right) {\left\lbrack  d\right\rbrack  }^{3}}\right| \text{ with }\nu  = \frac{p + 1}{p - 2}\text{ and }{\kappa }_{\nu } = {\kappa }_{3}.\tag{5.3.8}
+\]
+'''
+deps = ["theorem_4_1_5", "theorem_5_3_3", "lemma_2_3_5", "lemma_2_3_1", "lemma_5_3_1", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6424)"
+
+[[node]]
+id = "lemma_5_3_6"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 5.3.6: Gap-decrease rates for measure-dominated problems (trust region-like methods)
+
+Suppose that the objective function \( f \) is \( \psi \) -dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that a \( \operatorname{TR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( {\Gamma }_0 > 0 \) , and let
+
+\[
+{\Gamma }_{\square }\overset{\text{ def }}{ = }{\left( \frac{{\kappa }_{\psi }^{\nu /\mu }}{{\kappa }_{\nu }}\right) }^{\frac{\mu }{\nu  - \mu }}.
+\]
+
+Then the following conclusions hold.
+
+(i) If \( \nu  = \mu \) , then \( {\kappa }_{\nu } \leq  {\kappa }_{\psi } \) and the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge linearly to zero with factor \( 1 - {\kappa }_{\nu }/{\kappa }_{\psi } \) when \( {\kappa }_{\nu } < {\kappa }_{\psi } \) . If \( {\kappa }_{\nu } = {\kappa }_{\psi } \) , then \( f\left( {x}_{{k}_{S,1} + 1}\right)  = {f}_{ * } \) , where \( {k}_{\mathcal{S},1} \) is the index of the first successful iteration.
+
+---
+
+\( {}^{41} \) Similarly, as we shall see,(12.2.20) in the proof of Lemma 12.2.4 (p. 297) for the TRq algorithm described in Chapter 12 does the same. In particular, (12.2.20) implies that, at successful iterations of the \( \mathrm{TR}q \) algorithm,
+
+\[
+f\left( {x}_{k}\right)  - f\left( {x}_{k + 1}\right)  \geq  \frac{{\eta }_{1}}{q!}\min {\left\lbrack  1,{\kappa }_{\delta }\mathop{\min }\limits_{{i \in  \left\lbrack  {0 : k}\right\rbrack  }}{\widehat{\phi }}_{f, i}\right\rbrack  }^{q + 1} \geq  \frac{{\eta }_{1}{\kappa }_{\delta }^{q}}{q!}\mathop{\min }\limits_{{i \in  \left\lbrack  {0 : k}\right\rbrack  }}\min {\left\lbrack  1,{\widehat{\phi }}_{f, i}\right\rbrack  }^{q + 1}
+\]
+
+for some constants \( {\eta }_1 \) and \( {\kappa }_{\Delta } \) in \( \left( {0,1}\right) \) , where \( {\widehat{\phi }}_{f, k} \) is an optimality measure defined in (12.2.8) (p. 294) (note that, for \( q = 1,{\widehat{\phi }}_{f, k} = \begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \) ), and we may define
+
+\[
+\psi \left( {x}_{k}\right)  = \min \left\lbrack  {1,{\widehat{\phi }}_{f, k}}\right\rbrack
+\]
+
+and obtain that successful iterations of the \( \mathrm{TR}q \) algorithm guarantee an objective function decrease of the form (5.3.28), where \( {\kappa }_{\nu } = {\eta }_1{\kappa }_{\delta }^q/q! \in  \left( {0,1}\right) \) and \( \nu  = q + 1 \) .
+
+---
+
+(ii) If \( \nu  < \mu \) , then
+
+\[
+{\Gamma }_0 \geq  {\Gamma }_{\square }.\tag{5.3.29}
+\]
+
+If, in addition, inequality (5.3.29) holds as an equality, then \( f\left( {x}_{{k}_{S,1} + 1}\right)  = {f}_{ * } \) . If the inequality is strict, then
+
+\[
+{\Gamma }_{k + 1} \leq  {\Gamma }_k\left\lbrack  {1 - \frac{{\kappa }_{\nu }}{{\kappa }_{\psi }^{\nu /\mu }}{\Gamma }_k^{\frac{\nu  - \mu }{\mu }}}\right\rbrack\tag{5.3.30}
+\]
+
+for all \( k \in  \mathcal{S} \) such that
+
+\[
+{\Gamma }_k \geq  {\Gamma }_{\square }\tag{5.3.31}
+\]
+
+and the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) start converging superlinearly to zero until a final value \( {\Gamma }_{{k}_{\square }} \geq  1 \) is reached, after which \( f\left( {x}_{{k}_{\square } + 1}\right)  = {f}_{ * } \) .
+
+(iii) If \( \nu  > \mu \) , then
+
+\[
+{\Gamma }_0 \leq  {\Gamma }_{\square }.\tag{5.3.32}
+\]
+
+If, in addition, inequality (5.3.32) holds as an equality, then \( f\left( {x}_{{k}_{S,1} + 1}\right)  = {f}_{ * } \) . If the inequality is strict, then (5.3.30) holds for all \( k \in  \mathcal{S} \) and the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge sublinearly to zero.
+
+Referenced equation payloads:
+
+Equation (5.3.28):
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_{\nu }{\left\lbrack  \mathop{\min }\limits_{i \in  \left\lbrack  {0 : k}\right\rbrack  }\psi \left( {x}_i\right) \right\rbrack  }^{\nu }\tag{5.3.28}
+\]
+'''
+deps = ["lemma_5_3_1", "theorem_3_2_1", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.3.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6476)"
+
+[[node]]
+id = "theorem_5_3_7"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.7: Complexity for measure-dominated problems (trust region-like methods, \( \nu  < \mu \) )
+
+[Appendix to Chapter 5, p. 470]: Suppose that the objective function \( f \) is \( \psi \) - dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that a \( \operatorname{TR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( \nu  < \mu \) . Then either the gap is zero after the first successful iteration or the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) start converging superlinearly to zero until a final iteration \( {k}_{\square } \) such that (5.3.29) holds, after which it is identically zero. Thus there exist positive constants \( {\kappa }_{\mathrm{TR},1}^C \) and \( {\kappa }_{\mathrm{TR},1}^F \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{gap}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},1}^{C} = \mathcal{O}\left( 1\right)\tag{5.3.35}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{gap}},1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},1}^{F} = \mathcal{O}\left( 1\right)\tag{5.3.36}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - {f}_{ * } = 0 \) . Moreover, the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{dom}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},1}^{C} = \mathcal{O}\left( 1\right)\tag{5.3.37}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{dom}},1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},1}^{F} = \mathcal{O}\left( 1\right)\tag{5.3.38}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \psi \left( {x}_{\epsilon }\right)  = 0 \) .
+
+Referenced equation payloads:
+
+Equation (5.3.29):
+\[
+{\Gamma }_0 \geq  {\Gamma }_{\square }.\tag{5.3.29}
+\]
+'''
+deps = ["measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6576)"
+
+[[node]]
+id = "theorem_5_3_8"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.8: Complexity for measure-dominated problems (trust region-like methods, \( \nu  = \mu \) )
+
+[Appendix to Chapter 5, p. 471]: Suppose that the objective function \( f \) is \( \psi \) - dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that a TR \( \psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( \nu  = \mu \) . Then either the gap is zero after the first successful iteration or the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge linearly to zero with factor \( 1 - {\kappa }_{\nu }/{\kappa }_{\psi } \) , and there exist positive constants \( {\kappa }_{\mathrm{TR},\mathrm{gap},2}^B,{\kappa }_{\mathrm{TR},\mathrm{gap},2}^C \) , \( {\kappa }_{\mathrm{TR},\mathrm{gap},2}^{\mathrm{E}} \) , and \( {\kappa }_{\mathrm{TR},\mathrm{gap},2}^{\mathrm{F}} \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{gap}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{gap}},2}^{B}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{gap}},2}^{C} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.39}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{gap}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{gap}},2}^{E}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{gap}},2}^{F} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.40}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - {f}_{ * } \leq  \epsilon \) . Moreover, there exist positive constants \( {\kappa }_{\mathrm{{TR}},\text{ dom, }2}^{B},{\kappa }_{\mathrm{{TR}},\text{ dom, }2}^{C} \) , \( {\kappa }_{\mathrm{{TR}},\text{ dom, }2}^{E} \) , and \( {\kappa }_{\mathrm{{TR}},\text{ dom, }2}^{F} \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{dom}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{dom}},2}^{B}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{dom}},2}^{C} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.41}
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{dom}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{dom}},2}^{E}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{dom}},2}^{F} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.42}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \psi \left( {x}_{\epsilon }\right)  \leq  \epsilon \) .
+'''
+deps = ["measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.8 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6604)"
+
+[[node]]
+id = "theorem_5_3_9"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.9: Complexity for measure-dominated problems (trust region-like methods, \( \nu  > \mu \) )
+
+[Appendix to Chapter 5, p. 472]: Suppose that the objective function \( f \) is \( \psi \) - dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that a \( \mathrm{TR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( \nu  > \mu \) . Then the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge sublinearly to zero, and there exist positive constants \( {\kappa }_{\mathrm{TR},\mathrm{gap},3}^B \) , \( {\kappa }_{\mathrm{TR},\mathrm{gap},3}^C,{\kappa }_{\mathrm{TR},\mathrm{gap},3}^E \) , and \( {\kappa }_{\mathrm{TR},\mathrm{gap},3}^F \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{gap}},3}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{gap}},3}^{B}{\epsilon }^{-\frac{\nu  - \mu }{\mu }} + {\kappa }_{\mathrm{{TR}},\mathrm{{gap}},3}^{C} = \mathcal{O}\left( {\epsilon }^{-\frac{\nu  - \mu }{\mu }}\right)
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{gap}},3}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{gap}},3}^{E}{\epsilon }^{-\frac{\nu  - \mu }{\mu }} + {\kappa }_{\mathrm{{TR}},\mathrm{{gap}},3}^{F} = \mathcal{O}\left( {\epsilon }^{-\frac{\nu  - \mu }{\mu }}\right)\tag{5.3.43}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - {f}_{ * } \leq  \epsilon \) . Moreover, the optimality measures \( {\left\{  \psi \left( {x}_k\right) \right\}  }_{k \in  \mathcal{S}} \) also converge to zero sublinearly and there exist positive constants \( {\kappa }_{\mathrm{TR},\mathrm{dom},3}^B,{\kappa }_{\mathrm{TR},\mathrm{dom},3}^C \) , \( {\kappa }_{\mathrm{TR},\mathrm{dom},3}^E \) , and \( {\kappa }_{\mathrm{TR},\mathrm{dom},3}^F \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{dom}},3}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{dom}},3}^{B}{\epsilon }^{-\left( {\nu  - \mu }\right) } + {\kappa }_{\mathrm{{TR}},\mathrm{{dom}},3}^{C} = \mathcal{O}\left( {\epsilon }^{-\left( {\nu  - \mu }\right) }\right)
+\]
+
+iterations and evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{dom}},3}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{dom}},3}^{E}{\epsilon }^{-\left( {\nu  - \mu }\right) } + {\kappa }_{\mathrm{{TR}},\mathrm{{dom}},3}^{F} = \mathcal{O}\left( {\epsilon }^{-\left( {\nu  - \mu }\right) }\right)
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \psi \left( {x}_{\epsilon }\right)  \leq  \epsilon \) .
+
+In the linear and sublinear cases, the complexities of adaptive regularization-like and trust region-like methods applied to measure-dominated functions are therefore identical in order, the main difference being that, barring convergence in a finite number of successful iterations, superlinear convergence (and thus much improved complexity) is only guaranteed to occur for the former.
+'''
+deps = ["theorem_5_1_7", "theorem_5_3_3", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.9 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6632)"
+
+[[node]]
+id = "theorem_5_3_10"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.10: Complexity for full-rank nonlinear least-squares (adaptive regularization-like methods)
+
+Suppose that an \( \mathrm{AR}\psi ,\nu \) algorithm is applied to minimize \( {\Phi }_{\ell } \) for an even positive integer \( \ell  \leq  p \) , where \( p \) is the degree of the model used by this algorithm. Suppose also that (5.1.62) holds. Then the sequence \( {\left\{  \begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}\right\}  }_{k \in  \mathcal{S}} \) converges superlinearly to zero and there exist positive constants \( {\kappa }_{\mathrm{AR},\mathrm{FRLS}}^B,{\kappa }_{\mathrm{AR},\mathrm{FRLS}}^C,{\kappa }_{\mathrm{AR},\mathrm{FRLS}}^E \) , and \( {\kappa }_{\mathrm{AR},\mathrm{FRLS}}^F \) such that the algorithm needs at most
+
+\[
+{\# }_{\text{ AR, FRLS }}^{F}\overset{\text{ def }}{ = }{\kappa }_{\text{ AR, FRLS }}^{B}\log \left( {\left| {\log \left( {\epsilon }_{0}\right) }\right|  + \frac{1}{\ell }\log \ell }\right)  + {\kappa }_{\text{ AR, FRLS }}^{C} = \mathcal{O}\left( {\log \left| {\log \left( {\epsilon }_{0}\right) }\right| }\right)\tag{5.3.44}
+\]
+
+iterations and evaluations \( {}^a \) of \( {\Phi }_{\ell } \) and at most
+
+\[
+{\# }_{\mathrm{{AR}},\mathrm{{FRLS}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{FRLS}}}^{E}\log \left( {\left| {\log \left( {\epsilon }_{0}\right) }\right|  + \frac{1}{\ell }\log \ell }\right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{FRLS}}}^{F} = \mathcal{O}\left( {\log \left| {\log \left( {\epsilon }_{0}\right) }\right| }\right)\tag{5.3.45}
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{r\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) .
+
+\( {}^a \) Strictly, to show the order estimates \( \mathcal{O}\left( {\log \left| {\log \left( {\epsilon }_0\right) }\right| }\right) \) in (5.3.44) and (5.3.45) requires a mild additional assumption such as that \( {\epsilon }_0 \) is small enough so that \( \left| {\log {\epsilon }_0}\right|  \geq  1 \) .
+
+Referenced equation payloads:
+
+Equation (5.1.62):
+\[
+{\psi }_{\ell ,1}\left( {x}_k\right)  \geq  {\psi }_{\min }\tag{5.1.62}
+\]
+'''
+deps = ["theorem_5_3_3", "theorem_5_1_7", "theorem_5_3_9", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.10 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6676)"
+
+[[node]]
+id = "theorem_5_3_11"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.11: Complexity for full-rank nonlinear least-squares (trust region-like methods, \( \ell  > 2 \) )
+
+Suppose that a TR \( \psi ,\nu \) algorithm is applied to minimize \( {\Phi }_{\ell } \) for an even integer \( \ell  > \) 2. Suppose also that (5.1.62) holds. Then the sequence \( {\left\{  \begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}\right\}  }_{k \in  \mathcal{S}} \) converges sublinearly to zero, and there exist positive constants \( {\kappa }_{\mathrm{TR}2,\mathrm{FRLS}}^B,{\kappa }_{\mathrm{TR}2,\mathrm{FRLS}}^C,{\kappa }_{\mathrm{TR}2,\mathrm{FRLS}}^E \) , and \( {\kappa }_{\mathrm{TR}2,\mathrm{FRLS}}^F \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{B}{\epsilon }_{0}^{-\left( {\ell  - 2}\right) } + {\kappa }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{C} = \mathcal{O}\left( {\epsilon }_{0}^{-\left( {\ell  - 2}\right) }\right)
+\]
+
+iterations and evaluations of \( r \) and at most
+
+\[
+{\# }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{E}{\epsilon }_{0}^{-\left( {\ell  - 2}\right) } + {\kappa }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{F} = \mathcal{O}\left( {\epsilon }_{0}^{-\left( {\ell  - 2}\right) }\right)
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{r\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) .
+
+Referenced equation payloads:
+
+Equation (5.1.62):
+\[
+{\psi }_{\ell ,1}\left( {x}_k\right)  \geq  {\psi }_{\min }\tag{5.1.62}
+\]
+'''
+deps = ["theorem_5_3_9", "theorem_5_3_8", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.11 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6712)"
+
+[[node]]
+id = "theorem_5_3_12"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 5.3.12: Complexity for full-rank nonlinear least-squares (trust region-like methods, \( \ell  = 2 \) )
+
+Suppose that a \( \operatorname{TR}\psi ,\nu \) algorithm is applied to minimize \( {\Phi }_2 \) . Suppose also that (5.1.62) holds. Then either \( r\left( {x}_k\right)  = 0 \) after the first successful iteration or the sequence \( \left\{  {\begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix}{\} }_{k \in  \mathcal{S}}}\right. \) converges linearly to zero, and there exist positive constants \( {\kappa }_{\mathrm{TR},\mathrm{FRLS}}^B,{\kappa }_{\mathrm{TR},\mathrm{FRLS}}^C,{\kappa }_{\mathrm{TR},\mathrm{FRLS}}^E \) , and \( {\kappa }_{\mathrm{TR},\mathrm{FRLS}}^F \) such that the algorithm needs at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{B}\left| {\log \left( {\epsilon }_{0}\right) }\right|  + {\kappa }_{\mathrm{{TR}}1,\mathrm{{FRLS}}}^{C} = \mathcal{O}\left( \left| {\log \left( {\epsilon }_{0}\right) }\right| \right)
+\]
+
+iterations and evaluations of \( r \) and at most
+
+\[
+{\# }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{E}\left| {\log \left( {\epsilon }_{0}\right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{F} = \mathcal{O}\left( \left| {\log \left( {\epsilon }_{0}\right) }\right| \right)
+\]
+
+successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{r\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) .
+
+Referenced equation payloads:
+
+Equation (5.1.62):
+\[
+{\psi }_{\ell ,1}\left( {x}_k\right)  \geq  {\psi }_{\min }\tag{5.1.62}
+\]
+'''
+deps = ["theorem_5_3_8", "lemma_5_3_6", "theorem_5_3_3", "theorem_5_1_7", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.12 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6740)"

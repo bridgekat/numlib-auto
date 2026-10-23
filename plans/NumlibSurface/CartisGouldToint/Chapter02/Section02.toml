@@ -1,0 +1,211 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 2, Section 2.
+
+Normalize the step bound using t_min=min(t_ini,(1−α)/L), not (2.2.7) alone. A trial costs a function evaluation even when no backtracking is needed. In Theorem 2.2.2 use I=max(0,ceil(log₂(t_ini L/[2(1−α)]))) backtracks, at most I+1 trial evaluations per iteration, and κ=1/(α t_min). The corrected function count is 1+(I+1) floor(κ(f(x₀)−f_low)/ε²), derivative count at most floor(κ(f(x₀)−f_low)/ε²)+1. This is a documented correction of the printed constants, with unchanged O(ε⁻²) order. SDEX uses exact line minimization; its bound is an iteration/gradient bound, since the cost of solving an exact line minimization is not automatically one value query.
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+Since the first optimization method using gradients that comes to mind is the steepest-descent algorithm, we begin our analysis there.
+
+#### 2.2.1 The steepest-descent algorithm with backtracking-Armijo linesearch
+
+The steepest-descent algorithm is an iterative method intended to find approximate first-order minimizers of the smooth unconstrained minimization problem (2.1.1). Given the iterate \( {x}_k \) at iteration \( k \) , the steepest-descent method searches for an approximate minimizer of \( f\left( {{x}_k - t{\nabla }_x^{1}f\left( {x}_k\right) }\right) \) considered as a function of the nonnegative real parameter \( t \) . The name of the method derives from the fact that \( - {\nabla }_x^{1}f\left( {x}_k\right) \) is the direction in \( {\mathbb{R}}^n \) with the most negative slope of \( f \) at \( {x}_k \) measured in the Euclidean norm.
+
+The first step in our development is to say precisely what we mean by finding an approximate minimizer along the steepest-descent direction. A common approach is to use a linesearch to find a point \( {x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) \) that provides a good reduction in \( f \) . In what follows, we consider the well-known backtracking-Armijo technique, in which \( {t}_{k} = {2}^{-{i}_{k}}{t}_{\text{ ini }} \) , where \( {t}_{\text{ ini }} > 0 \) is given and \( {i}_k \) is the smallest nonnegative integer for which
+
+\[
+f\left( {{x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) }\right)  \leq  f\left( {x}_k\right)  - \alpha {t}_k{\begin{Vmatrix}{\nabla }_x^{1}f\left( {x}_k\right) \end{Vmatrix}}^2\tag{2.2.1}
+\]
+
+for a given \( \alpha  \in  \left( {0,1}\right) \) . The intention is that such a step provides a significant reduction in \( f \) and is not too short. Crucially, as we shall shortly show, such a step always exists.
+
+Our algorithm may be stated formally as follows.
+
+Algorithm 2.2.1: Steepest-descent algorithm with backtracking-Armijo linesearch (SDBA)
+
+Step 0: Initialization. An initial point \( {x}_0 \) is given, as well as an accuracy level \( \epsilon  > 0 \) . Constants \( {t}_{\text{ ini }} \) and \( \alpha \) satisfying
+
+\[
+{t}_{\text{ ini }} > 0\text{ and }0 < \alpha  < 1\tag{2.2.2}
+\]
+
+are also given. Compute \( f\left( {x}_0\right) \) , and set \( k = 0 \) .
+
+Step 1: Test for termination. Compute \( {\nabla }_x^{1}f\left( {x}_k\right) \) . If \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  \epsilon \) , terminate with the \( \epsilon \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+Step 2: Linesearch: initialization.
+
+Set \( {t}_{k} = {t}_{\text{ ini }} \) and \( {i}_k = 0 \) , and compute \( f\left( {{x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) }\right) \) .
+
+Step 3: Linesearch: acceptance or backtracking.
+
+1. If (2.2.1) holds, go to Step 4.
+
+2. Else set \( {t}_k \leftarrow  \frac{1}{2}{t}_k \) and \( {i}_k \leftarrow  {i}_k + 1 \) , compute \( f\left( {{x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) }\right) \) , and return to Step 3.
+
+Step 4: Compute the new iterate and gradient.
+
+Set \( {x}_{k + 1} = {x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) \) , increment \( k \) by one, and return to Step 1.
+
+Note that \( f\left( {x}_{k + 1}\right) \) is computed in Step 2 or 3 and thus need not be computed again in Step 4. The choice of the initial candidate for \( {t}_k \) in Step 2 simply reflects that no a priori estimate of the steplength is truly reliable in a purely first-order method unless one has additional information beyond that assumed here. In practice, one often chooses \( {t}_{\mathrm{ini}} = 1 \) or initializes \( {t}_k \) to the steplength computed at the previous iteration, for lack of a better choice. Our analysis in fact allows for any initialization of \( {t}_k \) provided that it is uniformly bounded away from zero and infinity. A typical value for the other constant in (2.2.2) is \( \alpha  = \frac{1}{1000} \) . Note that we have chosen to halve \( {t}_k \) in Step 3.2 purely for convenience of exposition, and one could choose a different contraction factor without altering the substance of what follows.
+
+Before we analyze the algorithm, we must show that (2.2.1) is well defined.
+'''
+
+[[node]]
+id = "sdbaRun"
+kind = "definition"
+desc = '''
+Define the set of finite traces satisfying Algorithm 2.2.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
+
+Algorithm 2.2.1: Steepest-descent algorithm with backtracking-Armijo linesearch (SDBA)
+
+Step 0: Initialization. An initial point \( {x}_0 \) is given, as well as an accuracy level \( \epsilon  > 0 \) . Constants \( {t}_{\text{ ini }} \) and \( \alpha \) satisfying
+
+\[
+{t}_{\text{ ini }} > 0\text{ and }0 < \alpha  < 1\tag{2.2.2}
+\]
+
+are also given. Compute \( f\left( {x}_0\right) \) , and set \( k = 0 \) .
+
+Step 1: Test for termination. Compute \( {\nabla }_x^{1}f\left( {x}_k\right) \) . If \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  \epsilon \) , terminate with the \( \epsilon \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+
+Step 2: Linesearch: initialization.
+
+Set \( {t}_{k} = {t}_{\text{ ini }} \) and \( {i}_k = 0 \) , and compute \( f\left( {{x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) }\right) \) .
+
+Step 3: Linesearch: acceptance or backtracking.
+
+1. If (2.2.1) holds, go to Step 4.
+
+2. Else set \( {t}_k \leftarrow  \frac{1}{2}{t}_k \) and \( {i}_k \leftarrow  {i}_k + 1 \) , compute \( f\left( {{x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) }\right) \) , and return to Step 3.
+
+Step 4: Compute the new iterate and gradient.
+
+Set \( {x}_{k + 1} = {x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) \) , increment \( k \) by one, and return to Step 1.
+
+Note that \( f\left( {x}_{k + 1}\right) \) is computed in Step 2 or 3 and thus need not be computed again in Step 4. The choice of the initial candidate for \( {t}_k \) in Step 2 simply reflects that no a priori estimate of the steplength is truly reliable in a purely first-order method unless one has additional information beyond that assumed here. In practice, one often chooses \( {t}_{\mathrm{ini}} = 1 \) or initializes \( {t}_k \) to the steplength computed at the previous iteration, for lack of a better choice. Our analysis in fact allows for any initialization of \( {t}_k \) provided that it is uniformly bounded away from zero and infinity. A typical value for the other constant in (2.2.2) is \( \alpha  = \frac{1}{1000} \) . Note that we have chosen to halve \( {t}_k \) in Step 3.2 purely for convenience of exposition, and one could choose a different contraction factor without altering the substance of what follows.
+
+Before we analyze the algorithm, we must show that (2.2.1) is well defined.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 2.2"
+
+[[node]]
+id = "sdexRun"
+kind = "definition"
+desc = '''
+For x₀ and ε>0, the steepest-descent exact-linesearch method has s_k=−t_k grad f(x_k), with t_k the first global minimizer over t≥0 of t↦f(x_k−t grad f(x_k)) (as (2.2.26)), x_(k+1)=x_k+s_k, and termination ||grad f(x_k)||≤ε. Include existence of a chosen line minimizer as a step specification only where attained; no finite oracle cost for obtaining an exact line minimizer is assumed.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 2.2"
+
+[[node]]
+id = "lemma_2_2_1"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 2.2.1: Lower bound on the stepsize
+
+Suppose that f.gL holds. Then
+
+\[
+f\left( {{x}_k - t{\nabla }_x^{1}f\left( {x}_k\right) }\right)  \leq  f\left( {x}_k\right)  - {\alpha t}{\begin{Vmatrix}{\nabla }_x^{1}f\left( {x}_k\right) \end{Vmatrix}}^2\tag{2.2.3}
+\]
+
+holds for all
+
+\[
+t \in  \left\lbrack  {0,{t}_{\text{ low }}}\right\rbrack  ,\text{ where }{t}_{\text{ low }}\overset{\text{ def }}{ = }\frac{2\left( {1 - \alpha }\right) }{{L}_{f,1}}.\tag{2.2.4}
+\]
+'''
+deps = ["sdbaRun", "sdexRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.2.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1343)"
+
+[[node]]
+id = "theorem_2_2_2"
+kind = "theorem"
+desc = '''
+Semantic specification: Apply the corrected t_min, backtracking and function counts in the module design note; retain both gradient/function counts, termination and O(ε⁻²). The source formula alone is invalid when t_ini is small.
+
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 2.2.2: Complexity of the steepest-descent algorithm with a backtracking-Armijo linesearch
+
+Suppose that f.Bb and f.gL hold. Then there is a positive constant
+
+\[
+{\kappa }_{\text{ SDBA }}\overset{\text{ def }}{ = }\frac{{L}_{f,1}}{\alpha \left( {1 - \alpha }\right) }
+\]
+
+for which the SDBA algorithm (p. 25) requires at most
+
+\[
+{\# }_{\mathrm{{SBDA}}}^{F} = \left\lceil  {{\log }_{2}\left( \frac{{L}_{f,1}{t}_{\mathrm{{ini}}}}{2\left( {1 - \alpha }\right) }\right) }\right\rceil  {\kappa }_{\mathrm{{SDBA}}}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }^{2}} = \mathcal{O}\left( {\epsilon }^{-2}\right)\tag{2.2.8}
+\]
+
+evaluations of the objective function and at most
+
+\[
+{\# }_{\mathrm{{SBDA}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{SDBA}}}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }^{2}} + 1 = \mathcal{O}\left( {\epsilon }^{-2}\right)\tag{2.2.9}
+\]
+
+gradient evaluations to determine an iterate \( {x}_{\epsilon } \) for which \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
+
+We note here and hereafter that evaluation bounds such as (2.2.8) and (2.2.9) should be interpreted as the smallest integer not exceeding the stated number quoted. We could have used the \( \lfloor  \cdot  \rfloor {\text{ notation }}^{8} \) to be precise, but this would lead to additional notational clutter.
+'''
+deps = ["sdbaRun", "sdexRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1387)"
+
+[[node]]
+id = "theorem_2_2_3"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 2.2.3: Slow first-order convergence of the steepest-descent algorithm
+
+The SDBA algorithm applied to minimize a function \( f \) satisfying \( f.{Bb} \) and \( f.{gL} \) may require as many as \( {\epsilon }^{-2} \) evaluations of \( f\left( x\right) \) and \( {\nabla }_x^{1}f\left( x\right) \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
+'''
+deps = ["theorem_2_2_2", "sdbaRun", "sdexRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1453)"
+
+[[node]]
+id = "theorem_2_2_4"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 2.2.4: Complexity of the steepest-descent algorithm with an exact linesearch
+
+Suppose that f.Bb and f.gL hold. Then there exists a positive constant \( {\kappa }_{\text{ SDEX }} \) such that the SDEX algorithm requires at most
+
+\[
+{\# }_{\text{ SDEX }}^{I}\overset{\text{ def }}{ = }{\kappa }_{\text{ SDEX }}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }^{2}} = \mathcal{O}\left( {\epsilon }^{-2}\right)\tag{2.2.27}
+\]
+
+iterations to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
+'''
+deps = ["sdbaRun", "sdexRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1609)"
+
+[[node]]
+id = "theorem_2_2_5"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 2.2.5: Slow first-order convergence of the steepest-descent algorithm
+
+The SDEX algorithm applied to minimize a function \( f \) satisfying f.Bb and f.gL may require as many as \( {\epsilon }^{-2} \) iterations of \( f\left( x\right) \) and \( {\nabla }_x^{1}f\left( x\right) \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
+'''
+deps = ["theorem_2_2_3", "theorem_2_2_2", "sdbaRun", "sdexRun", "objectiveRegularity"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1667)"

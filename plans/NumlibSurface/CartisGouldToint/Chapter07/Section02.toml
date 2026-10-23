@@ -1,0 +1,505 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 7, Section 2.
+
+TPp-GC has a feasibility Phase 1 and repeated residual-minimization Phase 2 with explicit decreasing target t_k. Preserve infeasible-critical termination as a valid outcome. Uniform smoothness constants for μ₂(x,t) must be proved for the generated bounded target range; do not assume the conclusions of Lemma 7.2.5 as algorithm fields. Separate outer target changes K_a,K_b from inner AR iteration sets I_k. The final result is a disjunction of infeasible criticality and scaled KKT approximate optimality; do not assume exact feasibility exists.
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+Since generally constrained optimization is more complicated than the topics we have addressed thus far in this book, both in theory and in practice, we shall take things at a gentle pace. In this chapter, we consider the simplest case, in which we aim to compute an \( \left( {{\epsilon }_0,{\epsilon }_1}\right) \) -approximate first-order minimizer of \( f \) within \( \mathcal{F}\left( {\mathcal{C}, c}\right) \) ; that is, we aim to satisfy (7.1.4). It is fair to say that almost all the current research on evaluation complexity for generally constrained optimization focuses on achieving first-order optimality, but as we shall see later, in Chapter 14, there are hints of generalizations to higher-order conditions.
+
+#### 7.2.1 The basic approach
+
+Most, but not all, methods for generally-constrained optimization recognize that there is an unstated conflict between reducing the objective on one hand and satisfying the constraints on the other. A common ploy is to build an artificial function that balances these two conflicting goals; penalty-function and augmented-Lagrangian methods are cases in point, while interior-point and SQP methods depend on suitable merit functions of this kind. The method that will form the focus of this chapter is also of this flavour but differs in one key aspect. This is that it first tries to satisfy the constraints to a reasonable degree and, if it achieves this, thereafter reduces the objective as much as possible while keeping a tight rein on subsequent constraint infeasibility. This very cautious approach is the key to its reasonable worst-case behaviour but mitigates against the bravado that the best practical methods exhibit.
+
+The essential idea is straightforward and dates back to a class of methods for nonlinear convex optimization from the 1960s [260,294]. Consider, for simplicity, the equality-constrained problem of minimizing \( f\left( x\right) \) subject to the equality constraints \( c\left( x\right)  = 0 \) , and let \( {f}_{\min } \) be the smallest value of \( f \) allowed by the constraints. Then, if \( t = {f}_{\min } \) , the roots of the nonlinear system
+
+\[
+c\left( x\right)  = 0\text{ and }f\left( x\right)  - t = 0\tag{7.2.1}
+\]
+
+are the global minimizers of the problem. If \( t < {f}_{\min },\left( {7.2.1}\right) \) has no solution, while if \( t > {f}_{\min },\left( {7.2.1}\right) \) may have many. In particular, if \( x = {x}_{\mathrm{F}} \) is any vector that satisfies
+
+\[
+c\left( x\right)  = 0,\tag{7.2.2}
+\]
+
+(7.2.1) has a solution when \( t = f\left( {x}_{\mathrm{F}}\right) \) .
+
+Thus, our basic strategy is to find a solution to (7.2.2) if that is possible, to record the corresponding \( t = f\left( {x}_{\mathrm{F}}\right) \) , and then to gradually reduce \( t \) so long as (7.2.1) continues to hold. But rather than solving the nonlinear equations (7.2.2) and (7.2.1), we consider instead the equivalent optimization problems
+
+\[
+\mathop{\min }\limits_{x \in  {\mathbb{R}}^n}\parallel c\left( x\right) \parallel\tag{7.2.3}
+\]
+
+and, if the former (approximately) achieves (7.2.2),
+
+\[
+\mathop{\min }\limits_{{x \in  {\mathbb{R}}^{n}}}\parallel r\left( {x, t}\right) \parallel ,\text{ where }r\left( {x, t}\right) \overset{\text{ def }}{ = }\left( \begin{matrix} c\left( x\right) \\  f\left( x\right)  - t \end{matrix}\right) ,\tag{7.2.4}
+\]
+
+where the latter is solved for a well-chosen sequence of decreasing \( t \) . There is no difficulty, at least in principle, in adapting such a scheme to cope with additional convex constraints by restricting the minimizations in (7.2.3) and (7.2.4) to \( x \in  \mathcal{C} \) . Fortunately, as the reader will recall, we have already studied good methods for the problems (7.2.3) and (7.2.4) both with and without additional constraints in Sections 5.1 and 6.3.
+
+#### 7.2.2 The TPp-GC algorithm and its complexity
+
+##### 7.2.2.1 The TPp-GC algorithm
+
+We now expand on the method we sketched in the previous section. To say anything more, we need to define more thoroughly the class of constrained optimization problems (7.1.1) that will be our focus in this chapter. We consider first the constraints on the problem and aim at solving (7.2.3) by solving the equivalent convexly constrained least-Euclidean-norm problem
+
+\[
+\mathop{\min }\limits_{{x \in  \mathcal{C}}}{\Phi }_{1}\left( x\right) \overset{\text{ def }}{ = }\parallel c\left( x\right) \parallel
+\]
+
+using the ARpLE-CC algorithm (p. 189). This requires that we choose a particular \( \ell \) satisfying either (5.1.38) or (5.1.39). Moreover, we must ensure the necessary smoothness conditions to be able to use the complexity result of Theorem 6.3.1, that is, \( {\Phi }_{\ell } \) .DpL.C (for the chosen \( \ell \) ). As we argued after the statement of assumption \( {\Phi }_{\ell } \) .DpL on p. 124, a sufficient condition for \( {\Phi }_{\ell } \) .DpL.C to hold is that \( \parallel c\left( x\right) \parallel \) remain bounded in \( \mathcal{C} \) and that the following hold.
+
+c.D1pL.C
+
+The constraint functions \( {c}_i\left( x\right) , i \in  \left\lbrack  {1 : m}\right\rbrack \) , are all \( p \) -times continuously differentiable in an open set \( \mathcal{D} \) containing \( \mathcal{C} \) , and their derivative tensors \( {\nabla }_x^j{c}_i\left( x\right) , j \in  \left\lbrack  {1 : p}\right\rbrack \) , are Lipschitz continuous and bounded in \( \mathcal{C} \) .
+
+As in previous chapters, we prefer to use the weaker \( {\Phi }_{\ell } \) .DpL.C. This is then sufficient to try to find an approximately feasible point \( {x}_1 \) for which \( \begin{Vmatrix}{c\left( {x}_1\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) for a predefined, small \( {\epsilon }_0 > 0 \) . If we fail, there is little more that we can do; indeed, we shall link failure to finding instead an infeasible approximately critical point of \( \parallel c\left( x\right) \parallel \) . But if we succeed, our focus then necessarily changes to the objective function.
+
+Armed with the approximately feasible point \( {x}_1 \) , we may then consider using the ARp-CC or ARp1-CC algorithm once again to approximately solve the problem
+
+\[
+\mathop{\min }\limits_{{x \in  \mathcal{C}}}{\mu }_{2}\left( {x,{t}_{k}}\right) \overset{\text{ def }}{ = }\frac{1}{2}{\begin{Vmatrix}r\left( x,{t}_{k}\right) \end{Vmatrix}}^{2}\tag{7.2.5}
+\]
+
+or ARpLE-CC to tackle the equivalent
+
+\[
+\mathop{\min }\limits_{{x \in  \mathcal{C}}}{\mu }_{1}\left( {x,{t}_{k}}\right) \overset{\text{ def }}{ = }\begin{Vmatrix}{r\left( {x,{t}_{k}}\right) }\end{Vmatrix}\tag{7.2.6}
+\]
+
+for some monotonically decreasing sequence of targets \( \left\{  {t}_k\right\}  , k \geq  1 \) . Again this requires that we specify the assumptions on the objective function that make this possible. Let \( \beta  > {\epsilon }_0 > 0 \) , and consider the region of near feasibility
+
+\[
+{\mathcal{F}}_{\beta } = \{ x \in  \mathcal{C} \mid  \parallel c\left( x\right) \parallel  \leq  \beta \}\tag{7.2.7}
+\]
+
+We first require that the objective function satisfy an assumption on this region.
+
+f.B.Fb If \( {\mathcal{F}}_{\beta } \neq  \varnothing , f\left( x\right) \) is bounded above and below on \( {\mathcal{F}}_{\beta } \) ; that is, there are constants \( {f}_{\text{ low }} \) and \( {f}_{\text{ up }} \) for which
+
+\[
+{f}_{\text{ low }} \leq  f\left( x\right)  \leq  {f}_{\text{ up }}
+\]
+
+for all \( x \in  {\mathcal{F}}_{\beta } \) .
+
+In line with our approach for ensuring feasibility, we also require that \( {\mu }_2 \) .DpL.C hold, \( {}^{53} \) where \( {\mu }_2 \) is considered as a function of its first argument. We note once again, in the light of our comment on p. 124, that a sufficient condition to ensure \( {\mu }_2 \) .DpLC is that \( \left| {f\left( x\right)  - t}\right| \) is bounded \( {}^{54} \) in \( \mathcal{C} \) and that the following holds.
+
+f.D1pL.C
+
+The objective function \( f\left( x\right) \) is \( p \) -times continuously differentiable in an open set \( \mathcal{D} \) containing \( \mathcal{C} \) , and its derivative tensors \( {\nabla }_x^j{f}_i\left( x\right) \) , \( j \in  \left\lbrack  {1 : p}\right\rbrack \) , are Lipschitz continuous and bounded in \( \mathcal{C} \) .
+
+However, we prefer to focus on \( {\mu }_2 \) .DpL.C. Of course, \( {\Phi }_{\ell } \) .DpL.C and \( {\mu }_2 \) .DpL.C ensure that \( f \) and the components of \( c \) are \( p \) -times continuously differentiable in \( \mathcal{C} \) .
+
+Of course, this is simply a sketch of an algorithm, and we now need to fill in crucial details, most particularly of how we pick the targets \( {t}_k \) , how accurately we need to solve the crucial subproblems (7.2.5)-(7.2.6), and when to stop. Although, as we mention above, it is possible to apply a variety of algorithms during the feasibility and optimality phases, in the description below we have selected those that lead to the currently best complexity in each phase.
+
+Algorithm 7.2.1: Two-phase adaptive-regularization algorithm using \( p \) th-order models for general constraints (TP \( p \) -GC)
+
+Initialization: An initial point \( {x}_0 \in  \mathcal{C} \) , an infeasibility bound \( \beta  > 0 \) defining \( {\mathcal{F}}_{\beta } \) , and a constant \( \theta  \in  \left( {0,1}\right) \) are given. Infeasibility and optimality tolerances
+
+\[
+0 < {\epsilon }_{0} \leq  \min \left( {1,\beta }\right) \text{ and }0 < {\epsilon }_{1} \leq  1\tag{7.2.8}
+\]
+
+are also given.
+
+---
+
+\( {}^{53}\mathrm{\;{By}}{\mu }_2 \) .D1pL.C we mean \( {\Phi }_{\ell } \) .DpL.C on page 189 in the case where \( {\Phi }_{\ell } = {\mu }_2 \) . Assumption \( {\mu }_2 \) .DpL.C imposes smoothness requirements on \( {\mu }_2\left( {\cdot , t}\right) \) throughout \( \mathcal{C} \) . This is actually stronger than needed and made purely for simplicity. A more reasonable assumption might be that the required smoothness hold instead only for \( x \) in \( {\mathcal{F}}_{\beta } \) . To do so is delicate and needs the parameter \( \beta \) to be sufficiently large to ensure that iterates and trial points of the \( \mathrm{AR}p - \mathrm{CC} \) algorithm in Phase 2 of the forthcoming TP \( p \) -GC algorithm remain in this restricted subset. The construction of the AR \( p \) -CC algorithm ensures that this is trivially satisfied for successful iterates. At unsuccessful trial points, one needs to show that the length of the trial steps \( \begin{Vmatrix}{s}_{k, i}\end{Vmatrix} \) remains uniformly bounded above, and this is so provided that the derivatives of the generated iterates are bounded [105, Lem. 3.2]. Thus a suitable \( \beta \) ultimately depends on Lipschitz constants and other algorithmic parameters.
+
+\( {}^{54} \) Note that boundedness of \( \left| {f\left( x\right) }\right| \) is ensured in \( {\mathcal{F}}_{\beta } \) by f.B.Fb and will ensure in what follows that \( t \) remains bounded.
+
+---
+
+Phase 1: Feasibility phase: Pick a Taylor degree \( p \) along with suitable values \( i \geq  0 \) and \( \ell  > 1 \) satisfying either (5.1.38) or (5.1.39), and apply the ARpLE-CC algorithm (p. 189), starting from \( {x}_0 \) , to find a point \( {x}_1 \in  \mathcal{C} \) for which
+
+\[
+\begin{Vmatrix}{c\left( {x}_{1}\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\text{ or }{\omega }_{{\Phi }_{\ell },\mathcal{C},1}\left( {x}_{1}\right)  \leq  {\epsilon }_{1}{\begin{Vmatrix}c\left( {x}_{1}\right) \end{Vmatrix}}^{\ell  - 1}.\tag{7.2.9}
+\]
+
+If \( \begin{Vmatrix}{c\left( {x}_1\right) }\end{Vmatrix} > \theta {\epsilon }_0 \) , terminate with \( {x}_{\epsilon } = {x}_1 \) .
+
+Phase 2: Optimality phase:
+
+Step 0: Initialization. Set \( {t}_1 = f\left( {x}_1\right)  - \sqrt{{\epsilon }_0^2 - {\begin{Vmatrix}c\left( {x}_1\right) \end{Vmatrix}}^2} \) and \( k = 1 \) .
+
+Step 1: Inner iteration to compute an improved objective value. Starting from \( {x}_k \) , apply the ARp-CC algorithm (p. 180) to minimize \( {\mu }_2\left( {x,{t}_k}\right) \) as a function of \( x \in  \mathcal{C} \) until an iterate \( {x}_{k + 1} \in  \mathcal{C} \) is found such that
+
+\[
+\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k}}\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\text{ or }f\left( {x}_{k + 1}\right)  < {t}_{k}\text{ or }{\omega }_{{\mu }_{2},\mathcal{C},1}\left( {{x}_{k + 1},{t}_{k}}\right)  \leq  {\epsilon }_{1}\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k}}\right) }\end{Vmatrix}.
+\]
+
+(7.2.10)
+
+Step 2: Decrease the target and check for termination.
+
+(a) If \( \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_k}\right) }\end{Vmatrix} < \theta {\epsilon }_0 \) , set
+
+\[
+{t}_{k + 1} = f\left( {x}_{k + 1}\right)  - \sqrt{{\epsilon }_0^2 - {\begin{Vmatrix}c\left( {x}_{k + 1}\right) \end{Vmatrix}}^2},\tag{7.2.11}
+\]
+
+and terminate with \( \left( {{x}_{\epsilon },{t}_{\epsilon }}\right)  = \left( {{x}_{k + 1},{t}_{k + 1}}\right) \) if
+
+\[
+{\omega }_{{\mu }_2,\mathcal{C},1}\left( {{x}_{k + 1},{t}_{k + 1}}\right)  \leq  {\epsilon }_1\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k + 1}}\right) }\end{Vmatrix}.\tag{7.2.12}
+\]
+
+(b) Otherwise, if \( \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_k}\right) }\end{Vmatrix} \geq  \theta {\epsilon }_0 \) and \( f\left( {x}_{k + 1}\right)  < {t}_k \) , set
+
+\[
+{t}_{k + 1} = {2f}\left( {x}_{k + 1}\right)  - {t}_k\tag{7.2.13}
+\]
+
+and terminate with \( \left( {{x}_{\epsilon },{t}_{\epsilon }}\right)  = \left( {{x}_{k + 1},{t}_{k + 1}}\right) \) if (7.2.12) holds.
+
+(c) Otherwise, if \( \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_k}\right) }\end{Vmatrix} \geq  \theta {\epsilon }_0 \) and \( f\left( {x}_{k + 1}\right)  \geq  {t}_k \) , terminate with \( \left( {{x}_{\epsilon },{t}_{\epsilon }}\right)  = \left( {{x}_{k + 1},{t}_k}\right) \) .
+
+Step 3: Move to the next iteration. Set \( k = k + 1 \) , and go to Step 1.
+
+Just to remind the reader, the function \( {\Phi }_{\ell } \) used by the ARpLE-CC algorithm and in the stopping test (7.2.9) is that defined by (5.1.3) (p. 120). Observe that the computation of \( {\omega }_{{\mu }_2,\mathcal{C},1}\left( {{x}_{k + 1},{t}_{k + 1}}\right) \) in Step 2 does not require that \( f\left( {x}_{k + 1}\right) , c\left( {x}_{k + 1}\right) \) , or any of their derivatives be reevaluated.
+
+The mechanism devised to adjust the targets may seem at a first glance to be rather complicated. To reassure the reader that there is some purpose, it is relatively straightforward to show that if the algorithm terminates, it does so at either an \( \epsilon \) -approximate infeasible local minimizer of \( \parallel c\left( x\right) \parallel \) or an \( \epsilon \) -approximate KKT point.
+'''
+
+[[node]]
+id = "targetResidual"
+kind = "definition"
+desc = '''
+Define r(x,t)=(c(x),f(x)−t) in the Euclidean product, μ₁(x,t)=||r(x,t)||, μ₂(x,t)=½||r(x,t)||², F_β={x∈C| ||c x||≤β}, and Φ_ℓ(x)=||c(x)||^ℓ/ℓ. Bounds f_low≤f x≤f_up are imposed only on F_β. Parameters satisfy β>ε₀>0. Quantify Lipschitz constants uniformly over the generated target interval rather than choose a new arbitrary constant for each inner iteration.
+'''
+deps = ["residualPowerObjective", "constrainedFeasibleSet"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2"
+
+[[node]]
+id = "twoPhaseRun"
+kind = "definition"
+desc = '''
+Define the set of finite traces satisfying Algorithm 7.2.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
+
+Algorithm 7.2.1: Two-phase adaptive-regularization algorithm using \( p \) th-order models for general constraints (TP \( p \) -GC)
+
+Initialization: An initial point \( {x}_0 \in  \mathcal{C} \) , an infeasibility bound \( \beta  > 0 \) defining \( {\mathcal{F}}_{\beta } \) , and a constant \( \theta  \in  \left( {0,1}\right) \) are given. Infeasibility and optimality tolerances
+
+\[
+0 < {\epsilon }_{0} \leq  \min \left( {1,\beta }\right) \text{ and }0 < {\epsilon }_{1} \leq  1\tag{7.2.8}
+\]
+
+are also given.
+
+---
+
+\( {}^{53}\mathrm{\;{By}}{\mu }_2 \) .D1pL.C we mean \( {\Phi }_{\ell } \) .DpL.C on page 189 in the case where \( {\Phi }_{\ell } = {\mu }_2 \) . Assumption \( {\mu }_2 \) .DpL.C imposes smoothness requirements on \( {\mu }_2\left( {\cdot , t}\right) \) throughout \( \mathcal{C} \) . This is actually stronger than needed and made purely for simplicity. A more reasonable assumption might be that the required smoothness hold instead only for \( x \) in \( {\mathcal{F}}_{\beta } \) . To do so is delicate and needs the parameter \( \beta \) to be sufficiently large to ensure that iterates and trial points of the \( \mathrm{AR}p - \mathrm{CC} \) algorithm in Phase 2 of the forthcoming TP \( p \) -GC algorithm remain in this restricted subset. The construction of the AR \( p \) -CC algorithm ensures that this is trivially satisfied for successful iterates. At unsuccessful trial points, one needs to show that the length of the trial steps \( \begin{Vmatrix}{s}_{k, i}\end{Vmatrix} \) remains uniformly bounded above, and this is so provided that the derivatives of the generated iterates are bounded [105, Lem. 3.2]. Thus a suitable \( \beta \) ultimately depends on Lipschitz constants and other algorithmic parameters.
+
+\( {}^{54} \) Note that boundedness of \( \left| {f\left( x\right) }\right| \) is ensured in \( {\mathcal{F}}_{\beta } \) by f.B.Fb and will ensure in what follows that \( t \) remains bounded.
+
+---
+
+Phase 1: Feasibility phase: Pick a Taylor degree \( p \) along with suitable values \( i \geq  0 \) and \( \ell  > 1 \) satisfying either (5.1.38) or (5.1.39), and apply the ARpLE-CC algorithm (p. 189), starting from \( {x}_0 \) , to find a point \( {x}_1 \in  \mathcal{C} \) for which
+
+\[
+\begin{Vmatrix}{c\left( {x}_{1}\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\text{ or }{\omega }_{{\Phi }_{\ell },\mathcal{C},1}\left( {x}_{1}\right)  \leq  {\epsilon }_{1}{\begin{Vmatrix}c\left( {x}_{1}\right) \end{Vmatrix}}^{\ell  - 1}.\tag{7.2.9}
+\]
+
+If \( \begin{Vmatrix}{c\left( {x}_1\right) }\end{Vmatrix} > \theta {\epsilon }_0 \) , terminate with \( {x}_{\epsilon } = {x}_1 \) .
+
+Phase 2: Optimality phase:
+
+Step 0: Initialization. Set \( {t}_1 = f\left( {x}_1\right)  - \sqrt{{\epsilon }_0^2 - {\begin{Vmatrix}c\left( {x}_1\right) \end{Vmatrix}}^2} \) and \( k = 1 \) .
+
+Step 1: Inner iteration to compute an improved objective value. Starting from \( {x}_k \) , apply the ARp-CC algorithm (p. 180) to minimize \( {\mu }_2\left( {x,{t}_k}\right) \) as a function of \( x \in  \mathcal{C} \) until an iterate \( {x}_{k + 1} \in  \mathcal{C} \) is found such that
+
+\[
+\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k}}\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\text{ or }f\left( {x}_{k + 1}\right)  < {t}_{k}\text{ or }{\omega }_{{\mu }_{2},\mathcal{C},1}\left( {{x}_{k + 1},{t}_{k}}\right)  \leq  {\epsilon }_{1}\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k}}\right) }\end{Vmatrix}.
+\]
+
+(7.2.10)
+
+Step 2: Decrease the target and check for termination.
+
+(a) If \( \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_k}\right) }\end{Vmatrix} < \theta {\epsilon }_0 \) , set
+
+\[
+{t}_{k + 1} = f\left( {x}_{k + 1}\right)  - \sqrt{{\epsilon }_0^2 - {\begin{Vmatrix}c\left( {x}_{k + 1}\right) \end{Vmatrix}}^2},\tag{7.2.11}
+\]
+
+and terminate with \( \left( {{x}_{\epsilon },{t}_{\epsilon }}\right)  = \left( {{x}_{k + 1},{t}_{k + 1}}\right) \) if
+
+\[
+{\omega }_{{\mu }_2,\mathcal{C},1}\left( {{x}_{k + 1},{t}_{k + 1}}\right)  \leq  {\epsilon }_1\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k + 1}}\right) }\end{Vmatrix}.\tag{7.2.12}
+\]
+
+(b) Otherwise, if \( \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_k}\right) }\end{Vmatrix} \geq  \theta {\epsilon }_0 \) and \( f\left( {x}_{k + 1}\right)  < {t}_k \) , set
+
+\[
+{t}_{k + 1} = {2f}\left( {x}_{k + 1}\right)  - {t}_k\tag{7.2.13}
+\]
+
+and terminate with \( \left( {{x}_{\epsilon },{t}_{\epsilon }}\right)  = \left( {{x}_{k + 1},{t}_{k + 1}}\right) \) if (7.2.12) holds.
+
+(c) Otherwise, if \( \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_k}\right) }\end{Vmatrix} \geq  \theta {\epsilon }_0 \) and \( f\left( {x}_{k + 1}\right)  \geq  {t}_k \) , terminate with \( \left( {{x}_{\epsilon },{t}_{\epsilon }}\right)  = \left( {{x}_{k + 1},{t}_k}\right) \) .
+
+Step 3: Move to the next iteration. Set \( k = k + 1 \) , and go to Step 1.
+
+Just to remind the reader, the function \( {\Phi }_{\ell } \) used by the ARpLE-CC algorithm and in the stopping test (7.2.9) is that defined by (5.1.3) (p. 120). Observe that the computation of \( {\omega }_{{\mu }_2,\mathcal{C},1}\left( {{x}_{k + 1},{t}_{k + 1}}\right) \) in Step 2 does not require that \( f\left( {x}_{k + 1}\right) , c\left( {x}_{k + 1}\right) \) , or any of their derivatives be reevaluated.
+
+The mechanism devised to adjust the targets may seem at a first glance to be rather complicated. To reassure the reader that there is some purpose, it is relatively straightforward to show that if the algorithm terminates, it does so at either an \( \epsilon \) -approximate infeasible local minimizer of \( \parallel c\left( x\right) \parallel \) or an \( \epsilon \) -approximate KKT point.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2"
+
+[[node]]
+id = "lemma_7_2_1"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 7.2.1: Consequences of the termination of the TPp-GC algorithm
+
+Suppose that C.CNe, \( {\Phi }_{\ell } \) .DpL.C, and \( {\mu }_2 \) .DpL.C hold. Then if the TPp-GC algorithm stops in Phase 1,
+
+\[
+{\omega }_{{\Phi }_{\ell },\mathcal{C},1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_{1}{\begin{Vmatrix}c\left( {x}_{\epsilon }\right) \end{Vmatrix}}^{\ell  - 1}\text{ and }\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} > \theta {\epsilon }_{0}.\tag{7.2.14}
+\]
+
+Otherwise, if it stops in Phase 2, either
+
+\[
+{\omega }_{{\Phi }_{2},\mathcal{C},1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_{1}\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix}\text{ and }\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} > \theta {\epsilon }_{0}\tag{7.2.15}
+\]
+
+or
+
+\[
+{\omega }_{\mathcal{L},\mathcal{C},1}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right)  \leq  {\epsilon }_{1}\begin{Vmatrix}\left( {{y}_{\epsilon },1}\right) \end{Vmatrix}\text{ and }\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_{0},\tag{7.2.16}
+\]
+
+where \( \mathcal{L}\left( {x, y}\right) \) is the Lagrangian (1.1.1) with respect to the equality constraints and \( {y}_{\epsilon } \) is a vector of Lagrange multipliers associated with the equality constraints.
+
+Referenced equation payloads:
+
+Equation (1.1.1):
+\[
+\mathcal{L}\left( {x, y}\right) \overset{\text{ def }}{ = }f\left( x\right)  - \mathop{\sum }\limits_{{i = 1}}^{m}{y}_{i}{c}_{i}\left( x\right) ,\tag{1.1.1}
+\]
+'''
+deps = ["targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8768)"
+
+[[node]]
+id = "lemma_7_2_2"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 7.2.2: Evaluation complexity of Phase 1 of Algorithm 7.2.1
+
+Suppose that C.CNe and \( {\Phi }_{\ell } \) .DpL.C hold. Then Phase 1 of Algorithm 7.2.1 (TPp-GC) terminates at a point \( {x}_{\epsilon } \) for which either
+
+\[
+\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\text{ or }{\omega }_{{\Phi }_{\ell },\mathcal{C},1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_{1}{\begin{Vmatrix}c\left( {x}_{\epsilon }\right) \end{Vmatrix}}^{\ell  - 1}
+\]
+
+after at most
+
+\[
+{\# }_{\mathrm{{ARpLE}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARpLE}},1}^{A}\frac{\max \left\lbrack  {{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{\frac{1}{{2}^{i}}},{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{1 - \frac{\ell  - 1}{p}}}\right\rbrack  }{\min \left\lbrack  {{\theta }^{\frac{1}{{2}^{i}}}{\epsilon }_{0}^{\frac{1}{{2}^{i}}},{\epsilon }_{1}^{\frac{p + 1}{p}}}\right\rbrack  } + {\kappa }_{\mathrm{{ARpLE}} = }^{C}\mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{0}^{-\frac{1}{{2}^{i}}},{\epsilon }_{1}^{-\frac{p + 1}{p}}}\right\rbrack  }\right)
+\]
+
+(7.2.23)
+
+evaluations of \( c \) and
+
+\[
+{\# }_{\mathrm{{ARpLE},1}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARpLE},1}}^{S}\frac{\max \left\lbrack  {{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{\frac{1}{{2}^{i}}},{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{1 - \frac{\ell  - 1}{p}}}\right\rbrack  }{\min \left\lbrack  {{\theta }^{\frac{1}{{2}^{i}}}{\epsilon }_{0}^{\frac{1}{{2}^{i}}},{\epsilon }_{1}^{\frac{p + 1}{p}}}\right\rbrack  } = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{0}^{-\frac{1}{{2}^{i}}},{\epsilon }_{1}^{-\frac{p + 1}{p}}}\right\rbrack  }\right)
+\]
+
+(7.2.24)
+
+evaluations of its derivatives, where the constants \( {\kappa }_{\mathrm{ARPLE},1}^S,{\kappa }_{\mathrm{ARPLE},1}^A \) , and \( {\kappa }_{\mathrm{ARpLE}}^C \) are as for Theorem 6.3.1.
+'''
+deps = ["theorem_6_3_1", "theorem_6_2_3", "targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8872)"
+
+[[node]]
+id = "lemma_7_2_3"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 7.2.3: Properties of the Phase 2 iterates in Algorithm 7.2.1
+
+The sequence of targets \( \left\{  {t}_k\right\} \) generated in Phase 2 of Algorithm 7.2.1 (TPp-GC) is monotonically decreasing. Moreover, for all \( k \geq  1 \) , we have that
+
+\[
+f\left( {x}_k\right)  - {t}_k \geq  0\tag{7.2.26}
+\]
+
+\[
+\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k + 1}}\right) }\end{Vmatrix} = {\epsilon }_{0}\text{ if }k \in  {\mathcal{K}}_{a},\tag{7.2.27}
+\]
+
+\[
+\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k + 1}}\right) }\end{Vmatrix} = \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k}}\right) }\end{Vmatrix} \leq  {\epsilon }_{0}\text{ if }k \in  {\mathcal{K}}_{b},\tag{7.2.28}
+\]
+
+\[
+\begin{Vmatrix}{c\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{0}\text{ and }f\left( {x}_{k}\right)  - {t}_{k} \leq  {\epsilon }_{0}\text{ , and }\tag{7.2.29}
+\]
+
+\[
+{t}_{k} - {t}_{k + 1} \geq  \left( {1 - \theta }\right) {\epsilon }_{0}\text{ if }k \in  {\mathcal{K}}_{a}.\tag{7.2.30}
+\]
+
+Furthermore, if f.B.Fb holds, then, for \( k \geq  1 \) ,
+
+\[
+{t}_{k} \in  \left\lbrack  {{f}_{\text{ low }} - 1,{f}_{up}}\right\rbrack  .\tag{7.2.31}
+\]
+'''
+deps = ["targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8912)"
+
+[[node]]
+id = "lemma_7_2_4"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 7.2.4: Bound on the size of \( {\mathcal{K}}_a \)
+
+Suppose that f.B.Fb holds. Then
+
+\[
+\left| {\mathcal{K}}_a\right|  \leq  \frac{\left\lbrack  {f}_{up} - {f}_{low} + 1\right\rbrack  }{1 - \theta }{\epsilon }_0^{-1}.
+\]
+'''
+deps = ["lemma_7_2_3", "targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8980)"
+
+[[node]]
+id = "lemma_7_2_5"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 7.2.5: Uniform Lipschitz and regularization bounds
+
+Suppose that \( {\phi }_{\ell } \) .DpL.C, \( {\mu }_2 \) .DpL.C, and f.B.Fb hold. Then there exists a constant \( {L}_{\mu , p} \geq  0 \) such that the pth derivative of \( {\mu }_2\left( {x,{t}_k}\right) \) with respect to \( x \) is Lipschitz continuous with Lipschitz constant \( {L}_{{\mu }_2, p} \) for all values of \( {t}_k \) computed in Phase 2 of the TPp-GC algorithm. Furthermore, there exists a constant \( {\sigma }_{{\mu }_2,\max } > {\sigma }_{\min } \) such that all regularization parameters arising in the ARp-CC algorithm used within Step 1 of algorithm TPp-GC are bounded above by \( {\sigma }_{{\mu }_2,\max } \) .
+'''
+deps = ["lemma_4_1_2", "lemma_7_2_4", "targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8992)"
+
+[[node]]
+id = "lemma_7_2_6"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Lemma 7.2.6: Bound on the size of \( {\mathcal{I}}_k \)
+
+Suppose that C.CNe, \( {\Phi }_{\ell } \) .DpL.C, \( {\mu }_2 \) .DpL.C, and f.B.Fb hold. Then there are constants \( {\kappa }_{\text{ ARpGC }}^{S},{\kappa }_{\text{ ARpGC }}^{A} \) , and \( {\kappa }_{\text{ ARpGC }}^{C} \) such that
+
+\[
+\left| {\mathcal{I}}_{k}^{s}\right|  \leq  {\kappa }_{\text{ ARpGC }}^{s}\left( {1 - \theta }\right) {\epsilon }_{0}^{\frac{p - 1}{p}}{\epsilon }_{1}^{-\frac{p + 1}{p}}\tag{7.2.39}
+\]
+
+and
+
+\[
+\left| {\mathcal{I}}_{k}\right|  \leq  {\kappa }_{\text{ ARpGC }}^{A}\left( {1 - \theta }\right) {\epsilon }_{0}^{\frac{p - 1}{p}}{\epsilon }_{1}^{-\frac{p + 1}{p}} + {\kappa }_{\text{ ARpGC }}^{C}\tag{7.2.40}
+\]
+
+for each \( k \in  {\mathcal{K}}_a \) before termination.
+
+---
+
+\( {}^{56} \) The terminal iterate from subproblem \( j \) is the same as the initial one for subproblem \( j + 1 \) by construction, so it is not counted twice.
+
+---
+'''
+deps = ["lemma_7_2_5", "lemma_6_2_4", "lemma_2_4_1", "targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 9026)"
+
+[[node]]
+id = "theorem_7_2_7"
+kind = "theorem"
+desc = '''
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 7.2.7: Complexity of finding first-order critical points by the TPp-GC algorithm
+
+Suppose that C.CNe, \( {\Phi }_{\ell } \) .DpL.C, \( {\mu }_2 \) .DpL.C, and f.B.Fb hold. Then there are constants \( {\kappa }_{\text{ ARpGC }}^{F} \) and \( {\kappa }_{\text{ ARpGC }}^{D} \) such that, for any \( \left( {{\epsilon }_0,{\epsilon }_1}\right)  \in  (0,1{\rbrack }^2 \) , the TPp-GC algorithm (p. 198) requires at most
+
+\[
+{\# }_{\mathrm{{ARpGC}}}^{F}\overset{\text{ def }}{ = }{\# }_{\mathrm{{ARpLE}},1}^{F} + {\# }_{\mathrm{{ARpGC}},2}^{F} = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{0}^{-1},{\epsilon }_{0}^{-\frac{1}{p}}{\epsilon }_{1}^{-\frac{p + 1}{p}}}\right\rbrack  }\right)\tag{7.2.50}
+\]
+
+evaluations of \( c \) and \( f \) and
+
+\[
+{\# }_{\mathrm{{ARpGC}}}^{D}\overset{\text{ def }}{ = }{\# }_{\mathrm{{ARpLE}},1}^{D} + {\# }_{\mathrm{{ARpGC}},2}^{D} = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{0}^{-\frac{1}{{2}^{4}}},{\epsilon }_{0}^{-\frac{1}{p}}{\epsilon }_{1}^{-\frac{p + 1}{p}}}\right\rbrack  }\right)\tag{7.2.51}
+\]
+
+evaluations of their derivatives up to order \( p \) , where
+
+\[
+{\# }_{\mathrm{{ARpGC}},2}^{F}\overset{\text{ def }}{ = }\left( {{f}_{up} - {f}_{low} + 1}\right) \left( {{\kappa }_{\mathrm{{ARpGC}}}^{A}{\epsilon }_{0}^{-\frac{1}{p}}{\epsilon }_{1}^{-\frac{p + 1}{p}} + \frac{{\kappa }_{\mathrm{{ARpGC}}}^{C}}{1 - \theta }{\epsilon }_{0}^{-1}}\right)  + 1\tag{7.2.52}
+\]
+
+and
+
+\[
+{\# }_{\mathrm{{ARpGC}},2}^{D}\overset{\text{ def }}{ = }\left( {{f}_{up} - {f}_{low} + 1}\right) {\kappa }_{\mathrm{{ARpGC}}}^{s}{\epsilon }_{0}^{-\frac{1}{p}}{\epsilon }_{1}^{-\frac{p + 1}{p}} + 1;\tag{7.2.53}
+\]
+
+\( {\# }_{\mathrm{ARpLE},1}^F \) and \( {\# }_{\mathrm{ARpLE},1}^D \) are given by (7.2.23) and (7.2.24); and \( {\kappa }_{\mathrm{ARpGC}}^A,{\kappa }_{\mathrm{ARpGC}}^C \) , and \( {\kappa }_{\mathrm{ARpGC}}^S \) are given by (7.2.47)-(7.2.49), to compute a point \( {x}_{\epsilon } \) at which either (7.2.14) or (7.2.15) or (7.2.16) holds.
+
+Referenced equation payloads:
+
+Equation (7.2.14):
+\[
+{\omega }_{{\Phi }_{\ell },\mathcal{C},1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_{1}{\begin{Vmatrix}c\left( {x}_{\epsilon }\right) \end{Vmatrix}}^{\ell  - 1}\text{ and }\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} > \theta {\epsilon }_{0}.\tag{7.2.14}
+\]
+
+Equation (7.2.15):
+\[
+{\omega }_{{\Phi }_{2},\mathcal{C},1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_{1}\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix}\text{ and }\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} > \theta {\epsilon }_{0}\tag{7.2.15}
+\]
+
+Equation (7.2.16):
+\[
+{\omega }_{\mathcal{L},\mathcal{C},1}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right)  \leq  {\epsilon }_{1}\begin{Vmatrix}\left( {{y}_{\epsilon },1}\right) \end{Vmatrix}\text{ and }\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_{0},\tag{7.2.16}
+\]
+
+Equation (7.2.23):
+\[
+{\# }_{\mathrm{{ARpLE}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARpLE}},1}^{A}\frac{\max \left\lbrack  {{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{\frac{1}{{2}^{i}}},{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{1 - \frac{\ell  - 1}{p}}}\right\rbrack  }{\min \left\lbrack  {{\theta }^{\frac{1}{{2}^{i}}}{\epsilon }_{0}^{\frac{1}{{2}^{i}}},{\epsilon }_{1}^{\frac{p + 1}{p}}}\right\rbrack  } + {\kappa }_{\mathrm{{ARpLE}} = }^{C}\mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{0}^{-\frac{1}{{2}^{i}}},{\epsilon }_{1}^{-\frac{p + 1}{p}}}\right\rbrack  }\right)
+\]
+
+Equation (7.2.24):
+\[
+{\# }_{\mathrm{{ARpLE},1}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARpLE},1}}^{S}\frac{\max \left\lbrack  {{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{\frac{1}{{2}^{i}}},{\begin{Vmatrix}c\left( {x}_{0}\right) \end{Vmatrix}}^{1 - \frac{\ell  - 1}{p}}}\right\rbrack  }{\min \left\lbrack  {{\theta }^{\frac{1}{{2}^{i}}}{\epsilon }_{0}^{\frac{1}{{2}^{i}}},{\epsilon }_{1}^{\frac{p + 1}{p}}}\right\rbrack  } = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{0}^{-\frac{1}{{2}^{i}}},{\epsilon }_{1}^{-\frac{p + 1}{p}}}\right\rbrack  }\right)
+\]
+
+Equation (7.2.47):
+\[
+\left| {\mathcal{I}}_{k}^{\mathrm{S}}\right|  \leq  {\kappa }_{\mathrm{{ARpGC}}}^{\mathrm{S}}\left( {1 - \theta }\right) {\epsilon }_{0}^{\frac{p - 1}{p}}{\epsilon }_{1}^{-\frac{p + 1}{p}},\text{ where }{\kappa }_{\mathrm{{ARpGC}}}^{\mathrm{S}}\overset{\text{ def }}{ = }{\kappa }_{1}^{-1}{\theta }^{-\frac{p + 2}{p}},\tag{7.2.47}
+\]
+
+Equation (7.2.49):
+\[
+{\kappa }_{\text{ ARpGGC }}^{\mathrm{C}}\overset{\text{ def }}{ = }\frac{1}{\log {\gamma }_{2}}\log \left( \frac{{\sigma }_{{\mu }_{2},\max }}{{\sigma }_{0}}\right) .\tag{7.2.49}
+\]
+'''
+deps = ["lemma_7_2_2", "lemma_7_2_6", "theorem_4_1_5", "targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 7.2.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 9140)"

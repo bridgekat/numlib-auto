@@ -1,0 +1,115 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 2, Section 1.
+
+
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+Having surveyed the principle of evaluation complexity in Section 1.2, we start our investigations by considering optimization methods applied to the general smooth (possibly nonconvex) unconstrained problem
+
+\[
+\mathop{\operatorname{minimize}}\limits_{{x \in  {\mathbb{R}}^{n}}}f\left( x\right) ,\tag{2.1.1}
+\]
+
+where \( f \) is a real-valued objective function from \( {\mathbb{R}}^n \) into \( \mathbb{R} \) . It is natural to consider the widest possible class of such optimization problems for which first derivatives might be used, that is, those problems whose objective functions satisfy the following requirements.
+
+f.Bb
+
+\( f\left( x\right) \) is bounded below on \( {\mathbb{R}}^n \) ; that is, there exists a constant \( {f}_{\text{ low }} \) such that, for all \( x \in  {\mathbb{R}}^n \) ,
+
+\[
+f\left( x\right)  \geq  {f}_{\text{ low }}.
+\]
+
+f.C1 \( f\left( x\right) \) is continuously differentiable in \( {\mathbb{R}}^n \) .
+
+Since the second of these assumptions says that our objective function has a continuous gradient, our goal in this chapter is to design algorithms to find \( \epsilon \) -approximate first-order minimizers, that is, points \( {x}_{\epsilon } \) for which
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon\tag{2.1.2}
+\]
+
+for a prespecified \( \epsilon  > 0 \) , and to characterize the evaluation complexity of doing so. Notice the terminology: "first-order" reflects the fact that the test involves the gradient but no higher-order derivatives, " \( \epsilon \) -approximate" indicates the required accuracy of the approximation, and "minimizer" relates to Theorem 1.1.1, for which necessarily \( {\nabla }_x^{1}f\left( {x}_{ * }\right)  = 0 \) at a minimizer. Of course (2.1.2) will also hold in the neighbourhood of other critical points of \( f \) , and to distinguish these we will need higher-order derivatives.
+
+Unfortunately, it turns out that the assumptions above are too weak for worst-case analysis because it is easy to construct, for any algorithm, a one-dimensional example on which the algorithm will fail in any prescribed number of iterations.
+
+To see this, consider any finite sequence of test points \( {x}_0,\ldots ,{x}_m \) , le 2.1.1 and assume, without loss of generality, that they are reordered by increasing value and that \( {x}_{k + 1} \leq  {x}_k + 1 \) (this last property can easily be ensured by introducing additional intermediate test points if necessary). We then build a continuously differentiable function such that
+
+\[
+f\left( {x}_{k}\right)  = 0\text{ for all }k \geq  0\tag{2.1.3}
+\]
+
+and
+
+\[
+{f}^{\prime }\left( {x}_{0}\right)  =  - 1\text{ and }{f}^{\prime }\left( {x}_{k}\right)  = 1\text{ for all }k \geq  1\tag{2.1.4}
+\]
+
+using Hermite interpolation (see Appendix A.9) with polynomials of degree three of the form \( {p}_k\left( t\right)  = {c}_0 + {c}_{1}t + {c}_2{t}^2 + {c}_3{t}^3 \) on each interval \( \left\lbrack  {{x}_k,{x}_{k + 1}}\right\rbrack \) , where \( t \in  \left\lbrack  {0,{T}_k}\right\rbrack \) with \( {T}_k = {x}_{k + 1} - {x}_k \leq  1 \) . It is then not difficult to verify that the conditions (2.1.3)-(2.1.4) give
+
+\[
+{c}_{0} = 0,\;{c}_{1} = 1,\;{c}_{2} =  - 3/{T}_{k},\;\text{ and }\;{c}_{3} = 2/{T}_{k}^{2}
+\]
+
+for \( k \geq  0 \) , and thus
+
+\[
+{p}_k\left( t\right)  = t - 3{t}^2/{T}_k + 2{t}^3/{T}_k^2
+\]
+
+for \( t \in  \left\lbrack  {0,{T}_k}\right\rbrack \) , while, for \( k = 0 \) ,
+
+\[
+{c}_{0} = 0,\;{c}_{1} = 1,\;{c}_{2} = 1/{T}_{k},\;\text{ and }\;{c}_{3} = 0,
+\]
+
+which gives that \( {p}_0\left( t\right)  =  - t + {t}^2/{T}_k \) for \( t \in  \left\lbrack  {0,{T}_0}\right\rbrack \) . Using these elements, we may now construct
+
+\[
+f\left( x\right)  = \left\{  \begin{array}{ll} 0 & \text{ for }x \leq  {x}_{0} - 1, \\  {\left( x - {x}_{0} + 1\right) }^{2} - {\left( x - {x}_{0} + 1\right) }^{3} & \text{ for }x \in  \left\lbrack  {{x}_{0} - 1,{x}_{0}}\right\rbrack  , \\  {p}_{k}\left( {x - {x}_{k}}\right) & \text{ for }x \in  \left\lbrack  {{x}_{k},{x}_{k + 1}}\right\rbrack  \\   & 0 < \left( {k = 0,\ldots , m - 1}\right) , \\  \left( {x - {x}_{m}}\right)  - 2{\left( x - {x}_{m}\right) }^{2} + {\left( x - {x}_{m}\right) }^{3} & \text{ for }x \in  \left\lbrack  {{x}_{m},{x}_{m} + 1}\right\rbrack  ,\text{ and } \\  0 & \text{ for }x \geq  {x}_{m} + 1, \end{array}\right.
+\]
+
+which is continuously differentiable (satisfies f.C1) and is such that \( \left| {f\left( x\right) }\right|  \leq  6 \) for all \( x \) (and hence satisfies f.Bb). Figure 2.1.1 shows an example of such a function for 7 test points in the unit interval with \( {x}_0 = 0 \) and the rest of the sequence generated (before reordering) by a typical bisection process, namely, \( {x}_k = {\left( 1/2\right) }^{k - 1} \) for \( k \geq  1 \) .
+
+Observe now that any first-order method starting at \( {x}_0 = 0 \) and using this sequence of test points (in any order) will fail to find a point \( {x}_k \) with \( \left| {{f}^{\prime }\left( {x}_k\right) }\right|  < 1 \) in \( m \) iterations because it will discover that \( f\left( {x}_k\right)  = f\left( {x}_0\right)  = 0 \) and \( {f}^{\prime }\left( {x}_k\right)  = 1 \) for all \( 1 \leq  k \leq  m \) . Since \( m \) is arbitrary (but finite), this leads to the conclusion that no finite sequence of test points will guarantee that the norm of the gradient falls below any prescribed accuracy threshold.
+
+
+In fact, this short analysis shows that f.Bb and f.C1 are insufficient to quantify worst-case complexity bounds, essentially because they do not prevent the gradient from oscillating infinitely fast (see Figure 2.1.2). In particular, the quantity
+
+\[
+\frac{\begin{Vmatrix}{\nabla }_x^{1}f\left( {x}_0\right)  - {\nabla }_x^{1}f\left( \mathop{\min }\limits_{k = 1,\ldots , m}{x}_k\right) \end{Vmatrix}}{\begin{Vmatrix}{x}_0 - \mathop{\min }\limits_{k = 1,\ldots , m}{x}_k\end{Vmatrix}} = \frac{2}{\begin{Vmatrix}{x}_0 - \mathop{\min }\limits_{k = 1,\ldots , m}{x}_k\end{Vmatrix}}
+\]
+
+becomes arbitrarily large as the number of test points grows.
+
+
+If we wish to quantify the worst-case complexity of first-order algorithms, we are thus led to be slightly more restrictive, and we require an additional property of the gradient of the objective function that prevents such rapid growth.
+
+f.gl.
+
+\( f\left( x\right) \) is continuously differentiable in \( {\mathbb{R}}^n \) , and its gradient \( {\nabla }_x^{1}f\left( x\right) \) is Lipschitz continuous on \( {\mathbb{R}}^n \) ; that is, there exists a constant \( {L}_{f,1} \geq  1 \) such that
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{1}f\left( x\right)  - {\nabla }_x^{1}f\left( y\right) }\end{Vmatrix} \leq  {L}_{f,1}\parallel x - y\parallel\tag{2.1.5}
+\]
+
+for all \( x, y \in  {\mathbb{R}}^n \) .
+
+Note that if the gradient’s Lipschitz constant \( {L}_{f,1} \) is zero, then \( f \) is linear and either is constant, in which case optimization is meaningless, or has a minimizer at infinity (violating f.Bb). Thus our assumption that \( {L}_{f,1} \geq  1 \) can be made without loss of generality. As we will show in the remainder of this chapter, the modified set of assumptions (f.Bb and f.gL) is now sufficient for deriving relevant worst-case evaluation-complexity bounds, which depend on the Lipschitz constant \( {L}_{f,1} \) .
+'''
+
+[[node]]
+id = "objectiveRegularity"
+kind = "definition"
+desc = '''
+Bundle only analytic data: f:E→ℝ; lower bound f_low with ∀x,f_low≤f x (f.Bb); derivative degree p and ContDiff ℝ p f; nonnegative Lipschitz constants L_j for actual D^j f. f.gL has p=1, L₁≥1 and ||grad f x−grad f y||≤L₁||x−y||; f.HL has p=2 and Lipschitz Hessian; f.HBa means uniformly bounded operator norm of the Hessian. Each hypothesis remains optional and explicit at use sites. Generalize this interface in the backbone before the surface adapter.
+'''
+deps = []
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 2.1"

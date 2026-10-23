@@ -1,0 +1,90 @@
+namespace = "CartisGouldToint"
+desc = '''
+Surface adaptation of Cartis–Gould–Toint Chapter 7, Section 1.
+
+Theorem 7.1.1 says x* belongs to argmin, not equality with a unique argmin. It is an order argument valid even without smoothness or convexity; retain source hypotheses in the surface statement and route to a general Lagrangian restriction lemma in the backbone. The scaled first-order condition has ω_L≤ε₁||(y,1)|| and is accompanied by approximate feasibility.
+
+Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+
+Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+
+In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+
+Section mathematical setup (source OCR; resolve errors by the design notes above):
+
+At last, we near the end of our journey of exploration into algorithms for smooth, non-convex optimization. Thus far, we hope that we have persuaded the reader that there are methods with provable worst-case evaluation complexity for the approximate \( q \) th-order \( \left( {q \leq  3}\right) \) solution of many classes of optimization problems as well as demonstrating that the bounds we provide cannot be improved by more than constants. Moreover, as we have hinted, while the methods we describe may behave badly in rare extreme cases - those that give rise to the complexity bounds - in general they are typical of the best-performing currently known methods for their problem classes. In this sense, we maintain that the fields addressed thus far are relatively mature, and we do not expect large improvements in the foreseeable future.
+
+---
+
+\( {}^{48} \) We refine this in Chapter 14 to distinguish nonconvex constraints whose evaluation is expensive from others.
+
+\( {}^{49} \) See the comment just before Algorithm 6.2.1 (p. 180).
+
+---
+
+This comforting prospect changes as we address our most general problem. Indeed, we will consider algorithms that are unlikely to be implemented by the optimization-software community, nor to be efficient, general-purpose methods, but which nonetheless exhibit reasonable worst-case evaluation complexity. Regrettably, the state of the art in generally constrained nonlinear optimization is less mature than for the unconstrained and convexly constrained cases; even the best methods sometimes fail to converge, for a variety of technical reasons, when exposed to large sets of test examples. Although there are well-known classes of algorithms designed to cope with general constraints-names such as interior-point, augmented-Lagrangian, and SQP methods may be familiar to the reader-they universally rely on relatively strong, and often difficult to verify, assumptions. We wish that this were not the case, and perhaps this is simply a reflection of a rapidly evolving field. \( {}^{50} \)
+
+The problem we address can be expressed in many forms, but we focus on one in which we aim to
+
+\[
+\mathop{\operatorname{minimize}}\limits_{{x \in  \mathcal{C}}}f\left( x\right) \text{ subject to }c\left( x\right)  = 0,\tag{7.1.1}
+\]
+
+where \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) and \( c : {\mathbb{R}}^n \rightarrow  {\mathbb{R}}^m \) are suitably smooth and \( \mathcal{C} \subseteq  {\mathbb{R}}^n \) is a closed, bounded, nonempty convex set. In particular, such a formulation covers the general problem involving both equality constraints \( {c}_{\mathrm{E}}\left( x\right)  = 0 \) and inequalities \( {c}_1\left( x\right)  \geq  0 \) , by converting the latter into equations \( {c}_1\left( x\right)  - {s}_1 = 0 \) using slack variables \( {s}_1 \) and including the associated simple bounds \( {s}_{\mathrm{I}} \geq  0 \) in the convex set \( \mathcal{C} \) .
+
+Right from the outset, the reader may see a potential complication. Just because \( \mathcal{C} \) is nonempty, how do we know that the set of feasible points
+
+\[
+\mathcal{F}\left( {\mathcal{C}, c}\right) \overset{\text{ def }}{ = }\{ x \in  \mathcal{C} \mid  c\left( x\right)  = 0\}
+\]
+
+is nonempty, that is, that there is any \( x \in  \mathcal{C} \) for which \( c\left( x\right)  = 0 \) ? Unfortunately, checking this is itself a global optimization problem, and the best we can do is try and see. As we shall discover, this is an essential ingredient of the algorithm that we shall develop.
+
+Let us be optimistic. Suppose that \( \mathcal{F}\left( {\mathcal{C}, c}\right)  \neq  \varnothing \) , and consider the Lagrangian
+
+\[
+\mathcal{L}\left( {x, y}\right) \overset{\text{ def }}{ = }f\left( x\right)  - \langle y, c\left( x\right) \rangle
+\]
+
+for the explicit constraints, as we defined in (1.1.1). This enables us to characterize, to some extent, local minimizers of (7.1.1).
+'''
+
+[[node]]
+id = "constrainedFeasibleSet"
+kind = "definition"
+desc = '''
+For C:Set E and c:E→F, define feasibleSet C c={x∈C|c x=0}; define Lagrangian f c x y=f x−⟪y,c x⟫ by reuse of lagrangian. The scaled first-order tolerance is ω_(L,C,1)(x,y)≤ε₁*||(y,1)|| and ||c x||≤ε₀.
+'''
+deps = ["lagrangian", "constrainedCriticality"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.1"
+
+[[node]]
+id = "theorem_7_1_1"
+kind = "theorem"
+desc = '''
+Semantic specification: Formalize membership in argmin: ∀x∈S, c x=0 → f(x*)≤f x, under x*∈S, c(x*)=0 and ∀x∈S,L(x*,y*)≤L(x,y*). No uniqueness is asserted.
+
+Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
+
+Theorem 7.1.1: Local sufficiency of the Lagrangian
+
+Let \( \mathcal{S} \) be a closed subset of \( \mathcal{C} \) , and suppose that \( {x}_{ * } \in  \mathcal{S} \) and \( {y}_{ * } \in  {\mathbb{R}}^m \) are such that
+
+\[
+\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right)  = \mathop{\min }\limits_{x \in  \mathcal{S}}\mathcal{L}\left( {x,{y}_{ * }}\right)
+\]
+
+and \( c\left( {x}_{ * }\right)  = 0 \) . Then
+
+\[
+{x}_{ * } = \underset{x \in  \mathcal{F}\left( {\mathcal{S}, c}\right) }{\arg \min }f\left( x\right) .
+\]
+
+---
+
+\( {}^{50} \) Maybe we can persuade the reader to return in a few years’ time for our second edition?
+
+---
+'''
+deps = ["theorem_6_3_1", "constrainedFeasibleSet", "objectiveRegularity", "taylorModel"]
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 7.1.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8516)"
