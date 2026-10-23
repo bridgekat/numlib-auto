@@ -1,4 +1,4 @@
-import Numlib.Optimization.Regularization.Universal.Run
+import Numlib.Optimization.Regularization.Universal.Bounds
 
 /-!
 # Universal regularization with real powers
@@ -25,4 +25,28 @@ theorem lemma_5_5_1 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     (h : UniversalRegularization.Step f P ε2 x s σ) :
     σ / Real.finiteFactorial P.r * ‖s‖ ^ P.r ≤
       f x - TaylorModel.eval f p x s := h.taylor_decrease.le
+/-- **Lemma5.5.2.** Every actual computed step satisfies the displayed gradient
+bound. With second-order accuracy enabled, every actual unit Hessian value has
+the displayed negative-curvature bound, equivalently the least-eigenvalue bound
+in finite-dimensional Euclidean space. Both coefficients use the source finite
+real factorial, including Hölder exponents zero and one. -/
+theorem lemma_5_5_2 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {P : UniversalRegularization.Settings p} {ε2 : Option ℝ}
+    {x s : EuclideanSpace ℝ (Fin n)} {σ H β : ℝ}
+    (hf : ContDiff ℝ p f) (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
+    (hholder : ∀ y z,
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ H * ‖y - z‖ ^ β)
+    (hσ : 0 ≤ σ) (hp : ∀ e ∈ ε2, 2 ≤ p)
+    (h : UniversalRegularization.Step f P ε2 x s σ) :
+    ‖fderiv ℝ f (x + s)‖ ≤
+      H / Real.finiteFactorial ((p : ℝ) + β - 1) * ‖s‖ ^ ((p : ℝ) + β - 1) +
+      σ / Real.finiteFactorial (P.r - 1) * ‖s‖ ^ (P.r - 1) +
+      P.theta1 * ‖s‖ ^ (P.r - 1) ∧
+    ∀ e ∈ ε2, ∀ v : EuclideanSpace ℝ (Fin n), ‖v‖ = 1 →
+      -iteratedFDeriv ℝ 2 f (x + s) (fun _ => v) ≤
+        H / Real.finiteFactorial ((p : ℝ) + β - 2) * ‖s‖ ^ ((p : ℝ) + β - 2) +
+        σ / Real.finiteFactorial (P.r - 2) * ‖s‖ ^ (P.r - 2) +
+        P.theta2 * ‖s‖ ^ (P.r - 2) :=
+  ⟨h.gradient_bound hf hH hβ hβ1 hholder hσ,
+    fun e he v hv => h.curvature_bound (hp e he) hf hH hβ hβ1 hholder hσ he v hv⟩
 end CartisGouldToint

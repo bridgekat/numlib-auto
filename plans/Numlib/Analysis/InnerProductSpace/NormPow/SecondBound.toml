@@ -1,0 +1,4 @@
+namespace = "NormPower"
+
+[[node]]
+id = "norm_second_le_of_two_lt"

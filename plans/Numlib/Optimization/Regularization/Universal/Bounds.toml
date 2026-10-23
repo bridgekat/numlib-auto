@@ -1,0 +1,25 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "fderiv_model"
+
+[[node]]
+id = "norm_first_penalty"
+
+[[node]]
+id = "norm_first_error"
+
+[[node]]
+id = "Step.gradient_bound"
+
+[[node]]
+id = "hessian_model"
+
+[[node]]
+id = "norm_second_penalty"
+
+[[node]]
+id = "abs_second_error"
+
+[[node]]
+id = "Step.curvature_bound"
