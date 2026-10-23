@@ -1,0 +1,7 @@
+namespace = "ImplicitGap"
+
+[[node]]
+id = "normalized_log_step"
+
+[[node]]
+id = "exists_superlinear_budget"

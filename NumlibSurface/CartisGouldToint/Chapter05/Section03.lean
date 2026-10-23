@@ -1,3 +1,4 @@
+import Numlib.Optimization.MeasureDomination.Superlinear
 import Numlib.Optimization.MeasureDomination.Polynomial
 import Numlib.Optimization.MeasureDomination.Linear
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -145,5 +146,36 @@ theorem theorem_5_3_5 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
   ⟨hr.successful_tendsto_zero hd, hr.successful_sublinear_envelope hd hμν,
     hr.successful_measure_tendsto_zero hd, hr.measure_sublinear_envelope hd hμν,
     hr.gap_power_cost hd hμν, hr.measure_power_cost hd hμν⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Initialized first-attainment complexity in log|a+b log epsilon|, with positive constants
+and a positive accuracy cutoff fixed before every requested accuracy. The cutoff is at
+most exp(-1) and keeps the inner absolute logarithm at least one. -/
+def measureDoubleLogarithmicComplexity (a b : ℝ) (target : ℕ → ℝ) (S : Set ℕ) : Prop :=
+  MeasureDomination.DoubleLogarithmicCost a b target S
+
+/-- **Theorem 5.3.3.** Actual successful gaps converge superlinearly, and both gap and
+measure targets have the double-logarithmic initialized costs (5.3.16)–(5.3.19).
+The measure bound retains its exact printed inner expression, as well as the proved
+ordinary double-logarithmic order. Fixed positive small-accuracy thresholds make
+the displayed logarithms valid, including finite attainment and initial zero gaps. -/
+theorem theorem_5_3_3 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
+    {fstar μ κψ ν κν κR κA : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    (hd : measureDominated f ψ fstar μ κψ) (hr : arMeasureRun f ψ x S ν κν κR κA)
+    (hνμ : ν < μ) :
+    Tendsto (successfulObjectiveGap f fstar x S) atTop (𝓝 0) ∧
+      Tendsto (fun j => successfulObjectiveGap f fstar x S (j + 1) /
+        successfulObjectiveGap f fstar x S j) atTop (𝓝 0) ∧
+      Tendsto (fun j => ψ (x (measureSuccessIndex S j))) atTop (𝓝 0) ∧
+      measureDoubleLogarithmicComplexity 0 1 (fun k => objectiveGap f fstar (x k)) S ∧
+      measureDoubleLogarithmicComplexity (Real.log κν) ν (fun k => ψ (x k)) S ∧
+      measureDoubleLogarithmicComplexity 0 1 (fun k => ψ (x k)) S := by
+  have hm := hr.measure_doublelog_cost hd hνμ
+  exact ⟨hr.successful_tendsto_zero hd, hr.successful_superlinear hd hνμ,
+    hr.successful_measure_tendsto_zero hd, hr.gap_doublelog_cost hd hνμ, hm,
+    hm.to_plain (zero_lt_one.trans_le hr.exponent_ge_one)⟩
 
 end CartisGouldToint

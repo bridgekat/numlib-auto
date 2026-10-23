@@ -1,0 +1,16 @@
+namespace = "MeasureDomination"
+
+[[node]]
+id = "exists_log_cutoff"
+
+[[node]]
+id = "DoubleLogarithmicCost"
+
+[[node]]
+id = "DoubleLogarithmicCost.to_plain"
+
+[[node]]
+id = "ARRun.gap_doublelog_cost"
+
+[[node]]
+id = "ARRun.measure_doublelog_cost"

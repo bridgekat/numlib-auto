@@ -31,39 +31,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_5_3_3"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 5.3.3: Complexity for measure-dominated problems (adaptive regularization-like methods, \( \nu  < \mu \) )
-
-[Appendix to Chapter 5, p. 464]: Suppose that the objective function \( f \) is \( \psi \) - dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that an \( \mathrm{AR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( 1 \leq  \nu  < \mu \) . Then the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge superlinearly to zero, and there exist positive constants \( {\kappa }_{\mathrm{AR},\mathrm{gap},1}^B \) , \( {\kappa }_{\mathrm{AR},\mathrm{gap},1}^C,{\kappa }_{\mathrm{AR},\mathrm{gap},1}^E \) , and \( {\kappa }_{\mathrm{AR},\mathrm{gap},1}^F \) such that the algorithm needs at most
-
-\[
-{\# }_{\mathrm{{AR}},\mathrm{{gap}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},1}^{B}\log \left( \left| {\log \left( \epsilon \right) }\right| \right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},1}^{C} = \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right)\tag{5.3.16}
-\]
-
-iterations and evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{AR}},\mathrm{{gap}},1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{gap}},1}^{E}\log \left( \left| {\log \left( \epsilon \right) }\right| \right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{gap}},1}^{F} = \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right)\tag{5.3.17}
-\]
-
-successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - {f}_{ * } \leq  \epsilon \) . Moreover, there exist constants \( {\kappa }_{\mathrm{{AR}},\text{ dom, }1}^{B},{\kappa }_{\mathrm{{AR}},\text{ dom, }1}^{C},{\kappa }_{\mathrm{{AR}},\text{ dom, }1}^{E} \) , and \( {\kappa }_{\mathrm{{AR}},\text{ dom,1 }}^{F} \) such that the algorithm needs at most
-
-\[
-{\# }_{\mathrm{{AR}},\mathrm{{dom}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},1}^{B}\log \left( \left| {\log \left( {\kappa }_{\nu }\right)  + \nu \log \left( \epsilon \right) }\right| \right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},1}^{C} = \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right)\tag{5.3.18}
-\]
-
-iterations and evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{AR}},\mathrm{{dom}},1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{dom}},1}^{E}\log \left( \left| {\log \left( {\kappa }_{\nu }\right)  + \nu \log \left( \epsilon \right) }\right| \right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{dom}},1}^{F} = \mathcal{O}\left( {\log \left( \left| {\log \left( \epsilon \right) }\right| \right) }\right)\tag{5.3.19}
-\]
-
-successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \psi \left( {x}_{\epsilon }\right)  \leq  \epsilon \) .
-'''
-deps = ["measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6362)"
 
 [[node]]
@@ -389,3 +356,6 @@ id = "measureLogarithmicComplexity"
 
 [[node]]
 id = "measurePolynomialComplexity"
+
+[[node]]
+id = "measureDoubleLogarithmicComplexity"
