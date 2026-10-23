@@ -1,0 +1,25 @@
+namespace = "LeastNorm"
+
+[[node]]
+id = "product_difference_term_le"
+
+[[node]]
+id = "norm_sq_derivative_bound"
+
+[[node]]
+id = "norm_sq_derivative_difference_bound"
+
+[[node]]
+id = "iteratedFDeriv_merit"
+
+[[node]]
+id = "norm_merit_derivative_le_norm_sq"
+
+[[node]]
+id = "norm_merit_derivative_sub_le_norm_sq"
+
+[[node]]
+id = "merit_derivative_bounds_of_residual_bound"
+
+[[node]]
+id = "merit_regularity_on_residual_levels"
