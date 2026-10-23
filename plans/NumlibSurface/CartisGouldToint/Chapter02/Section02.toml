@@ -85,13 +85,3 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_2_2_5"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 2.2.5: Slow first-order convergence of the steepest-descent algorithm
-
-The SDEX algorithm applied to minimize a function \( f \) satisfying f.Bb and f.gL may require as many as \( {\epsilon }^{-2} \) iterations of \( f\left( x\right) \) and \( {\nabla }_x^{1}f\left( x\right) \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
-'''
-deps = ["theorem_2_2_3", "theorem_2_2_2", "sdbaRun", "sdexRun", "objectiveRegularity"]
-source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1667)"

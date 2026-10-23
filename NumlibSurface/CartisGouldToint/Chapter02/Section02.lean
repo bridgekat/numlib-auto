@@ -1,5 +1,6 @@
 import Numlib.Optimization.LineSearch.LipschitzGradient
 import Numlib.Optimization.LineSearch.ExactGradient
+import Numlib.Optimization.LineSearch.ExactQuadraticSharpness
 import Numlib.Optimization.LineSearch.Backtracking
 import Numlib.Optimization.LineSearch.Sharpness
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -10,6 +11,11 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 The explicit sufficient-decrease interval in Lemma 2.2.1 is obtained from the
 sharp quadratic remainder for a Lipschitz gradient. Gradients are identified
 with the Fréchet derivative through the Euclidean inner product.
+
+Theorem 2.2.5 uses a positive diagonal quadratic with genuine global line
+minimizers. This proves the original lower bound independently of the printed
+Appendix B.2 corridor, whose first-local-minimum argument does not establish the
+global exact-line-search condition (2.2.26).
 -/
 
 namespace CartisGouldToint
@@ -132,5 +138,25 @@ theorem theorem_2_2_3 {α tini : ℝ} (hα0 : 0 < α) (hα1 : α < 1) (htini : 0
         (1 / ε ^ 2 : ℝ) ≤ BacktrackingGradient.Run.functionEvaluations (fun _ => 0) N ∧
         (1 / ε ^ 2 : ℝ) ≤ BacktrackingGradient.Run.gradientEvaluations N :=
   BacktrackingGradient.exists_slow_run hα0 hα1 htini
+
+/-- **Theorem 2.2.5.** Genuine global exact steepest descent may require at least
+ε⁻² outer iterations. The infinitely smooth nonnegative quadratic witnesses
+have gradient Lipschitz constants and initial objective gaps bounded uniformly
+before the requested accuracy is chosen. The returned index is the actual first
+stopping index of the primitive SDEX execution.
+
+The explicit family has eigenvalues ε²/16 and 1, the exact global line step
+2/(1+ε²/16), gradient Lipschitz constant 1 and initial gap at most 17/2. Its
+selected line minimizers are unique. This proof does not rely on the incorrect
+global-line-minimum assertion for the printed Appendix B.2 corridor. -/
+theorem theorem_2_2_5 : ∃ L > 0, ∃ B > 0,
+    ∀ (ε : ℝ), 0 < ε → ε ≤ 1 →
+    ∃ (f : EuclideanSpace ℝ (Fin 2) → ℝ)
+      (x : ℕ → EuclideanSpace ℝ (Fin 2)) (t : ℕ → ℝ) (K : ℕ),
+      ContDiff ℝ (⊤ : ℕ∞) f ∧ (∀ z, 0 ≤ f z) ∧ f (x 0) ≤ B ∧
+      (∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y-z‖) ∧
+      sdexRun f (gradient f) x t ε K ∧ ‖gradient f (x K)‖ ≤ ε ∧
+      ⌊ε^(-(2 : ℝ))⌋₊ ≤ K ∧ ε^(-(2 : ℝ)) ≤ (K : ℝ) :=
+  ExactGradientLineSearch.QuadraticSharpness.exists_uniform_global_witness
 
 end CartisGouldToint

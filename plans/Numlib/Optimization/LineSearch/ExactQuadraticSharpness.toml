@@ -1,0 +1,100 @@
+namespace = "ExactGradientLineSearch.QuadraticSharpness"
+
+[[node]]
+id = "E"
+
+[[node]]
+id = "vec"
+
+[[node]]
+id = "eigenvalue"
+
+[[node]]
+id = "H"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "H_apply"
+
+[[node]]
+id = "H_symmetric"
+
+[[node]]
+id = "objective_eq"
+
+[[node]]
+id = "objective_gradient"
+
+[[node]]
+id = "objective_contDiff"
+
+[[node]]
+id = "objective_nonneg"
+
+[[node]]
+id = "eigenvalue_bounds"
+
+[[node]]
+id = "H_norm_apply_le"
+
+[[node]]
+id = "objective_gradient_lipschitz"
+
+[[node]]
+id = "stepLength"
+
+[[node]]
+id = "contraction"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "gradient_point"
+
+[[node]]
+id = "point_succ"
+
+[[node]]
+id = "contraction_neg_square"
+
+[[node]]
+id = "objective_line_value"
+
+[[node]]
+id = "objective_line_difference"
+
+[[node]]
+id = "line_minimum"
+
+[[node]]
+id = "contraction_bounds"
+
+[[node]]
+id = "gradient_norm_sq"
+
+[[node]]
+id = "contraction_pow_lower"
+
+[[node]]
+id = "gradient_large_through_budget"
+
+[[node]]
+id = "objective_initial_le"
+
+[[node]]
+id = "run_of_prefix"
+
+[[node]]
+id = "objective_contDiff_infty"
+
+[[node]]
+id = "line_minimum_strict"
+
+[[node]]
+id = "exists_first_stop"
+
+[[node]]
+id = "exists_uniform_global_witness"
