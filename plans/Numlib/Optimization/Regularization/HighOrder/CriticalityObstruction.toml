@@ -1,0 +1,4 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "criticality_obstruction"

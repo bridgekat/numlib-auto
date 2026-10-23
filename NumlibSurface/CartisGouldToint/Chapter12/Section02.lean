@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.CriticalityObstruction
 import Numlib.Optimization.HighOrder.ModelSolve.Sharp
 import Numlib.Optimization.HighOrder.ModelSolve.Uniform
 import Numlib.Optimization.Regularization.HighOrder.StepTwoTermination
@@ -507,5 +508,43 @@ theorem lemma_12_2_9 {n p q : ℕ} (hqp : q ≤ p)
     constructor <;> omega
   exact ModelSolve.exists_regularized_solve_sharp (ftaylorSeries ℝ f x) p hL hσ hA
     hθ hθ1 hζ hζ1 InexactTrustRegion.modelOrder horder ε hε
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Lemma12.2.11: a successful actual ARqp trial followed by failure of true
+approximate optimality forces the printed weighted step/radius inequality.
+The actual model test is needed only for steps of norm at most one. The
+parameter cap is derived from the objective ratio and parameter updates. -/
+theorem lemma_12_2_11 {n p q N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin L θ : ℝ}
+    (h : arpModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (hqp : q ≤ p) (hf : ContDiff ℝ p f) (hL : 1 ≤ L) (hθ : 0 ≤ θ)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
+    (hi : i < N) (hs : η₁ ≤ ρ i) (ε : Fin q → ℝ)
+    (hε : ∀ a, 0 < ε a ∧ ε a ≤ 1) (δ δs : ℕ → Fin q → ℝ)
+    (hδ : ∀ a, 0 < δ (i + 1) a ∧ δ (i + 1) a ≤ 1)
+    (hupdate : δ (i + 1) = δs i)
+    (htest : ‖s i‖ ≤ 1 → ∀ a,
+      TaylorModel.criticality (arpModel f p (x i) (σ i))
+        (InexactTrustRegion.modelOrder a) (s i) (δs i a) ≤
+        θ * ε a * δs i a ^ InexactTrustRegion.modelOrder a /
+          (InexactTrustRegion.modelOrder a).factorial)
+    (hnot : ¬∀ a, TaylorModel.criticality f (InexactTrustRegion.modelOrder a)
+      (x (i + 1)) (δ (i + 1) a) ≤ ε a * δ (i + 1) a ^ InexactTrustRegion.modelOrder a /
+        (InexactTrustRegion.modelOrder a).factorial) :
+    let σmax := max (σ 0) (γ₃ * L / (1 - η₂))
+    ∃ a, (1 - θ) * ε a * δ (i + 1) a ^ InexactTrustRegion.modelOrder a /
+        (InexactTrustRegion.modelOrder a).factorial ≤
+      (L + σmax) * ∑ ℓ ∈ Finset.range (InexactTrustRegion.modelOrder a),
+        δ (i + 1) a ^ (ℓ + 1) * ‖s i‖ ^ (p - (ℓ + 1) + 1) / (ℓ + 1).factorial := by
+  have hx : x (i + 1) = x i + s i := by rw [h.point_update i hi, ite_eq_left hs]
+  apply HighOrderRegularization.criticality_obstruction hqp f hf hL
+    (h.updates.pos hi.le).le (h.parameter_le hf (zero_le_one.trans hL) hlip hi.le)
+    hθ hlip (x i) (s i) ε (δ (i + 1)) hε hδ
+  · simpa only [hupdate] using htest
+  · simpa only [hx] using hnot
 
 end CartisGouldToint
