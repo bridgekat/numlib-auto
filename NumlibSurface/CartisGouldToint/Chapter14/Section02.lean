@@ -1,3 +1,4 @@
+import Numlib.Optimization.Constrained.BoxZeroReturn
 import Numlib.Optimization.Regularization.HighOrder.VanishingSteps
 import Numlib.Optimization.HighOrder.ConstrainedCriticality
 import Numlib.Optimization.Sparse.BoxLinear
@@ -162,5 +163,41 @@ theorem lemma_14_2_2_counterexample :
     simpa only [one_mul] using hlip x y
   · intro k
     exact TaylorModel.constrainedCriticality_univ _ _ _ _
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Counterexample to literal Theorem 14.2.4.** The feasible set is the simple
+scalar box `[-5,5]`, with open convex neighborhood `(-6,6)`. The actual quadratic
+objective satisfies the full zeroth- and first-jet assumptions, with fixed
+constants eight and thirty-two. In particular, the extra zeroth-order
+Lipschitz assumption of this theorem is retained.
+
+An actual initial constrained check fails. The feasible step four has the
+initial model value, uses the large-step bypass with unchanged unit radii,
+and immediately returns zero. No point produced by this execution satisfies
+the requested constrained criticality at any legal positive radius. -/
+theorem theorem_14_2_4_counterexample :
+    let f := RegularizationZeroReturn.objective
+    let X := RegularizationZeroReturn.Box.feasible
+    let S := RegularizationZeroReturn.Box.neighborhood
+    let P := RegularizationZeroReturn.Box.settings
+    IsClosed X ∧ X.Nonempty ∧ Convex ℝ X ∧ IsOpen S ∧ Convex ℝ S ∧ X ⊆ S ∧
+      ContDiffOn ℝ 1 f S ∧
+      (∀ j : ℕ, j ≤ 1 → ∀ x ∈ X, f x ≤ f 0 →
+        ‖iteratedFDeriv ℝ j f x‖ ≤ 32 ∧ ∀ y ∈ S,
+          ‖iteratedFDeriv ℝ j f x - iteratedFDeriv ℝ j f y‖ ≤ 8 * ‖x - y‖) ∧
+      (∀ x ∈ X, 0 ≤ f x) ∧
+      HighOrderRegularization.ConstrainedOuterZeroExit f X P (fun _ : Fin 1 => 1 / 2)
+        0 4 (fun _ => 1) (fun _ => 1) (fun _ => 1) (fun _ => 0) 0 ∧
+      ¬∃ (z δ : ℝ), RegularizationZeroReturn.Box.actual_exit.producedPoint z ∧
+        0 < δ ∧ δ ≤ 1 ∧ highOrderConstrainedCriticality f 1 X z δ ≤ (1 / 2 : ℝ) * δ := by
+  dsimp only
+  obtain ⟨hclosed, hne, hconv, hopen, hconvS, hXS⟩ :=
+    RegularizationZeroReturn.Box.geometry
+  obtain ⟨hsmooth, hjets, hlow⟩ := RegularizationZeroReturn.Box.source_regularity
+  exact ⟨hclosed, hne, hconv, hopen, hconvS, hXS, hsmooth, hjets, hlow,
+    RegularizationZeroReturn.Box.actual_exit, RegularizationZeroReturn.Box.no_produced_certificate⟩
 
 end CartisGouldToint

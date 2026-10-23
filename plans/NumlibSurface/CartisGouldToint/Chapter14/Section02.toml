@@ -61,6 +61,7 @@ deps = ["lemma_14_2_2"]
 
 [[node]]
 id = "theorem_14_2_4"
+wrong = "The literal ARqp-SC outer Step2 permits a feasible large zero-improvement return and immediately exits without a certificate. theorem_14_2_4_counterexample gives p=q=1, f(x)=(x-2)^2/2, the simple closed box X=[-5,5], open convex neighborhood S=(-6,6), epsilon=1/2 and unit radii. All full D0pLaB.X assumptions hold, including actual zeroth-order Lipschitz constant8, first-order Lipschitz bound8 and both jet bounds32; f is globally bounded below. Initial direction1 exactly attains constrained criticality2 and fails its test. Feasible step4 preserves radii and has the initial model value, triggering immediate exit at zero. Every positive legal radius has actual constrained criticality2*delta, so no produced point satisfies the requested certificate. The detailed positive-global-gap rule excludes this return, but is absent from the stated outer algorithm."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -93,3 +94,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "lemma_14_2_2_counterexample"
 source = "Cartis, Gould and Toint, Lemma 14.2.2, literal successful-iteration quantifier"
+
+[[node]]
+id = "theorem_14_2_4_counterexample"
+source = "Cartis, Gould and Toint, Theorem 14.2.4, literal simple-constraint outer algorithm"

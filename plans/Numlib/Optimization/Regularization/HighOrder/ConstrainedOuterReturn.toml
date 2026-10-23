@@ -1,0 +1,16 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "ConstrainedOptimalityCheck"
+
+[[node]]
+id = "ConstrainedOuterStepReturn"
+
+[[node]]
+id = "ConstrainedOuterZeroExit"
+
+[[node]]
+id = "ConstrainedOuterZeroExit.producedPoint"
+
+[[node]]
+id = "ConstrainedOuterZeroExit.producedPoint_iff"

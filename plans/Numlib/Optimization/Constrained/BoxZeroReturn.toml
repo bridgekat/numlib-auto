@@ -1,0 +1,46 @@
+namespace = "RegularizationZeroReturn.Box"
+
+[[node]]
+id = "feasible"
+
+[[node]]
+id = "neighborhood"
+
+[[node]]
+id = "geometry"
+
+[[node]]
+id = "initial_trial_feasible"
+
+[[node]]
+id = "testing_ball"
+
+[[node]]
+id = "criticality_formula"
+
+[[node]]
+id = "value_lipschitz"
+
+[[node]]
+id = "derivative_bound"
+
+[[node]]
+id = "value_bound"
+
+[[node]]
+id = "not_critical"
+
+[[node]]
+id = "source_regularity"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "initial_check"
+
+[[node]]
+id = "actual_exit"
+
+[[node]]
+id = "no_produced_certificate"
