@@ -1,0 +1,7 @@
+namespace = "Nat"
+
+[[node]]
+id = "Prime.existsUnique_not_dvd_mul_pow"
+
+[[node]]
+id = "existsUnique_odd_mul_two_pow"

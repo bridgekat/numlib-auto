@@ -1,0 +1,7 @@
+namespace = "Real"
+
+[[node]]
+id = "rpow_sub_le_mul_sub"
+
+[[node]]
+id = "rpow_sub_div_le_rpow_sub"

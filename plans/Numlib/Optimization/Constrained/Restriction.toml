@@ -1,0 +1,4 @@
+namespace = "Constrained"
+
+[[node]]
+id = "isMinOn_of_sub_comp_eq_zero"

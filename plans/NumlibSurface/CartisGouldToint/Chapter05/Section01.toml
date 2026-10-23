@@ -1,51 +1,4 @@
 namespace = "CartisGouldToint"
-desc = '''
-Surface adaptation of Cartis–Gould–Toint Chapter 5, Section 1.
-
-Φ_ℓ(x)=||r(x)||^ℓ/ℓ, with ℓ>0 and Euclidean residual norm; ℓ=1 is a Euclidean norm, not an l¹ norm. Lemma 5.1.1 has two branches (positive even integer ℓ, or real ℓ>2p), both retained. Lemma 5.1.5 assumes p>0 because the book uses ℕ for positive integers and ℕ⁰ for nonnegative integers; zero does not admit an odd positive factor. Mathlib Nat.ordProj_mul_ordCompl_eq_self, Nat.not_dvd_ordCompl and Nat.factorization provide a short implementation of odd factorization and uniqueness. Cascading fractional powers are nonnegative Real.rpow, with exact dyadic exponents.
-
-Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
-
-Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
-
-In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
-
-Section mathematical setup (source OCR; resolve errors by the design notes above):
-
-#### 5.1.1 Introduction
-
-In our experience, a large proportion of practical unconstrained optimization problems arise from fitting models to data. More specifically, given a vector \( r\left( x\right) \) of parameterized residual functions \( {r}_i : {\mathbb{R}}^n \rightarrow  \mathbb{R}, i \in  \left\lbrack  {1 : m}\right\rbrack \) , the parameters \( x \) are chosen to make an appropriate norm of \( r\left( x\right) \) as small as possible - each residual typically measures the discrepancy between a modeled quantity (using the model parameters \( x \) ) and a physical observation of the same quantity. Although other norms may arise, the majority prefer the Euclidean norm, or a weighted version thereof [164]. Thus the problem of concern is \( {\text{ to }}^{34} \)
-
-\[
-\mathop{\operatorname{minimize}}\limits_{{x \in  {\mathbb{R}}^{n}}}{\Phi }_{1}\left( x\right) \overset{\text{ def }}{ = }\parallel r\left( x\right) \parallel .\tag{5.1.1}
-\]
-
-However, because the Euclidean norm is not everywhere smooth, while its square is, it is usually considered convenient to solve the equivalent least-squares problem, that is,
-
-\[
-\mathop{\operatorname{minimize}}\limits_{{x \in  {\mathbb{R}}^{n}}}{\Phi }_{2}\left( x\right) \overset{\text{ def }}{ = }\frac{1}{2}\parallel r\left( x\right) {\parallel }^{2} = \frac{1}{2}\mathop{\sum }\limits_{{i = 1}}^{m}{r}_{i}^{2}\left( x\right) ,\tag{5.1.2}
-\]
-
-instead. Such a justification is somewhat spurious since, for smooth \( r \) , the only point of derivative discontinuity of \( {\Phi }_1\left( x\right) \) occurs if by chance \( r\left( x\right)  = 0 \) , and, as we will shortly see, it is possible to check separately for this possibility.
-
-Least-squares problems are classified as either linear-in which the parameters may simply be found by solving a suitable system of linear equations - or nonlinear-in the case when at least one of the residuals is a nonlinear function. A least-squares fit is often justified by the assumption that modeling errors are normally distributed, an assumption that is partially justified by the central-limit theorem. For linear models, normally distributed errors lead to the least-squares formulation via maximum likelihood estimation. The formulation above assumes that variances are equal, but this is not a restriction since unequal variances may be included either implicitly (via a weighted Euclidean norm) or explicitly (by weighting the residuals).
-
-Examples of problems of this kind abound [226, Chap. 12]. These range throughout experimental science (computational physics, chemistry, biology, and earth sciences), engineering (in disciplines such as transportation, aerospace, and power systems), and finance (pricing and hedging of financial derivatives). Specific applications arise in exploration seismology, NMR spectroscopy, and piezoelectric crystal identification (used in ultrasound for imaging) in medicine; selection of satellite image sensor characteristics, powering internet mapping services; data assimilation for weather forecasting and climate modeling; and building neural networks for artificial intelligence, to mention but a few.
-
-The reader may well have noticed that there is nothing sacred about the least-squares reformulation of (5.1.1); indeed the problem is also equivalent to minimizing
-
-\[
-{\Phi }_{\ell }\left( x\right) \overset{\text{ def }}{ = }\frac{1}{\ell }\parallel r\left( x\right) {\parallel }^{\ell }\tag{5.1.3}
-\]
-
-for any positive integer \( \ell \) chosen so that \( {\Phi }_{\ell } \) inherits the smoothness of \( r \) . The following lemma indicates when this is the case, allowing us to focus on (5.1.3) rather than \( {\Phi }_2\left( x\right) \) when it is advantageous to do so.
-
----
-
-\( {}^{34} \) Please be aware that we are using the Euclidean norm \( \parallel  \cdot  \parallel  = \parallel  \cdot  {\parallel }_2 \) throughout, not the one-norm \( \parallel  \cdot  {\parallel }_1! \)
-
----
-'''
 
 [[node]]
 id = "residualPowerObjective"
@@ -169,23 +122,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_5_1_3"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 5.1.3: Cascading differences
-
-[Appendix to Chapter 5, p. 463]: Suppose that \( a \geq  b \geq  0 \) . Then
-
-\[
-{a}^{1/{2}^i} - {b}^{1/{2}^i} \geq  \frac{{a}^{\ell } - {b}^{\ell }}{{2}^i\ell {a}^{\frac{{2}^i - 1}{{2}^i} + \ell  - 1}}
-\]
-
-for all integers \( i \geq  0 \) and \( \ell  \geq  1 \) .
-
-Next, we combine the two previous results to obtain more useful bounds on the guaranteed residual decrease following successful iterations.
-'''
-deps = ["residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5566)"
 
 [[node]]
@@ -268,23 +204,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_5_1_5"
-kind = "theorem"
-desc = '''
-Semantic specification: Exact Lean content: for p:ℕ with 0<p, ∃! z:ℕ×ℕ, Odd z.1 ∧ 0<z.1 ∧ p=z.1*2^z.2. Prove both existence and uniqueness; source ℕ excludes 0. No analytic prerequisites are needed.
-
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 5.1.5: Odd factorization of a positive integer
-
-[Appendix to Chapter 5, p. 464]: Let \( p \in  \mathbb{N} \) . Then \( p \) may be expressed uniquely as the product of an odd natural number and a power of 2 , i.e.,
-
-\[
-p = o \cdot  {2}^i\tag{5.1.31}
-\]
-
-for some odd positive integer \( o \) and \( i \in  {\mathbb{N}}^0 \) .
-'''
-deps = ["residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5682)"
 
 [[node]]
