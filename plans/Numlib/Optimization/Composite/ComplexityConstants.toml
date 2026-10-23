@@ -1,0 +1,40 @@
+namespace = "Composite"
+
+[[node]]
+id = "generalAccuracyFactor"
+
+[[node]]
+id = "generalAccuracyFactor_pos"
+
+[[node]]
+id = "generalAccuracyFactor_le"
+
+[[node]]
+id = "unitExponent"
+
+[[node]]
+id = "unitAccuracyFactor"
+
+[[node]]
+id = "unitAccuracyFactor_pos"
+
+[[node]]
+id = "unitAccuracyFactor_le"
+
+[[node]]
+id = "unitStepCoefficient"
+
+[[node]]
+id = "unitStepCoefficient_pos"
+
+[[node]]
+id = "generalDecreaseCoefficient"
+
+[[node]]
+id = "generalDecreaseCoefficient_pos"
+
+[[node]]
+id = "unitDecreaseCoefficient"
+
+[[node]]
+id = "unitDecreaseCoefficient_pos"
