@@ -1,0 +1,40 @@
+namespace = "NormPower"
+
+[[node]]
+id = "innerTensor"
+
+[[node]]
+id = "innerTensor_apply"
+
+[[node]]
+id = "norm_innerTensor_le"
+
+[[node]]
+id = "pairedTensor"
+
+[[node]]
+id = "pairedTensor_diagonal"
+
+[[node]]
+id = "norm_pairedTensor_le"
+
+[[node]]
+id = "contDiff_norm_pow_even"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_even_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_even_le_factorial"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_even_top_le"
+
+[[node]]
+id = "norm_sub_iteratedFDeriv_norm_pow_even_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_of_even"
+
+[[node]]
+id = "norm_sub_iteratedFDeriv_norm_pow_of_even"
