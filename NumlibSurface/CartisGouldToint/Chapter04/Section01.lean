@@ -1,4 +1,5 @@
 import Numlib.Optimization.Regularization.HighOrder.Sharpness.Witness
+import Numlib.Optimization.Regularization.HighOrder.Complexity
 import Numlib.Optimization.Regularization.HighOrder.EmptyDirections
 import Numlib.Analysis.Calculus.Gradient
 import Numlib.Optimization.Regularization.HighOrder.Step
@@ -273,5 +274,88 @@ theorem theorem_4_1_6 (p : ℕ) :
   ⟨fun hp => exists_first_order_witness hp,
     fun hp => exists_second_order_witness hp,
     fun hp => exists_third_order_witness hp⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open HighOrderRegularization
+
+/-- First-order ARp with both higher stopping tests explicitly disabled. -/
+abbrev arpFirstOrderRun {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ)
+    (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ ρ : ℕ → ℝ)
+    (η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ ε₁ : ℝ)
+    (ε₂ ε₃ : WithTop ℝ) (N : ℕ) : Prop :=
+  FirstOrderRun f p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ ε₁ ε₂ ε₃ N
+
+/-- Finite-second-order ARp with its third stopping test explicitly disabled. -/
+abbrev arpSecondOrderRun {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ)
+    (x s u : ℕ → EuclideanSpace ℝ (Fin n)) (μ σ ρ : ℕ → ℝ)
+    (η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ : ℝ)
+    (ε₃ : WithTop ℝ) (N : ℕ) : Prop :=
+  SecondOrderRun f p x s u μ σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin
+    θ₁ θ₂ ε₁ ε₂ ε₃ N
+
+/-- Full finite-third-order ARp after removing only the false nonempty-set guard.
+The original model, acceptance, parameter and model-direction updates
+remain primitive fields. -/
+abbrev arpFiniteRun {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ)
+    (x s u : ℕ → EuclideanSpace ℝ (Fin n)) (μ σ ρ : ℕ → ℝ)
+    (M : ℕ → Set (EuclideanSpace ℝ (Fin n)))
+    (η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ θ₃ ε₁ ε₂ ε₃ : ℝ)
+    (N : ℕ) : Prop :=
+  FiniteRun f p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+    θ₁ θ₂ θ₃ ε₁ ε₂ ε₃ N
+
+/-- The actual repaired third-order stopping test; the strict-Hessian branch is retained. -/
+abbrev arpFiniteStop {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (x : EuclideanSpace ℝ (Fin n)) (μ : ℝ) (M : Set (EuclideanSpace ℝ (Fin n)))
+    (ε₁ ε₂ ε₃ : ℝ) : Prop := finiteStop f x μ M ε₁ ε₂ ε₃
+
+/-- **Theorem 4.1.5, corrected stopping rule.** Removing the nonempty-direction
+condition in Step 1 yields the full source complexity bounds (4.1.38), including
+all derivative orders, the printed constants (4.1.45)–(4.1.46), and the first
+actual stopping point. Constants precede all accuracy requests and executions.
+The strict-Hessian branch returns the empty direction set; otherwise the returned
+set is precisely the algorithm's inherited model directions. The literal source
+version is disproved by `theorem_4_1_5_nonempty_guard_counterexample`. -/
+theorem theorem_4_1_5_corrected {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {σinit σmin η₁ η₂ γ₁ γ₂ γ₃ L θ₁ θ₂ θ₃ flow : ℝ}
+    (hf : ContDiff ℝ p f) (hL : 1 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
+    (hlow : ∀ y, flow ≤ f y) (hσ : 0 < σinit) (hmin : 0 < σmin) (hη : 0 < η₁)
+    (hγ₂ : 1 < γ₂) (hθ₁ : 0 < θ₁) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κC > 0,
+      κS = successfulIterationConstant p σinit σmin η₁ η₂ γ₃ L θ₁ θ₂ θ₃ ∧
+      κA = κS * (1 + |Real.log γ₁| / Real.log γ₂) ∧
+      κC = |Real.log γ₁| / Real.log γ₂ +
+        Real.log (max σinit (γ₃ * L / (1 - η₂)) / σinit) / Real.log γ₂ + 2 ∧
+      ∀ ε₁ : ℝ, 0 < ε₁ → ε₁ ≤ 1 → ∀ ε₂ : ℝ, 0 < ε₂ → ε₂ ≤ 1 →
+      ∀ ε₃ : ℝ, 0 < ε₃ → ε₃ ≤ 1 →
+      ∀ x s u : ℕ → EuclideanSpace ℝ (Fin n), ∀ μ σ ρ : ℕ → ℝ,
+      ∀ M : ℕ → Set (EuclideanSpace ℝ (Fin n)), σ 0 = σinit →
+        (∀ N, (∀ i < N, ¬arpFiniteStop f (x i) (μ i) (M i) ε₁ ε₂ ε₃) →
+          arpFiniteRun f p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+            θ₁ θ₂ θ₃ ε₁ ε₂ ε₃ N) →
+        ∃ K, arpFiniteStop f (x K) (μ K) (M K) ε₁ ε₂ ε₃ ∧
+          arpFiniteRun f p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+            θ₁ θ₂ θ₃ ε₁ ε₂ ε₃ K ∧
+          (∀ i < K, ¬arpFiniteStop f (x i) (μ i) (M i) ε₁ ε₂ ε₃) ∧
+          ‖gradient f (x K)‖ ≤ ε₁ ∧ -ε₂ ≤ μ K ∧
+          returnedDirections (μ K) ε₂ (M K) ⊆
+            {v | ‖v‖ = 1 ∧ |iteratedFDeriv ℝ 2 f (x K) (fun _ => v)| ≤ ε₂} ∧
+          (∀ v ∈ returnedDirections (μ K) ε₂ (M K),
+            |iteratedFDeriv ℝ 3 f (x K) (fun _ => v)| ≤ ε₃) ∧
+          (functionEvaluations K : ℝ) ≤
+            κA * (f (x 0) - flow) / finiteAccuracyFactor p ε₁ ε₂ ε₃ + κC ∧
+          (derivativeEvaluations ρ η₁ K : ℝ) ≤
+            κS * (f (x 0) - flow) / finiteAccuracyFactor p ε₁ ε₂ ε₃ + 2 := by
+  obtain ⟨κS,hS,κA,hA,κC,hC,hSeq,hAeq,hCeq,hRun⟩ := exists_uniform_finite_complexity p
+    hf (zero_lt_one.trans_le hL) hlip hlow hσ hmin hη hγ₂ hθ₁
+  refine ⟨κS,hS,κA,hA,κC,hC,hSeq,hAeq,hCeq,?_⟩
+  intro ε₁ _ _ ε₂ _ _ ε₃ _ _ x s u μ σ ρ M hσ0 hprefix
+  obtain ⟨K,hstop,hK,hfirst,hg,hμ,hM,hthird,hF,hD⟩ :=
+    hRun ε₁ ε₂ ε₃ x s u μ σ ρ M hσ0 hprefix
+  exact ⟨K,hstop,hK,hfirst,by simpa only [EuclideanSpace.norm_gradient_eq] using hg,
+    hμ,hM,hthird,hF,hD⟩
 
 end CartisGouldToint

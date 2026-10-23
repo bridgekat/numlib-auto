@@ -1,0 +1,73 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "finiteAccuracyFactor"
+
+[[node]]
+id = "finiteDecreaseCoefficient"
+
+[[node]]
+id = "inv_decreaseConstant_eq"
+
+[[node]]
+id = "inv_finiteAccuracyFactor_eq"
+
+[[node]]
+id = "successfulIterationConstant"
+
+[[node]]
+id = "successfulIterationConstant_pos"
+
+[[node]]
+id = "returnedDirections"
+
+[[node]]
+id = "mem_returnedDirections_iff"
+
+[[node]]
+id = "finiteStop_guarantees"
+
+[[node]]
+id = "FiniteRun.directions_unit"
+
+[[node]]
+id = "FiniteRun.terminal_guarantees"
+
+[[node]]
+id = "FiniteRun.decrease_coefficients_pos"
+
+[[node]]
+id = "FiniteRun.finiteDecreaseCoefficient_pos"
+
+[[node]]
+id = "FiniteRun.finiteAccuracyFactor_pos"
+
+[[node]]
+id = "FiniteRun.threshold_budgets"
+
+[[node]]
+id = "FiniteRun.inv_finiteDecreaseCoefficient_eq"
+
+[[node]]
+id = "FiniteRun.inverse_coefficient"
+
+[[node]]
+id = "FiniteRun.nonterminal_successful_decrease"
+
+[[node]]
+id = "FiniteRun.objective_eq_of_unsuccessful"
+
+[[node]]
+id = "FiniteRun.successful_card_le"
+
+[[node]]
+id = "FiniteRun.iterations_le"
+
+[[node]]
+id = "exists_finite_termination"
+
+[[node]]
+id = "exists_uniform_finite_complexity"
+
+[[node]]
+id = "FiniteRun.initialDirections_eq_empty_of_strict"
