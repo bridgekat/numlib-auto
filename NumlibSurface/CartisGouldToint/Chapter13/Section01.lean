@@ -8,8 +8,8 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 
 Trial counts distinguish parameter updates from accuracy-only iterations, using the terminal
 parameter after the counted updates. Approximate Taylor polynomials are finite polynomials of the
-actual approximate derivative tensors. The model-comparison conditions of Step 2 imply both the penalty lower bound and
-strict positivity of the acceptance ratio denominator.
+actual approximate derivative tensors. The model-comparison conditions of Step 2 imply both the
+penalty lower bound and strict positivity of the acceptance ratio denominator.
 -/
 
 namespace CartisGouldToint

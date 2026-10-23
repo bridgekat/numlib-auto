@@ -4,6 +4,7 @@ Natural home: Mathlib.Analysis.Calculus.LocalExtr.
 -/
 import Numlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
+import Numlib.Analysis.Calculus.LocalExtr.RightDerivative
 import Mathlib.Tactic
 
 /-!
@@ -21,33 +22,14 @@ open Set Filter Topology
 theorem IsLocalMin.iteratedDeriv_three_nonneg {f : ℝ → ℝ}
     (hmin : IsLocalMin f 0) (hf : ContDiff ℝ 3 f)
     (hsecond : iteratedDeriv 2 f 0 = 0) : 0 ≤ iteratedDeriv 3 f 0 := by
-  by_contra hn
-  have hneg : iteratedDeriv 3 f 0 < 0 := lt_of_not_ge hn
-  have hnear : ∀ᶠ t in 𝓝 (0 : ℝ), f 0 ≤ f t ∧ iteratedDeriv 3 f t < 0 :=
-    hmin.and (((hf.continuous_iteratedDeriv 3 le_rfl).continuousAt).eventually
-      (gt_mem_nhds hneg))
-  obtain ⟨ε, hε, hball⟩ := Metric.eventually_nhds_iff.mp hnear
-  have hy : (0 : ℝ) < ε / 2 := by positivity
-  have hne : (0 : ℝ) ≠ ε / 2 := ne_of_lt hy
-  obtain ⟨ξ, hξ, hT⟩ := exists_taylorWithinEval_add_iteratedDeriv_mul
-    (n := 2) hne hf.contDiffOn
-  rw [taylorWithinEval_eq_sum_of_contDiffAt hne
-    (hf.contDiffAt.of_le (by norm_num : (2 : WithTop ℕ∞) ≤ 3))] at hT
-  have hξnorm : dist ξ 0 < ε := by
-    have h := abs_sub_left_of_mem_uIcc (Ioo_subset_Icc_self hξ)
-    rw [Real.dist_eq, sub_zero]
-    simp only [sub_zero, abs_of_pos hy] at h
-    exact h.trans_lt (by linarith)
-  have hξneg := (hball hξnorm).2
-  have hminy := (hball (show dist (ε / 2) 0 < ε by
-    rw [Real.dist_eq, sub_zero, abs_of_pos hy]
-    linarith)).1
-  have hfirst : deriv f 0 = 0 := hmin.deriv_eq_zero
-  norm_num [Finset.sum_range_succ, iteratedDeriv_zero, iteratedDeriv_one,
-    hfirst, hsecond] at hT
-  have hprod : iteratedDeriv 3 f ξ * (ε / 2) ^ 3 / 6 < 0 := by
-    exact div_neg_of_neg_of_pos (mul_neg_of_neg_of_pos hξneg (pow_pos hy 3)) (by norm_num)
-  linarith
+  have hm : IsLocalMinOn f (Icc 0 1) 0 := hmin.filter_mono nhdsWithin_le_nhds
+  apply hm.iteratedDeriv_nonneg_of_lower_eq_zero (by norm_num : 0 < 3)
+    (fun _ _ => hf.contDiffAt)
+  intro j hj hj3
+  have hcases : j = 1 ∨ j = 2 := by omega
+  rcases hcases with rfl | rfl
+  · simpa [iteratedDeriv_one] using hmin.deriv_eq_zero
+  · exact hsecond
 
 /-- At a local minimum, a vanishing second derivative forces the third derivative to vanish. -/
 theorem IsLocalMin.iteratedDeriv_three_eq_zero_at_zero {f : ℝ → ℝ}

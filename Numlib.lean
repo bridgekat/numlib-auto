@@ -26,6 +26,7 @@ import Numlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 import Numlib.Analysis.Calculus.LipschitzDerivative
+import Numlib.Analysis.Calculus.LocalExtr.RightDerivative
 import Numlib.Analysis.Calculus.LocalExtr.ThirdOrder
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
@@ -653,6 +654,7 @@ import Numlib.ODE.OneStep
 import Numlib.ODE.RungeKutta
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
+import Numlib.Optimization.Constrained.Optimality
 import Numlib.Optimization.Constrained.Restriction
 import Numlib.Optimization.Descent
 import Numlib.Optimization.EvaluationComplexity.Decrease

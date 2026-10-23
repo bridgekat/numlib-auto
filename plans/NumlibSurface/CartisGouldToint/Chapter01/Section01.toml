@@ -6,11 +6,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "feasibleDisplacements"
-kind = "definition"
-desc = '''
-For C:Set E and x:E, define feasibleDisplacements C x = {d | x+d∈C}, exactly (1.1.7). This is a translated set of displacements, not the tangent cone; 0 belongs iff x∈C.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 1.1"
 
 [[node]]
@@ -19,47 +14,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_1_1_2"
-kind = "theorem"
-desc = '''
-Semantic specification: Implement the three NECESSARY conditions exactly. The printed converse is false for general C; it is recorded separately as wrong. A separate corrected theorem uses the closed tangent cone in its positivity hypothesis. Do not prove the printed false converse from impossible assumptions.
-
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 1.1.2: Convexly constrained optimality conditions
-
-Let \( \mathcal{C} \) be a nonempty, closed, convex set; let \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \in  {C}^1\left( \mathcal{S}\right) \) , where the open set \( \mathcal{S} \) contains \( \mathcal{C} \) ; and suppose that \( {x}_{ * } \) is a local minimizer of \( f \) within \( \mathcal{C} \) . Then
-
-\[
-\left\langle  {d,{\nabla }_{x}^{1}f\left( {x}_{ * }\right) }\right\rangle   \geq  0\text{ for all }d \in  \mathcal{C}\left( {x}_{ * }\right) ,\tag{1.1.6}
-\]
-
-where
-
-\[
-\mathcal{C}\left( x\right) \overset{\text{ def }}{ = }\left\{  {d \in  {\mathbb{R}}^{n} \mid  x + d \in  \mathcal{C}}\right\}  .\tag{1.1.7}
-\]
-
-If \( f \in  {C}^2\left( \mathcal{S}\right) \) , then
-
-\[
-\left\langle  {d,{\nabla }_{x}^{2}f\left( {x}_{ * }\right) d}\right\rangle   \geq  0\text{ for all }d \in  \mathcal{C}\left( {x}_{ * }\right) \text{ for which }\left\langle  {d,{\nabla }_{x}^{1}f\left( {x}_{ * }\right) }\right\rangle   = 0,\tag{1.1.8}
-\]
-
-while if \( f \in  {C}^3\left( \mathcal{S}\right) \) , then
-
-\[
-\begin{gathered}{\nabla }_{x}^{3}f\left( {x}_{ * }\right) {\left\lbrack  d\right\rbrack  }^{3} \geq  0\text{ for all }d \in  \mathcal{C}\left( {x}_{ * }\right) \text{ for which } \\ \left\langle  {d,{\nabla }_{x}^{1}f\left( {x}_{ * }\right) }\right\rangle   = 0\text{ and }\left\langle  {d,{\nabla }_{x}^{2}f\left( {x}_{ * }\right) d}\right\rangle   = 0.\end{gathered}\tag{1.1.9}
-\]
-
-Conversely, if, for a given \( {x}_{ * } \in  \mathcal{C} \) ,(1.1.6) holds and
-
-\[
-\left\langle  {d,{\nabla }_{x}^{2}f\left( {x}_{ * }\right) d}\right\rangle   > 0\text{ for all }d \neq  0 \in  \mathcal{C}\left( {x}_{ * }\right) \text{ for which }\left\langle  {d,{\nabla }_{x}^{1}f\left( {x}_{ * }\right) }\right\rangle   = 0\text{ , }
-\]
-
-then \( {x}_{ * } \) is a strict local minimizer of \( f \in  {C}^2\left( \mathcal{S}\right) \) .
-'''
-deps = ["theorem_1_1_1", "lagrangian", "feasibleDisplacements"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 781)"
 
 [[node]]

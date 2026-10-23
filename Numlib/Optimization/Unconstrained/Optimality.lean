@@ -21,7 +21,7 @@ section Normed
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- The second derivative along an affine line is the Hessian applied twice to its direction. -/
-theorem iteratedDeriv_two_affineLine {f : E → ℝ} (hf : ContDiff ℝ 2 f) (x v : E) :
+theorem iteratedDeriv_two_affineLine {f : E → ℝ} (x : E) (hf : ContDiffAt ℝ 2 f x) (v : E) :
     iteratedDeriv 2 (fun t : ℝ => f (x + t • v)) 0 =
       fderiv ℝ (fderiv ℝ f) x v v := by
   have hline : ContDiff ℝ 2 (fun t : ℝ => x + t • v) := by fun_prop
@@ -31,17 +31,17 @@ theorem iteratedDeriv_two_affineLine {f : E → ℝ} (hf : ContDiff ℝ 2 f) (x 
     rw [iteratedDeriv_const_add (by decide), iteratedDeriv_smul_const contDiff_id.contDiffAt]
     simp [iteratedDeriv_succ]
   have h := iteratedDeriv_vcomp_two (g := f) (f := fun t : ℝ => x + t • v)
-    (x := 0) (by simpa using hf.contDiffAt) hline.contDiffAt
+    (x := 0) (by simpa using hf) hline.contDiffAt
   simpa [Function.comp_def, hd, htwo, iteratedFDeriv_two_apply] using h
 
 /-- The third derivative along an affine line is the third derivative tensor applied
 three times to its direction. -/
-theorem iteratedDeriv_three_affineLine {f : E → ℝ} (hf : ContDiff ℝ 3 f) (x v : E) :
+theorem iteratedDeriv_three_affineLine {f : E → ℝ} (x : E) (hf : ContDiffAt ℝ 3 f x) (v : E) :
     iteratedDeriv 3 (fun t : ℝ => f (x + t • v)) 0 =
       iteratedFDeriv ℝ 3 f x (fun _ => v) := by
   have hline : ContDiff ℝ 3 (fun t : ℝ => x + t • v) := by fun_prop
   have h := iteratedDeriv_vcomp_three (g := f) (f := fun t : ℝ => x + t • v)
-    (x := 0) (by simpa using hf.contDiffAt) hline.contDiffAt
+    (x := 0) (by simpa using hf) hline.contDiffAt
   have hd : deriv (fun t : ℝ => x + t • v) 0 = v := by
     simpa using (((hasDerivAt_id (0 : ℝ)).smul_const v).const_add x).deriv
   have htwo : iteratedDeriv 2 (fun t : ℝ => x + t • v) 0 = 0 := by
@@ -70,8 +70,8 @@ theorem third_apply_eq_zero_of_isLocalMin {f : E → ℝ} {x : E}
         hline.continuous.continuousAt
   have hfline : ContDiff ℝ 3 (fun t : ℝ => f (x + t • v)) := hf.comp hline
   have hsline : iteratedDeriv 2 (fun t : ℝ => f (x + t • v)) 0 = 0 := by
-    rw [iteratedDeriv_two_affineLine (hf.of_le (by norm_num)) x v, hv]
-  rw [← iteratedDeriv_three_affineLine hf x v]
+    rw [iteratedDeriv_two_affineLine x (hf.contDiffAt.of_le (by norm_num)) v, hv]
+  rw [← iteratedDeriv_three_affineLine x hf.contDiffAt v]
   exact hmline.iteratedDeriv_three_eq_zero hfline hsline
 
 /-- The `C²` form of the second-order necessary condition, using the actual Hessian. -/

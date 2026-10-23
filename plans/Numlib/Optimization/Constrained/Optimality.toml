@@ -1,0 +1,13 @@
+namespace = "Constrained"
+
+[[node]]
+id = "higher_directional_nonneg"
+
+[[node]]
+id = "first_order_nonneg"
+
+[[node]]
+id = "second_order_nonneg"
+
+[[node]]
+id = "third_order_nonneg"
