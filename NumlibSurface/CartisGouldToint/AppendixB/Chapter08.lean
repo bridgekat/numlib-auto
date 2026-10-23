@@ -5,7 +5,8 @@ import Numlib.Nonlinear.PowerTransform
 
 Lemma B.8.2 is stated for every differentiable scalar function with positive value and
 negative derivative at the current point. These are the properties of the nondegenerate
-secular function needed by its proof; a root or a position relative to that root is unnecessary.
+secular function needed by its proof; in the secular specialization the right-hand
+side vector must be nonzero. A root or a position relative to it is unnecessary.
 For nonzero exponent the residual is exactly `π^β - (Δ²)^β = π^β - Δ^(2β)`.
 At exponent zero that residual is identically zero, so the logarithmic residual is used
 instead. Its Newton step is the continuous extension of the steps at nonzero exponents.

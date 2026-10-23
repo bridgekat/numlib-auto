@@ -1,8 +1,7 @@
 namespace = "CartisGouldToint"
 
-desc = '''
-Appendix B, Chapter 8: Newton/secant convergence and transformed secular functions. Use existing Numlib.Nonlinear.Newton and Secant plus scalar convex derivative inequalities; do not duplicate their general iteration interfaces. B.8.1 requires a simple root for the stated rates and a stopping convention after finite termination. B.8.2 requires a removable-value definition at beta=0. These are substantive clarifications of the source.
-'''
+# Planning conventions for remaining declarations:
+# Appendix B, Chapter 8: Newton/secant convergence and transformed secular functions. Use existing Numlib.Nonlinear.Newton and Secant plus scalar convex derivative inequalities; do not duplicate their general iteration interfaces. B.8.1 requires a simple root for the stated rates and a stopping convention after finite termination. B.8.2 requires a removable-value definition at beta=0. These are substantive clarifications of the source.
 
 [[node]]
 id = "lemma_B_8_1"

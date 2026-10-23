@@ -1,8 +1,7 @@
 namespace = "CartisGouldToint"
 
-desc = '''
-Appendix B, Chapter 5: positivity of the residual exponents used in high-order least-squares complexity. Exponent definitions belong to Chapter 5; retain explicit formulas locally in the statement to avoid a dependency on an assumed positivity condition. The source repeats iota_1 as the third symbol in its introductory list; correct it to iota_3.
-'''
+# Planning conventions for remaining declarations:
+# Appendix B, Chapter 5: positivity of the residual exponents used in high-order least-squares complexity. Exponent definitions belong to Chapter 5; retain explicit formulas locally in the statement to avoid a dependency on an assumed positivity condition. The source repeats iota_1 as the third symbol in its introductory list; correct it to iota_3.
 
 [[node]]
 id = "lemma_B_5_1"

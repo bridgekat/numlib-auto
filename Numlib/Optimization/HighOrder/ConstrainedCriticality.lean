@@ -46,7 +46,8 @@ theorem exists_decrement_eq_constrainedCriticality (f : E → ℝ) (p : ℕ) {X 
     (hX : IsClosed X) {x : E} (hx : x ∈ X) {δ : ℝ} (hδ : 0 ≤ δ) :
     ∃ d : E, x + d ∈ X ∧ ‖d‖ ≤ δ ∧
       decrement f p x d = constrainedCriticality f p X x δ := by
-  obtain ⟨d, hd, heq⟩ := (isCompact_feasibleDisplacements_inter_closedBall hX x δ).exists_sSup_image_eq
+  obtain ⟨d, hd, heq⟩ :=
+    (isCompact_feasibleDisplacements_inter_closedBall hX x δ).exists_sSup_image_eq
     ⟨0, by simpa using hx, by simpa using hδ⟩ (continuous_decrement f p x).continuousOn
   exact ⟨d, hd.1, by simpa using hd.2, heq.symm⟩
 

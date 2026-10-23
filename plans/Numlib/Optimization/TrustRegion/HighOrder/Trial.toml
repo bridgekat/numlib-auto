@@ -1,7 +1,5 @@
 namespace = "HighOrderTrustRegion"
 
-desc = "Actual arbitrary-order trust-region trial: source parameters, two radii, first failed approximate Taylor test, model comparison, objective ratio, capped update, and derived sharp small-radius acceptance."
-
 [[node]]
 id = "Parameters"
 

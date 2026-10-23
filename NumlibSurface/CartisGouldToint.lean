@@ -1,12 +1,17 @@
 import NumlibSurface.CartisGouldToint.AppendixA.Section08
 import NumlibSurface.CartisGouldToint.AppendixA.Section10
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter02
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter03
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter05
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter07
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter08
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter12
 import NumlibSurface.CartisGouldToint.Chapter01.Section01
 import NumlibSurface.CartisGouldToint.Chapter02.Section02
 import NumlibSurface.CartisGouldToint.Chapter02.Section03
 import NumlibSurface.CartisGouldToint.Chapter02.Section04
+import NumlibSurface.CartisGouldToint.Chapter03.Section02
+import NumlibSurface.CartisGouldToint.Chapter03.Section03
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import NumlibSurface.CartisGouldToint.Chapter04.Section02
 import NumlibSurface.CartisGouldToint.Chapter05.Section01
@@ -15,6 +20,7 @@ import NumlibSurface.CartisGouldToint.Chapter12.Section01
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 import NumlibSurface.CartisGouldToint.Chapter13.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section01
+import NumlibSurface.CartisGouldToint.Chapter14.Section02
 
 /-!
 # Cartis–Gould–Toint, *Evaluation Complexity of Algorithms for Nonconvex Optimization*
@@ -62,6 +68,9 @@ recorded on the relevant plan nodes. In particular:
 * The isolated-Taylor-minimum claim of Theorem 12.1.5 and the printed constraint
   qualification of Theorem 14.3.1 have explicit counterexamples. Their original
   statements remain marked incorrect in the plans.
+* The residual-only uniform bound in Lemma B.2.1 fails for constant polynomials
+  of arbitrary height. Its counterexample and a corrected theorem with bounds
+  on the initial endpoint data are formalized separately.
 * The norm constant in (B.4.3), part of Lemma B.4.1, fails already in dimension two.
   It remains marked incorrect rather than being represented by a false axiom.
 

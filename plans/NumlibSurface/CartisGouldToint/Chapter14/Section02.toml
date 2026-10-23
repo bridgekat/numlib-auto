@@ -1,7 +1,6 @@
 namespace = "CartisGouldToint"
-desc = '''
-Simple constraints X are closed and nonempty and step/model optimization over X is assumed inexpensive under the chosen oracle model. X(x)={d:x+d∈X}; criticality optimizes over X(x)∩closedBall(0,δ). Restricted smoothness and boundedness assumptions hold on the segments/set indicated by f.D0rLaB.X, not necessarily all R^n. f.bB.X means f_low≤f on X. Convex first-order and unconstrained second-order favorable cases must remain distinct from general constrained high-order cases.
-'''
+# Planning conventions for remaining declarations:
+# Simple constraints X are closed and nonempty and step/model optimization over X is assumed inexpensive under the chosen oracle model. X(x)={d:x+d∈X}; criticality optimizes over X(x)∩closedBall(0,δ). Restricted smoothness and boundedness assumptions hold on the segments/set indicated by f.D0rLaB.X, not necessarily all R^n. f.bB.X means f_low≤f on X. Convex first-order and unconstrained second-order favorable cases must remain distinct from general constrained high-order cases.
 
 [[node]]
 id = "highOrderConstrainedCriticality"

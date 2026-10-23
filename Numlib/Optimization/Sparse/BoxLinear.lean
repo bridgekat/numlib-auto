@@ -23,6 +23,7 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 noncomputable def support (x : ι → ℝ) : Finset ι := univ.filter (fun i => x i ≠ 0)
 
 omit [DecidableEq ι] in
+/-- Support membership is exactly a nonzero coordinate. -/
 @[simp] theorem mem_support {x : ι → ℝ} {i : ι} : i ∈ support x ↔ x i ≠ 0 := by
   simp [support]
 
@@ -30,6 +31,7 @@ omit [DecidableEq ι] in
 noncomputable def forced (x : ι → ℝ) (δ : ℝ) : Finset ι := univ.filter (fun i => δ < |x i|)
 
 omit [DecidableEq ι] in
+/-- A coordinate is forced precisely when its magnitude exceeds the radius. -/
 @[simp] theorem mem_forced {x : ι → ℝ} {δ : ℝ} {i : ι} :
     i ∈ forced x δ ↔ δ < |x i| := by simp [forced]
 
@@ -82,8 +84,9 @@ theorem sign_endpoint_value (g δ : ℝ) : g * (-δ * Real.sign g) = -δ * |g| :
 /-- Signed endpoints lie in the box even when the coefficient vanishes. -/
 theorem sign_endpoint_abs_le (g : ℝ) {δ : ℝ} (hδ : 0 ≤ δ) :
     |-δ * Real.sign g| ≤ δ := by
-  rcases Real.sign_apply_eq g with hg | hg | hg <;> rw [hg] <;> simp [abs_of_nonneg hδ]
-  exact hδ
+  rcases Real.sign_apply_eq g with hg | hg | hg <;> rw [hg] <;>
+    simp only [mul_neg_one, neg_neg, mul_one, mul_zero, abs_neg, abs_of_nonneg hδ, abs_zero]
+  all_goals first | exact le_rfl | exact hδ
 
 /-- Every box coordinate has objective value at least that of its signed endpoint. -/
 theorem endpoint_le_mul (g d : ℝ) {δ : ℝ} (hd : |d| ≤ δ) : -δ * |g| ≤ g * d := by
@@ -186,7 +189,8 @@ theorem objective_step {x g : ι → ℝ} {δ : ℝ} {k : ℕ} {R : Finset ι}
       · simp only [step, hi, hiR, or_self, ite_false, sub_zero]
         ring
   have heq := sum_congr (s₁ := (univ : Finset ι)) rfl (fun i _ => hpoint i)
-  simpa only [objective, baseline, selectionGain, sum_sub_distrib, sum_ite_mem, univ_inter] using heq
+  simpa only [objective, baseline, selectionGain, sum_sub_distrib,
+    sum_ite_mem, univ_inter] using heq
 
 /-- Any feasible step has objective at least baseline minus the gain of its optional
 support. The comparison uses actual coordinates, with no optimality assumption. -/
@@ -216,7 +220,8 @@ theorem baseline_sub_gain_le_objective {x g : ι → ℝ} {δ : ℝ} {k : ℕ} {
         ring_nf
         exact le_rfl
   have hh := sum_le_sum (s := (univ : Finset ι)) (fun i _ => hpoint i)
-  simpa only [objective, baseline, selectionGain, sum_sub_distrib, sum_ite_mem, univ_inter, T] using hh
+  simpa only [objective, baseline, selectionGain, sum_sub_distrib,
+    sum_ite_mem, univ_inter, T] using hh
 
 /-- Every true knapsack maximizer produces a globally optimal sparse box step. -/
 theorem step_isMinOn {x g : ι → ℝ} {δ : ℝ} {k : ℕ} {R : Finset ι}

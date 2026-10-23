@@ -35,11 +35,14 @@ theorem exists_inequality_multiplier
   let g' : ι → E → E →L[ℝ] ℝ := fun i z => -a' i z
   have hneg : LinearIndependent ℝ (fun j : activeSet g x => g' j x) := by
     let e : activeSet g x → activeSet a x := fun j => ⟨j.val,neg_eq_zero.mp j.prop⟩
-    have he : Function.Injective e := fun i j hij => Subtype.ext (congrArg (fun q : activeSet a x => q.val) hij)
+    have he : Function.Injective e := fun i j hij =>
+      Subtype.ext (congrArg (fun q : activeSet a x => q.val) hij)
     exact hreg.neg.comp e he
   have hlicq : IsRegularPointIneq h h' g g' x := by
     refine ⟨(fun i => nomatch i),(fun i => neg_nonpos.mpr (hx i)),?_⟩
-    exact linearIndependent_empty_type.sum_type hneg (by rw [Set.range_eq_empty,Submodule.span_empty]; exact disjoint_bot_left)
+    exact linearIndependent_empty_type.sum_type hneg (by
+      rw [Set.range_eq_empty,Submodule.span_empty]
+      exact disjoint_bot_left)
   have hset : feasible h g = {z | ∀ i, 0 ≤ a i z} := by
     ext z
     simp [feasible,h,g]

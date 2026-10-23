@@ -147,7 +147,8 @@ theorem theorem_1_1_3 {n m : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
       hf hc hx hstat hpos
 
 
-/-- Inequality LICQ: the actual active-coordinate constraint derivatives are linearly independent. -/
+/-- Inequality LICQ: the actual active-coordinate constraint derivatives are
+linearly independent. -/
 def inequalityLICQ {n m : ℕ}
     (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
     (x : EuclideanSpace ℝ (Fin n)) : Prop :=

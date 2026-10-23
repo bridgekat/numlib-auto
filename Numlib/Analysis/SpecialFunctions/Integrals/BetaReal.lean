@@ -55,17 +55,22 @@ theorem integral_rpow_mul_one_sub_pow (n : ℕ) {β : ℝ} (hβ : 0 ≤ β) :
   | zero =>
     rw [show shiftedFactorial (0 + 1) β = β + 1 by simp [shiftedFactorial]]
     simp only [pow_zero, mul_one, Nat.factorial_zero, Nat.cast_one]
-    rw [integral_rpow (Or.inl (by linarith)), one_rpow, zero_rpow (by linarith : β + 1 ≠ 0), sub_zero]
+    rw [integral_rpow (Or.inl (by linarith)), one_rpow,
+      zero_rpow (by linarith : β + 1 ≠ 0), sub_zero]
   | succ n ih =>
     have hu : ∀ t ∈ uIcc (0 : ℝ) 1, HasDerivAt (fun t : ℝ => (1 - t) ^ (n + 1))
         (-((n + 1 : ℝ) * (1 - t) ^ n)) t := by
       intro t _
-      exact (((hasDerivAt_id t).const_sub 1).pow (n + 1)).congr_deriv (by simp only [id_eq]; push_cast; ring)
+      exact (((hasDerivAt_id t).const_sub 1).pow (n + 1)).congr_deriv (by
+        simp only [id_eq]
+        push_cast
+        ring)
     have hβ1 : β + 1 ≠ 0 := by positivity
     have hv : ∀ t ∈ uIcc (0 : ℝ) 1, HasDerivAt (fun t : ℝ => t ^ (β + 1) / (β + 1))
         (t ^ β) t := by
       intro t _
-      have hd := (Real.hasDerivAt_rpow_const (x := t) (p := β + 1) (Or.inr (by linarith))).div_const (β + 1)
+      have hd := (Real.hasDerivAt_rpow_const (x := t) (p := β + 1)
+        (Or.inr (by linarith))).div_const (β + 1)
       convert hd using 1
       rw [add_sub_cancel_right]
       field_simp
@@ -87,6 +92,7 @@ theorem integral_rpow_mul_one_sub_pow (n : ℕ) {β : ℝ} (hβ : 0 ≤ β) :
           ((n.factorial : ℝ) / shiftedFactorial (n + 1) (β + 1)) := by
         rw [hparts', ih (by linarith)]
       _ = ((n + 1).factorial : ℝ) / shiftedFactorial (n + 1 + 1) β := by
-        rw [shiftedFactorial_succ (n + 1) β, Nat.factorial_succ, Nat.cast_mul, Nat.cast_add, Nat.cast_one]
+        rw [shiftedFactorial_succ (n + 1) β, Nat.factorial_succ,
+          Nat.cast_mul, Nat.cast_add, Nat.cast_one]
         field_simp
 end Real

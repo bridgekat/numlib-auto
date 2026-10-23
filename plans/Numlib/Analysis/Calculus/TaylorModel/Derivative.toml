@@ -1,6 +1,5 @@
 namespace = "TaylorModel"
 
-desc = "Finite-order Schwarz symmetry and the actual derivatives of finite Frechet Taylor polynomials. Mathlib's arbitrary-order permutation theorem currently assumes analytic regularity; these nodes must retain finite C^p regularity."
 
 [[node]]
 id = "iteratedFDeriv_comp_perm"

@@ -187,7 +187,9 @@ theorem plateau_run {α t ε : ℝ} {N : ℕ}
           (innerSL ℝ (plateauGradient r ε X (x i))) (-plateauGradient r ε X (x i))
       simp only [smul_neg,← sub_eq_add_neg]
       rw [hstep,(hlin i hi).1,hgi,step_zero]
-      simp [innerSL_apply_apply,abs_of_pos hε]
+      simp only [neg_mul, map_neg, neg_neg, neg_apply, coe_innerSL_apply,
+        inner_self_eq_norm_sq_to_K, norm_mul, Real.norm_ofNat, Real.norm_eq_abs,
+        RCLike.ofReal_real_eq_id, id_eq, mul_neg, le_add_neg_iff_add_le, abs_of_pos hε]
       by_cases hnext : i + 1 < N
       · rw [(hlin (i + 1) hnext).1]
         dsimp [x]

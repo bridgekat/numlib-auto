@@ -13,7 +13,8 @@ hypothesis and from (14.2.7).
 
 In Lemma 14.2.5, (14.2.18) and (14.2.19) must minimize the linear objective `g·d`
 (or maximize its negative): the printed maximization contradicts the displayed optimizer,
-the proof, and the subsequent TR1-SP algorithm. For one coordinate with `x=0`, `g=1`, `δ=1` and budget `k=1`, the formula
+the proof, and the subsequent TR1-SP algorithm. For one coordinate with `x=0`,
+`g=1`, `δ=1` and budget `k=1`, the formula
 gives `d=-1`, whereas `d=1` has the larger linear value. The sparse problem below uses
 minimization.
 -/
