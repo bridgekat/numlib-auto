@@ -1,0 +1,13 @@
+namespace = "Krylov"
+
+[[node]]
+id = "coe_pow_compression"
+
+[[node]]
+id = "map_subspace_compression"
+
+[[node]]
+id = "isGalerkinIterate_compression"
+
+[[node]]
+id = "norm_le_norm_of_compression_isSymmetricCoercive"
