@@ -1,3 +1,4 @@
+import Numlib.Optimization.Sharpness.SecondOrder
 import Numlib.Optimization.Regularization.Cubic.Finite
 import Numlib.Optimization.Regularization.Cubic.SecondOrder
 import Numlib.Optimization.Regularization.Cubic.ModifiedGradient
@@ -45,7 +46,8 @@ theorem lemma_3_3_2 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     {η₁ η₂ γ₁ γ₂ γ₃ σmin L : ℝ} {N : ℕ}
     (h : ar2ModelTrace f x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
     (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L)
-    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖) :
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤
+      L * ‖y - z‖) :
     ∀ i ≤ N, σ i ≤ max (σ 0) (γ₃ * L / (1 - η₂)) :=
   fun _ hi => h.parameter_le hf hL hlip hi
 
@@ -237,7 +239,8 @@ theorem lemma_3_3_8 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
 abbrev ar2FiniteRun {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x s u : ℕ → EuclideanSpace ℝ (Fin n)) (μ σ ρ : ℕ → ℝ)
     (η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ : ℝ) (N : ℕ) : Prop :=
-  CubicRegularization.FiniteRun f x s u μ σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ N
+  CubicRegularization.FiniteRun f x s u μ σ ρ
+    η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ N
 
 /-- **Theorem 3.3.9.** Finite-second-order AR2 reaches both actual stopping
 thresholds within the function, gradient and Hessian bounds (3.3.29)–(3.3.30),
@@ -261,7 +264,8 @@ theorem theorem_3_3_9 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
       κF = (1 + |Real.log γ₁| / Real.log γ₂) +
         Real.log (max (σ 0) (γ₃ * L / (1 - η₂)) / σ 0) / Real.log γ₂ + 1 ∧
       ∃ K, ‖gradient f (x K)‖ ≤ ε₁ ∧ -ε₂ ≤ μ K ∧
-        ar2FiniteRun f x s u μ σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ K ∧
+        ar2FiniteRun f x s u μ σ ρ
+          η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ K ∧
         (∀ i < K, ε₁ < ‖gradient f (x i)‖ ∨ μ i < -ε₂) ∧
         (CubicRegularization.functionEvaluations K : ℝ) ≤
           κD * (f (x 0) - flow) / min (ε₁ ^ (3 / 2 : ℝ)) (ε₂ ^ 3) + κF ∧
@@ -270,13 +274,15 @@ theorem theorem_3_3_9 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
         (CubicRegularization.hessianEvaluations ρ η₁ K : ℝ) ≤
           κT * (f (x 0) - flow) / min (ε₁ ^ (3 / 2 : ℝ)) (ε₂ ^ 3) + 2 := by
   have hprefix' : ∀ N, (∀ i < N, ε₁ < ‖fderiv ℝ f (x i)‖ ∨ μ i < -ε₂) →
-      ar2FiniteRun f x s u μ σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ N := by
+      ar2FiniteRun f x s u μ σ ρ
+        η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ N := by
     intro N hN
     exact hprefix N (fun i hi => by
       simpa only [EuclideanSpace.norm_gradient_eq] using hN i hi)
   obtain ⟨K, hg, hμ, hK, hfirst⟩ := CubicRegularization.exists_finite_termination
     hprefix' hf hL hlip hlow
-  let c := CubicRegularization.finiteDecreaseCoefficient (σ 0) σmin η₁ η₂ γ₃ L θ₁ θ₂
+  let c := CubicRegularization.finiteDecreaseCoefficient
+    (σ 0) σmin η₁ η₂ γ₃ L θ₁ θ₂
   let A := 1 + |Real.log γ₁| / Real.log γ₂
   let C := Real.log (max (σ 0) (γ₃ * L / (1 - η₂)) / σ 0) / Real.log γ₂
   have hc := hK.finiteDecreaseCoefficient_pos hL
@@ -287,7 +293,9 @@ theorem theorem_3_3_9 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     apply (le_div_iff₀ hσ₀).mpr
     simpa only [one_mul] using le_max_left (σ 0) (γ₃ * L / (1 - η₂))
   have hC : 0 ≤ C := div_nonneg (Real.log_nonneg hratio) hlog.le
-  have hD : (((EvaluationComplexity.successfulIterations {i | η₁ ≤ ρ i} K).card : ℕ) : ℝ) + 1 ≤
+  have hD :
+      (((EvaluationComplexity.successfulIterations
+        {i | η₁ ≤ ρ i} K).card : ℕ) : ℝ) + 1 ≤
       (1 / c) * (f (x 0) - flow) / min (ε₁ ^ (3 / 2 : ℝ)) (ε₂ ^ 3) + 2 := by
     have hh := hK.successful_card_le hf hL hlip hlow
     convert add_le_add_right hh 1 using 1 <;>
@@ -306,5 +314,33 @@ theorem theorem_3_3_9 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
       CubicRegularization.derivativeEvaluations, Nat.cast_add, Nat.cast_one] using hD
   · simpa only [CubicRegularization.hessianEvaluations,
       CubicRegularization.derivativeEvaluations, Nat.cast_add, Nat.cast_one] using hD
+
+/-- **Theorem 3.3.10.** Genuine finite-second-order AR2 can require the maximum
+of the first- and second-accuracy lower bounds in iterations and in every initialized
+objective, gradient and Hessian evaluation counter. Global smoothness and objective-gap
+constants precede both accuracies. The algorithm settings and the initial/minimum
+regularization parameter `4` are fixed. The actual smooth plateau supplies the
+first-accuracy branch, and a global Hermite curvature interpolant supplies the other.
+Both actual stopping tests hold first at the displayed terminal iterate. -/
+theorem theorem_3_3_10 :
+    ∃ B > 0,
+    ∃ L' ≥ 1, ∃ G > 0,
+      ∀ ε₁ : ℝ, 0 < ε₁ → ε₁ ≤ 1 → ∀ ε₂ : ℝ, 0 < ε₂ → ε₂ ≤ 1 →
+      ∃ (f : ℝ → ℝ) (x : ℕ → ℝ) (t : ℝ) (ρ μ : ℕ → ℝ) (N : ℕ),
+        x 0 = 0 ∧ ContDiff ℝ 2 f ∧ (∀ z, -B ≤ f z) ∧ f 0 - (-B) ≤ G ∧
+        (∀ z w, ‖iteratedFDeriv ℝ 2 f z - iteratedFDeriv ℝ 2 f w‖ ≤
+          L' * ‖z - w‖) ∧
+        CubicRegularization.FiniteRun f x (fun _ => t) (fun _ => 1) μ
+          (fun _ => 4) ρ (1/4) (1/2) (1/2) 2 3 4 1 1 ε₁ ε₂ N ∧
+        (∀ i < N, ¬(‖fderiv ℝ f (x i)‖ ≤ ε₁ ∧ -ε₂ ≤ μ i)) ∧
+        ‖fderiv ℝ f (x N)‖ ≤ ε₁ ∧ -ε₂ ≤ μ N ∧
+        max (1 / ε₁ ^ (3/2 : ℝ)) (1 / ε₂ ^ 3) ≤ (N : ℝ) ∧
+        max (1 / ε₁ ^ (3/2 : ℝ)) (1 / ε₂ ^ 3) ≤
+          (CubicRegularization.functionEvaluations N : ℝ) ∧
+        max (1 / ε₁ ^ (3/2 : ℝ)) (1 / ε₂ ^ 3) ≤
+          (CubicRegularization.gradientEvaluations ρ (1/4) N : ℝ) ∧
+        max (1 / ε₁ ^ (3/2 : ℝ)) (1 / ε₂ ^ 3) ≤
+          (CubicRegularization.hessianEvaluations ρ (1/4) N : ℝ) :=
+  CurvatureSharpness.exists_slow_cubicRun
 
 end CartisGouldToint

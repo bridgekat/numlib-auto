@@ -1,3 +1,4 @@
+import Numlib.Optimization.Sharpness.SecondOrder
 import Numlib.Optimization.TrustRegion.SecondOrder.Complexity
 import Numlib.Optimization.TrustRegion.SecondOrder.Eigenpair
 import Numlib.Optimization.TrustRegion.Eigenpoint
@@ -207,7 +208,8 @@ theorem lemma_3_2_5 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     (h : tr2FiniteRun f x s sC sE u μ Δ ρ η₁ η₂ γ₁ γ₂ γ₃ ε₁ ε₂ N)
     (hf : ContDiff ℝ 2 f) (hH : 1 ≤ H) (hL : 0 < L) (hε₂ : ε₂ ≤ 1)
     (hbound : ∀ y, ‖SecondOrderTrustRegion.hessian f y‖ ≤ H)
-    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖) :
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤
+      L * ‖y - z‖) :
     ∃ κΔ ∈ Set.Ioo (0 : ℝ) 1,
       κΔ = min (γ₁ * (1 - η₂) / max (4 * H) (L / 3)) (Δ 0) ∧
       ∀ i ≤ N, κΔ * min ε₁ ε₂ ≤ Δ i := by
@@ -266,7 +268,9 @@ theorem theorem_3_2_6 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ 
     (SecondOrderTrustRegion.secondOrderRadiusConstant (Δ 0) η₂ γ₁ H L / Δ 0)| /
       |Real.log γ₂| + 1
   have hF : 0 < F := by dsimp [F]; positivity
-  have hD : (((EvaluationComplexity.successfulIterations {i | η₁ ≤ ρ i} K).card : ℕ) : ℝ) + 1 ≤
+  have hD :
+      (((EvaluationComplexity.successfulIterations
+        {i | η₁ ≤ ρ i} K).card : ℕ) : ℝ) + 1 ≤
       (1 / c) * (f (x 0) - flow) / min (ε₁ ^ 2 * ε₂) (ε₂ ^ 3) + 1 := by
     have hh := hK.successful_card_le hf hH hL hε₂ hbound hlip (hlow _)
     convert add_le_add_right hh 1 using 1 <;>
@@ -292,5 +296,41 @@ theorem tr2LeastEigenpair_exists {n : ℕ} (hn : 0 < n)
       tr2LeastEigenpair f x μ u ∧ inner ℝ (gradient f x) u ≤ 0 := by
   let : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
   exact SecondOrderTrustRegion.exists_leastEigenpair f x hf
+
+/-- **Theorem 3.2.7.** An actual bounded-below, globally twice-smooth objective
+with uniformly bounded Hessian and Lipschitz Hessian can force the full inverse-cube
+TR2 iteration and evaluation lower bound. All regularity and objective-budget constants
+are fixed before the accuracy. The initial radius is the requested accuracy, as in the
+source construction. Every least Hessian eigenvalue is certified by the actual run.
+
+The ceiling only gives `ε³⌈ε⁻³⌉ ≤ 2`, correcting the source proof's invalid upper
+bound by one. Constant negative curvature until the final flat endpoint gives a
+uniformly bounded Hermite witness and the same stated sharp complexity order. -/
+theorem theorem_3_2_7 :
+    ∃ L ≥ 1, ∃ B > 0,
+    ∃ H ≥ 1, ∃ G > 0, ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
+      ∃ f : ℝ → ℝ,
+        ContDiff ℝ 2 f ∧ (∀ z, -B ≤ f z) ∧ f 0 - (-B) ≤ G ∧
+        (∀ z, ‖SecondOrderTrustRegion.hessian f z‖ ≤ H) ∧
+        (∀ z w, ‖iteratedFDeriv ℝ 2 f z - iteratedFDeriv ℝ 2 f w‖ ≤ L * ‖z - w‖) ∧
+        SecondOrderTrustRegion.Run f (CurvatureSharpness.grid ε)
+          (fun _ => ε) (fun _ => 0) (fun _ => ε)
+          (fun _ => 1) (CurvatureSharpness.curvature ε (CurvatureSharpness.horizon ε))
+          (fun _ => ε) (fun _ => 1)
+          (1/4) (1/2) (1/4) (1/2) 2 ε ε (CurvatureSharpness.horizon ε) ∧
+        (∀ i < CurvatureSharpness.horizon ε,
+          ¬(‖gradient f (CurvatureSharpness.grid ε i)‖ ≤ ε ∧
+            -ε ≤ CurvatureSharpness.curvature ε (CurvatureSharpness.horizon ε) i)) ∧
+        ‖gradient f (CurvatureSharpness.grid ε (CurvatureSharpness.horizon ε))‖ ≤ ε ∧
+        -ε ≤ CurvatureSharpness.curvature ε
+          (CurvatureSharpness.horizon ε) (CurvatureSharpness.horizon ε) ∧
+        1 / ε ^ 3 ≤ (CurvatureSharpness.horizon ε : ℝ) ∧
+        1 / ε ^ 3 ≤ (SecondOrderTrustRegion.functionEvaluations
+          (CurvatureSharpness.horizon ε) : ℝ) ∧
+        1 / ε ^ 3 ≤ (SecondOrderTrustRegion.gradientEvaluations
+          (fun _ => 1) (1/4) (CurvatureSharpness.horizon ε) : ℝ) ∧
+        1 / ε ^ 3 ≤ (SecondOrderTrustRegion.hessianEvaluations
+          (fun _ => 1) (1/4) (CurvatureSharpness.horizon ε) : ℝ) :=
+  CurvatureSharpness.exists_slow_trustRegionRun
 
 end CartisGouldToint

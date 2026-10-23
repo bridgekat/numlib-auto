@@ -1,0 +1,19 @@
+namespace = "CurvatureSharpness"
+
+[[node]]
+id = "UniformObjectives"
+
+[[node]]
+id = "exists_uniform_objectives"
+
+[[node]]
+id = "slow_trustRegionRun_of_uniform_objectives"
+
+[[node]]
+id = "slow_cubicRun_of_uniform_objectives"
+
+[[node]]
+id = "exists_slow_trustRegionRun"
+
+[[node]]
+id = "exists_slow_cubicRun"
