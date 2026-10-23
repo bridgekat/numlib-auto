@@ -5,12 +5,7 @@ namespace = "CartisGouldToint"
 
 [[node]]
 id = "compositeCriticality"
-kind = "definition"
-desc = '''
-For w=f+h∘c define T_(w,p)(x,s)=T_(f,p)(x,s)+h(T_(c,p)(x,s)); φ_(w,j)^δ(x)=w(x)−min_(||d||≤δ) T_(w,j)(x,d), with a constrained version when needed. The regularized model mhat_k(s)=T_(w,p)(xk,s)+σk||s||^(p+1)/(p+1)!. Define generalized model Taylor decrements by retaining h exactly, as (14.1.14)–(14.1.18), rather than differentiating a potentially nonsmooth h.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.1"
-deps = ["highOrderCriticality"]
 
 [[node]]
 id = "arqpcRun"
@@ -23,16 +18,7 @@ deps = ["compositeCriticality", "arqpRun"]
 
 [[node]]
 id = "lemma_14_1_1"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 14.1.1: Convex-composite first-order necessary optimality
-
-Suppose that \( f \) and \( c \) are continuously differentiable and that h.L and h.S0 hold. Suppose in addition that \( h \) is convex and that \( {x}_{ * } \) is a global minimizer of \( w \) . Then the origin is a global minimizer of \( {T}_{w,1}\left( {{x}_{ * }, s}\right) \) and \( {\phi }_{w,1}^{\delta }\left( {x}_{ * }\right)  = 0 \) for all \( \delta  > 0 \) .
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.1 (OCR Markdown line 15599)"
-deps = ["compositeCriticality"]
 
 [[node]]
 id = "lemma_14_1_2"
@@ -270,3 +256,9 @@ iterations and evaluations of \( f \) and \( c \) and of their derivatives of or
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 14.1.11 (OCR Markdown line 16151)"
 deps = ["theorem_12_2_15"]
+
+[[node]]
+id = "compositeTaylorModel"
+
+[[node]]
+id = "compositeTaylorModel_zero"

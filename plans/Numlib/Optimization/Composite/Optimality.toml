@@ -1,0 +1,34 @@
+namespace = "Composite"
+
+[[node]]
+id = "taylorModel"
+
+[[node]]
+id = "taylorModel_zero"
+
+[[node]]
+id = "taylorModel_one"
+
+[[node]]
+id = "linearized_isMinOn_of_isMinOn"
+
+[[node]]
+id = "taylorModel_one_isMinOn_of_isMinOn"
+
+[[node]]
+id = "criticality"
+
+[[node]]
+id = "continuous_taylorModel"
+
+[[node]]
+id = "exists_decrement_eq_criticality"
+
+[[node]]
+id = "decrement_le_criticality"
+
+[[node]]
+id = "criticality_nonneg"
+
+[[node]]
+id = "criticality_eq_zero_of_model_min"
