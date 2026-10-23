@@ -1,0 +1,13 @@
+namespace = "QuadraticKrylov"
+
+[[node]]
+id = "_root_.Matrix.trust_region_minimizer_solve"
+
+[[node]]
+id = "_root_.Matrix.trust_region_shift_posSemidef"
+
+[[node]]
+id = "projected_trust_region_optimality"
+
+[[node]]
+id = "trust_region_residual_bound"
