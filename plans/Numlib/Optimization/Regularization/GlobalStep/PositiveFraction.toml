@@ -1,0 +1,4 @@
+namespace = "ModelDecrease"
+
+[[node]]
+id = "exists_positive_fraction_of_strict_decrease"

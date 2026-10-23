@@ -1,0 +1,28 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "cancellationAmplitude"
+
+[[node]]
+id = "cancellation_coefficient"
+
+[[node]]
+id = "highest_model_derivative_zero"
+
+[[node]]
+id = "descFactorial_div_factorial_le_one"
+
+[[node]]
+id = "lower_model_derivative_bound"
+
+[[node]]
+id = "factorial_split_lt"
+
+[[node]]
+id = "cancellation_model_improves"
+
+[[node]]
+id = "cancellation_model_criticality_bound"
+
+[[node]]
+id = "cancellation_stepComputation"
