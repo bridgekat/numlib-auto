@@ -6,6 +6,7 @@ import NumlibSurface.CartisGouldToint.AppendixB.Chapter03
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter05
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter07
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter08
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter10
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter12
 import NumlibSurface.CartisGouldToint.Chapter01.Section01
 import NumlibSurface.CartisGouldToint.Chapter02.Section02
@@ -17,9 +18,11 @@ import NumlibSurface.CartisGouldToint.Chapter03.Section03
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import NumlibSurface.CartisGouldToint.Chapter04.Section02
 import NumlibSurface.CartisGouldToint.Chapter05.Section01
+import NumlibSurface.CartisGouldToint.Chapter05.Section03
 import NumlibSurface.CartisGouldToint.Chapter07.Section01
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
 import NumlibSurface.CartisGouldToint.Chapter08.Section02
+import NumlibSurface.CartisGouldToint.Chapter08.Section03
 import NumlibSurface.CartisGouldToint.Chapter09.Section01
 import NumlibSurface.CartisGouldToint.Chapter09.Section03
 import NumlibSurface.CartisGouldToint.Chapter12.Section01
@@ -95,11 +98,21 @@ recorded on the relevant plan nodes. In particular:
   Theorems 4.1.5 and 5.1.7 are marked incorrect as written; separate corrected
   companions remove these guards. The least-squares counterexample uses an actual
   smooth positive residual and satisfies the printed integer restrictions.
+* Corollaries 8.3.1–2 use the full shifted kernel when the least eigenvalue
+  is repeated. Their generalized inverse is metric-orthogonal; an ordinary
+  Euclidean Moore–Penrose inverse need not give that particular vector. Singular
+  interior trust-region minimizers at zero multiplier need only be feasible,
+  so the boundary-radius equation is imposed only for positive multipliers.
 * The derivative vectors in Algorithm 9.1.1 use the minus sign from (8.2.29).
   With this sign restored they are the actual secular-solution derivatives. The
   scalar outputs also admit a literal plus-sign interpretation with alternating
   vector signs. The following Cholesky prose has an extra factor two: its odd
   output is `−β‖y‖²`, as the algorithm itself gives.
+* In Theorem 9.3.1 the starting projection must use the metric inner product.
+  The printed Euclidean projection permits an actual two-dimensional run whose
+  shifts square and fail to converge, however close the initial shift is to
+  the target. The printed statement is marked incorrect; its metric-projection
+  companion remains a separate target.
 * The short-step accuracy guard in Algorithm 13.1.2 makes the printed parameter
   bounds in Lemmas 13.1.14 and 13.3.5 false when the initial accuracy cap exceeds
   the step-accuracy coefficient. Formal one-trial counterexamples use the zero

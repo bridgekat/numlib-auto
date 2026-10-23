@@ -72,8 +72,10 @@ theorem step_mono {c τ a b : ℝ} (hc : 0 < c) (hτ : 0 < τ) (ha : 0 ≤ a) (h
 /-- The actual implicit power recurrence, initialized at the specified gap. -/
 noncomputable def orbit (c τ a : ℝ) (n : ℕ) : ℝ := (step c τ)^[n] a
 
+/-- The canonical orbit starts at its specified initial gap. -/
 @[simp] theorem orbit_zero (c τ a : ℝ) : orbit c τ a 0 = a := rfl
 
+/-- Each next orbit value is the canonical implicit update of the previous value. -/
 theorem orbit_succ (c τ a : ℝ) (n : ℕ) :
     orbit c τ a (n + 1) = step c τ (orbit c τ a n) := Function.iterate_succ_apply' _ _ _
 

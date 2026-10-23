@@ -1,5 +1,4 @@
 namespace = "MeasureDomination"
-desc = "Actual implicit power updates, gap convergence, exact first-hitting counts and initialized evaluation bounds for measure-dominated adaptive regularization."
 
 [[node]]
 id = "Dominated"

@@ -138,6 +138,7 @@ import NumlibSurface.CartisGouldToint.AppendixB.Chapter03
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter05
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter07
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter08
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter10
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter12
 import NumlibSurface.CartisGouldToint.Chapter01.Section01
 import NumlibSurface.CartisGouldToint.Chapter02.Section02
@@ -149,9 +150,11 @@ import NumlibSurface.CartisGouldToint.Chapter03.Section03
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import NumlibSurface.CartisGouldToint.Chapter04.Section02
 import NumlibSurface.CartisGouldToint.Chapter05.Section01
+import NumlibSurface.CartisGouldToint.Chapter05.Section03
 import NumlibSurface.CartisGouldToint.Chapter07.Section01
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
 import NumlibSurface.CartisGouldToint.Chapter08.Section02
+import NumlibSurface.CartisGouldToint.Chapter08.Section03
 import NumlibSurface.CartisGouldToint.Chapter09.Section01
 import NumlibSurface.CartisGouldToint.Chapter09.Section03
 import NumlibSurface.CartisGouldToint.Chapter12.Section01

@@ -16,7 +16,7 @@ variable {H M : E →L[ℝ] E} (B : PencilBasis (ι := ι) H M)
 
 /-- Every actual global minimizer of a weighted regularized quadratic has its precise norm-power
   multiplier, a compatible metric generalized-inverse particular vector, and a full-kernel
-  correction. Include the exact radius and minimum-value formula, the entire least eigenspace at a
+  correction. The exact radius and minimum-value formula cover the entire least eigenspace at a
   singular shift, and unique equality to the particular solution for every strictly larger shift.
 -/
 theorem regularization_classification (hH : H.toLinearMap.IsSymmetric)

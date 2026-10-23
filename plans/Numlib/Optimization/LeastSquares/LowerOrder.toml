@@ -1,5 +1,4 @@
 namespace = "LeastSquares"
-desc = "Actual lower-order ARpLE stopping, residual budgets and initialized evaluation complexity, with disabled tests omitted from every minimum and maximum."
 
 [[node]]
 id = "lowerStop"

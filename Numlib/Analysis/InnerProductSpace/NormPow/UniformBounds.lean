@@ -37,4 +37,3 @@ theorem exists_uniform_normPow_derivative_bound (p : ℕ) :
       Real.rpow_le_one (norm_nonneg _) hx (sub_nonneg.mpr (by exact_mod_cast Nat.le_succ_of_le hn))
     have hc := mul_le_mul_of_nonneg_left hpow (hC n)
     simpa only [Real.rpow_natCast, mul_one] using hb.trans hc
-
