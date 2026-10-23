@@ -1,0 +1,28 @@
+namespace = "FirstOrderRegularization"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "model_neg_inv_smul"
+
+[[node]]
+id = "isMinOn_model"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.very_successful"
+
+[[node]]
+id = "Run.parameter_le"
+
+[[node]]
+id = "Run.successful_card_le"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "exists_termination"

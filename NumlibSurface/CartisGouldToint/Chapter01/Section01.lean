@@ -47,4 +47,3 @@ theorem theorem_1_1_1 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
   · exact Descent.strict_local_min_of_pos_hessian
 
 end CartisGouldToint
-

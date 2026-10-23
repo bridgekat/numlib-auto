@@ -116,6 +116,33 @@ theorem unsuccessful_ge (h : RegularizationParameterUpdates σ ρ η₁ η₂ γ
     simpa [h₂, hu] using h.update i hi
   exact hh.1
 
+/-- If reaching a threshold guarantees a very successful iteration, all
+parameters are bounded by the larger of their initial value and `γ₃` times the
+threshold. This is a consequence of the update mechanism, not a run invariant
+that an algorithm must assume. -/
+theorem le_max_initial_threshold
+    (h : RegularizationParameterUpdates σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin k)
+    {threshold : ℝ} (hgood : ∀ i < k, threshold ≤ σ i → η₂ ≤ ρ i)
+    {i : ℕ} (hi : i ≤ k) : σ i ≤ max (σ 0) (γ₃ * threshold) := by
+  induction i with
+  | zero => exact le_max_left _ _
+  | succ i ih =>
+    have hp := ih (by omega)
+    have hu := h.update i (by omega)
+    by_cases h₂ : η₂ ≤ ρ i
+    · simp only [h₂, ↓reduceIte] at hu
+      exact hu.2.trans hp
+    · have hsmall : σ i < threshold := lt_of_not_ge (fun hh => h₂ (hgood i (by omega) hh))
+      have hγ₃ : 0 < γ₃ := lt_trans (lt_trans zero_lt_one h.one_lt_gamma2)
+        h.gamma2_lt_gamma3
+      have hup : σ (i + 1) ≤ γ₃ * σ i := by
+        split_ifs at hu with h₁
+        · exact hu.2.trans (mul_le_mul_of_nonneg_right h.gamma2_lt_gamma3.le
+            (h.pos (by omega)).le)
+        · exact hu.2
+      exact hup.trans ((mul_le_mul_of_nonneg_left hsmall.le hγ₃.le).trans
+        (le_max_right _ _))
+
 end RegularizationParameterUpdates
 
 end EvaluationComplexity

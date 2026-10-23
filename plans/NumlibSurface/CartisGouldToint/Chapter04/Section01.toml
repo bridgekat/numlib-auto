@@ -1,185 +1,180 @@
 namespace = "CartisGouldToint"
-desc = '''
-Surface adaptation of Cartis–Gould–Toint Chapter 4, Section 1.
 
-Represent the pth Taylor polynomial by iteratedFDeriv, with factorial denominators, and regularize by σ/(p+1)! ||s||^(p+1). Keep first-, second-, and third-order branches with p≥q and a unit-vector restricted third-order criticality set. The OCR corrupts set-builder bars in (4.1.4); intended set is {d:||d||=1 and |D²f(x)[d,d]|≤ε₂}. Preserve any additional bounded lower derivative assumptions from the source rather than infer them from Lipschitz D^p alone.
-
-Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
-
-Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
-
-In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
-
-Section mathematical setup (source OCR; resolve errors by the design notes above):
-
-#### 4.1.1 The ARp algorithm
-
-Using third derivatives and beyond is conceptually simple: instead of basing the model in the neighbourhood of the iterate \( {x}_k \) on the Taylor’s expansion of degree two, \( {T}_{f,2}\left( {{x}_k, s}\right) \) , we may simply use the general \( p \) th-order Taylor-series expansion \( {T}_{f, p}\left( {{x}_k, s}\right) \) , where
-
-\[
-{T}_{f, p}\left( {x, s}\right) \overset{\text{ def }}{ = }f\left( x\right)  + \mathop{\sum }\limits_{{\ell  = 1}}^{p}\frac{1}{\ell !}{\nabla }_{x}^{\ell }f\left( x\right) {\left\lbrack  s\right\rbrack  }^{\ell },\tag{4.1.1}
-\]
-
-instead, increasing the degree of the regularization term accordingly, giving
-
-\[
-{m}_k\left( s\right)  = {T}_{f, p}\left( {{x}_k, s}\right)  + \frac{{\sigma }_k}{\left( {p + 1}\right) !}\parallel s{\parallel }^{p + 1}.\tag{4.1.2}
-\]
-
-As was the case for \( p = 2 \) in the AR2 algorithm, this model is bounded below because the high-order regularization term dominates for a large enough step. Note that, since we are computing higher-order derivatives, at least in principle we might check for higher-order critical points at the same time. There is a difficulty, though, that we shall describe and address in Section 12.1 and beyond, but we can at least contemplate an approximate third-order case. Bearing in mind Theorem 1.1.1 (p. 3), we say that \( {x}_{\epsilon } \) is an \( \epsilon \) -approximate third-order minimizer of \( f \) if (3.2.6) holds and additionally
-
-\[
-\left| {{\nabla }_{x}^{3}f\left( {x}_{\epsilon }\right) {\left\lbrack  d\right\rbrack  }^{3}}\right|  \leq  {\epsilon }_{3}\text{ for all }d \in  {\mathcal{Z}}_{\epsilon }\tag{4.1.3}
-\]
-
-whenever
-
-\[
-{\mathcal{Z}}_{\epsilon }\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{x}^{2}f\left( {x}_{\epsilon }\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\epsilon }_{2}}\right\}   \neq  \varnothing\tag{4.1.4}
-\]
-
-for given \( {\epsilon }_1,{\epsilon }_2,{\epsilon }_3 > 0 \) . If \( {\mathcal{Z}}_{\epsilon } = \varnothing \) but (3.2.6) holds, then \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   > {\epsilon }_2 \) and, thus, just as in (3.2.7), Theorem 1.1.1 suggests that \( {x}_{\epsilon } \) is instead an \( \epsilon \) -approximate strict local minimizer.
-
-The resulting algorithm, which we refer to as \( \mathrm{AR}p \) , is stated below. Notice that we implicitly assume that derivatives of the required orders are computed when needed and that these only need to be recomputed when the iterate has changed, i.e., following a successful iteration.
-
-Algorithm 4.1.1: Adaptive-regularization algorithm with \( p \) th-order models (ARp)
-
-Step 0: Initialization. An initial point \( {x}_0 \) , accuracy thresholds \( {\epsilon }_1 > 0,{\epsilon }_2 > 0 \) , and \( {\epsilon }_3 > 0 \) , and an initial regularization parameter \( {\sigma }_0 > 0 \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1,{\gamma }_2,{\gamma }_3,{\theta }_1,{\theta }_2,{\theta }_3 \) , and \( {\sigma }_{\min } \) are also given and satisfy
-
-\[
-{\sigma }_{\min } \in  \left( {0,{\sigma }_0}\right\rbrack  ,{\theta }_1,{\theta }_2,{\theta }_3 \in  (0,1\rbrack ,0 < {\eta }_1 \leq  {\eta }_2 < 1,
-\]
-
-\[
-\text{ and }0 < {\gamma }_{1} < 1 < {\gamma }_{2} < {\gamma }_{3}\text{ . }
-\]
-
-Compute \( f\left( {x}_0\right) ;{\nabla }_x^{j}f\left( {x}_0\right) \) for all \( j \in  \left\lbrack  {1 : p}\right\rbrack \) ; and, if \( {\epsilon }_3 < \infty \) ,
-
-\[
-{\mathcal{M}}_{0}\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{x}^{2}f\left( {x}_{0}\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\epsilon }_{2}}\right\}  .
-\]
-
-Set \( k = 0 \) .
-
-Step 1: Test for termination. If \( {\epsilon }_2 = {\epsilon }_3 = \infty \) and
-
-\[
-\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1\tag{4.1.5}
-\]
-
-terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-
-If \( {\epsilon }_2 < \infty ,\left( {4.1.5}\right) \) holds, and
-
-\[
-{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   > {\epsilon }_2,\tag{4.1.6}
-\]
-
-terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate strict local minimizer \( {x}_{\epsilon } = {x}_k \) .
-
-If \( {\epsilon }_2 < \infty \) and \( {\epsilon }_3 = \infty ,\left( {4.1.5}\right) \) holds, and (4.1.6) fails but
-
-\[
-{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   \geq   - {\epsilon }_2,\tag{4.1.7}
-\]
-
-terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) . If \( {\epsilon }_3 < \infty ,\left( {4.1.5}\right) ,\left( {4.1.7}\right) \) , and \( {\mathcal{M}}_k \neq  \varnothing \) hold, and
-
-\[
-\left| {{\nabla }_x^{3}f\left( {x}_k\right) {\left\lbrack  d\right\rbrack  }^3}\right|  \leq  {\epsilon }_3\tag{4.1.8}
-\]
-
-and
-
-\[
-\left| {{\nabla }_x^{2}f\left( {x}_k\right) {\left\lbrack  d\right\rbrack  }^2}\right|  \leq  {\epsilon }_2\tag{4.1.9}
-\]
-
-for all \( d \in  {\mathcal{M}}_k \) , terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2,{\epsilon }_3}\right) \) -approximate third-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-
-Step 2: Step computation. Compute a step \( {s}_k \) such that
-
-\[
-{m}_k\left( {s}_k\right)  < {m}_k\left( 0\right)\tag{4.1.10}
-\]
-
-where \( {m}_k\left( s\right) \) is given by (4.1.2),
-
-\[
-\begin{Vmatrix}{{\nabla }_s^1{m}_k\left( {s}_k\right) }\end{Vmatrix} \leq  {\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^p,\tag{4.1.11}
-\]
-
-and, if \( {\epsilon }_2 < \infty \) ,
-
-\[
-{\lambda }_{\min }\left\lbrack  {{\nabla }_s^2{m}_k\left( {s}_k\right) }\right\rbrack   \geq   - {\theta }_2{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - 1},\tag{4.1.12}
-\]
-
-and, if also \( {\epsilon }_3 < \infty \) ,
-
-\[
-\mathop{\max }\limits_{d \in  {\mathcal{M}}_{k + 1}}\left| {{\nabla }_s^3{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^3}\right|  \leq  {\theta }_3{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - 2},\tag{4.1.13}
-\]
-
-whenever
-
-\[
-{\mathcal{M}}_{k + 1}\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{s}^{2}{m}_{k}\left( {s}_{k}\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\theta }_{2}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p - 1}}\right\}   \neq  \varnothing .\tag{4.1.14}
-\]
-
-Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) , and define
-
-\[
-{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f, p}\left( {{x}_k,0}\right)  - {T}_{f, p}\left( {{x}_k,{s}_k}\right) }.\tag{4.1.15}
-\]
-
-If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_x^{j}f\left( {x}_{k + 1}\right) \) for all \( j \in  \left\lbrack  {1 : p}\right\rbrack \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
-
-Step 4: Regularization parameter update. Set
-
-\[
-{\sigma }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {\max \left( {{\sigma }_{\min },{\gamma }_{1}{\sigma }_{k}}\right) ,{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\sigma }_{k},{\gamma }_{2}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) , \\  \left\lbrack  {{\gamma }_{2}{\sigma }_{k},{\gamma }_{3}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.\tag{4.1.16}
-\]
-
-Increment \( k \) by one and go to Step 1.
-
-The first- and second-order termination conditions in Step 1 of the ARp algorithm reflect well the exact requirements in Theorem 1.1.1 (p. 3). However, the third-order conditions (4.1.8) and (4.1.9) differ from the requirement (4.1.3) and (4.1.4), in that (4.1.3) can only be guaranteed along directions of small curvature for the model, namely, \( d \in  {\mathcal{M}}_k \) . We will show that at termination, \( {\mathcal{M}}_k \subseteq  {\mathcal{Z}}_{\epsilon } \) , and so the model directions of small curvature also lead to small curvature for the objective, but there may be directions in \( {\mathcal{Z}}_{\epsilon } \) that the model does not "see" or along which the third-order model derivative is not small. A way to overcome this deficiency can be found in Section 6.2.1 (p. 179) by letting \( \mathcal{C} = {\mathbb{R}}^n \) .
-
-A cursory glance may not have revealed the significant difference between the AR2 and ARp algorithms. The fundamental distinction is of course that the model (4.1.2) now involves the pth-order Taylor’s expansion (A.10), that is,
-
-\[
-{T}_{f, p}\left( {{x}_k, s}\right)  = f\left( {x}_k\right)  + \mathop{\sum }\limits_{j = 1}^p\frac{1}{j!}{\nabla }_x^{j}f\left( {x}_k\right) {\left\lbrack  s\right\rbrack  }^j,
-\]
-
-which involves derivative tensors (see Section A. 6 for a very brief primer) of order up to \( p > 2 \) rather than simply gradients and Hessians. This has two consequences. The first is that we may no longer rely on familiar linear algebra for vectors and matrices but have to resort to multilinear algebra-tensor norms in particular; see (A.7) in Appendix A-to derive properties of the algorithm. The second is that approximately minimizing \( {m}_k\left( s\right) \) is now more complicated since the model is now a polynomial of degree \( p + 1 \) . While this is not impossible-general low-order optimization methods such as those given in Chapters 2 and 3 may be applied to \( {m}_k\left( x\right) \) to satisfy (4.1.11) and (4.1.12)-this is clearly an added difficulty because the specialized techniques for regularized quadratic models described in Chapters 9 and 10 may no longer be employed. However, it is crucial to note that the kth model minimization does not involve any additional evaluations of \( f \) or of its derivatives other than those at \( {x}_k \) . As a consequence, the effort in computing the step has no theoretical impact on the evaluation complexity of the ARp algorithm. The word "theoretical" in the last sentence is obviously important, because the same cannot be said in general from the computational-complexity and practical points of view.
-
-On the positive side, the fact that Step 4 of the ARp algorithm is identical to the corresponding step in the AR1 and AR2 algorithms means that Lemma 2.4.1 (p. 44) continues to apply.
-
-#### 4.1.2 Complexity of finding approximate first- to third-order minimizers
-
-We now claim that the complexity analysis for the ARp algorithm is a direct extension of that already covered for AR2, the only differences being that proofs and results use a general \( p \) rather than specifically \( p = 2 \) and that assumption f.HL must now be replaced by an assumption on the \( p \) th derivative.
-
-f.DpL
-
-\( f\left( x\right) \) is \( p \) -times continuously differentiable in \( {\mathbb{R}}^n \) , and its \( p \) th-order derivative tensor \( {\nabla }_x^{p}f\left( x\right) \) is Lipschitz continuous on \( {\mathbb{R}}^n \) ; that is, there exists a constant \( {L}_{f, p} \geq  1 \) such that
-
-\[
-\begin{Vmatrix}{{\nabla }_x^{p}f\left( x\right)  - {\nabla }_x^{p}f\left( y\right) }\end{Vmatrix} \leq  {L}_{f, p}\parallel x - y\parallel\tag{4.1.17}
-\]
-
-for all \( x, y \in  {\mathbb{R}}^n \) , where the norm on the left-hand side of (4.1.17) is the tensor norm (A.7).
-
-The first easy generalization is a lemma giving a lower bound on the model decrease that directly mimics Lemma 3.3.1 (p. 68).
-'''
+# Planning conventions for the remaining declarations:
+# Surface adaptation of Cartis–Gould–Toint Chapter 4, Section 1.
+#
+# Represent the pth Taylor polynomial by iteratedFDeriv, with factorial denominators, and regularize by σ/(p+1)! ||s||^(p+1). Keep first-, second-, and third-order branches with p≥q and a unit-vector restricted third-order criticality set. The OCR corrupts set-builder bars in (4.1.4); intended set is {d:||d||=1 and |D²f(x)[d,d]|≤ε₂}. Preserve any additional bounded lower derivative assumptions from the source rather than infer them from Lipschitz D^p alone.
+#
+# Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+#
+# Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+#
+# In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+#
+# Section mathematical setup (source OCR; resolve errors by the design notes above):
+#
+# #### 4.1.1 The ARp algorithm
+#
+# Using third derivatives and beyond is conceptually simple: instead of basing the model in the neighbourhood of the iterate \( {x}_k \) on the Taylor’s expansion of degree two, \( {T}_{f,2}\left( {{x}_k, s}\right) \) , we may simply use the general \( p \) th-order Taylor-series expansion \( {T}_{f, p}\left( {{x}_k, s}\right) \) , where
+#
+# \[
+# {T}_{f, p}\left( {x, s}\right) \overset{\text{ def }}{ = }f\left( x\right)  + \mathop{\sum }\limits_{{\ell  = 1}}^{p}\frac{1}{\ell !}{\nabla }_{x}^{\ell }f\left( x\right) {\left\lbrack  s\right\rbrack  }^{\ell },\tag{4.1.1}
+# \]
+#
+# instead, increasing the degree of the regularization term accordingly, giving
+#
+# \[
+# {m}_k\left( s\right)  = {T}_{f, p}\left( {{x}_k, s}\right)  + \frac{{\sigma }_k}{\left( {p + 1}\right) !}\parallel s{\parallel }^{p + 1}.\tag{4.1.2}
+# \]
+#
+# As was the case for \( p = 2 \) in the AR2 algorithm, this model is bounded below because the high-order regularization term dominates for a large enough step. Note that, since we are computing higher-order derivatives, at least in principle we might check for higher-order critical points at the same time. There is a difficulty, though, that we shall describe and address in Section 12.1 and beyond, but we can at least contemplate an approximate third-order case. Bearing in mind Theorem 1.1.1 (p. 3), we say that \( {x}_{\epsilon } \) is an \( \epsilon \) -approximate third-order minimizer of \( f \) if (3.2.6) holds and additionally
+#
+# \[
+# \left| {{\nabla }_{x}^{3}f\left( {x}_{\epsilon }\right) {\left\lbrack  d\right\rbrack  }^{3}}\right|  \leq  {\epsilon }_{3}\text{ for all }d \in  {\mathcal{Z}}_{\epsilon }\tag{4.1.3}
+# \]
+#
+# whenever
+#
+# \[
+# {\mathcal{Z}}_{\epsilon }\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{x}^{2}f\left( {x}_{\epsilon }\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\epsilon }_{2}}\right\}   \neq  \varnothing\tag{4.1.4}
+# \]
+#
+# for given \( {\epsilon }_1,{\epsilon }_2,{\epsilon }_3 > 0 \) . If \( {\mathcal{Z}}_{\epsilon } = \varnothing \) but (3.2.6) holds, then \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   > {\epsilon }_2 \) and, thus, just as in (3.2.7), Theorem 1.1.1 suggests that \( {x}_{\epsilon } \) is instead an \( \epsilon \) -approximate strict local minimizer.
+#
+# The resulting algorithm, which we refer to as \( \mathrm{AR}p \) , is stated below. Notice that we implicitly assume that derivatives of the required orders are computed when needed and that these only need to be recomputed when the iterate has changed, i.e., following a successful iteration.
+#
+# Algorithm 4.1.1: Adaptive-regularization algorithm with \( p \) th-order models (ARp)
+#
+# Step 0: Initialization. An initial point \( {x}_0 \) , accuracy thresholds \( {\epsilon }_1 > 0,{\epsilon }_2 > 0 \) , and \( {\epsilon }_3 > 0 \) , and an initial regularization parameter \( {\sigma }_0 > 0 \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1,{\gamma }_2,{\gamma }_3,{\theta }_1,{\theta }_2,{\theta }_3 \) , and \( {\sigma }_{\min } \) are also given and satisfy
+#
+# \[
+# {\sigma }_{\min } \in  \left( {0,{\sigma }_0}\right\rbrack  ,{\theta }_1,{\theta }_2,{\theta }_3 \in  (0,1\rbrack ,0 < {\eta }_1 \leq  {\eta }_2 < 1,
+# \]
+#
+# \[
+# \text{ and }0 < {\gamma }_{1} < 1 < {\gamma }_{2} < {\gamma }_{3}\text{ . }
+# \]
+#
+# Compute \( f\left( {x}_0\right) ;{\nabla }_x^{j}f\left( {x}_0\right) \) for all \( j \in  \left\lbrack  {1 : p}\right\rbrack \) ; and, if \( {\epsilon }_3 < \infty \) ,
+#
+# \[
+# {\mathcal{M}}_{0}\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{x}^{2}f\left( {x}_{0}\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\epsilon }_{2}}\right\}  .
+# \]
+#
+# Set \( k = 0 \) .
+#
+# Step 1: Test for termination. If \( {\epsilon }_2 = {\epsilon }_3 = \infty \) and
+#
+# \[
+# \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1\tag{4.1.5}
+# \]
+#
+# terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+#
+# If \( {\epsilon }_2 < \infty ,\left( {4.1.5}\right) \) holds, and
+#
+# \[
+# {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   > {\epsilon }_2,\tag{4.1.6}
+# \]
+#
+# terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate strict local minimizer \( {x}_{\epsilon } = {x}_k \) .
+#
+# If \( {\epsilon }_2 < \infty \) and \( {\epsilon }_3 = \infty ,\left( {4.1.5}\right) \) holds, and (4.1.6) fails but
+#
+# \[
+# {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   \geq   - {\epsilon }_2,\tag{4.1.7}
+# \]
+#
+# terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) . If \( {\epsilon }_3 < \infty ,\left( {4.1.5}\right) ,\left( {4.1.7}\right) \) , and \( {\mathcal{M}}_k \neq  \varnothing \) hold, and
+#
+# \[
+# \left| {{\nabla }_x^{3}f\left( {x}_k\right) {\left\lbrack  d\right\rbrack  }^3}\right|  \leq  {\epsilon }_3\tag{4.1.8}
+# \]
+#
+# and
+#
+# \[
+# \left| {{\nabla }_x^{2}f\left( {x}_k\right) {\left\lbrack  d\right\rbrack  }^2}\right|  \leq  {\epsilon }_2\tag{4.1.9}
+# \]
+#
+# for all \( d \in  {\mathcal{M}}_k \) , terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2,{\epsilon }_3}\right) \) -approximate third-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+#
+# Step 2: Step computation. Compute a step \( {s}_k \) such that
+#
+# \[
+# {m}_k\left( {s}_k\right)  < {m}_k\left( 0\right)\tag{4.1.10}
+# \]
+#
+# where \( {m}_k\left( s\right) \) is given by (4.1.2),
+#
+# \[
+# \begin{Vmatrix}{{\nabla }_s^1{m}_k\left( {s}_k\right) }\end{Vmatrix} \leq  {\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^p,\tag{4.1.11}
+# \]
+#
+# and, if \( {\epsilon }_2 < \infty \) ,
+#
+# \[
+# {\lambda }_{\min }\left\lbrack  {{\nabla }_s^2{m}_k\left( {s}_k\right) }\right\rbrack   \geq   - {\theta }_2{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - 1},\tag{4.1.12}
+# \]
+#
+# and, if also \( {\epsilon }_3 < \infty \) ,
+#
+# \[
+# \mathop{\max }\limits_{d \in  {\mathcal{M}}_{k + 1}}\left| {{\nabla }_s^3{m}_k\left( {s}_k\right) {\left\lbrack  d\right\rbrack  }^3}\right|  \leq  {\theta }_3{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - 2},\tag{4.1.13}
+# \]
+#
+# whenever
+#
+# \[
+# {\mathcal{M}}_{k + 1}\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{s}^{2}{m}_{k}\left( {s}_{k}\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\theta }_{2}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p - 1}}\right\}   \neq  \varnothing .\tag{4.1.14}
+# \]
+#
+# Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) , and define
+#
+# \[
+# {\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f, p}\left( {{x}_k,0}\right)  - {T}_{f, p}\left( {{x}_k,{s}_k}\right) }.\tag{4.1.15}
+# \]
+#
+# If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_x^{j}f\left( {x}_{k + 1}\right) \) for all \( j \in  \left\lbrack  {1 : p}\right\rbrack \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
+#
+# Step 4: Regularization parameter update. Set
+#
+# \[
+# {\sigma }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {\max \left( {{\sigma }_{\min },{\gamma }_{1}{\sigma }_{k}}\right) ,{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\sigma }_{k},{\gamma }_{2}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) , \\  \left\lbrack  {{\gamma }_{2}{\sigma }_{k},{\gamma }_{3}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.\tag{4.1.16}
+# \]
+#
+# Increment \( k \) by one and go to Step 1.
+#
+# The first- and second-order termination conditions in Step 1 of the ARp algorithm reflect well the exact requirements in Theorem 1.1.1 (p. 3). However, the third-order conditions (4.1.8) and (4.1.9) differ from the requirement (4.1.3) and (4.1.4), in that (4.1.3) can only be guaranteed along directions of small curvature for the model, namely, \( d \in  {\mathcal{M}}_k \) . We will show that at termination, \( {\mathcal{M}}_k \subseteq  {\mathcal{Z}}_{\epsilon } \) , and so the model directions of small curvature also lead to small curvature for the objective, but there may be directions in \( {\mathcal{Z}}_{\epsilon } \) that the model does not "see" or along which the third-order model derivative is not small. A way to overcome this deficiency can be found in Section 6.2.1 (p. 179) by letting \( \mathcal{C} = {\mathbb{R}}^n \) .
+#
+# A cursory glance may not have revealed the significant difference between the AR2 and ARp algorithms. The fundamental distinction is of course that the model (4.1.2) now involves the pth-order Taylor’s expansion (A.10), that is,
+#
+# \[
+# {T}_{f, p}\left( {{x}_k, s}\right)  = f\left( {x}_k\right)  + \mathop{\sum }\limits_{j = 1}^p\frac{1}{j!}{\nabla }_x^{j}f\left( {x}_k\right) {\left\lbrack  s\right\rbrack  }^j,
+# \]
+#
+# which involves derivative tensors (see Section A. 6 for a very brief primer) of order up to \( p > 2 \) rather than simply gradients and Hessians. This has two consequences. The first is that we may no longer rely on familiar linear algebra for vectors and matrices but have to resort to multilinear algebra-tensor norms in particular; see (A.7) in Appendix A-to derive properties of the algorithm. The second is that approximately minimizing \( {m}_k\left( s\right) \) is now more complicated since the model is now a polynomial of degree \( p + 1 \) . While this is not impossible-general low-order optimization methods such as those given in Chapters 2 and 3 may be applied to \( {m}_k\left( x\right) \) to satisfy (4.1.11) and (4.1.12)-this is clearly an added difficulty because the specialized techniques for regularized quadratic models described in Chapters 9 and 10 may no longer be employed. However, it is crucial to note that the kth model minimization does not involve any additional evaluations of \( f \) or of its derivatives other than those at \( {x}_k \) . As a consequence, the effort in computing the step has no theoretical impact on the evaluation complexity of the ARp algorithm. The word "theoretical" in the last sentence is obviously important, because the same cannot be said in general from the computational-complexity and practical points of view.
+#
+# On the positive side, the fact that Step 4 of the ARp algorithm is identical to the corresponding step in the AR1 and AR2 algorithms means that Lemma 2.4.1 (p. 44) continues to apply.
+#
+# #### 4.1.2 Complexity of finding approximate first- to third-order minimizers
+#
+# We now claim that the complexity analysis for the ARp algorithm is a direct extension of that already covered for AR2, the only differences being that proofs and results use a general \( p \) rather than specifically \( p = 2 \) and that assumption f.HL must now be replaced by an assumption on the \( p \) th derivative.
+#
+# f.DpL
+#
+# \( f\left( x\right) \) is \( p \) -times continuously differentiable in \( {\mathbb{R}}^n \) , and its \( p \) th-order derivative tensor \( {\nabla }_x^{p}f\left( x\right) \) is Lipschitz continuous on \( {\mathbb{R}}^n \) ; that is, there exists a constant \( {L}_{f, p} \geq  1 \) such that
+#
+# \[
+# \begin{Vmatrix}{{\nabla }_x^{p}f\left( x\right)  - {\nabla }_x^{p}f\left( y\right) }\end{Vmatrix} \leq  {L}_{f, p}\parallel x - y\parallel\tag{4.1.17}
+# \]
+#
+# for all \( x, y \in  {\mathbb{R}}^n \) , where the norm on the left-hand side of (4.1.17) is the tensor norm (A.7).
+#
+# The first easy generalization is a lemma giving a lower bound on the model decrease that directly mimics Lemma 3.3.1 (p. 68).
 
 [[node]]
 id = "taylorModel"
-kind = "definition"
-desc = '''
-For f:E→ℝ, define T_(f,p)(x,s)=f x+∑_{j=1}^p (j! : ℝ)⁻¹ (iteratedFDeriv ℝ j f x)(fun _ => s). Define m_(f,p,σ)(x,s)=T_(f,p)(x,s)+σ/(p+1)!*||s||^(p+1). The jth derivative tensor is a genuine continuous multilinear map.
-'''
-deps = ["objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 4.1"
 
 [[node]]

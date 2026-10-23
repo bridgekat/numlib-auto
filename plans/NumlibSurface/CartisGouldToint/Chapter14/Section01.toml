@@ -1,7 +1,7 @@
 namespace = "CartisGouldToint"
-desc = '''
-Composite objectives w(x)=f(x)+h(c(x)). f,c are C^p, derivatives of orders 1,…,p are globally Lipschitz componentwise for c. h is Lipschitz, subadditive, and h(0)=0; convexity is an additional hypothesis only in the favorable first-order case. w.Bb supplies w_low≤w. The generalized Taylor model preserves h exactly and Taylor-approximates f and c. Its model decrement and criticality must not be replaced by smooth f criticality.
-'''
+
+# Planning conventions for the remaining declarations:
+# Composite objectives w(x)=f(x)+h(c(x)). f,c are C^p, derivatives of orders 1,…,p are globally Lipschitz componentwise for c. h is Lipschitz, subadditive, and h(0)=0; convexity is an additional hypothesis only in the favorable first-order case. w.Bb supplies w_low≤w. The generalized Taylor model preserves h exactly and Taylor-approximates f and c. Its model decrement and criticality must not be replaced by smooth f criticality.
 
 [[node]]
 id = "compositeCriticality"

@@ -11,3 +11,6 @@ id = "RegularizationParameterUpdates"
 
 [[node]]
 id = "RegularizationParameterUpdates.min_le"
+
+[[node]]
+id = "RegularizationParameterUpdates.le_max_initial_threshold"

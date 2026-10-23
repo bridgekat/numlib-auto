@@ -8,6 +8,7 @@ import Numlib.Algebra.Polynomial.Roots
 import Numlib.Algebra.Polynomial.Taylor
 import Numlib.Analysis.Asymptotics.Pow
 import Numlib.Analysis.Calculus.AddTorsor.AffineMap
+import Numlib.Analysis.Calculus.ContDiff.Lipschitz
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.ContDiffOnClosure
@@ -24,6 +25,8 @@ import Numlib.Analysis.Calculus.IteratedDeriv.Analytic
 import Numlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.LineDeriv.IntegrationByParts
+import Numlib.Analysis.Calculus.LipschitzDerivative
+import Numlib.Analysis.Calculus.LocalExtr.ThirdOrder
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.Calculus.Periodic
@@ -32,6 +35,8 @@ import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Analysis.Calculus.SegmentAverage
 import Numlib.Analysis.Calculus.SpaceTime
 import Numlib.Analysis.Calculus.Taylor
+import Numlib.Analysis.Calculus.Taylor.ScalarRemainder
+import Numlib.Analysis.Calculus.TaylorModel
 import Numlib.Analysis.Calculus.TaylorSegment
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Complex.Polynomial.Basic
@@ -362,6 +367,7 @@ import Numlib.Analysis.SpecialFunctions.Log
 import Numlib.Analysis.SpecialFunctions.Log.Deriv
 import Numlib.Analysis.SpecialFunctions.PolynomialExp
 import Numlib.Analysis.SpecialFunctions.Pow.Deriv
+import Numlib.Analysis.SpecialFunctions.Pow.Differences
 import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Analysis.SpecialFunctions.Sqrt
 import Numlib.Analysis.SpecialFunctions.Sqrt.Bounds
@@ -430,6 +436,7 @@ import Numlib.Data.Fin.Tuple.Sort
 import Numlib.Data.Finset.Card
 import Numlib.Data.List.Fold
 import Numlib.Data.Matrix.Mul
+import Numlib.Data.Nat.Factorization
 import Numlib.Data.Subtype
 import Numlib.Direct.ConditionEstimation
 import Numlib.Direct.CyclicReduction
@@ -646,12 +653,20 @@ import Numlib.ODE.OneStep
 import Numlib.ODE.RungeKutta
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
+import Numlib.Optimization.Constrained.Restriction
 import Numlib.Optimization.Descent
 import Numlib.Optimization.EvaluationComplexity.Decrease
 import Numlib.Optimization.EvaluationComplexity.ParameterUpdates
+import Numlib.Optimization.EvaluationComplexity.TrialCounting
+import Numlib.Optimization.EvaluationComplexity.TrialUpdates
 import Numlib.Optimization.EvaluationComplexity.Updates
+import Numlib.Optimization.HighOrder.Criticality
+import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.LineSearch
+import Numlib.Optimization.LineSearch.LipschitzGradient
 import Numlib.Optimization.QuasiNewton
+import Numlib.Optimization.Regularization.FirstOrder
+import Numlib.Optimization.Unconstrained.Optimality
 import Numlib.Order.EReal
 import Numlib.Order.GaloisConnection
 import Numlib.Preconditioner.ApproximateInverse

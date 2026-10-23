@@ -1,8 +1,8 @@
 namespace = "CartisGouldToint"
 
-desc = '''
-Appendix A.8: Taylor expansions and sharp Hölder/Lipschitz remainder estimates. Reuse Numlib.Analysis.Calculus.Taylor and TaylorSegment, Mathlib iteratedFDeriv/iteratedDeriv, convex segment integration and existing Taylor jets. Surface statements specialize to Euclidean n-space. Restrict ambient derivatives to an open neighborhood of the convex set; never silently replace these by unrestricted within-derivatives. Explicitly require k>=1 in A.8.1 and p>=1 for the integral proofs. For beta=0 use Real.rpow with its standard 0^0=1 convention, and prove the endpoint s=0 separately. The proof text of A.8.3 has factorial transcription errors; statements (A.14)--(A.15) give the intended constants.
-'''
+
+# Planning conventions for the remaining declarations:
+# Appendix A.8: Taylor expansions and sharp Hölder/Lipschitz remainder estimates. Reuse Numlib.Analysis.Calculus.Taylor and TaylorSegment, Mathlib iteratedFDeriv/iteratedDeriv, convex segment integration and existing Taylor jets. Surface statements specialize to Euclidean n-space. Restrict ambient derivatives to an open neighborhood of the convex set; never silently replace these by unrestricted within-derivatives. Explicitly require k>=1 in A.8.1 and p>=1 for the integral proofs. For beta=0 use Real.rpow with its standard 0^0=1 convention, and prove the endpoint s=0 separately. The proof text of A.8.3 has factorial transcription errors; statements (A.14)--(A.15) give the intended constants.
 
 [[node]]
 id = "shiftedFactorial"

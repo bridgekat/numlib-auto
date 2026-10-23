@@ -1,7 +1,7 @@
 namespace = "CartisGouldToint"
-desc = '''
-High-order TRq and ARqp evaluation complexity. Always assume integers 1≤q≤p for regularization, q≥1 for trust regions, tolerances εj∈(0,1], and all initialization/update inequalities of the respective algorithms. f.Bb is a uniform lower bound f_low≤f(x). f.D1rL means C^r and each derivative order 1,…,r globally Lipschitz with constants L_(f,j)≥1; Lf is their finite maximum. Evaluation counters count calls, not arithmetic work. Existence of positive constants precedes universal ε. Lower-complexity examples require constructed objectives and legal runs.
-'''
+
+# Planning conventions for the remaining declarations:
+# High-order TRq and ARqp evaluation complexity. Always assume integers 1≤q≤p for regularization, q≥1 for trust regions, tolerances εj∈(0,1], and all initialization/update inequalities of the respective algorithms. f.Bb is a uniform lower bound f_low≤f(x). f.D1rL means C^r and each derivative order 1,…,r globally Lipschitz with constants L_(f,j)≥1; Lf is their finite maximum. Evaluation counters count calls, not arithmetic work. Existence of positive constants precedes universal ε. Lower-complexity examples require constructed objectives and legal runs.
 
 [[node]]
 id = "trqRun"

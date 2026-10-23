@@ -65,7 +65,8 @@ theorem third_apply_eq_zero_of_isLocalMin {f : E → ℝ} {x : E}
   have hline : ContDiff ℝ 3 (fun t : ℝ => x + t • v) := by fun_prop
   have hmline : IsLocalMin (fun t : ℝ => f (x + t • v)) 0 := by
     simpa [Function.comp_def] using
-      (show IsLocalMin f (x + (0 : ℝ) • v) by simpa using hmin).comp_continuous (g := fun t : ℝ => x + t • v) (b := 0)
+      (show IsLocalMin f (x + (0 : ℝ) • v) by simpa using hmin).comp_continuous
+        (g := fun t : ℝ => x + t • v) (b := 0)
         hline.continuous.continuousAt
   have hfline : ContDiff ℝ 3 (fun t : ℝ => f (x + t • v)) := hf.comp hline
   have hsline : iteratedDeriv 2 (fun t : ℝ => f (x + t • v)) 0 = 0 := by
@@ -114,4 +115,3 @@ theorem strict_local_min_of_pos_hessian {f : E → ℝ} {x : E}
     hf''.continuous.continuousAt hcrit hbound
 end FiniteDimensional
 end Descent
-

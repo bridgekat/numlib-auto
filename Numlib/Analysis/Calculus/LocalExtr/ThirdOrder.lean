@@ -80,4 +80,3 @@ theorem IsLocalMin.iteratedDeriv_three_eq_zero {f : ℝ → ℝ} {x : ℝ}
     simpa [iteratedDeriv_comp_const_add] using hsecond
   have heq := hm.iteratedDeriv_three_eq_zero_at_zero hg hs
   simpa [iteratedDeriv_comp_const_add] using heq
-

@@ -1,16 +1,11 @@
 namespace = "CartisGouldToint"
-desc = '''
-High-order necessary, sufficient, approximate, and stable optimality conditions. Define actual Taylor models from iterated Frechet derivatives and criticality by optimization over a compact ball. The Euclidean Hessian uses the self-adjoint operator associated with the second derivative; cubic norms are multilinear operator norms restricted to the stated subspaces. Theorem 12.1.5 is false as transcribed and is recorded with a counterexample, pending a corrected source statement.
-'''
+
+# Planning conventions for the remaining declarations:
+# High-order necessary, sufficient, approximate, and stable optimality conditions. Define actual Taylor models from iterated Frechet derivatives and criticality by optimization over a compact ball. The Euclidean Hessian uses the self-adjoint operator associated with the second derivative; cubic norms are multilinear operator norms restricted to the stated subspaces. Theorem 12.1.5 is false as transcribed and is recorded with a counterexample, pending a corrected source statement.
 
 [[node]]
 id = "highOrderCriticality"
-kind = "definition"
-desc = '''
-For integer j≥1 and C^j f:R^n→R define T_(f,j)(x,d)=f(x)+Σ_(i=1)^j D^i f(x)[d,…,d]/i! and ΔT_(f,j)(x,d)=T(x,0)−T(x,d). For δ>0 define φ_(f,j)^δ(x)=f(x)−min_(||d||≤δ) T_(f,j)(x,d), equivalently max of ΔT on that compact ball. Existence/attainment and continuity follow from finite dimensionality and continuous tensor data; do not assume them as arbitrary properties of an uninterpreted φ.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.1"
-deps = []
 
 [[node]]
 id = "isApproximateHighOrderMinimizer"

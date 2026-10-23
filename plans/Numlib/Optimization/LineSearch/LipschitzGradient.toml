@@ -1,0 +1,4 @@
+namespace = "LineSearch"
+
+[[node]]
+id = "armijo_neg_gradient_of_lipschitz"

@@ -1,0 +1,5 @@
+[[node]]
+id = "norm_sub_sub_fderiv_le_half_of_segment_bound"
+
+[[node]]
+id = "norm_sub_sub_fderiv_le_half_of_lipschitz_bound"
