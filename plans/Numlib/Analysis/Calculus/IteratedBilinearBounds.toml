@@ -1,0 +1,29 @@
+[[node]]
+id = "norm_iteratedFDeriv_zero_sub"
+
+[[node]]
+id = "norm_iteratedFDeriv_fderiv_sub"
+
+[[node]]
+id = "ContinuousLinearMap.norm_bilinear_sub_le"
+
+[[node]]
+id = "norm_iteratedFDerivWithin_zero_sub"
+
+[[node]]
+id = "norm_iteratedFDerivWithin_fderivWithin_sub"
+
+[[node]]
+id = "jetDifferenceSumWithin"
+
+[[node]]
+id = "jetDifferenceSumWithin_nonneg"
+
+[[node]]
+id = "ContinuousLinearMap.norm_iteratedFDerivWithin_sub_bilinear_le"
+
+[[node]]
+id = "ContinuousLinearMap.norm_iteratedFDeriv_sub_bilinear_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_sq_sub_le"
