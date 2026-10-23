@@ -31,6 +31,15 @@ theorem penalty_le_decrement (m : E → ℝ) (p : ℕ) (σ : ℝ) (s : E)
   unfold penalized at hs
   linarith
 
+/-- Strict improvement of the penalized model makes its norm-power penalty
+strictly smaller than the unpenalized model decrease. -/
+theorem penalty_lt_decrement (m : E → ℝ) (p : ℕ) (σ : ℝ) (s : E)
+    (hs : penalized m p σ s < penalized m p σ 0) :
+    σ / ((p + 1).factorial : ℝ) * ‖s‖ ^ (p + 1) < m 0 - m s := by
+  simp only [penalized_zero] at hs
+  unfold penalized at hs
+  linarith
+
 /-- A strictly positive improvement of the penalized model makes the unpenalized decrement
 strictly positive when the regularization parameter is nonnegative. -/
 theorem decrement_pos (m : E → ℝ) (p : ℕ) {σ : ℝ} (hσ : 0 ≤ σ) (d s : E)

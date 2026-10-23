@@ -1,0 +1,19 @@
+namespace = "CubicRegularization"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "ModelTrace"
+
+[[node]]
+id = "ModelTrace.model_decrease"
+
+[[node]]
+id = "ModelTrace.denominator_pos"
+
+[[node]]
+id = "ModelTrace.very_successful"
+
+[[node]]
+id = "ModelTrace.parameter_le"

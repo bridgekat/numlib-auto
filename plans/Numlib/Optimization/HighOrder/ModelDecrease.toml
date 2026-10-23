@@ -17,3 +17,6 @@ id = "scaled_mul_radius"
 
 [[node]]
 id = "le_scaled_of_test"
+
+[[node]]
+id = "penalty_lt_decrement"
