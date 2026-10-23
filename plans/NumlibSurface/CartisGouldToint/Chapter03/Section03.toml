@@ -167,19 +167,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_3_3_3"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.3.3: Lower bound on the length of the step
-
-Suppose that f.HL holds. Then, if iteration \( k \) of the AR2 algorithm is successful,
-
-\[
-{\begin{Vmatrix}{s}_k\end{Vmatrix}}^2 \geq  \frac{2}{{L}_{f,2} + {\theta }_1 + {\sigma }_{\max }}\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{k + 1}\right) }\end{Vmatrix}.\tag{3.3.15}
-\]
-'''
-deps = ["ar2Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.3.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3173)"
 
 [[node]]

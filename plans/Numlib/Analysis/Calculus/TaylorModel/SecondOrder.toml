@@ -1,0 +1,16 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "quadraticDerivative"
+
+[[node]]
+id = "eval_two_eq"
+
+[[node]]
+id = "hasFDerivAt_eval_two"
+
+[[node]]
+id = "norm_secondDerivative_sub_le"
+
+[[node]]
+id = "norm_fderiv_sub_quadraticDerivative_le"

@@ -1,4 +1,5 @@
-import Numlib.Optimization.Regularization.Cubic.Parameter
+import Numlib.Optimization.Regularization.Cubic.Gradient
+import Numlib.Analysis.Calculus.Gradient
 
 /-!
 # Cartis–Gould–Toint, Section 3.3: cubic model decrease and parameter bounds
@@ -6,7 +7,8 @@ import Numlib.Optimization.Regularization.Cubic.Parameter
 These results use precisely the model-improvement, acceptance-ratio and
 parameter-update components of AR2. The model is built from actual Taylor
 derivative tensors. Step stationarity, second-order tests and termination are
-irrelevant to these two lemmas; the complete AR2 trace remains separately planned.
+irrelevant to Lemmas 3.3.1–2. Lemma 3.3.3 additionally uses the actual model
+stationarity and accepted-step rules; the complete AR2 trace remains separately planned.
 -/
 
 namespace CartisGouldToint
@@ -41,5 +43,22 @@ theorem lemma_3_3_2 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖) :
     ∀ i ≤ N, σ i ≤ max (σ 0) (γ₃ * L / (1 - η₂)) :=
   fun _ hi => h.parameter_le hf hL hlip hi
+
+/-- **Lemma 3.3.3.** First-order stationarity of the actual cubic model
+implies the step-length bound (3.3.15) at every accepted trial. -/
+theorem lemma_3_3_3 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin L θ₁ : ℝ} {N i : ℕ}
+    (h : ar2ModelTrace f x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L) (hθ : 0 < θ₁)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖)
+    (hstep : ∀ j < N, x (j + 1) = if η₁ ≤ ρ j then x j + s j else x j)
+    (hi : i < N) (hs : η₁ ≤ ρ i)
+    (hstat : ‖gradient (ar2Model f (x i) (σ i)) (s i)‖ ≤ θ₁ / 2 * ‖s i‖ ^ 2) :
+    2 / (L + θ₁ + max (σ 0) (γ₃ * L / (1 - η₂))) *
+      ‖gradient f (x (i + 1))‖ ≤ ‖s i‖ ^ 2 := by
+  rw [hstep i hi, ite_eq_left hs, EuclideanSpace.norm_gradient_eq]
+  rw [EuclideanSpace.norm_gradient_eq] at hstat
+  exact h.step_length_lower hf hL hθ.le hlip hi hstat
 
 end CartisGouldToint
