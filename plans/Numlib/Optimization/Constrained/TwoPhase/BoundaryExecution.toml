@@ -1,0 +1,28 @@
+namespace = "Constrained.TwoPhase.Boundary"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "innerData"
+
+[[node]]
+id = "endpoint_mem"
+
+[[node]]
+id = "inner_run"
+
+[[node]]
+id = "actual_residuals"
+
+[[node]]
+id = "outerData"
+
+[[node]]
+id = "literal_run"
+
+[[node]]
+id = "literal_stop"
+
+[[node]]
+id = "merit_test_fails"

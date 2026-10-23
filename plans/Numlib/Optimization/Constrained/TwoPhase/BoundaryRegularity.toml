@@ -1,0 +1,28 @@
+namespace = "Constrained.TwoPhase.Boundary"
+
+[[node]]
+id = "feasibilityMerit"
+
+[[node]]
+id = "feasibility_contDiff"
+
+[[node]]
+id = "feasibility_fderiv"
+
+[[node]]
+id = "feasibility_second"
+
+[[node]]
+id = "actual_hessian_lipschitz"
+
+[[node]]
+id = "region_properties"
+
+[[node]]
+id = "objective_bounds"
+
+[[node]]
+id = "initially_feasible"
+
+[[node]]
+id = "counterexample"

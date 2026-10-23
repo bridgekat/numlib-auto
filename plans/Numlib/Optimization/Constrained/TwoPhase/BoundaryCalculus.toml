@@ -1,0 +1,73 @@
+namespace = "Constrained.TwoPhase.Boundary"
+
+[[node]]
+id = "E"
+
+[[node]]
+id = "P"
+
+[[node]]
+id = "vec"
+
+[[node]]
+id = "region"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "constraint"
+
+[[node]]
+id = "oldMerit"
+
+[[node]]
+id = "endpoint"
+
+[[node]]
+id = "vec_norm_sq"
+
+[[node]]
+id = "endpoint_norm"
+
+[[node]]
+id = "coordinates_contDiff"
+
+[[node]]
+id = "merit_contDiff"
+
+[[node]]
+id = "merit_fderiv"
+
+[[node]]
+id = "merit_second_fderiv"
+
+[[node]]
+id = "merit_second"
+
+[[node]]
+id = "merit_gradient"
+
+[[node]]
+id = "testing_ball_feasible"
+
+[[node]]
+id = "old_criticalities"
+
+[[node]]
+id = "model_fderiv_zero"
+
+[[node]]
+id = "taylor_exact"
+
+[[node]]
+id = "model_improves"
+
+[[node]]
+id = "actual_ratio"
+
+[[node]]
+id = "lagrangian_gradient"
+
+[[node]]
+id = "no_multiplier"

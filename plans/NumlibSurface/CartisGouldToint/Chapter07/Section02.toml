@@ -83,6 +83,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_7_2_1"
+wrong = "The literal nonstrict residual return in(7.2.10) and strict reset inStep2(a) disagree at equality. lemma_7_2_1_counterexample gives globally smooth quadratic merits on a bounded convex Euclidean disk, an initially feasible admissible p=ell=2 Phase1, and a genuine one-trial ARp-CC Phase2 execution ending at residual theta*epsilon0. Literal Step2(c) terminates, but exact feasibility excludes(7.2.15), and every multiplier fails(7.2.16). Closing the reset guard at equality repairs this defect; the corrected companion is separate."
 kind = "theorem"
 desc = '''
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -303,3 +304,7 @@ source = "Cartis–Gould–Toint Algorithm7.2.1, primitive Phase2 and actual fir
 [[node]]
 id = "twoPhaseResetIndices"
 source = "Cartis–Gould–Toint Algorithm7.2.1, primitive Phase2 and actual first-order ARp-CC inner executions; literal strict and corrected closed reset guards are separate."
+
+[[node]]
+id = "lemma_7_2_1_counterexample"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.1; literal Algorithm7.2.1 boundary counterexample"

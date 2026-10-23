@@ -1,4 +1,5 @@
 import Numlib.Optimization.Constrained.TwoPhase.Geometry
+import Numlib.Optimization.Constrained.TwoPhase.BoundaryRegularity
 
 /-!
 # Two-phase constrained target geometry
@@ -77,5 +78,32 @@ theorem lemma_7_2_4 {n m p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     (hf : ∀ z ∈ C, ‖c z‖ ≤ β → flow ≤ f z ∧ f z ≤ fup) :
     ((twoPhaseResetIndices closedReset f c ε₀ θ D N).card : ℝ) ≤
       (fup - flow + 1) / (1 - θ) * ε₀⁻¹ := h.card_resets_le hβ hf
+
+section BoundaryCounterexample
+open Constrained Constrained.TwoPhase Constrained.TwoPhase.Boundary
+
+/-- The literal nonstrict inner return and strict outer reset disagree at
+residual equality. A genuine p=2 one-call execution on a bounded Euclidean disk
+terminates with exact feasibility and fails the scaled Lagrangian inequality
+for every multiplier. Both source merits are globally smooth with constant
+actual Hessians; Phase1 starts feasible with admissible ℓ=p=2. -/
+theorem lemma_7_2_1_counterexample :
+    ((0 : E) ∈ region ∧ ‖constraint (0 : E)‖ ≤ (1 / 2 : ℝ) * (1 / 2) ∧
+      (2 : ℝ) > Real.logb 2 2 ∧ (2 : ℝ) > 1) ∧
+    region.Nonempty ∧ IsClosed region ∧ Convex ℝ region ∧ Bornology.IsBounded region ∧
+    ContDiff ℝ 2 feasibilityMerit ∧ LipschitzWith 0 (iteratedFDeriv ℝ 2 feasibilityMerit) ∧
+    (∀ t : ℝ, ContDiff ℝ 2 (targetMerit objective constraint t) ∧
+      LipschitzWith 0 (iteratedFDeriv ℝ 2 (targetMerit objective constraint t))) ∧
+    (∀ x ∈ region, -2 ≤ objective x ∧ objective x ≤ 2) ∧
+    PhaseTwoRun false objective constraint region settings
+      (1 / 2) (1 / 10) (1 / 2) outerData 1 ∧
+    StopAfter false objective constraint region (1 / 2) (1 / 10) (1 / 2)
+      (outerData.target 0) (outerData.point 1) ∧
+    ‖constraint (outerData.point 1)‖ = 0 ∧
+    ¬∃ y : ℝ, firstCriticality (vectorLagrangian objective constraint y)
+      region (outerData.point 1) ≤ (1 / 10 : ℝ) * multiplierNorm y :=
+  counterexample
+
+end BoundaryCounterexample
 
 end CartisGouldToint
