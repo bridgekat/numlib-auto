@@ -31,3 +31,6 @@ Documented source/OCR correction and formalization requirements: Keep the litera
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 10.3.3 (OCR Markdown line 10975)"
 deps = ["theorem_10_3_2"]
+
+[[node]]
+id = "corollary_10_3_3_corrected"

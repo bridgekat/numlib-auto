@@ -1,12 +1,15 @@
 import NumlibSurface.CartisGouldToint.Chapter10.Section01
 import Numlib.Optimization.Quadratic.Krylov.TrustRegion
+import Numlib.Optimization.Quadratic.Krylov.TrustRegionConvergence
 
 /-!
 # Trust-region minimization in actual preconditioned Lanczos spaces
 
 The constrained subproblem is the genuine projected quadratic on a Euclidean
 ball. Its actual multiplier and actual projected eigenvalues give the source
-residual bound in the dual metric norm.
+residual bound in the dual metric norm. The corrected iteration bound uses a
+natural ceiling and a separately proved condition-one branch; the literal
+unrestricted integer-ceiling claim remains distinct.
 -/
 
 open Krylov QuadraticOptimality.Metric QuadraticRegularization.Metric
@@ -111,5 +114,49 @@ theorem lemma_10_3_1 (hH : H.toLinearMap.IsSymmetric)
   simpa only [(lanczosSubspaceData H M hM g
     ((Nat.add_le_add_right hml 1).trans hl)).norm_map,
       (lanczosSubspaceData H M hM g hl).norm_map] using hh
+
+/-- **Corollary 10.3.3, corrected large-tolerance form.** Actual constrained Lanczos
+minimizers reach a residual tolerance within the minimum of the exact grade and the source
+logarithmic count with a natural ceiling. The actual maximum condition number one gives
+one-step termination. A natural ceiling clamps the logarithmic part at zero; the literal
+unrestricted integer ceiling printed in the source remains a distinct item. -/
+theorem corollary_10_3_3_corrected (hH : H.toLinearMap.IsSymmetric)
+    {g : EuclideanSpace ℝ (Fin n)} (hg : g ≠ 0) {G : ℕ}
+    (hG : G + 1 = grade (hessian M hM H).toLinearMap (gradient M hM g))
+    (ys : (i : Fin (G + 1)) → EuclideanSpace ℝ (Fin (i.val + 1)))
+    (shifts : Fin (G + 1) → ℝ) {Δ : ℝ} (hΔ : 0 < Δ)
+    (hfeas : ∀ i, ‖ys i‖ ≤ Δ)
+    (hmin : ∀ i z, ‖z‖ ≤ Δ → lanczosTrustRegionModel H M hM g i.val (ys i) ≤
+      lanczosTrustRegionModel H M hM g i.val z)
+    (hsolve : ∀ i, Matrix.toEuclideanLin
+      (Lanczos.tridiag (hessian M hM H).toLinearMap (gradient M hM g) (i.val + 1) +
+        shifts i • 1) (ys i) =
+        -(‖gradient M hM g‖ • PiLp.single 2 (0 : Fin (i.val + 1)) (1 : ℝ)))
+    {ε : ℝ} (hε : 0 < ε) :
+    let K := Lanczos.maxCondition (hessian M hM H).toLinearMap (gradient M hM g) G shifts
+    ∃ i : Fin (G + 1),
+      i.val + 1 ≤ min
+        (if K = 1 then 1 else
+          ⌈Real.log (2 * ‖M.inverse.comp H‖ * K * Δ / ε) /
+            Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉₊ + 1) (G + 1) ∧
+      let s := toOriginal M hM (lanczosSubspaceData H M hM g
+        (by omega : i.val + 1 ≤ grade (hessian M hM H).toLinearMap (gradient M hM g))
+        (ys i))
+      energyNorm M.inverse.toLinearMap (H s + shifts i • M s + g) ≤ ε := by
+  let A := hessian M hM H
+  let b := gradient M hM g
+  obtain ⟨i, hi, hr⟩ := QuadraticKrylov.trust_region_exists_residual_le A
+    (gradient_ne_zero M hM hg) (hessian_symmetric M hM hH) hG ys shifts hΔ hfeas hmin
+      hsolve (norm_hessian_le M hM hH) hε
+  refine ⟨i, ?_, ?_⟩
+  · simpa only [Krylov.budget_chebyshevFactor] using hi
+  · have he := norm_residual M hM H g (shifts i)
+      (lanczosSubspaceData H M hM g (by omega) (ys i))
+    have higrade : i.val + 1 ≤ grade A.toLinearMap b := by
+      dsimp only [A, b]
+      omega
+    change ‖A (Lanczos.basisEmbedding A.toLinearMap b higrade (ys i)) + shifts i •
+      Lanczos.basisEmbedding A.toLinearMap b higrade (ys i) + b‖ = _ at he
+    exact he.symm.trans_le hr
 
 end CartisGouldToint
