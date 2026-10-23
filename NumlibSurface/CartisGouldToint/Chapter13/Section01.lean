@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.Inexact.RadiusConsequences
 import Numlib.Optimization.Regularization.Inexact.ParameterCounterexample
 import Numlib.Analysis.Calculus.TaylorModel
 import Numlib.Optimization.Regularization.Inexact.ModelDecrease
@@ -79,7 +80,8 @@ logarithmic regularization range. Step 5 iterations keep `σ` fixed. The half-op
 updates is bounded using `σ N`, repairing the same terminal-index mismatch as Lemma 13.1.1. -/
 theorem lemma_13_1_9 {T : Set ℕ} {σ ρ : ℕ → ℝ}
     {η₁ η₂ γ₁ γ₂ γ₃ σmin σmax : ℝ} {N : ℕ}
-    (h : EvaluationComplexity.TrialRegularizationUpdates T σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (h : EvaluationComplexity.TrialRegularizationUpdates T σ ρ η₁ η₂ γ₁ γ₂
+      γ₃ σmin N)
     (hmax : σ N ≤ σmax) :
     ((EvaluationComplexity.successfulIterations T N).card : ℝ) ≤
       (EvaluationComplexity.successfulIterations (successfulTrials T ρ η₁) N).card *
@@ -108,7 +110,8 @@ abbrev idaSelectedTrials {n q : ℕ}
 /-- The actual normalized inexact Taylor gap (13.1.25). -/
 noncomputable abbrev idaScaledGap {n q : ℕ}
     (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
-    (j : ℕ → Fin q) (Δ : ℕ → ℝ) (d : ℕ → EuclideanSpace ℝ (Fin n)) (θ : ℝ) (i : ℕ) : ℝ :=
+    (j : ℕ → Fin q) (Δ : ℕ → ℝ) (d : ℕ → EuclideanSpace ℝ (Fin n)) (θ :
+      ℝ) (i : ℕ) : ℝ :=
   InexactTrustRegion.scaledGap A j Δ d θ i
 
 /-- The finite minimum over the actual inclusive trial prefix `T ∩ [0:k]`. -/
@@ -127,7 +130,8 @@ theorem lemma_13_1_2 {n q : ℕ}
     {T : Set ℕ} {j : ℕ → Fin q} {Δ : ℕ → ℝ}
     {d s : ℕ → EuclideanSpace ℝ (Fin n)} {ε : Fin q → ℝ} {ζ θ : ℝ} {k : ℕ}
     (h : idaSelectedTrials A T j Δ d s ε ζ θ) (hk : k ∈ T) :
-    ζ / 2 * InexactTrustRegion.minimumAccuracy h.order_pos ε ≤ idaPrefixGap A T j Δ d θ k hk ∧
+    ζ / 2 * InexactTrustRegion.minimumAccuracy h.order_pos ε ≤ idaPrefixGap A T j Δ d
+      θ k hk ∧
       idaScaledGap A j Δ d θ k * (min θ (Δ k)) ^ InexactTrustRegion.modelOrder (j k) /
         (InexactTrustRegion.modelOrder (j k)).factorial ≤
           inexactTaylorModel (A k) (InexactTrustRegion.modelOrder (j k)) 0 -
@@ -150,7 +154,8 @@ theorem lemma_13_1_3 {n q : ℕ}
     (h : InexactTrustRegion.SelectedTrials A T j Δ d s ε ζ θ)
     {f : EuclideanSpace ℝ (Fin n) → ℝ} (hf : ContDiff ℝ q f)
     {L κs κmax η₁ η₂ γ₁ γ₂ γ₃ Δmax : ℝ} {N k : ℕ}
-    (hu : EvaluationComplexity.TrialTrustRegionUpdates T Δ ρ η₁ η₂ γ₁ γ₂ γ₃ Δmax N)
+    (hu : EvaluationComplexity.TrialTrustRegionUpdates T Δ ρ η₁ η₂ γ₁ γ₂
+      γ₃ Δmax N)
     (hkN : k < N) (hk : k ∈ T) (hL : 1 ≤ L) (hκs : 0 ≤ κs) (hκmax : 0 ≤ κmax)
     (hlip : ∀ a, 1 ≤ a → a ≤ q → ∀ u v,
       ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
@@ -317,9 +322,11 @@ both the point and the regularization parameter. This is not a full stopping tra
 abbrev idaRegularizationModelTrace {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (p : ℕ) (O : idaRegularizationOracleSettings p)
     (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ) (T : Set ℕ)
-    (x d s : ℕ → EuclideanSpace ℝ (Fin n)) (accuracy : ℕ → ℕ → ℝ) (σ ρ : ℕ → ℝ)
+    (x d s : ℕ → EuclideanSpace ℝ (Fin n)) (accuracy : ℕ → ℕ → ℝ) (σ ρ :
+      ℕ → ℝ)
     (η₁ η₂ γ₁ γ₂ γ₃ σmin : ℝ) (N : ℕ) : Prop :=
-  InexactRegularization.ModelTrace f p O A T x d s accuracy σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N
+  InexactRegularization.ModelTrace f p O A T x d s accuracy σ ρ η₁ η₂ γ₁ γ₂
+    γ₃ σmin N
 
 /-- **Corrected Lemma 13.1.14.** With the literal short-step accuracy guard,
 the uniform parameter constant uses `max(κs,κh)`. The cap `κh` is derived from
@@ -332,7 +339,8 @@ the computed polynomial. The short-step guard itself is retained. -/
 theorem lemma_13_1_14_corrected {n p N : ℕ}
     {f : EuclideanSpace ℝ (Fin n) → ℝ} {O : idaRegularizationOracleSettings p}
     {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ} {T : Set ℕ}
-    {x d s : ℕ → EuclideanSpace ℝ (Fin n)} {accuracy : ℕ → ℕ → ℝ} {σ ρ : ℕ → ℝ}
+    {x d s : ℕ → EuclideanSpace ℝ (Fin n)} {accuracy : ℕ → ℕ → ℝ} {σ ρ :
+      ℕ → ℝ}
     {η₁ η₂ γ₁ γ₂ γ₃ σmin L : ℝ}
     (h : idaRegularizationModelTrace f p O A T x d s accuracy σ ρ
       η₁ η₂ γ₁ γ₂ γ₃ σmin N) (hf : ContDiff ℝ p f) (hL : 1 ≤ L)
@@ -348,7 +356,8 @@ additional condition `κh≤κs`. This condition is absent from Algorithm 13.1.2
 theorem lemma_13_1_14_of_cap_le {n p N : ℕ}
     {f : EuclideanSpace ℝ (Fin n) → ℝ} {O : idaRegularizationOracleSettings p}
     {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ} {T : Set ℕ}
-    {x d s : ℕ → EuclideanSpace ℝ (Fin n)} {accuracy : ℕ → ℕ → ℝ} {σ ρ : ℕ → ℝ}
+    {x d s : ℕ → EuclideanSpace ℝ (Fin n)} {accuracy : ℕ → ℕ → ℝ} {σ ρ :
+      ℕ → ℝ}
     {η₁ η₂ γ₁ γ₂ γ₃ σmin L : ℝ}
     (h : idaRegularizationModelTrace f p O A T x d s accuracy σ ρ
       η₁ η₂ γ₁ γ₂ γ₃ σmin N) (hf : ContDiff ℝ p f) (hL : 1 ≤ L)
@@ -383,5 +392,184 @@ theorem arqpidaPrintedBoundCounterexample :
         settings.stepCoefficient * settings.errorBound) / (1 - 1 / 2)) < parameter 1 :=
   ⟨trace,smoothness.1,smoothness.2,reference_maximizes,reference_tests,
     step_minimizes,printed_bound_violated⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- Actual point updates added to the primitive IDA model, oracle and radius trace. -/
+abbrev idaExecutionTrace {n q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (T : Set ℕ) (j : ℕ → Fin q) (x d s : ℕ → EuclideanSpace ℝ (Fin n))
+    (Δ ρ : ℕ → ℝ) (ε : Fin q → ℝ) (accuracy : ℕ → ℕ → ℝ)
+    (ζ θ κs κmax η₁ η₂ γ₁ γ₂ γ₃ Δmax : ℝ) (N : ℕ) : Prop :=
+  ExecutionTrace f A T j x d s Δ ρ ε accuracy ζ θ κs κmax η₁ η₂ γ₁ γ₂
+    γ₃ Δmax N
+
+/-- Lemma 13.1.5: the selected actual computed model and derived radius floor
+give (13.1.34), and accepted actual point updates give (13.1.35). The latter
+retains the source's factor one half, which is also used by the EDA variant. -/
+theorem lemma_13_1_5 {n q N k : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {T : Set ℕ} {j : ℕ → Fin q} {x d s : ℕ → EuclideanSpace ℝ (Fin n)}
+    {Δ ρ : ℕ → ℝ} {ε : Fin q → ℝ} {accuracy : ℕ → ℕ → ℝ}
+    {ζ θ κs κmax κh η₁ η₂ γ₁ γ₂ γ₃ Δmax L : ℝ}
+    (h : idaExecutionTrace f A T j x d s Δ ρ ε accuracy
+      ζ θ κs κmax η₁ η₂ γ₁ γ₂ γ₃ Δmax N)
+    (hf : ContDiff ℝ q f) (hL : 1 ≤ L) (hκh : 0 ≤ κh)
+    (hlip : ∀ a, 1 ≤ a → a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (hk : k < N) (hT : k ∈ T) :
+    let κδ := radiusConstant f h.order_pos (x 0) θ (Δ 0) γ₁ η₂ L κs κmax κh / 2
+    let μ := minimumAccuracy h.order_pos ε
+    (ζ * κδ) ^ (q + 1) / q.factorial * μ ^ (q + 1) ≤
+      decrement (A k) (modelOrder (j k)) (s k) ∧
+    (η₁ ≤ ρ k → η₁ * (ζ * κδ) ^ (q + 1) / (2 * (q.factorial : ℝ)) *
+      μ ^ (q + 1) ≤ f (x k) - f (x (k + 1))) := by
+  have hb := radiusConstant_bounds (L := L) f h.order_pos (x 0)
+    h.cap_pos.le h.cap_le_one h.updates.initial_pos.le h.updates.gamma1_pos.le
+    h.updates.eta2_lt_one.le (by linarith : 0 ≤ L) h.request_factor_nonneg
+    h.oracle_constant_nonneg hκh
+  have hb1 := h.toModelTrace.radiusCoefficient_le_one hL hb.2
+  exact ⟨h.toModelTrace.model_decrease hf hL hlip hb.1 hb1 hb.2 hk.le hT,
+    fun ha => h.function_decrease hf hL hlip hb.1 hb1 hb.2 hk hT ha⟩
+
+/-- Lemma 13.1.6: at any genuine Step 2 candidate, the source uniform request
+threshold makes every derivative-accuracy check pass. The selected failed test
+and actual model comparison are the primitive Step 1–2 operations; the trial
+length lower bound is proved from the actual tensor norms. -/
+theorem lemma_13_1_6 {n q N k : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {T : Set ℕ} {j : ℕ → Fin q} {x d s : ℕ → EuclideanSpace ℝ (Fin n)}
+    {Δ ρ : ℕ → ℝ} {ε : Fin q → ℝ} {accuracy : ℕ → ℕ → ℝ}
+    {ζ θ κs κmax κh η₁ η₂ γ₁ γ₂ γ₃ Δmax L H : ℝ}
+    (h : idaModelTrace f A T j x d s Δ ρ ε accuracy
+      ζ θ κs κmax η₁ η₂ γ₁ γ₂ γ₃ Δmax N)
+    (hf : ContDiff ℝ q f) (hL : 1 ≤ L) (hκh : 0 ≤ κh)
+    (hlip : ∀ a, a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (hk : k ≤ N) (haccuracy : ∀ a, 1 ≤ a → a ≤ q → accuracy k a ≤ κh)
+    (horacle : ∀ a, 1 ≤ a → a ≤ q →
+      ‖A k a - iteratedFDeriv ℝ a f (x k)‖ ≤ κmax * accuracy k a)
+    (hH : ∀ a, 1 ≤ a → a ≤ q → accuracy k a ≤ H)
+    (hfailed : ζ / 2 * ε (j k) * optimalityRadius θ (Δ k) ^ modelOrder (j k) /
+      (modelOrder (j k)).factorial < decrement (A k) (modelOrder (j k)) (d k))
+    (hcomparison : TaylorModel.ofJet (A k) (modelOrder (j k)) (s k) ≤
+      TaylorModel.ofJet (A k) (modelOrder (j k)) (d k))
+    (hsmall : H ≤ κs *
+      (ζ ^ (q + 1) *
+        (radiusConstant f h.order_pos (x 0) θ (Δ 0) γ₁ η₂ L κs κmax κh / 2) ^ q /
+        (4 * (q.factorial : ℝ) * (L + κmax * κh))) ^ q *
+      minimumAccuracy h.order_pos ε ^ (q * (q + 1))) :
+    ∀ a, 1 ≤ a → a ≤ q → accuracy k a ≤ κs * ‖s k‖ ^ (q - a + 1) := by
+  let κ := radiusConstant f h.order_pos (x 0) θ (Δ 0) γ₁ η₂ L κs κmax κh
+  let μ := minimumAccuracy h.order_pos ε
+  let M := L + κmax * κh
+  have hb := radiusConstant_bounds (L := L) f h.order_pos (x 0)
+    h.cap_pos.le h.cap_le_one h.updates.initial_pos.le h.updates.gamma1_pos.le
+    h.updates.eta2_lt_one.le (by linarith : 0 ≤ L) h.request_factor_nonneg
+    h.oracle_constant_nonneg hκh
+  have hb1 := h.radiusCoefficient_le_one hL hb.2
+  have hμ := (minimumAccuracy_pos h.order_pos h.accuracy_pos).le
+  have hμ1 : μ ≤ 1 := (minimumAccuracy_le h.order_pos ε (j k)).trans (h.accuracy_le_one _)
+  have hκ0 : 0 ≤ κ := hb.1
+  have hκhalf0 : 0 ≤ κ / 2 := div_nonneg hκ0 (by norm_num)
+  change 0 ≤ μ at hμ
+  have hM : 1 ≤ M := hL.trans (le_add_of_nonneg_right
+    (mul_nonneg h.oracle_constant_nonneg hκh))
+  have hA : ∀ a, 1 ≤ a → a ≤ modelOrder (j k) → ‖A k a‖ ≤ M := by
+    intro a ha haj
+    exact TaylorModel.norm_jet_le_of_lipschitz_oracle (by linarith) hκh
+      (fun b hb => hlip b (by omega)) (A k) (x k) (fun _ => κmax) (accuracy k)
+      (fun _ _ _ => ⟨h.oracle_constant_nonneg, le_rfl⟩) haccuracy horacle ha
+      (haj.trans (j k).isLt)
+  have htest : ζ / 2 * μ * optimalityRadius θ (Δ k) ^ modelOrder (j k) /
+      (modelOrder (j k)).factorial ≤ decrement (A k) (modelOrder (j k)) (s k) := by
+    have he := mul_le_mul_of_nonneg_right
+      (minimumAccuracy_le h.order_pos ε (j k))
+      (show 0 ≤ ζ / 2 * optimalityRadius θ (Δ k) ^ modelOrder (j k) /
+        (modelOrder (j k)).factorial by
+          have hδ := le_min h.cap_pos.le (h.updates.pos hk).le
+          have hz := h.zeta_pos
+          positivity)
+    have hc := sub_le_sub_left hcomparison (TaylorModel.ofJet (A k) (modelOrder (j k)) 0)
+    have he' : ζ / 2 * μ * optimalityRadius θ (Δ k) ^ modelOrder (j k) /
+        (modelOrder (j k)).factorial ≤
+        ζ / 2 * ε (j k) * optimalityRadius θ (Δ k) ^ modelOrder (j k) /
+        (modelOrder (j k)).factorial := by convert he using 1 <;> ring
+    exact he'.trans (hfailed.le.trans hc)
+  have hstep := norm_step_ge_of_failed_test (A k) (j k).isLt h.zeta_pos.le
+    h.zeta_le_one hκhalf0 (by dsimp [κ]; linarith)
+    hM hμ hμ1 (h.optimalityRadius_lower hf hL (fun a _ ha => hlip a ha) hb.2 hk)
+    (s k) hA htest
+  have hc : 0 ≤ accuracyThreshold q ζ (κ / 2) M μ := by
+    unfold accuracyThreshold
+    have hz := h.zeta_pos
+    have hM0 : 0 ≤ M := by linarith
+    positivity
+  have hc1 := accuracyThreshold_le_one (q := q) h.zeta_pos.le h.zeta_le_one
+    hκhalf0 (by dsimp [κ]; linarith) hM hμ hμ1
+  apply requests_of_norm_floor hc hc1 h.request_factor_nonneg _ (accuracy k) hH (s k) hstep
+  convert hsmall using 1
+  unfold accuracyThreshold
+  rw [mul_pow, ← pow_mul]
+  simp only [Nat.mul_comm (q + 1) q]
+  dsimp [κ, M, μ]
+  ring
+
+/-- Lemma 13.1.7: the source uniform accuracy threshold makes the all-order
+passing computed Step 1 loop certify true approximate optimality. The explicit
+finite tensor-error budget is derived, not assumed. -/
+theorem lemma_13_1_7 {n q N k : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {T : Set ℕ} {j : ℕ → Fin q} {x d s : ℕ → EuclideanSpace ℝ (Fin n)}
+    {Δ ρ : ℕ → ℝ} {ε : Fin q → ℝ} {accuracy : ℕ → ℕ → ℝ}
+    {ζ θ κs κmax κh η₁ η₂ γ₁ γ₂ γ₃ Δmax L H : ℝ}
+    (h : idaModelTrace f A T j x d s Δ ρ ε accuracy
+      ζ θ κs κmax η₁ η₂ γ₁ γ₂ γ₃ Δmax N)
+    (hf : ContDiff ℝ q f) (hL : 1 ≤ L) (hκh : 0 ≤ κh)
+    (hlip : ∀ a, 1 ≤ a → a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (hk : k ≤ N) (hH0 : 0 ≤ H)
+    (hH : ∀ a, 1 ≤ a → a ≤ q → accuracy k a ≤ H)
+    (horacle : ∀ a, 1 ≤ a → a ≤ q →
+      ‖A k a - iteratedFDeriv ℝ a f (x k)‖ ≤ κmax * accuracy k a)
+    (direction : Fin q → EuclideanSpace ℝ (Fin n))
+    (happrox : ∀ a, ζ * TaylorModel.jetCriticality (A k) (modelOrder a)
+      (optimalityRadius θ (Δ k)) ≤ TaylorModel.jetDecrement (A k) (modelOrder a) (direction a))
+    (hpass : ∀ a, TaylorModel.jetDecrement (A k) (modelOrder a) (direction a) ≤
+      ζ / 2 * ε a * optimalityRadius θ (Δ k) ^ modelOrder a / (modelOrder a).factorial)
+    (hsmall : H ≤ accuracyThreshold q ζ
+      (radiusConstant f h.order_pos (x 0) θ (Δ 0) γ₁ η₂ L κs κmax κh / 2)
+      κmax (minimumAccuracy h.order_pos ε)) :
+    ∀ a : Fin q, TaylorModel.criticality f (modelOrder a) (x k)
+      (optimalityRadius θ (Δ k)) ≤
+      ε a * optimalityRadius θ (Δ k) ^ modelOrder a / (modelOrder a).factorial := by
+  by_cases hzero : κmax = 0
+  · have hδ := le_min h.cap_pos.le (h.updates.pos hk).le
+    have hζ := h.zeta_pos
+    have hμ := minimumAccuracy_pos h.order_pos h.accuracy_pos
+    have hh : TerminationCheck (A k) (optimalityRadius θ (Δ k)) ζ ε direction
+        (fun _ => 0) := by
+      refine ⟨h.order_pos, hδ, (min_le_left θ (Δ k)).trans h.cap_le_one,
+        h.zeta_pos, h.zeta_le_one, h.accuracy_pos, happrox, hpass, ?_⟩
+      simp only [tensorErrorBudget, zero_mul, zero_div, Finset.sum_const_zero]
+      positivity
+    exact hh.true_optimality f (x k) (by simpa only [hzero, zero_mul] using horacle)
+  have hκmax : 0 < κmax := lt_of_le_of_ne h.oracle_constant_nonneg (Ne.symm hzero)
+  have hb := radiusConstant_bounds (L := L) f h.order_pos (x 0)
+    h.cap_pos.le h.cap_le_one h.updates.initial_pos.le h.updates.gamma1_pos.le
+    h.updates.eta2_lt_one.le (by linarith : 0 ≤ L) h.request_factor_nonneg
+    h.oracle_constant_nonneg hκh
+  have hh := terminationCheck_of_accuracyThreshold h.order_pos
+    (le_min h.cap_pos.le (h.updates.pos hk).le) ((min_le_left _ _).trans h.cap_le_one)
+    h.zeta_pos h.zeta_le_one (div_nonneg hb.1 (by norm_num)) hκmax hH0 h.accuracy_pos rfl
+    (h.optimalityRadius_lower hf hL hlip hb.2 hk) hsmall hH happrox hpass
+  exact hh.true_optimality f (x k) horacle
 
 end CartisGouldToint

@@ -1,0 +1,19 @@
+namespace = "EvaluationComplexity"
+
+[[node]]
+id = "card_successful_succ"
+
+[[node]]
+id = "AccuracyUpdates"
+
+[[node]]
+id = "AccuracyUpdates.pos"
+
+[[node]]
+id = "AccuracyUpdates.eq_initial_mul_pow"
+
+[[node]]
+id = "AccuracyUpdates.min_initial_threshold_le"
+
+[[node]]
+id = "AccuracyUpdates.reductions_le"

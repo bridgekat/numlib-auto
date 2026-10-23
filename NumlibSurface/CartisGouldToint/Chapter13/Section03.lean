@@ -1,3 +1,5 @@
+import Numlib.Optimization.TrustRegion.Inexact.FunctionRadius
+import Numlib.Optimization.TrustRegion.Inexact.Budget
 import Numlib.Optimization.Regularization.Inexact.ParameterFunctionCounterexample
 import Numlib.Optimization.TrustRegion.Inexact.FunctionValues
 import Numlib.Optimization.TrustRegion.Inexact.VerifiedOptimality
@@ -173,5 +175,78 @@ theorem arqpedaPrintedBoundCounterexample :
   ⟨FunctionCounterexample.trace, smoothness.1, smoothness.2, reference_maximizes,
     reference_tests, step_minimizes, FunctionCounterexample.coefficient_restrictions,
     FunctionCounterexample.printed_bound_violated⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- The actual EDA oracle, computed objective ratio and radius-update trace. -/
+abbrev edaModelTrace {n q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (T : Set ℕ) (j : ℕ → Fin q) (x d s : ℕ → EuclideanSpace ℝ (Fin n))
+    (Δ ρ F₀ F₁ h₀ : ℕ → ℝ) (ε : Fin q → ℝ) (accuracy : ℕ → ℕ → ℝ)
+    (ζ θ κs η₁ η₂ γ₁ γ₂ γ₃ Δmax : ℝ) (N : ℕ) : Prop :=
+  FunctionModelTrace f A T j x d s Δ ρ F₀ F₁ h₀ ε accuracy
+    ζ θ κs η₁ η₂ γ₁ γ₂ γ₃ Δmax N
+
+/-- Lemma 13.3.3, both clauses. The explicit Step 1.4.1 budget test certifies
+true all-order optimality. Moreover, the source uniform request threshold forces
+that test to pass, so Step 1.4.2 cannot be selected. The needed radius floor is
+derived from actual approximate objective values and computed-ratio updates. -/
+theorem lemma_13_3_3 {n q N k : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {T : Set ℕ} {j : ℕ → Fin q} {x d s : ℕ → EuclideanSpace ℝ (Fin n)}
+    {Δ ρ F₀ F₁ h₀ : ℕ → ℝ} {ε : Fin q → ℝ} {accuracy : ℕ → ℕ → ℝ}
+    {ζ θ κs κh η₁ η₂ γ₁ γ₂ γ₃ Δmax L H : ℝ}
+    (h : edaModelTrace f A T j x d s Δ ρ F₀ F₁ h₀ ε accuracy
+      ζ θ κs η₁ η₂ γ₁ γ₂ γ₃ Δmax N)
+    (hL : 1 ≤ L) (hκh : 0 ≤ κh)
+    (hk : k ≤ N) (hH0 : 0 ≤ H)
+    (hH : ∀ a, 1 ≤ a → a ≤ q → accuracy k a ≤ H)
+    (horacle : ∀ a, 1 ≤ a → a ≤ q →
+      ‖A k a - iteratedFDeriv ℝ a f (x k)‖ ≤ accuracy k a)
+    (direction : Fin q → EuclideanSpace ℝ (Fin n))
+    (happrox : ∀ a, ζ * TaylorModel.jetCriticality (A k) (modelOrder a)
+      (optimalityRadius θ (Δ k)) ≤
+      TaylorModel.jetDecrement (A k) (modelOrder a) (direction a))
+    (hpass : ∀ a, TaylorModel.jetDecrement (A k) (modelOrder a) (direction a) ≤
+      ζ / 2 * ε a * optimalityRadius θ (Δ k) ^ modelOrder a / (modelOrder a).factorial) :
+    let δ := optimalityRadius θ (Δ k)
+    let κδ := radiusConstant f h.order_pos (x 0) θ (Δ 0) γ₁ η₂ L κs 1 κh / 2
+    let optimal := ∀ a : Fin q, TaylorModel.criticality f (modelOrder a) (x k) δ ≤
+      ε a * δ ^ modelOrder a / (modelOrder a).factorial
+    (tensorErrorBudget (accuracy k) q δ ≤
+      ζ / 2 * minimumAccuracy h.order_pos ε * δ ^ q / q.factorial → optimal) ∧
+    (ContDiff ℝ q f →
+      (∀ a, 1 ≤ a → a ≤ q → ∀ u v,
+        ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖) →
+      H ≤ accuracyThreshold q ζ κδ 1 (minimumAccuracy h.order_pos ε) →
+      edaTerminationCheck (A k) δ ζ ε direction (accuracy k) ∧ optimal) := by
+  dsimp only
+  have hδ := le_min h.cap_pos.le (h.updates.pos hk).le
+  have hδ1 := (min_le_left θ (Δ k)).trans h.cap_le_one
+  have hmake (hver : tensorErrorBudget (accuracy k) q (optimalityRadius θ (Δ k)) ≤
+      ζ / 2 * minimumAccuracy h.order_pos ε * optimalityRadius θ (Δ k) ^ q / q.factorial) :
+      edaTerminationCheck (A k) (optimalityRadius θ (Δ k)) ζ ε direction (accuracy k) :=
+    ⟨h.order_pos, hδ, hδ1, h.zeta_pos, h.zeta_le_one, h.accuracy_pos,
+      happrox, hpass, hver⟩
+  refine ⟨fun hver => (hmake hver).true_optimality f (x k) horacle, ?_⟩
+  intro hf hlip hsmall
+  have hb := radiusConstant_bounds (L := L) f h.order_pos (x 0)
+    h.cap_pos.le h.cap_le_one h.updates.initial_pos.le h.updates.gamma1_pos.le
+    h.updates.eta2_lt_one.le (by linarith : 0 ≤ L) h.request_factor_nonneg
+    (by norm_num : (0 : ℝ) ≤ 1) hκh
+  have hfloor := h.optimalityRadius_lower hf hL hlip (by simpa only [mul_one] using hb.2) hk
+  have hc := terminationCheck_of_accuracyThreshold h.order_pos hδ hδ1
+    h.zeta_pos h.zeta_le_one (div_nonneg hb.1 (by norm_num)) (by norm_num : (0 : ℝ) < 1)
+    hH0 h.accuracy_pos rfl hfloor hsmall hH happrox hpass
+  have hc' : edaTerminationCheck (A k) (optimalityRadius θ (Δ k)) ζ ε direction
+      (accuracy k) := by
+    apply hmake
+    simpa only [tensorErrorBudget, optimalityRadius, one_mul] using hc.verified
+  exact ⟨hc', hc'.true_optimality f (x k) horacle⟩
 
 end CartisGouldToint

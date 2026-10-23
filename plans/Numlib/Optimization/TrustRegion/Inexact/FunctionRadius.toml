@@ -1,0 +1,13 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "FunctionModelTrace"
+
+[[node]]
+id = "FunctionModelTrace.tensor_error"
+
+[[node]]
+id = "FunctionModelTrace.very_successful"
+
+[[node]]
+id = "FunctionModelTrace.optimalityRadius_lower"

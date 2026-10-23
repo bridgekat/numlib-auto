@@ -1,0 +1,19 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "pow_div_factorial_antitone"
+
+[[node]]
+id = "accuracyThreshold_le_one"
+
+[[node]]
+id = "SelectedTrials.decrease_of_radius_floor"
+
+[[node]]
+id = "norm_decrement_le_two_mul"
+
+[[node]]
+id = "norm_step_ge_of_failed_test"
+
+[[node]]
+id = "requests_of_norm_floor"

@@ -1,0 +1,16 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "ExecutionTrace"
+
+[[node]]
+id = "SelectedTrials.denominator_pos"
+
+[[node]]
+id = "ModelTrace.radiusCoefficient_le_one"
+
+[[node]]
+id = "ModelTrace.model_decrease"
+
+[[node]]
+id = "ExecutionTrace.function_decrease"

@@ -40,18 +40,7 @@ deps = ["lemma_13_3_1", "lemma_13_1_5"]
 
 [[node]]
 id = "lemma_13_3_3"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.3.3: The outcomes of Step 1 of the TRqEDA algorithm
-
-(i) Suppose that (13.3.8) holds. Then \( {x}_k \) is an \( \left( {\epsilon ,{\delta }_k}\right) \) -approximate qth-order minimizer.
-
-(ii) Additionally, suppose that f.D0qL holds. If (13.1.37) holds with the choice (13.3.3), then the TRqEDA algorithm terminates in Step 1.4.1 rather than branching to Step 5 via Step 1.4.2.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.3 (OCR Markdown line 15145)"
-deps = ["trqedaRun"]
 
 [[node]]
 id = "theorem_13_3_4"
@@ -203,3 +192,7 @@ source = "Corrected companion or formal counterexample for Cartis, Gould and Toi
 [[node]]
 id = "arqpedaPrintedBoundCounterexample"
 source = "Corrected companion or formal counterexample for Cartis, Gould and Toint, Lemma 13.3.5; literal short-step guard retained."
+
+[[node]]
+id = "edaModelTrace"
+source = "Cartis, Gould and Toint, TRqEDA actual computed objective-ratio and radius-update components."

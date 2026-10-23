@@ -48,63 +48,15 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_13_1_5"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.1.5: Model decrease (TRqIDA)
-
-Suppose that f.D0qL holds. Then the TRqIDA algorithm ensures that
-
-\[
-{\overline{\Delta T}}_{f,{j}_{k}}\left( {{x}_{k},{s}_{k}}\right)  \geq  \frac{{\left( \varsigma {\kappa }_{\delta }\right) }^{q + 1}}{q!}{\epsilon }_{\min }^{q + 1}\tag{13.1.34}
-\]
-
-
-for every iteration \( k \in  \mathcal{T} \) of algorithm TRqIDA before reaching approximate optimality, where \( {\kappa }_{\delta } \) is defined as in (13.1.33). If, in addition, \( k \in  \mathcal{S} \) , then
-
-\[
-f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  \frac{{\eta }_1{\left( \varsigma {\kappa }_{\delta }\right) }^{q + 1}}{{2q}!}{\epsilon }_{\min }^{q + 1}.\tag{13.1.35}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.5 (OCR Markdown line 13908)"
-deps = ["lemma_13_1_4"]
 
 [[node]]
 id = "lemma_13_1_6"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.1.6: Finite loop in Step 2 of the TRqIDA algorithm
-
-Suppose that f.D0qL holds. Then branching from Step 2 to Step 5 of the TRqIDA algorithm cannot occur if
-
-\[
-{h}_{k,\max } \leq  {\kappa }_{s}{\left( \frac{{\varsigma }^{q + 1}{\kappa }_{\delta }^{q}}{{4q}!{\bar{L}}_{f}}\right) }^{q}{\epsilon }_{\min }^{q\left( {q + 1}\right) }.\tag{13.1.36}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.6 (OCR Markdown line 13932)"
-deps = ["lemma_13_1_4"]
 
 [[node]]
 id = "lemma_13_1_7"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.1.7: The loop in Step 1 of the TRqIDA algorithm
-
-Suppose that f.D0qL holds. If
-
-\[
-{h}_{k,\max } \leq  \frac{{\varsigma }^{q + 1}{\kappa }_{\delta }^q}{{4q}!{\kappa }_{\nabla ,\max }}{\epsilon }_{\min }^{q + 1},\tag{13.1.37}
-\]
-
-then branching from Step 1 to Step 5 of the TRqIDA algorithm achieves the desired approximate optimality condition, \( {\phi }_{f, j}^{{\delta }_k}\left( {x}_k\right)  \leq  {\epsilon }_j\frac{{\delta }_k^j}{j!} \) for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.7 (OCR Markdown line 13974)"
-deps = ["trqidaRun"]
 
 [[node]]
 id = "theorem_13_1_8"
@@ -404,3 +356,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "arqpidaPrintedBoundCounterexample"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma13.1.14 and Algorithm13.1.2 (corrected guarded accuracy constant)"
+
+[[node]]
+id = "idaExecutionTrace"
+source = "Cartis, Gould and Toint, Algorithm13.1.1 actual accepted/rejected/accuracy-only point updates."
