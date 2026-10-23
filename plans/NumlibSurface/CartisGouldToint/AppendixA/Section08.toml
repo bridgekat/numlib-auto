@@ -38,8 +38,3 @@ deps = ["theorem_A_8_3"]
 
 [[node]]
 id = "theorem_A_8_5"
-kind = "theorem"
-desc = '''
-Let p:natural, C open and convex in Euclidean n-space, f C^(p+1) on C, and L>=0. Then D^p f is L-Lipschitz on C if and only if for every x in C, norm(D^(p+1) f(x))<=L, equation (A.21). Interpret p=0 by f itself and order-zero maps. Prove using a reusable differentiable-map Lipschitz iff derivative bound on open convex sets and symmetry/currying of iteratedFDeriv; do not posit the derivative bound as part of the Lipschitz definition.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.5, equations (A.18),(A.21)"
