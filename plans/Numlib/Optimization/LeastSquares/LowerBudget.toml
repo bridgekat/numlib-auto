@@ -1,0 +1,17 @@
+namespace = "LeastSquares"
+desc = "Actual lower-order ARpLE stopping, residual budgets and initialized evaluation complexity, with disabled tests omitted from every minimum and maximum."
+
+[[node]]
+id = "LowerRun.endpoint_obstruction"
+
+[[node]]
+id = "lowerDecreaseCoefficient_bounds"
+
+[[node]]
+id = "lowerAccuracyFactor_bounds"
+
+[[node]]
+id = "lowerDenominator_bounds"
+
+[[node]]
+id = "LowerRun.successful_root_decrease"

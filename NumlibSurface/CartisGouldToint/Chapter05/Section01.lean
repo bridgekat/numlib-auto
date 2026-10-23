@@ -1,3 +1,4 @@
+import Numlib.Optimization.LeastSquares.LowerComplexity
 import Numlib.Optimization.LeastSquares.Complexity
 import Numlib.Optimization.LeastSquares.Run
 import Numlib.Optimization.LeastSquares.EmptyDirections
@@ -497,5 +498,143 @@ theorem theorem_5_1_7_corrected {n m p a : ℕ}
       exact ⟨ht.2.1.le, ht.2.2.1.le, ht.1.symm.le⟩
   exact LeastSquares.exists_uniform_finite_complexity p a ℓ hf (zero_lt_one.trans_le hL)
     hlip hσ hmin hη hγ₂ hθ₁ hθ₂ hθ₃ hβ hβ1 hg.1 hg.2.1 hg.2.2
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The normalized stop with third order disabled, and optionally second order disabled. -/
+abbrev arpLeastEuclideanLowerStop := @LeastSquares.lowerStop
+
+/-- A genuine literal ARpLE execution with only first or first-and-second tests enabled. -/
+abbrev arpLeastEuclideanLowerRun {n m : ℕ} (second : Bool)
+    (r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)) (ℓ : ℝ) (p : ℕ)
+    (x s u : ℕ → EuclideanSpace ℝ (Fin n)) (μ σ ρ : ℕ → ℝ)
+    (M : ℕ → Set (EuclideanSpace ℝ (Fin n)))
+    (η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ θ₃ ε₀ ε₁ ε₂ : ℝ) (N :
+      ℕ) : Prop :=
+  LeastSquares.LowerRun true second r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+    θ₁ θ₂ θ₃ ε₀ ε₁ ε₂ N
+
+/-- The exact minimum of enabled lower-order accuracy powers. -/
+noncomputable abbrev residualLowerAccuracyFactor := LeastSquares.lowerAccuracyFactor
+
+/-- The exact maximum of enabled initial residual powers. -/
+noncomputable abbrev residualLowerInitialBudget := LeastSquares.lowerBudget
+
+/-- The maximum of enabled reciprocal decrease coefficients, before all accuracies. -/
+noncomputable abbrev arpLeastEuclideanLowerSuccessfulIterationConstant :=
+  LeastSquares.lowerSuccessfulIterationConstant
+
+/-- Lower-order complexity has precisely the maximum of the enabled inverse accuracy powers. -/
+theorem residualLowerAccuracyFactor_inverse (second : Bool) (p a : ℕ) {ε₀ ε₁ ε₂ : ℝ}
+    (h₀ : 0 < ε₀) (h₁ : 0 < ε₁) (h₂ : 0 < ε₂) :
+    1 / residualLowerAccuracyFactor second p a ε₀ ε₁ ε₂ =
+      if second then max (ε₀ ^ (-(1 / (2 : ℝ) ^ a)))
+        (max (ε₁ ^ (-((p + 1 : ℕ) : ℝ) / p))
+          (ε₂ ^ (-((p + 1 : ℕ) : ℝ) / (p - 1 : ℕ))))
+      else max (ε₀ ^ (-(1 / (2 : ℝ) ^ a)))
+        (ε₁ ^ (-((p + 1 : ℕ) : ℝ) / p)) :=
+  LeastSquares.inv_lowerAccuracyFactor_eq second p a h₀ h₁ h₂
+
+/-- Theorem 5.1.7 with both higher tests disabled: choices (5.1.38)–(5.1.39),
+exact first-order powers and constants, the first actual stop and every initialized count.
+The literal program is valid in this mode; its third-order guard is irrelevant. -/
+theorem theorem_5_1_7_corrected_first_order {n m p a : ℕ}
+    {r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)} (ℓ : ℝ)
+    {σinit σmin η₁ η₂ γ₁ γ₂ γ₃ L θ₁ θ₂ θ₃ β : ℝ}
+    (hp : 0 < p) (_hℓ : 1 < ℓ)
+    (hchoice : (ℓ = (p : ℝ) ∧ Real.logb 2 (p : ℝ) < a) ∨
+      ∃ o : ℕ, Odd o ∧ Even p ∧ p = o * 2 ^ a ∧
+        ℓ = 1 + (o : ℝ) * ((2 : ℝ) ^ a - 1))
+    (hf : ContDiff ℝ p (residualPowerObjective r ℓ)) (hL : 1 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ p (residualPowerObjective r ℓ) y -
+      iteratedFDeriv ℝ p (residualPowerObjective r ℓ) z‖ ≤ L * ‖y - z‖)
+    (hσ : 0 < σinit) (hmin : 0 < σmin) (hη : 0 < η₁) (hγ₂ : 1 < γ₂)
+    (hθ₁ : 0 < θ₁) (hθ₂ : 0 < θ₂) (hβ : 0 < β) (hβ1 : β < 1) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κC > 0,
+      κS = arpLeastEuclideanLowerSuccessfulIterationConstant false p ℓ a σinit σmin
+        η₁ η₂ γ₃ L θ₁ θ₂ β ∧
+      κA = κS * (1 + |Real.log γ₁| / Real.log γ₂) ∧
+      κC = |Real.log γ₁| / Real.log γ₂ +
+        Real.log (max σinit (γ₃ * L / (1 - η₂)) / σinit) / Real.log γ₂ + 2 ∧
+      ∀ ε₀ ε₁ : ℝ, ∀ x s u : ℕ → EuclideanSpace ℝ (Fin n),
+      ∀ μ σ ρ : ℕ → ℝ, ∀ M : ℕ → Set (EuclideanSpace ℝ (Fin n)), σ 0 =
+        σinit →
+      (∀ N, (∀ i < N, ¬arpLeastEuclideanLowerStop false r ℓ (x i) (μ i) ε₀ ε₁ 1) →
+        arpLeastEuclideanLowerRun false r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+          θ₁ θ₂ θ₃ ε₀ ε₁ 1 N) →
+      ∃ K, arpLeastEuclideanLowerStop false r ℓ (x K) (μ K) ε₀ ε₁ 1 ∧
+        arpLeastEuclideanLowerRun false r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+          θ₁ θ₂ θ₃ ε₀ ε₁ 1 K ∧
+        (∀ i < K, ¬arpLeastEuclideanLowerStop false r ℓ (x i) (μ i) ε₀ ε₁ 1) ∧
+        (arpLeastEuclideanResidualEvaluations K : ℝ) ≤
+          κA * residualLowerInitialBudget false p ℓ a ‖r (x 0)‖ /
+            residualLowerAccuracyFactor false p a ε₀ ε₁ 1 + κC ∧
+        ∀ j : ℕ, 1 ≤ j → j ≤ p → (arpLeastEuclideanDerivativeEvaluations ρ
+          η₁ p j K : ℝ) ≤
+          κS * residualLowerInitialBudget false p ℓ a ‖r (x 0)‖ /
+            residualLowerAccuracyFactor false p a ε₀ ε₁ 1 + 2 := by
+  have H := LeastSquares.cascadingExponent_choices hp
+  have hg : 0 ≤ residualCascadingExponent p ℓ a 1 := by
+    rcases hchoice with ⟨rfl, hlog⟩ | ⟨o, ho, heven, hfac, rfl⟩
+    · exact (H.1 a hlog).le
+    · exact (H.2.1 o a ho heven hfac).1.symm.le
+  obtain ⟨κS, hS, κA, hA, κC, hC, hKS, hKA, hKC, h⟩ :=
+    LeastSquares.exists_uniform_lower_complexity true false p a ℓ hf
+      (zero_lt_one.trans_le hL) hlip hσ hmin hη hγ₂ hθ₁ hθ₂ hβ hβ1 hg (by simp)
+  refine ⟨κS, hS, κA, hA, κC, hC, hKS, hKA, hKC, ?_⟩
+  intro ε₀ ε₁
+  exact h ε₀ ε₁ 1 zero_lt_one
+
+/-- Theorem 5.1.7 with third order disabled: choices (5.1.40)–(5.1.41),
+exact first/second-order powers and constants, the first actual stop and initialized counts.
+The literal program is valid in this mode; its third-order guard is irrelevant. -/
+theorem theorem_5_1_7_corrected_second_order {n m p a : ℕ}
+    {r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)} (ℓ : ℝ)
+    {σinit σmin η₁ η₂ γ₁ γ₂ γ₃ L θ₁ θ₂ θ₃ β : ℝ}
+    (hp : 0 < p) (_hℓ : 1 < ℓ)
+    (hchoice : (Even p ∧ ℓ = (p : ℝ) / 2 ∧ Real.logb 2 (p - 1 : ℕ) < a) ∨
+      ∃ o : ℕ, Odd o ∧ 4 ∣ p - 1 ∧ p - 1 = o * 2 ^ (a + 1) ∧
+        ℓ = 1 + (o : ℝ) * ((2 : ℝ) ^ a - 1))
+    (hf : ContDiff ℝ p (residualPowerObjective r ℓ)) (hL : 1 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ p (residualPowerObjective r ℓ) y -
+      iteratedFDeriv ℝ p (residualPowerObjective r ℓ) z‖ ≤ L * ‖y - z‖)
+    (hσ : 0 < σinit) (hmin : 0 < σmin) (hη : 0 < η₁) (hγ₂ : 1 < γ₂)
+    (hθ₁ : 0 < θ₁) (hθ₂ : 0 < θ₂) (hβ : 0 < β) (hβ1 : β < 1) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κC > 0,
+      κS = arpLeastEuclideanLowerSuccessfulIterationConstant true p ℓ a σinit σmin
+        η₁ η₂ γ₃ L θ₁ θ₂ β ∧
+      κA = κS * (1 + |Real.log γ₁| / Real.log γ₂) ∧
+      κC = |Real.log γ₁| / Real.log γ₂ +
+        Real.log (max σinit (γ₃ * L / (1 - η₂)) / σinit) / Real.log γ₂ + 2 ∧
+      ∀ ε₀ ε₁ ε₂ : ℝ, 0 < ε₂ → ∀ x s u : ℕ → EuclideanSpace ℝ (Fin n),
+      ∀ μ σ ρ : ℕ → ℝ, ∀ M : ℕ → Set (EuclideanSpace ℝ (Fin n)), σ 0 =
+        σinit →
+      (∀ N, (∀ i < N, ¬arpLeastEuclideanLowerStop true r ℓ (x i) (μ i) ε₀ ε₁
+        ε₂) →
+        arpLeastEuclideanLowerRun true r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+          θ₁ θ₂ θ₃ ε₀ ε₁ ε₂ N) →
+      ∃ K, arpLeastEuclideanLowerStop true r ℓ (x K) (μ K) ε₀ ε₁ ε₂ ∧
+        arpLeastEuclideanLowerRun true r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+          θ₁ θ₂ θ₃ ε₀ ε₁ ε₂ K ∧
+        (∀ i < K, ¬arpLeastEuclideanLowerStop true r ℓ (x i) (μ i) ε₀ ε₁ ε₂) ∧
+        (arpLeastEuclideanResidualEvaluations K : ℝ) ≤
+          κA * residualLowerInitialBudget true p ℓ a ‖r (x 0)‖ /
+            residualLowerAccuracyFactor true p a ε₀ ε₁ ε₂ + κC ∧
+        ∀ j : ℕ, 1 ≤ j → j ≤ p → (arpLeastEuclideanDerivativeEvaluations ρ
+          η₁ p j K : ℝ) ≤
+          κS * residualLowerInitialBudget true p ℓ a ‖r (x 0)‖ /
+            residualLowerAccuracyFactor true p a ε₀ ε₁ ε₂ + 2 := by
+  have H := LeastSquares.cascadingExponent_choices hp
+  have hg : 0 ≤ residualCascadingExponent p ℓ a 1 ∧
+      0 ≤ residualCascadingExponent p ℓ a 2 := by
+    rcases hchoice with ⟨heven, rfl, hlog⟩ | ⟨o, ho, hdiv, hfac, rfl⟩
+    · have ht := H.2.2.1 a heven hlog
+      exact ⟨ht.1.le, ht.2.le⟩
+    · have ht := H.2.2.2.1 o a ho hdiv hfac
+      exact ⟨ht.2.1.le, ht.1.symm.le⟩
+  exact LeastSquares.exists_uniform_lower_complexity true true p a ℓ hf
+    (zero_lt_one.trans_le hL) hlip hσ hmin hη hγ₂ hθ₁ hθ₂ hβ hβ1 hg.1 (fun _ => hg.2)
 
 end CartisGouldToint

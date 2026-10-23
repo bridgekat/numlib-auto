@@ -1,0 +1,47 @@
+namespace = "LeastSquares"
+desc = "Actual lower-order ARpLE stopping, residual budgets and initialized evaluation complexity, with disabled tests omitted from every minimum and maximum."
+
+[[node]]
+id = "lowerStop"
+
+[[node]]
+id = "stop_lower_iff"
+
+[[node]]
+id = "LowerRun"
+
+[[node]]
+id = "lowerAccuracyFactor"
+
+[[node]]
+id = "lowerDecreaseCoefficient"
+
+[[node]]
+id = "lowerDenominator"
+
+[[node]]
+id = "lowerBudget"
+
+[[node]]
+id = "lowerSuccessfulIterationConstant"
+
+[[node]]
+id = "lowerAccuracyFactor_pos"
+
+[[node]]
+id = "inv_lowerAccuracyFactor_eq"
+
+[[node]]
+id = "lowerDenominator_pos"
+
+[[node]]
+id = "lowerDecreaseCoefficient_pos"
+
+[[node]]
+id = "inverse_lowerDecreaseCoefficient"
+
+[[node]]
+id = "lowerBudget_eq"
+
+[[node]]
+id = "lowerBudget_nonneg"

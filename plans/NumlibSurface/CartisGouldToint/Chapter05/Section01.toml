@@ -140,14 +140,26 @@ id = "residualAccuracyFactor_inverse"
 
 [[node]]
 id = "theorem_5_1_7_corrected_first_order"
-kind = "theorem"
-desc = "Prove the first-order disabled-mode specialization discussed after the proof of Theorem5.1.7 for the genuine actual all-order ARpLE Run. Set both higher tolerances to top. Use the first two exponent choices5.1.38/39, exact minimum of the global and first accuracy powers and decrease constants, and maximum of initial dyadic power and R0^(1-(ell-1)/p). Constants precede every enabled accuracy and execution; prove actual first-stop termination, normalized true optimality, exact initialized function and every residual derivative count, and exact maximum inverse-accuracy order. Preserve source parameter-update logarithmic constants. Do not claim this specialization from finite-third Run or assume endpoint decreases in its trace."
-deps = ["arpLeastEuclideanCorrectedRun", "lemma_5_1_4", "lemma_5_1_6"]
 source = "Cartis–Gould–Toint, Theorem5.1.7, disabled-mode specialization in the final proof paragraph."
 
 [[node]]
 id = "theorem_5_1_7_corrected_second_order"
-kind = "theorem"
-desc = "Prove the second-order disabled-mode specialization discussed after the proof of Theorem5.1.7 for the genuine actual all-order ARpLE Run. Set the third tolerance to top. Use the second pair of exponent choices5.1.40/41, exact minima of global/first/second accuracy powers and decrease constants, and corresponding three initial-residual powers. Constants precede every enabled accuracy and execution; prove actual first-stop termination, normalized true optimality, exact initialized function and every residual derivative count, and exact maximum inverse-accuracy order. Preserve source parameter-update logarithmic constants. Do not claim this specialization from finite-third Run or assume endpoint decreases in its trace."
-deps = ["arpLeastEuclideanCorrectedRun", "lemma_5_1_4", "lemma_5_1_6"]
 source = "Cartis–Gould–Toint, Theorem5.1.7, disabled-mode specialization in the final proof paragraph."
+
+[[node]]
+id = "arpLeastEuclideanLowerStop"
+
+[[node]]
+id = "arpLeastEuclideanLowerRun"
+
+[[node]]
+id = "residualLowerAccuracyFactor"
+
+[[node]]
+id = "residualLowerInitialBudget"
+
+[[node]]
+id = "arpLeastEuclideanLowerSuccessfulIterationConstant"
+
+[[node]]
+id = "residualLowerAccuracyFactor_inverse"

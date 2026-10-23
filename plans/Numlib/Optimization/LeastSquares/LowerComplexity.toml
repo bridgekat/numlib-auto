@@ -1,0 +1,14 @@
+namespace = "LeastSquares"
+desc = "Actual lower-order ARpLE stopping, residual budgets and initialized evaluation complexity, with disabled tests omitted from every minimum and maximum."
+
+[[node]]
+id = "LowerRun.successful_card_le"
+
+[[node]]
+id = "LowerRun.iterations_le"
+
+[[node]]
+id = "exists_lower_termination"
+
+[[node]]
+id = "exists_uniform_lower_complexity"
