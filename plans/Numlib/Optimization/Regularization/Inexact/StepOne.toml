@@ -1,0 +1,19 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "StepOneComputation"
+
+[[node]]
+id = "StepOneComputation.radius_bounds"
+
+[[node]]
+id = "StepOneComputation.radius_lower"
+
+[[node]]
+id = "StepOneComputation.reference_improvement"
+
+[[node]]
+id = "StepOneComputation.true_optimality"
+
+[[node]]
+id = "exists_stepOneComputation"
