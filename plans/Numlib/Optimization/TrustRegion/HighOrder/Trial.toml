@@ -1,0 +1,69 @@
+namespace = "HighOrderTrustRegion"
+
+desc = "Actual arbitrary-order trust-region trial: source parameters, two radii, first failed approximate Taylor test, model comparison, objective ratio, capped update, and derived sharp small-radius acceptance."
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "maxLipschitzConstant"
+
+[[node]]
+id = "le_maxLipschitzConstant"
+
+[[node]]
+id = "maxLipschitzConstant_le_iff"
+
+[[node]]
+id = "maxLipschitzConstant_pos"
+
+[[node]]
+id = "modelOrder"
+
+[[node]]
+id = "modelOrder_pos"
+
+[[node]]
+id = "modelOrder_le"
+
+[[node]]
+id = "optimalityRadius"
+
+[[node]]
+id = "optimalityRadius_le_radius"
+
+[[node]]
+id = "optimalityRadius_le_theta"
+
+[[node]]
+id = "optimalityRadius_eq_radius"
+
+[[node]]
+id = "Trial"
+
+[[node]]
+id = "scaledGap"
+
+[[node]]
+id = "Trial.optimalityRadius_pos"
+
+[[node]]
+id = "Trial.direction_decrement_pos"
+
+[[node]]
+id = "Trial.denominator_pos"
+
+[[node]]
+id = "Trial.scaledGap_pos"
+
+[[node]]
+id = "Trial.scaledGap_le_decrement"
+
+[[node]]
+id = "Trial.radius_le_next_of_very_successful"
+
+[[node]]
+id = "Trial.ratio_error_le"
+
+[[node]]
+id = "Trial.very_successful"
