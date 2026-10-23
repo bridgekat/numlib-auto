@@ -1,0 +1,64 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "coefficientPolynomial"
+
+[[node]]
+id = "coefficientProfile"
+
+[[node]]
+id = "contDiff_coefficientProfile"
+
+[[node]]
+id = "coefficientPolynomial_right_flat"
+
+[[node]]
+id = "coefficientProfile_left"
+
+[[node]]
+id = "coefficientProfile_right"
+
+[[node]]
+id = "coefficientProfile_interval"
+
+[[node]]
+id = "coefficientProfiles_bounded"
+
+[[node]]
+id = "lowerProfile"
+
+[[node]]
+id = "profile"
+
+[[node]]
+id = "lowerProfile_inner"
+
+[[node]]
+id = "lowerProfile_exterior"
+
+[[node]]
+id = "profile_central"
+
+[[node]]
+id = "profile_lower"
+
+[[node]]
+id = "profile_upper"
+
+[[node]]
+id = "profile_exterior"
+
+[[node]]
+id = "contDiff_profile"
+
+[[node]]
+id = "lowerProfile_strip_formula"
+
+[[node]]
+id = "profile_neg"
+
+[[node]]
+id = "corridorFunction"
+
+[[node]]
+id = "contDiff_corridorFunction"

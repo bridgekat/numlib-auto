@@ -1,0 +1,25 @@
+namespace = "Hermite"
+
+[[node]]
+id = "twoSidedTaylor"
+
+[[node]]
+id = "contDiff_twoSidedTaylor"
+
+[[node]]
+id = "twoSidedTaylor_left"
+
+[[node]]
+id = "twoSidedTaylor_interval"
+
+[[node]]
+id = "twoSidedTaylor_right"
+
+[[node]]
+id = "twoSidedTaylor_right_flat"
+
+[[node]]
+id = "twoSidedTaylor_bounded_nonneg"
+
+[[node]]
+id = "taylorTail_two"

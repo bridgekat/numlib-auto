@@ -1,0 +1,7 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "profile_derivatives_bounded"
+
+[[node]]
+id = "profile_composition_derivatives_bounded"
