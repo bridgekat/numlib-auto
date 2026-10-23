@@ -1,0 +1,7 @@
+namespace = "QuadraticSecular.PencilBasis"
+
+[[node]]
+id = "regularization_classification"
+
+[[node]]
+id = "trust_region_classification"

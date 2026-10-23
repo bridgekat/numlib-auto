@@ -1,0 +1,70 @@
+namespace = "QuadraticSecular.PencilBasis"
+
+[[node]]
+id = "particular"
+
+[[node]]
+id = "coefficient_zero_of_singular_solve"
+
+[[node]]
+id = "particular_solves"
+
+[[node]]
+id = "kernel_decomposition"
+
+[[node]]
+id = "inner_kernel_zero"
+
+[[node]]
+id = "inner_particular_eq"
+
+[[node]]
+id = "particular_eq_of_positive"
+
+[[node]]
+id = "denominator_nonneg_of_psd"
+
+[[node]]
+id = "shift_ge_neg_leftmost"
+
+[[node]]
+id = "denom_pos_of_gt_neg_leftmost"
+
+[[node]]
+id = "kernel_eigenvector"
+
+[[node]]
+id = "metricInverse"
+
+[[node]]
+id = "particular_eq_neg_metricInverse"
+
+[[node]]
+id = "particular_coordinate"
+
+[[node]]
+id = "generalized_inverse_identity"
+
+[[node]]
+id = "quadratic_value"
+
+[[node]]
+id = "trust_region_value"
+
+[[node]]
+id = "radius_of_multiplier"
+
+[[node]]
+id = "regularization_value"
+
+[[node]]
+id = "shifted_quadratic_eq_sum"
+
+[[node]]
+id = "shifted_positive"
+
+[[node]]
+id = "particular_metric_orthogonal"
+
+[[node]]
+id = "metric_norm_sq_add_kernel"

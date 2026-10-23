@@ -1,66 +1,12 @@
 namespace = "CartisGouldToint"
-desc = '''
-Global minimizers in the easy and hard cases. Reuse the multiplier characterizations. Treat the full leftmost eigenspace in a repeated-eigenvalue hard case. Source formulae involving a single eigenvector are existential representations, not a parametrization by one fixed arbitrary eigenvector.
-'''
 
 [[node]]
 id = "corollary_8_3_1"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Corollary 8.3.1: Global minimizers of the regularization subproblem
-
-Suppose that \( r > 2 \) . Then any global minimizer of (8.1.3) may be expressed as
-
-\[
-{s}_{ * } = \left\{  \begin{array}{l} {s}_{\mathrm{s}}\text{ (uniquely) if }{\lambda }_{ * } >  - {\lambda }_{1}\text{ or } \\  {s}_{\mathrm{s}} + \alpha {v}_{1}\text{ if }{\lambda }_{ * } =  - {\lambda }_{1}, \end{array}\right.\tag{8.3.1}
-\]
-
-where
-
-\[
-{s}_s =  - {\left( H + {\lambda }_{ * }M\right) }^{ + }g\tag{8.3.2}
-\]
-
-\( {\lambda }_{ * } = \sigma {\begin{Vmatrix}{s}_{ * }\end{Vmatrix}}_M^{r - 2},{\lambda }_1 \) is the leftmost eigenvalue of the pencil \( \left( {H, M}\right) ,{v}_1 \) is any corresponding eigenvector, and \( {\alpha }_s \) is one of the two roots of
-
-\[
-{\begin{Vmatrix}{s}_s + \alpha {v}_1\end{Vmatrix}}_M = {\left( {\lambda }_{ * }/\sigma \right) }^{1/\left( {r - 2}\right) }.
-\]
-
-In all cases, the minimum value of the objective function (8.1.4) is
-
-\[
-{m}^R\left( {{s}_{ * },\sigma , r}\right)  = \frac{1}{2}\left( {\left\langle  {g,{s}_s}\right\rangle   - \frac{\left( r - 2\right) }{r}{\lambda }_{ * }{\left( \frac{{\lambda }_{ * }}{\sigma }\right) }^{2/\left( {r - 2}\right) }}\right) .\tag{8.3.3}
-\]
-
-Documented source/OCR correction and formalization requirements: Multiplicity correction: in the singular case represent every minimizer as s_s+v with v in ker(H+λ*M), satisfying the displayed norm equation. Equivalently there EXISTS an eigenvector v1 and scalar α for each minimizer; do not fix an arbitrary v1 and claim it parametrizes every minimizer when the eigenspace has dimension greater than one. With general M, use the M-orthogonal particular solution or permit the full nullspace correction; Euclidean Moore–Penrose inversion need not give the M-minimum-norm solution. Preserve the objective-value identity.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 8.3.1 (OCR Markdown line 9992)"
-deps = ["theorem_8_2_8"]
 
 [[node]]
 id = "corollary_8_3_2"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Corollary 8.3.2: Global minimizers of the trust-region subproblem
-
-Any global minimizer of (8.1.2) is given by (8.3.1), where \( {s}_{\mathrm{s}} \) satisfies (8.3.2), \( {\lambda }_{ * } \geq  0,{\lambda }_{ * }\left( {{\begin{Vmatrix}{s}_{ * }\end{Vmatrix}}_M^2 - {\Delta }^2}\right)  = 0,{\lambda }_1 \) is the leftmost eigenvalue of the pencil \( \left( {H, M}\right) \) , \( {v}_1 \) is any corresponding eigenvector, and \( {\alpha }_s \) is one of the two roots of
-
-\[
-{\begin{Vmatrix}{s}_s + \alpha {v}_1\end{Vmatrix}}_M = \Delta
-\]
-
-In all cases, the minimum value of the objective function (8.1.1) is
-
-\[
-m\left( {s}_{ * }\right)  = \frac{1}{2}\left( {\left\langle  {g,{s}_s}\right\rangle   - {\lambda }_{ * }{\Delta }^2}\right) .\tag{8.3.5}
-\]
-
-Documented source/OCR correction and formalization requirements: Use the full nullspace correction, as in corrected Corollary 8.3.1, in a multiple-eigenvalue hard case. Also impose ||s*||_M≤Δ explicitly. At λ*=0 singular interior solutions can have arbitrary feasible nullspace components, so a requirement that every minimizer have norm Δ is incorrect. The value identity remains valid by complementary slackness.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 8.3.2 (OCR Markdown line 10076)"
-deps = ["theorem_8_2_7"]
+
+[[node]]
+id = "quadraticPencilGeneralizedInverse"
