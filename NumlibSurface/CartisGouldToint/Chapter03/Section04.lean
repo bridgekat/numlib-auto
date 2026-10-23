@@ -3,6 +3,7 @@ import Numlib.Optimization.Descent.LowerPoint
 import Numlib.Optimization.Regularization.InexactNewton.Step
 import Numlib.Optimization.Regularization.InexactNewton.Counting
 import Numlib.Optimization.Regularization.InexactNewton.FirstOrder
+import Numlib.Optimization.Regularization.InexactNewton.SecondOrder
 import Numlib.Optimization.TrustRegion.Regularized.Solve
 
 /-!
@@ -511,6 +512,75 @@ theorem theorem_3_4_11 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ
   simp only [RegularizedTrustRegion.functionEvaluations, Nat.cast_add, Nat.cast_one]
   calc
     (K : ℝ) + 1 ≤ ((f x₀ - flow) / (c * ε₁ ^ (3 / 2 : ℝ)) + 1) * A + R + 1 + 1 :=
+      add_le_add hF le_rfl
+    _ = _ := by dsimp [A]; ring
+
+/-- **Theorem3.4.12.** Full projected second-order iRN complexity with the
+actual first joint stopping point, the terminating subspace's genuine least
+curvature and initialized objective, gradient and Hessian counts. Constants
+precede the lower bound, both accuracies and every execution. -/
+theorem theorem_3_4_12 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [CompleteSpace E] (f : E → ℝ) (x₀ : E)
+    {η γ₁ γ₂ σmin σmax κ₁ κ₂ κ₃ κ₄ L : ℝ}
+    (hη : 0 < η) (_hη1 : η < 1) (hγ₁ : 1 < γ₁) (_hγ₁₂ : γ₁ ≤ γ₂)
+    (hmin : 0 < σmin) (horder : σmin ≤ σmax)
+    (_hκ₁ : 0 < κ₁) (_hκ₂ : 0 < κ₂) (hκ₃ : 0 < κ₃) (hκ₄ : 0 < κ₄)
+    (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤
+      L * ‖y - z‖) :
+    ∃ κT > 0, ∃ κC > 0, ∃ κD > 0,
+      ∀ flow : ℝ, (∀ y, flow ≤ f y) →
+      ∀ ε₁ : ℝ, 0 < ε₁ → ε₁ ≤ 1 →
+      ∀ ε₂ : ℝ, 0 < ε₂ → ε₂ ≤ 1 →
+      ∀ (x s : ℕ → E) (V : ℕ → Submodule ℝ E)
+      (μ ℓ σL σU ρ : ℕ → ℝ), x 0 = x₀ →
+      (∀ N, (∀ i < N,
+        ¬RegularizedTrustRegion.Stopped f (x i) (μ i) ε₁ (ε₂ : WithTop ℝ)) →
+        inexactRegularizedNewtonRun f x s V μ ℓ σL σU ρ η γ₁ γ₂ σmin σmax
+          κ₁ κ₂ κ₃ κ₄ ε₁ (ε₂ : WithTop ℝ) N) →
+      ∃ K, ‖gradient f (x K)‖ ≤ ε₁ ∧ -ε₂ ≤ μ K ∧
+        (∀ i < K, ε₁ < ‖gradient f (x i)‖ ∨ μ i < -ε₂) ∧
+        inexactRegularizedNewtonRun f x s V μ ℓ σL σU ρ η γ₁ γ₂ σmin σmax
+          κ₁ κ₂ κ₃ κ₄ ε₁ (ε₂ : WithTop ℝ) K ∧
+        (RegularizedTrustRegion.functionEvaluations K : ℝ) ≤
+          κC * (f x₀ - flow) / InexactRegularizedNewton.secondOrderScale ε₁ ε₂ + κD ∧
+        (RegularizedTrustRegion.derivativeEvaluations ρ η K : ℝ) ≤
+          κT * (f x₀ - flow) / InexactRegularizedNewton.secondOrderScale ε₁ ε₂ + 2 ∧
+        (RegularizedTrustRegion.derivativeEvaluations ρ η K : ℝ) ≤
+          κT * (f x₀ - flow) / InexactRegularizedNewton.secondOrderScale ε₁ ε₂ + 2 := by
+  let c := InexactRegularizedNewton.secondOrderDecrease σmax γ₂ η κ₂ κ₃ κ₄ L
+  let R := Real.log (InexactRegularizedNewton.upperBound σmax γ₂ η κ₂ L / σmin) /
+    Real.log γ₁
+  let A := 2 + R
+  have hc : 0 < c := InexactRegularizedNewton.secondOrderDecrease_pos
+    (hmin.trans_le horder) hη hκ₃ hκ₄ hL
+  have hR : 0 ≤ R := div_nonneg
+    (Real.log_nonneg ((one_le_div hmin).mpr (horder.trans (le_max_left _ _))))
+    (Real.log_pos hγ₁).le
+  have hA : 0 < A := by dsimp [A]; positivity
+  refine ⟨2 / c, by positivity, (2 / c) * A, by positivity, 2 * A, by positivity, ?_⟩
+  intro flow hlow ε₁ _hε₁ _hε₁1 ε₂ hε₂ _hε₂1 x s V μ ℓ σL σU ρ hx hprefix
+  obtain ⟨K, hstop, hK, _⟩ := InexactRegularizedNewton.exists_secondOrder_termination
+    hprefix hε₂ hf hL hlip hlow
+  have htests := (RegularizedTrustRegion.stopped_iff _ _ _ _ _).mp hstop
+  have hD := hK.secondOrder_successful_card_le rfl hε₂ hf hL hlip hlow
+  rw [hx] at hD
+  have hD' : (RegularizedTrustRegion.derivativeEvaluations ρ η K : ℝ) ≤
+      (2 / c) * (f x₀ - flow) / InexactRegularizedNewton.secondOrderScale ε₁ ε₂ + 2 := by
+    simp only [RegularizedTrustRegion.derivativeEvaluations, Nat.cast_add, Nat.cast_one]
+    calc
+      _ ≤ 2 * (f x₀ - flow) /
+          (c * InexactRegularizedNewton.secondOrderScale ε₁ ε₂) + 1 + 1 :=
+        add_le_add hD le_rfl
+      _ = _ := by ring
+  refine ⟨K, htests.1, htests.2 ε₂ rfl, fun _ hi => hK.finite_failure rfl hi,
+    hK, ?_, hD', hD'⟩
+  have hF := hK.secondOrder_iterations_le rfl hε₂ hf hL hlip hlow
+  rw [hx] at hF
+  simp only [RegularizedTrustRegion.functionEvaluations, Nat.cast_add, Nat.cast_one]
+  calc
+    (K : ℝ) + 1 ≤ (2 * (f x₀ - flow) /
+        (c * InexactRegularizedNewton.secondOrderScale ε₁ ε₂) + 1) * A + R + 1 + 1 :=
       add_le_add hF le_rfl
     _ = _ := by dsimp [A]; ring
 

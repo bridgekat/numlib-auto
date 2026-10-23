@@ -1,0 +1,31 @@
+namespace = "InexactRegularizedNewton"
+
+[[node]]
+id = "secondOrderDecrease"
+
+[[node]]
+id = "secondOrderDecrease_pos"
+
+[[node]]
+id = "secondOrderScale"
+
+[[node]]
+id = "secondOrderScale_pos"
+
+[[node]]
+id = "Run.finite_failure"
+
+[[node]]
+id = "Run.successful_decrease_of_curvature"
+
+[[node]]
+id = "Run.successful_credit_decrease"
+
+[[node]]
+id = "Run.secondOrder_successful_card_le"
+
+[[node]]
+id = "Run.secondOrder_iterations_le"
+
+[[node]]
+id = "exists_secondOrder_termination"

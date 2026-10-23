@@ -53,52 +53,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_3_4_12"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 3.4.12: Second-order complexity of the iRN algorithm
-
-[Appendix to Chapter 3, p. 457]: Suppose that f.Bb and f.HL hold. Then there exist positive constants \( {\kappa }_{\mathrm{iRN}}^T,{\kappa }_{\mathrm{iRN}}^C \) , and \( {\kappa }_{\mathrm{iRN}}^D \) such that, for any \( \left( {{\epsilon }_1,{\epsilon }_2}\right)  \in  (0,1{\rbrack }^2 \) , the iRN algorithm (p. 84) requires at most
-
-\[
-{\# }_{\mathrm{{iRN}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{iRN}}}^{C}\frac{f\left( {x}_{0}\right)  - {f}_{\mathrm{{low}}}}{\min \left\lbrack  {{\epsilon }_{1}^{3/2},{\epsilon }_{2}^{3}}\right\rbrack  } + {\kappa }_{\mathrm{{iRN}}}^{D} = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-3/2},{\epsilon }_{2}^{-3}}\right\rbrack  }\right)\tag{3.4.45}
-\]
-
-evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{IRN}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{IRN}}}^{T}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\min \left\lbrack  {{\epsilon }_{1}^{3/2},{\epsilon }_{2}^{3}}\right\rbrack  } + 2 = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-3/2},{\epsilon }_{2}^{-3}}\right\rbrack  }\right)\tag{3.4.46}
-\]
-
-evaluations of \( {\nabla }_x^{1}f \) and \( {\nabla }_x^{2}f \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) and \( {\lambda }_{\min }\left\lbrack  {{Q}_{\epsilon }^T{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) {Q}_{\epsilon }}\right\rbrack   \geq   - {\epsilon }_2 \) , where \( {Q}_{\epsilon } = {Q}_k \) is as defined in (3.4.32) at the terminating iteration \( k \) .
-
-Having derived satisfactory iteration-complexity bounds, a few remarks concerning the theoretical aspects of the above development are now in order.
-
-Firstly, conditions (3.4.28)-(3.4.32) can be shown to hold when minimizing problem (3.4.27) with respect to \( s \) over increasing (Krylov) subspaces containing \( {\nabla }_x^{1}f\left( {x}_k\right) \lbrack {139} \) , Appendix B].
-
-Secondly, the matrix \( {Q}_k \) in (3.4.32) may be a basis for the subspace in which model problem (3.4.27) is considered, and the second-order criticality condition can then only be achieved for the objective within this subspace. If the intent is to guarantee approximate local convexity for \( f \) , one needs to ensure model minimization over the whole of \( {\mathbb{R}}^n \) , asymptotically or at least during the final iteration.
-
-Finally, the iRN algorithm allows \( {\sigma }_k^{\mathrm{L}} = 0 \) , for example, by setting it as such on successful iterations. This allows \( {\lambda }_k = 0 \) , which corresponds to allowing pure Newton steps \( {s}_k \) to be calculated (provided that \( {Q}_k \) is a basis for a full-dimensional subspace).
-
-Referenced equation payloads:
-
-Equation (3.4.27):
-\[
-\begin{gathered}\mathop{\min }\limits_{{\left( {s,\lambda }\right)  \in  {\mathbb{R}}^{n} \times  {\mathbb{R}}_{ + }}}{m}_{k}\left( s\right) \overset{\text{ def }}{ = }f\left( {x}_{k}\right)  + \left\langle  {{\nabla }_{x}^{1}f\left( {x}_{k}\right) , s}\right\rangle   + \frac{1}{2}\left\langle  {s,\left( {{\nabla }_{x}^{2}f\left( {x}_{k}\right)  + {\lambda I}}\right) s}\right\rangle \\ \text{ subject to }{\sigma }_{k}^{\mathrm{L}}\parallel s\parallel  \leq  \lambda  \leq  {\sigma }_{k}^{\mathrm{U}}\parallel s\parallel\end{gathered}\tag{3.4.27}
-\]
-
-Equation (3.4.28):
-\[
-{\sigma }_k^{\mathrm{L}}\begin{Vmatrix}{s}_k\end{Vmatrix} \leq  {\lambda }_k \leq  {\sigma }_k^{\mathrm{U}}\begin{Vmatrix}{s}_k\end{Vmatrix}.\tag{3.4.28}
-\]
-
-Equation (3.4.32):
-\[
-{\lambda }_{\min }\left\lbrack  {{Q}_k^T{\nabla }_s^{2}m\left( {s}_k\right) {Q}_k}\right\rbrack   \geq   - {\kappa }_4\begin{Vmatrix}{s}_k\end{Vmatrix}\tag{3.4.32}
-\]
-'''
-deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.4.12 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4100)"
 
 [[node]]
