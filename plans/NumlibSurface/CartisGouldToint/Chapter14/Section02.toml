@@ -16,6 +16,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_14_2_2"
+wrong = "False with the literal all-successful-iterations quantifier. A fixed actual infinite p=q=1 ARqp execution on X=R has f(x)=x^2/2, x_k=3/4-10^-6+10^-6*(1/2)^k, s_k=-10^-6*(1/2)^(k+1), epsilon=9/10, zeta=1/2, theta=9/10, and sigma/radii one. Every finite prefix satisfies all actual checks, positive-fraction global model solves, objective ratios and accepted updates. All trials are very successful, the global C1/Lipschitz and initial-sublevel gradient bounds hold, but actual objective decreases tend to zero. Thus no positive kappa can work even after fixing the whole run. The iterates already satisfy true epsilon criticality while the computed relative check keeps selecting trials; a before-true-certificate restriction is needed."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -88,3 +89,7 @@ deps = ["lemma_14_2_3", "theorem_12_2_14", "theorem_13_1_19", "theorem_13_3_8", 
 [[node]]
 id = "lemma_14_2_5"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.5 (OCR Markdown line 16435)"
+
+[[node]]
+id = "lemma_14_2_2_counterexample"
+source = "Cartis, Gould and Toint, Lemma 14.2.2, literal successful-iteration quantifier"

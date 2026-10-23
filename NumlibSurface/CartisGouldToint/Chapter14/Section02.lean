@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.VanishingSteps
 import Numlib.Optimization.HighOrder.ConstrainedCriticality
 import Numlib.Optimization.Sparse.BoxLinear
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -120,5 +121,46 @@ theorem lemma_14_2_5 {n : ℕ} (x g : Fin n → ℝ) (k : ℕ) {δ : ℝ}
     exact hmin ((SparseBox.admissible_iff_norm hδ).mpr ⟨hs, hcard⟩)
   · rw [SparseBox.sum_binary hR.1]
     exact_mod_cast hR.1.2
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Counterexample to the literal Lemma 14.2.2.** A fixed exact ARqp run on
+`X = ℝ` has an actual prefix of every finite length and every trial is successful,
+but its accepted objective decreases tend to zero. All required first-order
+smoothness and initial-level derivative bounds hold. Therefore no positive
+uniform decrease coefficient exists, even after fixing this entire run.
+
+The iterates already satisfy true epsilon criticality; their computed relative
+checks still select a trial. Restricting the decrease claim to iterations before
+a true certificate is an essential correction. -/
+theorem lemma_14_2_2_counterexample :
+    let f := HighOrderRegularization.ObstructionCounterexample.objective
+    let P := HighOrderRegularization.ObstructionCounterexample.settings
+    let D := HighOrderRegularization.VanishingSteps.data
+    IsClosed (Set.univ : Set ℝ) ∧ Convex ℝ (Set.univ : Set ℝ) ∧
+      (Set.univ : Set ℝ).Nonempty ∧ ContDiff ℝ 1 f ∧
+      (∀ x y, ‖iteratedFDeriv ℝ 1 f x - iteratedFDeriv ℝ 1 f y‖ ≤ ‖x - y‖) ∧
+      (∀ x, f x ≤ f (D.point 0) → ‖iteratedFDeriv ℝ 1 f x‖ ≤ 1) ∧
+      (∀ x, 0 ≤ f x) ∧
+      (∀ N, HighOrderRegularization.Run f P (fun _ => 9 / 10) D N) ∧
+      (∀ k, P.eta1 ≤ D.ratio k) ∧
+      (∀ k, highOrderConstrainedCriticality f 1 Set.univ (D.point k) 1 =
+        TaylorModel.criticality f 1 (D.point k) 1) ∧
+      ¬∃ κ : ℝ, 0 < κ ∧ ∀ k : ℕ, P.eta1 ≤ D.ratio k →
+        κ * (9 / 10 : ℝ) ^ 2 ≤ f (D.point k) - f (D.point (k + 1)) := by
+  dsimp only
+  obtain ⟨hsmooth, hlip, hlow⟩ :=
+    HighOrderRegularization.ObstructionCounterexample.objective_regularity
+  refine ⟨isClosed_univ, convex_univ, Set.univ_nonempty, hsmooth,
+    ?_, fun x hx => HighOrderRegularization.VanishingSteps.level_gradient_bound hx,
+    hlow, HighOrderRegularization.VanishingSteps.run,
+    HighOrderRegularization.VanishingSteps.successful, ?_,
+    HighOrderRegularization.VanishingSteps.no_uniform_decrease⟩
+  · intro x y
+    simpa only [one_mul] using hlip x y
+  · intro k
+    exact TaylorModel.constrainedCriticality_univ _ _ _ _
 
 end CartisGouldToint

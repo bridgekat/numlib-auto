@@ -1,0 +1,43 @@
+namespace = "HighOrderRegularization.VanishingSteps"
+
+[[node]]
+id = "magnitude"
+
+[[node]]
+id = "magnitude_mem"
+
+[[node]]
+id = "step_computation"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "point_mem"
+
+[[node]]
+id = "point_succ"
+
+[[node]]
+id = "ratio_lower"
+
+[[node]]
+id = "data"
+
+[[node]]
+id = "modelTrace"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "level_gradient_bound"
+
+[[node]]
+id = "successful"
+
+[[node]]
+id = "decrease_tendsto_zero"
+
+[[node]]
+id = "no_uniform_decrease"
