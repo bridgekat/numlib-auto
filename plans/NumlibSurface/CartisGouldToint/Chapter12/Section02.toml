@@ -9,12 +9,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "arqpRun"
-kind = "definition"
-desc = '''
-Bundle Algorithm 12.2.2 and its detailed Step 2 (Algorithm 12.2.3), with 1≤q≤p, σmin>0, σ0≥σmin, θ∈(0,1), ς∈(0,1], 0<η1≤η2<1 and 0<γ1<1<γ2<γ3. mk(s)=T_(f,p)(xk,s)+σk||s||^(p+1)/(p+1)!. Step 1 applies the per-order approximate optimality checks (12.2.26); Step 2 demands mk(sk)≤mk(0), and either ||sk||>1 or fractional qth-order model criticality tests (12.2.29) with radii δ_(sk,j)∈(0,1]. Step 3 accepts using the true function/Taylor-decrement ratio (12.2.30); successful steps update x and optimality radii; unsuccessful steps keep them. σ updates in exactly the three intervals (12.2.31). Model-equality termination is separate from normal Step 1 termination. No existence, progress or complexity guarantees are stored as fields.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.2"
-deps = ["isApproximateHighOrderMinimizer"]
+source = "Cartis, Gould and Toint, Algorithms12.2.2–3, finite operational execution; retain criticality tests at norm exactly one to match the strict large-step exit. Actual zero-decrease exit and initialized evaluation convention."
 
 [[node]]
 id = "lemma_12_2_1"

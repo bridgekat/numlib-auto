@@ -1,0 +1,32 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "Settings"
+
+[[node]]
+id = "OptimalityCheck"
+
+[[node]]
+id = "ExecutionData"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "OptimalityAt"
+
+[[node]]
+id = "TargetAt"
+
+[[node]]
+id = "OptimalityCheck.optimality_of_none"
+
+[[node]]
+id = "Run.restrict"
+
+[[node]]
+id = "Run.radius_mem"
+
+[[node]]
+id = "Run.target_of_none"
+

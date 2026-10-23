@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.RunTarget
 import Numlib.Optimization.HighOrder.StepLower
 import Numlib.Optimization.Regularization.HighOrder.CriticalityObstruction
 import Numlib.Optimization.HighOrder.ModelSolve.Sharp
@@ -609,5 +610,18 @@ theorem lemma_12_2_12_corrected {n p q N i : ℕ} {f : EuclideanSpace ℝ (Fin n
     exact hunit a (by unfold InexactTrustRegion.modelOrder; omega)
   · intro hshort
     exact (mul_le_mul_of_nonneg_right (min_le_left _ _) (hε a).1.le).trans (hfloor hshort a)
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The finite operational ARqp execution of Algorithm12.2.2, with actual
+ordered objective Taylor checks and Algorithm12.2.3 model-solve/radius tests.
+The exact-zero model branch terminates before a trial objective evaluation.
+The strict large-step exit retains criticality tests at norm exactly one. -/
+abbrev arqpRun {n p q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (P : HighOrderRegularization.Settings p q) (ε : Fin q → ℝ)
+    (D : HighOrderRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+    (N : ℕ) : Prop := HighOrderRegularization.Run f P ε D N
 
 end CartisGouldToint
