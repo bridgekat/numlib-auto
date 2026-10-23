@@ -1,0 +1,13 @@
+namespace = "HighOrderStep"
+
+[[node]]
+id = "criticalityCoefficient"
+
+[[node]]
+id = "criticalityCoefficient_mem"
+
+[[node]]
+id = "criticalityCoefficient_antitone"
+
+[[node]]
+id = "two_mul_criticalityCoefficient_le_sum"

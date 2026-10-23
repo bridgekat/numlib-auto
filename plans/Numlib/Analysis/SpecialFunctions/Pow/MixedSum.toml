@@ -1,0 +1,10 @@
+namespace = "Real"
+
+[[node]]
+id = "sum_range_inv_succ_factorial_le_two"
+
+[[node]]
+id = "sum_range_mixed_pow_le_two_top"
+
+[[node]]
+id = "sum_range_mixed_pow_le_two_first"

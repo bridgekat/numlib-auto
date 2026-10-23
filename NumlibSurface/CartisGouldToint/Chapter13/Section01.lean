@@ -8,7 +8,7 @@ import Numlib.Optimization.TrustRegion.Inexact.Acceptance
 import Numlib.Optimization.TrustRegion.Inexact.Radius
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
-import Numlib.Optimization.Regularization.Inexact.RunObstruction
+import Numlib.Optimization.Regularization.Inexact.RunStepPowers
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -784,5 +784,43 @@ theorem lemma_13_1_16_corrected {n p q : ℕ}
           ‖D.step k‖ ^ (p - (i + 1) + 1) / (i + 1).factorial :=
   h.criticality_obstruction hf hL hlip hk ht haccepted hs
     (h.parameter_le hf hL hlip hk.le) hnot
+
+/-- **Corrected Lemma 13.1.17.** Both step-length accuracy rates follow for
+actual successful trials before true approximate optimality. The common radius
+coefficient is reduced to the minimum of the proved radius coefficient and
+`(1-theta)/(2*q!*C)`; this repairs the unjustified coefficient comparison in the
+shorter-than-radius branch of the source proof. The uniform parameter cap also
+retains the documented guarded-accuracy repair of Lemma13.1.14. The literal
+printed coefficients remain a separate open target. -/
+theorem lemma_13_1_17_corrected {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+    (N : ℕ) (h : InexactRegularization.Run f P ε D N)
+    {k : ℕ} (hk : k < N) (ht : k ∈ D.trials) (haccepted : P.eta1 ≤ D.ratio k)
+    (hnot : ¬InexactRegularization.OptimalityAt f ε (D.point (k + 1))
+      (D.startRadius (k + 1))) :
+    let S := InexactRegularization.executionParameterCap P L
+    let M := L + P.errorBound * P.initialCap
+    let C := L + S + 3 * P.errorBound * P.stepCoefficient
+    let κ := InexactRegularization.safeRadiusCoefficient P L M S
+    0 < κ ∧ κ ≤ 1 ∧ ∃ a,
+      (if q ≤ 2 then
+        (HighOrderStep.criticalityCoefficient P.theta C (modelOrder a)) ^
+          (1 / ((p - modelOrder a + 1 : ℕ) : ℝ)) *
+        (ε a) ^ (1 / ((p - modelOrder a + 1 : ℕ) : ℝ))
+      else
+        (HighOrderStep.criticalityCoefficient P.theta C (modelOrder a) *
+          κ ^ (modelOrder a - 1)) ^ (1 / (p : ℝ)) *
+          (ε a) ^ ((modelOrder a : ℝ) / p)) ≤ ‖D.step k‖ := by
+  have hM : 1 ≤ L + P.errorBound * P.initialCap := hL.trans
+    (le_add_of_nonneg_right (mul_nonneg P.errorBound_nonneg P.initialCap_nonneg))
+  exact h.step_lower_of_cap hf hL hM (hlip p le_rfl)
+    (fun k hk => h.parameter_le hf (zero_le_one.trans hL) (hlip p le_rfl) hk)
+    (fun k hk i hi hip => h.tensor_norm_le (zero_le_one.trans hL)
+      (fun j hj => hlip j hj.le) hk (by omega) hip)
+    hk ht haccepted hnot
 
 end CartisGouldToint

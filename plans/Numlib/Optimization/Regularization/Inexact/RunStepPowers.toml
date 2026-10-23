@@ -1,0 +1,10 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "safeRadiusCoefficient"
+
+[[node]]
+id = "Run.step_powers_of_cap"
+
+[[node]]
+id = "Run.step_lower_of_cap"
