@@ -1,13 +1,4 @@
 namespace = "CartisGouldToint"
 
-desc = '''
-Appendix B, Chapter 3: the sole newly numbered result is the elementary radical inequality B.3.1. Other appendix text proves already numbered main-body results and must not be duplicated. This is an independent initial proof target; Mathlib Real.sqrt_sq_eq_abs, sq_sqrt, sqrt_le_sqrt, nonnegativity and ordered-ring tactics suffice.
-'''
-
 [[node]]
 id = "lemma_B_3_1"
-kind = "theorem"
-desc = '''
-For real a,b,c with a>0,b>0,c>=0, prove -b+sqrt(b^2+a*c) >= (-b+sqrt(b^2+a))*min(1,c), exactly (B.3.1). Split c>=1 (monotonicity of sqrt) and 0<=c<=1 (rationalize sqrt or compare nonnegative squares). Include c=0 and c=1. Do not strengthen c>=0 to c>0.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.3.1, equation (B.3.1)"
