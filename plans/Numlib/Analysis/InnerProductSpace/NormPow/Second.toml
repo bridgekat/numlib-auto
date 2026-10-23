@@ -1,0 +1,22 @@
+namespace = "NormPower"
+
+[[node]]
+id = "hasFDerivAt_first_of_ne_zero"
+
+[[node]]
+id = "first_zero"
+
+[[node]]
+id = "hasFDerivAt_first_zero"
+
+[[node]]
+id = "second_zero_of_two_lt"
+
+[[node]]
+id = "hasFDerivAt_first_of_two_lt"
+
+[[node]]
+id = "fderiv_fderiv_normPower_of_two_lt"
+
+[[node]]
+id = "second_self_nonneg_of_two_lt"
