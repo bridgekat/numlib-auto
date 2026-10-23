@@ -1,0 +1,4 @@
+namespace = "ModelSolve"
+
+[[node]]
+id = "stepComputation_unit_of_isMin"

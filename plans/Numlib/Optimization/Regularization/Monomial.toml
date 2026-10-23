@@ -1,0 +1,7 @@
+namespace = "MonomialRegularization"
+
+[[node]]
+id = "weighted_power"
+
+[[node]]
+id = "global_min"

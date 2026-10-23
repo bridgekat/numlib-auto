@@ -1,0 +1,7 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "model_eq_balanced"
+
+[[node]]
+id = "model_global_min"
