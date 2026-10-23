@@ -1,0 +1,16 @@
+namespace = "QuadraticSecular.HardCase"
+
+[[node]]
+id = "inverseStep"
+
+[[node]]
+id = "rayleighValue"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "inverseStep_eq"
+
+[[node]]
+id = "rayleighValue_apply"

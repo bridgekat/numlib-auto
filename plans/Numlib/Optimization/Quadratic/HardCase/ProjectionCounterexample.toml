@@ -1,0 +1,97 @@
+namespace = "QuadraticSecular.HardCaseCounterexample"
+
+[[node]]
+id = "Space"
+
+[[node]]
+id = "metric"
+
+[[node]]
+id = "hessian"
+
+[[node]]
+id = "leastVector"
+
+[[node]]
+id = "trappedVector"
+
+[[node]]
+id = "metric_apply"
+
+[[node]]
+id = "hessian_apply"
+
+[[node]]
+id = "inner_metric"
+
+[[node]]
+id = "inner_hessian"
+
+[[node]]
+id = "metric_coercive"
+
+[[node]]
+id = "hessian_symmetric"
+
+[[node]]
+id = "trapped_metric_norm"
+
+[[node]]
+id = "least_metric_norm"
+
+[[node]]
+id = "printed_projection"
+
+[[node]]
+id = "metric_projection_zero"
+
+[[node]]
+id = "least_eigenvector"
+
+[[node]]
+id = "trapped_eigenvector"
+
+[[node]]
+id = "least_rayleigh"
+
+[[node]]
+id = "shifted_positive"
+
+[[node]]
+id = "shifted_invertible"
+
+[[node]]
+id = "raw_inverse"
+
+[[node]]
+id = "inverse_metric_norm"
+
+[[node]]
+id = "inverseStep_fixed"
+
+[[node]]
+id = "trapped_rayleigh"
+
+[[node]]
+id = "least_rayleigh_value"
+
+[[node]]
+id = "shifts"
+
+[[node]]
+id = "shifts_gt_one"
+
+[[node]]
+id = "initial_le_shifts"
+
+[[node]]
+id = "shifts_not_tendsto"
+
+[[node]]
+id = "run_of_gt_one"
+
+[[node]]
+id = "upper_secular_region"
+
+[[node]]
+id = "arbitrarily_close_counterexample"

@@ -4,12 +4,6 @@ namespace = "CartisGouldToint"
 
 [[node]]
 id = "hardCaseInverseIterationRun"
-kind = "definition"
-desc = '''
-Algorithm 9.3.1: starting λ0^G>−λ1 and an M-unit vector z0 with nonzero projection onto the least eigenspace, perform nk≥1 normalized inverse iterations with H+λk^G M, obtaining z_(k+1). Choose ωk∈[ωL,ωU] with 0<ωL≤ωU and γk∈[γL,2nk−γU], γL>1,γU>0. Update λ_(k+1)^G=−ρ_(H,M)(z_(k+1))+ωk |λk^G+ρ_(H,M)(z_(k+1))|^γk. Preserve exact normalization and source scale from Algorithm 9.3.1; include no convergence assumption.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 9.3"
-deps = ["weightedNorm"]
 
 [[node]]
 id = "regularizationStepTermination"
@@ -28,6 +22,7 @@ Documented source/OCR correction and formalization requirements: Include the spe
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 9.3.1 (OCR Markdown line 10323)"
 deps = ["hardCaseInverseIterationRun"]
+wrong = "The printed Euclidean projection in Z1 is insufficient for a general metric. Actual matrices M=[[1,-1],[-1,2]], H=[[-1,1],[1,-1]], least vector(1,0), and start(1,1) satisfy all source conditions, but every normalized inverse step fixes the higher eigenvector and legal fixed n=2,gamma=2,omega=1 gives shift_next=shift squared. Arbitrarily close shifts above1 fail to converge to1. See theorem_9_3_1_counterexample. The corrected target requires metric projection."
 
 [[node]]
 id = "theorem_9_3_2"
@@ -65,3 +60,29 @@ The weighted Hessian bound is correct and recovers the Euclidean result forM=I.
 [[node]]
 id = "theorem_9_3_2_scaled"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 9.3.2 (metric-scaled correction of Equation 9.3.14c)"
+
+[[node]]
+id = "theorem_9_3_1_counterexample"
+
+[[node]]
+id = "theorem_9_3_1_metric"
+kind = "theorem"
+desc = '''
+Corrected companion to Theorem9.3.1: replace the source's Euclidean Z1 guard by
+nonzero metric projection onto the least generalized eigenspace, equivalently a
+nonzero basis coordinate in an M-orthonormal generalized eigenbasis. Keep the
+actual normalized inverse solves and all legal Algorithm9.3.1 controls, including
+variable nk and gamma_k that become constant only eventually, bounded positive
+omega_k, gammaU in(0,1], 1<gammaL<=2-gammaU, gamma_k<=2nk-gammaU, and nU possibly
+infinite. For fixed admissible controls and initial metric-unit vector with the
+correct projection, sufficiently close initial shifts above -lambda1 generate
+valid positive-definite iterates converging to -lambda1 with Q-order gamma_bar.
+The local radius may depend on the fixed finite control prefix before eventual
+constancy. State Q-order as eventual positive two-sided bounds on the ratio of
+successive errors to error^gamma_bar; do not demand a ratio limit when omega_k
+need not converge. Prove the spectral subspace contraction, Rayleigh error and
+local dynamical estimates from the actual operations, without assuming them in
+the run. Original printed theorem remains wrong, separately witnessed above.
+'''
+source = "Metric-projection correction of Cartis, Gould and Toint, Theorem9.3.1 and Algorithm9.3.1"
+deps = ["hardCaseInverseIterationRun"]
