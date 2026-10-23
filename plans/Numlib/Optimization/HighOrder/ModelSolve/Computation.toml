@@ -1,0 +1,23 @@
+namespace = "ModelSolve"
+
+[[node]]
+id = "StepComputation"
+
+[[node]]
+id = "StepComputation.nonincrease"
+
+[[node]]
+id = "StepComputation.radius_mem"
+
+[[node]]
+id = "StepComputation.unit_radius"
+
+[[node]]
+id = "StepComputation.criticality"
+
+[[node]]
+id = "StepComputation.radius_lower"
+
+[[node]]
+id = "exists_stepComputation_of_isMin"
+

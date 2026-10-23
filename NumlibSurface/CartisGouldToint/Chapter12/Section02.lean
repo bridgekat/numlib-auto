@@ -348,7 +348,7 @@ theorem lemma_12_2_10 {n p q : ℕ}
     (direction : Fin q → EuclideanSpace ℝ (Fin n))
     (hfeasible : ∀ a, ‖direction a‖ ≤ δ₀ a) {ζ : ℝ} (hζ : 0 < ζ)
     (hfailed : ∃ a, ζ * ε a * δ₀ a ^ InexactTrustRegion.modelOrder a /
-      (InexactTrustRegion.modelOrder a).factorial <
+      (InexactTrustRegion.modelOrder a).factorial ≤
         TaylorModel.decrement f (InexactTrustRegion.modelOrder a) x (direction a)) :
     3 ≤ q ∧ ∃ δ : Fin q → ℝ, (∀ a, 0 < δ a ∧ δ a ≤ 1) ∧
       ∀ a, TaylorModel.criticality f (InexactTrustRegion.modelOrder a) x (δ a) ≤

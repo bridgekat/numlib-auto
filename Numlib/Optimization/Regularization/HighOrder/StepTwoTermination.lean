@@ -29,7 +29,7 @@ theorem zero_step_termination {f : E → ℝ} {p q : ℕ} {x s : E}
     (ε δ₀ : Fin q → ℝ) (hε : ∀ a, 0 < ε a) (hδ₀ : ∀ a, 0 < δ₀ a)
     (direction : Fin q → E) (hfeasible : ∀ a, ‖direction a‖ ≤ δ₀ a)
     {ζ : ℝ} (hζ : 0 < ζ)
-    (hfailed : ∃ a, ζ * ε a * δ₀ a ^ modelOrder a / (modelOrder a).factorial <
+    (hfailed : ∃ a, ζ * ε a * δ₀ a ^ modelOrder a / (modelOrder a).factorial ≤
       TaylorModel.decrement f (modelOrder a) x (direction a)) :
     3 ≤ q ∧ ∃ δ : Fin q → ℝ, (∀ a, 0 < δ a ∧ δ a ≤ 1) ∧
       ∀ a, TaylorModel.criticality f (modelOrder a) x (δ a) ≤
