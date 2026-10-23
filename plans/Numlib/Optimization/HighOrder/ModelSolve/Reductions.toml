@@ -1,0 +1,10 @@
+namespace = "ModelSolve"
+
+[[node]]
+id = "RadiusReductions"
+
+[[node]]
+id = "RadiusReductions.radius_lower"
+
+[[node]]
+id = "CriticalHalvingRun.toRadiusReductions"

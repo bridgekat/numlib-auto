@@ -20,3 +20,6 @@ id = "exists_attaining_criticalHalvingRun"
 
 [[node]]
 id = "CriticalHalvingRun.criticality_le_of_approximation"
+
+[[node]]
+id = "CriticalHalvingRun.radius_lower"

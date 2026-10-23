@@ -52,6 +52,33 @@ theorem criticalityPasses_of_radius_le {f : E → ℝ} {j p : ℕ}
     div_pos (mul_pos (half_pos hα) (pow_pos hδ j)) (by positivity)
   linarith [hmin (x + d t)]
 
+/-- An actual rejected prefix bounds the final criticality radius from below;
+no radius floor is assumed in the finite loop specification. -/
+theorem CriticalHalvingRun.radius_lower {f : E → ℝ} {j p N : ℕ}
+    (hj : 0 < j) (hjp : j ≤ p) (hf : ContDiff ℝ p f)
+    {L B α δ₀ : ℝ} (hL : 0 ≤ L) (hB : 0 < B) (hLB : L ≤ B) (hα : 0 < α)
+    (hlip : ∀ u v, ‖iteratedFDeriv ℝ p f u - iteratedFDeriv ℝ p f v‖ ≤ L * ‖u - v‖)
+    (x : E) (hmin : ∀ t : E, f x ≤ f t)
+    (hA : ∀ a, j < a → a ≤ p → ‖iteratedFDeriv ℝ a f x‖ ≤ B)
+    (hδ₀ : 0 < δ₀) (hδ₀1 : δ₀ ≤ 1) (d : ℕ → E)
+    (hd : ∀ t, ‖d t‖ ≤ BacktrackingGradient.step δ₀ t)
+    (h : CriticalHalvingRun f j x α δ₀ d N) :
+    min (α / (8 * B)) δ₀ ≤ BacktrackingGradient.step δ₀ N := by
+  cases N with
+  | zero => simp
+  | succ k =>
+    have hprev : α / (4 * B) < BacktrackingGradient.step δ₀ k := by
+      apply lt_of_not_ge
+      intro hh
+      exact h.rejected k (by omega)
+        (criticalityPasses_of_radius_le hj hjp hf hL hB hLB hα hlip x hmin hA
+          hδ₀ hδ₀1 d hd hh)
+    rw [BacktrackingGradient.step_succ]
+    apply (min_le_left _ _).trans
+    have he : α / (8 * B) = (α / (4 * B)) / 2 := by ring
+    rw [he]
+    exact div_le_div_of_nonneg_right hprev.le (by norm_num)
+
 /-- Every feasible direction schedule gives a genuine finite first-passing
 halving loop, with an explicit final radius floor and all prefix bounds. -/
 theorem exists_criticalHalvingRun {f : E → ℝ} {j p : ℕ}
@@ -76,20 +103,7 @@ theorem exists_criticalHalvingRun {f : E → ℝ} {j p : ℕ}
   have hrun : CriticalHalvingRun f j x α δ₀ d N :=
     ⟨Nat.find_spec hex, fun t ht => Nat.find_min hex ht⟩
   refine ⟨N, hrun, ?_, ?_⟩
-  · cases hN : N with
-    | zero => simp
-    | succ k =>
-      have hprev : α / (4 * B) < BacktrackingGradient.step δ₀ k := by
-        apply lt_of_not_ge
-        intro hh
-        exact hrun.rejected k (by omega)
-          (criticalityPasses_of_radius_le hj hjp hf hL hB hLB hα hlip x hmin hA
-            hδ₀ hδ₀1 d hd hh)
-      rw [BacktrackingGradient.step_succ]
-      apply (min_le_left _ _).trans
-      have he : α / (8 * B) = (α / (4 * B)) / 2 := by ring
-      rw [he]
-      exact div_le_div_of_nonneg_right hprev.le (by norm_num)
+  · exact hrun.radius_lower hj hjp hf hL hB hLB hα hlip x hmin hA hδ₀ hδ₀1 d hd
   · intro t ht
     exact ⟨BacktrackingGradient.step_antitone hδ₀.le ht,
       (BacktrackingGradient.step_antitone hδ₀.le (Nat.zero_le t)).trans (by simp)⟩

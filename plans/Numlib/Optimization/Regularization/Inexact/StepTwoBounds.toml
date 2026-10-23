@@ -1,0 +1,19 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "referenceStepThreshold"
+
+[[node]]
+id = "referenceStepThreshold_pos"
+
+[[node]]
+id = "referenceStepThreshold_le_one"
+
+[[node]]
+id = "model_drop_le_two_mul_norm"
+
+[[node]]
+id = "norm_step_ge_of_reference"
+
+[[node]]
+id = "requests_of_reference"
