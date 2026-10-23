@@ -1,0 +1,10 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "tensorErrorBudget"
+
+[[node]]
+id = "TerminationCheck"
+
+[[node]]
+id = "TerminationCheck.true_optimality"

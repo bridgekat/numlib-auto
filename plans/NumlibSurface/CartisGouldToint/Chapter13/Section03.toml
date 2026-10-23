@@ -1,18 +1,13 @@
 namespace = "CartisGouldToint"
 [[node]]
 id = "explicitAccuracyVerifier"
-kind = "definition"
-desc = '''
-Define VERIFY exactly from the source conditions (13.3.1)–(13.3.2): input absolute bounds on the approximate tensor errors, requested absolute/relative accuracy and trial decrement; return relative, absolute, or insufficient accuracy only after the corresponding finite sum of error bounds passes its test. The truth of the Taylor-error estimate is a theorem, not an assumed verifier field.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 13.3"
-deps = ["implicitAccuracyOracle"]
 
 [[node]]
 id = "trqedaRun"
 kind = "definition"
 desc = '''
-Algorithm 13.3.1: the explicit-accuracy variant of TRqIDA with VERIFY decisions, ω choice (13.3.3), inexact function evaluations satisfying (13.3.4), and the full absolute/relative/insufficient branches in Steps 1–5. Function values in the acceptance numerator are approximate; convergence and true decrease must be derived using their certified errors.
+Algorithm 13.3.1 with its actual computed polynomial and known unit tensor-error bounds. Step 1 approximates each computed criticality measure, branches on the failed positive-order test, and certifies termination only after the finite total budget comparison (13.3.8). Step 2 compares the selected computed decrement and checks step-scaled derivative requests. Step 3 uses both approximate objective values, each with absolute error at most h0 and h0 at most κs times the computed decrement; κs is at most one quarter of min(η1,1−η2). Preserve radius updates, point acceptance, and geometric accuracy reduction with point/radius unchanged. Derive true optimality, acceptance and evaluation counts.
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 13.3"
 deps = ["explicitAccuracyVerifier", "trqidaRun"]
@@ -21,7 +16,7 @@ deps = ["explicitAccuracyVerifier", "trqidaRun"]
 id = "arqpedaRun"
 kind = "definition"
 desc = '''
-Algorithm 13.3.2: the explicit-accuracy variant of ARqpIDA, including Step 1.5 model comparison, explicit derivative errors, (13.3.3) and inexact function-value controls. Retain Step 1.5.1 termination versus Step 1.5.2 accuracy-improvement branch and the detailed Step 2 loops. Bundle transition conditions and counters only.
+Algorithm 13.3.2 with actual inexact regularized Taylor models. Steps 1.1–1.4 retain the computed optimality tests and finite radius-halving loop; Step 1.5 certifies each order by its explicit finite tensor-error budget (13.3.17). Step 2 uses the genuine approximate model derivatives and its short-step accuracy guard, interpreted over all p derivative orders as required by (13.1.46). Step 3 bounds both objective errors by h0≤κs times the computed decrement and uses their actual approximate ratio. Retain point/radius propagation, three parameter-update branches and geometric accuracy reduction. The uniform parameter bound must account for the initial accuracy cap when the step is at least one; it is not a field of the run.
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 13.3"
 deps = ["explicitAccuracyVerifier", "arqpidaRun"]
@@ -184,3 +179,10 @@ Documented source/OCR correction and formalization requirements: OCR repair: in 
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.3.8 (OCR Markdown line 15449)"
 deps = ["lemma_13_3_6", "lemma_13_3_7", "theorem_13_1_19"]
+
+[[node]]
+id = "edaTerminationCheck"
+
+[[node]]
+id = "lemma_13_3_3_optimality"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.3(i)"

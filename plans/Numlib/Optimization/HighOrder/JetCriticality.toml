@@ -1,0 +1,31 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "jetCriticality"
+
+[[node]]
+id = "continuous_jetDecrement"
+
+[[node]]
+id = "exists_jetDecrement_eq_jetCriticality"
+
+[[node]]
+id = "jetDecrement_le_jetCriticality"
+
+[[node]]
+id = "jetCriticality_nonneg"
+
+[[node]]
+id = "jetCriticality_le_iff"
+
+[[node]]
+id = "norm_jetDecrement_sub_le_radius"
+
+[[node]]
+id = "abs_jetCriticality_sub_le"
+
+[[node]]
+id = "jetCriticality_ftaylorSeries"
+
+[[node]]
+id = "criticality_le_of_verified_jet"

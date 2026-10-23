@@ -1,4 +1,5 @@
 import Numlib.Optimization.TrustRegion.Inexact.FunctionValues
+import Numlib.Optimization.TrustRegion.Inexact.VerifiedOptimality
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
@@ -54,5 +55,38 @@ theorem lemma_13_3_1 {n q : ℕ}
   rw [← hratio] at hs
   exact ⟨hs, (show Δ (k + 1) ∈ Set.Icc (Δ k) (min Δmax (γ₃ * Δ k)) by
     simpa only [ite_eq_left hs] using hu.update k hkN hk).1⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The explicit finite error-budget verification used by the EDA stopping tests. -/
+noncomputable abbrev explicitAccuracyVerifier (accuracy : ℕ → ℝ) (q : ℕ)
+    (δ tolerance : ℝ) : Prop :=
+  InexactTrustRegion.tensorErrorBudget accuracy q δ ≤ tolerance
+
+/-- The computed selection, passing tests and verified finite derivative-error
+budget at the end of Step 1 of TRqEDA. This is the termination-check component,
+not a specification of the whole algorithm. -/
+abbrev edaTerminationCheck {n q : ℕ}
+    (A : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (δ ζ : ℝ) (ε : Fin q → ℝ) (d : Fin q → EuclideanSpace ℝ (Fin n))
+    (accuracy : ℕ → ℝ) : Prop :=
+  InexactTrustRegion.TerminationCheck A δ ζ ε d accuracy
+
+/-- The optimality assertion (i) of Lemma 13.3.3: passing the actual computed
+all-order checks and the explicit finite accuracy test certifies all true Taylor
+criticality tolerances. The finite-loop assertion (ii) is separate. -/
+theorem lemma_13_3_3_optimality {n q : ℕ}
+    {A : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {δ ζ : ℝ} {ε : Fin q → ℝ} {d : Fin q → EuclideanSpace ℝ (Fin n)}
+    {accuracy : ℕ → ℝ} (h : edaTerminationCheck A δ ζ ε d accuracy)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    (horacle : ∀ a, 1 ≤ a → a ≤ q →
+      ‖A a - iteratedFDeriv ℝ a f x‖ ≤ accuracy a) :
+    ∀ a : Fin q, TaylorModel.criticality f (InexactTrustRegion.modelOrder a) x δ ≤
+      ε a * δ ^ InexactTrustRegion.modelOrder a /
+        (InexactTrustRegion.modelOrder a).factorial :=
+  h.true_optimality f x horacle
 
 end CartisGouldToint
