@@ -8,3 +8,6 @@ id = "norm_multilinear_le_sqrt_dim_mul"
 
 [[node]]
 id = "norm_iteratedFDeriv_le_componentwise"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_le_componentwise"

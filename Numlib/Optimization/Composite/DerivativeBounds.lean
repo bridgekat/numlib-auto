@@ -56,3 +56,32 @@ theorem norm_iteratedFDeriv_le_componentwise {m p : ℕ}
   rw [← he]
   exact norm_iteratedFDeriv_le_of_lipschitz_lower hL (hlip i) ha hap x
 end Composite
+
+namespace Composite
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+
+/-- Componentwise actual derivative Lipschitz constants give the square-root
+dimension Lipschitz constant for the genuine vector derivative tensor. -/
+theorem norm_iteratedFDeriv_sub_le_componentwise {m p : ℕ}
+    {c : E → EuclideanSpace ℝ (Fin m)} (hc : ContDiff ℝ p c) {L : ℝ} (hL : 0 ≤ L)
+    (hlip : ∀ i u v,
+      ‖iteratedFDeriv ℝ p (fun z => c z i) u -
+        iteratedFDeriv ℝ p (fun z => c z i) v‖ ≤ L * ‖u - v‖) (u v : E) :
+    ‖iteratedFDeriv ℝ p c u - iteratedFDeriv ℝ p c v‖ ≤
+      Real.sqrt m * L * ‖u - v‖ := by
+  have hb := norm_multilinear_le_sqrt_dim_mul
+    (iteratedFDeriv ℝ p c u - iteratedFDeriv ℝ p c v)
+    (mul_nonneg hL (norm_nonneg (u - v))) (fun i => by
+      let P := EuclideanSpace.proj (𝕜 := ℝ) i
+      have he : P.compContinuousMultilinearMap
+          (iteratedFDeriv ℝ p c u - iteratedFDeriv ℝ p c v) =
+          P.compContinuousMultilinearMap (iteratedFDeriv ℝ p c u) -
+            P.compContinuousMultilinearMap (iteratedFDeriv ℝ p c v) := by
+        ext w
+        simp [P]
+      rw [he, ← P.iteratedFDeriv_comp_left (hc.contDiffAt (x := u)) le_rfl,
+        ← P.iteratedFDeriv_comp_left (hc.contDiffAt (x := v)) le_rfl]
+      exact hlip i u v)
+  convert hb using 1
+  ring
+end Composite
