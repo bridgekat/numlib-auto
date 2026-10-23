@@ -1,3 +1,4 @@
+import Numlib.Optimization.Constrained.TwoPhase.FullBoundary
 import NumlibSurface.CartisGouldToint.Chapter06.Section03
 import Numlib.Optimization.Regularization.Convex.LeastSquares.PhaseOneComplexity
 import Numlib.Optimization.Constrained.TwoPhase.Geometry
@@ -15,6 +16,15 @@ are explicit. The general feasibility Phase1 execution remains separate.
 
 open Set
 namespace CartisGouldToint
+
+/-- Complete primitive feasibility and target-call arrays. -/
+abbrev twoPhaseFullData := Constrained.TwoPhase.FullData
+
+/-- A full genuine two-phase prefix, with separate operational feasibility and target calls. -/
+abbrev twoPhaseRun := @Constrained.TwoPhase.FullRun
+
+/-- The literal operational final guard of the complete two-phase method. -/
+abbrev twoPhaseStop := @Constrained.TwoPhase.FullStop
 
 /-- The genuine Euclidean augmented residual `(c(x), f(x)−t)` in(7.2.4). -/
 noncomputable abbrev targetResidual := @Constrained.TwoPhase.residual
@@ -229,5 +239,43 @@ theorem lemma_7_2_2 {n m p a : ℕ}
   simpa only [LeastSquares.lowerBudget, LeastSquares.lowerAccuracyFactor,
     Bool.false_eq_true, ite_false, Real.mul_rpow hθ.le hε₀.le] using
       Hrun (θ * ε₀) ε₁ D hprefix
+
+section FullCounterexample
+open Constrained Constrained.TwoPhase Constrained.TwoPhase.Boundary
+
+/-- **Counterexample to Theorem7.2.7.** A complete actual zero-trial Phase1
+and one-trial Phase2 execution satisfies every source smoothness and boundedness
+assumption. Its literal final guard fires, while all three promised output
+alternatives fail. The obstruction concerns the literal return certificate;
+no failure of a separate evaluation-count inequality is asserted here. -/
+theorem theorem_7_2_7_counterexample :
+    twoPhaseRun false objective constraint region settings settings 2
+      (1 / 2) (1 / 10) (1 / 2) fullData ∧
+    twoPhaseStop false objective constraint region (1 / 2) (1 / 10) (1 / 2) fullData ∧
+    ¬((firstCriticality feasibilityMerit region endpoint ≤
+          (1 / 10 : ℝ) * ‖constraint endpoint‖ ∧
+        (1 / 2 : ℝ) * (1 / 2) < ‖constraint endpoint‖) ∨
+      (firstCriticality feasibilityMerit region endpoint ≤
+          (1 / 10 : ℝ) * ‖constraint endpoint‖ ∧
+        (1 / 2 : ℝ) * (1 / 2) < ‖constraint endpoint‖) ∨
+      ∃ y : ℝ, firstCriticality (vectorLagrangian objective constraint y) region endpoint ≤
+        (1 / 10 : ℝ) * multiplierNorm y ∧ ‖constraint endpoint‖ ≤ (1 / 2 : ℝ)) ∧
+    (((0 : E) ∈ region ∧ ‖constraint (0 : E)‖ ≤ (1 / 2 : ℝ) * (1 / 2) ∧
+      (2 : ℝ) > Real.logb 2 2 ∧ (2 : ℝ) > 1) ∧
+    region.Nonempty ∧ IsClosed region ∧ Convex ℝ region ∧ Bornology.IsBounded region ∧
+    ContDiff ℝ 2 feasibilityMerit ∧ LipschitzWith 0 (iteratedFDeriv ℝ 2 feasibilityMerit) ∧
+    (∀ t : ℝ, ContDiff ℝ 2 (targetMerit objective constraint t) ∧
+      LipschitzWith 0 (iteratedFDeriv ℝ 2 (targetMerit objective constraint t))) ∧
+    (∀ x ∈ region, -2 ≤ objective x ∧ objective x ≤ 2) ∧
+    PhaseTwoRun false objective constraint region settings
+      (1 / 2) (1 / 10) (1 / 2) outerData 1 ∧
+    StopAfter false objective constraint region (1 / 2) (1 / 10) (1 / 2)
+      (outerData.target 0) (outerData.point 1) ∧
+    ‖constraint (outerData.point 1)‖ = 0 ∧
+    ¬∃ y : ℝ, firstCriticality (vectorLagrangian objective constraint y)
+      region (outerData.point 1) ≤ (1 / 10 : ℝ) * multiplierNorm y) :=
+  ⟨full_run, full_stop, all_certificates_fail, lemma_7_2_1_counterexample⟩
+
+end FullCounterexample
 
 end CartisGouldToint

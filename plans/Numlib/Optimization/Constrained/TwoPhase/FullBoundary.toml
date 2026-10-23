@@ -1,0 +1,19 @@
+namespace = "Constrained.TwoPhase.Boundary"
+
+[[node]]
+id = "phaseOne_run"
+
+[[node]]
+id = "fullData"
+
+[[node]]
+id = "full_run"
+
+[[node]]
+id = "full_stop"
+
+[[node]]
+id = "full_certificate_fails"
+
+[[node]]
+id = "all_certificates_fail"

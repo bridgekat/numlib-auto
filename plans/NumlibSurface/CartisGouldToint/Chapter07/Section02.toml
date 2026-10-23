@@ -6,80 +6,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "twoPhaseRun"
-kind = "definition"
-desc = '''
-Define the set of finite traces satisfying Algorithm 7.2.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
-
-Algorithm 7.2.1: Two-phase adaptive-regularization algorithm using \( p \) th-order models for general constraints (TP \( p \) -GC)
-
-Initialization: An initial point \( {x}_0 \in  \mathcal{C} \) , an infeasibility bound \( \beta  > 0 \) defining \( {\mathcal{F}}_{\beta } \) , and a constant \( \theta  \in  \left( {0,1}\right) \) are given. Infeasibility and optimality tolerances
-
-\[
-0 < {\epsilon }_{0} \leq  \min \left( {1,\beta }\right) \text{ and }0 < {\epsilon }_{1} \leq  1\tag{7.2.8}
-\]
-
-are also given.
-
----
-
-\( {}^{53}\mathrm{\;{By}}{\mu }_2 \) .D1pL.C we mean \( {\Phi }_{\ell } \) .DpL.C on page 189 in the case where \( {\Phi }_{\ell } = {\mu }_2 \) . Assumption \( {\mu }_2 \) .DpL.C imposes smoothness requirements on \( {\mu }_2\left( {\cdot , t}\right) \) throughout \( \mathcal{C} \) . This is actually stronger than needed and made purely for simplicity. A more reasonable assumption might be that the required smoothness hold instead only for \( x \) in \( {\mathcal{F}}_{\beta } \) . To do so is delicate and needs the parameter \( \beta \) to be sufficiently large to ensure that iterates and trial points of the \( \mathrm{AR}p - \mathrm{CC} \) algorithm in Phase 2 of the forthcoming TP \( p \) -GC algorithm remain in this restricted subset. The construction of the AR \( p \) -CC algorithm ensures that this is trivially satisfied for successful iterates. At unsuccessful trial points, one needs to show that the length of the trial steps \( \begin{Vmatrix}{s}_{k, i}\end{Vmatrix} \) remains uniformly bounded above, and this is so provided that the derivatives of the generated iterates are bounded [105, Lem. 3.2]. Thus a suitable \( \beta \) ultimately depends on Lipschitz constants and other algorithmic parameters.
-
-\( {}^{54} \) Note that boundedness of \( \left| {f\left( x\right) }\right| \) is ensured in \( {\mathcal{F}}_{\beta } \) by f.B.Fb and will ensure in what follows that \( t \) remains bounded.
-
----
-
-Phase 1: Feasibility phase: Pick a Taylor degree \( p \) along with suitable values \( i \geq  0 \) and \( \ell  > 1 \) satisfying either (5.1.38) or (5.1.39), and apply the ARpLE-CC algorithm (p. 189), starting from \( {x}_0 \) , to find a point \( {x}_1 \in  \mathcal{C} \) for which
-
-\[
-\begin{Vmatrix}{c\left( {x}_{1}\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\text{ or }{\omega }_{{\Phi }_{\ell },\mathcal{C},1}\left( {x}_{1}\right)  \leq  {\epsilon }_{1}{\begin{Vmatrix}c\left( {x}_{1}\right) \end{Vmatrix}}^{\ell  - 1}.\tag{7.2.9}
-\]
-
-If \( \begin{Vmatrix}{c\left( {x}_1\right) }\end{Vmatrix} > \theta {\epsilon }_0 \) , terminate with \( {x}_{\epsilon } = {x}_1 \) .
-
-Phase 2: Optimality phase:
-
-Step 0: Initialization. Set \( {t}_1 = f\left( {x}_1\right)  - \sqrt{{\epsilon }_0^2 - {\begin{Vmatrix}c\left( {x}_1\right) \end{Vmatrix}}^2} \) and \( k = 1 \) .
-
-Step 1: Inner iteration to compute an improved objective value. Starting from \( {x}_k \) , apply the ARp-CC algorithm (p. 180) to minimize \( {\mu }_2\left( {x,{t}_k}\right) \) as a function of \( x \in  \mathcal{C} \) until an iterate \( {x}_{k + 1} \in  \mathcal{C} \) is found such that
-
-\[
-\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k}}\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\text{ or }f\left( {x}_{k + 1}\right)  < {t}_{k}\text{ or }{\omega }_{{\mu }_{2},\mathcal{C},1}\left( {{x}_{k + 1},{t}_{k}}\right)  \leq  {\epsilon }_{1}\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k}}\right) }\end{Vmatrix}.
-\]
-
-(7.2.10)
-
-Step 2: Decrease the target and check for termination.
-
-(a) If \( \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_k}\right) }\end{Vmatrix} < \theta {\epsilon }_0 \) , set
-
-\[
-{t}_{k + 1} = f\left( {x}_{k + 1}\right)  - \sqrt{{\epsilon }_0^2 - {\begin{Vmatrix}c\left( {x}_{k + 1}\right) \end{Vmatrix}}^2},\tag{7.2.11}
-\]
-
-and terminate with \( \left( {{x}_{\epsilon },{t}_{\epsilon }}\right)  = \left( {{x}_{k + 1},{t}_{k + 1}}\right) \) if
-
-\[
-{\omega }_{{\mu }_2,\mathcal{C},1}\left( {{x}_{k + 1},{t}_{k + 1}}\right)  \leq  {\epsilon }_1\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k + 1}}\right) }\end{Vmatrix}.\tag{7.2.12}
-\]
-
-(b) Otherwise, if \( \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_k}\right) }\end{Vmatrix} \geq  \theta {\epsilon }_0 \) and \( f\left( {x}_{k + 1}\right)  < {t}_k \) , set
-
-\[
-{t}_{k + 1} = {2f}\left( {x}_{k + 1}\right)  - {t}_k\tag{7.2.13}
-\]
-
-and terminate with \( \left( {{x}_{\epsilon },{t}_{\epsilon }}\right)  = \left( {{x}_{k + 1},{t}_{k + 1}}\right) \) if (7.2.12) holds.
-
-(c) Otherwise, if \( \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_k}\right) }\end{Vmatrix} \geq  \theta {\epsilon }_0 \) and \( f\left( {x}_{k + 1}\right)  \geq  {t}_k \) , terminate with \( \left( {{x}_{\epsilon },{t}_{\epsilon }}\right)  = \left( {{x}_{k + 1},{t}_k}\right) \) .
-
-Step 3: Move to the next iteration. Set \( k = k + 1 \) , and go to Step 1.
-
-Just to remind the reader, the function \( {\Phi }_{\ell } \) used by the ARpLE-CC algorithm and in the stopping test (7.2.9) is that defined by (5.1.3) (p. 120). Observe that the computation of \( {\omega }_{{\mu }_2,\mathcal{C},1}\left( {{x}_{k + 1},{t}_{k + 1}}\right) \) in Step 2 does not require that \( f\left( {x}_{k + 1}\right) , c\left( {x}_{k + 1}\right) \) , or any of their derivatives be reevaluated.
-
-The mechanism devised to adjust the targets may seem at a first glance to be rather complicated. To reassure the reader that there is some purpose, it is relatively straightforward to show that if the algorithm terminates, it does so at either an \( \epsilon \) -approximate infeasible local minimizer of \( \parallel c\left( x\right) \parallel \) or an \( \epsilon \) -approximate KKT point.
-'''
-deps = []
-source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2"
 
 [[node]]
 id = "lemma_7_2_1"
@@ -169,6 +95,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_7_2_7"
+wrong = "The literal algorithm can terminate at residual equality through Step2(c), while every promised output certificate fails. theorem_7_2_7_counterexample includes a genuine full-method execution: actual zero-trial Phase1 ARpLE-CC at an initially feasible point, followed by one actual accepted Phase2 ARp-CC trial. All source closed-convex, merit smoothness/Lipschitz, admissible p=ell=2 and bounded objective hypotheses hold. Its feasible returned point has no multiplier satisfying (7.2.16), and exact feasibility excludes (7.2.14) and (7.2.15). This refutes the literal output guarantee independently of the evaluation-count formulas; closing only the reset guard is documented separately."
 kind = "theorem"
 desc = '''
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -272,3 +199,13 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 [[node]]
 id = "lemma_7_2_1_corrected"
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.1; reset guard closed at residual equality"
+
+[[node]]
+id = "twoPhaseFullData"
+
+[[node]]
+id = "twoPhaseStop"
+
+[[node]]
+id = "theorem_7_2_7_counterexample"
+source = "Cartis, Gould and Toint, Theorem 7.2.7, literal complete-method return guarantee (7.2.14)-(7.2.16)"

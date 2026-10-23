@@ -1,0 +1,13 @@
+namespace = "Constrained.TwoPhase"
+
+[[node]]
+id = "FullData"
+
+[[node]]
+id = "FullRun"
+
+[[node]]
+id = "FullStop"
+
+[[node]]
+id = "FullRun.no_phaseTwo_of_infeasible"
