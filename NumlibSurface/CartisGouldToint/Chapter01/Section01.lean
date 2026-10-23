@@ -3,6 +3,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Optimization.Unconstrained.Optimality
 import Numlib.Optimization.Constrained.Optimality
 import Numlib.Optimization.Constrained.Equality
+import Numlib.Optimization.Constrained.Inequality
 
 /-!
 # Cartis–Gould–Toint, Section 1.1: optimality conditions
@@ -144,5 +145,79 @@ theorem theorem_1_1_3 {n m : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
   · intro y hf hc hx hstat hpos
     exact Constrained.strict_local_min_of_vector_lagrangian hS (hfeasS hx)
       hf hc hx hstat hpos
+
+
+/-- Inequality LICQ: the actual active-coordinate constraint derivatives are linearly independent. -/
+def inequalityLICQ {n m : ℕ}
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (x : EuclideanSpace ℝ (Fin n)) : Prop :=
+  LinearIndependent ℝ (fun i : {i : Fin m | c x i = 0} =>
+    (EuclideanSpace.proj i.val).comp (fderiv ℝ c x))
+
+/-- The actual active-coordinate derivative characterization of inequality LICQ. -/
+theorem inequalityLICQ_iff {n m : ℕ}
+    {c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {x : EuclideanSpace ℝ (Fin n)} : inequalityLICQ c x ↔
+    LinearIndependent ℝ (fun i : {i : Fin m | c x i = 0} =>
+      (EuclideanSpace.proj i.val).comp (fderiv ℝ c x)) := Iff.rfl
+
+/-- The multiplier critical cone `N₊` of Theorem 1.1.4: active positive-multiplier
+constraints have zero directional derivative, while active zero-multiplier constraints
+have nonnegative directional derivative. -/
+def criticalCone {n m : ℕ}
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (x : EuclideanSpace ℝ (Fin n)) (y : EuclideanSpace ℝ (Fin m)) :
+    Set (EuclideanSpace ℝ (Fin n)) :=
+  {d | ∀ i, c x i = 0 →
+    (0 < y i → (fderiv ℝ c x d) i = 0) ∧ (y i = 0 → 0 ≤ (fderiv ℝ c x d) i)}
+
+/-- Membership in the critical cone of Theorem 1.1.4. -/
+@[simp]
+theorem mem_criticalCone {n m : ℕ}
+    {c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {x d : EuclideanSpace ℝ (Fin n)} {y : EuclideanSpace ℝ (Fin m)} :
+    d ∈ criticalCone c x y ↔ ∀ i, c x i = 0 →
+      (0 < y i → (fderiv ℝ c x d) i = 0) ∧ (y i = 0 → 0 ≤ (fderiv ℝ c x d) i) := Iff.rfl
+
+/-- **Theorem 1.1.4 (inequality-constrained optimality).** Under active-gradient LICQ,
+a constrained local minimum has nonnegative KKT multipliers with complementarity;
+with `C²` data the same multiplier gives a nonnegative Lagrangian Hessian on `N₊`.
+Conversely, KKT conditions and strict Hessian positivity on nonzero directions in `N₊`
+imply a strict constrained local minimum. The unspecified source constraint qualification
+is specialized to LICQ, and the missing nonzero restriction in (1.1.18) is restored.
+All regularity is retained only on the source's open neighborhood of the feasible set. -/
+theorem theorem_1_1_4 {n m : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {x : EuclideanSpace ℝ (Fin n)} {S : Set (EuclideanSpace ℝ (Fin n))}
+    (hS : IsOpen S) (hfeasS : {z | ∀ i, 0 ≤ c z i} ⊆ S) :
+    (ContDiffOn ℝ 1 f S → ContDiffOn ℝ 1 c S → (∀ i, 0 ≤ c x i) →
+      IsLocalMinOn f {z | ∀ i, 0 ≤ c z i} x → inequalityLICQ c x →
+      ∃ y : EuclideanSpace ℝ (Fin m),
+        fderiv ℝ (fun z => lagrangian f c z y) x = 0 ∧ (∀ i, 0 ≤ c x i) ∧
+        (∀ i, 0 ≤ y i) ∧ inner ℝ y (c x) = 0 ∧
+        (ContDiffOn ℝ 2 f S → ContDiffOn ℝ 2 c S → ∀ d ∈ criticalCone c x y,
+          0 ≤ fderiv ℝ (fderiv ℝ (fun z => lagrangian f c z y)) x d d)) ∧
+    (∀ y : EuclideanSpace ℝ (Fin m),
+      ContDiffOn ℝ 2 f S → ContDiffOn ℝ 2 c S → (∀ i, 0 ≤ c x i) →
+      fderiv ℝ (fun z => lagrangian f c z y) x = 0 → (∀ i, 0 ≤ y i) →
+      inner ℝ y (c x) = 0 →
+      (∀ d ≠ 0, d ∈ criticalCone c x y →
+        0 < fderiv ℝ (fderiv ℝ (fun z => lagrangian f c z y)) x d d) →
+      ∃ δ > 0, ∀ z, (∀ i, 0 ≤ c z i) → dist z x < δ → z ≠ x → f x < f z) := by
+  constructor
+  · intro hf hc hx hmin hreg
+    have hxS : x ∈ S := hfeasS hx
+    obtain ⟨y,hy,hcomp,hstat⟩ := Constrained.exists_vector_inequality_multiplier hx hreg hmin
+      ((hf.contDiffAt (hS.mem_nhds hxS)).differentiableAt (by norm_num)).hasFDerivAt
+      ((hc.contDiffAt (hS.mem_nhds hxS)).hasStrictFDerivAt (by norm_num))
+    refine ⟨y,hstat,hx,hy,
+      (Constrained.vector_complementary_iff_inner_eq_zero hx hy).mp hcomp,?_⟩
+    intro hf2 hc2 d hd
+    exact Constrained.vector_inequality_lagrangian_hessian_nonneg hS hxS hf2 hc2
+      hx hy hcomp hmin hreg hstat hd
+  · intro y hf hc hx hstat hy hinner hpos
+    have hcomp := (Constrained.vector_complementary_iff_inner_eq_zero hx hy).mpr hinner
+    exact Constrained.strict_local_min_of_vector_inequality_lagrangian hS (hfeasS hx)
+      hf hc hx hy hcomp hstat hpos
 
 end CartisGouldToint

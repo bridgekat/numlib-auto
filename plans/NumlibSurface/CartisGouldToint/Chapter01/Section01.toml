@@ -43,42 +43,13 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_1_1_4"
-kind = "theorem"
-desc = '''
-Semantic specification: Use linear independence of the active gradients for the unspecified constraint qualification and require d≠0 in (1.1.18). Preserve nonnegative multipliers and componentwise feasibility, stationarity and complementarity.
-
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 1.1.4: Inequality-constrained optimality conditions
-
-Let \( \mathcal{S} \) be an open set containing the feasible region \( \{ x \mid  c\left( x\right)  \geq  0\} \) , let \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) and \( c : {\mathbb{R}}^n \rightarrow  {\mathbb{R}}^m \in  {C}^1\left( \mathcal{S}\right) \) , suppose that \( {x}_{ * } \in  {\mathbb{R}}^n \) is a local minimizer of \( f\left( x\right) \) subject to \( c\left( x\right)  \geq  0 \) , and suppose that a constraint qualification is satisfied at \( {x}_{ * } \) . Then there exist Lagrange multipliers \( {y}_{ * } \in  {\mathbb{R}}^m \) for which
-
-\[
-{\nabla }_{x}^{1}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right)  = 0, c\left( {x}_{ * }\right)  \geq  0,{y}_{ * } \geq  0,\text{ and }\left\langle  {{y}_{ * }, c\left( {x}_{ * }\right) }\right\rangle   = 0.\tag{1.1.16}
-\]
-
-If \( f, c \in  {C}^2\left( \mathcal{S}\right) \) , then
-
-\[
-\left\langle  {d,{\nabla }_{x}^{2}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) d}\right\rangle   \geq  0\text{ for all }d \in  {\mathcal{N}}_{ + },\tag{1.1.17}
-\]
-
-where
-
-\[
-{\mathcal{N}}_{ + } = \left\{  {d \in  {\mathbb{R}}^{n} \mid  \begin{array}{l} \left\langle  {d,{\nabla }_{x}^{1}{c}_{i}\left( {x}_{ * }\right) }\right\rangle   = 0\text{ for all }i \in  \mathcal{A}\left( {x}_{ * }\right) \text{ with }{\left\lbrack  {y}_{ * }\right\rbrack  }_{i} > 0\text{ and } \\  \left\langle  {d,{\nabla }_{x}^{1}{c}_{i}\left( {x}_{ * }\right) }\right\rangle   \geq  0\text{ for all }i \in  \mathcal{A}\left( {x}_{ * }\right) \text{ with }{\left\lbrack  {y}_{ * }\right\rbrack  }_{i} = 0 \end{array}}\right\}  .
-\]
-
-Conversely, if, for given \( {x}_{ * } \in  {\mathbb{R}}^n,{y}_{ * } \in  {\mathbb{R}}^m \) , and \( f, c \in  {C}^2\left( \mathcal{S}\right) \) ,(1.1.16) holds and
-
-\[
-\left\langle  {d,{\nabla }_{x}^{2}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) d}\right\rangle   > 0\text{ for all }d \in  {\mathcal{N}}_{ + },\tag{1.1.18}
-\]
-
-then \( {x}_{ * } \) is a strict local minimizer of \( f\left( x\right) \) subject to \( c\left( x\right)  \geq  0 \) .
-'''
-deps = ["theorem_1_1_2", "theorem_1_1_1", "lagrangian", "feasibleDisplacements"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 903)"
 
 [[node]]
 id = "equalityLICQ"
+
+[[node]]
+id = "inequalityLICQ"
+
+[[node]]
+id = "criticalCone"
