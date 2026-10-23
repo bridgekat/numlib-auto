@@ -1,5 +1,5 @@
 import Numlib.Approximation.Hermite.Quintic
-import Numlib.Optimization.SteepestDescent.Exact.CorridorEuclidean
+import Numlib.Optimization.SteepestDescent.Exact.CorridorGradient
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -150,5 +150,35 @@ theorem lemma_B_2_5 : ∃ L > 0, ∀ (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1)
         gradient (sdexCounterexample ε hε hε1) y‖ ≤ L * ‖x-y‖ := by
   obtain ⟨L,hL,H⟩ := ExactSteepestDescent.Corridor.euclideanObjective_gradient_lipschitz
   exact ⟨L,hL,fun ε hε hε1 => H (sdexCounterexampleData ε hε hε1)⟩
+
+/-- Lemma B.2.2: the actual source objective and prescribed negative-gradient
+steps require exactly the integer floor of ε⁻² iterations to reach the requested
+gradient accuracy, under the book's global integer-rounding convention. -/
+theorem lemma_B_2_2 (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1) :
+    ∃ x : ℕ → EuclideanSpace ℝ (Fin 2), x 0 = 0 ∧
+      (∀ k < ⌊ε^(-(2 : ℝ))⌋₊, x (k+1) = x k - Real.sqrt 2 •
+        gradient (sdexCounterexample ε hε hε1) (x k)) ∧
+      (∀ k < ⌊ε^(-(2 : ℝ))⌋₊,
+        ε < ‖gradient (sdexCounterexample ε hε hε1) (x k)‖) ∧
+      ‖gradient (sdexCounterexample ε hε hε1) (x ⌊ε^(-(2 : ℝ))⌋₊)‖ = ε := by
+  let P := sdexCounterexampleData ε hε hε1
+  have hN : P.horizon = ⌊ε^(-(2 : ℝ))⌋₊ :=
+    ExactSteepestDescent.Corridor.roundedHorizon_eq_floor_rpow ε hε.le
+  refine ⟨ExactSteepestDescent.Corridor.gridPoint P,
+    ExactSteepestDescent.Corridor.gridPoint_zero P,?_,?_,?_⟩
+  · change ∀ k < ⌊ε^(-(2 : ℝ))⌋₊,
+      ExactSteepestDescent.Corridor.gridPoint P (k+1) =
+        ExactSteepestDescent.Corridor.gridPoint P k - Real.sqrt 2 •
+          gradient (ExactSteepestDescent.Corridor.euclideanObjective P)
+            (ExactSteepestDescent.Corridor.gridPoint P k)
+    simpa only [hN] using
+      (fun k hk => ExactSteepestDescent.Corridor.gridPoint_succ P (k := k) hk)
+  · change ∀ k < ⌊ε^(-(2 : ℝ))⌋₊, P.accuracy <
+      ‖gradient (ExactSteepestDescent.Corridor.euclideanObjective P)
+        (ExactSteepestDescent.Corridor.gridPoint P k)‖
+    simpa only [hN] using (ExactSteepestDescent.Corridor.gradient_first_stop P).1
+  · change ‖gradient (ExactSteepestDescent.Corridor.euclideanObjective P)
+      (ExactSteepestDescent.Corridor.gridPoint P ⌊ε^(-(2 : ℝ))⌋₊)‖ = P.accuracy
+    simpa only [hN] using (ExactSteepestDescent.Corridor.gradient_first_stop P).2
 
 end CartisGouldToint

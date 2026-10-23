@@ -1,0 +1,58 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "fderiv_profile_vertical"
+
+[[node]]
+id = "curve_hasDerivAt_node"
+
+[[node]]
+id = "scalarObjective_hasDerivAt_node"
+
+[[node]]
+id = "curve_flat_hasFDerivAt_node"
+
+[[node]]
+id = "corridorCoordinates_hasFDerivAt_node"
+
+[[node]]
+id = "corridorCoordinates_node"
+
+[[node]]
+id = "residualCorridor_hasFDerivAt_node"
+
+[[node]]
+id = "scalarObjective_lift_hasFDerivAt_node"
+
+[[node]]
+id = "objective_hasFDerivAt_node"
+
+[[node]]
+id = "gridPoint"
+
+[[node]]
+id = "gridDirection"
+
+[[node]]
+id = "vertical_sub_center"
+
+[[node]]
+id = "vertical_sub_center_mem"
+
+[[node]]
+id = "euclideanObjective_gradient_node"
+
+[[node]]
+id = "norm_gridDirection"
+
+[[node]]
+id = "norm_euclideanObjective_gradient_node"
+
+[[node]]
+id = "gridPoint_succ"
+
+[[node]]
+id = "gradient_first_stop"
+
+[[node]]
+id = "gridPoint_zero"

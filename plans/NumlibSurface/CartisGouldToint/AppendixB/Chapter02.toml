@@ -20,24 +20,6 @@ id = "sdexCounterexampleData"
 
 [[node]]
 id = "lemma_B_2_2"
-kind = "theorem"
-desc = '''
-Use the book's global rounding convention (Markdown line1409): the canonical actual iteration horizon is N=floor(epsilon^(-2)). Keep its explicitly natural floor in Lean; do not infer an incorrect source claim merely from nonintegrality of the unrounded rate. Construct the actual source grid and objective for every epsilon in (0,1], and prove first stopping exactly at N. The generic arithmetic helper only documents the need to state this rounding explicitly.
-
-Lemma B.2.2: Construction of the counterexample
-
-For any given \( \epsilon  \in  (0,1\rbrack \) , there exists a function \( f\left( {x, y}\right) \) from \( {\mathbb{R}}^2 \) to \( \mathbb{R} \) and a starting point \( {x}_0 \in  {\mathbb{R}}^2 \) such that the steepest-descent algorithm with prescribed stepsize applied to \( f\left( {x, y}\right) \) starting from \( {x}_0 \) needs exactly
-
-\[
-{k}_{\epsilon } = {\epsilon }^{-2}
-\]
-
-iterations to produce an iterate \( {x}_k \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  \epsilon \) .
-
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.2"
-deps = ["sdexCounterexampleData"]
-
 
 [[node]]
 id = "lemma_B_2_3"
