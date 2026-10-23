@@ -1,0 +1,16 @@
+namespace = "LeastSquares"
+
+[[node]]
+id = "RegularizationTrace.residual_lt"
+
+[[node]]
+id = "cascadingExponent"
+
+[[node]]
+id = "cascadingConstant"
+
+[[node]]
+id = "cascadingConstant_pos"
+
+[[node]]
+id = "cascading_decrease_of_power"

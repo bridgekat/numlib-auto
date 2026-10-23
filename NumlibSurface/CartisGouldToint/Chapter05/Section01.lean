@@ -1,3 +1,4 @@
+import Numlib.Optimization.LeastSquares.Cascading
 import Numlib.Optimization.LeastSquares.Decrease
 import Numlib.Analysis.SpecialFunctions.Pow.Differences
 import Numlib.Data.Nat.Factorization
@@ -181,5 +182,121 @@ theorem lemma_5_1_2 {n m p N i : ℕ}
         hlip hi hs (hthird hε) hv,
       LeastSquares.RegularizationTrace.small_curvature_le h (by have := hp₃ hε; omega)
         hf hLp.le hlip hi hs hv⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open HighOrderRegularization
+
+/-- The exact residual exponent for branch `j`: `(2^a-1)/2^a-j*(ℓ-1)/(p+1-j)`. -/
+noncomputable abbrev residualCascadingExponent := LeastSquares.cascadingExponent
+
+/-- The exact dyadic-root coefficient `κ*β^((ℓ-1)*(p+1)/(p+1-j))/2^a`. -/
+noncomputable abbrev residualCascadingConstant := LeastSquares.cascadingConstant
+
+/-- **Lemma 5.1.4.** All three enabled dyadic-root decrease bounds (5.1.20),
+(5.1.22), (5.1.24) with the exact coefficients and exponents (5.1.21), (5.1.23),
+(5.1.25), together with both relative-decrease inequalities (5.1.27) and their
+strictly positive coefficient (5.1.28). Actual accepted trial rules derive
+residual monotonicity; no residual decrease is assumed. -/
+theorem lemma_5_1_4 {n m p N i : ℕ}
+    {r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {ℓ η₁ η₂ γ₁ γ₂ γ₃ σmin L θ₁ θ₂ θ₃ β : ℝ}
+    {ε₂ ε₃ : WithTop ℝ}
+    (h : arpLeastEuclideanModelTrace r ℓ p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (hp₂ : ε₂ ≠ ⊤ → 2 ≤ p) (hp₃ : ε₃ ≠ ⊤ → 3 ≤ p)
+    (hℓ : 2 ≤ ℓ) (hf : ContDiff ℝ p (residualPowerObjective r ℓ)) (hL : 1 ≤ L)
+    (hθ₁ : 0 < θ₁) (hθ₂ : 0 < θ₂) (hθ₃ : 0 < θ₃)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ p (residualPowerObjective r ℓ) y -
+      iteratedFDeriv ℝ p (residualPowerObjective r ℓ) z‖ ≤ L * ‖y - z‖)
+    (hβ : 0 < β) (hβ1 : β < 1)
+    (hi : i < N) (hs : η₁ ≤ ρ i)
+    (hfirst : ‖fderiv ℝ (model (residualPowerObjective r ℓ) p (x i) (σ i)) (s i)‖ ≤
+      θ₁ * ‖s i‖ ^ p)
+    (hsecond : ε₂ ≠ ⊤ → ∀ v : EuclideanSpace ℝ (Fin n), ‖v‖ = 1 →
+      -θ₂ * ‖s i‖ ^ (p - 1) ≤ iteratedFDeriv ℝ 2
+        (model (residualPowerObjective r ℓ) p (x i) (σ i)) (s i) (fun _ => v))
+    (hthird : ε₃ ≠ ⊤ → ∀ v ∈ smallModelDirections
+      (residualPowerObjective r ℓ) p (x i) (s i) (σ i) θ₂,
+      |iteratedFDeriv ℝ 3 (model (residualPowerObjective r ℓ) p (x i) (σ i)) (s i)
+        (fun _ => v)| ≤ θ₃ * ‖s i‖ ^ (p - 2)) :
+    ∃ κ₁ > 0, ∃ κ₂ > 0, ∃ κ₃ > 0,
+      κ₁ = decreaseConstant p p η₁ σmin L (max (σ 0) (γ₃ * L / (1 - η₂))) θ₁ ∧
+      κ₂ = decreaseConstant p (p - 1) η₁ σmin L
+        (max (σ 0) (γ₃ * L / (1 - η₂))) θ₂ ∧
+      κ₃ = decreaseConstant p (p - 2) η₁ σmin L
+        (max (σ 0) (γ₃ * L / (1 - η₂))) θ₃ ∧
+      ∀ a : ℕ,
+        0 < residualCascadingConstant κ₁ β ℓ p a 1 ∧
+        0 < residualCascadingConstant κ₂ β ℓ p a 2 ∧
+        0 < residualCascadingConstant κ₃ β ℓ p a 3 ∧
+        (β * ‖r (x i)‖ < ‖r (x (i + 1))‖ →
+          residualCascadingConstant κ₁ β ℓ p a 1 *
+            residualFirstMeasure r ℓ (x (i + 1)) ^ (((p + 1 : ℕ) : ℝ) / p) /
+            ‖r (x i)‖ ^ residualCascadingExponent p ℓ a 1 ≤
+              ‖r (x i)‖ ^ (1 / (2 : ℝ) ^ a) -
+                ‖r (x (i + 1))‖ ^ (1 / (2 : ℝ) ^ a) ∧
+          (ε₂ ≠ ⊤ → ∀ (μ : ℝ) (u : EuclideanSpace ℝ (Fin n)),
+            SecondOrderTrustRegion.IsLeastEigenpair
+              (residualPowerObjective r ℓ) (x (i + 1)) μ u →
+            residualCascadingConstant κ₂ β ℓ p a 2 *
+              max 0 (-residualSecondMeasure r ℓ (x (i + 1)) μ) ^
+                (((p + 1 : ℕ) : ℝ) / (p - 1 : ℕ)) /
+              ‖r (x i)‖ ^ residualCascadingExponent p ℓ a 2 ≤
+                ‖r (x i)‖ ^ (1 / (2 : ℝ) ^ a) -
+                  ‖r (x (i + 1))‖ ^ (1 / (2 : ℝ) ^ a)) ∧
+          (ε₃ ≠ ⊤ → ∀ v ∈ smallModelDirections
+            (residualPowerObjective r ℓ) p (x i) (s i) (σ i) θ₂,
+            residualCascadingConstant κ₃ β ℓ p a 3 *
+              residualThirdMeasure r ℓ (x (i + 1)) v ^
+                (((p + 1 : ℕ) : ℝ) / (p - 2 : ℕ)) /
+              ‖r (x i)‖ ^ residualCascadingExponent p ℓ a 3 ≤
+                ‖r (x i)‖ ^ (1 / (2 : ℝ) ^ a) -
+                  ‖r (x (i + 1))‖ ^ (1 / (2 : ℝ) ^ a))) ∧
+        (‖r (x (i + 1))‖ ≤ β * ‖r (x i)‖ →
+          0 < 1 - β ^ (1 / (2 : ℝ) ^ a) ∧
+          (1 - β ^ (1 / (2 : ℝ) ^ a)) * ‖r (x i)‖ ^ (1 / (2 : ℝ) ^ a) ≤
+            ‖r (x i)‖ ^ (1 / (2 : ℝ) ^ a) -
+              ‖r (x (i + 1))‖ ^ (1 / (2 : ℝ) ^ a) ∧
+          (1 - β ^ (1 / (2 : ℝ) ^ a)) * ‖r (x (i + 1))‖ ^ (1 / (2 : ℝ) ^ a) ≤
+            (1 - β ^ (1 / (2 : ℝ) ^ a)) * ‖r (x i)‖ ^ (1 / (2 : ℝ) ^ a)) := by
+  obtain ⟨κ₁, hκ₁, κ₂, hκ₂, κ₃, hκ₃, h₁, h₂, h₃, hd₁, hd₂, hd₃⟩ :=
+    lemma_5_1_2 h hp₂ hp₃ hℓ hf hL hθ₁ hθ₂ hθ₃ hlip hi hs hfirst hsecond hthird
+  refine ⟨κ₁, hκ₁, κ₂, hκ₂, κ₃, hκ₃, h₁, h₂, h₃, ?_⟩
+  have hres := LeastSquares.RegularizationTrace.residual_lt h (by linarith) hi hs
+  have ha : 0 < ‖r (x i)‖ := (norm_nonneg _).trans_lt hres
+  have hℓ1 : 1 ≤ ℓ := by linarith
+  intro a
+  refine ⟨LeastSquares.cascadingConstant_pos hκ₁ hβ p a 1,
+    LeastSquares.cascadingConstant_pos hκ₂ hβ p a 2,
+    LeastSquares.cascadingConstant_pos hκ₃ hβ p a 3, ?_, ?_⟩
+  · intro hrel
+    refine ⟨?_, ?_, ?_⟩
+    · simpa only [Nat.add_sub_cancel] using
+        LeastSquares.cascading_decrease_of_power (p := p) (i := a) (j := 1)
+          (u := residualFirstMeasure r ℓ (x (i + 1)))
+          ha (norm_nonneg _) hres.le hβ hrel.le hℓ1 hκ₁.le
+          (div_nonneg (norm_nonneg _) (LeastSquares.derivativeWeight_nonneg _ _ _))
+          h.order_pos hd₁
+    · intro hε μ u hu
+      have hd := hd₂ hε μ u hu
+      have hm : p + 1 - 2 = p - 1 := by omega
+      simpa only [hm] using
+        LeastSquares.cascading_decrease_of_power (p := p) (i := a) (j := 2)
+          ha (norm_nonneg _) hres.le hβ hrel.le hℓ1 hκ₂.le
+          (le_max_left 0 _) (hp₂ hε) (by simpa only [hm] using hd)
+    · intro hε v hv
+      have hd := (hd₃ hε v hv).1
+      have hm : p + 1 - 3 = p - 2 := by omega
+      simpa only [hm] using
+        LeastSquares.cascading_decrease_of_power (p := p) (i := a) (j := 3)
+          (u := residualThirdMeasure r ℓ (x (i + 1)) v)
+          ha (norm_nonneg _) hres.le hβ hrel.le hℓ1 hκ₃.le
+          (div_nonneg (abs_nonneg _) (LeastSquares.derivativeWeight_nonneg _ _ _))
+          (hp₃ hε) (by simpa only [hm] using hd)
+  · intro hrel
+    exact Real.relative_cascading_decrease (norm_nonneg _) hres.le hβ.le hβ1 hrel
+      (by positivity)
 
 end CartisGouldToint

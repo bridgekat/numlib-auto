@@ -1,0 +1,7 @@
+namespace = "Real"
+
+[[node]]
+id = "cascading_decrease"
+
+[[node]]
+id = "relative_cascading_decrease"

@@ -62,80 +62,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_5_1_4"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 5.1.4: Improved bounds on the function decrease for ARpLE
-
-Suppose that \( {\Phi }_{\ell } \) .DPL holds, that iteration \( k \) of the ARpLE algorithm is successful, and that
-
-\[
-\begin{Vmatrix}{r\left( {x}_{k + 1}\right) }\end{Vmatrix} > \beta \begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix}\tag{5.1.19}
-\]
-
-for some constant \( \beta  \in  \left( {0,1}\right) \) . Then, for any integer \( i \geq  0 \) , there are constants \( {\kappa }_{r1} \) , \( {\kappa }_{r2},{\kappa }_{r3} > 0 \) such that
-
-\[
-{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r1}\frac{{\left\lbrack  {\psi }_{\ell ,1}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p}}}{{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{{\iota }_1\left( {p,\ell , i}\right) }},\tag{5.1.20}
-\]
-
-where
-
-\[
-{\iota }_{1}\left( {p,\ell , i}\right) \overset{\text{ def }}{ = }\frac{{2}^{i} - 1}{{2}^{i}} - \frac{\ell  - 1}{p}\text{ and }{\kappa }_{r1}\overset{\text{ def }}{ = }\frac{{\kappa }_{1}{\beta }^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p}}}{{2}^{i}},\tag{5.1.21}
-\]
-
-together with
-
-\[
-{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r2}\frac{\max {\left\lbrack  0, - {\psi }_{\ell ,2}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p - 1}}}{{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{{\iota }_2\left( {p,\ell , i}\right) }},\tag{5.1.22}
-\]
-
-where
-
-\[
-{\iota }_{2}\left( {p,\ell , i}\right) \overset{\text{ def }}{ = }\frac{{2}^{i} - 1}{{2}^{i}} - 2\frac{\ell  - 1}{p - 1}\text{ and }{\kappa }_{r2}\overset{\text{ def }}{ = }\frac{{\kappa }_{2}{\beta }^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 1}}}{{2}^{i}}\tag{5.1.23}
-\]
-
-when \( {\epsilon }_2 < \infty \) , and additionally
-
-\[
-{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r3}\frac{{\left\lbrack  {\psi }_{\ell ,3}\left( {x}_{k + 1}, d\right) \right\rbrack  }^{\frac{p + 1}{p - 2}}}{{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{{\iota }_3\left( {p,\ell , i}\right) }}\tag{5.1.24}
-\]
-
-for all \( d \) in the set \( {\mathcal{M}}_{k + 1} \) given by (4.1.14), where
-
-\[
-{\iota }_{3}\left( {p,\ell , i}\right) \overset{\text{ def }}{ = }\frac{{2}^{i} - 1}{{2}^{i}} - 3\frac{\ell  - 1}{p - 2}\text{ and }{\kappa }_{r3}\overset{\text{ def }}{ = }\frac{{\kappa }_{3}{\beta }^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 2}}}{{2}^{i}}\tag{5.1.25}
-\]
-
-when \( {\epsilon }_3 < \infty \) . By contrast, if
-
-\[
-\begin{Vmatrix}{r\left( {x}_{k + 1}\right) }\end{Vmatrix} \leq  \beta \begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix},\tag{5.1.26}
-\]
-
-then
-
-\[
-{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r0}{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{1/{2}^i} \geq  {\kappa }_{r0}{\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{1/{2}^i},\tag{5.1.27}
-\]
-
-where
-
-\[
-{\kappa }_{r0}\overset{\text{ def }}{ = }1 - {\beta }^{1/{2}^{i}}.\tag{5.1.28}
-\]
-
-Referenced equation payloads:
-
-Equation (4.1.14):
-\[
-{\mathcal{M}}_{k + 1}\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{s}^{2}{m}_{k}\left( {s}_{k}\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\theta }_{2}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p - 1}}\right\}   \neq  \varnothing .\tag{4.1.14}
-\]
-'''
-deps = ["lemma_5_1_3", "residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5578)"
 
 [[node]]
@@ -284,3 +210,9 @@ id = "residualDirectionalSecondMeasure"
 
 [[node]]
 id = "residualThirdMeasure"
+
+[[node]]
+id = "residualCascadingExponent"
+
+[[node]]
+id = "residualCascadingConstant"
