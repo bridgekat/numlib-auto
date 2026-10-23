@@ -1,0 +1,34 @@
+namespace = "CubicRegularization"
+
+[[node]]
+id = "FirstOrderRun"
+
+[[node]]
+id = "decreaseCoefficient"
+
+[[node]]
+id = "inv_decreaseCoefficient_eq"
+
+[[node]]
+id = "FirstOrderRun.restrict"
+
+[[node]]
+id = "FirstOrderRun.decreaseCoefficient_pos"
+
+[[node]]
+id = "FirstOrderRun.successful_decrease"
+
+[[node]]
+id = "FirstOrderRun.nonterminal_successful_decrease"
+
+[[node]]
+id = "FirstOrderRun.objective_eq_of_unsuccessful"
+
+[[node]]
+id = "FirstOrderRun.successful_card_le"
+
+[[node]]
+id = "FirstOrderRun.iterations_le"
+
+[[node]]
+id = "exists_firstOrder_termination"

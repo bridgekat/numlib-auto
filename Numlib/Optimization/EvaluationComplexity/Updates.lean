@@ -44,6 +44,15 @@ theorem card_successful_add_card_unsuccessful (S : Set ℕ) (k : ℕ) :
   simpa [successfulIterations, unsuccessfulIterations] using
     (Finset.card_filter_add_card_filter_not (s := Finset.range k) (· ∈ S))
 
+/-- Extending an iteration prefix adds at most one successful index. -/
+theorem card_successful_succ_le (S : Set ℕ) (N : ℕ) :
+    (successfulIterations S (N + 1)).card ≤ (successfulIterations S N).card + 1 := by
+  classical
+  simp only [successfulIterations, Finset.range_add_one, Finset.filter_insert]
+  split_ifs
+  · exact Finset.card_insert_le _ _
+  · omega
+
 /-- Telescoping an upper bound for each change in a potential, with a separate
 constant for successful and unsuccessful steps. -/
 theorem potential_change_le {S : Set ℕ} {v : ℕ → ℝ} {a b : ℝ} {k : ℕ}
