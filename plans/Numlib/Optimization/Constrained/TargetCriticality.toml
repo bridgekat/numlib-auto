@@ -1,0 +1,13 @@
+namespace = "Constrained"
+
+[[node]]
+id = "decrement_one_targetMerit"
+
+[[node]]
+id = "constrainedCriticality_one_targetMerit"
+
+[[node]]
+id = "targetMultiplier_norm_identity"
+
+[[node]]
+id = "lagrangian_first_order_of_targetMerit"
