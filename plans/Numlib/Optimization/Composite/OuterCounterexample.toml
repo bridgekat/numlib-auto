@@ -1,0 +1,85 @@
+namespace = "Composite.OuterCounterexample"
+
+[[node]]
+id = "f"
+
+[[node]]
+id = "c"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "radius"
+
+[[node]]
+id = "fderiv_f"
+
+[[node]]
+id = "fderiv_c"
+
+[[node]]
+id = "model_formula"
+
+[[node]]
+id = "decrement_formula"
+
+[[node]]
+id = "model_min"
+
+[[node]]
+id = "global_step"
+
+[[node]]
+id = "outer_properties"
+
+[[node]]
+id = "model_criticality_zero"
+
+[[node]]
+id = "initial_criticality"
+
+[[node]]
+id = "next_criticality"
+
+[[node]]
+id = "smoothness"
+
+[[node]]
+id = "f_derivative_lipschitz"
+
+[[node]]
+id = "c_derivative_lipschitz"
+
+[[node]]
+id = "bounded_below"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "parameter_updates"
+
+[[node]]
+id = "model_trace"
+
+[[node]]
+id = "actual_checks"
+
+[[node]]
+id = "parameter_cap"
+
+[[node]]
+id = "violates_printed_bound"
+
+[[node]]
+id = "attaining_tests"
+
+[[node]]
+id = "model_tests"
+
+[[node]]
+id = "verified_counterexample"

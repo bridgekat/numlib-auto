@@ -61,6 +61,8 @@ where \( {\sigma }_{\max } \) is given by (14.1.26).
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.7 (OCR Markdown line 16015)"
 deps = ["lemma_14_1_6"]
 
+wrong = "The literal outer Algorithm14.1.1 allows a nonunit convex first-order model radius, and then the single residual value-error term in14.1.30 is insufficient. Formal lemma_14_1_7_counterexample uses f(t)=-251t/1000,c(t)=t/4-1/4000-t^2/100,h=abs,p=q=1,s=1/1000,sigma=1,Lf=1,Lc=1/50,theta=1/10,epsilon=2/5,zeta=1,delta0=1/2000,deltaNext=1/24998000. The actual model is globally minimized at s, both true initial/next tests fail, the true ratio50099/50100 accepts and all updates are legal; printed sigmaMax=153/25 yields a false rational inequality. The optional detailed Algorithm14.1.2 convex unit-radius choice excludes this example but is not a hypothesis of14.1.7. A generally valid criticality transfer includes twice the residual value error."
+
 [[node]]
 id = "lemma_14_1_8"
 kind = "theorem"
@@ -187,3 +189,7 @@ id = "compositeTaylorModel_zero"
 
 [[node]]
 id = "compositeModelTrace"
+
+[[node]]
+id = "lemma_14_1_7_counterexample"
+source = "Counterexample to Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma14.1.7 / Equation14.1.30 under literal outer Algorithm14.1.1"

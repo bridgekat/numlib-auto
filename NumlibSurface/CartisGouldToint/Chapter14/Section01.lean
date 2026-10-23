@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.OuterCounterexample
 import Numlib.Optimization.Composite.Origin
 import Numlib.Optimization.Composite.ModelCriticality
 import Numlib.Optimization.Composite.ModelTaylor
@@ -239,5 +240,12 @@ theorem lemma_14_1_4 {n m p q : ℕ} (hqp : q ≤ p)
     (fun a ha hap => Composite.norm_iteratedFDeriv_le_componentwise hcv hLc
       (fun i b hb hbp => hlipc i b hb hbp.le) ha hap x)
     hsolve hzero ε δ₀ hε hδ₀ direction hfeasible hfailed
+
+/-- **Counterexample to Lemma 14.1.7.** The literal outer Algorithm 14.1.1
+admits an exact global model solve with a small first-order radius. All actual
+smoothness, global-gap, criticality, ratio and update checks hold, while the
+printed coefficient-one residual bound fails. The optional detailed solver's
+convex unit-radius choice excludes this execution. -/
+alias lemma_14_1_7_counterexample := Composite.OuterCounterexample.verified_counterexample
 
 end CartisGouldToint
