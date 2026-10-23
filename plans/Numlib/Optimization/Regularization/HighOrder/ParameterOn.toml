@@ -1,0 +1,13 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "value_error_le_on"
+
+[[node]]
+id = "ratio_error_le_on"
+
+[[node]]
+id = "ModelTrace.very_successful_on"
+
+[[node]]
+id = "ModelTrace.parameter_le_on"

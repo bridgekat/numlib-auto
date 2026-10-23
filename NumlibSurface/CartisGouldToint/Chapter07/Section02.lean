@@ -1,4 +1,5 @@
 import Numlib.Optimization.Constrained.TwoPhase.Geometry
+import Numlib.Optimization.Constrained.TwoPhase.Uniform
 import Numlib.Optimization.Constrained.TwoPhase.Termination
 import Numlib.Optimization.Constrained.TwoPhase.BoundaryRegularity
 
@@ -138,5 +139,31 @@ theorem lemma_7_2_1_corrected {n m p : ℕ} {f : EuclideanSpace ℝ (Fin n) → 
           ‖c (D.point (k + 1))‖ ≤ ε₀) := by
   exact ⟨fun _ _ hr hs => Constrained.TwoPhase.phase_one_termination hr hs,
     Constrained.TwoPhase.CorrectedPhaseTwoRun.termination h hC hk hf hc hs⟩
+
+/-- **Lemma7.2.5.** The source merit smoothness and highest-derivative
+Lipschitz assumptions give one actual uniform Lipschitz constant and one strict
+regularization cap for all Phase2 calls. Both constants precede every accuracy
+and execution. All actual iterates and feasible trial endpoints remain in the
+source convex domain; only its open neighborhood needs Cp regularity. -/
+theorem lemma_7_2_5 {n m p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {C S : Set (EuclideanSpace ℝ (Fin n))} (hS : IsOpen S) (hCS : C ⊆ S)
+    (hC : Convex ℝ C) (P : twoPhaseInnerSettings p)
+    (hmu : ∀ t : ℝ, ContDiffOn ℝ p (Constrained.targetMerit f c t) S)
+    (hlip : ∀ t : ℝ, ∃ L ≥ 0, ∀ x ∈ C, ∀ y ∈ C,
+      ‖iteratedFDeriv ℝ p (Constrained.targetMerit f c t) x -
+        iteratedFDeriv ℝ p (Constrained.targetMerit f c t) y‖ ≤ L * ‖x - y‖)
+    {β flow fup : ℝ}
+    (hfb : ∀ x ∈ C, ‖c x‖ ≤ β → flow ≤ f x ∧ f x ≤ fup) :
+    ∃ L ≥ 0, ∃ σmax > P.sigmaMin,
+      ∀ (ε₀ ε₁ θ : ℝ) (D : twoPhaseData (EuclideanSpace ℝ (Fin n)))
+        (N : ℕ) (closedReset : Bool),
+        twoPhasePhaseTwoRun closedReset f c C P ε₀ ε₁ θ D N → ε₀ ≤ β →
+        (∀ k ≤ N, ∀ x ∈ C, ∀ y ∈ C,
+          ‖iteratedFDeriv ℝ p (Constrained.targetMerit f c (D.target k)) x -
+            iteratedFDeriv ℝ p (Constrained.targetMerit f c (D.target k)) y‖ ≤
+              L * ‖x - y‖) ∧
+        (∀ k < N, ∀ i ≤ D.length k, (D.inner k).parameter i ≤ σmax) :=
+  Constrained.TwoPhase.exists_uniform_bounds hS hCS hC P hmu hlip hfb
 
 end CartisGouldToint

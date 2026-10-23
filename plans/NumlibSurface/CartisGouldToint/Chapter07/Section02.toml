@@ -165,15 +165,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_7_2_5"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 7.2.5: Uniform Lipschitz and regularization bounds
-
-Suppose that \( {\phi }_{\ell } \) .DpL.C, \( {\mu }_2 \) .DpL.C, and f.B.Fb hold. Then there exists a constant \( {L}_{\mu , p} \geq  0 \) such that the pth derivative of \( {\mu }_2\left( {x,{t}_k}\right) \) with respect to \( x \) is Lipschitz continuous with Lipschitz constant \( {L}_{{\mu }_2, p} \) for all values of \( {t}_k \) computed in Phase 2 of the TPp-GC algorithm. Furthermore, there exists a constant \( {\sigma }_{{\mu }_2,\max } > {\sigma }_{\min } \) such that all regularization parameters arising in the ARp-CC algorithm used within Step 1 of algorithm TPp-GC are bounded above by \( {\sigma }_{{\mu }_2,\max } \) .
-'''
-deps = ["lemma_4_1_2", "lemma_7_2_4", "targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8992)"
 
 [[node]]
