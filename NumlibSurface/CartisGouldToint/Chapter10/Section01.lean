@@ -5,7 +5,7 @@ import Numlib.Optimization.Quadratic.Krylov.Metric
 # Actual preconditioned Lanczos subspaces and models
 
 The canonical basis is built in the true metric inner product. The metric
-Hessian and gradient are proved to be the actual inverse - metric objects in
+Hessian and gradient are proved to be the actual inverse-metric objects in
 original coordinates; the embedding preserves the metric norm exactly.
 Projected regularization models use the actual Lanczos tridiagonal matrix.
 -/
@@ -16,7 +16,7 @@ variable {n : ℕ}
 variable (H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
   (hM : M.toLinearMap.IsSymmetricCoercive)
 
-/-- The canonical actual metric - isometric embedding of the preconditioned Krylov space. -/
+/-- The canonical actual metric-isometric embedding of the preconditioned Krylov space. -/
 noncomputable def lanczosSubspaceData (g : EuclideanSpace ℝ (Fin n))
     {m : ℕ} (hm : m ≤ grade (hessian M hM H).toLinearMap (gradient M hM g)) :=
   Lanczos.basisEmbedding (hessian M hM H).toLinearMap (gradient M hM g) hm
