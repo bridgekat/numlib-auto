@@ -1,3 +1,4 @@
+import Numlib.Optimization.HighOrder.CurveOptimality
 import Numlib.Optimization.HighOrder.Criticality
 import Numlib.Optimization.LineSearch.Peano
 import Numlib.Optimization.HighOrder.CriticalityLowOrder
@@ -265,5 +266,41 @@ theorem theorem_12_1_2 :
   intro q hq δ hd
   rw [hk]
   exact PeanoExample.not_approximate_of_order hq δ hd
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open scoped BigOperators
+
+/-- The ordered positive integer tuples `P(j,k)` of equation (12.1.5). -/
+noncomputable abbrev orderedCompositions (j k : ℕ) : Finset (Fin k → ℕ) :=
+  TaylorModel.orderedCompositions j k
+
+/-- The tuples in (12.1.5) have positive entries at most j and total degree j. -/
+theorem mem_orderedCompositions {j k : ℕ} {l : Fin k → ℕ} :
+    l ∈ orderedCompositions j k ↔ (∀ i, 1 ≤ l i ∧ l i ≤ j) ∧ ∑ i, l i = j :=
+  TaylorModel.mem_orderedCompositions
+
+/-- Theorem12.1.1: at a local minimum, the order-j coefficient (12.1.6) is
+nonnegative whenever every lower positive-order coefficient (12.1.7) vanishes.
+The curve coefficients are vectors, correcting the scalar OCR transcription.
+Zero coefficients are permitted: the necessary condition holds for all polynomial
+curves. The actual finite derivative tensors are used, with only local C^q
+regularity. Ordered compositions supply exactly the mixed tensor terms. -/
+theorem theorem_12_1_1 {n q j : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
+    (hf : ContDiffAt ℝ q f x) (hmin : IsLocalMin f x)
+    (hj : 0 < j) (hjq : j ≤ q) (s : ℕ → EuclideanSpace ℝ (Fin n))
+    (hzero : ∀ i, 0 < i → i < j →
+      (∑ k ∈ Finset.Icc 1 i, ((k.factorial : ℝ)⁻¹) *
+        ∑ l ∈ orderedCompositions i k,
+          iteratedFDeriv ℝ k f x (fun a => s (l a))) = 0) :
+    0 ≤ ∑ k ∈ Finset.Icc 1 j, ((k.factorial : ℝ)⁻¹) *
+      ∑ l ∈ orderedCompositions j k, iteratedFDeriv ℝ k f x (fun a => s (l a)) := by
+  rw [← TaylorModel.curveCoefficient_eq_sum_Icc hj]
+  apply TaylorModel.curveCoefficient_nonneg_of_isLocalMin hj hjq hf hmin s
+  intro i hi hij
+  rw [TaylorModel.curveCoefficient_eq_sum_Icc hi]
+  exact hzero i hi hij
 
 end CartisGouldToint

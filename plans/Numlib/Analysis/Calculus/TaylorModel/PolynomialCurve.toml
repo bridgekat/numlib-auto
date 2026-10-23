@@ -1,0 +1,53 @@
+namespace = "TaylorModel"
+desc = "Actual polynomial-curve Taylor coefficients, finite ordered compositions and exact finite-regularity derivative identity."
+
+[[node]]
+id = "polynomialCurve"
+
+[[node]]
+id = "orderedCompositions"
+
+[[node]]
+id = "mem_orderedCompositions"
+
+[[node]]
+id = "orderedCompositions_filter"
+
+[[node]]
+id = "orderedCompositions_eq_empty"
+
+[[node]]
+id = "tensorCurvePolynomial"
+
+[[node]]
+id = "tensorCurvePolynomial_eval"
+
+[[node]]
+id = "tensorCurvePolynomial_coeff"
+
+[[node]]
+id = "curveCoefficient"
+
+[[node]]
+id = "curveTaylorPolynomial"
+
+[[node]]
+id = "curveTaylorPolynomial_eval"
+
+[[node]]
+id = "curveTaylorPolynomial_coeff"
+
+[[node]]
+id = "polynomialCurve_zero"
+
+[[node]]
+id = "polynomialCurve_contDiff"
+
+[[node]]
+id = "iteratedDeriv_polynomialCurve"
+
+[[node]]
+id = "orderedCompositions_zero_length"
+
+[[node]]
+id = "curveCoefficient_eq_sum_Icc"

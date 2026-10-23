@@ -1,0 +1,5 @@
+namespace = "ScalarOptimality"
+desc = "Finite local smoothness and vanishing lower jets imply a nonnegative next jet at a scalar local minimum."
+
+[[node]]
+id = "iteratedDeriv_nonneg_of_isLocalMin"

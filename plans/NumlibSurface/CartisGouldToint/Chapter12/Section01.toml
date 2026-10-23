@@ -18,43 +18,11 @@ deps = ["highOrderCriticality"]
 
 [[node]]
 id = "orderedCompositions"
-kind = "definition"
-desc = '''
-P(j,k) is the finite set of ordered tuples (ℓ1,…,ℓk) of positive integers with sum j. The curve coefficient of order j in f(x+Σ_i α^i si) is Σ_(k=1)^j (1/k!) Σ_(ℓ∈P(j,k)) D^k f(x)[s_(ℓ1),…,s_(ℓk)].
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.1"
-deps = []
+source = "Cartis, Gould and Toint, Section12.1. The ordered positive integer tuples of equation12.1.5, with actual finite-set membership characterization."
 
 [[node]]
 id = "theorem_12_1_1"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 12.1.1: Curve-based necessary conditions for an unconstrained local minimum
-
-[102, Thm. 3.1]: Suppose that \( f \) is \( q \) -times continuously differentiable in an open neighbourhood of \( {x}_{ * } \) and that \( {x}_{ * } \) is a local unconstrained minimizer of \( f \) . Let
-
-\[
-\mathcal{P}\left( {j, k}\right) \overset{\text{ def }}{ = }\left\{  {\left( {{\ell }_{1},\ldots ,{\ell }_{k}}\right)  \in  {\left\lbrack  1 : j\right\rbrack  }^{k} \mid  \mathop{\sum }\limits_{{i = 1}}^{k}{\ell }_{i} = j}\right\}  .\tag{12.1.5}
-\]
-
-Then, for \( j \in  \left\lbrack  {1 : q}\right\rbrack \) , the inequality
-
-\[
-\mathop{\sum }\limits_{k = 1}^j\frac{1}{k!}\left( {\mathop{\sum }\limits_{\left( {{\ell }_1,\ldots ,{\ell }_k}\right)  \in  \mathcal{P}\left( {j, k}\right) }{\nabla }_x^{k}f\left( {x}_{ * }\right) \left\lbrack  {{s}_{{\ell }_1},\ldots ,{s}_{{\ell }_k}}\right\rbrack  }\right)  \geq  0\tag{12.1.6}
-\]
-
-holds for all \( \left( {{s}_1,\ldots ,{s}_j}\right)  \in  {\left( \mathbb{R}\smallsetminus \{ 0\} \right) }^j \) such that, for \( i \in  \left\lbrack  {1 : j - 1}\right\rbrack \) ,
-
-\[
-\mathop{\sum }\limits_{k = 1}^i\frac{1}{k!}\left( {\mathop{\sum }\limits_{\left( {{\ell }_1,\ldots ,{\ell }_k}\right)  \in  \mathcal{P}\left( {i, k}\right) }{\nabla }_x^{k}f\left( {x}_{ * }\right) \left\lbrack  {{s}_{{\ell }_1},\ldots ,{s}_{{\ell }_k}}\right\rbrack  }\right)  = 0.\tag{12.1.7}
-\]
-
-Documented source/OCR correction and formalization requirements: OCR correction: the curve coefficients s_i lie in R^n, not R. Use vectors with the required nonzero curve jet; permit zero later coefficients, which occur in valid polynomial curves. The index sets P(j,k) comprise ordered positive integer k-tuples summing to j.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.1 (OCR Markdown line 11401)"
-deps = ["orderedCompositions"]
+source = "Cartis, Gould and Toint, Section12.1. Full curve-based necessary condition12.1.6–7, derived from actual polynomial-curve derivatives under local finite Cq regularity; curve coefficients are vectors, correcting scalar OCR. Zero later coefficients are allowed."
 
 [[node]]
 id = "theorem_12_1_2"
@@ -97,3 +65,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "theorem_12_1_8"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.8 (OCR Markdown line 12019)"
+
+[[node]]
+id = "mem_orderedCompositions"
+source = "Cartis, Gould and Toint, equation12.1.5."
