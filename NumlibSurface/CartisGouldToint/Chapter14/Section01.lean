@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.ModelError
 import Numlib.Optimization.Composite.OuterCounterexample
 import Numlib.Optimization.Composite.Origin
 import Numlib.Optimization.Composite.ModelCriticality
@@ -247,5 +248,51 @@ smoothness, global-gap, criticality, ratio and update checks hold, while the
 printed coefficient-one residual bound fails. The optional detailed solver's
 convex unit-radius choice excludes this execution. -/
 alias lemma_14_1_7_counterexample := Composite.OuterCounterexample.verified_counterexample
+
+/-- **Corrected companion to Lemma 14.1.7.** Actual accepted-point optimality
+failure and the operational model tests imply the weighted step obstruction with
+twice the residual value error. Both outer increments contribute this error.
+The parameter cap is derived from the actual model ratio and update trace. -/
+theorem lemma_14_1_7_corrected {n m p q N : ℕ} (hqp : q ≤ p + 1)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (h : EuclideanSpace ℝ (Fin m) → ℝ)
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin Lf Lc θ : ℝ} {K : NNReal}
+    (ht : Composite.ModelTrace f c h (p + 1) x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (hf : ContDiff ℝ (p + 1) f) (hLf : 1 ≤ Lf) (hLc : 0 ≤ Lc)
+    (hc : ∀ a, ContDiff ℝ (p + 1) (fun z => c z a))
+    (hlipf : ∀ u v, ‖iteratedFDeriv ℝ (p + 1) f u -
+      iteratedFDeriv ℝ (p + 1) f v‖ ≤ Lf * ‖u - v‖)
+    (hlipc : ∀ a u v, ‖iteratedFDeriv ℝ (p + 1) (fun z => c z a) u -
+      iteratedFDeriv ℝ (p + 1) (fun z => c z a) v‖ ≤ Lc * ‖u - v‖)
+    (hh : LipschitzWith K h) (hθ : 0 ≤ θ) {i : ℕ} (hi : i < N)
+    (_haccepted : η₁ ≤ ρ i) (hnext : x (i + 1) = x i + s i)
+    (ε δ : Fin q → ℝ) (hε : ∀ a, 0 < ε a ∧ ε a ≤ 1)
+    (hδ : ∀ a, 0 < δ a ∧ δ a ≤ 1)
+    (htest : ‖s i‖ ≤ 1 → ∀ a,
+      Composite.criticality (Composite.smoothModel f (p + 1) (x i) (σ i))
+        (Composite.residualModel c (p + 1) (x i)) h (a.val + 1) (s i) (δ a) ≤
+          θ * ε a * δ a ^ (a.val + 1) / (a.val + 1).factorial)
+    (hnot : ¬∀ a, Composite.criticality f c h (a.val + 1) (x (i + 1)) (δ a) ≤
+      ε a * δ a ^ (a.val + 1) / (a.val + 1).factorial) :
+    let S := max (σ 0) (γ₃ * (Lf + Real.sqrt m * (K : ℝ) * Lc) / (1 - η₂))
+    ∃ a, (1 - θ) * ε a * δ a ^ (a.val + 1) / (a.val + 1).factorial ≤
+      (Lf + Real.sqrt m * (K : ℝ) * Lc + S) *
+        (∑ b ∈ Finset.range (a.val + 1),
+          δ a ^ (b + 1) * ‖s i‖ ^ (p + 1 - (b + 1) + 1) / (b + 1).factorial) +
+      2 * Real.sqrt m * (K : ℝ) * Lc * ‖s i‖ ^ (p + 2) / (p + 2).factorial := by
+  have hcv : ContDiff ℝ (p + 1) c := (contDiff_piLp 2).mpr hc
+  have hcap := ht.parameter_le hf (zero_le_one.trans hLf) hLc hc hlipf hlipc hh
+    (show i ≤ N by omega)
+  have hσ := ht.updates.pos (show i ≤ N by omega)
+  rw [hnext] at hnot
+  obtain ⟨a, ha⟩ := Composite.criticality_obstruction hqp f c hf hcv hLf
+    (mul_nonneg (Real.sqrt_nonneg _) hLc) hσ.le hcap hθ hh hlipf
+    (Composite.norm_iteratedFDeriv_sub_le_componentwise hcv hLc hlipc)
+    (x i) (s i) ε δ hε hδ htest hnot
+  refine ⟨a, ?_⟩
+  convert ha using 1
+  ring
 
 end CartisGouldToint

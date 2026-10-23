@@ -5,3 +5,6 @@ id = "norm_derivative_sub_residualModel_le"
 
 [[node]]
 id = "criticality_le_model_add_error"
+
+[[node]]
+id = "criticality_obstruction"

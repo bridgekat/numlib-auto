@@ -193,3 +193,7 @@ id = "compositeModelTrace"
 [[node]]
 id = "lemma_14_1_7_counterexample"
 source = "Counterexample to Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma14.1.7 / Equation14.1.30 under literal outer Algorithm14.1.1"
+
+[[node]]
+id = "lemma_14_1_7_corrected"
+source = "Coefficient-two correction of Cartis, Gould and Toint, Lemma14.1.7 / Equation14.1.30, using actual accepted-point criticality failure"
