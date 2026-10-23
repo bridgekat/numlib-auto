@@ -1,5 +1,4 @@
 namespace = "Constrained.TargetCounterexample.InnerRegularization"
-desc = "An actual AR22 execution from ordered initial Taylor tests through global model solve, genuine ratio and parameter updates to checked endpoint termination. The inner-call relation is backed by real executions, and its soundness is derived."
 
 [[node]]
 id = "initial_decrement_one"

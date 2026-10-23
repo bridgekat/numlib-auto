@@ -1,5 +1,4 @@
 namespace = "Constrained.TargetCounterexample.InnerRegularization"
-desc = "Actual old-merit derivatives, finite Taylor polynomial, cubic model and global radial minimization for a genuine regularization realization of the target-merit counterexample."
 
 [[node]]
 id = "oldMerit"

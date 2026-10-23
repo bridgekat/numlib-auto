@@ -1,5 +1,4 @@
 namespace = "CubicRegularization.SpectralCounterexample"
-desc = "A fully legal positive scalar quadratic AR2 trial with all five finite positive printed local-threshold terms refutes the claimed coefficient in Lemma5.4.2. Actual derivatives, Hessian eigenpair, ratio, model tests and parameter updates are derived."
 
 [[node]]
 id = "objective"

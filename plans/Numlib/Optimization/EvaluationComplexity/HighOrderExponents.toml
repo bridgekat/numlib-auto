@@ -1,5 +1,4 @@
 namespace = "EvaluationComplexity"
-desc = "Numerical trust-region and regularization exponent profiles, with positivity for every admissible requested derivative order."
 
 [[node]]
 id = "HighOrderProfile"

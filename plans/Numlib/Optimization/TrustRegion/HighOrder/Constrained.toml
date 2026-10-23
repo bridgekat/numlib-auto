@@ -1,5 +1,4 @@
 namespace = "HighOrderTrustRegion"
-desc = "Actual constrained Taylor-model trials and finite runs, an interior-ball transfer, and the logarithmic count with an explicit endpoint radius floor."
 
 [[node]]
 id = "ConstrainedTrial"

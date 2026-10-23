@@ -4,7 +4,7 @@ import Numlib.Optimization.Regularization.Universal.Penalty
 # Successful decrease in universal regularization
 
 The true ratio, accepted point update, length checks and parameter caps imply
-the exact first - and second-order Hölder accuracy powers.
+the exact first- and second-order Hölder accuracy powers.
 -/
 namespace UniversalRegularization
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]

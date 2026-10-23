@@ -3,9 +3,9 @@ import Mathlib.Tactic
 /-!
 # Accuracy thresholds for universal regularization
 
-Real - power identities turn literal trial - point failure and genuine derivative
-estimates into the source step - dependent parameter threshold. Constants retain
-the exact finite - factorial powers for first and second order.
+Real power identities turn literal trial point failure and genuine derivative
+estimates into the source parameter threshold depending on the step. Constants retain
+the exact finite factorial powers for first and second order.
 -/
 
 namespace UniversalRegularization
@@ -156,7 +156,7 @@ theorem holder_second_coefficient {p : ℕ} (P : Settings p) (hp : 2 ≤ p) {H �
   have hh := mul_le_mul_of_nonneg_left hrel (mul_nonneg hκ hfr2.le)
   nlinarith
 /-- Failure of the true trial gradient and the source accuracy threshold give
-its step - dependent parameter threshold. -/
+its parameter threshold depending on the step. -/
 theorem Step.threshold_of_gradient_failure {p : ℕ} {P : Settings p} {f : E → ℝ}
     (hf : ContDiff ℝ p f) {H β : ℝ} (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
     (hholder : ∀ y z,
@@ -176,7 +176,7 @@ theorem Step.threshold_of_gradient_failure {p : ℕ} {P : Settings p} {f : E →
     (h.gradient_bound hf hH hβ hβ1 hholder hσ.le) hfail
     (by simpa only [thresholdCoefficient,Nat.cast_one] using hparameter)
 /-- True negative curvature and the second source accuracy threshold give
-the step - dependent parameter threshold. -/
+the parameter threshold depending on the step. -/
 theorem Step.threshold_of_curvature_failure {p : ℕ} {P : Settings p} (hp : 2 ≤ p)
     {f : E → ℝ} (hf : ContDiff ℝ p f) {H β : ℝ}
     (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)

@@ -19,7 +19,7 @@ theorem decreaseCoefficientOne_pos {p : ℕ} (P : Settings p) (H β : ℝ) :
     (Real.rpow_pos_of_pos (div_pos (Real.rpow_pos_of_pos P.alpha1_pos _)
       (uniformCapOne_pos P H β)) _)
 
-/-- Genuine first-order - only prefixes have the source successful - trial budget. -/
+/-- Genuine first-order prefixes have the source successful trial budget. -/
 theorem Run.successful_card_le_one {p : ℕ} {P : Settings p} {f : E → ℝ}
     (hf : ContDiff ℝ p f) {H β flow : ℝ} (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
     (hholder : ∀ y z,

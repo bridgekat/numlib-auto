@@ -1,5 +1,4 @@
 namespace = "HighOrderTrustRegion.CountingCounterexample"
-desc = "A fixed nonnegative quartic objective on a fixed scalar box with fixed algorithm settings admits arbitrary rejection prefixes after one accepted trial as the accuracy varies. This refutes only accuracy-independent additive count constants; fixed-accuracy logarithmic radius counts remain valid."
 
 [[node]]
 id = "objective"

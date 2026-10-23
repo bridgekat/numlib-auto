@@ -1,5 +1,4 @@
 namespace = "LeastNorm"
-desc = "Known per-call INNER endpoint and initial-level cost contracts give a genuine first phase-one return and both total evaluation bounds, with uniform constants before primal and dual accuracies. A larger positive INNER constant yields the exact source two-maximum form without exchanging a sum and a maximum."
 
 [[node]]
 id = "maximumWeight_mul_le"

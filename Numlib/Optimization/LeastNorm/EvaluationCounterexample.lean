@@ -28,8 +28,9 @@ noncomputable def merit_deriv (x : ℝ) : ℝ := -slope * residual x
 /-- The actual derivative of the squared affine residual. -/
 theorem merit_hasDerivAt (x : ℝ) : HasDerivAt (merit residual) (merit_deriv x) x := by
   have hr : HasDerivAt residual (-slope) x := by
-    convert (hasDerivAt_const x (1 : ℝ)).sub 
-      ((hasDerivAt_id x).const_mul slope) using 1 <;> try simp
+    convert (hasDerivAt_const x (1 : ℝ)).sub
+      ((hasDerivAt_id x).const_mul slope) using 1 <;>
+      try simp only [mul_one, zero_sub]
     funext z
     rfl
   have he : (merit residual : ℝ → ℝ) = fun z => (residual z) ^ 2 / 2 := by
@@ -62,8 +63,9 @@ theorem merit_second_apply (x : ℝ) (w : Fin 2 → ℝ) :
     rw [fderiv_eq_deriv_mul, (merit_hasDerivAt z).deriv]
     simp [I]
   have hr : HasDerivAt residual (-slope) x := by
-    convert (hasDerivAt_const x (1 : ℝ)).sub 
-      ((hasDerivAt_id x).const_mul slope) using 1 <;> try simp
+    convert (hasDerivAt_const x (1 : ℝ)).sub
+      ((hasDerivAt_id x).const_mul slope) using 1 <;>
+      try simp only [mul_one, zero_sub]
     funext z
     rfl
   have hd : HasDerivAt merit_deriv (slope ^ 2) x := by

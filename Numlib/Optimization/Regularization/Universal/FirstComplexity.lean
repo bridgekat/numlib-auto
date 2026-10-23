@@ -58,7 +58,7 @@ theorem log_le_inverse_power {a ε : ℝ} (ha : 1 < a) (he : 0 < ε) (he1 : ε �
     linarith
   · exact hd.trans he1
 
-/-- The detailed first-order source bound has a uniform inverse - power envelope. -/
+/-- The detailed first-order source bound has a uniform inverse power envelope. -/
 theorem detailed_bound_le_envelope_one {a ε A B1 C gap : ℝ} (ha : 1 < a)
     (he : 0 < ε) (he1 : ε ≤ 1)
     (hA : 0 ≤ A) (hB1 : 0 ≤ B1) (hC : 0 ≤ C) (hgap : 0 ≤ gap) :
@@ -81,9 +81,9 @@ theorem detailed_bound_le_envelope_one {a ε A B1 C gap : ℝ} (ha : 1 < a)
     linarith
   exact hb.trans (by nlinarith)
 
-/-- Fixed positive source constants precede all first-order - only accuracy requests.
-The literal first initial - or - trial check and every actual evaluation schedule
-satisfy the displayed objective, low - derivative and remaining - derivative bounds. -/
+/-- Fixed positive source constants precede all first-order accuracy requests.
+The literal first check at initialization or a trial and every actual evaluation schedule
+satisfy the displayed objective, bounds for low and remaining derivative orders. -/
 theorem exists_uniform_complexity_one {p : ℕ} (P : Settings p) {f : E → ℝ}
     (hf : ContDiff ℝ p f) {H β flow : ℝ} (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
     (hholder : ∀ y z,
