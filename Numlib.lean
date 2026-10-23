@@ -46,6 +46,7 @@ import Numlib.Analysis.Calculus.TaylorModel.Perturbation
 import Numlib.Analysis.Calculus.TaylorModel.PolynomialDerivative
 import Numlib.Analysis.Calculus.TaylorModel.Scalar
 import Numlib.Analysis.Calculus.TaylorModel.SecondOrder
+import Numlib.Analysis.Calculus.TaylorModel.Truncation
 import Numlib.Analysis.Calculus.TaylorModel
 import Numlib.Analysis.Calculus.TaylorSegment
 import Numlib.Analysis.Complex.Harmonic
@@ -404,6 +405,7 @@ import Numlib.Approximation.GaussLobatto
 import Numlib.Approximation.GradedMesh
 import Numlib.Approximation.Hermite.Endpoint
 import Numlib.Approximation.Hermite.Global
+import Numlib.Approximation.Hermite.OrderBounds
 import Numlib.Approximation.Hermite.Quintic
 import Numlib.Approximation.Hermite.Reflection
 import Numlib.Approximation.Hermite
@@ -709,8 +711,12 @@ import Numlib.Optimization.Regularization.Cubic.Sharpness
 import Numlib.Optimization.Regularization.Cubic.SharpnessFinite
 import Numlib.Optimization.Regularization.FirstOrder.Sharpness
 import Numlib.Optimization.Regularization.FirstOrder
+import Numlib.Optimization.Regularization.HighOrder.Parameter
+import Numlib.Optimization.Regularization.Inexact.ModelDecrease
+import Numlib.Optimization.Regularization.Inexact.RadiusLoop
 import Numlib.Optimization.Sharpness.Curvature
 import Numlib.Optimization.Sharpness.CurvatureInterpolation
+import Numlib.Optimization.Sharpness.SecondOrder
 import Numlib.Optimization.Sparse.BoxLinear
 import Numlib.Optimization.TrustRegion.Cauchy
 import Numlib.Optimization.TrustRegion.Eigenpoint
@@ -722,6 +728,7 @@ import Numlib.Optimization.TrustRegion.HighOrder.Sharpness
 import Numlib.Optimization.TrustRegion.HighOrder.SharpnessGlobal
 import Numlib.Optimization.TrustRegion.HighOrder.Trial
 import Numlib.Optimization.TrustRegion.Inexact.Acceptance
+import Numlib.Optimization.TrustRegion.Inexact.FunctionValues
 import Numlib.Optimization.TrustRegion.Inexact.Selection
 import Numlib.Optimization.TrustRegion.SecondOrder.Complexity
 import Numlib.Optimization.TrustRegion.SecondOrder.Eigenpair

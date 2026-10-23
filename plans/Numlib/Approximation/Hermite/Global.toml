@@ -1,7 +1,5 @@
 namespace = "Hermite"
 
-desc = "Global interpolation of finite real jets by polynomial intervals and two transitions to constant exterior tails. All derivatives and smoothness are actual Lean calculus objects. The common highest-derivative Lipschitz constant and conditional global lower-derivative bound are quantified before the number, locations, and values of the data. The terminal jet is derived from the preceding interval, and the exterior width is uniformly bounded whenever the initial jets and original steps are uniformly bounded."
-
 [[node]]
 id = "initialPolynomial_iteratedDeriv_top"
 

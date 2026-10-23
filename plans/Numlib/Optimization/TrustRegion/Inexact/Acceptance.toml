@@ -8,3 +8,9 @@ id = "model_value_error_le"
 
 [[node]]
 id = "SelectedTrials.very_successful"
+
+[[node]]
+id = "model_value_error_le_half_coefficient"
+
+[[node]]
+id = "objective_decrement_error_le"

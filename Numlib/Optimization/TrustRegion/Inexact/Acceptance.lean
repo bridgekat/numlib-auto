@@ -16,7 +16,90 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 noncomputable def acceptanceCoefficient (q : ℕ) (L K : ℝ) : ℝ :=
   L + 4 * ((q + 1).factorial : ℝ) * K
 
-/-- Actual tensor errors and Lipschitz derivatives control the computed model value. -/
+/-- Actual tensor errors and Lipschitz derivatives control the error in computed decrease. -/
+theorem objective_decrement_error_le {f : E → ℝ} {q j : ℕ} (hj : 0 < j) (hjq : j ≤ q)
+    (hf : ContDiff ℝ q f) {L K : ℝ} (hL : 1 ≤ L) (hK : 0 ≤ K)
+    (hlip : ∀ a, 1 ≤ a → a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (A : FormalMultilinearSeries ℝ E ℝ) (x s : E) (hs : ‖s‖ ≤ 1)
+    (herr : ∀ a, 1 ≤ a → a ≤ j →
+      ‖A a - iteratedFDeriv ℝ a f x‖ ≤ K * ‖s‖ ^ (q - a + 1)) :
+    |(f x - f (x + s)) - TaylorModel.jetDecrement A j s| ≤
+      (acceptanceCoefficient q L K / 2) * ‖s‖ ^ (j + 1) / j.factorial := by
+  obtain ⟨p, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hj)
+  have ht := TaylorModel.abs_sub_eval_le_lipschitz isOpen_univ (fun _ h => h)
+    (convex_univ : Convex ℝ (Set.univ : Set E))
+    (hf.of_le (by exact_mod_cast hjq)).contDiffOn (by linarith : 0 ≤ L)
+    (fun u _ v _ => hlip (p + 1) (by omega) hjq u v)
+    (Set.mem_univ x) (Set.mem_univ (x + s))
+  have he := TaylorModel.norm_jetDecrement_sub_le_power A (ftaylorSeries ℝ f x) hjq hK s herr
+  have hp : ‖s‖ ^ (q + 1) ≤ ‖s‖ ^ (p + 1 + 1) :=
+    pow_le_pow_of_le_one (norm_nonneg s) hs (by omega)
+  have hfac : (0 : ℝ) < (p + 1).factorial := by positivity
+  have hfac' : ((p + 1).factorial : ℝ) ≤ ((q + 1).factorial : ℝ) := by
+    exact_mod_cast Nat.factorial_le (by omega : p + 1 ≤ q + 1)
+  have hnext : 2 * ((p + 1).factorial : ℝ) ≤ (p + 2).factorial := by
+    have heq : ((p + 2).factorial : ℝ) = (p + 2 : ℝ) * (p + 1).factorial := by
+      exact_mod_cast Nat.factorial_succ (p + 1)
+    rw [heq]
+    have hp : (0 : ℝ) ≤ p := Nat.cast_nonneg p
+    nlinarith
+  have hcoef : L / ((p + 2).factorial : ℝ) + 2 * K ≤
+      (acceptanceCoefficient q L K / 2) / (p + 1).factorial := by
+    have hleft : L / ((p + 2).factorial : ℝ) ≤ (L / 2) / (p + 1).factorial := by
+      calc _ ≤ L / (2 * (p + 1).factorial) :=
+            div_le_div_of_nonneg_left (by linarith) (by positivity) hnext
+        _ = _ := by ring
+    have hright : 2 * K ≤ (2 * ((q + 1).factorial : ℝ) * K) / (p + 1).factorial := by
+      apply (le_div_iff₀ hfac).mpr
+      nlinarith
+    convert add_le_add hleft hright using 1
+    dsimp [acceptanceCoefficient]
+    ring
+  have hid : (f x - f (x + s)) - TaylorModel.jetDecrement A (p + 1) s =
+      -(f (x + s) - TaylorModel.eval f (p + 1) x s) -
+        (TaylorModel.jetDecrement A (p + 1) s -
+          TaylorModel.jetDecrement (ftaylorSeries ℝ f x) (p + 1) s) := by
+    simp only [TaylorModel.jetDecrement, TaylorModel.ofJet_zero, TaylorModel.eval,
+      ftaylorSeries, iteratedFDeriv_zero_apply]
+    abel
+  have htri : |(f x - f (x + s)) - TaylorModel.jetDecrement A (p + 1) s| ≤
+      |f (x + s) - TaylorModel.eval f (p + 1) x s| +
+        ‖TaylorModel.jetDecrement A (p + 1) s -
+          TaylorModel.jetDecrement (ftaylorSeries ℝ f x) (p + 1) s‖ := by
+    rw [hid]
+    simpa only [Real.norm_eq_abs, norm_neg] using
+      norm_sub_le (-(f (x + s) - TaylorModel.eval f (p + 1) x s))
+        (TaylorModel.jetDecrement A (p + 1) s -
+          TaylorModel.jetDecrement (ftaylorSeries ℝ f x) (p + 1) s)
+  calc _ ≤ L * ‖s‖ ^ (p + 2) / (p + 2).factorial +
+        2 * K * ‖s‖ ^ (q + 1) := htri.trans (add_le_add ht he)
+    _ ≤ L * ‖s‖ ^ (p + 2) / (p + 2).factorial +
+        2 * K * ‖s‖ ^ (p + 1 + 1) := by gcongr
+    _ = (L / ((p + 2).factorial : ℝ) + 2 * K) * ‖s‖ ^ (p + 1 + 1) := by ring
+    _ ≤ ((acceptanceCoefficient q L K / 2) / (p + 1).factorial) *
+        ‖s‖ ^ (p + 1 + 1) := mul_le_mul_of_nonneg_right hcoef (by positivity)
+    _ = _ := by simpa only [Nat.succ_eq_add_one] using
+        (show (acceptanceCoefficient q L K / 2) / (p + 1).factorial * ‖s‖ ^ (p + 1 + 1) =
+          (acceptanceCoefficient q L K / 2) * ‖s‖ ^ (p + 1 + 1) / (p + 1).factorial by ring)
+
+/-- Exact constant values convert the decrement error into a computed value error. -/
+theorem model_value_error_le_half_coefficient {f : E → ℝ} {q j : ℕ}
+    (hj : 0 < j) (hjq : j ≤ q) (hf : ContDiff ℝ q f) {L K : ℝ}
+    (hL : 1 ≤ L) (hK : 0 ≤ K)
+    (hlip : ∀ a, 1 ≤ a → a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (A : FormalMultilinearSeries ℝ E ℝ) (x s : E) (hs : ‖s‖ ≤ 1)
+    (hzero : A 0 (fun _ => 0) = f x)
+    (herr : ∀ a, 1 ≤ a → a ≤ j →
+      ‖A a - iteratedFDeriv ℝ a f x‖ ≤ K * ‖s‖ ^ (q - a + 1)) :
+    |f (x + s) - TaylorModel.ofJet A j s| ≤
+      (acceptanceCoefficient q L K / 2) * ‖s‖ ^ (j + 1) / j.factorial := by
+  have he := objective_decrement_error_le hj hjq hf hL hK hlip A x s hs herr
+  simpa only [TaylorModel.jetDecrement, TaylorModel.ofJet_zero, hzero,
+    sub_sub_sub_cancel_left, abs_sub_comm] using he
+
+/-- A convenient full-coefficient version of the sharp computed model value bound. -/
 theorem model_value_error_le {f : E → ℝ} {q j : ℕ} (hj : 0 < j) (hjq : j ≤ q)
     (hf : ContDiff ℝ q f) {L K : ℝ} (hL : 1 ≤ L) (hK : 0 ≤ K)
     (hlip : ∀ a, 1 ≤ a → a ≤ q → ∀ u v,
@@ -27,42 +110,10 @@ theorem model_value_error_le {f : E → ℝ} {q j : ℕ} (hj : 0 < j) (hjq : j �
       ‖A a - iteratedFDeriv ℝ a f x‖ ≤ K * ‖s‖ ^ (q - a + 1)) :
     |f (x + s) - TaylorModel.ofJet A j s| ≤
       acceptanceCoefficient q L K * ‖s‖ ^ (j + 1) / j.factorial := by
-  obtain ⟨p, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hj)
-  have ht := TaylorModel.abs_sub_eval_le_lipschitz isOpen_univ (fun _ h => h)
-    (convex_univ : Convex ℝ (Set.univ : Set E))
-    (hf.of_le (by exact_mod_cast hjq)).contDiffOn (by linarith : 0 ≤ L)
-    (fun u _ v _ => hlip (p + 1) (by omega) hjq u v)
-    (Set.mem_univ x) (Set.mem_univ (x + s))
-  have he := TaylorModel.norm_ofJet_sub_eval_le_power A f x s hjq hK hzero herr
-  have hp : ‖s‖ ^ (q + 1) ≤ ‖s‖ ^ (p + 1 + 1) :=
-    pow_le_pow_of_le_one (norm_nonneg s) hs (by omega)
-  have hfac : (0 : ℝ) < (p + 1).factorial := by positivity
-  have hfac' : ((p + 1).factorial : ℝ) ≤ ((q + 1).factorial : ℝ) := by
-    exact_mod_cast Nat.factorial_le (by omega : p + 1 ≤ q + 1)
-  have hcoef : L / ((p + 2).factorial : ℝ) + 2 * K ≤
-      acceptanceCoefficient q L K / (p + 1).factorial := by
-    rw [acceptanceCoefficient, add_div]
-    apply add_le_add
-    · exact div_le_div_of_nonneg_left (by linarith)
-        hfac (by exact_mod_cast Nat.factorial_le (by omega : p + 1 ≤ p + 2))
-    · apply (le_div_iff₀ hfac).mpr
-      nlinarith
-  have htri : |f (x + s) - TaylorModel.ofJet A (p + 1) s| ≤
-      |f (x + s) - TaylorModel.eval f (p + 1) x s| +
-        ‖TaylorModel.ofJet A (p + 1) s - TaylorModel.eval f (p + 1) x s‖ := by
-    simpa only [Real.norm_eq_abs, abs_sub_comm] using
-      norm_sub_le_norm_sub_add_norm_sub (f (x + s)) (TaylorModel.eval f (p + 1) x s)
-        (TaylorModel.ofJet A (p + 1) s)
-  calc _ ≤ L * ‖s‖ ^ (p + 2) / (p + 2).factorial +
-        2 * K * ‖s‖ ^ (q + 1) := htri.trans (add_le_add ht he)
-    _ ≤ L * ‖s‖ ^ (p + 2) / (p + 2).factorial +
-        2 * K * ‖s‖ ^ (p + 1 + 1) := by gcongr
-    _ = (L / ((p + 2).factorial : ℝ) + 2 * K) * ‖s‖ ^ (p + 1 + 1) := by ring
-    _ ≤ (acceptanceCoefficient q L K / (p + 1).factorial) *
-        ‖s‖ ^ (p + 1 + 1) := mul_le_mul_of_nonneg_right hcoef (by positivity)
-    _ = _ := by simpa only [Nat.succ_eq_add_one] using
-        (show acceptanceCoefficient q L K / (p + 1).factorial * ‖s‖ ^ (p + 1 + 1) =
-          acceptanceCoefficient q L K * ‖s‖ ^ (p + 1 + 1) / (p + 1).factorial by ring)
+  apply (model_value_error_le_half_coefficient hj hjq hf hL hK hlip A x s hs hzero herr).trans
+  have hC : 0 ≤ acceptanceCoefficient q L K := by dsimp [acceptanceCoefficient]; positivity
+  apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg _)
+  exact mul_le_mul_of_nonneg_right (by linarith) (pow_nonneg (norm_nonneg s) _)
 
 namespace SelectedTrials
 variable {q : ℕ} {A : ℕ → FormalMultilinearSeries ℝ E ℝ} {T : Set ℕ}

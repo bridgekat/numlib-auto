@@ -1,0 +1,10 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "SelectedTrials.objective_error_le_margin"
+
+[[node]]
+id = "SelectedTrials.very_successful_inexact_values"
+
+[[node]]
+id = "true_decrease_of_inexact_values"
