@@ -1,0 +1,13 @@
+namespace = "Lanczos"
+
+[[node]]
+id = "inner_shifted_apply_basisEmbedding"
+
+[[node]]
+id = "compression_isSymmetricCoercive_of_shifted_posDef"
+
+[[node]]
+id = "isGalerkinIterate_of_shifted_solve"
+
+[[node]]
+id = "norm_le_norm_of_nested_shifted_solve"
