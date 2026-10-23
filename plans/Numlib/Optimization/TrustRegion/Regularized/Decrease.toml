@@ -1,0 +1,19 @@
+namespace = "RegularizedTrustRegion"
+
+[[node]]
+id = "min_sq"
+
+[[node]]
+id = "minimum_scale_le_sq"
+
+[[node]]
+id = "decreaseCoefficient"
+
+[[node]]
+id = "decreaseCoefficient_pos"
+
+[[node]]
+id = "Run.successful_decrease_interior"
+
+[[node]]
+id = "Run.successful_decrease_boundary"

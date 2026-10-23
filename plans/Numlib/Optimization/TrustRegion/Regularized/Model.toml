@@ -1,0 +1,28 @@
+namespace = "RegularizedTrustRegion"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "model_decrease"
+
+[[node]]
+id = "ModelTrace"
+
+[[node]]
+id = "ModelTrace.step_ne_zero"
+
+[[node]]
+id = "ModelTrace.denominator_pos"
+
+[[node]]
+id = "ModelTrace.very_successful"
+
+[[node]]
+id = "ModelTrace.successful_and_nondecreasing"
+
+[[node]]
+id = "ModelTrace.radius_floor_min"
+
+[[node]]
+id = "ModelTrace.radius_floor"

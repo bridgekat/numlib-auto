@@ -1,0 +1,16 @@
+namespace = "RegularizedTrustRegion"
+
+[[node]]
+id = "hasFDerivAt_model"
+
+[[node]]
+id = "fderiv_model"
+
+[[node]]
+id = "trial_derivative_le"
+
+[[node]]
+id = "min_step_lower"
+
+[[node]]
+id = "interior_step_lower"

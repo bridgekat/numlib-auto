@@ -1,0 +1,22 @@
+namespace = "RegularizedTrustRegion"
+
+[[node]]
+id = "Stopped"
+
+[[node]]
+id = "stopped_iff"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.regularization_le_one"
+
+[[node]]
+id = "Run.interior_step_lower"
+
+[[node]]
+id = "Run.successful_decrease_step"
+
+[[node]]
+id = "Run.rejected_point"
