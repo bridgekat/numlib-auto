@@ -5,3 +5,9 @@ id = "value_ge_of_criticality"
 
 [[node]]
 id = "value_ge_sub_two_tolerance_of_criticality"
+
+[[node]]
+id = "value_ge_of_decrement_le"
+
+[[node]]
+id = "lipschitz_error_le_tolerance"

@@ -5,12 +5,7 @@ Simple constraints X are closed and nonempty and step/model optimization over X 
 
 [[node]]
 id = "highOrderConstrainedCriticality"
-kind = "definition"
-desc = '''
-For closed nonempty X and x∈X define X(x)={d:x+d∈X}. φ_(f,X(x),j)^δ(x)=f(x)−min_(d∈X(x),||d||≤δ) T_(f,j)(x,d), (14.2.2). Zero displacement guarantees nonemptiness; compactness gives attainment. The approximate certificate is the per-order inequality with εj δj^j/j!, (14.2.3). All constrained algorithm variants add xk+sk∈X and constrain model searches to X(xk).
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.2"
-deps = ["highOrderCriticality"]
 
 [[node]]
 id = "sparseStepProblem"
@@ -23,36 +18,7 @@ deps = []
 
 [[node]]
 id = "theorem_14_2_1"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 14.2.1: Stability of approximate constrained minimizers
-
-Suppose that \( f \) is \( j \) -times continuously differentiable and that, for some \( \eta  \geq  0 \) ,
-
-\[
-{\phi }_{f,\mathcal{X}\left( {x}_{\epsilon }\right) , j}^{{\delta }_j}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j\frac{{\delta }_j^j}{j!} + \eta
-\]
-
-for some \( \eta  \geq  0,{\delta }_j \in  (0,1\rbrack \) , and \( {\epsilon }_j \in  (0,1\rbrack \) , where \( {\phi }_{f,\mathcal{X}\left( x\right) , j}^{{\delta }_j}\left( x\right) \) is defined by (14.2.2) for some closed nonempty feasible set \( \mathcal{X} \) . Suppose also that \( {\nabla }_x^{j}f \) is Lipschitz continuous with constant \( {L}_{f, j} \) in an open neighbourhood of a point \( {x}_{\epsilon } \) of radius larger than \( {\delta }_j \) . Then, if \( {L}_{f, j} > 0 \) ,
-
-\[
-f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - 2{\epsilon }_{j}\frac{{\delta }^{j}}{j!} - \eta \;\text{ for all }d \in  \mathcal{X}\left( {x}_{\epsilon }\right) \text{ with }\parallel d\parallel  \leq  \min \left\lbrack  {{\delta }_{j},\frac{\left( {j + 1}\right) {\epsilon }_{j}}{{L}_{f, j}}}\right\rbrack  ,
-\]
-
-(14.2.6)
-
-and
-
-\[
-f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - {\epsilon }_{j}\frac{{\delta }_{j}^{j}}{j!} - \eta \;\text{ for all }d \in  \mathcal{X}\left( {x}_{\epsilon }\right) \text{ with }\parallel d\parallel  \leq  {\delta }_{j}\tag{14.2.7}
-\]
-
-otherwise.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.2.1 (OCR Markdown line 16229)"
-deps = ["highOrderConstrainedCriticality"]
 
 [[node]]
 id = "lemma_14_2_2"
