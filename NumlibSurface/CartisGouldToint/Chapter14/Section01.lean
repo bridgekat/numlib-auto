@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.Origin
 import Numlib.Optimization.Composite.ModelCriticality
 import Numlib.Optimization.Composite.ModelTaylor
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
@@ -17,6 +18,11 @@ Lemma 14.1.5, irrespective of whether `h` is differentiable.
 Lemma 14.1.1 derives global minimality of the first-order model at zero and vanishing
 actual composite criticality. Its source assumptions on subadditivity and `h(0)` are
 unnecessary: Lipschitz continuity and convexity of `h` suffice.
+
+Lemmas 14.1.2--14.1.4 use the smooth penalized scalar part and residual polynomial
+for the model's genuine generalized Taylor criticality. They derive the exact
+small-radius decrease, actual global-minimum step existence, quantitative radii,
+and the objective optimality certified by a zero-decrease global-gap return.
 -/
 
 namespace CartisGouldToint
@@ -195,5 +201,43 @@ theorem lemma_14_1_3 {n m p q : ℕ} (_hq : 1 ≤ q) (hqp : q ≤ p)
   · by_cases hs : ‖s‖ ≤ 1
     · exact Or.inr (htest hs)
     · exact Or.inl (lt_of_not_ge hs)
+
+/-- **Lemma 14.1.4.** A zero-decrease Step2 return satisfying the actual
+positive-fraction global-gap rule gives genuine approximate composite optimality
+at positive radii. It cannot follow a failed Step1 test when q=1 and h is convex. -/
+theorem lemma_14_1_4 {n m p q : ℕ} (hqp : q ≤ p)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (h : EuclideanSpace ℝ (Fin m) → ℝ)
+    (hf : ContDiff ℝ p f) (hc : ∀ i, ContDiff ℝ p (fun z => c z i))
+    {Lf Lc σ μ ζ : ℝ} {K : NNReal} (hLf : 0 ≤ Lf) (hLc : 0 ≤ Lc)
+    (hlipf : ∀ a, 1 ≤ a → a ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ Lf * ‖u - v‖)
+    (hlipc : ∀ i a, 1 ≤ a → a ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ a (fun z => c z i) u -
+        iteratedFDeriv ℝ a (fun z => c z i) v‖ ≤ Lc * ‖u - v‖)
+    (hh : LipschitzWith K h) (hσ : 0 < σ) (hμ : 0 < μ) (hζ : 0 < ζ)
+    (x s : EuclideanSpace ℝ (Fin n))
+    (hsolve : ModelDecrease.ApproximateGlobalStep
+      (Composite.regularizedModel f c h p x σ) μ s)
+    (hzero : Composite.regularizedModel f c h p x σ 0 =
+      Composite.regularizedModel f c h p x σ s)
+    (ε δ₀ : Fin q → ℝ) (hε : ∀ a, 0 < ε a) (hδ₀ : ∀ a, 0 < δ₀ a)
+    (direction : Fin q → EuclideanSpace ℝ (Fin n))
+    (hfeasible : ∀ a, ‖direction a‖ ≤ δ₀ a)
+    (hfailed : ∃ a, ζ * ε a * δ₀ a ^ (a.val + 1) / (a.val + 1).factorial <
+      Composite.decrement f c h (a.val + 1) x (direction a)) :
+    (q = 1 → ¬ConvexOn ℝ Set.univ h) ∧
+      ∃ δ : Fin q → ℝ, (∀ a, 0 < δ a ∧ δ a ≤ 1) ∧
+        ∀ a, Composite.criticality f c h (a.val + 1) x (δ a) ≤
+          ε a * δ a ^ (a.val + 1) / (a.val + 1).factorial := by
+  have hcv : ContDiff ℝ p c := (contDiff_piLp 2).mpr hc
+  exact Composite.zero_step_termination hqp hf.contDiffAt hcv.contDiffAt hLf
+    (mul_nonneg (Real.sqrt_nonneg _) hLc) hσ hμ hζ hh
+    (fun a ha hap => Composite.norm_iteratedFDeriv_le_of_lipschitz_lower hLf
+      (fun b hb hbp => hlipf b hb hbp.le) ha hap x)
+    (fun a ha hap => Composite.norm_iteratedFDeriv_le_componentwise hcv hLc
+      (fun i b hb hbp => hlipc i b hb hbp.le) ha hap x)
+    hsolve hzero ε δ₀ hε hδ₀ direction hfeasible hfailed
 
 end CartisGouldToint
