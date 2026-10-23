@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.ModelTaylor
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.Composite.Optimality
@@ -107,5 +108,41 @@ theorem lemma_14_1_6 {n m p N : ℕ}
     (hh : LipschitzWith Lh h) :
     ∀ i ≤ N, σ i ≤ max (σ 0) (γ₃ * (Lf + Real.sqrt m * (Lh : ℝ) * Lc) / (1 - η₂)) :=
   fun _ hi => ht.parameter_le hf hLf hLc hc hlipf hlipc hh hi
+
+/-- **Lemma 14.1.2.** A sufficiently small normalized generalized Taylor trial
+retains half its decrease in the actual regularized composite model. The outer
+function is retained exactly; its differentiability is unnecessary. The source's
+subadditivity and zero-at-zero assumptions are not needed for this conclusion. -/
+theorem lemma_14_1_2 {n m p j : ℕ} (hj : 1 ≤ j) (hjp : j ≤ p)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (h : EuclideanSpace ℝ (Fin m) → ℝ)
+    (_hf : ContDiff ℝ p f) (hc : ∀ i, ContDiff ℝ p (fun z => c z i))
+    {Lf Lc σ α δ : ℝ} {K : NNReal} (hLf : 0 ≤ Lf) (hLc : 0 ≤ Lc)
+    (hlipf : ∀ a, 1 ≤ a → a ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ Lf * ‖u - v‖)
+    (hlipc : ∀ i a, 1 ≤ a → a ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ a (fun z => c z i) u -
+        iteratedFDeriv ℝ a (fun z => c z i) v‖ ≤ Lc * ‖u - v‖)
+    (hh : LipschitzWith K h) (hσ : 0 < σ) (_hα : 0 < α)
+    (x s d : EuclideanSpace ℝ (Fin n)) (hs : ‖s‖ ≤ 1)
+    (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hd : ‖d‖ ≤ δ)
+    (hsmall : δ ≤ α / (4 * (3 * (Lf + Real.sqrt m * (K : ℝ) * Lc) + σ)))
+    (htest : α * δ ^ j / j.factorial ≤
+      Composite.decrement (Composite.smoothModel f p x σ)
+        (Composite.residualModel c p x) h j s d) :
+    α / 2 * δ ^ j / j.factorial ≤
+      Composite.regularizedModel f c h p x σ s -
+        Composite.regularizedModel f c h p x σ (s + d) := by
+  have hcv : ContDiff ℝ p c := (contDiff_piLp 2).mpr hc
+  apply Composite.regularizedModel_decrement_ge_half f c hj hjp hLf
+    (mul_nonneg (Real.sqrt_nonneg _) hLc) hσ hh x s d hs
+    (fun a ha hap => Composite.norm_iteratedFDeriv_le_of_lipschitz_lower hLf
+      (fun b hb hbp => hlipf b hb hbp.le) ha hap x)
+    (fun a ha hap => Composite.norm_iteratedFDeriv_le_componentwise hcv hLc
+      (fun i b hb hbp => hlipc i b hb hbp.le) ha hap x)
+    hδ hδ1 hd _ htest
+  convert hsmall using 1
+  ring
 
 end CartisGouldToint

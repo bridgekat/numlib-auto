@@ -1,0 +1,13 @@
+namespace = "Composite"
+
+[[node]]
+id = "smoothModel"
+
+[[node]]
+id = "residualModel"
+
+[[node]]
+id = "regularizedModel_eq"
+
+[[node]]
+id = "regularizedModel_decrement_ge_half"

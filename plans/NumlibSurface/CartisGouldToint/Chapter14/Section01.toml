@@ -22,32 +22,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_14_1_2"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 14.1.2: Relationship between composite model and generalized Taylor decrements
-
-Suppose that f.D1pL, c.D1pL, h.L, and h.S0 hold, that \( s \in  {\mathcal{B}}_1 \) , and that \( {L}_w \) is given by (14.1.3). Given \( \alpha  > 0 \) and
-
-\[
-\delta  \in  \left( {0,\min \left( {1,\frac{\alpha }{4\left( {3{L}_w + {\sigma }_k}\right) }}\right) }\right\rbrack  ,\tag{14.1.17}
-\]
-
-suppose that there is a displacement \( d \in  {\mathcal{B}}_{\delta } \) for which
-
-\[
-\Delta {T}_{{\widehat{m}}_{k}, j}\left( {s, d}\right)  \geq  \alpha \frac{{\delta }^{j}}{j!}\tag{14.1.18}
-\]
-
-for some \( j \in  \left\lbrack  {1 : q}\right\rbrack \) . Then
-
-\[
-{\widehat{m}}_{k}\left( s\right)  - {\widehat{m}}_{k}\left( {s + d}\right)  \geq  \frac{1}{2}\alpha \frac{{\delta }^{j}}{j!}.\tag{14.1.19}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.2 (OCR Markdown line 15783)"
-deps = ["compositeCriticality"]
 
 [[node]]
 id = "lemma_14_1_3"
