@@ -4,3 +4,5 @@ id = "continuousAt_zero_of_norm_le_rpow"
 [[node]]
 id = "hasFDerivAt_zero_of_norm_le_rpow"
 
+[[node]]
+id = "norm_sub_le_of_growth_and_fderiv_bound"

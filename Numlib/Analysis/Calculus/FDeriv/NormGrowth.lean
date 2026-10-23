@@ -1,4 +1,4 @@
-import Mathlib.Analysis.Calculus.FDeriv.Basic
+import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.Asymptotics.Lemmas
 import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
 
@@ -60,3 +60,42 @@ theorem hasFDerivAt_zero_of_norm_le_rpow {g : E → F} {C a : ℝ} (ha : 1 < a)
   exact hbig.trans_isLittleO hlittle
 
 end Bound
+
+open Metric Set
+
+section General
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F]
+
+/-- A linear growth bound and a bounded derivative off the origin give a
+global Lipschitz estimate, without differentiability at the origin. -/
+theorem norm_sub_le_of_growth_and_fderiv_bound {g : E → F} {B C : ℝ}
+    (hB : 0 ≤ B) (hg : ∀ x, ‖g x‖ ≤ B * ‖x‖)
+    (hd : ∀ x : E, x ≠ 0 → DifferentiableAt ℝ g x)
+    (hbound : ∀ x : E, x ≠ 0 → ‖fderiv ℝ g x‖ ≤ C) (x y : E) :
+    ‖g x - g y‖ ≤ max (5 * B) C * ‖x - y‖ := by
+  by_cases hnear : ‖x‖ ≤ 2 * ‖x - y‖
+  · have hny : ‖y‖ ≤ ‖x‖ + ‖x - y‖ := by
+      have hh := norm_sub_le x (x - y)
+      simpa only [sub_sub_cancel] using hh
+    have hsum : ‖g x - g y‖ ≤ 5 * B * ‖x - y‖ := by
+      have hh := norm_sub_le (g x) (g y)
+      have hx := hg x
+      have hy := hg y
+      nlinarith
+    exact hsum.trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _))
+  · have hfar : 2 * ‖x - y‖ < ‖x‖ := lt_of_not_ge hnear
+    have hxpos : 0 < ‖x‖ := lt_of_le_of_lt (by positivity) hfar
+    have hball : ∀ z ∈ ball x ‖x‖, z ≠ (0 : E) := by
+      intro z hz hzero
+      subst z
+      exact (lt_irrefl ‖x‖) (by simpa only [mem_ball, dist_zero_left] using hz)
+    have hb := Convex.norm_image_sub_le_of_norm_fderiv_le
+      (fun z hz => hd z (hball z hz)) (fun z hz => hbound z (hball z hz))
+      (convex_ball x ‖x‖) (show x ∈ ball x ‖x‖ by simpa using hxpos)
+      (show y ∈ ball x ‖x‖ by
+        rw [mem_ball, dist_comm, dist_eq_norm]
+        linarith [norm_nonneg (x - y)])
+    rw [norm_sub_rev (g y), norm_sub_rev y] at hb
+    exact hb.trans (mul_le_mul_of_nonneg_right (le_max_right _ _) (norm_nonneg _))
+end General
