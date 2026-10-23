@@ -1,0 +1,25 @@
+namespace = "Krylov"
+
+[[node]]
+id = "chebyshevFactor"
+
+[[node]]
+id = "chebyshevFactor_nonneg"
+
+[[node]]
+id = "chebyshevFactor_pos"
+
+[[node]]
+id = "chebyshevFactor_lt_one"
+
+[[node]]
+id = "chebyshevFactor_monotone"
+
+[[node]]
+id = "mul_chebyshevFactor_pow_le"
+
+[[node]]
+id = "chebyshevFactor_one"
+
+[[node]]
+id = "budget_chebyshevFactor"

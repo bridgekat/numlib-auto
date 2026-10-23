@@ -1,0 +1,10 @@
+namespace = "GeometricDecay"
+
+[[node]]
+id = "budget"
+
+[[node]]
+id = "bound_at_budget"
+
+[[node]]
+id = "exists_le_min_grade"
