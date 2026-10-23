@@ -1,0 +1,40 @@
+namespace = "MeasureDomination"
+
+[[node]]
+id = "trGapThreshold"
+
+[[node]]
+id = "trGapThreshold_eq"
+
+[[node]]
+id = "TRRun.point_eq_after_zero"
+
+[[node]]
+id = "TRRun.first_success_point"
+
+[[node]]
+id = "TRRun.next_success_point"
+
+[[node]]
+id = "TRRun.successful_explicit_decrease"
+
+[[node]]
+id = "TRRun.factor_decrease"
+
+[[node]]
+id = "TRRun.current_gap_ge_threshold"
+
+[[node]]
+id = "TRRun.successful_tendsto_zero"
+
+[[node]]
+id = "TRRun.successful_superlinear"
+
+[[node]]
+id = "TRRun.exists_gap_zero"
+
+[[node]]
+id = "TRRun.measure_zero_of_gap_zero"
+
+[[node]]
+id = "TRRun.first_zero_budget"

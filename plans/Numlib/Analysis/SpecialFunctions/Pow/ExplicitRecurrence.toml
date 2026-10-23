@@ -1,0 +1,52 @@
+namespace = "ExplicitGap"
+
+[[node]]
+id = "antitone"
+
+[[node]]
+id = "implicit_decrease"
+
+[[node]]
+id = "tendsto_zero"
+
+[[node]]
+id = "coefficient_le_power"
+
+[[node]]
+id = "threshold"
+
+[[node]]
+id = "threshold_pos"
+
+[[node]]
+id = "threshold_power"
+
+[[node]]
+id = "threshold_le_of_pos"
+
+[[node]]
+id = "le_threshold_of_pos"
+
+[[node]]
+id = "next_zero_of_eq_threshold"
+
+[[node]]
+id = "exists_zero"
+
+[[node]]
+id = "factor_step"
+
+[[node]]
+id = "linear_step"
+
+[[node]]
+id = "linear_coefficient_le_one"
+
+[[node]]
+id = "threshold_balance"
+
+[[node]]
+id = "decrease_ge_threshold"
+
+[[node]]
+id = "exists_zero_le_budget"

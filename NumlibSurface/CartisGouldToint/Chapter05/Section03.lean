@@ -1,3 +1,4 @@
+import Numlib.Optimization.MeasureDomination.TrustRegionRates
 import Numlib.Optimization.MeasureDomination.HistoricalEuclidean
 import Numlib.Optimization.MeasureDomination.Superlinear
 import Numlib.Optimization.MeasureDomination.Polynomial
@@ -203,5 +204,49 @@ theorem theorem_5_3_9_counterexample :
       ¬Tendsto (fun n => ψ (x (MeasureDomination.successIndex Set.univ n)))
         atTop (nhds 0) :=
   MeasureDomination.HistoricalCounterexample.euclidean_counterexample
+
+/-- The source's positive boundary between the nonunit domination regimes,
+`Γ_square = (κψ^(ν/μ)/κν)^(μ/(ν−μ))`, used when `ν ≠ μ`. -/
+noncomputable abbrev trMeasureGapThreshold (κψ κν μ ν : ℝ) : ℝ :=
+  MeasureDomination.trGapThreshold κψ κν μ ν
+
+/-- **Theorem5.3.7.** Below the domination level the actual first exact minimum
+and zero optimality measure have uniform constant evaluation bounds. The gaps
+have a superlinear upper rate, and each positive accepted gap is at least the
+fixed source threshold. Function and derivative counts include initialization. -/
+theorem theorem_5_3_7 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
+    {fstar μ κψ ν κν κR κA : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    (hd : measureDominated f ψ fstar μ κψ) (hr : trMeasureRun f ψ x S ν κν κR κA)
+    (hνμ : ν < μ) :
+    ∃ κC > 0, ∃ κF > 0,
+      Tendsto (fun j => MeasureDomination.successfulGap f fstar x S (j + 1) /
+        MeasureDomination.successfulGap f fstar x S j) atTop (nhds 0) ∧
+      ∃ K : ℕ, objectiveGap f fstar (x K) = 0 ∧ ψ (x K) = 0 ∧
+        (∀ i < K, 0 < objectiveGap f fstar (x i)) ∧
+        (∀ j, K ≤ j → x j = x K) ∧
+        (∀ i < K, i ∈ S →
+          trMeasureGapThreshold κψ κν μ ν ≤ objectiveGap f fstar (x i)) ∧
+        (K : ℝ) ≤ κC ∧ ((K + 1 : ℕ) : ℝ) ≤ κC ∧
+        ((EvaluationComplexity.successfulIterations S K).card : ℝ) ≤ κF ∧
+        (((EvaluationComplexity.successfulIterations S K).card + 1 : ℕ) : ℝ) ≤ κF := by
+  let θ := ExplicitGap.threshold (κν / κψ ^ (ν / μ)) (ν / μ)
+  let G := objectiveGap f fstar (x 0) / θ
+  have hc : 0 < κν / κψ ^ (ν / μ) :=
+    div_pos hr.coefficient_pos (Real.rpow_pos_of_pos hd.coefficient_pos _)
+  have hθ : 0 < θ := ExplicitGap.threshold_pos hc _
+  have hG : 0 ≤ G := div_nonneg (hd.gap_nonneg _) hθ.le
+  have hR : 0 < κR := zero_lt_one.trans_le hr.density_factor
+  have hA := hr.density_additive
+  refine ⟨κR * G + κA + 1, by positivity, G + 1, by positivity,
+    hr.successful_superlinear hd hνμ, ?_⟩
+  obtain ⟨K, hk, hψ, hfirst, hstop, hcard, htrials⟩ := hr.first_zero_budget hd hνμ
+  refine ⟨K, hk, hψ, hfirst, hstop,
+    fun i hi hiS => hr.current_gap_ge_threshold hd hνμ hiS (hfirst i hi), ?_, ?_, ?_, ?_⟩
+  · exact htrials.trans (le_add_of_nonneg_right zero_le_one)
+  · push_cast
+    linarith
+  · exact hcard.trans (le_add_of_nonneg_right zero_le_one)
+  · push_cast
+    linarith
 
 end CartisGouldToint
