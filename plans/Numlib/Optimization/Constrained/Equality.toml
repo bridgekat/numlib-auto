@@ -1,0 +1,15 @@
+
+[[node]]
+id = "Descent.hessian_nonneg_of_stationary_curve"
+
+[[node]]
+id = "Constrained.hessian_nonneg_on_kernel"
+
+[[node]]
+id = "Constrained.exists_vector_multiplier"
+
+[[node]]
+id = "Constrained.vector_lagrangian_hessian_nonneg"
+
+[[node]]
+id = "Constrained.strict_local_min_of_vector_lagrangian"

@@ -39,35 +39,6 @@ source = "Cartis–Gould–Toint, Theorem 1.1.2, corrected converse"
 
 [[node]]
 id = "theorem_1_1_3"
-kind = "theorem"
-desc = '''
-Semantic specification: Use explicit LICQ for the unspecified constraint qualification and require d≠0 in (1.1.15); both necessary and sufficient statements must be exposed with their own regularity assumptions.
-
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 1.1.3: Equality-constrained optimality conditions
-
-Let \( \mathcal{S} \) be an open set containing the feasible region \( \{ x \mid  c\left( x\right)  = 0\} \) , let \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) and \( c : {\mathbb{R}}^n \rightarrow  {\mathbb{R}}^m \in  {C}^1\left( \mathcal{S}\right) \) , suppose that \( {x}_{ * } \in  {\mathbb{R}}^n \) is a local minimizer of \( f\left( x\right) \) subject to \( c\left( x\right)  = 0 \) , and suppose that a constraint qualification is satisfied at \( {x}_{ * } \) . Then there exist Lagrange multipliers \( {y}_{ * } \in  {\mathbb{R}}^m \) for which
-
-\[
-{\nabla }_{x}^{1}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right)  = 0\text{ and }c\left( {x}_{ * }\right)  = 0.\tag{1.1.13}
-\]
-
-If \( f, c \in  {C}^2\left( \mathcal{S}\right) \) , then
-
-\[
-\left\langle  {d,{\nabla }_{x}^{2}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) d}\right\rangle   \geq  0\text{ for all }d\text{ such that }{\nabla }_{x}^{1}c\left( {x}_{ * }\right) d = 0\text{ . }\tag{1.1.14}
-\]
-
-Conversely, if, for given \( {x}_{ * } \in  {\mathbb{R}}^n,{y}_{ * } \in  {\mathbb{R}}^m \) , and \( f, c \in  {C}^2\left( \mathcal{S}\right) \) ,(1.1.13) holds and
-
-\[
-\left\langle  {d,{\nabla }_{x}^{2}\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) d}\right\rangle   > 0\text{ for all }d\text{ such that }{\nabla }_{x}^{1}c\left( {x}_{ * }\right) d = 0,\tag{1.1.15}
-\]
-
-then \( {x}_{ * } \) is a strict local minimizer of \( f\left( x\right) \) subject to \( c\left( x\right)  = 0 \) .
-'''
-deps = ["lagrangian", "feasibleDisplacements"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 863)"
 
 [[node]]
@@ -108,3 +79,6 @@ then \( {x}_{ * } \) is a strict local minimizer of \( f\left( x\right) \) subje
 '''
 deps = ["theorem_1_1_2", "theorem_1_1_1", "lagrangian", "feasibleDisplacements"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 903)"
+
+[[node]]
+id = "equalityLICQ"
