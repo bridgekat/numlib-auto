@@ -1,6 +1,6 @@
 namespace = "CartisGouldToint"
 desc = '''
-Implicit dynamic accuracy for high-order trust-region and regularization algorithms. f.D0rL means C^r with every derivative order 0,…,r globally Lipschitz (including f itself); Lf is the maximum of their constants, all ≥1. Approximate tensors obey ||Dbar^i f−D^i f||≤κ_(∇,i) h_(k,i); unknown positive κ_(∇,i) are fixed oracle constants. Accuracy parameters decrease geometrically in Step 5. Count T (ordinary trial) and A (accuracy-improvement) iterations separately; S contains successful trial iterations. The true Taylor criticality, rather than the approximate tensor model alone, must satisfy the final certificate.
+Implicit dynamic accuracy for high-order trust-region and regularization algorithms. Documented source repairs for Lemmas 13.1.1 and 13.1.9: count a half-open prefix of N updates and use the terminal parameter at N. An inclusive source count T_k corresponds to N=k+1 and terminal index k+1; the printed terminal index k is off by one. Algorithm 13.1.1 initialization accidentally gives regularization-factor ranges, while its trust-region update and proof require 0<gamma1<=gamma2<1<=gamma3. The Lean trace records use these trust-region ranges and the exact capped interval update. Accuracy-improving steps leave the radius/regularization parameter unchanged. f.D0rL means C^r with every derivative order 0,…,r globally Lipschitz (including f itself); Lf is the maximum of their constants, all ≥1. Approximate tensors obey ||Dbar^i f−D^i f||≤κ_(∇,i) h_(k,i); unknown positive κ_(∇,i) are fixed oracle constants. Accuracy parameters decrease geometrically in Step 5. Count T (ordinary trial) and A (accuracy-improvement) iterations separately; S contains successful trial iterations. The true Taylor criticality, rather than the approximate tensor model alone, must satisfy the final certificate.
 '''
 
 [[node]]
@@ -32,20 +32,7 @@ deps = ["implicitAccuracyOracle", "arqpRun"]
 
 [[node]]
 id = "lemma_13_1_1"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.1.1: Successful and unsuccessful iterations (TRqIDA)
-
-Suppose that the TRqIDA algorithm is used and that \( {\Delta }_k \geq  {\Delta }_{\min } \) for some \( {\Delta }_{\min } \in \; \left( {0,{\Delta }_0}\right\rbrack \) . Then
-
-\[
-\left| {\mathcal{T}}_k\right|  \leq  \left| {\mathcal{S}}_k\right| \left( {1 + \frac{\log {\gamma }_3}{\left| \log {\gamma }_2\right| }}\right)  + \frac{1}{\left| \log {\gamma }_2\right| }\left| {\log \left( \frac{{\Delta }_{\min }}{{\Delta }_0}\right) }\right| .\tag{13.1.22}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.1 (OCR Markdown line 13770)"
-deps = ["trqidaRun"]
 
 [[node]]
 id = "lemma_13_1_2"
@@ -219,20 +206,7 @@ deps = ["lemma_13_1_1", "lemma_13_1_5", "lemma_13_1_6", "lemma_13_1_7"]
 
 [[node]]
 id = "lemma_13_1_9"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.1.9: Successful and unsuccessful iterations (ARqpIDA)
-
-Suppose that the ARqpIDA algorithm is used and that \( {\sigma }_k \leq  {\sigma }_{\max } \) for some \( {\sigma }_{\max } > 0 \) . Then
-
-\[
-\left| {\mathcal{T}}_k\right|  \leq  \left| {\mathcal{S}}_k\right| \left( {1 + \frac{\left| \log {\gamma }_1\right| }{\log {\gamma }_2}}\right)  + \frac{1}{\log {\gamma }_2}\log \left( \frac{{\sigma }_{\max }}{{\sigma }_0}\right) .\tag{13.1.62}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.9 (OCR Markdown line 14248)"
-deps = ["arqpidaRun"]
 
 [[node]]
 id = "lemma_13_1_10"

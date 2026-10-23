@@ -1,0 +1,13 @@
+namespace = "EvaluationComplexity"
+
+[[node]]
+id = "potential_change_le_on_trials"
+
+[[node]]
+id = "le_potential_change_on_trials"
+
+[[node]]
+id = "iteration_bound_of_parameter_lower_on_trials"
+
+[[node]]
+id = "iteration_bound_of_parameter_upper_on_trials"

@@ -1,11 +1,13 @@
 import Numlib.Analysis.Calculus.TaylorModel
 import Numlib.Optimization.HighOrder.ModelDecrease
+import Numlib.Optimization.EvaluationComplexity.TrialUpdates
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
-# Positive model decrease for ARqpIDA
+# Trial counts and positive model decrease for implicit dynamic accuracy
 
-Approximate Taylor polynomials are finite polynomials of the actual approximate derivative
+Trial counts distinguish parameter updates from accuracy-only iterations, using the terminal
+parameter after the counted updates. Approximate Taylor polynomials are finite polynomials of the actual approximate derivative
 tensors. The model-comparison conditions of Step 2 imply both the penalty lower bound and
 strict positivity of the acceptance ratio denominator.
 -/
@@ -35,5 +37,58 @@ theorem lemma_13_1_13 {n : ℕ}
   have hpos := ModelDecrease.decrement_pos (inexactTaylorModel A p) p hσ d s hd hs
   exact ⟨ModelDecrease.penalty_le_decrement _ _ _ _ (hs.trans hd.le),
     hpos, ne_of_gt hpos⟩
+
+/-- The set of successful trials: accuracy-only iterations are excluded even if an arbitrary
+stored acceptance ratio happens to exceed the acceptance threshold. -/
+def successfulTrials (T : Set ℕ) (ρ : ℕ → ℝ) (η₁ : ℝ) : Set ℕ :=
+  {i | i ∈ T ∧ η₁ ≤ ρ i}
+
+/-- Lemma 13.1.1: the number of TRqIDA trials is bounded by the successful trial count and the
+available logarithmic radius range. Accuracy-improving iterations leave the radius unchanged.
+The prefix is `0 ≤ i < N` and its terminal radius is `Δ N`; thus the inclusive source count
+`T_k` corresponds to `N = k+1` with a bound at `Δ_(k+1)`. This repairs the source's terminal-index
+mismatch. The trust-region factor ranges are those required by its shrinking update rule,
+correcting the regularization ranges accidentally printed in Algorithm 13.1.1. -/
+theorem lemma_13_1_1 {T : Set ℕ} {Δ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ Δmax Δmin : ℝ} {N : ℕ}
+    (h : EvaluationComplexity.TrialTrustRegionUpdates T Δ ρ η₁ η₂ γ₁ γ₂ γ₃ Δmax N)
+    (hminpos : 0 < Δmin) (hmin : Δmin ≤ Δ N) :
+    ((EvaluationComplexity.successfulIterations T N).card : ℝ) ≤
+      (EvaluationComplexity.successfulIterations (successfulTrials T ρ η₁) N).card *
+        (1 + Real.log γ₃ / |Real.log γ₂|) +
+      |Real.log (Δmin / Δ 0)| / |Real.log γ₂| := by
+  apply EvaluationComplexity.iteration_bound_of_parameter_lower_on_trials
+    (S := successfulTrials T ρ η₁) (δ := Δ) (γs := γ₃) (γu := γ₂)
+    (fun _ hi => hi.1) (fun _ hi => h.pos hi)
+    (lt_of_lt_of_le zero_lt_one h.one_le_gamma3)
+    (h.gamma1_pos.trans_le h.gamma1_le_gamma2) h.gamma2_lt_one hmin hminpos
+  · intro i hi hS
+    exact h.successful_le hi hS.1 hS.2
+  · intro i hi hT hS
+    exact h.unsuccessful_le hi hT (fun hρ => hS ⟨hT, hρ⟩)
+  · intro i hi hT
+    exact h.inactive_eq hi hT
+
+/-- Lemma 13.1.9: the number of ARqpIDA trials is bounded by successful trials and the
+logarithmic regularization range. Step 5 iterations keep `σ` fixed. The half-open prefix of `N`
+updates is bounded using `σ N`, repairing the same terminal-index mismatch as Lemma 13.1.1. -/
+theorem lemma_13_1_9 {T : Set ℕ} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin σmax : ℝ} {N : ℕ}
+    (h : EvaluationComplexity.TrialRegularizationUpdates T σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (hmax : σ N ≤ σmax) :
+    ((EvaluationComplexity.successfulIterations T N).card : ℝ) ≤
+      (EvaluationComplexity.successfulIterations (successfulTrials T ρ η₁) N).card *
+        (1 + |Real.log γ₁| / Real.log γ₂) +
+      Real.log (σmax / σ 0) / Real.log γ₂ := by
+  apply EvaluationComplexity.iteration_bound_of_parameter_upper_on_trials
+    (S := successfulTrials T ρ η₁) (σ := σ) (γs := γ₁) (γu := γ₂)
+    (fun _ hi => hi.1) (fun _ hi => h.pos hi)
+    h.gamma1_pos h.gamma1_lt_one h.one_lt_gamma2 hmax
+  · intro i hi hS
+    exact h.successful_ge hi hS.1 hS.2
+  · intro i hi hT hS
+    exact h.unsuccessful_ge hi hT (fun hρ => hS ⟨hT, hρ⟩)
+  · intro i hi hT
+    exact h.inactive_eq hi hT
 
 end CartisGouldToint

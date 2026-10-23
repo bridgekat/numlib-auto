@@ -1,0 +1,7 @@
+namespace = "EvaluationComplexity"
+
+[[node]]
+id = "TrialTrustRegionUpdates"
+
+[[node]]
+id = "TrialRegularizationUpdates"
