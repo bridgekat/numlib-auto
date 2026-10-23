@@ -5,49 +5,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "inexactRegularizedNewtonRun"
-kind = "definition"
-desc = '''
-Theorem3.4.6 remains open with its exact printed constants. Its proof infers a preceding boundary step from negative curvature at the next point, whereas the literal algorithm tests curvature at the current point. A separate credited-objective companion proves the full complexity order for the literal algorithm with leading coefficient 2/κ_delta_f and initialized derivative allowance +2. A proof gap alone does not classify the original theorem as false.
-
-Define the set of finite traces satisfying Algorithm 3.4.2, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
-
-Algorithm 3.4.2: Inexact regularized Newton algorithm (iRN).
-Step 0: Initialization. An initial point \( {x}_0 \) and accuracy thresholds \( {\epsilon }_1 \in  (0,1\rbrack \)
-     and \( {\epsilon }_2 > 0 \) are given. The constants \( \eta ,{\gamma }_1 \) ,and \( {\gamma }_2 \) and the lower and upper
-     regularization bounds \( {\sigma }_{\min } \) and \( {\sigma }_{\max } \) ,respectively,are also given and satisfy
-                 \[0 < {\sigma }_{\min } \leq  {\sigma }_{\max },0 < \eta  < 1,\text{ and }1 < {\gamma }_{1} \leq  {\gamma }_{2}\]
-     Compute \( f\left( {x}_0\right) ,{\nabla }_x^{1}f\left( {x}_0\right) \) ,and \( {\nabla }_x^{2}f\left( {x}_0\right) \) ,and set \( k = 0,{\sigma }_0^{\mathrm{L}} = 0 \) ,and \( {\sigma }_0^{\mathrm{U}} \in \)
-     \( \left\lbrack  {{\sigma }_{\min },{\sigma }_{\max }}\right\rbrack \) .
-Step 1: First-order test for termination. If \( {\epsilon }_2 =  + \infty \) ,then if
-                               \[\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1\]
-     terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-Step 2: Step computation. Compute a step and multiplier pair \( \left( {{s}_k,{\lambda }_k}\right) \) for
-     which the conditions (3.4.28)-(3.4.30) are satisfied. If \( {\epsilon }_2 <  + \infty \) ,also require
-     that \( {s}_k \) satisfy (3.4.32).
-Step 3: Second-order test for termination. If \( {\epsilon }_2 < \infty \) and
-                 \[\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{Q}_{k}^{T}{\nabla }_{x}^{2}f\left( {x}_{k}\right) {Q}_{k}}\right\rbrack   > {\epsilon }_{2},\]
-     where \( {Q}_k \) is the same as in (3.4.32),terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate
-     strict local minimizer \( {x}_{\epsilon } = {x}_k \) . Otherwise,if
-            \[\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{Q}_{k}^{T}{\nabla }_{x}^{2}f\left( {x}_{k}\right) {Q}_{k}}\right\rbrack   \geq   - {\epsilon }_{2},\] (3.4.34)
-     terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-Step 4: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) ,and define
-                          \[{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{\begin{Vmatrix}{s}_k\end{Vmatrix}}^3}.\] (3.4.35)
-
-     If \( {\rho }_k \geq  \eta \) ,then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_x^{1}f\left( {x}_{k + 1}\right) \) and
-     \( {\nabla }_x^{2}f\left( {x}_{k + 1}\right) \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
-Step 5: Regularization parameter update. If \( {\rho }_k \geq  \eta \) ,set
-                          \[{\sigma }_{k + 1}^{\mathrm{L}} = 0\text{ and }{\sigma }_{k + 1}^{\mathrm{U}} = {\sigma }_{k}^{\mathrm{U}}.\]
-     Otherwise,if \( {\lambda }_k < {\sigma }_{\min }\begin{Vmatrix}{s}_k\end{Vmatrix} \) ,set
-                  \[{\sigma }_{k + 1}^{\mathrm{L}} \in  \left\lbrack  {{\sigma }_{\min },{\sigma }_{\max }}\right\rbrack  \text{ and }{\sigma }_{k + 1}^{\mathrm{U}} \in  \left\lbrack  {{\sigma }_{k + 1}^{\mathrm{L}},{\sigma }_{\max }}\right\rbrack  \text{ . }\]
-     Otherwise, set
-                      \[{\sigma }_{k + 1}^{\mathrm{L}} = {\gamma }_{1}\frac{{\lambda }_{k}}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}\text{ and }{\sigma }_{k + 1}^{\mathrm{U}} = {\gamma }_{2}\frac{{\lambda }_{k}}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}.\] (3.4.36)
-
-     Increment \( k \) by one and go to Step 1.
-```
-
-One ingredient that is atypical of traditional trust-region methods is the measure of progress (3.4.35). This attempts to ensure a decrease in the model that is typical of cubic-regularization methods such as AR2, and which, as we have already mentioned, is another crucial ingredient for achieving good first-order complexity. \( {}^{22} \) Just as in our earlier algorithms, we denote successful iterations as \( \mathcal{S} = \left\{  {k \mid  {\rho }_k \geq  \eta }\right\} \) , and the remaining (unsuccessful) ones belong to the set \( \mathcal{U} \) .
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 3.4"
 
 [[node]]
@@ -104,73 +61,14 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_3_4_7"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.4.7: Lower bound on the multiplier
-
-Suppose that f.HL holds. If
-
-\[
-{\lambda }_k \geq  \left( {{2\eta } + {\kappa }_2 + {L}_{f,2}}\right) \begin{Vmatrix}{s}_k\end{Vmatrix}\tag{3.4.37}
-\]
-
-at iteration \( k \) of the iRN algorithm, then \( {\rho }_k \geq  \eta \) and the iteration is successful.
-'''
-deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3946)"
 
 [[node]]
 id = "lemma_3_4_8"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.4.8: Upper bound on the upper regularization parameter
-
-Suppose that f.HL holds. Then, for all \( k \geq  0 \) , the iRN algorithm ensures that
-
-\[
-{\sigma }_{\mathbf{k}}^{U} \leq  {\sigma }_{\max }^{U}\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{\max },{\gamma }_{2}\left( {{2\eta } + {\kappa }_{2} + {L}_{f,2}}\right) }\right\rbrack  .\tag{3.4.38}
-\]
-'''
-deps = ["lemma_3_4_7", "lemma_3_3_3", "trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.8 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3990)"
 
 [[node]]
 id = "lemma_3_4_9"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.4.9: Lower bound on the length of the step
-
-Suppose that f.HL holds. Then, if iteration \( k \) of the iRN algorithm is successful,
-
-\[
-{\begin{Vmatrix}{s}_k\end{Vmatrix}}^2 \geq  \frac{2}{{L}_{f,2} + 4{\sigma }_{\max }^U + 2{\kappa }_3}\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{k + 1}\right) }\end{Vmatrix},\tag{3.4.39}
-\]
-
-where \( {\sigma }_{\max }^U \) is defined as in (3.4.38). If (3.4.32) holds,
-
-\[
-\begin{Vmatrix}{s}_k\end{Vmatrix} \geq   - \frac{1}{{\kappa }_4 + {\sigma }_{\max }^U}{\lambda }_{\min }\left\lbrack  {{Q}_k^T{\nabla }_x^{2}f\left( {x}_k\right) {Q}_k}\right\rbrack  .\tag{3.4.40}
-\]
-
-Referenced equation payloads:
-
-Equation (3.4.32):
-\[
-{\lambda }_{\min }\left\lbrack  {{Q}_k^T{\nabla }_s^{2}m\left( {s}_k\right) {Q}_k}\right\rbrack   \geq   - {\kappa }_4\begin{Vmatrix}{s}_k\end{Vmatrix}\tag{3.4.32}
-\]
-
-Equation (3.4.38):
-\[
-{\sigma }_{\mathbf{k}}^{U} \leq  {\sigma }_{\max }^{U}\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{\max },{\gamma }_{2}\left( {{2\eta } + {\kappa }_{2} + {L}_{f,2}}\right) }\right\rbrack  .\tag{3.4.38}
-\]
-'''
-deps = ["lemma_3_3_3", "trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.9 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4008)"
 
 [[node]]
@@ -280,3 +178,15 @@ source = "Cartis–Gould–Toint Section3.4, actual model and exact source coeff
 [[node]]
 id = "theorem_3_4_6_corrected"
 source = "Cartis–Gould–Toint Theorem3.4.6 companion for the literal current-curvature boundary rule, with twice the leading coefficient and +2 initialized derivative allowance; original exact constants remain open."
+
+[[node]]
+id = "irnModel"
+source = "Cartis–Gould–Toint Section3.4, (3.4.27)."
+
+[[node]]
+id = "irnLeastCurvatureOn"
+source = "Cartis–Gould–Toint Section3.4, actual least projected Hessian curvature, (3.4.32)–(3.4.34)."
+
+[[node]]
+id = "irnUpperRegularizationBound"
+source = "Cartis–Gould–Toint Section3.4, (3.4.38)."

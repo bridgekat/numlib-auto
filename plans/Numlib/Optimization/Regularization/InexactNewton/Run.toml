@@ -1,0 +1,25 @@
+namespace = "InexactRegularizedNewton"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "IsLeastCurvatureOn"
+
+[[node]]
+id = "IsLeastCurvatureOn.unique"
+
+[[node]]
+id = "exists_leastCurvatureOn"
+
+[[node]]
+id = "Step"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Step.gradient_zero_of_step_zero"
+
+[[node]]
+id = "Run.step_ne_zero"

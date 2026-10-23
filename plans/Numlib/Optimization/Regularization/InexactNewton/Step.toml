@@ -1,0 +1,13 @@
+namespace = "InexactRegularizedNewton"
+
+[[node]]
+id = "Run.trial_derivative_le"
+
+[[node]]
+id = "Run.step_lower"
+
+[[node]]
+id = "Run.projected_step_lower"
+
+[[node]]
+id = "Run.finite_projected_step_lower"

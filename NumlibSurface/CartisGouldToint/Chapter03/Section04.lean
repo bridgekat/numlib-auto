@@ -1,8 +1,9 @@
 import Numlib.Optimization.TrustRegion.Regularized.SecondOrder
+import Numlib.Optimization.Regularization.InexactNewton.Step
 import Numlib.Optimization.TrustRegion.Regularized.Solve
 
 /-!
-# Cartis–Gould–Toint, Section 3.4: regularized trust-region models
+# Cartis–Gould–Toint, Section 3.4: regularized second-order methods
 
 The TR epsilon trace uses actual Taylor derivatives, objective ratios and
 accepted/rejected updates. First-order mode explicitly disables the second
@@ -12,6 +13,10 @@ The model and radius bounds imply the printed decrease estimates. The normalizat
 The finite-second-order companion uses twice the printed leading coefficient
 and an initialized derivative allowance of two. Its credited-objective argument
 follows the literal current-curvature boundary rule.
+
+The iRN trace retains the actual model derivatives, projected stopping tests and
+coupled regularization updates. Varying subspaces represent the column spaces of
+the source's orthonormal matrices; their least curvatures are actual Rayleigh minima.
 -/
 
 namespace CartisGouldToint
@@ -244,5 +249,81 @@ theorem theorem_3_4_6_corrected {E : Type*} [NormedAddCommGroup E] [InnerProduct
           (|Real.log ((1 - η₂) * γ₁ / (L * Δ₀))| + |Real.log ε₂|) /
             |Real.log γ₂| + 1 := add_le_add hb le_rfl
       _ = _ := by dsimp [S, A, B, C]; rw [mul_comm Δ₀ L]; ring
+
+/-- The actual iRN quadratic Taylor model (3.4.27), with multiplier shift. -/
+noncomputable abbrev irnModel {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (f : E → ℝ) (x : E) (ℓ : ℝ) (s : E) : ℝ :=
+  RegularizedTrustRegion.model f x ℓ s
+
+/-- The source's least projected Hessian eigenvalue, represented as the true
+minimum Rayleigh form on the subspace spanned by orthonormal columns of `Q`. -/
+abbrev irnLeastCurvatureOn {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (f : E → ℝ) (x : E) (V : Submodule ℝ E) (μ : ℝ) : Prop :=
+  InexactRegularizedNewton.IsLeastCurvatureOn f x V μ
+
+/-- Algorithm3.4.2, iRN, including both stopping modes, actual model derivative
+checks, varying projected subspaces and the coupled lower/upper updates. Finite
+mode computes the endpoint model step before its projected curvature test. -/
+abbrev inexactRegularizedNewtonRun {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] [CompleteSpace E] (f : E → ℝ) (x s : ℕ → E)
+    (V : ℕ → Submodule ℝ E) (μ ℓ σL σU ρ : ℕ → ℝ)
+    (η γ₁ γ₂ σmin σmax κ₁ κ₂ κ₃ κ₄ ε₁ : ℝ)
+    (ε₂ : WithTop ℝ) (N : ℕ) : Prop :=
+  InexactRegularizedNewton.Run f x s V μ ℓ σL σU ρ η γ₁ γ₂ σmin σmax
+    κ₁ κ₂ κ₃ κ₄ ε₁ ε₂ N
+
+/-- The exact accuracy-independent upper regularization bound (3.4.38). -/
+noncomputable abbrev irnUpperRegularizationBound (σmax γ₂ η κ₂ L : ℝ) : ℝ :=
+  InexactRegularizedNewton.upperBound σmax γ₂ η κ₂ L
+
+section InexactNewton
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
+  {f : E → ℝ} {x s : ℕ → E} {V : ℕ → Submodule ℝ E} {μ ℓ σL σU ρ : ℕ → ℝ}
+  {η γ₁ γ₂ σmin σmax κ₁ κ₂ κ₃ κ₄ ε₁ L : ℝ} {ε₂ : WithTop ℝ} {N : ℕ}
+
+/-- **Lemma3.4.7.** The source multiplier threshold guarantees actual cubic
+objective descent and success. Nonzero trial steps follow from the operational
+stopping and model tests, including finite-mode projected curvature. -/
+theorem lemma_3_4_7
+    (h : inexactRegularizedNewtonRun f x s V μ ℓ σL σU ρ η γ₁ γ₂ σmin σmax
+      κ₁ κ₂ κ₃ κ₄ ε₁ ε₂ N) (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤
+      L * ‖y - z‖) :
+    ∀ i < N, (2 * η + κ₂ + L) * ‖s i‖ ≤ ℓ i → η ≤ ρ i :=
+  fun _ hi hs => h.successful_of_large_multiplier hf hL hlip hi hs
+
+/-- **Lemma3.4.8.** The literal coupled iRN updates imply the uniform cap
+(3.4.38) at every endpoint, without assuming this cap in the execution. -/
+theorem lemma_3_4_8
+    (h : inexactRegularizedNewtonRun f x s V μ ℓ σL σU ρ η γ₁ γ₂ σmin σmax
+      κ₁ κ₂ κ₃ κ₄ ε₁ ε₂ N) (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤
+      L * ‖y - z‖) :
+    ∀ i ≤ N, σU i ≤ irnUpperRegularizationBound σmax γ₂ η κ₂ L :=
+  fun _ hi => h.upper_le hf hL hlip hi
+
+/-- **Lemma3.4.9.** Accepted steps satisfy (3.4.39) for the actual next gradient.
+The true least projected curvature satisfies (3.4.40) whenever the actual model
+curvature test is imposed; finite-mode executions supply this test themselves.
+The optional formulation also covers imposing (3.4.32) in first-order-only mode. -/
+theorem lemma_3_4_9
+    (h : inexactRegularizedNewtonRun f x s V μ ℓ σL σU ρ η γ₁ γ₂ σmin σmax
+      κ₁ κ₂ κ₃ κ₄ ε₁ ε₂ N) (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤
+      L * ‖y - z‖) {i : ℕ} (hi : i < N) (ha : η ≤ ρ i) :
+    (2 / (L + 4 * irnUpperRegularizationBound σmax γ₂ η κ₂ L + 2 * κ₃) *
+      ‖gradient f (x (i + 1))‖ ≤ ‖s i‖ ^ 2) ∧
+    (ε₂ ≠ ⊤ →
+      -(κ₄ + irnUpperRegularizationBound σmax γ₂ η κ₂ L)⁻¹ * μ i ≤ ‖s i‖) ∧
+    (∀ ν : ℝ, irnLeastCurvatureOn f (x i) (V i) ν →
+      (∀ v : E, v ∈ V i → ‖v‖ = 1 →
+        -κ₄ * ‖s i‖ ≤
+          iteratedFDeriv ℝ 2 (irnModel f (x i) (ℓ i)) (s i) (fun _ => v)) →
+      -(κ₄ + irnUpperRegularizationBound σmax γ₂ η κ₂ L)⁻¹ * ν ≤ ‖s i‖) :=
+  ⟨h.step_lower hf hL hlip hi ha,
+    fun hfinite => h.finite_projected_step_lower hf hL hlip hi.le hfinite,
+    fun _ he hc => h.projected_step_lower hf hL hlip hi.le (Or.inl hi) he hc⟩
+
+end InexactNewton
 
 end CartisGouldToint

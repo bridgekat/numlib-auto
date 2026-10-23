@@ -1,0 +1,19 @@
+namespace = "InexactRegularizedNewton"
+
+[[node]]
+id = "Step.taylor_decrease"
+
+[[node]]
+id = "upperBound"
+
+[[node]]
+id = "Run.successful_of_large_multiplier"
+
+[[node]]
+id = "Run.upper_le"
+
+[[node]]
+id = "Run.multiplier_le"
+
+[[node]]
+id = "Run.upperBound_pos"

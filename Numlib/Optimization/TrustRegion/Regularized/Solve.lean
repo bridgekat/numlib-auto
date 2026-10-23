@@ -1,4 +1,5 @@
 import Numlib.Optimization.TrustRegion.Regularized.Run
+import Numlib.Optimization.TrustRegion.Regularized.Hessian
 import Numlib.Optimization.Descent
 
 /-!
@@ -19,19 +20,12 @@ nonnegative on every diagonal direction at any actual local minimizer. -/
 theorem model_curvature_nonneg {f : E → ℝ} {x s : E} {ε : ℝ}
     (hf : ContDiffAt ℝ 2 f x) (hm : IsLocalMin (model f x ε) s) (v : E) :
     0 ≤ fderiv ℝ (fderiv ℝ f) x v v + ε * ‖v‖ ^ 2 := by
-  let B := fderiv ℝ (fderiv ℝ f) x
-  let J : E →L[ℝ] E →L[ℝ] ℝ := innerSL ℝ
-  let D := B + ε • J
-  have hd : HasFDerivAt (fun y => quadraticDerivative f x y + ε • innerSL ℝ y) D s := by
-    convert ((hasFDerivAt_const (fderiv ℝ f x) s).add B.hasFDerivAt).add
-      (J.hasFDerivAt.const_smul ε) using 1
-    · ext y w
-      rfl
-    · simp only [D, zero_add]
-  have hnonneg := Descent.nonneg_apply_apply_of_isLocalMin hm
-    (Filter.Eventually.of_forall (fun y => hasFDerivAt_model hf ε y)) hd v
-  change 0 ≤ B v v + ε * inner ℝ v v at hnonneg
-  simpa only [B, real_inner_self_eq_norm_sq] using hnonneg
+  have hn := Descent.nonneg_apply_apply_of_isLocalMin hm
+    (Filter.Eventually.of_forall (fun y =>
+      (hasFDerivAt_model hf ε y).differentiableAt.hasFDerivAt))
+    (hasFDerivAt_fderiv_model hf ε s) v
+  change 0 ≤ fderiv ℝ (fderiv ℝ f) x v v + ε * inner ℝ v v at hn
+  simpa only [real_inner_self_eq_norm_sq] using hn
 
 variable [CompleteSpace E]
 
