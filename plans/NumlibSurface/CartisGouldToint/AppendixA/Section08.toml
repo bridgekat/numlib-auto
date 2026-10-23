@@ -14,19 +14,9 @@ source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconve
 
 [[node]]
 id = "theorem_A_8_1"
-kind = "theorem"
-desc = '''
-Let k>=1, t,h:real, h>=0, and psi:real->real be C^k on an open neighborhood of [t,t+h] (or use a derivative-chain version on this closed interval). Let tau_k=sum_{i=0}^k psi^(i)(t) h^i/i!. Then psi(t+h)-tau_k = 1/(k-1)! times the interval integral from 0 to h of (h-xi)^(k-1)*(psi^(k)(t+xi)-psi^(k)(t)). The h=0 case is included. The original does not state k>=1 although (A.9) requires it. An oriented uIcc formulation may additionally cover negative h.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.1, equation (A.9)"
 
 [[node]]
 id = "theorem_A_8_2"
-kind = "theorem"
-desc = '''
-For k:natural, h>=0, t:real and psi C^(k+1) on a neighborhood of [t,t+h], there exists xi in [t,t+h] such that psi(t+h)-sum_{i=0}^k psi^(i)(t)h^i/i! = psi^(k+1)(xi)*h^(k+1)/(k+1)!. Include h=0 using xi=t; for h>0 one can choose xi in the open interval. Reuse the existing one-dimensional Lagrange Taylor theorem.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.2"
 
 [[node]]
 id = "theorem_A_8_3"
