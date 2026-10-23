@@ -1,0 +1,25 @@
+namespace = "LeastSquares"
+
+[[node]]
+id = "FiniteRun.successful_card_le"
+
+[[node]]
+id = "FiniteRun.iterations_le"
+
+[[node]]
+id = "smallResidualCurvatureDirections"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "derivativeEvaluations_eq"
+
+[[node]]
+id = "FiniteRun.terminal_guarantees"
+
+[[node]]
+id = "exists_finite_termination"
+
+[[node]]
+id = "exists_uniform_finite_complexity"

@@ -1,3 +1,4 @@
+import Numlib.Optimization.LeastSquares.Complexity
 import Numlib.Optimization.LeastSquares.Run
 import Numlib.Optimization.LeastSquares.EmptyDirections
 import Numlib.Optimization.LeastSquares.Exponents
@@ -398,5 +399,103 @@ abbrev arpLeastEuclideanCorrectedRun {n m : ℕ}
     (ε₂ ε₃ : WithTop ℝ) (N : ℕ) : Prop :=
   LeastSquares.Run false r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
     θ₁ θ₂ θ₃ ε₀ ε₁ ε₂ ε₃ N
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The minimum of the four exact accuracy powers in (5.1.44)–(5.1.45). -/
+noncomputable abbrev residualAccuracyFactor := LeastSquares.rootAccuracyFactor
+
+/-- The maximum of the four printed initial-residual powers in the complexity numerator. -/
+noncomputable abbrev residualInitialBudget := LeastSquares.rootBudget
+
+/-- The exact maximum reciprocal decrease coefficient `κS`, fixed before all accuracies. -/
+noncomputable abbrev arpLeastEuclideanSuccessfulIterationConstant :=
+  LeastSquares.rootSuccessfulIterationConstant
+
+/-- The actual true normalized small-curvature unit directions (5.1.7). -/
+abbrev residualSmallCurvatureDirections := @LeastSquares.smallResidualCurvatureDirections
+
+/-- Residual calls include initialization and every actual acceptance trial. -/
+abbrev arpLeastEuclideanResidualEvaluations := HighOrderRegularization.functionEvaluations
+
+/-- Every requested residual derivative order is evaluated initially and at accepted endpoints. -/
+noncomputable abbrev arpLeastEuclideanDerivativeEvaluations := LeastSquares.derivativeEvaluations
+
+/-- The inverse accuracy factor is exactly the maximum of the four source inverse powers. -/
+theorem residualAccuracyFactor_inverse (p a : ℕ) {ε₀ ε₁ ε₂ ε₃ : ℝ}
+    (h₀ : 0 < ε₀) (h₁ : 0 < ε₁) (h₂ : 0 < ε₂) (h₃ : 0 < ε₃) :
+    1 / residualAccuracyFactor p a ε₀ ε₁ ε₂ ε₃ =
+      max (ε₀ ^ (-(1 / (2 : ℝ) ^ a)))
+        (max (ε₁ ^ (-((p + 1 : ℕ) : ℝ) / p))
+          (max (ε₂ ^ (-((p + 1 : ℕ) : ℝ) / (p - 1 : ℕ)))
+            (ε₃ ^ (-((p + 1 : ℕ) : ℝ) / (p - 2 : ℕ))))) :=
+  LeastSquares.inv_rootAccuracyFactor_eq p a h₀ h₁ h₂ h₃
+
+/-- **Theorem 5.1.7, corrected finite-third-order statement.** Only the false
+nonempty-direction guard is removed. The exact source constants are fixed before
+all four accuracies and all actual executions; all true optimality clauses,
+returned-direction containment, first-stop termination, and initialized counts
+are included. The source exponent choices use their preceding divisibility and
+odd-factorization context. OCR dyadic indices are `a`, and the function budget
+uses `κA` as derived in the proof, correcting its duplicated printed `κC`. -/
+theorem theorem_5_1_7_corrected {n m p a : ℕ}
+    {r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)} (ℓ : ℝ)
+    {σinit σmin η₁ η₂ γ₁ γ₂ γ₃ L θ₁ θ₂ θ₃ β : ℝ}
+    (hp : 0 < p) (_hℓ : 1 < ℓ)
+    (hchoice : (3 ∣ p ∧ ℓ = (p : ℝ) / 3 ∧ Real.logb 2 (p - 2 : ℕ) < a) ∨
+      ∃ o : ℕ, Odd o ∧ 0 < a ∧ Even a ∧ p - 2 = o * 2 ^ a ∧
+        ℓ = 1 + (o : ℝ) * ∑ k ∈ Finset.range (a / 2), (2 : ℝ) ^ (2 * k))
+    (hf : ContDiff ℝ p (residualPowerObjective r ℓ)) (hL : 1 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ p (residualPowerObjective r ℓ) y -
+      iteratedFDeriv ℝ p (residualPowerObjective r ℓ) z‖ ≤ L * ‖y - z‖)
+    (hσ : 0 < σinit) (hmin : 0 < σmin) (hη : 0 < η₁) (hγ₂ : 1 < γ₂)
+    (hθ₁ : 0 < θ₁) (hθ₂ : 0 < θ₂) (hθ₃ : 0 < θ₃) (hβ : 0 < β) (hβ1 : β < 1) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κC > 0,
+      κS = arpLeastEuclideanSuccessfulIterationConstant p ℓ a σinit σmin η₁ η₂
+        γ₃ L θ₁ θ₂ θ₃ β ∧
+      κA = κS * (1 + |Real.log γ₁| / Real.log γ₂) ∧
+      κC = |Real.log γ₁| / Real.log γ₂ +
+        Real.log (max σinit (γ₃ * L / (1 - η₂)) / σinit) / Real.log γ₂ + 2 ∧
+      ∀ ε₀ ε₁ ε₂ ε₃ : ℝ, ∀ x s u : ℕ → EuclideanSpace ℝ (Fin n),
+      ∀ μ σ ρ : ℕ → ℝ, ∀ M : ℕ → Set (EuclideanSpace ℝ (Fin n)), σ 0 =
+        σinit →
+      (∀ N, (∀ i < N, ¬arpLeastEuclideanFiniteStop r ℓ (x i) (μ i) (M i) ε₀
+        ε₁ ε₂ ε₃) →
+        arpLeastEuclideanCorrectedRun r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+          θ₁ θ₂ θ₃ ε₀ ε₁ ε₂ ε₃ N) →
+      ∃ K, arpLeastEuclideanFiniteStop r ℓ (x K) (μ K) (M K) ε₀ ε₁ ε₂ ε₃ ∧
+        arpLeastEuclideanCorrectedRun r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+          θ₁ θ₂ θ₃ ε₀ ε₁ ε₂ ε₃ K ∧
+        (∀ i < K, ¬arpLeastEuclideanFiniteStop r ℓ (x i) (μ i) (M i) ε₀ ε₁
+          ε₂ ε₃) ∧
+        (‖r (x K)‖ ≤ ε₀ ∨
+          residualFirstMeasure r ℓ (x K) ≤ ε₁ ∧ -ε₂ ≤ residualSecondMeasure
+            r ℓ (x K) (μ K) ∧
+          HighOrderRegularization.returnedDirections (residualSecondMeasure r ℓ (x K)
+            (μ K)) ε₂ (M K) ⊆
+            residualSmallCurvatureDirections r ℓ (x K) ε₂ ∧
+          ∀ v ∈ HighOrderRegularization.returnedDirections (residualSecondMeasure r
+            ℓ (x K) (μ K)) ε₂ (M K),
+            residualThirdMeasure r ℓ (x K) v ≤ ε₃) ∧
+        (arpLeastEuclideanResidualEvaluations K : ℝ) ≤
+          κA * residualInitialBudget p ℓ a ‖r (x 0)‖ / residualAccuracyFactor p a
+            ε₀ ε₁ ε₂ ε₃ + κC ∧
+        ∀ j : ℕ, 1 ≤ j → j ≤ p → (arpLeastEuclideanDerivativeEvaluations ρ
+          η₁ p j K : ℝ) ≤
+          κS * residualInitialBudget p ℓ a ‖r (x 0)‖ / residualAccuracyFactor p a
+            ε₀ ε₁ ε₂ ε₃ + 2 := by
+  have H := LeastSquares.cascadingExponent_choices hp
+  have hg : 0 ≤ residualCascadingExponent p ℓ a 1 ∧
+      0 ≤ residualCascadingExponent p ℓ a 2 ∧
+      0 ≤ residualCascadingExponent p ℓ a 3 := by
+    rcases hchoice with ⟨hdiv, rfl, hlog⟩ | ⟨o, ho, ha, heven, hfac, rfl⟩
+    · have ht := H.2.2.2.2.1 a hdiv hlog
+      exact ⟨ht.1.le, ht.2.1.le, ht.2.2.le⟩
+    · have ht := H.2.2.2.2.2 o a ho ha heven hfac
+      exact ⟨ht.2.1.le, ht.2.2.1.le, ht.1.symm.le⟩
+  exact LeastSquares.exists_uniform_finite_complexity p a ℓ hf (zero_lt_one.trans_le hL)
+    hlip hσ hmin hη hγ₂ hθ₁ hθ₂ hθ₃ hβ hβ1 hg.1 hg.2.1 hg.2.2
 
 end CartisGouldToint

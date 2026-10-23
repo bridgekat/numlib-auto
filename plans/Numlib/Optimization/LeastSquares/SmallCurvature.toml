@@ -1,0 +1,4 @@
+namespace = "LeastSquares"
+
+[[node]]
+id = "RegularizationTrace.decrease_directional_second"
