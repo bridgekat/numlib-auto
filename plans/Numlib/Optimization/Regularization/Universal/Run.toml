@@ -1,0 +1,40 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "Settings"
+
+[[node]]
+id = "Stops"
+
+[[node]]
+id = "Step"
+
+[[node]]
+id = "Data"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "LengthChecks"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "model_zero"
+
+[[node]]
+id = "Step.ne_zero"
+
+[[node]]
+id = "Step.taylor_decrease"
+
+[[node]]
+id = "Run.parameter_pos"
+
+[[node]]
+id = "Run.prediction_pos"
