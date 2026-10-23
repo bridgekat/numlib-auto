@@ -18,7 +18,7 @@ Derive the actual derivatives, rather than assume any sharp derivative formula
 or operator-norm/diagonal-norm identity. The even-m branch is already supplied
 by Even.lean and the cubic branch by CubicSharp.lean; higher odd m remain.
 '''
-deps = ["norm_iteratedFDeriv_norm_pow_of_even", "norm_iteratedFDeriv_norm_pow_three_le"]
+deps = ["norm_iteratedFDeriv_norm_pow_of_even", "norm_iteratedFDeriv_norm_pow_three_le", "norm_iteratedFDeriv_norm_pow_integer_le_finiteDimensional"]
 
 [[node]]
 id = "norm_iteratedFDeriv_norm_pow_integer_le_of_lt"
@@ -40,4 +40,4 @@ The even-power branch p+1 even is implemented in Even.lean. Prove the remaining
 odd-power branch of degree at least five, with actual finite smoothness and origin-crossing
 control. Keep the exact factorial coefficient, not an existential larger one.
 '''
-deps = ["norm_iteratedFDeriv_norm_pow_integer_le", "norm_sub_iteratedFDeriv_norm_pow_of_even", "norm_sub_iteratedFDeriv_norm_pow_three_le"]
+deps = ["norm_iteratedFDeriv_norm_pow_integer_le", "norm_sub_iteratedFDeriv_norm_pow_of_even", "norm_sub_iteratedFDeriv_norm_pow_three_le", "norm_sub_iteratedFDeriv_norm_pow_integer_le_finiteDimensional"]

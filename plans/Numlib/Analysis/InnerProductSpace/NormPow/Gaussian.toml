@@ -1,0 +1,55 @@
+namespace = "NormPower"
+desc = '''
+Sharp finite-dimensional integer norm-power bounds from the genuine Gaussian
+average, using actual differentiation under the integral and the sharp mixed
+projection moment bound. The unproved point is the derivative/interchange
+identity, rather than any desired operator norm estimate. The all-Hilbert-space
+extension remains in Integer.toml.
+'''
+
+[[node]]
+id = "iteratedFDeriv_norm_pow_apply_eq_gaussian"
+kind = "theorem"
+desc = '''
+Let E be a finite-dimensional real inner product space with its Borel measurable
+structure. For natural m and j<m, all x:E and v:Fin j->E, the actual jth Frechet
+derivative of norm^m at x applied to v equals
+(m.descFactorial j / c_m) * integral_g (
+  (Real.sign(inner g x))^j * |inner g x|^(m-j) * product_i inner g (v i)),
+where g has the actual standard Gaussian law on E and
+c_m=integral_t |t|^m against the standard real Gaussian. Derive the scalar
+absolute-power jets, their continuity through zero for j<m, the integrability
+of actual candidate tensors, and every dominated differentiation step. Do not
+assume the displayed derivative identity or an interchange hypothesis that
+already encodes it. The existing normalized Gaussian average is the order-zero
+base, and c_m is proved strictly positive.
+'''
+deps = ["_root_.ProbabilityTheory.norm_pow_eq_integral_abs_inner_pow_stdGaussian", "_root_.ProbabilityTheory.integrable_prod_abs_inner_stdGaussian"]
+
+[[node]]
+id = "norm_sub_iteratedFDeriv_norm_pow_integer_le_finiteDimensional"
+kind = "theorem"
+desc = '''
+For every natural p and all x,y in a finite-dimensional real inner product
+space, the actual pth Frechet derivative of norm^(p+1) satisfies
+norm(Dp(x)-Dp(y)) <= (p+1)!*norm(x-y), with the exact factorial coefficient.
+Use the actual Gaussian jet representation at j=p: its remaining scalar
+factor is either linear or absolute linear according to parity and is globally
+1-Lipschitz. Apply the mixed (p+1)st Gaussian projection moment bound to the
+difference and all p actual directions; do not replace the tensor operator
+norm by an unproved diagonal supremum equality.
+'''
+deps = ["iteratedFDeriv_norm_pow_apply_eq_gaussian", "_root_.ProbabilityTheory.integral_abs_inner_pow_mul_prod_stdGaussian_le"]
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_integer_le_finiteDimensional"
+kind = "theorem"
+desc = '''
+For natural j<=m and every nonzero x in a finite-dimensional real inner product
+space, norm(D^j(norm^m)(x)) <= m.descFactorial j * norm(x)^(m-j).
+For j<m use the genuine Gaussian jet representation and the sharp product
+moment bound. For j=m>=1 use the already proved exact global Lipschitz bound
+on D^(m-1), together with actual smoothness away from zero; handle m=0
+separately. Include the origin when j<m by deriving the actual zero jet there.
+'''
+deps = ["iteratedFDeriv_norm_pow_apply_eq_gaussian", "norm_sub_iteratedFDeriv_norm_pow_integer_le_finiteDimensional", "_root_.ProbabilityTheory.integral_abs_inner_pow_mul_prod_stdGaussian_le"]

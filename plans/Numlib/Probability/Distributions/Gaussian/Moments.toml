@@ -1,0 +1,31 @@
+namespace = "ProbabilityTheory"
+
+[[node]]
+id = "stdGaussian_inner_map"
+
+[[node]]
+id = "integral_abs_inner_pow_stdGaussian"
+
+[[node]]
+id = "integrable_abs_pow_gaussianReal"
+
+[[node]]
+id = "integral_abs_pow_gaussianReal_pos"
+
+[[node]]
+id = "norm_pow_eq_integral_abs_inner_pow_stdGaussian"
+
+[[node]]
+id = "integrable_abs_inner_pow_stdGaussian"
+
+[[node]]
+id = "integrable_prod_abs_inner_stdGaussian"
+
+[[node]]
+id = "integral_prod_abs_inner_stdGaussian_le_of_unit"
+
+[[node]]
+id = "integral_prod_abs_inner_stdGaussian_le"
+
+[[node]]
+id = "integral_abs_inner_pow_mul_prod_stdGaussian_le"
