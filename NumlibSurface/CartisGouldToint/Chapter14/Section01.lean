@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.ModelCriticality
 import Numlib.Optimization.Composite.ModelTaylor
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import Numlib.Optimization.HighOrder.ModelDecrease
@@ -144,5 +145,55 @@ theorem lemma_14_1_2 {n m p j : ℕ} (hj : 1 ≤ j) (hjp : j ≤ p)
     hδ hδ1 hd _ htest
   convert hsmall using 1
   ring
+
+/-- **Lemma 14.1.3.** A genuine global composite model minimum supplies a step,
+attaining generalized Taylor directions, and normalized criticality tests with
+the exact source radius floor. A convex outer function permits unit first-order
+radius. The radius floor also holds at order one and for large minimizing steps. -/
+theorem lemma_14_1_3 {n m p q : ℕ} (_hq : 1 ≤ q) (hqp : q ≤ p)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (h : EuclideanSpace ℝ (Fin m) → ℝ)
+    (_hf : ContDiff ℝ p f) (hc : ∀ i, ContDiff ℝ p (fun z => c z i))
+    {Lf Lc σ θ ζ : ℝ} {K : NNReal} (hLf : 1 ≤ Lf) (hLc : 0 ≤ Lc)
+    (hlipf : ∀ a, 1 ≤ a → a ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ Lf * ‖u - v‖)
+    (hlipc : ∀ i a, 1 ≤ a → a ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ a (fun z => c z i) u -
+        iteratedFDeriv ℝ a (fun z => c z i) v‖ ≤ Lc * ‖u - v‖)
+    (hh : LipschitzWith K h) (hσ : 0 < σ) (hθ : 0 < θ) (hθ1 : θ < 1)
+    (hζ : 0 < ζ) (hζ1 : ζ ≤ 1) (x : EuclideanSpace ℝ (Fin n))
+    (ε : Fin q → ℝ) (hε : ∀ a, 0 < ε a ∧ ε a ≤ 1) :
+    ∃ (s : EuclideanSpace ℝ (Fin n)) (δ : Fin q → ℝ)
+      (d : Fin q → EuclideanSpace ℝ (Fin n)),
+      Composite.regularizedModel f c h p x σ s ≤
+        Composite.regularizedModel f c h p x σ 0 ∧
+      (∀ a, 0 < δ a ∧ δ a ≤ 1) ∧
+      (∀ a, a.val + 1 = 1 → ConvexOn ℝ Set.univ h → δ a = 1) ∧
+      (∀ a, ζ * θ / (8 * (3 * (Lf + Real.sqrt m * (K : ℝ) * Lc) + σ)) * ε a ≤ δ a) ∧
+      (1 < ‖s‖ ∨ ∀ a, ‖d a‖ ≤ δ a ∧
+        ζ * Composite.criticality (Composite.smoothModel f p x σ)
+          (Composite.residualModel c p x) h (a.val + 1) s (δ a) ≤
+          Composite.decrement (Composite.smoothModel f p x σ)
+            (Composite.residualModel c p x) h (a.val + 1) s (d a) ∧
+        Composite.decrement (Composite.smoothModel f p x σ)
+            (Composite.residualModel c p x) h (a.val + 1) s (d a) ≤
+          ζ * θ * ε a * δ a ^ (a.val + 1) / (a.val + 1).factorial) := by
+  have hcv : ContDiff ℝ p c := (contDiff_piLp 2).mpr hc
+  obtain ⟨s, δ, d, hmin, hδ, hone, hfloor, htest⟩ :=
+    Composite.exists_minimizer_with_criticality f c p (fun a : Fin q => a.val + 1)
+      (fun a => ⟨by omega, (Nat.succ_le_of_lt a.isLt).trans hqp⟩) hLf
+      (mul_nonneg (Real.sqrt_nonneg _) hLc) hσ hh hθ hθ1.le hζ hζ1 x ε hε
+      (fun a ha hap => Composite.norm_iteratedFDeriv_le_of_lipschitz_lower
+        (zero_le_one.trans hLf) (fun b hb hbp => hlipf b hb hbp.le) ha hap x)
+      (fun a ha hap => Composite.norm_iteratedFDeriv_le_componentwise hcv hLc
+        (fun i b hb hbp => hlipc i b hb hbp.le) ha hap x)
+  refine ⟨s, δ, d, hmin 0, hδ, hone, ?_, ?_⟩
+  · intro a
+    convert hfloor a using 1
+    ring
+  · by_cases hs : ‖s‖ ≤ 1
+    · exact Or.inr (htest hs)
+    · exact Or.inl (lt_of_not_ge hs)
 
 end CartisGouldToint

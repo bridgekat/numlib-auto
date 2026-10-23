@@ -1,0 +1,7 @@
+namespace = "Composite"
+
+[[node]]
+id = "continuous_regularizedModel"
+
+[[node]]
+id = "exists_minimizer_regularizedModel"

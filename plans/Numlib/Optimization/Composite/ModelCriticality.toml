@@ -1,0 +1,10 @@
+namespace = "Composite"
+
+[[node]]
+id = "criticality_lt_of_isMin_regularizedModel"
+
+[[node]]
+id = "criticality_one_regularizedModel_eq_zero"
+
+[[node]]
+id = "exists_minimizer_with_criticality"
