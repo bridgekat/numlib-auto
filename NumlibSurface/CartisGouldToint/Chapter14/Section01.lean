@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.Complexity
 import Numlib.Optimization.Composite.ModelError
 import Numlib.Optimization.Composite.OuterCounterexample
 import Numlib.Optimization.Composite.Origin
@@ -21,10 +22,17 @@ Lemma 14.1.1 derives global minimality of the first-order model at zero and vani
 actual composite criticality. Its source assumptions on subadditivity and `h(0)` are
 unnecessary: Lipschitz continuity and convexity of `h` suffice.
 
-Lemmas 14.1.2--14.1.4 use the smooth penalized scalar part and residual polynomial
+Lemmas 14.1.2--14.1.3 and the detailed-solver companion to Lemma 14.1.4 use
+the smooth penalized scalar part and residual polynomial
 for the model's genuine generalized Taylor criticality. They derive the exact
 small-radius decrease, actual global-minimum step existence, quantitative radii,
 and the objective optimality certified by a zero-decrease global-gap return.
+
+The detailed-solver companion to Theorem 14.1.10 proves both evaluation orders
+with fixed positive constants before all accuracies. The corrected two-term
+residual-value error changes permitted
+constants while preserving the theorem's existential constant and rate claims.
+The actual run enforces the accuracy ranges and detailed solver return checks.
 -/
 
 namespace CartisGouldToint
@@ -94,7 +102,8 @@ Step stationarity and stopping tests are unnecessary for this parameter bound. -
 abbrev compositeModelTrace {E F : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F]
     (f : E → ℝ) (c : E → F) (h : F → ℝ) (p : ℕ)
-    (x s : ℕ → E) (σ ρ : ℕ → ℝ) (η₁ η₂ γ₁ γ₂ γ₃ σmin : ℝ) (N : ℕ) : Prop :=
+    (x s : ℕ → E) (σ ρ : ℕ → ℝ)
+    (η₁ η₂ γ₁ γ₂ γ₃ σmin : ℝ) (N : ℕ) : Prop :=
   Composite.ModelTrace f c h p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N
 
 /-- **Lemma 14.1.6.** The parameter bound (14.1.26) with exactly the
@@ -204,10 +213,10 @@ theorem lemma_14_1_3 {n m p q : ℕ} (_hq : 1 ≤ q) (hqp : q ≤ p)
     · exact Or.inr (htest hs)
     · exact Or.inl (lt_of_not_ge hs)
 
-/-- **Lemma 14.1.4.** A zero-decrease Step2 return satisfying the actual
-positive-fraction global-gap rule gives genuine approximate composite optimality
+/-- **Detailed-solver companion to Lemma 14.1.4.** A zero-decrease Step2 return satisfying
+the actual positive-fraction global-gap rule gives genuine approximate composite optimality
 at positive radii. It cannot follow a failed Step1 test when q=1 and h is convex. -/
-theorem lemma_14_1_4 {n m p q : ℕ} (hqp : q ≤ p)
+theorem lemma_14_1_4_detailed_solver {n m p q : ℕ} (hqp : q ≤ p)
     (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
     (h : EuclideanSpace ℝ (Fin m) → ℝ)
@@ -294,5 +303,86 @@ theorem lemma_14_1_7_corrected {n m p q N : ℕ} (hqp : q ≤ p + 1)
   refine ⟨a, ?_⟩
   convert ha using 1
   ring
+
+/-- **Detailed-solver companion to Theorem 14.1.10.** Both regimes hold with positive
+constants chosen before all accuracies and actual execution data. The favorable
+case produces a unit-radius first-order certificate; its accuracy factor is the
+single requested accuracy raised to `(p+1)/p`. The general case uses the actual
+minimum of `ε_j^(j+1)`. Counts include initialization and the first certificate.
+
+The execution uses the detailed solver's positive global-gap fraction. True
+certificate attainment is distinguished from the computed stopping test.
+The corrected two-term residual estimate changes permissible constants but
+preserves the two asserted evaluation orders. -/
+theorem theorem_14_1_10_detailed_solver {n m p q : ℕ} (P : Composite.Settings p q)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (h : EuclideanSpace ℝ (Fin m) → ℝ)
+    (hf : ContDiff ℝ p f) (hc : ∀ i, ContDiff ℝ p (fun z => c z i))
+    {Lf Lc wlow : ℝ} {K : NNReal} (hLf : 1 ≤ Lf) (hLc : 0 ≤ Lc)
+    (hlipf : ∀ a, 1 ≤ a → a ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ Lf * ‖u - v‖)
+    (hlipc : ∀ i a, 1 ≤ a → a ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ a (fun z => c z i) u -
+        iteratedFDeriv ℝ a (fun z => c z i) v‖ ≤ Lc * ‖u - v‖)
+    (hh : LipschitzWith K h) (_hsub : ∀ u v, h (u + v) ≤ h u + h v) (_hz : h 0 = 0)
+    (hlow : ∀ x, wlow ≤ f x + h (c x)) :
+    let Lw := Lf + (K : ℝ) * (Real.sqrt m * Lc)
+    (q = 1 → ConvexOn ℝ Set.univ h →
+      ∃ κs κa κc : ℝ, 0 < κs ∧ 0 < κa ∧ 0 < κc ∧
+        ∀ (ε : Fin q → ℝ)
+          (D : Composite.ExecutionData (EuclideanSpace ℝ (Fin n)) q),
+          (∀ N, (∀ k < N, ¬Composite.TargetAt f c h P ε D k) →
+            Composite.Run f c h P ε D N) →
+          (∀ k a, D.solvedRadius k a = 1) →
+          ∃ k, Composite.Run f c h P ε D k ∧
+            (∀ a, Composite.criticality f c h 1 (D.point k) 1 ≤ ε a) ∧
+            (Composite.functionEvaluations k : ℝ) ≤
+              κa * (f (D.point 0) + h (c (D.point 0)) - wlow) /
+                (ε ⟨0, P.order_pos⟩) ^ Composite.unitExponent p + κc ∧
+            (Composite.derivativeEvaluations D.ratio P.eta1 k : ℝ) ≤
+              κs * (f (D.point 0) + h (c (D.point 0)) - wlow) /
+                (ε ⟨0, P.order_pos⟩) ^ Composite.unitExponent p + 2) ∧
+      ((1 < q ∨ ¬ConvexOn ℝ Set.univ h) →
+        ∃ κs κa κc : ℝ, 0 < κs ∧ 0 < κa ∧ 0 < κc ∧
+          ∀ (ε : Fin q → ℝ)
+            (D : Composite.ExecutionData (EuclideanSpace ℝ (Fin n)) q),
+            (∀ N, (∀ k < N, ¬Composite.TargetAt f c h P ε D k) →
+              Composite.Run f c h P ε D N) →
+            (∀ k, ‖D.step k‖ < 1 → ∀ a,
+              Composite.radiusCoefficient P Lw (HighOrderRegularization.parameterCap P Lw) *
+                ε a ≤ D.solvedRadius k a) →
+            ∃ (k : ℕ) (δ : Fin q → ℝ), Composite.Run f c h P ε D k ∧
+              Composite.OptimalityAt f c h ε (D.point k) δ ∧
+              (Composite.functionEvaluations k : ℝ) ≤
+                κa * (f (D.point 0) + h (c (D.point 0)) - wlow) /
+                  Composite.generalAccuracyFactor P ε + κc ∧
+              (Composite.derivativeEvaluations D.ratio P.eta1 k : ℝ) ≤
+                κs * (f (D.point 0) + h (c (D.point 0)) - wlow) /
+                  Composite.generalAccuracyFactor P ε + 2) := by
+  dsimp only
+  have hcv : ContDiff ℝ p c := (contDiff_piLp 2).mpr hc
+  have hlipv : ∀ a, 1 ≤ a → a ≤ p → ∀ u v,
+      ‖iteratedFDeriv ℝ a c u - iteratedFDeriv ℝ a c v‖ ≤
+        (Real.sqrt m * Lc) * ‖u - v‖ := by
+    intro a ha hap u v
+    exact Composite.norm_iteratedFDeriv_sub_le_componentwise
+      (hcv.of_le (by exact_mod_cast hap)) hLc (fun i => hlipc i a ha hap) u v
+  constructor
+  · intro hq hconv
+    obtain ⟨κs, κa, κc, hs, ha, hcpos, hb⟩ :=
+      Composite.complexity_unit P hq f c hf hcv hLf
+        (mul_nonneg (Real.sqrt_nonneg _) hLc) hh hconv hlipf hlipv hlow
+    refine ⟨κs, κa, κc, hs, ha, hcpos, ?_⟩
+    intro ε D hprefix hunit
+    obtain ⟨k, hr, hcrit, hfun, hder⟩ := hb ε D hprefix hunit
+    refine ⟨k, hr, hcrit, ?_, ?_⟩
+    · simpa only [Composite.unitAccuracyFactor_eq_of_order_one P hq ε
+        ⟨0, P.order_pos⟩] using hfun
+    · simpa only [Composite.unitAccuracyFactor_eq_of_order_one P hq ε
+        ⟨0, P.order_pos⟩] using hder
+  · intro _
+    exact Composite.complexity_general P f c hf hcv hLf
+      (mul_nonneg (Real.sqrt_nonneg _) hLc) hh hlipf hlipv hlow
 
 end CartisGouldToint
