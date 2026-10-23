@@ -1,0 +1,7 @@
+namespace = "Composite"
+
+[[node]]
+id = "mul_decrement_one_le_smul"
+
+[[node]]
+id = "criticality_one_unit_le_of_radius"

@@ -1,0 +1,28 @@
+namespace = "Composite"
+
+[[node]]
+id = "Run.model_decrease"
+
+[[node]]
+id = "Run.denominator_pos"
+
+[[node]]
+id = "Run.successful_decrease"
+
+[[node]]
+id = "Run.objective_eq_of_unsuccessful"
+
+[[node]]
+id = "Run.objective_mono"
+
+[[node]]
+id = "Run.very_successful"
+
+[[node]]
+id = "Run.parameter_le"
+
+[[node]]
+id = "Run.not_optimality_of_not_target"
+
+[[node]]
+id = "Run.target_optimality"
