@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.Inexact.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.RadiusConsequences
 import Numlib.Optimization.Regularization.Inexact.ParameterCounterexample
 import Numlib.Analysis.Calculus.TaylorModel
@@ -571,5 +572,63 @@ theorem lemma_13_1_7 {n q N k : ℕ}
     h.zeta_pos h.zeta_le_one (div_nonneg hb.1 (by norm_num)) hκmax hH0 h.accuracy_pos rfl
     (h.optimalityRadius_lower hf hL hlip hb.2 hk) hsmall hH happrox hpass
   exact hh.true_optimality f (x k) horacle
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- Accuracy-independent settings of the actual TRqIDA algorithm. -/
+abbrev trqidaSettings (q : ℕ) := InexactTrustRegion.Settings q
+
+/-- Actual TRqIDA execution, including computed selection, primitive tensor
+oracles, actual function ratios and point/radius updates, both concrete accuracy
+branches, geometric request reductions and rejected-step derivative reuse. -/
+abbrev trqidaRun {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (P : trqidaSettings q) (ε : Fin q → ℝ)
+    (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (T : Set ℕ) (j : ℕ → Fin q) (x d s : ℕ → EuclideanSpace ℝ (Fin n))
+    (Δ ρ : ℕ → ℝ) (accuracy : ℕ → ℕ → ℝ) (N : ℕ) : Prop :=
+  InexactTrustRegion.Run f P ε A T j x d s Δ ρ accuracy N
+
+/-- Theorem 13.1.8: all five positive complexity coefficients are fixed before
+every admissible accuracy request. An actual TRqIDA execution reaches a first
+true all-order approximate minimizer within the objective and derivative budgets,
+even though the implicit-accuracy algorithm cannot observe that fact.
+
+Both counters include initialization; the derivative additive coefficient also
+covers the final threshold-crossing accuracy reduction. A positive fixed radius
+coefficient covers a vanishing initial jet and exact tensor oracles. In the
+printed conclusion the criticality order `q` is repaired to the tested order `j`.
+The initialization typo `1<γ₂` is corrected to the contraction range `γ₂<1`
+required by its actual radius updates and logarithmic counting argument. -/
+theorem theorem_13_1_8 {n q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : trqidaSettings q)
+    (x₀ : EuclideanSpace ℝ (Fin n))
+    {Δ₀ L flow : ℝ} (hL : 1 ≤ L) (hf : ContDiff ℝ q f)
+    (hlip : ∀ a, a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (hlow : ∀ y, flow ≤ f y) :
+    ∃ κA > 0, ∃ κB > 0, ∃ κC > 0, ∃ κE > 0, ∃ κF > 0,
+      ∀ (ε : Fin q → ℝ) (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace
+        ℝ (Fin n)) ℝ) (T : Set ℕ)
+        (j : ℕ → Fin q) (x d s : ℕ → EuclideanSpace ℝ (Fin n)) (Δ ρ : ℕ →
+          ℝ) (accuracy : ℕ → ℕ → ℝ),
+      x 0 = x₀ → Δ 0 = Δ₀ →
+      (∀ N, (∀ i < N, NotOptimal f ε (x i) (optimalityRadius P.theta (Δ i))) →
+        trqidaRun f P ε A T j x d s Δ ρ accuracy N) →
+      ∃ K, optimalityRadius P.theta (Δ K) ∈ Set.Ioc 0 1 ∧
+        (∀ a : Fin q, TaylorModel.criticality f (modelOrder a) (x K)
+          (optimalityRadius P.theta (Δ K)) ≤
+          ε a * optimalityRadius P.theta (Δ K) ^ modelOrder a / (modelOrder a).factorial) ∧
+        trqidaRun f P ε A T j x d s Δ ρ accuracy K ∧
+        (∀ i < K, NotOptimal f ε (x i) (optimalityRadius P.theta (Δ i))) ∧
+        (functionEvaluations T K : ℝ) ≤
+          κA * (f x₀ - flow) / minimumAccuracy P.order_pos ε ^ (q + 1) +
+          κB * |Real.log (minimumAccuracy P.order_pos ε)| + κC ∧
+        (derivativeEvaluations T ρ P.eta1 K : ℝ) ≤
+          κA * (f x₀ - flow) / minimumAccuracy P.order_pos ε ^ (q + 1) +
+          κE * |Real.log (minimumAccuracy P.order_pos ε)| + κF :=
+  InexactTrustRegion.evaluation_complexity (Δ₀ := Δ₀) f P x₀ hL hf hlip hlow
 
 end CartisGouldToint

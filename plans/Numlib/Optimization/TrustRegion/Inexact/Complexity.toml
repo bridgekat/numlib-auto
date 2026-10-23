@@ -1,0 +1,37 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "successfulSet"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "successfulConstant"
+
+[[node]]
+id = "Run.objective_eq_of_not_successful"
+
+[[node]]
+id = "Run.successful_card_le"
+
+[[node]]
+id = "Run.accuracy_card_le"
+
+[[node]]
+id = "Run.functionEvaluations_le"
+
+[[node]]
+id = "Run.derivativeEvaluations_le"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "exists_approximate_optimality"
+
+[[node]]
+id = "evaluation_complexity"

@@ -1,0 +1,43 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "Settings"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "positiveRadiusCoefficient"
+
+[[node]]
+id = "positiveRadiusCoefficient_properties"
+
+[[node]]
+id = "accuracyCap"
+
+[[node]]
+id = "Run.accuracy_updates"
+
+[[node]]
+id = "Run.accuracy_bounds"
+
+[[node]]
+id = "Run.accuracyCap_updates"
+
+[[node]]
+id = "Run.tensor_norm_le"
+
+[[node]]
+id = "accuracyCoefficient"
+
+[[node]]
+id = "accuracyCoefficient_pos"
+
+[[node]]
+id = "NotOptimal"
+
+[[node]]
+id = "Run.radius_floor"
+
+[[node]]
+id = "Run.accuracy_branch_large"
