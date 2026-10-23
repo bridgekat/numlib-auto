@@ -1,0 +1,13 @@
+namespace = "LeastSquares"
+
+[[node]]
+id = "literalFiniteStop"
+
+[[node]]
+id = "finiteStop"
+
+[[node]]
+id = "finiteStop_of_literal"
+
+[[node]]
+id = "literalFiniteStop_iff_of_nonempty"

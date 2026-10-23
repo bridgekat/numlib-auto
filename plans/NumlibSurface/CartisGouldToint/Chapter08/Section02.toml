@@ -31,36 +31,6 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "theorem_8_2_6"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 8.2.6: Derivatives of the secular function
-
-[Appendix to Chapter 8, p. 477]: Suppose that \( H + {\lambda M} \) is positive definite, that \( s\left( \lambda \right) \) satisfies (8.2.2), and that \( {s}^{\left( 0\right) }\left( \lambda \right) \overset{\text{ def }}{ = }s\left( \lambda \right) \) and \( {\alpha }_{0}\overset{\text{ def }}{ = }1 \) . Then, for \( k = 0,1,\ldots \) , the derivatives of \( \pi \left( \lambda \right)  = \langle s\left( \lambda \right) ,{Ms}\left( \lambda \right) \rangle \) satisfy
-
-\[
-{\pi }^{\left( 2k + 1\right) }\left( \lambda \right)  = 2{\alpha }_k\left\langle  {{s}^{\left( k\right) }\left( \lambda \right) , M{s}^{\left( k + 1\right) }\left( \lambda \right) }\right\rangle\tag{8.2.27}
-\]
-
-\[
-\text{ and }{\pi }^{\left( 2k + 2\right) }\left( \lambda \right)  = {\alpha }_{k + 1}\left\langle  {{s}^{\left( k + 1\right) }\left( \lambda \right) , M{s}^{\left( k + 1\right) }\left( \lambda \right) }\right\rangle  \text{ , }\tag{8.2.28}
-\]
-
-where
-
-\[
-\left( {H + {\lambda M}}\right) {s}^{\left( k + 1\right) }\left( \lambda \right)  =  - \left( {k + 1}\right) M{s}^{\left( k\right) }\left( \lambda \right)\tag{8.2.29}
-\]
-
-and
-
-\[
-{\alpha }_{k + 1} = 2\frac{\left( 2k + 3\right) }{\left( k + 1\right) }{\alpha }_{k}.\tag{8.2.30}
-\]
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.6 (OCR Markdown line 9754)"
-deps = ["secularFunction"]
 
 [[node]]
 id = "theorem_8_2_7"

@@ -1,0 +1,62 @@
+[[node]]
+id = "QuadraticSecular.PencilBasis.vectorSum"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.eventually_nonsingular"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.iteratedDeriv_solution_eq"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.contDiffAt_vectorSum"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.shifted_reciprocal_deriv"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.product_neg_one_sub"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.vectorSum_deriv_formula"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.iteratedDeriv_solution_formula"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.shifted_iteratedDeriv_succ"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.iteratedDeriv_secular_formula"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.inner_metric_sum_pair"
+
+[[node]]
+id = "QuadraticSecular.derivativeCoefficient"
+
+[[node]]
+id = "QuadraticSecular.derivativeCoefficient_zero"
+
+[[node]]
+id = "QuadraticSecular.derivativeCoefficient_succ"
+
+[[node]]
+id = "QuadraticSecular.derivativeCoefficient_mul_factorials"
+
+[[node]]
+id = "QuadraticSecular.derivativeCoefficient_mul_sq_factorial"
+
+[[node]]
+id = "QuadraticSecular.odd_coordinate_identity"
+
+[[node]]
+id = "QuadraticSecular.even_coordinate_identity"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.iteratedDeriv_secular_odd"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.iteratedDeriv_secular_even"
+
+[[node]]
+id = "QuadraticSecular.PencilBasis.denominator_pos_of_positive"

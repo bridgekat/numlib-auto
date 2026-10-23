@@ -1,3 +1,4 @@
+import Numlib.Optimization.Quadratic.Secular.Vector
 import Numlib.Optimization.Quadratic.Secular.FirstTaylor
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
 
@@ -169,5 +170,39 @@ theorem theorem_8_2_5 {n : ℕ} [NeZero n]
           transformedFirstTaylorPolynomial H M g β z δ)) :=
   ⟨fun hβ => B.firstTaylor_lower_pos_exponent g hβ hz hzδ,
     fun hβ hβlow hg => B.firstTaylor_upper_neg_exponent hg hβ hβlow hz hzδ⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Theorem 8.2.6: the actual shifted-inverse solution has the differentiated
+linear-system recurrence, while its squared metric norm has the exact odd/even
+contractions and coefficient recurrence. All orders are genuine iterated derivatives.
+Positive definiteness admits a zero shift whenever the original Hessian is positive definite. -/
+theorem theorem_8_2_6 {n : ℕ}
+    {H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
+    (B : QuadraticSecular.PencilBasis (ι := Fin n) H M)
+    (g : EuclideanSpace ℝ (Fin n)) {z : ℝ}
+    (hpos : ∀ v : EuclideanSpace ℝ (Fin n), v ≠ 0 →
+      0 < inner ℝ ((H + z • M) v) v) :
+    iteratedDeriv 0 (QuadraticSecular.solution H M g) z = QuadraticSecular.solution H M g z ∧
+      QuadraticSecular.derivativeCoefficient 0 = 1 ∧
+      ∀ k : ℕ,
+        (H + z • M) (iteratedDeriv (k + 1) (QuadraticSecular.solution H M g) z) =
+          -(k + 1 : ℝ) • M (iteratedDeriv k (QuadraticSecular.solution H M g) z) ∧
+        QuadraticSecular.derivativeCoefficient (k + 1) =
+          2 * ((2 * k + 3 : ℝ) / (k + 1)) * QuadraticSecular.derivativeCoefficient k ∧
+        iteratedDeriv (2 * k + 1) (secularFunction H M g) z =
+          2 * QuadraticSecular.derivativeCoefficient k *
+            inner ℝ (iteratedDeriv k (QuadraticSecular.solution H M g) z)
+              (M (iteratedDeriv (k + 1) (QuadraticSecular.solution H M g) z)) ∧
+        iteratedDeriv (2 * k + 2) (secularFunction H M g) z =
+          QuadraticSecular.derivativeCoefficient (k + 1) *
+            inner ℝ (iteratedDeriv (k + 1) (QuadraticSecular.solution H M g) z)
+              (M (iteratedDeriv (k + 1) (QuadraticSecular.solution H M g) z)) := by
+  have hz := fun i => ne_of_gt (B.denominator_pos_of_positive hpos i)
+  refine ⟨rfl, QuadraticSecular.derivativeCoefficient_zero, fun k => ?_⟩
+  exact ⟨B.shifted_iteratedDeriv_succ g k hz, QuadraticSecular.derivativeCoefficient_succ k,
+    B.iteratedDeriv_secular_odd g k hz, B.iteratedDeriv_secular_even g k hz⟩
 
 end CartisGouldToint

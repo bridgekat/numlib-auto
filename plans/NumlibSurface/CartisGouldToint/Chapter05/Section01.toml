@@ -118,6 +118,7 @@ Equation (5.1.43):
 '''
 deps = ["lemma_4_1_4", "lemma_5_1_3", "lemma_2_4_1", "theorem_4_1_5", "residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.1.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5840)"
+wrong = "The literal finite-third-order Algorithm 5.1.1 inherits the false nonempty-M stopping guard from Algorithm 4.1.1. A globally C6 smooth positive scalar residual with ell=2, p=6, i=3 satisfies (5.1.42), yet an actual accepted trial with legal fixed parameters and ratio two produces empty inherited model directions at a flat endpoint. The residual stays above epsilon0=1, the literal stop fails, and no further strict model improvement exists. See theorem_5_1_7_nonempty_guard_counterexample. Corrected complexity must remove only this nonemptiness guard; OCR powers 2^4/2^s in (5.1.44)–(5.1.45) mean 2^i."
 
 [[node]]
 id = "arpLeastEuclideanModelTrace"
@@ -139,3 +140,19 @@ id = "residualCascadingExponent"
 
 [[node]]
 id = "residualCascadingConstant"
+
+[[node]]
+id = "arpLeastEuclideanLiteralFiniteStop"
+
+[[node]]
+id = "arpLeastEuclideanFiniteStop"
+
+[[node]]
+id = "theorem_5_1_7_nonempty_guard_counterexample"
+
+[[node]]
+id = "theorem_5_1_7_corrected"
+kind = "theorem"
+desc = """Prove the full evaluation complexity conclusion of source Theorem 5.1.7 for actual ARpLE executions, correcting only the inherited nonempty-M stopping guard exhibited by theorem_5_1_7_nonempty_guard_counterexample. Preserve actual Phi_ell=norm(r)^ell/ell derivatives, genuine Taylor models, objective ratios, parameter updates, initialized residual/derivative evaluation counts and first-stop termination. Model-direction assignment occurs before acceptance on every trial. Constants are fixed before all four positive accuracies and all executions. Under the six good-exponent alternatives of Lemma 5.1.6 for the corresponding enabled orders (in particular the full third-order alternatives5.1.42/43), retain the exact normalized measures and successful bound kappaS times max(norm(r0)^(1/2^i), norm(r0)^(1-(ell-1)/p), norm(r0)^(1-2(ell-1)/(p-1)), norm(r0)^(1-3(ell-1)/(p-2))) divided by min(epsilon0^(1/2^i), epsilon1^((p+1)/p), epsilon2^((p+1)/(p-1)), epsilon3^((p+1)/(p-2))) plus2 for each derivative order1..p. The function bound uses kappaA times that budget plus kappaC, with exact constants5.1.60/61 and the inverse maximum accuracy order. Interpret OCR powers2^4/2^s as2^i; the coefficient on the first function budget is kappaA as derived in the proof, rather than the duplicated kappaC printed in5.1.44. At termination return residual norm at mostepsilon0 or all normalized first/least-Hessian/third-direction bounds and the actual returned-set containment in the true normalized small-Hessian unit directions. Handle initial stopping and the first-/second-order branches with disabled higher tolerances as in the final source paragraph. Do not assume decrease, step lower bounds, parameter bounds, successful counts or termination as Run fields."""
+deps = ["arpLeastEuclideanRun", "arpLeastEuclideanFiniteStop", "lemma_5_1_2", "lemma_5_1_3", "lemma_5_1_4", "lemma_5_1_6", "lemma_2_4_1"]
+source = "Correction of Cartis–Gould–Toint, Theorem 5.1.7, removing only the false nonempty-direction stopping guard and repairing printed/OCR indices and the function-count coefficient."

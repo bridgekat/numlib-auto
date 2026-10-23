@@ -1,3 +1,4 @@
+import Numlib.Optimization.LeastSquares.EmptyDirections
 import Numlib.Optimization.LeastSquares.Exponents
 import Numlib.Optimization.LeastSquares.Cascading
 import Numlib.Optimization.LeastSquares.Decrease
@@ -332,5 +333,44 @@ theorem lemma_5_1_6 {p : ℕ} (hp : 0 < p) :
       0 < residualCascadingExponent p ℓ i 1 ∧
       0 < residualCascadingExponent p ℓ i 2 ∧ 1 < ℓ) :=
   LeastSquares.cascadingExponent_choices hp
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The literal finite-third-order ARpLE test, including its printed direction guard. -/
+abbrev arpLeastEuclideanLiteralFiniteStop := @LeastSquares.literalFiniteStop
+
+/-- The repaired finite-third-order ARpLE test removes only the direction nonemptiness guard. -/
+abbrev arpLeastEuclideanFiniteStop := @LeastSquares.finiteStop
+
+/-- **Counterexample to the literal third-order claim of Theorem 5.1.7.**
+The legal choice `p=6,ℓ=2,i=3` satisfies (5.1.42). The actual positive C6 residual
+never passes the global tolerance one, and a genuine accepted AR6 trial with
+actual ratio two creates an empty inherited set at a flat terminal jet. The
+literal stopping test fails there and every positive-parameter model admits no
+strictly improving step. The repaired test accepts that same actual endpoint. -/
+theorem theorem_5_1_7_nonempty_guard_counterexample :
+    (1 < (2 : ℝ) ∧ (2 : ℝ) = (6 : ℝ) / 3 ∧ Real.logb 2 (6 - 2 : ℝ) < 3) ∧
+    ∃ (r : ℝ → ℝ) (L ε₁ : ℝ), 1 ≤ L ∧ 0 < ε₁ ∧ ε₁ ≤ 1 ∧
+      ContDiff ℝ 6 r ∧ ContDiff ℝ 6 (LeastSquares.powerObjective r 2) ∧
+      (∀ x, 1 < ‖r x‖) ∧
+      (∀ x y, ‖iteratedFDeriv ℝ 6 (LeastSquares.powerObjective r 2) x -
+        iteratedFDeriv ℝ 6 (LeastSquares.powerObjective r 2) y‖ ≤ L * ‖x - y‖) ∧
+      HighOrderRegularization.ModelTrace (LeastSquares.powerObjective r 2) 6
+        HighOrderRegularization.EmptyDirections.point (fun _ => 1) (fun _ => 1440) (fun _ => 2)
+        (1 / 4) (3 / 4) (1 / 2) 2 3 1440 1 ∧
+      HighOrderRegularization.StepConditions (LeastSquares.powerObjective r 2) 6 0 1 1440 1 1 1 ∧
+      HighOrderRegularization.smallModelDirections
+        (LeastSquares.powerObjective r 2) 6 0 1 1440 1 = ∅ ∧
+      (∀ (μ : ℝ) (M : Set ℝ), ¬ LeastSquares.literalFiniteStop r 2 0 μ M 1 ε₁ 1 1) ∧
+      ¬ LeastSquares.literalFiniteStop r 2 1 0 ∅ 1 ε₁ 1 1 ∧
+      LeastSquares.finiteStop r 2 1 0 ∅ 1 ε₁ 1 1 ∧
+      SecondOrderTrustRegion.IsLeastEigenpair (LeastSquares.powerObjective r 2) 1 0 1 ∧
+      (∀ σ : ℝ, 0 ≤ σ → ¬ ∃ s : ℝ,
+        HighOrderRegularization.model (LeastSquares.powerObjective r 2) 6 1 σ s <
+          HighOrderRegularization.model (LeastSquares.powerObjective r 2) 6 1 σ 0) :=
+  ⟨LeastSquares.EmptyDirections.source_exponent_choice,
+    LeastSquares.EmptyDirections.exists_stuck_execution⟩
 
 end CartisGouldToint

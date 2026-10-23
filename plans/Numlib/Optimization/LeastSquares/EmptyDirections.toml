@@ -1,0 +1,58 @@
+namespace = "LeastSquares.EmptyDirections"
+
+[[node]]
+id = "jet_residual_six"
+
+[[node]]
+id = "shiftedJet"
+
+[[node]]
+id = "exists_positive_objective"
+
+[[node]]
+id = "residual"
+
+[[node]]
+id = "contDiff_residual"
+
+[[node]]
+id = "powerObjective_residual"
+
+[[node]]
+id = "model_initial"
+
+[[node]]
+id = "initialPolynomial"
+
+[[node]]
+id = "model_initial_eventuallyEq"
+
+[[node]]
+id = "model_derivatives"
+
+[[node]]
+id = "smallModelDirections_empty"
+
+[[node]]
+id = "stepConditions"
+
+[[node]]
+id = "actual_ratio"
+
+[[node]]
+id = "modelTrace"
+
+[[node]]
+id = "no_next_improvement"
+
+[[node]]
+id = "residual_norm_gt_one"
+
+[[node]]
+id = "initial_measure_pos"
+
+[[node]]
+id = "source_exponent_choice"
+
+[[node]]
+id = "exists_stuck_execution"
