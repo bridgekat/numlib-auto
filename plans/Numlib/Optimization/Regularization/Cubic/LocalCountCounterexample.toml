@@ -1,0 +1,46 @@
+namespace = "CubicRegularization.LocalCountCounterexample"
+
+[[node]]
+id = "second_derivative"
+
+[[node]]
+id = "second_formula"
+
+[[node]]
+id = "least_eigenpair"
+
+[[node]]
+id = "regularity"
+
+[[node]]
+id = "taylor_exact"
+
+[[node]]
+id = "model_derivative_zero"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "modelTrace"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "stricter_test"
+
+[[node]]
+id = "printedZeta"
+
+[[node]]
+id = "printed_constants"
+
+[[node]]
+id = "initial_region"
+
+[[node]]
+id = "terminal_certificate"
+
+[[node]]
+id = "count_fails"

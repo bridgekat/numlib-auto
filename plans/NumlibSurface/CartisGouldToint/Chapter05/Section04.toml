@@ -58,6 +58,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_5_4_3"
+wrong = "The literal double logarithm is zero at epsilon=zeta/2, although an accepted iteration can be necessary. The formal actual AR2 counterexample uses f(x)=x^2/2, true least eigenvalue1 at minimizer0, L=1, sigmaMin=sigmaInitial=1/4, theta=1/2, eta2=3/4 and gamma3=3. All five printed local threshold terms are finite and their minimum is1/16; the source parameter cap is12. The initial point and gradient zeta=513/32768 lie in the radius1/4 ball and satisfy zeta<=zetaStar/2. Actual model-stationary step -1/64 is strictly improving, has objective ratio1, obeys every update and tightened model test, and produces endpoint gradient1/32768 below epsilon=zeta/2. The initial point fails that accuracy; no natural index at most the printed zero count can certify it. A ceiling alone does not repair the zero expression: a positive correction inside or outside the double logarithm is needed."
 kind = "theorem"
 desc = '''
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -145,3 +146,7 @@ Equation (5.4.5):
 '''
 deps = ["lemma_3_3_4", "theorem_3_3_5", "lemma_5_4_3", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.4.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7020)"
+
+[[node]]
+id = "lemma_5_4_3_counterexample"
+source = "Cartis, Gould and Toint, Lemma 5.4.3, exact printed local count at epsilon=zeta/2"
