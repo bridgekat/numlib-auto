@@ -1,4 +1,4 @@
-import Numlib.Analysis.Calculus.TaylorModel.Smooth
+import Numlib.Analysis.Calculus.TaylorModel.JetBounds
 import Mathlib.Analysis.Analytic.IteratedFDeriv
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Tactic
@@ -20,18 +20,10 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 theorem iteratedFDeriv_diagonal_eq_zero_of_lt {i n : ℕ}
     (A : E [×i]→L[ℝ] F) (hin : i < n) (x : E) :
     iteratedFDeriv ℝ n (fun y : E => A (fun _ => y)) x = 0 := by
-  let D : E →L[ℝ] (Fin i → E) := ContinuousLinearMap.pi fun _ => ContinuousLinearMap.id ℝ E
-  have he := ContinuousLinearMap.iteratedFDeriv_comp_right D A.contDiff x (n := n) le_rfl
-  change iteratedFDeriv ℝ n (A ∘ D) x = 0
-  rw [he]
-  have hzero : iteratedFDeriv ℝ n A (D x) = 0 := by
-    apply norm_eq_zero.mp
-    have hh := A.norm_iteratedFDeriv_le n (D x)
-    simp only [Fintype.card_fin, Nat.descFactorial_eq_zero_iff_lt.mpr hin,
-      Nat.cast_zero, zero_mul] at hh
-    exact le_antisymm hh (norm_nonneg _)
-  rw [hzero]
-  rfl
+  apply norm_eq_zero.mp
+  have hh := norm_iteratedFDeriv_diagonal_le (n := n) A x
+  simp only [Nat.descFactorial_eq_zero_iff_lt.mpr hin, Nat.cast_zero, zero_mul] at hh
+  exact le_antisymm hh (norm_nonneg _)
 
 /-- Every actual derivative above the degree of a finite tensor jet vanishes. -/
 theorem iteratedFDeriv_ofJet_eq_zero_of_lt (A : FormalMultilinearSeries ℝ E F)

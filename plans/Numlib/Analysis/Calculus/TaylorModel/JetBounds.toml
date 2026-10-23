@@ -1,0 +1,13 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "norm_iteratedFDeriv_diagonal_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_ofJet_le_sum"
+
+[[node]]
+id = "norm_iteratedFDeriv_ofJet_le_Icc"
+
+[[node]]
+id = "norm_iteratedFDeriv_ofJet_le_three_mul"
