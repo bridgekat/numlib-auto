@@ -58,3 +58,7 @@ evaluations of derivatives of the remaining orders up to \( p \) of \( f \) to p
 '''
 deps = ["lemma_5_5_6", "lemma_2_4_1", "theorem_4_1_5", "theorem_1_1_2", "universalArpRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.5.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7652)"
+
+[[node]]
+id = "theorem_5_5_7_two"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.5.7, finite second-order accuracy branch"

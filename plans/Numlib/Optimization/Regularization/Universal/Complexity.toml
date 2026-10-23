@@ -1,0 +1,40 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "accuracyFactor"
+
+[[node]]
+id = "accuracyFactor_pos"
+
+[[node]]
+id = "checkAt"
+
+[[node]]
+id = "returnedPoint"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "lowDerivativeEvaluations"
+
+[[node]]
+id = "highDerivativeEvaluations"
+
+[[node]]
+id = "checkAt_guarantee"
+
+[[node]]
+id = "exists_first_trial_stop_two"
+
+[[node]]
+id = "logs_le_inverse_accuracy"
+
+[[node]]
+id = "detailed_bound_le_envelope"
+
+[[node]]
+id = "reciprocal_accuracy_eq_rate"
+
+[[node]]
+id = "exists_uniform_complexity_two"

@@ -1,4 +1,4 @@
-import Numlib.Optimization.Regularization.Universal.Decrease
+import Numlib.Optimization.Regularization.Universal.Complexity
 
 /-!
 # Universal regularization with real powers
@@ -166,4 +166,13 @@ theorem lemma_5_5_6 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     have heq := Option.mem_def.mp he
     subst ε2
     exact h.successful_decrease_two hf hH hβ hβ1 hholder (ha2 e (by simp)) har hk hs
+/-- **Finite-second-accuracy branch of Theorem5.5.7.** Fixed positive constants
+precede both requested accuracies. A genuine primitive execution reaches its
+literal first initial-or-trial check, which gives the actual output derivative
+tests through `checkAt_guarantee`. All three initialized evaluation schedules
+satisfy the displayed bounds, including the remaining-derivative `+1`.
+The uniform reciprocal-accuracy envelope is exactly the maximum of the two
+printed negative powers by `reciprocal_accuracy_eq_rate`.
+The first-order-only branch is retained separately in the original plan. -/
+alias theorem_5_5_7_two := UniversalRegularization.exists_uniform_complexity_two
 end CartisGouldToint

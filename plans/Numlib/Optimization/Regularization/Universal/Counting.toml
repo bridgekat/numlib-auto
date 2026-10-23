@@ -1,0 +1,25 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "successful"
+
+[[node]]
+id = "Run.successful_parameter_lower"
+
+[[node]]
+id = "Run.unsuccessful_parameter_lower"
+
+[[node]]
+id = "Run.unsuccessful_objective"
+
+[[node]]
+id = "decreaseCoefficientTwo_pos"
+
+[[node]]
+id = "Run.successful_card_le_two"
+
+[[node]]
+id = "Run.parameter_le_product_two"
+
+[[node]]
+id = "Run.iterations_le_two"
