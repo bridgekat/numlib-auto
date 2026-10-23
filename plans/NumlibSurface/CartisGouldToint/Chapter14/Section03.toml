@@ -1,8 +1,4 @@
 namespace = "CartisGouldToint"
-desc = '''
-General equality constraints c(x)=0 alongside the closed nonempty simple set X. Use L(x,y)=f(x)−<y,c(x)>. Descriptor jets must be realized by paths with a small-o remainder. The source nonemptiness-only constraint qualification is insufficient, as recorded on Theorem 14.3.1. For complexity, f.D1pLB.X and c.D1pLB.X mean C^p on an open convex X0 containing X, each derivative 1,…,p Lipschitz and bounded there. ν(x)=||c(x)||²/2 and μ(x,t)=||r(x,t)||²/2 for r=(c,f−t). The LENq-SC inner solver and TPqp-GC phases are actual transition relations with evaluation counters; do not assume termination, complexity, or optimality in their definitions.
-'''
-
 [[node]]
 id = "feasibleCurveJet"
 kind = "definition"
@@ -71,46 +67,7 @@ False under the printed nonemptiness-only X.CqQ: q=1, c(x)=x², f(x)=x, X=R give
 
 [[node]]
 id = "theorem_14_3_2"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 14.3.2: Local sufficiency of the Lagrangian for approximate minimizers
-
-Suppose that the set \( \mathcal{X} \subseteq  {\mathbb{R}}^n \) is closed and nonempty, that \( {x}_{\epsilon } \in  \mathcal{X} \) , and that \( f \) and \( c \) are \( j \) -times continuously differentiable and have Lipschitz-continuous \( j \) th derivatives \( \left( {j \in  \{ 1,2,3\} }\right) \) with constants \( {L}_{f, j} \) and \( {L}_{c, j} \) , respectively, in a neighbourhood of \( {x}_{\epsilon } \) of diameter \( {\delta }_j > 0 \) . Suppose also that \( \mathcal{V}\left( {x}_{\epsilon }\right)  \subseteq  \mathcal{X}\left( {x}_{\epsilon }\right) \) is given and that
-
-\[
-\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_{0}.\tag{14.3.8}
-\]
-
-Finally, suppose that there exists a vector of Lagrange multipliers \( {y}_{\epsilon } \in  {\mathbb{R}}^m \) and an \( \eta  \geq  0 \) such that
-
-\[
-{\phi }_{\mathcal{L},\mathcal{V}\left( {x}_{\epsilon }\right) , j}^{{\delta }_j}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right)  \leq  {\epsilon }_j\begin{Vmatrix}\left( {1,{y}_{\epsilon }^T}\right) \end{Vmatrix}\frac{{\delta }_j^j}{j!} + \eta ,\;j \in  \{ 1,2,3\} .\tag{14.3.9}
-\]
-
-Then
-
-\[
-f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - 2{\epsilon }_0\begin{Vmatrix}{y}_{\epsilon }\end{Vmatrix} - 2{\epsilon }_j\begin{Vmatrix}\left( {1,{y}_{\epsilon }^T}\right) \end{Vmatrix}\frac{{\delta }_j^j}{j!} - \eta ,\;j \in  \{ 1,2,3\} ,\tag{14.3.10}
-\]
-
-for all \( d \in  \mathcal{V}\left( {x}_{\epsilon }\right) \) such that \( \begin{Vmatrix}{c\left( {{x}_{\epsilon } + d}\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) and \( {}^{111} \)
-
-\[
-\parallel d\parallel  \leq  \min \left\lbrack  {{\delta }_j,\frac{\left( {j + 1}\right) {\epsilon }_j}{\sqrt{2}\max \left\lbrack  {{L}_{f, j},{L}_{c, j}}\right\rbrack  }}\right\rbrack  .\tag{14.3.11}
-\]
-
-In addition, if either \( c\left( {{x}_{\epsilon } + s}\right)  = 0 \) and \( \left\langle  {{y}_{\epsilon }, c\left( {x}_{\epsilon }\right) }\right\rangle   \leq  0 \) or \( c\left( {{x}_{\epsilon } + s}\right)  = c\left( {x}_{\epsilon }\right) \) , then the bound (14.3.10) simplifies to
-
-\[
-f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - 2{\epsilon }_j\begin{Vmatrix}\left( {1,{y}_{\epsilon }^T}\right) \end{Vmatrix}\frac{{\delta }_j^j}{j!} - \eta ,\;j \in  \{ 1,2,3\} .\tag{14.3.12}
-\]
-
-Documented source/OCR correction and formalization requirements: OCR correction: the additional equalities concerning c(xepsilon+s) use the same displacement d as the quantified conclusion. The neighbourhood must contain all segments for ||d||≤δj, so use radius at least δj, not an ambiguous diameter δj.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.2 (OCR Markdown line 16771)"
-deps = ["constrainedCriticality"]
 
 [[node]]
 id = "theorem_14_3_3"

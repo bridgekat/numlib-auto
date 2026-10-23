@@ -1,0 +1,28 @@
+namespace = "Constrained"
+
+[[node]]
+id = "vectorLagrangian"
+
+[[node]]
+id = "multiplierNorm"
+
+[[node]]
+id = "multiplierNorm_pos"
+
+[[node]]
+id = "one_add_norm_le_sqrt_two_mul_multiplierNorm"
+
+[[node]]
+id = "contDiffOn_vectorLagrangian"
+
+[[node]]
+id = "norm_iteratedFDeriv_vectorLagrangian_sub_le"
+
+[[node]]
+id = "value_ge_of_lagrangian_criticality"
+
+[[node]]
+id = "objective_bound_of_lagrangian_bound"
+
+[[node]]
+id = "objective_bound_of_lagrangian_bound_no_loss"

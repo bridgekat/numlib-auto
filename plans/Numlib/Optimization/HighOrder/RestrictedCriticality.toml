@@ -1,0 +1,7 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "restrictedCriticality"
+
+[[node]]
+id = "decrement_le_restrictedCriticality"
