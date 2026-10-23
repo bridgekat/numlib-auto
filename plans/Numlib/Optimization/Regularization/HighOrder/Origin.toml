@@ -1,0 +1,10 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "iteratedFDeriv_model_zero"
+
+[[node]]
+id = "eval_model_zero"
+
+[[node]]
+id = "criticality_model_zero"

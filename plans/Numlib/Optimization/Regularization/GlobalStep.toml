@@ -1,0 +1,16 @@
+namespace = "ModelDecrease"
+
+[[node]]
+id = "ApproximateGlobalStep"
+
+[[node]]
+id = "approximateGlobalStep_iff_of_isMin"
+
+[[node]]
+id = "ApproximateGlobalStep.isGlobalMin_zero"
+
+[[node]]
+id = "ApproximateGlobalStep.strict_decrease"
+
+[[node]]
+id = "exists_approximateGlobalStep_ofJet"

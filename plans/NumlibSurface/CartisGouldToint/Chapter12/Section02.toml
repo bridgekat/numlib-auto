@@ -117,16 +117,7 @@ deps = ["lemma_12_2_8"]
 
 [[node]]
 id = "lemma_12_2_10"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 12.2.10: Termination in Step 2
-
-Termination cannot occur in Step 2 of the ARqp algorithm if \( q \leq  2 \) . If \( q \geq  3 \) and the ARqp algorithm terminates in Step 2 of iteration \( k \) with \( {x}_{\epsilon } = {x}_k \) , then there exists a \( \delta  \in  (0,1{\rbrack }^q \) such that (12.1.25) holds for \( x = {x}_{\epsilon } \) and \( {x}_{\epsilon } \) is an \( \left( {\epsilon ,\delta }\right) \) -approximate \( q \) th-order minimizer.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.10 (OCR Markdown line 12766)"
-deps = ["lemma_12_2_9"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma12.2.10 and equations12.2.34,12.2.49"
 
 [[node]]
 id = "lemma_12_2_11"
@@ -355,3 +346,6 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "trqMaximumInverseAccuracy"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.1 and Theorem 12.2.5"
+
+[[node]]
+id = "arqpStepTwoSolve"

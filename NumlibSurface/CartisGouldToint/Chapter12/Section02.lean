@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.StepTwoTermination
 import Numlib.Optimization.TrustRegion.HighOrder.SharpnessGlobal
 import Numlib.Optimization.TrustRegion.HighOrder.Complexity
 import Numlib.Optimization.TrustRegion.HighOrder.Radius
@@ -68,7 +69,8 @@ abbrev trqTrial {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : trqPar
   HighOrderTrustRegion.Trial f P x Δ d j s xnext Δnext ρ
 
 /-- The actual maximum per-order Lipschitz constant `L_f` in equation (12.2.6). -/
-noncomputable abbrev trqLipschitzConstant {q : ℕ} (P : trqParameters q) (L : Fin q → ℝ) : ℝ :=
+noncomputable abbrev trqLipschitzConstant {q : ℕ} (P : trqParameters q)
+    (L : Fin q → ℝ) : ℝ :=
   HighOrderTrustRegion.maxLipschitzConstant P L
 
 /-- **Lemma 12.2.2 (condition for success).** The exact small-radius condition
@@ -243,7 +245,8 @@ theorem theorem_12_2_5 {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
       ∀ (ε : Fin q → ℝ) (hε : ∀ a, 0 < ε a) (hε1 : ∀ a, ε a ≤ 1)
         (hεθ : ∃ a, ε a ≤ S.theta),
       let P := S.withAccuracy ε hε hε1 hεθ
-      ∀ (x s : ℕ → EuclideanSpace ℝ (Fin n)) (d : ℕ → Fin q → EuclideanSpace ℝ (Fin n))
+      ∀ (x s : ℕ → EuclideanSpace ℝ (Fin n))
+        (d : ℕ → Fin q → EuclideanSpace ℝ (Fin n))
         (j : ℕ → Fin q) (Δ ρ : ℕ → ℝ), x 0 = x₀ → Δ 0 = Δ₀ →
       (∀ N, (∀ i < N, ¬trqTestsPass f P (x i) (Δ i) (d i)) → trqRun f P x s d j Δ ρ N) →
       (∀ k, trqTestsPass f P (x k) (Δ k) (d k) → trqCheckedOracle f P (x k) (Δ k) (d k)) →
@@ -252,9 +255,11 @@ theorem theorem_12_2_5 {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
         HighOrderTrustRegion.optimalityRadius P (Δ K) ∈ Set.Ioc (0 : ℝ) 1 ∧
         (∀ a, TaylorModel.criticality f (HighOrderTrustRegion.modelOrder a) (x K)
           (HighOrderTrustRegion.optimalityRadius P (Δ K)) ≤
-          ε a * HighOrderTrustRegion.optimalityRadius P (Δ K) ^ HighOrderTrustRegion.modelOrder a /
+          ε a * HighOrderTrustRegion.optimalityRadius P (Δ K) ^
+            HighOrderTrustRegion.modelOrder a /
             (HighOrderTrustRegion.modelOrder a).factorial) ∧
-        (trqFunctionEvaluations K : ℝ) ≤ κA * (f x₀ - flow) / trqMinimumAccuracy P ^ (q + 1) +
+        (trqFunctionEvaluations K : ℝ) ≤
+          κA * (f x₀ - flow) / trqMinimumAccuracy P ^ (q + 1) +
           κB * |Real.log (trqMinimumAccuracy P)| + κC ∧
         (trqDerivativeEvaluations P ρ K : ℝ) ≤
           κS * (f x₀ - flow) / trqMinimumAccuracy P ^ (q + 1) + 1 ∧
@@ -294,8 +299,10 @@ theorem theorem_12_2_6 {q : ℕ} (hq : 0 < q)
         (∀ y, -B ≤ f y) ∧ f 0 = 4 ∧ f 0 - (-B) = 4 + B ∧
           Run f P (point ε) (fun _ => ε) (fun _ _ => direction q ε P.zeta)
             (fun _ => topIndex hq) (fun _ => ε) (fun _ => 1) (length q ε) ∧
-          (∀ k ≤ length q ε, CheckedOracle f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
-          (∀ k < length q ε, ¬TestsPass f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
+          (∀ k ≤ length q ε, CheckedOracle f P (point ε k) ε
+            (fun _ => direction q ε P.zeta)) ∧
+          (∀ k < length q ε, ¬TestsPass f P (point ε k) ε
+            (fun _ => direction q ε P.zeta)) ∧
           TestsPass f P (point ε (length q ε)) ε (fun _ => direction q ε P.zeta) ∧
           (∀ k < length q ε, ∀ δ > 0,
             ¬∀ a, TaylorModel.criticality f (modelOrder a) (point ε k) δ ≤
@@ -309,5 +316,41 @@ theorem theorem_12_2_6 {q : ℕ} (hq : 0 < q)
           1 / ε ^ (q + 1) < (functionEvaluations (length q ε) : ℝ) ∧
           1 / ε ^ (q + 1) < (derivativeEvaluations P (fun _ => 1) (length q ε) : ℝ) :=
   HighOrderTrustRegion.Sharpness.exists_slow_objective_for_settings hq S hθ hmax
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The actual fraction-of-global-model-gap rule (12.2.34) of Step2.
+It is equivalent to the usual inequality with the actual attained minimum;
+positive regularized finite models genuinely admit such steps. -/
+abbrev arqpStepTwoSolve {n : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ)
+    (x : EuclideanSpace ℝ (Fin n)) (σ μ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
+  ModelDecrease.ApproximateGlobalStep (HighOrderRegularization.model f p x σ) μ s
+
+/-- Lemma12.2.10: zero model decrease at an actual approximate-global Step2
+return is impossible for orders one and two after a failed Step1 test. For
+higher orders the returned objective point is a true approximate minimizer
+at some vector of positive optimality radii. Only the finite regularity at
+the model center is needed for this conditional result. -/
+theorem lemma_12_2_10 {n p q : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ} {x s : EuclideanSpace ℝ (Fin n)}
+    (hqp : q ≤ p) (hf : ContDiffAt ℝ p f x) {σ μ : ℝ} (hμ : 0 < μ)
+    (hsolve : arqpStepTwoSolve f p x σ μ s)
+    (hzero : HighOrderRegularization.model f p x σ 0 =
+      HighOrderRegularization.model f p x σ s)
+    (ε δ₀ : Fin q → ℝ) (hε : ∀ a, 0 < ε a) (hδ₀ : ∀ a, 0 < δ₀ a)
+    (direction : Fin q → EuclideanSpace ℝ (Fin n))
+    (hfeasible : ∀ a, ‖direction a‖ ≤ δ₀ a) {ζ : ℝ} (hζ : 0 < ζ)
+    (hfailed : ∃ a, ζ * ε a * δ₀ a ^ InexactTrustRegion.modelOrder a /
+      (InexactTrustRegion.modelOrder a).factorial <
+        TaylorModel.decrement f (InexactTrustRegion.modelOrder a) x (direction a)) :
+    3 ≤ q ∧ ∃ δ : Fin q → ℝ, (∀ a, 0 < δ a ∧ δ a ≤ 1) ∧
+      ∀ a, TaylorModel.criticality f (InexactTrustRegion.modelOrder a) x (δ a) ≤
+        ε a * δ a ^ InexactTrustRegion.modelOrder a /
+          (InexactTrustRegion.modelOrder a).factorial :=
+  HighOrderRegularization.zero_step_termination hqp hf hμ hsolve hzero
+    ε δ₀ hε hδ₀ direction hfeasible hζ hfailed
 
 end CartisGouldToint

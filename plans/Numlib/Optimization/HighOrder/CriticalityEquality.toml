@@ -1,0 +1,4 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "criticality_eq_of_decrement_eq"
