@@ -70,6 +70,9 @@ recorded on the relevant plan nodes. In particular:
 * Negative criticality signs are missing in (6.1.5) and (6.1.9). Strictness of
   transformed secular estimates in Chapter 8 needs nonzero data and separate
   treatment of the affine endpoint exponent.
+* The unscaled Hessian bound (9.3.14c) in Theorem 9.3.2 is false for a general
+  metric matrix. Its corrected companion uses the metric-scaled Hessian, as
+  the preceding prose requests, and recovers the Euclidean bound for `M=I`.
 * The isolated-Taylor-minimum claim of Theorem 12.1.5 and the printed constraint
   qualification of Theorem 14.3.1 have explicit counterexamples. Their original
   statements remain marked incorrect in the plans.

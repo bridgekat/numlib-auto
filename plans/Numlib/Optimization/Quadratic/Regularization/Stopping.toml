@@ -1,0 +1,82 @@
+namespace = "QuadraticRegularization"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "hasFDerivAt_model"
+
+[[node]]
+id = "fderiv_model"
+
+[[node]]
+id = "fderiv_fderiv_model"
+
+[[node]]
+id = "fderiv_model_eq_radial"
+
+[[node]]
+id = "norm_fderiv_model"
+
+[[node]]
+id = "model_zero"
+
+[[node]]
+id = "sq_rpow_half"
+
+[[node]]
+id = "radius_bound"
+
+[[node]]
+id = "model_eq_shifted"
+
+[[node]]
+id = "model_nonpos"
+
+[[node]]
+id = "norm_fderiv_model_le"
+
+[[node]]
+id = "fderiv_fderiv_model_apply"
+
+[[node]]
+id = "hessian_lower"
+
+[[node]]
+id = "stopping_tests"
+
+[[node]]
+id = "Metric.toOriginal"
+
+[[node]]
+id = "Metric.linearTerm"
+
+[[node]]
+id = "Metric.quadraticTerm"
+
+[[node]]
+id = "Metric.linearTerm_apply"
+
+[[node]]
+id = "Metric.quadraticTerm_apply"
+
+[[node]]
+id = "Metric.quadraticTerm_symmetric"
+
+[[node]]
+id = "Metric.model_eq"
+
+[[node]]
+id = "Metric.radial_equation"
+
+[[node]]
+id = "Metric.shifted_nonneg"
+
+[[node]]
+id = "Metric.coordinateModel"
+
+[[node]]
+id = "Metric.coordinateModel_eq_model"
+
+[[node]]
+id = "Metric.stopping_tests"

@@ -1,7 +1,6 @@
 namespace = "CartisGouldToint"
-desc = '''
-Hard-case inverse iteration and a constructive early termination criterion. Preconditions are the actual update rules and spectral-start conditions; convergence and stopping guarantees are conclusions. Reuse secular models from Chapter 8.
-'''
+# Hard-case inverse iteration and a constructive early termination criterion. Preconditions are the actual update rules and spectral-start conditions; convergence and stopping guarantees are conclusions. Reuse secular models from Chapter 8.
+
 
 [[node]]
 id = "hardCaseInverseIterationRun"
@@ -14,12 +13,6 @@ deps = ["weightedNorm"]
 
 [[node]]
 id = "regularizationStepTermination"
-kind = "definition"
-desc = '''
-Define the three stopping tests (9.3.14): m^R(s,σ,r)≤m^R(0,σ,r); ||∇m^R(s,σ,r)||_(M⁻¹)≤(θ1/2) ||s||_M²; and λmin of the M-scaled Hessian of m^R at s at least −θ2 ||s||_M, for θ1,θ2>0. Use the source convention for generalized eigenvalues. These tests are predicates on an actual model, not fields stating that any chosen step passes them.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 9.3"
-deps = ["regularizationSubproblemModel"]
 
 [[node]]
 id = "theorem_9_3_1"
@@ -62,3 +55,13 @@ Then \( s = s\left( {\lambda }_c\right) \) satisfies the stopping rules (9.3.14)
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 9.3.2 (OCR Markdown line 10385)"
 deps = ["secularFunction", "regularizationStepTermination"]
+wrong = '''
+Take E=R²,M=4I,H=−8I,τ=2,σ=1,r=3,g=0,s=(1/2,0),θ1=2,θ2=1.
+The shifted pencil is zero and π=1. The scalar tests are1≤9,1≤1 and−1≤−1.
+The actual Euclidean Hessian on v=(0,1) equals−4, whereas9.3.14c requires≥−1.
+The weighted Hessian bound is correct and recovers the Euclidean result forM=I.
+'''
+
+[[node]]
+id = "theorem_9_3_2_scaled"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 9.3.2 (metric-scaled correction of Equation 9.3.14c)"
