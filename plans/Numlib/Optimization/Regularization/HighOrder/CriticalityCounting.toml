@@ -1,0 +1,13 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "trialCountFactor"
+
+[[node]]
+id = "one_le_trialCountFactor"
+
+[[node]]
+id = "trialCountOffset"
+
+[[node]]
+id = "Run.iterations_le"

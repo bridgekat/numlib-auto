@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.CriticalityComplexity
 import Numlib.Optimization.Regularization.HighOrder.RunTarget
 import Numlib.Optimization.HighOrder.StepLower
 import Numlib.Optimization.Regularization.HighOrder.CriticalityObstruction
@@ -623,5 +624,41 @@ abbrev arqpRun {n p q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (P : HighOrderRegularization.Settings p q) (ε : Fin q → ℝ)
     (D : HighOrderRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
     (N : ℕ) : Prop := HighOrderRegularization.Run f P ε D N
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion EvaluationComplexity
+
+/-- Theorem12.2.14: full exact ARqp evaluation complexity. Positive constants
+precede all accuracies and actual executions. The finite rate minimum has
+exponents `(p+1)/(p-j+1)` for q at most two and `j*(p+1)/p` otherwise. Every
+function trial plus initialization and every derivative point plus initialization
+is counted, with the printed additive two in the derivative budget. Both
+actual-radius and low-order unit-radius true criticality are certified.
+The safe scalar comparison changes only the existential proof constants;
+the algorithm's primitive guards and printed radius floor are retained. -/
+theorem theorem_12_2_14 {n p q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (P : HighOrderRegularization.Settings p q) (x₀ : EuclideanSpace ℝ (Fin n))
+    (hf : ContDiff ℝ p f) {L flow : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, 1 ≤ i → i ≤ p → ∀ y z,
+      ‖iteratedFDeriv ℝ i f y - iteratedFDeriv ℝ i f z‖ ≤ L * ‖y - z‖)
+    (hlow : ∀ x, flow ≤ f x) :
+    ∃ κs > 0, ∃ κa > 0, ∃ κc > 0,
+      ∀ (ε : Fin q → ℝ)
+        (D : HighOrderRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q),
+      D.point 0 = x₀ →
+      (∀ N, (∀ k < N, ¬HighOrderRegularization.TargetAt f P ε D k) → arqpRun f P ε D N) →
+      ∃ (K : ℕ) (δ : Fin q → ℝ), arqpRun f P ε D K ∧
+        HighOrderRegularization.TargetAt f P ε D K ∧
+        (∀ k < K, ¬HighOrderRegularization.TargetAt f P ε D k) ∧
+        HighOrderRegularization.OptimalityAt f ε (D.point K) δ ∧
+        (q ≤ 2 → ∀ a, TaylorModel.criticality f (modelOrder a) (D.point K) 1 ≤
+          ε a / (modelOrder a).factorial) ∧
+        ((K + 1 : ℕ) : ℝ) ≤
+          κa * (f x₀ - flow) / HighOrderRegularization.accuracyFactor P ε + κc ∧
+        (((successfulIterations {i | P.eta1 ≤ D.ratio i} K).card + 1 : ℕ) : ℝ) ≤
+          κs * (f x₀ - flow) / HighOrderRegularization.accuracyFactor P ε + 2 :=
+  HighOrderRegularization.evaluation_complexity f P x₀ hf hL hlip hlow
 
 end CartisGouldToint
