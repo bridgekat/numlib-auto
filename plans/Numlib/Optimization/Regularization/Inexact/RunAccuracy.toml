@@ -1,0 +1,49 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "OptimalityAt"
+
+[[node]]
+id = "TargetAt"
+
+[[node]]
+id = "targetAt_iff"
+
+[[node]]
+id = "envelopeInitial"
+
+[[node]]
+id = "accuracyEnvelope"
+
+[[node]]
+id = "accuracyEnvelope_updates"
+
+[[node]]
+id = "Run.request_le_envelope"
+
+[[node]]
+id = "Run.accuracy_only_implies_target"
+
+[[node]]
+id = "regularizedAccuracyCoefficient"
+
+[[node]]
+id = "regularizedAccuracyThreshold"
+
+[[node]]
+id = "regularizedAccuracyThreshold_pos"
+
+[[node]]
+id = "regularizedAccuracyThreshold_le_verification"
+
+[[node]]
+id = "regularizedAccuracyThreshold_le_requests"
+
+[[node]]
+id = "Run.accuracy_reductions_le"
+
+[[node]]
+id = "log_regularizedAccuracyThreshold_ratio"
+
+[[node]]
+id = "Run.accuracy_reductions_le_log"
