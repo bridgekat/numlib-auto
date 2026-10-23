@@ -1,0 +1,19 @@
+desc = "Finite-order smooth gluing and exact iterated derivatives across a real breakpoint, followed by Lipschitz gluing with the same constant."
+
+[[node]]
+id = "hasDerivAt_piecewise_Iic"
+
+[[node]]
+id = "differentiable_piecewise_Iic"
+
+[[node]]
+id = "deriv_piecewise_Iic"
+
+[[node]]
+id = "iteratedDeriv_piecewise_Iic"
+
+[[node]]
+id = "contDiff_piecewise_Iic"
+
+[[node]]
+id = "LipschitzOnWith.piecewise_Iic"
