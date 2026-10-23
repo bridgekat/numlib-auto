@@ -1,0 +1,16 @@
+namespace = "QuadraticOptimality"
+
+[[node]]
+id = "fderiv_model_eq"
+
+[[node]]
+id = "fderiv_fderiv_model_apply"
+
+[[node]]
+id = "iteratedFDeriv_two_model"
+
+[[node]]
+id = "taylor_two_model"
+
+[[node]]
+id = "gradient_model"

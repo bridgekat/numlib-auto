@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Convex.DecreaseCounterexample
 import Numlib.Optimization.Regularization.Convex.FirstOrderStep
 import Numlib.Optimization.Regularization.Convex.FirstOrderComplexity
 import Numlib.Optimization.Regularization.Convex.StepExistence
@@ -80,5 +81,41 @@ theorem theorem_6_2_5 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
               κS * (f (D.point 0) - flow) / ε ^ (((p + 1 : ℕ) : ℝ) / p) + 2 :=
   ConvexRegularization.exists_uniform_first_order_complexity P hclosed hS hCS hC hf hL
     hlip hlow
+
+section DecreaseCounterexample
+open ConvexRegularization.DecreaseCounterexample
+
+/-- **Counterexample to the literal coefficient of Lemma6.2.2.** The genuine
+p=2 first-order-only constrained execution has an exactly stationary improving
+model trial. Both true criticality tests fail at the legal requested accuracy.
+The literal coefficient with p! predicts a decrease larger than the actual
+quadratic decrease. The model penalty uses(p+1)!, as reflected by the separately
+proved fixed-tolerance decrease helpers. -/
+theorem lemma_6_2_2_counterexample :
+    IsClosed (univ : Set E) ∧ Convex ℝ (univ : Set E) ∧ (univ : Set E).Nonempty ∧
+      ContDiff ℝ 2 objective ∧ 0 < L ∧
+      (∀ x y, ‖iteratedFDeriv ℝ 2 objective x - iteratedFDeriv ℝ 2 objective y‖ ≤
+        L * ‖x-y‖) ∧
+      0 < epsilon ∧ epsilon < 1 ∧ ConvexRegularization.parameterCap settings L = 1 ∧
+      ConvexRegularization.Run objective univ settings epsilon data 1 ∧
+      settings.eta1 ≤ data.ratio 0 ∧
+      epsilon < TaylorModel.constrainedCriticality objective 1 univ (data.point 0) 1 ∧
+      epsilon < TaylorModel.constrainedCriticality objective 1 univ (data.point 1) 1 ∧
+      fderiv ℝ (HighOrderRegularization.model objective 2 0 1) v = 0 ∧
+      objective (data.point 0) - objective (data.point 1) = 667/4000 ∧
+      printedCoefficient = settings.eta1 * settings.sigmaMin / (2 : ℕ).factorial *
+        ((2 : ℕ).factorial * (1-settings.theta) /
+          (L + ConvexRegularization.parameterCap settings L)) ^ (3/2 : ℝ) ∧
+      printedCoefficient * epsilon ^ (3/2 : ℝ) = 342657/2000000 ∧
+      ¬printedCoefficient * epsilon ^ (3/2 : ℝ) <
+        objective (data.point 0) - objective (data.point 1) := by
+  refine ⟨isClosed_univ,convex_univ,⟨0,mem_univ _⟩,objective_contDiff 2,
+    by norm_num [L],objective_lipschitz,epsilon_bounds.1,
+    epsilon_bounds.2.trans (by norm_num),parameter_cap,run,
+    by norm_num [settings,data],initial_fails,endpoint_fails,model_derivative_zero,
+    ?_,rfl,printed_decrease_value,printed_decrease_fails⟩
+  norm_num [data,objective_values.1,objective_values.2]
+
+end DecreaseCounterexample
 
 end CartisGouldToint

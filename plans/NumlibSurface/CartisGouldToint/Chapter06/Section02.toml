@@ -260,6 +260,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_6_2_2"
+wrong = "The supplied literal coefficient uses eta1*sigmaMin/p!, exceeding the model penalty coefficient eta1*sigmaMin/(p+1)!. lemma_6_2_2_counterexample gives a genuine p=2 first-order-only ARp-CC execution on the Euclidean plane with a smooth quadratic, constant actual Hessian, positive Lipschitz bound1/12000, exact parameter cap1, zero actual model derivative, strict model improvement and actual ratio1. Both initialized and endpoint criticalities exceed the legal accuracy below1/2. The printed coefficient times epsilon^(3/2) equals342657/2000000, while the actual objective drop is667/4000, contradicting the first required strict decrease. Only the first-order test is enabled, so the source does not require model Hessian positivity. The separate FixedStep helpers use the genuine(p+1)! penalty factor."
 kind = "theorem"
 desc = '''
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -361,3 +362,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 [[node]]
 id = "arpFirstOrderConvexData"
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm6.2.2"
+
+[[node]]
+id = "lemma_6_2_2_counterexample"
+source = "Cartis, Gould and Toint, Lemma6.2.2 literal first-order decrease coefficient with p!"

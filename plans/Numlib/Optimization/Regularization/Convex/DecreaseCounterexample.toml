@@ -1,0 +1,91 @@
+namespace = "ConvexRegularization.DecreaseCounterexample"
+
+[[node]]
+id = "E"
+
+[[node]]
+id = "vec"
+
+[[node]]
+id = "H"
+
+[[node]]
+id = "g"
+
+[[node]]
+id = "v"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "H_apply"
+
+[[node]]
+id = "H_symmetric"
+
+[[node]]
+id = "v_norm"
+
+[[node]]
+id = "objective_contDiff"
+
+[[node]]
+id = "objective_gradient"
+
+[[node]]
+id = "objective_lipschitz"
+
+[[node]]
+id = "taylor_exact"
+
+[[node]]
+id = "objective_values"
+
+[[node]]
+id = "model_derivative_zero"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "L"
+
+[[node]]
+id = "epsilon"
+
+[[node]]
+id = "epsilon_bounds"
+
+[[node]]
+id = "parameter_cap"
+
+[[node]]
+id = "data"
+
+[[node]]
+id = "criticality_formula"
+
+[[node]]
+id = "initial_fails"
+
+[[node]]
+id = "endpoint_fails"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "printedCoefficient"
+
+[[node]]
+id = "accuracy_product"
+
+[[node]]
+id = "rational_power"
+
+[[node]]
+id = "printed_decrease_value"
+
+[[node]]
+id = "printed_decrease_fails"
