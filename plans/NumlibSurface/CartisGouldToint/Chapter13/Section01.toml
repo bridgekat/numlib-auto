@@ -44,38 +44,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_13_1_4"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.1.4: Lower bound on the trust-region radius (TRqIDA)
-
-Suppose that f.D0qL holds. Then the TRqIDA algorithm generates
-
-\[
-{\Delta }_{k} \geq  \begin{cases} \min \left\{  {{\gamma }_{1}\vartheta ,{\kappa }_{\Delta }\mathop{\min }\limits_{{i \in  {\mathcal{T}}_{k}}}{\widehat{\phi }}_{f, i}}\right\}  & \text{ if }{\mathcal{T}}_{k} \neq  \varnothing , \\  {\gamma }_{1}\vartheta & \text{ otherwise } \end{cases}\tag{13.1.30}
-\]
-
-for all \( k \geq  0 \) , where \( {\widehat{\phi }}_{f, i} \) is defined as in (13.1.25) and
-
-\[
-\begin{gathered}{\kappa }_{\Delta }\overset{\text{ def }}{ = }\min \left\lbrack  {1,\frac{{\gamma }_{1}\left( {1 - {\eta }_{2}}\right) }{{L}_{f} + 4\left( {q + 1}\right) !{\kappa }_{s}{\kappa }_{\nabla ,\max }}}\right\rbrack \\ \times  \min \left\lbrack  {\vartheta ,\frac{{\Delta }_0\mathop{\min }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\delta }_0^j}{{2q}\left( {\mathop{\max }\limits_{i \in  \left\lbrack  {1 : q}\right\rbrack  }\begin{Vmatrix}{{\nabla }_x^{i}f\left( {x}_0\right) }\end{Vmatrix} + {\kappa }_{\nabla ,\max }{\kappa }_h}\right) }}\right\rbrack  .\end{gathered}\tag{13.1.31}
-\]
-
-Also, for all \( k \geq  0 \) , we have
-
-\[
-{\delta }_k \geq  \varsigma {\kappa }_{\delta }{\epsilon }_{\min }\tag{13.1.32}
-\]
-
-where
-
-\[
-{\kappa }_{\delta }\overset{\text{ def }}{ = }\frac{1}{2}{\kappa }_{\Delta }\text{ . }\tag{13.1.33}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.4 (OCR Markdown line 13878)"
-deps = ["lemma_13_1_3"]
 
 [[node]]
 id = "lemma_13_1_5"
@@ -411,3 +380,6 @@ id = "idaScaledGap"
 
 [[node]]
 id = "idaPrefixGap"
+
+[[node]]
+id = "idaModelTrace"

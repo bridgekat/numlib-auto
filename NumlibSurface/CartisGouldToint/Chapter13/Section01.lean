@@ -2,6 +2,7 @@ import Numlib.Analysis.Calculus.TaylorModel
 import Numlib.Optimization.Regularization.Inexact.ModelDecrease
 import Numlib.Optimization.Regularization.Inexact.RadiusLoop
 import Numlib.Optimization.TrustRegion.Inexact.Acceptance
+import Numlib.Optimization.TrustRegion.Inexact.Radius
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -250,5 +251,56 @@ theorem lemma_13_1_11 {n p j : ℕ}
     (by positivity : 0 < L + κmax * κh) hσ hζ hε hδ₀ hδ₀1
     (fun a hja hap => TaylorModel.norm_jet_le_of_lipschitz_oracle
       (by linarith) hκh hlip A x κ accuracy hκ haccuracy horacle (by omega) hap) d hd
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The TRqIDA model, derivative oracle, requested accuracy, ratio and update
+components needed for the radius analysis. It specifies primitive operations,
+not the whole program or any of its radius conclusions. -/
+abbrev idaModelTrace {n q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (T : Set ℕ) (j : ℕ → Fin q) (x d s : ℕ → EuclideanSpace ℝ (Fin n))
+    (Δ ρ : ℕ → ℝ) (ε : Fin q → ℝ) (accuracy : ℕ → ℕ → ℝ)
+    (ζ θ κs κmax η₁ η₂ γ₁ γ₂ γ₃ Δmax : ℝ) (N : ℕ) : Prop :=
+  InexactTrustRegion.ModelTrace f A T j x d s Δ ρ ε accuracy
+    ζ θ κs κmax η₁ η₂ γ₁ γ₂ γ₃ Δmax N
+
+/-- Lemma 13.1.4: the inclusive trial-prefix minimum gives the stated trust-radius
+floor, with its separate empty-prefix case, and every actual optimality radius
+satisfies (13.1.32). The source constant retains the printed initial radius and
+derivative maximum. The minimum of the initial radius powers is its qth power,
+since all orders from one through q are tested and the radius is at most one. -/
+theorem lemma_13_1_4 {n q : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {T : Set ℕ} {j : ℕ → Fin q} {x d s : ℕ → EuclideanSpace ℝ (Fin n)}
+    {Δ ρ : ℕ → ℝ} {ε : Fin q → ℝ} {accuracy : ℕ → ℕ → ℝ}
+    {ζ θ κs κmax κh η₁ η₂ γ₁ γ₂ γ₃ Δmax L : ℝ} {N k : ℕ}
+    (h : idaModelTrace f A T j x d s Δ ρ ε accuracy
+      ζ θ κs κmax η₁ η₂ γ₁ γ₂ γ₃ Δmax N)
+    (hf : ContDiff ℝ q f) (hL : 1 ≤ L) (hκh : 0 ≤ κh)
+    (hlip : ∀ a, 1 ≤ a → a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (hkN : k ≤ N) :
+    let κΔ := InexactTrustRegion.radiusConstant f h.order_pos (x 0)
+      θ (Δ 0) γ₁ η₂ L κs κmax κh
+    (if hk : (InexactTrustRegion.trialPrefix T k).Nonempty then
+      min (γ₁ * θ) (κΔ * InexactTrustRegion.prefixGapOfNonempty A T j Δ d θ k hk)
+      else γ₁ * θ) ≤ Δ k ∧
+    ζ * (κΔ / 2) * InexactTrustRegion.minimumAccuracy h.order_pos ε ≤
+      InexactTrustRegion.optimalityRadius θ (Δ k) := by
+  classical
+  dsimp only
+  have hκ := InexactTrustRegion.radiusConstant_bounds (L := L) f h.order_pos (x 0)
+    h.cap_pos.le h.cap_le_one h.updates.initial_pos.le h.updates.gamma1_pos.le
+    h.updates.eta2_lt_one.le (by linarith : 0 ≤ L) h.request_factor_nonneg
+    h.oracle_constant_nonneg hκh
+  refine ⟨?_, h.optimalityRadius_lower hf hL hlip hκ.2 hkN⟩
+  split_ifs with hk
+  · exact h.prefix_radius_lower hf hL hlip hκ.2 hkN hk
+  · exact h.radius_lower_of_no_trials hkN hk
 
 end CartisGouldToint

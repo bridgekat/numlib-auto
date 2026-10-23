@@ -1,0 +1,13 @@
+namespace = "EvaluationComplexity.TrialTrustRegionUpdates"
+
+[[node]]
+id = "gamma1_mul_le"
+
+[[node]]
+id = "le_next_of_very_successful"
+
+[[node]]
+id = "min_cap_scaled_gap_le"
+
+[[node]]
+id = "restrict"

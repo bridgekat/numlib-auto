@@ -1,0 +1,46 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "prefixGapOfNonempty"
+
+[[node]]
+id = "prefixGapOfNonempty_le"
+
+[[node]]
+id = "prefixGapOfNonempty_eq"
+
+[[node]]
+id = "radiusConstant"
+
+[[node]]
+id = "radiusConstant_bounds"
+
+[[node]]
+id = "SelectedTrials.prefixGapOfNonempty_lower"
+
+[[node]]
+id = "ModelTrace"
+
+[[node]]
+id = "ModelTrace.restrict"
+
+[[node]]
+id = "ModelTrace.tensor_error"
+
+[[node]]
+id = "ModelTrace.very_successful"
+
+[[node]]
+id = "ModelTrace.radius_floor"
+
+[[node]]
+id = "ModelTrace.prefix_radius_lower"
+
+[[node]]
+id = "ModelTrace.radius_lower_of_no_trials"
+
+[[node]]
+id = "ModelTrace.optimalityRadius_lower"
+
+[[node]]
+id = "minimumRadiusPower_eq"
