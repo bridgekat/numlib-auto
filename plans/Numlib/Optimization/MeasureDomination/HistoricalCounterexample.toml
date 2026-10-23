@@ -1,0 +1,49 @@
+namespace = "MeasureDomination.HistoricalCounterexample"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "measure"
+
+[[node]]
+id = "iterate"
+
+[[node]]
+id = "objective_contDiff"
+
+[[node]]
+id = "measure_continuous"
+
+[[node]]
+id = "measure_zero_iff"
+
+[[node]]
+id = "dominated"
+
+[[node]]
+id = "measure_iterate"
+
+[[node]]
+id = "measure_iterate_pos"
+
+[[node]]
+id = "pastMeasure_le_twice"
+
+[[node]]
+id = "historical_decrease"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "not_tendsto_measure"
+
+[[node]]
+id = "not_tendsto_successful_measure"
+
+[[node]]
+id = "gap_tendsto_zero"
+
+[[node]]
+id = "pastMeasure_tendsto_zero"

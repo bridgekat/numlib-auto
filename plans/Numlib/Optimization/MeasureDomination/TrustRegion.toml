@@ -1,0 +1,22 @@
+namespace = "MeasureDomination"
+
+[[node]]
+id = "pastMeasure"
+
+[[node]]
+id = "pastMeasure_le"
+
+[[node]]
+id = "le_pastMeasure"
+
+[[node]]
+id = "pastMeasure_attains"
+
+[[node]]
+id = "TRRun"
+
+[[node]]
+id = "TRRun.gap_antitone"
+
+[[node]]
+id = "TRRun.explicit_decrease"

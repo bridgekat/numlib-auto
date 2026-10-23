@@ -10,11 +10,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "trMeasureRun"
-kind = "definition"
-desc = '''
-A monotonic TRψ,ν trace has ν≥1, κν>0, infinite successful set S before possible termination, x_(k+1)=x_k off S, the same density bound as ARψ,ν, and f(x_k)−f(x_(k+1))≥κν*min_{0≤i≤k}(ψ(x_i)^ν) for k∈S, exactly (5.3.28). The run terminates if ψ(x_k)=0. Use finite traces and continued traces consistently so termination does not conflict with an infinite S.
-'''
-deps = ["measureDominated"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.3"
 
 [[node]]
@@ -234,6 +229,7 @@ In the linear and sublinear cases, the complexities of adaptive regularization-l
 '''
 deps = ["theorem_5_1_7", "theorem_5_3_3", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.9 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6632)"
+wrong = "The actual successful measures need not converge to zero under historical-minimum decrease. theorem_5_3_9_counterexample gives a globally smooth quadratic on the real plane and a continuous nonnegative measure vanishing exactly at global minimizers, with level2 domination and an all-success TR run of exponent4. The gaps and historical minimum converge to zero, but every even current measure is one. The gap and first-hitting complexity claims require a separate corrected companion; they are not refuted by this example."
 
 [[node]]
 id = "theorem_5_3_10"
@@ -359,3 +355,13 @@ id = "measurePolynomialComplexity"
 
 [[node]]
 id = "measureDoubleLogarithmicComplexity"
+
+[[node]]
+id = "theorem_5_3_9_counterexample"
+source = "Cartis–Gould–Toint Theorem5.3.9: counterexample to convergence of actual successful measures under historical-minimum decrease."
+
+[[node]]
+id = "theorem_5_3_9_corrected"
+kind = "theorem"
+desc = "Full gap power rates and initialized evaluation counts of Theorem5.3.9, and power rates for the historical measure and first actual measure hitting time. Constants precede every accuracy. Replace only the false convergence of all current successful measures by convergence of their historical minimum; retain the true first-hitting conclusions."
+deps = ["trMeasureRun", "measureDominated"]

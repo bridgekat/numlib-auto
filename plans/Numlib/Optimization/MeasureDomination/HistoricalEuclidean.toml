@@ -1,0 +1,13 @@
+namespace = "MeasureDomination.HistoricalCounterexample"
+
+[[node]]
+id = "coordinatePair"
+
+[[node]]
+id = "fromPair"
+
+[[node]]
+id = "coordinatePair_fromPair"
+
+[[node]]
+id = "euclidean_counterexample"

@@ -1,3 +1,4 @@
+import Numlib.Optimization.MeasureDomination.HistoricalEuclidean
 import Numlib.Optimization.MeasureDomination.Superlinear
 import Numlib.Optimization.MeasureDomination.Polynomial
 import Numlib.Optimization.MeasureDomination.Linear
@@ -15,6 +16,10 @@ faster or reach its minimum in finitely many steps. A genuine exact recurrence
 supplies the sublinear upper envelope. Source (5.3.14)'s corrupted subscript is
 `κν / κψ^(ν/μ), ν/μ`. The printed iteration and accepted-step counts exclude
 initialization; separate explicit evaluation bounds add the initial call.
+
+The historical-measure TR class has a genuine smooth-objective, continuous-measure
+counterexample to Theorem5.3.9's assertion that current successful measures
+converge to zero. Its gap and historical-measure conclusions remain distinct.
 -/
 
 open Set Filter Topology
@@ -25,6 +30,10 @@ abbrev measureDominated := @MeasureDomination.Dominated
 
 /-- The source ARψ,ν class: next-point successful decrease, rejection, and prefix density. -/
 abbrev arMeasureRun := @MeasureDomination.ARRun
+
+/-- The source TRψ,ν class: actual historical-measure decrease, rejection, prefix
+density and constant continuation after a zero-measure stop. -/
+abbrev trMeasureRun := @MeasureDomination.TRRun
 
 /-- The actual objective gap (5.3.4). -/
 abbrev objectiveGap := @MeasureDomination.gap
@@ -177,5 +186,22 @@ theorem theorem_5_3_3 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
   exact ⟨hr.successful_tendsto_zero hd, hr.successful_superlinear hd hνμ,
     hr.successful_measure_tendsto_zero hd, hr.gap_doublelog_cost hd hνμ, hm,
     hm.to_plain (zero_lt_one.trans_le hr.exponent_ge_one)⟩
+
+/-- A smooth, continuous-measure counterexample to the current-measure
+convergence clause of **Theorem5.3.9**. All trials are accepted in a genuine
+historical-decrease execution with `μ=2<4=ν`. Its gaps and historical measures
+converge to zero, while current measures at successful iterations do not.
+The measure vanishes exactly on the global minimizers. -/
+theorem theorem_5_3_9_counterexample :
+    ∃ (f ψ : EuclideanSpace ℝ (Fin 2) → ℝ)
+      (x : ℕ → EuclideanSpace ℝ (Fin 2)),
+      ContDiff ℝ ⊤ f ∧ Continuous ψ ∧ (∀ z, ψ z = 0 ↔ f z = 0) ∧
+      measureDominated f ψ 0 2 1 ∧ trMeasureRun f ψ x Set.univ 4 (1 / 64) 1 0 ∧
+      MeasureDomination.gap f 0 (x 0) = 1 ∧ (∀ n, 0 < ψ (x n)) ∧
+      Tendsto (fun n => MeasureDomination.gap f 0 (x n)) atTop (nhds 0) ∧
+      Tendsto (MeasureDomination.pastMeasure ψ x) atTop (nhds 0) ∧
+      ¬Tendsto (fun n => ψ (x (MeasureDomination.successIndex Set.univ n)))
+        atTop (nhds 0) :=
+  MeasureDomination.HistoricalCounterexample.euclidean_counterexample
 
 end CartisGouldToint
