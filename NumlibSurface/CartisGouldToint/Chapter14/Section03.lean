@@ -1,4 +1,5 @@
 import Numlib.Optimization.Constrained.LagrangianStability
+import Numlib.Optimization.Constrained.TargetCounterexample
 import Numlib.Optimization.LeastNorm.Counterexample
 import Numlib.Optimization.LeastNorm.Budget
 import Numlib.Optimization.LeastNorm.EvaluationCounterexample
@@ -199,5 +200,13 @@ theorem theorem_14_3_4_counterexample :
     printed_evaluation_bound_false⟩
   intro a
   fin_cases a <;> norm_num [exponent]
+
+/-- **Counterexample to Lemma14.3.5.** A bounded smooth objective and linear
+equality constraint admit an actual feasible phase-one return and one exact
+phase-two inner call. The genuine target reset terminates with all requested
+merit criticalities satisfied, but no multiplier satisfies both printed first-
+and second-order Lagrangian conclusions. The first bound forces the multiplier
+to zero, and a feasible tangent displacement refutes the second bound. -/
+alias lemma_14_3_5_counterexample := Constrained.TargetCounterexample.verified_counterexample
 
 end CartisGouldToint

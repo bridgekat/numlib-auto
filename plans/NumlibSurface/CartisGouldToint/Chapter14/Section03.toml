@@ -165,6 +165,8 @@ and
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.5 (OCR Markdown line 17237)"
 deps = ["tpqpgcRun"]
 
+wrong = "False for an actual two-phase q=p=2 execution on the Euclidean plane: f(x)=sin(x0)/10, c(x)=x1, all tolerances 1/10, theta=1/2 and beta=1/4. Both global objective bounds and all smoothness, global derivative bounds and Lipschitz bounds hold. Phase one returns (pi/2,0), one exact old-merit inner call returns zero, and branch2(a) resets the target to -1/10. The actual reset-merit checks pass at unit radii. The first printed Lagrangian bound forces every admissible multiplier to zero; tangent direction (-1,0) then gives second-order criticality at least 1/10 versus the printed upper bound 11/200. The formal verified_counterexample packages all regularity and execution facts. The proof drops a target-gap scaling factor in the tangent cross term."
+
 [[node]]
 id = "lemma_14_3_6"
 kind = "theorem"
@@ -325,3 +327,6 @@ id = "theorem_14_3_4_corrected"
 
 [[node]]
 id = "theorem_14_3_4_counterexample"
+
+[[node]]
+id = "lemma_14_3_5_counterexample"

@@ -142,6 +142,12 @@ recorded on the relevant plan nodes. In particular:
   above the printed bound of about 31407.86. The valid geometric companion
   retains the primal and dual accuracy exponents.
 
+* Lemma 14.3.5's simultaneous multiplier conclusions fail for a bounded sine
+  objective and a linear equality constraint on the Euclidean plane. An actual
+  phase-one return, inner solve and target reset pass every merit stopping check.
+  The first Lagrangian bound forces the multiplier to zero, where a feasible
+  tangent direction refutes the printed second-order bound.
+
 * Theorem 5.3.9's current-measure convergence claim fails for a smooth objective
   and a continuous measure on the Euclidean plane: all trials can satisfy the
   historical-minimum decrease while the current measures equal one at every

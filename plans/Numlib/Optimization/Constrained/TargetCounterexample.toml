@@ -1,0 +1,163 @@
+namespace = "Constrained.TargetCounterexample"
+
+[[node]]
+id = "E"
+
+[[node]]
+id = "P"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "constraint"
+
+[[node]]
+id = "resetMerit"
+
+[[node]]
+id = "objective_hasFDerivAt"
+
+[[node]]
+id = "constraint_hasFDerivAt"
+
+[[node]]
+id = "objective_fderiv"
+
+[[node]]
+id = "resetMerit_fderiv"
+
+[[node]]
+id = "resetMerit_second"
+
+[[node]]
+id = "reset_decrement_one"
+
+[[node]]
+id = "reset_decrement_two"
+
+[[node]]
+id = "reset_criticality_two_le"
+
+[[node]]
+id = "vec"
+
+[[node]]
+id = "vec_norm_sq"
+
+[[node]]
+id = "lagrangian_gradient"
+
+[[node]]
+id = "first_bound_forces_zero"
+
+[[node]]
+id = "lagrangian_fderiv"
+
+[[node]]
+id = "lagrangian_second_zero"
+
+[[node]]
+id = "lagrangian_decrement_two"
+
+[[node]]
+id = "tangent"
+
+[[node]]
+id = "tangent_criticality_lower"
+
+[[node]]
+id = "no_multiplier_satisfies_printed_bounds"
+
+[[node]]
+id = "reset_gradient"
+
+[[node]]
+id = "reset_criticality_one"
+
+[[node]]
+id = "residual"
+
+[[node]]
+id = "merit_residual"
+
+[[node]]
+id = "objective_contDiff"
+
+[[node]]
+id = "constraint_contDiff"
+
+[[node]]
+id = "merit_contDiff"
+
+[[node]]
+id = "old_merit_isMin"
+
+[[node]]
+id = "old_criticality_zero"
+
+[[node]]
+id = "innerCall"
+
+[[node]]
+id = "inner_sound"
+
+[[node]]
+id = "initial"
+
+[[node]]
+id = "actual_targets"
+
+[[node]]
+id = "actual_inner_return"
+
+[[node]]
+id = "reset_stopping_checks"
+
+[[node]]
+id = "cosine_hasFDerivAt"
+
+[[node]]
+id = "objective_second_apply"
+
+[[node]]
+id = "coordinate_bound"
+
+[[node]]
+id = "scalar_coefficient_lipschitz"
+
+[[node]]
+id = "objective_first_lipschitz"
+
+[[node]]
+id = "objective_second_lipschitz"
+
+[[node]]
+id = "objective_first_bound"
+
+[[node]]
+id = "objective_second_bound"
+
+[[node]]
+id = "constraint_second_zero"
+
+[[node]]
+id = "constraint_first_constant"
+
+[[node]]
+id = "constraint_first_bound"
+
+[[node]]
+id = "source_regularity"
+
+[[node]]
+id = "phase_one_run"
+
+[[node]]
+id = "phase_one_primal"
+
+[[node]]
+id = "tangent_eq_feasible_kernel"
+
+[[node]]
+id = "verified_counterexample"
