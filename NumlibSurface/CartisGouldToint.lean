@@ -20,6 +20,8 @@ import NumlibSurface.CartisGouldToint.Chapter05.Section01
 import NumlibSurface.CartisGouldToint.Chapter07.Section01
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
 import NumlibSurface.CartisGouldToint.Chapter08.Section02
+import NumlibSurface.CartisGouldToint.Chapter09.Section01
+import NumlibSurface.CartisGouldToint.Chapter09.Section03
 import NumlibSurface.CartisGouldToint.Chapter12.Section01
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 import NumlibSurface.CartisGouldToint.Chapter13.Section01
@@ -88,9 +90,16 @@ recorded on the relevant plan nodes. In particular:
   The corrected actual derivative preserves Lemma 3.3.8's printed bound.
   In Theorem 3.3.9, the derivative budget is `+2`, as its proof and one part
   of its inconsistent display state: one final successful trial and initialization.
-* The nonempty-direction guard in Algorithm 4.1.1 can prevent termination at a
-  stationary point, where no strictly improving model step exists. Theorem 4.1.5
-  is marked incorrect as written; its corrected companion removes this guard.
+* The nonempty-direction guards in Algorithms 4.1.1 and 5.1.1 can prevent
+  termination at a stationary point, where no strictly improving model step exists.
+  Theorems 4.1.5 and 5.1.7 are marked incorrect as written; separate corrected
+  companions remove these guards. The least-squares counterexample uses an actual
+  smooth positive residual and satisfies the printed integer restrictions.
+* The derivative vectors in Algorithm 9.1.1 use the minus sign from (8.2.29).
+  With this sign restored they are the actual secular-solution derivatives. The
+  scalar outputs also admit a literal plus-sign interpretation with alternating
+  vector signs. The following Cholesky prose has an extra factor two: its odd
+  output is `−β‖y‖²`, as the algorithm itself gives.
 * The short-step accuracy guard in Algorithm 13.1.2 makes the printed parameter
   bounds in Lemmas 13.1.14 and 13.3.5 false when the initial accuracy cap exceeds
   the step-accuracy coefficient. Formal one-trial counterexamples use the zero
