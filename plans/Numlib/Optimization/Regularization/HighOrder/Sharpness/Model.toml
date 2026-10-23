@@ -1,0 +1,127 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "eval_of_matches"
+
+[[node]]
+id = "modelPolynomial"
+
+[[node]]
+id = "model_eq_polynomial"
+
+[[node]]
+id = "iteratedDeriv_model_eq"
+
+[[node]]
+id = "iteratedDeriv_model_formula"
+
+[[node]]
+id = "coefficient"
+
+[[node]]
+id = "parameter"
+
+[[node]]
+id = "amplitude"
+
+[[node]]
+id = "coefficient_pos"
+
+[[node]]
+id = "parameter_pos"
+
+[[node]]
+id = "amplitude_pos"
+
+[[node]]
+id = "amplitude_div_factorial"
+
+[[node]]
+id = "iteratedDeriv_model_one"
+
+[[node]]
+id = "amplitude_descFactorial"
+
+[[node]]
+id = "parameter_descFactorial"
+
+[[node]]
+id = "iteratedDeriv_model_factored"
+
+[[node]]
+id = "root"
+
+[[node]]
+id = "scale"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "root_pos"
+
+[[node]]
+id = "root_le_one"
+
+[[node]]
+id = "scale_pos"
+
+[[node]]
+id = "step_pos"
+
+[[node]]
+id = "amplitude_step_power"
+
+[[node]]
+id = "inverse_root_power"
+
+[[node]]
+id = "inverse_accuracy_le_horizon"
+
+[[node]]
+id = "exists_uniform_objectives_accuracy"
+
+[[node]]
+id = "coefficient_descFactorial_le_one"
+
+[[node]]
+id = "descFactorial_monotone_low"
+
+[[node]]
+id = "iteratedDeriv_model_bounds"
+
+[[node]]
+id = "model_first_test"
+
+[[node]]
+id = "model_second_test"
+
+[[node]]
+id = "model_third_test"
+
+[[node]]
+id = "stepConditions_of_matches"
+
+[[node]]
+id = "smallModelDirections_eq"
+
+[[node]]
+id = "MatchesJets.value_eq"
+
+[[node]]
+id = "eval_step_of_matches"
+
+[[node]]
+id = "objective_drop_of_matches"
+
+[[node]]
+id = "parameter_div_factorial"
+
+[[node]]
+id = "model_improves_of_matches"
+
+[[node]]
+id = "ratio_eq_one_of_matches"
+
+[[node]]
+id = "modelTrace_of_matches"

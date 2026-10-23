@@ -1,0 +1,58 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "balance"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "horizon"
+
+[[node]]
+id = "drop"
+
+[[node]]
+id = "jet"
+
+[[node]]
+id = "MatchesJets"
+
+[[node]]
+id = "matchesJets_iff"
+
+[[node]]
+id = "point_zero"
+
+[[node]]
+id = "point_succ"
+
+[[node]]
+id = "point_strictMono"
+
+[[node]]
+id = "horizon_pos"
+
+[[node]]
+id = "horizon_mul_power_lt_two"
+
+[[node]]
+id = "initialPolynomial_eq"
+
+[[node]]
+id = "initialPolynomial_derivative"
+
+[[node]]
+id = "objective_residual_zero"
+
+[[node]]
+id = "endpoint_residual_bound"
+
+[[node]]
+id = "dataBound"
+
+[[node]]
+id = "uniform_data"
+
+[[node]]
+id = "exists_uniform_objectives"
