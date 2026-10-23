@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.GuardedCounterexample.PrintedConstants
 import Numlib.Optimization.Regularization.Inexact.Explicit.CurrentBudget
 import Numlib.Optimization.Regularization.Inexact.Explicit.Complexity
 import Numlib.Optimization.HighOrder.CriticalityRadius
@@ -410,4 +411,30 @@ theorem theorem_13_3_8_current_check {n p q : ℕ}
             accuracyCountOffset P.toSettings M S + 1 :=
   InexactRegularization.Explicit.evaluation_complexity_current f P x₀ hf hL hlip hlow
 
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion InexactRegularization.GuardedCounterexample
+
+/-- An actual ARqpEDA execution refutes both fixed-coefficient assertions of
+Lemma13.3.7. Exact function evaluations satisfy all explicit error requests.
+Before literal termination, its actual successful trial violates both printed
+decrease bounds. This finite example makes no claim against complexity
+statements whose constants are existentially quantified. -/
+theorem arqpedaPrintedDecreaseCounterexample :
+    ContDiff ℝ 1 Real.sin ∧
+    (∀ i, i ≤ 1 → ∀ x y, ‖iteratedFDeriv ℝ i Real.sin x -
+      iteratedFDeriv ℝ i Real.sin y‖ ≤ ‖x - y‖) ∧
+    (∀ x, -1 ≤ Real.sin x) ∧
+    InexactRegularization.Explicit.Run Real.sin settings (fun _ => 1 / 2) data 125 ∧
+    (124 ∈ data.trials ∧ settings.eta1 ≤ data.ratio 124 ∧ ‖data.step 124‖ < 1) ∧
+    (∀ k < 125, ¬InexactRegularization.Explicit.StopsAt settings (fun _ => 1 / 2) data k) ∧
+    (∀ k a, data.solvedRadius k a = 1) ∧
+    TaylorModel.jetDecrement (data.jet 124) 1 (data.step 124) <
+      printedModelConstant * (1 / 2 : ℝ) ^ 2 ∧
+    Real.sin (data.point 124) - Real.sin (data.point 125) <
+      settings.eta1 / 2 * printedModelConstant * (1 / 2 : ℝ) ^ 2 :=
+  ⟨source_regularity.1, source_regularity.2.1, source_regularity.2.2, run,
+    successful_short_trial, (fun k _ => never_stops k), unit_solved_radii,
+    model_floor_violated, objective_floor_violated⟩
 end CartisGouldToint

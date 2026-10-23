@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.GuardedCounterexample.PrintedConstants
 import Numlib.Optimization.TrustRegion.Inexact.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.RadiusConsequences
 import Numlib.Optimization.Regularization.Inexact.ParameterCounterexample
@@ -765,7 +766,7 @@ theorem lemma_13_1_16_of_parameter_cap {n p q : ℕ}
 
 /-- **Corrected Lemma 13.1.16.** The actual guarded execution supplies the
 uniform parameter cap, using the documented correction to Lemma13.1.14.
-The literal source result with its original cap remains a separate open target. -/
+The literal original cap is refuted by `arqpidaPrintedBoundsCounterexample`. -/
 theorem lemma_13_1_16_corrected {n p q : ℕ}
     (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
     (hf : ContDiff ℝ p f) {L : ℝ} (hL : 0 ≤ L)
@@ -792,7 +793,7 @@ coefficient is reduced to the minimum of the proved radius coefficient and
 `(1-theta)/(2*q!*C)`; this repairs the unjustified coefficient comparison in the
 shorter-than-radius branch of the source proof. The uniform parameter cap also
 retains the documented guarded-accuracy repair of Lemma13.1.14. The literal
-printed coefficients remain a separate open target. -/
+printed coefficients are refuted by `arqpidaPrintedBoundsCounterexample`. -/
 theorem lemma_13_1_17_corrected {n p q : ℕ}
     (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
     (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
@@ -870,5 +871,41 @@ theorem theorem_13_1_19 {n p q : ℕ}
   exact TaylorModel.criticality_unit_le_of_radius f (D.point K)
     (by unfold modelOrder; omega) (by unfold modelOrder; omega)
     (hopt.radius_mem a).1 (hopt.radius_mem a).2 (hopt.criticality a)
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion InexactRegularization.GuardedCounterexample
+
+/-- An actual scalar ARqpIDA execution refutes the literal fixed constants in
+Lemmas13.1.16,13.1.17 and13.1.18. The globally smooth sine objective has unit
+zeroth/first derivative Lipschitz constants and lower bound minus one. All true
+optimality tests fail throughout. The final accepted short step violates every
+printed obstruction, step, computed-decrease and objective-decrease bound.
+The valid corrected companions retain a cap depending on the initial request. -/
+theorem arqpidaPrintedBoundsCounterexample :
+    ContDiff ℝ 1 Real.sin ∧
+    (∀ i, i ≤ 1 → ∀ x y, ‖iteratedFDeriv ℝ i Real.sin x -
+      iteratedFDeriv ℝ i Real.sin y‖ ≤ ‖x - y‖) ∧
+    (∀ x, -1 ≤ Real.sin x) ∧
+    InexactRegularization.Run Real.sin settings.toSettings (fun _ => 1 / 2)
+      data.toExecutionData 125 ∧
+    (124 ∈ data.trials ∧ settings.eta1 ≤ data.ratio 124 ∧ ‖data.step 124‖ < 1) ∧
+    (∀ k, ¬InexactRegularization.OptimalityAt Real.sin (fun _ : Fin 1 => 1 / 2)
+      (data.point k) (data.startRadius k)) ∧
+    (∀ k a, data.solvedRadius k a = 1) ∧
+    (∀ a : Fin 1, printedCoefficient * ∑ i ∈ Finset.range (modelOrder a),
+      data.startRadius 125 a ^ (i + 1) * ‖data.step 124‖ ^ (1 - (i + 1) + 1) /
+        (i + 1).factorial <
+      (1 - settings.theta) * (1 / 2 : ℝ) * data.startRadius 125 a ^ modelOrder a /
+        (modelOrder a).factorial) ∧
+    ‖data.step 124‖ < (1 - settings.theta) / (2 * printedCoefficient) * (1 / 2 : ℝ) ∧
+    TaylorModel.jetDecrement (data.jet 124) 1 (data.step 124) <
+      printedModelConstant * (1 / 2 : ℝ) ^ 2 ∧
+    Real.sin (data.point 124) - Real.sin (data.point 125) <
+      settings.eta1 / 2 * printedModelConstant * (1 / 2 : ℝ) ^ 2 :=
+  ⟨source_regularity.1, source_regularity.2.1, source_regularity.2.2, ida_run,
+    successful_short_trial, true_failure, unit_solved_radii, weighted_inequality_violated,
+    step_floor_violated, model_floor_violated, objective_floor_violated⟩
 
 end CartisGouldToint

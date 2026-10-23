@@ -1,0 +1,47 @@
+namespace = "InexactRegularization.GuardedCounterexample"
+desc = "Actual finite IDA and EDA iterations refute the literal printed parameter-dependent obstruction, step and decrease constants while satisfying all primitive rules and global regularity."
+
+[[node]]
+id = "printedParameterCap"
+
+[[node]]
+id = "printedCoefficient"
+
+[[node]]
+id = "printedModelConstant"
+
+[[node]]
+id = "printedParameterCap_eq"
+
+[[node]]
+id = "printedCoefficient_eq"
+
+[[node]]
+id = "actual_parameter_exceeds_printed"
+
+[[node]]
+id = "true_failure"
+
+[[node]]
+id = "inequality_violated"
+
+[[node]]
+id = "step_floor_violated"
+
+[[node]]
+id = "model_floor_violated"
+
+[[node]]
+id = "objective_floor_violated"
+
+[[node]]
+id = "successful_short_trial"
+
+[[node]]
+id = "weighted_inequality_violated"
+
+[[node]]
+id = "source_regularity"
+
+[[node]]
+id = "unit_solved_radii"

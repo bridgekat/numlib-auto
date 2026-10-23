@@ -106,6 +106,7 @@ deps = ["arqpedaRun"]
 
 [[node]]
 id = "lemma_13_3_7"
+wrong = "The literal fixed constants are false for an actual full 125-iteration IDA and EDA Run. Formal arqpedaPrintedDecreaseCounterexample: f=sin, p=q=1, all zeroth/first derivative Lipschitz constants=1, lower bound=-1, epsilon=1/2, zeta=1/2, theta=9/10, kappa_s=1/16, known error bound=1, initial derivative cap=2^40, sigma0=sigmaMin=1, eta1=1/4, eta2=3/4, gamma1=1/2, gamma2=2, gamma3=3. Forty legal rejected large global-model steps increase sigma to 2^40; 84 legal accuracy-only iterations make the final exact short global-model minimizer admissible. Its accepted step and computed decrement equal 2^(-40), while all true criticality tests fail at all produced points. The exact printed 13.1.77 cap is 30, so the printed 13.1.79 coefficient is 499/16. The actual step violates 13.1.79/80 and both computed and true decreases violate 13.1.82/83. Both complete operational Run proofs include every Step1/Step2 check, oracle bound, derivative reuse, function request, ratio and update. Corrected companions with the genuine cap remain valid; this finite example does not refute existential complexity theorems."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -115,7 +116,7 @@ Lemma 13.3.7: Model and function decreases (ARqpEDA)
 Suppose that f.D0pL holds. Then the model decrease (13.1.82) holds, with the choice (13.3.3), for every iteration \( k \in  \mathcal{T} \) of the ARqpEDA algorithm before termination. If, in addition, \( k \in  \mathcal{S} \) , then (13.1.83) holds as well.
 
 
-Coverage note: the unrestricted original sharper-rate/fixed-coefficient result remains open. Literal stopping and all initialized evaluation counts are proved without an extra theta-versus-zeta margin by theorem_13_3_8_current_check, with the explicitly coarser epsilon_min^(-(q+1)) rate from current Step1 reference decrease. The effective-margin companion separately retains the sharper source rates under theta<zeta/2. Corrected guarded caps and safe radius coefficients remain explicit; no printed-cap result is assumed.
+Coverage note: the literal fixed-coefficient result is refuted by the actual finite counterexample below. Coarse unconditional stopping and effective-margin sharper-rate companions remain valid.
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.7 (OCR Markdown line 15423)"
 deps = ["lemma_13_3_5", "lemma_13_1_18"]
@@ -218,3 +219,7 @@ source = "Cartis, Gould and Toint, Theorem13.3.8, corrected positive-margin comp
 [[node]]
 id = "theorem_13_3_8_current_check"
 source = "A literal-stopping companion to Theorem13.3.8 from actual current Step1 reference decrease and Step2 comparison, with the explicitly coarser epsilon_min^(-(q+1)) rate. No additional theta<zeta/2 assumption; the original sharper p-dependent rate is not claimed."
+
+[[node]]
+id = "arqpedaPrintedDecreaseCounterexample"
+source = "Actual full operational sine execution refutes the literal fixed parameter-dependent constants; all original numbered payloads are retained with explicit wrong explanations."
