@@ -1,0 +1,34 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "finiteStop"
+
+[[node]]
+id = "initialDirections"
+
+[[node]]
+id = "FirstOrderRun"
+
+[[node]]
+id = "SecondOrderRun"
+
+[[node]]
+id = "FiniteRun"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "finiteStop_iff"
+
+[[node]]
+id = "mem_initialDirections_iff"
+
+[[node]]
+id = "functionEvaluations_eq"
+
+[[node]]
+id = "derivativeEvaluations_eq"
