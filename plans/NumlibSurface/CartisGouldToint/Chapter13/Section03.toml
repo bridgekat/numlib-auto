@@ -59,7 +59,7 @@ evaluations of the inexact derivatives \( \overline{{\nabla }_{x}^{i}f} \) of or
 
 Documented source/OCR correction and formalization requirements: OCR correction: the final condition is φ_(f,j)^(δepsilon)≤εj δepsilon^j/j! for every j, rather than φ_(f,q) on the left for all j.
 '''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.3.4 (OCR Markdown line 15193)"
+source = "Cartis, Gould and Toint, Theorem13.3.4 all clauses. Actual TRqEDA Run and literal StopsAt, true criticality at actual legal radius, five positive constants uniformly before all accuracies/data, exact inverse-minimum powers and logarithmic terms, objective budget2T with no initial objective evaluation, initialized derivative budgetS+A+1. Final source/OCR index is tested j rather than fixed q."
 deps = ["lemma_13_3_2", "lemma_13_3_3", "theorem_13_1_8"]
 
 [[node]]

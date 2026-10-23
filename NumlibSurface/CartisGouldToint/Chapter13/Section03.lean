@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.Inexact.Explicit.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.Explicit.Run
 import Numlib.Optimization.TrustRegion.Inexact.FunctionDecrease
 import Numlib.Optimization.Regularization.Inexact.GuardedCounterexample.PrintedConstants
@@ -486,5 +487,45 @@ abbrev trqedaRun {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (P : InexactTrustRegion.Explicit.Settings q) (ε : Fin q → ℝ)
     (D : InexactTrustRegion.Explicit.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
     (N : ℕ) : Prop := InexactTrustRegion.Explicit.Run f P ε D N
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- **Theorem13.3.4.** The actual TRqEDA execution reaches its first literal
+verified stop with all-order true Taylor criticality at a legal radius. Five
+strictly positive complexity constants precede every accuracy request and run.
+The source inverse-minimum power and logarithmic terms bound both objective
+and derivative evaluations. Step0 excludes the initial objective call, and
+all derivative counts include initialization. The final source/OCR index is
+corrected to the tested order j on both sides of every criticality bound. -/
+theorem theorem_13_3_4 {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (P : InexactTrustRegion.Explicit.Settings q) (x₀ : EuclideanSpace ℝ (Fin n))
+    {Δ₀ L flow : ℝ} (hL : 1 ≤ L) (hf : ContDiff ℝ q f)
+    (hlip : ∀ a, a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (hlow : ∀ y, flow ≤ f y) :
+    ∃ κA > 0, ∃ κB > 0, ∃ κC > 0, ∃ κE > 0, ∃ κF > 0,
+      ∀ (ε : Fin q → ℝ)
+        (D : InexactTrustRegion.Explicit.ExecutionData (EuclideanSpace ℝ (Fin n)) q),
+      D.point 0 = x₀ → D.radius 0 = Δ₀ →
+      (∀ N, (∀ i < N, ¬InexactTrustRegion.Explicit.StopsAt P ε D i) →
+        trqedaRun f P ε D N) →
+      ∃ K, InexactTrustRegion.Explicit.StopsAt P ε D K ∧
+        optimalityRadius P.theta (D.radius K) ∈ Set.Ioc 0 1 ∧
+        (∀ a : Fin q, TaylorModel.criticality f (modelOrder a) (D.point K)
+          (optimalityRadius P.theta (D.radius K)) ≤
+            ε a * optimalityRadius P.theta (D.radius K) ^ modelOrder a /
+              (modelOrder a).factorial) ∧
+        trqedaRun f P ε D K ∧
+        (∀ i < K, ¬InexactTrustRegion.Explicit.StopsAt P ε D i) ∧
+        (InexactTrustRegion.Explicit.functionEvaluations D.trials K : ℝ) ≤
+          κA * (f x₀ - flow) / minimumAccuracy P.order_pos ε ^ (q + 1) +
+          κB * |Real.log (minimumAccuracy P.order_pos ε)| + κC ∧
+        (InexactTrustRegion.derivativeEvaluations D.trials D.ratio P.eta1 K : ℝ) ≤
+          κA * (f x₀ - flow) / minimumAccuracy P.order_pos ε ^ (q + 1) +
+          κE * |Real.log (minimumAccuracy P.order_pos ε)| + κF :=
+  InexactTrustRegion.Explicit.evaluation_complexity f P x₀ hL hf hlip hlow
 
 end CartisGouldToint

@@ -1,0 +1,35 @@
+namespace = "InexactTrustRegion.Explicit"
+desc = "Actual computed stopping gives uniform successful/trial/accuracy counts, finite first verified stop and all objective/initialized derivative complexity bounds for TRqEDA."
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "Run.function_decrease"
+
+[[node]]
+id = "Run.objective_eq_of_not_successful"
+
+[[node]]
+id = "Run.successful_card_le"
+
+[[node]]
+id = "Run.accuracy_card_le"
+
+[[node]]
+id = "Run.trial_card_le"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "Run.functionEvaluations_le"
+
+[[node]]
+id = "Run.derivativeEvaluations_le"
+
+[[node]]
+id = "exists_stopping"
+
+[[node]]
+id = "evaluation_complexity"
