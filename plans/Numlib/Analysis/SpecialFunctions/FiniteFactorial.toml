@@ -1,0 +1,16 @@
+namespace = "Real"
+
+[[node]]
+id = "finiteFactorial"
+
+[[node]]
+id = "finiteFactorial_pos"
+
+[[node]]
+id = "finiteFactorial_nat"
+
+[[node]]
+id = "finiteFactorial_succ"
+
+[[node]]
+id = "finiteFactorial_nat_add"

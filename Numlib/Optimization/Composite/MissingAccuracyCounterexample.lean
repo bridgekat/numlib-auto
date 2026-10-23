@@ -57,7 +57,8 @@ theorem model_min (x t : ℝ) : HighOrderRegularization.model objective 1 x 2 (-
   rw [model_formula,model_formula]
   nlinarith [sq_nonneg (t+x/2)]
 /-- The genuine derivative of the actual regularized model. -/
-theorem model_deriv (x s : ℝ) : deriv (HighOrderRegularization.model objective 1 x 2) s = x+2*s := by
+theorem model_deriv (x s : ℝ) :
+    deriv (HighOrderRegularization.model objective 1 x 2) s = x+2*s := by
   have he : HighOrderRegularization.model objective 1 x 2 = fun s => objective x+x*s+s^2 :=
     funext (model_formula x)
   rw [he]
@@ -86,8 +87,13 @@ theorem output (x : ℝ) : StepOutput objective (fun _ : ℝ => (0 : ℝ)) Trunc
     simpa only [one_mul] using sub_le_sub_left (hm t)
       (regularizedModel objective (fun _ : ℝ => (0 : ℝ)) TruncatedAbs.h 1 x 2 0)
   · intro hs i
-    have hi : InexactTrustRegion.modelOrder i = 1 := by have := i.isLt; unfold InexactTrustRegion.modelOrder;omega
-    have hc : residualModel (fun _ : ℝ => (0 : ℝ)) 1 x = fun _ => 0 := by funext t;exact eval_zero_residual 1 x t
+    have hi : InexactTrustRegion.modelOrder i = 1 := by
+      have := i.isLt
+      unfold InexactTrustRegion.modelOrder
+      omega
+    have hc : residualModel (fun _ : ℝ => (0 : ℝ)) 1 x = fun _ => 0 := by
+      funext t
+      exact eval_zero_residual 1 x t
     rw [hi,hc,criticality_zero_residual _ hh,decrement_zero_residual _ hh]
     change ‖(0 : ℝ)‖ ≤ 1 ∧ settings.zeta *
       TaylorModel.criticality (HighOrderRegularization.model objective 1 x 2) 1 (-x/2) 1 ≤
@@ -148,9 +154,13 @@ theorem check (k : ℕ) : OptimalityCheck objective (fun _ : ℝ => (0 : ℝ)) T
       (data.direction k) (data.selected k) := by
   refine ⟨fun _ => by norm_num [data],?_,?_,?_⟩
   · intro i
-    have hi : InexactTrustRegion.modelOrder i = 1 := by have := i.isLt;unfold InexactTrustRegion.modelOrder;omega
+    have hi : InexactTrustRegion.modelOrder i = 1 := by
+      have := i.isLt
+      unfold InexactTrustRegion.modelOrder
+      omega
     rw [hi]
-    change settings.zeta * criticality objective (fun _ : ℝ => (0 : ℝ)) TruncatedAbs.h 1 (point k) 1 ≤
+    change settings.zeta *
+      criticality objective (fun _ : ℝ => (0 : ℝ)) TruncatedAbs.h 1 (point k) 1 ≤
       decrement objective (fun _ : ℝ => (0 : ℝ)) TruncatedAbs.h 1 (point k) 1
     rw [criticality_formula,decrement_zero_residual objective TruncatedAbs.zero,
       TaylorModel.decrement,taylor_formula,taylor_formula]
@@ -158,7 +168,10 @@ theorem check (k : ℕ) : OptimalityCheck objective (fun _ : ℝ => (0 : ℝ)) T
   · intro hn
     simp [data] at hn
   · intro i hi
-    have hj : InexactTrustRegion.modelOrder i = 1 := by have := i.isLt;unfold InexactTrustRegion.modelOrder;omega
+    have hj : InexactTrustRegion.modelOrder i = 1 := by
+      have := i.isLt
+      unfold InexactTrustRegion.modelOrder
+      omega
     rw [hj]
     simp only [data,decrement_zero_residual objective TruncatedAbs.zero,TaylorModel.decrement,
       taylor_formula]
@@ -182,7 +195,10 @@ theorem run : Run objective (fun _ : ℝ => (0 : ℝ)) TruncatedAbs.h settings
     subst k
     norm_num [data,point,step,settings,ZeroReturnCounterexample.settings]
     ring
-  radius_update := by intro k hk; change (fun _ : Fin 1 => (1 : ℝ)) = if _ then (fun _ => 1) else (fun _ => 1); split_ifs <;> rfl
+  radius_update := by
+    intro k hk
+    change (fun _ : Fin 1 => (1 : ℝ)) = if _ then (fun _ => 1) else (fun _ => 1)
+    split_ifs <;> rfl
 
 /-- All source scalar and residual smoothness and Lipschitz bounds hold globally. -/
 theorem source_regularity : ContDiff ℝ 1 objective ∧
@@ -232,7 +248,8 @@ theorem step_floor_violated : ‖data.step 0‖ < printedStepFloor := by
   rw [printed_constants.2.2]
   norm_num [data,step,point,a]
 /-- Every actual solved radius satisfies the prescribed source floor. -/
-theorem radius_floor (k : ℕ) (i : Fin 1) : printedRadiusCoefficient * epsilon ≤ data.solvedRadius k i := by
+theorem radius_floor (k : ℕ) (i : Fin 1) :
+    printedRadiusCoefficient * epsilon ≤ data.solvedRadius k i := by
   rw [printed_constants.2.1]
   norm_num [epsilon,a,data]
 /-- The actual trial ratio accepts the step. -/
