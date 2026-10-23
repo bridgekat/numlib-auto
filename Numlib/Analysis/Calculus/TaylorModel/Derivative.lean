@@ -133,3 +133,83 @@ theorem domDomCongr_iteratedFDeriv {f : E → F} {p n : ℕ} {x : E}
   ext v
   exact iteratedFDeriv_comp_perm hf hn v σ
 end TaylorModel
+
+namespace TaylorModel
+universe u v
+
+/-- Isometric postcomposition commutes with every iterated derivative, including
+at points where the function is not differentiable. -/
+theorem iteratedFDeriv_comp_isometryEquiv
+    {E F G : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] [NormedAddCommGroup G] [NormedSpace ℝ G]
+    (L : F ≃ₗᵢ[ℝ] G) (f : E → F) (q : ℕ) (x : E) (u : Fin q → E) :
+    iteratedFDeriv ℝ q (L ∘ f) x u = L (iteratedFDeriv ℝ q f x u) := by
+  change iteratedFDeriv ℝ q (L.toContinuousLinearEquiv ∘ f) x u = _
+  rw [L.toContinuousLinearEquiv.iteratedFDeriv_comp_left]
+  rfl
+
+variable {E : Type u} {F : Type (max u v)} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F]
+/-- The inner-order induction, in a codomain universe large enough to contain
+its spaces of continuous linear maps. -/
+private theorem iteratedFDeriv_iteratedFDeriv_of_universe_le
+    (f : E → F) (q j : ℕ) (x : E) (u : Fin q → E) (v : Fin j → E) :
+    iteratedFDeriv ℝ q (iteratedFDeriv ℝ j f) x u v =
+      iteratedFDeriv ℝ (q + j) f x (Fin.append u v) := by
+  induction j generalizing F q with
+  | zero =>
+    rw [iteratedFDeriv_zero_eq_comp]
+    have heq := iteratedFDeriv_comp_isometryEquiv
+      (continuousMultilinearCurryFin0 ℝ E F).symm f q x u
+    rw [heq]
+    simp only [continuousMultilinearCurryFin0_symm_apply_apply, Nat.add_zero]
+    congr 1
+    simpa using (Fin.append_right_nil u v rfl).symm
+  | succ j ih =>
+    rw [show iteratedFDeriv ℝ (j + 1) f =
+      (continuousMultilinearCurryRightEquiv' ℝ j E F).symm ∘
+        iteratedFDeriv ℝ j (fderiv ℝ f) by
+      funext y
+      exact iteratedFDeriv_succ_eq_comp_right]
+    have heq := iteratedFDeriv_comp_isometryEquiv
+      (continuousMultilinearCurryRightEquiv' ℝ j E F).symm (iteratedFDeriv ℝ j (fderiv ℝ f)) q x u
+    rw [heq]
+    change iteratedFDeriv ℝ q (iteratedFDeriv ℝ j (fderiv ℝ f)) x u (Fin.init v) (v (Fin.last j)) = _
+    rw [ih]
+    have h := iteratedFDeriv_succ_apply_right (𝕜 := ℝ) (f := f) (x := x)
+      (Fin.snoc (Fin.append u (Fin.init v)) (v (Fin.last j)))
+    simp only [Fin.init_snoc, Fin.snoc_last] at h
+    simp only [← Fin.append_snoc, Fin.snoc_init_self] at h
+    convert h.symm using 1
+end TaylorModel
+namespace TaylorModel
+universe uE uF
+variable {E : Type uE} {F : Type uF} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F]
+/-- Canonical currying identifies the genuine iterated derivatives of a
+derivative-valued map. The first block contains the outer differentiation directions.
+The fixed curry isometries make this true without a smoothness hypothesis. -/
+theorem iteratedFDeriv_iteratedFDeriv (f : E → F) (q j : ℕ) (x : E)
+    (u : Fin q → E) (v : Fin j → E) :
+    iteratedFDeriv ℝ q (iteratedFDeriv ℝ j f) x u v =
+      iteratedFDeriv ℝ (q + j) f x (Fin.append u v) := by
+  -- Lift only the codomain for the induction, then transport back isometrically.
+  let L : F ≃ₗᵢ[ℝ] ULift.{uE} F := (LinearIsometryEquiv.ulift ℝ F).symm
+  let : SeminormedAddCommGroup (E [×j]→L[ℝ] F) :=
+    (inferInstance : NormedAddCommGroup (E [×j]→L[ℝ] F)).toSeminormedAddCommGroup
+  let : SeminormedAddCommGroup (E [×j]→L[ℝ] ULift.{uE} F) :=
+    (inferInstance : NormedAddCommGroup (E [×j]→L[ℝ] ULift.{uE} F)).toSeminormedAddCommGroup
+  let K : (E [×j]→L[ℝ] F) ≃ₗᵢ[ℝ] (E [×j]→L[ℝ] ULift.{uE} F) :=
+    { L.toContinuousLinearEquiv.continuousMultilinearMapCongrRight (fun _ : Fin j => E) with
+      norm_map' := fun A => L.toLinearIsometry.norm_compContinuousMultilinearMap A }
+  have heq : iteratedFDeriv ℝ j (L ∘ f) = K ∘ iteratedFDeriv ℝ j f := by
+    funext y
+    apply ContinuousMultilinearMap.ext
+    intro w
+    exact iteratedFDeriv_comp_isometryEquiv L f j y w
+  have h := iteratedFDeriv_iteratedFDeriv_of_universe_le.{uE,uF} (L ∘ f) q j x u v
+  rw [heq] at h
+  have hK := iteratedFDeriv_comp_isometryEquiv K (iteratedFDeriv ℝ j f) q x u
+  rw [hK, iteratedFDeriv_comp_isometryEquiv L] at h
+  exact L.injective h
+end TaylorModel

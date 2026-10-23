@@ -39,3 +39,6 @@ id = "norm_iteratedFDeriv_sub_eval_le_holder"
 
 [[node]]
 id = "norm_iteratedFDeriv_sub_eval_le_lipschitz"
+
+[[node]]
+id = "iteratedFDeriv_eval_apply"

@@ -6,22 +6,13 @@ desc = "Finite-order Schwarz symmetry and the actual derivatives of finite Frech
 id = "iteratedFDeriv_comp_perm"
 
 [[node]]
-id = "iteratedFDeriv_eval_apply"
-kind = "theorem"
-desc = '''
-For f:E->F of class C^p at x, j<=p, s:E and v:Fin j->E, show D_s^j(TaylorModel.eval f p x)(s)[v] = sum over q=0,...,p-j of (q!)^-1 smul D^(q+j) f(x)[Fin.append (constant s on Fin q) v]. This is differentiation of the genuine factorial-normalized Taylor polynomial, not a definition of its derivatives. Prove it using finite-order Schwarz and the multilinear polynomial derivative API.
-'''
-deps = ["iteratedFDeriv_comp_perm"]
-
-[[node]]
 id = "iteratedFDeriv_iteratedFDeriv"
-kind = "theorem"
-desc = '''
-For q,j:natural and f C^(q+j) near x, establish the isometric curry identification of D^q (D^j f)(x): its evaluation on u:Fin q->E followed by v:Fin j->E equals D^(q+j) f(x)[Fin.append u v]. Include the induced equality of norms, and of differences at two points with the same regularity, under this fixed linear isometry. This transports the source highest-derivative Holder assumption to the derivative-valued map without assuming the desired error estimate.
-'''
 
 [[node]]
 id = "iteratedFDeriv_swap_first_two"
 
 [[node]]
 id = "domDomCongr_iteratedFDeriv"
+
+[[node]]
+id = "iteratedFDeriv_comp_isometryEquiv"

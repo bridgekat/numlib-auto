@@ -219,3 +219,21 @@ theorem norm_iteratedFDeriv_sub_eval_le_lipschitz {f : E → F} {p j : ℕ}
     Real.rpow_natCast, div_mul_eq_mul_div] using hb
 
 end TaylorModel
+
+namespace TaylorModel
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F]
+/-- The explicit finite Taylor polynomial derivative formula. All coefficients
+are genuine derivative tensors, with the remaining powers of the increment
+placed before the differentiation directions. -/
+theorem iteratedFDeriv_eval_apply {f : E → F} {p j : ℕ} {x : E}
+    (hf : ContDiffAt ℝ p f x) (hj : j ≤ p) (s : E) (v : Fin j → E) :
+    iteratedFDeriv ℝ j (eval f p x) s v = ∑ q ∈ Finset.range (p - j + 1),
+      ((q.factorial : ℝ)⁻¹) • iteratedFDeriv ℝ (q + j) f x
+        (Fin.append (fun _ : Fin q => s) v) := by
+  rw [iteratedFDeriv_eval hf hj, eval_eq_sum]
+  simp only [sum_apply, smul_apply]
+  apply Finset.sum_congr rfl
+  intro q _hq
+  rw [iteratedFDeriv_iteratedFDeriv]
+end TaylorModel
