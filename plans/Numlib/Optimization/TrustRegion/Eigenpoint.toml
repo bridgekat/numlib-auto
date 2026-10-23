@@ -14,3 +14,6 @@ id = "eigenpoint_decrease"
 
 [[node]]
 id = "eigenpoint_predicted_decrease_pos"
+
+[[node]]
+id = "eigen_trial_very_successful"

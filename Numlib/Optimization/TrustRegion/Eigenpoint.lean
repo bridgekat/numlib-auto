@@ -1,4 +1,5 @@
 import Numlib.Optimization.HighOrder.CriticalityApproximate
+import Numlib.Analysis.Calculus.TaylorModel.Holder
 import Mathlib.Topology.Order.Compact
 
 /-!
@@ -68,5 +69,34 @@ theorem eigenpoint_predicted_decrease_pos (f : E → ℝ) (x u : E)
     have hμpos : 0 < |μ| := abs_pos.mpr hμ.ne
     positivity
   linarith
+
+/-- The second-order small-radius condition guarantees very successful
+acceptance for the actual objective-to-Taylor-model ratio. -/
+theorem eigen_trial_very_successful (f : E → ℝ) (x u : E)
+    {μ Δ L η ρ : ℝ} {sE s : E} (hf : ContDiff ℝ 2 f) (hL : 0 < L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖)
+    (hΔ : 0 < Δ) (hμ : μ < 0) (hu : ‖u‖ = 1)
+    (he : hessianOperator f x u = μ • u)
+    (hg : inner ℝ (gradient f x) u ≤ 0) (hp : IsEigenPoint f x u Δ sE)
+    (hs : eval f 2 x s ≤ eval f 2 x sE) (hsnorm : ‖s‖ ≤ Δ)
+    (hη : η < 1) (hsmall : Δ < 3 * (1 - η) * |μ| / L)
+    (hρ : ρ = (f x - f (x + s)) / (eval f 2 x 0 - eval f 2 x s)) : η ≤ ρ := by
+  have hden := eigenpoint_predicted_decrease_pos f x u hΔ hμ hu he hg hp hs
+  have hd := eigenpoint_decrease f x u hΔ.le hμ hu he hg hp
+  have herr := abs_sub_eval_le_lipschitz (p := 1) (C := Set.univ) (D := Set.univ)
+    isOpen_univ (Set.Subset.refl _) convex_univ hf.contDiffOn hL.le
+    (fun y _ z _ => hlip y z) (Set.mem_univ x) (Set.mem_univ (x + s))
+  norm_num only [Nat.reduceAdd, Nat.factorial, Nat.cast_ofNat] at herr
+  have hpow : ‖s‖ ^ 3 ≤ Δ ^ 3 := pow_le_pow_left₀ (norm_nonneg s) hsnorm 3
+  have herr' : f (x + s) - eval f 2 x s ≤ L * Δ ^ 3 / 6 :=
+    ((abs_le.mp herr).2).trans (by nlinarith [mul_le_mul_of_nonneg_left hpow hL.le])
+  have hmul := (lt_div_iff₀ hL).mp hsmall
+  have hmul' := mul_le_mul_of_nonneg_right hmul.le (sq_nonneg Δ)
+  have hd' := mul_le_mul_of_nonneg_left (show (1 / 2 : ℝ) * |μ| * Δ ^ 2 ≤
+      eval f 2 x 0 - eval f 2 x s by linarith) (by linarith : 0 ≤ 1 - η)
+  rw [hρ]
+  apply (le_div_iff₀ hden).mpr
+  rw [eval_zero] at hd' ⊢
+  nlinarith
 
 end TaylorModel

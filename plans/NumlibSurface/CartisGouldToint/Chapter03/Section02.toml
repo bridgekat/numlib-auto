@@ -328,21 +328,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_3_2_4"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.2.4: Condition for a successful iteration (second order)
-
-Suppose that f.HL holds, that \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   < 0 \) , and that
-
-\[
-{\Delta }_k < \frac{3\left( {1 - {\eta }_2}\right) \left| {{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack  }\right| }{{L}_{f,2}}.\tag{3.2.16}
-\]
-
-Then \( {\rho }_k \geq  {\eta }_2 \) , iteration \( k \) is successful, and \( {\Delta }_{k + 1} \geq  {\Delta }_k \) .
-'''
-deps = ["tr2Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.2.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2779)"
 
 [[node]]
@@ -402,3 +387,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "eigenpoint_exists"
+
+[[node]]
+id = "eigenpoint"
