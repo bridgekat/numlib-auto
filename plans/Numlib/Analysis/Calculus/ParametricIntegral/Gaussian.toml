@@ -1,0 +1,40 @@
+namespace = "ProbabilityTheory"
+
+[[node]]
+id = "projectionJet"
+
+[[node]]
+id = "projectionJetDeriv"
+
+[[node]]
+id = "projectionJet_eq"
+
+[[node]]
+id = "projectionJetDeriv_apply"
+
+[[node]]
+id = "projectionJet_cons"
+
+[[node]]
+id = "hasFDerivAt_projectionJet"
+
+[[node]]
+id = "norm_projectionJet_le"
+
+[[node]]
+id = "norm_projectionJetDeriv_le"
+
+[[node]]
+id = "continuous_projectionJet"
+
+[[node]]
+id = "continuous_projectionJetDeriv"
+
+[[node]]
+id = "integrable_norm_pow_stdGaussian"
+
+[[node]]
+id = "integrable_projectionJet"
+
+[[node]]
+id = "integral_projectionJet_hasFDerivAt"
