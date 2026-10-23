@@ -169,44 +169,7 @@ wrong = "False for an actual two-phase q=p=2 execution on the Euclidean plane: f
 
 [[node]]
 id = "lemma_14_3_6"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 14.3.6: Smoothness of \( \nu \) and \( \mu \)
-
-(i) Suppose that c.D1pLB.X holds. Given \( {x}_0 \in  \mathcal{X} \) , let \( {\mathcal{L}}_{\nu }\left( {x}_{0}\right) \overset{\text{ def }}{ = }\{ x \in  \mathcal{X} \mid \; \parallel c\left( x\right) \parallel  \leq  \begin{Vmatrix}{c\left( {x}_0\right) }\end{Vmatrix}\} \) . Then \( \nu \left( x\right) \) is \( p \) -times continuously differentiable in an open, convex set \( {\mathcal{X}}_0 \) containing \( \mathcal{X} \) , and there are constants \( {L}_{\nu , j}^A \geq  1,{L}_{\nu , j}^B \geq  1 \) , \( {B}_{\nu , j}^A \geq  1 \) , and \( {B}_{\nu , j}^B \geq  1 \) such that
-
-\[
-\begin{Vmatrix}{{\nabla }_x^j\nu \left( x\right)  - {\nabla }_x^j\nu \left( y\right) }\end{Vmatrix} \leq  \left( {{L}_{\nu , j}^A + {L}_{\nu , j}^B\begin{Vmatrix}{c\left( {x}_0\right) }\end{Vmatrix}}\right) \parallel x - y\parallel\tag{14.3.60}
-\]
-
-and
-
-\[
-\begin{Vmatrix}{{\nabla }_x^j\nu \left( x\right) }\end{Vmatrix} \leq  {B}_{\nu , j}^A + {B}_{\nu , j}^B\begin{Vmatrix}{c\left( {x}_0\right) }\end{Vmatrix}\tag{14.3.61}
-\]
-
-for all \( x \in  {\mathcal{L}}_{\nu }\left( {x}_0\right) \) , all \( y \in  {\mathcal{X}}_0 \) , and every \( j \in  \left\lbrack  {1 : p}\right\rbrack \) .
-
-(ii) Suppose that c.D1pLB.X and f.D1pLB.X hold. Let \( {\mathcal{L}}_{\mu }\overset{\text{ def }}{ = }\{ x \in  \mathcal{X} \mid \; \parallel r\left( {x, t}\right) \parallel  \leq  1 \mid  \} \) . Then \( \mu \left( {x, t}\right) \) is \( p \) -times continuously differentiable in an open, convex set \( {\mathcal{X}}_0 \) containing \( \mathcal{X} \) , and there are constants \( {L}_{\mu , j} \geq  1 \) and \( {B}_{\mu , j} \geq  1 \) , independent of \( t \) , such that
-
-\[
-\begin{Vmatrix}{{\nabla }_x^j\mu \left( {x, t}\right)  - {\nabla }_x^j\mu \left( {y, t}\right) }\end{Vmatrix} \leq  {L}_{\mu , j}\parallel x - y\parallel\tag{14.3.62}
-\]
-
-and
-
-\[
-\begin{Vmatrix}{{\nabla }_x^j\nu \left( x\right) }\end{Vmatrix} \leq  {B}_{\mu , j}\tag{14.3.63}
-\]
-
-for all \( x \in  {\mathcal{L}}_{\mu } \) , all \( y \in  {\mathcal{X}}_0 \) , and every \( j \in  \left\lbrack  {1 : p}\right\rbrack \) .
-
-Documented source/OCR correction and formalization requirements: OCR correction: (14.3.63) bounds ||∇_x^j μ(x,t)|| by B_(μ,j), not ||∇_x^j ν(x)||. μ has the additional target parameter t. The set Lμ(t)={x∈X:||r(x,t)||≤1} depends on t; all Lipschitz and derivative bounds are uniform in t on their stated level sets.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.6 (OCR Markdown line 17443)"
-deps = ["leastSquaresMerit"]
 
 [[node]]
 id = "lemma_14_3_7"

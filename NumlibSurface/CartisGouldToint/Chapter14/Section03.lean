@@ -1,3 +1,5 @@
+import Numlib.Optimization.LeastNorm.ComponentRegularity
+import Numlib.Optimization.Constrained.TargetRegularity
 import Numlib.Optimization.Constrained.LagrangianStability
 import Numlib.Optimization.Constrained.TargetCounterexample
 import Numlib.Optimization.LeastNorm.Counterexample
@@ -208,5 +210,80 @@ merit criticalities satisfied, but no multiplier satisfies both printed first-
 and second-order Lagrangian conclusions. The first bound forces the multiplier
 to zero, and a feasible tangent displacement refutes the second bound. -/
 alias lemma_14_3_5_counterexample := Constrained.TargetCounterexample.verified_counterexample
+
+/-- **Lemma 14.3.6.** Both actual least-squares merits have the source regularity
+on the same open convex domain. Four constants for the feasibility merit are
+fixed before the initial residual level and all derivative orders. The target
+merit constants are fixed before every target, with both actual merit derivative
+norms bounded on its unit residual level.
+
+The printed equation (14.3.63) names the feasibility merit `ν`; this statement
+retains that bound and also proves the intended target merit `μ` bound. Uniform
+component derivative bounds and Lipschitz constants give the exact Euclidean
+square-root dimension conversion. -/
+theorem lemma_14_3_6 {n m p : ℕ}
+    {X S : Set (EuclideanSpace ℝ (Fin n))}
+    (hS : IsOpen S) (hconv : Convex ℝ S) (hXS : X ⊆ S)
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ i, ContDiffOn ℝ p (fun z => c z i) S) {Bc Lc : ℝ} (hBc : 0 ≤ Bc) (hLc : 0 ≤ Lc)
+    (hbc : ∀ i j, 1 ≤ j → j ≤ p → ∀ x ∈ S,
+      ‖iteratedFDeriv ℝ j (fun z => c z i) x‖ ≤ Bc)
+    (hlc : ∀ i j, 1 ≤ j → j ≤ p → ∀ x ∈ S, ∀ y ∈ S,
+      ‖iteratedFDeriv ℝ j (fun z => c z i) x -
+        iteratedFDeriv ℝ j (fun z => c z i) y‖ ≤ Lc * ‖x - y‖) :
+    (∃ LA ≥ 1, ∃ LB ≥ 1, ∃ BA ≥ 1, ∃ BB ≥ 1,
+      ContDiffOn ℝ p (LeastNorm.merit c) S ∧
+      ∀ x₀ ∈ X, ∀ j, 1 ≤ j → j ≤ p → ∀ x ∈ X,
+        ‖c x‖ ≤ ‖c x₀‖ →
+        (∀ y ∈ S, ‖iteratedFDeriv ℝ j (LeastNorm.merit c) x -
+          iteratedFDeriv ℝ j (LeastNorm.merit c) y‖ ≤
+            (LA + LB * ‖c x₀‖) * ‖x - y‖) ∧
+        ‖iteratedFDeriv ℝ j (LeastNorm.merit c) x‖ ≤ BA + BB * ‖c x₀‖) ∧
+    (∀ (f : EuclideanSpace ℝ (Fin n) → ℝ) (Bf Lf : ℝ),
+      ContDiffOn ℝ p f S → 0 ≤ Bf → 0 ≤ Lf →
+      (∀ j, 1 ≤ j → j ≤ p → ∀ x ∈ S, ‖iteratedFDeriv ℝ j f x‖ ≤ Bf) →
+      (∀ j, 1 ≤ j → j ≤ p → ∀ x ∈ S, ∀ y ∈ S,
+        ‖iteratedFDeriv ℝ j f x - iteratedFDeriv ℝ j f y‖ ≤ Lf * ‖x - y‖) →
+      ∃ L ≥ 1, ∃ B ≥ 1, ∀ t : ℝ, ContDiffOn ℝ p (Constrained.targetMerit f c t) S ∧
+        ∀ j, 1 ≤ j → j ≤ p → ∀ x ∈ X,
+          Constrained.targetMerit f c t x ≤ (1 / 2 : ℝ) →
+          (∀ y ∈ S, ‖iteratedFDeriv ℝ j (Constrained.targetMerit f c t) x -
+            iteratedFDeriv ℝ j (Constrained.targetMerit f c t) y‖ ≤ L * ‖x - y‖) ∧
+          ‖iteratedFDeriv ℝ j (Constrained.targetMerit f c t) x‖ ≤ B ∧
+          ‖iteratedFDeriv ℝ j (LeastNorm.merit c) x‖ ≤ B) := by
+  have hcv : ContDiffOn ℝ p c S := (contDiffOn_piLp 2).mpr hc
+  have hBc' : 0 ≤ Real.sqrt m * Bc := mul_nonneg (Real.sqrt_nonneg _) hBc
+  have hLc' : 0 ≤ Real.sqrt m * Lc := mul_nonneg (Real.sqrt_nonneg _) hLc
+  have hbcv : ∀ j, 1 ≤ j → j ≤ p → ∀ x ∈ S,
+      ‖iteratedFDeriv ℝ j c x‖ ≤ Real.sqrt m * Bc := by
+    intro j hj hjp x hx
+    exact LeastNorm.norm_iteratedFDeriv_le_components_on hcv hS hjp hBc
+      (fun i z hz => hbc i j hj hjp z hz) hx
+  have hlcv : ∀ j, 1 ≤ j → j ≤ p → ∀ x ∈ S, ∀ y ∈ S,
+      ‖iteratedFDeriv ℝ j c x - iteratedFDeriv ℝ j c y‖ ≤
+        (Real.sqrt m * Lc) * ‖x - y‖ := by
+    intro j hj hjp x hx y hy
+    exact LeastNorm.norm_iteratedFDeriv_sub_le_components_on hcv hS hjp hLc
+      (fun i z hz w hw => hlc i j hj hjp z hz w hw) hx hy
+  obtain ⟨LA, hLA, LB, hLB, BA, hBA, BB, hBB, hcont, hlevels⟩ :=
+    LeastNorm.merit_regularity_on_residual_levels hcv hS hconv hBc' hLc' hbcv hlcv
+  constructor
+  · refine ⟨LA, hLA, LB, hLB, BA, hBA, BB, hBB, hcont, ?_⟩
+    intro x₀ _hx₀ j hj hjp x hx hlevel
+    exact hlevels ‖c x₀‖ (norm_nonneg _) j hj hjp x (hXS hx) hlevel
+  · intro f Bf Lf hf hBf hLf hbf hlf
+    obtain ⟨L, hL, B, hB, htargets⟩ := Constrained.targetMerit_uniform_regularity
+      hf hcv hS hconv hBf hLf hBc' hLc' hbf hlf hbcv hlcv
+    refine ⟨L, hL, max B (BA + BB), hB.trans (le_max_left _ _), ?_⟩
+    intro t
+    refine ⟨(htargets t).1, ?_⟩
+    intro j hj hjp x hx hlevel
+    have hm := (htargets t).2 j hj hjp x (hXS hx) hlevel
+    have hr := Constrained.targetMerit_residual_bounds hlevel
+    have hn := (hlevels 1 zero_le_one j hj hjp x (hXS hx) hr.1).2
+    refine ⟨hm.1, hm.2.trans (le_max_left _ _), ?_⟩
+    have hn' : ‖iteratedFDeriv ℝ j (LeastNorm.merit c) x‖ ≤ BA + BB := by
+      simpa only [mul_one] using hn
+    exact hn'.trans (le_max_right B (BA + BB))
 
 end CartisGouldToint
