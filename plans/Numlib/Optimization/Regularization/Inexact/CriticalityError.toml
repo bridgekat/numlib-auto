@@ -1,0 +1,7 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "norm_derivative_sub_model_le_power"
+
+[[node]]
+id = "criticality_le_model_add_error"

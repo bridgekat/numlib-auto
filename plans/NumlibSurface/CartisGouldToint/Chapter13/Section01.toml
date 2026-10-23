@@ -299,3 +299,11 @@ source = "Cartis, Gould and Toint, Algorithm13.1.1 accuracy-independent initiali
 [[node]]
 id = "lemma_13_1_15_corrected"
 source = "Cartis, Gould and Toint, Lemma13.1.15 with corrected guarded parameter cap inherited from13.1.14; original literal node remains open. Includes zero-oracle case."
+
+[[node]]
+id = "lemma_13_1_16_of_parameter_cap"
+source = "Cartis, Gould and Toint, Lemma13.1.16, all conclusions with a genuine actual parameter cap S. Actual derivative identities and polynomial perturbations are derived."
+
+[[node]]
+id = "lemma_13_1_16_corrected"
+source = "Cartis, Gould and Toint, Lemma13.1.16 with corrected guarded cap inherited from13.1.14. The literal original target remains open."

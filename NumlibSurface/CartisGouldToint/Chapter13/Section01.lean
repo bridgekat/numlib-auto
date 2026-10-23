@@ -8,7 +8,7 @@ import Numlib.Optimization.TrustRegion.Inexact.Acceptance
 import Numlib.Optimization.TrustRegion.Inexact.Radius
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
-import Numlib.Optimization.Regularization.Inexact.RunVerified
+import Numlib.Optimization.Regularization.Inexact.RunObstruction
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -739,5 +739,50 @@ theorem lemma_13_1_15_corrected {n p q : ℕ}
     (fun k hk i hi hip => h.tensor_norm_le (zero_le_one.trans hL)
       (fun j hj => hlip j hj.le) hk (by omega) hip)
     hk hselected haccuracy hsmall
+
+/-- **Lemma 13.1.16 with a genuine parameter cap.** Actual accepted short
+trials that have not achieved true approximate optimality satisfy (13.1.79).
+Every model derivative and criticality comparison is derived from the actual
+Taylor model and the literal all-degree short-step accuracy requests. -/
+theorem lemma_13_1_16_of_parameter_cap {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
+    (hf : ContDiff ℝ p f) {L S : ℝ} (hL : 0 ≤ L)
+    (hlip : ∀ x y,
+      ‖iteratedFDeriv ℝ p f x - iteratedFDeriv ℝ p f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+    (N : ℕ) (h : InexactRegularization.Run f P ε D N)
+    {k : ℕ} (hk : k < N) (ht : k ∈ D.trials) (haccepted : P.eta1 ≤ D.ratio k)
+    (hs : ‖D.step k‖ < 1) (hcap : D.parameter k ≤ S)
+    (hnot : ¬InexactRegularization.OptimalityAt f ε (D.point (k + 1))
+      (D.startRadius (k + 1))) :
+    ∃ a, (1 - P.theta) * ε a * D.startRadius (k + 1) a ^ modelOrder a /
+        (modelOrder a).factorial ≤
+      (L + S + 3 * P.errorBound * P.stepCoefficient) *
+        ∑ i ∈ Finset.range (modelOrder a), D.startRadius (k + 1) a ^ (i + 1) *
+          ‖D.step k‖ ^ (p - (i + 1) + 1) / (i + 1).factorial :=
+  h.criticality_obstruction hf hL hlip hk ht haccepted hs hcap hnot
+
+/-- **Corrected Lemma 13.1.16.** The actual guarded execution supplies the
+uniform parameter cap, using the documented correction to Lemma13.1.14.
+The literal source result with its original cap remains a separate open target. -/
+theorem lemma_13_1_16_corrected {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 0 ≤ L)
+    (hlip : ∀ x y,
+      ‖iteratedFDeriv ℝ p f x - iteratedFDeriv ℝ p f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+    (N : ℕ) (h : InexactRegularization.Run f P ε D N)
+    {k : ℕ} (hk : k < N) (ht : k ∈ D.trials) (haccepted : P.eta1 ≤ D.ratio k)
+    (hs : ‖D.step k‖ < 1)
+    (hnot : ¬InexactRegularization.OptimalityAt f ε (D.point (k + 1))
+      (D.startRadius (k + 1))) :
+    ∃ a, (1 - P.theta) * ε a * D.startRadius (k + 1) a ^ modelOrder a /
+        (modelOrder a).factorial ≤
+      (L + InexactRegularization.executionParameterCap P L +
+        3 * P.errorBound * P.stepCoefficient) *
+        ∑ i ∈ Finset.range (modelOrder a), D.startRadius (k + 1) a ^ (i + 1) *
+          ‖D.step k‖ ^ (p - (i + 1) + 1) / (i + 1).factorial :=
+  h.criticality_obstruction hf hL hlip hk ht haccepted hs
+    (h.parameter_le hf hL hlip hk.le) hnot
 
 end CartisGouldToint

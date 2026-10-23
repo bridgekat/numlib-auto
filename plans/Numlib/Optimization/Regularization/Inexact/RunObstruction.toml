@@ -1,0 +1,7 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "Run.short_tensor_error"
+
+[[node]]
+id = "Run.criticality_obstruction"
