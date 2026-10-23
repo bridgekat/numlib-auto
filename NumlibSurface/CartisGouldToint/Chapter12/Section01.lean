@@ -1,4 +1,5 @@
 import Numlib.Optimization.HighOrder.Criticality
+import Numlib.Optimization.LineSearch.Peano
 import Numlib.Optimization.HighOrder.CriticalityLowOrder
 import Numlib.Optimization.HighOrder.CriticalityApproximate
 import Numlib.Optimization.HighOrder.CriticalityStability
@@ -232,5 +233,37 @@ theorem theorem_12_1_3 {n : ℕ}
     intro v h1 h2
     exact TaylorModel.third_derivative_zero_on_kernel_of_tendsto f x hlim v
       ((TaylorModel.mem_secondOrderKernel_iff_diagonal hf2 hp).2 ⟨h1,h2⟩)
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Theorem 12.1.2, as a counterexample for linesearch traces whose moves use descent
+directions. A smooth Euclidean polynomial has a strict minimum along every nonconstant
+straight line through zero, but every such trace started at zero stays there and fails
+approximate optimality of every order at least four. The actual directional derivatives
+and Taylor criticality are used. The Peano coefficients are `κ₁ = 3, κ₂ = 2`; the printed
+choice `κ₁ = 1, κ₂ = 2` instead has a global minimum at zero. -/
+theorem theorem_12_1_2 :
+    ∃ f : EuclideanSpace ℝ (Fin 2) → ℝ,
+      ContDiff ℝ ⊤ f ∧
+      (∀ v, IsLocalMin (fun t : ℝ => f (t • v)) 0) ∧
+      (∀ v ≠ 0, ∀ᶠ t : ℝ in nhds 0, t ≠ 0 → f 0 < f (t • v)) ∧
+      ¬ IsLocalMin f 0 ∧ LineSearch.DescentTrace f (fun _ => 0) ∧
+      (∀ x : ℕ → EuclideanSpace ℝ (Fin 2),
+        LineSearch.DescentTrace f x → x 0 = 0 → ∀ k,
+          x k = 0 ∧ ∀ (q : ℕ), 4 ≤ q → ∀ δ : Fin q → ℝ,
+            (∀ j, 0 < δ j ∧ δ j ≤ 1) →
+            ¬ ∀ j : Fin q, TaylorModel.criticality f (j.val + 1) (x k) (δ j) ≤
+              (1 / 100 : ℝ) * δ j ^ (j.val + 1) / (j.val + 1).factorial) := by
+  refine ⟨PeanoExample.saddle, PeanoExample.smooth, PeanoExample.line_min,
+    PeanoExample.line_strict, PeanoExample.not_local_min,
+    LineSearch.descentTrace_const _ _, ?_⟩
+  intro x hx hx0 k
+  have hk := PeanoExample.trace_stays hx hx0 k
+  refine ⟨hk, ?_⟩
+  intro q hq δ hd
+  rw [hk]
+  exact PeanoExample.not_approximate_of_order hq δ hd
 
 end CartisGouldToint

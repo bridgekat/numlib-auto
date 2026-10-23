@@ -1,0 +1,56 @@
+namespace = "PeanoExample"
+desc = "Actual Euclidean Peano polynomial, straight-line local minima, curved descent, exact fourth Taylor model, and failure of high-order approximate criticality."
+
+[[node]]
+id = "E"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "saddle"
+
+[[node]]
+id = "smooth"
+
+[[node]]
+id = "line_derivative"
+
+[[node]]
+id = "curve_fourth_derivative"
+
+[[node]]
+id = "line_strict"
+
+[[node]]
+id = "line_min"
+
+[[node]]
+id = "eval_four"
+
+[[node]]
+id = "curve_value"
+
+[[node]]
+id = "curve_norm"
+
+[[node]]
+id = "negative_near"
+
+[[node]]
+id = "criticality_four_lower"
+
+[[node]]
+id = "not_four_approximate"
+
+[[node]]
+id = "not_approximate_of_order"
+
+[[node]]
+id = "not_local_min"
+
+[[node]]
+id = "printed_global_min"
+
+[[node]]
+id = "trace_stays"

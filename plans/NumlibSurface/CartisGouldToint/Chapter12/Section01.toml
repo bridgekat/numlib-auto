@@ -58,18 +58,7 @@ deps = ["orderedCompositions"]
 
 [[node]]
 id = "theorem_12_1_2"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 12.1.2: Linesearch algorithms are unsuitable for finding high-order approximate local minimizers
-
-Linesearch methods (i.e., methods in which the next iterate is found by approximately minimizing the objective function \( f \) along a descent direction) cannot be proved to be locally convergent to approximate local minimizers of orders larger than three.
-
-Documented source/OCR correction and formalization requirements: Precise mathematical interpretation: formalize the Peano counterexample from Example 12.1.2 (a non-minimizer that is a strict minimizer along every straight line), and deduce failure of a universal local convergence guarantee for a precisely defined class of linesearch algorithms whose local certificate only excludes descending straight lines. The printed blanket assertion does not define an algorithm class; do not assume its conclusion as an algorithm property.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.2 (OCR Markdown line 11511)"
-deps = ["orderedCompositions"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.2 (OCR Markdown line 11511); Peano coefficients corrected from one and two to three and two. The precise class consists of traces whose nontrivial moves have negative actual directional derivative. All such traces initialized at zero remain there and fail actual approximate criticality at every order at least four."
 
 [[node]]
 id = "theorem_12_1_3"
