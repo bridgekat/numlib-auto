@@ -1,0 +1,34 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "Settings"
+
+[[node]]
+id = "ExecutionData"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.startRadius_mem"
+
+[[node]]
+id = "Run.checkedRadius_mem"
+
+[[node]]
+id = "Run.toModelTrace"
+
+[[node]]
+id = "Run.restrict"
+
+[[node]]
+id = "Run.step_nonzero"
+
+[[node]]
+id = "Run.accuracy_mem"
+
+[[node]]
+id = "Run.tensor_norm_le"
+
+[[node]]
+id = "Run.parameter_le"
