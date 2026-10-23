@@ -1,0 +1,7 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "constrainedCriticality_model_zero"
+
+[[node]]
+id = "exists_constrained_first_order_step"

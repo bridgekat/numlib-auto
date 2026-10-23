@@ -352,55 +352,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_6_2_5"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 6.2.5: Complexity of finding first-order critical points by the ARp1-CC algorithm
-
-Suppose that C.CNe, f.DpL.C, and f.bB.C hold. Then there exist positive constants \( {\kappa }_{\text{ ARpiCC }}^{s},{\kappa }_{\text{ ARp1CC }}^{A} \) , and \( {\kappa }_{\text{ ARp }}^{C} \) such that, for any \( {\epsilon }_1 \in  (0,1\rbrack \) , the ARp1-CC algorithm (p. 180) requires at most
-
-\[
-{\# }_{\mathrm{{ARp1CC}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARp1CC}}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{1}^{\frac{p + 1}{p}}} + {\kappa }_{\mathrm{{ARp}}}^{C} = \mathcal{O}\left( {\epsilon }_{1}^{-\frac{p + 1}{p}}\right)
-\]
-
-evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{ARp1CC}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARp1CC}}}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{1}^{\frac{p + 1}{p}}} + 2 = \mathcal{O}\left( {\epsilon }_{1}^{-\frac{p + 1}{p}}\right)
-\]
-
-evaluations of derivatives of order one to \( p \) of \( f \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\omega }_{f,\mathcal{C},1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_1 \) .
-
-For completeness, in the preceding statement,
-
-\[
-{\kappa }_{\mathrm{{ARp1CC}}}^{\mathrm{S}}\overset{\text{ def }}{ = }\frac{\left( {p + 1}\right) !}{{\eta }_{1}{\sigma }_{\min }}{\left( \frac{{L}_{f, p} + {\sigma }_{\max } + {\theta }_{1}p!}{p!}\right) }^{\frac{p + 1}{p}},
-\]
-
-where \( {\sigma }_{\max } \) is given by (4.1.19);
-
-\[
-{\kappa }_{\mathrm{{AR}}\mathrm{p}1\mathrm{{CC}}}^{\mathrm{A}}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}}\mathrm{p}1\mathrm{{CC}}}^{\mathrm{S}}\left( {1 + \frac{\left| \log {\gamma }_{1}\right| }{\log {\gamma }_{2}}}\right) ;
-\]
-
-and \( {\kappa }_{\mathrm{ARp}}^{\mathrm{C}} \) is given by (4.1.46).
-
-The importance of this result is not so much in itself, but in the impact it has on the convexly constrained least-squares problem, as we shall now see.
-
-Referenced equation payloads:
-
-Equation (4.1.19):
-\[
-{\sigma }_{k} \leq  {\sigma }_{\max }\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},\frac{{\gamma }_{3}{L}_{f, p}}{1 - {\eta }_{2}}}\right\rbrack  .\tag{4.1.19}
-\]
-
-Equation (4.1.46):
-\[
-{\kappa }_{\mathrm{{ARp}}}^{\mathrm{C}}\overset{\text{ def }}{ = }\frac{1}{\log {\gamma }_{2}}\left\{  {\left| {\log {\gamma }_{1}}\right|  + \log \left( \frac{{\sigma }_{\max }}{{\sigma }_{0}}\right) }\right\}   + 2,\tag{4.1.46}
-\]
-'''
-deps = ["lemma_5_1_2", "lemma_6_2_4", "lemma_5_1_4", "theorem_5_1_7", "arpConvexRun", "arpFirstOrderConvexRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 6.2.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8326)"
 
 [[node]]

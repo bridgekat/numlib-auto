@@ -1,0 +1,52 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "parameterCap"
+
+[[node]]
+id = "firstDecreaseCoefficient"
+
+[[node]]
+id = "firstDecreaseCoefficient_pos"
+
+[[node]]
+id = "inv_firstDecreaseCoefficient"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeEvaluationNodes"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "derivativeEvaluations_eq"
+
+[[node]]
+id = "derivativeEvaluationNodesAtOrder"
+
+[[node]]
+id = "derivativeEvaluationsAtOrder"
+
+[[node]]
+id = "derivativeEvaluationsAtOrder_le"
+
+[[node]]
+id = "ScaledRun.rejected"
+
+[[node]]
+id = "ScaledRun.nonterminal_decrease"
+
+[[node]]
+id = "ScaledRun.successful_card_le"
+
+[[node]]
+id = "ScaledRun.iterations_le"
+
+[[node]]
+id = "exists_first_order_termination"
+
+[[node]]
+id = "exists_uniform_first_order_complexity"

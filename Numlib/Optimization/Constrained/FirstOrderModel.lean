@@ -1,4 +1,5 @@
 import Numlib.Optimization.Constrained.FirstOrderCriticality
+import Numlib.Optimization.Descent
 
 /-!
 # Actual constrained first-order model comparison
@@ -43,5 +44,24 @@ theorem constrainedCriticality_one_le_model {f m : E → ℝ} {C : Set E}
   rw [decrement_one, inner_gradient_left]
   simp only [sub_apply, Real.norm_eq_abs] at hb
   linarith [(abs_le.mp hb).1]
+
+end TaylorModel
+
+namespace TaylorModel
+open Set
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [ProperSpace E]
+
+/-- A differentiable actual minimum on a closed convex set has zero constrained
+first-order criticality on every nonnegative testing ball. -/
+theorem constrainedCriticality_one_eq_zero_of_isMinOn {m : E → ℝ} {C : Set E}
+    (hclosed : IsClosed C) (hconv : Convex ℝ C) {x : E} (hx : x ∈ C)
+    (hmin : IsMinOn m C x) (hdiff : DifferentiableAt ℝ m x)
+    {δ : ℝ} (hδ : 0 ≤ δ) : constrainedCriticality m 1 C x δ = 0 := by
+  apply (constrainedCriticality_eq_zero_iff m 1 hclosed hx hδ).mpr
+  intro d hd _
+  have hh := Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn hconv hx
+    hmin.isLocalMinOn hdiff.hasFDerivAt (x + d) hd
+  rw [decrement_one, inner_gradient_left]
+  simpa only [add_sub_cancel_left] using neg_nonpos.mpr hh
 
 end TaylorModel
