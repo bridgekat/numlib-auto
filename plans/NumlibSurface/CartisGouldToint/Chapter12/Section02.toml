@@ -49,7 +49,18 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_12_2_10"
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma12.2.10 and equations12.2.34,12.2.49"
+kind = "theorem"
+desc = '''
+Lemma 12.2.10: Termination in Step 2
+
+Termination cannot occur in Step 2 of the ARqp algorithm if \( q \leq  2 \) . If \( q \geq  3 \) and the ARqp algorithm terminates in Step 2 of iteration \( k \) with \( {x}_{\epsilon } = {x}_k \) , then there exists a \( \delta  \in  (0,1{\rbrack }^q \) such that (12.1.25) holds for \( x = {x}_{\epsilon } \) and \( {x}_{\epsilon } \) is an \( \left( {\epsilon ,\delta }\right) \) -approximate \( q \) th-order minimizer.
+'''
+source = "Cartis, Gould and Toint, Lemma 12.2.10: Termination in Step 2"
+wrong = "The formal arqpOuterZeroExitCounterexample uses p=q=1, f(x)=(x-2)^2/2, x0=0, sigma=1, epsilon=1/2 and unit radii. The actual initial relative Taylor check fails. Step s=4 has norm>1, unchanged radii and m(4)=m(0), so it satisfies literal outer Algorithm12.2.2 Step2 and immediately exits at x0. Actual criticality phi1(0,delta)=2delta exceeds epsilon*delta for every positive radius, and no other iterate is produced. Thus even certificate attainment fails for the literal outer contract. The valid lemma_12_2_10_detailed_solver companion assumes the additional positive-global-gap rule from Algorithm12.2.3, which genuinely excludes this return."
+
+[[node]]
+id = "lemma_12_2_10_detailed_solver"
+source = "Lemma 12.2.10: Termination in Step 2 with the explicit positive-global-gap detailed-solver assumption."
 
 [[node]]
 id = "lemma_12_2_11"
@@ -134,7 +145,46 @@ wrong = "Formal arqpNonterminationLowerBoundsCounterexample supplies a full actu
 
 [[node]]
 id = "theorem_12_2_14"
-source = "Cartis, Gould and Toint, Theorem12.2.14, both source rates and initialized F/D counts; positive constants precede accuracies. Primitive model tests derive the printed radius floor. A safe scalar coefficient repairs only the existential proof constants; original fixed-coefficient Lemmas12.2.12–13 remain open."
+kind = "theorem"
+desc = '''
+Theorem 12.2.14: qth-order complexity for the ARqp algorithm
+
+Suppose that f.Bb and f.D1pL hold. Suppose also that the ARqp algorithm ensures, for each \( k \) , either that \( {\delta }_{k + 1, j} = 1 \) for \( j \in  \left\lbrack  {1 : q}\right\rbrack \) if \( q \in  \{ 1,2\} \) (as allowed by Lemma 12.2.9) or that (12.2.51) holds otherwise.
+
+1. If \( q \in  \{ 1,2\} \) , then there exist positive constants \( {\kappa }_{\mathrm{ARqp}}^{s,1},{\kappa }_{\mathrm{ARqp}}^{a,1} \) , and \( {\kappa }_{\mathrm{ARqp}}^c \) such that, for any \( \epsilon  \in  (0,1{\rbrack }^q \) , the \( \mathrm{AR}{qp} \) algorithm requires at most
+
+\[
+{\# }_{\mathsf{{ARqp}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathsf{{ARqp}}}^{a,1}\frac{f\left( {x}_{0}\right)  - {f}_{\mathsf{{low}}}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{p + 1}{p - j + 1}}} + {\kappa }_{\mathsf{{ARqp}}}^{c} = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{p + 1}{p - j + 1}}}\right)\tag{12.2.63}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathsf{{ARqp}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathsf{{ARqp}}}^{s,1}\frac{f\left( {x}_{0}\right)  - {f}_{\mathsf{{low}}}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{p + 1}{p - j + 1}}} + 2 = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{p + 1}{p - j + 1}}}\right)\tag{12.2.64}
+\]
+
+evaluations of the derivatives of \( f \) of orders one to \( p \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^1\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+
+2. If \( q > 2 \) , then there exist positive constants \( {\kappa }_{\text{ ARqp }}^{s,2},{\kappa }_{\text{ ARqp }}^{a,2} \) and \( {\kappa }_{\text{ ARqp }}^{c} \) such that, for any \( \epsilon  \in  (0,1{\rbrack }^q \) , the ARqp algorithm requires at most
+
+\[
+{k}_{\text{ ARqp }}\overset{\text{ def }}{ = }{\kappa }_{\text{ ARqp }}^{a,2}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{j\left( {p + 1}\right) }{p}}} + {\kappa }_{\text{ ARqp }}^{c} = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{j\left( {p + 1}\right) }{p}}}\right)\tag{12.2.65}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\kappa }_{\text{ ARqp }}^{s,2}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{j\left( {p + 1}\right) }{p}}} + 2 = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{j\left( {p + 1}\right) }{p}}}\right) \tag{12.2.66}
+\]
+
+evaluations of the derivatives of \( f \) of orders one to \( p \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^{{\delta }_{\epsilon }}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon , j}^j/j \) ! for some \( {\delta }_{\epsilon } \in  (0,1{\rbrack }^q \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+'''
+source = "Cartis, Gould and Toint, Theorem 12.2.14: qth-order complexity for the ARqp algorithm"
+wrong = "The formal arqpOuterZeroExitCounterexample uses p=q=1, f(x)=(x-2)^2/2, x0=0, sigma=1, epsilon=1/2 and unit radii. The actual initial relative Taylor check fails. Step s=4 has norm>1, unchanged radii and m(4)=m(0), so it satisfies literal outer Algorithm12.2.2 Step2 and immediately exits at x0. Actual criticality phi1(0,delta)=2delta exceeds epsilon*delta for every positive radius, and no other iterate is produced. Thus even certificate attainment fails for the literal outer contract. The valid theorem_12_2_14_detailed_solver companion assumes the additional positive-global-gap rule from Algorithm12.2.3, which genuinely excludes this return."
+
+[[node]]
+id = "theorem_12_2_14_detailed_solver"
+source = "Theorem 12.2.14: qth-order complexity for the ARqp algorithm with the explicit positive-global-gap detailed-solver assumption."
 
 [[node]]
 id = "theorem_12_2_15"
@@ -248,3 +298,7 @@ source = "Cartis, Gould and Toint, Lemma12.2.11 under failure of the true approx
 [[node]]
 id = "arqpNonterminationLowerBoundsCounterexample"
 source = "Cartis, Gould and Toint, Lemmas12.2.11--13, formal source counterexample"
+
+[[node]]
+id = "arqpOuterZeroExitCounterexample"
+source = "Counterexample to literal Algorithm12.2.2 zero-decrease termination in Lemma12.2.10 and Theorem12.2.14; all actual smooth objective, Taylor, model and initial-check conditions are derived."

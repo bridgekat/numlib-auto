@@ -1,0 +1,17 @@
+namespace = "HighOrderRegularization.ZeroReturn"
+desc = "A globally smooth bounded-below quadratic has an actual immediate outer exit and produces no first-order approximate certificate."
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "initial_check"
+
+[[node]]
+id = "returned"
+
+[[node]]
+id = "actual_exit"
+
+[[node]]
+id = "no_produced_certificate"

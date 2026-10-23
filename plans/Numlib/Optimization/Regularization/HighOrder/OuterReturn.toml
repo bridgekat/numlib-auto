@@ -1,0 +1,14 @@
+namespace = "HighOrderRegularization"
+desc = "Literal outer model nonincrease, strict large-step bypass, actual tests and immediate zero-model exit."
+
+[[node]]
+id = "OuterStepReturn"
+
+[[node]]
+id = "OuterZeroExit"
+
+[[node]]
+id = "OuterZeroExit.producedPoint"
+
+[[node]]
+id = "OuterZeroExit.producedPoint_iff"

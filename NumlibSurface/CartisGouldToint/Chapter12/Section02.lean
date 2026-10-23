@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.ZeroReturn
 import Numlib.Optimization.Regularization.HighOrder.ObstructionCounterexample
 import Numlib.Optimization.Regularization.HighOrder.Sharpness.CriticalityWitness
 import Numlib.Optimization.Regularization.HighOrder.CriticalityComplexity
@@ -337,12 +338,12 @@ abbrev arqpStepTwoSolve {n : ℕ}
     (x : EuclideanSpace ℝ (Fin n)) (σ μ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
   ModelDecrease.ApproximateGlobalStep (HighOrderRegularization.model f p x σ) μ s
 
-/-- Lemma12.2.10: zero model decrease at an actual approximate-global Step2
-return is impossible for orders one and two after a failed Step1 test. For
-higher orders the returned objective point is a true approximate minimizer
-at some vector of positive optimality radii. Only the finite regularity at
-the model center is needed for this conditional result. -/
-theorem lemma_12_2_10 {n p q : ℕ}
+/-- Lemma12.2.10 under the detailed positive-global-gap solver: zero model decrease
+at an actual approximate-global Step2 return is impossible for orders one and
+two after a failed Step1 test. For higher orders the returned objective point is
+a true approximate minimizer at some vector of positive optimality radii. Only
+the finite regularity at the model center is needed for this conditional result. -/
+theorem lemma_12_2_10_detailed_solver {n p q : ℕ}
     {f : EuclideanSpace ℝ (Fin n) → ℝ} {x s : EuclideanSpace ℝ (Fin n)}
     (hqp : q ≤ p) (hf : ContDiffAt ℝ p f x) {σ μ : ℝ} (hμ : 0 < μ)
     (hsolve : arqpStepTwoSolve f p x σ μ s)
@@ -633,8 +634,9 @@ end CartisGouldToint
 namespace CartisGouldToint
 open InexactTrustRegion EvaluationComplexity
 
-/-- Theorem12.2.14: full exact ARqp evaluation complexity. Positive constants
-precede all accuracies and actual executions. The finite rate minimum has
+/-- Theorem12.2.14 under the detailed positive-global-gap solver.
+The literal outer return contract alone does not guarantee certificate attainment.
+Positive constants precede all accuracies and actual executions. The finite rate minimum has
 exponents `(p+1)/(p-j+1)` for q at most two and `j*(p+1)/p` otherwise. Every
 function trial plus initialization and every derivative point plus initialization
 is counted, with the printed additive two in the derivative budget. Both
@@ -642,7 +644,7 @@ actual-radius and low-order unit-radius true criticality are certified.
 The safe scalar comparison changes only the existential proof constants;
 the algorithm's primitive guards and printed radius floor are retained.
 A true certificate may be attained before an observable termination check passes. -/
-theorem theorem_12_2_14 {n p q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+theorem theorem_12_2_14_detailed_solver {n p q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (P : HighOrderRegularization.Settings p q) (x₀ : EuclideanSpace ℝ (Fin n))
     (hf : ContDiff ℝ p f) {L flow : ℝ} (hL : 1 ≤ L)
     (hlip : ∀ i, 1 ≤ i → i ≤ p → ∀ y z,
@@ -741,5 +743,32 @@ theorem arqpNonterminationLowerBoundsCounterexample :
     run, successful_nontermination.1, successful_nontermination.2.1,
     successful_nontermination.2.2, printed_cap, next_true_optimality,
     obstruction_fails, step_bound_fails, decrease_bounds_fail.1, decrease_bounds_fail.2⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The literal outer Step2 counterexample to Lemma12.2.10 and Theorem12.2.14.
+For `p=q=1`, the globally smooth bounded-below objective `(x-2)^2/2` has unit
+Lipschitz first derivative. Its initial computed direction fails termination,
+then step four passes the strict large-step bypass with equal model values.
+The resulting immediate exit produces no first-order approximate minimizer
+at any positive radius. A positive-global-gap detailed solver excludes this return. -/
+theorem arqpOuterZeroExitCounterexample :
+    let f := RegularizationZeroReturn.objective
+    let P := HighOrderRegularization.ZeroReturn.settings
+    ContDiff ℝ 1 f ∧ (∀ x, 0 ≤ f x) ∧
+      (∀ x y, ‖iteratedFDeriv ℝ 1 f x - iteratedFDeriv ℝ 1 f y‖ ≤ ‖x - y‖) ∧
+      HighOrderRegularization.OuterZeroExit f P (fun _ => 1 / 2) 0 4
+        (fun _ => 1) (fun _ => 1) (fun _ => 1) (fun _ => 0) 0 ∧
+      (∀ δ : ℝ, 0 < δ → ¬∃ y : ℝ,
+        HighOrderRegularization.ZeroReturn.actual_exit.producedPoint y ∧
+          TaylorModel.criticality f 1 y δ ≤ (1 / 2 : ℝ) * δ) ∧
+      ¬∃ μ : ℝ, 0 < μ ∧ ModelDecrease.ApproximateGlobalStep
+        (HighOrderRegularization.model f 1 0 1) μ 4 := by
+  exact ⟨RegularizationZeroReturn.smooth 1, RegularizationZeroReturn.nonneg,
+    RegularizationZeroReturn.derivative_lipschitz, HighOrderRegularization.ZeroReturn.actual_exit,
+    fun _ hδ => HighOrderRegularization.ZeroReturn.no_produced_certificate hδ,
+    RegularizationZeroReturn.not_positive_fraction⟩
 
 end CartisGouldToint
