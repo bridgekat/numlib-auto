@@ -1,0 +1,49 @@
+namespace = "LeastSquares"
+
+[[node]]
+id = "derivativeWeight"
+
+[[node]]
+id = "derivativeWeight_eq"
+
+[[node]]
+id = "derivativeWeight_nonneg"
+
+[[node]]
+id = "derivativeWeight_pos"
+
+[[node]]
+id = "firstMeasure"
+
+[[node]]
+id = "secondMeasure"
+
+[[node]]
+id = "directionalSecondMeasure"
+
+[[node]]
+id = "thirdMeasure"
+
+[[node]]
+id = "firstMeasure_eq"
+
+[[node]]
+id = "secondMeasure_eq"
+
+[[node]]
+id = "directionalSecondMeasure_eq"
+
+[[node]]
+id = "thirdMeasure_eq"
+
+[[node]]
+id = "max_neg_secondMeasure"
+
+[[node]]
+id = "thirdMeasure_eq_abs_div"
+
+[[node]]
+id = "residual_power_drop_eq"
+
+[[node]]
+id = "residual_decrease_of_power"

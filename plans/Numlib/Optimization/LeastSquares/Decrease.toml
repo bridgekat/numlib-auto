@@ -1,0 +1,16 @@
+namespace = "LeastSquares"
+
+[[node]]
+id = "RegularizationTrace"
+
+[[node]]
+id = "RegularizationTrace.decrease_first"
+
+[[node]]
+id = "RegularizationTrace.decrease_second"
+
+[[node]]
+id = "RegularizationTrace.decrease_third"
+
+[[node]]
+id = "RegularizationTrace.small_curvature_le"

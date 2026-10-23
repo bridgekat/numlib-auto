@@ -54,56 +54,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_5_1_2"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 5.1.2: Bounds on the successful function decrease for \( \mathrm{AR}p\mathrm{LE} \)
-
-Suppose that \( {\Phi }_{\ell } \) .DpL holds and that iteration \( k \) of the ARpLE algorithm is successful. Then there are constants \( {\kappa }_1,{\kappa }_2,{\kappa }_3 > 0 \) such that
-
-\[
-{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{\ell } - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\ell } \geq  {\kappa }_1\ell {\left\lbrack  {\psi }_{\ell ,1}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p}}{\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p}},\tag{5.1.15}
-\]
-
-together with
-
-\[
-{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{\ell } - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\ell } \geq  {\kappa }_2\ell \max {\left\lbrack  0, - {\psi }_{\ell ,2}\left( {x}_{k + 1}\right) \right\rbrack  }^{\frac{p + 1}{p - 1}}{\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 1}}
-\]
-
-(5.1.16)
-
----
-
-\( {}^{36} \) We do provide details for the \( \ell  = 2 \) case in Lemma 14.3.6 (p. 416), but, as predicted, even here the details are cumbersome.
-
-\( {}^{37} \) See also Lemma 14.3.6 (p. 416) in a slightly more general context.
-
----
-
-when \( {\epsilon }_2 < \infty \) , and additionally
-
-\[
-{\begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}}^{\ell } - {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\ell } \geq  {\kappa }_3\ell {\left\lbrack  {\psi }_{\ell ,3}\left( {x}_{k + 1}, d\right) \right\rbrack  }^{\frac{p + 1}{p - 2}}{\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\frac{\left( {\ell  - 1}\right) \left( {p + 1}\right) }{p - 2}}\tag{5.1.17}
-\]
-
-for all \( d \) in the set \( {\mathcal{M}}_{k + 1} \) given by (4.1.14) when \( {\epsilon }_3 < \infty \) . Moreover, for any such \( d \) ,
-
-\[
-{\psi }_{\ell ,2}\left( {{x}_{k + 1}, d}\right) {\begin{Vmatrix}r\left( {x}_{k + 1}\right) \end{Vmatrix}}^{\ell  - 1} \leq  \frac{1}{{\kappa }_{s2}}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p - 1}\text{ , where }{\kappa }_{s2}\overset{\text{ def }}{ = }\frac{\left( {p - 1}\right) !}{{L}_{{\Phi }_{\ell }, p} + {\sigma }_{\max } + {\theta }_{2}\left( {p - 1}\right) !}\text{ . }
-\]
-
-(5.1.18)
-
-Referenced equation payloads:
-
-Equation (4.1.14):
-\[
-{\mathcal{M}}_{k + 1}\overset{\text{ def }}{ = }\left\{  {d\left| {\parallel d\parallel  = 1\text{ and }}\right| {\nabla }_{s}^{2}{m}_{k}\left( {s}_{k}\right) {\left\lbrack  d\right\rbrack  }^{2} \mid   \leq  {\theta }_{2}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p - 1}}\right\}   \neq  \varnothing .\tag{4.1.14}
-\]
-'''
-deps = ["lemma_4_1_4", "residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.1.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5524)"
 
 [[node]]
@@ -319,3 +269,18 @@ Equation (5.1.43):
 '''
 deps = ["lemma_4_1_4", "lemma_5_1_3", "lemma_2_4_1", "theorem_4_1_5", "residualPowerObjective", "arpLeastEuclideanRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.1.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 5840)"
+
+[[node]]
+id = "arpLeastEuclideanModelTrace"
+
+[[node]]
+id = "residualFirstMeasure"
+
+[[node]]
+id = "residualSecondMeasure"
+
+[[node]]
+id = "residualDirectionalSecondMeasure"
+
+[[node]]
+id = "residualThirdMeasure"
