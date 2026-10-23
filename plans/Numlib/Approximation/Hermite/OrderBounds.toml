@@ -1,0 +1,41 @@
+namespace = "Hermite"
+
+[[node]]
+id = "OrderBoundedChain"
+
+[[node]]
+id = "OrderBoundedChain.exists_prefix"
+
+[[node]]
+id = "extendRight_orderBounds"
+
+[[node]]
+id = "OrderBoundedChain.exists_global"
+
+[[node]]
+id = "shiftJet"
+
+[[node]]
+id = "initialPolynomial_shiftJet"
+
+[[node]]
+id = "iterate_derivative_add_const"
+
+[[node]]
+id = "endpointPolynomial_shiftJet"
+
+[[node]]
+id = "iteratedDeriv_endpointPolynomial_shiftJet"
+
+[[node]]
+id = "endpointPolynomial_uniform_centered_bounds"
+
+[[node]]
+id = "flatJet_residual_positive"
+
+[[node]]
+id = "abs_le_orderBound"
+
+[[node]]
+id = "exists_uniform_interpolant_positive"
+
