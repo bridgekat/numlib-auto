@@ -248,6 +248,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_6_2_3"
+wrong = "The independent finite third-order stopping target can be empty. theorem_6_2_3_counterexample supplies the genuine Euclidean-line quartic f(t)=t²/2+t³/6+t⁴/24, globally nonnegative with actual third tensor Lipschitz constant1. Legal tau1=tau2=1/2 and accuracies(1/100,1/2,1/10000) admit no simultaneous true target: first criticality at most1/100 forces |t|≤1/2, and the actual direction corresponding to d=-1/10 passes both lower derivative restrictions and the unit ball while its negative third diagonal is at least1/2000. At initial global minimizer0 with sigma0=sigmaMin=1 and p=3, the actual regularized cubic Taylor model equals the entire nonnegative objective, hence no strictly improving Step2 exists although the literal stopping test fails. The separately named execution companion proves uniform counts only for consistent actual primitive prefixes; it does not assert this missing step/target existence."
 kind = "theorem"
 desc = '''
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -310,3 +311,7 @@ source = "Cartis, Gould and Toint, Algorithm6.2.1 actual enabled-order stopping 
 [[node]]
 id = "theorem_6_2_3_execution"
 source = "Cartis, Gould and Toint, Theorem6.2.3 actual consistent-execution complexity companion"
+
+[[node]]
+id = "theorem_6_2_3_counterexample"
+source = "Cartis, Gould and Toint, Theorem6.2.3 literal independent constrained third-order output target and Algorithm6.2.1 Step2"

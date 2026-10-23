@@ -1,0 +1,82 @@
+namespace = "ConvexRegularization.TargetObstruction"
+
+[[node]]
+id = "polynomial"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "objective_value"
+
+[[node]]
+id = "jets"
+
+[[node]]
+id = "objective_contDiff"
+
+[[node]]
+id = "objective_nonneg"
+
+[[node]]
+id = "third_lipschitz"
+
+[[node]]
+id = "first_small_implies_near"
+
+[[node]]
+id = "scalar_no_target"
+
+[[node]]
+id = "E"
+
+[[node]]
+id = "coordinate"
+
+[[node]]
+id = "euclideanObjective"
+
+[[node]]
+id = "euclidean_jets"
+
+[[node]]
+id = "euclidean_contDiff"
+
+[[node]]
+id = "euclidean_nonneg"
+
+[[node]]
+id = "euclidean_third_lipschitz"
+
+[[node]]
+id = "euclidean_first_to_scalar"
+
+[[node]]
+id = "euclidean_no_target"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "accuracy"
+
+[[node]]
+id = "accuracy_bounds"
+
+[[node]]
+id = "all_stops_fail"
+
+[[node]]
+id = "initial_model_eq"
+
+[[node]]
+id = "no_initial_step"
+
+[[node]]
+id = "euclidean_zero"
+
+[[node]]
+id = "euclidean_global_minimum"
+
+[[node]]
+id = "no_positive_run"

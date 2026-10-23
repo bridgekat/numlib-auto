@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Convex.TargetObstruction
 import Numlib.Optimization.Regularization.Convex.DerivativeComplexity
 import NumlibSurface.CartisGouldToint.Chapter06.Section01
 import Numlib.Optimization.Regularization.Convex.CorrectedStep
@@ -260,5 +261,43 @@ theorem theorem_6_2_3_execution {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → 
     exact hj
   · exact hj
   · exact hj
+
+section ThirdOrderTargetObstruction
+open ConvexRegularization.TargetObstruction
+
+/-- **Counterexample to the literal output assertion of Theorem6.2.3.**
+The genuine Euclidean quartic has a global minimum and globally Lipschitz third
+derivative. With the displayed legal independent tolerances, every point passing
+the first true test fails the third true test. At the global minimizer zero,
+the actual regularized cubic model equals the objective, so the algorithm's
+strict-improvement step is unavailable although its literal stop fails. The
+separate execution companion retains valid counts for consistent actual runs. -/
+theorem theorem_6_2_3_counterexample :
+    IsClosed (univ : Set E) ∧ Convex ℝ (univ : Set E) ∧ (univ : Set E).Nonempty ∧
+      ContDiff ℝ 3 euclideanObjective ∧ (∀ x : E, 0 ≤ euclideanObjective x) ∧
+      euclideanObjective 0 = 0 ∧ IsMinOn euclideanObjective univ 0 ∧
+      (∀ x y : E, ‖iteratedFDeriv ℝ 3 euclideanObjective x -
+        iteratedFDeriv ℝ 3 euclideanObjective y‖ ≤ ‖x - y‖) ∧
+      (∀ j : Fin 3, 0 < accuracy j ∧ accuracy j ≤ 1) ∧
+      settings.tau = 1/2 ∧ settings.tauTwo = 1/2 ∧
+      settings.sigmaInitial = 1 ∧ settings.sigmaMin = 1 ∧
+      (∀ x : E, constrainedCriticality euclideanObjective univ x
+        settings.tau settings.tauTwo (accuracy 0) (accuracy 1) 0 ≤ accuracy 0 →
+        accuracy 2 < constrainedCriticality euclideanObjective univ x
+          settings.tau settings.tauTwo (accuracy 0) (accuracy 1) 2) ∧
+      (∀ x : E, ¬arpConvexStop euclideanObjective univ settings accuracy x) ∧
+      (∀ s : E, HighOrderRegularization.model euclideanObjective 3 0 1 s =
+        euclideanObjective s) ∧
+      (∀ s : E, ¬HighOrderRegularization.model euclideanObjective 3 0 1 s <
+        HighOrderRegularization.model euclideanObjective 3 0 1 0) ∧
+      (∀ (D : arpFirstOrderConvexData E) (N : ℕ), D.point 0 = 0 →
+        ¬arpConvexRun euclideanObjective univ settings accuracy D (N + 1)) := by
+  refine ⟨isClosed_univ,convex_univ,⟨0,mem_univ _⟩,euclidean_contDiff,euclidean_nonneg,
+    euclidean_zero,euclidean_global_minimum,euclidean_third_lipschitz,accuracy_bounds,
+    rfl,rfl,rfl,rfl,?_,all_stops_fail,initial_model_eq,no_initial_step,no_positive_run⟩
+  intro x hx
+  exact euclidean_no_target hx
+
+end ThirdOrderTargetObstruction
 
 end CartisGouldToint
