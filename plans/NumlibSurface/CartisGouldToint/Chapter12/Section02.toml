@@ -5,12 +5,7 @@ namespace = "CartisGouldToint"
 
 [[node]]
 id = "trqRun"
-kind = "definition"
-desc = '''
-Bundle the parameters, state sequence and local transition rules of Algorithm 12.2.1: q≥1, εj∈(0,1], Δ0>0, optimality radius δk=min(Δk,ϑ), ϑ∈[min_j εj,1], fractional model-decrease factor ς∈(0,1], and 0<η1≤η2<1, 0<γ1≤γ2<1≤γ3. Step 1 obtains dk,j with ςφ_(f,j)^δk(xk)≤ΔT_(f,j)(xk,dk,j), ||dk,j||≤δk; it terminates if every approximate test is below ς εj δk^j/j!. Otherwise jk is a failing order, Step 2 finds ||sk||≤Δk with at least its model decrement. Accept when ρk=(f(xk)−f(xk+sk))/ΔT_(f,jk)(xk,sk)≥η1 and update Δ in the intervals (12.2.5). Preserve the exact initialization and update intervals from the source, and count function/derivative calls. No global decrease, convergence, radius lower bound or complexity field is allowed.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.2"
-deps = ["isApproximateHighOrderMinimizer"]
 
 [[node]]
 id = "arqpRun"
@@ -31,49 +26,11 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_12_2_3"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 12.2.3: Lower bound on the trust-region radius (TRq)
-
-Suppose that f.D1qL holds and \( {L}_f \) is given by (12.2.6). Then
-
-\[
-{\Delta }_{k} \geq  \min \left\{  {{\gamma }_{1}\vartheta ,{\kappa }_{\Delta }\mathop{\min }\limits_{{i \in  \left\lbrack  {0 : k}\right\rbrack  }}{\widehat{\phi }}_{f, i}}\right\}  ,\tag{12.2.13}
-\]
-
-where \( {\widehat{\phi }}_{f, i} \) is defined as in (12.2.8), and
-
-\[
-{\kappa }_{\Delta }\overset{\text{ def }}{ = }\frac{{\gamma }_{1}\left( {1 - {\eta }_{2}}\right) }{{L}_{f}}\min \left\lbrack  {\vartheta ,\frac{{\Delta }_{0}{\delta }_{0}^{q}}{{2q}!\mathop{\max }\limits_{{i \in  \left\lbrack  {1 : q}\right\rbrack  }}\begin{Vmatrix}{{\nabla }_{x}^{i}f\left( {x}_{0}\right) }\end{Vmatrix}}}\right\rbrack   \in  \left( {0,1}\right) .\tag{12.2.14}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.3 (OCR Markdown line 12224)"
-deps = ["lemma_12_2_2"]
 
 [[node]]
 id = "lemma_12_2_4"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 12.2.4: Model and function decreases (TRq)
-
-Suppose that f.D1qL holds. Then
-
-\[
-\Delta {T}_{f,{j}_k}\left( {{x}_k,{s}_k}\right)  \geq  \frac{{\left( \varsigma {\kappa }_{\Delta }\right) }^{q + 1}}{q!}{\epsilon }_{\min }^{q + 1}\tag{12.2.18}
-\]
-
-for every iteration of algorithm \( \mathrm{TR}q \) before termination, where \( {\kappa }_{\Delta } \) is given by (12.2.14) and \( {\epsilon }_{\min } \) by (12.2.7). If, in addition, \( k \in  \mathcal{S} \) , then
-
-\[
-f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  \frac{{\eta }_1{\left( \varsigma {\kappa }_{\Delta }\right) }^{q + 1}}{q!}{\epsilon }_{\min }^{q + 1}.\tag{12.2.19}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.4 (OCR Markdown line 12294)"
-deps = ["lemma_12_2_1", "lemma_12_2_3"]
 
 [[node]]
 id = "theorem_12_2_5"
@@ -396,3 +353,15 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "trqLipschitzConstant"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.1 and equations (12.2.6), (12.2.8)"
+
+[[node]]
+id = "trqMinimumAccuracy"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, equations (12.2.7), (12.2.8), (12.2.14)"
+
+[[node]]
+id = "trqPrefixGap"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, equations (12.2.7), (12.2.8), (12.2.14)"
+
+[[node]]
+id = "trqRadiusConstant"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, equations (12.2.7), (12.2.8), (12.2.14)"

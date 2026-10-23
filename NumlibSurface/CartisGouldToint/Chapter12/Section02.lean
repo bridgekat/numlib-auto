@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.HighOrder.Radius
 import Numlib.Optimization.TrustRegion.HighOrder.Trial
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import Numlib.Optimization.HighOrder.ModelDecrease
@@ -89,5 +90,96 @@ theorem lemma_12_2_2 {n q : ℕ}
     exact (hlip j y z).trans (mul_le_mul_of_nonneg_right
       (HighOrderTrustRegion.le_maxLipschitzConstant P L j) (norm_nonneg _))
   · exact hsmall
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- A finite nonterminal prefix of Algorithm 12.2.1, with initialized radius and actual
+trials. Its rules contain no radius floor, model-decrease floor, or complexity estimate. -/
+abbrev trqRun {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : trqParameters q)
+    (x s : ℕ → EuclideanSpace ℝ (Fin n)) (d : ℕ → Fin q → EuclideanSpace ℝ (Fin n))
+    (j : ℕ → Fin q) (Δ ρ : ℕ → ℝ) (N : ℕ) : Prop :=
+  HighOrderTrustRegion.Run f P x s d j Δ ρ N
+
+/-- The minimum accuracy `ε_min` of equation (12.2.7). -/
+noncomputable abbrev trqMinimumAccuracy {q : ℕ} (P : trqParameters q) : ℝ :=
+  HighOrderTrustRegion.minimumAccuracy P
+
+/-- The true finite prefix minimum of the scaled gaps in equation (12.2.8). -/
+noncomputable abbrev trqPrefixGap {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (P : trqParameters q) (x : ℕ → EuclideanSpace ℝ (Fin n)) (Δ : ℕ → ℝ)
+    (d : ℕ → Fin q → EuclideanSpace ℝ (Fin n)) (j : ℕ → Fin q) (k : ℕ) : ℝ :=
+  HighOrderTrustRegion.prefixGap f P x Δ d j k
+
+/-- The exact `κ_Δ` of equation (12.2.14). Its arguments consist only of the fixed
+parameters, initial radius, initial point and objective derivatives: no accuracy is an
+argument. The printed `2q!` denotes `2 · q!`, as in the source reciprocal-factorial proof. -/
+noncomputable abbrev trqRadiusConstant {n : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (q : ℕ) (hq : 0 < q)
+    (x₀ : EuclideanSpace ℝ (Fin n)) (Δ₀ theta eta2 gamma1 L : ℝ) : ℝ :=
+  HighOrderTrustRegion.radiusConstant f q hq x₀ Δ₀ theta eta2 gamma1 L
+
+/-- **Lemma 12.2.3 (lower bound on the trust-region radius).** The exact coefficient
+(12.2.14) is strictly between zero and one, and the uniform prefix bound (12.2.13)
+holds at every nonterminal trial. The initial scaled-gap estimate is derived from the
+actual Taylor coefficients; the floor follows from the actual preceding updates.
+The enlargement factor may equal one. -/
+theorem lemma_12_2_3 {n q : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : trqParameters q}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {d : ℕ → Fin q → EuclideanSpace ℝ (Fin n)}
+    {j : ℕ → Fin q} {Δ ρ : ℕ → ℝ} {N k : ℕ}
+    (h : trqRun f P x s d j Δ ρ N) (hf : ContDiff ℝ q f)
+    (L : Fin q → ℝ) (hL : ∀ a, 1 ≤ L a)
+    (hlip : ∀ a y z,
+      ‖iteratedFDeriv ℝ (HighOrderTrustRegion.modelOrder a) f y -
+        iteratedFDeriv ℝ (HighOrderTrustRegion.modelOrder a) f z‖ ≤ L a * ‖y - z‖)
+    (hk : k < N) :
+    let κ := trqRadiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2 P.gamma1
+      (trqLipschitzConstant P L)
+    κ ∈ Set.Ioo (0 : ℝ) 1 ∧ κ < P.gamma1 ∧
+      min (P.gamma1 * P.theta) (κ * trqPrefixGap f P x Δ d j k) ≤ Δ k := by
+  have hmax : 1 ≤ trqLipschitzConstant P L :=
+    (hL ⟨0,P.order_pos⟩).trans (HighOrderTrustRegion.le_maxLipschitzConstant P L _)
+  have hc := h.radiusConstant_pos_lt_gamma1 (by omega) hmax
+  refine ⟨⟨hc.1, hc.2.trans (P.gamma1_le_gamma2.trans_lt P.gamma2_lt_one)⟩, hc.2, ?_⟩
+  apply h.radius_lower hf hmax _ hk
+  intro a y z
+  exact (hlip a y z).trans (mul_le_mul_of_nonneg_right
+    (HighOrderTrustRegion.le_maxLipschitzConstant P L a) (norm_nonneg _))
+
+/-- **Lemma 12.2.4 (model and function decreases).** The model floor (12.2.18) holds
+at every actual nonterminal trial, and every accepted trial attains (12.2.19).
+The coefficient is an explicit function of the fixed initial data and parameters;
+accuracies occur only as `ε_min^(q+1)`. Both statements use the actual Taylor model
+and the actual objective values at the algorithm's successive iterates. -/
+theorem lemma_12_2_4 {n q : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : trqParameters q}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {d : ℕ → Fin q → EuclideanSpace ℝ (Fin n)}
+    {j : ℕ → Fin q} {Δ ρ : ℕ → ℝ} {N k : ℕ}
+    (h : trqRun f P x s d j Δ ρ N) (hf : ContDiff ℝ q f)
+    (L : Fin q → ℝ) (hL : ∀ a, 1 ≤ L a)
+    (hlip : ∀ a y z,
+      ‖iteratedFDeriv ℝ (HighOrderTrustRegion.modelOrder a) f y -
+        iteratedFDeriv ℝ (HighOrderTrustRegion.modelOrder a) f z‖ ≤ L a * ‖y - z‖)
+    (hk : k < N) :
+    let κ := trqRadiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2 P.gamma1
+      (trqLipschitzConstant P L)
+    (P.zeta * κ) ^ (q + 1) / q.factorial * trqMinimumAccuracy P ^ (q + 1) ≤
+        taylorDecrement f (HighOrderTrustRegion.modelOrder (j k)) (x k) (s k) ∧
+      (P.eta1 ≤ ρ k →
+        P.eta1 * (P.zeta * κ) ^ (q + 1) / q.factorial * trqMinimumAccuracy P ^ (q + 1) ≤
+          f (x k) - f (x (k + 1))) := by
+  have hmax : 1 ≤ trqLipschitzConstant P L :=
+    (hL ⟨0,P.order_pos⟩).trans (HighOrderTrustRegion.le_maxLipschitzConstant P L _)
+  have hcommon : ∀ (a : Fin q) y z,
+      ‖iteratedFDeriv ℝ (HighOrderTrustRegion.modelOrder a) f y -
+        iteratedFDeriv ℝ (HighOrderTrustRegion.modelOrder a) f z‖ ≤
+        trqLipschitzConstant P L * ‖y - z‖ := by
+    intro a y z
+    exact (hlip a y z).trans (mul_le_mul_of_nonneg_right
+      (HighOrderTrustRegion.le_maxLipschitzConstant P L a) (norm_nonneg _))
+  exact ⟨h.model_decrease hf hmax hcommon hk,
+    fun hs => h.function_decrease hf hmax hcommon hk hs⟩
 
 end CartisGouldToint

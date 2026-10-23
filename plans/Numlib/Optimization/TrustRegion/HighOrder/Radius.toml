@@ -1,0 +1,93 @@
+namespace = "HighOrderTrustRegion"
+
+desc = "Genuine finite TRq runs, exact initial Taylor-gap bound, accuracy-independent radius coefficient, derived uniform prefix radius floor and actual model/function decreases."
+
+[[node]]
+id = "sum_inv_factorial_le_two"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "initialDerivativeBound"
+
+[[node]]
+id = "le_initialDerivativeBound"
+
+[[node]]
+id = "initialDerivativeBound_le_iff"
+
+[[node]]
+id = "initialDerivativeBound_nonneg"
+
+[[node]]
+id = "decrement_le_two_derivativeBound"
+
+[[node]]
+id = "radiusConstant"
+
+[[node]]
+id = "minimumAccuracy"
+
+[[node]]
+id = "minimumAccuracy_le"
+
+[[node]]
+id = "le_minimumAccuracy_iff"
+
+[[node]]
+id = "minimumAccuracy_pos"
+
+[[node]]
+id = "minimumAccuracy_le_theta"
+
+[[node]]
+id = "prefixGap"
+
+[[node]]
+id = "prefixGap_le"
+
+[[node]]
+id = "le_prefixGap_iff"
+
+[[node]]
+id = "Run.scaledGap_ge"
+
+[[node]]
+id = "Run.initialDerivativeBound_pos"
+
+[[node]]
+id = "Run.initial_scaledGap_le"
+
+[[node]]
+id = "Run.prefixGap_ge"
+
+[[node]]
+id = "Run.prefixGap_pos"
+
+[[node]]
+id = "Run.gamma1_mul_radius_le"
+
+[[node]]
+id = "Run.min_initial_threshold_le"
+
+[[node]]
+id = "Run.radiusConstant_pos_lt_gamma1"
+
+[[node]]
+id = "Run.radiusConstant_mul_initialGap_le"
+
+[[node]]
+id = "Run.restrict"
+
+[[node]]
+id = "Run.radius_lower"
+
+[[node]]
+id = "Run.radius_gap_lower"
+
+[[node]]
+id = "Run.model_decrease"
+
+[[node]]
+id = "Run.function_decrease"
