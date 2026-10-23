@@ -1,5 +1,6 @@
 import Numlib.Optimization.Regularization.Cubic.ModifiedGradient
 import Numlib.Optimization.Regularization.Cubic.FirstOrder
+import Numlib.Optimization.Regularization.Cubic.Sharpness
 import NumlibSurface.CartisGouldToint.Chapter02.Section03
 import Numlib.Analysis.Calculus.Gradient
 
@@ -150,6 +151,39 @@ theorem theorem_3_3_5 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
         (CubicRegularization.decreaseCoefficient (σ 0) σmin η₁ η₂ γ₃ L θ₁ *
           ε ^ (3 / 2 : ℝ)) + 1) * A + C + 1 := add_le_add hb le_rfl
     _ = _ := by rw [hSinv]; ring
+
+/-- **Theorem 3.3.6.** A one-dimensional, twice-smooth nonnegative objective
+can force `⌈ε⁻³ᐟ²⌉` genuine first-order AR2 iterations. The Hessian Lipschitz
+constant and initial objective gap are uniform in `ε`. Every trial is accepted,
+so objective calls and both derivative-call counts meet the same lower bound.
+The integer ceiling makes the source's suppressed rounding explicit. -/
+theorem theorem_3_3_6 {η₁ η₂ γ₁ γ₂ γ₃ θ₁ σmin : ℝ}
+    (hη₁ : 0 < η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂ < 1)
+    (hγ₁ : 0 < γ₁) (hγ₁1 : γ₁ < 1) (hγ₂ : 1 < γ₂) (hγ₃ : γ₂ < γ₃)
+    (hθ : 0 < θ₁) (hσ : 0 < σmin) :
+    ∃ L ≥ 1, ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
+      ∃ (f : ℝ → ℝ) (x : ℕ → ℝ) (t : ℝ) (ρ : ℕ → ℝ) (N : ℕ),
+        ContDiff ℝ 2 f ∧ (∀ z, 0 ≤ f z) ∧
+        (∀ z w, ‖iteratedFDeriv ℝ 2 f z - iteratedFDeriv ℝ 2 f w‖ ≤ L * ‖z - w‖) ∧
+        f (x 0) ≤ 8 / Real.sqrt σmin ∧
+        N = ⌈1 / ε ^ (3 / 2 : ℝ)⌉₊ ∧
+        CubicRegularization.FirstOrderRun f x (fun _ => t) (fun _ => σmin) ρ
+          η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ ε ⊤ N ∧
+        (∀ i < N, η₂ ≤ ρ i) ∧ ‖gradient f (x N)‖ = ε ∧
+        1 / ε ^ (3 / 2 : ℝ) ≤ N ∧
+        1 / ε ^ (3 / 2 : ℝ) ≤ ((N + 1 : ℕ) : ℝ) ∧
+        1 / ε ^ (3 / 2 : ℝ) ≤ (((successfulIterations ρ η₁ N).card + 1 : ℕ) : ℝ) ∧
+        1 / ε ^ (3 / 2 : ℝ) ≤ (((successfulIterations ρ η₁ N).card + 1 : ℕ) : ℝ) := by
+  obtain ⟨L, hL, h⟩ := CubicRegularization.exists_slow_firstOrderRun
+    hη₁ hη hη₂ hγ₁ hγ₁1 hγ₂ hγ₃ hθ hσ
+  refine ⟨L, hL, ?_⟩
+  intro ε hε hε1
+  obtain ⟨f, x, t, ρ, N, hf, hlow, hlip, hgap, hN, hrun, hvery, hstop,
+    hcount, hfun, hderiv⟩ := h ε hε hε1
+  refine ⟨f, x, t, ρ, N, hf, hlow, hlip, hgap, hN, hrun, hvery, ?_,
+    hcount, hfun, hderiv, hderiv⟩
+  change ‖(InnerProductSpace.toDual ℝ ℝ).symm (fderiv ℝ f (x N))‖ = ε
+  rwa [LinearIsometryEquiv.norm_map]
 
 /-- **Lemma 3.3.7.** The modified AR2 test (3.3.23), imposed on the actual
 quadratic Taylor polynomial, yields (3.3.24) at every accepted trial. The

@@ -179,15 +179,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_3_3_6"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 3.3.6: Slow first-order convergence of the AR2 algorithm
-
-The AR2 algorithm (p. 65) applied to minimize a function \( f \) satisfying f.Bb and f.HL may require \( {\epsilon }_1^{-3/2} \) iterations and evaluations of \( f\left( x\right) ,{\nabla }_x^{1}f\left( x\right) \) , and \( {\nabla }_x^{2}f\left( x\right) \) to produce a point \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) .
-'''
-deps = ["theorem_3_3_5", "lemma_3_3_3", "ar2Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.3.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3301)"
 
 [[node]]

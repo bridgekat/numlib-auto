@@ -161,3 +161,13 @@ theorem iteratedDeriv_comp_congr {𝕜 : Type*} [NontriviallyNormedField 𝕜] {
     rw [hff k hk]
 
 end Composition
+
+/-- For a one-variable map, passing between ordinary and Fréchet derivatives
+preserves the norm of differences of derivative tensors at two points. -/
+theorem norm_iteratedFDeriv_sub_eq_norm_iteratedDeriv_sub
+    {𝕜 F : Type*} [NontriviallyNormedField 𝕜]
+    [NormedAddCommGroup F] [NormedSpace 𝕜 F] (f : 𝕜 → F) (n : ℕ) (x y : 𝕜) :
+    ‖iteratedFDeriv 𝕜 n f x - iteratedFDeriv 𝕜 n f y‖ =
+      ‖iteratedDeriv n f x - iteratedDeriv n f y‖ := by
+  simp only [iteratedFDeriv_eq_equiv_comp, Function.comp_apply]
+  rw [← map_sub, LinearIsometryEquiv.norm_map]

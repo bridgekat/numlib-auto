@@ -12,3 +12,6 @@ id = "contDiffOn_of_hasDerivAt_chain"
 
 [[node]]
 id = "iteratedDeriv_comp_congr"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_eq_norm_iteratedDeriv_sub"

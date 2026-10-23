@@ -1,0 +1,67 @@
+namespace = "CubicRegularization"
+
+[[node]]
+id = "cubicHinge"
+
+[[node]]
+id = "hasDerivAt_cubicHinge"
+
+[[node]]
+id = "hasDerivAt_deriv_cubicHinge"
+
+[[node]]
+id = "contDiff_cubicHinge"
+
+[[node]]
+id = "smoothPlateau"
+
+[[node]]
+id = "smoothPlateauGradient"
+
+[[node]]
+id = "smoothPlateauHessian"
+
+[[node]]
+id = "contDiff_smoothPlateau"
+
+[[node]]
+id = "hasDerivAt_smoothPlateau"
+
+[[node]]
+id = "hasDerivAt_smoothPlateauGradient"
+
+[[node]]
+id = "smoothPlateau_on_left"
+
+[[node]]
+id = "smoothPlateau_at_middle"
+
+[[node]]
+id = "smoothPlateau_nonneg"
+
+[[node]]
+id = "smoothPlateauHessian_lipschitz"
+
+[[node]]
+id = "iteratedDeriv_two_smoothPlateau"
+
+[[node]]
+id = "smoothPlateau_tensor_lipschitz"
+
+[[node]]
+id = "hasFDerivAt_smoothPlateau"
+
+[[node]]
+id = "hasFDerivAt_smoothPlateauGradient"
+
+[[node]]
+id = "secondDerivative_smoothPlateau_eq_zero"
+
+[[node]]
+id = "plateauRatio"
+
+[[node]]
+id = "plateau_firstOrderRun"
+
+[[node]]
+id = "exists_slow_firstOrderRun"
