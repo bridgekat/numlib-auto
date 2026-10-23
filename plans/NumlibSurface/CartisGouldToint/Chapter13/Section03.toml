@@ -100,6 +100,8 @@ Formalize every hypothesis and conclusion in the following numbered statement, w
 
 Lemma 13.3.6: The outcome of Step 1.5 of the ARqpEDA algorithm
 
+Clause(i) is implemented separately as lemma_13_3_6_optimality. The complete numbered result remains open: clause(ii) still needs a genuine solver/radius-history proof, including the radius floor from13.1.12. The explicit-floor budget transfer lemmas do not supply that operational prerequisite.
+
 (i) Suppose that (13.3.17) holds. Then \( {x}_k \) is an \( \left( {\epsilon ,{\delta }_k}\right) \) -approximate qth-order minimizer.
 
 (ii) Additionally, suppose that f.D0pL holds. If (13.1.78) holds with the choice (13.3.3), \( {\sigma }_{\max } \) as defined in (13.1.77), and \( {\kappa }_{\delta }^{\left( 1\right) }\left( \sigma \right) \) as in (13.1.72), then the ARqpEDA algorithm terminates in Step 1.5.1 rather than branching to Step 5 via Step 1.5.2.
@@ -196,3 +198,10 @@ source = "Corrected companion or formal counterexample for Cartis, Gould and Toi
 [[node]]
 id = "edaModelTrace"
 source = "Cartis, Gould and Toint, TRqEDA actual computed objective-ratio and radius-update components."
+
+[[node]]
+id = "edaRegularizationTerminationCheck"
+
+[[node]]
+id = "lemma_13_3_6_optimality"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.6(i), equation13.3.17"

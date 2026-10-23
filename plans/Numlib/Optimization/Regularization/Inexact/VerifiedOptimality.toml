@@ -1,0 +1,19 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "VectorTerminationCheck"
+
+[[node]]
+id = "VectorTerminationCheck.true_optimality"
+
+[[node]]
+id = "verificationThreshold"
+
+[[node]]
+id = "tensorErrorBudget_le_of_radius_floor"
+
+[[node]]
+id = "vectorVerification_of_uniform_cap"
+
+[[node]]
+id = "vectorTerminationCheck_of_uniform_cap"

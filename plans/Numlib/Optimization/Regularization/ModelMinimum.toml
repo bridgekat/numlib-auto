@@ -1,0 +1,10 @@
+namespace = "ModelDecrease"
+
+[[node]]
+id = "continuous_penalized_ofJet"
+
+[[node]]
+id = "exists_minimizer_ofJet"
+
+[[node]]
+id = "exists_nonzero_minimizer_ofJet"

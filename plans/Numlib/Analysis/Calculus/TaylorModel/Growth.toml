@@ -1,0 +1,10 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "jetNormSum"
+
+[[node]]
+id = "jetNormSum_nonneg"
+
+[[node]]
+id = "norm_ofJet_le_mul_pow"

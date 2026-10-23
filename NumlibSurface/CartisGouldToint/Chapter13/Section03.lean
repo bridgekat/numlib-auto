@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.VerifiedOptimality
 import Numlib.Optimization.TrustRegion.Inexact.FunctionRadius
 import Numlib.Optimization.TrustRegion.Inexact.Budget
 import Numlib.Optimization.Regularization.Inexact.ParameterFunctionCounterexample
@@ -248,5 +249,31 @@ theorem lemma_13_3_3 {n q N k : ℕ}
     apply hmake
     simpa only [tensorErrorBudget, optimalityRadius, one_mul] using hc.verified
   exact ⟨hc', hc'.true_optimality f (x k) horacle⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The per-order computed tests and actual finite accuracy budgets in Step1.5.1
+of ARqpEDA, using the algorithm's vector of optimality radii. -/
+abbrev edaRegularizationTerminationCheck {n q : ℕ}
+    (A : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (δ : Fin q → ℝ) (ζ : ℝ) (ε : Fin q → ℝ)
+    (d : Fin q → EuclideanSpace ℝ (Fin n)) (accuracy : ℕ → ℝ) : Prop :=
+  InexactRegularization.VectorTerminationCheck A δ ζ ε d accuracy
+
+/-- Lemma13.3.6(i): each explicitly verified vector-radius computed optimality
+test certifies the corresponding true Taylor criticality condition. The separate
+finite-loop assertion(ii) requires a proved solver radius-floor theorem. -/
+theorem lemma_13_3_6_optimality {n q : ℕ}
+    {A : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {δ ε : Fin q → ℝ} {ζ : ℝ} {d : Fin q → EuclideanSpace ℝ (Fin n)}
+    {accuracy : ℕ → ℝ} (h : edaRegularizationTerminationCheck A δ ζ ε d accuracy)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    (horacle : ∀ a, 1 ≤ a → a ≤ q →
+      ‖A a - iteratedFDeriv ℝ a f x‖ ≤ accuracy a) :
+    ∀ a : Fin q, TaylorModel.criticality f (InexactTrustRegion.modelOrder a) x (δ a) ≤
+      ε a * δ a ^ InexactTrustRegion.modelOrder a / (InexactTrustRegion.modelOrder a).factorial :=
+  h.true_optimality f x horacle
 
 end CartisGouldToint
