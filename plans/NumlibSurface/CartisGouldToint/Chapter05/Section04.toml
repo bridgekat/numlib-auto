@@ -6,6 +6,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_5_4_2"
+wrong = "The printed quadratic gradient coefficient in(5.4.4)-(5.4.5) fails with all five threshold terms finite and positive. lemma_5_4_2_counterexample gives actual f(x)=x^2/20, least Hessian eigenvalue1/10, positive Hessian Lipschitz constant1/1000, theta1=1/2, sigmaMin=1/4<theta1, sigmaInitial=sigmaActual=sigmaMax=100 and legal acceptance/update settings. At u=10^(-8), x0=u+500u^2, s=-u and x1=500u^2, the actual cubic model gradient is zero, strict model improvement and true ratio1 give a genuine accepted AR2 run. All five source terms are [45/100501,15/4,5/8,45/16,3/200]; zetaStar=45/100501. Both points are inside Qstar and the initial actual gradient is below zetaStar, but the endpoint gradient strictly exceeds the initial gradient squared divided by zetaStar. This refutes the first displayed claim and hence the conjunction, without relying on the problematic division by max(theta1-sigmaMin,0) at zero."
 kind = "theorem"
 desc = '''
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -155,3 +156,7 @@ source = "Cartis, Gould and Toint, Lemma 5.4.3, exact printed local count at eps
 [[node]]
 id = "theorem_5_4_4_counterexample"
 source = "Cartis, Gould and Toint, Theorem5.4.4, literal total count at epsilon=zeta/sqrt(2)"
+
+[[node]]
+id = "lemma_5_4_2_counterexample"
+source = "Cartis, Gould and Toint, Lemma5.4.2, equations(5.4.3)-(5.4.6), all five finite positive threshold terms"

@@ -1,0 +1,56 @@
+namespace = "CubicRegularization.SpectralCounterexample"
+desc = "A fully legal positive scalar quadratic AR2 trial with all five finite positive printed local-threshold terms refutes the claimed coefficient in Lemma5.4.2. Actual derivatives, Hessian eigenpair, ratio, model tests and parameter updates are derived."
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "hasDerivAt_objective"
+
+[[node]]
+id = "deriv_objective"
+
+[[node]]
+id = "second_derivative"
+
+[[node]]
+id = "second_formula"
+
+[[node]]
+id = "least_eigenpair"
+
+[[node]]
+id = "regularity"
+
+[[node]]
+id = "taylor_exact"
+
+[[node]]
+id = "u"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "model_derivative_zero"
+
+[[node]]
+id = "modelTrace"
+
+[[node]]
+id = "actual_run"
+
+[[node]]
+id = "stricter_test"
+
+[[node]]
+id = "parameter_cap"
+
+[[node]]
+id = "printed_constants"
+
+[[node]]
+id = "local_region"
+
+[[node]]
+id = "printed_bound_fails"

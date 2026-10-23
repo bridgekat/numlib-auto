@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Cubic.SpectralCounterexample
 import Numlib.Optimization.Regularization.Cubic.PhaseCountCounterexample
 import Numlib.Optimization.Regularization.Cubic.LocalCountCounterexample
 import Numlib.Optimization.SecondOrder.HessianRegion
@@ -118,3 +119,43 @@ theorem CartisGouldToint.theorem_5_4_4_counterexample :
     zeta_bounds.1, epsilon_bounds.1, epsilon_bounds.2.2, initial_region, actual_run,
     stricter_test, never_excluded, initial_fails, terminal_passes, rfl,
     printed_double_log, count_fails⟩
+
+namespace CartisGouldToint
+
+/-- **Counterexample to Lemma 5.4.2.** A positive scalar quadratic has a true
+accepted AR2 trial satisfying the tightened actual model-gradient test. The
+Hessian Lipschitz constant is positive, `sigmaMin < theta`, and all five
+printed threshold terms are finite and positive. Their exact minimum is
+`45/100501`. The initial point belongs even to the printed small-gradient
+local region, but its accepted endpoint violates (5.4.4). Thus the claimed
+coefficient fails independently of any zero-denominator convention. -/
+theorem lemma_5_4_2_counterexample :
+    let f := CubicRegularization.SpectralCounterexample.objective
+    let x := CubicRegularization.SpectralCounterexample.point
+    let u := CubicRegularization.SpectralCounterexample.u
+    let ζstar := CubicRegularization.LocalCountCounterexample.printedZeta
+      (1 / 10) (1 / 1000) (1 / 2) (1 / 4) 100 (3 / 4)
+    ContDiff ℝ 2 f ∧ IsLocalMin f 0 ∧ (∀ z, 0 ≤ f z) ∧
+      (∀ a b, ‖iteratedFDeriv ℝ 2 f a - iteratedFDeriv ℝ 2 f b‖ ≤
+        (1 / 1000 : ℝ) * ‖a - b‖) ∧
+      SecondOrderTrustRegion.IsLeastEigenpair f 0 (1 / 10) 1 ∧
+      (0 : ℝ) < 1 / 1000 ∧ (0 : ℝ) < 1 / 2 - 1 / 4 ∧
+      max (100 : ℝ) (3 * (1 / 1000) / (1 - 3 / 4)) = 100 ∧
+      ζstar = 45 / 100501 ∧
+      CubicRegularization.FirstOrderRun f x (fun _ => -u) (fun _ => 100)
+        (fun _ => 1) (1 / 4) (3 / 4) (1 / 2) 2 3 (1 / 4) (1 / 2)
+          (1 / 100000000000) ⊤ 1 ∧
+      ‖fderiv ℝ (CubicRegularization.model f (x 0) 100) (-u)‖ ≤
+        (1 / 2 : ℝ) * min ‖fderiv ℝ f (x 0)‖ ((1 / 2 : ℝ) * ‖-u‖ ^ 2) ∧
+      (‖x 0‖ ≤ (1 / 10 : ℝ) / (4 * (1 / 1000)) ∧
+        ‖x 1‖ ≤ (1 / 10 : ℝ) / (4 * (1 / 1000)) ∧
+        ‖fderiv ℝ f (x 0)‖ ≤ ζstar) ∧
+      ‖fderiv ℝ f (x 0)‖ ^ 2 / ζstar < ‖fderiv ℝ f (x 1)‖ := by
+  dsimp only
+  open CubicRegularization.SpectralCounterexample in
+    exact ⟨regularity.1, regularity.2.1, regularity.2.2.1, regularity.2.2.2,
+      least_eigenpair 0, by norm_num, by norm_num, parameter_cap,
+      printed_constants.2.2.2.2.2, actual_run, stricter_test, local_region,
+      printed_bound_fails⟩
+
+end CartisGouldToint
