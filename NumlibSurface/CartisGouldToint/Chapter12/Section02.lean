@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.HighOrder.SharpnessGlobal
 import Numlib.Optimization.TrustRegion.HighOrder.Complexity
 import Numlib.Optimization.TrustRegion.HighOrder.Radius
 import Numlib.Optimization.TrustRegion.HighOrder.Trial
@@ -7,11 +8,13 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Data.Finset.Lattice.Fold
 
 /-!
-# Model-decrement lower bounds for TRq
+# Arbitrary-order trust-region evaluation complexity
 
-The local Step 1 and Step 2 conditions of Algorithm 12.2.1 suffice for the prefix minimum bound
-and the trial-step bound of Lemma 12.2.1. Taylor decrements are evaluated from the actual
-iterated Fréchet derivatives, and the scaled gap is the expression in equation (12.2.8).
+Actual Taylor trials give the prefix gap, radius, decrease and complete evaluation
+bounds for TRq. Uniform Hermite interpolation supplies globally regular objectives
+realizing the matching inverse-accuracy lower rate. The sharpness construction
+corrects the source's objective drop, ceiling estimate, grid origin and derivative
+factorials; initialization retains its accuracy-dependent radius.
 -/
 
 namespace CartisGouldToint
@@ -260,5 +263,51 @@ theorem theorem_12_2_5 {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
         (trqDerivativeEvaluations P ρ K : ℝ) ≤
           (κS * (f x₀ - flow) + 1) * trqMaximumInverseAccuracy P (q + 1) :=
   HighOrderTrustRegion.evaluation_complexity f S x₀ hΔ hΔmax hf L hL hlip hlow
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open HighOrderTrustRegion HighOrderTrustRegion.Sharpness in
+/-- **Theorem 12.2.6 (slow convergence of TRq).** Uniform regularity and objective
+bounds are chosen before the accuracy. The globally `C^q` objective realizes a legal
+run from zero with `ε_j=j!ε`, exactly `ceil(ε^(-(q+1)))` nonterminal trials, and one
+additional initialized evaluation of the function and each derivative. Before the
+last point, true approximate optimality fails at every positive radius. At the last
+point all true tests hold with radius `ε∈(0,1]`.
+
+The construction corrects the source's objective recurrence by making the actual
+drop equal the model prediction, starts the objective at four, and uses `x_k=kε`.
+The ceiling gives `ε^(q+1)K<2`; it does not give the printed upper bound by one.
+Derivative residuals use the descending factorial coefficient and include the
+highest-order change `q!ε/K`. Initialization retains the source's radius `Δ₀=ε`.
+The same objective works for every legal acceptance/update parameter choice with
+unit optimality cap and maximal radius at least one, including `γ₃=1` and every
+allowed approximation fraction. -/
+theorem theorem_12_2_6 {q : ℕ} (hq : 0 < q)
+    (S : Settings q) (hθ : S.theta = 1) (hmax : 1 ≤ S.radiusMax) :
+    ∃ L ≥ 1, ∃ B > 0, ∀ (ε : ℝ) (hε : 0 < ε) (hεq : ε ≤ 1 / (q.factorial : ℝ)),
+      let P := settingsParameters S hθ ε hε hεq
+      ∃ f : ℝ → ℝ, ContDiff ℝ q f ∧
+        (∀ j ≤ q, ∀ y, |iteratedDeriv j f y| ≤ B) ∧
+        (∀ j ≤ q, ∀ y z,
+          ‖iteratedFDeriv ℝ j f y - iteratedFDeriv ℝ j f z‖ ≤ L * ‖y - z‖) ∧
+        (∀ y, -B ≤ f y) ∧ f 0 = 4 ∧ f 0 - (-B) = 4 + B ∧
+          Run f P (point ε) (fun _ => ε) (fun _ _ => direction q ε P.zeta)
+            (fun _ => topIndex hq) (fun _ => ε) (fun _ => 1) (length q ε) ∧
+          (∀ k ≤ length q ε, CheckedOracle f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
+          (∀ k < length q ε, ¬TestsPass f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
+          TestsPass f P (point ε (length q ε)) ε (fun _ => direction q ε P.zeta) ∧
+          (∀ k < length q ε, ∀ δ > 0,
+            ¬∀ a, TaylorModel.criticality f (modelOrder a) (point ε k) δ ≤
+              P.accuracy a * δ ^ modelOrder a / (modelOrder a).factorial) ∧
+          (ε ∈ Set.Ioc (0 : ℝ) 1) ∧
+          (∀ a, TaylorModel.criticality f (modelOrder a) (point ε (length q ε)) ε ≤
+            P.accuracy a * ε ^ modelOrder a / (modelOrder a).factorial) ∧
+          functionEvaluations (length q ε) = length q ε + 1 ∧
+          derivativeEvaluations P (fun _ => 1) (length q ε) = length q ε + 1 ∧
+          1 / ε ^ (q + 1) ≤ (length q ε : ℝ) ∧
+          1 / ε ^ (q + 1) < (functionEvaluations (length q ε) : ℝ) ∧
+          1 / ε ^ (q + 1) < (derivativeEvaluations P (fun _ => 1) (length q ε) : ℝ) :=
+  HighOrderTrustRegion.Sharpness.exists_slow_objective_for_settings hq S hθ hmax
 
 end CartisGouldToint

@@ -1,0 +1,10 @@
+namespace = "HighOrderTrustRegion.Sharpness"
+
+[[node]]
+id = "exists_slow_objective"
+
+[[node]]
+id = "settingsParameters"
+
+[[node]]
+id = "exists_slow_objective_for_settings"
