@@ -353,6 +353,7 @@ import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 import Numlib.Analysis.SpecialFunctions.Exp
+import Numlib.Analysis.SpecialFunctions.Exp.FiniteSum
 import Numlib.Analysis.SpecialFunctions.Integrals.Basic
 import Numlib.Analysis.SpecialFunctions.Integrals.Beta
 import Numlib.Analysis.SpecialFunctions.Integrals.LogTrigonometric
@@ -363,6 +364,7 @@ import Numlib.Analysis.SpecialFunctions.PolynomialExp
 import Numlib.Analysis.SpecialFunctions.Pow.Deriv
 import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Analysis.SpecialFunctions.Sqrt
+import Numlib.Analysis.SpecialFunctions.Sqrt.Bounds
 import Numlib.Analysis.SpecialFunctions.Tribonacci
 import Numlib.Analysis.SpecialFunctions.Trigonometric.CosSum
 import Numlib.Analysis.Wavelet.ContinuousTransform
@@ -645,6 +647,9 @@ import Numlib.ODE.RungeKutta
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
 import Numlib.Optimization.Descent
+import Numlib.Optimization.EvaluationComplexity.Decrease
+import Numlib.Optimization.EvaluationComplexity.ParameterUpdates
+import Numlib.Optimization.EvaluationComplexity.Updates
 import Numlib.Optimization.LineSearch
 import Numlib.Optimization.QuasiNewton
 import Numlib.Order.EReal

@@ -1,119 +1,7 @@
 namespace = "CartisGouldToint"
-desc = '''
-Surface adaptation of Cartis–Gould–Toint Chapter 2, Section 3.
-
-Separate the general multiplicative radius-update counting theorem into Numlib.Optimization.EvaluationComplexity.Updates; its source leaf is Lemma 2.3.1. Model matrices are symmetric and their operator norms are uniformly bounded (m.HBa). Cauchy decrease is derived from a ray minimizer, never assumed as the conclusion of Lemma 2.3.2. Counts require explicit prefix indexing; the proof's k=|S_k|+|U_k| is an off-by-one shorthand when S_k is inclusive.
-
-Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
-
-Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
-
-In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
-
-Section mathematical setup (source OCR; resolve errors by the design notes above):
-
-Having examined steepest-descent linesearch algorithms for solving (2.1.1), we now turn to methods that use first-order information (i.e., the gradient) less directly. Specifically, a local model of the objective function is constructed using the gradient. This model is then (locally) optimized, with the intention of moving the next iterate toward an \( \epsilon \) -approximate first-order minimizer. The first of these methods is the trust-region algorithm.
-
-#### 2.3.1 The TR1 algorithm
-
-The basic trust-region algorithm is based on the idea that a (typically quadratic) model of the objective function is minimized, possibly approximately, in a trust region centered at the current iterate, that is, a region in which this model is believed to provide a sufficiently good approximation of the objective function.
-
-More specifically, iteration \( k \geq  0 \) consists of the following steps. We first define a quadratic model at the current iterate \( {x}_k \) by
-
-\[
-{m}_k\left( s\right)  = f\left( {x}_k\right)  + \left\langle  {{\nabla }_x^{1}f\left( {x}_k\right) , s}\right\rangle   + \frac{1}{2}\left\langle  {s,{B}_{k}s}\right\rangle  ,\tag{2.3.1}
-\]
-
-where \( {B}_k \) is a uniformly bounded symmetric matrix (see m.HBa), whose purpose is to approximate the objective function within a trust region, that is, the set of all points
-
-\[
-{\mathcal{B}}_{{\Delta }_k} = \left\{  {s \in  {\mathbb{R}}^n \mid  \parallel s\parallel  \leq  {\Delta }_k}\right\}\tag{2.3.2}
-\]
-
-for some trust-region radius \( {\Delta }_k \) . Observe that, at this stage, we do not require that the matrix \( {B}_k \) approximate the Hessian of \( f \) but insist that the gradient of the model \( {m}_k\left( s\right) \) coincide with that of \( f \) at \( {x}_k \) , so that \( {\nabla }_s^1{m}_k\left( 0\right)  = {\nabla }_x^{1}f\left( {x}_k\right) \) .
-
-We next seek a trial step \( {s}_k \) to a trial point \( {x}_k + {s}_k \in  {\mathcal{B}}_{{\Delta }_k} \) with the aim of reducing the model (while satisfying the bound \( \left. {\begin{Vmatrix}{s}_k\end{Vmatrix} \leq  {\Delta }_k}\right) \) . We ask that the reduction in the model at the trial point be at least equal to (a fraction of) the model reduction that can be achieved along the steepest-descent direction within the trust region.
-
-Having determined the trial step, we now compute the objective function at \( {x}_k + {s}_k \) and compare it to the value predicted by the model at this point, that is, \( {m}_k\left( {s}_k\right) \) . If the reduction predicted by the model is realized for the objective function, the trial point is accepted as the next iterate and the trust region is expanded or kept the same; such an iteration is said to be successful. If the model reduction turns out to be a poor prediction of the actual behaviour of the objective function, the trial point is rejected-the iteration is unsuccessful-and the trust region is contracted, with the hope that the model provides a better prediction within the smaller region.
-
-More formally, the basic trust-region algorithm is described on the next page.
-
-Algorithm 2.3.1: Trust-region algorithm with a first-order model (TR1)
-
-Step 0: Initialization. An initial point \( {x}_0 \) , an accuracy level \( \epsilon  > 0 \) , and an initial trust-region radius \( {\Delta }_0 > 0 \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1 \) , and \( {\gamma }_2 \) are also given and satisfy
-
-\[
-0 < {\eta }_{1} \leq  {\eta }_{2} < 1\text{ and }0 < {\gamma }_{1} \leq  {\gamma }_{2} < 1 < {\gamma }_{3}\tag{2.3.3}
-\]
-
-Compute \( f\left( {x}_0\right) \) and \( {\nabla }_{x}f\left( {x}_0\right) \) , and set \( k = 0 \) .
-
-Step 1: Test for termination. If \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  \epsilon \) , terminate with the \( \epsilon \) - approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-
-Step 2: Step computation. Compute a step \( {s}_k \in  {\mathcal{B}}_{{\Delta }_k} \) such that
-
-\[
-{m}_k\left( {s}_k\right)  \leq  {m}_k\left( {s}_k^{\mathrm{C}}\right) ,\tag{2.3.4}
-\]
-
-where \( {m}_k \) is given by (2.3.1) and
-
-\[
-{s}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = } - {t}_{k}^{\mathrm{C}}{\nabla }_{x}^{1}f\left( {x}_{k}\right) \;\text{ with }\;{t}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = }\underset{t \geq  0,{x}_{k} - t{\nabla }_{x}^{1}f\left( {x}_{k}\right)  \in  {\mathcal{R}}_{k}}{\arg \min }{m}_{k}\left( {-t{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\right) .
-\]
-
-(2.3.5)
-
-Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) and define
-
-\[
-{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{m}_k\left( 0\right)  - {m}_k\left( {s}_k\right) }.\tag{2.3.6}
-\]
-
-If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_{x}f\left( {x}_{k + 1}\right) \) . Otherwise, define \( {x}_{k + 1} = {x}_k \) .
-
-Step 4: Trust-region radius update. Set
-
-\[
-{\Delta }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {{\Delta }_{k},{\gamma }_{3}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\gamma }_{2}{\Delta }_{k},{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) , \\  \left\lbrack  {{\gamma }_{1}{\Delta }_{k},{\gamma }_{2}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.\tag{2.3.7}
-\]
-
-Increment \( k \) by one and go to Step 1.
-
-Reasonable values for the constants in (2.3.3) might be, for example, \( {\eta }_1 = {0.01} \) , \( {\eta }_2 = {0.9},{\gamma }_1 = {\gamma }_2 = {0.5} \) , and \( {\gamma }_3 = 2 \) . The step \( {s}_k^c \) in (2.3.5) is referred to as the Cauchy step and the point \( {x}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = }{x}_{k} + {s}_{k}^{\mathrm{C}} \) as the Cauchy point. We note that the condition (2.3.4) may be relaxed to require instead that merely
-
-\[
-{m}_k\left( 0\right)  - {m}_k\left( {s}_k\right)  \geq  \kappa \left( {{m}_k\left( 0\right)  - {m}_k\left( {s}_k^{ \circ  }\right) }\right)\tag{2.3.8}
-\]
-
-for some \( \kappa  \in  (0,1\rbrack \) , without affecting the results below.
-
-The key difference between this method and those considered in Section 2.2 is that here one minimizes a (possibly crude) approximate quadratic model of the objective function along the steepest-descent direction (see (2.3.5)) instead of considering the true objective function itself.
-
-For convenience, here and for many algorithms to come, we define
-
-\[
-\mathcal{S}\overset{\text{ def }}{ = }\left\{  {k \in  {\mathbb{N}}^{0} \mid  {\rho }_{k} \geq  {\eta }_{1}}\right\}  \;\text{ and }\;\mathcal{U}\overset{\text{ def }}{ = }{\mathbb{N}}^{0} \smallsetminus  \mathcal{S},\tag{2.3.9}
-\]
-
-the sets of successful and unsuccessful iterations, respectively, and
-
-\[
-{\mathcal{S}}_{k}\overset{\text{ def }}{ = }\left\{  {j \in  \left\lbrack  {0 : k}\right\rbrack   \mid  {\rho }_{j} \geq  {\eta }_{1}}\right\}  \;\text{ and }\;{\mathcal{U}}_{k}\overset{\text{ def }}{ = }\left\lbrack  {0 : k}\right\rbrack   \smallsetminus  {\mathcal{S}}_{k},\tag{2.3.10}
-\]
-
-the corresponding sets up to iteration \( k \) . Notice that \( {x}_{k + 1} = {x}_k + {s}_k \) for \( k \in  \mathcal{S} \) , while \( {x}_{k + 1} = {x}_k \) for \( k \in  \mathcal{U} \) .
-
-For future reference, we now state a property of the TR1 algorithm that solely depends on the mechanism (2.3.7) to update the trust-region radius.
-'''
 
 [[node]]
 id = "successfulIterations"
-kind = "definition"
-desc = '''
-For ratio ρ:ℕ→ℝ and threshold η₁, define S={k|η₁≤ρ k}, U=Sᶜ, and finite prefix successful indices (Finset.range N).filter (η₁≤ρ ·). Source S_k is this at N=k+1. No count inequality belongs to this definition.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 2.3"
 
 [[node]]
@@ -204,21 +92,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_2_3_1"
-kind = "theorem"
-desc = '''
-Semantic specification: Use the generic multiplicative radius-update counting theorem in Numlib.Optimization.EvaluationComplexity.Updates. Translate inclusive S_k to prefix N=k+1; the final source k-bound may follow from a stronger consistent prefix estimate.
-
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 2.3.1: Successful and unsuccessful trust-region iterations
-
-Suppose that the TR1 algorithm is used and that \( {\Delta }_k \geq  {\Delta }_{\min } \) for some \( {\Delta }_{\min } > 0 \) . Then
-
-\[
-k \leq  \left| {\mathcal{S}}_k\right| \left( {1 + \frac{\log {\gamma }_3}{\left| \log {\gamma }_2\right| }}\right)  + \frac{1}{\left| \log {\gamma }_2\right| }\left| {\log \left( \frac{{\Delta }_{\min }}{{\Delta }_0}\right) }\right| .\tag{2.3.11}
-\]
-'''
-deps = ["successfulIterations", "cauchyPoint", "tr1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 2.3.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1805)"
 
 [[node]]

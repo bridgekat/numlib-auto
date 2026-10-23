@@ -1,0 +1,13 @@
+namespace = "EvaluationComplexity"
+
+[[node]]
+id = "TrustRegionRadiusUpdates"
+
+[[node]]
+id = "TrustRegionRadiusUpdates.pos"
+
+[[node]]
+id = "RegularizationParameterUpdates"
+
+[[node]]
+id = "RegularizationParameterUpdates.min_le"

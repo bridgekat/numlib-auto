@@ -13,15 +13,6 @@ Define shiftedFactorial k beta = product over i=1,...,k of ((i:real)+beta), with
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.8, before Theorem A.8.3"
 
 [[node]]
-id = "taylorModel"
-kind = "definition"
-desc = '''
-For f:E->real, x,s:E and p:natural, define taylorModel f p x s = sum over ell=0,...,p of (ell!)^-1 times iteratedFDeriv real ell f x applied to ell copies of s. Under order-zero identification the first term is f x. This is exactly T_{f,p}(x,s) in (A.10).
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.8, equation (A.10)"
-deps = ["tensorDiagonal"]
-
-[[node]]
 id = "theorem_A_8_1"
 kind = "theorem"
 desc = '''
