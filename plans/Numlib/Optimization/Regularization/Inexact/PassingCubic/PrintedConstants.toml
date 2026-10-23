@@ -1,0 +1,43 @@
+namespace = "InexactRegularization.PassingCubic"
+
+[[node]]
+id = "printedParameterCap"
+
+[[node]]
+id = "printedTensorCap"
+
+[[node]]
+id = "printedRadiusCoefficient"
+
+[[node]]
+id = "printedAccuracyThreshold"
+
+[[node]]
+id = "printedParameterCap_eq"
+
+[[node]]
+id = "printedTensorCap_eq"
+
+[[node]]
+id = "printedRadiusCoefficient_eq"
+
+[[node]]
+id = "minimum_accuracy_eq"
+
+[[node]]
+id = "small_printed_accuracy"
+
+[[node]]
+id = "source_regularity"
+
+[[node]]
+id = "bad_not_optimality"
+
+[[node]]
+id = "bad_small_accuracy"
+
+[[node]]
+id = "actual_parameter_exceeds_printed"
+
+[[node]]
+id = "verified_counterexample"

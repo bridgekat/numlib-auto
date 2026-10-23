@@ -1,0 +1,49 @@
+namespace = "InexactRegularization.PassingCubic"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "derivative_objective"
+
+[[node]]
+id = "derivative_first"
+
+[[node]]
+id = "derivative_second"
+
+[[node]]
+id = "objective_jets"
+
+[[node]]
+id = "true_decrement"
+
+[[node]]
+id = "true_failure"
+
+[[node]]
+id = "smooth_objective"
+
+[[node]]
+id = "derivative_third"
+
+[[node]]
+id = "objective_derivative_formula"
+
+[[node]]
+id = "abs_combination_le"
+
+[[node]]
+id = "objective_derivative_bound"
+
+[[node]]
+id = "objective_lipschitz"
+
+[[node]]
+id = "oracle_error"
+
+[[node]]
+id = "verification_fails"
+
+[[node]]
+id = "exists_passing_component"

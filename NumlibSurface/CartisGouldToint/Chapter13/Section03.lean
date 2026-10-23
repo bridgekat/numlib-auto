@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.PassingCubic.PrintedConstants
 import Numlib.Optimization.TrustRegion.Inexact.Explicit.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.Explicit.Run
 import Numlib.Optimization.TrustRegion.Inexact.FunctionDecrease
@@ -299,8 +300,8 @@ abbrev arqpedaRun {n p q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
 /-- Lemma13.3.6 with the genuine corrected guarded parameter cap. The explicit
 finite error budgets certify true optimality. Actual oracle and radius histories
 force those budgets under the displayed uniform accuracy threshold, so a finished
-computed optimality loop takes Step1.5.1. The original printed-cap assertion
-remains a separate open target. -/
+computed optimality loop takes Step1.5.1. The original printed-cap assertion is refuted by
+`arqpedaPassingCheckCounterexample`. -/
 theorem lemma_13_3_6_corrected {n p q N k : ℕ}
     {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {P : InexactRegularization.Explicit.Settings p q} {ε : Fin q → ℝ}
@@ -527,5 +528,36 @@ theorem theorem_13_3_4 {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
           κA * (f x₀ - flow) / minimumAccuracy P.order_pos ε ^ (q + 1) +
           κE * |Real.log (minimumAccuracy P.order_pos ε)| + κF :=
   InexactTrustRegion.Explicit.evaluation_complexity f P x₀ hL hf hlip hlow
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactRegularization InexactRegularization.PassingCubic InexactTrustRegion
+
+/-- The literal printed sufficient error condition in Lemma13.3.6(ii) fails for a complete
+actual execution. At iteration 382, every computed test passes and every error
+request satisfies (13.1.78), yet true third-order criticality fails and EDA
+verification selects Step5. All global smoothness, oracle and update rules hold. -/
+theorem arqpedaPassingCheckCounterexample :
+    ContDiff ℝ 3 (objective perturbation curvature) ∧
+    (∀ j, j ≤ 3 → ∀ x y, ‖iteratedFDeriv ℝ j (objective perturbation curvature) x -
+      iteratedFDeriv ℝ j (objective perturbation curvature) y‖ ≤ 3 * ‖x - y‖) ∧
+    InexactRegularization.Run (objective perturbation curvature) settings.toSettings
+      (fun _ => 1 / 2) data.toExecutionData 383 ∧
+    Explicit.Run (objective perturbation curvature) settings (fun _ => 1 / 2) data 383 ∧
+    data.selected 382 = none ∧
+    (∀ i, data.accuracy 382 i ≤ verificationThreshold 3 settings.zeta
+      (stepRadiusCoefficient settings.zeta settings.theta
+        (3 + settings.errorBound * settings.initialCap)
+        (max settings.sigmaInitial
+          (settings.gamma3 * (2 * 3 + 4 * ((3 + 1).factorial : ℝ) *
+            settings.stepCoefficient * settings.errorBound) / (1 - settings.eta2))))
+      settings.errorBound (minimumAccuracy settings.order_pos (fun _ => 1 / 2))) ∧
+    ¬OptimalityAt (objective perturbation curvature) (fun _ => 1 / 2)
+      (data.point 382) (data.checkedRadius 382) ∧
+    ¬Explicit.StopsAt settings (fun _ => 1 / 2) data 382 ∧
+    382 ∉ data.trials ∧ data.parameter 383 = data.parameter 382 ∧
+    (∀ i, data.accuracy 383 i = (1 / 2) * data.accuracy 382 i) :=
+  verified_counterexample
 
 end CartisGouldToint

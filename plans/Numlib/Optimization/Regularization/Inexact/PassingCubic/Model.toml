@@ -1,0 +1,25 @@
+namespace = "InexactRegularization.PassingCubic"
+
+[[node]]
+id = "polynomial"
+
+[[node]]
+id = "jet"
+
+[[node]]
+id = "polynomial_jets"
+
+[[node]]
+id = "value"
+
+[[node]]
+id = "decrement"
+
+[[node]]
+id = "model_formula"
+
+[[node]]
+id = "model_nonnegative"
+
+[[node]]
+id = "exists_passing"

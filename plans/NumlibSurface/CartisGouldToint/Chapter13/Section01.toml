@@ -100,6 +100,7 @@ wrong = "With the literal short-step guard, the printed constant omits the initi
 
 [[node]]
 id = "lemma_13_1_15"
+wrong = "The literal printed-cap assertion is false for a complete actual 383-iteration IDA and EDA execution. Formal arqpidaPassingCheckCounterexample: p=q=3, epsilon_j=1/2, zeta=1/2, theta=9/10, kappa_s=1/16, known error bound=1, H=2^80, sigma0=sigmaMin=H, gamma3=H, initial error cap=2H. The globally smooth objective f(x)=(G-1)x+sin(x)+B(1-cos(x)), G=2^(-300), B=16/H^2, has all zeroth-through-third derivative Lipschitz constants three. The initial ghost jet (-H,B,-1) admits a large rejected step2, legally increasing sigma to H^2; the reused ghost then forces a short accuracy-only step. Subsequent computed jets (0,B,-1) have globally nonnegative regularized models and actual passing ordered checks with positive third radius delta<=4B. Accuracy halvings reach G at iteration382, which satisfies the exact printed13.1.78 threshold: sigmaMax=48H, kappaDelta^(1)=1/(2560H). Nevertheless actual true third criticality exceeds epsilon_3 delta^3/3!, and the actual EDA finite verification budget fails, so Step1 branches to Step5. Both complete Run proofs include actual Step1/Step2 computations, every oracle bound, both function evaluations, rejection, jet reuse, all parameter/radius/accuracy updates, and the final exact refresh. This refutes the literal sufficient condition; corrected companions using a genuine parameter cap and the valid clause13.3.6(i) remain proved. It does not refute an existential complexity or termination statement."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -265,3 +266,6 @@ source = "Cartis, Gould and Toint, Lemma13.1.17 with guarded parameter-cap corre
 [[node]]
 id = "arqpidaPrintedBoundsCounterexample"
 source = "Actual full operational sine execution refutes the literal fixed parameter-dependent constants; all original numbered payloads are retained with explicit wrong explanations."
+
+[[node]]
+id = "arqpidaPassingCheckCounterexample"

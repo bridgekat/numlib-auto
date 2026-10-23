@@ -1,0 +1,28 @@
+namespace = "InexactRegularization.PassingCubic"
+
+[[node]]
+id = "updates"
+
+[[node]]
+id = "accuracy_trial"
+
+[[node]]
+id = "accuracy_improvement"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "ida_run"
+
+[[node]]
+id = "bad_selected"
+
+[[node]]
+id = "bad_accuracy"
+
+[[node]]
+id = "bad_true_failure"
+
+[[node]]
+id = "bad_accuracy_only"

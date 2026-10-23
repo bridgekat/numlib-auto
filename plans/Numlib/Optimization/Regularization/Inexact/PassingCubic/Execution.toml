@@ -1,0 +1,37 @@
+namespace = "InexactRegularization.PassingCubic"
+
+[[node]]
+id = "accuracy_pos"
+
+[[node]]
+id = "accuracy_lower"
+
+[[node]]
+id = "accuracy_at_bad"
+
+[[node]]
+id = "ghost_oracle_error"
+
+[[node]]
+id = "oracle"
+
+[[node]]
+id = "exact_value"
+
+[[node]]
+id = "first_prediction"
+
+[[node]]
+id = "first_prediction_pos"
+
+[[node]]
+id = "ratio_rejected"
+
+[[node]]
+id = "computation_two"
+
+[[node]]
+id = "trial_rule"
+
+[[node]]
+id = "never_stops"

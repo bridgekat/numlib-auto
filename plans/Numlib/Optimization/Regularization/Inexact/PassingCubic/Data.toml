@@ -1,0 +1,73 @@
+namespace = "InexactRegularization.PassingCubic"
+
+[[node]]
+id = "height"
+
+[[node]]
+id = "curvature"
+
+[[node]]
+id = "perturbation"
+
+[[node]]
+id = "numeric_bounds"
+
+[[node]]
+id = "CheckData"
+
+[[node]]
+id = "CheckData.Valid"
+
+[[node]]
+id = "firstCheck"
+
+[[node]]
+id = "firstCheck_spec"
+
+[[node]]
+id = "ShortData"
+
+[[node]]
+id = "shortData"
+
+[[node]]
+id = "shortData_spec"
+
+[[node]]
+id = "passingCheck"
+
+[[node]]
+id = "passingCheck_spec"
+
+[[node]]
+id = "exactCheck"
+
+[[node]]
+id = "exactCheck_spec"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "check"
+
+[[node]]
+id = "computedJet"
+
+[[node]]
+id = "parameter"
+
+[[node]]
+id = "trialStep"
+
+[[node]]
+id = "solvedRadius"
+
+[[node]]
+id = "accuracy"
+
+[[node]]
+id = "data"
+
+[[node]]
+id = "computation_one"

@@ -1,0 +1,43 @@
+namespace = "InexactRegularization.PassingCubic"
+
+[[node]]
+id = "ghostPolynomial"
+
+[[node]]
+id = "ghostJet"
+
+[[node]]
+id = "ghost_jets"
+
+[[node]]
+id = "ghost_value"
+
+[[node]]
+id = "ghost_first_decrement"
+
+[[node]]
+id = "ghost_first_criticality"
+
+[[node]]
+id = "ghost_model_formula"
+
+[[node]]
+id = "ghost_tensor_norm_bound"
+
+[[node]]
+id = "selected_zero_of_ghost"
+
+[[node]]
+id = "ghost_initial_check"
+
+[[node]]
+id = "ghost_reference_bound"
+
+[[node]]
+id = "ghost_first_step_two"
+
+[[node]]
+id = "ghost_model_nonnegative_of_large"
+
+[[node]]
+id = "ghost_short_components"

@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.PassingCubic.PrintedConstants
 import Numlib.Optimization.Regularization.Inexact.GuardedCounterexample.PrintedConstants
 import Numlib.Optimization.TrustRegion.Inexact.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.RadiusConsequences
@@ -907,5 +908,36 @@ theorem arqpidaPrintedBoundsCounterexample :
   ⟨source_regularity.1, source_regularity.2.1, source_regularity.2.2, ida_run,
     successful_short_trial, true_failure, unit_solved_radii, weighted_inequality_violated,
     step_floor_violated, model_floor_violated, objective_floor_violated⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactRegularization InexactRegularization.PassingCubic InexactTrustRegion
+
+/-- The literal printed sufficient error condition in Lemma13.1.15 fails for a complete
+actual execution. At iteration 382, every computed test passes and every error
+request satisfies (13.1.78), yet true third-order criticality fails and EDA
+verification selects Step5. All global smoothness, oracle and update rules hold. -/
+theorem arqpidaPassingCheckCounterexample :
+    ContDiff ℝ 3 (objective perturbation curvature) ∧
+    (∀ j, j ≤ 3 → ∀ x y, ‖iteratedFDeriv ℝ j (objective perturbation curvature) x -
+      iteratedFDeriv ℝ j (objective perturbation curvature) y‖ ≤ 3 * ‖x - y‖) ∧
+    InexactRegularization.Run (objective perturbation curvature) settings.toSettings
+      (fun _ => 1 / 2) data.toExecutionData 383 ∧
+    Explicit.Run (objective perturbation curvature) settings (fun _ => 1 / 2) data 383 ∧
+    data.selected 382 = none ∧
+    (∀ i, data.accuracy 382 i ≤ verificationThreshold 3 settings.zeta
+      (stepRadiusCoefficient settings.zeta settings.theta
+        (3 + settings.errorBound * settings.initialCap)
+        (max settings.sigmaInitial
+          (settings.gamma3 * (2 * 3 + 4 * ((3 + 1).factorial : ℝ) *
+            settings.stepCoefficient * settings.errorBound) / (1 - settings.eta2))))
+      settings.errorBound (minimumAccuracy settings.order_pos (fun _ => 1 / 2))) ∧
+    ¬OptimalityAt (objective perturbation curvature) (fun _ => 1 / 2)
+      (data.point 382) (data.checkedRadius 382) ∧
+    ¬Explicit.StopsAt settings (fun _ => 1 / 2) data 382 ∧
+    382 ∉ data.trials ∧ data.parameter 383 = data.parameter 382 ∧
+    (∀ i, data.accuracy 383 i = (1 / 2) * data.accuracy 382 i) :=
+  verified_counterexample
 
 end CartisGouldToint
