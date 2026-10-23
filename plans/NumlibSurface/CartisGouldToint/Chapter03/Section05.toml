@@ -50,3 +50,11 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 [[node]]
 id = "inexactSecondOrderTrace"
 source = "Cartis–Gould–Toint Section3.5, actual nonnegative shifted Newton trace, (3.5.1)–(3.5.2)."
+
+[[node]]
+id = "secondOrderOracleMethod"
+source = "Cartis, Gould and Toint, Section3.5 deterministic methods observing actual scalar second-order oracle history"
+
+[[node]]
+id = "secondOrderOracleMethodClass"
+source = "Cartis, Gould and Toint, Section3.5 actual nonterminated execution rules(3.5.1)-(3.5.4)"

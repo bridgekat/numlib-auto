@@ -1,3 +1,4 @@
+import Numlib.Optimization.SecondOrder.OracleMethod
 import Numlib.Optimization.SecondOrder.QuadraticConvergence
 
 /-!
@@ -72,5 +73,14 @@ theorem lemma_3_5_3 {E : Type*} [NormedAddCommGroup E]
       ∀ i < N, (1 - κrg) / ((H + B) * Real.sqrt C) *
         Real.sqrt ‖gradient f (x (i + 1))‖ ≤ ‖s i‖ :=
   h.step_lower_of_quadratic hH hB hC hlip hℓ hnext
+
+/-- A scalar second-order method is an actual deterministic finite-oracle-history
+controller, with its recursively defined execution initialized at zero. -/
+abbrev secondOrderOracleMethod := ShiftedNewton.ScalarMethod
+
+/-- The primitive scalar method class applies the actual residual, PSD and
+spectral conditions to every nonterminated execution on the source objective
+class. It assumes no progress, trajectory support, stopping time or complexity. -/
+abbrev secondOrderOracleMethodClass := ShiftedNewton.IsScalarMethodClass
 
 end CartisGouldToint

@@ -1,0 +1,55 @@
+namespace = "ShiftedNewton"
+
+[[node]]
+id = "ScalarEvaluation"
+
+[[node]]
+id = "scalarOracle"
+
+[[node]]
+id = "ScalarMethod"
+
+[[node]]
+id = "ScalarMethod.iterates"
+
+[[node]]
+id = "ScalarMethod.iterates_zero"
+
+[[node]]
+id = "ScalarMethod.iterates_succ"
+
+[[node]]
+id = "ScalarMatches"
+
+[[node]]
+id = "ScalarMatches.oracle_eq"
+
+[[node]]
+id = "ScalarMethod.iterates_eq_of_matches"
+
+[[node]]
+id = "ScalarObjectiveClass"
+
+[[node]]
+id = "IsScalarMethodClass"
+
+[[node]]
+id = "scalarObjectiveClass_of_bounded_jets"
+
+[[node]]
+id = "exists_scalar_objective_interpolating"
+
+[[node]]
+id = "exists_objective_matches_scalar_history"
+
+[[node]]
+id = "ScalarMethod.next_eq_of_matches"
+
+[[node]]
+id = "stabilizedScalarNewton"
+
+[[node]]
+id = "stabilizedScalarNewton_next"
+
+[[node]]
+id = "stabilizedScalarNewton_isScalarMethodClass"
