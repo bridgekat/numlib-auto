@@ -1,5 +1,7 @@
 import Numlib.Analysis.Calculus.Taylor.ScalarRemainder
 import Numlib.Analysis.Calculus.ContDiff.Lipschitz
+import Numlib.Analysis.Calculus.TaylorModel.Holder
+import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -7,6 +9,8 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 
 Theorems A.8.1 and A.8.2 are the scalar integral and Lagrange Taylor formulas. Theorem A.8.5
 relates Lipschitz continuity of an iterated derivative to a bound on the next derivative.
+The separate value-error helpers establish (A.14) and (A.19). The derivative-error clauses
+(A.15) and (A.20) of the full Theorem A.8.3 and Corollary A.8.4 remain unformalized.
 Ordinary derivatives at the interval endpoints are obtained from smoothness on an open
 neighborhood. The integral formula explicitly assumes positive Taylor order, as its
 factorial and kernel require; zero increments are allowed in both formulas.
@@ -16,6 +20,10 @@ open Set
 open scoped BigOperators
 
 namespace CartisGouldToint
+
+/-- The finite shifted factorial used before Theorem A.8.3: the product of `i + β`
+for `i = 1, …, k`, with empty product one. -/
+noncomputable abbrev shiftedFactorial (k : ℕ) (β : ℝ) : ℝ := Real.shiftedFactorial k β
 
 /-- **Theorem A.8.1.** The error after degree `k` is the integral of the variation of
 the `k`-th derivative against `(h - ξ)^(k-1)/(k-1)!`. The positive order condition is
@@ -74,5 +82,35 @@ theorem theorem_A_8_5 {n p : ℕ} {C : Set (EuclideanSpace ℝ (Fin n))}
       (lipschitzOnWith_iff_norm_sub_le.2 h)
   · intro h
     exact ((lipschitzOnWith_iteratedFDeriv_iff_norm_le (L := ⟨L, hL⟩) hC hconv hf).2 h).norm_sub_le
+
+/-- The value-error clause (A.14) of Theorem A.8.3, with its sharp finite-product
+constant. This helper does not include the derivative-error assertion (A.15). -/
+theorem theorem_A_8_3_value {n p : ℕ} (hp : 0 < p)
+    {C D : Set (EuclideanSpace ℝ (Fin n))} (hD : IsOpen D) (hCD : C ⊆ D)
+    (hC : Convex ℝ C) {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    (hf : ContDiffOn ℝ p f D) {H β : ℝ} (hH : 0 ≤ H) (hβ : β ∈ Icc (0 : ℝ) 1)
+    (hholder : ∀ u ∈ C, ∀ v ∈ C,
+      ‖iteratedFDeriv ℝ p f u - iteratedFDeriv ℝ p f v‖ ≤ H * ‖u - v‖ ^ β)
+    {x s : EuclideanSpace ℝ (Fin n)} (hx : x ∈ C) (hxs : x + s ∈ C) :
+    |f (x + s) - taylorModel f p x s| ≤ H / shiftedFactorial p β * ‖s‖ ^ ((p : ℝ) + β) := by
+  cases p with
+  | zero => omega
+  | succ q =>
+    exact TaylorModel.abs_sub_eval_le_holder hD hCD hC hf hH hβ.1 hholder hx hxs
+
+/-- The value-error clause (A.19) of Corollary A.8.4. This helper does not include
+the derivative-error assertion (A.20). -/
+theorem corollary_A_8_4_value {n p : ℕ} (hp : 0 < p)
+    {C D : Set (EuclideanSpace ℝ (Fin n))} (hD : IsOpen D) (hCD : C ⊆ D)
+    (hC : Convex ℝ C) {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    (hf : ContDiffOn ℝ p f D) {L : ℝ} (hL : 0 ≤ L)
+    (hlip : ∀ u ∈ C, ∀ v ∈ C,
+      ‖iteratedFDeriv ℝ p f u - iteratedFDeriv ℝ p f v‖ ≤ L * ‖u - v‖)
+    {x s : EuclideanSpace ℝ (Fin n)} (hx : x ∈ C) (hxs : x + s ∈ C) :
+    |f (x + s) - taylorModel f p x s| ≤ L * ‖s‖ ^ (p + 1) / (p + 1).factorial := by
+  cases p with
+  | zero => omega
+  | succ q =>
+    exact TaylorModel.abs_sub_eval_le_lipschitz hD hCD hC hf hL hlip hx hxs
 
 end CartisGouldToint

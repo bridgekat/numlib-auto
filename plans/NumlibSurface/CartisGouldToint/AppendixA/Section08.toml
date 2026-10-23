@@ -6,11 +6,6 @@ namespace = "CartisGouldToint"
 
 [[node]]
 id = "shiftedFactorial"
-kind = "definition"
-desc = '''
-Define shiftedFactorial k beta = product over i=1,...,k of ((i:real)+beta), with empty product 1, representing the source notation (k+beta)!. At beta=1 this is (k+1)!, at beta=0 it is k!; beta! means 1. This is the finite product in the book, not Gamma(k+beta+1).
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.8, before Theorem A.8.3"
 
 [[node]]
 id = "theorem_A_8_1"
@@ -38,3 +33,9 @@ deps = ["theorem_A_8_3"]
 
 [[node]]
 id = "theorem_A_8_5"
+
+[[node]]
+id = "theorem_A_8_3_value"
+
+[[node]]
+id = "corollary_A_8_4_value"

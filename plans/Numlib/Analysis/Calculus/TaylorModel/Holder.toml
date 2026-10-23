@@ -1,0 +1,13 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "iteratedDeriv_affineLine_of_contDiffOn"
+
+[[node]]
+id = "sub_eval_eq_integral_variation"
+
+[[node]]
+id = "abs_sub_eval_le_holder"
+
+[[node]]
+id = "abs_sub_eval_le_lipschitz"

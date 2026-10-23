@@ -1,0 +1,22 @@
+namespace = "Real"
+
+[[node]]
+id = "shiftedFactorial"
+
+[[node]]
+id = "shiftedFactorial_zero"
+
+[[node]]
+id = "shiftedFactorial_succ"
+
+[[node]]
+id = "shiftedFactorial_pos"
+
+[[node]]
+id = "shiftedFactorial_nat_zero"
+
+[[node]]
+id = "shiftedFactorial_one"
+
+[[node]]
+id = "integral_rpow_mul_one_sub_pow"
