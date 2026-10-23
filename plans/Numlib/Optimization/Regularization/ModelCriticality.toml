@@ -1,0 +1,7 @@
+namespace = "ModelDecrease"
+
+[[node]]
+id = "contDiff_penalized_ofJet"
+
+[[node]]
+id = "exists_minimizer_with_criticality_ofJet"
