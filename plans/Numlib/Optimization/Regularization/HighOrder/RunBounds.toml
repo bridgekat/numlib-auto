@@ -1,0 +1,20 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "parameterCap"
+
+[[node]]
+id = "parameterCap_pos"
+
+[[node]]
+id = "tensor_bound_of_derivative_lipschitz"
+
+[[node]]
+id = "Run.parameter_le"
+
+[[node]]
+id = "Run.solved_radius_floor"
+
+[[node]]
+id = "Run.criticality_obstruction"
+
