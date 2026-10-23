@@ -93,6 +93,13 @@ recorded on the relevant plan nodes. In particular:
 * The isolated-Taylor-minimum claim of Theorem 12.1.5 and the printed constraint
   qualification of Theorem 14.3.1 have explicit counterexamples. Their original
   statements remain marked incorrect in the plans.
+* The local quadratic-convergence coefficient in Lemma 5.4.2 fails on an
+  actual legal scalar quadratic run. Lemma 6.2.1 omits a unit-direction restriction,
+  and Lemma 6.2.2 uses an incorrect factorial coefficient. Corrected bounds are
+  proved separately. The independent third-order tolerances in Theorem 6.2.3
+  can yield an empty output target even for a bounded-below smooth quartic.
+* The second-order accuracy powers in Lemmas 5.5.4–5 and their subsequent use
+  require `p+β>2`; their printed denominator vanishes at `p=2, β=0`.
 * The residual-only uniform bound in Lemma B.2.1 fails for constant polynomials
   of arbitrary height. Its counterexample and a corrected theorem with bounds
   on the initial endpoint data are formalized separately.
@@ -229,6 +236,44 @@ recorded on the relevant plan nodes. In particular:
   drop in a legal first-order-only constrained quadratic run. The corrected
   relative decrease theorem retains the regularizer's `(p+1)!` coefficient.
 
-No claim of completeness is made for the open analytic estimates, algorithm
-complexity theorems or sharpness constructions.
+* Theorem 13.2.1's minimum of inverse tolerance powers fails for one fixed
+  globally bounded twice continuously differentiable objective whose derivatives
+  through order two are globally Lipschitz. Actual exact-oracle trust-region runs
+  require unbounded work as the second tolerance tends to zero with the first
+  held fixed. The printed factor
+  stays constant. Separate fixed-cost companions use the maximum.
+
+## Deferred numbered results
+
+The following full source statements remain open, with their complete specifications
+and precise remaining prerequisites retained in the corresponding plans:
+
+* Theorem 3.5.4 and Corollary 3.5.5 need an interactive oracle construction for the
+  full method class, including rejected and off-trajectory queries. The proved
+  scalar-controller lower bound covers an explicitly narrower class.
+* Theorem 4.2.4 needs the orthogonal resisting-oracle simulation. Lemma 4.2.5
+  needs the specified smooth cutoff/Gaussian construction and its dimension-uniform
+  tensor estimates. Theorem 4.2.6 depends on both and the minimax scaling argument.
+* Lemmas 7.2.6 and 14.3.8 need a valid terminal-reflection charge in their block
+  counts. Actual interior decrease, reflection identities, telescoping and target
+  perturbation bounds are proved; these do not justify every terminal charge.
+* Theorem 12.2.17 needs the general sharpness construction with the independent
+  smoothness order and actual high-order model/radius traces.
+* Theorem 13.3.8 needs the original sharper rate without an additional accuracy
+  margin. Separate companions give the literal stopping guarantee with a coarser
+  rate and the sharper rate with the explicit margin.
+* Lemma 14.2.3 needs the fixed-accuracy count for all six constrained variants.
+  Its separate counterexample refutes only the stronger interpretation that
+  requires constants uniform before all accuracy requests.
+
+These ten results are deferred under the proving workflow's allowance for unusually
+large prerequisites; none is represented by an assumed conclusion or a false axiom.
+-/
+
+/-!
+The literal dynamic-accuracy threshold in Lemma 13.1.15 and Lemma 13.3.6(ii)
+also fails on complete IDA and EDA executions: all computed tests pass and the
+printed error threshold holds, but true third-order criticality fails. This
+counterexample concerns those sufficient conditions; the full sharper-rate
+statement of Theorem 13.3.8 remains open.
 -/

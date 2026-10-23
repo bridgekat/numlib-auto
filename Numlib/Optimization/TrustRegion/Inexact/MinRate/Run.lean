@@ -5,7 +5,7 @@ import Numlib.Optimization.TrustRegion.Inexact.Complexity
 # Actual exact-oracle trust-region executions for unequal tolerances
 
 One fixed objective admits accepted unit-step executions of arbitrary finite length. The
-first-order tolerance is one and the second decreases with the horizon; all actual
+first-order tolerance is one half and the second decreases with the horizon; all actual
 ordered checks and primitive updates are proved.
 -/
 

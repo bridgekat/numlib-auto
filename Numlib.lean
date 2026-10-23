@@ -1107,6 +1107,10 @@ import Numlib.Optimization.TrustRegion.Inexact.Explicit.Run
 import Numlib.Optimization.TrustRegion.Inexact.FunctionDecrease
 import Numlib.Optimization.TrustRegion.Inexact.FunctionRadius
 import Numlib.Optimization.TrustRegion.Inexact.FunctionValues
+import Numlib.Optimization.TrustRegion.Inexact.MinRate.Counterexample
+import Numlib.Optimization.TrustRegion.Inexact.MinRate.Criticality
+import Numlib.Optimization.TrustRegion.Inexact.MinRate.Function
+import Numlib.Optimization.TrustRegion.Inexact.MinRate.Run
 import Numlib.Optimization.TrustRegion.Inexact.OracleSimulation.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.Radius
 import Numlib.Optimization.TrustRegion.Inexact.RadiusConsequences
