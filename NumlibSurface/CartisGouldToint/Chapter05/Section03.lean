@@ -1,3 +1,4 @@
+import Numlib.Optimization.MeasureDomination.Linear
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Optimization.MeasureDomination.Regularization
 
@@ -83,5 +84,31 @@ theorem theorem_5_3_2 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
       (K : ℝ) ≤ κR * T + κA ∧
       (measureFunctionEvaluations K : ℝ) ≤ κR * T + κA + 1 ∧
       measureDerivativeEvaluations S K ≤ T + 1 := hr.first_gap_hitting hd hε
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Four positive constants before every accuracy bound initialized function and derivative
+counts by affine functions of |log epsilon|, at the first actual target-reaching iterate. -/
+def measureLogarithmicComplexity (target : ℕ → ℝ) (S : Set ℕ) : Prop :=
+  MeasureDomination.LogarithmicCost target S
+
+/-- **Theorem 5.3.4.** Equal exponents give the exact linear gap factor and both
+uniform logarithmic complexity bounds (5.3.20)–(5.3.23). Each target has four
+positive constants fixed before every accuracy, and both evaluation counts include
+initialization. A small true gap yields a small next-point measure by the actual
+accepted decrease; no measure convergence or cost is assumed in the algorithm. -/
+theorem theorem_5_3_4 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
+    {fstar μ κψ ν κν κR κA : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    (hd : measureDominated f ψ fstar μ κψ) (hr : arMeasureRun f ψ x S ν κν κR κA)
+    (heq : ν = μ) :
+    Tendsto (successfulObjectiveGap f fstar x S) atTop (𝓝 0) ∧
+      (∀ j, successfulObjectiveGap f fstar x S (j + 1) ≤
+        (1 + κν / κψ)⁻¹ * successfulObjectiveGap f fstar x S j) ∧
+      measureLogarithmicComplexity (fun k => objectiveGap f fstar (x k)) S ∧
+      measureLogarithmicComplexity (fun k => ψ (x k)) S :=
+  ⟨hr.successful_tendsto_zero hd, hr.successful_linear hd heq,
+    hr.gap_logarithmic hd heq, hr.measure_logarithmic hd heq⟩
 
 end CartisGouldToint

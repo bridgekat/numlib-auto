@@ -1,0 +1,14 @@
+namespace = "ImplicitGap"
+desc = "Exact geometric gap recurrences, uniform logarithmic target complexity and explicit prefix-index conversion."
+
+[[node]]
+id = "orbit_one_eq"
+
+[[node]]
+id = "exists_geometric_budget"
+
+[[node]]
+id = "exists_linear_budget"
+
+[[node]]
+id = "hittingTime_le"
