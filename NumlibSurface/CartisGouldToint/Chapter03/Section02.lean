@@ -1,4 +1,4 @@
-import Numlib.Optimization.TrustRegion.SecondOrder.Finite
+import Numlib.Optimization.TrustRegion.SecondOrder.Complexity
 import Numlib.Optimization.TrustRegion.Eigenpoint
 import Numlib.Optimization.TrustRegion.SecondOrder.FirstOrder
 import NumlibSurface.CartisGouldToint.Chapter02.Section03
@@ -212,5 +212,74 @@ theorem lemma_3_2_5 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
       ∀ i ≤ N, κΔ * min ε₁ ε₂ ≤ Δ i := by
   exact ⟨_, h.radiusConstant_mem_Ioo hH hL.le, rfl,
     fun _ hi => h.radius_lower hf hH hL hε₂ hbound hlip hi⟩
+
+
+/-- **Theorem 3.2.6.** Genuine finite-tolerance TR2 terminates with both
+first- and second-order stopping tests within the function, gradient and Hessian
+budgets (3.2.20)–(3.2.21). All four constants are explicit and independent of
+the requested tolerances. The OCR's final formula for `κF` omits the logarithm
+and misnormalizes the initial radius; the corrected logarithmic allowance below
+follows directly from the radius update counting lemma. The first tolerance may
+be any positive real, as in the theorem, despite a stronger restriction used
+unnecessarily in the source proof. -/
+theorem theorem_3_2_6 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [CompleteSpace E] {f : E → ℝ} {x s sC sE u : ℕ → E} {μ Δ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ ε₁ ε₂ H L flow : ℝ}
+    (hprefix : ∀ N, (∀ i < N, ε₁ < ‖gradient f (x i)‖ ∨ μ i < -ε₂) →
+      tr2FiniteRun f x s sC sE u μ Δ ρ η₁ η₂ γ₁ γ₂ γ₃ ε₁ ε₂ N)
+    (hf : ContDiff ℝ 2 f) (hH : 1 ≤ H) (hL : 0 < L) (hε₂ : ε₂ ≤ 1)
+    (hbound : ∀ y, ‖SecondOrderTrustRegion.hessian f y‖ ≤ H)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖)
+    (hlow : ∀ y, flow ≤ f y) :
+    ∃ κT > 0, ∃ κD > 0, ∃ κE > 0, ∃ κF > 0,
+      κT = 1 / (η₁ / 2 * min (1 / (1 + H))
+        ((min (γ₁ * (1 - η₂) / max (4 * H) (L / 3)) (Δ 0)) ^ 2)) ∧
+      κD = κT * (1 + Real.log γ₃ / |Real.log γ₂|) ∧
+      κE = 1 / |Real.log γ₂| ∧
+      κF = |Real.log
+        (SecondOrderTrustRegion.secondOrderRadiusConstant (Δ 0) η₂ γ₁ H L / Δ 0)| /
+          |Real.log γ₂| + 1 ∧
+      ∃ K, ‖gradient f (x K)‖ ≤ ε₁ ∧ -ε₂ ≤ μ K ∧
+        tr2FiniteRun f x s sC sE u μ Δ ρ η₁ η₂ γ₁ γ₂ γ₃ ε₁ ε₂ K ∧
+        (∀ i < K, ε₁ < ‖gradient f (x i)‖ ∨ μ i < -ε₂) ∧
+        (SecondOrderTrustRegion.functionEvaluations K : ℝ) ≤
+          κD * (f (x 0) - flow) / min (ε₁ ^ 2 * ε₂) (ε₂ ^ 3) +
+            κE * |Real.log (min ε₁ ε₂)| + κF ∧
+        (SecondOrderTrustRegion.gradientEvaluations ρ η₁ K : ℝ) ≤
+          κT * (f (x 0) - flow) / min (ε₁ ^ 2 * ε₂) (ε₂ ^ 3) + 1 ∧
+        (SecondOrderTrustRegion.hessianEvaluations ρ η₁ K : ℝ) ≤
+          κT * (f (x 0) - flow) / min (ε₁ ^ 2 * ε₂) (ε₂ ^ 3) + 1 := by
+  have h0 := hprefix 0 (by simp)
+  have hc := h0.secondOrderDecreaseCoefficient_pos hH hL.le
+  have hg₂ := h0.updates.gamma1_pos.trans_le h0.updates.gamma1_le_gamma2
+  have hglog := Real.log_neg hg₂ h0.updates.gamma2_lt_one
+  have hlp : 0 < |Real.log γ₂| := abs_pos.mpr hglog.ne
+  have hA : 0 < 1 + Real.log γ₃ / |Real.log γ₂| := by
+    have hg₃ := Real.log_pos h0.updates.one_lt_gamma3
+    positivity
+  obtain ⟨K, hg, hμ, hK, hfirst⟩ := SecondOrderTrustRegion.exists_termination
+    hprefix hf hH hL hε₂ hbound hlip hlow
+  let c := SecondOrderTrustRegion.secondOrderDecreaseCoefficient (Δ 0) η₁ η₂ γ₁ H L
+  let A := 1 + Real.log γ₃ / |Real.log γ₂|
+  let F := |Real.log
+    (SecondOrderTrustRegion.secondOrderRadiusConstant (Δ 0) η₂ γ₁ H L / Δ 0)| /
+      |Real.log γ₂| + 1
+  have hF : 0 < F := by dsimp [F]; positivity
+  have hD : (((EvaluationComplexity.successfulIterations {i | η₁ ≤ ρ i} K).card : ℕ) : ℝ) + 1 ≤
+      (1 / c) * (f (x 0) - flow) / min (ε₁ ^ 2 * ε₂) (ε₂ ^ 3) + 1 := by
+    have hh := hK.successful_card_le hf hH hL hε₂ hbound hlip (hlow _)
+    convert add_le_add_right hh 1 using 1 <;>
+      (try dsimp [c, SecondOrderTrustRegion.secondOrderAccuracyFactor]) <;> ring
+  refine ⟨1 / c, div_pos zero_lt_one hc, (1 / c) * A,
+    mul_pos (div_pos zero_lt_one hc) hA, 1 / |Real.log γ₂|, div_pos zero_lt_one hlp,
+    F, hF, rfl, rfl, rfl, rfl, K, hg, hμ, hK, hfirst, ?_, ?_, ?_⟩
+  · have hh := hK.iterations_le hf hH hL hε₂ hbound hlip (hlow _)
+    simp only [SecondOrderTrustRegion.functionEvaluations, Nat.cast_add, Nat.cast_one]
+    convert add_le_add_right hh 1 using 1 <;>
+      (try dsimp [c, A, F, SecondOrderTrustRegion.secondOrderAccuracyFactor]) <;> ring
+  · simpa only [SecondOrderTrustRegion.gradientEvaluations,
+      SecondOrderTrustRegion.derivativeEvaluations, Nat.cast_add, Nat.cast_one] using hD
+  · simpa only [SecondOrderTrustRegion.hessianEvaluations,
+      SecondOrderTrustRegion.derivativeEvaluations, Nat.cast_add, Nat.cast_one] using hD
 
 end CartisGouldToint

@@ -276,29 +276,11 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 id = "lemma_3_2_5"
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.2.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2799)"
 
+# Theorem 3.2.6 retains arbitrary positive ε₁. The OCR formula for κF is
+# corrected to |log(κΔ/Δ₀)|/|log γ₂|+1, derived from the radius counting lemma;
+# its printed version omits the logarithm and misnormalizes the initial radius.
 [[node]]
 id = "theorem_3_2_6"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 3.2.6: Second-order complexity of the TR2 algorithm
-
-Suppose that f.Bb, f.HBa, and f.HL hold. Then there exist positive constants \( {\kappa }_{\mathrm{TR}2}^T,{\kappa }_{\mathrm{TR}2}^D,{\kappa }_{\mathrm{TR}2}^E \) , and \( {\kappa }_{\mathrm{TR}2}^F \) such that, for any \( {\epsilon }_1 > 0,{\epsilon }_2 \in  (0,1\rbrack \) , the TR2 algorithm (p. 55) requires at most
-
-\[
-\begin{gathered}{\# }_{\mathrm{{TR}}2,2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}2}^{D}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\min \left\lbrack  {{\epsilon }_{1}^{2}{\epsilon }_{2},{\epsilon }_{2}^{3}}\right\rbrack  } + {\kappa }_{\mathrm{{TR}}2}^{E}\left| {\log \left( {\min \left\lbrack  {{\epsilon }_{1},{\epsilon }_{2}}\right\rbrack  }\right) }\right|  + {\kappa }_{\mathrm{{TR}}2}^{F} \\ = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_1^{-2}{\epsilon }_2^{-1},{\epsilon }_2^{-3}}\right\rbrack  }\right)\end{gathered}\tag{3.2.20}
-\]
-
-evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{TR}}2,2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR2}}}^{T}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\min \left\lbrack  {{\epsilon }_{1}^{2}{\epsilon }_{2},{\epsilon }_{2}^{3}}\right\rbrack  } + 1 = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{1}^{-2}{\epsilon }_{2}^{-1},{\epsilon }_{2}^{-3}}\right\rbrack  }\right)\tag{3.2.21}
-\]
-
-evaluations of the gradient and Hessian to produce an iterate \( {x}_e \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) and \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   \geq   - {\epsilon }_2 \) .
-'''
-deps = ["lemma_2_3_1", "theorem_3_2_2", "tr2Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.2.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2841)"
 
 [[node]]

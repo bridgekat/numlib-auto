@@ -1,0 +1,32 @@
+namespace = "SecondOrderTrustRegion"
+
+[[node]]
+id = "secondOrderAccuracyFactor"
+
+[[node]]
+id = "secondOrderAccuracyFactor_eq"
+
+[[node]]
+id = "secondOrderDecreaseCoefficient"
+
+[[node]]
+id = "Run.secondOrderDecreaseCoefficient_pos"
+
+[[node]]
+id = "Run.model_decrease_cauchy"
+
+[[node]]
+id = "Run.model_decrease"
+
+[[node]]
+id = "Run.successful_decrease"
+
+[[node]]
+id = "Run.successful_card_le"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "exists_termination"
+
