@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.Inexact.FunctionDecrease
 import Numlib.Optimization.Regularization.Inexact.GuardedCounterexample.PrintedConstants
 import Numlib.Optimization.Regularization.Inexact.Explicit.CurrentBudget
 import Numlib.Optimization.Regularization.Inexact.Explicit.Complexity
@@ -437,4 +438,39 @@ theorem arqpedaPrintedDecreaseCounterexample :
   ⟨source_regularity.1, source_regularity.2.1, source_regularity.2.2, run,
     successful_short_trial, (fun k _ => never_stops k), unit_solved_radii,
     model_floor_violated, objective_floor_violated⟩
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+/-- **Lemma13.3.2.** Actual TRqEDA computed Taylor decrements satisfy (13.1.34),
+with the exact source radius constant and known unit oracle bound. Accepted
+trials also satisfy the true decrease (13.1.35). Both approximate objective
+errors and the actual computed ratio are used; no exact ratio is assumed. -/
+theorem lemma_13_3_2 {n q : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {T : Set ℕ} {j : ℕ → Fin q} {x d s : ℕ → EuclideanSpace ℝ (Fin n)}
+    {Δ ρ F₀ F₁ h₀ : ℕ → ℝ} {ε : Fin q → ℝ} {accuracy : ℕ → ℕ → ℝ}
+    {ζ θ κs κh η₁ η₂ γ₁ γ₂ γ₃ Δmax L : ℝ} {N k : ℕ}
+    (h : FunctionModelTrace f A T j x d s Δ ρ F₀ F₁ h₀ ε accuracy
+      ζ θ κs η₁ η₂ γ₁ γ₂ γ₃ Δmax N)
+    (hf : ContDiff ℝ q f) (hL : 1 ≤ L) (hκh : 0 ≤ κh) (hκs : κs ≤ η₁ / 4)
+    (hlip : ∀ a, 1 ≤ a → a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (hpoint : ∀ i < N, i ∈ T → x (i + 1) = if η₁ ≤ ρ i then x i + s i else x i)
+    (hk : k < N) (hT : k ∈ T) :
+    let κδ := InexactTrustRegion.radiusConstant f h.order_pos (x 0)
+      θ (Δ 0) γ₁ η₂ L κs 1 κh / 2
+    (ζ * κδ) ^ (q + 1) / q.factorial * minimumAccuracy h.order_pos ε ^ (q + 1) ≤
+      decrement (A k) (modelOrder (j k)) (s k) ∧
+    (η₁ ≤ ρ k → η₁ * (ζ * κδ) ^ (q + 1) / (2 * (q.factorial : ℝ)) *
+      minimumAccuracy h.order_pos ε ^ (q + 1) ≤ f (x k) - f (x (k + 1))) := by
+  dsimp only
+  have hκ := InexactTrustRegion.radiusConstant_bounds (L := L) f h.order_pos (x 0)
+    h.cap_pos.le h.cap_le_one h.updates.initial_pos.le h.updates.gamma1_pos.le
+    h.updates.eta2_lt_one.le (by linarith : 0 ≤ L) h.request_factor_nonneg zero_le_one hκh
+  have hκupper := hκ.2
+  simp only [mul_one] at hκupper
+  exact ⟨h.model_decrease hf hL hlip hκ.1 hκupper hk.le hT,
+    fun ha => h.function_decrease hf hL hlip hκ.1 hκupper hκs hpoint hk hT ha⟩
 end CartisGouldToint
