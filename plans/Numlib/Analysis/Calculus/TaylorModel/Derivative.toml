@@ -4,10 +4,6 @@ desc = "Finite-order Schwarz symmetry and the actual derivatives of finite Frech
 
 [[node]]
 id = "iteratedFDeriv_comp_perm"
-kind = "theorem"
-desc = '''
-For real normed spaces E,F, p:natural, f:E->F, x:E with ContDiffAt real p f x, n<=p, v:Fin n->E and a permutation sigma of Fin n, prove D^n f(x)[v composed with sigma] = D^n f(x)[v]. Use finite-order Schwarz, not analytic or C-infinity regularity. This is the missing symmetry needed to differentiate arbitrary finite Taylor jets from actual derivatives.
-'''
 
 [[node]]
 id = "iteratedFDeriv_eval_apply"
@@ -23,3 +19,9 @@ kind = "theorem"
 desc = '''
 For q,j:natural and f C^(q+j) near x, establish the isometric curry identification of D^q (D^j f)(x): its evaluation on u:Fin q->E followed by v:Fin j->E equals D^(q+j) f(x)[Fin.append u v]. Include the induced equality of norms, and of differences at two points with the same regularity, under this fixed linear isometry. This transports the source highest-derivative Holder assumption to the derivative-valued map without assuming the desired error estimate.
 '''
+
+[[node]]
+id = "iteratedFDeriv_swap_first_two"
+
+[[node]]
+id = "domDomCongr_iteratedFDeriv"
