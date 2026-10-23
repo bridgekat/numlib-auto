@@ -1,0 +1,10 @@
+namespace = "QuadraticKrylov"
+
+[[node]]
+id = "norm_le_of_radial_nested_shifted_solve"
+
+[[node]]
+id = "norm_le_norm_of_regularized_ambient_min"
+
+[[node]]
+id = "norm_le_norm_of_projected_regularized_min"

@@ -1,12 +1,13 @@
 import NumlibSurface.CartisGouldToint.Chapter10.Section01
-import Numlib.Optimization.Quadratic.Krylov.Regularization
+import Numlib.Optimization.Quadratic.Krylov.RegularizationMonotonicity
+import Numlib.Optimization.Quadratic.Optimality.RegularizationMetric
 
 /-!
 # Actual Lanczos regularization gradient decay
 
 The computed global subproblem minimizer yields its actual shifted solve and
-positive - definite projected matrix. Inverse decay then gives the exact source
-bound in the inverse - metric norm. The norm - similarity equality in (B.10.4) is
+positive-definite projected matrix. Inverse decay then gives the exact source
+bound in the inverse-metric norm. The norm-similarity equality in (B.10.4) is
 replaced by the sufficient proved inequality; no extra spectral assumption is
 added. Grade termination and condition number one are included.
 -/
@@ -69,4 +70,49 @@ theorem theorem_10_2_2 (hH : H.toLinearMap.IsSymmetric)
     linarith
   have hnorm := norm_hessian_le M hM hH
   gcongr
+/-- **Lemma 10.2.1.** Genuine global regularization minimizers in nested Lanczos
+spaces have ordered radial multipliers and metric norms, each bounded by a true
+full-space minimizer. The full model is represented in the actual energy inner
+product; `Metric.regularized_eq` identifies the original objective exactly. -/
+theorem lemma_10_2_1 (hH : H.toLinearMap.IsSymmetric)
+    {g : EuclideanSpace ℝ (Fin n)} (hg : g ≠ 0) {m l : ℕ} (hml : m ≤ l)
+    (hl : l + 1 ≤ grade (hessian M hM H).toLinearMap (gradient M hM g))
+    (y : EuclideanSpace ℝ (Fin (m + 1))) (z : EuclideanSpace ℝ (Fin (l + 1)))
+    (x : WithEnergy M.toLinearMap hM) {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r)
+    (hminy : ∀ w, lanczosRegularizationModel H M hM g m σ r y ≤
+      lanczosRegularizationModel H M hM g m σ r w)
+    (hminz : ∀ w, lanczosRegularizationModel H M hM g l σ r z ≤
+      lanczosRegularizationModel H M hM g l σ r w)
+    (hminx : ∀ w, QuadraticOptimality.regularized (hessian M hM H) (gradient M hM g) σ r x ≤
+      QuadraticOptimality.regularized (hessian M hM H) (gradient M hM g) σ r w) :
+    let hm := (Nat.add_le_add_right hml 1).trans hl
+    let sy := toOriginal M hM (lanczosSubspaceData H M hM g hm y)
+    let sz := toOriginal M hM (lanczosSubspaceData H M hM g hl z)
+    let sx := toOriginal M hM x
+    let τ := σ * energyNorm M.toLinearMap sy ^ (r - 2)
+    let μ := σ * energyNorm M.toLinearMap sz ^ (r - 2)
+    let ν := σ * energyNorm M.toLinearMap sx ^ (r - 2)
+    τ ≤ μ ∧ μ ≤ ν ∧ energyNorm M.toLinearMap sy ≤ energyNorm M.toLinearMap sz ∧
+      energyNorm M.toLinearMap sz ≤ energyNorm M.toLinearMap sx := by
+  have hb := gradient_ne_zero M hM hg
+  have hsym := hessian_symmetric M hM hH
+  have hpair := QuadraticKrylov.norm_le_norm_of_projected_regularized_min
+    (hessian M hM H).toLinearMap hb hsym hml hl y z hσ hr hminy hminz
+  have hzsolve := (QuadraticKrylov.projected_optimality
+    (hessian M hM H).toLinearMap hb hl z hr hminz).1
+  have hstar := QuadraticKrylov.norm_le_norm_of_regularized_ambient_min
+    (hessian M hM H) hb hsym hl z x hσ hr hzsolve hminx
+  have hτμ := mul_le_mul_of_nonneg_left
+    (Real.rpow_le_rpow (norm_nonneg _) hpair (by linarith : 0 ≤ r - 2)) hσ.le
+  have hμν := mul_le_mul_of_nonneg_left
+    (Real.rpow_le_rpow (norm_nonneg _) hstar (by linarith : 0 ≤ r - 2)) hσ.le
+  change σ * ‖lanczosSubspaceData H M hM g ((Nat.add_le_add_right hml 1).trans hl) y‖ ^
+      (r - 2) ≤ σ * ‖lanczosSubspaceData H M hM g hl z‖ ^ (r - 2) ∧
+    σ * ‖lanczosSubspaceData H M hM g hl z‖ ^ (r - 2) ≤ σ * ‖x‖ ^ (r - 2) ∧
+    ‖lanczosSubspaceData H M hM g ((Nat.add_le_add_right hml 1).trans hl) y‖ ≤
+      ‖lanczosSubspaceData H M hM g hl z‖ ∧ ‖lanczosSubspaceData H M hM g hl z‖ ≤ ‖x‖
+  simpa only [(lanczosSubspaceData H M hM g
+    ((Nat.add_le_add_right hml 1).trans hl)).norm_map,
+      (lanczosSubspaceData H M hM g hl).norm_map] using ⟨hτμ, hμν, hpair, hstar⟩
+
 end CartisGouldToint

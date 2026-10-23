@@ -2,16 +2,7 @@ namespace = "CartisGouldToint"
 
 [[node]]
 id = "lemma_10_2_1"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 10.2.1: Nested subspace solutions increase in norm
-
-[81, Thm. 2.5 and Sect. 3]: Let \( {s}_{k} = {Q}_{k}{\bar{s}}_{k} \) , where \( {\bar{s}}_{k} \) satisfies (10.1.6); let \( {\lambda }_k \) be its multiplier (10.2.3); let \( {s}_{ * } \) be a global minimizer of (8.1.4); and let \( {\lambda }_{ * } = \; \sigma {\begin{Vmatrix}{s}_{ * }\end{Vmatrix}}_M^{r - 2} \) . Then \( {\lambda }_k \leq  {\lambda }_{\ell } \leq  {\lambda }_{ * } \) and \( {\begin{Vmatrix}{s}_k\end{Vmatrix}}_M \leq  {\begin{Vmatrix}{s}_{\ell }\end{Vmatrix}}_M \leq  {\begin{Vmatrix}{s}_{ * }\end{Vmatrix}}_M \) for \( 1 \leq  k \leq  \ell  \leq \; \operatorname{grade}\left( {{M}^{-1}H,{M}^{-1}g}\right) \) .
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 10.2.1 (OCR Markdown line 10855)"
-deps = ["lanczosSubspaceData", "theorem_8_2_8"]
 
 [[node]]
 id = "theorem_10_2_2"
