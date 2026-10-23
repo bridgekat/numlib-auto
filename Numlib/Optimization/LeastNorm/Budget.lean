@@ -14,13 +14,16 @@ namespace LeastNorm
 noncomputable def maximumWeight {q : ℕ} (hq : 0 < q) (w : Fin q → ℝ) : ℝ :=
   Finset.univ.sup' ⟨⟨0, hq⟩, Finset.mem_univ _⟩ w
 
+/-- Every requested order weight is bounded by the actual finite maximum. -/
 theorem le_maximumWeight {q : ℕ} (hq : 0 < q) (w : Fin q → ℝ) (a : Fin q) :
     w a ≤ maximumWeight hq w := Finset.le_sup' _ (Finset.mem_univ _)
 
+/-- A common upper bound controls the actual maximum over requested orders. -/
 theorem maximumWeight_le {q : ℕ} (hq : 0 < q) (w : Fin q → ℝ) {C : ℝ}
     (h : ∀ a, w a ≤ C) : maximumWeight hq w ≤ C :=
   (Finset.sup'_le_iff _ _).mpr (fun a _ => h a)
 
+/-- Nonnegative requested weights give a nonnegative finite maximum. -/
 theorem maximumWeight_nonneg {q : ℕ} (hq : 0 < q) {w : Fin q → ℝ}
     (h : ∀ a, 0 ≤ w a) : 0 ≤ maximumWeight hq w :=
   (h ⟨0, hq⟩).trans (le_maximumWeight hq w ⟨0, hq⟩)

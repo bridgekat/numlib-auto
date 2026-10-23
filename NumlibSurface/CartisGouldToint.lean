@@ -142,6 +142,20 @@ recorded on the relevant plan nodes. In particular:
   above the printed bound of about 31407.86. The valid geometric companion
   retains the primal and dual accuracy exponents.
 
+* Theorem 5.3.9's current-measure convergence claim fails for a smooth objective
+  and a continuous measure on the Euclidean plane: all trials can satisfy the
+  historical-minimum decrease while the current measures equal one at every
+  even iterate. Objective gaps and historical measures still converge to zero.
+* Lemma 14.1.7's residual value error needs a factor of two in the general
+  composite transfer bound. An actual outer-algorithm run with an exact global
+  model solve and a legal small radius refutes the displayed coefficient.
+  The optional detailed solver's convex unit-radius choice excludes that run;
+  the lemma does not impose it. A separate companion uses both value errors.
+* Lemma 12.2.11's proved obstruction assumes failure of the true optimality
+  certificate. The original statement based on observable nontermination
+  remains open. Theorem 12.2.14 only promises to produce a certified iterate,
+  and its proved complexity bound preserves that conclusion.
+
 No claim of completeness is made for the open analytic estimates, algorithm
 complexity theorems or sharpness constructions.
 -/
