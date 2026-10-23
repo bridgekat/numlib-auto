@@ -180,4 +180,30 @@ theorem ARRun.measure_sublinear_envelope (hr : ARRun f ψ x S ν κν κR κA)
     refine ⟨t, htpos, hbound, htlim, ?_⟩
     simp_rw [he]
     simpa only [Real.one_rpow] using hratio
+/-- A pointwise smaller target inherits initialized power costs at its own
+first actual attainment, including the successful-prefix derivative counter. -/
+theorem PowerCost.mono {q : ℝ} {target smaller : ℕ → ℝ}
+    (hc : PowerCost q target S) (hle : ∀ k, smaller k ≤ target k) :
+    PowerCost q smaller S := by
+  classical
+  obtain ⟨B, hB, C, hC, D, hD, F, hF, hh⟩ := hc
+  refine ⟨B, hB, C, hC, D, hD, F, hF, ?_⟩
+  intro ε hε
+  obtain ⟨K, hK, _, hfun, hder⟩ := hh ε hε
+  have hex : ∃ i, smaller i ≤ ε := ⟨K, (hle K).trans hK⟩
+  let i := Nat.find hex
+  have hiK : i ≤ K := Nat.find_min' hex ((hle K).trans hK)
+  have hcard : (EvaluationComplexity.successfulIterations S i).card ≤
+      (EvaluationComplexity.successfulIterations S K).card := by
+    apply Finset.card_le_card
+    intro j hj
+    rw [EvaluationComplexity.mem_successfulIterations] at hj ⊢
+    exact ⟨hj.1.trans_le hiK, hj.2⟩
+  refine ⟨i, Nat.find_spec hex, fun j hj => lt_of_not_ge (Nat.find_min hex hj), ?_, ?_⟩
+  · exact (show ((i + 1 : ℕ) : ℝ) ≤ ((K + 1 : ℕ) : ℝ) by
+      exact_mod_cast (Nat.add_le_add_right hiK 1)).trans hfun
+  · exact (show (((EvaluationComplexity.successfulIterations S i).card + 1 : ℕ) : ℝ) ≤
+      (((EvaluationComplexity.successfulIterations S K).card + 1 : ℕ) : ℝ) by
+        exact_mod_cast (Nat.add_le_add_right hcard 1)).trans hder
+
 end MeasureDomination

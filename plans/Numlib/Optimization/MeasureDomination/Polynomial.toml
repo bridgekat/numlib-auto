@@ -11,3 +11,6 @@ id = "ARRun.measure_power_cost"
 
 [[node]]
 id = "ARRun.measure_sublinear_envelope"
+
+[[node]]
+id = "PowerCost.mono"

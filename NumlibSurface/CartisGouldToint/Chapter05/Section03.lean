@@ -1,3 +1,4 @@
+import Numlib.Optimization.MeasureDomination.TrustRegionBudget
 import Numlib.Optimization.MeasureDomination.ThresholdCounterexample
 import Numlib.Optimization.MeasureDomination.TrustRegionRates
 import Numlib.Optimization.MeasureDomination.HistoricalEuclidean
@@ -320,5 +321,46 @@ theorem lemma_5_3_6_counterexample :
     MeasureDomination.ThresholdCounterexample.dominated,
     MeasureDomination.ThresholdCounterexample.run,
     MeasureDomination.ThresholdCounterexample.obstruction⟩
+
+/-- **Theorem5.3.8.** At equal exponents the actual gap either vanishes at the
+first accepted endpoint or has the printed linear contraction factor. Both gap
+and current-measure first targets have all four initialized logarithmic bounds,
+with positive constants chosen before every requested positive accuracy. -/
+theorem theorem_5_3_8 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
+    {fstar μ κψ ν κν κR κA : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    (hd : measureDominated f ψ fstar μ κψ) (hr : trMeasureRun f ψ x S ν κν κR κA)
+    (heq : ν = μ) :
+    Tendsto (successfulObjectiveGap f fstar x S) atTop (nhds 0) ∧
+      (objectiveGap f fstar (x (measureSuccessIndex S 0 + 1)) = 0 ∨
+        κν < κψ ∧ ∀ j, successfulObjectiveGap f fstar x S (j + 1) ≤
+          (1 - κν / κψ) * successfulObjectiveGap f fstar x S j) ∧
+      measureLogarithmicComplexity (fun k => objectiveGap f fstar (x k)) S ∧
+      measureLogarithmicComplexity (fun k => ψ (x k)) S :=
+  ⟨hr.successful_tendsto_zero hd, hr.linear_alternative hd heq,
+    hr.gap_logarithmic hd heq, hr.measure_logarithmic hd heq⟩
+
+/-- **Theorem5.3.9, corrected.** The actual gap has the complete power rate and
+initialized counts. Actual current-measure first targets retain their printed
+power counts. Historical measures converge and have the same power target bound;
+the printed convergence of every current successful measure is false, as shown
+by `theorem_5_3_9_counterexample`. Constants precede all requested accuracies. -/
+theorem theorem_5_3_9_corrected {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
+    {fstar μ κψ ν κν κR κA : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    (hd : measureDominated f ψ fstar μ κψ) (hr : trMeasureRun f ψ x S ν κν κR κA)
+    (hμν : μ < ν) :
+    Tendsto (successfulObjectiveGap f fstar x S) atTop (nhds 0) ∧
+      ((∀ j, successfulObjectiveGap f fstar x S j = 0) ∨
+        ∃ t : ℕ → ℝ, (∀ j, 0 < t j) ∧
+          (∀ j, successfulObjectiveGap f fstar x S j ≤ t j) ∧
+          Tendsto t atTop (nhds 0) ∧
+          Tendsto (fun j => t (j + 1) / t j) atTop (nhds 1)) ∧
+      measurePolynomialComplexity ((ν - μ) / μ)
+        (fun k => objectiveGap f fstar (x k)) S ∧
+      measurePolynomialComplexity (ν - μ) (fun k => ψ (x k)) S ∧
+      Tendsto (MeasureDomination.pastMeasure ψ x) atTop (nhds 0) ∧
+      measurePolynomialComplexity (ν - μ) (MeasureDomination.pastMeasure ψ x) S :=
+  ⟨hr.successful_tendsto_zero hd, hr.successful_sublinear_envelope hd hμν,
+    hr.gap_power_cost hd hμν, hr.measure_power_cost hd hμν,
+    hr.historical_measure_tendsto_zero hd hμν, hr.historical_measure_power_cost hd hμν⟩
 
 end CartisGouldToint

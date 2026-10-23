@@ -117,39 +117,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_5_3_8"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 5.3.8: Complexity for measure-dominated problems (trust region-like methods, \( \nu  = \mu \) )
-
-[Appendix to Chapter 5, p. 471]: Suppose that the objective function \( f \) is \( \psi \) - dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that a TR \( \psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . In addition, suppose that \( \nu  = \mu \) . Then either the gap is zero after the first successful iteration or the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge linearly to zero with factor \( 1 - {\kappa }_{\nu }/{\kappa }_{\psi } \) , and there exist positive constants \( {\kappa }_{\mathrm{TR},\mathrm{gap},2}^B,{\kappa }_{\mathrm{TR},\mathrm{gap},2}^C \) , \( {\kappa }_{\mathrm{TR},\mathrm{gap},2}^{\mathrm{E}} \) , and \( {\kappa }_{\mathrm{TR},\mathrm{gap},2}^{\mathrm{F}} \) such that the algorithm needs at most
-
-\[
-{\# }_{\mathrm{{TR}},\mathrm{{gap}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{gap}},2}^{B}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{gap}},2}^{C} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.39}
-\]
-
-iterations and evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{TR}},\mathrm{{gap}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{gap}},2}^{E}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{gap}},2}^{F} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.40}
-\]
-
-successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - {f}_{ * } \leq  \epsilon \) . Moreover, there exist positive constants \( {\kappa }_{\mathrm{{TR}},\text{ dom, }2}^{B},{\kappa }_{\mathrm{{TR}},\text{ dom, }2}^{C} \) , \( {\kappa }_{\mathrm{{TR}},\text{ dom, }2}^{E} \) , and \( {\kappa }_{\mathrm{{TR}},\text{ dom, }2}^{F} \) such that the algorithm needs at most
-
-\[
-{\# }_{\mathrm{{TR}},\mathrm{{dom}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{dom}},2}^{B}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{dom}},2}^{C} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.41}
-\]
-
-iterations and evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{TR}},\mathrm{{dom}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{dom}},2}^{E}\left| {\log \left( \epsilon \right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{dom}},2}^{F} = \mathcal{O}\left( \left| {\log \left( \epsilon \right) }\right| \right)\tag{5.3.42}
-\]
-
-successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \psi \left( {x}_{\epsilon }\right)  \leq  \epsilon \) .
-'''
-deps = ["measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.8 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6604)"
 
 [[node]]
@@ -323,9 +290,7 @@ source = "Cartis–Gould–Toint Theorem5.3.9: counterexample to convergence of 
 
 [[node]]
 id = "theorem_5_3_9_corrected"
-kind = "theorem"
-desc = "Full gap power rates and initialized evaluation counts of Theorem5.3.9, and power rates for the historical measure and first actual measure hitting time. Constants precede every accuracy. Replace only the false convergence of all current successful measures by convergence of their historical minimum; retain the true first-hitting conclusions."
-deps = ["trMeasureRun", "measureDominated"]
+source = "Cartis–Gould–Toint Theorem5.3.9; corrected historical-measure convergence with all original valid first-target power bounds."
 
 [[node]]
 id = "trMeasureGapThreshold"

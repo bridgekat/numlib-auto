@@ -1,0 +1,40 @@
+namespace = "MeasureDomination"
+
+[[node]]
+id = "Dominated.gap_dominated"
+
+[[node]]
+id = "TRRun.gap_run"
+
+[[node]]
+id = "TRRun.first_gap_budget"
+
+[[node]]
+id = "TRRun.successful_gap_le_orbit"
+
+[[node]]
+id = "TRRun.gap_logarithmic"
+
+[[node]]
+id = "TRRun.gap_power_cost"
+
+[[node]]
+id = "TRRun.first_measure_block"
+
+[[node]]
+id = "TRRun.measure_logarithmic"
+
+[[node]]
+id = "TRRun.measure_power_cost"
+
+[[node]]
+id = "pastMeasure_tendsto_zero_of_targets"
+
+[[node]]
+id = "TRRun.linear_alternative"
+
+[[node]]
+id = "TRRun.historical_measure_tendsto_zero"
+
+[[node]]
+id = "TRRun.historical_measure_power_cost"
