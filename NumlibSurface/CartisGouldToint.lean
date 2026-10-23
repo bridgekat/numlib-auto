@@ -25,6 +25,8 @@ import NumlibSurface.CartisGouldToint.Chapter08.Section02
 import NumlibSurface.CartisGouldToint.Chapter08.Section03
 import NumlibSurface.CartisGouldToint.Chapter09.Section01
 import NumlibSurface.CartisGouldToint.Chapter09.Section03
+import NumlibSurface.CartisGouldToint.Chapter10.Section01
+import NumlibSurface.CartisGouldToint.Chapter10.Section02
 import NumlibSurface.CartisGouldToint.Chapter12.Section01
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 import NumlibSurface.CartisGouldToint.Chapter13.Section01
@@ -113,6 +115,10 @@ recorded on the relevant plan nodes. In particular:
   shifts square and fail to converge, however close the initial shift is to
   the target. The printed statement is marked incorrect; its metric-projection
   companion remains a separate target.
+* The final similarity equality in (B.10.4) need only be an inequality.
+  Similarity does not preserve the ordinary operator norm. The proved bound
+  on the self-adjoint metric operator gives the exact coefficient required
+  by Theorem 10.2.2 without adding a spectral premise.
 * The short-step accuracy guard in Algorithm 13.1.2 makes the printed parameter
   bounds in Lemmas 13.1.14 and 13.3.5 false when the initial accuracy cap exceeds
   the step-accuracy coefficient. Formal one-trial counterexamples use the zero

@@ -1,5 +1,4 @@
 namespace = "ImplicitGap"
-desc = "Exact geometric gap recurrences, uniform logarithmic target complexity and explicit prefix-index conversion."
 
 [[node]]
 id = "orbit_one_eq"

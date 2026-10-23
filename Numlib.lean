@@ -34,6 +34,7 @@ import Numlib.Analysis.Calculus.LipschitzDerivative
 import Numlib.Analysis.Calculus.LocalExtr.RightDerivative
 import Numlib.Analysis.Calculus.LocalExtr.ThirdOrder
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Calculus.ParametricIntegral.Gaussian
 import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.Calculus.Periodic
 import Numlib.Analysis.Calculus.ProdContDiff
@@ -224,6 +225,8 @@ import Numlib.Analysis.InnerProductSpace.MaximalMonotone
 import Numlib.Analysis.InnerProductSpace.NormPow.CubicSharp
 import Numlib.Analysis.InnerProductSpace.NormPow.Derivatives
 import Numlib.Analysis.InnerProductSpace.NormPow.Even
+import Numlib.Analysis.InnerProductSpace.NormPow.Gaussian
+import Numlib.Analysis.InnerProductSpace.NormPow.Integer
 import Numlib.Analysis.InnerProductSpace.NormPow.Lipschitz
 import Numlib.Analysis.InnerProductSpace.NormPow.Second
 import Numlib.Analysis.InnerProductSpace.NormPow.Smoothness
@@ -240,6 +243,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.InnerProductSpace.Projection.OrthonormalBasis
 import Numlib.Analysis.InnerProductSpace.SingularValues
 import Numlib.Analysis.InnerProductSpace.Spectrum
+import Numlib.Analysis.InnerProductSpace.Symmetric.Similarity
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.Analysis.LinearRecurrence
 import Numlib.Analysis.Matrix.Frobenius
@@ -395,12 +399,16 @@ import Numlib.Analysis.SpecialFunctions.LaplaceTransform
 import Numlib.Analysis.SpecialFunctions.Log.Deriv
 import Numlib.Analysis.SpecialFunctions.Log
 import Numlib.Analysis.SpecialFunctions.PolynomialExp
+import Numlib.Analysis.SpecialFunctions.Pow.Absolute
 import Numlib.Analysis.SpecialFunctions.Pow.Cascading
 import Numlib.Analysis.SpecialFunctions.Pow.Deriv
 import Numlib.Analysis.SpecialFunctions.Pow.Differences
+import Numlib.Analysis.SpecialFunctions.Pow.GeometricBudget
 import Numlib.Analysis.SpecialFunctions.Pow.ImplicitRecurrence
 import Numlib.Analysis.SpecialFunctions.Pow.Normalized
 import Numlib.Analysis.SpecialFunctions.Pow.NormalizedGap
+import Numlib.Analysis.SpecialFunctions.Pow.PolynomialBudget
+import Numlib.Analysis.SpecialFunctions.Pow.SuperlinearBudget
 import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Analysis.SpecialFunctions.Sqrt.Bounds
 import Numlib.Analysis.SpecialFunctions.Sqrt
@@ -556,6 +564,7 @@ import Numlib.Krylov.Convergence.Superlinear
 import Numlib.Krylov.Decomposition
 import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Iterate
+import Numlib.Krylov.Lanczos.Residual
 import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Monotonicity
 import Numlib.Krylov.NormalEquations
@@ -638,6 +647,7 @@ import Numlib.LinearAlgebra.Matrix.Symmetric
 import Numlib.LinearAlgebra.Matrix.SymmetricIndefinite
 import Numlib.LinearAlgebra.Matrix.Toeplitz
 import Numlib.LinearAlgebra.Matrix.Triangular
+import Numlib.LinearAlgebra.Matrix.Tridiagonal.Kernel
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
@@ -704,6 +714,7 @@ import Numlib.Optimization.Constrained
 import Numlib.Optimization.Descent
 import Numlib.Optimization.EvaluationComplexity.AccuracyUpdates
 import Numlib.Optimization.EvaluationComplexity.Decrease
+import Numlib.Optimization.EvaluationComplexity.Density
 import Numlib.Optimization.EvaluationComplexity.ParameterUpdates
 import Numlib.Optimization.EvaluationComplexity.TrialCounting
 import Numlib.Optimization.EvaluationComplexity.TrialParameterBounds
@@ -744,13 +755,20 @@ import Numlib.Optimization.LineSearch.LipschitzGradient
 import Numlib.Optimization.LineSearch.Sharpness
 import Numlib.Optimization.LineSearch
 import Numlib.Optimization.LowerBounds.ZeroChain
+import Numlib.Optimization.MeasureDomination.Blocks
+import Numlib.Optimization.MeasureDomination.Linear
+import Numlib.Optimization.MeasureDomination.Polynomial
 import Numlib.Optimization.MeasureDomination.Regularization
+import Numlib.Optimization.MeasureDomination.Superlinear
 import Numlib.Optimization.Newton.Sharpness
 import Numlib.Optimization.Quadratic.HardCase.Classification
 import Numlib.Optimization.Quadratic.HardCase.Iteration
 import Numlib.Optimization.Quadratic.HardCase.ProjectionCounterexample
 import Numlib.Optimization.Quadratic.HardCase.Solutions
+import Numlib.Optimization.Quadratic.Krylov.Regularization
+import Numlib.Optimization.Quadratic.Optimality.Matrix
 import Numlib.Optimization.Quadratic.Optimality.Metric
+import Numlib.Optimization.Quadratic.Optimality.MetricInverse
 import Numlib.Optimization.Quadratic.Optimality.Regularization
 import Numlib.Optimization.Quadratic.Optimality.RegularizationMetric
 import Numlib.Optimization.Quadratic.Optimality.TrustRegion
@@ -792,6 +810,9 @@ import Numlib.Optimization.Regularization.Inexact.ParameterCounterexample
 import Numlib.Optimization.Regularization.Inexact.ParameterFunctionCounterexample
 import Numlib.Optimization.Regularization.Inexact.ParameterFunctionValues
 import Numlib.Optimization.Regularization.Inexact.RadiusLoop
+import Numlib.Optimization.Regularization.Inexact.Run
+import Numlib.Optimization.Regularization.Inexact.RunAccuracy
+import Numlib.Optimization.Regularization.Inexact.RunRadius
 import Numlib.Optimization.Regularization.Inexact.StepOne
 import Numlib.Optimization.Regularization.Inexact.StepTwo
 import Numlib.Optimization.Regularization.Inexact.StepTwoBounds

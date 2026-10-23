@@ -8,4 +8,3 @@ id = "norm_fderiv_regularized"
 
 [[node]]
 id = "regularized_gradient_bound"
-

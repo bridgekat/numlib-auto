@@ -1,5 +1,4 @@
 namespace = "MeasureDomination"
-desc = "Exact geometric gap recurrences, uniform logarithmic target complexity and explicit prefix-index conversion."
 
 [[node]]
 id = "ARRun.first_gap_budget"

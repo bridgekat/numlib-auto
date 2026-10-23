@@ -16,7 +16,7 @@ namespace ContinuousLinearMap
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [InnerProductSpace ℝ F] [FiniteDimensional ℝ F]
 
-/-- A finite - dimensional symmetric operator has norm at most that of any similar bounded
+/-- A finite-dimensional symmetric operator has norm at most that of any similar bounded
 operator. -/
 theorem norm_le_norm_of_similar {A : F →L[ℝ] F} (hA : A.toLinearMap.IsSymmetric)
     (B : E →L[ℝ] E) (J : F ≃ₗ[ℝ] E) (hJ : ∀ x, J (A x) = B (J x)) : ‖A‖ ≤

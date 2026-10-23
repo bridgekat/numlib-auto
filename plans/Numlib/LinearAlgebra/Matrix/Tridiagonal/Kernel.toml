@@ -5,4 +5,3 @@ id = "eq_zero_of_tridiagonal_kernel_first_zero"
 
 [[node]]
 id = "posDef_of_tridiagonal_solve"
-

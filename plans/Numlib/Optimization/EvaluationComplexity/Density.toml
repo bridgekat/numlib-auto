@@ -1,5 +1,4 @@
 namespace = "EvaluationComplexity"
-desc = "Exact geometric gap recurrences, uniform logarithmic target complexity and explicit prefix-index conversion."
 
 [[node]]
 id = "exclusive_density_of_inclusive"

@@ -11,7 +11,7 @@ open scoped Matrix BigOperators ComplexOrder
 # Kernels of unreduced tridiagonal matrices
 
 A zero first coordinate propagates through an unreduced tridiagonal kernel.
-A positive - semidefinite system with a nonzero first - coordinate right side is
+A positive-semidefinite system with a nonzero first-coordinate right side is
 therefore positive definite whenever the actual system has a solution.
 -/
 

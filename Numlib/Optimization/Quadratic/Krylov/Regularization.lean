@@ -10,14 +10,14 @@ open scoped BigOperators Matrix ComplexOrder
 # Regularized quadratic minimization in actual Lanczos spaces
 
 Actual projected global minimality and unreduced tridiagonal structure imply
-a positive - definite shifted system. The true regularized model derivative
-then satisfies the sharp radius and spectral - condition decay estimate.
+a positive-definite shifted system. The true regularized model derivative
+then satisfies the sharp radius and spectral-condition decay estimate.
 -/
 
 namespace QuadraticKrylov
 open Krylov Lanczos
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
-/-- Every actual projected regularized minimizer solves its positive - definite shifted system. -/
+/-- Every actual projected regularized minimizer solves its positive-definite shifted system. -/
 theorem projected_optimality (A : E →ₗ[ℝ] E) {g : E} (hg : g ≠ 0)
     {m : ℕ} (hm : m + 1 ≤ grade A g)
     (y : EuclideanSpace ℝ (Fin (m + 1))) {σ r : ℝ} (hr : 2 < r)
@@ -62,7 +62,7 @@ theorem norm_fderiv_regularized (A : E →L[ℝ] E) (g : E)
     ring
   rw [he, innerSL_apply_norm]
 
-/-- Actual Lanczos regularization subproblem minimizers satisfy the sharp model - gradient
+/-- Actual Lanczos regularization subproblem minimizers satisfy the sharp model-gradient
 decay bound. -/
 theorem regularized_gradient_bound (A : E →L[ℝ] E) {g : E} (hg : g ≠ 0)
     (hA : A.toLinearMap.IsSymmetric) {m : ℕ} (hm : m + 1 ≤ grade A.toLinearMap g)

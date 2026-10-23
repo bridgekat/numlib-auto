@@ -23,4 +23,3 @@ id = "gradient_residual"
 
 [[node]]
 id = "norm_residual"
-

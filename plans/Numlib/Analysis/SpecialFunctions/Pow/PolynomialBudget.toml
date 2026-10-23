@@ -1,5 +1,4 @@
 namespace = "ImplicitGap"
-desc = "Mean-value reciprocal-power increments and actual polynomial target budgets for the implicit scalar recurrence, with constants fixed independently of accuracy."
 
 [[node]]
 id = "inverse_power_increment"
