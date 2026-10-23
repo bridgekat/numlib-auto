@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.HighOrder.CountingCounterexample
 import Numlib.Optimization.Constrained.BoxZeroReturn
 import Numlib.Optimization.Regularization.HighOrder.VanishingSteps
 import Numlib.Optimization.HighOrder.ConstrainedCriticality
@@ -199,5 +200,58 @@ theorem theorem_14_2_4_counterexample :
   obtain ⟨hsmooth, hjets, hlow⟩ := RegularizationZeroReturn.Box.source_regularity
   exact ⟨hclosed, hne, hconv, hopen, hconvS, hXS, hsmooth, hjets, hlow,
     RegularizationZeroReturn.Box.actual_exit, RegularizationZeroReturn.Box.no_produced_certificate⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Lemma 14.2.3: obstruction to accuracy-independent additive constants.**
+The fixed quartic objective, box, initial point, radius and trust-region
+settings satisfy every first-order source regularity condition. For each
+requested rejection count, a genuine TR1-SC execution has precisely one
+successful trial and still fails true constrained criticality. Hence (14.2.13)
+cannot have both constants fixed before the requested accuracy and all legal
+model returns. The source's inclusive successful prefix `0,...,m` has `m+1`
+trials here. This does not contradict a fixed-accuracy count with an explicit
+logarithmic radius term; that valid companion is stated separately. -/
+theorem lemma_14_2_3_counterexample :
+    let f := HighOrderTrustRegion.CountingCounterexample.objective
+    let X := HighOrderTrustRegion.CountingCounterexample.feasible
+    let S := HighOrderTrustRegion.CountingCounterexample.neighborhood
+    let ε := HighOrderTrustRegion.CountingCounterexample.accuracy
+    let P := HighOrderTrustRegion.CountingCounterexample.parameters
+    let x := HighOrderTrustRegion.CountingCounterexample.point
+    let s := HighOrderTrustRegion.CountingCounterexample.step
+    let d := HighOrderTrustRegion.CountingCounterexample.direction
+    let j := HighOrderTrustRegion.CountingCounterexample.order
+    let Δ := HighOrderTrustRegion.CountingCounterexample.radius
+    let ρ := HighOrderTrustRegion.CountingCounterexample.ratio
+    IsClosed X ∧ X.Nonempty ∧ Convex ℝ X ∧ IsOpen S ∧ Convex ℝ S ∧ X ⊆ S ∧
+    ContDiffOn ℝ 1 f S ∧ (∀ y, 0 ≤ f y) ∧
+    (∀ y ∈ X, f y ≤ f 1 → ‖iteratedFDeriv ℝ 1 f y‖ ≤ 27 ∧
+      ∀ z ∈ S,
+        ‖iteratedFDeriv ℝ 1 f y - iteratedFDeriv ℝ 1 f z‖ ≤ 27 * ‖y - z‖) ∧
+    (∀ m, x m 0 = 1 ∧ Δ 0 = 1 ∧
+      HighOrderTrustRegion.ConstrainedRun f X (P m) (x m) (s m) d j Δ (ρ m) (m + 1) ∧
+      ∀ i, ε m < highOrderConstrainedCriticality f 1 X (x m i) 1) ∧
+    ¬∃ A B : ℝ, ∀ m : ℕ, (m : ℝ) ≤ A *
+      (EvaluationComplexity.successfulIterations {i | (P m).eta1 ≤ ρ m i} (m + 1)).card + B :=
+  HighOrderTrustRegion.CountingCounterexample.verified_counterexample
+
+/-- **Radius-floor companion to Lemma 14.2.3.** Every actual constrained
+trust-region run obeys the standard count with its explicit logarithmic
+endpoint-radius term. If the positive floor depends on the requested accuracy,
+so does this additive term. No uniform-before-accuracy assertion is made. -/
+theorem lemma_14_2_3_radius_floor {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] {q : ℕ} {f : E → ℝ} {X : Set E}
+    {P : HighOrderTrustRegion.Parameters q} {x s : ℕ → E}
+    {d : ℕ → Fin q → E} {j : ℕ → Fin q} {Δ ρ : ℕ → ℝ} {N : ℕ}
+    (h : HighOrderTrustRegion.ConstrainedRun f X P x s d j Δ ρ N)
+    {δmin : ℝ} (hδ : 0 < δmin) (hlow : δmin ≤ Δ N) :
+    (N : ℝ) ≤ (EvaluationComplexity.successfulIterations
+      {i | P.eta1 ≤ ρ i} N).card *
+        (1 + Real.log P.gamma3 / |Real.log P.gamma2|) +
+      |Real.log (δmin / Δ 0)| / |Real.log P.gamma2| :=
+  h.iterations_le_of_radius_lower hδ hlow
 
 end CartisGouldToint

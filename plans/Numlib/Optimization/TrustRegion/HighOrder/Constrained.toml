@@ -1,0 +1,23 @@
+namespace = "HighOrderTrustRegion"
+desc = "Actual constrained Taylor-model trials and finite runs, an interior-ball transfer, and the logarithmic count with an explicit endpoint radius floor."
+
+[[node]]
+id = "ConstrainedTrial"
+
+[[node]]
+id = "Trial.constrained_of_ball"
+
+[[node]]
+id = "ConstrainedRun"
+
+[[node]]
+id = "ConstrainedRun.radius_pos"
+
+[[node]]
+id = "ConstrainedRun.successful_radius_le"
+
+[[node]]
+id = "ConstrainedRun.unsuccessful_radius_le"
+
+[[node]]
+id = "ConstrainedRun.iterations_le_of_radius_lower"

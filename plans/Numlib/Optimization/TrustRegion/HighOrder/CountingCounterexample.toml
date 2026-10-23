@@ -1,0 +1,131 @@
+namespace = "HighOrderTrustRegion.CountingCounterexample"
+desc = "A fixed nonnegative quartic objective on a fixed scalar box with fixed algorithm settings admits arbitrary rejection prefixes after one accepted trial as the accuracy varies. This refutes only accuracy-independent additive count constants; fixed-accuracy logarithmic radius counts remain valid."
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "feasible"
+
+[[node]]
+id = "neighborhood"
+
+[[node]]
+id = "smooth"
+
+[[node]]
+id = "hasDerivAt_objective"
+
+[[node]]
+id = "gradient_objective"
+
+[[node]]
+id = "decrement"
+
+[[node]]
+id = "criticality"
+
+[[node]]
+id = "nonnegative"
+
+[[node]]
+id = "geometry"
+
+[[node]]
+id = "endpoint"
+
+[[node]]
+id = "endpoint_bounds"
+
+[[node]]
+id = "accuracy"
+
+[[node]]
+id = "accuracy_bounds"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "parameters"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "radius"
+
+[[node]]
+id = "direction"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "order"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "radius_bounds"
+
+[[node]]
+id = "radius_succ"
+
+[[node]]
+id = "radius_lower"
+
+[[node]]
+id = "point_bounds"
+
+[[node]]
+id = "testing_ball"
+
+[[node]]
+id = "ratio_zero"
+
+[[node]]
+id = "ratio_zero_bounds"
+
+[[node]]
+id = "trial_increases"
+
+[[node]]
+id = "ratio_negative"
+
+[[node]]
+id = "point_gradient_gt"
+
+[[node]]
+id = "step_norm"
+
+[[node]]
+id = "actual_trial"
+
+[[node]]
+id = "constrained_trial"
+
+[[node]]
+id = "actual_run"
+
+[[node]]
+id = "derivative_bound"
+
+[[node]]
+id = "derivative_lipschitz"
+
+[[node]]
+id = "source_regularity"
+
+[[node]]
+id = "successful_prefix"
+
+[[node]]
+id = "not_critical"
+
+[[node]]
+id = "no_uniform_count"
+
+[[node]]
+id = "verified_counterexample"

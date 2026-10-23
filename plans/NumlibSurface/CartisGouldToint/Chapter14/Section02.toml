@@ -55,6 +55,9 @@ k \leq  {\kappa }_{\text{ uns }}\left| {\mathcal{S}}_{k}\right|  + {\kappa }_{\t
 \]
 
 where \( {\mathcal{S}}_k = \mathcal{S} \cap  \left\lbrack  {0 : k}\right\rbrack \) and \( \mathcal{S} \) is the index set of successful iterations. The same is true for the TRqIDA-SC and TRqEDA-SC algorithms under f.D0qLaB.X and the ARqpIDA-SC and ARqpEDA-SC algorithms under f.D0pLaB.X.
+
+
+Constant-dependence audit: keep this original item open. The source does not explicitly quantify the constants before the accuracies and cites radius-floor logarithmic counts. The uniform-before-accuracy version is refuted by the separate genuine constrained TR1 counterexample. The radius-floor companion retains the accuracy-dependent logarithmic term. Complete the fixed-accuracy statement for all six variants before closing this original item; do not strengthen its implicit constant dependence and classify that stronger version as the source theorem.
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.3 (OCR Markdown line 16335)"
 deps = ["lemma_14_2_2"]
@@ -98,3 +101,11 @@ source = "Cartis, Gould and Toint, Lemma 14.2.2, literal successful-iteration qu
 [[node]]
 id = "theorem_14_2_4_counterexample"
 source = "Cartis, Gould and Toint, Theorem 14.2.4, literal simple-constraint outer algorithm"
+
+[[node]]
+id = "lemma_14_2_3_counterexample"
+source = "Cartis, Gould and Toint, Lemma 14.2.3, equation (14.2.13), accuracy-independent complexity constants"
+
+[[node]]
+id = "lemma_14_2_3_radius_floor"
+source = "Cartis, Gould and Toint, Lemma 14.2.3 and its reference to Lemma 2.3.1; explicit logarithmic radius-floor companion"
