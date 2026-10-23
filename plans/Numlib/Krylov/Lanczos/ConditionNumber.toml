@@ -1,0 +1,22 @@
+namespace = "Lanczos"
+
+[[node]]
+id = "eq_zero_of_shifted_condition_eq_one"
+
+[[node]]
+id = "conditionNumber"
+
+[[node]]
+id = "one_le_conditionNumber"
+
+[[node]]
+id = "maxCondition"
+
+[[node]]
+id = "conditionNumber_le_maxCondition"
+
+[[node]]
+id = "one_le_maxCondition"
+
+[[node]]
+id = "eq_zero_of_maxCondition_eq_one"
