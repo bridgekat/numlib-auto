@@ -1,0 +1,22 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "Run.parameter_le"
+
+[[node]]
+id = "Run.trial_criticality_le"
+
+[[node]]
+id = "Run.step_lower_of_endpoint_failure"
+
+[[node]]
+id = "Run.relative_step_lower"
+
+[[node]]
+id = "fixedDecreaseCoefficient"
+
+[[node]]
+id = "fixedDecreaseCoefficient_pos"
+
+[[node]]
+id = "Run.relative_successful_decrease"
