@@ -1,0 +1,13 @@
+namespace = "CurvatureSharpness"
+
+[[node]]
+id = "initialPolynomial_eval_eq"
+
+[[node]]
+id = "initialPolynomial_derivative_eq"
+
+[[node]]
+id = "grid_succ_sub"
+
+[[node]]
+id = "uniform_Hermite_data"
