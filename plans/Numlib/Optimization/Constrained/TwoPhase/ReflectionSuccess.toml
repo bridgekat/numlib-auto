@@ -1,0 +1,16 @@
+namespace = "Constrained.TwoPhase.Reflection"
+
+[[node]]
+id = "Block.start_gap_nonneg"
+
+[[node]]
+id = "Block.exists_success"
+
+[[node]]
+id = "Block.calls_le_successfulCount"
+
+[[node]]
+id = "Block.initialOrSuccessfulCount_le_twice"
+
+[[node]]
+id = "Block.initialOrSuccessful_le_two_band"

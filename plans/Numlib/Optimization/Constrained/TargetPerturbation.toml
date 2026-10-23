@@ -1,0 +1,37 @@
+namespace = "Constrained"
+
+[[node]]
+id = "targetMerit_sub"
+
+[[node]]
+id = "contDiffAt_targetMerit"
+
+[[node]]
+id = "iteratedFDeriv_targetMerit_sub"
+
+[[node]]
+id = "decrement_targetMerit_sub"
+
+[[node]]
+id = "targetTaylorBound"
+
+[[node]]
+id = "targetTaylorBound_nonneg"
+
+[[node]]
+id = "abs_decrement_le_targetTaylorBound"
+
+[[node]]
+id = "abs_decrement_targetMerit_sub_le"
+
+[[node]]
+id = "constrainedCriticality_targetMerit_le"
+
+[[node]]
+id = "abs_constrainedCriticality_targetMerit_sub_le"
+
+[[node]]
+id = "abs_constrainedCriticality_reflect_sub_le"
+
+[[node]]
+id = "reflection_gap_bound_of_criticality_failure"
