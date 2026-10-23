@@ -1,5 +1,4 @@
 namespace = "InexactRegularization.GuardedCounterexample"
-desc = "Actual finite IDA and EDA iterations refute the literal printed parameter-dependent obstruction, step and decrease constants while satisfying all primitive rules and global regularity."
 
 [[node]]
 id = "printedParameterCap"

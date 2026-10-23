@@ -1,5 +1,4 @@
 namespace = "InexactRegularization.GuardedCounterexample"
-desc = "A genuine finite sine execution of both IDA and EDA with large initial derivative error, guarded parameter growth, exact final short trial and failed true criticality at every produced point."
 
 [[node]]
 id = "settings"

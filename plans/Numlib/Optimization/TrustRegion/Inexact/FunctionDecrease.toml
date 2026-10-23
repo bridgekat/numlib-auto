@@ -1,5 +1,4 @@
 namespace = "InexactTrustRegion.FunctionModelTrace"
-desc = "Actual EDA objective errors, ratios and radius updates yield uniform computed and true decrease without an exact objective ratio hypothesis."
 
 [[node]]
 id = "radiusCoefficient_le_one"

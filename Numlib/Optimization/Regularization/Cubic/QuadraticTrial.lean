@@ -78,4 +78,3 @@ theorem run {u ε : ℝ} (hu : 0 < u) (hε : 0 < ε) (hε1 : ε ≤ 1)
     subst i
     norm_num [point]
 end CubicRegularization.QuadraticTrial
-

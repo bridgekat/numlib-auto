@@ -23,6 +23,7 @@ import NumlibSurface.CartisGouldToint.Chapter05.Section01
 import NumlibSurface.CartisGouldToint.Chapter05.Section03
 import NumlibSurface.CartisGouldToint.Chapter05.Section04
 import NumlibSurface.CartisGouldToint.Chapter06.Section02
+import NumlibSurface.CartisGouldToint.Chapter06.Section03
 import NumlibSurface.CartisGouldToint.Chapter07.Section01
 import NumlibSurface.CartisGouldToint.Chapter07.Section02
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
@@ -202,6 +203,20 @@ recorded on the relevant plan nodes. In particular:
 * Lemma 5.4.3's displayed double logarithm can equal zero although one actual
   cubic-regularization trial is necessary. The witness retains all five finite
   local-threshold terms. A natural ceiling alone does not repair this endpoint.
+
+* Corollary 10.2.3 uses an ordinary integer ceiling that can give a negative
+  iteration bound for a permitted positive relative tolerance. A genuine
+  two-dimensional Lanczos family realizes this case; its natural-ceiling
+  companion retains the printed coefficient.
+
+* Theorem 5.4.4's total count can be below one when one successful cubic
+  trial is required: at epsilon=zeta/sqrt(2), its local double logarithm
+  cancels the final additive one. Its separate large-gradient count remains
+  a distinct target.
+* Lemmas 13.1.16–13.1.18 and 13.3.7 use fixed coefficients that fail on a
+  complete sine-objective IDA/EDA execution. Its actual parameter grows beyond
+  the printed cap, and an accepted short step violates the stated floors
+  while true criticality still fails. Corrected companions remain separate.
 
 No claim of completeness is made for the open analytic estimates, algorithm
 complexity theorems or sharpness constructions.

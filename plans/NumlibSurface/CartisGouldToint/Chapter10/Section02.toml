@@ -34,7 +34,7 @@ deps = ["theorem_10_2_2"]
 
 [[node]]
 id = "corollary_10_2_3_corrected"
-source = "Cartis, Gould and Toint, Corollary 10.2.3 with natural ceiling; literal integer-ceiling target remains open. All printed constants retained, actual largest generalized eigenvalue and condition maximum."
+source = "Cartis, Gould and Toint, Corollary 10.2.3 with natural ceiling; literal integer-ceiling target is refuted by corollary_10_2_3_counterexample. All printed constants retained, actual largest generalized eigenvalue and condition maximum."
 
 [[node]]
 id = "corollary_10_2_3_counterexample"

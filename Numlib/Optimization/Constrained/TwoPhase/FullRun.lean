@@ -25,7 +25,7 @@ structure FullData (E : Type*) where
 model and every actual Phase2 model. Only operational return and entry guards
 are fields; no final approximate optimality or evaluation bound is assumed. -/
 structure FullRun {p : ℕ} (closedReset : Bool) (f : E → ℝ) (c : E → F) (C : Set E)
-    (P₁ P₂ : ConvexRegularization.Settings p) (ℓ ε₀ ε₁ θ : ℝ) 
+    (P₁ P₂ : ConvexRegularization.Settings p) (ℓ ε₀ ε₁ θ : ℝ)
     (D : FullData E) : Prop where
   primal_pos : 0 < ε₀
   primal_le_one : ε₀ ≤ 1
