@@ -1,0 +1,34 @@
+namespace = "Real"
+
+[[node]]
+id = "normalizedRpowDifference"
+
+[[node]]
+id = "antitone_normalizedRpowDifference"
+
+[[node]]
+id = "normalizedRpowDifference_zero"
+
+[[node]]
+id = "continuousAt_normalizedRpowDifference_zero"
+
+[[node]]
+id = "powerTransformDifference"
+
+[[node]]
+id = "newton_powerTransformDifference"
+
+[[node]]
+id = "antitone_newton_powerTransformDifference"
+
+[[node]]
+id = "normalizedRpowDifference_of_ne"
+
+[[node]]
+id = "powerTransformDifference_zero"
+
+[[node]]
+id = "powerTransformDifference_of_ne"
+
+[[node]]
+id = "deriv_powerTransformDifference_ne_zero"

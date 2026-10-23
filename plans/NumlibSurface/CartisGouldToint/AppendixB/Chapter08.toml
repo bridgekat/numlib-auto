@@ -14,17 +14,18 @@ source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconve
 
 [[node]]
 id = "transformedSecularStep"
-kind = "definition"
-desc = '''
-For mu>0 and A>0 define transformedSecularStep A mu beta = A*(1-mu^beta)/beta for beta!=0, and = -A*Real.log(mu) for beta=0. This is the continuous extension of (B.8.7); raw division at beta=0 would incorrectly make the step zero. In secular applications A=-pi(lambda_c)/pi prime(lambda_c)>0 and mu=Delta^2/pi(lambda_c)>0.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.8, equation (B.8.7)"
+
+[[node]]
+id = "transformedSecularStep_of_ne"
+
+[[node]]
+id = "transformedSecularStep_zero"
+
+[[node]]
+id = "transformedSecularStep_antitone"
+
+[[node]]
+id = "transformedSecularStep_continuousAt_zero"
 
 [[node]]
 id = "lemma_B_8_2"
-kind = "theorem"
-desc = '''
-For every A>0 and mu>0, beta->transformedSecularStep A mu beta is monotone nonincreasing on real, including its continuous value at zero. Consequently, for a differentiable secular function pi from (8.2.4), lambda_c>lambda_s, Delta>0, pi(lambda_c)>0 and pi prime(lambda_c)<0, the Newton step for Psi_beta(lambda)=pi(lambda)^beta-Delta^(2beta) is A*(1-mu^beta)/beta when beta!=0, where A=-pi/pi prime at lambda_c and mu=Delta^2/pi(lambda_c), and these steps decrease with beta. Do not need lambda_c>lambda*; source lambda_s is the spectral pole, distinct from root lambda*. Prove scalar monotonicity by the exponential tangent inequality or integral representation, retaining the continuous beta=0 logarithmic transformation.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.8.2, equation (B.8.7)"
-deps = ["transformedSecularStep"]

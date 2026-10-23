@@ -11,3 +11,10 @@ id = "abs_sub_eval_le_holder"
 
 [[node]]
 id = "abs_sub_eval_le_lipschitz"
+
+[[node]]
+id = "norm_sub_eval_le_holder"
+kind = "theorem"
+desc = '''
+Generalize abs_sub_eval_le_holder to a complete real normed codomain F. For C convex in E, D open containing C, f:E->F of class C^(p+1) on D, H>=0, beta>=0 and operator-norm Holder bound H||u-v||^beta on D^(p+1) f over C, prove ||f(x+s)-TaylorModel.eval f (p+1) x s|| <= H/Real.shiftedFactorial(p+1,beta) * ||s||^(p+1+beta), for x,x+s in C. Derive the vector-valued integral variation formula or scalarize via norming dual functionals; do not assume the norm estimate. This enables application to the derivative-valued map in A.8.3.
+'''
