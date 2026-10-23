@@ -1,0 +1,40 @@
+namespace = "LeastSquares"
+
+[[node]]
+id = "stop"
+
+[[node]]
+id = "stop_true_coe_iff"
+
+[[node]]
+id = "stop_false_coe_iff"
+
+[[node]]
+id = "stop_top_top_iff"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "FiniteRun"
+
+[[node]]
+id = "Run.restrict"
+
+[[node]]
+id = "Run.residual_gt_accuracy"
+
+[[node]]
+id = "Run.derivativeWeight_pos"
+
+[[node]]
+id = "Run.residual_step_le"
+
+[[node]]
+id = "Run.residual_le_initial"
+
+[[node]]
+id = "FiniteRun.directions_unit"
+
+[[node]]
+id = "FiniteRun.stepConditions"

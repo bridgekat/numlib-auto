@@ -6,46 +6,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "arpLeastEuclideanRun"
-kind = "definition"
-desc = '''
-Define the set of finite traces satisfying Algorithm 5.1.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
-
-Algorithm 5.1.1: Adaptive-regularization algorithm with \( p \) th-order
-                models for least Euclidean norm problems (ARpLE)
-Apply Algorithm 4.1.1 (ARp,on p. 100) to \( f\left( x\right)  = {\Phi }_{\ell }\left( x\right) \) for a given \( \ell  \geq  2 \) using
-the model
-                 \[{m}_k\left( s\right)  = {T}_{{\Phi }_{\ell },p}\left( {{x}_k,s}\right)  + \frac{{\sigma }_k}{\left( {p + 1}\right) !}\parallel s{\parallel }^{p + 1},\] (5.1.8)
-
-but replace the termination tests (Step 1) with the following:
-Step 1: Test for termination. If
-                              \[\begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_0,\] (5.1.9)
-
-     terminate with the \( {\epsilon }_0 \) -approximate global minimizer \( {x}_{\epsilon } = {x}_k \) .
-     If \( {\epsilon }_2 = {\epsilon }_3 = \infty \) and
-                              \[{\psi }_{\ell ,1}\left( {x}_k\right)  \leq  {\epsilon }_1\] (5.1.10)
-     terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-     If \( {\epsilon }_2 < \infty ,\left( {5.1.10}\right) \) holds,and
-                              \[{\psi }_{\ell ,2}\left( {x}_k\right)  > {\epsilon }_2\] (5.1.11)
-
-     terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate strict local minimizer \( {x}_{\epsilon } = {x}_k \) .
-     If \( {\epsilon }_2 < \infty \) and \( {\epsilon }_3 = \infty ,\left( {5.1.10}\right) \) holds,and (5.1.11) fails but
-                             \[{\psi }_{\ell ,2}\left( {x}_k\right)  \geq   - {\epsilon }_2\] (5.1.12)
-
-     terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-     If \( {\epsilon }_3 < \infty ,\left( {5.1.10}\right) ,\left( {5.1.12}\right) \) ,and \( {\mathcal{M}}_k \neq  \varnothing \) hold,where \( {\mathcal{M}}_k \) is defined as in
-     (4.1.14), and
-                             \[{\psi }_{\ell ,3}\left( {{x}_k,d}\right)  \leq  {\epsilon }_3\] (5.1.13)
-     and
-                             \[{\psi }_{\ell ,2}\left( {{x}_k,d}\right)  \leq  {\epsilon }_2\] (5.1.14)
-     for all \( d \in  {\mathcal{M}}_k \) ,terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2,{\epsilon }_3}\right) \) -approximate third-order min-
-     imizer \( {x}_{\epsilon } = {x}_k \) .
-```
-
-Just as when we applied ARp to general objectives, the third-order conditions (5.1.13) and (5.1.14) differ from the requirement (5.1.6) in that the latter can only be guaranteed along directions of small curvature for the model, namely, those in \( {\mathcal{M}}_k \) . Again, we will be able to show that at termination, \( {\mathcal{M}}_k \subseteq  {\mathcal{Z}}_{\epsilon } \) , where \( {\mathcal{Z}}_{\epsilon } \) is defined as in (5.1.7), and so model directions of small curvature also lead to small curvature for the true objective.
-
-Given \( p \) , we will consider the choice of \( \ell \) in some detail in Section 5.1.3. For the time being, it suffices to say that if one wishes to obtain a first-, second-, or third-order approximate minimizer, it is clear that \( p \) should be at least 1,2, or 3 (respectively). If \( p \) is a multiple of 1,2, or 6, then \( \ell  = p,\frac{1}{2}p \) , and \( \frac{1}{3}p \) (respectively) is reasonable. The larger the \( p \) , the better the (order of) worst-case evaluation complexity, but at the cost of more expensive subproblem solves.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.1"
 
 [[node]]
@@ -156,3 +116,6 @@ kind = "theorem"
 desc = """Prove the full evaluation complexity conclusion of source Theorem 5.1.7 for actual ARpLE executions, correcting only the inherited nonempty-M stopping guard exhibited by theorem_5_1_7_nonempty_guard_counterexample. Preserve actual Phi_ell=norm(r)^ell/ell derivatives, genuine Taylor models, objective ratios, parameter updates, initialized residual/derivative evaluation counts and first-stop termination. Model-direction assignment occurs before acceptance on every trial. Constants are fixed before all four positive accuracies and all executions. Under the six good-exponent alternatives of Lemma 5.1.6 for the corresponding enabled orders (in particular the full third-order alternatives5.1.42/43), retain the exact normalized measures and successful bound kappaS times max(norm(r0)^(1/2^i), norm(r0)^(1-(ell-1)/p), norm(r0)^(1-2(ell-1)/(p-1)), norm(r0)^(1-3(ell-1)/(p-2))) divided by min(epsilon0^(1/2^i), epsilon1^((p+1)/p), epsilon2^((p+1)/(p-1)), epsilon3^((p+1)/(p-2))) plus2 for each derivative order1..p. The function bound uses kappaA times that budget plus kappaC, with exact constants5.1.60/61 and the inverse maximum accuracy order. Interpret OCR powers2^4/2^s as2^i; the coefficient on the first function budget is kappaA as derived in the proof, rather than the duplicated kappaC printed in5.1.44. At termination return residual norm at mostepsilon0 or all normalized first/least-Hessian/third-direction bounds and the actual returned-set containment in the true normalized small-Hessian unit directions. Handle initial stopping and the first-/second-order branches with disabled higher tolerances as in the final source paragraph. Do not assume decrease, step lower bounds, parameter bounds, successful counts or termination as Run fields."""
 deps = ["arpLeastEuclideanRun", "arpLeastEuclideanFiniteStop", "lemma_5_1_2", "lemma_5_1_3", "lemma_5_1_4", "lemma_5_1_6", "lemma_2_4_1"]
 source = "Correction of Cartis–Gould–Toint, Theorem 5.1.7, removing only the false nonempty-direction stopping guard and repairing printed/OCR indices and the function-count coefficient."
+
+[[node]]
+id = "arpLeastEuclideanCorrectedRun"

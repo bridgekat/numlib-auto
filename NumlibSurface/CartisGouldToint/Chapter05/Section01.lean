@@ -1,3 +1,4 @@
+import Numlib.Optimization.LeastSquares.Run
 import Numlib.Optimization.LeastSquares.EmptyDirections
 import Numlib.Optimization.LeastSquares.Exponents
 import Numlib.Optimization.LeastSquares.Cascading
@@ -372,5 +373,30 @@ theorem theorem_5_1_7_nonempty_guard_counterexample :
           HighOrderRegularization.model (LeastSquares.powerObjective r 2) 6 1 σ 0) :=
   ⟨LeastSquares.EmptyDirections.source_exponent_choice,
     LeastSquares.EmptyDirections.exists_stuck_execution⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Algorithm 5.1.1 in all enabled orders, retaining the literal stopping guard.
+Every trace field is an actual objective/model rule, never a decrease or complexity conclusion. -/
+abbrev arpLeastEuclideanRun {n m : ℕ}
+    (r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)) (ℓ : ℝ) (p : ℕ)
+    (x s u : ℕ → EuclideanSpace ℝ (Fin n)) (μ σ ρ : ℕ → ℝ)
+    (M : ℕ → Set (EuclideanSpace ℝ (Fin n)))
+    (η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ θ₃ ε₀ ε₁ : ℝ)
+    (ε₂ ε₃ : WithTop ℝ) (N : ℕ) : Prop :=
+  LeastSquares.Run true r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+    θ₁ θ₂ θ₃ ε₀ ε₁ ε₂ ε₃ N
+
+/-- The same complete ARpLE program after removing only the false nonempty-direction guard. -/
+abbrev arpLeastEuclideanCorrectedRun {n m : ℕ}
+    (r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)) (ℓ : ℝ) (p : ℕ)
+    (x s u : ℕ → EuclideanSpace ℝ (Fin n)) (μ σ ρ : ℕ → ℝ)
+    (M : ℕ → Set (EuclideanSpace ℝ (Fin n)))
+    (η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ θ₃ ε₀ ε₁ : ℝ)
+    (ε₂ ε₃ : WithTop ℝ) (N : ℕ) : Prop :=
+  LeastSquares.Run false r ℓ p x s u μ σ ρ M η₁ η₂ γ₁ γ₂ γ₃ σmin
+    θ₁ θ₂ θ₃ ε₀ ε₁ ε₂ ε₃ N
 
 end CartisGouldToint
