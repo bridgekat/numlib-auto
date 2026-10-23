@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.ZeroReturnCounterexample
 import Numlib.Optimization.Composite.Complexity
 import Numlib.Optimization.Composite.ModelError
 import Numlib.Optimization.Composite.OuterCounterexample
@@ -27,6 +28,9 @@ the smooth penalized scalar part and residual polynomial
 for the model's genuine generalized Taylor criticality. They derive the exact
 small-radius decrease, actual global-minimum step existence, quantitative radii,
 and the objective optimality certified by a zero-decrease global-gap return.
+The literal outer Step2 lacks that global-gap condition. Its permitted large
+zero-improvement return disproves literal Lemma 14.1.4 and Theorem 14.1.10, even
+with unit first-order radii; the detailed-solver companions remain valid.
 
 The detailed-solver companion to Theorem 14.1.10 proves both evaluation orders
 with fixed positive constants before all accuracies. The corrected two-term
@@ -213,8 +217,9 @@ theorem lemma_14_1_3 {n m p q : ℕ} (_hq : 1 ≤ q) (hqp : q ≤ p)
     · exact Or.inr (htest hs)
     · exact Or.inl (lt_of_not_ge hs)
 
-/-- **Detailed-solver companion to Lemma 14.1.4.** A zero-decrease Step2 return satisfying
-the actual positive-fraction global-gap rule gives genuine approximate composite optimality
+/-- **Detailed-solver companion to Lemma 14.1.4.** A zero-decrease Step2 return
+satisfying the actual positive-fraction global-gap rule gives genuine
+approximate composite optimality
 at positive radii. It cannot follow a failed Step1 test when q=1 and h is convex. -/
 theorem lemma_14_1_4_detailed_solver {n m p q : ℕ} (hqp : q ≤ p)
     (f : EuclideanSpace ℝ (Fin n) → ℝ)
@@ -384,5 +389,48 @@ theorem theorem_14_1_10_detailed_solver {n m p q : ℕ} (P : Composite.Settings 
   · intro _
     exact Composite.complexity_general P f c hf hcv hLf
       (mul_nonneg (Real.sqrt_nonneg _) hLc) hh hlipf hlipv hlow
+
+
+/-- **Counterexample to literal Lemma 14.1.4.** Legal outer Step2 exits for a
+convex outer function and q=1. The sole produced point has no certifying radius.
+The positive global-gap condition of detailed Algorithm 14.1.2 excludes it. -/
+theorem lemma_14_1_4_counterexample :
+    Composite.OuterZeroExit RegularizationZeroReturn.objective
+      (fun _ : ℝ => (0 : ℝ)) abs Composite.ZeroReturnCounterexample.settings
+      (fun _ : Fin 1 => 1 / 2) 0 4 (fun _ => 1) (fun _ => 1)
+        (fun _ => 1) (fun _ => 0) 0 ∧
+    ConvexOn ℝ Set.univ (abs : ℝ → ℝ) ∧
+    ¬∃ (z : ℝ) (δ : Fin 1 → ℝ),
+      Composite.ZeroReturnCounterexample.actual_exit.producedPoint z ∧
+      Composite.OptimalityAt RegularizationZeroReturn.objective
+        (fun _ : ℝ => (0 : ℝ)) abs (fun _ => 1 / 2) z δ := by
+  exact ⟨Composite.ZeroReturnCounterexample.actual_exit,
+    Composite.ZeroReturnCounterexample.outer_properties.2.1,
+    Composite.ZeroReturnCounterexample.no_produced_certificate⟩
+
+/-- **Counterexample to literal Theorem 14.1.10.** A globally smooth, bounded-below
+problem satisfies all outer assumptions and the unit-radius policy. A permitted
+immediate outer exit produces no point with the claimed true optimality.
+-/
+theorem theorem_14_1_10_counterexample :
+    ContDiff ℝ 1 RegularizationZeroReturn.objective ∧
+    ContDiff ℝ 1 (fun _ : ℝ => (0 : ℝ)) ∧
+    (∀ x y, ‖iteratedFDeriv ℝ 1 RegularizationZeroReturn.objective x -
+      iteratedFDeriv ℝ 1 RegularizationZeroReturn.objective y‖ ≤
+      1 * ‖x - y‖) ∧
+    (∀ x y, ‖iteratedFDeriv ℝ 1 (fun _ : ℝ => (0 : ℝ)) x -
+      iteratedFDeriv ℝ 1 (fun _ : ℝ => (0 : ℝ)) y‖ ≤ 1 * ‖x - y‖) ∧
+    (∀ x, 0 ≤ RegularizationZeroReturn.objective x + |(0 : ℝ)|) ∧
+    LipschitzWith 1 (abs : ℝ → ℝ) ∧ ConvexOn ℝ Set.univ (abs : ℝ → ℝ) ∧
+    (∀ u v : ℝ, |u + v| ≤ |u| + |v|) ∧ |(0 : ℝ)| = 0 ∧
+    Composite.OuterZeroExit RegularizationZeroReturn.objective
+      (fun _ : ℝ => (0 : ℝ)) abs Composite.ZeroReturnCounterexample.settings
+      (fun _ : Fin 1 => 1 / 2) 0 4 (fun _ => 1) (fun _ => 1)
+        (fun _ => 1) (fun _ => 0) 0 ∧
+    ¬∃ (z : ℝ) (δ : Fin 1 → ℝ),
+      Composite.ZeroReturnCounterexample.actual_exit.producedPoint z ∧
+      Composite.OptimalityAt RegularizationZeroReturn.objective
+        (fun _ : ℝ => (0 : ℝ)) abs (fun _ => 1 / 2) z δ :=
+  Composite.ZeroReturnCounterexample.verified_counterexample
 
 end CartisGouldToint

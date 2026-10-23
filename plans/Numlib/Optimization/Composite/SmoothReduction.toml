@@ -1,0 +1,16 @@
+namespace = "Composite"
+
+[[node]]
+id = "eval_zero_residual"
+
+[[node]]
+id = "taylorModel_zero_residual"
+
+[[node]]
+id = "decrement_zero_residual"
+
+[[node]]
+id = "criticality_zero_residual"
+
+[[node]]
+id = "regularizedModel_zero_residual"

@@ -1,0 +1,40 @@
+namespace = "RegularizationZeroReturn"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "smooth"
+
+[[node]]
+id = "nonneg"
+
+[[node]]
+id = "fderiv_objective"
+
+[[node]]
+id = "derivative_lipschitz"
+
+[[node]]
+id = "taylor_formula"
+
+[[node]]
+id = "decrement_formula"
+
+[[node]]
+id = "criticality_formula"
+
+[[node]]
+id = "model_formula"
+
+[[node]]
+id = "zero_improvement"
+
+[[node]]
+id = "improving_displacement"
+
+[[node]]
+id = "not_positive_fraction"
+
+[[node]]
+id = "not_critical"

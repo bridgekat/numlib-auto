@@ -1,0 +1,34 @@
+namespace = "Composite.ZeroReturnCounterexample"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "outer_properties"
+
+[[node]]
+id = "decrement_formula"
+
+[[node]]
+id = "criticality_formula"
+
+[[node]]
+id = "initial_check"
+
+[[node]]
+id = "outer_return"
+
+[[node]]
+id = "actual_exit"
+
+[[node]]
+id = "source_regularity"
+
+[[node]]
+id = "no_produced_certificate"
+
+[[node]]
+id = "not_detailed_return"
+
+[[node]]
+id = "verified_counterexample"

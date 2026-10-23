@@ -1,0 +1,7 @@
+namespace = "ModelDecrease"
+
+[[node]]
+id = "exists_fraction_of_strict_decrease"
+
+[[node]]
+id = "exists_fraction_iff_of_isMin"

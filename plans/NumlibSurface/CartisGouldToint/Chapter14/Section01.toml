@@ -30,6 +30,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_14_1_4"
+wrong = "The literal outer Algorithm14.1.1 Step2 permits nonincrease plus the norm(s)>=1 bypass, and exits at zero decrease. Formal counterexample uses p=q=1, f(x)=(x-2)^2/2, c=0, h=abs, x0=0, sigma0=sigmaMin=1, epsilon=1/2 and all radii1. The actual model is 2-2s+s^2/2; returned s=4 has the same model value as0 and norm4, but actual criticality at x0 is2*delta for every positive delta. The initial computed direction1 exactly attains criticality2 and fails the test. All global smoothness, derivative Lipschitz, bounded-below and outer assumptions hold. The immediate exit precedes any acceptance ratio or parameter update and produces only x0, which has no certifying radius. Detailed Algorithm14.1.2 excludes this return by its positive global-gap fraction, and its valid companion is retained."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -137,6 +138,7 @@ deps = ["lemma_14_1_8"]
 
 [[node]]
 id = "theorem_14_1_10"
+wrong = "The literal outer Algorithm14.1.1 Step2 permits nonincrease plus the norm(s)>=1 bypass, and exits at zero decrease. Formal counterexample uses p=q=1, f(x)=(x-2)^2/2, c=0, h=abs, x0=0, sigma0=sigmaMin=1, epsilon=1/2 and all radii1. The actual model is 2-2s+s^2/2; returned s=4 has the same model value as0 and norm4, but actual criticality at x0 is2*delta for every positive delta. The initial computed direction1 exactly attains criticality2 and fails the test. All global smoothness, derivative Lipschitz, bounded-below and outer assumptions hold. The immediate exit precedes any acceptance ratio or parameter update and produces only x0, which has no certifying radius. Detailed Algorithm14.1.2 excludes this return by its positive global-gap fraction, and its valid companion is retained."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -216,3 +218,11 @@ source = "Counterexample to Cartis, Gould and Toint, Evaluation Complexity of Al
 [[node]]
 id = "lemma_14_1_7_corrected"
 source = "Coefficient-two correction of Cartis, Gould and Toint, Lemma14.1.7 / Equation14.1.30, using actual accepted-point criticality failure"
+
+[[node]]
+id = "lemma_14_1_4_counterexample"
+source = "Counterexample to literal Lemma14.1.4 via permitted outer Algorithm14.1.1 zero exit"
+
+[[node]]
+id = "theorem_14_1_10_counterexample"
+source = "Counterexample to literal Theorem14.1.10 via permitted outer zero exit, including convex unit-radius policy"
