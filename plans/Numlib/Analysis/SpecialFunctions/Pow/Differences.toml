@@ -5,3 +5,6 @@ id = "rpow_sub_le_mul_sub"
 
 [[node]]
 id = "rpow_sub_div_le_rpow_sub"
+
+[[node]]
+id = "mul_rpow_sub_le_sub_rpow"

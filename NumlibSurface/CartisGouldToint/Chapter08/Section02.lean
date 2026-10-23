@@ -1,3 +1,4 @@
+import Numlib.Optimization.Quadratic.Optimality.RegularizationMetric
 import Numlib.Optimization.Quadratic.Optimality.Metric
 import Numlib.Optimization.Quadratic.Secular.Vector
 import Numlib.Optimization.Quadratic.Secular.FirstTaylor
@@ -230,5 +231,28 @@ theorem theorem_8_2_7 {n : ℕ}
   ⟨QuadraticOptimality.Metric.trust_region_iff M hM hH g s hΔ hs,
     fun _ hτ hsolve hPD hcomp =>
       QuadraticOptimality.Metric.unique_trust_region M hM hH g s hτ hsolve hPD hcomp⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Theorem 8.2.8: global minimality of the actual weighted regularized
+quadratic is equivalent to its exact shifted-pencil equation and positive
+semidefiniteness. Every real exponent above two and every zero or nonzero
+minimizer is included. A positive-definite shifted pencil gives uniqueness. -/
+theorem theorem_8_2_8 {n : ℕ}
+    {H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
+    (hH : H.toLinearMap.IsSymmetric) (hM : M.toLinearMap.IsSymmetricCoercive)
+    (g s : EuclideanSpace ℝ (Fin n)) {r σ : ℝ} (hr : 2 < r) (hσ : 0 < σ) :
+    let τ := σ * weightedNorm M hM s ^ (r - 2)
+    ((∀ t, regularizationSubproblemModel g H M hM σ r s ≤
+      regularizationSubproblemModel g H M hM σ r t) ↔
+      (H + τ • M) s = -g ∧ ∀ v, 0 ≤ inner ℝ ((H + τ • M) v) v) ∧
+    ((H + τ • M) s = -g → (∀ v, v ≠ 0 → 0 < inner ℝ ((H + τ • M) v) v) →
+      ∀ t, regularizationSubproblemModel g H M hM σ r t ≤
+        regularizationSubproblemModel g H M hM σ r s → t = s) :=
+  ⟨QuadraticOptimality.Metric.regularized_iff M hM hH g s hr hσ.le,
+    fun hsolve hPD =>
+      QuadraticOptimality.Metric.unique_regularized M hM hH g s hr hσ.le hsolve hPD⟩
 
 end CartisGouldToint

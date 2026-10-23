@@ -54,5 +54,16 @@ theorem rpow_sub_div_le_rpow_sub {a b q p : ℝ} (hb : 0 ≤ b) (hba : b ≤ a)
       mul_pos (div_pos (hq.trans_le hqp) hq) (rpow_pos_of_pos ha _)
     exact (div_le_iff₀ hd).mpr (by simpa [mul_comm] using h)
 
-end Real
 
+/-- A convex real power lies above its tangent at every nonnegative base. -/
+theorem mul_rpow_sub_le_sub_rpow {a b p : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hp : 1 ≤ p) :
+    p * a ^ (p - 1) * (b - a) ≤ b ^ p - a ^ p := by
+  rcases le_or_gt b a with hba | hab
+  · have hh := Real.rpow_sub_le_mul_sub hb hba hp
+    nlinarith
+  · have hh := (convexOn_rpow hp).le_slope_of_hasDerivAt ha hb hab
+      (Real.hasDerivAt_rpow_const (Or.inr hp))
+    rw [slope_def_field] at hh
+    exact (le_div_iff₀ (sub_pos.mpr hab)).mp hh
+
+end Real

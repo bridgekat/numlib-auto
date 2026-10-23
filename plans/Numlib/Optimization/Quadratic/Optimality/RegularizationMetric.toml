@@ -1,0 +1,10 @@
+namespace = "QuadraticOptimality.Metric"
+
+[[node]]
+id = "regularized_eq"
+
+[[node]]
+id = "regularized_iff"
+
+[[node]]
+id = "unique_regularized"

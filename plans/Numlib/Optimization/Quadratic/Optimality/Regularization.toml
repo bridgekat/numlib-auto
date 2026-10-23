@@ -1,0 +1,28 @@
+namespace = "QuadraticOptimality"
+
+[[node]]
+id = "regularized"
+
+[[node]]
+id = "hasFDerivAt_regularized"
+
+[[node]]
+id = "stationary_of_regularized_min"
+
+[[node]]
+id = "psd_of_regularized_min_zero"
+
+[[node]]
+id = "necessary_regularized"
+
+[[node]]
+id = "penalty_gap_nonneg"
+
+[[node]]
+id = "sufficient_regularized"
+
+[[node]]
+id = "regularized_iff"
+
+[[node]]
+id = "unique_regularized"
