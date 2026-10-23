@@ -1,0 +1,16 @@
+namespace = "CubicRegularization"
+
+[[node]]
+id = "ModifiedFirstOrderStationary"
+
+[[node]]
+id = "modifiedFirstOrderStationary_iff"
+
+[[node]]
+id = "modifiedFirstOrderStationary_of_stationary"
+
+[[node]]
+id = "trial_derivative_le_of_modified"
+
+[[node]]
+id = "ModelTrace.step_length_lower_of_modified"

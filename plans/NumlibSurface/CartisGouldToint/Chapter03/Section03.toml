@@ -1,55 +1,55 @@
 namespace = "CartisGouldToint"
 # Planning conventions for remaining declarations:
 # Surface adaptation of Cartis–Gould–Toint Chapter 3, Section 3.
-# 
-# AR2 uses cubic regularization σ||s||³/6. Inexact model gradient and Hessian tests (3.3.5)–(3.3.6) are genuine step-computation requirements. Do not silently replace them with exact minimization or assume the lower bounds being proved. The alternative (3.3.11) rule in Lemma 3.3.7 is a distinct hypothesis. The model positivity/λ_min tests must use the proper sign in the OCR.
-# 
+#
+# AR2 uses cubic regularization σ||s||³/6. Inexact model gradient and Hessian tests (3.3.5)–(3.3.6) are genuine step-computation requirements. Do not silently replace them with exact minimization or assume the lower bounds being proved. The alternative (3.3.23) rule in Lemma 3.3.7 is a distinct hypothesis. The model positivity/λ_min tests must use the proper sign in the OCR.
+#
 # Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
-# 
+#
 # Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
-# 
+#
 # In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
-# 
+#
 # Section mathematical setup (source OCR; resolve errors by the design notes above):
-# 
+#
 # The previous section might suggest to the reader that, at least in the worst case, adding additional derivative information beyond the first order doesn't help. Fortunately, such a hasty conclusion is false. In this section, we describe another algorithm-which may also be considered a variant of Newton's method-whose evaluation complexity is significantly better than that of first-order methods.
-# 
+#
 # #### 3.3.1 The AR2 algorithm
-# 
+#
 # The adaptive-regularization algorithm may be motivated in two different ways. The first is to consider the method as a variant of the second-order trust-region scheme, in which the steplength is controlled not explicitly (by requiring that \( \begin{Vmatrix}{s}_k\end{Vmatrix} \leq  {\Delta }_k \) ), but implicitly instead. This is achieved by adding a term to the quadratic model \( {T}_{f,2}\left( {{x}_k, s}\right) \) used in (3.1.2) to penalize long steps. Thus, rather than updating \( {\Delta }_k \) from iteration to iteration, it is the strength of the penalization that is updated. However, this says little about which form the penalization should take. \( {}^{17} \)
-# 
+#
 # The second motivation is more interesting because it also suggests a suitable form for the penalization term. The reader might remember that we made significant use, in the analysis of the AR1 algorithm, of the overestimation property expressed by inequality (A.19) in Corollary A.8.4 (p. 437). In particular, the penalization in \( \parallel s{\parallel }^2 \) in (2.4.1) made direct reference to the error term in (A.19) for \( p = 1 \) . Considering now second-order models, that is, using \( p = 2 \) in (A.19), immediately suggests defining the regularized second-order model as
-# 
+#
 # \[
 # {m}_{k}\left( s\right) \overset{\text{ def }}{ = }f\left( {x}_{k}\right)  + \left\langle  {{\nabla }_{x}^{1}f\left( {x}_{k}\right) , s}\right\rangle   + \frac{1}{2}\left\langle  {s,{\nabla }_{x}^{2}f\left( {x}_{k}\right) s}\right\rangle   + \frac{1}{6}{\sigma }_{k}\parallel s{\parallel }^{3} = {T}_{f,2}\left( {{x}_{k}, s}\right)  + \frac{1}{6}{\sigma }_{k}\parallel s{\parallel }^{3},
 # \]
-# 
+#
 # (3.3.1)
-# 
+#
 # whose gradient and Hessian are given by
-# 
+#
 # \[
 # {\nabla }_s^1{m}_k\left( s\right)  = {\nabla }_x^{1}f\left( {x}_k\right)  + {\nabla }_x^{2}f\left( {x}_k\right) s + \frac{{\sigma }_k}{2}\parallel s\parallel s\tag{3.3.2}
 # \]
-# 
+#
 # and
-# 
+#
 # \[
 # {\nabla }_s^2{m}_k\left( s\right)  = {\nabla }_x^{2}f\left( {x}_k\right)  + {\sigma }_k\parallel s\parallel \left( {I + \frac{s{s}^T}{\parallel s{\parallel }^2}}\right) .
 # \]
-# 
+#
 # This improved model, compared to (2.4.1), is the main difference between the first-order regularization algorithm AR1 and the new second-order one, which we call AR2. We immediately note that \( {m}_k\left( s\right) \) is bounded below because any negative curvature present in \( {\nabla }_x^{2}f\left( {x}_k\right) \) is dominated by the third-order regularization term for large \( \parallel s\parallel \) . However, computing the global minimizer of (3.3.1) no longer results from a simple analytic formula, as was the case for AR1, but more elaborate techniques are needed-they are covered in detail in Chapters 9 and 10, and remarkably a global minimizer \( {s}_k \) of the model \( {m}_k\left( s\right) \) once again satisfies the linear system (3.2.2) for positive-semidefinite \( {\nabla }_x^{2}f\left( {x}_k\right)  + {\lambda }_{k}I \) , but now explicitly \( {\lambda }_k = \frac{1}{2}{\sigma }_k\begin{Vmatrix}{s}_k\end{Vmatrix} \) (see Theorem 8.2.8 on p. 226)—yielding exact or inexact minimizers of \( {m}_k\left( s\right) \) .
-# 
+#
 # ---
-# 
+#
 # \( {}^{17} \) Many forms of penalization have been proposed in the past, such as the Levenberg-Morrison-Marquardt algorithm or the proximal-point method, but without improving the worst-case evaluation complexity beyond that of Newton's method.
-# 
+#
 # ---
-# 
+#
 # Because of this complication, we focus here on a version of the AR2 algorithm that allows for inexact model minimization. Our algorithm is formally described as follows.
-# 
+#
 # ## Algorithm 3.3.1: Adaptive-regularization algorithm with a \(\text{ second-order model (AR2) }\)
-# 
+#
 # ```
 # Step 0: Initialization. An initial point \( {x}_0 \) ; accuracy thresholds \( {\epsilon }_1 \in  (0,1\rbrack ,{\epsilon }_2 > \)
 #      0 ; and an initial regularization parameter \( {\sigma }_0 > 0 \) are given. The constants
@@ -60,48 +60,48 @@ namespace = "CartisGouldToint"
 #      Compute \( f\left( {x}_0\right) ,{\nabla }_x^{1}f\left( {x}_0\right) \) ,and \( {\nabla }_x^{2}f\left( {x}_0\right) \) ,and set \( k = 0 \) .
 # Step 1: Test for termination. If \( {\epsilon }_2 < \infty \) and
 #                     \[\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   > {\epsilon }_{2},\]
-# 
+#
 #      terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate strict local minimizer \( {x}_{\epsilon } = {x}_k \) . Oth-
 #      erwise, if
 #                    \[\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   \geq   - {\epsilon }_{2},\] (3.3.4)
 #      terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) .
 # Step 2: Step computation. Compute a step \( {s}_k \) such that \( {m}_k\left( {s}_k\right)  < {m}_k\left( 0\right) \) ,
 #                            \[\begin{Vmatrix}{{\nabla }_s^1{m}_k\left( {s}_k\right) }\end{Vmatrix} \leq  \frac{1}{2}{\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^2,\] (3.3.5)
-# 
+#
 #      and,if \( {\epsilon }_2 < \infty \) ,
 #                           \[{\lambda }_{\min }\left\lbrack  {{\nabla }_s^2{m}_k\left( {s}_k\right) }\right\rbrack   \geq   - {\theta }_2\begin{Vmatrix}{s}_k\end{Vmatrix}.\] (3.3.6)
-# 
+#
 # Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) and define
 #                         \[{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f,2}\left( {{x}_k,0}\right)  - {T}_{f,2}\left( {{x}_k,{s}_k}\right) }.\] (3.3.7)
-# 
-# 
+#
+#
 #      If \( {\rho }_k \geq  {\eta }_1 \) ,then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_x^{1}f\left( {x}_{k + 1}\right) \) and
 #      \( {\nabla }_x^{2}f\left( {x}_{k + 1}\right) \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
 # Step 4: Regularization parameter update. Set
 #             \[{\sigma }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {\max \left( {{\sigma }_{\min },{\gamma }_{1}{\sigma }_{k}}\right) ,{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\sigma }_{k},{\gamma }_{2}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) , \\  \left\lbrack  {{\gamma }_{2}{\sigma }_{k},{\gamma }_{3}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.\] (3.3.8)
-# 
-# 
+#
+#
 #      Increment \( k \) by one and go to Step 1.
 # ```
-# 
+#
 # The AR2 algorithm is very similar in structure to AR1. Indeed, since \( \begin{Vmatrix}{{\nabla }_s^1{m}_k\left( s\right) }\end{Vmatrix} \) must be zero at a local minimizer of \( {m}_k\left( s\right) \) , the step computation in AR2 is a relaxed equivalent of the exact requirement (2.4.5); that is,
-# 
+#
 # \[
 # {s}_k = \underset{s \in  {\mathbb{R}}^n}{\arg \min }{m}_k\left( s\right) ,\tag{3.3.9}
 # \]
-# 
+#
 # from AR1. Moreover, (3.3.7) is the same as (2.4.3) for the models under consideration. As for the TR2 algorithm, we have left open the possibility of using AR2 simply to find an approximate first-order minimizer by selecting \( {\epsilon }_2 =  + \infty \) , which deactivates the second part of (3.3.4) and (3.3.6). As is now usual, we define the sets of successful and unsuccessful iterations by (2.3.9)-(2.3.10).
-# 
+#
 # #### 3.3.2 Complexity of finding approximate first-order minimizers
-# 
+#
 # The evaluation-complexity analysis for the convergence of AR2 to an \( {\epsilon }_1 \) -approximate first-order minimizer is remarkably simple and elegant. As we will discover throughout the book, it is also possible to generalize it in many other contexts.
-# 
+#
 # ---
-# 
+#
 # \( {}^{18} \) The term on the right-hand side of (3.3.11) may be replaced by \( \frac{1}{2}{\theta }_1\max \left\lbrack  {1,{\sigma }_k}\right\rbrack  {\begin{Vmatrix}{s}_k\end{Vmatrix}}^2 \) without detrimental theoretical consequences, and this is less restrictive for small \( {\sigma }_k \) .
-# 
+#
 # ---
-# 
+#
 # We start by establishing an elementary lower bound on the Taylor-series model decrease.
 
 [[node]]
@@ -192,29 +192,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_3_3_7"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.3.7: Modified lower bound on the length of the step
-
-Suppose that f.HL holds. Then, if iteration \( k \) of the modified AR2 algorithm using (3.3.23) rather than (3.3.5) is successful,
-
-\[
-{\begin{Vmatrix}{s}_k\end{Vmatrix}}^2 \geq  \frac{2}{{L}_{f,2} + {\theta }_1{\sigma }_{\max }}\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{k + 1}\right) }\end{Vmatrix}.\tag{3.3.24}
-\]
-
-Referenced equation payloads:
-
-Equation (3.3.5):
-\[\begin{Vmatrix}{{\nabla }_s^1{m}_k\left( {s}_k\right) }\end{Vmatrix} \leq  \frac{1}{2}{\theta }_1{\begin{Vmatrix}{s}_k\end{Vmatrix}}^2,\]
-
-Equation (3.3.23):
-\[
-\begin{Vmatrix}{{\nabla }_s^1{T}_{f,2}\left( {{x}_k,{s}_k}\right) }\end{Vmatrix} \leq  \frac{1}{2}{\theta }_1{\sigma }_k{\begin{Vmatrix}{s}_k\end{Vmatrix}}^2,\tag{3.3.23}
-\]
-'''
-deps = ["lemma_3_3_4", "theorem_3_3_5", "lemma_3_3_3", "ar2Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.3.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3333)"
 
 [[node]]

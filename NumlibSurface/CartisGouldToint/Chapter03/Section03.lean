@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Cubic.ModifiedGradient
 import Numlib.Optimization.Regularization.Cubic.FirstOrder
 import NumlibSurface.CartisGouldToint.Chapter02.Section03
 import Numlib.Analysis.Calculus.Gradient
@@ -149,5 +150,24 @@ theorem theorem_3_3_5 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
         (CubicRegularization.decreaseCoefficient (σ 0) σmin η₁ η₂ γ₃ L θ₁ *
           ε ^ (3 / 2 : ℝ)) + 1) * A + C + 1 := add_le_add hb le_rfl
     _ = _ := by rw [hSinv]; ring
+
+/-- **Lemma 3.3.7.** The modified AR2 test (3.3.23), imposed on the actual
+quadratic Taylor polynomial, yields (3.3.24) at every accepted trial. The
+regularization bound is derived from the actual model/ratio/update trace. -/
+theorem lemma_3_3_7 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin L θ₁ : ℝ} {N i : ℕ}
+    (h : ar2ModelTrace f x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L) (hθ : 1 < θ₁)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖)
+    (hstep : ∀ j < N, x (j + 1) = if η₁ ≤ ρ j then x j + s j else x j)
+    (hi : i < N) (hs : η₁ ≤ ρ i)
+    (hstat : ‖gradient (TaylorModel.eval f 2 (x i)) (s i)‖ ≤
+      θ₁ * σ i / 2 * ‖s i‖ ^ 2) :
+    2 / (L + θ₁ * max (σ 0) (γ₃ * L / (1 - η₂))) *
+      ‖gradient f (x (i + 1))‖ ≤ ‖s i‖ ^ 2 := by
+  rw [hstep i hi, ite_eq_left hs, EuclideanSpace.norm_gradient_eq]
+  rw [EuclideanSpace.norm_gradient_eq] at hstat
+  exact h.step_length_lower_of_modified hf hL (by linarith) hlip hi hstat
 
 end CartisGouldToint
