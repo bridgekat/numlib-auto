@@ -1,0 +1,4 @@
+namespace = "Lanczos"
+
+[[node]]
+id = "norm_rhs_le_of_quadratic_upper"
