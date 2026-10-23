@@ -1,0 +1,106 @@
+namespace = "CurvatureSharpness"
+
+[[node]]
+id = "grid"
+
+[[node]]
+id = "value"
+
+[[node]]
+id = "curvature"
+
+[[node]]
+id = "jet"
+
+[[node]]
+id = "Data"
+
+[[node]]
+id = "secondDerivative_apply"
+
+[[node]]
+id = "leastEigenpair"
+
+[[node]]
+id = "grid_strictMono"
+
+[[node]]
+id = "initialTaylor"
+
+[[node]]
+id = "initialTaylor_eq"
+
+[[node]]
+id = "initialTaylor_derivative"
+
+[[node]]
+id = "jet_residual_le"
+
+[[node]]
+id = "horizon"
+
+[[node]]
+id = "horizon_bounds"
+
+[[node]]
+id = "dataBound"
+
+[[node]]
+id = "step_scale"
+
+[[node]]
+id = "uniform_jet_bounds"
+
+[[node]]
+id = "unit_step_uniform_bounds"
+
+[[node]]
+id = "Data.of_jets"
+
+[[node]]
+id = "Data.fderiv_eq_zero"
+
+[[node]]
+id = "Data.leastEigenpair"
+
+[[node]]
+id = "Data.eval_two"
+
+[[node]]
+id = "Data.actual_ratio"
+
+[[node]]
+id = "Data.cubic_stationary"
+
+[[node]]
+id = "Data.cubic_curvature"
+
+[[node]]
+id = "Data.cubic_finiteRun"
+
+[[node]]
+id = "Data.gradient_eq_zero"
+
+[[node]]
+id = "Data.cauchyPoint"
+
+[[node]]
+id = "Data.eigenPoint"
+
+[[node]]
+id = "Data.trustRegion_run"
+
+[[node]]
+id = "Data.first_stopping_index"
+
+[[node]]
+id = "Data.successful_count"
+
+[[node]]
+id = "Data.initialized_counts"
+
+[[node]]
+id = "Data.initial_objective_gap"
+
+[[node]]
+id = "Data.terminal"
