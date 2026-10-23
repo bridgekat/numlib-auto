@@ -139,7 +139,7 @@ theorem Step.second_length_check {p : ℕ} {P : Settings p} (hp : 2 ≤ p) {f : 
     (hf : ContDiff ℝ p f) {H β : ℝ} (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
     (hholder : ∀ y z,
       ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ H * ‖y - z‖ ^ β)
-    (ha : 2 < (p : ℝ) + β) (har : (p : ℝ) + β ≤ P.r)
+    (ha : 2 ≤ (p : ℝ) + β) (har : (p : ℝ) + β ≤ P.r)
     {ε2 : Option ℝ} {x s : E} {σ e : ℝ} (hσ : 0 ≤ σ) (h : Step f P ε2 x s σ)
     (he : e ∈ ε2) (v : E) (hv : ‖v‖ = 1)
     (hsecond : P.theta2 * Real.finiteFactorial (P.r - 2) ≤ σ)
@@ -147,7 +147,8 @@ theorem Step.second_length_check {p : ℕ} {P : Settings p} (hp : 2 ≤ p) {f : 
     -P.alpha2 * iteratedFDeriv ℝ 2 f (x + s) (fun _ => v) ≤ σ * ‖s‖ ^ (P.r - 2) := by
   let a : ℝ := (p : ℝ) + β
   have ht : 0 < ‖s‖ := norm_pos_iff.mpr h.ne_zero
-  have hr : 2 < P.r := ha.trans_le har
+  have hpR : (2 : ℝ) ≤ p := by exact_mod_cast hp
+  have hr : 2 < P.r := hpR.trans_lt P.power_gt
   have hfac1 := Real.finiteFactorial_pos (show 0 ≤ a - 1 by dsimp [a];linarith)
   have hfacr := Real.finiteFactorial_pos (show 0 ≤ P.r by linarith)
   have hfac2 := Real.finiteFactorial_pos (show 0 ≤ P.r - 2 by linarith)
@@ -202,7 +203,7 @@ theorem Step.very_successful {p : ℕ} {P : Settings p} {f : E → ℝ}
       ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ H * ‖y - z‖ ^ β)
     (ha : 1 < (p : ℝ) + β) (har : (p : ℝ) + β ≤ P.r)
     {ε2 : Option ℝ} {x s : E} {σ : ℝ} (hσ : 0 < σ) (h : Step f P ε2 x s σ)
-    (hp : ∀ e ∈ ε2, 2 ≤ p) (ha2 : ∀ e ∈ ε2, 2 < (p : ℝ) + β)
+    (hp : ∀ e ∈ ε2, 2 ≤ p) (ha2 : ∀ e ∈ ε2, 2 ≤ (p : ℝ) + β)
     (hfirst : P.theta1 * Real.finiteFactorial (P.r - 1) ≤ σ)
     (hsecond : ∀ e ∈ ε2, P.theta2 * Real.finiteFactorial (P.r - 2) ≤ σ)
     (hthreshold : betaCoefficient P H β * ‖s‖ ^ ((p : ℝ) + β - P.r) ≤ σ) :

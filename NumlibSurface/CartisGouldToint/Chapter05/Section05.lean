@@ -61,7 +61,7 @@ theorem lemma_5_5_3 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
       ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ H * ‖y - z‖ ^ β)
     (ha : 1 < (p : ℝ) + β) (har : (p : ℝ) + β ≤ P.r)
     (hσ : 0 < σ) (h : UniversalRegularization.Step f P ε2 x s σ)
-    (hp : ∀ e ∈ ε2, 2 ≤ p) (ha2 : ∀ e ∈ ε2, 2 < (p : ℝ) + β)
+    (hp : ∀ e ∈ ε2, 2 ≤ p) (ha2 : ∀ e ∈ ε2, 2 ≤ (p : ℝ) + β)
     (hparameter : max (P.theta1 * Real.finiteFactorial (P.r - 1))
       (UniversalRegularization.betaCoefficient P H β * ‖s‖ ^ ((p : ℝ) + β - P.r)) ≤ σ)
     (hsecond : ∀ e ∈ ε2, P.theta2 * Real.finiteFactorial (P.r - 2) ≤ σ) :
