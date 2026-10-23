@@ -1,0 +1,13 @@
+namespace = "ExactGradientLineSearch"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.decrease"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "exists_termination"

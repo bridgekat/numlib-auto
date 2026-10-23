@@ -1,111 +1,111 @@
 namespace = "CartisGouldToint"
-desc = '''
-Surface adaptation of Cartis–Gould–Toint Chapter 4, Section 2.
 
-Model an oracle method as a deterministic function of the complete finite history of value and derivative queries up to degree p, with x₀=0. Complexity is inf_M sup_f hittingTime in ℕ∞, never sup_f inf_M. Use a family over arbitrary finite dimensions for resisting-oracle embeddings. Correct the first term of (4.2.6) to −Ψ(1)Φ(x₁): the OCR term −Ψ(x₁)Φ(x₁) vanishes near 0 and contradicts Lemma 4.2.5(ii). Document this correction in the definition and result docs.
-
-Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
-
-Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
-
-In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
-
-Section mathematical setup (source OCR; resolve errors by the design notes above):
-
-By this stage of our book, the reader might rightly have started to be suspicious that perhaps we have been overly selective in the algorithms that we have chosen to describe and analyze. While we have exhibited methods with what we have termed "good behaviour," might it be possible that we have only focused on methods we know, and that actually there are hidden gems that we have overlooked and that actually outperform our self-proclaimed champions?
-
-In this section, we review a far-reaching discovery by Carmon, Duchi, Hinder, and Sidford [77], who identify a problem instance that is difficult to optimize for a large class of algorithms. The construction they provide follows the tradition of lower complexity bound constructions for first-order algorithms for minimizing convex functions [296,299], in which a "worst function in the world" is exhibited whose dimension grows as a polynomial in the inverse of the optimality tolerance, and for which all algorithms with access to specified problem oracles (say function and gradient evaluations) will be slow in terms of global iteration and evaluation counts. The example of bad behaviour they suggest is algorithm independent and applies to a larger class of less prescriptive algorithms than simply those that we have encountered thus far.
-
-Unlike for the one- or two-dimensional bad-case examples we have met in Section 3.5 (p. 90) and in Theorems 3.2.2 (p. 58) and 4.1.6 (p. 109), this generality is made possible by constructing a high-dimensional example-whether there are similar examples that do not require large dimensions is an open question. In particular, here we show that for any \( {\epsilon }_1 > 0 \) , there exists a dimension \( n \) such that, for any \( \bar{n} \geq  n \) , there is a function \( f : {\mathbb{R}}^{\bar{n}} \rightarrow  \mathbb{R} \) such that any algorithm in the class of interest requires at least \( {k}_{\epsilon } \) evaluations of \( f \) and its derivatives up to order \( p \) to generate \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{{k}_{\epsilon }}\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) , where \( n = 2{k}_{\epsilon } \) . Because \( {k}_{\epsilon } = \mathcal{O}\left( {\epsilon }_1^{-\left( {p + 1}\right) /p}\right) \) , the results here imply that \( \mathrm{AR}p \) has optimal complexity within a general class of algorithms using derivatives up to \( p \) th order.
-
-#### 4.2.1 Problems and methods of interest
-
-Just as in Section 3.5 (p. 90), we start by describing the classes of problems and algorithms that will be our focus.
-
-##### 4.2.1.1 The function class \( \mathcal{F}\left( {\Delta , p}\right) \) of interest
-
-Let \( p \geq  1 \) . Our intention is, as we have done throughout this chapter, to apply the algorithms that we permit to the minimization of sufficiently smooth functions \( f \) that are bounded from below by a given \( {f}_{\text{ low }} = \inf f\left( x\right) \) and have Lipschitz-continuous \( p \) th derivatives. For a given \( \Delta  > 0 \) , we say \( f \) is in the class of functions \( \mathcal{F}\left( {\Delta , p}\right) \) if \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) is infinitely continuously differentiable \( {}^{29} \) and satisfies f.DpL and f.Bb, where
-
-\[
-f\left( 0\right)  - {f}_{\text{ low }} \leq  \Delta
-\]
-
----
-
-\( {}^{29} \) This is needed so that the dimension \( n \) of \( f \) is allowed to grow.
-
----
-
-Notice that functions in the class of interest have an important orthogonal invariance property, namely, for any function \( f \) in the class, and any \( U \in  O\left( {\bar{n}, n}\right) \) , where
-
-\[
-O\left( {\bar{n}, n}\right) \overset{\text{ def }}{ = }\{ O \mid  O\text{ is an }\bar{n}\text{ by }n\text{ real, orthonormal matrix }\} ,
-\]
-
-the function \( {f}_{\mathrm{U}} : {\mathbb{R}}^{\bar{n}} \rightarrow  \mathbb{R} \) defined by \( {f}_{\mathrm{U}}\left( z\right) \overset{\text{ def }}{ = }f\left( {{U}^{T}z}\right) \) for all \( z \in  {\mathbb{R}}^{\bar{n}} \) also belongs to this class. \( {}^{30} \) Thus \( \mathcal{F}\left( {\Delta , p}\right) \) contains functions of a variable number of unknowns, and hence \( n \) is not fixed.
-
-##### 4.2.1.2 The class \( \mathcal{M}\left( p\right) \) of methods and its zero-respecting subclass \( {\mathcal{M}}_{\mathrm{ZR}}\left( p\right) \)
-
-For any dimension \( n \) ; permitted derivative degree \( p \) ; and, without loss of generality, \( {x}_{0}\overset{\text{ def }}{ = }0 \in  {\mathbb{R}}^{n} \) , we view a method in the class \( \mathcal{M}\left( p\right) \) as a mapping that associates any given function \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) with a corresponding sequence of iterates \( \left\{  {x}_k\right\}   \subset  {\mathbb{R}}^n \) , where
-
-\[
-{x}_{k + 1} = {M}^{\left( k\right) }\left( {f\left( {x}_0\right) ,{\nabla }_x^{1}f\left( {x}_0\right) ,\ldots ,{\nabla }_x^{p}f\left( {x}_0\right) ,\ldots , f\left( {x}_k\right) ,\ldots ,{\nabla }_x^{p}f\left( {x}_k\right) }\right)
-\]
-
-and where \( {M}^{\left( k\right) } \) is a mapping \( {}^{31} \) from \( {\mathbb{R}}^n \) to \( {\mathbb{R}}^n \) . This general definition implies that all algorithms considered in this book that use exact derivatives belong to \( \mathcal{M}\left( p\right) \) for an appropriate choice of \( p \) . Furthermore, this general class of algorithms also includes methods that do not explicitly use all available derivatives, such as those we will encounter in Chapter 13 (p. 325). Thus the definition is understood to imply that the generated iterates depend upon derivatives of degree at most \( o \) , with \( o \leq  p \) .
-
-A useful subclass of \( \mathcal{M}\left( p\right) \) is the class of zero-respecting methods \( {\mathcal{M}}_{ZR}\left( p\right) \) . Specifically, a method in \( \mathcal{M}\left( p\right) \) that generates iterates \( \left\{  {x}_k\right\} \) is zero respecting with respect to any function \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) if for each \( k \geq  0 \) ,
-
-\[
-\left\{  {\mathop{\bigcap }\limits_{q \in  \left\lbrack  {1 : p}\right\rbrack  }\mathop{\bigcap }\limits_{i \leq  k}\left\{  {j \mid  {\nabla }_x^{q}f\left( {x}_i\right) {e}_j = 0}\right\}  }\right\}   \subseteq  \left\{  {j \mid  {\left\lbrack  {x}_{k + 1}\right\rbrack  }_j = 0}\right\}\tag{4.2.1}
-\]
-
-in other words, if all partial derivatives of \( f \) up to order \( p \) containing the \( j \) th coordinate are zero at the current and all previous iterates (including \( {x}_0 = 0 \) ), then the \( j \) th coordinate of the next iterate remains zero. This definition says that zero components of iterates are preserved if corresponding derivative components of \( f \) (up to order \( p \) ) are zero, so such an algorithm does not explore coordinates that do not appear to affect the function.
-
-It is clear that first-order \( \left( {p = 1}\right) \) algorithms belong to \( {\mathcal{M}}_{\mathrm{ZR}}\left( p\right) \) , but it is not difficult to see that Newton's method (Algorithm 3.1.1 (p. 50)) can also be viewed as zero respecting (with \( p = 2 \) ) if we employ a suitable convention. \( {}^{32} \) Under similar conventions, algorithms AR2 and TR2 and other variants of Newton’s method, as well as algorithms ARp and the forthcoming TRq and ARqp (which we shall encounter in Chapter 12), can be shown to be members of \( {\mathcal{M}}_{\mathrm{ZR}}\left( p\right) \) for \( p = 2 \) and \( p \geq  1 \) , respectively. We note though that it is not necessary for these algorithms to be zero respecting in order for the lower-bound results to apply to them.
-
----
-
-\( {}^{30} \) This is because the Lipschitz constants of \( f \) and \( {f}_{\mathrm{U}} \) and their respective derivatives coincide for all orders, and \( f\left( 0\right)  - {f}_{\text{ low }} = {f}_{\mathrm{U}}\left( 0\right)  - {f}_{U,\text{ low }} \) .
-
-\( {}^{31} \) We note that in [77], \( {M}^{\left( k\right) } \) is assumed to be measurable. However, this assumption does not appear to be used by the authors in the deterministic case that we are considering here.
-
-\( {}^{32} \) When the \( j \) th row and column of the Hessian matrix of \( f \) at \( {x}_k \) are zero, and the corresponding component of the gradient is also zero, then the step component \( {\left\lbrack  {s}_k\right\rbrack  }_j \) is arbitrary. Newton’s method is zero respecting if, in this case, we choose \( {\left\lbrack  {s}_k\right\rbrack  }_j = 0 \) .
-
----
-
-##### 4.2.1.3 The complexity of a class of methods
-
-Thus armed with sensible sets of functions and suitably related minimization algorithms, it is now reasonable to talk of the complexity of approximating a minimizer, or at least of finding an approximate stationary point. Let \( k = {k}_{\epsilon }\left( {M, f}\right) \) be the first iteration for which \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) , where \( {x}_k \) is generated by an algorithm \( M \) applied to minimize \( f \) . The complexity of the class \( \mathcal{M} \) on the function class \( \mathcal{F} \) is defined as the best worst-case complexity bound of an algorithm in \( \mathcal{M} \) for functions in \( \mathcal{F} \) , namely,
-
-\[
-{\# }_{\epsilon }\left( {\mathcal{M},\mathcal{F}}\right) \overset{\text{ def }}{ = }\mathop{\inf }\limits_{{M \in  \mathcal{M}}}\mathop{\sup }\limits_{{f \in  \mathcal{F}}}{k}_{\epsilon }\left( {M, f}\right) .\tag{4.2.2}
-\]
-
-In particular, when \( \mathcal{F} = \mathcal{F}\left( {\Delta , p}\right) \) , Theorem 4.1.5 with \( {\epsilon }_2 = {\epsilon }_3 = \infty \) shows that
-
-\[
-{\# }_{\epsilon }\left( {\mathcal{M},\mathcal{F}\left( {\Delta , p}\right) }\right)  \leq  \mathop{\sup }\limits_{f \in  \mathcal{F}\left( {\Delta , p}\right) }{k}_{\epsilon }\left( {\mathrm{AR}p, f}\right)  = \mathcal{O}\left( {\Delta {L}_{f, p}^{\frac{p + 1}{p}}{\epsilon }_1^{-\frac{p + 1}{p}}}\right) ,\tag{4.2.3}
-\]
-
-where \( {L}_{f, p} \) is the Lipschitz constant of the \( p \) th-order derivative \( {\nabla }_x^{p}f \) . We show that these bounds are sharp within \( p \) -dependent constant factors.
-
-#### 4.2.2 Constructing a lower complexity bound for the methods in \( \mathcal{M}\left( p\right) \) when applied to functions in \( \mathcal{F}\left( {\Delta , p}\right) \)
-
-In order to derive a lower complexity bound, we need to exhibit a "difficult" function, that is, one that requires a significant number of evaluations for all methods in our class. The key here is the idea of a zero-chain function.
-
-A function \( f \in  {C}^p \) is a pth-order zero chain if for each \( x \in  {\mathbb{R}}^n \) and any \( j \in  \left\lbrack  {1 : n}\right\rbrack \) ,
-
-\[
-{\left\lbrack  x\right\rbrack  }_{j} = \cdots  = {\left\lbrack  x\right\rbrack  }_{n} = 0\text{ implies }{\nabla }_{x}^{q}f\left( x\right) {e}_{j + 1} = \cdots  = {\nabla }_{x}^{q}f\left( x\right) {e}_{n} = 0\text{ for all }q \in  \left\lbrack  {1 : p}\right\rbrack  \text{ . }
-\]
-
-(4.2.4)
-
-In other words, if the last \( n - j \) components of a point \( x \) are zero, a zero-chain function looks constant in the last \( n - j - 1 \) components. See [299, Sect. 2.1.2] and [77, Def. 3] for more details and examples.
-
-This has the following immediate, trivial consequence.
-'''
+# Planning conventions for the remaining declarations:
+# Surface adaptation of Cartis–Gould–Toint Chapter 4, Section 2.
+#
+# Model an oracle method as a deterministic function of the complete finite history of value and derivative queries up to degree p, with x₀=0. Complexity is inf_M sup_f hittingTime in ℕ∞, never sup_f inf_M. Use a family over arbitrary finite dimensions for resisting-oracle embeddings. Correct the first term of (4.2.6) to −Ψ(1)Φ(x₁): the OCR term −Ψ(x₁)Φ(x₁) vanishes near 0 and contradicts Lemma 4.2.5(ii). Document this correction in the definition and result docs.
+#
+# Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+#
+# Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+#
+# In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+#
+# Section mathematical setup (source OCR; resolve errors by the design notes above):
+#
+# By this stage of our book, the reader might rightly have started to be suspicious that perhaps we have been overly selective in the algorithms that we have chosen to describe and analyze. While we have exhibited methods with what we have termed "good behaviour," might it be possible that we have only focused on methods we know, and that actually there are hidden gems that we have overlooked and that actually outperform our self-proclaimed champions?
+#
+# In this section, we review a far-reaching discovery by Carmon, Duchi, Hinder, and Sidford [77], who identify a problem instance that is difficult to optimize for a large class of algorithms. The construction they provide follows the tradition of lower complexity bound constructions for first-order algorithms for minimizing convex functions [296,299], in which a "worst function in the world" is exhibited whose dimension grows as a polynomial in the inverse of the optimality tolerance, and for which all algorithms with access to specified problem oracles (say function and gradient evaluations) will be slow in terms of global iteration and evaluation counts. The example of bad behaviour they suggest is algorithm independent and applies to a larger class of less prescriptive algorithms than simply those that we have encountered thus far.
+#
+# Unlike for the one- or two-dimensional bad-case examples we have met in Section 3.5 (p. 90) and in Theorems 3.2.2 (p. 58) and 4.1.6 (p. 109), this generality is made possible by constructing a high-dimensional example-whether there are similar examples that do not require large dimensions is an open question. In particular, here we show that for any \( {\epsilon }_1 > 0 \) , there exists a dimension \( n \) such that, for any \( \bar{n} \geq  n \) , there is a function \( f : {\mathbb{R}}^{\bar{n}} \rightarrow  \mathbb{R} \) such that any algorithm in the class of interest requires at least \( {k}_{\epsilon } \) evaluations of \( f \) and its derivatives up to order \( p \) to generate \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{{k}_{\epsilon }}\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) , where \( n = 2{k}_{\epsilon } \) . Because \( {k}_{\epsilon } = \mathcal{O}\left( {\epsilon }_1^{-\left( {p + 1}\right) /p}\right) \) , the results here imply that \( \mathrm{AR}p \) has optimal complexity within a general class of algorithms using derivatives up to \( p \) th order.
+#
+# #### 4.2.1 Problems and methods of interest
+#
+# Just as in Section 3.5 (p. 90), we start by describing the classes of problems and algorithms that will be our focus.
+#
+# ##### 4.2.1.1 The function class \( \mathcal{F}\left( {\Delta , p}\right) \) of interest
+#
+# Let \( p \geq  1 \) . Our intention is, as we have done throughout this chapter, to apply the algorithms that we permit to the minimization of sufficiently smooth functions \( f \) that are bounded from below by a given \( {f}_{\text{ low }} = \inf f\left( x\right) \) and have Lipschitz-continuous \( p \) th derivatives. For a given \( \Delta  > 0 \) , we say \( f \) is in the class of functions \( \mathcal{F}\left( {\Delta , p}\right) \) if \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) is infinitely continuously differentiable \( {}^{29} \) and satisfies f.DpL and f.Bb, where
+#
+# \[
+# f\left( 0\right)  - {f}_{\text{ low }} \leq  \Delta
+# \]
+#
+# ---
+#
+# \( {}^{29} \) This is needed so that the dimension \( n \) of \( f \) is allowed to grow.
+#
+# ---
+#
+# Notice that functions in the class of interest have an important orthogonal invariance property, namely, for any function \( f \) in the class, and any \( U \in  O\left( {\bar{n}, n}\right) \) , where
+#
+# \[
+# O\left( {\bar{n}, n}\right) \overset{\text{ def }}{ = }\{ O \mid  O\text{ is an }\bar{n}\text{ by }n\text{ real, orthonormal matrix }\} ,
+# \]
+#
+# the function \( {f}_{\mathrm{U}} : {\mathbb{R}}^{\bar{n}} \rightarrow  \mathbb{R} \) defined by \( {f}_{\mathrm{U}}\left( z\right) \overset{\text{ def }}{ = }f\left( {{U}^{T}z}\right) \) for all \( z \in  {\mathbb{R}}^{\bar{n}} \) also belongs to this class. \( {}^{30} \) Thus \( \mathcal{F}\left( {\Delta , p}\right) \) contains functions of a variable number of unknowns, and hence \( n \) is not fixed.
+#
+# ##### 4.2.1.2 The class \( \mathcal{M}\left( p\right) \) of methods and its zero-respecting subclass \( {\mathcal{M}}_{\mathrm{ZR}}\left( p\right) \)
+#
+# For any dimension \( n \) ; permitted derivative degree \( p \) ; and, without loss of generality, \( {x}_{0}\overset{\text{ def }}{ = }0 \in  {\mathbb{R}}^{n} \) , we view a method in the class \( \mathcal{M}\left( p\right) \) as a mapping that associates any given function \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) with a corresponding sequence of iterates \( \left\{  {x}_k\right\}   \subset  {\mathbb{R}}^n \) , where
+#
+# \[
+# {x}_{k + 1} = {M}^{\left( k\right) }\left( {f\left( {x}_0\right) ,{\nabla }_x^{1}f\left( {x}_0\right) ,\ldots ,{\nabla }_x^{p}f\left( {x}_0\right) ,\ldots , f\left( {x}_k\right) ,\ldots ,{\nabla }_x^{p}f\left( {x}_k\right) }\right)
+# \]
+#
+# and where \( {M}^{\left( k\right) } \) is a mapping \( {}^{31} \) from \( {\mathbb{R}}^n \) to \( {\mathbb{R}}^n \) . This general definition implies that all algorithms considered in this book that use exact derivatives belong to \( \mathcal{M}\left( p\right) \) for an appropriate choice of \( p \) . Furthermore, this general class of algorithms also includes methods that do not explicitly use all available derivatives, such as those we will encounter in Chapter 13 (p. 325). Thus the definition is understood to imply that the generated iterates depend upon derivatives of degree at most \( o \) , with \( o \leq  p \) .
+#
+# A useful subclass of \( \mathcal{M}\left( p\right) \) is the class of zero-respecting methods \( {\mathcal{M}}_{ZR}\left( p\right) \) . Specifically, a method in \( \mathcal{M}\left( p\right) \) that generates iterates \( \left\{  {x}_k\right\} \) is zero respecting with respect to any function \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \) if for each \( k \geq  0 \) ,
+#
+# \[
+# \left\{  {\mathop{\bigcap }\limits_{q \in  \left\lbrack  {1 : p}\right\rbrack  }\mathop{\bigcap }\limits_{i \leq  k}\left\{  {j \mid  {\nabla }_x^{q}f\left( {x}_i\right) {e}_j = 0}\right\}  }\right\}   \subseteq  \left\{  {j \mid  {\left\lbrack  {x}_{k + 1}\right\rbrack  }_j = 0}\right\}\tag{4.2.1}
+# \]
+#
+# in other words, if all partial derivatives of \( f \) up to order \( p \) containing the \( j \) th coordinate are zero at the current and all previous iterates (including \( {x}_0 = 0 \) ), then the \( j \) th coordinate of the next iterate remains zero. This definition says that zero components of iterates are preserved if corresponding derivative components of \( f \) (up to order \( p \) ) are zero, so such an algorithm does not explore coordinates that do not appear to affect the function.
+#
+# It is clear that first-order \( \left( {p = 1}\right) \) algorithms belong to \( {\mathcal{M}}_{\mathrm{ZR}}\left( p\right) \) , but it is not difficult to see that Newton's method (Algorithm 3.1.1 (p. 50)) can also be viewed as zero respecting (with \( p = 2 \) ) if we employ a suitable convention. \( {}^{32} \) Under similar conventions, algorithms AR2 and TR2 and other variants of Newton’s method, as well as algorithms ARp and the forthcoming TRq and ARqp (which we shall encounter in Chapter 12), can be shown to be members of \( {\mathcal{M}}_{\mathrm{ZR}}\left( p\right) \) for \( p = 2 \) and \( p \geq  1 \) , respectively. We note though that it is not necessary for these algorithms to be zero respecting in order for the lower-bound results to apply to them.
+#
+# ---
+#
+# \( {}^{30} \) This is because the Lipschitz constants of \( f \) and \( {f}_{\mathrm{U}} \) and their respective derivatives coincide for all orders, and \( f\left( 0\right)  - {f}_{\text{ low }} = {f}_{\mathrm{U}}\left( 0\right)  - {f}_{U,\text{ low }} \) .
+#
+# \( {}^{31} \) We note that in [77], \( {M}^{\left( k\right) } \) is assumed to be measurable. However, this assumption does not appear to be used by the authors in the deterministic case that we are considering here.
+#
+# \( {}^{32} \) When the \( j \) th row and column of the Hessian matrix of \( f \) at \( {x}_k \) are zero, and the corresponding component of the gradient is also zero, then the step component \( {\left\lbrack  {s}_k\right\rbrack  }_j \) is arbitrary. Newton’s method is zero respecting if, in this case, we choose \( {\left\lbrack  {s}_k\right\rbrack  }_j = 0 \) .
+#
+# ---
+#
+# ##### 4.2.1.3 The complexity of a class of methods
+#
+# Thus armed with sensible sets of functions and suitably related minimization algorithms, it is now reasonable to talk of the complexity of approximating a minimizer, or at least of finding an approximate stationary point. Let \( k = {k}_{\epsilon }\left( {M, f}\right) \) be the first iteration for which \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) , where \( {x}_k \) is generated by an algorithm \( M \) applied to minimize \( f \) . The complexity of the class \( \mathcal{M} \) on the function class \( \mathcal{F} \) is defined as the best worst-case complexity bound of an algorithm in \( \mathcal{M} \) for functions in \( \mathcal{F} \) , namely,
+#
+# \[
+# {\# }_{\epsilon }\left( {\mathcal{M},\mathcal{F}}\right) \overset{\text{ def }}{ = }\mathop{\inf }\limits_{{M \in  \mathcal{M}}}\mathop{\sup }\limits_{{f \in  \mathcal{F}}}{k}_{\epsilon }\left( {M, f}\right) .\tag{4.2.2}
+# \]
+#
+# In particular, when \( \mathcal{F} = \mathcal{F}\left( {\Delta , p}\right) \) , Theorem 4.1.5 with \( {\epsilon }_2 = {\epsilon }_3 = \infty \) shows that
+#
+# \[
+# {\# }_{\epsilon }\left( {\mathcal{M},\mathcal{F}\left( {\Delta , p}\right) }\right)  \leq  \mathop{\sup }\limits_{f \in  \mathcal{F}\left( {\Delta , p}\right) }{k}_{\epsilon }\left( {\mathrm{AR}p, f}\right)  = \mathcal{O}\left( {\Delta {L}_{f, p}^{\frac{p + 1}{p}}{\epsilon }_1^{-\frac{p + 1}{p}}}\right) ,\tag{4.2.3}
+# \]
+#
+# where \( {L}_{f, p} \) is the Lipschitz constant of the \( p \) th-order derivative \( {\nabla }_x^{p}f \) . We show that these bounds are sharp within \( p \) -dependent constant factors.
+#
+# #### 4.2.2 Constructing a lower complexity bound for the methods in \( \mathcal{M}\left( p\right) \) when applied to functions in \( \mathcal{F}\left( {\Delta , p}\right) \)
+#
+# In order to derive a lower complexity bound, we need to exhibit a "difficult" function, that is, one that requires a significant number of evaluations for all methods in our class. The key here is the idea of a zero-chain function.
+#
+# A function \( f \in  {C}^p \) is a pth-order zero chain if for each \( x \in  {\mathbb{R}}^n \) and any \( j \in  \left\lbrack  {1 : n}\right\rbrack \) ,
+#
+# \[
+# {\left\lbrack  x\right\rbrack  }_{j} = \cdots  = {\left\lbrack  x\right\rbrack  }_{n} = 0\text{ implies }{\nabla }_{x}^{q}f\left( x\right) {e}_{j + 1} = \cdots  = {\nabla }_{x}^{q}f\left( x\right) {e}_{n} = 0\text{ for all }q \in  \left\lbrack  {1 : p}\right\rbrack  \text{ . }
+# \]
+#
+# (4.2.4)
+#
+# In other words, if the last \( n - j \) components of a point \( x \) are zero, a zero-chain function looks constant in the last \( n - j - 1 \) components. See [299, Sect. 2.1.2] and [77, Def. 3] for more details and examples.
+#
+# This has the following immediate, trivial consequence.
 
 [[node]]
 id = "zeroChain"

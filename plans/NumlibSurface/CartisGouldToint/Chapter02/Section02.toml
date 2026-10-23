@@ -100,11 +100,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "sdexRun"
-kind = "definition"
-desc = '''
-For x₀ and ε>0, the steepest-descent exact-linesearch method has s_k=−t_k grad f(x_k), with t_k the first global minimizer over t≥0 of t↦f(x_k−t grad f(x_k)) (as (2.2.26)), x_(k+1)=x_k+s_k, and termination ||grad f(x_k)||≤ε. Include existence of a chosen line minimizer as a step specification only where attained; no finite oracle cost for obtaining an exact line minimizer is assumed.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 2.2"
 
 [[node]]
@@ -161,21 +156,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_2_2_4"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 2.2.4: Complexity of the steepest-descent algorithm with an exact linesearch
-
-Suppose that f.Bb and f.gL hold. Then there exists a positive constant \( {\kappa }_{\text{ SDEX }} \) such that the SDEX algorithm requires at most
-
-\[
-{\# }_{\text{ SDEX }}^{I}\overset{\text{ def }}{ = }{\kappa }_{\text{ SDEX }}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }^{2}} = \mathcal{O}\left( {\epsilon }^{-2}\right)\tag{2.2.27}
-\]
-
-iterations to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
-'''
-deps = ["sdbaRun", "sdexRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1609)"
 
 [[node]]

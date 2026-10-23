@@ -168,30 +168,7 @@ deps = ["isApproximateHighOrderMinimizer", "theorem_12_1_3"]
 
 [[node]]
 id = "theorem_12_1_7"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 12.1.7: Cascading approximate optimality
-
-[Appendix to Chapter 12, p. 482]: Suppose that, for some \( j \in  \left\lbrack  {2 : q}\right\rbrack \) ,
-
-\[
-{\phi }_{f, j}^{{\delta }_j}\left( x\right)  \leq  {\epsilon }_j\frac{{\delta }_j^j}{j!}\tag{12.1.30}
-\]
-
-for some \( {\epsilon }_j \in  (0,1\rbrack \) , some \( {\delta }_j \in  (0,1\rbrack \) , and some \( x \in  {\mathbb{R}}^n \) . Suppose also that \( {\epsilon }_j \leq  {\epsilon }_{j - 1} \) . Then
-
-\[
-{\phi }_{f, j - 1}^{{\delta }_j}\left( x\right)  \leq  {\epsilon }_{j - 1}\frac{{\delta }_j^{j - 1}}{\left( {j - 1}\right) !}\tag{12.1.31}
-\]
-
-whenever \( {\delta }_j \leq  \min \left\lbrack  {1,\frac{j{\epsilon }_j}{2\begin{Vmatrix}{{\nabla }_x^{j}f\left( x\right) }\end{Vmatrix}}}\right\rbrack \) .
-
-Documented source/OCR correction and formalization requirements: If ||∇^j f(x)||=0, interpret the radius restriction without dividing by zero: δj ||∇^j f(x)||≤j εj/2, alongside 0<δj≤1. This retains the intended theorem in the degenerate case.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.7 (OCR Markdown line 11929)"
-deps = ["highOrderCriticality"]
 
 [[node]]
 id = "theorem_12_1_8"
