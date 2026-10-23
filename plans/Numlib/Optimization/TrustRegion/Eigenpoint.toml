@@ -1,0 +1,16 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "IsEigenPoint"
+
+[[node]]
+id = "exists_eigenPoint"
+
+[[node]]
+id = "tensor_curvature_of_eigenvector"
+
+[[node]]
+id = "eigenpoint_decrease"
+
+[[node]]
+id = "eigenpoint_predicted_decrease_pos"

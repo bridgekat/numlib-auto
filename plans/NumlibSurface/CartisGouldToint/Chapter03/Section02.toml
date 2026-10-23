@@ -1,175 +1,174 @@
 namespace = "CartisGouldToint"
-desc = '''
-Surface adaptation of Cartis–Gould–Toint Chapter 3, Section 2.
-
-TR2 uses the true Hessian and requires both Cauchy and eigenpoint decrease. Preserve disabled second-order tests when ε₂=∞. Lower bounds are existential constructions, including legitimate step choices and parameter-update traces.
-
-Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
-
-Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
-
-In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
-
-Section mathematical setup (source OCR; resolve errors by the design notes above):
-
-#### 3.2.1 The TR2 algorithm
-
-As in Chapter 2, we next turn our attention to the most common variant of Newton's method using exact second derivatives that can be proved to be globally convergent: the second-order trust-region method TR2.
-
-An obvious generalization of the TR1 algorithm would be to use the same framework, except that the step would then be computed as
-
-\[
-{s}_k = \underset{{x}_k + s \in  {\mathcal{R}}_k}{\arg \min }{T}_{f,2}\left( {{x}_k, s}\right) .\tag{3.2.1}
-\]
-
-We immediately note that there are efficient methods for computing the step (3.2.1), and details are given in Chapters 9 and 10 (see also [131, Chap. 7]). These methods typically involve factorizing the matrix \( {\nabla }_x^{2}f\left( {x}_k\right)  + {\lambda I} \) for some suitable \( \lambda  \geq  0 \) , thereby ensuring the positive semidefiniteness of the modified Hessian. Such methods are based on the remarkable fact that \( {s}_k \) satisfies the linear system
-
-\[
-\left( {{\nabla }_x^{2}f\left( {x}_k\right)  + {\lambda }_{k}I}\right) {s}_k =  - {\nabla }_x^{1}f\left( {x}_k\right) ,\tag{3.2.2}
-\]
-
-where \( {\nabla }_x^{2}f\left( {x}_k\right)  + {\lambda }_{k}I \) is positive semidefinite, \( {\lambda }_k \geq  0 \) , and \( {\lambda }_k\left( {{\begin{Vmatrix}{s}_k\end{Vmatrix}}^2 - {\Delta }_k^2}\right)  = 0 \) (see Theorem 8.2.7 on p. 226).
-
-While this is indeed possible, and sometimes done for problems small or sparse enough to make factorizations affordable, we will focus here on an algorithm in which an inexact step can be used. The conditions we impose on this step reflect both first- and second-order optimality requirements. The first-order condition has already been stated in (2.3.4) and (2.3.5) of the TR1 algorithm on pages 35 and 35, although now we need to use \( {m}_k\left( s\right)  = {T}_{f,2}\left( {{x}_k, s}\right) \) in the latter. In addition, we also require that a meaningful step be made along a significant direction of negative curvature-a direction \( s \) for which \( \left\langle  {s,{\nabla }_x^{2}f\left( {x}_k\right) s}\right\rangle   < 0 \) -should such a direction occur. In particular, let \( {u}_k \) be a normalized eigenvector corresponding to the leftmost eigenvalue, \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   < 0 \) , of the Hessian \( {\nabla }_x^{2}f\left( {x}_k\right) \) , that is,
-
-\[
-{\nabla }_{x}^{2}f\left( {x}_{k}\right) {u}_{k} = {\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack  {u}_{k},\begin{Vmatrix}{u}_{k}\end{Vmatrix} = 1,\text{ and }\left\langle  {{u}_{k},{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\right\rangle   \leq  0.\tag{3.2.3}
-\]
-
-We then require that
-
-\[
-{T}_{f,2}\left( {{x}_k,{s}_k}\right)  \leq  {T}_{f,2}\left( {{x}_k,{s}_k^{\mathrm{E}}}\right) ,\tag{3.2.4}
-\]
-
-where
-
-\[
-{s}_{k}^{\mathrm{E}}\overset{\text{ def }}{ = }{t}_{k}^{\mathrm{E}}{u}_{k}\text{ with }{t}_{k}^{\mathrm{E}}\overset{\text{ def }}{ = }\underset{t \geq  0,{x}_{k} - t{u}_{k} \in  {\mathcal{B}}_{{\Delta }_{k}}}{\arg \min }{T}_{f,2}\left( {{x}_{k}, t{u}_{k}}\right) ,\tag{3.2.5}
-\]
-
-and, as we recall from (2.3.2),
-
-\[
-{\mathcal{B}}_{{\Delta }_k} = \left\{  {s \in  {\mathbb{R}}^n \mid  \parallel s\parallel  \leq  {\Delta }_k}\right\}
-\]
-
-If \( {\nabla }_x^{2}f\left( {x}_k\right) \) is positive semidefinite, i.e., if \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   \geq  0 \) , we simply define \( {s}_k^{\mathrm{E}} = 0 \) .
-
-The point \( {x}_k + {s}_k^{\mathrm{E}} \) is called the eigenpoint because it involves a move along an eigenvector, and (3.2.4) is referred to as the eigenpoint decrease condition. Obviously, the step to the global minimizer defined in (3.2.1) satisfies condition (3.2.4).
-
-Since we now have (and use) second derivatives, it is possible to seek points that approximately satisfy the second-order necessary conditions given in Theorem 1.1.1. To this end, we say that \( {x}_{\epsilon } \) is an \( \epsilon \) -approximate second-order minimizer of \( f \) if
-
-\[
-\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_{2}\tag{3.2.6}
-\]
-
-for given \( {\epsilon }_1,{\epsilon }_2 > 0 \) . Of course this is an extension of (2.1.2), and later we may sometimes write the second condition in (3.2.6) as the entirely equivalent
-
-\[
-\max \left( {0, - {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack  }\right)  \leq  {\epsilon }_{2}.
-\]
-
-In view of Theorem 1.1.1, if, by chance, in addition
-
-\[
-\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   > {\epsilon }_{2},\tag{3.2.7}
-\]
-
-we say that \( {x}_{\epsilon } \) is an \( \epsilon \) -approximate strict local minimizer. Although our algorithm is only designed to guarantee (3.2.6), a user will undoubtedly be delighted should (3.2.7) occur, since then there is no need to worry about whether higher-order approximate optimality conditions are satisfied.
-
-We formally state the TR2 algorithm as follows.
-
-Algorithm 3.2.1: Trust-region algorithm with a second-order model (TR2)
-
-Step 0: Initialization. An initial point \( {x}_0 \) , accuracy thresholds \( {\epsilon }_1,{\epsilon }_2 > 0 \) , and an initial trust-region radius \( {\Delta }_0 > 0 \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1 \) , and \( {\gamma }_2 \) are also given and satisfy
-
-\[
-0 < {\eta }_{1} \leq  {\eta }_{2} < 1\text{ and }0 < {\gamma }_{1} \leq  {\gamma }_{2} < 1 < {\gamma }_{3}\tag{3.2.8}
-\]
-
-Compute \( f\left( {x}_0\right) ,{\nabla }_x^{1}f\left( {x}_0\right) \) , and \( {\nabla }_x^{2}f\left( {x}_0\right) \) , and set \( k = 0 \) .
-
-Step 1: Test for termination. If \( {\epsilon }_2 = \infty \) and
-
-\[
-\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1
-\]
-
-terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) . Otherwise, if \( {\epsilon }_2 < \infty \) and
-
-\[
-\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   > {\epsilon }_{2},
-\]
-
-terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate strict local minimizer \( {x}_{\epsilon } = {x}_k \) . Otherwise, if
-
-\[
-\begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   \geq   - {\epsilon }_{2},\tag{3.2.9}
-\]
-
-terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-
-Step 2: Step computation. Compute a step \( {s}_k \in  {\mathcal{B}}_{{\Delta }_k} \) such that
-
-\[
-{T}_{f,2}\left( {{x}_k,{s}_k}\right)  \leq  {T}_{f,2}\left( {{x}_k,{s}_k^{ \circ  }}\right) ,
-\]
-
-where \( {s}_k^{\mathrm{C}} \) is defined by
-
-\[
-{s}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = } - {t}_{k}^{\mathrm{C}}{\nabla }_{x}^{1}f\left( {x}_{k}\right) \text{ with }{t}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = }\underset{t \geq  0,{x}_{k} - t{\nabla }_{x}^{1}f\left( {x}_{k}\right)  \in  {\mathcal{R}}_{k}}{\arg \min }{T}_{f,2}\left( {{x}_{k}, - t{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\right) ,
-\]
-
-and, if \( {\epsilon }_2 < \infty \) ,
-
-\[
-{T}_{f,2}\left( {{x}_k,{s}_k}\right)  \leq  {T}_{f,2}\left( {{x}_k,{s}_k^{\mathrm{E}}}\right) ,\tag{3.2.10}
-\]
-
-where \( {s}_k^{\mathrm{E}} \) is defined as in (3.2.5).
-
-Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) and define
-
-\[
-{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f,2}\left( {{x}_k,0}\right)  - {T}_{f,2}\left( {{x}_k,{s}_k}\right) }.\tag{3.2.11}
-\]
-
-If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_x^{1}f\left( {x}_{k + 1}\right) \) and \( {\nabla }_x^{2}f\left( {x}_{k + 1}\right) \) . Otherwise, define \( {x}_{k + 1} = {x}_k \) .
-
-Step 4: Trust-region radius update. Set
-
-\[
-{\Delta }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {{\Delta }_{k},{\gamma }_{3}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\gamma }_{2}{\Delta }_{k},{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) , \\  \left\lbrack  {{\gamma }_{1}{\Delta }_{k},{\gamma }_{2}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.\tag{3.2.12}
-\]
-
-Increment \( k \) by one and go to Step 1.
-
-As with TR1 and AR1, we define successful and unsuccessful iterations by (2.3.9)- (2.3.10) and note that Lemma 2.3.1 still applies to the TR2 algorithm because it uses the same updating rules for \( {\Delta }_k \) as TR1. Note also that, because TR2 can equally be used to compute approximate first-order minimizers alone, we allow \( {\epsilon }_2 =  + \infty \) , in which case the second parts of (3.2.9) and (3.2.10) are deactivated.
-
-#### 3.2.2 Complexity of finding approximate first-order minimizers
-
-In order to derive an upper bound on the number of evaluations of \( f\left( x\right) ,{\nabla }_x^{1}f\left( x\right) \) , and \( {\nabla }_x^{2}f\left( x\right) \) required to find an \( {\epsilon }_1 \) -approximate first-order minimizer, we first observe that the TR2 algorithm (with \( {\epsilon }_2 =  + \infty \) ) can be considered as a special case of TR1 where \( {B}_k = {\nabla }_x^{2}f\left( {x}_k\right) \) , provided we replace m.HBa by the following assumption.
-
-f.HBa
-
-The Hessian matrix \( {\nabla }_x^{2}f\left( x\right) \) is uniformly bounded above; that is, there exists a constant \( {\kappa }_H \geq  1 \) such that
-
-\[
-\begin{Vmatrix}{{\nabla }_x^{2}f\left( x\right) }\end{Vmatrix} \leq  {\kappa }_H
-\]
-
-for all \( x \in  {\mathbb{R}}^n \) .
-
-In particular, the first-order conditions on the step (the Cauchy decrease condition (2.3.5)) are identical for the TR1 and TR2 algorithms, and, therefore, since f.HBa implies f.gL, Lemmas 2.3.5 and 2.3.3 remain valid for the TR2 algorithm with
-
-\[
-{\kappa }_B = {\kappa }_H = {L}_{f,1}\tag{3.2.13}
-\]
-
-because of Theorem A.8.5 (p. 438)-once again, there is no loss of generality in assuming that \( {\kappa }_H \geq  1 \) . As a consequence, the evaluation-complexity analysis of TR2 for the convergence to \( {\epsilon }_1 \) -approximate first-order minimizers is directly inherited from that of the TR1 algorithm. For the sake of completeness, we restate here the complexity result for TR2.
-'''
+# Planning conventions for remaining declarations:
+# Surface adaptation of Cartis–Gould–Toint Chapter 3, Section 2.
+# 
+# TR2 uses the true Hessian and requires both Cauchy and eigenpoint decrease. Preserve disabled second-order tests when ε₂=∞. Lower bounds are existential constructions, including legitimate step choices and parameter-update traces.
+# 
+# Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
+# 
+# Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
+# 
+# In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
+# 
+# Section mathematical setup (source OCR; resolve errors by the design notes above):
+# 
+# #### 3.2.1 The TR2 algorithm
+# 
+# As in Chapter 2, we next turn our attention to the most common variant of Newton's method using exact second derivatives that can be proved to be globally convergent: the second-order trust-region method TR2.
+# 
+# An obvious generalization of the TR1 algorithm would be to use the same framework, except that the step would then be computed as
+# 
+# \[
+# {s}_k = \underset{{x}_k + s \in  {\mathcal{R}}_k}{\arg \min }{T}_{f,2}\left( {{x}_k, s}\right) .\tag{3.2.1}
+# \]
+# 
+# We immediately note that there are efficient methods for computing the step (3.2.1), and details are given in Chapters 9 and 10 (see also [131, Chap. 7]). These methods typically involve factorizing the matrix \( {\nabla }_x^{2}f\left( {x}_k\right)  + {\lambda I} \) for some suitable \( \lambda  \geq  0 \) , thereby ensuring the positive semidefiniteness of the modified Hessian. Such methods are based on the remarkable fact that \( {s}_k \) satisfies the linear system
+# 
+# \[
+# \left( {{\nabla }_x^{2}f\left( {x}_k\right)  + {\lambda }_{k}I}\right) {s}_k =  - {\nabla }_x^{1}f\left( {x}_k\right) ,\tag{3.2.2}
+# \]
+# 
+# where \( {\nabla }_x^{2}f\left( {x}_k\right)  + {\lambda }_{k}I \) is positive semidefinite, \( {\lambda }_k \geq  0 \) , and \( {\lambda }_k\left( {{\begin{Vmatrix}{s}_k\end{Vmatrix}}^2 - {\Delta }_k^2}\right)  = 0 \) (see Theorem 8.2.7 on p. 226).
+# 
+# While this is indeed possible, and sometimes done for problems small or sparse enough to make factorizations affordable, we will focus here on an algorithm in which an inexact step can be used. The conditions we impose on this step reflect both first- and second-order optimality requirements. The first-order condition has already been stated in (2.3.4) and (2.3.5) of the TR1 algorithm on pages 35 and 35, although now we need to use \( {m}_k\left( s\right)  = {T}_{f,2}\left( {{x}_k, s}\right) \) in the latter. In addition, we also require that a meaningful step be made along a significant direction of negative curvature-a direction \( s \) for which \( \left\langle  {s,{\nabla }_x^{2}f\left( {x}_k\right) s}\right\rangle   < 0 \) -should such a direction occur. In particular, let \( {u}_k \) be a normalized eigenvector corresponding to the leftmost eigenvalue, \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   < 0 \) , of the Hessian \( {\nabla }_x^{2}f\left( {x}_k\right) \) , that is,
+# 
+# \[
+# {\nabla }_{x}^{2}f\left( {x}_{k}\right) {u}_{k} = {\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack  {u}_{k},\begin{Vmatrix}{u}_{k}\end{Vmatrix} = 1,\text{ and }\left\langle  {{u}_{k},{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\right\rangle   \leq  0.\tag{3.2.3}
+# \]
+# 
+# We then require that
+# 
+# \[
+# {T}_{f,2}\left( {{x}_k,{s}_k}\right)  \leq  {T}_{f,2}\left( {{x}_k,{s}_k^{\mathrm{E}}}\right) ,\tag{3.2.4}
+# \]
+# 
+# where
+# 
+# \[
+# {s}_{k}^{\mathrm{E}}\overset{\text{ def }}{ = }{t}_{k}^{\mathrm{E}}{u}_{k}\text{ with }{t}_{k}^{\mathrm{E}}\overset{\text{ def }}{ = }\underset{t \geq  0,{x}_{k} - t{u}_{k} \in  {\mathcal{B}}_{{\Delta }_{k}}}{\arg \min }{T}_{f,2}\left( {{x}_{k}, t{u}_{k}}\right) ,\tag{3.2.5}
+# \]
+# 
+# and, as we recall from (2.3.2),
+# 
+# \[
+# {\mathcal{B}}_{{\Delta }_k} = \left\{  {s \in  {\mathbb{R}}^n \mid  \parallel s\parallel  \leq  {\Delta }_k}\right\}
+# \]
+# 
+# If \( {\nabla }_x^{2}f\left( {x}_k\right) \) is positive semidefinite, i.e., if \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   \geq  0 \) , we simply define \( {s}_k^{\mathrm{E}} = 0 \) .
+# 
+# The point \( {x}_k + {s}_k^{\mathrm{E}} \) is called the eigenpoint because it involves a move along an eigenvector, and (3.2.4) is referred to as the eigenpoint decrease condition. Obviously, the step to the global minimizer defined in (3.2.1) satisfies condition (3.2.4).
+# 
+# Since we now have (and use) second derivatives, it is possible to seek points that approximately satisfy the second-order necessary conditions given in Theorem 1.1.1. To this end, we say that \( {x}_{\epsilon } \) is an \( \epsilon \) -approximate second-order minimizer of \( f \) if
+# 
+# \[
+# \begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_{2}\tag{3.2.6}
+# \]
+# 
+# for given \( {\epsilon }_1,{\epsilon }_2 > 0 \) . Of course this is an extension of (2.1.2), and later we may sometimes write the second condition in (3.2.6) as the entirely equivalent
+# 
+# \[
+# \max \left( {0, - {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack  }\right)  \leq  {\epsilon }_{2}.
+# \]
+# 
+# In view of Theorem 1.1.1, if, by chance, in addition
+# 
+# \[
+# \begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   > {\epsilon }_{2},\tag{3.2.7}
+# \]
+# 
+# we say that \( {x}_{\epsilon } \) is an \( \epsilon \) -approximate strict local minimizer. Although our algorithm is only designed to guarantee (3.2.6), a user will undoubtedly be delighted should (3.2.7) occur, since then there is no need to worry about whether higher-order approximate optimality conditions are satisfied.
+# 
+# We formally state the TR2 algorithm as follows.
+# 
+# Algorithm 3.2.1: Trust-region algorithm with a second-order model (TR2)
+# 
+# Step 0: Initialization. An initial point \( {x}_0 \) , accuracy thresholds \( {\epsilon }_1,{\epsilon }_2 > 0 \) , and an initial trust-region radius \( {\Delta }_0 > 0 \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1 \) , and \( {\gamma }_2 \) are also given and satisfy
+# 
+# \[
+# 0 < {\eta }_{1} \leq  {\eta }_{2} < 1\text{ and }0 < {\gamma }_{1} \leq  {\gamma }_{2} < 1 < {\gamma }_{3}\tag{3.2.8}
+# \]
+# 
+# Compute \( f\left( {x}_0\right) ,{\nabla }_x^{1}f\left( {x}_0\right) \) , and \( {\nabla }_x^{2}f\left( {x}_0\right) \) , and set \( k = 0 \) .
+# 
+# Step 1: Test for termination. If \( {\epsilon }_2 = \infty \) and
+# 
+# \[
+# \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1
+# \]
+# 
+# terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) . Otherwise, if \( {\epsilon }_2 < \infty \) and
+# 
+# \[
+# \begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   > {\epsilon }_{2},
+# \]
+# 
+# terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate strict local minimizer \( {x}_{\epsilon } = {x}_k \) . Otherwise, if
+# 
+# \[
+# \begin{Vmatrix}{{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{1}\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack   \geq   - {\epsilon }_{2},\tag{3.2.9}
+# \]
+# 
+# terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) .
+# 
+# Step 2: Step computation. Compute a step \( {s}_k \in  {\mathcal{B}}_{{\Delta }_k} \) such that
+# 
+# \[
+# {T}_{f,2}\left( {{x}_k,{s}_k}\right)  \leq  {T}_{f,2}\left( {{x}_k,{s}_k^{ \circ  }}\right) ,
+# \]
+# 
+# where \( {s}_k^{\mathrm{C}} \) is defined by
+# 
+# \[
+# {s}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = } - {t}_{k}^{\mathrm{C}}{\nabla }_{x}^{1}f\left( {x}_{k}\right) \text{ with }{t}_{k}^{\mathrm{C}}\overset{\text{ def }}{ = }\underset{t \geq  0,{x}_{k} - t{\nabla }_{x}^{1}f\left( {x}_{k}\right)  \in  {\mathcal{R}}_{k}}{\arg \min }{T}_{f,2}\left( {{x}_{k}, - t{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\right) ,
+# \]
+# 
+# and, if \( {\epsilon }_2 < \infty \) ,
+# 
+# \[
+# {T}_{f,2}\left( {{x}_k,{s}_k}\right)  \leq  {T}_{f,2}\left( {{x}_k,{s}_k^{\mathrm{E}}}\right) ,\tag{3.2.10}
+# \]
+# 
+# where \( {s}_k^{\mathrm{E}} \) is defined as in (3.2.5).
+# 
+# Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) and define
+# 
+# \[
+# {\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f,2}\left( {{x}_k,0}\right)  - {T}_{f,2}\left( {{x}_k,{s}_k}\right) }.\tag{3.2.11}
+# \]
+# 
+# If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) and compute \( {\nabla }_x^{1}f\left( {x}_{k + 1}\right) \) and \( {\nabla }_x^{2}f\left( {x}_{k + 1}\right) \) . Otherwise, define \( {x}_{k + 1} = {x}_k \) .
+# 
+# Step 4: Trust-region radius update. Set
+# 
+# \[
+# {\Delta }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {{\Delta }_{k},{\gamma }_{3}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\gamma }_{2}{\Delta }_{k},{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) , \\  \left\lbrack  {{\gamma }_{1}{\Delta }_{k},{\gamma }_{2}{\Delta }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.\tag{3.2.12}
+# \]
+# 
+# Increment \( k \) by one and go to Step 1.
+# 
+# As with TR1 and AR1, we define successful and unsuccessful iterations by (2.3.9)- (2.3.10) and note that Lemma 2.3.1 still applies to the TR2 algorithm because it uses the same updating rules for \( {\Delta }_k \) as TR1. Note also that, because TR2 can equally be used to compute approximate first-order minimizers alone, we allow \( {\epsilon }_2 =  + \infty \) , in which case the second parts of (3.2.9) and (3.2.10) are deactivated.
+# 
+# #### 3.2.2 Complexity of finding approximate first-order minimizers
+# 
+# In order to derive an upper bound on the number of evaluations of \( f\left( x\right) ,{\nabla }_x^{1}f\left( x\right) \) , and \( {\nabla }_x^{2}f\left( x\right) \) required to find an \( {\epsilon }_1 \) -approximate first-order minimizer, we first observe that the TR2 algorithm (with \( {\epsilon }_2 =  + \infty \) ) can be considered as a special case of TR1 where \( {B}_k = {\nabla }_x^{2}f\left( {x}_k\right) \) , provided we replace m.HBa by the following assumption.
+# 
+# f.HBa
+# 
+# The Hessian matrix \( {\nabla }_x^{2}f\left( x\right) \) is uniformly bounded above; that is, there exists a constant \( {\kappa }_H \geq  1 \) such that
+# 
+# \[
+# \begin{Vmatrix}{{\nabla }_x^{2}f\left( x\right) }\end{Vmatrix} \leq  {\kappa }_H
+# \]
+# 
+# for all \( x \in  {\mathbb{R}}^n \) .
+# 
+# In particular, the first-order conditions on the step (the Cauchy decrease condition (2.3.5)) are identical for the TR1 and TR2 algorithms, and, therefore, since f.HBa implies f.gL, Lemmas 2.3.5 and 2.3.3 remain valid for the TR2 algorithm with
+# 
+# \[
+# {\kappa }_B = {\kappa }_H = {L}_{f,1}\tag{3.2.13}
+# \]
+# 
+# because of Theorem A.8.5 (p. 438)-once again, there is no loss of generality in assuming that \( {\kappa }_H \geq  1 \) . As a consequence, the evaluation-complexity analysis of TR2 for the convergence to \( {\epsilon }_1 \) -approximate first-order minimizers is directly inherited from that of the TR1 algorithm. For the sake of completeness, we restate here the complexity result for TR2.
 
 [[node]]
 id = "tr2Run"
@@ -325,38 +324,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_3_2_3"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.2.3: Model decrease at the eigenpoint
-
-Suppose that (3.2.3)-(3.2.5) hold and that \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack   < 0 \) . Then
-
-\[
-{T}_{f,2}\left( {{x}_k,{s}_k^E}\right)  \leq  {T}_{f,2}\left( {{x}_k,0}\right)  - \frac{1}{2}\left| {{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_k\right) }\right\rbrack  }\right| {\Delta }_k^2,\tag{3.2.15}
-\]
-
-and the ratio (3.2.11) is well defined.
-
-Referenced equation payloads:
-
-Equation (3.2.3):
-\[
-{\nabla }_{x}^{2}f\left( {x}_{k}\right) {u}_{k} = {\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{k}\right) }\right\rbrack  {u}_{k},\begin{Vmatrix}{u}_{k}\end{Vmatrix} = 1,\text{ and }\left\langle  {{u}_{k},{\nabla }_{x}^{1}f\left( {x}_{k}\right) }\right\rangle   \leq  0.\tag{3.2.3}
-\]
-
-Equation (3.2.5):
-\[
-{s}_{k}^{\mathrm{E}}\overset{\text{ def }}{ = }{t}_{k}^{\mathrm{E}}{u}_{k}\text{ with }{t}_{k}^{\mathrm{E}}\overset{\text{ def }}{ = }\underset{t \geq  0,{x}_{k} - t{u}_{k} \in  {\mathcal{B}}_{{\Delta }_{k}}}{\arg \min }{T}_{f,2}\left( {{x}_{k}, t{u}_{k}}\right) ,\tag{3.2.5}
-\]
-
-Equation (3.2.11):
-\[
-{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f,2}\left( {{x}_k,0}\right)  - {T}_{f,2}\left( {{x}_k,{s}_k}\right) }.\tag{3.2.11}
-\]
-'''
-deps = ["tr2Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.2.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2739)"
 
 [[node]]
@@ -432,3 +399,6 @@ The TR2 algorithm (p. 55) applied to minimize a function \( f \) satisfying f.Bb
 '''
 deps = ["theorem_3_2_6", "theorem_3_1_1", "tr2Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.2.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2913)"
+
+[[node]]
+id = "eigenpoint_exists"
