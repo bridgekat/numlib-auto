@@ -1,0 +1,13 @@
+namespace = "ModelDecrease"
+
+[[node]]
+id = "norm_iteratedFDeriv_penalty_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_penalized_ofJet_le_tail"
+
+[[node]]
+id = "norm_iteratedFDeriv_penalized_ofJet_le_three_max"
+
+[[node]]
+id = "norm_sub_iteratedFDeriv_penalized_ofJet_le"

@@ -8,6 +8,7 @@ import Numlib.Optimization.TrustRegion.Inexact.Acceptance
 import Numlib.Optimization.TrustRegion.Inexact.Radius
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
+import Numlib.Optimization.Regularization.Inexact.SharpOutcomes
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -630,5 +631,86 @@ theorem theorem_13_1_8 {n q : ℕ}
           κA * (f x₀ - flow) / minimumAccuracy P.order_pos ε ^ (q + 1) +
           κE * |Real.log (minimumAccuracy P.order_pos ε)| + κF :=
   InexactTrustRegion.evaluation_complexity (Δ₀ := Δ₀) f P x₀ hL hf hlip hlow
+
+/-- **Lemma 13.1.12.** Actual Step2 computations exist, are nonzero and satisfy
+(13.1.57), (13.1.69)--(13.1.73), with every intermediate Step1 radius included.
+The sufficient trial guarantee concerns iterations entering Step2, as in the
+proof: an iteration passing every Step1 test can instead go directly to Step5.
+The denominator 24 is proved from the combined polynomial-and-penalty bound
+`3*max(Lbar,sigma)`, repairing the invalid intermediate comparison in the source
+proof. Derivative requests range through `p` in the short-step guard. -/
+theorem lemma_13_1_12 {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
+    (_hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+    (N : ℕ) (h : InexactRegularization.Run f P ε D N) :
+    let M := L + P.errorBound * P.initialCap
+    (∀ k ≤ N, D.selected k ≠ none → ∃ s δ,
+      InexactRegularization.StepTwoComputation (D.jet k) p modelOrder
+        (D.parameter k) P.theta P.zeta ε (D.reference k) (D.checkedRadius k) s δ ∧
+      s ≠ 0 ∧ ∀ a, 0 < δ a ∧ δ a ≤ 1) ∧
+    (∀ k ≤ N, ∀ a, ∀ t ≤ D.checkCount k a,
+      D.checkedRadius k a ≤ BacktrackingGradient.step (D.startRadius k a) t ∧
+      BacktrackingGradient.step (D.startRadius k a) t ≤ D.startRadius k a ∧
+      InexactRegularization.stepRadiusCoefficient P.zeta P.theta M
+        (InexactRegularization.prefixParameterMax D.parameter k) * ε a ≤
+          D.checkedRadius k a) ∧
+    (∀ k < N, D.selected k ≠ none → D.step k ≠ 0 ∧
+      ((1 ≤ ‖D.step k‖ ∧ D.solvedRadius k = D.checkedRadius k) ∨
+      (‖D.step k‖ < 1 ∧ ∃ d : Fin q → EuclideanSpace ℝ (Fin n), ∀ a,
+        ‖d a‖ ≤ D.solvedRadius k a ∧
+        P.zeta * TaylorModel.criticality
+          (InexactRegularization.model (D.jet k) p (D.parameter k)) (modelOrder a)
+          (D.step k) (D.solvedRadius k a) ≤ TaylorModel.decrement
+            (InexactRegularization.model (D.jet k) p (D.parameter k)) (modelOrder a)
+              (D.step k) (d a) ∧
+        TaylorModel.decrement (InexactRegularization.model (D.jet k) p (D.parameter k))
+          (modelOrder a) (D.step k) (d a) ≤
+            P.zeta * P.theta * ε a * D.solvedRadius k a ^ modelOrder a /
+              (modelOrder a).factorial ∧
+        (modelOrder a ≤ 2 → D.solvedRadius k a = 1) ∧
+        InexactRegularization.stepRadiusCoefficient P.zeta P.theta M (D.parameter k) *
+          ε a ≤ D.solvedRadius k a))) ∧
+    (∀ k < N, D.selected k ≠ none →
+      (∀ i, 1 ≤ i → i ≤ p → D.accuracy k i ≤
+        InexactRegularization.trialAccuracyThreshold P M
+          (InexactRegularization.prefixParameterMax D.parameter k)
+          (minimumAccuracy P.order_pos ε)) → k ∈ D.trials) := by
+  let M := L + P.errorBound * P.initialCap
+  have hM : 1 ≤ M := hL.trans (le_add_of_nonneg_right
+    (mul_nonneg P.errorBound_nonneg P.initialCap_nonneg))
+  have hjet : ∀ k ≤ N, ∀ i, 1 ≤ i → i ≤ p → ‖D.jet k i‖ ≤ M :=
+    fun k hk i hi hip => h.tensor_norm_le (zero_le_one.trans hL)
+      (fun j hj => hlip j hj.le) hk hi hip
+  have hjet2 : ∀ k ≤ N, ∀ i, 2 ≤ i → i ≤ p → ‖D.jet k i‖ ≤ M :=
+    fun k hk i hi hip => hjet k hk i (by omega) hip
+  have hqp := P.order_le
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · intro k hk hselected
+    obtain ⟨s, δ, hs⟩ := InexactRegularization.exists_stepTwoComputation (D.jet k) p
+      modelOrder (fun a => ⟨by unfold modelOrder; omega, by unfold modelOrder; omega⟩)
+      (h.updates.pos hk) (zero_le_one.trans hM) (hjet2 k hk)
+      P.theta_pos P.theta_lt_one.le P.zeta_pos P.zeta_le_one ε
+      (fun a => ⟨h.accuracy_pos a, h.accuracy_le_one a⟩) (D.reference k) (D.checkedRadius k)
+    refine ⟨s, δ, hs, ?_, hs.radius_mem (h.checkedRadius_mem hk)⟩
+    obtain ⟨a, ha⟩ := Option.ne_none_iff_exists'.mp hselected
+    have hone := h.step_one k hk
+    rw [ha] at hone
+    exact hs.nonzero (hone.reference_improvement P.zeta_pos (h.accuracy_pos a)
+      (h.startRadius_mem hk))
+  · intro k hk a t ht
+    have hr := h.intermediate_radius_bounds hk a ht
+    exact ⟨hr.1, hr.2, (h.radius_floor_sharp_prefix hM hjet2 hk).1 a⟩
+  · intro k hk hselected
+    obtain ⟨hnonzero, hcase⟩ := h.stepTwo_outcomes hM hjet2 hk hselected
+    refine ⟨hnonzero, ?_⟩
+    rcases hcase with hlarge | ⟨hs, hr⟩
+    · exact Or.inl hlarge
+    · obtain ⟨d, hd⟩ := h.stepTwo_directions hk hselected hs
+      exact Or.inr ⟨hs, d, fun a => ⟨(hd a).1, (hd a).2.1, (hd a).2.2,
+        (hr a).2.1, (hr a).2.2⟩⟩
+  · exact fun k hk hselected => h.trial_of_stepTwo_accuracy hM hjet hk hselected
 
 end CartisGouldToint

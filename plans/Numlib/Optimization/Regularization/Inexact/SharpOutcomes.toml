@@ -1,0 +1,28 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "prefixParameterMax"
+
+[[node]]
+id = "parameter_le_prefixParameterMax"
+
+[[node]]
+id = "prefixParameterMax_le_iff"
+
+[[node]]
+id = "trialAccuracyThreshold"
+
+[[node]]
+id = "Run.intermediate_radius_bounds"
+
+[[node]]
+id = "Run.radius_floor_sharp_prefix"
+
+[[node]]
+id = "Run.stepTwo_outcomes"
+
+[[node]]
+id = "Run.stepTwo_directions"
+
+[[node]]
+id = "Run.trial_of_stepTwo_accuracy"

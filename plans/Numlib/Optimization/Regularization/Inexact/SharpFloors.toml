@@ -1,0 +1,13 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "stepRadiusCoefficient"
+
+[[node]]
+id = "stepRadiusCoefficient_mem"
+
+[[node]]
+id = "StepTwoComputation.radius_lower_sharp"
+
+[[node]]
+id = "Run.radius_floor_sharp"

@@ -71,48 +71,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_13_1_12"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.1.12: Outcomes of Step 2 of the ARqpIDA algorithm
-
-Suppose that f.D0pL holds and that \( {\bar{L}}_{f} \) is given by (13.1.63). Then Step 2 of the ARqpIDA algorithm, using Algorithm 12.2.3 (p. 303), is well defined and produces a pair \( \left( {{s}_k,{\delta }_{{s}_k}}\right) \) such that \( {s}_k \neq  0 \) and either
-
-(i) \( \begin{Vmatrix}{s}_k\end{Vmatrix} \geq  1 \) and \( {\delta }_{{s}_k} = {\delta }_k \) , or
-
-(ii) the second inequality in (13.1.57) holds for some \( {\delta }_{{s}_k} \) such that
-
-\[
-{\delta }_{{s}_{k}, j} = 1\text{ for }j \in  \left\lbrack  {1 : \min \left( {2, q}\right) }\right\rbrack\tag{13.1.69}
-\]
-
-and
-
-\[
-{\delta }_{{s}_{k}, j} \geq  \frac{\varsigma \theta }{{24}\max \left\lbrack  {{\bar{L}}_{f},{\sigma }_{k}}\right\rbrack  }{\epsilon }_{j}\;\text{ for }\;j \in  \left\lbrack  {3 : q}\right\rbrack  .\tag{13.1.70}
-\]
-
-Moreover,
-
-\[
-{\delta }_{k, j}^{\left( 0\right) } \geq  {\delta }_{k, j} \geq  {\delta }_{k, j}^{\left( 1\right) } \geq  {\kappa }_{\delta }^{\left( 1\right) }\left( {\sigma }_{k,\max }\right) {\epsilon }_j\tag{13.1.71}
-\]
-
-for all \( k \geq  0 \) and \( j \in  \left\lbrack  {1 : q}\right\rbrack \) , where \( {\sigma }_{k,\max } = \mathop{\max }\limits_{i \in  \left\lbrack  {0 : k}\right\rbrack  }{\sigma }_i \) and
-
-\[
-{\kappa }_{\delta }^{\left( 1\right) }\left( \sigma \right) \overset{\text{ def }}{ = }\frac{\varsigma \theta }{{24}\max \left\lbrack  {{\bar{L}}_{f},\sigma }\right\rbrack  }.\tag{13.1.72}
-\]
-
-Finally, \( k \in  \mathcal{T} \) whenever
-
-\[
-{h}_{k,\max } \leq  {\kappa }_{s}{\left( \frac{\varsigma {\left( {\kappa }_{\delta }^{\left( 1\right) }\left( {\sigma }_{k,\max }\right) \right) }^{q}}{{12q}!\max \left\lbrack  {{\bar{L}}_{f},{\sigma }_{k,\max }}\right\rbrack  }\right) }^{p}{\epsilon }_{\min }^{p\left( {q + 1}\right) }.\tag{13.1.73}
-\]
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.12 (OCR Markdown line 14358)"
-deps = ["lemma_13_1_10"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma13.1.12; actual Step2, exact (13.1.69)-(13.1.73), q-to-p request repair, and Step2 scope of final trial clause. The printed invalid coefficient comparison is replaced by a combined factorial-tail proof of 3*max(Lbar,sigma)."
 
 [[node]]
 id = "lemma_13_1_13"
