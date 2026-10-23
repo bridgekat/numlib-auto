@@ -1,0 +1,67 @@
+namespace = "HighOrderRegularization.EmptyDirections"
+
+[[node]]
+id = "jet"
+
+[[node]]
+id = "jet_zero"
+
+[[node]]
+id = "jet_succ"
+
+[[node]]
+id = "jet_residual"
+
+[[node]]
+id = "exists_objective"
+
+[[node]]
+id = "initialModelPolynomial"
+
+[[node]]
+id = "initialModelPolynomial_eval"
+
+[[node]]
+id = "model_initial"
+
+[[node]]
+id = "initialModel_derivatives"
+
+[[node]]
+id = "smallModelDirections_empty"
+
+[[node]]
+id = "stepConditions"
+
+[[node]]
+id = "no_next_improvement"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "point_zero"
+
+[[node]]
+id = "point_succ"
+
+[[node]]
+id = "actual_ratio"
+
+[[node]]
+id = "modelTrace"
+
+[[node]]
+id = "literalStop"
+
+[[node]]
+id = "literalStop_empty_iff"
+
+[[node]]
+id = "not_initial_stop"
+
+[[node]]
+id = "not_terminal_stop"
+
+[[node]]
+id = "exists_stuck_execution"

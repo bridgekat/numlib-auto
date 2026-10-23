@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.EmptyDirections
 import Numlib.Analysis.Calculus.Gradient
 import Numlib.Optimization.Regularization.HighOrder.Step
 import Numlib.Optimization.Regularization.HighOrder.Parameter
@@ -162,5 +163,30 @@ theorem lemma_4_1_4 {n p N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     exact h.decrease_second (hp₂ hε) hf hLp hθ₂.le hlip hi hs (hsecond hε) hu
   · intro hε v hv
     exact h.decrease_third (hp₃ hε) hf hLp hθ₃.le hlip hi hs (hthird hε) hv
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open HighOrderRegularization HighOrderRegularization.EmptyDirections
+/-- The literal nonempty-direction guard in Algorithm 4.1.1 can prevent
+termination at a stationary point after a legal accepted trial. Thus Theorem
+4.1.5 needs a repaired stopping test. Removing the guard allows the empty set
+in the theorem's stated terminal conclusion `Mε ⊆ Zε`.
+The objective is bounded and C³ with globally Lipschitz D³; all settings and
+actual model stationarity tests are legal. -/
+theorem theorem_4_1_5_nonempty_guard_counterexample :
+    ∃ (f : ℝ → ℝ) (L B : ℝ), 1 ≤ L ∧ 0 < B ∧ ContDiff ℝ 3 f ∧
+      (∀ x, |f x| ≤ B) ∧
+      (∀ x y, ‖iteratedFDeriv ℝ 3 f x - iteratedFDeriv ℝ 3 f y‖ ≤ L * ‖x - y‖) ∧
+      ModelTrace f 3 point (fun _ => 1) (fun _ => 12) (fun _ => 2)
+        (1 / 4) (3 / 4) (1 / 2) 2 3 12 1 ∧
+      StepConditions f 3 0 1 12 1 1 1 ∧
+      smallModelDirections f 3 0 1 12 1 = ∅ ∧
+      (∀ M : Set ℝ, ¬ literalStop f 0 M 1 1 1) ∧
+      ¬ literalStop f 1 (smallModelDirections f 3 0 1 12 1) 1 1 1 ∧
+      (∀ j ≤ 3, iteratedDeriv j f 1 = 0) ∧
+      SecondOrderTrustRegion.IsLeastEigenpair f 1 0 1 ∧
+      (∀ σ : ℝ, 0 ≤ σ → ¬ ∃ s : ℝ, model f 3 1 σ s < model f 3 1 σ 0) :=
+  exists_stuck_execution
 
 end CartisGouldToint

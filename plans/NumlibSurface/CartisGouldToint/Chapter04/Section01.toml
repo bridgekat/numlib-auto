@@ -318,6 +318,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_4_1_5"
+wrong = "The literal finite-third-order stopping test requires M nonempty. A bounded C3 objective with Lipschitz third derivative has a legal accepted cubic-model trial to a stationary point with M empty, after which no strictly improving model step exists. theorem_4_1_5_nonempty_guard_counterexample proves this obstruction. The corrected companion removes only the nonempty guard."
 kind = "theorem"
 desc = '''
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -385,3 +386,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "arpSmallModelDirections"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation (4.1.14)"
+
+[[node]]
+id = "theorem_4_1_5_nonempty_guard_counterexample"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 4.1.1 Step 1 and Theorem 4.1.5"
