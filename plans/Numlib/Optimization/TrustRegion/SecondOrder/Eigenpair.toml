@@ -1,0 +1,7 @@
+namespace = "SecondOrderTrustRegion"
+
+[[node]]
+id = "hessian_isSelfAdjoint"
+
+[[node]]
+id = "exists_leastEigenpair"

@@ -1,4 +1,5 @@
 import Numlib.Optimization.TrustRegion.SecondOrder.Complexity
+import Numlib.Optimization.TrustRegion.SecondOrder.Eigenpair
 import Numlib.Optimization.TrustRegion.Eigenpoint
 import Numlib.Optimization.TrustRegion.SecondOrder.FirstOrder
 import NumlibSurface.CartisGouldToint.Chapter02.Section03
@@ -281,5 +282,15 @@ theorem theorem_3_2_6 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ 
       SecondOrderTrustRegion.derivativeEvaluations, Nat.cast_add, Nat.cast_one] using hD
   · simpa only [SecondOrderTrustRegion.hessianEvaluations,
       SecondOrderTrustRegion.derivativeEvaluations, Nat.cast_add, Nat.cast_one] using hD
+
+/-- Every twice continuously differentiable objective on a positive-dimensional
+Euclidean space has an actual least Hessian eigenpair with the TR2 descent sign. -/
+theorem tr2LeastEigenpair_exists {n : ℕ} (hn : 0 < n)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    (hf : ContDiffAt ℝ 2 f x) :
+    ∃ μ : ℝ, ∃ u : EuclideanSpace ℝ (Fin n),
+      tr2LeastEigenpair f x μ u ∧ inner ℝ (gradient f x) u ≤ 0 := by
+  let : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
+  exact SecondOrderTrustRegion.exists_leastEigenpair f x hf
 
 end CartisGouldToint

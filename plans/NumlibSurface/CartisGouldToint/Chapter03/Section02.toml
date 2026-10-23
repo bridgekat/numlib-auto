@@ -316,3 +316,6 @@ id = "tr2LeastEigenpair"
 
 [[node]]
 id = "tr2FiniteRun"
+
+[[node]]
+id = "tr2LeastEigenpair_exists"
