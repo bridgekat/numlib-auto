@@ -1,0 +1,44 @@
+[[node]]
+id = "BacktrackingGradient.squaredHinge"
+
+[[node]]
+id = "BacktrackingGradient.hasDerivAt_squaredHinge"
+
+[[node]]
+id = "BacktrackingGradient.plateauObjective"
+
+[[node]]
+id = "BacktrackingGradient.plateauGradient"
+
+[[node]]
+id = "BacktrackingGradient.hasDerivAt_plateauObjective"
+
+[[node]]
+id = "BacktrackingGradient.plateauObjective_nonneg"
+
+[[node]]
+id = "BacktrackingGradient.plateauGradient_lipschitz"
+
+[[node]]
+id = "BacktrackingGradient.plateau_linear"
+
+[[node]]
+id = "BacktrackingGradient.plateau_midpoint"
+
+[[node]]
+id = "BacktrackingGradient.hasFDerivAt_plateauObjective"
+
+[[node]]
+id = "BacktrackingGradient.contDiff_plateauObjective"
+
+[[node]]
+id = "BacktrackingGradient.plateau_orbit_linear"
+
+[[node]]
+id = "BacktrackingGradient.plateau_run"
+
+[[node]]
+id = "BacktrackingGradient.Run.gradientEvaluations"
+
+[[node]]
+id = "BacktrackingGradient.exists_slow_run"

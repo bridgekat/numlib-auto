@@ -1,6 +1,7 @@
 import Numlib.Optimization.LineSearch.LipschitzGradient
 import Numlib.Optimization.LineSearch.ExactGradient
 import Numlib.Optimization.LineSearch.Backtracking
+import Numlib.Optimization.LineSearch.Sharpness
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -109,5 +110,27 @@ theorem theorem_2_2_2 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
       _ = _ := by ring
   · push_cast
     linarith
+
+/-- **Theorem 2.2.3 (slow steepest descent).** For every Armijo parameter and
+positive initial step, a one-dimensional bounded-below `C¹` objective can require
+at least `ε⁻²` function and gradient evaluations. The gradient Lipschitz constant
+and initial objective gap are uniform over `0 < ε < 1`.
+
+The explicit witness is a linear descent plateau with a quadratic terminal ramp.
+It yields an actual SDBA run with zero halvings at every iteration. The iteration
+count is rounded upward to `ceil(ε⁻²)`, since counts must be integers. Evaluation
+counts include the initial values and the terminal gradient stopping test. -/
+theorem theorem_2_2_3 {α tini : ℝ} (hα0 : 0 < α) (hα1 : α < 1) (htini : 0 < tini) :
+    ∃ L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
+      ∃ (f g : ℝ → ℝ) (x : ℕ → ℝ) (N : ℕ),
+        ContDiff ℝ 1 f ∧ (∀ y, HasFDerivAt f (innerSL ℝ (g y)) y) ∧
+        (∀ y z, ‖g y - g z‖ ≤ L * ‖y - z‖) ∧
+        (∀ y, 0 ≤ f y) ∧ f (x 0) ≤ 8 * tini ∧ x 0 = 0 ∧
+        N = ⌈1 / ε ^ 2⌉₊ ∧ BacktrackingGradient.Run f g x (fun _ => 0) α tini ε N ∧
+        ‖g (x N)‖ = ε ∧ (1 / ε ^ 2 : ℝ) ≤ N ∧
+        BacktrackingGradient.Run.functionEvaluations (fun _ => 0) N = N + 1 ∧
+        (1 / ε ^ 2 : ℝ) ≤ BacktrackingGradient.Run.functionEvaluations (fun _ => 0) N ∧
+        (1 / ε ^ 2 : ℝ) ≤ BacktrackingGradient.Run.gradientEvaluations N :=
+  BacktrackingGradient.exists_slow_run hα0 hα1 htini
 
 end CartisGouldToint
