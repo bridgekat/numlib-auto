@@ -1,0 +1,64 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "DerivativeSettings"
+
+[[node]]
+id = "DerivativeSettings.fractions"
+
+[[node]]
+id = "DerivativeSettings.fractions_zero"
+
+[[node]]
+id = "DerivativeSettings.fractions_one"
+
+[[node]]
+id = "DerivativeSettings.fractions_two"
+
+[[node]]
+id = "DerivativeSettings.fractions_pos"
+
+[[node]]
+id = "DerivativeSettings.fractions_lt_one"
+
+[[node]]
+id = "objectiveRestrictedDirections"
+
+[[node]]
+id = "objectiveDerivativeCriticality"
+
+[[node]]
+id = "objectiveDerivativeCriticality_zero"
+
+[[node]]
+id = "objectiveDerivativeCriticality_one"
+
+[[node]]
+id = "objectiveDerivativeCriticality_two"
+
+[[node]]
+id = "derivativeStop"
+
+[[node]]
+id = "DerivativeRun"
+
+[[node]]
+id = "DerivativeRun.mem"
+
+[[node]]
+id = "DerivativeRun.restrict"
+
+[[node]]
+id = "DerivativeRun.exists_failed_order"
+
+[[node]]
+id = "DerivativeRun.rejected"
+
+[[node]]
+id = "objectiveRestrictedDirections_zero"
+
+[[node]]
+id = "objectiveRestrictedDirections_one"
+
+[[node]]
+id = "objectiveRestrictedDirections_two"

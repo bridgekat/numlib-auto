@@ -1,0 +1,16 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "_root_.TaylorModel.tensorCriticality_le_of_unit_subset"
+
+[[node]]
+id = "zero_mem_objectiveRestrictedDirections"
+
+[[node]]
+id = "derivativeStepThreshold"
+
+[[node]]
+id = "DerivativeRun.stop_of_small_step"
+
+[[node]]
+id = "DerivativeRun.exists_large_step"

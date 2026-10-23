@@ -1,0 +1,19 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "modelRestrictedDirections"
+
+[[node]]
+id = "zero_mem_modelRestrictedDirections"
+
+[[node]]
+id = "isClosed_modelRestrictedDirections"
+
+[[node]]
+id = "modelDerivativeCriticality"
+
+[[node]]
+id = "modelDerivativeCriticality_nonneg"
+
+[[node]]
+id = "modelDerivativeCriticality_zero"

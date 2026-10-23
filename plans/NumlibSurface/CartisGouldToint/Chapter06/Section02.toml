@@ -2,83 +2,6 @@ namespace = "CartisGouldToint"
 
 [[node]]
 id = "arpConvexRun"
-kind = "definition"
-desc = '''
-Define the set of finite traces satisfying Algorithm 6.2.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
-
-Algorithm 6.2.1: Adaptive-regularization algorithm with \( p \) th-order models and convex constraints (ARp-CC)
-
-Step 0: Initialization. An initial point \( {x}_0 \in  \mathcal{C} \) ; accuracy thresholds \( {\epsilon }_1 > 0 \) , \( {\epsilon }_2 > 0,{\epsilon }_3 > 0,{\tau }_1 \in  \left( {0,1}\right) ,{\tau }_2 \in  \left( {0,1}\right) \) ; and an initial regularization parameter \( {\sigma }_0 > 0 \) are given. The constants \( {\eta }_1,{\eta }_2,{\gamma }_1,{\gamma }_2,{\gamma }_3,{\theta }_1,{\theta }_2,{\theta }_3 \) , and \( {\sigma }_{\min } \) are also given and satisfy
-
-\[
-\begin{gathered}{\sigma }_{\min } \in  \left( {0,{\sigma }_0}\right\rbrack  ,{\theta }_1,{\theta }_2,{\theta }_3 \in  \left( {0,1}\right) ,0 < {\eta }_1 \leq  {\eta }_2 < 1 \\ 0 < {\gamma }_1 < 1 < {\gamma }_2 < {\gamma }_3 \\ \frac{1}{2}\left\lbrack  {1 + {\tau }_{1}}\right\rbrack   \leq  {\theta }_{1} < 1,\text{ and }\frac{1}{2}\left\lbrack  {1 + {\tau }_{2}}\right\rbrack   \leq  {\theta }_{2} < 1.\end{gathered}\tag{6.2.7}
-\]
-
-Compute \( f\left( {x}_0\right) \) , and set \( k = 0 \) .
-
-Step 1: Test for termination. If \( {\epsilon }_2 = {\epsilon }_3 = \infty \) and
-
-\[
-{\omega }_{f,\mathcal{C},1}\left( {x}_k\right)  \leq  {\epsilon }_1\tag{6.2.8}
-\]
-
-terminate with the \( {\epsilon }_1 \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-
-If \( {\epsilon }_2 < \infty \) and \( {\epsilon }_3 = \infty ,\left( {6.2.8}\right) \) holds, and
-
-\[
-{\omega }_{f,\mathcal{C},2}\left( {{x}_k,{\epsilon }_1}\right)  \leq  {\epsilon }_2\tag{6.2.9}
-\]
-
-terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2}\right) \) -approximate second-order minimizer \( {x}_{\epsilon } = {x}_k \) . If \( {\epsilon }_3 < \infty ,\left( {6.2.8}\right) \) and (6.2.9) hold, and
-
-\[
-{\omega }_{f,\mathcal{C},3}\left( {{x}_k,{\epsilon }_1,{\epsilon }_2}\right)  \leq  {\epsilon }_3
-\]
-
-terminate with the \( \left( {{\epsilon }_1,{\epsilon }_2,{\epsilon }_3}\right) \) -approximate third-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-
-Step 2: Step computation. Compute a step \( {s}_k \in  \mathcal{C}\left( {x}_k\right) \) such that
-
-\[
-{m}_k\left( {s}_k\right)  < {m}_k\left( 0\right)
-\]
-
-where \( {m}_k\left( s\right) \) is given by (4.1.2), and
-
-\[
-{\omega }_{{m}_k,\mathcal{M},1}\left( {s}_k\right)  \leq  {\theta }_1{\epsilon }_1\tag{6.2.10}
-\]
-
-and, if \( {\epsilon }_2 < \infty \) ,
-
-\[
-{\omega }_{{m}_k,\mathcal{M},2}\left( {s}_k\right)  \leq  {\theta }_2{\epsilon }_2\tag{6.2.11}
-\]
-
-and, if also \( {\epsilon }_3 < \infty \) ,
-
-\[
-{\omega }_{{m}_k,\mathcal{M},3}\left( {s}_k\right)  \leq  {\theta }_3{\epsilon }_3\tag{6.2.12}
-\]
-
-Step 3: Acceptance of the trial point. Compute \( f\left( {{x}_k + {s}_k}\right) \) , and define
-
-\[
-{\rho }_k = \frac{f\left( {x}_k\right)  - f\left( {{x}_k + {s}_k}\right) }{{T}_{f, p}\left( {{x}_k,0}\right)  - {T}_{f, p}\left( {{x}_k,{s}_k}\right) }.
-\]
-
-If \( {\rho }_k \geq  {\eta }_1 \) , then define \( {x}_{k + 1} = {x}_k + {s}_k \) . Otherwise define \( {x}_{k + 1} = {x}_k \) .
-
-Step 4: Regularization parameter update. Set
-
-\[
-{\sigma }_{k + 1} \in  \left\{  \begin{array}{ll} \left\lbrack  {\max \left( {{\sigma }_{\min },{\gamma }_{1}{\sigma }_{k}}\right) ,{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \geq  {\eta }_{2}, \\  \left\lbrack  {{\sigma }_{k},{\gamma }_{2}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} \in  \left\lbrack  {{\eta }_{1},{\eta }_{2}}\right) \\  \left\lbrack  {{\gamma }_{2}{\sigma }_{k},{\gamma }_{3}{\sigma }_{k}}\right\rbrack  & \text{ if }{\rho }_{k} < {\eta }_{1}. \end{array}\right.
-\]
-
-Increment \( k \) by one and go to Step 1 .
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.2"
 
 [[node]]
@@ -374,6 +297,16 @@ source = "Cartis, Gould and Toint, literal Lemma6.2.1 directional bound(6.2.18) 
 
 [[node]]
 id = "lemma_6_2_1_corrected"
-kind = "theorem"
-desc = "Prove the complete source Lemma6.2.1 with the directional clauses restricted to C¹/C² intersected with the unit ball, consistently with the actual criticality domains. Preserve all enabled first/second/third step bounds, actual model restricted sets, exact factorial and parameter-cap coefficients, and both lower-derivative direction estimates. Use actual local Cp regularity and primitive model tests; do not assume any step lower bound."
 source = "Cartis, Gould and Toint, Lemma6.2.1 with the required unit-ball direction restriction"
+
+[[node]]
+id = "arpConvexSettings"
+source = "Cartis, Gould and Toint, Algorithm6.2.1 fixed legal settings and enabled order"
+
+[[node]]
+id = "arpConvexStop"
+source = "Cartis, Gould and Toint, Algorithm6.2.1 actual enabled-order stopping tests"
+
+[[node]]
+id = "theorem_6_2_3_execution"
+source = "Cartis, Gould and Toint, Theorem6.2.3 actual consistent-execution complexity companion"

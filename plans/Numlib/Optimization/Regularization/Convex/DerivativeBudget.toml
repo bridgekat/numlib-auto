@@ -1,0 +1,28 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "derivativeDecreaseCoefficient"
+
+[[node]]
+id = "derivativeBudgetCoefficient"
+
+[[node]]
+id = "derivativeStepThreshold_pos"
+
+[[node]]
+id = "derivativeDecreaseCoefficient_pos"
+
+[[node]]
+id = "derivativeBudgetCoefficient_pos"
+
+[[node]]
+id = "derivativeBudgetCoefficient_le"
+
+[[node]]
+id = "DerivativeRun.accuracy_factor_pos"
+
+[[node]]
+id = "derivativeAccuracyFactor_le"
+
+[[node]]
+id = "DerivativeRun.nonterminal_decrease"

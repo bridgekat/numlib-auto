@@ -1,0 +1,25 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "derivativeEvaluationNodesForOrder"
+
+[[node]]
+id = "derivativeEvaluationsForOrder"
+
+[[node]]
+id = "derivativeEvaluationsForOrder_le"
+
+[[node]]
+id = "DerivativeRun.parameter_le"
+
+[[node]]
+id = "DerivativeRun.successful_card_le"
+
+[[node]]
+id = "DerivativeRun.iterations_le"
+
+[[node]]
+id = "exists_derivative_termination"
+
+[[node]]
+id = "exists_uniform_derivative_complexity"
