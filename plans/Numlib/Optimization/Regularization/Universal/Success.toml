@@ -1,0 +1,25 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "power_transfer"
+
+[[node]]
+id = "betaCoefficient"
+
+[[node]]
+id = "abs_value_error"
+
+[[node]]
+id = "Step.ratio_ge_eta2"
+
+[[node]]
+id = "third_factor_absorption"
+
+[[node]]
+id = "Step.first_length_check"
+
+[[node]]
+id = "Step.second_length_check"
+
+[[node]]
+id = "Step.very_successful"

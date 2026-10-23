@@ -1,4 +1,4 @@
-import Numlib.Optimization.Regularization.Universal.Bounds
+import Numlib.Optimization.Regularization.Universal.Success
 
 /-!
 # Universal regularization with real powers
@@ -49,4 +49,26 @@ theorem lemma_5_5_2 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
         P.theta2 * ‖s‖ ^ (P.r - 2) :=
   ⟨h.gradient_bound hf hH hβ hβ1 hholder hσ,
     fun e he v hv => h.curvature_bound (hp e he) hf hH hβ hβ1 hholder hσ he v hv⟩
+/-- **Lemma5.5.3.** The source threshold gives the very successful ratio and
+all enabled length checks. With second-order accuracy disabled the second
+threshold is vacuous; with it enabled the two thresholds together are exactly
+the maximum of the three source terms in(5.5.20). -/
+theorem lemma_5_5_3 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {P : UniversalRegularization.Settings p} {ε2 : Option ℝ}
+    {x s : EuclideanSpace ℝ (Fin n)} {σ H β : ℝ}
+    (hf : ContDiff ℝ p f) (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
+    (hholder : ∀ y z,
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ H * ‖y - z‖ ^ β)
+    (ha : 1 < (p : ℝ) + β) (har : (p : ℝ) + β ≤ P.r)
+    (hσ : 0 < σ) (h : UniversalRegularization.Step f P ε2 x s σ)
+    (hp : ∀ e ∈ ε2, 2 ≤ p) (ha2 : ∀ e ∈ ε2, 2 < (p : ℝ) + β)
+    (hparameter : max (P.theta1 * Real.finiteFactorial (P.r - 1))
+      (UniversalRegularization.betaCoefficient P H β * ‖s‖ ^ ((p : ℝ) + β - P.r)) ≤ σ)
+    (hsecond : ∀ e ∈ ε2, P.theta2 * Real.finiteFactorial (P.r - 2) ≤ σ) :
+    P.eta2 ≤ (f x - f (x + s)) / (f x - TaylorModel.eval f p x s) ∧
+      P.alpha1 * ‖fderiv ℝ f (x + s)‖ ≤ σ * ‖s‖ ^ (P.r - 1) ∧
+      ∀ e ∈ ε2, ∀ v : EuclideanSpace ℝ (Fin n), ‖v‖ = 1 →
+        -P.alpha2 * iteratedFDeriv ℝ 2 f (x + s) (fun _ => v) ≤ σ * ‖s‖ ^ (P.r - 2) :=
+  h.very_successful hf hH hβ hβ1 hholder ha har hσ hp ha2
+    ((le_max_left _ _).trans hparameter) hsecond ((le_max_right _ _).trans hparameter)
 end CartisGouldToint

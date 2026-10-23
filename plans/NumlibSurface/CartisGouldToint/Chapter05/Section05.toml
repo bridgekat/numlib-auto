@@ -14,47 +14,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_5_5_3"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 5.5.3: Successful iterations
-
-Suppose that \( r \geq  p + {\beta }_p \) and f.DpH hold. (i) If \( {\epsilon }_2 = \infty \) and
-
-\[
-{\sigma }_k \geq  \max \left\lbrack  {{\theta }_1\left( {r - 1}\right) !,{\kappa }_{\beta }{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + {\beta }_p - r}}\right\rbrack  ,\tag{5.5.18}
-\]
-
-where
-
-\[
-{\kappa }_{\beta }\overset{\text{ def }}{ = }\frac{r!{H}_{f, p}}{\left( {p + {\beta }_{p} - 1}\right) !\left( {1 - {\eta }_{2}}\right) },\tag{5.5.19}
-\]
-
-then \( {\rho }_k \geq  {\eta }_2 \) and (5.5.10) hold, and so iteration \( k \) is very successful.
-
-(ii) If \( {\epsilon }_2 < \infty \) and
-
-\[
-{\sigma }_k \geq  \max \left\lbrack  {{\theta }_1\left( {r - 1}\right) !,{\theta }_2\left( {r - 2}\right) !,{\kappa }_{\beta }{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + {\beta }_p - r}}\right\rbrack  ,\tag{5.5.20}
-\]
-
-then additionally (5.5.11) holds, and again iteration \( k \) is very successful.
-
-Referenced equation payloads:
-
-Equation (5.5.10):
-\[
-{\sigma }_k{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 1} \geq  {\alpha }_1\begin{Vmatrix}{{\nabla }_x^{1}f\left( {{x}_k + {s}_k}\right) }\end{Vmatrix},\tag{5.5.10}
-\]
-
-Equation (5.5.11):
-\[
-{\sigma }_k{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{r - 2} \geq   - {\alpha }_2{\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {{x}_k + {s}_k}\right) }\right\rbrack  .\tag{5.5.11}
-\]
-'''
-deps = ["universalArpRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.5.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 7284)"
 
 [[node]]
