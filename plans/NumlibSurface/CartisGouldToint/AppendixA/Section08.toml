@@ -15,21 +15,9 @@ id = "theorem_A_8_2"
 
 [[node]]
 id = "theorem_A_8_3"
-kind = "theorem"
-desc = '''
-Let p>=1, C convex in Euclidean n-space, D open with C subset D, f C^p on D, H>=0 and beta in [0,1]. Assume for every x,y in C the operator norm of D^p f(x)-D^p f(y) is <= H*norm(x-y)^beta, equation (A.13). For x,x+s in C, prove |f(x+s)-taylorModel f p x s| <= H/shiftedFactorial p beta * norm(s)^(p+beta), and simultaneously for each 1<=j<=p the j-multilinear derivative error norm <= H/shiftedFactorial (p-j) beta * norm(s)^(p-j+beta). Here derivative of the model is with respect to s. j=p is directly the Hölder assumption, not the integral formula with (p-j-1)!; s=0 is direct. Constants are precisely (A.14),(A.15).
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.3, equations (A.13)--(A.15)"
-deps = ["shiftedFactorial", "taylorModel", "theorem_A_8_1", "TaylorModel.iteratedFDeriv_eval_apply", "TaylorModel.iteratedFDeriv_iteratedFDeriv", "TaylorModel.norm_sub_eval_le_holder"]
 
 [[node]]
 id = "corollary_A_8_4"
-kind = "theorem"
-desc = '''
-Under the same convex C, open D and C^p hypotheses as A.8.3, if D^p f is L-Lipschitz on C with L>=0, then for x,x+s in C the function value error is <= L*norm(s)^(p+1)/(p+1)!, and for each 1<=j<=p the jth model derivative error norm is <= L*norm(s)^(p-j+1)/(p-j+1)!. Derive by beta=1 in A.8.3, with exact (A.19),(A.20) constants.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary A.8.4, equations (A.18)--(A.20)"
-deps = ["theorem_A_8_3"]
 
 [[node]]
 id = "theorem_A_8_5"

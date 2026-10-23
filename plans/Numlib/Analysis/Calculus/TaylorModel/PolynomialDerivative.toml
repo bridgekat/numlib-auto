@@ -1,0 +1,41 @@
+namespace = "TaylorModel"
+
+desc = '''
+Actual all-order derivatives of finite Taylor polynomials under finite C^p regularity, and their sharp Holder/Lipschitz remainder bounds. The derivative identity is derived from finite Schwarz symmetry and the genuine multilinear diagonal derivative sum. Repeated fixed curry isometries preserve differences of tensor derivatives, with no completeness or extra derivative assumption; applying the vector-valued value remainder to D^j f gives the sharp bound for each 0<=j<=p, including the endpoint j=p.
+'''
+
+[[node]]
+id = "hasFDerivAt_diagonal_iteratedFDeriv"
+
+[[node]]
+id = "eval_eq_add_sum_succ"
+
+[[node]]
+id = "hasFDerivAt_eval_succ"
+
+[[node]]
+id = "fderiv_eval_succ"
+
+[[node]]
+id = "iteratedFDeriv_eval_add"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_comp_isometryEquiv"
+
+[[node]]
+id = "norm_iteratedFDeriv_fderiv_sub"
+
+[[node]]
+id = "norm_iteratedFDeriv_iteratedFDeriv_sub"
+
+[[node]]
+id = "iteratedFDeriv_eval"
+
+[[node]]
+id = "eval_degree_zero"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_eval_le_holder"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_eval_le_lipschitz"

@@ -1,6 +1,6 @@
 import Numlib.Analysis.Calculus.Taylor.ScalarRemainder
 import Numlib.Analysis.Calculus.ContDiff.Lipschitz
-import Numlib.Analysis.Calculus.TaylorModel.Holder
+import Numlib.Analysis.Calculus.TaylorModel.PolynomialDerivative
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
@@ -9,8 +9,8 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 
 Theorems A.8.1 and A.8.2 are the scalar integral and Lagrange Taylor formulas. Theorem A.8.5
 relates Lipschitz continuity of an iterated derivative to a bound on the next derivative.
-The separate value-error helpers establish (A.14) and (A.19). The derivative-error clauses
-(A.15) and (A.20) of the full Theorem A.8.3 and Corollary A.8.4 remain unformalized.
+Theorem A.8.3 and Corollary A.8.4 include both the value and every derivative-error
+clause, with the sharp finite-product and factorial constants.
 Ordinary derivatives at the interval endpoints are obtained from smoothness on an open
 neighborhood. The integral formula explicitly assumes positive Taylor order, as its
 factorial and kernel require; zero increments are allowed in both formulas.
@@ -112,5 +112,40 @@ theorem corollary_A_8_4_value {n p : ℕ} (hp : 0 < p)
   | zero => omega
   | succ q =>
     exact TaylorModel.abs_sub_eval_le_lipschitz hD hCD hC hf hL hlip hx hxs
+
+/-- **Theorem A.8.3.** The sharp Hölder remainder bounds for the value and for all
+model derivatives of orders `1, …, p`, equations (A.14) and (A.15). Derivatives
+of the model are taken with respect to its increment. -/
+theorem theorem_A_8_3 {n p : ℕ} (hp : 0 < p)
+    {C D : Set (EuclideanSpace ℝ (Fin n))} (hD : IsOpen D) (hCD : C ⊆ D)
+    (hC : Convex ℝ C) {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    (hf : ContDiffOn ℝ p f D) {H β : ℝ} (hH : 0 ≤ H) (hβ : β ∈ Icc (0 : ℝ) 1)
+    (hholder : ∀ u ∈ C, ∀ v ∈ C,
+      ‖iteratedFDeriv ℝ p f u - iteratedFDeriv ℝ p f v‖ ≤ H * ‖u - v‖ ^ β)
+    {x s : EuclideanSpace ℝ (Fin n)} (hx : x ∈ C) (hxs : x + s ∈ C) :
+    |f (x + s) - taylorModel f p x s| ≤ H / shiftedFactorial p β * ‖s‖ ^ ((p : ℝ) + β) ∧
+      ∀ j : ℕ, 1 ≤ j → j ≤ p →
+        ‖iteratedFDeriv ℝ j f (x + s) - iteratedFDeriv ℝ j (taylorModel f p x) s‖ ≤
+          H / shiftedFactorial (p - j) β * ‖s‖ ^ ((p - j : ℕ) + β) := by
+  refine ⟨theorem_A_8_3_value hp hD hCD hC hf hH hβ hholder hx hxs, ?_⟩
+  intro j _hj hj
+  exact TaylorModel.norm_iteratedFDeriv_sub_eval_le_holder hD hCD hC hf hH hβ.1 hholder hj hx hxs
+
+/-- **Corollary A.8.4.** The sharp Lipschitz bounds for the value and for every
+model derivative of orders `1, …, p`, equations (A.19) and (A.20). -/
+theorem corollary_A_8_4 {n p : ℕ} (hp : 0 < p)
+    {C D : Set (EuclideanSpace ℝ (Fin n))} (hD : IsOpen D) (hCD : C ⊆ D)
+    (hC : Convex ℝ C) {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    (hf : ContDiffOn ℝ p f D) {L : ℝ} (hL : 0 ≤ L)
+    (hlip : ∀ u ∈ C, ∀ v ∈ C,
+      ‖iteratedFDeriv ℝ p f u - iteratedFDeriv ℝ p f v‖ ≤ L * ‖u - v‖)
+    {x s : EuclideanSpace ℝ (Fin n)} (hx : x ∈ C) (hxs : x + s ∈ C) :
+    |f (x + s) - taylorModel f p x s| ≤ L * ‖s‖ ^ (p + 1) / (p + 1).factorial ∧
+      ∀ j : ℕ, 1 ≤ j → j ≤ p →
+        ‖iteratedFDeriv ℝ j f (x + s) - iteratedFDeriv ℝ j (taylorModel f p x) s‖ ≤
+          L * ‖s‖ ^ (p - j + 1) / (p - j + 1).factorial := by
+  refine ⟨corollary_A_8_4_value hp hD hCD hC hf hL hlip hx hxs, ?_⟩
+  intro j _hj hj
+  exact TaylorModel.norm_iteratedFDeriv_sub_eval_le_lipschitz hD hCD hC hf hL hlip hj hx hxs
 
 end CartisGouldToint
