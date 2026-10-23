@@ -1,0 +1,8 @@
+namespace = "Constrained.TargetCounterexample.InnerRegularization"
+desc = "The genuine regularization inner execution realizes the full target-reset return of the two-phase constrained algorithm and refutes its existential Lagrangian output certificate."
+
+[[node]]
+id = "no_output_alternative"
+
+[[node]]
+id = "verified_regularized_counterexample"

@@ -239,6 +239,7 @@ deps = ["theorem_14_3_4", "lemma_14_3_6"]
 
 [[node]]
 id = "theorem_14_3_9"
+wrong = "The output guarantee fails for an actual regularization-based INNER method, not just an abstract inner-call relation. theorem_14_3_9_counterexample realizes p=q=2, f(x)=sin(x0)/10, c(x)=x1, X=R^2, initial(pi/2,0), epsilon0=epsilon1=epsilon2=1/10, theta=1/2 and beta=1/4. Phase1 is immediately feasible. The true old-merit AR22 model has Hessian diag(-1/100,1), parameter sigma=1/(50R) with R=pi/2, and its genuine global minimizer s=(-R,0) follows from an actual radial square factorization. A complete primitive AR22 Run1 has first-order pass, second-order failure at requested inner accuracy1/400, actual positive-fraction model computation, true ratio1/R^2 in[1/4,3/4), legal parameter/radius updates and two passing endpoint tests. The actual outer target-reset branch returns zero at target-1/10 and passes all recomputed merit tests. Global source C2, bounded objective and bounded Lipschitz derivative hypotheses hold, but no multiplier satisfies both(14.3.42) and(14.3.43). Thus no count constants can supply the claimed output certificate for this legitimate execution. The separate counting claims are not individually refuted by this counterexample."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -293,3 +294,7 @@ id = "theorem_14_3_4_counterexample"
 
 [[node]]
 id = "lemma_14_3_5_counterexample"
+
+[[node]]
+id = "theorem_14_3_9_counterexample"
+source = "Cartis, Gould and Toint, Theorem14.3.9, output alternatives(14.3.41)-(14.3.44), genuine regularization INNER realization"

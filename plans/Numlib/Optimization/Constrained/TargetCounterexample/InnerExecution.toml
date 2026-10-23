@@ -1,0 +1,68 @@
+namespace = "Constrained.TargetCounterexample.InnerRegularization"
+desc = "An actual AR22 execution from ordered initial Taylor tests through global model solve, genuine ratio and parameter updates to checked endpoint termination. The inner-call relation is backed by real executions, and its soundness is derived."
+
+[[node]]
+id = "initial_decrement_one"
+
+[[node]]
+id = "initial_decrement_two"
+
+[[node]]
+id = "initial_criticality_one"
+
+[[node]]
+id = "initial_criticality_two"
+
+[[node]]
+id = "trial_decrement"
+
+[[node]]
+id = "actual_ratio"
+
+[[node]]
+id = "ratio_bounds"
+
+[[node]]
+id = "tolerance"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "initialDirection"
+
+[[node]]
+id = "initial_check"
+
+[[node]]
+id = "endpoint_criticality"
+
+[[node]]
+id = "endpoint_check"
+
+[[node]]
+id = "actual_stepComputation"
+
+[[node]]
+id = "data"
+
+[[node]]
+id = "actual_modelTrace"
+
+[[node]]
+id = "actual_run"
+
+[[node]]
+id = "regularizedCall"
+
+[[node]]
+id = "regularizedCall_sound"
+
+[[node]]
+id = "actual_inner_call"
+
+[[node]]
+id = "actual_endpoint_optimality"
+
+[[node]]
+id = "actual_model_criticality"

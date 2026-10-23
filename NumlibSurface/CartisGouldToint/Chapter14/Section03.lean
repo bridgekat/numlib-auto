@@ -1,3 +1,4 @@
+import Numlib.Optimization.Constrained.TargetCounterexample.TwoPhase
 import Numlib.Optimization.LeastNorm.ComponentRegularity
 import Numlib.Optimization.Constrained.TargetRegularity
 import Numlib.Optimization.Constrained.LagrangianStability
@@ -285,5 +286,21 @@ theorem lemma_14_3_6 {n m p : ℕ}
     have hn' : ‖iteratedFDeriv ℝ j (LeastNorm.merit c) x‖ ≤ BA + BB := by
       simpa only [mul_one] using hn
     exact hn'.trans (le_max_right B (BA + BB))
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Counterexample to Theorem 14.3.9's output guarantee.** For `p=q=2`,
+all source regularity and objective bounds hold globally. Phase one is an
+actual zero-call feasible return. Phase two uses a genuine one-trial AR22 run:
+its initial ordered Taylor check selects order two, its step is a proved global
+minimum of the actual cubic model, its actual ratio lies between the legal
+acceptance thresholds, and its endpoint passes both true Taylor checks. The
+actual target-reset branch then terminates at zero with unit radii, although
+no multiplier satisfies even the first two printed Lagrangian bounds. This
+refutes the stated output conclusion independently of the numerical counts. -/
+alias theorem_14_3_9_counterexample :=
+  Constrained.TargetCounterexample.InnerRegularization.verified_regularized_counterexample
 
 end CartisGouldToint

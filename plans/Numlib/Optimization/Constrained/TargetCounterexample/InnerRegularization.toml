@@ -1,0 +1,56 @@
+namespace = "Constrained.TargetCounterexample.InnerRegularization"
+desc = "Actual old-merit derivatives, finite Taylor polynomial, cubic model and global radial minimization for a genuine regularization realization of the target-merit counterexample."
+
+[[node]]
+id = "oldMerit"
+
+[[node]]
+id = "length"
+
+[[node]]
+id = "sigma"
+
+[[node]]
+id = "trial"
+
+[[node]]
+id = "length_bounds"
+
+[[node]]
+id = "sigma_pos"
+
+[[node]]
+id = "initial_add_trial"
+
+[[node]]
+id = "trial_norm"
+
+[[node]]
+id = "old_fderiv"
+
+[[node]]
+id = "old_fderiv_initial"
+
+[[node]]
+id = "old_second_initial"
+
+[[node]]
+id = "old_taylor"
+
+[[node]]
+id = "model_formula"
+
+[[node]]
+id = "model_trial"
+
+[[node]]
+id = "norm_sq"
+
+[[node]]
+id = "model_gap_factorization"
+
+[[node]]
+id = "model_isMin"
+
+[[node]]
+id = "model_improves"
