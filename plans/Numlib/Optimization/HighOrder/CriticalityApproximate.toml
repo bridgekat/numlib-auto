@@ -1,0 +1,31 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "decrement_one"
+
+[[node]]
+id = "exists_unit_opposite"
+
+[[node]]
+id = "criticality_one"
+
+[[node]]
+id = "decrement_two_smul"
+
+[[node]]
+id = "unit_curvature_ge_neg"
+
+[[node]]
+id = "curvature_ge_neg_mul_sq"
+
+[[node]]
+id = "gradient_norm_le_of_criticality_two"
+
+[[node]]
+id = "hessianOperator"
+
+[[node]]
+id = "inner_hessianOperator"
+
+[[node]]
+id = "eigenvalue_ge_neg_of_criticality_two"

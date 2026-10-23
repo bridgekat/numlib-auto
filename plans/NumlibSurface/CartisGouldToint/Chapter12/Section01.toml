@@ -132,20 +132,7 @@ False as stated: (v−u²)²+v⁴−u⁵ has an isolated strictly minimal fourth
 
 [[node]]
 id = "theorem_12_1_6"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 12.1.6: Comparing the old and new approximate measures
-
-Suppose that \( f \) is continuously differentiable, \( \delta  > 0 \) , and \( {x}_{\epsilon } \in  {\mathbb{R}}^n \) . Then
-
-(i) if \( {\phi }_{f,1}^{{\delta }_1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_1{\delta }_1 \) (and so (12.1.25) holds with \( q = j = 1 \) ), then \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq \; {\epsilon }_1 \) (and so (12.1.22) is satisfied); and
-
-(ii) if \( {\phi }_{f,2}^{\delta }\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_2\frac{{\delta }^2}{2} \) , then \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_2 \) (and so (12.1.23) holds) and \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\delta \kappa }\left( {x}_{\epsilon }\right) \sqrt{{\epsilon }_2} \) , where \( \kappa \left( {x}_{\epsilon }\right) \) depends on (the eigenvalues of) \( {\nabla }_x^{2}f\left( {x}_{\epsilon }\right) \) .
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.6 (OCR Markdown line 11855)"
-deps = ["isApproximateHighOrderMinimizer", "theorem_12_1_3"]
 
 [[node]]
 id = "theorem_12_1_7"

@@ -1,4 +1,5 @@
 import Numlib.Optimization.HighOrder.Criticality
+import Numlib.Optimization.HighOrder.CriticalityApproximate
 import Numlib.Optimization.HighOrder.CriticalityLocalMin
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
@@ -8,6 +9,10 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 The criticality measure (12.1.10) is the largest decrease of the genuine Taylor polynomial
 on a closed ball. The supremum is attained for nonnegative radii in finite dimension,
 as proved in the backbone. This formulation also permits radius zero.
+
+For Theorem 12.1.6(ii), second-order smoothness and the tolerance range from the
+approximate-minimizer definition are explicit; its first-order branch retains first-order
+smoothness. The Hessian bound is given as a quadratic form with an eigenvalue bridge.
 -/
 
 namespace CartisGouldToint
@@ -87,5 +92,40 @@ theorem theorem_12_1_4 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     TaylorModel.criticality_one_eq_zero_of_isLocalMin hmin hδ.le, ?_, ?_⟩
   · exact fun hf hmin δ hδ => TaylorModel.criticality_two_eq_zero_of_isLocalMin hf hmin hδ.le
   · exact fun j hj hf hmin => TaylorModel.tendsto_criticality_div_pow (by omega) hf hmin
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Theorem 12.1.6 (comparing approximate optimality measures).**
+First-order Taylor criticality bounds the gradient norm. Second-order Taylor criticality
+bounds every Hessian quadratic form, every genuine Hessian eigenvalue, and the gradient
+with the explicit Hessian-dependent constant `√(max 1 ‖D²f(x)‖)`.
+
+The source's `C¹` assumption is sufficient for (i); (ii) requires `C²` to interpret the
+classical Hessian. The range `0 ≤ ε₂ ≤ 1`, used in its proof and supplied by the preceding
+approximate-minimizer definition, is explicit. The quadratic-form statement also covers
+zero-dimensional spaces, where a smallest eigenvalue is undefined. -/
+theorem theorem_12_1_6 {n : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    (_hf1 : ContDiffAt ℝ 1 f x) :
+    (∀ (δ₁ ε₁ : ℝ), 0 < δ₁ → highOrderCriticality f 1 x δ₁ ≤ ε₁ * δ₁ →
+      ‖gradient f x‖ ≤ ε₁) ∧
+    (ContDiffAt ℝ 2 f x → ∀ (δ ε₂ : ℝ), 0 < δ → 0 ≤ ε₂ → ε₂ ≤ 1 →
+      highOrderCriticality f 2 x δ ≤ ε₂ * δ ^ 2 / 2 →
+      (∀ v, -ε₂ * ‖v‖ ^ 2 ≤ iteratedFDeriv ℝ 2 f x (fun _ => v)) ∧
+      ‖gradient f x‖ ≤ δ * Real.sqrt (max 1 ‖iteratedFDeriv ℝ 2 f x‖) * Real.sqrt ε₂ ∧
+      (∀ (μ : ℝ) (v : EuclideanSpace ℝ (Fin n)), v ≠ 0 →
+        TaylorModel.hessianOperator f x v = μ • v → -ε₂ ≤ μ)) := by
+  constructor
+  · intro δ₁ ε₁ hδ₁ hcrit
+    change TaylorModel.criticality f 1 x δ₁ ≤ ε₁ * δ₁ at hcrit
+    rw [TaylorModel.criticality_one f x hδ₁] at hcrit
+    have hh : δ₁ * ‖gradient f x‖ ≤ δ₁ * ε₁ := by nlinarith
+    exact (mul_le_mul_iff_of_pos_left hδ₁).mp hh
+  · intro _hf2 δ ε₂ hδ hε0 hε1 hcrit
+    exact ⟨TaylorModel.curvature_ge_neg_mul_sq f x hδ hcrit,
+      TaylorModel.gradient_norm_le_of_criticality_two f x hδ hε0 hε1 hcrit,
+      fun _ v hv he => TaylorModel.eigenvalue_ge_neg_of_criticality_two f x hδ hcrit v hv he⟩
 
 end CartisGouldToint
