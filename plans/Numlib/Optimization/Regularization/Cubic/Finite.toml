@@ -1,0 +1,55 @@
+namespace = "CubicRegularization"
+
+[[node]]
+id = "FiniteRun"
+
+[[node]]
+id = "finiteDenominator"
+
+[[node]]
+id = "finiteDecreaseCoefficient"
+
+[[node]]
+id = "finiteAccuracyFactor"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "gradientEvaluations"
+
+[[node]]
+id = "hessianEvaluations"
+
+[[node]]
+id = "FiniteRun.denominator_bounds"
+
+[[node]]
+id = "FiniteRun.finiteDecreaseCoefficient_pos"
+
+[[node]]
+id = "FiniteRun.inv_finiteDecreaseCoefficient_eq"
+
+[[node]]
+id = "FiniteRun.successful_decrease"
+
+[[node]]
+id = "FiniteRun.step_cube_lower"
+
+[[node]]
+id = "FiniteRun.nonterminal_successful_decrease"
+
+[[node]]
+id = "FiniteRun.objective_eq_of_unsuccessful"
+
+[[node]]
+id = "FiniteRun.successful_card_le"
+
+[[node]]
+id = "FiniteRun.iterations_le"
+
+[[node]]
+id = "exists_finite_termination"

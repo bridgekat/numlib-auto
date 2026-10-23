@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Cubic.Finite
 import Numlib.Optimization.Regularization.Cubic.SecondOrder
 import Numlib.Optimization.Regularization.Cubic.ModifiedGradient
 import Numlib.Optimization.Regularization.Cubic.FirstOrder
@@ -231,5 +232,79 @@ theorem lemma_3_3_8 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
   have he := hleast.eigenvector
   rw [hstep i hi, ite_eq_left hs] at he
   exact h.step_length_lower_secondOrder hf hL hθ hlip hi hstat u hleast.unit he hμ
+
+/-- The full operational AR2 branch with both finite stopping tolerances. -/
+abbrev ar2FiniteRun {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (x s u : ℕ → EuclideanSpace ℝ (Fin n)) (μ σ ρ : ℕ → ℝ)
+    (η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ : ℝ) (N : ℕ) : Prop :=
+  CubicRegularization.FiniteRun f x s u μ σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ N
+
+/-- **Theorem 3.3.9.** Finite-second-order AR2 reaches both actual stopping
+thresholds within the function, gradient and Hessian bounds (3.3.29)–(3.3.30),
+with the printed accuracy-independent constants. The display (3.3.30) prints
+`+1` and later `+2`; its proof bounds accepted trials by the objective budget
+plus one, and initialization requires the corrected derivative allowance `+2`.
+The listed but unused source constant `κE` is normalized to one. The constant
+`κF` is written in the equivalent form using `σmax/σ₀`. -/
+theorem theorem_3_3_9 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s u : ℕ → EuclideanSpace ℝ (Fin n)} {μ σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ L flow : ℝ}
+    (hprefix : ∀ N, (∀ i < N, ε₁ < ‖gradient f (x i)‖ ∨ μ i < -ε₂) →
+      ar2FiniteRun f x s u μ σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ N)
+    (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖)
+    (hlow : ∀ y, flow ≤ f y) :
+    ∃ κT > 0, ∃ κD > 0, ∃ κE > 0, ∃ κF > 0,
+      κT = 6 * (L + max 1 (max θ₁ θ₂) + max (σ 0) (γ₃ * L / (1 - η₂))) ^ 3 /
+        (η₁ * σmin) ∧
+      κD = κT * (1 + |Real.log γ₁| / Real.log γ₂) ∧ κE = 1 ∧
+      κF = (1 + |Real.log γ₁| / Real.log γ₂) +
+        Real.log (max (σ 0) (γ₃ * L / (1 - η₂)) / σ 0) / Real.log γ₂ + 1 ∧
+      ∃ K, ‖gradient f (x K)‖ ≤ ε₁ ∧ -ε₂ ≤ μ K ∧
+        ar2FiniteRun f x s u μ σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ K ∧
+        (∀ i < K, ε₁ < ‖gradient f (x i)‖ ∨ μ i < -ε₂) ∧
+        (CubicRegularization.functionEvaluations K : ℝ) ≤
+          κD * (f (x 0) - flow) / min (ε₁ ^ (3 / 2 : ℝ)) (ε₂ ^ 3) + κF ∧
+        (CubicRegularization.gradientEvaluations ρ η₁ K : ℝ) ≤
+          κT * (f (x 0) - flow) / min (ε₁ ^ (3 / 2 : ℝ)) (ε₂ ^ 3) + 2 ∧
+        (CubicRegularization.hessianEvaluations ρ η₁ K : ℝ) ≤
+          κT * (f (x 0) - flow) / min (ε₁ ^ (3 / 2 : ℝ)) (ε₂ ^ 3) + 2 := by
+  have hprefix' : ∀ N, (∀ i < N, ε₁ < ‖fderiv ℝ f (x i)‖ ∨ μ i < -ε₂) →
+      ar2FiniteRun f x s u μ σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ₁ θ₂ ε₁ ε₂ N := by
+    intro N hN
+    exact hprefix N (fun i hi => by
+      simpa only [EuclideanSpace.norm_gradient_eq] using hN i hi)
+  obtain ⟨K, hg, hμ, hK, hfirst⟩ := CubicRegularization.exists_finite_termination
+    hprefix' hf hL hlip hlow
+  let c := CubicRegularization.finiteDecreaseCoefficient (σ 0) σmin η₁ η₂ γ₃ L θ₁ θ₂
+  let A := 1 + |Real.log γ₁| / Real.log γ₂
+  let C := Real.log (max (σ 0) (γ₃ * L / (1 - η₂)) / σ 0) / Real.log γ₂
+  have hc := hK.finiteDecreaseCoefficient_pos hL
+  have hlog := Real.log_pos hK.trace.updates.one_lt_gamma2
+  have hA : 0 < A := by dsimp [A]; positivity
+  have hσ₀ := hK.trace.updates.pos (Nat.zero_le K)
+  have hratio : 1 ≤ max (σ 0) (γ₃ * L / (1 - η₂)) / σ 0 := by
+    apply (le_div_iff₀ hσ₀).mpr
+    simpa only [one_mul] using le_max_left (σ 0) (γ₃ * L / (1 - η₂))
+  have hC : 0 ≤ C := div_nonneg (Real.log_nonneg hratio) hlog.le
+  have hD : (((EvaluationComplexity.successfulIterations {i | η₁ ≤ ρ i} K).card : ℕ) : ℝ) + 1 ≤
+      (1 / c) * (f (x 0) - flow) / min (ε₁ ^ (3 / 2 : ℝ)) (ε₂ ^ 3) + 2 := by
+    have hh := hK.successful_card_le hf hL hlip hlow
+    convert add_le_add_right hh 1 using 1 <;>
+      (try dsimp [c, CubicRegularization.finiteAccuracyFactor]) <;> ring
+  refine ⟨1 / c, div_pos zero_lt_one hc, (1 / c) * A,
+    mul_pos (div_pos zero_lt_one hc) hA, 1, zero_lt_one, A + C + 1, by positivity,
+    hK.inv_finiteDecreaseCoefficient_eq hL, rfl, rfl, rfl, K, ?_, hμ, hK, ?_, ?_, ?_, ?_⟩
+  · simpa only [EuclideanSpace.norm_gradient_eq] using hg
+  · intro i hi
+    simpa only [EuclideanSpace.norm_gradient_eq] using hfirst i hi
+  · have hh := hK.iterations_le hf hL hlip hlow
+    simp only [CubicRegularization.functionEvaluations, Nat.cast_add, Nat.cast_one]
+    convert add_le_add_right hh 1 using 1 <;>
+      (try dsimp [c, A, C, CubicRegularization.finiteAccuracyFactor]) <;> ring
+  · simpa only [CubicRegularization.gradientEvaluations,
+      CubicRegularization.derivativeEvaluations, Nat.cast_add, Nat.cast_one] using hD
+  · simpa only [CubicRegularization.hessianEvaluations,
+      CubicRegularization.derivativeEvaluations, Nat.cast_add, Nat.cast_one] using hD
 
 end CartisGouldToint
