@@ -1,0 +1,31 @@
+namespace = "RegularizedTrustRegion"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "inv_decreaseCoefficient_eq"
+
+[[node]]
+id = "Run.gradient_gt_of_disabled"
+
+[[node]]
+id = "Run.regularization_eq_sqrt"
+
+[[node]]
+id = "Run.regularization_cube_eq"
+
+[[node]]
+id = "Run.firstOrder_successful_decrease"
+
+[[node]]
+id = "Run.firstOrder_successful_card_le"
+
+[[node]]
+id = "Run.firstOrder_iterations_le"
+
+[[node]]
+id = "exists_firstOrder_termination"

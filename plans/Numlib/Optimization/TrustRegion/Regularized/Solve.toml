@@ -1,0 +1,16 @@
+namespace = "RegularizedTrustRegion"
+
+[[node]]
+id = "model_curvature_nonneg"
+
+[[node]]
+id = "not_isLocalMin_of_negative_shift"
+
+[[node]]
+id = "not_isLocalMin_zero_of_gradient_ne"
+
+[[node]]
+id = "exists_modelStep"
+
+[[node]]
+id = "exists_step_of_not_stopped"

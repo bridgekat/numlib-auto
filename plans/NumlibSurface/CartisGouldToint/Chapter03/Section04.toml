@@ -66,34 +66,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_3_4_5"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 3.4.5: First-order complexity of the TR \( \epsilon \) algorithm
-
-Suppose that f.Bb and f.HL hold. Then there exist positive constants \( {\kappa }_{\text{ TRe }}^{s},{\kappa }_{\text{ TRe }}^{A} \) , \( {\kappa }_{\mathrm{TR}\epsilon }^B \) , and \( {\kappa }_{\mathrm{TR}\epsilon }^C \) such that, for any \( {\epsilon }_1 \in  (0,1\rbrack \) , the TR \( \epsilon \) algorithm (p. 76) with \( {\epsilon }_{ * } = \sqrt{{\epsilon }_1} \) and \( {\epsilon }_2 =  + \infty \) requires at most
-
-\[
-{\# }_{\mathrm{{TR}}\epsilon ,1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}\epsilon }^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{1}^{3/2}} + {\kappa }_{\mathrm{{TR}}\epsilon }^{B}\left| {\log {\epsilon }_{1}}\right|  + {\kappa }_{\mathrm{{TR}}\epsilon }^{C} = \mathcal{O}\left( {\epsilon }_{1}^{-3/2}\right)\tag{3.4.16}
-\]
-
-evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{TR}}\epsilon ,1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}\epsilon }^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{1}^{3/2}} + 2 = \mathcal{O}\left( {\epsilon }_{1}^{-3/2}\right)\tag{3.4.17}
-\]
-
-evaluations of \( {\nabla }_x^{1}f \) and \( {\nabla }_x^{2}f \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_1 \) (i.e., (3.4.3) is satisfied).
-
-Referenced equation payloads:
-
-Equation (3.4.3):
-\[
-\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  {\epsilon }_1\tag{3.4.3}
-\]
-'''
-deps = ["lemma_3_4_4", "lemma_2_3_1", "trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 3.4.5 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 3725)"
 
 [[node]]
