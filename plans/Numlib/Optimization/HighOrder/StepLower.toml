@@ -1,0 +1,10 @@
+namespace = "HighOrderStep"
+
+[[node]]
+id = "regularizationRadiusCoefficient"
+
+[[node]]
+id = "regularizationRadiusCoefficient_mem"
+
+[[node]]
+id = "lower_of_obstruction"

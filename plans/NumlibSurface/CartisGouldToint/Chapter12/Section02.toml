@@ -64,6 +64,8 @@ source = "Cartis, Gould and Toint, Lemma12.2.11, actual accepted point/radius up
 id = "lemma_12_2_12"
 kind = "theorem"
 desc = '''
+The scalar implication from (12.2.60) to the stated high-order coefficient requires an extra coefficient comparison not implied by kappa_delta_min<1. Keep this literal target open. The proved lemma_12_2_12_corrected uses min(kappa_delta_min,(1-theta)/(2*q!*(Lf,p+sigma_max))) and retains both source accuracy rates.
+
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
 
 Lemma 12.2.12: Lower bound on the length of step for \( \mathrm{AR}{qp} \)
@@ -275,3 +277,7 @@ id = "arqpStepTwoSolve"
 [[node]]
 id = "lemma_12_2_9_uniform"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma12.2.9; uniform existential radius coefficient companion"
+
+[[node]]
+id = "lemma_12_2_12_corrected"
+source = "Cartis, Gould and Toint, Lemma12.2.12, safe common radius coefficient; original fixed-coefficient target remains open."

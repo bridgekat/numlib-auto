@@ -1,3 +1,4 @@
+import Numlib.Optimization.HighOrder.StepLower
 import Numlib.Optimization.Regularization.HighOrder.CriticalityObstruction
 import Numlib.Optimization.HighOrder.ModelSolve.Sharp
 import Numlib.Optimization.HighOrder.ModelSolve.Uniform
@@ -546,5 +547,67 @@ theorem lemma_12_2_11 {n p q N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     hθ hlip (x i) (s i) ε (δ (i + 1)) hε hδ
   · simpa only [hupdate] using htest
   · simpa only [hx] using hnot
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Lemma12.2.12 with a safe common radius coefficient. Taking the minimum
+of the actual solver floor and the normalized order-q obstruction coefficient
+repairs the scalar comparison when the step is shorter than its radius.
+Both source accuracy exponents are retained. The original fixed-coefficient
+statement remains a separate open target. -/
+theorem lemma_12_2_12_corrected {n p q N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin L θ : ℝ}
+    (h : arpModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
+    (hqp : q ≤ p) (hf : ContDiff ℝ p f) (hL : 1 ≤ L)
+    (hθ : 0 < θ) (hθ1 : θ < 1) {ζ D : ℝ}
+    (hζ : 0 < ζ) (hζ1 : ζ ≤ 1) (hD : 1 ≤ D)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
+    (hi : i < N) (hs : η₁ ≤ ρ i) (ε : Fin q → ℝ)
+    (hε : ∀ a, 0 < ε a ∧ ε a ≤ 1) (δ δs : ℕ → Fin q → ℝ)
+    (hδ : ∀ a, 0 < δ (i + 1) a ∧ δ (i + 1) a ≤ 1)
+    (hupdate : δ (i + 1) = δs i)
+    (htest : ‖s i‖ ≤ 1 → ∀ a,
+      TaylorModel.criticality (arpModel f p (x i) (σ i))
+        (InexactTrustRegion.modelOrder a) (s i) (δs i a) ≤
+        θ * ε a * δs i a ^ InexactTrustRegion.modelOrder a /
+          (InexactTrustRegion.modelOrder a).factorial)
+    (hnot : ¬∀ a, TaylorModel.criticality f (InexactTrustRegion.modelOrder a)
+      (x (i + 1)) (δ (i + 1) a) ≤ ε a * δ (i + 1) a ^ InexactTrustRegion.modelOrder a /
+        (InexactTrustRegion.modelOrder a).factorial)
+    (hunit : ∀ a, InexactTrustRegion.modelOrder a ≤ 2 → δ (i + 1) a = 1)
+    (hfloor : ‖s i‖ ≤ 1 → ∀ a,
+      ζ * θ / (8 * (3 * D + max (σ 0) (γ₃ * L / (1 - η₂)))) * ε a ≤ δ (i + 1) a) :
+    let σmax := max (σ 0) (γ₃ * L / (1 - η₂))
+    let κ := HighOrderStep.regularizationRadiusCoefficient ζ θ D L σmax q
+    0 < κ ∧ κ ≤ 1 ∧ ∃ a,
+      (if q ≤ 2 then
+        (HighOrderStep.criticalityCoefficient θ (L + σmax)
+          (InexactTrustRegion.modelOrder a)) ^
+            (1 / ((p - InexactTrustRegion.modelOrder a + 1 : ℕ) : ℝ)) *
+          (ε a) ^ (1 / ((p - InexactTrustRegion.modelOrder a + 1 : ℕ) : ℝ))
+      else
+        (HighOrderStep.criticalityCoefficient θ (L + σmax)
+          (InexactTrustRegion.modelOrder a) * κ ^ (InexactTrustRegion.modelOrder a - 1)) ^
+            (1 / (p : ℝ)) * (ε a) ^ ((InexactTrustRegion.modelOrder a : ℝ) / p)) ≤
+          ‖s i‖ := by
+  let S := max (σ 0) (γ₃ * L / (1 - η₂))
+  let κ := HighOrderStep.regularizationRadiusCoefficient ζ θ D L S q
+  have hcap := h.parameter_le hf (zero_le_one.trans hL) hlip hi.le
+  have hS : 0 ≤ S := (h.updates.pos hi.le).le.trans hcap
+  have hκ := HighOrderStep.regularizationRadiusCoefficient_mem hζ hζ1 hθ hθ1 hD hL hS q
+  obtain ⟨a, ha⟩ := lemma_12_2_11 h hqp hf hL hθ.le hlip hi hs ε hε δ δs
+    hδ hupdate htest hnot
+  refine ⟨hκ.1, hκ.2, a, ?_⟩
+  apply HighOrderStep.lower_of_obstruction (by unfold InexactTrustRegion.modelOrder; omega)
+    (by unfold InexactTrustRegion.modelOrder; omega) hqp hθ hθ1
+    (by linarith : 1 ≤ L + S) hκ.1.le hκ.2 (min_le_right _ _)
+    (hε a).1.le (hε a).2 (hδ a).1 (norm_nonneg _) ?_ ?_ ha
+  · intro hq2
+    exact hunit a (by unfold InexactTrustRegion.modelOrder; omega)
+  · intro hshort
+    exact (mul_le_mul_of_nonneg_right (min_le_left _ _) (hε a).1.le).trans (hfloor hshort a)
 
 end CartisGouldToint
