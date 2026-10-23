@@ -1,0 +1,80 @@
+namespace = "QuadraticSecular"
+
+
+[[node]]
+id = "PencilBasis"
+
+[[node]]
+id = "solution"
+
+[[node]]
+id = "secular"
+
+[[node]]
+id = "PencilBasis.eq_zero_of_inner_basis"
+
+[[node]]
+id = "PencilBasis.inner_metric_sum"
+
+[[node]]
+id = "PencilBasis.dual_expansion"
+
+[[node]]
+id = "PencilBasis.shifted_sum"
+
+[[node]]
+id = "PencilBasis.shifted_inverse_sum"
+
+[[node]]
+id = "PencilBasis.shifted_apply_inner"
+
+[[node]]
+id = "PencilBasis.shifted_injective"
+
+[[node]]
+id = "PencilBasis.shifted_invertible"
+
+[[node]]
+id = "PencilBasis.solution_eq_sum"
+
+[[node]]
+id = "PencilBasis.metric_norm_sq_sum"
+
+[[node]]
+id = "PencilBasis.secular_eq_sum"
+
+[[node]]
+id = "PencilBasis.leftmost"
+
+[[node]]
+id = "PencilBasis.edge"
+
+[[node]]
+id = "PencilBasis.denominator_pos"
+
+[[node]]
+id = "PencilBasis.spectralSum"
+
+[[node]]
+id = "PencilBasis.spectralSum_nonneg"
+
+[[node]]
+id = "PencilBasis.exists_coefficient_ne_zero"
+
+[[node]]
+id = "PencilBasis.strictAntiOn_spectralSum"
+
+[[node]]
+id = "PencilBasis.continuousOn_spectralSum"
+
+[[node]]
+id = "PencilBasis.tendsto_spectralSum_zero"
+
+[[node]]
+id = "PencilBasis.existsUnique_root"
+
+[[node]]
+id = "PencilBasis.exists_gap_of_right_limit"
+
+[[node]]
+id = "PencilBasis.existsUnique_secular_root"

@@ -5,12 +5,7 @@ Secular equations and global optimality characterizations. The secular model is 
 
 [[node]]
 id = "secularFunction"
-kind = "definition"
-desc = '''
-For λ with H+λM positive definite, let s(λ)=−(H+λM)⁻¹g and π(λ)=<s(λ),M s(λ)>. Generalized spectral data satisfy Hv_i=λ_i Mv_i and <v_i,Mv_j>=δij; λs=max(0,−λ1). Then the defining finite spectral expression is Σ_i γ_i²/(λ+λ_i)², γ_i=<v_i,g>. Require actual complete generalized eigenbasis data, with spectral representation proved from the matrix definition rather than postulated as an extra theorem assumption.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.2"
-deps = ["weightedNorm"]
 
 [[node]]
 id = "transformedSecularFunction"
@@ -23,24 +18,7 @@ deps = ["secularFunction"]
 
 [[node]]
 id = "lemma_8_2_1"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 8.2.1: Root of the secular equation
-
-[Appendix to Chapter 8, p. 475]: Let
-
-\[
-{\lambda }_{\mathrm{s}}\overset{\text{ def }}{ = }\max \left( {0, - {\lambda }_{1}}\right)
-\]
-
-where \( {\lambda }_1 \) is the leftmost eigenvalue of the pencil \( \left( {H, M}\right) \) . Let \( \pi \left( \lambda \right) \) be the secular function (8.2.4), and suppose that \( \tau \left( \lambda \right) \) is a nonzero, nonnegative, monotonically nondecreasing, continuous function on \( \left( {{\lambda }_s,\infty }\right) \) and that \( \pi \left( {\lambda }_s\right)  > \tau \left( {\lambda }_s\right)  \geq  0 \) . Then there is a unique root, say \( {\lambda }_{ * } > {\lambda }_s \) , of the secular equation (8.2.8).
-
-Documented source/OCR correction and formalization requirements: Endpoint notation correction: interpret π(λs)>τ(λs) by right limits in the extended reals when H+λs M is singular; require the right limit of π−τ strictly positive. Assume H symmetric, M positive definite, τ continuous and nondecreasing on (λs,∞), nonnegative and nonzero on that interval. Prove existence and uniqueness without assuming the secular equation has a root.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 8.2.1 (OCR Markdown line 9552)"
-deps = ["secularFunction"]
 
 [[node]]
 id = "theorem_8_2_2"
