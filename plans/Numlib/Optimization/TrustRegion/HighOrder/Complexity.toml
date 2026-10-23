@@ -1,0 +1,90 @@
+namespace = "HighOrderTrustRegion"
+
+desc = "Accuracy-independent settings and positive constants, true checked model stopping tests, endpoint radius floor, actual trial budgets, first termination and all initialized evaluation counts with uniform maximum-inverse-accuracy order bounds."
+
+[[node]]
+id = "Settings"
+
+[[node]]
+id = "Settings.withAccuracy"
+
+[[node]]
+id = "Settings.defaultParameters"
+
+[[node]]
+id = "positiveRadiusConstant"
+
+[[node]]
+id = "positiveRadiusConstant_properties"
+
+[[node]]
+id = "positiveRadiusConstant_le"
+
+[[node]]
+id = "successfulConstant"
+
+[[node]]
+id = "iterationFactor"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "CheckedOracle"
+
+[[node]]
+id = "TestsPass"
+
+[[node]]
+id = "criticality_le_of_testsPass"
+
+[[node]]
+id = "maximumInverseAccuracy"
+
+[[node]]
+id = "inverse_minimumAccuracy_pow"
+
+[[node]]
+id = "abs_log_minimumAccuracy_le"
+
+[[node]]
+id = "budget_le_maximumInverseAccuracy"
+
+[[node]]
+id = "Run.positive_model_decrease"
+
+[[node]]
+id = "Run.positive_function_decrease"
+
+[[node]]
+id = "Run.endpoint_radius_floor"
+
+[[node]]
+id = "Run.objective_eq_of_unsuccessful"
+
+[[node]]
+id = "Run.successful_card_le"
+
+[[node]]
+id = "Run.successful_radius_le"
+
+[[node]]
+id = "Run.unsuccessful_radius_le"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "Run.functionEvaluations_le"
+
+[[node]]
+id = "Run.derivativeEvaluations_le"
+
+[[node]]
+id = "exists_termination"
+
+[[node]]
+id = "evaluation_complexity"

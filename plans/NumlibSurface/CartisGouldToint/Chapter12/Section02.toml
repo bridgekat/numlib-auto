@@ -34,30 +34,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "theorem_12_2_5"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 12.2.5: qth-order complexity for the \( {\mathrm{TR}}_q \) algorithm
-
-Suppose that f.Bb and f.D1qL hold. Then there exist positive constants \( {\kappa }_{\mathrm{TRq}}^{\mathrm{A}} \) , \( {\kappa }_{\mathrm{TRq}}^B \) , and \( {\kappa }_{\mathrm{TRq}}^C \) such that, for any \( \epsilon  \in  (0,1{\rbrack }^q \) , the TRq algorithm (p. 292) requires at most
-
-\[
-\begin{gathered}{\# }_{\mathrm{{TRq}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TRq}}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{\min }^{q + 1}} + {\kappa }_{\mathrm{{TRq}}}^{B}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\mathrm{{TRq}}}^{C} \\ = \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right)\end{gathered}\tag{12.2.21}
-\]
-
-evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{TRq}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TRq}}}^{s}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{\min }^{q + 1}} + 1 = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\left( {q + 1}\right) }}\right)\tag{12.2.22}
-\]
-
-evaluations of \( {\left\{  {\nabla }_x^f\right\}  }_{j = 1}^q \) to produce an iterate \( {x}_{\epsilon } \) and an optimality radius \( {\delta }_{\epsilon } > 0 \) such that, for all \( j \in  \left\lbrack  {1 : q}\right\rbrack  ,{\phi }_{f, q}^{{\delta }_{\epsilon }}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon }^j/j \) ! for some \( {\delta }_{\epsilon } \in  (0,1\rbrack \) .
-
-Documented source/OCR correction and formalization requirements: OCR correction: the final approximate-optimality condition uses φ_(f,j), not φ_(f,q), for every j=1,…,q. Constants must be positive and independent of ε. Both function and derivative evaluation bounds in the source are required.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.5 (OCR Markdown line 12330)"
-deps = ["lemma_12_2_4"]
 
 [[node]]
 id = "theorem_12_2_6"
@@ -70,9 +47,10 @@ Theorem 12.2.6: Slow convergence of the \( \mathrm{TR}q \) algorithm
 Let \( {\epsilon }_j = j!\epsilon \) for given \( \epsilon  \in  (0,1/q!\rbrack \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) . Then the \( \mathrm{TR}q \) algorithm (p. 292) applied to minimize a function \( f \) satisfying f.Bb and f.D1qL may require \( {\epsilon }^{-\left( {q + 1}\right) } \) iterations and evaluations of \( f \) and \( {\left\{  {\nabla }_x^{j}f\right\}  }_{j = 1}^q \) to produce a point \( {x}_{\epsilon } \) such that, for all \( j \in  \left\lbrack  {1 : q}\right\rbrack  ,{\phi }_{f, j}^{{\delta }_{\epsilon }}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon }^j/j \) ! for some \( {\delta }_{\epsilon } \in  (0,1\rbrack \) .
 
 Documented source/OCR correction and formalization requirements: OCR correction: the final approximate-optimality condition uses φ_(f,j) for all j. Construct an actual bounded-below C^q objective with the indicated Lipschitz derivatives and a legal run; do not encode the desired number of iterations as a hypothesis.
+Construction corrections: the printed B.12.5 half-decrease and B.12.6 derivative jet give rho=1/2, not the claimed rho=1. To obtain all-accepted trials for arbitrary legal acceptance parameters, remove the half factor (true objective drop equals Taylor decrement), increase the initial objective value to four, and use x_k=k*epsilon. The ceiling gives epsilon^(q+1)*k_e>=1, not <=1. The Taylor derivative factorial is (q-j)!, not j!, so uniform residual constants may depend on q. Full arbitrary-order piecewise Hermite interpolation A.9.2 remains a prerequisite; a finite-jet polynomial alone does not supply the global C^q bounded-range interpolant.
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.6 (OCR Markdown line 12386)"
-deps = ["trqRun"]
+deps = ["trqRun", "theorem_A_9_2"]
 
 [[node]]
 id = "lemma_12_2_7"
@@ -365,3 +343,27 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "trqRadiusConstant"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, equations (12.2.7), (12.2.8), (12.2.14)"
+
+[[node]]
+id = "trqSettings"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.1 and Theorem 12.2.5"
+
+[[node]]
+id = "trqTestsPass"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.1 and Theorem 12.2.5"
+
+[[node]]
+id = "trqCheckedOracle"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.1 and Theorem 12.2.5"
+
+[[node]]
+id = "trqFunctionEvaluations"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.1 and Theorem 12.2.5"
+
+[[node]]
+id = "trqDerivativeEvaluations"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.1 and Theorem 12.2.5"
+
+[[node]]
+id = "trqMaximumInverseAccuracy"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm 12.2.1 and Theorem 12.2.5"

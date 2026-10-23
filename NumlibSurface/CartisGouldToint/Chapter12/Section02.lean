@@ -1,3 +1,4 @@
+import Numlib.Optimization.TrustRegion.HighOrder.Complexity
 import Numlib.Optimization.TrustRegion.HighOrder.Radius
 import Numlib.Optimization.TrustRegion.HighOrder.Trial
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
@@ -181,5 +182,82 @@ theorem lemma_12_2_4 {n q : ℕ}
       (HighOrderTrustRegion.le_maxLipschitzConstant P L a) (norm_nonneg _))
   exact ⟨h.model_decrease hf hmax hcommon hk,
     fun hs => h.function_decrease hf hmax hcommon hk hs⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The accuracy-independent settings of Algorithm 12.2.1. -/
+abbrev trqSettings (q : ℕ) := HighOrderTrustRegion.Settings q
+
+/-- The actual computed Step 1 stopping tests, before converting approximate model
+maximization into a conclusion about the true Taylor criticality measures. -/
+abbrev trqTestsPass {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : trqParameters q)
+    (x : EuclideanSpace ℝ (Fin n)) (Δ : ℝ) (d : Fin q → EuclideanSpace ℝ (Fin n)) : Prop :=
+  HighOrderTrustRegion.TestsPass f P x Δ d
+
+/-- Feasibility and the fractional actual Taylor-criticality approximation in Step 1. -/
+abbrev trqCheckedOracle {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : trqParameters q)
+    (x : EuclideanSpace ℝ (Fin n)) (Δ : ℝ) (d : Fin q → EuclideanSpace ℝ (Fin n)) : Prop :=
+  HighOrderTrustRegion.CheckedOracle f P x Δ d
+
+/-- Objective calls: initialization plus one call at every trial. -/
+abbrev trqFunctionEvaluations (N : ℕ) : ℕ := HighOrderTrustRegion.functionEvaluations N
+
+/-- Calls of each derivative order: initialization plus accepted new iterates. -/
+noncomputable abbrev trqDerivativeEvaluations {q : ℕ} (P : trqParameters q) (ρ : ℕ → ℝ) (N : ℕ) : ℕ :=
+  HighOrderTrustRegion.derivativeEvaluations P ρ N
+
+/-- The maximum reciprocal accuracy power appearing in the source complexity order. -/
+noncomputable abbrev trqMaximumInverseAccuracy {q : ℕ} (P : trqParameters q) (p : ℕ) : ℝ :=
+  HighOrderTrustRegion.maximumInverseAccuracy P p
+
+/-- **Theorem 12.2.5 (arbitrary-order complexity of TRq).** Positive constants are
+chosen before every admissible accuracy request and execution from the fixed initial
+data. The actual algorithm reaches its first passed stopping test, with the objective
+and derivative budgets (12.2.21)–(12.2.22), including initialization. Both counters
+also have explicit uniform bounds by a constant times the maximum inverse accuracy
+power, proving the stated complexity order. The returned radius
+is in `(0,1]`, and every derivative order has its required true criticality bound.
+
+For a fixed algorithmic cap `ϑ`, admissibility retains the source condition
+`min ε ≤ ϑ`; taking `ϑ = 1` permits every accuracy in `(0,1]^q`. A uniformly positive
+coefficient using `max(1,B₀)` covers even a vanishing initial derivative jet. The source's
+final criticality display has an index typo: the measure in the `j`-th inequality is
+`φ_{f,j}`, as in the stopping criterion, rather than `φ_{f,q}` for every `j`.
+The consistent-prefix and checked-oracle premises are precisely the operational trial
+and Step 1 approximation rules, with no termination or complexity field. -/
+theorem theorem_12_2_5 {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (S : trqSettings q) (x₀ : EuclideanSpace ℝ (Fin n))
+    {Δ₀ : ℝ} (hΔ : 0 < Δ₀) (hΔmax : Δ₀ ≤ S.radiusMax)
+    (hf : ContDiff ℝ q f) (L : Fin q → ℝ) (hL : ∀ a, 1 ≤ L a)
+    (hlip : ∀ (a : Fin q) y z,
+      ‖iteratedFDeriv ℝ (HighOrderTrustRegion.modelOrder a) f y -
+        iteratedFDeriv ℝ (HighOrderTrustRegion.modelOrder a) f z‖ ≤ L a * ‖y - z‖)
+    {flow : ℝ} (hlow : ∀ y, flow ≤ f y) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κB > 0, ∃ κC > 0,
+      ∀ (ε : Fin q → ℝ) (hε : ∀ a, 0 < ε a) (hε1 : ∀ a, ε a ≤ 1)
+        (hεθ : ∃ a, ε a ≤ S.theta),
+      let P := S.withAccuracy ε hε hε1 hεθ
+      ∀ (x s : ℕ → EuclideanSpace ℝ (Fin n)) (d : ℕ → Fin q → EuclideanSpace ℝ (Fin n))
+        (j : ℕ → Fin q) (Δ ρ : ℕ → ℝ), x 0 = x₀ → Δ 0 = Δ₀ →
+      (∀ N, (∀ i < N, ¬trqTestsPass f P (x i) (Δ i) (d i)) → trqRun f P x s d j Δ ρ N) →
+      (∀ k, trqTestsPass f P (x k) (Δ k) (d k) → trqCheckedOracle f P (x k) (Δ k) (d k)) →
+      ∃ K, trqTestsPass f P (x K) (Δ K) (d K) ∧ trqRun f P x s d j Δ ρ K ∧
+        (∀ i < K, ¬trqTestsPass f P (x i) (Δ i) (d i)) ∧
+        HighOrderTrustRegion.optimalityRadius P (Δ K) ∈ Set.Ioc (0 : ℝ) 1 ∧
+        (∀ a, TaylorModel.criticality f (HighOrderTrustRegion.modelOrder a) (x K)
+          (HighOrderTrustRegion.optimalityRadius P (Δ K)) ≤
+          ε a * HighOrderTrustRegion.optimalityRadius P (Δ K) ^ HighOrderTrustRegion.modelOrder a /
+            (HighOrderTrustRegion.modelOrder a).factorial) ∧
+        (trqFunctionEvaluations K : ℝ) ≤ κA * (f x₀ - flow) / trqMinimumAccuracy P ^ (q + 1) +
+          κB * |Real.log (trqMinimumAccuracy P)| + κC ∧
+        (trqDerivativeEvaluations P ρ K : ℝ) ≤
+          κS * (f x₀ - flow) / trqMinimumAccuracy P ^ (q + 1) + 1 ∧
+        (trqFunctionEvaluations K : ℝ) ≤
+          (κA * (f x₀ - flow) + κB + κC) * trqMaximumInverseAccuracy P (q + 1) ∧
+        (trqDerivativeEvaluations P ρ K : ℝ) ≤
+          (κS * (f x₀ - flow) + 1) * trqMaximumInverseAccuracy P (q + 1) :=
+  HighOrderTrustRegion.evaluation_complexity f S x₀ hΔ hΔmax hf L hL hlip hlow
 
 end CartisGouldToint
