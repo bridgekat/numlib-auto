@@ -1,7 +1,5 @@
 namespace = "HighOrderTrustRegion"
 
-desc = "Accuracy-independent settings and positive constants, true checked model stopping tests, endpoint radius floor, actual trial budgets, first termination and all initialized evaluation counts with uniform maximum-inverse-accuracy order bounds."
-
 [[node]]
 id = "Settings"
 

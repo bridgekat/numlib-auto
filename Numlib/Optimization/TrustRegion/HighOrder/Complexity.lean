@@ -128,7 +128,8 @@ theorem positiveRadiusConstant_le {q : ℕ} {f : E → ℝ} {P : Parameters q}
       radiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2 P.gamma1 L := by
   have hB := h.initialDerivativeBound_pos hN
   have hδ := (h.trials 0 hN).optimalityRadius_pos
-  have hden : 0 < 2 * (q.factorial : ℝ) * initialDerivativeBound f q P.order_pos (x 0) := by positivity
+  have hden : 0 < 2 * (q.factorial : ℝ) * initialDerivativeBound f q P.order_pos (x
+    0) := by positivity
   have hratio := div_le_div_of_nonneg_left
     (mul_nonneg h.initial_radius_pos.le (pow_nonneg hδ.le q)) hden
     (mul_le_mul_of_nonneg_left (le_max_right 1 _) (by positivity : (0 : ℝ) ≤ 2 * q.factorial))
@@ -190,7 +191,8 @@ theorem inverse_minimumAccuracy_pow {q : ℕ} (P : Parameters q) (p : ℕ) :
   have hm := minimumAccuracy_pos P
   apply le_antisymm
   · obtain ⟨a,_,ha⟩ := Finset.exists_mem_eq_inf'
-      (show (Finset.univ : Finset (Fin q)).Nonempty from ⟨⟨0,P.order_pos⟩, Finset.mem_univ _⟩) P.accuracy
+      (show (Finset.univ : Finset (Fin q)).Nonempty from ⟨⟨0,P.order_pos⟩,
+        Finset.mem_univ _⟩) P.accuracy
     have heq : minimumAccuracy P = P.accuracy a := ha
     rw [heq]
     exact Finset.le_sup' (fun b : Fin q => (1 : ℝ) / P.accuracy b ^ p) (Finset.mem_univ a)
@@ -243,7 +245,8 @@ theorem positive_model_decrease (h : Run f P x s d j Δ ρ N) (hf : ContDiff ℝ
     (hlip : ∀ (a : Fin q) y z, ‖iteratedFDeriv ℝ (modelOrder a) f y -
       iteratedFDeriv ℝ (modelOrder a) f z‖ ≤ L * ‖y - z‖)
     {k : ℕ} (hk : k < N) :
-    (P.zeta * positiveRadiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2 P.gamma1 L) ^ (q + 1) /
+    (P.zeta * positiveRadiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2
+      P.gamma1 L) ^ (q + 1) /
       q.factorial * minimumAccuracy P ^ (q + 1) ≤
         TaylorModel.decrement f (modelOrder (j k)) (x k) (s k) := by
   have hc := h.model_decrease hf hL hlip hk
@@ -260,7 +263,8 @@ theorem positive_function_decrease (h : Run f P x s d j Δ ρ N) (hf : ContDiff 
     (hlip : ∀ (a : Fin q) y z, ‖iteratedFDeriv ℝ (modelOrder a) f y -
       iteratedFDeriv ℝ (modelOrder a) f z‖ ≤ L * ‖y - z‖)
     {k : ℕ} (hk : k < N) (hs : P.eta1 ≤ ρ k) :
-    P.eta1 * (P.zeta * positiveRadiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2 P.gamma1 L) ^ (q + 1) /
+    P.eta1 * (P.zeta * positiveRadiusConstant f q P.order_pos (x 0) (Δ 0) P.theta
+      P.eta2 P.gamma1 L) ^ (q + 1) /
       q.factorial * minimumAccuracy P ^ (q + 1) ≤ f (x k) - f (x (k + 1)) := by
   have ht := h.trials k hk
   have hd := mul_le_mul_of_nonneg_left (h.positive_model_decrease hf hL hlip hk) P.eta1_pos.le
@@ -341,7 +345,8 @@ theorem successful_card_le (h : Run f P x s d j Δ ρ N) (hf : ContDiff ℝ q f)
   have hζ := P.zeta_pos
   have hη := P.eta1_pos
   have hd : 0 < P.eta1 *
-      (P.zeta * positiveRadiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2 P.gamma1 L) ^ (q + 1) /
+      (P.zeta * positiveRadiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2
+        P.gamma1 L) ^ (q + 1) /
         q.factorial * minimumAccuracy P ^ (q + 1) := by positivity
   have hb := card_successful_le_gap_div (S := {i | P.eta1 ≤ ρ i})
     (f := fun i => f (x i)) hd (hlow (x N))
@@ -398,7 +403,8 @@ theorem iterations_le (h : Run f P x s d j Δ ρ N) (hf : ContDiff ℝ q f)
   have hratio : (P.zeta * κ * ε / Δ 0) = (P.zeta * κ / Δ 0) * ε := by ring
   have hlog : |Real.log (P.zeta * κ * ε / Δ 0)| ≤
       |Real.log (P.zeta * κ / Δ 0)| + |Real.log ε| := by
-    rw [hratio, Real.log_mul (div_ne_zero (mul_ne_zero P.zeta_pos.ne' hκ.ne') h.initial_radius_pos.ne') hε.ne']
+    rw [hratio, Real.log_mul (div_ne_zero (mul_ne_zero P.zeta_pos.ne' hκ.ne')
+      h.initial_radius_pos.ne') hε.ne']
     exact abs_add_le _ _
   have hcard := mul_le_mul_of_nonneg_right (h.successful_card_le hf hL hlip hlow) hA
   have hlogs := div_le_div_of_nonneg_right hlog hD.le
@@ -503,7 +509,8 @@ theorem evaluation_complexity {q : ℕ} (f : E → ℝ) (S : Settings q) (x₀ :
   have hcommon : ∀ (a : Fin q) y z, ‖iteratedFDeriv ℝ (modelOrder a) f y -
       iteratedFDeriv ℝ (modelOrder a) f z‖ ≤ Lf * ‖y - z‖ := by
     intro a y z
-    exact (hlip a y z).trans (mul_le_mul_of_nonneg_right (le_maxLipschitzConstant P₀ L a) (norm_nonneg _))
+    exact (hlip a y z).trans (mul_le_mul_of_nonneg_right (le_maxLipschitzConstant P₀
+      L a) (norm_nonneg _))
   let κ := positiveRadiusConstant f q S.order_pos x₀ Δ₀ S.theta S.eta2 S.gamma1 Lf
   have hp := positiveRadiusConstant_properties f P₀ x₀ hΔ hLf
   have hκ : 0 < κ := hp.1
@@ -512,7 +519,8 @@ theorem evaluation_complexity {q : ℕ} (f : E → ℝ) (S : Settings q) (x₀ :
   have hlog3 : 0 ≤ Real.log S.gamma3 := Real.log_nonneg S.one_le_gamma3
   have hA : 0 < iterationFactor S.gamma2 S.gamma3 := by unfold iterationFactor; positivity
   let κS := successfulConstant q S.eta1 S.zeta κ
-  have hS : 0 < κS := div_pos (by positivity) (mul_pos S.eta1_pos (pow_pos (mul_pos S.zeta_pos hκ) _))
+  have hS : 0 < κS := div_pos (by positivity) (mul_pos S.eta1_pos (pow_pos (mul_pos
+    S.zeta_pos hκ) _))
   refine ⟨κS, hS, κS * iterationFactor S.gamma2 S.gamma3, mul_pos hS hA,
     1 / |Real.log S.gamma2|, div_pos zero_lt_one hD,
     |Real.log (S.zeta * κ / Δ₀)| / |Real.log S.gamma2| + 1, by positivity, ?_⟩

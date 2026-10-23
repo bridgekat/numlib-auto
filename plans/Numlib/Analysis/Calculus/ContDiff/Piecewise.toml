@@ -1,5 +1,3 @@
-desc = "Finite-order smooth gluing and exact iterated derivatives across a real breakpoint, followed by Lipschitz gluing with the same constant."
-
 [[node]]
 id = "hasDerivAt_piecewise_Iic"
 

@@ -32,7 +32,8 @@ theorem endpointPolynomial_zero {p : ℕ} {s : ℝ} (hs : s ≠ 0) (a b : ℕ �
       (fun x j => if x = 0 then a j / j.factorial else b j / j.factorial))
     0 (by simp) j (by simp [Multiset.count_replicate, hs, Ne.symm hs]; omega)
   rw [coeff_taylor_eq_eval_iterate_derivative_div] at h
-  simpa only [endpointPolynomial, ite_true, div_left_inj' (by positivity : (j.factorial : ℝ) ≠ 0)] using h
+  simpa only [endpointPolynomial, ite_true, div_left_inj' (by positivity : (j.factorial
+    : ℝ) ≠ 0)] using h
 
 /-- Every prescribed terminal derivative is attained at the second endpoint. -/
 theorem endpointPolynomial_right {p : ℕ} {s : ℝ} (hs : s ≠ 0) (a b : ℕ → ℝ)
@@ -44,7 +45,8 @@ theorem endpointPolynomial_right {p : ℕ} {s : ℝ} (hs : s ≠ 0) (a b : ℕ �
       (fun x j => if x = 0 then a j / j.factorial else b j / j.factorial))
     s (by simp) j (by simp [Multiset.count_replicate, hs]; omega)
   rw [coeff_taylor_eq_eval_iterate_derivative_div] at h
-  simpa only [endpointPolynomial, ite_eq_right hs, div_left_inj' (by positivity : (j.factorial : ℝ) ≠ 0)] using h
+  simpa only [endpointPolynomial, ite_eq_right hs, div_left_inj' (by positivity :
+    (j.factorial : ℝ) ≠ 0)] using h
 
 /-- The canonical endpoint polynomial has degree strictly below `2p+2`. -/
 theorem endpointPolynomial_degree_lt (p : ℕ) (s : ℝ) (a b : ℕ → ℝ) :
@@ -244,7 +246,8 @@ theorem unitResidualPolynomial_degree_lt (p : ℕ) (r : Fin (p + 1) → ℝ) :
   simp only [unitResidualPolynomial, finsetSum_coeff, coeff_smul]
   apply Finset.sum_eq_zero
   intro i _hi
-  change r i • (endpointPolynomial p 1 (fun _ => 0) (fun j => if j = i.val then 1 else 0)).coeff n = 0
+  change r i • (endpointPolynomial p 1 (fun _ => 0) (fun j => if j = i.val then 1
+    else 0)).coeff n = 0
   rw [coeff_eq_zero_of_degree_lt ((endpointPolynomial_degree_lt p 1
     (fun _ => 0) (fun j => if j = i.val then 1 else 0)).trans_le (by exact_mod_cast hn))]
   simp
@@ -255,11 +258,13 @@ theorem residualScaledPolynomial_natDegree_le (p : ℕ) (s : ℝ) (a : ℕ → �
   have hinit : (initialPolynomial p a).natDegree ≤ p := by
     apply natDegree_le_iff_coeff_eq_zero.mpr
     intro n hn
-    exact coeff_eq_zero_of_degree_lt ((initialPolynomial_degree_lt p a).trans_le (by exact_mod_cast hn))
+    exact coeff_eq_zero_of_degree_lt ((initialPolynomial_degree_lt p a).trans_le (by
+      exact_mod_cast hn))
   have hunit : (unitResidualPolynomial p r).natDegree ≤ 2 * p + 1 := by
     apply natDegree_le_iff_coeff_eq_zero.mpr
     intro n hn
-    exact coeff_eq_zero_of_degree_lt ((unitResidualPolynomial_degree_lt p r).trans_le (by exact_mod_cast hn))
+    exact coeff_eq_zero_of_degree_lt ((unitResidualPolynomial_degree_lt p r).trans_le
+      (by exact_mod_cast hn))
   apply (natDegree_add_le _ _).trans
   apply max_le
   · omega
@@ -357,7 +362,8 @@ theorem endpointPolynomial_uniform_bounds (p : ℕ) (κ : ℝ) (hκ : 0 ≤ κ) 
         (pow_le_pow_right₀ (by linarith : (1 : ℝ) ≤ 1 + κ) (by omega))
     calc
       _ ≤ |(derivative^[j] (initialPolynomial p a)).eval t| +
-          |s ^ (p + 1 - j) * (derivative^[j] (unitResidualPolynomial p r)).eval (s⁻¹ * t)| := abs_add_le _ _
+          |s ^ (p + 1 - j) * (derivative^[j] (unitResidualPolynomial p r)).eval (s⁻¹
+            * t)| := abs_add_le _ _
       _ = |(derivative^[j] (initialPolynomial p a)).eval t| +
           s ^ (p + 1 - j) * |(derivative^[j] (unitResidualPolynomial p r)).eval (s⁻¹ * t)| := by
         rw [abs_mul, abs_of_nonneg hfac]

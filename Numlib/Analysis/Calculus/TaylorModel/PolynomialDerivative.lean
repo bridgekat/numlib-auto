@@ -38,7 +38,8 @@ theorem hasFDerivAt_diagonal_iteratedFDeriv {f : E → F} {p n : ℕ} {x : E}
       (Function.update (fun _ => s) (Fin.last n) v) (Equiv.swap i (Fin.last n))
     rw [Function.update_comp_equiv] at hsym
     simpa [A, Function.comp_def] using hsym
-  rw [Finset.sum_congr rfl (fun i _ => hterm i), Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+  rw [Finset.sum_congr rfl (fun i _ => hterm i), Finset.sum_const, Finset.card_univ,
+    Fintype.card_fin]
   congr 1
   rw [iteratedFDeriv_succ_apply_right]
   simp only [Function.update_self, Fin.init_update_last]
@@ -94,7 +95,8 @@ theorem iteratedFDeriv_eval_add {j k : ℕ} {f : E → F} {x : E}
   induction j generalizing k s with
   | zero =>
     simp only [Nat.zero_add, iteratedFDeriv_zero_eq_comp, Function.comp_apply]
-    simpa using (map_eval (continuousMultilinearCurryFin0 ℝ E F).symm.toLinearIsometry.toContinuousLinearMap hf s).symm
+    simpa using (map_eval (continuousMultilinearCurryFin0 ℝ E
+      F).symm.toLinearIsometry.toContinuousLinearMap hf s).symm
   | succ j ih =>
     have hf' : ContDiffAt ℝ (k + 1 : ℕ) (iteratedFDeriv ℝ j f) x :=
       hf.iteratedFDeriv_right (by exact_mod_cast (show k + 1 + j ≤ j + 1 + k by omega))
@@ -107,7 +109,8 @@ theorem iteratedFDeriv_eval_add {j k : ℕ} {f : E → F} {x : E}
     simp only [Function.comp_apply]
     rw [heq, fderiv_eval_succ hf']
     rw [iteratedFDeriv_succ_eq_comp_left]
-    exact (map_eval (continuousMultilinearCurryLeftEquiv ℝ (fun _ : Fin (j + 1) => E) F).symm.toLinearIsometry.toContinuousLinearMap
+    exact (map_eval (continuousMultilinearCurryLeftEquiv ℝ (fun _ : Fin (j + 1) => E)
+      F).symm.toLinearIsometry.toContinuousLinearMap
       (hf'.fderiv_right (m := k) (by simp)) s).symm
 
 /-- A fixed isometric equivalence preserves differences of all derivative tensors.
@@ -122,8 +125,10 @@ theorem norm_iteratedFDeriv_sub_comp_isometryEquiv
   rw [L.toContinuousLinearEquiv.iteratedFDeriv_comp_left,
     L.toContinuousLinearEquiv.iteratedFDeriv_comp_left]
   have heq : (L.toContinuousLinearEquiv.toContinuousLinearMap).compContinuousMultilinearMap
-      (iteratedFDeriv ℝ q f x) - (L.toContinuousLinearEquiv.toContinuousLinearMap).compContinuousMultilinearMap
-      (iteratedFDeriv ℝ q f y) = L.toLinearIsometry.toContinuousLinearMap.compContinuousMultilinearMap
+      (iteratedFDeriv ℝ q f x) -
+        (L.toContinuousLinearEquiv.toContinuousLinearMap).compContinuousMultilinearMap
+      (iteratedFDeriv ℝ q f y) =
+        L.toLinearIsometry.toContinuousLinearMap.compContinuousMultilinearMap
       (iteratedFDeriv ℝ q f x - iteratedFDeriv ℝ q f y) := by
     ext v
     simp

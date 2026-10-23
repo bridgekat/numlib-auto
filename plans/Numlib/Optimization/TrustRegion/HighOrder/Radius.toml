@@ -1,7 +1,5 @@
 namespace = "HighOrderTrustRegion"
 
-desc = "Genuine finite TRq runs, exact initial Taylor-gap bound, accuracy-independent radius coefficient, derived uniform prefix radius floor and actual model/function decreases."
-
 [[node]]
 id = "sum_inv_factorial_le_two"
 

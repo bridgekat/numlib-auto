@@ -80,6 +80,7 @@ theorem plateau_finiteRun {η₁ η₂ γ₁ γ₂ γ₃ θ₁ θ₂ σ ε₁ ε
   positivity
 
 set_option maxHeartbeats 800000 in
+-- Elaborating the full existential algorithm witness requires extensive parameter substitutions.
 /-- Uniformly regular, bounded-gap objectives force the full first-order sharpness
 bound with both finite AR2 stopping tests enabled. The regularity constant and initial
 objective budget are independent of both accuracies. All three initialized counters

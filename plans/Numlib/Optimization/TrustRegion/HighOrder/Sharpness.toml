@@ -1,7 +1,5 @@
 namespace = "HighOrderTrustRegion.Sharpness"
 
-desc = "Corrected bounded Hermite jets, actual scalar Taylor models and criticality, uniform endpoint residuals, and operational finite TRq executions conditional only on actual matched derivatives. The global interpolant existence needed for source Theorem12.2.6 remains a separate prerequisite."
-
 [[node]]
 id = "length"
 

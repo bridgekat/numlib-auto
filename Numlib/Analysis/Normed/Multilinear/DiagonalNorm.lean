@@ -19,7 +19,8 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 /-- The diagonal tensor seminorm, as the supremum of absolute homogeneous evaluations on
 the closed unit ball. This is the first, diagonal definition of the symmetric tensor
 norm in (A.7); the ball formulation also covers the zero-dimensional space. -/
-noncomputable def diagonalNorm {p : ℕ} (T : ContinuousMultilinearMap ℝ (fun _ : Fin p => E) ℝ) : ℝ :=
+noncomputable def diagonalNorm {p : ℕ} (T : ContinuousMultilinearMap ℝ (fun _ : Fin
+  p => E) ℝ) : ℝ :=
   sSup ((fun v : E => |T (fun _ => v)|) '' Metric.closedBall 0 1)
 
 /-- A tensor is bounded on the diagonal unit ball by its multilinear norm. -/

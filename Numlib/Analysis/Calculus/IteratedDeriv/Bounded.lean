@@ -32,7 +32,8 @@ theorem norm_iteratedFDeriv_sub_le_of_bounded_jets
     have hcont : ContDiffOn ℝ (j + 1) f univ :=
       (hf.of_le (by exact_mod_cast hjq)).contDiffOn
     have hlip : LipschitzOnWith C (iteratedFDeriv ℝ j f) univ :=
-      (lipschitzOnWith_iteratedFDeriv_iff_norm_le isOpen_univ (convex_univ : Convex ℝ (univ : Set ℝ)) hcont).2
+      (lipschitzOnWith_iteratedFDeriv_iff_norm_le isOpen_univ (convex_univ : Convex ℝ
+        (univ : Set ℝ)) hcont).2
         (fun z _ => by
           change ‖iteratedFDeriv ℝ (j + 1) f z‖ ≤ max B L
           rw [norm_iteratedFDeriv_eq_norm_iteratedDeriv]

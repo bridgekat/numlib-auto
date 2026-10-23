@@ -214,7 +214,9 @@ theorem initial_scaledGap_le (h : Run f P x s d j Δ ρ N) (hN : 0 < N) :
   have hB := initialDerivativeBound_nonneg f P.order_pos (x 0)
   unfold scaledGap ModelDecrease.scaled
   apply (div_le_div_iff₀ (pow_pos hδ _) (pow_pos hδ _)).2
-  have hmul := mul_le_mul hb hf (by positivity : (0 : ℝ) ≤ (modelOrder (j 0)).factorial) (by positivity : (0 : ℝ) ≤ 2 * initialDerivativeBound f q P.order_pos (x 0))
+  have hmul := mul_le_mul hb hf (by positivity : (0 : ℝ) ≤ (modelOrder (j
+    0)).factorial) (by positivity : (0 : ℝ) ≤ 2 * initialDerivativeBound f q
+    P.order_pos (x 0))
   have hmul' := mul_le_mul_of_nonneg_right hmul (pow_nonneg hδ.le q)
   have hpow' := mul_le_mul_of_nonneg_left hp
     (by positivity : 0 ≤ 2 * (q.factorial : ℝ) * initialDerivativeBound f q P.order_pos (x 0))
@@ -359,7 +361,8 @@ theorem radius_lower (h : Run f P x s d j Δ ρ N) (hf : ContDiff ℝ q f)
     have hh := mul_le_of_le_one_right hfactor
       ((min_le_left P.theta
         (Δ 0 * min (Δ 0) P.theta ^ q /
-          (2 * (q.factorial : ℝ) * initialDerivativeBound f q P.order_pos (x 0)))).trans P.theta_le_one)
+          (2 * (q.factorial : ℝ) * initialDerivativeBound f q P.order_pos (x
+            0)))).trans P.theta_le_one)
     exact hh.trans_eq (by dsimp [c]; ring)
   have hstep : min (P.gamma1 * P.theta) (κ * m) ≤ P.gamma1 * min P.theta (c * m) := by
     by_cases hcθ : P.theta ≤ c * m
@@ -463,7 +466,8 @@ theorem function_decrease (h : Run f P x s d j Δ ρ N) (hf : ContDiff ℝ q f)
     (hlip : ∀ (a : Fin q) y z, ‖iteratedFDeriv ℝ (modelOrder a) f y -
       iteratedFDeriv ℝ (modelOrder a) f z‖ ≤ L * ‖y - z‖)
     {k : ℕ} (hk : k < N) (hs : P.eta1 ≤ ρ k) :
-    P.eta1 * (P.zeta * radiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2 P.gamma1 L) ^ (q + 1) /
+    P.eta1 * (P.zeta * radiusConstant f q P.order_pos (x 0) (Δ 0) P.theta P.eta2
+      P.gamma1 L) ^ (q + 1) /
       q.factorial * minimumAccuracy P ^ (q + 1) ≤ f (x k) - f (x (k + 1)) := by
   have ht := h.trials k hk
   have hd := mul_le_mul_of_nonneg_left (h.model_decrease hf hL hlip hk) P.eta1_pos.le

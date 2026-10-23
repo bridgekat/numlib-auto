@@ -50,6 +50,7 @@ theorem point_strictMono {ε : ℝ} (hε : 0 < ε) : StrictMono (point ε) := by
   intro i j hij
   exact mul_lt_mul_of_pos_right (by exact_mod_cast hij) hε
 
+/-- The grid begins at the origin. -/
 @[simp] theorem point_zero (ε : ℝ) : point ε 0 = 0 := by simp [point]
 
 /-- Each trial moves by exactly one grid spacing. -/
@@ -109,6 +110,7 @@ theorem value_succ (q : ℕ) (ε : ℝ) (K k : ℕ) :
   simp only [value, Finset.sum_range_succ]
   ring
 
+/-- The initial objective value is the fixed number four. -/
 @[simp] theorem value_zero (q : ℕ) (ε : ℝ) (K : ℕ) : value q ε K 0 = 4 := by
   simp [value]
 
@@ -223,7 +225,8 @@ theorem criticality_top_of_matches {f : ℝ → ℝ} {q K k : ℕ} {ε δ : ℝ}
       t ^ q ≤ |t| ^ q := le_trans (le_abs_self _) (by rw [abs_pow])
       _ ≤ δ ^ q := pow_le_pow_left₀ (abs_nonneg _) (by simpa [Real.norm_eq_abs] using ht) q
   · rw [← decrement_top_of_matches hq h hk (t := δ)]
-    exact TaylorModel.decrement_le_criticality f q (point ε k) (by simp [Real.norm_eq_abs, abs_of_nonneg hδ])
+    exact TaylorModel.decrement_le_criticality f q (point ε k) (by simp
+      [Real.norm_eq_abs, abs_of_nonneg hδ])
 
 /-- The actual initial Hermite polynomial for the prescribed jet is a constant
 minus one monomial. -/
@@ -308,7 +311,8 @@ theorem endpoint_residual_bound {q : ℕ} (hq : 0 < q) {ε : ℝ}
   · rw [jet_lower q ε (length q ε) (k + 1) hjp (by omega)]
     have hw := weight_mem_Icc (length_pos q hε) (Nat.le_of_lt hk)
     have hw1 : 1 ≤ weight (length q ε) k := hw.1
-    have hd : (q.descFactorial j : ℝ) ≤ q.factorial := by exact_mod_cast descFactorial_le_factorial hj
+    have hd : (q.descFactorial j : ℝ) ≤ q.factorial := by
+      exact_mod_cast descFactorial_le_factorial hj
     rw [zero_sub, abs_neg, abs_mul, abs_mul, abs_mul, abs_neg,
       abs_of_nonneg (by positivity : 0 ≤ (q.descFactorial j : ℝ)), abs_of_pos hε,
       abs_of_nonneg (by linarith : 0 ≤ weight (length q ε) k),
@@ -341,6 +345,7 @@ theorem direction_pow {q : ℕ} (hq : 0 < q) (ε : ℝ) {ζ : ℝ} (hζ : 0 ≤ 
 /-- The selected model index represents order `q`. -/
 def topIndex {q : ℕ} (hq : 0 < q) : Fin q := ⟨q - 1, by omega⟩
 
+/-- The final positive-order index represents the full criticality order. -/
 @[simp] theorem modelOrder_topIndex {q : ℕ} (hq : 0 < q) : modelOrder (topIndex hq) = q := by
   simp only [modelOrder, topIndex]
   omega
@@ -548,7 +553,8 @@ theorem uniform_data {q : ℕ} (hq : 0 < q) {ε : ℝ} (hε : 0 < ε) (hε1 : ε
       (∀ k ≤ length q ε, ∀ j ≤ q, |jet q ε (length q ε) k j| ≤ κ) ∧
       (∀ k < length q ε, ∀ j ≤ q,
         |jet q ε (length q ε) (k + 1) j -
-          (Polynomial.derivative^[j] (Hermite.initialPolynomial q (jet q ε (length q ε) k))).eval ε| ≤
+          (Polynomial.derivative^[j] (Hermite.initialPolynomial q (jet q ε (length q
+            ε) k))).eval ε| ≤
           κ * ε ^ (q - j + 1)) := by
   dsimp only
   have hκ : 4 ≤ max 4 (2 * (q.factorial : ℝ)) := le_max_left _ _

@@ -152,7 +152,8 @@ theorem LipschitzOnWith.piecewise_Iic {f g : ℝ → F} {c : ℝ} {S : Set ℝ} 
             simp only [Real.norm_eq_abs, abs_of_nonpos (sub_nonpos.mpr hx),
               abs_of_nonpos (sub_nonpos.mpr hcy), abs_of_nonpos (sub_nonpos.mpr hxy)]
             ring
-      · simpa only [piecewise_eq_of_notMem (Iic c) f g hx, piecewise_eq_of_notMem (Iic c) f g hy] using
+      · simpa only [piecewise_eq_of_notMem (Iic c) f g hx, piecewise_eq_of_notMem (Iic
+        c) f g hy] using
           hg.norm_sub_le ⟨hxS,(lt_of_not_ge hx).le⟩ ⟨hyS,hcy⟩
   apply lipschitzOnWith_iff_norm_sub_le.mpr
   intro x hx y hy

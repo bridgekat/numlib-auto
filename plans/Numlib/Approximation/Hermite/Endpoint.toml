@@ -1,7 +1,5 @@
 namespace = "Hermite"
 
-desc = "Canonical two-endpoint Hermite interpolation at arbitrary order, exact jets and degree, rescaling by normalized endpoint residuals, and uniform bounds chosen before interval and jet data."
-
 [[node]]
 id = "endpointPolynomial"
 

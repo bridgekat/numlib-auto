@@ -205,7 +205,8 @@ abbrev trqCheckedOracle {n q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ) (P 
 abbrev trqFunctionEvaluations (N : ℕ) : ℕ := HighOrderTrustRegion.functionEvaluations N
 
 /-- Calls of each derivative order: initialization plus accepted new iterates. -/
-noncomputable abbrev trqDerivativeEvaluations {q : ℕ} (P : trqParameters q) (ρ : ℕ → ℝ) (N : ℕ) : ℕ :=
+noncomputable abbrev trqDerivativeEvaluations {q : ℕ} (P : trqParameters q)
+    (ρ : ℕ → ℝ) (N : ℕ) : ℕ :=
   HighOrderTrustRegion.derivativeEvaluations P ρ N
 
 /-- The maximum reciprocal accuracy power appearing in the source complexity order. -/

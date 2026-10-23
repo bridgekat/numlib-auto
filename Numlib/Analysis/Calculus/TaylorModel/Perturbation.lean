@@ -112,4 +112,18 @@ theorem norm_ofJet_sub_eq_norm_jetDecrement_sub (A B : FormalMultilinearSeries �
     abel
   rw [he, norm_neg]
 
+/-- Tensor errors relative to the actual derivative jet control the computed
+Taylor value when the constant coefficient is evaluated exactly. No analyticity
+or differentiability beyond the genuine finite jet is required for this comparison. -/
+theorem norm_ofJet_sub_eval_le_power (A : FormalMultilinearSeries ℝ E F) (f : E → F)
+    (x s : E) {j q : ℕ} (hjq : j ≤ q) {K : ℝ} (hK : 0 ≤ K)
+    (hzero : A 0 (fun _ => 0) = f x)
+    (herr : ∀ i, 1 ≤ i → i ≤ j →
+      ‖A i - iteratedFDeriv ℝ i f x‖ ≤ K * ‖s‖ ^ (q - i + 1)) :
+    ‖ofJet A j s - eval f j x s‖ ≤ 2 * K * ‖s‖ ^ (q + 1) := by
+  change ‖ofJet A j s - ofJet (ftaylorSeries ℝ f x) j s‖ ≤ _
+  rw [norm_ofJet_sub_eq_norm_jetDecrement_sub A (ftaylorSeries ℝ f x)
+    (by simpa only [ftaylorSeries, iteratedFDeriv_zero_apply] using hzero)]
+  exact norm_jetDecrement_sub_le_power A (ftaylorSeries ℝ f x) hjq hK s herr
+
 end TaylorModel

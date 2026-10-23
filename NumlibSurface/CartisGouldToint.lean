@@ -1,4 +1,5 @@
 import NumlibSurface.CartisGouldToint.AppendixA.Section08
+import NumlibSurface.CartisGouldToint.AppendixA.Section09
 import NumlibSurface.CartisGouldToint.AppendixA.Section10
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter02
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter03
@@ -71,6 +72,15 @@ recorded on the relevant plan nodes. In particular:
 * The residual-only uniform bound in Lemma B.2.1 fails for constant polynomials
   of arbitrary height. Its counterexample and a corrected theorem with bounds
   on the initial endpoint data are formalized separately.
+* Theorem 12.2.5's all-order stopping conclusion uses the corresponding
+  `φ_{f,j}` for each order `j`; the printed repeated `φ_{f,q}` is an index typo.
+* Lemma B.8.1 needs a simple root for the stated rates. In the concave
+  increasing case the initial residuals have negative sign. Finite termination
+  is covered by keeping the root and extending subsequent error ratios by zero.
+* The unnumbered cubic Hessian after (3.3.2) is missing a factor `1/2`.
+  The corrected actual derivative preserves Lemma 3.3.8's printed bound.
+  In Theorem 3.3.9, the derivative budget is `+2`, as its proof and one part
+  of its inconsistent display state: one final successful trial and initialization.
 * The norm constant in (B.4.3), part of Lemma B.4.1, fails already in dimension two.
   It remains marked incorrect rather than being represented by a false axiom.
 

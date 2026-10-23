@@ -174,7 +174,8 @@ private theorem iteratedFDeriv_iteratedFDeriv_of_universe_le
     have heq := iteratedFDeriv_comp_isometryEquiv
       (continuousMultilinearCurryRightEquiv' ℝ j E F).symm (iteratedFDeriv ℝ j (fderiv ℝ f)) q x u
     rw [heq]
-    change iteratedFDeriv ℝ q (iteratedFDeriv ℝ j (fderiv ℝ f)) x u (Fin.init v) (v (Fin.last j)) = _
+    change iteratedFDeriv ℝ q (iteratedFDeriv ℝ j (fderiv ℝ f)) x u (Fin.init v)
+      (v (Fin.last j)) = _
     rw [ih]
     have h := iteratedFDeriv_succ_apply_right (𝕜 := ℝ) (f := f) (x := x)
       (Fin.snoc (Fin.append u (Fin.init v)) (v (Fin.last j)))
