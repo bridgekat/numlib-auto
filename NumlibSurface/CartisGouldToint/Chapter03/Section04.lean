@@ -2,6 +2,7 @@ import Numlib.Optimization.TrustRegion.Regularized.InitialBudget
 import Numlib.Optimization.Descent.LowerPoint
 import Numlib.Optimization.Regularization.InexactNewton.Step
 import Numlib.Optimization.Regularization.InexactNewton.Counting
+import Numlib.Optimization.Regularization.InexactNewton.FirstOrder
 import Numlib.Optimization.TrustRegion.Regularized.Solve
 
 /-!
@@ -447,5 +448,70 @@ theorem lemma_3_4_10 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E
   have hh := h.rejected_block_le hf hL hlip (a := i + 1) (b := j) (by omega) hj.le
     (fun k hk hjk => hconsecutive k (by omega) hjk)
   simpa only [show j - (i + 1) = j - i - 1 by omega] using hh
+
+/-- **Theorem3.4.11.** The full first-order iRN complexity statement, with
+actual first termination and initialized objective, gradient and Hessian counts.
+All constants precede the lower bound, accuracy and every execution, and the
+second-order test is explicitly disabled. -/
+theorem theorem_3_4_11 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [CompleteSpace E] (f : E → ℝ) (x₀ : E)
+    {η γ₁ γ₂ σmin σmax κ₁ κ₂ κ₃ κ₄ L : ℝ}
+    (hη : 0 < η) (_hη1 : η < 1) (hγ₁ : 1 < γ₁) (_hγ₁₂ : γ₁ ≤ γ₂)
+    (hmin : 0 < σmin) (horder : σmin ≤ σmax)
+    (_hκ₁ : 0 < κ₁) (_hκ₂ : 0 < κ₂) (hκ₃ : 0 < κ₃) (_hκ₄ : 0 < κ₄)
+    (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤
+      L * ‖y - z‖) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κB > 0, ∃ κC > 0,
+      ∀ flow : ℝ, (∀ y, flow ≤ f y) →
+      ∀ ε₁ : ℝ, 0 < ε₁ → ε₁ ≤ 1 →
+      ∀ (x s : ℕ → E) (V : ℕ → Submodule ℝ E)
+      (μ ℓ σL σU ρ : ℕ → ℝ), x 0 = x₀ →
+      (∀ N, (∀ i < N, ¬RegularizedTrustRegion.Stopped f (x i) (μ i) ε₁ ⊤) →
+        inexactRegularizedNewtonRun f x s V μ ℓ σL σU ρ η γ₁ γ₂ σmin σmax
+          κ₁ κ₂ κ₃ κ₄ ε₁ ⊤ N) →
+      ∃ K, ‖gradient f (x K)‖ ≤ ε₁ ∧
+        (∀ i < K, ε₁ < ‖gradient f (x i)‖) ∧
+        inexactRegularizedNewtonRun f x s V μ ℓ σL σU ρ η γ₁ γ₂ σmin σmax
+          κ₁ κ₂ κ₃ κ₄ ε₁ ⊤ K ∧
+        (RegularizedTrustRegion.functionEvaluations K : ℝ) ≤
+          κA * (f x₀ - flow) / ε₁ ^ (3 / 2 : ℝ) + κB ∧
+        (RegularizedTrustRegion.derivativeEvaluations ρ η K : ℝ) ≤
+          κS * (f x₀ - flow) / ε₁ ^ (3 / 2 : ℝ) + 2 ∧
+        (RegularizedTrustRegion.derivativeEvaluations ρ η K : ℝ) ≤
+          κS * (f x₀ - flow) / ε₁ ^ (3 / 2 : ℝ) + 2 := by
+  let c := InexactRegularizedNewton.firstOrderDecrease σmax γ₂ η κ₂ κ₃ L
+  let R := Real.log (InexactRegularizedNewton.upperBound σmax γ₂ η κ₂ L / σmin) /
+    Real.log γ₁
+  let A := 2 + R
+  have hc : 0 < c := InexactRegularizedNewton.firstOrderDecrease_pos
+    (hmin.trans_le horder) hη hκ₃ hL
+  have hR : 0 ≤ R := div_nonneg
+    (Real.log_nonneg ((one_le_div hmin).mpr (horder.trans (le_max_left _ _))))
+    (Real.log_pos hγ₁).le
+  have hA : 0 < A := by dsimp [A]; positivity
+  refine ⟨1 / c, by positivity, (1 / c) * A, by positivity,
+    2 * A, by positivity, 1, zero_lt_one, ?_⟩
+  intro flow hlow ε₁ _hε₁ _hε₁1 x s V μ ℓ σL σU ρ hx hprefix
+  obtain ⟨K, hstop, hK, _⟩ := InexactRegularizedNewton.exists_firstOrder_termination
+    hprefix hf hL hlip hlow
+  have hg := ((RegularizedTrustRegion.stopped_iff _ _ _ _ _).mp hstop).1
+  have hD := hK.firstOrder_successful_card_le rfl hf hL hlip hlow
+  rw [hx] at hD
+  have hD' : (RegularizedTrustRegion.derivativeEvaluations ρ η K : ℝ) ≤
+      (1 / c) * (f x₀ - flow) / ε₁ ^ (3 / 2 : ℝ) + 2 := by
+    simp only [RegularizedTrustRegion.derivativeEvaluations, Nat.cast_add, Nat.cast_one]
+    calc
+      _ ≤ (f x₀ - flow) / (c * ε₁ ^ (3 / 2 : ℝ)) + 1 + 1 :=
+        add_le_add hD le_rfl
+      _ = _ := by ring
+  refine ⟨K, hg, fun _ hi => hK.gradient_gt_of_disabled rfl hi, hK, ?_, hD', hD'⟩
+  have hF := hK.firstOrder_iterations_le rfl hf hL hlip hlow
+  rw [hx] at hF
+  simp only [RegularizedTrustRegion.functionEvaluations, Nat.cast_add, Nat.cast_one]
+  calc
+    (K : ℝ) + 1 ≤ ((f x₀ - flow) / (c * ε₁ ^ (3 / 2 : ℝ)) + 1) * A + R + 1 + 1 :=
+      add_le_add hF le_rfl
+    _ = _ := by dsimp [A]; ring
 
 end CartisGouldToint

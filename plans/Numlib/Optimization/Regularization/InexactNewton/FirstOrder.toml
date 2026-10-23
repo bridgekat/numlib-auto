@@ -1,0 +1,28 @@
+namespace = "InexactRegularizedNewton"
+
+[[node]]
+id = "firstOrderDecrease"
+
+[[node]]
+id = "firstOrderDecrease_pos"
+
+[[node]]
+id = "Run.successful_decrease"
+
+[[node]]
+id = "Run.rejected_point"
+
+[[node]]
+id = "Run.gradient_gt_of_disabled"
+
+[[node]]
+id = "Run.successful_decrease_of_next_gradient"
+
+[[node]]
+id = "Run.firstOrder_successful_card_le"
+
+[[node]]
+id = "Run.firstOrder_iterations_le"
+
+[[node]]
+id = "exists_firstOrder_termination"

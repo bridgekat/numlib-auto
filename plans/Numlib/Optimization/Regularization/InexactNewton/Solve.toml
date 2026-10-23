@@ -1,0 +1,10 @@
+namespace = "InexactRegularizedNewton"
+
+[[node]]
+id = "Step.of_stationary_psd"
+
+[[node]]
+id = "exists_exact_step"
+
+[[node]]
+id = "exists_step"
