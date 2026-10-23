@@ -1,5 +1,6 @@
 import Numlib.Optimization.HighOrder.Criticality
 import Numlib.Optimization.HighOrder.CriticalityApproximate
+import Numlib.Optimization.HighOrder.CriticalityStability
 import Numlib.Optimization.HighOrder.CriticalityLocalMin
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
@@ -13,6 +14,8 @@ as proved in the backbone. This formulation also permits radius zero.
 For Theorem 12.1.6(ii), second-order smoothness and the tolerance range from the
 approximate-minimizer definition are explicit; its first-order branch retains first-order
 smoothness. The Hessian bound is given as a quadratic form with an eigenvalue bridge.
+Theorem 12.1.8 retains the local Lipschitz neighborhood and uses the optimality radius
+`δ_j` in both tolerances; the unindexed printed `δ` denotes that same radius.
 -/
 
 namespace CartisGouldToint
@@ -127,5 +130,45 @@ theorem theorem_12_1_6 {n : ℕ}
     exact ⟨TaylorModel.curvature_ge_neg_mul_sq f x hδ hcrit,
       TaylorModel.gradient_norm_le_of_criticality_two f x hδ hε0 hε1 hcrit,
       fun _ v hv he => TaylorModel.eigenvalue_ge_neg_of_criticality_two f x hδ hcrit v hv he⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Theorem 12.1.8 (stability of approximate unconstrained minimizers).**
+A small order-`j` Taylor criticality bounds the true objective decrease nearby. For
+positive highest-derivative Lipschitz constant the guaranteed radius is
+`min δ ((j+1)ε/L)` and the tolerance doubles; for zero constant the original tolerance
+holds on the full radius ball. The Lipschitz hypothesis is local to an open ball whose
+radius exceeds `δ`. The unindexed `δ` in the printed tolerance (12.1.35) means its
+optimality radius `δ_j`, as in (12.1.34), (12.1.36) and the proof. -/
+theorem theorem_12_1_8 {n j : ℕ} (hj : 0 < j)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    (hf : ContDiff ℝ j f) {δ ε L R : ℝ}
+    (hδ : 0 < δ) (_hδ1 : δ ≤ 1) (hε : 0 < ε) (_hε1 : ε ≤ 1)
+    (hL : 0 ≤ L) (hR : δ < R)
+    (hlip : ∀ u ∈ Metric.ball x R, ∀ v ∈ Metric.ball x R,
+      ‖iteratedFDeriv ℝ j f u - iteratedFDeriv ℝ j f v‖ ≤ L * ‖u - v‖)
+    (hcrit : highOrderCriticality f j x δ ≤ ε * δ ^ j / j.factorial) :
+    (0 < L → ∀ d : EuclideanSpace ℝ (Fin n),
+      ‖d‖ ≤ min δ ((j + 1 : ℕ) * ε / L) →
+      f x - 2 * ε * δ ^ j / j.factorial ≤ f (x + d)) ∧
+    (L = 0 → ∀ d : EuclideanSpace ℝ (Fin n), ‖d‖ ≤ δ →
+      f x - ε * δ ^ j / j.factorial ≤ f (x + d)) := by
+  have hball : Metric.closedBall x δ ⊆ Metric.ball x R := fun z hz =>
+    (Metric.mem_closedBall.mp hz).trans_lt hR
+  have hlip' : ∀ u ∈ Metric.closedBall x δ, ∀ v ∈ Metric.closedBall x δ,
+      ‖iteratedFDeriv ℝ j f u - iteratedFDeriv ℝ j f v‖ ≤ L * ‖u - v‖ :=
+    fun u hu v hv => hlip u (hball hu) v (hball hv)
+  constructor
+  · intro hLpos d hd
+    apply TaylorModel.value_ge_sub_two_tolerance_of_criticality hj Metric.isOpen_ball
+      hf.contDiffOn x hδ.le hε.le hball hL hlip' hcrit (le_min_iff.mp hd).1
+    have hmul := (le_div_iff₀ hLpos).mp (le_min_iff.mp hd).2
+    nlinarith
+  · intro hLzero d hd
+    have hb := TaylorModel.value_ge_of_criticality hj Metric.isOpen_ball hf.contDiffOn x
+      hδ.le hball hL hlip' hcrit hd
+    simpa only [hLzero, zero_mul, zero_div, sub_zero] using hb
 
 end CartisGouldToint

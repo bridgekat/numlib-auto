@@ -140,31 +140,4 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "theorem_12_1_8"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 12.1.8: Stability of approximate unconstrained minimizers
-
-Suppose that \( f \) is \( j \) -times continuously differentiable and that
-
-\[
-{\phi }_{f, j}^{{\delta }_j}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j\frac{{\delta }_j^j}{j!}\tag{12.1.34}
-\]
-
-for some \( {\delta }_j \in  (0,1\rbrack \) and \( {\epsilon }_j \in  (0,1\rbrack \) . Suppose also that \( {\nabla }_x^{j}f \) is Lipschitz continuous with constant \( {L}_{f, j} \) in an open neighbourhood of a point \( {x}_{\epsilon } \) of radius larger than \( {\delta }_j \) . Then, if \( {L}_{f, j} > 0 \) ,
-
-\[
-f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - 2{\epsilon }_{j}\frac{{\delta }^{j}}{j!}\;\text{ for all }d\text{ with }\parallel d\parallel  \leq  \min \left\lbrack  {{\delta }_{j},\frac{\left( {j + 1}\right) {\epsilon }_{j}}{{L}_{f, j}}}\right\rbrack\tag{12.1.35}
-\]
-
-and, otherwise,
-
-\[
-f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - {\epsilon }_{j}\frac{{\delta }_{j}^{j}}{j!}\;\text{ for all }d\text{ with }\parallel d\parallel  \leq  {\delta }_{j}.\tag{12.1.36}
-\]
-
-Documented source/OCR correction and formalization requirements: OCR correction: the δ^j in (12.1.35) denotes δ_j^j, the original optimality radius, not ||d||^j or a new free variable. Keep the original radius in the loss bound even when the admissible displacement radius shrinks.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.8 (OCR Markdown line 12019)"
-deps = ["isApproximateHighOrderMinimizer"]
