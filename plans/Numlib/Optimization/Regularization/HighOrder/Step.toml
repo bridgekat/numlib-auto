@@ -1,0 +1,94 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "contDiffAt_normPower"
+
+[[node]]
+id = "iteratedFDeriv_model"
+
+[[node]]
+id = "fderiv_model"
+
+[[node]]
+id = "norm_first_penalty"
+
+[[node]]
+id = "norm_first_error_le"
+
+[[node]]
+id = "penalty_direction_le"
+
+[[node]]
+id = "directional_error_le"
+
+[[node]]
+id = "smallModelDirections"
+
+[[node]]
+id = "mem_smallModelDirections_iff"
+
+[[node]]
+id = "StepConditions"
+
+[[node]]
+id = "trial_gradient_le"
+
+[[node]]
+id = "trial_curvature_lower"
+
+[[node]]
+id = "trial_small_curvature_le"
+
+[[node]]
+id = "trial_third_le"
+
+[[node]]
+id = "stepConstant"
+
+[[node]]
+id = "stepConstant_pos"
+
+[[node]]
+id = "stepConstant_mul_le"
+
+[[node]]
+id = "inv_stepConstant"
+
+[[node]]
+id = "ModelTrace.step_ne_zero"
+
+[[node]]
+id = "ModelTrace.successful_point"
+
+[[node]]
+id = "ModelTrace.step_lower_first"
+
+[[node]]
+id = "ModelTrace.step_lower_second"
+
+[[node]]
+id = "ModelTrace.step_lower_third"
+
+[[node]]
+id = "ModelTrace.small_curvature_le"
+
+[[node]]
+id = "rpow_step_lower"
+
+[[node]]
+id = "decreaseConstant"
+
+[[node]]
+id = "decreaseConstant_pos"
+
+[[node]]
+id = "ModelTrace.decrease_of_step_lower"
+
+[[node]]
+id = "ModelTrace.decrease_first"
+
+[[node]]
+id = "ModelTrace.decrease_second"
+
+[[node]]
+id = "ModelTrace.decrease_third"
