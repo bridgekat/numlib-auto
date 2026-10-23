@@ -1,0 +1,13 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "exists_pos_criticality_le_mul_pow"
+
+[[node]]
+id = "tendsto_criticality_div_pow"
+
+[[node]]
+id = "criticality_one_eq_zero_of_isLocalMin"
+
+[[node]]
+id = "criticality_two_eq_zero_of_isLocalMin"

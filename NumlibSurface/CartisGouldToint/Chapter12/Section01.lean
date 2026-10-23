@@ -1,4 +1,5 @@
 import Numlib.Optimization.HighOrder.Criticality
+import Numlib.Optimization.HighOrder.CriticalityLocalMin
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -65,4 +66,26 @@ theorem theorem_12_1_7_of_radius_le {n j : ℕ} (hj : 2 ≤ j)
   have hmul := (le_div_iff₀ (show 0 < 2 * ‖iteratedFDeriv ℝ j f x‖ by positivity)).1
     (le_min_iff.mp hsmall).2
   nlinarith
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Theorem 12.1.4 (the criticality measure and local minimizers).** First- and
+second-order Taylor criticality vanish for all positive radii at a local minimum with
+the respective regularity. At every positive order `j`, the ratio of criticality to
+`δ^j` tends to zero as the positive radius `δ` tends to zero. -/
+theorem theorem_12_1_4 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x : EuclideanSpace ℝ (Fin n)} :
+    (ContDiff ℝ 1 f → IsLocalMin f x →
+      ∀ δ : ℝ, 0 < δ → highOrderCriticality f 1 x δ = 0) ∧
+    (ContDiff ℝ 2 f → IsLocalMin f x →
+      ∀ δ : ℝ, 0 < δ → highOrderCriticality f 2 x δ = 0) ∧
+    (∀ j : ℕ, 1 ≤ j → ContDiff ℝ j f → IsLocalMin f x →
+      Filter.Tendsto (fun δ : ℝ => highOrderCriticality f j x δ / δ ^ j)
+        (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)) := by
+  refine ⟨fun _ hmin δ hδ =>
+    TaylorModel.criticality_one_eq_zero_of_isLocalMin hmin hδ.le, ?_, ?_⟩
+  · exact fun hf hmin δ hδ => TaylorModel.criticality_two_eq_zero_of_isLocalMin hf hmin hδ.le
+  · exact fun j hj hf hmin => TaylorModel.tendsto_criticality_div_pow (by omega) hf hmin
+
 end CartisGouldToint
