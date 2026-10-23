@@ -1,0 +1,105 @@
+namespace = "Hermite"
+
+desc = "Global interpolation of finite real jets by polynomial intervals and two transitions to constant exterior tails. All derivatives and smoothness are actual Lean calculus objects. The common highest-derivative Lipschitz constant and conditional global lower-derivative bound are quantified before the number, locations, and values of the data. The terminal jet is derived from the preceding interval, and the exterior width is uniformly bounded whenever the initial jets and original steps are uniformly bounded."
+
+[[node]]
+id = "initialPolynomial_iteratedDeriv_top"
+
+[[node]]
+id = "polynomial_contDiff"
+
+[[node]]
+id = "taylorTail"
+
+[[node]]
+id = "taylorTail_contDiff"
+
+[[node]]
+id = "taylorTail_jet"
+
+[[node]]
+id = "taylorTail_top"
+
+[[node]]
+id = "intervalTail"
+
+[[node]]
+id = "intervalTail_contDiff"
+
+[[node]]
+id = "intervalTail_iteratedDeriv"
+
+[[node]]
+id = "intervalTail_left"
+
+[[node]]
+id = "intervalTail_right"
+
+[[node]]
+id = "intervalTail_lipschitzOn_top"
+
+[[node]]
+id = "extendRight"
+
+[[node]]
+id = "extendRight_contDiff"
+
+[[node]]
+id = "extendRight_iteratedDeriv"
+
+[[node]]
+id = "extendRight_left"
+
+[[node]]
+id = "extendRight_interval"
+
+[[node]]
+id = "extendRight_lipschitz_top"
+
+[[node]]
+id = "initialPolynomial_congr"
+
+[[node]]
+id = "initialPolynomial_of_flat"
+
+[[node]]
+id = "taylorTail_congr"
+
+[[node]]
+id = "taylorTail_of_flat"
+
+[[node]]
+id = "taylorTail_iteratedDeriv"
+
+[[node]]
+id = "extendRight_tail"
+
+[[node]]
+id = "PolynomialChain"
+
+[[node]]
+id = "PolynomialChain.exists_prefix"
+
+[[node]]
+id = "extendRight_bound_prefix"
+
+[[node]]
+id = "PolynomialChain.exists_global"
+
+[[node]]
+id = "polynomial_derivatives_bounded"
+
+[[node]]
+id = "finite_polynomial_derivatives_bounded"
+
+[[node]]
+id = "flatJet"
+
+[[node]]
+id = "initialPolynomial_flatJet"
+
+[[node]]
+id = "flatJet_residual"
+
+[[node]]
+id = "exists_uniform_interpolant"

@@ -1,8 +1,6 @@
 namespace = "CartisGouldToint"
 
-desc = '''
-Appendix A.9: Hermite interpolation with constants uniform over interval length, data count and interpolation data. Reuse Polynomial.IsJetInterpolant, Polynomial.interpolateJet and derivative conversions in Numlib.Analysis.Calculus.HermiteInterpolation. Uniform dependence means constants are quantified before s and the data, not chosen after them. Require s>0, an implicit condition in the interval construction. In A.9.2 correct the step index to k<k_e (not k<=k_e) and x in R (not R^n). Derivative factorials in (A.28) contain an inconsistent extra 1/p!; use the subsequent proof constant (p+1)(2p+1)! norm(A_p^-1)_infinity.
-'''
+# Appendix A.9: Hermite interpolation with constants uniform over interval length, data count and interpolation data. Reuse Polynomial.IsJetInterpolant, Polynomial.interpolateJet and derivative conversions in Numlib.Analysis.Calculus.HermiteInterpolation. Uniform dependence means constants are quantified before s and the data, not chosen after them. Require s>0, an implicit condition in the interval construction. In A.9.2 correct the step index to k<k_e (not k<=k_e) and x in R (not R^n). Derivative factorials in (A.28) contain an inconsistent extra 1/p!; use the subsequent proof constant (p+1)(2p+1)! norm(A_p^-1)_infinity.
 
 [[node]]
 id = "hermiteEndpointPolynomial"
@@ -12,12 +10,6 @@ id = "theorem_A_9_1"
 
 [[node]]
 id = "theorem_A_9_2"
-kind = "theorem"
-desc = '''
-For p>0 and kappa>=0 choose L>=0 uniformly in the number and location of interpolation points. Given k_e>0, strictly increasing x_0,...,x_{k_e}, real jets a_{k,j} for k<=k_e,j<=p and steps s_k=x_{k+1}-x_k, assume |a_{k+1,j}-sum_{i=j}^p a_{k,i}*s_k^(i-j)/(i-j)!|<=kappa*s_k^(p-j+1) for every k<k_e,j<=p. Then there exists f:real->real of class C^p, globally L-Lipschitz pth derivative and f^(j)(x_k)=a_{k,j}. If additionally |a_{k,j}|<=kappa for k<k_e,j<=p and s_k<=kappa, an interpolant can be chosen with every derivative of order 0,...,p uniformly bounded on real by a constant depending only on p,kappa. Endpoint jets k_e are controlled from residuals and the preceding interval. Use piecewise Hermite polynomials and two exterior transition intervals with constant tails; treat kappa=0 separately (the global polynomial extension for the first clause).
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.9.2, equation (A.32)"
-deps = ["theorem_A_9_1"]
 
 [[node]]
 id = "hermiteEndpointPolynomial_spec"
