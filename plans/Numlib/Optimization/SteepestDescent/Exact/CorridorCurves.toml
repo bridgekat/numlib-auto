@@ -1,0 +1,46 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "curvePolynomial"
+
+[[node]]
+id = "curveJet"
+
+[[node]]
+id = "curveSeed"
+
+[[node]]
+id = "curve"
+
+[[node]]
+id = "horizontal_zero"
+
+[[node]]
+id = "curvePolynomial_left"
+
+[[node]]
+id = "curvePolynomial_right"
+
+[[node]]
+id = "curveSeed_jets"
+
+[[node]]
+id = "curve_spec"
+
+[[node]]
+id = "curve_left"
+
+[[node]]
+id = "curve_right"
+
+[[node]]
+id = "curveJet_flat"
+
+[[node]]
+id = "curve_right_flat"
+
+[[node]]
+id = "residualCorridor"
+
+[[node]]
+id = "contDiff_residualCorridor"

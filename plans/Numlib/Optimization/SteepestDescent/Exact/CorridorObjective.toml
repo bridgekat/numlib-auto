@@ -1,0 +1,49 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "scalarTerminalPolynomial"
+
+[[node]]
+id = "scalarObjective"
+
+[[node]]
+id = "scalarTerminalPolynomial_left"
+
+[[node]]
+id = "scalarTerminalPolynomial_right"
+
+[[node]]
+id = "contDiff_scalarObjective"
+
+[[node]]
+id = "scalarObjective_left"
+
+[[node]]
+id = "scalarObjective_interval"
+
+[[node]]
+id = "scalarObjective_right"
+
+[[node]]
+id = "scalarTerminalPolynomial_uniform_bound"
+
+[[node]]
+id = "curve_scalar_left"
+
+[[node]]
+id = "scalarObjective_bounded_below"
+
+[[node]]
+id = "profile_bounded"
+
+[[node]]
+id = "residualCorridor_bounded"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "contDiff_objective"
+
+[[node]]
+id = "objective_bounded_below"

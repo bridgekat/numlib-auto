@@ -1,4 +1,6 @@
 import Numlib.Approximation.Hermite.Quintic
+import Numlib.Optimization.SteepestDescent.Exact.CorridorObjective
+import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
 # Cartis–Gould–Toint, Appendix B.2: quintic Hermite interpolation
@@ -95,5 +97,33 @@ theorem quinticHermite_residual_only_bound_false {κ : ℝ} (hκ : 0 ≤ κ) :
   rw [abs_of_pos (by positivity : 0 < |K| + 1)] at h
   linarith [le_abs_self K]
 
+
+/-- Primitive data for the Appendix B.2 construction, using the book's global
+integer-floor convention for the inverse-square horizon. The actual smooth curves
+and corridor objective are constructed from these primitive data. -/
+noncomputable def sdexCounterexampleData (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1) :
+    ExactSteepestDescent.Corridor.Parameters :=
+  ExactSteepestDescent.Corridor.Parameters.ofAccuracy ε hε hε1
+
+/-- The actual Euclidean objective (B.2.24), with the genuine piecewise quintic
+corridor and a smooth bounded terminal extension beyond the final source iterate. -/
+noncomputable def sdexCounterexample (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1)
+    (z : EuclideanSpace ℝ (Fin 2)) : ℝ :=
+  ExactSteepestDescent.Corridor.objective (sdexCounterexampleData ε hε hε1) (z 0, z 1)
+
+/-- The actual Appendix B.2 objective is globally twice continuously differentiable. -/
+theorem contDiff_sdexCounterexample (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1) :
+    ContDiff ℝ 2 (sdexCounterexample ε hε hε1) := by
+  exact (ExactSteepestDescent.Corridor.contDiff_objective _).comp
+    ((EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2)).contDiff.prodMk
+      (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 2)).contDiff)
+
+/-- Lemma B.2.4: the actual source corridor objective is uniformly bounded below
+on the whole Euclidean plane. The lower bound is chosen before the accuracy,
+including the left linear continuation and the bounded smooth right extension. -/
+theorem lemma_B_2_4 : ∃ B > 0, ∀ (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1),
+    ∀ z : EuclideanSpace ℝ (Fin 2), -B ≤ sdexCounterexample ε hε hε1 z := by
+  obtain ⟨B,hB,H⟩ := ExactSteepestDescent.Corridor.objective_bounded_below
+  exact ⟨B,hB,fun ε hε hε1 z => H (sdexCounterexampleData ε hε hε1) (z 0, z 1)⟩
 
 end CartisGouldToint

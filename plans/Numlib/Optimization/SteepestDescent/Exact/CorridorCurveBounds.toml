@@ -1,0 +1,28 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "smoothStep_mem"
+
+[[node]]
+id = "widthPolynomial_mem"
+
+[[node]]
+id = "initialPolynomial_two"
+
+[[node]]
+id = "curveJet_abs_le"
+
+[[node]]
+id = "curvePolynomial_residual"
+
+[[node]]
+id = "curvePolynomial_uniform_bounds"
+
+[[node]]
+id = "curve_width_mem"
+
+[[node]]
+id = "curve_uniform_bounds"
+
+[[node]]
+id = "curve_flat_derivatives_bounded"

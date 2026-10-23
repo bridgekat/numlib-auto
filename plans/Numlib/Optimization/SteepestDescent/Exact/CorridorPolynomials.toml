@@ -1,0 +1,61 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "smoothStep"
+
+[[node]]
+id = "slopeCorrection"
+
+[[node]]
+id = "widthPolynomial"
+
+[[node]]
+id = "centerPolynomial"
+
+[[node]]
+id = "scalarPolynomial"
+
+[[node]]
+id = "widthJet"
+
+[[node]]
+id = "centerJet"
+
+[[node]]
+id = "scalarJet"
+
+[[node]]
+id = "widthPolynomial_left"
+
+[[node]]
+id = "centerPolynomial_left"
+
+[[node]]
+id = "scalarPolynomial_left"
+
+[[node]]
+id = "widthPolynomial_right"
+
+[[node]]
+id = "centerPolynomial_right"
+
+[[node]]
+id = "scalarPolynomial_right"
+
+[[node]]
+id = "widthPolynomial_degree"
+
+[[node]]
+id = "centerPolynomial_degree"
+
+[[node]]
+id = "scalarPolynomial_degree"
+
+[[node]]
+id = "widthPolynomial_eq_endpoint"
+
+[[node]]
+id = "centerPolynomial_eq_endpoint"
+
+[[node]]
+id = "scalarPolynomial_eq_endpoint"

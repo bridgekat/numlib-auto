@@ -17,12 +17,6 @@ wrong = "The residual-only bound is false: endpoint data (M,0,0,M,0,0) give p(t)
 
 [[node]]
 id = "sdexCounterexampleData"
-kind = "definition"
-desc = '''
-For epsilon in (0,1] and the positive natural horizon N=floor(epsilon^(-2)) under the book global rounding convention, define omega_k=epsilon*(N-k)/N for k<=N; x0=y0=0, x_{k+1}=x_k+epsilon+omega_k, y_{k+1}=y_k+(-1)^k*(epsilon+omega_k). Define f1 from endpoint f1(x0)=4, decreases (epsilon+omega_k)^2, slopes -(epsilon+omega_k), zero second derivatives. Corridor ylow,yup is constant on alternating intervals, connected by quintic h(t)=10t^3-15t^4+6t^5 using (B.2.13),(B.2.14). Define delta=yup-ylow and ymid=(ylow+yup)/2. Define f2=(y-ymid)^2 in corridor, 8delta^2 outside its unit enlargement, with quintic connectors (B.2.19),(B.2.20). For x>=0 set fSDEX=(f1+f2)/sqrt(2); for x<0 use the linear f1 extension in (B.2.24). Supply explicit bounded C^2 right-end extension, not an assumption of boundedness/Lipschitz continuity.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, equations (B.2.4)--(B.2.25)"
-deps = ["quinticHermite"]
 
 [[node]]
 id = "lemma_B_2_2"
@@ -56,12 +50,6 @@ deps = ["sdexCounterexampleData", "lemma_B_2_1_corrected"]
 
 [[node]]
 id = "lemma_B_2_4"
-kind = "theorem"
-desc = '''
-For fSDEX from sdexCounterexampleData there exists a real lower bound m with m<=fSDEX z for every z in real^2. Derive it from the f1 interpolation bounds, bounded f2 transition strips and nonnegative corridor/exterior values; do not include the desired bound in the construction data. If the construction permits constants uniform in epsilon,N, expose that stronger bound.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.4"
-deps = ["sdexCounterexampleData", "lemma_B_2_3"]
 
 [[node]]
 id = "lemma_B_2_5"
@@ -92,3 +80,10 @@ id = "quinticHermite_constant"
 
 [[node]]
 id = "quinticHermite_residual_only_bound_false"
+
+
+[[node]]
+id = "sdexCounterexample"
+
+[[node]]
+id = "contDiff_sdexCounterexample"

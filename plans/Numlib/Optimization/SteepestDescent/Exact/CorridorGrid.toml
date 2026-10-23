@@ -71,3 +71,27 @@ id = "amplitude_horizon"
 
 [[node]]
 id = "amplitude_gt_accuracy"
+
+[[node]]
+id = "amplitude_zero"
+
+[[node]]
+id = "centerValue_formula"
+
+[[node]]
+id = "centerValue_mem"
+
+[[node]]
+id = "widthIncrement_le_two_mul_cube"
+
+[[node]]
+id = "widthIncrement_le_two_mul_amplitude_cube"
+
+[[node]]
+id = "roundedHorizon"
+
+[[node]]
+id = "roundedHorizon_eq_floor_rpow"
+
+[[node]]
+id = "Parameters.ofAccuracy"
