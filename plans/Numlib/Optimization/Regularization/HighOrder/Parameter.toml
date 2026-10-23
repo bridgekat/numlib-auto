@@ -1,0 +1,64 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "model_eq"
+
+[[node]]
+id = "model_zero"
+
+[[node]]
+id = "penalty_le_decrement"
+
+[[node]]
+id = "penalty_lt_decrement"
+
+[[node]]
+id = "decrement_pos"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "ratio_eq"
+
+[[node]]
+id = "ratio_error_eq"
+
+[[node]]
+id = "value_error_le"
+
+[[node]]
+id = "ratio_error_le"
+
+[[node]]
+id = "very_successful"
+
+[[node]]
+id = "ModelTrace"
+
+[[node]]
+id = "ModelTrace.restrict"
+
+[[node]]
+id = "ModelTrace.model_decrease"
+
+[[node]]
+id = "ModelTrace.denominator_pos"
+
+[[node]]
+id = "ModelTrace.ratio_error_le"
+
+[[node]]
+id = "ModelTrace.very_successful"
+
+[[node]]
+id = "ModelTrace.next_le_of_large"
+
+[[node]]
+id = "ModelTrace.parameter_le"
+
+[[node]]
+id = "ModelTrace.successful_decrease"

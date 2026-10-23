@@ -29,8 +29,10 @@ theorem exists_slow_objective {q : ℕ} (hq : 0 < q) :
           (∀ a, P.accuracy a = ((modelOrder a).factorial : ℝ) * ε) →
           Run f P (point ε) (fun _ => ε) (fun _ _ => direction q ε P.zeta)
             (fun _ => topIndex hq) (fun _ => ε) (fun _ => 1) (length q ε) ∧
-          (∀ k ≤ length q ε, CheckedOracle f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
-          (∀ k < length q ε, ¬TestsPass f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
+          (∀ k ≤ length q ε,
+            CheckedOracle f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
+          (∀ k < length q ε,
+            ¬TestsPass f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
           TestsPass f P (point ε (length q ε)) ε (fun _ => direction q ε P.zeta) ∧
           (∀ k < length q ε, ∀ δ > 0,
             ¬∀ a, TaylorModel.criticality f (modelOrder a) (point ε k) δ ≤
@@ -57,7 +59,8 @@ theorem exists_slow_objective {q : ℕ} (hq : 0 < q) :
     ⟨fun k hk j hj => hjets k hk.le j hj,
       fun k _ => by simpa only [point_succ, add_sub_cancel_left] using hstep⟩
   have hmatch : MatchesJets f q ε (length q ε) := hjet
-  have hvalue : f 0 = 4 := by simpa only [point_zero, value_zero] using hmatch.value_eq (Nat.zero_le _)
+  have hvalue : f 0 = 4 := by
+    simpa only [point_zero, value_zero] using hmatch.value_eq (Nat.zero_le _)
   have hglob := norm_iteratedFDeriv_sub_le_of_bounded_jets hf hB.le
     (fun j hj y => by simpa only [Real.norm_eq_abs] using hbounded j hj y)
     (fun y z => hLip.norm_sub_le y z)
@@ -102,8 +105,10 @@ theorem exists_slow_objective_for_settings {q : ℕ} (hq : 0 < q)
         (∀ y, -B ≤ f y) ∧ f 0 = 4 ∧ f 0 - (-B) = 4 + B ∧
           Run f P (point ε) (fun _ => ε) (fun _ _ => direction q ε P.zeta)
             (fun _ => topIndex hq) (fun _ => ε) (fun _ => 1) (length q ε) ∧
-          (∀ k ≤ length q ε, CheckedOracle f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
-          (∀ k < length q ε, ¬TestsPass f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
+          (∀ k ≤ length q ε,
+            CheckedOracle f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
+          (∀ k < length q ε,
+            ¬TestsPass f P (point ε k) ε (fun _ => direction q ε P.zeta)) ∧
           TestsPass f P (point ε (length q ε)) ε (fun _ => direction q ε P.zeta) ∧
           (∀ k < length q ε, ∀ δ > 0,
             ¬∀ a, TaylorModel.criticality f (modelOrder a) (point ε k) δ ≤

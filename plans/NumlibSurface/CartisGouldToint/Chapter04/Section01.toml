@@ -302,43 +302,10 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_4_1_1"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 4.1.1: Decrease in the pth-degree Taylor-series model
-
-Suppose that \( {m}_k\left( s\right) \) is defined by (4.1.2) and that \( {m}_k\left( s\right)  \leq  {m}_k\left( 0\right) \) . Then
-
-\[
-{T}_{f, p}\left( {{x}_k,0}\right)  - {T}_{f, p}\left( {{x}_k,{s}_k}\right)  \geq  \frac{{\sigma }_k}{\left( {p + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + 1}.\tag{4.1.18}
-\]
-
-Referenced equation payloads:
-
-Equation (4.1.2):
-\[
-{m}_k\left( s\right)  = {T}_{f, p}\left( {{x}_k, s}\right)  + \frac{{\sigma }_k}{\left( {p + 1}\right) !}\parallel s{\parallel }^{p + 1}.\tag{4.1.2}
-\]
-'''
-deps = ["taylorModel", "arpRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.1.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4672)"
 
 [[node]]
 id = "lemma_4_1_2"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 4.1.2: Upper bound on the regularization parameter
-
-Suppose that f.DpL holds. Then, for all \( k \geq  0 \) , the ARp algorithm ensures that
-
-\[
-{\sigma }_{k} \leq  {\sigma }_{\max }\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},\frac{{\gamma }_{3}{L}_{f, p}}{1 - {\eta }_{2}}}\right\rbrack  .\tag{4.1.19}
-\]
-'''
-deps = ["taylorModel", "arpRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 4.1.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4692)"
 
 [[node]]
@@ -503,3 +470,11 @@ iterations and evaluations of \( f \) and its derivatives of order 1 to \( p \) 
 '''
 deps = ["theorem_3_2_2", "theorem_2_2_3", "theorem_2_3_8", "theorem_4_1_5", "taylorModel", "arpRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 4.1.6 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4988)"
+
+[[node]]
+id = "arpModel"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm4.1.1 and equation(4.1.2)"
+
+[[node]]
+id = "arpModelTrace"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Algorithm4.1.1 and equation(4.1.2)"
