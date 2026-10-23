@@ -1,0 +1,30 @@
+namespace = "CartisGouldToint"
+
+desc = '''
+Appendix B, Chapter 8: Newton/secant convergence and transformed secular functions. Use existing Numlib.Nonlinear.Newton and Secant plus scalar convex derivative inequalities; do not duplicate their general iteration interfaces. B.8.1 requires a simple root for the stated rates and a stopping convention after finite termination. B.8.2 requires a removable-value definition at beta=0. These are substantive clarifications of the source.
+'''
+
+[[node]]
+id = "lemma_B_8_1"
+kind = "theorem"
+desc = '''
+Corrected version: theta C^1 on a neighborhood of closed interval I, convex and strictly decreasing on I, with theta(lambda*)=0 and theta prime(lambda*)<0. For lambda0 in I with theta(lambda0)>0, stopped Newton iteration lambda_{j+1}=lambda_j-theta(lambda_j)/theta prime(lambda_j), keeping lambda* once reached, stays in [lambda0,lambda*], is monotone increasing, and converges to lambda*. With gamma=1-theta prime(lambda*)/theta prime(lambda0), 0<=gamma<1 and errors e_{j+1}<=gamma*e_j; unless finitely terminated, e_{j+1}/e_j tends to 0. If theta prime is Lipschitz near root, eventually e_{j+1}<=C e_j^2 for some C. For lambda0<lambda1 in I with both theta values positive, stopped secant iteration (B.8.2) has the same interval invariance, monotonicity, global gamma bound for j>=1 and eventual superlinear convergence. Concave strictly increasing case follows by replacing theta by -theta, hence requires theta(lambda0)<0 (and theta(lambda1)<0), not the positive sign printed in source. Without the added nonzero root derivative the source rates fail for theta(lambda)=-lambda^3 on [-1,0], whose Newton ratio is 2/3.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.8.1, equations (B.8.1)--(B.8.6)"
+
+[[node]]
+id = "transformedSecularStep"
+kind = "definition"
+desc = '''
+For mu>0 and A>0 define transformedSecularStep A mu beta = A*(1-mu^beta)/beta for beta!=0, and = -A*Real.log(mu) for beta=0. This is the continuous extension of (B.8.7); raw division at beta=0 would incorrectly make the step zero. In secular applications A=-pi(lambda_c)/pi prime(lambda_c)>0 and mu=Delta^2/pi(lambda_c)>0.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.8, equation (B.8.7)"
+
+[[node]]
+id = "lemma_B_8_2"
+kind = "theorem"
+desc = '''
+For every A>0 and mu>0, beta->transformedSecularStep A mu beta is monotone nonincreasing on real, including its continuous value at zero. Consequently, for a differentiable secular function pi from (8.2.4), lambda_c>lambda_s, Delta>0, pi(lambda_c)>0 and pi prime(lambda_c)<0, the Newton step for Psi_beta(lambda)=pi(lambda)^beta-Delta^(2beta) is A*(1-mu^beta)/beta when beta!=0, where A=-pi/pi prime at lambda_c and mu=Delta^2/pi(lambda_c), and these steps decrease with beta. Do not need lambda_c>lambda*; source lambda_s is the spectral pole, distinct from root lambda*. Prove scalar monotonicity by the exponential tangent inequality or integral representation, retaining the continuous beta=0 logarithmic transformation.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.8.2, equation (B.8.7)"
+deps = ["transformedSecularStep"]

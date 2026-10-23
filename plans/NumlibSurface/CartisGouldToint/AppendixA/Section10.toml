@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint"
+
+desc = '''
+Appendix A.10: elementary factorial series estimates, a self-contained initial proof target. Use finite sums over Finset.Icc; indices are natural numbers and all factorials cast to real. Prove a reusable factorial/geometric majorant or use the existing exponential power series estimates. The source proof via exp(delta)<=1+2delta on [0,1] is valid. Equations (A.34)--(A.36) are unnumbered consequences of the numbered lemma and may be included as helper corollaries.
+'''
+
+[[node]]
+id = "lemma_A_10_1"
+kind = "theorem"
+desc = '''
+For delta:real with 0<=delta<=1, and natural j<=p, simultaneously prove sum_{ell=j}^p delta^(ell-j)/(ell-j)! <= 1+2*delta and sum_{ell=j+1}^{p+1} delta^ell/ell! <= 2*delta^(j+1)/j!, equation (A.33). Include delta=0, p=j and j=0 without dividing by delta. A useful backbone estimate is sum_{i=1}^m delta^i/i!<=2*delta; the second estimate follows from (ell-j)!*j!<=ell! and reindexing.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma A.10.1, equation (A.33)"

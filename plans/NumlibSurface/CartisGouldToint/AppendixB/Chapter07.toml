@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint"
+
+desc = '''
+Appendix B, Chapter 7: two-variable trust-region lower bound. The sole new numbered result is B.7.1. Prove it directly using nonnegative square-root inequalities rather than reproducing the source KKT case analysis; express global minimization as a feasible point and a universal inequality over the disk.
+'''
+
+[[node]]
+id = "lemma_B_7_1"
+kind = "theorem"
+desc = '''
+For real 0<omega<epsilon, let psi(f,c)=-f+sqrt(epsilon^2-c^2) on the disk f^2+c^2<=omega^2. Then (omega,0) is feasible, psi(omega,0)=epsilon-omega, and for every feasible real f,c, epsilon-omega<=psi(f,c). Equivalently the minimum is epsilon-omega and is attained at (omega,0). The square root radicand is positive throughout the disk from omega<epsilon.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.7.1, equation (B.7.1)"

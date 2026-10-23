@@ -1,0 +1,31 @@
+namespace = "CartisGouldToint"
+
+desc = '''
+Appendix A.6: tensor notation required by the derivative and optimality estimates. Use Mathlib ContinuousMultilinearMap and iteratedFDeriv rather than a second array calculus. Tensor operator norm is the existing multilinear-map norm. The diagonal and full operator norm equality (A.7) is a theorem for symmetric forms over real Hilbert spaces, not a definition. No numbered theorem/definition appears in A.1--A.7. Include these unnumbered definitions because subsequent numbered results need them.
+'''
+
+[[node]]
+id = "tensorDiagonal"
+kind = "definition"
+desc = '''
+For a continuous p-multilinear real form T on Euclidean n-space, define tensorDiagonal T v = T (fun _ => v), the diagonal contraction T[v]^p of (A.6). Handle order zero using the unique empty tuple.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.6, equation (A.6)"
+
+[[node]]
+id = "tensorPKernel"
+kind = "definition"
+desc = '''
+For a continuous p-multilinear real form T, define tensorPKernel T = {v | tensorDiagonal T v = 0}, matching (A.8). This is a set, not in general a linear subspace (the quadratic form v1*v2 is the source counterexample).
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.6, equation (A.8)"
+deps = ["tensorDiagonal"]
+
+[[node]]
+id = "tensor_norm_eq_diagonal_sup"
+kind = "theorem"
+desc = '''
+For n>0 and a symmetric continuous p-multilinear real form T on Euclidean n-space, its operator norm equals the supremum of |T[v]^p| over unit vectors v, as in the two maxima of (A.7). Prove norm equality using symmetry and the real Hilbert structure; do not assume it or redefine the full norm to be the diagonal supremum. Order zero is interpreted as the scalar absolute value.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.6, equation (A.7)"
+deps = ["tensorDiagonal"]

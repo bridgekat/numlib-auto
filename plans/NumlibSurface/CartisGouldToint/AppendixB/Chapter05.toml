@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint"
+
+desc = '''
+Appendix B, Chapter 5: positivity of the residual exponents used in high-order least-squares complexity. Exponent definitions belong to Chapter 5; retain explicit formulas locally in the statement to avoid a dependency on an assumed positivity condition. The source repeats iota_1 as the third symbol in its introductory list; correct it to iota_3.
+'''
+
+[[node]]
+id = "lemma_B_5_1"
+kind = "theorem"
+desc = '''
+For natural i and positive natural p define iota1(p,ell,i)=((2^i-1):real)/2^i-(ell-1)/p; iota2=((2^i-1):real)/2^i-2*(ell-1)/(p-1); iota3=((2^i-1):real)/2^i-3*(ell-1)/(p-2), with p,ell interpreted as real before subtraction. Prove: if (i:real)>Real.log(p)/Real.log(2), then iota1(p,p,i)>0; if p>0 is divisible by 2 and i>log(p-1)/log(2), then iota2(p,p/2,i)>0; if p>0 is divisible by 3 and i>log(p-2)/log(2), then iota3(p,p/3,i)>0. In the last two formulas ell is the exact integer quotient cast to real. Use equivalence to 2^i>p, p-1 or p-2 and algebra; denominators positive follow from divisibility.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.5.1; equations (5.1.21),(5.1.23),(5.1.25)"

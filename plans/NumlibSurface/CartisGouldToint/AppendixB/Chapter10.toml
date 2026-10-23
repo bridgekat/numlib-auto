@@ -1,0 +1,13 @@
+namespace = "CartisGouldToint"
+
+desc = '''
+Appendix B, Chapter 10: inverse decay for symmetric positive-definite tridiagonal matrices. Reuse Matrix.PosDef, the spectral theorem, operator norm and existing Chebyshev polynomial material. The proof should factor a general banded inverse approximation estimate and then instantiate bandwidth one. Distances of indices are natural absolute differences; diagonal exponent zero uses 0^0=1 when condition number is one.
+'''
+
+[[node]]
+id = "lemma_B_10_1"
+kind = "theorem"
+desc = '''
+Let m>0 and T be a real symmetric positive-definite m by m matrix with T_ij=0 whenever the natural absolute difference of i,j exceeds one. Let lambda_min>0 and lambda_max be its extremal eigenvalues and kappa=lambda_max/lambda_min>=1. For every i,j in Fin m prove |(T^-1)_ij|<=2/lambda_min*((sqrt(kappa)-1)/(sqrt(kappa)+1))^(abs(i.val-j.val)). The inverse is the ordinary nonsingular matrix inverse. Include kappa=1 and off-diagonal zeros rather than assuming a positive decay factor.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.10.1"

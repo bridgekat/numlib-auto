@@ -1,0 +1,76 @@
+namespace = "CartisGouldToint"
+
+desc = '''
+Appendix B, Chapter 2: six numbered technical lemmas supporting the exact-linesearch steepest-descent lower-bound example. These are new results; the appendix proof of Theorem 2.2.5 is not a second numbered result. Use explicit piecewise quintic Hermite constructions, with a shared source-faithful data structure only for primitive parameters and formulas, never for the conclusions. The polynomial bound in B.2.1 requires bounded initial jets in addition to bounded residuals; this necessary correction is documented in its node. B.2.2 also requires an integer-compatible iteration count. The piecewise formula must be extended past the last iterate in a bounded C^2 manner as in A.9.2; do not continue omega_k linearly indefinitely.
+'''
+
+[[node]]
+id = "quinticHermite"
+kind = "definition"
+desc = '''
+For endpoint data f0,g0,H0,f1,g1,H1:real let r0=f1-f0-g0-H0/2, r1=g1-g0-H0,r2=H1-H0. Define a real polynomial with coefficients c0=f0,c1=g0,c2=H0/2,c3=10r0-4r1+r2/2,c4=-15r0+7r1-r2,c5=6r0-3r1+r2/2. Provide polynomial and evaluation-function interfaces.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, equations (B.2.1),(B.2.2)"
+
+[[node]]
+id = "lemma_B_2_1"
+kind = "theorem"
+desc = '''
+For any six real endpoint values, quinticHermite has degree <=5 and its values, first and second derivatives at 0 are f0,g0,H0 and at 1 are f1,g1,H1. Its coefficients satisfy exactly (B.2.1),(B.2.2). Correct the final bound: for every kappa>=1 there exists K>0, chosen before the data, such that if |r_i|<=kappa for i=0,1,2 AND |f0|,|g0|,|H0|<=kappa, then |p^(i)(t)|<=K for every i<=2,t in [0,1]. The capitalized extra hypothesis is necessary: the original residual-only assertion fails for p(t)=M constant with arbitrarily large M and zero residuals.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.1, equations (B.2.1)--(B.2.3)"
+deps = ["quinticHermite"]
+
+[[node]]
+id = "sdexCounterexampleData"
+kind = "definition"
+desc = '''
+For epsilon in (0,1] and a positive integer N with (N:real)=epsilon^(-2), define omega_k=epsilon*(N-k)/N for k<=N; x0=y0=0, x_{k+1}=x_k+epsilon+omega_k, y_{k+1}=y_k+(-1)^k*(epsilon+omega_k). Define f1 from endpoint f1(x0)=4, decreases (epsilon+omega_k)^2, slopes -(epsilon+omega_k), zero second derivatives. Corridor ylow,yup is constant on alternating intervals, connected by quintic h(t)=10t^3-15t^4+6t^5 using (B.2.13),(B.2.14). Define delta=yup-ylow and ymid=(ylow+yup)/2. Define f2=(y-ymid)^2 in corridor, 8delta^2 outside its unit enlargement, with quintic connectors (B.2.19),(B.2.20). For x>=0 set fSDEX=(f1+f2)/sqrt(2); for x<0 use the linear f1 extension in (B.2.24). Supply explicit bounded C^2 right-end extension, not an assumption of boundedness/Lipschitz continuity.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, equations (B.2.4)--(B.2.25)"
+deps = ["quinticHermite"]
+
+[[node]]
+id = "lemma_B_2_2"
+kind = "theorem"
+desc = '''
+Corrected integer-compatible version: for every positive natural N and epsilon in (0,1] with (N:real)=epsilon^(-2), the explicitly constructed fSDEX and starting point (0,0) admit prescribed positive steepest-descent steps whose first iterate with gradient norm<=epsilon has index exactly N. Prove norm(gradient fSDEX(x_k,y_k))=epsilon+omega_k for k<=N, >epsilon for k<N and =epsilon at N; identify the prescribed positive step from (B.2.25). The original statement for every real epsilon with exactly epsilon^(-2) iterations is impossible when epsilon^(-2) is not integral. Any later all-epsilon formulation must explicitly derive and state its integer rounding rather than casting a real iteration count to natural.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.2"
+deps = ["sdexCounterexampleData"]
+
+[[node]]
+id = "lemma_B_2_3"
+kind = "theorem"
+desc = '''
+For the f2,ylow,yup from sdexCounterexampleData there exists M>=0, uniform in epsilon,N, such that for every x>=0 and y in [ylow(x)-1,ylow(x)] union [yup(x),yup(x)+1], the absolute values of f2, partial_x f2, partial_y f2, partial_xx f2, partial_yy f2, partial_xy f2 are all <=M. Derive coefficient bounds and their x derivatives from the explicit formulas, delta<=2 and (B.2.26); include join boundaries by C^2 matching.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.3"
+deps = ["sdexCounterexampleData", "lemma_B_2_1"]
+
+[[node]]
+id = "lemma_B_2_4"
+kind = "theorem"
+desc = '''
+For fSDEX from sdexCounterexampleData there exists a real lower bound m with m<=fSDEX z for every z in real^2. Derive it from the f1 interpolation bounds, bounded f2 transition strips and nonnegative corridor/exterior values; do not include the desired bound in the construction data. If the construction permits constants uniform in epsilon,N, expose that stronger bound.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.4"
+deps = ["sdexCounterexampleData", "lemma_B_2_3"]
+
+[[node]]
+id = "lemma_B_2_5"
+kind = "theorem"
+desc = '''
+For the explicit fSDEX construction there exists L>=0 such that for every z,w in real^2, norm(gradient fSDEX z-gradient fSDEX w)<=L*norm(z-w). Prove the global C^2 function has bounded Hessian by the three y regions: central corridor using (B.2.28)--(B.2.31), connector strips using B.2.3 and exterior 8delta^2 using B.2.26, plus the x<0 extension. Constants can be chosen independently of epsilon,N.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.5"
+deps = ["sdexCounterexampleData", "lemma_B_2_3", "theorem_A_8_5"]
+
+[[node]]
+id = "lemma_B_2_6"
+kind = "theorem"
+desc = '''
+For every k<N in sdexCounterexampleData, the prescribed positive step reaches (x_{k+1},y_{k+1}), the first local minimizer of fSDEX along the ray from (x_k,y_k) in direction -gradient fSDEX(x_k,y_k). State a positive step parameter alpha_k, strict negativity of the one-variable derivative for 0<=alpha<alpha_k, derivative zero at alpha_k, and local minimality at alpha_k. Use (B.2.32)--(B.2.36) for the decreasing segment and the neighboring extension to prove local minimality, not mere zero derivative.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.6"
+deps = ["sdexCounterexampleData", "lemma_B_2_2"]

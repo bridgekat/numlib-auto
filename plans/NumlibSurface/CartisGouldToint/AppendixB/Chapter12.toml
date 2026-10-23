@@ -1,0 +1,14 @@
+namespace = "CartisGouldToint"
+
+desc = '''
+Appendix B, Chapter 12: reduction of zero cubic model decrease to zero quadratic model decrease. The original statement suppresses Delta>=0; include this radius condition to ensure the feasible ball is nonempty. Use the average of the cubic evaluations at s and -s so no eigenvector or optimization machinery is needed. A minimum-zero statement is equivalent here to every feasible model value nonnegative, since both models vanish at zero.
+'''
+
+[[node]]
+id = "lemma_B_12_1"
+kind = "theorem"
+desc = '''
+For Euclidean n-space, g a vector, H a symmetric real matrix, T a symmetric continuous trilinear real form, and Delta>=0, define psi2(s)=inner(g,s)+inner(s,H*s)/2 and psi3(s)=psi2(s)+T[s,s,s]/6. If the minimum of psi3 over norm(s)<=Delta is zero, then the minimum of psi2 over that ball is zero. Formalize as (forall s with norm(s)<=Delta, 0<=psi3(s)) implying (forall such s, 0<=psi2(s)), together with attained minimum at s=0 for each. Handle Delta=0 directly because only s=0 is feasible. For Delta>0, a correct proof first derives g=0 from small positive and negative scalings (or uses local first derivative optimality), then averages psi3(s) and psi3(-s) to obtain nonnegative quadratic values. Merely averaging gives only the quadratic term and cannot discard inner(g,s) without proving g=0.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.12.1"
+deps = ["tensorDiagonal"]

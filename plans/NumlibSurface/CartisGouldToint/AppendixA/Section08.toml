@@ -1,0 +1,64 @@
+namespace = "CartisGouldToint"
+
+desc = '''
+Appendix A.8: Taylor expansions and sharp Hölder/Lipschitz remainder estimates. Reuse Numlib.Analysis.Calculus.Taylor and TaylorSegment, Mathlib iteratedFDeriv/iteratedDeriv, convex segment integration and existing Taylor jets. Surface statements specialize to Euclidean n-space. Restrict ambient derivatives to an open neighborhood of the convex set; never silently replace these by unrestricted within-derivatives. Explicitly require k>=1 in A.8.1 and p>=1 for the integral proofs. For beta=0 use Real.rpow with its standard 0^0=1 convention, and prove the endpoint s=0 separately. The proof text of A.8.3 has factorial transcription errors; statements (A.14)--(A.15) give the intended constants.
+'''
+
+[[node]]
+id = "shiftedFactorial"
+kind = "definition"
+desc = '''
+Define shiftedFactorial k beta = product over i=1,...,k of ((i:real)+beta), with empty product 1, representing the source notation (k+beta)!. At beta=1 this is (k+1)!, at beta=0 it is k!; beta! means 1. This is the finite product in the book, not Gamma(k+beta+1).
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.8, before Theorem A.8.3"
+
+[[node]]
+id = "taylorModel"
+kind = "definition"
+desc = '''
+For f:E->real, x,s:E and p:natural, define taylorModel f p x s = sum over ell=0,...,p of (ell!)^-1 times iteratedFDeriv real ell f x applied to ell copies of s. Under order-zero identification the first term is f x. This is exactly T_{f,p}(x,s) in (A.10).
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix A.8, equation (A.10)"
+deps = ["tensorDiagonal"]
+
+[[node]]
+id = "theorem_A_8_1"
+kind = "theorem"
+desc = '''
+Let k>=1, t,h:real, h>=0, and psi:real->real be C^k on an open neighborhood of [t,t+h] (or use a derivative-chain version on this closed interval). Let tau_k=sum_{i=0}^k psi^(i)(t) h^i/i!. Then psi(t+h)-tau_k = 1/(k-1)! times the interval integral from 0 to h of (h-xi)^(k-1)*(psi^(k)(t+xi)-psi^(k)(t)). The h=0 case is included. The original does not state k>=1 although (A.9) requires it. An oriented uIcc formulation may additionally cover negative h.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.1, equation (A.9)"
+
+[[node]]
+id = "theorem_A_8_2"
+kind = "theorem"
+desc = '''
+For k:natural, h>=0, t:real and psi C^(k+1) on a neighborhood of [t,t+h], there exists xi in [t,t+h] such that psi(t+h)-sum_{i=0}^k psi^(i)(t)h^i/i! = psi^(k+1)(xi)*h^(k+1)/(k+1)!. Include h=0 using xi=t; for h>0 one can choose xi in the open interval. Reuse the existing one-dimensional Lagrange Taylor theorem.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.2"
+
+[[node]]
+id = "theorem_A_8_3"
+kind = "theorem"
+desc = '''
+Let p>=1, C convex in Euclidean n-space, D open with C subset D, f C^p on D, H>=0 and beta in [0,1]. Assume for every x,y in C the operator norm of D^p f(x)-D^p f(y) is <= H*norm(x-y)^beta, equation (A.13). For x,x+s in C, prove |f(x+s)-taylorModel f p x s| <= H/shiftedFactorial p beta * norm(s)^(p+beta), and simultaneously for each 1<=j<=p the j-multilinear derivative error norm <= H/shiftedFactorial (p-j) beta * norm(s)^(p-j+beta). Here derivative of the model is with respect to s. j=p is directly the Hölder assumption, not the integral formula with (p-j-1)!; s=0 is direct. Constants are precisely (A.14),(A.15).
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.3, equations (A.13)--(A.15)"
+deps = ["shiftedFactorial", "taylorModel", "theorem_A_8_1"]
+
+[[node]]
+id = "corollary_A_8_4"
+kind = "theorem"
+desc = '''
+Under the same convex C, open D and C^p hypotheses as A.8.3, if D^p f is L-Lipschitz on C with L>=0, then for x,x+s in C the function value error is <= L*norm(s)^(p+1)/(p+1)!, and for each 1<=j<=p the jth model derivative error norm is <= L*norm(s)^(p-j+1)/(p-j+1)!. Derive by beta=1 in A.8.3, with exact (A.19),(A.20) constants.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary A.8.4, equations (A.18)--(A.20)"
+deps = ["theorem_A_8_3"]
+
+[[node]]
+id = "theorem_A_8_5"
+kind = "theorem"
+desc = '''
+Let p:natural, C open and convex in Euclidean n-space, f C^(p+1) on C, and L>=0. Then D^p f is L-Lipschitz on C if and only if for every x in C, norm(D^(p+1) f(x))<=L, equation (A.21). Interpret p=0 by f itself and order-zero maps. Prove using a reusable differentiable-map Lipschitz iff derivative bound on open convex sets and symmetry/currying of iteratedFDeriv; do not posit the derivative bound as part of the Lipschitz definition.
+'''
+source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem A.8.5, equations (A.18),(A.21)"
