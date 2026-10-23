@@ -1,0 +1,49 @@
+namespace = "NormPower"
+
+[[node]]
+id = "first"
+
+[[node]]
+id = "first_apply"
+
+[[node]]
+id = "second"
+
+[[node]]
+id = "hasFDerivAt_normPower"
+
+[[node]]
+id = "hasFDerivAt_first"
+
+[[node]]
+id = "fderiv_fderiv_normPower"
+
+[[node]]
+id = "second_apply"
+
+[[node]]
+id = "second_zero"
+
+[[node]]
+id = "norm_second_le"
+
+[[node]]
+id = "iteratedFDeriv_three_apply_of_ne_zero"
+
+[[node]]
+id = "hasFDerivAt_second_zero"
+
+[[node]]
+id = "iteratedFDeriv_three_zero"
+
+[[node]]
+id = "abs_iteratedFDeriv_three_le_of_ne_zero"
+
+[[node]]
+id = "abs_iteratedFDeriv_three_norm_pow_le"
+
+[[node]]
+id = "norm_fderiv_norm_pow"
+
+[[node]]
+id = "abs_iteratedFDeriv_two_norm_pow_le"
