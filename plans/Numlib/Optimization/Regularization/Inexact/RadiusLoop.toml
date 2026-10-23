@@ -1,0 +1,25 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "HalvingAccepts"
+
+[[node]]
+id = "halving_radius_pos"
+
+[[node]]
+id = "halving_radius_antitone"
+
+[[node]]
+id = "halvingAccepts_of_radius_le"
+
+[[node]]
+id = "exists_halvingAccepts"
+
+[[node]]
+id = "halving_radius_lower"
+
+[[node]]
+id = "HalvingRun"
+
+[[node]]
+id = "exists_halvingRun"

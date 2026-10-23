@@ -1,5 +1,6 @@
 import Numlib.Analysis.Calculus.TaylorModel
 import Numlib.Optimization.Regularization.Inexact.ModelDecrease
+import Numlib.Optimization.Regularization.Inexact.RadiusLoop
 import Numlib.Optimization.TrustRegion.Inexact.Acceptance
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
@@ -214,5 +215,40 @@ theorem lemma_13_1_10 {n p j : ℕ}
     (hsmall.trans (min_le_left _ _)) (hsmall.trans (min_le_right _ _))
     (fun a hja hap => TaylorModel.norm_jet_le_of_lipschitz_oracle
       (by linarith) hκh hlip A x κ accuracy hκ haccuracy horacle (by omega) hap) d hd htest
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Lemma 13.1.11: for each tested positive order, the actual radius-halving
+program exits finitely through Step 1.2 or Step 1.3. Every intermediate radius
+lies between its initial and final values, and the final radius satisfies the
+exact floor (13.1.66). The selected directions may be any feasible directions;
+the stronger approximation requirement (13.1.52) is unnecessary for this result. -/
+theorem lemma_13_1_11 {n p j : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    (A : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (x : EuclideanSpace ℝ (Fin n)) {L κmax κh σ ζ ε δ₀ : ℝ}
+    (hL : 1 ≤ L) (hκmax : 0 ≤ κmax) (hκh : 0 ≤ κh) (hσ : 0 ≤ σ)
+    (hlip : ∀ a, a < p → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (κ accuracy : ℕ → ℝ)
+    (hκ : ∀ a, 1 ≤ a → a ≤ p → 0 ≤ κ a ∧ κ a ≤ κmax)
+    (haccuracy : ∀ a, 1 ≤ a → a ≤ p → accuracy a ≤ κh)
+    (horacle : ∀ a, 1 ≤ a → a ≤ p →
+      ‖A a - iteratedFDeriv ℝ a f x‖ ≤ κ a * accuracy a)
+    (hj : 0 < j) (hjp : j ≤ p) (hζ : 0 < ζ) (hε : 0 < ε)
+    (hδ₀ : 0 < δ₀) (hδ₀1 : δ₀ ≤ 1)
+    (d : ℕ → EuclideanSpace ℝ (Fin n))
+    (hd : ∀ t, ‖d t‖ ≤ BacktrackingGradient.step δ₀ t) :
+    ∃ N, InexactRegularization.HalvingRun A j p σ ζ ε δ₀ d N ∧
+      min (ζ * ε / (16 * max (L + κmax * κh) σ)) δ₀ ≤
+        BacktrackingGradient.step δ₀ N ∧
+      ∀ t ≤ N, BacktrackingGradient.step δ₀ N ≤ BacktrackingGradient.step δ₀ t ∧
+        BacktrackingGradient.step δ₀ t ≤ δ₀ := by
+  exact InexactRegularization.exists_halvingRun A hj hjp
+    (by positivity : 0 < L + κmax * κh) hσ hζ hε hδ₀ hδ₀1
+    (fun a hja hap => TaylorModel.norm_jet_le_of_lipschitz_oracle
+      (by linarith) hκh hlip A x κ accuracy hκ haccuracy horacle (by omega) hap) d hd
 
 end CartisGouldToint
