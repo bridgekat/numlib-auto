@@ -173,46 +173,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_14_3_7"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 14.3.7: Evaluation complexity of Phase 1 of the TPqp-GC algorithm
-
-Suppose that X.CNe and c.D1pLB.X hold. Then there are constants \( {\kappa }_{\mathrm{NNER}}^{F,\nu } \) and \( {\kappa }_{\text{ INNER }}^{D,\nu } \) depending on \( \begin{Vmatrix}{c\left( {x}_0\right) }\end{Vmatrix} \) such that Phase 1 of the TPqp-GC algorithm terminates at a point \( {x}_1 \) for which either
-
-\[
-\begin{Vmatrix}{c\left( {x}_{1}\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\;\text{ or }\;{\phi }_{\nu ,\mathcal{X}\left( {x}_{1}\right) , j}^{{\delta }_{{k}_{1}, j}\left( {x}_{1}\right) } \leq  {\epsilon }_{j}\begin{Vmatrix}{c\left( {x}_{1}\right) }\end{Vmatrix}\frac{{\delta }_{k, j}^{j}}{j!}\tag{14.3.64}
-\]
-
-in at most
-
-\[
-{\# }_{\text{ INNER },1}^{F}\overset{\text{ def }}{ = }\frac{1}{2}{\kappa }_{\text{ INNER }}^{F,\nu }\left( \begin{Vmatrix}{c\left( {x}_{0}\right) }\end{Vmatrix}\right) \begin{Vmatrix}{c\left( {x}_{0}\right) }\end{Vmatrix}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}\frac{{\beta }^{1 - 2{\pi }_{j}}}{{\beta }^{1 - {\pi }_{j}} - 1}{\theta }^{1 - {\pi }_{j}}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}}
-\]
-
-\[
-= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_0^{1 - {\pi }_j}{\epsilon }_j^{-{\pi }_j}}\right)
-\]
-
-(14.3.65)
-
-evaluations of \( c \) and at most
-
-\[
-{\# }_{\text{ INNER,1 }}^{D}\overset{\text{ def }}{ = }\frac{1}{2}{\kappa }_{\text{ INNER }}^{D,\nu }\left( \begin{Vmatrix}{c\left( {x}_{0}\right) }\end{Vmatrix}\right) \begin{Vmatrix}{c\left( {x}_{0}\right) }\end{Vmatrix}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}\frac{{\beta }^{1 - 2{\pi }_{j}}}{{\beta }^{1 - {\pi }_{j}} - 1}{\theta }^{1 - {\pi }_{j}}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}}
-\]
-
-\[
-= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_0^{1 - {\pi }_j}{\epsilon }_j^{-{\pi }_j}}\right)
-\]
-
-(14.3.66)
-
-evaluations of its derivatives.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.7 (OCR Markdown line 17481)"
-deps = ["theorem_14_3_4", "lemma_14_3_6"]
 
 [[node]]
 id = "lemma_14_3_8"

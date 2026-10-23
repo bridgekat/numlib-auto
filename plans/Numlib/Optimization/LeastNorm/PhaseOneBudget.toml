@@ -1,0 +1,44 @@
+namespace = "LeastNorm"
+desc = "Known per-call INNER endpoint and initial-level cost contracts give a genuine first phase-one return and both total evaluation bounds, with uniform constants before primal and dual accuracies. A larger positive INNER constant yields the exact source two-maximum form without exchanging a sum and a maximum."
+
+[[node]]
+id = "maximumWeight_mul_le"
+
+[[node]]
+id = "phaseOneFactor"
+
+[[node]]
+id = "phaseOneFactor_pos"
+
+[[node]]
+id = "phaseOneEnvelope"
+
+[[node]]
+id = "phaseOneEnvelope_pos"
+
+[[node]]
+id = "phaseOneConstant"
+
+[[node]]
+id = "le_phaseOneConstant"
+
+[[node]]
+id = "phaseOneConstant_pos"
+
+[[node]]
+id = "InnerCountsOn"
+
+[[node]]
+id = "Run.feasible"
+
+[[node]]
+id = "Run.residual_le_initial"
+
+[[node]]
+id = "Run.evaluations_le_phaseOne"
+
+[[node]]
+id = "Run.radius_mem"
+
+[[node]]
+id = "exists_phaseOne_budget"

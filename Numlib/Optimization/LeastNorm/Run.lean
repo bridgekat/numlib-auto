@@ -36,14 +36,15 @@ def TargetAt (r : E → F) (X : Set E) (ε₀ : ℝ) (ε : Fin q → ℝ)
       ε a * ‖r (x k)‖ * δ k a ^ modelOrder a / (modelOrder a).factorial
 
 /-- Primitive finite least-norm executions with actual inner calls, counters and pre-target
-tests. -/
+tests. The closed unit upper endpoint also covers the tolerances of the
+two-phase constrained method. -/
 structure Run (r : E → F) (X : Set E)
     (call : E → (Fin q → ℝ) → E → (Fin q → ℝ) → ℕ → ℕ → Prop)
     (ε₀ β : ℝ) (ε : Fin q → ℝ) (x : ℕ → E) (δ : ℕ → Fin q → ℝ)
     (nf nd : ℕ → ℕ) (N : ℕ) : Prop where
   primal_pos : 0 < ε₀
   primal_lt_one : ε₀ < 1
-  accuracy : ∀ a, 0 < ε a ∧ ε a < 1
+  accuracy : ∀ a, 0 < ε a ∧ ε a ≤ 1
   contraction_pos : 0 < β
   contraction_lt_one : β < 1
   initial_scale : β * ‖r (x 0)‖ < 1

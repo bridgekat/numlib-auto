@@ -1,3 +1,5 @@
+import Numlib.Optimization.LeastNorm.PhaseOneBudget
+import Numlib.Optimization.EvaluationComplexity.HighOrderExponents
 import Numlib.Optimization.Constrained.TargetCounterexample.TwoPhase
 import Numlib.Optimization.LeastNorm.ComponentRegularity
 import Numlib.Optimization.Constrained.TargetRegularity
@@ -302,5 +304,77 @@ no multiplier satisfies even the first two printed Lagrangian bounds. This
 refutes the stated output conclusion independently of the numerical counts. -/
 alias theorem_14_3_9_counterexample :=
   Constrained.TargetCounterexample.InnerRegularization.verified_regularized_counterexample
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Lemma 14.3.7.** The actual first feasibility-phase return has legal
+associated radii and satisfies (14.3.64), with both evaluation counts in the
+source's two-maximum form (14.3.65)-(14.3.66). Positive constants are selected
+before every primal and dual accuracy.
+
+The section explicitly assumes known INNER endpoint and cost guarantees in
+(14.3.19)-(14.3.21). Here `InnerSound` is precisely the actual endpoint
+criticality contract and `InnerCountsOn` is precisely the per-call cost
+contract on the initial residual level. These hypotheses concern individual
+INNER calls, and the complete outer termination and total counts are derived.
+The four numerical exponent profiles are those displayed in (14.2.12); each
+selected order has the actual specified profile, rather than an arbitrary
+complexity exponent. A larger admissible INNER constant absorbs the finite
+geometric coefficient, avoiding the invalid sum/maximum exchange in the
+proof of Theorem 14.3.4. -/
+theorem lemma_14_3_7 {n m p q : ℕ} (hq : 0 < q) (hqp : q ≤ p)
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (X S : Set (EuclideanSpace ℝ (Fin n))) (_hX : IsClosed X) (_hne : X.Nonempty)
+    (_hS : IsOpen S) (_hconv : Convex ℝ S) (_hXS : X ⊆ S)
+    (_hc : ∀ i, ContDiffOn ℝ p (fun z => c z i) S)
+    (L B : Fin m → ℝ) (_hL : ∀ i, 1 ≤ L i) (_hB : ∀ i, 1 ≤ B i)
+    (_hlip : ∀ i j, 1 ≤ j → j ≤ p → ∀ x ∈ S, ∀ y ∈ S,
+      ‖iteratedFDeriv ℝ j (fun z => c z i) x -
+        iteratedFDeriv ℝ j (fun z => c z i) y‖ ≤ L i * ‖x - y‖)
+    (_hbound : ∀ i j, 1 ≤ j → j ≤ p → ∀ x ∈ S,
+      ‖iteratedFDeriv ℝ j (fun z => c z i) x‖ ≤ B i)
+    (profile : EvaluationComplexity.HighOrderProfile)
+    (call : EuclideanSpace ℝ (Fin n) → (Fin q → ℝ) → EuclideanSpace ℝ (Fin n) →
+      (Fin q → ℝ) → ℕ → ℕ → Prop)
+    (hsound : LeastNorm.InnerSound c X call)
+    (x₀ : EuclideanSpace ℝ (Fin n)) (_hx₀ : x₀ ∈ X)
+    {β θ : ℝ} (hβ : 0 < β) (hβ1 : β < 1) (_hscale : β * ‖c x₀‖ < 1)
+    (hθ : 0 < θ) (_hθ1 : θ < 1)
+    (hcounts : ∃ κF > 0, ∃ κD > 0, LeastNorm.InnerCountsOn c X ‖c x₀‖ call hq
+      (fun a => profile.exponent p (a.val + 1)) κF κD) :
+    let π : Fin q → ℝ := fun a => profile.exponent p (a.val + 1)
+    ∃ KF > 0, ∃ KD > 0, ∀ (ε₀ : ℝ) (_hε₀ : 0 < ε₀) (_hε₀1 : ε₀ ≤ 1)
+      (ε : Fin q → ℝ) (_hε : ∀ a, 0 < ε a ∧ ε a ≤ 1)
+      (x : ℕ → EuclideanSpace ℝ (Fin n)) (δ : ℕ → Fin q → ℝ) (nf nd : ℕ → ℕ),
+      x 0 = x₀ → (∀ a, 0 < δ 0 a ∧ δ 0 a ≤ 1) →
+      (∀ N, (∀ k < N, ¬LeastNorm.TargetAt c X (θ * ε₀) ε x δ k) →
+        lenqscRun c X call (θ * ε₀) β ε x δ nf nd N) →
+      ∃ K, lenqscRun c X call (θ * ε₀) β ε x δ nf nd K ∧
+        (∀ k < K, ¬LeastNorm.TargetAt c X (θ * ε₀) ε x δ k) ∧
+        (∀ a, 0 < δ K a ∧ δ K a ≤ 1) ∧
+        (‖c (x K)‖ ≤ θ * ε₀ ∨ ∀ a,
+          TaylorModel.constrainedCriticality (LeastNorm.merit c)
+            (InexactTrustRegion.modelOrder a) X (x K) (δ K a) ≤
+              ε a * ‖c (x K)‖ * δ K a ^ InexactTrustRegion.modelOrder a /
+                (InexactTrustRegion.modelOrder a).factorial) ∧
+        (∑ k ∈ Finset.range K, (nf k : ℝ)) ≤ KF / 2 * ‖c x₀‖ *
+          LeastNorm.phaseOneFactor hq π β θ *
+            LeastNorm.maximumWeight hq (fun a => ε₀ ^ (1 - π a) * ε a ^ (-π a)) ∧
+        (∑ k ∈ Finset.range K, (nd k : ℝ)) ≤ KD / 2 * ‖c x₀‖ *
+          LeastNorm.phaseOneFactor hq π β θ *
+            LeastNorm.maximumWeight hq (fun a => ε₀ ^ (1 - π a) * ε a ^ (-π a)) := by
+  dsimp only
+  let π : Fin q → ℝ := fun a => profile.exponent p (a.val + 1)
+  have hπ : ∀ a, 1 < π a := by
+    intro a
+    exact profile.one_lt_exponent (by omega) (by have := a.isLt; omega)
+  obtain ⟨κF, hκF, κD, hκD, hcounts⟩ := hcounts
+  obtain ⟨KF, hKF, KD, hKD, hb⟩ := LeastNorm.exists_phaseOne_budget
+    hsound hq π hπ x₀ hβ hβ1 hθ hκF hκD hcounts
+  refine ⟨KF, hKF, KD, hKD, ?_⟩
+  intro ε₀ hε₀ _ ε _ x δ nf nd hx hδ hprefix
+  exact hb ε₀ hε₀ ε x δ nf nd hx hδ hprefix
 
 end CartisGouldToint

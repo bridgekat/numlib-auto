@@ -1,4 +1,5 @@
 namespace = "LeastNorm"
+desc = "Actual least-norm calls and outer stopping tests; dual tolerances include the closed unit endpoint used by the two-phase algorithm. Residual contraction and finite first-target termination follow from the separate actual INNER soundness contract."
 
 [[node]]
 id = "merit"
