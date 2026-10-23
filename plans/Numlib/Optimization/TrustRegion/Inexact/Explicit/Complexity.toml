@@ -1,5 +1,4 @@
 namespace = "InexactTrustRegion.Explicit"
-desc = "Actual computed stopping gives uniform successful/trial/accuracy counts, finite first verified stop and all objective/initialized derivative complexity bounds for TRqEDA."
 
 [[node]]
 id = "functionEvaluations"

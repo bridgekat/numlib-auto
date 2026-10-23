@@ -155,6 +155,8 @@ import NumlibSurface.CartisGouldToint.Chapter04.Section02
 import NumlibSurface.CartisGouldToint.Chapter05.Section01
 import NumlibSurface.CartisGouldToint.Chapter05.Section03
 import NumlibSurface.CartisGouldToint.Chapter05.Section04
+import NumlibSurface.CartisGouldToint.Chapter05.Section05
+import NumlibSurface.CartisGouldToint.Chapter06.Section01
 import NumlibSurface.CartisGouldToint.Chapter06.Section02
 import NumlibSurface.CartisGouldToint.Chapter06.Section03
 import NumlibSurface.CartisGouldToint.Chapter07.Section01

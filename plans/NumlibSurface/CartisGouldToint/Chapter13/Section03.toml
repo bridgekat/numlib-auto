@@ -5,12 +5,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "trqedaRun"
-kind = "definition"
-desc = '''
-Algorithm 13.3.1 with its actual computed polynomial and known unit tensor-error bounds. Step 1 approximates each computed criticality measure, branches on the failed positive-order test, and certifies termination only after the finite total budget comparison (13.3.8). Step 2 compares the selected computed decrement and checks step-scaled derivative requests. Step 3 uses both approximate objective values, each with absolute error at most h0 and h0 at most κs times the computed decrement; κs is at most one quarter of min(η1,1−η2). Preserve radius updates, point acceptance, and geometric accuracy reduction with point/radius unchanged. Derive true optimality, acceptance and evaluation counts.
-'''
 source = "Cartis, Gould and Toint, Algorithm13.3.1, full primitive computed-check/error-budget/objective-ratio/request-update trace, including first selected failing order and reuse after rejection. Step0 excludes initial function evaluation; derivative counters include initialization."
-deps = ["explicitAccuracyVerifier", "trqidaRun"]
 
 [[node]]
 id = "arqpedaRun"
@@ -29,38 +24,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "theorem_13_3_4"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 13.3.4: qth-order complexity for the TRqEDA algorithm
-
-Suppose that f.D0qL and f.Bb hold. Then there exist positive constants \( {\kappa }_{\text{ TRaEDA }}^{A} \) , \( {\kappa }_{\text{ TRqEDA }}^{B},{\kappa }_{\text{ TRqEDA }}^{C},{\kappa }_{\text{ TRqEDA }}^{E} \) , and \( {\kappa }_{\text{ TRqEDA }}^{F} \) such that, for any \( \epsilon  \in  (0,1{\rbrack }^q \) , the TRqEDA algorithm (p. 358) requires at most
-
-\[
-{\# }_{\text{ TrqEDA }}^{F}\overset{\text{ def }}{ = }{\kappa }_{\text{ TRqEDA }}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{q + 1}} + {\kappa }_{\text{ TRqEDA }}^{B}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\text{ TRqEDA }}^{C}
-\]
-
-\[
-= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right)
-\]
-
-evaluations of \( \bar{f} \) and at most
-
-\[
-{\# }_{\text{ TRqEDA }}^{D}\overset{\text{ def }}{ = }{\kappa }_{\text{ TRqEDA }}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{q + 1}} + {\kappa }_{\text{ TRqEDA }}^{E}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\text{ TRqEDA }}^{F}
-\]
-
-\[
-= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right)
-\]
-
-evaluations of the inexact derivatives \( \overline{{\nabla }_{x}^{i}f} \) of order \( i \) from one to \( q \) to terminate with an iterate \( {x}_{\epsilon } \) and an optimality radius \( {\delta }_{\epsilon } \in  (0,1\rbrack \) such that \( {\phi }_{f, q}^{{\delta }_{\epsilon }}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon }^j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
-
-Documented source/OCR correction and formalization requirements: OCR correction: the final condition is φ_(f,j)^(δepsilon)≤εj δepsilon^j/j! for every j, rather than φ_(f,q) on the left for all j.
-'''
 source = "Cartis, Gould and Toint, Theorem13.3.4 all clauses. Actual TRqEDA Run and literal StopsAt, true criticality at actual legal radius, five positive constants uniformly before all accuracies/data, exact inverse-minimum powers and logarithmic terms, objective budget2T with no initial objective evaluation, initialized derivative budgetS+A+1. Final source/OCR index is tested j rather than fixed q."
-deps = ["lemma_13_3_2", "lemma_13_3_3", "theorem_13_1_8"]
 
 [[node]]
 id = "lemma_13_3_5"

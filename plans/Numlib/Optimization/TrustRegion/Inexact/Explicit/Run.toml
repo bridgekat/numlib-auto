@@ -1,5 +1,4 @@
 namespace = "InexactTrustRegion.Explicit"
-desc = "Actual computed checks, finite stopping budget, inexact function ratios and primitive updates define TRqEDA executions; true optimality and uniform logarithmic accuracy budgets are derived."
 
 [[node]]
 id = "Settings"

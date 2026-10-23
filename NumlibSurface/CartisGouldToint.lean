@@ -22,6 +22,8 @@ import NumlibSurface.CartisGouldToint.Chapter04.Section02
 import NumlibSurface.CartisGouldToint.Chapter05.Section01
 import NumlibSurface.CartisGouldToint.Chapter05.Section03
 import NumlibSurface.CartisGouldToint.Chapter05.Section04
+import NumlibSurface.CartisGouldToint.Chapter05.Section05
+import NumlibSurface.CartisGouldToint.Chapter06.Section01
 import NumlibSurface.CartisGouldToint.Chapter06.Section02
 import NumlibSurface.CartisGouldToint.Chapter06.Section03
 import NumlibSurface.CartisGouldToint.Chapter07.Section01
@@ -42,7 +44,6 @@ import NumlibSurface.CartisGouldToint.Chapter13.Section03
 import NumlibSurface.CartisGouldToint.Chapter14.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
-
 /-!
 # Cartis–Gould–Toint, *Evaluation Complexity of Algorithms for Nonconvex Optimization*
 
@@ -217,6 +218,16 @@ recorded on the relevant plan nodes. In particular:
   complete sine-objective IDA/EDA execution. Its actual parameter grows beyond
   the printed cap, and an accepted short step violates the stated floors
   while true criticality still fails. Corrected companions remain separate.
+
+* Theorem 7.2.7's literal output guarantee fails on the full two-phase
+  boundary run: neither the infeasibility certificate nor any multiplier's
+  scaled Lagrangian condition holds at its actual return.
+* Lemma 14.1.8's general nonconvex-composite step bound omits an accuracy
+  factor. A genuine quadratic-objective run with a truncated absolute-value
+  outer function violates the displayed floor under both factorial readings.
+* Lemma 6.2.2's printed `p!` decrease coefficient exceeds the actual objective
+  drop in a legal first-order-only constrained quadratic run. The corrected
+  relative decrease theorem retains the regularizer's `(p+1)!` coefficient.
 
 No claim of completeness is made for the open analytic estimates, algorithm
 complexity theorems or sharpness constructions.
