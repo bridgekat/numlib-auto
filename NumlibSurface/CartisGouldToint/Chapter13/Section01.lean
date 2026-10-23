@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.TaylorModel
+import Numlib.Optimization.Regularization.Inexact.ModelDecrease
 import Numlib.Optimization.TrustRegion.Inexact.Acceptance
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
@@ -180,5 +181,38 @@ theorem lemma_13_1_3 {n q : ℕ}
   rw [← hratio] at hs
   exact ⟨hs, (show Δ (k + 1) ∈ Set.Icc (Δ k) (min Δmax (γ₃ * Δ k)) by
     simpa only [ite_eq_left hs] using hu.update k hkN hk).1⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Lemma 13.1.10: a positive truncated computed Taylor decrement retains at
+least half its value in the full inexact regularized model at a small radius.
+The uniform tensor bound (13.1.63) is derived from Lipschitz lower derivatives,
+the primitive oracle errors and the nonincreasing requested accuracy cap. -/
+theorem lemma_13_1_10 {n p j : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    (A : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (x : EuclideanSpace ℝ (Fin n)) {L κmax κh σ α δ : ℝ}
+    (hL : 1 ≤ L) (hκmax : 0 ≤ κmax) (hκh : 0 ≤ κh) (hσ : 0 ≤ σ)
+    (hlip : ∀ a, a < p → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (κ accuracy : ℕ → ℝ)
+    (hκ : ∀ a, 1 ≤ a → a ≤ p → 0 ≤ κ a ∧ κ a ≤ κmax)
+    (haccuracy : ∀ a, 1 ≤ a → a ≤ p → accuracy a ≤ κh)
+    (horacle : ∀ a, 1 ≤ a → a ≤ p →
+      ‖A a - iteratedFDeriv ℝ a f x‖ ≤ κ a * accuracy a)
+    (hj : 0 < j) (hjp : j ≤ p) (hδ : 0 < δ)
+    (hsmall : δ ≤ min 1 (α / (4 * max (L + κmax * κh) σ)))
+    (d : EuclideanSpace ℝ (Fin n)) (hd : ‖d‖ ≤ δ)
+    (htest : α * δ ^ j / j.factorial ≤ TaylorModel.jetDecrement A j d) :
+    α / 2 * δ ^ j / j.factorial ≤
+      ModelDecrease.penalized (inexactTaylorModel A p) p σ 0 -
+        ModelDecrease.penalized (inexactTaylorModel A p) p σ d := by
+  apply TaylorModel.penalized_decrement_ge_half A hj hjp
+    (by positivity : 0 < L + κmax * κh) hσ hδ
+    (hsmall.trans (min_le_left _ _)) (hsmall.trans (min_le_right _ _))
+    (fun a hja hap => TaylorModel.norm_jet_le_of_lipschitz_oracle
+      (by linarith) hκh hlip A x κ accuracy hκ haccuracy horacle (by omega) hap) d hd htest
 
 end CartisGouldToint

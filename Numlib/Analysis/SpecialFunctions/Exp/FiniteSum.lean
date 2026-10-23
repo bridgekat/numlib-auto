@@ -99,4 +99,35 @@ theorem sum_Icc_pow_div_factorial_le_tail {x : ℝ} (hx0 : 0 ≤ x) (hx1 : x ≤
       mul_le_mul_of_nonneg_left hfactor (pow_nonneg hx0 _)
     _ = 2 * x ^ (j + 1) / j.factorial := by ring
 
+/-- A positive-order exponential tail has a bound with the preceding factorial. -/
+theorem sum_Icc_pow_div_factorial_le_tail_of_pos {x : ℝ}
+    (hx0 : 0 ≤ x) (hx1 : x ≤ 1) {j : ℕ} (hj : 0 < j) (p : ℕ) :
+    (∑ i ∈ Finset.Icc (j + 1) p, x ^ i / i.factorial) ≤
+      x ^ (j + 1) / j.factorial := by
+  have hfactor : ((j + 1 + 1 : ℕ) : ℝ) /
+      (((j + 1).factorial : ℝ) * (j + 1)) ≤ 1 / (j.factorial : ℝ) := by
+    rw [Nat.factorial_succ, Nat.cast_mul, Nat.cast_add, Nat.cast_one]
+    have hj' : (1 : ℝ) ≤ j := by exact_mod_cast hj
+    have hf : 0 < (j.factorial : ℝ) := by positivity
+    apply (div_le_div_iff₀ (by positivity) hf).2
+    push_cast
+    have hp : (j : ℝ) + 1 + 1 ≤ ((j : ℝ) + 1) * ((j : ℝ) + 1) := by nlinarith
+    nlinarith [mul_le_mul_of_nonneg_right hp hf.le]
+  calc _ ≤ ∑ i ∈ Finset.Icc (j + 1) p, x ^ (j + 1) * (1 / (i.factorial : ℝ)) := by
+        apply Finset.sum_le_sum
+        intro i hi
+        have hp := pow_le_pow_of_le_one hx0 hx1 (Finset.mem_Icc.mp hi).1
+        simpa only [div_eq_mul_inv, one_mul] using
+          div_le_div_of_nonneg_right hp (Nat.cast_nonneg i.factorial)
+    _ = x ^ (j + 1) * ∑ i ∈ Finset.Icc (j + 1) p, (1 / (i.factorial : ℝ)) := by
+        rw [Finset.mul_sum]
+    _ ≤ x ^ (j + 1) * (((j + 1 + 1 : ℕ) : ℝ) /
+        (((j + 1).factorial : ℝ) * (j + 1))) :=
+      mul_le_mul_of_nonneg_left (by
+        simpa only [Nat.cast_add, Nat.cast_one] using
+          sum_Icc_inv_factorial_le (j + 1) p (by omega)) (pow_nonneg hx0 _)
+    _ ≤ x ^ (j + 1) * (1 / (j.factorial : ℝ)) :=
+      mul_le_mul_of_nonneg_left hfactor (pow_nonneg hx0 _)
+    _ = _ := by ring
+
 end Real

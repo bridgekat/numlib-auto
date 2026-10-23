@@ -1,0 +1,7 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "penalized_decrement_ge_half"
+
+[[node]]
+id = "norm_jet_le_of_lipschitz_oracle"

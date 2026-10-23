@@ -14,3 +14,6 @@ id = "sum_Icc_shift_pow_div_factorial_le"
 
 [[node]]
 id = "sum_Icc_pow_div_factorial_le_tail"
+
+[[node]]
+id = "sum_Icc_pow_div_factorial_le_tail_of_pos"
