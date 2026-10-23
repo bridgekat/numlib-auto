@@ -10,8 +10,8 @@ reduction that crosses the threshold.
 -/
 
 namespace EvaluationComplexity
-open scoped Classical
 
+open Classical in
 /-- Adding one index to a prefix increments its count exactly when it belongs
 to the specified class of iterations. -/
 theorem card_successful_succ (A : Set ℕ) (i : ℕ) :
@@ -23,6 +23,7 @@ theorem card_successful_succ (A : Set ℕ) (i : ℕ) :
   · rw [Finset.card_insert_of_notMem (by simp)]
   · simp
 
+open Classical in
 /-- Primitive multiplicative request reductions on a specified iteration class. -/
 structure AccuracyUpdates (A : Set ℕ) (request : ℕ → ℝ) (γ : ℝ) (N : ℕ) : Prop where
   initial_pos : 0 < request 0
@@ -86,7 +87,8 @@ theorem reductions_le (h : AccuracyUpdates A request γ N) {τ : ℝ} (hτ : 0 <
     h.reduction_lt_one (h.min_initial_threshold_le hbranch le_rfl) hδ
     (by simp) (fun i hi hA _ => by rw [h.update i hi, ite_eq_left hA])
     (fun i hi hA => by rw [h.update i hi, ite_eq_right hA])
-  simp [successfulIterations] at hb
+  simp only [successfulIterations, Set.mem_empty_iff_false, Finset.filter_false,
+    Finset.card_empty, Nat.cast_zero, zero_mul, zero_add] at hb
   have hlogγ := Real.log_neg h.reduction_pos h.reduction_lt_one
   have hp : 0 < |Real.log γ| := abs_pos.mpr hlogγ.ne
   have hlog : |Real.log (δmin / request 0)| ≤ |Real.log γ| +
