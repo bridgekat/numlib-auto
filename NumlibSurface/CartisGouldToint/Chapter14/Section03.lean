@@ -1,5 +1,7 @@
 import Numlib.Optimization.Constrained.LagrangianStability
 import Numlib.Optimization.LeastNorm.Counterexample
+import Numlib.Optimization.LeastNorm.Budget
+import Numlib.Optimization.LeastNorm.EvaluationCounterexample
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -133,5 +135,69 @@ theorem theorem_14_3_3_counterexample :
   ⟨LeastNorm.Counterexample.inner_sound, LeastNorm.Counterexample.one_iteration,
     LeastNorm.Counterexample.first_target_one.1, LeastNorm.Counterexample.first_target_one.2,
     LeastNorm.Counterexample.printed_iteration_bound_false⟩
+
+/-- **Theorem14.3.4 with a uniform geometric coefficient.** Actual per-call
+least-squares evaluation bounds give simultaneous function and derivative
+budgets at the genuine first outer termination point. The accuracy exponents
+are unchanged. This companion uses the coefficient `β^(-π)/(1-β)` instead of
+interchanging a finite sum and a maximum as in the printed proof. -/
+theorem theorem_14_3_4_corrected {n m q : ℕ} (hq : 0 < q)
+    (r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (X : Set (EuclideanSpace ℝ (Fin n)))
+    (call : EuclideanSpace ℝ (Fin n) → (Fin q → ℝ) → EuclideanSpace ℝ (Fin n) →
+      (Fin q → ℝ) → ℕ → ℕ → Prop) (hsound : LeastNorm.InnerSound r X call)
+    (π : Fin q → ℝ) (hπ : ∀ a, 1 < π a) {κF κD : ℝ}
+    (hκF : 0 ≤ κF) (hκD : 0 ≤ κD)
+    (hcounts : LeastNorm.InnerCounts r call hq π κF κD)
+    (ε₀ β : ℝ) (ε : Fin q → ℝ) (x : ℕ → EuclideanSpace ℝ (Fin n))
+    (δ : ℕ → Fin q → ℝ) (nf nd : ℕ → ℕ)
+    (hprefix : ∀ N, (∀ k < N, ¬LeastNorm.TargetAt r X ε₀ ε x δ k) →
+      lenqscRun r X call ε₀ β ε x δ nf nd N) :
+    ∃ K : ℕ, LeastNorm.TargetAt r X ε₀ ε x δ K ∧
+      lenqscRun r X call ε₀ β ε x δ nf nd K ∧
+      (∀ k < K, ¬LeastNorm.TargetAt r X ε₀ ε x δ k) ∧
+      K ≤ GeometricDecay.budget ‖r (x 0)‖ ε₀ β ∧
+      (∑ k ∈ Finset.range K, (nf k : ℝ)) ≤ κF / 2 * ‖r (x 0)‖ / (1 - β) *
+        LeastNorm.maximumWeight hq
+          (fun a => β ^ (-π a) * ε₀ ^ (1 - π a) * ε a ^ (-π a)) ∧
+      (∑ k ∈ Finset.range K, (nd k : ℝ)) ≤ κD / 2 * ‖r (x 0)‖ / (1 - β) *
+        LeastNorm.maximumWeight hq
+          (fun a => β ^ (-π a) * ε₀ ^ (1 - π a) * ε a ^ (-π a)) := by
+  obtain ⟨K, ht, hr, hf, hb⟩ := LeastNorm.exists_first_target hsound hprefix
+  exact ⟨K, ht, hr, hf, hb,
+    hr.evaluations_le hsound hq π hπ hκF nf
+      (fun k hk => (hcounts _ _ _ _ _ _ (hr.inner k hk)).1),
+    hr.evaluations_le hsound hq π hπ hκD nd
+      (fun k hk => (hcounts _ _ _ _ _ _ (hr.inner k hk)).2)⟩
+
+open LeastNorm.EvaluationCounterexample in
+/-- **Theorem14.3.4 is false with the displayed constants for arbitrary
+allowed exponents.** This actual smooth affine-residual execution satisfies
+all inner criticality tests, both per-call evaluation bounds with constants one,
+and all source global Lipschitz and initial-level tensor bounds. Its first outer
+target requires two calls totaling 34203 evaluations, while the printed bound
+is less than that total. The invalid maximum/sum interchange cannot be used. -/
+theorem theorem_14_3_4_counterexample :
+    ContDiff ℝ 2 (LeastNorm.merit residual) ∧
+    (∀ j, 1 ≤ j → j ≤ 2 → ∀ x y : ℝ,
+      ‖iteratedFDeriv ℝ j (LeastNorm.merit residual) x -
+        iteratedFDeriv ℝ j (LeastNorm.merit residual) y‖ ≤ 1 * ‖x - y‖) ∧
+    (∀ x : ℝ, LeastNorm.merit residual x ≤ LeastNorm.merit residual (point 0) →
+      ∀ j, 1 ≤ j → j ≤ 2 → ‖iteratedFDeriv ℝ j (LeastNorm.merit residual) x‖ ≤ 1) ∧
+    (∀ a, 1 < exponent a) ∧
+    LeastNorm.InnerSound residual Set.univ innerCall ∧
+    LeastNorm.InnerCounts residual innerCall (by norm_num : 0 < 2) exponent 1 1 ∧
+    LeastNorm.Run residual Set.univ innerCall (898 / 1000) (9 / 10) accuracy point
+      (fun _ _ => 1) count count 2 ∧
+    LeastNorm.TargetAt residual Set.univ (898 / 1000) accuracy point (fun _ _ => 1) 2 ∧
+    (∀ k < 2, ¬LeastNorm.TargetAt residual Set.univ (898 / 1000)
+      accuracy point (fun _ _ => 1) k) ∧
+    ¬(∑ k ∈ Finset.range 2, (count k : ℝ)) ≤ 1 / 2 * ‖residual (point 0)‖ *
+      LeastNorm.maximumWeight (by norm_num : 0 < 2) printedWeight := by
+  refine ⟨merit_regularity.1, merit_regularity.2.1, merit_regularity.2.2, ?_,
+    inner_sound, inner_counts, two_iterations, first_target_two.1, first_target_two.2,
+    printed_evaluation_bound_false⟩
+  intro a
+  fin_cases a <;> norm_num [exponent]
 
 end CartisGouldToint

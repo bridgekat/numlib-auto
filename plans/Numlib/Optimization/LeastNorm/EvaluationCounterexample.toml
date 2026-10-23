@@ -1,0 +1,85 @@
+namespace = "LeastNorm.EvaluationCounterexample"
+
+[[node]]
+id = "slope"
+
+[[node]]
+id = "residual"
+
+[[node]]
+id = "accuracy"
+
+[[node]]
+id = "exponent"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "merit_deriv"
+
+[[node]]
+id = "merit_hasDerivAt"
+
+[[node]]
+id = "merit_gradient"
+
+[[node]]
+id = "decrement_one"
+
+[[node]]
+id = "merit_second_apply"
+
+[[node]]
+id = "merit_second"
+
+[[node]]
+id = "decrement_two"
+
+[[node]]
+id = "criticality_one_eq"
+
+[[node]]
+id = "criticality_two_le"
+
+[[node]]
+id = "residual_point"
+
+[[node]]
+id = "inner_sound"
+
+[[node]]
+id = "count"
+
+[[node]]
+id = "first_target_two"
+
+[[node]]
+id = "two_iterations"
+
+[[node]]
+id = "inner_counts"
+
+[[node]]
+id = "printedWeight"
+
+[[node]]
+id = "printed_evaluation_bound_false"
+
+[[node]]
+id = "merit_contDiff"
+
+[[node]]
+id = "derivative_lipschitz"
+
+[[node]]
+id = "first_jet_lipschitz"
+
+[[node]]
+id = "second_jet_constant"
+
+[[node]]
+id = "level_set_jet_bound"
+
+[[node]]
+id = "merit_regularity"

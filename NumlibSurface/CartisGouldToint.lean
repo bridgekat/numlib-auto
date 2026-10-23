@@ -134,6 +134,14 @@ recorded on the relevant plan nodes. In particular:
 * The norm constant in (B.4.3), part of Lemma B.4.1, fails already in dimension two.
   It remains marked incorrect rather than being represented by a false axiom.
 
+* The unrounded real iteration bound in Theorem 14.3.3 can be smaller than
+  one despite a required inner call; its companion uses a natural ceiling.
+  Theorem 14.3.4's displayed evaluation constant also fails for arbitrary allowed
+  exponents: a smooth affine-residual execution satisfies every actual inner and
+  outer test and each per-call count bound, but its two counts sum to 34203,
+  above the printed bound of about 31407.86. The valid geometric companion
+  retains the primal and dual accuracy exponents.
+
 No claim of completeness is made for the open analytic estimates, algorithm
 complexity theorems or sharpness constructions.
 -/

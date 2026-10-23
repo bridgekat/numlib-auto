@@ -1,0 +1,28 @@
+namespace = "LeastNorm"
+
+[[node]]
+id = "maximumWeight"
+
+[[node]]
+id = "le_maximumWeight"
+
+[[node]]
+id = "maximumWeight_le"
+
+[[node]]
+id = "maximumWeight_nonneg"
+
+[[node]]
+id = "residual_cost_le"
+
+[[node]]
+id = "exists_maximumWeight"
+
+[[node]]
+id = "geometric_sum_le"
+
+[[node]]
+id = "InnerCounts"
+
+[[node]]
+id = "Run.evaluations_le"
