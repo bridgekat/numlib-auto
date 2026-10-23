@@ -1,0 +1,13 @@
+namespace = "ShiftedNewton"
+
+[[node]]
+id = "norm_hessian_le_of_gradient_lipschitz"
+
+[[node]]
+id = "Step.gradient_mul_le"
+
+[[node]]
+id = "Step.step_lower_of_quadratic"
+
+[[node]]
+id = "Trace.step_lower_of_quadratic"

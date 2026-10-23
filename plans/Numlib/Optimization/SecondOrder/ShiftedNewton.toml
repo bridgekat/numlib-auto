@@ -1,0 +1,52 @@
+namespace = "ShiftedNewton"
+
+[[node]]
+id = "Step"
+
+[[node]]
+id = "ShiftedPSD"
+
+[[node]]
+id = "shiftedPSD_iff"
+
+[[node]]
+id = "Trace"
+
+[[node]]
+id = "MethodClass"
+
+[[node]]
+id = "quadraticDerivative_eq"
+
+[[node]]
+id = "Step.trial_gradient_le"
+
+[[node]]
+id = "Step.trial_gradient_le_sq"
+
+[[node]]
+id = "sqrt_step_lower"
+
+[[node]]
+id = "Step.step_lower"
+
+[[node]]
+id = "least_rayleigh_lower"
+
+[[node]]
+id = "least_shift_nonneg"
+
+[[node]]
+id = "Step.shift_mul_norm_le"
+
+[[node]]
+id = "spectral_bound_of_quadratic"
+
+[[node]]
+id = "Step.spectral_bound"
+
+[[node]]
+id = "Trace.to_methodClass"
+
+[[node]]
+id = "Trace.step_lower"
