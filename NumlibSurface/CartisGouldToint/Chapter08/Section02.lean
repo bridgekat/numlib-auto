@@ -1,4 +1,4 @@
-import Numlib.Optimization.Quadratic.Secular.Taylor
+import Numlib.Optimization.Quadratic.Secular.Transform
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
 
 /-!
@@ -72,5 +72,39 @@ theorem theorem_8_2_2 {n : ℕ} [NeZero n]
         secularTaylorPolynomial H M g k z δ < secularTaylorPolynomial H M g (k + 1) z δ ∧
         secularTaylorPolynomial H M g (k + 1) z δ < secularFunction H M g (z + δ))) :=
   B.actualTaylor_bounds g k hz
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The actual transformed secular function (8.2.17), `π(z)^β`. Negative
+exponents are used on its positive-base domain, supplied by a nonzero gradient. -/
+noncomputable abbrev transformedSecularFunction {n : ℕ}
+    (H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
+    (g : EuclideanSpace ℝ (Fin n)) (β z : ℝ) : ℝ :=
+  QuadraticSecular.PencilBasis.transformed H M g β z
+
+/-- Lemma 8.2.3, with the strictness correction at `β=−1/2`. Both derivative
+signs are strict for positive exponents and nonzero gradient. For negative
+exponents the first derivative is positive, and the second is nonpositive on
+`[−1/2,0)`. It is strictly negative on `(−1/2,0)` and also at the endpoint when
+two distinct generalized eigenvalues are active. With one active eigenvalue,
+the endpoint transform can be affine, so its weak inequality is essential. -/
+theorem lemma_8_2_3 {n : ℕ} [NeZero n]
+    {H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
+    (B : QuadraticSecular.PencilBasis (ι := Fin n) H M)
+    (g : EuclideanSpace ℝ (Fin n)) (β : ℝ)
+    {z : ℝ} (hz : B.edge < z) :
+    (0 < β → deriv (transformedSecularFunction H M g β) z ≤ 0 ∧
+      0 ≤ iteratedDeriv 2 (transformedSecularFunction H M g β) z ∧
+      (g ≠ 0 → deriv (transformedSecularFunction H M g β) z < 0 ∧
+        0 < iteratedDeriv 2 (transformedSecularFunction H M g β) z)) ∧
+    (β < 0 → g ≠ 0 → 0 < deriv (transformedSecularFunction H M g β) z ∧
+      (-(1 / 2 : ℝ) ≤ β → iteratedDeriv 2 (transformedSecularFunction H M g β) z ≤ 0 ∧
+        (-(1 / 2 : ℝ) < β → iteratedDeriv 2 (transformedSecularFunction H M g β) z < 0) ∧
+        ((∃ i j, inner ℝ g (B.basis i) ≠ 0 ∧ inner ℝ g (B.basis j) ≠ 0 ∧
+          B.eigenvalue i ≠ B.eigenvalue j) →
+          iteratedDeriv 2 (transformedSecularFunction H M g β) z < 0))) :=
+  B.transformed_derivative_signs g β hz
 
 end CartisGouldToint

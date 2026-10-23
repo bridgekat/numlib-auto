@@ -2,3 +2,9 @@ namespace = "Finset"
 
 [[node]]
 id = "one_sub_sum_le_prod_one_sub"
+
+[[node]]
+id = "sum_mul_sub_mul_sq"
+
+[[node]]
+id = "sum_mul_sq_lt_sq_mul_sq"

@@ -1,0 +1,38 @@
+namespace = "QuadraticSecular.PencilBasis"
+
+
+[[node]]
+id = "transformed_hasDerivAt"
+
+[[node]]
+id = "transformed_second"
+
+[[node]]
+id = "transformed_first_pos_exponent"
+
+[[node]]
+id = "transformed_first_neg_exponent"
+
+[[node]]
+id = "transformed_second_pos_exponent"
+
+[[node]]
+id = "transformed_second_neg_exponent"
+
+[[node]]
+id = "transformed_second_neg_strict"
+
+[[node]]
+id = "transformed_second_neg_strict_of_active"
+
+[[node]]
+id = "transformed"
+
+[[node]]
+id = "transformed_derivative_eq"
+
+[[node]]
+id = "transformed_zero_derivative"
+
+[[node]]
+id = "transformed_derivative_signs"

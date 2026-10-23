@@ -1,0 +1,38 @@
+namespace = "QuadraticSecular.PencilBasis"
+
+
+[[node]]
+id = "moment"
+
+[[node]]
+id = "moment_two"
+
+[[node]]
+id = "cauchy_moments"
+
+[[node]]
+id = "moment_add"
+
+[[node]]
+id = "strict_cauchy_moments"
+
+[[node]]
+id = "spectralSum_pos"
+
+[[node]]
+id = "first_derivative_eq"
+
+[[node]]
+id = "second_derivative_eq"
+
+[[node]]
+id = "curvature_inequality"
+
+[[node]]
+id = "strict_curvature_inequality"
+
+[[node]]
+id = "curvature_bracket_nonneg"
+
+[[node]]
+id = "curvature_bracket_pos"

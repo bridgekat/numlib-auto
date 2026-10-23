@@ -7,12 +7,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "transformedSecularFunction"
-kind = "definition"
-desc = '''
-For real β≠0 define π(λ;β)=π(λ)^β on λ>λs, with g≠0 whenever β<0. Keep the exponent convention 2β on ||s(λ)||_M, from (8.2.17). Define the kth Taylor polynomial t_k(δ)=Σ_(j=0)^k π^(j)(λc)δ^j/j! and transformed first-order t1(δ;β)=π(λc;β)+π′(λc;β)δ.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.2"
-deps = ["secularFunction"]
 
 [[node]]
 id = "lemma_8_2_1"
@@ -24,24 +19,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_8_2_3"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 8.2.3: Derivatives of \( \pi \left( {\lambda ;\beta }\right) \)
-
-[Appendix to Chapter 8, p. 476]: Let \( \pi \left( {\lambda ;\beta }\right) \) be the transformed secular function (8.2.17). Suppose that \( \lambda  > {\lambda }_s \) . Then
-
-(i) \( {\pi }^{\left( 1\right) }\left( {\lambda ;\beta }\right)  \leq  0 \) for all \( \beta  > 0 \) , while \( {\pi }^{\left( 1\right) }\left( {\lambda ;\beta }\right)  \geq  0 \) for all \( \beta  < 0 \) ;
-
-(ii) \( {\pi }^{\left( 2\right) }\left( {\lambda ;\beta }\right)  \geq  0 \) for all \( \beta  > 0 \) , while \( {\pi }^{\left( 2\right) }\left( {\lambda ;\beta }\right)  \leq  0 \) for all \( \beta  \in  \lbrack  - 1/2,0) \) .
-
-The above inequalities are strict whenever \( g \neq  0 \) .
-
-Documented source/OCR correction and formalization requirements: Correction to the final strictness sentence: first derivative signs are strict when g≠0. For the second derivative, strict positivity holds for β>0 and g≠0; strict negativity holds for −1/2<β<0 and g≠0. At β=−1/2 retain a non-strict inequality; it is strict only if g has nonzero spectral components at two distinct generalized eigenvalues. For negative β assume g≠0 so real powers are defined on a positive base. A single active eigenvalue makes π(λ;−1/2) affine, refuting the unqualified strict claim.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 8.2.3 (OCR Markdown line 9662)"
-deps = ["transformedSecularFunction"]
 
 [[node]]
 id = "corollary_8_2_4"
