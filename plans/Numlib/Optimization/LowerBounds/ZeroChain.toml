@@ -1,0 +1,52 @@
+namespace = "ZeroChain"
+
+[[node]]
+id = "DerivativeCoordinateZero"
+
+[[node]]
+id = "IsZeroChain"
+
+[[node]]
+id = "IsZeroRespectingSequence"
+
+[[node]]
+id = "IsZeroChain.scale"
+
+[[node]]
+id = "support_iterate"
+
+[[node]]
+id = "OracleEvaluation"
+
+[[node]]
+id = "OracleMethod"
+
+[[node]]
+id = "OracleMethod.iterates"
+
+[[node]]
+id = "IsZeroRespectingMethod"
+
+[[node]]
+id = "Problem"
+
+[[node]]
+id = "hittingTime"
+
+[[node]]
+id = "functionClass"
+
+[[node]]
+id = "methodClassComplexity"
+
+[[node]]
+id = "classComplexity"
+
+[[node]]
+id = "classComplexity_mono"
+
+[[node]]
+id = "dimension_le_hittingTime"
+
+[[node]]
+id = "dimension_le_singleton_complexity"
