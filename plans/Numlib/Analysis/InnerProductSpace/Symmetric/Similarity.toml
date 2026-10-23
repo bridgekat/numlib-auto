@@ -1,0 +1,5 @@
+namespace = "ContinuousLinearMap"
+
+[[node]]
+id = "norm_le_norm_of_similar"
+

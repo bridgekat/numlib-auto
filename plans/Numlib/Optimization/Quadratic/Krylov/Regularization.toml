@@ -1,0 +1,11 @@
+namespace = "QuadraticKrylov"
+
+[[node]]
+id = "projected_optimality"
+
+[[node]]
+id = "norm_fderiv_regularized"
+
+[[node]]
+id = "regularized_gradient_bound"
+

@@ -1,0 +1,52 @@
+namespace = "Lanczos"
+
+[[node]]
+id = "basisEmbedding"
+
+[[node]]
+id = "basisEmbedding_apply"
+
+[[node]]
+id = "basisEmbedding_single"
+
+[[node]]
+id = "inner_basisEmbedding_vec"
+
+[[node]]
+id = "basisEmbedding_mem"
+
+[[node]]
+id = "coeff_norm_le"
+
+[[node]]
+id = "basisEmbedding_initial"
+
+[[node]]
+id = "apply_basisEmbedding"
+
+[[node]]
+id = "shifted_apply_basisEmbedding"
+
+[[node]]
+id = "residual_eq"
+
+[[node]]
+id = "norm_residual_le_coeff"
+
+[[node]]
+id = "last_coordinate_le"
+
+[[node]]
+id = "norm_rhs_le"
+
+[[node]]
+id = "shifted_tridiag"
+
+[[node]]
+id = "norm_residual_le"
+
+[[node]]
+id = "shifted_tridiag_offdiag_ne"
+
+[[node]]
+id = "shifted_tridiag_isHermitian"

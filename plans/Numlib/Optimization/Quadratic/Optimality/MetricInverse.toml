@@ -1,0 +1,26 @@
+namespace = "QuadraticOptimality.Metric"
+
+[[node]]
+id = "invertible"
+
+[[node]]
+id = "hessian_intertwines"
+
+[[node]]
+id = "norm_hessian_le"
+
+[[node]]
+id = "gradient_intertwines"
+
+[[node]]
+id = "gradient_ne_zero"
+
+[[node]]
+id = "norm_gradient"
+
+[[node]]
+id = "gradient_residual"
+
+[[node]]
+id = "norm_residual"
+

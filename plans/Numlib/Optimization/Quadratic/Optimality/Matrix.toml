@@ -1,0 +1,5 @@
+namespace = "Matrix"
+
+[[node]]
+id = "regularized_minimizer_solve"
+
