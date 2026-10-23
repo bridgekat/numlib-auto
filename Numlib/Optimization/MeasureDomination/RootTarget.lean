@@ -135,4 +135,59 @@ theorem sublinear_envelope_of_scaled_power (hℓ : 0 < ℓ) (hR : ∀ n, 0 ≤ R
           mul_div_mul_left _ _ hℓ.ne']
       simpa only [he, Real.one_rpow] using hh
 
+/-- Positive power substitution gives the exact residual double-logarithmic
+expression, with a fixed small-accuracy interval and initialized counters. -/
+theorem DoubleLogarithmicCost.root (hℓ : 1 ≤ ℓ) (hR : ∀ n, 0 ≤ R n)
+    (hh : DoubleLogarithmicCost 0 1 (fun n => R n ^ ℓ / ℓ) S) :
+    DoubleLogarithmicCost (-(Real.log ℓ / ℓ)) 1 R S := by
+  obtain ⟨δmax, hδmax, hδmax1, B, hB, C, hC, D, hD, F, hF, hc⟩ := hh
+  have hl : 0 < ℓ := zero_lt_one.trans_le hℓ
+  have hlogl : 0 ≤ Real.log ℓ := Real.log_nonneg hℓ
+  let εmax := min (Real.exp (-1)) ((ℓ * δmax) ^ (1 / ℓ))
+  have hmax : 0 < εmax := lt_min (Real.exp_pos _)
+    (Real.rpow_pos_of_pos (mul_pos hl hδmax) _)
+  refine ⟨εmax, hmax, min_le_left _ _, B, hB, C + B * Real.log ℓ, by positivity,
+    D, hD, F + D * Real.log ℓ, by positivity, ?_⟩
+  intro ε hε hεmax
+  have hδ : 0 < ε ^ ℓ / ℓ := div_pos (Real.rpow_pos_of_pos hε _) hl
+  have hδle : ε ^ ℓ / ℓ ≤ δmax := by
+    have he := Real.rpow_le_rpow hε.le (hεmax.trans (min_le_right _ _)) hl.le
+    rw [←Real.rpow_mul (mul_pos hl hδmax).le,
+      one_div_mul_cancel hl.ne', Real.rpow_one] at he
+    exact (div_le_iff₀ hl).mpr (by nlinarith)
+  obtain ⟨_, K, hK, hfirst, hfun, hder⟩ := hc _ hδ hδle
+  have hloge : Real.log ε ≤ -1 := by
+    have he := Real.log_le_log hε (hεmax.trans (min_le_left _ _))
+    rwa [Real.log_exp] at he
+  have haff : |-(Real.log ℓ / ℓ) + Real.log ε| = |Real.log ε| + Real.log ℓ / ℓ := by
+    rw [abs_of_nonpos
+      (by linarith [div_nonneg hlogl hl.le] : -(Real.log ℓ / ℓ) + Real.log ε ≤ 0),
+      abs_of_nonpos (by linarith : Real.log ε ≤ 0)]
+    ring
+  have hinner : 1 ≤ |-(Real.log ℓ / ℓ) + Real.log ε| := by
+    rw [haff, abs_of_nonpos (by linarith : Real.log ε ≤ 0)]
+    have hh : 0 ≤ Real.log ℓ / ℓ := div_nonneg hlogl hl.le
+    linarith
+  have he : Real.log |Real.log (ε ^ ℓ / ℓ)| =
+      Real.log ℓ + Real.log |-(Real.log ℓ / ℓ) + Real.log ε| := by
+    rw [Real.log_div (Real.rpow_pos_of_pos hε _).ne' hl.ne', Real.log_rpow hε,
+      abs_of_nonpos (by nlinarith : ℓ * Real.log ε - Real.log ℓ ≤ 0)]
+    have harg : -(ℓ * Real.log ε - Real.log ℓ) =
+        ℓ * |-(Real.log ℓ / ℓ) + Real.log ε| := by
+      rw [haff, abs_of_nonpos (by linarith : Real.log ε ≤ 0)]
+      field_simp
+      ring
+    rw [harg, Real.log_mul hl.ne' (zero_lt_one.trans_le hinner).ne']
+  simp only [one_mul, zero_add] at hfun hder
+  rw [he] at hfun hder
+  refine ⟨by simpa only [one_mul] using hinner, K,
+    (scaled_power_le_iff hl (hR K) hε.le).mp hK, ?_, ?_, ?_⟩
+  · intro k hk
+    exact lt_of_not_ge (fun hn => (not_le_of_gt (hfirst k hk))
+      ((scaled_power_le_iff hl (hR k) hε.le).mpr hn))
+  · simp only [one_mul]
+    nlinarith
+  · simp only [one_mul]
+    nlinarith
+
 end MeasureDomination

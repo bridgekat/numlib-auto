@@ -26,3 +26,6 @@ id = "linear_step_of_scaled_power"
 
 [[node]]
 id = "sublinear_envelope_of_scaled_power"
+
+[[node]]
+id = "DoubleLogarithmicCost.root"

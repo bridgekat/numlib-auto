@@ -161,36 +161,6 @@ wrong = "The actual successful measures need not converge to zero under historic
 
 [[node]]
 id = "theorem_5_3_10"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 5.3.10: Complexity for full-rank nonlinear least-squares (adaptive regularization-like methods)
-
-Suppose that an \( \mathrm{AR}\psi ,\nu \) algorithm is applied to minimize \( {\Phi }_{\ell } \) for an even positive integer \( \ell  \leq  p \) , where \( p \) is the degree of the model used by this algorithm. Suppose also that (5.1.62) holds. Then the sequence \( {\left\{  \begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}\right\}  }_{k \in  \mathcal{S}} \) converges superlinearly to zero and there exist positive constants \( {\kappa }_{\mathrm{AR},\mathrm{FRLS}}^B,{\kappa }_{\mathrm{AR},\mathrm{FRLS}}^C,{\kappa }_{\mathrm{AR},\mathrm{FRLS}}^E \) , and \( {\kappa }_{\mathrm{AR},\mathrm{FRLS}}^F \) such that the algorithm needs at most
-
-\[
-{\# }_{\text{ AR, FRLS }}^{F}\overset{\text{ def }}{ = }{\kappa }_{\text{ AR, FRLS }}^{B}\log \left( {\left| {\log \left( {\epsilon }_{0}\right) }\right|  + \frac{1}{\ell }\log \ell }\right)  + {\kappa }_{\text{ AR, FRLS }}^{C} = \mathcal{O}\left( {\log \left| {\log \left( {\epsilon }_{0}\right) }\right| }\right)\tag{5.3.44}
-\]
-
-iterations and evaluations \( {}^a \) of \( {\Phi }_{\ell } \) and at most
-
-\[
-{\# }_{\mathrm{{AR}},\mathrm{{FRLS}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{AR}},\mathrm{{FRLS}}}^{E}\log \left( {\left| {\log \left( {\epsilon }_{0}\right) }\right|  + \frac{1}{\ell }\log \ell }\right)  + {\kappa }_{\mathrm{{AR}},\mathrm{{FRLS}}}^{F} = \mathcal{O}\left( {\log \left| {\log \left( {\epsilon }_{0}\right) }\right| }\right)\tag{5.3.45}
-\]
-
-successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{r\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) .
-
-\( {}^a \) Strictly, to show the order estimates \( \mathcal{O}\left( {\log \left| {\log \left( {\epsilon }_0\right) }\right| }\right) \) in (5.3.44) and (5.3.45) requires a mild additional assumption such as that \( {\epsilon }_0 \) is small enough so that \( \left| {\log {\epsilon }_0}\right|  \geq  1 \) .
-
-Referenced equation payloads:
-
-Equation (5.1.62):
-\[
-{\psi }_{\ell ,1}\left( {x}_k\right)  \geq  {\psi }_{\min }\tag{5.1.62}
-\]
-'''
-deps = ["theorem_5_3_3", "theorem_5_1_7", "theorem_5_3_9", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.10 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6676)"
 
 [[node]]

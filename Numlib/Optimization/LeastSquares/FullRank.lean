@@ -148,4 +148,35 @@ theorem UniformFirstMeasure.tr_linear (h : UniformFirstMeasure r 2 κ x)
     exact linear_step_of_scaled_power (by norm_num) (norm_nonneg _) ha
       (norm_nonneg _) (hlin j)
 
+/-- Below the domination level, actual residuals converge superlinearly and
+have the exact source double-logarithmic initialized evaluation bounds. -/
+theorem UniformFirstMeasure.ar_superlinear (h : UniformFirstMeasure r ℓ κ x)
+    (hℓ : 1 < ℓ) (hκ : 0 < κ) {ν κν κR κA : ℝ} {S : Set ℕ}
+    (hr : ARRun (powerObjective r ℓ)
+      (fun z => ‖fderiv ℝ (powerObjective r ℓ) z‖) x S ν κν κR κA)
+    (hνμ : ν < ℓ / (ℓ - 1)) :
+    Tendsto (fun j => ‖r (x (successIndex S j))‖) atTop (nhds 0) ∧
+      Tendsto (fun j => ‖r (x (successIndex S (j + 1)))‖ /
+        ‖r (x (successIndex S j))‖) atTop (nhds 0) ∧
+      DoubleLogarithmicCost (-(Real.log ℓ / ℓ)) 1 (fun k => ‖r (x k)‖) S ∧
+      DoubleLogarithmicCost 0 1 (fun k => ‖r (x k)‖) S := by
+  have hd := h.along_domination hℓ hκ
+  have ht := (hr.trace_run (fstar := 0)).successful_tendsto_zero hd.dominated
+  have hs := (hr.trace_run (fstar := 0)).successful_superlinear hd.dominated hνμ
+  have hc := (hr.trace_run (fstar := 0)).gap_doublelog_cost hd.dominated hνμ
+  change Tendsto (fun j => powerObjective r ℓ (x (successIndex S j)) - 0)
+    atTop (nhds 0) at ht
+  simp only [MeasureDomination.successfulGap, gap, traceObjective_iterate,
+    sub_zero, powerObjective_apply] at ht hs hc
+  have hroot : DoubleLogarithmicCost (-(Real.log ℓ / ℓ)) 1
+      (fun k => ‖r (x k)‖) S := DoubleLogarithmicCost.root (R := fun k => ‖r (x k)‖) hℓ.le
+        (fun _ => norm_nonneg _) hc
+  exact ⟨tendsto_zero_of_scaled_power (ℓ := ℓ)
+      (R := fun j => ‖r (x (successIndex S j))‖) (zero_lt_one.trans hℓ)
+      (fun _ => norm_nonneg _) ht,
+    superlinear_of_scaled_power (ℓ := ℓ)
+      (R := fun j => ‖r (x (successIndex S j))‖) (zero_lt_one.trans hℓ)
+      (fun _ => norm_nonneg _) hs,
+    hroot, hroot.to_plain zero_lt_one⟩
+
 end LeastSquares

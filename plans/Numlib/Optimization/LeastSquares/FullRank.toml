@@ -20,3 +20,6 @@ id = "UniformFirstMeasure.tr_sublinear"
 
 [[node]]
 id = "UniformFirstMeasure.tr_linear"
+
+[[node]]
+id = "UniformFirstMeasure.ar_superlinear"

@@ -409,4 +409,31 @@ theorem theorem_5_3_12 {n m : ℕ} {r : EuclideanSpace ℝ (Fin n) →
   obtain ⟨ht, he⟩ := hfull.tr_linear hmin hr
   exact ⟨ht, he, hfull.tr_logarithmic_cost hmin hr⟩
 
+/-- **Theorem5.3.10.** For every positive even `ℓ≤p`, the actual adaptive
+regularization trace has superlinear residual convergence and initialized
+first-target double-logarithmic counts. The displayed affine inner logarithm is
+`log(|log ε₀| + log ℓ/ℓ)` on the fixed admissible accuracy interval. Its ordinary
+double-logarithmic order is also included. Domination uses only visited points. -/
+theorem theorem_5_3_10 {n m ℓ p : ℕ} {r : EuclideanSpace ℝ (Fin n) →
+      EuclideanSpace ℝ (Fin m)} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    {ψmin κν κR κA : ℝ} (heven : Even ℓ) (hℓ : 0 < ℓ) (hℓp : ℓ ≤ p)
+    (hmin : 0 < ψmin) (hfull : residualFullRankTrace r (ℓ : ℝ) ψmin x)
+    (hr : arMeasureRun (LeastSquares.powerObjective r (ℓ : ℝ))
+      (fun z => ‖fderiv ℝ (LeastSquares.powerObjective r (ℓ : ℝ)) z‖)
+      x S (((p : ℝ) + 1) / p) κν κR κA) :
+    Tendsto (fun j => ‖r (x (measureSuccessIndex S j))‖) atTop (nhds 0) ∧
+      Tendsto (fun j => ‖r (x (measureSuccessIndex S (j + 1)))‖ /
+        ‖r (x (measureSuccessIndex S j))‖) atTop (nhds 0) ∧
+      measureDoubleLogarithmicComplexity (-(Real.log ℓ / ℓ)) 1
+        (fun k => ‖r (x k)‖) S ∧
+      measureDoubleLogarithmicComplexity 0 1 (fun k => ‖r (x k)‖) S := by
+  have hl : (1 : ℝ) < ℓ := by
+    obtain ⟨a, ha⟩ := heven
+    exact_mod_cast (show 1 < ℓ by omega)
+  have hp : (0 : ℝ) < p := by exact_mod_cast lt_of_lt_of_le hℓ hℓp
+  have hlp : (ℓ : ℝ) ≤ p := by exact_mod_cast hℓp
+  apply hfull.ar_superlinear hl hmin hr
+  apply (div_lt_div_iff₀ hp (sub_pos.mpr hl)).mpr
+  nlinarith
+
 end CartisGouldToint
