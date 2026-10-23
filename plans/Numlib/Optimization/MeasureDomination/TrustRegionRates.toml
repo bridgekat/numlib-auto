@@ -38,3 +38,30 @@ id = "TRRun.measure_zero_of_gap_zero"
 
 [[node]]
 id = "TRRun.first_zero_budget"
+
+[[node]]
+id = "TRRun.successful_initial_gap"
+
+[[node]]
+id = "TRRun.linear_decrease"
+
+[[node]]
+id = "TRRun.linear_coefficient_le"
+
+[[node]]
+id = "TRRun.first_zero_of_equal_linear"
+
+[[node]]
+id = "TRRun.initial_threshold_le"
+
+[[node]]
+id = "TRRun.initial_le_threshold"
+
+[[node]]
+id = "TRRun.first_zero_of_initial_threshold"
+
+[[node]]
+id = "TRRun.last_positive_gap"
+
+[[node]]
+id = "TRRun.successful_sublinear_envelope"

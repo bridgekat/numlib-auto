@@ -50,3 +50,6 @@ id = "decrease_ge_threshold"
 
 [[node]]
 id = "exists_zero_le_budget"
+
+[[node]]
+id = "sublinear_envelope"

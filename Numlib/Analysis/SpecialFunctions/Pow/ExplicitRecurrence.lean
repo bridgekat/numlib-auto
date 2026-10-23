@@ -172,4 +172,21 @@ theorem exists_zero_le_budget (hc : 0 < c) (hτ : 0 < τ) (hτ1 : τ < 1)
   refine ⟨K, hzero, hfirst, (le_div_iff₀ (threshold_pos hc τ)).mpr ?_⟩
   simpa only [hzero, sub_zero] using hsum
 
+/-- Above exponent one the positive implicit orbit gives a sublinear upper
+envelope. Actual explicit sequences may reach zero earlier. -/
+theorem sublinear_envelope (hc : 0 < c) (hτ : 1 < τ) (hb : ∀ n, 0 ≤ b n)
+    (hstep : ∀ n, b (n + 1) + c * b n ^ τ ≤ b n) :
+    (∀ n, b n = 0) ∨ ∃ t : ℕ → ℝ, (∀ n, 0 < t n) ∧
+      (∀ n, b n ≤ t n) ∧ Tendsto t atTop (nhds 0) ∧
+      Tendsto (fun n => t (n + 1) / t n) atTop (nhds 1) := by
+  have ht : 0 < τ := zero_lt_one.trans hτ
+  rcases (hb 0).eq_or_lt with hz | hp
+  · left
+    intro n
+    exact le_antisymm (((antitone hc hb hstep) (Nat.zero_le n)).trans_eq hz.symm) (hb n)
+  · right
+    exact ⟨ImplicitGap.orbit c τ (b 0), ImplicitGap.orbit_pos hc ht hp,
+      ImplicitGap.le_orbit hc ht hb (implicit_decrease hc ht hb hstep),
+      ImplicitGap.orbit_tendsto_zero hc ht hp.le, ImplicitGap.orbit_sublinear_ratio hc hτ hp⟩
+
 end ExplicitGap

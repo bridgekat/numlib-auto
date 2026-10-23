@@ -1,3 +1,4 @@
+import Numlib.Optimization.MeasureDomination.ThresholdCounterexample
 import Numlib.Optimization.MeasureDomination.TrustRegionRates
 import Numlib.Optimization.MeasureDomination.HistoricalEuclidean
 import Numlib.Optimization.MeasureDomination.Superlinear
@@ -248,5 +249,76 @@ theorem theorem_5_3_7 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
   · exact hcard.trans (le_add_of_nonneg_right zero_le_one)
   · push_cast
     linarith
+
+/-- **Lemma5.3.6, corrected.** The complete historical-gap trichotomy uses
+`Γ_square` as the final positive threshold. The printed `Γ≥1` in clause(ii)
+is false for unnormalized gaps; it holds for `Γ/Γ_square`. The sublinear clause
+is an upper rate, allowing faster actual convergence or finite attainment. -/
+theorem lemma_5_3_6_corrected {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
+    {fstar μ κψ ν κν κR κA : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    (hd : measureDominated f ψ fstar μ κψ) (hr : trMeasureRun f ψ x S ν κν κR κA)
+    (hinit : 0 < objectiveGap f fstar (x 0)) :
+    Tendsto (successfulObjectiveGap f fstar x S) atTop (nhds 0) ∧
+      (∀ k ∈ S, objectiveGap f fstar (x (k + 1)) ≤ objectiveGap f fstar (x k) *
+        (1 - κν / κψ ^ (ν / μ) * objectiveGap f fstar (x k) ^ ((ν - μ) / μ))) ∧
+      (ν = μ → κν ≤ κψ ∧
+        (∀ k ∈ S, objectiveGap f fstar (x (k + 1)) ≤
+          (1 - κν / κψ) * objectiveGap f fstar (x k)) ∧
+        (∀ j, successfulObjectiveGap f fstar x S (j + 1) ≤
+          (1 - κν / κψ) * successfulObjectiveGap f fstar x S j) ∧
+        (κν = κψ → objectiveGap f fstar (x (measureSuccessIndex S 0 + 1)) = 0)) ∧
+      (ν < μ → trMeasureGapThreshold κψ κν μ ν ≤ objectiveGap f fstar (x 0) ∧
+        (objectiveGap f fstar (x 0) = trMeasureGapThreshold κψ κν μ ν →
+          objectiveGap f fstar (x (measureSuccessIndex S 0 + 1)) = 0) ∧
+        Tendsto (fun j => successfulObjectiveGap f fstar x S (j + 1) /
+          successfulObjectiveGap f fstar x S j) atTop (nhds 0) ∧
+        ∃ k ∈ S, trMeasureGapThreshold κψ κν μ ν ≤ objectiveGap f fstar (x k) ∧
+          (∀ i ≤ k, 0 < objectiveGap f fstar (x i)) ∧
+          objectiveGap f fstar (x (k + 1)) = 0 ∧ ψ (x (k + 1)) = 0 ∧
+          ∀ j, k + 1 ≤ j → x j = x (k + 1)) ∧
+      (μ < ν → objectiveGap f fstar (x 0) ≤ trMeasureGapThreshold κψ κν μ ν ∧
+        (objectiveGap f fstar (x 0) = trMeasureGapThreshold κψ κν μ ν →
+          objectiveGap f fstar (x (measureSuccessIndex S 0 + 1)) = 0) ∧
+        ((∀ j, successfulObjectiveGap f fstar x S j = 0) ∨
+          ∃ t : ℕ → ℝ, (∀ j, 0 < t j) ∧
+            (∀ j, successfulObjectiveGap f fstar x S j ≤ t j) ∧
+            Tendsto t atTop (nhds 0) ∧
+            Tendsto (fun j => t (j + 1) / t j) atTop (nhds 1))) := by
+  refine ⟨hr.successful_tendsto_zero hd, ?_, ?_, ?_, ?_⟩
+  · intro k hk
+    have he : (ν - μ) / μ = ν / μ - 1 := by
+      field_simp [(zero_lt_one.trans_le hd.level_ge_one).ne']
+    simpa only [he] using hr.factor_decrease hd hk
+  · intro heq
+    refine ⟨hr.linear_coefficient_le hd heq hinit,
+      fun _ hk => hr.linear_decrease hd heq hk, ?_,
+      hr.first_zero_of_equal_linear hd heq⟩
+    intro j
+    have hh := hr.linear_decrease hd heq
+      (MeasureDomination.successIndex_mem hr.infinite_success j)
+    simpa only [successfulObjectiveGap, MeasureDomination.successfulGap,
+      hr.next_success_point j] using hh
+  · intro hνμ
+    exact ⟨hr.initial_threshold_le hd hνμ hinit,
+      hr.first_zero_of_initial_threshold hd hνμ.ne,
+      hr.successful_superlinear hd hνμ, hr.last_positive_gap hd hνμ hinit⟩
+  · intro hμν
+    exact ⟨hr.initial_le_threshold hd hμν hinit,
+      hr.first_zero_of_initial_threshold hd hμν.ne', hr.successful_sublinear_envelope hd hμν⟩
+
+/-- A smooth one-dimensional execution refutes the unit lower bound in the
+literal **Lemma5.3.6(ii)**: the threshold is `1/4`, the initial gap is `9/16`,
+and the exact minimum is reached after one accepted step, with no gap at least one. -/
+theorem lemma_5_3_6_counterexample :
+    ∃ (f ψ : EuclideanSpace ℝ (Fin 1) → ℝ)
+      (x : ℕ → EuclideanSpace ℝ (Fin 1)),
+      ContDiff ℝ ⊤ f ∧ measureDominated f ψ 0 2 1 ∧
+      trMeasureRun f ψ x Set.univ 1 (1 / 2) 1 0 ∧
+      trMeasureGapThreshold 1 (1 / 2) 2 1 < objectiveGap f 0 (x 0) ∧
+      (∀ k, objectiveGap f 0 (x k) < 1) ∧ objectiveGap f 0 (x 1) = 0 :=
+  ⟨_, _, _, MeasureDomination.ThresholdCounterexample.objective_contDiff,
+    MeasureDomination.ThresholdCounterexample.dominated,
+    MeasureDomination.ThresholdCounterexample.run,
+    MeasureDomination.ThresholdCounterexample.obstruction⟩
 
 end CartisGouldToint

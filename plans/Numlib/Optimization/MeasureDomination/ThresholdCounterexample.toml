@@ -1,0 +1,25 @@
+namespace = "MeasureDomination.ThresholdCounterexample"
+
+[[node]]
+id = "objective"
+
+[[node]]
+id = "measure"
+
+[[node]]
+id = "iterate"
+
+[[node]]
+id = "objective_contDiff"
+
+[[node]]
+id = "dominated"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "threshold"
+
+[[node]]
+id = "obstruction"

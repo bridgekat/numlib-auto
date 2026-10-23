@@ -225,4 +225,122 @@ theorem TRRun.first_zero_budget (hr : TRRun f ψ x S ν κν κR κA)
   · exact (hr.density K).trans (add_le_add
       (mul_le_mul_of_nonneg_left hreal (zero_le_one.trans hr.density_factor)) le_rfl)
 
+/-- The first successful gap is exactly the initial objective gap. -/
+theorem TRRun.successful_initial_gap (hr : TRRun f ψ x S ν κν κR κA) (a : ℝ) :
+    successfulGap f a x S 0 = gap f a (x 0) := by
+  rw [successfulGap, hr.first_success_point]
+
+/-- At equal exponents the actual accepted gap has the exact source linear factor. -/
+theorem TRRun.linear_decrease (hr : TRRun f ψ x S ν κν κR κA)
+    (hd : Dominated f ψ fstar μ κψ) (heq : ν = μ) {k : ℕ} (hk : k ∈ S) :
+    gap f fstar (x (k + 1)) ≤ (1 - κν / κψ) * gap f fstar (x k) := by
+  have ht : ν / μ = 1 := by rw [heq, div_self (zero_lt_one.trans_le hd.level_ge_one).ne']
+  have hh := hr.explicit_decrease hd hk
+  simp only [ht, Real.rpow_one] at hh
+  linarith
+
+/-- A positive initial gap bounds the equal-exponent decrease coefficient by
+the domination coefficient, before the first actual accepted trial. -/
+theorem TRRun.linear_coefficient_le (hr : TRRun f ψ x S ν κν κR κA)
+    (hd : Dominated f ψ fstar μ κψ) (heq : ν = μ) (hinit : 0 < gap f fstar (x 0)) :
+    κν ≤ κψ := by
+  have ht : ν / μ = 1 := by rw [heq, div_self (zero_lt_one.trans_le hd.level_ge_one).ne']
+  have hstep := hr.successful_explicit_decrease hd
+  simp only [ht, Real.rpow_one] at hstep
+  have hp : 0 < successfulGap f fstar x S 0 := by
+    rw [hr.successful_initial_gap fstar]
+    exact hinit
+  have hh := ExplicitGap.linear_coefficient_le_one
+    (b := successfulGap f fstar x S) (c := κν / κψ) (fun n => hd.gap_nonneg _)
+    (fun n => by simpa only [Real.rpow_one] using hstep n) hp
+  exact (div_le_one hd.coefficient_pos).mp hh
+
+/-- Equality of the linear decrease and domination coefficients attains the
+minimum immediately after the first successful trial. -/
+theorem TRRun.first_zero_of_equal_linear (hr : TRRun f ψ x S ν κν κR κA)
+    (hd : Dominated f ψ fstar μ κψ) (heq : ν = μ) (hκ : κν = κψ) :
+    gap f fstar (x (successIndex S 0 + 1)) = 0 := by
+  have hh := hr.linear_decrease hd heq (successIndex_mem hr.infinite_success 0)
+  rw [hκ, div_self hd.coefficient_pos.ne', sub_self, zero_mul] at hh
+  exact le_antisymm hh (hd.gap_nonneg _)
+
+/-- Below the domination level a positive initial gap is above the source threshold. -/
+theorem TRRun.initial_threshold_le (hr : TRRun f ψ x S ν κν κR κA)
+    (hd : Dominated f ψ fstar μ κψ) (hνμ : ν < μ) (hinit : 0 < gap f fstar (x 0)) :
+    trGapThreshold κψ κν μ ν ≤ gap f fstar (x 0) := by
+  rw [←hr.successful_initial_gap fstar] at hinit ⊢
+  exact hr.current_gap_ge_threshold hd hνμ (successIndex_mem hr.infinite_success 0) hinit
+
+/-- Above the domination level a positive initial gap is below the source threshold. -/
+theorem TRRun.initial_le_threshold (hr : TRRun f ψ x S ν κν κR κA)
+    (hd : Dominated f ψ fstar μ κψ) (hμν : μ < ν) (hinit : 0 < gap f fstar (x 0)) :
+    gap f fstar (x 0) ≤ trGapThreshold κψ κν μ ν := by
+  rw [trGapThreshold_eq (zero_lt_one.trans_le hd.level_ge_one).ne' hμν.ne']
+  have hp : 0 < successfulGap f fstar x S 0 := by
+    rw [hr.successful_initial_gap fstar]
+    exact hinit
+  have hh := ExplicitGap.le_threshold_of_pos (b := successfulGap f fstar x S)
+    (div_pos hr.coefficient_pos (Real.rpow_pos_of_pos hd.coefficient_pos (ν / μ)))
+    ((one_lt_div (zero_lt_one.trans_le hd.level_ge_one)).mpr hμν)
+    (fun _ => hd.gap_nonneg _) (hr.successful_explicit_decrease hd) hp
+  simpa only [hr.successful_initial_gap fstar] using hh
+
+/-- In either nonunit regime an initial gap exactly at the threshold attains
+the minimum at the first successful endpoint. -/
+theorem TRRun.first_zero_of_initial_threshold (hr : TRRun f ψ x S ν κν κR κA)
+    (hd : Dominated f ψ fstar μ κψ) (hνμ : ν ≠ μ)
+    (hinit : gap f fstar (x 0) = trGapThreshold κψ κν μ ν) :
+    gap f fstar (x (successIndex S 0 + 1)) = 0 := by
+  have hμ : μ ≠ 0 := (zero_lt_one.trans_le hd.level_ge_one).ne'
+  have ht : ν / μ ≠ 1 := by
+    intro he
+    exact hνμ ((div_eq_one_iff_eq hμ).mp he)
+  have hb : successfulGap f fstar x S 0 =
+      ExplicitGap.threshold (κν / κψ ^ (ν / μ)) (ν / μ) :=
+    (hr.successful_initial_gap fstar).trans (hinit.trans (trGapThreshold_eq hμ hνμ))
+  have hh := ExplicitGap.next_zero_of_eq_threshold (b := successfulGap f fstar x S)
+    (div_pos hr.coefficient_pos (Real.rpow_pos_of_pos hd.coefficient_pos (ν / μ))) ht
+    (fun _ => hd.gap_nonneg _) (hr.successful_explicit_decrease hd) hb
+  simpa only [successfulGap, hr.next_success_point 0] using hh
+
+/-- The final positive accepted gap is above the actual source threshold;
+thereafter the method is at its unchanged exact terminal point. -/
+theorem TRRun.last_positive_gap (hr : TRRun f ψ x S ν κν κR κA)
+    (hd : Dominated f ψ fstar μ κψ) (hνμ : ν < μ) (hinit : 0 < gap f fstar (x 0)) :
+    ∃ k ∈ S, trGapThreshold κψ κν μ ν ≤ gap f fstar (x k) ∧
+      (∀ i ≤ k, 0 < gap f fstar (x i)) ∧ gap f fstar (x (k + 1)) = 0 ∧
+      ψ (x (k + 1)) = 0 ∧ ∀ j, k + 1 ≤ j → x j = x (k + 1) := by
+  obtain ⟨K, hk, hψ, hfirst, hstop, _, _⟩ := hr.first_zero_budget hd hνμ
+  have hK : 0 < K := by
+    by_contra hn
+    have he : K = 0 := by omega
+    rw [he] at hk
+    exact hinit.ne' hk
+  let k := K - 1
+  have he : k + 1 = K := by omega
+  have hkS : k ∈ S := by
+    by_contra hn
+    have hx := hr.rejected k hn
+    rw [he] at hx
+    have hz : gap f fstar (x k) = 0 := by rw [←hx]; exact hk
+    exact (hfirst k (by omega)).ne' hz
+  refine ⟨k, hkS, hr.current_gap_ge_threshold hd hνμ hkS (hfirst k (by omega)),
+    fun i hi => hfirst i (by omega), ?_, ?_, ?_⟩
+  · simpa only [he] using hk
+  · simpa only [he] using hψ
+  · simpa only [he] using hstop
+
+/-- Above the domination level, a genuine positive sublinear recurrence bounds
+all successful gaps, including when actual attainment is faster. -/
+theorem TRRun.successful_sublinear_envelope (hr : TRRun f ψ x S ν κν κR κA)
+    (hd : Dominated f ψ fstar μ κψ) (hμν : μ < ν) :
+    (∀ n, successfulGap f fstar x S n = 0) ∨
+      ∃ t : ℕ → ℝ, (∀ n, 0 < t n) ∧
+        (∀ n, successfulGap f fstar x S n ≤ t n) ∧ Tendsto t atTop (nhds 0) ∧
+        Tendsto (fun n => t (n + 1) / t n) atTop (nhds 1) :=
+  ExplicitGap.sublinear_envelope
+    (div_pos hr.coefficient_pos (Real.rpow_pos_of_pos hd.coefficient_pos _))
+    ((one_lt_div (zero_lt_one.trans_le hd.level_ge_one)).mpr hμν)
+    (fun _ => hd.gap_nonneg _) (hr.successful_explicit_decrease hd)
+
 end MeasureDomination
