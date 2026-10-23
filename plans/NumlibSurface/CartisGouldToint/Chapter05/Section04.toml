@@ -1,47 +1,7 @@
 namespace = "CartisGouldToint"
-desc = '''
-Surface adaptation of Cartis–Gould–Toint Chapter 5, Section 4.
-
-Separate local Newton-region estimates from the global-to-local transition. Lipschitz Hessian and positive definite limiting Hessian yield a quantitative ball and quadratic error recurrence, then the doubly logarithmic local evaluation count. Retain the assumptions of convergence to the designated local minimizer; do not infer that all bounded-below objectives are locally strongly convex.
-
-Use EuclideanSpace ℝ (Fin n), with n>0 where a least eigenvalue or unit sphere is used. Gradients are the Riesz representatives of fderiv; derivative tensors are iteratedFDeriv ℝ, and Hessian PSD/PD means the corresponding quadratic form is nonnegative/positive on all/nonzero vectors. The tensor operator norm is the supremum on products of unit balls. Reuse Mathlib ContDiff/ContDiffOn, IsLocalMin/IsLocalMinOn, Convex, IsClosed, Matrix.PosSemidef/PosDef, and LipschitzWith. Do not replace a derivative by arbitrary supplied data without a HasFDeriv/iteratedFDeriv compatibility hypothesis.
-
-Algorithm declarations are predicates on genuine finite traces, not functions that assume successful termination: initial conditions, model construction, allowed step selection, acceptance test, iterate and parameter updates must be explicit. Prove separately that model steps exist and denominators are positive when used. An accuracy component set to infinity means its test is disabled (use WithTop or an explicit active-order index), and does not coerce infinity to a real. For finite counting use a prefix of length N, indexed by i<N; translate the book's inclusive S_k by N=k+1 and record the index conversion. Evaluation counts include initial and terminal evaluations and reuse values only when the algorithm explicitly reuses them.
-
-In evaluation bounds every κ/L parameter must be fixed independently of requested accuracies; constants may depend on problem data, dimension, algorithm parameters and f(x₀)−f_low only as displayed. Lower-bound results mean: for all sufficiently small positive accuracy, there exists an objective and a trace of the stated method with uniformly controlled smoothness and gap constants; this is not a claim about all objectives. Use integer floors/ceilings and a documented bounded additive correction when the OCR suppresses rounding. Big-O follows from the explicit bounds and uses the accuracy tending to 0 through positive values. No conclusion or iteration-complexity bound may be a field in an algorithm predicate.
-
-Section mathematical setup (source OCR; resolve errors by the design notes above):
-
-#### 5.4.1 Introduction
-
-We have seen that when nonconvex \( f \) has a Lipschitz-continuous Hessian, the AR2 algorithm will find an \( \epsilon \) -approximate first-order minimizer using at most \( \mathcal{O}\left( {\epsilon }^{-3/2}\right) \) function and derivative iterations, but that there are fiendish, carefully constructed examples for which this pessimistic bound may be attained. This is particularly unfortunate since, in practice, many years of computational experience with real-world problems have not revealed such bad examples, and evaluations in the tens to hundreds are far more typical.
-
-The question we wish to consider in this section is whether the general bound can be improved at least for certain (nonconvex) problem classes, such as those whose local minimizers are strict. In particular, using known results for strongly convex problems [90] and the results we have already presented for general nonconvex functions, we may characterize such (nonconvex) problem classes by their complexity phases, so that the overall algorithm complexity is obtained by adding together the complexities of the phases. A notable analysis of such additive phase complexity was given for Nesterov and Polyak's cubic-regularization algorithm on classes that include problems with gradient-dominated objectives - which we considered in more general terms in the previous section - and those derived from nonlinear transformations of convex functions [305, Sects. 4.2, 4.3]. More recently, Curtis and Robinson have investigated a general formulation that they refer to as regional complexity [135]. Our interest here, aside from employing and analyzing a practical cubic-regularization algorithm that is suitable for large-scale calculations, is to investigate "head-on" nonconvex problems and subclasses.
-
-#### 5.4.2 Phase complexity under strict local convexity
-
-The results in this section establish that strong convexity of \( f \) in a neighbourhood of a strict local minimizer implies local \( Q \) -quadratic convergence of the AR2 algorithm (p. 65) in this neighbourhood and hence provides an associated evaluation complexity of order \( {\log }_2\left( {{\log }_2\left( {\epsilon }^{-1}\right) }\right) \) .
-
-We first show that there is a neighbourhood around any strong local minimizer of \( f \) for which \( f \) is locally strongly convex.
-'''
 
 [[node]]
 id = "lemma_5_4_1"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 5.4.1: Region of local strong convexity
-
-Let \( {x}_{ * } \) be a local minimizer of \( f\left( x\right) \) , and suppose that f.HL holds and that \( {\lambda }_{\min , * }\overset{\text{ def }}{ = }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( {x}_{ * }\right) }\right\rbrack   > 0 \) . Then there is a neighbourhood of \( {x}_{ * } \) ,
-
-\[
-{\mathcal{Q}}_{ * }\overset{\text{ def }}{ = }\left\{  {x : \begin{Vmatrix}{x - {x}_{ * }}\end{Vmatrix} \leq  {q}_{ * }}\right\}  ,\text{ where }{q}_{ * }\overset{\text{ def }}{ = }\frac{{\lambda }_{\min , * }}{4{L}_{f,2}},\tag{5.4.1}
-\]
-
-for which \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( x\right) }\right\rbrack   \geq  \frac{1}{2}{\lambda }_{\min , * } \) for all \( x \in  {\mathcal{Q}}_{ * } \) .
-'''
-deps = ["objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.4.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6812)"
 
 [[node]]
