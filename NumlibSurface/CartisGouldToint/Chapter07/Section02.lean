@@ -1,3 +1,4 @@
+import Numlib.Optimization.Constrained.TwoPhase.InnerBudget
 import Numlib.Optimization.Constrained.TwoPhase.FullBoundary
 import NumlibSurface.CartisGouldToint.Chapter06.Section03
 import Numlib.Optimization.Regularization.Convex.LeastSquares.PhaseOneComplexity
@@ -277,5 +278,36 @@ theorem theorem_7_2_7_counterexample :
   ⟨full_run, full_stop, all_certificates_fail, lemma_7_2_1_counterexample⟩
 
 end FullCounterexample
+
+section ReflectionInterior
+open Constrained Constrained.TwoPhase
+
+/-- **Interior-count companion to Lemma 7.2.6.** Actual ordinary ARp-CC model
+checks give the printed primal and dual powers for genuine successful inner
+endpoints strictly before their call returns. The estimate telescopes across
+actual reflection updates. Terminal reflection-return trials remain separate;
+no old-target criticality failure is asserted for those endpoints. -/
+theorem lemma_7_2_6_interior
+    {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [ProperSpace E]
+    [NormedAddCommGroup F] {p : ℕ} {closedReset : Bool} {f : E → ℝ} {c : E → F}
+    {C S : Set E} {P : ConvexRegularization.Settings p} {ε₀ ε₁ θ L : ℝ}
+    {D : Data E} {N : ℕ}
+    (h : PhaseTwoRun closedReset f c C P ε₀ ε₁ θ D N)
+    (hclosed : IsClosed C) (hS : IsOpen S) (hCS : C ⊆ S) (hC : Convex ℝ C)
+    (hf : ∀ j < N, ContDiffOn ℝ p (targetMerit f c (D.target j)) S) (hL : 0 < L)
+    (hlip : ∀ j < N, ∀ y ∈ C, ∀ z ∈ C,
+      ‖iteratedFDeriv ℝ p (targetMerit f c (D.target j)) y -
+        iteratedFDeriv ℝ p (targetMerit f c (D.target j)) z‖ ≤ L * ‖y - z‖)
+    {a m : ℕ} (ham : a + m ≤ N)
+    (hreflect : ∀ j < m,
+      ¬ResetGuard closedReset f c ε₀ θ (D.target (a + j)) (D.point (a + j + 1)) ∧
+        f (D.point (a + j + 1)) < D.target (a + j)) :
+    (∑ j ∈ Finset.range m, ((interiorSuccesses P D (a + j)).card : ℝ)) ≤
+      (ConvexRegularization.fixedDecreaseCoefficient P L *
+          θ ^ (((p + 1 : ℕ) : ℝ) / p))⁻¹ * (1 - θ) *
+        ε₀ ^ (((p : ℝ) - 1) / p) * ε₁ ^ (-(((p + 1 : ℕ) : ℝ) / p)) :=
+  h.reflection_interior_card_le hclosed hS hCS hC hf hL hlip ham hreflect
+
+end ReflectionInterior
 
 end CartisGouldToint

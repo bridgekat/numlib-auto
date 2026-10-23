@@ -1,0 +1,34 @@
+namespace = "Constrained.TwoPhase"
+
+[[node]]
+id = "PhaseTwoRun.inner_nonterminal_failure"
+
+[[node]]
+id = "PhaseTwoRun.inner_nonterminal_decrease"
+
+[[node]]
+id = "interiorSuccesses"
+
+[[node]]
+id = "mem_interiorSuccesses"
+
+[[node]]
+id = "PhaseTwoRun.inner_interior_budget"
+
+[[node]]
+id = "PhaseTwoRun.reflection_merit"
+
+[[node]]
+id = "PhaseTwoRun.reflection_interior_budget"
+
+[[node]]
+id = "squared_accuracy_budget_eq"
+
+[[node]]
+id = "PhaseTwoRun.reflection_interior_card_le"
+
+[[node]]
+id = "successful_card_le_interior_add_one"
+
+[[node]]
+id = "PhaseTwoRun.inner_trials_le_interior"
