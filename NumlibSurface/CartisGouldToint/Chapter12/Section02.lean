@@ -516,11 +516,12 @@ end CartisGouldToint
 
 namespace CartisGouldToint
 
-/-- Lemma12.2.11: a successful actual ARqp trial followed by failure of true
+/-- The obstruction in Lemma12.2.11 before true certificate attainment:
+a successful actual ARqp trial followed by failure of true
 approximate optimality forces the printed weighted step/radius inequality.
 The actual model test is needed only for steps of norm at most one. The
 parameter cap is derived from the objective ratio and parameter updates. -/
-theorem lemma_12_2_11 {n p q N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+theorem lemma_12_2_11_before_certificate {n p q N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
     {η₁ η₂ γ₁ γ₂ γ₃ σmin L θ : ℝ}
     (h : arpModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
@@ -600,7 +601,7 @@ theorem lemma_12_2_12_corrected {n p q N i : ℕ} {f : EuclideanSpace ℝ (Fin n
   have hcap := h.parameter_le hf (zero_le_one.trans hL) hlip hi.le
   have hS : 0 ≤ S := (h.updates.pos hi.le).le.trans hcap
   have hκ := HighOrderStep.regularizationRadiusCoefficient_mem hζ hζ1 hθ hθ1 hD hL hS q
-  obtain ⟨a, ha⟩ := lemma_12_2_11 h hqp hf hL hθ.le hlip hi hs ε hε δ δs
+  obtain ⟨a, ha⟩ := lemma_12_2_11_before_certificate h hqp hf hL hθ.le hlip hi hs ε hε δ δs
     hδ hupdate htest hnot
   refine ⟨hκ.1, hκ.2, a, ?_⟩
   apply HighOrderStep.lower_of_obstruction (by unfold InexactTrustRegion.modelOrder; omega)
@@ -637,7 +638,8 @@ function trial plus initialization and every derivative point plus initializatio
 is counted, with the printed additive two in the derivative budget. Both
 actual-radius and low-order unit-radius true criticality are certified.
 The safe scalar comparison changes only the existential proof constants;
-the algorithm's primitive guards and printed radius floor are retained. -/
+the algorithm's primitive guards and printed radius floor are retained.
+A true certificate may be attained before an observable termination check passes. -/
 theorem theorem_12_2_14 {n p q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (P : HighOrderRegularization.Settings p q) (x₀ : EuclideanSpace ℝ (Fin n))
     (hf : ContDiff ℝ p f) {L flow : ℝ} (hL : 1 ≤ L)

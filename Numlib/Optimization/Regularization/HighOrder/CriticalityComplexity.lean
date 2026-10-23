@@ -7,7 +7,8 @@ import Numlib.Optimization.HighOrder.CriticalityRadius
 
 Positive constants are fixed before accuracies and execution arrays. Actual
 consistent prefixes reach true all-order criticality with the two source rates,
-including unit-radius certification in orders one and two. Function calls
+including unit-radius certification in orders one and two. True certificate
+attainment may precede observable termination. Function calls
 count every trial plus initialization; derivative calls count successful point
 updates plus initialization. The safe radius coefficient only repairs proof
 constants and does not change the algorithm or source accuracy exponents.

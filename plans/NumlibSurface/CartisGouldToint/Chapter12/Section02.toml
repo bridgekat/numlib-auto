@@ -53,7 +53,24 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_12_2_11"
-source = "Cartis, Gould and Toint, Lemma12.2.11, actual accepted point/radius update and derived printed parameter cap. The proof uses correct orderwise exponents in (12.2.56)."
+kind = "theorem"
+desc = '''
+The proved lemma_12_2_11_before_certificate assumes failure of the true epsilon-criticality certificate. Literal nontermination only forces the computed decrement above zeta times its threshold, which need not imply true epsilon-criticality failure when theta exceeds zeta. Keep this original target open pending a stopping-margin repair or actual counterexample.
+
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.11: A useful relationship between the stepsize and radii
+
+Suppose that f.D1pL holds. Suppose also that iteration \( k \) is successful and that the ARqp algorithm does not terminate at iteration \( k + 1 \) . Then there exists \( j \in  \left\lbrack  {1 : q}\right\rbrack \) such that
+
+\[
+\left( {1 - \theta }\right) {\epsilon }_j\frac{{\delta }_{k + 1, j}^j}{j!} \leq  \left( {{L}_{f, p} + {\sigma }_{\max }}\right) \mathop{\sum }\limits_{\ell  = 1}^j\frac{{\delta }_{k + 1, j}^{\ell }}{\ell !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - \ell  + 1},\tag{12.2.52}
+\]
+
+where \( {\sigma }_{\max } \) is given by (4.1.19).
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.11 (OCR Markdown line 12812)"
+deps = ["arqpRun"]
 
 [[node]]
 id = "lemma_12_2_12"
@@ -239,3 +256,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "lemma_12_2_12_corrected"
 source = "Cartis, Gould and Toint, Lemma12.2.12, safe common radius coefficient; original fixed-coefficient target remains open."
+
+[[node]]
+id = "lemma_12_2_11_before_certificate"
+source = "Cartis, Gould and Toint, Lemma12.2.11 under failure of the true approximate-criticality certificate; literal nontermination target remains open."
