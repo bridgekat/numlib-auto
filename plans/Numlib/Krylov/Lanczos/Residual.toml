@@ -50,3 +50,6 @@ id = "shifted_tridiag_offdiag_ne"
 
 [[node]]
 id = "shifted_tridiag_isHermitian"
+
+[[node]]
+id = "residual_eq_zero_at_grade"

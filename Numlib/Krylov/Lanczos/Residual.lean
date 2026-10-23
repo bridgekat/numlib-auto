@@ -10,7 +10,7 @@ open scoped BigOperators Matrix
 
 The canonical Arnoldi basis gives the actual isometric Krylov embedding.
 The Lanczos identity and tridiagonal inverse decay bound the true shifted
-residual, including grade termination and an equal - endpoint spectrum.
+residual, including grade termination and an equal-endpoint spectrum.
 -/
 
 namespace Lanczos
@@ -51,7 +51,7 @@ theorem basisEmbedding_mem (A : E →ₗ[ℝ] E) (g : E) {m : ℕ} (hm : m ≤ g
   change ((Arnoldi.orthonormalBasis A g hm).repr.symm y : E) ∈ _
   exact ((Arnoldi.orthonormalBasis A g hm).repr.symm y).property
 
-/-- Every actual Lanczos off - diagonal coefficient before grade is bounded by the operator norm. -/
+/-- Every actual Lanczos off-diagonal coefficient before grade is bounded by the operator norm. -/
 theorem coeff_norm_le (A : E →L[ℝ] E) (g : E) {j : ℕ} (hj : j < grade A.toLinearMap g) :
     Lanczos.beta A.toLinearMap g j ≤ ‖A‖ := by
   have he := Lanczos.coe_beta A.toLinearMap g j
@@ -81,7 +81,7 @@ theorem basisEmbedding_initial (A : E →ₗ[ℝ] E) {g : E} (hg : g ≠ 0) {m :
   change ‖g‖ • Arnoldi.vec A g 0 = g
   simp [Arnoldi.vec_zero A g hg, smul_smul, norm_ne_zero_iff.mpr hg]
 
-/-- The actual Lanczos embedding satisfies its projected matrix relation and rank - one
+/-- The actual Lanczos embedding satisfies its projected matrix relation and rank-one
 remainder. -/
 theorem apply_basisEmbedding (A : E →ₗ[ℝ] E) (g : E) (hA : A.IsSymmetric) {m : ℕ}
     (hm : m + 1 ≤ grade A g) (y : EuclideanSpace ℝ (Fin (m + 1))) :
@@ -93,7 +93,7 @@ theorem apply_basisEmbedding (A : E →ₗ[ℝ] E) (g : E) (hA : A.IsSymmetric) 
   rw [basisEmbedding_apply]
   congr 1
 
-/-- Scalar shifting preserves the exact Lanczos relation with the same rank - one remainder. -/
+/-- Scalar shifting preserves the exact Lanczos relation with the same rank-one remainder. -/
 theorem shifted_apply_basisEmbedding (A : E →ₗ[ℝ] E) (g : E) (hA : A.IsSymmetric) {m : ℕ}
     (hm : m + 1 ≤ grade A g) (y : EuclideanSpace ℝ (Fin (m + 1))) (τ : ℝ) :
     A (basisEmbedding A g hm y) + τ • basisEmbedding A g hm y =
@@ -105,7 +105,7 @@ theorem shifted_apply_basisEmbedding (A : E →ₗ[ℝ] E) (g : E) (hA : A.IsSym
   abel
 
 
-/-- A true shifted projected solve has exactly its Lanczos rank - one residual. -/
+/-- A true shifted projected solve has exactly its Lanczos rank-one residual. -/
 theorem residual_eq (A : E →ₗ[ℝ] E) {g : E} (hg : g ≠ 0) (hA : A.IsSymmetric) {m : ℕ}
     (hm : m + 1 ≤ grade A g) (y : EuclideanSpace ℝ (Fin (m + 1))) (τ : ℝ)
     (hsolve : Matrix.toEuclideanLin (Lanczos.tridiag A g (m + 1) + τ • 1) y =
@@ -140,7 +140,7 @@ theorem norm_residual_le_coeff (A : E →L[ℝ] E) {g : E} (hg : g ≠ 0)
 
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The last coordinate of an actual tridiagonal solve has the sharp inverse - decay estimate. -/
+/-- The last coordinate of an actual tridiagonal solve has the sharp inverse-decay estimate. -/
 theorem last_coordinate_le {m : ℕ} {T : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ}
     (htri : T.IsTridiagonal) (hunit : IsUnit T) {lo hi : ℝ} (hlo : 0 < lo) (hle : lo ≤ hi)
     (hT : (Matrix.toEuclideanLin T).IsSymmetricBoundedBy lo hi)
@@ -167,7 +167,7 @@ theorem last_coordinate_le {m : ℕ} {T : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ
 
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- A true shifted positive - spectrum solve bounds its right - side norm by the largest
+/-- A true shifted positive-spectrum solve bounds its right-side norm by the largest
 spectral bound. -/
 theorem norm_rhs_le {m : ℕ} {T : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ}
     {lo hi : ℝ} (hlo : 0 < lo) (hle : lo ≤ hi)
@@ -203,7 +203,7 @@ theorem shifted_tridiag (A : E →ₗ[ℝ] E) (g : E) (m : ℕ) (τ : ℝ) :
   simp only [Matrix.add_apply, Matrix.smul_apply, Matrix.one_apply_ne hn, smul_zero, add_zero]
   exact Lanczos.tridiag_isTridiagonal A g m i j hij
 
-/-- The actual Lanczos residual has the sharp condition - number and radius decay bound. -/
+/-- The actual Lanczos residual has the sharp condition-number and radius decay bound. -/
 theorem norm_residual_le (A : E →L[ℝ] E) {g : E} (hg : g ≠ 0)
     (hA : A.toLinearMap.IsSymmetric) {m : ℕ} (hm : m + 1 ≤ grade A.toLinearMap g)
     (y : EuclideanSpace ℝ (Fin (m + 1))) (τ : ℝ)
@@ -242,7 +242,7 @@ theorem norm_residual_le (A : E →L[ℝ] E) {g : E} (hg : g ≠ 0)
     _ = _ := by ring
 
 
-/-- Every actual projected off - diagonal entry before grade remains nonzero after shifting. -/
+/-- Every actual projected off-diagonal entry before grade remains nonzero after shifting. -/
 theorem shifted_tridiag_offdiag_ne (A : E →ₗ[ℝ] E) (g : E) {m : ℕ}
     (hm : m + 1 ≤ grade A g) (τ : ℝ) (j : Fin m) :
     (Lanczos.tridiag A g (m + 1) + τ • 1) j.castSucc j.succ ≠ 0 := by
@@ -256,5 +256,15 @@ theorem shifted_tridiag_offdiag_ne (A : E →ₗ[ℝ] E) (g : E) {m : ℕ}
   simpa [Matrix.add_apply, Matrix.smul_apply, Matrix.one_apply_ne hn,
     Lanczos.tridiag_apply, Fin.ext_iff] using hb
 
+
+/-- At the true Krylov grade the actual shifted projected solve has zero full residual. -/
+theorem residual_eq_zero_at_grade (A : E →ₗ[ℝ] E) {g : E} (hg : g ≠ 0)
+    (hA : A.IsSymmetric) {m : ℕ} (hm : m + 1 = grade A g)
+    (y : EuclideanSpace ℝ (Fin (m + 1))) (τ : ℝ)
+    (hsolve : Matrix.toEuclideanLin (tridiag A g (m + 1) + τ • 1) y =
+      -(‖g‖ • PiLp.single 2 (0 : Fin (m + 1)) (1 : ℝ))) :
+    A (basisEmbedding A g hm.le y) + τ • basisEmbedding A g hm.le y + g = 0 := by
+  rw [residual_eq A hg hA hm.le y τ hsolve,
+    (Arnoldi.vec_eq_zero_iff A g (m + 1)).mpr hm.ge, smul_zero]
 
 end Lanczos
