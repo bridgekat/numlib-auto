@@ -1,3 +1,5 @@
+import Numlib.Optimization.Regularization.Convex.DerivativeStep
+import Numlib.Optimization.Regularization.Convex.DirectionCounterexample
 import Numlib.Optimization.Regularization.Convex.DecreaseCounterexample
 import Numlib.Optimization.Regularization.Convex.FirstOrderStep
 import Numlib.Optimization.Regularization.Convex.FirstOrderComplexity
@@ -117,5 +119,41 @@ theorem lemma_6_2_2_counterexample :
   norm_num [data,objective_values.1,objective_values.2]
 
 end DecreaseCounterexample
+
+section DirectionCounterexample
+open ConvexRegularization.DirectionCounterexample
+open HighOrderRegularization.ObstructionCounterexample (objective)
+
+/-- **Counterexample to the literal directional clause of Lemma6.2.1.**
+The source C¹ set in(6.1.8) does not include the unit ball. The genuine scalar
+quadratic execution accepts a model trial to its minimizer. Direction100 is in
+C¹ because the true endpoint derivative is zero, yet its actual model
+functional has magnitude25, exceeding the displayed constant53/4. The
+separately proved tensor-error estimates retain the required unit-ball domain. -/
+theorem lemma_6_2_1_counterexample :
+    IsClosed (univ : Set ℝ) ∧ Convex ℝ (univ : Set ℝ) ∧ (univ : Set ℝ).Nonempty ∧
+      ContDiff ℝ 1 objective ∧
+      (∀ x y : ℝ, ‖iteratedFDeriv ℝ 1 objective x -
+        iteratedFDeriv ℝ 1 objective y‖ ≤ ‖x-y‖) ∧
+      ConvexRegularization.Run objective univ settings (1/2) data 1 ∧
+      settings.eta1 ≤ data.ratio 0 ∧ ConvexRegularization.parameterCap settings 1 = 12 ∧
+      (data.point 0 = 1 ∧ data.point 1 = 0 ∧ data.step 0 = -1) ∧
+      (100 : ℝ) ∈ TaylorModel.firstRestrictedDirections objective
+        (TaylorModel.feasibleDisplacements univ (data.point 1)) (data.point 1)
+        (settings.tau*(1/2)) ∧
+      ‖(100 : ℝ)‖ = 100 ∧
+      |fderiv ℝ (HighOrderRegularization.model objective 1 (data.point 0)
+        (data.parameter 0)) (data.step 0) (100 : ℝ)| = 25 ∧
+      ((1 : ℝ)+ConvexRegularization.parameterCap settings 1) / (1 : ℕ).factorial *
+        ‖data.step 0‖ ^ 1 + settings.tau*(1/2) = 53/4 ∧
+      ¬|fderiv ℝ (HighOrderRegularization.model objective 1 (data.point 0)
+        (data.parameter 0)) (data.step 0) (100 : ℝ)| ≤
+          ((1 : ℝ)+ConvexRegularization.parameterCap settings 1) / (1 : ℕ).factorial *
+            ‖data.step 0‖ ^ 1 + settings.tau*(1/2) := by
+  exact ⟨isClosed_univ,convex_univ,⟨0,mem_univ _⟩,regularity.1,regularity.2,run,
+    by norm_num [settings,data],parameter_cap,⟨rfl,rfl,rfl⟩,restricted_direction,
+    by norm_num,directional_value,printed_error_value,directional_bound_fails⟩
+
+end DirectionCounterexample
 
 end CartisGouldToint

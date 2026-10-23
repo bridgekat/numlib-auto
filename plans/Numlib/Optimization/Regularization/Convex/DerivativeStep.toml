@@ -1,0 +1,7 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "derivative_step_lower_of_model_test"
+
+[[node]]
+id = "abs_model_diagonal_le_of_objective_bound"

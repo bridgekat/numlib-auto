@@ -1,0 +1,37 @@
+namespace = "ConvexRegularization.DirectionCounterexample"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "data"
+
+[[node]]
+id = "taylor_formula"
+
+[[node]]
+id = "model_formula"
+
+[[node]]
+id = "model_deriv"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "parameter_cap"
+
+[[node]]
+id = "regularity"
+
+[[node]]
+id = "restricted_direction"
+
+[[node]]
+id = "directional_value"
+
+[[node]]
+id = "printed_error_value"
+
+[[node]]
+id = "directional_bound_fails"

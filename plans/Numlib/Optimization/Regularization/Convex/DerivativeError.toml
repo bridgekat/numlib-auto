@@ -1,0 +1,10 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "factorial_penalty_weight"
+
+[[node]]
+id = "norm_model_derivative_error_le_on"
+
+[[node]]
+id = "abs_model_derivative_error_le_on"

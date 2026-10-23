@@ -87,6 +87,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_6_2_1"
+wrong = "The literal directional assertion(6.2.18) quantifies every d in C¹(xnext,epsilon1), whose definition(6.1.8) has no unit-ball restriction. Its right side omits a direction norm factor. lemma_6_2_1_counterexample gives the actual scalar quadratic f=x²/2 on C=univ, p=1, sigma=5/4, epsilon1=1/2, theta1=3/4, tau1=1/2, and one genuine accepted trial x0=1,s=-1,x1=0 with ratio1/2 and exact sigma cap12. Direction100 belongs to the true C¹ set because Df(0)=0, but its actual model directional derivative has magnitude25 while the stated bound equals53/4. The correct tensor-error and directional lemmas retain the unit-ball domain. The other source clauses remain in the plan payload for the corrected companion."
 kind = "theorem"
 desc = '''
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -366,3 +367,13 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 [[node]]
 id = "lemma_6_2_2_counterexample"
 source = "Cartis, Gould and Toint, Lemma6.2.2 literal first-order decrease coefficient with p!"
+
+[[node]]
+id = "lemma_6_2_1_counterexample"
+source = "Cartis, Gould and Toint, literal Lemma6.2.1 directional bound(6.2.18) and unrestricted C¹ definition(6.1.8)"
+
+[[node]]
+id = "lemma_6_2_1_corrected"
+kind = "theorem"
+desc = "Prove the complete source Lemma6.2.1 with the directional clauses restricted to C¹/C² intersected with the unit ball, consistently with the actual criticality domains. Preserve all enabled first/second/third step bounds, actual model restricted sets, exact factorial and parameter-cap coefficients, and both lower-derivative direction estimates. Use actual local Cp regularity and primitive model tests; do not assume any step lower bound."
+source = "Cartis, Gould and Toint, Lemma6.2.1 with the required unit-ball direction restriction"
