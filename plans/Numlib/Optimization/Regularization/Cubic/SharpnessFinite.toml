@@ -1,0 +1,10 @@
+namespace = "CubicRegularization"
+
+[[node]]
+id = "smoothPlateau_model_curvature"
+
+[[node]]
+id = "plateau_finiteRun"
+
+[[node]]
+id = "exists_slow_finiteRun_first_branch"
