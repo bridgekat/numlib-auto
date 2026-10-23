@@ -1,0 +1,43 @@
+namespace = "Composite"
+
+[[node]]
+id = "Settings"
+
+[[node]]
+id = "ExecutionData"
+
+[[node]]
+id = "OptimalityCheck"
+
+[[node]]
+id = "StepOutput"
+
+[[node]]
+id = "OptimalityAt"
+
+[[node]]
+id = "TargetAt"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "OptimalityCheck.optimality_of_none"
+
+[[node]]
+id = "StepOutput.nonincrease"
+
+[[node]]
+id = "StepOutput.criticality_le"
+
+[[node]]
+id = "exists_stepOutput"
+
+[[node]]
+id = "Run.restrict"
+
+[[node]]
+id = "Run.radius_mem"
+
+[[node]]
+id = "Run.target_of_none"

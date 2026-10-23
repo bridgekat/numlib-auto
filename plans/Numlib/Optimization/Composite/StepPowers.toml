@@ -1,0 +1,22 @@
+namespace = "CompositeStep"
+
+[[node]]
+id = "coefficient"
+
+[[node]]
+id = "coefficient_mem"
+
+[[node]]
+id = "coefficient_antitone"
+
+[[node]]
+id = "coefficient_identity"
+
+[[node]]
+id = "power_lower_of_obstruction"
+
+[[node]]
+id = "power_lower_of_unit_obstruction"
+
+[[node]]
+id = "uniform_power_lower_of_obstruction"
