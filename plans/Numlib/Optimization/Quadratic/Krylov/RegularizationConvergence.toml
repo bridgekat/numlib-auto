@@ -1,0 +1,7 @@
+namespace = "QuadraticKrylov"
+
+[[node]]
+id = "uniform_regularized_bounds"
+
+[[node]]
+id = "regularized_relative_gradient_hitting"

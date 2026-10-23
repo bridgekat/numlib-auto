@@ -1,6 +1,8 @@
 import NumlibSurface.CartisGouldToint.Chapter10.Section01
 import Numlib.Optimization.Quadratic.Krylov.RegularizationMonotonicity
 import Numlib.Optimization.Quadratic.Optimality.RegularizationMetric
+import Numlib.Optimization.Quadratic.Krylov.RegularizationConvergence
+import Numlib.Optimization.Quadratic.Optimality.MetricSpectrum
 
 /-!
 # Actual Lanczos regularization gradient decay
@@ -114,5 +116,76 @@ theorem lemma_10_2_1 (hH : H.toLinearMap.IsSymmetric)
   simpa only [(lanczosSubspaceData H M hM g
     ((Nat.add_le_add_right hml 1).trans hl)).norm_map,
       (lanczosSubspaceData H M hM g hl).norm_map] using ⟨hτμ, hμν, hpair, hstar⟩
+
+/-- **Corollary 10.2.3 with a natural ceiling.** Genuine Lanczos regularization
+minimizers reach the true relative model-gradient test with the exact printed
+logarithmic coefficient and actual maximum condition number. Natural rounding
+covers a negative logarithmic count; condition number one terminates in one step. -/
+theorem corollary_10_2_3_corrected (hnpos : 0 < n) (hH : H.toLinearMap.IsSymmetric)
+    {g : EuclideanSpace ℝ (Fin n)} (hg : g ≠ 0) {G : ℕ}
+    (hG : G + 1 = grade (hessian M hM H).toLinearMap (gradient M hM g))
+    (Y : (i : Fin (G + 1)) → EuclideanSpace ℝ (Fin (i.val + 1)))
+    (x : WithEnergy M.toLinearMap hM) {σ r θ : ℝ}
+    (hσ : 0 < σ) (hr : 2 < r) (hθ : 0 < θ)
+    (hmin : ∀ i w, lanczosRegularizationModel H M hM g i.val σ r (Y i) ≤
+      lanczosRegularizationModel H M hM g i.val σ r w)
+    (hx : ∀ w, QuadraticOptimality.regularized (hessian M hM H) (gradient M hM g) σ r x ≤
+      QuadraticOptimality.regularized (hessian M hM H) (gradient M hM g) σ r w) :
+    let shifts := fun i => σ * ‖Y i‖ ^ (r - 2)
+    let K := Lanczos.maxCondition (hessian M hM H).toLinearMap (gradient M hM g) G shifts
+    let t := σ * ‖x‖ ^ (r - 2)
+    let U := QuadraticOptimality.Metric.greatestEigenvalue M hM H hH (by
+      simpa only [finrank_euclideanSpace, Fintype.card_fin] using hnpos)
+    ∃ i : Fin (G + 1), i.val + 1 ≤ min
+      (if K = 1 then 1 else
+        ⌈Real.log (4 * ‖M.inverse.comp H‖ * K / θ * (t / σ) ^ (1 / (r - 2)) *
+          ((U + t) / energyNorm M.inverse.toLinearMap g) ^ 2) /
+          Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉₊ + 1) (G + 1) ∧
+      let s := toOriginal M hM (lanczosSubspaceData H M hM g (by omega) (Y i))
+      energyNorm M.inverse.toLinearMap (H s + shifts i • M s + g) ≤
+        θ / 2 * energyNorm M.toLinearMap s ^ 2 := by
+  let A := hessian M hM H
+  let b := gradient M hM g
+  let shifts := fun i : Fin (G + 1) => σ * ‖Y i‖ ^ (r - 2)
+  let K := Lanczos.maxCondition A.toLinearMap b G shifts
+  let t := σ * ‖x‖ ^ (r - 2)
+  let U := QuadraticOptimality.Metric.greatestEigenvalue M hM H hH (by
+    simpa only [finrank_euclideanSpace, Fintype.card_fin] using hnpos)
+  let C := 2 * ‖M.inverse.comp H‖ * K * ‖x‖
+  let ε := θ / 2 * (‖b‖ / (U + t)) ^ 2
+  have hsym := hessian_symmetric M hM hH
+  have hupper := inner_hessian_le_greatestEigenvalue M hM H hH (by
+    simpa only [finrank_euclideanSpace, Fintype.card_fin] using hnpos)
+  have hb := gradient_ne_zero M hM hg
+  obtain ⟨i, hi, hhit⟩ := QuadraticKrylov.regularized_relative_gradient_hitting A hb hsym
+    hG Y x hσ hr (norm_hessian_le M hM hH) hθ hupper hmin hx
+  have hrad : (t / σ) ^ (1 / (r - 2)) = ‖x‖ := by
+    dsimp [t]
+    rw [mul_div_cancel_left₀ _ hσ.ne', ←Real.rpow_mul (norm_nonneg _),
+      mul_one_div_cancel (by linarith : r - 2 ≠ 0), Real.rpow_one]
+  have hratio : C / ε = 4 * ‖M.inverse.comp H‖ * K / θ * (t / σ) ^ (1 / (r - 2)) *
+      ((U + t) / energyNorm M.inverse.toLinearMap g) ^ 2 := by
+    rw [hrad, ← norm_gradient M hM g]
+    dsimp [C, ε, b]
+    field_simp
+    ring
+  refine ⟨i, ?_, ?_⟩
+  · change i.val + 1 ≤ min
+      (if K = 1 then 1 else ⌈Real.log _ /
+        Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉₊ + 1) (G + 1)
+    change i.val + 1 ≤ min
+      (if K = 1 then 1 else GeometricDecay.budget C ε (Krylov.chebyshevFactor K) + 1)
+        (G + 1) at hi
+    simpa only [Krylov.budget_chebyshevFactor, hratio] using hi
+  · have higrade : i.val + 1 ≤ grade A.toLinearMap b := by dsimp [A, b]; omega
+    rw [QuadraticKrylov.norm_fderiv_regularized A b hsym hr σ,
+      (Lanczos.basisEmbedding A.toLinearMap b higrade).norm_map] at hhit
+    have he := norm_residual M hM H g (shifts i)
+      (lanczosSubspaceData H M hM g (by omega) (Y i))
+    change ‖A (Lanczos.basisEmbedding A.toLinearMap b higrade (Y i)) + shifts i •
+      Lanczos.basisEmbedding A.toLinearMap b higrade (Y i) + b‖ = _ at he
+    change _ ≤ θ / 2 * ‖lanczosSubspaceData H M hM g (by omega) (Y i)‖ ^ 2
+    rw [(lanczosSubspaceData H M hM g (by omega)).norm_map]
+    exact he.symm.trans_le hhit
 
 end CartisGouldToint

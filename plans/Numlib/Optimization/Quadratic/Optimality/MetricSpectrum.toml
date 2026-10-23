@@ -1,0 +1,7 @@
+namespace = "QuadraticOptimality.Metric"
+
+[[node]]
+id = "greatestEigenvalue"
+
+[[node]]
+id = "inner_hessian_le_greatestEigenvalue"

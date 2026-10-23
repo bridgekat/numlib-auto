@@ -47,3 +47,15 @@ theorem exists_le_min_grade {C ε q : ℝ} (hC : 0 ≤ C) (hε : 0 < ε)
     · rw [hexact]
       exact hε.le
 end GeometricDecay
+
+namespace GeometricDecay
+/-- A finite family with a geometric bound and an exact last residual reaches the target. -/
+theorem exists_fin_le_min_grade {C ε q : ℝ} (hC : 0 ≤ C) (hε : 0 < ε)
+    (hq : 0 < q) (hq1 : q < 1) {G : ℕ} (R : Fin (G + 1) → ℝ)
+    (hexact : R (Fin.last G) = 0) (hbound : ∀ i, R i ≤ C * q ^ i.val) :
+    ∃ i : Fin (G + 1), i.val + 1 ≤ min (budget C ε q + 1) (G + 1) ∧ R i ≤ ε := by
+  by_cases hn : budget C ε q < G + 1
+  · refine ⟨⟨budget C ε q, hn⟩, le_min le_rfl (Nat.succ_le_of_lt hn), ?_⟩
+    exact (hbound _).trans (bound_at_budget hC hε hq hq1)
+  · exact ⟨Fin.last G, by simp only [Fin.val_last]; omega, by rw [hexact]; exact hε.le⟩
+end GeometricDecay

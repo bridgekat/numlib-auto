@@ -8,3 +8,6 @@ id = "bound_at_budget"
 
 [[node]]
 id = "exists_le_min_grade"
+
+[[node]]
+id = "exists_fin_le_min_grade"

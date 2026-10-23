@@ -30,3 +30,7 @@ Documented source/OCR correction and formalization requirements: The main formul
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 10.2.3 (OCR Markdown line 10915)"
 deps = ["theorem_10_2_2"]
+
+[[node]]
+id = "corollary_10_2_3_corrected"
+source = "Cartis, Gould and Toint, Corollary 10.2.3 with natural ceiling; literal integer-ceiling target remains open. All printed constants retained, actual largest generalized eigenvalue and condition maximum."

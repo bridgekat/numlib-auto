@@ -1,0 +1,7 @@
+namespace = "LinearMap.IsSymmetric"
+
+[[node]]
+id = "greatestEigenvalue"
+
+[[node]]
+id = "inner_apply_le_greatestEigenvalue"
