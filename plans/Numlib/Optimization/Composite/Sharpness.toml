@@ -1,0 +1,4 @@
+namespace = "Composite"
+
+[[node]]
+id = "exists_first_order_sharpness"

@@ -1,0 +1,7 @@
+namespace = "Composite"
+
+[[node]]
+id = "exists_stepOutput_of_smooth"
+
+[[node]]
+id = "exists_run_of_smooth"

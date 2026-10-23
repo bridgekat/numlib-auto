@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.Sharpness
 import Numlib.Optimization.Composite.ZeroReturnCounterexample
 import Numlib.Optimization.Composite.Complexity
 import Numlib.Optimization.Composite.ModelError
@@ -28,6 +29,8 @@ the smooth penalized scalar part and residual polynomial
 for the model's genuine generalized Taylor criticality. They derive the exact
 small-radius decrease, actual global-minimum step existence, quantitative radii,
 and the objective optimality certified by a zero-decrease global-gap return.
+Corollary 14.1.11 embeds actual uniform smooth sharpness runs with zero residual
+and the nonzero convex outer function absolute value.
 The literal outer Step2 lacks that global-gap condition. Its permitted large
 zero-improvement return disproves literal Lemma 14.1.4 and Theorem 14.1.10, even
 with unit first-order radii; the detailed-solver companions remain valid.
@@ -432,5 +435,45 @@ theorem theorem_14_1_10_counterexample :
       Composite.OptimalityAt RegularizationZeroReturn.objective
         (fun _ : ℝ => (0 : ℝ)) abs (fun _ => 1 / 2) z δ :=
   Composite.ZeroReturnCounterexample.verified_counterexample
+
+
+/-- **Corollary 14.1.11.** For every p≥1, fixed legal settings and uniform
+problem constants precede accuracy. A genuine bounded smooth scalar objective,
+zero residual and nonzero convex outer function admit actual ARqpC executions
+whose first true certificate and every derivative evaluation count attain
+ε^(-(p+1)/p). Both data functions are evaluated on the same actual schedule.
+-/
+theorem corollary_14_1_11 {p : ℕ} (hp : 1 ≤ p) :
+    ContDiff ℝ p (fun _ : ℝ => (0 : ℝ)) ∧
+    (∀ j ≤ p, ∀ x y : ℝ,
+      ‖iteratedFDeriv ℝ j (fun _ : ℝ => (0 : ℝ)) x -
+        iteratedFDeriv ℝ j (fun _ : ℝ => (0 : ℝ)) y‖ ≤ 1 * ‖x - y‖) ∧
+    LipschitzWith 1 (abs : ℝ → ℝ) ∧ ConvexOn ℝ Set.univ (abs : ℝ → ℝ) ∧
+    (∀ u v : ℝ, |u + v| ≤ |u| + |v|) ∧ |(0 : ℝ)| = 0 ∧ |(1 : ℝ)| ≠ 0 ∧
+    ∃ P : Composite.Settings p 1, ∃ L B : ℝ, 1 ≤ L ∧ 0 < B ∧
+      ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 →
+      ∃ (f : ℝ → ℝ) (D : Composite.ExecutionData ℝ 1) (N : ℕ),
+        ContDiff ℝ p f ∧ (∀ x, |f x| ≤ B) ∧
+        (∀ j ≤ p, ∀ x y,
+          ‖iteratedFDeriv ℝ j f x - iteratedFDeriv ℝ j f y‖ ≤ L * ‖x - y‖) ∧
+        Composite.Run f (fun _ : ℝ => (0 : ℝ)) abs P (fun _ => ε) D N ∧
+        StrictMono D.point ∧ D.selected N = none ∧
+        (∀ k a, D.radius k a = 1 ∧ D.solvedRadius k a = 1) ∧
+        Composite.criticality f (fun _ : ℝ => (0 : ℝ)) abs 1 (D.point N) 1 ≤ ε ∧
+        (∀ k < N, ε < Composite.criticality f (fun _ : ℝ => (0 : ℝ)) abs 1 (D.point k) 1) ∧
+        ε ^ (-((p + 1 : ℕ) : ℝ) / p) ≤ (N : ℝ) ∧
+        Composite.functionEvaluations N = N + 1 ∧
+        ∀ j, 1 ≤ j → j ≤ p →
+          ε ^ (-((p + 1 : ℕ) : ℝ) / p) ≤
+            ((HighOrderRegularization.Sharpness.derivativeEvaluationNodes
+              D.selected j N).card : ℝ) := by
+  refine ⟨contDiff_const, ?_, Composite.ZeroReturnCounterexample.outer_properties.1,
+    Composite.ZeroReturnCounterexample.outer_properties.2.1,
+    Composite.ZeroReturnCounterexample.outer_properties.2.2.1,
+    Composite.ZeroReturnCounterexample.outer_properties.2.2.2.1,
+    Composite.ZeroReturnCounterexample.outer_properties.2.2.2.2,
+    Composite.exists_first_order_sharpness hp⟩
+  intro j hj x y
+  simp
 
 end CartisGouldToint

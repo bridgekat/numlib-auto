@@ -185,22 +185,7 @@ source = "Detailed-solver companion to Cartis, Gould and Toint, theorem 14 1 10,
 
 [[node]]
 id = "corollary_14_1_11"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Corollary 14.1.11: Slow convergence of the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm for \( q = 1 \) and \( h \) convex
-
-Suppose that \( q = 1 \) and that \( h \) is convex. Then the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm applied to minimize \( w \) may require
-
-\[
-{\epsilon }_1^{-\frac{p + 1}{p}}
-\]
-
-iterations and evaluations of \( f \) and \( c \) and of their derivatives of order one up to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( {\phi }_{w,1}^1\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_1 \) .
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 14.1.11 (OCR Markdown line 16151)"
-deps = ["theorem_12_2_15"]
+source = "Cartis, Gould and Toint, Corollary14.1.11; actual uniform smooth sharpness executions embedded with zero residual and h=abs, all sufficiently small positive accuracies"
 
 [[node]]
 id = "compositeTaylorModel"
