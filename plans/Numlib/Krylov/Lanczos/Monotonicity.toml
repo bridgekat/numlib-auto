@@ -11,3 +11,12 @@ id = "isGalerkinIterate_of_shifted_solve"
 
 [[node]]
 id = "norm_le_norm_of_nested_shifted_solve"
+
+[[node]]
+id = "shifted_posDef_of_le"
+
+[[node]]
+id = "exists_shifted_solve"
+
+[[node]]
+id = "multiplier_le_of_nested_shifted_solve"
