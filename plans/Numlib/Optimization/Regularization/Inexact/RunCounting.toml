@@ -1,0 +1,34 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "trialCountFactor"
+
+[[node]]
+id = "trialCountOffset"
+
+[[node]]
+id = "one_le_trialCountFactor"
+
+[[node]]
+id = "accuracyCountSlope"
+
+[[node]]
+id = "accuracyCountOffset"
+
+[[node]]
+id = "Run.trial_card_le_successful"
+
+[[node]]
+id = "Run.accuracy_card_le"
+
+[[node]]
+id = "Run.trial_card_le"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "Run.functionEvaluations_le"
+
+[[node]]
+id = "Run.derivativeEvaluations_le"

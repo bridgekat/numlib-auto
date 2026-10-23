@@ -8,7 +8,8 @@ import Numlib.Optimization.TrustRegion.Inexact.Acceptance
 import Numlib.Optimization.TrustRegion.Inexact.Radius
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
-import Numlib.Optimization.Regularization.Inexact.RunStepPowers
+import Numlib.Optimization.Regularization.Inexact.Complexity
+import Numlib.Optimization.HighOrder.CriticalityRadius
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -822,5 +823,52 @@ theorem lemma_13_1_17_corrected {n p q : ℕ}
     (fun k hk i hi hip => h.tensor_norm_le (zero_le_one.trans hL)
       (fun j hj => hlip j hj.le) hk (by omega) hip)
     hk ht haccepted hnot
+
+/-- **Theorem 13.1.19.** Uniform evaluation complexity for the actual ARqpIDA
+rules, including exact oracles, zero initial requests and the first target-
+reaching endpoint. Both source accuracy rates and all initialized objective
+and derivative counts hold. Orders one and two certify the actual unit-radius
+measures; higher orders use a legal actual inherited or checked radius vector.
+The theorem existentially quantifies its constants, so the valid guarded
+parameter cap and safe radius coefficient repair its proof without changing
+its stated rates or algorithm. The minimum factor has the source formulas by
+`InexactRegularization.evaluationExponent_eq`. -/
+theorem theorem_13_1_19 {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
+    (x₀ : EuclideanSpace ℝ (Fin n)) (hf : ContDiff ℝ p f) {L flow : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (hlow : ∀ x, flow ≤ f x) :
+    ∃ κA > 0, ∃ κB > 0, ∃ κF > 0, ∃ κD > 0,
+      ∀ (ε : Fin q → ℝ)
+        (D : InexactRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q),
+      D.point 0 = x₀ →
+      (∀ N, (∀ k < N, ¬InexactRegularization.TargetAt f ε D k) →
+        InexactRegularization.Run f P ε D N) →
+      ∃ (K : ℕ) (δ : Fin q → ℝ),
+        (δ = D.startRadius K ∨ δ = D.checkedRadius K) ∧
+        (∀ a, 0 < δ a ∧ δ a ≤ 1) ∧
+        (∀ a, TaylorModel.criticality f (modelOrder a) (D.point K) (δ a) ≤
+          ε a * δ a ^ modelOrder a / (modelOrder a).factorial) ∧
+        (q ≤ 2 → ∀ a, TaylorModel.criticality f (modelOrder a) (D.point K) 1 ≤
+          ε a / (modelOrder a).factorial) ∧
+        InexactRegularization.Run f P ε D K ∧
+        (∀ k < K, ¬InexactRegularization.TargetAt f ε D k) ∧
+        (functionEvaluations D.trials K : ℝ) ≤
+          κA * (f x₀ - flow) / InexactRegularization.accuracyFactor P ε + κF ∧
+        (derivativeEvaluations D.trials D.ratio P.eta1 K : ℝ) ≤
+          κA * (f x₀ - flow) / InexactRegularization.accuracyFactor P ε +
+          κB * |Real.log (minimumAccuracy P.order_pos ε)| + κD := by
+  obtain ⟨κA, hA, κB, hB, κF, hF, κD, hD, hall⟩ :=
+    InexactRegularization.evaluation_complexity f P x₀ hf hL hlip hlow
+  refine ⟨κA, hA, κB, hB, κF, hF, κD, hD, ?_⟩
+  intro ε D hinit hprefix
+  obtain ⟨K, δ, hactual, hopt, hrun, hfirst, hfcount, hdcount⟩ := hall ε D hinit hprefix
+  refine ⟨K, δ, hactual, hopt.radius_mem, hopt.criticality, ?_,
+    hrun, hfirst, hfcount, hdcount⟩
+  intro hq a
+  exact TaylorModel.criticality_unit_le_of_radius f (D.point K)
+    (by unfold modelOrder; omega) (by unfold modelOrder; omega)
+    (hopt.radius_mem a).1 (hopt.radius_mem a).2 (hopt.criticality a)
 
 end CartisGouldToint

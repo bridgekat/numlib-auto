@@ -1,0 +1,19 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "exists_quadratic_decrement_orientation"
+
+[[node]]
+id = "mul_sq_decrement_two_le"
+
+[[node]]
+id = "sq_mul_criticality_two_one_le"
+
+[[node]]
+id = "criticality_one_unit_le_of_radius"
+
+[[node]]
+id = "criticality_two_unit_le_of_radius"
+
+[[node]]
+id = "criticality_unit_le_of_radius"

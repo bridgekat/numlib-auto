@@ -202,60 +202,7 @@ deps = ["lemma_13_1_17"]
 
 [[node]]
 id = "theorem_13_1_19"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 13.1.19: qth-order complexity for the ARqpIDA algorithm
-
-
-Suppose that f.D0pL and f.Bb hold. Suppose also that the algorithm ensures that
-(13.1.69) and (13.1.70) hold.
-   1. If \( q \in  \{ 1,2\} \) ,then there exist positive constants \( {\kappa }_{\text{ AraplDA,1 }}^{S},{\kappa }_{\text{ AraplDA,1 }}^{A},{\kappa }_{\text{ AraplDA }}^{C} \) ,
-      \( {\kappa }_{\text{ ARqpIDA }}^{E} \) ,and \( {\kappa }_{\text{ ARqpIDA }}^{F} \) such that,for any \( \epsilon  \in  (0,1{\rbrack }^q \) ,the ARqpIDA algorithm
-      requires at most
-                  \[{\# }_{\mathrm{{ARqpIDA}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpIDA}},1}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{kw}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{p + 1}{p - j + 1}}} + {\kappa }_{\mathrm{{ARqpIDA}}1}^{C}\] (13.1.84)
-
-
-                          \[= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{p + 1}{p - j + 1}}}\right)\]
-
-      evaluations of \( f \) and at most
-          \[{\# }_{\mathrm{{ARqpIDA}},1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpIDA}},1}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{p + 1}{p - j + 1}}} + {\kappa }_{\mathrm{{ARqpIDA}}1}^{E}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\mathrm{{ARqpIDA}}1}^{F}\]
-
-
-                  \[= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{p + 1}{p - j + 1}}}\right)\]
-
-                                                                      (13.1.85)
-      evaluations of the inexact derivatives \( \overline{{\nabla }_{x}^{i}f} \) of order \( i \) from one to \( p \) to pro-
-      duce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{f,j}^1\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
-   2. If \( q > 2 \) ,then there exist positive constants \( {\kappa }_{\mathrm{ARqpIDA},2}^S,{\kappa }_{\mathrm{ARqpIDA},2}^A,{\kappa }_{\mathrm{ARqpIDA},2}^C,{\kappa }_{\mathrm{ARqpIDA},}^E \)
-      and \( {\kappa }_{\text{ ARqpIDA }}^{F} \) such that,for any \( \epsilon  \in  (0,1{\rbrack }^q \) ,the ARqpIDA algorithm requires at
-      most
-                  \[{\# }_{\mathrm{{ARqIDAp}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpIDA}},2}^{A}\underset{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\underbrace{\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{p\left( {p + 1}\right) } + {\kappa }_{\mathrm{{ARqpIDA}} }^{C}}}\] (13.1.86)
-
-
-                          \[= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{j\left( {p + 1}\right) }{p}}}\right)\]
-
-
-
-evaluations of \( f \) and at most
-
-\[
-{\# }_{\mathrm{{ARqIDAp}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpDA}},2}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{j\left( {p + 1}\right) }{p}}} + {\kappa }_{\mathrm{{ARqpIDA}}1}^{E}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\mathrm{{ARqpIDA}}1}^{F}
-\]
-
-\[
-= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{j\left( {p + 1}\right) }{p}}}\right)
-\]
-
-(13.1.87)
-
-evaluations of the inexact derivatives \( \overline{{\nabla }_{x}^{i}f} \) of order \( i \) from one to \( p \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^{{\delta }_{\epsilon , j}}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon , j}^j/j \) ! for some \( {\delta }_{\epsilon } \in  (0,1{\rbrack }^q \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
-
-Documented source/OCR correction and formalization requirements: OCR repair for (13.1.86): the missing denominator is min_(1≤j≤q) ε_j^(j(p+1)/p); the bound is κ_(ARqpIDA,2)^A (f(x0)−f_low)/(min_j ε_j^(j(p+1)/p))+κ^C. This is forced by (13.1.83), the following O-expression, and the derivation immediately after the theorem. Restore f_low for the corrupted f_kw. Keep both function counts and derivative counts including the latter logarithmic accuracy term.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.1.19 (OCR Markdown line 14668)"
-deps = ["lemma_13_1_9", "lemma_13_1_12", "lemma_13_1_15", "lemma_13_1_18"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem13.1.19 all clauses. Actual primitive execution, constants uniformly before accuracies, both source rates, true unit-radius tests for q<=2, actual radii otherwise, all initialized counts. Existential proof constants repaired via guarded parameter cap and safe radius coefficient; literal statement unchanged."
 
 [[node]]
 id = "idaSelectedTrials"

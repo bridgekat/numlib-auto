@@ -1,0 +1,13 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "executionTensorCap"
+
+[[node]]
+id = "one_le_executionTensorCap"
+
+[[node]]
+id = "executionParameterCap_pos"
+
+[[node]]
+id = "Run.actual_caps"
