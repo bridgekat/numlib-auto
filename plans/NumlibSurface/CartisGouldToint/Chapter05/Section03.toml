@@ -195,66 +195,10 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_5_3_11"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 5.3.11: Complexity for full-rank nonlinear least-squares (trust region-like methods, \( \ell  > 2 \) )
-
-Suppose that a TR \( \psi ,\nu \) algorithm is applied to minimize \( {\Phi }_{\ell } \) for an even integer \( \ell  > \) 2. Suppose also that (5.1.62) holds. Then the sequence \( {\left\{  \begin{Vmatrix}r\left( {x}_k\right) \end{Vmatrix}\right\}  }_{k \in  \mathcal{S}} \) converges sublinearly to zero, and there exist positive constants \( {\kappa }_{\mathrm{TR}2,\mathrm{FRLS}}^B,{\kappa }_{\mathrm{TR}2,\mathrm{FRLS}}^C,{\kappa }_{\mathrm{TR}2,\mathrm{FRLS}}^E \) , and \( {\kappa }_{\mathrm{TR}2,\mathrm{FRLS}}^F \) such that the algorithm needs at most
-
-\[
-{\# }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{B}{\epsilon }_{0}^{-\left( {\ell  - 2}\right) } + {\kappa }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{C} = \mathcal{O}\left( {\epsilon }_{0}^{-\left( {\ell  - 2}\right) }\right)
-\]
-
-iterations and evaluations of \( r \) and at most
-
-\[
-{\# }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{E}{\epsilon }_{0}^{-\left( {\ell  - 2}\right) } + {\kappa }_{\mathrm{{TR}}2,\mathrm{{FRLS}}}^{F} = \mathcal{O}\left( {\epsilon }_{0}^{-\left( {\ell  - 2}\right) }\right)
-\]
-
-successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{r\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) .
-
-Referenced equation payloads:
-
-Equation (5.1.62):
-\[
-{\psi }_{\ell ,1}\left( {x}_k\right)  \geq  {\psi }_{\min }\tag{5.1.62}
-\]
-'''
-deps = ["theorem_5_3_9", "theorem_5_3_8", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.11 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6712)"
 
 [[node]]
 id = "theorem_5_3_12"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 5.3.12: Complexity for full-rank nonlinear least-squares (trust region-like methods, \( \ell  = 2 \) )
-
-Suppose that a \( \operatorname{TR}\psi ,\nu \) algorithm is applied to minimize \( {\Phi }_2 \) . Suppose also that (5.1.62) holds. Then either \( r\left( {x}_k\right)  = 0 \) after the first successful iteration or the sequence \( \left\{  {\begin{Vmatrix}{r\left( {x}_k\right) }\end{Vmatrix}{\} }_{k \in  \mathcal{S}}}\right. \) converges linearly to zero, and there exist positive constants \( {\kappa }_{\mathrm{TR},\mathrm{FRLS}}^B,{\kappa }_{\mathrm{TR},\mathrm{FRLS}}^C,{\kappa }_{\mathrm{TR},\mathrm{FRLS}}^E \) , and \( {\kappa }_{\mathrm{TR},\mathrm{FRLS}}^F \) such that the algorithm needs at most
-
-\[
-{\# }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{B}\left| {\log \left( {\epsilon }_{0}\right) }\right|  + {\kappa }_{\mathrm{{TR}}1,\mathrm{{FRLS}}}^{C} = \mathcal{O}\left( \left| {\log \left( {\epsilon }_{0}\right) }\right| \right)
-\]
-
-iterations and evaluations of \( r \) and at most
-
-\[
-{\# }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{E}\left| {\log \left( {\epsilon }_{0}\right) }\right|  + {\kappa }_{\mathrm{{TR}},\mathrm{{FRLS}}}^{F} = \mathcal{O}\left( \left| {\log \left( {\epsilon }_{0}\right) }\right| \right)
-\]
-
-successful iterations (and derivative evaluations) to compute an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{r\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) .
-
-Referenced equation payloads:
-
-Equation (5.1.62):
-\[
-{\psi }_{\ell ,1}\left( {x}_k\right)  \geq  {\psi }_{\min }\tag{5.1.62}
-\]
-'''
-deps = ["theorem_5_3_8", "lemma_5_3_6", "theorem_5_3_3", "theorem_5_1_7", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.12 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6740)"
 
 [[node]]
@@ -303,3 +247,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity, Lemma5.3.6; documented 
 [[node]]
 id = "lemma_5_3_6_counterexample"
 source = "Cartis–Gould–Toint, Evaluation Complexity, Lemma5.3.6; documented final threshold correction/counterexample."
+
+[[node]]
+id = "residualFullRankTrace"
+source = "Cartis–Gould–Toint source condition(5.1.62), normalized actual first derivative bound until residual zero."

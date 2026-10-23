@@ -1,0 +1,28 @@
+namespace = "MeasureDomination"
+
+[[node]]
+id = "scaled_power_le_iff"
+
+[[node]]
+id = "root_scaled_power"
+
+[[node]]
+id = "ratio_eq_root_scaled_power"
+
+[[node]]
+id = "tendsto_zero_of_scaled_power"
+
+[[node]]
+id = "superlinear_of_scaled_power"
+
+[[node]]
+id = "PowerCost.root"
+
+[[node]]
+id = "LogarithmicCost.root"
+
+[[node]]
+id = "linear_step_of_scaled_power"
+
+[[node]]
+id = "sublinear_envelope_of_scaled_power"

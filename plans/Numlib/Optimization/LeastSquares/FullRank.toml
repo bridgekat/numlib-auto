@@ -1,0 +1,22 @@
+namespace = "LeastSquares"
+
+[[node]]
+id = "UniformFirstMeasure"
+
+[[node]]
+id = "UniformFirstMeasure.gradient_lower_bound"
+
+[[node]]
+id = "UniformFirstMeasure.along_domination"
+
+[[node]]
+id = "UniformFirstMeasure.tr_power_cost"
+
+[[node]]
+id = "UniformFirstMeasure.tr_logarithmic_cost"
+
+[[node]]
+id = "UniformFirstMeasure.tr_sublinear"
+
+[[node]]
+id = "UniformFirstMeasure.tr_linear"

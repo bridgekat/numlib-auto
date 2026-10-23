@@ -1,3 +1,4 @@
+import Numlib.Optimization.LeastSquares.FullRank
 import Numlib.Optimization.MeasureDomination.TrustRegionBudget
 import Numlib.Optimization.MeasureDomination.ThresholdCounterexample
 import Numlib.Optimization.MeasureDomination.TrustRegionRates
@@ -362,5 +363,50 @@ theorem theorem_5_3_9_corrected {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) →
   ⟨hr.successful_tendsto_zero hd, hr.successful_sublinear_envelope hd hμν,
     hr.gap_power_cost hd hμν, hr.measure_power_cost hd hμν,
     hr.historical_measure_tendsto_zero hd hμν, hr.historical_measure_power_cost hd hμν⟩
+
+/-- The source uniform normalized first-gradient bound(5.1.62), required at
+nonzero residuals along the actual trace. A least-singular-value bound on each
+actual residual Jacobian is a sufficient condition for this precise hypothesis. -/
+abbrev residualFullRankTrace := @LeastSquares.UniformFirstMeasure
+
+/-- **Theorem5.3.11.** Uniformly bounded normalized actual gradients give the
+complete residual convergence and initialized inverse-power complexity `ℓ−2`.
+Domination is derived only at visited points. No existence of an ambient residual
+root is inferred from the state restriction used in the complexity proof. -/
+theorem theorem_5_3_11 {n m ℓ : ℕ} {r : EuclideanSpace ℝ (Fin n) →
+      EuclideanSpace ℝ (Fin m)} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    {ψmin κν κR κA : ℝ} (_heven : Even ℓ) (hℓ : 2 < ℓ) (hmin : 0 < ψmin)
+    (hfull : residualFullRankTrace r (ℓ : ℝ) ψmin x)
+    (hr : trMeasureRun (LeastSquares.powerObjective r (ℓ : ℝ))
+      (fun z => ‖fderiv ℝ (LeastSquares.powerObjective r (ℓ : ℝ)) z‖)
+      x S 2 κν κR κA) :
+    Tendsto (fun j => ‖r (x (measureSuccessIndex S j))‖) atTop (nhds 0) ∧
+      ((∀ j, ‖r (x (measureSuccessIndex S j))‖ = 0) ∨
+        ∃ t : ℕ → ℝ, (∀ j, 0 < t j) ∧
+          (∀ j, ‖r (x (measureSuccessIndex S j))‖ ≤ t j) ∧
+          Tendsto t atTop (nhds 0) ∧
+          Tendsto (fun j => t (j + 1) / t j) atTop (nhds 1)) ∧
+      measurePolynomialComplexity ((ℓ : ℝ) - 2) (fun k => ‖r (x k)‖) S := by
+  have hl : (2 : ℝ) < ℓ := by exact_mod_cast hℓ
+  obtain ⟨ht, he⟩ := hfull.tr_sublinear hl hmin hr
+  exact ⟨ht, he, hfull.tr_power_cost hl hmin hr⟩
+
+/-- **Theorem5.3.12.** Quadratic residuals either vanish at the first accepted
+endpoint or converge linearly; every residual target has the full initialized
+logarithmic function/derivative bounds. The positive constants precede accuracy. -/
+theorem theorem_5_3_12 {n m : ℕ} {r : EuclideanSpace ℝ (Fin n) →
+      EuclideanSpace ℝ (Fin m)} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    {ψmin κν κR κA : ℝ} (hmin : 0 < ψmin)
+    (hfull : residualFullRankTrace r 2 ψmin x)
+    (hr : trMeasureRun (LeastSquares.powerObjective r 2)
+      (fun z => ‖fderiv ℝ (LeastSquares.powerObjective r 2) z‖) x S 2 κν κR κA) :
+    Tendsto (fun j => ‖r (x (measureSuccessIndex S j))‖) atTop (nhds 0) ∧
+      (r (x (measureSuccessIndex S 0 + 1)) = 0 ∨
+        ∃ c : ℝ, 0 ≤ c ∧ c < 1 ∧ ∀ j,
+          ‖r (x (measureSuccessIndex S (j + 1)))‖ ≤
+            c * ‖r (x (measureSuccessIndex S j))‖) ∧
+      measureLogarithmicComplexity (fun k => ‖r (x k)‖) S := by
+  obtain ⟨ht, he⟩ := hfull.tr_linear hmin hr
+  exact ⟨ht, he, hfull.tr_logarithmic_cost hmin hr⟩
 
 end CartisGouldToint

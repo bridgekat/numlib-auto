@@ -1,0 +1,40 @@
+namespace = "MeasureDomination"
+
+[[node]]
+id = "AlongDomination"
+
+[[node]]
+id = "TraceState"
+
+[[node]]
+id = "traceObjective"
+
+[[node]]
+id = "traceMeasure"
+
+[[node]]
+id = "traceIterate"
+
+[[node]]
+id = "traceObjective_iterate"
+
+[[node]]
+id = "traceMeasure_iterate"
+
+[[node]]
+id = "trace_gap"
+
+[[node]]
+id = "trace_pastMeasure"
+
+[[node]]
+id = "AlongDomination.dominated"
+
+[[node]]
+id = "traceIterate_eq"
+
+[[node]]
+id = "ARRun.trace_run"
+
+[[node]]
+id = "TRRun.trace_run"
