@@ -1,0 +1,22 @@
+namespace = "FirstOrderTrustRegion"
+
+[[node]]
+id = "cauchyPoint_identity"
+
+[[node]]
+id = "identity_model_decrement"
+
+[[node]]
+id = "gradientStepRatio"
+
+[[node]]
+id = "run_of_unit_backtracking"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "gradientEvaluations"
+
+[[node]]
+id = "exists_slow_run"

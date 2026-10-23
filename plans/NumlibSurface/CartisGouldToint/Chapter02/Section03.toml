@@ -42,15 +42,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_2_3_8"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 2.3.8: Slow first-order convergence of the TR1 algorithm
-
-The TR1 algorithm (p. 35) applied to a function \( f \) satisfying f.Bb, f.gL, and m.HBa may require as many as \( {\epsilon }^{-2} \) evaluations of \( f\left( x\right) \) and \( {\nabla }_x^{1}f\left( x\right) \) to produce an iterate \( {x}_{\epsilon } \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
-'''
-deps = ["theorem_2_3_7", "lemma_2_3_2", "lemma_2_3_4", "lemma_2_3_1", "successfulIterations", "cauchyPoint", "tr1Run", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.3.8 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 2075)"
 
 [[node]]

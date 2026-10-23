@@ -1,5 +1,7 @@
 import Numlib.Optimization.EvaluationComplexity.ParameterUpdates
 import Numlib.Optimization.TrustRegion.FirstOrder
+import Numlib.Optimization.TrustRegion.FirstOrder.Sharpness
+import Numlib.Analysis.Calculus.Gradient
 
 /-!
 # Cartis–Gould–Toint, Section 2.3: trust-region iteration counts
@@ -218,5 +220,36 @@ theorem theorem_2_3_7 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ 
               |Real.log ε|) / |Real.log γ₂| + 1 := add_le_add hb le_rfl
         _ = _ := by rw [hκ]; dsimp [C]; ring
   · simpa only [Nat.cast_add, Nat.cast_one] using add_le_add hScount (le_rfl : (1 : ℝ) ≤ 1)
+
+/-- **Theorem 2.3.8.** A nonnegative C¹ objective with gradient Lipschitz
+constant four and initial gap at most eight can require `⌈ε⁻²⌉` genuine TR1
+iterations and at least `ε⁻²` objective and gradient evaluations. The radius is
+fixed at two and the quadratic operator at the identity, uniformly in accuracy. -/
+theorem theorem_2_3_8 {η₁ η₂ γ₁ γ₂ γ₃ : ℝ}
+    (hη₁ : 0 < η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂ < 1)
+    (hγ₁ : 0 < γ₁) (hγ : γ₁ ≤ γ₂) (hγ₂ : γ₂ < 1) (hγ₃ : 1 < γ₃)
+    {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) :
+    ∃ (f : ℝ → ℝ) (x : ℕ → ℝ) (ρ : ℕ → ℝ) (N : ℕ),
+      ContDiff ℝ 1 f ∧ (∀ y z, ‖gradient f y - gradient f z‖ ≤ 4 * ‖y - z‖) ∧
+      (∀ y, 0 ≤ f y) ∧ f (x 0) ≤ 8 ∧ x 0 = 0 ∧ N = ⌈1 / ε ^ 2⌉₊ ∧
+      tr1Run f (gradient f) x (fun i => -gradient f (x i)) (fun i => -gradient f (x i))
+        (fun _ => ContinuousLinearMap.id ℝ ℝ) (fun _ => 2) ρ η₁ η₂ γ₁ γ₂ γ₃ ε N ∧
+      (∀ i < N, 1 ≤ ρ i) ∧ ‖gradient f (x N)‖ = ε ∧
+      ‖ContinuousLinearMap.id ℝ ℝ‖ ≤ 1 ∧ 1 / ε ^ 2 ≤ (N : ℝ) ∧
+      FirstOrderTrustRegion.functionEvaluations N = N + 1 ∧
+      FirstOrderTrustRegion.gradientEvaluations ρ η₁ N = N + 1 ∧
+      1 / ε ^ 2 ≤ (FirstOrderTrustRegion.functionEvaluations N : ℝ) ∧
+      1 / ε ^ 2 ≤ (FirstOrderTrustRegion.gradientEvaluations ρ η₁ N : ℝ) := by
+  obtain ⟨f, g, x, ρ, N, hf, hderiv, hlip, hlow, hgap, hx0, hN, hrun, hvery,
+    hstop, hB, hcount, hF, hG, hFl, hGl⟩ := FirstOrderTrustRegion.exists_slow_run
+      hη₁ hη hη₂ hγ₁ hγ hγ₂ hγ₃ hε hε1
+  have hgrad : g = gradient f := by
+    funext y
+    apply (InnerProductSpace.toDual ℝ ℝ).injective
+    rw [toDual_gradient]
+    exact (hderiv y).fderiv.symm
+  subst g
+  exact ⟨f, x, ρ, N, hf, hlip, hlow, hgap, hx0, hN, hrun, hvery, hstop,
+    hB, hcount, hF, hG, hFl, hGl⟩
 
 end CartisGouldToint
