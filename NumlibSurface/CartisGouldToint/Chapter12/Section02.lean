@@ -1,3 +1,4 @@
+import Numlib.Optimization.HighOrder.ModelSolve.Uniform
 import Numlib.Optimization.Regularization.HighOrder.StepTwoTermination
 import Numlib.Optimization.TrustRegion.HighOrder.SharpnessGlobal
 import Numlib.Optimization.TrustRegion.HighOrder.Complexity
@@ -352,5 +353,62 @@ theorem lemma_12_2_10 {n p q : ℕ}
           (InexactTrustRegion.modelOrder a).factorial :=
   HighOrderRegularization.zero_step_termination hqp hf hμ hsolve hzero
     ε δ₀ hε hδ₀ direction hfeasible hζ hfailed
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- A uniform quantitative version of the step-existence claim in Lemma12.2.9
+with an existential radius coefficient. The coefficient precedes all centers,
+penalty parameters below their fixed cap and accuracies. Actual global model
+minimization and finite first-passing halving yield every test, including unit
+radii for the first two orders. The exact printed coefficient remains a
+separate target. At step norm exactly one the criticality tests are retained. -/
+theorem lemma_12_2_9_uniform {n p q : ℕ} (hqp : q ≤ p)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) {L S : ℝ} (hL : 0 ≤ L) (hS : 0 ≤ S)
+    (hlip : ∀ i, 1 ≤ i → i < p → ∀ y z,
+      ‖iteratedFDeriv ℝ i f y - iteratedFDeriv ℝ i f z‖ ≤ L * ‖y - z‖) :
+    ∃ κ > 0, κ ≤ 1 ∧ ∀ x : EuclideanSpace ℝ (Fin n),
+      ∀ σ : ℝ, 0 < σ → σ ≤ S → ∀ θ ζ : ℝ,
+      0 < θ → θ ≤ 1 → 0 < ζ → ζ ≤ 1 →
+      ∀ ε : Fin q → ℝ, (∀ a, 0 < ε a ∧ ε a ≤ 1) →
+      ∃ s : EuclideanSpace ℝ (Fin n),
+        (∀ t, HighOrderRegularization.model f p x σ s ≤
+          HighOrderRegularization.model f p x σ t) ∧
+        (∀ μ : ℝ, 0 ≤ μ → μ ≤ 1 → arqpStepTwoSolve f p x σ μ s) ∧
+        (1 < ‖s‖ ∨ ∃ (δ : Fin q → ℝ) (d : Fin q → EuclideanSpace ℝ (Fin n)),
+          ∀ a, (0 < δ a ∧ δ a ≤ 1) ∧ κ * (ζ * θ * ε a) ≤ δ a ∧
+            (InexactTrustRegion.modelOrder a ≤ 2 → δ a = 1) ∧ ‖d a‖ ≤ δ a ∧
+            ζ * TaylorModel.criticality (HighOrderRegularization.model f p x σ)
+              (InexactTrustRegion.modelOrder a) s (δ a) ≤
+              TaylorModel.decrement (HighOrderRegularization.model f p x σ)
+                (InexactTrustRegion.modelOrder a) s (d a) ∧
+            TaylorModel.decrement (HighOrderRegularization.model f p x σ)
+              (InexactTrustRegion.modelOrder a) s (d a) ≤
+              ζ * θ * ε a * δ a ^ InexactTrustRegion.modelOrder a /
+                (InexactTrustRegion.modelOrder a).factorial ∧
+            TaylorModel.criticality (HighOrderRegularization.model f p x σ)
+              (InexactTrustRegion.modelOrder a) s (δ a) ≤
+              θ * ε a * δ a ^ InexactTrustRegion.modelOrder a /
+                (InexactTrustRegion.modelOrder a).factorial) := by
+  obtain ⟨κ, hκ, hκ1, hsolve⟩ :=
+    ModelSolve.exists_uniform_regularized_critical_step
+      (E := EuclideanSpace ℝ (Fin n)) (ι := Fin q) p hS hL
+  refine ⟨κ, hκ, hκ1, ?_⟩
+  intro x σ hσ hσS θ ζ hθ hθ1 hζ hζ1 ε hε
+  have hA : ∀ i, 2 ≤ i → i ≤ p → ‖ftaylorSeries ℝ f x i‖ ≤ L := by
+    intro i hi hip
+    obtain ⟨j, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : i ≠ 0)
+    change ‖iteratedFDeriv ℝ (j + 1) f x‖ ≤ L
+    rw [← norm_fderiv_iteratedFDeriv]
+    exact norm_fderiv_le_of_lip' ℝ hL
+      (Filter.Eventually.of_forall (fun y => hlip j (by omega) (by omega) y x))
+  have horder : ∀ a : Fin q, 0 < InexactTrustRegion.modelOrder a ∧
+      InexactTrustRegion.modelOrder a ≤ p := by
+    intro a
+    unfold InexactTrustRegion.modelOrder
+    constructor <;> omega
+  exact hsolve σ hσ hσS (ftaylorSeries ℝ f x) hA θ ζ hθ hθ1 hζ hζ1
+    InexactTrustRegion.modelOrder horder ε hε
 
 end CartisGouldToint

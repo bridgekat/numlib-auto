@@ -17,3 +17,6 @@ id = "CriticalHalvingRun.eq_zero_of_order_le_two"
 
 [[node]]
 id = "exists_attaining_criticalHalvingRun"
+
+[[node]]
+id = "CriticalHalvingRun.criticality_le_of_approximation"

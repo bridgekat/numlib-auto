@@ -95,6 +95,21 @@ theorem exists_criticalHalvingRun {f : E → ℝ} {j p : ℕ}
       (BacktrackingGradient.step_antitone hδ₀.le (Nat.zero_le t)).trans (by simp)⟩
 
 
+/-- A completed actual halving loop with a relative criticality direction
+certifies the normalized criticality test after its positive relative factor
+cancels. -/
+theorem CriticalHalvingRun.criticality_le_of_approximation
+    {f : E → ℝ} {j N : ℕ} {x : E} {θ ζ ε δ₀ : ℝ} {d : ℕ → E}
+    (hζ : 0 < ζ) (h : CriticalHalvingRun f j x (ζ * θ * ε) δ₀ d N)
+    (hd : ζ * TaylorModel.criticality f j x (BacktrackingGradient.step δ₀ N) ≤
+      TaylorModel.decrement f j x (d N)) :
+    TaylorModel.criticality f j x (BacktrackingGradient.step δ₀ N) ≤
+      θ * ε * BacktrackingGradient.step δ₀ N ^ j / j.factorial := by
+  apply le_of_mul_le_mul_left (a := ζ) _ hζ
+  calc _ ≤ TaylorModel.decrement f j x (d N) := hd
+    _ ≤ (ζ * θ * ε) * BacktrackingGradient.step δ₀ N ^ j / j.factorial := h.passes
+    _ = _ := by ring
+
 variable [ProperSpace E]
 
 /-- The first two derivative orders at a global minimum accept the initial
