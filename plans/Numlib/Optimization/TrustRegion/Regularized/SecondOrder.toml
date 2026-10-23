@@ -1,0 +1,40 @@
+namespace = "RegularizedTrustRegion"
+
+[[node]]
+id = "secondOrderScale"
+
+[[node]]
+id = "secondOrderScale_pos"
+
+[[node]]
+id = "inv_secondOrderScale_eq"
+
+[[node]]
+id = "creditPotential"
+
+[[node]]
+id = "creditPotential_bounds"
+
+[[node]]
+id = "Run.finite_failure"
+
+[[node]]
+id = "Run.boundary_of_small_gradient"
+
+[[node]]
+id = "Run.successful_decrease_of_next_gradient"
+
+[[node]]
+id = "Run.successful_objective_nonincreasing"
+
+[[node]]
+id = "Run.successful_credit_decrease"
+
+[[node]]
+id = "Run.secondOrder_successful_card_le"
+
+[[node]]
+id = "Run.secondOrder_iterations_le"
+
+[[node]]
+id = "exists_secondOrder_termination"

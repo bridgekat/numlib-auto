@@ -1,4 +1,4 @@
-import Numlib.Optimization.TrustRegion.Regularized.FirstOrder
+import Numlib.Optimization.TrustRegion.Regularized.SecondOrder
 import Numlib.Optimization.TrustRegion.Regularized.Solve
 
 /-!
@@ -9,6 +9,9 @@ accepted/rejected updates. First-order mode explicitly disables the second
 stopping test; finite-second-order mode uses genuine least Hessian eigenpairs.
 The model and radius bounds imply the printed decrease estimates. The normalization
 `L ≥ 1` in the radius floor is the source's f.HL convention.
+The finite-second-order companion uses twice the printed leading coefficient
+and an initialized derivative allowance of two. Its credited-objective argument
+follows the literal current-curvature boundary rule.
 -/
 
 namespace CartisGouldToint
@@ -155,6 +158,90 @@ theorem theorem_3_4_5 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ 
     calc
       (K : ℝ) + 1 ≤ ((f x₀ - flow) / (c * ε₁ ^ (3 / 2 : ℝ)) + 1) * A +
           (|Real.log ((1 - η₂) * γ₁ / (L * Δ₀))| + |Real.log ε₁| / 2) /
+            |Real.log γ₂| + 1 := add_le_add hb le_rfl
+      _ = _ := by dsimp [S, A, B, C]; rw [mul_comm Δ₀ L]; ring
+
+/-- A corrected companion to **Theorem3.4.6**, for the literal current-curvature
+boundary rule. The credited-objective argument gives leading coefficient twice
+(3.4.20) and initialized derivative allowance `+2`. The printed proof's
+next-curvature-to-previous-boundary inference is not used. All constants precede
+both accuracies, the actual first joint stopping point and every execution. -/
+theorem theorem_3_4_6_corrected {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [CompleteSpace E] (f : E → ℝ) (x₀ : E)
+    {Δ₀ η₁ η₂ γ₁ γ₂ γ₃ θ L flow : ℝ}
+    (_hΔ₀ : 0 < Δ₀) (hη₁ : 0 < η₁) (hη₂ : η₂ < 1) (hγ₁ : 0 < γ₁)
+    (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 1) (hγ₃ : 1 < γ₃) (hθ : 0 < θ)
+    (hf : ContDiff ℝ 2 f) (hL : 1 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤
+      L * ‖y - z‖) (hlow : ∀ y, flow ≤ f y) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κD > 0, ∃ κC > 0,
+      κS = 4 / η₁ * max (L ^ 2 / (γ₁ ^ 2 * (1 - η₂) ^ 2))
+        (1 + 2 * (L + θ)) ∧
+      κA = κS * (1 + Real.log γ₃ / |Real.log γ₂|) ∧
+      κD = 1 / |Real.log γ₂| ∧
+      κC = (Real.log γ₃ + |Real.log ((1 - η₂) * γ₁ / (Δ₀ * L))|) /
+        |Real.log γ₂| + 2 ∧
+      ∀ ε₁ : ℝ, 0 < ε₁ → ε₁ ≤ 1 →
+      ∀ ε₂ : ℝ, 0 < ε₂ → ε₂ ≤ 1 →
+      ∀ (x s u : ℕ → E) (μ Δ ρ : ℕ → ℝ), x 0 = x₀ → Δ 0 = Δ₀ →
+      (∀ N, (∀ i < N,
+        ¬RegularizedTrustRegion.Stopped f (x i) (μ i) ε₁ (ε₂ : WithTop ℝ)) →
+        trEpsilonRun f x s u μ Δ ρ η₁ η₂ γ₁ γ₂ γ₃ θ
+          ε₂ ε₁ (ε₂ : WithTop ℝ) N) →
+      ∃ K, ‖gradient f (x K)‖ ≤ ε₁ ∧ -ε₂ ≤ μ K ∧
+        (∀ i < K, ε₁ < ‖gradient f (x i)‖ ∨ μ i < -ε₂) ∧
+        trEpsilonRun f x s u μ Δ ρ η₁ η₂ γ₁ γ₂ γ₃ θ
+          ε₂ ε₁ (ε₂ : WithTop ℝ) K ∧
+        (RegularizedTrustRegion.functionEvaluations K : ℝ) ≤
+          κA * (f x₀ - flow) / RegularizedTrustRegion.secondOrderScale ε₁ ε₂ +
+            κD * |Real.log ε₂| + κC ∧
+        (RegularizedTrustRegion.derivativeEvaluations ρ η₁ K : ℝ) ≤
+          κS * (f x₀ - flow) / RegularizedTrustRegion.secondOrderScale ε₁ ε₂ + 2 ∧
+        (RegularizedTrustRegion.derivativeEvaluations ρ η₁ K : ℝ) ≤
+          κS * (f x₀ - flow) / RegularizedTrustRegion.secondOrderScale ε₁ ε₂ + 2 := by
+  let c := RegularizedTrustRegion.decreaseCoefficient η₁ η₂ γ₁ L θ
+  let S := 2 / c
+  let A := 1 + Real.log γ₃ / |Real.log γ₂|
+  let B := 1 / |Real.log γ₂|
+  let C := (Real.log γ₃ + |Real.log ((1 - η₂) * γ₁ / (Δ₀ * L))|) /
+    |Real.log γ₂| + 2
+  have hc : 0 < c := RegularizedTrustRegion.decreaseCoefficient_pos hη₁ hη₂ hγ₁
+    (zero_lt_one.trans_le hL) hθ.le
+  have hlog3 := Real.log_pos hγ₃
+  have hlog2 : 0 < |Real.log γ₂| := abs_pos.mpr (Real.log_neg hγ₂ hγ₂1).ne
+  have hS : 0 < S := by dsimp [S]; positivity
+  have hA : 0 < A := by dsimp [A]; positivity
+  have hB : 0 < B := by dsimp [B]; positivity
+  have hC : 0 < C := by dsimp [C]; positivity
+  refine ⟨S, hS, S * A, mul_pos hS hA, B, hB, C, hC, ?_, rfl, rfl, rfl, ?_⟩
+  · have hi := RegularizedTrustRegion.inv_decreaseCoefficient_eq hη₁ hη₂ hγ₁
+      (zero_lt_one.trans_le hL) hθ.le
+    calc S = 2 * (1 / c) := by dsimp [S]; ring
+      _ = _ := by rw [hi]; ring
+  · intro ε₁ _hε₁ _hε₁1 ε₂ _hε₂ _hε₂1 x s u μ Δ ρ hx hΔ hprefix
+    obtain ⟨K, hstop, hK, _⟩ := RegularizedTrustRegion.exists_secondOrder_termination
+      hprefix hf hL hlip hlow
+    have htests := (RegularizedTrustRegion.stopped_iff _ _ _ _ _).mp hstop
+    have hg := htests.1
+    have hμ := htests.2 ε₂ rfl
+    have hD := hK.secondOrder_successful_card_le rfl hf hL hlip hlow
+    have hD' : (RegularizedTrustRegion.derivativeEvaluations ρ η₁ K : ℝ) ≤
+        S * (f x₀ - flow) / RegularizedTrustRegion.secondOrderScale ε₁ ε₂ + 2 := by
+      rw [hx] at hD
+      simp only [RegularizedTrustRegion.derivativeEvaluations, Nat.cast_add, Nat.cast_one]
+      calc
+        _ ≤ 2 * (f x₀ - flow) /
+            (c * RegularizedTrustRegion.secondOrderScale ε₁ ε₂) + 1 + 1 :=
+          add_le_add hD le_rfl
+        _ = _ := by dsimp [S]; ring
+    refine ⟨K, hg, hμ, fun _ hi => hK.finite_failure rfl hi, hK, ?_, hD', hD'⟩
+    have hb := hK.secondOrder_iterations_le rfl hf hL hlip hlow
+    rw [hx, hΔ] at hb
+    simp only [RegularizedTrustRegion.functionEvaluations, Nat.cast_add, Nat.cast_one]
+    calc
+      (K : ℝ) + 1 ≤ (2 * (f x₀ - flow) /
+          (c * RegularizedTrustRegion.secondOrderScale ε₁ ε₂) + 1) * A +
+          (|Real.log ((1 - η₂) * γ₁ / (L * Δ₀))| + |Real.log ε₂|) /
             |Real.log γ₂| + 1 := add_le_add hb le_rfl
       _ = _ := by dsimp [S, A, B, C]; rw [mul_comm Δ₀ L]; ring
 

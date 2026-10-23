@@ -7,6 +7,8 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 id = "inexactRegularizedNewtonRun"
 kind = "definition"
 desc = '''
+Theorem3.4.6 remains open with its exact printed constants. Its proof infers a preceding boundary step from negative curvature at the next point, whereas the literal algorithm tests curvature at the current point. A separate credited-objective companion proves the full complexity order for the literal algorithm with leading coefficient 2/κ_delta_f and initialized derivative allowance +2. A proof gap alone does not classify the original theorem as false.
+
 Define the set of finite traces satisfying Algorithm 3.4.2, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
 
 Algorithm 3.4.2: Inexact regularized Newton algorithm (iRN).
@@ -274,3 +276,7 @@ source = "Cartis–Gould–Toint Section3.4, actual model and exact source coeff
 [[node]]
 id = "trEpsilonDecreaseCoefficient"
 source = "Cartis–Gould–Toint Section3.4, actual model and exact source coefficient."
+
+[[node]]
+id = "theorem_3_4_6_corrected"
+source = "Cartis–Gould–Toint Theorem3.4.6 companion for the literal current-curvature boundary rule, with twice the leading coefficient and +2 initialized derivative allowance; original exact constants remain open."
