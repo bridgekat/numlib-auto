@@ -1,0 +1,16 @@
+namespace = "Composite.TruncatedAbs"
+
+[[node]]
+id = "h"
+
+[[node]]
+id = "zero"
+
+[[node]]
+id = "lipschitz"
+
+[[node]]
+id = "subadditive"
+
+[[node]]
+id = "not_convex"

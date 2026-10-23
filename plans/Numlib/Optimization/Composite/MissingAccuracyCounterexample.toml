@@ -1,0 +1,85 @@
+namespace = "Composite.MissingAccuracyCounterexample"
+
+[[node]]
+id = "a"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "epsilon"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "data"
+
+[[node]]
+id = "taylor_formula"
+
+[[node]]
+id = "model_formula"
+
+[[node]]
+id = "model_min"
+
+[[node]]
+id = "model_deriv"
+
+[[node]]
+id = "smooth_criticality"
+
+[[node]]
+id = "output"
+
+[[node]]
+id = "parameter_updates"
+
+[[node]]
+id = "model_trace"
+
+[[node]]
+id = "criticality_formula"
+
+[[node]]
+id = "check"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "source_regularity"
+
+[[node]]
+id = "true_failure"
+
+[[node]]
+id = "printedCap"
+
+[[node]]
+id = "printedRadiusCoefficient"
+
+[[node]]
+id = "printedStepFloor"
+
+[[node]]
+id = "printed_constants"
+
+[[node]]
+id = "step_floor_violated"
+
+[[node]]
+id = "radius_floor"
+
+[[node]]
+id = "successful"
+
+[[node]]
+id = "not_target"
+
+[[node]]
+id = "factorial_step_floor_violated"

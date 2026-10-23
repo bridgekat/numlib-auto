@@ -1,3 +1,4 @@
+import Numlib.Optimization.Composite.MissingAccuracyCounterexample
 import Numlib.Optimization.Composite.FunctionDecreaseCounterexample
 import Numlib.Optimization.Composite.Sharpness
 import Numlib.Optimization.Composite.ZeroReturnCounterexample
@@ -504,4 +505,40 @@ theorem lemma_14_1_9_counterexample :
       f (data.point 0) - f (data.point 1) :=
   Composite.FunctionDecreaseCounterexample.verified_counterexample
 
+end CartisGouldToint
+
+
+namespace CartisGouldToint
+open Composite.MissingAccuracyCounterexample
+/-- **Counterexample to Lemma14.1.8's literal general branch.** The nonconvex,
+unit Lipschitz, subadditive outer function is min(abs(t),1); the residual is
+zero and the smooth objective is x^2/2. The actual accepted global-model step
+has ratio3/4 and remains truly nonterminal at its endpoint. Unit solved radii
+satisfy the source radius policy, but the printed accuracy-independent step
+floor is violated. The alternative OCR reading of 3j! as (3j)! also fails. -/
+theorem lemma_14_1_8_counterexample :
+    let f := HighOrderRegularization.ObstructionCounterexample.objective
+    let c := fun _ : ℝ => (0 : ℝ)
+    let h := Composite.TruncatedAbs.h
+    LipschitzWith 1 h ∧ (∀ x y, h (x+y) ≤ h x+h y) ∧ h 0 = 0 ∧ h 1 ≠ 0 ∧
+      ¬ConvexOn ℝ Set.univ h ∧
+      (ContDiff ℝ 1 f ∧ ContDiff ℝ 1 c ∧
+        (∀ x y, ‖iteratedFDeriv ℝ 1 f x - iteratedFDeriv ℝ 1 f y‖ ≤ 1*‖x-y‖) ∧
+        (∀ x y, ‖iteratedFDeriv ℝ 1 c x - iteratedFDeriv ℝ 1 c y‖ ≤ 1*‖x-y‖) ∧
+        ∀ x, 0 ≤ f x+h 0) ∧
+      Composite.Run f c h settings (fun _ : Fin 1 => epsilon) data 1 ∧
+      settings.eta1 ≤ data.ratio 0 ∧
+      ¬Composite.TargetAt f c h settings (fun _ : Fin 1 => epsilon) data 1 ∧
+      (∀ k a, data.solvedRadius k a = 1) ∧
+      (∀ k a, printedRadiusCoefficient*epsilon ≤ data.solvedRadius k a) ∧
+      (printedCap = 24 ∧ printedRadiusCoefficient = 1/480 ∧ printedStepFloor = 1/74880) ∧
+      ‖data.step 0‖ < printedStepFloor ∧
+      ‖data.step 0‖ < ((1-settings.theta)*printedRadiusCoefficient^1 /
+        (((3*1 : ℕ).factorial : ℝ)*((1+1)+printedCap))) ^ ((1 : ℝ)/(1-1+1)) := by
+  dsimp only
+  exact ⟨Composite.TruncatedAbs.lipschitz,Composite.TruncatedAbs.subadditive,
+    Composite.TruncatedAbs.zero,by norm_num [Composite.TruncatedAbs.h],
+    Composite.TruncatedAbs.not_convex,source_regularity,run,successful,not_target 1,
+    fun _ _ => rfl,radius_floor,printed_constants,step_floor_violated,
+    factorial_step_floor_violated⟩
 end CartisGouldToint

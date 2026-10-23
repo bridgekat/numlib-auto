@@ -80,6 +80,7 @@ wrong = "The literal outer Algorithm14.1.1 allows a nonunit convex first-order m
 
 [[node]]
 id = "lemma_14_1_8"
+wrong = "The literal general-branch step floor in (14.1.31) omits its accuracy factor. lemma_14_1_8_counterexample gives p=q=1, globally smooth f(x)=x^2/2, c=0, and the nonconvex globally unit Lipschitz subadditive outer function min(abs(t),1). A genuine detailed ARqpC trial from -10^(-6) uses parameter2 and its true global model minimum step5*10^(-7), is accepted at ratio3/4, and remains nonterminal at epsilon=2.5*10^(-7). All actual unit radii satisfy the exact source floor; printed cap24, radius coefficient1/480 and general-branch step floor1/74880 are retained. The step is below that floor. The alternative OCR parsing of 3j! as (3j)! is also refuted. The valid accuracy-dependent bounds remain distinct."
 kind = "theorem"
 desc = '''
 Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
@@ -216,3 +217,7 @@ source = "Counterexample to literal Theorem14.1.10 via permitted outer zero exit
 [[node]]
 id = "lemma_14_1_9_counterexample"
 source = "Counterexample to literal Lemma14.1.9, Equation14.1.33: genuine accepted composite step increases f while decreasing w"
+
+[[node]]
+id = "lemma_14_1_8_counterexample"
+source = "Cartis, Gould and Toint, Lemma14.1.8, literal general-branch step floor without an accuracy factor"
