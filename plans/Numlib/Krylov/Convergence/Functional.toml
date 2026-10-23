@@ -1,0 +1,4 @@
+namespace = "Krylov"
+
+[[node]]
+id = "functional_solution_decay"

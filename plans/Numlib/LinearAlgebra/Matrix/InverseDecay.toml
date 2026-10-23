@@ -1,0 +1,13 @@
+namespace = "Matrix"
+
+[[node]]
+id = "tridiagonal_pow_bandwidth"
+
+[[node]]
+id = "tridiagonal_pow_entry_zero"
+
+[[node]]
+id = "tridiagonal_krylov_coordinate_zero"
+
+[[node]]
+id = "inverse_entry_decay"

@@ -1,0 +1,22 @@
+namespace = "Matrix.IsHermitian"
+
+[[node]]
+id = "leastEigenvalue"
+
+[[node]]
+id = "greatestEigenvalue"
+
+[[node]]
+id = "leastEigenvalue_le"
+
+[[node]]
+id = "le_greatestEigenvalue"
+
+[[node]]
+id = "leastEigenvalue_le_greatest"
+
+[[node]]
+id = "leastEigenvalue_pos"
+
+[[node]]
+id = "isSymmetricBoundedBy_extrema"
