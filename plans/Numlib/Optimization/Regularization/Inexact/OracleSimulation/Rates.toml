@@ -1,0 +1,13 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "oracleRateExponent"
+
+[[node]]
+id = "oracleRateExponent_pos"
+
+[[node]]
+id = "evaluationExponent_le_oracleRate"
+
+[[node]]
+id = "minimumAccuracy_pow_oracleRate_le"

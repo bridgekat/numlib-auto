@@ -1,0 +1,25 @@
+namespace = "OracleSimulation"
+
+[[node]]
+id = "calls"
+
+[[node]]
+id = "calls_le"
+
+[[node]]
+id = "calls_le_function_derivative"
+
+[[node]]
+id = "abs_log_le_inverse_power"
+
+[[node]]
+id = "minimum_power_lower"
+
+[[node]]
+id = "schedule"
+
+[[node]]
+id = "calls_schedule_le"
+
+[[node]]
+id = "exists_calls_inverse_power_bound"
