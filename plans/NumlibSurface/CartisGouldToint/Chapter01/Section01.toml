@@ -15,21 +15,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_1_1_1"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 1.1.1: Unconstrained optimality conditions
-
-Let \( f : {\mathbb{R}}^n \rightarrow  \mathbb{R} \in  {C}^1 \) , and suppose that \( {x}_{ * } \in  {\mathbb{R}}^n \) is a local minimizer of \( f \) . Then
-
-\[
-{\nabla }_x^{1}f\left( {x}_{ * }\right)  = 0.\tag{1.1.4}
-\]
-
-If \( f \in  {C}^2 \) , then \( {\nabla }_x^{2}f\left( {x}_{ * }\right) \) is positive semidefinite, while if \( f \in  {C}^3,{\nabla }_x^{3}f\left( {x}_{ * }\right) {\left\lbrack  d\right\rbrack  }^3 = 0 \) for all vectors \( d \) for which \( {\nabla }_x^{2}f\left( {x}_{ * }\right) d = 0 \) . Conversely, if, for a given \( {x}_{ * } \in  {\mathbb{R}}^n \) , (1.1.4) holds and \( {\nabla }_x^{2}f\left( {x}_{ * }\right) \) is positive definite, then \( {x}_{ * } \) is a strict local minimizer of \( f \in  {C}^2 \) .
-'''
-deps = ["lagrangian", "feasibleDisplacements"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 1.1.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 747)"
 
 [[node]]

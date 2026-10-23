@@ -1,0 +1,10 @@
+namespace = "IsLocalMin"
+
+[[node]]
+id = "iteratedDeriv_three_nonneg"
+
+[[node]]
+id = "iteratedDeriv_three_eq_zero_at_zero"
+
+[[node]]
+id = "iteratedDeriv_three_eq_zero"
