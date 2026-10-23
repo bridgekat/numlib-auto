@@ -1,0 +1,28 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "criticalitySettings"
+
+[[node]]
+id = "criticalityData"
+
+[[node]]
+id = "optimalityCheck_of_matches"
+
+[[node]]
+id = "criticalityRun_of_matches"
+
+[[node]]
+id = "criticalityDerivativeEvaluations"
+
+[[node]]
+id = "le_criticalityDerivativeEvaluations"
+
+[[node]]
+id = "derivativeEvaluationNodes"
+
+[[node]]
+id = "derivativeEvaluationNodes_data"
+
+[[node]]
+id = "criticalityDerivativeEvaluations_eq_card"

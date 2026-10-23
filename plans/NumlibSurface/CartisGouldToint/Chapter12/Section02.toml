@@ -171,9 +171,11 @@ Suppose that \( q \in  \{ 1,2\} \) and that \( {\epsilon }_j = \epsilon  \leq  \
 \]
 
 iterations and evaluations of \( f \) and of its derivatives of orders one up to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^1\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+
+Completed by a direct uniform actual Hermite witness. Fixed p,q constants precede every accuracy; actual globally bounded C^p objectives have all-order derivative Lipschitz bounds, genuine globally minimizing steps and literal unit-radius ARqp computations. Internal accuracy2ε/3 gives strict observable termination at the last node and true criticality failure at every earlier node. The exact objective count N+1 and order-specific derivative count N+1 for j<=q, N for q<j<=p, all attain the printed rate. The proof is independent of open Theorem12.2.15.
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 12.2.16 (OCR Markdown line 13206)"
-deps = ["theorem_12_2_15"]
+deps = []
 
 [[node]]
 id = "theorem_12_2_17"

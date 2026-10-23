@@ -1,0 +1,4 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "exists_low_order_criticality_witness"

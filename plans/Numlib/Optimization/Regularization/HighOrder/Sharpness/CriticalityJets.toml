@@ -1,0 +1,19 @@
+namespace = "HighOrderRegularization.Sharpness"
+
+[[node]]
+id = "eval_order_of_matches"
+
+[[node]]
+id = "decrement_order_of_matches"
+
+[[node]]
+id = "criticality_lower_eq_zero"
+
+[[node]]
+id = "criticality_order_eq"
+
+[[node]]
+id = "criticality_order_eq_accuracy"
+
+[[node]]
+id = "decrement_one_eq_criticality"

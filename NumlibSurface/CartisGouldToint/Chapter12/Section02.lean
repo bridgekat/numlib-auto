@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.Sharpness.CriticalityWitness
 import Numlib.Optimization.Regularization.HighOrder.CriticalityComplexity
 import Numlib.Optimization.Regularization.HighOrder.RunTarget
 import Numlib.Optimization.HighOrder.StepLower
@@ -662,5 +663,45 @@ theorem theorem_12_2_14 {n p q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
         (((successfulIterations {i | P.eta1 ≤ D.ratio i} K).card + 1 : ℕ) : ℝ) ≤
           κs * (f x₀ - flow) / HighOrderRegularization.accuracyFactor P ε + 2 :=
   HighOrderRegularization.evaluation_complexity f P x₀ hf hL hlip hlow
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- Corollary12.2.16, all cases. Uniform globally bounded actual C^p objectives
+have Lipschitz derivatives of every order through p before accuracy is chosen.
+The literal ARqp run uses genuine globally minimizing model steps, unit radii,
+ratio one and a strict final passing check. Every earlier iterate fails the
+requested true criticality. Actual iteration and order-specific evaluation counts
+attain the exact source lower-bound rate. -/
+theorem corollary_12_2_16 {p q : ℕ}
+    (hq : 0 < q) (hqp : q ≤ p) (hq2 : q ≤ 2) :
+    ∃ L B : ℝ, 1 ≤ L ∧ 0 < B ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 →
+      ∃ f : ℝ → ℝ,
+        let u := (2 : ℝ) / 3 * ε
+        let N := HighOrderRegularization.Sharpness.length p q u
+        let t := HighOrderRegularization.Sharpness.step p q u
+        let D := HighOrderRegularization.Sharpness.criticalityData p q N hq t
+        ContDiff ℝ p f ∧ (∀ x, |f x| ≤ B) ∧
+        (∀ j ≤ p, ∀ x y,
+          ‖iteratedFDeriv ℝ j f x - iteratedFDeriv ℝ j f y‖ ≤ L * ‖x - y‖) ∧
+        HighOrderRegularization.Run f
+          (HighOrderRegularization.Sharpness.criticalitySettings hq hqp) (fun _ => ε) D N ∧
+        StrictMono D.point ∧
+        D.selected N = none ∧
+        (∀ a : Fin q, TaylorModel.criticality f (modelOrder a) (D.point N) 1 ≤
+          ε / (modelOrder a).factorial) ∧
+        (∀ k < N, ε / q.factorial < TaylorModel.criticality f q (D.point k) 1) ∧
+        ε ^ (-((p + 1 : ℕ) : ℝ) / (p - q + 1 : ℕ)) ≤ (N : ℝ) ∧
+        HighOrderRegularization.functionEvaluations N = N + 1 ∧
+        ∀ j, 1 ≤ j → j ≤ p →
+          HighOrderRegularization.Sharpness.criticalityDerivativeEvaluations q j N =
+            (HighOrderRegularization.Sharpness.derivativeEvaluationNodes D.selected j N).card ∧
+          HighOrderRegularization.Sharpness.criticalityDerivativeEvaluations q j N = N +
+            (if j ≤ q then 1 else 0) ∧
+          ε ^ (-((p + 1 : ℕ) : ℝ) / (p - q + 1 : ℕ)) ≤
+            (HighOrderRegularization.Sharpness.criticalityDerivativeEvaluations q j N : ℝ) :=
+  HighOrderRegularization.Sharpness.exists_low_order_criticality_witness hq hqp hq2
 
 end CartisGouldToint
