@@ -1,5 +1,5 @@
 import Numlib.Krylov.Lanczos.Residual
-import Numlib.Optimization.Quadratic.Optimality.MetricInverse
+import Numlib.Optimization.Quadratic.Krylov.Metric
 
 /-!
 # Actual preconditioned Lanczos subspaces and models
