@@ -33,6 +33,17 @@ theorem constrainedCriticality_eq_of_ball {X : Set E} {x : E} {δ : ℝ}
     constrainedCriticality f p X x δ = criticality f p x δ := by
   rw [constrainedCriticality, feasibleDisplacements_inter_eq_closedBall hball, criticality]
 
+/-- Identical genuine derivatives give identical constrained first-order
+criticality, independently of objective values or regularity elsewhere. -/
+theorem constrainedCriticality_one_congr_fderiv {f g : E → ℝ} {x : E}
+    (h : fderiv ℝ f x = fderiv ℝ g x) (C : Set E) (δ : ℝ) :
+    constrainedCriticality f 1 C x δ = constrainedCriticality g 1 C x δ := by
+  have hd : decrement f 1 x = decrement g 1 x := by
+    funext d
+    simp [decrement_eq, eval_eq_sum, Finset.sum_range_succ,
+      iteratedFDeriv_one_apply, smul_eq_mul, h]
+  rw [constrainedCriticality, constrainedCriticality, hd]
+
 end Normed
 
 variable [InnerProductSpace ℝ E] [ProperSpace E]

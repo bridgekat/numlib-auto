@@ -1,0 +1,13 @@
+namespace = "Constrained.TwoPhase"
+
+[[node]]
+id = "firstCriticality_targetMerit_of_gap_zero"
+
+[[node]]
+id = "CorrectedPhaseTwoRun.residual_gt"
+
+[[node]]
+id = "CorrectedPhaseTwoRun.termination"
+
+[[node]]
+id = "phase_one_termination"

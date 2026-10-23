@@ -1,4 +1,5 @@
 import Numlib.Optimization.Constrained.TwoPhase.Geometry
+import Numlib.Optimization.Constrained.TwoPhase.Termination
 import Numlib.Optimization.Constrained.TwoPhase.BoundaryRegularity
 
 /-!
@@ -105,5 +106,37 @@ theorem lemma_7_2_1_counterexample :
   counterexample
 
 end BoundaryCounterexample
+
+/-- **Lemma7.2.1, corrected.** The unchanged Phase1 return and exit guards
+imply its infeasible criticality certificate. Closing the Phase2 reset guard at
+residual equality yields both printed Phase2 alternatives, with the genuine
+Lagrangian and an actual multiplier. Only differentiability at the returned
+point is needed for the termination implication; the source Cp assumptions
+supply it. The literal algorithm is refuted by `lemma_7_2_1_counterexample`. -/
+theorem lemma_7_2_1_corrected {n m p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {C : Set (EuclideanSpace ℝ (Fin n))} {P : twoPhaseInnerSettings p}
+    {ε₀ ε₁ θ : ℝ} {D : twoPhaseData (EuclideanSpace ℝ (Fin n))} {N k : ℕ}
+    (h : twoPhasePhaseTwoRun true f c C P ε₀ ε₁ θ D N)
+    (hC : IsClosed C) (hk : k < N)
+    (hf : DifferentiableAt ℝ f (D.point (k + 1)))
+    (hc : DifferentiableAt ℝ c (D.point (k + 1)))
+    (hs : Constrained.TwoPhase.StopAfter true f c C ε₀ ε₁ θ
+      (D.target k) (D.point (k + 1))) :
+    (∀ (ℓ : ℝ) (x : EuclideanSpace ℝ (Fin n)),
+      (‖c x‖ ≤ θ * ε₀ ∨ Constrained.TwoPhase.firstCriticality
+        (fun z => ‖c z‖ ^ ℓ / ℓ) C x ≤ ε₁ * ‖c x‖ ^ (ℓ - 1)) →
+      θ * ε₀ < ‖c x‖ →
+      Constrained.TwoPhase.firstCriticality (fun z => ‖c z‖ ^ ℓ / ℓ) C x ≤
+        ε₁ * ‖c x‖ ^ (ℓ - 1) ∧ θ * ε₀ < ‖c x‖) ∧
+    ((Constrained.TwoPhase.firstCriticality (fun z => ‖c z‖ ^ 2 / 2)
+      C (D.point (k + 1)) ≤ ε₁ * ‖c (D.point (k + 1))‖ ∧
+      θ * ε₀ < ‖c (D.point (k + 1))‖) ∨
+      ∃ y : EuclideanSpace ℝ (Fin m),
+        Constrained.TwoPhase.firstCriticality (Constrained.vectorLagrangian f c y)
+          C (D.point (k + 1)) ≤ ε₁ * Constrained.multiplierNorm y ∧
+          ‖c (D.point (k + 1))‖ ≤ ε₀) := by
+  exact ⟨fun _ _ hr hs => Constrained.TwoPhase.phase_one_termination hr hs,
+    Constrained.TwoPhase.CorrectedPhaseTwoRun.termination h hC hk hf hc hs⟩
 
 end CartisGouldToint

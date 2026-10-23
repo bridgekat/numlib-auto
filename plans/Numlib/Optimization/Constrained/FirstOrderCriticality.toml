@@ -11,3 +11,6 @@ id = "constrainedCriticality_one_eq_zero_of_fderiv"
 
 [[node]]
 id = "constrainedCriticality_one_eq_norm_of_ball"
+
+[[node]]
+id = "constrainedCriticality_one_congr_fderiv"

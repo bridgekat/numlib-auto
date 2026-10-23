@@ -308,3 +308,7 @@ source = "Cartis–Gould–Toint Algorithm7.2.1, primitive Phase2 and actual fir
 [[node]]
 id = "lemma_7_2_1_counterexample"
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.1; literal Algorithm7.2.1 boundary counterexample"
+
+[[node]]
+id = "lemma_7_2_1_corrected"
+source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.1; reset guard closed at residual equality"
