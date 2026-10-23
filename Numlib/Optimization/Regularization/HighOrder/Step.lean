@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Cubic.SecondOrder
 import Numlib.Optimization.Regularization.HighOrder.Parameter
 import Numlib.Analysis.InnerProductSpace.NormPow.Derivatives
 import Numlib.Analysis.Calculus.TaylorModel.PolynomialDerivative
@@ -219,8 +220,45 @@ theorem trial_gradient_le {p : ℕ} (hp : 1 ≤ p) {f : E → ℝ} (hf : ContDif
   convert hc using 1
   ring
 
+/-- The actual Hessian directional error includes cubic regularization (`p = 2`). -/
+theorem second_directional_error_le {p : ℕ} (hp : 2 ≤ p)
+    {f : E → ℝ} (hf : ContDiff ℝ p f) {L σ : ℝ} (hL : 0 ≤ L) (hσ : 0 ≤ σ)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
+    (x : E) {s : E} (hs : s ≠ 0) (v : E) (hv : ‖v‖ = 1) :
+    |iteratedFDeriv ℝ 2 f (x + s) (fun _ => v) -
+      iteratedFDeriv ℝ 2 (model f p x σ) s (fun _ => v)| ≤
+        (L + σ) / (p - 1).factorial * ‖s‖ ^ (p - 1) := by
+  by_cases hp3 : 3 ≤ p
+  · simpa only [show p - 2 + 1 = p - 1 by omega] using
+      directional_error_le hp3 (Or.inl rfl) hf hL hσ hlip x hs v hv
+  have hp2 : p = 2 := by omega
+  subst p
+  have hd : iteratedFDeriv ℝ 2 (model f 2 x σ) s (fun _ => v) =
+      iteratedFDeriv ℝ 2 f x (fun _ => v) +
+        CubicRegularization.penaltySecondDerivative σ s v v := by
+    change iteratedFDeriv ℝ 2 (CubicRegularization.model f x σ) s (fun _ => v) = _
+    simp only [iteratedFDeriv_two_apply,
+      CubicRegularization.fderiv_fderiv_model hf.contDiffAt, add_apply]
+  have he := (iteratedFDeriv ℝ 2 f (x + s) - iteratedFDeriv ℝ 2 f x).le_opNorm
+    (fun _ => v)
+  simp only [sub_apply, Fin.prod_const, hv, one_pow, mul_one, Real.norm_eq_abs] at he
+  have hl := hlip (x + s) x
+  rw [add_sub_cancel_left] at hl
+  have hTaylor := he.trans hl
+  have hpen := (CubicRegularization.penaltySecondDerivative σ s v).le_opNorm v
+  have hpen' := (CubicRegularization.penaltySecondDerivative σ s).le_opNorm v
+  rw [hv, mul_one, Real.norm_eq_abs] at hpen
+  rw [hv, mul_one] at hpen'
+  have hPenalty := hpen.trans
+    (hpen'.trans (CubicRegularization.norm_penaltySecondDerivative_le hσ s))
+  rw [hd]
+  calc _ = |(iteratedFDeriv ℝ 2 f (x + s) (fun _ => v) -
+      iteratedFDeriv ℝ 2 f x (fun _ => v)) -
+        CubicRegularization.penaltySecondDerivative σ s v v| := by congr 1; ring
+       _ ≤ _ := (abs_sub _ _).trans (add_le_add hTaylor hPenalty) |>.trans_eq (by norm_num; ring)
+
 /-- The actual model's curvature test controls the genuine trial Hessian in every unit direction. -/
-theorem trial_curvature_lower {p : ℕ} (hp : 3 ≤ p) {f : E → ℝ} (hf : ContDiff ℝ p f)
+theorem trial_curvature_lower {p : ℕ} (hp : 2 ≤ p) {f : E → ℝ} (hf : ContDiff ℝ p f)
     {L σ θ₂ : ℝ} (hL : 0 ≤ L) (hσ : 0 ≤ σ)
     (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
     (x : E) {s : E} (hs : s ≠ 0) (v : E) (hv : ‖v‖ = 1)
@@ -228,20 +266,18 @@ theorem trial_curvature_lower {p : ℕ} (hp : 3 ≤ p) {f : E → ℝ} (hf : Con
       iteratedFDeriv ℝ 2 (model f p x σ) s (fun _ => v)) :
     -((L + σ) / (p - 1).factorial + θ₂) * ‖s‖ ^ (p - 1) ≤
       iteratedFDeriv ℝ 2 f (x + s) (fun _ => v) := by
-  have hh := directional_error_le hp (Or.inl rfl) hf hL hσ hlip x hs v hv
-  rw [show p - 2 + 1 = p - 1 by omega] at hh
+  have hh := second_directional_error_le hp hf hL hσ hlip x hs v hv
   linarith [(abs_le.mp hh).1]
 
 /-- Every small-model-curvature direction has the source's absolute trial Hessian bound. -/
-theorem trial_small_curvature_le {p : ℕ} (hp : 3 ≤ p) {f : E → ℝ} (hf : ContDiff ℝ p f)
+theorem trial_small_curvature_le {p : ℕ} (hp : 2 ≤ p) {f : E → ℝ} (hf : ContDiff ℝ p f)
     {L σ θ₂ : ℝ} (hL : 0 ≤ L) (hσ : 0 ≤ σ)
     (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
     (x : E) {s : E} (hs : s ≠ 0) {v : E}
     (hv : v ∈ smallModelDirections f p x s σ θ₂) :
     |iteratedFDeriv ℝ 2 f (x + s) (fun _ => v)| ≤
       ((L + σ) / (p - 1).factorial + θ₂) * ‖s‖ ^ (p - 1) := by
-  have hh := directional_error_le hp (Or.inl rfl) hf hL hσ hlip x hs v hv.1
-  rw [show p - 2 + 1 = p - 1 by omega] at hh
+  have hh := second_directional_error_le hp hf hL hσ hlip x hs v hv.1
   have htri := abs_add_le
     (iteratedFDeriv ℝ 2 f (x + s) (fun _ => v) -
       iteratedFDeriv ℝ 2 (model f p x σ) s (fun _ => v))
@@ -346,7 +382,7 @@ theorem step_lower_first (h : ModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ �
 /-- The second-order step bound uses a least eigenpair of the actual endpoint Hessian. -/
 theorem step_lower_second [CompleteSpace E]
     (h : ModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
-    (hp : 3 ≤ p) (hf : ContDiff ℝ p f) (hL : 0 < L) (hθ : 0 ≤ θ₂)
+    (hp : 2 ≤ p) (hf : ContDiff ℝ p f) (hL : 0 < L) (hθ : 0 ≤ θ₂)
     (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
     {i : ℕ} (hi : i < N) (hs : η₁ ≤ ρ i)
     (hsecond : ∀ v : E, ‖v‖ = 1 → -θ₂ * ‖s i‖ ^ (p - 1) ≤
@@ -395,7 +431,7 @@ theorem step_lower_third (h : ModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ �
 
 /-- Small model curvature implies the endpoint's absolute Hessian bound (4.1.23). -/
 theorem small_curvature_le (h : ModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
-    (hp : 3 ≤ p) (hf : ContDiff ℝ p f) (hL : 0 ≤ L)
+    (hp : 2 ≤ p) (hf : ContDiff ℝ p f) (hL : 0 ≤ L)
     (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
     {i : ℕ} (hi : i < N) (hs : η₁ ≤ ρ i)
     {v : E} (hv : v ∈ smallModelDirections f p (x i) (s i) (σ i) θ₂) :
@@ -476,7 +512,7 @@ theorem decrease_first (h : ModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ γ�
 /-- The full second-order successful objective decrease for the actual least Hessian pair. -/
 theorem decrease_second [CompleteSpace E]
     (h : ModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
-    (hp : 3 ≤ p) (hf : ContDiff ℝ p f) (hL : 0 < L) {θ₂ : ℝ} (hθ : 0 ≤ θ₂)
+    (hp : 2 ≤ p) (hf : ContDiff ℝ p f) (hL : 0 < L) {θ₂ : ℝ} (hθ : 0 ≤ θ₂)
     (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
     {i : ℕ} (hi : i < N) (hs : η₁ ≤ ρ i)
     (hsecond : ∀ v : E, ‖v‖ = 1 → -θ₂ * ‖s i‖ ^ (p - 1) ≤

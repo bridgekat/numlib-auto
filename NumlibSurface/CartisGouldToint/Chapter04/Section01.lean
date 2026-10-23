@@ -82,7 +82,8 @@ theorem lemma_4_1_3 {n p N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
     {η₁ η₂ γ₁ γ₂ γ₃ σmin L θ₁ θ₂ θ₃ : ℝ} {ε₂ ε₃ : WithTop ℝ}
     (h : arpModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
-    (hp : 3 ≤ p) (hf : ContDiff ℝ p f) (hL : 1 ≤ L)
+    (hp₂ : ε₂ ≠ ⊤ → 2 ≤ p) (hp₃ : ε₃ ≠ ⊤ → 3 ≤ p)
+    (hf : ContDiff ℝ p f) (hL : 1 ≤ L)
     (hθ₁ : 0 < θ₁) (hθ₂ : 0 < θ₂) (hθ₃ : 0 < θ₃)
     (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
     (hi : i < N) (hs : η₁ ≤ ρ i)
@@ -111,10 +112,10 @@ theorem lemma_4_1_3 {n p N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
   · simpa only [EuclideanSpace.norm_gradient_eq, stepConstant] using
       h.step_lower_first hf hLp hθ₁.le hlip hi hs hfirst
   · intro hε μ u hu
-    exact h.step_lower_second hp hf hLp hθ₂.le hlip hi hs (hsecond hε) hu
+    exact h.step_lower_second (hp₂ hε) hf hLp hθ₂.le hlip hi hs (hsecond hε) hu
   · intro hε v hv
-    exact ⟨h.step_lower_third hp hf hLp hθ₃.le hlip hi hs (hthird hε) hv,
-      h.small_curvature_le hp hf hLp.le hlip hi hs hv⟩
+    exact ⟨h.step_lower_third (hp₃ hε) hf hLp hθ₃.le hlip hi hs (hthird hε) hv,
+      h.small_curvature_le (by have := hp₃ hε; omega) hf hLp.le hlip hi hs hv⟩
 
 /-- **Lemma 4.1.4.** All three objective decrease bounds (4.1.31)–(4.1.36),
 with the printed factorial coefficients and real fractional exponents. The
@@ -123,7 +124,8 @@ theorem lemma_4_1_4 {n p N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
     {η₁ η₂ γ₁ γ₂ γ₃ σmin L θ₁ θ₂ θ₃ : ℝ} {ε₂ ε₃ : WithTop ℝ}
     (h : arpModelTrace f p x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin N)
-    (hp : 3 ≤ p) (hf : ContDiff ℝ p f) (hL : 1 ≤ L)
+    (hp₂ : ε₂ ≠ ⊤ → 2 ≤ p) (hp₃ : ε₃ ≠ ⊤ → 3 ≤ p)
+    (hf : ContDiff ℝ p f) (hL : 1 ≤ L)
     (hθ₁ : 0 < θ₁) (hθ₂ : 0 < θ₂) (hθ₃ : 0 < θ₃)
     (hlip : ∀ y z, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
     (hi : i < N) (hs : η₁ ≤ ρ i)
@@ -157,8 +159,8 @@ theorem lemma_4_1_4 {n p N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
   · simpa only [EuclideanSpace.norm_gradient_eq, decreaseConstant, stepConstant] using
       h.decrease_first hf hLp hθ₁.le hlip hi hs hfirst
   · intro hε μ u hu
-    exact h.decrease_second hp hf hLp hθ₂.le hlip hi hs (hsecond hε) hu
+    exact h.decrease_second (hp₂ hε) hf hLp hθ₂.le hlip hi hs (hsecond hε) hu
   · intro hε v hv
-    exact h.decrease_third hp hf hLp hθ₃.le hlip hi hs (hthird hε) hv
+    exact h.decrease_third (hp₃ hε) hf hLp hθ₃.le hlip hi hs (hthird hε) hv
 
 end CartisGouldToint

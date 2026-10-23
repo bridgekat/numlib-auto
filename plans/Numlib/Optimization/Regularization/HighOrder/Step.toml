@@ -92,3 +92,6 @@ id = "ModelTrace.decrease_second"
 
 [[node]]
 id = "ModelTrace.decrease_third"
+
+[[node]]
+id = "second_directional_error_le"
