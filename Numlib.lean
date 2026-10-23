@@ -719,7 +719,9 @@ import Numlib.Optimization.TrustRegion.FirstOrder
 import Numlib.Optimization.TrustRegion.HighOrder.Complexity
 import Numlib.Optimization.TrustRegion.HighOrder.Radius
 import Numlib.Optimization.TrustRegion.HighOrder.Sharpness
+import Numlib.Optimization.TrustRegion.HighOrder.SharpnessGlobal
 import Numlib.Optimization.TrustRegion.HighOrder.Trial
+import Numlib.Optimization.TrustRegion.Inexact.Acceptance
 import Numlib.Optimization.TrustRegion.Inexact.Selection
 import Numlib.Optimization.TrustRegion.SecondOrder.Complexity
 import Numlib.Optimization.TrustRegion.SecondOrder.Eigenpair

@@ -40,22 +40,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_13_1_3"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.1.3: Condition for success (TRqIDA)
-
-Suppose that f.D0qL holds, that \( {L}_f \) is given by (13.1.23), and that \( {\widehat{\phi }}_{f, k} \) is defined by (13.1.25). Suppose also that
-
-\[
-{\Delta }_{k} \leq  \min \left\{  {\vartheta ,\frac{\left( 1 - {\eta }_{2}\right) }{{L}_{f} + 4\left( {q + 1}\right) !{\kappa }_{s}{\kappa }_{\nabla ,\max }}{\widehat{\phi }}_{f, k}}\right\}\tag{13.1.28}
-\]
-
-at iteration \( k \in  \mathcal{T} \) of the TRqIDA algorithm. Then \( {\rho }_k \geq  {\eta }_2 \) , iteration \( k \) is very successful, and \( {\Delta }_{k + 1} \geq  {\Delta }_k \) .
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.3 (OCR Markdown line 13834)"
-deps = ["lemma_13_1_2"]
 
 [[node]]
 id = "lemma_13_1_4"

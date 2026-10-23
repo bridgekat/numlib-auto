@@ -1,5 +1,5 @@
 import Numlib.Analysis.Calculus.TaylorModel
-import Numlib.Optimization.TrustRegion.Inexact.Selection
+import Numlib.Optimization.TrustRegion.Inexact.Acceptance
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -129,5 +129,56 @@ theorem lemma_13_1_2 {n q : ℕ}
           inexactTaylorModel (A k) (InexactTrustRegion.modelOrder (j k)) 0 -
             inexactTaylorModel (A k) (InexactTrustRegion.modelOrder (j k)) (s k) :=
   ⟨h.prefixGap_lower hk, h.model_decrease hk⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Lemma 13.1.3: at a trial of TRqIDA, the small-radius bound guarantees the
+actual objective ratio is at least `η₂`, so the permitted update does not shrink
+the radius. Derivative errors are bounded by their oracle constants times the
+requested accuracies; Step 2 bounds each requested accuracy by the actual step
+length. These are the primitive conditions (13.1.2) and (13.1.9). -/
+theorem lemma_13_1_3 {n q : ℕ}
+    {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {T : Set ℕ} {j : ℕ → Fin q} {Δ ρ : ℕ → ℝ}
+    {d s x : ℕ → EuclideanSpace ℝ (Fin n)} {ε : Fin q → ℝ} {ζ θ : ℝ}
+    (h : InexactTrustRegion.SelectedTrials A T j Δ d s ε ζ θ)
+    {f : EuclideanSpace ℝ (Fin n) → ℝ} (hf : ContDiff ℝ q f)
+    {L κs κmax η₁ η₂ γ₁ γ₂ γ₃ Δmax : ℝ} {N k : ℕ}
+    (hu : EvaluationComplexity.TrialTrustRegionUpdates T Δ ρ η₁ η₂ γ₁ γ₂ γ₃ Δmax N)
+    (hkN : k < N) (hk : k ∈ T) (hL : 1 ≤ L) (hκs : 0 ≤ κs) (hκmax : 0 ≤ κmax)
+    (hlip : ∀ a, 1 ≤ a → a ≤ q → ∀ u v,
+      ‖iteratedFDeriv ℝ a f u - iteratedFDeriv ℝ a f v‖ ≤ L * ‖u - v‖)
+    (κ : ℕ → ℝ) (accuracy : ℕ → ℕ → ℝ)
+    (hκ : ∀ a, 1 ≤ a → a ≤ q → 0 ≤ κ a ∧ κ a ≤ κmax)
+    (horacle : ∀ a, 1 ≤ a → a ≤ q →
+      ‖A k a - iteratedFDeriv ℝ a f (x k)‖ ≤ κ a * accuracy k a)
+    (hrequest : ∀ a, 1 ≤ a → a ≤ q →
+      accuracy k a ≤ κs * ‖s k‖ ^ (q - a + 1))
+    (hzero : A k 0 (fun _ => 0) = f (x k))
+    (hratio : ρ k = (f (x k) - f (x k + s k)) /
+      InexactTrustRegion.decrement (A k) (InexactTrustRegion.modelOrder (j k)) (s k))
+    (hsmall : Δ k ≤ min θ ((1 - η₂) /
+      (L + 4 * ((q + 1).factorial : ℝ) * κs * κmax) *
+      InexactTrustRegion.scaledGap A j Δ d θ k)) :
+    η₂ ≤ ρ k ∧ Δ k ≤ Δ (k + 1) := by
+  have herr : ∀ a, 1 ≤ a → a ≤ InexactTrustRegion.modelOrder (j k) →
+      ‖A k a - iteratedFDeriv ℝ a f (x k)‖ ≤
+        (κs * κmax) * ‖s k‖ ^ (q - a + 1) := by
+    intro a ha haj
+    have haq : a ≤ q := haj.trans (by exact (j k).isLt)
+    calc _ ≤ κ a * accuracy k a := horacle a ha haq
+      _ ≤ κ a * (κs * ‖s k‖ ^ (q - a + 1)) :=
+        mul_le_mul_of_nonneg_left (hrequest a ha haq) (hκ a ha haq).1
+      _ ≤ κmax * (κs * ‖s k‖ ^ (q - a + 1)) :=
+        mul_le_mul_of_nonneg_right (hκ a ha haq).2 (by positivity)
+      _ = _ := by ring
+  have hs := h.very_successful hf hL (mul_nonneg hκs hκmax) hu.eta2_lt_one
+    hlip x hk hzero herr (by
+      simpa only [InexactTrustRegion.acceptanceCoefficient, mul_assoc] using hsmall)
+  rw [← hratio] at hs
+  exact ⟨hs, (show Δ (k + 1) ∈ Set.Icc (Δ k) (min Δmax (γ₃ * Δ k)) by
+    simpa only [ite_eq_left hs] using hu.update k hkN hk).1⟩
 
 end CartisGouldToint

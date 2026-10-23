@@ -1,0 +1,10 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "acceptanceCoefficient"
+
+[[node]]
+id = "model_value_error_le"
+
+[[node]]
+id = "SelectedTrials.very_successful"
