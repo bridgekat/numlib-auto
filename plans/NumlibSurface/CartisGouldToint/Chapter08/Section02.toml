@@ -1,7 +1,5 @@
 namespace = "CartisGouldToint"
-desc = '''
-Secular equations and global optimality characterizations. The secular model is a resolvent of H+λM. Transfer to the M inner product or conjugate by M^(−1/2); no arbitrary inverse at a singular endpoint. Package the spectral representation once. Check strictness and multiple eigenvalues explicitly. Equations retain the textbook numbering.
-'''
+
 
 [[node]]
 id = "secularFunction"
@@ -22,30 +20,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "theorem_8_2_2"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 8.2.2: Lower and upper Taylor estimates of \( \pi \left( \lambda \right) \)
-
-[Appendix to Chapter 8, p. 475]: Let \( \pi \left( \lambda \right) \) be the secular function (8.2.4). Suppose that \( {\lambda }_C \) is a given value such that \( {\lambda }_C > {\lambda }_S \) , and let \( {t}_k\left( \delta \right) \) be the \( k \) th-order Taylor-series approximation (8.2.12) to \( \pi \left( {{\lambda }_c + \delta }\right) \) . Then
-
-\[
-\pi \left( {{\lambda }_{c} + \delta }\right)  \leq  {t}_{k}\left( \delta \right) \text{ for even }k > 0\text{ and }\pi \left( {{\lambda }_{c} + \delta }\right)  \geq  {t}_{k}\left( \delta \right) \text{ for odd }k > 0
-\]
-
-(8.2.13)
-
-when \( \delta  > 0 \) , while
-
-\[
-\pi \left( {{\lambda }_{c} + \delta }\right)  \geq  {t}_{k + 1}\left( \delta \right)  \geq  {t}_{k}\left( \delta \right) \text{ for all }k > 0\tag{8.2.14}
-\]
-
-when \( {\lambda }_s - {\lambda }_c < \delta  < 0 \) . The inequalities in (8.2.13) and (8.2.14) are strict whenever \( g \neq  0 \) .
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.2 (OCR Markdown line 9592)"
-deps = ["secularFunction"]
 
 [[node]]
 id = "lemma_8_2_3"
@@ -192,3 +167,8 @@ Documented source/OCR correction and formalization requirements: Retain the mode
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.8 (OCR Markdown line 9800)"
 deps = ["regularizationSubproblemModel"]
+
+[[node]]
+id = "secularTaylorPolynomial"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Equation (8.2.12)"
+

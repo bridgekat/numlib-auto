@@ -1,0 +1,71 @@
+namespace = "QuadraticSecular.PencilBasis"
+
+
+[[node]]
+id = "contDiffOn_spectralSum"
+
+[[node]]
+id = "shifted_power_deriv"
+
+[[node]]
+id = "spectralSum_deriv"
+
+[[node]]
+id = "product_two_add"
+
+[[node]]
+id = "product_neg_two_sub"
+
+[[node]]
+id = "spectralSum_deriv_formula"
+
+[[node]]
+id = "positive_derivative_sum"
+
+[[node]]
+id = "derivative_even_pos"
+
+[[node]]
+id = "derivative_odd_neg"
+
+[[node]]
+id = "contDiffAt_spectralSum"
+
+[[node]]
+id = "taylor"
+
+[[node]]
+id = "taylorWithinEval_eq"
+
+[[node]]
+id = "taylor_remainder"
+
+[[node]]
+id = "taylor_upper_even"
+
+[[node]]
+id = "taylor_lower_odd"
+
+[[node]]
+id = "taylor_lower_negative"
+
+[[node]]
+id = "taylor_succ"
+
+[[node]]
+id = "taylor_increasing_negative"
+
+[[node]]
+id = "taylor_zero"
+
+[[node]]
+id = "iteratedDeriv_secular_eq"
+
+[[node]]
+id = "actualTaylor"
+
+[[node]]
+id = "actualTaylor_eq"
+
+[[node]]
+id = "actualTaylor_bounds"
