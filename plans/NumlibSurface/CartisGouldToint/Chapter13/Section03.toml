@@ -101,6 +101,8 @@ Suppose that f.D0pL holds. Then (13.1.77) with the choice (13.3.3) holds for all
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.5 (OCR Markdown line 15325)"
 deps = ["arqpedaRun", "lemma_13_1_14"]
 
+wrong = "The printed coefficient omits the initial request cap on large steps, where Step 2 skips its relative tensor-accuracy check. The formal arqpedaPrintedBoundCounterexample has p=q=1, zero objective, computed derivative -1000, accuracy cap 1000, kappa_s=1/16, sigma_0=32, exact model minimizer s=125/4, exact objective values with positive error request 1 and ratio zero. A legal update gives sigma_1=64, exceeding the printed bound 32. Corrected lemma_13_3_5_corrected retains the short-step guard and replaces kappa_s by max(kappa_s,kappa_h); lemma_13_3_5_of_cap_le restores the printed bound under explicit kappa_h<=kappa_s. The final Step 2 index range 1:q is repaired to 1:p as required by referenced equation13.1.46."
+
 [[node]]
 id = "lemma_13_3_6"
 kind = "theorem"
@@ -186,3 +188,18 @@ id = "edaTerminationCheck"
 [[node]]
 id = "lemma_13_3_3_optimality"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.3(i)"
+[[node]]
+id = "edaRegularizationModelTrace"
+source = "Corrected companion or formal counterexample for Cartis, Gould and Toint, Lemma 13.3.5; literal short-step guard retained."
+
+[[node]]
+id = "lemma_13_3_5_corrected"
+source = "Corrected companion or formal counterexample for Cartis, Gould and Toint, Lemma 13.3.5; literal short-step guard retained."
+
+[[node]]
+id = "lemma_13_3_5_of_cap_le"
+source = "Corrected companion or formal counterexample for Cartis, Gould and Toint, Lemma 13.3.5; literal short-step guard retained."
+
+[[node]]
+id = "arqpedaPrintedBoundCounterexample"
+source = "Corrected companion or formal counterexample for Cartis, Gould and Toint, Lemma 13.3.5; literal short-step guard retained."

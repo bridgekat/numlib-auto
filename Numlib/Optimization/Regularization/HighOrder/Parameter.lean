@@ -25,6 +25,7 @@ noncomputable def model (f : E → ℝ) (p : ℕ) (x : E) (σ : ℝ) (s : E) : �
 theorem model_eq (f : E → ℝ) (p : ℕ) (x : E) (σ : ℝ) (s : E) :
     model f p x σ s = eval f p x s + σ / (p + 1).factorial * ‖s‖ ^ (p + 1) := rfl
 
+/-- At zero displacement the regularized model is the actual objective value. -/
 @[simp] theorem model_zero (f : E → ℝ) (p : ℕ) (x : E) (σ : ℝ) :
     model f p x σ 0 = f x := by simp [model]
 

@@ -213,6 +213,8 @@ for all \( k \) .
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.14 (OCR Markdown line 14488)"
 deps = ["lemma_13_1_13"]
 
+wrong = "With the literal short-step guard, the printed constant omits the initial request cap. Formal arqpidaPrintedBoundCounterexample: f=0,p=q=1,computed gradient=-1000,cap=1000,stepCoefficient=1,errorBound=1,sigma0=32,eta2=1/2,gamma3=3. The exact computed-model step125/4 is large, so no accuracy check occurs; actual ratio0 allows sigma1=64, exceeding printed max(32,60)=60. The corrected theorem replaces stepCoefficient by max(stepCoefficient,initialCap), retaining the guard. The printed bound has a separate companion under initialCap<=stepCoefficient. The final Step2 index q must also be p to check every derivative required in13.1.46."
+
 [[node]]
 id = "lemma_13_1_15"
 kind = "theorem"
@@ -383,3 +385,22 @@ id = "idaPrefixGap"
 
 [[node]]
 id = "idaModelTrace"
+[[node]]
+id = "idaRegularizationOracleSettings"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma13.1.14 and Algorithm13.1.2 (corrected guarded accuracy constant)"
+
+[[node]]
+id = "idaRegularizationModelTrace"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma13.1.14 and Algorithm13.1.2 (corrected guarded accuracy constant)"
+
+[[node]]
+id = "lemma_13_1_14_corrected"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma13.1.14 and Algorithm13.1.2 (corrected guarded accuracy constant)"
+
+[[node]]
+id = "lemma_13_1_14_of_cap_le"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma13.1.14 and Algorithm13.1.2 (corrected guarded accuracy constant)"
+
+[[node]]
+id = "arqpidaPrintedBoundCounterexample"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma13.1.14 and Algorithm13.1.2 (corrected guarded accuracy constant)"

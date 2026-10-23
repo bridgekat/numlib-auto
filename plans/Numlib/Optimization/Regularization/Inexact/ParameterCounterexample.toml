@@ -1,0 +1,34 @@
+namespace = "InexactRegularization.Counterexample"
+
+[[node]]
+id = "data"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "parameter"
+
+[[node]]
+id = "ofJet_data"
+
+[[node]]
+id = "model_data"
+
+[[node]]
+id = "trace"
+
+[[node]]
+id = "smoothness"
+
+[[node]]
+id = "reference_maximizes"
+
+[[node]]
+id = "reference_tests"
+
+[[node]]
+id = "printed_bound_violated"
+
+[[node]]
+id = "step_minimizes"

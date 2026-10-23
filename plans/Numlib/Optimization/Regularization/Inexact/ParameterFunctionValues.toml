@@ -1,0 +1,22 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "objective_decrement_error_le"
+
+[[node]]
+id = "FunctionTrace"
+
+[[node]]
+id = "OracleTrace.objective_error_le"
+
+[[node]]
+id = "FunctionTrace.ratio_error_le"
+
+[[node]]
+id = "FunctionTrace.very_successful"
+
+[[node]]
+id = "FunctionTrace.parameter_le"
+
+[[node]]
+id = "FunctionTrace.parameter_le_of_cap_le"

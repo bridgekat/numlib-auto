@@ -1,0 +1,58 @@
+namespace = "InexactRegularization"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "ratio"
+
+[[node]]
+id = "OracleSettings"
+
+[[node]]
+id = "ModelTrace"
+
+[[node]]
+id = "penalty_lt_decrement"
+
+[[node]]
+id = "value_error_le"
+
+[[node]]
+id = "parameterCoefficient"
+
+[[node]]
+id = "parameterCoefficient_eq_of_cap_le"
+
+[[node]]
+id = "ratio_error_eq"
+
+[[node]]
+id = "OracleTrace.accuracy_mem_Icc"
+
+[[node]]
+id = "OracleTrace.request_le"
+
+[[node]]
+id = "OracleTrace.tensor_error_le"
+
+[[node]]
+id = "OracleTrace.denominator_pos"
+
+[[node]]
+id = "ModelTrace.ratio_error_le"
+
+[[node]]
+id = "ModelTrace.very_successful"
+
+[[node]]
+id = "ModelTrace.next_le_of_large"
+
+[[node]]
+id = "ModelTrace.parameter_le"
+
+[[node]]
+id = "ModelTrace.parameter_le_of_cap_le"
+
+[[node]]
+id = "OracleTrace"

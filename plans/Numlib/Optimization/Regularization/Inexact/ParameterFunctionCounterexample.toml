@@ -1,0 +1,16 @@
+namespace = "InexactRegularization.FunctionCounterexample"
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "oracleTrace"
+
+[[node]]
+id = "trace"
+
+[[node]]
+id = "coefficient_restrictions"
+
+[[node]]
+id = "printed_bound_violated"
