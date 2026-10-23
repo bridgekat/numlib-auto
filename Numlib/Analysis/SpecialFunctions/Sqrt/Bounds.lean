@@ -34,4 +34,19 @@ theorem min_mul_sqrt_sub_le_sqrt_add_mul_sub {a b c : ℝ} (ha : 0 ≤ a) (hb : 
     have hrad : b ^ 2 + a ≤ b ^ 2 + a * c := by nlinarith
     linarith [Real.sqrt_le_sqrt hrad]
 
+/-- On a disk of radius `r ≤ R`, the function `-x + sqrt (R²-y²)` is bounded below by
+`R-r`. Both radii may be zero, and the boundary case `r = R` is included. -/
+theorem sub_le_neg_add_sqrt_of_sq_add_sq_le {r R x y : ℝ} (hr : 0 ≤ r)
+    (hR : r ≤ R) (hxy : x ^ 2 + y ^ 2 ≤ r ^ 2) :
+    R - r ≤ -x + sqrt (R ^ 2 - y ^ 2) := by
+  have hx : x ≤ r := by nlinarith [sq_nonneg y]
+  have hrad : 0 ≤ R ^ 2 - y ^ 2 := by
+    nlinarith [sq_nonneg x, mul_nonneg (sub_nonneg.mpr hR) (add_nonneg hr (hr.trans hR))]
+  by_cases hleft : R - r + x ≤ 0
+  · linarith [sqrt_nonneg (R ^ 2 - y ^ 2)]
+  · have hsq : (R - r + x) ^ 2 ≤ R ^ 2 - y ^ 2 := by
+      nlinarith [mul_nonneg (sub_nonneg.mpr hR) (sub_nonneg.mpr hx)]
+    have h := (le_sqrt (le_of_lt (lt_of_not_ge hleft)) hrad).2 hsq
+    linarith
+
 end Real

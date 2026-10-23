@@ -2,3 +2,6 @@ namespace = "Real"
 
 [[node]]
 id = "min_mul_sqrt_sub_le_sqrt_add_mul_sub"
+
+[[node]]
+id = "sub_le_neg_add_sqrt_of_sq_add_sq_le"
