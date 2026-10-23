@@ -113,6 +113,9 @@ Formalize every hypothesis and conclusion in the following numbered statement, w
 Lemma 13.3.7: Model and function decreases (ARqpEDA)
 
 Suppose that f.D0pL holds. Then the model decrease (13.1.82) holds, with the choice (13.3.3), for every iteration \( k \in  \mathcal{T} \) of the ARqpEDA algorithm before termination. If, in addition, \( k \in  \mathcal{S} \) , then (13.1.83) holds as well.
+
+
+Coverage note: the unrestricted original remains open. Genuine literal stopping is proved separately under the additional effective margin theta < zeta/2, using actual next computed tests and explicit error-budget failures. The corrected guarded parameter cap and safe radius coefficient also remain explicit; no printed-cap result is assumed.
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.7 (OCR Markdown line 15423)"
 deps = ["lemma_13_3_5", "lemma_13_1_18"]
@@ -164,6 +167,9 @@ Suppose that f.D0pL and f.Bb hold. Suppose also that the algorithm ensures that
 
 
 Documented source/OCR correction and formalization requirements: OCR repair: in the derivative-evaluation bounds, restore denominator min_j ε_j^((p+1)/(p−j+1)) in case q≤2 and min_j ε_j^(j(p+1)/p) in case q>2. The OCR underbrace lines lost these denominators; the following O-expressions and IDA analogue specify them. Preserve the logarithmic accuracy-improvement terms.
+
+
+Coverage note: the unrestricted original remains open. Genuine literal stopping is proved separately under the additional effective margin theta < zeta/2, using actual next computed tests and explicit error-budget failures. The corrected guarded parameter cap and safe radius coefficient also remain explicit; no printed-cap result is assumed.
 '''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.3.8 (OCR Markdown line 15449)"
 deps = ["lemma_13_3_6", "lemma_13_3_7", "theorem_13_1_19"]
@@ -204,3 +210,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "lemma_13_3_6_corrected"
 source = "Cartis, Gould and Toint, Lemma13.3.6 with the genuine corrected guarded parameter cap. Both verified true optimality and forced Step1.5.1 exit under a uniform request cap. Original fixed printed-cap assertion remains open."
+
+[[node]]
+id = "theorem_13_3_8_effective_margin"
+source = "Cartis, Gould and Toint, Theorem13.3.8, corrected positive-margin companion"

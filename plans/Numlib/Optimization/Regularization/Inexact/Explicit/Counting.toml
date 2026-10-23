@@ -1,0 +1,19 @@
+namespace = "InexactRegularization.Explicit"
+
+[[node]]
+id = "Run.trial_card_le_successful"
+
+[[node]]
+id = "Run.accuracy_card_le"
+
+[[node]]
+id = "Run.trial_card_le"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "Run.functionEvaluations_le"
+
+[[node]]
+id = "Run.derivativeEvaluations_le"

@@ -1,3 +1,5 @@
+import Numlib.Optimization.Regularization.Inexact.Explicit.Complexity
+import Numlib.Optimization.HighOrder.CriticalityRadius
 import Numlib.Optimization.Regularization.Inexact.Explicit.Stopping
 import Numlib.Optimization.Regularization.Inexact.VerifiedOptimality
 import Numlib.Optimization.TrustRegion.Inexact.FunctionRadius
@@ -319,5 +321,51 @@ theorem lemma_13_3_6_corrected {n p q N k : ℕ}
   refine ⟨fun hbudget => (h.stopped_optimality hk ⟨hselected, hbudget⟩).2, ?_⟩
   intro hf L hL hlip H hH hrequests hsmall
   exact h.passing_check_stops hf hL hlip hk hselected hH hrequests hsmall
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion EvaluationComplexity
+
+/-- A corrected termination companion to Theorem13.3.8. The explicit positive
+margin theta < zeta/2 controls failure of the literal computed stopping test,
+including budget-only failures after all initial computed tests pass. The
+original unrestricted theorem remains open. Both source accuracy exponents,
+initialized derivative counts and two function calls per actual trial are kept. -/
+theorem theorem_13_3_8_effective_margin {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (P : InexactRegularization.Explicit.Settings p q) (x₀ : EuclideanSpace ℝ (Fin n))
+    (hf : ContDiff ℝ p f) (hmargin : P.theta < P.zeta / 2) {L flow : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (hlow : ∀ x, flow ≤ f x) :
+    ∃ κA > 0, ∃ κB > 0, ∃ κF > 0, ∃ κD > 0,
+      ∀ (ε : Fin q → ℝ)
+        (D : InexactRegularization.Explicit.ExecutionData (EuclideanSpace ℝ (Fin n)) q),
+      D.point 0 = x₀ →
+      (∀ N, (∀ k < N, ¬InexactRegularization.Explicit.StopsAt P ε D k) →
+        arqpedaRun f P ε D N) →
+      ∃ K : ℕ, InexactRegularization.Explicit.StopsAt P ε D K ∧
+        (∀ a, 0 < D.checkedRadius K a ∧ D.checkedRadius K a ≤ 1) ∧
+        (∀ a, TaylorModel.criticality f (modelOrder a) (D.point K) (D.checkedRadius K a) ≤
+          ε a * D.checkedRadius K a ^ modelOrder a / (modelOrder a).factorial) ∧
+        (q ≤ 2 → ∀ a, TaylorModel.criticality f (modelOrder a) (D.point K) 1 ≤
+          ε a / (modelOrder a).factorial) ∧ arqpedaRun f P ε D K ∧
+        (∀ k < K, ¬InexactRegularization.Explicit.StopsAt P ε D k) ∧
+        (2 * ((successfulIterations D.trials K).card : ℝ)) ≤
+          κA * (f x₀ - flow) / InexactRegularization.accuracyFactor P.toSettings ε + κF ∧
+        (derivativeEvaluations D.trials D.ratio P.eta1 K : ℝ) ≤
+          κA * (f x₀ - flow) / InexactRegularization.accuracyFactor P.toSettings ε +
+          κB * |Real.log (minimumAccuracy P.order_pos ε)| + κD := by
+  obtain ⟨κA, hA, κB, hB, κF, hF, κD, hD, hall⟩ :=
+    InexactRegularization.Explicit.evaluation_complexity f P x₀ hf hmargin hL hlip hlow
+  refine ⟨κA, hA, κB, hB, κF, hF, κD, hD, ?_⟩
+  intro ε D hinit hprefix
+  obtain ⟨K, hstop, hlegal, hopt, hrun, hfirst, hfcount, hdcount⟩ := hall ε D hinit hprefix
+  refine ⟨K, hstop, hlegal, hopt, ?_, hrun, hfirst, hfcount, hdcount⟩
+  intro hq a
+  exact TaylorModel.criticality_unit_le_of_radius f (D.point K)
+    (by unfold modelOrder; omega) (by unfold modelOrder; omega)
+    (hlegal a).1 (hlegal a).2 (hopt a)
 
 end CartisGouldToint

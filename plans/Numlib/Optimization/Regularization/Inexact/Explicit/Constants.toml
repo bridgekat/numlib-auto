@@ -1,0 +1,19 @@
+namespace = "InexactRegularization.Explicit"
+
+[[node]]
+id = "rootStepCoefficient"
+
+[[node]]
+id = "rootStepCoefficient_pos"
+
+[[node]]
+id = "orderDecreaseCoefficient"
+
+[[node]]
+id = "commonDecreaseCoefficient"
+
+[[node]]
+id = "commonDecreaseCoefficient_pos"
+
+[[node]]
+id = "commonDecreaseCoefficient_le"
