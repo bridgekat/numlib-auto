@@ -6,6 +6,7 @@ import Numlib.Analysis.Calculus.TaylorSegment
 import Numlib.Analysis.Calculus.Taylor.ScalarRemainder
 import Numlib.Analysis.Calculus.TaylorModel
 import Numlib.Analysis.SpecialFunctions.Integrals.BetaReal
+import Mathlib.Analysis.Normed.Module.HahnBanach
 
 /-!
 # Sharp Hölder bounds for Taylor value remainders
@@ -133,8 +134,10 @@ theorem abs_sub_eval_le_holder {f : E → ℝ} {p : ℕ} {C D : Set E}
   have hcont : Continuous (fun t : ℝ =>
       H * ‖s‖ ^ ((p + 1 : ℕ) + β) * (t ^ β * (1 - t) ^ p)) :=
     continuous_const.mul ((Real.continuous_rpow_const hβ).mul (by fun_prop))
-  have hint := intervalIntegral.norm_integral_le_of_norm_le (μ := MeasureTheory.volume) (by norm_num : (0 : ℝ) ≤ 1)
-    (MeasureTheory.ae_of_all _ (fun t ht => hpoint t ⟨ht.1.le, ht.2⟩)) (hcont.intervalIntegrable 0 1)
+  have hint := intervalIntegral.norm_integral_le_of_norm_le (μ := MeasureTheory.volume)
+    (by norm_num : (0 : ℝ) ≤ 1)
+    (MeasureTheory.ae_of_all _ (fun t ht => hpoint t ⟨ht.1.le, ht.2⟩))
+    (hcont.intervalIntegrable 0 1)
   rw [hrem, abs_mul, abs_of_nonneg (by positivity : (0 : ℝ) ≤ 1 / (p.factorial : ℝ))]
   have hint' : |∫ t in (0 : ℝ)..1, (1 - t) ^ p *
       (iteratedFDeriv ℝ (p + 1) f (x + t • s) (fun _ => s) -
@@ -164,6 +167,81 @@ theorem abs_sub_eval_le_lipschitz {f : E → ℝ} {p : ℕ} {C D : Set E}
     |f (x + s) - eval f (p + 1) x s| ≤ L * ‖s‖ ^ (p + 2) / (p + 2).factorial := by
   have h := abs_sub_eval_le_holder hD hCD hC hf hL (by norm_num : (0 : ℝ) ≤ 1)
     (by simpa using hlip) hx hxs
-  simpa only [Real.shiftedFactorial_one, show (p + 1 : ℕ) + (1 : ℝ) = ((p + 2 : ℕ) : ℝ) by push_cast; ring,
+  simpa only [Real.shiftedFactorial_one,
+    show (p + 1 : ℕ) + (1 : ℝ) = ((p + 2 : ℕ) : ℝ) by push_cast; ring,
     Real.rpow_natCast, div_mul_eq_mul_div] using h
+end TaylorModel
+
+namespace TaylorModel
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F]
+
+/-- A continuous linear map commutes with the genuine finite Taylor polynomial
+at a point with the corresponding finite differentiability. -/
+theorem map_eval {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
+    (ℓ : F →L[ℝ] G) {f : E → F} {p : ℕ} {x : E}
+    (hf : ContDiffAt ℝ p f x) (s : E) :
+    eval (ℓ ∘ f) p x s = ℓ (eval f p x s) := by
+  rw [eval_eq_sum, eval_eq_sum, map_sum]
+  apply Finset.sum_congr rfl
+  intro i hi
+  rw [ℓ.iteratedFDeriv_comp_left hf (by exact_mod_cast
+    (Nat.le_of_lt_succ (Finset.mem_range.mp hi)))]
+  rw [map_smul]
+  rfl
+
+/-- Sharp vector-valued Hölder remainder with finite smoothness. Scalarization
+by a norming real functional preserves the exact constant and requires no
+completeness of the codomain. -/
+theorem norm_sub_eval_le_holder {f : E → F} {p : ℕ} {C D : Set E}
+    (hD : IsOpen D) (hCD : C ⊆ D) (hC : Convex ℝ C)
+    (hf : ContDiffOn ℝ (p + 1) f D) {H β : ℝ} (hH : 0 ≤ H) (hβ : 0 ≤ β)
+    (hholder : ∀ u ∈ C, ∀ v ∈ C,
+      ‖iteratedFDeriv ℝ (p + 1) f u - iteratedFDeriv ℝ (p + 1) f v‖ ≤ H * ‖u - v‖ ^ β)
+    {x s : E} (hx : x ∈ C) (hxs : x + s ∈ C) :
+    ‖f (x + s) - eval f (p + 1) x s‖ ≤
+      H / Real.shiftedFactorial (p + 1) β * ‖s‖ ^ ((p + 1 : ℕ) + β) := by
+  obtain ⟨ℓ, hℓ, hnorm⟩ := exists_dual_vector'' ℝ (f (x + s) - eval f (p + 1) x s)
+  have hscalar : ContDiffOn ℝ (p + 1) (ℓ ∘ f) D := ℓ.contDiff.comp_contDiffOn hf
+  have hscalarHolder : ∀ u ∈ C, ∀ v ∈ C,
+      ‖iteratedFDeriv ℝ (p + 1) (ℓ ∘ f) u -
+          iteratedFDeriv ℝ (p + 1) (ℓ ∘ f) v‖ ≤ H * ‖u - v‖ ^ β := by
+    intro u hu v hv
+    rw [ℓ.iteratedFDeriv_comp_left (hf.contDiffAt (hD.mem_nhds (hCD hu))) le_rfl,
+      ℓ.iteratedFDeriv_comp_left (hf.contDiffAt (hD.mem_nhds (hCD hv))) le_rfl]
+    have heq : ℓ.compContinuousMultilinearMap (iteratedFDeriv ℝ (p + 1) f u) -
+        ℓ.compContinuousMultilinearMap (iteratedFDeriv ℝ (p + 1) f v) =
+        ℓ.compContinuousMultilinearMap
+          (iteratedFDeriv ℝ (p + 1) f u - iteratedFDeriv ℝ (p + 1) f v) := by
+      ext z
+      simp
+    rw [heq]
+    calc
+      _ ≤ ‖ℓ‖ * ‖iteratedFDeriv ℝ (p + 1) f u - iteratedFDeriv ℝ (p + 1) f v‖ :=
+        ℓ.norm_compContinuousMultilinearMap_le _
+      _ ≤ 1 * ‖iteratedFDeriv ℝ (p + 1) f u - iteratedFDeriv ℝ (p + 1) f v‖ :=
+        mul_le_mul_of_nonneg_right hℓ (norm_nonneg _)
+      _ ≤ _ := by simpa only [one_mul] using hholder u hu v hv
+  have hb := abs_sub_eval_le_holder hD hCD hC hscalar hH hβ hscalarHolder hx hxs
+  rw [map_eval ℓ (hf.contDiffAt (hD.mem_nhds (hCD hx)))] at hb
+  simp only [Function.comp_apply] at hb
+  rw [← map_sub, hnorm] at hb
+  change |‖f (x + s) - eval f (p + 1) x s‖| ≤ _ at hb
+  simpa only [abs_of_nonneg (norm_nonneg _)] using hb
+
+/-- Sharp vector-valued Lipschitz Taylor value bound with exact factorial. -/
+theorem norm_sub_eval_le_lipschitz {f : E → F} {p : ℕ} {C D : Set E}
+    (hD : IsOpen D) (hCD : C ⊆ D) (hC : Convex ℝ C)
+    (hf : ContDiffOn ℝ (p + 1) f D) {L : ℝ} (hL : 0 ≤ L)
+    (hlip : ∀ u ∈ C, ∀ v ∈ C,
+      ‖iteratedFDeriv ℝ (p + 1) f u - iteratedFDeriv ℝ (p + 1) f v‖ ≤ L * ‖u - v‖)
+    {x s : E} (hx : x ∈ C) (hxs : x + s ∈ C) :
+    ‖f (x + s) - eval f (p + 1) x s‖ ≤ L * ‖s‖ ^ (p + 2) / (p + 2).factorial := by
+  have h := norm_sub_eval_le_holder hD hCD hC hf hL (by norm_num : (0 : ℝ) ≤ 1)
+    (by simpa using hlip) hx hxs
+  simpa only [Real.shiftedFactorial_one,
+    show (p + 1 : ℕ) + (1 : ℝ) = ((p + 2 : ℕ) : ℝ) by push_cast; ring,
+    Real.rpow_natCast, div_mul_eq_mul_div] using h
+
 end TaylorModel
