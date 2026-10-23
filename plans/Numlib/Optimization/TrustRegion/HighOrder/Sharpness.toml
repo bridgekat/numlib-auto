@@ -1,0 +1,171 @@
+namespace = "HighOrderTrustRegion.Sharpness"
+
+desc = "Corrected bounded Hermite jets, actual scalar Taylor models and criticality, uniform endpoint residuals, and operational finite TRq executions conditional only on actual matched derivatives. The global interpolant existence needed for source Theorem12.2.6 remains a separate prerequisite."
+
+[[node]]
+id = "length"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "weight"
+
+[[node]]
+id = "value"
+
+[[node]]
+id = "jet"
+
+[[node]]
+id = "MatchesJets"
+
+[[node]]
+id = "matchesJets_iff"
+
+[[node]]
+id = "MatchesJets.value_eq"
+
+[[node]]
+id = "point_strictMono"
+
+[[node]]
+id = "point_succ"
+
+[[node]]
+id = "inverse_pow_le_length"
+
+[[node]]
+id = "length_pos"
+
+[[node]]
+id = "length_mul_pow_lt_two"
+
+[[node]]
+id = "weight_mem_Icc"
+
+[[node]]
+id = "one_lt_weight"
+
+[[node]]
+id = "weight_last"
+
+[[node]]
+id = "weight_succ"
+
+[[node]]
+id = "value_succ"
+
+[[node]]
+id = "value_mem_Icc"
+
+[[node]]
+id = "jet_lower"
+
+[[node]]
+id = "jet_top"
+
+[[node]]
+id = "jet_bound"
+
+[[node]]
+id = "eval_lower_of_matches"
+
+[[node]]
+id = "eval_top_of_matches"
+
+[[node]]
+id = "decrement_lower_of_matches"
+
+[[node]]
+id = "decrement_top_of_matches"
+
+[[node]]
+id = "criticality_lower_of_matches"
+
+[[node]]
+id = "criticality_top_of_matches"
+
+[[node]]
+id = "initialPolynomial_eq"
+
+[[node]]
+id = "initialPolynomial_derivative"
+
+[[node]]
+id = "descFactorial_le_factorial"
+
+[[node]]
+id = "objective_residual_zero"
+
+[[node]]
+id = "endpoint_residual_bound"
+
+[[node]]
+id = "direction"
+
+[[node]]
+id = "direction_norm_le"
+
+[[node]]
+id = "direction_pow"
+
+[[node]]
+id = "topIndex"
+
+[[node]]
+id = "modelOrder_lt_of_lt_topIndex"
+
+[[node]]
+id = "checkedOracle_of_matches"
+
+[[node]]
+id = "threshold_eq"
+
+[[node]]
+id = "trial_of_matches"
+
+[[node]]
+id = "run_of_matches"
+
+[[node]]
+id = "testsPass_last_of_matches"
+
+[[node]]
+id = "not_testsPass_of_matches"
+
+[[node]]
+id = "true_first_stopping_index"
+
+[[node]]
+id = "initialized_counts"
+
+[[node]]
+id = "initialized_counts_lower"
+
+[[node]]
+id = "uniform_data"
+
+[[node]]
+id = "accuracy_le_one"
+
+[[node]]
+id = "factorial_accuracy_le_one"
+
+[[node]]
+id = "parameters"
+
+[[node]]
+id = "execution_of_matches"
+
+[[node]]
+id = "initial_objective_gap"
+
+[[node]]
+id = "point_zero"
+
+[[node]]
+id = "value_zero"
+
+[[node]]
+id = "modelOrder_topIndex"
