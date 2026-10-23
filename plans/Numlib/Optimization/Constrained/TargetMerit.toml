@@ -1,0 +1,16 @@
+namespace = "Constrained"
+
+[[node]]
+id = "targetMerit"
+
+[[node]]
+id = "targetMultiplier"
+
+[[node]]
+id = "hasFDerivAt_targetMerit"
+
+[[node]]
+id = "fderiv_targetMerit"
+
+[[node]]
+id = "fderiv_targetMerit_eq_lagrangian"
