@@ -1,0 +1,34 @@
+namespace = "Hermite"
+
+[[node]]
+id = "reflectPolynomial"
+
+[[node]]
+id = "eval_reflectPolynomial"
+
+[[node]]
+id = "iteratedDeriv_reflectPolynomial"
+
+[[node]]
+id = "abs_iteratedDeriv_reflectPolynomial"
+
+[[node]]
+id = "sub_mem_Icc"
+
+[[node]]
+id = "abs_iteratedDeriv_reflectPolynomial_le"
+
+[[node]]
+id = "norm_iteratedDeriv_reflectPolynomial_sub_le"
+
+[[node]]
+id = "iteratedDeriv_reflectPolynomial_lipschitzOnWith"
+
+[[node]]
+id = "iteratedDeriv_reflectPolynomial_zero"
+
+[[node]]
+id = "iteratedDeriv_reflectPolynomial_end"
+
+[[node]]
+id = "reflectPolynomial_endpoint_jets"
