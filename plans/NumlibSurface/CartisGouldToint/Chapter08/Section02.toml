@@ -34,30 +34,7 @@ id = "theorem_8_2_6"
 
 [[node]]
 id = "theorem_8_2_7"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 8.2.7: Trust-region subproblem global optimality
-
-[178, Thm. 2.1],[292, Lem. 2.1]: Any global minimizer \( {s}_{ * } \) of (8.1.2) satisfies the equation
-
-\[
-\left( {H + {\lambda }_{ * }M}\right) {s}_{ * } =  - g,\tag{8.2.31}
-\]
-
-where \( H + {\lambda }_{ * }M \) is positive semidefinite, \( {\lambda }_{ * } \geq  0 \) , and
-
-\[
-{\lambda }_{ * }\left( {{\begin{Vmatrix}{s}_{ * }\end{Vmatrix}}_M^2 - {\Delta }^2}\right)  = 0.\tag{8.2.32}
-\]
-
-If \( H + {\lambda }_{ * }M \) is positive definite, then \( {s}_{ * } \) is unique.
-
-Documented source/OCR correction and formalization requirements: Make the ambient feasibility condition explicit: s* belongs to the M-norm closed ball of radius Δ>0; the multiplier characterization is an equivalence for such feasible s*. H is symmetric and M positive definite.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.7 (OCR Markdown line 9784)"
-deps = ["quadraticModel", "weightedNorm"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.7"
 
 [[node]]
 id = "theorem_8_2_8"

@@ -1,3 +1,4 @@
+import Numlib.Optimization.Quadratic.Optimality.Metric
 import Numlib.Optimization.Quadratic.Secular.Vector
 import Numlib.Optimization.Quadratic.Secular.FirstTaylor
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
@@ -204,5 +205,30 @@ theorem theorem_8_2_6 {n : ℕ}
   refine ⟨rfl, QuadraticSecular.derivativeCoefficient_zero, fun k => ?_⟩
   exact ⟨B.shifted_iteratedDeriv_succ g k hz, QuadraticSecular.derivativeCoefficient_succ k,
     B.iteratedDeriv_secular_odd g k hz, B.iteratedDeriv_secular_even g k hz⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Theorem 8.2.7: a feasible point globally minimizes the actual quadratic on
+an arbitrary positive-definite metric ball exactly when it has the nonnegative
+shifted-pencil multiplier certificate. Every positive-definite shifted pencil
+also gives uniqueness, including all feasible comparison points. -/
+theorem theorem_8_2_7 {n : ℕ}
+    {H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
+    (hH : H.toLinearMap.IsSymmetric) (hM : M.toLinearMap.IsSymmetricCoercive)
+    (g s : EuclideanSpace ℝ (Fin n)) {Δ : ℝ} (hΔ : 0 < Δ)
+    (hs : weightedNorm M hM s ≤ Δ) :
+    ((∀ t, weightedNorm M hM t ≤ Δ → quadraticModel g H s ≤ quadraticModel g H t) ↔
+      ∃ τ : ℝ, 0 ≤ τ ∧ (H+τ • M) s = -g ∧
+        (∀ v, 0 ≤ inner ℝ ((H+τ • M) v) v) ∧
+        τ*(weightedNorm M hM s ^ 2 - Δ^2)=0) ∧
+    (∀ τ : ℝ, 0 ≤ τ → (H+τ • M) s = -g →
+      (∀ v, v ≠ 0 → 0 < inner ℝ ((H+τ • M) v) v) →
+      τ*(weightedNorm M hM s ^ 2 - Δ^2)=0 →
+      ∀ t, weightedNorm M hM t ≤ Δ → quadraticModel g H t ≤ quadraticModel g H s → t=s) :=
+  ⟨QuadraticOptimality.Metric.trust_region_iff M hM hH g s hΔ hs,
+    fun _ hτ hsolve hPD hcomp =>
+      QuadraticOptimality.Metric.unique_trust_region M hM hH g s hτ hsolve hPD hcomp⟩
 
 end CartisGouldToint

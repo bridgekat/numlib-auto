@@ -1,0 +1,31 @@
+namespace = "QuadraticOptimality.Metric"
+
+[[node]]
+id = "gradient"
+
+[[node]]
+id = "hessian"
+
+[[node]]
+id = "inner_gradient"
+
+[[node]]
+id = "inner_hessian"
+
+[[node]]
+id = "hessian_symmetric"
+
+[[node]]
+id = "model_eq"
+
+[[node]]
+id = "shifted_inner"
+
+[[node]]
+id = "solve_iff"
+
+[[node]]
+id = "trust_region_iff"
+
+[[node]]
+id = "unique_trust_region"

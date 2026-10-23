@@ -1,0 +1,46 @@
+namespace = "QuadraticOptimality"
+
+[[node]]
+id = "model"
+
+[[node]]
+id = "model_eq"
+
+[[node]]
+id = "model_add"
+
+[[node]]
+id = "shifted_gap"
+
+[[node]]
+id = "sufficient_trust_region"
+
+[[node]]
+id = "hasFDerivAt_model"
+
+[[node]]
+id = "contDiff_model"
+
+[[node]]
+id = "hasStrictFDerivAt_model"
+
+[[node]]
+id = "radial_multiplier_of_sphere_min"
+
+[[node]]
+id = "shifted_nonneg_of_nonorthogonal"
+
+[[node]]
+id = "shifted_psd_of_sphere_min"
+
+[[node]]
+id = "interior_psd"
+
+[[node]]
+id = "necessary_trust_region"
+
+[[node]]
+id = "trust_region_iff"
+
+[[node]]
+id = "unique_trust_region"
