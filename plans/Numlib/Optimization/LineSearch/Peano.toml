@@ -1,5 +1,4 @@
 namespace = "PeanoExample"
-desc = "Actual Euclidean Peano polynomial, straight-line local minima, curved descent, exact fourth Taylor model, and failure of high-order approximate criticality."
 
 [[node]]
 id = "E"

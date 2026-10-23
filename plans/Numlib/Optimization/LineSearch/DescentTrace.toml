@@ -1,5 +1,4 @@
 namespace = "LineSearch"
-desc = "Actual negative-directional-derivative moves cannot escape a directionally stationary point."
 
 [[node]]
 id = "DescentTrace"

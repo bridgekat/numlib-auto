@@ -22,6 +22,7 @@ import NumlibSurface.CartisGouldToint.Chapter04.Section02
 import NumlibSurface.CartisGouldToint.Chapter05.Section01
 import NumlibSurface.CartisGouldToint.Chapter05.Section03
 import NumlibSurface.CartisGouldToint.Chapter07.Section01
+import NumlibSurface.CartisGouldToint.Chapter07.Section02
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
 import NumlibSurface.CartisGouldToint.Chapter08.Section02
 import NumlibSurface.CartisGouldToint.Chapter08.Section03
@@ -168,6 +169,20 @@ recorded on the relevant plan nodes. In particular:
   relative checks still select trials although true criticality already passes.
   The valid companions require failure of the true optimality certificate.
   The detailed-solver certificate-attainment complexity proof remains valid.
+
+
+* The Peano example preceding Theorem 12.1.2 needs coefficients `κ₁=3, κ₂=2`
+  for the claimed saddle. The printed `κ₁=1, κ₂=2` gives a global minimum.
+  The linesearch obstruction uses actual directional derivatives and fourth-order
+  Taylor criticality for a precisely defined descent-direction trace class.
+* The literal outer composite Step 2 permits a large zero-improvement return
+  at a point that fails criticality at every positive radius. This refutes
+  Lemma 14.1.4 and Theorem 14.1.10 under their stated outer algorithm. Their
+  valid detailed-solver companions retain the positive global-gap return rule.
+* Lemma 14.2.2 needs a restriction to iterations before a true criticality
+  certificate. A fixed actual infinite quadratic-objective run has only successful
+  trials, while their accepted decreases tend to zero. Thus no positive uniform
+  coefficient bounds every successful decrease under the literal relative checks.
 
 No claim of completeness is made for the open analytic estimates, algorithm
 complexity theorems or sharpness constructions.

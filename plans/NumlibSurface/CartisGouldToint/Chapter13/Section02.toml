@@ -1,7 +1,4 @@
 namespace = "CartisGouldToint"
-desc = '''
-Simulating higher-order derivative oracles by finite approximation schemes. Separate each requested derivative approximation from the underlying lower-degree oracle calls and require uniform fixed-dimensional stencil cost. Preserve worst-component rather than best-component tolerance dependence.
-'''
 
 [[node]]
 id = "theorem_13_2_1"

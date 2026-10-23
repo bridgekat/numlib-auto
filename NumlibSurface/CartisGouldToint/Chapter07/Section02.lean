@@ -33,7 +33,7 @@ abbrev twoPhaseCorrectedPhaseTwoRun := @Constrained.TwoPhase.CorrectedPhaseTwoRu
 /-- Actual reset indices among the first N outer returns, matching `K_a`. -/
 noncomputable abbrev twoPhaseResetIndices := @Constrained.TwoPhase.resetIterations
 
-/-- **Lemma7.2.3.** All Phase2 target and residual invariants follow from actual
+/-- **Lemma 7.2.3.** All Phase2 target and residual invariants follow from actual
 inner model acceptance and the explicit reset/reflection formulas. The optional
 objective-range bounds give the exact source target interval, including both
 endpoints. Both literal and corrected reset modes satisfy these invariants. -/
@@ -65,7 +65,7 @@ theorem lemma_7_2_3 {n m p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     exact ⟨h.reset_residual hk hr, h.reset_drop hk hr⟩
   · exact fun _ hk hr hgap => h.reflection_residual hk hr hgap
 
-/-- **Lemma7.2.4.** The exact source objective range bounds every actual outer
+/-- **Lemma 7.2.4.** The exact source objective range bounds every actual outer
 reset count by `(f_up−f_low+1)/(1−θ) ε₀⁻¹`, without assuming termination or a
 reset decrease floor as part of the algorithm trace. -/
 theorem lemma_7_2_4 {n m p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}

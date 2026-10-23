@@ -20,7 +20,8 @@ noncomputable def residual (f : E → ℝ) (c : E → F) (t : ℝ) (x : E) :
 /-- The augmented residual has exactly the Euclidean sum-of-squares norm. -/
 theorem residual_norm_sq (f : E → ℝ) (c : E → F) (t : ℝ) (x : E) :
     ‖residual f c t x‖ ^ 2 = ‖c x‖ ^ 2 + (f x - t) ^ 2 := by
-  simpa only [residual, WithLp.toLp_fst, WithLp.toLp_snd, Prod.fst, Prod.snd, Real.norm_eq_abs, sq_abs] using
+  simpa only [residual, WithLp.toLp_fst, WithLp.toLp_snd, Prod.fst, Prod.snd,
+    Real.norm_eq_abs, sq_abs] using
     WithLp.prod_norm_sq_eq_of_L2 (residual f c t x)
 
 /-- The actual residual norm is the square root of its genuine squared components. -/
