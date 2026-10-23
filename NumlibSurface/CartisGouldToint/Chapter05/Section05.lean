@@ -1,4 +1,4 @@
-import Numlib.Optimization.Regularization.Universal.Success
+import Numlib.Optimization.Regularization.Universal.Threshold
 
 /-!
 # Universal regularization with real powers
@@ -71,4 +71,39 @@ theorem lemma_5_5_3 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
         -P.alpha2 * iteratedFDeriv ℝ 2 f (x + s) (fun _ => v) ≤ σ * ‖s‖ ^ (P.r - 2) :=
   h.very_successful hf hH hβ hβ1 hholder ha har hσ hp ha2
     ((le_max_left _ _).trans hparameter) hsecond ((le_max_right _ _).trans hparameter)
+/-- **Lemma5.5.4.** The source accuracy thresholds imply the step-dependent
+threshold and hence a very successful trial whenever its literal stopping test
+fails. The optional second-order threshold is disabled explicitly for first
+order; the two maxima combine to the four-term maximum in(5.5.29). -/
+theorem lemma_5_5_4 {n p : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {P : UniversalRegularization.Settings p} {ε1 : ℝ} {ε2 : Option ℝ}
+    {x s : EuclideanSpace ℝ (Fin n)} {σ H β : ℝ}
+    (hf : ContDiff ℝ p f) (hH : 0 ≤ H) (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
+    (hholder : ∀ y z,
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ H * ‖y - z‖ ^ β)
+    (ha : 1 < (p : ℝ) + β) (har : (p : ℝ) + β ≤ P.r)
+    (hσ : 0 < σ) (hε1 : 0 < ε1) (hε2 : ∀ e ∈ ε2, 0 < e)
+    (h : UniversalRegularization.Step f P ε2 x s σ)
+    (hfail : ¬UniversalRegularization.Stops f ε1 ε2 (x + s))
+    (hp : ∀ e ∈ ε2, 2 ≤ p) (ha2 : ∀ e ∈ ε2, 2 < (p : ℝ) + β)
+    (hfirst : max (P.theta1 * Real.finiteFactorial (P.r - 1))
+      (UniversalRegularization.thresholdCoefficient P H β 1 *
+        ε1 ^ (((p : ℝ) + β - P.r) / ((p : ℝ) + β - 1))) ≤ σ)
+    (hsecond : ∀ e ∈ ε2, max (P.theta2 * Real.finiteFactorial (P.r - 2))
+      (UniversalRegularization.thresholdCoefficient P H β 2 *
+        e ^ (((p : ℝ) + β - P.r) / ((p : ℝ) + β - 2))) ≤ σ) :
+    max (P.theta1 * Real.finiteFactorial (P.r - 1))
+      (UniversalRegularization.betaCoefficient P H β * ‖s‖ ^ ((p : ℝ) + β - P.r)) ≤ σ ∧
+      (∀ e ∈ ε2, P.theta2 * Real.finiteFactorial (P.r - 2) ≤ σ) ∧
+      P.eta2 ≤ (f x - f (x + s)) / (f x - TaylorModel.eval f p x s) ∧
+      P.alpha1 * ‖fderiv ℝ f (x + s)‖ ≤ σ * ‖s‖ ^ (P.r - 1) ∧
+      ∀ e ∈ ε2, ∀ v : EuclideanSpace ℝ (Fin n), ‖v‖ = 1 →
+        -P.alpha2 * iteratedFDeriv ℝ 2 f (x + s) (fun _ => v) ≤ σ * ‖s‖ ^ (P.r - 2) := by
+  have hκ := h.threshold_of_trial_failure hf hH hβ hβ1 hholder ha har hσ hε1 hε2
+    hfail hp ha2 hfirst hsecond
+  have hθ1 := (le_max_left _ _).trans hfirst
+  have hθ2 : ∀ e ∈ ε2, P.theta2 * Real.finiteFactorial (P.r - 2) ≤ σ :=
+    fun e he => (le_max_left _ _).trans (hsecond e he)
+  exact ⟨max_le hθ1 hκ, hθ2, h.very_successful hf hH hβ hβ1 hholder ha har hσ hp
+    (fun e he => (ha2 e he).le) hθ1 hθ2 hκ⟩
 end CartisGouldToint

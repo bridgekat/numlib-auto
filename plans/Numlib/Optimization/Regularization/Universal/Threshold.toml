@@ -1,0 +1,28 @@
+namespace = "UniversalRegularization"
+
+[[node]]
+id = "parameter_threshold_of_lower_power"
+
+[[node]]
+id = "thresholdCoefficient"
+
+[[node]]
+id = "betaCoefficient_nonneg"
+
+[[node]]
+id = "holder_first_coefficient"
+
+[[node]]
+id = "step_threshold_of_model_bound"
+
+[[node]]
+id = "holder_second_coefficient"
+
+[[node]]
+id = "Step.threshold_of_gradient_failure"
+
+[[node]]
+id = "Step.threshold_of_curvature_failure"
+
+[[node]]
+id = "Step.threshold_of_trial_failure"
