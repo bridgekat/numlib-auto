@@ -1,0 +1,34 @@
+namespace = "NormPower"
+
+[[node]]
+id = "cubic_second_diagonal"
+
+[[node]]
+id = "norm_cubic_diagonal_gradient_le"
+
+[[node]]
+id = "hasFDerivAt_cubic_second_diagonal"
+
+[[node]]
+id = "abs_cubic_second_diagonal_le"
+
+[[node]]
+id = "abs_cubic_second_diagonal_sub_le"
+
+[[node]]
+id = "norm_cubic_second_sub_le"
+
+[[node]]
+id = "norm_sub_iteratedFDeriv_norm_pow_three_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_three_top_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_three_two_le"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_three_one"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_three_le"

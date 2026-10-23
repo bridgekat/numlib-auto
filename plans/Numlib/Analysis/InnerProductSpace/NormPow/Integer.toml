@@ -1,7 +1,8 @@
 namespace = "NormPower"
 desc = '''
 Exact integer norm-power bounds. The arbitrary even-power case is implemented in
-Even.lean. Unrestricted integer bounds require the remaining odd-power case;
+Even.lean, and the cubic power is implemented in CubicSharp.lean. Unrestricted
+integer bounds require the remaining odd powers of degree at least five;
 no fractional-exponent assertion is made. In particular this does not restore
 the false full fractional statement of source LemmaB.4.3.
 '''
@@ -15,9 +16,9 @@ space, the actual operator norm of D^j (norm^m)(x) is at most
 m.descFactorial j * norm(x)^(m-j), equivalently m!/(m-j)! times that power.
 Derive the actual derivatives, rather than assume any sharp derivative formula
 or operator-norm/diagonal-norm identity. The even-m branch is already supplied
-by Even.lean; the general odd-m branch remains required.
+by Even.lean and the cubic branch by CubicSharp.lean; higher odd m remain.
 '''
-deps = ["norm_iteratedFDeriv_norm_pow_of_even"]
+deps = ["norm_iteratedFDeriv_norm_pow_of_even", "norm_iteratedFDeriv_norm_pow_three_le"]
 
 [[node]]
 id = "norm_iteratedFDeriv_norm_pow_integer_le_of_lt"
@@ -36,7 +37,7 @@ desc = '''
 For every natural p and all x,y in a real inner product space, the actual pth
 Fréchet derivative of norm^(p+1) satisfies norm(Dp(x)-Dp(y)) <= (p+1)!*norm(x-y).
 The even-power branch p+1 even is implemented in Even.lean. Prove the remaining
-odd-power branch, with actual global finite smoothness and origin-crossing
+odd-power branch of degree at least five, with actual finite smoothness and origin-crossing
 control. Keep the exact factorial coefficient, not an existential larger one.
 '''
-deps = ["norm_iteratedFDeriv_norm_pow_integer_le", "norm_sub_iteratedFDeriv_norm_pow_of_even"]
+deps = ["norm_iteratedFDeriv_norm_pow_integer_le", "norm_sub_iteratedFDeriv_norm_pow_of_even", "norm_sub_iteratedFDeriv_norm_pow_three_le"]
