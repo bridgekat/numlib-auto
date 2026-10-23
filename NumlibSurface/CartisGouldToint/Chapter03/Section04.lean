@@ -1,6 +1,7 @@
 import Numlib.Optimization.TrustRegion.Regularized.InitialBudget
 import Numlib.Optimization.Descent.LowerPoint
 import Numlib.Optimization.Regularization.InexactNewton.Step
+import Numlib.Optimization.Regularization.InexactNewton.Counting
 import Numlib.Optimization.TrustRegion.Regularized.Solve
 
 /-!
@@ -424,5 +425,27 @@ theorem theorem_3_4_6 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ 
         (|Real.log ((1 - η₂) * γ₁ / (L * Δ₀))| + |Real.log ε₂|) /
           |Real.log γ₂| + 1 := by gcongr
     _ = _ := by dsimp [A, B, C]; rw [mul_comm Δ₀ L]; ring
+
+/-- **Lemma3.4.10.** Between consecutive accepted trials, the number of actual
+rejected trials is bounded by the printed logarithmic allowance. The underlying
+bound also covers initial and terminal rejected blocks. -/
+theorem lemma_3_4_10 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [CompleteSpace E] {f : E → ℝ} {x s : ℕ → E} {V : ℕ → Submodule ℝ E}
+    {μ ℓ σL σU ρ : ℕ → ℝ}
+    {η γ₁ γ₂ σmin σmax κ₁ κ₂ κ₃ κ₄ ε₁ L : ℝ}
+    {ε₂ : WithTop ℝ} {N i j : ℕ}
+    (h : inexactRegularizedNewtonRun f x s V μ ℓ σL σU ρ η γ₁ γ₂ σmin σmax
+      κ₁ κ₂ κ₃ κ₄ ε₁ ε₂ N)
+    (hf : ContDiff ℝ 2 f) (hL : 0 ≤ L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤
+      L * ‖y - z‖) (hij : i < j) (hj : j < N)
+    (_hiaccepted : η ≤ ρ i) (_hjaccepted : η ≤ ρ j)
+    (hconsecutive : ∀ k, i < k → k < j → ¬η ≤ ρ k) :
+    ((j - i - 1 : ℕ) : ℝ) ≤
+      Real.log (irnUpperRegularizationBound σmax γ₂ η κ₂ L / σmin) /
+        Real.log γ₁ + 1 := by
+  have hh := h.rejected_block_le hf hL hlip (a := i + 1) (b := j) (by omega) hj.le
+    (fun k hk hjk => hconsecutive k (by omega) hjk)
+  simpa only [show j - (i + 1) = j - i - 1 by omega] using hh
 
 end CartisGouldToint

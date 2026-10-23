@@ -45,21 +45,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_3_4_10"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 3.4.10: Bound on unsuccessful iterations
-
-Suppose that algorithm iRN is used. Then, between any two consecutive successful iterations, \( {k}_i,{k}_{i + 1} \in  \mathcal{S} \) , for any \( i \geq  0 \) , there are at most
-
-\[
-{k}_{i + 1} - {k}_i - 1 \leq  \frac{1}{\log {\gamma }_1}\log \left( \frac{{\sigma }_{\max }^U}{{\sigma }_{\min }}\right)  + 1\tag{3.4.42}
-\]
-
-unsuccessful iterations.
-'''
-deps = ["trEpsilonRun", "inexactRegularizedNewtonRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 3.4.10 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 4056)"
 
 [[node]]
