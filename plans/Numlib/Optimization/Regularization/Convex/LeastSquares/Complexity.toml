@@ -1,0 +1,25 @@
+namespace = "ConvexLeastSquares"
+
+[[node]]
+id = "Run.successful_card_le"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "exists_termination"
+
+[[node]]
+id = "source_success_constant"
+
+[[node]]
+id = "derivativeEvaluationNodes"
+
+[[node]]
+id = "derivativeEvaluations"
+
+[[node]]
+id = "derivativeEvaluations_le"
+
+[[node]]
+id = "exists_uniform_complexity"

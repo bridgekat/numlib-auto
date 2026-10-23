@@ -1,0 +1,10 @@
+namespace = "ConvexLeastSquares"
+
+[[node]]
+id = "Run.measure_nonneg"
+
+[[node]]
+id = "Run.residual_power_decrease"
+
+[[node]]
+id = "Run.successful_root_decrease"

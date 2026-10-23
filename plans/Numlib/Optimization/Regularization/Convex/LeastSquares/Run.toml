@@ -1,0 +1,31 @@
+namespace = "ConvexLeastSquares"
+
+[[node]]
+id = "firstMeasure"
+
+[[node]]
+id = "Stop"
+
+[[node]]
+id = "stop_iff_scaled"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.residual_gt"
+
+[[node]]
+id = "Run.measure_gt"
+
+[[node]]
+id = "Run.scaledRun"
+
+[[node]]
+id = "Run.mem"
+
+[[node]]
+id = "Run.residual_step_le"
+
+[[node]]
+id = "Run.residual_le_initial"
