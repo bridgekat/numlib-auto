@@ -1,0 +1,103 @@
+namespace = "NewtonMinimization"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "functionEvaluations"
+
+[[node]]
+id = "gradientEvaluations"
+
+[[node]]
+id = "hessianEvaluations"
+
+[[node]]
+id = "Sharpness.horizon"
+
+[[node]]
+id = "Sharpness.basePoint"
+
+[[node]]
+id = "Sharpness.point"
+
+[[node]]
+id = "Sharpness.baseJet"
+
+[[node]]
+id = "Sharpness.initialPolynomial_baseJet"
+
+[[node]]
+id = "Sharpness.baseJet_residual"
+
+[[node]]
+id = "Sharpness.uniform_base_data"
+
+[[node]]
+id = "Sharpness.scaleObjective"
+
+[[node]]
+id = "Sharpness.iteratedDeriv_scaleObjective"
+
+[[node]]
+id = "Sharpness.scaleObjective_contDiff"
+
+[[node]]
+id = "Sharpness.Data"
+
+[[node]]
+id = "Sharpness.hessianOperator_real"
+
+[[node]]
+id = "Sharpness.Data.gradient_eq"
+
+[[node]]
+id = "Sharpness.Data.hessian_eq"
+
+[[node]]
+id = "Sharpness.Data.eval_two"
+
+[[node]]
+id = "Sharpness.Data.model_minimum"
+
+[[node]]
+id = "Sharpness.Data.newton_run"
+
+[[node]]
+id = "Sharpness.Data.first_stop"
+
+[[node]]
+id = "Sharpness.Data.cauchyPoint"
+
+[[node]]
+id = "Sharpness.Data.actual_ratio"
+
+[[node]]
+id = "Sharpness.Data.leastEigenpair"
+
+[[node]]
+id = "Sharpness.Data.trustRegion_run"
+
+[[node]]
+id = "Sharpness.Data.trustRegion_firstOrderRun"
+
+[[node]]
+id = "Sharpness.Data.strict_decrease"
+
+[[node]]
+id = "Sharpness.exists_uniform_objectives"
+
+[[node]]
+id = "Sharpness.horizon_gt_ceil"
+
+[[node]]
+id = "Sharpness.newton_counts_lower"
+
+[[node]]
+id = "Sharpness.trustRegion_counts"
+
+[[node]]
+id = "Sharpness.exists_slow_newton_objective"
+
+[[node]]
+id = "Sharpness.exists_slow_trustRegion_objective"

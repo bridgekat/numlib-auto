@@ -302,7 +302,7 @@ theorem abs_le_orderBound {Q : ℝ[X]} {p : ℕ} {S : Set ℝ} {c M B : ℝ}
     (hQ : ∀ j ≤ p, ∀ t ∈ S,
       |iteratedDeriv j Q.eval t-(if j=0 then c else 0)| ≤ B) :
     ∀ j ≤ p, ∀ t ∈ S,
-      |iteratedDeriv j Q.eval t| ≤ if j=0 then M+B else B := by
+      |iteratedDeriv j Q.eval t| ≤ if j = 0 then M + B else B := by
   intro j hj t ht
   have hh := hQ j hj t ht
   by_cases hj0 : j=0
@@ -341,7 +341,7 @@ theorem exists_uniform_interpolant_positive (p : ℕ) (κ : ℝ) (hκ : 1 ≤ κ
   let V := endpointPolynomial p 1 (flatJet (a n 0)) (fun j => (-1:ℝ)^j*a n j)
   let R := reflectPolynomial V 1
   let L' : NNReal := ⟨L,hL.le⟩
-  let Bs : ℕ → ℝ := fun j => if j=0 then M+B else B
+  let Bs : ℕ → ℝ := fun j => if j = 0 then M + B else B
   have hflat (c : ℝ) : ∀ j, 1 ≤ j → j ≤ p → |flatJet c j| ≤ κ := by
     intro j hj _hjp
     simpa only [flatJet, ite_eq_right (by omega : j ≠ 0), abs_zero] using
