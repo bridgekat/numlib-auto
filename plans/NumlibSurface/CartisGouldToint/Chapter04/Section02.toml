@@ -140,6 +140,8 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 id = "theorem_4_2_4"
 kind = "theorem"
 desc = '''
+Remaining prerequisite: construct a genuine resisting oracle for arbitrary deterministic OracleMethod executions, with sequential orthonormal-column choices preserving every already observed objective/actual derivative tensor. The argument must produce an actual zero-respecting controller, prove projected finite-history execution agreement and gradient hitting-time equivalence, preserve the function class under isometric embedding, and retain the explicit ambient dimension n+k in the second clause. The existing zero-chain support and minimax APIs do not supply this orthogonal simulation. Retain the full original OPEN; a bound for a particular ARp execution is not this universal method-class result.
+
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
 
 Theorem 4.2.4: Connecting the complexity of \( \mathcal{M}\left( p\right) \) and \( {\mathcal{M}}_{\mathrm{ZR}}\left( p\right) \)
@@ -165,6 +167,8 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 id = "lemma_4_2_5"
 kind = "theorem"
 desc = '''
+Remaining prerequisite: the corrected difficult objective must be built from the actual flat exponential cutoff Psi and Gaussian primitive Phi. Required proofs include smoothness to every order across the cutoff, all-slot zero-chain locality, the coordinate gradient lower bound, the dimension-linear objective-gap bound, and a dimension-independent actual derivative-tensor Lipschitz bound with explicit growth exp((5/2)*p*log(p)+c*p). A scalar jet interpolation witness does not prove these properties of the specified function. The first source term is corrected to -Psi(1)*Phi(x_1), as already recorded in difficultZeroChain; -Psi(x_1)*Phi(x_1) would be flat at the origin. Retain the complete corrected original OPEN.
+
 Semantic specification: Use difficultZeroChain with the corrected −Ψ(1)Φ(x₁) first term. Retain all four conclusions, including gradient lower bound, gap ≤12 n and derivative Lipschitz growth controlled uniformly in n.
 
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -204,6 +208,8 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 id = "theorem_4_2_6"
 kind = "theorem"
 desc = '''
+Remaining prerequisites: combine the actual difficult-function tensor bounds and resisting-oracle simulation with derivative-correct scaling, the source objective-gap normalization, varying ambient dimension and best-worst-case quantifier order. The full first-order ARp upper theorem is available, but an algorithm-specific sharp example does not establish the universal oracle lower bound. The global downward-rounding convention also applies here; the small positive real expression at large accuracy is not by itself a counterexample. Retain the complete original OPEN, including the optimal-order conclusion.
+
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
 
 Theorem 4.2.6: Lower complexity bound

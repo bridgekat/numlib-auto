@@ -19,10 +19,10 @@ theorem derivative_step_lower_of_model_test {p j : ℕ} (hj : j ≤ p)
     (hf : ContDiffOn ℝ p f S) {L σ σmax θ ε : ℝ} (hL : 0 ≤ L) (hσ : 0 < σ)
     (hσmax : σ ≤ σmax)
     (hlip : ∀ y ∈ C, ∀ z ∈ C,
-      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y-z‖)
-    {x s : E} (hx : x ∈ C) (hxs : x+s ∈ C) (hs : s ≠ 0) (hA : (0 : E) ∈ A)
-    (hmodel : tensorCriticality (iteratedFDeriv ℝ j (model f p x σ) s) A ≤ θ*ε)
-    (hfail : ε < tensorCriticality (iteratedFDeriv ℝ j f (x+s)) A) :
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
+    {x s : E} (hx : x ∈ C) (hxs : x + s ∈ C) (hs : s ≠ 0) (hA : (0 : E) ∈ A)
+    (hmodel : tensorCriticality (iteratedFDeriv ℝ j (model f p x σ) s) A ≤ θ * ε)
+    (hfail : ε < tensorCriticality (iteratedFDeriv ℝ j f (x + s)) A) :
     (p-j+1).factorial * (1-θ) / (L+σmax) * ε < ‖s‖ ^ (p-j+1) := by
   have he := tensorCriticality_le_of_error (iteratedFDeriv ℝ j f (x+s))
     (iteratedFDeriv ℝ j (model f p x σ) s) hA
@@ -47,9 +47,9 @@ theorem abs_model_diagonal_le_of_objective_bound {p j : ℕ} (hj : j ≤ p)
     (hf : ContDiffOn ℝ p f S) {L σ σmax b : ℝ} (hL : 0 ≤ L) (hσ : 0 ≤ σ)
     (hσmax : σ ≤ σmax)
     (hlip : ∀ y ∈ C, ∀ z ∈ C,
-      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y-z‖)
-    {x s d : E} (hx : x ∈ C) (hxs : x+s ∈ C) (hs : s ≠ 0) (hd : ‖d‖ ≤ 1)
-    (hsmall : |iteratedFDeriv ℝ j f (x+s) (fun _ => d)| ≤ b) :
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
+    {x s d : E} (hx : x ∈ C) (hxs : x + s ∈ C) (hs : s ≠ 0) (hd : ‖d‖ ≤ 1)
+    (hsmall : |iteratedFDeriv ℝ j f (x + s) (fun _ => d)| ≤ b) :
     |iteratedFDeriv ℝ j (model f p x σ) s (fun _ => d)| ≤
       (L+σmax) / (p-j+1).factorial * ‖s‖ ^ (p-j+1) + b := by
   have he := abs_model_derivative_error_le_on hj hS hCS hC hf hL hσ hlip hx hxs hs hd

@@ -66,7 +66,7 @@ theorem tensorCriticality_mono {j : ℕ} (T : E [×j]→L[ℝ] ℝ) {A B : Set E
 
 /-- The actual tensor norm error bounds the change of the restricted derivative measure. -/
 theorem tensorCriticality_le_of_error {j : ℕ} (T U : E [×j]→L[ℝ] ℝ)
-    {A : Set E} (hA : (0 : E) ∈ A) {b : ℝ} (he : ‖T-U‖ ≤ b) :
+    {A : Set E} (hA : (0 : E) ∈ A) {b : ℝ} (he : ‖T - U‖ ≤ b) :
     tensorCriticality T A ≤ tensorCriticality U A + b := by
   apply (tensorCriticality_le_iff T hA).mpr
   intro d hd hn

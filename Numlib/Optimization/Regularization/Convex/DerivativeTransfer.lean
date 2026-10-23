@@ -59,7 +59,7 @@ theorem DerivativeRun.stop_of_small_step {p : ℕ} {q : Fin 3}
     (hlip : ∀ y ∈ C, ∀ z ∈ C,
       ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
     (hi : i < N)
-    (hsmall : ∀ j ≤ q, ‖D.step i‖^(p - j.val) ≤ derivativeStepThreshold P L j * ε j) :
+    (hsmall : ∀ j ≤ q, ‖D.step i‖ ^ (p - j.val) ≤ derivativeStepThreshold P L j * ε j) :
     derivativeStop f C P ε (D.point i + D.step i) := by
   have hcap : D.parameter i ≤ parameterCap P.toSettings L := by
     have hh := h.modelTrace.parameter_le_on hS hCS hC hf hL hlip

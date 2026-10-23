@@ -35,8 +35,8 @@ theorem norm_model_derivative_error_le_on {p j : ℕ} (hj : j ≤ p)
     {f : E → ℝ} {C S : Set E} (hS : IsOpen S) (hCS : C ⊆ S) (hC : Convex ℝ C)
     (hf : ContDiffOn ℝ p f S) {L σ : ℝ} (hL : 0 ≤ L) (hσ : 0 ≤ σ)
     (hlip : ∀ y ∈ C, ∀ z ∈ C,
-      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y-z‖)
-    {x s : E} (hx : x ∈ C) (hxs : x+s ∈ C) (hs : s ≠ 0) :
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
+    {x s : E} (hx : x ∈ C) (hxs : x + s ∈ C) (hs : s ≠ 0) :
     ‖iteratedFDeriv ℝ j f (x+s) - iteratedFDeriv ℝ j (model f p x σ) s‖ ≤
       (L+σ) / (p-j+1).factorial * ‖s‖ ^ (p-j+1) := by
   have hT := norm_iteratedFDeriv_sub_eval_le_lipschitz hS hCS hC hf hL hlip hj hx hxs
@@ -66,8 +66,8 @@ theorem abs_model_derivative_error_le_on {p j : ℕ} (hj : j ≤ p)
     {f : E → ℝ} {C S : Set E} (hS : IsOpen S) (hCS : C ⊆ S) (hC : Convex ℝ C)
     (hf : ContDiffOn ℝ p f S) {L σ : ℝ} (hL : 0 ≤ L) (hσ : 0 ≤ σ)
     (hlip : ∀ y ∈ C, ∀ z ∈ C,
-      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y-z‖)
-    {x s d : E} (hx : x ∈ C) (hxs : x+s ∈ C) (hs : s ≠ 0) (hd : ‖d‖ ≤ 1) :
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
+    {x s d : E} (hx : x ∈ C) (hxs : x + s ∈ C) (hs : s ≠ 0) (hd : ‖d‖ ≤ 1) :
     |iteratedFDeriv ℝ j f (x+s) (fun _ => d) -
       iteratedFDeriv ℝ j (model f p x σ) s (fun _ => d)| ≤
         (L+σ) / (p-j+1).factorial * ‖s‖ ^ (p-j+1) := by
