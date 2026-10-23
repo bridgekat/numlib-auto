@@ -1,0 +1,10 @@
+namespace = "InexactRegularization.Explicit"
+
+[[node]]
+id = "Run.function_decrease_ge_computed"
+
+[[node]]
+id = "Run.function_decrease_ge_penalty"
+
+[[node]]
+id = "Run.objective_eq_of_not_successful"

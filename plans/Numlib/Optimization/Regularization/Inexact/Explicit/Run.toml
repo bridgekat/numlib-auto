@@ -1,0 +1,43 @@
+namespace = "InexactRegularization.Explicit"
+
+[[node]]
+id = "Settings"
+
+[[node]]
+id = "ExecutionData"
+
+[[node]]
+id = "StopsAt"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.startRadius_mem"
+
+[[node]]
+id = "Run.checkedRadius_mem"
+
+[[node]]
+id = "Run.toFunctionTrace"
+
+[[node]]
+id = "Run.restrict"
+
+[[node]]
+id = "Run.step_nonzero"
+
+[[node]]
+id = "Run.accuracy_mem"
+
+[[node]]
+id = "Run.tensor_norm_le"
+
+[[node]]
+id = "Run.parameter_le"
+
+[[node]]
+id = "Run.oracle_le_request"
+
+[[node]]
+id = "Run.stopped_optimality"

@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.Explicit.Stopping
 import Numlib.Optimization.Regularization.Inexact.VerifiedOptimality
 import Numlib.Optimization.TrustRegion.Inexact.FunctionRadius
 import Numlib.Optimization.TrustRegion.Inexact.Budget
@@ -275,5 +276,48 @@ theorem lemma_13_3_6_optimality {n q : ℕ}
     ∀ a : Fin q, TaylorModel.criticality f (InexactTrustRegion.modelOrder a) x (δ a) ≤
       ε a * δ a ^ InexactTrustRegion.modelOrder a / (InexactTrustRegion.modelOrder a).factorial :=
   h.true_optimality f x horacle
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- The full finite ARqpEDA operational execution of Algorithm13.3.2, including
+both approximate objective values and the literal explicit stopping budgets. -/
+abbrev arqpedaRun {n p q : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (P : InexactRegularization.Explicit.Settings p q) (ε : Fin q → ℝ)
+    (D : InexactRegularization.Explicit.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+    (N : ℕ) : Prop := InexactRegularization.Explicit.Run f P ε D N
+
+/-- Lemma13.3.6 with the genuine corrected guarded parameter cap. The explicit
+finite error budgets certify true optimality. Actual oracle and radius histories
+force those budgets under the displayed uniform accuracy threshold, so a finished
+computed optimality loop takes Step1.5.1. The original printed-cap assertion
+remains a separate open target. -/
+theorem lemma_13_3_6_corrected {n p q N k : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {P : InexactRegularization.Explicit.Settings p q} {ε : Fin q → ℝ}
+    {D : InexactRegularization.Explicit.ExecutionData (EuclideanSpace ℝ (Fin n)) q}
+    (h : arqpedaRun f P ε D N) (hk : k ≤ N) (hselected : D.selected k = none) :
+    let optimal := ∀ a : Fin q,
+      TaylorModel.criticality f (modelOrder a) (D.point k) (D.checkedRadius k a) ≤
+        ε a * D.checkedRadius k a ^ modelOrder a / (modelOrder a).factorial
+    ((∀ a : Fin q, tensorErrorBudget (D.accuracy k) (modelOrder a) (D.checkedRadius k a) ≤
+      P.zeta / 2 * ε a * D.checkedRadius k a ^ modelOrder a / (modelOrder a).factorial) →
+        optimal) ∧
+    (ContDiff ℝ p f → ∀ L : ℝ, 1 ≤ L →
+      (∀ i, i ≤ p → ∀ x y,
+        ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖) →
+      ∀ H : ℝ, 0 ≤ H → (∀ i, 1 ≤ i → i ≤ q → D.accuracy k i ≤ H) →
+      H ≤ InexactRegularization.verificationThreshold q P.zeta
+        (InexactRegularization.stepRadiusCoefficient P.zeta P.theta
+          (InexactRegularization.executionTensorCap P.toSettings L)
+          (InexactRegularization.executionParameterCap P.toSettings L))
+        1 (minimumAccuracy P.order_pos ε) →
+      InexactRegularization.Explicit.StopsAt P ε D k ∧ optimal) := by
+  dsimp only
+  refine ⟨fun hbudget => (h.stopped_optimality hk ⟨hselected, hbudget⟩).2, ?_⟩
+  intro hf L hL hlip H hH hrequests hsmall
+  exact h.passing_check_stops hf hL hlip hk hselected hH hrequests hsmall
 
 end CartisGouldToint

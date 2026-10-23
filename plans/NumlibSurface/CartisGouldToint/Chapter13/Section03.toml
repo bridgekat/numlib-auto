@@ -14,12 +14,7 @@ deps = ["explicitAccuracyVerifier", "trqidaRun"]
 
 [[node]]
 id = "arqpedaRun"
-kind = "definition"
-desc = '''
-Algorithm 13.3.2 with actual inexact regularized Taylor models. Steps 1.1–1.4 retain the computed optimality tests and finite radius-halving loop; Step 1.5 certifies each order by its explicit finite tensor-error budget (13.3.17). Step 2 uses the genuine approximate model derivatives and its short-step accuracy guard, interpreted over all p derivative orders as required by (13.1.46). Step 3 bounds both objective errors by h0≤κs times the computed decrement and uses their actual approximate ratio. Retain point/radius propagation, three parameter-update branches and geometric accuracy reduction. The uniform parameter bound must account for the initial accuracy cap when the step is at least one; it is not a field of the run.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 13.3"
-deps = ["explicitAccuracyVerifier", "arqpidaRun"]
+source = "Cartis, Gould and Toint, Algorithm13.3.2. Actual ordered computed optimality checks, literal explicit error-budget exit, both approximate objective values, guarded requests and point/radius/parameter/accuracy updates. No decrease floor or termination conclusion in fields."
 
 [[node]]
 id = "lemma_13_3_1"
@@ -205,3 +200,7 @@ id = "edaRegularizationTerminationCheck"
 [[node]]
 id = "lemma_13_3_6_optimality"
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.3.6(i), equation13.3.17"
+
+[[node]]
+id = "lemma_13_3_6_corrected"
+source = "Cartis, Gould and Toint, Lemma13.3.6 with the genuine corrected guarded parameter cap. Both verified true optimality and forced Step1.5.1 exit under a uniform request cap. Original fixed printed-cap assertion remains open."
