@@ -1,0 +1,62 @@
+namespace = "InexactRegularization.GuardedCounterexample"
+desc = "Actual affine derivative jets, quadratic model solves, sequential geometric checks and global sine regularity for guarded dynamic accuracy executions."
+
+[[node]]
+id = "affine"
+
+[[node]]
+id = "jet"
+
+[[node]]
+id = "deriv_affine"
+
+[[node]]
+id = "value"
+
+[[node]]
+id = "decrement"
+
+[[node]]
+id = "model_formula"
+
+[[node]]
+id = "model_deriv"
+
+[[node]]
+id = "criticality"
+
+[[node]]
+id = "global_min"
+
+[[node]]
+id = "stepOne"
+
+[[node]]
+id = "scalar_decrement"
+
+[[node]]
+id = "model_criticality"
+
+[[node]]
+id = "stepTwo"
+
+[[node]]
+id = "sine_lipschitz"
+
+[[node]]
+id = "sine_lower"
+
+[[node]]
+id = "sine_criticality"
+
+[[node]]
+id = "oracle_error"
+
+[[node]]
+id = "constant_value"
+
+[[node]]
+id = "first_tensor_eq"
+
+[[node]]
+id = "sine_smooth"
