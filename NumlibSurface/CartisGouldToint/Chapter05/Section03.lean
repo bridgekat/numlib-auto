@@ -1,0 +1,87 @@
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import Numlib.Optimization.MeasureDomination.Regularization
+
+/-!
+# Measure domination and gap complexity
+
+Gaps are measured above an attained global minimum. The adaptive regularization
+class uses the actual next-point measure in its successful decrease rule.
+
+The sublinear conclusion is an upper rate: an allowed algorithm may converge
+faster or reach its minimum in finitely many steps. A genuine exact recurrence
+supplies the sublinear upper envelope. Source (5.3.14)'s corrupted subscript is
+`κν / κψ^(ν/μ), ν/μ`. The printed iteration and accepted-step counts exclude
+initialization; separate explicit evaluation bounds add the initial call.
+-/
+
+open Set Filter Topology
+namespace CartisGouldToint
+
+/-- Measure domination (5.3.1), with a nonnegative measure and attained global minimum. -/
+abbrev measureDominated := @MeasureDomination.Dominated
+
+/-- The source ARψ,ν class: next-point successful decrease, rejection, and prefix density. -/
+abbrev arMeasureRun := @MeasureDomination.ARRun
+
+/-- The actual objective gap (5.3.4). -/
+abbrev objectiveGap := @MeasureDomination.gap
+
+/-- The increasing index of the nth genuine successful iteration. -/
+noncomputable abbrev measureSuccessIndex := MeasureDomination.successIndex
+
+/-- Actual objective gaps at the successive successful iterations. -/
+noncomputable abbrev successfulObjectiveGap := @MeasureDomination.successfulGap
+
+/-- The exact implicit recurrence (5.3.12), including zero initial gaps. -/
+noncomputable abbrev implicitGapSequence := ImplicitGap.orbit
+
+/-- The first finite target-hitting index of the exact implicit recurrence (5.3.13). -/
+noncomputable abbrev implicitGapHittingTime := ImplicitGap.hittingTime
+
+/-- One initial function evaluation and one evaluation for each trial. -/
+def measureFunctionEvaluations (K : ℕ) : ℕ := K + 1
+
+/-- One initial derivative evaluation and one evaluation at each accepted endpoint. -/
+noncomputable def measureDerivativeEvaluations (S : Set ℕ) (K : ℕ) : ℕ :=
+  (EvaluationComplexity.successfulIterations S K).card + 1
+
+/-- **Lemma 5.3.1.** The exact factor bound and convergence of actual successful gaps,
+with superlinear, linear and sublinear upper rates. Division by a zero gap has
+value zero, so finite attainment is included. Above the domination level the
+sublinear envelope is the genuine exact power recurrence, rather than an assertion
+that every admissible algorithm converges at exactly that slow rate. -/
+theorem lemma_5_3_1 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
+    {fstar μ κψ ν κν κR κA : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    (hd : measureDominated f ψ fstar μ κψ) (hr : arMeasureRun f ψ x S ν κν κR κA) :
+    (∀ k ∈ S, objectiveGap f fstar (x (k + 1)) ≤ objectiveGap f fstar (x k) *
+      (1 + κν / κψ ^ (ν / μ) * objectiveGap f fstar (x (k + 1)) ^ ((ν - μ) / μ))⁻¹) ∧
+    Tendsto (successfulObjectiveGap f fstar x S) atTop (𝓝 0) ∧
+    (ν < μ → Tendsto (fun j => successfulObjectiveGap f fstar x S (j + 1) /
+      successfulObjectiveGap f fstar x S j) atTop (𝓝 0)) ∧
+    (ν = μ → ∀ j, successfulObjectiveGap f fstar x S (j + 1) ≤
+      (1 + κν / κψ)⁻¹ * successfulObjectiveGap f fstar x S j) ∧
+    (μ < ν → (∀ j, successfulObjectiveGap f fstar x S j = 0) ∨
+      ∃ t : ℕ → ℝ, (∀ j, 0 < t j) ∧
+        (∀ j, successfulObjectiveGap f fstar x S j ≤ t j) ∧ Tendsto t atTop (𝓝 0) ∧
+        Tendsto (fun j => t (j + 1) / t j) atTop (𝓝 1)) := by
+  exact ⟨fun _ hk => hr.factor_decrease hd hk, hr.successful_tendsto_zero hd,
+    hr.successful_superlinear hd, hr.successful_linear hd, hr.successful_sublinear_envelope hd⟩
+
+/-- **Theorem 5.3.2.** The first actual target gap is reached with the exact
+implicit-recurrence success budget and source density bound. Include the initially
+zero gap and the initialized function and derivative counts explicitly. -/
+theorem theorem_5_3_2 {n : ℕ} {f ψ : EuclideanSpace ℝ (Fin n) → ℝ}
+    {fstar μ κψ ν κν κR κA : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {S : Set ℕ}
+    (hd : measureDominated f ψ fstar μ κψ) (hr : arMeasureRun f ψ x S ν κν κR κA)
+    {ε : ℝ} (hε : 0 < ε) :
+    let T := implicitGapHittingTime (κν / κψ ^ (ν / μ)) (ν / μ)
+      (objectiveGap f fstar (x 0)) ε
+    ∃ K : ℕ, objectiveGap f fstar (x K) ≤ ε ∧
+      (∀ k < K, ε < objectiveGap f fstar (x k)) ∧
+      (objectiveGap f fstar (x 0) ≤ ε → K = 0) ∧
+      (EvaluationComplexity.successfulIterations S K).card ≤ T ∧
+      (K : ℝ) ≤ κR * T + κA ∧
+      (measureFunctionEvaluations K : ℝ) ≤ κR * T + κA + 1 ∧
+      measureDerivativeEvaluations S K ≤ T + 1 := hr.first_gap_hitting hd hε
+
+end CartisGouldToint

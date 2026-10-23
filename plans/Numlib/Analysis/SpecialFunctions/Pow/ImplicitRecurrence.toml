@@ -1,0 +1,74 @@
+namespace = "ImplicitGap"
+desc = "Actual implicit power updates, gap convergence, exact first-hitting counts and initialized evaluation bounds for measure-dominated adaptive regularization."
+
+[[node]]
+id = "strictMonoOn_update"
+
+[[node]]
+id = "existsUnique_step"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "step_spec"
+
+[[node]]
+id = "step_pos"
+
+[[node]]
+id = "le_step"
+
+[[node]]
+id = "step_mono"
+
+[[node]]
+id = "orbit"
+
+[[node]]
+id = "orbit_zero"
+
+[[node]]
+id = "orbit_succ"
+
+[[node]]
+id = "orbit_nonneg"
+
+[[node]]
+id = "orbit_pos"
+
+[[node]]
+id = "orbit_equation"
+
+[[node]]
+id = "tendsto_zero"
+
+[[node]]
+id = "le_orbit"
+
+[[node]]
+id = "orbit_tendsto_zero"
+
+[[node]]
+id = "next_le_power"
+
+[[node]]
+id = "superlinear"
+
+[[node]]
+id = "linear_step"
+
+[[node]]
+id = "orbit_sublinear_ratio"
+
+[[node]]
+id = "exists_hitting"
+
+[[node]]
+id = "hittingTime"
+
+[[node]]
+id = "hittingTime_spec"
+
+[[node]]
+id = "hittingTime_zero"

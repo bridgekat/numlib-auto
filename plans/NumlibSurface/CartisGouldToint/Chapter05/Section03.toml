@@ -167,20 +167,10 @@ As the next lemma shows, the combination of these decrease properties and corres
 
 [[node]]
 id = "measureDominated"
-kind = "definition"
-desc = '''
-Given f:E→ℝ, attained global minimum value f_*, ψ:E→ℝ nonnegative, μ≥1, κψ>0, define ψ-domination by ∀x,f x−f_*≤κψ*(ψ x)^μ. Define Γ_k=f(x_k)−f_*≥0. Use Real.rpow for nonintegral powers; no convergence rate is part of domination.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.3"
 
 [[node]]
 id = "arMeasureRun"
-kind = "definition"
-desc = '''
-A monotonic ARψ,ν trace has ν≥1, κν>0, infinite successful set S, x_(k+1)=x_k for k∉S, and f(x_k)−f(x_(k+1))≥κν*(ψ(x_(k+1)))^ν for k∈S; constants κ_R≥1,κ_A≥0 satisfy the prefix-density bound N≤κ_R*card(S∩{0,...,N−1})+κ_A (with the source index translation documented). No gap-rate inequality is assumed.
-'''
-deps = ["measureDominated"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.3"
 
 [[node]]
@@ -194,65 +184,14 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "implicitGapHittingTime"
-kind = "definition"
-desc = '''
-For κ>0,τ>0,t₀>0 define t_(n+1) as the unique positive u solving κ*u^τ+u=t_n. Define Υ_(κ,τ)(t₀,ε) as the least k with t_k≤ε, ε>0. Prove existence/uniqueness and finite hitting time from continuity, strict monotonicity and convergence to zero; these conclusions must not be assumed in the definition.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 5.3"
 
 [[node]]
 id = "lemma_5_3_1"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 5.3.1: Gap-decrease rates for measure-dominated problems (adaptive regularization-like methods)
-
-Suppose that the objective function \( f \) is \( \psi \) -dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that an AR \( \psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . Then we have that
-
-\[
-{\Gamma }_{k + 1} \leq  {\Gamma }_k{\left( 1 + \frac{{\kappa }_{\nu }}{{\kappa }_{\psi }^{\nu /\mu }}{\Gamma }_{k + 1}^{\frac{\nu  - \mu }{\mu }}\right) }^{-1}\tag{5.3.10}
-\]
-
-for every \( k \in  \mathcal{S} \) , and \( {}^a \)
-
-(i) if \( \nu  < \mu \) , the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge superlinearly to zero;
-
-(ii) if \( \nu  = \mu \) , the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge linearly to zero with factor \( {\left( 1 + {\kappa }_{\nu }/{\kappa }_{\psi }\right) }^{-1} \) ; and
-
-(iii) if \( \nu  > \mu \) , the gaps \( {\left\{  {\Gamma }_k\right\}  }_{k \in  \mathcal{S}} \) converge sublinearly to zero.
-
-\( {}^a \) Convergence rates are discussed in Section A.3.
-'''
-deps = ["measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 5.3.1 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6276)"
 
 [[node]]
 id = "theorem_5_3_2"
-kind = "theorem"
-desc = '''
-Semantic specification: Correct the destroyed Υ subscript in (5.3.14) to (κν/κψ^(ν/μ),ν/μ). Handle Γ₀=0 as immediate termination and Γ₀>0 by the recurrence. Bound successful and total iterations separately.
-
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 5.3.2: Complexity of reducing the gap (implicit)
-
-Suppose that the objective function \( f \) is \( \psi \) -dominated of level \( \mu \) for some \( \mu  \geq  1 \) and that an \( \mathrm{AR}\psi ,\nu \) algorithm for which \( \nu  \geq  1 \) is applied to minimize \( f \) . Then the algorithm needs at most
-
-\[
-{\# }_{\text{ ARp, gap, }0}^{\text{ SI }}\overset{\text{ def }}{ = }\Upsilon \underset{{\kappa }_{\psi }^{\nu /\mu }}{\xrightarrow[]{{\kappa }_{\nu }}}\mathop{\sum }\limits_{\mu }\left( {{\Gamma }_{0},\epsilon }\right)\tag{5.3.14}
-\]
-
-successful iterations (and derivative evaluations) and at most
-
-\[
-{\# }_{\mathrm{{ARp}},\mathrm{{gap}},0}^{F}\overset{\text{ def }}{ = }{\kappa }_{R}^{\mathcal{S}}\Upsilon \frac{{\kappa }_{\nu }}{{\kappa }_{\psi }^{\nu /\mu },\frac{\nu }{\mu }}\left( {{\Gamma }_{0},\epsilon }\right)  + {\kappa }_{A}^{\mathcal{S}}\tag{5.3.15}
-\]
-
-iterations and evaluations of \( f \) to compute an iterate \( {x}_{\epsilon } \) such that \( {\Gamma }_{\epsilon } = f\left( {x}_{\epsilon }\right)  - \; {f}_{ * } \leq  \epsilon \) .
-'''
-deps = ["lemma_5_3_1", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6340)"
 
 [[node]]
@@ -675,3 +614,21 @@ Equation (5.1.62):
 '''
 deps = ["theorem_5_3_8", "lemma_5_3_6", "theorem_5_3_3", "theorem_5_1_7", "measureDominated", "arMeasureRun", "trMeasureRun", "implicitGapHittingTime", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 5.3.12 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 6740)"
+
+[[node]]
+id = "objectiveGap"
+
+[[node]]
+id = "measureSuccessIndex"
+
+[[node]]
+id = "successfulObjectiveGap"
+
+[[node]]
+id = "implicitGapSequence"
+
+[[node]]
+id = "measureFunctionEvaluations"
+
+[[node]]
+id = "measureDerivativeEvaluations"

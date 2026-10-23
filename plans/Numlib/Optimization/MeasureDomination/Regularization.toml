@@ -1,0 +1,62 @@
+namespace = "MeasureDomination"
+desc = "Actual implicit power updates, gap convergence, exact first-hitting counts and initialized evaluation bounds for measure-dominated adaptive regularization."
+
+[[node]]
+id = "Dominated"
+
+[[node]]
+id = "ARRun"
+
+[[node]]
+id = "gap"
+
+[[node]]
+id = "successIndex"
+
+[[node]]
+id = "successfulGap"
+
+[[node]]
+id = "Dominated.gap_nonneg"
+
+[[node]]
+id = "Dominated.power_gap_le"
+
+[[node]]
+id = "ARRun.gap_antitone"
+
+[[node]]
+id = "ARRun.implicit_decrease"
+
+[[node]]
+id = "ARRun.factor_decrease"
+
+[[node]]
+id = "successIndex_mem"
+
+[[node]]
+id = "successIndex_strictMono"
+
+[[node]]
+id = "ARRun.successful_implicit_decrease"
+
+[[node]]
+id = "ARRun.successful_tendsto_zero"
+
+[[node]]
+id = "ARRun.successful_superlinear"
+
+[[node]]
+id = "ARRun.successful_linear"
+
+[[node]]
+id = "ARRun.successful_sublinear_envelope"
+
+[[node]]
+id = "ARRun.gap_le_orbit"
+
+[[node]]
+id = "card_successIndex"
+
+[[node]]
+id = "ARRun.first_gap_hitting"
