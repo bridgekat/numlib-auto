@@ -95,9 +95,16 @@ It is worth remarking at this point that computing the first-order measure \( {\
 
 [[node]]
 id = "constrainedCriticality"
-kind = "definition"
-desc = '''
-Let C be nonempty closed convex, x∈C, B={d| ||d||≤1}, C(x)={d|x+d∈C}, τ₁,τ₂∈(0,1). Define ω₁=−min_{d∈C(x)∩B}⟪d,grad f x⟫. Define C¹(x,α)={d∈C(x)| |⟪d,grad f x⟫|≤τ₁α}; ω₂(x,α)=−min_{d∈C¹(x,α)∩B}D²f(x)[d,d]. Define C²(x,α₁,α₂)={d∈C¹(x,α₁)| |D²f(x)[d,d]|≤τ₂α₂} and ω₃=−min_{d∈C²∩B}D³f(x)[d,d,d]. Require α_i≥0 so 0 is feasible and compactness supplies minima. Correct missing minus signs in OCR (6.1.5),(6.1.9).
-'''
-deps = ["feasibleDisplacements"]
-source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 6.1"
+source = "Cartis, Gould and Toint, Section6.1, all actual restricted first- to third-order derivative criticality measures; missing leading minus signs in(6.1.5) and(6.1.9) restored"
+
+[[node]]
+id = "constrainedCriticality_one"
+
+[[node]]
+id = "constrainedCriticality_two"
+
+[[node]]
+id = "constrainedCriticality_three"
+
+[[node]]
+id = "constrainedCriticality_nonneg"

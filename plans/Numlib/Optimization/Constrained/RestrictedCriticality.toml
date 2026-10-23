@@ -1,0 +1,55 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "tensorCriticality"
+
+[[node]]
+id = "abs_diagonal_le_norm"
+
+[[node]]
+id = "tensorCriticality_bddAbove"
+
+[[node]]
+id = "neg_diagonal_le_tensorCriticality"
+
+[[node]]
+id = "tensorCriticality_le_iff"
+
+[[node]]
+id = "tensorCriticality_nonneg"
+
+[[node]]
+id = "tensorCriticality_mono"
+
+[[node]]
+id = "tensorCriticality_le_of_error"
+
+[[node]]
+id = "exists_diagonal_eq_tensorCriticality"
+
+[[node]]
+id = "firstRestrictedDirections"
+
+[[node]]
+id = "secondRestrictedDirections"
+
+[[node]]
+id = "mem_firstRestrictedDirections"
+
+[[node]]
+id = "mem_secondRestrictedDirections"
+
+[[node]]
+id = "zero_mem_firstRestrictedDirections"
+
+[[node]]
+id = "zero_mem_secondRestrictedDirections"
+
+[[node]]
+id = "isClosed_firstRestrictedDirections"
+
+[[node]]
+id = "isClosed_secondRestrictedDirections"
+
+[[node]]
+id = "tensorCriticality_one"
