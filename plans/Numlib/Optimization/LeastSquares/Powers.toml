@@ -1,0 +1,20 @@
+[[node]]
+id = "LeastSquares.powerObjective"
+
+[[node]]
+id = "LeastSquares.powerObjective_eq_sq_norm_rpow"
+
+[[node]]
+id = "LeastSquares.powerObjective_even"
+
+[[node]]
+id = "LeastSquares.contDiffOn_powerObjective_even"
+
+[[node]]
+id = "LeastSquares.contDiffOn_powerObjective_of_two_mul_le"
+
+[[node]]
+id = "LeastSquares.contDiff_powerObjective_even"
+
+[[node]]
+id = "LeastSquares.contDiff_powerObjective_of_two_mul_le"
