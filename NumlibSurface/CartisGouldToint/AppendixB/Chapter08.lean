@@ -1,4 +1,5 @@
 import Numlib.Nonlinear.PowerTransform
+import Numlib.Nonlinear.Scalar.Monotone
 
 /-!
 # Cartis–Gould–Toint, Appendix B.8: transformed secular Newton steps
@@ -13,6 +14,32 @@ instead. Its Newton step is the continuous extension of the steps at nonzero exp
 -/
 
 namespace CartisGouldToint
+
+/-- All Newton and secant convergence conclusions of Lemma B.8.1: interval
+invariance, increasing iterates, the explicit global Q-linear factor, convergence,
+ultimate Q-superlinear error ratios, and the conditional Q-quadratic Newton bound.
+These use the actual Newton and secant updates, fixed at a root after termination. -/
+abbrev scalarNewtonSecantConvergence (f f' : ℝ → ℝ) (a b : ℝ) : Prop :=
+  MonotoneRoot.Convergence f f' a b
+
+/-- **Lemma B.8.1 (Newton and secant rates).** Both the convex decreasing and
+concave increasing cases satisfy all the source convergence conclusions. A simple
+root is required: the source's missing nonzero derivative condition is essential
+for its superlinear and quadratic rates. In the concave increasing case, the
+initial values are negative before the root, correcting the source's positive sign.
+The factor is exactly `1 - θ'(b)/θ'(a)` in both cases. -/
+theorem lemma_B_8_1 {θ : ℝ → ℝ} {a b : ℝ} {D : Set ℝ}
+    (hab : a < b) (hD : IsOpen D) (hsub : Set.Icc a b ⊆ D)
+    (hθ : ContDiffOn ℝ 1 θ D) (hroot : θ b = 0)
+    (hshape : (ConvexOn ℝ (Set.Icc a b) θ ∧ deriv θ b < 0) ∨
+      (ConcaveOn ℝ (Set.Icc a b) θ ∧ 0 < deriv θ b)) :
+    scalarNewtonSecantConvergence θ (deriv θ) a b := by
+  have hlocal : ∀ x ∈ Set.Icc a b, ContDiffAt ℝ 1 θ x :=
+    fun x hx => hθ.contDiffAt (hD.mem_nhds (hsub hx))
+  exact MonotoneRoot.convergence_of_convex_or_concave hab.le
+    (fun x hx => ((hlocal x hx).differentiableAt (by norm_num)).hasDerivAt)
+    (fun x hx => (hlocal x hx).continuousAt_deriv.continuousWithinAt) hroot hshape
+
 
 /-- The transformed secular step (B.8.7), with its removable value `-A log μ` at `β = 0`. -/
 noncomputable def transformedSecularStep (A μ β : ℝ) : ℝ :=

@@ -1,0 +1,121 @@
+namespace = "MonotoneRoot"
+
+[[node]]
+id = "Data"
+
+[[node]]
+id = "Data.derivative_neg"
+
+[[node]]
+id = "Data.tangent_bounds"
+
+[[node]]
+id = "Data.value_nonneg"
+
+[[node]]
+id = "factor"
+
+[[node]]
+id = "Data.factor_mem"
+
+[[node]]
+id = "Data.step_bounds"
+
+[[node]]
+id = "newtonOrbit"
+
+[[node]]
+id = "newtonOrbit_zero"
+
+[[node]]
+id = "newtonOrbit_succ"
+
+[[node]]
+id = "Data.newtonOrbit_mem"
+
+[[node]]
+id = "Data.newtonOrbit_bounds"
+
+[[node]]
+id = "Data.newtonOrbit_error_le"
+
+[[node]]
+id = "Data.tendsto_newtonOrbit"
+
+[[node]]
+id = "Data.tendsto_newton_multiplier"
+
+[[node]]
+id = "Data.tendsto_newton_error_ratio"
+
+[[node]]
+id = "Data.value_pos"
+
+[[node]]
+id = "Data.lt_step"
+
+[[node]]
+id = "Data.secant_slope"
+
+[[node]]
+id = "Data.secant_state"
+
+[[node]]
+id = "secantSlope"
+
+[[node]]
+id = "Data.secantSlope_bounds"
+
+[[node]]
+id = "Data.secant_step_eq"
+
+[[node]]
+id = "Data.secantOrbit_bounds"
+
+[[node]]
+id = "Data.secantOrbit_error_le"
+
+[[node]]
+id = "Data.tendsto_secantOrbit"
+
+[[node]]
+id = "Data.newton_quadratic_bound"
+
+[[node]]
+id = "Data.eventually_newton_quadratic"
+
+[[node]]
+id = "Data.tendsto_secantSlope"
+
+[[node]]
+id = "Data.tendsto_secant_error_ratio"
+
+[[node]]
+id = "Convergence"
+
+[[node]]
+id = "Data.convergence"
+
+[[node]]
+id = "Data.of_convex"
+
+[[node]]
+id = "newtonStep_neg"
+
+[[node]]
+id = "newtonOrbit_neg"
+
+[[node]]
+id = "secantStep_neg"
+
+[[node]]
+id = "secantOrbit_neg"
+
+[[node]]
+id = "factor_neg"
+
+[[node]]
+id = "Convergence.of_neg"
+
+[[node]]
+id = "convergence_of_convex_or_concave"

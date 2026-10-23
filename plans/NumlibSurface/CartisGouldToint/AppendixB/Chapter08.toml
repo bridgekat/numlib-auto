@@ -5,10 +5,6 @@ namespace = "CartisGouldToint"
 
 [[node]]
 id = "lemma_B_8_1"
-kind = "theorem"
-desc = '''
-Corrected version: theta C^1 on a neighborhood of closed interval I, convex and strictly decreasing on I, with theta(lambda*)=0 and theta prime(lambda*)<0. For lambda0 in I with theta(lambda0)>0, stopped Newton iteration lambda_{j+1}=lambda_j-theta(lambda_j)/theta prime(lambda_j), keeping lambda* once reached, stays in [lambda0,lambda*], is monotone increasing, and converges to lambda*. With gamma=1-theta prime(lambda*)/theta prime(lambda0), 0<=gamma<1 and errors e_{j+1}<=gamma*e_j; unless finitely terminated, e_{j+1}/e_j tends to 0. If theta prime is Lipschitz near root, eventually e_{j+1}<=C e_j^2 for some C. For lambda0<lambda1 in I with both theta values positive, stopped secant iteration (B.8.2) has the same interval invariance, monotonicity, global gamma bound for j>=1 and eventual superlinear convergence. Concave strictly increasing case follows by replacing theta by -theta, hence requires theta(lambda0)<0 (and theta(lambda1)<0), not the positive sign printed in source. Without the added nonzero root derivative the source rates fail for theta(lambda)=-lambda^3 on [-1,0], whose Newton ratio is 2/3.
-'''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.8.1, equations (B.8.1)--(B.8.6)"
 
 [[node]]
@@ -28,3 +24,6 @@ id = "transformedSecularStep_continuousAt_zero"
 
 [[node]]
 id = "lemma_B_8_2"
+
+[[node]]
+id = "scalarNewtonSecantConvergence"
