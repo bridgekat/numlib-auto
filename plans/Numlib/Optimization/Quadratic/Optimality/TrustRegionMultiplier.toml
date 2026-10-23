@@ -1,0 +1,4 @@
+namespace = "QuadraticOptimality"
+
+[[node]]
+id = "trust_region_stationary_shift"

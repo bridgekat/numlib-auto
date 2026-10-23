@@ -1,5 +1,7 @@
 import Numlib.Optimization.Quadratic.Krylov.Regularization
 import Numlib.Optimization.Quadratic.Optimality.TrustRegion
+import Numlib.Optimization.Quadratic.Optimality.TrustRegionMultiplier
+import Numlib.Krylov.Lanczos.TrustRegion
 import Mathlib.Tactic
 /-!
 # Actual constrained Lanczos minimizers
@@ -138,4 +140,52 @@ theorem trust_region_residual_bound (A : E →L[ℝ] E) {g : E} (hg : g ≠ 0)
       hPD.isHermitian.leastEigenvalue) + 1) := by positivity
   apply hr.trans
   gcongr
+/-- The genuine Lanczos projected quadratic, without a radius constraint or regularizer. -/
+noncomputable def projectedQuadratic (A : E →ₗ[ℝ] E) (g : E) (m : ℕ)
+    (y : EuclideanSpace ℝ (Fin (m + 1))) : ℝ :=
+  QuadraticOptimality.model
+    (Matrix.toEuclideanLin (tridiag A g (m + 1))).toContinuousLinearMap
+    (‖g‖ • PiLp.single 2 (0 : Fin (m + 1)) (1 : ℝ)) y
+
+omit [FiniteDimensional ℝ E] in
+/-- The projected quadratic is the actual linear plus quadratic form in Lanczos coordinates. -/
+theorem projectedQuadratic_eq (A : E →ₗ[ℝ] E) (g : E) (m : ℕ)
+    (y : EuclideanSpace ℝ (Fin (m + 1))) :
+    projectedQuadratic A g m y =
+      inner ℝ (‖g‖ • PiLp.single 2 (0 : Fin (m + 1)) (1 : ℝ)) y +
+        inner ℝ (Matrix.toEuclideanLin (tridiag A g (m + 1)) y) y / 2 := by
+  exact QuadraticOptimality.model_eq _ _ _
+
+/-- True constrained global minimizers in nested Lanczos spaces have ordered multipliers
+and radii, each bounded by those of a true full-space minimizer. -/
+theorem trust_region_nested_minimizers (A : E →L[ℝ] E) {g : E} (hg : g ≠ 0)
+    (hA : A.toLinearMap.IsSymmetric) {m l : ℕ} (hml : m ≤ l)
+    (hl : l + 1 ≤ grade A.toLinearMap g)
+    (y : EuclideanSpace ℝ (Fin (m + 1))) (z : EuclideanSpace ℝ (Fin (l + 1))) (x : E)
+    {Δ : ℝ} (hΔ : 0 < Δ) (hy : ‖y‖ ≤ Δ) (hz : ‖z‖ ≤ Δ) (hx : ‖x‖ ≤ Δ)
+    (hminy : ∀ w, ‖w‖ ≤ Δ → projectedQuadratic A.toLinearMap g m y ≤
+      projectedQuadratic A.toLinearMap g m w)
+    (hminz : ∀ w, ‖w‖ ≤ Δ → projectedQuadratic A.toLinearMap g l z ≤
+      projectedQuadratic A.toLinearMap g l w)
+    (hminx : ∀ w, ‖w‖ ≤ Δ → QuadraticOptimality.model A g x ≤
+      QuadraticOptimality.model A g w)
+    {τ μ ν : ℝ}
+    (hsolvey : Matrix.toEuclideanLin (tridiag A.toLinearMap g (m + 1) + τ • 1) y =
+      -(‖g‖ • PiLp.single 2 (0 : Fin (m + 1)) (1 : ℝ)))
+    (hsolvez : Matrix.toEuclideanLin (tridiag A.toLinearMap g (l + 1) + μ • 1) z =
+      -(‖g‖ • PiLp.single 2 (0 : Fin (l + 1)) (1 : ℝ)))
+    (hsolvex : A x + ν • x = -g) :
+    τ ≤ μ ∧ μ ≤ ν ∧ ‖y‖ ≤ ‖z‖ ∧ ‖z‖ ≤ ‖x‖ := by
+  have hm : m + 1 ≤ grade A.toLinearMap g := (Nat.add_le_add_right hml 1).trans hl
+  obtain ⟨hτ, _, hcompy⟩ := projected_trust_region_optimality A.toLinearMap hg hm y
+    hΔ hy hminy hsolvey
+  obtain ⟨hμ, hPD, hcompz⟩ := projected_trust_region_optimality A.toLinearMap hg hl z
+    hΔ hz hminz hsolvez
+  obtain ⟨hν, hPSD, hcompx⟩ := QuadraticOptimality.trust_region_stationary_shift hA hg x
+    hΔ hx hminx hsolvex
+  have hpair := trust_region_compare_of_shifted_solve A.toLinearMap hg hA hml hl y z
+    hτ hμ hy hz hcompy hcompz hPD hsolvey hsolvez
+  have hstar := trust_region_compare_ambient A.toLinearMap hg hA hl z x hμ hν hz hx
+    hcompz hcompx hsolvez hsolvex hPSD
+  exact ⟨hpair.1, hstar.1, hpair.2, hstar.2⟩
 end QuadraticKrylov

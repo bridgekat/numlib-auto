@@ -1,0 +1,7 @@
+namespace = "Lanczos"
+
+[[node]]
+id = "trust_region_compare_of_shifted_solve"
+
+[[node]]
+id = "trust_region_compare_ambient"

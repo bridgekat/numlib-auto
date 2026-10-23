@@ -6,16 +6,6 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_10_3_1"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 10.3.1: Nested subspace trust-region solutions norm increase
-
-[279, Thm. 2.6],[343, Thm. 2.1]: Let \( {s}_{k} = {Q}_{k}{\bar{s}}_{k} \) , where \( {\bar{s}}_{k} \) satisfies (10.1.5); let \( {\lambda }_k \) be the corresponding Lagrange multiplier for the trust-region constraint; and let \( {s}_{ * } \) be a global solution of (8.1.2) with corresponding multiplier \( {\lambda }_{ * } \) . Then \( {\lambda }_k \leq \; {\lambda }_{\ell } \leq  {\lambda }_{ * } \) and \( {\begin{Vmatrix}{s}_k\end{Vmatrix}}_M \leq  {\begin{Vmatrix}{s}_{\ell }\end{Vmatrix}}_M \leq  {\begin{Vmatrix}{s}_{ * }\end{Vmatrix}}_M \) for \( 1 \leq  k \leq  \ell  \leq  \operatorname{grade}\left( {{M}^{-1}H,{M}^{-1}g}\right) \) .
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 10.3.1 (OCR Markdown line 10941)"
-deps = ["lanczosSubspaceData", "theorem_8_2_7"]
 
 [[node]]
 id = "theorem_10_3_2"

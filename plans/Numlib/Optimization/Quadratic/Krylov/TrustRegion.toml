@@ -11,3 +11,12 @@ id = "projected_trust_region_optimality"
 
 [[node]]
 id = "trust_region_residual_bound"
+
+[[node]]
+id = "projectedQuadratic"
+
+[[node]]
+id = "projectedQuadratic_eq"
+
+[[node]]
+id = "trust_region_nested_minimizers"

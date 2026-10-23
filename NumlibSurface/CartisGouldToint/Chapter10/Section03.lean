@@ -20,10 +20,7 @@ variable (H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
 `m + 1`; the trust-region constraint is the ordinary coordinate ball. -/
 noncomputable def lanczosTrustRegionModel (g : EuclideanSpace ℝ (Fin n))
     (m : ℕ) (y : EuclideanSpace ℝ (Fin (m + 1))) :=
-  QuadraticOptimality.model
-    (Matrix.toEuclideanLin (Lanczos.tridiag (hessian M hM H).toLinearMap
-      (gradient M hM g) (m + 1))).toContinuousLinearMap
-    (‖gradient M hM g‖ • PiLp.single 2 (0 : Fin (m + 1)) (1 : ℝ)) y
+  QuadraticKrylov.projectedQuadratic (hessian M hM H).toLinearMap (gradient M hM g) m y
 
 /-- **Theorem 10.3.2.** A true constrained Lanczos minimizer satisfies the exact residual
 bound in the inverse metric norm. The shift is its actual stationary multiplier, and the
@@ -73,4 +70,46 @@ theorem theorem_10_3_2 (hH : H.toLinearMap.IsSymmetric)
       hPD.isHermitian.leastEigenvalue) + 1) := by positivity
   have hnorm := norm_hessian_le M hM hH
   gcongr
+/-- **Lemma 10.3.1.** Actual nested constrained Lanczos minimizers have ordered multipliers
+and metric norms, bounded by those of an actual full-space trust-region minimizer. The full
+quadratic is represented in the genuine metric inner product; `Metric.model_eq` identifies
+it with the original objective. Interior and singular ambient shifted systems are included. -/
+theorem lemma_10_3_1 (hH : H.toLinearMap.IsSymmetric)
+    {g : EuclideanSpace ℝ (Fin n)} (hg : g ≠ 0) {m l : ℕ} (hml : m ≤ l)
+    (hl : l + 1 ≤ grade (hessian M hM H).toLinearMap (gradient M hM g))
+    (y : EuclideanSpace ℝ (Fin (m + 1))) (z : EuclideanSpace ℝ (Fin (l + 1)))
+    (x : WithEnergy M.toLinearMap hM) {Δ : ℝ} (hΔ : 0 < Δ)
+    (hy : ‖y‖ ≤ Δ) (hz : ‖z‖ ≤ Δ) (hx : ‖x‖ ≤ Δ)
+    (hminy : ∀ w, ‖w‖ ≤ Δ → lanczosTrustRegionModel H M hM g m y ≤
+      lanczosTrustRegionModel H M hM g m w)
+    (hminz : ∀ w, ‖w‖ ≤ Δ → lanczosTrustRegionModel H M hM g l z ≤
+      lanczosTrustRegionModel H M hM g l w)
+    (hminx : ∀ w, ‖w‖ ≤ Δ →
+      QuadraticOptimality.model (hessian M hM H) (gradient M hM g) x ≤
+        QuadraticOptimality.model (hessian M hM H) (gradient M hM g) w)
+    {τ μ ν : ℝ}
+    (hsolvey : Matrix.toEuclideanLin
+      (Lanczos.tridiag (hessian M hM H).toLinearMap (gradient M hM g) (m + 1) + τ • 1) y =
+      -(‖gradient M hM g‖ • PiLp.single 2 (0 : Fin (m + 1)) (1 : ℝ)))
+    (hsolvez : Matrix.toEuclideanLin
+      (Lanczos.tridiag (hessian M hM H).toLinearMap (gradient M hM g) (l + 1) + μ • 1) z =
+      -(‖gradient M hM g‖ • PiLp.single 2 (0 : Fin (l + 1)) (1 : ℝ)))
+    (hsolvex : hessian M hM H x + ν • x = -(gradient M hM g)) :
+    let hm := (Nat.add_le_add_right hml 1).trans hl
+    let sy := toOriginal M hM (lanczosSubspaceData H M hM g hm y)
+    let sz := toOriginal M hM (lanczosSubspaceData H M hM g hl z)
+    let sx := toOriginal M hM x
+    τ ≤ μ ∧ μ ≤ ν ∧ energyNorm M.toLinearMap sy ≤ energyNorm M.toLinearMap sz ∧
+      energyNorm M.toLinearMap sz ≤ energyNorm M.toLinearMap sx := by
+  have hh := QuadraticKrylov.trust_region_nested_minimizers (hessian M hM H)
+    (gradient_ne_zero M hM hg) (hessian_symmetric M hM hH) hml hl y z x hΔ hy hz hx
+    hminy hminz hminx hsolvey hsolvez hsolvex
+  change τ ≤ μ ∧ μ ≤ ν ∧
+    ‖lanczosSubspaceData H M hM g ((Nat.add_le_add_right hml 1).trans hl) y‖ ≤
+      ‖lanczosSubspaceData H M hM g hl z‖ ∧
+        ‖lanczosSubspaceData H M hM g hl z‖ ≤ ‖x‖
+  simpa only [(lanczosSubspaceData H M hM g
+    ((Nat.add_le_add_right hml 1).trans hl)).norm_map,
+      (lanczosSubspaceData H M hM g hl).norm_map] using hh
+
 end CartisGouldToint
