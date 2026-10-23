@@ -1,0 +1,16 @@
+namespace = "Hermite"
+
+[[node]]
+id = "quinticFromResiduals"
+
+[[node]]
+id = "quinticFromResiduals_natDegree_le"
+
+[[node]]
+id = "quinticFromResiduals_coeff"
+
+[[node]]
+id = "quinticFromResiduals_endpoints"
+
+[[node]]
+id = "quinticFromResiduals_uniform_bound"

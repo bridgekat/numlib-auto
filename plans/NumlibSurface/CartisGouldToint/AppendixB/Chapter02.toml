@@ -6,20 +6,16 @@ Appendix B, Chapter 2: six numbered technical lemmas supporting the exact-linese
 
 [[node]]
 id = "quinticHermite"
-kind = "definition"
-desc = '''
-For endpoint data f0,g0,H0,f1,g1,H1:real let r0=f1-f0-g0-H0/2, r1=g1-g0-H0,r2=H1-H0. Define a real polynomial with coefficients c0=f0,c1=g0,c2=H0/2,c3=10r0-4r1+r2/2,c4=-15r0+7r1-r2,c5=6r0-3r1+r2/2. Provide polynomial and evaluation-function interfaces.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, equations (B.2.1),(B.2.2)"
 
 [[node]]
 id = "lemma_B_2_1"
 kind = "theorem"
 desc = '''
-For any six real endpoint values, quinticHermite has degree <=5 and its values, first and second derivatives at 0 are f0,g0,H0 and at 1 are f1,g1,H1. Its coefficients satisfy exactly (B.2.1),(B.2.2). Correct the final bound: for every kappa>=1 there exists K>0, chosen before the data, such that if |r_i|<=kappa for i=0,1,2 AND |f0|,|g0|,|H0|<=kappa, then |p^(i)(t)|<=K for every i<=2,t in [0,1]. The capitalized extra hypothesis is necessary: the original residual-only assertion fails for p(t)=M constant with arbitrarily large M and zero residuals.
+The source asserts existence of a quintic with all six endpoint jets and coefficients (B.2.1),(B.2.2), followed by a positive bound K depending only on kappa>=1 for all derivatives of order 0,1,2 on [0,1] under residual bounds |r0|,|r1|,|r2|<=kappa alone. The endpoint and coefficient assertions are valid, but the final uniform-bound assertion is false. Keep this original item unproved; use lemma_B_2_1_corrected when initial jets are also bounded.
 '''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.1, equations (B.2.1)--(B.2.3)"
 deps = ["quinticHermite"]
+wrong = "The residual-only bound is false: endpoint data (M,0,0,M,0,0) give p(t)=M and r0=r1=r2=0, while |p(0)| is unbounded as M grows. quinticHermite_residual_only_bound_false proves the contradiction. Bounded initial jets repair the estimate; that result has the distinct ID lemma_B_2_1_corrected."
 
 [[node]]
 id = "sdexCounterexampleData"
@@ -46,7 +42,7 @@ desc = '''
 For the f2,ylow,yup from sdexCounterexampleData there exists M>=0, uniform in epsilon,N, such that for every x>=0 and y in [ylow(x)-1,ylow(x)] union [yup(x),yup(x)+1], the absolute values of f2, partial_x f2, partial_y f2, partial_xx f2, partial_yy f2, partial_xy f2 are all <=M. Derive coefficient bounds and their x derivatives from the explicit formulas, delta<=2 and (B.2.26); include join boundaries by C^2 matching.
 '''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.3"
-deps = ["sdexCounterexampleData", "lemma_B_2_1"]
+deps = ["sdexCounterexampleData", "lemma_B_2_1_corrected"]
 
 [[node]]
 id = "lemma_B_2_4"
@@ -74,3 +70,15 @@ For every k<N in sdexCounterexampleData, the prescribed positive step reaches (x
 '''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.6"
 deps = ["sdexCounterexampleData", "lemma_B_2_2"]
+
+[[node]]
+id = "quinticHermite_endpoints"
+
+[[node]]
+id = "lemma_B_2_1_corrected"
+
+[[node]]
+id = "quinticHermite_constant"
+
+[[node]]
+id = "quinticHermite_residual_only_bound_false"
