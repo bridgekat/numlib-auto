@@ -1,3 +1,4 @@
+import Numlib.Optimization.HighOrder.ModelSolve.Sharp
 import Numlib.Optimization.HighOrder.ModelSolve.Uniform
 import Numlib.Optimization.Regularization.HighOrder.StepTwoTermination
 import Numlib.Optimization.TrustRegion.HighOrder.SharpnessGlobal
@@ -362,8 +363,8 @@ namespace CartisGouldToint
 with an existential radius coefficient. The coefficient precedes all centers,
 penalty parameters below their fixed cap and accuracies. Actual global model
 minimization and finite first-passing halving yield every test, including unit
-radii for the first two orders. The exact printed coefficient remains a
-separate target. At step norm exactly one the criticality tests are retained. -/
+radii for the first two orders. The exact printed coefficient is supplied
+separately by Lemma12.2.9. At step norm exactly one the criticality tests are retained. -/
 theorem lemma_12_2_9_uniform {n p q : ℕ} (hqp : q ≤ p)
     (f : EuclideanSpace ℝ (Fin n) → ℝ) {L S : ℝ} (hL : 0 ≤ L) (hS : 0 ≤ S)
     (hlip : ∀ i, 1 ≤ i → i < p → ∀ y z,
@@ -410,5 +411,101 @@ theorem lemma_12_2_9_uniform {n p q : ℕ} (hqp : q ≤ p)
     constructor <;> omega
   exact hsolve σ hσ hσS (ftaylorSeries ℝ f x) hA θ ζ hθ hθ1 hζ hζ1
     InexactTrustRegion.modelOrder horder ε hε
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Lemma12.2.7: the actual regularized Taylor model is `C^p`, its highest
+actual derivative is globally sigma-Lipschitz, and all derivatives of orders
+2 through p have the printed unit-ball bound `3*L+sigma`. -/
+theorem lemma_12_2_7 {n p : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (x : EuclideanSpace ℝ (Fin n)) {L σ : ℝ} (hL : 1 ≤ L) (hσ : 0 ≤ σ)
+    (hlip : ∀ i, 1 ≤ i → i < p → ∀ y z,
+      ‖iteratedFDeriv ℝ i f y - iteratedFDeriv ℝ i f z‖ ≤ L * ‖y - z‖) :
+    ContDiff ℝ p (HighOrderRegularization.model f p x σ) ∧
+      (∀ u v, ‖iteratedFDeriv ℝ p (HighOrderRegularization.model f p x σ) u -
+        iteratedFDeriv ℝ p (HighOrderRegularization.model f p x σ) v‖ ≤ σ * ‖u - v‖) ∧
+      ∀ j, 2 ≤ j → j ≤ p → ∀ s, ‖s‖ ≤ 1 →
+        ‖iteratedFDeriv ℝ j (HighOrderRegularization.model f p x σ) s‖ ≤ 3 * L + σ := by
+  have hA : ∀ i, 2 ≤ i → i ≤ p → ‖ftaylorSeries ℝ f x i‖ ≤ L := by
+    intro i hi hip
+    obtain ⟨j, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : i ≠ 0)
+    change ‖iteratedFDeriv ℝ (j + 1) f x‖ ≤ L
+    rw [← norm_fderiv_iteratedFDeriv]
+    exact norm_fderiv_le_of_lip' ℝ (zero_le_one.trans hL)
+      (Filter.Eventually.of_forall (fun y => hlip j (by omega) (by omega) y x))
+  refine ⟨ModelDecrease.contDiff_penalized_ofJet (ftaylorSeries ℝ f x) p p le_rfl σ,
+    ModelDecrease.norm_sub_iteratedFDeriv_penalized_ofJet_le (ftaylorSeries ℝ f x) p hσ,
+    ?_⟩
+  intro j hj hjp s hs
+  exact ModelDecrease.norm_iteratedFDeriv_penalized_ofJet_le_three_mul_add
+    (ftaylorSeries ℝ f x) hjp hσ (zero_le_one.trans hL)
+    (fun i hji hip => hA i (hj.trans hji) hip) hs
+
+/-- Lemma12.2.8: every sufficiently small positive Taylor-model decrement
+retains at least half its normalized value in the actual regularized model. -/
+theorem lemma_12_2_8 {n p j : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (x s d : EuclideanSpace ℝ (Fin n)) {L σ α δ : ℝ}
+    (hL : 1 ≤ L) (hσ : 0 < σ) (hj : 0 < j) (hjp : j ≤ p)
+    (hlip : ∀ i, 1 ≤ i → i < p → ∀ y z,
+      ‖iteratedFDeriv ℝ i f y - iteratedFDeriv ℝ i f z‖ ≤ L * ‖y - z‖)
+    (hs : ‖s‖ ≤ 1) (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hd : ‖d‖ ≤ δ)
+    (hsmall : δ ≤ α / (4 * (3 * L + σ)))
+    (htest : α * δ ^ j / j.factorial ≤
+      TaylorModel.decrement (HighOrderRegularization.model f p x σ) j s d) :
+    α / 2 * δ ^ j / j.factorial ≤
+      HighOrderRegularization.model f p x σ s -
+        HighOrderRegularization.model f p x σ (s + d) := by
+  obtain ⟨hf, htop, hbound⟩ := lemma_12_2_7 f x hL hσ.le hlip
+  exact TaylorModel.value_decrement_ge_half_of_taylor_test hj hjp hf hσ.le
+    (by linarith) (by linarith) htop s d hδ hδ1 hd hsmall
+    (fun a hja hap => hbound a (by omega) hap s hs) htest
+
+/-- Lemma12.2.9: a genuine global model minimum and finite criticality halving
+supply an admissible step with the exact printed radius floor. All first- and
+second-order radii equal one. A step of norm exactly one retains the criticality
+checks, as required by the strict large-step alternative in the statement. -/
+theorem lemma_12_2_9 {n p q : ℕ} (hqp : q ≤ p)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    {L σ θ ζ : ℝ} (hL : 1 ≤ L) (hσ : 0 < σ)
+    (hlip : ∀ i, 1 ≤ i → i < p → ∀ y z,
+      ‖iteratedFDeriv ℝ i f y - iteratedFDeriv ℝ i f z‖ ≤ L * ‖y - z‖)
+    (hθ : 0 < θ) (hθ1 : θ ≤ 1) (hζ : 0 < ζ) (hζ1 : ζ ≤ 1)
+    (ε : Fin q → ℝ) (hε : ∀ a, 0 < ε a ∧ ε a ≤ 1) :
+    ∃ (s : EuclideanSpace ℝ (Fin n)) (δ : Fin q → ℝ),
+      (∀ t, HighOrderRegularization.model f p x σ s ≤
+        HighOrderRegularization.model f p x σ t) ∧
+      (∀ μ : ℝ, 0 ≤ μ → μ ≤ 1 → arqpStepTwoSolve f p x σ μ s) ∧
+      (∀ a, 0 < δ a ∧ δ a ≤ 1) ∧
+      (∀ a, InexactTrustRegion.modelOrder a ≤ 2 → δ a = 1) ∧
+      (1 < ‖s‖ ∨ ∃ d : Fin q → EuclideanSpace ℝ (Fin n), ∀ a,
+        ζ * θ / (8 * (3 * L + σ)) * ε a ≤ δ a ∧ ‖d a‖ ≤ δ a ∧
+        ζ * TaylorModel.criticality (HighOrderRegularization.model f p x σ)
+          (InexactTrustRegion.modelOrder a) s (δ a) ≤
+          TaylorModel.decrement (HighOrderRegularization.model f p x σ)
+            (InexactTrustRegion.modelOrder a) s (d a) ∧
+        TaylorModel.decrement (HighOrderRegularization.model f p x σ)
+          (InexactTrustRegion.modelOrder a) s (d a) ≤
+          ζ * θ * ε a * δ a ^ InexactTrustRegion.modelOrder a /
+            (InexactTrustRegion.modelOrder a).factorial ∧
+        TaylorModel.criticality (HighOrderRegularization.model f p x σ)
+          (InexactTrustRegion.modelOrder a) s (δ a) ≤
+          θ * ε a * δ a ^ InexactTrustRegion.modelOrder a /
+            (InexactTrustRegion.modelOrder a).factorial) := by
+  have hA : ∀ i, 2 ≤ i → i ≤ p → ‖ftaylorSeries ℝ f x i‖ ≤ L := by
+    intro i hi hip
+    obtain ⟨j, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : i ≠ 0)
+    change ‖iteratedFDeriv ℝ (j + 1) f x‖ ≤ L
+    rw [← norm_fderiv_iteratedFDeriv]
+    exact norm_fderiv_le_of_lip' ℝ (zero_le_one.trans hL)
+      (Filter.Eventually.of_forall (fun y => hlip j (by omega) (by omega) y x))
+  have horder : ∀ a : Fin q, 0 < InexactTrustRegion.modelOrder a ∧
+      InexactTrustRegion.modelOrder a ≤ p := by
+    intro a
+    unfold InexactTrustRegion.modelOrder
+    constructor <;> omega
+  exact ModelSolve.exists_regularized_solve_sharp (ftaylorSeries ℝ f x) p hL hσ hA
+    hθ hθ1 hζ hζ1 InexactTrustRegion.modelOrder horder ε hε
 
 end CartisGouldToint

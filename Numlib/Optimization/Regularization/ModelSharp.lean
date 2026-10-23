@@ -94,4 +94,20 @@ theorem norm_sub_iteratedFDeriv_penalized_ofJet_le
             (div_nonneg hσ (Nat.cast_nonneg _))
     _ = _ := by field_simp
 
+/-- The separately estimated polynomial and penalty terms give the source
+bound `3*D+sigma` on the unit ball, with the exact highest-derivative penalty. -/
+theorem norm_iteratedFDeriv_penalized_ofJet_le_three_mul_add
+    (A : FormalMultilinearSeries ℝ E ℝ) {p n : ℕ} (hn : n ≤ p)
+    {σ D : ℝ} (hσ : 0 ≤ σ) (hD : 0 ≤ D)
+    (hA : ∀ i, n ≤ i → i ≤ p → ‖A i‖ ≤ D) {x : E} (hx : ‖x‖ ≤ 1) :
+    ‖iteratedFDeriv ℝ n (penalized (TaylorModel.ofJet A p) p σ) x‖ ≤ 3 * D + σ := by
+  have hpoly := TaylorModel.norm_iteratedFDeriv_ofJet_le_three_mul A hn hD hA hx
+  have hpen := norm_iteratedFDeriv_penalty_le hn hσ x
+  have hfac : (1 : ℝ) ≤ (p + 1 - n).factorial := by exact_mod_cast Nat.factorial_pos _
+  have hpow : ‖x‖ ^ (p + 1 - n) ≤ 1 := pow_le_one₀ (norm_nonneg _) hx
+  have hpen' := (hpen.trans (div_le_self (by positivity) hfac)).trans
+    (mul_le_of_le_one_right hσ hpow)
+  rw [iteratedFDeriv_penalized_ofJet_eq A p n hn σ x]
+  exact (norm_add_le _ _).trans (add_le_add hpoly hpen')
+
 end ModelDecrease

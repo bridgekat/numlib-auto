@@ -42,80 +42,15 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_12_2_7"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 12.2.7: Properties of the regularized model
-
-Suppose that f.D1pL holds, that \( {m}_k\left( s\right) \) is the model (12.2.23), and that \( {L}_f \) is given by (12.2.25). Then \( {m}_k \) is \( p \) -times continuously differentiable and has a Lipschitz-continuous pth derivative (with Lipschitz constant \( {\sigma }_k \) ). Moreover, if \( \parallel s\parallel  \leq  1 \) , then
-
-\[
-\begin{Vmatrix}{{\nabla }_{s}^{\ell }{m}_{k}\left( s\right) }\end{Vmatrix} \leq  3{L}_{f} + {\sigma }_{k}\;\text{ for }\;\ell  \in  \left\lbrack  {2 : p}\right\rbrack  .\tag{12.2.38}
-\]
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.7 (OCR Markdown line 12632)"
-deps = ["arqpRun"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma12.2.7."
 
 [[node]]
 id = "lemma_12_2_8"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 12.2.8: Relationship between model and Taylor decrements
-
-Suppose that f.D1pL holds, that \( {m}_k\left( s\right) \) is the model (12.2.23), that \( s \in  {\mathcal{B}}_1 \) , and that \( {L}_f \) is given by (12.2.25). Given \( \alpha  > 0 \) and
-
-\[
-\delta  \in  \left( {0,\min \left\lbrack  {1,\frac{\alpha }{4\left( {3{L}_f + {\sigma }_k}\right) }}\right\rbrack  }\right\rbrack  ,\tag{12.2.41}
-\]
-
-suppose that there is a displacement \( d \in  {\mathcal{B}}_{\delta } \) for which
-
-\[
-\Delta {T}_{{m}_k, j}\left( {s, d}\right)  \geq  \alpha \frac{{\delta }^j}{j!}\tag{12.2.42}
-\]
-
-for some \( j \in  \left\lbrack  {1 : q}\right\rbrack \) . Then
-
-\[
-{m}_k\left( s\right)  - {m}_k\left( {s + d}\right)  \geq  \frac{1}{2}\alpha \frac{{\delta }^j}{j!}.\tag{12.2.43}
-\]
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.8 (OCR Markdown line 12674)"
-deps = ["lemma_12_2_7"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma12.2.8."
 
 [[node]]
 id = "lemma_12_2_9"
-kind = "theorem"
-desc = '''
-The exact printed coefficient remains open pending the sharp integer norm-power bounds. The proved lemma_12_2_9_uniform supplies a genuine finite global-minimum solver and all criticality conclusions with a common positive coefficient chosen before model data and accuracies. Algorithm12.2.3 must retain the criticality tests at norm exactly one, using the strict large-step exit consistent with this lemma.
-
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 12.2.9: Existence of a step
-
-Suppose that f.D1pL holds and that \( {L}_f \) is given by (12.2.25). Then a pair \( \left( {{s}_k,{\delta }_{{s}_k}}\right) \) always exists such that (12.2.27) and either \( \begin{Vmatrix}{s}_k\end{Vmatrix} > 1 \) or (12.2.29) hold. Moreover, it is always possible to ensure that
-
-\[
-{\delta }_{{s}_{k}, j} = 1\text{ for }j \in  \left\lbrack  {1 : \min \left( {q,2}\right) }\right\rbrack\tag{12.2.44}
-\]
-
-and, if \( q \geq  3 \) and \( \begin{Vmatrix}{s}_k\end{Vmatrix} \leq  1 \) ,
-
-\[
-{\delta }_{{s}_{k}, j} \geq  {\kappa }_{\delta }\left( {\sigma }_{k}\right) {\epsilon }_{j}\text{ for }j \in  \left\lbrack  {3 : q}\right\rbrack  ,\tag{12.2.45}
-\]
-
-where
-
-\[
-{\kappa }_{\delta }\left( \sigma \right) \overset{\text{ def }}{ = }\frac{\varsigma \theta }{8\left( {3{L}_{f} + \sigma }\right) }.
-\]
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.9 (OCR Markdown line 12720)"
-deps = ["lemma_12_2_8"]
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma12.2.9. Exact printed radius coefficient; at norm exactly one retain criticality checks, consistent with the strict large-step alternative. Actual global minimization and finite first-passing halving provide the existence witness."
 
 [[node]]
 id = "lemma_12_2_10"
