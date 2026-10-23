@@ -1,0 +1,52 @@
+namespace = "CubicRegularization.PhaseCountCounterexample"
+
+[[node]]
+id = "u"
+
+[[node]]
+id = "zeta"
+
+[[node]]
+id = "epsilon"
+
+[[node]]
+id = "kappa"
+
+[[node]]
+id = "zeta_bounds"
+
+[[node]]
+id = "sqrt_two_bounds"
+
+[[node]]
+id = "epsilon_bounds"
+
+[[node]]
+id = "kappa_bounds"
+
+[[node]]
+id = "printed_double_log"
+
+[[node]]
+id = "printed_bound_lt_one"
+
+[[node]]
+id = "actual_run"
+
+[[node]]
+id = "stricter_test"
+
+[[node]]
+id = "initial_region"
+
+[[node]]
+id = "never_excluded"
+
+[[node]]
+id = "initial_fails"
+
+[[node]]
+id = "terminal_passes"
+
+[[node]]
+id = "count_fails"

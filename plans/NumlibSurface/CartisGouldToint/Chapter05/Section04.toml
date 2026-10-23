@@ -101,6 +101,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_5_4_4"
+wrong = "The literal total iteration count fails at a permitted epsilon below zeta but above zeta/2. theorem_5_4_4_counterexample realizes f(x)=x^2/2 with a genuine one-trial AR2 execution, tightened model derivative zero, ratio one, all five finite local threshold terms, and every produced point inside Qstar. With step scale2^(-40), zeta equal to the initial gradient and epsilon=zeta/sqrt(2), the printed double logarithm equals -1. It cancels the final +1, leaving the exact global term below one, although the initial point fails and one accepted trial is necessary. This refutes the displayed total count; the separate global count of large-gradient successful iterations is not refuted."
 kind = "theorem"
 desc = '''
 Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
@@ -150,3 +151,7 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 [[node]]
 id = "lemma_5_4_3_counterexample"
 source = "Cartis, Gould and Toint, Lemma 5.4.3, exact printed local count at epsilon=zeta/2"
+
+[[node]]
+id = "theorem_5_4_4_counterexample"
+source = "Cartis, Gould and Toint, Theorem5.4.4, literal total count at epsilon=zeta/sqrt(2)"

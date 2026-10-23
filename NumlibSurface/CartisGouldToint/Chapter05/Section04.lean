@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Cubic.PhaseCountCounterexample
 import Numlib.Optimization.Regularization.Cubic.LocalCountCounterexample
 import Numlib.Optimization.SecondOrder.HessianRegion
 
@@ -75,3 +76,45 @@ theorem lemma_5_4_3_counterexample :
       run, stricter_test, terminal_certificate, count_fails.1, count_fails.2⟩
 
 end CartisGouldToint
+
+
+open CubicRegularization.PhaseCountCounterexample in
+/-- **Counterexample to Theorem 5.4.4's literal total count.** The actual
+quadratic has a genuine accepted model-stationary AR2 trial, and all produced
+points lie in the positive-curvature neighborhood. At epsilon=zeta/sqrt(2),
+the printed double logarithm is minus one. It cancels the additive one, leaving
+a total bound below one although one successful trial is necessary. All five
+local-threshold terms are finite, and the global coefficient is exactly the
+source coefficient from Lemma 3.3.4. -/
+theorem CartisGouldToint.theorem_5_4_4_counterexample :
+    let f := HighOrderRegularization.ObstructionCounterexample.objective
+    let x := CubicRegularization.QuadraticTrial.point u
+    let ζstar := CubicRegularization.LocalCountCounterexample.printedZeta
+      1 1 (1 / 2) (1 / 4) 12 (3 / 4)
+    ContDiff ℝ 2 f ∧ IsLocalMin f 0 ∧ (∀ z, 0 ≤ f z) ∧
+      (∀ a b, ‖iteratedFDeriv ℝ 2 f a - iteratedFDeriv ℝ 2 f b‖ ≤ ‖a - b‖) ∧
+      SecondOrderTrustRegion.IsLeastEigenpair f 0 1 1 ∧
+      max (1 / 4 : ℝ) (3 * 1 / (1 - 3 / 4)) = 12 ∧ ζstar = 1 / 16 ∧
+      0 < zeta ∧ 0 < epsilon ∧ epsilon ≤ 1 ∧
+      (‖x 0‖ ≤ (1 : ℝ) / 4 ∧ ‖fderiv ℝ f (x 0)‖ = zeta ∧ zeta ≤ ζstar / 2) ∧
+      CubicRegularization.FirstOrderRun f x (fun _ => -u)
+        (fun _ => 1/4) (fun _ => 1) (1/4) (3/4) (1/2) 2 3 (1/4) (1/2) epsilon ⊤ 1 ∧
+      ‖fderiv ℝ (CubicRegularization.model f (x 0) (1/4)) (-u)‖ ≤
+        (1/2 : ℝ) * min ‖fderiv ℝ f (x 0)‖ ((1/2 : ℝ) * ‖-u‖ ^ 2) ∧
+      (∀ k, ¬((1 : ℝ)/4 < ‖x k‖ ∧ epsilon < ‖fderiv ℝ f (x k)‖ ∧
+        ‖fderiv ℝ f (x k)‖ ≤ zeta)) ∧
+      epsilon < ‖fderiv ℝ f (x 0)‖ ∧ ‖fderiv ℝ f (x 1)‖ < epsilon ∧
+      kappa = 6 * ((1 : ℝ) + 1/2 + 12) ^ (3/2 : ℝ) /
+        ((2 : ℝ) ^ (3/2 : ℝ) * (1/4) * (1/4)) ∧
+      Real.logb 2 (Real.logb 2 (zeta / epsilon)) = -1 ∧
+      ¬∃ k : ℕ, (k : ℝ) ≤ kappa * (f zeta - 0) / zeta ^ (3/2 : ℝ) +
+        Real.logb 2 (Real.logb 2 (zeta / epsilon)) + 1 ∧
+        ‖fderiv ℝ f (x k)‖ < epsilon := by
+  dsimp only
+  have hr := CubicRegularization.LocalCountCounterexample.regularity
+  have hp := CubicRegularization.LocalCountCounterexample.printed_constants
+  exact ⟨hr.1, hr.2.1, hr.2.2.1, by simpa only [one_mul] using hr.2.2.2,
+    CubicRegularization.LocalCountCounterexample.least_eigenpair 0, hp.1, hp.2,
+    zeta_bounds.1, epsilon_bounds.1, epsilon_bounds.2.2, initial_region, actual_run,
+    stricter_test, never_excluded, initial_fails, terminal_passes, rfl,
+    printed_double_log, count_fails⟩

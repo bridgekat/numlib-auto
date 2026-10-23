@@ -1,0 +1,13 @@
+namespace = "CubicRegularization.QuadraticTrial"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "model_derivative_zero"
+
+[[node]]
+id = "modelTrace"
+
+[[node]]
+id = "run"
