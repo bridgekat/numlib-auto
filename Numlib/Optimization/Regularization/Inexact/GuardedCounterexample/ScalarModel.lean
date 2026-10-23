@@ -77,7 +77,7 @@ theorem global_min {σ : ℝ} (hσ : 0 < σ) (c g t : ℝ) :
 The scalar inequalities imply both failed exit tests and the final reference decrease. -/
 theorem stepOne (c g σ v a : ℝ) (n : ℕ) (hv : |v| = 1)
     (hgv : g * v = -a) (ha : (1 : ℝ) / 4 < a)
-    (hchosen : σ * BacktrackingGradient.step 1 n ≤ a)
+    (hchosen : σ * BacktrackingGradient.step 1 n ≤ 2 * a - 1 / 8)
     (hprev : ∀ t < n, 2 * a ≤ σ * BacktrackingGradient.step 1 t) :
     StepOneComputation (jet c g) 1 σ (1 / 2) (fun _ : Fin 1 => 1 / 2)
       (fun _ => 1) (fun _ => BacktrackingGradient.step 1 n)

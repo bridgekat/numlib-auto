@@ -1,0 +1,116 @@
+namespace = "InexactRegularization.GuardedCounterexample"
+desc = "A genuine finite sine execution of both IDA and EDA with large initial derivative error, guarded parameter growth, exact final short trial and failed true criticality at every produced point."
+
+[[node]]
+id = "settings"
+
+[[node]]
+id = "parameter"
+
+[[node]]
+id = "point"
+
+[[node]]
+id = "slope"
+
+[[node]]
+id = "accuracy"
+
+[[node]]
+id = "trialStep"
+
+[[node]]
+id = "checkCount"
+
+[[node]]
+id = "orientation"
+
+[[node]]
+id = "checkedRadius"
+
+[[node]]
+id = "direction"
+
+[[node]]
+id = "data"
+
+[[node]]
+id = "endpoint_cos"
+
+[[node]]
+id = "cos_mem"
+
+[[node]]
+id = "slope_abs_lower"
+
+[[node]]
+id = "computation_one"
+
+[[node]]
+id = "parameter_pos"
+
+[[node]]
+id = "trialStep_large"
+
+[[node]]
+id = "trialStep_small"
+
+[[node]]
+id = "computation_two"
+
+[[node]]
+id = "oracle"
+
+[[node]]
+id = "exact_value"
+
+[[node]]
+id = "never_stops"
+
+[[node]]
+id = "trialStep_pos"
+
+[[node]]
+id = "computed_decrement"
+
+[[node]]
+id = "computed_decrement_pos"
+
+[[node]]
+id = "ratio_rejected"
+
+[[node]]
+id = "ratio_success"
+
+[[node]]
+id = "trial_rule"
+
+[[node]]
+id = "parameter_succ_early"
+
+[[node]]
+id = "updates"
+
+[[node]]
+id = "accuracy_trial"
+
+[[node]]
+id = "accuracy_improvement"
+
+[[node]]
+id = "point_trial"
+
+[[node]]
+id = "point_inactive"
+
+[[node]]
+id = "derivative_reuse"
+
+[[node]]
+id = "run"
+
+[[node]]
+id = "not_critical"
+
+[[node]]
+id = "ida_run"
