@@ -1,0 +1,4 @@
+namespace = "GeometricDecay"
+
+[[node]]
+id = "exists_negative_integer_budget"

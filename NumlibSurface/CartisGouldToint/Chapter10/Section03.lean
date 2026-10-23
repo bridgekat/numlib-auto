@@ -8,8 +8,9 @@ import Numlib.Optimization.Quadratic.Krylov.TrustRegionConvergence
 The constrained subproblem is the genuine projected quadratic on a Euclidean
 ball. Its actual multiplier and actual projected eigenvalues give the source
 residual bound in the dual metric norm. The corrected iteration bound uses a
-natural ceiling and a separately proved condition-one branch; the literal
-unrestricted integer-ceiling claim remains distinct.
+natural ceiling and a separately proved condition-one branch. The literal
+integer count holds on the explicit small-tolerance domain corresponding to
+the source qualification immediately before Theorem 10.3.2 (OCR line 10959).
 -/
 
 open Krylov QuadraticOptimality.Metric QuadraticRegularization.Metric
@@ -119,7 +120,7 @@ theorem lemma_10_3_1 (hH : H.toLinearMap.IsSymmetric)
 minimizers reach a residual tolerance within the minimum of the exact grade and the source
 logarithmic count with a natural ceiling. The actual maximum condition number one gives
 one-step termination. A natural ceiling clamps the logarithmic part at zero; the literal
-unrestricted integer ceiling printed in the source remains a distinct item. -/
+integer ceiling is stated below on the explicit source small-tolerance domain. -/
 theorem corollary_10_3_3_corrected (hH : H.toLinearMap.IsSymmetric)
     {g : EuclideanSpace ℝ (Fin n)} (hg : g ≠ 0) {G : ℕ}
     (hG : G + 1 = grade (hessian M hM H).toLinearMap (gradient M hM g))
@@ -158,5 +159,83 @@ theorem corollary_10_3_3_corrected (hH : H.toLinearMap.IsSymmetric)
     change ‖A (Lanczos.basisEmbedding A.toLinearMap b higrade (ys i)) + shifts i •
       Lanczos.basisEmbedding A.toLinearMap b higrade (ys i) + b‖ = _ at he
     exact he.symm.trans_le hr
+
+/-- **Corollary 10.3.3.** The literal integer-ceiling count holds on the explicit sufficient
+small-tolerance domain `epsilon ≤ 2*norm(M⁻¹H)*kappaMax*Delta`. This makes precise the source's
+“suitably small epsilon” qualification immediately before Theorem 10.3.2. A genuine maximum
+condition number of one gives one-step termination. The natural-ceiling companion above
+covers all positive tolerances. -/
+theorem corollary_10_3_3 (hH : H.toLinearMap.IsSymmetric)
+    {g : EuclideanSpace ℝ (Fin n)} (hg : g ≠ 0) {G : ℕ}
+    (hG : G + 1 = grade (hessian M hM H).toLinearMap (gradient M hM g))
+    (ys : (i : Fin (G + 1)) → EuclideanSpace ℝ (Fin (i.val + 1)))
+    (shifts : Fin (G + 1) → ℝ) {Δ : ℝ} (hΔ : 0 < Δ)
+    (hfeas : ∀ i, ‖ys i‖ ≤ Δ)
+    (hmin : ∀ i z, ‖z‖ ≤ Δ → lanczosTrustRegionModel H M hM g i.val (ys i) ≤
+      lanczosTrustRegionModel H M hM g i.val z)
+    (hsolve : ∀ i, Matrix.toEuclideanLin
+      (Lanczos.tridiag (hessian M hM H).toLinearMap (gradient M hM g) (i.val + 1) +
+        shifts i • 1) (ys i) =
+        -(‖gradient M hM g‖ • PiLp.single 2 (0 : Fin (i.val + 1)) (1 : ℝ)))
+    {ε : ℝ} (hε : 0 < ε)
+    (hsmall : Lanczos.maxCondition (hessian M hM H).toLinearMap (gradient M hM g)
+        G shifts = 1 ∨ ε ≤ 2 * ‖M.inverse.comp H‖ *
+          Lanczos.maxCondition (hessian M hM H).toLinearMap (gradient M hM g) G shifts * Δ) :
+    let K := Lanczos.maxCondition (hessian M hM H).toLinearMap (gradient M hM g) G shifts
+    ∃ i : Fin (G + 1),
+      (i.val : ℤ) + 1 ≤ min
+        (if K = 1 then 1 else
+          (⌈Real.log (2 * ‖M.inverse.comp H‖ * K * Δ / ε) /
+            Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉ : ℤ) + 1) (G + 1) ∧
+      let s := toOriginal M hM (lanczosSubspaceData H M hM g
+        (by omega : i.val + 1 ≤ grade (hessian M hM H).toLinearMap (gradient M hM g))
+        (ys i))
+      energyNorm M.inverse.toLinearMap (H s + shifts i • M s + g) ≤ ε := by
+  let A := hessian M hM H
+  let b := gradient M hM g
+  let K := Lanczos.maxCondition A.toLinearMap b G shifts
+  obtain ⟨i, hi, hr⟩ := corollary_10_3_3_corrected H M hM hH hg hG ys shifts hΔ hfeas
+    hmin hsolve hε
+  change i.val + 1 ≤ min
+    (if K = 1 then 1 else
+      ⌈Real.log (2 * ‖M.inverse.comp H‖ * K * Δ / ε) /
+        Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉₊ + 1) (G + 1) at hi
+  refine ⟨i, ?_, hr⟩
+  change (i.val : ℤ) + 1 ≤ min
+    (if K = 1 then 1 else
+      (⌈Real.log (2 * ‖M.inverse.comp H‖ * K * Δ / ε) /
+        Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉ : ℤ) + 1) (G + 1)
+  by_cases hone : K = 1
+  · have hn : i.val + 1 ≤ min 1 (G + 1) := by
+      simpa only [ite_eq_left hone] using hi
+    rw [ite_eq_left hone]
+    exact_mod_cast hn
+  · have hPD := (QuadraticKrylov.projected_trust_region_optimality A.toLinearMap
+      (gradient_ne_zero M hM hg) (by dsimp only [A, b]; omega) (ys 0)
+      hΔ (hfeas 0) (hmin 0) (hsolve 0)).2.1
+    have hK : 1 ≤ K := (Lanczos.one_le_conditionNumber A.toLinearMap b 0
+      (shifts 0) hPD).trans (Lanczos.conditionNumber_le_maxCondition A.toLinearMap b G shifts 0)
+    have hKpos : 1 < K := lt_of_le_of_ne hK (Ne.symm hone)
+    have hsqrt : 1 < Real.sqrt K := by
+      rw [Real.lt_sqrt (by norm_num)]
+      simpa using hKpos
+    have hden : 0 < Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1)) := by
+      apply Real.log_pos
+      apply (one_lt_div (by linarith : 0 < Real.sqrt K - 1)).mpr
+      linarith
+    have hsm : ε ≤ 2 * ‖M.inverse.comp H‖ * K * Δ := hsmall.resolve_left hone
+    have hnum : 0 ≤ Real.log (2 * ‖M.inverse.comp H‖ * K * Δ / ε) :=
+      Real.log_nonneg ((one_le_div hε).mpr hsm)
+    have hc := Int.natCast_ceil_eq_ceil (div_nonneg hnum hden.le)
+    have hn : i.val + 1 ≤ min
+        (⌈Real.log (2 * ‖M.inverse.comp H‖ * K * Δ / ε) /
+          Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉₊ + 1) (G + 1) := by
+      simpa only [ite_eq_right hone] using hi
+    have hz : (i.val : ℤ) + 1 ≤ min
+        ((⌈Real.log (2 * ‖M.inverse.comp H‖ * K * Δ / ε) /
+          Real.log ((Real.sqrt K + 1) / (Real.sqrt K - 1))⌉₊ : ℤ) + 1) (G + 1) := by
+      exact_mod_cast hn
+    rw [ite_eq_right hone]
+    simpa only [hc] using hz
 
 end CartisGouldToint

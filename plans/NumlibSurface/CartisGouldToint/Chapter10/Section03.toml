@@ -6,6 +6,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "lemma_10_3_1"
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 10.3.1"
 
 [[node]]
 id = "theorem_10_3_2"
@@ -13,24 +14,8 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 
 [[node]]
 id = "corollary_10_3_3"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Corollary 10.3.3: Iteration bound for the trust-region subspace approximation
-
-[Appendix to Chapter 10, p. 481]: The iteration defined by \( {s}_{k} = {Q}_{k}{\bar{s}}_{k} \) and the subspace trust-region minimization (10.1.5) satisfies (10.3.2) for some
-
-\[
-k \leq  \min \left\lbrack  {\left\lceil  \frac{\log \left( \frac{2\begin{Vmatrix}{{M}^{-1}H}\end{Vmatrix}{\kappa }_{ * }\Delta }{\epsilon }\right) }{\log \left( \frac{\sqrt{{\kappa }_{ * }} + 1}{\sqrt{{\kappa }_{ * }} - 1}\right) }\right\rceil   + 1,\;\operatorname{grade}\left( {{M}^{-1}H,{M}^{-1}g}\right) }\right\rbrack  ,
-\]
-
-where \( {\kappa }_{ * } \) is given by (10.2.10).
-
-Documented source/OCR correction and formalization requirements: Keep the literal integer-ceiling result open unless its small-accuracy domain is proved or a counterexample is formalized. A natural-ceiling, equivalently max(1, integer-ceiling+1), formulation for large tolerances is a distinct corrected companion. Make κ*>1 explicit for the displayed logarithmic bound, and separately handle κ*=1 by exact termination in one Lanczos step. The grade bound covers finite-dimensional termination and should not depend on division by zero.
-'''
-source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 10.3.3 (OCR Markdown line 10975)"
-deps = ["theorem_10_3_2"]
+source = "Cartis, Gould and Toint, Corollary 10.3.3 (OCR line 10975), with explicit sufficient small-tolerance domain from preceding setup at OCR line 10959"
 
 [[node]]
 id = "corollary_10_3_3_corrected"
+source = "Cartis, Gould and Toint, Corollary 10.3.3, all-positive-tolerance natural-ceiling extension"
