@@ -1,0 +1,35 @@
+namespace = "CartisGouldToint"
+desc = '''
+Simulating higher-order derivative oracles by finite approximation schemes. Separate each requested derivative approximation from the underlying lower-degree oracle calls and require uniform fixed-dimensional stencil cost. Preserve worst-component rather than best-component tolerance dependence.
+'''
+
+[[node]]
+id = "theorem_13_2_1"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 13.2.1: Complexity using low-order derivatives
+
+Suppose that f.D0pL and f.Bb hold, and that derivative-evaluation oracles are available for all degrees up to \( o \) for a given \( o \in  \left\lbrack  {0 : q}\right\rbrack \) . Then the TRqIDA algorithm, using inexact derivatives \( {\left\{  \overline{{\nabla }_{x}^{i}f}\left( x\right) \right\}  }_{i = o + 1}^{q} \) in Step 1 obtained by some finite derivative-approximation scheme, will compute an unconstrained \( q \) th-order \( \left( {\epsilon ,\delta }\right) \) -approximate minimizer of \( f\left( x\right) \) in at most
+
+\[
+\mathcal{O}\left( {\mathop{\min }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right)\tag{13.2.5}
+\]
+
+calls to oracles of degree up to o. If the ARqpIDA algorithm with inexact derivatives \( {\left\{  \overline{{\nabla }_{x}^{i}f}\left( x\right) \right\}  }_{i = o + 1}^{p} \) obtained as above is used instead, the bound becomes
+
+\[
+\mathcal{O}\left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{p + 1}{p - q + 1}}}\right) \text{ for }q \leq  2\tag{13.2.6}
+\]
+
+or
+
+\[
+\mathcal{O}\left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{q\left( {p + 1}\right) }{p}}}\right) \text{ for }q > 2.\tag{13.2.7}
+\]
+
+Documented source/OCR correction and formalization requirements: Extremum correction: the displayed min_j of inverse tolerance powers in (13.2.5)–(13.2.7) must be max_j (equivalently use ε_min raised to the negative common exponent), as inherited from Theorems 13.1.8 and 13.1.19. State a uniform finite evaluation-cost guarantee for the derivative-approximation scheme at fixed dimension and orders; merely finite but unbounded cost does not preserve a Big-O oracle bound. Constants may depend on dimension, p,q and the chosen finite-difference stencil, but not tolerances.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.2.1 (OCR Markdown line 14899)"
+deps = ["theorem_13_1_8", "theorem_13_1_19"]

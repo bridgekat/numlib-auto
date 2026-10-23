@@ -1,0 +1,230 @@
+namespace = "CartisGouldToint"
+desc = '''
+High-order necessary, sufficient, approximate, and stable optimality conditions. Define actual Taylor models from iterated Frechet derivatives and criticality by optimization over a compact ball. The Euclidean Hessian uses the self-adjoint operator associated with the second derivative; cubic norms are multilinear operator norms restricted to the stated subspaces. Theorem 12.1.5 is false as transcribed and is recorded with a counterexample, pending a corrected source statement.
+'''
+
+[[node]]
+id = "highOrderCriticality"
+kind = "definition"
+desc = '''
+For integer j≥1 and C^j f:R^n→R define T_(f,j)(x,d)=f(x)+Σ_(i=1)^j D^i f(x)[d,…,d]/i! and ΔT_(f,j)(x,d)=T(x,0)−T(x,d). For δ>0 define φ_(f,j)^δ(x)=f(x)−min_(||d||≤δ) T_(f,j)(x,d), equivalently max of ΔT on that compact ball. Existence/attainment and continuity follow from finite dimensionality and continuous tensor data; do not assume them as arbitrary properties of an uninterpreted φ.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.1"
+deps = []
+
+[[node]]
+id = "isApproximateHighOrderMinimizer"
+kind = "definition"
+desc = '''
+For q≥1, ε,δ indexed by j=1,…,q with 0<εj≤1 and 0<δj≤1, define the strong (ε,δ)-approximate qth-order minimizer predicate by ∀j, φ_(f,j)^(δj)(x)≤εj δj^j/j!, exactly (12.1.25). Retain all lower-order inequalities and each individual radius.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.1"
+deps = ["highOrderCriticality"]
+
+[[node]]
+id = "orderedCompositions"
+kind = "definition"
+desc = '''
+P(j,k) is the finite set of ordered tuples (ℓ1,…,ℓk) of positive integers with sum j. The curve coefficient of order j in f(x+Σ_i α^i si) is Σ_(k=1)^j (1/k!) Σ_(ℓ∈P(j,k)) D^k f(x)[s_(ℓ1),…,s_(ℓk)].
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.1"
+deps = []
+
+[[node]]
+id = "theorem_12_1_1"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.1.1: Curve-based necessary conditions for an unconstrained local minimum
+
+[102, Thm. 3.1]: Suppose that \( f \) is \( q \) -times continuously differentiable in an open neighbourhood of \( {x}_{ * } \) and that \( {x}_{ * } \) is a local unconstrained minimizer of \( f \) . Let
+
+\[
+\mathcal{P}\left( {j, k}\right) \overset{\text{ def }}{ = }\left\{  {\left( {{\ell }_{1},\ldots ,{\ell }_{k}}\right)  \in  {\left\lbrack  1 : j\right\rbrack  }^{k} \mid  \mathop{\sum }\limits_{{i = 1}}^{k}{\ell }_{i} = j}\right\}  .\tag{12.1.5}
+\]
+
+Then, for \( j \in  \left\lbrack  {1 : q}\right\rbrack \) , the inequality
+
+\[
+\mathop{\sum }\limits_{k = 1}^j\frac{1}{k!}\left( {\mathop{\sum }\limits_{\left( {{\ell }_1,\ldots ,{\ell }_k}\right)  \in  \mathcal{P}\left( {j, k}\right) }{\nabla }_x^{k}f\left( {x}_{ * }\right) \left\lbrack  {{s}_{{\ell }_1},\ldots ,{s}_{{\ell }_k}}\right\rbrack  }\right)  \geq  0\tag{12.1.6}
+\]
+
+holds for all \( \left( {{s}_1,\ldots ,{s}_j}\right)  \in  {\left( \mathbb{R}\smallsetminus \{ 0\} \right) }^j \) such that, for \( i \in  \left\lbrack  {1 : j - 1}\right\rbrack \) ,
+
+\[
+\mathop{\sum }\limits_{k = 1}^i\frac{1}{k!}\left( {\mathop{\sum }\limits_{\left( {{\ell }_1,\ldots ,{\ell }_k}\right)  \in  \mathcal{P}\left( {i, k}\right) }{\nabla }_x^{k}f\left( {x}_{ * }\right) \left\lbrack  {{s}_{{\ell }_1},\ldots ,{s}_{{\ell }_k}}\right\rbrack  }\right)  = 0.\tag{12.1.7}
+\]
+
+Documented source/OCR correction and formalization requirements: OCR correction: the curve coefficients s_i lie in R^n, not R. Use vectors with the required nonzero curve jet; permit zero later coefficients, which occur in valid polynomial curves. The index sets P(j,k) comprise ordered positive integer k-tuples summing to j.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.1 (OCR Markdown line 11401)"
+deps = ["orderedCompositions"]
+
+[[node]]
+id = "theorem_12_1_2"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.1.2: Linesearch algorithms are unsuitable for finding high-order approximate local minimizers
+
+Linesearch methods (i.e., methods in which the next iterate is found by approximately minimizing the objective function \( f \) along a descent direction) cannot be proved to be locally convergent to approximate local minimizers of orders larger than three.
+
+Documented source/OCR correction and formalization requirements: Precise mathematical interpretation: formalize the Peano counterexample from Example 12.1.2 (a non-minimizer that is a strict minimizer along every straight line), and deduce failure of a universal local convergence guarantee for a precisely defined class of linesearch algorithms whose local certificate only excludes descending straight lines. The printed blanket assertion does not define an algorithm class; do not assume its conclusion as an algorithm property.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.2 (OCR Markdown line 11511)"
+deps = ["orderedCompositions"]
+
+[[node]]
+id = "theorem_12_1_3"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.1.3: Relating the old and new criticality measures
+
+Suppose that \( f \) is continuously differentiable. Then
+
+(i) for any \( \delta  > 0 \) and any \( x \in  {\mathbb{R}}^n \) , we have
+
+\[
+\begin{Vmatrix}{{\nabla }_x^{1}f\left( x\right) }\end{Vmatrix} = \frac{{\phi }_{f,1}^{\delta }\left( x\right) }{\delta },\tag{12.1.12}
+\]
+
+and so \( {\phi }_{f,1}^{\delta }\left( x\right)  = 0 \) if and only if \( {\nabla }_x^{1}f\left( x\right)  = 0 \) ;
+
+(ii) if \( f \in  {C}^2 \) , then if
+
+\[
+{\phi }_{f,2}^{\delta }\left( x\right)  = 0\text{ for some }\delta  > 0 \Rightarrow  {\nabla }_{x}^{1}f\left( x\right)  = 0\text{ and }{\lambda }_{\min }\left\lbrack  {{\nabla }_{x}^{2}f\left( x\right) }\right\rbrack   \geq  0,
+\]
+
+and so any such \( x \) is a first- and second-order minimizer; and
+
+(iii) if \( f \in  {C}^{3},\mathcal{M}\left( x\right) \overset{\text{ def }}{ = }{\ker }^{1}\left\lbrack  {{\nabla }_{x}^{1}f\left( x\right) }\right\rbrack   \cap  {\ker }^{2}\left\lbrack  {{\nabla }_{x}^{2}f\left( x\right) }\right\rbrack  ,{P}_{\mathcal{M}\left( x\right) } \) is the exact orthogonal projection onto that subspace, and \( x \) satisfies the first- and second-order conditions exactly (i.e., \( {\nabla }_x^{1}f\left( x\right)  = 0 \) and \( {\nabla }_x^{2}f\left( x\right) \) is positive semidefinite), then
+
+\[
+\begin{Vmatrix}{{P}_{\mathcal{M}\left( x\right) }\left\lbrack  {{\nabla }_x^{3}f\left( x\right) }\right\rbrack  }\end{Vmatrix} \leq  \frac{{\phi }_{f,3}^{\delta }\left( x\right) }{\left( {\delta }^3/3!\right) },\tag{12.1.13}
+\]
+
+and so \( x \) is also a third-order minimizer provided that \( {\phi }_{f,3}^{\delta }\left( x\right) /{\delta }^3 \rightarrow  0 \) as \( \delta  \rightarrow  0 \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.3 (OCR Markdown line 11547)"
+deps = ["highOrderCriticality"]
+
+[[node]]
+id = "theorem_12_1_4"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.1.4: The \( \phi \) measure and local minimizers
+
+Suppose that \( f \) is \( j \) -times continuously differentiable and that \( x \) is a local minimizer of \( f \) . Then
+
+\[
+{\phi }_{f, j}^{\delta }\left( x\right)  = 0\text{ for }j \in  \{ 1,2\}\tag{12.1.16}
+\]
+
+for all \( \delta  > 0 \) . Moreover, for all \( j \geq  1 \) ,
+
+\[
+\mathop{\lim }\limits_{\delta  \rightarrow  0}\frac{{\phi }_{f, j}^{\delta }\left( x\right) }{{\delta }^j} = 0.\tag{12.1.17}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.4 (OCR Markdown line 11631)"
+deps = ["highOrderCriticality"]
+
+[[node]]
+id = "theorem_12_1_5"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.1.5: A sufficient optimality condition
+
+Let \( f \) be \( \left( {j + 1}\right) \) -times continuously differentiable. Suppose that \( s = 0 \) is an isolated minimizer of \( {T}_{f, j}\left( {x, s}\right) \) and that \( \begin{Vmatrix}{{\nabla }_x^{j + 1}f\left( x\right) }\end{Vmatrix} \leq  L \) for some \( L \geq  0 \) . Then \( s = 0 \) is also an isolated minimizer of \( {T}_{f, j + 1}\left( {x, s}\right) \) , and \( x \) is an isolated local minimizer of \( f \) .
+
+Documented source/OCR correction and formalization requirements: The source is false without a uniform growth hypothesis. Counterexample: j=4, x=(0,0), f(u,v)=(v−u²)²+v⁴−u⁵. Its fourth Taylor polynomial has an isolated strict minimum at zero, its fifth derivative is bounded locally (in fact constant), but f(t,t²)=t⁸−t⁵<0 for 0<t<1. A corrected sufficient theorem can require T_(f,j)(x,s)−f(x)≥c||s||^j for 0<||s||≤r and c>0, then dominate the order j+1 Taylor remainder on a sufficiently small ball. Preserve this counterexample in documentation rather than asserting the false source.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.5 (OCR Markdown line 11779)"
+deps = ["highOrderCriticality"]
+wrong = '''
+False as stated: (v−u²)²+v⁴−u⁵ has an isolated strictly minimal fourth-order Taylor polynomial at zero but decreases along (t,t²); uniform Taylor growth is missing.
+'''
+
+[[node]]
+id = "theorem_12_1_6"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.1.6: Comparing the old and new approximate measures
+
+Suppose that \( f \) is continuously differentiable, \( \delta  > 0 \) , and \( {x}_{\epsilon } \in  {\mathbb{R}}^n \) . Then
+
+(i) if \( {\phi }_{f,1}^{{\delta }_1}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_1{\delta }_1 \) (and so (12.1.25) holds with \( q = j = 1 \) ), then \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq \; {\epsilon }_1 \) (and so (12.1.22) is satisfied); and
+
+(ii) if \( {\phi }_{f,2}^{\delta }\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_2\frac{{\delta }^2}{2} \) , then \( {\lambda }_{\min }\left\lbrack  {{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\right\rbrack   \geq   - {\epsilon }_2 \) (and so (12.1.23) holds) and \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\delta \kappa }\left( {x}_{\epsilon }\right) \sqrt{{\epsilon }_2} \) , where \( \kappa \left( {x}_{\epsilon }\right) \) depends on (the eigenvalues of) \( {\nabla }_x^{2}f\left( {x}_{\epsilon }\right) \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.6 (OCR Markdown line 11855)"
+deps = ["isApproximateHighOrderMinimizer", "theorem_12_1_3"]
+
+[[node]]
+id = "theorem_12_1_7"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.1.7: Cascading approximate optimality
+
+[Appendix to Chapter 12, p. 482]: Suppose that, for some \( j \in  \left\lbrack  {2 : q}\right\rbrack \) ,
+
+\[
+{\phi }_{f, j}^{{\delta }_j}\left( x\right)  \leq  {\epsilon }_j\frac{{\delta }_j^j}{j!}\tag{12.1.30}
+\]
+
+for some \( {\epsilon }_j \in  (0,1\rbrack \) , some \( {\delta }_j \in  (0,1\rbrack \) , and some \( x \in  {\mathbb{R}}^n \) . Suppose also that \( {\epsilon }_j \leq  {\epsilon }_{j - 1} \) . Then
+
+\[
+{\phi }_{f, j - 1}^{{\delta }_j}\left( x\right)  \leq  {\epsilon }_{j - 1}\frac{{\delta }_j^{j - 1}}{\left( {j - 1}\right) !}\tag{12.1.31}
+\]
+
+whenever \( {\delta }_j \leq  \min \left\lbrack  {1,\frac{j{\epsilon }_j}{2\begin{Vmatrix}{{\nabla }_x^{j}f\left( x\right) }\end{Vmatrix}}}\right\rbrack \) .
+
+Documented source/OCR correction and formalization requirements: If ||∇^j f(x)||=0, interpret the radius restriction without dividing by zero: δj ||∇^j f(x)||≤j εj/2, alongside 0<δj≤1. This retains the intended theorem in the degenerate case.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.7 (OCR Markdown line 11929)"
+deps = ["highOrderCriticality"]
+
+[[node]]
+id = "theorem_12_1_8"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.1.8: Stability of approximate unconstrained minimizers
+
+Suppose that \( f \) is \( j \) -times continuously differentiable and that
+
+\[
+{\phi }_{f, j}^{{\delta }_j}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j\frac{{\delta }_j^j}{j!}\tag{12.1.34}
+\]
+
+for some \( {\delta }_j \in  (0,1\rbrack \) and \( {\epsilon }_j \in  (0,1\rbrack \) . Suppose also that \( {\nabla }_x^{j}f \) is Lipschitz continuous with constant \( {L}_{f, j} \) in an open neighbourhood of a point \( {x}_{\epsilon } \) of radius larger than \( {\delta }_j \) . Then, if \( {L}_{f, j} > 0 \) ,
+
+\[
+f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - 2{\epsilon }_{j}\frac{{\delta }^{j}}{j!}\;\text{ for all }d\text{ with }\parallel d\parallel  \leq  \min \left\lbrack  {{\delta }_{j},\frac{\left( {j + 1}\right) {\epsilon }_{j}}{{L}_{f, j}}}\right\rbrack\tag{12.1.35}
+\]
+
+and, otherwise,
+
+\[
+f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - {\epsilon }_{j}\frac{{\delta }_{j}^{j}}{j!}\;\text{ for all }d\text{ with }\parallel d\parallel  \leq  {\delta }_{j}.\tag{12.1.36}
+\]
+
+Documented source/OCR correction and formalization requirements: OCR correction: the δ^j in (12.1.35) denotes δ_j^j, the original optimality radius, not ||d||^j or a new free variable. Keep the original radius in the loss bound even when the admissible displacement radius shrinks.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.8 (OCR Markdown line 12019)"
+deps = ["isApproximateHighOrderMinimizer"]

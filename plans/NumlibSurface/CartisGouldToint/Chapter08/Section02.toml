@@ -1,0 +1,216 @@
+namespace = "CartisGouldToint"
+desc = '''
+Secular equations and global optimality characterizations. The secular model is a resolvent of H+λM. Transfer to the M inner product or conjugate by M^(−1/2); no arbitrary inverse at a singular endpoint. Package the spectral representation once. Check strictness and multiple eigenvalues explicitly. Equations retain the textbook numbering.
+'''
+
+[[node]]
+id = "secularFunction"
+kind = "definition"
+desc = '''
+For λ with H+λM positive definite, let s(λ)=−(H+λM)⁻¹g and π(λ)=<s(λ),M s(λ)>. Generalized spectral data satisfy Hv_i=λ_i Mv_i and <v_i,Mv_j>=δij; λs=max(0,−λ1). Then the defining finite spectral expression is Σ_i γ_i²/(λ+λ_i)², γ_i=<v_i,g>. Require actual complete generalized eigenbasis data, with spectral representation proved from the matrix definition rather than postulated as an extra theorem assumption.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.2"
+deps = ["weightedNorm"]
+
+[[node]]
+id = "transformedSecularFunction"
+kind = "definition"
+desc = '''
+For real β≠0 define π(λ;β)=π(λ)^β on λ>λs, with g≠0 whenever β<0. Keep the exponent convention 2β on ||s(λ)||_M, from (8.2.17). Define the kth Taylor polynomial t_k(δ)=Σ_(j=0)^k π^(j)(λc)δ^j/j! and transformed first-order t1(δ;β)=π(λc;β)+π′(λc;β)δ.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.2"
+deps = ["secularFunction"]
+
+[[node]]
+id = "lemma_8_2_1"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 8.2.1: Root of the secular equation
+
+[Appendix to Chapter 8, p. 475]: Let
+
+\[
+{\lambda }_{\mathrm{s}}\overset{\text{ def }}{ = }\max \left( {0, - {\lambda }_{1}}\right)
+\]
+
+where \( {\lambda }_1 \) is the leftmost eigenvalue of the pencil \( \left( {H, M}\right) \) . Let \( \pi \left( \lambda \right) \) be the secular function (8.2.4), and suppose that \( \tau \left( \lambda \right) \) is a nonzero, nonnegative, monotonically nondecreasing, continuous function on \( \left( {{\lambda }_s,\infty }\right) \) and that \( \pi \left( {\lambda }_s\right)  > \tau \left( {\lambda }_s\right)  \geq  0 \) . Then there is a unique root, say \( {\lambda }_{ * } > {\lambda }_s \) , of the secular equation (8.2.8).
+
+Documented source/OCR correction and formalization requirements: Endpoint notation correction: interpret π(λs)>τ(λs) by right limits in the extended reals when H+λs M is singular; require the right limit of π−τ strictly positive. Assume H symmetric, M positive definite, τ continuous and nondecreasing on (λs,∞), nonnegative and nonzero on that interval. Prove existence and uniqueness without assuming the secular equation has a root.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 8.2.1 (OCR Markdown line 9552)"
+deps = ["secularFunction"]
+
+[[node]]
+id = "theorem_8_2_2"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 8.2.2: Lower and upper Taylor estimates of \( \pi \left( \lambda \right) \)
+
+[Appendix to Chapter 8, p. 475]: Let \( \pi \left( \lambda \right) \) be the secular function (8.2.4). Suppose that \( {\lambda }_C \) is a given value such that \( {\lambda }_C > {\lambda }_S \) , and let \( {t}_k\left( \delta \right) \) be the \( k \) th-order Taylor-series approximation (8.2.12) to \( \pi \left( {{\lambda }_c + \delta }\right) \) . Then
+
+\[
+\pi \left( {{\lambda }_{c} + \delta }\right)  \leq  {t}_{k}\left( \delta \right) \text{ for even }k > 0\text{ and }\pi \left( {{\lambda }_{c} + \delta }\right)  \geq  {t}_{k}\left( \delta \right) \text{ for odd }k > 0
+\]
+
+(8.2.13)
+
+when \( \delta  > 0 \) , while
+
+\[
+\pi \left( {{\lambda }_{c} + \delta }\right)  \geq  {t}_{k + 1}\left( \delta \right)  \geq  {t}_{k}\left( \delta \right) \text{ for all }k > 0\tag{8.2.14}
+\]
+
+when \( {\lambda }_s - {\lambda }_c < \delta  < 0 \) . The inequalities in (8.2.13) and (8.2.14) are strict whenever \( g \neq  0 \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.2 (OCR Markdown line 9592)"
+deps = ["secularFunction"]
+
+[[node]]
+id = "lemma_8_2_3"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 8.2.3: Derivatives of \( \pi \left( {\lambda ;\beta }\right) \)
+
+[Appendix to Chapter 8, p. 476]: Let \( \pi \left( {\lambda ;\beta }\right) \) be the transformed secular function (8.2.17). Suppose that \( \lambda  > {\lambda }_s \) . Then
+
+(i) \( {\pi }^{\left( 1\right) }\left( {\lambda ;\beta }\right)  \leq  0 \) for all \( \beta  > 0 \) , while \( {\pi }^{\left( 1\right) }\left( {\lambda ;\beta }\right)  \geq  0 \) for all \( \beta  < 0 \) ;
+
+(ii) \( {\pi }^{\left( 2\right) }\left( {\lambda ;\beta }\right)  \geq  0 \) for all \( \beta  > 0 \) , while \( {\pi }^{\left( 2\right) }\left( {\lambda ;\beta }\right)  \leq  0 \) for all \( \beta  \in  \lbrack  - 1/2,0) \) .
+
+The above inequalities are strict whenever \( g \neq  0 \) .
+
+Documented source/OCR correction and formalization requirements: Correction to the final strictness sentence: first derivative signs are strict when g≠0. For the second derivative, strict positivity holds for β>0 and g≠0; strict negativity holds for −1/2<β<0 and g≠0. At β=−1/2 retain a non-strict inequality; it is strict only if g has nonzero spectral components at two distinct generalized eigenvalues. For negative β assume g≠0 so real powers are defined on a positive base. A single active eigenvalue makes π(λ;−1/2) affine, refuting the unqualified strict claim.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 8.2.3 (OCR Markdown line 9662)"
+deps = ["transformedSecularFunction"]
+
+[[node]]
+id = "corollary_8_2_4"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Corollary 8.2.4: Monotonicity of transformed secular function
+
+The transformed secular function (8.2.17) is strictly decreasing from \( \pi \left( {{\lambda }_s;\beta }\right) \) to zero and strictly convex for \( \lambda  \in  \left( {{\lambda }_s,\infty }\right) \) when \( \beta  > 0 \) and strictly increasing from \( \pi \left( {{\lambda }_s;\beta }\right) \) to infinity and concave for \( \lambda  \in  \left( {{\lambda }_s,\infty }\right) \) when \( \beta  \in  \lbrack  - 1/2,0) \) .
+
+Documented source/OCR correction and formalization requirements: Missing hypothesis correction: require g≠0 for strict monotonicity and the stated endpoint-at-infinity limits. Convexity is strict for β>0. Concavity at β=−1/2 is not strict in general. Endpoint values at λs mean one-sided limits.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 8.2.4 (OCR Markdown line 9674)"
+deps = ["lemma_8_2_3"]
+
+[[node]]
+id = "theorem_8_2_5"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 8.2.5: Lower and upper first-order Taylor estimates of \( \pi \left( {\lambda ;\beta }\right) \)
+
+[Appendix to Chapter 8, p. 476]: Let \( \pi \left( {\lambda ;\beta }\right) \) be the transformed secular function (8.2.17). Suppose that the value \( {\lambda }_c \) and perturbation \( \delta \) satisfy \( {\lambda }_c > {\lambda }_s \) and \( \delta  > {\lambda }_s - {\lambda }_c \) . Let \( {t}_1\left( {\delta ;\beta }\right)  = \pi \left( {{\lambda }_c;\beta }\right)  + {\pi }^{\left( 1\right) }\left( {{\lambda }_c;\beta }\right) \delta \) be the first-order Taylor series approximation to \( \pi \left( {{\lambda }_c + \delta ;\beta }\right) \) . Then
+
+(i) for \( \beta  > 0 \) ,
+
+\[
+\pi \left( {{\lambda }_c + \delta ;\beta }\right)  \geq  {t}_1\left( {\delta ;\beta }\right)\tag{8.2.20}
+\]
+
+(ii) otherwise, for \( \beta  \in  \lbrack  - 1/2,0) \) ,
+
+\[
+\pi \left( {{\lambda }_c + \delta ;\beta }\right)  \leq  {t}_1\left( {\delta ;\beta }\right) .\tag{8.2.21}
+\]
+
+The inequalities in (8.2.20) and (8.2.21) are strict whenever \( g \neq  0 \) .
+
+Documented source/OCR correction and formalization requirements: Strictness correction: weak Taylor inequalities hold as written on the positive-base domain (g≠0 when β<0). Strictness also needs δ≠0. At β=−1/2 strictness additionally needs non-affinity, e.g. two distinct active eigenvalues; otherwise the transformed secular function can be affine and equality holds for all δ.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.5 (OCR Markdown line 9688)"
+deps = ["lemma_8_2_3"]
+
+[[node]]
+id = "theorem_8_2_6"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 8.2.6: Derivatives of the secular function
+
+[Appendix to Chapter 8, p. 477]: Suppose that \( H + {\lambda M} \) is positive definite, that \( s\left( \lambda \right) \) satisfies (8.2.2), and that \( {s}^{\left( 0\right) }\left( \lambda \right) \overset{\text{ def }}{ = }s\left( \lambda \right) \) and \( {\alpha }_{0}\overset{\text{ def }}{ = }1 \) . Then, for \( k = 0,1,\ldots \) , the derivatives of \( \pi \left( \lambda \right)  = \langle s\left( \lambda \right) ,{Ms}\left( \lambda \right) \rangle \) satisfy
+
+\[
+{\pi }^{\left( 2k + 1\right) }\left( \lambda \right)  = 2{\alpha }_k\left\langle  {{s}^{\left( k\right) }\left( \lambda \right) , M{s}^{\left( k + 1\right) }\left( \lambda \right) }\right\rangle\tag{8.2.27}
+\]
+
+\[
+\text{ and }{\pi }^{\left( 2k + 2\right) }\left( \lambda \right)  = {\alpha }_{k + 1}\left\langle  {{s}^{\left( k + 1\right) }\left( \lambda \right) , M{s}^{\left( k + 1\right) }\left( \lambda \right) }\right\rangle  \text{ , }\tag{8.2.28}
+\]
+
+where
+
+\[
+\left( {H + {\lambda M}}\right) {s}^{\left( k + 1\right) }\left( \lambda \right)  =  - \left( {k + 1}\right) M{s}^{\left( k\right) }\left( \lambda \right)\tag{8.2.29}
+\]
+
+and
+
+\[
+{\alpha }_{k + 1} = 2\frac{\left( 2k + 3\right) }{\left( k + 1\right) }{\alpha }_{k}.\tag{8.2.30}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.6 (OCR Markdown line 9754)"
+deps = ["secularFunction"]
+
+[[node]]
+id = "theorem_8_2_7"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 8.2.7: Trust-region subproblem global optimality
+
+[178, Thm. 2.1],[292, Lem. 2.1]: Any global minimizer \( {s}_{ * } \) of (8.1.2) satisfies the equation
+
+\[
+\left( {H + {\lambda }_{ * }M}\right) {s}_{ * } =  - g,\tag{8.2.31}
+\]
+
+where \( H + {\lambda }_{ * }M \) is positive semidefinite, \( {\lambda }_{ * } \geq  0 \) , and
+
+\[
+{\lambda }_{ * }\left( {{\begin{Vmatrix}{s}_{ * }\end{Vmatrix}}_M^2 - {\Delta }^2}\right)  = 0.\tag{8.2.32}
+\]
+
+If \( H + {\lambda }_{ * }M \) is positive definite, then \( {s}_{ * } \) is unique.
+
+Documented source/OCR correction and formalization requirements: Make the ambient feasibility condition explicit: s* belongs to the M-norm closed ball of radius Δ>0; the multiplier characterization is an equivalence for such feasible s*. H is symmetric and M positive definite.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.7 (OCR Markdown line 9784)"
+deps = ["quadraticModel", "weightedNorm"]
+
+[[node]]
+id = "theorem_8_2_8"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 8.2.8: Regularization subproblem global optimality
+
+[84, Thm. 3.1],[305, Lem. 10] when \( r = 3 \) ,[151, Thm. 2.3],[218, Sect. 3] for general \( r > 2\rbrack \) : Any global minimizer \( {s}_{ * } \) of (8.1.3) when \( r > 2 \) satisfies (8.2.31), where \( H + {\lambda }_{ * }M \) is positive semidefinite and
+
+\[
+{\lambda }_{ * } = \sigma {\begin{Vmatrix}{s}_{ * }\end{Vmatrix}}_M^{r - 2}.\tag{8.2.33}
+\]
+
+If \( H + {\lambda }_{ * }M \) is positive definite, then \( {s}_{ * } \) is unique.
+
+Documented source/OCR correction and formalization requirements: Retain the model hypotheses σ>0 and r>2 and all directions in the global-minimum quantifier. The multiplier characterization is an equivalence; positive definiteness implies uniqueness, while semidefiniteness suffices for global optimality.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 8.2.8 (OCR Markdown line 9800)"
+deps = ["regularizationSubproblemModel"]

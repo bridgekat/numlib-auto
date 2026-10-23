@@ -1,0 +1,285 @@
+namespace = "CartisGouldToint"
+desc = '''
+Composite objectives w(x)=f(x)+h(c(x)). f,c are C^p, derivatives of orders 1,…,p are globally Lipschitz componentwise for c. h is Lipschitz, subadditive, and h(0)=0; convexity is an additional hypothesis only in the favorable first-order case. w.Bb supplies w_low≤w. The generalized Taylor model preserves h exactly and Taylor-approximates f and c. Its model decrement and criticality must not be replaced by smooth f criticality.
+'''
+
+[[node]]
+id = "compositeCriticality"
+kind = "definition"
+desc = '''
+For w=f+h∘c define T_(w,p)(x,s)=T_(f,p)(x,s)+h(T_(c,p)(x,s)); φ_(w,j)^δ(x)=w(x)−min_(||d||≤δ) T_(w,j)(x,d), with a constrained version when needed. The regularized model mhat_k(s)=T_(w,p)(xk,s)+σk||s||^(p+1)/(p+1)!. Define generalized model Taylor decrements by retaining h exactly, as (14.1.14)–(14.1.18), rather than differentiating a potentially nonsmooth h.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.1"
+deps = ["highOrderCriticality"]
+
+[[node]]
+id = "arqpcRun"
+kind = "definition"
+desc = '''
+Algorithm 14.1.1 with detailed Step 2 Algorithm 14.1.2: replace smooth objective and model checks of ARqp by composite w and its generalized Taylor model; keep the parameters, per-order radii, model decrease, acceptance ratio and σ update. Inner tests are exactly (14.1.10)–(14.1.16), using finite component Taylor tensors for f,c and h evaluations. No iteration-count or step-existence theorem is assumed in the run record.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.1"
+deps = ["compositeCriticality", "arqpRun"]
+
+[[node]]
+id = "lemma_14_1_1"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.1.1: Convex-composite first-order necessary optimality
+
+Suppose that \( f \) and \( c \) are continuously differentiable and that h.L and h.S0 hold. Suppose in addition that \( h \) is convex and that \( {x}_{ * } \) is a global minimizer of \( w \) . Then the origin is a global minimizer of \( {T}_{w,1}\left( {{x}_{ * }, s}\right) \) and \( {\phi }_{w,1}^{\delta }\left( {x}_{ * }\right)  = 0 \) for all \( \delta  > 0 \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.1 (OCR Markdown line 15599)"
+deps = ["compositeCriticality"]
+
+[[node]]
+id = "lemma_14_1_2"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.1.2: Relationship between composite model and generalized Taylor decrements
+
+Suppose that f.D1pL, c.D1pL, h.L, and h.S0 hold, that \( s \in  {\mathcal{B}}_1 \) , and that \( {L}_w \) is given by (14.1.3). Given \( \alpha  > 0 \) and
+
+\[
+\delta  \in  \left( {0,\min \left( {1,\frac{\alpha }{4\left( {3{L}_w + {\sigma }_k}\right) }}\right) }\right\rbrack  ,\tag{14.1.17}
+\]
+
+suppose that there is a displacement \( d \in  {\mathcal{B}}_{\delta } \) for which
+
+\[
+\Delta {T}_{{\widehat{m}}_{k}, j}\left( {s, d}\right)  \geq  \alpha \frac{{\delta }^{j}}{j!}\tag{14.1.18}
+\]
+
+for some \( j \in  \left\lbrack  {1 : q}\right\rbrack \) . Then
+
+\[
+{\widehat{m}}_{k}\left( s\right)  - {\widehat{m}}_{k}\left( {s + d}\right)  \geq  \frac{1}{2}\alpha \frac{{\delta }^{j}}{j!}.\tag{14.1.19}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.2 (OCR Markdown line 15783)"
+deps = ["compositeCriticality"]
+
+[[node]]
+id = "lemma_14_1_3"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.1.3: Existence of a step (ARqpC)
+
+Suppose that f.D1pL, c.D1pL, h.L, and h.S0 hold and that \( {L}_w \) is given by (14.1.3). Then a pair \( \left( {{s}_k,{\delta }_{{s}_k}}\right) \) always exists such that (14.1.12) and either \( \begin{Vmatrix}{s}_k\end{Vmatrix} > 1 \) or (14.1.13) hold. Moreover, it is always possible to ensure that
+
+\[
+{\delta }_{{s}_{k}, j} = 1\text{ when }j = 1\text{ and }h\text{ is convex }
+\]
+
+and, if either \( q \geq  2 \) or \( h \) is nonconvex and \( \begin{Vmatrix}{s}_k\end{Vmatrix} \leq  1 \) , then
+
+\[
+{\delta }_{{s}_{k}, j} \geq  {\kappa }_{\delta }\left( {\sigma }_{k}\right) {\epsilon }_{j}\text{ for }j \in  \left\lbrack  {2 : q}\right\rbrack  ,
+\]
+
+where
+
+\[
+{\kappa }_{\delta }\left( \sigma \right) \overset{\text{ def }}{ = }\frac{\varsigma \theta }{8\left( {3{L}_{w} + \sigma }\right) }.\tag{14.1.24}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.3 (OCR Markdown line 15929)"
+deps = ["arqpcRun", "lemma_14_1_2"]
+
+[[node]]
+id = "lemma_14_1_4"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.1.4: Termination in Step 2 of ARqpC
+
+Termination cannot occur in Step 2 of the ARqpC algorithm if \( q = 1 \) and \( h \) is convex. In other cases, if the ARqpC algorithm terminates in Step 2 of iteration \( k \) with \( {x}_{\epsilon } = {x}_k \) , then there exists a \( \delta  \in  (0,1{\rbrack }^q \) such that (14.1.9) holds for \( x = {x}_{\epsilon } \) and \( {x}_{\epsilon } \) is an \( \left( {\epsilon ,\delta }\right) \) -approximate qth-order minimizer.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.4 (OCR Markdown line 15959)"
+deps = ["lemma_14_1_3"]
+
+[[node]]
+id = "lemma_14_1_5"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.1.5: Taylor decrease for the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm
+
+At every iteration \( k \) of the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm, one has that
+
+\[
+\Delta {T}_{w, p}\left( {{x}_k,{s}_k}\right)  = {T}_{w, p}\left( {{x}_k,0}\right)  - {T}_{w, p}\left( {{x}_k,{s}_k}\right)  \geq  \frac{{\sigma }_k}{\left( {p + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + 1}.\tag{14.1.25}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.5 (OCR Markdown line 15971)"
+deps = ["arqpcRun"]
+
+[[node]]
+id = "lemma_14_1_6"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.1.6: Upper bound on the regularization parameter for the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm
+
+Suppose that f.DpL, c.DpL, and h.L hold. Then, for all \( k \geq  0 \) ,
+
+\[
+{\sigma }_{k} \leq  {\sigma }_{\max }\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},\frac{{\gamma }_{3}{L}_{w, p}}{1 - {\eta }_{2}}}\right\rbrack  ,\tag{14.1.26}
+\]
+
+where
+
+\[
+{L}_{w, p}\overset{\text{ def }}{ = }{L}_{f, p} + \sqrt{m}{L}_{h,0}{L}_{c, p}.\tag{14.1.27}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.6 (OCR Markdown line 15983)"
+deps = ["lemma_14_1_5"]
+
+[[node]]
+id = "lemma_14_1_7"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.1.7: A useful inequality (for the ARqpC algorithm)
+
+Suppose that f.D1pL, c.D1pL, h.L, and h.S0 hold. Suppose also that iteration \( k \) is successful and that the ARqpC algorithm does not terminate at iteration \( k + 1 \) . Then there exists a \( j \in  \left\lbrack  {1 : q}\right\rbrack \) such that
+
+\[
+\left( {1 - \theta }\right) {\epsilon }_j\frac{{\delta }_{k + 1, j}^j}{j!} \leq  \left( {{L}_{w, p} + {\sigma }_{\max }}\right) \mathop{\sum }\limits_{\ell  = 1}^j\frac{{\delta }_{k + 1, j}^{\ell }}{\ell !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - \ell  + 1} + \frac{\sqrt{m}{L}_{h,0}{L}_{c, p}}{\left( {p + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + 1},
+\]
+
+(14.1.30)
+
+where \( {\sigma }_{\max } \) is given by (14.1.26).
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.7 (OCR Markdown line 16015)"
+deps = ["lemma_14_1_6"]
+
+[[node]]
+id = "lemma_14_1_8"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.1.8: Lower bound on the step for the ARqpC algorithm
+
+Suppose that f.D1pL, c.D1pL, h.L, and h.S0 hold, that iteration \( k \) is successful, and that the ARqpC algorithm does not terminate at iteration \( k + 1 \) . In addition, suppose the algorithm ensures for each \( k \) that either \( {\delta }_{{s}_k,1} = 1 \) , if \( q = 1 \) and \( h \) is convex, or otherwise (14.1.28) holds for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) (as is possible, according to Lemma 14.1.3). Then there exists a \( j \in  \left\lbrack  {1 : q}\right\rbrack \) such that
+
+\[
+\begin{Vmatrix}{s}_{k}\end{Vmatrix} \geq  \left\{  \begin{array}{ll} {\left( \frac{1 - \theta }{{3j}!\left( {{L}_{w, p} + {\sigma }_{\max }}\right) }\right) }^{\frac{1}{p}}{\epsilon }_{j}^{\frac{1}{p}} & \text{ if }q = 1\text{ and }h\text{ is convex, } \\  {\left( \frac{\left( {1 - \theta }\right) {\kappa }_{\delta ,\min }^{j}}{{3j}!\left( {{L}_{w, p} + {\sigma }_{\max }}\right) }\right) }^{\frac{1}{p - j + 1}} & \text{ otherwise, } \end{array}\right.
+\]
+
+(14.1.31)
+
+where \( {\kappa }_{\delta ,\min } \) is defined by (14.1.29), \( {L}_{w, p} \) by (14.1.27), and \( {\sigma }_{\max } \) by (14.1.26).
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.8 (OCR Markdown line 16031)"
+deps = ["lemma_14_1_7"]
+
+[[node]]
+id = "lemma_14_1_9"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.1.9: Model and function decreases (ARqpC)
+
+Suppose that f.D1qL holds. Then
+
+\[
+\Delta {T}_{w, p}\left( {{x}_k,{s}_k}\right)  \geq  {\kappa }_{\Delta m}\mathop{\min }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{{\pi }_j}\tag{14.1.32}
+\]
+
+for every iteration of algorithm ARqpC before termination, where
+
+\[
+{\kappa }_{\Delta m}\overset{\text{ def }}{ = }\left\{  \begin{array}{ll} \frac{{\sigma }_{\min }}{\left( {p + 1}\right) !}{\left( \frac{1 - \theta }{{3q}!\left( {{L}_{f, p} + {\sigma }_{\max }}\right) }\right) }^{\frac{p + 1}{p}} & \text{ if }q = 1\text{ and }h\text{ is convex, } \\  \frac{{\sigma }_{\min }}{\left( {p + 1}\right) !}{\left( \frac{\left( {1 - \theta }\right) {\kappa }_{\delta ,\min }^{q}}{{3q}!\left( {{L}_{f, p} + {\sigma }_{\max }}\right) }\right) }^{\frac{p + 1}{p - q + 1}} & \text{ otherwise, } \end{array}\right.
+\]
+
+with \( {\kappa }_{\delta ,\min } \) given by (14.1.29), \( {\sigma }_{\max } \) given by (14.1.26), and
+
+\[
+{\pi }_{j}\overset{\text{ def }}{ = }\left\{  \begin{array}{ll} \frac{p + 1}{p} & \text{ if }q = 1\text{ and }h\text{ is convex, } \\  j + 1 & \text{ otherwise. } \end{array}\right.
+\]
+
+If, in addition, \( k \in  \mathcal{S} \) ,
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\eta }_1{\kappa }_{\Delta m}\mathop{\min }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{{\pi }_j}.\tag{14.1.33}
+\]
+
+Documented source/OCR correction and formalization requirements: OCR correction: the successful decrease in (14.1.33) is w(xk)−w(x_(k+1)), the composite objective, rather than f(xk)−f(x_(k+1)). The acceptance ratio concerns w and alone gives no such lower bound for f.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.9 (OCR Markdown line 16047)"
+deps = ["lemma_14_1_8"]
+
+[[node]]
+id = "theorem_14_1_10"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 14.1.10: qth-order complexity for the ARqpC algorithm
+
+Suppose that f.D1pL, c.D1pL, h.L, h.S0, and w.Bb hold. Suppose also that the \( \mathrm{AR}{qp}\mathrm{C} \) (p. 376) algorithm ensures, for each \( k \) , that either \( {\delta }_{{s}_k,1} = 1 \) if \( q = 1 \) and \( h \) is convex or otherwise (14.1.28) holds for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+
+1. Suppose \( q = 1 \) and \( h \) is convex. Then there exist positive constants \( {\kappa }_{\mathrm{ARqpC}}^{s,1} \) , \( {\kappa }_{\text{ ARqpC }}^{a,1} \) , and \( {\kappa }_{\text{ ARqpC }}^{c} \) such that, for any \( \epsilon  \in  (0,1\rbrack \) , the ARqpC algorithm requires at most
+
+\[
+{\# }_{\mathrm{{ARqpC}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpC}}}^{a,1}\frac{w\left( {x}_{0}\right)  - {w}_{\mathrm{{low}}}}{{\epsilon }^{\frac{p + 1}{p}}} + {\kappa }_{\mathrm{{ARqpC}}}^{c,1} = \mathcal{O}\left( {\epsilon }^{-\frac{p + 1}{p}}\right)\tag{14.1.34}
+\]
+
+evaluations of \( f \) and \( c \) and at most
+
+\[
+{\# }_{\mathrm{{ARqpC}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpC}}}^{s,1}\frac{w\left( {x}_{0}\right)  - {w}_{\text{ low }}}{{\epsilon }^{\frac{p + 1}{p}}} + 2 = \mathcal{O}\left( {\epsilon }^{-\frac{p + 1}{p}}\right)\tag{14.1.35}
+\]
+
+evaluations of the derivatives of \( f \) and \( c \) of orders one to \( p \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{w, j}^1\left( {x}_{\epsilon }\right)  \leq  \epsilon \) for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+
+2. Suppose that \( h \) is nonconvex or that \( q > 1 \) . Then there exist positive constants \( {\kappa }_{\text{ ARqp }}^{s,2},{\kappa }_{\text{ ARqp }}^{a,2} \) , and \( {\kappa }_{\text{ ARqp }}^{c} \) such that, for any \( \epsilon  \in  (0,1{\rbrack }^q \) , the ARqpC algorithm requires at most
+
+\[
+{\# }_{\text{ ARqpC }}^{F}\overset{\text{ def }}{ = }{\kappa }_{\text{ ARqpC }}^{a,2}\frac{w\left( {x}_{0}\right)  - {w}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{j + 1}} + {\kappa }_{\text{ ARqpC }}^{c} = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\left( {j + 1}\right) }}\right)\tag{14.1.36}
+\]
+
+evaluations of \( f \) and \( c \) and at most
+
+\[
+{\# }_{\mathrm{{ARqpC}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpC}}}^{s,2}\frac{w\left( {x}_{0}\right)  - {w}_{\mathrm{{low}}}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{j + 1}} + 2 = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\left( {j + 1}\right) }}\right)\tag{14.1.37}
+\]
+
+evaluations of the derivatives of \( f \) and \( c \) of orders one to \( p \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{w, j}^{{\delta }_{\epsilon }}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon , j}^j/j \) ! for some \( {\delta }_{\epsilon } \in  (0,1{\rbrack }^q \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.1.10 (OCR Markdown line 16083)"
+deps = ["lemma_14_1_4", "lemma_14_1_9"]
+
+[[node]]
+id = "corollary_14_1_11"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Corollary 14.1.11: Slow convergence of the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm for \( q = 1 \) and \( h \) convex
+
+Suppose that \( q = 1 \) and that \( h \) is convex. Then the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm applied to minimize \( w \) may require
+
+\[
+{\epsilon }_1^{-\frac{p + 1}{p}}
+\]
+
+iterations and evaluations of \( f \) and \( c \) and of their derivatives of order one up to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( {\phi }_{w,1}^1\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_1 \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 14.1.11 (OCR Markdown line 16151)"
+deps = ["theorem_12_2_15"]

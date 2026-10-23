@@ -1,0 +1,153 @@
+namespace = "CartisGouldToint"
+desc = '''
+Simple constraints X are closed and nonempty and step/model optimization over X is assumed inexpensive under the chosen oracle model. X(x)={d:x+d∈X}; criticality optimizes over X(x)∩closedBall(0,δ). Restricted smoothness and boundedness assumptions hold on the segments/set indicated by f.D0rLaB.X, not necessarily all R^n. f.bB.X means f_low≤f on X. Convex first-order and unconstrained second-order favorable cases must remain distinct from general constrained high-order cases.
+'''
+
+[[node]]
+id = "constrainedCriticality"
+kind = "definition"
+desc = '''
+For closed nonempty X and x∈X define X(x)={d:x+d∈X}. φ_(f,X(x),j)^δ(x)=f(x)−min_(d∈X(x),||d||≤δ) T_(f,j)(x,d), (14.2.2). Zero displacement guarantees nonemptiness; compactness gives attainment. The approximate certificate is the per-order inequality with εj δj^j/j!, (14.2.3). All constrained algorithm variants add xk+sk∈X and constrain model searches to X(xk).
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.2"
+deps = ["highOrderCriticality"]
+
+[[node]]
+id = "sparseStepProblem"
+kind = "definition"
+desc = '''
+Problem (14.2.18) maximizes the linear Taylor decrement on ||d||_∞≤δ with ||x+d||_0≤n_nz, for a feasible sparse x. Define Aδ(x)={i:|xi|>δ}, its complement, the component gains vi and wi from (14.2.19)–(14.2.20), and the binary-cardinality selection problem (14.2.21). Keep the box norm and exact support cardinality; ties may give multiple maximizers.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.2"
+deps = []
+
+[[node]]
+id = "theorem_14_2_1"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 14.2.1: Stability of approximate constrained minimizers
+
+Suppose that \( f \) is \( j \) -times continuously differentiable and that, for some \( \eta  \geq  0 \) ,
+
+\[
+{\phi }_{f,\mathcal{X}\left( {x}_{\epsilon }\right) , j}^{{\delta }_j}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j\frac{{\delta }_j^j}{j!} + \eta
+\]
+
+for some \( \eta  \geq  0,{\delta }_j \in  (0,1\rbrack \) , and \( {\epsilon }_j \in  (0,1\rbrack \) , where \( {\phi }_{f,\mathcal{X}\left( x\right) , j}^{{\delta }_j}\left( x\right) \) is defined by (14.2.2) for some closed nonempty feasible set \( \mathcal{X} \) . Suppose also that \( {\nabla }_x^{j}f \) is Lipschitz continuous with constant \( {L}_{f, j} \) in an open neighbourhood of a point \( {x}_{\epsilon } \) of radius larger than \( {\delta }_j \) . Then, if \( {L}_{f, j} > 0 \) ,
+
+\[
+f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - 2{\epsilon }_{j}\frac{{\delta }^{j}}{j!} - \eta \;\text{ for all }d \in  \mathcal{X}\left( {x}_{\epsilon }\right) \text{ with }\parallel d\parallel  \leq  \min \left\lbrack  {{\delta }_{j},\frac{\left( {j + 1}\right) {\epsilon }_{j}}{{L}_{f, j}}}\right\rbrack  ,
+\]
+
+(14.2.6)
+
+and
+
+\[
+f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - {\epsilon }_{j}\frac{{\delta }_{j}^{j}}{j!} - \eta \;\text{ for all }d \in  \mathcal{X}\left( {x}_{\epsilon }\right) \text{ with }\parallel d\parallel  \leq  {\delta }_{j}\tag{14.2.7}
+\]
+
+otherwise.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.2.1 (OCR Markdown line 16229)"
+deps = ["constrainedCriticality"]
+
+[[node]]
+id = "lemma_14_2_2"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.2.2: Function decrease at successful iterations (in the presence of simple constraints)
+
+Suppose that f.D1qLaB.X (for TR algorithms) or f.D1pLaB.X (for AR algorithms) holds. Then there exist algorithm-dependent constants \( {\kappa }_{\text{ decr }} \) so that
+
+\[
+f\left( {x}_{k}\right)  - f\left( {x}_{k + 1}\right)  \geq  {\kappa }_{\text{ decr }}\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{{\pi }_{j}}\tag{14.2.11}
+\]
+
+for each \( k \in  \mathcal{S} \) , where
+
+\[
+{\pi }_{j} = \left\{  \begin{array}{lll} \frac{p + 1}{p - j + 1} & \text{ for ARqp-SC } & \text{ for }q = 1,\mathcal{X}\text{ convex } \\  \frac{j\left( {p + 1}\right) }{p} & \text{ for ARqp-SC } & \text{ in all other cases; } \\  \frac{j\left( {p + 1}\right) }{p - j + 1} & \text{ for ARqp-SC } & \text{ in all other cases; } \\  \frac{p + 1}{p - j + 1} & \text{ for ARqpC-SC } & \text{ for }q = 1, h,\mathcal{X}\text{ convex; } \\  j + 1 & \text{ for TRq-SC. } &  \end{array}\right.\tag{14.2.12}
+\]
+
+Suppose instead that f.D0qLaB.X (for TR algorithms) or f.D0pLaB.X (for AR algorithms) holds. Then the guaranteed decreases for the TRqIDA-SC and TRqEDA-SC algorithms are identical to those stated for TRq-SC, and the decreases for the ARqpIDA-SC and ARqpEDA-SC algorithms are identical to those stated for ARqp-SC.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.2 (OCR Markdown line 16315)"
+deps = ["constrainedCriticality", "lemma_12_2_4", "lemma_12_2_13"]
+
+[[node]]
+id = "lemma_14_2_3"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.2.3: Count of successful iterations
+
+Suppose that the TRq-SC algorithm is applied and f.D1qLaB.X holds or that the ARqp-SC algorithm is applied and f.D1pLaB.X holds. Then there are algorithm-dependent constants \( {\kappa }_{\text{ uns }} \) and \( {\kappa }_{\text{ unc }} \) for which
+
+\[
+k \leq  {\kappa }_{\text{ uns }}\left| {\mathcal{S}}_{k}\right|  + {\kappa }_{\text{ unc }}\tag{14.2.13}
+\]
+
+where \( {\mathcal{S}}_k = \mathcal{S} \cap  \left\lbrack  {0 : k}\right\rbrack \) and \( \mathcal{S} \) is the index set of successful iterations. The same is true for the TRqIDA-SC and TRqEDA-SC algorithms under f.D0qLaB.X and the ARqpIDA-SC and ARqpEDA-SC algorithms under f.D0pLaB.X.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.3 (OCR Markdown line 16335)"
+deps = ["lemma_14_2_2"]
+
+[[node]]
+id = "theorem_14_2_4"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 14.2.4: Complexity in the presence of simple constraints
+
+Suppose that the feasible set \( \mathcal{X} \) corresponds to simple constraints, that \( \mathbf{X} \) .CNe, f.bB.X, and f.D0pLaB.X (or f.D0qLaB.X in the trust-region case) hold, and that \( {\phi }_{f,\mathcal{X}\left( x\right) , j}^{{\delta }_j}\left( x\right) \) is as defined by (14.2.2). Suppose also that, for all iterations \( k \) of regularization algorithms, either \( {\delta }_{k, j} = 1 \) for \( j \in  \left\lbrack  {1 : q}\right\rbrack \) if \( q = 1 \) and \( \mathcal{X} \) is convex or \( q = 2 \) and \( \mathcal{X} = {\mathbb{R}}^n \) (as discussed above) or that (12.2.51) holds (as allowed by Lemma 12.2.9). Then the complexity results for the \( \mathrm{AR}{qp},\mathrm{AR}{qp}\mathrm{C},\mathrm{AR}{qp}\mathrm{IDA} \) , \( \mathrm{AR}{qp}\mathrm{EDA},\mathrm{TR}q,\mathrm{TR}q\mathrm{IDA} \) , and \( \mathrm{TR}q\mathrm{EDA} \) algorithms extend to their variants for simple constraints, with the aim of finding an \( {x}_{\epsilon } \in  \mathcal{X} \) for which
+
+\[
+{\phi }_{f,\mathcal{X}\left( {x}_{\epsilon }\right) , j}^{{\delta }_{j}}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_{j}\frac{{\delta }_{j}^{j}}{j!}\;\text{ for all }\;j \in  \left\lbrack  {1 : q}\right\rbrack  ,
+\]
+
+as indicated in the following table.
+
+<table><tr><td>Adapted algorithm</td><td>Applicable result</td><td>Evaluation-complexity order with simple constraints</td></tr><tr><td>ARqp-SC</td><td>Thm. 12.2.14 (p. 311)</td><td>( \( q = 1;\mathcal{X} \) convex or <br> \( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{p + 1}{p - j + 1}}}\right) \; \left. {q = 2;\mathcal{X} = {\mathbb{R}}^n}\right) \) <br> \( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{j\left( {p + 1}\right) }{p}}}\right) \) (otherwise)</td></tr><tr><td>ARqpC-SC</td><td>Thm. 14.1.10 (p. 384)</td><td>\( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{p + 1}{p - j + 1}}}\right) \; \left( {q = 1;h,\mathcal{X}\text{ convex }}\right) \) <br> \( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {j + 1}\right) }}\right) \) (otherwise)</td></tr><tr><td>ARqpIDA-SC</td><td>Thm. 13.1.19 (p. 349)</td><td>\( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{p + 1}{p - j + 1}}}\right) \; (q = 1;\mathcal{X} \) convex or \( \left. {q = 2;\mathcal{X} = {\mathbb{R}}^n}\right) \) <br> \( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{j\left( {p + 1}\right) }{p}}}\right) \) (otherwise)</td></tr></table>
+
+(continued)
+
+<table><tr><td>Adapted algorithm</td><td>Applicable result</td><td>Evaluation-complexity order with simple constraints</td></tr><tr><td>ARqpEDA-SC</td><td>Thm. 13.3.8 (p. 368)</td><td>\( (q = 1;\mathcal{X} \) convex or <br> \( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{p + 1}{p - j + 1}}}\right) \; \left. {q = 2;\mathcal{X} = {\mathbb{R}}^n}\right) \) <br> \( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{j\left( {p + 1}\right) }{p}}}\right) \) (otherwise)</td></tr><tr><td>TRq-SC</td><td>Thm. 12.2.5 (p. 297)</td><td>\( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right) \)</td></tr><tr><td>TRqIDA-SC</td><td>Thm. 13.1.8 (p. 335)</td><td>\( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right) \)</td></tr><tr><td>TRqEDA-SC</td><td>Thm. 13.3.4 (p. 362)</td><td>\( \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right) \)</td></tr></table>
+
+Moreover, the orders of complexity mentioned in the last column of the table are sharp.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.2.4 (OCR Markdown line 16349)"
+deps = ["lemma_14_2_3", "theorem_12_2_14", "theorem_13_1_19", "theorem_13_3_8", "theorem_14_1_10"]
+
+[[node]]
+id = "lemma_14_2_5"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.2.5: Optimal sparse solution of problem (14.2.18)
+
+Suppose that \( x \in  \mathcal{X} \) . Then the solution to problem (14.2.18) is given by
+
+\[
+{d}^{ * } =  - \delta \mathop{\sum }\limits_{{i \in  {\mathcal{A}}_{\delta }\left( x\right) }}\operatorname{sign}\left( {\left\lbrack  g\right\rbrack  }_{i}\right) {e}_{i} - \mathop{\sum }\limits_{{i \in  \mathcal{A}\left( x\right)  \smallsetminus  {\mathcal{A}}_{\delta }\left( x\right) }}{\left\lbrack  x\right\rbrack  }_{i}{e}_{i} - \mathop{\sum }\limits_{{i \in  {\mathcal{A}}_{\delta }^{c}\left( x\right) }}{\tau }_{i}\left( {\delta \operatorname{sign}\left( {\left\lbrack  g\right\rbrack  }_{i}\right)  - {\left\lbrack  x\right\rbrack  }_{i}}\right) {e}_{i},
+\]
+
+(14.2.20)
+
+where \( g = {\nabla }_x^{1}f\left( x\right) ,\mathcal{A}\left( x\right) \) is defined as in (14.2.15), \( {\mathcal{A}}_{\delta }\left( x\right) \overset{\text{ def }}{ = }\left\{  {i \in  \left\lbrack  {1 : n}\right\rbrack  \left| \right| \left| {\left\lbrack  x\right\rbrack  }_{i}\right|  > }\right. \; \delta \} ,{\mathcal{A}}_{\delta }^{c}\left( x\right) \overset{\text{ def }}{ = }\left\lbrack  {1 : n}\right\rbrack   \smallsetminus  {\mathcal{A}}_{\delta }\left( x\right) \) , and the binary variables \( {\tau }_i \) solve the \( 0 - 1 \) knapsack \( {\text{ problem }}^{105} \) given by
+
+\[
+\mathop{\max }\limits_{{\tau  \in  \{ 0,1{\} }^{n - \left| {{\mathcal{A}}_{\delta }\left( x\right) }\right| }}}\mathop{\sum }\limits_{{i \in  {\mathcal{A}}_{\delta }^{c}\left( x\right) }}{\tau }_{i}\left( {\delta \left| {\left\lbrack  g\right\rbrack  }_{i}\right|  - {\left\lbrack  x\right\rbrack  }_{i}{\left\lbrack  g\right\rbrack  }_{i}}\right) \text{ such that }\mathop{\sum }\limits_{{i \in  {\mathcal{A}}_{\delta }^{c}\left( x\right) }}{\tau }_{i} \leq  {n}_{\mathbf{{nz}}} - \left| {{\mathcal{A}}_{\delta }\left( x\right) }\right| .
+\]
+
+(14.2.21)
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.2.5 (OCR Markdown line 16435)"
+deps = ["sparseStepProblem"]

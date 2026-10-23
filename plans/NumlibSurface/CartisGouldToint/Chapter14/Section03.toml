@@ -1,0 +1,363 @@
+namespace = "CartisGouldToint"
+desc = '''
+General equality constraints c(x)=0 alongside the closed nonempty simple set X. Use L(x,y)=f(x)−<y,c(x)>. Descriptor jets must be realized by paths with a small-o remainder. The source nonemptiness-only constraint qualification is insufficient, as recorded on Theorem 14.3.1. For complexity, f.D1pLB.X and c.D1pLB.X mean C^p on an open convex X0 containing X, each derivative 1,…,p Lipschitz and bounded there. ν(x)=||c(x)||²/2 and μ(x,t)=||r(x,t)||²/2 for r=(c,f−t). The LENq-SC inner solver and TPqp-GC phases are actual transition relations with evaluation counters; do not assume termination, complexity, or optimality in their definitions.
+'''
+
+[[node]]
+id = "feasibleCurveJet"
+kind = "definition"
+desc = '''
+D_X^j(x) consists of vector tuples (s1,…,sj) for which an X-feasible path α↦x+Σ_(i=1)^j α^i si+o(α^j) exists as α→0+. Equality Taylor feasibility imposes the ordered-composition coefficient conditions (14.3.3). Define the printed X.CqQ separately from the stronger equality-jet realizability needed to repair Theorem 14.3.1; nonempty jets alone do not establish realization.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.3"
+deps = ["orderedCompositions"]
+
+[[node]]
+id = "leastSquaresMerit"
+kind = "definition"
+desc = '''
+For c:R^n→R^m and f:R^n→R define ν(x)=||c(x)||²/2, r(x,t)=(c(x),f(x)−t), and μ(x,t)=||r(x,t)||²/2. Generalize to residual map r in LENq-SC. Keep the parameter t explicit in derivatives and level sets.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.3"
+deps = []
+
+[[node]]
+id = "lenqscRun"
+kind = "definition"
+desc = '''
+Algorithm 14.3.1 LENq-SC local rules for minimizing ||r(x)|| over X: inner minimization of ||r||²/2 using the selected SC algorithm; target εk=β^k ε0, β∈(0,1); termination and continuation tests are exactly (14.3.18)–(14.3.23). Inputs include the choice of an inner algorithm, its operational run and call counters; its generic decrease/complexity assumptions are explicit hypotheses of later theorems rather than built-in conclusions.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.3"
+deps = ["leastSquaresMerit", "constrainedCriticality"]
+
+[[node]]
+id = "tpqpgcRun"
+kind = "definition"
+desc = '''
+Algorithm 14.3.2 TPqp-GC with 1≤q≤3 and q≤p. Phase 1 drives ν using LENq-SC toward feasibility ε0; Phase 2 minimizes μ(x,t) with the prescribed target-update formulas, inner solver tests and tolerances ε1,…,εq. Define Ik and Ik^s from the actual target updates and successful inner iterations. Preserve separate infeasible stationary termination (14.3.41) and feasible approximate KKT termination (14.3.42)–(14.3.47), including multiplier scaling, tangent subspaces and radii.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 14.3"
+deps = ["lenqscRun"]
+
+[[node]]
+id = "theorem_14_3_1"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 14.3.1: Curve-based necessary conditions for a constrained minimum
+
+[104, Thm. 2.2]: Suppose that \( f \) and each of the \( {\left\{  {c}_i\right\}  }_{i = 1}^m \) are \( q \) -times continuously differentiable in an open set containing \( \mathcal{X} \) and that \( {x}_{ * } \) is a local minimizer for problem (14.3.1) at which X.CQ holds. Then we have that \( c\left( {x}_{ * }\right)  = 0 \) and, for all \( {y}_{ * } \in  {\mathbb{R}}^m \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) ,
+
+\[
+\mathop{\sum }\limits_{k = 1}^j\frac{1}{k!}\left( {\mathop{\sum }\limits_{\left( {{\ell }_1,\ldots ,{\ell }_k}\right)  \in  \mathcal{P}\left( {j, k}\right) }{\nabla }_x^k\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) \left\lbrack  {{s}_{{\ell }_1},\ldots ,{s}_{{\ell }_k}}\right\rbrack  }\right)  \geq  0\tag{14.3.4}
+\]
+
+for all \( \left( {{s}_1,\ldots ,{s}_j}\right)  \in  {\mathcal{D}}_{\mathcal{X}}^j \) and such that
+
+\[
+\mathop{\sum }\limits_{k = 1}^i\frac{1}{k!}\left( {\mathop{\sum }\limits_{\left( {{\ell }_1,\ldots ,{\ell }_k}\right)  \in  \mathcal{P}\left( {i, k}\right) }{\nabla }_x^k\mathcal{L}\left( {{x}_{ * },{y}_{ * }}\right) \left\lbrack  {{s}_{{\ell }_1},\ldots ,{s}_{{\ell }_k}}\right\rbrack  }\right)  = 0\;\left( {i \in  \left\lbrack  {1 : j - 1}\right\rbrack  }\right) ,({14.3.5} \tag{14.3.5}
+\]
+
+and (14.3.3) hold for \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+
+Documented source/OCR correction and formalization requirements: The printed X.CqQ assumption only requires nonempty nonzero Taylor-feasible jets and is insufficient for the claimed necessary condition. Counterexample q=1, X=R, c(x)=x², f(x)=x, x*=0. The equality feasible set is {0}, so 0 is a local constrained minimizer and every nonzero s satisfies Dc(0)s=0, fulfilling the printed qualification. But for s=−1 and any multiplier, D_x L(0,y)s=−1<0. A corrected theorem needs realizability of every admissible jet by an actual equality-feasible path (or an appropriate regularity condition implying this). Do not replace mere nonemptiness by the theorem conclusion.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.1 (OCR Markdown line 16617)"
+deps = ["feasibleCurveJet", "orderedCompositions"]
+wrong = '''
+False under the printed nonemptiness-only X.CqQ: q=1, c(x)=x², f(x)=x, X=R gives a local feasible minimizer at zero with a Taylor-feasible direction of negative objective derivative. Jet realizability is missing.
+'''
+
+[[node]]
+id = "theorem_14_3_2"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 14.3.2: Local sufficiency of the Lagrangian for approximate minimizers
+
+Suppose that the set \( \mathcal{X} \subseteq  {\mathbb{R}}^n \) is closed and nonempty, that \( {x}_{\epsilon } \in  \mathcal{X} \) , and that \( f \) and \( c \) are \( j \) -times continuously differentiable and have Lipschitz-continuous \( j \) th derivatives \( \left( {j \in  \{ 1,2,3\} }\right) \) with constants \( {L}_{f, j} \) and \( {L}_{c, j} \) , respectively, in a neighbourhood of \( {x}_{\epsilon } \) of diameter \( {\delta }_j > 0 \) . Suppose also that \( \mathcal{V}\left( {x}_{\epsilon }\right)  \subseteq  \mathcal{X}\left( {x}_{\epsilon }\right) \) is given and that
+
+\[
+\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_{0}.\tag{14.3.8}
+\]
+
+Finally, suppose that there exists a vector of Lagrange multipliers \( {y}_{\epsilon } \in  {\mathbb{R}}^m \) and an \( \eta  \geq  0 \) such that
+
+\[
+{\phi }_{\mathcal{L},\mathcal{V}\left( {x}_{\epsilon }\right) , j}^{{\delta }_j}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right)  \leq  {\epsilon }_j\begin{Vmatrix}\left( {1,{y}_{\epsilon }^T}\right) \end{Vmatrix}\frac{{\delta }_j^j}{j!} + \eta ,\;j \in  \{ 1,2,3\} .\tag{14.3.9}
+\]
+
+Then
+
+\[
+f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - 2{\epsilon }_0\begin{Vmatrix}{y}_{\epsilon }\end{Vmatrix} - 2{\epsilon }_j\begin{Vmatrix}\left( {1,{y}_{\epsilon }^T}\right) \end{Vmatrix}\frac{{\delta }_j^j}{j!} - \eta ,\;j \in  \{ 1,2,3\} ,\tag{14.3.10}
+\]
+
+for all \( d \in  \mathcal{V}\left( {x}_{\epsilon }\right) \) such that \( \begin{Vmatrix}{c\left( {{x}_{\epsilon } + d}\right) }\end{Vmatrix} \leq  {\epsilon }_0 \) and \( {}^{111} \)
+
+\[
+\parallel d\parallel  \leq  \min \left\lbrack  {{\delta }_j,\frac{\left( {j + 1}\right) {\epsilon }_j}{\sqrt{2}\max \left\lbrack  {{L}_{f, j},{L}_{c, j}}\right\rbrack  }}\right\rbrack  .\tag{14.3.11}
+\]
+
+In addition, if either \( c\left( {{x}_{\epsilon } + s}\right)  = 0 \) and \( \left\langle  {{y}_{\epsilon }, c\left( {x}_{\epsilon }\right) }\right\rangle   \leq  0 \) or \( c\left( {{x}_{\epsilon } + s}\right)  = c\left( {x}_{\epsilon }\right) \) , then the bound (14.3.10) simplifies to
+
+\[
+f\left( {{x}_{\epsilon } + d}\right)  \geq  f\left( {x}_{\epsilon }\right)  - 2{\epsilon }_j\begin{Vmatrix}\left( {1,{y}_{\epsilon }^T}\right) \end{Vmatrix}\frac{{\delta }_j^j}{j!} - \eta ,\;j \in  \{ 1,2,3\} .\tag{14.3.12}
+\]
+
+Documented source/OCR correction and formalization requirements: OCR correction: the additional equalities concerning c(xepsilon+s) use the same displacement d as the quantified conclusion. The neighbourhood must contain all segments for ||d||≤δj, so use radius at least δj, not an ambiguous diameter δj.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.2 (OCR Markdown line 16771)"
+deps = ["constrainedCriticality"]
+
+[[node]]
+id = "theorem_14_3_3"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 14.3.3: Convergence of the LENq-SC algorithm
+
+The LENq-SC algorithm terminates at a point satisfying (14.3.18) after at most \( {\# }_{\text{ LENq-SC }}^{I}\overset{\text{ def }}{ = }\max \left( {0,\log \left( {{\epsilon }_{0}/\begin{Vmatrix}{r\left( {x}_{0}\right) }\end{Vmatrix}}\right) /\log \beta }\right) \) iterations.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.3 (OCR Markdown line 16961)"
+deps = ["lenqscRun"]
+
+[[node]]
+id = "theorem_14_3_4"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 14.3.4: Evaluation complexity of the LEN \( q \) -SC algorithm
+
+Suppose that \( {\Phi }_2 \) .D1qLaB.X (for trust-region INNER algorithms) or \( {\Phi }_2 \) .D1pLaB.X (for regularization INNER algorithms) holds, and that each call to the INNER algorithm satisfies the evaluation bounds (14.3.20) and (14.3.21). Then the LENq-SC algorithm requires at most \( {}^{116} \)
+
+\[
+{\# }_{\text{ LENq-SC }}^{F} = \frac{1}{2}{\kappa }_{\text{ INNER }}^{F}\begin{Vmatrix}{r\left( {x}_{0}\right) }\end{Vmatrix}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}\frac{{\beta }^{1 - 2{\pi }_{j}}}{{\beta }^{1 - {\pi }_{j}} - 1}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}}\tag{14.3.27}
+\]
+
+evaluations of \( {\Phi }_2\left( x\right) \) and at most
+
+\[
+{\# }_{\text{ LENq-SC }}^{D} = \frac{1}{2}{\kappa }_{\text{ INNER }}^{D}\begin{Vmatrix}{r\left( {x}_{0}\right) }\end{Vmatrix}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}\frac{{\beta }^{1 - 2{\pi }_{j}}}{{\beta }^{1 - {\pi }_{j}} - 1}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}}\tag{14.3.28}
+\]
+
+evaluations of its derivatives to compute an iterate \( {x}_k \) satisfying (14.3.23).
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.4 (OCR Markdown line 17019)"
+deps = ["lenqscRun", "theorem_14_3_3"]
+
+[[node]]
+id = "lemma_14_3_5"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.3.5: Consequences of the termination of the TPqp-GC algorithm
+
+Suppose that X.CNe, c.D1pLB.X, f.D1pLB.X, and f.B.Fb hold. Suppose also that the TPqp-GC algorithm terminates at iteration \( {k}_{\epsilon } \) . Then one of the two following situations will occur.
+
+1. Infeasible approximate local minimizer of the constraint violation:
+
+\[
+\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} > \theta {\epsilon }_{0}\;\text{ and }\;{\phi }_{\nu ,\mathcal{X}\left( {x}_{\epsilon }\right) , j}^{{\delta }_{{k}_{\epsilon }, j}}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_{j}\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix}\frac{{\delta }_{{k}_{\epsilon }, j}^{j}}{j!}.\tag{14.3.41}
+\]
+
+2. Approximate problem solution:
+
+\[
+\begin{Vmatrix}{c\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  {\epsilon }_{0}\text{ and }{\phi }_{\mathcal{L},\mathcal{X}\left( {x}_{\epsilon }\right) ,1}^{{\delta }_{{k}_{\epsilon },1}}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right)  \leq  {\epsilon }_{1}\begin{Vmatrix}\left( {1,{y}_{\epsilon }^{T}}\right) \end{Vmatrix}{\delta }_{{k}_{\epsilon },1}\tag{14.3.42}
+\]
+
+for some \( {y}_{\epsilon } \in  {\mathbb{R}}^m \) . Moreover, if \( q > 1 \) , then
+
+\[
+{\phi }_{\mathcal{L},\mathcal{T}\left( {x}_{\epsilon }\right) ,2}^{{\delta }_{{k}_{\epsilon },2}}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right)  \leq  \frac{1}{2}\left\lbrack  {{\epsilon }_2\begin{Vmatrix}\left( {1,{y}_{\epsilon }^T}\right) \end{Vmatrix}{\delta }_{{k}_{\epsilon },2}^2 + {\phi }_{\mathcal{L},\mathcal{X}\left( {x}_{\epsilon }\right) ,1}^{{\delta }_{{k}_{\epsilon },2}}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right) \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix}{\delta }_{{k}_{\epsilon },2}}\right\rbrack
+\]
+
+(14.3.43)
+
+and
+
+\[
+{\phi }_{\mathcal{L},\mathcal{M}\left( {x}_{\epsilon }\right) ,2}^{{\delta }_{{k}_{\epsilon },2}}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right)  \leq  \frac{1}{2}{\epsilon }_2\begin{Vmatrix}\left( {1,{y}_{\epsilon }^T}\right) \end{Vmatrix}{\delta }_{{k}_{\epsilon },2}^2,\tag{14.3.44}
+\]
+
+where
+
+\[
+\mathcal{T}\left( x\right) \overset{\text{ def }}{ = }\mathcal{X}\left( x\right)  \cap  {\ker }^{1}\left\lbrack  {{\nabla }_{x}^{1}c\left( x\right) }\right\rbrack  \;\text{ and }\;\mathcal{M}\left( x\right) \overset{\text{ def }}{ = }\mathcal{T}\left( x\right)  \cap  {\ker }^{1}\left\lbrack  {{\nabla }_{x}^{1}f\left( x\right) }\right\rbrack  .
+\]
+
+(14.3.45)
+
+In addition, if \( q = 3 \) ,
+
+\[
+{\phi }_{\mathcal{L},\mathcal{T}\left( {x}_{\epsilon }\right) ,3}^{{\delta }_{{k}_{\epsilon },3}}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right)  \leq  \frac{1}{6}\left\lbrack  {{\epsilon }_3\parallel \left( {1,{y}_{\epsilon }^T}\right) \parallel {\delta }_{{k}_{\epsilon },3}^3}\right.
+\]
+
+\[
++ 3{\phi }_{\mathcal{L},\mathcal{X}\left( {x}_{\epsilon }\right) ,1}^{{\delta }_{{k}_{\epsilon },3}}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right) \left. \left( {\begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix}{\delta }_{{k}_{\epsilon },3} + \begin{Vmatrix}{{\nabla }_x^{2}f\left( {x}_{\epsilon }\right) }\end{Vmatrix}{\delta }_{{k}_{\epsilon },3}^2}\right) \right\rbrack
+\]
+
+(14.3.46)
+
+and
+
+\[
+{\phi }_{\mathcal{L},\mathcal{M}\left( {x}_{\epsilon }\right) ,3}^{{\delta }_{{k}_{\epsilon },3}}\left( {{x}_{\epsilon },{y}_{\epsilon }}\right)  \leq  \frac{1}{6}{\epsilon }_3\begin{Vmatrix}\left( {1,{y}_{\epsilon }^T}\right) \end{Vmatrix}{\delta }_{{k}_{\epsilon },3}^{3}. \tag{14.3.47}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.5 (OCR Markdown line 17237)"
+deps = ["tpqpgcRun"]
+
+[[node]]
+id = "lemma_14_3_6"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.3.6: Smoothness of \( \nu \) and \( \mu \)
+
+(i) Suppose that c.D1pLB.X holds. Given \( {x}_0 \in  \mathcal{X} \) , let \( {\mathcal{L}}_{\nu }\left( {x}_{0}\right) \overset{\text{ def }}{ = }\{ x \in  \mathcal{X} \mid \; \parallel c\left( x\right) \parallel  \leq  \begin{Vmatrix}{c\left( {x}_0\right) }\end{Vmatrix}\} \) . Then \( \nu \left( x\right) \) is \( p \) -times continuously differentiable in an open, convex set \( {\mathcal{X}}_0 \) containing \( \mathcal{X} \) , and there are constants \( {L}_{\nu , j}^A \geq  1,{L}_{\nu , j}^B \geq  1 \) , \( {B}_{\nu , j}^A \geq  1 \) , and \( {B}_{\nu , j}^B \geq  1 \) such that
+
+\[
+\begin{Vmatrix}{{\nabla }_x^j\nu \left( x\right)  - {\nabla }_x^j\nu \left( y\right) }\end{Vmatrix} \leq  \left( {{L}_{\nu , j}^A + {L}_{\nu , j}^B\begin{Vmatrix}{c\left( {x}_0\right) }\end{Vmatrix}}\right) \parallel x - y\parallel\tag{14.3.60}
+\]
+
+and
+
+\[
+\begin{Vmatrix}{{\nabla }_x^j\nu \left( x\right) }\end{Vmatrix} \leq  {B}_{\nu , j}^A + {B}_{\nu , j}^B\begin{Vmatrix}{c\left( {x}_0\right) }\end{Vmatrix}\tag{14.3.61}
+\]
+
+for all \( x \in  {\mathcal{L}}_{\nu }\left( {x}_0\right) \) , all \( y \in  {\mathcal{X}}_0 \) , and every \( j \in  \left\lbrack  {1 : p}\right\rbrack \) .
+
+(ii) Suppose that c.D1pLB.X and f.D1pLB.X hold. Let \( {\mathcal{L}}_{\mu }\overset{\text{ def }}{ = }\{ x \in  \mathcal{X} \mid \; \parallel r\left( {x, t}\right) \parallel  \leq  1 \mid  \} \) . Then \( \mu \left( {x, t}\right) \) is \( p \) -times continuously differentiable in an open, convex set \( {\mathcal{X}}_0 \) containing \( \mathcal{X} \) , and there are constants \( {L}_{\mu , j} \geq  1 \) and \( {B}_{\mu , j} \geq  1 \) , independent of \( t \) , such that
+
+\[
+\begin{Vmatrix}{{\nabla }_x^j\mu \left( {x, t}\right)  - {\nabla }_x^j\mu \left( {y, t}\right) }\end{Vmatrix} \leq  {L}_{\mu , j}\parallel x - y\parallel\tag{14.3.62}
+\]
+
+and
+
+\[
+\begin{Vmatrix}{{\nabla }_x^j\nu \left( x\right) }\end{Vmatrix} \leq  {B}_{\mu , j}\tag{14.3.63}
+\]
+
+for all \( x \in  {\mathcal{L}}_{\mu } \) , all \( y \in  {\mathcal{X}}_0 \) , and every \( j \in  \left\lbrack  {1 : p}\right\rbrack \) .
+
+Documented source/OCR correction and formalization requirements: OCR correction: (14.3.63) bounds ||∇_x^j μ(x,t)|| by B_(μ,j), not ||∇_x^j ν(x)||. μ has the additional target parameter t. The set Lμ(t)={x∈X:||r(x,t)||≤1} depends on t; all Lipschitz and derivative bounds are uniform in t on their stated level sets.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.6 (OCR Markdown line 17443)"
+deps = ["leastSquaresMerit"]
+
+[[node]]
+id = "lemma_14_3_7"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.3.7: Evaluation complexity of Phase 1 of the TPqp-GC algorithm
+
+Suppose that X.CNe and c.D1pLB.X hold. Then there are constants \( {\kappa }_{\mathrm{NNER}}^{F,\nu } \) and \( {\kappa }_{\text{ INNER }}^{D,\nu } \) depending on \( \begin{Vmatrix}{c\left( {x}_0\right) }\end{Vmatrix} \) such that Phase 1 of the TPqp-GC algorithm terminates at a point \( {x}_1 \) for which either
+
+\[
+\begin{Vmatrix}{c\left( {x}_{1}\right) }\end{Vmatrix} \leq  \theta {\epsilon }_{0}\;\text{ or }\;{\phi }_{\nu ,\mathcal{X}\left( {x}_{1}\right) , j}^{{\delta }_{{k}_{1}, j}\left( {x}_{1}\right) } \leq  {\epsilon }_{j}\begin{Vmatrix}{c\left( {x}_{1}\right) }\end{Vmatrix}\frac{{\delta }_{k, j}^{j}}{j!}\tag{14.3.64}
+\]
+
+in at most
+
+\[
+{\# }_{\text{ INNER },1}^{F}\overset{\text{ def }}{ = }\frac{1}{2}{\kappa }_{\text{ INNER }}^{F,\nu }\left( \begin{Vmatrix}{c\left( {x}_{0}\right) }\end{Vmatrix}\right) \begin{Vmatrix}{c\left( {x}_{0}\right) }\end{Vmatrix}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}\frac{{\beta }^{1 - 2{\pi }_{j}}}{{\beta }^{1 - {\pi }_{j}} - 1}{\theta }^{1 - {\pi }_{j}}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}}
+\]
+
+\[
+= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_0^{1 - {\pi }_j}{\epsilon }_j^{-{\pi }_j}}\right)
+\]
+
+(14.3.65)
+
+evaluations of \( c \) and at most
+
+\[
+{\# }_{\text{ INNER,1 }}^{D}\overset{\text{ def }}{ = }\frac{1}{2}{\kappa }_{\text{ INNER }}^{D,\nu }\left( \begin{Vmatrix}{c\left( {x}_{0}\right) }\end{Vmatrix}\right) \begin{Vmatrix}{c\left( {x}_{0}\right) }\end{Vmatrix}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}\frac{{\beta }^{1 - 2{\pi }_{j}}}{{\beta }^{1 - {\pi }_{j}} - 1}{\theta }^{1 - {\pi }_{j}}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}}
+\]
+
+\[
+= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_0^{1 - {\pi }_j}{\epsilon }_j^{-{\pi }_j}}\right)
+\]
+
+(14.3.66)
+
+evaluations of its derivatives.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.7 (OCR Markdown line 17481)"
+deps = ["theorem_14_3_4", "lemma_14_3_6"]
+
+[[node]]
+id = "lemma_14_3_8"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 14.3.8: Bounds on the size of \( {\mathcal{I}}_k \) and \( {\mathcal{I}}_k^{\mathrm{s}} \)
+
+Suppose that X.CNe, c.D1pLB.X, f.D1pLB.X, and f.B.Fb hold. Then there are constants \( {\kappa }_{\text{ INNER },2}^{s},{\kappa }_{\text{ INNER },2}^{A} \) , and \( {\kappa }_{\text{ INNER },2}^{C} \) such that, for each \( k \in  {\mathcal{K}}_a \) before termination,
+
+\[
+\left| {\mathcal{I}}_{k}^{s}\right|  \leq  {\kappa }_{\text{ INNER },2}^{s}\left( {1 - \theta }\right) \mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{2 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}}\tag{14.3.71}
+\]
+
+and
+
+\[
+\left| {\mathcal{I}}_{k}\right|  \leq  {\kappa }_{\text{ INNER },2}^{A}\left( {1 - \theta }\right) \mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{2 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}} + {\kappa }_{\text{ INNER },2}^{C}.\tag{14.3.72}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.3.8 (OCR Markdown line 17559)"
+deps = ["theorem_14_3_4", "lemma_14_3_6"]
+
+[[node]]
+id = "theorem_14_3_9"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 14.3.9: Complexity of finding \( q \) th-order approximate minimizers by the TP \( {qp} \) -GC algorithm
+
+Suppose that the INNER algorithm is of regularization type and X.CNe, c.D1pLB.X, f.D1pLB.X, and f.B.Fb hold, or that the INNER algorithm is of trust-region type and X.CNe, c.D1qLB.X, f.D1qLB.Fb, and f.B.Fb hold. Then there exist constants \( {\kappa }_{\text{ INNER },2}^{S},{\kappa }_{\text{ INNER },2}^{A} \) , and \( {\kappa }_{\text{ INNER },2}^{C} \) such that, for any \( {\epsilon }_0 \in  (0,1\rbrack \) and \( \epsilon  \in  (0,1{\rbrack }^q \) , the TP \( {qp} \) -GC algorithm requires at most
+
+\[
+{\# }_{\text{ TPqpGC@TPqpGC }}^{F}\overset{\text{ def }}{ = }{\# }_{\text{ INNER,1 }}^{F} + {\# }_{\text{ INNER,2 }}^{F} = \mathcal{O}\left( {\max \left\lbrack  {{\epsilon }_{0}^{-1},\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}}}\right\rbrack  }\right)
+\]
+
+evaluations of \( f \) and \( c \) and at most
+
+\[
+{\# }_{\text{ TPqpGC@TPqpGC }}^{D}\overset{\text{ def }}{ = }{\# }_{\text{ INNER },1}^{D} + {\# }_{\text{ INNER },2}^{D} = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}}}\right)
+\]
+
+evaluations of their derivatives, where the \( {\left\{  {\pi }_j\right\}  }_{j = 1}^q \) are defined in (14.2.12), \( {\# }_{\text{ INNER },1}^{F} \)
+
+
+and \( {\# }_{\text{ INNER },1}^{D} \) are given by (14.3.65) and (14.3.66), and
+
+\[
+{\# }_{\mathrm{{INNER}},2}^{F}\overset{\text{ def }}{ = }\left( {{f}_{up} - {f}_{low} - 1}\right) \left( {{\kappa }_{\mathrm{{INNER}},2}^{A}\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}} + {\kappa }_{\mathrm{{INNER}},2}^{C}{\epsilon }_{0}^{-1}}\right)  + 1
+\]
+
+and
+
+\[
+{\# }_{\mathrm{{INNER}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{INNER}},2}^{S}\left( {{f}_{up} - {f}_{low} - 1}\right) \mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{0}^{1 - {\pi }_{j}}{\epsilon }_{j}^{-{\pi }_{j}} + 1,
+\]
+
+to compute a point \( {x}_{\epsilon } \) such that either (14.3.41) holds, or (14.3.42) holds for some \( {y}_{\epsilon } \) together with (14.3.43) and (14.3.44) if \( q > 1 \) , and (14.3.46) and (14.3.47) if \( q = 3 \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 14.3.9 (OCR Markdown line 17583)"
+deps = ["lemma_14_3_5", "lemma_14_3_7", "lemma_14_3_8"]

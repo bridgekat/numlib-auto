@@ -1,0 +1,28 @@
+namespace = "CartisGouldToint"
+desc = '''
+Secular derivatives computed with LDLᵀ factors. The derivative-vector recurrence must carry its minus sign. Use exact real arithmetic; numerical roundoff and matrix storage are outside the mathematical statements.
+'''
+
+[[node]]
+id = "secularDerivativeFactorizationRun"
+kind = "definition"
+desc = '''
+Algorithm 9.1.1 as an exact triangular-solve recurrence: H+λM=LDLᵀ positive definite, L invertible, D positive diagonal; s0=s(λ), α0=1. Set βk=2αk/(k+1), solve L y_(k+1)=−(k+1)M sk, D z_(k+1)=y_(k+1), Lᵀ s_(k+1)=z_(k+1), and α_(k+1)=(2k+3)βk. Return derivative values using the printed odd/even formulas after restoring this minus sign. The recurrence must be independent of its derivative-correctness theorem.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 9.1"
+deps = ["secularFunction"]
+
+[[node]]
+id = "corollary_9_1_1"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Corollary 9.1.1: Derivatives of the secular function via \( {LD}{L}^T \) factors
+
+[Appendix to Chapter 9, p. 477]: Suppose that \( H + {\lambda M} \) is positive definite with \( {LD}{L}^T \) factorization \( H + {\lambda M} = {LD}{L}^T \) . Then Algorithm 9.1.1 provides the first \( {l}_{\max } \) derivatives of \( \pi \left( \lambda \right) \) . The odd-powered derivatives \( {\pi }^{\left( 2k + 1\right) }\left( \lambda \right) \) may also be expressed as \( 2{\alpha }_k\left\langle  {{s}^{\left( k\right) }\left( \lambda \right) , M{s}^{\left( k + 1\right) }\left( \lambda \right) }\right\rangle \) .
+
+Documented source/OCR correction and formalization requirements: Factorization sign correction: recurrence for the derivative vector is (H+λM)s^(k+1)=−(k+1)M s^(k), as in (8.2.29); Algorithm 9.1.1 drops this minus sign in its printed triangular right-hand side. Correct the recurrence before proving the derivative identities. α0=1 and α_(k+1)=2(2k+3)/(k+1) αk.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 9.1.1 (OCR Markdown line 10143)"
+deps = ["secularDerivativeFactorizationRun", "theorem_8_2_6"]

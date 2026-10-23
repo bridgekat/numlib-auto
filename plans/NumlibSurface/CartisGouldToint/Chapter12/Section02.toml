@@ -1,0 +1,416 @@
+namespace = "CartisGouldToint"
+desc = '''
+High-order TRq and ARqp evaluation complexity. Always assume integers 1≤q≤p for regularization, q≥1 for trust regions, tolerances εj∈(0,1], and all initialization/update inequalities of the respective algorithms. f.Bb is a uniform lower bound f_low≤f(x). f.D1rL means C^r and each derivative order 1,…,r globally Lipschitz with constants L_(f,j)≥1; Lf is their finite maximum. Evaluation counters count calls, not arithmetic work. Existence of positive constants precedes universal ε. Lower-complexity examples require constructed objectives and legal runs.
+'''
+
+[[node]]
+id = "trqRun"
+kind = "definition"
+desc = '''
+Bundle the parameters, state sequence and local transition rules of Algorithm 12.2.1: q≥1, εj∈(0,1], Δ0>0, optimality radius δk=min(Δk,ϑ), ϑ∈[min_j εj,1], fractional model-decrease factor ς∈(0,1], and 0<η1≤η2<1, 0<γ1≤γ2<1≤γ3. Step 1 obtains dk,j with ςφ_(f,j)^δk(xk)≤ΔT_(f,j)(xk,dk,j), ||dk,j||≤δk; it terminates if every approximate test is below ς εj δk^j/j!. Otherwise jk is a failing order, Step 2 finds ||sk||≤Δk with at least its model decrement. Accept when ρk=(f(xk)−f(xk+sk))/ΔT_(f,jk)(xk,sk)≥η1 and update Δ in the intervals (12.2.5). Preserve the exact initialization and update intervals from the source, and count function/derivative calls. No global decrease, convergence, radius lower bound or complexity field is allowed.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.2"
+deps = ["isApproximateHighOrderMinimizer"]
+
+[[node]]
+id = "arqpRun"
+kind = "definition"
+desc = '''
+Bundle Algorithm 12.2.2 and its detailed Step 2 (Algorithm 12.2.3), with 1≤q≤p, σmin>0, σ0≥σmin, θ∈(0,1), ς∈(0,1], 0<η1≤η2<1 and 0<γ1<1<γ2<γ3. mk(s)=T_(f,p)(xk,s)+σk||s||^(p+1)/(p+1)!. Step 1 applies the per-order approximate optimality checks (12.2.26); Step 2 demands mk(sk)≤mk(0), and either ||sk||>1 or fractional qth-order model criticality tests (12.2.29) with radii δ_(sk,j)∈(0,1]. Step 3 accepts using the true function/Taylor-decrement ratio (12.2.30); successful steps update x and optimality radii; unsuccessful steps keep them. σ updates in exactly the three intervals (12.2.31). Model-equality termination is separate from normal Step 1 termination. No existence, progress or complexity guarantees are stored as fields.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 12.2"
+deps = ["isApproximateHighOrderMinimizer"]
+
+[[node]]
+id = "lemma_12_2_1"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.1: A useful lower bound
+
+At iteration \( k \) before termination of the \( \mathrm{TR}q \) algorithm, \( {\widehat{\phi }}_{f, k} \) in (12.2.8) satisfies
+
+\[
+\mathop{\min }\limits_{{i \in  \left\lbrack  {0 : k}\right\rbrack  }}{\widehat{\phi }}_{f, i} \geq  \varsigma {\epsilon }_{\min }.\tag{12.2.9}
+\]
+
+Moreover,
+
+\[
+\Delta {T}_{f,{j}_{k}}\left( {{x}_{k},{s}_{k}}\right)  \geq  {\widehat{\phi }}_{f, k}\frac{{\delta }_{k}^{{j}_{k}}}{{j}_{k}!}.\tag{12.2.10}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.1 (OCR Markdown line 12168)"
+deps = ["trqRun"]
+
+[[node]]
+id = "lemma_12_2_2"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.2: Condition for success (TRq)
+
+Suppose that f.D1qL holds, that \( {\widehat{\phi }}_{f, k} \) is defined by (12.2.8), and that \( {L}_f \) is given by (12.2.6). Suppose also that
+
+\[
+{\Delta }_{k} \leq  \min \left\lbrack  {\vartheta ,\frac{\left( 1 - {\eta }_{2}\right) }{{L}_{f}}{\widehat{\phi }}_{f, k}}\right\rbrack\tag{12.2.11}
+\]
+
+at iteration \( k \) . Then \( {\rho }_k \geq  {\eta }_2 \) , iteration \( k \) is very successful, and \( {\Delta }_{k + 1} \geq  {\Delta }_k \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.2 (OCR Markdown line 12204)"
+deps = ["lemma_12_2_1"]
+
+[[node]]
+id = "lemma_12_2_3"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.3: Lower bound on the trust-region radius (TRq)
+
+Suppose that f.D1qL holds and \( {L}_f \) is given by (12.2.6). Then
+
+\[
+{\Delta }_{k} \geq  \min \left\{  {{\gamma }_{1}\vartheta ,{\kappa }_{\Delta }\mathop{\min }\limits_{{i \in  \left\lbrack  {0 : k}\right\rbrack  }}{\widehat{\phi }}_{f, i}}\right\}  ,\tag{12.2.13}
+\]
+
+where \( {\widehat{\phi }}_{f, i} \) is defined as in (12.2.8), and
+
+\[
+{\kappa }_{\Delta }\overset{\text{ def }}{ = }\frac{{\gamma }_{1}\left( {1 - {\eta }_{2}}\right) }{{L}_{f}}\min \left\lbrack  {\vartheta ,\frac{{\Delta }_{0}{\delta }_{0}^{q}}{{2q}!\mathop{\max }\limits_{{i \in  \left\lbrack  {1 : q}\right\rbrack  }}\begin{Vmatrix}{{\nabla }_{x}^{i}f\left( {x}_{0}\right) }\end{Vmatrix}}}\right\rbrack   \in  \left( {0,1}\right) .\tag{12.2.14}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.3 (OCR Markdown line 12224)"
+deps = ["lemma_12_2_2"]
+
+[[node]]
+id = "lemma_12_2_4"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.4: Model and function decreases (TRq)
+
+Suppose that f.D1qL holds. Then
+
+\[
+\Delta {T}_{f,{j}_k}\left( {{x}_k,{s}_k}\right)  \geq  \frac{{\left( \varsigma {\kappa }_{\Delta }\right) }^{q + 1}}{q!}{\epsilon }_{\min }^{q + 1}\tag{12.2.18}
+\]
+
+for every iteration of algorithm \( \mathrm{TR}q \) before termination, where \( {\kappa }_{\Delta } \) is given by (12.2.14) and \( {\epsilon }_{\min } \) by (12.2.7). If, in addition, \( k \in  \mathcal{S} \) , then
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  \frac{{\eta }_1{\left( \varsigma {\kappa }_{\Delta }\right) }^{q + 1}}{q!}{\epsilon }_{\min }^{q + 1}.\tag{12.2.19}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.4 (OCR Markdown line 12294)"
+deps = ["lemma_12_2_1", "lemma_12_2_3"]
+
+[[node]]
+id = "theorem_12_2_5"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.2.5: qth-order complexity for the \( {\mathrm{TR}}_q \) algorithm
+
+Suppose that f.Bb and f.D1qL hold. Then there exist positive constants \( {\kappa }_{\mathrm{TRq}}^{\mathrm{A}} \) , \( {\kappa }_{\mathrm{TRq}}^B \) , and \( {\kappa }_{\mathrm{TRq}}^C \) such that, for any \( \epsilon  \in  (0,1{\rbrack }^q \) , the TRq algorithm (p. 292) requires at most
+
+\[
+\begin{gathered}{\# }_{\mathrm{{TRq}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TRq}}}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{\min }^{q + 1}} + {\kappa }_{\mathrm{{TRq}}}^{B}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\mathrm{{TRq}}}^{C} \\ = \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right)\end{gathered}\tag{12.2.21}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{TRq}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{TRq}}}^{s}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }_{\min }^{q + 1}} + 1 = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\left( {q + 1}\right) }}\right)\tag{12.2.22}
+\]
+
+evaluations of \( {\left\{  {\nabla }_x^f\right\}  }_{j = 1}^q \) to produce an iterate \( {x}_{\epsilon } \) and an optimality radius \( {\delta }_{\epsilon } > 0 \) such that, for all \( j \in  \left\lbrack  {1 : q}\right\rbrack  ,{\phi }_{f, q}^{{\delta }_{\epsilon }}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon }^j/j \) ! for some \( {\delta }_{\epsilon } \in  (0,1\rbrack \) .
+
+Documented source/OCR correction and formalization requirements: OCR correction: the final approximate-optimality condition uses φ_(f,j), not φ_(f,q), for every j=1,…,q. Constants must be positive and independent of ε. Both function and derivative evaluation bounds in the source are required.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.5 (OCR Markdown line 12330)"
+deps = ["lemma_12_2_4"]
+
+[[node]]
+id = "theorem_12_2_6"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.2.6: Slow convergence of the \( \mathrm{TR}q \) algorithm
+
+Let \( {\epsilon }_j = j!\epsilon \) for given \( \epsilon  \in  (0,1/q!\rbrack \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) . Then the \( \mathrm{TR}q \) algorithm (p. 292) applied to minimize a function \( f \) satisfying f.Bb and f.D1qL may require \( {\epsilon }^{-\left( {q + 1}\right) } \) iterations and evaluations of \( f \) and \( {\left\{  {\nabla }_x^{j}f\right\}  }_{j = 1}^q \) to produce a point \( {x}_{\epsilon } \) such that, for all \( j \in  \left\lbrack  {1 : q}\right\rbrack  ,{\phi }_{f, j}^{{\delta }_{\epsilon }}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon }^j/j \) ! for some \( {\delta }_{\epsilon } \in  (0,1\rbrack \) .
+
+Documented source/OCR correction and formalization requirements: OCR correction: the final approximate-optimality condition uses φ_(f,j) for all j. Construct an actual bounded-below C^q objective with the indicated Lipschitz derivatives and a legal run; do not encode the desired number of iterations as a hypothesis.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.6 (OCR Markdown line 12386)"
+deps = ["trqRun"]
+
+[[node]]
+id = "lemma_12_2_7"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.7: Properties of the regularized model
+
+Suppose that f.D1pL holds, that \( {m}_k\left( s\right) \) is the model (12.2.23), and that \( {L}_f \) is given by (12.2.25). Then \( {m}_k \) is \( p \) -times continuously differentiable and has a Lipschitz-continuous pth derivative (with Lipschitz constant \( {\sigma }_k \) ). Moreover, if \( \parallel s\parallel  \leq  1 \) , then
+
+\[
+\begin{Vmatrix}{{\nabla }_{s}^{\ell }{m}_{k}\left( s\right) }\end{Vmatrix} \leq  3{L}_{f} + {\sigma }_{k}\;\text{ for }\;\ell  \in  \left\lbrack  {2 : p}\right\rbrack  .\tag{12.2.38}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.7 (OCR Markdown line 12632)"
+deps = ["arqpRun"]
+
+[[node]]
+id = "lemma_12_2_8"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.8: Relationship between model and Taylor decrements
+
+Suppose that f.D1pL holds, that \( {m}_k\left( s\right) \) is the model (12.2.23), that \( s \in  {\mathcal{B}}_1 \) , and that \( {L}_f \) is given by (12.2.25). Given \( \alpha  > 0 \) and
+
+\[
+\delta  \in  \left( {0,\min \left\lbrack  {1,\frac{\alpha }{4\left( {3{L}_f + {\sigma }_k}\right) }}\right\rbrack  }\right\rbrack  ,\tag{12.2.41}
+\]
+
+suppose that there is a displacement \( d \in  {\mathcal{B}}_{\delta } \) for which
+
+\[
+\Delta {T}_{{m}_k, j}\left( {s, d}\right)  \geq  \alpha \frac{{\delta }^j}{j!}\tag{12.2.42}
+\]
+
+for some \( j \in  \left\lbrack  {1 : q}\right\rbrack \) . Then
+
+\[
+{m}_k\left( s\right)  - {m}_k\left( {s + d}\right)  \geq  \frac{1}{2}\alpha \frac{{\delta }^j}{j!}.\tag{12.2.43}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.8 (OCR Markdown line 12674)"
+deps = ["lemma_12_2_7"]
+
+[[node]]
+id = "lemma_12_2_9"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.9: Existence of a step
+
+Suppose that f.D1pL holds and that \( {L}_f \) is given by (12.2.25). Then a pair \( \left( {{s}_k,{\delta }_{{s}_k}}\right) \) always exists such that (12.2.27) and either \( \begin{Vmatrix}{s}_k\end{Vmatrix} > 1 \) or (12.2.29) hold. Moreover, it is always possible to ensure that
+
+\[
+{\delta }_{{s}_{k}, j} = 1\text{ for }j \in  \left\lbrack  {1 : \min \left( {q,2}\right) }\right\rbrack\tag{12.2.44}
+\]
+
+and, if \( q \geq  3 \) and \( \begin{Vmatrix}{s}_k\end{Vmatrix} \leq  1 \) ,
+
+\[
+{\delta }_{{s}_{k}, j} \geq  {\kappa }_{\delta }\left( {\sigma }_{k}\right) {\epsilon }_{j}\text{ for }j \in  \left\lbrack  {3 : q}\right\rbrack  ,\tag{12.2.45}
+\]
+
+where
+
+\[
+{\kappa }_{\delta }\left( \sigma \right) \overset{\text{ def }}{ = }\frac{\varsigma \theta }{8\left( {3{L}_{f} + \sigma }\right) }.
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.9 (OCR Markdown line 12720)"
+deps = ["lemma_12_2_8"]
+
+[[node]]
+id = "lemma_12_2_10"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.10: Termination in Step 2
+
+Termination cannot occur in Step 2 of the ARqp algorithm if \( q \leq  2 \) . If \( q \geq  3 \) and the ARqp algorithm terminates in Step 2 of iteration \( k \) with \( {x}_{\epsilon } = {x}_k \) , then there exists a \( \delta  \in  (0,1{\rbrack }^q \) such that (12.1.25) holds for \( x = {x}_{\epsilon } \) and \( {x}_{\epsilon } \) is an \( \left( {\epsilon ,\delta }\right) \) -approximate \( q \) th-order minimizer.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.10 (OCR Markdown line 12766)"
+deps = ["lemma_12_2_9"]
+
+[[node]]
+id = "lemma_12_2_11"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.11: A useful relationship between the stepsize and radii
+
+Suppose that f.D1pL holds. Suppose also that iteration \( k \) is successful and that the ARqp algorithm does not terminate at iteration \( k + 1 \) . Then there exists \( j \in  \left\lbrack  {1 : q}\right\rbrack \) such that
+
+\[
+\left( {1 - \theta }\right) {\epsilon }_j\frac{{\delta }_{k + 1, j}^j}{j!} \leq  \left( {{L}_{f, p} + {\sigma }_{\max }}\right) \mathop{\sum }\limits_{\ell  = 1}^j\frac{{\delta }_{k + 1, j}^{\ell }}{\ell !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - \ell  + 1},\tag{12.2.52}
+\]
+
+where \( {\sigma }_{\max } \) is given by (4.1.19).
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.11 (OCR Markdown line 12812)"
+deps = ["arqpRun"]
+
+[[node]]
+id = "lemma_12_2_12"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.12: Lower bound on the length of step for \( \mathrm{AR}{qp} \)
+
+Suppose that iteration \( k \) is successful and that the \( \mathrm{AR}{qp} \) algorithm does not terminate at iteration \( k + 1 \) . Suppose also that (as Lemma 12.2.9 allows) the algorithm ensures that \( {\delta }_{k + 1, j} = 1 \) for \( j \in  \left\lbrack  {1 : \min \left( {q,2}\right) }\right\rbrack \) and that (12.2.51) holds for \( j \in  \left\lbrack  {3 : q}\right\rbrack \) . Then there exists a \( j \in  \left\lbrack  {1 : q}\right\rbrack \) such that
+
+\[
+\begin{Vmatrix}{s}_{k}\end{Vmatrix} \geq  \left\{  \begin{array}{ll} {\left( \frac{1 - \theta }{{2j}!\left( {{L}_{f, p} + {\sigma }_{\max }}\right) }\right) }^{\frac{1}{p - j + 1}}{\epsilon }_{j}^{\frac{1}{p - j + 1}} & \text{ if }q \in  \{ 1,2\} , \\  {\left( \frac{\left( {1 - \theta }\right) {\kappa }_{\delta ,\min }^{j - 1}}{{2j}!\left( {{L}_{f, p} + {\sigma }_{\max }}\right) }\right) }^{\frac{1}{p}}{\epsilon }_{j}^{\frac{j}{p}} & \text{ if }q > 2, \end{array}\right.\tag{12.2.57}
+\]
+
+where \( {\kappa }_{\delta ,\min } \) is defined as in (12.2.51) and \( {\sigma }_{\max } \) as in (4.1.19).
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.12 (OCR Markdown line 12864)"
+deps = ["lemma_12_2_11"]
+
+[[node]]
+id = "lemma_12_2_13"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 12.2.13: Model and function decreases (ARqp)
+
+Suppose that f.D1qL holds. Then
+
+\[
+\Delta {T}_{f, p}\left( {{x}_k,{s}_k}\right)  \geq  {\kappa }_{\Delta m}\mathop{\min }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{{\pi }_j}\tag{12.2.61}
+\]
+
+
+for every iteration of algorithm ARqp before termination, where
+
+\[
+{\kappa }_{\Delta m}\overset{\text{ def }}{ = }\left\{  \begin{array}{ll} \frac{{\sigma }_{\min }}{\left( {p + 1}\right) !}{\left( \frac{1 - \theta }{{2q}!\left( {{L}_{f, p} + {\sigma }_{\max }}\right) }\right) }^{\frac{p + 1}{p - q + 1}} & \text{ if }q \in  \{ 1,2\} , \\  \frac{{\sigma }_{\min }}{\left( {p + 1}\right) !}{\left( \frac{\left( {1 - \theta }\right) {\kappa }_{\delta ,\min }^{q - 1}}{{2q}!\left( {{L}_{f, p} + {\sigma }_{\max }}\right) }\right) }^{\frac{q\left( {p + 1}\right) }{p}} & \text{ if }q > 2, \end{array}\right.
+\]
+
+with \( {\kappa }_{\delta ,\min } \) being given by (12.2.51), \( {\sigma }_{\max } \) by (4.1.19) on p. 103, and
+
+\[
+{\pi }_{j}\overset{\text{ def }}{ = }\left\{  \begin{array}{ll} \frac{p + 1}{p - j + 1} & \text{ if }q \in  \{ 1,2\} , \\  \frac{j\left( {p + 1}\right) }{p} & \text{ if }q > 2. \end{array}\right.
+\]
+
+If, in addition, \( k \in  \mathcal{S} \) ,
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  {\eta }_1{\kappa }_{\Delta m}\mathop{\min }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{{\pi }_j}.\tag{12.2.62}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.13 (OCR Markdown line 12910)"
+deps = ["lemma_12_2_12"]
+
+[[node]]
+id = "theorem_12_2_14"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.2.14: qth-order complexity for the ARqp algorithm
+
+Suppose that f.Bb and f.D1pL hold. Suppose also that the ARqp algorithm ensures, for each \( k \) , either that \( {\delta }_{k + 1, j} = 1 \) for \( j \in  \left\lbrack  {1 : q}\right\rbrack \) if \( q \in  \{ 1,2\} \) (as allowed by Lemma 12.2.9) or that (12.2.51) holds otherwise.
+
+1. If \( q \in  \{ 1,2\} \) , then there exist positive constants \( {\kappa }_{\mathrm{ARqp}}^{s,1},{\kappa }_{\mathrm{ARqp}}^{a,1} \) , and \( {\kappa }_{\mathrm{ARqp}}^c \) such that, for any \( \epsilon  \in  (0,1{\rbrack }^q \) , the \( \mathrm{AR}{qp} \) algorithm requires at most
+
+\[
+{\# }_{\mathsf{{ARqp}}}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathsf{{ARqp}}}^{a,1}\frac{f\left( {x}_{0}\right)  - {f}_{\mathsf{{low}}}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{p + 1}{p - j + 1}}} + {\kappa }_{\mathsf{{ARqp}}}^{c} = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{p + 1}{p - j + 1}}}\right)\tag{12.2.63}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathsf{{ARqp}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathsf{{ARqp}}}^{s,1}\frac{f\left( {x}_{0}\right)  - {f}_{\mathsf{{low}}}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{p + 1}{p - j + 1}}} + 2 = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{p + 1}{p - j + 1}}}\right)\tag{12.2.64}
+\]
+
+evaluations of the derivatives of \( f \) of orders one to \( p \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^1\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+
+2. If \( q > 2 \) , then there exist positive constants \( {\kappa }_{\text{ ARqp }}^{s,2},{\kappa }_{\text{ ARqp }}^{a,2} \) and \( {\kappa }_{\text{ ARqp }}^{c} \) such that, for any \( \epsilon  \in  (0,1{\rbrack }^q \) , the ARqp algorithm requires at most
+
+\[
+{k}_{\text{ ARqp }}\overset{\text{ def }}{ = }{\kappa }_{\text{ ARqp }}^{a,2}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{j\left( {p + 1}\right) }{p}}} + {\kappa }_{\text{ ARqp }}^{c} = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{j\left( {p + 1}\right) }{p}}}\right)\tag{12.2.65}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+{\kappa }_{\text{ ARqp }}^{s,2}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{j\left( {p + 1}\right) }{p}}} + 2 = \mathcal{O}\left( {\mathop{\max }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{-\frac{j\left( {p + 1}\right) }{p}}}\right) \tag{12.2.66}
+\]
+
+evaluations of the derivatives of \( f \) of orders one to \( p \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^{{\delta }_{\epsilon }}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon , j}^j/j \) ! for some \( {\delta }_{\epsilon } \in  (0,1{\rbrack }^q \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.14 (OCR Markdown line 12952)"
+deps = ["lemma_12_2_13", "lemma_12_2_10"]
+
+[[node]]
+id = "theorem_12_2_15"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.2.15: Slow qth-order convergence of the ARqp algorithm (good case)
+
+Suppose that the choice \( {\delta }_{{s}_k, j} = 1 \) is possible (and made) for all \( k \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) and that \( {\epsilon }_j = \epsilon  \leq  \frac{1}{2} \) for all \( j \) . Then the ARqp algorithm applied to minimize a function \( f \) satisfying \( f.{Bb} \) and \( F.{D1pL} \) may require
+
+\[
+{\epsilon }^{-\frac{p + 1}{p - q + 1}}
+\]
+
+iterations and evaluations of \( f \) and of its derivatives of order one up to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^1\left( {x}_{\epsilon }\right)  \leq  \epsilon /j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.15 (OCR Markdown line 13054)"
+deps = ["arqpRun"]
+
+[[node]]
+id = "corollary_12_2_16"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Corollary 12.2.16: Slow \( q \) th-order convergence of the ARqp algorithm for
+
+\[
+q \in  \{ 1,2\}
+\]
+
+Suppose that \( q \in  \{ 1,2\} \) and that \( {\epsilon }_j = \epsilon  \leq  \frac{1}{2} \) for \( j \leq  2 \) . Then the ARqp algorithm applied to minimize a function \( f \) satisfying F.Bb and f.D1pL may require
+
+\[
+{\epsilon }^{-\frac{p + 1}{p - q + 1}}
+\]
+
+iterations and evaluations of \( f \) and of its derivatives of orders one up to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^1\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Corollary 12.2.16 (OCR Markdown line 13206)"
+deps = ["theorem_12_2_15"]
+
+[[node]]
+id = "theorem_12_2_17"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 12.2.17: Slow qth-order convergence of the ARqp algorithm (general case)
+
+Let \( 1 \leq  q \leq  p \leq  r \) . If \( {\epsilon }_j = \epsilon  \in  \left( {0,1}\right) \) is sufficiently small for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) , and if the ARqp algorithm is applied to minimize a function \( f \) satisfying f.Bb and f.D1rL, and we can choose an arbitrary \( {\delta }_{k, j} > 0 \) satisfying (12.251), it may then require
+
+\[
+{\epsilon }^{-\frac{q\left( {p + 1}\right) }{p}}
+\]
+
+iterations and evaluations of \( f \) and of its derivatives of orders one up to \( p \) to produce a point \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^{{\delta }_{\epsilon , j}}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon , j}^j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) and some \( {\delta }_{\epsilon } \in  (0,1{\rbrack }^q \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.2.17 (OCR Markdown line 13262)"
+deps = ["arqpRun"]

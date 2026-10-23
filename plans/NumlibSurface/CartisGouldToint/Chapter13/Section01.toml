@@ -1,0 +1,523 @@
+namespace = "CartisGouldToint"
+desc = '''
+Implicit dynamic accuracy for high-order trust-region and regularization algorithms. f.D0rL means C^r with every derivative order 0,…,r globally Lipschitz (including f itself); Lf is the maximum of their constants, all ≥1. Approximate tensors obey ||Dbar^i f−D^i f||≤κ_(∇,i) h_(k,i); unknown positive κ_(∇,i) are fixed oracle constants. Accuracy parameters decrease geometrically in Step 5. Count T (ordinary trial) and A (accuracy-improvement) iterations separately; S contains successful trial iterations. The true Taylor criticality, rather than the approximate tensor model alone, must satisfy the final certificate.
+'''
+
+[[node]]
+id = "implicitAccuracyOracle"
+kind = "definition"
+desc = '''
+For order r≥1 an implicit-accuracy derivative oracle returns symmetric tensors Dbar^i f(x) at requested h_i>0 with ||Dbar^i f(x)−D^i f(x)||≤κ_(∇,i)h_i for fixed unknown κ_(∇,i)>0. Define the approximate Taylor polynomial/decrement from these actual tensors, including the degree-zero convention. Accuracy updates h_(k+1,i)≤γh h_(k,i), 0<γh<1, are part of the algorithm.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 13.1"
+deps = []
+
+[[node]]
+id = "trqidaRun"
+kind = "definition"
+desc = '''
+Algorithm 13.1.1 exact local rules, including initialization, approximate optimality loop, Taylor-decrease test, accuracy-relative-to-step test (13.1.9), acceptance/update, and Step 5 reductions. Use the full nested Step 1 and Step 2 branches in (13.1.3)–(13.1.21). T contains trials reaching the ratio calculation, A contains accuracy-improving iterations, and S successful trials; define counters for calls of f and all approximate derivatives. Define φhat by (13.1.25) from the actually computed decrements. No desired true criticality or evaluation bound is assumed.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 13.1"
+deps = ["implicitAccuracyOracle", "trqRun"]
+
+[[node]]
+id = "arqpidaRun"
+kind = "definition"
+desc = '''
+Algorithm 13.1.2 exact local rules with mk(s)=Tbar_(f,p)(xk,s)+σk||s||^(p+1)/(p+1)!, oracle errors and accuracy-forcing test (13.1.46). Preserve nested optimality-radius loops, Step 2 model-minimization and stationarity tests, acceptance ratio (13.1.58), parameter update, and Step 5 geometric accuracy improvements. Keep radii δ^(0),δ^(1),δ^(2) distinct as in (13.1.42)–(13.1.61). Define T,A,S and call counters operationally; do not assume their cardinality bounds.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 13.1"
+deps = ["implicitAccuracyOracle", "arqpRun"]
+
+[[node]]
+id = "lemma_13_1_1"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.1: Successful and unsuccessful iterations (TRqIDA)
+
+Suppose that the TRqIDA algorithm is used and that \( {\Delta }_k \geq  {\Delta }_{\min } \) for some \( {\Delta }_{\min } \in \; \left( {0,{\Delta }_0}\right\rbrack \) . Then
+
+\[
+\left| {\mathcal{T}}_k\right|  \leq  \left| {\mathcal{S}}_k\right| \left( {1 + \frac{\log {\gamma }_3}{\left| \log {\gamma }_2\right| }}\right)  + \frac{1}{\left| \log {\gamma }_2\right| }\left| {\log \left( \frac{{\Delta }_{\min }}{{\Delta }_0}\right) }\right| .\tag{13.1.22}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.1 (OCR Markdown line 13770)"
+deps = ["trqidaRun"]
+
+[[node]]
+id = "lemma_13_1_2"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.2: A useful lower bound for TR IDA
+
+Consider an iteration \( k \in  \mathcal{T} \) of the TR IDA algorithm, and define
+
+\[
+{\widehat{\phi }}_{f, k}\overset{\text{ def }}{ = }\frac{{j}_{k}!\overline{\Delta T}{}_{f,{j}_{k}}\left( {{x}_{k},{d}_{k}}\right) }{{\delta }_{k}^{{j}_{k}}},\tag{13.1.25}
+\]
+
+where \( {j}_k \) is the index \( j \) and the direction \( {d}_k = {d}_{k, j} \) for which (13.1.14) holds in Step 1 of Algorithm 13.1.1. Then
+
+\[
+\mathop{\min }\limits_{{i \in  {\mathcal{T}}_{k}}}{\widehat{\phi }}_{f, i} \geq  \frac{1}{2}\varsigma {\epsilon }_{\min }\tag{13.1.26}
+\]
+
+where \( {\epsilon }_{\min } = \mathop{\min }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j \) . Moreover,
+
+\[
+{\overline{\Delta T}}_{f,{j}_{k}}\left( {{x}_{k},{s}_{k}}\right)  \geq  {\widehat{\phi }}_{f, k}\frac{{\delta }_{k}^{{j}_{k}}}{{j}_{k}!}.\tag{13.1.27}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.2 (OCR Markdown line 13810)"
+deps = ["trqidaRun"]
+
+[[node]]
+id = "lemma_13_1_3"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.3: Condition for success (TRqIDA)
+
+Suppose that f.D0qL holds, that \( {L}_f \) is given by (13.1.23), and that \( {\widehat{\phi }}_{f, k} \) is defined by (13.1.25). Suppose also that
+
+\[
+{\Delta }_{k} \leq  \min \left\{  {\vartheta ,\frac{\left( 1 - {\eta }_{2}\right) }{{L}_{f} + 4\left( {q + 1}\right) !{\kappa }_{s}{\kappa }_{\nabla ,\max }}{\widehat{\phi }}_{f, k}}\right\}\tag{13.1.28}
+\]
+
+at iteration \( k \in  \mathcal{T} \) of the TRqIDA algorithm. Then \( {\rho }_k \geq  {\eta }_2 \) , iteration \( k \) is very successful, and \( {\Delta }_{k + 1} \geq  {\Delta }_k \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.3 (OCR Markdown line 13834)"
+deps = ["lemma_13_1_2"]
+
+[[node]]
+id = "lemma_13_1_4"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.4: Lower bound on the trust-region radius (TRqIDA)
+
+Suppose that f.D0qL holds. Then the TRqIDA algorithm generates
+
+\[
+{\Delta }_{k} \geq  \begin{cases} \min \left\{  {{\gamma }_{1}\vartheta ,{\kappa }_{\Delta }\mathop{\min }\limits_{{i \in  {\mathcal{T}}_{k}}}{\widehat{\phi }}_{f, i}}\right\}  & \text{ if }{\mathcal{T}}_{k} \neq  \varnothing , \\  {\gamma }_{1}\vartheta & \text{ otherwise } \end{cases}\tag{13.1.30}
+\]
+
+for all \( k \geq  0 \) , where \( {\widehat{\phi }}_{f, i} \) is defined as in (13.1.25) and
+
+\[
+\begin{gathered}{\kappa }_{\Delta }\overset{\text{ def }}{ = }\min \left\lbrack  {1,\frac{{\gamma }_{1}\left( {1 - {\eta }_{2}}\right) }{{L}_{f} + 4\left( {q + 1}\right) !{\kappa }_{s}{\kappa }_{\nabla ,\max }}}\right\rbrack \\ \times  \min \left\lbrack  {\vartheta ,\frac{{\Delta }_0\mathop{\min }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\delta }_0^j}{{2q}\left( {\mathop{\max }\limits_{i \in  \left\lbrack  {1 : q}\right\rbrack  }\begin{Vmatrix}{{\nabla }_x^{i}f\left( {x}_0\right) }\end{Vmatrix} + {\kappa }_{\nabla ,\max }{\kappa }_h}\right) }}\right\rbrack  .\end{gathered}\tag{13.1.31}
+\]
+
+Also, for all \( k \geq  0 \) , we have
+
+\[
+{\delta }_k \geq  \varsigma {\kappa }_{\delta }{\epsilon }_{\min }\tag{13.1.32}
+\]
+
+where
+
+\[
+{\kappa }_{\delta }\overset{\text{ def }}{ = }\frac{1}{2}{\kappa }_{\Delta }\text{ . }\tag{13.1.33}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.4 (OCR Markdown line 13878)"
+deps = ["lemma_13_1_3"]
+
+[[node]]
+id = "lemma_13_1_5"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.5: Model decrease (TRqIDA)
+
+Suppose that f.D0qL holds. Then the TRqIDA algorithm ensures that
+
+\[
+{\overline{\Delta T}}_{f,{j}_{k}}\left( {{x}_{k},{s}_{k}}\right)  \geq  \frac{{\left( \varsigma {\kappa }_{\delta }\right) }^{q + 1}}{q!}{\epsilon }_{\min }^{q + 1}\tag{13.1.34}
+\]
+
+
+for every iteration \( k \in  \mathcal{T} \) of algorithm TRqIDA before reaching approximate optimality, where \( {\kappa }_{\delta } \) is defined as in (13.1.33). If, in addition, \( k \in  \mathcal{S} \) , then
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  \frac{{\eta }_1{\left( \varsigma {\kappa }_{\delta }\right) }^{q + 1}}{{2q}!}{\epsilon }_{\min }^{q + 1}.\tag{13.1.35}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.5 (OCR Markdown line 13908)"
+deps = ["lemma_13_1_4"]
+
+[[node]]
+id = "lemma_13_1_6"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.6: Finite loop in Step 2 of the TRqIDA algorithm
+
+Suppose that f.D0qL holds. Then branching from Step 2 to Step 5 of the TRqIDA algorithm cannot occur if
+
+\[
+{h}_{k,\max } \leq  {\kappa }_{s}{\left( \frac{{\varsigma }^{q + 1}{\kappa }_{\delta }^{q}}{{4q}!{\bar{L}}_{f}}\right) }^{q}{\epsilon }_{\min }^{q\left( {q + 1}\right) }.\tag{13.1.36}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.6 (OCR Markdown line 13932)"
+deps = ["lemma_13_1_4"]
+
+[[node]]
+id = "lemma_13_1_7"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.7: The loop in Step 1 of the TRqIDA algorithm
+
+Suppose that f.D0qL holds. If
+
+\[
+{h}_{k,\max } \leq  \frac{{\varsigma }^{q + 1}{\kappa }_{\delta }^q}{{4q}!{\kappa }_{\nabla ,\max }}{\epsilon }_{\min }^{q + 1},\tag{13.1.37}
+\]
+
+then branching from Step 1 to Step 5 of the TRqIDA algorithm achieves the desired approximate optimality condition, \( {\phi }_{f, j}^{{\delta }_k}\left( {x}_k\right)  \leq  {\epsilon }_j\frac{{\delta }_k^j}{j!} \) for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.7 (OCR Markdown line 13974)"
+deps = ["trqidaRun"]
+
+[[node]]
+id = "theorem_13_1_8"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 13.1.8: \( q \) th-order complexity for the TRqIDA algorithm
+
+Suppose that f.D0qL and f.Bb hold. Then there exist positive constants \( {\kappa }_{\text{ TRIDA }}^{\mathbf{A}} \) , \( {\kappa }_{\text{ TRqIDA }}^{B},{\kappa }_{\text{ TRqIDA }}^{C},{\kappa }_{\text{ TRqIDA }}^{E} \) , and \( {\kappa }_{\text{ TRqIDA }}^{F} \) such that, for any \( \epsilon  \in  (0,1{\rbrack }^q \) , the TRqIDA algorithm (p. 329) requires at most
+
+\[
+\begin{gathered}{\# }_{\text{ TrqIDA }}^{F}\overset{\text{ def }}{ = }{\kappa }_{\text{ TRqIDA }}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{q + 1}} + {\kappa }_{\text{ TRqIDA }}^{B}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\text{ TRqIDA }}^{C} \\ = \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right)\end{gathered}\tag{13.1.38}
+\]
+
+evaluations of \( f \) and at most
+
+\[
+\begin{gathered}{\# }_{\text{ TRqIDA }}^{D}\overset{\text{ def }}{ = }{\kappa }_{\text{ TRqIDA }}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{q + 1}} + {\kappa }_{\text{ TRqIDA }}^{E}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\text{ TRqIDA }}^{F} \\ = \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\left( {q + 1}\right) }}\right)\end{gathered}\tag{13.1.39}
+\]
+
+evaluations of the inexact derivatives \( \overline{{\nabla }_{x}^{i}f} \) of order \( i \) from one to \( q \) to produce an iterate \( {x}_{\epsilon } \) and an optimality radius \( {\delta }_{\epsilon } \in  (0,1\rbrack \) such that \( {\phi }_{f, q}^{\delta }\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon }^j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+
+Documented source/OCR correction and formalization requirements: OCR correction: replace φ_(f,q)^δ in the final condition with φ_(f,j)^(δepsilon), for each j. Function evaluation and derivative evaluation counters differ by accuracy-improvement iterations and their logarithmic terms; retain both.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.1.8 (OCR Markdown line 13994)"
+deps = ["lemma_13_1_1", "lemma_13_1_5", "lemma_13_1_6", "lemma_13_1_7"]
+
+[[node]]
+id = "lemma_13_1_9"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.9: Successful and unsuccessful iterations (ARqpIDA)
+
+Suppose that the ARqpIDA algorithm is used and that \( {\sigma }_k \leq  {\sigma }_{\max } \) for some \( {\sigma }_{\max } > 0 \) . Then
+
+\[
+\left| {\mathcal{T}}_k\right|  \leq  \left| {\mathcal{S}}_k\right| \left( {1 + \frac{\left| \log {\gamma }_1\right| }{\log {\gamma }_2}}\right)  + \frac{1}{\log {\gamma }_2}\log \left( \frac{{\sigma }_{\max }}{{\sigma }_0}\right) .\tag{13.1.62}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.9 (OCR Markdown line 14248)"
+deps = ["arqpidaRun"]
+
+[[node]]
+id = "lemma_13_1_10"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.10: Relationship between model and Taylor decrements
+
+Suppose that f.D0pL holds, that \( {\bar{m}}_{k}\left( s\right) \) is the inexact model (13.1.45) corresponding to some approximate derivative values \( {\left\{  {\nabla }_x^{\ell }f\left( {x}_k\right) \right\}  }_{\ell  = 1}^p \) , and that \( {\bar{L}}_{f} \) is given by (13.1.63). Given \( \alpha  > 0 \) and
+
+\[
+\delta  \in  \left( {0,\min \left( {1,\frac{\alpha }{4\max \left\lbrack  {{\bar{L}}_{f},{\sigma }_{k}}\right\rbrack  }}\right) }\right\rbrack  ,\tag{13.1.64}
+\]
+
+suppose that there is a displacement \( d \in  {\mathcal{B}}_{\delta } \) for which
+
+\[
+{\overline{\Delta T}}_{f, j}\left( {{x}_{k}, d}\right)  \geq  \alpha \frac{{\delta }^{j}}{j!}
+\]
+
+for some \( j \in  \left\lbrack  {1 : q}\right\rbrack \) . Then
+
+\[
+\Delta {\bar{m}}_{k}\left( d\right)  \geq  \frac{1}{2}\alpha \frac{{\delta }^{j}}{j!}.\tag{13.1.65}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.10 (OCR Markdown line 14286)"
+deps = ["arqpidaRun"]
+
+[[node]]
+id = "lemma_13_1_11"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.11: Outcome of Step 1 of the ARqpIDA algorithm
+
+Suppose that f.D0pL holds and that \( {\bar{L}}_{f} \) is given by (13.1.63). Then the loop on \( {\delta }_{k, j} \) in Step 1 is finite (i.e., Step 1.4 cannot be performed ad infinitum), and
+
+\[
+{\delta }_{k, j}^{\left( 0\right) } \geq  {\delta }_{k, j} \geq  {\delta }_{k, j}^{\left( 1\right) } \geq  \min \left\lbrack  {\frac{\varsigma {\epsilon }_{j}}{{16}\max \left\lbrack  {{\bar{L}}_{f},{\sigma }_{k}}\right\rbrack  },{\delta }_{k, j}^{\left( 0\right) }}\right\rbrack  .\tag{13.1.66}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.11 (OCR Markdown line 14332)"
+deps = ["lemma_13_1_10"]
+
+[[node]]
+id = "lemma_13_1_12"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.12: Outcomes of Step 2 of the ARqpIDA algorithm
+
+Suppose that f.D0pL holds and that \( {\bar{L}}_{f} \) is given by (13.1.63). Then Step 2 of the ARqpIDA algorithm, using Algorithm 12.2.3 (p. 303), is well defined and produces a pair \( \left( {{s}_k,{\delta }_{{s}_k}}\right) \) such that \( {s}_k \neq  0 \) and either
+
+(i) \( \begin{Vmatrix}{s}_k\end{Vmatrix} \geq  1 \) and \( {\delta }_{{s}_k} = {\delta }_k \) , or
+
+(ii) the second inequality in (13.1.57) holds for some \( {\delta }_{{s}_k} \) such that
+
+\[
+{\delta }_{{s}_{k}, j} = 1\text{ for }j \in  \left\lbrack  {1 : \min \left( {2, q}\right) }\right\rbrack\tag{13.1.69}
+\]
+
+and
+
+\[
+{\delta }_{{s}_{k}, j} \geq  \frac{\varsigma \theta }{{24}\max \left\lbrack  {{\bar{L}}_{f},{\sigma }_{k}}\right\rbrack  }{\epsilon }_{j}\;\text{ for }\;j \in  \left\lbrack  {3 : q}\right\rbrack  .\tag{13.1.70}
+\]
+
+Moreover,
+
+\[
+{\delta }_{k, j}^{\left( 0\right) } \geq  {\delta }_{k, j} \geq  {\delta }_{k, j}^{\left( 1\right) } \geq  {\kappa }_{\delta }^{\left( 1\right) }\left( {\sigma }_{k,\max }\right) {\epsilon }_j\tag{13.1.71}
+\]
+
+for all \( k \geq  0 \) and \( j \in  \left\lbrack  {1 : q}\right\rbrack \) , where \( {\sigma }_{k,\max } = \mathop{\max }\limits_{i \in  \left\lbrack  {0 : k}\right\rbrack  }{\sigma }_i \) and
+
+\[
+{\kappa }_{\delta }^{\left( 1\right) }\left( \sigma \right) \overset{\text{ def }}{ = }\frac{\varsigma \theta }{{24}\max \left\lbrack  {{\bar{L}}_{f},\sigma }\right\rbrack  }.\tag{13.1.72}
+\]
+
+Finally, \( k \in  \mathcal{T} \) whenever
+
+\[
+{h}_{k,\max } \leq  {\kappa }_{s}{\left( \frac{\varsigma {\left( {\kappa }_{\delta }^{\left( 1\right) }\left( {\sigma }_{k,\max }\right) \right) }^{q}}{{12q}!\max \left\lbrack  {{\bar{L}}_{f},{\sigma }_{k,\max }}\right\rbrack  }\right) }^{p}{\epsilon }_{\min }^{p\left( {q + 1}\right) }.\tag{13.1.73}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.12 (OCR Markdown line 14358)"
+deps = ["lemma_13_1_10"]
+
+[[node]]
+id = "lemma_13_1_13"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.13: Model decrease for the ARqpIDA algorithm
+
+The mechanism of the ARqpIDA algorithm guarantees that
+
+\[
+{\overline{\Delta T}}_{f, p}\left( {{x}_{k},{s}_{k}}\right)  \geq  \frac{{\sigma }_{k}}{\left( {p + 1}\right) !}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p + 1}\tag{13.1.76}
+\]
+
+for all \( k \in  \mathcal{T} \) and that (13.1.58) is well defined.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.13 (OCR Markdown line 14468)"
+deps = ["arqpidaRun"]
+
+[[node]]
+id = "lemma_13_1_14"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.14: Condition for success (ARqpIDA)
+
+Suppose that f.D0pL holds. Then
+
+\[
+{\sigma }_{k} \leq  {\sigma }_{\max }\overset{\text{ def }}{ = }\max \left\lbrack  {{\sigma }_{0},{\gamma }_{3}\frac{2{L}_{f, p} + 4\left( {p + 1}\right) !{\kappa }_{s}{\kappa }_{\nabla ,\max }}{1 - {\eta }_{2}}}\right\rbrack\tag{13.1.77}
+\]
+
+for all \( k \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.14 (OCR Markdown line 14488)"
+deps = ["lemma_13_1_13"]
+
+[[node]]
+id = "lemma_13_1_15"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.15: The optimality loop in Step 1 of the ARqpIDA algorithm
+
+Suppose that f.D0pL holds. If
+
+\[
+{h}_{k,\max } \leq  \varsigma \frac{{\left( {\kappa }_{\delta }^{\left( 1\right) }\left( {\sigma }_{\max }\right) \right) }^q}{{4q}!{\kappa }_{\nabla ,\max }}{\epsilon }_{\min }^{q + 1},\tag{13.1.78}
+\]
+
+then branching from Step 1 to Step 5 of the ARqpIDA algorithm achieves the desired approximate optimality condition, \( {\phi }_{f, j}^{{\delta }_k}\left( {x}_k\right)  \leq  {\epsilon }_j\frac{{\delta }_k^j}{j!} \) , for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.15 (OCR Markdown line 14532)"
+deps = ["arqpidaRun"]
+
+[[node]]
+id = "lemma_13_1_16"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.16: A useful inequality for the ARqpIDA algorithm
+
+Suppose that f.D0pL holds. Suppose also that iteration \( k \in  \mathcal{T} \) is successful, that approximate optimality is not achieved at iteration \( k + 1 \) (i.e.,(12.1.25) (p. 285) does not hold), and that \( \begin{Vmatrix}{s}_k\end{Vmatrix} < 1 \) . Then there exists \( j \in  \left\lbrack  {1 : q}\right\rbrack \) such that
+
+\[
+\left( {1 - \theta }\right) {\epsilon }_j\frac{{\left( {\delta }_{k + 1, j}^{\left( 0\right) }\right) }^j}{j!} \leq  \left( {{L}_{f, p} + {\sigma }_{\max } + 3{\kappa }_{\nabla ,\max }{\kappa }_s}\right) \mathop{\sum }\limits_{\ell  = 1}^j\frac{{\left( {\delta }_{k + 1, j}^{\left( 0\right) }\right) }^{\ell }}{\ell !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p - \ell  + 1},
+\]
+
+(13.1.79)
+
+where \( {\sigma }_{\max } \) is given by (13.1.77).
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.16 (OCR Markdown line 14566)"
+deps = ["lemma_13_1_14"]
+
+[[node]]
+id = "lemma_13_1_17"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.17: Lower bound on the length of the step for ARqpIDA
+
+Suppose that f.D0pL holds, that iteration \( k \) is successful, and that approximate optimality is not achieved at iteration \( k + 1 \) . Suppose also that the algorithm ensures that (13.1.69) and (13.1.70) hold. Then there exists a \( j \in  \left\lbrack  {1 : q}\right\rbrack \) such that
+
+\[
+\begin{Vmatrix}{s}_{k}\end{Vmatrix} \geq  \left\{  \begin{array}{ll} {\left( \frac{1 - \theta }{{2j}!\left( {{L}_{f, p} + {\sigma }_{\max } + 3{\kappa }_{\nabla ,\max }{\kappa }_{s}}\right) }\right) }^{\frac{1}{p - j + 1}}{\epsilon }_{j}^{\frac{1}{p - j + 1}} & \text{ if }q \in  \{ 1,2\} , \\  {\left( \frac{\left( {1 - \theta }\right) {\kappa }_{\delta ,\min }^{j - 1}}{{2j}!\left( {{L}_{f, p} + {\sigma }_{\max } + 3{\kappa }_{\nabla ,\max }{\kappa }_{s}}\right) }\right) }^{\frac{1}{p}}{\epsilon }_{j}^{\frac{j}{p}} & \text{ if }q > 2, \end{array}\right.
+\]
+
+(13.1.80)
+
+where
+
+\[
+{\kappa }_{\delta ,\min }\overset{\text{ def }}{ = }\frac{\varsigma \theta }{{24}\max \left\lbrack  {{\bar{L}}_{f},{\sigma }_{\max }}\right\rbrack  }\tag{13.1.81}
+\]
+
+and \( {\sigma }_{\max } \) is given by (13.1.77).
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.17 (OCR Markdown line 14610)"
+deps = ["lemma_13_1_16"]
+
+[[node]]
+id = "lemma_13_1_18"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Lemma 13.1.18: Model and function decreases (ARqpIDA)
+
+Suppose that f.D0pL holds. Then
+
+\[
+{\overline{\Delta T}}_{f, p}\left( {{x}_{k},{s}_{k}}\right)  \geq  {\kappa }_{\Delta m}\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{{\pi }_{j}}\tag{13.1.82}
+\]
+
+for every iteration \( k \in  \mathcal{T} \) of algorithm ARqpIDA before reaching approximate optimality, where
+
+\[
+{\kappa }_{\Delta m}\overset{\text{ def }}{ = }\left\{  \begin{array}{ll} \frac{{\sigma }_{\min }}{\left( {p + 1}\right) !}{\left( \frac{1 - \theta }{{2q}!\left( {{L}_{f, p} + {\sigma }_{\max } + 3{\kappa }_{\nabla ,\max }{\kappa }_{s}}\right) }\right) }^{\frac{p + 1}{p - q + 1}} & \text{ if }q \in  \{ 1,2\} , \\  \frac{{\sigma }_{\min }}{\left( {p + 1}\right) !}{\left( \frac{\left( {1 - \theta }\right) {\kappa }_{\delta ,\min }^{q - 1}}{{2q}!\left( {{L}_{f, p} + {\sigma }_{\max } + 3{\kappa }_{\nabla ,\max }{\kappa }_{s}}\right) }\right) }^{\frac{q\left( {p + 1}\right) }{p}} & \text{ if }q > 2, \end{array}\right.
+\]
+
+with \( {\kappa }_{\delta ,\min } \) being given by (13.1.81) and \( {\sigma }_{\max } \) by (13.1.77), and
+
+\[
+{\pi }_{j}\overset{\text{ def }}{ = }\left\{  \begin{array}{ll} \frac{p + 1}{p - j + 1} & \text{ if }q \in  \{ 1,2\} , \\  \frac{j\left( {p + 1}\right) }{p} & \text{ if }q > 2. \end{array}\right.
+\]
+
+If, in addition, \( k \in  \mathcal{S} \) , then
+
+\[
+f\left( {x}_k\right)  - f\left( {x}_{k + 1}\right)  \geq  \frac{1}{2}{\eta }_1{\kappa }_{\Delta m}\mathop{\min }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{{\pi }_j}.\tag{13.1.83}
+\]
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.18 (OCR Markdown line 14632)"
+deps = ["lemma_13_1_17"]
+
+[[node]]
+id = "theorem_13_1_19"
+kind = "theorem"
+desc = '''
+Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
+
+Theorem 13.1.19: qth-order complexity for the ARqpIDA algorithm
+
+
+Suppose that f.D0pL and f.Bb hold. Suppose also that the algorithm ensures that
+(13.1.69) and (13.1.70) hold.
+   1. If \( q \in  \{ 1,2\} \) ,then there exist positive constants \( {\kappa }_{\text{ AraplDA,1 }}^{S},{\kappa }_{\text{ AraplDA,1 }}^{A},{\kappa }_{\text{ AraplDA }}^{C} \) ,
+      \( {\kappa }_{\text{ ARqpIDA }}^{E} \) ,and \( {\kappa }_{\text{ ARqpIDA }}^{F} \) such that,for any \( \epsilon  \in  (0,1{\rbrack }^q \) ,the ARqpIDA algorithm
+      requires at most
+                  \[{\# }_{\mathrm{{ARqpIDA}},1}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpIDA}},1}^{A}\frac{f\left( {x}_{0}\right)  - {f}_{kw}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{p + 1}{p - j + 1}}} + {\kappa }_{\mathrm{{ARqpIDA}}1}^{C}\] (13.1.84)
+
+
+                          \[= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{p + 1}{p - j + 1}}}\right)\]
+
+      evaluations of \( f \) and at most
+          \[{\# }_{\mathrm{{ARqpIDA}},1}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpIDA}},1}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{p + 1}{p - j + 1}}} + {\kappa }_{\mathrm{{ARqpIDA}}1}^{E}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\mathrm{{ARqpIDA}}1}^{F}\]
+
+
+                  \[= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{p + 1}{p - j + 1}}}\right)\]
+
+                                                                      (13.1.85)
+      evaluations of the inexact derivatives \( \overline{{\nabla }_{x}^{i}f} \) of order \( i \) from one to \( p \) to pro-
+      duce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{f,j}^1\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j/j \) ! for all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+   2. If \( q > 2 \) ,then there exist positive constants \( {\kappa }_{\mathrm{ARqpIDA},2}^S,{\kappa }_{\mathrm{ARqpIDA},2}^A,{\kappa }_{\mathrm{ARqpIDA},2}^C,{\kappa }_{\mathrm{ARqpIDA},}^E \)
+      and \( {\kappa }_{\text{ ARqpIDA }}^{F} \) such that,for any \( \epsilon  \in  (0,1{\rbrack }^q \) ,the ARqpIDA algorithm requires at
+      most
+                  \[{\# }_{\mathrm{{ARqIDAp}},2}^{F}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpIDA}},2}^{A}\underset{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\underbrace{\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{p\left( {p + 1}\right) } + {\kappa }_{\mathrm{{ARqpIDA}} }^{C}}}\] (13.1.86)
+
+
+                          \[= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{j\left( {p + 1}\right) }{p}}}\right)\]
+
+
+
+evaluations of \( f \) and at most
+
+\[
+{\# }_{\mathrm{{ARqIDAp}},2}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{ARqpDA}},2}^{S}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}^{\frac{j\left( {p + 1}\right) }{p}}} + {\kappa }_{\mathrm{{ARqpIDA}}1}^{E}\left| {\log \left( {\mathop{\min }\limits_{{j \in  \left\lbrack  {1 : q}\right\rbrack  }}{\epsilon }_{j}}\right) }\right|  + {\kappa }_{\mathrm{{ARqpIDA}}1}^{F}
+\]
+
+\[
+= \mathcal{O}\left( {\mathop{\max }\limits_{j \in  \left\lbrack  {1 : q}\right\rbrack  }{\epsilon }_j^{-\frac{j\left( {p + 1}\right) }{p}}}\right)
+\]
+
+(13.1.87)
+
+evaluations of the inexact derivatives \( \overline{{\nabla }_{x}^{i}f} \) of order \( i \) from one to \( p \) to produce an iterate \( {x}_{\epsilon } \) such that \( {\phi }_{f, j}^{{\delta }_{\epsilon , j}}\left( {x}_{\epsilon }\right)  \leq  {\epsilon }_j{\delta }_{\epsilon , j}^j/j \) ! for some \( {\delta }_{\epsilon } \in  (0,1{\rbrack }^q \) and all \( j \in  \left\lbrack  {1 : q}\right\rbrack \) .
+
+Documented source/OCR correction and formalization requirements: OCR repair for (13.1.86): the missing denominator is min_(1≤j≤q) ε_j^(j(p+1)/p); the bound is κ_(ARqpIDA,2)^A (f(x0)−f_low)/(min_j ε_j^(j(p+1)/p))+κ^C. This is forced by (13.1.83), the following O-expression, and the derivation immediately after the theorem. Restore f_low for the corrupted f_kw. Keep both function counts and derivative counts including the latter logarithmic accuracy term.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 13.1.19 (OCR Markdown line 14668)"
+deps = ["lemma_13_1_9", "lemma_13_1_12", "lemma_13_1_15", "lemma_13_1_18"]

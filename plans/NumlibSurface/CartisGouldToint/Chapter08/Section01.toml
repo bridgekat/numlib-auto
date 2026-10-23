@@ -1,0 +1,31 @@
+namespace = "CartisGouldToint"
+desc = '''
+Quadratic models and weighted norms for the trust-region and regularization subproblems. Use a finite-dimensional real inner-product space; H is self-adjoint and M is self-adjoint positive definite. Defer general self-adjoint spectral and coercivity lemmas to a reusable backbone.
+'''
+
+[[node]]
+id = "quadraticModel"
+kind = "definition"
+desc = '''
+For g∈R^n and symmetric H, define m(s)=<g,s>+<s,Hs>/2, as (8.1.1). This constant-free model has m(0)=0; retain an objective constant only when explicitly present in a later Taylor model.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.1"
+deps = []
+
+[[node]]
+id = "weightedNorm"
+kind = "definition"
+desc = '''
+Given symmetric positive-definite M, define ||s||_M=sqrt(<s,Ms>) and its dual norm ||g||_(M⁻¹). Package positivity and the induced inner product with M, rather than accepting a function named norm without norm laws.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.1"
+deps = []
+
+[[node]]
+id = "regularizationSubproblemModel"
+kind = "definition"
+desc = '''
+For σ>0 and real r>2 define m^R(s,σ,r)=quadraticModel(g,H,s)+(σ/r)||s||_M^r, (8.1.4). The trust-region subproblem (8.1.2) minimizes quadraticModel on ||s||_M≤Δ, Δ>0; the regularization subproblem (8.1.3) minimizes m^R over all s.
+'''
+source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 8.1"
+deps = ["quadraticModel", "weightedNorm"]
