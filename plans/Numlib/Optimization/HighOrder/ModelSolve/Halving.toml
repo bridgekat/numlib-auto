@@ -1,0 +1,19 @@
+namespace = "ModelSolve"
+
+[[node]]
+id = "CriticalityPasses"
+
+[[node]]
+id = "CriticalHalvingRun"
+
+[[node]]
+id = "criticalityPasses_of_radius_le"
+
+[[node]]
+id = "exists_criticalHalvingRun"
+
+[[node]]
+id = "CriticalHalvingRun.eq_zero_of_order_le_two"
+
+[[node]]
+id = "exists_attaining_criticalHalvingRun"
