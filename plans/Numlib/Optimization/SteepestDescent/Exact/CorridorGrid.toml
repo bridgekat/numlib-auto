@@ -1,0 +1,73 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "Parameters"
+
+[[node]]
+id = "omega"
+
+[[node]]
+id = "amplitude"
+
+[[node]]
+id = "widthIncrement"
+
+[[node]]
+id = "horizontal"
+
+[[node]]
+id = "vertical"
+
+[[node]]
+id = "scalarValue"
+
+[[node]]
+id = "centerValue"
+
+[[node]]
+id = "Parameters.horizon_cast_pos"
+
+[[node]]
+id = "omega_mem"
+
+[[node]]
+id = "amplitude_mem"
+
+[[node]]
+id = "amplitude_pos"
+
+[[node]]
+id = "amplitude_succ"
+
+[[node]]
+id = "widthIncrement_eq_cube"
+
+[[node]]
+id = "widthIncrement_le_cube"
+
+[[node]]
+id = "horizontal_succ"
+
+[[node]]
+id = "vertical_succ"
+
+[[node]]
+id = "scalarValue_succ"
+
+[[node]]
+id = "centerValue_succ"
+
+[[node]]
+id = "horizontal_increasing"
+
+[[node]]
+id = "scalarValue_mem"
+
+[[node]]
+id = "omega_horizon"
+
+[[node]]
+id = "amplitude_horizon"
+
+[[node]]
+id = "amplitude_gt_accuracy"

@@ -1,0 +1,22 @@
+namespace = "Hermite"
+
+[[node]]
+id = "polynomialPrefix"
+
+[[node]]
+id = "polynomialPrefix_zero"
+
+[[node]]
+id = "polynomialPrefix_succ"
+
+[[node]]
+id = "polynomialPrefix_spec"
+
+[[node]]
+id = "polynomialPrefix_tail"
+
+[[node]]
+id = "polynomialPrefix_left"
+
+[[node]]
+id = "polynomialPrefix_bound"

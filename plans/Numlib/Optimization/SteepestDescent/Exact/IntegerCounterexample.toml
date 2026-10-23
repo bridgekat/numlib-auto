@@ -1,0 +1,4 @@
+namespace = "ExactSteepestDescent"
+
+[[node]]
+id = "no_exact_inverse_square_iterations"

@@ -10,6 +10,10 @@ has three zero residuals and unbounded size as `M` grows. The declaration
 item remains marked wrong in its plan; `lemma_B_2_1_corrected` supplies the endpoint and
 coefficient assertions together with the valid uniform estimate when the three initial
 jets are bounded as well.
+
+The remaining construction uses the book's global rounding convention: its
+canonical iteration horizon is the natural floor of the inverse-square rate.
+
 -/
 
 open Polynomial Set
@@ -57,7 +61,8 @@ theorem lemma_B_2_1_corrected {κ : ℝ} (_hκ : 1 ≤ κ) :
       iteratedDeriv 2 (fun z => q.eval z) 1 = H1 ∧
       (∀ j : Fin 6, q.coeff j =
         ![f0,g0,H0/2,10*r0-4*r1+r2/2,-15*r0+7*r1-r2,6*r0-3*r1+r2/2] j) ∧
-      (|f0| ≤ κ → |g0| ≤ κ → |H0| ≤ κ → |r0| ≤ κ → |r1| ≤ κ → |r2| ≤ κ →
+      (|f0| ≤ κ → |g0| ≤ κ → |H0| ≤ κ →
+        |r0| ≤ κ → |r1| ≤ κ → |r2| ≤ κ →
         ∀ j ≤ 2, ∀ t ∈ Icc (0 : ℝ) 1, |iteratedDeriv j (fun z => q.eval z) t| ≤ K) := by
   obtain ⟨K,hK,hbound⟩ := Hermite.quinticFromResiduals_uniform_bound κ
   refine ⟨K,hK,?_⟩
@@ -89,4 +94,6 @@ theorem quinticHermite_residual_only_bound_false {κ : ℝ} (hκ : 0 ≤ κ) :
   simp only [quinticHermite_constant, eval_C] at h
   rw [abs_of_pos (by positivity : 0 < |K| + 1)] at h
   linarith [le_abs_self K]
+
+
 end CartisGouldToint

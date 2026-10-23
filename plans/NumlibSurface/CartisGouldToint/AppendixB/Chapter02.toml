@@ -1,7 +1,6 @@
 namespace = "CartisGouldToint"
 
-# Planning conventions for remaining declarations:
-# Appendix B, Chapter 2: six numbered technical lemmas supporting the exact-linesearch steepest-descent lower-bound example. These are new results; the appendix proof of Theorem 2.2.5 is not a second numbered result. Use explicit piecewise quintic Hermite constructions, with a shared source-faithful data structure only for primitive parameters and formulas, never for the conclusions. The polynomial bound in B.2.1 requires bounded initial jets in addition to bounded residuals; this necessary correction is documented in its node. B.2.2 also requires an integer-compatible iteration count. The piecewise formula must be extended past the last iterate in a bounded C^2 manner as in A.9.2; do not continue omega_k linearly indefinitely.
+# Remaining construction uses the book's global floor-rounding convention.
 
 [[node]]
 id = "quinticHermite"
@@ -20,7 +19,7 @@ wrong = "The residual-only bound is false: endpoint data (M,0,0,M,0,0) give p(t)
 id = "sdexCounterexampleData"
 kind = "definition"
 desc = '''
-For epsilon in (0,1] and a positive integer N with (N:real)=epsilon^(-2), define omega_k=epsilon*(N-k)/N for k<=N; x0=y0=0, x_{k+1}=x_k+epsilon+omega_k, y_{k+1}=y_k+(-1)^k*(epsilon+omega_k). Define f1 from endpoint f1(x0)=4, decreases (epsilon+omega_k)^2, slopes -(epsilon+omega_k), zero second derivatives. Corridor ylow,yup is constant on alternating intervals, connected by quintic h(t)=10t^3-15t^4+6t^5 using (B.2.13),(B.2.14). Define delta=yup-ylow and ymid=(ylow+yup)/2. Define f2=(y-ymid)^2 in corridor, 8delta^2 outside its unit enlargement, with quintic connectors (B.2.19),(B.2.20). For x>=0 set fSDEX=(f1+f2)/sqrt(2); for x<0 use the linear f1 extension in (B.2.24). Supply explicit bounded C^2 right-end extension, not an assumption of boundedness/Lipschitz continuity.
+For epsilon in (0,1] and the positive natural horizon N=floor(epsilon^(-2)) under the book global rounding convention, define omega_k=epsilon*(N-k)/N for k<=N; x0=y0=0, x_{k+1}=x_k+epsilon+omega_k, y_{k+1}=y_k+(-1)^k*(epsilon+omega_k). Define f1 from endpoint f1(x0)=4, decreases (epsilon+omega_k)^2, slopes -(epsilon+omega_k), zero second derivatives. Corridor ylow,yup is constant on alternating intervals, connected by quintic h(t)=10t^3-15t^4+6t^5 using (B.2.13),(B.2.14). Define delta=yup-ylow and ymid=(ylow+yup)/2. Define f2=(y-ymid)^2 in corridor, 8delta^2 outside its unit enlargement, with quintic connectors (B.2.19),(B.2.20). For x>=0 set fSDEX=(f1+f2)/sqrt(2); for x<0 use the linear f1 extension in (B.2.24). Supply explicit bounded C^2 right-end extension, not an assumption of boundedness/Lipschitz continuity.
 '''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Appendix B.2, equations (B.2.4)--(B.2.25)"
 deps = ["quinticHermite"]
@@ -29,10 +28,22 @@ deps = ["quinticHermite"]
 id = "lemma_B_2_2"
 kind = "theorem"
 desc = '''
-Corrected integer-compatible version: for every positive natural N and epsilon in (0,1] with (N:real)=epsilon^(-2), the explicitly constructed fSDEX and starting point (0,0) admit prescribed positive steepest-descent steps whose first iterate with gradient norm<=epsilon has index exactly N. Prove norm(gradient fSDEX(x_k,y_k))=epsilon+omega_k for k<=N, >epsilon for k<N and =epsilon at N; identify the prescribed positive step from (B.2.25). The original statement for every real epsilon with exactly epsilon^(-2) iterations is impossible when epsilon^(-2) is not integral. Any later all-epsilon formulation must explicitly derive and state its integer rounding rather than casting a real iteration count to natural.
+Use the book's global rounding convention (Markdown line1409): the canonical actual iteration horizon is N=floor(epsilon^(-2)). Keep its explicitly natural floor in Lean; do not infer an incorrect source claim merely from nonintegrality of the unrounded rate. Construct the actual source grid and objective for every epsilon in (0,1], and prove first stopping exactly at N. The generic arithmetic helper only documents the need to state this rounding explicitly.
+
+Lemma B.2.2: Construction of the counterexample
+
+For any given \( \epsilon  \in  (0,1\rbrack \) , there exists a function \( f\left( {x, y}\right) \) from \( {\mathbb{R}}^2 \) to \( \mathbb{R} \) and a starting point \( {x}_0 \in  {\mathbb{R}}^2 \) such that the steepest-descent algorithm with prescribed stepsize applied to \( f\left( {x, y}\right) \) starting from \( {x}_0 \) needs exactly
+
+\[
+{k}_{\epsilon } = {\epsilon }^{-2}
+\]
+
+iterations to produce an iterate \( {x}_k \) such that \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  \epsilon \) .
+
 '''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.2"
 deps = ["sdexCounterexampleData"]
+
 
 [[node]]
 id = "lemma_B_2_3"
