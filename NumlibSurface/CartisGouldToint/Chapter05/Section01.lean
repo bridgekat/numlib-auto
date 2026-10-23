@@ -1,3 +1,4 @@
+import Numlib.Optimization.LeastSquares.Exponents
 import Numlib.Optimization.LeastSquares.Cascading
 import Numlib.Optimization.LeastSquares.Decrease
 import Numlib.Analysis.SpecialFunctions.Pow.Differences
@@ -298,5 +299,38 @@ theorem lemma_5_1_4 {n m p N i : ℕ}
   · intro hrel
     exact Real.relative_cascading_decrease (norm_nonneg _) hres.le hβ.le hβ1 hrel
       (by positivity)
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Lemma 5.1.6.** All six good-exponent choices (5.1.38)–(5.1.43),
+including every strict-positivity, exact-zero and `ℓ>1` conclusion. The odd
+factors from Lemma 5.1.5 and the positive even valuation in (5.1.43) are
+explicit. The source convention that natural model orders are positive is
+recorded by `hp`. -/
+theorem lemma_5_1_6 {p : ℕ} (hp : 0 < p) :
+    (∀ i : ℕ, Real.logb 2 (p : ℝ) < i →
+      0 < residualCascadingExponent p p i 1) ∧
+    (∀ o i : ℕ, Odd o → Even p → p = o * 2 ^ i →
+      residualCascadingExponent p (1 + (o : ℝ) * ((2 : ℝ)^i - 1)) i 1 = 0 ∧
+        1 < 1 + (o : ℝ) * ((2 : ℝ)^i - 1)) ∧
+    (∀ i : ℕ, Even p → Real.logb 2 (p - 1 : ℕ) < i →
+      0 < residualCascadingExponent p ((p : ℝ) / 2) i 1 ∧
+      0 < residualCascadingExponent p ((p : ℝ) / 2) i 2) ∧
+    (∀ o i : ℕ, Odd o → 4 ∣ p - 1 → p - 1 = o * 2 ^ (i + 1) →
+      residualCascadingExponent p (1 + (o : ℝ) * ((2 : ℝ)^i - 1)) i 2 = 0 ∧
+      0 < residualCascadingExponent p (1 + (o : ℝ) * ((2 : ℝ)^i - 1)) i 1 ∧
+      1 < 1 + (o : ℝ) * ((2 : ℝ)^i - 1)) ∧
+    (∀ i : ℕ, 3 ∣ p → Real.logb 2 (p - 2 : ℕ) < i →
+      0 < residualCascadingExponent p ((p : ℝ) / 3) i 1 ∧
+      0 < residualCascadingExponent p ((p : ℝ) / 3) i 2 ∧
+      0 < residualCascadingExponent p ((p : ℝ) / 3) i 3) ∧
+    (∀ o i : ℕ, Odd o → 0 < i → Even i → p - 2 = o * 2 ^ i →
+      let ℓ := 1 + (o : ℝ) * ∑ k ∈ Finset.range (i / 2), (2 : ℝ)^(2 * k)
+      residualCascadingExponent p ℓ i 3 = 0 ∧
+      0 < residualCascadingExponent p ℓ i 1 ∧
+      0 < residualCascadingExponent p ℓ i 2 ∧ 1 < ℓ) :=
+  LeastSquares.cascadingExponent_choices hp
 
 end CartisGouldToint

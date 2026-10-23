@@ -1,0 +1,25 @@
+namespace = "LeastSquares"
+
+[[node]]
+id = "cascadingExponent_antitone"
+
+[[node]]
+id = "cascadingExponent_div_order"
+
+[[node]]
+id = "cascadingExponent_pos_of_log"
+
+[[node]]
+id = "cascadingExponent_strictAntitone"
+
+[[node]]
+id = "cascadingExponent_zero"
+
+[[node]]
+id = "cascadingExponent_zero_of_factorization"
+
+[[node]]
+id = "three_mul_even_geometric_sum"
+
+[[node]]
+id = "cascadingExponent_choices"
