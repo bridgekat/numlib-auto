@@ -1,0 +1,19 @@
+namespace = "ModelDecrease"
+
+[[node]]
+id = "penalized"
+
+[[node]]
+id = "scaled"
+
+[[node]]
+id = "penalty_le_decrement"
+
+[[node]]
+id = "decrement_pos"
+
+[[node]]
+id = "scaled_mul_radius"
+
+[[node]]
+id = "le_scaled_of_test"

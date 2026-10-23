@@ -23,26 +23,7 @@ deps = ["isApproximateHighOrderMinimizer"]
 
 [[node]]
 id = "lemma_12_2_1"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 12.2.1: A useful lower bound
-
-At iteration \( k \) before termination of the \( \mathrm{TR}q \) algorithm, \( {\widehat{\phi }}_{f, k} \) in (12.2.8) satisfies
-
-\[
-\mathop{\min }\limits_{{i \in  \left\lbrack  {0 : k}\right\rbrack  }}{\widehat{\phi }}_{f, i} \geq  \varsigma {\epsilon }_{\min }.\tag{12.2.9}
-\]
-
-Moreover,
-
-\[
-\Delta {T}_{f,{j}_{k}}\left( {{x}_{k},{s}_{k}}\right)  \geq  {\widehat{\phi }}_{f, k}\frac{{\delta }_{k}^{{j}_{k}}}{{j}_{k}!}.\tag{12.2.10}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 12.2.1 (OCR Markdown line 12168)"
-deps = ["trqRun"]
 
 [[node]]
 id = "lemma_12_2_2"

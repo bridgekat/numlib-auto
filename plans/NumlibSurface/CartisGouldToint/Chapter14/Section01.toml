@@ -107,20 +107,7 @@ deps = ["lemma_14_1_3"]
 
 [[node]]
 id = "lemma_14_1_5"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 14.1.5: Taylor decrease for the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm
-
-At every iteration \( k \) of the \( \mathrm{AR}{qp}\mathrm{C} \) algorithm, one has that
-
-\[
-\Delta {T}_{w, p}\left( {{x}_k,{s}_k}\right)  = {T}_{w, p}\left( {{x}_k,0}\right)  - {T}_{w, p}\left( {{x}_k,{s}_k}\right)  \geq  \frac{{\sigma }_k}{\left( {p + 1}\right) !}{\begin{Vmatrix}{s}_k\end{Vmatrix}}^{p + 1}.\tag{14.1.25}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 14.1.5 (OCR Markdown line 15971)"
-deps = ["arqpcRun"]
 
 [[node]]
 id = "lemma_14_1_6"

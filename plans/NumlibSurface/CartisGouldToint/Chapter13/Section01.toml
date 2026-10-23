@@ -327,22 +327,7 @@ deps = ["lemma_13_1_10"]
 
 [[node]]
 id = "lemma_13_1_13"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Lemma 13.1.13: Model decrease for the ARqpIDA algorithm
-
-The mechanism of the ARqpIDA algorithm guarantees that
-
-\[
-{\overline{\Delta T}}_{f, p}\left( {{x}_{k},{s}_{k}}\right)  \geq  \frac{{\sigma }_{k}}{\left( {p + 1}\right) !}{\begin{Vmatrix}{s}_{k}\end{Vmatrix}}^{p + 1}\tag{13.1.76}
-\]
-
-for all \( k \in  \mathcal{T} \) and that (13.1.58) is well defined.
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 13.1.13 (OCR Markdown line 14468)"
-deps = ["arqpidaRun"]
 
 [[node]]
 id = "lemma_13_1_14"
