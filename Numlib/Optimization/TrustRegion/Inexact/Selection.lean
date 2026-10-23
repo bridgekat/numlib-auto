@@ -1,4 +1,4 @@
-import Numlib.Analysis.Calculus.TaylorModel
+import Numlib.Analysis.Calculus.TaylorModel.Perturbation
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Mathlib.Tactic
 
@@ -21,7 +21,11 @@ def modelOrder {q : ℕ} (j : Fin q) : ℕ := j.val + 1
 /-- The inexact Taylor decrement, computed from the supplied continuous
 multilinear derivative tensors with the actual factorial normalization. -/
 noncomputable def decrement (A : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (s : E) : ℝ :=
-  TaylorModel.ofJet A p 0 - TaylorModel.ofJet A p s
+  TaylorModel.jetDecrement A p s
+
+/-- The decrement is exactly the difference of the actual computed model values. -/
+@[simp] theorem decrement_eq (A : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (s : E) :
+    decrement A p s = TaylorModel.ofJet A p 0 - TaylorModel.ofJet A p s := rfl
 
 /-- The minimum of the requested accuracies over positive orders. -/
 noncomputable def minimumAccuracy {q : ℕ} (hq : 0 < q) (ε : Fin q → ℝ) : ℝ :=

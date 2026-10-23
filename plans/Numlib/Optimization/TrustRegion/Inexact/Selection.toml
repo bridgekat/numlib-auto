@@ -47,3 +47,6 @@ id = "SelectedTrials.prefixGap_lower"
 
 [[node]]
 id = "SelectedTrials.model_decrease"
+
+[[node]]
+id = "decrement_eq"
