@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.TaylorModel
+import Numlib.Optimization.TrustRegion.Inexact.Selection
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -90,5 +91,43 @@ theorem lemma_13_1_9 {T : Set ℕ} {σ ρ : ℕ → ℝ}
     exact h.unsuccessful_ge hi hT (fun hρ => hS ⟨hT, hρ⟩)
   · intro i hi hT
     exact h.inactive_eq hi hT
+
+/-- The failed computed test and model comparison of TRqIDA on its actual trial set.
+This selection component is sufficient for Lemma 13.1.2; it excludes accuracy-only
+iterations and makes no claim to specify the complete algorithm. -/
+abbrev idaSelectedTrials {n q : ℕ}
+    (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (T : Set ℕ) (j : ℕ → Fin q) (Δ : ℕ → ℝ)
+    (d s : ℕ → EuclideanSpace ℝ (Fin n)) (ε : Fin q → ℝ) (ζ θ : ℝ) : Prop :=
+  InexactTrustRegion.SelectedTrials A T j Δ d s ε ζ θ
+
+/-- The actual normalized inexact Taylor gap (13.1.25). -/
+noncomputable abbrev idaScaledGap {n q : ℕ}
+    (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (j : ℕ → Fin q) (Δ : ℕ → ℝ) (d : ℕ → EuclideanSpace ℝ (Fin n)) (θ : ℝ) (i : ℕ) : ℝ :=
+  InexactTrustRegion.scaledGap A j Δ d θ i
+
+/-- The finite minimum over the actual inclusive trial prefix `T ∩ [0:k]`. -/
+noncomputable abbrev idaPrefixGap {n q : ℕ}
+    (A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ)
+    (T : Set ℕ) (j : ℕ → Fin q) (Δ : ℕ → ℝ)
+    (d : ℕ → EuclideanSpace ℝ (Fin n)) (θ : ℝ) (k : ℕ) (hk : k ∈ T) : ℝ :=
+  InexactTrustRegion.prefixGap A T j Δ d θ k hk
+
+/-- **Lemma 13.1.2.** Every trial-prefix minimum satisfies (13.1.26), and the
+actual chosen comparison step gives (13.1.27). Both follow from the failed computed
+optimality test and Step 2's model comparison. Derivative accuracy and later updates
+are unnecessary for this lemma about the actual approximate Taylor polynomials. -/
+theorem lemma_13_1_2 {n q : ℕ}
+    {A : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin n)) ℝ}
+    {T : Set ℕ} {j : ℕ → Fin q} {Δ : ℕ → ℝ}
+    {d s : ℕ → EuclideanSpace ℝ (Fin n)} {ε : Fin q → ℝ} {ζ θ : ℝ} {k : ℕ}
+    (h : idaSelectedTrials A T j Δ d s ε ζ θ) (hk : k ∈ T) :
+    ζ / 2 * InexactTrustRegion.minimumAccuracy h.order_pos ε ≤ idaPrefixGap A T j Δ d θ k hk ∧
+      idaScaledGap A j Δ d θ k * (min θ (Δ k)) ^ InexactTrustRegion.modelOrder (j k) /
+        (InexactTrustRegion.modelOrder (j k)).factorial ≤
+          inexactTaylorModel (A k) (InexactTrustRegion.modelOrder (j k)) 0 -
+            inexactTaylorModel (A k) (InexactTrustRegion.modelOrder (j k)) (s k) :=
+  ⟨h.prefixGap_lower hk, h.model_decrease hk⟩
 
 end CartisGouldToint

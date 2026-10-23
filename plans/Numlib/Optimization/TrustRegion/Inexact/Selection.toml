@@ -1,0 +1,49 @@
+namespace = "InexactTrustRegion"
+
+[[node]]
+id = "modelOrder"
+
+[[node]]
+id = "decrement"
+
+[[node]]
+id = "minimumAccuracy"
+
+[[node]]
+id = "minimumAccuracy_le"
+
+[[node]]
+id = "minimumAccuracy_pos"
+
+[[node]]
+id = "optimalityRadius"
+
+[[node]]
+id = "SelectedTrials"
+
+[[node]]
+id = "scaledGap"
+
+[[node]]
+id = "trialPrefix"
+
+[[node]]
+id = "mem_trialPrefix"
+
+[[node]]
+id = "trialPrefix_nonempty"
+
+[[node]]
+id = "prefixGap"
+
+[[node]]
+id = "SelectedTrials.optimalityRadius_pos"
+
+[[node]]
+id = "SelectedTrials.scaledGap_lower"
+
+[[node]]
+id = "SelectedTrials.prefixGap_lower"
+
+[[node]]
+id = "SelectedTrials.model_decrease"
