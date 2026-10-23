@@ -300,7 +300,7 @@ zeroth- and positive-order estimates. -/
 theorem abs_le_orderBound {Q : ℝ[X]} {p : ℕ} {S : Set ℝ} {c M B : ℝ}
     (hc : |c| ≤ M)
     (hQ : ∀ j ≤ p, ∀ t ∈ S,
-      |iteratedDeriv j Q.eval t-(if j=0 then c else 0)| ≤ B) :
+      |iteratedDeriv j Q.eval t - (if j = 0 then c else 0)| ≤ B) :
     ∀ j ≤ p, ∀ t ∈ S,
       |iteratedDeriv j Q.eval t| ≤ if j = 0 then M + B else B := by
   intro j hj t ht

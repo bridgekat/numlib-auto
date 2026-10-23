@@ -56,7 +56,7 @@ def point (ε : ℝ) (k : ℕ) : ℝ := 2 * k * ε
 /-- Unscaled prescribed values, first derivatives, and second derivatives. -/
 noncomputable def baseJet (N k j : ℕ) : ℝ :=
   if j = 0 then 4 * (N - k : ℕ) else
-    if j = 1 then if k<N then - 2 else - 1 else if j = 2 then 1 else 0
+    if j = 1 then if k < N then - 2 else - 1 else if j = 2 then 1 else 0
 
 /-- Each nonterminal initial Hermite polynomial is the prescribed convex quadratic. -/
 theorem initialPolynomial_baseJet {N k : ℕ} (hk : k < N) :
@@ -77,15 +77,15 @@ theorem baseJet_residual {N k j : ℕ} (hk : k < N) (hj : j ≤ 2) :
     rw [hn]
     ring_nf
     norm_num
-  · by_cases hk1 : k + 1<N <;> norm_num [baseJet, hk1]
+  · by_cases hk1 : k + 1 < N <;> norm_num [baseJet, hk1]
   · norm_num [baseJet]
 
 /-- All positive jets, steps, and endpoint residuals have bounds independent of the chain length. -/
 theorem uniform_base_data (N : ℕ) :
-    (∀ i j, i<j → j ≤ N → basePoint i<basePoint j) ∧
+    (∀ i j, i < j → j ≤ N → basePoint i < basePoint j) ∧
     (∀ k ≤ N, ∀ j, 1 ≤ j → j ≤ 2 → |baseJet N k j| ≤ 2) ∧
-    (∀ k<N, basePoint (k + 1) - basePoint k ≤ 2) ∧
-    (∀ k<N, ∀ j ≤ 2,
+    (∀ k < N, basePoint (k + 1) - basePoint k ≤ 2) ∧
+    (∀ k < N, ∀ j ≤ 2,
       |baseJet N (k + 1) j - (derivative^[j] (Hermite.initialPolynomial 2 (baseJet N k))).eval
         (basePoint (k + 1) - basePoint k)| ≤
           2 * (basePoint (k + 1) - basePoint k) ^ (2 - j + 1)) ∧
@@ -98,7 +98,7 @@ theorem uniform_base_data (N : ℕ) :
     dsimp [basePoint]
     exact mul_lt_mul_of_pos_left (by exact_mod_cast hij) (by norm_num)
   · intro k hk j hj hj2
-    interval_cases j <;> by_cases hkn : k<N <;> norm_num [baseJet, hkn]
+    interval_cases j <;> by_cases hkn : k < N <;> norm_num [baseJet, hkn]
   · intro k _
     rw [hstep]
   · intro k hk j hj
@@ -133,7 +133,7 @@ theorem scaleObjective_contDiff {F : ℝ → ℝ} {p : ℕ} (hf : ContDiff ℝ p
 structure Data (f : ℝ → ℝ) (ε : ℝ) (N : ℕ) : Prop where
   regularity : ContDiff ℝ 2 f
   values : ∀ k ≤ N, f (point ε k) = 4 * ε ^ 2 * (N - k : ℕ)
-  first : ∀ k ≤ N, deriv f (point ε k) = if k<N then - 2 * ε else - ε
+  first : ∀ k ≤ N, deriv f (point ε k) = if k < N then - 2 * ε else - ε
   second : ∀ k ≤ N, iteratedDeriv 2 f (point ε k) = 1
 
 /-- A scalar Hessian is multiplication by its actual second derivative. -/
@@ -151,7 +151,7 @@ variable {f : ℝ → ℝ} {ε : ℝ} {N : ℕ}
 
 /-- The actual scalar gradient agrees with the prescribed first derivative. -/
 theorem gradient_eq (h : Data f ε N) {k : ℕ} (hk : k ≤ N) :
-    gradient f (point ε k) = if k<N then - 2 * ε else - ε := by
+    gradient f (point ε k) = if k < N then - 2 * ε else - ε := by
   rw [gradient_eq_deriv', h.first k hk]
 
 /-- All Hessians at interpolation nodes are the identity operator. -/
@@ -160,20 +160,20 @@ theorem hessian_eq (h : Data f ε N) {k : ℕ} (hk : k ≤ N) (v : ℝ) :
   rw [hessianOperator_real, h.second k hk, mul_one]
 
 /-- Every nonterminal true Taylor model is the stated positive-definite quadratic. -/
-theorem eval_two (h : Data f ε N) {k : ℕ} (hk : k<N) (t : ℝ) :
+theorem eval_two (h : Data f ε N) {k : ℕ} (hk : k < N) (t : ℝ) :
     TaylorModel.eval f 2 (point ε k) t = f (point ε k) - 2 * ε * t + t ^ 2 / 2 := by
   rw [TaylorModel.eval_eq_sum_iteratedDeriv]
   norm_num [Finset.sum_range_succ, iteratedDeriv_one, h.first k hk.le, h.second k hk.le, hk]
   ring
 
 /-- The Newton step is the global minimizer of the actual quadratic Taylor model. -/
-theorem model_minimum (h : Data f ε N) {k : ℕ} (hk : k<N) (t : ℝ) :
+theorem model_minimum (h : Data f ε N) {k : ℕ} (hk : k < N) (t : ℝ) :
     TaylorModel.eval f 2 (point ε k) (2 * ε) ≤ TaylorModel.eval f 2 (point ε k) t := by
   rw [h.eval_two hk, h.eval_two hk]
   nlinarith [sq_nonneg (t - 2 * ε)]
 
 /-- The interpolation nodes follow the genuine Newton recurrence, with positive Hessians. -/
-theorem newton_run (h : Data f ε N) (hε : 0<ε) :
+theorem newton_run (h : Data f ε N) (hε : 0 < ε) :
     Run f (point ε) (fun _ => 2 * ε) ε N := by
   refine ⟨hε,?_,?_,?_,?_⟩
   · intro k hk
@@ -182,7 +182,7 @@ theorem newton_run (h : Data f ε N) (hε : 0<ε) :
     linarith
   · intro k hk v hv
     rw [h.hessian_eq hk.le]
-    change 0<v * v
+    change 0 < v * v
     exact mul_self_pos.mpr hv
   · intro k hk
     rw [h.hessian_eq hk.le, h.gradient_eq hk.le, ite_eq_left hk]
@@ -192,16 +192,16 @@ theorem newton_run (h : Data f ε N) (hε : 0<ε) :
     ring
 
 /-- The first true gradient stopping condition occurs precisely at the last node. -/
-theorem first_stop (h : Data f ε N) (hε : 0<ε) :
-    (∀ k<N, ε<‖gradient f (point ε k)‖) ∧ ‖gradient f (point ε N)‖ ≤ ε := by
+theorem first_stop (h : Data f ε N) (hε : 0 < ε) :
+    (∀ k < N, ε < ‖gradient f (point ε k)‖) ∧ ‖gradient f (point ε N)‖ ≤ ε := by
   refine ⟨(h.newton_run hε).not_terminated,?_⟩
-  rw [h.gradient_eq le_rfl, ite_eq_right (by omega : ¬N<N), norm_neg,
+  rw [h.gradient_eq le_rfl, ite_eq_right (by omega : ¬N < N), norm_neg,
     Real.norm_eq_abs, abs_of_pos hε]
 
 
 /-- The Newton step is also a genuine minimizer on the negative-gradient Cauchy ray. -/
-theorem cauchyPoint (h : Data f ε N) (hε : 0<ε) (hε1 : ε ≤ 1)
-    {k : ℕ} (hk : k<N) :
+theorem cauchyPoint (h : Data f ε N) (hε : 0 < ε) (hε1 : ε ≤ 1)
+    {k : ℕ} (hk : k < N) :
     SecondOrderTrustRegion.IsCauchyPoint f (point ε k) 2 (2 * ε) := by
   refine ⟨1, by norm_num, ?_, ?_, ?_⟩
   · rw [one_smul, h.gradient_eq hk.le, ite_eq_left hk, Real.norm_eq_abs,
@@ -214,7 +214,7 @@ theorem cauchyPoint (h : Data f ε N) (hε : 0<ε) (hε1 : ε ≤ 1)
       using h.model_minimum hk (-(r • gradient f (point ε k)))
 
 /-- The actual objective decrease is twice its strictly positive quadratic prediction. -/
-theorem actual_ratio (h : Data f ε N) (hε : 0<ε) {k : ℕ} (hk : k<N) :
+theorem actual_ratio (h : Data f ε N) (hε : 0 < ε) {k : ℕ} (hk : k < N) :
     (f (point ε k) - f (point ε k + 2 * ε)) /
       (TaylorModel.eval f 2 (point ε k) 0 - TaylorModel.eval f 2 (point ε k) (2 * ε)) = 2 := by
   have hd : TaylorModel.eval f 2 (point ε k) 0-
@@ -239,11 +239,11 @@ theorem leastEigenpair (h : Data f ε N) {k : ℕ} (hk : k ≤ N) :
 
 /-- The same objective and steps satisfy the full operational TR2 algorithm,
 for every legal acceptance/update choice and every finite positive curvature tolerance. -/
-theorem trustRegion_run (h : Data f ε N) (hε : 0<ε) (hε1 : ε ≤ 1)
+theorem trustRegion_run (h : Data f ε N) (hε : 0 < ε) (hε1 : ε ≤ 1)
     {η₁ η₂ γ₁ γ₂ γ₃ ε₂ : ℝ}
-    (hη₁ : 0<η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂<1)
-    (hγ₁ : 0<γ₁) (hγ : γ₁ ≤ γ₂) (hγ₂ : γ₂<1) (hγ₃ : 1<γ₃)
-    (hε₂ : 0<ε₂) :
+    (hη₁ : 0 < η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂ < 1)
+    (hγ₁ : 0 < γ₁) (hγ : γ₁ ≤ γ₂) (hγ₂ : γ₂ < 1) (hγ₃ : 1 < γ₃)
+    (hε₂ : 0 < ε₂) :
     SecondOrderTrustRegion.Run f (point ε) (fun _ => 2 * ε) (fun _ => 2 * ε)
       (fun _ => 0) (fun _ => 1) (fun _ => 1) (fun _ => 2) (fun _ => 2)
       η₁ η₂ γ₁ γ₂ γ₃ ε ε₂ N := by
@@ -279,20 +279,20 @@ theorem trustRegion_run (h : Data f ε N) (hε : 0<ε) (hε1 : ε ≤ 1)
     ring
 
 /-- Disabling the curvature test gives a legal first-order-only TR2 run as well. -/
-theorem trustRegion_firstOrderRun (h : Data f ε N) (hε : 0<ε) (hε1 : ε ≤ 1)
+theorem trustRegion_firstOrderRun (h : Data f ε N) (hε : 0 < ε) (hε1 : ε ≤ 1)
     {η₁ η₂ γ₁ γ₂ γ₃ : ℝ}
-    (hη₁ : 0<η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂<1)
-    (hγ₁ : 0<γ₁) (hγ : γ₁ ≤ γ₂) (hγ₂ : γ₂<1) (hγ₃ : 1<γ₃) :
+    (hη₁ : 0 < η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂ < 1)
+    (hγ₁ : 0 < γ₁) (hγ : γ₁ ≤ γ₂) (hγ₂ : γ₂ < 1) (hγ₃ : 1 < γ₃) :
     SecondOrderTrustRegion.FirstOrderRun f (point ε) (fun _ => 2 * ε) (fun _ => 2 * ε)
       (fun _ => 2) (fun _ => 2) η₁ η₂ γ₁ γ₂ γ₃ ε ⊤ N := by
   have hr := h.trustRegion_run hε hε1 hη₁ hη hη₂ hγ₁ hγ hγ₂ hγ₃
-    (by norm_num : (0: ℝ)<1)
+    (by norm_num : (0: ℝ) < 1)
   exact ⟨rfl,hr.updates,hε,(h.newton_run hε).not_terminated,hr.cauchy,
     hr.feasible_step,hr.model_cauchy,hr.ratio,hr.step⟩
 
 /-- Every actual objective step decreases strictly, including the last step. -/
-theorem strict_decrease (h : Data f ε N) (hε : 0<ε) {k : ℕ} (hk : k<N) :
-    f (point ε (k + 1))<f (point ε k) := by
+theorem strict_decrease (h : Data f ε N) (hε : 0 < ε) {k : ℕ} (hk : k < N) :
+    f (point ε (k + 1)) < f (point ε k) := by
   rw [h.values k hk.le, h.values (k + 1) (by omega)]
   have hn : ((N - k : ℕ): ℝ) = ((N - (k + 1): ℕ): ℝ) + 1 := by
     exact_mod_cast (show N - k = N - (k + 1) + 1 by omega)
@@ -305,7 +305,7 @@ end Data
 /-- The interpolation and scaling constants precede the accuracy. Hessian norms and
 objective ranges are uniform; the Hessian Lipschitz constant is allowed to depend on it. -/
 theorem exists_uniform_objectives :
-    ∃ H ≥ 1, ∃ G>0, ∀ ε : ℝ, 0<ε → ε ≤ 1 → ∃ f : ℝ → ℝ,
+    ∃ H ≥ 1, ∃ G > 0, ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∃ f : ℝ → ℝ,
       Data f ε (horizon ε) ∧ (∀ z, |f z| ≤ G) ∧
       (∀ z, ‖SecondOrderTrustRegion.hessian f z‖ ≤ H) ∧
       (∀ z w, ‖gradient f z - gradient f w‖ ≤ H * ‖z - w‖) ∧
@@ -340,7 +340,7 @@ theorem exists_uniform_objectives :
     · intro k hk
       rw [←iteratedDeriv_one, iteratedDeriv_scaleObjective hF (by omega), harg,
         hFjet k hk 1 (by omega)]
-      by_cases hkn : k<N <;> norm_num [baseJet, hkn]
+      by_cases hkn : k < N <;> norm_num [baseJet, hkn]
       all_goals field_simp
     · intro k hk
       rw [hsecond, harg, hFjet k hk 2 le_rfl]
@@ -408,14 +408,14 @@ theorem trustRegion_counts {η₁ : ℝ} (hη : η₁ ≤ 2) (N : ℕ) :
 Newton lower bound, despite positive Hessians at every node and strict descent.
 Each objective also has a globally Lipschitz Hessian. -/
 theorem exists_slow_newton_objective :
-    ∃ H ≥ 1, ∃ G>0, ∀ ε : ℝ, 0<ε → ε ≤ 1 → ∃ f : ℝ → ℝ,
+    ∃ H ≥ 1, ∃ G > 0, ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∃ f : ℝ → ℝ,
       ContDiff ℝ 2 f ∧ (∀ z, -G ≤ f z) ∧ f 0 - (-G) ≤ 2 * G ∧
       (∀ z, ‖SecondOrderTrustRegion.hessian f z‖ ≤ H) ∧
       (∀ z w, ‖gradient f z - gradient f w‖ ≤ H * ‖z - w‖) ∧
       (∃ L ≥ 1, ∀ z w,
         ‖iteratedFDeriv ℝ 2 f z - iteratedFDeriv ℝ 2 f w‖ ≤ L * ‖z - w‖) ∧
       Run f (point ε) (fun _ => 2 * ε) ε (horizon ε) ∧ point ε 0 = 0 ∧
-      (∀ k<horizon ε, f (point ε (k + 1))<f (point ε k)) ∧
+      (∀ k < horizon ε, f (point ε (k + 1)) < f (point ε k)) ∧
       ‖gradient f (point ε (horizon ε))‖ ≤ ε ∧
       ⌈1 / ε ^ 2⌉₊ < horizon ε ∧
       ⌈1 / ε ^ 2⌉₊ < functionEvaluations (horizon ε) ∧
@@ -435,18 +435,18 @@ theorem exists_slow_newton_objective :
 runs for every legal fixed update rule and every positive curvature tolerance.
 The disabled curvature branch is included explicitly. -/
 theorem exists_slow_trustRegion_objective {η₁ η₂ γ₁ γ₂ γ₃ : ℝ}
-    (hη₁ : 0<η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂<1)
-    (hγ₁ : 0<γ₁) (hγ : γ₁ ≤ γ₂) (hγ₂ : γ₂<1) (hγ₃ : 1<γ₃) :
-    ∃ H ≥ 1, ∃ G>0, ∀ ε : ℝ, 0<ε → ε ≤ 1 → ∃ f : ℝ → ℝ,
+    (hη₁ : 0 < η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂ < 1)
+    (hγ₁ : 0 < γ₁) (hγ : γ₁ ≤ γ₂) (hγ₂ : γ₂ < 1) (hγ₃ : 1 < γ₃) :
+    ∃ H ≥ 1, ∃ G > 0, ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∃ f : ℝ → ℝ,
       ContDiff ℝ 2 f ∧ (∀ z, -G ≤ f z) ∧ f 0 - (-G) ≤ 2 * G ∧
       (∀ z, ‖SecondOrderTrustRegion.hessian f z‖ ≤ H) ∧
-      (∀ ε₂>0, SecondOrderTrustRegion.Run f (point ε) (fun _ => 2 * ε) (fun _ => 2 * ε)
+      (∀ ε₂ > 0, SecondOrderTrustRegion.Run f (point ε) (fun _ => 2 * ε) (fun _ => 2 * ε)
         (fun _ => 0) (fun _ => 1) (fun _ => 1) (fun _ => 2) (fun _ => 2)
         η₁ η₂ γ₁ γ₂ γ₃ ε ε₂ (horizon ε)) ∧
       SecondOrderTrustRegion.FirstOrderRun f (point ε) (fun _ => 2 * ε) (fun _ => 2 * ε)
         (fun _ => 2) (fun _ => 2) η₁ η₂ γ₁ γ₂ γ₃ ε ⊤ (horizon ε) ∧
       point ε 0 = 0 ∧ ‖gradient f (point ε (horizon ε))‖ ≤ ε ∧
-      (∀ ε₂>0, ∀ v : ℝ, ‖v‖ = 1 → -ε₂ ≤
+      (∀ ε₂ > 0, ∀ v : ℝ, ‖v‖ = 1 → -ε₂ ≤
         iteratedFDeriv ℝ 2 f (point ε (horizon ε)) (fun _ => v)) ∧
       ⌈1 / ε ^ 2⌉₊ < horizon ε ∧
       SecondOrderTrustRegion.functionEvaluations (horizon ε) = horizon ε + 1 ∧

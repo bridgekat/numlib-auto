@@ -345,18 +345,18 @@ legal run for every finite positive second-order tolerance and for the disabled
 curvature test. Radius two, the true ratio two, actual Cauchy minimizers, and
 actual least Hessian eigenpairs realize all algorithm rules. -/
 theorem theorem_3_2_2 {η₁ η₂ γ₁ γ₂ γ₃ : ℝ}
-    (hη₁ : 0<η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂<1)
-    (hγ₁ : 0<γ₁) (hγ : γ₁ ≤ γ₂) (hγ₂ : γ₂<1) (hγ₃ : 1<γ₃) :
-    ∃ H ≥ 1, ∃ G>0, ∀ ε : ℝ, 0<ε → ε ≤ 1 → ∃ f : ℝ → ℝ,
+    (hη₁ : 0 < η₁) (hη : η₁ ≤ η₂) (hη₂ : η₂ < 1)
+    (hγ₁ : 0 < γ₁) (hγ : γ₁ ≤ γ₂) (hγ₂ : γ₂ < 1) (hγ₃ : 1 < γ₃) :
+    ∃ H ≥ 1, ∃ G > 0, ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∃ f : ℝ → ℝ,
       ContDiff ℝ 2 f ∧ (∀ z, -G ≤ f z) ∧ f 0 - (-G) ≤ 2 * G ∧
       (∀ z, ‖SecondOrderTrustRegion.hessian f z‖ ≤ H) ∧
-      (∀ ε₂>0, SecondOrderTrustRegion.Run f (point ε) (fun _ => 2 * ε) (fun _ => 2 * ε)
+      (∀ ε₂ > 0, SecondOrderTrustRegion.Run f (point ε) (fun _ => 2 * ε) (fun _ => 2 * ε)
         (fun _ => 0) (fun _ => 1) (fun _ => 1) (fun _ => 2) (fun _ => 2)
         η₁ η₂ γ₁ γ₂ γ₃ ε ε₂ (horizon ε)) ∧
       SecondOrderTrustRegion.FirstOrderRun f (point ε) (fun _ => 2 * ε) (fun _ => 2 * ε)
         (fun _ => 2) (fun _ => 2) η₁ η₂ γ₁ γ₂ γ₃ ε ⊤ (horizon ε) ∧
       point ε 0 = 0 ∧ ‖gradient f (point ε (horizon ε))‖ ≤ ε ∧
-      (∀ ε₂>0, ∀ v : ℝ, ‖v‖ = 1 → -ε₂ ≤
+      (∀ ε₂ > 0, ∀ v : ℝ, ‖v‖ = 1 → -ε₂ ≤
         iteratedFDeriv ℝ 2 f (point ε (horizon ε)) (fun _ => v)) ∧
       ⌈1 / ε ^ 2⌉₊ < horizon ε ∧
       SecondOrderTrustRegion.functionEvaluations (horizon ε) = horizon ε + 1 ∧
