@@ -1,0 +1,50 @@
+[[node]]
+id = "SecondOrderTrustRegion.hessian"
+
+[[node]]
+id = "SecondOrderTrustRegion.norm_hessian_le"
+
+[[node]]
+id = "SecondOrderTrustRegion.norm_hessian"
+
+[[node]]
+id = "SecondOrderTrustRegion.model_eq_taylor"
+
+[[node]]
+id = "SecondOrderTrustRegion.gradient_lipschitz_of_hessian_bound"
+
+[[node]]
+id = "SecondOrderTrustRegion.IsCauchyPoint"
+
+[[node]]
+id = "SecondOrderTrustRegion.isCauchyPoint_iff"
+
+[[node]]
+id = "SecondOrderTrustRegion.exists_cauchyPoint"
+
+[[node]]
+id = "SecondOrderTrustRegion.FirstOrderRun"
+
+[[node]]
+id = "SecondOrderTrustRegion.FirstOrderRun.to_firstOrder"
+
+[[node]]
+id = "SecondOrderTrustRegion.functionEvaluations"
+
+[[node]]
+id = "SecondOrderTrustRegion.derivativeEvaluations"
+
+[[node]]
+id = "SecondOrderTrustRegion.gradientEvaluations"
+
+[[node]]
+id = "SecondOrderTrustRegion.hessianEvaluations"
+
+[[node]]
+id = "FirstOrderTrustRegion.decreaseConstant_self"
+
+[[node]]
+id = "FirstOrderTrustRegion.inv_decreaseConstant_self"
+
+[[node]]
+id = "FirstOrderTrustRegion.log_initial_radius_le"
