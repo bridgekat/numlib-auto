@@ -197,7 +197,8 @@ theorem dimension_le_hittingTime {n p : ℕ} {f : Space (n + 1) → ℝ}
   apply (natCast_le_hittingTime_iff f x ε (n + 1)).mpr
   intro k hk
   by_contra hkn
-  have hz := support_iterate hf hx k (Fin.last n) (by simpa only [Fin.val_last] using Nat.le_of_lt_succ (Nat.lt_of_not_ge hkn))
+  have hz := support_iterate hf hx k (Fin.last n)
+    (by simpa only [Fin.val_last] using Nat.le_of_lt_succ (Nat.lt_of_not_ge hkn))
   exact (not_le_of_gt (hhard (x k) hz)) hk
 
 /-- A single difficult zero chain gives a lower bound on the entire method class. -/

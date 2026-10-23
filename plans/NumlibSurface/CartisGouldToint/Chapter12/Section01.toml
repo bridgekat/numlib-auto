@@ -110,26 +110,7 @@ deps = ["highOrderCriticality"]
 
 [[node]]
 id = "theorem_12_1_4"
-kind = "theorem"
-desc = '''
-Formalize every hypothesis and conclusion in the following numbered statement, with the mathematical objects and run predicates described by this module and its dependencies. Keep all cases, constants and equation references; positivity and order bounds in the ambient algorithm remain hypotheses.
-
-Theorem 12.1.4: The \( \phi \) measure and local minimizers
-
-Suppose that \( f \) is \( j \) -times continuously differentiable and that \( x \) is a local minimizer of \( f \) . Then
-
-\[
-{\phi }_{f, j}^{\delta }\left( x\right)  = 0\text{ for }j \in  \{ 1,2\}\tag{12.1.16}
-\]
-
-for all \( \delta  > 0 \) . Moreover, for all \( j \geq  1 \) ,
-
-\[
-\mathop{\lim }\limits_{\delta  \rightarrow  0}\frac{{\phi }_{f, j}^{\delta }\left( x\right) }{{\delta }^j} = 0.\tag{12.1.17}
-\]
-'''
 source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 12.1.4 (OCR Markdown line 11631)"
-deps = ["highOrderCriticality"]
 
 [[node]]
 id = "theorem_12_1_5"

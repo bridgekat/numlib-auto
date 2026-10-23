@@ -38,6 +38,7 @@ import Numlib.Analysis.Calculus.SpaceTime
 import Numlib.Analysis.Calculus.Taylor
 import Numlib.Analysis.Calculus.Taylor.ScalarRemainder
 import Numlib.Analysis.Calculus.TaylorModel
+import Numlib.Analysis.Calculus.TaylorModel.Peano
 import Numlib.Analysis.Calculus.TaylorSegment
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Complex.Polynomial.Basic
@@ -654,6 +655,7 @@ import Numlib.ODE.OneStep
 import Numlib.ODE.RungeKutta
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
+import Numlib.Optimization.Constrained.Equality
 import Numlib.Optimization.Constrained.Optimality
 import Numlib.Optimization.Constrained.Restriction
 import Numlib.Optimization.Descent
@@ -663,9 +665,13 @@ import Numlib.Optimization.EvaluationComplexity.TrialCounting
 import Numlib.Optimization.EvaluationComplexity.TrialUpdates
 import Numlib.Optimization.EvaluationComplexity.Updates
 import Numlib.Optimization.HighOrder.Criticality
+import Numlib.Optimization.HighOrder.CriticalityLocalMin
 import Numlib.Optimization.HighOrder.ModelDecrease
 import Numlib.Optimization.LineSearch
+import Numlib.Optimization.LineSearch.Backtracking
+import Numlib.Optimization.LineSearch.ExactGradient
 import Numlib.Optimization.LineSearch.LipschitzGradient
+import Numlib.Optimization.LowerBounds.ZeroChain
 import Numlib.Optimization.QuasiNewton
 import Numlib.Optimization.Regularization.FirstOrder
 import Numlib.Optimization.Unconstrained.Optimality

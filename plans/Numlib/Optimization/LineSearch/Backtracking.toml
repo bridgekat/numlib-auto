@@ -1,0 +1,40 @@
+namespace = "BacktrackingGradient"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "threshold"
+
+[[node]]
+id = "Accepts"
+
+[[node]]
+id = "exists_step_le"
+
+[[node]]
+id = "accepts_of_step_le"
+
+[[node]]
+id = "exists_accepts"
+
+[[node]]
+id = "lower_bound_of_rejected_prefix"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.decrease"
+
+[[node]]
+id = "Run.iterations_le"
+
+[[node]]
+id = "Run.functionEvaluations"
+
+[[node]]
+id = "Run.functionEvaluations_le"
+
+[[node]]
+id = "exists_termination"

@@ -61,41 +61,6 @@ namespace = "CartisGouldToint"
 
 [[node]]
 id = "sdbaRun"
-kind = "definition"
-desc = '''
-Define the set of finite traces satisfying Algorithm 2.2.1, including initialization, derivative compatibility, enabled termination tests, allowed steps, trial evaluations, acceptance and parameter updates. Derive positivity, existence and iteration bounds in theorems, never in this predicate. Exact source program and its immediate mathematical specifications:
-
-Algorithm 2.2.1: Steepest-descent algorithm with backtracking-Armijo linesearch (SDBA)
-
-Step 0: Initialization. An initial point \( {x}_0 \) is given, as well as an accuracy level \( \epsilon  > 0 \) . Constants \( {t}_{\text{ ini }} \) and \( \alpha \) satisfying
-
-\[
-{t}_{\text{ ini }} > 0\text{ and }0 < \alpha  < 1\tag{2.2.2}
-\]
-
-are also given. Compute \( f\left( {x}_0\right) \) , and set \( k = 0 \) .
-
-Step 1: Test for termination. Compute \( {\nabla }_x^{1}f\left( {x}_k\right) \) . If \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_k\right) }\end{Vmatrix} \leq  \epsilon \) , terminate with the \( \epsilon \) -approximate first-order minimizer \( {x}_{\epsilon } = {x}_k \) .
-
-Step 2: Linesearch: initialization.
-
-Set \( {t}_{k} = {t}_{\text{ ini }} \) and \( {i}_k = 0 \) , and compute \( f\left( {{x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) }\right) \) .
-
-Step 3: Linesearch: acceptance or backtracking.
-
-1. If (2.2.1) holds, go to Step 4.
-
-2. Else set \( {t}_k \leftarrow  \frac{1}{2}{t}_k \) and \( {i}_k \leftarrow  {i}_k + 1 \) , compute \( f\left( {{x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) }\right) \) , and return to Step 3.
-
-Step 4: Compute the new iterate and gradient.
-
-Set \( {x}_{k + 1} = {x}_k - {t}_k{\nabla }_x^{1}f\left( {x}_k\right) \) , increment \( k \) by one, and return to Step 1.
-
-Note that \( f\left( {x}_{k + 1}\right) \) is computed in Step 2 or 3 and thus need not be computed again in Step 4. The choice of the initial candidate for \( {t}_k \) in Step 2 simply reflects that no a priori estimate of the steplength is truly reliable in a purely first-order method unless one has additional information beyond that assumed here. In practice, one often chooses \( {t}_{\mathrm{ini}} = 1 \) or initializes \( {t}_k \) to the steplength computed at the previous iteration, for lack of a better choice. Our analysis in fact allows for any initialization of \( {t}_k \) provided that it is uniformly bounded away from zero and infinity. A typical value for the other constant in (2.2.2) is \( \alpha  = \frac{1}{1000} \) . Note that we have chosen to halve \( {t}_k \) in Step 3.2 purely for convenience of exposition, and one could choose a different contraction factor without altering the substance of what follows.
-
-Before we analyze the algorithm, we must show that (2.2.1) is well defined.
-'''
-deps = []
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 2.2"
 
 [[node]]
@@ -108,37 +73,6 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "theorem_2_2_2"
-kind = "theorem"
-desc = '''
-Semantic specification: Apply the corrected t_min, backtracking and function counts in the module design note; retain both gradient/function counts, termination and O(ε⁻²). The source formula alone is invalid when t_ini is small.
-
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Theorem 2.2.2: Complexity of the steepest-descent algorithm with a backtracking-Armijo linesearch
-
-Suppose that f.Bb and f.gL hold. Then there is a positive constant
-
-\[
-{\kappa }_{\text{ SDBA }}\overset{\text{ def }}{ = }\frac{{L}_{f,1}}{\alpha \left( {1 - \alpha }\right) }
-\]
-
-for which the SDBA algorithm (p. 25) requires at most
-
-\[
-{\# }_{\mathrm{{SBDA}}}^{F} = \left\lceil  {{\log }_{2}\left( \frac{{L}_{f,1}{t}_{\mathrm{{ini}}}}{2\left( {1 - \alpha }\right) }\right) }\right\rceil  {\kappa }_{\mathrm{{SDBA}}}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }^{2}} = \mathcal{O}\left( {\epsilon }^{-2}\right)\tag{2.2.8}
-\]
-
-evaluations of the objective function and at most
-
-\[
-{\# }_{\mathrm{{SBDA}}}^{D}\overset{\text{ def }}{ = }{\kappa }_{\mathrm{{SDBA}}}\frac{f\left( {x}_{0}\right)  - {f}_{\text{ low }}}{{\epsilon }^{2}} + 1 = \mathcal{O}\left( {\epsilon }^{-2}\right)\tag{2.2.9}
-\]
-
-gradient evaluations to determine an iterate \( {x}_{\epsilon } \) for which \( \begin{Vmatrix}{{\nabla }_x^{1}f\left( {x}_{\epsilon }\right) }\end{Vmatrix} \leq  \epsilon \) .
-
-We note here and hereafter that evaluation bounds such as (2.2.8) and (2.2.9) should be interpreted as the smallest integer not exceeding the stated number quoted. We could have used the \( \lfloor  \cdot  \rfloor {\text{ notation }}^{8} \) to be precise, but this would lead to additional notational clutter.
-'''
-deps = ["sdbaRun", "sdexRun", "objectiveRegularity"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 2.2.2 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 1387)"
 
 [[node]]

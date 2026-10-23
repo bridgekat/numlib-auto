@@ -1,5 +1,6 @@
 import Numlib.Optimization.LineSearch.LipschitzGradient
 import Numlib.Optimization.LineSearch.ExactGradient
+import Numlib.Optimization.LineSearch.Backtracking
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -11,6 +12,14 @@ with the Fréchet derivative through the Euclidean inner product.
 -/
 
 namespace CartisGouldToint
+
+/-- A finite nonterminated prefix of Algorithm 2.2.1. The natural number `j i`
+is exactly the first halving index passing the actual Armijo test at iteration `i`. -/
+def sdbaRun {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (g : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
+    (x : ℕ → EuclideanSpace ℝ (Fin n)) (j : ℕ → ℕ)
+    (α tini ε : ℝ) (N : ℕ) : Prop :=
+  BacktrackingGradient.Run f g x j α tini ε N
 
 /-- A finite prefix of exact steepest descent before termination. Its steps
 globally minimize the actual objective along each nonnegative negative-gradient
@@ -51,5 +60,54 @@ theorem theorem_2_2_4 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
   obtain ⟨K, hstop, hK, hbound⟩ :=
     ExactGradientLineSearch.exists_termination hprefix hL hLpos hlow
   exact ⟨2 * L, by positivity, rfl, K, hstop, hK, hbound⟩
+
+/-- **Theorem 2.2.2.** Backtracking steepest descent reaches the gradient tolerance
+with objective and gradient evaluation bounds of order `ε⁻²`. The constants
+are given by an accuracy-independent sufficient halving index and the step bound
+`min(tini, (1-α)/L)`. The additive ones count the initial evaluations; these repairs
+are necessary when the initial step is already small or the initial point satisfies
+the stopping test. -/
+theorem theorem_2_2_2 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {g : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)}
+    {x : ℕ → EuclideanSpace ℝ (Fin n)} {j : ℕ → ℕ} {α tini ε L flow : ℝ}
+    (hprefix : ∀ N, (∀ i < N, ε < ‖g (x i)‖) → sdbaRun f g x j α tini ε N)
+    (hL : ∀ y z, ‖g y - g z‖ ≤ L * ‖y - z‖) (hL1 : 1 ≤ L)
+    (hlow : ∀ y, flow ≤ f y) :
+    ∃ M : ℕ, BacktrackingGradient.step tini M ≤ BacktrackingGradient.threshold L α ∧
+      ∃ κI > 0, ∃ κF > 0,
+        κI = (α * min tini ((1 - α) / L))⁻¹ ∧ κF = (M + 1 : ℕ) * κI ∧
+        ∃ K, ‖g (x K)‖ ≤ ε ∧ sdbaRun f g x j α tini ε K ∧
+          (K : ℝ) ≤ κI * (f (x 0) - flow) / ε ^ 2 ∧
+          ((BacktrackingGradient.Run.functionEvaluations j K : ℕ) : ℝ) ≤
+            κF * (f (x 0) - flow) / ε ^ 2 + 1 ∧
+          ((K + 1 : ℕ) : ℝ) ≤ κI * (f (x 0) - flow) / ε ^ 2 + 1 := by
+  have h0 := hprefix 0 (by simp)
+  have hLpos : 0 < L := by linarith
+  have hmin : 0 < min tini ((1 - α) / L) := lt_min h0.initial_pos
+    (div_pos (by linarith [h0.alpha_lt_one]) hLpos)
+  obtain ⟨M, hM⟩ := BacktrackingGradient.exists_step_le tini
+    (show 0 < BacktrackingGradient.threshold L α from by
+      exact div_pos (mul_pos (by norm_num) (sub_pos.mpr h0.alpha_lt_one)) hLpos)
+  let κI := (α * min tini ((1 - α) / L))⁻¹
+  have hI : 0 < κI := inv_pos.mpr (mul_pos h0.alpha_pos hmin)
+  obtain ⟨K, hstop, hK, hbound⟩ :=
+    BacktrackingGradient.exists_termination hprefix hL hLpos hlow
+  have hiter : (K : ℝ) ≤ κI * (f (x 0) - flow) / ε ^ 2 := by
+    convert hbound using 1
+    dsimp [κI]
+    field_simp
+  refine ⟨M, hM, κI, hI, (M + 1 : ℕ) * κI, by positivity,
+    rfl, rfl, K, hstop, hK, hiter, ?_, ?_⟩
+  · have hc : (BacktrackingGradient.Run.functionEvaluations j K : ℝ) ≤
+        1 + (M + 1 : ℕ) * (K : ℝ) := by
+      exact_mod_cast hK.functionEvaluations_le hL hLpos hM
+    have hm : (0 : ℝ) ≤ (M + 1 : ℕ) := by positivity
+    have hp := mul_le_mul_of_nonneg_left hiter hm
+    calc
+      (BacktrackingGradient.Run.functionEvaluations j K : ℝ) ≤ 1 + (M + 1 : ℕ) * (K : ℝ) := hc
+      _ ≤ 1 + (M + 1 : ℕ) * (κI * (f (x 0) - flow) / ε ^ 2) := add_le_add le_rfl hp
+      _ = _ := by ring
+  · push_cast
+    linarith
 
 end CartisGouldToint

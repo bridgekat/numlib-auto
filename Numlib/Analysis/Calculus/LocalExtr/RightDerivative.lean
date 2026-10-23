@@ -26,9 +26,8 @@ theorem IsLocalMinOn.iteratedDeriv_nonneg_of_lower_eq_zero {f : ℝ → ℝ} {k 
     have hneg : iteratedDeriv (n + 1) f 0 < 0 := lt_of_not_ge hn
     have hcont : ContinuousAt (iteratedDeriv (n + 1) f) 0 := by
       rw [iteratedDeriv_eq_equiv_comp]
-      have hmap :=
-        (ContinuousMultilinearMap.piFieldEquiv ℝ (Fin (n + 1)) ℝ).symm.continuous.continuousAt
-      exact hmap.comp ((hf 0 (by simp)).continuousAt_iteratedFDeriv le_rfl)
+      have hmap := (ContinuousMultilinearMap.piFieldEquiv ℝ (Fin (n + 1)) ℝ).symm.continuous
+      exact hmap.continuousAt.comp ((hf 0 (by simp)).continuousAt_iteratedFDeriv le_rfl)
     have hmnear : ∀ᶠ t in 𝓝 (0 : ℝ), t ∈ Icc (0 : ℝ) 1 → f 0 ≤ f t :=
       eventually_nhdsWithin_iff.mp hmin
     have hnear := hmnear.and (hcont.eventually (gt_mem_nhds hneg))
