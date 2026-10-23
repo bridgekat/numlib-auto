@@ -1,0 +1,31 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "euclideanCoordinates"
+
+[[node]]
+id = "norm_euclideanCoordinates_le"
+
+[[node]]
+id = "euclideanResidual"
+
+[[node]]
+id = "euclideanObjective"
+
+[[node]]
+id = "contDiff_euclideanResidual"
+
+[[node]]
+id = "contDiff_euclideanObjective"
+
+[[node]]
+id = "euclideanResidual_derivatives_bounded"
+
+[[node]]
+id = "euclideanResidual_partials_bounded"
+
+[[node]]
+id = "euclideanObjective_second_bounded"
+
+[[node]]
+id = "euclideanObjective_gradient_lipschitz"

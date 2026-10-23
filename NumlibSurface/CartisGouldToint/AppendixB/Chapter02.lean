@@ -1,5 +1,5 @@
 import Numlib.Approximation.Hermite.Quintic
-import Numlib.Optimization.SteepestDescent.Exact.CorridorObjective
+import Numlib.Optimization.SteepestDescent.Exact.CorridorEuclidean
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -109,14 +109,12 @@ noncomputable def sdexCounterexampleData (ε : ℝ) (hε : 0 < ε) (hε1 : ε �
 corridor and a smooth bounded terminal extension beyond the final source iterate. -/
 noncomputable def sdexCounterexample (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1)
     (z : EuclideanSpace ℝ (Fin 2)) : ℝ :=
-  ExactSteepestDescent.Corridor.objective (sdexCounterexampleData ε hε hε1) (z 0, z 1)
+  ExactSteepestDescent.Corridor.euclideanObjective (sdexCounterexampleData ε hε hε1) z
 
 /-- The actual Appendix B.2 objective is globally twice continuously differentiable. -/
 theorem contDiff_sdexCounterexample (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1) :
     ContDiff ℝ 2 (sdexCounterexample ε hε hε1) := by
-  exact (ExactSteepestDescent.Corridor.contDiff_objective _).comp
-    ((EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2)).contDiff.prodMk
-      (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 2)).contDiff)
+  exact ExactSteepestDescent.Corridor.contDiff_euclideanObjective _
 
 /-- Lemma B.2.4: the actual source corridor objective is uniformly bounded below
 on the whole Euclidean plane. The lower bound is chosen before the accuracy,
@@ -125,5 +123,32 @@ theorem lemma_B_2_4 : ∃ B > 0, ∀ (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1)
     ∀ z : EuclideanSpace ℝ (Fin 2), -B ≤ sdexCounterexample ε hε hε1 z := by
   obtain ⟨B,hB,H⟩ := ExactSteepestDescent.Corridor.objective_bounded_below
   exact ⟨B,hB,fun ε hε hε1 z => H (sdexCounterexampleData ε hε hε1) (z 0, z 1)⟩
+
+/-- The genuine Euclidean corridor term f₂ of (B.2.19)–(B.2.20). -/
+noncomputable def sdexCorridor (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1) :
+    EuclideanSpace ℝ (Fin 2) → ℝ :=
+  ExactSteepestDescent.Corridor.euclideanResidual (sdexCounterexampleData ε hε hε1)
+
+/-- Lemma B.2.3: the corridor value, both actual first partial derivatives and
+all four second partial entries are uniformly bounded. The global bound proved
+here includes both closed connector strips in the source, including every join. -/
+theorem lemma_B_2_3 : ∃ B > 0, ∀ (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1),
+    ∀ z : EuclideanSpace ℝ (Fin 2),
+      |sdexCorridor ε hε hε1 z| ≤ B ∧
+      (∀ i : Fin 2, |fderiv ℝ (sdexCorridor ε hε hε1) z
+        (EuclideanSpace.basisFun (Fin 2) ℝ i)| ≤ B) ∧
+      ∀ i j : Fin 2, |iteratedFDeriv ℝ 2 (sdexCorridor ε hε hε1) z
+        ![EuclideanSpace.basisFun (Fin 2) ℝ i, EuclideanSpace.basisFun (Fin 2) ℝ j]| ≤ B := by
+  obtain ⟨B,hB,H⟩ := ExactSteepestDescent.Corridor.euclideanResidual_partials_bounded
+  exact ⟨B,hB,fun ε hε hε1 => H (sdexCounterexampleData ε hε hε1)⟩
+
+/-- Lemma B.2.5: the actual source objective has a globally Lipschitz Euclidean
+gradient, with a common positive constant preceding the requested accuracy. -/
+theorem lemma_B_2_5 : ∃ L > 0, ∀ (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1),
+    ∀ x y : EuclideanSpace ℝ (Fin 2),
+      ‖gradient (sdexCounterexample ε hε hε1) x -
+        gradient (sdexCounterexample ε hε hε1) y‖ ≤ L * ‖x-y‖ := by
+  obtain ⟨L,hL,H⟩ := ExactSteepestDescent.Corridor.euclideanObjective_gradient_lipschitz
+  exact ⟨L,hL,fun ε hε hε1 => H (sdexCounterexampleData ε hε hε1)⟩
 
 end CartisGouldToint

@@ -41,24 +41,12 @@ deps = ["sdexCounterexampleData"]
 
 [[node]]
 id = "lemma_B_2_3"
-kind = "theorem"
-desc = '''
-For the f2,ylow,yup from sdexCounterexampleData there exists M>=0, uniform in epsilon,N, such that for every x>=0 and y in [ylow(x)-1,ylow(x)] union [yup(x),yup(x)+1], the absolute values of f2, partial_x f2, partial_y f2, partial_xx f2, partial_yy f2, partial_xy f2 are all <=M. Derive coefficient bounds and their x derivatives from the explicit formulas, delta<=2 and (B.2.26); include join boundaries by C^2 matching.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.3"
-deps = ["sdexCounterexampleData", "lemma_B_2_1_corrected"]
 
 [[node]]
 id = "lemma_B_2_4"
 
 [[node]]
 id = "lemma_B_2_5"
-kind = "theorem"
-desc = '''
-For the explicit fSDEX construction there exists L>=0 such that for every z,w in real^2, norm(gradient fSDEX z-gradient fSDEX w)<=L*norm(z-w). Prove the global C^2 function has bounded Hessian by the three y regions: central corridor using (B.2.28)--(B.2.31), connector strips using B.2.3 and exterior 8delta^2 using B.2.26, plus the x<0 extension. Constants can be chosen independently of epsilon,N.
-'''
-source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.5"
-deps = ["sdexCounterexampleData", "lemma_B_2_3", "theorem_A_8_5"]
 
 [[node]]
 id = "lemma_B_2_6"
@@ -87,3 +75,6 @@ id = "sdexCounterexample"
 
 [[node]]
 id = "contDiff_sdexCounterexample"
+
+[[node]]
+id = "sdexCorridor"

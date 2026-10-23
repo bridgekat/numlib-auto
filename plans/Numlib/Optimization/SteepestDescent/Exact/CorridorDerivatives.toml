@@ -1,0 +1,31 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "profile_eventuallyEq_plateau"
+
+[[node]]
+id = "iteratedFDeriv_plateau"
+
+[[node]]
+id = "profile_derivatives_bounded_global"
+
+[[node]]
+id = "corridorCoordinates"
+
+[[node]]
+id = "contDiff_corridorCoordinates"
+
+[[node]]
+id = "corridorCoordinates_derivatives_bounded"
+
+[[node]]
+id = "residualCorridor_derivatives_bounded"
+
+[[node]]
+id = "curveSeed_scalar"
+
+[[node]]
+id = "scalarObjective_second_bounded"
+
+[[node]]
+id = "objective_second_bounded"
