@@ -1,0 +1,34 @@
+namespace = "Constrained.TwoPhase"
+
+[[node]]
+id = "PhaseTwoRun.invariants"
+
+[[node]]
+id = "PhaseTwoRun.reset_residual"
+
+[[node]]
+id = "PhaseTwoRun.reflection_residual"
+
+[[node]]
+id = "PhaseTwoRun.reset_drop"
+
+[[node]]
+id = "PhaseTwoRun.target_succ_le"
+
+[[node]]
+id = "PhaseTwoRun.target_le"
+
+[[node]]
+id = "PhaseTwoRun.component_bounds"
+
+[[node]]
+id = "PhaseTwoRun.target_bounds"
+
+[[node]]
+id = "resetIterations"
+
+[[node]]
+id = "mem_resetIterations"
+
+[[node]]
+id = "PhaseTwoRun.card_resets_le"

@@ -1,0 +1,28 @@
+namespace = "ConvexRegularization"
+
+[[node]]
+id = "Settings"
+
+[[node]]
+id = "Data"
+
+[[node]]
+id = "Run"
+
+[[node]]
+id = "Run.mem"
+
+[[node]]
+id = "Run.restrict"
+
+[[node]]
+id = "Run.denominator_pos"
+
+[[node]]
+id = "Run.rejected"
+
+[[node]]
+id = "Run.objective_succ_le"
+
+[[node]]
+id = "Run.objective_le"

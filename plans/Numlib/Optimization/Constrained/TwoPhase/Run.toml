@@ -1,0 +1,43 @@
+namespace = "Constrained.TwoPhase"
+
+[[node]]
+id = "firstCriticality"
+
+[[node]]
+id = "InnerReturn"
+
+[[node]]
+id = "ResetGuard"
+
+[[node]]
+id = "nextTarget"
+
+[[node]]
+id = "MeritTarget"
+
+[[node]]
+id = "StopAfter"
+
+[[node]]
+id = "Data"
+
+[[node]]
+id = "PhaseTwoRun"
+
+[[node]]
+id = "LiteralPhaseTwoRun"
+
+[[node]]
+id = "CorrectedPhaseTwoRun"
+
+[[node]]
+id = "ResetGuard.le"
+
+[[node]]
+id = "PhaseTwoRun.mem"
+
+[[node]]
+id = "PhaseTwoRun.inner_residual_le"
+
+[[node]]
+id = "CorrectedPhaseTwoRun.target_of_stop"

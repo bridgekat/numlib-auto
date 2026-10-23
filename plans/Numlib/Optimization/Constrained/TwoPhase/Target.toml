@@ -1,0 +1,46 @@
+namespace = "Constrained.TwoPhase"
+
+[[node]]
+id = "residual"
+
+[[node]]
+id = "residual_norm_sq"
+
+[[node]]
+id = "residual_norm"
+
+[[node]]
+id = "constraint_norm_le_residual"
+
+[[node]]
+id = "abs_gap_le_residual"
+
+[[node]]
+id = "resetTarget"
+
+[[node]]
+id = "reflectTarget"
+
+[[node]]
+id = "reset_gap_nonneg"
+
+[[node]]
+id = "residual_reset"
+
+[[node]]
+id = "residual_reflect"
+
+[[node]]
+id = "reflect_gap_pos"
+
+[[node]]
+id = "reflect_lt"
+
+[[node]]
+id = "reset_decrease"
+
+[[node]]
+id = "targetMerit_eq_residual"
+
+[[node]]
+id = "residual_le_of_merit_le"

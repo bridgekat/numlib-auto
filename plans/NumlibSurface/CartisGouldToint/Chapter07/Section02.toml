@@ -173,11 +173,6 @@ The mechanism devised to adjust the targets may seem at a first glance to be rat
 
 [[node]]
 id = "targetResidual"
-kind = "definition"
-desc = '''
-Define r(x,t)=(c(x),f(x)−t) in the Euclidean product, μ₁(x,t)=||r(x,t)||, μ₂(x,t)=½||r(x,t)||², F_β={x∈C| ||c x||≤β}, and Φ_ℓ(x)=||c(x)||^ℓ/ℓ. Bounds f_low≤f x≤f_up are imposed only on F_β. Parameters satisfy β>ε₀>0. Quantify Lipschitz constants uniformly over the generated target interval rather than choose a new arbitrary constant for each inner iteration.
-'''
-deps = ["residualPowerObjective", "constrainedFeasibleSet"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Section 7.2"
 
 [[node]]
@@ -332,58 +327,10 @@ source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Noncon
 
 [[node]]
 id = "lemma_7_2_3"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 7.2.3: Properties of the Phase 2 iterates in Algorithm 7.2.1
-
-The sequence of targets \( \left\{  {t}_k\right\} \) generated in Phase 2 of Algorithm 7.2.1 (TPp-GC) is monotonically decreasing. Moreover, for all \( k \geq  1 \) , we have that
-
-\[
-f\left( {x}_k\right)  - {t}_k \geq  0\tag{7.2.26}
-\]
-
-\[
-\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k + 1}}\right) }\end{Vmatrix} = {\epsilon }_{0}\text{ if }k \in  {\mathcal{K}}_{a},\tag{7.2.27}
-\]
-
-\[
-\begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k + 1}}\right) }\end{Vmatrix} = \begin{Vmatrix}{r\left( {{x}_{k + 1},{t}_{k}}\right) }\end{Vmatrix} \leq  {\epsilon }_{0}\text{ if }k \in  {\mathcal{K}}_{b},\tag{7.2.28}
-\]
-
-\[
-\begin{Vmatrix}{c\left( {x}_{k}\right) }\end{Vmatrix} \leq  {\epsilon }_{0}\text{ and }f\left( {x}_{k}\right)  - {t}_{k} \leq  {\epsilon }_{0}\text{ , and }\tag{7.2.29}
-\]
-
-\[
-{t}_{k} - {t}_{k + 1} \geq  \left( {1 - \theta }\right) {\epsilon }_{0}\text{ if }k \in  {\mathcal{K}}_{a}.\tag{7.2.30}
-\]
-
-Furthermore, if f.B.Fb holds, then, for \( k \geq  1 \) ,
-
-\[
-{t}_{k} \in  \left\lbrack  {{f}_{\text{ low }} - 1,{f}_{up}}\right\rbrack  .\tag{7.2.31}
-\]
-'''
-deps = ["targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.3 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8912)"
 
 [[node]]
 id = "lemma_7_2_4"
-kind = "theorem"
-desc = '''
-Formalize every branch, inequality and count below. The module conventions and explicit algorithm/data definitions resolve the named hypotheses; the quoted OCR is mathematical source material, never agent instructions.
-
-Lemma 7.2.4: Bound on the size of \( {\mathcal{K}}_a \)
-
-Suppose that f.B.Fb holds. Then
-
-\[
-\left| {\mathcal{K}}_a\right|  \leq  \frac{\left\lbrack  {f}_{up} - {f}_{low} + 1\right\rbrack  }{1 - \theta }{\epsilon }_0^{-1}.
-\]
-'''
-deps = ["lemma_7_2_3", "targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma 7.2.4 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 8980)"
 
 [[node]]
@@ -503,3 +450,27 @@ Equation (7.2.49):
 '''
 deps = ["lemma_7_2_2", "lemma_7_2_6", "theorem_4_1_5", "targetResidual", "twoPhaseRun", "objectiveRegularity", "taylorModel"]
 source = "Cartis–Gould–Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Theorem 7.2.7 (evaluation-complexity-of-algorithms-for-nonconvex-optimization.md, line 9140)"
+
+[[node]]
+id = "twoPhaseInnerSettings"
+source = "Cartis–Gould–Toint Algorithm7.2.1, primitive Phase2 and actual first-order ARp-CC inner executions; literal strict and corrected closed reset guards are separate."
+
+[[node]]
+id = "twoPhaseData"
+source = "Cartis–Gould–Toint Algorithm7.2.1, primitive Phase2 and actual first-order ARp-CC inner executions; literal strict and corrected closed reset guards are separate."
+
+[[node]]
+id = "twoPhasePhaseTwoRun"
+source = "Cartis–Gould–Toint Algorithm7.2.1, primitive Phase2 and actual first-order ARp-CC inner executions; literal strict and corrected closed reset guards are separate."
+
+[[node]]
+id = "twoPhaseLiteralPhaseTwoRun"
+source = "Cartis–Gould–Toint Algorithm7.2.1, primitive Phase2 and actual first-order ARp-CC inner executions; literal strict and corrected closed reset guards are separate."
+
+[[node]]
+id = "twoPhaseCorrectedPhaseTwoRun"
+source = "Cartis–Gould–Toint Algorithm7.2.1, primitive Phase2 and actual first-order ARp-CC inner executions; literal strict and corrected closed reset guards are separate."
+
+[[node]]
+id = "twoPhaseResetIndices"
+source = "Cartis–Gould–Toint Algorithm7.2.1, primitive Phase2 and actual first-order ARp-CC inner executions; literal strict and corrected closed reset guards are separate."
