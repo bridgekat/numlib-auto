@@ -1,0 +1,22 @@
+namespace = "Composite"
+
+[[node]]
+id = "radiusCoefficient"
+
+[[node]]
+id = "radiusCoefficient_mem"
+
+[[node]]
+id = "stepCoefficient"
+
+[[node]]
+id = "stepCoefficient_mem"
+
+[[node]]
+id = "Run.short_step_obstruction"
+
+[[node]]
+id = "Run.exists_power_lower"
+
+[[node]]
+id = "Run.exists_unit_power_lower"
