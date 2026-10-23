@@ -1,5 +1,4 @@
 namespace = "InexactRegularization.GuardedCounterexample"
-desc = "Actual affine derivative jets, quadratic model solves, sequential geometric checks and global sine regularity for guarded dynamic accuracy executions."
 
 [[node]]
 id = "affine"
