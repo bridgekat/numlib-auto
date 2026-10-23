@@ -1,5 +1,5 @@
 namespace = "InexactRegularization.Explicit"
-desc = "Current failed checks yield actual decrease budgets and literal EDA stopping with a coarse q+1 rate, without an effective-margin assumption."
+
 
 [[node]]
 id = "currentReferenceCoefficient"

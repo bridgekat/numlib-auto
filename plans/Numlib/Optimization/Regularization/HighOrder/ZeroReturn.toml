@@ -1,5 +1,5 @@
 namespace = "HighOrderRegularization.ZeroReturn"
-desc = "A globally smooth bounded-below quadratic has an actual immediate outer exit and produces no first-order approximate certificate."
+
 
 [[node]]
 id = "settings"

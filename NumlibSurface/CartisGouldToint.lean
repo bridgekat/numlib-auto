@@ -21,6 +21,8 @@ import NumlibSurface.CartisGouldToint.Chapter04.Section01
 import NumlibSurface.CartisGouldToint.Chapter04.Section02
 import NumlibSurface.CartisGouldToint.Chapter05.Section01
 import NumlibSurface.CartisGouldToint.Chapter05.Section03
+import NumlibSurface.CartisGouldToint.Chapter05.Section04
+import NumlibSurface.CartisGouldToint.Chapter06.Section02
 import NumlibSurface.CartisGouldToint.Chapter07.Section01
 import NumlibSurface.CartisGouldToint.Chapter07.Section02
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
@@ -183,6 +185,23 @@ recorded on the relevant plan nodes. In particular:
   certificate. A fixed actual infinite quadratic-objective run has only successful
   trials, while their accepted decreases tend to zero. Thus no positive uniform
   coefficient bounds every successful decrease under the literal relative checks.
+
+
+* The same large zero-decrease return also refutes literal Lemma 12.2.10 and
+  Theorem 12.2.14; their detailed-solver companions keep the stronger return rule.
+  Theorem 14.2.4 fails on a scalar box with all required zeroth- and first-order
+  anchored Lipschitz and boundedness assumptions, so the defect survives simple
+  constraints and the stronger function regularity.
+* Lemma 7.2.1's nonstrict inner return and strict outer reset disagree at residual
+  equality. An actual quadratic-merit run terminates with exact feasibility but
+  fails the scaled Lagrangian test for every multiplier. The corrected companion
+  closes the reset guard at equality and proves both termination alternatives.
+* The function decrease in Lemma 14.1.9 must concern the full composite objective
+  `w=f+h∘c`. An actual accepted global-model trial increases `f` by one half
+  while decreasing `w` by one half, contrary to the printed scalar-part bound.
+* Lemma 5.4.3's displayed double logarithm can equal zero although one actual
+  cubic-regularization trial is necessary. The witness retains all five finite
+  local-threshold terms. A natural ceiling alone does not repair this endpoint.
 
 No claim of completeness is made for the open analytic estimates, algorithm
 complexity theorems or sharpness constructions.

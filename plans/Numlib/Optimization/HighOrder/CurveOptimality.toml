@@ -1,5 +1,5 @@
 namespace = "TaylorModel"
-desc = "Curve-based necessary optimality using actual ordered-composition derivative coefficients."
+
 
 [[node]]
 id = "curveCoefficient_nonneg_of_isLocalMin"

@@ -1,5 +1,5 @@
 namespace = "InexactRegularization"
-desc = "Actual nonnegative penalties and trial-model comparisons transfer reference gaps to Taylor decrements."
+
 
 [[node]]
 id = "reference_gap_le_computed_decrement"

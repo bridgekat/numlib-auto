@@ -1,5 +1,5 @@
 namespace = "TaylorModel"
-desc = "Actual polynomial-curve Taylor coefficients, finite ordered compositions and exact finite-regularity derivative identity."
+
 
 [[node]]
 id = "polynomialCurve"

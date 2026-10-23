@@ -17,4 +17,3 @@ id = "IsLeastEigenpair.ge_half_on_ball"
 
 [[node]]
 id = "IsLeastEigenpair.curvature_ge_half_on_ball"
-desc = "The explicit positive-curvature ball gives a lower bound on the actual Hessian quadratic form in every unit direction, without requiring an eigenpair at the perturbed point."
