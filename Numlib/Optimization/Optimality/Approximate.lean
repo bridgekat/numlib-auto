@@ -22,6 +22,8 @@ results of [cartis2022evaluation] ((1.1.5), (2.1.2), (3.2.6), (12.1.10), (12.1.2
   `S = univ`;
 * `Optimization.IsEpsDeltaApprox D S q ε δ`, `Optimization.IsEpsApprox D S q ε`: condition
   (12.1.25) for given radii `δ`, and the `(ε, δ)`-approximate `q`-th order minimizer;
+* `Optimization.hessianMatrix f x`: on `EuclideanSpace ℝ ι`, the Hessian matrix
+  `[∇²f(x)]ᵢⱼ = ∇²f(x)[eᵢ, eⱼ]`, which represents `hessianOperator f x` for `f` `C²` at `x`;
 * `Optimization.hessianOperator f x`: the Hessian `∇²f(x)` as an operator, the derivative of the
   gradient.
 
@@ -417,5 +419,55 @@ theorem minCurvature_iteratedFDeriv_two_eq_leftmost [FiniteDimensional ℝ F]
   minCurvature_eq_leftmost _ fun v w => (inner_hessianOperator_apply hf v w).symm
 
 end Inner
+
+section Matrix
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι] {f : EuclideanSpace ℝ ι → ℝ}
+  {x : EuclideanSpace ℝ ι}
+
+/-- The Hessian matrix `[∇²f(x)]ᵢⱼ = ∇²f(x)[eᵢ, eⱼ]` (`= ∂²f(x)/∂xᵢ∂xⱼ`) of a function on
+`EuclideanSpace ℝ ι`, in the standard basis `eᵢ`. -/
+noncomputable def hessianMatrix (f : EuclideanSpace ℝ ι → ℝ) (x : EuclideanSpace ℝ ι) :
+    Matrix ι ι ℝ :=
+  fun i j => iteratedFDeriv ℝ 2 f x ![EuclideanSpace.single i 1, EuclideanSpace.single j 1]
+
+theorem hessianMatrix_apply (i j : ι) :
+    hessianMatrix f x i j =
+      iteratedFDeriv ℝ 2 f x ![EuclideanSpace.single i 1, EuclideanSpace.single j 1] := rfl
+
+/-- For `f` `C²` at `x`, the Hessian matrix represents the Hessian operator. -/
+theorem toEuclideanLin_hessianMatrix (hf : ContDiffAt ℝ 2 f x) :
+    Matrix.toEuclideanLin (hessianMatrix f x) =
+      (hessianOperator f x : EuclideanSpace ℝ ι →ₗ[ℝ] _) := by
+  have e : hessianMatrix f x = LinearMap.toMatrix (EuclideanSpace.basisFun ι ℝ).toBasis
+      (EuclideanSpace.basisFun ι ℝ).toBasis
+      (hessianOperator f x : EuclideanSpace ℝ ι →ₗ[ℝ] _) := by
+    ext i j
+    rw [LinearMap.toMatrix_apply]
+    have h := EuclideanSpace.inner_single_left i (1 : ℝ)
+      (hessianOperator f x (EuclideanSpace.single j 1))
+    simp only [map_one, one_mul] at h
+    simp [hessianMatrix, ← h, inner_hessianOperator_apply hf]
+  rw [Matrix.toEuclideanLin_eq_toLin_orthonormal, e, Matrix.toLin_toMatrix]
+
+/-- For `f` `C²` at `x`, `∇²f(x)[v, w] = ⟪v, H w⟫` with the Hessian matrix `H`. -/
+theorem iteratedFDeriv_two_eq_inner_hessianMatrix (hf : ContDiffAt ℝ 2 f x)
+    (v w : EuclideanSpace ℝ ι) :
+    iteratedFDeriv ℝ 2 f x ![v, w] = ⟪v, Matrix.toEuclideanLin (hessianMatrix f x) w⟫ := by
+  rw [toEuclideanLin_hessianMatrix hf, ContinuousLinearMap.coe_coe,
+    inner_hessianOperator_apply hf]
+
+/-- The Hessian matrix of a function `C²` at `x` is symmetric. -/
+theorem hessianMatrix_isHermitian (hf : ContDiffAt ℝ 2 f x) : (hessianMatrix f x).IsHermitian :=
+  Matrix.isSymmetric_toEuclideanLin_iff.mp
+    (toEuclideanLin_hessianMatrix hf ▸ hessianOperator_isSymmetric hf)
+
+/-- `λ_min[∇²f(x)]` is the least eigenvalue of the Hessian matrix ([cartis2022evaluation],
+(1.1.5) and Section A.5); both sides are `0` when `ι` is empty. -/
+theorem minCurvature_iteratedFDeriv_two_eq_iInf_eigenvalues (hf : ContDiffAt ℝ 2 f x) :
+    minCurvature (iteratedFDeriv ℝ 2 f x) = ⨅ i, (hessianMatrix_isHermitian hf).eigenvalues i :=
+  minCurvature_eq_iInf_isHermitian_eigenvalues _ (iteratedFDeriv_two_eq_inner_hessianMatrix hf)
+
+end Matrix
 
 end Optimization
