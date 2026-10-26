@@ -1,0 +1,24 @@
+desc = '''
+Cartis–Gould–Toint Chapter 7, "Problems with Nonconvex Constraints": the general problem
+`minimize_{x ∈ 𝒞} f(x)` s.t. `c(x) = 0` (7.1.1) with `𝒞` closed convex (bounded in the book; not
+needed), the Lagrangian `ℒ(x,y) = f(x) - ⟨y, c(x)⟩` and its local sufficiency (Theorem 7.1.1), scaled
+approximate first-order criticality (7.1.4), and the two-phase target-following algorithm TPp-GC
+(§7.2.2) with its termination guarantees and evaluation complexity. §7.2.3 (penalty, augmented
+Lagrangian, barrier and SQP methods) is a literature discussion without numbered results and is not
+planned.
+
+Conventions: namespace `CartisGouldToint.Chapter07`; `E = EuclideanSpace ℝ (Fin n)`,
+`c : E → EuclideanSpace ℝ (Fin m)` (Euclidean norm `‖c x‖`), multipliers `y` in
+`EuclideanSpace ℝ (Fin m)`, `‖(y,1)‖ = √(‖y‖² + 1)`; the residual `r(x,t) = (c(x), f(x) - t)` is
+handled through `Constrained.targetResidual` / `targetMerit` (never as an element of a product
+space). Book indices are kept: `x 0` is the initial point, `x 1` the output of Phase 1, outer
+iterations of Phase 2 are `k ≥ 1`.
+
+Source corrections (details in nodes): Phase 2 must use ARp1-CC (the proof of Lemma 7.2.6 uses
+Lemma 6.2.4); the Step-2(a) test `< θε₀` must be `≤ θε₀` (consistency with the inner stopping rule
+(7.2.10); otherwise termination without any guarantee is possible); the block counting of Lemma 7.2.6
+/ Theorem 7.2.7 misses the first and last blocks, restarts of the regularization parameter, and
+inner iterations whose new iterate passes the third test of (7.2.10) — the corrected Theorem 7.2.7
+carries an explicit term in the number of outer iterations, and the book's bound is not established
+by its proof (see the report); Lemma 7.2.2's derivative bound misses `+2`; (7.2.51) `2^4` is `2^i`.
+'''

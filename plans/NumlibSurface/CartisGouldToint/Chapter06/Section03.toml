@@ -1,0 +1,88 @@
+namespace = "CartisGouldToint.Chapter06"
+desc = '''
+§6.3 Convexly constrained least-Euclidean-norm problems: `minimize_{x ∈ 𝒞} ‖r(x)‖` for
+`r : E → EuclideanSpace ℝ (Fin m)`, via `Φ_ℓ(x) = ‖r(x)‖^ℓ/ℓ` (5.1.3) and ARp1-CC (Algorithm 6.3.1,
+ARpLE-CC), with the scaled first-order test `ω_{Φ_ℓ,𝒞,1}(x)/‖r(x)‖^{ℓ-1} ≤ ε₁`. Written
+multiplicatively (`omega1 (PhiEll r ℓ) C x ≤ ε₁ ‖r x‖^(ℓ-1)`), which is equivalent whenever the
+first test `‖r(x)‖ ≤ ε₀` fails (`ε₀ > 0`) and avoids division by zero; Chapter 7 uses the same form
+(7.2.9).
+
+The complexity proof is the first-order case of Theorem 5.1.7 with Lemma 6.2.4 in place of Lemma
+4.1.4: decrease of the potential `‖r(x_k)‖^{1/2^i}` (`Optimization.rpow_inv_two_pow_sub_ge_min`)
+fed to `Optimization.IsARRun.exists_isFirstHit_of_decrease`. `ℓ` is a natural number `≥ 2`
+(conditions (5.1.38)/(5.1.39) produce naturals; the smoothness of `Φ_ℓ` is part of the assumption
+Φℓ.DpL.C, as in the book). Consolidation: `PhiEll` duplicates the Chapter 5 definition of `Φ_ℓ`;
+alias it to the Chapter 5 node when merged.
+
+Source issues: Theorem 6.3.1 reads "(5.1.38) for (5.1.39)" (meant: "or"); the exponents printed
+`2^*` (and `2^4` in (5.1.44)) are `2^i`. Only `ι₁(p,ℓ,i) ≥ 0` is used, so the theorem is stated
+under that weaker hypothesis.
+'''
+
+[[node]]
+id = "PhiEll"
+kind = "def"
+desc = '''
+`PhiEll (r : E → EuclideanSpace ℝ (Fin m)) (ℓ : ℕ) (x : E) : ℝ := ‖r x‖ ^ ℓ / ℓ` (5.1.3) (same as
+Chapter 5's `Φ_ℓ`).
+'''
+source = "Cartis–Gould–Toint, (5.1.3)"
+
+[[node]]
+id = "AssumptionPhiDpLC"
+kind = "def"
+desc = '''
+Φℓ.DpL.C: `AssumptionPhiDpLC r ℓ C p L : Prop := AssumptionDpLC (PhiEll r ℓ) C p L`.
+'''
+deps = ["PhiEll", "AssumptionDpLC"]
+source = "Cartis–Gould–Toint, assumption Φℓ.DpL.C (Section 6.3)"
+
+[[node]]
+id = "algorithm_6_3_1"
+kind = "def"
+desc = '''
+Algorithm 6.3.1 (ARpLE-CC) as a run predicate: ARp1-CC applied to `PhiEll r ℓ` (model (5.1.8) =
+`regularizedModel (ftaylorSeries ℝ (PhiEll r ℓ) (x k)) p (σ k)`), with Step 1 replaced by
+"stop if `‖r x‖ ≤ ε₀` (6.3.1) or `omega1 (PhiEll r ℓ) C x ≤ ε₁ * ‖r x‖ ^ (ℓ - 1)` (6.3.2)":
+`IsARpLECCRun r ℓ C p P ε₀ ε₁ x s σ : Prop := x 0 ∈ C ∧ Optimization.IsARRun (PhiEll r ℓ) p P.σ₀ …
+(Optimization.IsFirstOrderCCStep (PhiEll r ℓ) C p P.θ₁) (stopLE r ℓ C ε₀ ε₁) x s σ`,
+`stopLE r ℓ C ε₀ ε₁ x := ‖r x‖ ≤ ε₀ ∨ omega1 (PhiEll r ℓ) C x ≤ ε₁ * ‖r x‖ ^ (ℓ - 1)` (part of
+node). Existence (part of node): from any `x₀ ∈ C`, C.CNe, `Φ_ℓ` `C^p` on an open `D ⊇ C`,
+`ε₀ > 0` (a failing test gives `omega1 > 0`; `Optimization.exists_isFirstOrderCCStep`).
+'''
+deps = ["PhiEll", "omega1", "ARpCCParams", "Optimization.IsARRun", "Optimization.IsFirstOrderCCStep", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 6.3.1"
+
+[[node]]
+id = "arpleCC_decrease"
+kind = "theorem"
+desc = '''
+Display (6.3.3) and the one before it. C.CNe, `AssumptionPhiDpLC r ℓ C p L`, an ARpLE-CC run, `k`
+successful before termination: `‖r(x_k)‖^ℓ - ‖r(x_{k+1})‖^ℓ ≥ κ₁ ℓ (omega1 (PhiEll r ℓ) C
+(x (k+1)))^((p+1)/p)` (Lemma 6.2.4 for `f = Φ_ℓ`, `κ₁` of (4.1.32) with `L_{Φ_ℓ,p}`); hence, if
+moreover the test fails at `x_{k+1}`, for every `β ∈ (0,1)` and `i` with `ι₁(p,ℓ,i) ≥ 0`:
+`‖r(x_k)‖^{1/2^i} - ‖r(x_{k+1})‖^{1/2^i} ≥ min(κ_{r0}, κ_{r1}) min(ε₀^{1/2^i}, ε₁^{(p+1)/p}) /
+max(1, ‖r(x₀)‖^{ι₁})` (`κ_{r0} = 1 - β^{1/2^i}`, `κ_{r1} = κ₁ β^{(ℓ-1)(p+1)/p}/2^i`), the
+residual norms being nonincreasing along the run.
+'''
+deps = ["algorithm_6_3_1", "AssumptionPhiDpLC", "lemma_6_2_4", "Optimization.rpow_inv_two_pow_sub_ge_min"]
+source = "Cartis–Gould–Toint, (6.3.3)"
+
+[[node]]
+id = "theorem_6_3_1"
+kind = "theorem"
+desc = '''
+Theorem 6.3.1. Let `p ≥ 1`, `ℓ ≥ 2`, `i ≥ 0` be naturals with
+`ι₁ := (2^i - 1)/2^i - (ℓ - 1)/p ≥ 0` (holds under (5.1.38) or (5.1.39)), `β ∈ (0,1)`, C.CNe,
+`AssumptionPhiDpLC r ℓ C p L`, `(ε₀, ε₁) ∈ (0,1]²`. Every ARpLE-CC run has a first termination
+index `kε` (`stopLE r ℓ C ε₀ ε₁ (x kε)`, i.e. `‖r(x_ε)‖ ≤ ε₀` or
+`ω_{Φ_ℓ,𝒞,1}(x_ε) ≤ ε₁ ‖r(x_ε)‖^{ℓ-1}`) with, writing `R = ‖r(x₀)‖`,
+`M = max(R^{1/2^i}, R^{1-(ℓ-1)/p})`, `μ = min(ε₀^{1/2^i}, ε₁^{(p+1)/p})`:
+`funEvalCount kε ≤ κ^A M/μ + κ^C` and `derivEvalCount succ kε ≤ κ^S M/μ + 2`, where
+`κ^S = max(1/(1 - β^{1/2^i}), 2^i/β^{(ℓ-1)(p+1)/p} · (p+1)!/(η₁σ_min) ·
+((L + σ_max + θ₁ p!)/p!)^{(p+1)/p})`, `σ_max = max(σ₀, γ₃ L/(1-η₂))` (5.1.60),
+`κ^A = κ^S (1 + |log γ₁|/log γ₂)`, `κ^C = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2` (5.1.61).
+(Potential `φ_k = ‖r(x_k)‖^{1/2^i}`, `φ_low = 0`, decrease from `arpleCC_decrease`.)
+'''
+deps = ["arpleCC_decrease", "arpcc_sigma_le", "Optimization.IsARRun.exists_isFirstHit_of_decrease"]
+source = "Cartis–Gould–Toint, Theorem 6.3.1"

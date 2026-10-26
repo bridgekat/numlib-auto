@@ -1,0 +1,20 @@
+namespace = "CartisGouldToint.AppendixB"
+desc = '''
+Appendix to Chapter 7: Lemma B.7.1, the two-variable global minimization used for the target
+decrease (7.2.30) in Lemma 7.2.3. Its content is the backbone inequality
+`neg_add_sqrt_sq_sub_sq_ge` (planned in `Numlib/Optimization/Constrained/TargetResidual`), which
+also covers the boundary cases `ω = 0` and `ω = ε` used in the text before Lemma B.7.1
+("for `ω ∈ [0, ε₀]`"); the lemma as printed assumes `0 < ω < ε`.
+'''
+
+[[node]]
+id = "lemma_B_7_1"
+kind = "theorem"
+desc = '''
+Lemma B.7.1. For `0 < ω < ε`, with `ψ (f, c) := -f + √(ε ^ 2 - c ^ 2)` on
+`K := {(f, c) : ℝ × ℝ | f ^ 2 + c ^ 2 ≤ ω ^ 2}`: `(ω, 0) ∈ K`, `IsMinOn ψ K (ω, 0)` and
+`ψ (ω, 0) = ε - ω`; moreover `(ω, 0)` is the unique minimizer on `K` (part of node). (The book's
+KKT-based proof is replaced by the monotonicity argument of `neg_add_sqrt_sq_sub_sq_ge`.)
+'''
+deps = ["_root_.neg_add_sqrt_sq_sub_sq_ge"]
+source = "Cartis–Gould–Toint, Lemma B.7.1"

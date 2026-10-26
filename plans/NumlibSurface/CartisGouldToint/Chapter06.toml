@@ -1,0 +1,18 @@
+desc = '''
+Cartis–Gould–Toint Chapter 6, "Convexly Constrained Problems": approximate first- to third-order
+criticality measures over a closed convex set `𝒞` (§6.1), the adaptive-regularization algorithm
+ARp-CC and its complexity (§6.2.1–6.2.2), the first-order variant ARp1-CC (§6.2.3), and the
+convexly constrained least-Euclidean-norm algorithm ARpLE-CC (§6.3).
+
+Conventions: namespace `CartisGouldToint.Chapter06` for all sections; `x ∈ EuclideanSpace ℝ (Fin n)`;
+the measures are `Optimization.formCriticality` of derivative tensors over `Optimization.feasibleSteps`
+and `Optimization.restrictedSteps`; runs are `Optimization.IsARRun` with a method-specific step
+predicate and termination test. The requested optimality order is `q ∈ {1,2,3}` (`ε_j = +∞` for
+`j > q`), and `q ≤ p` is required (the book leaves this implicit; the exponents
+`(p+1)/(p-j+1)` and the third-derivative estimate need it).
+
+Source corrections (details in the nodes): missing minus signs in (6.1.5), (6.1.9); Lemma 6.2.1's
+(6.2.18)–(6.2.19) need `‖d‖ ≤ 1`; Lemma 6.2.2's constants have `p!` for `(p+1)!`; Step 2 of ARp-CC
+can be infeasible when `q ≥ 2` (exact local minimizers may fail the approximate second-order test,
+`algorithm_6_2_1_not_exists_step`); Theorem 6.3.1 "for" → "or", `2^*` → `2^i`.
+'''

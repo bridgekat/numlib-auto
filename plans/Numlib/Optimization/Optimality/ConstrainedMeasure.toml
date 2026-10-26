@@ -1,0 +1,164 @@
+namespace = "Optimization"
+desc = '''
+Criticality measures over a set of admissible displacements (Cartis–Gould–Toint (6.1.5), (6.1.7),
+(6.1.9), (6.2.3)–(6.2.5), (6.2.14), (6.2.16), (7.1.2); also the convexly constrained measures of
+Chapter 14). All of them have the shape
+
+  `ω = - min_{d ∈ T ∩ 𝓑} A[d]^j = sup_{d ∈ T ∩ 𝓑} (-A[d]^j)`
+
+with `A` a `j`-linear form (a derivative tensor `iteratedFDeriv ℝ j g y` of the objective or of a
+model), `𝓑` the closed unit ball and `T` a set of displacements: the feasible steps
+`C(x) = {d | x + d ∈ C}` (6.1.2) or a "restricted" subset `{d ∈ T | |B[d]^i| ≤ a}` (6.1.8),
+(6.1.10), (6.2.1)–(6.2.2). One definition `formCriticality A T` (as `sSup` of the image, which is
+bounded by `‖A‖`) covers all of them; the analysis of ARp-CC (Lemma 6.2.1, Theorem 6.2.3) only
+uses the four structural facts planned below (nonnegativity, monotonicity in `T`, Lipschitz
+dependence on `A`, positive homogeneity), together with the inclusion lemma for restricted sets.
+
+Conventions. `E` is a real inner product space (the unit ball is Euclidean, as in (6.1.3)); `j`-
+linear forms are `ContinuousMultilinearMap ℝ (fun _ : Fin j => E) ℝ`, evaluated on the diagonal
+`A (fun _ => d)` (the book's `A[d]^j`); for `j = 1`, `iteratedFDeriv ℝ 1 g y (fun _ => d) =
+fderiv ℝ g y d` (Mathlib `iteratedFDeriv_one_apply`). Sign: the book prints (6.1.5) and (6.1.9)
+as `min … ≥ 0` without the leading minus sign; the minus sign is meant (see (6.2.3), (7.1.2), and
+the claimed nonnegativity, which holds because `d = 0` is admissible).
+
+Prototype: `drafts/cgt/plan-ch0607/Proto.lean` (definitions elaborate against Mathlib).
+'''
+
+[[node]]
+id = "feasibleSteps"
+kind = "def"
+desc = '''
+`feasibleSteps (C : Set E) (x : E) : Set E := {d | x + d ∈ C}` — the book's `𝒞(x)` (1.1.7),
+(6.1.2), equal to `(x + ·) ⁻¹' C`. API (part of node): `0 ∈ feasibleSteps C x ↔ x ∈ C`;
+convex/closed if `C` is; `feasibleSteps C (x + s) = {d | x + s + d ∈ C}` (the model's
+`𝓜⁰_k(s)` of (6.2.1) is `feasibleSteps C (x_k + s)`); `d ∈ feasibleSteps C x → 0 ≤ t ≤ 1 →
+t • d ∈ feasibleSteps C x` for convex `C ∋ x`. The surface `Chapter01.feasibleDirections` is this
+definition on `EuclideanSpace ℝ (Fin n)` (rfl bridge).
+'''
+source = "Cartis–Gould–Toint, (1.1.7), (6.1.2)"
+
+[[node]]
+id = "formCriticality"
+kind = "def"
+desc = '''
+`formCriticality {j : ℕ} (A : ContinuousMultilinearMap ℝ (fun _ : Fin j => E) ℝ) (T : Set E) : ℝ :=
+sSup ((fun d => -A (fun _ => d)) '' (Metric.closedBall 0 1 ∩ T))` — the book's
+`- min_{d ∈ T ∩ 𝓑} A[d]^j`. Basic API (part of node): the image is bounded above by `‖A‖`
+(`|A (fun _ => d)| ≤ ‖A‖ ‖d‖^j`), so for every `d ∈ closedBall 0 1 ∩ T`,
+`-A (fun _ => d) ≤ formCriticality A T` (`le_formCriticality`).
+'''
+source = "Cartis–Gould–Toint, (6.1.5), (6.1.7), (6.1.9), (6.2.3)–(6.2.5), (7.1.2)"
+
+[[node]]
+id = "formCriticality_nonneg"
+kind = "theorem"
+desc = '''
+If `0 ∈ T` then `0 ≤ formCriticality A T` (for `j ≥ 1`, `A (fun _ => 0) = 0`; for `j = 0` the
+statement needs `A = const ≤ 0`, so the node assumes `1 ≤ j`). Characterization (part of node):
+for `0 ∈ T`, `formCriticality A T ≤ ε ↔ ∀ d ∈ closedBall 0 1 ∩ T, -ε ≤ A (fun _ => d)`. This is
+the form in which termination tests (6.2.8), (6.2.9), (7.1.4) are used.
+'''
+deps = ["formCriticality"]
+source = "Cartis–Gould–Toint, (6.1.5) (\"≥ 0\")"
+
+[[node]]
+id = "formCriticality_mono"
+kind = "theorem"
+desc = '''
+Monotonicity in the admissible set, restricted to the unit ball: if `0 ∈ T` and
+`closedBall 0 1 ∩ T ⊆ T'` then `formCriticality A T ≤ formCriticality A T'` (bounded-above sup
+over a larger set). Used as `𝒞¹(x_{k+1}, ε₁) ∩ 𝓑 ⊆ 𝓜¹_k(s_k)` ⇒ `ω_{f,𝒞,2} ≤ ω_{k+1,2}` in the
+proof of Theorem 6.2.3.
+'''
+deps = ["formCriticality"]
+source = "Cartis–Gould–Toint, proof of Theorem 6.2.3"
+
+[[node]]
+id = "formCriticality_le_add_of_abs_sub_le"
+kind = "theorem"
+desc = '''
+Perturbation: if `0 ∈ T` and `|A (fun _ => d) - B (fun _ => d)| ≤ e` for all
+`d ∈ closedBall 0 1 ∩ T`, then `formCriticality A T ≤ formCriticality B T + e` (hence
+`|formCriticality A T - formCriticality B T| ≤ e`). In particular (corollary, part of node)
+`|formCriticality A T - formCriticality B T| ≤ ‖A - B‖`. This is the step "(6.2.23) ⇒
+ω_{f,𝒞,1}(x_{k+1}) ≤ (L+σ_max)/p! ‖s_k‖^p + ω_{m_k,𝓜,1}(s_k)" of Lemma 6.2.1.
+'''
+deps = ["formCriticality", "formCriticality_nonneg"]
+source = "Cartis–Gould–Toint, proof of Lemma 6.2.1"
+
+[[node]]
+id = "formCriticality_smul"
+kind = "theorem"
+desc = '''
+Positive homogeneity: for `0 ≤ c`, `formCriticality (c • A) T = c * formCriticality A T` (for
+`0 ∈ T`; `Real.sSup_smul_of_nonneg`). Used in Lemma 7.2.1:
+`ω_{μ₂,𝒞,1}(x,t) = (f(x) - t) ω_{ℒ,𝒞,1}(x,y)` when `∇μ₂ = (f - t) ∇ℒ` and `f(x) > t`.
+'''
+deps = ["formCriticality"]
+source = "Cartis–Gould–Toint, proof of Lemma 7.2.1"
+
+[[node]]
+id = "restrictedSteps"
+kind = "def"
+desc = '''
+`restrictedSteps {i : ℕ} (B : ContinuousMultilinearMap ℝ (fun _ : Fin i => E) ℝ) (a : ℝ)
+(T : Set E) : Set E := {d ∈ T | |B (fun _ => d)| ≤ a}` — the book's `α`-restricted sets
+`𝒞¹(x, α) = restrictedSteps (D¹f x) (τ₁ α) (𝒞(x))` (6.1.8), `𝒞²(x, α₁, α₂) =
+restrictedSteps (D²f x) (τ₂ α₂) (𝒞¹(x, α₁))` (6.1.10) and their model counterparts `𝓜¹_k(s)`,
+`𝓜²_k(s)` (6.2.1)–(6.2.2). API: `restrictedSteps B a T ⊆ T`; `0 ∈` it iff `0 ∈ T` (for `i ≥ 1`,
+`a ≥ 0`); monotone in `a` and `T`.
+'''
+source = "Cartis–Gould–Toint, (6.1.8), (6.1.10), (6.2.1), (6.2.2)"
+
+[[node]]
+id = "inter_closedBall_restrictedSteps_subset"
+kind = "theorem"
+desc = '''
+Transfer of restricted sets: if `|A (fun _ => d) - B (fun _ => d)| ≤ e` for all
+`d ∈ closedBall 0 1 ∩ T` and `e + a ≤ b`, then `closedBall 0 1 ∩ restrictedSteps A a T ⊆
+restrictedSteps B b T`. (Theorem 6.2.3's proof: `(1 - θ₁ + τ₁) ε₁ ≤ θ₁ ε₁` by (6.2.7) gives
+`𝒞¹(x_{k+1}, ε₁) ∩ 𝓑 ⊆ 𝓜¹_k(s_k)`; the book claims the inclusion without `∩ 𝓑`, which does
+not follow from the ball-restricted estimate (6.2.23); only the ball part is needed.)
+'''
+deps = ["restrictedSteps"]
+source = "Cartis–Gould–Toint, proof of Theorem 6.2.3, (6.2.18)–(6.2.19)"
+
+[[node]]
+id = "formCriticality_one_univ"
+kind = "theorem"
+desc = '''
+Unconstrained first-order case: for `A : ContinuousMultilinearMap ℝ (fun _ : Fin 1 => E) ℝ`,
+`formCriticality A univ = ‖A‖`; hence `formCriticality (iteratedFDeriv ℝ 1 f x) univ =
+‖fderiv ℝ f x‖` (`= ‖gradient f x‖`), so with `𝒞 = ℝⁿ` the measure (6.1.5) is the book's
+`‖∇f(x)‖` and (6.1.4) is `IsApproxFirstOrder` (consistency remark after (6.1.10)). Also (part of
+node) the bridge to the core Taylor measure: `formCriticality (D 1) S = taylorMeasure D 1 1 S` for
+`D : FormalMultilinearSeries ℝ E ℝ` (with `D 1` read as a `Fin 1`-multilinear map).
+'''
+deps = ["formCriticality", "IsApproxFirstOrder", "taylorMeasure"]
+source = "Cartis–Gould–Toint, remark after (6.1.10), (12.1.12)"
+
+[[node]]
+id = "formCriticality_fderiv_eq_zero_iff"
+kind = "theorem"
+desc = '''
+First-order measure and the first-order optimality condition (1.1.6) on a convex set: for `C`
+convex, `x ∈ C`, `f` differentiable at `x`: `formCriticality (iteratedFDeriv ℝ 1 f x)
+(feasibleSteps C x) = 0 ↔ ∀ y ∈ C, 0 ≤ fderiv ℝ f x (y - x)` (scale `d = y - x` into the ball
+by convexity). Hence (corollary, part of node) every local minimizer of `f` on `C` has zero
+first-order measure (`Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn`), and for `g` with a
+global minimizer `s*` of `g` on a convex `S ∋ s*`, `formCriticality (D¹g s*) {d | s* + d ∈ S} = 0`
+(used to produce admissible ARp1-CC steps).
+'''
+deps = ["formCriticality_nonneg", "feasibleSteps", "Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn"]
+source = "Cartis–Gould–Toint, (1.1.6), Theorem 1.1.2, Section 6.1.1"
+
+[[node]]
+id = "exists_formCriticality_eq"
+kind = "theorem"
+desc = '''
+`[FiniteDimensional ℝ E]`, `T` closed and nonempty-with-ball (`(closedBall 0 1 ∩ T).Nonempty`):
+the sup is attained, `∃ d ∈ closedBall 0 1 ∩ T, -A (fun _ => d) = formCriticality A T` (compact
+set, continuous function) — justifies the book's "min".
+'''
+deps = ["formCriticality"]
+source = "Cartis–Gould–Toint, (6.1.5)"
