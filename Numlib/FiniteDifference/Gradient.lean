@@ -36,7 +36,8 @@ The inexact jets are `Optimization.gradientJet` and `Optimization.hessianJet`
   map), and for the Hessian `FiniteDifference.norm_fdHessian_sub_hessianOperator_le`,
   `FiniteDifference.jetApprox_fdHessian`.
 
-General stencils ((13.2.1)) and interpolation models ((13.2.2)–(13.2.4)) are not covered.
+General stencils ((13.2.1)) are in `Numlib.FiniteDifference.MixedPartial`, interpolation models
+((13.2.2)–(13.2.4)) in `Numlib.Approximation.MvLagrange`.
 -/
 
 open Finset

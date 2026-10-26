@@ -404,6 +404,7 @@ import Numlib.Approximation.Jackson
 import Numlib.Approximation.LeastSquares
 import Numlib.Approximation.MarkovInequality
 import Numlib.Approximation.Muntz
+import Numlib.Approximation.MvLagrange
 import Numlib.Approximation.MvPolynomial
 import Numlib.Approximation.NewtonCotes
 import Numlib.Approximation.NewtonForm
@@ -485,6 +486,7 @@ import Numlib.FiniteDifference.Derivative
 import Numlib.FiniteDifference.Gradient
 import Numlib.FiniteDifference.Hyperbolic
 import Numlib.FiniteDifference.LaxEquivalence
+import Numlib.FiniteDifference.MixedPartial
 import Numlib.FiniteDifference.Parabolic
 import Numlib.FiniteDifference.Stencil
 import Numlib.FiniteDifference.TwoLevel

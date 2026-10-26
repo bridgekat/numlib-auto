@@ -31,3 +31,91 @@ source = "Cartis–Gould–Toint, Section 13.2"
 [[node]]
 id = "exists_algorithm_13_1_1_fdGradient"
 source = "Cartis–Gould–Toint, Section 13.2"
+
+[[node]]
+id = "eq_13_2_1"
+source = "Cartis–Gould–Toint, (13.2.1)"
+
+[[node]]
+id = "eq_13_2_1_ida"
+source = "Cartis–Gould–Toint, (13.2.1) and (13.1.2)"
+
+[[node]]
+id = "eq_13_2_2_card"
+source = "Cartis–Gould–Toint, (13.2.2)"
+
+[[node]]
+id = "eq_13_2_4"
+source = "Cartis–Gould–Toint, (13.2.4)"
+
+[[node]]
+id = "eq_13_2_4_scaled"
+source = "Cartis–Gould–Toint, Section 13.2, display after (13.2.4)"
+
+[[node]]
+id = "interpRadius"
+source = "Cartis–Gould–Toint, Section 13.2 (interpolation)"
+
+[[node]]
+id = "interpolationScheme"
+source = "Cartis–Gould–Toint, Section 13.2 (interpolation)"
+
+[[node]]
+id = "accuracyStep"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "accuracyStep_pow"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "accuracyStep_pos"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "coordProd"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "coordProd_apply"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "norm_coordProd_le"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "eq_sum_coordProd"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "stencilSize"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "stencilConst"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "stencilConst_nonneg"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "stencilEntry"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "abs_stencilEntry_sub_le"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "stencilTensor"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "norm_stencilTensor_sub_le"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"
+
+[[node]]
+id = "stencilScheme"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1) as a finite derivative-approximation scheme"

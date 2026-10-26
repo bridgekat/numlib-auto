@@ -1,0 +1,86 @@
+namespace = "Approximation"
+
+[[node]]
+id = "evalFun"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2)"
+
+[[node]]
+id = "evalFun_apply"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2)"
+
+[[node]]
+id = "polyFunLE"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2), polynomials of degree at most p"
+
+[[node]]
+id = "mem_polyFunLE_iff"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2)"
+
+[[node]]
+id = "polyFunLE_mono"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2)"
+
+[[node]]
+id = "contDiff_evalFun"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.4)"
+
+[[node]]
+id = "contDiff_of_mem_polyFunLE"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.4)"
+
+
+[[node]]
+id = "comp_smul_add_mem_polyFunLE"
+source = "Cartis–Gould–Toint, Section 13.2, scaling of Lagrange polynomials"
+
+[[node]]
+id = "apply_diag_sub_mem_polyFunLE"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.4)"
+
+[[node]]
+id = "taylorPolynomial_comp_sub_mem_polyFunLE"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.4)"
+
+[[node]]
+id = "IsPoised"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2), poised interpolation set"
+
+[[node]]
+id = "IsLagrangeBasis"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2), Lagrange polynomials"
+
+[[node]]
+id = "IsLagrangeBasis.sum_mul_mem"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.3)"
+
+[[node]]
+id = "IsLagrangeBasis.sum_mul_eq"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.3), reproduction of polynomials"
+
+[[node]]
+id = "IsLagrangeBasis.norm_iteratedFDeriv_sub_le"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.4)"
+
+[[node]]
+id = "IsLagrangeBasis.smul_add"
+source = "Cartis–Gould–Toint, Section 13.2, scaling of Lagrange polynomials"
+
+[[node]]
+id = "iteratedFDeriv_comp_smul_sub"
+source = "Cartis–Gould–Toint, Section 13.2, scaling of Lagrange polynomials"
+
+[[node]]
+id = "IsLagrangeBasis.norm_iteratedFDeriv_sub_le_of_scaled"
+source = "Cartis–Gould–Toint, Section 13.2, display after (13.2.4)"
+
+[[node]]
+id = "IsLagrangeBasis.card_eq"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2), number of interpolation points"
+
+[[node]]
+id = "sum_range_choose_eq"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2)"
+
+[[node]]
+id = "IsLagrangeBasis.card_eq_sum_choose"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.2), number of interpolation points"
