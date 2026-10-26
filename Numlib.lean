@@ -366,6 +366,7 @@ import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 import Numlib.Analysis.SpecialFunctions.Exp
 import Numlib.Analysis.SpecialFunctions.FactorialSum
+import Numlib.Analysis.SpecialFunctions.FlatFunctions
 import Numlib.Analysis.SpecialFunctions.Integrals.Basic
 import Numlib.Analysis.SpecialFunctions.Integrals.Beta
 import Numlib.Analysis.SpecialFunctions.Integrals.LogTrigonometric
@@ -481,6 +482,7 @@ import Numlib.Eigen.Sturm
 import Numlib.Eigen.SymmetricPencil
 import Numlib.FiniteDifference.BoundaryValue
 import Numlib.FiniteDifference.Derivative
+import Numlib.FiniteDifference.Gradient
 import Numlib.FiniteDifference.Hyperbolic
 import Numlib.FiniteDifference.LaxEquivalence
 import Numlib.FiniteDifference.Parabolic
@@ -689,6 +691,7 @@ import Numlib.Optimization.ModelBased.ARRun
 import Numlib.Optimization.ModelBased.ARpRun
 import Numlib.Optimization.ModelBased.ConvexConstrained
 import Numlib.Optimization.ModelBased.HighOrder.MeasureTest
+import Numlib.Optimization.ModelBased.HighOrder.TRq
 import Numlib.Optimization.ModelBased.HighOrderStep
 import Numlib.Optimization.ModelBased.InexactRatio
 import Numlib.Optimization.ModelBased.InexactTaylor

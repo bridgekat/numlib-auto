@@ -1,0 +1,8 @@
+
+[[node]]
+id = "iteratedFDeriv_expNegInvGlue_comp_eq_zero"
+source = "Cartis–Gould–Toint, Example 12.1.1"
+
+[[node]]
+id = "contDiff_oscFlat"
+source = "Cartis–Gould–Toint, (12.1.3)"

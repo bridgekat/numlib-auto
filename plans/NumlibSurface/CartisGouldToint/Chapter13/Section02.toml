@@ -28,10 +28,11 @@ approx : ∀ x h, (∀ i, 0 ≤ h i) → Optimization.JetApprox (ftaylorSeries �
 (fun i => κ∇ i * h i); exact_low : ∀ x h, ∀ i ≤ o, est x h i = iteratedFDeriv ℝ i f x`
 (degree-`≤ o` information is exact; `cost` = oracle calls of degree `≤ o` per estimate).
 Example instances (part of node): `FiniteDifference.fdGradient` gives a scheme with `o = 0`, `r = 1`,
-`κ∇ 1 = √n L₁/2`, `cost = n` under f.gL; `FiniteDifference.fdHessian` (of the gradient) a scheme with
-`o = 1`, `r = 2`, `κ∇ 2 = √n L₂/2`, `cost = n` under f.HL.
+`κ∇ 1 = √n L₁/2`, `cost = n` under f.gL (`FiniteDifference.jetApprox_fdGradient`);
+`FiniteDifference.fdHessian f = fdFDeriv (gradient f)` a scheme with `o = 1`, `r = 2`,
+`κ∇ 2 = √n L₂/2`, `cost = n` under f.HL (`FiniteDifference.jetApprox_fdHessian`).
 '''
-deps = ["Optimization.JetApprox", "FiniteDifference.norm_fdGradient_sub_gradient_le", "FiniteDifference.norm_fdHessian_sub_le"]
+deps = ["Optimization.JetApprox", "FiniteDifference.jetApprox_fdGradient", "FiniteDifference.jetApprox_fdHessian"]
 source = "Cartis–Gould–Toint, Section 13.2 (finite derivative-approximation scheme)"
 
 [[node]]
