@@ -86,18 +86,4 @@ source = "Cartis–Gould–Toint, Theorem 14.1.10, item 2"
 
 [[node]]
 id = "corollary_14_1_11"
-kind = "theorem"
-desc = '''
-Corollary 14.1.11 (sharpness for `q = 1`, `h` convex). For every `p ≥ 1` there are constants
-(depending only on `p` and the algorithm parameters) such that for every `ε₁ ∈ (0,1)` there exist
-`c : E → F` (`n = m = 1`, lifted with `Optimization.ridge` if desired) with `c > 0`, satisfying
-c.D1pL with those constants (and `f = 0`, `h = |·|`, `X = univ`, `wlow = 0`), and an ARqpC run whose
-first termination index is `≥ ⌈ε₁^{-(p+1)/p}⌉₊`; every iteration costs one evaluation of `c` and
-(being successful) one of its derivatives, so `ε₁^{-(p+1)/p}` evaluations are needed. Proof: `c` is
-the positive function of Theorem 12.2.15 (plan-ch12; Hermite construction
-`Hermite.exists_contDiff_interpolating_jets_bounded`); since `c > 0` along the iterates and the
-steps of that example keep `T_{c,p}(x_k, s_k) > 0`, the ARqp steps on `c` are admissible ARqpC steps
-on `|c|`. (Risk: the book's one-line proof does not check this admissibility.)
-'''
-deps = ["algorithm_14_1_1", "Hermite.exists_contDiff_interpolating_jets_bounded", "Optimization.ridge"]
 source = "Cartis–Gould–Toint, Corollary 14.1.11"

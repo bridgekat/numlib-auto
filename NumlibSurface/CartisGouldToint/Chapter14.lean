@@ -18,14 +18,15 @@ module imports the section modules and adds nothing of its own.
   (Algorithms 14.1.1–14.1.2, `algorithm_14_1_1`, `algorithm_14_1_2`); Lemma 14.1.1, Example
   14.1.1, Lemmas 14.1.2–14.1.9, Theorem 14.1.10 (`theorem_14_1_10_i`, `theorem_14_1_10_ii`);
   existence of runs (`exists_isARqpCRun`) and the radius policy (14.1.28) for every run
-  (`algorithm_14_1_1.radius_policy`)
+  (`algorithm_14_1_1.radius_policy`); Corollary 14.1.11 (`corollary_14_1_11`, with the
+  admissibility of the slow steps for `|c|` that the book does not check)
 * §14.2, `Chapter14.Section02`: simple constraints; assumptions X.CNe, f.D1qLaB.X (and
   variants), f.bB.X; Theorem 14.2.1, Lemma 14.2.5 (sparse first-order measure); the ARqpC-SC,
   TRq-SC and ARqp-SC rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 (`lemma_14_2_2_arqpc`,
   `lemma_14_2_2_trq`, `lemma_14_2_2_arqp`, `lemma_14_2_3`, `lemma_14_2_3_arqpc`,
   `theorem_14_2_4_trq`, `theorem_14_2_4_arqp`, `theorem_14_2_4_arqpc`,
-  `theorem_14_2_4_arqpc_convex`) and sharpness of the TRq-SC and ARqp-SC (`q ≤ 2`) orders
-  (`theorem_14_2_4_sharp`)
+  `theorem_14_2_4_arqpc_convex`) and sharpness of the TRq-SC, ARqp-SC (`q ≤ 2`) and ARqpC-SC
+  (`q = 1`, convex `h`) orders (`theorem_14_2_4_sharp`)
 * §14.3, `Chapter14.Section03`: the problem (14.3.1), assumption X.CQ (`AssumptionXCQ`);
   Theorems 14.3.1–14.3.2, Example 14.3.1; LENq-SC (Algorithm 14.3.1, `algorithm_14_3_1`),
   Theorems 14.3.3–14.3.4; TPqp-GC (Algorithm 14.3.2, `algorithm_14_3_2`), Lemmas 14.3.5–14.3.8
@@ -91,9 +92,6 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Not formalized
 
-* Corollary 14.1.11 (sharpness for ARqpC with `q = 1`, `h` convex): the book's one-line proof
-  does not check that the steps of the slow ARqp example are admissible ARqpC steps for `|c|`;
-  hence also the sharpness of the ARqpC-SC row of Theorem 14.2.4.
 * An explicit counterexample declaration for (14.3.43) (it is described above).
 * The TRqIDA/EDA and ARqpIDA/EDA rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 (the Chapter 13
   run predicates carry no feasible set), the TR rows of Lemma 14.2.3, the sharpness of the

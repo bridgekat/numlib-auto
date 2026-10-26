@@ -9,3 +9,7 @@ source = "Cartis–Gould–Toint, (5.2.2)"
 [[node]]
 id = "taylorPolynomial_finset_sum_comp_continuousLinearMap"
 source = "Cartis–Gould–Toint, (5.2.2)"
+
+[[node]]
+id = "taylorPolynomial_smul_const"
+source = "Cartis–Gould–Toint, proof of Corollary 14.1.11"

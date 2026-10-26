@@ -37,8 +37,8 @@ subproblems. It therefore has no declaration of its own.
   (the §14.1 statements carry a general closed `X`);
 * `lemma_14_2_2_trq`, `theorem_14_2_4_trq` — the TRq-SC rows (from Chapter 12's TRq with a
   feasible set); `lemma_14_2_2_arqp`, `lemma_14_2_3`, `theorem_14_2_4_arqp` — the ARqp-SC rows
-  (from Chapter 12's ARqp with a feasible set); `theorem_14_2_4_sharp` — sharpness of the TRq-SC
-  and ARqp-SC (`q ≤ 2`) orders with `X = ℝ`;
+  (from Chapter 12's ARqp with a feasible set); `theorem_14_2_4_sharp` — sharpness of the TRq-SC,
+  ARqp-SC (`q ≤ 2`) and ARqpC-SC (`q = 1`, convex `h`) orders with `X = ℝ`;
 * bridges: `AssumptionD1qLaBX.of_lipschitzOn`, `AssumptionD1qLaBX.assumptionD1pLOn`,
   `assumptionBbX_iff_assumptionWBb`.
 
@@ -60,8 +60,9 @@ subproblems. It therefore has no declaration of its own.
   open convex superset `C` of `X` (`Chapter12.AssumptionD1pLOn`; for ARqpC-SC on `ℝⁿ`), which
   `AssumptionD1qLaBX.assumptionD1pLOn` yields when the anchor set is all of `X₀`; the book's
   remark that only anchored conditions are used by the proofs is not formalized.
-* Sharpness of the ARqpC-SC row (Corollary 14.1.11) and of the ARqp-SC row for `q ≥ 3` (the
-  Chapter 12 slow example is a genuine ARqp run only for `q ≤ 2`).
+* Sharpness of the ARqp-SC row for `q ≥ 3` (the Chapter 12 slow example is a genuine ARqp run
+  only for `q ≤ 2`). (For the ARqpC-SC row with `q = 1` and convex `h`, the example of Corollary
+  14.1.11, `corollary_14_1_11`, is an ARqpC-SC run with the simple feasible set `X = ℝ`.)
 -/
 
 open Set Metric
@@ -446,10 +447,10 @@ theorem theorem_14_2_4_arqp {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
 end ARqpSC
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness: the orders of the TRq-SC row
-(`ε^{-(q+1)}`) and of the ARqp-SC row for `q ≤ 2` (`ε^{-(p+1)/(p-q+1)}`) are attained, by the
-slow examples of Theorem 12.2.6 and Corollary 12.2.16 run with the (simple) feasible set
-`X = ℝ` (`univ`). (The ARqpC-SC row would need Corollary 14.1.11, which is not formalized; the
-IDA/EDA rows are not stated.) -/
+(`ε^{-(q+1)}`), of the ARqp-SC row for `q ≤ 2` (`ε^{-(p+1)/(p-q+1)}`) and of the ARqpC-SC row
+for `q = 1` and convex `h` (`ε^{-(p+1)/p}`) are attained, by the slow examples of
+Theorem 12.2.6, Corollary 12.2.16 and Corollary 14.1.11 run with the (simple) feasible set
+`X = ℝ` (`univ`; `X = ℝ¹` and `h = ‖·‖` for ARqpC-SC). (The IDA/EDA rows are not stated.) -/
 theorem theorem_14_2_4_sharp {p q : ℕ} (hq : 1 ≤ q) :
     (∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / q ! → ∀ P : Optimization.TRqParams,
       P.Δ₀ = ε → ∃ f : ℝ → ℝ, (∀ t, flow ≤ f t) ∧ Chapter12.AssumptionD1pL f q (fun _ => L) ∧
@@ -465,8 +466,21 @@ theorem theorem_14_2_4_sharp {p q : ℕ} (hq : 1 ≤ q) :
           Chapter12.algorithm_12_2_2_feasible f univ P p q (fun _ => ε) (fun _ => 1) x s σ
             (fun _ _ => 1) (fun _ _ => 1) d (fun _ _ => 0) ∧
           Optimization.IsFirstHit (Chapter12.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => 1) d)
-            ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊) := by
-  refine ⟨?_, fun hq2 hqp => ?_⟩
+            ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊) ∧
+    (1 ≤ p → ∀ P : ARqpCParams, ∃ L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
+      ∃ c : EuclideanSpace ℝ (Fin 1) → EuclideanSpace ℝ (Fin 1),
+        AssumptionCD1pL c p (fun _ => L) ∧ ‖c 0‖ ≤ L ∧
+        AssumptionWBb (fun _ => 0) c (fun v => ‖v‖) univ 0 ∧
+        ∃ (x s : ℕ → EuclideanSpace ℝ (Fin 1)) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ)
+          (d dm : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)),
+          algorithm_14_1_1 (fun _ => 0) c (fun v => ‖v‖) univ p 1 P (fun _ => ε) (fun _ => 1)
+            x s σ δ δs d dm ∧
+          Optimization.IsFirstHit
+            (arqpcStop (fun _ => 0) c (fun v => ‖v‖) p 1 P (fun _ => ε) x s σ δ d)
+            ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊ ∧
+          ε ^ (-((p + 1 : ℝ) / p)) + 1 ≤
+            (Optimization.funEvalCount ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊ : ℝ)) := by
+  refine ⟨?_, fun hq2 hqp => ?_, fun hp P => ?_⟩
   · obtain ⟨flow, L, hL, H⟩ := Chapter12.theorem_12_2_6 hq
     refine ⟨flow, L, hL, fun ε hε hε1 P hP => ?_⟩
     obtain ⟨f, hb, hf, x, s, Δ, jk, d, hrun, -, -, hhit, -, hF, -⟩ := H ε hε hε1 P hP
@@ -475,5 +489,9 @@ theorem theorem_14_2_4_sharp {p q : ℕ} (hq : 1 ≤ q) :
     refine ⟨flow, L, hL, fun ε hε hε1 P hP => ?_⟩
     obtain ⟨f, hb, hf, x, s, σ, d, hrun, -, hhit, -⟩ := H ε hε hε1 P hP
     exact ⟨f, hb, hf, x, s, σ, d, hrun, hhit⟩
+  · obtain ⟨-, -, -, -, L, hL, H⟩ := corollary_14_1_11 hp P
+    refine ⟨L, hL, fun ε hε hε1 => ?_⟩
+    obtain ⟨c, hc, hc0, -, hw, x, s, σ, δ, δs, d, dm, hrun, -, hhit, -, hF, -⟩ := H ε hε hε1
+    exact ⟨c, hc, hc0, hw, x, s, σ, δ, δs, d, dm, hrun, hhit, hF⟩
 
 end CartisGouldToint.Chapter14
