@@ -114,65 +114,28 @@ source = "Cartis–Gould–Toint, Theorem 7.2.7, (7.2.52)–(7.2.53)"
 
 [[node]]
 id = "algorithm_7_2_1"
-kind = "def"
-desc = '''
-Algorithm 7.2.1 (TPp-GC), whole run: Phase 1 is an ARpLE-CC run (`Chapter06.algorithm_6_3_1`) on `c`
-with tolerances `(θε₀, ε₁)` from `x₀ ∈ C` stopped at its first hit `k₁` of
-`Chapter06.stopLE c ℓ C (θ ε₀) ε₁` (7.2.9); `x₁ := y k₁`; Phase 1 terminates the algorithm with
-`x_ε = x₁` iff `‖c x₁‖ > θ ε₀`, otherwise `IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D` (Phase 2, proved
-part of the module). `IsTPpGCRun f c C p ℓ P ε₀ ε₁ x₀ y s σ k₁ D : Prop := (Phase 1) ∧
-(‖c (y k₁)‖ ≤ θ ε₀ → IsTPpGCPhase2 … (y k₁) D)`; evaluation counts of Phase 1 as in Chapter 6
-(`funEvalCount k₁`, `derivEvalCount succ k₁`), of Phase 2 `Phase2Seq.funEvals`/`derivEvals`.
-'''
-deps = ["IsTPpGCPhase2", "CartisGouldToint.Chapter06.algorithm_6_3_1"]
 source = "Cartis–Gould–Toint, Algorithm 7.2.1"
 
 [[node]]
 id = "algorithm_7_2_1_exists"
-kind = "theorem"
-desc = '''
-Existence of TPp-GC runs. C.CNe, `x₀ ∈ C`, `ι₁(p,ℓ,i) ≥ 0`, `Chapter06.AssumptionPhiDpLC c ℓ C p LΦ`,
-`AssumptionMu2DpLC f c C p`, `TPpGCTol P ε₀ ε₁`: Phase 1 by `Chapter06.algorithm_6_3_1` (existence)
-and `Chapter06.theorem_6_3_1` (termination), Phase 2 by `exists_phase2`.
-'''
-deps = ["algorithm_7_2_1", "exists_phase2", "CartisGouldToint.Chapter06.theorem_6_3_1"]
 source = "Cartis–Gould–Toint, Algorithm 7.2.1 (well-posedness)"
 
 [[node]]
 id = "lemma_7_2_1"
-kind = "theorem"
-desc = '''
-Lemma 7.2.1, whole algorithm: if TPp-GC stops in Phase 1 then
-`omega1 (Chapter06.PhiEll c ℓ) C x_ε ≤ ε₁ ‖c x_ε‖^(ℓ-1)` and `‖c x_ε‖ > θ ε₀` (7.2.14) (from the
-first hit of `stopLE`); if it stops in Phase 2, `lemma_7_2_1_phase2` (with `Φ₂ = ½‖c‖² =
-Chapter06.PhiEll c 2`).
-'''
-deps = ["algorithm_7_2_1", "lemma_7_2_1_phase2"]
 source = "Cartis–Gould–Toint, Lemma 7.2.1"
 
 [[node]]
 id = "lemma_7_2_2"
-kind = "theorem"
-desc = '''
-Lemma 7.2.2 (Phase 1 complexity). C.CNe, `AssumptionPhiDpLC c ℓ C p LΦ`, `ι₁(p,ℓ,i) ≥ 0`,
-`β' ∈ (0,1)` (the analysis constant of Theorem 6.3.1). Phase 1 reaches its first hit `k₁` with
-`funEvalCount k₁ ≤ κ^A M / min((θε₀)^{1/2^i}, ε₁^{(p+1)/p}) + κ^C` (7.2.23) and
-`derivEvalCount succ k₁ ≤ κ^S M / min(…) + 2` (7.2.24 corrected: the printed bound lacks the `+2` of
-Theorem 6.3.1), `M = max(‖c(x₀)‖^{1/2^i}, ‖c(x₀)‖^{1-(ℓ-1)/p})`. Instance of
-`Chapter06.theorem_6_3_1` with `r = c`, `ε₀ ← θε₀ ∈ (0,1]`.
-'''
-deps = ["algorithm_7_2_1", "CartisGouldToint.Chapter06.theorem_6_3_1"]
 source = "Cartis–Gould–Toint, Lemma 7.2.2"
 
 [[node]]
 id = "theorem_7_2_7"
-kind = "theorem"
-desc = '''
-Theorem 7.2.7, corrected, whole algorithm: Phase 1 terminates within the bounds of Lemma 7.2.2 (if it
-stops the algorithm, (7.2.14) holds); if Phase 2 is entered, `theorem_7_2_7_phase2` (with `Lμ` from
-`lemma_7_2_5` on `[f_low - 1, f_up]`); total evaluations are the sums of the two phases. With the
-number of bad `𝒦_b` iterations bounded independently of `ε`, the totals are
-`O(max[ε₀^{-1/2^i}, ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}])`.
-'''
-deps = ["lemma_7_2_2", "theorem_7_2_7_phase2", "lemma_7_2_5", "lemma_7_2_1"]
 source = "Cartis–Gould–Toint, Theorem 7.2.7"
+
+[[node]]
+id = "lemma_7_2_6_of_mu2"
+source = "Cartis–Gould–Toint, Lemma 7.2.6 (with Lemma 7.2.5)"
+
+[[node]]
+id = "theorem_7_2_7_phase2_of_mu2"
+source = "Cartis–Gould–Toint, Theorem 7.2.7 (Phase 2, with Lemma 7.2.5)"

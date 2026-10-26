@@ -207,6 +207,24 @@ end Acceptance
 `k`. -/
 abbrev IsARRun.Stop (stop₁ stop₂ : ℕ → Prop) (k : ℕ) : Prop := stop₁ k ∨ stop₂ k
 
+/-- Without a post-step test, "no termination before `k`" is "the Step-1 test fails before `k`". -/
+@[simp]
+theorem IsARRun.forall_lt_not_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
+    (∀ j < k, ¬ IsARRun.Stop stop₁ (fun _ => False) j) ↔ ∀ j < k, ¬ stop₁ j := by
+  simp [IsARRun.Stop]
+
+/-- Without a post-step test, "no termination up to `k`" is "the Step-1 test fails up to `k`". -/
+@[simp]
+theorem IsARRun.forall_le_not_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
+    (∀ j ≤ k, ¬ IsARRun.Stop stop₁ (fun _ => False) j) ↔ ∀ j ≤ k, ¬ stop₁ j := by
+  simp [IsARRun.Stop]
+
+/-- Without a post-step test, the termination index is the first hit of the Step-1 test. -/
+@[simp]
+theorem IsARRun.isFirstHit_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
+    IsFirstHit (IsARRun.Stop stop₁ fun _ => False) k ↔ IsFirstHit stop₁ k := by
+  simp [isFirstHit_iff, IsARRun.Stop]
+
 /-- A run of an adaptive-regularization method ([cartis2022evaluation], Algorithms 2.4.1, 3.3.1,
 4.1.1, 12.2.2, Steps 2–4). `stop₁ k` is the Step-1 termination test at iteration `k`, `stop₂ k` a
 termination test evaluated after the step has been computed (`fun _ => False` for most methods),
@@ -476,6 +494,25 @@ theorem exists_isFirstHit_of_decrease_of_le {σmax : ℝ}
       exact hdec j (fun i hi => hk i (hi.trans hj.1)) hj.2)
     (hlow (k + 1) fun j hj => hk j (Nat.lt_succ_iff.1 hj))
   rw [le_div_iff₀ hδ]; linarith
+
+omit h in
+/-- In a run without post-step test, an iterate different from the starting point was reached by
+a successful iteration: the last successful iteration `i < N` has `x_{i+1} = x_N`. -/
+theorem exists_last_succ (h : IsARRun P stop₁ step (fun _ => False) ρ x s σ) :
+    ∀ N, (∀ j < N, ¬ stop₁ j) → x N ≠ x 0 → ∃ i < N, P.η₁ ≤ ρ i ∧ x (i + 1) = x N := by
+  intro N
+  induction N with
+  | zero => exact fun _ h0 => absurd rfl h0
+  | succ N ih =>
+    intro hN hne
+    have hle : ∀ j ≤ N, ¬ IsARRun.Stop stop₁ (fun _ => False) j :=
+      forall_le_not_stop_iff.2 fun j hj => hN j (Nat.lt_succ_of_le hj)
+    by_cases hs : P.η₁ ≤ ρ N
+    · exact ⟨N, N.lt_succ_self, hs, rfl⟩
+    · have heq := h.eq_of_not_succ hle (not_le.1 hs)
+      obtain ⟨i, hi, hsi, hxi⟩ := ih (fun j hj => hN j (hj.trans N.lt_succ_self))
+        (heq ▸ hne)
+      exact ⟨i, hi.trans N.lt_succ_self, hsi, hxi.trans heq.symm⟩
 
 end General
 

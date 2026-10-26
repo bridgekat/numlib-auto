@@ -68,6 +68,18 @@ theorem card_mul_le_of_decrease {T : Finset ℕ} (hT : T ⊆ range (k + 1))
   rw [sum_range_sub', sum_const, nsmul_eq_mul] at *
   linarith
 
+/-- The form of `Optimization.card_mul_le_of_decrease` over `[0, N)`: if `φ` is nonincreasing
+on `[0, N]` and decreases by at least `c` at every iteration of `T ⊆ [0, N)`, then
+`|T| c ≤ φ_0 - φ_N`. -/
+theorem card_mul_le_sub_of_decrease {T : Finset ℕ} {N : ℕ} (hT : T ⊆ range N)
+    (hmono : ∀ j < N, φ (j + 1) ≤ φ j) (hdec : ∀ j ∈ T, c ≤ φ j - φ (j + 1)) :
+    (T.card : ℝ) * c ≤ φ 0 - φ N := by
+  have h1 : ∑ _j ∈ T, c ≤ ∑ j ∈ T, (φ j - φ (j + 1)) := sum_le_sum hdec
+  have h2 : ∑ j ∈ T, (φ j - φ (j + 1)) ≤ ∑ j ∈ range N, (φ j - φ (j + 1)) :=
+    sum_le_sum_of_subset_of_nonneg hT fun j hj _ => sub_nonneg.2 (hmono j (mem_range.1 hj))
+  rw [sum_range_sub', sum_const, nsmul_eq_mul] at *
+  linarith
+
 /-- Division form of `Optimization.card_mul_le_of_decrease`: `|T| ≤ (φ_0 - φlow) / c` for
 `c > 0`. -/
 theorem card_le_div_of_decrease {T : Finset ℕ} (hc : 0 < c) (hT : T ⊆ range (k + 1))
