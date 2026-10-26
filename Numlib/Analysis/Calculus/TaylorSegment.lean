@@ -43,23 +43,34 @@ section Segment
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
 
+/-- **The derivative along a line of an iterated derivative applied to fixed vectors**: if `f` is
+`C^{n+1}` at `a + t • s`, then `t ↦ D^n f(a + t • s)[u]` has derivative
+`D^{n+1} f(a + t • s)[s, u]` (the direction `s` prepended to `u`) at `t`. -/
+theorem hasDerivAt_iteratedFDeriv_line_apply {f : E → F} {n : ℕ} {a s : E} {t : ℝ}
+    (hf : ContDiffAt ℝ (n + 1) f (a + t • s)) (u : Fin n → E) :
+    HasDerivAt (fun t : ℝ => iteratedFDeriv ℝ n f (a + t • s) u)
+      (iteratedFDeriv ℝ (n + 1) f (a + t • s) (Fin.cons s u)) t := by
+  have hd : DifferentiableAt ℝ (iteratedFDeriv ℝ n f) (a + t • s) :=
+    hf.differentiableAt_iteratedFDeriv (by exact_mod_cast Nat.lt_succ_self n)
+  have hline : HasDerivAt (fun t : ℝ => a + t • s) s t := by
+    simpa using ((hasDerivAt_id t).smul_const s).const_add a
+  have h : HasDerivAt (fun t : ℝ => iteratedFDeriv ℝ n f (a + t • s) u)
+      (fderiv ℝ (iteratedFDeriv ℝ n f) (a + t • s) s u) t :=
+    (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n => E) F u).hasFDerivAt.comp_hasDerivAt
+      t (hd.hasFDerivAt.comp_hasDerivAt t hline)
+  convert h using 1
+  rw [iteratedFDeriv_succ_apply_left, Fin.cons_zero, Fin.tail_cons]
+
 /-- **The derivative along a segment of an iterated derivative applied to the direction**: if `f`
 is `C^{n+1}` at `a + s • w`, then `s ↦ D^n f(a + s • w)[w, …, w]` has derivative
-`D^{n+1} f(a + s • w)[w, …, w]` at `s`. -/
+`D^{n+1} f(a + s • w)[w, …, w]` at `s`. The case `u = (w, …, w)` of
+`hasDerivAt_iteratedFDeriv_line_apply`. -/
 theorem hasDerivAt_iteratedFDeriv_segment {f : E → F} {n : ℕ} {a w : E} {s : ℝ}
     (hf : ContDiffAt ℝ (n + 1) f (a + s • w)) :
     HasDerivAt (fun s : ℝ => iteratedFDeriv ℝ n f (a + s • w) (fun _ => w))
       (iteratedFDeriv ℝ (n + 1) f (a + s • w) (fun _ => w)) s := by
-  have hd : DifferentiableAt ℝ (iteratedFDeriv ℝ n f) (a + s • w) :=
-    hf.differentiableAt_iteratedFDeriv (by exact_mod_cast Nat.lt_succ_self n)
-  have hseg : HasDerivAt (fun s : ℝ => a + s • w) w s := by
-    simpa using ((hasDerivAt_id s).smul_const w).const_add a
-  have h1 : HasDerivAt (fun s : ℝ => iteratedFDeriv ℝ n f (a + s • w))
-      (fderiv ℝ (iteratedFDeriv ℝ n f) (a + s • w) w) s :=
-    hd.hasFDerivAt.comp_hasDerivAt s hseg
-  have h2 := (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n => E) F
-    (fun _ => w)).hasFDerivAt.comp_hasDerivAt s h1
-  exact h2
+  convert hasDerivAt_iteratedFDeriv_line_apply hf (fun _ => w) using 2
+  exact (Fin.cons_self_tail (fun _ : Fin (n + 1) => w)).symm
 
 /-- **Taylor's theorem along a segment, with the Lagrange bound.** If `f : E → F` is `C^{n+1}` at
 every point of the segment `a + s • w`, `s ∈ [0, 1]`, and `‖D^{n+1} f‖ ≤ M` along it, then
