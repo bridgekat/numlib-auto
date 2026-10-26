@@ -1,55 +1,13 @@
 namespace = "Subproblem"
-desc = '''
-Minimizing a linear function over an `ℓ∞` ball intersected with a sparsity set (Cartis–Gould–Toint
-§14.2.2.2, Lemma 14.2.5): the subproblem that makes sparsity constraints "simple" for first-order
-trust-region / regularization methods (TR1-SP, AR1-SP). Space `Fin n → ℝ` with Mathlib's sup norm,
-so `Metric.closedBall x δ` *is* the `ℓ∞` ball of the book (no separate norm needed), and the core
-`Optimization.taylorMeasure` on this space is the book's measure (14.2.17).
-
-The book states (14.2.18)–(14.2.19) as `max ℓ(d)` while the measure needs `min ℓ(d)`
-(`φ = f(x) - min T_{f,1} = -min ℓ`), and its solution (14.2.20) is the minimizer; the plan follows the
-minimization. The "0-1 knapsack" (14.2.21) has unit weights, so it is solved by choosing the
-`n_nz - |A_δ(x)|` largest nonnegative values `δ|g_i| - x_i g_i` (ties arbitrary); the lemma is stated
-for any optimal selection.
-'''
 
 [[node]]
 id = "sparseSet"
-kind = "def"
-desc = '''
-`sparseSet (n nnz : ℕ) : Set (Fin n → ℝ) := {x | (Finset.univ.filter (fun i => x i ≠ 0)).card ≤ nnz}`
-(the book's `‖x‖₀ ≤ n_nz`, (14.2.14)); `support' x := Finset.univ.filter (x · ≠ 0)` is `𝒜(x)`
-(14.2.15). API (part of node): closed, nonempty (`0 ∈`), not convex in general, `= univ` iff
-`n ≤ nnz`.
-'''
 source = "Cartis–Gould–Toint, (14.2.14)–(14.2.16)"
 
 [[node]]
 id = "sparseLinearStep"
-kind = "def"
-desc = '''
-For `x g : Fin n → ℝ`, `δ ≥ 0` and a selection `τ : Fin n → Bool` (only read on `A_δ^c`):
-`sparseLinearStep x g δ τ i := if δ < |x i| then -δ * Real.sign (g i) else if τ i then
--δ * Real.sign (g i) else -x i` — the book's (14.2.20) with `A_δ(x) = {i | |x_i| > δ}`; on
-`A_δ^c` the coordinate is either zeroed (`τ_i = 0`, `x_i + d_i = 0`) or moved to the far face
-(`τ_i = 1`). (Equal to (14.2.20) after simplifying `-x_i - τ_i(δ sign g_i - x_i)`.)
-'''
 source = "Cartis–Gould–Toint, (14.2.20)"
 
 [[node]]
 id = "isMinOn_sparseLinearStep"
-kind = "theorem"
-desc = '''
-Lemma 14.2.5 (corrected to minimization). Let `x ∈ sparseSet n nnz`, `δ ≥ 0`, `g`, and let `τ`
-maximize `∑_{i ∈ A_δ^c} τ_i (δ |g i| - x i * g i)` subject to `∑_{i ∈ A_δ^c} τ_i ≤ nnz - |A_δ(x)|`
-(note `|A_δ(x)| ≤ |𝒜(x)| ≤ nnz`). Then `d⋆ := sparseLinearStep x g δ τ` satisfies `‖d⋆‖ ≤ δ`,
-`x + d⋆ ∈ sparseSet n nnz`, and `IsMinOn (fun d => ∑ i, g i * d i)
-(closedBall 0 δ ∩ {d | x + d ∈ sparseSet n nnz}) d⋆`, with optimal value
-`-δ ∑_{i ∈ A_δ} |g i| - ∑_{i ∈ 𝒜(x) \ A_δ} x i g i - ∑_{i ∈ A_δ^c} τ_i (δ|g i| - x i g i)`.
-Consequently the book's measure (14.2.17) is `Optimization.taylorMeasure (ftaylorSeries ℝ f x) 1 δ
-{d | x + d ∈ sparseSet n nnz} = -(that value)` and is computable without oracle calls.
-Proof: separability by coordinates; on `A_δ` the coordinate cannot be zeroed; on `A_δ^c` each
-coordinate either vanishes or contributes `-δ|g_i|`; counting gives the knapsack constraint.
-'''
-deps = ["sparseSet", "sparseLinearStep", "Optimization.taylorMeasure"]
 source = "Cartis–Gould–Toint, Lemma 14.2.5"

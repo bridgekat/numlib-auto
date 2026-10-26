@@ -309,7 +309,7 @@ Corrections: the printed factor `(1 - θ)` is valid only for `ς = 1`: non-termi
 `φ_{m_k} ≤ θ ε_j δ^j/j!`; the hypothesis that (12.2.29) (not the long-step branch) was used is
 implicit in the printed proof.
 '''
-deps = ["algorithm_12_2_2", "Optimization.IsARRun.sigma_le", "Optimization.taylorMeasure_le_of_regularizedModel", "Optimization.exists_lt_taylorDecrement_of_not_measureTestPasses"]
+deps = ["algorithm_12_2_2", "Optimization.IsARRun.sigma_le", "Optimization.taylorMeasure_le_of_regularizedModel", "Optimization.exists_lt_of_not_measureTestPasses"]
 source = "Cartis–Gould–Toint, Lemma 12.2.11"
 
 [[node]]
