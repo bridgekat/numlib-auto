@@ -33,10 +33,13 @@ module imports the section modules and adds nothing of its own.
   `Chapter13.RadiiControlOf`; on `ℝⁿ` with `q ≤ 2` every ARqpIDA-SC run attains the unit-radii
   bound in either mode, `theorem_14_2_4_arqpida_le_two`)
 * §14.2, `Chapter14.Section02Sharp`: sharpness of the TRq-SC, ARqp-SC, ARqpC-SC (`q = 1`, convex
-  `h`), TRqIDA-SC and TRqEDA-SC orders, of the ARqpIDA-SC and ARqpEDA-SC orders of the
-  unit-radii mode (`q ≤ 2`), of the ARqpEDA-SC order of the lower-bound mode (every `q`) and of
-  the ARqpIDA-SC order of the lower-bound mode for `q = p ≥ 3` (`theorem_14_2_4_sharp`,
-  `theorem_14_2_4_sharp_arqp`, `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda`,
+  `h`), TRqIDA-SC and TRqEDA-SC orders, of the ARqp-SC order of the lower-bound mode for every `q`
+  on a closed nonconvex `X ⊂ ℝ` (the "otherwise" entries for `q ≤ 2`), of the ARqpIDA-SC and
+  ARqpEDA-SC orders of the unit-radii mode (`q ≤ 2`), of the ARqpEDA-SC order of the lower-bound
+  mode (every `q`) and of the ARqpIDA-SC order of the lower-bound mode for `q = p ≥ 3` and, on a
+  closed nonconvex `X ⊂ ℝ²`, for every `q` (`theorem_14_2_4_sharp`,
+  `theorem_14_2_4_sharp_arqp`, `theorem_14_2_4_sharp_arqp_otherwise`,
+  `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda`,
   `theorem_14_2_4_sharp_arqpida`, `theorem_14_2_4_sharp_arqpeda`,
   `theorem_14_2_4_sharp_arqpeda_otherwise`, `theorem_14_2_4_sharp_arqpida_otherwise`,
   `theorem_14_2_4_sharp_arqpida_otherwise_constrained`)

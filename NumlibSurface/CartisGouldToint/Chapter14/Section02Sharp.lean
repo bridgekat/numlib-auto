@@ -16,6 +16,10 @@ Chapter 13 steps.
 * `theorem_14_2_4_sharp` — the TRq-SC, ARqp-SC (`q ≤ 2`) and ARqpC-SC (`q = 1`, convex `h`)
   orders, from Theorem 12.2.6, Corollary 12.2.16 and Corollary 14.1.11 with `X = ℝ`;
   `theorem_14_2_4_sharp_arqp` — the ARqp-SC order for `q ≥ 3` (Theorem 12.2.17);
+* `theorem_14_2_4_sharp_arqp_otherwise` — the ARqp-SC order `ε^{-q(p+1)/p}` of the lower-bound
+  radius mode for every `1 ≤ q ≤ p`, on the closed nonconvex `X = (-∞, R] ∪ [R + 2, ∞) ⊂ ℝ`
+  (Theorem 12.2.17 restricted to `X`; the "otherwise" entries for `q = 1`, nonconvex `X`, and
+  `q = 2`, `X ≠ ℝⁿ`);
 * `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda` — the TRqIDA-SC and TRqEDA-SC
   orders `ε^{-(q+1)}`, from the example of Theorem 12.2.6 lifted to `ℝ¹` (for TRqEDA with `f`
   halved);
@@ -27,7 +31,8 @@ Chapter 13 steps.
 * `theorem_14_2_4_sharp_arqpida_otherwise` — the ARqpIDA-SC order `ε^{-q(p+1)/p}` of the
   lower-bound mode for `q = p ≥ 3`, from pure `p`-th order spikes (Theorem 12.2.15 with `q = p`);
 * `theorem_14_2_4_sharp_arqpida_otherwise_constrained` — the ARqpIDA-SC order `ε^{-q(p+1)/p}` of
-  the lower-bound mode for every `2 ≤ q ≤ p`, on the closed feasible set
+  the lower-bound mode for every `1 ≤ q ≤ p` (in particular the "otherwise" entries for `q = 1`,
+  nonconvex `X`, and `q = 2`, `X ≠ ℝⁿ`), on the closed feasible set
   `X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1} ⊂ ℝ²` (`v 1` the second coordinate: a line and a parallel
   half-plane at distance `ρ ∈ (ε, 2ε]`),
   from the example of Theorem 12.2.17 on the line.
@@ -62,12 +67,13 @@ the "otherwise" entry for `q = 2` needs `X ≠ ℝⁿ`.
     fraction `ς` of the measures.
   - **Lower-bound mode of ARqpIDA** (`q = p ≥ 3`, `σ₀ = p`, initial radii `ε`). The Step-2 radii
     are `ε/p`.
-  - **Lower-bound mode of ARqpIDA with a feasible set** (`2 ≤ q ≤ p`, `σ₀ = (3/(p+2))^p`, all
+  - **Lower-bound mode of ARqpIDA with a feasible set** (`1 ≤ q ≤ p`, `σ₀ = (3/(p+2))^p`, all
     radii `ε`). The criterion `Chapter13.arTest_feasible` asks for approximate optimality for
     *some* radii, and on the line alone the gradient spikes `β_k ≈ ε^q/q!` meet it at radius `1`.
     A second coordinate with `∂f/∂(v 1) = -1` and the half-plane `{ρ ≤ v 1}` make every radius
     `δ ≥ ρ` fail, while radii `δ < ρ` (including the algorithm's radii `ε`) only see the line;
-    `ρ^{q-1} = ε^{q-1}(1 + 1/k_ε)` makes the first hit exactly `k_ε`. After `k_ε` the run makes
+    `ρ^{q-1} = ε^{q-1}(1 + 1/k_ε)` (`ρ = ε(1 + 1/k_ε)` for `q = 1`) makes the first hit exactly
+    `k_ε`. After `k_ε` the run makes
     one more step, to a point where the derivatives along the line vanish, and continues with
     accuracy-improving iterations there.
   - **Termination and continuation.** ARqpEDA is run on `f/2` so that it terminates at `k_ε`.
@@ -173,6 +179,115 @@ theorem theorem_14_2_4_sharp_arqp {p q : ℕ} (hq : 2 < q) (hqp : q ≤ p) :
   refine ⟨f, hb, hf, x, s, σ, d, hrun, fun k _ _ _ _ => hκ k, hhit, ?_⟩
   simp only [Optimization.funEvalCount, Nat.cast_add, Nat.cast_one]
   linarith [Nat.le_ceil (ε ^ (-((q : ℝ) * (p + 1) / p)))]
+
+/-! ### Sharpness of the ARqp-SC row in the lower-bound mode with a constrained feasible set
+
+The slow example of Theorem 12.2.17 never leaves a half-line, so it is also an ARqp-SC run on a
+closed nonconvex `X ⊂ ℝ` (`X ≠ ℝ`), which reaches the "otherwise" entries of the table for
+`q ≤ 2`. -/
+
+section ARqpOtherwise
+
+open Optimization
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+
+/-- An approximate optimality displacement of a Taylor decrement over a set `S'` of displacements
+is one over any smaller set `S ⊆ S'` containing it. -/
+private theorem isApproxMeasureStep_of_subset {D : FormalMultilinearSeries ℝ E ℝ} {j : ℕ}
+    {δ ς : ℝ} {d : E} {S S' : Set E} (hς : 0 ≤ ς)
+    (h : IsApproxMeasureStep (D.taylorDecrement j) δ S' ς d) (hSS' : S ⊆ S') (hd : d ∈ S) :
+    IsApproxMeasureStep (D.taylorDecrement j) δ S ς d :=
+  ⟨⟨h.1.1, hd⟩, (mul_le_mul_of_nonneg_left (decrementMeasure_mono_set ⟨d, h.1.1, hd⟩
+    (bddAbove_taylorDecrement D j δ S') hSS') hς).trans h.2⟩
+
+/-- **Restricting an unconstrained ARqp run to a feasible set**: an ARqp run on `univ` is an
+ARqp-SC run on `X` if its iterates reached, their Step-1 displacements, and the trial points and
+Step-2 displacements of its short steps are feasible. -/
+private theorem algorithm_12_2_2_feasible_of_univ {f : E → ℝ} {P : ARqpParams} {p q : ℕ}
+    {ε δ₀ : ℕ → ℝ} {x s : ℕ → E} {σ : ℕ → ℝ} {δ δs : ℕ → ℕ → ℝ} {d dm : ℕ → ℕ → E}
+    {X : Set E} (h : Chapter12.algorithm_12_2_2 f P p q ε δ₀ x s σ δ δs d dm)
+    (hX : ∀ k, (∀ i < k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) →
+      x k ∈ X ∧ (∀ j ∈ Finset.Icc 1 q, x k + d k j ∈ X) ∧ x k + s k ∈ X ∧
+        (‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 q, x k + s k + dm k j ∈ X)) :
+    Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm := by
+  have hς := P.ς_pos.le
+  refine ⟨⟨h.toIsARRun.sigma_zero, fun k hk h1 => ?_, h.toIsARRun.accept⟩,
+    (hX 0 fun _ h => absurd h (Nat.not_lt_zero _)).1, h.delta_zero, fun k hk j hj => ?_, h.radii⟩
+  · have hst := h.toIsARRun.step k hk h1
+    obtain ⟨-, -, hs, hdm⟩ := hX k hk
+    refine ⟨hs, hst.model_le, fun he => (hst.isMinOn_of_eq he).of_subset (subset_univ _),
+      hst.radius_pos, hst.radius_le_one, ?_⟩
+    rcases hst.branch with hl | hb
+    · exact Or.inl hl
+    rcases le_or_gt 1 ‖s k‖ with hl | hl
+    · exact Or.inl hl
+    · refine Or.inr fun j hj => ⟨?_, (hb j hj).2⟩
+      exact isApproxMeasureStep_of_subset hς (hb j hj).1 (fun _ _ => mem_univ _) (hdm hl j hj)
+  · exact isApproxMeasureStep_of_subset hς (h.witness k hk j hj) (fun _ _ => mem_univ _)
+      ((hX k hk).2.1 j hj)
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqp-SC row in the lower-bound
+mode of the radius policy (the "otherwise" order `ε^{-q(p+1)/p}`) for every `1 ≤ q ≤ p`, with a
+closed nonconvex feasible set `X = (-∞, R] ∪ [R + 2, ∞) ⊂ ℝ`: the slow example of
+Theorem 12.2.17 (`r = p`) restricted to `X`. For `1 ≤ q ≤ p` there are `f_low` and `L ≥ 1` such
+that for every `ε ∈ (0, ½]` and ARqp constants with `σ₀` the weight (12.2.85) there are `R` and
+`f` with f.bB and f.D1pL and an ARqp-SC run on `X` with radii `ε` satisfying the radius hypothesis
+of the lower-bound mode of `theorem_14_2_4_arqp` (`δ_{s_k,j} ≥ κ_δ(σ_k) ε_j`) that first
+terminates at `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after `k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` evaluations. The run
+of Theorem 12.2.17 stays in `(-∞, R]` together with its displacements, so it is a run on `X`.
+This covers the "otherwise" entries of the table for `q = 1` (nonconvex `X`) and `q = 2`
+(`X ≠ ℝⁿ`), which the reduction to `X = ℝⁿ` does not reach; for `q > 2` it complements
+`theorem_14_2_4_sharp_arqp` (`X = ℝ`). -/
+theorem theorem_14_2_4_sharp_arqp_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
+    ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 → ∀ P : ARqpParams,
+      P.σ₀ = Chapter12.arqpSigmaSharp p q →
+      ∃ (R : ℝ) (f : ℝ → ℝ), (∀ t, flow ≤ f t) ∧ Chapter12.AssumptionD1pL f p (fun _ => L) ∧
+        ∃ (x s σ : ℕ → ℝ) (d : ℕ → ℕ → ℝ),
+          Chapter12.algorithm_12_2_2_feasible f ({t | t ≤ R} ∪ {t | R + 2 ≤ t}) P p q
+            (fun _ => ε) (fun _ => ε) x s σ (fun _ _ => ε) (fun _ _ => ε) d (fun _ _ => 0) ∧
+          (∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => ε) d i) →
+            ‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 q,
+              Chapter12.arqpKappaDelta P (Chapter12.finMax 1 (fun _ => L) p) (σ k) * ε ≤ ε) ∧
+          IsFirstHit (Chapter12.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => ε) d)
+            ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ ∧
+          ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤
+            (funEvalCount ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) := by
+  obtain ⟨flow, L, hL, H⟩ := Chapter12.theorem_12_2_17 (r := p) hq hqp le_rfl
+  refine ⟨flow, L, hL, fun ε hε hε2 P hP => ?_⟩
+  obtain ⟨f, hb, hf, x, s, σ, d, hrun, -, -, hκ, -, hhit, -⟩ := H ε hε hε2 P hP
+  set kε := ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊
+  set R : ℝ := ∑ k ∈ Finset.range (kε + 1), (|x k| + |s k|) + 2 with hR
+  have hxs : ∀ k ≤ kε, |x k| + |s k| ≤ R - 2 := fun k hk => by
+    rw [hR, add_sub_cancel_right]
+    exact Finset.single_le_sum (f := fun k => |x k| + |s k|) (fun _ _ => by positivity)
+      (Finset.mem_range.2 (Nat.lt_succ_of_le hk))
+  have hX : ∀ k, (∀ i < k, ¬ Chapter12.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => ε) d i) →
+      x k ∈ {t | t ≤ R} ∪ {t | R + 2 ≤ t} ∧
+      (∀ j ∈ Finset.Icc 1 q, x k + d k j ∈ {t | t ≤ R} ∪ {t | R + 2 ≤ t}) ∧
+      x k + s k ∈ {t | t ≤ R} ∪ {t | R + 2 ≤ t} ∧
+      (‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 q,
+        x k + s k + (fun _ _ => (0 : ℝ)) k j ∈ {t | t ≤ R} ∪ {t | R + 2 ≤ t}) := by
+    intro k hk
+    have hkε : k ≤ kε := not_lt.1 fun hlt => hk kε hlt hhit.1
+    have h1 := hxs k hkε
+    have hxa := le_abs_self (x k)
+    have hsa := le_abs_self (s k)
+    have hsa' := abs_nonneg (s k)
+    refine ⟨Or.inl (by simp only [mem_ofPred_eq]; linarith), fun j hj => Or.inl ?_,
+      Or.inl (by simp only [mem_ofPred_eq]; linarith), fun _ j _ => Or.inl (by
+        simp only [mem_ofPred_eq, add_zero]; linarith)⟩
+    have hd := (hrun.witness k hk j hj).1.1
+    rw [mem_closedBall_zero_iff, Real.norm_eq_abs] at hd
+    have := le_abs_self (d k j)
+    simp only [mem_ofPred_eq]
+    linarith
+  refine ⟨R, f, hb, hf, x, s, σ, d, algorithm_12_2_2_feasible_of_univ hrun hX,
+    fun k _ _ _ _ => hκ k, hhit, ?_⟩
+  simp only [funEvalCount, Nat.cast_add, Nat.cast_one]
+  linarith [Nat.le_ceil (ε ^ (-((q : ℝ) * (p + 1) / p)))]
+
+end ARqpOtherwise
 
 /-! ### Sharpness of the dynamic-accuracy trust-region rows
 
@@ -2462,7 +2577,7 @@ end ARqpDASharp
 /-! ### Sharpness of the ARqpIDA-SC row in the lower-bound mode with a constrained feasible set
 
 The order `ε^{-q(p+1)/p}` of the lower-bound mode of the ARqpIDA-SC row is attained for every
-`2 ≤ q ≤ p` with the closed feasible set `X = {v 1 = 0} ∪ {ρ ≤ v 1}` of `ℝ²` (a line and a parallel
+`1 ≤ q ≤ p` with the closed feasible set `X = {v 1 = 0} ∪ {ρ ≤ v 1}` of `ℝ²` (a line and a parallel
 half-plane at distance `ρ ∈ (ε, 2ε]`), by the slow example of Theorem 12.2.17 on the line. The
 half-plane makes the criterion `Chapter13.arTest_feasible` ("approximately optimal for some radii
 in `(0, 1]^q`") fail at the large radii, which the line alone cannot do. -/
@@ -2846,13 +2961,13 @@ section SlitTest
 variable {D : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ} {q : ℕ} {ε β ρ c : ℝ}
   {x : EuclideanSpace ℝ (Fin 2)}
 
-/-- **The slit example fails the criterion at every radius** when `q ≥ 2`, the radius of the
-half-plane is `ρ = ε (1 + c)^{1/(q-1)}` and the gradient is `β ≥ ε^q (1 + c)/q!`: on radii
-`δ < ρ` the measure of order `q` is `β δ > ε δ^q/q!`, and on radii `δ ≥ ρ` it is at least
-`ρ > ε`. -/
+/-- **The slit example fails the criterion at every radius** when `q ≥ 1`, `c > 0`, the radius
+of the half-plane is `ρ = ε (1 + c)^{1/n}` with `n = max(q - 1, 1)` and the gradient is
+`β ≥ ε^q (1 + c)/q!`: on radii `δ < ρ` the measure of order `q` is `β δ > ε δ^q/q!`, and on radii
+`δ ≥ ρ` it is at least `ρ > ε`. -/
 private theorem slit_not_approx (hε : 0 < ε) (hερ : ε < ρ)
-    (hρpow : ρ ^ (q - 1) = ε ^ (q - 1) * (1 + c)) (hβ0 : 0 ≤ β)
-    (hβ : ε ^ q * (1 + c) / q ! ≤ β) (hx : ⟪e₂, x⟫ = 0) (hq : 2 ≤ q)
+    (hρpow : ρ ^ max (q - 1) 1 = ε ^ max (q - 1) 1 * (1 + c)) (hc : 0 < c) (hβ0 : 0 ≤ β)
+    (hβ : ε ^ q * (1 + c) / q ! ≤ β) (hx : ⟪e₂, x⟫ = 0) (hq : 1 ≤ q)
     (hdec : ∀ j ∈ Finset.Icc 1 q, ∀ d, D.taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫)
     (δ' : ℕ → ℝ) (hδ' : ∀ j ∈ Finset.Icc 1 q, δ' j ∈ Set.Ioc 0 1)
     (ht : IsEpsDeltaApprox D {e | x + e ∈ slitSet ρ} q (fun _ => ε) δ') : False := by
@@ -2860,10 +2975,17 @@ private theorem slit_not_approx (hε : 0 < ε) (hερ : ε < ρ)
   have h1 := ht q hqm
   obtain ⟨hδ0, hδ1⟩ := hδ' q hqm
   have hqf : (0 : ℝ) < q ! := by positivity
-  have hq0 : q - 1 ≠ 0 := by omega
   set δq := δ' q
   rcases lt_or_ge δq ρ with hδρ | hδρ
   · rw [slit_measure_lt hβ0 hδ0.le hδρ hx (hdec q hqm)] at h1
+    rcases hq.eq_or_lt with rfl | hq2
+    · have h2 : ε ^ 1 * (1 + c) / (1 : ℕ)! * δq ≤ ε * δq ^ 1 / (1 : ℕ)! :=
+        (mul_le_mul_of_nonneg_right hβ hδ0.le).trans h1
+      simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one] at h2
+      nlinarith [mul_pos (mul_pos hε hδ0) hc]
+    have hq0 : q - 1 ≠ 0 := by omega
+    have hmax : max (q - 1) 1 = q - 1 := max_eq_left (by omega)
+    rw [hmax] at hρpow
     have hqq : q = (q - 1) + 1 := by omega
     have e1 : ε ^ q = ε ^ (q - 1) * ε := by rw [← pow_succ, ← hqq]
     have e2 : δq ^ q = δq ^ (q - 1) * δq := by rw [← pow_succ, ← hqq]
@@ -3097,7 +3219,7 @@ end SlitStep
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpIDA-SC row in the
 lower-bound mode of the radii control (the "otherwise" order `ε^{-q(p+1)/p}`) for every
-`2 ≤ q ≤ p`, with a closed nonconvex feasible set in `ℝ²` and exact derivatives. There are
+`1 ≤ q ≤ p`, with a closed nonconvex feasible set in `ℝ²` and exact derivatives. There are
 `f_low`, `L ≥ 1` and `ε₀ > 0` such that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpIDA
 constants with orders `p, q`, weight `σ₀ = (3/(p+2))^p`, initial radii `δ₀ = ε` and initial
 accuracies `h_{0,i} ≤ κ_s ε^{p-i+1}`, there are `ρ ∈ (ε, 2ε]`, the feasible set
@@ -3113,18 +3235,19 @@ The run follows the slow example of Theorem 12.2.17 (`r = p`) on the line `v 1 =
 `f(v) = G(v 0) + H(v 1)` with gradient spikes `G'(x_k) = -β_k`,
 `β_k = (ε^q + ε^q (k_ε - k)/k_ε)/q!`, steps the minimizers of the model on the line (admissible
 Step-2 steps, since (13.1.55)–(13.1.57) are local conditions, but not global minimizers of the
-model on `X`, which are in the half-plane), `σ_k = σ₀`, `ρ_k = 1`, and `H'(0) = -1`, so that
-the half-plane lowers the Taylor models by at least `ρ > ε`. Radii `δ < ρ` only see the line,
-where the measure of order `q` is `β_k δ`; with `ρ^{q-1} = ε^{q-1} (1 + 1/k_ε)` this exceeds
-`ε δ^q/q!` for every `δ < ρ` exactly when `k < k_ε`, and radii `δ ≥ ρ` reach the half-plane. So
-the criterion fails at every radius before `k_ε`, while the Step-1 and Step-2 radii `ε < ρ` only
-see the line, where the model measures at the steps vanish (Example 12.1.3). After `k_ε` one more
-step reaches a point where all derivatives of `G` vanish, and the run continues with
-accuracy-improving iterations there. The cases `q = 2 < p` (with `X ≠ ℝⁿ`) and `3 ≤ q < p` are
-not reached by the book's reduction to unconstrained problems: on `ℝⁿ` the order is not attained
-for `q = 2 < p` (`theorem_14_2_4_arqpida_le_two`), and for `3 ≤ q < p` the case `X = ℝⁿ` is open
-(see the module doc). -/
-theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 2 ≤ q) (hqp : q ≤ p) :
+model on `X`, which are in the half-plane), `σ_k = σ₀`, `ρ_k = 1`, and `H'(0) = -1`, so that the
+half-plane lowers the Taylor models by at least `ρ > ε`. Radii `δ < ρ` only see the line, where
+the measure of order `q` is `β_k δ`; with `ρ^n = ε^n (1 + 1/k_ε)`, `n = max(q - 1, 1)`, this
+exceeds `ε δ^q/q!` for every `δ < ρ` exactly when `k < k_ε`, and radii `δ ≥ ρ` reach the
+half-plane. So the criterion fails at every radius before `k_ε`, while the Step-1 and Step-2 radii
+`ε < ρ` only see the line, where the model measures at the steps vanish (Example 12.1.3). After
+`k_ε` one more step reaches a point where all derivatives of `G` vanish, and the run continues with
+accuracy-improving iterations there. For `q = 1` this is the "otherwise" entry with a nonconvex
+`X` (its order `ε^{-(p+1)/p}` coincides with that of the convex entry). The cases `q = 2 < p`
+(with `X ≠ ℝⁿ`) and `3 ≤ q < p` are not reached by the book's reduction to unconstrained
+problems: on `ℝⁿ` the order is not attained for `q = 2 < p` (`theorem_14_2_4_arqpida_le_two`), and
+for `3 ≤ q < p` the case `X = ℝⁿ` is open (see the module doc). -/
+theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
       P.p = p → P.q = q → P.σ₀ = (3 / ((p : ℝ) + 2)) ^ p → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = ε) →
       (∀ i ∈ Finset.Icc 1 p, P.h₀ i ≤ P.κs * ε ^ (p - i + 1)) →
@@ -3146,7 +3269,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 2 �
           ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤ (derivEvalCount
             (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i))
               ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) := by
-  have hq1 : 1 ≤ q := by omega
+  have hq1 : 1 ≤ q := hq
   have hp1 : 1 ≤ p := hq1.trans hqp
   have hp0 : p ≠ 0 := by omega
   have hpR : (0 : ℝ) < p := by exact_mod_cast hp1
@@ -3259,9 +3382,9 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 2 �
   have hfb : ∀ y, -(BG + BH) ≤ f y := fun y => by
     have := hGb y; have := hHb y; simp only [hfdef, Pi.add_apply]; linarith
   -- the feasible set
-  set ρ : ℝ := ε * (1 + 1 / κ) ^ (((q - 1 : ℕ) : ℝ)⁻¹) with hρ
-  have hq0 : q - 1 ≠ 0 := by omega
-  have hqR : (0 : ℝ) < ((q - 1 : ℕ) : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero hq0
+  set ρ : ℝ := ε * (1 + 1 / κ) ^ (((max (q - 1) 1 : ℕ) : ℝ)⁻¹) with hρ
+  have hq0 : max (q - 1) 1 ≠ 0 := by omega
+  have hqR : (0 : ℝ) < ((max (q - 1) 1 : ℕ) : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero hq0
   have ha1 : 1 < 1 + 1 / (κ : ℝ) := by
     have : 0 < 1 / (κ : ℝ) := by positivity
     linarith
@@ -3272,11 +3395,11 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 2 �
   have hρ2 : ρ ≤ 2 * ε := by
     rw [hρ, mul_comm 2]
     refine mul_le_mul_of_nonneg_left ?_ hε.le
-    calc (1 + 1 / (κ : ℝ)) ^ (((q - 1 : ℕ) : ℝ)⁻¹) ≤ (1 + 1 / (κ : ℝ)) ^ (1 : ℝ) :=
+    calc (1 + 1 / (κ : ℝ)) ^ (((max (q - 1) 1 : ℕ) : ℝ)⁻¹) ≤ (1 + 1 / (κ : ℝ)) ^ (1 : ℝ) :=
           Real.rpow_le_rpow_of_exponent_le ha1.le (inv_le_one_of_one_le₀ (by
             exact_mod_cast Nat.one_le_iff_ne_zero.2 hq0))
       _ ≤ 2 := by rw [Real.rpow_one]; exact ha2
-  have hρpow : ρ ^ (q - 1) = ε ^ (q - 1) * (1 + 1 / κ) := by
+  have hρpow : ρ ^ max (q - 1) 1 = ε ^ max (q - 1) 1 * (1 + 1 / κ) := by
     rw [hρ, mul_pow, Real.rpow_inv_natCast_pow (by positivity) hq0]
   have hρ0 : 0 < ρ := hε.trans hερ
   set X : Set (EuclideanSpace ℝ (Fin 2)) := slitSet ρ with hX
@@ -3417,8 +3540,8 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 2 �
     constructor
     · rintro ⟨δ', hδ', ht'⟩
       by_contra hne
-      exact slit_not_approx hε hερ hρpow (hβpos k hk).le (hβlt k (lt_of_le_of_ne hk hne))
-        (hx1 k) hq hdk δ' hδ' ht'
+      exact slit_not_approx hε hερ hρpow (by positivity) (hβpos k hk).le
+        (hβlt k (lt_of_le_of_ne hk hne)) (hx1 k) hq hdk δ' hδ' ht'
     · rintro rfl
       exact ⟨fun _ => ε, fun _ _ => ⟨hε, hε1⟩,
         slit_approx hε hε1 hερ (hβpos _ hk).le hβκ.le (hx1 _) hdk⟩
