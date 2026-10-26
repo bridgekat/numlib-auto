@@ -8,6 +8,7 @@ For the Taylor polynomial `T_{f,p}(x, s) = taylorPolynomial f p x s` of
 
 * `taylorPolynomial_comp_continuousLinearMap`: `T_{g ∘ U, p}(x, s) = T_{g, p}(U x, U s)` for a
   continuous linear map `U`;
+* `taylorPolynomial_smul_const`: `T_{g v, p}(x, s) = T_{g, p}(x, s) v` for scalar `g`;
 * `taylorPolynomial_finset_sum`: `T_{∑ᵢ fᵢ, p}(x, s) = ∑ᵢ T_{fᵢ, p}(x, s)`;
 * `taylorPolynomial_finset_sum_comp_continuousLinearMap`: the combination below.
 
@@ -46,6 +47,20 @@ theorem taylorPolynomial_comp_continuousLinearMap {g : F → G} (U : E →L[ℝ]
   refine sum_congr rfl fun i hi => ?_
   rw [hg.iteratedFDeriv_comp_continuousLinearMap U (Nat.lt_succ_iff.1 (mem_range.1 hi)),
     ContinuousMultilinearMap.compContinuousLinearMap_apply]
+
+/-- **Taylor polynomial of a scalar function times a fixed vector**: if `g : E → ℝ` is `C^p` at
+`x`, then `T_{g v, p}(x, s) = T_{g, p}(x, s) v`. -/
+theorem taylorPolynomial_smul_const {g : E → ℝ} {p : ℕ} {x : E} (hg : ContDiffAt ℝ p g x) (v : F)
+    (s : E) : taylorPolynomial (fun y => g y • v) p x s = taylorPolynomial g p x s • v := by
+  have hcomp : (fun y => g y • v) =
+      (ContinuousLinearMap.smulRight (ContinuousLinearMap.id ℝ ℝ) v) ∘ g := by
+    funext y
+    simp
+  rw [hcomp, taylorPolynomial_apply, taylorPolynomial_apply, sum_smul]
+  refine sum_congr rfl fun i hi => ?_
+  rw [ContinuousLinearMap.iteratedFDeriv_comp_left _ hg
+    (by exact_mod_cast Nat.lt_succ_iff.1 (mem_range.1 hi))]
+  simp [smul_smul]
 
 /-- **Taylor polynomial of a finite sum** ([cartis2022evaluation], (5.2.2)): if every `f i` is
 `C^p` at `x`, then `T_{∑ᵢ fᵢ, p}(x, s) = ∑ᵢ T_{fᵢ, p}(x, s)`. -/

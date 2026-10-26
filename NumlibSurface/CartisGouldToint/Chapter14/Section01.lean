@@ -1,7 +1,9 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import Numlib.Analysis.Calculus.MultivariateTaylor.LinearComp
 import Numlib.Analysis.Calculus.MultivariateTaylor.VectorRemainder
 import Numlib.Optimization.ModelBased.HighOrder.ARqp
 import Numlib.Optimization.ModelBased.HighOrderStep
+import Numlib.Optimization.Complexity.SlowExampleARp
 import Numlib.Optimization.Optimality.CurveConditions
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 
@@ -40,16 +42,9 @@ maxima `L_f`, `L_c` of (14.1.3) are `Chapter12.finMax 1 Lf p` and `Chapter12.fin
 * `lemma_14_1_2` – `lemma_14_1_9`, `theorem_14_1_10_i`, `theorem_14_1_10_ii`;
 * `exists_isARqpCRun` — ARqpC(-SC) runs exist; `algorithm_14_1_1.radius_policy` — every run
   satisfies the radius policy (14.1.28) (Lemma 14.1.3 for every output of Algorithm 14.1.2).
-
-## Not formalized
-
-The sharpness statement Corollary 14.1.11. Its one-line proof ("take `w = |c|` with `c` the
-positive function of Theorem 12.2.15") requires that the steps of the slow ARqp example for `c`
-be outputs of Algorithm 14.1.2 for the composite model `|T_{c,p}(x_k, s)| + σ_k ‖s‖^{p+1}/(p+1)!`
-of `|c|`: a step `s` approximately minimizing this model must also be found where
-`T_{c,p}(x_k, s) < 0`, and the book does not check that the slow steps remain global minimizers
-(Step 2.2) there, nor the Step-1 test for `|·|` at the iterates. This admissibility argument is
-not formalized.
+* `algorithm_14_1_2_of_isMinOn` — for `q = 1` and convex `h`, `X`, global model minimizers are
+  outputs of Algorithm 14.1.2;
+* `corollary_14_1_11` — sharpness of the bound of Theorem 14.1.10 (1).
 
 ## Deviations from the book
 
@@ -76,6 +71,13 @@ not formalized.
 * Theorem 14.1.10: `3j!` in the constants reads `3q!`; `(1 - θ)` becomes `(ς - θ)`. The radius
   policies the book assumes ("suppose that the ARqpC algorithm ensures …") are proved for every
   run; part 1 needs `δ_{0,1} = 1`.
+* Corollary 14.1.11: the book's one-line proof ("take `w = |c|` with `c` the positive function of
+  Theorem 12.2.15") does not check that the slow ARqp steps are admissible ARqpC steps for `|c|`.
+  They are: since `|t| ≥ t`, the composite model lies above the smooth model and agrees with it at
+  the slow step, where `T_{c,p}(x_k, s_k) = c(x_{k+1}) > 0`; and `c(x_k) ≥ |c'(x_k)|` makes the
+  measure `φ^1_{w,1}(x_k) = min(c(x_k), |c'(x_k)|)` equal to `|c'(x_k)|`. The example `c` is the
+  interpolant of Theorem 12.2.15 shifted to be `≥ 2`, lifted to `ℝ¹ → ℝ¹`; it works for every
+  `σ₀` (the book fixes `σ₀ = p!`) and every `ε ∈ (0, 1]` (the book takes `ε ≤ ½`).
 -/
 
 open Set Metric
@@ -1630,5 +1632,488 @@ theorem theorem_14_1_10_ii (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ 
 
 end Theorem
 
+/-! ### Corollary 14.1.11: sharpness for `q = 1` and convex `h` -/
+
+/-- **Global model minimizers are outputs of Algorithm 14.1.2 for `q = 1`** (convex `h` and
+`X`). If `x + s ∈ X` and `s` globally minimizes the composite model `m̂` over the feasible steps,
+then `(s, 1)` is an output of Algorithm 14.1.2 with `q = 1`: a long step is returned at once, and
+for a short step the order-`1` model decrements at `s` are nonpositive (Lemma 14.1.1 applied to
+`m̂`), so the displacement `0` passes the order-`1` test with radius `1`. -/
+theorem algorithm_14_1_2_of_isMinOn {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {h : ℝᵐ → ℝ} {Lh : ℝ}
+    {X : Set ℝⁿ} {p : ℕ} (hp : 1 ≤ p) (hL : AssumptionHLip h Lh) (hconv : ConvexOn ℝ univ h)
+    (hX : Convex ℝ X) (P : ARqpCParams) {ε : ℕ → ℝ} (hε : 0 ≤ ε 1) {σ : ℝ} {x s : ℝⁿ}
+    (hs : x + s ∈ X)
+    (hmin : IsMinOn (Optimization.compositeRegularizedModel (ftaylorSeries ℝ f x)
+      (ftaylorSeries ℝ c x) h p σ) {t | x + t ∈ X} s) :
+    algorithm_14_1_2 f c h X p 1 P ε σ x s (fun _ => 1) := by
+  set mod := Optimization.compositeRegularizedModel (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h
+    p σ
+  set T : Set ℝⁿ := {t | x + t ∈ X}
+  have hsT : s ∈ T := hs
+  have hinf : sInf (mod '' T) = mod s :=
+    IsLeast.csInf_eq ⟨⟨s, hsT, rfl⟩, by rintro _ ⟨t, ht, rfl⟩; exact isMinOn_iff.1 hmin t ht⟩
+  rcases le_or_gt 1 ‖s‖ with hlong | hshort
+  · exact ⟨1, ⟨one_pos, le_rfl⟩, Relation.ReflTransGen.single
+      (Optimization.DetailedStepTrans.ret hsT (by rw [hinf, one_mul]) hlong)⟩
+  set D : Set ℝⁿ := closedBall (0 : ℝⁿ) 1 ∩ {d | x + s + d ∈ X}
+  have hnp : ∀ d ∈ D, Optimization.compositeModelDecrement (ftaylorSeries ℝ f x)
+      (ftaylorSeries ℝ c x) h p σ 1 s d ≤ 0 := fun d hd =>
+    Optimization.compositeTaylorDecrement_one_nonpos_of_isLocalMinOn
+      (hX.translate_preimage_right x) hsT
+      ((Optimization.contDiff_regularizedModel (D := ftaylorSeries ℝ f x) (p := p)
+        (σ := σ)).differentiable (by exact_mod_cast Nat.one_le_iff_ne_zero.1 hp) s)
+      (((ftaylorSeries ℝ c x).contDiff_taylorSum p (n := 1)).differentiable one_ne_zero s)
+      hconv hL.hasLipschitzConst hmin.isLocalMinOn (by simpa [T, add_assoc] using hd.2)
+  have h0 : (0 : ℝⁿ) ∈ D := ⟨by simp, by simpa using hs⟩
+  have hsup : sSup ((fun d => Optimization.compositeModelDecrement (ftaylorSeries ℝ f x)
+      (ftaylorSeries ℝ c x) h p σ 1 s d) '' D) ≤ 0 :=
+    csSup_le ⟨_, ⟨0, h0, rfl⟩⟩ (by rintro _ ⟨d, hd, rfl⟩; exact hnp d hd)
+  have hdec0 : Optimization.compositeModelDecrement (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x)
+      h p σ 1 s 0 = 0 := by
+    simp [Optimization.compositeModelDecrement_def]
+  refine ⟨1, ⟨one_pos, le_rfl⟩, Relation.ReflTransGen.head
+    (Optimization.DetailedStepTrans.start hsT (by rw [hinf, one_mul]) hshort)
+    (Relation.ReflTransGen.single (Optimization.DetailedStepTrans.finish (d := 0) h0 ?_ ?_ le_rfl))⟩
+  · rw [hdec0]
+    exact mul_nonpos_of_nonneg_of_nonpos P.ς_pos.le hsup
+  · rw [hdec0]
+    have := P.ς_pos
+    have := P.θ_pos
+    positivity
+
+section Corollary
+
+open scoped RealInnerProductSpace
+
+/-- The unit vector `e₁` of `ℝ¹`. -/
+private noncomputable def e₁ : EuclideanSpace ℝ (Fin 1) := EuclideanSpace.single 0 1
+
+private theorem norm_e₁ : ‖e₁‖ = 1 := by simp [e₁]
+
+private theorem inner_e₁ (v : EuclideanSpace ℝ (Fin 1)) : ⟪e₁, v⟫ = v 0 := by
+  simp [e₁, EuclideanSpace.inner_single_left]
+
+private theorem norm_eq_abs_inner_e₁ (v : EuclideanSpace ℝ (Fin 1)) : ‖v‖ = |⟪e₁, v⟫| := by
+  rw [inner_e₁, EuclideanSpace.norm_eq, Fin.sum_univ_one, Real.norm_eq_abs, Real.sqrt_sq_eq_abs,
+    abs_abs]
+
+private theorem smul_e₁_apply (r : ℝ) (i : Fin 1) : (r • e₁) i = r := by
+  fin_cases i
+  simp [e₁]
+
+private theorem norm_smul_e₁ (r : ℝ) : ‖r • e₁‖ = |r| := by
+  rw [norm_smul, norm_e₁, mul_one, Real.norm_eq_abs]
+
+private theorem inner_smul_e₁ (r : ℝ) : ⟪e₁, r • e₁⟫ = r := by
+  rw [inner_smul_right, real_inner_self_eq_norm_sq, norm_e₁]
+  ring
+
+/-- The vector function `c(y) = g(y₀) e₁` on `ℝ¹`. -/
+private noncomputable def liftC (g : ℝ → ℝ) (y : EuclideanSpace ℝ (Fin 1)) :
+    EuclideanSpace ℝ (Fin 1) :=
+  Optimization.ridge g e₁ y • e₁
+
+private theorem taylorSum_liftC {g : ℝ → ℝ} {p j : ℕ} (hg : ContDiff ℝ p g) (hj1 : 1 ≤ j)
+    (hjp : j ≤ p) {y : EuclideanSpace ℝ (Fin 1)} {α : ℝ}
+    (hd : Optimization.IsSpikeJetOf p g 1 ⟪e₁, y⟫ α) (t : EuclideanSpace ℝ (Fin 1)) :
+    (ftaylorSeries ℝ (liftC g) y).taylorSum j t = (g ⟪e₁, y⟫ - α * ⟪e₁, t⟫) • e₁ := by
+  have hgj : ContDiff ℝ j g := hg.of_le (by exact_mod_cast hjp)
+  have hd' : Optimization.IsSpikeJetOf j g 1 ⟪e₁, y⟫ α :=
+    ⟨hd.1, fun i hi1 hij hi => hd.2 i hi1 (hij.trans hjp) hi⟩
+  rw [← taylorPolynomial_eq_taylorSum, show liftC g = fun y => Optimization.ridge g e₁ y • e₁ from
+    rfl, taylorPolynomial_smul_const (Optimization.contDiff_ridge hgj).contDiffAt,
+    Optimization.taylorPolynomial_ridge_spike hgj le_rfl hj1 hd']
+  simp
+
+private theorem taylorSum_zero_fun {j : ℕ} (y t : EuclideanSpace ℝ (Fin 1)) :
+    (ftaylorSeries ℝ (fun _ : EuclideanSpace ℝ (Fin 1) => (0 : ℝ)) y).taylorSum j t = 0 := by
+  rw [← taylorPolynomial_eq_taylorSum, taylorPolynomial_apply]
+  simp
+
+
+/-- h.L for the norm of `ℝ¹`, with `L_{h,0} = 1`. -/
+private theorem assumptionHLip_norm : AssumptionHLip (fun v : EuclideanSpace ℝ (Fin 1) => ‖v‖) 1 :=
+  ⟨zero_le_one, fun a b => by rw [one_mul]; exact abs_norm_sub_norm_le a b⟩
+
+private theorem lipschitz_of_iteratedFDerivLipschitzOn {g : ℝ → ℝ} {j : ℕ} {L : ℝ}
+    (h : IteratedFDerivLipschitzOn g j L univ) (s t : ℝ) :
+    |iteratedDeriv j g s - iteratedDeriv j g t| ≤ L * |s - t| := by
+  have := (iteratedFDerivLipschitzOn_iff.1 h) s (mem_univ s) t (mem_univ t)
+  rwa [iteratedFDeriv_eq_equiv_comp, Function.comp_apply, Function.comp_apply, ← map_sub,
+    LinearIsometryEquiv.norm_map, Real.norm_eq_abs, Real.norm_eq_abs] at this
+
+section LiftC
+
+variable {g : ℝ → ℝ} {p : ℕ} {y : EuclideanSpace ℝ (Fin 1)} {α : ℝ}
+
+private theorem compositeTaylorDecrement_liftC (hg : ContDiff ℝ p g) {j : ℕ} (hj1 : 1 ≤ j)
+    (hjp : j ≤ p) (hd : Optimization.IsSpikeJetOf p g 1 ⟪e₁, y⟫ α)
+    (t : EuclideanSpace ℝ (Fin 1)) :
+    Optimization.compositeTaylorDecrement (ftaylorSeries ℝ (fun _ => (0 : ℝ)) y)
+      (ftaylorSeries ℝ (liftC g) y) (fun v => ‖v‖) j t =
+      |g ⟪e₁, y⟫| - |g ⟪e₁, y⟫ - α * ⟪e₁, t⟫| := by
+  rw [Optimization.compositeTaylorDecrement, taylorSum_zero_fun, taylorSum_zero_fun,
+    taylorSum_liftC hg hj1 hjp hd, taylorSum_liftC hg hj1 hjp hd, norm_smul_e₁, norm_smul_e₁,
+    inner_zero_right]
+  ring_nf
+
+private theorem compositeRegularizedModel_liftC (hg : ContDiff ℝ p g) (hp : 1 ≤ p)
+    (hd : Optimization.IsSpikeJetOf p g 1 ⟪e₁, y⟫ α) (σ : ℝ) (t : EuclideanSpace ℝ (Fin 1)) :
+    Optimization.compositeRegularizedModel (ftaylorSeries ℝ (fun _ => (0 : ℝ)) y)
+      (ftaylorSeries ℝ (liftC g) y) (fun v => ‖v‖) p σ t =
+      g ⟪e₁, y⟫ + Optimization.negMonomialRegModel p 1 σ α ⟪e₁, t⟫ +
+        (|g ⟪e₁, y⟫ - α * ⟪e₁, t⟫| - (g ⟪e₁, y⟫ - α * ⟪e₁, t⟫)) := by
+  rw [Optimization.compositeRegularizedModel_def, Optimization.regularizedModel_def,
+    taylorSum_zero_fun, taylorSum_liftC hg hp le_rfl hd, norm_smul_e₁,
+    Optimization.negMonomialRegModel, norm_eq_abs_inner_e₁ t]
+  simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one]
+  ring
+
+/-- The Step-1 measure of `|liftC g|` at `y`: `φ^1_{w,1}(y) = α` when `g(y₀) ≥ 2 ≥ α ≥ 0`. -/
+private theorem compositeTaylorMeasure_liftC (hg : ContDiff ℝ p g) (hp : 1 ≤ p)
+    (hd : Optimization.IsSpikeJetOf p g 1 ⟪e₁, y⟫ α) (hg2 : 2 ≤ g ⟪e₁, y⟫) (hα0 : 0 ≤ α)
+    (hα2 : α ≤ 2) :
+    Optimization.compositeTaylorMeasure (ftaylorSeries ℝ (fun _ => (0 : ℝ)) y)
+      (ftaylorSeries ℝ (liftC g) y) (fun v => ‖v‖) 1 1 univ = α := by
+  rw [Optimization.compositeTaylorMeasure_eq_sSup]
+  have hdec := compositeTaylorDecrement_liftC hg le_rfl hp hd
+  refine IsGreatest.csSup_eq ⟨⟨e₁, ⟨by simp [norm_e₁], mem_univ _⟩, ?_⟩, ?_⟩
+  · rw [hdec, real_inner_self_eq_norm_sq, norm_e₁, abs_of_nonneg (by linarith),
+      abs_of_nonneg (by linarith)]
+    ring
+  · rintro _ ⟨t, ⟨ht, -⟩, rfl⟩
+    have ht1 : |⟪e₁, t⟫| ≤ 1 := by
+      rw [← norm_eq_abs_inner_e₁]; simpa using ht
+    have h1 := (abs_le.1 ht1).1
+    have h2 := (abs_le.1 ht1).2
+    have hat : α * ⟪e₁, t⟫ ≤ α := by nlinarith
+    have hat' : -α ≤ α * ⟪e₁, t⟫ := by nlinarith
+    rw [hdec, abs_of_nonneg (by linarith), abs_of_nonneg (by linarith)]
+    linarith
+
+/-- The global minimizer of the composite model of `|liftC g|` at a spike jet, when the Taylor
+model of `g` stays nonnegative at the step. -/
+private theorem isMinOn_liftC (hg : ContDiff ℝ p g) (hp : 1 ≤ p)
+    (hd : Optimization.IsSpikeJetOf p g 1 ⟪e₁, y⟫ α) {σ : ℝ} (hσ : 0 < σ) (hα : 0 < α)
+    (hpos : 0 ≤ g ⟪e₁, y⟫ - α * Optimization.monomialMinimizer p 1 σ α) :
+    IsMinOn (Optimization.compositeRegularizedModel (ftaylorSeries ℝ (fun _ => (0 : ℝ)) y)
+      (ftaylorSeries ℝ (liftC g) y) (fun v => ‖v‖) p σ) univ
+        (Optimization.monomialMinimizer p 1 σ α • e₁) ∧
+      Optimization.compositeRegularizedModel (ftaylorSeries ℝ (fun _ => (0 : ℝ)) y)
+        (ftaylorSeries ℝ (liftC g) y) (fun v => ‖v‖) p σ
+          (Optimization.monomialMinimizer p 1 σ α • e₁) <
+      Optimization.compositeRegularizedModel (ftaylorSeries ℝ (fun _ => (0 : ℝ)) y)
+        (ftaylorSeries ℝ (liftC g) y) (fun v => ‖v‖) p σ 0 := by
+  obtain ⟨hm, hv, -⟩ := Optimization.isMinOn_neg_monomial_add_regularization le_rfl hp hσ hα
+  rw [← Optimization.monomialMinimizer] at hm hv
+  set τ := Optimization.monomialMinimizer p 1 σ α
+  have hτ : 0 < τ := Optimization.monomialMinimizer_pos hσ hα
+  have hmod := compositeRegularizedModel_liftC hg hp hd σ
+  have hval : Optimization.compositeRegularizedModel (ftaylorSeries ℝ (fun _ => (0 : ℝ)) y)
+      (ftaylorSeries ℝ (liftC g) y) (fun v => ‖v‖) p σ (τ • e₁) =
+      g ⟪e₁, y⟫ + Optimization.negMonomialRegModel p 1 σ α τ := by
+    rw [hmod, inner_smul_e₁, abs_of_nonneg hpos, sub_self, add_zero]
+  refine ⟨isMinOn_iff.2 fun t _ => ?_, ?_⟩
+  · rw [hval, hmod]
+    have := isMinOn_iff.1 hm ⟪e₁, t⟫ (mem_univ _)
+    have := le_abs_self (g ⟪e₁, y⟫ - α * ⟪e₁, t⟫)
+    linarith
+  · rw [hval, hmod, inner_zero_right, mul_zero, sub_zero, hv]
+    have := le_abs_self (g ⟪e₁, y⟫)
+    have h0 : Optimization.negMonomialRegModel p 1 σ α 0 = 0 := by
+      simp [Optimization.negMonomialRegModel]
+    rw [h0]
+    have : 0 < (((p - 1 + 1 : ℕ) : ℝ) / ((p + 1) * (1 ! : ℕ))) * α * τ ^ 1 := by positivity
+    linarith
+
+end LiftC
+
+/-- **Corollary 14.1.11** of [cartis2022evaluation] (slow convergence of ARqpC for `q = 1` and
+convex `h`). Let `p ≥ 1` and fix the ARqpC constants `P`. Take `n = m = 1`, `f = 0` (f.D1pL with
+constants `1`) and the convex `h = ‖·‖` (h.L with `L_{h,0} = 1`, h.S0). There is `L ≥ 1`
+(depending only on `p` and `P`) such that for every `ε ∈ (0, 1]` (all `ε_1 = ε`) some
+`c : ℝ¹ → ℝ¹` satisfying c.D1pL with constants `L`, with `‖c(0)‖ ≤ L` (so
+`w(x₀) - w_low ≤ L` independently of `ε`) and `c(y)₀ ≥ 2` (so w.Bb holds with `w_low = 0`),
+admits an ARqpC run (Algorithm 14.1.1 with `q = 1`, `δ₀ = 1`, Step 2 computed by
+Algorithm 14.1.2) from `x₀ = 0` whose iterations are all successful (`ρ_k = 1`) and which
+first terminates at `k_ε = ⌈ε^{-(p+1)/p}⌉`, where `φ^1_{w,1}(x_{k_ε}) ≤ ε`, while
+`φ^1_{w,1}(x_k) > ε` for every `k < k_ε`. So ARqpC needs at least `ε^{-(p+1)/p} + 1`
+evaluations of `c` and of its derivatives: the bounds of Theorem 14.1.10 (1) are sharp in
+order.
+
+The function `c(y) = g(y₀) e₁` lifts the slow example of Theorem 12.2.15 (data
+`Optimization.exists_slowTaylorOrder_interpolant` with `q = 1`, for any `σ₀`), shifted so that
+`g ≥ 2`. The steps of that example are admissible ARqpC steps for `w = |c|`: since
+`|t| ≥ t`, the composite model `|T_{c,p}(x_k, s)| + σ₀ ‖s‖^{p+1}/(p+1)!` lies above the smooth
+model `T_{c,p}(x_k, s) + σ₀ ‖s‖^{p+1}/(p+1)!` and agrees with it at its global minimizer `s_k`,
+where `T_{c,p}(x_k, s_k) = c(x_{k+1}) > 0`; so `s_k` is a global minimizer of the composite model
+and an output of Algorithm 14.1.2 (`algorithm_14_1_2_of_isMinOn`). Since `c(x_k) ≥ 2 ≥ |c'(x_k)|`,
+the measure is `φ^1_{w,1}(x_k) = |c'(x_k)| = ε + ω_k`, as in the smooth case. -/
+theorem corollary_14_1_11 {p : ℕ} (hp : 1 ≤ p) (P : ARqpCParams) :
+    Chapter12.AssumptionD1pL (fun _ : EuclideanSpace ℝ (Fin 1) => (0 : ℝ)) p (fun _ => 1) ∧
+    AssumptionHLip (fun v : EuclideanSpace ℝ (Fin 1) => ‖v‖) 1 ∧
+    AssumptionHS0 (fun v : EuclideanSpace ℝ (Fin 1) => ‖v‖) ∧
+    ConvexOn ℝ univ (fun v : EuclideanSpace ℝ (Fin 1) => ‖v‖) ∧
+    ∃ L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
+      ∃ c : EuclideanSpace ℝ (Fin 1) → EuclideanSpace ℝ (Fin 1),
+        AssumptionCD1pL c p (fun _ => L) ∧ ‖c 0‖ ≤ L ∧ (∀ y, 2 ≤ c y 0) ∧
+        AssumptionWBb (fun _ => 0) c (fun v => ‖v‖) univ 0 ∧
+        ∃ (x s : ℕ → EuclideanSpace ℝ (Fin 1)) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ)
+          (d dm : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)),
+          algorithm_14_1_1 (fun _ => 0) c (fun v => ‖v‖) univ p 1 P (fun _ => ε) (fun _ => 1)
+            x s σ δ δs d dm ∧ x 0 = 0 ∧
+          Optimization.IsFirstHit
+            (arqpcStop (fun _ => 0) c (fun v => ‖v‖) p 1 P (fun _ => ε) x s σ δ d)
+            ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊ ∧
+          (∀ k < ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊, Optimization.arqpRatio (fun y => 0 + ‖c y‖)
+            (fun k => arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σ k)) x s k = 1) ∧
+          ε ^ (-((p + 1 : ℝ) / p)) + 1 ≤
+            (Optimization.funEvalCount ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊ : ℝ) ∧
+          ε ^ (-((p + 1 : ℝ) / p)) + 1 ≤ (Optimization.derivEvalCount (fun k => P.η₁ ≤
+            Optimization.arqpRatio (fun y => 0 + ‖c y‖)
+              (fun k => arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σ k)) x s k)
+            ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊ : ℝ) ∧
+          Optimization.compositeTaylorMeasure
+            (ftaylorSeries ℝ (fun _ => (0 : ℝ)) (x ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊))
+            (ftaylorSeries ℝ c (x ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊)) (fun v => ‖v‖) 1 1 univ ≤ ε ∧
+          ∀ k < ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊, ε < Optimization.compositeTaylorMeasure
+            (ftaylorSeries ℝ (fun _ => (0 : ℝ)) (x k)) (ftaylorSeries ℝ c (x k))
+            (fun v => ‖v‖) 1 1 univ := by
+  have hf0 : Chapter12.AssumptionD1pL (fun _ : EuclideanSpace ℝ (Fin 1) => (0 : ℝ)) p
+      (fun _ => 1) :=
+    ⟨contDiff_const, fun _ _ => le_rfl, fun j _ => (iteratedFDerivLipschitzOn_iff).2
+      fun a _ b _ => by simp⟩
+  refine ⟨hf0, assumptionHLip_norm, ⟨Optimization.isSubadditive_norm, norm_zero⟩,
+    convexOn_norm convex_univ, ?_⟩
+  have hσ₀ := P.σ₀_pos
+  obtain ⟨L₀, B, hL₀, hB, hG⟩ := Optimization.exists_slowTaylorOrder_interpolant (q := 1) le_rfl
+    hp (c := (p ! : ℝ) / P.σ₀) (by positivity)
+  set L : ℝ := max 1 (max L₀ (B + (B + 2))) with hLdef
+  refine ⟨L, le_max_left _ _, fun ε hε hε1 => ?_⟩
+  have hR : ((p - 1 + 1 : ℕ) : ℝ) = p := by rw [Nat.sub_add_cancel hp]
+  set kε : ℕ := ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊ with hkε
+  have hkε1 : 1 ≤ kε := Nat.one_le_iff_ne_zero.2 (by
+    rw [hkε]; exact (Nat.ceil_pos.2 (Real.rpow_pos_of_pos hε _)).ne')
+  have hkεpos : (0 : ℝ) < kε := by exact_mod_cast hkε1
+  set a : ℕ → ℝ := fun k => ε + ε * ((kε : ℝ) - k) / kε with ha
+  set st : ℕ → ℝ := fun k => Optimization.monomialMinimizer p 1 P.σ₀ (a k) with hst
+  set xr : ℕ → ℝ := fun k => ∑ i ∈ Finset.range k, st i with hxr
+  have hxs : ∀ k, xr (k + 1) = xr k + st k := fun k => by
+    simp only [hxr, Finset.sum_range_succ]
+  have hstc : ∀ k, st k = ((p ! : ℝ) / P.σ₀ * a k) ^ (1 / ((p - 1 + 1 : ℕ) : ℝ)) := fun k => by
+    simp only [hst, Optimization.monomialMinimizer, Nat.sub_self, Nat.factorial_zero,
+      Nat.cast_one, mul_one]
+    congr 1
+    field_simp
+  obtain ⟨G, hGc, hGL, hGB, hGd, hGf⟩ := hG ε kε xr hε hε1 (by rw [hkε, hR])
+    fun k _ => by rw [hxs k, hstc k]
+  clear_value kε
+  -- the sequence `a_k = ε + ω_k`
+  have ha_ge : ∀ k ≤ kε, ε ≤ a k := fun k hk => by
+    simp only [ha]
+    have : (0 : ℝ) ≤ ε * ((kε : ℝ) - k) / kε := by
+      have : (k : ℝ) ≤ kε := by exact_mod_cast hk
+      have : 0 ≤ (kε : ℝ) - k := by linarith
+      positivity
+    linarith
+  have ha_gt : ∀ k < kε, ε < a k := fun k hk => by
+    simp only [ha]
+    have : (0 : ℝ) < ε * ((kε : ℝ) - k) / kε := by
+      have : (k : ℝ) < kε := by exact_mod_cast hk
+      have : 0 < (kε : ℝ) - k := by linarith
+      positivity
+    linarith
+  have ha_le : ∀ k, a k ≤ 2 := fun k => by
+    simp only [ha]
+    have : ε * ((kε : ℝ) - k) / kε ≤ ε := by
+      rw [div_le_iff₀ hkεpos]
+      have : (0 : ℝ) ≤ k := k.cast_nonneg
+      nlinarith
+    linarith
+  have ha_eq : a kε = ε := by simp only [ha]; rw [sub_self, mul_zero, zero_div, add_zero]
+  -- the shifted interpolant `g = (B + 2) + G ≥ 2`
+  set g : ℝ → ℝ := fun t => (B + 2) + G t with hgdef
+  have hg : ContDiff ℝ p g := contDiff_const.add hGc
+  have hgder : ∀ j, 1 ≤ j → ∀ t, iteratedDeriv j g t = iteratedDeriv j G t := fun j hj t =>
+    iteratedDeriv_const_add (by omega) _
+  have hg2 : ∀ t, 2 ≤ g t := fun t => by
+    have := hGB 0 (Nat.zero_le p) t
+    rw [iteratedDeriv_zero] at this
+    simp only [hgdef]
+    linarith [(abs_le.1 this).1]
+  have hgD : Chapter12.AssumptionD1pL g p (fun _ => L) := by
+    refine Chapter12.assumptionD1pL_real hg (fun s t => ?_) (fun j hj t => ?_)
+    · rw [hgder p hp, hgder p hp]; exact hGL s t
+    · rcases Nat.eq_zero_or_pos j with rfl | hj0
+      · rw [iteratedDeriv_zero]
+        have := hGB 0 (Nat.zero_le p) t
+        rw [iteratedDeriv_zero] at this
+        simp only [hgdef]
+        calc |B + 2 + G t| ≤ |B + 2| + |G t| := abs_add_le _ _
+          _ ≤ B + (B + 2) := by rw [abs_of_nonneg (by linarith)]; linarith
+      · rw [hgder j hj0 t]
+        linarith [hGB j hj t]
+  have hspike : ∀ k ≤ kε, Optimization.IsSpikeJetOf p g 1 (xr k) (a k) := fun k hk =>
+    ⟨by rw [hgder 1 le_rfl, (hGd k hk).1], fun j hj1 hjp hj => by
+      rw [hgder j hj1, (hGd k hk).2 j hj1 hjp hj]⟩
+  have hgval : ∀ k < kε, g (xr (k + 1)) = g (xr k) - a k * st k := fun k hk => by
+    simp only [hgdef]
+    rw [hGf k hk, hxs k]
+    simp
+    ring
+  -- the problem
+  set c : EuclideanSpace ℝ (Fin 1) → EuclideanSpace ℝ (Fin 1) := liftC g with hcdef
+  have hcD : AssumptionCD1pL c p (fun _ => L) := by
+    refine ⟨(Optimization.contDiff_ridge hg).smul contDiff_const, fun _ _ =>
+      zero_le_one.trans (le_max_left _ _), fun i j hj => ?_⟩
+    have hci : (fun y => c y i) = Optimization.ridge g e₁ := funext fun y => smul_e₁_apply _ i
+    rw [hci]
+    exact Optimization.iteratedFDerivLipschitzOn_ridge hg
+      (by exact_mod_cast (Finset.mem_Icc.1 hj).2) norm_e₁.le
+      (zero_le_one.trans (le_max_left _ _))
+      (lipschitz_of_iteratedFDerivLipschitzOn (hgD.lipschitz j hj))
+  have hc0 : ∀ y, c y 0 = g ⟪e₁, y⟫ := fun y => smul_e₁_apply _ 0
+  have hnc : ∀ y, ‖c y‖ = g ⟪e₁, y⟫ := fun y => by
+    rw [hcdef, liftC, norm_smul_e₁, Optimization.ridge_apply,
+      abs_of_nonneg (by linarith [hg2 ⟪e₁, y⟫])]
+  -- the iterates
+  set x : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => xr k • e₁ with hxdef
+  set sv : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => st k • e₁ with hsvdef
+  set σs : ℕ → ℝ := fun _ => P.σ₀ with hσs
+  have hxe : ∀ k, ⟪e₁, x k⟫ = xr k := fun k => inner_smul_e₁ _
+  have hxsv : ∀ k, x (k + 1) = x k + sv k := fun k => by
+    simp only [hxdef, hsvdef, hxs k, add_smul]
+  have hspk : ∀ k ≤ kε, Optimization.IsSpikeJetOf p g 1 ⟪e₁, x k⟫ (a k) := fun k hk => by
+    rw [hxe]; exact hspike k hk
+  have hapos : ∀ k ≤ kε, 0 < a k := fun k hk => hε.trans_le (ha_ge k hk)
+  have hstpos : ∀ k ≤ kε, 0 < st k := fun k hk =>
+    Optimization.monomialMinimizer_pos hσ₀ (hapos k hk)
+  have hnext : ∀ k < kε, 0 ≤ g ⟪e₁, x k⟫ - a k * Optimization.monomialMinimizer p 1 P.σ₀ (a k) :=
+    fun k hk => by
+      rw [hxe, show Optimization.monomialMinimizer p 1 P.σ₀ (a k) = st k from rfl, ← hgval k hk]
+      linarith [hg2 (xr (k + 1))]
+  have hmin : ∀ k < kε, _ := fun k hk => isMinOn_liftC hg hp (hspk k hk.le) hσ₀
+    (hapos k hk.le) (hnext k hk)
+  -- the measures
+  have hmeas : ∀ k ≤ kε, Optimization.compositeTaylorMeasure
+      (ftaylorSeries ℝ (fun _ => (0 : ℝ)) (x k)) (ftaylorSeries ℝ c (x k))
+      (fun v => ‖v‖) 1 1 univ = a k := fun k hk =>
+    compositeTaylorMeasure_liftC hg hp (hspk k hk) (hg2 _) (hapos k hk).le (ha_le k)
+  have hU : ∀ y : EuclideanSpace ℝ (Fin 1), {e : EuclideanSpace ℝ (Fin 1) | y + e ∈ univ} = univ :=
+    fun y => by ext; simp
+  -- Step-1 witnesses
+  have hw : ∀ k j, ∃ e : EuclideanSpace ℝ (Fin 1),
+      Optimization.IsApproxMeasureStep
+        ((arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k)).dec j) 1 univ P.ς e ∧
+      (arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k)).dec j e =
+        P.ς * Optimization.decrementMeasure
+          ((arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k)).dec j) 1 univ := fun k j =>
+    Optimization.exists_isApproxMeasureStep_eq isClosed_univ (mem_univ 0) (starConvex_univ 0)
+      zero_le_one (Optimization.continuous_compositeTaylorDecrement _ _ _ j
+        assumptionHLip_norm.continuous).continuousOn
+      (Optimization.compositeTaylorDecrement_zero_right _ _ _ j) ⟨P.ς_pos.le, P.ς_le_one⟩
+  choose d hd hdeq using hw
+  set δ : ℕ → ℕ → ℝ := fun _ _ => 1 with hδ
+  have hstop₁ : ∀ k ≤ kε, (Optimization.arqpStop₁ P.toARqpParams 1 (fun _ => ε)
+      (fun k => arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k)) δ d k ↔ k = kε) := by
+    intro k hk
+    have hd1 : (arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k)).dec 1 (d k 1) =
+        P.ς * a k := by
+      rw [hdeq, ← hmeas k hk]; rfl
+    simp only [Optimization.arqpStop₁, Optimization.measureTestPasses_iff, Finset.Icc_self,
+      Finset.mem_singleton, forall_eq, hd1, hδ, one_pow, mul_one, Nat.factorial_one,
+      Nat.cast_one, div_one]
+    constructor
+    · intro h
+      by_contra hne
+      have := ha_gt k (lt_of_le_of_ne hk hne)
+      nlinarith [P.ς_pos]
+    · rintro rfl
+      rw [ha_eq]
+  -- Step 2: global model minimizers, outputs of Algorithm 14.1.2
+  have halg : ∀ k < kε, algorithm_14_1_2 (fun _ => 0) c (fun v => ‖v‖) univ p 1 P (fun _ => ε)
+      (σs k) (x k) (sv k) (fun _ => 1) := fun k hk =>
+    algorithm_14_1_2_of_isMinOn hp assumptionHLip_norm (convexOn_norm convex_univ) convex_univ P
+      (ε := fun _ => ε) hε.le (mem_univ _) (by rw [hU]; exact (hmin k hk).1)
+  have hdm : ∀ k, ∃ e : ℕ → EuclideanSpace ℝ (Fin 1), k < kε →
+      Optimization.ARqpStep univ P.toARqpParams 1 (fun _ => ε)
+        (arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k)) (x k) (sv k) (fun _ => 1) e := by
+    intro k
+    by_cases hk : k < kε
+    · obtain ⟨e, he⟩ := (halg k hk).exists_arqpStep assumptionHLip_norm isClosed_univ hσ₀
+        (mem_univ _)
+      exact ⟨e, fun _ => he⟩
+    · exact ⟨0, fun h => absurd h hk⟩
+  choose dm hdm using hdm
+  -- the ratio
+  have hratio : ∀ k < kε, Optimization.arqpRatio (fun y => 0 + ‖c y‖)
+      (fun k => arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k)) x sv k = 1 := by
+    intro k hk
+    have hpred : Optimization.compositeTaylorDecrement (ftaylorSeries ℝ (fun _ => (0 : ℝ)) (x k))
+        (ftaylorSeries ℝ c (x k)) (fun v => ‖v‖) p (sv k) = a k * st k := by
+      rw [compositeTaylorDecrement_liftC hg hp le_rfl (hspk k hk.le), hxe,
+        show ⟪e₁, sv k⟫ = st k from inner_smul_e₁ _,
+        ← hgval k hk, abs_of_nonneg (by linarith [hg2 (xr k)]),
+        abs_of_nonneg (by linarith [hg2 (xr (k + 1))])]
+      rw [hgval k hk]
+      ring
+    have hpos : 0 < a k * st k := mul_pos (hapos k hk.le) (hstpos k hk.le)
+    change Optimization.reductionRatio _ (x k) (sv k)
+      (Optimization.compositeTaylorDecrement _ _ _ p (sv k)) = 1
+    rw [Optimization.reductionRatio_def, hpred, ← hxsv, hnc, hnc, hxe, hxe, hgval k hk,
+      div_eq_one_iff_eq hpos.ne']
+    ring
+  have hη1 : P.η₁ ≤ 1 := P.η₁_le_η₂.trans P.η₂_lt_one.le
+  -- termination
+  have hstop₂ : ∀ k < kε, ¬ Optimization.arqpStop₂
+      (fun k => arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k)) sv k :=
+    fun k hk h2 => (hmin k hk).2.ne h2
+  have hfirst : Optimization.IsFirstHit
+      (arqpcStop (fun _ => 0) c (fun v => ‖v‖) p 1 P (fun _ => ε) x sv σs δ d) kε :=
+    ⟨Or.inl ((hstop₁ kε le_rfl).2 rfl), fun i hi h' => h'.elim
+      (fun h1 => hi.ne ((hstop₁ i hi.le).1 h1)) (hstop₂ i hi)⟩
+  have hbefore : ∀ k, (∀ i ≤ k, ¬ arqpcStop (fun _ => 0) c (fun v => ‖v‖) p 1 P (fun _ => ε)
+      x sv σs δ d i) → k < kε := fun k hk => by
+    by_contra hge
+    exact hk kε (not_lt.1 hge) hfirst.1
+  have hbefore' : ∀ k, (∀ i < k, ¬ arqpcStop (fun _ => 0) c (fun v => ‖v‖) p 1 P (fun _ => ε)
+      x sv σs δ d i) → ¬ Optimization.arqpStop₁ P.toARqpParams 1 (fun _ => ε)
+        (fun k => arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k)) δ d k → k < kε :=
+    fun k hk h1 => by
+      have hle : k ≤ kε := by
+        by_contra hge
+        exact hk kε (not_le.1 hge) hfirst.1
+      exact lt_of_le_of_ne hle fun heq => h1 ((hstop₁ k hle).2 heq)
+  have hkge : ε ^ (-((p + 1 : ℝ) / p)) ≤ kε := hkε ▸ Nat.le_ceil _
+  have hderiv : Optimization.derivEvalCount (fun k => P.η₁ ≤ Optimization.arqpRatio
+      (fun y => 0 + ‖c y‖) (fun k => arqpcData (fun _ => 0) c (fun v => ‖v‖) p (x k) (σs k))
+        x sv k) kε = kε + 1 := by
+    classical
+    rw [Optimization.derivEvalCount, Finset.filter_true_of_mem fun k hk => by
+      rw [hratio k (Finset.mem_range.1 hk)]; exact hη1, Finset.card_range]
+  have hc0L : ‖c 0‖ ≤ L := by
+    rw [hnc, inner_zero_right]
+    have := hGB 0 (Nat.zero_le p) 0
+    rw [iteratedDeriv_zero] at this
+    simp only [hgdef]
+    linarith [(abs_le.1 this).2, le_max_right L₀ (B + (B + 2)),
+      le_max_right 1 (max L₀ (B + (B + 2)))]
+  refine ⟨c, hcD, hc0L, fun y => by rw [hc0]; exact hg2 _, fun y _ => by positivity, x, sv, σs, δ,
+    fun _ _ => 1, d, dm, ⟨le_rfl, hp, fun _ _ => ⟨hε, hε1⟩, fun _ _ => ⟨one_pos, le_rfl⟩,
+    ⟨⟨rfl, fun k hk h1 => hdm k (hbefore' k hk h1), fun k hk => ?_⟩, mem_univ _, rfl,
+      fun k _ j _ => by rw [hU]; exact hd k j, fun k hk => ⟨fun _ => rfl, fun hρ =>
+        (hρ (le_of_le_of_eq hη1 (hratio k (hbefore k hk)).symm)).elim⟩⟩,
+    fun k hk h1 => halg k (hbefore' k hk h1)⟩, by simp [hxdef, hxr], hfirst, hratio,
+    by rw [Optimization.funEvalCount_eq]; push_cast; linarith,
+    by rw [hderiv]; push_cast; linarith, ?_, fun k hk => ?_⟩
+  · beta_reduce
+    rw [hxsv]
+    exact Optimization.arAcceptance_of_one_le P.toARParams (hratio k (hbefore k hk)).ge (x k)
+      (sv k) P.σmin_le_σ₀ hσ₀.le
+  · rw [hmeas kε le_rfl, ha_eq]
+  · rw [hmeas k hk.le]
+    exact ha_gt k hk
+
+end Corollary
 
 end CartisGouldToint.Chapter14

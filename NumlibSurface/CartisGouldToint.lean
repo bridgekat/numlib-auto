@@ -163,8 +163,6 @@ and on the declarations.
 
 ## Not formalized
 
-* Corollary 14.1.11 (sharpness of ARqpC): the book's proof does not check that the slow ARqp
-  steps are admissible ARqpC steps for `|c|`.
 * An explicit counterexample declaration for (14.3.43) of Lemma 14.3.5 (the counterexample is
   described in `Chapter14.Section03`).
 * The inexact (IDA/EDA) rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4, the TR rows of
