@@ -1,0 +1,9 @@
+namespace = "Constrained.TwoPhase.CompletedRun"
+[[node]]
+id = "inner_certificate"
+[[node]]
+id = "target_of_stop"
+[[node]]
+id = "zero_gap_constraint_gt"
+[[node]]
+id = "return_certificate"
