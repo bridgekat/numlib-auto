@@ -1,0 +1,34 @@
+namespace = "ConstrainedRegularization"
+
+[[node]]
+id = "radiusCoefficient"
+
+[[node]]
+id = "radiusCoefficient_mem"
+
+[[node]]
+id = "rootStepCoefficient"
+
+[[node]]
+id = "rootStepCoefficient_pos"
+
+[[node]]
+id = "Run.exists_root_step_lower"
+
+[[node]]
+id = "accuracyFactor"
+
+[[node]]
+id = "accuracyFactor_pos"
+
+[[node]]
+id = "accuracyFactor_le"
+
+[[node]]
+id = "commonDecreaseCoefficient"
+
+[[node]]
+id = "commonDecreaseCoefficient_pos"
+
+[[node]]
+id = "Run.function_decrease_uniform"
