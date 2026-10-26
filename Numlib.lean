@@ -660,10 +660,13 @@ import Numlib.ODE.Multistep
 import Numlib.ODE.OneStep
 import Numlib.ODE.RungeKutta
 import Numlib.Optimization.Complexity.Basic
+import Numlib.Optimization.Complexity.CarmonChain
 import Numlib.Optimization.Complexity.Existence
 import Numlib.Optimization.Complexity.OracleMethod
 import Numlib.Optimization.Complexity.ParameterCount
+import Numlib.Optimization.Complexity.ResistingOracle
 import Numlib.Optimization.Complexity.Telescoping
+import Numlib.Optimization.Complexity.ZeroChain
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
 import Numlib.Optimization.Descent

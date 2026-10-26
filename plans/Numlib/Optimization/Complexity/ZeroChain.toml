@@ -1,144 +1,69 @@
 namespace = "Optimization"
-desc = '''
-Oracle complexity of classes of `p`-th order methods on classes of functions of *variable*
-dimension, and zero-respecting methods on zero-chain functions (Cartis–Gould–Toint §4.2, after
-Carmon, Duchi, Hinder, Sidford, "Lower bounds for finding stationary points I", 2020; Nesterov's
-"worst function in the world" technique). Spaces are `EuclideanSpace ℝ (Fin n)` because zero
-chains and zero-respecting methods are coordinate notions; `e_j = EuclideanSpace.single j 1`.
-
-Design (prototype elaborated in `drafts/cgt/plan-ch04/Proto.lean`):
-* `JetMethod p := (n : ℕ) → OracleMethod (EuclideanSpace ℝ (Fin n)) (Jet n p)` with
-  `Jet n p := (j : Fin (p+1)) → (EuclideanSpace ℝ (Fin n)) [×j]→L[ℝ] ℝ` — one deterministic method
-  for every dimension (the book's `M^{(k)}`), queried through `jetOracle f p`; the class `𝓜(p)` is
-  the set of those starting at `0` in every dimension.
-* Functions of variable dimension: `Σ n, (EuclideanSpace ℝ (Fin n) → ℝ)`.
-* `firstStationaryIndex : ℕ∞` (`⊤` if never), class complexity `⨅ M ∈ 𝓜, ⨆ F ∈ 𝓕, …` in `ℕ∞`
-  (the book's (4.2.2)).
-The "zero-respecting" property is defined relative to a function (`IsZeroRespectingFor M f`), and
-the class `𝓜_ZR(p)` asks it for every function; Lemma 4.2.3 only needs it for the one function.
-'''
 
 [[node]]
 id = "JetMethod"
-kind = "def"
-desc = '''
-`abbrev JetMethod (p : ℕ) := (n : ℕ) → OracleMethod (EuclideanSpace ℝ (Fin n))
-((j : Fin (p + 1)) → ContinuousMultilinearMap ℝ (fun _ : Fin j => EuclideanSpace ℝ (Fin n)) ℝ)`;
-`M.iter n f k := (M n).iterate (jetOracle f p) k` (the iterates when applied to
-`f : EuclideanSpace ℝ (Fin n) → ℝ`); `methodClass p : Set (JetMethod p) := {M | ∀ n, (M n).x₀ = 0}`
-(the book's `𝓜(p)` with `x₀ = 0`).
-'''
-deps = ["OracleMethod", "jetOracle"]
 source = "Cartis–Gould–Toint, Section 4.2.1.2 (class 𝓜(p))"
 
 [[node]]
 id = "firstStationaryIndex"
-kind = "def"
-desc = '''
-`firstStationaryIndex (x : ℕ → E) (f : E → ℝ) (ε : ℝ) : ℕ∞ := ⨅ (k : ℕ) (_ : ‖fderiv ℝ f (x k)‖ ≤ ε), (k : ℕ∞)`
-(the book's `k_ε(M, f)` for the iterates `x = M.iter n f`; `⊤` if no iterate is `ε`-stationary).
-API (part of node): `firstStationaryIndex x f ε = k ↔ IsFirstHit (fun j => ‖fderiv ℝ f (x j)‖ ≤ ε) k`;
-`n ≤ firstStationaryIndex x f ε ↔ ∀ k < n, ε < ‖fderiv ℝ f (x k)‖`; congruence in the first `n` iterates.
-'''
-deps = ["IsFirstHit"]
 source = "Cartis–Gould–Toint, Section 4.2.1.3"
 
 [[node]]
 id = "classComplexity"
-kind = "def"
-desc = '''
-`classComplexity (𝓜 : Set (JetMethod p)) (𝓕 : Set (Σ n, EuclideanSpace ℝ (Fin n) → ℝ)) (ε : ℝ) : ℕ∞ :=
-⨅ M ∈ 𝓜, ⨆ F ∈ 𝓕, firstStationaryIndex (M.iter F.1 F.2) F.2 ε` (the book's (4.2.2)).
-API (part of node): antitone in `𝓜`, monotone in `𝓕`; `k ≤ classComplexity 𝓜 𝓕 ε ↔ ∀ M ∈ 𝓜,
-∀ k' < k, ∃ F ∈ 𝓕, k' < firstStationaryIndex …` (no attainment needed); in particular
-`(∀ M ∈ 𝓜, ∃ F ∈ 𝓕, k ≤ firstStationaryIndex …) → k ≤ classComplexity 𝓜 𝓕 ε`.
-'''
-deps = ["JetMethod", "firstStationaryIndex"]
 source = "Cartis–Gould–Toint, (4.2.2)"
 
 [[node]]
 id = "smoothClass"
-kind = "def"
-desc = '''
-The function class `𝓕(Δ, p)` (with its Lipschitz constant `L` made explicit):
-`smoothClass (Δ L : ℝ) (p : ℕ) : Set (Σ n, EuclideanSpace ℝ (Fin n) → ℝ) := {F | ContDiff ℝ ∞ F.2 ∧
-IteratedFDerivLipschitzOn F.2 p L univ ∧ BddBelow (range F.2) ∧ F.2 0 - ⨅ x, F.2 x ≤ Δ}`
-(`ContDiff ℝ ∞`: the book's footnote 29; f.DpL with constant `L`; f.Bb with `f_low = inf f`).
-'''
-deps = ["IteratedFDerivHolderOn"]
 source = "Cartis–Gould–Toint, Section 4.2.1.1"
 
 [[node]]
 id = "comp_adjoint_mem_smoothClass"
-kind = "theorem"
-desc = '''
-Orthogonal invariance (footnote 30). If `⟨n, f⟩ ∈ smoothClass Δ L p` and
-`U : EuclideanSpace ℝ (Fin n) →ₗᵢ[ℝ] EuclideanSpace ℝ (Fin m)` (the book's `U ∈ O(m, n)`, `m ≥ n`),
-then `⟨m, f ∘ U.adjoint⟩ ∈ smoothClass Δ L p` (writing `U.adjoint` for `(U : _ →L[ℝ] _).adjoint`,
-the book's `Uᵀ`). Also: `iteratedFDeriv ℝ q (f ∘ Uᵀ) z = (iteratedFDeriv ℝ q f (Uᵀ z)).compContinuousLinearMap
-(fun _ => Uᵀ)`, `‖fderiv ℝ (f ∘ Uᵀ) z‖ = ‖fderiv ℝ f (Uᵀ z)‖`, and `Uᵀ ∘ U = id` (part of node).
-'''
-deps = ["smoothClass"]
 source = "Cartis–Gould–Toint, Section 4.2.1.1, footnote 30"
 
 [[node]]
 id = "IsZeroRespectingFor"
-kind = "def"
-desc = '''
-`IsZeroRespectingFor (M : OracleMethod (EuclideanSpace ℝ (Fin n)) (Jet n p)) (f) : Prop :=
-M.x₀ = 0 ∧ ∀ k (j : Fin n), (∀ q : ℕ, q < p → ∀ i ≤ k,
-(iteratedFDeriv ℝ (q + 1) f (M.iterate (jetOracle f p) i)).curryLeft (EuclideanSpace.single j 1) = 0) →
-M.iterate (jetOracle f p) (k + 1) j = 0` ((4.2.1): coordinates on which all derivatives of orders
-`1..p` at all past iterates vanish stay zero). `zeroRespectingClass p : Set (JetMethod p) :=
-{M | ∀ n f, IsZeroRespectingFor (M n) f}` (the book's `𝓜_ZR(p)`; `⊆ methodClass p`).
-'''
-deps = ["JetMethod"]
 source = "Cartis–Gould–Toint, (4.2.1)"
 
 [[node]]
 id = "IsZeroChain"
-kind = "def"
-desc = '''
-`IsZeroChain (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) : Prop := ∀ x (j : ℕ),
-(∀ i : Fin n, j ≤ i → x i = 0) → ∀ q < p, ∀ i : Fin n, j < i →
-(iteratedFDeriv ℝ (q + 1) f x).curryLeft (EuclideanSpace.single i 1) = 0` ((4.2.4) with 0-based
-coordinates: if coordinates `j, j+1, …` of `x` vanish then all derivatives of orders `1..p`
-vanish in the directions `e_i`, `i > j`). Prototyped in `drafts/cgt/plan-ch04/Proto.lean`.
-'''
 source = "Cartis–Gould–Toint, (4.2.4)"
 
 [[node]]
 id = "IsZeroChain.comp_smul"
-kind = "theorem"
-desc = '''
-Scale invariance (Lemma 4.2.1): if `IsZeroChain f p`, `μ₁ : ℝ`, `μ₂ ≠ 0`, then
-`IsZeroChain (fun x => μ₁ * f (μ₂⁻¹ • x)) p` (chain rule: `D^q` scales by `μ₁ μ₂^{-q}`, and the
-support condition is invariant under scaling).
-'''
-deps = ["IsZeroChain"]
 source = "Cartis–Gould–Toint, Lemma 4.2.1"
 
 [[node]]
 id = "IsZeroRespectingFor.iterate_apply_eq_zero"
-kind = "theorem"
-desc = '''
-Lemma 4.2.2. If `IsZeroRespectingFor M f` and `IsZeroChain f p` (`p ≥ 1`) then for all `k` and all
-coordinates `j : Fin n` with `k ≤ j` (0-based; the book's `j ∈ [k+1 : n]`):
-`M.iterate (jetOracle f p) k j = 0`. (Induction on `k`; the book restricts to `k ≤ n - 1`, which
-is automatic here since otherwise there is no such `j`.)
-'''
-deps = ["IsZeroRespectingFor", "IsZeroChain"]
 source = "Cartis–Gould–Toint, Lemma 4.2.2"
 
 [[node]]
 id = "le_firstStationaryIndex_of_isZeroChain"
-kind = "theorem"
-desc = '''
-Lemma 4.2.3 (core). If `IsZeroChain f p`, `p ≥ 1`, `‖fderiv ℝ f x‖ > ε` for every `x` whose last
-coordinate vanishes (`n ≥ 1`, `x ⟨n-1, _⟩ = 0`), and `IsZeroRespectingFor M f`, then
-`(n : ℕ∞) ≤ firstStationaryIndex (M.iterate (jetOracle f p)) f ε`. Consequently
-`n ≤ classComplexity (zeroRespectingClass p) {⟨n, f⟩} ε` and, if `⟨n,f⟩ ∈ 𝓕`,
-`n ≤ classComplexity (zeroRespectingClass p) 𝓕 ε`.
-'''
-deps = ["IsZeroRespectingFor.iterate_apply_eq_zero", "firstStationaryIndex", "classComplexity"]
 source = "Cartis–Gould–Toint, Lemma 4.2.3"
+
+[[node]]
+id = "IsNullDirection"
+source = "Cartis–Gould–Toint, (4.2.1), (4.2.4) (∇^q f(x) e_j = 0)"
+
+[[node]]
+id = "isNullDirection_iff_curryLeft_eq_zero"
+source = "Cartis–Gould–Toint, (4.2.1), (4.2.4)"
+
+[[node]]
+id = "isometryAdjoint"
+source = "Cartis–Gould–Toint, Section 4.2.1.1 (Uᵀ for U ∈ O(n̄, n))"
+
+[[node]]
+id = "min_firstStationaryIndex_le"
+source = "Cartis–Gould–Toint, proof of Theorem 4.2.4"
+
+[[node]]
+id = "le_classComplexity_of_isZeroChain"
+source = "Cartis–Gould–Toint, Lemma 4.2.3"
+
+[[node]]
+id = "zeroRespectingClass_nonempty"
+source = "Cartis–Gould–Toint, Section 4.2.1.2"
+
+[[node]]
+id = "methodClass_nonempty"
+source = "Cartis–Gould–Toint, Section 4.2.1.2"

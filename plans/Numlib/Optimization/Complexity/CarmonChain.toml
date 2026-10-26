@@ -1,103 +1,31 @@
 namespace = "Optimization"
-desc = '''
-The hard zero-chain function of Carmon–Duchi–Hinder–Sidford ("Lower bounds for finding stationary
-points I", §3.2, Lemmas 1–3, App. B), Cartis–Gould–Toint (4.2.6) and Lemma 4.2.5, and the resulting
-lower bound for `p`-th order methods (Theorem 4.2.6). On `ℝ^T` (`T ≥ 1`, coordinates `0..T-1`):
-`chain T x = -Ψ(1) Φ(x_0) + Σ_{i=1}^{T-1} [Ψ(-x_{i-1}) Φ(-x_i) - Ψ(x_{i-1}) Φ(x_i)]` with
-`Ψ y = 0` for `y ≤ 1/2`, `exp(1 - (2y-1)^{-2})` otherwise, and
-`Φ y = √e ∫_{-∞}^y exp(-t²/2) dt` (`= √e (√(π/2) + ∫_0^y exp(-t²/2))`).
-
-**Source error.** The book's (4.2.6) has first term `-Ψ([x]_1) Φ([x]_1)`; Carmon et al. have
-`-Ψ(1) Φ([x]_1)` (`Ψ(1) = 1`). With the printed term `∇f^D(0) = 0`, contradicting Lemma 4.2.5 (ii)
-at `x = 0`; the planned function uses `-Ψ(1) Φ(x_0)`.
-
-Smoothness of `Ψ`: `Ψ y = e · expNegInvGlue ((2y-1)²)` for `y > 1/2` — prove `ContDiff ℝ ∞` as for
-`Real.expNegInvGlue` (all derivatives at `1/2` vanish), or via `Real.smoothTransition`-style
-lemmas. `Φ' y = √e exp(-y²/2)`, so `Φ` is smooth (fundamental theorem of calculus).
-Dimension-free derivative bounds: each summand depends on two consecutive coordinates, so for
-unit vectors `v_1..v_{q}`: `|D^q chain(x)[v_1..v_q]| ≤ C_q Σ_i Π_m (|v_{m,i-1}| + |v_{m,i}|)` and
-the generalized Hölder inequality (`q ≥ 2`) bounds the sum by `2^q C_q` independently of `T` (no
-symmetric-tensor norm theorem needed). Expected effort: 800–1500 lines (the explicit growth
-`exp(5/2 p log p + c p)` of the derivative bounds of `Ψ`, `Φ` is the hardest part).
-'''
 
 [[node]]
 id = "CarmonChain.psi"
-kind = "def"
-desc = '''
-`psi (y : ℝ) : ℝ := if y ≤ 1/2 then 0 else Real.exp (1 - ((2 * y - 1) ^ 2)⁻¹)`; `phi (y : ℝ) : ℝ :=
-Real.sqrt (Real.exp 1) * ∫ t in Set.Iic y, Real.exp (-t ^ 2 / 2)`. API (part of node, [77, Lemma 1]):
-both `ContDiff ℝ ∞`; `0 ≤ psi < e`, `psi` monotone, `psi 1 = 1`, `iteratedDeriv k psi y = 0` for
-`y ≤ 1/2`; `0 < phi < √(2π e)`, `deriv phi y = √e exp(-y²/2) > 1` for `|y| < 1`; `psi y * deriv phi z > 1`
-for `y ≥ 1`, `|z| < 1`; `deriv psi ≥ 0`.
-'''
 source = "Cartis–Gould–Toint, (4.2.6) (definitions of Ψ and Φ)"
 
 [[node]]
 id = "CarmonChain.chain"
-kind = "def"
-desc = '''
-`chain (T : ℕ) (x : EuclideanSpace ℝ (Fin T)) : ℝ` as in the module description (the book's `f^D`
-with `k̄ = T`, first term corrected to `-Ψ(1) Φ(x_0)`); for `T = 0`, `chain 0 = 0`.
-`ContDiff ℝ ∞ (chain T)` (part of node).
-'''
-deps = ["CarmonChain.psi"]
 source = "Cartis–Gould–Toint, (4.2.6)"
 
 [[node]]
 id = "CarmonChain.isZeroChain_chain"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (i), [77, Lemma 1, Obs. 3]: `IsZeroChain (chain T) p` for every `p`. (If
-`|x_{i-1}| < 1/2` and `|x_i| < 1/2` then `chain T` is locally independent of `x_i`, …; with
-`x_j = x_{j+1} = … = 0` all derivatives in directions `e_i`, `i > j`, vanish.)
-'''
-deps = ["CarmonChain.chain", "IsZeroChain"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (i)"
 
 [[node]]
 id = "CarmonChain.exists_abs_partial_chain_gt_one"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (ii), [77, Lemma 2]: if `|x_i| < 1` for some `i : Fin T`, then there is `j ≤ i` with
-`|x_j| < 1` and `1 < |fderiv ℝ (chain T) x (EuclideanSpace.single j 1)|`; in particular
-`1 < ‖fderiv ℝ (chain T) x‖`. (Take the least such `j`; all four terms of `∂_j` have the same sign
-and one of them exceeds `1` in modulus.)
-'''
-deps = ["CarmonChain.chain"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (ii)"
 
 [[node]]
 id = "CarmonChain.chain_zero_sub_iInf_le"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (iii), [77, Lemma 3 (i)]: `chain T` is bounded below and
-`chain T 0 - ⨅ x, chain T x ≤ 12 * T` (from `0 ≤ Ψ ≤ e`, `0 ≤ Φ ≤ √(2πe)`, `e √(2πe) < 12`).
-'''
-deps = ["CarmonChain.chain"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (iii)"
 
 [[node]]
 id = "CarmonChain.lipschitzConst"
-kind = "def"
-desc = '''
-`lipschitzConst (p : ℕ) : ℝ` — an explicit dimension-free bound for `‖D^{p+1} chain T‖`, e.g.
-`2^{p+1} * Σ_{a+b=p+1} C(p+1,a) sup|Ψ^{(a)}| sup|Φ^{(b)}|` (sups finite by `psi`'s API), with
-`0 < lipschitzConst p`.
-'''
-deps = ["CarmonChain.psi"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv)"
 
 [[node]]
 id = "CarmonChain.lipschitzOn_iteratedFDeriv_chain"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (iv), qualitative-uniform part ([77, Lemma 3 (ii)]): for all `T` and `p ≥ 1`,
-`‖iteratedFDeriv ℝ (p + 1) (chain T) x‖ ≤ lipschitzConst p` for all `x`, hence
-`IteratedFDerivLipschitzOn (chain T) p (lipschitzConst p) univ` (Theorem A.8.5 converse,
-`iteratedFDerivLipschitzOn_of_norm_le`). The constant does not depend on `T`.
-'''
-deps = ["CarmonChain.chain", "CarmonChain.lipschitzConst", "iteratedFDerivLipschitzOn_of_norm_le", "IteratedFDerivHolderOn"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv)"
 
 [[node]]
@@ -105,30 +33,31 @@ id = "CarmonChain.lipschitzConst_le_exp"
 kind = "theorem"
 desc = '''
 Lemma 4.2.5 (iv), quantitative part ([77, Lemma 3 (iii)]): there is `c₁ > 0` with
-`lipschitzConst p ≤ exp (5/2 * p * Real.log p + c₁ * p)` for all `p ≥ 1`. Needs explicit bounds
-`sup |Ψ^{(k)}| ≤ exp(5k/2 log k + c k)` (derivatives of `exp(-1/t²)`: `Ψ^{(k)} = P_k(1/(2y-1)) Ψ`
-with a recursion for the polynomials `P_k`) and `sup|Φ^{(k)}| ≤ √e · sup |He_{k-1}(y) e^{-y²/2}|`
-(Hermite functions, `≤ C √((k-1)!)`); the constants must combine to the exponent `5/2 p log p`.
-**Risk: medium-high (explicit special-function estimates)**; nothing else in the book depends on
-the explicit form (Theorem 4.2.6 only needs `lipschitzConst p` to depend on `p` alone).
+`lipschitzConst p ≤ exp (5/2 * p * Real.log p + c₁ * p)` for all `p ≥ 1`. Here
+`lipschitzConst p = 1 + phiBound (p+1) + 2 * pairBound (p+1)` with
+`pairBound q = 2 ∑_{i ≤ q} C(q,i) psiBound i * phiBound (q-i)` and `psiBound`, `phiBound` the
+suprema of `|Ψ^{(k)}|`, `|Φ^{(k)}|`. Available: `iteratedDeriv_psi` (`Ψ^{(k)}(y) =
+e 2^k P_k(1/(2y-1)) flat(2y-1)`, `P_k = flatPoly k`, `P_{k+1} = 2X³P_k - X²P_k'`) and
+`iteratedDeriv_succ_phi` (`Φ^{(k+1)} = e^{1/2} H_k(y) e^{-y²/2}`, `H_k = gaussPoly k`). Needed:
+`psiBound k ≤ exp(5k/2 log k + c k)` (coefficient bounds for `P_k`, degree `3k`, and
+`sup_t t^m e^{-t²} ≤ (m/2)^{m/2}`), and any `phiBound k ≤ C^k k!` (crude Hermite bound suffices,
+since `C(q,i) e^{5i/2 log i} (q-i)! C^{q-i} ≤ e^{5q/2 log q + c q}`). Nothing else depends on it.
 '''
-deps = ["CarmonChain.lipschitzConst", "CarmonChain.psi"]
+deps = ["CarmonChain.lipschitzConst", "CarmonChain.psi", "CarmonChain.phi"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv) (explicit growth)"
 
 [[node]]
 id = "CarmonChain.le_classComplexity_smoothClass"
-kind = "theorem"
-desc = '''
-Lower bound (backbone form of Theorem 4.2.6). For `p ≥ 1`, `Δ L ε > 0`, set
-`k̄ := ⌊Δ / 12 * (L / lipschitzConst p) ^ (1/p) * ε ^ (-(p+1)/p)⌋₊`. Then
-`k̄ ≤ classComplexity (zeroRespectingClass p) (smoothClass Δ L p) ε` and
-`k̄ ≤ classComplexity (methodClass p) (smoothClass Δ L p) ε`.
-Proof: `f x = μ^{p+1} (L / ℓ) chain k̄ (μ⁻¹ • x)`, `ℓ = lipschitzConst p`, `μ = (ℓ ε / L)^{1/p}`;
-zero chain (`IsZeroChain.comp_smul`, `isZeroChain_chain`); `‖∇f(x)‖ > μ^p L/ℓ = ε` when the last
-coordinate vanishes (`exists_abs_partial_chain_gt_one`); `D^{p+1} f` bounded by `L` (scaling) so
-`f ∈ smoothClass Δ L p` (`chain_zero_sub_iInf_le` and the choice of `k̄`);
-`le_firstStationaryIndex_of_isZeroChain` gives the `𝓜_ZR` bound and `le_classComplexity_comp_adjoint`
-(with `comp_adjoint_mem_smoothClass`) the `𝓜(p)` bound, on dimension `2 k̄`.
-'''
-deps = ["CarmonChain.chain", "CarmonChain.isZeroChain_chain", "CarmonChain.exists_abs_partial_chain_gt_one", "CarmonChain.chain_zero_sub_iInf_le", "CarmonChain.lipschitzOn_iteratedFDeriv_chain", "IsZeroChain.comp_smul", "le_firstStationaryIndex_of_isZeroChain", "le_classComplexity_comp_adjoint", "comp_adjoint_mem_smoothClass", "smoothClass"]
 source = "Cartis–Gould–Toint, Theorem 4.2.6 (proof)"
+
+[[node]]
+id = "CarmonChain.phi"
+source = "Cartis–Gould–Toint, (4.2.6) (definition of Φ)"
+
+[[node]]
+id = "CarmonChain.norm_iteratedFDeriv_chain_le"
+source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv)"
+
+[[node]]
+id = "CarmonChain.le_classComplexity_smoothClass_methodClass"
+source = "Cartis–Gould–Toint, Theorem 4.2.6"
