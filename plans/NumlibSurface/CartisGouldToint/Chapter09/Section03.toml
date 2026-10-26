@@ -61,12 +61,13 @@ Theorem 9.3.1 (Fast convergence in the hard case), with the missing hypothesis m
 `𝒵₁` read in the `M`-inner product: let `λ₁` be the leftmost pencil eigenvalue and suppose
 `z₀ ∈ 𝒵₁ = {z | ⟨z, M vᵢ⟩ ≠ 0 for some generalized eigenvector vᵢ with λᵢ = λ₁}` (with `VᵀMV = I`;
 the printed Euclidean `⟨z, vᵢ⟩ ≠ 0` is not invariant under the choice of basis of the eigenspace and
-is not the right condition for `M ≠ I`). Suppose `γ k = γ̄` and `n k = n̄` for all large `k`. Then
-there is `ε > 0` such that every run of Algorithm 9.3.1 with `z 0 = z₀` and
-`λᴳ₀ ∈ (-λ₁, -λ₁ + ε)` has `λᴳₖ > -λ₁` for all `k`, `λᴳₖ → -λ₁` monotonically, and Q-order exactly
+is not the right condition for `M ≠ I`). Fix the parameter sequences `n k`, `ω k`, `γ k` with
+`γ k = γ̄` and `n k = n̄` for all large `k` (`n_U = ∞` allowed). Then there is `ε > 0` (depending on
+the sequences through a bound for `n k`; no `ε` is uniform over all runs when `n_U = ∞`) such that
+every run of Algorithm 9.3.1 with these sequences, `z 0 = z₀` and `λᴳ₀ ∈ (-λ₁, -λ₁ + ε)` has `λᴳₖ > -λ₁` for all `k`, `λᴳₖ → -λ₁` monotonically, and Q-order exactly
 `γ̄`: `c (λᴳₖ + λ₁)^γ̄ ≤ λᴳₖ₊₁ + λ₁ ≤ C (λᴳₖ + λ₁)^γ̄` eventually, for some `0 < c ≤ C`.
 '''
-deps = ["algorithm_9_3_1", "Subproblem.IsInverseIterationRun.convergence"]
+deps = ["algorithm_9_3_1", "Subproblem.IsInverseIterationRun.convergence_of_eventually_const"]
 source = "Cartis–Gould–Toint, Theorem 9.3.1"
 
 [[node]]

@@ -1,117 +1,53 @@
 namespace = "Subproblem"
-desc = '''
-Iterations for the secular equations started in `𝓛 = (λₛ, λ*]` (book §8.2.1–8.2.2, §8.3,
-Algorithms 8.3.1/8.3.2). Setting as in `Secular`, `g ≠ 0`. Targets: `τ λ = Δ²` (trust region) and
-`τ λ = (λ/σ)^{2/(r-2)}` (regularization, `σ > 0`, `r > 2`); the transformed equations are
-`θ_β λ = secular g H λ ^ β - τ λ ^ β = 0`.
-
-Corrections from a current `λc`:
-* Taylor corrections `taylorCorrection g H τ k λc`: the rightmost real root `δ` of
-  `t_k(δ) = τ(λc + δ)` (8.2.15), defined as `sSup` of the root set (which is nonempty and bounded
-  above for odd `k` and `λc ∈ 𝓛` when `τ` is continuous and nondecreasing);
-* Newton corrections on `θ_β`: `trNewtonCorrection` ((8.2.24), `β = -1/2`, the longest Newton step
-  among `β ≥ -1/2` by Lemma B.8.2) and `regNewtonCorrection β` ((8.2.25), `β ≠ 0`; the book's
-  "arbitrary `βⱼ ∈ [-1/2, (r-2)/2]`" must exclude `β = 0`, where `θ₀ ≡ 0`).
-
-Key facts: from `λc ∈ 𝓛` every such correction lands in `[λc, λ*]` (odd Taylor orders by
-`secular_taylor_bounds`, Newton by convexity/concavity of `θ_β` for `β ∈ [-1/2, 0) ∪ (0, (r-2)/2]`,
-which combines `secular_shape` with the concavity/convexity of `-τ^β`); from `λc ∈ 𝓖` the Newton
-corrections overshoot to `≤ λ*`; and any iteration taking at least one Newton correction per step
-and staying `≤ λ*` converges monotonically to `λ*` with the global Q-linear factor of
-`Newton.monotone_scalarStep_iterate_of_convexOn` and ultimately Q-superlinearly.
-'''
 
 [[node]]
 id = "taylorCorrection"
-kind = "definition"
-desc = '''
-`taylorCorrection g H (τ : ℝ → ℝ) (k : ℕ) (λc : ℝ) : ℝ := sSup {δ | t k δ = τ (λc + δ)}`, where
-`t k δ = ∑ j ∈ range (k + 1), iteratedDeriv j (secular g H) λc / j! * δ ^ j` is the Taylor
-polynomial (8.2.12) (same Taylor-polynomial convention as `SecularSum`).
-'''
-deps = ["secular", "iteratedDeriv_secular"]
+source = "Cartis–Gould–Toint, (8.2.15)"
 
 [[node]]
 id = "trNewtonCorrection"
-kind = "definition"
-desc = '''
-`trNewtonCorrection g H Δ λc := 2 * secular g H λc / deriv (secular g H) λc * (1 - ‖step g H λc‖ / Δ)`
-(book (8.2.24)): the Newton step for `λ ↦ secular g H λ ^ (-1/2) - Δ⁻¹`.
-'''
-deps = ["secular", "step"]
+source = "Cartis–Gould–Toint, (8.2.24)"
 
 [[node]]
 id = "regNewtonCorrection"
-kind = "definition"
-desc = '''
-`regNewtonCorrection g H σ r β λc := -θ λc / deriv θ λc` with
-`θ λ = secular g H λ ^ β - (λ / σ) ^ (2 β / (r - 2))` (book (8.2.25), first line).
-'''
-deps = ["secular"]
+source = "Cartis–Gould–Toint, (8.2.25)"
 
 [[node]]
 id = "newtonCorrection_eq"
-kind = "theorem"
-desc = '''
-Closed forms. For `g ≠ 0`, `λc > -leftmost hH`, `π = secular g H λc`, `π' = deriv (secular g H) λc`:
-(i) the Newton step of `λ ↦ secular g H λ ^ β - Δ ^ (2β)` from `λc` equals
-`(-π/π') * newtonFactor (Δ²/π) β` for `β ≠ 0` ((B.8.7)), which is antitone in `β`
-(`antitone_newtonFactor`, Lemma B.8.2) and equals `trNewtonCorrection g H Δ λc` at `β = -1/2`;
-(ii) for `λc > 0`, `β ≠ 0`: `regNewtonCorrection g H σ r β λc = (-π/π') * (1 - μ^β) / (β (1 - ω μ^β))`
-with `ω = 2π / ((r - 2) λc π')`, `μ = (λc/σ)^{2/(r-2)} / π` (last line of (8.2.25); the
-denominator is nonzero since `ω < 0`).
-'''
-deps = ["trNewtonCorrection", "regNewtonCorrection", "antitone_newtonFactor", "iteratedDeriv_secular"]
+source = "Cartis–Gould–Toint, (B.8.7)"
 
 [[node]]
-id = "taylorCorrection_mem"
-kind = "theorem"
-desc = '''
-Let `g ≠ 0`, `τ` continuous and monotone on `Ioi λₛ`, `λ*` as in `existsUnique_secular_root`, and
-`λc ∈ Ioc λₛ λ*`. For odd `k`, the root set of `t k δ = τ (λc + δ)` is nonempty and bounded above,
-and `λc ≤ λc + taylorCorrection g H τ k λc ≤ λ*` (book §8.2.1: odd-order Taylor corrections
-underestimate `λ*`). For `λc > λ*` (in `𝓖`) the least-negative root lies left of `λ*`
-(only stated as a remark in the book; include if cheap).
-'''
-deps = ["taylorCorrection", "secular_taylor_bounds", "existsUnique_secular_root"]
+id = "trNewtonCorrection_eq"
+source = "Cartis–Gould–Toint, (8.2.24)"
 
 [[node]]
-id = "newtonCorrection_mem"
-kind = "theorem"
-desc = '''
-Newton corrections from `𝓛` stay in `𝓛`, from `𝓖` overshoot. Trust region: if
-`IsTrustRegionMultiplier g H Δ s λ*`, `λₛ < λc ≤ λ*` then
-`λc ≤ λc + trNewtonCorrection g H Δ λc ≤ λ*`; if `λc > max λₛ λ*` then
-`λc + trNewtonCorrection g H Δ λc ≤ λ*`. Regularization (`0 < σ`, `2 < r`, `λ*` of a global
-minimizer): for `β ∈ [-1/2, 0) ∪ (0, (r - 2)/2]` the same two statements for
-`regNewtonCorrection g H σ r β`. Proof: `θ_β` is convex decreasing (`β > 0`) or concave increasing
-(`β < 0`) on `Ioi λₛ` with root `λ*` (when `λ* > λₛ`), then `Newton.scalarStep_le_of_convexOn`.
-'''
-deps = ["newtonCorrection_eq", "le_secular_iff_of_trustRegion", "le_secular_iff_of_regularization", "secular_shape", "Newton.scalarStep_le_of_convexOn"]
+id = "regNewtonCorrection_eq"
+source = "Cartis–Gould–Toint, (8.2.25)"
 
 [[node]]
-id = "tendsto_of_newtonCorrection_le"
-kind = "theorem"
-desc = '''
-Convergence of "largest correction" iterations (the convergence claim of Algorithms 8.3.1/8.3.2,
-§8.3). Let `λ* > λₛ` (easy case), `N` one of the Newton corrections of `newtonCorrection_mem` for
-an admissible `β`, and `λ : ℕ → ℝ` with `λ 0 ∈ Ioc λₛ λ*` and
-`λ j + N (λ j) ≤ λ (j + 1) ≤ λ*` for all `j`. Then `λ` is monotone, tends to `λ*`, satisfies
-`λ* - λ (j+1) ≤ γ (λ* - λ j)` with `γ = 1 - θ_β'(λ*)/θ_β'(λ 0) < 1`, and
-`ConvergesSuperlinearly λ λ*`. (In particular the plain Newton iteration, the
-`β`-maximizing iteration (8.2.26) and Algorithm 8.3.1 converge.)
-'''
-deps = ["newtonCorrection_mem", "Newton.monotone_scalarStep_iterate_of_convexOn", "_root_.ConvergesSuperlinearly"]
+id = "IsSecularTarget.taylorCorrection_mem"
+source = "Cartis–Gould–Toint, §8.2.1"
 
 [[node]]
-id = "tendsto_of_taylorCorrection_le"
-kind = "theorem"
-desc = '''
-Convergence of odd-order Taylor iterations (without any Newton candidate). Let `g ≠ 0`, `τ`
-continuous and monotone on `Ioi λₛ`, `λ*` the root of `existsUnique_secular_root`, `k` odd, and
-`λ : ℕ → ℝ` with `λ 0 ∈ Ioc λₛ λ*` and
-`λ j + taylorCorrection g H τ k (λ j) ≤ λ (j + 1) ≤ λ*`. Then `λ` is monotone and `λ j → λ*`.
-(At a limit `λ̄ < λ*`, `π - τ` is bounded below by a positive constant near `λ̄` and the Taylor
-coefficients are continuous, so the corrections stay bounded below: contradiction.)
-'''
-deps = ["taylorCorrection_mem"]
+id = "trNewtonCorrection_mem"
+source = "Cartis–Gould–Toint, §8.2.2, §8.3.2"
+
+[[node]]
+id = "regNewtonCorrection_mem"
+source = "Cartis–Gould–Toint, §8.2.2, §8.3.1"
+
+[[node]]
+id = "tendsto_of_trNewtonCorrection_le"
+source = "Cartis–Gould–Toint, Algorithm 8.3.2, Lemma B.8.1"
+
+[[node]]
+id = "tendsto_of_regNewtonCorrection_le"
+source = "Cartis–Gould–Toint, Algorithm 8.3.1, Lemma B.8.1"
+
+[[node]]
+id = "IsSecularTarget.tendsto_of_taylorCorrection_le"
+source = "Cartis–Gould–Toint, §8.2.1, Algorithm 8.3.1"
+
+[[node]]
+id = "IsSecularTarget.isGreatest_taylorCorrection"
+source = "Cartis–Gould–Toint, §8.2.1, (8.2.15)"

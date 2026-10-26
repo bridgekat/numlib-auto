@@ -17,7 +17,8 @@ A scaling norm `‖·‖_M` of the book is not a parameter: it is the norm of th
 
 ## Main definitions
 
-* `leftmost hH`: the least eigenvalue `λ₁` of `H` (`0` on the zero space), and
+* `leftmost hH`, `rightmost hH`: the least and greatest eigenvalues `λ₁`, `λₙ` of `H` (`0` on the
+  zero space), and
   `shiftThreshold hH = max 0 (-λ₁)`, the book's `λₛ`.
 * `step g H λ = -(Ring.inverse (H + λ • 1)) g` and `secular g H λ = ‖step g H λ‖ ^ 2`.
 * `particular hH g λ`: the minimum-norm solution of `(H + λ) x = -g` when one exists (the book's
@@ -39,6 +40,8 @@ A scaling norm `‖·‖_M` of the book is not a parameter: it is the norm of th
   eigenbasis `bᵢ`: `s(λ) = -∑ ⟪bᵢ, g⟫ / (λ + λᵢ) bᵢ` and `π(λ) = ∑ ⟪bᵢ, g⟫² / (λ + λᵢ)²`. All
   real-variable properties of `π` then come from `Numlib.Optimization.Subproblem.SecularSum`.
 * `secular_shape`: shape of `π` and of `π ^ β` on `λ > -λ₁` (Corollary 8.2.4).
+* `hasDerivAt_secular`, `secular_pos`, `deriv_secular_neg`, `hasDerivAt_secular_rpow`,
+  `contDiffOn_secular_rpow`: calculus facts about `π` and `π ^ β` on `λ > -λ₁` for `g ≠ 0`.
 * `particular_spec`, `tendsto_step_threshold`: the minimum-norm solution, and the behaviour of
   `s(λ)` and `π(λ)` as `λ ↓ -λ₁` (finite limit `sₛ` iff `g ⊥ ker (H - λ₁)`, otherwise `π → ∞`).
   `tendsto_secular_rpow_threshold` is the corresponding statement for `π ^ β`.
@@ -87,11 +90,24 @@ noncomputable def leftmost : ℝ := ⨅ i, hH.eigenvalues rfl i
 on which `H + λ` is positive definite. -/
 noncomputable def shiftThreshold : ℝ := max 0 (-leftmost hH)
 
+/-- The rightmost (greatest) eigenvalue `λₙ` of the symmetric operator `H`; `0` if `E` is the
+zero space. -/
+noncomputable def rightmost : ℝ := ⨆ i, hH.eigenvalues rfl i
+
 variable {hH}
+
+theorem eigenvalues_le_rightmost (i : Fin (Module.finrank ℝ E)) :
+    hH.eigenvalues rfl i ≤ rightmost hH :=
+  le_ciSup (Set.finite_range _).bddAbove i
 
 theorem leftmost_le_eigenvalues (i : Fin (Module.finrank ℝ E)) :
     leftmost hH ≤ hH.eigenvalues rfl i :=
   ciInf_le (Set.finite_range _).bddBelow i
+
+theorem leftmost_le_rightmost : leftmost hH ≤ rightmost hH := by
+  rcases isEmpty_or_nonempty (Fin (Module.finrank ℝ E)) with h | ⟨⟨i⟩⟩
+  · simp [leftmost, rightmost]
+  · exact (leftmost_le_eigenvalues i).trans (eigenvalues_le_rightmost i)
 
 theorem exists_eigenvalues_eq_leftmost [Nontrivial E] :
     ∃ i, hH.eigenvalues rfl i = leftmost hH := by
@@ -871,5 +887,62 @@ theorem tendsto_secular_rpow_threshold (β : ℝ) :
   · have := (tendsto_rpow_neg_atTop (neg_pos.2 hβ)).comp
       ((tendsto_step_threshold (hH := hH)).2 hg)
     simpa only [neg_neg, Function.comp_def] using this
+
+/-! ### Calculus facts about the secular function -/
+
+section SecularCalculus
+
+variable {g : E} {hH : (H : E →ₗ[ℝ] E).IsSymmetric}
+
+/-- `π` is differentiable on `λ > -λ₁`. -/
+theorem hasDerivAt_secular {lam : ℝ} (hlam : -leftmost hH < lam) :
+    HasDerivAt (secular g H) (deriv (secular g H) lam) lam :=
+  ((hasDerivAt_secularSum (μ := hH.eigenvalues rfl) (w := secularWeight hH g)
+    fun i => (mem_secularDomain_of_lt hlam i).ne').congr_of_eventuallyEq
+      (secular_eventuallyEq hlam)).differentiableAt.hasDerivAt
+
+/-- For `g ≠ 0`, `π(λ) > 0` on `λ > -λ₁`. -/
+theorem secular_pos (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam) : 0 < secular g H lam :=
+  (secular_shape (hH := hH) hg 0).1 lam hlam
+
+/-- For `g ≠ 0`, `π'(λ) < 0` on `λ > -λ₁` (book (8.2.4) and Theorem 8.2.6). -/
+theorem deriv_secular_neg (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam) :
+    deriv (secular g H) lam < 0 := by
+  rw [(secular_eventuallyEq hlam).deriv_eq,
+    deriv_secularSum fun i => (mem_secularDomain_of_lt hlam i).ne']
+  have := secularMoment_pos secularWeight_nonneg ((secularWeight_ne_zero_iff (hH := hH)).2 hg)
+    (mem_secularDomain_of_lt hlam) 3
+  linarith
+
+/-- The derivative of the transformed secular function: `(π ^ β)' = β π ^ (β - 1) π'`
+(book (8.2.18)). -/
+theorem hasDerivAt_secular_rpow (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam) (β : ℝ) :
+    HasDerivAt (fun t => secular g H t ^ β)
+      (β * secular g H lam ^ (β - 1) * deriv (secular g H) lam) lam := by
+  convert (hasDerivAt_secular hlam).rpow_const (p := β) (Or.inl (secular_pos hg hlam).ne') using 1
+  ring
+
+/-- `π ^ β` is smooth on `λ > -λ₁` for `g ≠ 0`. -/
+theorem contDiffOn_secular_rpow (hg : g ≠ 0) (β : ℝ) {n : WithTop ℕ∞} :
+    ContDiffOn ℝ n (fun t => secular g H t ^ β) (Ioi (-leftmost hH)) :=
+  ((contDiffOn_secularSum_rpow secularWeight_nonneg
+    ((secularWeight_ne_zero_iff (hH := hH)).2 hg) β).mono Ioi_subset_secularDomain).congr
+    fun x hx => by simp only [secular_eq_secularSum hx]
+
+/-- The spectral moments decrease in `λ` on `λ > -λ₁`. -/
+theorem secularMoment_le_of_le {x₀ x : ℝ} (hx₀ : -leftmost hH < x₀) (hx : x₀ ≤ x) (m : ℕ) :
+    secularMoment (hH.eigenvalues rfl) (secularWeight hH g) m x ≤
+      secularMoment (hH.eigenvalues rfl) (secularWeight hH g) m x₀ := by
+  have h0 := mem_secularDomain_of_lt hx₀
+  refine Finset.sum_le_sum fun i _ => div_le_div_of_nonneg_left (secularWeight_nonneg i)
+    (pow_pos (h0 i) m) (pow_le_pow_left₀ (h0 i).le (by linarith) m)
+
+end SecularCalculus
+
+omit [FiniteDimensional ℝ E] in
+/-- `g ≠ 0` as soon as the secular function has a positive value. -/
+theorem ne_zero_of_secular_pos {lam : ℝ} (h : 0 < secular g H lam) : g ≠ 0 := by
+  rintro rfl
+  simp [secular_zero_left] at h
 
 end Subproblem
