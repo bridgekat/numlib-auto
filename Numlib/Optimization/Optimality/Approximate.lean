@@ -356,6 +356,65 @@ theorem taylorDecrement_one_apply (D : FormalMultilinearSeries ℝ E ℝ) (s : E
 
 /-! ### Gradient and Hessian on inner product spaces -/
 
+/-! ### Monotonicity of the low-order measures in the radius -/
+
+section Scale
+
+/-- Scaling a step scales the `i`-th term of a jet by `c^i`. -/
+theorem formalMultilinearSeries_apply_smul (D : FormalMultilinearSeries ℝ E ℝ) (i : ℕ) (c : ℝ)
+    (d : E) : D i (fun _ => c • d) = c ^ i * D i (fun _ => d) := by
+  have := (D i).map_smul_univ (fun _ => c) (fun _ => d)
+  simpa [Finset.prod_const] using this
+
+/-- **Scaling of decrements of order `≤ 2`**: for `t ∈ [0, 1]` and any `d` there is `d'` with
+`‖d'‖ ≤ t ‖d‖` and `t^j ΔT_j(d) ≤ ΔT_j(d')` (`d' ∈ {0, t d, -t d}`). -/
+theorem exists_taylorDecrement_scale_ge (D : FormalMultilinearSeries ℝ E ℝ) {j : ℕ}
+    (hj : j ≤ 2) {t : ℝ} (ht0 : 0 ≤ t) (ht1 : t ≤ 1) (d : E) :
+    ∃ d', ‖d'‖ ≤ t * ‖d‖ ∧ t ^ j * D.taylorDecrement j d ≤ D.taylorDecrement j d' := by
+  interval_cases j
+  · refine ⟨0, by rw [norm_zero]; positivity, ?_⟩
+    simp [FormalMultilinearSeries.taylorDecrement_eq]
+  · refine ⟨t • d, by rw [norm_smul, Real.norm_of_nonneg ht0], ?_⟩
+    rw [FormalMultilinearSeries.taylorDecrement_one_apply,
+      FormalMultilinearSeries.taylorDecrement_one_apply, formalMultilinearSeries_apply_smul]
+    ring_nf; rfl
+  · set a := -(D 1 fun _ => d)
+    set b := -2⁻¹ * D 2 fun _ => d
+    have hT : ∀ c : ℝ, D.taylorDecrement 2 (c • d) = c * a + c ^ 2 * b := fun c => by
+      rw [FormalMultilinearSeries.taylorDecrement_two, formalMultilinearSeries_apply_smul,
+        formalMultilinearSeries_apply_smul]
+      simp only [a, b]; ring
+    have h1 : D.taylorDecrement 2 d = a + b := by
+      have := hT 1; simpa using this
+    rcases le_or_gt 0 a with ha | ha
+    · refine ⟨t • d, by rw [norm_smul, Real.norm_of_nonneg ht0], ?_⟩
+      rw [hT, h1]; nlinarith [mul_nonneg ht0 ha, mul_nonneg (mul_nonneg ht0 ht0) ha]
+    · refine ⟨(-t) • d, by rw [norm_smul, norm_neg, Real.norm_of_nonneg ht0], ?_⟩
+      rw [hT, h1]; nlinarith [mul_nonneg ht0 (le_of_lt (neg_pos.2 ha)),
+        mul_nonneg (mul_nonneg ht0 ht0) (le_of_lt (neg_pos.2 ha))]
+
+/-- **The measures of orders `≤ 2` decrease slowly in the radius** (unconstrained case): for
+`0 < δ' ≤ δ` and `j ≤ 2`, `(δ'/δ)^j φ^δ_j ≤ φ^{δ'}_j`, i.e. `δ ↦ φ^δ_j/δ^j` is non-increasing. -/
+theorem pow_div_mul_taylorMeasure_le (D : FormalMultilinearSeries ℝ E ℝ) {j : ℕ} (hj : j ≤ 2)
+    {δ δ' : ℝ} (hδ' : 0 < δ') (hδδ' : δ' ≤ δ) :
+    (δ' / δ) ^ j * taylorMeasure D j δ univ ≤ taylorMeasure D j δ' univ := by
+  have hδ : 0 < δ := hδ'.trans_le hδδ'
+  set t := δ' / δ
+  have ht0 : 0 < t := div_pos hδ' hδ
+  have ht1 : t ≤ 1 := (div_le_one hδ).2 hδδ'
+  have htj : 0 < t ^ j := pow_pos ht0 j
+  rw [← le_div_iff₀' htj]
+  refine decrementMeasure_le ⟨0, mem_closedBall_self hδ.le, mem_univ _⟩ fun d hd => ?_
+  obtain ⟨d', hd'n, hd'⟩ := exists_taylorDecrement_scale_ge D hj ht0.le ht1 d
+  have hd'm : d' ∈ closedBall 0 δ' ∩ univ := by
+    refine ⟨mem_closedBall_zero_iff.2 (hd'n.trans ?_), mem_univ _⟩
+    calc t * ‖d‖ ≤ t * δ := mul_le_mul_of_nonneg_left (mem_closedBall_zero_iff.1 hd.1) ht0.le
+      _ = δ' := by simp only [t]; field_simp
+  rw [le_div_iff₀' htj]
+  exact hd'.trans (taylorDecrement_le_taylorMeasure D j hd'm)
+
+end Scale
+
 section Inner
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]

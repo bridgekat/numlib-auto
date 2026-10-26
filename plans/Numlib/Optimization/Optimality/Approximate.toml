@@ -79,3 +79,11 @@ source = "Cartis–Gould–Toint, (3.2.3)"
 [[node]]
 id = "exists_eigenvector_hessianOperator"
 source = "Cartis–Gould–Toint, (3.2.3)"
+
+[[node]]
+id = "exists_taylorDecrement_scale_ge"
+source = "Cartis–Gould–Toint, Theorem 13.1.19 (1)"
+
+[[node]]
+id = "pow_div_mul_taylorMeasure_le"
+source = "Cartis–Gould–Toint, Theorem 13.1.19 (1)"

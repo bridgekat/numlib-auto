@@ -179,6 +179,9 @@ import NumlibSurface.CartisGouldToint.Chapter11.Section03
 import NumlibSurface.CartisGouldToint.Chapter12.Section01
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 import NumlibSurface.CartisGouldToint.Chapter12.Section03
+import NumlibSurface.CartisGouldToint.Chapter13.Section01
+import NumlibSurface.CartisGouldToint.Chapter13.Section02
+import NumlibSurface.CartisGouldToint.Chapter13.Section03
 import NumlibSurface.FongSaunders
 import NumlibSurface.FongSaunders.Section01
 import NumlibSurface.FongSaunders.Section02
