@@ -1,6 +1,7 @@
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Numlib.Approximation.HermiteSpline
 import Numlib.Analysis.Calculus.IteratedDeriv.Lemmas
+import Numlib.Optimization.Optimality.Approximate
 
 /-!
 # Slow-convergence examples of arbitrary order
@@ -23,6 +24,9 @@ bounded and whose top derivative is Lipschitz, with constants independent of `ε
   Theorem 12.2.6 (Appendix B), corrected.
 * `Optimization.exists_slowARqpSmooth_interpolant` — the data of Theorem 12.2.17, for any
   regularization weight `σ > 0`.
+* `Optimization.taylorMeasure_linearRegModel_eq_zero` — Example 12.1.3 in one variable: the
+  Taylor measures of `-β t + σ |t|^{p+1}/(p+1)!` vanish at its minimizer for radii up to
+  `3 t*/(p-1)`.
 
 ## Implementation notes
 
@@ -866,5 +870,111 @@ theorem isMinOn_neg_monomial_add_regularization_book {p q : ℕ} (hq : 1 ≤ q) 
     have : (q : ℝ) ≤ p := by exact_mod_cast hqp
     have : (0 : ℝ) < p - q + 1 := by linarith
     positivity
+
+/-! ### The linear regularized model of Example 12.1.3 -/
+
+/-- A sum `∑_{i=1}^j u_i` is nonnegative if `u_1 = 0`, the even terms are nonnegative and the
+consecutive pairs `u_{2k} + u_{2k+1}` (`k ≥ 1`) are nonnegative. -/
+private theorem sum_Icc_one_nonneg_of_pairs {u : ℕ → ℝ} (h1 : u 1 = 0) :
+    ∀ j : ℕ, (∀ i ≤ j, 2 ≤ i → Even i → 0 ≤ u i) →
+      (∀ k, 1 ≤ k → 2 * k + 1 ≤ j → 0 ≤ u (2 * k) + u (2 * k + 1)) →
+      0 ≤ ∑ i ∈ Finset.Icc 1 j, u i
+  | 0, _, _ => by simp
+  | 1, _, _ => by simp [h1]
+  | j + 2, he, hp => by
+    have ih := sum_Icc_one_nonneg_of_pairs h1 (j + 1) (fun i hi => he i (by omega))
+      (fun k hk1 hk => hp k hk1 (by omega))
+    rcases Nat.even_or_odd j with ⟨k, hk⟩ | ⟨k, hk⟩
+    · rw [Finset.sum_Icc_succ_top (by omega)]
+      have := he (j + 2) le_rfl (by omega) ⟨k + 1, by omega⟩
+      linarith
+    · have ih' := sum_Icc_one_nonneg_of_pairs h1 j (fun i hi => he i (by omega))
+        (fun k hk1 hk => hp k hk1 (by omega))
+      rw [Finset.sum_Icc_succ_top (by omega), Finset.sum_Icc_succ_top (by omega)]
+      have := hp (k + 1) (by omega) (by omega)
+      rw [show 2 * (k + 1) = j + 1 by omega] at this
+      linarith
+
+/-- **Example 12.1.3 in one variable** ([cartis2022evaluation], (12.1.18)–(12.1.21)). Let
+`p ≥ 1`, `β, σ > 0` and `m t = -β t + σ |t|^{p+1}/(p+1)!` on `ℝ`, with global minimizer
+`t* = (β p!/σ)^{1/p}`. For `j ∈ [1, p]` and every radius `δ` with `(p - 1) δ ≤ 3 t*` (no restriction
+when `j ≤ 2`), the `j`-th order Taylor measure of `m` at `t*` vanishes: `φ^δ_{m,j}(t*) = 0`.
+Along `d = α t*` the Taylor decrease is `-σ t*^{p+1} ∑_{ℓ=2}^{j} α^ℓ/(ℓ!(p+1-ℓ)!)`, and the terms
+of orders `2k, 2k+1` have a nonnegative sum when `|α| ≤ 3/(p-1)`. -/
+theorem taylorMeasure_linearRegModel_eq_zero {p j : ℕ} (hj : j ∈ Icc 1 p) {β σ δ : ℝ}
+    (hβ : 0 < β) (hσ : 0 < σ)
+    (hδ : j ≤ 2 ∨ ((p : ℝ) - 1) * δ ≤ 3 * (β * p.factorial / σ) ^ (1 / (p : ℝ))) :
+    taylorMeasure (ftaylorSeries ℝ (fun t : ℝ => -β * t + σ * |t| ^ (p + 1) / (p + 1).factorial)
+      ((β * p.factorial / σ) ^ (1 / (p : ℝ)))) j δ univ = 0 := by
+  obtain ⟨hj1, hjp⟩ := hj
+  have hp : 1 ≤ p := hj1.trans hjp
+  set ts := (β * p.factorial / σ) ^ (1 / (p : ℝ)) with hts
+  have hm : (fun t : ℝ => -β * t + σ * |t| ^ (p + 1) / (p + 1).factorial) =
+      negMonomialRegModel p 1 σ β := by
+    funext t; simp [negMonomialRegModel]
+  have hts' : (β / (σ * (1 - 1).factorial / p.factorial)) ^ (1 / ((p - 1 + 1 : ℕ) : ℝ)) = ts := by
+    rw [hts, Nat.sub_add_cancel hp]
+    congr 1
+    simp only [Nat.sub_self, Nat.factorial_zero, Nat.cast_one, mul_one]
+    field_simp
+  obtain ⟨hmin, -, hder⟩ := isMinOn_neg_monomial_add_regularization le_rfl hp hσ hβ
+  rw [hts'] at hmin hder
+  rw [hm]
+  set m := negMonomialRegModel p 1 σ β
+  have ht0 : 0 < ts := by rw [hts]; positivity
+  have hd1 : iteratedDeriv 1 m ts = 0 := by
+    rw [iteratedDeriv_one]
+    exact (hmin.isLocalMin Filter.univ_mem).deriv_eq_zero
+  have hdi : ∀ i, 2 ≤ i → i ≤ p + 1 →
+      iteratedDeriv i m ts = σ * ts ^ (p + 1 - i) / (p + 1 - i).factorial := fun i hi2 hip => by
+    rw [hder, ite_eq_right (by omega), ite_eq_left hip, zero_add]
+  rcases lt_or_ge δ 0 with hneg | hδ0
+  · rw [taylorMeasure_eq_sSup, Metric.closedBall_eq_empty.2 hneg, empty_inter, image_empty,
+      Real.sSup_empty]
+  refine le_antisymm (decrementMeasure_le ⟨0, Metric.mem_closedBall_self hδ0, mem_univ _⟩
+    fun d hd => ?_) (taylorMeasure_nonneg _ _ (mem_univ _) hδ0)
+  have hdδ : |d| ≤ δ := by simpa [Real.norm_eq_abs] using hd.1
+  rw [FormalMultilinearSeries.taylorDecrement_eq, neg_nonpos]
+  set u : ℕ → ℝ := fun i => (i.factorial : ℝ)⁻¹ * (d ^ i * iteratedDeriv i m ts) with hu
+  have hsum : ∀ i, (i.factorial : ℝ)⁻¹ * ftaylorSeries ℝ m ts i (fun _ => d) = u i := fun i => by
+    simp only [hu, ftaylorSeries, iteratedFDeriv_apply_eq_iteratedDeriv_mul_prod,
+      Finset.prod_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
+  simp only [hsum]
+  refine sum_Icc_one_nonneg_of_pairs (by simp [hu, hd1]) j (fun i hi hi2 hev => ?_)
+    (fun k hk1 hk => ?_)
+  · simp only [hu, hdi i hi2 (by omega)]
+    have := hev.pow_nonneg d
+    positivity
+  · have hj2 : ¬ j ≤ 2 := by omega
+    have hδ' := hδ.resolve_left hj2
+    obtain ⟨N, hN⟩ : ∃ N, p = N + 2 * k + 1 := ⟨p - 2 * k - 1, by omega⟩
+    subst hN
+    simp only [hu, hdi (2 * k) (by omega) (by omega), hdi (2 * k + 1) (by omega) (by omega),
+      show N + 2 * k + 1 + 1 - 2 * k = N + 1 + 1 by omega,
+      show N + 2 * k + 1 + 1 - (2 * k + 1) = N + 1 by omega, Nat.factorial_succ (2 * k),
+      Nat.factorial_succ (N + 1)]
+    push_cast at hδ' ⊢
+    have hdδ' : -δ ≤ d := (abs_le.1 hdδ).1
+    have hK : (1 : ℝ) ≤ k := by exact_mod_cast hk1
+    have hN0 : (0 : ℝ) ≤ N := N.cast_nonneg
+    have hkey : 0 ≤ (2 * k + 1 : ℝ) * ts + (N + 1 + 1) * d := by
+      nlinarith [mul_le_mul_of_nonneg_left hδ' (by positivity : (0 : ℝ) ≤ 2 * k + 1),
+        mul_nonneg (mul_nonneg (sub_nonneg.2 hK) hN0) hδ0, mul_nonneg (sub_nonneg.2 hK) hδ0,
+        mul_nonneg (mul_nonneg (sub_nonneg.2 hK) (by positivity : (0 : ℝ) ≤ k + 1)) hδ0]
+    have hA : 0 ≤ σ * ts ^ (N + 1) * d ^ (2 * k) /
+        (((2 * k).factorial : ℝ) * (N + 1).factorial * (2 * k + 1) * (N + 1 + 1)) := by
+      have := (even_two_mul k).pow_nonneg d
+      positivity
+    have e : ((2 * k).factorial : ℝ)⁻¹ * (d ^ (2 * k) * (σ * ts ^ (N + 1 + 1) /
+          ((N + 1 + 1) * (N + 1).factorial))) +
+        (((2 * k + 1) * (2 * k).factorial : ℝ))⁻¹ * (d ^ (2 * k + 1) * (σ * ts ^ (N + 1) /
+          (N + 1).factorial)) =
+        σ * ts ^ (N + 1) * d ^ (2 * k) /
+          (((2 * k).factorial : ℝ) * (N + 1).factorial * (2 * k + 1) * (N + 1 + 1)) *
+          ((2 * k + 1 : ℝ) * ts + (N + 1 + 1) * d) := by
+      field_simp
+      ring
+    rw [e]
+    exact mul_nonneg hA hkey
 
 end Optimization

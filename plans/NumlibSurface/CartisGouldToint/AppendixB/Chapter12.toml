@@ -1,21 +1,5 @@
 namespace = "CartisGouldToint.AppendixB"
-desc = '''
-Appendix to Chapter 12: Lemma B.12.1 (a vanishing third-order measure forces a vanishing
-second-order measure, justifying the use of `φ^δ_{f,3}` in §12.1.3). The proofs of Theorems 12.1.7
-and 12.2.6 given in this appendix belong to `Chapter12.theorem_12_1_7` and
-`Chapter12.theorem_12_2_6` (the latter with corrected data, see
-`Optimization.exists_slowTRq_interpolant`).
-'''
 
 [[node]]
 id = "lemma_B_12_1"
-kind = "theorem"
-desc = '''
-Lemma B.12.1. For `g : 𝔼`, symmetric `H`, a cubically symmetric tensor `T` (any data
-`D : FormalMultilinearSeries ℝ 𝔼 ℝ` with `D 1 = ⟪g, ·⟫`, `D 2 = H`, `D 3 = T`), and `Δ ≥ 0`, with
-`ψ₂(s) = ⟪g, s⟫ + ½⟪s, H s⟫`, `ψ₃(s) = ψ₂(s) + T[s]³/6`: if `min_{‖s‖≤Δ} ψ₃(s) = 0` then
-`min_{‖s‖≤Δ} ψ₂(s) = 0`; equivalently `phi_3 = 0 ⇒ phi_2 = 0`
-(`Optimization.taylorMeasure D 3 Δ univ = 0 → taylorMeasure D 2 Δ univ = 0`). Symmetry is not needed.
-'''
-deps = ["Optimization.taylorMeasure_two_eq_zero_of_three"]
 source = "Cartis–Gould–Toint, Lemma B.12.1"

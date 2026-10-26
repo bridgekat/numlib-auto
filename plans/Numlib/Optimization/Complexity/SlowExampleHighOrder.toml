@@ -2,17 +2,6 @@ namespace = "Optimization"
 
 [[node]]
 id = "taylorMeasure_linearRegModel_eq_zero"
-kind = "theorem"
-desc = '''
-Example 12.1.3 in one variable. Let `p ≥ 1`, `β σ > 0`, `m t = -β t + σ |t| ^ (p + 1) / (p + 1)!`
-on `ℝ`, `t* = (β p!/σ)^{1/p}` (its unique global minimizer). Then for `j ∈ Icc 1 p` and every
-`δ ≥ 0` with `(p - 1) δ ≤ 3 t*` (no restriction when `p ≤ 2` or `j ≤ 2`):
-`taylorMeasure (ftaylorSeries ℝ m t*) j δ univ = 0`. Proof (book): `T_{m,j}(t*, α t*) - m(t*) =
-σ t*^{p+1} ∑_{ℓ=2}^{j} α^ℓ/(ℓ!(p+1-ℓ)!)` (from (B.4.2)); for `α ≥ 0` all terms are `≥ 0`; for
-`α < 0` pair the terms of orders `2i, 2i+1`, each pair `≥ 0` when `|α| ≤ (2i+1)/(p+1-2i)`, the
-minimum over `i` being `3/(p-1)`; an even top order adds a nonnegative term.
-'''
-deps = ["taylorMeasure", "iteratedFDeriv_norm_pow_apply_self"]
 source = "Cartis–Gould–Toint, Example 12.1.3"
 
 [[node]]
