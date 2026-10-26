@@ -647,6 +647,9 @@ import Numlib.Optimization.Constrained
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
 import Numlib.Optimization.QuasiNewton
+import Numlib.Optimization.Subproblem.Model
+import Numlib.Optimization.Subproblem.Regularization
+import Numlib.Optimization.Subproblem.TrustRegion
 import Numlib.Order.EReal
 import Numlib.Order.GaloisConnection
 import Numlib.Preconditioner.ApproximateInverse
