@@ -1,0 +1,11 @@
+desc = '''
+Cartis–Gould–Toint Chapter 2, "Methods Using First Derivatives": assumptions f.Bb, f.C1, f.gL;
+steepest descent with backtracking-Armijo (SDBA) and exact line search (SDEX); the first-order
+trust-region (TR1) and adaptive-regularization (AR1) algorithms; `O(ε⁻²)` complexity and sharpness.
+
+Source corrections: Theorem 2.2.2's evaluation bound (2.2.8) is false as printed (it ignores the
+initial and the first trial evaluation of each iteration and assumes `t_ini ≥ (1-α)/L_{f,1}`);
+Theorem 2.2.5's example realizes a first-local-minimizer line search, not the global argmin
+(2.2.26); Theorem 2.3.8's model Hessian is `t_ini⁻¹` (not `2 t_ini⁻¹`); `ε⁻²` must be an integer in
+the sharpness constructions; the "reasonable values" after (2.4.4) swap `γ₁`, `γ₂/γ₃`.
+'''

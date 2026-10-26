@@ -1,0 +1,113 @@
+namespace = "CartisGouldToint.Chapter02"
+desc = '''
+§2.2 Linesearch algorithms. SDBA (Algorithm 2.2.1) is deterministic; its run records the iterates
+`x` and backtracking indices `i`. Evaluation counts: objective `1 + ∑_{k<k_ε} (i_k + 1)` (initial
+value; Step 2 and each backtrack in Step 3), gradient `k_ε + 1`. SDEX replaces the backtracking by
+an exact line search; two exact rules are formalized (`LineSearch.IsExactLineMin`, the book's
+(2.2.26), and `LineSearch.IsFirstLocalLineMin`), see `theorem_2_2_5`. The paragraphs on flexible
+Armijo, Goldstein–Armijo, Nesterov's view and nonmonotone methods (§§2.2.3.1–2.2.3.3, 2.2.3.5)
+contain no numbered results.
+'''
+
+[[node]]
+id = "algorithm_2_2_1"
+kind = "def"
+desc = '''
+Algorithm 2.2.1 (SDBA) as a run predicate `IsSDBARun f α tini ε x i` (`x : ℕ → 𝔼`, `i : ℕ → ℕ`):
+`0 < tini`, `0 < α < 1`, `0 < ε`, and `UntilHit (fun k => ‖gradient f (x k)‖ ≤ ε) fun k =>
+i k = LineSearch.backtrackingIndex f α tini (x k) ∧
+x (k+1) = x k - (tini * 2⁻¹ ^ i k) • gradient f (x k)` (the step `t_k = 2^{-i_k} t_ini` with `i_k`
+the smallest index satisfying (2.2.1)). `x 0` is the given starting point.
+Existence (part of node, `exists_isSDBARun`): under f.gL a run exists from any `x₀` (the index is
+well defined by Lemma 2.2.1; deterministic recursion).
+'''
+deps = ["Optimization.UntilHit", "LineSearch.backtrackingIndex", "Optimization.exists_run_of_forall_exists", "lemma_2_2_1"]
+source = "Cartis–Gould–Toint, Algorithm 2.2.1"
+
+[[node]]
+id = "lemma_2_2_1"
+kind = "theorem"
+desc = '''
+Lemma 2.2.1. Under `AssumptionGL f L` and `0 < α < 1`: for every `x` and `t ∈ [0, 2(1-α)/L]`,
+`f (x - t • gradient f x) ≤ f x - α * t * ‖gradient f x‖ ^ 2` (2.2.3). Consequences recorded in
+the node (the text after the proof): the backtracking index satisfies
+`i_k ≤ ⌈logb 2 (L t_ini / (2(1-α)))⌉₊` (2.2.6), and the accepted step `t_k ≥ min t_ini ((1-α)/L)`
+((2.2.7) as printed, `t_k ≥ t_low/2`, requires `t_ini ≥ t_low/2`).
+'''
+deps = ["AssumptionGL", "LineSearch.armijo_neg_gradient_of_le", "LineSearch.backtrackingIndex_le"]
+source = "Cartis–Gould–Toint, Lemma 2.2.1"
+
+[[node]]
+id = "theorem_2_2_2"
+kind = "theorem"
+desc = '''
+Theorem 2.2.2, **corrected**. Assume `AssumptionBb f flow`, `AssumptionGL f L`, and let
+`IsSDBARun f α tini ε x i` with `ε > 0`. Put `t_min = min tini ((1-α)/L)`,
+`κ = 1 / (α t_min)` (`= L/(α(1-α))`, the book's `κ_SDBA`, when `tini ≥ (1-α)/L`) and
+`i_max = ⌈logb 2 (L tini / (2(1-α)))⌉₊`. Then there is `k_ε` with
+`IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε) k_ε`, `(k_ε : ℝ) ≤ κ (f (x 0) - flow) / ε²`,
+objective evaluations `1 + ∑_{k < k_ε} (i k + 1) ≤ 1 + (i_max + 1) κ (f (x 0) - flow)/ε²` and
+gradient evaluations `k_ε + 1 ≤ κ (f (x 0) - flow)/ε² + 1` (2.2.9).
+Correction: (2.2.8) as printed, `⌈log₂(L t_ini/(2(1-α)))⌉ κ_SDBA (f(x₀)-f_low)/ε²`, is false: it can
+be `≤ 0` (e.g. `t_ini ≤ 2(1-α)/L`) while at least one evaluation is made, it omits the first trial of
+each iteration, and `κ_SDBA = L/(α(1-α))` uses (2.2.7), valid only if `t_ini ≥ (1-α)/L`.
+'''
+deps = ["algorithm_2_2_1", "lemma_2_2_1", "AssumptionBb", "Optimization.IsFirstHit", "Optimization.card_mul_le_of_decrease"]
+source = "Cartis–Gould–Toint, Theorem 2.2.2"
+
+[[node]]
+id = "theorem_2_2_3"
+kind = "theorem"
+desc = '''
+Theorem 2.2.3 (sharpness). For all `α ∈ (0,1)`, `tini > 0` there are `L ≥ 1`, `flow` (depending
+only on `tini`) such that for every `ε ∈ (0,1)` with `ε⁻² = k_ε ∈ ℕ` there is
+`f : EuclideanSpace ℝ (Fin 1) → ℝ` with `AssumptionBb f flow`, `AssumptionGL f L`, and the SDBA run
+from `x₀ = 0` (unique) has `i k = 0` for `k < k_ε` and `IsFirstHit (‖∇f(x_k)‖ ≤ ε) k_ε`; thus it
+uses exactly `k_ε + 1` evaluations of `f` and of `∇f`. (The book's hypothesis `t_ini ≥ α` is not
+needed.) Proof: `Optimization.exists_slowFirstOrder_interpolant` with `θ ≡ tini`, lifted by
+`Optimization.ridge`.
+'''
+deps = ["algorithm_2_2_1", "AssumptionBb", "AssumptionGL", "Optimization.exists_slowFirstOrder_interpolant", "Optimization.ridge", "Optimization.IsFirstHit"]
+source = "Cartis–Gould–Toint, Theorem 2.2.3"
+
+[[node]]
+id = "IsSDEXRun"
+kind = "def"
+desc = '''
+The SDEX algorithm ((2.2.26), not a numbered algorithm) as a run predicate, parametrized by the
+line-search rule: `IsSDEXRun rule f ε x t : Prop := 0 < ε ∧ UntilHit (‖gradient f (x k)‖ ≤ ε)
+fun k => rule f (x k) (t k) ∧ x (k+1) = x k - t k • gradient f (x k)`, with
+`rule = LineSearch.IsExactLineMin` (book) or `LineSearch.IsFirstLocalLineMin`.
+Existence (part of node): if the sublevel set `{y | f y ≤ f x₀}` is bounded and `f` is `C¹`, a run
+exists for both rules (the line function attains its minimum / has a first stationary point).
+'''
+deps = ["Optimization.UntilHit", "LineSearch.IsFirstLocalLineMin", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, (2.2.26)"
+
+[[node]]
+id = "theorem_2_2_4"
+kind = "theorem"
+desc = '''
+Theorem 2.2.4. Under `AssumptionBb f flow`, `AssumptionGL f L`, for every SDEX run (either rule)
+with `ε > 0` there is `k_ε` with `IsFirstHit (‖∇f(x_k)‖ ≤ ε) k_ε` and
+`(k_ε : ℝ) ≤ 2 L (f (x 0) - flow) / ε²` (`κ_SDEX = 2 L_{f,1}`; iterations, not evaluations).
+'''
+deps = ["IsSDEXRun", "AssumptionBb", "AssumptionGL", "LineSearch.decrease_ge_of_exactLineMin", "Optimization.card_mul_le_of_decrease"]
+source = "Cartis–Gould–Toint, Theorem 2.2.4"
+
+[[node]]
+id = "theorem_2_2_5"
+kind = "theorem"
+desc = '''
+Theorem 2.2.5 (sharpness of SDEX), **for the first-local-minimizer line search**. There are `L ≥ 1`,
+`flow` such that for every `ε ∈ (0,1]` with `ε⁻² = k_ε ∈ ℕ` there is
+`f : EuclideanSpace ℝ (Fin 2) → ℝ` with `AssumptionBb f flow`, `AssumptionGL f L`, and an SDEX run
+with rule `LineSearch.IsFirstLocalLineMin` from `x₀ = 0` (steps `t_k = √2`) with
+`IsFirstHit (‖∇f(x_k)‖ ≤ ε) k_ε`. Correction: the book claims this for the global line minimizer
+(2.2.26), but its construction (Appendix B, Lemma B.2.6) only shows that `x_{k+1}` is the first local
+minimizer along the ray; the global minimizer along the ray lies far beyond (the function keeps
+decreasing along `x`). Whether SDEX with exact global line minimization attains `ε⁻²` remains open
+here.
+'''
+deps = ["IsSDEXRun", "AssumptionBb", "AssumptionGL", "Optimization.zigZagFunction", "Optimization.zigZag_gradient", "Optimization.zigZag_bounds", "Optimization.zigZag_isFirstLocalLineMin"]
+source = "Cartis–Gould–Toint, Theorem 2.2.5"

@@ -1,0 +1,19 @@
+desc = '''
+Surface library for C. Cartis, N. I. M. Gould, Ph. L. Toint, *Evaluation Complexity of Algorithms
+for Nonconvex Optimization* (MOS–SIAM Series on Optimization, 2022). One module per book section,
+`NumlibSurface.CartisGouldToint.ChapterNN.SectionMM` (namespace `CartisGouldToint.ChapterNN`),
+`AppendixA.SectionMM` (namespace `CartisGouldToint.AppendixA`), and `AppendixB.ChapterNN` for the
+separately numbered lemmas of Appendix B (namespace `CartisGouldToint.AppendixB`).
+
+Conventions (see `notes/cgt/core-design.md`): problems on `EuclideanSpace ℝ (Fin n)`; gradients
+`gradient f x`, Hessians `iteratedFDeriv ℝ 2 f x` (or the operator `Optimization.hessianOperator`),
+`λ_min[∇²f(x)] = minCurvature (iteratedFDeriv ℝ 2 f x)`; algorithms are run predicates (sequences
+satisfying the algorithm's rules before the first iteration passing the termination test, with
+the book's nondeterministic choices as hypotheses); complexity theorems assert the existence of
+the first termination index and explicit bounds on the evaluation counts
+`Optimization.funEvalCount` / `Optimization.derivEvalCount`; sharpness theorems exhibit a function
+in the class and a run whose first termination index is the claimed count; every algorithm has an
+existence theorem. Tolerances `ε₂ = +∞` are `none : Option ℝ`. Corrections of statements that are
+false as printed are documented in the node descriptions and collected in the reports
+`notes/cgt/reports/*.md`.
+'''

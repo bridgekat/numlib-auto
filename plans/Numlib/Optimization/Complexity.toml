@@ -1,0 +1,24 @@
+desc = '''
+Algorithm-agnostic evaluation-complexity machinery (Cartis–Gould–Toint, used in every chapter).
+
+Design. An iterative method is modelled *relationally*: a run is a family of sequences indexed by
+`ℕ` (iterates `x k`, steps `s k`, parameters `σ k`/`Δ k`, …) satisfying the method's rules at
+every iteration `k` **before termination** (`UntilHit test rule`: `∀ k, (∀ j ≤ k, ¬ test j) →
+rule k`); nondeterministic choices of the book (`σ_{k+1} ∈ [·,·]`, approximate model minimizers)
+are hypotheses, not functions. Termination is the first index where the test holds
+(`IsFirstHit`). Complexity theorems have the shape "for every run there is `k_ε` with
+`IsFirstHit test k_ε` and evaluation counts `≤` explicit bounds". Evaluation counts follow the
+book's convention: `f` evaluated once initially and once per iteration (`funEvalCount k = k + 1`),
+derivatives once initially and once per successful iteration (`derivEvalCount succ k = |S ∩ [0,k)| + 1`).
+
+Modules: `Basic` (first hits, success sets `S_k`, evaluation counts, the skeleton theorem
+`exists_hit_le_of_counting`), `ParameterCount` (Lemmas 2.3.1/2.4.1/13.1.1: unsuccessful iterations
+bounded through multiplicative parameter updates), `Telescoping` (sum of decreases over successful
+iterations), `Existence` (runs exist: dependent choice), `OracleMethod` (deterministic methods
+driven by oracle information, for "every method in a class" lower bounds, Sections 3.5, 4.2), and
+`SlowExample` (one-dimensional interpolated functions realizing prescribed iterate data: the
+sharpness constructions of Chapters 2, 3 and beyond).
+
+Concrete method families live in `Numlib/Optimization/ModelBased` (ratio tests, regularization and
+trust-region updates, Taylor and quadratic models) and `Numlib/Optimization/LineSearch`.
+'''

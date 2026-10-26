@@ -1,0 +1,10 @@
+desc = '''
+Cartis–Gould–Toint Chapter 1, "Introduction": optimality conditions for unconstrained, convexly
+constrained, equality- and inequality-constrained problems (Theorems 1.1.1–1.1.4) and criticality
+measures. Sections 1.2–1.4 contain no numbered results.
+
+Source corrections: Theorem 1.1.2's converse is false as printed (radial directions must be
+replaced by tangent-cone directions; counterexample `C = {v ≥ u²}`, `f = v - 2u²`); the sufficient
+conditions (1.1.15), (1.1.18) must exclude `d = 0`; "a constraint qualification" is taken to be
+LICQ.
+'''

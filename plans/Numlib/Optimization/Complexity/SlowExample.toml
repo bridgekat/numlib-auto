@@ -1,0 +1,93 @@
+namespace = "Optimization"
+desc = '''
+Sharpness ("slow convergence") constructions shared by Chapters 2, 3 (and the comments of
+Chapter 4): prescribed values/derivatives at a prescribed increasing sequence of points on the
+line are interpolated (Hermite, `Hermite.exists_contDiff_interpolating_jets_bounded`) by a function
+whose derivatives are bounded and Lipschitz with constants **independent of the tolerance ε**,
+then lifted to any inner product space as a ridge function `x ↦ g ⟪e, x⟫`. Three data families
+(first-order, second-order first-order-slow, second-order curvature-slow) are parametrized by a
+sequence of step factors `θ_k ∈ [a, b]`, so that the same lemma serves steepest descent, TR1 and AR1
+(`θ ≡ t_ini`), AR2 with any regularization weight, and every method of class `𝓜` (whatever
+`θ_k` the method picks). A multidimensional gluing lemma (bumps around well-separated points) serves
+the two-dimensional Newton example of Theorem 3.1.1.
+'''
+
+[[node]]
+id = "ridge"
+kind = "def"
+desc = '''
+For `g : ℝ → ℝ` and `e : E` (real inner product space): `ridge g e x := g ⟪e, x⟫`. API (part of
+node): if `‖e‖ = 1` and `ContDiff ℝ p g` then `ContDiff ℝ p (ridge g e)`,
+`iteratedFDeriv ℝ j (ridge g e) x (fun _ => d) = iteratedDeriv j g ⟪e,x⟫ * ⟪e, d⟫ ^ j`,
+`‖iteratedFDeriv ℝ j (ridge g e) x‖ = |iteratedDeriv j g ⟪e, x⟫|` (`E` nontrivial),
+`gradient (ridge g e) x = deriv g ⟪e,x⟫ • e`, Lipschitz constants of `D^j` transfer, and
+`minCurvature (iteratedFDeriv ℝ 2 (ridge g e) x) = min 0 (g''(⟪e,x⟫))` when `dim E ≥ 2`
+(`= g''` in dimension one).
+'''
+deps = ["minCurvature"]
+source = "Cartis–Gould–Toint, footnote 10 (one-dimensional examples embed in ℝⁿ)"
+
+[[node]]
+id = "exists_slowFirstOrder_interpolant"
+kind = "theorem"
+desc = '''
+First-order slow example (Theorem 2.2.3 data). For `0 < a ≤ b` there are `L B` (depending only on
+`a, b`) such that: for every `ε ∈ (0,1]` with `k_ε = ε⁻²` a natural number, and every `θ : ℕ → ℝ`
+with `θ k ∈ [a, b]`, setting `ω_k = ε (k_ε - k)/k_ε`, `g_k = -(ε + ω_k)`, `x_0 = 0`,
+`x_{k+1} = x_k - θ_k g_k`, `f_0 = 4 b`, `f_{k+1} = f_k - θ_k g_k²`, there is `G : ℝ → ℝ`,
+`ContDiff ℝ 1 G`, `deriv G` `L`-Lipschitz, `|G| ≤ B`, `G (x k) = f_k`, `deriv G (x k) = g_k`
+(`k ≤ k_ε`). (Book (2.2.14)–(2.2.22) with `θ ≡ t_ini`; the bounds `|g_{k+1} - g_k| = ε³ ≤ s_k/θ_k`
+give (A.32) with `κ = max(1/a, 4b, 2)`.) The integrality of `ε⁻²` is the book's implicit
+assumption in (2.2.14); a variant with `k_ε = ⌈ε⁻²⌉` and `ω_k = ε (k_ε - k)/k_ε` holds as well.
+'''
+deps = ["Hermite.exists_contDiff_interpolating_jets_bounded"]
+source = "Cartis–Gould–Toint, proof of Theorem 2.2.3"
+
+[[node]]
+id = "exists_slowSecondOrder_interpolant"
+kind = "theorem"
+desc = '''
+Second-order example, slow to first-order criticality (Theorem 3.5.4 data, (3.5.12)). For
+`0 < a ≤ b` there are `L B` (depending only on `a, b`) such that for every `ε ∈ (0,1)` and
+`θ : ℕ → ℝ`, `θ k ∈ [a,b]`: with `k_ε = ⌈ε^{-3/2}⌉₊`, `f_k = 1 - k ε^{3/2}/2`, `g_k = -2 ε f_k`,
+`H_k = 4 ε^{1/2} f_k²`, `x_0 = 0`, `x_{k+1} = x_k + θ_k ε^{1/2} / (2 f_k)`, there is `G : ℝ → ℝ`,
+`ContDiff ℝ 2 G`, `iteratedDeriv 2 G` `L`-Lipschitz, `|G|, |G'|, |G''| ≤ B` on `ℝ`, interpolating
+`(f_k, g_k, H_k)` at `x_k` for `k ≤ k_ε`. (Appendix B proof of Theorem 3.5.4: the residuals
+`r_{0,k}/s_k³, r_{1,k}/s_k², r_{2,k}/s_k` of (B.3.11) are bounded in terms of `a, b`.)
+'''
+deps = ["Hermite.exists_contDiff_interpolating_jets_bounded"]
+source = "Cartis–Gould–Toint, proof of Theorem 3.5.4, Appendix B (Proof of Theorem 3.5.4)"
+
+[[node]]
+id = "exists_slowNegCurvature_interpolant"
+kind = "theorem"
+desc = '''
+Second-order example, slow to second-order criticality (Theorem 3.2.7 data, (3.2.24)). For
+`0 < a ≤ b` there are `L B` such that for every `ε ∈ (0,1]` and `θ : ℕ → ℝ`, `θ k ∈ [a,b]`: with
+`k_ε = ⌈ε^{-3}⌉₊`, `c_k = 2 - k/k_ε`, `H_k = -ε c_k`, `g_k = 0`, `x_0 = 0`, `s_k = θ_k ε`,
+`x_{k+1} = x_k + s_k`, `f_0 = 1`, `f_{k+1} = f_k + H_k s_k² / 2`, there is `G` as in
+`exists_slowSecondOrder_interpolant` interpolating `(f_k, 0, H_k)` at `x_k`, `k ≤ k_ε`
+(residuals: `r_0 = 0`, `|r_1|/s² = c_k/θ_k ≤ 2/a`, `|r_2|/s = 1/(θ_k k_ε) ≤ 1/a`). TR2 uses
+`θ ≡ 1`; AR2 with constant weight `σ` uses `θ_k = 2 c_k/σ`.
+(The book's (3.2.25) `x_k = (k-1)ε` is a typo for `x_k = kε`, and its claim `f_{k_ε} ≥ 0` needs
+`ε^{-3}` integral; boundedness of `f` is all that is needed.)
+'''
+deps = ["Hermite.exists_contDiff_interpolating_jets_bounded"]
+source = "Cartis–Gould–Toint, proof of Theorem 3.2.7"
+
+[[node]]
+id = "exists_contDiff_interpolating_separated_jets"
+kind = "theorem"
+desc = '''
+Multidimensional gluing. `E` finite-dimensional real inner product space, `r > 0`, `κ ≥ 0`. There is
+`B` (depending only on `r, κ`, not on the number of points) such that for any finite family of
+points `x_k` (`k ≤ K`) with `‖x_i - x_j‖ ≥ 2 r` (`i ≠ j`) and quadratic jets `(f_k, g_k, H_k)`
+(`H_k` symmetric bilinear) with `|f_k|, ‖g_k‖, ‖H_k‖ ≤ κ`, there is `F : E → ℝ`, `ContDiff ℝ ⊤ F`,
+with `F (x k) = f_k`, `gradient F (x k) = g_k`, `iteratedFDeriv ℝ 2 F (x k) = H_k`, and
+`|F x| ≤ B`, `‖iteratedFDeriv ℝ j F x‖ ≤ B` for `j ≤ 3`, all `x`. Construction:
+`F = ∑_k ψ((x - x_k)/r) q_k(x)`, `ψ` a `ContDiffBump` equal to `1` near `0` and supported in the
+unit ball, `q_k` the quadratic Taylor polynomial of the jet (at most one term is nonzero at each
+point). Book's two-dimensional Newton example (3.1.7), with a smooth bump instead of the book's
+piecewise-polynomial `σ`.
+'''
+source = "Cartis–Gould–Toint, proof of Theorem 3.1.1, (3.1.7)"

@@ -1,0 +1,65 @@
+namespace = "Optimization"
+desc = '''
+Runs, first hits, success sets and evaluation counts. All index sets are `Finset ℕ` built with
+`Finset.filter` on `Finset.range` (classical decidability). `successSet succ k` is the book's
+`𝒮_k = {j ∈ [0:k] | j ∈ 𝒮}` (2.3.10) (note: *includes* `k`); `failureSet succ k = 𝒰_k`.
+'''
+
+[[node]]
+id = "IsFirstHit"
+kind = "def"
+desc = '''
+`IsFirstHit (test : ℕ → Prop) (k : ℕ) : Prop := test k ∧ ∀ j < k, ¬ test j` (termination at
+iteration `k`). API (part of node): uniqueness; `∃ k, test k → ∃ k, IsFirstHit test k` (via
+`Nat.find`, classical); `IsFirstHit test k → test j → k ≤ j`.
+'''
+source = "Cartis–Gould–Toint, Section 1.2.4 (termination at the first iterate passing the test)"
+
+[[node]]
+id = "UntilHit"
+kind = "def"
+desc = '''
+`UntilHit (test rule : ℕ → Prop) : Prop := ∀ k, (∀ j ≤ k, ¬ test j) → rule k`: the rule of the
+method holds at every iteration at which the method has not yet terminated (Step 1 of every
+algorithm in the book returns before Steps 2–4 when the test holds). Lemma: `UntilHit.mono`.
+'''
+source = "Cartis–Gould–Toint, Algorithms 2.2.1–14.3.2 (Step 1: test for termination)"
+
+[[node]]
+id = "successSet"
+kind = "def"
+desc = '''
+`successSet (succ : ℕ → Prop) (k : ℕ) : Finset ℕ := (Finset.range (k + 1)).filter succ` and
+`failureSet succ k := (range (k + 1)).filter (¬ succ ·)`. Lemmas (part of node):
+`card_successSet_add_card_failureSet : |S_k| + |U_k| = k + 1`, monotonicity in `k`,
+`|S_{k+1}| ≤ |S_k| + 1`.
+'''
+source = "Cartis–Gould–Toint, (2.3.9)–(2.3.10)"
+
+[[node]]
+id = "funEvalCount"
+kind = "def"
+desc = '''
+Evaluation-count conventions. `funEvalCount (k : ℕ) : ℕ := k + 1` — objective evaluations of a
+model-based method that terminates at iteration `k` (initial value plus one trial value per
+iteration `0..k-1`); `derivEvalCount (succ : ℕ → Prop) (k : ℕ) : ℕ :=
+((Finset.range k).filter succ).card + 1` — derivative evaluations (initial plus one after each
+successful iteration before `k`). Methods with inner loops (backtracking line searches, accuracy
+loops of Chapter 13) state their own counts explicitly.
+'''
+deps = ["successSet"]
+source = "Cartis–Gould–Toint, proofs of Theorems 2.3.7, 2.4.4 (evaluation counting)"
+
+[[node]]
+id = "exists_hit_le_of_counting"
+kind = "theorem"
+desc = '''
+Complexity skeleton. Let `test succ : ℕ → Prop`, `A B N : ℝ`, `0 ≤ A`, and suppose for every `k`
+before the first hit (`∀ j ≤ k, ¬ test j`): (counting) `(k + 1 : ℝ) ≤ A * |successSet succ k| + B`
+and (decrease) `|successSet succ k| ≤ N`. Then `∃ k ≤ ⌊A * N + B⌋₊, test k`; hence there is `k_ε`
+with `IsFirstHit test k_ε` and `(k_ε : ℝ) ≤ A * N + B`. Variant (part of node) when the decrease
+bound is only available for successes before `k` (`|successSet succ (k - 1)| ≤ N`, AR2-style
+"`S_{k-1}`" arguments): conclusion with `N + 1`.
+'''
+deps = ["IsFirstHit", "successSet"]
+source = "Cartis–Gould–Toint, Section 2.2.2 (\"the same basic pattern will occur many times\")"

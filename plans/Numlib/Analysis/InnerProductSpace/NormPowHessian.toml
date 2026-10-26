@@ -1,0 +1,46 @@
+desc = '''
+First and second derivatives of `s ↦ ‖s‖ ^ r` (`r ≥ 2`) on a real inner product space, everywhere
+including the origin: the regularization terms `σ/(p+1)! ‖s‖^{p+1}` of adaptive-regularization
+models (Cartis–Gould–Toint (2.4.1), (3.3.1), (4.1.2)). Away from the origin these follow from
+`Numlib/Analysis/InnerProductSpace/NormPow` (`hasFDerivAt_norm_rpow_of_ne_zero`, smoothness off `0`)
+and Mathlib's `hasFDerivAt_norm_rpow` (`r > 1`, all points). The general `j`-th derivative and its
+norm (Cartis–Gould–Toint Lemma B.4.1, needed for third-order conditions in Chapter 4) extend this
+module; that lemma's printed statement needs care for non-integer exponents (see the Chapter 4/B
+plans).
+'''
+
+[[node]]
+id = "fderiv_norm_rpow_apply"
+kind = "theorem"
+desc = '''
+For `r > 1` and all `s v : E`: `fderiv ℝ (fun s => ‖s‖ ^ r) s v = r * ‖s‖ ^ (r - 2) * ⟪s, v⟫`
+(read as `0` at `s = 0`), equivalently `gradient (‖·‖^r) s = (r * ‖s‖^(r-2)) • s`; its norm is
+`r ‖s‖^{r-1}`.
+'''
+deps = ["hasFDerivAt_norm_rpow_of_ne_zero"]
+source = "Cartis–Gould–Toint, (3.3.2)"
+
+[[node]]
+id = "iteratedFDeriv_two_norm_rpow_apply"
+kind = "theorem"
+desc = '''
+For `r ≥ 2`, `s ↦ ‖s‖^r` is `ContDiff ℝ 2` and for all `s u v`:
+`iteratedFDeriv ℝ 2 (fun s => ‖s‖ ^ r) s ![u, v] = r ‖s‖^{r-2} ⟪u, v⟫ + r (r - 2) ‖s‖^{r-4} ⟪s, u⟫⟪s, v⟫`
+for `s ≠ 0`, and `= 0` at `s = 0` when `r > 2` (`= 2⟪u, v⟫` when `r = 2`). (The book's display after
+(3.3.2) has a spurious factor 2 for `r = 3`; the correct Hessian of `σ/6 ‖s‖³` is
+`σ/2 (‖s‖ I + s sᵀ/‖s‖)`.)
+'''
+deps = ["fderiv_norm_rpow_apply"]
+source = "Cartis–Gould–Toint, (3.3.2), proof of Lemma 3.3.8, (4.1.29)"
+
+[[node]]
+id = "iteratedFDeriv_two_norm_rpow_bounds"
+kind = "theorem"
+desc = '''
+For `r ≥ 2` and all `s d`: `0 ≤ D²(‖·‖^r)(s)[d,d] ≤ r (r - 1) ‖s‖^{r-2} ‖d‖²`, with equality on the
+right for `d = s`; hence `‖iteratedFDeriv ℝ 2 (‖·‖^r) s‖ = r (r-1) ‖s‖^{r-2}` and
+`minCurvature (-(D²(‖·‖^r) s)) = -r (r-1) ‖s‖^{r-2}` for `E` nontrivial
+(the book's (3.3.28) for `r = 3`: `max_{‖d‖=1} ⟨∇²(‖s‖³) d, d⟩ = 6 ‖s‖`).
+'''
+deps = ["iteratedFDeriv_two_norm_rpow_apply", "minCurvature_le_apply"]
+source = "Cartis–Gould–Toint, (3.3.28), (4.1.29)"

@@ -1,0 +1,61 @@
+namespace = "CartisGouldToint.AppendixA"
+desc = '''
+§A.8 Taylor's theorem, on `EuclideanSpace ℝ (Fin n)` (multivariate) and `ℝ` (univariate).
+Specializations of `Numlib/Analysis/Calculus/MultivariateTaylor` and
+`Numlib/Analysis/Calculus/LipschitzIteratedFDeriv`; tensor norms are operator norms.
+'''
+
+[[node]]
+id = "theorem_A_8_1"
+kind = "theorem"
+desc = '''
+Theorem A.8.1. `ψ : ℝ → ℝ`, `k ≥ 1`, `h ≥ 0`, `ContDiffOn ℝ k ψ (Icc t (t+h))`:
+`ψ(t+h) - τ_k(t,h) = 1/(k-1)! ∫_0^h (h-ξ)^{k-1} (ψ^{(k)}(t+ξ) - ψ^{(k)}(t)) dξ` (A.9), `τ_k` the
+`k`-th degree Taylor polynomial.
+'''
+deps = ["taylor_integral_remainder_sub"]
+source = "Cartis–Gould–Toint, Theorem A.8.1"
+
+[[node]]
+id = "theorem_A_8_2"
+kind = "theorem"
+desc = '''
+Theorem A.8.2 (Lagrange form). `ψ` `C^{k+1}` on `[t, t+h]` (`h ≠ 0`, either sign): there is `ξ`
+between `t` and `t + h` with `ψ(t+h) - τ_k(t,h) = ψ^{(k+1)}(ξ) h^{k+1}/(k+1)!`.
+'''
+deps = ["exists_taylorWithinEval_add_iteratedDeriv_mul"]
+source = "Cartis–Gould–Toint, Theorem A.8.2"
+
+[[node]]
+id = "theorem_A_8_3"
+kind = "theorem"
+desc = '''
+Theorem A.8.3. `C` convex, `D ⊇ C` open in `EuclideanSpace ℝ (Fin n)`, `f` `C^p` on `D`,
+`‖∇^p f(x) - ∇^p f(y)‖ ≤ H ‖x - y‖^β` on `C` (`β ∈ [0,1]`, (A.13)), `x, x + s ∈ C`: (A.14)
+`|f(x+s) - T_{f,p}(x,s)| ≤ H/(p+β)! ‖s‖^{p+β}` and (A.15) for `j ∈ [1:p]`
+`‖∇^j f(x+s) - ∇^j_s T_{f,p}(x,s)‖ ≤ H/(p-j+β)! ‖s‖^{p-j+β}`, with `(k+β)! = holderFactorial k β`.
+Also the identity (A.16) `∫_0^1 ξ^β (1-ξ)^{k-1} dξ = (k-1)!/(k+β)!`.
+'''
+deps = ["abs_sub_taylorPolynomial_le_of_holder", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder", "integral_rpow_mul_one_sub_pow", "holderFactorial"]
+source = "Cartis–Gould–Toint, Theorem A.8.3"
+
+[[node]]
+id = "corollary_A_8_4"
+kind = "theorem"
+desc = '''
+Corollary A.8.4. Same setting with a Lipschitz `p`-th derivative (A.18), constant `L`: (A.19)
+`|f(x+s) - T_{f,p}(x,s)| ≤ L/(p+1)! ‖s‖^{p+1}` and (A.20)
+`‖∇^j f(x+s) - ∇^j_s T_{f,p}(x,s)‖ ≤ L/(p-j+1)! ‖s‖^{p-j+1}` for `j ∈ [1:p]`.
+'''
+deps = ["abs_sub_taylorPolynomial_le_of_lipschitz", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, Corollary A.8.4"
+
+[[node]]
+id = "theorem_A_8_5"
+kind = "theorem"
+desc = '''
+Theorem A.8.5. `C` open convex in `EuclideanSpace ℝ (Fin n)`, `f` `C^{p+1}` on `C`:
+`(∀ x y ∈ C, ‖∇^p f(x) - ∇^p f(y)‖ ≤ L ‖x - y‖) ↔ ∀ x ∈ C, ‖∇^{p+1} f(x)‖ ≤ L` (A.21).
+'''
+deps = ["iteratedFDerivLipschitzOn_of_norm_le", "norm_iteratedFDeriv_succ_le_of_lipschitzOn"]
+source = "Cartis–Gould–Toint, Theorem A.8.5"

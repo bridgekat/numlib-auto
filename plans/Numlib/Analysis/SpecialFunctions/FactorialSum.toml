@@ -1,0 +1,31 @@
+desc = '''
+Elementary bounds on partial sums of the exponential series used to control Taylor sums
+(Cartis–Gould–Toint Lemma A.10.1 and (A.34)–(A.36)), from `∑ δ^i/i! ≤ exp δ ≤ 1 + 2δ` on `[0,1]`
+(Mathlib `Real.add_one_le_exp`, `Real.exp_bound'`, `Real.sum_le_exp_of_nonneg`).
+'''
+
+[[node]]
+id = "sum_pow_div_factorial_le_one_add_two_mul"
+kind = "theorem"
+desc = '''
+For `δ ∈ [0,1]` and `j ≤ p`: `∑ ℓ ∈ Finset.Icc j p, δ ^ (ℓ - j) / (ℓ - j)! ≤ 1 + 2 δ`.
+'''
+source = "Cartis–Gould–Toint, Lemma A.10.1, first bound of (A.33)"
+
+[[node]]
+id = "sum_pow_div_factorial_Icc_succ_le"
+kind = "theorem"
+desc = '''
+For `δ ∈ [0,1]` and `j ≤ p`: `∑ ℓ ∈ Finset.Icc (j + 1) (p + 1), δ ^ ℓ / ℓ! ≤ 2 δ ^ (j + 1) / j!`.
+'''
+source = "Cartis–Gould–Toint, Lemma A.10.1, second bound of (A.33)"
+
+[[node]]
+id = "sum_pow_div_factorial_le_two_mul_pow"
+kind = "theorem"
+desc = '''
+For `δ ≥ 1` and `j ≥ 1`: `∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ! ≤ 2 δ ^ j` (A.35); for `δ ∈ [0,1]`:
+`∑ ℓ ∈ Icc 1 j, δ^ℓ/ℓ! ≤ 2 δ` (A.34).
+'''
+deps = ["sum_pow_div_factorial_Icc_succ_le"]
+source = "Cartis–Gould–Toint, (A.34), (A.35)"
