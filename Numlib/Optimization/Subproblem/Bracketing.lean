@@ -33,8 +33,9 @@ constant once a trial value lies in `Ioc a b`.
 The book bounds the width ratio by `max (1 - θ, θ, γ √λᵁ/(√λᴸ + √λᵁ))`; this is valid but not
 uniformly below `1`. The geometric branch in fact contracts by `√λᴸ/(√λᴸ + √λᵁ) ≤ 1/2` when it
 moves the upper end, which gives the uniform factor `ρ`. Finite termination needs the initial
-lower end below `b`: if `λᴸ = λ*` initially, every later trial value exceeds `λ*` and the run never
-stops, a degenerate case not excluded by the book's "finite convergence if `𝓛` is nonempty".
+lower end below `b`: if `λᴸ = λ*` initially, a run need not stop (while the upper end exceeds
+`λ*`, every trial value exceeds `λ*`), a degenerate case not excluded by the book's "finite
+convergence if `𝓛` is nonempty".
 -/
 
 open Set
@@ -119,6 +120,13 @@ theorem bracketEstimate_mem_Icc (hl : 0 ≤ l) (hlu : l ≤ u) (hγ : γ ∈ ({0
   nlinarith [hθ.2]
 
 end Estimate
+
+/-- A lower-end update with an estimate `e ≤ a` is one for any larger bound `a'`. -/
+theorem IsLowerUpdate.mono {a a' l l' : ℝ} (haa : a ≤ a') (h : IsLowerUpdate a l l') :
+    IsLowerUpdate a' l l' := by
+  rcases h with h | ⟨e, he, h⟩
+  · exact Or.inl h
+  · exact Or.inr ⟨e, he.trans haa, h⟩
 
 /-- The lower end after an update is at least the old one. -/
 theorem IsLowerUpdate.le {a l l' : ℝ} (h : IsLowerUpdate a l l') : l ≤ l' := by

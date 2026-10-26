@@ -1,64 +1,32 @@
 namespace = "CartisGouldToint.Chapter08"
 desc = '''
-§8.1 The context of the step computation: the scaling norm, the quadratic model (8.1.1), the
-trust-region subproblem (8.1.2), the regularized model (8.1.4) and the regularization subproblem
-(8.1.3). No numbered results; these definitions are used by Chapters 8–11.
+§8.1: scaled norm, quadratic and regularized models, the two subproblems, bridge to the M-inner product space.
 '''
 
 [[node]]
 id = "mNorm"
-kind = "definition"
-desc = '''
-`mNorm M v = √⟪v, toEuclideanLin M v⟫`, the book's `‖v‖_M` (§8.1, after (8.1.4)); for
-`M.PosDef` it is a norm, equal to `‖toEnergy v‖` in the energy space of `M`. The dual norm
-`‖v‖_{M⁻¹}` is `mNorm M⁻¹ v`.
-'''
 source = "Cartis–Gould–Toint, §8.1"
 
 [[node]]
 id = "model"
-kind = "definition"
-desc = '''
-`model g H s = ⟪g, s⟫ + (1/2) ⟪s, toEuclideanLin H s⟫` (book (8.1.1)).
-'''
 source = "Cartis–Gould–Toint, (8.1.1)"
 
 [[node]]
 id = "regModel"
-kind = "definition"
-desc = '''
-`regModel g H M σ r s = model g H s + (1/r) * σ * mNorm M s ^ r` (`Real.rpow`, `r ≥ 2`; book
-(8.1.4), the "1/r" normalization of footnote 59).
-'''
-deps = ["model", "mNorm"]
 source = "Cartis–Gould–Toint, (8.1.4)"
 
 [[node]]
 id = "IsTrustRegionSolution"
-kind = "definition"
-desc = '''
-`IsTrustRegionSolution g H M Δ s : Prop := mNorm M s ≤ Δ ∧ ∀ u, mNorm M u ≤ Δ → model g H s ≤ model g H u`,
-`s` is a global minimizer of the trust-region subproblem (8.1.2).
-'''
-deps = ["model", "mNorm"]
 source = "Cartis–Gould–Toint, (8.1.2)"
 
 [[node]]
 id = "IsRegularizationSolution"
-kind = "definition"
-desc = '''
-`IsRegularizationSolution g H M σ r s : Prop := ∀ u, regModel g H M σ r s ≤ regModel g H M σ r u`,
-`s` is a global minimizer of the regularization subproblem (8.1.3).
-'''
-deps = ["regModel"]
 source = "Cartis–Gould–Toint, (8.1.3)"
 
 [[node]]
 id = "isTrustRegionSolution_iff_scaled"
-kind = "theorem"
-desc = '''
-Bridge: for `M.PosDef`, `IsTrustRegionSolution g H M Δ s ↔ ‖toEnergy s‖ ≤ Δ ∧ IsMinOn (Subproblem.quadModel (scaledGrad g) (scaledOp H)) (closedBall 0 Δ) (toEnergy s)`,
-and `IsRegularizationSolution g H M σ r s ↔ IsMinOn (Subproblem.regModel (scaledGrad g) (scaledOp H) σ r) univ (toEnergy s)`.
-'''
-deps = ["IsTrustRegionSolution", "IsRegularizationSolution", "Subproblem.quadModel_scaled"]
+source = "Cartis–Gould–Toint, §8.1"
+
+[[node]]
+id = "isRegularizationSolution_iff_scaled"
 source = "Cartis–Gould–Toint, §8.1"

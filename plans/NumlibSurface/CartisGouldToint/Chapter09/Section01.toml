@@ -1,41 +1,16 @@
 namespace = "CartisGouldToint.Chapter09"
 desc = '''
-§9.1 Matrix factorization: Algorithm 9.1.1 computes `π(λ)` and its first `l_max` derivatives from
-a factorization `H + λM = L D Lᵀ`, justified by Corollary 9.1.1 (via Theorem 8.2.6). The algorithm
-is deterministic and is formalized as a function of `(L, D, g, M, l_max)`. Mathlib's
-`LDL.lower`/`LDL.diag` (`Mathlib/Analysis/Matrix/LDL`) or Numlib's `Matrix.IsLDM` supply such
-factorizations of a positive-definite matrix; the statement only needs `L` invertible and `D`
-diagonal invertible with `L D Lᵀ = H + λM`.
+§9.1: Algorithm 9.1.1 (derivatives of the secular function from LDLᵀ factors) and Corollary 9.1.1.
 '''
 
 [[node]]
 id = "algorithm_9_1_1"
-kind = "definition"
-desc = '''
-Algorithm 9.1.1 (Given `λ ∈ 𝓕`, find `π(λ)` and its first `l_max` derivatives). Inputs: invertible
-`L`, diagonal invertible `D`, `g`, `M`, `l_max > 0`. Define `y⁽⁰⁾ = L⁻¹(-g)`, `z⁽⁰⁾ = D⁻¹ y⁽⁰⁾`,
-`s⁽⁰⁾ = L⁻ᵀ z⁽⁰⁾`, `π = ⟪s⁽⁰⁾, M s⁽⁰⁾⟫`, `α₀ = 1`, and for `k = 0, 1, …`:
-`βₖ = 2 αₖ/(k+1)`, `y⁽ᵏ⁺¹⁾ = L⁻¹((k+1) M s⁽ᵏ⁾)`, `z⁽ᵏ⁺¹⁾ = D⁻¹ y⁽ᵏ⁺¹⁾`,
-`π⁽²ᵏ⁺¹⁾ = -βₖ ⟪y⁽ᵏ⁺¹⁾, z⁽ᵏ⁺¹⁾⟫`, `αₖ₊₁ = (2k+3) βₖ`, `s⁽ᵏ⁺¹⁾ = L⁻ᵀ z⁽ᵏ⁺¹⁾`,
-`π⁽²ᵏ⁺²⁾ = αₖ₊₁ ⟪s⁽ᵏ⁺¹⁾, M s⁽ᵏ⁺¹⁾⟫`. Output: `algorithm_9_1_1 L D g M : ℕ → ℝ`, `j ↦ π⁽ʲ⁾`
-(the loop bound `k ≤ ⌈l_max/2⌉` of the book computes a few values past `l_max`; the output is
-read for `j ≤ l_max`, so the bound is immaterial).
-'''
 source = "Cartis–Gould–Toint, Algorithm 9.1.1"
 
 [[node]]
+id = "algS_eq"
+source = "Cartis–Gould–Toint, Algorithm 9.1.1, (8.2.29)"
+
+[[node]]
 id = "corollary_9_1_1"
-kind = "theorem"
-desc = '''
-Corollary 9.1.1 (Derivatives of the secular function via `LDLᵀ` factors). If `H + λM` is positive
-definite and `H + λM = L D Lᵀ` (L invertible, D diagonal invertible), then
-`algorithm_9_1_1 L D g M j = iteratedDeriv j (secularFn g H M) λ` for all `j` (in particular for
-`j ≤ l_max`). The vectors computed satisfy `s⁽ᵏ⁾_alg = (-1)^k s⁽ᵏ⁾` with `s⁽ᵏ⁾ = secularDerivVec`
-of Theorem 8.2.6 (the algorithm's right-hand side `+(k+1) M s⁽ᵏ⁾` has the opposite sign to (8.2.29);
-values are unaffected since they are quadratic in the vectors). The odd derivatives also equal
-`2 αₖ ⟪s⁽ᵏ⁾, M s⁽ᵏ⁺¹⁾⟫` with the *true* derivative vectors of Theorem 8.2.6 (not the algorithm's).
-Cholesky case (`D = 1`): `π⁽²ᵏ⁺¹⁾ = -βₖ ‖y⁽ᵏ⁺¹⁾‖²` (the book's text says `-2βₖ‖y⁽ᵏ⁺¹⁾‖²`, a
-factor-2 slip).
-'''
-deps = ["algorithm_9_1_1", "CartisGouldToint.Chapter08.theorem_8_2_6", "CartisGouldToint.Chapter08.secularDerivVec"]
 source = "Cartis–Gould–Toint, Corollary 9.1.1"

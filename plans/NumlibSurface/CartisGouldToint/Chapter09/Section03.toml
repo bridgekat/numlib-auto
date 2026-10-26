@@ -1,124 +1,68 @@
 namespace = "CartisGouldToint.Chapter09"
 desc = '''
-§9.3 The regularization subproblem: initial bounds `λᴸ ≤ λ* ≤ λᵁ` (§9.3.1, (9.3.3)–(9.3.7)),
-the potential-hard-case inverse iteration (Algorithm 9.3.1, Theorem 9.3.1), monotonicity of `𝓛` in
-`σ` (§9.3.5) and the constructive early-termination test (Theorem 9.3.2). The safeguarded update
-(9.3.10)–(9.3.12) and the overall procedure of §9.3.7 are heuristics combining these and are not
-separately formalized beyond `algorithm_9_2_1` (their admissible choices are covered by its run
-predicate).
+§9.3: bounds on the regularization multiplier, generalized Gershgorin, Algorithm 9.3.1 and Theorem 9.3.1, monotonicity of L in σ, early termination (Theorem 9.3.2, (9.3.16)).
 '''
+
+[[node]]
+id = "rightmostPencil"
+source = "Cartis–Gould–Toint, (9.3.1)"
+
+[[node]]
+id = "rightmostPencil_eq"
+source = "Cartis–Gould–Toint, (9.3.1)"
 
 [[node]]
 id = "lambdaStar_bounds_9_3_3"
-kind = "theorem"
-desc = '''
-(9.3.1)–(9.3.4). Let `σ > 0`, `r > 2`, `s*` a global minimizer of (8.1.3), `λ* = σ‖s*‖_M^{r-2}`,
-`λ₁ ≤ … ≤ λₙ` the pencil eigenvalues. Then
-`(λ* + λ₁) λ*^{1/(r-2)} ≤ σ^{1/(r-2)} ‖g‖_{M⁻¹} ≤ (λ* + λₙ) λ*^{1/(r-2)}` (9.3.3), hence the same
-with any outer bounds `λ₁ᴸ ≤ λ₁`, `λₙᵁ ≥ λₙ` (9.3.4); and if `λᵁ`, `λᴸ` are the rightmost real roots
-of `(λ + λ₁ᴸ) λ^{1/(r-2)} = σ^{1/(r-2)}‖g‖_{M⁻¹}` and `(λ + λₙᵁ) λ^{1/(r-2)} = σ^{1/(r-2)}‖g‖_{M⁻¹}`
-on `λ ≥ 0` (9.3.5) then `λᴸ ≤ λ* ≤ λᵁ` ((9.2.1)). Also `λ* ≥ λₛ`.
-'''
-deps = ["CartisGouldToint.Chapter08.theorem_8_2_8", "CartisGouldToint.Chapter08.leftmostPencil", "Subproblem.eigenvalues_scaledOp"]
 source = "Cartis–Gould–Toint, (9.3.3)–(9.3.5)"
 
 [[node]]
+id = "exists_abs_sub_le_of_eigen"
+source = "Cartis–Gould–Toint, (9.3.6)–(9.3.7)"
+
+[[node]]
 id = "pencil_gershgorin_9_3_7"
-kind = "theorem"
-desc = '''
-Generalized Gershgorin bounds (9.3.6)–(9.3.7). If `M` is symmetric positive definite and strictly
-diagonally dominant (`o_kᴹ = ∑_{i≠k} |m_ki| < m_kk`) then every eigenvalue `λ` of the pencil
-`(H, M)` satisfies `|h_kk - λ m_kk| ≤ o_kᴴ + |λ| o_kᴹ` for some `k`, each such set is a compact
-interval, and `λ₁ ≥ min_k min((h_kk - o_kᴴ)/(m_kk - o_kᴹ), (h_kk - o_kᴴ)/(m_kk + o_kᴹ))`,
-`λₙ ≤ max_k max((h_kk + o_kᴴ)/(m_kk - o_kᴹ), (h_kk + o_kᴴ)/(m_kk + o_kᴹ))`. (The book's intermediate
-inequality (9.3.6) drops the factors `|uᵢ|/|u_k| ≤ 1`; the final bound is unaffected.) Also, for
-`M = I`, `-‖H‖ ≤ λ₁ ≤ λₙ ≤ ‖H‖ ≤ min(‖H‖_∞, ‖H‖_F)`, and `λ₁ ≤ min_i h_ii/m_ii`.
-'''
-deps = ["CartisGouldToint.Chapter08.leftmostPencil"]
 source = "Cartis–Gould–Toint, (9.3.6)–(9.3.7), §9.3.1"
 
 [[node]]
+id = "invIterVec"
+source = "Cartis–Gould–Toint, Algorithm 9.3.1"
+
+[[node]]
 id = "algorithm_9_3_1"
-kind = "definition"
-desc = '''
-Algorithm 9.3.1 (Potential hard case) as a run predicate on `(λᴳ k, z k, n k, ω k, γ k)`:
-constants `0 < ωL ≤ ωU`, `0 < γU ≤ 1`, `1 < γL ≤ 2 - γU`, `1 ≤ nU ≤ ∞`; `‖z 0‖_M = 1`;
-`λᴳ 0 ∈ 𝓖` (only `H + λᴳ₀ M ≻ 0` is used); for each `k`: `1 ≤ n k ≤ nU`;
-`w₀ = z k`, `wᵢ = (H + λᴳₖ M)⁻¹ M wᵢ₋₁` normalized in `‖·‖_M` (`i = 1 … n k`), `z (k+1) = w_{n k}`;
-`ρ = ⟪z (k+1), H z (k+1)⟫`; `ω k ∈ [ωL, ωU]`, `γ k ∈ [γL, 2 n k - γU]`;
-`λᴳ (k+1) = -ρ + ω k (λᴳ k + ρ)^{γ k}`. Transported to `Subproblem.IsInverseIterationRun` of the
-scaled operator.
-'''
-deps = ["Subproblem.IsInverseIterationRun", "Subproblem.eigenvalues_scaledOp"]
+source = "Cartis–Gould–Toint, Algorithm 9.3.1"
+
+[[node]]
+id = "algorithm_9_3_1.isInverseIterationRun"
 source = "Cartis–Gould–Toint, Algorithm 9.3.1"
 
 [[node]]
 id = "theorem_9_3_1"
-kind = "theorem"
-desc = '''
-Theorem 9.3.1 (Fast convergence in the hard case), with the missing hypothesis made explicit
-(footnote 64 notes it is missing from [196]; it is also missing from the printed theorem) and
-`𝒵₁` read in the `M`-inner product: let `λ₁` be the leftmost pencil eigenvalue and suppose
-`z₀ ∈ 𝒵₁ = {z | ⟨z, M vᵢ⟩ ≠ 0 for some generalized eigenvector vᵢ with λᵢ = λ₁}` (with `VᵀMV = I`;
-the printed Euclidean `⟨z, vᵢ⟩ ≠ 0` is not invariant under the choice of basis of the eigenspace and
-is not the right condition for `M ≠ I`). Fix the parameter sequences `n k`, `ω k`, `γ k` with
-`γ k = γ̄` and `n k = n̄` for all large `k` (`n_U = ∞` allowed). Then there is `ε > 0` (depending on
-the sequences through a bound for `n k`; no `ε` is uniform over all runs when `n_U = ∞`) such that
-every run of Algorithm 9.3.1 with these sequences, `z 0 = z₀` and `λᴳ₀ ∈ (-λ₁, -λ₁ + ε)` has `λᴳₖ > -λ₁` for all `k`, `λᴳₖ → -λ₁` monotonically, and Q-order exactly
-`γ̄`: `c (λᴳₖ + λ₁)^γ̄ ≤ λᴳₖ₊₁ + λ₁ ≤ C (λᴳₖ + λ₁)^γ̄` eventually, for some `0 < c ≤ C`.
-'''
-deps = ["algorithm_9_3_1", "Subproblem.IsInverseIterationRun.convergence_of_eventually_const"]
 source = "Cartis–Gould–Toint, Theorem 9.3.1"
 
 [[node]]
 id = "setL_reg_mono"
-kind = "theorem"
-desc = '''
-§9.3.5: for fixed `H, g, M, r` and `σ ≤ σ₊`, `𝓝` is unchanged and `setL_reg σ ⊆ setL_reg σ₊`; in
-particular the previous `λ₋ ∈ 𝓛 ∪ {λₛ}` with `λ₋ > λₛ` lies in `𝓛₊`, and any sampled `λ₊ > λₛ` with
-`π(λ₊) ≥ (λ₊/σ₊)^{2/(r-2)}` lies in `𝓛₊`.
-'''
-deps = ["CartisGouldToint.Chapter08.setL_reg"]
 source = "Cartis–Gould–Toint, §9.3.5"
 
 [[node]]
 id = "stoppingRules_9_3_14"
-kind = "definition"
-desc = '''
-The early-termination requirements (9.3.14) for a step `s` of (8.1.3), with the `M`-scalings:
-(a) `regModel g H M σ r s ≤ 0`;
-(b) `‖g + H s + σ ‖s‖_M^{r-2} M s‖_{M⁻¹} ≤ (1/2) θ₁ ‖s‖_M²`;
-(c) `λ_min[∇²ₛ m^R(s), M] ≥ -θ₂ ‖s‖_M`, i.e. `∀ v, ⟪v, ∇²ₛ m^R(s) v⟫ ≥ -θ₂ ‖s‖_M ‖v‖_M²`, with
-`∇²ₛ m^R(s) = H + λM + (r-2) λ (Ms)(Ms)ᵀ/‖s‖_M²`, `λ = σ‖s‖_M^{r-2}` ((8.2.34); `= H` at `s = 0`).
-Transports to `Subproblem.RegStoppingRules`.
-'''
-deps = ["CartisGouldToint.Chapter08.regModel", "Subproblem.RegStoppingRules", "Subproblem.quadModel_scaled"]
+source = "Cartis–Gould–Toint, (9.3.14)"
+
+[[node]]
+id = "stoppingRules_9_3_14_iff_scaled"
 source = "Cartis–Gould–Toint, (9.3.14)"
 
 [[node]]
 id = "theorem_9_3_2"
-kind = "theorem"
-desc = '''
-Theorem 9.3.2 (Constructive early termination test). Let `σ > 0`, `r > 2`, `λc ∈ 𝓕` (so
-`H + λc M ≻ 0`), `π = secularFn g H M λc`, and suppose (9.3.15a)
-`π ≤ (r/2)^{2/(r-2)} (λc/σ)^{2/(r-2)}`, (9.3.15b) `|π^{(r-2)/2} - λc/σ| ≤ θ₁/(2σ) π^{1/2}`,
-(9.3.15c) `π^{(r-2)/2} - λc/σ ≥ -(θ₂/σ) π^{1/2}`. Then `s = stepOf g H M λc` satisfies
-`stoppingRules_9_3_14` (with (9.3.14c) in the `M`-generalized form). Correction: with the
-Euclidean `λ_min` in (9.3.14c) the theorem is false for `M ≠ I`, since (9.3.15c) only yields
-`∇²m^R ⪰ -θ₂‖s‖_M M`, whose Euclidean least eigenvalue is `-θ₂‖s‖_M λ_max(M)`; the book's phrase
-"with the appropriate `M`-scalings of the primal and dual norms" supports the generalized reading.
-'''
-deps = ["stoppingRules_9_3_14", "Subproblem.regStoppingRules_step", "Subproblem.posDef_add_smul_iff_scaled", "CartisGouldToint.Chapter08.setL_reg"]
 source = "Cartis–Gould–Toint, Theorem 9.3.2"
 
 [[node]]
+id = "etaL"
+source = "Cartis–Gould–Toint, (9.3.16)"
+
+[[node]]
+id = "etaU"
+source = "Cartis–Gould–Toint, (9.3.16)"
+
+[[node]]
 id = "cubic_termination_9_3_16"
-kind = "theorem"
-desc = '''
-For `r = 3`, (9.3.15) is equivalent to
-`ηᴸ(σ, θ₁, θ₂) λc/σ ≤ ‖s(λc)‖_M ≤ ηᵁ(σ, θ₁) λc/σ` with
-`ηᴸ = max(1/(1 + θ₁/(2σ)), 1/(1 + θ₂/σ))` and `ηᵁ = min(3/2, 1/(1 - θ₁/(2σ)))`, the second term
-of the minimum omitted when `1 - θ₁/(2σ) ≤ 0` (9.3.16).
-'''
-deps = ["theorem_9_3_2"]
 source = "Cartis–Gould–Toint, (9.3.16)"

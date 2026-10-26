@@ -65,3 +65,38 @@ id = "inner_regModelHessian_scaled"
 
 [[node]]
 id = "regStoppingRules_scaled_iff"
+
+[[node]]
+id = "isUnit_of_isUnit_add_smul_scaledOp"
+source = "Cartis–Gould–Toint, (8.2.2)"
+
+[[node]]
+id = "toScaled_inv_apply"
+source = "Cartis–Gould–Toint, (8.2.2), (8.2.29)"
+
+[[node]]
+id = "toScaled_inv_mul_apply"
+source = "Cartis–Gould–Toint, Algorithm 9.3.1"
+
+[[node]]
+id = "scaledGrad_ne_zero"
+
+[[node]]
+id = "eigen_of_scaledOp_eq"
+source = "Cartis–Gould–Toint, (8.2.5)"
+
+[[node]]
+id = "eigen_of_mem_ker"
+source = "Cartis–Gould–Toint, (8.3.1)"
+
+[[node]]
+id = "exists_scaledOp_scaledGrad_eq_iff"
+source = "Cartis–Gould–Toint, Lemma 8.2.3"
+
+[[node]]
+id = "exists_eigen_of_eigenvalues"
+source = "Cartis–Gould–Toint, (8.2.5)"
+
+[[node]]
+id = "rightmost_scaledOp"
+source = "Cartis–Gould–Toint, (9.3.1)"
