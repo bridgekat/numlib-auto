@@ -418,6 +418,284 @@ theorem exists_isDetailedStepOutput {sstar : E} {δbar : ℕ → ℝ} (hq : 1 �
 
 end DetailedStep
 
+/-! ### Termination and progress of the detailed Step 2 -/
+
+section Termination
+
+variable {m : E → ℝ} {T : Set E} {Sd : E → Set E} {ΔT : ℕ → E → E → ℝ} {q : ℕ} {ς θ : ℝ}
+  {ε : ℕ → ℝ} {J : Set ℕ}
+
+/-- The radii of a state of the detailed Step 2. -/
+def DetailedStepState.radii : DetailedStepState E → ℕ → ℝ
+  | findStep _ δ => δ
+  | check _ _ δ _ => δ
+  | done _ δ => δ
+
+omit [NormedAddCommGroup E] in
+@[simp] theorem DetailedStepState.radii_findStep (μ : ℝ) (δ : ℕ → ℝ) :
+    (findStep μ δ : DetailedStepState E).radii = δ := rfl
+
+omit [NormedAddCommGroup E] in
+@[simp] theorem DetailedStepState.radii_check (μ : ℝ) (s : E) (δ : ℕ → ℝ) (j : ℕ) :
+    (check μ s δ j).radii = δ := rfl
+
+omit [NormedAddCommGroup E] in
+@[simp] theorem DetailedStepState.radii_done (s : E) (δ : ℕ → ℝ) :
+    (done s δ : DetailedStepState E).radii = δ := rfl
+
+/-- **Progress of the detailed Step 2** ([cartis2022evaluation], Algorithms 12.2.3, 14.1.2:
+every step of the procedure can be executed). Assume that Step 2.2 can always be performed (for
+every `μ ∈ (0, 1]` some `s ∈ T` has `μ (m(0) - m*) ≤ m(0) - m(s)`) and Step 2.4.1 can always be
+performed (for every feasible `s`, order `j` and radius `r ∈ (0, 1]` some feasible `d` of norm at
+most `r` achieves the fraction `ς` of the supremum of the decrements). Then every state reachable
+from `μ₀ ∈ (0, 1]` and unit radii that is not final has a successor: the tests of Steps 2.3–2.4
+cover all cases. -/
+theorem DetailedStepState.exists_trans
+    (hfind : ∀ μ ∈ Set.Ioc (0 : ℝ) 1, ∃ s ∈ T, μ * (m 0 - sInf (m '' T)) ≤ m 0 - m s)
+    (hdisp : ∀ s ∈ T, ∀ (j : ℕ) (r : ℝ), 0 < r → r ≤ 1 → ∃ d ∈ closedBall 0 r ∩ Sd s,
+      ς * sSup (ΔT j s '' (closedBall 0 r ∩ Sd s)) ≤ ΔT j s d) {μ₀ : ℝ}
+    (hμ₀ : μ₀ ∈ Set.Ioc (0 : ℝ) 1) {b : DetailedStepState E}
+    (h : Relation.ReflTransGen (DetailedStepTrans m T Sd ΔT q ς θ ε J)
+      (findStep μ₀ fun _ => 1) b) (hb : ∀ s δ, b ≠ done s δ) :
+    ∃ b', DetailedStepTrans m T Sd ΔT q ς θ ε J b b' := by
+  have hinv : StepInv m T Sd ΔT q ς θ ε J b := by
+    refine Relation.ReflTransGen.rec (motive := fun b _ => StepInv m T Sd ΔT q ς θ ε J b)
+      ?_ (fun _ hbc ih => stepInv_trans hbc ih) h
+    exact ⟨hμ₀, fun _ => ⟨one_pos, le_rfl, fun _ => rfl⟩⟩
+  rcases b with ⟨μ, δ⟩ | ⟨μ, s, δ, j⟩ | ⟨s, δ⟩
+  · obtain ⟨s, hs, hdec⟩ := hfind μ hinv.1
+    by_cases hlong : 1 ≤ ‖s‖
+    · exact ⟨_, DetailedStepTrans.ret hs hdec hlong⟩
+    · exact ⟨_, DetailedStepTrans.start hs hdec (not_le.1 hlong)⟩
+  · obtain ⟨-, hR, hsT, -⟩ := hinv
+    obtain ⟨d, hd, happrox⟩ := hdisp s hsT j (δ j) (hR j).1 (hR j).2.1
+    by_cases hsmall : ΔT j s d ≤ ς * θ * ε j * δ j ^ j / (j ! : ℝ)
+    · rcases lt_or_ge j q with hjq | hjq
+      · exact ⟨_, DetailedStepTrans.next hd happrox hsmall hjq⟩
+      · exact ⟨_, DetailedStepTrans.finish hd happrox hsmall hjq⟩
+    · push Not at hsmall
+      by_cases hJ : j ∈ J ∧ m s - m (s + d) < ς * θ * ε j * δ j ^ j / (2 * j !)
+      · exact ⟨_, DetailedStepTrans.halve hd happrox hsmall hJ.1 hJ.2⟩
+      · refine ⟨_, DetailedStepTrans.restart hd happrox hsmall ?_⟩
+        by_cases hjJ : j ∈ J
+        · exact Or.inr (not_lt.1 fun h' => hJ ⟨hjJ, h'⟩)
+        · exact Or.inl hjJ
+  · exact absurd rfl (hb s δ)
+
+/-- Radii between the lower bounds `lb` and `1`, equal to `1` outside `J`. -/
+private def RadLB (J : Set ℕ) (lb δ : ℕ → ℝ) : Prop :=
+  ∀ j, lb j ≤ δ j ∧ δ j ≤ 1 ∧ (j ∉ J → δ j = 1)
+
+/-- The invariant of an execution with radius lower bounds `lb`. -/
+private def TermInv (m : E → ℝ) (T : Set E) (q : ℕ) (J : Set ℕ) (lb : ℕ → ℝ) :
+    DetailedStepState E → Prop
+  | findStep μ δ => μ ∈ Set.Ioc (0 : ℝ) 1 ∧ RadLB J lb δ
+  | check μ s δ j => μ ∈ Set.Ioc (0 : ℝ) 1 ∧ RadLB J lb δ ∧ s ∈ T ∧
+      μ * (m 0 - sInf (m '' T)) ≤ m 0 - m s ∧ ‖s‖ < 1 ∧ 1 ≤ j ∧ j ≤ q
+  | done _ δ => RadLB J lb δ
+
+/-- The halving hypothesis of the termination theorem: a halving (Step 2.4.3) at an order
+`j ∈ J ∩ [1, q]`, from radii within their bounds at a short feasible trial step, only happens
+when `δ_j ≥ 2 lb_j` (so the halved radius stays above `lb_j`). -/
+def DetailedHalvingBound (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT : ℕ → E → E → ℝ)
+    (q : ℕ) (ς θ : ℝ) (ε : ℕ → ℝ) (J : Set ℕ) (lb : ℕ → ℝ) : Prop :=
+  ∀ (s : E) (δ : ℕ → ℝ) (j : ℕ) (d : E), s ∈ T → ‖s‖ < 1 → 1 ≤ j → j ≤ q → j ∈ J →
+    lb j ≤ δ j → δ j ≤ 1 → d ∈ closedBall 0 (δ j) ∩ Sd s →
+    ς * θ * ε j * δ j ^ j / j ! < ΔT j s d →
+    m s - m (s + d) < ς * θ * ε j * δ j ^ j / (2 * j !) → 2 * lb j ≤ δ j
+
+/-- The restart-gap hypothesis of the termination theorem: there is `η > 0` such that a restart
+(Step 2.4.4) at a short feasible trial step `s`, with radii within their bounds, only happens when
+`m(s) - m* ≥ η`, with `m* = sInf (m '' T)`. -/
+def DetailedRestartGap (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT : ℕ → E → E → ℝ)
+    (q : ℕ) (ς θ : ℝ) (ε : ℕ → ℝ) (J : Set ℕ) (lb : ℕ → ℝ) : Prop :=
+  ∃ η > 0, ∀ (s : E) (δ : ℕ → ℝ) (j : ℕ) (d : E), s ∈ T → ‖s‖ < 1 → 1 ≤ j → j ≤ q →
+    (∀ i, lb i ≤ δ i ∧ δ i ≤ 1 ∧ (i ∉ J → δ i = 1)) → d ∈ closedBall 0 (δ j) ∩ Sd s →
+    ς * θ * ε j * δ j ^ j / j ! < ΔT j s d →
+    (j ∉ J ∨ ς * θ * ε j * δ j ^ j / (2 * j !) ≤ m s - m (s + d)) →
+    η ≤ m s - sInf (m '' T)
+
+private theorem termInv_trans {lb : ℕ → ℝ} (hq : 1 ≤ q)
+    (hhalve : DetailedHalvingBound m T Sd ΔT q ς θ ε J lb) {a b : DetailedStepState E}
+    (h : DetailedStepTrans m T Sd ΔT q ς θ ε J a b) (ha : TermInv m T q J lb a) :
+    TermInv m T q J lb b := by
+  cases h with
+  | ret hs hdec hlong => exact ha.2
+  | start hs hdec hshort => exact ⟨ha.1, ha.2, hs, hdec, hshort, le_rfl, hq⟩
+  | next hd happrox hsmall hj =>
+    obtain ⟨hμ, hR, hsT, hdec, hs, hj1, -⟩ := ha
+    exact ⟨hμ, hR, hsT, hdec, hs, by omega, hj⟩
+  | finish hd happrox hsmall hj => exact ha.2.1
+  | @halve μ s δ j d hd happrox hlarge hJ hmodel =>
+    obtain ⟨hμ, hR, hsT, hdec, hs, hj1, hjq⟩ := ha
+    refine ⟨hμ, fun i => ?_, hsT, hdec, hs, hj1, hjq⟩
+    rcases eq_or_ne i j with rfl | hij
+    · simp only [Function.update_self]
+      obtain ⟨hlb, hle1, -⟩ := hR i
+      have := hhalve s δ i d hsT hs hj1 hjq hJ hlb hle1 hd hlarge hmodel
+      exact ⟨by linarith, by linarith, fun h => absurd hJ h⟩
+    · simp only [Function.update_of_ne hij]
+      exact hR i
+  | restart hd happrox hlarge hJ =>
+    obtain ⟨⟨h0, h1⟩, hR, -⟩ := ha
+    exact ⟨⟨by linarith, by linarith⟩, hR⟩
+
+private theorem termInv_init {lb : ℕ → ℝ} (hlb : ∀ j, lb j ≤ 1) {μ₀ : ℝ}
+    (hμ₀ : μ₀ ∈ Set.Ioc (0 : ℝ) 1) : TermInv m T q J lb (findStep μ₀ fun _ => 1) :=
+  ⟨hμ₀, fun j => ⟨hlb j, le_rfl, fun _ => rfl⟩⟩
+
+private theorem termInv_of_reflTransGen {lb : ℕ → ℝ} (hq : 1 ≤ q) (hlb : ∀ j, lb j ≤ 1)
+    (hhalve : DetailedHalvingBound m T Sd ΔT q ς θ ε J lb) {μ₀ : ℝ}
+    (hμ₀ : μ₀ ∈ Set.Ioc (0 : ℝ) 1) {b : DetailedStepState E}
+    (h : Relation.ReflTransGen (DetailedStepTrans m T Sd ΔT q ς θ ε J)
+      (findStep μ₀ fun _ => 1) b) : TermInv m T q J lb b :=
+  Relation.ReflTransGen.rec (motive := fun b _ => TermInv m T q J lb b)
+    (termInv_init hlb hμ₀) (fun _ hbc ih => termInv_trans hq hhalve hbc ih) h
+
+/-- **Radius lower bounds along executions** (proof of [cartis2022evaluation], Lemma 12.2.9):
+under the halving bound, every state reachable from `μ₀ ∈ (0, 1]` and unit radii has radii
+`lb_j ≤ δ_j ≤ 1` (for lower bounds `lb_j ≤ 1`). -/
+theorem DetailedStepState.lb_le_radii {lb : ℕ → ℝ} (hq : 1 ≤ q) (hlb : ∀ j, lb j ≤ 1)
+    (hhalve : DetailedHalvingBound m T Sd ΔT q ς θ ε J lb) {μ₀ : ℝ}
+    (hμ₀ : μ₀ ∈ Set.Ioc (0 : ℝ) 1) {b : DetailedStepState E}
+    (h : Relation.ReflTransGen (DetailedStepTrans m T Sd ΔT q ς θ ε J)
+      (findStep μ₀ fun _ => 1) b) : ∀ j, lb j ≤ b.radii j ∧ b.radii j ≤ 1 := by
+  have hinv := termInv_of_reflTransGen hq hlb hhalve hμ₀ h
+  intro j
+  rcases b with ⟨μ, δ⟩ | ⟨μ, s, δ, i⟩ | ⟨s, δ⟩
+  · exact ⟨(hinv.2 j).1, (hinv.2 j).2.1⟩
+  · exact ⟨(hinv.2.1 j).1, (hinv.2.1 j).2.1⟩
+  · exact ⟨(hinv j).1, (hinv j).2.1⟩
+
+/-- The potential `C (1 - μ) + ∑_{i ≤ q} δ_i + ℓ (q + 1 - j)` of a state. -/
+private noncomputable def termPotential (q : ℕ) (C ℓ : ℝ) : DetailedStepState E → ℝ
+  | findStep μ δ => C * (1 - μ) + ∑ i ∈ Icc 1 q, δ i + ℓ * ((q : ℝ) + 1)
+  | check μ _ δ j => C * (1 - μ) + ∑ i ∈ Icc 1 q, δ i + ℓ * ((q : ℝ) + 1 - j)
+  | done _ _ => 0
+
+/-- The potential decreases by `ℓ` at every transition to a state that is not final. -/
+private theorem termPotential_le {lb : ℕ → ℝ} {C ℓ : ℝ} (hℓ0 : 0 ≤ ℓ)
+    (hℓ : ∀ j ∈ Icc 1 q, ℓ ≤ lb j / 2)
+    (hrestart : ∀ (μ : ℝ) (s : E) (δ : ℕ → ℝ) (j : ℕ) (d : E),
+      TermInv m T q J lb (check μ s δ j) → d ∈ closedBall 0 (δ j) ∩ Sd s →
+      ς * θ * ε j * δ j ^ j / j ! < ΔT j s d →
+      (j ∉ J ∨ ς * θ * ε j * δ j ^ j / (2 * j !) ≤ m s - m (s + d)) →
+      ℓ * ((q : ℝ) + 1) ≤ C * (1 - μ) / 2)
+    {a b : DetailedStepState E} (h : DetailedStepTrans m T Sd ΔT q ς θ ε J a b)
+    (ha : TermInv m T q J lb a) (hb : ∀ s δ, b ≠ done s δ) :
+    termPotential q C ℓ b ≤ termPotential q C ℓ a - ℓ := by
+  cases h with
+  | ret hs hdec hlong => exact absurd rfl (hb _ _)
+  | start hs hdec hshort =>
+    simp only [termPotential, Nat.cast_one]
+    linarith
+  | next hd happrox hsmall hj =>
+    simp only [termPotential, Nat.cast_add, Nat.cast_one]
+    linarith
+  | finish hd happrox hsmall hj => exact absurd rfl (hb _ _)
+  | @halve μ s δ j d hd happrox hlarge hJ hmodel =>
+    obtain ⟨-, hR, -, -, -, hj1, hjq⟩ := ha
+    have hj : j ∈ Icc 1 q := mem_Icc.2 ⟨hj1, hjq⟩
+    have hsum := sum_update_of_mem hj δ (δ j / 2)
+    have hsplit := sum_eq_add_sum_sdiff_singleton (s := Icc 1 q) j δ fun h' => absurd hj h'
+    have := hℓ j hj
+    have := (hR j).1
+    simp only [termPotential]
+    linarith
+  | @restart μ s δ j d hd happrox hlarge hJ =>
+    have hr := hrestart μ s δ j d ha hd hlarge hJ
+    obtain ⟨-, -, -, -, -, -, hjq⟩ := ha
+    have : (j : ℝ) ≤ q := by exact_mod_cast hjq
+    have : ℓ * j ≤ ℓ * q := mul_le_mul_of_nonneg_left this hℓ0
+    simp only [termPotential]
+    nlinarith
+
+/-- **Termination of the detailed Step 2** ([cartis2022evaluation], Lemma 12.2.9 for
+Algorithm 12.2.3, and Algorithm 14.1.2), abstract form. Let `1 ≤ q`, `0 ∈ T`, the model be bounded
+below on `T`, `lb_j ∈ (0, 1]`, and assume the halving bound (halvings stop at `2 lb_j`) and the
+restart gap (a restart needs `m(s) - m* ≥ η > 0`). Then there is no infinite execution started
+(Step 2.1) with `μ₀ ∈ (0, 1]` and unit radii. (A potential
+`C (1 - μ) + ∑ δ_i + ℓ (q + 1 - j)` decreases by `ℓ` at every transition.) -/
+theorem detailedStep_terminates {lb : ℕ → ℝ} (hq : 1 ≤ q) (h0 : (0 : E) ∈ T)
+    (hb : BddBelow (m '' T)) (hlb : ∀ j, 0 < lb j ∧ lb j ≤ 1)
+    (hhalve : DetailedHalvingBound m T Sd ΔT q ς θ ε J lb)
+    (hgap : DetailedRestartGap m T Sd ΔT q ς θ ε J lb) {μ₀ : ℝ}
+    (hμ₀ : μ₀ ∈ Set.Ioc (0 : ℝ) 1) :
+    ¬ ∃ c : ℕ → DetailedStepState E, c 0 = findStep μ₀ (fun _ => 1) ∧
+      ∀ n, DetailedStepTrans m T Sd ΔT q ς θ ε J (c n) (c (n + 1)) := by
+  classical
+  rintro ⟨c, hc0, hc⟩
+  have hinv : ∀ n, TermInv m T q J lb (c n) := fun n => by
+    induction n with
+    | zero => rw [hc0]; exact termInv_init (fun j => (hlb j).2) hμ₀
+    | succ n ih => exact termInv_trans hq hhalve (hc n) ih
+  have hnd : ∀ n s δ, c (n + 1) ≠ done s δ := fun n s δ h => by
+    have := hc (n + 1)
+    rw [h] at this
+    cases this
+  obtain ⟨η, hη, hgap⟩ := hgap
+  set Δm := m 0 - sInf (m '' T) with hΔm
+  have hΔm0 : 0 ≤ Δm := sub_nonneg.2 (csInf_le hb ⟨0, h0, rfl⟩)
+  have hne : (Icc 1 q).Nonempty := ⟨1, mem_Icc.2 ⟨le_rfl, hq⟩⟩
+  set ℓ := (Icc 1 q).inf' hne fun j => lb j / 2 with hℓdef
+  have hℓ0 : 0 < ℓ := (lt_inf'_iff _).2 fun j _ => half_pos (hlb j).1
+  have hℓ : ∀ j ∈ Icc 1 q, ℓ ≤ lb j / 2 := fun j hj => inf'_le _ hj
+  set C := 2 * (ℓ * ((q : ℝ) + 1)) * Δm / η with hCdef
+  have hC : 0 ≤ C := by positivity
+  -- the potential decreases by `ℓ` at every transition
+  have hrestart : ∀ (μ : ℝ) (s : E) (δ : ℕ → ℝ) (j : ℕ) (d : E),
+      TermInv m T q J lb (check μ s δ j) → d ∈ closedBall 0 (δ j) ∩ Sd s →
+      ς * θ * ε j * δ j ^ j / j ! < ΔT j s d →
+      (j ∉ J ∨ ς * θ * ε j * δ j ^ j / (2 * j !) ≤ m s - m (s + d)) →
+      ℓ * ((q : ℝ) + 1) ≤ C * (1 - μ) / 2 := by
+    intro μ s δ j d hinv' hd hlarge hJ
+    obtain ⟨-, hR, hsT, h2, hs, hj1, hjq⟩ := hinv'
+    have h1 := hgap s δ j d hsT hs hj1 hjq hR hd hlarge hJ
+    have h3 : η ≤ (1 - μ) * Δm := by
+      have e : (1 - μ) * Δm = Δm - μ * Δm := by ring
+      rw [e, hΔm]
+      linarith
+    have h4 : 1 ≤ (1 - μ) * Δm / η := (one_le_div hη).2 h3
+    have e : C * (1 - μ) / 2 = ℓ * ((q : ℝ) + 1) * ((1 - μ) * Δm / η) := by
+      rw [hCdef]; field_simp
+    rw [e]
+    have : 0 ≤ ℓ * ((q : ℝ) + 1) := by positivity
+    nlinarith
+  have hdec : ∀ n, termPotential q C ℓ (c (n + 1)) ≤ termPotential q C ℓ (c n) - ℓ := fun n =>
+    termPotential_le hℓ0.le hℓ hrestart (hc n) (hinv n) (hnd n)
+  have hbound : ∀ n : ℕ, termPotential q C ℓ (c n) ≤ termPotential q C ℓ (c 0) - n * ℓ := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ n ih => have := hdec n; push_cast; linarith
+  have hnonneg : ∀ n, 0 ≤ termPotential q C ℓ (c n) := by
+    intro n
+    have ha := hinv n
+    have hS : ∀ δ : ℕ → ℝ, RadLB J lb δ → 0 ≤ ∑ i ∈ Icc 1 q, δ i := fun δ hR =>
+      sum_nonneg fun i _ => (hlb i).1.le.trans (hR i).1
+    generalize c n = a at ha
+    rcases a with ⟨μ, δ⟩ | ⟨μ, s, δ, j⟩ | ⟨s, δ⟩
+    · obtain ⟨⟨-, h1⟩, hR⟩ := ha
+      have := hS δ hR
+      have : 0 ≤ C * (1 - μ) := mul_nonneg hC (by linarith)
+      simp only [termPotential]
+      positivity
+    · obtain ⟨⟨-, h1⟩, hR, -, -, -, -, hjq⟩ := ha
+      have := hS δ hR
+      have : 0 ≤ C * (1 - μ) := mul_nonneg hC (by linarith)
+      have : (j : ℝ) ≤ q := by exact_mod_cast hjq
+      have : 0 ≤ ℓ * ((q : ℝ) + 1 - j) := mul_nonneg hℓ0.le (by linarith)
+      simp only [termPotential]
+      linarith
+    · exact le_rfl
+  obtain ⟨n, hn⟩ := exists_nat_gt (termPotential q C ℓ (c 0) / ℓ)
+  have h1 := hbound n
+  have h2 := hnonneg n
+  rw [div_lt_iff₀ hℓ0] at hn
+  linarith
+
+end Termination
+
 /-! ### Step-length algebra -/
 
 section StepLength
@@ -563,11 +841,17 @@ theorem pow_ge_of_measure_ineq {κ : ℝ} (h : MeasureIneq A 0 a ε δ t j p) (h
       _ ≤ t ^ p := h2
 
 /-- `x ≤ t^n` with `x, t ≥ 0`, `n ≠ 0` gives `x^{1/n} ≤ t`. -/
-private theorem rpow_one_div_le_of_le_pow {x t : ℝ} {n : ℕ} (hn : n ≠ 0) (hx : 0 ≤ x)
+theorem rpow_one_div_le_of_le_pow {x t : ℝ} {n : ℕ} (hn : n ≠ 0) (hx : 0 ≤ x)
     (ht : 0 ≤ t) (h : x ≤ t ^ n) : x ^ (1 / (n : ℝ)) ≤ t := by
   calc x ^ (1 / (n : ℝ)) ≤ (t ^ n) ^ (1 / (n : ℝ)) :=
         Real.rpow_le_rpow hx h (by positivity)
     _ = t := by rw [one_div, Real.pow_rpow_inv_natCast ht hn]
+
+/-- `(t^n)^{m/n} = t^m` for `t ≥ 0`, `n ≠ 0`. -/
+theorem pow_rpow_div_natCast {t : ℝ} (ht : 0 ≤ t) {n : ℕ} (hn : n ≠ 0) (m : ℕ) :
+    (t ^ n) ^ ((m : ℝ) / (n : ℝ)) = t ^ m := by
+  rw [← Real.rpow_natCast t n, ← Real.rpow_mul ht, mul_div_cancel₀ _ (by positivity),
+    Real.rpow_natCast]
 
 /-- **Step-length bound for ARqpC** ([cartis2022evaluation], Lemma 14.1.8, corrected). Let
 `j ≤ p`, `A > 0`, `0 ≤ B ≤ A`, `0 < a ≤ j! A`, `ε ∈ (0, 1]`, `t > 0`, `δ > 0`, and suppose the

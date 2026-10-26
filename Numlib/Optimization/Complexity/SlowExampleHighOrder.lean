@@ -2,6 +2,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Numlib.Approximation.HermiteSpline
 import Numlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Numlib.Optimization.Optimality.Approximate
+import Numlib.Optimization.ModelBased.TaylorModel
 
 /-!
 # Slow-convergence examples of arbitrary order
@@ -976,5 +977,137 @@ theorem taylorMeasure_linearRegModel_eq_zero {p j : ℕ} (hj : j ∈ Icc 1 p) {�
       ring
     rw [e]
     exact mul_nonneg hA hkey
+
+
+/-! ### Taylor data of functions of one variable -/
+
+section OneDim
+
+open Metric
+open scoped Nat
+
+/-- The derivative tensors of a function of one variable along `d`:
+`∇^i G(y)[d]^i = G^{(i)}(y) d^i`. -/
+theorem ftaylorSeries_real_apply (G : ℝ → ℝ) (y : ℝ) (i : ℕ) (d : ℝ) :
+    ftaylorSeries ℝ G y i (fun _ => d) = iteratedDeriv i G y * d ^ i := by
+  simp [ftaylorSeries, iteratedFDeriv_apply_eq_iteratedDeriv_mul_prod, mul_comm]
+
+/-- The Taylor decrement of a function of one variable:
+`ΔT_{G,j}(y, d) = -∑_{i=1}^j G^{(i)}(y) d^i/i!`. -/
+theorem taylorDecrement_real (G : ℝ → ℝ) (y : ℝ) (j : ℕ) (d : ℝ) :
+    (ftaylorSeries ℝ G y).taylorDecrement j d =
+      -∑ i ∈ Finset.Icc 1 j, iteratedDeriv i G y * d ^ i / i ! := by
+  rw [FormalMultilinearSeries.taylorDecrement_eq]
+  congr 1
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [ftaylorSeries_real_apply]
+  ring
+
+/-- If the derivatives of orders `1, …, j` vanish at `y`, the Taylor decrement of order `j`
+vanishes. -/
+theorem taylorDecrement_real_eq_zero {G : ℝ → ℝ} {y : ℝ} {j : ℕ}
+    (h0 : ∀ i ∈ Finset.Icc 1 j, iteratedDeriv i G y = 0) (d : ℝ) :
+    (ftaylorSeries ℝ G y).taylorDecrement j d = 0 := by
+  rw [taylorDecrement_real, Finset.sum_eq_zero fun i hi => by rw [h0 i hi, zero_mul, zero_div],
+    neg_zero]
+
+/-- If, among the orders `1, …, j`, only the derivative of order `m` may be nonzero at `y`, then
+`ΔT_{G,j}(y, d) = -G^{(m)}(y) d^m/m!`. -/
+theorem taylorDecrement_real_spike {G : ℝ → ℝ} {y : ℝ} {j m : ℕ} (hm : m ∈ Finset.Icc 1 j)
+    (h0 : ∀ i ∈ Finset.Icc 1 j, i ≠ m → iteratedDeriv i G y = 0) (d : ℝ) :
+    (ftaylorSeries ℝ G y).taylorDecrement j d = -(iteratedDeriv m G y * d ^ m / m !) := by
+  rw [taylorDecrement_real, Finset.sum_eq_single_of_mem m hm fun i hi him => by
+    rw [h0 i hi him, zero_mul, zero_div]]
+
+/-- The measure of a decrement of the form `a d^m` (`a ≥ 0`) over `[-δ, δ]` is `a δ^m`. -/
+theorem taylorMeasure_real_monomial {D : FormalMultilinearSeries ℝ ℝ ℝ} {j m : ℕ} {a δ : ℝ}
+    (ha : 0 ≤ a) (hδ : 0 ≤ δ) (hD : ∀ d, D.taylorDecrement j d = a * d ^ m) :
+    taylorMeasure D j δ univ = a * δ ^ m := by
+  refine le_antisymm (decrementMeasure_le ⟨0, mem_closedBall_self hδ, mem_univ _⟩
+    fun d hd => ?_) ?_
+  · have hdδ : |d| ≤ δ := by simpa [Real.norm_eq_abs] using hd.1
+    rw [hD]
+    refine mul_le_mul_of_nonneg_left ((le_abs_self _).trans ?_) ha
+    rw [abs_pow]
+    exact pow_le_pow_left₀ (abs_nonneg d) hdδ m
+  · have := taylorDecrement_le_taylorMeasure D j (S := univ) (d := δ)
+      ⟨mem_closedBall_zero_iff.2 (by rw [Real.norm_eq_abs, abs_of_nonneg hδ]), mem_univ _⟩
+    rwa [hD] at this
+
+/-- The derivative tensors of a function of one variable have the norms of the derivatives:
+`‖∇^i G(s) - ∇^i G(t)‖ = |G^{(i)}(s) - G^{(i)}(t)|`. -/
+theorem norm_iteratedFDeriv_sub_real (G : ℝ → ℝ) (i : ℕ) (s t : ℝ) :
+    ‖iteratedFDeriv ℝ i G s - iteratedFDeriv ℝ i G t‖ =
+      |iteratedDeriv i G s - iteratedDeriv i G t| := by
+  rw [iteratedFDeriv_eq_equiv_comp, Function.comp_apply, Function.comp_apply, ← map_sub,
+    LinearIsometryEquiv.norm_map, Real.norm_eq_abs]
+
+/-- A function of one variable with `|G| ≤ B` is bounded below by `-B`. -/
+theorem neg_le_of_abs_iteratedDeriv_zero_le {G : ℝ → ℝ} {B : ℝ}
+    (hB : ∀ t, |iteratedDeriv 0 G t| ≤ B) (t : ℝ) : -B ≤ G t := by
+  have := hB t
+  rw [iteratedDeriv_zero] at this
+  exact (abs_le.1 this).1
+
+/-- The ARqp model of one-variable data whose only nonzero derivative of order `1, …, p` at `y`
+is the one of order `m`: `m(t) = G(y) + G^{(m)}(y) t^m/m! + σ |t|^{p+1}/(p+1)!`. -/
+theorem regularizedModel_real_spike {G : ℝ → ℝ} {y : ℝ} {p m : ℕ} (hm : m ∈ Finset.Icc 1 p)
+    (h0 : ∀ i ∈ Finset.Icc 1 p, i ≠ m → iteratedDeriv i G y = 0) (σ t : ℝ) :
+    regularizedModel (ftaylorSeries ℝ G y) p σ t =
+      G y + iteratedDeriv m G y * t ^ m / m ! + σ * |t| ^ (p + 1) / (p + 1)! := by
+  have h1 : (ftaylorSeries ℝ G y).taylorSum p t = (ftaylorSeries ℝ G y).taylorSum p 0 -
+      (ftaylorSeries ℝ G y).taylorDecrement p t := by
+    rw [FormalMultilinearSeries.taylorDecrement]; ring
+  have h00 : ftaylorSeries ℝ G y 0 0 = G y := by simp [ftaylorSeries]
+  rw [regularizedModel_def, h1, taylorDecrement_real_spike hm h0,
+    FormalMultilinearSeries.taylorSum_zero_right, h00, Real.norm_eq_abs]
+  ring
+
+/-- Adding a constant does not change the Taylor measures (of positive order). -/
+theorem taylorMeasure_real_const_add (c : ℝ) (g : ℝ → ℝ) (y : ℝ) (j : ℕ) (δ : ℝ) (S : Set ℝ) :
+    taylorMeasure (ftaylorSeries ℝ (fun t => c + g t) y) j δ S =
+      taylorMeasure (ftaylorSeries ℝ g y) j δ S := by
+  unfold taylorMeasure
+  congr 1
+  funext d
+  rw [taylorDecrement_real, taylorDecrement_real]
+  congr 1
+  refine Finset.sum_congr rfl fun i hi => ?_
+  rw [iteratedDeriv_const_add (Finset.mem_Icc.1 hi).1 c]
+
+/-- The global minimizer of the linear regularized model of Example 12.1.3 in one variable:
+for `p ≥ 1`, `β, σ > 0`, `t ↦ -β t + σ |t|^{p+1}/(p+1)!` is globally minimized at
+`t* = (β p!/σ)^{1/p} > 0`, with a negative minimal value. -/
+theorem isMinOn_linearRegModel {p : ℕ} (hp : 1 ≤ p) {β σ : ℝ} (hβ : 0 < β) (hσ : 0 < σ) :
+    IsMinOn (fun t : ℝ => -β * t + σ * |t| ^ (p + 1) / (p + 1)!) univ
+        ((β * p ! / σ) ^ (1 / (p : ℝ))) ∧
+      -β * (β * p ! / σ) ^ (1 / (p : ℝ)) +
+        σ * |(β * p ! / σ) ^ (1 / (p : ℝ))| ^ (p + 1) / (p + 1)! < 0 := by
+  have hm : (fun t : ℝ => -β * t + σ * |t| ^ (p + 1) / (p + 1)!) =
+      negMonomialRegModel p 1 σ β := by
+    funext t; simp [negMonomialRegModel]
+  have hts : (β / (σ * (1 - 1)! / p !)) ^ (1 / ((p - 1 + 1 : ℕ) : ℝ)) =
+      (β * p ! / σ) ^ (1 / (p : ℝ)) := by
+    rw [Nat.sub_add_cancel hp]
+    congr 1
+    simp only [Nat.sub_self, Nat.factorial_zero, Nat.cast_one, mul_one]
+    field_simp
+  obtain ⟨hmin, hval, -⟩ := isMinOn_neg_monomial_add_regularization le_rfl hp hσ hβ
+  rw [hts] at hmin hval
+  rw [hm]
+  refine ⟨hmin, ?_⟩
+  have ht : 0 < (β * p ! / σ) ^ (1 / (p : ℝ)) := by positivity
+  have e : -β * (β * p ! / σ) ^ (1 / (p : ℝ)) +
+      σ * |(β * p ! / σ) ^ (1 / (p : ℝ))| ^ (p + 1) / (p + 1)! =
+      negMonomialRegModel p 1 σ β ((β * p ! / σ) ^ (1 / (p : ℝ))) := by
+    simp [negMonomialRegModel]
+  rw [e, hval]
+  have hp' : (0 : ℝ) < ((p - 1 + 1 : ℕ) : ℝ) := by
+    rw [Nat.sub_add_cancel hp]; exact_mod_cast hp
+  have : 0 < ((p - 1 + 1 : ℕ) : ℝ) / ((p + 1) * (1 ! : ℕ)) * β *
+      ((β * p ! / σ) ^ (1 / (p : ℝ))) ^ 1 := by positivity
+  linarith
+
+end OneDim
 
 end Optimization

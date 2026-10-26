@@ -187,3 +187,55 @@ source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof), Algorithm 12.2.3"
 [[node]]
 id = "detailedStep_radius_ge"
 source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof), Algorithm 12.2.3"
+
+[[node]]
+id = "AssumptionD1pLOn"
+source = "Cartis–Gould–Toint, f.D1pL with a feasible set (§14.2)"
+
+[[node]]
+id = "one_le_finMax"
+source = "Cartis–Gould–Toint, (12.2.25)"
+
+[[node]]
+id = "algorithm_12_2_1_feasible"
+source = "Cartis–Gould–Toint, Algorithm 12.2.1; TRq-SC (§14.2)"
+
+[[node]]
+id = "lemma_12_2_4_feasible"
+source = "Cartis–Gould–Toint, Lemma 12.2.4; Lemma 14.2.2"
+
+[[node]]
+id = "theorem_12_2_5_feasible"
+source = "Cartis–Gould–Toint, Theorem 12.2.5; Theorem 14.2.4 (TRq-SC)"
+
+[[node]]
+id = "algorithm_12_2_2_feasible"
+source = "Cartis–Gould–Toint, Algorithm 12.2.2; ARqp-SC (§14.2)"
+
+[[node]]
+id = "lemma_12_2_13_feasible"
+source = "Cartis–Gould–Toint, Lemma 12.2.13; Lemma 14.2.2"
+
+[[node]]
+id = "isEpsDeltaApprox_of_isMinOn_zero"
+source = "Cartis–Gould–Toint, Lemma 12.2.10"
+
+[[node]]
+id = "theorem_12_2_14_feasible"
+source = "Cartis–Gould–Toint, Theorem 12.2.14; Theorem 14.2.4 (ARqp-SC)"
+
+[[node]]
+id = "algorithm_12_2_2_exists_of_D1pL"
+source = "Cartis–Gould–Toint, Lemmas 12.2.9, 12.2.10, (12.2.50)"
+
+[[node]]
+id = "detailedStep_exists_trans"
+source = "Cartis–Gould–Toint, Algorithm 12.2.3"
+
+[[node]]
+id = "arqp_detailedHalvingBound"
+source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof)"
+
+[[node]]
+id = "arqp_detailedRestartGap"
+source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof)"

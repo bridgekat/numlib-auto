@@ -35,3 +35,19 @@ source = "Cartis–Gould–Toint, Lemma 14.1.8 (corrected), Appendix B (B.14.7)�
 [[node]]
 id = "MeasureIneq.div_le_of_le"
 source = "Cartis–Gould–Toint, proofs of Lemmas 12.2.12, 14.1.8 (case ‖s_k‖ ≤ δ)"
+
+[[node]]
+id = "detailedStep_terminates"
+source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof), Algorithm 14.1.2"
+
+[[node]]
+id = "DetailedStepState.exists_trans"
+source = "Cartis–Gould–Toint, Algorithms 12.2.3, 14.1.2"
+
+[[node]]
+id = "DetailedStepState.lb_le_radii"
+source = "Cartis–Gould–Toint, (12.2.45)"
+
+[[node]]
+id = "rpow_one_div_le_of_le_pow"
+source = "Cartis–Gould–Toint, Lemma 12.2.12"

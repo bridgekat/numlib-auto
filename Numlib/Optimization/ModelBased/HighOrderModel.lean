@@ -534,4 +534,34 @@ theorem radius_inequality_of_compositeTaylorMeasure_gt {F : Type*} [NormedAddCom
 
 end Transfer
 
+
+/-! ### The model at the zero step -/
+
+section Zero
+
+/-- **(12.2.49)** of [cartis2022evaluation]: for `f` of class `C^p` at `x`, the Taylor decrements of
+order `j ≤ p` of the model `m = regularizedModel (ftaylorSeries ℝ f x) p σ` at `0` are those of
+`f` at `x`. -/
+theorem taylorDecrement_regularizedModel_zero {f : E → ℝ} {p : ℕ} {x : E} (hf : ContDiffAt ℝ p f x)
+    (σ : ℝ) {j : ℕ} (hj : j ≤ p) (d : E) :
+    (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) 0).taylorDecrement j d =
+      (ftaylorSeries ℝ f x).taylorDecrement j d := by
+  have hsymm := hf.isSymm_ftaylorSeries (p := p) le_rfl
+  rw [FormalMultilinearSeries.taylorDecrement_eq, FormalMultilinearSeries.taylorDecrement_eq]
+  congr 1
+  refine Finset.sum_congr rfl fun i hi => ?_
+  rw [ftaylorSeries_regularizedModel_zero hsymm ((Finset.mem_Icc.1 hi).2.trans hj)]
+
+/-- The measures of order `j ≤ p` of the model at `0` are those of `f` at `x`. -/
+theorem taylorMeasure_regularizedModel_zero {f : E → ℝ} {p : ℕ} {x : E} (hf : ContDiffAt ℝ p f x)
+    (σ : ℝ) {j : ℕ} (hj : j ≤ p) (δ : ℝ) (S : Set E) :
+    taylorMeasure (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) 0) j δ S =
+      taylorMeasure (ftaylorSeries ℝ f x) j δ S := by
+  unfold taylorMeasure
+  congr 1
+  funext d
+  exact taylorDecrement_regularizedModel_zero hf σ hj d
+
+end Zero
+
 end Optimization
