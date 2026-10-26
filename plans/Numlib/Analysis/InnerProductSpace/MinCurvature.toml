@@ -57,3 +57,7 @@ source = "Cartis–Gould–Toint, (A.2)–(A.3)"
 [[node]]
 id = "minCurvature_of_subsingleton"
 source = "Cartis–Gould–Toint, Section A.5 (degenerate case)"
+
+[[node]]
+id = "minCurvature_ge_of_add_smul"
+source = "Cartis–Gould–Toint, (4.1.27)–(4.1.29), (5.5.15)–(5.5.17)"

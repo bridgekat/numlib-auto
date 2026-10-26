@@ -143,7 +143,7 @@ Lemma 4.1.1. If `m_k(s) ≤ m_k(0)` (model (4.1.2)) then
 `T_{f,p}(x_k, 0) - T_{f,p}(x_k, s) ≥ σ_k/(p+1)! ‖s‖^{p+1}` (4.1.18); in an ARp run this holds (strictly,
 by (4.1.10)) at every iteration before termination.
 '''
-deps = ["algorithm_4_1_1", "Optimization.taylorDecrement_ge_of_regularizedModel_lt", "Optimization.IsARRun.sub_ge_of_succ"]
+deps = ["algorithm_4_1_1", "Optimization.lt_taylorDecrement_of_regularizedModel_lt", "Optimization.IsARRun.sub_ge_of_succ"]
 source = "Cartis–Gould–Toint, Lemma 4.1.1"
 
 [[node]]

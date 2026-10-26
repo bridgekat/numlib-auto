@@ -42,7 +42,7 @@ desc = '''
 `s = -σ⁻¹ • gradient f x`, its Taylor decrement is `‖∇f(x)‖²/σ` (`= σ ‖s‖²`), and
 `ρ = σ (f x - f (x + s)) / ‖∇f(x)‖²`.
 '''
-deps = ["algorithm_2_4_1", "Optimization.taylorDecrement_ge_of_regularizedModel_lt"]
+deps = ["algorithm_2_4_1", "Optimization.lt_taylorDecrement_of_regularizedModel_lt"]
 source = "Cartis–Gould–Toint, (2.4.5)–(2.4.7)"
 
 [[node]]

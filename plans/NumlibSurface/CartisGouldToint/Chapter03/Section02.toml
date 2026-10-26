@@ -85,7 +85,7 @@ Lemma 3.2.3. If `λ := hessianMinEig f x < 0`, `u` is a unit eigenvector for `λ
 `T₂(x, Δ u) ≤ T₂(x, 0) - ½ |λ| Δ²` (3.2.15); in a TR2 run with `ε₂ ≠ none` and `λ_min[∇²f(x_k)] < 0`
 the denominator of (3.2.11) is positive.
 '''
-deps = ["algorithm_3_2_1", "Optimization.neg_quadModel_eigen_ge", "Optimization.taylorPolynomial_two_eq_quadModel"]
+deps = ["algorithm_3_2_1", "Optimization.quadModel_smul_le_of_curvature", "Optimization.taylorPolynomial_two_eq_quadModel"]
 source = "Cartis–Gould–Toint, Lemma 3.2.3"
 
 [[node]]

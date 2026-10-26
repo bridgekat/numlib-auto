@@ -1,98 +1,49 @@
 namespace = "Optimization"
-desc = '''
-Quadratic models `q(s) = ⟪g, s⟫ + ½ ⟪s, H s⟫` (the decrement form of `m(s) - m(0)`), using the
-shared definition `Subproblem.quadModel g H` of `Numlib/Optimization/Subproblem/Model`
-(`H : E →L[ℝ] E` symmetric, `‖H‖` its operator norm; for a `C²` function `H` is
-`Optimization.hessianOperator f x`), on a real inner product space,
-as used by trust-region methods (Cartis–Gould–Toint (2.3.1), TR1 with `B = B_k`, TR2 with
-`B = ∇²f(x_k)`). Cauchy step (2.3.5) and eigenpoint (3.2.5) are specified relationally
-(minimizers along a ray within the trust region), and their guaranteed decreases are Lemmas
-2.3.2 and 3.2.3. Also the TR ratio estimates of Lemmas 2.3.3 and 3.2.4, stated for one iteration.
-'''
 
 [[node]]
 id = "taylorPolynomial_two_eq_quadModel"
-kind = "theorem"
-desc = '''
-For `f` `C²` at `x` on a real inner product space (complete): `taylorPolynomial f 2 x s =
-f x + Subproblem.quadModel (gradient f x) (hessianOperator f x) s`. (Links the Taylor-polynomial
-vocabulary of the complexity theory to the subproblem vocabulary of Chapters 8–11.)
-'''
-deps = ["taylorPolynomial", "Subproblem.quadModel", "hessianOperator"]
 source = "Cartis–Gould–Toint, (2.3.1), (3.1.2)"
 
 [[node]]
 id = "IsCauchyStep"
-kind = "def"
-desc = '''
-`IsCauchyStep g H Δ t : Prop := 0 ≤ t ∧ t * ‖g‖ ≤ Δ ∧ ∀ τ, 0 ≤ τ → τ * ‖g‖ ≤ Δ →
-Subproblem.quadModel g H (-(t • g)) ≤ Subproblem.quadModel g H (-(τ • g))` (`t^C_k` of (2.3.5): minimizer of the model
-along `-g` inside the region `‖s‖ ≤ Δ`; the book's "`x_k - t g ∈ 𝓡_k`" means `‖t g‖ ≤ Δ_k`).
-Existence (`exists_isCauchyStep`, part of node) for `Δ ≥ 0`: compact interval, continuity (any
-`t` if `g = 0`).
-'''
-deps = ["Subproblem.quadModel"]
 source = "Cartis–Gould–Toint, (2.3.5)"
 
 [[node]]
 id = "neg_quadModel_cauchy_ge"
-kind = "theorem"
-desc = '''
-Lemma 2.3.2: if `IsCauchyStep g H Δ t` and `0 ≤ Δ`, then
-`-Subproblem.quadModel g H (-(t • g)) ≥ ‖g‖ / 2 * min (‖g‖ / (1 + ‖H‖)) Δ`; in particular it is `> 0` when
-`g ≠ 0`, `Δ > 0`. (Three cases: positive curvature with interior minimizer, positive curvature
-with boundary minimizer, nonpositive curvature.)
-'''
-deps = ["IsCauchyStep"]
 source = "Cartis–Gould–Toint, Lemma 2.3.2"
 
 [[node]]
-id = "neg_quadModel_eigen_ge"
-kind = "theorem"
-desc = '''
-Lemma 3.2.3 core: if `‖u‖ = 1`, `⟪u, H u⟫ = λ < 0`, `⟪g, u⟫ ≤ 0` and `Δ ≥ 0`, then
-`Subproblem.quadModel g H (Δ • u) ≤ λ Δ² / 2` (so the eigenpoint decrease is `≥ |λ| Δ²/2`), and `t = Δ`
-minimizes `t ↦ Subproblem.quadModel g H (t • u)` over `[0, Δ]` (the eigenpoint is on the boundary). The book
-writes the constraint as `x_k - t u_k ∈ 𝓑_{Δ_k}`; it means `‖t u_k‖ ≤ Δ_k`.
-'''
-deps = ["Subproblem.quadModel"]
+id = "quadModel_smul_le_of_curvature"
 source = "Cartis–Gould–Toint, Lemma 3.2.3, (3.2.5)"
 
 [[node]]
 id = "le_reductionRatio_trust_first"
-kind = "theorem"
-desc = '''
-Lemma 2.3.3 core (one iteration). `f` differentiable with `‖∇f y - ∇f z‖ ≤ L ‖y - z‖`,
-`‖H‖ ≤ κB`, `‖s‖ ≤ Δ`, `pred := -Subproblem.quadModel (gradient f x) H s ≥ ‖∇f x‖ Δ / 2 > 0`. Then
-`|reductionRatio f x s pred - 1| ≤ 2 (L + κB) Δ / ‖∇f x‖`; hence
-`Δ < (1 - η₂) ‖∇f x‖ / (2 (L + κB))` implies `η₂ ≤ ρ`.
-(`|f(x+s) - f x - quadModel(s)| ≤ (L/2 + κB/2) ‖s‖²` by (A.19), p = 1; the book's mean-value route
-gives `(L + κB) ‖s‖²`; either suffices.)
-'''
-deps = ["Subproblem.quadModel", "reductionRatio", "abs_sub_taylorPolynomial_le_of_lipschitz", "le_reductionRatio_of_abs_sub_le"]
 source = "Cartis–Gould–Toint, Lemma 2.3.3"
 
 [[node]]
 id = "le_reductionRatio_trust_second"
-kind = "theorem"
-desc = '''
-Lemma 3.2.4 core. `f` `C²` with `IteratedFDerivLipschitzOn f 2 L₂ univ`, `H = hessianOperator f x`,
-`‖s‖ ≤ Δ`, `pred := -Subproblem.quadModel (gradient f x) H s ≥ |λ| Δ² / 2` with `λ < 0`. Then
-`|reductionRatio f x s pred - 1| ≤ L₂ Δ / (3 |λ|)`; hence `Δ < 3 (1 - η₂) |λ| / L₂` implies
-`η₂ ≤ ρ`.
-'''
-deps = ["Subproblem.quadModel", "reductionRatio", "abs_sub_taylorPolynomial_le_of_lipschitz", "le_reductionRatio_of_abs_sub_le"]
 source = "Cartis–Gould–Toint, Lemma 3.2.4"
 
 [[node]]
 id = "exists_isMinOn_quadModel_ball"
-kind = "theorem"
-desc = '''
-`[FiniteDimensional ℝ E]`, `Δ ≥ 0`: `Subproblem.quadModel g H` attains its minimum on `closedBall 0 Δ`; any
-minimizer `s*` satisfies the Cauchy decrease condition `Subproblem.quadModel g H s* ≤ Subproblem.quadModel g H (-(t • g))`
-for every Cauchy step `t`, and the eigenpoint condition `Subproblem.quadModel g H s* ≤ Subproblem.quadModel g H (Δ • u)`
-for every unit `u`. (Existence of TR1/TR2/TRε steps; existence of the minimizer is
-`Subproblem.exists_isMinOn_closedBall`.)
-'''
-deps = ["Subproblem.quadModel", "IsCauchyStep", "Subproblem.exists_isMinOn_closedBall"]
 source = "Cartis–Gould–Toint, Section 3.2.1 (global minimizer satisfies (3.2.4))"
+
+[[node]]
+id = "abs_reductionRatio_sub_one_le_trust_first"
+source = "Cartis–Gould–Toint, Lemma 2.3.3"
+
+[[node]]
+id = "abs_reductionRatio_sub_one_le_trust_second"
+source = "Cartis–Gould–Toint, Lemma 3.2.4"
+
+[[node]]
+id = "le_neg_quadModel_smul_of_curvature"
+source = "Cartis–Gould–Toint, Lemma 3.2.3, (3.2.15)"
+
+[[node]]
+id = "le_reductionRatio_trust_first_of_isCauchyStep"
+source = "Cartis–Gould–Toint, Lemma 2.3.3"
+
+[[node]]
+id = "le_reductionRatio_trust_second_of_curvature"
+source = "Cartis–Gould–Toint, Lemma 3.2.4"

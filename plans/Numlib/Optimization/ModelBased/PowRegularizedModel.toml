@@ -1,120 +1,49 @@
 namespace = "Optimization"
-desc = '''
-Taylor models regularized by a *real* power: `m(s) = T_p(x, s) + σ/r! ‖s‖^r` with `r > p` real and
-the generalized factorial `r! = ∏_{ℓ=1}^{⌊r⌋} (ℓ + r - ⌊r⌋)` (Cartis–Gould–Toint (5.5.1)–(5.5.2)),
-and the one-iteration estimates of the universal method ARp-H (Algorithm 5.5.1) under a Hölder
-continuous `p`-th derivative (assumption f.DpH, `IteratedFDerivHolderOn f p H β univ`).
-
-Generalizes the core `regularizedModel` (which is the case `r = p + 1`:
-`regularizedModel_eq_powRegularizedModel`); the core lemmas are the Lipschitz (`β = 1`, `r = p+1`)
-special cases of the ones here, and could be refactored to be derived from them. All exponents are
-real (`Real.rpow`); `‖s‖ ^ r` with `r > 1` is `C¹` everywhere (Mathlib `hasFDerivAt_norm_rpow`) and
-`C²` for `r ≥ 2` (`NormPowHessian`).
-
-Generalized factorial: `realFactorial r := holderFactorial ⌊r⌋₊ (Int.fract r)` for `r ≥ 0` (the
-book's `(k + β)!` is `holderFactorial k β` for `β ∈ [0, 1)`, and `realFactorial (k + 1) = (k+1)! =
-holderFactorial k 1` — the two conventions agree on `(p + β_p)!` for `β_p ∈ [0,1]`, including
-`β_p = 1`: `realFactorial_add_holder`).
-'''
 
 [[node]]
 id = "realFactorial"
-kind = "def"
-desc = '''
-`realFactorial (r : ℝ) : ℝ := holderFactorial ⌊r⌋₊ (Int.fract r)` (book (5.5.2) for `r ≥ 0`).
-API (part of node): `realFactorial (n : ℕ) = n !`; `realFactorial r = r * realFactorial (r - 1)`
-for `r ≥ 1` (footnote 44); positivity (`r ≥ 0`); monotone on `[1, ∞)`, so
-`realFactorial (r - 1) ≤ realFactorial r` for `r ≥ 1` and `realFactorial r ≤ realFactorial r'` for
-`1 ≤ r ≤ r'`; `realFactorial_add_holder : realFactorial (k + β) = holderFactorial k β` for
-`β ∈ [0, 1]` (the case `β = 1` uses `holderFactorial k 1 = (k+1)!`).
-'''
-deps = ["holderFactorial"]
 source = "Cartis–Gould–Toint, (5.5.2), definition of (p + β_p)! before Lemma 5.5.2"
 
 [[node]]
 id = "powRegularizedModel"
-kind = "def"
-desc = '''
-`powRegularizedModel (D : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (σ r : ℝ) (s : E) : ℝ :=
-D.taylorSum p s + σ / realFactorial r * ‖s‖ ^ r` (book (5.5.1)). Bridge (part of node):
-`regularizedModel_eq_powRegularizedModel : regularizedModel D p σ = powRegularizedModel D p σ (p+1)`.
-'''
-deps = ["realFactorial", "regularizedModel", "FormalMultilinearSeries.taylorSum"]
 source = "Cartis–Gould–Toint, (5.5.1)"
 
 [[node]]
-id = "taylorDecrement_ge_of_powRegularizedModel_lt"
-kind = "theorem"
-desc = '''
-If `powRegularizedModel D p σ r s < powRegularizedModel D p σ r 0` and `r > 0` then
-`σ / realFactorial r * ‖s‖ ^ r < D.taylorDecrement p s` (book (5.5.12), Lemma 5.5.1).
-'''
-deps = ["powRegularizedModel", "FormalMultilinearSeries.taylorDecrement"]
+id = "lt_taylorDecrement_of_powRegularizedModel_lt"
 source = "Cartis–Gould–Toint, Lemma 5.5.1"
 
 [[node]]
 id = "fderiv_powRegularizedModel"
-kind = "theorem"
-desc = '''
-For symmetric data (`D.IsSymm p`), `r > 1`: the model is differentiable with
-`fderiv ℝ (powRegularizedModel D p σ r) s = fderiv ℝ (D.taylorSum p) s +
-(σ / realFactorial (r - 1) * ‖s‖ ^ (r - 2)) • innerSL ℝ s` (using `r! = r (r-1)!`), so the
-regularization gradient has norm `σ/(r-1)! ‖s‖^{r-1}`; for `r ≥ 2` it is `C²` and
-`‖iteratedFDeriv ℝ 2 (σ/r! ‖·‖^r) s‖ = σ/(r-2)! ‖s‖^{r-2}` with the regularization Hessian positive
-semidefinite (book (5.5.17), from `iteratedFDeriv_two_norm_rpow_bounds`;
-`r (r-1) / r! = 1/(r-2)!` for `r ≥ 2`).
-'''
-deps = ["powRegularizedModel", "realFactorial", "fderiv_norm_rpow_apply", "iteratedFDeriv_two_norm_rpow_bounds", "FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply"]
 source = "Cartis–Gould–Toint, proof of Lemma 5.5.2, (5.5.17)"
 
 [[node]]
 id = "norm_fderiv_le_of_powRegularizedModel"
-kind = "theorem"
-desc = '''
-(5.5.13) Let `p ≥ 1`, `β ∈ [0,1]`, `r > 1`, `f` `C^p` with `IteratedFDerivHolderOn f p H β univ`,
-`m = powRegularizedModel (ftaylorSeries ℝ f x) p σ r`, `σ ≥ 0`. Then
-`‖fderiv ℝ f (x + s)‖ ≤ H / holderFactorial (p - 1) β * ‖s‖ ^ ((p - 1 : ℕ) + β) +
-σ / realFactorial (r - 1) * ‖s‖ ^ (r - 1) + ‖fderiv ℝ m s‖`.
-(The book's display writes `∇_s m_k(x_k + s_k)`; the model is a function of the step: `∇_s m_k(s_k)`.)
-'''
-deps = ["fderiv_powRegularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder"]
 source = "Cartis–Gould–Toint, Lemma 5.5.2 (5.5.13)"
 
 [[node]]
 id = "minCurvature_ge_of_powRegularizedModel"
-kind = "theorem"
-desc = '''
-(5.5.14) Same setting with `p ≥ 2`, `r ≥ 2`, `E` nontrivial:
-`-minCurvature (iteratedFDeriv ℝ 2 f (x + s)) ≤ H / holderFactorial (p - 2) β * ‖s‖ ^ ((p-2 : ℕ) + β)
-+ σ / realFactorial (r - 2) * ‖s‖ ^ (r - 2) - minCurvature (iteratedFDeriv ℝ 2 m s)`.
-Uses `abs_minCurvature_sub_le` ((A.5)), (A.15) with `j = 2`, and the Hessian norm of the
-regularization term (only the `j = 2` case of Lemma B.4.1, which is correct for real `r ≥ 2`).
-'''
-deps = ["fderiv_powRegularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder", "abs_minCurvature_sub_le"]
 source = "Cartis–Gould–Toint, Lemma 5.5.2 (5.5.14)"
 
 [[node]]
 id = "abs_reductionRatio_sub_one_le_of_holder"
-kind = "theorem"
-desc = '''
-(5.5.22) `f` `C^p`, `IteratedFDerivHolderOn f p H β univ`, `β ∈ [0,1]`, `p + β ≥ 1`, `σ > 0`, and
-`0 < σ / realFactorial r * ‖s‖ ^ r ≤ (ftaylorSeries ℝ f x).taylorDecrement p s`. Then
-`|reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) - 1| ≤
-realFactorial r * H / (holderFactorial (p - 1) β * σ) * ‖s‖ ^ ((p : ℝ) + β - r)`
-(via (A.14) `abs_sub_taylorPolynomial_le_of_holder` and `(p+β)! ≥ (p+β-1)!`).
-'''
-deps = ["abs_sub_taylorPolynomial_le_of_holder", "reductionRatio", "realFactorial"]
 source = "Cartis–Gould–Toint, proof of Lemma 5.5.3 (5.5.22)"
 
 [[node]]
 id = "exists_isMinOn_powRegularizedModel"
-kind = "theorem"
-desc = '''
-`[FiniteDimensional ℝ E]`, `σ > 0`, `r > p ≥ 1`: `powRegularizedModel D p σ r` attains its global
-minimum (coercivity). At a global minimizer `s*`: `fderiv ℝ m s* = 0`, and if `r ≥ 2`,
-`0 ≤ minCurvature (iteratedFDeriv ℝ 2 m s*)`; if moreover `fderiv ℝ (D.taylorSum p) 0 ≠ 0`, or
-`r > 2` and `minCurvature (iteratedFDeriv ℝ 2 (D.taylorSum p) 0) < 0`, then `m s* < m 0`.
-Used for the existence of ARp-H runs.
-'''
-deps = ["powRegularizedModel", "fderiv_powRegularizedModel", "Optimization.IsLocalMin.iteratedFDeriv_two_nonneg"]
 source = "Cartis–Gould–Toint, Algorithm 5.5.1 (Step 1 well-posedness)"
+
+[[node]]
+id = "realFactorial_eq_mul_sub_one"
+source = "Cartis–Gould–Toint, footnote 44"
+
+[[node]]
+id = "realFactorial_add_holder"
+source = "Cartis–Gould–Toint, definition of (p + β_p)! before Lemma 5.5.2"
+
+[[node]]
+id = "iteratedFDeriv_powRegularizedModel"
+source = "Cartis–Gould–Toint, proof of Lemma 5.5.2"
+
+[[node]]
+id = "abs_reductionRatio_sub_one_le_of_holder_sharp"
+source = "Cartis–Gould–Toint, proof of Lemma 5.5.3 (5.5.22)"
