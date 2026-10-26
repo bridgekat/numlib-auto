@@ -1,0 +1,34 @@
+namespace = "ExactSteepestDescent.Corridor"
+
+[[node]]
+id = "two_widthIncrement_le_amplitude"
+
+[[node]]
+id = "segmentPolynomial"
+
+[[node]]
+id = "segmentObjective"
+
+[[node]]
+id = "segmentObjective_eq_polynomial"
+
+[[node]]
+id = "contDiff_segmentObjective"
+
+[[node]]
+id = "segmentObjective_iteratedDeriv"
+
+[[node]]
+id = "segmentObjective_deriv_neg"
+
+[[node]]
+id = "segmentObjective_endpoint"
+
+[[node]]
+id = "rayObjective"
+
+[[node]]
+id = "rayObjective_eq_segmentObjective"
+
+[[node]]
+id = "first_local_line_minimum"

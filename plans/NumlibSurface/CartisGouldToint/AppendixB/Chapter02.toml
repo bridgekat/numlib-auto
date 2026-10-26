@@ -67,12 +67,7 @@ id = "sdexCorridor"
 
 [[node]]
 id = "lemma_B_2_6_first_local"
-kind = "theorem"
-desc = '''
-For every k<N in sdexCounterexampleData, the prescribed positive step reaches (x_{k+1},y_{k+1}), the first local minimizer of fSDEX along the ray from (x_k,y_k) in direction -gradient fSDEX(x_k,y_k). State a positive step parameter alpha_k, strict negativity of the one-variable derivative for 0<=alpha<alpha_k, derivative zero at alpha_k, and local minimality at alpha_k. Use (B.2.32)--(B.2.36) for the decreasing segment and the neighboring extension to prove local minimality, not mere zero derivative.
-'''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.2.6"
-deps = ["sdexCounterexampleData", "lemma_B_2_2"]
 
 [[node]]
 id = "lemma_B_2_6_counterexample"

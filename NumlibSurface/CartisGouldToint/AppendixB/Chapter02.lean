@@ -1,3 +1,4 @@
+import Numlib.Optimization.SteepestDescent.Exact.CorridorLocal
 import Numlib.Approximation.Hermite.Quintic
 import Numlib.Optimization.SteepestDescent.Exact.CorridorGlobalCounterexample
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -205,5 +206,38 @@ theorem lemma_B_2_6_counterexample :
   unfold ExactSteepestDescent.Corridor.initialRayObjective at h
   rw [ExactSteepestDescent.Corridor.gridPoint_zero] at h
   exact h
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **First-local-minimum correction of Lemma B.2.6.** At every nonterminal
+node of the genuine canonical corridor construction, the prescribed positive
+step reaches the first local minimum on the actual negative-gradient ray.
+The true ray derivative is negative at every preceding nonnegative parameter
+and vanishes at the endpoint. Global line minimality is not asserted. -/
+theorem lemma_B_2_6_first_local (ε : ℝ) (hε : 0 < ε) (hε1 : ε ≤ 1) :
+    let P := sdexCounterexampleData ε hε hε1
+    ∀ k < P.horizon,
+      0 < Real.sqrt 2 ∧
+      ExactSteepestDescent.Corridor.gridPoint P (k + 1) =
+        ExactSteepestDescent.Corridor.gridPoint P k - Real.sqrt 2 •
+          gradient (sdexCounterexample ε hε hε1)
+            (ExactSteepestDescent.Corridor.gridPoint P k) ∧
+      (∀ α ∈ Set.Ico (0 : ℝ) (Real.sqrt 2),
+        deriv (fun a => sdexCounterexample ε hε hε1
+          (ExactSteepestDescent.Corridor.gridPoint P k - a •
+            gradient (sdexCounterexample ε hε hε1)
+              (ExactSteepestDescent.Corridor.gridPoint P k))) α < 0) ∧
+      deriv (fun a => sdexCounterexample ε hε hε1
+        (ExactSteepestDescent.Corridor.gridPoint P k - a •
+          gradient (sdexCounterexample ε hε hε1)
+            (ExactSteepestDescent.Corridor.gridPoint P k))) (Real.sqrt 2) = 0 ∧
+      IsLocalMin (fun a => sdexCounterexample ε hε hε1
+        (ExactSteepestDescent.Corridor.gridPoint P k - a •
+          gradient (sdexCounterexample ε hε hε1)
+            (ExactSteepestDescent.Corridor.gridPoint P k))) (Real.sqrt 2) := by
+  intro P k hk
+  exact ExactSteepestDescent.Corridor.first_local_line_minimum P hk
 
 end CartisGouldToint
