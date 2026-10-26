@@ -77,7 +77,9 @@ irrelevant to these two counting results.
 
 The supplied Markdown is the source of the plans; a discrepancy has not necessarily
 been checked against the printed edition. Corrections and counterexamples are
-recorded on the relevant plan nodes. In particular:
+recorded on the relevant plan nodes. Separately proved repairs are indexed in
+the [correction guide](CartisGouldToint/CORRECTIONS.md), including the explicit
+changes to algorithms, assumptions and conclusions. In particular:
 
 * The converse of Theorem 1.1.2 is false for arbitrary closed convex sets when
   critical directions are restricted to actual feasible displacements. Its

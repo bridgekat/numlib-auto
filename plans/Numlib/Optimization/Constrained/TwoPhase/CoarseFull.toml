@@ -1,6 +1,4 @@
 namespace = "Constrained.TwoPhase"
-desc = "Full coarser corrected target-method and two-phase evaluation complexity, from actual good merit, reset and reflection target charges. Fixed positive constants precede independent accuracies. Preserve actual Phase1 and interrupted Phase2 rules except closed reset equality; every actual first-return and all three actual output alternatives and initialized oracle schedules are explicit. The extra target-reflection charge replaces the unsupported sharper reflection-block estimate."
-
 [[node]]
 id = "FullData.outputPoint"
 [[node]]

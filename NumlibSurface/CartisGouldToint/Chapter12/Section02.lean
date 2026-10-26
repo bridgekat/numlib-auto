@@ -564,7 +564,7 @@ namespace CartisGouldToint
 of the actual solver floor and the normalized order-q obstruction coefficient
 repairs the scalar comparison when the step is shorter than its radius.
 Both source accuracy exponents are retained. The original fixed-coefficient
-statement remains a separate open target. -/
+statement is refuted by `arqpNonterminationLowerBoundsCounterexample`. -/
 theorem lemma_12_2_12_corrected {n p q N i : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
     {η₁ η₂ γ₁ γ₂ γ₃ σmin L θ : ℝ}

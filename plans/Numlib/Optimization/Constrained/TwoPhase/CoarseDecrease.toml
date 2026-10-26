@@ -1,6 +1,4 @@
 namespace = "ConvexRegularization"
-desc = "Actual fractional endpoint model-error decrease, actual good-merit telescoping with reset injections, exact same-point reflection target perturbation, and actual call/event accounting. Rejection preserves points, so each continuing call has a terminal accepted event; every such event is good, reset, or a charged small-check reflection. No decrease/count conclusion is a primitive execution field."
-
 [[node]]
 id = "Run.fractional_step_lower"
 [[node]]
