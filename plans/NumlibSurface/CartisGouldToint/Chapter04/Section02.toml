@@ -62,13 +62,6 @@ source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv)"
 
 [[node]]
 id = "lemma_4_2_5_iv_growth"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (iv), explicit growth: there is `c₁ > 0` with
-`L^D_p = Optimization.CarmonChain.lipschitzConst p ≤ exp(5/2 p log p + c₁ p)` for all `p ≥ 1`.
-Nothing else in the section depends on it.
-'''
-deps = ["lemma_4_2_5_iv", "Optimization.CarmonChain.lipschitzConst_le_exp"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv) (explicit growth)"
 
 [[node]]

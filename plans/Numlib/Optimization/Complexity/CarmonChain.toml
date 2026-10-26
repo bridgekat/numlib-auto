@@ -30,20 +30,6 @@ source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv)"
 
 [[node]]
 id = "CarmonChain.lipschitzConst_le_exp"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (iv), quantitative part ([77, Lemma 3 (iii)]): there is `c₁ > 0` with
-`lipschitzConst p ≤ exp (5/2 * p * Real.log p + c₁ * p)` for all `p ≥ 1`. Here
-`lipschitzConst p = 1 + phiBound (p+1) + 2 * pairBound (p+1)` with
-`pairBound q = 2 ∑_{i ≤ q} C(q,i) psiBound i * phiBound (q-i)` and `psiBound`, `phiBound` the
-suprema of `|Ψ^{(k)}|`, `|Φ^{(k)}|`. Available: `iteratedDeriv_psi` (`Ψ^{(k)}(y) =
-e 2^k P_k(1/(2y-1)) flat(2y-1)`, `P_k = flatPoly k`, `P_{k+1} = 2X³P_k - X²P_k'`) and
-`iteratedDeriv_succ_phi` (`Φ^{(k+1)} = e^{1/2} H_k(y) e^{-y²/2}`, `H_k = gaussPoly k`). Needed:
-`psiBound k ≤ exp(5k/2 log k + c k)` (coefficient bounds for `P_k`, degree `3k`, and
-`sup_t t^m e^{-t²} ≤ (m/2)^{m/2}`), and any `phiBound k ≤ C^k k!` (crude Hermite bound suffices,
-since `C(q,i) e^{5i/2 log i} (q-i)! C^{q-i} ≤ e^{5q/2 log q + c q}`). Nothing else depends on it.
-'''
-deps = ["CarmonChain.lipschitzConst", "CarmonChain.psi", "CarmonChain.phi"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv) (explicit growth)"
 
 [[node]]
