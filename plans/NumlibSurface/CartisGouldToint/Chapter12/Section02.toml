@@ -243,3 +243,19 @@ source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof)"
 [[node]]
 id = "lemma_12_2_3_feasible"
 source = "Cartis–Gould–Toint, Lemma 12.2.3; Lemma 14.2.3 (TRq-SC)"
+
+[[node]]
+id = "arqpPiOf"
+source = "Cartis–Gould–Toint, Lemma 12.2.13 and Table (14.2.12): the exponents π_j per radii mode"
+
+[[node]]
+id = "arqpKappaDmOf"
+source = "Cartis–Gould–Toint, Lemma 12.2.13: the constant κ_{Δm} per radii mode"
+
+[[node]]
+id = "kappaSARqpOf"
+source = "Cartis–Gould–Toint, Theorem 12.2.14: the constant κ^s per radii mode"
+
+[[node]]
+id = "kappaAARqpOf"
+source = "Cartis–Gould–Toint, Theorem 12.2.14: the constant κ^a per radii mode"

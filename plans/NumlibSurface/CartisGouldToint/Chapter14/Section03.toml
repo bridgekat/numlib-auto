@@ -158,8 +158,88 @@ source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 (ARqp-SC row) and 14.3.
 
 [[node]]
 id = "exists_algorithm_14_3_1_complexity_arqp"
-source = "Cartis–Gould–Toint, Theorem 14.3.4 for the LENq-SC runs with INNER = ARqp-SC (ARqp-SC exponents, q > 2)"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 for the LENq-SC runs with INNER = ARqp-SC (ARqp-SC exponents j(p+1)/p, q ≥ 2)"
 
 [[node]]
 id = "exists_algorithm_14_3_2_complexity_arqp"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 for the TPqp-GC runs with INNER = ARqp-SC (ARqp-SC exponents, q > 2)"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for the TPqp-GC runs with INNER = ARqp-SC (ARqp-SC exponents j(p+1)/p, q ≥ 2)"
+
+[[node]]
+id = "arqpRowKappaDecr"
+source = "Cartis–Gould–Toint, (14.2.11) for INNER = ARqp-SC (ARqp-SC row of Lemma 14.2.2), the constant κ_decr"
+
+[[node]]
+id = "IsARqpSCOutputCost.cost_le_arqp_add"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqp-SC row) for an INNER call, with the additive constants that footnote 114 ignores"
+
+[[node]]
+id = "theorem_14_3_4_add"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 with the additive per-call constants of footnote 114"
+
+[[node]]
+id = "exists_algorithm_14_3_1_complexity_arqp_add"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 for the LENq-SC runs with INNER = ARqp-SC (ARqp-SC exponents j(p+1)/p, every q, additive constants of footnote 114)"
+
+[[node]]
+id = "algorithm_14_1_1.zero_radius_ge"
+source = "Cartis–Gould–Toint, Lemma 14.1.3 for the radii of the ARqpC-SC runs with c = 0, h = 0"
+
+[[node]]
+id = "arqpSCKappaRad"
+source = "Cartis–Gould–Toint, (14.1.29) and Lemma 12.2.10, the radius constant of the INNER certificate of ARqp-SC"
+
+[[node]]
+id = "algorithm_14_1_1.zero_exists_cert"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 and Lemma 12.2.10 (certificate (14.3.19) of an ARqp-SC call, with radii bounded below)"
+
+[[node]]
+id = "TPqpSeq.kbCount"
+source = "Cartis–Gould–Toint, (14.3.36), the number of case-(b) outer iterations"
+
+[[node]]
+id = "IsInnerCertified"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (the INNER output (14.3.19) of the case-(b) calls)"
+
+[[node]]
+id = "IsTPqpGCPhase2.complexity"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (Phase 2)"
+
+[[node]]
+id = "jetApprox_targetMerit"
+source = "Cartis–Gould–Toint, (14.3.30): the dependence of the derivatives of μ(·, t) on t"
+
+[[node]]
+id = "IsTPqpGCPhase2.target_drop_of_isKb"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 (the target update (14.3.35) of a case-(b) iteration)"
+
+[[node]]
+id = "IsTPqpGCPhase2.kbCount_le"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 / Lemma 7.2.4 (number of case-(b) outer iterations)"
+
+[[node]]
+id = "TPqpSeq.badCount_le_kbCount"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8"
+
+[[node]]
+id = "IsTPqpGCPhase2.complexity_of_certified"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (Phase 2, without the bad-iteration parameter)"
+
+[[node]]
+id = "exists_isTPqpGCPhase2_isInnerCertified"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 with INNER = ARqp-SC (the INNER certificate of the constructed Phase-2 runs)"
+
+[[node]]
+id = "arqpSCKbDrop"
+source = "Cartis–Gould–Toint, (14.3.35), the target decrease of a case-(b) iteration of the constructed runs"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_certified"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for the TPqp-GC runs with INNER = ARqp-SC, without the bad-iteration parameter"
+
+[[node]]
+id = "lemma_14_3_7_add"
+source = "Cartis–Gould–Toint, Lemma 14.3.7 with the additive per-call constants of footnote 114"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_arqp_add"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for the TPqp-GC runs with INNER = ARqp-SC (ARqp-SC exponents j(p+1)/p, every q, additive Phase-1 constants of footnote 114)"

@@ -144,8 +144,11 @@ where one exists:
   When Phase 2 ends with `f(x_ε) = t_ε`, only the first-order part of (14.3.41) follows.
 * **Lemma 14.3.8, Theorem 14.3.9**: TPqp-GC has the same counting gap as TPp-GC: the bad outer
   iterations are not bounded by the book's argument, and `Chapter14.theorem_14_3_9` carries
-  their number as a parameter (also for the constructed runs with INNER = ARqp-SC,
-  `Chapter14.exists_algorithm_14_3_2_complexity`).
+  their number as a parameter. INNER's certificate closes the gap when `β < θ` (the book allows
+  `β = θ`) and the derivatives of `f` are bounded: every case-(b) iteration then lowers the target
+  by a fixed amount (`Chapter14.IsTPqpGCPhase2.kbCount_le`), and the constructed runs with
+  INNER = ARqp-SC satisfy Theorem 14.3.9 without the parameter
+  (`Chapter14.exists_algorithm_14_3_2_complexity_certified`).
 * **Lemma B.4.1 (B.4.3)**: false for `β < 1` (`AppendixB.lemma_B_4_1_iii_false`); true for `β = 1`,
   the case the book uses.
 * **Theorem 9.3.2** is false with the Euclidean `λ_min` when `M ≠ I`, and **Theorem 9.3.1** omits
@@ -169,7 +172,8 @@ and on the declarations.
   for `3 ≤ q < p` and for `q = 2 < p` on `X ≠ ℝⁿ` (on `ℝⁿ` the mode-`False` bound is not attained
   for `q = 2 < p`, `theorem_14_2_4_arqpida_le_two`); existence and complexity of LENq-SC and TPqp-GC
   runs under the book's anchored (rather than global) Lipschitz assumptions, and their complexity
-  with the ARqp-SC exponents for `q ≤ 2`.
+  with the ARqp-SC unit-radii exponents for `q = 2` on `ℝⁿ` (the "otherwise" exponents are
+  proved for every `q`; for `q = 1` only with the additive Phase-1 constants of footnote 114).
 * The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
   the Gertz–Gill criterion (9.4.8) quoted in §9.4.
 * Discussion without numbered results: the variants of §2.2.3, §4.1.3, §7.2.3, the qualitative parts

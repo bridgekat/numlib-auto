@@ -41,7 +41,9 @@ maxima `L_f`, `L_c` of (14.1.3) are `Chapter12.finMax 1 Lf p` and `Chapter12.fin
 * `lemma_14_1_1`, `example_14_1_1` — first-order necessary condition and its failure at order 2;
 * `lemma_14_1_2` – `lemma_14_1_9`, `theorem_14_1_10_i`, `theorem_14_1_10_ii`;
 * `exists_isARqpCRun` — ARqpC(-SC) runs exist; `algorithm_14_1_1.radius_policy` — every run
-  satisfies the radius policy (14.1.28) (Lemma 14.1.3 for every output of Algorithm 14.1.2).
+  satisfies the radius policy (14.1.28) (Lemma 14.1.3 for every output of Algorithm 14.1.2), in
+  the stronger form `algorithm_14_1_1.kappaDeltaMin_mul_le_radius` (the radius bound also holds
+  after long steps).
 * `algorithm_14_1_2_of_isMinOn` — for `q = 1` and convex `h`, `X`, global model minimizers are
   outputs of Algorithm 14.1.2;
 * `corollary_14_1_11` — sharpness of the bound of Theorem 14.1.10 (1).
@@ -388,7 +390,8 @@ private theorem jet_bounds
     exact (hc.norm_iteratedFDeriv_le hi x).trans
       (mul_le_mul_of_nonneg_left (Chapter12.le_finMax hi') (Real.sqrt_nonneg _))
 
-private theorem one_le_compositeLipschitzW
+/-- `L_w ≥ 1` under f.D1pL, c.D1pL and h.L. -/
+theorem one_le_compositeLipschitzW
     (hf : Chapter12.AssumptionD1pL f p Lf)
     (hc : AssumptionCD1pL c p Lc) (hL : AssumptionHLip h Lh) (hp : 1 ≤ p) :
     1 ≤ compositeLipschitzW Lf Lc Lh p m := by
@@ -1191,27 +1194,23 @@ theorem algorithm_14_1_1.radius_eq_one (hr : algorithm_14_1_1 f c h X p q P ε �
     δs k j = 1 :=
   (hr.detailed k hk h1).spec.2.2.2.1 j hj
 
-/-- **The radius policy (14.1.28)** holds for every ARqpC run (Lemma 14.1.3 for every output of
-Algorithm 14.1.2): under f.D1pL, c.D1pL, h.L and h.S0, at every iteration reaching Step 2,
-`‖s_k‖ ≥ 1` or `δ_{s_k,j} ≥ κ_{δ,min} ε_j` for all `j ∈ [1 : q]`. -/
-theorem algorithm_14_1_1.radius_policy
+/-- **The radii of Algorithm 14.1.2 are bounded below at every iteration reaching Step 2**
+([cartis2022evaluation], Lemma 14.1.3): `δ_{s_k,j} ≥ κ_{δ,min} ε_j` for `j ∈ [1 : q]`, whatever
+the length of the step (radii are only halved while short trial steps are checked). -/
+theorem algorithm_14_1_1.kappaDeltaMin_mul_le_radius
     (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hf : Chapter12.AssumptionD1pL f p Lf) (hc : AssumptionCD1pL c p Lc)
     (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i)
     (h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d k) :
-    1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q, kappaDeltaMin P Lf Lc Lh p m * ε j ≤ δs k j := by
-  rcases le_or_gt 1 ‖s k‖ with hlong | hshort
-  · exact Or.inl hlong
-  refine Or.inr fun j hj => ?_
-  have hp : 1 ≤ p := hr.one_le_q.trans hr.q_le_p
+    ∀ j ∈ Finset.Icc 1 q, kappaDeltaMin P Lf Lc Lh p m * ε j ≤ δs k j := by
+  intro j hj
+  have hW := one_le_compositeLipschitzW hf hc hL (hr.one_le_q.trans hr.q_le_p)
   have hε := hr.ε_mem j hj
   have hσ : 0 < σ k := hr.run.toIsARRun.sigma_pos hk k le_rfl
   have hσmax := sigma_le_arqpcSigmaMax hr hf hc hL hk k le_rfl
-  have hW := one_le_compositeLipschitzW hf hc hL hp
   have hς := P.ς_pos
   have hθ := P.θ_pos
-  have hςθ : P.ς * P.θ ≤ 1 := by nlinarith [P.ς_le_one, P.θ_lt_one]
   set K := 3 * compositeLipschitzW Lf Lc Lh p m + σ k
   have hK : 3 ≤ K := by simp only [K]; linarith
   have hκ1 : kappaDeltaMin P Lf Lc Lh p m * ε j ≤ P.ς * P.θ / (8 * K) * ε j := by
@@ -1223,6 +1222,7 @@ theorem algorithm_14_1_1.radius_policy
   by_cases hJ : j ∈ halvingSet h X
   · set δbar : ℕ → ℝ := fun i => min 1 (P.ς * P.θ * ε i / (4 * K))
     have hsm : P.ς * P.θ * ε j / (4 * K) ≤ 1 := by
+      have hςθ : P.ς * P.θ ≤ 1 := by nlinarith [P.ς_le_one, P.θ_lt_one]
       rw [div_le_one (by positivity)]
       nlinarith [hε.2, hε.1]
     have hge := (hr.detailed k hk h1).radius_ge (δbar := δbar) hr.one_le_q
@@ -1230,7 +1230,6 @@ theorem algorithm_14_1_1.radius_policy
       (fun s' hs' hs'1 i _ hiq δ' hδ' d' hd' hdec => by
         have hi' : i ∈ Finset.Icc 1 p := Finset.mem_Icc.2
           ⟨(Finset.mem_Icc.1 hiq).1, (Finset.mem_Icc.1 hiq).2.trans hr.q_le_p⟩
-        have hεi := hr.ε_mem i hiq
         have := lemma_14_1_2 hf hc hL hS (x k) hσ.le hs'1.le hi'
           (α := P.ς * P.θ * ε i) hδ'.1 (hδ'.2.trans (min_le_min le_rfl le_rfl))
           (mem_closedBall_zero_iff.1 hd'.1) hdec
@@ -1243,9 +1242,22 @@ theorem algorithm_14_1_1.radius_policy
     ring
   · rw [hr.radius_eq_one hk h1 hJ]
     have : P.ς * P.θ / (8 * K) ≤ 1 := by
-      rw [div_le_one (by positivity)]; linarith
+      rw [div_le_one (by positivity)]; nlinarith [P.ς_le_one, P.θ_lt_one]
     nlinarith [hε.2, hε.1, div_nonneg (by positivity : (0 : ℝ) ≤ P.ς * P.θ)
       (by positivity : (0 : ℝ) ≤ 8 * K)]
+
+/-- **The radius policy (14.1.28)** holds for every ARqpC run (Lemma 14.1.3 for every output of
+Algorithm 14.1.2): under f.D1pL, c.D1pL, h.L and h.S0, at every iteration reaching Step 2,
+`‖s_k‖ ≥ 1` or `δ_{s_k,j} ≥ κ_{δ,min} ε_j` for all `j ∈ [1 : q]` (in fact the second alternative
+always holds, `algorithm_14_1_1.kappaDeltaMin_mul_le_radius`). -/
+theorem algorithm_14_1_1.radius_policy
+    (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
+    (hf : Chapter12.AssumptionD1pL f p Lf) (hc : AssumptionCD1pL c p Lc)
+    (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {k : ℕ}
+    (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i)
+    (h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d k) :
+    1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q, kappaDeltaMin P Lf Lc Lh p m * ε j ≤ δs k j :=
+  Or.inr (hr.kappaDeltaMin_mul_le_radius hf hc hL hS hk h1)
 
 end RadiusPolicy
 
