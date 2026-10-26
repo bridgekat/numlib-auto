@@ -207,6 +207,8 @@ import Numlib.Analysis.InnerProductSpace.HilbertSum
 import Numlib.Analysis.InnerProductSpace.MaximalMonotone
 import Numlib.Analysis.InnerProductSpace.MinCurvature
 import Numlib.Analysis.InnerProductSpace.NormPow
+import Numlib.Analysis.InnerProductSpace.NormPowHessian
+import Numlib.Analysis.InnerProductSpace.NormPowIteratedFDeriv
 import Numlib.Analysis.InnerProductSpace.Normalize
 import Numlib.Analysis.InnerProductSpace.Orthonormal
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
