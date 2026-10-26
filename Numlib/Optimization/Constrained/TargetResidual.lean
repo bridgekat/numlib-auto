@@ -195,6 +195,13 @@ end Defs
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [InnerProductSpace ℝ F]
 
+omit [NormedSpace ℝ E] in
+/-- The Lagrangian `ℒ(·, y) = f - ⟪y, c⟫` of [cartis2022evaluation], (1.1.1), as a function of
+`x` for a fixed multiplier `y` (reducible, so that statements about `fun z => f z - ⟪y, c z⟫`
+apply). -/
+noncomputable abbrev lagrangianFn (f : E → ℝ) (c : E → F) (y : F) : E → ℝ :=
+  fun z => f z - ⟪y, c z⟫
+
 /-- The multiplier estimate `y = -c(x)/(f(x) - t)` of [cartis2022evaluation], (7.2.22) and
 (14.3.53). It is meaningful only when `f(x) ≠ t`; for `f(x) = t` it takes the junk value `0`
 (`0⁻¹ = 0`). -/

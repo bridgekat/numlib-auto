@@ -24,6 +24,10 @@ block of outer iterations (the telescoping argument of Lemmas 7.2.6 and 14.3.8).
 
 * `Constrained.IsTargetSequence.props`: Lemma 7.2.3 ((7.2.26)–(7.2.31));
 * `Constrained.IsTargetSequence.card_Ka_le`: Lemma 7.2.4, `|𝒦_a| ≤ (f_up - f_low + 1)/((1-θ)ε₀)`;
+* `Constrained.IsTargetSequence.sum_max_sub_le`: the residual decrease above `θε₀` over the outer
+  iterations `[1, K]` is at most `(1 - θ)ε₀ (|𝒦_a ∩ [1, K)| + 1)`;
+* `Constrained.le_card_add_sum_of_cover`: counting the outer iterations by case-(a), bad and
+  productive ones;
 * `Constrained.card_le_of_residual_block`: the number of "good" successful inner iterations
   between two consecutive case-(a) iterations is `O((1-θ) max_l ε₀^{2-π_l} ε_l^{-π_l})`
   (Lemmas 7.2.6 and 14.3.8).
@@ -258,7 +262,94 @@ theorem card_Ka_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka 
   have htK := h.target_mem_Icc hθ.le hε₀.le hε₀1 hxX hB hK le_rfl
   linarith [ht1.2, htK.1]
 
+/-- The number of case-(a) iterations in `[1, K + 1)` is that in `[1, K)` plus `1` if `K` is a
+case-(a) iteration. -/
+private theorem card_filter_Ico_succ (Ka : ℕ → Prop) [DecidablePred Ka] {K : ℕ} (hK1 : 1 ≤ K) :
+    (((Finset.Ico 1 (K + 1)).filter Ka).card : ℝ) =
+      ((Finset.Ico 1 K).filter Ka).card + if Ka K then 1 else 0 := by
+  rw [← Nat.succ_eq_add_one, Nat.Ico_succ_right_eq_insert_Ico hK1, Finset.filter_insert]
+  split_ifs with ha
+  · rw [Finset.card_insert_of_notMem (by simp)]; push_cast; ring
+  · simp
+
+/-- **Telescoping over the outer iterations** (the sums behind (7.2.37)–(7.2.39) and (14.3.69)–
+(14.3.71) of [cartis2022evaluation]). With `a_k = max(‖r(x_k, t_k)‖, θε₀)` and
+`b_k = max(‖r(x_{k+1}, t_k)‖, θε₀)`, for `1 ≤ K`:
+`∑_{k ∈ [1, K]} (a_k - b_k) + b_K ≤ a_1 + (1 - θ) ε₀ |𝒦_a ∩ [1, K)|`. -/
+theorem sum_max_sub_add_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka K)
+    (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀) (hK1 : 1 ≤ K) :
+    ∑ k ∈ Finset.Icc 1 K,
+        (max (targetResidual f c (t k) (x k)) (θ * ε₀) -
+          max (targetResidual f c (t k) (x (k + 1))) (θ * ε₀)) +
+      max (targetResidual f c (t K) (x (K + 1))) (θ * ε₀) ≤
+      max (targetResidual f c (t 1) (x 1)) (θ * ε₀) +
+        (1 - θ) * ε₀ * ((Finset.Ico 1 K).filter Ka).card := by
+  induction K, hK1 using Nat.le_induction with
+  | base => simp
+  | succ K hK1 ih =>
+    have ih := ih (h.mono K.le_succ)
+    have hθε : θ * ε₀ ≤ ε₀ := mul_le_of_le_one_left hε₀ hθ
+    rw [Finset.sum_Icc_succ_top (by omega), card_filter_Ico_succ Ka hK1]
+    have key : max (targetResidual f c (t (K + 1)) (x (K + 1))) (θ * ε₀) -
+        max (targetResidual f c (t K) (x (K + 1))) (θ * ε₀) ≤
+        (1 - θ) * ε₀ * (if Ka K then 1 else 0) := by
+      split_ifs with ha
+      · rw [h.residual_succ_of_Ka hθ hε₀ hK1 K.lt_succ_self ha, max_eq_left hθε,
+          max_eq_right (h.residual_le_of_Ka K hK1 K.lt_succ_self ha)]
+        linarith
+      · rw [h.residual_succ_of_not_Ka hK1 K.lt_succ_self ha]
+        simp
+    linarith
+
+/-- **The outer telescoping bound**: `∑_{k ∈ [1, K]} (a_k - b_k) ≤ (1 - θ) ε₀ (|𝒦_a ∩ [1, K)| + 1)`
+for `1 ≤ K`, `0 ≤ θ ≤ 1`, `ε₀ ≥ 0` (notation of `sum_max_sub_add_le`): a decrease of the
+residual above `θε₀` within the inner runs can accumulate only `(1 - θ)ε₀` per block between two
+case-(a) iterations. -/
+theorem sum_max_sub_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka K)
+    (hθ0 : 0 ≤ θ) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀) (hK1 : 1 ≤ K) :
+    ∑ k ∈ Finset.Icc 1 K,
+        (max (targetResidual f c (t k) (x k)) (θ * ε₀) -
+          max (targetResidual f c (t k) (x (k + 1))) (θ * ε₀)) ≤
+      (1 - θ) * ε₀ * (((Finset.Ico 1 K).filter Ka).card + 1) := by
+  have hs := h.sum_max_sub_add_le hθ hε₀ hK1
+  have ha1 : max (targetResidual f c (t 1) (x 1)) (θ * ε₀) ≤ ε₀ :=
+    max_le (h.residual_le hθ hε₀ le_rfl hK1) (mul_le_of_le_one_left hε₀ hθ)
+  have hbK := le_max_right (targetResidual f c (t K) (x (K + 1))) (θ * ε₀)
+  have : 0 ≤ θ * ε₀ := mul_nonneg hθ0 hε₀
+  nlinarith
+
 end IsTargetSequence
+
+/-- **Counting the outer iterations** (Lemmas 7.2.6 and 14.3.8 of [cartis2022evaluation]): if every
+outer iteration `k ∈ [1, K)` is a case-(a) iteration (`A k`), a "bad" iteration (`B k`), or
+contains at least one counted inner iteration (`1 ≤ g k`), then
+`K ≤ |A ∩ [1, K)| + ∑_{k ∈ [1, K]} g k + |B ∩ [1, K)| + 1`. -/
+theorem le_card_add_sum_of_cover (A B : ℕ → Prop) [DecidablePred A] [DecidablePred B]
+    (g : ℕ → ℕ) {K : ℕ} (hcov : ∀ k ∈ Finset.Ico 1 K, A k ∨ B k ∨ 1 ≤ g k) :
+    K ≤ ((Finset.Ico 1 K).filter A).card + ∑ k ∈ Finset.Icc 1 K, g k +
+      ((Finset.Ico 1 K).filter B).card + 1 := by
+  classical
+  have hsub : Finset.Ico 1 K ⊆ ((Finset.Ico 1 K).filter A ∪ (Finset.Ico 1 K).filter B) ∪
+      (Finset.Ico 1 K).filter (fun k => 1 ≤ g k) := by
+    intro k hk
+    simp only [Finset.mem_union, Finset.mem_filter]
+    rcases hcov k hk with ha | hb | hg
+    · exact Or.inl (Or.inl ⟨hk, ha⟩)
+    · exact Or.inl (Or.inr ⟨hk, hb⟩)
+    · exact Or.inr ⟨hk, hg⟩
+  have hcard := (Finset.card_le_card hsub).trans
+    ((Finset.card_union_le _ _).trans (Nat.add_le_add_right (Finset.card_union_le _ _) _))
+  have hgood : ((Finset.Ico 1 K).filter (fun k => 1 ≤ g k)).card ≤ ∑ k ∈ Finset.Icc 1 K, g k := by
+    rw [Finset.card_eq_sum_ones]
+    calc ∑ _k ∈ (Finset.Ico 1 K).filter (fun k => 1 ≤ g k), 1
+        ≤ ∑ k ∈ (Finset.Ico 1 K).filter (fun k => 1 ≤ g k), g k :=
+          Finset.sum_le_sum fun k hk => (Finset.mem_filter.1 hk).2
+      _ ≤ ∑ k ∈ Finset.Icc 1 K, g k :=
+          Finset.sum_le_sum_of_subset ((Finset.filter_subset _ _).trans
+            Finset.Ico_subset_Icc_self)
+  rw [Nat.card_Ico] at hcard
+  omega
+
 
 /-! ### Counting inner iterations within a block -/
 

@@ -808,49 +808,6 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {C : Set ℝⁿ} {p : ℕ}
   (hL : ∀ t ∈ Icc (flow - 1) fup,
     Chapter06.AssumptionDpLC (Constrained.targetMerit f c t) C p Lμ)
 
-open Classical in
-private theorem kaCount_succ {K : ℕ} (hK1 : 1 ≤ K) :
-    (D.kaCount f c P ε₀ (K + 1) : ℝ) =
-      D.kaCount f c P ε₀ K + if D.IsKa f c P ε₀ K then 1 else 0 := by
-  classical
-  unfold Phase2Seq.kaCount
-  rw [← Nat.succ_eq_add_one, Nat.Ico_succ_right_eq_insert_Ico hK1, Finset.filter_insert]
-  split_ifs with ha
-  · rw [Finset.card_insert_of_notMem (by simp)]; push_cast; ring
-  · simp
-
-open Classical in
-include h in
-/-- The telescoping over the outer iterations behind (7.2.37)–(7.2.39): with
-`a_k = max(‖r(x_k, t_k)‖, θε₀)` and `b_k = max(‖r(x_{k+1}, t_k)‖, θε₀)`,
-`∑_{k ∈ [1, K]} (a_k - b_k) + b_K ≤ a_1 + (1 - θ) ε₀ |𝒦_a ∩ [1, K)|`. -/
-private theorem sum_sub_le {K : ℕ} (hK1 : 1 ≤ K) (hK : D.Before f c C P ε₀ ε₁ K) :
-    ∑ k ∈ Finset.Icc 1 K,
-        (max (Constrained.targetResidual f c (D.t k) (D.X k)) (P.θ * ε₀) -
-          max (Constrained.targetResidual f c (D.t k) (D.X (k + 1))) (P.θ * ε₀)) +
-      max (Constrained.targetResidual f c (D.t K) (D.X (K + 1))) (P.θ * ε₀) ≤
-      max (Constrained.targetResidual f c (D.t 1) (D.X 1)) (P.θ * ε₀) +
-        (1 - P.θ) * ε₀ * D.kaCount f c P ε₀ K := by
-  induction K, hK1 using Nat.le_induction with
-  | base => simp [Phase2Seq.kaCount]
-  | succ K hK1 ih =>
-    have hK' := hK.mono K.le_succ
-    have ih := ih hK'
-    have hTS := h.isTargetSequence hK
-    have hε₀ := h.tol.ε₀_pos
-    have hθε : P.θ * ε₀ ≤ ε₀ := mul_le_of_le_one_left hε₀.le P.θ_lt_one.le
-    rw [Finset.sum_Icc_succ_top (by omega), kaCount_succ hK1]
-    have key : max (Constrained.targetResidual f c (D.t (K + 1)) (D.X (K + 1))) (P.θ * ε₀) -
-        max (Constrained.targetResidual f c (D.t K) (D.X (K + 1))) (P.θ * ε₀) ≤
-        (1 - P.θ) * ε₀ * (if D.IsKa f c P ε₀ K then 1 else 0) := by
-      split_ifs with ha
-      · rw [hTS.residual_succ_of_Ka P.θ_lt_one.le hε₀.le hK1 K.lt_succ_self ha,
-          max_eq_left hθε, max_eq_right ha]
-        linarith
-      · rw [hTS.residual_succ_of_not_Ka hK1 K.lt_succ_self ha]
-        simp
-    linarith
-
 include h hB hL in
 /-- **The good inner iterations of Phase 2** (the corrected (7.2.39) of [cartis2022evaluation],
 summed over the blocks): for every outer iteration `K ≥ 1` reached, the number of good inner
@@ -863,7 +820,8 @@ theorem sum_goodCount_le (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) {K : �
   have hε₀ := h.tol.ε₀_pos
   have hL0 : 0 ≤ Lμ := (hL _ (h.t_mem hB le_rfl Phase2Seq.before_one)).nonneg
   have hδ := goodDecr_pos (P := P) hL0 p hε₀ h.tol.ε₁_pos
-  have hsum := h.sum_sub_le hK1 hK
+  classical
+  have hsum := (h.isTargetSequence hK).sum_max_sub_le P.θ_pos.le P.θ_lt_one.le hε₀.le hK1
   have h1 : ∑ k ∈ Finset.Icc 1 K, (D.goodCount f c C p P ε₀ ε₁ k : ℝ) * goodDecr P Lμ p ε₀ ε₁ ≤
       ∑ k ∈ Finset.Icc 1 K,
         (max (Constrained.targetResidual f c (D.t k) (D.X k)) (P.θ * ε₀) -
@@ -871,13 +829,11 @@ theorem sum_goodCount_le (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) {K : �
     Finset.sum_le_sum fun k hk => by
       rw [Finset.mem_Icc] at hk
       exact h.goodCount_mul_le hB hL hC hp hk.1 (hK.mono hk.2)
-  have ha1 : max (Constrained.targetResidual f c (D.t 1) (D.X 1)) (P.θ * ε₀) ≤ ε₀ :=
-    max_le ((h.isTargetSequence hK).residual_le P.θ_lt_one.le hε₀.le le_rfl hK1)
-      (mul_le_of_le_one_left hε₀.le P.θ_lt_one.le)
-  have hbK := le_max_right (Constrained.targetResidual f c (D.t K) (D.X (K + 1))) (P.θ * ε₀)
   rw [← Finset.sum_mul] at h1
-  rw [goodBound_eq hL0 hp hε₀ h.tol.ε₁_pos, div_mul_eq_mul_div, le_div_iff₀ hδ]
-  nlinarith
+  have hka : (D.kaCount f c P ε₀ K : ℝ) = ((Finset.Ico 1 K).filter (D.IsKa f c P ε₀)).card := by
+    unfold Phase2Seq.kaCount; congr
+  rw [goodBound_eq hL0 hp hε₀ h.tol.ε₁_pos, div_mul_eq_mul_div, le_div_iff₀ hδ, hka]
+  linarith
 
 include h in
 /-- Every successful inner iteration except possibly the last one of its run is good: the
@@ -930,32 +886,16 @@ theorem le_counts {K : ℕ} (hK : D.Before f c C P ε₀ ε₁ K) :
     K ≤ D.kaCount f c P ε₀ K + ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k +
       D.badCount f c C P ε₀ ε₁ K + 1 := by
   classical
-  have hsub : Finset.Ico 1 K ⊆ ((Finset.Ico 1 K).filter (D.IsKa f c P ε₀) ∪
-      (Finset.Ico 1 K).filter (D.IsBad f c C P ε₀ ε₁)) ∪
-      (Finset.Ico 1 K).filter (fun k => 1 ≤ D.goodCount f c C p P ε₀ ε₁ k) := by
-    intro k hk
-    have hk' := Finset.mem_Ico.1 hk
-    simp only [Finset.mem_union, Finset.mem_filter]
-    rcases Phase2Seq.isKa_or_isKb_of_not_stop (hK.not_stop hk'.1 hk'.2) with ha | hb
-    · exact Or.inl (Or.inl ⟨hk, ha⟩)
-    · by_cases hbad : D.IsBad f c C P ε₀ ε₁ k
-      · exact Or.inl (Or.inr ⟨hk, hbad⟩)
-      · exact Or.inr ⟨hk, h.one_le_goodCount hk'.1 (hK.mono hk'.2.le) hb hbad⟩
-  have hcard := (Finset.card_le_card hsub).trans
-    ((Finset.card_union_le _ _).trans (Nat.add_le_add_right (Finset.card_union_le _ _) _))
-  have hgood : ((Finset.Ico 1 K).filter (fun k => 1 ≤ D.goodCount f c C p P ε₀ ε₁ k)).card ≤
-      ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k := by
-    rw [Finset.card_eq_sum_ones]
-    calc ∑ _k ∈ (Finset.Ico 1 K).filter (fun k => 1 ≤ D.goodCount f c C p P ε₀ ε₁ k), 1
-        ≤ ∑ k ∈ (Finset.Ico 1 K).filter (fun k => 1 ≤ D.goodCount f c C p P ε₀ ε₁ k),
-            D.goodCount f c C p P ε₀ ε₁ k :=
-          Finset.sum_le_sum fun k hk => (Finset.mem_filter.1 hk).2
-      _ ≤ ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k :=
-          Finset.sum_le_sum_of_subset ((Finset.filter_subset _ _).trans
-            Finset.Ico_subset_Icc_self)
-  rw [Nat.card_Ico] at hcard
+  have := Constrained.le_card_add_sum_of_cover (D.IsKa f c P ε₀) (D.IsBad f c C P ε₀ ε₁)
+    (D.goodCount f c C p P ε₀ ε₁) (K := K) fun k hk => by
+      have hk' := Finset.mem_Ico.1 hk
+      rcases Phase2Seq.isKa_or_isKb_of_not_stop (hK.not_stop hk'.1 hk'.2) with ha | hb
+      · exact Or.inl ha
+      · by_cases hbad : D.IsBad f c C P ε₀ ε₁ k
+        · exact Or.inr (Or.inl hbad)
+        · exact Or.inr (Or.inr (h.one_le_goodCount hk'.1 (hK.mono hk'.2.le) hb hbad))
   unfold Phase2Seq.kaCount Phase2Seq.badCount
-  omega
+  convert this
 
 include h hB hL in
 /-- Lemma 2.4.1 for one inner run (the regularization parameter restarts at `σ₀` in every run):

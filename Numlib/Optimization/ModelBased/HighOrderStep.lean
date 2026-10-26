@@ -35,7 +35,9 @@ The procedure chooses an approximate global minimizer `s_μ` (Step 2.2) and appr
 * `Optimization.IsDetailedStepOutput.spec`: every output satisfies the Step-2 conditions
   (12.2.27)–(12.2.29) / (14.1.12)–(14.1.13);
 * `Optimization.exists_isDetailedStepOutput`: from a global minimizer of the model there is an
-  output whose radii are bounded below (Lemmas 12.2.9 and 14.1.3).
+  output whose radii are bounded below (Lemmas 12.2.9 and 14.1.3);
+* `Optimization.IsDetailedStepOutput.radius_ge`: every output has radii at least `δbar j / 2`
+  when the model-decrease property of Lemmas 12.2.8/14.1.2 holds at all short trial steps.
 
 The second part is the step-length algebra shared by Lemmas 12.2.12, 13.1.17 and 14.1.8: if the
 measure inequality `a ε δ^j / j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1} + B t^{p+1}` holds for the step
@@ -226,6 +228,58 @@ theorem IsDetailedStepOutput.isMinOn_of_eq {s : E} {δs : ℕ → ℝ}
     nlinarith [hμ.1]
   intro t ht
   exact hle.trans (csInf_le hb ⟨t, ht, rfl⟩)
+
+/-- The invariant behind `IsDetailedStepOutput.radius_ge`: positive radii, bounded below by
+`δbar j / 2` at the halved orders `j ∈ J ∩ [1, q]`, and short feasible trial steps and orders in
+`[1, q]` while checking. -/
+private def RadiusLB (T : Set E) (q : ℕ) (J : Set ℕ) (δbar : ℕ → ℝ) :
+    DetailedStepState E → Prop
+  | findStep _ δ => ∀ j, 0 < δ j ∧ (j ∈ J → j ∈ Icc 1 q → δbar j / 2 ≤ δ j)
+  | check _ s δ i => (∀ j, 0 < δ j ∧ (j ∈ J → j ∈ Icc 1 q → δbar j / 2 ≤ δ j)) ∧ s ∈ T ∧
+      ‖s‖ < 1 ∧ i ∈ Icc 1 q
+  | done _ δ => ∀ j, 0 < δ j ∧ (j ∈ J → j ∈ Icc 1 q → δbar j / 2 ≤ δ j)
+
+/-- **Lower bound on the radii of every output** of the detailed Step 2 (the argument of
+[cartis2022evaluation], Lemmas 12.2.9 and 14.1.3, for all executions): let `1 ≤ q`, let
+`δbar j ≤ 1` at the halved orders `j ∈ J ∩ [1, q]`, and suppose that at every short feasible trial
+step `s` a decrement `ΔT j s d ≥ ς θ ε_j δ^j/j!` with `0 < δ ≤ δbar j` forces the model decrease
+`m s - m (s + d) ≥ ς θ ε_j δ^j/(2 j!)` (Lemmas 12.2.8, 14.1.2). Then the radius `δ_j` is never
+halved below `δbar j / 2`: every output has `δs j ≥ δbar j / 2` for `j ∈ J ∩ [1, q]`. -/
+theorem IsDetailedStepOutput.radius_ge {s : E} {δs : ℕ → ℝ} {δbar : ℕ → ℝ}
+    (h : IsDetailedStepOutput m T Sd ΔT q ς θ ε J s δs) (hq : 1 ≤ q)
+    (hδbar : ∀ j ∈ J, j ∈ Icc 1 q → δbar j ≤ 1)
+    (hgood : ∀ s ∈ T, ‖s‖ < 1 → ∀ j ∈ J, j ∈ Icc 1 q → ∀ δ ∈ Set.Ioc (0 : ℝ) (δbar j),
+      ∀ d ∈ closedBall 0 δ ∩ Sd s, ς * θ * ε j * δ ^ j / j ! ≤ ΔT j s d →
+        ς * θ * ε j * δ ^ j / (2 * j !) ≤ m s - m (s + d)) :
+    ∀ j ∈ J, j ∈ Icc 1 q → δbar j / 2 ≤ δs j := by
+  obtain ⟨μ₀, -, hrun⟩ := h
+  have hinv : RadiusLB T q J δbar (done s δs) := by
+    refine Relation.ReflTransGen.rec (motive := fun b _ => RadiusLB T q J δbar b)
+      ?_ (fun _ hbc ih => ?_) hrun
+    · exact fun j => ⟨one_pos, fun hj hjq => by linarith [hδbar j hj hjq]⟩
+    cases hbc with
+    | ret hs hdec hlong => exact ih
+    | start hs hdec hshort => exact ⟨ih, hs, hshort, mem_Icc.2 ⟨le_rfl, hq⟩⟩
+    | next hd happrox hsmall hj =>
+      obtain ⟨hR, hs', hshort, hjq⟩ := ih
+      exact ⟨hR, hs', hshort, mem_Icc.2 ⟨by have := (mem_Icc.1 hjq).1; omega, hj⟩⟩
+    | finish hd happrox hsmall hj => exact ih.1
+    | @halve μ s' δ j d hd happrox hlarge hJ hmodel =>
+      obtain ⟨hR, hs', hshort, hjq⟩ := ih
+      refine ⟨fun i => ?_, hs', hshort, hjq⟩
+      rcases eq_or_ne i j with rfl | hij
+      · simp only [Function.update_self]
+        have hpos := (hR i).1
+        have hgt : δbar i < δ i := by
+          by_contra hle
+          push Not at hle
+          have := hgood s' hs' hshort i hJ hjq (δ i) ⟨hpos, hle⟩ d hd hlarge.le
+          linarith
+        exact ⟨by linarith, fun _ _ => by linarith⟩
+      · simp only [Function.update_of_ne hij]
+        exact hR i
+    | restart hd happrox hlarge hJ => exact ih.1
+  exact fun j hj hjq => (hinv j).2 hj hjq
 
 /-- The supremum of `f` over `S` is attained at a maximizer `d ∈ S`. -/
 private theorem sSup_image_eq_of_max {α : Type*} {f : α → ℝ} {S : Set α} {d : α} (hd : d ∈ S)
