@@ -40,44 +40,18 @@ the number of bad `𝒦_b` iterations is bounded; whether the book's uncondition
 
 [[node]]
 id = "AssumptionCD1pLC"
-kind = "def"
-desc = '''
-c.D1pL.C: `∃ D open, C ⊆ D`, `ContDiffOn ℝ p c D`, and for each `j ∈ [1:p]` and component `i`,
-`iteratedFDeriv ℝ j (fun x => c x i)` is Lipschitz and bounded on `C`
-(`IteratedFDerivHolderOn (fun x => c x i) j Lj 1 C` and `‖·‖ ≤ Bj` on `C`). (Stated; the book's
-claim that it implies Φℓ.DpL.C when `‖c‖` is bounded on `C` is not planned — the book itself prefers
-to assume Φℓ.DpL.C.)
-'''
-deps = ["IteratedFDerivHolderOn"]
 source = "Cartis–Gould–Toint, assumption c.D1pL.C (Section 7.2.2.1)"
 
 [[node]]
 id = "nearFeasible"
-kind = "def"
-desc = '''
-`nearFeasible C c β : Set E := {x ∈ C | ‖c x‖ ≤ β}` (the book's `ℱ_β`, (7.2.7)).
-'''
 source = "Cartis–Gould–Toint, (7.2.7)"
 
 [[node]]
 id = "AssumptionBFb"
-kind = "def"
-desc = '''
-f.B.Fb: `AssumptionBFb f c C β flow fup : Prop := ∀ x ∈ nearFeasible C c β, flow ≤ f x ∧ f x ≤ fup`
-(the book's "if `ℱ_β ≠ ∅`" is vacuous in this form).
-'''
-deps = ["nearFeasible"]
 source = "Cartis–Gould–Toint, assumption f.B.Fb (Section 7.2.2.1)"
 
 [[node]]
 id = "AssumptionFD1pLC"
-kind = "def"
-desc = '''
-f.D1pL.C: `∃ D open, C ⊆ D`, `ContDiffOn ℝ p f D`, and `iteratedFDeriv ℝ j f` is Lipschitz and
-bounded on `C` for `j ∈ [1:p]` (stated for completeness; not used by the results, which assume
-μ₂.DpL.C). (The book's `∇^j_x f_i` is a typo for `∇^j_x f`.)
-'''
-deps = ["IteratedFDerivHolderOn"]
 source = "Cartis–Gould–Toint, assumption f.D1pL.C (Section 7.2.2.1)"
 
 [[node]]
