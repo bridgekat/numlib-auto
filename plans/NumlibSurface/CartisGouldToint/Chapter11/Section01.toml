@@ -1,0 +1,77 @@
+namespace = "CartisGouldToint.Chapter11"
+desc = '''
+§11.1 Variable scaling: the modified absolute value (11.1.4), the ideal scaling `M = V|Λ_δ|Vᵀ` and the
+change of variables to the diagonal problems (11.1.5)–(11.1.7), their explicit solutions
+(§11.1.3, corrected), and the same transformation for a symmetric indefinite factorization
+(11.1.15). Proofs: `Subproblem.TrustRegion`/`Regularization`/`Multiplier` applied to diagonal data,
+and the bridge `Subproblem/Matrix` (a change of variables `sᴰ = Wᵀ s` with `M = W Wᵀ` is an isometry
+from `‖·‖_M` to the Euclidean norm).
+'''
+
+[[node]]
+id = "modifiedAbs"
+kind = "definition"
+desc = '''
+`modifiedAbs δ (λ : ℝ) = if δ ≤ |λ| then |λ| else δ` (11.1.4), applied entrywise to a diagonal;
+for `H = V Λ Vᵀ` (orthogonal `V`) the ideal scaling is `M = V |Λ_δ| Vᵀ` (11.1.2)–(11.1.3), positive
+definite for `δ > 0`.
+'''
+source = "Cartis–Gould–Toint, (11.1.2)–(11.1.4)"
+
+[[node]]
+id = "idealScaling_transform"
+kind = "theorem"
+desc = '''
+(11.1.5)–(11.1.7). With `H = VΛVᵀ`, `M = V|Λ_δ|Vᵀ`, `δ > 0`, `sᴰ = |Λ_δ|^{1/2} Vᵀ s`,
+`gᴰ = |Λ_δ|^{-1/2} Vᵀ g`, `D = |Λ_δ|^{-1/2} Λ |Λ_δ|^{-1/2}`: `D` is diagonal with
+`dᵢᵢ = 1` if `λᵢ ≥ δ`, `-1` if `λᵢ ≤ -δ`, `λᵢ/δ ∈ (-1, 1)` otherwise (the book's strict `>δ`, `<-δ`
+must be `≥`, `≤` to match (11.1.4) at `|λᵢ| = δ`; both give `±1` there); `model g H s = ⟪gᴰ, sᴰ⟫ + ½⟪sᴰ, D sᴰ⟫`
+and `‖s‖_M = ‖sᴰ‖`; hence `s` solves (8.1.2)/(8.1.3) iff `sᴰ` solves (11.1.5)/(11.1.6) (whose
+regularization term is `σ/r ‖sᴰ‖^r`; printed `‖s‖^r`), with `s = V |Λ_δ|^{-1/2} sᴰ`.
+'''
+deps = ["modifiedAbs", "CartisGouldToint.Chapter08.IsTrustRegionSolution", "CartisGouldToint.Chapter08.IsRegularizationSolution"]
+source = "Cartis–Gould–Toint, (11.1.5)–(11.1.7)"
+
+[[node]]
+id = "diagonal_trustRegion_solution"
+kind = "theorem"
+desc = '''
+§11.1.3, trust region, for `D = diag(±1)` (`𝒟⁰ = ∅`), `gᴰ = g₊ + g₋` split by the sign pattern:
+(i) `𝒟⁻ = ∅`: if `‖gᴰ‖ ≤ Δ` the solution is `-gᴰ` with `λ* = 0`; else `λ* = ‖gᴰ‖/Δ - 1` and
+`sᴰ = -(Δ/‖gᴰ‖) gᴰ` (11.1.11)–(11.1.13);
+(ii) `𝒟⁻ ≠ ∅`: every solution is on the boundary and `λ* ≥ 1`; if `g₋ ≠ 0`, `λ* > 1` is the unique
+root on `(1, ∞)` of `‖g₊‖²/(λ+1)² + ‖g₋‖²/(λ-1)² = Δ²` (11.1.14) and
+`sᴰ = -g₊/(λ*+1) - g₋/(λ*-1)` (11.1.10); if `g₋ = 0` and `½‖gᴰ‖ ≥ Δ`, (11.1.13) holds with
+`λ* = ‖gᴰ‖/Δ - 1 ≥ 1`; if `g₋ = 0` and `½‖gᴰ‖ < Δ` (hard case), the solutions are exactly
+`-½ g₊ + ∑_{i ∈ 𝒟⁻} αᵢ eᵢ` with `∑ αᵢ² = Δ² - ¼‖gᴰ‖²`. (For `𝒟⁺ = ∅`, `g₋ = 0` this says every
+`‖sᴰ‖ = Δ` is a solution, as in the book.)
+'''
+deps = ["idealScaling_transform", "Subproblem.multiplier_classification"]
+source = "Cartis–Gould–Toint, §11.1.3, (11.1.8)–(11.1.14)"
+
+[[node]]
+id = "diagonal_regularization_solution"
+kind = "theorem"
+desc = '''
+§11.1.3, regularization (`σ > 0`, `r > 2`), `D = diag(±1)`: (i) `𝒟⁻ = ∅`: `sᴰ = -gᴰ/(λ*+1)` with
+`λ*` the unique positive root of `λ = σ (‖gᴰ‖/(λ+1))^{r-2}` (quadratic for `r = 3`);
+(ii) `𝒟⁻ ≠ ∅`: `λ* ≥ 1`; if `g₋ ≠ 0`, `λ*` is the unique root `> 1` of
+`‖g₊‖²/(λ+1)² + ‖g₋‖²/(λ-1)² = (λ/σ)^{2/(r-2)}` (corrected right-hand side) and (11.1.10) holds;
+if `g₋ = 0` the hard case `λ* = 1` occurs iff `½‖gᴰ‖ ≤ σ^{-1/(r-2)}` (corrected inequality), and
+then the solutions are `-½ g₊ + ∑_{i∈𝒟⁻} αᵢ eᵢ` with `∑ αᵢ² = σ^{-2/(r-2)} - ¼‖gᴰ‖²` (corrected
+from the printed product); otherwise (11.1.10) with `g₋ = 0`.
+'''
+deps = ["idealScaling_transform", "Subproblem.multiplier_classification"]
+source = "Cartis–Gould–Toint, §11.1.3"
+
+[[node]]
+id = "indefiniteFactorization_transform"
+kind = "theorem"
+desc = '''
+§11.1.4: if `H = F Dᴮ Fᵀ` with `F` invertible (e.g. `F = P L V` from a Bunch–Kaufman–Parlett
+factorization `H = P L B Lᵀ Pᵀ`, `B = V Dᴮ Vᵀ`) and `M = F |Dᴮ_δ| Fᵀ`, then the change of variables
+`sᴰ = |Dᴮ_δ|^{1/2} Fᵀ s` maps (8.1.2)/(8.1.3) to (11.1.5)/(11.1.6) with `gᴰ = |Dᴮ_δ|^{-1/2} F⁻¹ g`
+and the same diagonal `D`; solutions are recovered by `s = F⁻ᵀ |Dᴮ_δ|^{-1/2} sᴰ`.
+'''
+deps = ["idealScaling_transform"]
+source = "Cartis–Gould–Toint, §11.1.4, (11.1.15)"

@@ -1,0 +1,34 @@
+namespace = "CartisGouldToint.Chapter09"
+desc = '''
+§9.4 The trust-region subproblem: initial bounds (9.4.1), monotonicity of the optimal value in the
+radius and the two-sided bounds (9.4.5)–(9.4.7) used for early termination of criticality tests.
+No numbered results; the trust-region analogues of Algorithms 9.2.1/8.3.2 are covered by
+`algorithm_9_2_1` (with the trust-region sets) and `CartisGouldToint.Chapter08.algorithm_8_3_2`.
+'''
+
+[[node]]
+id = "lambdaStar_bounds_9_4_1"
+kind = "theorem"
+desc = '''
+(9.4.1). Let `Δ > 0` and `s*` a global minimizer of (8.1.2) with `‖s*‖_M = Δ` and multiplier `λ*`.
+Then `‖g‖_{M⁻¹}/Δ - λₙ ≤ λ* ≤ ‖g‖_{M⁻¹}/Δ - λ₁`, and the same with outer bounds `λₙᵁ ≥ λₙ`,
+`λ₁ᴸ ≤ λ₁`.
+'''
+deps = ["CartisGouldToint.Chapter08.theorem_8_2_7", "CartisGouldToint.Chapter08.leftmostPencil", "Subproblem.eigenvalues_scaledOp"]
+source = "Cartis–Gould–Toint, (9.4.1)"
+
+[[node]]
+id = "optimalValue_bounds_9_4_6"
+kind = "theorem"
+desc = '''
+With `m_Δ = min_{‖s‖_M ≤ Δ} model g H s` (attained, `≤ 0`):
+(9.4.5) corrected: `Δ₁ ≤ Δ₂ → m_{Δ₂} ≤ m_{Δ₁}` (the converse claimed by "if and only if" fails,
+e.g. `g = 0`, `H = 0`, where `m_Δ = 0` for all `Δ`);
+(9.4.6) for `Δ < Δ⁺` and a minimizer `s_{Δ⁺}` on the boundary: `m_{Δ⁺} ≤ m_Δ ≤ model g H ((Δ/Δ⁺) s_{Δ⁺})`;
+(9.4.7) for `Δ⁻ < Δ` and a boundary minimizer `s_{Δ⁻}`:
+`m_Δ ≤ min(model g H ((Δ/Δ⁻) s_{Δ⁻}), m_{Δ⁻})`;
+and for `λ ∈ 𝓛 ∪ 𝓖` (trust-region sets) with `Δ(λ) = ‖s(λ)‖_M`:
+`m_{Δ(λ)} = (1/2)(⟪g, s(λ)⟫ - λ Δ(λ)²)`.
+'''
+deps = ["Subproblem.isMinOn_closedBall_mono", "CartisGouldToint.Chapter08.corollary_8_3_2", "Subproblem.quadModel_scaled"]
+source = "Cartis–Gould–Toint, (9.4.5)–(9.4.7)"

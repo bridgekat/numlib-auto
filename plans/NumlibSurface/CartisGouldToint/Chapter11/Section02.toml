@@ -1,0 +1,41 @@
+namespace = "CartisGouldToint.Chapter11"
+desc = '''
+§11.2 Trust-region radius and regularization weight updates. The practical update rules (11.2.1),
+(11.2.2) are parameter choices for the algorithms of Chapter 3 (planned there); the formalizable
+content is the asymptotic correspondence (11.2.3)–(11.2.6) between radii and weights, with the
+book's (11.2.3) and (11.2.5) inverted (corrected below).
+'''
+
+[[node]]
+id = "trMultiplier_asymptotics"
+kind = "theorem"
+desc = '''
+(11.2.3), corrected. For `g ≠ 0` and `Δ → 0⁺`, the trust-region multiplier `λ(Δ)` (unique for
+small `Δ`: the solution is on the boundary and `λ(Δ) > λₛ`) satisfies `λ(Δ) · Δ → ‖g‖_{M⁻¹}`, i.e.
+`λ ≈ ‖g‖_{M⁻¹}/Δ` (printed `Δ/‖g‖_{M⁻¹}`).
+'''
+deps = ["CartisGouldToint.Chapter08.setL_eq_Ioc", "CartisGouldToint.Chapter08.secularFn_eq_sum"]
+source = "Cartis–Gould–Toint, (11.2.3)"
+
+[[node]]
+id = "regMultiplier_asymptotics"
+kind = "theorem"
+desc = '''
+(11.2.4). For `g ≠ 0`, `r > 2` and `σ → ∞`, the regularization multiplier `λ(σ)` satisfies
+`λ(σ) / (σ^{1/(r-1)} ‖g‖_{M⁻¹}^{(r-2)/(r-1)}) → 1`.
+'''
+deps = ["CartisGouldToint.Chapter08.setL_eq_Ioc", "CartisGouldToint.Chapter08.secularFn_eq_sum"]
+source = "Cartis–Gould–Toint, (11.2.4)"
+
+[[node]]
+id = "radius_weight_correspondence"
+kind = "theorem"
+desc = '''
+(11.2.5)–(11.2.6), corrected. If `s` solves (8.1.2) with radius `Δ` and multiplier `λ > 0`, then
+`s` solves (8.1.3) with `σ(Δ) = λ / Δ^{r-2}` (sufficiency in Theorem 8.2.8's converse), and as
+`Δ → 0⁺`, `σ(Δ) Δ^{r-1} / ‖g‖_{M⁻¹} → 1` ("fidelity" of Table 11.2.1 for `r = 3`), i.e.
+`σ ≈ ‖g‖_{M⁻¹}/Δ^{r-1}` (printed inverted). Consequently `σ(γΔ)/σ(Δ) → γ^{-(r-1)}` for fixed
+`γ > 0`, which is the rule (11.2.6).
+'''
+deps = ["trMultiplier_asymptotics", "Subproblem.isMinOn_regModel_iff"]
+source = "Cartis–Gould–Toint, (11.2.5)–(11.2.6)"

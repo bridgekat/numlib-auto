@@ -1,0 +1,92 @@
+namespace = "Subproblem"
+desc = '''
+The optimal multiplier `λ*` versus the secular equation (book §8.2.1, §8.3). Setting as in
+`Secular`; `λ₁ = leftmost hH`, `λₛ = shiftThreshold hH`.
+
+The book partitions the real line into `𝓝 = (-∞, λₛ]`, `𝓛 = (λₛ, λ*]`, `𝓖 = (λ*, ∞)` and states
+the alternative descriptions `𝓛 = {λ | H + λ ≻ 0 ∧ ‖s(λ)‖ ≥ τ-target}`, `𝓖 = {… < …}`. The
+backbone form is: `λₛ ≤ λ*` and, for every `λ > λₛ`, `τ(λ) ≤ secular g H λ ↔ λ ≤ λ*`
+(`le_secular_iff_of_trustRegion`, `le_secular_iff_of_regularization`). The proofs combine the
+optimality theorems with `secular_shape` (strict decrease) and `tendsto_step_threshold` (value at the
+pole). The easy/hard dichotomy and the "minimizer = particular solution + kernel vector" description
+(Corollaries 8.3.1/8.3.2) follow.
+
+Remark on the book's description of `𝓝` as "`H + λ` not positive definite": that equals
+`(-∞, -λ₁]`, which differs from `(-∞, λₛ]` when `λ₁ > 0` (then `λ ∈ (-λ₁, 0]` is "not in `𝓝`" by
+one description and in it by the other). The interval description is the one used.
+'''
+
+[[node]]
+id = "existsUnique_secular_root"
+kind = "theorem"
+desc = '''
+Lemma 8.2.1 (backbone form). Let `τ : ℝ → ℝ` be continuous and monotone on `Ioi λₛ`, nonnegative
+there and not identically zero on it, and suppose `π > τ` near the left end, i.e.
+`∀ᶠ λ in 𝓝[>] λₛ, τ λ < secular g H λ` (this is the book's `π(λₛ) > τ(λₛ)` read with `π(λₛ)` the
+right limit of `secular`, possibly `+∞`, see `tendsto_step_threshold`). Then there is a unique
+`λ* ∈ Ioi λₛ` with `secular g H λ* = τ λ*`; moreover `τ < secular` on `(λₛ, λ*)` and
+`secular < τ` on `(λ*, ∞)`. (The hypothesis forces `g ≠ 0`.)
+'''
+deps = ["secular_shape", "shiftThreshold"]
+
+[[node]]
+id = "shiftThreshold_le_of_isTrustRegionMultiplier"
+kind = "theorem"
+desc = '''
+If `IsTrustRegionMultiplier g H Δ s λ` then `shiftThreshold hH ≤ λ` and `s = particular g H λ + w`
+with `w ∈ ker (H + λ • 1)`, `⟪g, w⟫ = 0`, and `w = 0` when `-leftmost hH < λ`. Likewise for a
+global minimizer `s` of `regModel g H σ r` (`0 < σ`, `2 < r`) and `λ = σ‖s‖^{r-2}`.
+'''
+deps = ["IsTrustRegionMultiplier", "isPositive_add_smul_iff", "particular_spec", "isMinOn_regModel_iff"]
+
+[[node]]
+id = "le_secular_iff_of_trustRegion"
+kind = "theorem"
+desc = '''
+Let `0 < Δ` and `IsTrustRegionMultiplier g H Δ s λ*`. Then for every `λ > shiftThreshold hH`:
+`Δ ^ 2 ≤ secular g H λ ↔ λ ≤ λ*` (and hence `secular g H λ < Δ²` for `λ > λ*`, `𝓖`). In
+particular, if `λ* > λₛ` then `secular g H λ* = Δ²` and `λ*` is the unique root of `π = Δ²` in
+`Ioi λₛ` (book §8.3.2).
+'''
+deps = ["shiftThreshold_le_of_isTrustRegionMultiplier", "secular_shape", "tendsto_step_threshold"]
+
+[[node]]
+id = "le_secular_iff_of_regularization"
+kind = "theorem"
+desc = '''
+Let `0 < σ`, `2 < r`, `s` a global minimizer of `regModel g H σ r`, `λ* = σ‖s‖^{r-2}`. Then for
+every `λ > shiftThreshold hH`: `(λ / σ) ^ (2 / (r - 2)) ≤ secular g H λ ↔ λ ≤ λ*`. If `λ* > λₛ`
+then `secular g H λ* = (λ*/σ)^{2/(r-2)}`, the unique root in `Ioi λₛ` of the secular equation
+(8.2.42) (book §8.3.1).
+'''
+deps = ["shiftThreshold_le_of_isTrustRegionMultiplier", "secular_shape", "tendsto_step_threshold", "norm_eq_of_isMinOn_regModel"]
+
+[[node]]
+id = "multiplier_classification"
+kind = "theorem"
+desc = '''
+Easy/hard case classification. With `λ₁ = leftmost hH` (nontrivial `E`), `P = (ker (H - λ₁ • 1))ᗮ`,
+`sₛ = particular g H (-λ₁)` and the target `τ` (`Δ²` for the trust region, `(λ/σ)^{2/(r-2)}` for
+regularization): the multiplier satisfies `λ* = λₛ` exactly in the following cases:
+(a) `λₛ = 0` (`λ₁ ≥ 0`), with (trust region) the interior case `g ∈ range H`,
+`‖particular g H 0‖ ≤ Δ`, or (regularization) `g = 0`;
+(b) the hard case `λ₁ < 0`, `g ∈ P`, `‖sₛ‖² ≤ τ(-λ₁)`.
+In all other cases `λ* > λₛ` (easy case) and every minimizer equals `step g H λ*`.
+Conversely in case (b) every `sₛ + w`, `w ∈ ker (H - λ₁ • 1)`, `‖sₛ + w‖² = τ(-λ₁)` is a global
+minimizer (sufficiency), so such `w` (in particular `α v₁` for an eigenvector `v₁` and either root
+`α` of the quadratic `‖sₛ + α v₁‖² = τ(-λ₁)`) gives the hard-case solutions of §8.3.
+'''
+deps = ["le_secular_iff_of_trustRegion", "le_secular_iff_of_regularization", "isMinOn_closedBall_iff", "isMinOn_regModel_iff"]
+
+[[node]]
+id = "optimalValue_eq"
+kind = "theorem"
+desc = '''
+Optimal values. (i) If `IsTrustRegionMultiplier g H Δ s λ*` then
+`quadModel g H s = (1/2) * (⟪g, particular g H λ*⟫ - λ* * Δ ^ 2)` ((8.3.5); the `Δ²` term is
+harmless when `λ* = 0`). (ii) If `s` globally minimizes `regModel g H σ r` (`0 < σ`, `2 < r`) and
+`λ* = σ‖s‖^{r-2}` then
+`regModel g H σ r s = (1/2) * (⟪g, particular g H λ*⟫ - ((r - 2)/r) * λ* * (λ*/σ) ^ (2/(r-2)))`
+((8.3.3)). Both use `⟪g, w⟫ = 0` for the kernel part.
+'''
+deps = ["quadModel_eq_of_shifted", "shiftThreshold_le_of_isTrustRegionMultiplier"]

@@ -1,0 +1,39 @@
+namespace = "Matrix"
+desc = '''
+Exponential off-diagonal decay of the inverse of a banded symmetric positive-definite matrix
+(Demko–Moss–Smith 1984, Theorem 2.4; Cartis–Gould–Toint Lemma B.10.1 for the tridiagonal case).
+
+Proof plan (polynomial approximation): if `G` is Hermitian positive definite with spectrum in
+`[a, b]`, `0 < a`, and `HasLowerBandwidth`/`HasUpperBandwidth` `β ≥ 1`, then `p(G)` has bandwidth
+`β · deg p` (`Matrix.HasLowerBandwidth.mul` of `Numlib/LinearAlgebra/Matrix/Band`), so
+`(p(G))ᵢⱼ = 0` whenever `|i - j| > β deg p`, and
+`|(G⁻¹)ᵢⱼ| ≤ ‖G⁻¹ - p(G)‖₂ = max_{x ∈ σ(G)} |1/x - p(x)|`. Choosing `p` with
+`1 - x p(x) = T_d((b + a - 2x)/(b - a)) / T_d((b + a)/(b - a))` (the shifted Chebyshev residual
+polynomial of the CG analysis, `Numlib/Krylov/Convergence/CG`, `Numlib/RingTheory/Polynomial/ChebyshevMinimax`)
+gives `|1/x - p(x)| ≤ (1/a) · 2 q^d` with `q = (√κ - 1)/(√κ + 1)`, `κ = b/a`, `deg p = d - 1`.
+Taking `d = ⌈|i - j| / β⌉` yields the bound below; at `β = 1` (tridiagonal) exactly the book's
+`2/λ_min · q^{|i-j|}` (the `i = j` case is `|(G⁻¹)ᵢᵢ| ≤ 1/λ_min`). This route avoids the
+Demko–Moss–Smith constant `max(1, (1+√κ)²/(2κ))` entirely and gives the book's constant directly.
+'''
+
+[[node]]
+id = "abs_inv_apply_le_of_hasBandwidth"
+kind = "theorem"
+desc = '''
+Let `G : Matrix (Fin m) (Fin m) ℝ` be positive definite with `G.HasLowerBandwidth β` and
+`G.HasUpperBandwidth β`, `1 ≤ β`, and let `a = λ_min(G)`, `b = λ_max(G)`, `κ = b / a`,
+`q = (√κ - 1)/(√κ + 1)`. Then for all `i j`:
+`|G⁻¹ i j| ≤ (2 / a) * q ^ ⌈(|i - j| : ℝ) / β⌉₊` (in particular `≤ (2/a) q^{|i-j|/β}` as a real
+power since `q ≤ 1`).
+'''
+
+[[node]]
+id = "abs_inv_apply_le_of_isTridiagonal"
+kind = "theorem"
+desc = '''
+Lemma B.10.1. Let `T : Matrix (Fin m) (Fin m) ℝ` be symmetric, positive definite and
+tridiagonal (`T.IsTridiagonal`, `Numlib/LinearAlgebra/Matrix/Hessenberg`), with
+`a = λ_min(T)`, `κ = λ_max(T)/λ_min(T)`. Then for all `i j : Fin m`:
+`|T⁻¹ i j| ≤ (2 / a) * ((√κ - 1)/(√κ + 1)) ^ (Int.natAbs (i - j))`.
+'''
+deps = ["abs_inv_apply_le_of_hasBandwidth"]

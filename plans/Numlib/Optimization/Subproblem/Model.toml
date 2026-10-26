@@ -1,0 +1,113 @@
+namespace = "Subproblem"
+desc = '''
+The quadratic model and the regularized quadratic model of a step, on a real inner product space
+`E` (no finite dimensionality needed here). `H : E →L[ℝ] E` with `(H : E →ₗ[ℝ] E).IsSymmetric`
+wherever symmetry is used; `r : ℝ` is a real exponent and powers `‖s‖ ^ r` are `Real.rpow`.
+
+The algebraic heart of all optimality proofs is the shifted-system identity: if
+`(H + λ) s = -g` then for every `u`
+`m(u) - m(s) = ½⟪u - s, (H + λ)(u - s)⟫ + λ/2 (‖s‖² - ‖u‖²)`
+(`quadModel_sub_eq_of_shifted`); every global-optimality, uniqueness and value formula of the
+subproblem theory is a corollary of it. Derivatives use Mathlib's `HasGradientAt`/`HasFDerivAt`.
+'''
+
+[[node]]
+id = "quadModel"
+kind = "definition"
+desc = '''
+The quadratic model `quadModel g H s = ⟪g, s⟫ + (1/2) ⟪s, H s⟫` for `g s : E`,
+`H : E →L[ℝ] E` (book (8.1.1)).
+'''
+
+[[node]]
+id = "regModel"
+kind = "definition"
+desc = '''
+The regularized model `regModel g H σ r s = quadModel g H s + σ / r * ‖s‖ ^ r` (`Real.rpow`,
+book (8.1.4) with `M` absorbed in the inner product).
+'''
+deps = ["quadModel"]
+
+[[node]]
+id = "hasGradientAt_quadModel"
+kind = "theorem"
+desc = '''
+For symmetric `H` and complete `E`, `HasGradientAt (quadModel g H) (g + H s) s` for every `s`.
+'''
+deps = ["quadModel"]
+
+[[node]]
+id = "hasGradientAt_regModel"
+kind = "theorem"
+desc = '''
+For symmetric `H`, complete `E`, `σ : ℝ` and `1 < r`,
+`HasGradientAt (regModel g H σ r) (g + H s + (σ * ‖s‖ ^ (r - 2)) • s) s` for every `s`
+(at `s = 0` the last term is `0`; book (8.2.34), first line, with `λ = σ‖s‖^{r-2}`).
+'''
+deps = ["regModel", "hasGradientAt_quadModel"]
+
+[[node]]
+id = "regModelHessian"
+kind = "definition"
+desc = '''
+The Hessian of the regularized model at `s`:
+`regModelHessian H σ r s = H + (σ * ‖s‖ ^ (r - 2)) • 1 + ((r - 2) * σ * ‖s‖ ^ (r - 4)) • (innerSL ℝ s).smulRight s`,
+i.e. `H + λ I + (r - 2) λ (s/‖s‖)(s/‖s‖)ᵀ` with `λ = σ‖s‖^{r-2}` (book (8.2.34), second line). At
+`s = 0` it equals `H` when `r > 2` (all `rpow`s of `0` vanish for positive exponent; the
+`‖s‖^(r-4)` term is multiplied by a zero rank-one map).
+'''
+deps = ["regModel"]
+
+[[node]]
+id = "hasFDerivAt_gradient_regModel"
+kind = "theorem"
+desc = '''
+For symmetric `H`, complete `E`, `σ : ℝ`, `2 < r`: the gradient map
+`s ↦ g + H s + (σ‖s‖^{r-2}) • s` has Fréchet derivative `regModelHessian H σ r s` at every `s`
+(including `s = 0`, where `r > 2` makes the regularization term's derivative vanish). Hence
+`regModelHessian` is the second derivative of `regModel`.
+'''
+deps = ["hasGradientAt_regModel", "regModelHessian"]
+
+[[node]]
+id = "inner_regModelHessian_ge"
+kind = "theorem"
+desc = '''
+For `σ ≥ 0`, `r ≥ 2`, every `s v : E`:
+`⟪v, regModelHessian H σ r s v⟫ ≥ ⟪v, (H + (σ‖s‖^{r-2}) • 1) v⟫` (the rank-one term is positive
+semidefinite). Used for the second-order stopping test (book proof of Theorem 9.3.2).
+'''
+deps = ["regModelHessian"]
+
+[[node]]
+id = "quadModel_sub_eq_of_shifted"
+kind = "theorem"
+desc = '''
+Shifted-system identity. For symmetric `H`, `λ : ℝ` and `s` with `(H + λ • 1) s = -g`, for every
+`u : E`:
+`quadModel g H u - quadModel g H s = (1/2) ⟪u - s, (H + λ • 1) (u - s)⟫ + (λ / 2) * (‖s‖ ^ 2 - ‖u‖ ^ 2)`.
+'''
+deps = ["quadModel"]
+
+[[node]]
+id = "quadModel_eq_of_shifted"
+kind = "theorem"
+desc = '''
+For symmetric `H` and `(H + λ • 1) s = -g`:
+`quadModel g H s = (1/2) * (⟪g, s⟫ - λ * ‖s‖ ^ 2)` (book (8.3.4) and the computation behind (8.3.3),
+(8.3.5)); and
+`regModel g H σ r s = (1/2) * (⟪g, s⟫ - ((r - 2) / r) * λ * ‖s‖ ^ 2)` when moreover
+`λ = σ * ‖s‖ ^ (r - 2)` and `r ≠ 0`.
+'''
+deps = ["quadModel", "regModel"]
+
+[[node]]
+id = "regModel_eq_of_shifted_general"
+kind = "theorem"
+desc = '''
+For symmetric `H`, any `λ` and `(H + λ • 1) s = -g` (no relation between `λ` and `σ‖s‖^{r-2}`):
+`regModel g H σ r s = -(1/2) ⟪s, (H + λ • 1) s⟫ + ‖s‖ ^ 2 * (σ / r * ‖s‖ ^ (r - 2) - λ / 2)`
+(proof of Theorem 9.3.2 in Appendix B), and the gradient of `regModel` at `s` equals
+`(σ * ‖s‖ ^ (r - 2) - λ) • s`.
+'''
+deps = ["regModel", "hasGradientAt_regModel"]

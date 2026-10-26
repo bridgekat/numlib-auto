@@ -1,0 +1,69 @@
+namespace = "CartisGouldToint.Chapter10"
+desc = '''
+§10.1 Krylov-subspace methods: subspace subproblems (10.1.1)–(10.1.6), the Krylov space and grade,
+the preconditioned Lanczos method (Algorithm 10.1.1) and the hard-case obstruction (§10.1.2).
+'''
+
+[[node]]
+id = "krylovSpace"
+kind = "definition"
+desc = '''
+`krylovSpace H M g k = Krylov.subspace (M⁻¹ H) (M⁻¹ g) k` (as a submodule of
+`EuclideanSpace ℝ (Fin n)`; `𝒦(A, b, k) = span {Aⁱ b}_{i<k}`) and `gradeHM = Krylov.grade (M⁻¹ H) (M⁻¹ g)`;
+the facts listed after its definition (nested, `dim ≤ k`, stabilization at the grade `≤ n`) are
+`Numlib/Krylov/Subspace` lemmas (`Krylov.finrank_subspace`), restated here.
+'''
+source = "Cartis–Gould–Toint, §10.1.1"
+
+[[node]]
+id = "subspaceSolution"
+kind = "definition"
+desc = '''
+Subspace subproblems (10.1.1): `IsTRSubspaceSolution g H M Δ S s` (`s ∈ S`, `‖s‖_M ≤ Δ`, minimizes
+`model` over `S ∩ {‖·‖_M ≤ Δ}`) and `IsRegSubspaceSolution g H M σ r S s` (minimizes `regModel`
+over `S`), for a subspace `S`; with a basis matrix `Sₖ` these are the problems (10.1.2) in the
+reduced data `Sₖᵀg`, `SₖᵀHSₖ`, `SₖᵀMSₖ` (`subspaceSolution_iff_reduced`).
+'''
+deps = ["CartisGouldToint.Chapter08.model", "CartisGouldToint.Chapter08.regModel", "Subproblem.isMinOn_subspace_iff_compression"]
+source = "Cartis–Gould–Toint, (10.1.1)–(10.1.2)"
+
+[[node]]
+id = "algorithm_10_1_1"
+kind = "definition"
+desc = '''
+Algorithm 10.1.1 (The preconditioned Lanczos method), deterministic recurrence: `t₁ = g`,
+`w₀ = 0`; for `k = 1, 2, …`: `yₖ = M⁻¹ tₖ`, `γₖ = √⟪tₖ, yₖ⟫` (stop if `γₖ = 0`), `wₖ = tₖ/γₖ`,
+`qₖ = yₖ/γₖ`, `ρₖ = ⟪qₖ, H qₖ⟫`, `tₖ₊₁ = H qₖ - ρₖ wₖ - γₖ wₖ₋₁`. Formalized as functions of `k`
+(`lanczosQ`, `lanczosW`, `lanczosGamma`, `lanczosRho`) with the convention that everything is `0`
+after the stop.
+'''
+source = "Cartis–Gould–Toint, Algorithm 10.1.1"
+
+[[node]]
+id = "algorithm_10_1_1_spec"
+kind = "theorem"
+desc = '''
+Properties of Algorithm 10.1.1 (book (10.1.3), (10.1.4), (10.2.1) and the termination remark),
+for `g ≠ 0`: the first `k` vectors `qᵢ` (`k ≤ gradeHM`) are an `M`-orthonormal basis of
+`krylovSpace H M g k` with `Qₖᵀ M Qₖ = I`, `Qₖᵀ H Qₖ = Tₖ` (symmetric tridiagonal with diagonal
+`ρᵢ` and off-diagonal `γᵢ₊₁ > 0`), `Qₖᵀ g = γ₁ e₁` with `γ₁ = ‖g‖_{M⁻¹} > 0`; `wᵢ = M qᵢ`;
+`H Qₖ - M Qₖ Tₖ = γₖ₊₁ wₖ₊₁ eₖᵀ` (10.2.1); the recurrence stops (`γₖ₊₁ = 0`) exactly at
+`k = gradeHM ≤ n`, and then `krylovSpace` is `M⁻¹H`-invariant; `Tₖ` is the leading `k × k` block of
+`Tₖ₊₁` (the correct form of (10.1.7)). Proof: the recurrence is the Lanczos process
+(`Lanczos.tridiag`, `Arnoldi.vec`) for `M⁻¹H` in the `M`-inner product, i.e. `Lanczos` on
+`Subproblem.scaledOp`.
+'''
+deps = ["algorithm_10_1_1", "krylovSpace", "Subproblem.krylov_lanczos_coordinates", "Subproblem.eigenvalues_scaledOp"]
+source = "Cartis–Gould–Toint, (10.1.3)–(10.1.7), (10.2.1)"
+
+[[node]]
+id = "krylov_hardCase_10_1_2"
+kind = "theorem"
+desc = '''
+§10.1.2: if `⟪vᵢ, g⟫ = 0` for every generalized eigenvector of `(H, M)` with eigenvalue `λ₁`
+(the hard-case condition), then `krylovSpace H M g k ⊆ (span of the eigenvectors for eigenvalues
+> λ₁)` for all `k`, so `gradeHM ≤ n - i₁` (`i₁` the multiplicity of `λ₁`) and every subspace
+solution `sₖ` is `M`-orthogonal to the `λ₁`-eigenspace.
+'''
+deps = ["krylovSpace", "Subproblem.eigenvalues_scaledOp"]
+source = "Cartis–Gould–Toint, §10.1.2"

@@ -1,0 +1,81 @@
+namespace = "Subproblem"
+desc = '''
+Global optimality for the trust-region subproblem `min {quadModel g H s : ‖s‖ ≤ Δ}` on a
+finite-dimensional real inner product space (Gay 1981, Sorensen 1982, Moré–Sorensen 1983; book
+Theorem 8.2.7; Conn–Gould–Toint, *Trust-Region Methods*, Theorem 7.2.1).
+
+Statement shape: `IsMinOn (quadModel g H) (closedBall 0 Δ) s` together with `‖s‖ ≤ Δ`, for
+`0 < Δ`. The characterization is necessary *and* sufficient. Sufficiency is one line from
+`quadModel_sub_eq_of_shifted`. Necessity: an interior minimizer is an unconstrained local
+minimizer (gradient zero, `H` positive semidefinite by `Numlib/Optimization/Descent`); a boundary
+minimizer has a Lagrange multiplier (`IsLocalExtrOn.exists_linear_map_of_hasStrictFDerivAt` or
+`Numlib/Optimization/Constrained.exists_kkt_of_isLocalMinOn`, mind its sign convention), which is
+`≥ 0` (else moving inward decreases `m`), and `H + λ` is positive semidefinite by the reflection
+argument: for `w` with `⟪w, s⟫ ≠ 0`, `u = s - 2 ⟪w, s⟫/‖w‖² w` has `‖u‖ = ‖s‖` and
+`0 ≤ m(u) - m(s) = ½⟪u - s, (H + λ)(u - s)⟫`; for `w ⊥ s` use second order along the sphere or
+density/continuity of the quadratic form.
+'''
+
+[[node]]
+id = "IsTrustRegionMultiplier"
+kind = "definition"
+desc = '''
+`IsTrustRegionMultiplier g H Δ s λ : Prop :=`
+`0 ≤ λ ∧ (H + λ • 1) s = -g ∧ ((H + λ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive ∧ λ * (‖s‖ - Δ) = 0`
+(book (8.2.31)–(8.2.32), with `‖s‖² - Δ²` replaced by the equivalent `‖s‖ - Δ`).
+'''
+
+[[node]]
+id = "isMinOn_closedBall_iff"
+kind = "theorem"
+desc = '''
+For symmetric `H`, `0 < Δ` and `‖s‖ ≤ Δ`:
+`IsMinOn (quadModel g H) (closedBall 0 Δ) s ↔ ∃ λ, IsTrustRegionMultiplier g H Δ s λ`.
+'''
+deps = ["IsTrustRegionMultiplier", "quadModel_sub_eq_of_shifted", "hasGradientAt_quadModel"]
+
+[[node]]
+id = "exists_isMinOn_closedBall"
+kind = "theorem"
+desc = '''
+For `0 ≤ Δ` there is `s` with `‖s‖ ≤ Δ` and `IsMinOn (quadModel g H) (closedBall 0 Δ) s`
+(compactness of the closed ball in finite dimension, continuity of the model).
+'''
+deps = ["quadModel"]
+
+[[node]]
+id = "IsTrustRegionMultiplier.unique"
+kind = "theorem"
+desc = '''
+The multiplier is unique given the minimizer: if `IsTrustRegionMultiplier g H Δ s λ` and
+`IsTrustRegionMultiplier g H Δ s λ'` (with `0 < Δ`) then `λ = λ'` (if `s ≠ 0`, `(λ - λ') s = 0`;
+if `s = 0`, complementarity forces `λ = λ' = 0`). Moreover it is the same for all minimizers:
+if `IsTrustRegionMultiplier g H Δ s λ` and `IsTrustRegionMultiplier g H Δ s' λ'` then `λ = λ'`
+(from `quadModel_sub_eq_of_shifted` applied both ways: `m(s') - m(s) ≥ λ/2 (‖s‖² - ‖s'‖²)` and
+symmetrically, with complementarity).
+'''
+deps = ["IsTrustRegionMultiplier", "quadModel_sub_eq_of_shifted"]
+
+[[node]]
+id = "eq_of_isMinOn_closedBall_of_posDef"
+kind = "theorem"
+desc = '''
+Uniqueness: if `IsTrustRegionMultiplier g H Δ s λ` and `H + λ • 1` is coercive (positive
+definite), then every `u` with `‖u‖ ≤ Δ` and `IsMinOn (quadModel g H) (closedBall 0 Δ) u` equals
+`s`; quantitatively `m(u) - m(s) ≥ ½ ⟪u - s, (H + λ)(u - s)⟫` on the ball.
+'''
+deps = ["isMinOn_closedBall_iff"]
+
+[[node]]
+id = "isMinOn_closedBall_mono"
+kind = "theorem"
+desc = '''
+Optimal values along radii (Section 9.4.2). Let `mΔ = ⨅ s ∈ closedBall 0 Δ, quadModel g H s`.
+(i) `Δ₁ ≤ Δ₂ → m_{Δ₂} ≤ m_{Δ₁}` (only this direction; the book's (9.4.5) "if and only if" is false,
+e.g. for `g = 0`, `H = 0`, or once the unconstrained minimizer is interior);
+(ii) for `0 < Δ < Δ⁺` and a minimizer `s⁺` for `Δ⁺` with `‖s⁺‖ = Δ⁺`:
+`m_{Δ⁺} ≤ m_Δ ≤ quadModel g H ((Δ / Δ⁺) • s⁺)` ((9.4.6));
+(iii) for `0 < Δ⁻ < Δ` and a minimizer `s⁻` for `Δ⁻` with `‖s⁻‖ = Δ⁻`:
+`m_Δ ≤ min (quadModel g H ((Δ / Δ⁻) • s⁻)) m_{Δ⁻}` ((9.4.7)).
+'''
+deps = ["quadModel", "exists_isMinOn_closedBall"]

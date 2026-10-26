@@ -1,0 +1,21 @@
+desc = '''
+Cartis–Gould–Toint, *Evaluation Complexity of Algorithms for Nonconvex Optimization*, Chapter 8,
+"Subproblem Fundamentals": the trust-region subproblem (8.1.2) and the regularization subproblem
+(8.1.3) of a quadratic model with a scaling norm `‖·‖_M`, the secular function and its transformed
+versions, global optimality and the hard case.
+
+Surface conventions for Chapters 8–11 (namespace `CartisGouldToint.ChapterNN`): `n : ℕ`,
+vectors in `EuclideanSpace ℝ (Fin n)`, `H M : Matrix (Fin n) (Fin n) ℝ` with `H` symmetric
+(`H.IsHermitian`) and `M.PosDef`; `⟨s, H s⟩` is `⟪s, Matrix.toEuclideanLin H s⟫`. Every statement is
+proved by transporting to the operator setting with `Subproblem.quadModel_scaled` /
+`Subproblem.posDef_add_smul_iff_scaled` / `Subproblem.eigenvalues_scaledOp`
+(`Numlib/Optimization/Subproblem/Matrix`) and applying the backbone `Numlib/Optimization/Subproblem`.
+"Eigenvalues of the pencil `(H, M)`" are `Matrix.pencilEigenvalues`.
+
+Source corrections in this chapter (details in the node descriptions): Lemma 8.2.1 (meaning of
+`π(λₛ)` at a pole), Lemma 8.2.3 / Corollary 8.2.4 / Theorem 8.2.5 (strictness fails at
+`β = -1/2` when `g` lies in one eigenspace; Corollary 8.2.4 needs `g ≠ 0`; Theorem 8.2.5 strictness
+needs `δ ≠ 0`), Corollary 8.3.2 (interior solutions with `λ* = 0` and singular `H` are not of the
+printed boundary form), Algorithm 8.3.1 (`β = 0` must be excluded), and the minimum-norm solution
+`(H + λ*M)⁺ g` must be taken in the `M`-norm.
+'''
