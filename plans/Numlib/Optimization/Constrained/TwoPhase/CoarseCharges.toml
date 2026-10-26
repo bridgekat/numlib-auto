@@ -1,0 +1,31 @@
+namespace = "Constrained.TwoPhase"
+desc = "Actual fractional endpoint model-error decrease, actual good-merit telescoping with reset injections, exact same-point reflection target perturbation, and actual call/event accounting. Rejection preserves points, so each continuing call has a terminal accepted event; every such event is good, reset, or a charged small-check reflection. No decrease/count conclusion is a primitive execution field."
+
+[[node]]
+id = "reflection_target_charge"
+[[node]]
+id = "goodSuccesses"
+[[node]]
+id = "PhaseTwoRun.good_inner_budget"
+[[node]]
+id = "PhaseTwoRun.total_merit_budget"
+[[node]]
+id = "badReflections"
+[[node]]
+id = "PhaseTwoRun.start_residual_gt"
+[[node]]
+id = "PhaseTwoRun.continuing_length_pos"
+[[node]]
+id = "PhaseTwoRun.terminal_accepted"
+[[node]]
+id = "PhaseTwoRun.good_card_le"
+[[node]]
+id = "PhaseTwoRun.bad_reflection_drop"
+[[node]]
+id = "PhaseTwoRun.bad_reflection_card_le"
+
+[[node]]
+id = "mem_goodSuccesses"
+
+[[node]]
+id = "mem_badReflections"

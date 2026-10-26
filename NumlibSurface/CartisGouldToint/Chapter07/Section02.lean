@@ -1,3 +1,4 @@
+import Numlib.Optimization.Constrained.TwoPhase.CoarseFull
 import Numlib.Optimization.Constrained.TwoPhase.InnerBudget
 import Numlib.Optimization.Constrained.TwoPhase.FullBoundary
 import NumlibSurface.CartisGouldToint.Chapter06.Section03
@@ -309,5 +310,91 @@ theorem lemma_7_2_6_interior
   h.reflection_interior_card_le hclosed hS hCS hC hf hL hlip ham hreflect
 
 end ReflectionInterior
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open Constrained Constrained.TwoPhase TaylorModel LeastSquares EvaluationComplexity Set
+
+/-- **Corrected Theorem 7.2.7.** Close the reset guard at residual equality;
+the actual feasibility and interrupted inner algorithms otherwise remain the
+same. Preserve all three true output alternatives and every initialized
+function and derivative schedule. Add the displayed uniform bound on the
+objective derivative in the feasible tube, and choose a fixed charge fraction
+`P2.theta < beta < 1`. The explicit `coarseBudgets` pay for true good accepted
+endpoints, reset injections and small-criticality terminal reflections. Their
+extra reflection term is `(fup-flow+1)*B/((1-beta)*theta*epsilon0*epsilon1)`;
+the unproved sharper reflection-block count is not assumed. Phase1 retains the
+source dyadic residual budget. Fixed constants precede all accuracies, and both
+phases return at their first actual stopping tests. Consistent primitive
+prefixes specify the actual algorithms, without any decrease/count conclusion
+as a hypothesis. -/
+theorem theorem_7_2_7_corrected {n m p a : ℕ}
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {C S : Set (EuclideanSpace ℝ (Fin n))}
+    (P₁ P₂ : ConvexRegularization.Settings p) (ℓ : ℝ) (_hℓ : 1 < ℓ)
+    (hchoice : (ℓ = (p : ℝ) ∧ Real.logb 2 (p : ℝ) < a) ∨
+      ∃ o : ℕ, Odd o ∧ Even p ∧ p = o * 2 ^ a ∧
+        ℓ = 1 + (o : ℝ) * ((2 : ℝ) ^ a - 1))
+    (hclosed : IsClosed C) (hS : IsOpen S) (hCS : C ⊆ S) (hC : Convex ℝ C)
+    (hφ : ContDiffOn ℝ p (powerObjective c ℓ) S) {L₁ L₂ B b flow fup θ β : ℝ}
+    (hL₁ : 0 < L₁)
+    (hlipφ : ∀ y ∈ C, ∀ z ∈ C,
+      ‖iteratedFDeriv ℝ p (powerObjective c ℓ) y -
+        iteratedFDeriv ℝ p (powerObjective c ℓ) z‖ ≤ L₁ * ‖y - z‖)
+    (hmu : ∀ t, ContDiffOn ℝ p (targetMerit f c t) S) (hL₂ : 0 < L₂)
+    (hlipmu : ∀ t ∈ Icc (flow - 1) fup, ∀ y ∈ C, ∀ z ∈ C,
+      ‖iteratedFDeriv ℝ p (targetMerit f c t) y -
+        iteratedFDeriv ℝ p (targetMerit f c t) z‖ ≤ L₂ * ‖y - z‖)
+    (hθ : 0 < θ) (hθ1 : θ < 1) (hβ : P₂.theta < β) (hβ0 : 0 ≤ β) (hβ1 : β < 1)
+    (hB : 0 < B) (_hb : 0 < b)
+    (hf : ∀ x ∈ C, ContDiffAt ℝ 1 f x) (hc : ∀ x ∈ C, ContDiffAt ℝ 1 c x)
+    (hDf : ∀ x ∈ C, ‖c x‖ ≤ 1 → ‖fderiv ℝ f x‖ ≤ B)
+    (hfb : ∀ x ∈ C, ‖c x‖ ≤ b → flow ≤ f x ∧ f x ≤ fup) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κC > 0,
+      ∀ (ε₀ ε₁ : ℝ),
+        0 < ε₀ → ε₀ ≤ 1 → 0 < ε₁ → ε₁ ≤ 1 → ε₀ ≤ b →
+      ∀ (D₁ : ConvexRegularization.Data (EuclideanSpace ℝ (Fin n)))
+        (D₂ : ℕ → Data (EuclideanSpace ℝ (Fin n))),
+        (∀ N, (∀ i < N, ¬ConvexLeastSquares.Stop c ℓ C (θ * ε₀) ε₁ (D₁.point i)) →
+          ConvexLeastSquares.Run c ℓ C P₁ (θ * ε₀) ε₁ D₁ N) →
+        (∀ K, (D₂ K).point 0 = D₁.point K) →
+        (∀ K, ConvexLeastSquares.Stop c ℓ C (θ * ε₀) ε₁ (D₁.point K) →
+          ‖c (D₁.point K)‖ ≤ θ * ε₀ →
+          ∀ N, (∀ k < N, ¬StopAfter true f c C ε₀ ε₁ θ
+            ((D₂ K).target k) ((D₂ K).point (k + 1))) →
+            PhaseTwoRun true f c C P₂ ε₀ ε₁ θ (D₂ K) (N + 1)) →
+      let J := coarseBudgets P₂ L₂ B β θ (fup - flow + 1) ε₀ ε₁
+      let R := lowerBudget false p ℓ a ‖c (D₁.point 0)‖ /
+        lowerAccuracyFactor false p a (θ * ε₀) ε₁ 1
+      ∃ D : FullData (EuclideanSpace ℝ (Fin n)),
+        D.phaseOne = D₁ ∧ D.phaseTwo = D₂ D.phaseOneLength ∧
+        FullRun true f c C P₁ P₂ ℓ ε₀ ε₁ θ D ∧
+        FullStop true f c C ε₀ ε₁ θ D ∧
+        (∀ i < D.phaseOneLength,
+          ¬ConvexLeastSquares.Stop c ℓ C (θ * ε₀) ε₁ (D₁.point i)) ∧
+        (∀ k, k + 1 < D.phaseTwoLength → ¬StopAfter true f c C ε₀ ε₁ θ
+          (D.phaseTwo.target k) (D.phaseTwo.point (k + 1))) ∧
+        ((firstCriticality (powerObjective c ℓ) C (D.outputPoint c ε₀ θ) ≤
+            ε₁ * ‖c (D.outputPoint c ε₀ θ)‖ ^ (ℓ - 1) ∧
+            θ * ε₀ < ‖c (D.outputPoint c ε₀ θ)‖) ∨
+          (firstCriticality (fun x => ‖c x‖ ^ 2 / 2) C (D.outputPoint c ε₀ θ) ≤
+            ε₁ * ‖c (D.outputPoint c ε₀ θ)‖ ∧
+            θ * ε₀ < ‖c (D.outputPoint c ε₀ θ)‖) ∨
+          ∃ y : EuclideanSpace ℝ (Fin m),
+            firstCriticality (vectorLagrangian f c y) C (D.outputPoint c ε₀ θ) ≤
+            ε₁ * multiplierNorm y ∧ ‖c (D.outputPoint c ε₀ θ)‖ ≤ ε₀) ∧
+        (D.functionEvaluations : ℝ) ≤ κA * R + κC + max 0 J.functions ∧
+        ∀ j : ℕ, 1 ≤ j → j ≤ p →
+          (D.derivativeEvaluations c P₁ P₂ ε₀ θ j : ℝ) ≤
+            κS * R + max 0 J.derivatives := by
+  have H := LeastSquares.cascadingExponent_choices P₁.order_pos
+  have hι : 0 ≤ LeastSquares.cascadingExponent p ℓ a 1 := by
+    rcases hchoice with ⟨rfl, hlog⟩ | ⟨o, ho, heven, hfac, rfl⟩
+    · exact (H.1 a hlog).le
+    · exact (H.2.1 o a ho heven hfac).1.symm.le
+  exact Constrained.TwoPhase.exists_corrected_full_complexity P₁ P₂ ℓ a hι
+    hclosed hS hCS hC hφ hL₁ hlipφ hmu hL₂ hlipmu hθ hθ1 hβ hβ0 hβ1 hB hf hc hDf hfb
 
 end CartisGouldToint

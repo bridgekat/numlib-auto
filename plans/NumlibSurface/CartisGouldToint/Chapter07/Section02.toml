@@ -216,3 +216,7 @@ source = "Cartis, Gould and Toint, Theorem 7.2.7, literal complete-method return
 [[node]]
 id = "lemma_7_2_6_interior"
 source = "Cartis–Gould–Toint Lemma7.2.6 companion: actual nonterminal inner-success count across literal or corrected reflection blocks; terminal returns excluded"
+
+[[node]]
+id = "theorem_7_2_7_corrected"
+source = "Closed-reset correction of Cartis, Gould and Toint, Theorem7.2.7, with an explicit derivative bound and coarser complete initialized evaluation budgets"
