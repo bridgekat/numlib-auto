@@ -31,6 +31,8 @@ gives ARp runs with `σ_k = σ₀`, exact model minimization and `ρ_k = 1`.
   used by the third-order step condition (4.1.13) and the sets (4.1.14).
 * `Optimization.ridge_const_mul_slow_bounds`: scaled ridges of the slow interpolants satisfy the
   Lipschitz and lower bounds of the function classes, with constants independent of `ε`.
+* `Optimization.iteratedFDeriv_apply_const_eq_line`, `Optimization.taylorDecrement_eq_of_line`:
+  iterated derivatives and Taylor decrements along a line are those of the restriction.
 * `Optimization.taylorDecrement_regularizedModel_ridge_spike`: the model decrements at a spike
   jet along the ridge are those of the one-dimensional monomial model.
 * `Optimization.taylorDecrement_regularizedModel_ridge_linear_nonpos`: at a gradient spike the
@@ -166,6 +168,45 @@ theorem iteratedDeriv_two_negMonomialRegModel_mem (hp : 3 ≤ p) (hσ : 0 < σ) 
 end Minimizer
 
 /-! ### Ridge functions -/
+
+/-! ### Restriction to a line -/
+
+section Line
+
+/-- **Iterated derivatives along a line**: for `F` of class `C^n` and `i ≤ n`, `∇^i F(s)[d]^i` is
+the `i`-th derivative of `τ ↦ F(s + τ d)` at `0`. -/
+theorem iteratedFDeriv_apply_const_eq_line {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] {F : E → ℝ} {n : ℕ} (hF : ContDiff ℝ n F) {i : ℕ} (hi : i ≤ n) (s d : E) :
+    iteratedFDeriv ℝ i F s (fun _ => d) = iteratedDeriv i (fun τ : ℝ => F (s + τ • d)) 0 := by
+  have hcomp : (fun τ : ℝ => F (s + τ • d)) =
+      (fun v => F (s + v)) ∘ ContinuousLinearMap.toSpanSingleton ℝ d := by
+    funext τ; simp [ContinuousLinearMap.toSpanSingleton_apply]
+  have hg : ContDiff ℝ n (fun v => F (s + v)) := hF.comp (contDiff_const.add contDiff_id)
+  rw [hcomp, iteratedDeriv_eq_iteratedFDeriv,
+    (ContinuousLinearMap.toSpanSingleton ℝ d).iteratedFDeriv_comp_right hg 0
+      (by exact_mod_cast hi),
+    ContinuousMultilinearMap.compContinuousLinearMap_apply, iteratedFDeriv_comp_add_left]
+  simp [ContinuousLinearMap.toSpanSingleton_apply]
+
+/-- **Taylor decrements along a line**: if `F(s + τ d) = F₁(t + τ a)` for all `τ`, then the
+Taylor decrements of `F` at `s` along `d` are those of `F₁` at `t` along `a`. -/
+theorem taylorDecrement_eq_of_line {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] {F : E → ℝ} {F₁ : ℝ → ℝ} {n : ℕ} (hF : ContDiff ℝ n F)
+    (hF₁ : ContDiff ℝ n F₁) {s d : E} {t a : ℝ} (hline : ∀ τ : ℝ, F (s + τ • d) = F₁ (t + τ * a))
+    {ℓ : ℕ} (hℓ : ℓ ≤ n) :
+    (ftaylorSeries ℝ F s).taylorDecrement ℓ d = (ftaylorSeries ℝ F₁ t).taylorDecrement ℓ a := by
+  rw [FormalMultilinearSeries.taylorDecrement_eq, FormalMultilinearSeries.taylorDecrement_eq]
+  congr 1
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hin : i ≤ n := (Finset.mem_Icc.1 hi).2.trans hℓ
+  change (i ! : ℝ)⁻¹ * iteratedFDeriv ℝ i F s (fun _ => d) =
+    (i ! : ℝ)⁻¹ * iteratedFDeriv ℝ i F₁ t (fun _ => a)
+  rw [iteratedFDeriv_apply_const_eq_line hF hin, iteratedFDeriv_apply_const_eq_line hF₁ hin]
+  congr 2
+  funext τ
+  rw [hline, smul_eq_mul]
+
+end Line
 
 section Ridge
 

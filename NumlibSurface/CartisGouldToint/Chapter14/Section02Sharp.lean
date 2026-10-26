@@ -25,11 +25,17 @@ Chapter 13 steps.
 * `theorem_14_2_4_sharp_arqpeda_otherwise` — the ARqpEDA-SC order `ε^{-q(p+1)/p}` of the
   lower-bound mode, for every `q ≤ p`, from the example of Theorem 12.2.17 (`r = p`);
 * `theorem_14_2_4_sharp_arqpida_otherwise` — the ARqpIDA-SC order `ε^{-q(p+1)/p}` of the
-  lower-bound mode for `q = p ≥ 3`, from pure `p`-th order spikes (Theorem 12.2.15 with `q = p`).
+  lower-bound mode for `q = p ≥ 3`, from pure `p`-th order spikes (Theorem 12.2.15 with `q = p`);
+* `theorem_14_2_4_sharp_arqpida_otherwise_constrained` — the ARqpIDA-SC order `ε^{-q(p+1)/p}` of
+  the lower-bound mode for every `2 ≤ q ≤ p`, on the closed feasible set
+  `X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1} ⊂ ℝ²` (`v 1` the second coordinate: a line and a parallel
+  half-plane at distance `ρ ∈ (ε, 2ε]`),
+  from the example of Theorem 12.2.17 on the line.
 
 All runs are genuine runs of the Chapter 13 run predicates with exact derivatives (and values),
 with class constants independent of `ε`. For `q = 2 < p` on `ℝⁿ` the lower-bound-mode order of
-the ARqpIDA-SC row is not attained (`theorem_14_2_4_arqpida_le_two` in `Chapter14.Section02`).
+the ARqpIDA-SC row is not attained (`theorem_14_2_4_arqpida_le_two` in `Chapter14.Section02`), so
+the "otherwise" entry for `q = 2` needs `X ≠ ℝⁿ`.
 
 ## Deviations from the book
 
@@ -56,22 +62,31 @@ the ARqpIDA-SC row is not attained (`theorem_14_2_4_arqpida_le_two` in `Chapter1
     fraction `ς` of the measures.
   - **Lower-bound mode of ARqpIDA** (`q = p ≥ 3`, `σ₀ = p`, initial radii `ε`). The Step-2 radii
     are `ε/p`.
+  - **Lower-bound mode of ARqpIDA with a feasible set** (`2 ≤ q ≤ p`, `σ₀ = (3/(p+2))^p`, all
+    radii `ε`). The criterion `Chapter13.arTest_feasible` asks for approximate optimality for
+    *some* radii, and on the line alone the gradient spikes `β_k ≈ ε^q/q!` meet it at radius `1`.
+    A second coordinate with `∂f/∂(v 1) = -1` and the half-plane `{ρ ≤ v 1}` make every radius
+    `δ ≥ ρ` fail, while radii `δ < ρ` (including the algorithm's radii `ε`) only see the line;
+    `ρ^{q-1} = ε^{q-1}(1 + 1/k_ε)` makes the first hit exactly `k_ε`. After `k_ε` the run makes
+    one more step, to a point where the derivatives along the line vanish, and continues with
+    accuracy-improving iterations there.
   - **Termination and continuation.** ARqpEDA is run on `f/2` so that it terminates at `k_ε`.
     ARqpIDA is continued after `k_ε` by ARqpIDA iterations from the state at `k_ε`
     (`Chapter13.exists_algorithm_13_1_2_exact`, `Chapter13.exists_arqpDA_steps`).
   - **Accuracies.** The initial accuracies are assumed to pass (13.1.46) along the steps and, for
     ARqpEDA, (13.3.17) at termination.
 
-## Not formalized here
+## Remarks
 
-* Sharpness of the ARqpIDA-SC row in the lower-bound mode of the radii control for `3 ≤ q < p`, and
-  for `q = 2 < p` on a feasible set `X ≠ ℝⁿ` (the "otherwise" entry of the table; on `ℝⁿ` the
-  mode-`False` bound is not attained, `theorem_14_2_4_arqpida_le_two`). Its criterion
-  `Chapter13.arTest_feasible` asks for approximate optimality for *some* radii in `(0, 1]^q`, and
-  the example of Theorem 12.2.17 meets it at `x₀`: its measures at radius `1` are `β_0 ≤ ε/j!`. Pure
-  `q`-th order spikes fail the criterion at every radius, but their order is only
-  `ε^{-(p+1)/(p-q+1)}`. The book's statement of Theorem 12.2.17, "for some `δ_ε`", has the same
-  caveat.
+* The table's sharpness claim for the "otherwise" entry of the ARqpIDA-SC row is met by
+  `theorem_14_2_4_sharp_arqpida_otherwise_constrained` (a feasible set `X ≠ ℝⁿ`). The book's proof,
+  by reduction to `X = ℝⁿ`, would also need the case `X = ℝⁿ`, `3 ≤ q < p`, which is open here:
+  the example of Theorem 12.2.17 meets the criterion at `x₀` (its measures at radius `1` are
+  `β_0 ≤ ε/j!`), and pure `q`-th order spikes fail it at every radius but have the order
+  `ε^{-(p+1)/(p-q+1)}`. Heuristically, failing the criterion at radius `1` needs a derivative of
+  some order `3 ≤ i ≤ q` of size `≳ ε` at every iterate, and if these derivatives are periodic
+  along the run, Taylor consistency of the jets needs steps `t ≳ ε^{1/(p-2)} ≫ ε^{q/p}`. The
+  book's statement of Theorem 12.2.17, "for some `δ_ε`", has the same caveat.
 -/
 
 open Set Metric
@@ -2443,5 +2458,988 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
     linarith only [hκge]
 
 end ARqpDASharp
+
+/-! ### Sharpness of the ARqpIDA-SC row in the lower-bound mode with a constrained feasible set
+
+The order `ε^{-q(p+1)/p}` of the lower-bound mode of the ARqpIDA-SC row is attained for every
+`2 ≤ q ≤ p` with the closed feasible set `X = {v 1 = 0} ∪ {ρ ≤ v 1}` of `ℝ²` (a line and a parallel
+half-plane at distance `ρ ∈ (ε, 2ε]`), by the slow example of Theorem 12.2.17 on the line. The
+half-plane makes the criterion `Chapter13.arTest_feasible` ("approximately optimal for some radii
+in `(0, 1]^q`") fail at the large radii, which the line alone cannot do. -/
+
+section ARqpIDAConstrained
+
+open Chapter13 Optimization
+open scoped RealInnerProductSpace
+
+/-- The first unit vector of `ℝ²`. -/
+private noncomputable def e₁ : EuclideanSpace ℝ (Fin 2) := EuclideanSpace.single 0 1
+
+/-- The second unit vector of `ℝ²`. -/
+private noncomputable def e₂ : EuclideanSpace ℝ (Fin 2) := EuclideanSpace.single 1 1
+
+private theorem inner_e₁ (v : EuclideanSpace ℝ (Fin 2)) : ⟪e₁, v⟫ = v 0 := by
+  simp [e₁, EuclideanSpace.inner_single_left]
+
+private theorem inner_e₂ (v : EuclideanSpace ℝ (Fin 2)) : ⟪e₂, v⟫ = v 1 := by
+  simp [e₂, EuclideanSpace.inner_single_left]
+
+private theorem norm_e₁ : ‖e₁‖ = 1 := by simp [e₁]
+
+private theorem norm_e₂ : ‖e₂‖ = 1 := by simp [e₂]
+
+private theorem inner_e₁_smul (c : ℝ) : ⟪e₁, c • e₁⟫ = c := by
+  rw [inner_e₁]; simp [e₁]
+
+private theorem inner_e₂_smul_e₁ (c : ℝ) : ⟪e₂, c • e₁⟫ = 0 := by
+  rw [inner_e₂]; simp [e₁]
+
+private theorem inner_e₁_smul_e₂ (c : ℝ) : ⟪e₁, c • e₂⟫ = 0 := by
+  rw [inner_e₁]; simp [e₂]
+
+private theorem inner_e₂_smul (c : ℝ) : ⟪e₂, c • e₂⟫ = c := by
+  rw [inner_e₂]; simp [e₂]
+
+private theorem norm_smul_e₁ (c : ℝ) : ‖c • e₁‖ = |c| := by
+  rw [norm_smul, norm_e₁, mul_one, Real.norm_eq_abs]
+
+private theorem norm_smul_e₂ (c : ℝ) : ‖c • e₂‖ = |c| := by
+  rw [norm_smul, norm_e₂, mul_one, Real.norm_eq_abs]
+
+/-- A vector orthogonal to `e₂` is a multiple of `e₁`. -/
+private theorem eq_smul_e₁ {v : EuclideanSpace ℝ (Fin 2)} (hv : ⟪e₂, v⟫ = 0) :
+    v = ⟪e₁, v⟫ • e₁ := by
+  rw [inner_e₂] at hv
+  rw [inner_e₁]
+  ext i
+  fin_cases i <;> simp [e₁, hv]
+
+private theorem abs_inner_e₁_le (v : EuclideanSpace ℝ (Fin 2)) : |⟪e₁, v⟫| ≤ ‖v‖ := by
+  simpa [norm_e₁] using abs_real_inner_le_norm e₁ v
+
+private theorem inner_e₂_le (v : EuclideanSpace ℝ (Fin 2)) : ⟪e₂, v⟫ ≤ ‖v‖ := by
+  simpa [norm_e₂] using real_inner_le_norm e₂ v
+
+section Slit
+
+variable {p : ℕ} {G H : ℝ → ℝ} {x : EuclideanSpace ℝ (Fin 2)} {α γ : ℝ}
+
+/-- A spike jet of order `p` restricts to a spike jet of order `j ≤ p`. -/
+private theorem isSpikeJetOf_restrict {q j : ℕ} {a : ℝ} (hd : IsSpikeJetOf p G q a α) (hj : j ≤ p) :
+    IsSpikeJetOf j G q a α :=
+  ⟨hd.1, fun i hi1 hij hiq => hd.2 i hi1 (hij.trans hj) hiq⟩
+
+/-- The Taylor polynomials of `G(⟪e₁, ·⟫) + H(⟪e₂, ·⟫)` at a point where `G` and `H` have gradient
+spikes `-α` and `-γ`: `T_j(x, w) = G(⟪e₁, x⟫) + H(⟪e₂, x⟫) - α ⟪e₁, w⟫ - γ ⟪e₂, w⟫`
+(`1 ≤ j ≤ p`). -/
+private theorem taylorPolynomial_slit (hG : ContDiff ℝ p G) (hH : ContDiff ℝ p H)
+    (hdG : IsSpikeJetOf p G 1 ⟪e₁, x⟫ α) (hdH : IsSpikeJetOf p H 1 ⟪e₂, x⟫ γ) {j : ℕ}
+    (hj1 : 1 ≤ j) (hjp : j ≤ p) (w : EuclideanSpace ℝ (Fin 2)) :
+    taylorPolynomial (ridge G e₁ + ridge H e₂) j x w =
+      G ⟪e₁, x⟫ + H ⟪e₂, x⟫ - α * ⟪e₁, w⟫ - γ * ⟪e₂, w⟫ := by
+  have hGj : ContDiff ℝ j G := hG.of_le (by exact_mod_cast hjp)
+  have hHj : ContDiff ℝ j H := hH.of_le (by exact_mod_cast hjp)
+  have hsum : taylorPolynomial (ridge G e₁ + ridge H e₂) j x w =
+      taylorPolynomial (ridge G e₁) j x w + taylorPolynomial (ridge H e₂) j x w := by
+    rw [taylorPolynomial_apply, taylorPolynomial_apply, taylorPolynomial_apply,
+      ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun i hi => ?_
+    have hij : (i : WithTop ℕ∞) ≤ j := by exact_mod_cast Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+    rw [iteratedFDeriv_add_apply ((contDiff_ridge hGj).contDiffAt.of_le hij)
+      ((contDiff_ridge hHj).contDiffAt.of_le hij), add_apply, smul_add]
+  rw [hsum, taylorPolynomial_ridge_spike hGj le_rfl hj1 (isSpikeJetOf_restrict hdG hjp),
+    taylorPolynomial_ridge_spike hHj le_rfl hj1 (isSpikeJetOf_restrict hdH hjp)]
+  simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one]
+  ring
+
+/-- The Taylor decrements of `G(⟪e₁, ·⟫) + H(⟪e₂, ·⟫)` at a point with gradient spikes:
+`ΔT_j(x, w) = α ⟪e₁, w⟫ + γ ⟪e₂, w⟫` (`1 ≤ j ≤ p`). -/
+private theorem taylorDecrement_slit (hG : ContDiff ℝ p G) (hH : ContDiff ℝ p H)
+    (hdG : IsSpikeJetOf p G 1 ⟪e₁, x⟫ α) (hdH : IsSpikeJetOf p H 1 ⟪e₂, x⟫ γ) {j : ℕ}
+    (hj1 : 1 ≤ j) (hjp : j ≤ p) (w : EuclideanSpace ℝ (Fin 2)) :
+    (ftaylorSeries ℝ (ridge G e₁ + ridge H e₂) x).taylorDecrement j w =
+      α * ⟪e₁, w⟫ + γ * ⟪e₂, w⟫ := by
+  rw [ftaylorSeries_taylorDecrement_eq, taylorPolynomial_slit hG hH hdG hdH hj1 hjp,
+    Pi.add_apply, ridge_apply, ridge_apply]
+  ring
+
+/-- The model (13.1.45) of `G(⟪e₁, ·⟫) + H(⟪e₂, ·⟫)` at a point with gradient spikes, on the
+line `⟪e₂, w⟫ = 0`: `m(w) = G(⟪e₁, x⟫) + H(⟪e₂, x⟫) + m₁(⟪e₁, w⟫)` with the one-dimensional model
+`m₁ t = -α t + σ |t|^{p+1}/(p+1)!`. -/
+private theorem regularizedModel_slit_line (hp : 1 ≤ p) (hG : ContDiff ℝ p G)
+    (hH : ContDiff ℝ p H) (hdG : IsSpikeJetOf p G 1 ⟪e₁, x⟫ α)
+    (hdH : IsSpikeJetOf p H 1 ⟪e₂, x⟫ γ) (σ : ℝ) {w : EuclideanSpace ℝ (Fin 2)}
+    (hw : ⟪e₂, w⟫ = 0) :
+    regularizedModel (ftaylorSeries ℝ (ridge G e₁ + ridge H e₂) x) p σ w =
+      G ⟪e₁, x⟫ + H ⟪e₂, x⟫ + negMonomialRegModel p 1 σ α ⟪e₁, w⟫ := by
+  have hn : ‖w‖ = |⟪e₁, w⟫| := by rw [eq_smul_e₁ hw, inner_e₁_smul, norm_smul_e₁]
+  rw [regularizedModel_def, ← taylorPolynomial_eq_taylorSum,
+    taylorPolynomial_slit hG hH hdG hdH hp le_rfl, hw, hn, negMonomialRegModel]
+  simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one]
+  ring
+
+/-- The Taylor decrements of the model at a point `t e₁` of the line, along a direction `d` of
+the line, are those of the one-dimensional model `m₁` at `t` along `⟪e₁, d⟫` (orders `ℓ ≤ p`). -/
+private theorem taylorDecrement_regularizedModel_slit (hp : 1 ≤ p) (hG : ContDiff ℝ p G)
+    (hH : ContDiff ℝ p H) (hdG : IsSpikeJetOf p G 1 ⟪e₁, x⟫ α)
+    (hdH : IsSpikeJetOf p H 1 ⟪e₂, x⟫ γ) (σ t : ℝ) {d : EuclideanSpace ℝ (Fin 2)}
+    (hd : ⟪e₂, d⟫ = 0) {ℓ : ℕ} (hℓ : ℓ ≤ p) :
+    (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ (ridge G e₁ + ridge H e₂) x) p σ)
+      (t • e₁)).taylorDecrement ℓ d =
+      (ftaylorSeries ℝ (negMonomialRegModel p 1 σ α) t).taylorDecrement ℓ ⟪e₁, d⟫ := by
+  set C := G ⟪e₁, x⟫ + H ⟪e₂, x⟫
+  have hline : ∀ τ : ℝ, regularizedModel (ftaylorSeries ℝ (ridge G e₁ + ridge H e₂) x) p σ
+      (t • e₁ + τ • d) = C + negMonomialRegModel p 1 σ α (t + τ * ⟪e₁, d⟫) := fun τ => by
+    have h1 : ⟪e₂, t • e₁ + τ • d⟫ = 0 := by
+      rw [inner_add_right, inner_e₂_smul_e₁, inner_smul_right, hd]; ring
+    rw [regularizedModel_slit_line hp hG hH hdG hdH σ h1, inner_add_right, inner_e₁_smul,
+      inner_smul_right]
+  rw [taylorDecrement_eq_of_line contDiff_regularizedModel
+    (contDiff_const.add (contDiff_negMonomialRegModel p 1 σ α)) hline hℓ, taylorDecrement_real,
+    taylorDecrement_real]
+  congr 1
+  refine Finset.sum_congr rfl fun i hi => ?_
+  rw [iteratedDeriv_const_add (by have := (Finset.mem_Icc.1 hi).1; omega)]
+
+/-- The feasible set of the slit example: the line `{⟪e₂, v⟫ = 0}` and the half-plane
+`{⟪e₂, v⟫ ≥ ρ}` at distance `ρ` from it. -/
+private def slitSet (ρ : ℝ) : Set (EuclideanSpace ℝ (Fin 2)) :=
+  {v | ⟪e₂, v⟫ = 0} ∪ {v | ρ ≤ ⟪e₂, v⟫}
+
+private theorem add_mem_slitSet_iff {ρ : ℝ} {x e : EuclideanSpace ℝ (Fin 2)} (hx : ⟪e₂, x⟫ = 0) :
+    x + e ∈ slitSet ρ ↔ ⟪e₂, e⟫ = 0 ∨ ρ ≤ ⟪e₂, e⟫ := by
+  simp only [slitSet, mem_union, mem_ofPred_eq, inner_add_right, hx, zero_add]
+
+/-- Near a point of the line, the slit set is the line: feasible displacements shorter than `ρ`
+are orthogonal to `e₂`. -/
+private theorem inner_e₂_eq_zero_of_mem {ρ : ℝ} {x e : EuclideanSpace ℝ (Fin 2)}
+    (hx : ⟪e₂, x⟫ = 0) (he : x + e ∈ slitSet ρ) (hρ : ‖e‖ < ρ) : ⟪e₂, e⟫ = 0 := by
+  rcases (add_mem_slitSet_iff hx).1 he with h | h
+  · exact h
+  · exact absurd (h.trans (inner_e₂_le e)) (not_le.2 hρ)
+
+private theorem smul_e₁_mem_slitSet {ρ : ℝ} {x : EuclideanSpace ℝ (Fin 2)} (hx : ⟪e₂, x⟫ = 0)
+    (c : ℝ) : x + c • e₁ ∈ slitSet ρ :=
+  (add_mem_slitSet_iff hx).2 (Or.inl (inner_e₂_smul_e₁ c))
+
+/-- **The slow gradient interpolant with a flat endpoint** (the data of Theorem 12.2.17 with
+`r = p`, followed by one more point). For `1 ≤ q ≤ p` and `σ > 0` there are `L, B ≥ 0` depending
+only on `p, q, σ` such that: for every `ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-q(p+1)/p}⌉₊`,
+`β_k = (ε^q + ε^q (k_ε - k)/k_ε)/q!` and points `ξ_{k+1} = ξ_k + (p! β_k/σ)^{1/p}` (`k ≤ k_ε`),
+there is a `C^p` function `G` with `L`-Lipschitz `p`-th derivative, `|G^{(j)}| ≤ B` (`j ≤ p`),
+gradient spikes `G'(ξ_k) = -β_k` (other derivatives of orders `2, …, p` zero) for `k ≤ k_ε`, all
+derivatives of orders `1, …, p` zero at `ξ_{k_ε+1}`, and `G(ξ_{k+1}) = G(ξ_k) - β_k (ξ_{k+1} - ξ_k)`
+for `k ≤ k_ε`. -/
+private theorem exists_slitGrad_interpolant {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) {σ : ℝ}
+    (hσ : 0 < σ) :
+    ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (κ : ℕ) (ξ β : ℕ → ℝ), 0 < ε → ε ≤ 1 →
+      κ = ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ →
+      (∀ k, β k = (ε ^ q + ε ^ q * ((κ : ℝ) - k) / κ) / q !) →
+      (∀ k ≤ κ, ξ (k + 1) = ξ k + (p ! * β k / σ) ^ (1 / (p : ℝ))) →
+      ∃ G : ℝ → ℝ, ContDiff ℝ p G ∧
+        (∀ s t, |iteratedDeriv p G s - iteratedDeriv p G t| ≤ L * |s - t|) ∧
+        (∀ j ≤ p, ∀ t, |iteratedDeriv j G t| ≤ B) ∧
+        (∀ k ≤ κ, IsSpikeJetOf p G 1 (ξ k) (β k)) ∧ IsSpikeJetOf p G 1 (ξ (κ + 1)) 0 ∧
+        ∀ k ≤ κ, G (ξ (k + 1)) = G (ξ k) - β k * (ξ (k + 1) - ξ k) := by
+  have hp1 : 1 ≤ p := hq.trans hqp
+  have hp0 : p ≠ 0 := by omega
+  have hppos : (0 : ℝ) < p := by exact_mod_cast hp1
+  have hqf : (0 : ℝ) < q ! := by positivity
+  have hqf1 : (1 : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_pos q
+  have hpf : (0 : ℝ) < p ! := by positivity
+  set M : ℝ := 2 / q ! * (2 * p ! / (q ! * σ)) ^ (1 / (p : ℝ)) with hM
+  have hM0 : 0 ≤ M := by positivity
+  set κH : ℝ := max (3 * M) (max 2 (max ((2 * p ! / σ) ^ (1 / (p : ℝ))) (σ / p !))) with hκH
+  have hκM : 3 * M ≤ κH := le_max_left _ _
+  have hκ2 : 2 ≤ κH := (le_max_left _ _).trans (le_max_right _ _)
+  have hκs : (2 * p ! / σ) ^ (1 / (p : ℝ)) ≤ κH :=
+    (le_max_left _ _).trans ((le_max_right _ _).trans (le_max_right _ _))
+  have hκσ : σ / p ! ≤ κH :=
+    (le_max_right _ _).trans ((le_max_right _ _).trans (le_max_right _ _))
+  have hκ0 : 0 ≤ κH := by linarith
+  obtain ⟨L, B, hL, hB, hH⟩ := Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le p hκ0
+  refine ⟨L, B, hL, hB, fun ε κ ξ β hε hε1 hκdef hβ hξ => ?_⟩
+  set e : ℝ := (q : ℝ) * (p + 1) / p with he
+  have he0 : 0 ≤ e := by positivity
+  obtain ⟨hκ1, hκ2'⟩ := one_le_ceil_rpow_neg_and_mul_le hε hε1 he0
+  rw [← hκdef] at hκ1 hκ2'
+  have hκpos : (0 : ℝ) < κ := by exact_mod_cast hκ1
+  have hεq : 0 < ε ^ q := pow_pos hε q
+  have hεq1 : ε ^ q ≤ 1 := pow_le_one₀ hε.le hε1
+  have hεe1 : ε ^ e ≤ 1 := Real.rpow_le_one hε.le hε1 he0
+  have hqe : ε ^ q * (ε ^ q) ^ (1 / (p : ℝ)) = ε ^ e := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul hε.le, ← Real.rpow_add hε, he]
+    congr 1
+    field_simp
+  have hβb : ∀ k ≤ κ, ε ^ q / q ! ≤ β k ∧ β k ≤ 2 * ε ^ q / q ! := fun k hk => by
+    have hk' : (k : ℝ) ≤ κ := by exact_mod_cast hk
+    have h0 : 0 ≤ ε ^ q * ((κ : ℝ) - k) / κ := div_nonneg (mul_nonneg hεq.le (by linarith)) hκpos.le
+    have h1 : ε ^ q * ((κ : ℝ) - k) / κ ≤ ε ^ q := by
+      rw [div_le_iff₀ hκpos]; nlinarith [Nat.cast_nonneg (α := ℝ) k]
+    rw [hβ k]
+    constructor
+    · exact div_le_div_of_nonneg_right (by linarith) hqf.le
+    · exact div_le_div_of_nonneg_right (by linarith) hqf.le
+  have hβs : ∀ k, β k - β (k + 1) = ε ^ q / κ / q ! := fun k => by
+    rw [hβ, hβ]; push_cast; field_simp; ring
+  have hβpos : ∀ k ≤ κ, 0 < β k := fun k hk => lt_of_lt_of_le (by positivity) (hβb k hk).1
+  set β' : ℕ → ℝ := fun k => if k ≤ κ then β k else 0 with hβ'
+  set ts : ℕ → ℝ := fun k => (p ! * β k / σ) ^ (1 / (p : ℝ)) with hts
+  have hgap : ∀ k ≤ κ, ξ (k + 1) - ξ k = ts k := fun k hk => by rw [hξ k hk]; ring
+  have hspos : ∀ k ≤ κ, 0 < ts k := fun k hk => by
+    have := hβpos k hk
+    exact Real.rpow_pos_of_pos (by positivity) _
+  have htsp : ∀ k ≤ κ, ts k ^ p = p ! * β k / σ := fun k hk => by
+    have := hβpos k hk
+    simp only [hts]
+    rw [one_div, Real.rpow_inv_natCast_pow (by positivity) hp0]
+  have hsle : ∀ k ≤ κ, ts k ≤ (2 * p ! / σ) ^ (1 / (p : ℝ)) := fun k hk => by
+    have hb := (hβb k hk).2
+    have := hβpos k hk
+    refine Real.rpow_le_rpow (by positivity) ?_ (by positivity)
+    have : β k ≤ 2 := hb.trans (by rw [div_le_iff₀ hqf]; nlinarith)
+    exact div_le_div_of_nonneg_right (by nlinarith) hσ.le
+  set fv : ℕ → ℝ := fun k => -∑ i ∈ Finset.range k, β' i * ts i with hfv
+  set dv : ℕ → ℝ := fun k => -β' k with hdv
+  have hfs : ∀ k, fv (k + 1) = fv k - β' k * ts k := fun k => by
+    simp only [fv, Finset.sum_range_succ]; ring
+  have hdec : ∀ i < κ + 1, 0 ≤ β' i * ts i ∧ β' i * ts i ≤ M * ε ^ e := fun i hi => by
+    have hi' : i ≤ κ := by omega
+    obtain ⟨hb1, hb2⟩ := hβb i hi'
+    have hβ0 := hβpos i hi'
+    have hs0 := (hspos i hi').le
+    simp only [β', ite_eq_left hi']
+    refine ⟨by positivity, ?_⟩
+    have hsb : ts i ≤ (2 * p ! / (q ! * σ)) ^ (1 / (p : ℝ)) * (ε ^ q) ^ (1 / (p : ℝ)) := by
+      rw [← Real.mul_rpow (by positivity) hεq.le]
+      refine Real.rpow_le_rpow (by positivity) ?_ (by positivity)
+      calc p ! * β i / σ ≤ p ! * (2 * ε ^ q / q !) / σ := by gcongr
+        _ = 2 * p ! / (q ! * σ) * ε ^ q := by field_simp
+    calc β i * ts i ≤ 2 * ε ^ q / q ! *
+          ((2 * p ! / (q ! * σ)) ^ (1 / (p : ℝ)) * (ε ^ q) ^ (1 / (p : ℝ))) :=
+          mul_le_mul hb2 hsb hs0 (by positivity)
+      _ = M * (ε ^ q * (ε ^ q) ^ (1 / (p : ℝ))) := by rw [hM]; ring
+      _ = M * ε ^ e := by rw [hqe]
+  have hfb : ∀ k ≤ κ + 1, |fv k| ≤ 3 * M := fun k hk => by
+    simp only [fv, abs_neg]
+    refine abs_sum_range_le_of_le hdec ?_ hk
+    push_cast
+    nlinarith [mul_le_mul_of_nonneg_left hεe1 hM0, mul_le_mul_of_nonneg_left hκ2' hM0]
+  have hβ'2 : ∀ k, |β' k| ≤ 2 := fun k => by
+    simp only [β']
+    split_ifs with hk
+    · rw [abs_of_pos (hβpos k hk)]
+      exact (hβb k hk).2.trans (by rw [div_le_iff₀ hqf]; nlinarith)
+    · simp
+  obtain ⟨G, hGc, hGL, hGB, hGj, -, -⟩ := hH (κ + 1) ξ (spikeJet fv dv 1)
+    (fun k hk => by rw [← sub_pos, hgap k (by omega)]; exact hspos k (by omega))
+    (fun k hk => by rw [hgap k (by omega)]; exact (hsle k (by omega)).trans hκs)
+    (fun k hk j _ => by
+      unfold spikeJet
+      split_ifs
+      · exact (hfb k hk).trans hκM
+      · simp only [dv, abs_neg]; linarith [hβ'2 k]
+      · simpa using hκ0)
+    (fun k hk => by
+      have hk' : k ≤ κ := by omega
+      rw [hgap k hk']
+      have hs0 := (hspos k hk').le
+      refine hermite_consistency_spike le_rfl hp1 hs0 hκ0 ?_
+        (fun h => absurd h (lt_irrefl 1)) ?_
+      · rw [hfs]
+        simp only [dv]
+        have : fv k - β' k * ts k - (fv k + -β' k * ts k ^ 1 / (Nat.factorial 1 : ℝ)) = 0 := by
+          simp; ring
+        rw [this, abs_zero]
+        positivity
+      · rw [Nat.sub_add_cancel hp1, htsp k hk']
+        have hb : |dv (k + 1) - dv k| ≤ β k := by
+          simp only [dv, β', ite_eq_left hk']
+          rcases hk'.lt_or_eq with hlt | rfl
+          · rw [ite_eq_left (show k + 1 ≤ κ by omega),
+              show -β (k + 1) - -β k = β k - β (k + 1) by ring,
+              hβs, abs_of_nonneg (by positivity)]
+            calc ε ^ q / κ / q ! ≤ ε ^ q / q ! := by
+                  gcongr; exact div_le_self hεq.le (by exact_mod_cast hκ1)
+              _ ≤ β k := (hβb k hk').1
+          · rw [ite_eq_right (by omega), neg_zero, zero_sub, neg_neg, abs_of_pos (hβpos _ le_rfl)]
+        refine hb.trans ?_
+        have := hβpos k hk'
+        calc β k = σ / p ! * (p ! * β k / σ) := by field_simp
+          _ ≤ κH * (p ! * β k / σ) := mul_le_mul_of_nonneg_right hκσ (by positivity))
+  refine ⟨G, hGc, hGL, hGB, fun k hk => ⟨?_, fun j hj1 hjp hj => ?_⟩, ⟨?_, fun j hj1 hjp hj => ?_⟩,
+    fun k hk => ?_⟩
+  · obtain ⟨-, h1, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k) (by omega)
+    rw [h1]; simp only [dv, β', ite_eq_left hk]
+  · obtain ⟨-, -, h2⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k) (by omega)
+    exact h2 j hj1 hjp hj
+  · obtain ⟨-, h1, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := κ + 1) le_rfl
+    rw [h1]; simp only [dv, β', ite_eq_right (show ¬ κ + 1 ≤ κ by omega), neg_zero]
+  · obtain ⟨-, -, h2⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := κ + 1) le_rfl
+    exact h2 j hj1 hjp hj
+  · obtain ⟨h0, -, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k) (by omega)
+    obtain ⟨h0', -, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k + 1) (by omega)
+    rw [h0, h0', hfs, hgap k hk]
+    simp only [β', ite_eq_left hk]
+
+/-- **The wall of the slit example**: a `C^p` function `H` with Lipschitz `p`-th derivative and
+bounded derivatives (constants depending only on `p`) with `H'(0) = -1` and `H^{(j)}(0) = 0` for
+`2 ≤ j ≤ p`. -/
+private theorem exists_slitWall (p : ℕ) (hp : 1 ≤ p) :
+    ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∃ H : ℝ → ℝ, ContDiff ℝ p H ∧
+      (∀ s t, |iteratedDeriv p H s - iteratedDeriv p H t| ≤ L * |s - t|) ∧
+      (∀ j ≤ p, ∀ t, |iteratedDeriv j H t| ≤ B) ∧ IsSpikeJetOf p H 1 0 1 := by
+  obtain ⟨L, B, hL, hB, hH⟩ :=
+    Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le p zero_le_one
+  set fv : ℕ → ℝ := fun k => -(k : ℝ)
+  set dv : ℕ → ℝ := fun k => if k = 0 then -1 else 0
+  obtain ⟨H, hHc, hHL, hHB, hHj, -, -⟩ := hH 1 (fun k => (k : ℝ)) (spikeJet fv dv 1)
+    (fun k hk => by push_cast; linarith) (fun k hk => by push_cast; linarith)
+    (fun k hk j _ => by
+      interval_cases k <;> (unfold spikeJet; split_ifs <;> simp [fv, dv]))
+    (fun k hk => by
+      obtain rfl : k = 0 := by omega
+      refine hermite_consistency_spike le_rfl hp (by norm_num) zero_le_one ?_
+        (fun h => absurd h (lt_irrefl 1)) ?_
+      · simp [fv, dv]
+      · simp [dv])
+  obtain ⟨-, h1, h2⟩ := iteratedDeriv_eq_of_spikeJet (x := fun k => (k : ℝ)) one_ne_zero hp hHj
+    (k := 0) (Nat.zero_le 1)
+  refine ⟨L, B, hL, hB, H, hHc, hHL, hHB, ?_, fun j hj1 hjp hj => ?_⟩
+  · simpa [dv] using h1
+  · simpa using h2 j hj1 hjp hj
+
+section SlitMeasure
+
+variable {D : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ} {j : ℕ} {β ρ δ : ℝ}
+  {x : EuclideanSpace ℝ (Fin 2)}
+
+/-- On radii `δ < ρ` the measure of the decrement `β ⟪e₁, d⟫ + ⟪e₂, d⟫` (`β ≥ 0`) at a point of
+the line is `β δ`. -/
+private theorem slit_measure_lt (hβ : 0 ≤ β) (hδ : 0 ≤ δ) (hδρ : δ < ρ) (hx : ⟪e₂, x⟫ = 0)
+    (hdec : ∀ d, D.taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫) :
+    taylorMeasure D j δ {e | x + e ∈ slitSet ρ} = β * δ := by
+  refine le_antisymm (decrementMeasure_le ⟨0, mem_closedBall_self hδ, by
+    simpa using smul_e₁_mem_slitSet (ρ := ρ) hx 0⟩ fun d hd => ?_) ?_
+  · have hdn : ‖d‖ ≤ δ := mem_closedBall_zero_iff.1 hd.1
+    rw [hdec, inner_e₂_eq_zero_of_mem hx hd.2 (hdn.trans_lt hδρ), add_zero]
+    exact mul_le_mul_of_nonneg_left ((le_abs_self _).trans ((abs_inner_e₁_le d).trans hdn)) hβ
+  · have := taylorDecrement_le_taylorMeasure D j (S := {e | x + e ∈ slitSet ρ}) (δ := δ)
+      (d := δ • e₁) ⟨by rw [mem_closedBall_zero_iff, norm_smul_e₁, abs_of_nonneg hδ],
+        smul_e₁_mem_slitSet hx δ⟩
+    rwa [hdec, inner_e₁_smul, inner_e₂_smul_e₁, add_zero] at this
+
+/-- On radii `δ ≥ ρ ≥ 0` the half-plane is reached: the measure of the decrement
+`β ⟪e₁, d⟫ + ⟪e₂, d⟫` at a point of the line is at least `ρ`. -/
+private theorem slit_measure_ge (hρ : 0 ≤ ρ) (hρδ : ρ ≤ δ) (hx : ⟪e₂, x⟫ = 0)
+    (hdec : ∀ d, D.taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫) :
+    ρ ≤ taylorMeasure D j δ {e | x + e ∈ slitSet ρ} := by
+  have := taylorDecrement_le_taylorMeasure D j (S := {e | x + e ∈ slitSet ρ}) (δ := δ)
+    (d := ρ • e₂) ⟨by rw [mem_closedBall_zero_iff, norm_smul_e₂, abs_of_nonneg hρ]; exact hρδ,
+      (add_mem_slitSet_iff hx).2 (Or.inr (by rw [inner_e₂_smul]))⟩
+  rwa [hdec, inner_e₁_smul_e₂, inner_e₂_smul, mul_zero, zero_add] at this
+
+end SlitMeasure
+
+section SlitTest
+
+variable {D : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ} {q : ℕ} {ε β ρ c : ℝ}
+  {x : EuclideanSpace ℝ (Fin 2)}
+
+/-- **The slit example fails the criterion at every radius** when `q ≥ 2`, the radius of the
+half-plane is `ρ = ε (1 + c)^{1/(q-1)}` and the gradient is `β ≥ ε^q (1 + c)/q!`: on radii
+`δ < ρ` the measure of order `q` is `β δ > ε δ^q/q!`, and on radii `δ ≥ ρ` it is at least
+`ρ > ε`. -/
+private theorem slit_not_approx (hε : 0 < ε) (hερ : ε < ρ)
+    (hρpow : ρ ^ (q - 1) = ε ^ (q - 1) * (1 + c)) (hβ0 : 0 ≤ β)
+    (hβ : ε ^ q * (1 + c) / q ! ≤ β) (hx : ⟪e₂, x⟫ = 0) (hq : 2 ≤ q)
+    (hdec : ∀ j ∈ Finset.Icc 1 q, ∀ d, D.taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫)
+    (δ' : ℕ → ℝ) (hδ' : ∀ j ∈ Finset.Icc 1 q, δ' j ∈ Set.Ioc 0 1)
+    (ht : IsEpsDeltaApprox D {e | x + e ∈ slitSet ρ} q (fun _ => ε) δ') : False := by
+  have hqm : q ∈ Finset.Icc 1 q := Finset.mem_Icc.2 ⟨by omega, le_rfl⟩
+  have h1 := ht q hqm
+  obtain ⟨hδ0, hδ1⟩ := hδ' q hqm
+  have hqf : (0 : ℝ) < q ! := by positivity
+  have hq0 : q - 1 ≠ 0 := by omega
+  set δq := δ' q
+  rcases lt_or_ge δq ρ with hδρ | hδρ
+  · rw [slit_measure_lt hβ0 hδ0.le hδρ hx (hdec q hqm)] at h1
+    have hqq : q = (q - 1) + 1 := by omega
+    have e1 : ε ^ q = ε ^ (q - 1) * ε := by rw [← pow_succ, ← hqq]
+    have e2 : δq ^ q = δq ^ (q - 1) * δq := by rw [← pow_succ, ← hqq]
+    have h2 : ε ^ q * (1 + c) / q ! * δq ≤ ε * δq ^ q / q ! :=
+      (mul_le_mul_of_nonneg_right hβ hδ0.le).trans h1
+    have h3 : ε ^ (q - 1) * (1 + c) * (ε * δq) ≤ δq ^ (q - 1) * (ε * δq) := by
+      rw [e1, e2] at h2
+      calc ε ^ (q - 1) * (1 + c) * (ε * δq) =
+            ε ^ (q - 1) * ε * (1 + c) / q ! * δq * q ! := by field_simp
+        _ ≤ ε * (δq ^ (q - 1) * δq) / q ! * q ! := mul_le_mul_of_nonneg_right h2 hqf.le
+        _ = δq ^ (q - 1) * (ε * δq) := by field_simp
+    have h4 := le_of_mul_le_mul_right h3 (mul_pos hε hδ0)
+    rw [← hρpow] at h4
+    exact absurd h4 (not_le.2 (pow_lt_pow_left₀ hδρ hδ0.le hq0))
+  · have h2 := slit_measure_ge (hε.trans hερ).le hδρ hx (hdec q hqm)
+    have h3 : ε * δq ^ q / q ! ≤ ε := by
+      have hδq : δq ^ q ≤ 1 := pow_le_one₀ hδ0.le hδ1
+      have : (1 : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_pos _
+      calc ε * δq ^ q / q ! ≤ ε * δq ^ q := div_le_self (by positivity) this
+        _ ≤ ε * 1 := mul_le_mul_of_nonneg_left hδq hε.le
+        _ = ε := mul_one ε
+    exact absurd (h2.trans (h1.trans h3)) (not_le.2 hερ)
+
+/-- **The slit example meets the criterion with radii `ε`** when `ε < ρ` and the gradient is
+`β ≤ ε^q/q!`: the measures at radius `ε` are `β ε ≤ ε ε^j/j!`. -/
+private theorem slit_approx (hε : 0 < ε) (hε1 : ε ≤ 1) (hερ : ε < ρ) (hβ0 : 0 ≤ β)
+    (hβ : β ≤ ε ^ q / q !) (hx : ⟪e₂, x⟫ = 0)
+    (hdec : ∀ j ∈ Finset.Icc 1 q, ∀ d, D.taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫) :
+    IsEpsDeltaApprox D {e | x + e ∈ slitSet ρ} q (fun _ => ε) (fun _ => ε) := by
+  intro j hj
+  rw [slit_measure_lt hβ0 hε.le hερ hx (hdec j hj)]
+  have hj := Finset.mem_Icc.1 hj
+  have h1 : ε ^ q ≤ ε ^ j := pow_le_pow_of_le_one hε.le hε1 hj.2
+  have h2 : (j ! : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_le hj.2
+  have h3 : ε ^ q / q ! ≤ ε ^ j / j ! := div_le_div₀ (by positivity) h1 (by positivity) h2
+  calc β * ε ≤ ε ^ j / j ! * ε := mul_le_mul_of_nonneg_right (hβ.trans h3) hε.le
+    _ = ε * ε ^ j / j ! := by ring
+
+end SlitTest
+
+section SlitStep
+
+variable {P : ARqpIDAParams} {ε β ρ t : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin 2)} {σ : ℕ → ℝ}
+  {δ δ₁ δs : ℕ → ℕ → ℝ} {h : ℕ → ℕ → ℝ}
+  {D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ}
+  {dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 2)} {jk : ℕ → ℕ} {s : ℕ → EuclideanSpace ℝ (Fin 2)}
+  {acc : ℕ → Prop} {ρr : ℕ → ℝ} {k : ℕ}
+
+/-- `ε^q/q! ≤ ε^j/(4 j!)` for `j < q` and `0 ≤ ε ≤ 1/4`. -/
+private theorem slit_pow_le {j q : ℕ} (hε : 0 ≤ ε) (hε4 : ε ≤ 1 / 4) (hjq : j < q) :
+    ε ^ q / q ! ≤ ε ^ j / j ! / 4 := by
+  have h1 : ε ^ q ≤ ε ^ j / 4 := by
+    have e : ε ^ q = ε ^ j * ε ^ (q - j) := by rw [← pow_add]; congr 1; omega
+    have h2 : ε ^ (q - j) ≤ ε := pow_le_of_le_one hε (by linarith) (by omega)
+    rw [e]
+    have := pow_nonneg hε j
+    nlinarith
+  have hjf : (j ! : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_le hjq.le
+  have hj0 : (0 : ℝ) < j ! := by positivity
+  calc ε ^ q / q ! ≤ ε ^ j / 4 / q ! := div_le_div_of_nonneg_right h1 (by positivity)
+    _ ≤ ε ^ j / 4 / j ! := div_le_div_of_nonneg_left (by positivity) hj0 hjf
+    _ = ε ^ j / j ! / 4 := by ring
+
+/-- **One trial iteration of the slit example is an ARqpIDA-SC step** on `X = slitSet ρ`
+(tolerances `ε_j = ε ≤ 1/4`, `ε < ρ`): at a point of the line with Taylor decrements
+`β ⟪e₁, d⟫ + ⟪e₂, d⟫` at all orders `1, …, p`, `ε^q/q! < β ≤ 2 ε^q/q!`, radii
+`δ_k = δ^{(1)}_k = δ_{s_k} = ε` (no halving), Step-1 displacements `ς ε e₁` (the fraction `ς` of
+the measures `β ε`), a weight with `σ_k/(p+1)! ≤ 1/(2 q!)`, a short step `s_k = t e₁` minimizing
+the model on the line, whose model decrements of orders `1, …, q` along the line are nonpositive
+on the ball of radius `ε`, accuracies passing (13.1.46), and the ratio `ρ_k = 1`. -/
+private theorem slit_arqpDAStep (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε < ρ)
+    (hβ : ε ^ P.q / P.q ! ≤ β) (hβ1 : β ≤ 2 * ε ^ P.q / P.q !)
+    (hσ54 : σ k / ((P.p + 1)! : ℝ) ≤ 1 / (2 * P.q !)) (hx : ⟪e₂, x k⟫ = 0)
+    (hδ : ∀ j ∈ Finset.Icc 1 P.q, δ k j = ε) (hδ1 : δ (k + 1) = δs k) (hδ₁ : δ₁ k = δ k)
+    (hδs : ∀ j ∈ Finset.Icc 1 P.q, δs k j = ε) (hdd : ∀ j, dd k j = (P.ς * ε) • e₁)
+    (hjk : jk k = P.q)
+    (hdec : ∀ j ∈ Finset.Icc 1 P.p, ∀ d, (D k).taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫)
+    (hs : s k = t • e₁)
+    (hmin : ∀ c : ℝ, regularizedModel (D k) P.p (σ k) (s k) ≤
+      regularizedModel (D k) P.p (σ k) (c • e₁))
+    (hmodel : ∀ ℓ ∈ Finset.Icc 1 P.q, ∀ d, ‖d‖ ≤ ε → ⟪e₂, d⟫ = 0 →
+      (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)).taylorDecrement ℓ d ≤ 0)
+    (hs1 : ‖s k‖ < 1) (hhk : ∀ i ∈ Finset.Icc 1 P.p, h k i ≤ P.κs * ‖s k‖ ^ (P.p - i + 1))
+    (hacc : ¬ acc k) (hx1 : x (k + 1) = x k + s k) (hσ1 : σ (k + 1) = σ k)
+    (hσk : P.σmin ≤ σ k) (hh1 : h (k + 1) = h k) (hρ : ρr k = 1) :
+    ARqpDAStep (slitSet ρ) P (fun _ => ε) x σ δ δ₁ δs h D dd jk s acc ρr k := by
+  have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
+  have hς := P.ς_pos
+  have hς1 := P.ς_le_one
+  have hqf : (0 : ℝ) < P.q ! := by positivity
+  have hβ0 : 0 < β := lt_of_lt_of_le (by positivity) hβ
+  have hσ0 : 0 ≤ σ k := P.σmin_pos.le.trans hσk
+  have hη : P.η₁ ≤ 1 := P.η₁_le_η₂.trans P.η₂_lt_one.le
+  have hdv : ∀ j ∈ Finset.Icc 1 P.q, (D k).taylorDecrement j (dd k j) = P.ς * (β * ε) :=
+    fun j hj => by
+      rw [hdd, hdec j (P.Icc_q_subset hj), inner_e₁_smul, inner_e₂_smul_e₁]; ring
+  have hfail : ¬ arPass P (fun _ => ε) D δ₁ dd k P.q := by
+    rw [arPass, hdv _ hqm, hδ₁, hδ _ hqm, not_le]
+    have : ε * ε ^ P.q / P.q ! / 2 < β * ε := by
+      rw [show ε * ε ^ P.q / P.q ! / 2 = ε ^ P.q / P.q ! / 2 * ε by ring]
+      exact mul_lt_mul_of_pos_right (by linarith [div_pos (pow_pos hε P.q) hqf]) hε
+    rw [show P.ς * ε * ε ^ P.q / P.q ! / 2 = P.ς * (ε * ε ^ P.q / P.q ! / 2) by ring]
+    exact mul_lt_mul_of_pos_left this hς
+  have hpass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < P.q → arPass P (fun _ => ε) D δ₁ dd k j := by
+    intro j hj hlt
+    rw [arPass, hdv j hj, hδ₁, hδ j hj]
+    have h1 := slit_pow_le hε.le hε4 hlt
+    have h2 : β * ε ≤ ε * ε ^ j / j ! / 2 := by
+      rw [show ε * ε ^ j / j ! / 2 = ε ^ j / j ! / 2 * ε by ring]
+      have e : 2 * ε ^ P.q / P.q ! = 2 * (ε ^ P.q / P.q !) := by ring
+      exact mul_le_mul_of_nonneg_right (by linarith) hε.le
+    rw [show P.ς * ε * ε ^ j / j ! / 2 = P.ς * (ε * ε ^ j / j ! / 2) by ring]
+    exact mul_le_mul_of_nonneg_left h2 hς.le
+  have hxs : ⟪e₂, x k + s k⟫ = 0 := by rw [inner_add_right, hx, hs, inner_e₂_smul_e₁, add_zero]
+  refine ⟨⟨fun j hj => by rw [hδ₁, hδ j hj]; exact hε, fun j _ => by rw [hδ₁],
+    fun j _ hlt => by rw [hδ₁] at hlt; exact absurd hlt (lt_irrefl _),
+    fun j _ => ⟨0, by rw [hδ₁]; norm_num⟩, fun j hj => ?_⟩,
+    fun hp => absurd (hp _ hqm) hfail, fun _ => ?_, fun _ => ?_, fun _ => ?_, fun _ => hh1,
+    fun _ hr' => absurd hr' (by rw [hρ]; exact not_lt.2 hη), fun ha' => absurd ha' hacc,
+    fun ha' => absurd ha' hacc, fun ha' => absurd ha' hacc, fun ha' => absurd ha' hacc⟩
+  · -- the Step-1 displacements
+    rw [hδ₁, hδ j hj]
+    have hn : dd k j ∈ closedBall (0 : EuclideanSpace ℝ (Fin 2)) ε := by
+      rw [hdd, mem_closedBall_zero_iff, norm_smul_e₁, abs_of_pos (by positivity)]
+      nlinarith
+    refine ⟨⟨hn, by rw [hdd]; exact smul_e₁_mem_slitSet hx _⟩, ?_⟩
+    rw [hdv j hj]
+    change P.ς * taylorMeasure (D k) j ε _ ≤ _
+    rw [slit_measure_lt hβ0.le hε.le hερ hx (hdec j (P.Icc_q_subset hj))]
+  · -- Step 2
+    refine ⟨by rw [hjk]; exact hqm, by rw [hjk]; exact hfail,
+      fun j hj hlt => hpass_lt j hj (by rw [hjk] at hlt; exact hlt),
+      fun j hj hlt => absurd (Finset.mem_Icc.1 hj).2 (by rw [hjk] at hlt; omega), ?_,
+      Or.inl hxs, ?_, Or.inr fun ℓ hℓ => ?_, iff_of_false hacc ?_⟩
+    · -- (13.1.54)
+      rw [hjk, hδ₁, hδ _ hqm, arModelDec_eq, hdec _ (Finset.mem_Icc.2 ⟨P.one_le_p, le_rfl⟩),
+        hdd, inner_e₁_smul, inner_e₂_smul_e₁, norm_smul_e₁, abs_of_pos (by positivity)]
+      have hpow : (P.ς * ε) ^ (P.p + 1) ≤ P.ς * ε ^ (P.q + 1) := by
+        rw [mul_pow]
+        exact mul_le_mul (pow_le_of_le_one hς.le hς1 (by omega))
+          (pow_le_pow_of_le_one hε.le (by linarith) (by have := P.q_le_p; omega))
+          (by positivity) hς.le
+      have h3 : σ k / ((P.p + 1)! : ℝ) * (P.ς * ε) ^ (P.p + 1) ≤
+          1 / (2 * P.q !) * (P.ς * ε ^ (P.q + 1)) :=
+        mul_le_mul hσ54 hpow (by positivity) (by positivity)
+      have h2 : P.ς * (ε ^ P.q / P.q ! * ε) ≤ P.ς * (β * ε) :=
+        mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right hβ hε.le) hς.le
+      have e1 : P.ς * ε * ε ^ P.q / P.q ! / 4 = 1 / (4 * P.q !) * (P.ς * ε ^ (P.q + 1)) := by
+        rw [pow_succ]; field_simp
+      have e2 : P.ς * (ε ^ P.q / P.q ! * ε) = 4 * (1 / (4 * P.q !) * (P.ς * ε ^ (P.q + 1))) := by
+        rw [pow_succ]; field_simp
+      have e3 : 1 / (2 * P.q !) * (P.ς * ε ^ (P.q + 1)) =
+          2 * (1 / (4 * P.q !) * (P.ς * ε ^ (P.q + 1))) := by field_simp; ring
+      have : 0 ≤ 1 / (4 * P.q !) * (P.ς * ε ^ (P.q + 1)) := by positivity
+      have h4 : P.ς * (β * ε) - σ k / ((P.p + 1)! : ℝ) * (P.ς * ε) ^ (P.p + 1) =
+          β * (P.ς * ε) + 0 - σ k / ((P.p + 1)! : ℝ) * (P.ς * ε) ^ (P.p + 1) := by ring
+      linarith
+    · simp only [arModelDec]
+      have := hmin (P.ς * ε)
+      rw [hdd]
+      linarith
+    · have hℓ' : ∀ d ∈ closedBall (0 : EuclideanSpace ℝ (Fin 2)) ε ∩
+          {e | x k + s k + e ∈ slitSet ρ},
+          (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)).taylorDecrement ℓ d ≤ 0 :=
+        fun d hd => hmodel ℓ hℓ d (mem_closedBall_zero_iff.1 hd.1)
+          (inner_e₂_eq_zero_of_mem hxs hd.2 ((mem_closedBall_zero_iff.1 hd.1).trans_lt hερ))
+      rw [hδs ℓ hℓ]
+      have h0 : (0 : EuclideanSpace ℝ (Fin 2)) ∈ closedBall 0 ε ∩
+          {e | x k + s k + e ∈ slitSet ρ} :=
+        ⟨mem_closedBall_self hε.le, by simpa using smul_e₁_mem_slitSet (ρ := ρ) hxs 0⟩
+      refine ⟨⟨hε, by linarith⟩, 0, ⟨h0, ?_⟩, ?_⟩
+      · rw [FormalMultilinearSeries.taylorDecrement_zero_right]
+        exact mul_nonpos_of_nonneg_of_nonpos hς.le (decrementMeasure_le ⟨0, h0⟩ hℓ')
+      · rw [FormalMultilinearSeries.taylorDecrement_zero_right]
+        have := P.θ_pos
+        positivity
+    · rintro ⟨-, i, hi, hlt⟩
+      linarith [hhk i hi]
+  · rw [hρ, hx1, hσ1]
+    exact arAcceptance_of_one_le P.toARParams le_rfl _ _ hσk hσ0
+  · rw [hδ1, hρ, ite_eq_left ⟨hη, hs1⟩]
+
+/-- **An accuracy-improving iteration at a flat point of the line** (the continuation of the slit
+example): at a point of the line where the Taylor decrements are `⟪e₂, d⟫` at all orders
+`1, …, p`, with radii `δ_k = δ^{(1)}_k = ε < ρ` and zero Step-1 displacements, the test (13.1.53)
+holds at every order, and Step 5 keeps the iterate, the weight and the radii and multiplies the
+accuracies by `γ_h`. -/
+private theorem slit_acc_step (hε : 0 < ε) (hερ : ε < ρ) (hx : ⟪e₂, x k⟫ = 0)
+    (hδ : ∀ j ∈ Finset.Icc 1 P.q, δ k j = ε) (hδ₁ : δ₁ k = δ k) (hdd : ∀ j, dd k j = 0)
+    (hdec : ∀ j ∈ Finset.Icc 1 P.p, ∀ d, (D k).taylorDecrement j d = ⟪e₂, d⟫)
+    (hacc : acc k) (hx1 : x (k + 1) = x k) (hδ1 : δ (k + 1) = δ k) (hσ1 : σ (k + 1) = σ k)
+    (hh1 : ∀ i, h (k + 1) i = P.γh * h k i) :
+    ARqpDAStep (slitSet ρ) P (fun _ => ε) x σ δ δ₁ δs h D dd jk s acc ρr k := by
+  have hς := P.ς_pos
+  have hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P (fun _ => ε) D δ₁ dd k j := fun j hj => by
+    rw [arPass, hdd, FormalMultilinearSeries.taylorDecrement_zero_right, hδ₁, hδ j hj]
+    positivity
+  refine ⟨⟨fun j hj => by rw [hδ₁, hδ j hj]; exact hε, fun j _ => by rw [hδ₁],
+    fun j _ hlt => by rw [hδ₁] at hlt; exact absurd hlt (lt_irrefl _),
+    fun j _ => ⟨0, by rw [hδ₁]; norm_num⟩, fun j hj => ?_⟩,
+    fun _ => hacc, fun ⟨j, hj, hj'⟩ => absurd (hpass j hj) hj', fun h' => absurd hacc h',
+    fun h' => absurd hacc h', fun h' => absurd hacc h', fun h' => absurd hacc h',
+    fun _ => hx1, fun _ => hδ1, fun _ => hσ1, fun _ => hh1⟩
+  rw [hδ₁, hδ j hj, hdd]
+  have h0 : (0 : EuclideanSpace ℝ (Fin 2)) ∈ closedBall 0 ε ∩ {e | x k + e ∈ slitSet ρ} :=
+    ⟨mem_closedBall_self hε.le, by simpa using smul_e₁_mem_slitSet (ρ := ρ) hx 0⟩
+  refine ⟨h0, ?_⟩
+  rw [FormalMultilinearSeries.taylorDecrement_zero_right]
+  refine mul_nonpos_of_nonneg_of_nonpos hς.le (decrementMeasure_le ⟨0, h0⟩ fun d hd => ?_)
+  rw [hdec j (P.Icc_q_subset hj), inner_e₂_eq_zero_of_mem hx hd.2
+    ((mem_closedBall_zero_iff.1 hd.1).trans_lt hερ)]
+
+/-- The weight `σ = (3/(p+2))^p` of the slit example satisfies `σ/(p+1)! ≤ 1/(2 q!)` for
+`q ≤ p`. -/
+private theorem slit_sigma_le {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
+    (3 / ((p : ℝ) + 2)) ^ p / ((p + 1)! : ℝ) ≤ 1 / (2 * q !) := by
+  have hσ1 : (3 / ((p : ℝ) + 2)) ^ p ≤ 1 := by
+    rcases Nat.eq_zero_or_pos p with rfl | hp
+    · simp
+    have : (1 : ℝ) ≤ p := by exact_mod_cast hp
+    exact pow_le_one₀ (by positivity) (by rw [div_le_one (by positivity)]; linarith)
+  have hσ0 : 0 ≤ (3 / ((p : ℝ) + 2)) ^ p := by positivity
+  have h2 : (2 * q ! : ℝ) ≤ (p + 1)! := by
+    have h1 : 2 * q ! ≤ (q + 1)! := by
+      rw [Nat.factorial_succ]; exact Nat.mul_le_mul_right _ (by omega)
+    exact_mod_cast h1.trans (Nat.factorial_le (by omega))
+  rw [div_le_div_iff₀ (by positivity) (by positivity), one_mul]
+  nlinarith
+
+end SlitStep
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpIDA-SC row in the
+lower-bound mode of the radii control (the "otherwise" order `ε^{-q(p+1)/p}`) for every
+`2 ≤ q ≤ p`, with a closed nonconvex feasible set in `ℝ²` and exact derivatives. There are
+`f_low`, `L ≥ 1` and `ε₀ > 0` such that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpIDA
+constants with orders `p, q`, weight `σ₀ = (3/(p+2))^p`, initial radii `δ₀ = ε` and initial
+accuracies `h_{0,i} ≤ κ_s ε^{p-i+1}`, there are `ρ ∈ (ε, 2ε]`, the feasible set
+`X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1}` (`v 1` is the second coordinate; a line and a parallel
+half-plane at distance `ρ`), `f` with
+f.bB and f.D0pL (all `L_{f,j} = L`) and an ARqpIDA-SC run on `X` with exact derivatives from
+`x₀ = 0` satisfying the radii control in the lower-bound mode (`Chapter13.RadiiControlOf False`
+for every `L̄ ≥ 1`; all radii are `ε`), whose first iterate that is `(ε, δ)`-approximately optimal
+on `X` for some radii `δ ∈ (0, 1]^q` (`Chapter13.arTest_feasible`) is `x_{k_ε}`,
+`k_ε = ⌈ε^{-q(p+1)/p}⌉`, after `k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` function and derivative evaluations.
+
+The run follows the slow example of Theorem 12.2.17 (`r = p`) on the line `v 1 = 0`:
+`f(v) = G(v 0) + H(v 1)` with gradient spikes `G'(x_k) = -β_k`,
+`β_k = (ε^q + ε^q (k_ε - k)/k_ε)/q!`, steps the minimizers of the model on the line (admissible
+Step-2 steps, since (13.1.55)–(13.1.57) are local conditions, but not global minimizers of the
+model on `X`, which are in the half-plane), `σ_k = σ₀`, `ρ_k = 1`, and `H'(0) = -1`, so that
+the half-plane lowers the Taylor models by at least `ρ > ε`. Radii `δ < ρ` only see the line,
+where the measure of order `q` is `β_k δ`; with `ρ^{q-1} = ε^{q-1} (1 + 1/k_ε)` this exceeds
+`ε δ^q/q!` for every `δ < ρ` exactly when `k < k_ε`, and radii `δ ≥ ρ` reach the half-plane. So
+the criterion fails at every radius before `k_ε`, while the Step-1 and Step-2 radii `ε < ρ` only
+see the line, where the model measures at the steps vanish (Example 12.1.3). After `k_ε` one more
+step reaches a point where all derivatives of `G` vanish, and the run continues with
+accuracy-improving iterations there. The cases `q = 2 < p` (with `X ≠ ℝⁿ`) and `3 ≤ q < p` are
+not reached by the book's reduction to unconstrained problems: on `ℝⁿ` the order is not attained
+for `q = 2 < p` (`theorem_14_2_4_arqpida_le_two`), and for `3 ≤ q < p` the case `X = ℝⁿ` is open
+(see the module doc). -/
+theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 2 ≤ q) (hqp : q ≤ p) :
+    ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
+      P.p = p → P.q = q → P.σ₀ = (3 / ((p : ℝ) + 2)) ^ p → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = ε) →
+      (∀ i ∈ Finset.Icc 1 p, P.h₀ i ≤ P.κs * ε ^ (p - i + 1)) →
+      ∃ (ρ : ℝ) (X : Set (EuclideanSpace ℝ (Fin 2))) (f : EuclideanSpace ℝ (Fin 2) → ℝ),
+        ε < ρ ∧ ρ ≤ 2 * ε ∧ X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1} ∧ IsClosed X ∧
+        (∀ y, flow ≤ f y) ∧ AssumptionD0pL f p (fun _ => L) ∧
+        ∃ (x : ℕ → EuclideanSpace ℝ (Fin 2)) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ)
+          (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ)
+          (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 2)) (jk : ℕ → ℕ)
+          (s : ℕ → EuclideanSpace ℝ (Fin 2)) (acc : ℕ → Prop),
+          algorithm_13_1_2_feasible f X (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
+            acc ∧
+          (∀ k, D k = ftaylorSeries ℝ f (x k)) ∧
+          (∀ Lb : ℝ, 1 ≤ Lb → ∀ k, RadiiControlOf False P (fun _ => ε) Lb σ δs s acc k) ∧
+          IsFirstHit (arTest_feasible f X P (fun _ => ε) x)
+            ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ ∧
+          ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤
+            (derivEvalCount (fun i => ¬ acc i) ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) ∧
+          ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤ (derivEvalCount
+            (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i))
+              ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) := by
+  have hq1 : 1 ≤ q := by omega
+  have hp1 : 1 ≤ p := hq1.trans hqp
+  have hp0 : p ≠ 0 := by omega
+  have hpR : (0 : ℝ) < p := by exact_mod_cast hp1
+  set σI : ℝ := (3 / ((p : ℝ) + 2)) ^ p with hσI
+  have hσI0 : 0 < σI := by positivity
+  have hσI1 : σI ≤ 1 := by
+    have : (1 : ℝ) ≤ p := by exact_mod_cast hp1
+    exact pow_le_one₀ (by positivity) (by rw [div_le_one (by positivity)]; linarith)
+  have hpf : (0 : ℝ) < p ! := by positivity
+  have hqf : (0 : ℝ) < q ! := by positivity
+  obtain ⟨LG, BG, hLG, hBG, hGint⟩ := exists_slitGrad_interpolant hq1 hqp hσI0
+  obtain ⟨LH, BH, hLH, hBH, H, hHc, hHL, hHB, hHd⟩ := exists_slitWall p hp1
+  set L : ℝ := max 1 (max LG BG) + max 1 (max LH BH) with hL
+  refine ⟨-(BG + BH), L, min (1 / 4) (σI / (4 * p !)), ?_, by positivity,
+    fun ε hε hε0 P hPp hPq hσ hδ₀ hh₀ => ?_⟩
+  · have := le_max_left 1 (max LG BG); have := le_max_left 1 (max LH BH); linarith
+  have hε4 : ε ≤ 1 / 4 := hε0.trans (min_le_left _ _)
+  have hεσ : ε ≤ σI / (4 * p !) := hε0.trans (min_le_right _ _)
+  have hε1 : ε ≤ 1 := by linarith
+  -- the data of the slow gradient example
+  set e : ℝ := (q : ℝ) * (p + 1) / p with he
+  set κ : ℕ := ⌈ε ^ (-e)⌉₊ with hκ
+  have hκge : ε ^ (-e) ≤ κ := Nat.le_ceil _
+  have hκ1 : 1 ≤ κ := Nat.one_le_iff_ne_zero.2 (Nat.ceil_pos.2 (Real.rpow_pos_of_pos hε _)).ne'
+  have hκpos : (0 : ℝ) < κ := by exact_mod_cast hκ1
+  set β : ℕ → ℝ := fun k => (ε ^ q + ε ^ q * ((κ : ℝ) - k) / κ) / q ! with hβ
+  set ts : ℕ → ℝ := fun k => (p ! * β k / σI) ^ (1 / (p : ℝ)) with hts
+  set ξ : ℕ → ℝ := fun k => ∑ i ∈ Finset.range k, ts i with hξ
+  have hξ1 : ∀ k, ξ (k + 1) = ξ k + ts k := fun k => Finset.sum_range_succ _ _
+  obtain ⟨G, hGc, hGL, hGB, hGs, hGz, hGv⟩ :=
+    hGint ε κ ξ β hε hε1 rfl (fun _ => rfl) fun k _ => hξ1 k
+  have hβb : ∀ k ≤ κ, ε ^ q / q ! ≤ β k ∧ β k ≤ 2 * ε ^ q / q ! := fun k hk => by
+    have hk' : (k : ℝ) ≤ κ := by exact_mod_cast hk
+    have h0 : 0 ≤ ε ^ q * ((κ : ℝ) - k) / κ :=
+      div_nonneg (mul_nonneg (by positivity) (by linarith)) hκpos.le
+    have h1 : ε ^ q * ((κ : ℝ) - k) / κ ≤ ε ^ q := by
+      rw [div_le_iff₀ hκpos]; nlinarith [Nat.cast_nonneg (α := ℝ) k, pow_pos hε q]
+    exact ⟨div_le_div_of_nonneg_right (by linarith) hqf.le,
+      div_le_div_of_nonneg_right (by linarith) hqf.le⟩
+  have hβlt : ∀ k < κ, ε ^ q * (1 + 1 / κ) / q ! ≤ β k := fun k hk => by
+    have hk' : (k : ℝ) + 1 ≤ κ := by exact_mod_cast hk
+    refine div_le_div_of_nonneg_right ?_ hqf.le
+    have : ε ^ q * (1 / κ) ≤ ε ^ q * ((κ : ℝ) - k) / κ := by
+      rw [mul_div_assoc]
+      exact mul_le_mul_of_nonneg_left (div_le_div_of_nonneg_right (by linarith) hκpos.le)
+        (by positivity)
+    nlinarith
+  have hβκ : β κ = ε ^ q / q ! := by simp only [hβ, sub_self, mul_zero, zero_div, add_zero]
+  have hβpos : ∀ k ≤ κ, 0 < β k := fun k hk => lt_of_lt_of_le (by positivity) (hβb k hk).1
+  -- the steps
+  have htsp : ∀ k ≤ κ, ts k ^ p = p ! * β k / σI := fun k hk => by
+    have := hβpos k hk
+    simp only [hts]
+    rw [one_div, Real.rpow_inv_natCast_pow (by positivity) hp0]
+  have hts0 : ∀ k ≤ κ, 0 < ts k := fun k hk => by
+    have := hβpos k hk
+    exact Real.rpow_pos_of_pos (by positivity) _
+  have hts_ge : ∀ k ≤ κ, ε * ((p : ℝ) + 2) / 3 ≤ ts k := fun k hk => by
+    have h1 : (ε * ((p : ℝ) + 2) / 3) ^ p = ε ^ p / σI := by
+      rw [hσI, div_pow, mul_pow, div_pow, div_div_eq_mul_div]
+    have h2 : ε ^ p ≤ p ! * β k := by
+      have hεpq : ε ^ p ≤ ε ^ q := pow_le_pow_of_le_one hε.le hε1 hqp
+      have hfq : (q ! : ℝ) ≤ p ! := by exact_mod_cast Nat.factorial_le hqp
+      have := (hβb k hk).1
+      calc ε ^ p ≤ ε ^ q := hεpq
+        _ = q ! * (ε ^ q / q !) := by field_simp
+        _ ≤ p ! * β k := mul_le_mul hfq this (by positivity) hpf.le
+    have h3 : (ε * ((p : ℝ) + 2) / 3) ^ p ≤ ts k ^ p := by
+      rw [h1, htsp k hk]; exact div_le_div_of_nonneg_right h2 hσI0.le
+    exact (pow_le_pow_iff_left₀ (by positivity) (hts0 k hk).le hp0).1 h3
+  have hts_ge' : ∀ k ≤ κ, ε ≤ ts k := fun k hk => by
+    have := hts_ge k hk
+    have : ε ≤ ε * ((p : ℝ) + 2) / 3 := by
+      have : (1 : ℝ) ≤ p := by exact_mod_cast hp1
+      rw [le_div_iff₀ (by norm_num)]; nlinarith
+    linarith
+  have hts1 : ∀ k ≤ κ, ts k < 1 := fun k hk => by
+    by_contra hcon
+    have h1 : 1 ≤ ts k ^ p := one_le_pow₀ (not_lt.1 hcon)
+    rw [htsp k hk] at h1
+    have h2 : p ! * β k / σI ≤ 1 / 2 := by
+      rw [div_le_iff₀ hσI0]
+      have hb := (hβb k hk).2
+      have hεq : ε ^ q ≤ ε := pow_le_of_le_one hε.le hε1 (by omega)
+      have : β k ≤ 2 * ε := hb.trans (by
+        rw [div_le_iff₀ hqf]
+        have : (1 : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_pos q
+        nlinarith)
+      have h4 : 4 * p ! * ε ≤ σI := by
+        rw [le_div_iff₀ (by positivity)] at hεσ; linarith
+      nlinarith
+    linarith
+  -- the function
+  have hG1 : (fun t => 1 * G t) = G := funext fun t => one_mul _
+  have hH1 : (fun t => 1 * H t) = H := funext fun t => one_mul _
+  obtain ⟨hGr, hGb, hGl⟩ := ridge_const_mul_slow_bounds (G := G) (lam := 1) (e := e₁) hGc hBG
+    hGL hGB one_pos le_rfl norm_e₁.le
+  obtain ⟨hHr, hHb, hHl⟩ := ridge_const_mul_slow_bounds (G := H) (lam := 1) (e := e₂) hHc hBH
+    hHL hHB one_pos le_rfl norm_e₂.le
+  rw [hG1] at hGr hGb hGl
+  rw [hH1] at hHr hHb hHl
+  set f : EuclideanSpace ℝ (Fin 2) → ℝ := ridge G e₁ + ridge H e₂ with hfdef
+  have hfc : ContDiff ℝ p f := hGr.add hHr
+  have hf : AssumptionD0pL f p (fun _ => L) := by
+    refine ⟨hfc, fun j hj => ⟨?_, ?_⟩⟩
+    · have := le_max_left 1 (max LG BG); have := le_max_left 1 (max LH BH); linarith
+    · exact (hGl j hj).add (hHl j hj)
+        (fun y _ => (hGr.of_le (by exact_mod_cast hj)).contDiffAt)
+        (fun y _ => (hHr.of_le (by exact_mod_cast hj)).contDiffAt)
+  have hfb : ∀ y, -(BG + BH) ≤ f y := fun y => by
+    have := hGb y; have := hHb y; simp only [hfdef, Pi.add_apply]; linarith
+  -- the feasible set
+  set ρ : ℝ := ε * (1 + 1 / κ) ^ (((q - 1 : ℕ) : ℝ)⁻¹) with hρ
+  have hq0 : q - 1 ≠ 0 := by omega
+  have hqR : (0 : ℝ) < ((q - 1 : ℕ) : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero hq0
+  have ha1 : 1 < 1 + 1 / (κ : ℝ) := by
+    have : 0 < 1 / (κ : ℝ) := by positivity
+    linarith
+  have ha2 : 1 + 1 / (κ : ℝ) ≤ 2 := by
+    have : 1 / (κ : ℝ) ≤ 1 := by rw [div_le_one hκpos]; exact_mod_cast hκ1
+    linarith
+  have hερ : ε < ρ := lt_mul_of_one_lt_right hε (Real.one_lt_rpow ha1 (inv_pos.2 hqR))
+  have hρ2 : ρ ≤ 2 * ε := by
+    rw [hρ, mul_comm 2]
+    refine mul_le_mul_of_nonneg_left ?_ hε.le
+    calc (1 + 1 / (κ : ℝ)) ^ (((q - 1 : ℕ) : ℝ)⁻¹) ≤ (1 + 1 / (κ : ℝ)) ^ (1 : ℝ) :=
+          Real.rpow_le_rpow_of_exponent_le ha1.le (inv_le_one_of_one_le₀ (by
+            exact_mod_cast Nat.one_le_iff_ne_zero.2 hq0))
+      _ ≤ 2 := by rw [Real.rpow_one]; exact ha2
+  have hρpow : ρ ^ (q - 1) = ε ^ (q - 1) * (1 + 1 / κ) := by
+    rw [hρ, mul_pow, Real.rpow_inv_natCast_pow (by positivity) hq0]
+  have hρ0 : 0 < ρ := hε.trans hερ
+  set X : Set (EuclideanSpace ℝ (Fin 2)) := slitSet ρ with hX
+  have hXeq : X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1} := by
+    ext v; simp only [hX, slitSet, inner_e₂]
+  have hXc : IsClosed X := by
+    rw [hXeq]
+    exact (isClosed_eq (by fun_prop) continuous_const).union (isClosed_le continuous_const
+      (by fun_prop))
+  -- the run
+  subst hPp hPq
+  obtain ⟨xv, hxv⟩ : ∃ xv : ℕ → EuclideanSpace ℝ (Fin 2), ∀ k, xv k = ξ (min k (κ + 1)) • e₁ :=
+    ⟨_, fun _ => rfl⟩
+  obtain ⟨δv, hδv⟩ : ∃ δv : ℕ → ℕ → ℝ, ∀ k, δv k = if k = 0 then P.δ₀ else fun _ => ε :=
+    ⟨_, fun _ => rfl⟩
+  obtain ⟨hv, hhv⟩ : ∃ hv : ℕ → ℕ → ℝ, ∀ k, hv k = fun i => P.γh ^ (k - (κ + 1)) * P.h₀ i :=
+    ⟨_, fun _ => rfl⟩
+  obtain ⟨Dv, hDv⟩ : ∃ Dv : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ,
+      ∀ k, Dv k = ftaylorSeries ℝ f (xv k) := ⟨_, fun _ => rfl⟩
+  obtain ⟨ddv, hddv⟩ : ∃ ddv : ℕ → ℕ → EuclideanSpace ℝ (Fin 2),
+      ∀ k, ddv k = fun _ => if k ≤ κ then (P.ς * ε) • e₁ else 0 := ⟨_, fun _ => rfl⟩
+  obtain ⟨sv, hsv⟩ : ∃ sv : ℕ → EuclideanSpace ℝ (Fin 2),
+      ∀ k, sv k = if k ≤ κ then ts k • e₁ else 0 := ⟨_, fun _ => rfl⟩
+  have hxle : ∀ k ≤ κ + 1, xv k = ξ k • e₁ := fun k hk => by rw [hxv, min_eq_left hk]
+  have hxgt : ∀ k, κ + 1 ≤ k → xv k = ξ (κ + 1) • e₁ := fun k hk => by rw [hxv, min_eq_right hk]
+  have hx1 : ∀ k, ⟪e₂, xv k⟫ = 0 := fun k => by rw [hxv, inner_e₂_smul_e₁]
+  have hHk : ∀ k, IsSpikeJetOf P.p H 1 ⟪e₂, xv k⟫ 1 := fun k => by rw [hx1]; exact hHd
+  have hGk : ∀ k ≤ κ, IsSpikeJetOf P.p G 1 ⟪e₁, xv k⟫ (β k) := fun k hk => by
+    rw [hxle k (by omega), inner_e₁_smul]; exact hGs k hk
+  have hGz' : ∀ k, κ < k → IsSpikeJetOf P.p G 1 ⟪e₁, xv k⟫ 0 := fun k hk => by
+    rw [hxgt k hk, inner_e₁_smul]; exact hGz
+  have hdecT : ∀ k ≤ κ, ∀ j ∈ Finset.Icc 1 P.p, ∀ d,
+      (Dv k).taylorDecrement j d = β k * ⟪e₁, d⟫ + ⟪e₂, d⟫ := fun k hk j hj d => by
+    rw [hDv, taylorDecrement_slit hGc hHc (hGk k hk) (hHk k) (Finset.mem_Icc.1 hj).1
+      (Finset.mem_Icc.1 hj).2, one_mul]
+  have hdecZ : ∀ k, κ < k → ∀ j ∈ Finset.Icc 1 P.p, ∀ d,
+      (Dv k).taylorDecrement j d = ⟪e₂, d⟫ := fun k hk j hj d => by
+    rw [hDv, taylorDecrement_slit hGc hHc (hGz' k hk) (hHk k) (Finset.mem_Icc.1 hj).1
+      (Finset.mem_Icc.1 hj).2, one_mul, zero_mul, zero_add]
+  have hfline : ∀ c : ℝ, f (c • e₁) = G c + H 0 := fun c => by
+    simp only [hfdef, Pi.add_apply, ridge_apply, inner_e₁_smul, inner_e₂_smul_e₁]
+  have hxs : ∀ k ≤ κ, xv (k + 1) = xv k + sv k := fun k hk => by
+    rw [hxle (k + 1) (by omega), hxle k (by omega), hsv, ite_eq_left hk, hξ1, add_smul]
+  have hdecs : ∀ k ≤ κ, (Dv k).taylorDecrement P.p (sv k) = β k * ts k := fun k hk => by
+    rw [hdecT k hk _ (Finset.mem_Icc.2 ⟨hp1, le_rfl⟩), hsv, ite_eq_left hk, inner_e₁_smul,
+      inner_e₂_smul_e₁, add_zero]
+  have hρ1 : ∀ k ≤ κ, arqpIDARatio f P Dv xv sv k = 1 := fun k hk => by
+    have hpos : 0 < β k * ts k := mul_pos (hβpos k hk) (hts0 k hk)
+    rw [arqpIDARatio, reductionRatio_def, hdecs k hk, ← hxs k hk, hxle k (by omega),
+      hxle (k + 1) (by omega), hfline, hfline, hGv k hk, hξ1]
+    rw [show G (ξ k) + H 0 - (G (ξ k) - β k * (ξ k + ts k - ξ k) + H 0) = β k * ts k by ring,
+      div_self hpos.ne']
+  -- the model along the line
+  have hmin : ∀ k ≤ κ, ∀ c : ℝ, regularizedModel (Dv k) P.p P.σ₀ (sv k) ≤
+      regularizedModel (Dv k) P.p P.σ₀ (c • e₁) := fun k hk c => by
+    obtain ⟨hm, -, -⟩ := isMinOn_neg_monomial_add_regularization le_rfl hp1 (σ := P.σ₀)
+      (by rw [hσ]; exact hσI0) (hβpos k hk)
+    have e : (β k / (P.σ₀ * (1 - 1)! / P.p !)) ^ (1 / ((P.p - 1 + 1 : ℕ) : ℝ)) = ts k := by
+      rw [Nat.sub_add_cancel hp1, hσ]
+      simp only [hts, Nat.sub_self, Nat.factorial_zero, Nat.cast_one, mul_one]
+      congr 1; field_simp
+    rw [e] at hm
+    rw [hsv, ite_eq_left hk, hDv, regularizedModel_slit_line hp1 hGc hHc (hGk k hk) (hHk k) _
+      (inner_e₂_smul_e₁ _), regularizedModel_slit_line hp1 hGc hHc (hGk k hk) (hHk k) _
+      (inner_e₂_smul_e₁ _), inner_e₁_smul, inner_e₁_smul]
+    exact (add_le_add_iff_left _).2 (isMinOn_iff.1 hm _ (mem_univ _))
+  have hmodel : ∀ k ≤ κ, ∀ ℓ ∈ Finset.Icc 1 P.q, ∀ d, ‖d‖ ≤ ε → ⟪e₂, d⟫ = 0 →
+      (ftaylorSeries ℝ (regularizedModel (Dv k) P.p P.σ₀) (sv k)).taylorDecrement ℓ d ≤ 0 :=
+    fun k hk ℓ hℓ d hd hd1 => by
+      have hℓp : ℓ ≤ P.p := (Finset.mem_Icc.1 hℓ).2.trans P.q_le_p
+      have hσ0 : 0 < P.σ₀ := by rw [hσ]; exact hσI0
+      rw [hsv, ite_eq_left hk, hDv, taylorDecrement_regularizedModel_slit hp1 hGc hHc (hGk k hk)
+        (hHk k) P.σ₀ (ts k) hd1 hℓp]
+      have hm : negMonomialRegModel P.p 1 P.σ₀ (β k) =
+          fun t : ℝ => -β k * t + P.σ₀ * |t| ^ (P.p + 1) / (P.p + 1)! := by
+        funext t; simp [negMonomialRegModel]
+      have ht : ts k = (β k * P.p ! / P.σ₀) ^ (1 / (P.p : ℝ)) := by
+        simp only [hts, hσ]; ring_nf
+      have h0 := taylorMeasure_linearRegModel_eq_zero (p := P.p) (j := ℓ)
+        ⟨(Finset.mem_Icc.1 hℓ).1, hℓp⟩ (hβpos k hk) hσ0 (δ := ε) (Or.inr (by
+          rw [← ht]
+          have := hts_ge k hk
+          nlinarith))
+      have hle := taylorDecrement_le_taylorMeasure
+        (ftaylorSeries ℝ (fun t : ℝ => -β k * t + P.σ₀ * |t| ^ (P.p + 1) / (P.p + 1)!)
+          ((β k * P.p ! / P.σ₀) ^ (1 / (P.p : ℝ)))) ℓ (S := univ) (δ := ε) (d := ⟪e₁, d⟫)
+        ⟨mem_closedBall_zero_iff.2 (by rw [Real.norm_eq_abs]; exact (abs_inner_e₁_le d).trans hd),
+          mem_univ _⟩
+      rw [h0] at hle
+      rw [hm, ht]
+      exact hle
+  -- the iterations
+  have hσ54 : P.σ₀ / ((P.p + 1)! : ℝ) ≤ 1 / (2 * P.q !) := by
+    rw [hσ]; exact slit_sigma_le P.one_le_q P.q_le_p
+  have hstep : ∀ k, ARqpDAStep X P (fun _ => ε) xv (fun _ => P.σ₀) δv δv (fun _ _ => ε) hv Dv
+      ddv (fun _ => P.q) sv (fun k => κ < k) (arqpIDARatio f P Dv xv sv) k := by
+    intro k
+    have hδk : ∀ j ∈ Finset.Icc 1 P.q, δv k j = ε := fun j hj => by
+      rw [hδv]
+      split_ifs
+      · exact hδ₀ j hj
+      · rfl
+    by_cases hk : k ≤ κ
+    · refine slit_arqpDAStep (t := ts k) hε hε4 hερ (hβb k hk).1 (hβb k hk).2 hσ54 (hx1 k) hδk
+        (by rw [hδv, ite_eq_right (Nat.succ_ne_zero k)]) rfl (fun _ _ => rfl)
+        (fun j => by rw [hddv, ite_eq_left hk]) rfl (hdecT k hk)
+        (by rw [hsv, ite_eq_left hk]) (hmin k hk) (hmodel k hk)
+        (by rw [hsv, ite_eq_left hk, norm_smul_e₁, abs_of_pos (hts0 k hk)]; exact hts1 k hk)
+        (fun i hi => ?_) (not_lt.2 hk) (hxs k hk) rfl P.σmin_le_σ₀
+        (by rw [hhv, hhv, Nat.sub_eq_zero_of_le (by omega), Nat.sub_eq_zero_of_le (by omega)])
+        (hρ1 k hk)
+      rw [hhv]
+      dsimp only
+      rw [Nat.sub_eq_zero_of_le (by omega), pow_zero, one_mul, hsv, ite_eq_left hk,
+        norm_smul_e₁, abs_of_pos (hts0 k hk)]
+      exact (hh₀ i hi).trans (mul_le_mul_of_nonneg_left
+        (pow_le_pow_left₀ hε.le (hts_ge' k hk) _) P.κs_pos.le)
+    · have hk' : κ < k := not_le.1 hk
+      refine slit_acc_step hε hερ (hx1 k) hδk rfl (fun j => by rw [hddv, ite_eq_right hk])
+        (hdecZ k hk') hk' (by rw [hxgt k hk', hxgt (k + 1) (by omega)])
+        (by rw [hδv, hδv, ite_eq_right (Nat.succ_ne_zero k), ite_eq_right (by omega)]) rfl
+        fun i => ?_
+      rw [hhv, hhv, show k + 1 - (κ + 1) = k - (κ + 1) + 1 by omega, pow_succ]
+      ring
+  have hrun : algorithm_13_1_2_feasible f X (fun _ => 0) P (fun _ => ε) 0 xv (fun _ => P.σ₀) δv
+      δv (fun _ _ => ε) hv Dv ddv (fun _ => P.q) sv (fun k => κ < k) :=
+    ⟨fun _ _ => ⟨hε, hε1⟩, fun j hj => by rw [hδ₀ j hj], fun _ _ => le_rfl,
+      by rw [hxle 0 (Nat.zero_le _)]; simp [hξ], Or.inl (inner_zero_right _), rfl,
+      by rw [hδv, ite_eq_left rfl], by funext i; rw [hhv]; simp,
+      fun k => by rw [hDv]; exact (jetApprox_self _ _).mono_err fun i _ => by simp, hstep⟩
+  -- the criterion
+  have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
+  have htest : ∀ k ≤ κ, (arTest_feasible f X P (fun _ => ε) xv k ↔ k = κ) := by
+    intro k hk
+    have hdk : ∀ j ∈ Finset.Icc 1 P.q, ∀ d,
+        (ftaylorSeries ℝ f (xv k)).taylorDecrement j d = β k * ⟪e₁, d⟫ + ⟪e₂, d⟫ :=
+      fun j hj d => by rw [← hDv]; exact hdecT k hk j (P.Icc_q_subset hj) d
+    constructor
+    · rintro ⟨δ', hδ', ht'⟩
+      by_contra hne
+      exact slit_not_approx hε hερ hρpow (hβpos k hk).le (hβlt k (lt_of_le_of_ne hk hne))
+        (hx1 k) hq hdk δ' hδ' ht'
+    · rintro rfl
+      exact ⟨fun _ => ε, fun _ _ => ⟨hε, hε1⟩,
+        slit_approx hε hε1 hερ (hβpos _ hk).le hβκ.le (hx1 _) hdk⟩
+  refine ⟨ρ, X, f, hερ, hρ2, hXeq, hXc, hfb, hf, xv, fun _ => P.σ₀, δv, δv, fun _ _ => ε, hv,
+    Dv, ddv, fun _ => P.q, sv, fun k => κ < k, hrun, hDv, fun Lb hLb k _ _ => ⟨fun h => h.elim,
+      fun _ j _ => ?_⟩, ⟨(htest κ le_rfl).2 rfl, fun i hi ht' => hi.ne ((htest i hi.le).1 ht')⟩,
+    ?_, ?_⟩
+  · have hM : 1 ≤ max Lb P.σ₀ := hLb.trans (le_max_left _ _)
+    have h0 : P.ς * P.θ ≤ 1 := mul_le_one_of_le_one P.ς_le_one P.θ_pos.le P.θ_lt_one.le
+    rw [div_le_iff₀ (by positivity)]
+    have h1 : P.ς * P.θ * ε ≤ ε := mul_le_of_le_one_left hε.le h0
+    exact h1.trans (le_mul_of_one_le_right hε.le (by linarith only [hM]))
+  · rw [derivEvalCount_of_forall fun i hi => not_lt.2 hi.le, Nat.cast_add, Nat.cast_one]
+    linarith only [hκge]
+  · rw [derivEvalCount_of_forall fun i hi => Or.inr ⟨not_lt.2 hi.le, by
+      rw [hρ1 i hi.le]; exact P.η₁_le_η₂.trans P.η₂_lt_one.le⟩, Nat.cast_add, Nat.cast_one]
+    linarith only [hκge]
+
+end Slit
+
+end ARqpIDAConstrained
+
 
 end CartisGouldToint.Chapter14

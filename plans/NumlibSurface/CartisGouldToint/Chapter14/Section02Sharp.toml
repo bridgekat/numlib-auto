@@ -31,3 +31,7 @@ source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpEDA-SC row, \"o
 [[node]]
 id = "theorem_14_2_4_sharp_arqpida_otherwise"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row, \"otherwise\" order, q = p ≥ 3); Theorem 12.2.15, Algorithm 13.1.2"
+
+[[node]]
+id = "theorem_14_2_4_sharp_arqpida_otherwise_constrained"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row, \"otherwise\" order, 2 ≤ q ≤ p, feasible set X ≠ ℝⁿ); Theorem 12.2.17, Algorithm 13.1.2"

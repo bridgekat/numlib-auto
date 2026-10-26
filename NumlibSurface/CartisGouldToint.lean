@@ -168,12 +168,10 @@ and on the declarations.
 
 ## Not formalized
 
-* The sharpness of the ARqpIDA-SC row of Theorem 14.2.4 in the lower-bound mode of the radii control
-  for `3 ≤ q < p` and for `q = 2 < p` on `X ≠ ℝⁿ` (on `ℝⁿ` the mode-`False` bound is not attained
-  for `q = 2 < p`, `theorem_14_2_4_arqpida_le_two`); existence and complexity of LENq-SC and TPqp-GC
-  runs under the book's anchored (rather than global) Lipschitz assumptions, and their complexity
-  with the ARqp-SC unit-radii exponents for `q = 2` on `ℝⁿ` (the "otherwise" exponents are
-  proved for every `q`; for `q = 1` only with the additive Phase-1 constants of footnote 114).
+* Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored (rather than
+  global) Lipschitz assumptions, and their complexity with the ARqp-SC unit-radii exponents for
+  `q = 2` on `ℝⁿ` (the "otherwise" exponents are proved for every `q`; for `q = 1` only with the
+  additive Phase-1 constants of footnote 114).
 * The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
   the Gertz–Gill criterion (9.4.8) quoted in §9.4.
 * Discussion without numbered results: the variants of §2.2.3, §4.1.3, §7.2.3, the qualitative parts
