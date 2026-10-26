@@ -181,10 +181,14 @@ and on the declarations.
 
 ## Not formalized
 
-* Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored (rather than
-  global) Lipschitz assumptions, and a bound on the bad outer iterations of TPqp-GC in the order
-  of the ARqp-SC exponents (the ARqp-SC exponents themselves are proved: "otherwise" for every `q`,
-  unit-radius on `ℝⁿ` for `q ≤ 2`, with the additive Phase-1 constants of footnote 114 where the
+* Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored Lipschitz
+  assumptions are proved with the ARqpC-SC exponents `j + 1`
+  (`Chapter14.exists_algorithm_14_3_1_complexity_anchored`,
+  `Chapter14.exists_algorithm_14_3_2_complexity_anchored`); the variants with the ARqp-SC
+  exponents, the certified and strong-contract variants remain under global Lipschitz assumptions.
+  Also not formalized: a bound on the bad outer iterations of TPqp-GC in the order of the ARqp-SC
+  exponents (the ARqp-SC exponents themselves are proved: "otherwise" for every `q`, unit-radius
+  on `ℝⁿ` for `q ≤ 2`, with the additive Phase-1 constants of footnote 114 where the
   multiplicative contract fails).
 * The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
   the Gertz–Gill criterion (9.4.8) quoted in §9.4.

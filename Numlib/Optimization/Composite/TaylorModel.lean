@@ -434,22 +434,21 @@ end Necessity
 
 /-! ### Value remainder -/
 
-/-- **Remainder of the composite model** (proof of Lemma 14.1.6 of [cartis2022evaluation], with
-`L_{w,p} = L_{f,p} + L_{h,0} L_{c,p}` (14.1.27)). If `f`, `c` are `C^p` on the convex set `C`, with
-`∇^p f` `Lf`-Lipschitz and `∇^p c` `Lc`-Lipschitz on `C`, and `h` has Lipschitz constant `Lh`,
-then for `x, x + s ∈ C`,
-`|w(x + s) - T_{w,p}(x, s)| ≤ (Lf + Lh Lc) / (p + 1)! ‖s‖^{p+1}`. (The book's `√m` comes from
-componentwise constants, see `ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean`.) -/
-theorem abs_sub_compositeTaylor_le_of_lipschitz {f : E → ℝ} {c : E → F} {h : F → ℝ} {p : ℕ}
-    {Lf Lc Lh : ℝ} {C : Set E} (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
-    (hc : ∀ y ∈ C, ContDiffAt ℝ p c y) (hLf : IteratedFDerivLipschitzOn f p Lf C)
-    (hLc : IteratedFDerivLipschitzOn c p Lc C) (hLip : HasLipschitzConst h Lh)
-    {x s : E} (hx : x ∈ C) (hxs : x + s ∈ C) :
+/-- **Remainder of the composite model, anchored** (proof of Lemma 14.1.6 of
+[cartis2022evaluation]): as `abs_sub_compositeTaylor_le_of_lipschitz`, with `∇^p f` and `∇^p c`
+only Lipschitz anchored at `x` (`‖∇^p f(y) - ∇^p f(x)‖ ≤ L_f ‖y - x‖` and the same for `c` with
+`L_c`, for `y ∈ C`). -/
+theorem abs_sub_compositeTaylor_le_of_lipschitzAnchored {f : E → ℝ} {c : E → F} {h : F → ℝ}
+    {p : ℕ} {Lf Lc Lh : ℝ} {C : Set E} {x s : E} (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)
+    (hLf : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ Lf * ‖y - x‖)
+    (hLc : ∀ y ∈ C, ‖iteratedFDeriv ℝ p c y - iteratedFDeriv ℝ p c x‖ ≤ Lc * ‖y - x‖)
+    (hLip : HasLipschitzConst h Lh) (hx : x ∈ C) (hxs : x + s ∈ C) :
     |(f (x + s) + h (c (x + s))) -
         (taylorPolynomial f p x s + h ((ftaylorSeries ℝ c x).taylorSum p s))| ≤
       (Lf + Lh * Lc) / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by
-  have h1 := abs_sub_taylorPolynomial_le_of_lipschitz hC hf hLf hx hxs
-  have h2 := norm_sub_taylorPolynomial_le_of_lipschitz hC hc hLc hx hxs
+  have h1 := norm_sub_taylorPolynomial_le_of_lipschitzAnchored hC hf hLf hx hxs
+  have h2 := norm_sub_taylorPolynomial_le_of_lipschitzAnchored hC hc hLc hx hxs
   have h3 : |h (c (x + s)) - h ((ftaylorSeries ℝ c x).taylorSum p s)| ≤
       Lh * (Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1)) :=
     (hLip.abs_sub_le _ _).trans (mul_le_mul_of_nonneg_left h2 hLip.nonneg)
@@ -460,5 +459,23 @@ theorem abs_sub_compositeTaylor_le_of_lipschitz {f : E → ℝ} {c : E → F} {h
     _ ≤ Lf / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) + Lh * (Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1)) :=
         add_le_add h1 h3
     _ = (Lf + Lh * Lc) / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by ring
+
+/-- **Remainder of the composite model** (proof of Lemma 14.1.6 of [cartis2022evaluation], with
+`L_{w,p} = L_{f,p} + L_{h,0} L_{c,p}` (14.1.27)). If `f`, `c` are `C^p` on the convex set `C`, with
+`∇^p f` `Lf`-Lipschitz and `∇^p c` `Lc`-Lipschitz on `C`, and `h` has Lipschitz constant `Lh`,
+then for `x, x + s ∈ C`,
+`|w(x + s) - T_{w,p}(x, s)| ≤ (Lf + Lh Lc) / (p + 1)! ‖s‖^{p+1}`. (The book's `√m` comes from
+componentwise constants, see `ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean`.) -/
+theorem abs_sub_compositeTaylor_le_of_lipschitz {f : E → ℝ} {c : E → F} {h : F → ℝ} {p : ℕ}
+    {Lf Lc Lh : ℝ} {C : Set E} {x s : E} (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
+    (hc : ∀ y ∈ C, ContDiffAt ℝ p c y) (hLf : IteratedFDerivLipschitzOn f p Lf C)
+    (hLc : IteratedFDerivLipschitzOn c p Lc C) (hLip : HasLipschitzConst h Lh)
+    (hx : x ∈ C) (hxs : x + s ∈ C) :
+    |(f (x + s) + h (c (x + s))) -
+        (taylorPolynomial f p x s + h ((ftaylorSeries ℝ c x).taylorSum p s))| ≤
+      (Lf + Lh * Lc) / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) :=
+  abs_sub_compositeTaylor_le_of_lipschitzAnchored hC hf hc
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLf y hy x hx)
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLc y hy x hx) hLip hx hxs
 
 end Optimization

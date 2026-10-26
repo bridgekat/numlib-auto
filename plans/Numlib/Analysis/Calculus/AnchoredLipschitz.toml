@@ -41,3 +41,7 @@ source = "Cartis–Gould–Toint, proof of Lemma 14.3.6 (ii)"
 [[node]]
 id = "IteratedFDerivLipschitzOn.anchored"
 source = "Cartis–Gould–Toint, remark after f.D1qLaB.X"
+
+[[node]]
+id = "IteratedFDerivLipschitzAnchored.lipschitzAt"
+source = "Cartis–Gould–Toint, (14.2.9) at one anchor"

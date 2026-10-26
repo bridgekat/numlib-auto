@@ -1,0 +1,37 @@
+namespace = "CartisGouldToint.Chapter14"
+
+[[node]]
+id = "anchoredConst"
+source = "Cartis–Gould–Toint, assumption f.D1pLaB.X, (14.2.9)–(14.2.10)"
+
+[[node]]
+id = "iteratedFDeriv_zeroCon"
+source = "Cartis–Gould–Toint, §14.3.2 (INNER realized by ARqpC-SC with c = 0)"
+
+[[node]]
+id = "anchoredCompositeBounds_zeroCon"
+source = "Cartis–Gould–Toint, assumption f.D1pLaB.X and the remark after (14.2.10)"
+
+[[node]]
+id = "AssumptionD1qLaBX.anchoredCompositeBounds"
+source = "Cartis–Gould–Toint, assumption f.D1pLaB.X and the remark after (14.2.10)"
+
+[[node]]
+id = "exists_algorithm_14_3_1_complexity_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 for the LENq-SC runs with INNER = ARqp-SC under Φ₂.D1pLaB.X"
+
+[[node]]
+id = "nuAnchoredConst"
+source = "Cartis–Gould–Toint, Lemma 14.3.6 (i), (14.3.60)–(14.3.61)"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_anchored'"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for the TPqp-GC runs with INNER = ARqp-SC under anchored bounds for ν and μ"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for the TPqp-GC runs with INNER = ARqp-SC under c.D1pLB.X, f.D1pLB.X, f.B.Fb"
+
+[[node]]
+id = "anchoredCompositeBounds_zeroCon_of"
+source = "Cartis–Gould–Toint, remark after (14.2.10): the parts of f.D1pLaB.X used by the analysis"

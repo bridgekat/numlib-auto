@@ -499,6 +499,34 @@ theorem radius_inequality_of_measure_gt (hC : Convex ℝ C) (hf : ∀ y ∈ C, C
   refine sub_mul_lt_of_measure_comparison h₁ ?_ h₂
   linarith
 
+/-- **The radius inequality for composite problems, anchored** ([cartis2022evaluation],
+Lemma 14.1.7, corrected): as `radius_inequality_of_compositeTaylorMeasure_gt`, with `∇^p f` and
+`∇^p c` only Lipschitz anchored at `x` (between `x` and the points of `C`). -/
+theorem radius_inequality_of_compositeTaylorMeasure_gt_anchored {F : Type*} [NormedAddCommGroup F]
+    [NormedSpace ℝ F] {c : E → F} {h : F → ℝ} {Lf Lc Lh σmax : ℝ} (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)
+    (hLf : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ Lf * ‖y - x‖)
+    (hLc : ∀ y ∈ C, ‖iteratedFDeriv ℝ p c y - iteratedFDeriv ℝ p c x‖ ≤ Lc * ‖y - x‖)
+    (hLip : HasLipschitzConst h Lh) (hLf0 : 0 ≤ Lf) (hLc0 : 0 ≤ Lc) (hx : x ∈ C)
+    (hxs : x + s ∈ C) (hσ : 0 ≤ σ) (hσmax : σ ≤ σmax) {j : ℕ} (hjp : j ≤ p) {S : Set E}
+    (hS0 : (0 : E) ∈ S) {δ : ℝ} (hδ : 0 ≤ δ) {ε a θ e₀ : ℝ}
+    (h₁ : a * ε * δ ^ j / (j ! : ℝ) - e₀ <
+      compositeTaylorMeasure (ftaylorSeries ℝ f (x + s)) (ftaylorSeries ℝ c (x + s)) h j δ S)
+    (h₂ : compositeTaylorMeasure
+        (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) s)
+        (ftaylorSeries ℝ ((ftaylorSeries ℝ c x).taylorSum p) s) h j δ S ≤
+      θ * ε * δ ^ j / j !) :
+    (a - θ) * ε * δ ^ j / j ! <
+      (Lf + Lh * Lc + σmax) * ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * ‖s‖ ^ (p - ℓ + 1) +
+        2 * Lh * Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) + e₀ := by
+  have h3 := compositeTaylorMeasure_le_of_step_anchored hC hf hc hLf hLc hLip hLf0 hLc0 hx hxs hσ
+    hjp hS0 hδ
+  have hLh := hLip.nonneg
+  have h5 := mul_sum_le_mul_sum_of_factorial (j := j) (p := p) (A' := Lf + Lh * Lc + σmax)
+    (by positivity : 0 ≤ Lf + Lh * Lc + σ) (by linarith) hδ (norm_nonneg s)
+  refine sub_mul_lt_of_measure_comparison h₁ ?_ h₂
+  linarith
+
 /-- **The radius inequality for composite problems** ([cartis2022evaluation], Lemma 14.1.7,
 corrected). Under the hypotheses of `compositeTaylorMeasure_le_of_step` (with `0 ≤ σ ≤ σmax`),
 suppose
@@ -524,13 +552,11 @@ theorem radius_inequality_of_compositeTaylorMeasure_gt {F : Type*} [NormedAddCom
       θ * ε * δ ^ j / j !) :
     (a - θ) * ε * δ ^ j / j ! <
       (Lf + Lh * Lc + σmax) * ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * ‖s‖ ^ (p - ℓ + 1) +
-        2 * Lh * Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) + e₀ := by
-  have h3 := compositeTaylorMeasure_le_of_step hC hf hc hLf hLc hLip hLf0 hLc0 hx hxs hσ hjp hS0 hδ
-  have hLh := hLip.nonneg
-  have h5 := mul_sum_le_mul_sum_of_factorial (j := j) (p := p) (A' := Lf + Lh * Lc + σmax)
-    (by positivity : 0 ≤ Lf + Lh * Lc + σ) (by linarith) hδ (norm_nonneg s)
-  refine sub_mul_lt_of_measure_comparison h₁ ?_ h₂
-  linarith
+        2 * Lh * Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) + e₀ :=
+  radius_inequality_of_compositeTaylorMeasure_gt_anchored hC hf hc
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLf y hy x hx)
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLc y hy x hx) hLip hLf0 hLc0 hx hxs hσ hσmax hjp
+    hS0 hδ h₁ h₂
 
 end Transfer
 

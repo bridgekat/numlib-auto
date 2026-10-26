@@ -85,6 +85,14 @@ theorem mono_const (h : IteratedFDerivLipschitzAnchored f j L A D) (hL : L ≤ L
     IteratedFDerivLipschitzAnchored f j L' A D :=
   h.mono subset_rfl subset_rfl hL
 
+/-- The anchored condition at one anchor `x ∈ A`, in the form used by the anchored Taylor bounds
+(`norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitzAnchored`):
+`‖∇^j f(y) - ∇^j f(x)‖ ≤ L ‖y - x‖` for `y ∈ D`. -/
+theorem lipschitzAt (h : IteratedFDerivLipschitzAnchored f j L A D) {x : E} (hx : x ∈ A) :
+    ∀ y ∈ D, ‖iteratedFDeriv ℝ j f y - iteratedFDeriv ℝ j f x‖ ≤ L * ‖y - x‖ := fun y hy => by
+  rw [norm_sub_rev, norm_sub_rev y]
+  exact h x hx y hy
+
 /-- Sums: the constants add. Both functions are assumed `C^j` on `D ⊇ A`. -/
 theorem add (hf : IteratedFDerivLipschitzAnchored f j L A D)
     (hg : IteratedFDerivLipschitzAnchored g j L' A D) (hfd : ∀ y ∈ D, ContDiffAt ℝ j f y)
