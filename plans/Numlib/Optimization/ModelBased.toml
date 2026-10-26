@@ -1,0 +1,24 @@
+desc = '''
+Building blocks of model-based methods (trust-region and adaptive-regularization families of
+Cartis–Gould–Toint Chapters 2–7 and 12–14), stated for sequences on a real normed / inner product
+space and independent of the particular model:
+
+* `RatioTest`: the achieved-versus-predicted reduction ratio `ρ_k`, acceptance of the trial point,
+  the decrease it guarantees on successful iterations, and the generic "`|ρ_k - 1|` small ⇒ very
+  successful" lemma.
+* `RegularizationUpdate` / `TrustRegionUpdate`: the parameter update rules (2.4.4) / (2.3.7) as
+  interval-valued (nondeterministic) predicates, with the generic consequences shared by all
+  chapters: `σ_k ≥ σ_min`, `σ_k ≤ max(σ_0, γ₃ σ̄)` once large `σ` forces success, `Δ_k ≥
+  min(Δ_0, γ₁ θ_k)` once small `Δ` forces success, and the counting lemmas of
+  `Complexity/ParameterCount` specialized to these rules.
+* `TaylorModel`: the regularized `p`-th order Taylor model `T_p(x,s) + σ/(p+1)! ‖s‖^{p+1}` and the
+  three estimates on which AR1/AR2/ARp/ARqp analyses rest: Taylor decrease from model decrease
+  (Lemmas 3.3.1, 4.1.1), ratio bound from Lipschitz continuity (Lemmas 2.4.2, 3.3.2, 4.1.2), and
+  step-length lower bounds from approximate model stationarity (Lemmas 3.3.3, 3.3.8, 4.1.3).
+* `QuadraticModel`: quadratic models `⟨g, s⟩ + ½ B[s,s]` with the Cauchy-point and eigenpoint
+  decreases (Lemmas 2.3.2, 3.2.3) and the trust-region ratio bounds (Lemmas 2.3.3, 3.2.4).
+
+Algorithms themselves (TR1, AR1, TR2, AR2, TRε, iRN, ARp, TRq, …) are defined in the surface
+(`NumlibSurface/CartisGouldToint`), each as a run predicate whose fields are instances of these
+blocks; their analyses are short combinations of the backbone lemmas.
+'''

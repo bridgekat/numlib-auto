@@ -1,0 +1,77 @@
+namespace = "LineSearch"
+desc = '''
+Steepest descent with backtracking-Armijo and exact line searches, with explicit evaluation counts
+(Cartis–Gould–Toint Section 2.2). Uses the existing `LineSearch.Armijo` predicate with
+`d = -∇f(x)` (so `f' x d = -‖∇f x‖²`) and the Lipschitz-gradient Taylor bound (A.19) with `p = 1`.
+
+Backtracking: trial steps `t_ini 2^{-i}`, `i = 0, 1, …`; the accepted index is the least `i` for which
+Armijo holds (`Nat.find`, which exists once `t_ini 2^{-i} ≤ 2(1-α)/L`).
+
+Exact line search: two variants are provided, because the book's definition (2.2.26) (global
+minimizer of `t ↦ f(x - t ∇f(x))` on `t ≥ 0`, first one if several) is *not* what its sharpness
+example (Theorem 2.2.5, Lemma B.2.6) realizes — that example only makes `x_{k+1}` the *first
+local minimizer* (first stationary point, slope negative before) along the ray. Both variants
+satisfy the decrease estimate of Theorem 2.2.4 (`t_k ≥ 1/L`, decrease `≥ ‖∇f‖²/(2L)`).
+'''
+
+[[node]]
+id = "armijo_neg_gradient_of_le"
+kind = "theorem"
+desc = '''
+Lemma 2.2.1 core. On a real inner product space, if `f` is differentiable with
+`‖gradient f y - gradient f z‖ ≤ L ‖y - z‖` (`L > 0`) and `α < 1`, then for all
+`t ∈ [0, 2 (1 - α) / L]`: `f (x - t • gradient f x) ≤ f x - α * t * ‖gradient f x‖ ^ 2`
+(i.e. `Armijo f (fderiv ℝ f) α x (-gradient f x) t`).
+'''
+deps = ["Armijo", "abs_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, Lemma 2.2.1"
+
+[[node]]
+id = "backtrackingIndex"
+kind = "def"
+desc = '''
+`backtrackingIndex f α tini x : ℕ` — the least `i` such that
+`f (x - (tini * 2⁻¹ ^ i) • gradient f x) ≤ f x - α * (tini * 2⁻¹ ^ i) * ‖gradient f x‖ ^ 2`
+(classical `Nat.find`, with junk value `0` if no such `i`). API: `backtrackingIndex_spec`
+(Armijo holds at the accepted step when some index works) and minimality.
+'''
+source = "Cartis–Gould–Toint, (2.2.1), Algorithm 2.2.1 Steps 2–3"
+
+[[node]]
+id = "backtrackingIndex_le"
+kind = "theorem"
+desc = '''
+Under the hypotheses of `armijo_neg_gradient_of_le` (`0 < α < 1`, `0 < tini`, `0 < L`):
+`backtrackingIndex f α tini x ≤ ⌈Real.logb 2 (L * tini / (2 * (1 - α)))⌉₊` (the book's (2.2.6), with
+the natural ceiling `⌈·⌉₊` making negative logarithms `0`), and the accepted step
+`t = tini 2^{-i}` satisfies `t ≥ min tini ((1 - α) / L)` (the book's (2.2.7) `t ≥ t_low/2` holds only
+when `tini ≥ t_low/2 = (1-α)/L`; in general the initial trial may already be shorter).
+'''
+deps = ["backtrackingIndex", "armijo_neg_gradient_of_le"]
+source = "Cartis–Gould–Toint, (2.2.6)–(2.2.7)"
+
+[[node]]
+id = "IsFirstLocalLineMin"
+kind = "def"
+desc = '''
+Exact line-search step rules along `-∇f(x)` (`φ t = f (x - t • gradient f x)`):
+`IsExactLineMin f x t : Prop := 0 ≤ t ∧ ∀ τ ≥ 0, φ t ≤ φ τ` (global minimizer on `[0, ∞)`, book
+(2.2.26); tie-breaking by the first minimizer is an additional conjunct
+`∀ τ ∈ Ico 0 t, φ t < φ τ`), and `IsFirstLocalLineMin f x t : Prop := 0 < t ∧ deriv φ t = 0 ∧
+∀ τ ∈ Ico 0 t, deriv φ τ < 0` (first stationary point, `φ` strictly decreasing before it; the
+property established in Lemma B.2.6).
+'''
+source = "Cartis–Gould–Toint, (2.2.26), Lemma B.2.6"
+
+[[node]]
+id = "decrease_ge_of_exactLineMin"
+kind = "theorem"
+desc = '''
+Theorem 2.2.4 core. `f` differentiable on a real inner product space with `L`-Lipschitz gradient,
+`L > 0`, `gradient f x ≠ 0`. If `IsExactLineMin f x t` or `IsFirstLocalLineMin f x t`, then
+`t ≥ 1 / L` (from `0 = ⟪∇f(x), ∇f(x - t ∇f(x))⟫ ≥ ‖∇f(x)‖²(1 - L t)` for the stationary variant;
+directly from the global-minimum property and (2.2.28) for the other) and
+`f x - f (x - t • gradient f x) ≥ ‖gradient f x‖ ^ 2 / (2 L)`.
+'''
+deps = ["IsFirstLocalLineMin", "abs_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, proof of Theorem 2.2.4, (2.2.28)"

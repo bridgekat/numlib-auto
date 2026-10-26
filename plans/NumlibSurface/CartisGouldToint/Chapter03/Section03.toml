@@ -1,0 +1,165 @@
+namespace = "CartisGouldToint.Chapter03"
+desc = '''
+§3.3 Adaptive regularization using second derivatives (AR2). Model
+`m_k(s) = T_{f,2}(x_k, s) + σ_k/6 ‖s‖³ = Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) 2
+(σ k) s` (3.3.1); step conditions (3.3.5)–(3.3.6) on `fderiv ℝ m_k (s k)` and
+`minCurvature (iteratedFDeriv ℝ 2 m_k (s k))`; update `Optimization.ARUpdate` (3.3.8). The Hessian
+display after (3.3.2) has a spurious factor 2 (correct: `∇²m_k(s) = ∇²f(x_k) + σ_k/2 (‖s‖ I +
+s sᵀ/‖s‖)`); nothing depends on it.
+'''
+
+[[node]]
+id = "AR2Params"
+kind = "def"
+desc = '''
+AR2 constants (3.3.3): `Chapter02.ARParams` together with `θ₁ > 0`, `θ₂ > 0`.
+'''
+deps = ["CartisGouldToint.Chapter02.ARParams"]
+source = "Cartis–Gould–Toint, (3.3.3)"
+
+[[node]]
+id = "algorithm_3_3_1"
+kind = "def"
+desc = '''
+Algorithm 3.3.1 (AR2) as a run predicate `IsAR2Run f P ε₁ ε₂ x s σ` (prototype in
+`drafts/cgt/plan-core/Core.lean`): `σ 0 = P.σ₀`; before the first `k` with `stopTest f ε₁ ε₂ (x k)`:
+`m_k (s k) < m_k 0`; `‖fderiv ℝ m_k (s k)‖ ≤ θ₁/2 ‖s k‖²` (3.3.5); if `ε₂ ≠ none`,
+`-θ₂ ‖s k‖ ≤ minCurvature (iteratedFDeriv ℝ 2 m_k (s k))` (3.3.6); ratio (3.3.7) with
+`(ftaylorSeries ℝ f (x k)).taylorDecrement 2 (s k)`; acceptance; `ARUpdate` (3.3.8). The book
+requires `ε₁ ∈ (0,1]`. Existence (part of node): for `C²` `f` from any `x₀` (a global minimizer of
+`m_k`, `Optimization.exists_isMinOn_regularizedModel` / `Subproblem.exists_isMinOn_regModel`, is
+admissible whenever the test fails).
+'''
+deps = ["AR2Params", "IsApproxSecondOrderMinimizer", "Optimization.UntilHit", "Optimization.regularizedModel", "Optimization.ARUpdate", "Optimization.reductionRatio", "Optimization.exists_isMinOn_regularizedModel", "Optimization.regularizedModel_two_eq_regModel", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 3.3.1"
+
+[[node]]
+id = "lemma_3_3_1"
+kind = "theorem"
+desc = '''
+Lemma 3.3.1. At every iteration `k` (before termination) of an AR2 run:
+`T_{f,2}(x_k, 0) - T_{f,2}(x_k, s_k) > σ_k/6 ‖s_k‖³` (3.3.13).
+'''
+deps = ["algorithm_3_3_1", "Optimization.taylorDecrement_ge_of_regularizedModel_lt"]
+source = "Cartis–Gould–Toint, Lemma 3.3.1"
+
+[[node]]
+id = "lemma_3_3_2"
+kind = "theorem"
+desc = '''
+Lemma 3.3.2. Under `AssumptionHL f L₂`, every AR2 run satisfies `σ_k ≤ σ_max :=
+max σ₀ (γ₃ L₂/(1-η₂))` for all `k` up to the first termination index (3.3.14).
+'''
+deps = ["lemma_3_3_1", "AssumptionHL", "Optimization.abs_reductionRatio_sub_one_le_of_lipschitz", "Optimization.sigma_le_max_of_arUpdate"]
+source = "Cartis–Gould–Toint, Lemma 3.3.2"
+
+[[node]]
+id = "lemma_3_3_3"
+kind = "theorem"
+desc = '''
+Lemma 3.3.3. Under f.HL, if iteration `k` (before termination) is successful then
+`‖s_k‖² ≥ 2/(L₂ + θ₁ + σ_max) ‖∇f(x_{k+1})‖` (3.3.15).
+'''
+deps = ["algorithm_3_3_1", "lemma_3_3_2", "Optimization.norm_fderiv_le_of_regularizedModel"]
+source = "Cartis–Gould–Toint, Lemma 3.3.3"
+
+[[node]]
+id = "lemma_3_3_4"
+kind = "theorem"
+desc = '''
+Lemma 3.3.4. Under f.Bb, f.HL, for an AR2 run with `ε₂ = none`, `ε₁ ∈ (0,1]`, and `k` before
+termination: `|successSet succ k| ≤ κ^S_AR2 (f(x_0) - flow)/ε₁^{3/2} + 1` with
+`κ^S_AR2 = 6 (L₂ + θ₁ + σ_max)^{3/2} / (2^{3/2} η₁ σ_min)` (3.3.19).
+'''
+deps = ["lemma_3_3_1", "lemma_3_3_3", "Optimization.le_sigma_of_arUpdate", "Optimization.card_mul_le_of_decrease", "Optimization.sum_successSet_sub_eq"]
+source = "Cartis–Gould–Toint, Lemma 3.3.4"
+
+[[node]]
+id = "theorem_3_3_5"
+kind = "theorem"
+desc = '''
+Theorem 3.3.5. Under f.Bb, f.HL, for every AR2 run with `ε₂ = none`, `ε₁ ∈ (0,1]`: there is `k_ε`
+with `IsFirstHit (‖∇f(x_k)‖ ≤ ε₁) k_ε`, `funEvalCount k_ε ≤ κ^A (f(x_0)-flow)/ε₁^{3/2} + κ^C`,
+`derivEvalCount succ k_ε ≤ κ^S (f(x_0)-flow)/ε₁^{3/2} + 2`, with `κ^A = κ^S (1 + |log γ₁|/log γ₂)`,
+`κ^C = (|log γ₁| + log(max(1, γ₃ L₂/(σ₀(1-η₂)))))/log γ₂ + 2`.
+'''
+deps = ["lemma_3_3_4", "lemma_3_3_2", "CartisGouldToint.Chapter02.lemma_2_4_1", "Optimization.exists_hit_le_of_counting", "Optimization.funEvalCount"]
+source = "Cartis–Gould–Toint, Theorem 3.3.5"
+
+[[node]]
+id = "theorem_3_3_6"
+kind = "theorem"
+desc = '''
+Theorem 3.3.6 (sharpness). For all AR2 constants `P` there are `flow`, `L₂` (independent of `ε₁`)
+such that for every `ε₁ ∈ (0,1)` there are `f : EuclideanSpace ℝ (Fin 1) → ℝ` with f.Bb, f.HL and an
+AR2 run with `ε₂ = none` from `x₀ = 0`, `σ_k = σ₀` for all `k`, `s_k` the global minimizer of the
+cubic model, all iterations very successful, and `IsFirstHit (‖∇f(x_k)‖ ≤ ε₁) ⌈ε₁^{-3/2}⌉₊`.
+(The book defers the proof to §12.2.2.4; here: data (3.5.12) with step factors
+`θ_k ∈ [θ(σ₀/2), 1]` solving `θ + σ₀ θ²/(16 f_k³) = 1`, `Optimization.exists_slowSecondOrder_interpolant`;
+`ρ_k = 1/(2θ_k - θ_k²) ≥ 1`.)
+'''
+deps = ["algorithm_3_3_1", "Optimization.exists_slowSecondOrder_interpolant", "Optimization.ridge"]
+source = "Cartis–Gould–Toint, Theorem 3.3.6"
+
+[[node]]
+id = "IsModifiedAR2Run"
+kind = "def"
+desc = '''
+The modified AR2 algorithm of §3.3.2 (notes after Theorem 3.3.6): `IsAR2Run` with (3.3.5) replaced
+by `‖fderiv ℝ (taylorPolynomial f 2 (x k)) (s k)‖ ≤ θ₁/2 σ_k ‖s k‖²` (3.3.23), `θ₁ > 1`.
+'''
+deps = ["algorithm_3_3_1"]
+source = "Cartis–Gould–Toint, (3.3.23)"
+
+[[node]]
+id = "lemma_3_3_7"
+kind = "theorem"
+desc = '''
+Lemma 3.3.7. Under f.HL, if iteration `k` of a modified AR2 run (before termination) is successful,
+then `‖s_k‖² ≥ 2/(L₂ + θ₁ σ_max) ‖∇f(x_{k+1})‖` (3.3.24) (`σ_max` as in Lemma 3.3.2, which holds
+for the modified run as well).
+'''
+deps = ["IsModifiedAR2Run", "lemma_3_3_2", "Optimization.norm_fderiv_le_of_regularizedModel"]
+source = "Cartis–Gould–Toint, Lemma 3.3.7"
+
+[[node]]
+id = "lemma_3_3_8"
+kind = "theorem"
+desc = '''
+Lemma 3.3.8. Under f.HL, if iteration `k` of an AR2 run with `ε₂ = some e` is successful (before
+termination) and `hessianMinEig f (x (k+1)) < 0`, then
+`‖s_k‖ ≥ |hessianMinEig f (x (k+1))| / (L₂ + θ₂ + σ_max)` (3.3.25).
+'''
+deps = ["algorithm_3_3_1", "lemma_3_3_2", "Optimization.minCurvature_ge_of_regularizedModel"]
+source = "Cartis–Gould–Toint, Lemma 3.3.8"
+
+[[node]]
+id = "theorem_3_3_9"
+kind = "theorem"
+desc = '''
+Theorem 3.3.9. Under f.Bb, f.HL, for every AR2 run with `ε₁ ∈ (0,1]`, `ε₂ = some e`, `e ∈ (0,1]`:
+there is `k_ε` with `IsFirstHit (stopTest f ε₁ (some e) ∘ x) k_ε`,
+`funEvalCount k_ε ≤ κ^D (f(x_0)-flow)/min(ε₁^{3/2}, e³) + κ^F`,
+`derivEvalCount succ k_ε ≤ κ^T (f(x_0)-flow)/min(ε₁^{3/2}, e³) + 2`, with
+`κ^T = 6 (L₂ + max(1,θ₁,θ₂) + σ_max)³/(η₁ σ_min)`, `κ^D = κ^T (1 + |log γ₁|/log γ₂)`,
+`κ^F = (|log γ₁| + log(max(1, γ₃ L₂/(σ₀(1-η₂)))))/log γ₂ + 2`. (The display (3.3.30) has a stray
+`+ 2` after the `O(·)`.)
+'''
+deps = ["lemma_3_3_3", "lemma_3_3_8", "lemma_3_3_1", "lemma_3_3_2", "CartisGouldToint.Chapter02.lemma_2_4_1", "Optimization.exists_hit_le_of_counting", "Optimization.card_mul_le_of_decrease"]
+source = "Cartis–Gould–Toint, Theorem 3.3.9"
+
+[[node]]
+id = "theorem_3_3_10"
+kind = "theorem"
+desc = '''
+Theorem 3.3.10 (sharpness). For all AR2 constants there are `flow`, `L₂` (independent of the
+tolerances) such that for all `ε₁, ε₂ ∈ (0,1)` there are `f : EuclideanSpace ℝ (Fin 1) → ℝ` with
+f.Bb, f.HL and an AR2 run with `ε₂ = some ε₂`, from `x₀ = 0`, `σ_k = σ₀`, whose first termination
+index is exactly `max ⌈ε₁^{-3/2}⌉₊ ⌈ε₂^{-3}⌉₊`. Proof: if `ε₁^{-3/2} ≥ ε₂^{-3}`, the example of
+Theorem 3.3.6 (positive curvature, terminates exactly at `⌈ε₁^{-3/2}⌉₊`); otherwise the
+negative-curvature data (`Optimization.exists_slowNegCurvature_interpolant` with
+`θ_k = 2 c_k/σ₀`, `g_k = 0`), terminating exactly at `⌈ε₂^{-3}⌉₊`. (The book defers the proof to
+§12.2.2.4.)
+'''
+deps = ["algorithm_3_3_1", "theorem_3_3_6", "Optimization.exists_slowNegCurvature_interpolant", "Optimization.ridge"]
+source = "Cartis–Gould–Toint, Theorem 3.3.10"

@@ -1,0 +1,141 @@
+namespace = "CartisGouldToint.Chapter03"
+desc = '''
+§3.2 The trust-region method using second derivatives (TR2). Model `T_{f,2}(x_k, s) =
+f(x_k) + Subproblem.quadModel (∇f(x_k)) (hessianOperator f (x k)) s`; Cauchy point as in TR1,
+eigenpoint (3.2.5) along a unit eigenvector `u_k` of the leftmost eigenvalue with `⟪u_k, ∇f(x_k)⟫ ≤ 0`
+when `λ_min < 0` (`s^E = 0` otherwise). Radius update `Optimization.TRUpdate` (3.2.12).
+'''
+
+[[node]]
+id = "AssumptionHBa"
+kind = "def"
+desc = '''
+f.HBa: `AssumptionHBa f κH : Prop := ContDiff ℝ 2 f ∧ 1 ≤ κH ∧ ∀ x, ‖iteratedFDeriv ℝ 2 f x‖ ≤ κH`.
+Consequence (part of node, Theorem A.8.5): `AssumptionHBa f κH → Chapter02.AssumptionGL f κH`.
+'''
+deps = ["CartisGouldToint.Chapter02.AssumptionGL", "iteratedFDerivLipschitzOn_of_norm_le"]
+source = "Cartis–Gould–Toint, Assumption f.HBa, (3.2.13)"
+
+[[node]]
+id = "IsApproxSecondOrderMinimizer"
+kind = "def"
+desc = '''
+`IsApproxSecondOrderMinimizer f x ε₁ ε₂ : Prop := ‖gradient f x‖ ≤ ε₁ ∧
+-ε₂ ≤ Chapter01.hessianMinEig f x` (3.2.6) (= `Optimization.IsApproxSecondOrder`); the termination
+test with optional `ε₂` is `stopTest f ε₁ ε₂ x := ‖gradient f x‖ ≤ ε₁ ∧ ∀ e ∈ ε₂,
+-e ≤ Chapter01.hessianMinEig f x` (defined in this node).
+'''
+deps = ["CartisGouldToint.Chapter01.hessianMinEig", "Optimization.IsApproxSecondOrder"]
+source = "Cartis–Gould–Toint, (3.2.6), (3.2.9)"
+
+[[node]]
+id = "algorithm_3_2_1"
+kind = "def"
+desc = '''
+Algorithm 3.2.1 (TR2) as a run predicate `IsTR2Run f P ε₁ ε₂ x s Δ` (`P : Chapter02.TR1Params`):
+`Δ 0 = P.Δ₀` and before the first `k` with `stopTest f ε₁ ε₂ (x k)`: `‖s k‖ ≤ Δ k`;
+Cauchy condition `T₂(x_k, s_k) ≤ T₂(x_k, -t ∇f(x_k))` for some Cauchy step `t`
+(`Optimization.IsCauchyStep` with `H = hessianOperator f (x k)`); if `ε₂ ≠ none` the eigenpoint
+condition (3.2.10): if `hessianMinEig f (x k) < 0` then there is a unit `u` with
+`hessianOperator f (x k) u = hessianMinEig f (x k) • u`, `⟪u, ∇f(x_k)⟫ ≤ 0` and
+`T₂(x_k, s_k) ≤ T₂(x_k, Δ_k • u)` (the eigenpoint is on the boundary, Lemma 3.2.3), else
+`T₂(x_k,s_k) ≤ T₂(x_k, 0)`; ratio (3.2.11) with the Taylor decrement; acceptance; `TRUpdate`.
+Existence (part of node): from any `x₀` for `C²` `f` (global model minimizer in the ball,
+`Optimization.exists_isMinOn_quadModel_ball`, eigenvectors `Optimization.exists_eq_minCurvature`).
+'''
+deps = ["CartisGouldToint.Chapter02.TR1Params", "IsApproxSecondOrderMinimizer", "Optimization.UntilHit", "Optimization.IsCauchyStep", "Optimization.hessianOperator", "Optimization.TRUpdate", "Optimization.reductionRatio", "Optimization.exists_isMinOn_quadModel_ball", "exists_eq_minCurvature", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 3.2.1"
+
+[[node]]
+id = "theorem_3_2_1"
+kind = "theorem"
+desc = '''
+Theorem 3.2.1. Under f.Bb and `AssumptionHBa f κH`, for every TR2 run with `ε₂ = none` and
+`ε₁ > 0`: there is `k_ε` with `IsFirstHit (‖∇f(x_k)‖ ≤ ε₁) k_ε`,
+`funEvalCount k_ε ≤ κ^A (f(x_0)-flow)/ε₁² + κ^B |log ε₁| + κ^C`,
+`derivEvalCount succ k_ε ≤ κ^S (f(x_0)-flow)/ε₁² + 1`, with
+`κ^S = 8 κH/(γ₁ η₁ (1-η₂)) max(1, ‖∇f(x_0)‖/Δ₀)`, `κ^A = κ^S (1 + log γ₃/|log γ₂|)`,
+`κ^B = 1/|log γ₂|`, `κ^C = |log(γ₁(1-η₂)/(4 Δ₀ κH) min(1, Δ₀/‖∇f(x_0)‖))|/|log γ₂| + 1`.
+Proof: a TR2 run with `ε₂ = none` is a TR1 run with `B_k = hessianOperator f (x k)`,
+`κ_B = κ_H = L_{f,1}` (3.2.13); apply Theorem 2.3.7.
+'''
+deps = ["algorithm_3_2_1", "AssumptionHBa", "CartisGouldToint.Chapter02.theorem_2_3_7", "CartisGouldToint.Chapter02.algorithm_2_3_1"]
+source = "Cartis–Gould–Toint, Theorem 3.2.1"
+
+[[node]]
+id = "theorem_3_2_2"
+kind = "theorem"
+desc = '''
+Theorem 3.2.2. For the functions `f` of Theorem 3.1.1 (which also satisfy f.HBa with `κH` independent
+of `ε₁`), the Newton iterates form a TR2 run (any `ε₂`, any constants, `Δ₀ = 2`, `Δ_k = 2`, all
+iterations successful with `ρ_k = 1`), hence TR2 may need more than `⌈ε₁⁻²⌉` iterations and
+evaluations: `‖∇f(x_k)‖ > ε₁` for `k < ⌈ε₁⁻²⌉₊`. (The book requires `Δ₀ = 2`; for general `Δ₀` the
+radius must first grow, which (3.2.12) allows on very successful iterations only once the steps
+fit; the statement is for `Δ₀ = 2` as in the book.)
+'''
+deps = ["algorithm_3_2_1", "theorem_3_1_1", "AssumptionHBa"]
+source = "Cartis–Gould–Toint, Theorem 3.2.2"
+
+[[node]]
+id = "lemma_3_2_3"
+kind = "theorem"
+desc = '''
+Lemma 3.2.3. If `λ := hessianMinEig f x < 0`, `u` is a unit eigenvector for `λ` with
+`⟪u, ∇f(x)⟫ ≤ 0` and `Δ ≥ 0`, then the eigenpoint is `s^E = Δ u` and
+`T₂(x, Δ u) ≤ T₂(x, 0) - ½ |λ| Δ²` (3.2.15); in a TR2 run with `ε₂ ≠ none` and `λ_min[∇²f(x_k)] < 0`
+the denominator of (3.2.11) is positive.
+'''
+deps = ["algorithm_3_2_1", "Optimization.neg_quadModel_eigen_ge", "Optimization.taylorPolynomial_two_eq_quadModel"]
+source = "Cartis–Gould–Toint, Lemma 3.2.3"
+
+[[node]]
+id = "lemma_3_2_4"
+kind = "theorem"
+desc = '''
+Lemma 3.2.4. Under `AssumptionHL f L₂`, in a TR2 run with `ε₂ ≠ none`, if `k` is before termination,
+`hessianMinEig f (x k) < 0` and `Δ k < 3 (1-η₂) |hessianMinEig f (x k)| / L₂` (3.2.16), then
+`η₂ ≤ ρ_k`, iteration `k` is successful and `Δ k ≤ Δ (k+1)`.
+'''
+deps = ["lemma_3_2_3", "AssumptionHL", "Optimization.le_reductionRatio_trust_second"]
+source = "Cartis–Gould–Toint, Lemma 3.2.4"
+
+[[node]]
+id = "lemma_3_2_5"
+kind = "theorem"
+desc = '''
+Lemma 3.2.5. Under f.HBa, f.HL, for a TR2 run with `ε₂ = some e`, `e ∈ (0,1]`, and `k` before
+termination: `Δ k ≥ κ_Δ min ε₁ e` (3.2.17) with
+`κ_Δ = min (γ₁ (1-η₂) / max(4 κH, L₂/3)) Δ₀ ∈ (0,1)` (the first term is `< 1` as `κH ≥ 1`).
+(`Optimization.le_delta_of_trUpdate` with constant threshold, from Lemmas 2.3.3 and 3.2.4.)
+'''
+deps = ["lemma_3_2_4", "CartisGouldToint.Chapter02.lemma_2_3_3", "AssumptionHBa", "Optimization.le_delta_of_trUpdate"]
+source = "Cartis–Gould–Toint, Lemma 3.2.5"
+
+[[node]]
+id = "theorem_3_2_6"
+kind = "theorem"
+desc = '''
+Theorem 3.2.6. Under f.Bb, f.HBa, f.HL, for every TR2 run with `ε₁ > 0`, `ε₂ = some e`, `e ∈ (0,1]`:
+there is `k_ε` with `IsFirstHit (stopTest f ε₁ (some e) ∘ x) k_ε`,
+`funEvalCount k_ε ≤ κ^D (f(x_0)-flow)/min(ε₁² e, e³) + κ^E |log(min ε₁ e)| + κ^F` and
+`derivEvalCount succ k_ε ≤ κ^T (f(x_0)-flow)/min(ε₁² e, e³) + 1`, with
+`κ^T = (½ η₁ min(1/(1+κH), κ_Δ²))⁻¹`, `κ^D = κ^T (1 + log γ₃/|log γ₂|)`, `κ^E = 1/|log γ₂|`,
+**corrected** `κ^F = |log(κ_Δ/Δ₀)|/|log γ₂| + 1` (the printed `κ^F` lacks the `|log ·|` and has
+`Δ₀` in place of `1` inside the `min`). Also uses `ε₁ ≤ 1` when `ε₁ < e` (automatic).
+'''
+deps = ["lemma_3_2_5", "lemma_3_2_3", "CartisGouldToint.Chapter02.lemma_2_3_2", "CartisGouldToint.Chapter02.lemma_2_3_1", "Optimization.exists_hit_le_of_counting", "Optimization.card_mul_le_of_decrease"]
+source = "Cartis–Gould–Toint, Theorem 3.2.6"
+
+[[node]]
+id = "theorem_3_2_7"
+kind = "theorem"
+desc = '''
+Theorem 3.2.7 (sharpness). There are `flow`, `κH`, `L₂` such that for every `ε ∈ (0,1]` there are
+`f : EuclideanSpace ℝ (Fin 1) → ℝ` with f.Bb, f.HBa, f.HL and a TR2 run with `ε₁ = ε`,
+`ε₂ = some ε`, `Δ₀ = ε` (any other constants), from `x₀ = 0`, with `Δ_k = s_k = ε`, all iterations
+successful, and `IsFirstHit (stopTest f ε (some ε) ∘ x) ⌈ε⁻³⌉₊`. Data (3.2.24) (`g_k = 0`,
+`H_k = -ε(2 - k/k_ε)`, `x_k = kε` — the book's (3.2.25) `x_k = (k-1)ε` is a typo):
+`Optimization.exists_slowNegCurvature_interpolant` with `θ ≡ 1`.
+'''
+deps = ["algorithm_3_2_1", "AssumptionHBa", "AssumptionHL", "Optimization.exists_slowNegCurvature_interpolant", "Optimization.ridge"]
+source = "Cartis–Gould–Toint, Theorem 3.2.7"

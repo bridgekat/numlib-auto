@@ -1,0 +1,11 @@
+desc = '''
+Multivariate Taylor polynomials `T_p(s) = ∑_{i ≤ p} (1/i!) D_i[s]^i` built from *derivative data*
+`D : FormalMultilinearSeries ℝ E ℝ` (so that exact jets `ftaylorSeries ℝ f x` and inexact
+derivative estimates of Cartis–Gould–Toint Chapter 13 share one API), their derivatives in `s`, and
+Taylor's theorem with Hölder/Lipschitz-continuous top derivative (Cartis–Gould–Toint Appendix A.8).
+`Basic` holds the definitions and the algebra (formula (A.11)), `Remainder` the remainder bounds
+(A.14), (A.15), (A.19), (A.20) on a convex subset of an open set, for `f : E → ℝ` on a real normed
+space. Existing `Numlib/Analysis/Calculus/Taylor` and `TaylorSegment` treat the `C^{p+1}`/bounded
+`(p+1)`-st derivative case; this directory treats the `C^p` case with a Hölder `p`-th derivative,
+which is what complexity analyses of regularization methods need.
+'''

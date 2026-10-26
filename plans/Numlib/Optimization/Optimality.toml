@@ -1,0 +1,11 @@
+desc = '''
+Optimality conditions for smooth problems, exact and approximate, on real normed / inner product
+spaces, with derivatives as `iteratedFDeriv ℝ j f x` (the book convention `∇^j f(x)[d]^j =
+iteratedFDeriv ℝ j f x (fun _ => d)`). `Unconstrained` and `ConvexSet` complement `Descent`
+(first- and second-order conditions along lines) with third-order and strict/tangent-cone results
+(Cartis–Gould–Toint Theorems 1.1.1–1.1.2); `Approximate` defines the approximate-optimality notions
+and criticality measures shared by all evaluation-complexity results (first/second-order tests,
+`λ_min`, and the `q`-th order Taylor-decrement measure `φ^δ_{f,j}` of Cartis–Gould–Toint
+Chapter 12, used again in Chapters 13–14). Constrained (KKT) conditions are `Constrained` and
+`Constrained/SecondOrder`.
+'''

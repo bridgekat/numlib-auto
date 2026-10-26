@@ -1,0 +1,42 @@
+namespace = "Optimization"
+desc = '''
+Deterministic methods that only access the objective through an oracle (Cartis–Gould–Toint
+Section 1.2.4, classes `𝓜` of Section 3.5 and `𝓜(p)`, `𝓜_ZR(p)` of Section 4.2): the next iterate
+is a function of the oracle answers at the previous iterates. Used to state "for every method in a
+class there is a hard function" lower bounds. The answer type is arbitrary; the `p`-th order
+oracle returns the jet `(f(x), ∇f(x), …, ∇^p f(x))`. The key lemma is the "resisting oracle"
+principle: two oracles agreeing at the iterates produced by the first generate the same iterates.
+'''
+
+[[node]]
+id = "OracleMethod"
+kind = "def"
+desc = '''
+`structure OracleMethod (E I : Type*) where x₀ : E; next : (k : ℕ) → (Fin (k + 1) → I) → E`.
+`M.trajectory O : (k : ℕ) → Fin (k + 1) → E` (by recursion with `Fin.snoc`) and
+`M.iterate O k := M.trajectory O k (Fin.last k)` are the iterates `x_0, x_1, …` generated with
+oracle `O : E → I`; `iterate_zero`, `iterate_succ` (`x_{k+1} = next k (O x_0, …, O x_k)`) are API.
+(Prototyped in `drafts/cgt/plan-core/Core.lean`.)
+'''
+source = "Cartis–Gould–Toint, Section 1.2.4, Section 4.2.1.2"
+
+[[node]]
+id = "jetOracle"
+kind = "def"
+desc = '''
+`jetOracle (f : E → ℝ) (p : ℕ) (x : E) : (j : Fin (p + 1)) → E [×j]→L[ℝ] ℝ :=
+fun j => iteratedFDeriv ℝ j f x` (a `p`-th degree oracle).
+'''
+deps = ["OracleMethod"]
+source = "Cartis–Gould–Toint, Section 1.2.4 (p-th degree oracle)"
+
+[[node]]
+id = "OracleMethod.iterate_congr"
+kind = "theorem"
+desc = '''
+If `O' (M.iterate O i) = O (M.iterate O i)` for all `i ≤ k`, then `M.iterate O' i = M.iterate O i`
+for all `i ≤ k + 1`. (Hence a function built *after* fixing the oracle answers along the
+trajectory forces the method onto that trajectory.)
+'''
+deps = ["OracleMethod"]
+source = "Cartis–Gould–Toint, proofs of Theorem 3.5.4 and Lemma 4.2.2"

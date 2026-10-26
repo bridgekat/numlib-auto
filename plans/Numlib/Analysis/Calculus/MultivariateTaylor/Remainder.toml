@@ -1,0 +1,144 @@
+desc = '''
+Taylor's theorem with a Hölder (in particular Lipschitz) continuous top derivative: the remainder
+bounds (A.14)–(A.15) and (A.19)–(A.20) of Cartis–Gould–Toint, Theorem A.8.3 and Corollary A.8.4,
+which drive every evaluation-complexity proof of the book (overestimation of regularized models,
+"add-and-subtract" lower bounds on step lengths).
+
+Setting: `f : E → ℝ` on a real normed space, `ContDiffOn ℝ p f D` on an open `D`, Hölder condition
+`‖D^p f x - D^p f y‖ ≤ H ‖x - y‖^β` (`β ∈ [0,1]`) for `x, y` in a convex `C ⊆ D`, tensor norms being
+Mathlib's operator norms on `ContinuousMultilinearMap` (the book's (A.7) "max over unit `v_1..v_p`"
+form; for symmetric tensors on an inner product space it agrees with the diagonal form
+`max_{‖v‖=1} |T[v]^p|`, a theorem of Banach which is *not* needed for the results below).
+
+The constant is the generalized factorial `(k + β)! = ∏_{ℓ=1}^k (ℓ + β)`
+(`holderFactorial k β = (ascPochhammer ℝ k).eval (1 + β)`), so that `(k+1)! = holderFactorial k 1`.
+
+Proof route (suggested): a one-dimensional lemma for curves (`norm_sub_taylorSum_le_of_holder`):
+for a chain `Y_0, …, Y_p : ℝ → F` with `Y_i' = Y_{i+1}` on `[0,1]` and
+`‖Y_p t - Y_p 0‖ ≤ H t^β`, `‖Y_0 1 - ∑_{i ≤ p} Y_i 0 / i!‖ ≤ H / (p + β)!`; proved by induction on
+`p` with the mean value inequality (`image_norm_le_of_norm_deriv_right_le_deriv_boundary`), each
+step integrating `t^{k+β}/(k+β)!`. The book's proof via the integral remainder (A.9) and the Beta
+integral (A.16) is an alternative (`integral_rpow_mul_one_sub_pow`). The multivariate bounds follow
+by restricting to the segment `t ↦ x + t s` (as `TaylorSegment.hasDerivAt_iteratedFDeriv_segment`)
+and, for (A.15), by applying the scalar result to `t ↦ (D^j f(x + t s) - D^j_s T_p(x, t s))[v]`.
+'''
+
+[[node]]
+id = "holderFactorial"
+kind = "def"
+desc = '''
+`holderFactorial (k : ℕ) (β : ℝ) : ℝ := (ascPochhammer ℝ k).eval (1 + β) = ∏_{ℓ=1}^{k} (ℓ + β)`,
+the book's `(k + β)!`. Basic API (part of this node): `holderFactorial 0 β = 1`;
+`holderFactorial (k+1) β = holderFactorial k β * (k + 1 + β)`; positivity for `β > -1`;
+`holderFactorial k 1 = (k + 1)!`; `holderFactorial k 0 = k!`.
+'''
+source = "Cartis–Gould–Toint, Section A.8 (definition before Theorem A.8.3)"
+
+[[node]]
+id = "integral_rpow_mul_one_sub_pow"
+kind = "theorem"
+desc = '''
+For `k ≥ 1` and `β ≥ 0`: `∫ ξ in (0:ℝ)..1, ξ ^ β * (1 - ξ) ^ (k - 1) = (k - 1)! / holderFactorial k β`
+(Beta-function identity (A.16); provable by integration by parts / induction or from Mathlib's
+`Real.Gamma`/Beta API).
+'''
+deps = ["holderFactorial"]
+source = "Cartis–Gould–Toint, (A.16)"
+
+[[node]]
+id = "taylor_integral_remainder_sub"
+kind = "theorem"
+desc = '''
+Theorem A.8.1 (integral form, (A.9)). If `k ≥ 1`, `0 ≤ h` and `ContDiffOn ℝ k ψ (Icc t (t + h))`
+for `ψ : ℝ → ℝ`, then with `τ_k = taylorWithinEval ψ k (Icc t (t+h)) t (t+h)`
+(`= ∑_{i ≤ k} ψ^{(i)}(t) h^i / i!`, derivatives within the interval):
+`ψ (t + h) - τ_k = 1/(k-1)! * ∫ ξ in 0..h, (h - ξ)^(k-1) * (ψ^{(k)} (t + ξ) - ψ^{(k)} t)`.
+Corollary of Mathlib's `taylor_integral_remainder` (order `k - 1`, which needs `C^k`) and
+`h^k = k ∫_0^h (h - ξ)^{k-1} dξ`.
+'''
+source = "Cartis–Gould–Toint, Theorem A.8.1"
+
+[[node]]
+id = "norm_sub_taylorSum_le_of_holder"
+kind = "theorem"
+desc = '''
+Curve version of the Hölder remainder. Let `F` be a real normed space, `p : ℕ`, `H ≥ 0`,
+`β ∈ [0,1]`, `Y : ℕ → ℝ → F` with `HasDerivWithinAt (Y i) (Y (i+1) t) (Icc 0 1) t` for `i < p`,
+`t ∈ Icc 0 1`, `Y p` continuous on `[0,1]`, and `‖Y p t - Y p 0‖ ≤ H * t ^ β` for `t ∈ [0,1]`.
+Then `‖Y 0 1 - ∑ i ∈ range (p + 1), (i ! : ℝ)⁻¹ • Y i 0‖ ≤ H / holderFactorial p β`.
+(More generally at time `t`: bound `H t^{p+β} / (p+β)!`, which is the induction hypothesis.)
+'''
+deps = ["holderFactorial"]
+source = "Cartis–Gould–Toint, proof of Theorem A.8.3"
+
+[[node]]
+id = "IteratedFDerivHolderOn"
+kind = "def"
+desc = '''
+`IteratedFDerivHolderOn (f : E → ℝ) (p : ℕ) (H β : ℝ) (C : Set E) : Prop :=
+∀ x ∈ C, ∀ y ∈ C, ‖iteratedFDeriv ℝ p f x - iteratedFDeriv ℝ p f y‖ ≤ H * ‖x - y‖ ^ β`
+(real exponent, `Real.rpow`; the book's (A.13)). The Lipschitz case is the abbreviation
+`IteratedFDerivLipschitzOn f p L C := IteratedFDerivHolderOn f p L 1 C` (book's (A.18), assumptions
+f.gL, f.HL, f.DpL), with simp lemma unfolding `‖x - y‖ ^ (1:ℝ) = ‖x - y‖`. Real-valued constants
+are used (rather than `HolderOnWith`/`LipschitzOnWith` with `ℝ≥0` constants) because the constants
+enter explicit complexity bounds; a bridge lemma to `LipschitzOnWith` is part of the API.
+'''
+source = "Cartis–Gould–Toint, (A.13), (A.18)"
+
+[[node]]
+id = "abs_sub_taylorPolynomial_le_of_holder"
+kind = "theorem"
+desc = '''
+(A.14) Let `D` open, `C ⊆ D` convex, `ContDiffOn ℝ p f D`, `β ∈ [0,1]`,
+`IteratedFDerivHolderOn f p H β C`. For `x ∈ C`, `x + s ∈ C`:
+`|f (x + s) - taylorPolynomial f p x s| ≤ H / holderFactorial p β * ‖s‖ ^ ((p : ℝ) + β)`.
+For `p = 0` this is the Hölder condition itself.
+'''
+deps = ["IteratedFDerivHolderOn", "taylorPolynomial", "norm_sub_taylorSum_le_of_holder", "hasDerivAt_iteratedFDeriv_segment"]
+source = "Cartis–Gould–Toint, Theorem A.8.3, (A.14)"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder"
+kind = "theorem"
+desc = '''
+(A.15) Same hypotheses, `1 ≤ j ≤ p`: `‖iteratedFDeriv ℝ j f (x + s) - iteratedFDeriv ℝ j
+(taylorPolynomial f p x) s‖ ≤ H / holderFactorial (p - j) β * ‖s‖ ^ (((p - j : ℕ) : ℝ) + β)`.
+(The book's proof displays the constant `(p-j+1)!/(p-j+β)!`; the correct value from (A.16) is
+`1/(p-j+β)!`, which is what (A.15) states.) Uses `iteratedFDeriv_taylorPolynomial_zero` to see that
+`s ↦ D^j f(x+s) - D^j_s T_p(x,s)` has vanishing jet up to order `p - j - 1` at `0` and `(p-j)`-th
+derivative `D^p f(x + s) - D^p f(x)`.
+'''
+deps = ["abs_sub_taylorPolynomial_le_of_holder", "iteratedFDeriv_taylorPolynomial_zero"]
+source = "Cartis–Gould–Toint, Theorem A.8.3, (A.15)"
+
+[[node]]
+id = "abs_sub_taylorPolynomial_le_of_lipschitz"
+kind = "theorem"
+desc = '''
+(A.19) Corollary A.8.4: with `IteratedFDerivLipschitzOn f p L C` (and the other hypotheses of
+(A.14)), `|f (x + s) - taylorPolynomial f p x s| ≤ L / (p + 1)! * ‖s‖ ^ (p + 1)` (natural power).
+'''
+deps = ["abs_sub_taylorPolynomial_le_of_holder"]
+source = "Cartis–Gould–Toint, Corollary A.8.4, (A.19)"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"
+kind = "theorem"
+desc = '''
+(A.20) Corollary A.8.4: for `1 ≤ j ≤ p`, `‖iteratedFDeriv ℝ j f (x + s) - iteratedFDeriv ℝ j
+(taylorPolynomial f p x) s‖ ≤ L / (p - j + 1)! * ‖s‖ ^ (p - j + 1)`. The case `j = 1` is the
+gradient bound used in every step-length lemma (`‖∇f(x+s) - ∇_s T_p(x,s)‖ ≤ L ‖s‖^p / p!`).
+'''
+deps = ["norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder"]
+source = "Cartis–Gould–Toint, Corollary A.8.4, (A.20)"
+
+[[node]]
+id = "le_taylorPolynomial_add_of_lipschitz"
+kind = "theorem"
+desc = '''
+Overestimation property: under the hypotheses of (A.19), for every `σ ≥ L`,
+`f (x + s) ≤ taylorPolynomial f p x s + σ / (p + 1)! * ‖s‖ ^ (p + 1)` (the regularized model
+majorizes `f`); also the minorization `taylorPolynomial f p x s - σ/(p+1)! ‖s‖^{p+1} ≤ f (x + s)`.
+'''
+deps = ["abs_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, Corollary A.8.4 (overestimation property (A.19))"

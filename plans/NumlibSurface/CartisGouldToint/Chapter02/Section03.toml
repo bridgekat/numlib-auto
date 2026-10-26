@@ -1,0 +1,143 @@
+namespace = "CartisGouldToint.Chapter02"
+desc = '''
+§2.3 The trust-region method TR1. Model `m_k(s) = f(x_k) + ⟪∇f(x_k), s⟫ + ½⟪s, B_k s⟫`
+(2.3.1) with `B_k : 𝔼 →L[ℝ] 𝔼` self-adjoint (the book's symmetric matrix; `‖B_k‖` the operator
+norm = spectral norm), i.e. `f(x_k) + Subproblem.quadModel (∇f(x_k)) B_k s`. Success: `ρ_k ≥ η₁`;
+`𝒮_k`, `𝒰_k` as `Optimization.successSet`. Proofs combine `Optimization.ModelBased.*` with
+`Optimization.Complexity.*`. Evaluation counts: `funEvalCount k_ε`, `derivEvalCount succ k_ε`.
+'''
+
+[[node]]
+id = "TR1Params"
+kind = "def"
+desc = '''
+Structure of TR1 constants (2.3.3): `Δ₀ > 0`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ ≤ γ₂ < 1 < γ₃`
+(fields with their constraints as proof fields).
+'''
+source = "Cartis–Gould–Toint, (2.3.3)"
+
+[[node]]
+id = "algorithm_2_3_1"
+kind = "def"
+desc = '''
+Algorithm 2.3.1 (TR1) as a run predicate `IsTR1Run f P ε x s Δ B` (`x s : ℕ → 𝔼`, `Δ : ℕ → ℝ`,
+`B : ℕ → 𝔼 →L[ℝ] 𝔼`): `Δ 0 = P.Δ₀`, every `B k` self-adjoint, and before the first `k` with
+`‖gradient f (x k)‖ ≤ ε` (`Optimization.UntilHit`): `‖s k‖ ≤ Δ k`; the Cauchy decrease
+`m_k(s_k) ≤ m_k(-t • ∇f(x_k))` for some `t` with `Optimization.IsCauchyStep (∇f(x_k)) (B k) (Δ k) t`
+(2.3.4)–(2.3.5); with `pred k = m_k(0) - m_k(s_k)` and `ρ_k = Optimization.reductionRatio f (x k)
+(s k) (pred k)`: `x (k+1) = if η₁ ≤ ρ_k then x k + s k else x k` and
+`Optimization.TRUpdate η₁ η₂ γ₁ γ₂ γ₃ ρ_k (Δ k) (Δ (k+1))` (2.3.7).
+Existence (part of node, `exists_isTR1Run`): for any `x₀`, `P`, `ε > 0` and any sequence of
+self-adjoint `B_k` (as a function of the state, e.g. constant), a run exists (the model minimizer
+over the ball satisfies the Cauchy condition: `Optimization.exists_isMinOn_quadModel_ball`).
+'''
+deps = ["TR1Params", "Optimization.UntilHit", "Optimization.IsCauchyStep", "Optimization.reductionRatio", "Optimization.TRUpdate", "Optimization.exists_isMinOn_quadModel_ball", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 2.3.1"
+
+[[node]]
+id = "AssumptionMHBa"
+kind = "def"
+desc = '''
+m.HBa: `AssumptionMHBa B κB : Prop := 0 ≤ κB ∧ ∀ k, ‖B k‖ ≤ κB`.
+'''
+source = "Cartis–Gould–Toint, Assumption m.HBa"
+
+[[node]]
+id = "lemma_2_3_1"
+kind = "theorem"
+desc = '''
+Lemma 2.3.1. For a TR1 run and `Δmin > 0` with `Δmin ≤ Δ j` for all `j ≤ k` (and `k` before
+termination): `(k : ℝ) ≤ |successSet succ k| (1 + log γ₃ / |log γ₂|) + |log (Δmin / Δ₀)| / |log γ₂|`
+(2.3.11), where `succ j :↔ η₁ ≤ ρ_j`. Independent of the step (only (2.3.7) is used).
+'''
+deps = ["algorithm_2_3_1", "Optimization.succ_le_of_trUpdate"]
+source = "Cartis–Gould–Toint, Lemma 2.3.1"
+
+[[node]]
+id = "lemma_2_3_2"
+kind = "theorem"
+desc = '''
+Lemma 2.3.2. For a quadratic model with gradient `g`, self-adjoint `B`, radius `Δ ≥ 0` and any
+Cauchy step `t` (`Optimization.IsCauchyStep g B Δ t`):
+`m(0) - m(-t g) ≥ ½ ‖g‖ min(‖g‖/(1 + ‖B‖), Δ)` (2.3.12). Consequently, in a TR1 run with
+`∇f(x_k) ≠ 0`, the denominator of (2.3.6) is positive (the ratio is well defined).
+'''
+deps = ["Optimization.neg_quadModel_cauchy_ge", "algorithm_2_3_1"]
+source = "Cartis–Gould–Toint, Lemma 2.3.2"
+
+[[node]]
+id = "lemma_2_3_3"
+kind = "theorem"
+desc = '''
+Lemma 2.3.3. `AssumptionGL f L`, `AssumptionMHBa B κB`, TR1 run, `k` before termination with
+`Δ k < (1 - η₂) ‖∇f(x_k)‖ / (2 (L + κB))` (2.3.15) ⇒ `η₂ ≤ ρ_k`, iteration `k` is successful and
+`Δ k ≤ Δ (k+1)`.
+'''
+deps = ["algorithm_2_3_1", "AssumptionMHBa", "AssumptionGL", "lemma_2_3_2", "Optimization.le_reductionRatio_trust_first"]
+source = "Cartis–Gould–Toint, Lemma 2.3.3"
+
+[[node]]
+id = "lemma_2_3_4"
+kind = "theorem"
+desc = '''
+Lemma 2.3.4. Under f.gL, m.HBa, for a TR1 run and `k` before termination (so `∇f(x_0) ≠ 0`):
+`Δ k ≥ γ₁ (1 - η₂) / (2 (L + κB)) * min 1 (Δ₀ / ‖∇f(x_0)‖) * min_{i ≤ k} ‖∇f(x_i)‖` (2.3.17).
+(From `Optimization.le_delta_of_trUpdate` with `θ_k = (1-η₂)/(2(L+κB)) min_{i≤k} ‖∇f(x_i)‖`, using
+`γ₁ (1-η₂)/(2(L+κB)) ≤ 1`.)
+'''
+deps = ["lemma_2_3_3", "Optimization.le_delta_of_trUpdate"]
+source = "Cartis–Gould–Toint, Lemma 2.3.4"
+
+[[node]]
+id = "lemma_2_3_5"
+kind = "theorem"
+desc = '''
+Lemma 2.3.5. Under f.gL, m.HBa, for `k` before termination:
+`m_k(0) - m_k(s_k) ≥ κ_decr ‖∇f(x_k)‖ min_{i ≤ k} ‖∇f(x_i)‖` with
+`κ_decr = ½ min(1/(1 + κB), γ₁(1-η₂)/(2(L+κB)) min(1, Δ₀/‖∇f(x_0)‖))` (2.3.19)–(2.3.20).
+(The book writes `m_k(x_k) - m_k(x_k + s_k)`, inconsistent with `m_k` being a function of the
+step; the decrease is `m_k(0) - m_k(s_k)`.)
+'''
+deps = ["lemma_2_3_2", "lemma_2_3_4"]
+source = "Cartis–Gould–Toint, Lemma 2.3.5"
+
+[[node]]
+id = "lemma_2_3_6"
+kind = "theorem"
+desc = '''
+Lemma 2.3.6. Under f.Bb, f.gL, m.HBa, for `k` before termination (so `‖∇f(x_j)‖ > ε` for `j ≤ k`):
+`|successSet succ k| ≤ κ^S_TR1 (f(x_0) - flow)/ε²` with
+`κ^S_TR1 = 4 (L + κB) / (γ₁ η₁ (1 - η₂)) * max 1 (‖∇f(x_0)‖/Δ₀)` (2.3.21).
+'''
+deps = ["lemma_2_3_5", "AssumptionBb", "Optimization.sum_successSet_sub_eq", "Optimization.card_mul_le_of_decrease", "Optimization.sub_le_of_le_reductionRatio"]
+source = "Cartis–Gould–Toint, Lemma 2.3.6"
+
+[[node]]
+id = "theorem_2_3_7"
+kind = "theorem"
+desc = '''
+Theorem 2.3.7. Under f.Bb, f.gL, m.HBa, for every TR1 run with `ε > 0` there is `k_ε` with `IsFirstHit (‖∇f(x_k)‖ ≤ ε) k_ε`,
+`funEvalCount k_ε ≤ κ^A (f(x_0) - flow)/ε² + κ^B |log ε| + κ^C` and
+`derivEvalCount succ k_ε ≤ κ^S (f(x_0) - flow)/ε² + 1`, with `κ^S` of (2.3.21),
+`κ^A = κ^S (1 + log γ₃ / |log γ₂|)`, `κ^B = 1/|log γ₂|` (2.3.22),
+`κ^C = |log(γ₁ (1-η₂)/(2 Δ₀ (L+κB)) min(1, Δ₀/‖∇f(x_0)‖))| / |log γ₂| + 1` (2.3.23).
+'''
+deps = ["lemma_2_3_1", "lemma_2_3_4", "lemma_2_3_6", "Optimization.exists_hit_le_of_counting", "Optimization.funEvalCount"]
+source = "Cartis–Gould–Toint, Theorem 2.3.7"
+
+[[node]]
+id = "theorem_2_3_8"
+kind = "theorem"
+desc = '''
+Theorem 2.3.8 (sharpness). For all TR1 constants `P` there are `L ≥ 1`, `flow`, `κB ≥ 0`
+(independent of `ε`) such that for every `ε ∈ (0,1)` with `ε⁻² = k_ε ∈ ℕ` there are
+`f : EuclideanSpace ℝ (Fin 1) → ℝ` with f.Bb, f.gL and a TR1 run from `x₀ = 0` with
+`AssumptionMHBa B κB`, all iterations successful and `IsFirstHit (‖∇f(x_k)‖ ≤ ε) k_ε`
+(`k_ε + 1` evaluations of `f` and `∇f`). Construction: the data of Theorem 2.2.3 with step factor
+`t = min(1, Δ₀/2)`, `B_k = t⁻¹ • 1` (`κB = t⁻¹`), constant radius `Δ_k = Δ₀` (allowed since every
+iteration is very successful), so that the iterate step `-t ∇f(x_k)` is the Cauchy step and
+`ρ_k = 2`. (The book's `B_k = 2 t_ini⁻¹` would make the Cauchy step half the iterate step, violating
+(2.3.4), and `ρ_k = 1` is claimed instead of `2`; harmless.)
+'''
+deps = ["algorithm_2_3_1", "AssumptionMHBa", "theorem_2_2_3", "Optimization.exists_slowFirstOrder_interpolant", "Optimization.ridge"]
+source = "Cartis–Gould–Toint, Theorem 2.3.8"

@@ -1,0 +1,67 @@
+namespace = "Optimization"
+desc = '''
+Necessary and sufficient optimality conditions for unconstrained minimization of `f : E → ℝ` on a
+real normed space, stated with `iteratedFDeriv` (Cartis–Gould–Toint Theorem 1.1.1). First and
+second order are already in `Descent` (with derivative data `f', f''`) and Mathlib
+(`IsLocalMin.fderiv_eq_zero`); this module states them in the `iteratedFDeriv` vocabulary used by
+the complexity theory, adds the third-order condition and the generic one-dimensional "first
+non-vanishing derivative" lemma along rays (also used for convex sets and by the higher-order
+theory of Chapter 12).
+'''
+
+[[node]]
+id = "IsStrictLocalMinOn"
+kind = "def"
+desc = '''
+`IsStrictLocalMinOn (f : E → ℝ) (S : Set E) (x : E) : Prop :=
+∃ ε > 0, ∀ y ∈ S, dist y x < ε → y ≠ x → f x < f y` (strict, or strong, local minimizer of `f` on
+`S`; `S = univ` for the unconstrained case). Lemma: implies `IsLocalMinOn f S x`.
+'''
+source = "Cartis–Gould–Toint, Section 1.1.2.2 (strict local minimizer)"
+
+[[node]]
+id = "IsLocalMinOn.iteratedDeriv_nonneg_of_ray"
+kind = "theorem"
+desc = '''
+One-dimensional lemma. Let `ψ : ℝ → ℝ` be `ContDiffAt ℝ m ψ 0` (`m ≥ 1`), with `0` a local minimizer
+of `ψ` on `Ici 0` (`IsLocalMinOn ψ (Ici 0) 0`) and `iteratedDeriv i ψ 0 = 0` for `1 ≤ i < m`. Then
+`0 ≤ iteratedDeriv m ψ 0`. If `0` is a local minimizer on all of `ℝ` and `m` is odd, then
+`iteratedDeriv m ψ 0 = 0` (apply to `ψ` and `ψ ∘ neg`). Proof: Taylor expansion with Peano
+remainder (`taylor_isLittleO` / Numlib `abs_sub_sum_taylor_le`).
+'''
+source = "Cartis–Gould–Toint, Theorems 1.1.1–1.1.2 (along a direction)"
+
+[[node]]
+id = "IsLocalMin.iteratedFDeriv_two_nonneg"
+kind = "theorem"
+desc = '''
+If `x` is a local minimizer of `f`, `ContDiffAt ℝ 2 f x`, then `∀ d, 0 ≤ iteratedFDeriv ℝ 2 f x
+(fun _ => d)`, i.e. `0 ≤ minCurvature (iteratedFDeriv ℝ 2 f x)` on an inner product space.
+(Translation of `Descent.nonneg_apply_apply_of_isLocalMin`, or via the ray lemma with
+`ψ t = f (x + t d)`.)
+'''
+deps = ["IsLocalMinOn.iteratedDeriv_nonneg_of_ray", "Descent.nonneg_apply_apply_of_isLocalMin", "le_minCurvature_iff"]
+source = "Cartis–Gould–Toint, Theorem 1.1.1 (second order)"
+
+[[node]]
+id = "IsLocalMin.iteratedFDeriv_three_eq_zero"
+kind = "theorem"
+desc = '''
+If `x` is a local minimizer of `f`, `ContDiffAt ℝ 3 f x`, and `d` satisfies
+`iteratedFDeriv ℝ 2 f x ![d, w] = 0` for all `w` (book: `∇²f(x) d = 0`), then
+`iteratedFDeriv ℝ 3 f x (fun _ => d) = 0`. (Only `∇²f(x)[d,d] = 0` is used; `∇f(x)[d] = 0` holds by
+first order.) Via the ray lemma with `m = 3` applied to `t ↦ f (x ± t d)`.
+'''
+deps = ["IsLocalMinOn.iteratedDeriv_nonneg_of_ray"]
+source = "Cartis–Gould–Toint, Theorem 1.1.1 (third order)"
+
+[[node]]
+id = "isStrictLocalMin_of_fderiv_eq_zero_of_posDef"
+kind = "theorem"
+desc = '''
+`[FiniteDimensional ℝ E]`: if `ContDiffAt ℝ 2 f x`, `fderiv ℝ f x = 0` and
+`∀ d ≠ 0, 0 < iteratedFDeriv ℝ 2 f x (fun _ => d)`, then `IsStrictLocalMinOn f univ x`. (Positive definiteness gives coercivity
+`c ‖d‖² ≤ D²f[d,d]` by compactness of the sphere; then `Descent.isLocalMin_of_coercive_second`.)
+'''
+deps = ["Descent.isLocalMin_of_coercive_second", "IsStrictLocalMinOn"]
+source = "Cartis–Gould–Toint, Theorem 1.1.1 (sufficient condition)"

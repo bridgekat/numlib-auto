@@ -1,0 +1,19 @@
+desc = '''
+Cartis–Gould–Toint Chapter 3, "Methods Using Second Derivatives": slowness of Newton's method
+(§3.1), the second-order trust-region method TR2 (§3.2), the second-order adaptive-regularization
+method AR2 (§3.3), the `O(ε^{-3/2})` variants TRε and iRN (§3.4), and the class `𝓜` of second-order
+methods with its lower bound (§3.5).
+
+Conventions: tolerances `ε₁ > 0`, `ε₂ : Option ℝ` (`none` = `+∞`, second-order test and step
+conditions switched off). The "strict local minimizer" termination branch of TR2/AR2/iRN
+(`‖g‖ ≤ ε₁`, `λ_min > ε₂`) is subsumed by the second-order test (`λ_min > ε₂ ⇒ λ_min ≥ -ε₂`), so
+the termination test is `‖∇f(x_k)‖ ≤ ε₁ ∧ ∀ e ∈ ε₂, -e ≤ λ_min[∇²f(x_k)]`.
+
+Source corrections (details in nodes): Theorem 3.2.6's constant `κ^F` (missing `|log|`, `Δ₀` for
+`1`); (3.2.25) `x_k = (k-1)ε` for `kε`; the Hessian formula after (3.3.2) (factor 2); Lemma 3.4.3
+(denominator `L_{f,2}` for `L_{f,2} + θ₁`); Lemma 3.4.4 (case labels swapped); Theorems 3.4.6 and
+3.4.12 (index slip in the counting argument; corrected constants); Lemma 3.5.1 (self-referential
+constant: `κ_λ = 2√(κ̄_λ(1+κ_rg))`); (3.5.17) sign; iRN in Corollary 3.5.5 needs a rescaled example.
+Sharpness results whose proofs the book postpones to Chapter 12 (Theorems 3.3.6, 3.3.10) are proved
+here from the one-dimensional constructions of `Optimization.SlowExample`.
+'''

@@ -1,0 +1,119 @@
+namespace = "Optimization"
+desc = '''
+Regularized Taylor models of adaptive-regularization methods, `m(s) = T_p(s) + σ/(p+1)! ‖s‖^{p+1}`
+with `T_p` the Taylor polynomial of derivative data `D` (exact jet `ftaylorSeries ℝ f x` in
+AR1/AR2/ARp/ARqp; inexact in Chapter 13), on a real inner product space `E`.
+
+The key estimates are stated for a *single* iteration (point `x`, step `s`, weight `σ`), with the
+constants explicit so that each chapter's lemma (with its own constants: e.g. AR2's `θ₁/2` in
+(3.3.5) versus ARp's `θ₁` in (4.1.11)) is a direct instance:
+* `taylorDecrement_ge_of_regularizedModel_lt`: Lemmas 3.3.1, 4.1.1;
+* `abs_reductionRatio_sub_one_le_of_lipschitz`: core of Lemmas 2.4.2, 3.3.2, 4.1.2, with a
+  parameter `c` in `ΔT ≥ c σ ‖s‖^{p+1}` (AR1's exact step gives `c = 1`, the general bound
+  `c = 1/(p+1)!`), so that both `σ_max = γ₃ L/(2(1-η₂))` (AR1) and `γ₃ L/(1-η₂)` (AR2, ARp) follow;
+* `norm_fderiv_le_of_regularizedModel` and `minCurvature_ge_of_regularizedModel`: Lemmas 3.3.3, 3.3.7,
+  3.3.8 and the first two parts of Lemma 4.1.3.
+The third-order part of Lemma 4.1.3 and anything using `∇³` of the regularization term are left to
+the Chapter 4 plans (they need Lemma B.4.1).
+'''
+
+[[node]]
+id = "regularizedModel"
+kind = "def"
+desc = '''
+`regularizedModel (D : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (σ : ℝ) (s : E) : ℝ :=
+D.taylorSum p s + σ / (p + 1)! * ‖s‖ ^ (p + 1)` (book (2.4.1), (3.3.1), (4.1.2), (12.2.23)).
+'''
+deps = ["FormalMultilinearSeries.taylorSum"]
+source = "Cartis–Gould–Toint, (4.1.2)"
+
+[[node]]
+id = "taylorDecrement_ge_of_regularizedModel_lt"
+kind = "theorem"
+desc = '''
+If `regularizedModel D p σ s ≤ regularizedModel D p σ 0` then
+`σ / (p + 1)! * ‖s‖ ^ (p + 1) ≤ D.taylorDecrement p s`, with strict inequality if the model
+decrease is strict.
+'''
+deps = ["regularizedModel", "FormalMultilinearSeries.taylorDecrement"]
+source = "Cartis–Gould–Toint, Lemma 3.3.1, Lemma 4.1.1"
+
+[[node]]
+id = "abs_reductionRatio_sub_one_le_of_lipschitz"
+kind = "theorem"
+desc = '''
+Let `f` be `C^p` on an open convex set containing `[x, x + s]` with `IteratedFDerivLipschitzOn f p L`
+there, and `0 < c * σ * ‖s‖ ^ (p+1) ≤ (ftaylorSeries ℝ f x).taylorDecrement p s` (`c, σ > 0`). Then
+`|reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) - 1| ≤ L / ((p + 1)! * c * σ)`.
+Hence `σ ≥ L / ((p+1)! c (1 - η₂))` implies `η₂ ≤ ρ`.
+'''
+deps = ["abs_sub_taylorPolynomial_le_of_lipschitz", "reductionRatio", "le_reductionRatio_of_abs_sub_le"]
+source = "Cartis–Gould–Toint, Lemmas 2.4.2, 3.3.2, 4.1.2 (ratio estimate)"
+
+[[node]]
+id = "fderiv_regularizedModel"
+kind = "theorem"
+desc = '''
+For symmetric data (`D.IsSymm p`), `p ≥ 1`: `regularizedModel D p σ` is differentiable and
+`fderiv ℝ (regularizedModel D p σ) s = fderiv ℝ (D.taylorSum p) s + (σ / p! * ‖s‖ ^ (p - 1)) •
+innerSL ℝ s`; for `p ≥ 2` it is `C²` with `iteratedFDeriv ℝ 2 (regularizedModel D p σ) s =
+iteratedFDeriv ℝ 2 (D.taylorSum p) s + σ/(p+1)! • iteratedFDeriv ℝ 2 (‖·‖^(p+1)) s`.
+'''
+deps = ["regularizedModel", "FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply", "fderiv_norm_rpow_apply", "iteratedFDeriv_two_norm_rpow_apply"]
+source = "Cartis–Gould–Toint, (3.3.2), proof of Lemma 4.1.3"
+
+[[node]]
+id = "norm_fderiv_le_of_regularizedModel"
+kind = "theorem"
+desc = '''
+Step-length lower bound, first order (Lemma 4.1.3 (4.1.20); Lemma 3.3.3 with `θ = θ₁/2`; Lemma
+3.3.7 variant). `p ≥ 1`, `f` `C^p` near `[x, x+s]` with `IteratedFDerivLipschitzOn f p L`, model
+`m = regularizedModel (ftaylorSeries ℝ f x) p σ`, `σ ≥ 0`. Then
+`‖fderiv ℝ f (x + s)‖ ≤ (L / p! + σ / p!) * ‖s‖ ^ p + ‖fderiv ℝ m s‖`; in particular
+`‖fderiv ℝ m s‖ ≤ θ ‖s‖^p` gives `‖s‖^p ≥ p! / (L + σ + θ p!) * ‖fderiv ℝ f (x + s)‖`.
+Also the variant (Lemma 3.3.7) with the hypothesis on the Taylor part,
+`‖fderiv ℝ (taylorPolynomial f p x) s‖ ≤ θ' σ ‖s‖^p`: `‖∇f(x+s)‖ ≤ (L/p! + θ' σ) ‖s‖^p`.
+'''
+deps = ["fderiv_regularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, Lemmas 3.3.3, 3.3.7, 4.1.3 (4.1.20)"
+
+[[node]]
+id = "minCurvature_ge_of_regularizedModel"
+kind = "theorem"
+desc = '''
+Step-length lower bound, second order (Lemma 4.1.3 (4.1.21); Lemma 3.3.8). `p ≥ 2`, `E` nontrivial,
+same hypotheses: `minCurvature (iteratedFDeriv ℝ 2 f (x + s)) ≥ minCurvature (iteratedFDeriv ℝ 2 m s)
+- (L + σ) / (p - 1)! * ‖s‖ ^ (p - 1)`; hence `λ_min(∇²m(s)) ≥ -θ ‖s‖^{p-1}` gives
+`‖s‖^{p-1} ≥ (p-1)! / (L + σ + θ (p-1)!) * max 0 (-λ_min(∇²f(x+s)))`.
+(Uses `abs_minCurvature_sub_le`, (A.20) with `j = 2`, and the Hessian norm
+`(p+1) p ‖s‖^{p-1}` of `‖·‖^{p+1}`.)
+'''
+deps = ["fderiv_regularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "abs_minCurvature_sub_le", "iteratedFDeriv_two_norm_rpow_bounds"]
+source = "Cartis–Gould–Toint, Lemmas 3.3.8, 4.1.3 (4.1.21)"
+
+[[node]]
+id = "exists_isMinOn_regularizedModel"
+kind = "theorem"
+desc = '''
+`[FiniteDimensional ℝ E]`, `σ > 0`, `p ≥ 1`: `regularizedModel D p σ` attains its global minimum
+(coercive: the regularization term dominates the degree-`p` polynomial). At a global minimizer
+`s*`: `fderiv ℝ m s* = 0`; if `p ≥ 2`, `0 ≤ minCurvature (iteratedFDeriv ℝ 2 m s*)`; and
+`m s* < m 0` unless `0` is itself a global minimizer (e.g. if `D 1 ≠ 0`). Used for the existence
+of AR runs.
+'''
+deps = ["regularizedModel", "fderiv_regularizedModel", "Optimization.IsLocalMin.iteratedFDeriv_two_nonneg"]
+source = "Cartis–Gould–Toint, Section 3.3.1 (the model is bounded below)"
+
+[[node]]
+id = "regularizedModel_two_eq_regModel"
+kind = "theorem"
+desc = '''
+For `f` `C²` at `x` on a complete real inner product space and `p = 2`:
+`regularizedModel (ftaylorSeries ℝ f x) 2 σ s = f x + Subproblem.regModel (gradient f x)
+(hessianOperator f x) (σ / 2) 3 s` (the book's `σ/6 ‖s‖³` is `regModel`'s `σ'/r ‖s‖^r` with
+`r = 3`, `σ' = σ/2`). Transfers the subproblem theory (global minimizers satisfy
+`(H + λ I) s = -g`, `H + λ I ⪰ 0` with `λ = σ ‖s‖ / 2`: `Subproblem.isMinOn_regModel_iff`,
+existence `Subproblem.exists_isMinOn_regModel`) to AR2 / iRN steps.
+'''
+deps = ["regularizedModel", "Subproblem.regModel", "hessianOperator", "taylorPolynomial_two_eq_quadModel", "Subproblem.isMinOn_regModel_iff", "Subproblem.exists_isMinOn_regModel"]
+source = "Cartis–Gould–Toint, (3.3.1), Theorem 8.2.8"

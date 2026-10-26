@@ -1,0 +1,37 @@
+namespace = "Optimization"
+desc = '''
+The ratio test of model-based methods: `ρ = (f(x) - f(x + s)) / pred` where `pred > 0` is the
+predicted decrease (a Taylor decrement in the book's AR/TR methods, `‖s‖³` in iRN, an inexact
+decrement in Chapter 13), and the acceptance rule `x⁺ = if η₁ ≤ ρ then x + s else x`
+(Cartis–Gould–Toint (2.3.6), (2.4.3), (3.3.7), (4.1.15), (12.2.4), …).
+'''
+
+[[node]]
+id = "reductionRatio"
+kind = "def"
+desc = '''
+`reductionRatio (f : E → ℝ) (x s : E) (pred : ℝ) : ℝ := (f x - f (x + s)) / pred`, and
+`acceptStep η₁ f x s pred : E := if η₁ ≤ reductionRatio f x s pred then x + s else x`.
+'''
+source = "Cartis–Gould–Toint, (2.3.6), (2.4.3)"
+
+[[node]]
+id = "sub_le_of_le_reductionRatio"
+kind = "theorem"
+desc = '''
+If `0 < pred` and `η ≤ reductionRatio f x s pred` then `η * pred ≤ f x - f (x + s)`
+(a successful iteration decreases `f` by at least `η₁` times the predicted decrease).
+'''
+deps = ["reductionRatio"]
+source = "Cartis–Gould–Toint, proof of Lemma 2.3.6"
+
+[[node]]
+id = "le_reductionRatio_of_abs_sub_le"
+kind = "theorem"
+desc = '''
+If `0 < pred` and `|f (x + s) - (f x - pred)| ≤ c * pred` (the model `f x - pred` predicts
+`f (x + s)` up to `c * pred`) then `1 - c ≤ reductionRatio f x s pred` (from
+`|ρ - 1| = |f(x+s) - m(s)| / pred`). With `c ≤ 1 - η₂` this gives `η₂ ≤ ρ` ("very successful").
+'''
+deps = ["reductionRatio"]
+source = "Cartis–Gould–Toint, proofs of Lemmas 2.3.3, 2.4.2, 3.2.4, 3.3.2"

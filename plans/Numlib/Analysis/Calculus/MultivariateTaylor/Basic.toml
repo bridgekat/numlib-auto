@@ -1,0 +1,120 @@
+desc = '''
+Taylor polynomials from derivative data. `D : FormalMultilinearSeries ℝ E ℝ` (`D i : E [×i]→L[ℝ] ℝ`)
+plays the role of the jet `(f(x), ∇f(x), …, ∇^p f(x))`; for a function the data is Mathlib's
+`ftaylorSeries ℝ f x`, whose `i`-th term is `iteratedFDeriv ℝ i f x` (the book's `∇^i_x f(x)`,
+applied as `∇^i f(x)[s]^i = iteratedFDeriv ℝ i f x (fun _ => s)`). Note Mathlib's
+`FormalMultilinearSeries.partialSum` has no factorials (power-series convention); here the factorial
+convention of Taylor series is used.
+
+Formula (A.11) for the derivatives of `s ↦ T_p(s)` needs the data to be *symmetric* (invariant under
+permutation of arguments); `iteratedFDeriv` of a `C^n` function is symmetric in orders `≤ n`
+(`ContDiffAt.isSymm_iteratedFDeriv`; Mathlib only has order two, `IsSymmSndFDerivAt`, and Numlib has
+the `C^∞` case `ContDiff.iteratedFDeriv_congr_perm`). The derivative of `s ↦ A[s]^ℓ` is
+`ContinuousMultilinearMap.iteratedFDeriv_comp_diagonal` (sum over permutations), which collapses to
+`ℓ!/(ℓ-j)!` copies for symmetric `A`.
+
+Decrement `ΔT_p(s) = T_p(0) - T_p(s)` (Cartis–Gould–Toint (12.1.11)) is defined here since every
+regularization / trust-region method of the book measures predicted decrease with it.
+'''
+
+[[node]]
+id = "FormalMultilinearSeries.taylorSum"
+kind = "def"
+desc = '''
+For `D : FormalMultilinearSeries ℝ E ℝ`, `p : ℕ`, `s : E`:
+`D.taylorSum p s = ∑ i ∈ Finset.range (p + 1), (i ! : ℝ)⁻¹ * D i (fun _ => s)`.
+(The `i = 0` term is the value `D 0 (fun _ => s) = D 0 ![]`.)
+'''
+source = "Cartis–Gould–Toint, (A.10), (13.1.1)"
+
+[[node]]
+id = "FormalMultilinearSeries.taylorDecrement"
+kind = "def"
+desc = '''
+`D.taylorDecrement p s = D.taylorSum p 0 - D.taylorSum p s` (the book's `ΔT_{f,p}(x, s)`).
+'''
+deps = ["FormalMultilinearSeries.taylorSum"]
+source = "Cartis–Gould–Toint, (12.1.11)"
+
+[[node]]
+id = "FormalMultilinearSeries.taylorDecrement_eq"
+kind = "theorem"
+desc = '''
+`D.taylorDecrement p s = -∑ i ∈ Finset.Icc 1 p, (i ! : ℝ)⁻¹ * D i (fun _ => s)` (the zeroth-order
+terms cancel; for `p = 0` the decrement is `0`).
+'''
+deps = ["FormalMultilinearSeries.taylorDecrement"]
+source = "Cartis–Gould–Toint, (12.1.11)"
+
+[[node]]
+id = "FormalMultilinearSeries.abs_taylorDecrement_sub_le"
+kind = "theorem"
+desc = '''
+For two data `D D'` (exact and inexact derivatives): `|D.taylorDecrement p s - D'.taylorDecrement p s|
+≤ ∑ i ∈ Icc 1 p, ‖D i - D' i‖ * ‖s‖ ^ i / i !`; in particular (`D' = 0`) `|D.taylorDecrement p s| ≤
+∑ i ∈ Icc 1 p, ‖D i‖ ‖s‖^i / i!`. Used for inexact models (Cartis–Gould–Toint (13.1.3)) and to show
+that the optimality measure is finite.
+'''
+deps = ["FormalMultilinearSeries.taylorDecrement_eq"]
+source = "Cartis–Gould–Toint, (13.1.3)"
+
+[[node]]
+id = "taylorPolynomial"
+kind = "def"
+desc = '''
+For `f : E → ℝ`, `p : ℕ`, `x s : E`: `taylorPolynomial f p x s = (ftaylorSeries ℝ f x).taylorSum p s
+= ∑_{i ≤ p} (1/i!) iteratedFDeriv ℝ i f x (fun _ => s)`, the book's `T_{f,p}(x, s)`.
+`taylorPolynomial_zero_right : taylorPolynomial f p x 0 = f x` is part of this node's API.
+'''
+deps = ["FormalMultilinearSeries.taylorSum"]
+source = "Cartis–Gould–Toint, (A.10), (4.1.1)"
+
+[[node]]
+id = "FormalMultilinearSeries.IsSymm"
+kind = "def"
+desc = '''
+`D.IsSymm p : Prop := ∀ i ≤ p, ∀ (σ : Equiv.Perm (Fin i)) (v : Fin i → E), D i (v ∘ σ) = D i v`
+(the data is symmetric up to order `p`, as derivative tensors are).
+'''
+source = "Cartis–Gould–Toint, Section A.6"
+
+[[node]]
+id = "ContDiffAt.isSymm_iteratedFDeriv"
+kind = "theorem"
+desc = '''
+If `f : E → F` is `ContDiffAt ℝ n f x` with `n : ℕ` then for every `i ≤ n`, `σ : Perm (Fin i)` and
+`v`, `iteratedFDeriv ℝ i f x (v ∘ σ) = iteratedFDeriv ℝ i f x v`; hence
+`(ftaylorSeries ℝ f x).IsSymm n` for real-valued `f`. Proof by induction on `i` from the
+second-order symmetry `ContDiffAt.isSymmSndFDerivAt` of Mathlib applied to the iterated derivatives
+(adjacent transpositions generate `Perm (Fin i)`). Generalizes Numlib's `C^∞` statement
+`ContDiff.iteratedFDeriv_congr_perm`.
+'''
+deps = ["FormalMultilinearSeries.IsSymm", "ContDiff.iteratedFDeriv_congr_perm"]
+source = "Cartis–Gould–Toint, Section A.6 (derivative tensors are symmetric)"
+
+[[node]]
+id = "FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply"
+kind = "theorem"
+desc = '''
+Formula (A.11). If `D.IsSymm p` and `j ≤ p`, then for all `s : E` and `v : Fin j → E`,
+`iteratedFDeriv ℝ j (D.taylorSum p) s v = ∑ ℓ ∈ Finset.Icc j p, ((ℓ - j)! : ℝ)⁻¹ *
+D ℓ (fun i => if h : (i : ℕ) < j then v ⟨i, h⟩ else s)` (the first `j` arguments are `v`, the
+remaining `ℓ - j` are `s`); for `j > p` the derivative is `0`. The map `s ↦ D.taylorSum p s` is
+`ContDiff ℝ ⊤`. Proof from `ContinuousMultilinearMap.iteratedFDeriv_comp_diagonal` termwise.
+Special cases recorded as corollaries: `j = 1` (gradient of the model), `j = p` (constant, equal to
+`D p`), `s = 0` (`iteratedFDeriv ℝ j (D.taylorSum p) 0 = D j` for `j ≤ p`).
+'''
+deps = ["FormalMultilinearSeries.taylorSum", "FormalMultilinearSeries.IsSymm"]
+source = "Cartis–Gould–Toint, (A.11)"
+
+[[node]]
+id = "iteratedFDeriv_taylorPolynomial_zero"
+kind = "theorem"
+desc = '''
+If `ContDiffAt ℝ p f x` then for all `j ≤ p`, `iteratedFDeriv ℝ j (taylorPolynomial f p x) 0 =
+iteratedFDeriv ℝ j f x`, and for all `s`, `iteratedFDeriv ℝ p (taylorPolynomial f p x) s =
+iteratedFDeriv ℝ p f x`: the Taylor polynomial has the jet of `f` at `s = 0` and constant top
+derivative.
+'''
+deps = ["FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply", "ContDiffAt.isSymm_iteratedFDeriv", "taylorPolynomial"]
+source = "Cartis–Gould–Toint, (A.11)"

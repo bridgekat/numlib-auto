@@ -1,0 +1,75 @@
+namespace = "Constrained"
+desc = '''
+Second-order optimality conditions for equality- and inequality-constrained problems, in the
+conventions of `Numlib/Optimization/Constrained` (equalities `h i x = 0`, inequalities `g j x ≤ 0`,
+Lagrangian `f + ∑ λ_i h_i + ∑ μ_j g_j`, LICQ = `IsRegularPoint` / `IsRegularPointIneq`). The book's
+convention (Cartis–Gould–Toint Theorems 1.1.3–1.1.4: `c(x) ≥ 0`, `ℒ = f - ⟨y, c⟩`) is the instance
+`g = -c`, `μ = y`. The book leaves "a constraint qualification" unspecified; the necessary
+conditions are proved under LICQ (which is what the existing first-order theory uses). The
+sufficient conditions need no constraint qualification but, as printed in the book, quantify over
+*all* `d` (including `d = 0`, making the hypothesis `0 < 0` unsatisfiable); they are stated for
+`d ≠ 0`.
+
+Proof of the necessary conditions (Nocedal–Wright Theorem 12.5): for `d` in the critical cone,
+build a `C²` feasible arc `γ` with `γ 0 = x`, `γ' 0 = d`, keeping the equality constraints and the
+active inequality constraints with `g' d = 0` at zero (implicit function theorem under LICQ), the
+other active ones strictly feasible for small `t > 0`; then `t ↦ ℒ(γ t) = f(γ t)` on the arc and
+the ray lemma give `ℒ''[d,d] + ℒ'[γ''(0)] ≥ 0` with `ℒ' = 0`.
+'''
+
+[[node]]
+id = "criticalCone"
+kind = "def"
+desc = '''
+For constraint derivatives `h' : ι → E → E →L[ℝ] ℝ`, `g' : κ → E → E →L[ℝ] ℝ`, constraint values `g`,
+point `x` and inequality multipliers `μ`: `criticalCone h' g g' x μ : Set E := {d | (∀ i, h' i x d = 0)
+∧ (∀ j ∈ activeSet g x, 0 < μ j → g' j x d = 0) ∧ (∀ j ∈ activeSet g x, μ j = 0 → g' j x d ≤ 0)}`
+(the book's `𝒩₊` (1.1.17) with `g = -c`).
+'''
+deps = ["activeSet"]
+source = "Cartis–Gould–Toint, Theorem 1.1.4 (set 𝒩₊)"
+
+[[node]]
+id = "exists_contDiff_feasible_arc"
+kind = "theorem"
+desc = '''
+Feasible arcs under LICQ. `[FiniteDimensional ℝ E]`, `x` with `IsRegularPointIneq h h' g g' x`,
+all constraints `ContDiffAt ℝ 2` at `x` with derivatives `h' i x`, `g' j x`; `J ⊆ activeSet g x`;
+`d` with `h' i x d = 0` (all `i`), `g' j x d = 0` (`j ∈ J`), `g' j x d < 0` (`j` active, `j ∉ J`).
+Then there is `γ : ℝ → E`, `ContDiffAt ℝ 2 γ 0`, `γ 0 = x`, `deriv γ 0 = d`, and `ε > 0` such that
+for `t ∈ [0, ε)`: `h i (γ t) = 0`, `g j (γ t) = 0` (`j ∈ J`), `g j (γ t) ≤ 0` (all `j`). Proof:
+implicit function theorem (`HasStrictFDerivAt.implicitFunction`, `C²` version) applied to
+`(t, z) ↦ (h(x + t d + A z), g_J(x + t d + A z))` with `A` a right inverse of the Jacobian.
+'''
+deps = ["IsRegularPointIneq", "exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top"]
+source = "Cartis–Gould–Toint, Theorems 1.1.3–1.1.4 (constraint qualification)"
+
+[[node]]
+id = "secondOrder_necessary_ineq"
+kind = "theorem"
+desc = '''
+Second-order necessary condition (book (1.1.17), (1.1.14)). `[FiniteDimensional ℝ E]`, `x` a local
+minimizer of `f` on `feasible h g`, `IsRegularPointIneq h h' g g' x`, `f` and all constraints
+`ContDiffAt ℝ 2` at `x`. Then there are multipliers `l, μ` with `IsKKTPoint f' h h' g g' x l μ`
+(existing first-order theorem) and for every `d ∈ criticalCone h' g g' x μ`:
+`0 ≤ iteratedFDeriv ℝ 2 (fun y => f y + ∑ i, l i * h i y + ∑ j, μ j * g j y) x (fun _ => d)`.
+The equality-constrained case (no `g`, book (1.1.14)) is the instance `κ = Empty`.
+'''
+deps = ["criticalCone", "exists_contDiff_feasible_arc", "exists_kkt_of_isLocalMinOn", "IsKKTPoint", "Optimization.IsLocalMinOn.iteratedDeriv_nonneg_of_ray"]
+source = "Cartis–Gould–Toint, Theorems 1.1.3–1.1.4 (second-order necessary)"
+
+[[node]]
+id = "isStrictLocalMinOn_of_secondOrder_sufficient"
+kind = "theorem"
+desc = '''
+Second-order sufficient condition (book (1.1.18), (1.1.15), with `d ≠ 0`). `[FiniteDimensional ℝ E]`,
+`IsKKTPoint f' h h' g g' x l μ` (no constraint qualification), `f`, `h i`, `g j` `C²` near `x`
+with `f' = fderiv f`, etc., and `∀ d ∈ criticalCone h' g g' x μ, d ≠ 0 → 0 < D²ℒ(x)[d,d]` where
+`ℒ = f + ∑ l_i h_i + ∑ μ_j g_j`. Then `Optimization.IsStrictLocalMinOn f (feasible h g) x`.
+Proof as `isLocalMin_of_lagrangian_second_order`: a violating feasible sequence has normalized
+directions clustering at `d ≠ 0`; `ℒ ≤ f` on the feasible set, `f y_k ≤ f x = ℒ x`, the
+first-order expansions show `d ∈ criticalCone`, and the second-order expansion of `ℒ` gives
+`D²ℒ[d,d] ≤ 0`.
+'''
+deps = ["criticalCone", "IsKKTPoint", "isLocalMin_of_lagrangian_second_order", "isLittleO_taylor_two", "Optimization.IsStrictLocalMinOn"]
+source = "Cartis–Gould–Toint, Theorems 1.1.3–1.1.4 (second-order sufficient, corrected to d ≠ 0)"

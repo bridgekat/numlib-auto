@@ -1,0 +1,35 @@
+namespace = "CartisGouldToint.Chapter02"
+desc = '''
+§2.1 A requirement: the standing assumptions of Part IA. `f : EuclideanSpace ℝ (Fin n) → ℝ`.
+The one-dimensional example showing that f.Bb and f.C1 alone admit no complexity bound is not a
+numbered result and is not formalized. Bridges from the surface assumptions to the backbone
+predicates (`IteratedFDerivLipschitzOn f 1 L univ`) are part of this module.
+'''
+
+[[node]]
+id = "AssumptionBb"
+kind = "def"
+desc = '''
+f.Bb: `AssumptionBb f flow : Prop := ∀ x, flow ≤ f x`.
+'''
+source = "Cartis–Gould–Toint, Assumption f.Bb (Section 2.1)"
+
+[[node]]
+id = "AssumptionC1"
+kind = "def"
+desc = '''
+f.C1: `AssumptionC1 f : Prop := ContDiff ℝ 1 f`.
+'''
+source = "Cartis–Gould–Toint, Assumption f.C1 (Section 2.1)"
+
+[[node]]
+id = "AssumptionGL"
+kind = "def"
+desc = '''
+f.gL: `AssumptionGL f L : Prop := ContDiff ℝ 1 f ∧ 1 ≤ L ∧ ∀ x y, ‖gradient f x - gradient f y‖ ≤
+L * ‖x - y‖` (2.1.5). Bridge (part of node): `AssumptionGL f L → IteratedFDerivLipschitzOn f 1 L
+univ` (`‖iteratedFDeriv ℝ 1 f x - …‖ = ‖fderiv …‖ = ‖gradient …‖`), and `‖iteratedFDeriv ℝ 2 f x‖ ≤
+L` when `f` is `C²` (Theorem A.8.5).
+'''
+deps = ["IteratedFDerivHolderOn", "norm_iteratedFDeriv_succ_le_of_lipschitzOn"]
+source = "Cartis–Gould–Toint, Assumption f.gL, (2.1.5)"
