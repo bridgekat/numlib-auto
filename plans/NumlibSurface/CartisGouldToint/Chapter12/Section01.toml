@@ -3,8 +3,8 @@ desc = '''
 §12.1 Optimality conditions revisited. Functions `f : EuclideanSpace ℝ (Fin n) → ℝ` (`𝔼`), the
 measure `phiMeasure f j δ x = φ^δ_{f,j}(x)` (12.1.10) as an abbreviation of
 `Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ univ`, `(ε,δ)`-approximate minimizers (12.1.25)
-via `Optimization.IsEpsDeltaApprox`. Curve-based conditions use `Optimization.curveCoeff` (Mathlib
-`Composition` for the index sets `P(j,k)` of (12.1.5)). Tensor norms are Mathlib operator norms;
+via `Optimization.IsEpsDeltaApprox`. Curve-based conditions use `Optimization.curveCoeff`, defined from the index sets
+`Optimization.curveIndexSet j k = P(j,k)` of (12.1.5) (`k`-tuples of positive integers summing to `j`). Tensor norms are Mathlib operator norms;
 projected norms (12.1.13) are read in diagonal form (see `theorem_12_1_3_iii`).
 Examples stating facts are planned as theorems `example_12_1_x`. The weak approximate minimizers
 of (12.1.40) (Notes) are not planned. Theorem 12.1.5 as printed is false
@@ -75,7 +75,7 @@ Theorem 12.1.1. If `ContDiffAt ℝ q f x` and `IsLocalMin f x`, then for every `
 (`P(j,k)` (12.1.5) = compositions of `j` with `k` parts). Equivalently `IsQthOrderMinimizer f x q`.
 (The book skips the proof; route via polynomial curves and the Peano remainder.)
 '''
-deps = ["IsQthOrderMinimizer", "Optimization.IsLocalMin.isCurveCritical"]
+deps = ["IsQthOrderMinimizer", "IsLocalMin.isCurveCritical"]
 source = "Cartis–Gould–Toint, Theorem 12.1.1"
 
 [[node]]

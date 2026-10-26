@@ -566,3 +566,47 @@ theorem taylorPolynomial_sub_le_of_lipschitz (hC : Convex ℝ C)
   linarith
 
 end RealValued
+
+section LipschitzAlgebra
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+
+variable {F G : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [NormedAddCommGroup G]
+  [NormedSpace ℝ G] {f g : E → F} {j : ℕ} {L L' : ℝ} {C : Set E}
+
+/-- Lipschitz constants of `j`-th derivatives add under subtraction of `C^j` functions. -/
+theorem IteratedFDerivLipschitzOn.sub (hf : IteratedFDerivLipschitzOn f j L C)
+    (hg : IteratedFDerivLipschitzOn g j L' C) (hfC : ∀ y ∈ C, ContDiffAt ℝ j f y)
+    (hgC : ∀ y ∈ C, ContDiffAt ℝ j g y) : IteratedFDerivLipschitzOn (f - g) j (L + L') C := by
+  rw [iteratedFDerivLipschitzOn_iff] at *
+  intro y hy z hz
+  rw [iteratedFDeriv_sub_apply (hfC y hy) (hgC y hy), iteratedFDeriv_sub_apply (hfC z hz)
+    (hgC z hz), sub_sub_sub_comm, add_mul]
+  exact (norm_sub_le _ _).trans (add_le_add (hf y hy z hz) (hg y hy z hz))
+
+/-- Lipschitz constants of `j`-th derivatives add under addition of `C^j` functions. -/
+theorem IteratedFDerivLipschitzOn.add (hf : IteratedFDerivLipschitzOn f j L C)
+    (hg : IteratedFDerivLipschitzOn g j L' C) (hfC : ∀ y ∈ C, ContDiffAt ℝ j f y)
+    (hgC : ∀ y ∈ C, ContDiffAt ℝ j g y) : IteratedFDerivLipschitzOn (f + g) j (L + L') C := by
+  rw [iteratedFDerivLipschitzOn_iff] at *
+  intro y hy z hz
+  rw [iteratedFDeriv_add_apply (hfC y hy) (hgC y hy), iteratedFDeriv_add_apply (hfC z hz)
+    (hgC z hz), add_sub_add_comm, add_mul]
+  exact (norm_add_le _ _).trans (add_le_add (hf y hy z hz) (hg y hy z hz))
+
+/-- Composition with a continuous linear map on the left multiplies the Lipschitz constant of
+the `j`-th derivative by `‖A‖`. -/
+theorem IteratedFDerivLipschitzOn.continuousLinearMap_comp (A : F →L[ℝ] G)
+    (hf : IteratedFDerivLipschitzOn f j L C) (hfC : ∀ y ∈ C, ContDiffAt ℝ j f y) :
+    IteratedFDerivLipschitzOn (A ∘ f) j (‖A‖ * L) C := by
+  rw [iteratedFDerivLipschitzOn_iff] at *
+  intro y hy z hz
+  have hsub : ∀ X Y : ContinuousMultilinearMap ℝ (fun _ : Fin j => E) F,
+      A.compContinuousMultilinearMap X - A.compContinuousMultilinearMap Y =
+        A.compContinuousMultilinearMap (X - Y) := fun X Y => by ext; simp
+  rw [A.iteratedFDeriv_comp_left (hfC y hy) le_rfl, A.iteratedFDeriv_comp_left (hfC z hz) le_rfl,
+    hsub, mul_assoc]
+  exact (A.norm_compContinuousMultilinearMap_le _).trans
+    (mul_le_mul_of_nonneg_left (hf y hy z hz) (norm_nonneg A))
+
+end LipschitzAlgebra
