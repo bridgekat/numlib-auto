@@ -1,0 +1,60 @@
+namespace = "Optimization"
+desc = '''
+The resisting-oracle (orthogonal-embedding) argument of Carmon–Duchi–Hinder–Sidford
+(Props. 1 and 2, App. A of "Lower bounds for finding stationary points I"), cited without proof
+as Cartis–Gould–Toint Theorem 4.2.4: every deterministic `p`-th order method, run on a randomly
+rotated copy `f ∘ Uᵀ` of `f` in a larger dimension, behaves like a zero-respecting method on `f`.
+
+Construction (deterministic, lazy Gram–Schmidt): given `M : JetMethod p`, `n`, a horizon `T`, set
+`m = n + T`. The simulating method `Z` on `f : ℝⁿ → ℝ` keeps a partial isometry: columns `u_j`
+(`j : Fin n`) are fixed when coordinate `j` is *discovered* (some derivative of order `1..p` of `f`
+at a past iterate is nonzero in direction `e_j`), chosen unit, orthogonal to all previously chosen
+columns and to the simulated queries `z_0, …, z_k` of `M` (possible while
+`#queries + #columns < m`). `Z` answers `M`'s queries with the push-forward of `f`'s jets
+(which only involve discovered columns, by construction), and outputs `x_{k+1} = Σ_{j discovered}
+⟪u_j, z_{k+1}⟫ e_j`. Undiscovered columns are completed orthogonally at the end, giving
+`U : ℝⁿ →ₗᵢ ℝ^m` with `Uᵀ z_k = x_k` (at most `T` queries and `n - 1` other columns
+constrain each choice, so `m = n + T` suffices) and the jets of `f ∘ Uᵀ` at
+`z_k` equal the answers used, so by `OracleMethod.iterate_congr` the real run of `M` on `f ∘ Uᵀ`
+is the simulated one. `Z` is zero-respecting for every `f` by construction. Classical choice is
+used for the column choices (noncomputable def). Expected 700–1200 lines; the main formal
+difficulty is the bookkeeping of the simulation state.
+'''
+
+[[node]]
+id = "exists_zeroRespecting_simulation"
+kind = "theorem"
+desc = '''
+For every `M ∈ methodClass p` and `T : ℕ` there is `Z ∈ zeroRespectingClass p` such that for every
+`n` and every `f : EuclideanSpace ℝ (Fin n) → ℝ` with `ContDiff ℝ p f` there is a linear isometry
+`U : EuclideanSpace ℝ (Fin n) →ₗᵢ[ℝ] EuclideanSpace ℝ (Fin (n + T))` with
+`Uᵀ (M.iter (n + T) (f ∘ Uᵀ) k) = Z.iter n f k` for all `k < T` (`Uᵀ` the adjoint). Consequently
+`min T (firstStationaryIndex (Z.iter n f) f ε) ≤ firstStationaryIndex (M.iter (n+T) (f ∘ Uᵀ)) (f ∘ Uᵀ) ε`.
+'''
+deps = ["JetMethod", "IsZeroRespectingFor", "firstStationaryIndex", "comp_adjoint_mem_smoothClass", "OracleMethod.iterate_congr"]
+source = "Cartis–Gould–Toint, Theorem 4.2.4 (proof: [77, Props. 1 and 2, App. A])"
+
+[[node]]
+id = "classComplexity_zeroRespecting_le"
+kind = "theorem"
+desc = '''
+If `𝓕` is closed under orthogonal embeddings (`⟨n,f⟩ ∈ 𝓕 → ∀ m ≥ n, ∀ U : ℝⁿ →ₗᵢ ℝ^m,
+⟨m, f ∘ Uᵀ⟩ ∈ 𝓕`; true for `smoothClass` by `comp_adjoint_mem_smoothClass`) and all members are
+`C^p`, then `classComplexity (zeroRespectingClass p) 𝓕 ε ≤ classComplexity (methodClass p) 𝓕 ε`
+(Theorem 4.2.4, first part). Proof: for `M` and every `T`, take `Z` from
+`exists_zeroRespecting_simulation`; `⨆_F k_ε(M, ·) ≥ min T (⨆_F k_ε(Z, ·)) ≥ min T (#_ZR)`; let `T → ∞`.
+'''
+deps = ["exists_zeroRespecting_simulation", "classComplexity", "comp_adjoint_mem_smoothClass"]
+source = "Cartis–Gould–Toint, Theorem 4.2.4 (first part)"
+
+[[node]]
+id = "le_classComplexity_comp_adjoint"
+kind = "theorem"
+desc = '''
+Theorem 4.2.4, second part. If `f : EuclideanSpace ℝ (Fin n) → ℝ` is `C^p` and
+`k̄ ≤ classComplexity (zeroRespectingClass p) {⟨n, f⟩} ε` (`k̄ : ℕ`), then
+`k̄ ≤ classComplexity (methodClass p) {⟨n + k̄, f ∘ Uᵀ⟩ | U : ℝⁿ →ₗᵢ ℝ^{n+k̄}} ε`; hence, if all
+these rotated copies lie in `𝓕`, `k̄ ≤ classComplexity (methodClass p) 𝓕 ε`.
+'''
+deps = ["exists_zeroRespecting_simulation", "classComplexity"]
+source = "Cartis–Gould–Toint, Theorem 4.2.4 (second part)"

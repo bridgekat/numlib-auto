@@ -117,3 +117,37 @@ existence `Subproblem.exists_isMinOn_regModel`) to AR2 / iRN steps.
 '''
 deps = ["regularizedModel", "Subproblem.regModel", "hessianOperator", "taylorPolynomial_two_eq_quadModel", "Subproblem.isMinOn_regModel_iff", "Subproblem.exists_isMinOn_regModel"]
 source = "Cartis–Gould–Toint, (3.3.1), Theorem 8.2.8"
+
+[[node]]
+id = "iteratedFDeriv_regularizedModel"
+kind = "theorem"
+desc = '''
+(Added by the Chapter 4 plan.) For `s ≠ 0` and every `j : ℕ` (or any `s` and `j ≤ p`, by
+`contDiff_normRpow_of_lt`): `regularizedModel D p σ` is `C^j` near `s` and
+`iteratedFDeriv ℝ j (regularizedModel D p σ) s = iteratedFDeriv ℝ j (D.taylorSum p) s +
+(σ / (p + 1)!) • iteratedFDeriv ℝ j (fun y : E => ‖y‖ ^ (p + 1)) s` (the norm power written with
+the natural exponent `p + 1`, equal to the real power `((p : ℝ) + 1)`). Generalizes the `j ≤ 2`
+statements of `fderiv_regularizedModel`.
+'''
+deps = ["regularizedModel", "contDiffOn_normRpow", "contDiff_normRpow_of_lt"]
+source = "Cartis–Gould–Toint, (4.1.2), proof of Lemma 4.1.3 (4.1.30)"
+
+[[node]]
+id = "abs_iteratedFDeriv_apply_le_of_regularizedModel"
+kind = "theorem"
+desc = '''
+(Added by the Chapter 4 plan.) Higher-order step-length estimate (core of (4.1.30)). Let `p ≥ 1`,
+`1 ≤ j ≤ p`, `f` `C^p` on an open set containing `[x, x + s]`, `IteratedFDerivLipschitzOn f p L`
+on a convex subset containing `x, x + s`, `s ≠ 0`, `σ ≥ 0`,
+`m = regularizedModel (ftaylorSeries ℝ f x) p σ`. Then for all `d : E`:
+`|iteratedFDeriv ℝ j f (x + s) (fun _ => d)| ≤ L / (p - j + 1)! * ‖s‖ ^ (p - j + 1) * ‖d‖ ^ j
++ σ / (p + 1)! * |iteratedFDeriv ℝ j (fun y => ‖y‖ ^ (p + 1)) s (fun _ => d)|
++ |iteratedFDeriv ℝ j m s (fun _ => d)|`.
+Combined with a diagonal bound on the norm power (`iteratedFDeriv_two_norm_rpow_bounds` for
+`j = 2`, `abs_iteratedFDeriv_three_normRpow_apply_le` for `j = 3`,
+`abs_iteratedFDeriv_normRpow_apply_le` for general `j`) the middle term is
+`≤ σ / (p - j + 1)! ‖s‖^{p-j+1} ‖d‖^j`, giving the book's
+`|∇^j f(x+s)[d]^j| ≤ (L + σ)/(p-j+1)! ‖s‖^{p-j+1} + |∇^j m(s)[d]^j|` for `‖d‖ = 1`.
+'''
+deps = ["iteratedFDeriv_regularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, proof of Lemma 4.1.3 (4.1.30); also (6.2.20)–(6.2.22), Lemma 12.2.12"

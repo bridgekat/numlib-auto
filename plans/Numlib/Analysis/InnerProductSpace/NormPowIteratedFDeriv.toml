@@ -1,0 +1,164 @@
+desc = '''
+Higher derivatives of `x ↦ ‖x‖ ^ λ` (`λ : ℝ`) on a real inner product space `E`: the regularization
+terms `σ/(p+1)! ‖s‖^{p+1}` (and `‖s‖^{p+β}`) of adaptive-regularization models
+(Cartis–Gould–Toint Lemma B.4.1, used in Chapters 4, 5, 6, 12, 14). Builds on
+`Numlib/Analysis/InnerProductSpace/NormPow` (smoothness off `0`, homogeneity, radial and
+perpendicular values, reduction to derivatives along lines) and `NormPowHessian` (orders 1–2 at
+every point including `0`). A separate module rather than an extension of `NormPowHessian` because
+the content (all orders, operator norms, a one-variable coefficient inequality) is of a different
+kind; `NormPowHessian`'s order-2 statements are the `j = 2` instances.
+
+Notation: `π_j(λ) := ∏ i ∈ range j, (λ - i)` (the descending Pochhammer value
+`(descPochhammer ℝ j).eval λ`; the book's `(p+β)!/(p-j+β)!` for `λ = p + β`, by
+`holderFactorial`). Line reduction: for `x ≠ 0`, `v ≠ 0`, `t ↦ ‖x + t v‖^λ =
+‖x‖^λ (1 + 2 c τ + τ²)^{λ/2}` with `τ = t ‖v‖/‖x‖`, `c = ⟪x,v⟫/(‖x‖ ‖v‖) ∈ [-1,1]`, so
+`D^j(‖·‖^λ)(x)[v]^j = ‖x‖^{λ-j} ‖v‖^j · a_j(λ,c)` with
+`a_j(λ,c) = iteratedDeriv j (fun τ => (1 + 2 c τ + τ²)^(λ/2)) 0`.
+
+**Source error (Lemma B.4.1).** (B.4.1)–(B.4.2) hold for `j ≤ p` (indeed for every natural `j` with
+`(j : ℝ) ≤ λ`), but (B.4.3), `‖∇^{p+1}(‖s‖^{p+β})‖ = β (p+β)! ‖s‖^{β-1}`, is false for every
+`β ∈ (0,1)`: the value `β (p+β)! ‖s‖^{β-1}` is only the *radial* value `D^{p+1}[ŝ]^{p+1}`, and the
+book's claim "the maximum in (B.4.4) is achieved for `v = s/‖s‖`" fails because the coefficients in
+(B.4.9) change sign. Counterexample: `p = 1`, `β = 1/2`, `E = ℝ²`, `s = e₁`:
+`D²(‖·‖^{3/2})(e₁)[e₂,e₂] = 3/2 > 3/4 = β (p+β)!`. For `β = 1` (the only case used in the book:
+Chapters 4, 12, 14) (B.4.3) is correct: `‖∇^{p+1} ‖s‖^{p+1}‖ = (p+1)!` for `s ≠ 0`. (Numerically,
+for `β ∈ (0,1)`, `‖∇^{p+1}(‖s‖^{p+β})‖ ≤ (p+1)! ‖s‖^{β-1}` for `p ≤ 15`; not planned.) The book's
+justification of the diagonal maximum is also incomplete for `j ≤ p` (mixed signs occur, e.g.
+`λ = 5`, `j = 4`); the statement is nevertheless true (numerically verified for `p ≤ 8`), and its
+proof is the risk of this module (node `abs_iteratedDeriv_line_rpow_le`). Chapter 4 only needs
+`j ≤ 3`, which is covered by the explicit node `abs_iteratedFDeriv_three_normRpow_apply_le`.
+'''
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_eq_line"
+kind = "theorem"
+desc = '''
+Line reduction. For `x ≠ 0`, `v ≠ 0`, `λ : ℝ`, `j : ℕ`, with `c = ⟪x, v⟫ / (‖x‖ * ‖v‖)`:
+`iteratedFDeriv ℝ j (fun y : E => ‖y‖ ^ λ) x (fun _ => v) =
+‖x‖ ^ (λ - j) * ‖v‖ ^ j * iteratedDeriv j (fun τ : ℝ => (1 + 2 * c * τ + τ ^ 2) ^ (λ / 2)) 0`
+(and `|c| ≤ 1`). (`iteratedFDeriv_apply_const_eq_iteratedDeriv` on the open set `{0}ᶜ`, then the
+substitution `t = τ ‖x‖/‖v‖`, `iteratedDeriv_comp_const_mul`-type scaling.)
+'''
+deps = ["iteratedFDeriv_apply_const_eq_iteratedDeriv", "contDiffOn_normRpow"]
+source = "Cartis–Gould–Toint, proof of Lemma B.4.1, (B.4.9)"
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_self"
+kind = "theorem"
+desc = '''
+Radial values (B.4.2), any real `λ`, any `j`: for `x ≠ 0`,
+`iteratedFDeriv ℝ j (fun y : E => ‖y‖ ^ λ) x (fun _ => x) = (∏ i ∈ range j, (λ - i)) * ‖x‖ ^ λ`.
+(From `iteratedFDeriv_normRpow_apply_unit` and multilinearity: `[x]^j = ‖x‖^j [x̂]^j`.)
+For `λ = p + β`, `j ≤ p + 1` the product is `holderFactorial p β / holderFactorial (p - j) β`
+(`j ≤ p`), resp. `β * holderFactorial p β` (`j = p + 1`).
+'''
+deps = ["iteratedFDeriv_normRpow_apply_unit", "holderFactorial"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.2)"
+
+[[node]]
+id = "abs_iteratedDeriv_line_rpow_le"
+kind = "theorem"
+desc = '''
+The one-variable coefficient inequality behind (B.4.1). For `λ : ℝ`, `j : ℕ` with `(j : ℝ) ≤ λ`
+and `c ∈ [-1, 1]`: `|iteratedDeriv j (fun τ : ℝ => (1 + 2 * c * τ + τ ^ 2) ^ (λ / 2)) 0| ≤
+∏ i ∈ range j, (λ - i)` (the value at `c = 1`, where the function is `(1 + τ)^λ`).
+Equivalently `|C_j^{(-λ/2)}(x)| ≤ |C_j^{(-λ/2)}(1)|` for Gegenbauer polynomials with negative
+parameter, `j ≤ λ`. Proof notes: if `λ/2` is a natural number, or more generally if
+`j ≤ ⌊λ/2⌋ + 1`, all binomial coefficients in
+`(1+τe^{iθ})^{λ/2}(1+τe^{-iθ})^{λ/2} = Σ_{a,b} C(λ/2,a) C(λ/2,b) e^{i(a-b)θ} τ^{a+b}` are
+nonnegative and the triangle inequality suffices; the general case needs a genuine argument
+(e.g. a Turán/three-term-recurrence or maximum-principle argument for the Gegenbauer recurrence;
+numerically true for all tested `λ`, `j ≤ λ`, false for `j = ⌊λ⌋ + 1` when `λ ∉ ℕ`).
+**Risk: proof not known to the planner.** Only needed for general `j` (Chapters 6, 12, 14);
+Chapter 4 uses `abs_iteratedFDeriv_three_normRpow_apply_le`.
+'''
+source = "Cartis–Gould–Toint, proof of Lemma B.4.1 (claim that the maximum in (B.4.4) is radial)"
+
+[[node]]
+id = "abs_iteratedFDeriv_normRpow_apply_le"
+kind = "theorem"
+desc = '''
+Diagonal bound (B.4.1, diagonal form). For `x ≠ 0`, `v : E`, `j : ℕ` with `(j : ℝ) ≤ λ`:
+`|iteratedFDeriv ℝ j (fun y : E => ‖y‖ ^ λ) x (fun _ => v)| ≤ (∏ i ∈ range j, (λ - i)) *
+‖x‖ ^ (λ - j) * ‖v‖ ^ j`, with equality for `v = x` (`iteratedFDeriv_normRpow_apply_self`).
+'''
+deps = ["iteratedFDeriv_normRpow_apply_eq_line", "abs_iteratedDeriv_line_rpow_le", "iteratedFDeriv_normRpow_apply_self"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.1), (B.4.9)–(B.4.10)"
+
+[[node]]
+id = "abs_iteratedFDeriv_three_normRpow_apply_le"
+kind = "theorem"
+desc = '''
+Explicit third derivative. For `x ≠ 0` and `u v w : E`:
+`iteratedFDeriv ℝ 3 (fun y : E => ‖y‖ ^ λ) x ![u, v, w] = λ (λ-2) (λ-4) ‖x‖^{λ-6} ⟪x,u⟫⟪x,v⟫⟪x,w⟫
++ λ (λ-2) ‖x‖^{λ-4} (⟪x,u⟫⟪v,w⟫ + ⟪x,v⟫⟪u,w⟫ + ⟪x,w⟫⟪u,v⟫)`; hence on the diagonal, with
+`c = ⟪x̂, v̂⟫`, the value is `λ(λ-2) ‖x‖^{λ-3} ‖v‖³ ((λ-4) c³ + 3 c)`, and for `λ ≥ 3`:
+`|D³(‖·‖^λ)(x)[v]³| ≤ λ (λ-1) (λ-2) ‖x‖^{λ-3} ‖v‖³` (the cubic `(λ-4)c³ + 3c` is increasing on
+`[-1,1]` since its derivative is `≥ 3(λ-3) ≥ 0`, so its maximum modulus is at `c = ±1`).
+The `j ≤ 3` instance of `abs_iteratedFDeriv_normRpow_apply_le` without the general coefficient
+inequality; for `λ = p + 1`, `p ≥ 3` this is the bound used in (4.1.30) with `j = 3`.
+'''
+deps = ["hasFDerivAt_norm_rpow_of_ne_zero", "iteratedFDeriv_two_norm_rpow_apply"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 with j = 3 (proof of Lemma 4.1.3)"
+
+[[node]]
+id = "contDiff_normRpow_of_lt"
+kind = "theorem"
+desc = '''
+Global smoothness: for `j : ℕ` with `(j : ℝ) < λ`, `ContDiff ℝ j (fun y : E => ‖y‖ ^ λ)` and
+`iteratedFDeriv ℝ i (fun y => ‖y‖ ^ λ) 0 = 0` for `1 ≤ i ≤ j`; if `λ = 2 m` with `m : ℕ` the
+function is a polynomial (`ContDiff ℝ ⊤`). (Off `0`: `contDiffOn_normRpow`; at `0`: the bound
+`‖D^i(‖·‖^λ)(y)‖ ≤ C ‖y‖^{λ-i}` (`exists_norm_iteratedFDeriv_normRpow_le`, finite dimension) shows
+each derivative extends continuously by `0` with derivative `0`; for general `E` use the line
+reduction.) Makes the regularized model `C^p` everywhere (`λ = p + 1 > p`).
+'''
+deps = ["contDiffOn_normRpow", "exists_norm_iteratedFDeriv_normRpow_le", "fderiv_norm_rpow_apply"]
+source = "Cartis–Gould–Toint, (4.1.2) (the model is p times differentiable)"
+
+[[node]]
+id = "norm_iteratedFDeriv_normRpow"
+kind = "theorem"
+desc = '''
+Operator norm (B.4.1). For `x ≠ 0` and `j : ℕ` with `(j : ℝ) ≤ λ`:
+`‖iteratedFDeriv ℝ j (fun y : E => ‖y‖ ^ λ) x‖ = (∏ i ∈ range j, (λ - i)) * ‖x‖ ^ (λ - j)` (`E`
+nontrivial). Lower bound from `v = x̂`; upper bound from the diagonal bound and the symmetric
+multilinear norm theorem `ContinuousMultilinearMap.norm_eq_iSup_norm_apply_diag_of_symm`
+(`iteratedFDeriv` of a `C^j` function is symmetric). In particular, for `λ = j = p + 1` (book's
+(B.4.3) with `β = 1`): `‖∇^{p+1}(‖s‖^{p+1})‖ = (p+1)!` for `s ≠ 0`, used in Chapters 12 and 14 to
+show that `∇^p ‖s‖^{p+1}` is `(p+1)!`-Lipschitz.
+'''
+deps = ["abs_iteratedFDeriv_normRpow_apply_le", "iteratedFDeriv_normRpow_apply_self", "ContinuousMultilinearMap.norm_eq_iSup_norm_apply_diag_of_symm"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.1), (B.4.3) with β = 1"
+
+[[node]]
+id = "not_norm_iteratedFDeriv_normRpow_eq_radial"
+kind = "theorem"
+desc = '''
+Counterexample to (B.4.3) for fractional `β`. On `E = EuclideanSpace ℝ (Fin 2)`, `λ = 3/2`
+(`p = 1`, `β = 1/2`), `x = e₀`: `iteratedFDeriv ℝ 2 (fun y => ‖y‖ ^ (3/2 : ℝ)) x ![e₁, e₁] = 3/2`
+(`iteratedFDeriv_normRpow_apply_perp` and `iteratedDeriv_one_add_sq_rpow_two_mul` with `j = 1`),
+so `‖D²(‖·‖^{3/2})(e₀)‖ ≥ 3/2 > 3/4 = β (p + β)! ‖x‖^{β - 1}`. More generally for every
+`p : ℕ` and `β ∈ (0,1)` the radial value `D^{p+1}(‖·‖^{p+β})(x)[x̂]^{p+1} = β (p+β)! ‖x‖^{β-1}`
+(from `iteratedFDeriv_normRpow_apply_self`) is strictly smaller than the norm (the statement of
+this node is the `p = 1` instance; the general strict inequality is not planned).
+'''
+deps = ["iteratedFDeriv_normRpow_apply_perp", "iteratedDeriv_one_add_sq_rpow_two_mul"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.3) (false for β < 1)"
+
+[[node]]
+id = "convexOn_iteratedFDeriv_normRpow"
+kind = "theorem"
+desc = '''
+Convexity claims of Lemma B.4.1. Let `x ≠ 0`, `j : ℕ`, `(j : ℝ) ≤ λ + 1`.
+(a) On the orthogonal complement `(ℝ ∙ x)ᗮ`, `d ↦ iteratedFDeriv ℝ j (‖·‖^λ) x (fun _ => d)` equals
+`‖x‖^{λ-j} h^{(j)}(0) ‖d‖^j` with `h τ = (1 + τ²)^{λ/2}` (`iteratedFDeriv_normRpow_apply_perp`
+and homogeneity); it is `0` for odd `j` (`h` is even) and `∏_{i<j/2} (2i+1)(λ-2i) ‖x‖^{λ-j} ‖d‖^j`
+with a nonnegative coefficient for even `j` (`iteratedDeriv_one_add_sq_rpow_two_mul`; `λ - 2i ≥ 0`
+for `2i ≤ j - 2`); hence it is `ConvexOn ℝ (ℝ ∙ x)ᗮ`.
+(b) For even `j`, `t ↦ iteratedFDeriv ℝ j (‖·‖^λ) x (fun _ => t • x) = t^j ∏_{i<j}(λ - i) ‖x‖^λ`
+is convex on `ℝ` (the product is `≥ 0` for `j ≤ λ + 1`).
+(The book states (b) "for any multiple of `s` whenever `j` is even" without the range of `j`; for
+`j > λ + 1` the coefficient can be negative.)
+'''
+deps = ["iteratedFDeriv_normRpow_apply_perp", "iteratedDeriv_one_add_sq_rpow_two_mul", "iteratedFDeriv_normRpow_apply_self"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 (convexity statements)"
