@@ -1,171 +1,61 @@
 namespace = "Optimization"
-desc = '''
-The regularized `p`-th order model `m(s) = regularizedModel D p σ s = D.taylorSum p s +
-σ/(p+1)! ‖s‖^{p+1}` of the high-order adaptive-regularization methods ARqp (Cartis–Gould–Toint
-§12.2.2), ARqpIDA/ARqpEDA (§13.1.4, §13.3.2) and, through `Composite/RegularizedModel`, ARqpC
-(§14.1), stated for **arbitrary data** `D` (exact jet `ftaylorSeries ℝ f x` or an inexact jet), so
-that one lemma set serves Chapters 12–14 (consolidation decision: data-general statements with an
-explicit error budget; the exact-data lemmas of Chapter 12 are the specializations `Dbar = D`,
-errors `0`). The model's own optimality measure at a trial step `s` is
-`taylorMeasure (ftaylorSeries ℝ (regularizedModel D p σ) s) j δ S` (the book's `φ^δ_{m,j}(s)`).
 
-Contents, in logical order: derivative bounds and value remainder of the model (Lemma 12.2.7),
-model decrease from a large model decrement (Lemmas 12.2.8, 13.1.10; the general composite form is
-Lemma 14.1.2, `compositeRegularizedModel_sub_ge_of_decrement_ge`), existence of an admissible
-approximate model minimizer with explicit optimality radii (Lemmas 12.2.9, 13.1.12; directly from a
-global minimizer of the model, which avoids the limiting argument of Algorithm 12.2.3), measure
-transfer from the model to the function (Lemma 12.2.11), the exact-versus-inexact model measure
-perturbation ((13.1.48)–(13.1.50)), and the radius inequality with error budget (Lemmas 12.2.11,
-13.1.16 and the EDA variant). The step-length algebra (Lemmas 12.2.12, 13.1.17, 14.1.8) is
-`pow_ge_of_measure_ineq` (Lemmas 12.2.12, 13.1.17) and `norm_step_ge_of_measure_ineq`
-(Lemma 14.1.8) in `ModelBased/HighOrderStep`; Theorem 12.1.4 (orders 1, 2) is
-`taylorMeasure_eq_zero_of_isLocalMin` in `Optimality/HighOrder`.
+[[node]]
+id = "iteratedFDerivLipschitzOn_regularizedModel"
+source = "Cartis–Gould–Toint, Lemma 12.2.7 (first part)"
 
-Derivatives of `‖s‖^{p+1}` come from `Analysis/InnerProductSpace/NormPowIteratedFDeriv`
-(diagonal `abs_iteratedFDeriv_norm_pow_apply_le`, operator-norm `norm_iteratedFDeriv_norm_pow_le`,
-`iteratedFDerivLipschitzOn_norm_pow` for (B.4.3), value remainder
-`abs_norm_pow_sub_taylorPolynomial_le`); operator norms may be used freely.
-'''
+[[node]]
+id = "abs_regularizedModel_sub_taylorPolynomial_le"
+source = "Cartis–Gould–Toint, Lemma 12.2.7 with Corollary A.8.4"
+
+[[node]]
+id = "norm_iteratedFDeriv_regularizedModel_le"
+source = "Cartis–Gould–Toint, Lemma 12.2.7, (12.2.38)"
 
 [[node]]
 id = "abs_iteratedFDeriv_regularizedModel_apply_le"
-kind = "theorem"
-desc = '''
-Lemma 12.2.7, diagonal form (the only form used downstream). Let `p ≥ 1`, `D.IsSymm p`,
-`L ≥ 0` with `‖D i‖ ≤ L` for `i ∈ Icc 2 p`, `σ ≥ 0`, `m = regularizedModel D p σ`. Then `m` is
-`ContDiff ℝ p`, and for `‖s‖ ≤ 1`, `ℓ ∈ Icc 2 p`, all `d`:
-`|iteratedFDeriv ℝ ℓ m s (fun _ => d)| ≤ (3 * L + σ) * ‖d‖ ^ ℓ` (12.2.38), and
-`|m (s + d) - taylorPolynomial m p s d| ≤ σ / (p + 1)! * ‖d‖ ^ (p + 1)` (the Lipschitz-`σ` property of
-`∇^p m` in the form used by Corollary A.8.4). Proof: (A.11) `iteratedFDeriv_taylorSum_apply`,
-`∑_{i=ℓ}^p ‖s‖^{i-ℓ}/(i-ℓ)! ≤ 1 + 2‖s‖ ≤ 3` (A.33), the diagonal bound for `‖·‖^{p+1}`
-(`σ/(p+1)! · (p+1)!/(p+1-ℓ)! ‖s‖^{p+1-ℓ} ≤ σ`); the Taylor polynomial of the degree-`p` part is exact
-and `abs_norm_pow_sub_taylorPolynomial_le` handles the regularization term. (Merged: the Chapter 13
-plan's operator-norm variant `norm_iteratedFDeriv_regularizedModel_le` was dropped; its users only
-need this diagonal form.)
-'''
-deps = ["regularizedModel", "FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply", "sum_pow_div_factorial_le_one_add_two_mul", "abs_iteratedFDeriv_norm_pow_apply_le", "abs_norm_pow_sub_taylorPolynomial_le", "contDiff_norm_pow"]
 source = "Cartis–Gould–Toint, Lemma 12.2.7"
 
 [[node]]
 id = "sub_regularizedModel_ge_of_taylorDecrement_ge"
-kind = "theorem"
-desc = '''
-(Lemma 12.2.8, data-general; the `h = 0` case of Lemma 14.1.2,
-`compositeRegularizedModel_sub_ge_of_decrement_ge`.) Under the hypotheses of
-`abs_iteratedFDeriv_regularizedModel_apply_le`,
-let `m = regularizedModel D p σ`, `‖s‖ ≤ 1`, `α > 0`, `j ∈ Icc 1 p`,
-`δ ∈ (0, min 1 (α / (4 (3 L + σ)))]`, `d ∈ closedBall 0 δ` with
-`(ftaylorSeries ℝ m s).taylorDecrement j d ≥ α δ^j / j!`. Then `m s - m (s + d) ≥ α δ^j / j! / 2`.
-Contrapositive corollary (part of node): if `s` is a global minimizer of `m` (`IsMinOn m univ s`) and
-`‖s‖ ≤ 1`, then for every such `δ`, `taylorMeasure (ftaylorSeries ℝ m s) j δ univ ≤ α δ^j / j!`.
-Proof: specialize `compositeRegularizedModel_sub_ge_of_decrement_ge` to `h = 0`, `Dc = 0`
-(`compositeModelDecrement Df 0 0 p σ j s d = (ftaylorSeries ℝ (regularizedModel Df p σ) s).
-taylorDecrement j d`); directly: the value remainder and the bound (12.2.38) of
-`abs_iteratedFDeriv_regularizedModel_apply_le` for the orders `j+1..p`, and (A.33)
-`∑_{ℓ=j+1}^{p+1} δ^ℓ/ℓ! ≤ 2 δ^{j+1}/j!`. The corollary is the content of Lemma 12.2.9's radii.
-'''
-deps = ["abs_iteratedFDeriv_regularizedModel_apply_le", "compositeRegularizedModel_sub_ge_of_decrement_ge", "sum_pow_div_factorial_Icc_succ_le", "taylorMeasure_nonneg"]
 source = "Cartis–Gould–Toint, Lemma 12.2.8"
 
 [[node]]
+id = "taylorMeasure_regularizedModel_le_of_isMinOn"
+source = "Cartis–Gould–Toint, Lemma 12.2.9 (radii at a model minimizer)"
+
+[[node]]
 id = "regularizedModel_decrease_ge_of_taylorDecrement_ge"
-kind = "theorem"
-desc = '''
-(Lemma 13.1.10, data-general; the same estimate at the origin of the model, where the model's Taylor
-data is `D` itself plus the regularization.) Let `p ≥ 1`, `j ∈ Icc 1 p`, `σ ≥ 0`, `‖D ℓ‖ ≤ L` for
-`ℓ ∈ Icc (j + 1) p`, `α > 0`, `δ ∈ (0, min 1 (α / (4 max L σ))]`, `d ∈ closedBall 0 δ` with
-`D.taylorDecrement j d ≥ α δ^j / j!`. Then
-`regularizedModel D p σ 0 - regularizedModel D p σ d ≥ α δ^j / j! / 2`
-(the book's `Δm̄_k(d) ≥ ½ α δ^j/j!`, (13.1.65)). Pure polynomial estimate with (A.33).
-'''
-deps = ["regularizedModel", "FormalMultilinearSeries.taylorDecrement", "sum_pow_div_factorial_Icc_succ_le"]
 source = "Cartis–Gould–Toint, Lemma 13.1.10"
 
 [[node]]
 id = "exists_highOrderStep"
-kind = "theorem"
-desc = '''
-(Existence of an admissible ARqp / ARqpIDA step: Lemmas 12.2.9 and 13.1.12, data-general.) Let `E`
-be a finite-dimensional real inner product space, `1 ≤ q ≤ p`, `σ > 0`, `‖D i‖ ≤ L` for
-`i ∈ Icc 2 p` (`L ≥ 0`), `θ ∈ (0,1)`, `ς ∈ (0,1]`, `ε : ℕ → ℝ` with `ε j ∈ (0,1]` for `j ∈ Icc 1 q`,
-and `m = regularizedModel D p σ`. Then there are `s : E`, radii `δs : ℕ → ℝ` and displacements
-`dm : ℕ → E` with: `IsMinOn m univ s` (so `m 0 - m s ≥ m 0 - m d` for every `d`, (13.1.55));
-and either `1 ≤ ‖s‖`, or for all `ℓ ∈ Icc 1 q`: `δs ℓ ∈ (0,1]`, `dm ℓ ∈ closedBall 0 (δs ℓ)`,
-`ς * taylorMeasure (ftaylorSeries ℝ m s) ℓ (δs ℓ) univ ≤ (ftaylorSeries ℝ m s).taylorDecrement ℓ (dm ℓ)
-≤ ς * θ * ε ℓ * δs ℓ ^ ℓ / ℓ!` ((12.2.29)/(13.1.57)), with `δs ℓ = 1` for `ℓ ≤ min 2 q` ((13.1.69))
-and `δs ℓ = min 1 (ς θ ε ℓ / (4 (3 L + σ))) ≥ min 1 (ς θ ε ℓ / (24 max L σ))` for `ℓ ∈ Icc 3 q`
-((12.2.45), (13.1.70); the `min 1` is vacuous when `max L σ ≥ 1`, as in the book where `L ≥ 1`).
-Proof: global minimizer (`exists_isMinOn_regularizedModel`); orders `≤ 2` by
-`taylorMeasure_eq_zero_of_isLocalMin`; orders `≥ 3` by the corollary of
-`sub_regularizedModel_ge_of_taylorDecrement_ge` with `α = ς θ ε ℓ`; `dm ℓ` a maximizer
-(`exists_taylorMeasure_eq`).
-'''
-deps = ["exists_isMinOn_regularizedModel", "taylorMeasure_eq_zero_of_isLocalMin", "sub_regularizedModel_ge_of_taylorDecrement_ge", "exists_taylorMeasure_eq", "abs_iteratedFDeriv_regularizedModel_apply_le"]
 source = "Cartis–Gould–Toint, Lemmas 12.2.9, 13.1.12 (existence part)"
 
 [[node]]
 id = "taylorMeasure_regularizedModel_le_add"
-kind = "theorem"
-desc = '''
-((13.1.48)–(13.1.50).) Let `E` be a real inner product space, `JetApprox D Dbar p err`, `σ ≥ 0`,
-`s : E`, `δ ∈ [0,1]`, `j ∈ Icc 1 p`, `S ∋ 0`, `m = regularizedModel D p σ`,
-`mbar = regularizedModel Dbar p σ`.
-Then `taylorMeasure (ftaylorSeries ℝ m s) j δ S ≤ taylorMeasure (ftaylorSeries ℝ mbar s) j δ S +
-∑ ℓ ∈ Icc 1 j, δ^ℓ / ℓ! * ∑ i ∈ Icc ℓ p, err i * ‖s‖^(i - ℓ) / (i - ℓ)!` (and symmetrically).
-Corollaries (part of node): (13.1.49) if `err i ≤ κ * κs * ‖s‖^(p - i + 1)` for `i ∈ Icc 1 p` the
-excess is `≤ 3 κ κs ∑ ℓ ∈ Icc 1 j, δ^ℓ/ℓ! ‖s‖^(p - ℓ + 1)`; (13.1.50) if `‖s‖ ≤ 1` and `err i ≤ e` it
-is `≤ 6 e`. Proof: `m - mbar = (D - Dbar).taylorSum p` (the regularization cancels; both are `C^p`),
-so the order-`ℓ` Taylor data differ by `iteratedFDeriv ℝ ℓ ((D - Dbar).taylorSum p) s`, bounded by
-`FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le`; then `abs_taylorMeasure_sub_le`.
-'''
-deps = ["JetApprox", "FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le", "abs_taylorMeasure_sub_le", "abs_iteratedFDeriv_regularizedModel_apply_le", "sum_pow_div_factorial_le_two_mul_pow"]
-source = "Cartis–Gould–Toint, (13.1.48), (13.1.49), (13.1.50)"
+source = "Cartis–Gould–Toint, (13.1.48), (13.1.49)"
+
+[[node]]
+id = "taylorMeasure_regularizedModel_le_add_of_stepAccuracy"
+source = "Cartis–Gould–Toint, (13.1.49)"
+
+[[node]]
+id = "taylorMeasure_regularizedModel_le_add_six_mul"
+source = "Cartis–Gould–Toint, (13.1.50)"
 
 [[node]]
 id = "taylorMeasure_le_of_regularizedModel"
-kind = "theorem"
-desc = '''
-Measure transfer from the model to the function (Lemma 12.2.11, exact data, generic and corrected;
-the `h = 0` case of `compositeTaylorDecrement_le_of_step`, taken to the sup). Let `p ≥ 1`,
-`C` convex, `D' ⊇ C` open, `ContDiffOn ℝ p f D'`, `IteratedFDerivLipschitzOn f p L C` (`L ≥ 0`),
-`x, x + s ∈ C`, `σ ≥ 0`, `m = regularizedModel (ftaylorSeries ℝ f x) p σ`, and `S ∋ 0` (feasible
-displacements at `x + s`; `univ` unconstrained). For `j ∈ Icc 1 p`, `δ ≥ 0`:
-`taylorMeasure (ftaylorSeries ℝ f (x + s)) j δ S ≤ taylorMeasure (ftaylorSeries ℝ m s) j δ S +
-(L + σ) * ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / ℓ! * ‖s‖ ^ (p - ℓ + 1) / (p - ℓ + 1)!`.
-Proof: pointwise in `d`, `ΔT_{f,j}(x+s,d) - ΔT_{m,j}(s,d) = ∑_ℓ (∇^ℓ m(s) - ∇^ℓ f(x+s))[d]^ℓ/ℓ!` with
-`∇^ℓ m(s) = ∇^ℓ_s T_p(x,s) + σ/(p+1)! ∇^ℓ ‖·‖^{p+1}(s)`; (A.20)
-`norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz` for the first part, the diagonal bound
-`abs_iteratedFDeriv_norm_pow_apply_le` for the second (`σ/(p+1)! · (p+1)!/(p+1-ℓ)!`); then
-`le_decrementMeasure`. The book's (12.2.56) has `‖s_k‖^{p-j+1}` for `‖s_k‖^{p-ℓ+1}` (typo).
-'''
-deps = ["norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "abs_iteratedFDeriv_norm_pow_apply_le", "taylorMeasure_nonneg", "le_decrementMeasure", "regularizedModel", "FormalMultilinearSeries.taylorDecrement_eq"]
 source = "Cartis–Gould–Toint, Lemma 12.2.11, (12.2.53)–(12.2.56)"
 
 [[node]]
 id = "radius_inequality_of_measure_gt"
-kind = "theorem"
-desc = '''
-(Lemmas 12.2.11 and 13.1.16, with an explicit error budget.) Let `E` be a real inner product space,
-`f : E → ℝ` with `ContDiff ℝ p f` and `IteratedFDerivLipschitzOn f p Lp univ`, `x s : E`,
-`D = ftaylorSeries ℝ f x`, `JetApprox D Dbar p err` with `err i ≤ κ * κs * ‖s‖^(p - i + 1)` for
-`i ∈ Icc 1 p` (`κ κs ≥ 0`), `0 ≤ σ ≤ σmax`, `j ∈ Icc 1 p`, `δ ∈ (0,1]`, `ε ≥ 0`, reals `a θ e₀`,
-and a feasible displacement set `S ∋ 0` at `x + s` (`univ` unconstrained, `{d | x + s + d ∈ X}` for
-the -SC variants). Suppose
-(h₁) `a * ε * δ^j / j! - e₀ < taylorMeasure (ftaylorSeries ℝ f (x + s)) j δ S` (the true measure
-at the new iterate is not small), and
-(h₂) `taylorMeasure (ftaylorSeries ℝ (regularizedModel Dbar p σ) s) j δ S ≤ θ * ε * δ^j / j!`
-(the step approximately minimizes the inexact model at order `j`, radius `δ`).
-Then `(a - θ) * ε * δ^j / j! ≤ (Lp + σmax + 3 * κ * κs) * ∑ ℓ ∈ Icc 1 j, δ^ℓ / ℓ! * ‖s‖^(p - ℓ + 1)
-+ e₀`.
-Instances: exact ARqp (Lemma 12.2.11): `Dbar = D`, `κ = 0`, `a = 1`, `e₀ = 0` (non-approximate
-optimality at `x + s`); ARqpIDA (Lemma 13.1.16): `κ = κ_{∇,max}`, `a = 1`, `e₀ = 0`; ARqpEDA
-(corrected Lemma 13.1.16 for EDA, see Chapter 13 §3 plan): `κ = 1`, `a = ς/2`,
-`e₀ = κs ∑ δ^ℓ/ℓ! ‖s‖^{p-ℓ+1}` (inexact Step-1 test at `x + s` with the inherited accuracies).
-Proof: `taylorMeasure_le_of_regularizedModel` (exact model vs function, constant `Lp + σ`, the
-factors `1/(p-ℓ+1)! ≤ 1`), then `taylorMeasure_regularizedModel_le_add` (13.1.49, exact vs inexact
-model) and (h₂). (The book's (12.2.56) writes
-`‖s_k‖^{p-j+1}` for `‖s_k‖^{p-ℓ+1}`; harmless typo.)
-'''
-deps = ["taylorMeasure_regularizedModel_le_add", "taylorMeasure_le_of_regularizedModel"]
 source = "Cartis–Gould–Toint, Lemmas 12.2.11, 13.1.16"
 
+[[node]]
+id = "sub_mul_lt_of_measure_comparison"
+source = "Cartis–Gould–Toint, Lemmas 12.2.11, 13.1.16, 14.1.7 (common step)"
+
+[[node]]
+id = "radius_inequality_of_compositeTaylorMeasure_gt"
+source = "Cartis–Gould–Toint, Lemma 14.1.7 (corrected)"

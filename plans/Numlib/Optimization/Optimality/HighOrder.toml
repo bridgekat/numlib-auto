@@ -53,9 +53,5 @@ id = "isStrictLocalMin_of_taylorPolynomial_growth"
 source = "Cartis–Gould–Toint, Theorem 12.1.5 (corrected)"
 
 [[node]]
-id = "sub_ge_half_of_taylorDecrement_ge"
-source = "Cartis–Gould–Toint, Lemma 12.2.8"
-
-[[node]]
 id = "exists_growth_taylorSum_succ_of_growth"
 source = "Cartis–Gould–Toint, remark after Theorem 12.1.5 (corrected)"

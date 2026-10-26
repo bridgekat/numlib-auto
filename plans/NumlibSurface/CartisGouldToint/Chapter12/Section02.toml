@@ -232,7 +232,7 @@ Lemma 12.2.8. Under `AssumptionD1pL f p L`, for `‖s‖ ≤ 1`, `α > 0`,
 `δ ∈ (0, min 1 (α / (4 (3 L_f + σ_k)))]`, `‖d‖ ≤ δ`, `j ∈ [1:q]` (`q ≤ p`): if
 `ΔT_{m_k,j}(s, d) ≥ α δ^j/j!` (12.2.42) then `m_k(s) - m_k(s + d) ≥ ½ α δ^j/j!` (12.2.43).
 '''
-deps = ["AssumptionD1pL", "Optimization.sub_ge_half_of_taylorDecrement_ge", "Optimization.abs_iteratedFDeriv_regularizedModel_apply_le"]
+deps = ["AssumptionD1pL", "Optimization.sub_regularizedModel_ge_of_taylorDecrement_ge", "Optimization.abs_iteratedFDeriv_regularizedModel_apply_le"]
 source = "Cartis–Gould–Toint, Lemma 12.2.8"
 
 [[node]]

@@ -1,4 +1,5 @@
-import Numlib.Analysis.Calculus.MultivariateTaylor.Basic
+import Numlib.Analysis.Calculus.LipschitzIteratedFDeriv
+import Numlib.Analysis.SpecialFunctions.FactorialSum
 
 /-!
 # Norm bounds for the derivatives of a Taylor sum
@@ -18,7 +19,11 @@ the proof of Lemma 12.2.7 of [cartis2022evaluation].
   `‖∇^ℓ (y ↦ A[y]^n)(s)‖ ≤ n (n-1) ⋯ (n-ℓ+1) ‖A‖ ‖s‖^{n-ℓ}`;
 * `FormalMultilinearSeries.iteratedFDeriv_taylorSum_sub`: linearity in the data;
 * `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le`: the bound above, and its quadratic
-  case on a ball `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_two_le`.
+  case on a ball `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_two_le`;
+* `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le_three_mul`: `‖∇^ℓ T_p(s)‖ ≤ 3 L` on the
+  unit ball when `‖D_i‖ ≤ L` for `i ≥ ℓ` (proof of Lemma 12.2.7);
+* `FormalMultilinearSeries.taylorSum_add_eq_taylorPolynomial`: a Taylor sum is its own Taylor
+  polynomial at every point (no symmetry needed).
 -/
 
 open Finset
@@ -125,5 +130,41 @@ theorem norm_iteratedFDeriv_taylorSum_two_le {κ ρ : ℝ} (hκ : 0 ≤ κ) (hρ
   have : ((2 + 1 - m : ℕ) : ℝ) ≤ 3 := by exact_mod_cast (by omega : 2 + 1 - m ≤ 3)
   have : 0 ≤ κ * (1 + ρ) ^ 2 := by positivity
   nlinarith
+
+/-- The `p`-th derivative of a Taylor sum of degree `p` is constant, hence `0`-Lipschitz. -/
+theorem iteratedFDerivLipschitzOn_taylorSum (p : ℕ) :
+    IteratedFDerivLipschitzOn (D.taylorSum p) p 0 Set.univ :=
+  iteratedFDerivLipschitzOn_of_norm_le convex_univ
+    (fun _ _ => (D.contDiff_taylorSum p).contDiffAt) fun x _ => by
+      refine (D.norm_iteratedFDeriv_taylorSum_le p (p + 1) x).trans_eq ?_
+      rw [Icc_eq_empty (by omega), sum_empty]
+
+/-- **A Taylor sum is its own Taylor polynomial**: `T_p(s + d) = T_{T_p,p}(s, d)` for all `s, d`
+(the expansion of a polynomial of degree `p` at any point is exact). No symmetry of `D` is
+needed. -/
+theorem taylorSum_add_eq_taylorPolynomial (p : ℕ) (s d : E) :
+    D.taylorSum p (s + d) = taylorPolynomial (D.taylorSum p) p s d := by
+  have h := norm_sub_taylorPolynomial_le_of_lipschitz convex_univ
+    (fun y _ => (D.contDiff_taylorSum p).contDiffAt) (D.iteratedFDerivLipschitzOn_taylorSum p)
+    (Set.mem_univ s) (Set.mem_univ (s + d))
+  rw [zero_div, zero_mul] at h
+  exact sub_eq_zero.1 (norm_le_zero_iff.1 h)
+
+/-- **Derivatives of a Taylor sum on the unit ball** (proof of [cartis2022evaluation],
+Lemma 12.2.7, with (A.33)): if `‖D_i‖ ≤ L` for `i = ℓ, …, p` and `‖s‖ ≤ 1`, then
+`‖∇^ℓ T_p(s)‖ ≤ 3 L`. -/
+theorem norm_iteratedFDeriv_taylorSum_le_three_mul {ℓ p : ℕ} {L : ℝ} (hL : 0 ≤ L)
+    (hD : ∀ i ∈ Icc ℓ p, ‖D i‖ ≤ L) {s : E} (hs : ‖s‖ ≤ 1) :
+    ‖iteratedFDeriv ℝ ℓ (D.taylorSum p) s‖ ≤ 3 * L := by
+  calc ‖iteratedFDeriv ℝ ℓ (D.taylorSum p) s‖
+      ≤ ∑ i ∈ Icc ℓ p, ‖D i‖ * ‖s‖ ^ (i - ℓ) / ((i - ℓ)! : ℝ) :=
+        D.norm_iteratedFDeriv_taylorSum_le p ℓ s
+    _ ≤ ∑ i ∈ Icc ℓ p, L * (‖s‖ ^ (i - ℓ) / ((i - ℓ)! : ℝ)) :=
+        sum_le_sum fun i hi => by rw [mul_div_assoc]; gcongr; exact hD i hi
+    _ = L * ∑ i ∈ Icc ℓ p, ‖s‖ ^ (i - ℓ) / ((i - ℓ)! : ℝ) := (mul_sum _ _ _).symm
+    _ ≤ L * (1 + 2 * ‖s‖) := by
+        gcongr; exact sum_pow_div_factorial_le_one_add_two_mul (norm_nonneg _) hs ℓ p
+    _ ≤ 3 * L := by nlinarith
+
 
 end FormalMultilinearSeries
