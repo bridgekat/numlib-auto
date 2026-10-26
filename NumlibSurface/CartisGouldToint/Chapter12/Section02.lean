@@ -384,24 +384,6 @@ theorem norm_ftaylorSeries_le_derivMax (x₀ : E) : ∀ i ∈ Finset.Icc 1 q,
     ‖ftaylorSeries ℝ f x₀ i‖ ≤ finMax 0 (fun i => ‖iteratedFDeriv ℝ i f x₀‖) q :=
   fun _ hi => le_finMax (u := fun i => ‖iteratedFDeriv ℝ i f x₀‖) hi
 
-/-- **Lemma 12.2.3** of [cartis2022evaluation]: under f.D1qL and `0 < ϑ ≤ 1`, `ε_j ≥ 0`, at every
-iteration `k` before termination, `Δ_k ≥ min(γ₁ ϑ, κ_Δ min_{i ∈ [0:k]} φ̂_i)` (12.2.13), and
-`κ_Δ ∈ (0, 1)` ((12.2.14)). (The bound also holds for `Δ_{k+1}`.) -/
-theorem lemma_12_2_3 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hf : AssumptionD1pL f q L)
-    (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1) (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) {k : ℕ}
-    (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) :
-    (0 < trqKappaDelta f P q L ϑ (x 0) ∧ trqKappaDelta f P q L ϑ (x 0) < 1) ∧
-      min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
-        Δ k ∧
-      min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
-        Δ (k + 1) := by
-  have hL : 1 ≤ finMax 1 L q := one_le_finMax
-  have hM := IsTRqRun.pos_of_not_trqTest_zero h hε hϑ.le
-    (norm_ftaylorSeries_le_derivMax (x 0)) (hk 0 (Nat.zero_le k))
-  refine ⟨⟨trqKappa_pos (by linarith) hϑ hM, trqKappa_lt_one hL hϑ1⟩, ?_⟩
-  exact IsTRqRun.radius_ge h hL hϑ hϑ1 hε
-    (norm_ftaylorSeries_le_derivMax (x 0)) (trq_fidelity h hf) hk
-
 /-- **Lemma 12.2.4** of [cartis2022evaluation]: under f.D1qL, `ε_j ∈ (0, 1]` and
 `ϑ ∈ [ε_min, 1]`, at every iteration `k` before termination
 `ΔT_{f,j_k}(x_k, s_k) ≥ (ς κ_Δ)^{q+1} ε_min^{q+1}/q!` (12.2.18), and if `k` is successful,
@@ -482,6 +464,41 @@ theorem trq_fidelity_feasible {X C : Set E} (h : algorithm_12_2_1_feasible f X P
   exact abs_sub_taylorPolynomial_le_of_lipschitz hf.convex
     (fun y hy => (hf.contDiffAt y hy).of_le (by exact_mod_cast (Finset.mem_Icc.1 hj).2))
     (hf.lipschitz_finMax hj) (hXC (trq_mem h hx0 k fun i hi => hk i hi.le)) (hXC hst.mem.2)
+
+/-- **Lemma 12.2.3 with a feasible set** ([cartis2022evaluation], Lemma 12.2.3; used in
+Lemma 14.2.3): under f.D1qL on an open convex `C ⊇ X`, `x₀ ∈ X`, `0 < ϑ ≤ 1` and `ε_j ≥ 0`, at
+every iteration `k` before termination of a feasible TRq run,
+`Δ_k ≥ min(γ₁ ϑ, κ_Δ min_{i ∈ [0:k]} φ̂_i)` (12.2.13) (and the same bound for `Δ_{k+1}`), with
+`κ_Δ ∈ (0, 1)` of (12.2.14). -/
+theorem lemma_12_2_3_feasible {X C : Set E}
+    (h : algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d) (hf : AssumptionD1pLOn f C q L)
+    (hXC : X ⊆ C) (hx0 : x 0 ∈ X) (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1)
+    (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) {k : ℕ} (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) :
+    (0 < trqKappaDelta f P q L ϑ (x 0) ∧ trqKappaDelta f P q L ϑ (x 0) < 1) ∧
+      min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
+        Δ k ∧
+      min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
+        Δ (k + 1) := by
+  have hL : 1 ≤ finMax 1 L q := one_le_finMax
+  have hM := IsTRqRun.pos_of_not_trqTest_zero h hε hϑ.le
+    (norm_ftaylorSeries_le_derivMax (x 0)) (hk 0 (Nat.zero_le k))
+  refine ⟨⟨trqKappa_pos (by linarith) hϑ hM, trqKappa_lt_one hL hϑ1⟩, ?_⟩
+  exact IsTRqRun.radius_ge h hL hϑ hϑ1 hε
+    (norm_ftaylorSeries_le_derivMax (x 0)) (trq_fidelity_feasible h hf hXC hx0) hk
+
+/-- **Lemma 12.2.3** of [cartis2022evaluation]: under f.D1qL and `0 < ϑ ≤ 1`, `ε_j ≥ 0`, at every
+iteration `k` before termination, `Δ_k ≥ min(γ₁ ϑ, κ_Δ min_{i ∈ [0:k]} φ̂_i)` (12.2.13), and
+`κ_Δ ∈ (0, 1)` ((12.2.14)). (The bound also holds for `Δ_{k+1}`.) -/
+theorem lemma_12_2_3 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hf : AssumptionD1pL f q L)
+    (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1) (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) {k : ℕ}
+    (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) :
+    (0 < trqKappaDelta f P q L ϑ (x 0) ∧ trqKappaDelta f P q L ϑ (x 0) < 1) ∧
+      min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
+        Δ k ∧
+      min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
+        Δ (k + 1) :=
+  lemma_12_2_3_feasible (X := univ) (C := univ) (algorithm_12_2_1_iff_feasible.1 h)
+    hf.on_univ (subset_univ _) (mem_univ _) hϑ hϑ1 hε hk
 
 /-- **Lemma 12.2.4 with a feasible set** ([cartis2022evaluation], Lemma 12.2.4; used in
 Lemma 14.2.2): under f.D1qL on an open convex `C ⊇ X`, `x₀ ∈ X`, `ε ∈ (0, 1]^q`, `ϑ ∈ [ε_min, 1]`,

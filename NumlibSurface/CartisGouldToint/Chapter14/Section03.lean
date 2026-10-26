@@ -47,8 +47,6 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   realized by ARqp-SC (ARqpC-SC with `c = 0`, `h = 0`, `IsARqpSCOutput`, `IsARqpSCCall`; such
   runs are `Chapter12.algorithm_12_2_2_feasible` runs by
   `algorithm_14_1_1.zero_algorithm_12_2_2_feasible`).
-* `theorem_14_2_4_sharp_arqp`: sharpness of the ARqp-SC row of Theorem 14.2.4 for `q ≥ 3`
-  (order `ε^{-q(p+1)/p}`), by the example of Theorem 12.2.17 with `X = ℝ`.
 
 ## Deviations from the book
 
@@ -2877,35 +2875,5 @@ theorem exists_algorithm_14_3_2 (hX : IsClosed X) (hq : 1 ≤ q) (hqp : q ≤ p)
       fun h => absurd h hc⟩
 
 end TPqp
-
-/-! ### Theorem 14.2.4: sharpness of the ARqp-SC row for `q ≥ 3` -/
-
-/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqp-SC row for `q ≥ 3`
-(the "otherwise" order `ε^{-q(p+1)/p}`): the slow example of Theorem 12.2.17 run with the (simple)
-feasible set `X = ℝ` (`univ`). For `3 ≤ q ≤ p` there are `f_low` and `L ≥ 1` such that for every
-`ε ∈ (0, ½]` and ARqp constants with `σ₀` the weight (12.2.85) there is `f` with f.bB and f.D1pL
-and an ARqp-SC run with radii `ε` satisfying the radius hypothesis of `theorem_14_2_4_arqp`
-(`δ_{s_k,j} ≥ κ_δ(σ_k) ε_j`) that first terminates at `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after
-`k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` evaluations. -/
-theorem theorem_14_2_4_sharp_arqp {p q : ℕ} (hq : 2 < q) (hqp : q ≤ p) :
-    ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 → ∀ P : Optimization.ARqpParams,
-      P.σ₀ = Chapter12.arqpSigmaSharp p q →
-      ∃ f : ℝ → ℝ, (∀ t, flow ≤ f t) ∧ Chapter12.AssumptionD1pL f p (fun _ => L) ∧
-        ∃ (x s σ : ℕ → ℝ) (d : ℕ → ℕ → ℝ),
-          Chapter12.algorithm_12_2_2_feasible f univ P p q (fun _ => ε) (fun _ => ε) x s σ
-            (fun _ _ => ε) (fun _ _ => ε) d (fun _ _ => 0) ∧
-          (∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => ε) d i) →
-            ‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 q,
-              Chapter12.arqpKappaDelta P (Chapter12.finMax 1 (fun _ => L) p) (σ k) * ε ≤ ε) ∧
-          Optimization.IsFirstHit (Chapter12.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => ε) d)
-            ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ ∧
-          ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤
-            (Optimization.funEvalCount ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) := by
-  obtain ⟨flow, L, hL, H⟩ := Chapter12.theorem_12_2_17 (r := p) (by omega) hqp le_rfl
-  refine ⟨flow, L, hL, fun ε hε hε2 P hP => ?_⟩
-  obtain ⟨f, hb, hf, x, s, σ, d, hrun, -, -, hκ, -, hhit, -⟩ := H ε hε hε2 P hP
-  refine ⟨f, hb, hf, x, s, σ, d, hrun, fun k _ _ _ _ => hκ k, hhit, ?_⟩
-  simp only [Optimization.funEvalCount, Nat.cast_add, Nat.cast_one]
-  linarith [Nat.le_ceil (ε ^ (-((q : ℝ) * (p + 1) / p)))]
 
 end CartisGouldToint.Chapter14

@@ -91,7 +91,3 @@ source = "Cartis–Gould–Toint, Algorithm 14.3.2, Phase 2 (well-definedness), 
 [[node]]
 id = "exists_algorithm_14_3_2"
 source = "Cartis–Gould–Toint, Algorithm 14.3.2 (well-definedness)"
-
-[[node]]
-id = "theorem_14_2_4_sharp_arqp"
-source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqp-SC row for q > 2, via Theorem 12.2.17)"

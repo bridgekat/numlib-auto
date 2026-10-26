@@ -16,6 +16,7 @@ bounds allowing such *neutral* iterations are `Optimization.le_delta_of_trUpdate
 * `Optimization.card_accuracyImproving_le`: the number of accuracy-improving iterations is at most
   `⌈log (c / κ_h) / log γ_h⌉₊` if such an iteration can only happen while the largest requested
   accuracy exceeds `c` (the root `i_{h,ε}` in the proofs of Theorems 13.1.8, 13.1.19).
+* `Optimization.card_trial_add_card_acc`: every iteration is a trial or an accuracy-improving one.
 * `Optimization.exists_firstHit_le_of_dynamicAccuracy`: the complexity skeleton: bounds on the
   numbers of trial and of accuracy-improving iterations before termination bound the termination
   index and the evaluation counts.
@@ -134,6 +135,15 @@ section skeleton
 
 variable {test acc : ℕ → Prop} {NT NA : ℝ}
 
+/-- Every iteration is a trial iteration or an accuracy-improving one: `|𝒯_k| + |𝒜_k| = k + 1`,
+where `𝒯_k = {j ≤ k | ¬ acc j}` and `𝒜_k = {j ≤ k | acc j}`. -/
+theorem card_trial_add_card_acc (acc : ℕ → Prop) (k : ℕ) :
+    (successSet (fun j => ¬ acc j) k).card + (successSet acc k).card = k + 1 := by
+  have h := card_successSet_add_card_failureSet (succ := fun j => ¬ acc j) (k := k)
+  have hfail : failureSet (fun j => ¬ acc j) k = successSet acc k := by
+    ext j; simp
+  rwa [hfail] at h
+
 /-- **Complexity skeleton with accuracy-improving iterations** ([cartis2022evaluation], proofs of
 Theorems 13.1.8, 13.1.19, 13.3.4, 13.3.8). Let `acc k` mark the accuracy-improving iterations and
 `¬ acc k` the trial ones. Suppose that at every iteration `k` before termination, the numbers of
@@ -150,13 +160,9 @@ theorem exists_firstHit_le_of_dynamicAccuracy (hNT : 0 ≤ NT) (hNA : 0 ≤ NA)
   have hcount : ∀ k, (∀ j ≤ k, ¬ test j) →
       (k + 1 : ℝ) ≤ 1 * (successSet (fun j => ¬ acc j) k).card + NA := by
     intro k hk
-    have h := card_successSet_add_card_failureSet (succ := fun j => ¬ acc j) (k := k)
-    have hfail : failureSet (fun j => ¬ acc j) k = successSet acc k := by
-      ext j; simp
-    rw [hfail] at h
     have : ((k + 1 : ℕ) : ℝ) =
         (successSet (fun j => ¬ acc j) k).card + (successSet acc k).card := by
-      rw [← h]; push_cast; ring
+      exact_mod_cast (card_trial_add_card_acc acc k).symm
     push_cast at this
     linarith [hA k hk]
   obtain ⟨k, hk, hkle⟩ := exists_isFirstHit_le_of_counting zero_le_one (by linarith) hcount hT
