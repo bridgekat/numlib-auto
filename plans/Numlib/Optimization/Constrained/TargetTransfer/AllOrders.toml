@@ -1,0 +1,10 @@
+namespace = "Constrained"
+
+[[node]]
+id = "commonCriticalDirections"
+
+[[node]]
+id = "zero_mem_commonCriticalDirections"
+
+[[node]]
+id = "lagrangian_bounds_of_merit_certificates"
