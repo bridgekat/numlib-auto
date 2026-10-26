@@ -35,3 +35,11 @@ source = "Cartis–Gould–Toint, proofs of Theorems 12.2.6, 12.2.15, 12.2.17 (f
 [[node]]
 id = "taylorDecrement_regularizedModel_ridge_spike"
 source = "Cartis–Gould–Toint, (12.2.69)–(12.2.70) along a ridge; Theorem 14.2.4 (sharpness)"
+
+[[node]]
+id = "iteratedFDeriv_apply_const_eq_line"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row with a feasible set): models restricted to a line"
+
+[[node]]
+id = "taylorDecrement_eq_of_line"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row with a feasible set): models restricted to a line"

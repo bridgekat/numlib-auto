@@ -126,12 +126,8 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Not formalized
 
-* The sharpness of the ARqpIDA-SC row of Theorem 14.2.4 in the lower-bound mode of the radii
-  control for `3 ≤ q < p` and for `q = 2 < p` on `X ≠ ℝⁿ` (with its criterion, approximate
-  optimality for some radii in `(0, 1]^q`; on `ℝⁿ` the mode-`False` bound is not attained for
-  `q = 2 < p`,
-  `theorem_14_2_4_arqpida_le_two`; see `Chapter14.Section02Sharp`), and the remark that only the
-  anchored assumptions f.D1qLaB.X (f.D0qLaB.X) are used.
+* The remark of Theorem 14.2.4 that only the anchored assumptions f.D1qLaB.X (f.D0qLaB.X) are
+  used.
 * Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored assumptions
   (they are proved under global Lipschitz assumptions, `exists_algorithm_14_3_1_complexity`,
   `exists_algorithm_14_3_2_complexity`), their complexity with the ARqp-SC unit-radii exponents
