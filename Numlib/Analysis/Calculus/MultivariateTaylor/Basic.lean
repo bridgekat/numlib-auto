@@ -426,6 +426,36 @@ theorem taylorDecrement_one_apply (s : E) : D.taylorDecrement 1 s = -D 1 (fun _ 
   rw [taylorDecrement_eq]
   simp
 
+/-- `ΔT_{j+1}(s) = ΔT_j(s) - (1/(j+1)!) D_{j+1}[s]^{j+1}`. -/
+theorem taylorDecrement_succ (j : ℕ) (s : E) :
+    D.taylorDecrement (j + 1) s =
+      D.taylorDecrement j s - ((j + 1)! : ℝ)⁻¹ * D (j + 1) fun _ => s := by
+  have h0 : (D (j + 1) fun _ => (0 : E)) = 0 := (D (j + 1)).map_coord_zero (0 : Fin (j + 1)) rfl
+  simp only [taylorDecrement, taylorSum_succ, smul_eq_mul, h0, mul_zero, add_zero]
+  ring
+
+/-- `ΔT_2(s) = -D_1[s] - ½ D_2[s]^2`. -/
+theorem taylorDecrement_two (s : E) :
+    D.taylorDecrement 2 s = -(D 1 fun _ => s) - 2⁻¹ * D 2 fun _ => s := by
+  rw [taylorDecrement_succ, taylorDecrement_one_apply]
+  norm_num [Nat.factorial]
+
+/-- `ΔT_3(s) = -D_1[s] - ½ D_2[s]^2 - (1/6) D_3[s]^3`. -/
+theorem taylorDecrement_three (s : E) :
+    D.taylorDecrement 3 s = -(D 1 fun _ => s) - 2⁻¹ * (D 2 fun _ => s) - 6⁻¹ * D 3 fun _ => s := by
+  rw [taylorDecrement_succ, taylorDecrement_two]
+  norm_num [Nat.factorial]
+
+/-- `ΔT_p(s) = ΔT_j(s) - ∑_{ℓ=j+1}^{p} (1/ℓ!) D_ℓ[s]^ℓ` for `j ≤ p`. -/
+theorem taylorDecrement_eq_sub_sum {j p : ℕ} (hjp : j ≤ p) (s : E) :
+    D.taylorDecrement p s =
+      D.taylorDecrement j s - ∑ ℓ ∈ Finset.Icc (j + 1) p, ((ℓ ! : ℝ))⁻¹ * D ℓ fun _ => s := by
+  induction p, hjp using Nat.le_induction with
+  | base => simp
+  | succ p hjp ih =>
+    rw [taylorDecrement_succ, ih, Finset.sum_Icc_succ_top (by omega)]
+    ring
+
 /-- The Taylor decrement is continuous. -/
 theorem continuous_taylorDecrement : Continuous (D.taylorDecrement p) :=
   continuous_const.sub (D.contDiff_taylorSum p (n := 0)).continuous
