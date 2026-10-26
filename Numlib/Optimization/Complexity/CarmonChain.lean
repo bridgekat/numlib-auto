@@ -32,6 +32,9 @@ contradicting Lemma 4.2.5 (ii); `chain` uses `-Ψ(1) Φ(x_0)`.
 * `chain_zero_sub_iInf_le`: Lemma 4.2.5 (iii).
 * `norm_iteratedFDeriv_chain_le`, `lipschitzOn_iteratedFDeriv_chain`: Lemma 4.2.5 (iv), with an
   explicit constant `lipschitzConst p` independent of the dimension `T`.
+* `lipschitzConst_le_exp`: the growth `lipschitzConst p ≤ exp (5/2 p log p + c₁ p)` of
+  Lemma 4.2.5 (iv), with `c₁ = 20` (`lipschitzConst_le_exp_twenty`), via coefficient bounds for
+  the polynomials of the derivatives of `Ψ` and `Φ` and `x^k e^{-x} ≤ k!`.
 * `le_classComplexity_smoothClass`: the lower bound of Theorem 4.2.6.
 -/
 
@@ -1062,6 +1065,416 @@ theorem le_classComplexity_smoothClass_methodClass (hp : 1 ≤ p) {Δ L ε : ℝ
   le_classComplexity_smoothClass hp hΔ hL hε (methodClass p)
 
 end LowerBound
+
+/-! ### Explicit growth of `lipschitzConst p` -/
+
+/-- The sum `∑ₘ |aₘ|` of the absolute values of the coefficients of a real polynomial. -/
+noncomputable def coeffAbsSum (P : ℝ[X]) : ℝ :=
+  ∑ m ∈ Finset.range (P.natDegree + 1), |P.coeff m|
+
+/-- `coeffAbsSum P` may be computed over any range containing the support. -/
+theorem coeffAbsSum_eq_sum_range {P : ℝ[X]} {N : ℕ} (h : P.natDegree < N) :
+    coeffAbsSum P = ∑ m ∈ Finset.range N, |P.coeff m| := by
+  refine Finset.sum_subset (Finset.range_subset_range.2 (by omega)) fun m _ hm => ?_
+  rw [Finset.mem_range, not_lt] at hm
+  rw [coeff_eq_zero_of_natDegree_lt (by omega), abs_zero]
+
+theorem coeffAbsSum_nonneg (P : ℝ[X]) : 0 ≤ coeffAbsSum P :=
+  Finset.sum_nonneg fun _ _ => abs_nonneg _
+
+theorem coeffAbsSum_add_le (P Q : ℝ[X]) :
+    coeffAbsSum (P + Q) ≤ coeffAbsSum P + coeffAbsSum Q := by
+  have hP : P.natDegree < max P.natDegree Q.natDegree + 1 := by omega
+  have hQ : Q.natDegree < max P.natDegree Q.natDegree + 1 := by omega
+  have hPQ : (P + Q).natDegree < max P.natDegree Q.natDegree + 1 :=
+    (natDegree_add_le P Q).trans_lt (by omega)
+  rw [coeffAbsSum_eq_sum_range hP, coeffAbsSum_eq_sum_range hQ, coeffAbsSum_eq_sum_range hPQ,
+    ← Finset.sum_add_distrib]
+  exact Finset.sum_le_sum fun m _ => by rw [coeff_add]; exact abs_add_le _ _
+
+theorem coeffAbsSum_neg (P : ℝ[X]) : coeffAbsSum (-P) = coeffAbsSum P := by
+  simp [coeffAbsSum, natDegree_neg]
+
+theorem coeffAbsSum_sub_le (P Q : ℝ[X]) :
+    coeffAbsSum (P - Q) ≤ coeffAbsSum P + coeffAbsSum Q := by
+  rw [sub_eq_add_neg, ← coeffAbsSum_neg Q]
+  exact coeffAbsSum_add_le _ _
+
+/-- Multiplying by `X^k` shifts the coefficients. -/
+theorem coeffAbsSum_X_pow_mul (k : ℕ) (P : ℝ[X]) :
+    coeffAbsSum (X ^ k * P) = coeffAbsSum P := by
+  have h : (X ^ k * P).natDegree < k + (P.natDegree + 1) :=
+    (natDegree_mul_le.trans (Nat.add_le_add_right (natDegree_X_pow_le k) _)).trans_lt (by omega)
+  rw [coeffAbsSum_eq_sum_range h, Finset.sum_range_add, coeffAbsSum]
+  have h0 : ∑ m ∈ Finset.range k, |(X ^ k * P).coeff m| = 0 :=
+    Finset.sum_eq_zero fun m hm => by
+      have : ¬ k ≤ m := by simp at hm; omega
+      simp [coeff_X_pow_mul', this]
+  rw [h0, zero_add]
+  refine Finset.sum_congr rfl fun m _ => ?_
+  simp [coeff_X_pow_mul']
+
+/-- `∑ |coeff P'| ≤ deg P · ∑ |coeff P|`. -/
+theorem coeffAbsSum_derivative_le (P : ℝ[X]) :
+    coeffAbsSum (derivative P) ≤ P.natDegree * coeffAbsSum P := by
+  have h : (derivative P).natDegree < P.natDegree + 1 :=
+    (natDegree_derivative_le P).trans_lt (by omega)
+  rw [coeffAbsSum_eq_sum_range h, coeffAbsSum_eq_sum_range (N := P.natDegree + 1 + 1) (by omega),
+    Finset.sum_range_succ' (fun m => |P.coeff m|), mul_add, Finset.mul_sum]
+  have hle : ∀ m ∈ Finset.range (P.natDegree + 1),
+      |(derivative P).coeff m| ≤ P.natDegree * |P.coeff (m + 1)| := by
+    intro m _
+    rw [coeff_derivative, abs_mul]
+    by_cases hc : P.coeff (m + 1) = 0
+    · simp [hc]
+    · have := le_natDegree_of_ne_zero hc
+      rw [mul_comm, abs_of_nonneg (by positivity)]
+      gcongr
+      exact_mod_cast this
+  exact (Finset.sum_le_sum hle).trans
+    (le_add_of_nonneg_right (mul_nonneg (Nat.cast_nonneg _) (abs_nonneg _)))
+
+/-- `|P(y)| ≤ (∑ₘ |aₘ|) (1 + |y|^d)` when `deg P ≤ d`. -/
+theorem abs_eval_le_coeffAbsSum {P : ℝ[X]} {d : ℕ} (hd : P.natDegree ≤ d) (y : ℝ) :
+    |P.eval y| ≤ coeffAbsSum P * (1 + |y| ^ d) := by
+  rw [eval_eq_sum_range, coeffAbsSum, Finset.sum_mul]
+  refine (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun m hm => ?_)
+  rw [abs_mul, abs_pow]
+  refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg _)
+  rcases le_or_gt |y| 1 with h | h
+  · have := pow_le_one₀ (n := m) (abs_nonneg y) h
+    have := pow_nonneg (abs_nonneg y) d
+    linarith
+  · have := pow_le_pow_right₀ h.le (show m ≤ d by simp at hm; omega)
+    linarith
+
+theorem flatDerivPoly_eq (P : ℝ[X]) :
+    flatDerivPoly P = X ^ 3 * P + X ^ 3 * P - X ^ 2 * derivative P := by
+  rw [flatDerivPoly]; ring
+
+/-- `deg P_j ≤ 3j` for the polynomials of the derivatives of `flat`. -/
+theorem natDegree_flatPoly_le (j : ℕ) : (flatPoly j).natDegree ≤ 3 * j := by
+  induction j with
+  | zero => simp [flatPoly]
+  | succ j ih =>
+    rw [flatPoly, flatDerivPoly_eq]
+    have h3 := natDegree_X_pow_le (R := ℝ) 3
+    have h2 := natDegree_X_pow_le (R := ℝ) 2
+    have hd := natDegree_derivative_le (flatPoly j)
+    have h1 : (X ^ 3 * flatPoly j).natDegree ≤ 3 * (j + 1) :=
+      natDegree_mul_le.trans (by omega)
+    have h2 : (X ^ 2 * derivative (flatPoly j)).natDegree ≤ 3 * (j + 1) :=
+      natDegree_mul_le.trans (by omega)
+    exact (natDegree_sub_le _ _).trans (max_le ((natDegree_add_le _ _).trans (max_le h1 h1)) h2)
+
+/-- `∑ |coeff P_j| ≤ 3^j j!`, from `P_{j+1} = 2X³P_j - X²P_j'`. -/
+theorem coeffAbsSum_flatPoly_le (j : ℕ) : coeffAbsSum (flatPoly j) ≤ 3 ^ j * j.factorial := by
+  induction j with
+  | zero => simp [flatPoly, coeffAbsSum]
+  | succ j ih =>
+    rw [flatPoly, flatDerivPoly_eq]
+    have hd := coeffAbsSum_derivative_le (flatPoly j)
+    have hdeg : ((flatPoly j).natDegree : ℝ) ≤ 3 * j := by exact_mod_cast natDegree_flatPoly_le j
+    have h0 := coeffAbsSum_nonneg (flatPoly j)
+    calc _ ≤ coeffAbsSum (X ^ 3 * flatPoly j) + coeffAbsSum (X ^ 3 * flatPoly j) +
+          coeffAbsSum (X ^ 2 * derivative (flatPoly j)) :=
+by
+            have := coeffAbsSum_sub_le (X ^ 3 * flatPoly j + X ^ 3 * flatPoly j)
+              (X ^ 2 * derivative (flatPoly j))
+            have := coeffAbsSum_add_le (X ^ 3 * flatPoly j) (X ^ 3 * flatPoly j)
+            linarith
+      _ ≤ (3 * (j + 1)) * coeffAbsSum (flatPoly j) := by
+          simp only [coeffAbsSum_X_pow_mul]; nlinarith
+      _ ≤ (3 * (j + 1)) * (3 ^ j * j.factorial) := by gcongr
+      _ = 3 ^ (j + 1) * (j + 1).factorial := by
+          rw [Nat.factorial_succ]; push_cast; ring
+
+/-- `deg H_k ≤ k` for the polynomials of the derivatives of the Gaussian. -/
+theorem natDegree_gaussPoly_le (k : ℕ) : (gaussPoly k).natDegree ≤ k := by
+  induction k with
+  | zero => simp [gaussPoly]
+  | succ k ih =>
+    rw [gaussPoly]
+    have hd := natDegree_derivative_le (gaussPoly k)
+    have h1 : (X * gaussPoly k).natDegree ≤ k + 1 :=
+      natDegree_mul_le.trans (by have := natDegree_X_le (R := ℝ); omega)
+    exact (natDegree_sub_le _ _).trans (max_le (by omega) h1)
+
+/-- `∑ |coeff H_k| ≤ k!`, from `H_{k+1} = H_k' - X H_k`. -/
+theorem coeffAbsSum_gaussPoly_le (k : ℕ) : coeffAbsSum (gaussPoly k) ≤ k.factorial := by
+  induction k with
+  | zero => simp [gaussPoly, coeffAbsSum]
+  | succ k ih =>
+    rw [gaussPoly]
+    have hd := coeffAbsSum_derivative_le (gaussPoly k)
+    have hdeg : ((gaussPoly k).natDegree : ℝ) ≤ k := by exact_mod_cast natDegree_gaussPoly_le k
+    have h0 := coeffAbsSum_nonneg (gaussPoly k)
+    have hX : coeffAbsSum (X * gaussPoly k) = coeffAbsSum (gaussPoly k) := by
+      simpa using coeffAbsSum_X_pow_mul 1 (gaussPoly k)
+    calc _ ≤ coeffAbsSum (derivative (gaussPoly k)) + coeffAbsSum (X * gaussPoly k) :=
+          coeffAbsSum_sub_le _ _
+      _ ≤ (k + 1) * coeffAbsSum (gaussPoly k) := by rw [hX]; nlinarith
+      _ ≤ (k + 1) * k.factorial := by gcongr
+      _ = (k + 1).factorial := by rw [Nat.factorial_succ]; push_cast; ring
+
+/-- `x^k e^{-x} ≤ k!` for `x ≥ 0`. -/
+theorem pow_mul_exp_neg_le_factorial {x : ℝ} (hx : 0 ≤ x) (k : ℕ) :
+    x ^ k * exp (-x) ≤ k.factorial := by
+  have := Real.pow_div_factorial_le_exp x hx k
+  rw [div_le_iff₀ (by positivity)] at this
+  rw [exp_neg, ← div_eq_mul_inv, div_le_iff₀ (exp_pos _)]
+  linarith [mul_comm (exp x) (k.factorial : ℝ)]
+
+/-- `t^{3j} e^{-t²} ≤ √((3j)!)`. -/
+theorem abs_pow_mul_exp_neg_sq_le (t : ℝ) (j : ℕ) :
+    |t| ^ (3 * j) * exp (-t ^ 2) ≤ √((3 * j).factorial) := by
+  rw [Real.le_sqrt (by positivity) (by positivity)]
+  have h := pow_mul_exp_neg_le_factorial (x := 2 * t ^ 2) (by positivity) (3 * j)
+  calc (|t| ^ (3 * j) * exp (-t ^ 2)) ^ 2 = (t ^ 2) ^ (3 * j) * exp (-(2 * t ^ 2)) := by
+        rw [mul_pow, ← Real.exp_nat_mul]
+        congr 1
+        · rw [← pow_mul, mul_comm, pow_mul, sq_abs]
+        · push_cast; ring_nf
+    _ ≤ (2 * t ^ 2) ^ (3 * j) * exp (-(2 * t ^ 2)) := by
+        gcongr; nlinarith [sq_nonneg t]
+    _ ≤ _ := h
+
+/-- `|y|^k e^{-y²/2} ≤ √(k!)`. -/
+theorem abs_pow_mul_gauss_le (y : ℝ) (k : ℕ) :
+    |y| ^ k * exp (-y ^ 2 / 2) ≤ √(k.factorial) := by
+  rw [Real.le_sqrt (by positivity) (by positivity)]
+  have h := pow_mul_exp_neg_le_factorial (x := y ^ 2) (by positivity) k
+  calc (|y| ^ k * exp (-y ^ 2 / 2)) ^ 2 = (y ^ 2) ^ k * exp (-(y ^ 2)) := by
+        rw [mul_pow, ← Real.exp_nat_mul]
+        congr 1
+        · rw [← pow_mul, mul_comm, pow_mul, sq_abs]
+        · push_cast; ring_nf
+    _ ≤ _ := h
+
+/-- `a! (1 + √(b!)) ≤ 2 √((a!)² b!)`. -/
+theorem factorial_mul_one_add_sqrt_le (a b : ℕ) :
+    (a.factorial : ℝ) * (1 + √(b.factorial)) ≤ 2 * √((a.factorial ^ 2 * b.factorial : ℕ)) := by
+  have hb : (1 : ℝ) ≤ √(b.factorial) :=
+    Real.one_le_sqrt.2 (by exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero b))
+  have ha : (0 : ℝ) ≤ a.factorial := Nat.cast_nonneg _
+  have : √((a.factorial ^ 2 * b.factorial : ℕ) : ℝ) = a.factorial * √(b.factorial) := by
+    push_cast
+    rw [Real.sqrt_mul (by positivity), Real.sqrt_sq ha]
+  rw [this]
+  nlinarith
+
+/-- The growth scale `√(q^{5q})`. -/
+noncomputable def growthScale (q : ℕ) : ℝ := √((q : ℝ) ^ (5 * q))
+
+theorem one_le_growthScale (q : ℕ) : 1 ≤ growthScale q := by
+  refine Real.one_le_sqrt.2 ?_
+  rcases Nat.eq_zero_or_pos q with rfl | hq
+  · simp
+  · exact one_le_pow₀ (by exact_mod_cast hq)
+
+theorem growthScale_mul_le {i q : ℕ} (hi : i ≤ q) :
+    growthScale i * growthScale (q - i) ≤ growthScale q := by
+  rw [growthScale, growthScale, growthScale, ← Real.sqrt_mul (by positivity)]
+  refine Real.sqrt_le_sqrt ?_
+  calc (i : ℝ) ^ (5 * i) * ((q - i : ℕ) : ℝ) ^ (5 * (q - i))
+      ≤ (q : ℝ) ^ (5 * i) * (q : ℝ) ^ (5 * (q - i)) := by
+        gcongr
+        exact_mod_cast Nat.sub_le q i
+    _ = (q : ℝ) ^ (5 * q) := by rw [← pow_add]; congr 1; omega
+
+theorem growthScale_sq (q : ℕ) : growthScale q ^ 2 = (q : ℝ) ^ (5 * q) :=
+  Real.sq_sqrt (by positivity)
+
+/-- `|Ψ^{(j)}(y)| ≤ e 6^j j! (1 + √((3j)!))`. -/
+theorem abs_psiDeriv_le (j : ℕ) (y : ℝ) :
+    |psiDeriv j y| ≤ exp 1 * 6 ^ j * (j.factorial * (1 + √((3 * j).factorial))) := by
+  rw [psiDeriv, abs_mul, abs_of_pos (by positivity), show (6 : ℝ) ^ j = 2 ^ j * 3 ^ j by
+    rw [← mul_pow]; norm_num, mul_assoc (exp 1), mul_assoc (exp 1)]
+  refine mul_le_mul_of_nonneg_left ?_ (exp_pos 1).le
+  rw [mul_assoc]
+  refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+  set s := 2 * y - 1
+  rcases le_or_gt s 0 with hs | hs
+  · rw [flat_of_nonpos hs, mul_zero, abs_zero]; positivity
+  rw [flat_of_pos hs, abs_mul, abs_of_pos (exp_pos _)]
+  set t := s⁻¹
+  have ht : (s ^ 2)⁻¹ = t ^ 2 := by rw [inv_pow]
+  rw [ht]
+  have h1 := abs_eval_le_coeffAbsSum (natDegree_flatPoly_le j) t
+  have h2 := coeffAbsSum_flatPoly_le j
+  have h3 := abs_pow_mul_exp_neg_sq_le t j
+  have h4 : exp (-t ^ 2) ≤ 1 := exp_le_one_iff.2 (by nlinarith [sq_nonneg t])
+  have h5 := coeffAbsSum_nonneg (flatPoly j)
+  calc |(flatPoly j).eval t| * exp (-t ^ 2)
+      ≤ coeffAbsSum (flatPoly j) * (1 + |t| ^ (3 * j)) * exp (-t ^ 2) :=
+        mul_le_mul_of_nonneg_right h1 (exp_pos _).le
+    _ = coeffAbsSum (flatPoly j) * (exp (-t ^ 2) + |t| ^ (3 * j) * exp (-t ^ 2)) := by ring
+    _ ≤ (3 ^ j * j.factorial) * (1 + √((3 * j).factorial)) := by
+        gcongr
+    _ = _ := by ring
+
+/-- `sup |Ψ^{(j)}| ≤ 6 · 36^j √(j^{5j})`. -/
+theorem psiBound_le (j : ℕ) : psiBound j ≤ 6 * 36 ^ j * growthScale j := by
+  have hnat : j.factorial ^ 2 * (3 * j).factorial ≤ 36 ^ j * j ^ (5 * j) :=
+    calc j.factorial ^ 2 * (3 * j).factorial ≤ (j ^ j) ^ 2 * (3 * j) ^ (3 * j) :=
+          Nat.mul_le_mul (Nat.pow_le_pow_left (Nat.factorial_le_pow j) 2) (Nat.factorial_le_pow _)
+      _ = 27 ^ j * j ^ (5 * j) := by
+          rw [mul_pow, show (3 : ℕ) ^ (3 * j) = 27 ^ j by rw [pow_mul]; norm_num]; ring
+      _ ≤ 36 ^ j * j ^ (5 * j) := Nat.mul_le_mul_right _ (Nat.pow_le_pow_left (by norm_num) j)
+  have hW : √((j.factorial ^ 2 * (3 * j).factorial : ℕ) : ℝ) ≤ 6 ^ j * growthScale j := by
+    calc √((j.factorial ^ 2 * (3 * j).factorial : ℕ) : ℝ) ≤ √((36 ^ j * j ^ (5 * j) : ℕ) : ℝ) :=
+          Real.sqrt_le_sqrt (by exact_mod_cast hnat)
+      _ = 6 ^ j * growthScale j := by
+          push_cast
+          rw [Real.sqrt_mul (by positivity), growthScale,
+            show (36 : ℝ) ^ j = (6 ^ j) ^ 2 by rw [← pow_mul, mul_comm, pow_mul]; norm_num,
+            Real.sqrt_sq (by positivity)]
+  have he : exp 1 ≤ 3 := (Real.exp_one_lt_d9.trans_le (by norm_num)).le
+  refine ciSup_le fun y => ?_
+  rw [iteratedDeriv_psi]
+  refine (abs_psiDeriv_le j y).trans ?_
+  have := factorial_mul_one_add_sqrt_le j (3 * j)
+  have hg := one_le_growthScale j
+  calc exp 1 * 6 ^ j * (j.factorial * (1 + √((3 * j).factorial)))
+      ≤ 3 * 6 ^ j * (2 * (6 ^ j * growthScale j)) :=
+        mul_le_mul (by gcongr) (this.trans (by linarith)) (by positivity) (by positivity)
+    _ = 6 * 36 ^ j * growthScale j := by
+        rw [show (36 : ℝ) ^ j = 6 ^ j * 6 ^ j by rw [← mul_pow]; norm_num]; ring
+
+/-- `sup |Φ^{(k)}| ≤ 12 √(k^{5k})` (a crude bound, enough for the growth estimate). -/
+theorem phiBound_le (k : ℕ) : phiBound k ≤ 12 * growthScale k := by
+  rcases k with _ | k
+  · refine ciSup_le fun y => ?_
+    rw [iteratedDeriv_zero, abs_of_nonneg (phi_nonneg y), growthScale]
+    simpa using (phi_le y).trans phi_bound_le
+  have hnat : k.factorial ^ 2 * k.factorial ≤ (k + 1) ^ (5 * (k + 1)) :=
+    calc k.factorial ^ 2 * k.factorial = k.factorial ^ 3 := by ring
+      _ ≤ ((k + 1) ^ (k + 1)) ^ 3 := Nat.pow_le_pow_left ((Nat.factorial_le_pow k).trans
+          ((Nat.pow_le_pow_left k.le_succ k).trans (Nat.pow_le_pow_right k.succ_pos k.le_succ))) 3
+      _ ≤ (k + 1) ^ (5 * (k + 1)) := by
+          rw [← pow_mul]; exact Nat.pow_le_pow_right k.succ_pos (by omega)
+  have he : exp (1 / 2) ≤ 3 :=
+    ((exp_le_exp.2 (by norm_num : (1 : ℝ) / 2 ≤ 1)).trans Real.exp_one_lt_d9.le).trans
+      (by norm_num)
+  refine ciSup_le fun y => ?_
+  rw [iteratedDeriv_succ_phi, abs_mul, abs_of_pos (exp_pos _), abs_mul, abs_of_pos (exp_pos _)]
+  have h1 := abs_eval_le_coeffAbsSum (natDegree_gaussPoly_le k) y
+  have h2 := coeffAbsSum_gaussPoly_le k
+  have h3 := abs_pow_mul_gauss_le y k
+  have h4 : exp (-y ^ 2 / 2) ≤ 1 := exp_le_one_iff.2 (by nlinarith [sq_nonneg y])
+  have h5 := coeffAbsSum_nonneg (gaussPoly k)
+  have h6 := factorial_mul_one_add_sqrt_le k k
+  have h7 : √((k.factorial ^ 2 * k.factorial : ℕ) : ℝ) ≤ growthScale (k + 1) :=
+    Real.sqrt_le_sqrt (by exact_mod_cast hnat)
+  calc exp (1 / 2) * (|(gaussPoly k).eval y| * exp (-y ^ 2 / 2))
+      ≤ 3 * (coeffAbsSum (gaussPoly k) * (1 + |y| ^ k) * exp (-y ^ 2 / 2)) := by
+        gcongr
+    _ = 3 * (coeffAbsSum (gaussPoly k) * (exp (-y ^ 2 / 2) + |y| ^ k * exp (-y ^ 2 / 2))) := by
+        ring
+    _ ≤ 3 * (k.factorial * (1 + √(k.factorial))) := by gcongr
+    _ ≤ 3 * (2 * growthScale (k + 1)) :=
+        mul_le_mul_of_nonneg_left (h6.trans (by linarith)) (by norm_num)
+    _ ≤ 12 * growthScale (k + 1) := by nlinarith [one_le_growthScale (k + 1)]
+
+/-- `pairBound q ≤ 144 · 72^q √(q^{5q})`. -/
+theorem pairBound_le (q : ℕ) : pairBound q ≤ 144 * 72 ^ q * growthScale q := by
+  have hW := one_le_growthScale q
+  have hterm : ∀ i ∈ Finset.range (q + 1), (q.choose i : ℝ) * psiBound i * phiBound (q - i) ≤
+      (q.choose i : ℝ) * (72 * 36 ^ q * growthScale q) := by
+    intro i hi
+    have hi : i ≤ q := by simp at hi; omega
+    rw [mul_assoc]
+    refine mul_le_mul_of_nonneg_left ?_ (Nat.cast_nonneg _)
+    have h36 : (36 : ℝ) ^ i ≤ 36 ^ q := pow_le_pow_right₀ (by norm_num) hi
+    have hg := growthScale_mul_le hi
+    calc psiBound i * phiBound (q - i)
+        ≤ (6 * 36 ^ i * growthScale i) * (12 * growthScale (q - i)) :=
+          mul_le_mul (psiBound_le i) (phiBound_le _) (phiBound_nonneg _)
+            (by have := one_le_growthScale i; positivity)
+      _ = 72 * 36 ^ i * (growthScale i * growthScale (q - i)) := by ring
+      _ ≤ 72 * 36 ^ q * growthScale q := by
+          gcongr
+          exact mul_nonneg (by linarith [one_le_growthScale i])
+            (by linarith [one_le_growthScale (q - i)])
+  have hchoose : ∑ i ∈ Finset.range (q + 1), (q.choose i : ℝ) = 2 ^ q := by
+    exact_mod_cast Nat.sum_range_choose q
+  rw [pairBound]
+  calc 2 * ∑ i ∈ Finset.range (q + 1), (q.choose i : ℝ) * psiBound i * phiBound (q - i)
+      ≤ 2 * ∑ i ∈ Finset.range (q + 1), (q.choose i : ℝ) * (72 * 36 ^ q * growthScale q) := by
+        gcongr 2 * ?_; exact Finset.sum_le_sum hterm
+    _ = 144 * 72 ^ q * growthScale q := by
+        rw [← Finset.sum_mul, hchoose, show (72 : ℝ) ^ q = 2 ^ q * 36 ^ q by
+          rw [← mul_pow]; norm_num]
+        ring
+
+/-- `lipschitzConst p ≤ 301 · 72^{p+1} √((p+1)^{5(p+1)})`. -/
+theorem lipschitzConst_le_growthScale (p : ℕ) :
+    lipschitzConst p ≤ 301 * 72 ^ (p + 1) * growthScale (p + 1) := by
+  have h1 := phiBound_le (p + 1)
+  have h2 := pairBound_le (p + 1)
+  have hW := one_le_growthScale (p + 1)
+  have h72 : (1 : ℝ) ≤ 72 ^ (p + 1) := one_le_pow₀ (by norm_num)
+  rw [lipschitzConst]
+  nlinarith
+
+/-- The arithmetic step `301² 72^{2(p+1)} (p+1)^{5(p+1)} ≤ (301² 72⁴ 32³)^p p^{5p}`. -/
+theorem lipschitzConst_nat_aux {p : ℕ} (hp : 1 ≤ p) :
+    301 ^ 2 * 72 ^ (2 * (p + 1)) * (p + 1) ^ (5 * (p + 1)) ≤
+      (301 ^ 2 * 72 ^ 4 * 32 ^ 3) ^ p * p ^ (5 * p) := by
+  have h5 : p ^ 5 ≤ 32 ^ p := by
+    calc p ^ 5 ≤ (2 ^ p) ^ 5 := Nat.pow_le_pow_left Nat.lt_two_pow_self.le 5
+      _ = 32 ^ p := by rw [← pow_mul, mul_comm, pow_mul]; norm_num
+  have h1 : (p + 1) ^ (5 * (p + 1)) ≤ 32 ^ (p + 1) * 32 ^ p * p ^ (5 * p) :=
+    calc (p + 1) ^ (5 * (p + 1)) ≤ (2 * p) ^ (5 * (p + 1)) := Nat.pow_le_pow_left (by omega) _
+      _ = 32 ^ (p + 1) * p ^ 5 * p ^ (5 * p) := by
+          rw [mul_pow, pow_mul 2 5 (p + 1)]; norm_num; ring
+      _ ≤ 32 ^ (p + 1) * 32 ^ p * p ^ (5 * p) := by gcongr
+  have ha : 301 ^ 2 ≤ 301 ^ (2 * p) := Nat.pow_le_pow_right (by norm_num) (by omega)
+  have hb : 72 ^ (2 * (p + 1)) ≤ 72 ^ (4 * p) := Nat.pow_le_pow_right (by norm_num) (by omega)
+  have hc : 32 ^ (p + 1) * 32 ^ p ≤ 32 ^ (3 * p) := by
+    rw [← pow_add]; exact Nat.pow_le_pow_right (by norm_num) (by omega)
+  calc 301 ^ 2 * 72 ^ (2 * (p + 1)) * (p + 1) ^ (5 * (p + 1))
+      ≤ 301 ^ 2 * 72 ^ (2 * (p + 1)) * (32 ^ (p + 1) * 32 ^ p * p ^ (5 * p)) := by gcongr
+    _ ≤ 301 ^ (2 * p) * 72 ^ (4 * p) * (32 ^ (3 * p) * p ^ (5 * p)) := by gcongr
+    _ = (301 ^ 2 * 72 ^ 4 * 32 ^ 3) ^ p * p ^ (5 * p) := by
+        rw [mul_pow, mul_pow, ← pow_mul, ← pow_mul, ← pow_mul]; ring
+
+/-- `(lipschitzConst p)² ≤ Q^p p^{5p}` with `Q = 301² 72⁴ 32³ ≤ e^{40}`. -/
+theorem lipschitzConst_sq_le {p : ℕ} (hp : 1 ≤ p) :
+    lipschitzConst p ^ 2 ≤ ((301 ^ 2 * 72 ^ 4 * 32 ^ 3 : ℕ) : ℝ) ^ p * (p : ℝ) ^ (5 * p) := by
+  have h := lipschitzConst_le_growthScale p
+  have h0 := (lipschitzConst_pos p).le
+  calc lipschitzConst p ^ 2 ≤ (301 * 72 ^ (p + 1) * growthScale (p + 1)) ^ 2 := by gcongr
+    _ = ((301 ^ 2 * 72 ^ (2 * (p + 1)) * (p + 1) ^ (5 * (p + 1)) : ℕ) : ℝ) := by
+        rw [mul_pow, mul_pow, growthScale_sq, ← pow_mul, mul_comm (p + 1) 2]; push_cast; ring
+    _ ≤ (((301 ^ 2 * 72 ^ 4 * 32 ^ 3) ^ p * p ^ (5 * p) : ℕ) : ℝ) := by
+        exact_mod_cast lipschitzConst_nat_aux hp
+    _ = _ := by push_cast; ring
+
+/-- **Lemma 4.2.5 (iv) of [cartis2022evaluation]**, explicit growth with `c₁ = 20`
+([Carmon–Duchi–Hinder–Sidford, Lemma 3]): `lipschitzConst p ≤ exp (5/2 p log p + 20 p)`. -/
+theorem lipschitzConst_le_exp_twenty {p : ℕ} (hp : 1 ≤ p) :
+    lipschitzConst p ≤ exp (5 / 2 * p * log p + 20 * p) := by
+  have hp0 : (0 : ℝ) < p := by exact_mod_cast hp
+  have hQ : ((301 ^ 2 * 72 ^ 4 * 32 ^ 3 : ℕ) : ℝ) ≤ exp 40 := by
+    have h := Real.exp_one_gt_d9
+    have : (2.7182818283 : ℝ) ^ 40 ≤ exp 1 ^ 40 := by gcongr
+    rw [← Real.exp_nat_mul] at this
+    norm_num at this ⊢
+    linarith
+  have hsq : lipschitzConst p ^ 2 ≤ exp (5 / 2 * p * log p + 20 * p) ^ 2 := by
+    refine (lipschitzConst_sq_le hp).trans ?_
+    rw [← Real.exp_nat_mul, show ((2 : ℕ) : ℝ) * (5 / 2 * p * log p + 20 * p) =
+      (5 * p : ℕ) * log p + p * 40 by push_cast; ring, exp_add, Real.exp_nat_mul,
+      Real.exp_log hp0, Real.exp_nat_mul, mul_comm]
+    gcongr
+  exact (pow_le_pow_iff_left₀ (lipschitzConst_pos p).le (exp_pos _).le two_ne_zero).1 hsq
+
+/-- **Lemma 4.2.5 (iv) of [cartis2022evaluation]**, explicit growth ([77, Lemma 3 (iii)]): there
+is an absolute constant `c₁ > 0` with `lipschitzConst p ≤ exp (5/2 p log p + c₁ p)` for `p ≥ 1`. -/
+theorem lipschitzConst_le_exp :
+    ∃ c₁ > 0, ∀ p : ℕ, 1 ≤ p → lipschitzConst p ≤ exp (5 / 2 * p * log p + c₁ * p) :=
+  ⟨20, by norm_num, fun _ hp => lipschitzConst_le_exp_twenty hp⟩
 
 end CarmonChain
 

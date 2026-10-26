@@ -32,7 +32,8 @@ is a pair `⟨n, f⟩ : Σ n, ℝⁿ → ℝ`. Coordinates are `0`-based: the bo
 * `lemma_4_2_1`, `lemma_4_2_2`, `lemma_4_2_3` — zero chains and zero-respecting methods.
 * `theorem_4_2_4_i`, `theorem_4_2_4_ii` — Theorem 4.2.4 (proved in the backbone by a resisting
   oracle; the book cites Carmon et al. for the proof).
-* `lemma_4_2_5_i` – `lemma_4_2_5_iv` — properties of the difficult function.
+* `lemma_4_2_5_i` – `lemma_4_2_5_iv`, `lemma_4_2_5_iv_growth` — properties of the difficult
+  function.
 * `theorem_4_2_6_i` — the lower bound (4.2.7).
 * `arpOracleMethod` — ARp (§4.1, first-order mode) as a method of `𝓜(p)`;
   `complexity_le_arpComplexityBound` — the upper bound (4.2.3); `theorem_4_2_6_ii` — tightness:
@@ -46,8 +47,8 @@ is a pair `⟨n, f⟩ : Σ n, ℝⁿ → ℝ`. Coordinates are `0`-based: the bo
   both classes; the book's `#_ε(𝓜(p), 𝓕(Δ, p)) ≥ 2 k̄` does not follow from Theorem 4.2.4. The
   form `c₀ Δ (L/L^D_p)^{1/p} ε^{-(p+1)/p}` (with `c₀ = 1/24`) needs that quantity to be at least
   `12`, i.e. `ε` small enough: for large `ε` the complexity is `0`.
-* Lemma 4.2.5 (iv) is proved with an explicit constant `L^D_p` independent of `k̄`; the growth
-  bound `L^D_p ≤ exp(5/2 p log p + c₁ p)` is not formalized.
+* Lemma 4.2.5 (iv) is proved with an explicit constant `L^D_p` independent of `k̄`, and the growth
+  bound `L^D_p ≤ exp(5/2 p log p + c₁ p)` holds with `c₁ = 20` (`lemma_4_2_5_iv_growth`).
 * **(4.2.3) and tightness**: the upper bound uses the constants of Theorem 4.1.5 (i) with
   `L_{f,p} = max(1, L)` and is stated with an integer part. The upper bound scales like
   `Δ L^{(p+1)/p}` and the lower bound (4.2.7) like `Δ L^{1/p}`, so only the order in `ε` is
@@ -216,6 +217,18 @@ theorem lemma_4_2_5_iv {p : ℕ} (hp : 1 ≤ p) :
     0 < CarmonChain.lipschitzConst p ∧ ∀ k : ℕ,
       IteratedFDerivLipschitzOn (hardFunction k) p (CarmonChain.lipschitzConst p) univ :=
   ⟨CarmonChain.lipschitzConst_pos p, fun _ => CarmonChain.lipschitzOn_iteratedFDeriv_chain hp⟩
+
+/-- **Lemma 4.2.5 (iv)** of [cartis2022evaluation], with the growth estimate: there is an
+absolute constant `c₁ > 0` such that for every `p ≥ 1`, `∇^p f^D` is Lipschitz continuous
+(f.DpL) with the constant `L^D_p = Optimization.CarmonChain.lipschitzConst p`, independent of
+`k̄`, and `L^D_p ≤ exp(5/2 p log p + c₁ p)`. One may take `c₁ = 20`
+(`Optimization.CarmonChain.lipschitzConst_le_exp_twenty`). -/
+theorem lemma_4_2_5_iv_growth :
+    ∃ c₁ > 0, ∀ p : ℕ, 1 ≤ p →
+      (∀ k : ℕ, IteratedFDerivLipschitzOn (hardFunction k) p (CarmonChain.lipschitzConst p) univ) ∧
+        CarmonChain.lipschitzConst p ≤ Real.exp (5 / 2 * p * Real.log p + c₁ * p) := by
+  obtain ⟨c₁, hc₁, h⟩ := CarmonChain.lipschitzConst_le_exp
+  exact ⟨c₁, hc₁, fun p hp => ⟨(lemma_4_2_5_iv hp).2, h p hp⟩⟩
 
 /-! ### The lower bound -/
 
