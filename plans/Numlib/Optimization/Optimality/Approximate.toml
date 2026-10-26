@@ -1,171 +1,69 @@
 namespace = "Optimization"
-desc = '''
-Approximate optimality notions and criticality measures (Cartis–Gould–Toint (1.1.5), (2.1.2),
-(3.2.6), (12.1.10), (12.1.25), (13.1.5)). Design:
-
-* First/second order: predicates on `f : E → ℝ` at `x`, stated with `‖fderiv ℝ f x‖` (equal to
-  `‖gradient f x‖` on inner product spaces) and `minCurvature (iteratedFDeriv ℝ 2 f x)`.
-  Tolerances `ε₂ = +∞` of the book (second-order test switched off) are represented by
-  `Option ℝ` (`none` = `+∞`) in algorithm statements; these predicates take real tolerances.
-* High order: the Taylor-decrement measure is defined from derivative *data*
-  `D : FormalMultilinearSeries ℝ E ℝ` and a feasible set `S` of displacements, so the same
-  definition serves exact derivatives (`ftaylorSeries ℝ f x`), inexact ones (Chapter 13: `φ̄`),
-  and convex/simple constraints (Chapters 6, 14: `S = {d | x + d ∈ C}`):
-  `taylorMeasure D j δ S = sSup (D.taylorDecrement j '' (closedBall 0 δ ∩ S))`. It is finite
-  without compactness (`abs_taylorDecrement_sub_le`) and attained in finite dimension when `S` is
-  closed.
-* All Taylor-decrement measures of the book are instances of one sup, `decrementMeasure Δ δ S :=
-  sSup (Δ '' (closedBall 0 δ ∩ S))` for a decrement function `Δ : E → ℝ` with `Δ 0 = 0`:
-  `taylorMeasure` (`Δ = D.taylorDecrement j`), the composite measure of Chapter 14
-  (`compositeTaylorMeasure`, `Δ = compositeTaylorDecrement Df Dc h j`) and the model measures at a
-  trial step (`Δ = (ftaylorSeries ℝ m s).taylorDecrement j`). The approximate-evaluation and
-  termination-test machinery (`ModelBased/HighOrder/MeasureTest`) is stated for an arbitrary
-  decrement, so it serves exact, inexact and composite methods alike (consolidation decision).
-'''
 
 [[node]]
 id = "IsApproxFirstOrder"
-kind = "def"
-desc = '''
-`IsApproxFirstOrder f x ε : Prop := ‖fderiv ℝ f x‖ ≤ ε` (the book's `ε`-approximate first-order
-minimizer (2.1.2); on an inner product space equivalently `‖gradient f x‖ ≤ ε`, recorded as a simp
-lemma `isApproxFirstOrder_iff_norm_gradient` part of this node).
-'''
 source = "Cartis–Gould–Toint, (2.1.2)"
 
 [[node]]
 id = "IsApproxSecondOrder"
-kind = "def"
-desc = '''
-`IsApproxSecondOrder f x ε₁ ε₂ : Prop := ‖fderiv ℝ f x‖ ≤ ε₁ ∧ -ε₂ ≤ minCurvature
-(iteratedFDeriv ℝ 2 f x)` (book (3.2.6), `E` a real inner product space).
-'''
-deps = ["minCurvature"]
 source = "Cartis–Gould–Toint, (3.2.6)"
 
 [[node]]
 id = "criticality₂"
-kind = "def"
-desc = '''
-`criticality₂ f x := max 0 (-minCurvature (iteratedFDeriv ℝ 2 f x))`, the second-order criticality
-measure `ω₂` of (1.1.5) (the first-order one `ω₁` is `‖fderiv ℝ f x‖`). Lemma (part of node):
-`criticality₂ f x ≤ ε ↔ -ε ≤ minCurvature (D²f x)` for `ε ≥ 0`.
-'''
-deps = ["minCurvature"]
 source = "Cartis–Gould–Toint, (1.1.5)"
 
 [[node]]
 id = "decrementMeasure"
-kind = "def"
-desc = '''
-`decrementMeasure (Δ : E → ℝ) (δ : ℝ) (S : Set E) : ℝ := sSup (Δ '' (Metric.closedBall 0 δ ∩ S))`:
-the largest decrease `Δ d` of a model over feasible displacements of length at most `δ`
-(book (12.1.10), (13.1.5), (14.1.6), (14.1.14), (14.2.2), (14.2.4) for the respective `Δ`).
-'''
 source = "Cartis–Gould–Toint, (12.1.10), (14.1.6)"
 
 [[node]]
 id = "le_decrementMeasure"
-kind = "theorem"
-desc = '''
-If `0 ∈ S`, `0 ≤ δ`, `Δ 0 = 0` and `Δ` is bounded above on `closedBall 0 δ ∩ S` (e.g.
-`|Δ d| ≤ B` there): `0 ≤ decrementMeasure Δ δ S` and `Δ d ≤ decrementMeasure Δ δ S` for every
-`d ∈ closedBall 0 δ ∩ S`; `decrementMeasure Δ δ S ≤ B'` whenever `Δ ≤ B'` on that set. Monotone in
-`δ` and in `S` (under boundedness on the larger set) and in `Δ` (pointwise); and
-`|decrementMeasure Δ δ S - decrementMeasure Δ' δ S| ≤ e` when `|Δ d - Δ' d| ≤ e` on the set.
-'''
-deps = ["decrementMeasure"]
 source = "Cartis–Gould–Toint, (12.1.10)"
 
 [[node]]
 id = "exists_decrementMeasure_eq"
-kind = "theorem"
-desc = '''
-`[FiniteDimensional ℝ E]`, `S` closed, `0 ∈ S`, `δ ≥ 0`, `Δ` continuous on `closedBall 0 δ ∩ S`:
-`∃ d ∈ closedBall 0 δ ∩ S, Δ d = decrementMeasure Δ δ S` (compactness). If moreover `S` is
-star-shaped about `0` and `Δ 0 = 0`, for every `ς ∈ [0,1]` some `d ∈ closedBall 0 δ ∩ S` has
-`Δ d = ς * decrementMeasure Δ δ S` (intermediate value theorem on `t ↦ Δ (t d*)`).
-'''
-deps = ["le_decrementMeasure"]
 source = "Cartis–Gould–Toint, Key Definition after (12.1.25)"
 
 [[node]]
 id = "taylorMeasure"
-kind = "def"
-desc = '''
-`taylorMeasure (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) (δ : ℝ) (S : Set E) : ℝ :=
-decrementMeasure (D.taylorDecrement j) δ S` (`= sSup (D.taylorDecrement j '' (Metric.closedBall 0 δ ∩ S))`) — the book's
-`φ^δ_{f,j}(x) = f(x) - min_{‖d‖≤δ} T_{f,j}(x,d) = max_{‖d‖ ≤ δ} ΔT_{f,j}(x,d)` (12.1.10) when
-`D = ftaylorSeries ℝ f x` and `S = univ`; with `S = {d | x + d ∈ C}` the constrained measure of
-Chapters 6/14; with inexact data the `φ̄` of (13.1.5).
-'''
-deps = ["decrementMeasure", "FormalMultilinearSeries.taylorDecrement"]
 source = "Cartis–Gould–Toint, (12.1.10), (13.1.5)"
 
 [[node]]
 id = "taylorMeasure_nonneg"
-kind = "theorem"
-desc = '''
-If `0 ≤ δ` and `0 ∈ S`: `0 ≤ taylorMeasure D j δ S`, and for every `d ∈ closedBall 0 δ ∩ S`,
-`D.taylorDecrement j d ≤ taylorMeasure D j δ S` (the image is bounded above by
-`∑_{i=1}^j ‖D i‖ δ^i / i!`, `FormalMultilinearSeries.abs_taylorDecrement_sub_le`).
-'''
-deps = ["taylorMeasure", "le_decrementMeasure", "FormalMultilinearSeries.abs_taylorDecrement_sub_le"]
 source = "Cartis–Gould–Toint, (12.1.10)"
 
 [[node]]
 id = "taylorMeasure_one_eq"
-kind = "theorem"
-desc = '''
-First-order case: for `δ ≥ 0`, `taylorMeasure D 1 δ univ = δ * ‖D 1‖` on a real normed space
-(sup of the linear functional `-D 1` over the ball); for a function on an inner product space
-`taylorMeasure (ftaylorSeries ℝ f x) 1 δ univ = δ * ‖gradient f x‖` (book (12.1.12)).
-'''
-deps = ["taylorMeasure"]
 source = "Cartis–Gould–Toint, (12.1.12)"
 
 [[node]]
 id = "abs_taylorMeasure_sub_le"
-kind = "theorem"
-desc = '''
-Perturbation of the measure by inexact data: `|taylorMeasure D j δ S - taylorMeasure D' j δ S| ≤
-∑ i ∈ Icc 1 j, ‖D i - D' i‖ * δ ^ i / i!` whenever `0 ∈ S` and `δ ≥ 0` (book (13.1.6)).
-'''
-deps = ["taylorMeasure_nonneg", "FormalMultilinearSeries.abs_taylorDecrement_sub_le"]
 source = "Cartis–Gould–Toint, (13.1.6)"
 
 [[node]]
 id = "exists_taylorMeasure_eq"
-kind = "theorem"
-desc = '''
-`[FiniteDimensional ℝ E]`, `S` closed, `0 ∈ S`, `δ ≥ 0`: the sup is attained:
-`∃ d ∈ closedBall 0 δ ∩ S, D.taylorDecrement j d = taylorMeasure D j δ S` (an "optimality
-displacement" of the book).
-'''
-deps = ["taylorMeasure_nonneg", "exists_decrementMeasure_eq"]
 source = "Cartis–Gould–Toint, Key Definition after (12.1.25)"
 
 [[node]]
 id = "IsEpsDeltaApprox"
-kind = "def"
-desc = '''
-`IsEpsDeltaApprox (D : FormalMultilinearSeries ℝ E ℝ) (S : Set E) (q : ℕ) (ε δ : ℕ → ℝ) : Prop :=
-∀ j ∈ Finset.Icc 1 q, taylorMeasure D j (δ j) S ≤ ε j * δ j ^ j / j !` — the book's
-`(ε, δ)`-approximate `q`-th order minimizer (12.1.25) (for `D = ftaylorSeries ℝ f x`, `S = univ`;
-constrained variants by choice of `S`). Interface for Chapters 12–14.
-'''
-deps = ["taylorMeasure"]
 source = "Cartis–Gould–Toint, (12.1.25)"
 
 [[node]]
 id = "hessianOperator"
-kind = "def"
-desc = '''
-`hessianOperator (f : E → ℝ) (x : E) : E →L[ℝ] E := fderiv ℝ (gradient f) x` on a complete real
-inner product space (the book's Hessian matrix `∇²f(x)` as an operator). Lemma (part of node): if
-`ContDiffAt ℝ 2 f x` then `⟪u, hessianOperator f x v⟫ = iteratedFDeriv ℝ 2 f x ![u, v]` and the
-operator is symmetric; hence `minCurvature (iteratedFDeriv ℝ 2 f x) =
-Subproblem.leftmost (symmetry proof)` in finite dimension (`minCurvature_eq_leftmost`).
-'''
-deps = ["minCurvature", "minCurvature_eq_leftmost"]
 source = "Cartis–Gould–Toint, Section 1.1.2.1 (Hessian matrix)"
+
+[[node]]
+id = "exists_decrementMeasure_mul_eq"
+source = "Cartis–Gould–Toint, Key Definition after (12.1.25)"
+
+[[node]]
+id = "taylorMeasure_one_ftaylorSeries"
+source = "Cartis–Gould–Toint, (12.1.12)"
+
+[[node]]
+id = "inner_hessianOperator_apply"
+source = "Cartis–Gould–Toint, Section 1.1.2.1 (Hessian matrix)"
+
+[[node]]
+id = "IsEpsApprox"
+source = "Cartis–Gould–Toint, Key Definition with (12.1.25)"

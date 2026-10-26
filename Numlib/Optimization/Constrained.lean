@@ -47,6 +47,10 @@ constraints `g j x ≤ 0` indexed by a `Fintype κ`. Derivatives are data, `f' :
   ([quarteroni2000numerical] Property 7.12), through the linearizing lemma
   `Constrained.mem_posTangentConeAt_of_isRegularPointIneq` (the implicit function theorem) and
   Farkas' lemma `ConvexAnalysis.farkas`; `Constrained.kkt_multipliers_unique` is the uniqueness;
+* `Constrained.exists_contDiff_feasible_arc`: under LICQ every direction of the linearized cone is
+  the velocity of a feasible arc, `Cⁿ` when the constraints are, keeping the equality constraints
+  and the active inequality constraints with zero directional derivative at zero (implicit function
+  theorem, `Constrained.exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top`);
 * `Constrained.isMinOn_of_lagrangian_convexOn`: sufficiency of the Kuhn–Tucker conditions for a
   convex program ([quarteroni2000numerical] Property 7.15);
 * `Constrained.exists_kkt_of_convexOn_of_slater`: the Kuhn–Tucker conditions for a differentiable
@@ -425,69 +429,106 @@ theorem _root_.LinearIndependent.range_pi_eq_top {σ : Type*} [Finite σ] {φ : 
   exact hspan
 
 omit [Fintype ι] [Fintype κ] in
-/-- The linearizing lemma of the implicit function theorem: if `c : E → F` is strictly
+/-- **Curves through level sets** (implicit function theorem). If `c : E → F` is strictly
 differentiable at `a` with surjective derivative `c'`, `F` finite-dimensional, then for every
-direction `z` there is a curve `γ` with `γ 0 = a`, `γ' 0 = z` and `c (γ t) = c a + t c' z` near
-`t = 0`. The curve is `t ↦ ψ (c a + t c' z, t P z)` for the inverse `ψ` of `x ↦ (c x, P (x - a))`
-provided by `ImplicitFunctionData`, `P` a projection onto `ker c'`; its derivative at `0` is
-`(c', P)⁻¹ (c' z, P z) = z`. -/
-theorem exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top [CompleteSpace E] {F : Type*}
+direction `z` there is a curve `γ` with `γ 0 = a`, `γ'(0) = z` and `c (γ t) = c a + t c' z` near
+`t = 0`; moreover `γ` is `Cⁿ` at `0` whenever `c` is `Cⁿ` at `a`. The curve is
+`t ↦ ψ (c a + t c' z, t P z)` for the local inverse `ψ` of `y ↦ (c y, P (y - a))` provided by
+`ImplicitFunctionData`, `P` a projection onto `ker c'`; its derivative at `0` is
+`(c', P)⁻¹ (c' z, P z) = z`, and `ψ` is `Cⁿ` by the inverse function theorem. -/
+theorem exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top [CompleteSpace E] {F : Type*}
     [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F] {c : E → F}
     {c' : E →L[ℝ] F} {a : E} (hc : HasStrictFDerivAt c c' a) (hc' : c'.range = ⊤) (z : E) :
-    ∃ γ : ℝ → E, γ 0 = a ∧ HasDerivAt γ z 0 ∧ ∀ᶠ t in 𝓝 (0 : ℝ), c (γ t) = c a + t • c' z := by
+    ∃ γ : ℝ → E, γ 0 = a ∧ HasDerivAt γ z 0 ∧
+      (∀ n : WithTop ℕ∞, ContDiffAt ℝ n c a → ContDiffAt ℝ n γ 0) ∧
+      ∀ᶠ t in 𝓝 (0 : ℝ), c (γ t) = c a + t • c' z := by
   have := FiniteDimensional.complete ℝ F
-  set φ : ImplicitFunctionData ℝ E F c'.ker :=
+  set D : ImplicitFunctionData ℝ E F c'.ker :=
     HasStrictFDerivAt.implicitFunctionDataOfComplemented c c' hc hc'
-      c'.ker_closedComplemented_of_finiteDimensional_range with hφ
-  have hpt : φ.prodFun φ.pt = (c a, 0) := by
-    simp [hφ, ImplicitFunctionData.prodFun, HasStrictFDerivAt.implicitFunctionDataOfComplemented]
-  set P : E →L[ℝ] c'.ker := φ.rightDeriv with hP
-  set ψ : F × c'.ker → E := fun q => φ.toOpenPartialHomeomorph.symm q with hψ
+      c'.ker_closedComplemented_of_finiteDimensional_range with hD
+  have hpt : D.prodFun D.pt = (c a, 0) := by
+    simp [hD, ImplicitFunctionData.prodFun, HasStrictFDerivAt.implicitFunctionDataOfComplemented]
+  set P : E →L[ℝ] c'.ker := D.rightDeriv with hP
+  set ψ : F × c'.ker → E := fun q => D.toOpenPartialHomeomorph.symm q with hψ
   set p : ℝ → F × c'.ker := fun t => (c a + t • c' z, t • P z) with hp
-  have hp0 : p 0 = φ.prodFun φ.pt := by rw [hpt]; simp [hp]
+  have hp0 : p 0 = D.prodFun D.pt := by rw [hpt]; simp [hp]
   have hpderiv : HasDerivAt p (c' z, P z) 0 := by
     have h1 : HasDerivAt (fun t : ℝ => c a + t • c' z) (c' z) 0 := by
       simpa using ((hasDerivAt_id (0 : ℝ)).smul_const (c' z)).const_add (c a)
     have h2 : HasDerivAt (fun t : ℝ => t • P z) (P z) 0 := by
       simpa using (hasDerivAt_id (0 : ℝ)).smul_const (P z)
     exact h1.prodMk h2
-  have hψderiv : HasStrictFDerivAt ψ
-      ((φ.leftDeriv.equivProdOfSurjectiveOfIsCompl φ.rightDeriv φ.range_leftDeriv
-        φ.range_rightDeriv φ.isCompl_ker).symm : F × c'.ker →L[ℝ] E) (φ.prodFun φ.pt) :=
-    φ.hasStrictFDerivAt.to_localInverse
-  refine ⟨fun t => ψ (p t), ?_, ?_, ?_⟩
+  set e := D.leftDeriv.equivProdOfSurjectiveOfIsCompl D.rightDeriv D.range_leftDeriv
+    D.range_rightDeriv D.isCompl_ker with he
+  have hψderiv : HasStrictFDerivAt ψ (e.symm : F × c'.ker →L[ℝ] E) (D.prodFun D.pt) :=
+    D.hasStrictFDerivAt.to_localInverse
+  have hleft : D.toOpenPartialHomeomorph.symm (D.prodFun D.pt) = a :=
+    D.toOpenPartialHomeomorph.left_inv D.pt_mem_toOpenPartialHomeomorph_source
+  refine ⟨fun t => ψ (p t), ?_, ?_, fun n hcn => ?_, ?_⟩
   · change ψ (p 0) = a
     rw [hp0]
-    exact φ.toOpenPartialHomeomorph.left_inv φ.pt_mem_toOpenPartialHomeomorph_source
+    exact hleft
   · rw [← hp0] at hψderiv
     have h := hψderiv.hasFDerivAt.comp_hasDerivAt (0 : ℝ) hpderiv
-    have hz : (φ.leftDeriv.equivProdOfSurjectiveOfIsCompl φ.rightDeriv φ.range_leftDeriv
-        φ.range_rightDeriv φ.isCompl_ker) z = (c' z, P z) := by
-      rw [ContinuousLinearMap.equivProdOfSurjectiveOfIsCompl_apply]
+    have hz : e z = (c' z, P z) := by
+      rw [he, ContinuousLinearMap.equivProdOfSurjectiveOfIsCompl_apply]
       rfl
     rw [← hz, ContinuousLinearEquiv.coe_coe, ContinuousLinearEquiv.symm_apply_apply] at h
     exact h
-  · have hlim : Tendsto p (𝓝 0) (𝓝 (φ.prodFun φ.pt)) := by
+  · have hpsmooth : ContDiff ℝ n p :=
+      (contDiff_const.add (contDiff_id.smul contDiff_const)).prodMk
+        (contDiff_id.smul contDiff_const)
+    have hψsmooth : ContDiffAt ℝ n ψ (D.prodFun D.pt) := by
+      have hmem : D.prodFun D.pt ∈ D.toOpenPartialHomeomorph.target := by
+        rw [← D.toOpenPartialHomeomorph_coe]
+        exact D.map_pt_mem_toOpenPartialHomeomorph_target
+      have hprod : ContDiffAt ℝ n D.prodFun a := by
+        change ContDiffAt ℝ n (fun y => (c y, P (y - a))) a
+        exact hcn.prodMk (P.contDiff.contDiffAt.comp a (contDiffAt_id.sub contDiffAt_const))
+      refine D.toOpenPartialHomeomorph.contDiffAt_symm hmem (f₀' := e) ?_ ?_
+      · rw [hleft, D.toOpenPartialHomeomorph_coe]
+        exact D.hasStrictFDerivAt.hasFDerivAt
+      · rw [hleft, D.toOpenPartialHomeomorph_coe]
+        exact hprod
+    rw [← hp0] at hψsmooth
+    exact hψsmooth.comp 0 hpsmooth.contDiffAt
+  · have hlim : Tendsto p (𝓝 0) (𝓝 (D.prodFun D.pt)) := by
       rw [← hp0]
       exact hpderiv.continuousAt.tendsto
-    filter_upwards [hlim.eventually φ.leftFun_implicitFunction] with t ht
+    filter_upwards [hlim.eventually D.leftFun_implicitFunction] with t ht
     rw [ImplicitFunctionData.implicitFunction_apply] at ht
     exact ht
 
 omit [Fintype ι] [Fintype κ] in
-/-- Under LICQ the linearized cone is contained in the positive tangent cone of the feasible set
-(Nocedal–Wright Lemma 12.2): if `x` is a regular point of the mixed constraints, the `h_i` and
-`g_j` are strictly differentiable at `x`, and `z` satisfies `h_i' x z = 0` for all `i` and
-`g_j' x z ≤ 0` for the active `j`, then `z ∈ posTangentConeAt (feasible h g) x`. The curve of
-`exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top` for the active constraints keeps
-`h_i = 0`, makes the active `g_j` equal to `t g_j' x z ≤ 0`, and the inactive constraints stay
-strict by continuity. -/
-theorem mem_posTangentConeAt_of_isRegularPointIneq [FiniteDimensional ℝ E] [Finite ι] [Finite κ]
-    {h : ι → E → ℝ}
-    {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
+/-- The linearizing lemma of the implicit function theorem: if `c : E → F` is strictly
+differentiable at `a` with surjective derivative `c'`, `F` finite-dimensional, then for every
+direction `z` there is a curve `γ` with `γ 0 = a`, `γ' 0 = z` and `c (γ t) = c a + t c' z` near
+`t = 0` (`exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top` without the smoothness). -/
+theorem exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top [CompleteSpace E] {F : Type*}
+    [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F] {c : E → F}
+    {c' : E →L[ℝ] F} {a : E} (hc : HasStrictFDerivAt c c' a) (hc' : c'.range = ⊤) (z : E) :
+    ∃ γ : ℝ → E, γ 0 = a ∧ HasDerivAt γ z 0 ∧ ∀ᶠ t in 𝓝 (0 : ℝ), c (γ t) = c a + t • c' z := by
+  obtain ⟨γ, h0, hd, -, hc⟩ := exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top hc hc' z
+  exact ⟨γ, h0, hd, hc⟩
+
+omit [Fintype ι] [Fintype κ] in
+/-- **Feasible arcs under LICQ** (Nocedal–Wright Lemma 12.2). In finite dimension, let `x` be a
+regular point of the mixed constraints, with all constraints strictly differentiable at `x`, and
+let `d` satisfy `h_i' x d = 0` for all `i` and `g_j' x d ≤ 0` for the active `j`. Then there is an
+arc `γ` with `γ(0) = x`, `γ'(0) = d`, which is `Cⁿ` at `0` whenever all constraints are `Cⁿ` at
+`x`, and which for all small `t > 0` is feasible and satisfies `g_j(γ(t)) = t g_j' x d` for every
+active `j` (so the active constraints with `g_j' x d = 0` stay active). The curve of
+`exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top` for the equality and active constraints
+keeps `h_i = 0`; the inactive constraints stay strict by continuity. -/
+theorem exists_contDiff_feasible_arc [FiniteDimensional ℝ E] [Finite ι] [Finite κ]
+    {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
     (hx : IsRegularPointIneq h h' g g' x) (hh : ∀ i, HasStrictFDerivAt (h i) (h' i x) x)
-    (hg : ∀ j, HasStrictFDerivAt (g j) (g' j x) x) {z : E} (hz1 : ∀ i, h' i x z = 0)
-    (hz2 : ∀ j ∈ activeSet g x, g' j x z ≤ 0) : z ∈ posTangentConeAt (feasible h g) x := by
+    (hg : ∀ j, HasStrictFDerivAt (g j) (g' j x) x) {d : E} (hd1 : ∀ i, h' i x d = 0)
+    (hd2 : ∀ j ∈ activeSet g x, g' j x d ≤ 0) :
+    ∃ γ : ℝ → E, γ 0 = x ∧ HasDerivAt γ d 0 ∧
+      (∀ n : WithTop ℕ∞, (∀ i, ContDiffAt ℝ n (h i) x) → (∀ j, ContDiffAt ℝ n (g j) x) →
+        ContDiffAt ℝ n γ 0) ∧
+      ∀ᶠ t in 𝓝[>] (0 : ℝ), γ t ∈ feasible h g ∧ ∀ j ∈ activeSet g x, g j (γ t) = t * g' j x d := by
   classical
   cases nonempty_fintype ι
   cases nonempty_fintype κ
@@ -501,42 +542,61 @@ theorem mem_posTangentConeAt_of_isRegularPointIneq [FiniteDimensional ℝ E] [Fi
     · exact hh i
     · exact hg j
   have hc' : (ContinuousLinearMap.pi cf').range = ⊤ := hx.2.2.range_pi_eq_top
-  obtain ⟨γ, hγ0, hγ, hγc⟩ := exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top hc hc' z
+  obtain ⟨γ, hγ0, hγ, hγn, hγc⟩ :=
+    exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top hc hc' d
   have hγcont : Tendsto γ (𝓝 0) (𝓝 x) := by
     have := hγ.continuousAt.tendsto
     rwa [hγ0] at this
-  -- feasibility along the curve for small positive `t`
-  have hfeas : ∀ᶠ t in 𝓝[>] (0 : ℝ), γ t ∈ feasible h g := by
-    have hγc' : ∀ᶠ t in 𝓝[>] (0 : ℝ), (fun s => cf s (γ t))
-        = (fun s => cf s x) + t • ContinuousLinearMap.pi cf' z :=
-      hγc.filter_mono nhdsWithin_le_nhds
-    have hinact : ∀ᶠ t in 𝓝[>] (0 : ℝ), ∀ j, j ∉ activeSet g x → g j (γ t) < 0 := by
-      refine eventually_all.2 fun j => ?_
-      by_cases hj : j ∈ activeSet g x
-      · exact Eventually.of_forall fun t hj' => absurd hj hj'
-      · have hneg : g j x < 0 := lt_of_le_of_ne (hx.2.1 j) hj
-        exact ((((hg j).continuousAt.tendsto.comp hγcont).eventually_lt_const hneg).filter_mono
-          nhdsWithin_le_nhds).mono fun t ht _ => ht
-    filter_upwards [hγc', hinact, self_mem_nhdsWithin] with t ht hin htpos
-    have hval : ∀ s, cf s (γ t) = cf s x + t * cf' s z := fun s => by
-      have := congrFun ht s
-      simpa [ContinuousLinearMap.pi_apply] using this
-    refine ⟨fun i => ?_, fun j => ?_⟩
-    · have := hval (Sum.inl i)
-      simp only [hcf, hcf', Sum.elim_inl] at this
-      rw [this, hx.1 i, hz1 i, mul_zero, add_zero]
-    · by_cases hj : j ∈ activeSet g x
-      · have := hval (Sum.inr ⟨j, hj⟩)
-        simp only [hcf, hcf', Sum.elim_inr] at this
-        rw [this, mem_activeSet.1 hj, zero_add]
-        exact mul_nonpos_of_nonneg_of_nonpos (le_of_lt htpos) (hz2 j hj)
-      · exact (hin j hj).le
-  -- membership in the tangent cone through the curve
+  refine ⟨γ, hγ0, hγ, fun n hhn hgn => hγn n ?_, ?_⟩
+  · refine contDiffAt_pi.2 fun s => ?_
+    rcases s with i | j
+    · exact hhn i
+    · exact hgn j
+  have hγc' : ∀ᶠ t in 𝓝[>] (0 : ℝ), (fun s => cf s (γ t))
+      = (fun s => cf s x) + t • ContinuousLinearMap.pi cf' d :=
+    hγc.filter_mono nhdsWithin_le_nhds
+  have hinact : ∀ᶠ t in 𝓝[>] (0 : ℝ), ∀ j, j ∉ activeSet g x → g j (γ t) < 0 := by
+    refine eventually_all.2 fun j => ?_
+    by_cases hj : j ∈ activeSet g x
+    · exact Eventually.of_forall fun t hj' => absurd hj hj'
+    · have hneg : g j x < 0 := lt_of_le_of_ne (hx.2.1 j) hj
+      exact ((((hg j).continuousAt.tendsto.comp hγcont).eventually_lt_const hneg).filter_mono
+        nhdsWithin_le_nhds).mono fun t ht _ => ht
+  filter_upwards [hγc', hinact, self_mem_nhdsWithin] with t ht hin htpos
+  have hval : ∀ s, cf s (γ t) = cf s x + t * cf' s d := fun s => by
+    have := congrFun ht s
+    simpa [ContinuousLinearMap.pi_apply] using this
+  have hact : ∀ j ∈ activeSet g x, g j (γ t) = t * g' j x d := fun j hj => by
+    have := hval (Sum.inr ⟨j, hj⟩)
+    simp only [hcf, hcf', Sum.elim_inr] at this
+    rw [this, mem_activeSet.1 hj, zero_add]
+  refine ⟨⟨fun i => ?_, fun j => ?_⟩, hact⟩
+  · have := hval (Sum.inl i)
+    simp only [hcf, hcf', Sum.elim_inl] at this
+    rw [this, hx.1 i, hd1 i, mul_zero, add_zero]
+  · by_cases hj : j ∈ activeSet g x
+    · rw [hact j hj]
+      exact mul_nonpos_of_nonneg_of_nonpos (le_of_lt htpos) (hd2 j hj)
+    · exact (hin j hj).le
+
+omit [Fintype ι] [Fintype κ] in
+/-- Under LICQ the linearized cone is contained in the positive tangent cone of the feasible set
+(Nocedal–Wright Lemma 12.2): if `x` is a regular point of the mixed constraints, the `h_i` and
+`g_j` are strictly differentiable at `x`, and `z` satisfies `h_i' x z = 0` for all `i` and
+`g_j' x z ≤ 0` for the active `j`, then `z ∈ posTangentConeAt (feasible h g) x`: it is the
+velocity of the feasible arc of `exists_contDiff_feasible_arc`. -/
+theorem mem_posTangentConeAt_of_isRegularPointIneq [FiniteDimensional ℝ E] [Finite ι] [Finite κ]
+    {h : ι → E → ℝ}
+    {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
+    (hx : IsRegularPointIneq h h' g g' x) (hh : ∀ i, HasStrictFDerivAt (h i) (h' i x) x)
+    (hg : ∀ j, HasStrictFDerivAt (g j) (g' j x) x) {z : E} (hz1 : ∀ i, h' i x z = 0)
+    (hz2 : ∀ j ∈ activeSet g x, g' j x z ≤ 0) : z ∈ posTangentConeAt (feasible h g) x := by
+  obtain ⟨γ, hγ0, hγ, -, hfeas⟩ := exists_contDiff_feasible_arc hx hh hg hz1 hz2
   have hd0 : Tendsto (fun t => γ t - x) (𝓝[>] (0 : ℝ)) (𝓝 0) := by
-    have := (hγcont.mono_left (nhdsWithin_le_nhds (s := Ioi 0))).sub_const x
-    rwa [sub_self] at this
+    have := (hγ.continuousAt.tendsto.mono_left (nhdsWithin_le_nhds (s := Ioi 0))).sub_const x
+    rwa [hγ0, sub_self] at this
   refine mem_tangentConeAt_of_seq (𝓝[>] (0 : ℝ)) (fun t => Real.toNNReal t⁻¹) (fun t => γ t - x)
-    hd0 (hfeas.mono fun t ht => by simpa using ht) ?_
+    hd0 (hfeas.mono fun t ht => by simpa using ht.1) ?_
   have hslope := hγ.tendsto_slope_zero_right
   simp only [zero_add, hγ0] at hslope
   refine hslope.congr' ?_

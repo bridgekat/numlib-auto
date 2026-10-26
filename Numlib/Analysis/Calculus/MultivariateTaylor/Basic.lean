@@ -162,6 +162,11 @@ end Symmetry
 
 section Diagonal
 
+/-- Homogeneity of a diagonal value: `A[t d]^n = t^n A[d]^n`. -/
+theorem ContinuousMultilinearMap.apply_smul_diag {n : ℕ} (A : E [×n]→L[ℝ] F) (t : ℝ) (d : E) :
+    A (fun _ => t • d) = t ^ n • A (fun _ => d) := by
+  rw [A.map_smul_univ (fun _ => t) (fun _ => d), prod_const, card_univ, Fintype.card_fin]
+
 /-- The iterated derivative at an arbitrary point `s` of the restriction `y ↦ A (y, …, y)` of a
 continuous multilinear map to the diagonal: the sum over all placements (embeddings
 `Fin j ↪ Fin n`) of the `j` directions `v` among the `n` arguments, the other arguments being `s`.
@@ -408,6 +413,22 @@ theorem abs_taylorDecrement_sub_le (s : E) :
       ∑ i ∈ Icc 1 p, ‖D i - D' i‖ * ‖s‖ ^ i / i ! := by
   rw [← taylorDecrement_sub]
   exact abs_taylorDecrement_le (D - D') p s
+
+/-- The Taylor decrement is bounded on balls: `|ΔT_p(s)| ≤ ∑_{i=1}^p ‖D_i‖ δ^i / i!` for
+`‖s‖ ≤ δ`. -/
+theorem abs_taylorDecrement_le_of_norm_le {s : E} {δ : ℝ} (hs : ‖s‖ ≤ δ) :
+    |D.taylorDecrement p s| ≤ ∑ i ∈ Icc 1 p, ‖D i‖ * δ ^ i / i ! := by
+  refine (D.abs_taylorDecrement_le p s).trans (sum_le_sum fun i _ => ?_)
+  gcongr
+
+/-- The first-order Taylor decrement is `-D₁[s]`. -/
+theorem taylorDecrement_one_apply (s : E) : D.taylorDecrement 1 s = -D 1 (fun _ => s) := by
+  rw [taylorDecrement_eq]
+  simp
+
+/-- The Taylor decrement is continuous. -/
+theorem continuous_taylorDecrement : Continuous (D.taylorDecrement p) :=
+  continuous_const.sub (D.contDiff_taylorSum p (n := 0)).continuous
 
 end Decrement
 
