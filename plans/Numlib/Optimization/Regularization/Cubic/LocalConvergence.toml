@@ -1,0 +1,64 @@
+namespace = "CubicRegularization"
+
+[[node]]
+id = "step_norm_le_of_positive_hessian"
+
+[[node]]
+id = "quadratic_trial_gradient_le"
+
+[[node]]
+id = "localStepConstant"
+
+[[node]]
+id = "localQuadraticConstant"
+
+[[node]]
+id = "localStepConstant_pos"
+
+[[node]]
+id = "localQuadraticConstant_pos"
+
+[[node]]
+id = "prediction_ge_of_positive_hessian"
+
+[[node]]
+id = "very_successful_of_local_step"
+
+[[node]]
+id = "localThreshold"
+
+[[node]]
+id = "localThreshold_pos"
+
+[[node]]
+id = "localThreshold_bounds"
+
+[[node]]
+id = "TightenedRun"
+
+[[node]]
+id = "TightenedRun.restrict"
+
+[[node]]
+id = "TightenedRun.toFirstOrderRun"
+
+[[node]]
+id = "localQuadraticConstant_le_inv_threshold"
+
+[[node]]
+id = "least_curvature_form"
+
+[[node]]
+id = "curvature_lower_of_distance"
+
+[[node]]
+id = "gradient_distance_le_on_ball"
+
+[[node]]
+id = "trial_local_properties"
+
+[[node]]
+id = "TightenedRun.local_quadratic_step"
+
+[[node]]
+id = "TightenedRun.local_persistence"

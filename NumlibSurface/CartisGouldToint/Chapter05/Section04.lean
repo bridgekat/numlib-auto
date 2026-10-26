@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Cubic.LocalConvergence
 import Numlib.Optimization.Regularization.Cubic.SpectralCounterexample
 import Numlib.Optimization.Regularization.Cubic.PhaseCountCounterexample
 import Numlib.Optimization.Regularization.Cubic.LocalCountCounterexample
@@ -157,5 +158,55 @@ theorem lemma_5_4_2_counterexample :
       least_eigenpair 0, by norm_num, by norm_num, parameter_cap,
       printed_constants.2.2.2.2.2, actual_run, stricter_test, local_region,
       printed_bound_fails⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Corrected Lemma 5.4.2.** The true local step multiplier is
+`2*(1+theta)/lambda`; the cubic penalty has no constant Hessian shift.
+The explicit positive five-term replacement threshold gives the displayed
+quadratic derivative bound on every accepted local trial, and entry into its
+small-gradient region makes every subsequent available trial very successful
+and keeps all subsequent iterates in that region. The tightened trace contains
+only actual model tests, objective ratios and parameter/point updates. -/
+theorem lemma_5_4_2_corrected {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin θ ℓ L : ℝ} {N : ℕ}
+    {xstar ustar : EuclideanSpace ℝ (Fin n)}
+    (h : CubicRegularization.TightenedRun f x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ N)
+    (hf : ContDiff ℝ 2 f) (hmin : IsLocalMin f xstar)
+    (hstar : SecondOrderTrustRegion.IsLeastEigenpair f xstar ℓ ustar)
+    (hℓ : 0 < ℓ) (hL : 0 < L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖) :
+    let ζ := CubicRegularization.localThreshold ℓ L θ
+      (max (σ 0) (γ₃ * L / (1 - η₂))) η₂
+    0 < ζ ∧
+      (∀ i < N, ‖x i - xstar‖ ≤ ℓ / (4 * L) → η₁ ≤ ρ i →
+        ‖fderiv ℝ f (x (i + 1))‖ ≤ 1 / ζ * ‖fderiv ℝ f (x i)‖ ^ 2) ∧
+      ∀ k₀ ≤ N, ‖x k₀ - xstar‖ ≤ ℓ / (4 * L) →
+        ‖fderiv ℝ f (x k₀)‖ ≤ ζ →
+        (∀ i, k₀ ≤ i → i ≤ N →
+          ‖x i - xstar‖ ≤ ℓ / (4 * L) ∧ ‖fderiv ℝ f (x i)‖ ≤ ζ) ∧
+        ∀ i, k₀ ≤ i → i < N → η₂ ≤ ρ i ∧
+          ‖fderiv ℝ f (x (i + 1))‖ ≤ 1 / ζ * ‖fderiv ℝ f (x i)‖ ^ 2 := by
+  dsimp only
+  have hcap : 0 ≤ max (σ 0) (γ₃ * L / (1 - η₂)) :=
+    (h.updates.pos (Nat.zero_le N)).le.trans (le_max_left _ _)
+  have hz := CubicRegularization.localThreshold_pos hℓ hL h.theta_pos hcap
+    h.updates.eta2_lt_one
+  have hc := CubicRegularization.localQuadraticConstant_le_inv_threshold hℓ hL
+    h.theta_pos hcap h.updates.eta2_lt_one
+  refine ⟨hz, ?_, ?_⟩
+  · intro i hi hx hs
+    exact (h.local_quadratic_step hf hstar hℓ hL hlip hi hx hs).trans
+      (mul_le_mul_of_nonneg_right hc (sq_nonneg _))
+  · intro k₀ hk₀ hx₀ hg₀
+    obtain ⟨hi, ht⟩ := h.local_persistence hf hstar hℓ hL hmin.fderiv_eq_zero hlip
+      hk₀ hx₀ hg₀
+    refine ⟨hi, ?_⟩
+    intro i hki hiN
+    have hh := ht i hki hiN
+    exact ⟨hh.1, hh.2.trans (mul_le_mul_of_nonneg_right hc (sq_nonneg _))⟩
 
 end CartisGouldToint
