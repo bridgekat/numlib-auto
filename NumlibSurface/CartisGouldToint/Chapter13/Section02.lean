@@ -183,7 +183,7 @@ theorem epsMin_rpow_arPi_le {ε : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 P.q
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
   have hp := P.one_le_p
   have hπ : 1 ≤ arPi P.q P.p j := by
-    unfold arPi
+    unfold arPi arPiOf
     split_ifs
     · rw [le_div_iff₀ (by exact_mod_cast (show 0 < P.p - j + 1 by omega)), one_mul]
       have : P.p - j + 1 ≤ P.p + 1 := by omega
@@ -247,7 +247,7 @@ theorem theorem_13_2_1_ii (hf : AssumptionD0pL f P.p L) {flow : ℝ}
         (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
           (arSigmaMax P (L P.p) (ordMax P.p κg))) := by
       have := sub_pos.2 P.θ_lt_one
-      unfold arStepConst
+      unfold arStepConst arStepConstOf
       split_ifs <;> positivity
     have := P.σmin_pos
     positivity

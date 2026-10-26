@@ -19,3 +19,7 @@ source = "Cartis–Gould–Toint, Algorithm 4.1.1, Step 2"
 [[node]]
 id = "arp_ridge_run"
 source = "Cartis–Gould–Toint, Theorem 4.1.6, proof of Theorem 12.2.15"
+
+[[node]]
+id = "taylorDecrement_ridge_of_lt"
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.6 (Appendix B); Theorem 14.2.4 (sharpness)"

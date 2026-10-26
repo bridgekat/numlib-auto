@@ -527,6 +527,30 @@ theorem exists_eigenvector_hessianOperator [FiniteDimensional ℝ F] (hf : ContD
 
 end Inner
 
+section InnerMonomial
+
+variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+
+/-- The measure of the decrement `d ↦ a ⟪e, d⟫^m` (`a ≥ 0`, `‖e‖ = 1`) over the ball of radius
+`δ ≥ 0` is `a δ^m` (attained at `d = δ e`). -/
+theorem decrementMeasure_mul_inner_pow {e : F} (he : ‖e‖ = 1) {a δ : ℝ} {m : ℕ}
+    (ha : 0 ≤ a) (hδ : 0 ≤ δ) :
+    decrementMeasure (fun d => a * ⟪e, d⟫ ^ m) δ univ = a * δ ^ m := by
+  have hle : ∀ d ∈ closedBall (0 : F) δ ∩ univ, a * ⟪e, d⟫ ^ m ≤ a * δ ^ m := fun d hd => by
+    have h1 : |⟪e, d⟫| ≤ δ := (abs_real_inner_le_norm e d).trans (by
+      rw [he, one_mul]; simpa using hd.1)
+    refine mul_le_mul_of_nonneg_left ((le_abs_self _).trans ?_) ha
+    rw [abs_pow]; exact pow_le_pow_left₀ (abs_nonneg _) h1 m
+  refine le_antisymm (decrementMeasure_le ⟨0, mem_closedBall_self hδ, mem_univ _⟩ hle) ?_
+  have hmem : δ • e ∈ closedBall (0 : F) δ ∩ univ :=
+    ⟨by rw [mem_closedBall_zero_iff, norm_smul, he, mul_one, Real.norm_eq_abs, abs_of_nonneg hδ],
+      mem_univ _⟩
+  have := le_decrementMeasure (Δ := fun d => a * ⟪e, d⟫ ^ m) ⟨a * δ ^ m, forall_mem_image.2 hle⟩
+    hmem
+  simpa only [inner_smul_right, real_inner_self_eq_norm_sq, he, one_pow, mul_one] using this
+
+end InnerMonomial
+
 section Matrix
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {f : EuclideanSpace ℝ ι → ℝ}

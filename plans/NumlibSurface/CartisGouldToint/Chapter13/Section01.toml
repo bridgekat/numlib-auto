@@ -263,3 +263,23 @@ source = "Cartis–Gould–Toint, proof of Theorem 13.1.19 (accuracy-improving i
 [[node]]
 id = "arqpIDA_complexity_feasible"
 source = "Cartis–Gould–Toint, proof of Theorem 13.1.19; Theorem 14.2.4 (ARqpIDA-SC)"
+
+[[node]]
+id = "RadiiControlOf"
+source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70); §14.2 (radius policy with simple constraints, (12.2.51))"
+
+[[node]]
+id = "RadiiControlOf.kappa_mul_le"
+source = "Cartis–Gould–Toint, proof of Lemma 13.1.12, (13.1.71)"
+
+[[node]]
+id = "arPiOf"
+source = "Cartis–Gould–Toint, Lemma 13.1.18, (13.1.82); Theorem 14.2.4"
+
+[[node]]
+id = "arStepConstOf"
+source = "Cartis–Gould–Toint, Lemma 13.1.18, (13.1.82)"
+
+[[node]]
+id = "TRqDAStep.congr"
+source = "Cartis–Gould–Toint, Algorithm 13.1.1"
