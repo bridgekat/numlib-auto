@@ -1,0 +1,10 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "exists_pos_constrainedCriticality_le_mul_pow"
+
+[[node]]
+id = "tendsto_constrainedCriticality_div_pow"
+
+[[node]]
+id = "exists_constrained_criticality_radii_of_isMinOn"

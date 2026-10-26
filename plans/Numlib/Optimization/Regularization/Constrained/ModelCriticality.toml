@@ -1,0 +1,10 @@
+namespace = "HighOrderRegularization"
+
+[[node]]
+id = "constrainedCriticality_model_zero_order"
+
+[[node]]
+id = "zero_step_constrained_optimality"
+
+[[node]]
+id = "_root_.ModelDecrease.exists_constrained_minimizer_with_criticality_ofJet"

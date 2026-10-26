@@ -1,0 +1,16 @@
+namespace = "ModelDecrease"
+
+[[node]]
+id = "ApproximateGlobalStepOn"
+
+[[node]]
+id = "approximateGlobalStepOn_iff_of_isMinOn"
+
+[[node]]
+id = "ApproximateGlobalStepOn.nonincrease"
+
+[[node]]
+id = "ApproximateGlobalStepOn.isMinOn_zero"
+
+[[node]]
+id = "ApproximateGlobalStepOn.strict_decrease"
