@@ -1,0 +1,15 @@
+namespace = "Constrained.TwoPhase"
+[[node]]
+id = "completedPhaseOneBudget"
+[[node]]
+id = "completedFullFunctionEvaluations"
+[[node]]
+id = "completedFullDerivativeEvaluations"
+[[node]]
+id = "completedFullDerivativeEvaluations_le_functions"
+[[node]]
+id = "CompletedFullRun.phaseOne_iterations_le"
+[[node]]
+id = "CompletedFullRun.total_evaluations_le"
+[[node]]
+id = "exists_completed_full_complexity"

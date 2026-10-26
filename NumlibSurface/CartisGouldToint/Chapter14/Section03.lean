@@ -1,3 +1,4 @@
+import Numlib.Optimization.Constrained.TwoPhase.CompletedComplexity
 import Numlib.Optimization.Constrained.TwoPhase.CompletedTransfer
 import Numlib.Optimization.Constrained.TargetTransfer
 import Numlib.Optimization.Constrained.CurveJets
@@ -467,5 +468,60 @@ The first-order multiplier/violation bounds and common critical-direction
 certificates through order three are exact. No division by a zero gap occurs. -/
 alias lemma_14_3_5_corrected :=
   Constrained.TwoPhase.CompletedFullRun.corrected_termination
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open Constrained.TwoPhase
+
+/-- **Corrected Theorem 14.3.9.** Complete every actual constrained regularization
+INNER call at absolute accuracies `β*θ*ε₀*ε`, and use the closed reset guard.
+Assume global smoothness and uniform merit-jet Lipschitz bounds on the bounded
+target interval, as specified by `CompletedRegularity`, together with global
+positive-order derivative Lipschitz bounds for the feasibility merit.
+
+The actual constructed method terminates with the corrected output certificate
+at the endpoint selected by its actual exit guard. All-order certificates retain
+the squared-increment Taylor error; first-order and common-critical-direction
+bounds through order three keep their exact form. The zero-gap case has its own
+violation certificate and forms no multiplier. Both actual initialized schedules
+satisfy the explicit coarser sum/product bound displayed below. All regularity
+constants and algorithm settings precede the requested accuracies. -/
+theorem theorem_14_3_9_corrected
+    {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [FiniteDimensional ℝ E] [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    {p q : ℕ} (f : E → ℝ) (c : E → F) (X : Set E)
+    (P₁ P₂ : ConstrainedRegularization.Settings p q) {L L₁ B flow fup : ℝ}
+    (A : CompletedRegularity f c X p q L B flow fup) (hL₁ : 1 ≤ L₁)
+    (hlipν : ∀ i, 1 ≤ i → i ≤ p → ∀ y z,
+      ‖iteratedFDeriv ℝ i (LeastNorm.merit c) y -
+        iteratedFDeriv ℝ i (LeastNorm.merit c) z‖ ≤ L₁ * ‖y - z‖)
+    (x₀ : E) (hx₀ : x₀ ∈ X) {β θ : ℝ}
+    (hβ : 0 < β) (hβ1 : β < 1) (hθ : 0 < θ) (hθ1 : θ < 1)
+    (ε₀ : ℝ) (hε₀ : 0 < ε₀) (hε₀1 : ε₀ ≤ 1) (ε : Fin q → ℝ)
+    (hε : ∀ a, 0 < ε a ∧ ε a ≤ 1) :
+    ∃ D : CompletedFullData E q, D.phaseOne.point 0 = x₀ ∧
+      CompletedFullRun f c X P₁ P₂ β θ ε₀ L ε D ∧
+      CompletedFullStop f c X P₂ β θ ε₀ L ε D ∧
+      ((θ * ε₀ < ‖c (D.phaseOne.point D.phaseOneLength)‖ ∧
+        ∃ δ, CorrectedTwoPhaseOutput P₂.order_pos f c X θ ε₀ ε δ
+          (D.phaseOne.point D.phaseOneLength)) ∨
+      (‖c (D.phaseOne.point D.phaseOneLength)‖ ≤ θ * ε₀ ∧
+        0 < D.phaseTwoLength ∧
+        ∃ δ, CorrectedTwoPhaseOutput P₂.order_pos f c X θ ε₀ ε δ
+          (D.phaseTwo.point D.phaseTwoLength))) ∧
+      (completedFullFunctionEvaluations D : ℝ) ≤
+        completedPhaseOneBudget P₁ L₁ β θ ε₀ ‖c x₀‖ ε +
+          (max 0 (fup - flow + 1) / completedDropFloor P₂ L β θ B ε₀ ε + 1) *
+            completedInnerBudget P₂ L β θ ε₀ ε ∧
+      (completedFullDerivativeEvaluations P₁ P₂ D : ℝ) ≤
+        completedPhaseOneBudget P₁ L₁ β θ ε₀ ‖c x₀‖ ε +
+          (max 0 (fup - flow + 1) / completedDropFloor P₂ L β θ B ε₀ ε + 1) *
+            completedInnerBudget P₂ L β θ ε₀ ε := by
+  obtain ⟨D, hx, hr, hs, hF, hD⟩ := exists_completed_full_complexity
+    f c X P₁ P₂ A hL₁ hlipν x₀ hx₀ hβ hβ1 hθ hθ1 hε₀ hε₀1 ε hε
+  exact ⟨D, hx, hr, hs, hr.corrected_termination A.closed A.convex
+    A.one_le_constant A.smooth_objective A.smooth_constraint A.objective_band
+      A.merit_regularity hs, hF, hD⟩
 
 end CartisGouldToint

@@ -278,3 +278,7 @@ source = "Residual-increment correction of Cartis, Gould and Toint, Lemma14.3.5"
 
 [[node]]
 id = "correctedTwoPhaseOutput"
+
+[[node]]
+id = "theorem_14_3_9_corrected"
+source = "Cartis, Gould and Toint, Theorem14.3.9; explicit completed-inner, closed-reset algorithm and coarser product-bound repair of its false output transfer"
