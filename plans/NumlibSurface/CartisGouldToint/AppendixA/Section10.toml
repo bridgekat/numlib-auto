@@ -1,16 +1,17 @@
 namespace = "CartisGouldToint.AppendixA"
-desc = '''
-§A.10 Simple series bounds.
-'''
 
 [[node]]
 id = "lemma_A_10_1"
-kind = "theorem"
-desc = '''
-Lemma A.10.1. For `δ ∈ [0,1]`, `j ≥ 0`, `p ≥ j`: `∑_{ℓ=j}^p δ^{ℓ-j}/(ℓ-j)! ≤ 1 + 2δ` and
-`∑_{ℓ=j+1}^{p+1} δ^ℓ/ℓ! ≤ 2δ^{j+1}/j!` (A.33); with the consequences (A.34)
-`∑_{ℓ=1}^j δ^ℓ/ℓ! ≤ 2δ` (`δ ∈ [0,1]`), (A.35) `≤ 2δ^j` (`δ ≥ 1`), (A.36)
-`∑_{ℓ=1}^j 1/ℓ! ≤ 2`, `∑_{ℓ=j}^p 1/(ℓ-j)! < 3`, `∑_{ℓ=j+1}^{p+1} 1/ℓ! ≤ 2/j!`.
-'''
-deps = ["sum_pow_div_factorial_le_one_add_two_mul", "sum_pow_div_factorial_Icc_succ_le", "sum_pow_div_factorial_le_two_mul_pow"]
 source = "Cartis–Gould–Toint, Lemma A.10.1"
+
+[[node]]
+id = "eq_A_34"
+source = "Cartis–Gould–Toint, (A.34)"
+
+[[node]]
+id = "eq_A_35"
+source = "Cartis–Gould–Toint, (A.35)"
+
+[[node]]
+id = "eq_A_36"
+source = "Cartis–Gould–Toint, (A.36)"

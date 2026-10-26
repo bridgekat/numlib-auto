@@ -1,17 +1,5 @@
 namespace = "CartisGouldToint.AppendixB"
-desc = '''
-Appendix B, "Appendix to Chapter 10": Lemma B.10.1, the off-diagonal decay of the inverse of a
-symmetric positive-definite tridiagonal matrix (a corollary of Demko–Moss–Smith). The appendix
-proofs of Theorem 10.2.2 and Corollaries 10.2.3/10.3.3 are the proofs of those surface nodes.
-'''
 
 [[node]]
 id = "lemma_B_10_1"
-kind = "theorem"
-desc = '''
-Lemma B.10.1 (Inverse of a positive-definite tridiagonal matrix). Let `T : Matrix (Fin m) (Fin m) ℝ`
-be symmetric, positive definite and tridiagonal. Then for all `i, j`:
-`|(T⁻¹)ᵢⱼ| ≤ (2/λ_min(T)) ((√κ(T) - 1)/(√κ(T) + 1))^{|i-j|}`, `κ(T) = λ_max(T)/λ_min(T)`.
-'''
-deps = ["Matrix.abs_inv_apply_le_of_isTridiagonal"]
 source = "Cartis–Gould–Toint, Lemma B.10.1"

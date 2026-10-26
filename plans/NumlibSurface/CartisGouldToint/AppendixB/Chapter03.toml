@@ -1,15 +1,5 @@
 namespace = "CartisGouldToint.AppendixB"
-desc = '''
-Appendix to Chapter 3: the algebraic Lemma B.3.1 (used in Lemma 3.4.3 through its backbone form).
-The proofs of Theorems 3.4.11, 3.4.12, Lemmas 3.5.1–3.5.3 and Theorem 3.5.4 given in this appendix
-belong to the corresponding Chapter 3 nodes.
-'''
 
 [[node]]
 id = "lemma_B_3_1"
-kind = "theorem"
-desc = '''
-Lemma B.3.1. For `a, b > 0`, `c ≥ 0`: `-b + √(b² + a c) ≥ (-b + √(b² + a)) min(1, c)` (B.3.1).
-'''
-deps = ["neg_add_sqrt_sq_add_mul_ge"]
 source = "Cartis–Gould–Toint, Lemma B.3.1"
