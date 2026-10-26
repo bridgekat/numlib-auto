@@ -1,3 +1,5 @@
+import Numlib.Optimization.Regularization.Cubic.LocalGlobalCounts
+import Numlib.Optimization.Regularization.Cubic.LocalComplexity
 import Numlib.Optimization.Regularization.Cubic.LocalConvergence
 import Numlib.Optimization.Regularization.Cubic.SpectralCounterexample
 import Numlib.Optimization.Regularization.Cubic.PhaseCountCounterexample
@@ -208,5 +210,94 @@ theorem lemma_5_4_2_corrected {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     intro i hki hiN
     have hh := ht i hki hiN
     exact ⟨hh.1, hh.2.trans (mul_le_mul_of_nonneg_right hc (sq_nonneg _))⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Corrected Lemma 5.4.3.** Entry into the repaired positive-curvature
+region with gradient at most `zeta <= localThreshold/2` gives an actual first
+`epsilon`-stationary iterate within the natural budget
+`ceil(logb 2 (1 + max 0 (logb 2 (zeta / epsilon))))`.
+Every intervening trial is very successful, so the same bound counts successful
+iterations. Consistent primitive prefixes describe the execution until its
+actual gradient test passes; no termination index or convergence is assumed.
+The positive correction inside the logarithm replaces the false printed count
+and covers every positive accuracy, including the initial stopping test. -/
+theorem lemma_5_4_3_corrected {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin θ ℓ L ζ ε : ℝ} {k₀ : ℕ}
+    {xstar ustar : EuclideanSpace ℝ (Fin n)}
+    (hf : ContDiff ℝ 2 f) (hmin : IsLocalMin f xstar)
+    (hstar : SecondOrderTrustRegion.IsLeastEigenpair f xstar ℓ ustar)
+    (hℓ : 0 < ℓ) (hL : 0 < L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖)
+    (hζ : 0 < ζ) (hε : 0 < ε)
+    (hζbound : ζ ≤ CubicRegularization.localThreshold ℓ L θ
+      (max (σ 0) (γ₃ * L / (1 - η₂))) η₂ / 2)
+    (hx₀ : ‖x k₀ - xstar‖ ≤ ℓ / (4 * L))
+    (hg₀ : ‖fderiv ℝ f (x k₀)‖ ≤ ζ)
+    (hprefix : ∀ N, (∀ i, k₀ ≤ i → i < N → ε < ‖fderiv ℝ f (x i)‖) →
+      CubicRegularization.TightenedRun f x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ N) :
+    ∃ K ≤ EvaluationComplexity.quadraticIterationBudget ζ ε,
+      ‖fderiv ℝ f (x (k₀ + K))‖ ≤ ε ∧
+      (∀ k < K, ε < ‖fderiv ℝ f (x (k₀ + k))‖) ∧
+      CubicRegularization.TightenedRun f x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ (k₀ + K) ∧
+      ∀ k < K, η₂ ≤ ρ (k₀ + k) :=
+  CubicRegularization.exists_local_target_count hf hstar hℓ hL hmin.fderiv_eq_zero
+    hlip hζ hε hζbound hx₀ hg₀ hprefix
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Corrected Theorem 5.4.4.** The original large-current-gradient count
+holds with its single initialization allowance and actual cubic coefficient.
+The total bound uses the repaired local threshold and the safe natural local
+budget. To ensure the printed strict final inequality at every positive
+`epsilon`, run the actual gradient stopping test at `epsilon/2`; the exclusion
+of small gradients outside the local ball uses that same internal tolerance.
+The backbone also proves the nonstrict `epsilon` version with the original
+exclusion. All coefficients are fixed independently of the requested accuracy;
+no termination, parameter cap, decrease floor or iteration count is assumed.
+Function evaluations include initialization, and both gradient and Hessian
+schedules include initialization and each actual successful update. -/
+theorem theorem_5_4_4_corrected {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ ρ : ℕ → ℝ}
+    {η₁ η₂ γ₁ γ₂ γ₃ σmin θ L ℓ ζ ε flow : ℝ}
+    {xstar ustar : EuclideanSpace ℝ (Fin n)}
+    (hf : ContDiff ℝ 2 f) (hmin : IsLocalMin f xstar)
+    (hstar : SecondOrderTrustRegion.IsLeastEigenpair f xstar ℓ ustar)
+    (hℓ : 0 < ℓ) (hL : 0 < L)
+    (hlip : ∀ y z, ‖iteratedFDeriv ℝ 2 f y - iteratedFDeriv ℝ 2 f z‖ ≤ L * ‖y - z‖)
+    (hlow : ∀ y, flow ≤ f y) (hζ : 0 < ζ) (hε : 0 < ε)
+    (hζbound : ζ ≤ CubicRegularization.localThreshold ℓ L θ
+      (max (σ 0) (γ₃ * L / (1 - η₂))) η₂ / 2)
+    (hexclude : ∀ i, ε / 2 < ‖fderiv ℝ f (x i)‖ →
+      ‖fderiv ℝ f (x i)‖ ≤ ζ → ‖x i - xstar‖ ≤ ℓ / (4 * L))
+    (hprefix : ∀ N, (∀ i < N, ε / 2 < ‖fderiv ℝ f (x i)‖) →
+      CubicRegularization.TightenedRun f x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ N) :
+    let G := (f (x 0) - flow) /
+      (CubicRegularization.decreaseCoefficient (σ 0) σmin η₁ η₂ γ₃ L θ * ζ ^ (3 / 2 : ℝ))
+    let B := EvaluationComplexity.quadraticIterationBudget ζ (ε / 2)
+    let A := 1 + |Real.log γ₁| / Real.log γ₂
+    let C := Real.log (max (σ 0) (γ₃ * L / (1 - η₂)) / σ 0) / Real.log γ₂
+    ∃ K, ‖fderiv ℝ f (x K)‖ < ε ∧ ‖fderiv ℝ f (x K)‖ ≤ ε / 2 ∧
+      (∀ i < K, ε / 2 < ‖fderiv ℝ f (x i)‖) ∧
+      CubicRegularization.TightenedRun f x s σ ρ η₁ η₂ γ₁ γ₂ γ₃ σmin θ K ∧
+      ((EvaluationComplexity.successfulIterations
+        {i | η₁ ≤ ρ i ∧ ζ < ‖fderiv ℝ f (x i)‖} K).card : ℝ) ≤ G + 1 ∧
+      ((EvaluationComplexity.successfulIterations {i | η₁ ≤ ρ i} K).card : ℝ) ≤
+        G + 1 + B ∧
+      (K : ℝ) ≤ (G + 1 + B) * A + C ∧
+      (K : ℝ) + 1 ≤ (G + 1 + B) * A + C + 1 ∧
+      ((EvaluationComplexity.successfulIterations {i | η₁ ≤ ρ i} K).card : ℝ) + 1 ≤
+        G + B + 2 := by
+  dsimp only
+  obtain ⟨K, hK, hfirst, hrun, hlarge, hsuccess, htrials, hfunctions, hderivatives⟩ :=
+    CubicRegularization.exists_local_global_complexity hf hstar hℓ hL
+      hmin.fderiv_eq_zero hlip hlow hζ (half_pos hε) hζbound hexclude hprefix
+  refine ⟨K, ?_, hK, hfirst, hrun, hlarge, hsuccess, htrials, hfunctions, hderivatives⟩
+  linarith only [hK, hε]
 
 end CartisGouldToint

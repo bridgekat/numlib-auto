@@ -1,0 +1,5 @@
+namespace = "EvaluationComplexity"
+desc = "Count actual successful checks before and after point updates. Rejection preserves the predicate, so telescope the integer indicators; initialization costs at most one."
+
+[[node]]
+id = "card_current_le_endpoint_add_one"

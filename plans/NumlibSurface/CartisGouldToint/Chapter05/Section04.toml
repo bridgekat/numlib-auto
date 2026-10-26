@@ -167,12 +167,7 @@ source = "Full correction of Cartis–Gould–Toint Lemma5.4.2: actual coercivit
 
 [[node]]
 id = "lemma_5_4_3_corrected"
-kind = "theorem"
-desc = """Preserve actual local first attainment and successful iteration count for all epsilon>0. Use the corrected local region and positive Nat.ceil double-logarithm budget ceil(logb2(1+max(0,logb2(zeta/epsilon)))); include initial stop and derive all local iterations very successful."""
 source = "Correction of Cartis–Gould–Toint lemma_5_4_3; changed hypotheses/formulas/algorithm are explicit in this specification"
-
 [[node]]
 id = "theorem_5_4_4_corrected"
-kind = "theorem"
-desc = """Preserve full global large-gradient count and combined phase complexity with actual first attainment. Use corrected local constants and safe local count (epsilon/2 for the strict final target), retain the explicit no-small-gradient-outside-region source condition, and account for a transition success. Original false double logarithm is not reused."""
 source = "Correction of Cartis–Gould–Toint theorem_5_4_4; changed hypotheses/formulas/algorithm are explicit in this specification"
