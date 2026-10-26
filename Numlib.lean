@@ -674,6 +674,7 @@ import Numlib.Optimization.Complexity.SlowExample
 import Numlib.Optimization.Complexity.SlowExampleHighOrder
 import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.Complexity.ZeroChain
+import Numlib.Optimization.Complexity.ZigZagExample
 import Numlib.Optimization.Composite.TaylorModel
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained

@@ -17,7 +17,8 @@ the proof of Lemma 12.2.7 of [cartis2022evaluation].
 * `ContinuousMultilinearMap.norm_iteratedFDeriv_comp_diagonal_le`: for an `n`-multilinear map `A`,
   `‖∇^ℓ (y ↦ A[y]^n)(s)‖ ≤ n (n-1) ⋯ (n-ℓ+1) ‖A‖ ‖s‖^{n-ℓ}`;
 * `FormalMultilinearSeries.iteratedFDeriv_taylorSum_sub`: linearity in the data;
-* `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le`: the bound above.
+* `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le`: the bound above, and its quadratic
+  case on a ball `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_two_le`.
 -/
 
 open Finset
@@ -100,5 +101,29 @@ theorem norm_iteratedFDeriv_taylorSum_le (ℓ : ℕ) (s : E) :
   ext i
   simp only [mem_filter, mem_range, mem_Icc]
   omega
+
+
+/-- **Quadratic Taylor sums on a ball**: if `‖D_i‖ ≤ κ` for `i ≤ 2` and `‖s‖ ≤ ρ`, then
+`‖∇^m T_2(s)‖ ≤ 3 κ (1 + ρ)²` for every `m`. -/
+theorem norm_iteratedFDeriv_taylorSum_two_le {κ ρ : ℝ} (hκ : 0 ≤ κ) (hρ : 0 ≤ ρ)
+    (hD : ∀ i ≤ 2, ‖D i‖ ≤ κ) (m : ℕ) {s : E} (hs : ‖s‖ ≤ ρ) :
+    ‖iteratedFDeriv ℝ m (D.taylorSum 2) s‖ ≤ 3 * κ * (1 + ρ) ^ 2 := by
+  refine (D.norm_iteratedFDeriv_taylorSum_le 2 m s).trans ?_
+  have hterm : ∀ i ∈ Icc m 2, ‖D i‖ * ‖s‖ ^ (i - m) / ((i - m)! : ℝ) ≤ κ * (1 + ρ) ^ 2 := by
+    intro i hi
+    obtain ⟨hmi, hi2⟩ := mem_Icc.1 hi
+    have h1 : ‖s‖ ^ (i - m) ≤ (1 + ρ) ^ 2 :=
+      (pow_le_pow_left₀ (norm_nonneg s) (by linarith) _).trans
+        (pow_le_pow_right₀ (by linarith) (by omega))
+    have h2 : (1 : ℝ) ≤ ((i - m)! : ℝ) := by
+      exact_mod_cast Nat.succ_le_of_lt (Nat.factorial_pos _)
+    calc ‖D i‖ * ‖s‖ ^ (i - m) / ((i - m)! : ℝ) ≤ ‖D i‖ * ‖s‖ ^ (i - m) :=
+          div_le_self (by positivity) h2
+      _ ≤ κ * (1 + ρ) ^ 2 := mul_le_mul (hD i hi2) h1 (by positivity) hκ
+  refine (sum_le_card_nsmul _ _ _ hterm).trans ?_
+  rw [nsmul_eq_mul, Nat.card_Icc]
+  have : ((2 + 1 - m : ℕ) : ℝ) ≤ 3 := by exact_mod_cast (by omega : 2 + 1 - m ≤ 3)
+  have : 0 ≤ κ * (1 + ρ) ^ 2 := by positivity
+  nlinarith
 
 end FormalMultilinearSeries
