@@ -1,3 +1,4 @@
+import Numlib.Optimization.HighOrder.TaylorGrowth
 import Numlib.Optimization.HighOrder.CurveOptimality
 import Numlib.Optimization.HighOrder.Criticality
 import Numlib.Optimization.LineSearch.Peano
@@ -302,5 +303,24 @@ theorem theorem_12_1_1 {n q j : ℕ}
   intro i hi hij
   rw [TaylorModel.curveCoefficient_eq_sum_Icc hi]
   exact hzero i hi hij
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Corrected Theorem 12.1.5.** Uniform positive degree-j Taylor growth
+replaces the insufficient isolated-minimum hypothesis. Both the actual next
+Taylor polynomial and the objective have strict isolated local minima on a
+common ball. The printed pointwise derivative bound is automatic for the
+actual continuous multilinear tensor and imposes no additional restriction. -/
+theorem theorem_12_1_5_corrected {n j : ℕ} (hj : 0 < j)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    (hf : ContDiff ℝ (j + 1) f) {c r : ℝ} (hc : 0 < c) (hr : 0 < r)
+    (hgrowth : ∀ s : EuclideanSpace ℝ (Fin n), ‖s‖ ≤ r →
+      c * ‖s‖ ^ j ≤ TaylorModel.eval f j x s - f x) :
+    ∃ R > 0, ∀ s : EuclideanSpace ℝ (Fin n), ‖s‖ < R → s ≠ 0 →
+      f x < TaylorModel.eval f (j + 1) x s ∧ f x < f (x + s) :=
+  TaylorModel.strict_local_min_of_taylor_growth hj
+    (hf.of_le (by exact_mod_cast Nat.le_succ j)) x hc hr hgrowth
 
 end CartisGouldToint

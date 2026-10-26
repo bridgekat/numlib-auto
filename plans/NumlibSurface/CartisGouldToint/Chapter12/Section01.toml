@@ -69,3 +69,7 @@ source = "Cartis, Gould and Toint, Evaluation Complexity of Algorithms for Nonco
 [[node]]
 id = "mem_orderedCompositions"
 source = "Cartis, Gould and Toint, equation12.1.5."
+
+[[node]]
+id = "theorem_12_1_5_corrected"
+source = "Uniform Taylor-growth correction of Cartis, Gould and Toint, Theorem12.1.5"

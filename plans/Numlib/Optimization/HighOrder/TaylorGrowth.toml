@@ -1,0 +1,10 @@
+namespace = "TaylorModel"
+
+[[node]]
+id = "exists_pos_eval_succ_growth"
+
+[[node]]
+id = "exists_pos_value_growth"
+
+[[node]]
+id = "strict_local_min_of_taylor_growth"
