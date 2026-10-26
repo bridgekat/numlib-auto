@@ -70,19 +70,6 @@ deps = ["regularizedModel", "FormalMultilinearSeries.taylorDecrement", "sum_pow_
 source = "Cartis–Gould–Toint, Lemma 13.1.10"
 
 [[node]]
-id = "taylorMeasure_eq_zero_of_isLocalMin"
-kind = "theorem"
-desc = '''
-For `g : E → ℝ` with a local minimum at `s` (`IsLocalMin g s`), `δ ≥ 0`, and `j ∈ {1, 2}` with
-`ContDiffAt ℝ j g s`: `taylorMeasure (ftaylorSeries ℝ g s) j δ univ = 0` (first order: `fderiv = 0`;
-second order: additionally `iteratedFDeriv ℝ 2 g s (fun _ => d) ≥ 0`, so every decrement
-`-(∇g[d] + ½∇²g[d,d]) ≤ 0`, attained at `d = 0`). This is the `j ≤ 2` part of Theorem 12.1.4
-(stated here so that the step-existence lemma below does not depend on the Chapter 12 plan).
-'''
-deps = ["taylorMeasure", "taylorMeasure_nonneg", "IsLocalMin.iteratedFDeriv_two_nonneg"]
-source = "Cartis–Gould–Toint, Theorem 12.1.4 (orders one and two)"
-
-[[node]]
 id = "exists_highOrderStep"
 kind = "theorem"
 desc = '''
