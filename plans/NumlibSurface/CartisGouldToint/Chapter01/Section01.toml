@@ -30,11 +30,6 @@ source = "Cartis–Gould–Toint, Theorem 1.1.2, converse"
 
 [[node]]
 id = "theorem_1_1_2_tangentCone_sufficient"
-kind = "theorem"
-desc = '''
-Corrected sufficient clause: let C be closed convex, x*∈C, f C² on an open neighborhood, and ⟪grad f x*,y−x*⟫≥0 for all y∈C. Let T be the closure of {t • (y−x*) | t≥0, y∈C}. If D²f(x*)[d,d]>0 for every nonzero d∈T with ⟪grad f x*,d⟫=0, then x* is a strict local minimizer of f on C. This explicitly strengthens the faulty source condition from actual displacements to the closed tangent cone; prove by compactness of normalized feasible displacements and a second-order Taylor contradiction.
-'''
-deps = ["feasibleDisplacements"]
 source = "Cartis–Gould–Toint, Theorem 1.1.2, corrected converse"
 
 [[node]]

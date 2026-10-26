@@ -1,0 +1,18 @@
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_radial"
+
+[[node]]
+id = "iteratedDeriv_one_add_sq_rpow_odd"
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_perp_even"
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_perp_odd"
+
+[[node]]
+id = "convexOn_iteratedFDeriv_normRpow_perp"
+
+[[node]]
+id = "convexOn_iteratedFDeriv_normRpow_span_even"

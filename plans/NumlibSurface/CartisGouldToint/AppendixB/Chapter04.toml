@@ -8,8 +8,16 @@ Appendix B, Chapter 4: radial norm-power differentiation. Reuse Mathlib norm/rpo
 id = "lemma_B_4_1"
 kind = "theorem"
 desc = '''
-Source statement: for p:natural, beta in (0,1], F(s)=norm(s)^(p+beta), and 0<=j<=p, norm(D^j F(s)) = shiftedFactorial p beta/shiftedFactorial (p-j) beta * norm(s)^(p-j+beta), and D^j F(s)[s]^j equals the same coefficient times norm(s)^(p+beta), equations (B.4.1),(B.4.2). For s!=0 it further claims norm(D^(p+1) F(s))=beta*shiftedFactorial p beta*norm(s)^(beta-1), equation (B.4.3), and asserts convexity of d->D^j F(s)[d]^j on the hyperplane orthogonal to s and on span(s) when j is even. The all-j orthogonal convexity also needs auditing at j=p+1 because tangential even derivatives can have negative coefficients. Prove valid clauses separately before replacing this bundled node with a corrected statement.
+Source statement: for p:natural, beta in (0,1], F(s)=norm(s)^(p+beta), and 0<=j<=p, norm(D^j F(s)) = shiftedFactorial p beta/shiftedFactorial (p-j) beta * norm(s)^(p-j+beta), and D^j F(s)[s]^j equals the same coefficient times norm(s)^(p+beta), equations (B.4.1),(B.4.2). For s!=0 it further claims norm(D^(p+1) F(s))=beta*shiftedFactorial p beta*norm(s)^(beta-1), equation (B.4.3), and asserts convexity of d->D^j F(s)[d]^j on the hyperplane orthogonal to s and on span(s) when j is even. Orthogonal convexity is valid throughout j<=p+1 off the origin, since the actual even tangential coefficient is a product of positive factors; unrestricted orders require an explicit range. The corrected companion preserves radial identities and convexity, replacing the norm equalities with true common homogeneous upper bounds.
 '''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.4.1, equations (B.4.1)--(B.4.3)"
 deps = ["shiftedFactorial"]
 wrong = '''Equation (B.4.3) is false: take n=2,p=1,beta=1/2,s=e1. Hessian of norm(s)^(3/2) has radial eigenvalue 3/4 and tangential eigenvalue 3/2, so its operator norm is 3/2 whereas the stated expression is 3/4. This is mathematical, not merely a Lean issue.'''
+
+[[node]]
+id = "lemma_B_4_1_norm_bound_corrected"
+source = "Homogeneous operator-bound correction of Cartis, Gould and Toint, LemmaB.4.1(B.4.3); diagonal identities and convexity clauses are separate"
+
+[[node]]
+id = "lemma_B_4_1_corrected"
+source = "Corrected Cartis, Gould and Toint, LemmaB.4.1, (B.4.1)--(B.4.3) and subsequent convexity clauses"

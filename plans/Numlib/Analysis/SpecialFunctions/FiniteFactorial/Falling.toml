@@ -1,0 +1,7 @@
+namespace = "Real"
+
+[[node]]
+id = "prod_falling_mul_shiftedFactorial"
+
+[[node]]
+id = "prod_falling_eq_shiftedFactorial_div"

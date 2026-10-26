@@ -1,0 +1,13 @@
+namespace = "Constrained"
+
+[[node]]
+id = "closedRadialCone"
+
+[[node]]
+id = "smul_sub_mem_closedRadialCone"
+
+[[node]]
+id = "nonneg_on_closedRadialCone"
+
+[[node]]
+id = "strict_local_min_of_pos_hessian_on_closedRadialCone"
