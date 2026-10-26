@@ -203,6 +203,7 @@ import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.EuclideanProd
 import Numlib.Analysis.InnerProductSpace.GramDeterminant
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
+import Numlib.Analysis.InnerProductSpace.HalfNormSqDeriv
 import Numlib.Analysis.InnerProductSpace.HilbertSum
 import Numlib.Analysis.InnerProductSpace.MaximalMonotone
 import Numlib.Analysis.InnerProductSpace.MinCurvature
@@ -677,6 +678,8 @@ import Numlib.Optimization.Composite.TaylorModel
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
 import Numlib.Optimization.Constrained.SecondOrder
+import Numlib.Optimization.Constrained.TargetResidual
+import Numlib.Optimization.Constrained.TwoPhase
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
 import Numlib.Optimization.LineSearch.Backtracking

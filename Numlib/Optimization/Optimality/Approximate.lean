@@ -1,6 +1,7 @@
 import Numlib.Optimization.Optimality.Unconstrained
 import Numlib.Optimization.Subproblem.MinCurvature
 import Mathlib.Analysis.Calculus.Gradient.Basic
+import Mathlib.Basic.Real.Pointwise
 
 /-!
 # Approximate optimality and criticality measures
@@ -118,6 +119,14 @@ theorem abs_decrementMeasure_sub_le {e : ℝ} (hne : (closedBall 0 δ ∩ S).Non
     refine decrementMeasure_le hne fun d hd => ?_
     have := le_decrementMeasure hbdd hd
     linarith [(abs_sub_le_iff.1 (h d hd)).2]
+
+/-- The decrement measure is positively homogeneous in the decrement:
+`sup (a Δ) = a sup Δ` for `a ≥ 0`. -/
+theorem decrementMeasure_const_mul {Δ : E → ℝ} {δ a : ℝ} {S : Set E} (ha : 0 ≤ a) :
+    decrementMeasure (fun d => a * Δ d) δ S = a * decrementMeasure Δ δ S := by
+  rw [decrementMeasure_def, decrementMeasure_def, ← smul_eq_mul (a := a),
+    ← Real.sSup_smul_of_nonneg ha, ← Set.image_smul, Set.image_image]
+  rfl
 
 variable [NormedSpace ℝ E]
 

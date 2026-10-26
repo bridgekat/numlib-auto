@@ -1,72 +1,17 @@
 namespace = "Constrained"
-desc = '''
-Outer bookkeeping of the two-phase "target-following" methods for `min f(x)` s.t. `x ∈ X`,
-`c(x) = 0` (Cartis–Gould–Toint §7.2 TPp-GC and §14.3.2 TPqp-GC): the target sequence of Phase 2
-(Lemmas 7.2.3, 7.2.4, valid verbatim for TPqp-GC as the book notes before (14.3.36)) and the
-per-block counting of inner iterations (Lemmas 7.2.6, 14.3.8, corrected). The merit/residual
-objects and their derivative/measure algebra are in `Constrained/TargetResidual` (consolidated:
-the Chapter 7 and Chapter 14 plans had parallel copies; one set of ids in namespace `Constrained`,
-argument order `targetMerit f c t x`). Both chapters' surface algorithms use `IsTargetSequence`.
-'''
 
 [[node]]
 id = "IsTargetSequence"
-kind = "def"
-desc = '''
-Outer bookkeeping of Phase 2 (Steps 0 and 2 of TPp-GC / TPqp-GC).
-`IsTargetSequence (f : E → ℝ) (c : E → F) (θ ε₀ : ℝ) (x : ℕ → E) (t : ℕ → ℝ) (Ka : ℕ → Prop)
-(K : ℕ) : Prop` — outer iterates `x`, targets `t`, a horizon `K` (outer iterations `k ∈ [1, K)`
-completed without termination) and the set `Ka` of case-(a) iterations (`𝒦_a`): `‖c (x 1)‖ ≤ θ ε₀`,
-`t 1 = f (x 1) - √(ε₀² - ‖c (x 1)‖²)`; for `1 ≤ k < K`: (inner monotonicity)
-`targetResidual f c (t k) (x (k+1)) ≤ targetResidual f c (t k) (x k)`; (a) if `Ka k` then
-`targetResidual f c (t k) (x (k+1)) ≤ θ ε₀` and `t (k+1) = f (x (k+1)) - √(ε₀² - ‖c (x (k+1))‖²)`;
-(b) if `¬ Ka k` then `θ ε₀ ≤ targetResidual f c (t k) (x (k+1))`, `f (x (k+1)) < t k` and
-`t (k+1) = 2 f (x (k+1)) - t k` (`𝒦_b`; the case (c), `f ≥ t`, terminates, i.e. does not occur
-before `K`). Leaving the boundary case to `Ka` covers both printed variants: Algorithm 7.2.1 with
-the corrected `≤ θ ε₀` in Step 2(a) (`Ka k ↔ residual ≤ θ ε₀`) and Algorithm 14.3.2 with `<`
-(`Ka k ↔ residual < θ ε₀`).
-'''
-deps = ["targetResidual"]
 source = "Cartis–Gould–Toint, Algorithm 7.2.1 Phase 2 and Algorithm 14.3.2 Phase 2, (14.3.36)"
 
 [[node]]
 id = "IsTargetSequence.props"
-kind = "theorem"
-desc = '''
-Lemma 7.2.3 (valid verbatim for TPqp-GC, as the book notes before (14.3.36)). For an
-`IsTargetSequence … x t Ka K` and `1 ≤ k ≤ K`: `t` is strictly decreasing on `[1, K]`;
-`0 ≤ f (x k) - t k` (7.2.26); `targetResidual f c (t (k+1)) (x (k+1)) = ε₀` if `Ka k` (7.2.27);
-`= targetResidual f c (t k) (x (k+1)) ≤ ε₀` if `¬ Ka k` (7.2.28); `‖c (x k)‖ ≤ ε₀` and
-`f (x k) - t k ≤ ε₀` (7.2.29); `t k - t (k+1) ≥ (1 - θ) ε₀` for `Ka k` (7.2.30); and, if
-`flow ≤ f ≤ fup` on `{z ∈ X | ‖c z‖ ≤ ε₀}` (f.B.Fb) with `ε₀ ≤ 1`, `t k ∈ [flow - 1, fup]` (7.2.31).
-'''
-deps = ["IsTargetSequence", "_root_.neg_add_sqrt_sq_sub_sq_ge"]
 source = "Cartis–Gould–Toint, Lemma 7.2.3 (used for Algorithm 14.3.2)"
 
 [[node]]
 id = "IsTargetSequence.card_Ka_le"
-kind = "theorem"
-desc = '''
-Lemma 7.2.4: under f.B.Fb (as in `IsTargetSequence.props`), the number of `k ∈ [1, K)` with
-`Ka k` is at most `(fup - flow + 1) / ((1 - θ) ε₀)`. (Theorem 14.3.9's `f_up - f_low - 1` is a
-sign slip for this `+ 1`.)
-'''
-deps = ["IsTargetSequence.props"]
 source = "Cartis–Gould–Toint, Lemma 7.2.4 (used in (14.3.69)–(14.3.70))"
 
 [[node]]
 id = "card_le_of_residual_block"
-kind = "theorem"
-desc = '''
-Counting successful inner iterations in one block between consecutive `𝒦_a` indices (the
-telescoping argument of Lemmas 7.2.6 / 14.3.8, corrected). Let `ρ : ℕ → ℝ` be antitone on
-`[0, N]` with `θ ε₀ ≤ ρ i ≤ ε₀` there (`θ ∈ (0,1)`, `ε₀ > 0`), `T ⊆ range N`, `c > 0`,
-`π : ℕ → ℝ` with `1 ≤ π l ≤ πmax` and `ε l > 0` for `l ∈ Icc 1 q`, and for every `i ∈ T`:
-`θ * ρ i ≤ ρ (i+1)` and `ρ i ^ 2 / 2 - ρ (i+1) ^ 2 / 2 ≥ c * min_{l ∈ Icc 1 q} (ρ (i+1) * ε l) ^ π l`.
-Then `|T| ≤ (1 - θ) / (c * θ ^ (2 * πmax - 1)) * max_{l ∈ Icc 1 q} ε₀ ^ (2 - π l) * ε l ^ (-π l)`.
-Correction: the book's proof of Lemma 14.3.8 bounds `‖r(x_{j,s},t_j)‖^{π_l - 1}` from below by
-`ε₀^{π_l-1}`, but (B.14.20) only gives `(θ ε₀)^{π_l-1}`; hence the constant
-`κ^S_{INNER,2} = [κ^μ_decr]⁻¹ β^{-π_max} θ^{1-2π_max}` instead of `[κ^μ_decr]⁻¹ (βθ)^{-π_max}` (same
-order in `ε`). (Here `c = κ^μ_decr β^{π_max}`.)
-'''
 source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 (Appendix B) and Lemma 7.2.6"
