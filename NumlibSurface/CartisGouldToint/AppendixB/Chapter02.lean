@@ -21,8 +21,9 @@ The global exact-line-search reading of Lemma B.2.6 is false for this actual
 construction: at accuracy one quarter, a farther point on the first positive
 negative-gradient ray has strictly smaller value than the prescribed endpoint.
 `lemma_B_2_6_counterexample` proves failure of the global minimum in (2.2.26).
-The source proof's separate first-local-minimum property remains a planned
-companion; neither that property nor Lemma B.2.2 supplies a global SDEX execution.
+The separate `lemma_B_2_6_first_local` proves the source proof's first local
+minimum, including the true ray derivatives and local minimality. This property
+and Lemma B.2.2 do not supply a global SDEX execution.
 
 -/
 

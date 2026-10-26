@@ -66,23 +66,4 @@ id = "theorem_9_3_1_counterexample"
 
 [[node]]
 id = "theorem_9_3_1_metric"
-kind = "theorem"
-desc = '''
-Corrected companion to Theorem9.3.1: replace the source's Euclidean Z1 guard by
-nonzero metric projection onto the least generalized eigenspace, equivalently a
-nonzero basis coordinate in an M-orthonormal generalized eigenbasis. Keep the
-actual normalized inverse solves and all legal Algorithm9.3.1 controls, including
-variable nk and gamma_k that become constant only eventually, bounded positive
-omega_k, gammaU in(0,1], 1<gammaL<=2-gammaU, gamma_k<=2nk-gammaU, and nU possibly
-infinite. For fixed admissible controls and initial metric-unit vector with the
-correct projection, sufficiently close initial shifts above -lambda1 generate
-valid positive-definite iterates converging to -lambda1 with Q-order gamma_bar.
-The local radius may depend on the fixed finite control prefix before eventual
-constancy. State Q-order as eventual positive two-sided bounds on the ratio of
-successive errors to error^gamma_bar; do not demand a ratio limit when omega_k
-need not converge. Prove the spectral subspace contraction, Rayleigh error and
-local dynamical estimates from the actual operations, without assuming them in
-the run. Original printed theorem remains wrong, separately witnessed above.
-'''
 source = "Metric-projection correction of Cartis, Gould and Toint, Theorem9.3.1 and Algorithm9.3.1"
-deps = ["hardCaseInverseIterationRun"]

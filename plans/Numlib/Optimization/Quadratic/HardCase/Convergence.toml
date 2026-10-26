@@ -1,0 +1,7 @@
+namespace = "QuadraticSecular.PencilBasis"
+
+[[node]]
+id = "exists_pos_radius_hardCase_convergence"
+
+[[node]]
+id = "exists_pos_radius_hardCase_eventual_order"

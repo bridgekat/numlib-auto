@@ -1,0 +1,13 @@
+namespace = "Real"
+
+[[node]]
+id = "exists_pos_power_safeguards"
+
+[[node]]
+id = "positive_power_shift_bounds"
+
+[[node]]
+id = "tendsto_zero_of_pos_half_step"
+
+[[node]]
+id = "exists_nat_bound_of_eventually_const"

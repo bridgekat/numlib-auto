@@ -1,3 +1,4 @@
+import Numlib.Optimization.Quadratic.HardCase.Convergence
 import Numlib.Optimization.Quadratic.HardCase.ProjectionCounterexample
 import Numlib.Optimization.Quadratic.Regularization.Stopping
 import NumlibSurface.CartisGouldToint.Chapter08.Section02
@@ -23,6 +24,9 @@ requires a nonzero metric projection onto the least eigenspace. Its printed
 Euclidean projection permits a starting vector trapped in a higher eigenspace.
 The concrete two-dimensional counterexample below has legal fixed controls
 n=2, gamma=2, omega=1 and arbitrarily close initial shifts, but no convergence.
+The metric-projection correction proves full local convergence and eventual
+two-sided Q-order bounds, including eventual control constancy, repeated least
+eigenvalues and bounded weights that need not converge.
 -/
 
 namespace CartisGouldToint
@@ -122,5 +126,57 @@ theorem theorem_9_3_1_counterexample :
       QuadraticSecular.HardCaseCounterexample.arbitrarily_close_counterexample hδ
     exact ⟨a, ha, hclose, hrun,
       QuadraticSecular.HardCaseCounterexample.upper_secular_region ha, hnot⟩
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Metric-projection correction of Theorem 9.3.1.** Require a nonzero metric
+projection onto the least generalized eigenspace. The true normalized inverse
+solves and all legal algorithm controls are retained. Counts and exponents may
+have arbitrary finite prefixes before becoming constant, and nU may be infinite.
+A fixed sufficiently close start gives positive-definite shifted pencils,
+strictly decreasing shifts converging to the spectral edge, and eventual
+positive two-sided Q-order bounds. No limit of the bounded weights is required. -/
+theorem theorem_9_3_1_metric {n : ℕ}
+    (H M : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
+    (_hH : H.toLinearMap.IsSymmetric) (hM : M.toLinearMap.IsSymmetricCoercive)
+    (B : QuadraticSecular.PencilBasis (ι := Fin n) H M)
+    (least : ℝ) (hmin : ∀ i, least ≤ B.eigenvalue i)
+    (v0 : EuclideanSpace ℝ (Fin n))
+    (_hvunit : energyNorm M.toLinearMap v0 = 1)
+    (hproj : ∃ i, B.eigenvalue i = least ∧ inner ℝ (M v0) (B.basis i) ≠ 0)
+    (count : ℕ → ℕ) (exponent weight : ℕ → ℝ)
+    (ωL ωU γL γU : ℝ) (hωL : 0 < ωL) (hωU : ωL ≤ ωU)
+    (hγL : 1 < γL) (hγU : 0 < γU)
+    (nbar : ℕ) (γbar : ℝ) (_hnbar : 0 < nbar) (_hγbarpos : 0 < γbar)
+    (hnbar : ∀ᶠ k in Filter.atTop, count k = nbar)
+    (hγbar : ∀ᶠ k in Filter.atTop, exponent k = γbar) :
+    ∃ R > 0, ∃ A > 0, ∃ D > 0,
+      ∀ (shift : ℕ → ℝ) (vector : ℕ → EuclideanSpace ℝ (Fin n))
+        (innerVector : ℕ → ℕ → EuclideanSpace ℝ (Fin n)) (nU : WithTop ℕ),
+        hardCaseInverseIterationRun H M least shift vector innerVector count exponent weight
+          ωL ωU γL γU nU →
+        vector 0 = v0 → shift 0 + least ≤ R →
+        (∀ k, 0 < shift k + least ∧ shift (k + 1) < shift k ∧
+          ∀ v : EuclideanSpace ℝ (Fin n), v ≠ 0 →
+            0 < inner ℝ ((H + shift k • M) v) v) ∧
+        Filter.Tendsto shift Filter.atTop (nhds (-least)) ∧
+        ∀ᶠ k in Filter.atTop,
+          A * (shift k + least) ^ γbar ≤ shift (k + 1) + least ∧
+            shift (k + 1) + least ≤ D * (shift k + least) ^ γbar := by
+  obtain ⟨l, hl, hp⟩ := hproj
+  have hv : B.basis.repr v0 l ≠ 0 := by
+    rwa [B.coordinate_eq_metric_inner]
+  obtain ⟨R, hR, A, hA, D, hD, hb⟩ := B.exists_pos_radius_hardCase_eventual_order
+    hM least hmin hl v0 hv count exponent weight ωL ωU γL γU hωL hωU hγL hγU
+      nbar γbar hnbar hγbar
+  refine ⟨R, hR, A, hA, D, hD, ?_⟩
+  intro shift vector innerVector nU h hvinit hclose
+  obtain ⟨hpos, hlim, hhalf, hrate⟩ := hb shift vector innerVector nU h hvinit hclose
+  refine ⟨?_, hlim, hrate⟩
+  intro k
+  refine ⟨hpos k, by linarith [hhalf k, hpos k], ?_⟩
+  exact B.shifted_positive (shift k) (fun i => by linarith [hmin i, hpos k])
 
 end CartisGouldToint

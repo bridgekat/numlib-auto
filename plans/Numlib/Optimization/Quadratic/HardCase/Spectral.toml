@@ -1,0 +1,52 @@
+namespace = "QuadraticSecular.PencilBasis"
+
+[[node]]
+id = "coordinate_eq_metric_inner"
+
+[[node]]
+id = "metric_norm_sq_coordinates"
+
+[[node]]
+id = "rayleigh_eq_sum_coordinates"
+
+[[node]]
+id = "raw_inverse_coordinate"
+
+[[node]]
+id = "inverseStep_coordinate"
+
+[[node]]
+id = "inverseStep_unit"
+
+[[node]]
+id = "inverseStep_coordinate_ne_zero"
+
+[[node]]
+id = "inverseStep_coordinate_ratio"
+
+[[node]]
+id = "inverseBlock_coordinate_ratio"
+
+[[node]]
+id = "rayleigh_error_nonneg"
+
+[[node]]
+id = "inverseBlock_unit"
+
+[[node]]
+id = "coordinate_sq_le_ratio_sq"
+
+[[node]]
+id = "rayleighCoefficient"
+
+[[node]]
+id = "rayleighBoundConstant"
+
+[[node]]
+id = "rayleighBoundConstant_pos"
+
+[[node]]
+id = "rayleighCoefficient_le_bound"
+
+[[node]]
+id = "inverseBlock_rayleigh_bound"
