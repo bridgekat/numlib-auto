@@ -1,0 +1,40 @@
+desc = '''
+Cartis–Gould–Toint Chapter 12, "Finding High-Order Approximate Minimizers": curve-based necessary
+conditions and their limits (§12.1.1–12.1.2), the Taylor-decrement measure
+`φ^δ_{f,j}(x) = f(x) - min_{‖d‖≤δ} T_{f,j}(x,d)` (`Optimization.taylorMeasure`) and the
+`(ε,δ)`-approximate `q`-th order minimizers (`Optimization.IsEpsDeltaApprox`) (§12.1.3–12.1.7), the
+trust-region method TRq and the regularization method ARqp with their complexity and sharpness
+(§12.2), and remarks on inexact global minimization (§12.3). Appendix B's Lemma B.12.1 is in
+`AppendixB.Chapter12`.
+
+Conventions: namespace `CartisGouldToint.Chapter12` for all sections; functions on
+`EuclideanSpace ℝ (Fin n)`; tolerance and radius vectors `ε δ : ℕ → ℝ` indexed by the order
+`j ∈ [1:q]`; algorithms are the backbone run predicates `Optimization.IsTRqRun` /
+`Optimization.IsARqpRun` with exact data `ftaylorSeries ℝ f (x k)`.
+
+Source corrections (details in the nodes):
+* Example 12.1.2: the saddle needs `κ₁² > 4κ₂` (the curve `x₂ = 3/2 x₁²` and Figure 12.1.2 use
+  `κ₁ = 3`); with the printed `κ₁ = 1, κ₂ = 2` the origin is a global minimizer.
+* Theorem 12.1.5 is false as printed (counterexample `(x₂ - x₁²)² + x₂⁶ - x₁⁷`, `j = 6`, due to the
+  earlier late-report attempt, verified here); corrected with a uniform order-`j` growth hypothesis.
+* Theorem 12.1.6(ii): needs `f ∈ C²` (prints `C¹`); `κ(x)` made explicit.
+* Theorem 12.1.7: radius condition written multiplicatively (`2 δ_j ‖∇^j f(x)‖ ≤ j ε_j`); the
+  prose after it reverses the order of the tolerances (needs `ε_q ≤ … ≤ ε_1`).
+* Theorem 12.2.5: conclusion `φ^δ_{f,q}` should be `φ^δ_{f,j}`.
+* Theorem 12.2.6 / (B.12.5)–(B.12.9): inconsistent decrease (`ρ_k = ½`), false `ε^{q+1} k_ε ≤ 1`,
+  `x_k = (k-1)ε` typo; corrected data in `Optimization.exists_slowTRq_interpolant`.
+* ARqp Step 1: printed `≥` normalized to `>` (as TRq); Step 2: termination `m_k(s_k) = m_k(0)` only
+  sound under Algorithm 12.2.3's guarantee that `0` is then a global model minimizer (added);
+  (12.2.28) vs Step 2.3 radii and `>`/`≥` reconciled.
+* Lemma 12.2.11: with `ς < 1` the factor `(1 - θ)` must be `(ς - θ)` and `θ < ς` is needed (the
+  algorithm's non-termination only gives `φ ≥ ς ε δ^j/j!`); also needs (12.2.29) at iteration `k`.
+* Lemma 12.2.12 (case `q > 2`): constant `κ_{δ,min}` must be replaced by
+  `κ̂ = min(κ_{δ,min}, τ_q/2)` (the "first case implies second" step fails when `θ` is close to 1).
+* Lemma 12.2.13: f.D1qL should read f.D1pL, and the decrease holds for successful `k` followed by a
+  non-terminating iteration (not "every iteration").
+* Theorem 12.2.15 for `q ≥ 3`: its hypothesis "`δ_{s_k} = 1` is possible" fails for its own example
+  (`theorem_12_2_15_counterexample`); the theorem is formalized for the global-step variant and is
+  a genuine ARqp statement for `q ≤ 2` (Corollary 12.2.16).
+* Example 12.2.2: `s²(s - ½)² = ¼ s² (1 - 4s) + s⁴`, not `½ s²(1 - 2s) + s⁴`; the radius threshold is
+  `¼`, not `½`.
+'''

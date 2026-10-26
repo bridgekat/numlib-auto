@@ -1,0 +1,31 @@
+desc = '''
+Taylor's theorem with Peano remainder for `f : E → ℝ` on a real normed space (Cartis–Gould–Toint
+(A.12), the "weak Taylor-series bound"), in the vocabulary of `MultivariateTaylor/Basic`
+(`taylorPolynomial f n x h = ∑_{i ≤ n} (i!)⁻¹ D^i f(x)[h]^i`). Mathlib only has the
+one-dimensional `taylor_isLittleO`; the multivariate statement is a corollary of the Hölder bound
+(A.14) (`abs_sub_taylorPolynomial_le_of_holder`) with exponent `β = 0` on small balls, where the
+"Hölder constant" is the oscillation of `D^n f` (small by continuity), since
+`holderFactorial n 0 = n!`. No new analysis is needed.
+
+Consumers: Chapter 12 (Theorem 12.1.1 curve-based necessary conditions via polynomial curves;
+Theorem 12.1.4 `φ^δ_{f,j}(x)/δ^j → 0` at local minimizers; the corrected sufficient condition of
+Theorem 12.1.5); presumably also Chapters 6 and 14 (constrained analogues).
+(Planned by plan-ch12; not part of the core design.)
+'''
+
+[[node]]
+id = "sub_taylorPolynomial_isLittleO"
+kind = "theorem"
+desc = '''
+Peano remainder. Let `f : E → ℝ`, `n : ℕ`, `ContDiffAt ℝ n f x`. Then
+`(fun h => f (x + h) - taylorPolynomial f n x h) =o[𝓝 0] (fun h => ‖h‖ ^ n)`.
+Quantitative form (part of the node, the one used downstream): for every `η > 0` there is `r > 0`
+such that `|f (x + h) - taylorPolynomial f n x h| ≤ η * ‖h‖ ^ n` whenever `‖h‖ < r`.
+Proof: `ContDiffAt` gives `ContDiffOn ℝ n f (ball x r₀)` and continuity of `iteratedFDeriv ℝ n f`
+at `x`; on a smaller ball `ball x r` the oscillation `‖D^n f y - D^n f z‖ ≤ η * n!` holds, i.e.
+`IteratedFDerivHolderOn f n (η * n!) 0 (ball x r)` (with `‖·‖ ^ (0:ℝ) = 1`), and
+`abs_sub_taylorPolynomial_le_of_holder` (`C = ball x r` convex, `D = ball x r₀` open) gives
+`|f(x+h) - T_n(x,h)| ≤ η n!/holderFactorial n 0 ‖h‖^n = η ‖h‖^n`.
+'''
+deps = ["abs_sub_taylorPolynomial_le_of_holder", "holderFactorial", "taylorPolynomial", "IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, (A.12)"

@@ -1,0 +1,98 @@
+namespace = "Optimization"
+desc = '''
+One-dimensional data for the sharpness ("slow convergence") results of Cartis–Gould–Toint
+Chapter 12 (Theorems 12.2.6, 12.2.15, 12.2.17, Corollary 12.2.16), generalizing the
+`Complexity/SlowExample` families of the core to arbitrary orders `q ≤ p ≤ r`. Each node fixes the
+iterates `x_k`, values `f_k` and derivatives `f_k^{(j)}` of the example, checks the Hermite
+consistency condition (A.32) `|f_{k+1}^{(j)} - ∑_{i=j}^{n} f_k^{(i)} s_k^{i-j}/(i-j)!| ≤ κ s_k^{n-j+1}`
+(`n = q`, `p` or `r`) with `κ` depending only on the orders, and concludes with
+`Hermite.exists_contDiff_interpolating_jets_bounded` (Theorem A.9.2) an interpolant `G : ℝ → ℝ`,
+`ContDiff ℝ n G`, derivatives of orders `0..n` bounded by `B`, `n`-th derivative `L`-Lipschitz, with
+`L, B` independent of `ε` (hence f.Bb and f.D1nL). Lifting to `EuclideanSpace ℝ (Fin n)` (if
+wanted) by `ridge` preserves the measures `φ^δ_{f,j}` since the Taylor data only see `⟪e, d⟫`.
+Also: two explicit one-dimensional model facts (the regularized-linear model of Example 12.1.3 and
+the monomial model (12.2.69)) used to verify the step conditions. (Planned by plan-ch12.)
+'''
+
+[[node]]
+id = "taylorMeasure_linearRegModel_eq_zero"
+kind = "theorem"
+desc = '''
+Example 12.1.3 in one variable. Let `p ≥ 1`, `β σ > 0`, `m t = -β t + σ |t| ^ (p + 1) / (p + 1)!`
+on `ℝ`, `t* = (β p!/σ)^{1/p}` (its unique global minimizer). Then for `j ∈ Icc 1 p` and every
+`δ ≥ 0` with `(p - 1) δ ≤ 3 t*` (no restriction when `p ≤ 2` or `j ≤ 2`):
+`taylorMeasure (ftaylorSeries ℝ m t*) j δ univ = 0`. Proof (book): `T_{m,j}(t*, α t*) - m(t*) =
+σ t*^{p+1} ∑_{ℓ=2}^{j} α^ℓ/(ℓ!(p+1-ℓ)!)` (from (B.4.2)); for `α ≥ 0` all terms are `≥ 0`; for
+`α < 0` pair the terms of orders `2i, 2i+1`, each pair `≥ 0` when `|α| ≤ (2i+1)/(p+1-2i)`, the
+minimum over `i` being `3/(p-1)`; an even top order adds a nonnegative term.
+'''
+deps = ["taylorMeasure", "iteratedFDeriv_norm_pow_apply_self"]
+source = "Cartis–Gould–Toint, Example 12.1.3"
+
+[[node]]
+id = "isMinOn_neg_monomial_add_regularization"
+kind = "theorem"
+desc = '''
+The monomial model (12.2.69)–(12.2.70). For `1 ≤ q ≤ p`, `a > 0`, `σ = p!/(q-1)!`, the function
+`m t = -a t ^ q / q! + σ |t| ^ (p + 1) / (p + 1)!` on `ℝ` attains its global minimum at
+`t* = a ^ (1/(p-q+1))` (`Real.rpow`), with `m t* = -(p - q + 1)/((p + 1) q!) a^{(p+1)/(p-q+1)} < 0`;
+`T_{m}` has `∇^j m(t*) = -t*^{p-j+1}/(q-j)! + p!/((q-1)!(p+1-j)!) t*^{p+1-j}` for `j ≤ p`.
+'''
+source = "Cartis–Gould–Toint, (12.2.70) and the display after it"
+
+[[node]]
+id = "exists_slowTRq_interpolant"
+kind = "theorem"
+desc = '''
+TRq slow example (Appendix B proof of Theorem 12.2.6, corrected). For `q ≥ 1` there are `L B`
+(depending only on `q`) such that for every `ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-(q+1)}⌉₊`,
+`c_k = 2 - k/k_ε`, `x_k = k ε` (the printed (B.12.7) `x_k = (k-1)ε` is a typo), `f_0 = 4`,
+`f_{k+1} = f_k - ε^{q+1} c_k`, `f_k^{(j)} = 0` for `1 ≤ j < q`, `f_k^{(q)} = -ε c_k q!` (`k ≤ k_ε`),
+there is `G : ℝ → ℝ` with `ContDiff ℝ q G`, `|G^{(j)}| ≤ B` (`j ≤ q`), `G^{(q)}` `L`-Lipschitz,
+`G (x_k) = f_k`, `G^{(j)}(x_k) = f_k^{(j)}`. Corrections: the printed (B.12.5)
+`f_{k+1} = f_k - ½ ε^{q+1} c_k` contradicts (B.12.8) `f_{k+1} = T_{f,q}(x_k, s_k)` (the model
+decrease is `ε^{q+1} c_k`, giving `ρ_k = ½` instead of `1`), and the claimed `ε^{q+1} k_ε ≤ 1` is
+false (`k_ε ≥ ε^{-(q+1)}`); with the decrease `ε^{q+1} c_k` and `f_0 = 4`, `f_k ≥ 4 - 2ε^{q+1}k_ε ≥ 0`.
+Residuals: `0` at order `0`, `ε q! /k_ε ≤ q! s_k` at order `q`, `2 q!/(q-j)! s_k^{q-j+1}` at orders
+`1 ≤ j < q` (the book omits the factor `q!/(q-j)!`), so `κ = 4 q!` works.
+'''
+deps = ["Hermite.exists_contDiff_interpolating_jets_bounded"]
+source = "Cartis–Gould–Toint, Appendix B, proof of Theorem 12.2.6, (B.12.4)–(B.12.9)"
+
+[[node]]
+id = "exists_slowARqp_interpolant"
+kind = "theorem"
+desc = '''
+ARqp slow example, good case (proof of Theorem 12.2.15). For `1 ≤ q ≤ p` there are `L B`
+(depending only on `p, q`) such that for every `ε ∈ (0, 1/2]`, with `π = (p+1)/(p-q+1)`,
+`k_ε = ⌈ε^{-π}⌉₊`, `ω_k = ε (k_ε - k)/k_ε`, `a_k = ε + ω_k`, `s_k = a_k^{1/(p-q+1)}`,
+`x_0 = 0`, `x_{k+1} = x_k + s_k`, `f_0 = 2^{1+π}`, `f_{k+1} = f_k - a_k^π / q!`,
+`f_k^{(q)} = -a_k`, `f_k^{(j)} = 0` for `j ∈ [1:p] \ {q}`, there is `G` (`ContDiff ℝ p`, bounds `B`,
+`G^{(p)}` `L`-Lipschitz) interpolating these jets at `x_k`, `k ≤ k_ε`. Residuals: order `0`: `0`
+((12.2.72): `T_{f,p}(x_k, s_k) = f_{k+1}`); orders `j < q`: `s_k^{p-j+1}/(q-j)!`; order `q`:
+`|ω_k - ω_{k+1}| = ε/k_ε ≤ s_k^{p-q+1}` (the printed (12.2.78) claims `0`, wrongly but harmlessly);
+orders `> q`: `0`. Also `f_k ∈ (0, 2^{1+π}]`.
+'''
+deps = ["Hermite.exists_contDiff_interpolating_jets_bounded", "isMinOn_neg_monomial_add_regularization"]
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.15, (12.2.67)–(12.2.79)"
+
+[[node]]
+id = "exists_slowARqpSmooth_interpolant"
+kind = "theorem"
+desc = '''
+ARqp slow example, general case (proof of Theorem 12.2.17). For `1 ≤ q ≤ p ≤ r` there are `L B`
+(depending only on `p, q, r`) such that for every `ε ∈ (0, 1/2]`, with `k_ε = ⌈ε^{-q(p+1)/p}⌉₊`,
+`γ = q (r/p - 1)`, `ω_k = ε^{q+γ} (k_ε - k)/k_ε`, `β_k = (ε^q + ω_k)/q!`,
+`σ = (3/(p-1))^p p!/q!` if `p > 2`, `σ = p!` if `p ≤ 2` (12.2.85),
+`s_k = (p! β_k/σ)^{1/p}`, `x_0 = 0`, `x_{k+1} = x_k + s_k`,
+`f_0 = 2^{1+q(p+1)/p} κ_F`, `κ_F = (p!/(σ q!))^{1/p}/q!` (12.2.90),
+`f_{k+1} = f_k - (p!/σ)^{1/p} β_k^{(p+1)/p}`, `f_k^{(1)} = -β_k`, `f_k^{(j)} = 0` for `j ∈ [2:r]`,
+there is `G` with `ContDiff ℝ r G`, bounds `B`, `G^{(r)}` `L`-Lipschitz (so f.D1rL and f.Bb)
+interpolating the `r`-jets. Residuals (12.2.92)–(12.2.96): only order `1` is nonzero,
+`|ω_{k+1} - ω_k|/q! ≤ ε^{qr/p}/q! ≤ (q!)^{r/p-1}(σ/p!)^{r/p} s_k^r`. Also `s_k ≤ C(p,q)` and
+`f_k ∈ [0, f_0]`. The decrement identity `m_k(s_k) - m_k(0) = -(p/(p+1)) (p!/σ)^{1/p} β_k^{(p+1)/p}`
+((12.1.20)) shows `f_{k+1} = T_{f,p}(x_k, s_k)` — note `T_{f,p}(x_k,s_k) - f_k = -β_k s_k`, so the
+printed (12.2.90) decrement must equal `β_k s_k = (p!/σ)^{1/p} β_k^{(p+1)/p}` ✓.
+'''
+deps = ["Hermite.exists_contDiff_interpolating_jets_bounded", "taylorMeasure_linearRegModel_eq_zero"]
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.17, (12.2.80)–(12.2.96)"
