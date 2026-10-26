@@ -1,0 +1,31 @@
+namespace = "Constrained"
+
+[[node]]
+id = "residualIncrementMerit"
+
+[[node]]
+id = "targetMerit_decomposition"
+
+[[node]]
+id = "contDiffAt_residualIncrementMerit"
+
+[[node]]
+id = "decrement_targetMerit_decomposition"
+
+[[node]]
+id = "constrainedCriticality_lagrangian_le_with_increment"
+
+[[node]]
+id = "lagrangian_bound_of_merit_certificate_with_increment"
+
+[[node]]
+id = "hasFDerivAt_residualIncrementMerit"
+
+[[node]]
+id = "residualIncrementMerit_diagonal_zero"
+
+[[node]]
+id = "residualIncrementMerit_decrement_zero"
+
+[[node]]
+id = "lagrangian_restricted_bound_of_merit_certificate"
