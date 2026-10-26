@@ -138,15 +138,6 @@ structure algorithm_2_4_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : ARParams
     (fun k => IsMinOn (ar1Model f (x k) (σ k)) univ (s k)) (fun _ => False)
     (taylorRatio f 1 x s) x s σ
 
-/-- The termination test of AR1 (no post-step test). -/
-private theorem not_stop_iff {test : ℕ → Prop} {k : ℕ} :
-    (∀ j < k, ¬ IsARRun.Stop test (fun _ => False) j) ↔ ∀ j < k, ¬ test j := by
-  simp [IsARRun.Stop]
-
-private theorem not_stop_le_iff {test : ℕ → Prop} {k : ℕ} :
-    (∀ j ≤ k, ¬ IsARRun.Stop test (fun _ => False) j) ↔ ∀ j ≤ k, ¬ test j := by
-  simp [IsARRun.Stop]
-
 /-- **Existence of AR1 runs** from every starting point (the step `-∇f(x_k)/σ_k`, (2.4.5), and the
 left ends of the intervals of (2.4.4)). -/
 theorem exists_algorithm_2_4_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : ARParams) {ε : ℝ}
@@ -166,13 +157,13 @@ variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : ARParams} {ε : ℝ}
 
 theorem sigma_pos (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j < k, ¬ ‖gradient f (x j)‖ ≤ ε) : 0 < σ k :=
-  h.run.sigma_pos (not_stop_iff.2 hk) k le_rfl
+  h.run.sigma_pos (IsARRun.forall_lt_not_stop_iff.2 hk) k le_rfl
 
 /-- Before termination the AR1 step is `s_k = -∇f(x_k)/σ_k` (2.4.5). -/
 theorem step_eq (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε) : s k = -((σ k)⁻¹ • gradient f (x k)) :=
   ((ar1_step_eq (h.sigma_pos fun j hj => hk j hj.le)).1).1
-    (h.run.step_of_forall_le (not_stop_le_iff.2 hk))
+    (h.run.step_of_forall_le (IsARRun.forall_le_not_stop_iff.2 hk))
 
 /-- Before termination the Taylor decrease is `‖∇f(x_k)‖²/σ_k` (2.4.6). -/
 theorem taylorDecrement_eq (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
@@ -205,7 +196,7 @@ theorem lemma_2_4_1 (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (k : ℝ) ≤ (successSet (fun j => P.η₁ ≤ taylorRatio f 1 x s j) k).card *
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
       Real.log (σmax / P.σ₀) / Real.log P.γ₂ :=
-  h.run.le_succ_count (not_stop_iff.2 hk) hσ
+  h.run.le_succ_count (IsARRun.forall_lt_not_stop_iff.2 hk) hσ
 
 /-- The bound `σ_max = max(σ₀, γ₃ L/(2(1 - η₂)))` of (2.4.9): the backbone's
 `Optimization.arSigmaMax` with Lipschitz constant `L/2` (`sigmaMaxAR1_eq`). -/
@@ -227,7 +218,7 @@ theorem lemma_2_4_2 (hf : AssumptionGL f L) (h : algorithm_2_4_1 f P ε x s σ) 
   have hforce : ∀ k, (∀ j ≤ k, ¬ IsARRun.Stop (fun k => ‖gradient f (x k)‖ ≤ ε)
       (fun _ => False) j) → L / (2 * (1 - P.η₂)) ≤ σ k → P.η₂ ≤ taylorRatio f 1 x s k := by
     intro k hk hσk
-    rw [not_stop_le_iff] at hk
+    rw [IsARRun.forall_le_not_stop_iff] at hk
     have hσ := h.sigma_pos fun j hj => hk j hj.le
     have hg : 0 < ‖gradient f (x k)‖ := h.ε_pos.trans (not_le.1 (hk k le_rfl))
     have hs : s k ≠ 0 := by
@@ -244,7 +235,7 @@ theorem lemma_2_4_2 (hf : AssumptionGL f L) (h : algorithm_2_4_1 f P ε x s σ) 
     rw [div_le_iff₀ (by linarith [P.η₂_lt_one])] at hσk
     norm_num [Nat.factorial]
     linarith
-  have := (h.run.sigma_le_max hforce (not_stop_iff.2 hk) k le_rfl).2.2
+  have := (h.run.sigma_le_max hforce (IsARRun.forall_lt_not_stop_iff.2 hk) k le_rfl).2.2
   rw [sigmaMaxAR1_eq]
   convert this using 2
   ring
@@ -259,7 +250,7 @@ private theorem sub_ge_of_succ (hf : AssumptionGL f L) (h : algorithm_2_4_1 f P 
     P.η₁ * ε ^ 2 / sigmaMaxAR1 P L ≤ f (x k) - f (x (k + 1)) := by
   have hsub := (h.run.sub_ge_of_succ (w := f)
     (pred := fun k => (ftaylorSeries ℝ f (x k)).taylorDecrement 1 (s k))
-    (not_stop_le_iff.2 hk) rfl (h.taylorDecrement_pos hk) hs).2
+    (IsARRun.forall_le_not_stop_iff.2 hk) rfl (h.taylorDecrement_pos hk) hs).2
   rw [h.taylorDecrement_eq hk] at hsub
   have hσ := h.sigma_pos fun j hj => hk j hj.le
   have hσmax := lemma_2_4_2 hf h fun j hj => hk j hj.le
@@ -280,7 +271,8 @@ theorem lemma_2_4_3 (hb : AssumptionBb f flow) (hf : AssumptionGL f L)
     have := P.η₁_pos; have := h.ε_pos; have := sigmaMaxAR1_pos P L; positivity
   have hcard := card_successSet_le_div_of_decrease (φ := fun j => f (x j)) hc
     (fun j hj hs => by
-      rw [h.run.eq_of_not_succ (not_stop_le_iff.2 fun i hi => hk i (hi.trans hj)) (not_le.1 hs)])
+      rw [h.run.eq_of_not_succ (IsARRun.forall_le_not_stop_iff.2 fun i hi => hk i (hi.trans hj))
+        (not_le.1 hs)])
     (fun j hj hs => sub_ge_of_succ hf h (fun i hi => hk i (hi.trans hj)) hs) (hb (x (k + 1)))
   refine hcard.trans_eq ?_
   have := P.η₁_pos; have := h.ε_pos; have := sigmaMaxAR1_pos P L
@@ -319,11 +311,11 @@ theorem theorem_2_4_4 (hb : AssumptionBb f flow) (hf : AssumptionGL f L)
   have hδ : 0 < P.η₁ * ε ^ 2 / σmax := by positivity
   obtain ⟨kε, hk, hF, hD⟩ := h.run.exists_isFirstHit_of_decrease_of_le (σmax := σmax)
     (V := fun k => f (x k)) (Vlow := flow)
-    (fun k hk => lemma_2_4_2 hf h (not_stop_iff.1 hk)) hδ
+    (fun k hk => lemma_2_4_2 hf h (IsARRun.forall_lt_not_stop_iff.1 hk)) hδ
     (fun k hk => (h.run.accept k hk).le (w := f) rfl
-      (h.taylorDecrement_pos (not_stop_le_iff.1 hk)))
+      (h.taylorDecrement_pos (IsARRun.forall_le_not_stop_iff.1 hk)))
     (fun k _ => hb (x k))
-    (fun k hk hs => sub_ge_of_succ hf h (not_stop_le_iff.1 hk) hs)
+    (fun k hk hs => sub_ge_of_succ hf h (IsARRun.forall_le_not_stop_iff.1 hk) hs)
   have hN : (f (x 0) - flow) / (P.η₁ * ε ^ 2 / σmax) =
       kappaSAR1 P L * (f (x 0) - flow) / ε ^ 2 := by
     rw [kappaSAR1]; field_simp; rfl
@@ -395,7 +387,7 @@ theorem theorem_2_4_5 (P : ARParams) :
     isFirstHit_slow hε (fun _ _ => rfl) fun k hk => (hfk k hk).2
   have hbefore : ∀ k, (∀ j ≤ k, ¬ IsARRun.Stop (fun k => ‖gradient f (x k)‖ ≤ ε)
       (fun _ => False) j) → k < kε := fun k hk =>
-    not_le.1 fun hle => (not_stop_le_iff.1 hk) kε hle hhit.test
+    not_le.1 fun hle => (IsARRun.forall_le_not_stop_iff.1 hk) kε hle hhit.test
   have hfx : ∀ j ≤ kε, f (x j) = slowF t ε kε j := fun j hj => (hfk j hj).1
   have hg : ∀ k ≤ kε, ‖gradient f (x k)‖ = ε + slowOmega ε kε k := fun k hk => by
     simp only [x]

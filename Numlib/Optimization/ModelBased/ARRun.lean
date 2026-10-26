@@ -38,6 +38,9 @@ the regularization weight is updated by (2.4.4) (`Optimization.ARUpdate`). Metho
 * `Optimization.IsARRun.succ_count`, `Optimization.IsARRun.le_succ_count`: Lemma 2.4.1;
 * `Optimization.IsARRun.exists_isFirstHit_of_decrease`: the counting skeleton of the complexity
   theorems (Theorems 2.4.4, 3.3.5, 4.1.5, …), with the book's constants (4.1.46);
+* `Optimization.IsARRun.forall_lt_not_stop_iff`, `Optimization.IsARRun.forall_le_not_stop_iff`,
+  `Optimization.IsARRun.isFirstHit_stop_iff`, `Optimization.IsARRun.exists_last_succ`: runs without a
+  post-step test;
 * `Optimization.exists_isARRun_prev`, `Optimization.exists_isARRun`: existence of runs when an
   admissible step exists whenever the test fails (the test may read the previous iteration, as
   ARp's third-order test does through `𝓜_k`).
@@ -208,13 +211,11 @@ end Acceptance
 abbrev IsARRun.Stop (stop₁ stop₂ : ℕ → Prop) (k : ℕ) : Prop := stop₁ k ∨ stop₂ k
 
 /-- Without a post-step test, "no termination before `k`" is "the Step-1 test fails before `k`". -/
-@[simp]
 theorem IsARRun.forall_lt_not_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
     (∀ j < k, ¬ IsARRun.Stop stop₁ (fun _ => False) j) ↔ ∀ j < k, ¬ stop₁ j := by
   simp [IsARRun.Stop]
 
 /-- Without a post-step test, "no termination up to `k`" is "the Step-1 test fails up to `k`". -/
-@[simp]
 theorem IsARRun.forall_le_not_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
     (∀ j ≤ k, ¬ IsARRun.Stop stop₁ (fun _ => False) j) ↔ ∀ j ≤ k, ¬ stop₁ j := by
   simp [IsARRun.Stop]

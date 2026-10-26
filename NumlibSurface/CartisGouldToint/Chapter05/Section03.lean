@@ -43,7 +43,7 @@ successful iterations `S`, unchanged iterates otherwise, and the density (5.3.9)
   Theorem 5.3.10 assumes `|log ε| ≥ 1`).
 * The additive constants are those of the corrected backbone counts (the book's Appendix B
   contains slips, listed in `Optimization.GapRecurrence`): Theorem 5.3.3's `κ^F` is
-  `kappaFGap1` (the second phase must reach `ω ≤ c^{1/α} ε`); Theorem 5.3.5's `κ^E` uses
+  `superlinearCountConst` (the second phase must reach `ω ≤ c^{1/α} ε`); Theorem 5.3.5's `κ^E` uses
   `min(1, α)` in place of `α` ((B.5.12) holds only for `α ≤ 1`) and `Γ_0^{-α}` in place of the
   printed `κψ^{ν/μ}/κν`, and its halving argument gives `2M + 2` successful iterations; in
   Theorem 5.3.9 `κ^E = μ κψ^{ν/μ}/((ν - μ) κν)` (printed exponent `μ/ν`) and
@@ -158,70 +158,22 @@ structure TRSetting (f ψ : ℝⁿ → ℝ) (fstar μ κψ κν ν κR κA : ℝ
   /-- `κA ≥ 0`. -/
   kappaA_nonneg : 0 ≤ κA
 
-/-! ### Generic counting tools -/
 
-section Counting
+/-- The standing hypotheses of §5.3.2 from the book's global domination (5.3.1), with reference
+value `f_* = inf f`. -/
+theorem ARSetting.of_isDominated {f ψ : ℝⁿ → ℝ} {μ κψ κν ν κR κA : ℝ} {x : ℕ → ℝⁿ}
+    {S : ℕ → Prop} (hψ : ∀ y, 0 ≤ ψ y) (hμ : 1 ≤ μ) (hκψ : 0 < κψ) (hdom : IsDominated f ψ μ κψ)
+    (hrun : IsARpsiNuRun f ψ κν ν κR κA x S) (hκν : 0 < κν) (hν : 1 ≤ ν) (hκR : 1 ≤ κR)
+    (hκA : 0 ≤ κA) : ARSetting f ψ (⨅ y, f y) μ κψ κν ν κR κA x S :=
+  ⟨hψ, hμ, hκψ, hdom.range x, hrun, hκν, hν, hκR, hκA⟩
 
-variable {Γ : ℕ → ℝ} {S : ℕ → Prop}
-
-/-- The density (5.3.9) forces infinitely many successful iterations. -/
-theorem frequently_of_density {κR κA : ℝ} (hκR : 0 ≤ κR)
-    (h : ∀ k : ℕ, (k : ℝ) ≤ κR * (successSet S k).card + κA) : ∀ N, ∃ k ≥ N, S k := by
-  intro N
-  by_contra hcon
-  push Not at hcon
-  have hcard : ∀ k, (successSet S k).card ≤ N := fun k => by
-    calc (successSet S k).card ≤ (Finset.range N).card := by
-          refine Finset.card_le_card fun j hj => ?_
-          rw [mem_successSet] at hj
-          exact Finset.mem_range.2 (lt_of_not_ge fun hjN => hcon j hjN hj.2)
-      _ = N := Finset.card_range N
-  obtain ⟨k, hk⟩ := exists_nat_gt (κR * N + κA)
-  have h1 := h k
-  have h2 : κR * ((successSet S k).card : ℝ) ≤ κR * N :=
-    mul_le_mul_of_nonneg_left (by exact_mod_cast hcard k) hκR
-  linarith
-
-/-- **Measure counts from gap counts** (the step (B.5.11) of [cartis2022evaluation], Appendix B):
-let `Γ ≥ 0` with infinitely many successful iterations, `Γ_{k+1} ≤ ε` whenever `N ≤ |𝒮_k|`, and
-`κν φ_k^ν ≤ Γ_k - Γ_{k+1}` at the successful `k`. Then some successful `k` has
-`κν φ_k^ν ≤ ε` and `|𝒮_k| ≤ max N 0 + 2`. -/
-theorem exists_le_of_gap_count {φ : ℕ → ℝ} {κν ν ε N : ℝ} (hΓ : ∀ k, 0 ≤ Γ k)
-    (hS : ∀ M, ∃ k ≥ M, S k) (hcount : ∀ k, N ≤ (successSet S k).card → Γ (k + 1) ≤ ε)
-    (hdec : ∀ k, S k → κν * φ k ^ ν ≤ Γ k - Γ (k + 1)) :
-    ∃ k, S k ∧ κν * φ k ^ ν ≤ ε ∧ ((successSet S k).card : ℝ) ≤ max N 0 + 2 := by
-  set n := max 2 (⌈N⌉₊ + 1) with hn
-  obtain ⟨k₀, hk₀⟩ := exists_le_card_successSet hS n
-  obtain ⟨a, -, hSa, hcard⟩ := exists_card_successSet_eq (by omega) hk₀
-  have ha : a ≠ 0 := by
-    rintro rfl
-    have : (successSet S 0).card ≤ 1 := card_successSet_le
-    omega
-  obtain ⟨b, rfl⟩ := Nat.exists_eq_succ_of_ne_zero ha
-  have hcb : (successSet S b).card + 1 = n := by
-    rw [← card_successSet_add_one_of_succ hSa, hcard]
-  have hNb : N ≤ (successSet S b).card := by
-    have h1 : N ≤ (⌈N⌉₊ : ℝ) := Nat.le_ceil N
-    have h2 : ⌈N⌉₊ ≤ (successSet S b).card := by omega
-    exact h1.trans (by exact_mod_cast h2)
-  refine ⟨b + 1, hSa, ?_, ?_⟩
-  · have := hdec _ hSa
-    have := hcount b hNb
-    have := hΓ (b + 1 + 1)
-    linarith
-  · rw [hcard]
-    rcases le_total 2 (⌈N⌉₊ + 1) with h | h
-    · rw [hn, max_eq_right h]
-      have := Nat.ceil_lt_add_one (le_max_right N 0)
-      have h3 : (⌈N⌉₊ : ℝ) ≤ ⌈max N 0⌉₊ := by exact_mod_cast Nat.ceil_mono (le_max_left _ _)
-      push_cast
-      linarith
-    · rw [hn, max_eq_left h]
-      have := le_max_right N 0
-      push_cast
-      linarith
-
-end Counting
+/-- The standing hypotheses of §5.3.3 from the book's global domination (5.3.1), with reference
+value `f_* = inf f`. -/
+theorem TRSetting.of_isDominated {f ψ : ℝⁿ → ℝ} {μ κψ κν ν κR κA : ℝ} {x : ℕ → ℝⁿ}
+    {S : ℕ → Prop} (hψ : ∀ y, 0 ≤ ψ y) (hμ : 1 ≤ μ) (hκψ : 0 < κψ) (hdom : IsDominated f ψ μ κψ)
+    (hrun : IsTRpsiNuRun f ψ κν ν κR κA x S) (hκν : 0 < κν) (hν : 1 ≤ ν) (hκR : 1 ≤ κR)
+    (hκA : 0 ≤ κA) : TRSetting f ψ (⨅ y, f y) μ κψ κν ν κR κA x S :=
+  ⟨hψ, hμ, hκψ, hdom.range x, hrun, hκν, hν, hκR, hκA⟩
 
 /-! ### Adaptive-regularization-like methods -/
 
@@ -246,7 +198,7 @@ theorem gap :
 
 /-- There are infinitely many successful iterations. -/
 theorem frequently : ∀ N, ∃ k ≥ N, S k :=
-  frequently_of_density (by linarith [h.one_le_kappaR]) h.run.density
+  Optimization.frequently_of_density (by linarith [h.one_le_kappaR]) h.run.density
 
 /-- (5.3.9): `N ≤ |𝒮_k|` once `κR N + κA ≤ k`. -/
 theorem le_card {N : ℝ} {k : ℕ} (hk : κR * N + κA ≤ k) : N ≤ (successSet S k).card :=
@@ -267,7 +219,7 @@ theorem exists_measure_le {ε N : ℝ} (hε : 0 ≤ ε)
     (hcount : ∀ k, N ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν) :
     ∃ k, S k ∧ ψ (x (k + 1)) ≤ ε ∧ ((successSet S k).card : ℝ) ≤ max N 0 + 2 ∧
       (k : ℝ) ≤ κR * (max N 0 + 2) + κA := by
-  obtain ⟨k, hk, hφ, hcard⟩ := exists_le_of_gap_count (φ := fun k => ψ (x (k + 1)))
+  obtain ⟨k, hk, hφ, hcard⟩ := Optimization.exists_le_of_gap_count (φ := fun k => ψ (x (k + 1)))
     (κν := κν) (ν := ν)
     h.gap.nonneg h.frequently hcount fun k hk => by
       have := h.run.decrease k hk; linarith
@@ -277,6 +229,25 @@ theorem exists_measure_le {ε N : ℝ} (hε : 0 ≤ ε)
   · have := h.run.density k
     have : κR * ((successSet S k).card : ℝ) ≤ κR * (max N 0 + 2) :=
       mul_le_mul_of_nonneg_left hcard (by linarith [h.one_le_kappaR])
+    linarith
+
+/-- Measure counts from integer gap counts: if `Γ_{k+1} ≤ κν ε^ν` whenever `n ≤ |𝒮_k|`, some
+successful `k` with `|𝒮_k| ≤ max n 1 + 1` and `k ≤ κR (max n 1 + 1) + κA` has
+`ψ(x_{k+1}) ≤ ε`. -/
+theorem exists_measure_le_nat {ε : ℝ} {n : ℕ} (hε : 0 ≤ ε)
+    (hcount : ∀ k, n ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν) :
+    ∃ k, S k ∧ ψ (x (k + 1)) ≤ ε ∧ (successSet S k).card ≤ max n 1 + 1 ∧
+      (k : ℝ) ≤ κR * (max n 1 + 1 : ℕ) + κA := by
+  obtain ⟨k, hk, hφ, hcard⟩ := Optimization.exists_le_of_gap_count_nat
+    (φ := fun k => ψ (x (k + 1))) (κν := κν) (ν := ν)
+    h.gap.nonneg h.frequently hcount fun k hk => by
+      have := h.run.decrease k hk; linarith
+  refine ⟨k, hk, ?_, hcard, ?_⟩
+  · have h3 : ψ (x (k + 1)) ^ ν ≤ ε ^ ν := le_of_mul_le_mul_left hφ h.kappaNu_pos
+    exact (Real.rpow_le_rpow_iff (h.psi_nonneg _) hε h.nu_pos).1 h3
+  · have := h.run.density k
+    have : κR * ((successSet S k).card : ℝ) ≤ κR * (max n 1 + 1 : ℕ) :=
+      mul_le_mul_of_nonneg_left (by exact_mod_cast hcard) (by linarith [h.one_le_kappaR])
     linarith
 
 end ARSetting
@@ -333,63 +304,41 @@ theorem theorem_5_3_2 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) {ε
   have hcount := (h.gap.le_implicitGapSeq h.c_pos (div_pos h.nu_pos h.mu_pos)).2 ε hε
   exact ⟨hcount, fun k hk => hcount k (by exact_mod_cast h.le_card hk)⟩
 
-/-- The additive constant `κ^F_{AR,gap,1}` of Theorem 5.3.3 (corrected, see
-`Optimization.superlinearGapCount_le`): with `α = τ - 1` and `ω_0 = c^{1/α} Γ_0`,
-`max(0, log ω_0)/log(1 + ω_0^α) + 2 + (log(1 + |log c|/|α|) + |log log(1 + ω_0^α)|)/log(1/τ)`
-`+ 1`. -/
-noncomputable def kappaFGap1 (c τ Γ0 : ℝ) : ℝ :=
-  max 0 (Real.log (c ^ (1 / (τ - 1)) * Γ0)) /
-      Real.log (1 + (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1)) + 2 +
-    (Real.log (1 + |Real.log c| / |τ - 1|) +
-        |Real.log (Real.log (1 + (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1)))|) /
-      Real.log (1 / τ) + 1
-
-theorem kappaFGap1_nonneg {c τ Γ0 : ℝ} (hc : 0 ≤ c) (hτ0 : 0 < τ) (hτ1 : τ ≤ 1)
-    (hΓ0 : 0 ≤ Γ0) : 0 ≤ kappaFGap1 c τ Γ0 := by
-  have h1 : 0 ≤ (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1) :=
-    Real.rpow_nonneg (mul_nonneg (Real.rpow_nonneg hc _) hΓ0) _
-  have h2 : 0 ≤ Real.log (1 + (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1)) :=
-    Real.log_nonneg (by linarith)
-  have h3 : 0 ≤ Real.log (1 + |Real.log c| / |τ - 1|) := Real.log_nonneg (by
-    have : 0 ≤ |Real.log c| / |τ - 1| := by positivity
-    linarith)
-  have h4 : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ0]; linarith)
-  unfold kappaFGap1
-  have := le_max_left 0 (Real.log (c ^ (1 / (τ - 1)) * Γ0))
-  positivity
 
 /-- **Theorem 5.3.3** ([cartis2022evaluation], `1 ≤ ν < μ`): under the standing hypotheses of
 §5.3.2 with `Γ_0 > 0`, the gaps converge superlinearly, and for every `ε > 0`, `Γ_{k+1} ≤ ε`
 after `κ^E log(max(1, |log ε|)) + κ^F` successful iterations (5.3.17) and after
 `κ^B log(max(1, |log ε|)) + κ^C` iterations (5.3.16), with `κ^E = 1/(log μ - log ν)`,
-`κ^F = kappaFGap1 c (ν/μ) Γ_0`, `κ^B = κR κ^E`, `κ^C = κR κ^F + κA`. Moreover (5.3.18)–(5.3.19)
+`κ^F = superlinearCountConst c (ν/μ) Γ_0`, `κ^B = κR κ^E`, `κ^C = κR κ^F + κA`. Moreover
+(5.3.18)–(5.3.19)
 some successful `k` has `ψ(x_{k+1}) ≤ ε` with
-`|𝒮_k| ≤ κ^E log(max(1, |log(κν ε^ν)|)) + κ^F + 2` and `k ≤ κR (that bound) + κA`. -/
+`|𝒮_k| ≤ κ^E log(max(1, |log(κν ε^ν)|)) + κ^F + 1` and `k ≤ κR (that bound) + κA`. -/
 theorem theorem_5_3_3 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν < μ)
     (hΓ0 : 0 < f (x 0) - fstar) :
     (∀ η, 0 < η → ∃ K, ∀ k ≥ K, S k → f (x (k + 1)) - fstar ≤ η * (f (x k) - fstar)) ∧
     (∀ ε, 0 < ε → ∀ k, 1 / (Real.log μ - Real.log ν) * Real.log (max 1 |Real.log ε|) +
-        kappaFGap1 (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) ≤ (successSet S k).card →
+        superlinearCountConst (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) ≤
+          (successSet S k).card →
       f (x (k + 1)) - fstar ≤ ε) ∧
     (∀ ε, 0 < ε → ∀ k : ℕ, κR * (1 / (Real.log μ - Real.log ν)) * Real.log (max 1 |Real.log ε|) +
-        (κR * kappaFGap1 (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) + κA) ≤ k →
+        (κR * superlinearCountConst (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) + κA) ≤ k →
       f (x (k + 1)) - fstar ≤ ε) ∧
     (∀ ε, 0 < ε → ∃ k, S k ∧ ψ (x (k + 1)) ≤ ε ∧
       ((successSet S k).card : ℝ) ≤ 1 / (Real.log μ - Real.log ν) *
           Real.log (max 1 |Real.log (κν * ε ^ ν)|) +
-        kappaFGap1 (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) + 2 ∧
+        superlinearCountConst (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) + 1 ∧
       (k : ℝ) ≤ κR * (1 / (Real.log μ - Real.log ν) * Real.log (max 1 |Real.log (κν * ε ^ ν)|) +
-        kappaFGap1 (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) + 2) + κA) := by
+        superlinearCountConst (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) + 1) + κA) := by
   have hμ := h.mu_pos
   have hν := h.nu_pos
   have hτ0 : 0 < ν / μ := div_pos hν hμ
   have hτ1 : ν / μ < 1 := (div_lt_one hμ).2 hνμ
   set c := κν / κψ ^ (ν / μ) with hc_def
   set Γ0 := f (x 0) - fstar with hΓ0_def
-  set κF := kappaFGap1 c (ν / μ) Γ0 with hκF
+  set κF := superlinearCountConst c (ν / μ) Γ0 with hκF
   have hlog : Real.log (1 / (ν / μ)) = Real.log μ - Real.log ν := by
     rw [one_div_div, Real.log_div hμ.ne' hν.ne']
-  have hκF0 : 0 ≤ κF := kappaFGap1_nonneg h.c_pos.le hτ0 hτ1.le hΓ0.le
+  have hκF0 : 0 ≤ κF := superlinearCountConst_nonneg h.c_pos.le hτ0 hτ1.le hΓ0.le
   -- the gap count
   have hcount : ∀ ε, 0 < ε → ∀ k, 1 / (Real.log μ - Real.log ν) *
       Real.log (max 1 |Real.log ε|) + κF ≤ (successSet S k).card →
@@ -400,21 +349,32 @@ theorem theorem_5_3_3 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
     refine h.gap.le_of_superlinear_count h.c_pos hτ0 hτ1 hΓ0 hε ?_
     have : (superlinearGapCount c (ν / μ) Γ0 ε : ℝ) ≤ (successSet S k).card := by
       refine hb.trans (le_trans (le_of_eq ?_) hk)
-      rw [hκF, kappaFGap1, hlog]
+      rw [hκF, superlinearCountConst, hlog]
       ring
     exact_mod_cast this
   refine ⟨(lemma_5_3_1 h).2.2.1 hνμ, hcount, fun ε hε k hk => hcount ε hε k
     (h.le_card (by linarith)), fun ε hε => ?_⟩
   have hεν : 0 < κν * ε ^ ν := mul_pos h.kappaNu_pos (Real.rpow_pos_of_pos hε _)
-  have hN : 0 ≤ 1 / (Real.log μ - Real.log ν) * Real.log (max 1 |Real.log (κν * ε ^ ν)|) +
-      κF := by
-    have : 0 < Real.log μ - Real.log ν := by
-      rw [← hlog]; exact Real.log_pos (by rw [lt_div_iff₀ hτ0]; linarith)
-    have : 0 ≤ Real.log (max 1 |Real.log (κν * ε ^ ν)|) := Real.log_nonneg (le_max_left _ _)
-    positivity
-  obtain ⟨k, hk, hψ, hcard, hkle⟩ := h.exists_measure_le hε.le (hcount _ hεν)
-  rw [max_eq_left hN] at hcard hkle
-  exact ⟨k, hk, hψ, hcard, hkle⟩
+  -- the integer count `n = superlinearGapCount …` and one more successful iteration
+  set n := superlinearGapCount c (ν / μ) Γ0 (κν * ε ^ ν) with hn
+  have hn1 : 1 ≤ n := by
+    rw [hn, superlinearGapCount]
+    exact le_add_right (Nat.le_add_left 1 _)
+  have hnb := superlinearGapCount_le_const (Γ0 := Γ0) h.c_pos hτ0 hτ1 hΓ0 hεν
+  rw [hlog] at hnb
+  have hgc : ∀ k, n ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν :=
+    fun k hk => h.gap.le_of_superlinear_count h.c_pos hτ0 hτ1 hΓ0 hεν hk
+  obtain ⟨k, hk, hψ, hcard, hkle⟩ := ARSetting.exists_measure_le_nat h hε.le hgc
+  rw [max_eq_left hn1] at hcard hkle
+  have hb : ((n + 1 : ℕ) : ℝ) ≤ 1 / (Real.log μ - Real.log ν) *
+      Real.log (max 1 |Real.log (κν * ε ^ ν)|) + κF + 1 := by
+    push_cast; rw [hκF]; linarith [show Real.log (max 1 |Real.log (κν * ε ^ ν)|) /
+      (Real.log μ - Real.log ν) = 1 / (Real.log μ - Real.log ν) *
+        Real.log (max 1 |Real.log (κν * ε ^ ν)|) by ring]
+  refine ⟨k, hk, hψ, (by exact_mod_cast hcard : ((successSet S k).card : ℝ) ≤ (n + 1 : ℕ)).trans hb,
+    hkle.trans ?_⟩
+  have := mul_le_mul_of_nonneg_left hb (by linarith [h.one_le_kappaR] : (0 : ℝ) ≤ κR)
+  linarith
 
 /-- **Theorem 5.3.4** ([cartis2022evaluation], `ν = μ`): under the standing hypotheses of §5.3.2
 with `Γ_0 > 0`, the gaps converge linearly with factor `(1 + κν/κψ)^{-1}` along the successful
@@ -422,7 +382,7 @@ iterations, and for every `ε > 0`, `Γ_{k+1} ≤ ε` after `κ^E |log ε| + κ^
 (5.3.21) and after `κR κ^E |log ε| + κR κ^F + κA` iterations (5.3.20), with
 `κ^E = 1/log(1 + κν/κψ)` and `κ^F = log Γ_0 / log(1 + κν/κψ) + 1`. Moreover (5.3.22)–(5.3.23)
 some successful `k` has `ψ(x_{k+1}) ≤ ε` with
-`|𝒮_k| ≤ max(ν κ^E |log ε| + κ^E |log κν| + κ^F, 0) + 2` and `k ≤ κR (that bound) + κA`. -/
+`|𝒮_k| ≤ max(ν κ^E |log ε| + κ^E |log κν| + κ^F, 1) + 1` and `k ≤ κR (that bound) + κA`. -/
 theorem theorem_5_3_4 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν = μ)
     (hΓ0 : 0 < f (x 0) - fstar) :
     (∀ k, S k → f (x (k + 1)) - fstar ≤ (1 + κν / κψ)⁻¹ * (f (x k) - fstar)) ∧
@@ -435,10 +395,10 @@ theorem theorem_5_3_4 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
     (∀ ε, 0 < ε → ∃ k, S k ∧ ψ (x (k + 1)) ≤ ε ∧
       ((successSet S k).card : ℝ) ≤ max (ν * (1 / Real.log (1 + κν / κψ)) * |Real.log ε| +
           (1 / Real.log (1 + κν / κψ) * |Real.log κν| +
-            (Real.log (f (x 0) - fstar) / Real.log (1 + κν / κψ) + 1))) 0 + 2 ∧
+            (Real.log (f (x 0) - fstar) / Real.log (1 + κν / κψ) + 1))) 1 + 1 ∧
       (k : ℝ) ≤ κR * (max (ν * (1 / Real.log (1 + κν / κψ)) * |Real.log ε| +
           (1 / Real.log (1 + κν / κψ) * |Real.log κν| +
-            (Real.log (f (x 0) - fstar) / Real.log (1 + κν / κψ) + 1))) 0 + 2) + κA) := by
+            (Real.log (f (x 0) - fstar) / Real.log (1 + κν / κψ) + 1))) 1 + 1) + κA) := by
   have hμ := h.mu_pos
   have hτ : ν / μ = 1 := by rw [hνμ, div_self hμ.ne']
   have hc : κν / κψ ^ (ν / μ) = κν / κψ := by rw [hτ, Real.rpow_one]
@@ -462,23 +422,48 @@ theorem theorem_5_3_4 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
   refine ⟨(lemma_5_3_1 h).2.2.2.1 hνμ, hcount, fun ε hε k hk => hcount ε hε k
     (h.le_card (by linarith)), fun ε hε => ?_⟩
   have hεν : 0 < κν * ε ^ ν := mul_pos h.kappaNu_pos (Real.rpow_pos_of_pos hε _)
-  refine h.exists_measure_le hε.le fun k hk => hcount _ hεν k (le_trans ?_ hk)
+  set N := ν * (1 / Real.log (1 + κν / κψ)) * |Real.log ε| +
+    (1 / Real.log (1 + κν / κψ) * |Real.log κν| + (Real.log Γ0 / Real.log (1 + κν / κψ) + 1))
+  set y := (Real.log Γ0 - Real.log (κν * ε ^ ν)) / Real.log (1 + κν / κψ) with hy
   -- `|log (κν ε^ν)| ≤ |log κν| + ν |log ε|`
   have hlog : |Real.log (κν * ε ^ ν)| ≤ |Real.log κν| + ν * |Real.log ε| := by
     rw [Real.log_mul h.kappaNu_pos.ne' (Real.rpow_pos_of_pos hε _).ne', Real.log_rpow hε]
     refine (abs_add_le _ _).trans ?_
     rw [abs_mul, abs_of_pos h.nu_pos]
-  have := mul_le_mul_of_nonneg_left hlog (one_div_pos.2 hL).le
-  nlinarith
+  have hyN : y + 1 ≤ N := by
+    have h2 : -Real.log (κν * ε ^ ν) ≤ |Real.log κν| + ν * |Real.log ε| :=
+      (neg_le_abs _).trans hlog
+    have h4 := div_le_div_of_nonneg_right h2 hL.le
+    have e1 : y = Real.log Γ0 / Real.log (1 + κν / κψ) +
+        -Real.log (κν * ε ^ ν) / Real.log (1 + κν / κψ) := by rw [hy]; ring
+    have e2 : (|Real.log κν| + ν * |Real.log ε|) / Real.log (1 + κν / κψ) =
+        1 / Real.log (1 + κν / κψ) * |Real.log κν| +
+          ν * (1 / Real.log (1 + κν / κψ)) * |Real.log ε| := by ring
+    have eN : N = ν * (1 / Real.log (1 + κν / κψ)) * |Real.log ε| +
+      (1 / Real.log (1 + κν / κψ) * |Real.log κν| +
+        (Real.log Γ0 / Real.log (1 + κν / κψ) + 1)) := rfl
+    linarith
+  have hgc : ∀ k, ⌈y⌉₊ ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν := by
+    intro k hk
+    refine h.gap.le_of_linear_count hτ h.c_pos hεν hΓ0 ?_
+    rw [hc]
+    exact (Nat.le_ceil y).trans (by exact_mod_cast hk)
+  obtain ⟨k, hk, hψ, hcard, hkle⟩ := ARSetting.exists_measure_le_nat h hε.le hgc
+  have hnN : ((max ⌈y⌉₊ 1 + 1 : ℕ) : ℝ) ≤ max N 1 + 1 := by
+    have hc : (⌈y⌉₊ : ℝ) ≤ max N 1 := by
+      rcases le_or_gt y 0 with hy0 | hy0
+      · rw [Nat.ceil_eq_zero.2 hy0, Nat.cast_zero]
+        exact zero_le_one.trans (le_max_right _ _)
+      · exact ((Nat.ceil_lt_add_one hy0.le).le.trans hyN).trans (le_max_left _ _)
+    have : ((max ⌈y⌉₊ 1 : ℕ) : ℝ) ≤ max N 1 := by
+      rw [Nat.cast_max, Nat.cast_one]; exact max_le hc (le_max_right _ _)
+    push_cast at this ⊢
+    linarith
+  refine ⟨k, hk, hψ, (by exact_mod_cast hcard : ((successSet S k).card : ℝ) ≤
+    ((max ⌈y⌉₊ 1 + 1 : ℕ) : ℝ)).trans hnN, hkle.trans ?_⟩
+  have := mul_le_mul_of_nonneg_left hnN (by linarith [h.one_le_kappaR] : (0 : ℝ) ≤ κR)
+  linarith
 
-/-- `c κdom = min(Γ_0^{-α} (2^α - 1), min(1, α) c / 2)` for `c > 0`. -/
-theorem mul_kappaDom {c α Γ0 : ℝ} (hc : 0 < c) :
-    c * IsImplicitGapDecrease.kappaDom c α Γ0 =
-      min (Γ0 ^ (-α) * (2 ^ α - 1)) (min 1 α * c / 2) := by
-  rw [IsImplicitGapDecrease.kappaDom, mul_min_of_nonneg _ _ hc.le]
-  congr 1
-  · field_simp
-  · ring
 
 /-- **Theorem 5.3.5** ([cartis2022evaluation], `ν > μ`): under the standing hypotheses of §5.3.2
 with `Γ_0 > 0`, with `α = (ν - μ)/μ`, `c = κν/κψ^{ν/μ}` and
@@ -524,7 +509,8 @@ theorem theorem_5_3_5 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
   set c := κν / κψ ^ (ν / μ) with hcdef
   set Γ0 := f (x 0) - fstar with hΓ0def
   set D := min (Γ0 ^ (-α) * (2 ^ α - 1)) (min 1 α * c / 2) with hD
-  have hDeq : c * IsImplicitGapDecrease.kappaDom c α Γ0 = D := mul_kappaDom h.c_pos
+  have hDeq : c * IsImplicitGapDecrease.kappaDom c α Γ0 = D :=
+    IsImplicitGapDecrease.mul_kappaDom h.c_pos
   have hDpos : 0 < D := by
     rw [← hDeq]; exact mul_pos h.c_pos (IsImplicitGapDecrease.kappaDom_pos h.c_pos hαpos hΓ0)
   -- the rate
@@ -611,50 +597,6 @@ theorem mul_gapBox_rpow {κψ κν μ ν : ℝ} (hκψ : 0 < κψ) (hκν : 0 < 
   rw [gapBox_eq hκψ hκν hμ hνμ, ← Real.rpow_mul hc.le, div_mul_cancel₀ _ hα, Real.rpow_neg_one,
     mul_inv_cancel₀ hc.ne']
 
-section Explicit
-
-variable {Γ : ℕ → ℝ} {S : ℕ → Prop} {c τ : ℝ}
-
-/-- Before the first successful iteration the gap is unchanged. -/
-private theorem eq_zero_index_of_lt_first (hg : IsExplicitGapDecrease Γ S c τ) {k₁ : ℕ}
-    (hfirst : ∀ j < k₁, ¬ S j) : ∀ j ≤ k₁, Γ j = Γ 0 := by
-  intro j
-  induction j with
-  | zero => exact fun _ => rfl
-  | succ j ih =>
-    intro hj
-    rw [hg.eq_of_not j (hfirst j (by omega)), ih (by omega)]
-
-/-- At the first successful iteration, `0 ≤ Γ_{k₁+1} ≤ Γ_0 (1 - c Γ_0^{τ-1})`; hence
-`c Γ_0^{τ-1} ≤ 1` when `Γ_0 > 0`. -/
-private theorem mul_rpow_le_one (hg : IsExplicitGapDecrease Γ S c τ) (hc : 0 ≤ c)
-    (hS : ∃ k, S k) (hΓ0 : 0 < Γ 0) : c * Γ 0 ^ (τ - 1) ≤ 1 := by
-  classical
-  have hk := Nat.find_spec hS
-  have h0 := eq_zero_index_of_lt_first hg (fun j hj => Nat.find_min hS hj) _ le_rfl
-  have h1 := hg.le_mul hc hk
-  have h2 := hg.nonneg (Nat.find hS + 1)
-  rw [h0] at h1
-  by_contra hcon
-  push Not at hcon
-  nlinarith
-
-/-- If `c Γ_0^{τ-1} ≥ 1` (and `Γ_0 > 0`), the gap vanishes after every successful iteration. -/
-private theorem eq_zero_of_one_le_mul_rpow (hg : IsExplicitGapDecrease Γ S c τ) (hc : 0 ≤ c)
-    (hΓ0 : 0 < Γ 0) (h1 : 1 ≤ c * Γ 0 ^ (τ - 1)) : ∀ k, S k → Γ (k + 1) = 0 := by
-  classical
-  intro k hk
-  have hS : ∃ k, S k := ⟨k, hk⟩
-  set k₁ := Nat.find hS
-  have hk₁ : k₁ ≤ k := Nat.find_min' hS hk
-  have h0 := eq_zero_index_of_lt_first hg (fun j hj => Nat.find_min hS hj) _ le_rfl
-  have hle := hg.le_mul hc (Nat.find_spec hS)
-  rw [h0] at hle
-  have hz : Γ (k₁ + 1) ≤ 0 := hle.trans (by nlinarith)
-  have hanti : Antitone Γ := antitone_nat_of_succ_le (hg.le_self hc)
-  exact le_antisymm ((hanti (by omega : k₁ + 1 ≤ k + 1)).trans hz) (hg.nonneg _)
-
-end Explicit
 
 namespace TRSetting
 
@@ -677,7 +619,7 @@ theorem gap :
 
 /-- There are infinitely many successful iterations. -/
 theorem frequently : ∀ N, ∃ k ≥ N, S k :=
-  frequently_of_density (by linarith [h.one_le_kappaR]) h.run.density
+  Optimization.frequently_of_density (by linarith [h.one_le_kappaR]) h.run.density
 
 /-- (5.3.9): `N ≤ |𝒮_k|` once `κR N + κA ≤ k`. -/
 theorem le_card {N : ℝ} {k : ℕ} (hk : κR * N + κA ≤ k) : N ≤ (successSet S k).card :=
@@ -689,7 +631,7 @@ theorem exists_measure_le {ε N : ℝ} (hε : 0 ≤ ε)
     (hcount : ∀ k, N ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν) :
     ∃ i k, i ≤ k ∧ S k ∧ ψ (x i) ≤ ε ∧ ((successSet S k).card : ℝ) ≤ max N 0 + 2 ∧
       (k : ℝ) ≤ κR * (max N 0 + 2) + κA := by
-  obtain ⟨k, hk, hφ, hcard⟩ := exists_le_of_gap_count
+  obtain ⟨k, hk, hφ, hcard⟩ := Optimization.exists_le_of_gap_count
     (φ := fun k => (Finset.range (k + 1)).inf' Finset.nonempty_range_add_one (ψ ∘ x))
     (κν := κν) (ν := ν) h.gap.nonneg h.frequently hcount fun k hk => by
       have := h.run.decrease k hk; linarith
@@ -703,6 +645,29 @@ theorem exists_measure_le {ε N : ℝ} (hε : 0 ≤ ε)
   · have := h.run.density k
     have : κR * ((successSet S k).card : ℝ) ≤ κR * (max N 0 + 2) :=
       mul_le_mul_of_nonneg_left hcard (by linarith [h.one_le_kappaR])
+    linarith
+
+/-- Measure counts from integer gap counts: if `Γ_{k+1} ≤ κν ε^ν` whenever `n ≤ |𝒮_k|`, some
+`i ≤ k` with `k` successful, `|𝒮_k| ≤ max n 1 + 1` and `k ≤ κR (max n 1 + 1) + κA` has
+`ψ(x_i) ≤ ε`. -/
+theorem exists_measure_le_nat {ε : ℝ} {n : ℕ} (hε : 0 ≤ ε)
+    (hcount : ∀ k, n ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν) :
+    ∃ i k, i ≤ k ∧ S k ∧ ψ (x i) ≤ ε ∧ (successSet S k).card ≤ max n 1 + 1 ∧
+      (k : ℝ) ≤ κR * (max n 1 + 1 : ℕ) + κA := by
+  obtain ⟨k, hk, hφ, hcard⟩ := Optimization.exists_le_of_gap_count_nat
+    (φ := fun k => (Finset.range (k + 1)).inf' Finset.nonempty_range_add_one (ψ ∘ x))
+    (κν := κν) (ν := ν) h.gap.nonneg h.frequently hcount fun k hk => by
+      have := h.run.decrease k hk; linarith
+  obtain ⟨i, hi, hieq⟩ := Finset.exists_mem_eq_inf' (Finset.nonempty_range_add_one (n := k))
+    (ψ ∘ x)
+  refine ⟨i, k, Nat.lt_succ_iff.1 (Finset.mem_range.1 hi), hk, ?_, hcard, ?_⟩
+  · have h3 : ((Finset.range (k + 1)).inf' Finset.nonempty_range_add_one (ψ ∘ x)) ^ ν ≤ ε ^ ν :=
+      le_of_mul_le_mul_left hφ h.kappaNu_pos
+    rw [hieq] at h3
+    exact (Real.rpow_le_rpow_iff (h.psi_nonneg _) hε h.nu_pos).1 h3
+  · have := h.run.density k
+    have : κR * ((successSet S k).card : ℝ) ≤ κR * (max n 1 + 1 : ℕ) :=
+      mul_le_mul_of_nonneg_left (by exact_mod_cast hcard) (by linarith [h.one_le_kappaR])
     linarith
 
 end TRSetting
@@ -743,7 +708,7 @@ theorem lemma_5_3_6 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S)
   have hc := h.c_pos
   have hτ0 : 0 < ν / μ := div_pos hν hμ
   have hS : ∃ k, S k := (h.frequently 0).imp fun _ hk => hk.2
-  have hone := mul_rpow_le_one h.gap hc.le hS hΓ0
+  have hone := h.gap.mul_rpow_le_one hc.le hS hΓ0
   refine ⟨fun k hk => ⟨h.gap.nonneg (k + 1), ?_⟩, fun hνμ => ?_, fun hνμ => ?_, fun hνμ => ?_⟩
   · have := h.gap.le_mul hc.le hk
     rwa [hα] at this
@@ -756,7 +721,7 @@ theorem lemma_5_3_6 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S)
     · have := h.gap.le_mul hc.le hk
       rw [hc1, hτ, sub_self, Real.rpow_zero, mul_one] at this
       linarith
-    · refine eq_zero_of_one_le_mul_rpow h.gap hc.le hΓ0 ?_
+    · refine h.gap.eq_zero_of_one_le_mul_rpow hc.le hΓ0 ?_
       show 1 ≤ κν / κψ ^ (ν / μ) * (f (x 0) - fstar) ^ (ν / μ - 1)
       rw [hc1, hτ, sub_self, Real.rpow_zero, mul_one, heq, div_self h.kappaPsi_pos.ne']
   · -- (ii)
@@ -764,7 +729,7 @@ theorem lemma_5_3_6 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S)
     obtain ⟨p1, p2, p3⟩ := h.gap.eq_zero_of_lt_one hc hτ1
     rw [← gapBox_eq h.kappaPsi_pos h.kappaNu_pos hμ hνμ.ne] at p1 p2 p3
     obtain ⟨k₀, hk₀⟩ := hS
-    refine ⟨p2 hΓ0 k₀ hk₀, fun heq => eq_zero_of_one_le_mul_rpow h.gap hc.le hΓ0 ?_,
+    refine ⟨p2 hΓ0 k₀ hk₀, fun heq => h.gap.eq_zero_of_one_le_mul_rpow hc.le hΓ0 ?_,
       fun k hk => ?_, ?_⟩
     · show 1 ≤ κν / κψ ^ (ν / μ) * (f (x 0) - fstar) ^ (ν / μ - 1)
       rw [heq, mul_gapBox_rpow h.kappaPsi_pos h.kappaNu_pos hμ hνμ.ne]
@@ -783,7 +748,7 @@ theorem lemma_5_3_6 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S)
     have hτ1 : 1 < ν / μ := (one_lt_div hμ).2 hνμ
     have hαpos : 0 < ν / μ - 1 := by linarith
     have hbox := gapBox_eq h.kappaPsi_pos h.kappaNu_pos hμ hνμ.ne'
-    refine ⟨?_, fun heq => eq_zero_of_one_le_mul_rpow h.gap hc.le hΓ0 ?_,
+    refine ⟨?_, fun heq => h.gap.eq_zero_of_one_le_mul_rpow hc.le hΓ0 ?_,
       (h.gap.toImplicit hc.le hτ0.le).tendsto_zero hc hτ0 h.frequently, fun k => ?_⟩
     · -- `c Γ_0^α ≤ 1` gives `Γ_0 ≤ c^{-1/α}`
       rw [hbox]
@@ -824,8 +789,10 @@ theorem lemma_5_3_6 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S)
 /-- **Theorem 5.3.7** ([cartis2022evaluation], `ν < μ`): under the standing hypotheses of §5.3.3
 with `Γ_0 > 0`, let `ω_0 = Γ_0/Γ□` and `κ^F = ⌈log ω_0 / |log(1 - ω_0^{(ν-μ)/μ})|⌉₊ + 1` (the
 integer form of the book's `κ^F_{TR,1}`). Then the gap vanishes after `κ^F` successful iterations
-(5.3.36) and after `κR κ^F + κA` iterations (5.3.35), and some iterate `x_i` with
-`i ≤ κR (κ^F + 2) + κA` has `ψ(x_i) = 0` ((5.3.37)–(5.3.38)). -/
+(5.3.36) and after `κR κ^F + κA` iterations (5.3.35), and ((5.3.37)–(5.3.38)) some iterate
+`x_i` has `ψ(x_i) = 0`, where `i ≤ k` for a successful iteration `k` with `|𝒮_k| ≤ κ^F + 1` and
+`k ≤ κR (κ^F + 1) + κA` (the gap vanishes at `x_k` and (5.3.28) forces `min_{i ≤ k} ψ(x_i) = 0`;
+the book writes `ψ(x_k) = 0`). -/
 theorem theorem_5_3_7 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν < μ)
     (hΓ0 : 0 < f (x 0) - fstar) :
     (∀ k, ((⌈Real.log ((f (x 0) - fstar) / gapBox κψ κν μ ν) /
@@ -834,9 +801,12 @@ theorem theorem_5_3_7 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
     (∀ k : ℕ, κR * ((⌈Real.log ((f (x 0) - fstar) / gapBox κψ κν μ ν) /
         |Real.log (1 - ((f (x 0) - fstar) / gapBox κψ κν μ ν) ^ ((ν - μ) / μ))|⌉₊ + 1 : ℕ) : ℝ) +
           κA ≤ k → f (x (k + 1)) - fstar = 0) ∧
-    ∃ i : ℕ, (i : ℝ) ≤ κR * (((⌈Real.log ((f (x 0) - fstar) / gapBox κψ κν μ ν) /
+    ∃ i k, i ≤ k ∧ S k ∧ ψ (x i) = 0 ∧
+      (successSet S k).card ≤ (⌈Real.log ((f (x 0) - fstar) / gapBox κψ κν μ ν) /
+        |Real.log (1 - ((f (x 0) - fstar) / gapBox κψ κν μ ν) ^ ((ν - μ) / μ))|⌉₊ + 1) + 1 ∧
+      (k : ℝ) ≤ κR * (((⌈Real.log ((f (x 0) - fstar) / gapBox κψ κν μ ν) /
         |Real.log (1 - ((f (x 0) - fstar) / gapBox κψ κν μ ν) ^ ((ν - μ) / μ))|⌉₊ + 1 : ℕ) : ℝ) +
-          2) + κA ∧ ψ (x i) = 0 := by
+          1) + κA := by
   have hμ := h.mu_pos
   have hα := sub_div_self_eq (ν := ν) hμ.ne'
   have hτ1 : ν / μ < 1 := (div_lt_one hμ).2 hνμ
@@ -847,18 +817,20 @@ theorem theorem_5_3_7 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
         (successSet S k).card → f (x (k + 1)) - fstar = 0 :=
     fun k hk => p3 hΓ0 k (by exact_mod_cast hk)
   refine ⟨hcount, fun k hk => hcount k (h.le_card hk), ?_⟩
-  obtain ⟨i, k, hik, -, hψ, -, hkle⟩ := h.exists_measure_le le_rfl fun k hk => by
-    rw [hcount k hk, Real.zero_rpow h.nu_pos.ne', mul_zero]
-  rw [max_eq_left (by positivity)] at hkle
-  exact ⟨i, le_trans (by exact_mod_cast hik) hkle, le_antisymm hψ (h.psi_nonneg _)⟩
+  obtain ⟨i, k, hik, hSk, hψ, hcard, hkle⟩ := h.exists_measure_le_nat le_rfl fun k hk => by
+    rw [hcount k (by exact_mod_cast hk), Real.zero_rpow h.nu_pos.ne', mul_zero]
+  rw [max_eq_left (by omega)] at hcard hkle
+  refine ⟨i, k, hik, hSk, le_antisymm hψ (h.psi_nonneg _), hcard, hkle.trans_eq ?_⟩
+  push_cast; ring
 
 /-- **Theorem 5.3.8** ([cartis2022evaluation], `ν = μ`): under the standing hypotheses of §5.3.3
 with `Γ_0 > 0`: either `κν = κψ` and the gap vanishes after every successful iteration, or
 `κν < κψ`, the gaps converge linearly with factor `1 - κν/κψ`, `Γ_{k+1} ≤ ε` (`ε > 0`) after
 `κ^E |log ε| + κ^F` successful iterations (5.3.40) and after `κR κ^E |log ε| + κR κ^F + κA`
 iterations (5.3.39), with `κ^E = 1/|log(1 - κν/κψ)|` and `κ^F = log Γ_0/|log(1 - κν/κψ)|`, and
-((5.3.41)–(5.3.42)) some iterate `x_i` with
-`i ≤ κR (max(ν κ^E |log ε| + κ^E |log κν| + κ^F, 0) + 2) + κA` has `ψ(x_i) ≤ ε`. -/
+((5.3.41)–(5.3.42)) some iterate `x_i` has `ψ(x_i) ≤ ε`, where `i ≤ k` for a successful iteration
+`k` with `|𝒮_k| ≤ max(ν κ^E |log ε| + κ^E |log κν| + κ^F, 0) + 2` and `k ≤ κR (that bound) + κA`
+(the book's `κ^F` has no ceiling term, hence `+ 2`). -/
 theorem theorem_5_3_8 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν = μ)
     (hΓ0 : 0 < f (x 0) - fstar) :
     (κν = κψ → ∀ k, S k → f (x (k + 1)) - fstar = 0) ∧
@@ -870,8 +842,11 @@ theorem theorem_5_3_8 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
       (∀ ε, 0 < ε → ∀ k : ℕ, κR * (1 / |Real.log (1 - κν / κψ)|) * |Real.log ε| +
           (κR * (Real.log (f (x 0) - fstar) / |Real.log (1 - κν / κψ)|) + κA) ≤ k →
         f (x (k + 1)) - fstar ≤ ε) ∧
-      (∀ ε, 0 < ε → ∃ i : ℕ, ψ (x i) ≤ ε ∧
-        (i : ℝ) ≤ κR * (max (ν * (1 / |Real.log (1 - κν / κψ)|) * |Real.log ε| +
+      (∀ ε, 0 < ε → ∃ i k, i ≤ k ∧ S k ∧ ψ (x i) ≤ ε ∧
+        ((successSet S k).card : ℝ) ≤ max (ν * (1 / |Real.log (1 - κν / κψ)|) * |Real.log ε| +
+          (1 / |Real.log (1 - κν / κψ)| * |Real.log κν| +
+            Real.log (f (x 0) - fstar) / |Real.log (1 - κν / κψ)|)) 0 + 2 ∧
+        (k : ℝ) ≤ κR * (max (ν * (1 / |Real.log (1 - κν / κψ)|) * |Real.log ε| +
           (1 / |Real.log (1 - κν / κψ)| * |Real.log κν| +
             Real.log (f (x 0) - fstar) / |Real.log (1 - κν / κψ)|)) 0 + 2) + κA)) := by
   have hμ := h.mu_pos
@@ -900,7 +875,7 @@ theorem theorem_5_3_8 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
   refine ⟨hlin hlt, hcount, fun ε hε k hk => hcount ε hε k (h.le_card (by linarith)),
     fun ε hε => ?_⟩
   have hεν : 0 < κν * ε ^ ν := mul_pos h.kappaNu_pos (Real.rpow_pos_of_pos hε _)
-  obtain ⟨i, k, hik, -, hψ, -, hkle⟩ := h.exists_measure_le hε.le
+  obtain ⟨i, k, hik, hSk, hψ, hcard, hkle⟩ := h.exists_measure_le hε.le
     (N := ν * (1 / |Real.log (1 - κν / κψ)|) * |Real.log ε| +
       (1 / |Real.log (1 - κν / κψ)| * |Real.log κν| + Real.log Γ0 / |Real.log (1 - κν / κψ)|))
     fun k hk => hcount _ hεν k (le_trans (by
@@ -910,15 +885,15 @@ theorem theorem_5_3_8 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
         rw [abs_mul, abs_of_pos h.nu_pos]
       have := mul_le_mul_of_nonneg_left hlog (one_div_pos.2 hL).le
       nlinarith) hk)
-  exact ⟨i, hψ, le_trans (by exact_mod_cast hik) hkle⟩
+  exact ⟨i, k, hik, hSk, hψ, hcard, hkle⟩
 
 /-- **Theorem 5.3.9** ([cartis2022evaluation], `ν > μ`): under the standing hypotheses of §5.3.3
 with `Γ_0 > 0`, with `α = (ν - μ)/μ` and `c = κν/κψ^{ν/μ}`: the gaps converge sublinearly
 (Lemma 5.3.6 (iii)); for `ε > 0`, `Γ_{k+1} ≤ ε` after `κ^E ε^{-α} + κ^F` successful iterations
 (5.3.43) and after `κR κ^E ε^{-α} + κR κ^F + κA` iterations, with
 `κ^E = μ κψ^{ν/μ}/((ν - μ) κν)` (`= 1/(α c)`) and `κ^F = -κ^E Γ_0^{-α}`; and some iterate `x_i`
-with `i ≤ κR (2M + 2) + κA`, `M = (α c)^{-μ/ν} κν^{-(ν-μ)/ν} ε^{-(ν-μ)}`, has `ψ(x_i) ≤ ε`
-(halving argument). -/
+has `ψ(x_i) ≤ ε`, where `i ≤ j` for a successful iteration `j` with `|𝒮_j| ≤ 2M + 2` and
+`j ≤ κR (2M + 2) + κA`, `M = (α c)^{-μ/ν} κν^{-(ν-μ)/ν} ε^{-(ν-μ)}` (halving argument). -/
 theorem theorem_5_3_9 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : μ < ν)
     (hΓ0 : 0 < f (x 0) - fstar) :
     (∀ k, f (x (k + 1)) - fstar ≤ ((f (x 0) - fstar) ^ (-((ν - μ) / μ)) +
@@ -929,8 +904,10 @@ theorem theorem_5_3_9 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
     (∀ ε, 0 < ε → ∀ k : ℕ, κR * (μ * κψ ^ (ν / μ) / ((ν - μ) * κν)) * ε ^ (-((ν - μ) / μ)) +
         (κR * -(μ * κψ ^ (ν / μ) / ((ν - μ) * κν) * (f (x 0) - fstar) ^ (-((ν - μ) / μ))) + κA) ≤
           k → f (x (k + 1)) - fstar ≤ ε) ∧
-    (∀ ε, 0 < ε → ∃ i : ℕ, ψ (x i) ≤ ε ∧
-      (i : ℝ) ≤ κR * (2 * (((ν - μ) / μ * (κν / κψ ^ (ν / μ))) ^ (-μ / ν) *
+    (∀ ε, 0 < ε → ∃ i j, i ≤ j ∧ S j ∧ ψ (x i) ≤ ε ∧
+      ((successSet S j).card : ℝ) ≤ 2 * (((ν - μ) / μ * (κν / κψ ^ (ν / μ))) ^ (-μ / ν) *
+        κν ^ (-(ν - μ) / ν) * ε ^ (-(ν - μ))) + 2 ∧
+      (j : ℝ) ≤ κR * (2 * (((ν - μ) / μ * (κν / κψ ^ (ν / μ))) ^ (-μ / ν) *
         κν ^ (-(ν - μ) / ν) * ε ^ (-(ν - μ))) + 2) + κA) := by
   have hμ := h.mu_pos
   have hν := h.nu_pos
@@ -976,7 +953,7 @@ theorem theorem_5_3_9 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
       (by have := Real.rpow_pos_of_pos hΓ0 (-α); linarith)
       (by rw [neg_div]; exact neg_nonpos.2 (div_nonneg zero_le_one hαpos.le))))
     (fun k hk => by have := h.run.decrease k hk; linarith) hk₀
-  obtain ⟨j, -, -, hcard, hφ⟩ := hhalf
+  obtain ⟨j, -, hSj, hcard, hφ⟩ := hhalf
   rw [← hM] at hcard
   obtain ⟨i, hi, hieq⟩ := Finset.exists_mem_eq_inf' (Finset.nonempty_range_add_one (n := j))
     (ψ ∘ x)
@@ -989,8 +966,7 @@ theorem theorem_5_3_9 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
   have hcard' : ((successSet S j).card : ℝ) ≤ 2 * M + 2 :=
     (by exact_mod_cast hcard : ((successSet S j).card : ℝ) ≤ (2 * (⌊M⌋₊ + 1) : ℕ)).trans hfloor
   rw [hM, e1, e2, e3] at hcard'
-  refine ⟨i, hψ, ?_⟩
-  have hij : (i : ℝ) ≤ j := by exact_mod_cast Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+  refine ⟨i, j, Nat.lt_succ_iff.1 (Finset.mem_range.1 hi), hSj, hψ, hcard', ?_⟩
   have := h.run.density j
   have : κR * ((successSet S j).card : ℝ) ≤ κR * (2 * ((α * c) ^ (-μ / ν) *
       κν ^ (-(ν - μ) / ν) * ε ^ (-(ν - μ))) + 2) :=
@@ -1006,19 +982,20 @@ section LeastSquares
 variable {m : ℕ} {r : ℝⁿ → EuclideanSpace ℝ (Fin m)}
 
 /-- **(5.3.2)–(5.3.3)** ([cartis2022evaluation], §5.3.1, §5.3.4): if `ℓ > 1`, `ψ_min > 0` and the
-full-rank condition (5.1.62) `ψ_{ℓ,1}(x) ≥ ψ_min` holds on `A`, then `Φ_ℓ` is dominated on `A`,
-of level `μ = ℓ/(ℓ-1)`, for the measure `‖∇Φ_ℓ‖`, with reference value `0 ≤ Φ_ℓ` and
+full-rank condition (5.1.62) `ψ_{ℓ,1}(x) ≥ ψ_min` holds at the points of `A` with `r(x) ≠ 0`,
+then `Φ_ℓ` is dominated on `A`, of level `μ = ℓ/(ℓ-1)`, for the measure `‖∇Φ_ℓ‖`, with reference
+value `0 ≤ Φ_ℓ` and
 `κψ = ψ_min^{-ℓ/(ℓ-1)}/ℓ`. (The book also claims `min Φ_ℓ = 0`; only the reference value `0` is
 needed.) -/
 theorem Phi_isMeasureDominated {ℓ ψmin : ℝ} {A : Set ℝⁿ} (hℓ : 1 < ℓ) (hψ : 0 < ψmin)
-    (h : ∀ y ∈ A, ψmin ≤ psiOne r ℓ y) :
+    (h : ∀ y ∈ A, r y ≠ 0 → ψmin ≤ psiOne r ℓ y) :
     IsMeasureDominated (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) 0 (ℓ / (ℓ - 1))
       (ψmin ^ (-(ℓ / (ℓ - 1))) / ℓ) A := by
   have key : ∀ y ∈ A, ψmin * ‖r y‖ ^ (ℓ - 1) ≤ ‖fderiv ℝ (Phi r ℓ) y‖ := by
     intro y hy
     rcases eq_or_ne (r y) 0 with h0 | h0
     · rw [h0, norm_zero, Real.zero_rpow (by linarith), mul_zero]; exact norm_nonneg _
-    · have := h y hy
+    · have := h y hy h0
       rwa [psiOne_eq, le_div_iff₀ (Real.rpow_pos_of_pos (norm_pos_iff.2 h0) _)] at this
   have hfun : (fun y => ‖gradient (Phi r ℓ) y‖) = fun y => ‖fderiv ℝ (Phi r ℓ) y‖ :=
     funext fun y => norm_gradient_eq _ _
@@ -1032,7 +1009,7 @@ private theorem arSetting_Phi {ℓ ψmin κν ν κR κA : ℝ} {x : ℕ → ℝ
     (hℓ : 1 < ℓ) (hψ : 0 < ψmin)
     (hrun : IsARpsiNuRun (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) κν ν κR κA x S)
     (hκν : 0 < κν) (hν : 1 ≤ ν) (hκR : 1 ≤ κR) (hκA : 0 ≤ κA)
-    (hfr : ∀ k, ψmin ≤ psiOne r ℓ (x k)) :
+    (hfr : ∀ k, r (x k) ≠ 0 → ψmin ≤ psiOne r ℓ (x k)) :
     ARSetting (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) 0 (ℓ / (ℓ - 1))
       (ψmin ^ (-(ℓ / (ℓ - 1))) / ℓ) κν ν κR κA x S where
   psi_nonneg _ := norm_nonneg _
@@ -1049,7 +1026,7 @@ private theorem trSetting_Phi {ℓ ψmin κν ν κR κA : ℝ} {x : ℕ → ℝ
     (hℓ : 1 < ℓ) (hψ : 0 < ψmin)
     (hrun : IsTRpsiNuRun (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) κν ν κR κA x S)
     (hκν : 0 < κν) (hν : 1 ≤ ν) (hκR : 1 ≤ κR) (hκA : 0 ≤ κA)
-    (hfr : ∀ k, ψmin ≤ psiOne r ℓ (x k)) :
+    (hfr : ∀ k, r (x k) ≠ 0 → ψmin ≤ psiOne r ℓ (x k)) :
     TRSetting (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) 0 (ℓ / (ℓ - 1))
       (ψmin ^ (-(ℓ / (ℓ - 1))) / ℓ) κν ν κR κA x S where
   psi_nonneg _ := norm_nonneg _
@@ -1092,29 +1069,31 @@ private theorem log_max_mul_le {ℓ y : ℝ} (hℓ : 1 ≤ ℓ) :
 even, which only matters for the smoothness of `Φ_ℓ` and is not needed here), `ψ_min > 0`, and
 `x` an `ARψ,ν` run (success set `S`, constants `κν > 0`, `κR ≥ 1`, `κA ≥ 0`) for
 `Φ_ℓ` with the measure `ψ = ‖∇Φ_ℓ‖` and `ν = (p+1)/p` (the first-order case (5.3.6) of ARp), along
-which the full-rank condition (5.1.62) `ψ_{ℓ,1}(x_k) ≥ ψ_min` holds. Then (`ν < μ = ℓ/(ℓ-1)`)
+which the full-rank condition (5.1.62) `ψ_{ℓ,1}(x_k) ≥ ψ_min` holds whenever `r(x_k) ≠ 0`. Then
+(`ν < μ = ℓ/(ℓ-1)`)
 `‖r(x_k)‖` converges superlinearly along the successful iterations, and for every `ε₀ ∈ (0, 1)`,
 `‖r(x_{k+1})‖ ≤ ε₀` after `κ^E log(max(1, |log ε₀| + log ℓ/ℓ)) + κ^F + κ^E log ℓ` successful
 iterations (5.3.45) and after `κR` times that plus `κA` iterations (5.3.44), with the constants
-`κ^E = 1/(log μ - log ν)`, `κ^F = kappaFGap1 c (ν/μ) Φ_ℓ(x_0)` of Theorem 5.3.3 for
+`κ^E = 1/(log μ - log ν)`, `κ^F = superlinearCountConst c (ν/μ) Φ_ℓ(x_0)` of Theorem 5.3.3 for
 `κψ = ψ_min^{-μ}/ℓ`, `c = κν/κψ^{ν/μ}`. -/
 theorem theorem_5_3_10 {ℓ p : ℕ} (hℓ2 : 2 ≤ ℓ) (hℓp : ℓ ≤ p)
     {ψmin κν κR κA : ℝ} (hψ : 0 < ψmin) {x : ℕ → ℝⁿ} {S : ℕ → Prop}
     (hrun : IsARpsiNuRun (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) κν (((p : ℝ) + 1) / p) κR
       κA x S)
-    (hκν : 0 < κν) (hκR : 1 ≤ κR) (hκA : 0 ≤ κA) (hfr : ∀ k, ψmin ≤ psiOne r ℓ (x k)) :
+    (hκν : 0 < κν) (hκR : 1 ≤ κR) (hκA : 0 ≤ κA)
+    (hfr : ∀ k, r (x k) ≠ 0 → ψmin ≤ psiOne r ℓ (x k)) :
     (∀ η, 0 < η → ∃ K, ∀ k ≥ K, S k → ‖r (x (k + 1))‖ ≤ η * ‖r (x k)‖) ∧
     (∀ ε₀, 0 < ε₀ → ε₀ < 1 → ∀ k,
       1 / (Real.log ((ℓ : ℝ) / (ℓ - 1)) - Real.log (((p : ℝ) + 1) / p)) *
           Real.log (max 1 (|Real.log ε₀| + Real.log ℓ / ℓ)) +
-        kappaFGap1 (κν / (ψmin ^ (-((ℓ : ℝ) / (ℓ - 1))) / ℓ) ^ ((((p : ℝ) + 1) / p) /
+        superlinearCountConst (κν / (ψmin ^ (-((ℓ : ℝ) / (ℓ - 1))) / ℓ) ^ ((((p : ℝ) + 1) / p) /
           ((ℓ : ℝ) / (ℓ - 1)))) ((((p : ℝ) + 1) / p) / ((ℓ : ℝ) / (ℓ - 1))) (Phi r ℓ (x 0)) +
         1 / (Real.log ((ℓ : ℝ) / (ℓ - 1)) - Real.log (((p : ℝ) + 1) / p)) * Real.log ℓ ≤
           (successSet S k).card → ‖r (x (k + 1))‖ ≤ ε₀) ∧
     (∀ ε₀, 0 < ε₀ → ε₀ < 1 → ∀ k : ℕ,
       κR * (1 / (Real.log ((ℓ : ℝ) / (ℓ - 1)) - Real.log (((p : ℝ) + 1) / p)) *
           Real.log (max 1 (|Real.log ε₀| + Real.log ℓ / ℓ)) +
-        kappaFGap1 (κν / (ψmin ^ (-((ℓ : ℝ) / (ℓ - 1))) / ℓ) ^ ((((p : ℝ) + 1) / p) /
+        superlinearCountConst (κν / (ψmin ^ (-((ℓ : ℝ) / (ℓ - 1))) / ℓ) ^ ((((p : ℝ) + 1) / p) /
           ((ℓ : ℝ) / (ℓ - 1)))) ((((p : ℝ) + 1) / p) / ((ℓ : ℝ) / (ℓ - 1))) (Phi r ℓ (x 0)) +
         1 / (Real.log ((ℓ : ℝ) / (ℓ - 1)) - Real.log (((p : ℝ) + 1) / p)) * Real.log ℓ) + κA ≤
           k → ‖r (x (k + 1))‖ ≤ ε₀) := by
@@ -1137,7 +1116,7 @@ theorem theorem_5_3_10 {ℓ p : ℕ} (hℓ2 : 2 ≤ ℓ) (hℓp : ℓ ≤ p)
     -- the counts for `‖r‖`
     have hcount' : ∀ ε₀, 0 < ε₀ → ε₀ < 1 → ∀ k,
         κE * Real.log (max 1 (|Real.log ε₀| + Real.log ℓ / ℓ)) +
-          kappaFGap1 (κν / (ψmin ^ (-((ℓ : ℝ) / (ℓ - 1))) / ℓ) ^ ((((p : ℝ) + 1) / p) /
+          superlinearCountConst (κν / (ψmin ^ (-((ℓ : ℝ) / (ℓ - 1))) / ℓ) ^ ((((p : ℝ) + 1) / p) /
             ((ℓ : ℝ) / (ℓ - 1)))) ((((p : ℝ) + 1) / p) / ((ℓ : ℝ) / (ℓ - 1))) (Phi r ℓ (x 0)) +
           κE * Real.log ℓ ≤ (successSet S k).card → ‖r (x (k + 1))‖ ≤ ε₀ := by
       intro ε₀ hε₀ hε₁ k hk
@@ -1189,16 +1168,23 @@ private theorem TRSetting.norm_eq_zero_of_gap_zero {ℓ : ℕ} (hℓ : 1 ≤ ℓ
 /-- **Theorem 5.3.11** ([cartis2022evaluation]): let `ℓ > 2` be an integer (the book's evenness of
 `ℓ` is not needed), `ψ_min > 0`, and
 `x` a `TRψ,ν` run (success set `S`, `κν > 0`, `κR ≥ 1`, `κA ≥ 0`) for `Φ_ℓ` with the measure
-`‖∇Φ_ℓ‖` and `ν = 2`, along which (5.1.62) `ψ_{ℓ,1}(x_k) ≥ ψ_min` holds. Then
-(`μ = ℓ/(ℓ-1) < ν`) `‖r(x_k)‖ → 0`, and for every `ε₀ > 0`, `‖r(x_{k+1})‖ ≤ ε₀` after
+`‖∇Φ_ℓ‖` and `ν = 2`, along which (5.1.62) `ψ_{ℓ,1}(x_k) ≥ ψ_min` holds whenever `r(x_k) ≠ 0`. Then
+(`μ = ℓ/(ℓ-1) < ν`) `‖r(x_k)‖ → 0` with the sublinear rate of Lemma 5.3.6 (iii),
+`Φ_ℓ(x_{k+1}) ≤ (Φ_ℓ(x_0)^{-α} + α c |𝒮_k|)^{-1/α}` (`α = (ℓ-2)/ℓ`, `c = κν/κψ^{ν/μ}`), and for
+every
+`ε₀ > 0`, `‖r(x_{k+1})‖ ≤ ε₀` after
 `ℓ^{(ℓ-2)/ℓ} κ^E ε₀^{-(ℓ-2)} + κ^F` successful iterations and after `κR` times that plus `κA`
 iterations, with the constants `κ^E = μ κψ^{ν/μ}/((ν - μ) κν)`, `κ^F = -κ^E Φ_ℓ(x_0)^{-(ℓ-2)/ℓ}`
 of Theorem 5.3.9 for `κψ = ψ_min^{-μ}/ℓ` (`(ν - μ)/μ = (ℓ-2)/ℓ`, `ε = ε₀^ℓ/ℓ`). -/
 theorem theorem_5_3_11 {ℓ : ℕ} (hℓ2 : 2 < ℓ) {ψmin κν κR κA : ℝ} (hψ : 0 < ψmin)
     {x : ℕ → ℝⁿ} {S : ℕ → Prop}
     (hrun : IsTRpsiNuRun (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) κν 2 κR κA x S)
-    (hκν : 0 < κν) (hκR : 1 ≤ κR) (hκA : 0 ≤ κA) (hfr : ∀ k, ψmin ≤ psiOne r ℓ (x k)) :
+    (hκν : 0 < κν) (hκR : 1 ≤ κR) (hκA : 0 ≤ κA)
+    (hfr : ∀ k, r (x k) ≠ 0 → ψmin ≤ psiOne r ℓ (x k)) :
     Tendsto (fun k => ‖r (x k)‖) atTop (𝓝 0) ∧
+    (∀ k, Phi r ℓ (x (k + 1)) ≤ (Phi r ℓ (x 0) ^ (-(((ℓ : ℝ) - 2) / ℓ)) +
+        ((ℓ : ℝ) - 2) / ℓ * (κν / (ψmin ^ (-((ℓ : ℝ) / (ℓ - 1))) / ℓ) ^ (2 / ((ℓ : ℝ) / (ℓ - 1)))) *
+          (successSet S k).card) ^ (-1 / (((ℓ : ℝ) - 2) / ℓ))) ∧
     (∀ ε₀, 0 < ε₀ → ∀ k, (ℓ : ℝ) ^ (((ℓ : ℝ) - 2) / ℓ) *
         ((ℓ : ℝ) / (ℓ - 1) * (ψmin ^ (-((ℓ : ℝ) / (ℓ - 1))) / ℓ) ^ (2 / ((ℓ : ℝ) / (ℓ - 1))) /
           ((2 - (ℓ : ℝ) / (ℓ - 1)) * κν)) * ε₀ ^ (-((ℓ : ℝ) - 2)) +
@@ -1222,8 +1208,8 @@ theorem theorem_5_3_11 {ℓ : ℕ} (hℓ2 : 2 < ℓ) {ψmin κν κR κA : ℝ} 
   rcases (h.gap.nonneg 0).lt_or_eq with hΓ0 | hΓ0
   · obtain ⟨-, hcount, -, -⟩ := theorem_5_3_9 h hμν hΓ0
     obtain ⟨-, -, -, hiii⟩ := lemma_5_3_6 h hΓ0
-    obtain ⟨-, -, htend, -⟩ := hiii hμν
-    rw [hαeq] at hcount
+    obtain ⟨-, -, htend, hrate⟩ := hiii hμν
+    rw [hαeq] at hcount hrate
     set κE := (ℓ : ℝ) / (ℓ - 1) * (ψmin ^ (-((ℓ : ℝ) / (ℓ - 1))) / ℓ) ^ (2 / ((ℓ : ℝ) / (ℓ - 1))) /
       ((2 - (ℓ : ℝ) / (ℓ - 1)) * κν) with hκE
     -- `ε^{-(ℓ-2)/ℓ} = ℓ^{(ℓ-2)/ℓ} ε₀^{-(ℓ-2)}` for `ε = ε₀^ℓ/ℓ`
@@ -1241,7 +1227,8 @@ theorem theorem_5_3_11 {ℓ : ℕ} (hℓ2 : 2 < ℓ) {ψmin κν κR κA : ℝ} 
         (hcount (ε₀ ^ ℓ / ℓ) (by positivity) k ?_)
       rw [hpow ε₀ hε₀, sub_zero]
       linarith
-    refine ⟨?_, hcount', fun ε₀ hε₀ k hk => hcount' ε₀ hε₀ k (h.le_card hk)⟩
+    refine ⟨?_, fun k => by have := hrate k; rwa [sub_zero, sub_zero] at this, hcount',
+      fun ε₀ hε₀ k hk => hcount' ε₀ hε₀ k (h.le_card hk)⟩
     -- `‖r‖ = (ℓ Φ_ℓ)^{1/ℓ}`
     have hcont : Tendsto (fun t : ℝ => (ℓ * t) ^ ((ℓ : ℝ)⁻¹)) (𝓝 0) (𝓝 ((ℓ * 0) ^ ((ℓ : ℝ)⁻¹))) :=
       ((continuous_const.mul continuous_id).rpow_const fun _ => Or.inr (by positivity)).tendsto 0
@@ -1250,12 +1237,20 @@ theorem theorem_5_3_11 {ℓ : ℕ} (hℓ2 : 2 < ℓ) {ψmin κν κR κA : ℝ} 
     simp only [Function.comp, sub_zero, Phi_natCast]
     rw [mul_div_cancel₀ _ hℓpos.ne', Real.pow_rpow_inv_natCast (norm_nonneg _) (by omega)]
   · have hz := TRSetting.norm_eq_zero_of_gap_zero (by omega) h hΓ0
-    refine ⟨by simp only [hz]; exact tendsto_const_nhds, fun ε₀ hε₀ k _ => by rw [hz]; exact hε₀.le,
-      fun ε₀ hε₀ k _ => by rw [hz]; exact hε₀.le⟩
+    refine ⟨by simp only [hz]; exact tendsto_const_nhds, fun k => ?_,
+      fun ε₀ hε₀ k _ => by rw [hz]; exact hε₀.le, fun ε₀ hε₀ k _ => by rw [hz]; exact hε₀.le⟩
+    have hΦ0 : ∀ j, Phi r ℓ (x j) = 0 := fun j => by
+      rw [Phi_natCast, hz, zero_pow (by omega), zero_div]
+    rw [hΦ0, hΦ0, Real.zero_rpow (by
+      have : (0 : ℝ) < ((ℓ : ℝ) - 2) / ℓ := div_pos (by linarith) hℓpos
+      linarith), zero_add]
+    have hα : 0 ≤ ((ℓ : ℝ) - 2) / ℓ := div_nonneg (by linarith) hℓpos.le
+    exact Real.rpow_nonneg (mul_nonneg (mul_nonneg hα h.c_pos.le) (Nat.cast_nonneg _)) _
 
 /-- **Theorem 5.3.12** ([cartis2022evaluation]): let `ψ_min > 0` and `x` a `TRψ,ν` run (success
 set `S`, `κν > 0`, `κR ≥ 1`, `κA ≥ 0`) for `Φ_2 = ‖r‖²/2` with the measure `‖∇Φ_2‖` and
-`ν = 2 = μ`, along which (5.1.62) `ψ_{2,1}(x_k) ≥ ψ_min` holds; let `κψ = ψ_min^{-2}/2`. Then
+`ν = 2 = μ`, along which (5.1.62) `ψ_{2,1}(x_k) ≥ ψ_min` holds whenever `r(x_k) ≠ 0`; let
+`κψ = ψ_min^{-2}/2`. Then
 either `κν = κψ` and `r(x_{k+1}) = 0` after every successful iteration `k`, or `κν < κψ`,
 `‖r(x_k)‖²` converges linearly with factor `1 - κν/κψ`, and for every `ε₀ ∈ (0, 1)`,
 `‖r(x_{k+1})‖ ≤ ε₀` after `2 κ^E |log ε₀| + κ^E log 2 + κ^F` successful iterations and after
@@ -1264,7 +1259,8 @@ either `κν = κψ` and `r(x_{k+1}) = 0` after every successful iteration `k`, 
 residual vanishes along the run.) -/
 theorem theorem_5_3_12 {ψmin κν κR κA : ℝ} (hψ : 0 < ψmin) {x : ℕ → ℝⁿ} {S : ℕ → Prop}
     (hrun : IsTRpsiNuRun (Phi r 2) (fun y => ‖gradient (Phi r 2) y‖) κν 2 κR κA x S)
-    (hκν : 0 < κν) (hκR : 1 ≤ κR) (hκA : 0 ≤ κA) (hfr : ∀ k, ψmin ≤ psiOne r 2 (x k)) :
+    (hκν : 0 < κν) (hκR : 1 ≤ κR) (hκA : 0 ≤ κA)
+    (hfr : ∀ k, r (x k) ≠ 0 → ψmin ≤ psiOne r 2 (x k)) :
     (κν = ψmin ^ (-2 : ℝ) / 2 → ∀ k, S k → r (x (k + 1)) = 0) ∧
     (κν < ψmin ^ (-2 : ℝ) / 2 →
       (∀ k, S k → ‖r (x (k + 1))‖ ^ 2 ≤ (1 - κν / (ψmin ^ (-2 : ℝ) / 2)) * ‖r (x k)‖ ^ 2) ∧
@@ -1316,5 +1312,22 @@ theorem theorem_5_3_12 {ψmin κν κR κA : ℝ} (hψ : 0 < ψmin) {x : ℕ →
     rw [hz, hz]; norm_num
 
 end LeastSquares
+
+/-! ### Deprecated aliases (moved to `Optimization.GapRecurrence`) -/
+
+@[deprecated Optimization.frequently_of_density (since := "2026-10-26")]
+alias frequently_of_density := Optimization.frequently_of_density
+
+@[deprecated Optimization.exists_le_of_gap_count (since := "2026-10-26")]
+alias exists_le_of_gap_count := Optimization.exists_le_of_gap_count
+
+@[deprecated Optimization.superlinearCountConst (since := "2026-10-26")]
+alias kappaFGap1 := Optimization.superlinearCountConst
+
+@[deprecated Optimization.superlinearCountConst_nonneg (since := "2026-10-26")]
+alias kappaFGap1_nonneg := Optimization.superlinearCountConst_nonneg
+
+@[deprecated Optimization.IsImplicitGapDecrease.mul_kappaDom (since := "2026-10-26")]
+alias mul_kappaDom := Optimization.IsImplicitGapDecrease.mul_kappaDom
 
 end CartisGouldToint.Chapter05
