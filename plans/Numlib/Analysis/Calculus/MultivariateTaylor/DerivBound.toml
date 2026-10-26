@@ -1,25 +1,11 @@
-desc = '''
-Norm bounds for the derivatives of the Taylor polynomial `s ↦ D.taylorSum p s` of arbitrary
-(not necessarily symmetric) data `D : FormalMultilinearSeries ℝ E ℝ`. The exact formula (A.11)
-(`FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply`) needs symmetric data; the *bound* does not:
-the `ℓ`-th derivative of `s ↦ A (fun _ => s)` (`A` an `i`-multilinear map) is a sum over the
-injections `Fin ℓ ↪ Fin i` (`ContinuousMultilinearMap.iteratedFDeriv_comp_diagonal_apply`, proved in `MultivariateTaylor/Basic`), whose norm is
-at most `i!/(i-ℓ)! ‖A‖ ‖s‖^{i-ℓ}`. This is what the inexact-model estimates of Cartis–Gould–Toint
-(13.1.48)–(13.1.50) and the model-derivative bound of Lemma 12.2.7 use, with `D` an inexact jet or a
-difference of jets (the derivative is linear in `D`).
-'''
-
 [[node]]
 id = "FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le"
-kind = "theorem"
-desc = '''
-For `D : FormalMultilinearSeries ℝ E ℝ`, `ℓ p : ℕ`, `s : E`:
-`‖iteratedFDeriv ℝ ℓ (fun s => D.taylorSum p s) s‖ ≤
-∑ i ∈ Finset.Icc ℓ p, ‖D i‖ * ‖s‖ ^ (i - ℓ) / (i - ℓ)!`.
-Linearity (part of node): `D.taylorSum p - D'.taylorSum p = (D - D').taylorSum p` and hence
-`iteratedFDeriv ℝ ℓ (D.taylorSum p) s - iteratedFDeriv ℝ ℓ (D'.taylorSum p) s =
-iteratedFDeriv ℝ ℓ ((D - D').taylorSum p) s`, so the bound applies to differences of jets
-(book (13.1.48)); `s ↦ D.taylorSum p s` is `ContDiff ℝ ⊤`.
-'''
-deps = ["FormalMultilinearSeries.taylorSum"]
 source = "Cartis–Gould–Toint, (A.11), proofs of Lemma 12.2.7 and (13.1.48)"
+
+[[node]]
+id = "FormalMultilinearSeries.iteratedFDeriv_taylorSum_sub"
+source = "Cartis–Gould–Toint, (13.1.48)"
+
+[[node]]
+id = "ContinuousMultilinearMap.norm_iteratedFDeriv_comp_diagonal_le"
+source = "Cartis–Gould–Toint, (A.11)"

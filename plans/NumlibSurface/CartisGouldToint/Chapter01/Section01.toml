@@ -55,7 +55,7 @@ desc = '''
 `λ_min[∇²_x f(x)]`; bridge (part of node, from `minCurvature_eq_iInf_eigenvalues`): for `C²` `f`
 and `n ≥ 1` it is the least eigenvalue of the (symmetric) Hessian matrix.
 '''
-deps = ["minCurvature", "minCurvature_eq_iInf_eigenvalues"]
+deps = ["minCurvature", "minCurvature_eq_iInf_isHermitian_eigenvalues"]
 source = "Cartis–Gould–Toint, (1.1.5), Section A.5"
 
 [[node]]

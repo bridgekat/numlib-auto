@@ -1,27 +1,11 @@
-desc = '''
-Taylor polynomials (core `taylorPolynomial f p x s = (ftaylorSeries ℝ f x).taylorSum p s`) of
-compositions with continuous linear maps and of finite sums — the identity behind partially
-separable models, Cartis–Gould–Toint (5.2.2): `T_{f,p}(x, s) = Σ_i T_{f_i,p}(U_i x, U_i s)` for
-`f = Σ_i f_i ∘ U_i`. Proofs from Mathlib's `ContinuousLinearMap.iteratedFDeriv_comp_right` and
-`iteratedFDeriv_sum` (both need `ContDiff`).
-'''
-
 [[node]]
 id = "taylorPolynomial_comp_continuousLinearMap"
-kind = "theorem"
-desc = '''
-For `g : F → ℝ` with `ContDiff ℝ p g` and `U : E →L[ℝ] F`:
-`taylorPolynomial (g ∘ U) p x s = taylorPolynomial g p (U x) (U s)`.
-'''
-deps = ["taylorPolynomial"]
 source = "Cartis–Gould–Toint, (5.2.2)"
 
 [[node]]
 id = "taylorPolynomial_finset_sum"
-kind = "theorem"
-desc = '''
-For a finite family `f i : E → ℝ` with `ContDiff ℝ p (f i)`:
-`taylorPolynomial (fun x => ∑ i ∈ t, f i x) p x s = ∑ i ∈ t, taylorPolynomial (f i) p x s`.
-'''
-deps = ["taylorPolynomial"]
+source = "Cartis–Gould–Toint, (5.2.2)"
+
+[[node]]
+id = "taylorPolynomial_finset_sum_comp_continuousLinearMap"
 source = "Cartis–Gould–Toint, (5.2.2)"
