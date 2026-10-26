@@ -1,5 +1,4 @@
 namespace = "CartisGouldToint.Chapter10"
-desc = '§10.3 Trust region on Krylov subspaces: Lemma 10.3.1, Theorem 10.3.2, Corollary 10.3.3.'
 
 [[node]]
 id = "lemma_10_3_1"

@@ -1,5 +1,4 @@
 namespace = "CartisGouldToint.Chapter11"
-desc = '§11.3 Least-squares models (11.3.1)–(11.3.3).'
 
 [[node]]
 id = "leastSquares_structure"

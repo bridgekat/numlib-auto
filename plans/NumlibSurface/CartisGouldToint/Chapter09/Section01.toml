@@ -1,7 +1,4 @@
 namespace = "CartisGouldToint.Chapter09"
-desc = '''
-§9.1: Algorithm 9.1.1 (derivatives of the secular function from LDLᵀ factors) and Corollary 9.1.1.
-'''
 
 [[node]]
 id = "algorithm_9_1_1"

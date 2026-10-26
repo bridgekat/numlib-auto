@@ -1,7 +1,4 @@
 namespace = "CartisGouldToint.Chapter09"
-desc = '''
-§9.2: Algorithm 9.2.1 (find a point in L) as a run predicate, existence and termination, instances for the two subproblems.
-'''
 
 [[node]]
 id = "algorithm_9_2_1"

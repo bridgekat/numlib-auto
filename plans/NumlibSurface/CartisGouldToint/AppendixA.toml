@@ -1,8 +1,0 @@
-desc = '''
-Cartis–Gould–Toint Appendix A, "Background and General Technical Results". Only Sections A.8
-(Taylor's theorem), A.9 (Hermite interpolation) and A.10 (series bounds) contain numbered results;
-the notation of A.1–A.7 (norms, eigenvalues, tensors) is realized by Mathlib and the backbone
-(`minCurvature` for `λ_min`, operator norms of `ContinuousMultilinearMap` for the tensor norm (A.7)).
-Corrections: the proof of (A.15) prints the constant `(p-j+1)!/(p-j+β)!` for `1/(p-j+β)!`; Theorem
-A.9.2's index range `k ∈ [0:k_e]` for `s_k` and "`x ∈ ℝⁿ`" are typos.
-'''

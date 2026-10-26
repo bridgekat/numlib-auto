@@ -1,5 +1,4 @@
 namespace = "CartisGouldToint.Chapter11"
-desc = '§11.1 Variable scaling: modified absolute value, change of variables to diagonal problems and their solutions.'
 
 [[node]]
 id = "modifiedAbs"

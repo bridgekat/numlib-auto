@@ -1,5 +1,4 @@
 namespace = "CartisGouldToint.Chapter11"
-desc = '§11.2 Radius and weight updates: the asymptotic correspondence (11.2.3)–(11.2.6), corrected.'
 
 [[node]]
 id = "trMultiplier_asymptotics"
