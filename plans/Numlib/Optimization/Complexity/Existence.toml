@@ -1,19 +1,13 @@
 namespace = "Optimization"
-desc = '''
-Existence of runs of relationally specified methods: if at every non-terminal state an admissible
-next state exists, a run exists (dependent choice along `ℕ`). Every algorithm of the book gets an
-existence theorem so that its complexity theorems ("for every run …") are not vacuous.
-'''
 
 [[node]]
 id = "exists_run_of_forall_exists"
-kind = "theorem"
-desc = '''
-Let `α` be a type, `init : α → Prop`, `stop : ℕ → α → Prop`, `step : ℕ → α → α → Prop`, with
-`∃ a, init a` and `∀ k a, ¬ stop k a → ∃ b, step k a b`. Then there is `r : ℕ → α` with `init (r 0)`
-and `∀ k, ¬ stop k (r k) → step k (r k) (r (k + 1))` (after a stop the sequence is arbitrary).
-A history-dependent variant (`step` reading `fun i : Fin (k+1) => r i`) is part of the node.
-States are typically tuples `(x_k, σ_k, s_k, …)`; the admissibility of the chosen step `s_k`
-is encoded in `step`.
-'''
+source = "Cartis–Gould–Toint, all algorithms (well-posedness)"
+
+[[node]]
+id = "exists_run_of_forall_exists_of_invariant"
+source = "Cartis–Gould–Toint, all algorithms (well-posedness)"
+
+[[node]]
+id = "exists_run_of_forall_exists_hist"
 source = "Cartis–Gould–Toint, all algorithms (well-posedness)"

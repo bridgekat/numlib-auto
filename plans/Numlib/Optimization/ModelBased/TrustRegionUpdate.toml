@@ -1,41 +1,21 @@
 namespace = "Optimization"
-desc = '''
-The trust-region radius update (Cartis–Gould–Toint (2.3.7), identical in TR1, TR2 (3.2.12), TRε,
-TRq (12.2.5, with cap Δ_max), TRqIDA): with `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ ≤ γ₂ < 1 < γ₃`:
-`Δ⁺ ∈ [Δ, γ₃ Δ]` if `ρ ≥ η₂`; `Δ⁺ ∈ [γ₂ Δ, Δ]` if `ρ ∈ [η₁, η₂)`; `Δ⁺ ∈ [γ₁ Δ, γ₂ Δ]` if `ρ < η₁`.
-A cap `Δ⁺ ≤ Δ_max` (TRq) is an extra conjunct, not a separate rule.
-'''
 
 [[node]]
 id = "TRUpdate"
-kind = "def"
-desc = '''
-`TRUpdate (η₁ η₂ γ₁ γ₂ γ₃ ρ Δ Δ' : ℝ) : Prop :=
-(η₂ ≤ ρ → Δ ≤ Δ' ∧ Δ' ≤ γ₃ * Δ) ∧ (η₁ ≤ ρ → ρ < η₂ → γ₂ * Δ ≤ Δ' ∧ Δ' ≤ Δ) ∧
-(ρ < η₁ → γ₁ * Δ ≤ Δ' ∧ Δ' ≤ γ₂ * Δ)`. API (part of node): positivity, `γ₁ Δ ≤ Δ'` always,
-`η₁ ≤ ρ → Δ' ≤ γ₃ Δ`, `ρ < η₁ → Δ' ≤ γ₂ Δ`, `η₂ ≤ ρ → Δ ≤ Δ'`.
-'''
 source = "Cartis–Gould–Toint, (2.3.7), (3.2.12), (12.2.5)"
 
 [[node]]
 id = "le_delta_of_trUpdate"
-kind = "theorem"
-desc = '''
-Generic lower bound on the radius (Lemmas 2.3.4, 3.2.5, 3.4.2 and later analogues). Let
-`θ : ℕ → ℝ` be antitone on `[0, K]`, `TRUpdate … (ρ k) (Δ k) (Δ (k+1))` for `k < K` (`0 < γ₁`),
-and for `k < K`: `Δ k < θ k → η₂ ≤ ρ k`. Then `min (Δ 0) (γ₁ * θ k) ≤ Δ k` for all `k ≤ K`.
-(Lemma 2.3.4 is the instance `θ_k = (1-η₂)/(2(L+κ_B)) · min_{i ≤ k} ‖∇f(x_i)‖`.)
-'''
-deps = ["TRUpdate"]
 source = "Cartis–Gould–Toint, Lemma 2.3.4 (mechanism)"
 
 [[node]]
 id = "succ_le_of_trUpdate"
-kind = "theorem"
-desc = '''
-Lemma 2.3.1 for the rule (2.3.7): if `TRUpdate` holds for `j ≤ k`, `0 < Δ 0`, success means
-`η₁ ≤ ρ j`, and `0 < Δmin ≤ Δ (k+1)`, then `(k+1 : ℝ) ≤ |successSet (η₁ ≤ ρ ·) k| *
-(1 + log γ₃ / |log γ₂|) + |log (Δmin / Δ 0)| / |log γ₂|`.
-'''
-deps = ["TRUpdate", "succ_le_card_successSet_of_upper_ratio"]
 source = "Cartis–Gould–Toint, Lemma 2.3.1"
+
+[[node]]
+id = "le_of_trUpdate"
+source = "Cartis–Gould–Toint, Lemma 2.3.1"
+
+[[node]]
+id = "le_delta_succ_of_trUpdate"
+source = "Cartis–Gould–Toint, Lemma 2.3.4, proof of Theorem 2.3.7"

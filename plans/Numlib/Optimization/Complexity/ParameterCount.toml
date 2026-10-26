@@ -1,48 +1,45 @@
 namespace = "Optimization"
-desc = '''
-Bounding all iterations by successful ones through the multiplicative parameter updates
-(Cartis–Gould–Toint Lemmas 2.3.1, 2.4.1, 13.1.1 and their uses in every later chapter). One general
-statement: a positive parameter `σ` changes by at least a factor `γ_S ∈ (0,1]` on "successful"
-iterations, increases by at least `γ_U > 1` on "failed" ones and does not decrease on the others
-("neutral", e.g. accuracy-improving iterations of Chapter 13); if `σ_{k+1} ≤ σ_max` then
-`|fail_k| log γ_U ≤ log(σ_max/σ_0) + |succ_k| |log γ_S|`. The trust-region form is the same lemma
-applied to `1/Δ` (symmetric delegation, no duplicated proof).
-'''
+
+[[node]]
+id = "mul_pow_card_le"
+source = "Cartis–Gould–Toint, proofs of Lemmas 2.3.1, 2.4.1"
 
 [[node]]
 id = "card_fail_mul_log_le"
-kind = "theorem"
-desc = '''
-Let `σ : ℕ → ℝ`, `0 < σ 0`, `succ fail : ℕ → Prop` (disjoint), `0 < γS ≤ 1 < γU`, `k : ℕ`, and for
-`j ≤ k`: `succ j → γS * σ j ≤ σ (j+1)`, `fail j → γU * σ j ≤ σ (j+1)`, otherwise `σ j ≤ σ (j+1)`.
-If `σ (k+1) ≤ σmax` then
-`|(range (k+1)).filter fail| * Real.log γU ≤ Real.log (σmax / σ 0) + |(range (k+1)).filter succ| *
-|Real.log γS|`. (Proof: induction `σ 0 * γS^{|S|} * γU^{|U|} ≤ σ (k+1)`, then `Real.log`.)
-'''
-deps = ["successSet"]
+source = "Cartis–Gould–Toint, proof of Lemma 2.4.1"
+
+[[node]]
+id = "card_fail_le_of_lower_ratio"
 source = "Cartis–Gould–Toint, proof of Lemma 2.4.1"
 
 [[node]]
 id = "succ_le_card_successSet_of_lower_ratio"
-kind = "theorem"
-desc = '''
-Adaptive-regularization form (Lemma 2.4.1). With `fail = ¬ succ` in `card_fail_mul_log_le`
-(`0 < γS < 1 < γU`, `σ (k+1) ≤ σmax`):
-`(k + 1 : ℝ) ≤ |successSet succ k| * (1 + |log γS| / log γU) + log (σmax / σ 0) / log γU`.
-(The book states `k ≤ …`, which follows.)
-'''
-deps = ["card_fail_mul_log_le", "successSet"]
 source = "Cartis–Gould–Toint, Lemma 2.4.1"
 
 [[node]]
+id = "le_card_successSet_of_lower_ratio"
+source = "Cartis–Gould–Toint, Lemma 2.4.1"
+
+[[node]]
+id = "card_successSet_or_le_of_lower_ratio"
+source = "Cartis–Gould–Toint, Lemma 13.1.9"
+
+[[node]]
+id = "card_fail_le_of_upper_ratio"
+source = "Cartis–Gould–Toint, proofs of Lemmas 2.3.1, 13.1.1"
+
+[[node]]
 id = "succ_le_card_successSet_of_upper_ratio"
-kind = "theorem"
-desc = '''
-Trust-region form (Lemma 2.3.1). `Δ : ℕ → ℝ`, `0 < Δ 0`, `γ₂ ∈ (0,1)`, `γ₃ ≥ 1`; for `j ≤ k`:
-`succ j → Δ (j+1) ≤ γ₃ * Δ j`, `¬ succ j → Δ (j+1) ≤ γ₂ * Δ j`; `0 < Δmin ≤ Δ (k+1)` (all `Δ j > 0`).
-Then `(k + 1 : ℝ) ≤ |successSet succ k| * (1 + log γ₃ / |log γ₂|) + |log (Δmin / Δ 0)| / |log γ₂|`.
-Proof: `card_fail_mul_log_le` for `σ j = 1 / Δ j`, `γS = 1/γ₃`, `γU = 1/γ₂`. A variant with neutral
-iterations (counting only `succ ∪ fail`, Lemma 13.1.1) is part of this node.
-'''
-deps = ["card_fail_mul_log_le", "successSet"]
-source = "Cartis–Gould–Toint, Lemma 2.3.1, Lemma 13.1.1"
+source = "Cartis–Gould–Toint, Lemma 2.3.1"
+
+[[node]]
+id = "le_card_successSet_of_upper_ratio"
+source = "Cartis–Gould–Toint, Lemma 2.3.1"
+
+[[node]]
+id = "card_successSet_or_le_of_upper_ratio"
+source = "Cartis–Gould–Toint, Lemma 13.1.1"
+
+[[node]]
+id = "card_fail_le_of_upper_ratio_abs"
+source = "Cartis–Gould–Toint, proof of Lemma 2.3.1"
