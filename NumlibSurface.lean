@@ -194,9 +194,11 @@ import NumlibSurface.CartisGouldToint.Chapter12
 import NumlibSurface.CartisGouldToint.Chapter12.Section01
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 import NumlibSurface.CartisGouldToint.Chapter12.Section03
+import NumlibSurface.CartisGouldToint.Chapter13
 import NumlibSurface.CartisGouldToint.Chapter13.Section01
 import NumlibSurface.CartisGouldToint.Chapter13.Section02
 import NumlibSurface.CartisGouldToint.Chapter13.Section03
+import NumlibSurface.CartisGouldToint.Chapter14
 import NumlibSurface.CartisGouldToint.Chapter14.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
 import NumlibSurface.CartisGouldToint.Chapter14.Section03

@@ -10,6 +10,8 @@ import NumlibSurface.CartisGouldToint.Chapter09
 import NumlibSurface.CartisGouldToint.Chapter10
 import NumlibSurface.CartisGouldToint.Chapter11
 import NumlibSurface.CartisGouldToint.Chapter12
+import NumlibSurface.CartisGouldToint.Chapter13
+import NumlibSurface.CartisGouldToint.Chapter14
 import NumlibSurface.CartisGouldToint.AppendixA
 import NumlibSurface.CartisGouldToint.AppendixB
 
@@ -63,13 +65,12 @@ library dependencies run forward in the book's order.
 | 11 | `Chapter11` | Variable scaling and other practicalities |
 | **II** | | *Evaluation complexity for higher-order optimality* |
 | 12 | `Chapter12` | Finding high-order approximate minimizers: `φ^δ_{f,j}`, TRq, ARqp |
+| 13 | `Chapter13` | Inexact function values and derivatives: TRqIDA, ARqpIDA, TRqEDA, ARqpEDA |
+| 14 | `Chapter14` | Composite and constrained problems: ARqpC, `-SC` variants, LENq-SC, TPqp-GC |
 | A | `AppendixA` | Taylor's theorem, Hermite interpolation, series bounds |
 | B | `AppendixB` | the separately numbered lemmas of the chapter appendices |
 
-Chapters 13 ("Inexact function values and derivatives") and 14 ("Composite and constrained
-problems") are not yet part of the library; their plans are under
-`plans/NumlibSurface/CartisGouldToint/`. Part III ("Conclusions and perspectives") has no numbered
-items.
+Part III ("Conclusions and perspectives") has no numbered items.
 
 ## Conventions
 
@@ -87,7 +88,12 @@ items.
   **Sharpness theorems** exhibit a function in the class and a run whose first termination index
   is the claimed count.
 * Infinite tolerances: `ε₂ = +∞` is `none : Option ℝ` (Chapters 3–4), or the order `q` of the
-  sought minimizer is explicit and the higher-order tests are switched off (Chapters 5, 6 and 12).
+  sought minimizer is explicit and the higher-order tests are switched off (Chapters 5, 6 and
+  12–14).
+* Inexact derivatives (Chapter 13) are jets `FormalMultilinearSeries ℝ ℝⁿ ℝ` within the error
+  model `Optimization.JetApprox` of the exact `ftaylorSeries ℝ f x`; methods without a
+  termination rule (TRqIDA, ARqpIDA) are bounded up to the first truly approximately optimal
+  iterate.
 * In Chapters 8–11, `H` is symmetric, `M` symmetric positive definite, and every statement is
   transported through the `M`-inner product space `Subproblem.ScaledSpace` to the operator
   backbone.
@@ -118,6 +124,26 @@ where one exists:
 * **Theorem 12.2.15 for `q ≥ 3`**: its own example violates its hypothesis
   (`Chapter12.theorem_12_2_15_counterexample`); it is stated for a global-step scenario that is a
   genuine ARqp run for `q ≤ 2`. Lemmas 12.2.11–12.2.13 need `θ < ς` and a corrected constant `κ̂`.
+* **Theorems 13.1.19 and 13.3.8**: the printed radius-one conclusion `φ^1_{f,j}(x_ε) ≤ ε_j/j!`
+  is not what the proof certifies (it conflates the radii before and after Step 1); the theorems
+  are stated for some radii in `(0, 1]^q`, from which radius one follows for `q ≤ 2`. Lemma 13.1.17
+  needs a corrected constant `κ̂`.
+* **ARqpEDA (Lemma 13.3.7, Theorem 13.3.8)**: the book reuses Lemma 13.1.16, whose hypothesis
+  does not follow from non-termination; the corrected argument needs `θ < ς/2`, with `ς/2 - θ`
+  for `1 - θ` in the constants. The orders are unchanged.
+* **Lemmas 14.1.7–14.1.9, Theorem 14.1.10**: `(1 - θ)` must be `(ς - θ)`, with `θ < ς`, as in
+  Lemma 12.2.11; (14.1.30) misses a factor `2` and (14.1.31) a factor `ε_j^{(j+1)/(p+1)}`.
+* **Theorem 14.3.1**: the descriptor arcs must be feasible for `X ∩ {c = 0}`, not only for `X`;
+  as printed the theorem fails for `c(x) = x₁² + x₂²`, `f(x) = -x₁`, `x⋆ = 0`. Example 14.3.1's
+  origin is a minimizer, not a saddle point.
+* **Theorem 14.3.4** (and Lemma 14.3.7, Theorem 14.3.9): the proof uses
+  `∑_k max_j ≤ max_j ∑_k`, which is false; the bounds hold with `∑_j` for `max_j`.
+* **Lemma 14.3.5**: (14.3.43) and (14.3.46) are false (e.g. `c ≡ 0`, `X = [-1, 1]`,
+  `f(x) = x/4 - 25x²/8`); they are corrected with terms of order `(‖∇f‖δ)²/(f(x_ε) - t_ε)`.
+  When Phase 2 ends with `f(x_ε) = t_ε`, only the first-order part of (14.3.41) follows.
+* **Lemma 14.3.8, Theorem 14.3.9**: TPqp-GC has the same counting gap as TPp-GC: the bad outer
+  iterations are not bounded by the book's argument, and `Chapter14.theorem_14_3_9` carries
+  their number as a parameter.
 * **Lemma B.4.1 (B.4.3)**: false for `β < 1` (`AppendixB.lemma_B_4_1_iii_false`); true for `β = 1`,
   the case the book uses.
 * **Theorem 9.3.2** is false with the Euclidean `λ_min` when `M ≠ I`, and **Theorem 9.3.1** omits
@@ -125,6 +151,11 @@ where one exists:
   `θ'(λ*) ≠ 0`.
 * **Chapter 11**: (11.2.3), (11.2.5) and the regularization case of §11.1.3 are printed inverted
   or with wrong exponents.
+
+Evaluation counts are recounted throughout: several derivative bounds omit the initial evaluation
+or the last accuracy-improving iteration (Lemma 7.2.2, Theorems 13.1.8, 13.1.19, 13.3.4, 13.3.8:
+`κ^F + 2`, resp. `+ 3`), the constant `κ^C` of Theorem 13.1.19 misses a factor
+`1 + |log γ₁|/log γ₂`, and Theorem 13.3.4's garbled constants are a factor `2`.
 
 Smaller repairs — OCR damage restored, index slips, constants recomputed, the ARqp Step-1 test
 normalized to `>`, hypotheses the proofs do not need dropped — are recorded in the section modules
@@ -134,11 +165,17 @@ and on the declarations.
 
 * Lemma 4.2.5 (iv), explicit growth `L^D_p ≤ exp(5/2 p log p + c₁ p)` of the hard function's
   constant (the lemma itself is proved with an explicit constant).
+* Corollary 14.1.11 (sharpness of ARqpC): the book's proof does not check that the slow ARqp
+  steps are admissible ARqpC steps for `|c|`.
+* An explicit counterexample declaration for (14.3.43) of Lemma 14.3.5 (the counterexample is
+  described in `Chapter14.Section03`).
+* The inexact (IDA/EDA) rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4, the TR rows of
+  Lemma 14.2.3; the existence of LENq-SC and TPqp-GC runs; the stencil claim (13.2.1) and the
+  interpolation bound (13.2.4).
 * The starting values (right limits at `λₛ`) of Corollary 8.2.4.
 * The norm comparisons `‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)`, `|λᵢ| ≤ ‖H‖_F` quoted in §9.3.1, the heuristic
   procedure of §9.3.7 and the tests (9.4.2)–(9.4.4).
 * Discussion without numbered results: the variants of §2.2.3, §4.1.3, §7.2.3, the qualitative parts
   of §§5.3.1, 12.1.6, 12.3, the `O(·)` restatements and Table 12.2.1, and the weak approximate
   minimizers (12.1.40) of the Notes.
-* Chapters 13 and 14.
 -/
