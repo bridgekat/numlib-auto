@@ -32,10 +32,10 @@ Theorem 9.3.2 (backbone form). Let `H` be symmetric, `0 < σ`, `2 < r`, `-leftmo
 (a) `π ≤ (r/2) ^ (2/(r-2)) * (λc/σ) ^ (2/(r-2))`,
 (b) `|π ^ ((r-2)/2) - λc/σ| ≤ θ₁/(2σ) * π ^ (1/2)`,
 (c) `π ^ ((r-2)/2) - λc/σ ≥ -(θ₂/σ) * π ^ (1/2)`,
-then `RegStoppingRules g H σ r θ₁ θ₂ s`. Proof by `regModel_eq_of_shifted_general` and
-`inner_regModelHessian_ge`.
+then `RegStoppingRules g H σ r θ₁ θ₂ s`. Proof by `regModel_eq_of_shifted_general` (value),
+`hasGradientAt_regModel_of_shifted` (gradient) and `inner_regModelHessian_ge`.
 '''
-deps = ["RegStoppingRules", "regModel_eq_of_shifted_general", "inner_regModelHessian_ge", "step_spec", "secular"]
+deps = ["RegStoppingRules", "regModel_eq_of_shifted_general", "hasGradientAt_regModel_of_shifted", "inner_regModelHessian_ge", "step_spec", "secular"]
 
 [[node]]
 id = "regStoppingRules_of_isMinOn"

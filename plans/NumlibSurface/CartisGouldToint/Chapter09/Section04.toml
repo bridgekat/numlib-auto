@@ -30,5 +30,5 @@ e.g. `g = 0`, `H = 0`, where `m_Δ = 0` for all `Δ`);
 and for `λ ∈ 𝓛 ∪ 𝓖` (trust-region sets) with `Δ(λ) = ‖s(λ)‖_M`:
 `m_{Δ(λ)} = (1/2)(⟪g, s(λ)⟫ - λ Δ(λ)²)`.
 '''
-deps = ["Subproblem.isMinOn_closedBall_mono", "CartisGouldToint.Chapter08.corollary_8_3_2", "Subproblem.quadModel_scaled"]
+deps = ["Subproblem.trustRegionValue_antitone", "Subproblem.trustRegionValue_mem_Icc", "Subproblem.trustRegionValue_le_min", "CartisGouldToint.Chapter08.corollary_8_3_2", "Subproblem.quadModel_scaled"]
 source = "Cartis–Gould–Toint, (9.4.5)–(9.4.7)"
