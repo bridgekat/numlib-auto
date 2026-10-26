@@ -98,10 +98,10 @@ Convergence of "largest correction" iterations (the convergence claim of Algorit
 an admissible `β`, and `λ : ℕ → ℝ` with `λ 0 ∈ Ioc λₛ λ*` and
 `λ j + N (λ j) ≤ λ (j + 1) ≤ λ*` for all `j`. Then `λ` is monotone, tends to `λ*`, satisfies
 `λ* - λ (j+1) ≤ γ (λ* - λ j)` with `γ = 1 - θ_β'(λ*)/θ_β'(λ 0) < 1`, and
-`Newton.ConvergesSuperlinearly λ λ*`. (In particular the plain Newton iteration, the
+`ConvergesSuperlinearly λ λ*`. (In particular the plain Newton iteration, the
 `β`-maximizing iteration (8.2.26) and Algorithm 8.3.1 converge.)
 '''
-deps = ["newtonCorrection_mem", "Newton.monotone_scalarStep_iterate_of_convexOn", "Newton.ConvergesSuperlinearly"]
+deps = ["newtonCorrection_mem", "Newton.monotone_scalarStep_iterate_of_convexOn", "_root_.ConvergesSuperlinearly"]
 
 [[node]]
 id = "tendsto_of_taylorCorrection_le"

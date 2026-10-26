@@ -1,60 +1,28 @@
 namespace = "Matrix"
-desc = '''
-The `LDLᵀ` factorization of a shifted symmetric tridiagonal matrix `T + λ I` by the scalar pivot
-recurrence, with positive-definiteness detected by the pivots (Cartis–Gould–Toint (10.2.5)–(10.2.6),
-Algorithms 10.2.1/10.2.2; Golub–Van Loan §4.3.6). This is the symmetric specialization of the
-Thomas algorithm of `Numlib/LinearAlgebra/Matrix/LU` (`Matrix.thomasAlpha`, `thomasGamma`,
-`isLU_tridiagonal_thomas`) and of `Matrix.IsLDM` / `exists_isLDM_conjTranspose_of_posDef` of
-`Numlib/LinearAlgebra/Matrix/Cholesky`; the formalizer should derive it from those rather than
-re-prove factorization identities.
-
-Data: diagonal `ρ : ℕ → ℝ` (indices `0 … k-1`) and off-diagonal `γ : ℕ → ℝ` (`γ i` couples rows
-`i - 1` and `i`), `symTridiag ρ γ k` the corresponding `k × k` matrix.
-'''
 
 [[node]]
 id = "symTridiag"
-kind = "definition"
-desc = '''
-`symTridiag (ρ γ : ℕ → ℝ) (k : ℕ) : Matrix (Fin k) (Fin k) ℝ` with diagonal `ρ i`, entries
-`γ i` at `(i, i-1)` and `(i-1, i)`, zero elsewhere. (`Lanczos.tridiag A b k` is
-`symTridiag (Lanczos.alpha A b) (fun i => Lanczos.beta A b (i - 1)) k`, up to the indexing
-convention of `Numlib/Krylov/Lanczos` — a lemma stating this belongs here.)
-'''
 
 [[node]]
 id = "ldlPivot"
-kind = "definition"
-desc = '''
-`ldlPivot ρ γ λ : ℕ → ℝ`, `d 0 = ρ 0 + λ`, `d (i+1) = ρ (i+1) + λ - γ (i+1) ^ 2 / d i`
-(the book's `dᵢ(λ)` in (10.2.6), with `lᵢ = γᵢ / dᵢ₋₁`).
-'''
+source = "Cartis–Gould–Toint (10.2.6)"
 
 [[node]]
 id = "posDef_symTridiag_add_iff"
-kind = "theorem"
-desc = '''
-`(symTridiag ρ γ k + λ • 1).PosDef ↔ ∀ i < k, 0 < ldlPivot ρ γ λ i`, and in that case
-`symTridiag ρ γ k + λ • 1 = L * diagonal d * Lᵀ` with `L` unit lower bidiagonal,
-`L (i+1) i = γ (i+1) / d i` ((10.2.6)). Moreover `PosDef` of the `(k+1)`-matrix follows from that of
-the `k`-matrix iff `ρ k + λ > γ k ^ 2 / d (k-1)` (the update test of §10.2.1–10.2.2).
-'''
-deps = ["symTridiag", "ldlPivot"]
+source = "Cartis–Gould–Toint §10.2.1"
+
+[[node]]
+id = "symTridiag_add_smul_one_eq_ldl"
+source = "Cartis–Gould–Toint (10.2.6)"
+
+[[node]]
+id = "posDef_symTridiag_succ_add_iff"
+source = "Cartis–Gould–Toint §10.2.1 (update test)"
 
 [[node]]
 id = "tridiagSolve"
-kind = "definition"
-desc = '''
-`tridiagSolve ρ γ λ k (b : Fin k → ℝ) : Fin k → ℝ`, the forward–diagonal–backward substitution
-of Algorithm 10.2.2 with `l i = γ i / d (i-1)` and `r i = 1 / d i`.
-'''
-deps = ["ldlPivot"]
+source = "Cartis–Gould–Toint, Algorithm 10.2.2"
 
 [[node]]
 id = "mulVec_tridiagSolve"
-kind = "theorem"
-desc = '''
-If `∀ i < k, 0 < ldlPivot ρ γ λ i` then
-`(symTridiag ρ γ k + λ • 1) *ᵥ tridiagSolve ρ γ λ k b = b` for every `b`.
-'''
-deps = ["tridiagSolve", "posDef_symTridiag_add_iff"]
+source = "Cartis–Gould–Toint, Algorithm 10.2.2"

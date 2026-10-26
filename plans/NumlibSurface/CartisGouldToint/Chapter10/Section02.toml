@@ -41,7 +41,7 @@ Algorithm 10.2.1 returns `none` iff `Tₖ + λ Iₖ` is not positive definite; w
 `Dₖ = diag(1/rᵢ)` with positive entries ((10.2.5)–(10.2.6)); and `Tₖ₊₁ + λ Iₖ₊₁` is positive definite
 iff additionally `ρₖ₊₁ + λ > γₖ₊₁² rₖ(λ)` (§10.2.1–10.2.2).
 '''
-deps = ["algorithm_10_2_1", "Matrix.posDef_symTridiag_add_iff"]
+deps = ["algorithm_10_2_1", "Matrix.posDef_symTridiag_add_iff", "Lanczos.tridiag_eq_symTridiag"]
 source = "Cartis–Gould–Toint, (10.2.5)–(10.2.6), Algorithm 10.2.1"
 
 [[node]]

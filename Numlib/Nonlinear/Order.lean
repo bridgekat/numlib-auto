@@ -19,6 +19,9 @@ real power so that non-integer orders such as the golden ratio are allowed — a
 stated for a normed additive group, so that the `ℝⁿ` methods of [quarteroni2000numerical] chapter 7
 reuse them. The derivative-based results are scalar. Every error-ratio limit carries the hypothesis
 `x k ≠ α`: an orbit that hits the fixed point is constant from then on and the ratios are `0 / 0`.
+`ConvergesSuperlinearly x α` (`‖x (k+1) - α‖ ≤ c k ‖x k - α‖` with `c k → 0`) is `Q`-superlinear
+convergence, equivalent to the ratio form away from `α`
+(`convergesSuperlinearly_iff_tendsto_ratio`).
 
 ## Design
 
@@ -184,6 +187,41 @@ theorem hasIterationOrder_of_eventually_norm_sub_le {φ : E → E} {α : E} {C :
       ?_)
     simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one (r := (1 / 2 : ℝ)) (by norm_num)
       (by norm_num)).mul_const ‖x₀ - α‖
+
+/-- `x` converges `Q`-superlinearly to `α`: `‖x (k+1) - α‖ ≤ c k ‖x k - α‖` for all `k`, for some
+factors `c k → 0`. Sequences reaching `α` in finitely many steps are included. -/
+def ConvergesSuperlinearly (x : ℕ → E) (α : E) : Prop :=
+  ∃ c : ℕ → ℝ, Tendsto c atTop (𝓝 0) ∧ ∀ k, ‖x (k + 1) - α‖ ≤ c k * ‖x k - α‖
+
+/-- A `Q`-superlinearly convergent sequence converges. -/
+theorem ConvergesSuperlinearly.tendsto {x : ℕ → E} {α : E} (h : ConvergesSuperlinearly x α) :
+    Tendsto x atTop (𝓝 α) := by
+  obtain ⟨c, hc, hle⟩ := h
+  refine tendsto_of_eventually_norm_sub_succ_le (C := 1 / 2) (by norm_num) ?_
+  filter_upwards [hc.eventually (gt_mem_nhds (by norm_num : (0 : ℝ) < 1 / 2))] with k hk
+  exact (hle k).trans (mul_le_mul_of_nonneg_right hk.le (norm_nonneg _))
+
+/-- `Q`-superlinear convergence implies convergence of order `1` (with constant `1`). -/
+theorem ConvergesSuperlinearly.convergesWithOrder_one {x : ℕ → E} {α : E}
+    (h : ConvergesSuperlinearly x α) : ConvergesWithOrder x α 1 := by
+  refine ⟨h.tendsto, 1, one_pos, ?_⟩
+  obtain ⟨c, hc, hle⟩ := h
+  filter_upwards [hc.eventually (gt_mem_nhds one_pos)] with k hk
+  rw [Real.rpow_one]
+  exact (hle k).trans (mul_le_mul_of_nonneg_right hk.le (norm_nonneg _))
+
+/-- For a sequence that never reaches `α`, `Q`-superlinear convergence is the ratio form
+`‖x (k+1) - α‖ / ‖x k - α‖ → 0`. -/
+theorem convergesSuperlinearly_iff_tendsto_ratio {x : ℕ → E} {α : E} (hne : ∀ k, x k ≠ α) :
+    ConvergesSuperlinearly x α ↔
+      Tendsto (fun k => ‖x (k + 1) - α‖ / ‖x k - α‖) atTop (𝓝 0) := by
+  have hpos : ∀ k, 0 < ‖x k - α‖ := fun k => norm_pos_iff.2 (sub_ne_zero.2 (hne k))
+  constructor
+  · rintro ⟨c, hc, hle⟩
+    refine squeeze_zero (fun k => div_nonneg (norm_nonneg _) (norm_nonneg _)) (fun k => ?_) hc
+    exact (div_le_iff₀ (hpos k)).2 (hle k)
+  · intro h
+    exact ⟨_, h, fun k => (div_mul_cancel₀ _ (hpos k).ne').ge⟩
 
 end NormedGroup
 
