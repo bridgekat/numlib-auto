@@ -17,3 +17,6 @@ id = "evaluation_complexity"
 
 [[node]]
 id = "evaluation_complexity_with_unit_first"
+
+[[node]]
+id = "evaluation_complexity_worst_accuracy"

@@ -217,4 +217,40 @@ theorem evaluation_complexity_with_unit_first {p q : ℕ} (f : E → ℝ) (X : S
   exact TaylorModel.constrainedCriticality_one_unit_le_of_radius hX hconv hopt.1
     (hopt.2.1 a).1 (hopt.2.1 a).2 hb
 
+/-- The full constrained theorem has the common worst-accuracy rate
+q(p+1)/p, and hence the usual (p+1)/p rate for q=1. Actual feasible Taylor
+certificates, initialized counts and unit first-order certification are retained. -/
+theorem evaluation_complexity_worst_accuracy {p q : ℕ} (f : E → ℝ) (X : Set E)
+    (hX : IsClosed X) (hconv : Convex ℝ X) (P : Settings p q) (x₀ : E) (hx₀ : x₀ ∈ X)
+    (hf : ContDiff ℝ p f) {L flow : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, 1 ≤ i → i ≤ p → ∀ y z,
+      ‖iteratedFDeriv ℝ i f y - iteratedFDeriv ℝ i f z‖ ≤ L * ‖y - z‖)
+    (hlow : ∀ x ∈ X, flow ≤ f x) :
+    ∃ κs > 0, ∃ κa > 0, ∃ κc > 0,
+      ∀ (ε : Fin q → ℝ) (D : ExecutionData E q), D.point 0 = x₀ →
+      (∀ N, (∀ k < N, ¬TargetAt f X P ε D k) → Run f X P ε D N) →
+      ∃ (K : ℕ) (δ : Fin q → ℝ), Run f X P ε D K ∧ TargetAt f X P ε D K ∧
+        (∀ k < K, ¬TargetAt f X P ε D k) ∧ OptimalityAt f X ε (D.point K) δ ∧
+        (∀ a, modelOrder a = 1 → TaylorModel.constrainedCriticality f 1 X (D.point K) 1 ≤
+          ε a) ∧
+        ((K + 1 : ℕ) : ℝ) ≤ κa * (f x₀ - flow) /
+          minimumAccuracy P.order_pos ε ^ ((q : ℝ) * (p + 1 : ℕ) / p) + κc ∧
+        (((successfulIterations {i | P.eta1 ≤ D.ratio i} K).card + 1 : ℕ) : ℝ) ≤
+          κs * (f x₀ - flow) /
+            minimumAccuracy P.order_pos ε ^ ((q : ℝ) * (p + 1 : ℕ) / p) + 2 := by
+  obtain ⟨κs, hs, κa, ha, κc, hc, hall⟩ :=
+    evaluation_complexity_with_unit_first f X hX hconv P x₀ hx₀ hf hL hlip hlow
+  refine ⟨κs, hs, κa, ha, κc, hc, ?_⟩
+  intro ε D hinit hprefix
+  obtain ⟨K, δ, hr, ht, hfirst, hopt, hunit, hF, hD⟩ := hall ε D hinit hprefix
+  have hμ := minimumAccuracy_pos P.order_pos hr.accuracy_pos
+  have hpow := Real.rpow_pos_of_pos hμ ((q : ℝ) * (p + 1 : ℕ) / p)
+  have hfactor := accuracyFactor_lower_minimum P ε hr.accuracy_pos hr.accuracy_le_one
+  have hgap : 0 ≤ f x₀ - flow := sub_nonneg.mpr (hlow x₀ hx₀)
+  refine ⟨K, δ, hr, ht, hfirst, hopt, hunit, ?_, ?_⟩
+  · exact hF.trans (add_le_add
+      (div_le_div_of_nonneg_left (mul_nonneg ha.le hgap) hpow hfactor) le_rfl)
+  · exact hD.trans (add_le_add
+      (div_le_div_of_nonneg_left (mul_nonneg hs.le hgap) hpow hfactor) le_rfl)
+
 end ConstrainedRegularization

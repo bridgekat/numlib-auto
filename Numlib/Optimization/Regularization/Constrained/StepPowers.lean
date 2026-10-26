@@ -1,3 +1,4 @@
+import Numlib.Optimization.EvaluationComplexity.OracleSimulation.Counts
 import Numlib.Optimization.Regularization.Inexact.ComplexityConstants
 import Numlib.Optimization.Regularization.Constrained.RunBounds
 import Numlib.Optimization.HighOrder.StepCoefficient
@@ -59,6 +60,21 @@ theorem accuracyFactor_pos {p q : ℕ} (P : Settings p q) {ε : Fin q → ℝ}
 theorem accuracyFactor_le {p q : ℕ} (P : Settings p q) (ε : Fin q → ℝ) (a : Fin q) :
     accuracyFactor P ε ≤ (ε a) ^ ((modelOrder a : ℝ) * (p + 1 : ℕ) / p) :=
   minimumAccuracy_le P.order_pos _ a
+
+/-- The actual all-order accuracy factor retains the common worst-component
+rate epsilon-min raised to q(p+1)/p. -/
+theorem accuracyFactor_lower_minimum {p q : ℕ} (P : Settings p q) (ε : Fin q → ℝ)
+    (hε : ∀ a, 0 < ε a) (hε1 : ∀ a, ε a ≤ 1) :
+    minimumAccuracy P.order_pos ε ^ ((q : ℝ) * (p + 1 : ℕ) / p) ≤ accuracyFactor P ε := by
+  apply OracleSimulation.minimum_power_lower P.order_pos ε
+    (fun a => (modelOrder a : ℝ) * (p + 1 : ℕ) / p) hε hε1
+  intro a
+  have hp : 0 < p := P.order_pos.trans_le P.order_le
+  have ha : modelOrder a ≤ q := a.isLt
+  refine ⟨by positivity, ?_⟩
+  exact div_le_div_of_nonneg_right
+    (mul_le_mul_of_nonneg_right (by exact_mod_cast ha) (Nat.cast_nonneg _))
+    (Nat.cast_nonneg p)
 
 /-- The fixed finite minimum of all positive actual objective-decrease coefficients. -/
 noncomputable def commonDecreaseCoefficient {p q : ℕ} (P : Settings p q) (L S : ℝ) : ℝ :=
