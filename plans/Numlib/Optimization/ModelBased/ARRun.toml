@@ -1,94 +1,210 @@
 namespace = "Optimization"
 desc = '''
-Generic runs of adaptive-regularization methods with `p`-th order Taylor models (Cartis–Gould–Toint
-Algorithms 2.4.1, 3.3.1, 4.1.1, 5.1.1, 6.2.1, 6.2.2, 6.3.1 and the inner loops of 7.2.1 — the
-Steps 3–4 "acceptance + regularization update" of all of them are literally the same; only the
-Step-1 termination test and the Step-2 conditions on the trial step differ).
+**The** generic run interface of adaptive-regularization (AR) methods (Cartis–Gould–Toint
+Algorithms 2.4.1 AR1, 3.3.1 AR2, 4.1.1 ARp, 5.1.1 ARpLE, 5.5.1 ARp-H, 6.2.1 ARp-CC, 6.2.2 ARp1-CC,
+6.3.1 ARpLE-CC, the inner runs of 7.2.1, 12.2.2 ARqp, 14.1.1 ARqpC(-SC); per iteration also
+13.1.2 ARqpIDA and 13.3.2 ARqpEDA). Consolidated from the plans of Chapters 5, 6–7 and 12 (see
+`notes/cgt/core-design.md`, "Run and model interfaces (consolidated)"). The trust-region
+counterpart is `ModelBased/TRRun`.
 
-**Interface (planned here because Chapters 6–7 need it four times; the Chapter 4 plan of ARp should
-instantiate it rather than restate it — consolidation note).** A run is
-`IsARRun f p σ₀ σmin η₁ η₂ γ₁ γ₂ γ₃ stepOK test x s σ`, where `stepOK : E → ℝ → E → Prop` is the
-Step-2 admissibility of the trial step `s` at `(x, σ)` (closing over the method's tolerances) and
-`test : E → Prop` is the Step-1 termination test at the current iterate. The model is
-`regularizedModel (ftaylorSeries ℝ f x) p σ`, the ratio is `reductionRatio f x s
-((ftaylorSeries ℝ f x).taylorDecrement p s)` (book: `ρ_k = (f(x_k) - f(x_k+s_k)) / (T_{f,p}(x_k,0)
-- T_{f,p}(x_k,s_k))`), success is `η₁ ≤ ρ_k`, and the update is `ARUpdate`.
+Every AR method has the same Steps 3–4: with a ratio `ρ_k`, the trial point is accepted iff
+`η₁ ≤ ρ_k` and `σ` is updated by (2.4.4) (`ARUpdate`). Methods differ only in
+* the Step-1 termination test `stop₁ k` (gradient/eigenvalue tests, `φ`-measure tests, residual
+  tests, …), and an optional test `stop₂ k` evaluated *after* the step is computed (ARqp/ARqpC:
+  `m_k(s_k) = m_k(0)`; ARp-H: the test at the trial point `x_k + s_k`); `fun _ => False` otherwise;
+* the Step-2 conditions on the trial step, `step k` (approximate model minimization, feasibility,
+  radii and witnesses, …);
+* the ratio `ρ k`: normally `taylorRatio f p x s k` (achieved over predicted Taylor decrease of the
+  exact jet), but any sequence is allowed (inexact data, composite objectives `w = f + h ∘ c`,
+  inexact values (Ch 13 EDA), ARp-H's modified ratio).
+`stop₁`, `step`, `stop₂`, `ρ` are indexed by the iteration and may refer to the run itself (ARp's
+curvature sets `M_k` depend on the previous model, ARqp's radii on the previous step). Method-specific
+run predicates (`IsARpRun`, `IsARqpRun`, the surface `algorithm_x_y_z`) are `IsARRun` applied to
+their own closures, plus extra fields where needed.
 
-The three generic lemmas below replace, for every such method, the book's "Lemmas 4.1.1–4.1.2
-continue to hold" and "the remainder of the proof is identical to that of Theorem 4.1.5": all they
-need from `stepOK` is that the trial point is in a convex set `C` on which `f` has a Lipschitz
-`p`-th derivative and that the model decreases (`m(s) < m(0)`). The complexity skeleton is stated
-for an arbitrary nonincreasing *potential* `φ` (not only `f`): ARpLE(-CC) counts decreases of
-`‖r(x_k)‖^{1/2^i}`, and Chapter 7 decreases of `‖r(x_k, t)‖`.
+Iterations that are neither successful nor unsuccessful (the accuracy-improving iterations of
+Ch 13, leaving `x` and `σ` unchanged) do not fit `IsARRun`; the Ch 13 iteration predicates use
+`ARAcceptance` on their trial iterations and the counting lemmas of `Complexity/DynamicAccuracy`.
 
-Evaluation counts follow `Complexity/Basic`: `funEvalCount k = k + 1`, `derivEvalCount succ k`.
+Evaluation counts follow `Complexity/Basic`: `funEvalCount k = k + 1`, `derivEvalCount succ k`
+with `succ k :↔ P.η₁ ≤ ρ k`.
 '''
+
+[[node]]
+id = "ARParams"
+kind = "def"
+desc = '''
+`structure ARParams` of adaptive-regularization constants (book (2.4.2), (3.3.3), Step 0 of
+Algorithms 4.1.1, 6.2.1, 12.2.2, 13.1.2, 14.1.1): fields `σ₀ σmin η₁ η₂ γ₁ γ₂ γ₃ : ℝ` and proof
+fields `0 < σ₀`, `0 ≤ σmin`, `σmin ≤ σ₀`, `0 < η₁`, `η₁ ≤ η₂`, `η₂ < 1`, `0 < γ₁`, `γ₁ < 1`,
+`1 < γ₂`, `γ₂ ≤ γ₃`. (`σmin = 0` is allowed for ARp-H, Algorithm 5.5.1; results that need
+`σmin > 0`, e.g. the decrease `η₁ σmin/(p+1)! ‖s‖^{p+1}`, assume it. The book's strict `γ₂ < γ₃` is
+never used.) Every method-specific parameter structure `extends ARParams` (backbone `ARpParams`,
+`ARqpParams`; surface `Chapter02.ARParams` adds `0 < σmin`).
+'''
+source = "Cartis–Gould–Toint, (2.4.2)"
+
+[[node]]
+id = "ARAcceptance"
+kind = "def"
+desc = '''
+Steps 3–4 of every AR method for one iteration, given the ratio value `ρ`:
+`ARAcceptance (P : ARParams) (ρ : ℝ) (x s x' : E) (σ σ' : ℝ) : Prop :=
+x' = (if P.η₁ ≤ ρ then x + s else x) ∧ ARUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ P.σmin ρ σ σ'`
+(book (2.4.3)–(2.4.4), (4.1.15)–(4.1.16), (12.2.30)–(12.2.31), (13.1.58)–(13.1.59), (14.1.15)–
+(14.1.16)). With `ρ = reductionRatio f x s pred` the new point is `acceptStep P.η₁ f x s pred`.
+API (part of node): `η₁ ≤ ρ → x' = x + s`; `ρ < η₁ → x' = x`; for `ρ = reductionRatio f x s pred`,
+`0 < pred`, `η₁ ≤ ρ`: `η₁ * pred ≤ f x - f x'` (`sub_le_of_le_reductionRatio`); existence: for
+`0 < σ` there is `σ'` with `ARAcceptance P ρ x s (if P.η₁ ≤ ρ then x + s else x) σ σ'` (the left
+end of the relevant interval of (2.4.4)).
+'''
+deps = ["ARParams", "ARUpdate", "reductionRatio", "acceptStep", "sub_le_of_le_reductionRatio"]
+source = "Cartis–Gould–Toint, (2.4.3)–(2.4.4)"
 
 [[node]]
 id = "IsARRun"
 kind = "def"
 desc = '''
-`IsARRun (f : E → ℝ) (p : ℕ) (σ₀ σmin η₁ η₂ γ₁ γ₂ γ₃ : ℝ) (stepOK : E → ℝ → E → Prop)
-(test : E → Prop) (x s : ℕ → E) (σ : ℕ → ℝ) : Prop :=
-σ 0 = σ₀ ∧ UntilHit (fun k => test (x k)) (fun k => stepOK (x k) (σ k) (s k) ∧
-x (k + 1) = (if η₁ ≤ ρ k then x k + s k else x k) ∧ ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σmin (ρ k) (σ k)
-(σ (k + 1)))` with `ρ k := reductionRatio f (x k) (s k) ((ftaylorSeries ℝ f (x k)).taylorDecrement
-p (s k))`; `arSucc f p x s η₁ k : Prop := η₁ ≤ ρ k` (success predicate, part of node). Lemma:
-`IsARRun.mono_step` (a stronger `stepOK` gives a run of the weaker method).
+`structure IsARRun (P : ARParams) (stop₁ step stop₂ : ℕ → Prop) (ρ : ℕ → ℝ) (x s : ℕ → E)
+(σ : ℕ → ℝ) : Prop` with fields
+* `sigma_zero : σ 0 = P.σ₀`;
+* `step : ∀ k, (∀ j < k, ¬ (stop₁ j ∨ stop₂ j)) → ¬ stop₁ k → step k` (Step 2 is executed at every
+  iteration reached whose Step-1 test fails — also at an iteration that then stops by `stop₂`);
+* `accept : UntilHit (fun k => stop₁ k ∨ stop₂ k) fun k => ARAcceptance P (ρ k) (x k) (s k)
+  (x (k+1)) (σ k) (σ (k+1))`.
+The termination test of the run is `IsARRun.stop stop₁ stop₂ k := stop₁ k ∨ stop₂ k` (part of node;
+complexity theorems produce `IsFirstHit stop kε`), successful iterations `succ k :↔ P.η₁ ≤ ρ k`.
+For methods without a post-step test, `stop₂ = fun _ => False`. Monotonicity in `step` (part of
+node): a run with a stronger step condition is a run with a weaker one.
+Prototype elaborates: `drafts/cgt/cons-a/Runs.lean`.
 '''
-deps = ["UntilHit", "ARUpdate", "reductionRatio", "regularizedModel", "FormalMultilinearSeries.taylorDecrement"]
-source = "Cartis–Gould–Toint, Algorithms 2.4.1, 4.1.1, 6.2.1 (Steps 3–4)"
+deps = ["ARAcceptance", "UntilHit"]
+source = "Cartis–Gould–Toint, Algorithms 2.4.1, 4.1.1, 12.2.2 (Steps 3–4)"
+
+[[node]]
+id = "taylorRatio"
+kind = "def"
+desc = '''
+The standard AR/ARp ratio (2.4.3), (3.3.7), (4.1.15) for exact Taylor models:
+`taylorRatio (f : E → ℝ) (p : ℕ) (x s : ℕ → E) (k : ℕ) : ℝ := reductionRatio f (x k) (s k)
+((ftaylorSeries ℝ f (x k)).taylorDecrement p (s k))`.
+'''
+deps = ["reductionRatio", "FormalMultilinearSeries.taylorDecrement"]
+source = "Cartis–Gould–Toint, (2.4.3), (4.1.15)"
+
+[[node]]
+id = "arSigmaMax"
+kind = "def"
+desc = '''
+`arSigmaMax (P : ARParams) (L : ℝ) : ℝ := max P.σ₀ (P.γ₃ * L / (1 - P.η₂))`, the book's `σ_max`
+of (4.1.19) (= (3.3.13) for `p = 2`; AR1's (2.4.6) is `arSigmaMax P (L/2)`, the exact AR1 step
+having `c = 1` in `abs_reductionRatio_sub_one_le_of_lipschitz`). Used by every AR analysis
+(Chapters 2–7, 12–14; replaces the per-chapter `σ_max` nodes, e.g. the former Chapter 12
+`arqpSigmaMax`). API (part of node): `P.σ₀ ≤ arSigmaMax P L`, monotone in `L`, positive.
+'''
+deps = ["ARParams"]
+source = "Cartis–Gould–Toint, (4.1.19)"
+
+[[node]]
+id = "IsARRun.sigma_le_max"
+kind = "theorem"
+desc = '''
+Regularization bounds for any AR run (the mechanism of Lemmas 2.4.2, 3.3.2, 4.1.2, 13.1.14,
+14.1.6): if `IsARRun P stop₁ step stop₂ ρ x s σ` and `σbar ≥ 0` is such that for every `k` before
+termination (`∀ j ≤ k, ¬ stop j`) `σbar ≤ σ k → P.η₂ ≤ ρ k`, then for every `k` up to and including
+the first termination index (`∀ j < k, ¬ stop j`): `P.σmin ≤ σ k`, `0 < σ k` and
+`σ k ≤ max P.σ₀ (P.γ₃ * σbar)`. Proof: `sigma_le_max_of_arUpdate`, `le_sigma_of_arUpdate` on the
+prefix of the run.
+'''
+deps = ["IsARRun", "sigma_le_max_of_arUpdate", "le_sigma_of_arUpdate"]
+source = "Cartis–Gould–Toint, Lemma 2.4.2 (mechanism), Lemma 4.1.2"
 
 [[node]]
 id = "IsARRun.sigma_le"
 kind = "theorem"
 desc = '''
-Iterates stay feasible and the regularization stays bounded (Lemma 4.1.2 for every AR-type method,
-(4.1.19)). Hypotheses: `C` convex, `D ⊇ C` open, `ContDiffOn ℝ p f D`, `IteratedFDerivHolderOn f p
-L 1 C` (Lipschitz, `0 ≤ L`), `p ≥ 1`, constants as in (2.4.2) (`0 < σmin ≤ σ₀`, `0 < η₁ ≤ η₂ < 1`,
-`0 < γ₁ < 1 < γ₂ ≤ γ₃`), `x 0 ∈ C`, and `stepOK x σ s → x ∈ C → x + s ∈ C ∧
-regularizedModel (ftaylorSeries ℝ f x) p σ s < regularizedModel (ftaylorSeries ℝ f x) p σ 0`.
-Conclusion: for every `k` with `∀ j < k, ¬ test (x j)` (i.e. up to and including the first
-termination index): `x k ∈ C`, `σmin ≤ σ k`, and `σ k ≤ max σ₀ (γ₃ * L / (1 - η₂))`.
-Proof: `taylorDecrement_ge_of_regularizedModel_lt`, `abs_reductionRatio_sub_one_le_of_lipschitz`
-with `c = 1/(p+1)!` (so `σ ≥ L/(1-η₂) ⇒ η₂ ≤ ρ`), `sigma_le_max_of_arUpdate`,
-`le_sigma_of_arUpdate`.
+Lemma 4.1.2 for every AR method with exact Taylor models (also on a convex feasible set, as used in
+§6.2.2: "Lemmas 4.1.1 and 4.1.2 continue to hold"). Hypotheses: `IsARRun P stop₁ step stop₂
+(taylorRatio f p x s) x s σ`, `p ≥ 1`, `C` convex, `D ⊇ C` open, `ContDiffOn ℝ p f D`,
+`IteratedFDerivLipschitzOn f p L C` (`0 ≤ L`), `x 0 ∈ C`, and for every `k` before termination
+`step k → x k + s k ∈ C ∧ regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k) (s k) <
+regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k) 0`. Conclusion: for every `k` up to and including
+the first termination index, `x k ∈ C`, `P.σmin ≤ σ k` and `σ k ≤ arSigmaMax P L` (4.1.19).
+Proof: `taylorDecrement_ge_of_regularizedModel_lt` (Lemma 4.1.1),
+`abs_reductionRatio_sub_one_le_of_lipschitz` with `c = 1/(p+1)!` (so `σ ≥ L/(1-η₂) ⇒ η₂ ≤ ρ`),
+`IsARRun.sigma_le_max`. Instances: Lemma 4.1.2 (`C = univ`), ARp/ARpLE/ARp-CC/ARp1-CC/ARpLE-CC,
+TPp-GC inner runs, ARqp (the `σ` bound used in Lemma 12.2.13 and Theorem 12.2.14; for ARqp the
+step condition is `m_k(s_k) ≤ m_k(0)` with `s_k ≠ 0` unless the run stops — the non-strict version,
+with the same conclusion, is part of the node).
 '''
-deps = ["IsARRun", "taylorDecrement_ge_of_regularizedModel_lt", "abs_reductionRatio_sub_one_le_of_lipschitz", "sigma_le_max_of_arUpdate", "le_sigma_of_arUpdate", "IteratedFDerivHolderOn"]
-source = "Cartis–Gould–Toint, Lemma 4.1.2, (4.1.19); Section 6.2.2 (\"Lemmas 4.1.1 and 4.1.2 continue to hold\")"
+deps = ["IsARRun.sigma_le_max", "taylorRatio", "arSigmaMax", "regularizedModel", "taylorDecrement_ge_of_regularizedModel_lt", "abs_reductionRatio_sub_one_le_of_lipschitz", "IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, Lemma 4.1.2, (4.1.19); Section 6.2.2"
 
 [[node]]
 id = "IsARRun.sub_ge_of_succ"
 kind = "theorem"
 desc = '''
-Decrease on successful iterations (Lemma 4.1.1 + ratio test, (4.1.37)): under the step hypothesis
-of `IsARRun.sigma_le` (model decrease), for `k` before termination with `arSucc … k`:
-`f (x k) - f (x (k+1)) ≥ η₁ * σ k / (p+1)! * ‖s k‖ ^ (p+1) > 0` (so `≥ η₁ σmin/(p+1)! ‖s_k‖^{p+1}`);
-for unsuccessful `k`, `x (k+1) = x k`. Hence `k ↦ f (x k)` is antitone up to the first
-termination index (part of node).
+Decrease on successful iterations. Let `IsARRun P stop₁ step stop₂ ρ x s σ` with
+`ρ k = reductionRatio w (x k) (s k) (pred k)` for every `k` before termination (`w` any objective,
+`pred` any predicted decrease). For `k` before termination: if `P.η₁ ≤ ρ k` and `0 < pred k` then
+`x (k+1) = x k + s k` and `P.η₁ * pred k ≤ w (x k) - w (x (k+1))`; if `ρ k < P.η₁` then
+`x (k+1) = x k`. Hence `k ↦ w (x k)` is antitone up to the first termination index when
+`pred k > 0` on successful iterations (part of node). With `pred k = (ftaylorSeries ℝ f (x k)).
+taylorDecrement p (s k)` and model decrease: `f (x k) - f (x (k+1)) ≥ η₁ σ_k/(p+1)! ‖s_k‖^{p+1}`
+(4.1.37), via `taylorDecrement_ge_of_regularizedModel_lt` (part of node).
 '''
-deps = ["IsARRun", "taylorDecrement_ge_of_regularizedModel_lt", "sub_le_of_le_reductionRatio"]
+deps = ["IsARRun", "sub_le_of_le_reductionRatio", "taylorDecrement_ge_of_regularizedModel_lt"]
 source = "Cartis–Gould–Toint, Lemma 4.1.1, (4.1.37)"
+
+[[node]]
+id = "IsARRun.succ_count"
+kind = "theorem"
+desc = '''
+Lemma 2.4.1 for any AR run: if `k` is before termination (`∀ j ≤ k, ¬ stop j`) and
+`σ (k+1) ≤ σmax`, then `(k + 1 : ℝ) ≤ |successSet succ k| * (1 + |log P.γ₁| / log P.γ₂) +
+log (σmax / P.σ₀) / log P.γ₂` (`succ j :↔ P.η₁ ≤ ρ j`); book indexing (`j < k`, `σ k ≤ σmax`,
+conclusion `k ≤ …`) as a second clause. Direct from `succ_le_of_arUpdate` / `le_of_arUpdate`.
+'''
+deps = ["IsARRun", "succ_le_of_arUpdate", "le_of_arUpdate", "successSet"]
+source = "Cartis–Gould–Toint, Lemma 2.4.1"
 
 [[node]]
 id = "IsARRun.exists_isFirstHit_of_decrease"
 kind = "theorem"
 desc = '''
-Complexity skeleton of AR-type methods (the common end of the proofs of Theorems 2.4.4, 3.3.5,
-4.1.5, 5.1.7, 6.2.3, 6.2.5, 6.3.1). Let `IsARRun … x s σ` with valid constants, `σmax ≥ σ₀` with
-`σ k ≤ σmax` for all `k` up to the first termination index, and a potential `φ : ℕ → ℝ` with:
-`φ (k+1) ≤ φ k` and `φ (k+1) = φ k` if `k` is unsuccessful (for `k` before termination);
-`φlow ≤ φ k` for all `k` up to termination; and `δ > 0` with `φ k - φ (k+1) ≥ δ` whenever `k` is
-successful, `k` is before termination and `¬ test (x (k+1))` (the test fails at the new iterate).
-Then there is `kε` with `IsFirstHit (fun k => test (x k)) kε`,
-`(funEvalCount kε : ℝ) ≤ κA * (φ 0 - φlow) / δ + κC` and
-`(derivEvalCount (arSucc …) kε : ℝ) ≤ (φ 0 - φlow) / δ + 2`, where
-`κA = 1 + |log γ₁| / log γ₂` and `κC = (|log γ₁| + log (σmax / σ₀)) / log γ₂ + 2` (book (4.1.46)).
-Proof: successes `j ≤ k - 2` before termination are "good", so `|S_{k-1}| ≤ (φ0 - φlow)/δ + 1`
-(`card_mul_le_of_decrease`); Lemma 2.4.1 (`succ_le_of_arUpdate`) bounds `k`;
-`exists_hit_le_of_counting` gives the hit. (With `φ = f`, `δ = κ min_j ε_j^{(p+1)/(p-j+1)}` this
-is Theorem 4.1.5's / 6.2.3's arithmetic; the `+2` accounts for the initial evaluation and the last
-successful iteration, whose new iterate passes the test.)
+Complexity skeleton of AR methods (the common end of the proofs of Theorems 2.4.4, 3.3.5, 4.1.5,
+5.1.7, 6.2.3, 6.2.5, 6.3.1, 12.2.14, 14.1.10). Let `IsARRun P stop₁ step stop₂ ρ x s σ`,
+`σmax ≥ P.σ₀` with `σ k ≤ σmax` for all `k` up to the first termination index, and a potential
+`φ : ℕ → ℝ` with: `φ (k+1) ≤ φ k`, and `φ (k+1) = φ k` if `k` is unsuccessful (for `k` before
+termination); `φlow ≤ φ k` for all `k` up to termination; and `δ > 0` with `φ k - φ (k+1) ≥ δ`
+whenever `k` is successful, before termination, and `k + 1` is not the termination index. Then
+there is `kε` with `IsFirstHit stop kε`, `(funEvalCount kε : ℝ) ≤ κA * (φ 0 - φlow) / δ + κC` and
+`(derivEvalCount succ kε : ℝ) ≤ (φ 0 - φlow) / δ + 2`, where `κA = 1 + |log γ₁| / log γ₂` and
+`κC = (|log γ₁| + log (σmax / σ₀)) / log γ₂ + 2` (book (4.1.46)). Proof: successes `j ≤ k - 2`
+before termination are "good", so `|S_{k-1}| ≤ (φ0 - φlow)/δ + 1` (`card_mul_le_of_decrease`);
+`IsARRun.succ_count` bounds `k`; `exists_hit_le_of_counting` gives the hit. (With `φ = f`,
+`δ = κ min_j ε_j^{(p+1)/(p-j+1)}` this is Theorem 4.1.5's / 6.2.3's arithmetic; the `+2` accounts
+for the initial evaluation and the last successful iteration, whose new iterate passes the test.
+Potentials other than `f`: ARpLE(-CC) `‖r(x_k)‖^{1/2^i}`, TPp-GC `‖r(x_k,t)‖`, ARqpC `w`.)
 '''
-deps = ["IsARRun", "succ_le_of_arUpdate", "card_mul_le_of_decrease", "exists_hit_le_of_counting", "IsFirstHit", "funEvalCount"]
+deps = ["IsARRun.succ_count", "card_mul_le_of_decrease", "exists_hit_le_of_counting", "IsFirstHit", "funEvalCount", "derivEvalCount"]
 source = "Cartis–Gould–Toint, proofs of Theorems 4.1.5, 6.2.3, 6.2.5, 6.3.1"
+
+[[node]]
+id = "exists_isARRun"
+kind = "theorem"
+desc = '''
+Existence of AR runs with state-based ("Markov") tests and step conditions — AR1, AR2, ARp with
+`q ≤ 2`, ARp-CC, ARp1-CC, ARpLE-CC, TPp-GC inner runs. Let `test : E → Prop`,
+`stepOK : E → ℝ → E → Prop`, `pred : E → E → ℝ`, `w : E → ℝ`, `Inv : E → Prop` (e.g. `· ∈ C`), and
+assume: for every `y` with `Inv y` and `¬ test y` and every `σ ≥ P.σmin` with `σ > 0` there is `s`
+with `stepOK y σ s` and `Inv (y + s)`. Then for every `x₀` with `Inv x₀` there are `x s σ` with
+`x 0 = x₀` and `IsARRun P (fun k => test (x k)) (fun k => stepOK (x k) (σ k) (s k)) (fun _ => False)
+(fun k => reductionRatio w (x k) (s k) (pred (x k) (s k))) x s σ`, and `Inv (x k)` along the run.
+Proof: `exists_run_of_forall_exists_of_invariant` with states `(x_k, σ_k)` and invariant
+`Inv x ∧ σmin ≤ σ ∧ 0 < σ`; `σ_{k+1}` the left end of the relevant interval of (2.4.4).
+Run-dependent tests (ARp's `M_k` for `q = 3`, ARqp radii) use `exists_run_of_forall_exists_hist`
+directly in their own existence results.
+'''
+deps = ["IsARRun", "exists_run_of_forall_exists_of_invariant"]
+source = "Cartis–Gould–Toint, Algorithms 2.4.1, 4.1.1, 6.2.1 (well-posedness)"

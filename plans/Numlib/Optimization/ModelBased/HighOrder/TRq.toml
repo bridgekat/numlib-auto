@@ -4,14 +4,16 @@ The high-order trust-region method TRq (Cartis–Gould–Toint Algorithm 12.2.1)
 predicate, generic in
 * the derivative data `D k : FormalMultilinearSeries ℝ E ℝ` used at iteration `k` (exact TRq:
   `D k = ftaylorSeries ℝ f (x k)`; Chapter 13 inexact variants: approximate jets), and
-* the feasible displacement sets `S k : Set E` (unconstrained: `univ`; Chapter 14 convex
-  constraints: `{d | x k + d ∈ C}`),
-so that Chapters 13–14 can reuse the run shape and the one-iteration lemmas below.
+* the feasible displacement sets `S k : Set E` (unconstrained: `univ`; TRq-SC of §14.2 with a
+  closed feasible set `X`: `S k = {d | x k + d ∈ X}`, which is the consolidated "runs take `X`"
+  convention; `x 0 ∈ X` is then a hypothesis of the theorems),
+so that Chapters 13–14 can reuse the run shape and the one-iteration lemmas below. Steps 3–4 are
+the generic trust-region ones (`IsTRRun`, `ModelBased/TRRun`).
 
 Run conventions (core `Complexity/Basic`): optimality radius `δ_k = min Δ_k ϑ` (a scalar, used for
 all orders); Step-1 witnesses `d k j` (`IsApproxMeasureStep`, all `j ∈ [1:q]` — requiring them
 beyond the first failing order is harmless: they exist and are unused); termination test
-`MeasureTestPasses (D k) q ς ε (fun _ => δ_k) (d k)`; rules of Steps 2–4 imposed with `UntilHit`;
+`MeasureTestPasses (fun j => (D k).taylorDecrement j) q ς ε (fun _ => δ_k) (d k)`; rules of Steps 2–4 imposed with `UntilHit`;
 `j_k` the least failing order, `d_k = d k j_k`; ratio (12.2.4) with the decrement of order `j_k`;
 radius update `TRUpdate` plus the cap `Δ_{k+1} ≤ Δ_max` (12.2.5). Successful iterations:
 `η₁ ≤ ρ_k`; derivative evaluations once per successful iteration plus the initial one
@@ -27,33 +29,32 @@ is (A.19), `abs_sub_taylorPolynomial_le_of_lipschitz`; inexact data add their er
 id = "TRqParams"
 kind = "def"
 desc = '''
-Structure of TRq constants (Algorithm 12.2.1, Step 0): `Δ₀ Δmax η₁ η₂ γ₁ γ₂ γ₃ ς : ℝ` with
-`0 < Δ₀ ≤ Δmax`, `0 < γ₁ ≤ γ₂ < 1 ≤ γ₃`, `0 < η₁ ≤ η₂ < 1`, `0 < ς ≤ 1` (proof fields). The
+`structure TRqParams extends TRParams` (Algorithm 12.2.1, Step 0): the TR constants plus
+`Δmax ς : ℝ` with `Δ₀ ≤ Δmax`, `0 < ς ≤ 1` (proof fields). The
 threshold `ϑ ∈ [min_j ε_j, 1]` depends on the tolerances and is an argument of the run predicate.
 '''
+deps = ["TRParams"]
 source = "Cartis–Gould–Toint, Algorithm 12.2.1 (Step 0)"
 
 [[node]]
 id = "IsTRqRun"
 kind = "def"
 desc = '''
-`IsTRqRun (f : E → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (S : ℕ → Set E) (P : TRqParams)
-(q : ℕ) (ε : ℕ → ℝ) (ϑ : ℝ) (x s : ℕ → E) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → E) : Prop`,
-a structure with, writing `δ k := min (Δ k) ϑ`, `test k := MeasureTestPasses (D k) q P.ς ε
-(fun _ => δ k) (d k)`, `pred k := (D k).taylorDecrement (jk k) (s k)`,
-`ρ k := reductionRatio f (x k) (s k) (pred k)`:
-* `init : Δ 0 = P.Δ₀`;
-* `witness : ∀ k, (∀ i < k, ¬ test i) → ∀ j ∈ Icc 1 q, IsApproxMeasureStep (D k) j (δ k) (S k)
+`structure IsTRqRun (f : E → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (S : ℕ → Set E)
+(P : TRqParams) (q : ℕ) (ε : ℕ → ℝ) (ϑ : ℝ) (x s : ℕ → E) (Δ : ℕ → ℝ) (jk : ℕ → ℕ)
+(d : ℕ → ℕ → E) : Prop`. Writing `δ k := min (Δ k) ϑ`, `Δf k j := (D k).taylorDecrement j`,
+`test k := MeasureTestPasses (Δf k) q P.ς ε (fun _ => δ k) (d k)`,
+`pred k := Δf k (jk k) (s k)`, `ρ k := reductionRatio f (x k) (s k) (pred k)`, and the Step-1.2/2
+condition `step k := jk k ∈ Icc 1 q ∧ P.ς * ε (jk k) * δ k ^ jk k / (jk k)! < Δf k (jk k) (d k (jk k))
+∧ (∀ j ∈ Ico 1 (jk k), ¬ (P.ς ε_j δ_k^j/j! < Δf k j (d k j))) ∧ s k ∈ closedBall 0 (Δ k) ∩ S k ∧
+Δf k (jk k) (d k (jk k)) ≤ pred k` ((12.2.3)), the fields are:
+* `toIsTRRun : IsTRRun P.toTRParams test step ρ x s Δ` (Steps 2–4, (12.2.4)–(12.2.5));
+* `witness : ∀ k, (∀ i < k, ¬ test i) → ∀ j ∈ Icc 1 q, IsApproxMeasureStep (Δf k j) (δ k) (S k)
   P.ς (d k j)` (Step 1.1, (12.2.1); also at the terminating iteration);
-* `step : UntilHit test fun k => jk k ∈ Icc 1 q ∧ P.ς * ε (jk k) * δ k ^ jk k / (jk k)! <
-  (D k).taylorDecrement (jk k) (d k (jk k)) ∧ (∀ j ∈ Ico 1 (jk k), ¬ (P.ς ε_j δ_k^j/j! <
-  ΔT_j(D k, d k j))) ∧ s k ∈ closedBall 0 (Δ k) ∩ S k ∧ (D k).taylorDecrement (jk k) (d k (jk k)) ≤
-  pred k ∧ x (k+1) = acceptStep P.η₁ f (x k) (s k) (pred k) ∧
-  TRUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ (ρ k) (Δ k) (Δ (k+1)) ∧ Δ (k+1) ≤ P.Δmax`
-  (Steps 1.2, 2 (12.2.3), 3 (12.2.4), 4 (12.2.5)).
-Exact TRq: `D k = ftaylorSeries ℝ f (x k)`, `S k = univ`.
+* `cap : UntilHit test fun k => Δ (k+1) ≤ P.Δmax` (12.2.5).
+Exact TRq: `D k = ftaylorSeries ℝ f (x k)`, `S k = univ`; TRq-SC: `S k = {d | x k + d ∈ X}`.
 '''
-deps = ["TRqParams", "IsApproxMeasureStep", "MeasureTestPasses", "UntilHit", "reductionRatio", "TRUpdate", "FormalMultilinearSeries.taylorDecrement"]
+deps = ["TRqParams", "IsTRRun", "IsApproxMeasureStep", "MeasureTestPasses", "UntilHit", "reductionRatio", "FormalMultilinearSeries.taylorDecrement"]
 source = "Cartis–Gould–Toint, Algorithm 12.2.1"
 
 [[node]]
@@ -103,7 +104,7 @@ fidelity `|f (x k + s k) - (f (x k) - pred k)| ≤ L / (jk k + 1)! * ‖s k‖ ^
 and `Δ k ≤ min ϑ ((1 - η₂) * φ̂_k / L)` (12.2.11). Then `δ_k = Δ_k`, `η₂ ≤ ρ k` and `Δ k ≤ Δ (k+1)`.
 Computation (12.2.12): `|ρ_k - 1| ≤ L ‖s_k‖^{j+1} / ((j+1) φ̂_k δ_k^j) ≤ L Δ_k / ((j+1) φ̂_k) ≤ 1 - η₂`.
 '''
-deps = ["IsTRqRun.trqGap_ge", "le_reductionRatio_of_abs_sub_le", "TRUpdate"]
+deps = ["IsTRqRun.trqGap_ge", "le_reductionRatio_of_abs_sub_le", "IsTRRun"]
 source = "Cartis–Gould–Toint, Lemma 12.2.2"
 
 [[node]]
@@ -118,10 +119,10 @@ Lemma 12.2.3 (generic). Assume the model fidelity of `IsTRqRun.le_reductionRatio
 termination `min (P.γ₁ * ϑ) (κΔ * min_{i ≤ k} φ̂_i) ≤ Δ k` (12.2.13); at the first termination index
 `K ≥ 1` the same holds with the minimum over `i < K`. Proof: `le_delta_of_trUpdate` with the
 antitone threshold `θ_k = min ϑ ((1 - η₂)/L · min_{i≤k} φ̂_i)` (Lemma 12.2.2 gives `Δ_k < θ_k ⇒
-η₂ ≤ ρ_k`), and `φ̂_0 ≤ 2 q! M / δ₀^q` from `abs_taylorDecrement_sub_le` (with `D' = 0`) and
+η₂ ≤ ρ_k`; packaged as `IsTRRun.delta_ge`), and `φ̂_0 ≤ 2 q! M / δ₀^q` from `abs_taylorDecrement_sub_le` (with `D' = 0`) and
 `∑_{i ≤ j} δ₀^i/i! ≤ 2 δ₀` (A.34), `δ₀ ≤ 1`.
 '''
-deps = ["IsTRqRun.le_reductionRatio", "le_delta_of_trUpdate", "FormalMultilinearSeries.abs_taylorDecrement_sub_le", "sum_pow_div_factorial_le_two_mul_pow"]
+deps = ["IsTRqRun.le_reductionRatio", "IsTRRun.delta_ge", "FormalMultilinearSeries.abs_taylorDecrement_sub_le", "sum_pow_div_factorial_le_two_mul_pow"]
 source = "Cartis–Gould–Toint, Lemma 12.2.3"
 
 [[node]]
@@ -135,5 +136,5 @@ Lemma 12.2.4 (generic). Under the hypotheses of `IsTRqRun.radius_ge` and `εmin 
 (part of node, used for the iteration count): `P.ς * κΔ * εmin ≤ Δ k` for `k` up to and including
 the first termination index (`Δ_min` in the proof of Theorem 12.2.5).
 '''
-deps = ["IsTRqRun.radius_ge", "IsTRqRun.trqGap_ge", "sub_le_of_le_reductionRatio"]
+deps = ["IsTRqRun.radius_ge", "IsTRqRun.trqGap_ge", "IsTRRun.sub_ge_of_succ"]
 source = "Cartis–Gould–Toint, Lemma 12.2.4"

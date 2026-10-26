@@ -1,99 +1,32 @@
-namespace = "Optimization"
+namespace = "Constrained"
 desc = '''
-Two-phase "target-following" methods for `min f(x)` s.t. `x ∈ X`, `c(x) = 0` (Cartis–Gould–Toint
-§7.2 TPp-GC and §14.3.2 TPqp-GC). Setting: `E` real normed space, `F` real inner product space
-(`EuclideanSpace ℝ (Fin m)` on the surface), `c : E → F`, `f : E → ℝ`, target `t : ℝ`.
-The residual `r(x,t) = (c(x), f(x) - t) ∈ F × ℝ` is never formed as a Lean product (Mathlib's
-product norm is the sup norm); instead its Euclidean norm and the merit `μ = ½‖r‖²` are defined
-directly. Contents: the merit and residual, the exact relation between Taylor measures of `μ` and of
-the Lagrangian `f - ⟪y, c⟫` at `y = -c(x)/(f(x) - t)` (the algebra of Lemmas 7.2.1 and 14.3.5), the
-target-update bookkeeping (Lemmas 7.2.3, 7.2.4, B.7.1) and the per-block counting of inner
-iterations (Lemmas 7.2.6, 14.3.8). Planned by the Chapter 14 planner; the Chapter 6–7 planner's
-TPp-GC analysis should reuse the target-update and counting lemmas (Lemma B.7.1's content is
-`sub_add_sqrt_ge`).
+Outer bookkeeping of the two-phase "target-following" methods for `min f(x)` s.t. `x ∈ X`,
+`c(x) = 0` (Cartis–Gould–Toint §7.2 TPp-GC and §14.3.2 TPqp-GC): the target sequence of Phase 2
+(Lemmas 7.2.3, 7.2.4, valid verbatim for TPqp-GC as the book notes before (14.3.36)) and the
+per-block counting of inner iterations (Lemmas 7.2.6, 14.3.8, corrected). The merit/residual
+objects and their derivative/measure algebra are in `Constrained/TargetResidual` (consolidated:
+the Chapter 7 and Chapter 14 plans had parallel copies; one set of ids in namespace `Constrained`,
+argument order `targetMerit f c t x`). Both chapters' surface algorithms use `IsTargetSequence`.
 '''
-
-[[node]]
-id = "targetMerit"
-kind = "def"
-desc = '''
-`targetMerit c f t x : ℝ := (‖c x‖ ^ 2 + (f x - t) ^ 2) / 2` (the book's `μ(x,t) = ½‖r(x,t)‖²`,
-(14.3.30), (7.2.5); with `f = 0`, `t = 0` up to the constant it is `ν = ½‖c‖²`) and
-`targetResidualNorm c f t x : ℝ := Real.sqrt (‖c x‖ ^ 2 + (f x - t) ^ 2)` (`‖r(x,t)‖`). API (part of
-node): `targetMerit = targetResidualNorm ^ 2 / 2`; `‖c x‖ ≤ targetResidualNorm`,
-`|f x - t| ≤ targetResidualNorm`; `C^p` when `f`, `c` are; first three derivatives (14.3.37)–(14.3.39):
-`D μ[d] = ⟪c x, Dc[d]⟫ + (f x - t) Df[d]`, `D²μ[d,d] = ‖Dc[d]‖² + ⟪c x, D²c[d,d]⟫ + (Df[d])² +
-(f x - t) D²f[d,d]`, `D³μ[d,d,d] = 3⟪D²c[d,d], Dc[d]⟫ + ⟪c x, D³c[d,d,d]⟫ + 3 D²f[d,d] Df[d] +
-(f x - t) D³f[d,d,d]`.
-'''
-source = "Cartis–Gould–Toint, (14.3.30), (14.3.37)–(14.3.39)"
-
-[[node]]
-id = "taylorMeasure_lagrangian_one_eq"
-kind = "theorem"
-desc = '''
-Let `f`, `c` be differentiable at `x`, `τ := f x - t > 0`, `y := -(τ⁻¹) • c x`, and
-`ℓ z := f z - ⟪y, c z⟫`. Then `fderiv ℝ ℓ x = τ⁻¹ • fderiv ℝ (targetMerit c f t) x` (14.3.54), hence
-for all `δ`, `S`: `taylorMeasure (ftaylorSeries ℝ ℓ x) 1 δ S = τ⁻¹ * taylorMeasure
-(ftaylorSeries ℝ (targetMerit c f t) x) 1 δ S`, and `targetResidualNorm c f t x / τ =
-Real.sqrt (1 + ‖y‖ ^ 2)` (the book's `‖(1, yᵀ)‖`); also `⟪y, c x⟫ = -‖c x‖² / τ ≤ 0`.
-'''
-deps = ["targetMerit", "taylorMeasure"]
-source = "Cartis–Gould–Toint, (14.3.53)–(14.3.54), proof of Lemma 14.3.5 (j = 1)"
-
-[[node]]
-id = "taylorMeasure_lagrangian_two_le"
-kind = "theorem"
-desc = '''
-Second order (corrected (14.3.43)–(14.3.44)). With the data of `taylorMeasure_lagrangian_one_eq`,
-`f`, `c` `C^2` at `x`, `S ∋ 0`, `T := S ∩ {d | fderiv ℝ c x d = 0}`, `M := T ∩ {d | fderiv ℝ f x d = 0}`,
-`δ ≥ 0`, and `G := sSup ((fun d => |fderiv ℝ f x d|) '' (closedBall 0 δ ∩ T))`:
-`taylorMeasure (ftaylorSeries ℝ ℓ x) 2 δ T ≤ τ⁻¹ * (taylorMeasure (ftaylorSeries ℝ μ x) 2 δ S + G ^ 2 / 2)`
-and `taylorMeasure (ftaylorSeries ℝ ℓ x) 2 δ M ≤ τ⁻¹ * taylorMeasure (ftaylorSeries ℝ μ x) 2 δ S`.
-Proof: on `T`, `ΔT_{ℓ,2}(d) = τ⁻¹ (ΔT_{μ,2}(d) + ½ (Df[d])²)` ((14.3.55)). The book's (14.3.57)
-claims `|Df[d]|/τ = |Dℓ[d]|` on `T`, but there `Dℓ[d] = Df[d]`; the term is `(Df[d])²/(2τ)`, which
-is not bounded by `½ φ^δ_{ℓ,X,1} ‖Df‖ δ` (see the Section03 counterexample to (14.3.43)).
-'''
-deps = ["taylorMeasure_lagrangian_one_eq"]
-source = "Cartis–Gould–Toint, (14.3.55)–(14.3.57), proof of Lemma 14.3.5 (j = 2)"
-
-[[node]]
-id = "taylorMeasure_lagrangian_three_le"
-kind = "theorem"
-desc = '''
-Third order (corrected (14.3.46)–(14.3.47)). As above with `C^3` data and
-`H := sSup ((fun d => |iteratedFDeriv ℝ 2 f x ![d, d]|) '' (closedBall 0 δ ∩ T))`:
-`taylorMeasure (ftaylorSeries ℝ ℓ x) 3 δ T ≤ τ⁻¹ * (taylorMeasure (ftaylorSeries ℝ μ x) 3 δ S +
-(G + H) * G / 2)` and `taylorMeasure (ftaylorSeries ℝ ℓ x) 3 δ M ≤ τ⁻¹ * taylorMeasure
-(ftaylorSeries ℝ μ x) 3 δ S`. Proof: on `T`, `D³ℓ[d]³ = τ⁻¹ (D³μ[d]³ - 3 D²f[d]² Df[d])` (14.3.58).
-'''
-deps = ["taylorMeasure_lagrangian_two_le"]
-source = "Cartis–Gould–Toint, (14.3.58)–(14.3.59), proof of Lemma 14.3.5 (j = 3)"
-
-[[node]]
-id = "sub_add_sqrt_ge"
-kind = "theorem"
-desc = '''
-For `0 ≤ ω ≤ ε₀` and reals `a b` with `a ^ 2 + b ^ 2 ≤ ω ^ 2`:
-`ε₀ - ω ≤ -a + Real.sqrt (ε₀ ^ 2 - b ^ 2)` (the minimum of `-a + √(ε₀² - b²)` over the disc of
-radius `ω` is `ε₀ - ω`: Lemma B.7.1 as an inequality). Used for the target decrease (7.2.30).
-'''
-source = "Cartis–Gould–Toint, Lemma B.7.1 and (7.2.30)"
 
 [[node]]
 id = "IsTargetSequence"
 kind = "def"
 desc = '''
-Outer bookkeeping of Phase 2 (Steps 0 and 2 of TPp-GC / TPqp-GC). For `c f`, `θ ∈ (0,1)`, `ε₀ > 0`,
-outer iterates `x : ℕ → E`, targets `t : ℕ → ℝ` and a horizon `K` (outer iterations `k ∈ [1, K)`
-completed without termination): `‖c (x 1)‖ ≤ θ ε₀`, `t 1 = f (x 1) - √(ε₀² - ‖c (x 1)‖²)`; for
-`1 ≤ k < K`: (inner monotonicity) `targetResidualNorm c f (t k) (x (k+1)) ≤ targetResidualNorm c f
-(t k) (x k)`; (a) if `targetResidualNorm c f (t k) (x (k+1)) < θ ε₀` then
-`t (k+1) = f (x (k+1)) - √(ε₀² - ‖c (x (k+1))‖²)` (`k ∈ 𝒦_a`); (b) otherwise `f (x (k+1)) < t k`
-and `t (k+1) = 2 f (x (k+1)) - t k` (`k ∈ 𝒦_b`; the case (c), `f ≥ t`, terminates, i.e. does not
-occur before `K`).
+Outer bookkeeping of Phase 2 (Steps 0 and 2 of TPp-GC / TPqp-GC).
+`IsTargetSequence (f : E → ℝ) (c : E → F) (θ ε₀ : ℝ) (x : ℕ → E) (t : ℕ → ℝ) (Ka : ℕ → Prop)
+(K : ℕ) : Prop` — outer iterates `x`, targets `t`, a horizon `K` (outer iterations `k ∈ [1, K)`
+completed without termination) and the set `Ka` of case-(a) iterations (`𝒦_a`): `‖c (x 1)‖ ≤ θ ε₀`,
+`t 1 = f (x 1) - √(ε₀² - ‖c (x 1)‖²)`; for `1 ≤ k < K`: (inner monotonicity)
+`targetResidual f c (t k) (x (k+1)) ≤ targetResidual f c (t k) (x k)`; (a) if `Ka k` then
+`targetResidual f c (t k) (x (k+1)) ≤ θ ε₀` and `t (k+1) = f (x (k+1)) - √(ε₀² - ‖c (x (k+1))‖²)`;
+(b) if `¬ Ka k` then `θ ε₀ ≤ targetResidual f c (t k) (x (k+1))`, `f (x (k+1)) < t k` and
+`t (k+1) = 2 f (x (k+1)) - t k` (`𝒦_b`; the case (c), `f ≥ t`, terminates, i.e. does not occur
+before `K`). Leaving the boundary case to `Ka` covers both printed variants: Algorithm 7.2.1 with
+the corrected `≤ θ ε₀` in Step 2(a) (`Ka k ↔ residual ≤ θ ε₀`) and Algorithm 14.3.2 with `<`
+(`Ka k ↔ residual < θ ε₀`).
 '''
-deps = ["targetMerit"]
+deps = ["targetResidual"]
 source = "Cartis–Gould–Toint, Algorithm 7.2.1 Phase 2 and Algorithm 14.3.2 Phase 2, (14.3.36)"
 
 [[node]]
@@ -101,13 +34,13 @@ id = "IsTargetSequence.props"
 kind = "theorem"
 desc = '''
 Lemma 7.2.3 (valid verbatim for TPqp-GC, as the book notes before (14.3.36)). For an
-`IsTargetSequence … x t K` and `1 ≤ k ≤ K`: `t` is strictly decreasing on `[1, K]`;
-`0 ≤ f (x k) - t k` (7.2.26); `targetResidualNorm c f (t (k+1)) (x (k+1)) = ε₀` if `k ∈ 𝒦_a` (7.2.27);
-`= targetResidualNorm c f (t k) (x (k+1)) ≤ ε₀` if `k ∈ 𝒦_b` (7.2.28); `‖c (x k)‖ ≤ ε₀` and
-`f (x k) - t k ≤ ε₀` (7.2.29); `t k - t (k+1) ≥ (1 - θ) ε₀` for `k ∈ 𝒦_a` (7.2.30); and, if
+`IsTargetSequence … x t Ka K` and `1 ≤ k ≤ K`: `t` is strictly decreasing on `[1, K]`;
+`0 ≤ f (x k) - t k` (7.2.26); `targetResidual f c (t (k+1)) (x (k+1)) = ε₀` if `Ka k` (7.2.27);
+`= targetResidual f c (t k) (x (k+1)) ≤ ε₀` if `¬ Ka k` (7.2.28); `‖c (x k)‖ ≤ ε₀` and
+`f (x k) - t k ≤ ε₀` (7.2.29); `t k - t (k+1) ≥ (1 - θ) ε₀` for `Ka k` (7.2.30); and, if
 `flow ≤ f ≤ fup` on `{z ∈ X | ‖c z‖ ≤ ε₀}` (f.B.Fb) with `ε₀ ≤ 1`, `t k ∈ [flow - 1, fup]` (7.2.31).
 '''
-deps = ["IsTargetSequence", "sub_add_sqrt_ge"]
+deps = ["IsTargetSequence", "_root_.neg_add_sqrt_sq_sub_sq_ge"]
 source = "Cartis–Gould–Toint, Lemma 7.2.3 (used for Algorithm 14.3.2)"
 
 [[node]]
@@ -115,7 +48,7 @@ id = "IsTargetSequence.card_Ka_le"
 kind = "theorem"
 desc = '''
 Lemma 7.2.4: under f.B.Fb (as in `IsTargetSequence.props`), the number of `k ∈ [1, K)` with
-`k ∈ 𝒦_a` is at most `(fup - flow + 1) / ((1 - θ) ε₀)`. (Theorem 14.3.9's `f_up - f_low - 1` is a
+`Ka k` is at most `(fup - flow + 1) / ((1 - θ) ε₀)`. (Theorem 14.3.9's `f_up - f_low - 1` is a
 sign slip for this `+ 1`.)
 '''
 deps = ["IsTargetSequence.props"]

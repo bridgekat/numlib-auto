@@ -13,8 +13,10 @@ constants explicit so that each chapter's lemma (with its own constants: e.g. AR
   `c = 1/(p+1)!`), so that both `σ_max = γ₃ L/(2(1-η₂))` (AR1) and `γ₃ L/(1-η₂)` (AR2, ARp) follow;
 * `norm_fderiv_le_of_regularizedModel` and `minCurvature_ge_of_regularizedModel`: Lemmas 3.3.3, 3.3.7,
   3.3.8 and the first two parts of Lemma 4.1.3.
-The third-order part of Lemma 4.1.3 and anything using `∇³` of the regularization term are left to
-the Chapter 4 plans (they need Lemma B.4.1).
+Higher-order parts use `abs_iteratedFDeriv_apply_le_of_regularizedModel` (general `j`, diagonal
+bound of Lemma B.4.1 for the natural exponent `p + 1`). Consolidation: the real-power model of ARp-H
+(`PowRegularizedModel`) generalizes `regularizedModel` (`r = p + 1`, Hölder `β = 1`); the
+first-order step bound here may be proved as the `β = 1` case of `norm_fderiv_le_of_powRegularizedModel`.
 '''
 
 [[node]]
@@ -74,7 +76,7 @@ Step-length lower bound, first order (Lemma 4.1.3 (4.1.20); Lemma 3.3.3 with `θ
 Also the variant (Lemma 3.3.7) with the hypothesis on the Taylor part,
 `‖fderiv ℝ (taylorPolynomial f p x) s‖ ≤ θ' σ ‖s‖^p`: `‖∇f(x+s)‖ ≤ (L/p! + θ' σ) ‖s‖^p`.
 '''
-deps = ["fderiv_regularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"]
+deps = ["fderiv_regularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "norm_fderiv_le_of_powRegularizedModel"]
 source = "Cartis–Gould–Toint, Lemmas 3.3.3, 3.3.7, 4.1.3 (4.1.20)"
 
 [[node]]
@@ -136,18 +138,18 @@ source = "Cartis–Gould–Toint, (4.1.2), proof of Lemma 4.1.3 (4.1.30)"
 id = "abs_iteratedFDeriv_apply_le_of_regularizedModel"
 kind = "theorem"
 desc = '''
-(Added by the Chapter 4 plan.) Higher-order step-length estimate (core of (4.1.30)). Let `p ≥ 1`,
-`1 ≤ j ≤ p`, `f` `C^p` on an open set containing `[x, x + s]`, `IteratedFDerivLipschitzOn f p L`
-on a convex subset containing `x, x + s`, `s ≠ 0`, `σ ≥ 0`,
-`m = regularizedModel (ftaylorSeries ℝ f x) p σ`. Then for all `d : E`:
-`|iteratedFDeriv ℝ j f (x + s) (fun _ => d)| ≤ L / (p - j + 1)! * ‖s‖ ^ (p - j + 1) * ‖d‖ ^ j
-+ σ / (p + 1)! * |iteratedFDeriv ℝ j (fun y => ‖y‖ ^ (p + 1)) s (fun _ => d)|
-+ |iteratedFDeriv ℝ j m s (fun _ => d)|`.
-Combined with a diagonal bound on the norm power (`iteratedFDeriv_two_norm_rpow_bounds` for
-`j = 2`, `abs_iteratedFDeriv_three_normRpow_apply_le` for `j = 3`,
-`abs_iteratedFDeriv_normRpow_apply_le` for general `j`) the middle term is
-`≤ σ / (p - j + 1)! ‖s‖^{p-j+1} ‖d‖^j`, giving the book's
-`|∇^j f(x+s)[d]^j| ≤ (L + σ)/(p-j+1)! ‖s‖^{p-j+1} + |∇^j m(s)[d]^j|` for `‖d‖ = 1`.
+Model-versus-function derivative estimate (core of (4.1.30), (6.2.20)–(6.2.23), Lemma 12.2.12;
+merged with the Chapter 6 plan's `abs_iteratedFDeriv_sub_regularizedModel_le`). Let `p ≥ 1`,
+`1 ≤ j ≤ p`, `C` convex, `D ⊇ C` open, `ContDiffOn ℝ p f D`, `IteratedFDerivLipschitzOn f p L C`,
+`x, x + s ∈ C`, `σ ≥ 0`, `m = regularizedModel (ftaylorSeries ℝ f x) p σ`. Then for all `d : E`:
+`|iteratedFDeriv ℝ j f (x + s) (fun _ => d) - iteratedFDeriv ℝ j m s (fun _ => d)| ≤
+L / (p - j + 1)! * ‖s‖ ^ (p - j + 1) * ‖d‖ ^ j + σ / (p + 1)! *
+|iteratedFDeriv ℝ j (fun y => ‖y‖ ^ (p + 1)) s (fun _ => d)|`
+(at `s = 0` and for `s ≠ 0`; `m` is `C^p` everywhere, `iteratedFDeriv_regularizedModel`), and with
+the diagonal bound `abs_iteratedFDeriv_norm_pow_apply_le`
+(`|∇^j ‖·‖^{p+1}(s)[d]^j| ≤ (p+1)!/(p-j+1)! ‖s‖^{p-j+1} ‖d‖^j`):
+`|∇^j f(x+s)[d]^j - ∇^j m(s)[d]^j| ≤ (L + σ)/(p-j+1)! ‖s‖^{p-j+1} ‖d‖^j` — the book's (6.2.23)
+(for `‖d‖ ≤ 1`) and, with the triangle inequality, (4.1.30).
 '''
-deps = ["iteratedFDeriv_regularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"]
-source = "Cartis–Gould–Toint, proof of Lemma 4.1.3 (4.1.30); also (6.2.20)–(6.2.22), Lemma 12.2.12"
+deps = ["iteratedFDeriv_regularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "abs_iteratedFDeriv_norm_pow_apply_le"]
+source = "Cartis–Gould–Toint, proof of Lemma 4.1.3 (4.1.30); (6.2.20)–(6.2.23), Lemma 12.2.12"

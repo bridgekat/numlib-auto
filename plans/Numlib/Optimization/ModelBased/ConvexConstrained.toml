@@ -6,47 +6,17 @@ ARp of Chapter 4). Setting: `E` a real inner product space, `C ⊆ E` convex, `D
 `ContDiffOn ℝ p f D`, `IteratedFDerivHolderOn f p L 1 C` (f.DpL.C), `x, x + s ∈ C`, `σ ≥ 0`,
 `m = regularizedModel (ftaylorSeries ℝ f x) p σ`.
 
-Key estimate (6.2.23): for `1 ≤ j ≤ p`, `j ≤ 3`, `‖d‖ ≤ 1`:
-`|D^j f(x+s)[d]^j - D^j m(s)[d]^j| ≤ (L + σ)/(p-j+1)! ‖s‖^{p-j+1}` — Taylor remainder (A.20)
-(`norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`) plus the size of the `j`-th derivative
-of `σ/(p+1)! ‖s‖^{p+1}` (Lemma B.4.1 with `β = 1`: `(p+1)!/(p-j+1)! ‖s‖^{p-j+1}`). The `j = 1, 2`
-bounds come from the core module `NormPowHessian`; the `j = 3` bound is planned here
-(`abs_iteratedFDeriv_three_norm_pow_le`) and is a special case of the Chapter 4 plan's Lemma B.4.1
-(consolidation: replace by that node once merged; the integer exponent `r = p + 1 ≥ 4` avoids the
-fractional-`β` issue reported for B.4.1).
+Key estimate (6.2.23): for `1 ≤ j ≤ p`, `‖d‖ ≤ 1`:
+`|D^j f(x+s)[d]^j - D^j m(s)[d]^j| ≤ (L + σ)/(p-j+1)! ‖s‖^{p-j+1}` — the core lemma
+`abs_iteratedFDeriv_apply_le_of_regularizedModel` (`ModelBased/TaylorModel`, any `j ≤ p`, convex
+`C`), which is Taylor remainder (A.20) plus the diagonal bound of Lemma B.4.1 for the natural
+exponent `p + 1` (consolidation: the former local nodes for `j ≤ 3` and for the third derivative of
+`‖s‖^r` were merged into it; the integer exponent avoids the fractional-`β` issue of B.4.1).
 
 ARp1-CC steps (6.2.29): `IsFirstOrderCCStep` — feasible, model decrease, and the model's
 first-order measure over `𝓜⁰(s) = 𝒞(x+s)` at most `θ ‖s‖^p`. With `C = univ` this is ARp's
 (4.1.11); its decrease lemma is Lemma 6.2.4 (and the first part of Lemma 4.1.4).
 '''
-
-[[node]]
-id = "abs_iteratedFDeriv_three_norm_pow_le"
-kind = "theorem"
-desc = '''
-For a natural `r ≥ 4`, `s ↦ ‖s‖ ^ r` is `ContDiff ℝ 3` and for all `s d : E`:
-`|iteratedFDeriv ℝ 3 (fun s => ‖s‖ ^ r) s (fun _ => d)| ≤ r * (r-1) * (r-2) * ‖s‖ ^ (r-3) * ‖d‖ ^ 3`
-(equality for `d ∥ s`). Proof: along the line `t ↦ ‖s + t d‖^r = q(t)^{r/2}`,
-`q = ‖s‖² + 2t⟨s,d⟩ + t²‖d‖²`, the third derivative at `0` is
-`r(r-2)(r-4)/8 · q^{r/2-3} q'^3 + 3 r(r-2)/4 · q^{r/2-2} q' q''`; bound with
-`|⟨s,d⟩| ≤ ‖s‖ ‖d‖`. (Lemma B.4.1 with `β = 1`, `j = 3`; duplicate candidate of the Chapter 4 plan.)
-'''
-deps = ["iteratedFDeriv_two_norm_rpow_apply"]
-source = "Cartis–Gould–Toint, Lemma B.4.1 (β = 1, j = 3), (6.2.22)"
-
-[[node]]
-id = "abs_iteratedFDeriv_sub_regularizedModel_le"
-kind = "theorem"
-desc = '''
-(6.2.21)–(6.2.23). Under the module setting (`C` convex, `D ⊇ C` open, `ContDiffOn ℝ p f D`,
-`IteratedFDerivHolderOn f p L 1 C`, `x ∈ C`, `x + s ∈ C`, `0 ≤ σ`), for `j ∈ {1, 2, 3}` with
-`j ≤ p` and every `d` with `‖d‖ ≤ 1`:
-`|iteratedFDeriv ℝ j f (x + s) (fun _ => d) - iteratedFDeriv ℝ j (regularizedModel
-(ftaylorSeries ℝ f x) p σ) s (fun _ => d)| ≤ (L + σ) / (p - j + 1)! * ‖s‖ ^ (p - j + 1)`.
-(For `j = 3` the hypothesis `j ≤ p` gives `p + 1 ≥ 4`.)
-'''
-deps = ["norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "fderiv_regularizedModel", "fderiv_norm_rpow_apply", "iteratedFDeriv_two_norm_rpow_bounds", "abs_iteratedFDeriv_three_norm_pow_le", "regularizedModel"]
-source = "Cartis–Gould–Toint, (6.2.20)–(6.2.23), proof of Lemma 6.2.1"
 
 [[node]]
 id = "formCriticality_le_regularizedModel"
@@ -60,7 +30,7 @@ any `T ∋ 0`: (i) `formCriticality (iteratedFDeriv ℝ j f (x+s)) T ≤ formCri
 omits `∩ 𝓑`, but its bound is only proved for `‖d‖ ≤ 1`; for `‖d‖ > 1` the error scales like
 `‖d‖^j`).
 '''
-deps = ["abs_iteratedFDeriv_sub_regularizedModel_le", "formCriticality_le_add_of_abs_sub_le", "inter_closedBall_restrictedSteps_subset"]
+deps = ["abs_iteratedFDeriv_apply_le_of_regularizedModel", "formCriticality_le_add_of_abs_sub_le", "inter_closedBall_restrictedSteps_subset"]
 source = "Cartis–Gould–Toint, Lemma 6.2.1, (6.2.18)–(6.2.19)"
 
 [[node]]

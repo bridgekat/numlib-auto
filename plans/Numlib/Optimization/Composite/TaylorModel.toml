@@ -11,12 +11,13 @@ Design.
   ARqpC model at a trial step `s` (`Df` = Taylor series at `s` of the regularized polynomial,
   `Dc` = Taylor series at `s` of `T_{c,p}`, book (14.1.14)). `h` is kept exactly (not expanded):
   `T_{w,j}` is *not* a Taylor polynomial of `w`.
-* **Interface request to the core**: `FormalMultilinearSeries.taylorSum` (core
-  `MultivariateTaylor/Basic`, planned for `ℝ`-valued data with `*`) must be stated for an arbitrary
-  normed codomain `F` (`∑ i ∈ range (p+1), (i ! : ℝ)⁻¹ • D i (fun _ => s)`; identical for `F = ℝ`),
-  and `IteratedFDerivHolderOn`/`IteratedFDerivLipschitzOn` for `F`-valued maps. Vector-valued
-  remainder bounds are planned in `MultivariateTaylor/VectorRemainder` (proved from the real ones by
-  duality).
+* The core `FormalMultilinearSeries.taylorSum` (`MultivariateTaylor/Basic`) is vector-valued
+  (`∑ i ∈ range (p+1), (i ! : ℝ)⁻¹ • D i (fun _ => s)`, on main), and `IteratedFDerivHolderOn` /
+  `IteratedFDerivLipschitzOn` take any normed codomain, as requested by this plan. Vector-valued
+  remainder bounds are planned in `MultivariateTaylor/VectorRemainder`.
+* The composite measure is an instance of the core `decrementMeasure`, so the measure-test
+  machinery (`ModelBased/HighOrder/MeasureTest`) and the ARqp run predicate (`IsARqpRun` with
+  `ARqpData.ofComposite`) apply verbatim.
 * Feasible displacement sets `S : Set E` as in the core (`S = {d | x + d ∈ X}`; `Set.univ`
   unconstrained), so §14.2's ARqpC-SC needs nothing new.
 * Lipschitz constants of `h` are real (`∀ a b, |h a - h b| ≤ Lh * ‖a - b‖`), they enter explicit
@@ -54,13 +55,13 @@ source = "Cartis–Gould–Toint, (14.1.5) and the decrement after (14.1.10)"
 id = "compositeTaylorMeasure"
 kind = "def"
 desc = '''
-`compositeTaylorMeasure Df Dc h j δ S : ℝ := sSup (compositeTaylorDecrement Df Dc h j ''
-(Metric.closedBall 0 δ ∩ S))`: the book's `φ^δ_{w,j}(x) = w(x) - min_{‖d‖≤δ} T_{w,j}(x,d)` (14.1.6)
+`compositeTaylorMeasure Df Dc h j δ S : ℝ := decrementMeasure (compositeTaylorDecrement Df Dc h j) δ S`
+(`= sSup (compositeTaylorDecrement Df Dc h j '' (Metric.closedBall 0 δ ∩ S))`): the book's `φ^δ_{w,j}(x) = w(x) - min_{‖d‖≤δ} T_{w,j}(x,d)` (14.1.6)
 (with the book's `x_k`/`s` variable slips corrected: the minimization variable is `d`), its
 constrained variant for §14.2, and, with the model's jets at `s`, `φ^δ_{m̂_k,j}(s)` (14.1.14).
 Lemma (part of node): `compositeTaylorMeasure Df Dc 0 j δ S = taylorMeasure Df j δ S`.
 '''
-deps = ["compositeTaylorDecrement", "taylorMeasure"]
+deps = ["compositeTaylorDecrement", "decrementMeasure", "taylorMeasure"]
 source = "Cartis–Gould–Toint, (14.1.6), (14.1.14)"
 
 [[node]]
@@ -73,7 +74,7 @@ If `|h a - h b| ≤ Lh ‖a - b‖` for all `a b`, then
 `d ∈ closedBall 0 δ ∩ S` has `compositeTaylorDecrement … d ≤ compositeTaylorMeasure …` (the image
 is bounded above). Monotone in `δ` and in `S`.
 '''
-deps = ["compositeTaylorMeasure", "FormalMultilinearSeries.abs_taylorDecrement_sub_le"]
+deps = ["compositeTaylorMeasure", "le_decrementMeasure", "FormalMultilinearSeries.abs_taylorDecrement_sub_le"]
 source = "Cartis–Gould–Toint, (14.1.6) (well-definedness of the measure)"
 
 [[node]]
@@ -88,7 +89,7 @@ continuously on a parameter `s`, `s ↦ compositeTaylorMeasure (D s) …` are co
 fixed (compact-ball argument; used in the book's proof of Lemma 12.2.9/14.1.3 — not needed for the
 global-minimizer proof planned here).
 '''
-deps = ["abs_compositeTaylorDecrement_le"]
+deps = ["abs_compositeTaylorDecrement_le", "exists_decrementMeasure_eq"]
 source = "Cartis–Gould–Toint, Section 14.1.2.1"
 
 [[node]]
@@ -98,7 +99,8 @@ desc = '''
 `IsEpsDeltaApproxComposite Df Dc h S q ε δ : Prop := ∀ j ∈ Finset.Icc 1 q,
 compositeTaylorMeasure Df Dc h j (δ j) S ≤ ε j * δ j ^ j / j !` (`ε δ : ℕ → ℝ`): `x` is an
 `(ε, δ)`-approximate `q`-th order minimizer of `w` (14.1.9) when `Df = ftaylorSeries ℝ f x`,
-`Dc = ftaylorSeries ℝ c x`. With `h = 0` it is the core `IsEpsDeltaApprox Df S q ε δ`.
+`Dc = ftaylorSeries ℝ c x`. With `h = 0` it is the core `IsEpsDeltaApprox Df S q ε δ`. Certified by
+the generic `isEpsDeltaApprox_of_measureTestPasses` with `Δ = fun j => compositeTaylorDecrement Df Dc h j`.
 '''
 deps = ["compositeTaylorMeasure", "IsEpsDeltaApprox"]
 source = "Cartis–Gould–Toint, (14.1.9)"
@@ -133,5 +135,5 @@ version) and `|h a - h b| ≤ Lh ‖a - b‖`: for `x, x + s ∈ C`,
 (14.1.27); the `√m` of the book comes from converting componentwise constants, see
 `ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean`).
 '''
-deps = ["abs_sub_taylorPolynomial_le_of_lipschitz", "norm_sub_taylorSum_le_of_lipschitz_vec"]
+deps = ["abs_sub_taylorPolynomial_le_of_lipschitz", "norm_sub_taylorPolynomial_le_of_lipschitz"]
 source = "Cartis–Gould–Toint, proof of Lemma 14.1.6 (Appendix B)"

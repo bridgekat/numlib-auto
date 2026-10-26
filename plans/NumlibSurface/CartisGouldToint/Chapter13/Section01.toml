@@ -22,6 +22,13 @@ Design.
 * Step 1 records displacements `dd k j` for **all** `j ∈ Icc 1 q` (the book computes them only up to
   the first failing order `j_k`; any book run extends to a run of the predicate, since admissible
   displacements always exist). This makes the Step-1 outcome a function of the run data.
+* Feasible set (consolidation; Chapter 14 §14.2 request): the step predicates and runs take a closed
+  `X : Set E` with `x 0 ∈ X`; every displacement set written `univ` below for the Step-1 measures
+  reads `Xk k := {e | x k + e ∈ X}`, for the model measures `{e | x k + s k + e ∈ X}`, and steps
+  satisfy `x k + s k ∈ X`. The book's IDA/EDA algorithms are `X = univ`; TRqIDA-SC, ARqpIDA-SC (and
+  EDA) of §14.2 are general `X`. Lemmas hold for general `X` except where the radius choice
+  `δ_{k,j} = 1` for `j ≤ 2` (`RadiiControl`, via Theorem 12.1.4) is used, which needs `X = univ`
+  (resp. `j = 1` with convex `X`).
 * Termination tests: TR: `trTest k := IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ q ε
   (fun _ => min (Δ k) ϑ)`; AR: `arTest k := ∃ δ', (∀ j ∈ Icc 1 q, δ' j ∈ Ioc 0 1) ∧
   IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ q ε δ'` (existential radius, see theorem_13_1_19_i).
@@ -64,7 +71,9 @@ The tolerance-dependent requirement `ϑ ∈ [ε_min, 1]` is a hypothesis of the 
 Source fix: Step 0 prints `0 < γ₁ < 1 < γ₂ < γ₃` (the regularization convention); the trust-region
 update (13.1.17) (`Δ_{k+1} ∈ [γ₁Δ_k, γ₂Δ_k]` on unsuccessful iterations) and the proof of
 Lemma 13.1.1 (`γ₂ ∈ (0,1)`) require `γ₁ ≤ γ₂ < 1`, as in TRq (Algorithm 12.2.1).
+`structure TRqIDAParams extends Optimization.TRParams` with the remaining fields.
 '''
+deps = ["Optimization.TRParams"]
 source = "Cartis–Gould–Toint, Algorithm 13.1.1, Step 0"
 
 [[node]]
@@ -83,18 +92,20 @@ id = "TRqDAStep"
 kind = "def"
 desc = '''
 One iteration of Steps 1, 2, 4 and 5 of Algorithm 13.1.1, shared by TRqIDA and TRqEDA.
-`TRqDAStep P ε x Δ h D dd jk s acc ρ k : Prop` for sequences `x s : ℕ → E`, `Δ ρ : ℕ → ℝ`,
+`TRqDAStep X P ε x Δ h D dd jk s acc ρ k : Prop` (feasible set `X`, see the module desc) for sequences `x s : ℕ → E`, `Δ ρ : ℕ → ℝ`,
 `h : ℕ → ℕ → ℝ`, `D : ℕ → FormalMultilinearSeries ℝ E ℝ`, `dd : ℕ → ℕ → E`, `jk : ℕ → ℕ`,
 `acc : ℕ → Prop`; with `δ k := min (Δ k) P.ϑ`, `ΔT̄ j v := (D k).taylorDecrement j v`:
 * (Step 1.1, (13.1.13)) `∀ j ∈ Icc 1 q, dd k j ∈ closedBall 0 (δ k) ∧
-  ς * taylorMeasure (D k) j (δ k) univ ≤ ΔT̄ j (dd k j)`;
+  ς * taylorMeasure (D k) j (δ k) (Xk k) ≤ ΔT̄ j (dd k j)` (`Xk k = {e | x k + e ∈ X}`), i.e.
+  `Optimization.IsApproxMeasureStep (ΔT̄ j) (δ k) (Xk k) ς (dd k j)`;
 * (Step 1.2–1.3, (13.1.14)) `fail j := ς * ε j * δ k ^ j / j! / 2 < ΔT̄ j (dd k j)`; either
   (a) `∀ j ∈ Icc 1 q, ¬ fail j` and `acc k` (branch to Step 5), or
   (b) `jk k ∈ Icc 1 q`, `fail (jk k)`, `∀ j ∈ Icc 1 q, j < jk k → ¬ fail j`; then (Step 2, (13.1.15))
   `s k ∈ closedBall 0 (Δ k)`, `ΔT̄ (jk k) (s k) ≥ ΔT̄ (jk k) (dd k (jk k))`, and
   `acc k ↔ ∃ i ∈ Icc 1 q, P.κs * ‖s k‖ ^ (q - i + 1) < h k i` (accuracy test (13.1.9) fails);
-* (Steps 3–4, trial iteration, `¬ acc k`) `x (k+1) = if η₁ ≤ ρ k then x k + s k else x k`,
-  `TRUpdate η₁ η₂ γ₁ γ₂ γ₃ (ρ k) (Δ k) (Δ (k+1))`, `Δ (k+1) ≤ Δmax`, `h (k+1) = h k`, and
+* (Steps 3–4, trial iteration, `¬ acc k`) `Optimization.TRAcceptance P.toTRParams (ρ k) (x k) (s k)
+  (x (k+1)) (Δ k) (Δ (k+1))` (`x (k+1) = if η₁ ≤ ρ k then x k + s k else x k`, `TRUpdate`),
+  `Δ (k+1) ≤ Δmax`, `h (k+1) = h k`, and
   `ρ k < η₁ → D (k+1) = D k` (no new derivative estimate at an unchanged iterate);
 * (Step 5, (13.1.18), `acc k`) `x (k+1) = x k`, `Δ (k+1) = Δ k`, `∀ i, h (k+1) i = γh * h k i`.
 The book's shortcut "go to Step 2 with `d_{k+1} = d_k`" after an unsuccessful iteration with
@@ -102,7 +113,7 @@ The book's shortcut "go to Step 2 with `d_{k+1} = d_k`" after an unsuccessful it
 Iteration classes: `S = {k | ¬ acc k ∧ η₁ ≤ ρ k}`, `U = {k | ¬ acc k ∧ ρ k < η₁}`, `A = acc`, `T = ¬ acc`
 (13.1.19)–(13.1.21).
 '''
-deps = ["TRqIDAParams", "Optimization.taylorMeasure", "Optimization.TRUpdate", "FormalMultilinearSeries.taylorDecrement"]
+deps = ["TRqIDAParams", "Optimization.taylorMeasure", "Optimization.IsApproxMeasureStep", "Optimization.TRAcceptance", "FormalMultilinearSeries.taylorDecrement"]
 source = "Cartis–Gould–Toint, Algorithm 13.1.1, (13.1.19)–(13.1.21)"
 
 [[node]]
@@ -268,8 +279,10 @@ Constants of Algorithm 13.1.2 (Step 0, (13.1.51)): `q p : ℕ` with `1 ≤ q ≤
 η₂ γ₁ γ₂ γ₃ γh : ℝ`, `δ₀ h₀ : ℕ → ℝ` with `0 < σmin ≤ σ₀`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ < γ₃`,
 `γh ∈ Ioo 0 1`, `θ ∈ Ioo 0 1`, `ς ∈ Ioc 0 1` (missing from the book's Step-0 list), `0 < κs`,
 `0 ≤ κh`, `δ₀ j ∈ Ioc 0 1` for `j ∈ Icc 1 q`, `0 ≤ h₀ i ≤ κh` for `i ∈ Icc 1 p`. The requirement
-`ε_j ≤ δ₀ j` is a hypothesis of the run predicate.
+`ε_j ≤ δ₀ j` is a hypothesis of the run predicate. `structure ARqpIDAParams extends
+Optimization.ARqpParams` (the `σ, η, γ, θ, ς` part) with the remaining fields.
 '''
+deps = ["Optimization.ARqpParams"]
 source = "Cartis–Gould–Toint, Algorithm 13.1.2, Step 0, (13.1.51)"
 
 [[node]]
@@ -277,6 +290,9 @@ id = "ARqpDAStep"
 kind = "def"
 desc = '''
 One iteration of Steps 1, 2, 4 and 5 of Algorithm 13.1.2, shared by ARqpIDA and ARqpEDA.
+`ARqpDAStep X P ε …` takes the feasible set `X` (module desc); the model data are
+`Optimization.ARqpData.ofTaylor (D k) p (σ k)` (`m̄_k` its `model`, the model decrements its
+`modelDec`), shared with `Optimization.IsARqpRun`.
 Sequences: `x s : ℕ → E`, `σ ρ : ℕ → ℝ`, radii `δ δ₁ δs : ℕ → ℕ → ℝ` (`δ k = δ^{(0)}_k` at the start
 of Step 1 (13.1.60), `δ₁ k = δ^{(1)}_k` at its end (13.1.61), `δs k = δ_{s_k}`), `h : ℕ → ℕ → ℝ`,
 `D : ℕ → FormalMultilinearSeries ℝ E ℝ`, `dd : ℕ → ℕ → E`, `jk : ℕ → ℕ`, `acc : ℕ → Prop`; model
@@ -297,7 +313,8 @@ of Step 1 (13.1.60), `δ₁ k = δ^{(1)}_k` at its end (13.1.61), `δs k = δ_{s
   ς * taylorMeasure (ftaylorSeries ℝ m̄_k (s k)) ℓ (δs k ℓ) univ ≤
   (ftaylorSeries ℝ m̄_k (s k)).taylorDecrement ℓ dm ≤ ς θ ε ℓ (δs k ℓ)^ℓ / ℓ!`; and
   `acc k ↔ (‖s k‖ < 1 ∧ ∃ i ∈ Icc 1 p, κs * ‖s k‖^(p - i + 1) < h k i)`;
-* (Steps 3–4, `¬ acc k`) `x (k+1) = if η₁ ≤ ρ k then x k + s k else x k`,
+* (Steps 3–4, `¬ acc k`) `Optimization.ARAcceptance P.toARParams (ρ k) (x k) (s k) (x (k+1)) (σ k)
+  (σ (k+1))`, i.e. `x (k+1) = if η₁ ≤ ρ k then x k + s k else x k` and
   `δ (k+1) = if η₁ ≤ ρ k ∧ ‖s k‖ < 1 then δs k else δ₁ k`,
   `ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σmin (ρ k) (σ k) (σ (k+1))` ((13.1.59) = (2.4.4)), `h (k+1) = h k`,
   `ρ k < η₁ → D (k+1) = D k`;
@@ -309,7 +326,7 @@ Radii control (the hypothesis "the algorithm ensures (13.1.69)–(13.1.70)" of T
 separate predicate `RadiiControl Lbar k := ¬ acc k → ‖s k‖ < 1 → (∀ j ∈ Icc 1 (min 2 q),
 δs k j = 1) ∧ ∀ j ∈ Icc 3 q, ς θ ε j / (24 max Lbar (σ k)) ≤ δs k j`, is part of this node.
 '''
-deps = ["ARqpIDAParams", "Optimization.regularizedModel", "Optimization.taylorMeasure", "Optimization.ARUpdate", "FormalMultilinearSeries.taylorDecrement"]
+deps = ["ARqpIDAParams", "Optimization.regularizedModel", "Optimization.taylorMeasure", "Optimization.IsApproxMeasureStep", "Optimization.ARAcceptance", "FormalMultilinearSeries.taylorDecrement"]
 source = "Cartis–Gould–Toint, Algorithm 13.1.2, (13.1.60)–(13.1.61), (13.1.69)–(13.1.70)"
 
 [[node]]
@@ -460,10 +477,10 @@ Lemma 13.1.17. Under the hypotheses of Lemma 13.1.16 but allowing `‖s k‖ ≥
 `‖s k‖ ≥ ((1 - θ) κ_δmin^(j-1) / (2 j! (L p + σmax + 3 κ∇max κs)))^(1/p) * ε j^(j/p)` if `q > 2`
 (13.1.80), with `κ_δmin = ς θ / (24 max Lbar σmax)` (13.1.81) (real powers `Real.rpow`).
 Proof: trivial if `‖s_k‖ ≥ 1` (right-hand sides `≤ 1`); otherwise Lemma 13.1.16 and
-`Optimization.norm_step_ge_of_radius_inequality` with `δ (k+1) j = δs k j` (`= 1` for `j ≤ 2`,
+`Optimization.norm_step_ge_of_measure_ineq` (case (i), `B = 0`) with `δ (k+1) j = δs k j` (`= 1` for `j ≤ 2`,
 `≥ κ_δmin ε_j` for `j ≥ 3` by `RadiiControl` and Lemma 13.1.14).
 '''
-deps = ["lemma_13_1_16", "lemma_13_1_14", "Optimization.norm_step_ge_of_radius_inequality"]
+deps = ["lemma_13_1_16", "lemma_13_1_14", "Optimization.norm_step_ge_of_measure_ineq"]
 source = "Cartis–Gould–Toint, Lemma 13.1.17"
 
 [[node]]

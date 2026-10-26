@@ -8,31 +8,7 @@ Both use `taylorPolynomial c p x = (ftaylorSeries ℝ c x).taylorSum p`, and `ta
 for `FormalMultilinearSeries ℝ E F`. So this module only adds the conversion of componentwise
 constants (book c.D1pL: each `c_i` has its own `L_{c,j}`) into a constant for
 `c : E → EuclideanSpace ℝ (Fin m)`, which is where the book's `√m` comes from.
-
-The two `…_vec` nodes are **transitional** aliases of the core theorems. They are still named by
-`Optimization/Composite/{TaylorModel,RegularizedModel}`, which another reviewer owns. Delete them
-once those dependencies point at the core ids.
 '''
-
-[[node]]
-id = "norm_sub_taylorSum_le_of_lipschitz_vec"
-kind = "theorem"
-desc = '''
-**Transitional.** This is the core (A.19) `norm_sub_taylorPolynomial_le_of_lipschitz` for
-`c : E → F`. Do not prove it separately: delete it once its dependents are repointed.
-'''
-deps = ["norm_sub_taylorPolynomial_le_of_lipschitz"]
-source = "Cartis–Gould–Toint, Corollary A.8.4 (A.19), vector-valued use in (B.14.3)"
-
-[[node]]
-id = "norm_iteratedFDeriv_sub_taylorSum_le_of_lipschitz_vec"
-kind = "theorem"
-desc = '''
-**Transitional.** This is the core (A.20) `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`
-for `c : E → F`. Do not prove it separately: delete it once its dependents are repointed.
-'''
-deps = ["norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"]
-source = "Cartis–Gould–Toint, Corollary A.8.4 (A.20), vector-valued use in (B.14.4)"
 
 [[node]]
 id = "ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean"

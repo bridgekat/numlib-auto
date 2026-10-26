@@ -21,8 +21,9 @@ source = "Cartis–Gould–Toint, (3.3.3)"
 id = "algorithm_3_3_1"
 kind = "def"
 desc = '''
-Algorithm 3.3.1 (AR2) as a run predicate `IsAR2Run f P ε₁ ε₂ x s σ` (prototype in
-`drafts/cgt/plan-core/Core.lean`): `σ 0 = P.σ₀`; before the first `k` with `stopTest f ε₁ ε₂ (x k)`:
+Algorithm 3.3.1 (AR2) as a run predicate `IsAR2Run f P ε₁ ε₂ x s σ`, an instance of
+`Optimization.IsARRun P.toARParams (fun k => stopTest f ε₁ ε₂ (x k)) step (fun _ => False)
+(Optimization.taylorRatio f 2 x s) x s σ` with `step k` the conditions below: `σ 0 = P.σ₀`; before the first `k` with `stopTest f ε₁ ε₂ (x k)`:
 `m_k (s k) < m_k 0`; `‖fderiv ℝ m_k (s k)‖ ≤ θ₁/2 ‖s k‖²` (3.3.5); if `ε₂ ≠ none`,
 `-θ₂ ‖s k‖ ≤ minCurvature (iteratedFDeriv ℝ 2 m_k (s k))` (3.3.6); ratio (3.3.7) with
 `(ftaylorSeries ℝ f (x k)).taylorDecrement 2 (s k)`; acceptance; `ARUpdate` (3.3.8). The book
@@ -30,7 +31,7 @@ requires `ε₁ ∈ (0,1]`. Existence (part of node): for `C²` `f` from any `x�
 `m_k`, `Optimization.exists_isMinOn_regularizedModel` / `Subproblem.exists_isMinOn_regModel`, is
 admissible whenever the test fails).
 '''
-deps = ["AR2Params", "IsApproxSecondOrderMinimizer", "Optimization.UntilHit", "Optimization.regularizedModel", "Optimization.ARUpdate", "Optimization.reductionRatio", "Optimization.exists_isMinOn_regularizedModel", "Optimization.regularizedModel_two_eq_regModel", "Optimization.exists_run_of_forall_exists"]
+deps = ["AR2Params", "IsApproxSecondOrderMinimizer", "Optimization.IsARRun", "Optimization.taylorRatio", "Optimization.UntilHit", "Optimization.regularizedModel", "Optimization.ARUpdate", "Optimization.reductionRatio", "Optimization.exists_isMinOn_regularizedModel", "Optimization.regularizedModel_two_eq_regModel", "Optimization.exists_run_of_forall_exists"]
 source = "Cartis–Gould–Toint, Algorithm 3.3.1"
 
 [[node]]

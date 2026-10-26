@@ -6,15 +6,19 @@ one-iteration lemmas behind Lemmas 14.1.2, 14.1.4, 14.1.5, 14.1.7, stated for ge
 `p`, `FormalMultilinearSeries.IsSymm`), Lipschitz `h` with `h 0 = 0` and `IsSubadditive h`, and a
 feasible displacement set (for §14.2). With `h = 0` these are exactly the ARqp lemmas of
 Chapter 12 (12.2.8, 12.2.10, 12.2.11): the Chapter 12 planner should specialize these rather than
-re-prove them.
+re-prove them (consolidated: Lemma 12.2.8 = `sub_regularizedModel_ge_of_taylorDecrement_ge` is
+derived from `compositeRegularizedModel_sub_ge_of_decrement_ge`; Lemma 12.2.11's measure transfer
+`taylorMeasure_le_of_regularizedModel` is the `h = 0` case of `compositeTaylorDecrement_le_of_step`).
+`ARqpData.ofComposite` packages the model data for the generic run predicate `IsARqpRun`.
 
 Derivatives of the model at a trial step `s` are those of `s ↦ regularizedModel Df p σ s` and
 `s ↦ Dc.taylorSum p s` (Mathlib `ftaylorSeries` at `s`); the needed facts are the core (A.11)
 `FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply` and the bounds on the derivatives of
 `‖s‖^{p+1}` from Lemma B.4.1 ((B.4.1): `‖∇^ℓ_s ‖s‖^{p+1}‖ ≤ (p+1)!/(p-ℓ+1)! ‖s‖^{p-ℓ+1}`,
 (B.4.3): `∇^p_s ‖s‖^{p+1}` is `(p+1)!`-Lipschitz), which belong to the Chapter 4 planner's
-`Analysis/InnerProductSpace` module (extension of `NormPowHessian`); they are referenced in prose
-here because that module is not on main yet.
+`Analysis/InnerProductSpace` module (extension of `NormPowHessian`); the diagonal bounds are
+`abs_iteratedFDeriv_norm_pow_apply_le`, `abs_norm_pow_sub_taylorPolynomial_le`
+(`Analysis/InnerProductSpace/NormPowIteratedDeriv`).
 '''
 
 [[node]]
@@ -123,5 +127,18 @@ each contribute `L_{h,0} √m L_{c,p} ‖s‖^{p+1}/(p+1)!`, so the factor is `2
 exponent `p - j + 1` in (B.14.6) should read `p - ℓ + 1`. Uses `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`
 for `f`, its vector version for `c`, and (B.4.1) for `‖·‖^{p+1}`.
 '''
-deps = ["compositeModelDecrement", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "norm_iteratedFDeriv_sub_taylorSum_le_of_lipschitz_vec", "norm_sub_taylorSum_le_of_lipschitz_vec"]
+deps = ["compositeModelDecrement", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "norm_sub_taylorPolynomial_le_of_lipschitz"]
 source = "Cartis–Gould–Toint, Lemma 14.1.7, proof (B.14.1)–(B.14.6)"
+
+[[node]]
+id = "ARqpData.ofComposite"
+kind = "def"
+desc = '''
+The ARqpC model data (§14.1) for the generic run predicate `IsARqpRun`:
+`ARqpData.ofComposite Df Dc h p σ : ARqpData E := ⟨fun j => compositeTaylorDecrement Df Dc h j,
+compositeRegularizedModel Df Dc h p σ, fun j s => compositeModelDecrement Df Dc h p σ j s,
+compositeTaylorDecrement Df Dc h p⟩` (Step 1 (14.1.10), model (14.1.11), Step 2 (14.1.12)–(14.1.14),
+ratio (14.1.15)). With `h = 0` it agrees with `ARqpData.ofTaylor Df p σ` (lemma, part of node).
+'''
+deps = ["ARqpData", "compositeTaylorDecrement", "compositeRegularizedModel", "compositeModelDecrement"]
+source = "Cartis–Gould–Toint, (14.1.10)–(14.1.15)"

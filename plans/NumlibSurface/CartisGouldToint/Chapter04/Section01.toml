@@ -6,8 +6,12 @@ desc = '''
 `iteratedFDeriv ℝ 3 m_k (s k)`, ratio (4.1.15) with `(ftaylorSeries ℝ f (x k)).taylorDecrement p (s k)`,
 update `Optimization.ARUpdate` (4.1.16). Surface on `E = EuclideanSpace ℝ (Fin n)`.
 
-The one-iteration estimates are backbone (`Optimization.TaylorModel`): Lemmas 4.1.1–4.1.3 are
-instances; the third-order parts use `Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel`
+ARp is the backbone run predicate `Optimization.IsARpRun` (`ModelBased/ARpRun`, an instance of the
+generic AR run `Optimization.IsARRun`) with the Step-1 test (4.1.5)–(4.1.9); Lemmas 4.1.1–4.1.4 and
+the existence result are specializations of `IsARRun.sub_ge_of_succ`, `IsARRun.sigma_le`,
+`IsARpRun.step_lower_bounds`, `IsARpRun.decrease_ge`, `exists_isARpRun`, and Theorem 4.1.5's
+counting is `IsARRun.exists_isFirstHit_of_decrease`. The one-iteration estimates are backbone
+(`Optimization.TaylorModel`): Lemmas 4.1.1–4.1.3 are instances; the third-order parts use `Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel`
 with the bound on the third derivative of `‖s‖^{p+1}` (`norm_iteratedFDeriv_norm_pow_le` with
 `ℓ = 3`, Lemma B.4.1 with `j = 3`). Counting uses `Optimization.succ_le_of_arUpdate` (Lemma 2.4.1 in the
 form `k + 1 ≤ |𝒮_k|(1 + |log γ₁|/log γ₂) + log(σ_max/σ₀)/log γ₂`), which yields the book's
@@ -23,11 +27,11 @@ Chapter 2/3 sharpness results).
 id = "ARpParams"
 kind = "def"
 desc = '''
-Constants of Algorithm 4.1.1, Step 0: `structure ARpParams extends Chapter02.ARParams` with
-`θ₁ θ₂ θ₃ ∈ (0, 1]` (`σ_min ∈ (0, σ₀]`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ < γ₃` from
-`ARParams`).
+Constants of Algorithm 4.1.1, Step 0: `structure ARpParams extends Optimization.ARpParams`
+adding the conditions of `Chapter02.ARParams` (`σ_min ∈ (0, σ₀]`, `γ₂ < γ₃`); the backbone part
+carries `θ₁ θ₂ θ₃ ∈ (0, 1]`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂`.
 '''
-deps = ["CartisGouldToint.Chapter02.ARParams"]
+deps = ["CartisGouldToint.Chapter02.ARParams", "Optimization.ARpParams"]
 source = "Cartis–Gould–Toint, Algorithm 4.1.1 (Step 0)"
 
 [[node]]
@@ -45,7 +49,8 @@ source = "Cartis–Gould–Toint, Assumption f.DpL, (4.1.17)"
 id = "IsApproxThirdOrderMinimizer"
 kind = "def"
 desc = '''
-(4.1.3)–(4.1.4): `smallCurvatureSet f x ε₂ : Set E := {d | ‖d‖ = 1 ∧ |iteratedFDeriv ℝ 2 f x (fun _ => d)| ≤ ε₂}`
+(4.1.3)–(4.1.4): `smallCurvatureSet f x ε₂ : Set E := Optimization.smallCurvatureDirections (iteratedFDeriv ℝ 2 f x) ε₂`
+(`= {d | ‖d‖ = 1 ∧ |iteratedFDeriv ℝ 2 f x (fun _ => d)| ≤ ε₂}`)
 (the book's `𝒵_ε`) and `IsApproxThirdOrderMinimizer f x ε₁ ε₂ ε₃ : Prop :=
 Chapter03.IsApproxSecondOrderMinimizer f x ε₁ ε₂ ∧ ∀ d ∈ smallCurvatureSet f x ε₂,
 |iteratedFDeriv ℝ 3 f x (fun _ => d)| ≤ ε₃` (vacuous when `𝒵_ε = ∅`, which with (3.2.6) means
@@ -53,7 +58,7 @@ Chapter03.IsApproxSecondOrderMinimizer f x ε₁ ε₂ ∧ ∀ d ∈ smallCurvat
 `IsApproxThirdOrderMinimizerOn f x ε₁ ε₂ ε₃ M` (the cubic condition only on `M ⊆ 𝒵_ε`), which is
 what ARp certifies.
 '''
-deps = ["CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer"]
+deps = ["CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer", "Optimization.smallCurvatureDirections"]
 source = "Cartis–Gould–Toint, (4.1.3)–(4.1.4)"
 
 [[node]]
@@ -79,8 +84,10 @@ source = "Cartis–Gould–Toint, Algorithm 4.1.1 (Step 1), (4.1.5)–(4.1.9)"
 id = "algorithm_4_1_1"
 kind = "def"
 desc = '''
-Algorithm 4.1.1 (ARp) as a run predicate `IsARpRun f p P ε₁ ε₂ ε₃ x s σ` (`p ≥ 1`;
-`ε₂ = none → ε₃ = none`; `p ≥ 2` if `ε₂ ≠ none`, `p ≥ 3` if `ε₃ ≠ none`). With
+Algorithm 4.1.1 (ARp) as a run predicate `algorithm_4_1_1 f p P ε₁ ε₂ ε₃ x s σ` (`p ≥ 1`;
+`ε₂ = none → ε₃ = none`; `p ≥ 2` if `ε₂ ≠ none`, `p ≥ 3` if `ε₃ ≠ none`):
+`Optimization.IsARpRun f p P.toARpParams q test x s σ` with `q = 1, 2, 3` according to the
+tolerances (number of finite `ε`'s) and `test` below. Spelled out, with
 `m k := Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)`, the curvature sets
 `curvSet 0 := smallCurvatureSet f (x 0) e₂` and
 `curvSet (k+1) := {d | ‖d‖ = 1 ∧ |iteratedFDeriv ℝ 2 (m k) (s k) (fun _ => d)| ≤ θ₂ ‖s k‖^(p-1)}`
@@ -94,7 +101,7 @@ Algorithm 4.1.1 (ARp) as a run predicate `IsARpRun f p P ε₁ ε₂ ε₃ x s �
 (4.1.16). Success predicate `succ k := η₁ ≤ ρ k`. Counts: `Optimization.funEvalCount`,
 `Optimization.derivEvalCount` (derivatives of orders `1..p` recomputed after successful iterations).
 '''
-deps = ["ARpParams", "arpStopTest", "Optimization.UntilHit", "Optimization.regularizedModel", "Optimization.ARUpdate", "Optimization.reductionRatio", "Optimization.funEvalCount", "minCurvature", "FormalMultilinearSeries.taylorDecrement"]
+deps = ["ARpParams", "arpStopTest", "Optimization.IsARpRun", "Optimization.smallCurvatureDirections", "Optimization.funEvalCount", "Optimization.derivEvalCount"]
 source = "Cartis–Gould–Toint, Algorithm 4.1.1"
 
 [[node]]
@@ -102,14 +109,14 @@ id = "exists_isARpRun"
 kind = "theorem"
 desc = '''
 Well-posedness for `ε₃ = none`. If `f` is `C^p` (`p ≥ 1`; `p ≥ 2` when `ε₂ ≠ none`), `P : ARpParams`,
-`ε₁ > 0`, then from every `x₀` there is an ARp run (`IsARpRun … x s σ` with `x 0 = x₀`). Proof: when
+`ε₁ > 0`, then from every `x₀` there is an ARp run (`algorithm_4_1_1 … x s σ` with `x 0 = x₀`). Proof: when
 the test fails at `x_k`, a global minimizer `s*` of `m_k` (`Optimization.exists_isMinOn_regularizedModel`)
 satisfies (4.1.11)–(4.1.12) with `∇m_k(s*) = 0`, `∇²m_k(s*) ⪰ 0`, and `m_k(s*) < m_k(0)` because `0`
 is not a local minimizer of `m_k` (either `∇f(x_k) ≠ 0`, or `λ_min(∇²f(x_k)) < -ε₂ < 0` and
 `∇²m_k(0) = ∇²f(x_k)` as `∇²‖·‖^{p+1}(0) = 0` for `p ≥ 2`); `σ_{k+1} = σ_k` or `γ₂ σ_k` is
-admissible; `Optimization.exists_run_of_forall_exists`.
+admissible. This is `Optimization.exists_isARpRun` (a) (via `Optimization.exists_isARpStep`).
 '''
-deps = ["algorithm_4_1_1", "Optimization.exists_isMinOn_regularizedModel", "Optimization.exists_run_of_forall_exists", "iteratedFDeriv_two_norm_rpow_apply"]
+deps = ["algorithm_4_1_1", "Optimization.exists_isARpRun"]
 source = "Cartis–Gould–Toint, Algorithm 4.1.1 (well-posedness, implicit)"
 
 [[node]]
@@ -136,7 +143,7 @@ Lemma 4.1.1. If `m_k(s) ≤ m_k(0)` (model (4.1.2)) then
 `T_{f,p}(x_k, 0) - T_{f,p}(x_k, s) ≥ σ_k/(p+1)! ‖s‖^{p+1}` (4.1.18); in an ARp run this holds (strictly,
 by (4.1.10)) at every iteration before termination.
 '''
-deps = ["algorithm_4_1_1", "Optimization.taylorDecrement_ge_of_regularizedModel_lt"]
+deps = ["algorithm_4_1_1", "Optimization.taylorDecrement_ge_of_regularizedModel_lt", "Optimization.IsARRun.sub_ge_of_succ"]
 source = "Cartis–Gould–Toint, Lemma 4.1.1"
 
 [[node]]
@@ -144,11 +151,11 @@ id = "lemma_4_1_2"
 kind = "theorem"
 desc = '''
 Lemma 4.1.2. Under `AssumptionDpL f p L`, every ARp run satisfies `σ k ≤ σ_max :=
-max σ₀ (γ₃ L / (1 - η₂))` (4.1.19) for every `k` such that the test fails at all `j < k`. (Ratio
+Optimization.arSigmaMax P L = max σ₀ (γ₃ L / (1 - η₂))` (4.1.19) for every `k` such that the test fails at all `j < k`. (Ratio
 estimate `|ρ_k - 1| ≤ L/σ_k`: `Optimization.abs_reductionRatio_sub_one_le_of_lipschitz` with
 `c = 1/(p+1)!`, using (4.1.18) and `s_k ≠ 0`.)
 '''
-deps = ["lemma_4_1_1", "AssumptionDpL", "Optimization.abs_reductionRatio_sub_one_le_of_lipschitz", "Optimization.sigma_le_max_of_arUpdate"]
+deps = ["lemma_4_1_1", "AssumptionDpL", "Optimization.IsARRun.sigma_le", "Optimization.arSigmaMax"]
 source = "Cartis–Gould–Toint, Lemma 4.1.2"
 
 [[node]]
@@ -158,7 +165,7 @@ desc = '''
 Lemma 4.1.3 (4.1.20). Under f.DpL, for every successful iteration `k` before termination of an ARp run:
 `‖s_k‖^p ≥ p!/(L + σ_max + θ₁ p!) ‖∇f(x_{k+1})‖`.
 '''
-deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.norm_fderiv_le_of_regularizedModel"]
+deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.IsARpRun.step_lower_bounds"]
 source = "Cartis–Gould–Toint, Lemma 4.1.3 (4.1.20)"
 
 [[node]]
@@ -168,7 +175,7 @@ desc = '''
 Lemma 4.1.3 (4.1.21). Under f.DpL, `ε₂ ≠ none` (so `p ≥ 2`), for every successful iteration `k`
 before termination: `‖s_k‖^{p-1} ≥ (p-1)!/(L + σ_max + θ₂ (p-1)!) · max(0, -λ_min[∇²f(x_{k+1})])`.
 '''
-deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.minCurvature_ge_of_regularizedModel"]
+deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.IsARpRun.step_lower_bounds"]
 source = "Cartis–Gould–Toint, Lemma 4.1.3 (4.1.21)"
 
 [[node]]
@@ -180,7 +187,7 @@ before termination and every `d ∈ curvSet (k+1)` ((4.1.14)):
 `‖s_k‖^{p-2} ≥ (p-2)!/(L + σ_max + θ₃ (p-2)!) |∇³f(x_{k+1})[d]³|` (from (4.1.30) with `j = 3` and
 (4.1.13)).
 '''
-deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel", "abs_iteratedFDeriv_norm_pow_apply_le"]
+deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.IsARpRun.step_lower_bounds"]
 source = "Cartis–Gould–Toint, Lemma 4.1.3 (4.1.22)"
 
 [[node]]
@@ -192,7 +199,7 @@ termination and every `d ∈ curvSet (k+1)`: `|∇²f(x_{k+1})[d]²| ≤ κ_{s2}
 `κ_{s2} = (p-1)!/(L + σ_max + θ₂ (p-1)!)` (from (4.1.30) with `j = 2`, the bound
 `|∇²(‖·‖^{p+1})(s)[d]²| ≤ (p+1) p ‖s‖^{p-1}` and the definition (4.1.14) of the set).
 '''
-deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel", "iteratedFDeriv_two_norm_rpow_bounds"]
+deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.IsARpRun.step_lower_bounds"]
 source = "Cartis–Gould–Toint, Lemma 4.1.3 (4.1.23)"
 
 [[node]]
@@ -203,7 +210,7 @@ Lemma 4.1.4 (4.1.31)–(4.1.32). Under f.DpL, for every successful iteration `k`
 `f(x_k) - f(x_{k+1}) ≥ η₁ σ_min/(p+1)! ‖s_k‖^{p+1}` (4.1.37) `≥ κ₁ ‖∇f(x_{k+1})‖^{(p+1)/p}` with
 `κ₁ = η₁ σ_min/(p+1)! (p!/(L + σ_max + θ₁ p!))^{(p+1)/p}`.
 '''
-deps = ["lemma_4_1_1", "lemma_4_1_3_i", "Optimization.sub_le_of_le_reductionRatio", "Optimization.le_sigma_of_arUpdate"]
+deps = ["lemma_4_1_1", "lemma_4_1_3_i", "Optimization.IsARpRun.decrease_ge"]
 source = "Cartis–Gould–Toint, Lemma 4.1.4 (4.1.31)"
 
 [[node]]
@@ -242,7 +249,7 @@ and `AssumptionDpL f p L`, for every ARp run with `ε₁ > 0` there is `k_ε` wi
 `j ≤ k_ε - 2` decrease `f` by `≥ κ₁ ε₁^{(p+1)/p}`, so `|𝒮_{k_ε - 2}| ≤ κ^S (f(x_0)-flow)/ε₁^{(p+1)/p}`;
 `derivEvalCount k_ε = |𝒮_{k_ε-1}| + 1`; `Optimization.succ_le_of_arUpdate` at `k_ε - 1`.)
 '''
-deps = ["lemma_4_1_4_i", "lemma_4_1_2", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.sum_successSet_sub_eq", "Optimization.card_mul_le_of_decrease", "Optimization.succ_le_of_arUpdate", "Optimization.exists_hit_le_of_counting", "Optimization.IsFirstHit"]
+deps = ["lemma_4_1_4_i", "lemma_4_1_2", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.IsARRun.exists_isFirstHit_of_decrease"]
 source = "Cartis–Gould–Toint, Theorem 4.1.5"
 
 [[node]]

@@ -6,7 +6,9 @@ complexity and sharpness. Functions on `𝔼 = EuclideanSpace ℝ (Fin n)`; shar
 
 Algorithms are the backbone run predicates with exact data:
 `algorithm_12_2_1 = Optimization.IsTRqRun f (fun k => ftaylorSeries ℝ f (x k)) (fun _ => univ) …`,
-`algorithm_12_2_2 = Optimization.IsARqpRun f (fun k => ftaylorSeries ℝ f (x k)) …`
+`algorithm_12_2_2 = Optimization.IsARqpRun f univ P q ε δ₀ (fun k => Optimization.ARqpData.ofTaylor
+(ftaylorSeries ℝ f (x k)) p (σ k)) …` (both built on the generic `Optimization.IsTRRun` /
+`Optimization.IsARRun`; the -SC variants of §14.2 are the same predicates with a feasible set)
 (read the backbone `desc`s for the run conventions and the normalizations of the printed ARqp
 algorithm: strict Step-1 test, sound Step-2 termination, reconciled long-step branch, carried
 witnesses after failures). Evaluation counts: `Optimization.funEvalCount` (one `f` per iteration +
@@ -15,7 +17,9 @@ one), as in the book's proofs.
 
 Constants: tolerances `ε j ∈ (0,1]`, `ε_min = min_{j ∈ [1:q]} ε_j`; Lipschitz constants
 `L : ℕ → ℝ` (f.D1qL / f.D1pL / f.D1rL, all `≥ 1`), `L_f = max_j L j` ((12.2.6), (12.2.25)),
-`L_{f,p} = L p`. Corrections (details in nodes): Theorem 12.2.5 conclusion `φ_q → φ_j`;
+`L_{f,p} = L p`, `σ_max = Optimization.arSigmaMax P.toARParams (L p)` (the former surface
+`arqpSigmaMax`; the bound `σ_k ≤ σ_max` is `Optimization.IsARRun.sigma_le`, Lemma 4.1.2 for every AR
+method). Corrections (details in nodes): Theorem 12.2.5 conclusion `φ_q → φ_j`;
 Theorem 12.2.6 data; Lemma 12.2.11 `(1 - θ) → (ς - θ)` with `θ < ς`; Lemma 12.2.12/12.2.13/
 Theorem 12.2.14 constant `κ_{δ,min} → κ̂`; Lemma 12.2.13 hypotheses; Theorem 12.2.15 for `q ≥ 3`;
 Example 12.2.2 expansion.
@@ -43,7 +47,7 @@ Algorithm 12.2.1 (TRq): `algorithm_12_2_1 (f : 𝔼 → ℝ) (P : Optimization.T
 (ε : ℕ → ℝ) (ϑ : ℝ) (x s : ℕ → 𝔼) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → 𝔼) : Prop :=
 Optimization.IsTRqRun f (fun k => ftaylorSeries ℝ f (x k)) (fun _ => Set.univ) P q ε ϑ x s Δ jk d`,
 used with `ε j ∈ (0,1]` and `ϑ ∈ [ε_min, 1]`. Its termination test is
-`trqStop f P q ε ϑ x Δ d k := MeasureTestPasses (ftaylorSeries ℝ f (x k)) q P.ς ε
+`trqStop f P q ε ϑ x Δ d k := MeasureTestPasses (fun j => (ftaylorSeries ℝ f (x k)).taylorDecrement j) q P.ς ε
 (fun _ => min (Δ k) ϑ) (d k)` (part of node); `δ_k = min Δ_k ϑ`; successful iterations
 `P.η₁ ≤ ρ_k`. Existence (part of node): for every `f`, `x₀` a run exists
 (`Optimization.exists_isTRqRun` with `J y = ftaylorSeries ℝ f y`, `C' y = univ`).
@@ -141,7 +145,8 @@ kind = "def"
 desc = '''
 Algorithm 12.2.2 (ARqp): `algorithm_12_2_2 (f : 𝔼 → ℝ) (P : Optimization.ARqpParams) (p q : ℕ)
 (ε δ₀ : ℕ → ℝ) (x s : ℕ → 𝔼) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → 𝔼) : Prop :=
-Optimization.IsARqpRun f (fun k => ftaylorSeries ℝ f (x k)) P p q ε δ₀ x s σ δ δs d dm`, used with
+Optimization.IsARqpRun f Set.univ P q ε δ₀ (fun k => Optimization.ARqpData.ofTaylor (ftaylorSeries ℝ f
+(x k)) p (σ k)) x s σ δ δs d dm`, used with
 `1 ≤ q ≤ p`, `ε j ∈ (0,1]`, `δ₀ j ∈ (0,1]`. Stopping predicate `arqpStop … k := test₁ k ∨ test₂ k`
 (Step 1 measure test or Step 2 `m_k(s_k) = m_k(0)`; part of node); model
 `m_k = Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)` (12.2.23). Normalizations of
@@ -185,19 +190,23 @@ source = "Cartis–Gould–Toint, Example 12.2.2"
 id = "algorithm_12_2_3"
 kind = "def"
 desc = '''
-Algorithm 12.2.3 (detailed Step 2) as a run predicate of the inner procedure on events `t : ℕ`
-(each execution of Step 2.4.1). Given the model `m` (any `m : 𝔼 → ℝ` bounded below; ARqp: `m_k`),
+Algorithm 12.2.3 (detailed Step 2): `algorithm_12_2_3 m q ς θ ε s δs :=
+Optimization.IsDetailedStepOutput m univ (fun _ => univ) (fun j s d => (ftaylorSeries ℝ m s).taylorDecrement j d)
+q ς θ ε {j | 3 ≤ j} s δs` — the instance `h = 0`, `X = univ`, halving set `J = {j | 3 ≤ j}` of the
+backbone transition system shared with Algorithm 14.1.2 (consolidation; every output satisfies the
+Step-2 condition of `Optimization.IsARqpRun` by `IsDetailedStepOutput.spec`). Informally, the inner
+procedure runs on events `t : ℕ` (each execution of Step 2.4.1). Given the model `m` (any `m : 𝔼 → ℝ` bounded below; ARqp: `m_k`),
 `q`, `ς`, `θ`, `ε`: sequences `μ : ℕ → ℝ`, `sμ : ℕ → 𝔼`, `jt : ℕ → ℕ`, `δt : ℕ → ℕ → ℝ`,
 `dt : ℕ → 𝔼` and a return predicate, with: Step 2.1 `μ 0 ∈ (0,1]`, `δt 0 = 1`, `jt 0 = 1`;
 Step 2.2 every new trial point satisfies `μ (m 0 - ⨅ m) ≤ m 0 - m sμ` (12.2.34); Step 2.3 return
-`(sμ, δt)` if `‖sμ‖ ≥ 1`; Step 2.4.1 `dt t` is an `IsApproxMeasureStep (ftaylorSeries ℝ m (sμ t))
-(jt t) (δt t (jt t)) univ ς` witness (12.2.35); Step 2.4.2 if `ΔT ≤ ς θ ε_j δ^j/j!` (12.2.36) go to
+`(sμ, δt)` if `‖sμ‖ ≥ 1`; Step 2.4.1 `dt t` is an `IsApproxMeasureStep ((ftaylorSeries ℝ m (sμ t)).taylorDecrement
+(jt t)) (δt t (jt t)) univ ς` witness (12.2.35); Step 2.4.2 if `ΔT ≤ ς θ ε_j δ^j/j!` (12.2.36) go to
 `j + 1` or return (Step 2.5) when `j = q`; Step 2.4.3 else if `j ≥ 3` and
 `m(sμ) - m(sμ + dt) < ½ ς θ ε_j δ^j/j!` (12.2.37) halve `δ_j` and repeat with the same `j`;
 Step 2.4.4 else `μ ← (1 + μ)/2`, new trial point, `j ← 1` (radii kept). (Step 2.3's `≥ 1` is the
 long-step branch `1 ≤ ‖s‖` of `IsARqpRun`.)
 '''
-deps = ["Optimization.IsApproxMeasureStep"]
+deps = ["Optimization.IsApproxMeasureStep", "Optimization.DetailedStepTrans", "Optimization.IsDetailedStepOutput.spec"]
 source = "Cartis–Gould–Toint, Algorithm 12.2.3"
 
 [[node]]
@@ -238,7 +247,7 @@ conditions of ARqp ((12.2.27) and either the long-step branch `‖s_k‖ ≥ 1` 
 from a global model minimizer, which the book notes is always acceptable; termination of
 Algorithm 12.2.3 itself is `lemma_12_2_9_algorithm`.)
 '''
-deps = ["lemma_12_2_8", "Optimization.exists_arqp_step", "arqpKappaDelta"]
+deps = ["lemma_12_2_8", "Optimization.exists_highOrderStep", "arqpKappaDelta"]
 source = "Cartis–Gould–Toint, Lemma 12.2.9"
 
 [[node]]
@@ -268,26 +277,13 @@ Lemma 12.2.10. For an ARqp run under `AssumptionD1pL f p L` and the first stoppi
 `0` globally minimizes `m_k`, and `T_{m_k,j}(0,·) = T_{f,j}(x_k,·)` for `j ≤ p` (12.2.49). For
 `q ≤ 2`, `φ^δ_{f,j}(x_k) = 0` for `j ≤ 2` (Theorem 12.1.4 for `m_k` at `0`), contradicting the
 failed Step-1 test (`ΔT ≤ φ = 0 < ς ε δ^j/j!`). For `q ≥ 3` take `δ_j = min 1 (ε_j/(4(3L_f + σ_k)))`
-(`Optimization.taylorMeasure_le_of_isMinOn_regularizedModel` with `α = ε_j` at `s* = 0`). (The
+(corollary of `Optimization.sub_regularizedModel_ge_of_taylorDecrement_ge` with `α = ε_j` at `s* = 0`;
+equivalently `Optimization.exists_radius_of_isMinOn_compositeRegularizedModel_zero` with `h = 0`). (The
 printed proof's "(12.2.29) for `s_k = 0`" assumes the returned step is `0`, which need not hold —
 see Example 12.2.2 with `s_k = ½`.)
 '''
-deps = ["algorithm_12_2_2", "AssumptionD1pL", "IsEpsDeltaApproxMinimizer", "Optimization.taylorMeasure_le_of_isMinOn_regularizedModel", "Optimization.taylorMeasure_eq_zero_of_isLocalMin"]
+deps = ["algorithm_12_2_2", "AssumptionD1pL", "IsEpsDeltaApproxMinimizer", "Optimization.sub_regularizedModel_ge_of_taylorDecrement_ge", "Optimization.taylorMeasure_eq_zero_of_isLocalMin"]
 source = "Cartis–Gould–Toint, Lemma 12.2.10"
-
-[[node]]
-id = "arqpSigmaMax"
-kind = "def"
-desc = '''
-`arqpSigmaMax (P : Optimization.ARqpParams) (Lp : ℝ) : ℝ := max P.σ₀ (P.γ₃ * Lp / (1 - P.η₂))`
-(the book's `σ_max` (4.1.19), with `Lp = L_{f,p}`). Lemma `sigma_le_arqpSigmaMax` (part of node):
-under `AssumptionD1pL f p L` (only f.DpL is used), every ARqp run has `σ_k ≤ arqpSigmaMax P (L p)`
-for all `k` up to the first stop (Lemma 4.1.2 for ARqp, via `taylorDecrement_ge_of_regularizedModel_lt`,
-`abs_reductionRatio_sub_one_le_of_lipschitz` with `c = 1/(p+1)!`, `sigma_le_max_of_arUpdate`), and
-`σ_k ≥ σ_min`.
-'''
-deps = ["algorithm_12_2_2", "Optimization.taylorDecrement_ge_of_regularizedModel_lt", "Optimization.abs_reductionRatio_sub_one_le_of_lipschitz", "Optimization.sigma_le_max_of_arUpdate", "Optimization.le_sigma_of_arUpdate"]
-source = "Cartis–Gould–Toint, (4.1.19), Section 12.2.2.2 (Lemmas 4.1.1–4.1.2 still hold)"
 
 [[node]]
 id = "arqpKappaDelta"
@@ -297,7 +293,7 @@ desc = '''
 (`κ_δ(σ)` of Lemma 12.2.9); `κ_{δ,min} = arqpKappaDelta P L_f σ_max ≤ κ_δ(σ_k)` (12.2.51) since
 `σ_k ≤ σ_max`; `κ_{δ,min} < 1`.
 '''
-deps = ["arqpSigmaMax"]
+deps = ["Optimization.IsARRun.sigma_le"]
 source = "Cartis–Gould–Toint, Lemma 12.2.9, (12.2.51)"
 
 [[node]]
@@ -313,7 +309,7 @@ Corrections: the printed factor `(1 - θ)` is valid only for `ς = 1`: non-termi
 `φ_{m_k} ≤ θ ε_j δ^j/j!`; the hypothesis that (12.2.29) (not the long-step branch) was used is
 implicit in the printed proof.
 '''
-deps = ["algorithm_12_2_2", "arqpSigmaMax", "Optimization.taylorMeasure_le_of_regularizedModel", "Optimization.exists_lt_taylorDecrement_of_not_measureTestPasses"]
+deps = ["algorithm_12_2_2", "Optimization.IsARRun.sigma_le", "Optimization.taylorMeasure_le_of_regularizedModel", "Optimization.exists_lt_taylorDecrement_of_not_measureTestPasses"]
 source = "Cartis–Gould–Toint, Lemma 12.2.11"
 
 [[node]]
@@ -321,11 +317,11 @@ id = "arqpKappaHat"
 kind = "def"
 desc = '''
 Corrected radius constant: `arqpKappaHat P q Lf Lp := min (arqpKappaDelta P Lf σ_max) (τ_q / 2)`
-with `τ_j = (ς - θ)/(j! (Lp + σ_max))`, `σ_max = arqpSigmaMax P Lp`. Replaces `κ_{δ,min}` in
+with `τ_j = (ς - θ)/(j! (Lp + σ_max))`, `σ_max = Optimization.arSigmaMax P.toARParams Lp`. Replaces `κ_{δ,min}` in
 Lemmas 12.2.12–12.2.13 and Theorem 12.2.14 (case `q > 2`); equals `κ_{δ,min}` whenever
 `κ_{δ,min} ≤ τ_q/2`.
 '''
-deps = ["arqpKappaDelta", "arqpSigmaMax"]
+deps = ["arqpKappaDelta", "Optimization.arSigmaMax"]
 source = "Cartis–Gould–Toint, Lemma 12.2.12 (corrected constant)"
 
 [[node]]
@@ -343,9 +339,9 @@ if `q ∈ {1,2}`, `‖s_k‖ ≥ (τ_j ε_j / 2)^{1/(p-j+1)}`; if `q > 2`,
 Correction: the printed constant uses `κ_{δ,min}`; the step "the first case implies the second"
 needs `(τ_j/2)^{j-1} ≥ κ_{δ,min}^{j-1}`, false when `θ` is close to `1` (`τ_j → 0`), hence `κ̂`.
 Proof: `‖s_k‖ ≥ 1` trivial (bounds `≤ 1`); else Lemma 12.2.11 and
-`Optimization.norm_step_ge_of_le_sum`.
+`Optimization.norm_step_ge_of_measure_ineq` (case (i), `B = 0`).
 '''
-deps = ["lemma_12_2_11", "arqpKappaHat", "Optimization.norm_step_ge_of_le_sum"]
+deps = ["lemma_12_2_11", "arqpKappaHat", "Optimization.norm_step_ge_of_measure_ineq"]
 source = "Cartis–Gould–Toint, Lemma 12.2.12"
 
 [[node]]
@@ -363,7 +359,7 @@ every successful iteration `k` before termination such that the Step-1 test fail
 the next iteration not to terminate.) Proof: Lemma 4.1.1 (`taylorDecrement_ge_of_regularizedModel_lt`,
 `σ_k ≥ σ_min`) and Lemma 12.2.12; exponents/base `≤ 1` monotonicity to pass from `j` to `q`.
 '''
-deps = ["lemma_12_2_12", "arqpSigmaMax", "Optimization.taylorDecrement_ge_of_regularizedModel_lt", "Optimization.sub_le_of_le_reductionRatio"]
+deps = ["lemma_12_2_12", "Optimization.IsARRun.sigma_le", "Optimization.taylorDecrement_ge_of_regularizedModel_lt", "Optimization.sub_le_of_le_reductionRatio"]
 source = "Cartis–Gould–Toint, Lemma 12.2.13"
 
 [[node]]
@@ -381,7 +377,7 @@ stop is in Step 1 (Lemma 12.2.10), `phiMeasure f j 1 (x k_ε) ≤ ε_j/j!` for `
 Proof: Lemma 12.2.13 on successes `i < k_ε - 1` (`card_mul_le_of_decrease`, `|𝒮| ≤ N + 1`),
 Lemma 2.4.1 (`succ_le_of_arUpdate`) with `σ_{k} ≤ σ_max`.
 '''
-deps = ["lemma_12_2_13", "lemma_12_2_10", "arqpSigmaMax", "phiMeasure", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.isEpsDeltaApprox_of_measureTestPasses", "Optimization.succ_le_of_arUpdate", "Optimization.card_mul_le_of_decrease", "Optimization.exists_hit_le_of_counting", "Optimization.IsFirstHit", "Optimization.funEvalCount"]
+deps = ["lemma_12_2_13", "lemma_12_2_10", "Optimization.IsARRun.sigma_le", "phiMeasure", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.isEpsDeltaApprox_of_measureTestPasses", "Optimization.succ_le_of_arUpdate", "Optimization.card_mul_le_of_decrease", "Optimization.exists_hit_le_of_counting", "Optimization.IsFirstHit", "Optimization.funEvalCount"]
 source = "Cartis–Gould–Toint, Theorem 12.2.14 (1)"
 
 [[node]]
@@ -414,7 +410,7 @@ exact data, `δ₀ = 1`, except that Step 2 is replaced by: `s_k` is a global mi
 radii is one; conversely for `q ≤ 2` such a run is a genuine ARqp run (global minimizers satisfy
 (12.2.29) with radius `1` for `j ≤ 2`).
 '''
-deps = ["algorithm_12_2_2", "Optimization.taylorMeasure_le_of_isMinOn_regularizedModel"]
+deps = ["algorithm_12_2_2", "Optimization.sub_regularizedModel_ge_of_taylorDecrement_ge"]
 source = "Cartis–Gould–Toint, Theorem 12.2.15 (hypothesis)"
 
 [[node]]
@@ -456,7 +452,7 @@ with a genuine ARqp run (`algorithm_12_2_2`, `δ₀ = 1`, radii `δ_k ≡ 1`): t
 f.D1pL (constants depending only on `p, q`) and an ARqp run whose first stop index is
 `⌈ε^{-(p+1)/(p-q+1)}⌉₊`, so the bound of Theorem 12.2.14 (1) is sharp in order.
 '''
-deps = ["theorem_12_2_15", "IsARqpGlobalStepRun", "algorithm_12_2_2", "Optimization.taylorMeasure_le_of_isMinOn_regularizedModel"]
+deps = ["theorem_12_2_15", "IsARqpGlobalStepRun", "algorithm_12_2_2", "Optimization.sub_regularizedModel_ge_of_taylorDecrement_ge"]
 source = "Cartis–Gould–Toint, Corollary 12.2.16"
 
 [[node]]
