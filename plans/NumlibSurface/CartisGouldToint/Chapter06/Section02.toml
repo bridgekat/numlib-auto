@@ -184,7 +184,7 @@ Lemma 6.2.1 (6.2.18)–(6.2.19), **corrected** (unit ball added). Same setting (
 restricted set) the bounds are unproved: the proof's (6.2.23) holds only for `d ∈ 𝓑`, and for
 `‖d‖ > 1` the error term scales as `‖d‖` (resp. `‖d‖²`).
 '''
-deps = ["arpcc_sigma_le", "Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel", "restrictedSteps₂"]
+deps = ["arpcc_sigma_le", "Optimization.abs_iteratedFDeriv_sub_regularizedModel_le_of_mem_closedBall", "Optimization.inter_closedBall_restrictedSteps_subset_regularizedModel", "restrictedSteps₂"]
 source = "Cartis–Gould–Toint, Lemma 6.2.1, (6.2.18)–(6.2.19)"
 
 [[node]]

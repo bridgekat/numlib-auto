@@ -245,5 +245,5 @@ desc = '''
 whenever `s₀ ‖v‖ ≤ ‖(fderiv ℝ r x)† v‖` for all `v` (smallest singular value of the Jacobian
 bounded away from zero, (5.1.62)).
 '''
-deps = ["psiOne", "Optimization.gradient_residualPow", "Optimization.norm_fderiv_residualPow_ge"]
+deps = ["psiOne", "Optimization.gradient_residualPow", "Optimization.norm_fderiv_residualPow_div", "Optimization.norm_fderiv_residualPow_ge"]
 source = "Cartis–Gould–Toint, (5.1.62)–(5.1.64)"

@@ -42,7 +42,7 @@ The class `ARψ,ν`: `IsARpsiNuRun f ψ κν ν κR κA x S := Optimization.IsAR
 ((5.3.5), (5.3.9); the book's "monotonic" is implied for `ψ ≥ 0`). Non-vacuity: ARp runs without
 termination (`Optimization.isARLikeRun_of_isARpRun`, cases (5.3.6)–(5.3.7)).
 '''
-deps = ["Optimization.IsARLikeRun", "Optimization.isARLikeRun_of_isARpRun"]
+deps = ["Optimization.IsARLikeRun", "Optimization.isARLikeRun_of_isARpRun", "Optimization.isARLikeRun_of_isARpRun_curvature", "Optimization.exists_isARpRun_softplus"]
 source = "Cartis–Gould–Toint, Section 5.3.2 (class ARψ,ν)"
 
 [[node]]
@@ -54,7 +54,7 @@ The class `TRψ,ν`: `IsTRpsiNuRun f ψ κν ν κR κA x S := Optimization.IsTR
 `κν = η₁ κ_decr` holds for the decrease (Lemma 2.3.5) but its density constant depends on a lower
 bound for the gradient along the run; see `Optimization.MeasureDominated`.)
 '''
-deps = ["Optimization.IsTRLikeRun"]
+deps = ["Optimization.IsTRLikeRun", "Optimization.isTRLikeRun_halving"]
 source = "Cartis–Gould–Toint, Section 5.3.3 (class TRψ,ν)"
 
 [[node]]
@@ -146,7 +146,7 @@ book's "final value `Γ_{k□} ≥ 1`" is `Γ_{k□} ≥ Γ□`, i.e. `ω ≥ 1`
 (iii) `ν > μ`: `Γ₀ ≤ Γ□` (5.3.32); if equal, `Γ_{k₁+1} = 0`; (5.3.30) holds and `Γ_k → 0` with
 `Γ_{k+1} ≤ (Γ₀^(-α) + α c |𝒮_k|)^(-1/α)` (sublinear).
 '''
-deps = ["IsTRpsiNuRun", "Optimization.isImplicitGapDecrease_of_isARLikeRun", "Optimization.IsImplicitGapDecrease.le_div", "Optimization.IsImplicitGapDecrease.le_of_linear_count", "Optimization.IsExplicitGapDecrease.eq_zero_of_lt_one", "Optimization.IsImplicitGapDecrease.le_of_sublinear_count"]
+deps = ["IsTRpsiNuRun", "Optimization.isExplicitGapDecrease_of_isTRLikeRun", "Optimization.IsImplicitGapDecrease.le_div", "Optimization.IsImplicitGapDecrease.le_of_linear_count", "Optimization.IsExplicitGapDecrease.eq_zero_of_lt_one", "Optimization.IsImplicitGapDecrease.le_of_sublinear_count"]
 source = "Cartis–Gould–Toint, Lemma 5.3.6"
 
 [[node]]
@@ -201,7 +201,7 @@ every point of `A`, then `Optimization.IsMeasureDominated (Phi r ℓ) (fun x => 
 `0 ≤ Φ_ℓ`; the book's "`min Φ_ℓ = 0`" is not needed — and does not follow from (5.1.62) at the
 iterates only).
 '''
-deps = ["Phi", "psiOne", "Optimization.residualPow_le_of_norm_fderiv_ge", "Optimization.IsMeasureDominated"]
+deps = ["Phi", "psiOne", "Optimization.residualPow_le_of_norm_fderiv_ge", "Optimization.IsMeasureDominated", "Optimization.isMeasureDominated_residualPow"]
 source = "Cartis–Gould–Toint, (5.3.2)–(5.3.3)"
 
 [[node]]

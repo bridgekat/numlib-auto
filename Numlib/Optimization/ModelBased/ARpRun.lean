@@ -169,6 +169,22 @@ theorem sigma_pos (h : IsARpRun f p P q test x s σ) {k : ℕ} (hk : ∀ j < k, 
     0 < σ k :=
   h.toIsARRun.sigma_pos (not_stop_iff.2 hk) k le_rfl
 
+/-- An unsuccessful iteration before termination keeps the iterate. -/
+theorem eq_of_not_succ (h : IsARpRun f p P q test x s σ) {k : ℕ} (hk : ∀ j ≤ k, ¬ test j)
+    (hs : ¬ P.η₁ ≤ taylorRatio f p x s k) : x (k + 1) = x k :=
+  h.toIsARRun.eq_of_not_succ (not_stop_le_iff.2 hk) (not_le.1 hs)
+
+/-- **Density of the successful iterations** ([cartis2022evaluation], Lemma 2.4.1 with
+`σ_k ≤ σ_max` from Lemma 4.1.2; the form (5.3.9)): if the run has not terminated before `k`, then
+`k ≤ (1 + |log γ₁|/log γ₂) |𝒮_k| + log(σ_max/σ₀)/log γ₂`. -/
+theorem density (h : IsARpRun f p P q test x s σ) {L : ℝ} (hf : ContDiff ℝ p f)
+    (hL : IteratedFDerivLipschitzOn f p L univ) {k : ℕ} (hk : ∀ j < k, ¬ test j) :
+    (k : ℝ) ≤ (1 + |Real.log P.γ₁| / Real.log P.γ₂) *
+        (successSet (fun j => P.η₁ ≤ taylorRatio f p x s j) k).card +
+      Real.log (arSigmaMax P.toARParams L / P.σ₀) / Real.log P.γ₂ := by
+  have := h.toIsARRun.le_succ_count (k := k) (not_stop_iff.2 hk) (h.sigma_le hf hL hk).2
+  linarith
+
 variable {L : ℝ}
 
 /-- **Lemma 4.1.3, (4.1.20)** at the trial point ([cartis2022evaluation]): before termination,
