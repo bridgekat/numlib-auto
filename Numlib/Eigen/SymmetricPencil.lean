@@ -157,7 +157,7 @@ omit [DecidableEq n] in
 /-- The sets of Courant–Fischer bounds are transported by a linear equivalence: if `g (Φ y) = f y`,
 the bounds `R c (g x)` holding on the nonzero vectors of some `d`-dimensional subspace of `V'` are
 those holding for `f` on some `d`-dimensional subspace of `V`. -/
-private theorem setOf_exists_submodule_eq {V V' : Type*} [AddCommGroup V] [Module 𝕜 V]
+theorem setOf_exists_submodule_eq {V V' : Type*} [AddCommGroup V] [Module 𝕜 V]
     [AddCommGroup V'] [Module 𝕜 V'] (Φ : V ≃ₗ[𝕜] V') {f : V → ℝ} {g : V' → ℝ}
     (hfg : ∀ y, g (Φ y) = f y) (d : ℕ) (R : ℝ → ℝ → Prop) :
     {c : ℝ | ∃ S : Submodule 𝕜 V', Module.finrank 𝕜 S = d ∧ ∀ x ∈ S, x ≠ 0 → R c (g x)} =

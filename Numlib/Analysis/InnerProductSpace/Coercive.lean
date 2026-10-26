@@ -50,7 +50,10 @@ convergence analysis of iterative methods uses.
 * `ContinuousLinearMap.isCoerciveWith_iff_hermitianPart`: coercivity of `A` is coercivity of
   `½ (A + A†)`;
 * `Matrix.posDef_iff_isSymmetricCoercive`: `Matrix.PosDef` is symmetric coercivity of the
-  Euclidean operator.
+  Euclidean operator;
+* `LinearMap.isSymmetric_iff_of_inner_map_eq`, `LinearMap.isPositive_iff_of_inner_map_eq`,
+  `LinearMap.isSymmetricCoercive_iff_of_inner_map_eq`: these properties are transported along a
+  linear equivalence `Φ` (not necessarily an isometry) with `⟪T (Φ x), Φ y⟫ = ⟪S x, y⟫`.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -645,3 +648,54 @@ theorem LinearMap.IsPositive.apply_eq_zero_of_inner_eq_zero {T : F →ₗ[ℝ] F
   exact inner_self_eq_zero.mp hw
 
 end RealShift
+
+/-! ### Transport of quadratic forms along a linear equivalence -/
+
+namespace LinearMap
+
+section Transport
+
+open scoped RealInnerProductSpace
+
+variable {F F' : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [NormedAddCommGroup F']
+  [InnerProductSpace ℝ F'] {S : F →ₗ[ℝ] F} {T : F' →ₗ[ℝ] F'} (Φ : F ≃ₗ[ℝ] F')
+  (hST : ∀ x y, ⟪T (Φ x), Φ y⟫ = ⟪S x, y⟫)
+include hST
+
+/-- Symmetry is transported along a linear equivalence that carries the bilinear forms. -/
+theorem isSymmetric_iff_of_inner_map_eq : S.IsSymmetric ↔ T.IsSymmetric := by
+  constructor
+  · intro hS u v
+    obtain ⟨x, rfl⟩ := Φ.surjective u
+    obtain ⟨y, rfl⟩ := Φ.surjective v
+    rw [hST, real_inner_comm (T (Φ y)), hST, hS]
+    exact real_inner_comm _ _
+  · intro hT x y
+    rw [← hST, hT, real_inner_comm (T (Φ y)), hST]
+    exact real_inner_comm _ _
+
+/-- Positivity is transported along a linear equivalence that carries the bilinear forms. -/
+theorem isPositive_iff_of_inner_map_eq : S.IsPositive ↔ T.IsPositive := by
+  rw [isPositive_iff, isPositive_iff, isSymmetric_iff_of_inner_map_eq Φ hST]
+  refine and_congr_right fun _ => ⟨fun h u => ?_, fun h x => ?_⟩
+  · obtain ⟨x, rfl⟩ := Φ.surjective u
+    rw [hST]; exact h x
+  · rw [← hST]; exact h (Φ x)
+
+/-- Symmetric coercivity (positive definiteness) is transported along a linear equivalence that
+carries the bilinear forms, in finite dimension. -/
+theorem isSymmetricCoercive_iff_of_inner_map_eq [FiniteDimensional ℝ F] [FiniteDimensional ℝ F'] :
+    S.IsSymmetricCoercive ↔ T.IsSymmetricCoercive := by
+  have hc : S.IsCoercive ↔ T.IsCoercive := by
+    rw [isCoercive_iff_forall_pos, isCoercive_iff_forall_pos]
+    simp only [RCLike.re_to_real]
+    refine ⟨fun h u hu => ?_, fun h x hx => ?_⟩
+    · obtain ⟨x, rfl⟩ := Φ.surjective u
+      rw [hST]; exact h x (fun hx => hu (by rw [hx, map_zero]))
+    · rw [← hST]; exact h (Φ x) (fun h0 => hx (Φ.injective (by rw [h0, map_zero])))
+  exact ⟨fun h => ⟨(isSymmetric_iff_of_inner_map_eq Φ hST).1 h.isSymmetric, hc.1 h.isCoercive⟩,
+    fun h => ⟨(isSymmetric_iff_of_inner_map_eq Φ hST).2 h.isSymmetric, hc.2 h.isCoercive⟩⟩
+
+end Transport
+
+end LinearMap
