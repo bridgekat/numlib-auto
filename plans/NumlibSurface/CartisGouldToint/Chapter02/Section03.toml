@@ -12,8 +12,10 @@ id = "TR1Params"
 kind = "def"
 desc = '''
 Structure of TR1 constants (2.3.3): `Δ₀ > 0`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ ≤ γ₂ < 1 < γ₃`
-(fields with their constraints as proof fields).
+(fields with their constraints as proof fields): `structure TR1Params extends
+Optimization.TRParams` adding `1 < γ₃`.
 '''
+deps = ["Optimization.TRParams"]
 source = "Cartis–Gould–Toint, (2.3.3)"
 
 [[node]]
@@ -26,12 +28,13 @@ Algorithm 2.3.1 (TR1) as a run predicate `IsTR1Run f P ε x s Δ B` (`x s : ℕ 
 `m_k(s_k) ≤ m_k(-t • ∇f(x_k))` for some `t` with `Optimization.IsCauchyStep (∇f(x_k)) (B k) (Δ k) t`
 (2.3.4)–(2.3.5); with `pred k = m_k(0) - m_k(s_k)` and `ρ_k = Optimization.reductionRatio f (x k)
 (s k) (pred k)`: `x (k+1) = if η₁ ≤ ρ_k then x k + s k else x k` and
-`Optimization.TRUpdate η₁ η₂ γ₁ γ₂ γ₃ ρ_k (Δ k) (Δ (k+1))` (2.3.7).
+`Optimization.TRUpdate η₁ η₂ γ₁ γ₂ γ₃ ρ_k (Δ k) (Δ (k+1))` (2.3.7) — i.e. an instance of
+`Optimization.IsTRRun P.toTRParams test step ρ x s Δ`.
 Existence (part of node, `exists_isTR1Run`): for any `x₀`, `P`, `ε > 0` and any sequence of
 self-adjoint `B_k` (as a function of the state, e.g. constant), a run exists (the model minimizer
 over the ball satisfies the Cauchy condition: `Optimization.exists_isMinOn_quadModel_ball`).
 '''
-deps = ["TR1Params", "Optimization.UntilHit", "Optimization.IsCauchyStep", "Optimization.reductionRatio", "Optimization.TRUpdate", "Optimization.exists_isMinOn_quadModel_ball", "Optimization.exists_run_of_forall_exists"]
+deps = ["TR1Params", "Optimization.IsTRRun", "Optimization.UntilHit", "Optimization.IsCauchyStep", "Optimization.reductionRatio", "Optimization.TRUpdate", "Optimization.exists_isMinOn_quadModel_ball", "Optimization.exists_run_of_forall_exists"]
 source = "Cartis–Gould–Toint, Algorithm 2.3.1"
 
 [[node]]

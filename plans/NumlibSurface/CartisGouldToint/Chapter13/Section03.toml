@@ -195,9 +195,9 @@ Proof: the first order `j` at which Step 1 at `k+1` halves or branches to Step 2
 `φ^δ_j(x_{k+1}) > ς ε_j δ^j/(2 j!) - κs ∑_ℓ δ^ℓ/ℓ! ‖s_k‖^{p-ℓ+1}`
 (`Optimization.taylorMeasure_le_add_of_jetApprox`); then
 `Optimization.radius_inequality_of_measure_gt` with `a = ς/2`, `κ = 1`, and
-`Optimization.norm_step_ge_of_radius_inequality`.
+`Optimization.norm_step_ge_of_measure_ineq` (case (i), `B = 0`).
 '''
-deps = ["algorithm_13_3_2", "lemma_13_3_5", "Optimization.taylorMeasure_le_add_of_jetApprox", "Optimization.radius_inequality_of_measure_gt", "Optimization.norm_step_ge_of_radius_inequality"]
+deps = ["algorithm_13_3_2", "lemma_13_3_5", "Optimization.taylorMeasure_le_add_of_jetApprox", "Optimization.radius_inequality_of_measure_gt", "Optimization.norm_step_ge_of_measure_ineq"]
 source = "Cartis–Gould–Toint, Section 13.3.2 (Lemmas 13.1.16–13.1.17 \"continue to hold\")"
 
 [[node]]

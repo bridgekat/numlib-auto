@@ -145,20 +145,6 @@ deps = ["sub_taylorPolynomial_isLittleO", "taylorMeasure_nonneg", "taylorPolynom
 source = "Cartis–Gould–Toint, Theorem 12.1.4, (12.1.17)"
 
 [[node]]
-id = "le_add_of_taylorMeasure_le"
-kind = "theorem"
-desc = '''
-Stability inequality (12.1.39). Let `j ≥ 1`, `0 < δ < r`, `ContDiffOn ℝ j f (ball x r)`,
-`IteratedFDerivHolderOn f j L 1 (ball x r)` (`L ≥ 0`, i.e. `∇^j f` is `L`-Lipschitz there) and
-`taylorMeasure (ftaylorSeries ℝ f x) j δ univ ≤ ε * δ ^ j / j!`. Then for all `d` with `‖d‖ ≤ δ`:
-`f x - L / (j + 1)! * ‖d‖ * δ ^ j - ε * δ ^ j / j! ≤ f (x + d)`.
-(Taylor polynomial lower bound from the measure, plus (A.19) `abs_sub_taylorPolynomial_le_of_lipschitz`
-on `C = closedBall x δ ⊆ ball x r`.)
-'''
-deps = ["taylorMeasure_nonneg", "abs_sub_taylorPolynomial_le_of_lipschitz", "IteratedFDerivHolderOn"]
-source = "Cartis–Gould–Toint, proof of Theorem 12.1.8, (12.1.37)–(12.1.39)"
-
-[[node]]
 id = "isStrictLocalMin_taylorPolynomial_succ_of_growth"
 kind = "theorem"
 desc = '''

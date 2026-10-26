@@ -9,15 +9,16 @@ Notation used below for a run: `Dfk := ftaylorSeries ℝ f (x k)`, `Dck := ftayl
 `Xk := {d | x k + d ∈ X}`; the measure `φ^δ_{w,X,j}(x_k) = Optimization.compositeTaylorMeasure Dfk
 Dck h j δ Xk`; the model `m̂_k := Optimization.compositeRegularizedModel Dfk Dck h p (σ k)`; its
 order-`j` decrement at `s`: `Optimization.compositeModelDecrement Dfk Dck h p (σ k) j s d`. The
-algorithm is planned directly with a feasible set `X` (closed, `x 0 ∈ X`): `X = univ` is ARqpC,
+algorithm is the backbone `Optimization.IsARqpRun` with composite model data
+(`Optimization.ARqpData.ofComposite`) and a feasible set `X` (closed, `x 0 ∈ X`): `X = univ` is ARqpC,
 general `X` is ARqpC-SC of §14.2 (the only changes are (14.2.2)–(14.2.5)).
 
-Interfaces assumed from the concurrent Chapter 12 plan (plan-ch12), referenced in prose only (not
-in `deps`, because those ids are not on main): f.D1pL as `Chapter12.AssumptionFD1pL f p Lf`
-(`ContDiff ℝ p f`, `IteratedFDerivLipschitzOn f j (Lf j) univ` and `1 ≤ Lf j` for `j ∈ Icc 1 p`),
-the ARqp algorithm/Algorithm 12.2.3 (which should instantiate the backbone
-`Optimization.DetailedStepTrans` with `J = {j | 3 ≤ j}`), Lemmas 12.2.8–12.2.13, Theorems 12.2.14,
-12.2.15 (the slow example used by Corollary 14.1.11).
+Interfaces from Chapter 12 (now on main; the planned statements below may cite them): f.D1pL is
+`CartisGouldToint.Chapter12.AssumptionD1pL f p Lf` (the earlier name `AssumptionFD1pL` in some
+descriptions means this node); ARqp is `algorithm_12_2_2` (= `Optimization.IsARqpRun` with
+`ARqpData.ofTaylor`), Algorithm 12.2.3 is `Chapter12.algorithm_12_2_3` (the `h = 0`,
+`J = {j | 3 ≤ j}` instance of `Optimization.DetailedStepTrans`), Lemmas 12.2.8–12.2.13 and
+Theorems 12.2.14, 12.2.15 (the slow example used by Corollary 14.1.11).
 '''
 
 [[node]]
@@ -105,13 +106,13 @@ source = "Cartis–Gould–Toint, Example 14.1.1"
 id = "ARqpCParams"
 kind = "def"
 desc = '''
-Constants of Algorithm 14.1.1 (and 12.2.2): `q ≥ 1`, `p ≥ q`, `toAR : Chapter02.ARParams` (σ₀,
-σ_min ∈ (0,σ₀], 0 < η₁ ≤ η₂ < 1, 0 < γ₁ < 1 < γ₂ < γ₃), `θ ∈ (0,1)`, `ς ∈ (0,1]`, and the extra
+Constants of Algorithm 14.1.1 (and 12.2.2): `q ≥ 1`, `p ≥ q`, `toARqpParams : Optimization.ARqpParams`
+(σ₀, σ_min ∈ (0,σ₀] (`0 < σmin` as a field), 0 < η₁ ≤ η₂ < 1, 0 < γ₁ < 1 < γ₂ ≤ γ₃, `θ ∈ (0,1)`, `ς ∈ (0,1]`), and the extra
 condition `θ < ς` (not in the book; needed for Lemma 14.1.7 when `ς < 1`, automatic if `ς = 1`),
 initial radii `δ₀ : ℕ → ℝ` with `δ₀ j ∈ (0,1]`, accuracies `ε : ℕ → ℝ` with `ε j ∈ (0,1]` for
 `j ∈ Icc 1 q` (book: `(0,1)^q`).
 '''
-deps = ["CartisGouldToint.Chapter02.ARParams"]
+deps = ["Optimization.ARqpParams"]
 source = "Cartis–Gould–Toint, Algorithm 14.1.1, Step 0"
 
 [[node]]
@@ -135,23 +136,25 @@ id = "algorithm_14_1_1"
 kind = "def"
 desc = '''
 Algorithm 14.1.1 (ARqpC; ARqpC-SC for general closed `X`) as a run predicate
-`IsARqpCRun f c h X P x δ d s δs σ : Prop` on `x s : ℕ → E`, `δ δs : ℕ → ℕ → ℝ`,
-`d : ℕ → ℕ → E` (optimality displacements `d_{k,j}`), `σ : ℕ → ℝ`. With
-`stopTest k := ∀ j ∈ Icc 1 q, compositeTaylorDecrement Dfk Dck h j (d k j) ≤ ς ε_j δ_{k,j}^j / j!`
-(Step 1, (14.1.10) with the book's `δ_j` read as `δ_{k,j}`), `test k := stopTest k ∨ m̂_k (s k) =
-m̂_k 0` (Step 2 termination), `ρ k := Optimization.reductionRatio w (x k) (s k)
-(compositeTaylorDecrement Dfk Dck h p (s k))` (14.1.15) and `succ k := η₁ ≤ ρ k`:
-(init) `x 0 ∈ X`, `δ 0 = δ₀`, `σ 0 = σ₀`;
-(Step 1) for `k` with `∀ i < k, ¬ test i` and `j ∈ Icc 1 q`: `d k j ∈ closedBall 0 (δ k j) ∩ Xk` and
-`ς * compositeTaylorMeasure Dfk Dck h j (δ k j) Xk ≤ compositeTaylorDecrement Dfk Dck h j (d k j)`;
-(Step 2) for such `k` with `¬ stopTest k`: `IsARqpCStep f c h X P (σ k) (x k) (δs k) (s k)`;
-(Steps 3–4) for `k` with `∀ i ≤ k, ¬ test i`: `x (k+1) = if succ k then x k + s k else x k`,
-`δ (k+1) = if succ k then δs k else δ k`, `Optimization.ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σ_min (ρ k) (σ k)
-(σ (k+1))` ((14.1.16) = (2.4.4)).
+`IsARqpCRun f c h X P x δ d s δs σ dm : Prop` on `x s : ℕ → E`, `δ δs : ℕ → ℕ → ℝ`,
+`d dm : ℕ → ℕ → E` (optimality displacements `d_{k,j}`, model witnesses), `σ : ℕ → ℝ`:
+`Optimization.IsARqpRun w X P.toARqpParams q ε δ₀ (fun k => Optimization.ARqpData.ofComposite Dfk Dck
+h p (σ k)) x s σ δ δs d dm` (with `w = f + h ∘ c`) `∧ ∀ k, (∀ i < k, ¬ stop i) → ¬ stop₁ k →
+IsARqpCStep f c h X P (σ k) (x k) (δs k) (s k)` (Step 2 is computed by Algorithm 14.1.2, whose
+outputs satisfy the generic Step-2 condition of `IsARqpRun` by
+`Optimization.IsDetailedStepOutput.spec`). Unfolded: `stop₁ k := ∀ j ∈ Icc 1 q,
+compositeTaylorDecrement Dfk Dck h j (d k j) ≤ ς ε_j δ_{k,j}^j / j!` (Step 1, (14.1.10) with the book's
+`δ_j` read as `δ_{k,j}`), `stop₂ k := m̂_k (s k) = m̂_k 0` (Step 2 termination),
+`ρ k := Optimization.reductionRatio w (x k) (s k) (compositeTaylorDecrement Dfk Dck h p (s k))`
+(14.1.15), `succ k := η₁ ≤ ρ k`; (init) `x 0 ∈ X`, `δ 0 = δ₀`, `σ 0 = σ₀`; (Step 1) Step-1
+witnesses `Optimization.IsApproxMeasureStep (compositeTaylorDecrement Dfk Dck h j) (δ k j) Xk ς (d k j)`;
+(Steps 3–4) `Optimization.ARAcceptance` ((14.1.16) = (2.4.4)), `δ (k+1) = if succ k then δs k else δ k`
+(and `d (k+1) = d k` after a failure, harmless: the book recomputes the same quantities).
+`X = univ` is ARqpC; general `X` is ARqpC-SC (§14.2).
 Derivative evaluations: orders `1..q` at Step 1, `q+1..p` only if Step 2 is reached; counted with
 the core convention (all orders, once per successful iteration plus initial).
 '''
-deps = ["ARqpCParams", "algorithm_14_1_2", "Optimization.UntilHit", "Optimization.compositeTaylorMeasure", "Optimization.reductionRatio", "Optimization.ARUpdate"]
+deps = ["ARqpCParams", "algorithm_14_1_2", "Optimization.IsARqpRun", "Optimization.ARqpData.ofComposite", "Optimization.IsDetailedStepOutput.spec", "Optimization.compositeTaylorMeasure"]
 source = "Cartis–Gould–Toint, Algorithm 14.1.1"
 
 [[node]]

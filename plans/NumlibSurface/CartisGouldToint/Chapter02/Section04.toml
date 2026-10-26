@@ -12,21 +12,26 @@ kind = "def"
 desc = '''
 Structure of adaptive-regularization constants (2.4.2), shared by AR1, AR2 (3.3.3) and later
 chapters' ARp: `σ₀ > 0`, `σ_min ∈ (0, σ₀]`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ < γ₃`.
+`structure ARParams extends Optimization.ARParams` adding `0 < σmin` and `γ₂ < γ₃` (the backbone
+structure allows `σmin = 0`, `γ₂ = γ₃`).
 '''
+deps = ["Optimization.ARParams"]
 source = "Cartis–Gould–Toint, (2.4.2)"
 
 [[node]]
 id = "algorithm_2_4_1"
 kind = "def"
 desc = '''
-Algorithm 2.4.1 (AR1) as a run predicate `IsAR1Run f P ε x s σ`: `σ 0 = P.σ₀` and before the first
+Algorithm 2.4.1 (AR1) as a run predicate `IsAR1Run f P ε x s σ := Optimization.IsARRun
+P.toARParams (fun k => ‖∇f(x_k)‖ ≤ ε) (fun k => IsMinOn m_k univ (s k)) (fun _ => False)
+(Optimization.taylorRatio f 1 x s) x s σ`, i.e.: `σ 0 = P.σ₀` and before the first
 `k` with `‖∇f(x_k)‖ ≤ ε`: `s k` is a global minimizer of `m_k` (`IsMinOn m_k univ (s k)`, Step 2);
 `x (k+1) = if η₁ ≤ ρ_k then x k + s k else x k` with
 `ρ_k = Optimization.reductionRatio f (x k) (s k) ((ftaylorSeries ℝ f (x k)).taylorDecrement 1 (s k))`;
 `Optimization.ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σ_min ρ_k (σ k) (σ (k+1))`.
 Existence (part of node): from any `x₀`, `s_k = -σ_k⁻¹ ∇f(x_k)` and any admissible `σ_{k+1}`.
 '''
-deps = ["ARParams", "Optimization.UntilHit", "Optimization.regularizedModel", "Optimization.reductionRatio", "Optimization.ARUpdate", "Optimization.exists_run_of_forall_exists"]
+deps = ["ARParams", "Optimization.IsARRun", "Optimization.taylorRatio", "Optimization.regularizedModel", "Optimization.ARUpdate", "Optimization.exists_isARRun"]
 source = "Cartis–Gould–Toint, Algorithm 2.4.1"
 
 [[node]]

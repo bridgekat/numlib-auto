@@ -14,7 +14,9 @@ criticality of `μ₂` into the scaled approximate KKT condition (7.1.4); (ii) `
 additive constant, affine in `t`, which makes Lipschitz constants of its `p`-th derivative uniform
 over a bounded interval of targets (Lemma 7.2.5; the book's "continuous dependence on `t`" is not by
 itself enough, the affine structure is what is used); (iii) the elementary inequality of Lemma B.7.1
-behind the target decrease (7.2.30).
+behind the target decrease (7.2.30); (iv) the second/third-order measure relations between `μ₂` and
+the Lagrangian used by TPqp-GC (Lemma 14.3.5, corrected). Consolidated with the Chapter 14 plan's
+`Constrained/TwoPhase` copies (one set of ids; the target-sequence bookkeeping is in `TwoPhase`).
 
 Sign conventions: the existing `Constrained.lagrangian`/`augmented` use `f + ⟨λ, h⟩`; the book's
 `ℒ(x,y) = f(x) - ⟨y, c(x)⟩` is `Constrained.augmented f c 0 (-y)`. Nodes below write the book's
@@ -31,7 +33,8 @@ desc = '''
 `‖c x‖ ≤ targetResidual f c t x`; `|f x - t| ≤ targetResidual f c t x`;
 `targetResidual f c (2 * f x - t) x = targetResidual f c t x` ((7.2.18)–(7.2.19));
 if `‖c x‖ ≤ ε` then `targetResidual f c (f x - √(ε^2 - ‖c x‖^2)) x = ε` ((7.2.11), (7.2.27));
-`targetResidual f c (f x) x = ‖c x‖` and `targetMerit f c (f x) = Φ₂(x) := ‖c x‖²/2` pointwise.
+`targetResidual f c (f x) x = ‖c x‖` and `targetMerit f c (f x) = Φ₂(x) := ‖c x‖²/2` pointwise;
+`C^p` when `f`, `c` are.
 Monotonicity transfer: `targetMerit` decreases iff `targetResidual` does.
 '''
 source = "Cartis–Gould–Toint, (7.2.4)–(7.2.6)"
@@ -45,7 +48,10 @@ If `f` and `c` are differentiable at `x`: `fderiv ℝ (targetMerit f c t) x =
 [∇c]ᵀ c`). Also (part of node) the dependence on `t`: `targetMerit f c t x = targetMerit f c 0 x -
 t * f x + t ^ 2 / 2`, so `iteratedFDeriv ℝ j (targetMerit f c t) x =
 iteratedFDeriv ℝ j (targetMerit f c 0) x - t • iteratedFDeriv ℝ j f x` for `j ≥ 1`; at `t = f x`
-the derivative is that of `Φ₂ = ‖c‖²/2` (used for (7.2.15) when `f(x_ε) = t_ε`).
+the derivative is that of `Φ₂ = ‖c‖²/2` (used for (7.2.15) when `f(x_ε) = t_ε`). Diagonal second and
+third derivatives (14.3.38)–(14.3.39) (part of node): `D²μ[d,d] = ‖Dc[d]‖² + ⟪c x, D²c[d,d]⟫ +
+(Df[d])² + (f x - t) D²f[d,d]`, `D³μ[d,d,d] = 3⟪D²c[d,d], Dc[d]⟫ + ⟪c x, D³c[d,d,d]⟫ +
+3 D²f[d,d] Df[d] + (f x - t) D³f[d,d,d]`.
 '''
 deps = ["targetResidual"]
 source = "Cartis–Gould–Toint, proof of Lemma 7.2.1"
@@ -57,11 +63,15 @@ desc = '''
 Multiplier estimate (7.2.22). If `f x ≠ t` and `y := -(f x - t)⁻¹ • c x`, then
 `fderiv ℝ (targetMerit f c t) x = (f x - t) • fderiv ℝ (fun z => f z - ⟪y, c z⟫_ℝ) x`, and, when
 `f x > t`, `targetResidual f c t x / (f x - t) = √(‖y‖ ^ 2 + 1)` (the book's `‖(y_ε, 1)‖`).
-Consequently (with `formCriticality_smul`) for any `T ∋ 0`:
+Also `⟪y, c x⟫ = -‖c x‖²/(f x - t) ≤ 0`, and the Taylor-measure form ((14.3.53)–(14.3.54), Lemma
+14.3.5 for `j = 1`; merged from the Chapter 14 plan's `taylorMeasure_lagrangian_one_eq`): for all
+`δ`, `S`, `taylorMeasure (ftaylorSeries ℝ ℓ x) 1 δ S = (f x - t)⁻¹ * taylorMeasure (ftaylorSeries ℝ
+(targetMerit f c t) x) 1 δ S` with `ℓ z = f z - ⟪y, c z⟫`. Consequently (with `formCriticality_smul`)
+for any `T ∋ 0`:
 `formCriticality (iteratedFDeriv ℝ 1 (targetMerit f c t) x) T = (f x - t) *
 formCriticality (iteratedFDeriv ℝ 1 (fun z => f z - ⟪y, c z⟫_ℝ) x) T`.
 '''
-deps = ["fderiv_targetMerit", "Optimization.formCriticality_smul"]
+deps = ["fderiv_targetMerit", "Optimization.formCriticality_smul", "Optimization.taylorMeasure"]
 source = "Cartis–Gould–Toint, (7.2.22) and the proof of Lemma 7.2.1"
 
 [[node]]
@@ -99,3 +109,32 @@ Lagrangian sufficiency (Theorem 7.1.1): for `f : E → ℝ`, `c : E → F`, `S :
 unused.)
 '''
 source = "Cartis–Gould–Toint, Theorem 7.1.1"
+
+[[node]]
+id = "taylorMeasure_lagrangian_two_le"
+kind = "theorem"
+desc = '''
+Second order (corrected (14.3.43)–(14.3.44)). With the data of `fderiv_targetMerit_eq_smul_lagrangian` (`τ = f x - t > 0`, `y`, `ℓ`, `μ = targetMerit f c t`),
+`f`, `c` `C^2` at `x`, `S ∋ 0`, `T := S ∩ {d | fderiv ℝ c x d = 0}`, `M := T ∩ {d | fderiv ℝ f x d = 0}`,
+`δ ≥ 0`, and `G := sSup ((fun d => |fderiv ℝ f x d|) '' (closedBall 0 δ ∩ T))`:
+`taylorMeasure (ftaylorSeries ℝ ℓ x) 2 δ T ≤ τ⁻¹ * (taylorMeasure (ftaylorSeries ℝ μ x) 2 δ S + G ^ 2 / 2)`
+and `taylorMeasure (ftaylorSeries ℝ ℓ x) 2 δ M ≤ τ⁻¹ * taylorMeasure (ftaylorSeries ℝ μ x) 2 δ S`.
+Proof: on `T`, `ΔT_{ℓ,2}(d) = τ⁻¹ (ΔT_{μ,2}(d) + ½ (Df[d])²)` ((14.3.55)). The book's (14.3.57)
+claims `|Df[d]|/τ = |Dℓ[d]|` on `T`, but there `Dℓ[d] = Df[d]`; the term is `(Df[d])²/(2τ)`, which
+is not bounded by `½ φ^δ_{ℓ,X,1} ‖Df‖ δ` (see the Section03 counterexample to (14.3.43)).
+'''
+deps = ["fderiv_targetMerit_eq_smul_lagrangian", "Optimization.taylorMeasure"]
+source = "Cartis–Gould–Toint, (14.3.55)–(14.3.57), proof of Lemma 14.3.5 (j = 2)"
+
+[[node]]
+id = "taylorMeasure_lagrangian_three_le"
+kind = "theorem"
+desc = '''
+Third order (corrected (14.3.46)–(14.3.47)). As above with `C^3` data and
+`H := sSup ((fun d => |iteratedFDeriv ℝ 2 f x ![d, d]|) '' (closedBall 0 δ ∩ T))`:
+`taylorMeasure (ftaylorSeries ℝ ℓ x) 3 δ T ≤ τ⁻¹ * (taylorMeasure (ftaylorSeries ℝ μ x) 3 δ S +
+(G + H) * G / 2)` and `taylorMeasure (ftaylorSeries ℝ ℓ x) 3 δ M ≤ τ⁻¹ * taylorMeasure
+(ftaylorSeries ℝ μ x) 3 δ S`. Proof: on `T`, `D³ℓ[d]³ = τ⁻¹ (D³μ[d]³ - 3 D²f[d]² Df[d])` (14.3.58).
+'''
+deps = ["taylorMeasure_lagrangian_two_le"]
+source = "Cartis–Gould–Toint, (14.3.58)–(14.3.59), proof of Lemma 14.3.5 (j = 3)"

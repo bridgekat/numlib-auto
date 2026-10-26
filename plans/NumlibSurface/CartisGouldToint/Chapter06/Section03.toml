@@ -52,13 +52,14 @@ desc = '''
 Algorithm 6.3.1 (ARpLE-CC) as a run predicate: ARp1-CC applied to `PhiEll r ℓ` (model (5.1.8) =
 `regularizedModel (ftaylorSeries ℝ (PhiEll r ℓ) (x k)) p (σ k)`), with Step 1 replaced by
 "stop if `‖r x‖ ≤ ε₀` (6.3.1) or `omega1 (PhiEll r ℓ) C x ≤ ε₁ * ‖r x‖ ^ (ℓ - 1)` (6.3.2)":
-`IsARpLECCRun r ℓ C p P ε₀ ε₁ x s σ : Prop := x 0 ∈ C ∧ Optimization.IsARRun (PhiEll r ℓ) p P.σ₀ …
-(Optimization.IsFirstOrderCCStep (PhiEll r ℓ) C p P.θ₁) (stopLE r ℓ C ε₀ ε₁) x s σ`,
+`IsARpLECCRun r ℓ C p P ε₀ ε₁ x s σ : Prop := x 0 ∈ C ∧ Optimization.IsARRun P.toARParams
+(fun k => stopLE r ℓ C ε₀ ε₁ (x k)) (fun k => Optimization.IsFirstOrderCCStep (PhiEll r ℓ) C p P.θ₁
+(x k) (σ k) (s k)) (fun _ => False) (Optimization.taylorRatio (PhiEll r ℓ) p x s) x s σ`,
 `stopLE r ℓ C ε₀ ε₁ x := ‖r x‖ ≤ ε₀ ∨ omega1 (PhiEll r ℓ) C x ≤ ε₁ * ‖r x‖ ^ (ℓ - 1)` (part of
 node). Existence (part of node): from any `x₀ ∈ C`, C.CNe, `Φ_ℓ` `C^p` on an open `D ⊇ C`,
 `ε₀ > 0` (a failing test gives `omega1 > 0`; `Optimization.exists_isFirstOrderCCStep`).
 '''
-deps = ["PhiEll", "omega1", "ARpCCParams", "Optimization.IsARRun", "Optimization.IsFirstOrderCCStep", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_run_of_forall_exists"]
+deps = ["PhiEll", "omega1", "ARpCCParams", "Optimization.IsARRun", "Optimization.taylorRatio", "Optimization.IsFirstOrderCCStep", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_isARRun"]
 source = "Cartis–Gould–Toint, Algorithm 6.3.1"
 
 [[node]]

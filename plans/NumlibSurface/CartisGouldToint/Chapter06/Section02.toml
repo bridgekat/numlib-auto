@@ -48,9 +48,9 @@ desc = '''
 Constants of ARp-CC (6.2.7): `Chapter02.ARParams` (`σ₀ > 0`, `σ_min ∈ (0, σ₀]`,
 `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ < γ₃`) together with `θ₁ θ₂ θ₃ ∈ (0,1)`, `τ₁ τ₂ ∈ (0,1)`,
 `(1 + τ₁)/2 ≤ θ₁`, `(1 + τ₂)/2 ≤ θ₂`. Abbreviation (part of node):
-`sigmaMax P L := max P.σ₀ (P.γ₃ * L / (1 - P.η₂))` (4.1.19).
+`sigmaMax P L := Optimization.arSigmaMax P.toARParams L` (`= max σ₀ (γ₃ L/(1 - η₂))`, (4.1.19)).
 '''
-deps = ["CartisGouldToint.Chapter02.ARParams"]
+deps = ["CartisGouldToint.Chapter02.ARParams", "Optimization.arSigmaMax"]
 source = "Cartis–Gould–Toint, (6.2.7), (4.1.19)"
 
 [[node]]
@@ -83,8 +83,9 @@ id = "algorithm_6_2_1"
 kind = "def"
 desc = '''
 Algorithm 6.2.1 (ARp-CC) as a run predicate: `IsARpCCRun f C p P q ε₁ ε₂ ε₃ x s σ : Prop :=
-x 0 ∈ C ∧ Optimization.IsARRun f p P.σ₀ P.σmin P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃
-(IsARpCCStep f C p P q ε₁ ε₂ ε₃) (IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃) x s σ`
+x 0 ∈ C ∧ Optimization.IsARRun P.toARParams (fun k => IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃
+(x k)) (fun k => IsARpCCStep f C p P q ε₁ ε₂ ε₃ (x k) (σ k) (s k)) (fun _ => False)
+(Optimization.taylorRatio f p x s) x s σ`
 (`1 ≤ q ≤ 3`; the Step-3 ratio uses the Taylor decrement, the update is (2.4.4)).
 Existence (part of node): (a) `q = 1`, `C` closed convex, `x₀ ∈ C`, `f` `C^p` on an open
 `D ⊇ C`, `p ≥ 1`: a run exists from `x₀` (a global model minimizer over `𝒞(x_k)` is admissible,
@@ -93,7 +94,7 @@ provided every feasible `x` failing the test admits, for every `σ ≥ σ_min`, 
 `IsARpCCStep` (`Optimization.exists_run_of_forall_exists`). Without that proviso existence fails
 (`algorithm_6_2_1_not_exists_step`).
 '''
-deps = ["IsARpCCStep", "IsApproxMinimizerCC", "Optimization.IsARRun", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_run_of_forall_exists"]
+deps = ["IsARpCCStep", "IsApproxMinimizerCC", "Optimization.IsARRun", "Optimization.taylorRatio", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_isARRun"]
 source = "Cartis–Gould–Toint, Algorithm 6.2.1"
 
 [[node]]
@@ -183,7 +184,7 @@ Lemma 6.2.1 (6.2.18)–(6.2.19), **corrected** (unit ball added). Same setting (
 restricted set) the bounds are unproved: the proof's (6.2.23) holds only for `d ∈ 𝓑`, and for
 `‖d‖ > 1` the error term scales as `‖d‖` (resp. `‖d‖²`).
 '''
-deps = ["arpcc_sigma_le", "Optimization.abs_iteratedFDeriv_sub_regularizedModel_le", "restrictedSteps₂"]
+deps = ["arpcc_sigma_le", "Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel", "restrictedSteps₂"]
 source = "Cartis–Gould–Toint, Lemma 6.2.1, (6.2.18)–(6.2.19)"
 
 [[node]]
@@ -242,13 +243,15 @@ id = "algorithm_6_2_2"
 kind = "def"
 desc = '''
 Algorithm 6.2.2 (ARp1-CC): ARp-CC with `ε₂ = ε₃ = ∞` and (6.2.10) replaced by (6.2.29):
-`IsARp1CCRun f C p P ε₁ x s σ : Prop := x 0 ∈ C ∧ Optimization.IsARRun f p P.σ₀ … P.γ₃
-(Optimization.IsFirstOrderCCStep f C p P.θ₁) (fun y => omega1 f C y ≤ ε₁) x s σ`. Existence (part
+`IsARp1CCRun f C p P ε₁ x s σ : Prop := x 0 ∈ C ∧ Optimization.IsARRun P.toARParams
+(fun k => omega1 f C (x k) ≤ ε₁) (fun k => Optimization.IsFirstOrderCCStep f C p P.θ₁ (x k) (σ k)
+(s k)) (fun _ => False) (Optimization.taylorRatio f p x s) x s σ`. Existence (part
 of node): from any `x₀ ∈ C` under C.CNe and `f` `C^p` on an open `D ⊇ C`
-(`Optimization.exists_isFirstOrderCCStep`, `exists_run_of_forall_exists`). Only `θ₁` of
+(`Optimization.exists_isFirstOrderCCStep`, `Optimization.exists_isARRun` with `Inv = (· ∈ C)`).
+Only `θ₁` of
 `ARpCCParams` is used.
 '''
-deps = ["ARpCCParams", "omega1", "Optimization.IsARRun", "Optimization.IsFirstOrderCCStep", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_run_of_forall_exists"]
+deps = ["ARpCCParams", "omega1", "Optimization.IsARRun", "Optimization.taylorRatio", "Optimization.IsFirstOrderCCStep", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_isARRun"]
 source = "Cartis–Gould–Toint, Algorithm 6.2.2"
 
 [[node]]

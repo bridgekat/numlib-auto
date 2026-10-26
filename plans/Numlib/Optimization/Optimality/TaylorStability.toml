@@ -6,8 +6,8 @@ Theorem 12.1.8, its constrained/perturbed version Theorem 14.2.1, and the Lagran
 Theorem 14.3.2). Stated with the core `taylorMeasure` on a feasible displacement set `S` and an
 additive slack `η ≥ 0`; radii conditions are written multiplicatively (`L * ‖d‖ ≤ (j+1) ε`) so that
 the degenerate case `L = 0` (book: "otherwise", footnote 111) needs no division. Planned by the
-Chapter 14 planner; Theorem 12.1.8 is the case `S = univ`, `η = 0` (this module replaces Chapter 12's
-`Optimization.le_add_of_taylorMeasure_le` in `Optimality/HighOrder`).
+Chapter 14 planner; Theorem 12.1.8 is the case `S = univ`, `η = 0` (it replaced Chapter 12's duplicate
+`le_add_of_taylorMeasure_le`, deleted in the consolidation).
 
 Lipschitz hypotheses are local and use the core hypothesis shape of `MultivariateTaylor/Remainder`:
 `∀ y ∈ closedBall x δ, ContDiffAt ℝ j f y` and `IteratedFDerivLipschitzOn f j L (closedBall x δ)`

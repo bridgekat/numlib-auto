@@ -1,183 +1,110 @@
 namespace = "Optimization"
 desc = '''
 The high-order adaptive-regularization method ARqp (Cartis–Gould–Toint Algorithm 12.2.2) as a
-relational run predicate generic in the derivative data `D k` at the iterates (exact ARqp:
-`D k = ftaylorSeries ℝ f (x k)`), the model being `m_k = regularizedModel (D k) p (σ k)` (core
-`ModelBased/TaylorModel`), plus the generic one-iteration lemmas of its analysis.
-
-Shared skeleton: `ARAcceptance` packages Steps 3–4 common to AR1/AR2/ARp/ARqp (ratio with
-predicted decrease, acceptance `acceptStep`, update `ARUpdate`). Chapter 4's ARp differs from ARqp
-only in Steps 1–2 (gradient/eigenvalue tests vs. `φ`-measure tests), so ARp can be written as
-`ARAcceptance` + its own Step-1/Step-2 predicates; Chapters 13–14 (ARqpIDA/EDA, composite ARqp)
-likewise.
+relational run predicate built on the generic `IsARRun` (`ModelBased/ARRun`), generic in
+* the **model data** used at each iteration, bundled in `ARqpData` (Step-1 decrements of the
+  objective's model at `x_k`, the regularized model `m_k`, its decrements at a trial step, and the
+  predicted decrease used in the ratio): exact ARqp uses `ARqpData.ofTaylor (ftaylorSeries ℝ f (x k))
+  p (σ k)`; inexact derivatives (Ch 13) `ARqpData.ofTaylor (D k) p (σ k)`; the composite method
+  ARqpC (Algorithm 14.1.1) `ARqpData.ofComposite …` (`Composite/RegularizedModel`) with objective
+  `w = f + h ∘ c`;
+* the **feasible set** `X` (Chapter 14 request, §14.2): Step-1 measures over `{d | x k + d ∈ X}`,
+  steps with `x k + s k ∈ X`, model measures over `{d | x k + s k + d ∈ X}`; unconstrained ARqp is
+  `X = univ`, ARqp-SC / ARqpC-SC general closed `X`.
+The one-iteration model lemmas (Lemmas 12.2.7–12.2.12, 13.1.10–13.1.17, 14.1.2–14.1.8) live in
+`ModelBased/HighOrderModel`, `ModelBased/HighOrderStep` and `Composite/RegularizedModel`, stated for
+arbitrary (possibly inexact, possibly composite) data; complexity theorems are assembled in the
+surface from these and the generic AR-run lemmas.
 
 Run conventions and normalizations (reported in `notes/cgt/reports/plan-ch12.md`):
 * Radii are vectors `δ k j`, `δs k j` (`j ∈ [1:q]`); successful iterations inherit `δ_{k+1} = δ_{s_k}`.
 * Termination: Step 1 (`MeasureTestPasses`, i.e. *strict* `>` for going on, as in TRq — the
-  printed `≥` in ARqp's Step 1.3 would prevent detection in the book's own sharpness examples) or
-  Step 2 (`m_k(s_k) = m_k(0)`).
+  printed `≥` in ARqp's Step 1.3 would prevent detection in the book's own sharpness examples;
+  this is `stop₁` of `IsARRun`) or Step 2 (`m_k(s_k) = m_k(0)`; `stop₂`).
 * Step 2 requires (12.2.27), and either the long-step branch `1 ≤ ‖s_k‖` with arbitrary radii in
   `(0,1]` (covers the printed (12.2.28) `δ_{s_k} = δ_k` and Algorithm 12.2.3's Step 2.3, which
   returns the initial radii `1` and tests `‖s_μ‖ ≥ 1`), or (12.2.29) with witnesses `dm k j`.
 * Added (from Algorithm 12.2.3, (12.2.34) with `μ > 0`): `m_k(s_k) = m_k(0)` only if `0` globally
-  minimizes `m_k`. Without it Step-2 termination is unsound (a long step `s ≠ 0` with
-  `m(s) = m(0)` exists whenever `D 1 ≠ 0`), and Lemma 12.2.10 fails.
+  minimizes `m_k` on the feasible steps. Without it Step-2 termination is unsound (a long step
+  `s ≠ 0` with `m(s) = m(0)` exists whenever `D 1 ≠ 0`), and Lemma 12.2.10 fails.
 * After an unsuccessful iteration the book skips Step 1; we carry `x`, `δ` and the Step-1
   witnesses `d` over unchanged, so the test outcome is unchanged.
-(Planned by plan-ch12.)
+(Planned by plan-ch12; data/feasible-set generalization by the consolidation.)
 '''
-
-[[node]]
-id = "ARAcceptance"
-kind = "def"
-desc = '''
-Steps 3–4 of every adaptive-regularization method (book (2.4.3)–(2.4.4), (4.1.15)–(4.1.16),
-(12.2.30)–(12.2.31)): `ARAcceptance (f : E → ℝ) (η₁ η₂ γ₁ γ₂ γ₃ σmin pred : ℝ) (x s x' : E)
-(σ σ' : ℝ) : Prop := x' = acceptStep η₁ f x s pred ∧ ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σmin
-(reductionRatio f x s pred) σ σ'`. Lemmas (part of node): on success `x' = x + s` and
-`η₁ pred ≤ f x - f x'` (if `pred > 0`); on failure `x' = x`.
-'''
-deps = ["reductionRatio", "ARUpdate", "sub_le_of_le_reductionRatio"]
-source = "Cartis–Gould–Toint, (2.4.3)–(2.4.4), (12.2.30)–(12.2.31)"
 
 [[node]]
 id = "ARqpParams"
 kind = "def"
 desc = '''
-Structure of ARqp constants (Algorithm 12.2.2, Step 0): `σ₀ σmin η₁ η₂ γ₁ γ₂ γ₃ θ ς : ℝ` with
-`0 < σmin ≤ σ₀`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ < γ₃`, `0 < θ < 1`, `0 < ς ≤ 1`. (The
-complexity analysis additionally needs `θ < ς`, imposed where used; for `ς = 1` this is the
-printed `θ < 1`.) Consolidation note: the `σ, η, γ` part coincides with the surface
-`Chapter02.ARParams`.
+`structure ARqpParams extends ARParams` (Algorithm 12.2.2, Step 0; also 14.1.1): the AR constants
+plus `θ ς : ℝ` with `0 < θ < 1`, `0 < ς ≤ 1`. (The complexity analysis additionally needs `θ < ς`,
+imposed where used; for `ς = 1` this is the printed `θ < 1`.)
 '''
+deps = ["ARParams"]
 source = "Cartis–Gould–Toint, Algorithm 12.2.2 (Step 0)"
+
+[[node]]
+id = "ARqpData"
+kind = "def"
+desc = '''
+`structure ARqpData (E : Type*)` — the model data of one high-order AR iteration: fields
+`dec : ℕ → E → ℝ` (order-`j` decrement `ΔT_{·,j}(x_k, d)` of the objective's (generalized) Taylor
+model at the current iterate, used in Step 1), `model : E → ℝ` (the regularized model `m_k`),
+`modelDec : ℕ → E → E → ℝ` (order-`j` decrement `ΔT_{m_k,j}(s, d)` of the model at a trial step `s`,
+used in Step 2), `pred : E → ℝ` (predicted decrease `ΔT_{·,p}(x_k, s)` in the ratio).
+Taylor instance (part of node): `ARqpData.ofTaylor (D : FormalMultilinearSeries ℝ E ℝ) (p : ℕ)
+(σ : ℝ) := ⟨fun j => D.taylorDecrement j, regularizedModel D p σ, fun j s =>
+(ftaylorSeries ℝ (regularizedModel D p σ) s).taylorDecrement j, D.taylorDecrement p⟩`
+((12.2.23), (12.2.26)–(12.2.30)). Composite instance: `ARqpData.ofComposite` in
+`Composite/RegularizedModel`.
+'''
+deps = ["regularizedModel", "FormalMultilinearSeries.taylorDecrement"]
+source = "Cartis–Gould–Toint, (12.2.23), (14.1.11)"
 
 [[node]]
 id = "IsARqpRun"
 kind = "def"
 desc = '''
-`IsARqpRun (f : E → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (P : ARqpParams) (p q : ℕ)
-(ε δ₀ : ℕ → ℝ) (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) : Prop`, a
-structure with `m k := regularizedModel (D k) p (σ k)`, `test₁ k := MeasureTestPasses (D k) q P.ς ε
-(δ k) (d k)`, `test₂ k := m k (s k) = m k 0`, `stop k := test₁ k ∨ test₂ k`,
-`pred k := (D k).taylorDecrement p (s k)`, `succ k := P.η₁ ≤ reductionRatio f (x k) (s k) (pred k)`:
-* `init : σ 0 = P.σ₀ ∧ δ 0 = δ₀`;
-* `witness : ∀ k, (∀ i < k, ¬ stop i) → ∀ j ∈ Icc 1 q, IsApproxMeasureStep (D k) j (δ k j) univ
-  P.ς (d k j)` (12.2.26);
-* `step : ∀ k, (∀ i < k, ¬ stop i) → ¬ test₁ k →` (Step 2) `m k (s k) ≤ m k 0` (12.2.27) `∧
-  (m k (s k) = m k 0 → ∀ t, m k 0 ≤ m k t) ∧ (∀ j ∈ Icc 1 q, 0 < δs k j ∧ δs k j ≤ 1) ∧
-  (1 ≤ ‖s k‖ ∨ ∀ j ∈ Icc 1 q, IsApproxMeasureStep (ftaylorSeries ℝ (m k) (s k)) j (δs k j) univ P.ς
-  (dm k j) ∧ (ftaylorSeries ℝ (m k) (s k)).taylorDecrement j (dm k j) ≤ P.ς * P.θ * ε j *
-  δs k j ^ j / j!)` (12.2.28)/(12.2.29);
-* `accept : UntilHit stop fun k => ARAcceptance f P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ P.σmin (pred k) (x k)
-  (s k) (x (k+1)) (σ k) (σ (k+1)) ∧ (succ k → δ (k+1) = δs k) ∧ (¬ succ k → δ (k+1) = δ k ∧
-  d (k+1) = d k)` (Steps 3–4).
-Prototype elaborates (`drafts/cgt/plan-ch12/Proto.lean`).
+`structure IsARqpRun (w : E → ℝ) (X : Set E) (P : ARqpParams) (q : ℕ) (ε δ₀ : ℕ → ℝ)
+(M : ℕ → ARqpData E) (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) : Prop`.
+Writing `Xk k := {e | x k + e ∈ X}`, `Xs k := {e | x k + s k + e ∈ X}`, `m k := (M k).model`,
+`stop₁ k := MeasureTestPasses (M k).dec q P.ς ε (δ k) (d k)`, `stop₂ k := m k (s k) = m k 0`,
+`stop k := stop₁ k ∨ stop₂ k`, `ρ k := reductionRatio w (x k) (s k) ((M k).pred (s k))`,
+`succ k :↔ P.η₁ ≤ ρ k`, and the Step-2 condition
+`step k := x k + s k ∈ X ∧ m k (s k) ≤ m k 0` (12.2.27) `∧ (m k (s k) = m k 0 → IsMinOn (m k) (Xk k)
+0) ∧ (∀ j ∈ Icc 1 q, 0 < δs k j ∧ δs k j ≤ 1) ∧ (1 ≤ ‖s k‖ ∨ ∀ j ∈ Icc 1 q, IsApproxMeasureStep
+((M k).modelDec j (s k)) (δs k j) (Xs k) P.ς (dm k j) ∧ (M k).modelDec j (s k) (dm k j) ≤
+P.ς * P.θ * ε j * δs k j ^ j / j!)` ((12.2.28)/(12.2.29), (14.1.12)–(14.1.13)), the fields are:
+* `toIsARRun : IsARRun P.toARParams stop₁ step stop₂ ρ x s σ` (Steps 2–4);
+* `mem_zero : x 0 ∈ X`, `delta_zero : δ 0 = δ₀`;
+* `witness : ∀ k, (∀ i < k, ¬ stop i) → ∀ j ∈ Icc 1 q, IsApproxMeasureStep ((M k).dec j) (δ k j)
+  (Xk k) P.ς (d k j)` (Step 1, (12.2.26), (14.1.10); also at the terminating iteration);
+* `radii : UntilHit stop fun k => (succ k → δ (k+1) = δs k) ∧ (¬ succ k → δ (k+1) = δ k ∧
+  d (k+1) = d k)`.
+Iterates stay in `X` (part of node). Exact ARqp (`algorithm_12_2_2`): `w = f`, `X = univ`,
+`M k = ARqpData.ofTaylor (ftaylorSeries ℝ f (x k)) p (σ k)`; ARqp-SC: general `X`; ARqpC(-SC)
+(`algorithm_14_1_1`): `w = f + h ∘ c`, `M k = ARqpData.ofComposite …`, plus the detailed-Step-2
+output condition of Algorithm 14.1.2. Prototype elaborates (`drafts/cgt/cons-a/Runs.lean`).
 '''
-deps = ["ARqpParams", "ARAcceptance", "IsApproxMeasureStep", "MeasureTestPasses", "UntilHit", "regularizedModel"]
+deps = ["ARqpParams", "ARqpData", "IsARRun", "IsApproxMeasureStep", "MeasureTestPasses", "UntilHit", "reductionRatio"]
 source = "Cartis–Gould–Toint, Algorithm 12.2.2"
-
-[[node]]
-id = "abs_iteratedFDeriv_regularizedModel_apply_le"
-kind = "theorem"
-desc = '''
-Lemma 12.2.7, diagonal form (the only form used downstream). Let `p ≥ 1`, `D.IsSymm p`,
-`L ≥ 0` with `‖D i‖ ≤ L` for `i ∈ Icc 2 p`, `σ ≥ 0`, `m = regularizedModel D p σ`. Then `m` is
-`ContDiff ℝ p`, and for `‖s‖ ≤ 1`, `ℓ ∈ Icc 2 p`, all `d`:
-`|iteratedFDeriv ℝ ℓ m s (fun _ => d)| ≤ (3 * L + σ) * ‖d‖ ^ ℓ` (12.2.38), and
-`|m (s + d) - taylorPolynomial m p s d| ≤ σ / (p + 1)! * ‖d‖ ^ (p + 1)` (the Lipschitz-`σ` property of
-`∇^p m` in the form used by Corollary A.8.4). Proof: (A.11) `iteratedFDeriv_taylorSum_apply`,
-`∑_{i=ℓ}^p ‖s‖^{i-ℓ}/(i-ℓ)! ≤ 1 + 2‖s‖ ≤ 3` (A.33), the diagonal bound for `‖·‖^{p+1}`
-(`σ/(p+1)! · (p+1)!/(p+1-ℓ)! ‖s‖^{p+1-ℓ} ≤ σ`); the Taylor polynomial of the degree-`p` part is exact
-and `abs_norm_pow_sub_taylorPolynomial_le` handles the regularization term.
-'''
-deps = ["regularizedModel", "FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply", "sum_pow_div_factorial_le_one_add_two_mul", "abs_iteratedFDeriv_norm_pow_apply_le", "abs_norm_pow_sub_taylorPolynomial_le", "contDiff_norm_pow"]
-source = "Cartis–Gould–Toint, Lemma 12.2.7"
-
-[[node]]
-id = "taylorMeasure_le_of_isMinOn_regularizedModel"
-kind = "theorem"
-desc = '''
-Optimality radii at a global model minimizer (core of Lemma 12.2.9). Under the hypotheses of
-`abs_iteratedFDeriv_regularizedModel_apply_le` (`E` a real inner product space), let `s*` be a
-global minimizer of `m = regularizedModel D p σ` with `‖s*‖ ≤ 1`, and `m* := ftaylorSeries ℝ m s*`.
-(i) for `j ∈ Icc 1 (min p 2)` and every `δ ≥ 0`: `taylorMeasure m* j δ univ = 0`
-(`taylorMeasure_eq_zero_of_isLocalMin`; `m` is `C²` when `p ≥ 2`, and `C^∞` when `p = 1`);
-(ii) for `j ∈ Icc 1 p`, `α > 0` and `δ = min 1 (α / (4 * (3 * L + σ)))`:
-`taylorMeasure m* j δ univ ≤ α * δ ^ j / j!` (otherwise some `d`, `‖d‖ ≤ δ`, has
-`ΔT_j ≥ α δ^j/j!` and `sub_ge_half_of_taylorDecrement_ge` gives `m (s* + d) < m s*`).
-Without the bounds on `‖D i‖` (any `C^p` model): for every `j ≤ p` and `α > 0` some `δ ∈ (0,1]`
-works (`tendsto_taylorMeasure_div_pow_of_isLocalMin`).
-'''
-deps = ["abs_iteratedFDeriv_regularizedModel_apply_le", "sub_ge_half_of_taylorDecrement_ge", "taylorMeasure_eq_zero_of_isLocalMin", "tendsto_taylorMeasure_div_pow_of_isLocalMin"]
-source = "Cartis–Gould–Toint, proof of Lemma 12.2.9"
-
-[[node]]
-id = "exists_arqp_step"
-kind = "theorem"
-desc = '''
-Existence of an admissible ARqp step (Lemma 12.2.9, generic). `[FiniteDimensional ℝ E]`, data `D`
-with `D.IsSymm p`, `‖D i‖ ≤ L` (`i ∈ Icc 2 p`), `σ > 0`, `1 ≤ q ≤ p`, `0 < θ`, `0 < ς ≤ 1`,
-`ε j ∈ (0,1]`, current radii `δ`. Then there are `s`, `δs`, `dm` satisfying the Step-2 conditions of
-`IsARqpRun` for `m = regularizedModel D p σ` (including "`m s = m 0` only if `0` is a global
-minimizer"), with moreover `δs j = 1` for `j ∈ Icc 1 (min q 2)` (12.2.44) and, if `‖s‖ < 1`,
-`κδ σ * ε j ≤ δs j` for `j ∈ Icc 3 q` (12.2.45), where `κδ σ := ς * θ / (8 * (3 * L + σ))`.
-Construction: `s` a global minimizer (`exists_isMinOn_regularizedModel`); if `‖s‖ ≥ 1` the long-step
-branch with `δs = 1`; otherwise radii `1` for `j ≤ 2` and `ςθε_j/(4(3L+σ)) = 2 κδ(σ) ε_j` for
-`j ≥ 3` (`taylorMeasure_le_of_isMinOn_regularizedModel` with `α = ς θ ε_j`), witnesses `dm` exact
-maximizers (`exists_isApproxMeasureStep`). Variant without the bounds on `D` (any `C^p` data): some
-admissible step exists (radii from the `C^p` part of the previous node).
-'''
-deps = ["taylorMeasure_le_of_isMinOn_regularizedModel", "exists_isMinOn_regularizedModel", "exists_isApproxMeasureStep", "IsARqpRun"]
-source = "Cartis–Gould–Toint, Lemma 12.2.9"
 
 [[node]]
 id = "exists_isARqpRun"
 kind = "theorem"
 desc = '''
-Existence of ARqp runs (exact data). `[FiniteDimensional ℝ E]`, `f` `ContDiff ℝ p`, `1 ≤ q ≤ p`,
-`P`, `ε j ∈ (0,1]`, `δ₀ j ∈ (0,1]`, `x₀`: there is a run of `IsARqpRun f (fun k => ftaylorSeries ℝ f
-(x k)) P p q ε δ₀ …` with `x 0 = x₀`. If moreover `‖iteratedFDeriv ℝ i f y‖ ≤ L` for all `y` and
-`i ∈ Icc 2 p` (consequence of f.D1pL, (12.2.24)), the run can be chosen with the radii property
-(12.2.50): for every `k` before termination with `‖s k‖ < 1`, `δs k j = 1` (`j ≤ min q 2`) and
-`κδ (σ k) * ε j ≤ δs k j` (`j ∈ Icc 3 q`). Construction: `exists_run_of_forall_exists_of_invariant`
-(invariant `σ_k ≥ σmin`), Step-1 witnesses by `exists_isApproxMeasureStep`, Step 2 by
-`exists_arqp_step` (`ContDiffAt.isSymm_ftaylorSeries` for symmetry), `σ_{k+1}` any point of the
-`ARUpdate` interval.
+Existence of ARqp runs (exact data, `X = univ`). `[FiniteDimensional ℝ E]`, `f` `ContDiff ℝ p`,
+`1 ≤ q ≤ p`, `P`, `ε j ∈ (0,1]`, `δ₀ j ∈ (0,1]`, `x₀`: there is a run of
+`IsARqpRun f univ P q ε δ₀ (fun k => ARqpData.ofTaylor (ftaylorSeries ℝ f (x k)) p (σ k)) …` with
+`x 0 = x₀`. If moreover `‖iteratedFDeriv ℝ i f y‖ ≤ L` for all `y` and `i ∈ Icc 2 p` (consequence of
+f.D1pL, (12.2.24)), the run can be chosen with the radii property (12.2.50): for every `k` before
+termination with `‖s k‖ < 1`, `δs k j = 1` (`j ≤ min q 2`) and
+`min 1 (P.ς * P.θ * ε j / (4 * (3 * L + σ k))) ≤ δs k j` (`j ∈ Icc 3 q`). Construction:
+`exists_run_of_forall_exists_of_invariant` (invariant `σ_k ≥ σmin`, `σ_k > 0`), Step-1 witnesses
+by `exists_isApproxMeasureStep`, Step 2 by `exists_highOrderStep` (a global model minimizer; any
+data has `‖D i‖ ≤ L` for some `L`, so existence needs no bound), `σ_{k+1}` any point of the
+`ARUpdate` interval. For general closed `X` and composite data, steps come from
+`exists_isDetailedStepOutput` (Lemma 14.1.3; see the Chapter 14 surface `exists_isARqpCRun`).
 '''
-deps = ["exists_arqp_step", "exists_isApproxMeasureStep", "exists_run_of_forall_exists", "ContDiffAt.isSymm_ftaylorSeries", "IsARqpRun"]
+deps = ["IsARqpRun", "exists_highOrderStep", "exists_isApproxMeasureStep", "exists_run_of_forall_exists_of_invariant", "ContDiffAt.isSymm_ftaylorSeries"]
 source = "Cartis–Gould–Toint, Lemmas 12.2.9–12.2.10 (the conceptual ARqp algorithm is well defined)"
-
-[[node]]
-id = "taylorMeasure_le_of_regularizedModel"
-kind = "theorem"
-desc = '''
-Measure transfer from the model to the function (Lemma 12.2.11, generic and corrected). Let `p ≥ 1`,
-`ContDiff ℝ p f`, `IteratedFDerivHolderOn f p L 1 univ` (f.DpL, `L ≥ 0`), `σ ≥ 0`,
-`m = regularizedModel (ftaylorSeries ℝ f x) p σ`. For `j ∈ Icc 1 p`, `δ ≥ 0`, all `s`:
-`taylorMeasure (ftaylorSeries ℝ f (x + s)) j δ univ ≤ taylorMeasure (ftaylorSeries ℝ m s) j δ univ +
-(L + σ) * ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / ℓ! * ‖s‖ ^ (p - ℓ + 1) / (p - ℓ + 1)!`.
-Proof: pointwise in `d`, `ΔT_{f,j}(x+s,d) - ΔT_{m,j}(s,d) = ∑_ℓ (∇^ℓ m(s) - ∇^ℓ f(x+s))[d]^ℓ/ℓ!` with
-`∇^ℓ m(s) = ∇^ℓ_s T_p(x,s) + σ/(p+1)! ∇^ℓ ‖·‖^{p+1}(s)`; (A.20)
-`norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz` for the first part, the diagonal bound
-`abs_iteratedFDeriv_norm_pow_apply_le` for the second (`σ/(p+1)! · (p+1)!/(p+1-ℓ)!`). The book's
-(12.2.56) has `‖s_k‖^{p-j+1}` for `‖s_k‖^{p-ℓ+1}` (typo).
-'''
-deps = ["norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "abs_iteratedFDeriv_norm_pow_apply_le", "taylorMeasure_nonneg", "regularizedModel", "FormalMultilinearSeries.taylorDecrement_eq"]
-source = "Cartis–Gould–Toint, Lemma 12.2.11, (12.2.53)–(12.2.56)"
-
-[[node]]
-id = "norm_step_ge_of_le_sum"
-kind = "theorem"
-desc = '''
-Real-variable core of Lemma 12.2.12. Let `1 ≤ j ≤ p`, `τ > 0`, `0 < e ≤ 1`, `0 < δ ≤ 1`,
-`0 < t ≤ 1` (the step length `‖s_k‖`) with
-`τ * e * δ ^ j ≤ ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / ℓ! * t ^ (p - ℓ + 1)` (= `t^{p+1} χ_j(δ/t)`, (12.2.58)).
-Then (i) if `t ≤ δ`: `τ * e ≤ 2 * t ^ (p - j + 1)` (`χ_j(u) ≤ 2u^j` for `u ≥ 1`, (A.35)); hence
-`(τ e/2)^{1/(p-j+1)} ≤ t` and, since `1/(p-j+1) ≤ j/p`, `τ e/2 ≤ 1`: `(τ/2)^j e^j ≤ t^p`;
-(ii) if `δ < t`: `τ * e * δ ^ (j - 1) ≤ 2 * t ^ p` (`χ_j(u) ≤ 2u` for `u ≤ 1`, (A.34)).
-Consequently, with `κ ≤ δ/e`-type lower bounds `κ e ≤ δ` and `κ̂ := min κ (τ/2)`:
-`(τ/2) * κ̂ ^ (j - 1) * e ^ j ≤ t ^ p` in both cases.
-'''
-deps = ["sum_pow_div_factorial_le_two_mul_pow"]
-source = "Cartis–Gould–Toint, proof of Lemma 12.2.12, (12.2.58)–(12.2.60)"

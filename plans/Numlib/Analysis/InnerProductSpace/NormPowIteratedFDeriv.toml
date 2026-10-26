@@ -304,30 +304,3 @@ Proof: (A.19) (`abs_sub_taylorPolynomial_le_of_lipschitz` with `C = univ`) toget
 deps = ["iteratedFDerivLipschitzOn_norm_pow", "contDiff_norm_pow", "abs_sub_taylorPolynomial_le_of_lipschitz", "taylorPolynomial"]
 source = "Cartis–Gould–Toint, proof of Lemma 12.2.7, (B.4.3)"
 
-[[node]]
-id = "contDiff_norm_pow_succ"
-kind = "theorem"
-desc = '''
-**Transitional** (the `r = p + 1` instance of `contDiff_norm_pow`, formerly planned in `NormPowSucc`
-by plan-ch13): `ContDiff ℝ p (fun s : E => ‖s‖ ^ (p + 1))`. Still named by
-`Optimization.norm_iteratedFDeriv_regularizedModel_le` (`ModelBased/HighOrderModel`, owned by the
-other consolidation reviewer). Delete this node once that dependency is repointed to
-`contDiff_norm_pow`.
-'''
-deps = ["contDiff_norm_pow"]
-source = "Cartis–Gould–Toint, Lemma 12.2.7 (smoothness of the model)"
-
-[[node]]
-id = "norm_iteratedFDeriv_norm_pow_succ_le"
-kind = "theorem"
-desc = '''
-**Transitional** (formerly planned in `NormPowSucc` by plan-ch13). It is the conjunction of
-`norm_iteratedFDeriv_norm_pow_le` (with `r = p + 1`, `ℓ ≤ p`) and
-`iteratedFDerivLipschitzOn_norm_pow` (with `r = p + 1`). Still named by
-`Optimization.norm_iteratedFDeriv_regularizedModel_le` and
-`Optimization.radius_inequality_of_measure_gt` (`ModelBased/HighOrderModel`, owned by the other
-consolidation reviewer). Delete this node once those dependencies are repointed to the two
-canonical nodes.
-'''
-deps = ["norm_iteratedFDeriv_norm_pow_le", "iteratedFDerivLipschitzOn_norm_pow"]
-source = "Cartis–Gould–Toint, Lemma B.4.1, (B.4.1), (B.4.3)"

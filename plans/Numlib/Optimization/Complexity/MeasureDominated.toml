@@ -81,5 +81,5 @@ An ARp run without termination (`IsARpRun f p P q (fun _ => False) x s σ`) for 
 (The third-order measure (5.3.8) depends on the run through `M_{k+1}` and is not a function of the
 point; it is not covered.)
 '''
-deps = ["IsARLikeRun", "IsARpRun.decrease_ge", "IsARpRun.succ_count", "IsARpRun.sigma_le"]
+deps = ["IsARLikeRun", "IsARpRun.decrease_ge", "Optimization.IsARRun.succ_count", "Optimization.IsARRun.sigma_le"]
 source = "Cartis–Gould–Toint, (5.3.6)–(5.3.9) (\"obviously satisfied by the ARp algorithm\")"

@@ -38,8 +38,10 @@ desc = '''
 Constants of Algorithm 5.5.1 for given `p : ℕ`, real `r > p`: `σ₀ > 0`, `0 < η₁ ≤ η₂ < 1`,
 `0 < γ₁ < 1 < γ₂ < γ₃`, `θ₁, θ₂ ∈ (0,1]`, `α₁ ∈ (0, min 1 (realFactorial (r-1)) / 3]`,
 `α₂ ∈ (0, min 1 (realFactorial (r-2)) / 3]` (the latter used only when `ε₂ ≠ none`, then `p ≥ 2`).
+`structure ARpHParams extends Optimization.ARParams` with `σmin = 0` (a field equation) plus the
+`θ`'s and `α`'s.
 '''
-deps = ["Optimization.realFactorial"]
+deps = ["Optimization.realFactorial", "Optimization.ARParams"]
 source = "Cartis–Gould–Toint, Algorithm 5.5.1 (Step 0)"
 
 [[node]]
@@ -59,13 +61,18 @@ Algorithm 5.5.1 (ARp-H) as a run predicate `IsARpHRun f p r P ε₁ ε₂ x s σ
 moreover `¬ stop (x k + s k)` (Step 2 passed): (Step 3) `x (k+1) = if succ k then x k + s k else x k`
 and (Step 4, corrected) `Optimization.ARUpdate η₁ η₂ γ₁ γ₂ γ₃ 0 (if lengthTest k then ρ_k else 0)
 (σ k) (σ (k+1))`.
+Equivalently (and so planned in Lean): `Optimization.IsARRun P.toARParams stop₁ step stop₂ ρ̃ x s σ`
+with `stop₁ 0 = stop (x 0)`, `stop₁ (k+1) = False`, `stop₂ k = stop (x k + s k)` (the post-step test of
+the generic AR run), `step k` = (5.5.4)–(5.5.6), `ρ̃ k = if lengthTest k then ρ_k else 0` (since
+`η₁ > 0`, `η₁ ≤ ρ̃_k ↔ succ k`) and `P.toARParams.σmin = 0`; the generic lemmas
+`Optimization.IsARRun.sigma_le_max`, `IsARRun.succ_count` then give Lemmas 5.5.4–5.5.6's counting.
 Termination sequence (part of node): `ARpHTest 0 = stop (x 0)`, `ARpHTest (k+1) = stop (x k + s k)`;
 output `x 0` if the first hit is `0`, else `x (K-1) + s (K-1)`.
 Existence (part of node): finite-dimensional, `ContDiff ℝ p f`: from every `x₀` a run exists
 (`Optimization.exists_isMinOn_powRegularizedModel`: the current iterate fails `stop`, so a global
 model minimizer decreases the model; `Optimization.exists_run_of_forall_exists`).
 '''
-deps = ["ARpHParams", "AssumptionDpH", "Optimization.powRegularizedModel", "Optimization.reductionRatio", "Optimization.ARUpdate", "CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer", "Optimization.exists_isMinOn_powRegularizedModel", "Optimization.exists_run_of_forall_exists", "minCurvature"]
+deps = ["ARpHParams", "AssumptionDpH", "Optimization.powRegularizedModel", "Optimization.reductionRatio", "Optimization.ARUpdate", "Optimization.IsARRun", "CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer", "Optimization.exists_isMinOn_powRegularizedModel", "Optimization.exists_run_of_forall_exists", "minCurvature"]
 source = "Cartis–Gould–Toint, Algorithm 5.5.1"
 
 [[node]]
@@ -132,7 +139,7 @@ the run has not terminated (`¬ ARpHTest j` for `j ≤ k`):
 `σ_H = max[σ₀, γ₃θ₁(r-1)!, γ₃θ₂(r-2)!, γ₃κ_{β,1}, γ₃κ_{β,2}]` (5.5.42); for `ε₂ = none`,
 `σ_k ≤ σ_{H,1} ε₁^((p+β-r)/(p+β-1))`, `σ_{H,1} = max[σ₀, γ₃θ₁(r-1)!, γ₃κ_{β,1}]`.
 '''
-deps = ["lemma_5_5_4", "Optimization.sigma_le_max_of_arUpdate"]
+deps = ["lemma_5_5_4", "Optimization.IsARRun.sigma_le_max"]
 source = "Cartis–Gould–Toint, Lemma 5.5.5"
 
 [[node]]

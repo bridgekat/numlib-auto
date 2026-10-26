@@ -97,7 +97,7 @@ id = "algorithm_5_1_1"
 kind = "def"
 desc = '''
 Algorithm 5.1.1 (ARpLE) as a run predicate `IsARpLERun r ℓ p P q ε₀ ε₁ ε₂ ε₃ x s σ`
-(`P : Optimization.ARpConstants`, natural `ℓ ≥ 2`, `p ≥ q`):
+(`P : Optimization.ARpParams`, natural `ℓ ≥ 2`, `p ≥ q`):
 `Optimization.IsARpRun (Phi r ℓ) p P q (fun k => ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ (Mdir k) (x k)) x s σ`,
 where `Mdir 0 = Optimization.smallCurvatureDirections (iteratedFDeriv ℝ 2 (Phi r ℓ) (x 0)) ε₂`
 (Algorithm 4.1.1, Step 0) and `Mdir (k+1) = Optimization.smallCurvatureDirections
@@ -213,10 +213,10 @@ termination, either `‖r_{j+1}‖ ≤ β‖r_j‖` ((5.1.27), decrease `> κ_{r
 or one of (5.1.54)–(5.1.56) holds — nontermination at `x_{j+1}` gives `‖r_{j+1}‖ > ε₀` and
 (OR, not AND as printed in (5.1.51)) `ψ₁ > ε₁`, `ψ₂ < -ε₂`, `ψ₃(·, d) > ε₃` for some `d ∈ M_{j+1}`,
 or (5.1.52) `‖s_j‖^{p-1} > κs2 ‖r_{j+1}‖^{ℓ-1} ε₂` (handled by (4.1.37) as in (5.1.57)); `ι_j ≥ 0`
-and `‖r_j‖ ≤ ‖r₀‖`; then `Optimization.IsARpRun.succ_count` and
+and `‖r_j‖ ≤ ‖r₀‖`; then `Optimization.IsARRun.succ_count` and
 `Optimization.card_successSet_le_add_one_of_forall`/`exists_hit_le_of_counting`.
 '''
-deps = ["lemma_5_1_4", "algorithm_5_1_1", "zSet", "Optimization.IsARpRun.succ_count", "Optimization.IsARpRun.sigma_le", "Optimization.sum_successSet_sub_eq", "Optimization.exists_hit_le_of_counting", "Optimization.funEvalCount"]
+deps = ["lemma_5_1_4", "algorithm_5_1_1", "zSet", "Optimization.IsARRun.succ_count", "Optimization.IsARRun.sigma_le", "Optimization.sum_successSet_sub_eq", "Optimization.exists_hit_le_of_counting", "Optimization.funEvalCount"]
 source = "Cartis–Gould–Toint, Theorem 5.1.7 and the remark after its proof"
 
 [[node]]

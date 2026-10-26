@@ -18,7 +18,19 @@ space and independent of the particular model:
 * `QuadraticModel`: quadratic models `⟨g, s⟩ + ½ B[s,s]` with the Cauchy-point and eigenpoint
   decreases (Lemmas 2.3.2, 3.2.3) and the trust-region ratio bounds (Lemmas 2.3.3, 3.2.4).
 
+* `ARRun` / `TRRun`: **the** generic run predicates `IsARRun` / `IsTRRun` (Steps 3–4 shared by all
+  AR / TR methods, parametrized by the Step-1 test, the Step-2 step condition and the ratio
+  sequence), the parameter structures `ARParams` / `TRParams`, `σ_max = arSigmaMax`, and the
+  run-level lemmas (σ/Δ bounds, decrease on success, Lemmas 2.3.1/2.4.1, complexity skeleton,
+  existence).
+* `ARpRun` (ARp with a generic test; Ch 4, 5), `HighOrder/{MeasureTest,TRq,ARqp}` (Ch 12–14),
+  `HighOrderModel`, `HighOrderStep` (data-general high-order model lemmas), `PowRegularizedModel`
+  (real-power regularization, ARp-H), `ConvexConstrained` (Ch 6), `InexactTaylor`, `InexactRatio`
+  (Ch 13).
+
 Algorithms themselves (TR1, AR1, TR2, AR2, TRε, iRN, ARp, TRq, …) are defined in the surface
-(`NumlibSurface/CartisGouldToint`), each as a run predicate whose fields are instances of these
-blocks; their analyses are short combinations of the backbone lemmas.
+(`NumlibSurface/CartisGouldToint`) as instances of `IsARRun` / `IsTRRun` or of the backbone
+method predicates (`IsARpRun`, `IsTRqRun`, `IsARqpRun`); their analyses are short combinations of
+the backbone lemmas. Design summary: `notes/cgt/core-design.md`, "Run and model interfaces
+(consolidated)".
 '''

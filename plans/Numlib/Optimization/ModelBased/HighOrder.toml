@@ -1,19 +1,17 @@
 desc = '''
 High-order model-based methods (Cartis–Gould–Toint Chapter 12, reused by Chapters 13–14): methods
-whose termination test and step conditions are expressed with the Taylor-decrement measure
-`Optimization.taylorMeasure` (`φ^δ_{f,j}`) rather than gradient/eigenvalue tests.
+whose termination test and step conditions are expressed with Taylor-decrement measures
+(`Optimization.decrementMeasure`, `taylorMeasure`: `φ^δ_{f,j}`) rather than gradient/eigenvalue tests.
 
-* `HighOrder/MeasureTest`: approximate evaluation of the measure by a displacement `d` with
-  `ς φ ≤ ΔT(d)` ((12.1.32), (12.2.1), (12.2.26), (12.2.35)) and the resulting termination test
-  (shared by TRq, ARqp and the inexact/constrained variants of Chapters 13–14).
-* `HighOrder/TRq`: the trust-region method TRq (Algorithm 12.2.1) as a run predicate generic in
-  the derivative data used at each iterate and in the feasible displacement sets, with its
-  one-iteration lemmas (Lemmas 12.2.1–12.2.4 in generic form).
-* `HighOrder/ARqp`: the adaptive-regularization method ARqp (Algorithm 12.2.2) as a run predicate
-  generic in the data, the shared AR acceptance/update skeleton `ARAcceptance` (also suitable for
-  ARp of Chapter 4), existence of steps (Lemma 12.2.9) and the step-length/measure-transfer lemmas
-  (Lemmas 12.2.7, 12.2.11, 12.2.12 in generic form).
-
-Complexity theorems (Theorems 12.2.5, 12.2.14) are assembled in the surface from these pieces and
-the core counting lemmas. (Planned by plan-ch12.)
+* `HighOrder/MeasureTest`: approximate evaluation of a decrement measure by a displacement `d` with
+  `ς φ ≤ Δ(d)` ((12.1.32), (12.2.1), (12.2.26), (12.2.35)) and the resulting termination test, for an
+  arbitrary decrement function (exact, inexact, model and composite decrements alike).
+* `HighOrder/TRq`: TRq (Algorithm 12.2.1) on top of the generic `IsTRRun`, generic in the
+  derivative data and the feasible displacement sets (TRq-SC of §14.2), with Lemmas 12.2.1–12.2.4
+  in generic form.
+* `HighOrder/ARqp`: ARqp (Algorithm 12.2.2) on top of the generic `IsARRun`, generic in the model
+  data (`ARqpData`: exact, inexact, composite) and in a feasible set `X` (ARqp-SC, ARqpC(-SC)).
+Model lemmas: `ModelBased/HighOrderModel` (data-general, error budgets), `ModelBased/HighOrderStep`
+(detailed Step 2, step-length algebra), `Composite/RegularizedModel` (composite models).
+Complexity theorems (Theorems 12.2.5, 12.2.14, 14.1.10) are assembled in the surface.
 '''

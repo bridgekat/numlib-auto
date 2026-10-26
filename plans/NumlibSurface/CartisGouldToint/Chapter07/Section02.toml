@@ -115,20 +115,24 @@ Algorithm 7.2.1 (TPp-GC), corrected as in the module description. Parts (all par
   terminates the algorithm with `x_ε = y k₁` iff `‖c (y k₁)‖ > θ ε₀`;
 * `IsTPpGCPhase2 … x₁ X t xi si σi e : Prop`: `X 1 = x₁`, `t 1 = f x₁ - √(ε₀² - ‖c x₁‖²)` (Step 0),
   and for every `k ≥ 1` such that no outer `j ∈ [1, k)` stopped: `xi k 0 = X k`,
-  `Optimization.IsARRun (targetMerit f c (t k)) p σ₀ … (Optimization.IsFirstOrderCCStep
-  (targetMerit f c (t k)) C p θ₁) (innerStop … (t k)) (xi k) (si k) (σi k)`,
+  `Optimization.IsARRun P.toARParams (fun i => innerStop … (t k) (xi k i)) (fun i =>
+  Optimization.IsFirstOrderCCStep (targetMerit f c (t k)) C p θ₁ (xi k i) (σi k i) (si k i))
+  (fun _ => False) (Optimization.taylorRatio (targetMerit f c (t k)) p (xi k) (si k)) (xi k) (si k)
+  (σi k)`,
   `IsFirstHit (fun i => innerStop … (t k) (xi k i)) (e k)`, `X (k+1) = xi k (e k)`, and the target
   rule: case (a) `targetResidual f c (t k) (X (k+1)) ≤ θ ε₀` (corrected from `<`):
   `t (k+1) = f (X (k+1)) - √(ε₀² - ‖c (X (k+1))‖²)` (7.2.11); case (b) residual `> θ ε₀` and
   `f (X (k+1)) < t k`: `t (k+1) = 2 f (X (k+1)) - t k` (7.2.13); case (c) otherwise: stop with
   `t_ε = t k`. In cases (a)/(b) stop iff (7.2.12): `omega1 (targetMerit f c (t (k+1))) C (X (k+1))
   ≤ ε₁ * targetResidual f c (t (k+1)) (X (k+1))`, with `t_ε = t (k+1)`. `outerStop k`, `IsKa k`
-  (case (a)), `IsKb k` (case (b)) are named (7.2.25);
+  (case (a)), `IsKb k` (case (b)) are named (7.2.25); the outer bookkeeping is
+  `Constrained.IsTargetSequence f c θ ε₀ X t IsKa K` (with `IsKa k :↔ targetResidual f c (t k)
+  (X (k+1)) ≤ θ ε₀`, the corrected Step 2(a)), shared with Chapter 14's TPqp-GC;
 * `IsTPpGCRun` := Phase 1 ∧ (`‖c x₁‖ ≤ θ ε₀` → Phase 2 from `x₁`); outputs `x_ε`, `t_ε`;
 * counts `phase2FunEvals kε := 1 + ∑_{k ∈ [1, kε]} e k`, `phase2DerivEvals kε :=
   1 + ∑_{k ∈ [1, kε]} |{i < e k | arSucc (inner run k) i}|`.
 '''
-deps = ["TPpGCParams", "CartisGouldToint.Chapter06.algorithm_6_3_1", "CartisGouldToint.Chapter06.algorithm_6_2_2", "CartisGouldToint.Chapter06.omega1", "Constrained.targetResidual", "Optimization.IsARRun", "Optimization.IsFirstOrderCCStep", "Optimization.IsFirstHit"]
+deps = ["TPpGCParams", "CartisGouldToint.Chapter06.algorithm_6_3_1", "CartisGouldToint.Chapter06.algorithm_6_2_2", "CartisGouldToint.Chapter06.omega1", "Constrained.targetResidual", "Optimization.IsARRun", "Optimization.IsFirstOrderCCStep", "Optimization.IsFirstHit", "Constrained.IsTargetSequence", "Optimization.taylorRatio"]
 source = "Cartis–Gould–Toint, Algorithm 7.2.1"
 
 [[node]]
@@ -191,7 +195,7 @@ the stopping index: `t (k+1) < t k` whenever `t (k+1)` is defined (strictly decr
 `ω = θε₀`). Under `AssumptionBFb f c C β flow fup` (and `ε₀ ≤ min 1 β`):
 `t k ∈ [flow - 1, fup]` (7.2.31).
 '''
-deps = ["algorithm_7_2_1", "AssumptionBFb", "Constrained.targetResidual", "_root_.neg_add_sqrt_sq_sub_sq_ge", "Optimization.IsARRun.sub_ge_of_succ"]
+deps = ["algorithm_7_2_1", "AssumptionBFb", "Constrained.targetResidual", "_root_.neg_add_sqrt_sq_sub_sq_ge", "Optimization.IsARRun.sub_ge_of_succ", "Constrained.IsTargetSequence.props"]
 source = "Cartis–Gould–Toint, Lemma 7.2.3"
 
 [[node]]
@@ -202,7 +206,7 @@ Lemma 7.2.4. Under f.B.Fb, for every Phase-2 run and every outer index `K` up to
 `|{k ∈ [1, K] | IsKa k}| ≤ (fup - flow + 1) / ((1 - θ) ε₀)` (telescoping (7.2.30) inside
 `[flow - 1, fup]`, `Optimization.card_mul_le_of_decrease`).
 '''
-deps = ["lemma_7_2_3", "Optimization.card_mul_le_of_decrease"]
+deps = ["lemma_7_2_3", "Optimization.card_mul_le_of_decrease", "Constrained.IsTargetSequence.card_Ka_le"]
 source = "Cartis–Gould–Toint, Lemma 7.2.4"
 
 [[node]]
@@ -243,7 +247,7 @@ As printed, (7.2.39) fails when `G < 1`, because `ℐ^s_k` contains the `i = 0` 
 the next `𝒦_a` iteration (with the proof's index range `[k+1 : k+ℓ(k)]`; with the printed range
 `[k+1 : k+ℓ(k))` that run is not counted at all).
 '''
-deps = ["lemma_7_2_3", "lemma_7_2_5", "CartisGouldToint.Chapter06.lemma_6_2_4", "Optimization.succ_le_of_arUpdate", "Optimization.card_mul_le_of_decrease"]
+deps = ["lemma_7_2_3", "lemma_7_2_5", "CartisGouldToint.Chapter06.lemma_6_2_4", "Optimization.succ_le_of_arUpdate", "Optimization.card_mul_le_of_decrease", "Constrained.card_le_of_residual_block"]
 source = "Cartis–Gould–Toint, Lemma 7.2.6"
 
 [[node]]

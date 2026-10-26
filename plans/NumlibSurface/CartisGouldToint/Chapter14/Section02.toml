@@ -11,17 +11,14 @@ relational formalization the feasible set enters the run predicates only through
 the requirement `x 0 ∈ X`, `x k + s k ∈ X`, and the evaluation counts never charge the
 subproblems, so the definition is reflected by the planned statements and has no node.
 
-**Interface assumed from Chapters 12–13 (plan-ch12 and the Chapter 13 planner)**: every run
-predicate of TRq, ARqp (Ch 12) and TRqIDA, TRqEDA, ARqpIDA, ARqpEDA (Ch 13) carries an explicit
-closed feasible set `X : Set E` — measures `taylorMeasure D j δ {d | x k + d ∈ X}` (and model
-measures likewise), steps with `x k + s k ∈ X`, `x 0 ∈ X`, unconstrained = `Set.univ` — and the
-decrease/count/complexity lemmas are proved for general `X` (the book's proofs never use
-`X = ℝ^n` except for the choice `δ_{k,2} = 1`, which needs Theorem 12.1.4 and hence `X = ℝ^n`, or
-`δ_{k,1} = 1`, which needs convex `X`). The -SC algorithms are then those predicates with general
-`X`; ARqpC-SC is `algorithm_14_1_1` with general `X` (planned here directly). If the Chapter 12/13
-plans do not take `X`, the consolidator should add the parameter there rather than duplicating seven
-run predicates in this module. The nodes below therefore cite those results in prose; their `deps`
-only list ids that exist on main.
+**Feasible-set interface (consolidated, provided by the backbone and Chapters 12–13)**: TRq-SC is
+`Optimization.IsTRqRun` with `S k = {d | x k + d ∈ X}`; ARqp-SC is `Optimization.IsARqpRun f X …`
+with `ARqpData.ofTaylor`; ARqpC-SC is `algorithm_14_1_1` with general `X`; TRqIDA/TRqEDA/ARqpIDA/ARqpEDA
+-SC are the Chapter 13 step predicates `TRqDAStep X …` / `ARqpDAStep X …` with general `X` — measures
+over `{d | x k + d ∈ X}` (model measures over `{d | x k + s k + d ∈ X}`), steps with `x k + s k ∈ X`,
+`x 0 ∈ X`, unconstrained = `Set.univ`. The decrease/count/complexity lemmas hold for general `X`
+except for the choice `δ_{k,2} = 1` (needs Theorem 12.1.4, hence `X = ℝ^n`) and `δ_{k,1} = 1` (needs
+convex `X`). The nodes below are those statements.
 '''
 
 [[node]]
@@ -79,7 +76,7 @@ constants in place of global ones). Same statement (under f.D0qLaB.X) for TRqIDA
 TRqEDA-SC with Lemmas 13.1.5, 13.3.2. Proof: the proofs of those lemmas only evaluate Lipschitz
 inequalities between `x_k ∈ 𝓛_f(x₀)` and points of `X₀`.
 '''
-deps = ["AssumptionD1qLaBX", "AssumptionXCNe"]
+deps = ["AssumptionD1qLaBX", "AssumptionXCNe", "Optimization.IsTRqRun", "Optimization.IsTRqRun.taylorDecrement_ge", "CartisGouldToint.Chapter13.TRqDAStep"]
 source = "Cartis–Gould–Toint, Lemma 14.2.2 (TR rows of (14.2.12))"
 
 [[node]]
@@ -92,7 +89,7 @@ successful `k` not followed by termination, `f(x_k) - f(x_{k+1}) ≥ κ_decr min
 `q = 2` and `X = ℝ^n`) and `π_j = j(p+1)/p` otherwise, with `κ_decr` from Lemma 12.2.13 (resp. 13.1.18, 13.3.7) (the exponents of Theorem 14.2.4's table are used: the book's table (14.2.12) is garbled —
 it lists three ARqp-SC rows, one of them `j(p+1)/(p-j+1)`, and no "otherwise" row for ARqpC-SC).
 '''
-deps = ["AssumptionD1qLaBX", "AssumptionXCNe"]
+deps = ["AssumptionD1qLaBX", "AssumptionXCNe", "Optimization.IsARqpRun", "CartisGouldToint.Chapter12.lemma_12_2_13", "CartisGouldToint.Chapter13.ARqpDAStep"]
 source = "Cartis–Gould–Toint, Lemma 14.2.2 (AR rows of (14.2.12))"
 
 [[node]]
@@ -123,7 +120,7 @@ accuracy-improving iterations from the proofs of Theorems 13.1.8, 13.1.19, 13.3.
 (Chapter 13 interface); the planned statement keeps the two counts separate, since the book's
 "a bound of the form (14.2.13) also holds" hides an `ε`-dependent additive term.
 '''
-deps = ["AssumptionD1qLaBX", "Optimization.succ_le_of_trUpdate", "Optimization.succ_le_of_arUpdate", "lemma_14_1_6", "Optimization.successSet"]
+deps = ["AssumptionD1qLaBX", "Optimization.succ_le_of_trUpdate", "Optimization.succ_le_of_arUpdate", "lemma_14_1_6", "Optimization.successSet", "Optimization.IsARRun.succ_count", "Optimization.IsTRRun.succ_count"]
 source = "Cartis–Gould–Toint, Lemma 14.2.3"
 
 [[node]]
@@ -136,7 +133,7 @@ TRqEDA-SC) run terminates at some `k_ε` with `x_{k_ε} ∈ X`,
 `j ∈ Icc 1 q` (some admissible radii), and evaluation counts bounded by the explicit bounds of
 Theorems 12.2.5 / 13.1.8 / 13.3.4 with `(f(x₀) - flow)`, which are `O(max_j ε_j^{-(q+1)})`.
 '''
-deps = ["lemma_14_2_2_trq", "lemma_14_2_3", "AssumptionBbX", "AssumptionXCNe", "Optimization.exists_hit_le_of_counting"]
+deps = ["lemma_14_2_2_trq", "lemma_14_2_3", "AssumptionBbX", "AssumptionXCNe", "Optimization.exists_hit_le_of_counting", "CartisGouldToint.Chapter12.theorem_12_2_5"]
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRq-SC, TRqIDA-SC, TRqEDA-SC)"
 
 [[node]]
@@ -149,7 +146,7 @@ ARqpIDA-SC, ARqpEDA-SC) run terminates at an `(ε,δ)`-approximate `q`-th order 
 within the explicit bounds of Theorems 12.2.14 / 13.1.19 / 13.3.8, of order
 `O(max_j ε_j^{-(p+1)/(p-j+1)})` in the first case and `O(max_j ε_j^{-j(p+1)/p})` otherwise.
 '''
-deps = ["lemma_14_2_2_arqp", "lemma_14_2_3", "AssumptionBbX", "AssumptionXCNe", "Optimization.exists_hit_le_of_counting"]
+deps = ["lemma_14_2_2_arqp", "lemma_14_2_3", "AssumptionBbX", "AssumptionXCNe", "Optimization.exists_hit_le_of_counting", "CartisGouldToint.Chapter12.theorem_12_2_14_i", "CartisGouldToint.Chapter12.theorem_12_2_14_ii"]
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqp-SC, ARqpIDA-SC, ARqpEDA-SC)"
 
 [[node]]
