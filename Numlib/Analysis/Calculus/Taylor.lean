@@ -17,7 +17,9 @@ For `f : ℝ → ℝ` the remainder comes from Mathlib's `taylor_mean_remainder_
 intermediate point lies in the *open* interval; that is what lets
 `exists_taylorWithinEval_add_iteratedDeriv_mul` state the remainder with `iteratedDeriv` and
 `taylorWithinEval_eq_sum_of_contDiffAt` rewrite the Taylor polynomial as
-`∑_{k ≤ n} (x - x₀)^k / k! f^{(k)}(x₀)`. The uniform bound is stated on an *open ball*
+`∑_{k ≤ n} (x - x₀)^k / k! f^{(k)}(x₀)`. On an open convex set the two combine into
+`exists_eq_sum_taylor_add`, the expansion `f (x + δ) = ∑_{j ≤ k} f^{(j)}(x) / j! δ^j + R` with a
+Lagrange remainder at a point of the set. The uniform bound is stated on an *open ball*
 (`abs_sub_sum_taylor_le`): `iteratedDeriv` is determined by `f` only on an open set, so a
 `ContDiffOn` hypothesis over a closed interval does not determine the coefficients of the
 expansion, and a `uIcc` formulation of the primitive would not do. For a function that is `C^{n+1}`
@@ -337,6 +339,26 @@ theorem abs_sub_taylor_three_le_of_lipschitz {u : ℝ → ℝ} {M x y : ℝ} (hn
       integral_sub_sq_div_two_mul_sub, abs_neg, abs_of_nonneg hM,
       abs_of_nonneg (by positivity : (0 : ℝ) ≤ (y - x) ^ 4 / 24)]
     ring
+
+/-- Taylor's theorem with the Lagrange remainder on an open convex set, with the Taylor
+polynomial `∑ j ≤ k, f⁽ʲ⁾(x) / j! * δ ^ j` written with two-sided derivatives. -/
+theorem exists_eq_sum_taylor_add {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U) (hUc : Convex ℝ U)
+    {k : ℕ} (hf : ContDiffOn ℝ (k + 1) f U) {x δ : ℝ} (hx : x ∈ U) (hxδ : x + δ ∈ U) :
+    ∃ ξ ∈ U, f (x + δ) = ∑ j ∈ range (k + 1), iteratedDeriv j f x / j ! * δ ^ j
+      + iteratedDeriv (k + 1) f ξ * δ ^ (k + 1) / (k + 1)! := by
+  rcases eq_or_ne δ 0 with rfl | hδ
+  · refine ⟨x, hx, ?_⟩
+    rw [Finset.sum_range_succ']
+    simp
+  have hne : x ≠ x + δ := fun h => hδ (by linarith)
+  have hsub : uIcc x (x + δ) ⊆ U := hUc.ordConnected.uIcc_subset hx hxδ
+  obtain ⟨ξ, hξ, h⟩ := exists_taylorWithinEval_add_iteratedDeriv_mul hne (hf.mono hsub)
+  rw [taylorWithinEval_eq_sum_of_contDiffAt hne
+    ((hf.contDiffAt (hU.mem_nhds hx)).of_le (by exact_mod_cast k.le_succ))] at h
+  refine ⟨ξ, hsub (Ioo_subset_Icc_self hξ), ?_⟩
+  rw [h, add_sub_cancel_left]
+  congr 1
+  exact Finset.sum_congr rfl fun j _ => by ring
 
 end Scalar
 

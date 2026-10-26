@@ -580,3 +580,68 @@ theorem PosDef.isSymmetricCoercive_toEuclideanLin {M : Matrix n n 𝕜} (hM : M.
   (Matrix.posDef_iff_isSymmetricCoercive M).1 hM
 
 end Matrix
+
+/-! ### Real shifted operators -/
+
+section RealShift
+
+variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+
+open scoped RealInnerProductSpace
+
+namespace ContinuousLinearMap
+
+/-- For symmetric `H`, the shifted operator `H + μ I` is symmetric. -/
+theorem isSymmetric_add_smul_one {H : F →L[ℝ] F} (hH : (H : F →ₗ[ℝ] F).IsSymmetric) (μ : ℝ) :
+    ((H + μ • (1 : F →L[ℝ] F) : F →L[ℝ] F) : F →ₗ[ℝ] F).IsSymmetric := by
+  intro x y
+  simp only [ContinuousLinearMap.coe_coe, add_apply, smul_apply, one_apply_eq_self,
+    inner_add_left, inner_add_right, inner_smul_left, inner_smul_right, conj_trivial]
+  rw [show ⟪H x, y⟫ = ⟪x, H y⟫ from hH x y]
+
+/-- For symmetric `H`, positive semidefiniteness of `H + μ I` is nonnegativity of its quadratic
+form. -/
+theorem isPositive_add_smul_one_iff {H : F →L[ℝ] F} (hH : (H : F →ₗ[ℝ] F).IsSymmetric) (μ : ℝ) :
+    ((H + μ • (1 : F →L[ℝ] F) : F →L[ℝ] F) : F →ₗ[ℝ] F).IsPositive ↔
+      ∀ v, 0 ≤ ⟪v, (H + μ • (1 : F →L[ℝ] F)) v⟫ := by
+  refine ⟨fun h v => ?_, fun h => ⟨isSymmetric_add_smul_one hH μ, fun v => ?_⟩⟩
+  · rw [real_inner_comm]; exact h.inner_nonneg_left v
+  · simpa [real_inner_comm] using h v
+
+/-- The quadratic form of a positive semidefinite shifted operator is nonnegative. -/
+theorem inner_apply_nonneg_of_isPositive {H : F →L[ℝ] F} {μ : ℝ}
+    (h : ((H + μ • (1 : F →L[ℝ] F) : F →L[ℝ] F) : F →ₗ[ℝ] F).IsPositive) (v : F) :
+    0 ≤ ⟪v, (H + μ • (1 : F →L[ℝ] F)) v⟫ := by
+  rw [real_inner_comm]; exact h.inner_nonneg_left v
+
+end ContinuousLinearMap
+
+/-- A positive semidefinite operator kills every vector on which its quadratic form vanishes:
+`⟪T d, d⟫ = 0 → T d = 0`. -/
+theorem LinearMap.IsPositive.apply_eq_zero_of_inner_eq_zero {T : F →ₗ[ℝ] F} (hT : T.IsPositive)
+    {d : F} (hd : ⟪T d, d⟫ = 0) : T d = 0 := by
+  have key : ∀ w : F, ∀ t : ℝ, 0 ≤ 2 * t * ⟪T d, w⟫ + t ^ 2 * ⟪T w, w⟫ := by
+    intro w t
+    have h := hT.inner_nonneg_left (d + t • w)
+    have hs : ⟪T w, d⟫ = ⟪T d, w⟫ := by rw [hT.isSymmetric w d, real_inner_comm]
+    simp only [map_add, map_smul, inner_add_left, inner_add_right, inner_smul_left,
+      inner_smul_right, conj_trivial, hd, hs] at h
+    nlinarith
+  have hw : ⟪T d, T d⟫ = 0 := by
+    set a := ⟪T d, T d⟫
+    set b := ⟪T (T d), T d⟫
+    have hb : 0 ≤ b := hT.inner_nonneg_left _
+    have ha : 0 ≤ a := real_inner_self_nonneg
+    by_contra hne
+    have hapos : 0 < a := lt_of_le_of_ne ha (Ne.symm hne)
+    have := key (T d) (-a / (b + 1))
+    have hb1 : 0 < b + 1 := by linarith
+    have e : 2 * (-a / (b + 1)) * a + (-a / (b + 1)) ^ 2 * b
+        = -a ^ 2 * (b + 2) / (b + 1) ^ 2 := by field_simp; ring
+    rw [e] at this
+    have : 0 < a ^ 2 * (b + 2) / (b + 1) ^ 2 := by positivity
+    linarith [show -a ^ 2 * (b + 2) / (b + 1) ^ 2
+      = -(a ^ 2 * (b + 2) / (b + 1) ^ 2) by ring]
+  exact inner_self_eq_zero.mp hw
+
+end RealShift

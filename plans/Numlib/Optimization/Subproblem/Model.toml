@@ -44,9 +44,3 @@ source = "Cartis–Gould–Toint, proof of (8.3.3)"
 [[node]]
 id = "hasGradientAt_regModel_of_shifted"
 source = "Cartis–Gould–Toint, proof of Theorem 9.3.2"
-
-[[node]]
-id = "isPositive_add_smul_one_iff"
-
-[[node]]
-id = "apply_eq_zero_of_isPositive"

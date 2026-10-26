@@ -150,7 +150,7 @@ theorem isMinOn_regModel_iff (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hσ : 0 <
     · have hlam : σ * ‖(0 : E)‖ ^ (r - 2) = 0 := by
         simp [Real.zero_rpow (show r - 2 ≠ 0 by linarith)]
       have hg : g = 0 := by simpa [hlam] using hshift.symm
-      rw [hlam, isPositive_add_smul_one_iff hH]
+      rw [hlam, ContinuousLinearMap.isPositive_add_smul_one_iff hH]
       intro v
       simpa using inner_apply_nonneg_of_isMinOn_regModel_zero hr hmin hg v
     · have hball := isMinOn_closedBall_of_isMinOn_regModel hσ.le (by linarith) hmin
@@ -161,7 +161,7 @@ theorem isMinOn_regModel_iff (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hσ : 0 <
       exact this ▸ hμ.isPositive
   · rintro ⟨hshift, hpos⟩ u _
     have h1 := inner_le_regModel_sub_of_shifted hH hσ.le hr hshift u
-    have h2 := inner_apply_nonneg_of_isPositive hpos (u - s)
+    have h2 := ContinuousLinearMap.inner_apply_nonneg_of_isPositive hpos (u - s)
     simp only [mem_ofPred_eq]
     linarith
 
@@ -236,12 +236,12 @@ theorem sub_smul_eq_zero_of_isMinOn_regModel (hH : (H : E →ₗ[ℝ] E).IsSymme
   have hshift' := shifted_of_isMinOn_regModel hH (by linarith) hmin'
   have h1 := inner_le_regModel_sub_of_shifted hH hσ.le hr hshift s'
   have h2 := hmin' (mem_univ s)
-  have h3 := inner_apply_nonneg_of_isPositive hpos (s' - s)
+  have h3 := ContinuousLinearMap.inner_apply_nonneg_of_isPositive hpos (s' - s)
   simp only [mem_ofPred_eq] at h2
   have hq : ⟪(((H + (σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E)) (s' - s),
       s' - s⟫ = 0 := by
     rw [ContinuousLinearMap.coe_coe, real_inner_comm]; linarith
-  have hk := apply_eq_zero_of_isPositive hpos hq
+  have hk := hpos.apply_eq_zero_of_inner_eq_zero hq
   rw [ContinuousLinearMap.coe_coe, map_sub, sub_eq_zero, hshift] at hk
   exact sub_smul_eq_zero_of_shifted hk hshift'
 

@@ -161,7 +161,7 @@ theorem IsTrustRegionMultiplier.isMinOn (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
   intro u hu
   have hu' : ‖u‖ ≤ Δ := mem_closedBall_zero_iff.mp hu
   have := h.inner_le_quadModel_sub hH hu'
-  have := inner_apply_nonneg_of_isPositive h.isPositive (u - s)
+  have := ContinuousLinearMap.inner_apply_nonneg_of_isPositive h.isPositive (u - s)
   simp only [mem_ofPred_eq]
   linarith
 
@@ -187,7 +187,7 @@ theorem isTrustRegionMultiplier_zero_of_isMinOn_of_norm_lt (hH : (H : E →ₗ[�
   · simp only [zero_smul, add_zero]
     rw [eq_neg_iff_add_eq_zero, add_comm]
     exact hd0
-  · rw [isPositive_add_smul_one_iff hH]
+  · rw [ContinuousLinearMap.isPositive_add_smul_one_iff hH]
     intro v
     obtain ⟨t, ht, htpos⟩ := ((eventually_add_smul_mem_closedBall_of_norm_lt hs v).and
       self_mem_nhdsWithin).exists
@@ -266,7 +266,7 @@ theorem exists_isTrustRegionMultiplier_of_isMinOn_of_norm_eq
     simp only [conj_trivial] at hid
     have : 0 ≤ c * c * ⟪v, T v⟫ := by nlinarith
     exact nonneg_of_mul_nonneg_right (by linarith) (mul_self_pos.mpr hc0)
-  rw [isPositive_add_smul_one_iff hH]
+  rw [ContinuousLinearMap.isPositive_add_smul_one_iff hH]
   intro v
   by_cases hv : ⟪v, s⟫ = 0
   · refine nonneg_of_eventually_nonneg_quadratic (b := ⟪v, T s⟫ + ⟪s, T v⟫) (c := ⟪s, T s⟫) ?_
@@ -306,11 +306,11 @@ theorem IsTrustRegionMultiplier.sub_smul_eq_zero (hH : (H : E →ₗ[ℝ] E).IsS
     (h' : IsTrustRegionMultiplier g H Δ s' μ') (hs' : ‖s'‖ ≤ Δ) : (μ - μ') • s' = 0 := by
   have h1 := h.inner_le_quadModel_sub hH hs'
   have h2 := h'.isMinOn hH (mem_closedBall_zero_iff.mpr hs)
-  have h3 := inner_apply_nonneg_of_isPositive h.isPositive (s' - s)
+  have h3 := ContinuousLinearMap.inner_apply_nonneg_of_isPositive h.isPositive (s' - s)
   simp only [mem_ofPred_eq] at h2
   have hq : ⟪(((H + μ • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E)) (s' - s), s' - s⟫ = 0 := by
     rw [ContinuousLinearMap.coe_coe, real_inner_comm]; linarith
-  have hk := apply_eq_zero_of_isPositive h.isPositive hq
+  have hk := h.isPositive.apply_eq_zero_of_inner_eq_zero hq
   rw [ContinuousLinearMap.coe_coe, map_sub, sub_eq_zero, h.shifted] at hk
   exact sub_smul_eq_zero_of_shifted hk h'.shifted
 
