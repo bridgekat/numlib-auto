@@ -1,0 +1,129 @@
+namespace = "Optimization"
+desc = '''
+One-iteration estimates for adaptive regularization with `p`-th order models over a closed convex
+set `C` (Cartis–Gould–Toint §6.2; used again in §6.3, §7.2 and, with `C = univ`, by the unconstrained
+ARp of Chapter 4). Setting: `E` a real inner product space, `C ⊆ E` convex, `D ⊇ C` open,
+`ContDiffOn ℝ p f D`, `IteratedFDerivHolderOn f p L 1 C` (f.DpL.C), `x, x + s ∈ C`, `σ ≥ 0`,
+`m = regularizedModel (ftaylorSeries ℝ f x) p σ`.
+
+Key estimate (6.2.23): for `1 ≤ j ≤ p`, `j ≤ 3`, `‖d‖ ≤ 1`:
+`|D^j f(x+s)[d]^j - D^j m(s)[d]^j| ≤ (L + σ)/(p-j+1)! ‖s‖^{p-j+1}` — Taylor remainder (A.20)
+(`norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`) plus the size of the `j`-th derivative
+of `σ/(p+1)! ‖s‖^{p+1}` (Lemma B.4.1 with `β = 1`: `(p+1)!/(p-j+1)! ‖s‖^{p-j+1}`). The `j = 1, 2`
+bounds come from the core module `NormPowHessian`; the `j = 3` bound is planned here
+(`abs_iteratedFDeriv_three_norm_pow_le`) and is a special case of the Chapter 4 plan's Lemma B.4.1
+(consolidation: replace by that node once merged; the integer exponent `r = p + 1 ≥ 4` avoids the
+fractional-`β` issue reported for B.4.1).
+
+ARp1-CC steps (6.2.29): `IsFirstOrderCCStep` — feasible, model decrease, and the model's
+first-order measure over `𝓜⁰(s) = 𝒞(x+s)` at most `θ ‖s‖^p`. With `C = univ` this is ARp's
+(4.1.11); its decrease lemma is Lemma 6.2.4 (and the first part of Lemma 4.1.4).
+'''
+
+[[node]]
+id = "abs_iteratedFDeriv_three_norm_pow_le"
+kind = "theorem"
+desc = '''
+For a natural `r ≥ 4`, `s ↦ ‖s‖ ^ r` is `ContDiff ℝ 3` and for all `s d : E`:
+`|iteratedFDeriv ℝ 3 (fun s => ‖s‖ ^ r) s (fun _ => d)| ≤ r * (r-1) * (r-2) * ‖s‖ ^ (r-3) * ‖d‖ ^ 3`
+(equality for `d ∥ s`). Proof: along the line `t ↦ ‖s + t d‖^r = q(t)^{r/2}`,
+`q = ‖s‖² + 2t⟨s,d⟩ + t²‖d‖²`, the third derivative at `0` is
+`r(r-2)(r-4)/8 · q^{r/2-3} q'^3 + 3 r(r-2)/4 · q^{r/2-2} q' q''`; bound with
+`|⟨s,d⟩| ≤ ‖s‖ ‖d‖`. (Lemma B.4.1 with `β = 1`, `j = 3`; duplicate candidate of the Chapter 4 plan.)
+'''
+deps = ["iteratedFDeriv_two_norm_rpow_apply"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 (β = 1, j = 3), (6.2.22)"
+
+[[node]]
+id = "abs_iteratedFDeriv_sub_regularizedModel_le"
+kind = "theorem"
+desc = '''
+(6.2.21)–(6.2.23). Under the module setting (`C` convex, `D ⊇ C` open, `ContDiffOn ℝ p f D`,
+`IteratedFDerivHolderOn f p L 1 C`, `x ∈ C`, `x + s ∈ C`, `0 ≤ σ`), for `j ∈ {1, 2, 3}` with
+`j ≤ p` and every `d` with `‖d‖ ≤ 1`:
+`|iteratedFDeriv ℝ j f (x + s) (fun _ => d) - iteratedFDeriv ℝ j (regularizedModel
+(ftaylorSeries ℝ f x) p σ) s (fun _ => d)| ≤ (L + σ) / (p - j + 1)! * ‖s‖ ^ (p - j + 1)`.
+(For `j = 3` the hypothesis `j ≤ p` gives `p + 1 ≥ 4`.)
+'''
+deps = ["norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "fderiv_regularizedModel", "fderiv_norm_rpow_apply", "iteratedFDeriv_two_norm_rpow_bounds", "abs_iteratedFDeriv_three_norm_pow_le", "regularizedModel"]
+source = "Cartis–Gould–Toint, (6.2.20)–(6.2.23), proof of Lemma 6.2.1"
+
+[[node]]
+id = "formCriticality_le_regularizedModel"
+kind = "theorem"
+desc = '''
+Measure form of (6.2.23) (the core of Lemma 6.2.1). Same hypotheses, `j ∈ {1,2,3}`, `j ≤ p`, and
+any `T ∋ 0`: (i) `formCriticality (iteratedFDeriv ℝ j f (x+s)) T ≤ formCriticality
+(iteratedFDeriv ℝ j m s) T + (L + σ)/(p-j+1)! * ‖s‖^(p-j+1)`; (ii) for `a, b` with
+`(L + σ)/(p-j+1)! ‖s‖^(p-j+1) + a ≤ b`: `closedBall 0 1 ∩ restrictedSteps (iteratedFDeriv ℝ j f
+(x+s)) a T ⊆ restrictedSteps (iteratedFDeriv ℝ j m s) b T` (corrected (6.2.18)–(6.2.19): the book
+omits `∩ 𝓑`, but its bound is only proved for `‖d‖ ≤ 1`; for `‖d‖ > 1` the error scales like
+`‖d‖^j`).
+'''
+deps = ["abs_iteratedFDeriv_sub_regularizedModel_le", "formCriticality_le_add_of_abs_sub_le", "inter_closedBall_restrictedSteps_subset"]
+source = "Cartis–Gould–Toint, Lemma 6.2.1, (6.2.18)–(6.2.19)"
+
+[[node]]
+id = "IsFirstOrderCCStep"
+kind = "def"
+desc = '''
+`IsFirstOrderCCStep (f : E → ℝ) (C : Set E) (p : ℕ) (θ : ℝ) (x : E) (σ : ℝ) (s : E) : Prop :=
+x + s ∈ C ∧ m s < m 0 ∧ formCriticality (iteratedFDeriv ℝ 1 m s) (feasibleSteps C (x + s)) ≤
+θ * ‖s‖ ^ p` with `m = regularizedModel (ftaylorSeries ℝ f x) p σ` — Step 2 of ARp1-CC
+(Algorithm 6.2.2, condition (6.2.29)); for `C = univ` the last condition is `‖∇m(s)‖ ≤ θ ‖s‖^p`
+(ARp's (4.1.11), via `formCriticality_one_univ`).
+'''
+deps = ["formCriticality", "feasibleSteps", "regularizedModel"]
+source = "Cartis–Gould–Toint, Algorithm 6.2.2, (6.2.29)"
+
+[[node]]
+id = "IsFirstOrderCCStep.pow_ge"
+kind = "theorem"
+desc = '''
+Step-length bound for ARp1-CC (proof of Lemma 6.2.4): under the module setting with `p ≥ 1`,
+`IsFirstOrderCCStep f C p θ x σ s`, `0 ≤ θ`: `ω ≤ (L + σ)/p! ‖s‖^p + θ ‖s‖^p`, i.e.
+`‖s‖ ^ p ≥ p! / (L + σ + θ p!) * ω` with `ω = formCriticality (iteratedFDeriv ℝ 1 f (x + s))
+(feasibleSteps C (x + s))` (= `ω_{f,𝒞,1}(x+s)`). (`𝓜⁰(s) = 𝒞(x+s)` makes the admissible sets of
+the two measures coincide.)
+'''
+deps = ["IsFirstOrderCCStep", "formCriticality_le_regularizedModel"]
+source = "Cartis–Gould–Toint, proof of Lemma 6.2.4"
+
+[[node]]
+id = "IsFirstOrderCCStep.sub_ge"
+kind = "theorem"
+desc = '''
+Decrease on a successful ARp1-CC iteration (Lemma 6.2.4; with `C = univ` the first part of
+Lemma 4.1.4, (4.1.31)): if moreover `σmin ≤ σ ≤ σmax`, `η₁ ≤ reductionRatio f x s
+((ftaylorSeries ℝ f x).taylorDecrement p s)` and `0 < η₁`, then
+`f x - f (x + s) ≥ κ₁ * ω ^ ((p+1)/p : ℝ)` with
+`κ₁ = η₁ σmin / (p+1)! * (p! / (L + σmax + θ p!)) ^ ((p+1)/p : ℝ)` (book (4.1.32)).
+'''
+deps = ["IsFirstOrderCCStep.pow_ge", "taylorDecrement_ge_of_regularizedModel_lt", "sub_le_of_le_reductionRatio"]
+source = "Cartis–Gould–Toint, Lemma 6.2.4, (4.1.32)"
+
+[[node]]
+id = "exists_isMinOn_regularizedModel_of_isClosed"
+kind = "theorem"
+desc = '''
+`[FiniteDimensional ℝ E]`, `S` closed, `0 ∈ S`, `σ > 0`, `p ≥ 1`: `regularizedModel D p σ` attains
+its minimum on `S` (coercivity, as in `exists_isMinOn_regularizedModel` with `S = univ`).
+'''
+deps = ["exists_isMinOn_regularizedModel"]
+source = "Cartis–Gould–Toint, Section 6.2.1 (well-posedness of Step 2)"
+
+[[node]]
+id = "exists_isFirstOrderCCStep"
+kind = "theorem"
+desc = '''
+Well-posedness of ARp1-CC / first-order ARp-CC Step 2. `[FiniteDimensional ℝ E]`, `C` closed
+convex, `x ∈ C`, `f` `C^p` near `x` (`p ≥ 1`), `σ > 0`, `θ ≥ 0`, and
+`0 < formCriticality (iteratedFDeriv ℝ 1 f x) (feasibleSteps C x)`. Then a global minimizer `s*`
+of `m` on `feasibleSteps C x` satisfies `IsFirstOrderCCStep f C p θ x σ s*` with model measure
+`= 0` (also `≤ θ₁ ε₁`, as needed by ARp-CC's (6.2.10)): the positive measure gives a feasible
+`d` with `fderiv ℝ f x d < 0`, and `fderiv ℝ m 0 = fderiv ℝ f x`, so `m s* < m 0`; zero model
+measure by `formCriticality_fderiv_eq_zero_iff` (`feasibleSteps C (x + s*) = feasibleSteps
+(feasibleSteps C x) s*`).
+'''
+deps = ["IsFirstOrderCCStep", "exists_isMinOn_regularizedModel_of_isClosed", "formCriticality_fderiv_eq_zero_iff", "fderiv_regularizedModel"]
+source = "Cartis–Gould–Toint, Algorithms 6.2.1–6.2.2 (Step 2)"

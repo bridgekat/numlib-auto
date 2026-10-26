@@ -1,0 +1,271 @@
+namespace = "CartisGouldToint.Chapter07"
+desc = '''
+§7.2 Finding first-order approximate minimizers: the two-phase target-following algorithm TPp-GC
+(Algorithm 7.2.1), its termination guarantees (Lemma 7.2.1) and evaluation complexity (Lemmas
+7.2.2–7.2.6, Theorem 7.2.7). Objects: `f : E → ℝ`, `c : E → EuclideanSpace ℝ (Fin m)`, `C : Set E`,
+`‖r(x,t)‖ = Constrained.targetResidual f c t x`, `μ₂(x,t) = Constrained.targetMerit f c t x`,
+`Φ_ℓ = Chapter06.PhiEll c ℓ`.
+
+**Modelling of Algorithm 7.2.1.** Phase 1 is an ARpLE-CC run (`Chapter06.algorithm_6_3_1`) on `c`
+with tolerances `(θε₀, ε₁)` stopped at its first hit `k₁`; `x₁ := y k₁`. Phase 2 is a structure of
+sequences indexed by the book's outer index `k ≥ 1`: outer iterates `X k` (`X 1 = x₁`), targets
+`t k`, and for each outer `k` an inner ARp1-CC run `(xi k, si k, σi k)` on `μ₂(·, t k)` started at
+`X k` with initial regularization `σ₀`, stopped at its first hit `e k` of the inner test (7.2.10);
+`X (k+1) = xi k (e k)`. Evaluation counts: Phase 1 as in Chapter 6 (evaluations of `c`); Phase 2:
+`1 + ∑_{k ≤ kε} e k` evaluations of `(f, c)` (one at `x₁`, one per inner iteration) and
+`1 + ∑_{k ≤ kε} |{i < e k | inner iteration i successful}|` derivative evaluations.
+
+**Corrections to the algorithm (needed for the printed proofs).** (1) Phase 2 Step 1 applies ARp1-CC
+(Algorithm 6.2.2), not ARp-CC: the proof of Lemma 7.2.6 uses Lemma 6.2.4, i.e. the step rule
+(6.2.29); ARp-CC's (6.2.10) with a fixed tolerance does not fit the relative test of (7.2.10).
+(2) Step 2(a) is entered when `‖r(x_{k+1}, t_k)‖ ≤ θε₀` (printed `< θε₀`): with `<`, an inner run
+stopped by `‖r‖ = θε₀` exactly, with `f ≥ t` and large `ω`, falls into Step 2(c) and terminates
+without the guarantee (7.2.17), contradicting Lemma 7.2.1. With `≤`, Lemma 7.2.1's strict
+`‖c(x_ε)‖ > θε₀` in (7.2.15) also follows (the printed proof only gives `≥`).
+
+**Counting gap (Lemma 7.2.6, Theorem 7.2.7).** The printed block argument (7.2.35)–(7.2.47) bounds
+only successful inner iterations whose new iterate fails the third test of (7.2.10) ("good"
+iterations). It omits: the first block (before the first `k ∈ 𝒦_a`) and the last one; the restart
+of `σ` at `σ₀` in every inner run (Lemma 2.4.1 must be applied per run, adding `κ^C` per run); the
+`i = 0` elements of `ℐ^s_k` (so (7.2.39) fails whenever its right-hand side is `< 1`, e.g. for a
+block consisting of one `𝒦_a` iteration); and outer iterations in `𝒦_b` whose inner run ends with a
+successful iteration landing on a point that passes the third test ("bad" `𝒦_b` iterations) — for
+these no decrease is guaranteed and the printed argument gives no bound on their number. The
+corrected Lemma 7.2.6 / Theorem 7.2.7 below are provable and recover the book's order
+`O(max[ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}])` for both function and derivative evaluations (the
+derivative bound acquires the `ε₀^{-1}` term: every `𝒦_a` block needs a successful iteration) when
+the number of bad `𝒦_b` iterations is bounded; whether the book's unconditional claim holds is open
+(check against [100], [103]).
+'''
+
+[[node]]
+id = "AssumptionCD1pLC"
+kind = "def"
+desc = '''
+c.D1pL.C: `∃ D open, C ⊆ D`, `ContDiffOn ℝ p c D`, and for each `j ∈ [1:p]` and component `i`,
+`iteratedFDeriv ℝ j (fun x => c x i)` is Lipschitz and bounded on `C`
+(`IteratedFDerivHolderOn (fun x => c x i) j Lj 1 C` and `‖·‖ ≤ Bj` on `C`). (Stated; the book's
+claim that it implies Φℓ.DpL.C when `‖c‖` is bounded on `C` is not planned — the book itself prefers
+to assume Φℓ.DpL.C.)
+'''
+deps = ["IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, assumption c.D1pL.C (Section 7.2.2.1)"
+
+[[node]]
+id = "nearFeasible"
+kind = "def"
+desc = '''
+`nearFeasible C c β : Set E := {x ∈ C | ‖c x‖ ≤ β}` (the book's `ℱ_β`, (7.2.7)).
+'''
+source = "Cartis–Gould–Toint, (7.2.7)"
+
+[[node]]
+id = "AssumptionBFb"
+kind = "def"
+desc = '''
+f.B.Fb: `AssumptionBFb f c C β flow fup : Prop := ∀ x ∈ nearFeasible C c β, flow ≤ f x ∧ f x ≤ fup`
+(the book's "if `ℱ_β ≠ ∅`" is vacuous in this form).
+'''
+deps = ["nearFeasible"]
+source = "Cartis–Gould–Toint, assumption f.B.Fb (Section 7.2.2.1)"
+
+[[node]]
+id = "AssumptionFD1pLC"
+kind = "def"
+desc = '''
+f.D1pL.C: `∃ D open, C ⊆ D`, `ContDiffOn ℝ p f D`, and `iteratedFDeriv ℝ j f` is Lipschitz and
+bounded on `C` for `j ∈ [1:p]` (stated for completeness; not used by the results, which assume
+μ₂.DpL.C). (The book's `∇^j_x f_i` is a typo for `∇^j_x f`.)
+'''
+deps = ["IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, assumption f.D1pL.C (Section 7.2.2.1)"
+
+[[node]]
+id = "AssumptionMu2DpLC"
+kind = "def"
+desc = '''
+μ₂.DpL.C (footnote 53: Φℓ.DpL.C for `μ₂(·, t)`): `AssumptionMu2DpLC f c C p : Prop := ∀ t : ℝ,
+∃ L, Chapter06.AssumptionDpLC (Constrained.targetMerit f c t) C p L` (the Lipschitz constant may
+depend on `t`; uniformity over the relevant targets is Lemma 7.2.5).
+'''
+deps = ["CartisGouldToint.Chapter06.AssumptionDpLC", "Constrained.targetResidual"]
+source = "Cartis–Gould–Toint, assumption μ₂.DpL.C, footnote 53"
+
+[[node]]
+id = "TPpGCParams"
+kind = "def"
+desc = '''
+Data of Algorithm 7.2.1: AR constants `P : Chapter06.ARpCCParams` (used by both phases; only
+`θ₁` among the `θ`'s), degrees `p ≥ 1`, `ℓ ≥ 2`, `i ≥ 0` (naturals; the book's (5.1.38)/(5.1.39)
+are used only through `ι₁(p,ℓ,i) ≥ 0`), `θ ∈ (0,1)`, `β > 0`. Tolerances (7.2.8):
+`0 < ε₀ ≤ min 1 β`, `0 < ε₁ ≤ 1`.
+'''
+deps = ["CartisGouldToint.Chapter06.ARpCCParams"]
+source = "Cartis–Gould–Toint, Algorithm 7.2.1 (Initialization), (7.2.8)"
+
+[[node]]
+id = "algorithm_7_2_1"
+kind = "def"
+desc = '''
+Algorithm 7.2.1 (TPp-GC), corrected as in the module description. Parts (all part of this node):
+* `innerStop f c C θ ε₀ ε₁ t x : Prop := targetResidual f c t x ≤ θ ε₀ ∨ f x < t ∨
+  Chapter06.omega1 (targetMerit f c t) C x ≤ ε₁ * targetResidual f c t x` (7.2.10);
+* `IsTPpGCPhase1 … x₀ y s σ k₁ : Prop := Chapter06.IsARpLECCRun c ℓ C p P (θ ε₀) ε₁ y s σ ∧
+  y 0 = x₀ ∧ IsFirstHit (fun k => stopLE c ℓ C (θ ε₀) ε₁ (y k)) k₁` (Phase 1, (7.2.9)); Phase 1
+  terminates the algorithm with `x_ε = y k₁` iff `‖c (y k₁)‖ > θ ε₀`;
+* `IsTPpGCPhase2 … x₁ X t xi si σi e : Prop`: `X 1 = x₁`, `t 1 = f x₁ - √(ε₀² - ‖c x₁‖²)` (Step 0),
+  and for every `k ≥ 1` such that no outer `j ∈ [1, k)` stopped: `xi k 0 = X k`,
+  `Optimization.IsARRun (targetMerit f c (t k)) p σ₀ … (Optimization.IsFirstOrderCCStep
+  (targetMerit f c (t k)) C p θ₁) (innerStop … (t k)) (xi k) (si k) (σi k)`,
+  `IsFirstHit (fun i => innerStop … (t k) (xi k i)) (e k)`, `X (k+1) = xi k (e k)`, and the target
+  rule: case (a) `targetResidual f c (t k) (X (k+1)) ≤ θ ε₀` (corrected from `<`):
+  `t (k+1) = f (X (k+1)) - √(ε₀² - ‖c (X (k+1))‖²)` (7.2.11); case (b) residual `> θ ε₀` and
+  `f (X (k+1)) < t k`: `t (k+1) = 2 f (X (k+1)) - t k` (7.2.13); case (c) otherwise: stop with
+  `t_ε = t k`. In cases (a)/(b) stop iff (7.2.12): `omega1 (targetMerit f c (t (k+1))) C (X (k+1))
+  ≤ ε₁ * targetResidual f c (t (k+1)) (X (k+1))`, with `t_ε = t (k+1)`. `outerStop k`, `IsKa k`
+  (case (a)), `IsKb k` (case (b)) are named (7.2.25);
+* `IsTPpGCRun` := Phase 1 ∧ (`‖c x₁‖ ≤ θ ε₀` → Phase 2 from `x₁`); outputs `x_ε`, `t_ε`;
+* counts `phase2FunEvals kε := 1 + ∑_{k ∈ [1, kε]} e k`, `phase2DerivEvals kε :=
+  1 + ∑_{k ∈ [1, kε]} |{i < e k | arSucc (inner run k) i}|`.
+'''
+deps = ["TPpGCParams", "CartisGouldToint.Chapter06.algorithm_6_3_1", "CartisGouldToint.Chapter06.algorithm_6_2_2", "CartisGouldToint.Chapter06.omega1", "Constrained.targetResidual", "Optimization.IsARRun", "Optimization.IsFirstOrderCCStep", "Optimization.IsFirstHit"]
+source = "Cartis–Gould–Toint, Algorithm 7.2.1"
+
+[[node]]
+id = "algorithm_7_2_1_exists"
+kind = "theorem"
+desc = '''
+Existence of TPp-GC runs. C.CNe, `x₀ ∈ C`, `ι₁(p,ℓ,i) ≥ 0`, `Chapter06.AssumptionPhiDpLC c ℓ C p
+LΦ`, `AssumptionMu2DpLC f c C p`, tolerances (7.2.8). Then an `IsTPpGCRun` exists: Phase 1 by
+`Chapter06.algorithm_6_3_1` (existence) and `Chapter06.theorem_6_3_1` (termination); each inner run
+of Phase 2 exists (`exists_isFirstOrderCCStep`: a failing inner test gives
+`omega1 > ε₁ θ ε₀ > 0`) and terminates (`Chapter06.theorem_6_2_5` for `μ₂(·, t_k) ≥ 0`, `flow = 0`);
+the outer sequence by `Optimization.exists_run_of_forall_exists` on states
+`(X k, t k, inner run k)`.
+'''
+deps = ["algorithm_7_2_1", "AssumptionMu2DpLC", "CartisGouldToint.Chapter06.theorem_6_3_1", "CartisGouldToint.Chapter06.theorem_6_2_5", "CartisGouldToint.Chapter06.AssumptionPhiDpLC", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 7.2.1 (well-posedness)"
+
+[[node]]
+id = "lemma_7_2_1"
+kind = "theorem"
+desc = '''
+Lemma 7.2.1 (for the corrected algorithm; `f`, `c` differentiable on an open set containing `C`).
+If TPp-GC stops in Phase 1 then `omega1 (Chapter06.PhiEll c ℓ) C x_ε ≤ ε₁ ‖c x_ε‖^(ℓ-1)` and
+`‖c x_ε‖ > θ ε₀` (7.2.14). If it stops in Phase 2 at outer `kε` with output `(x_ε, t_ε)` then
+(7.2.17) holds (`targetResidual f c t_ε x_ε > θ ε₀` — strict, `f x_ε ≥ t_ε`,
+`omega1 (targetMerit f c t_ε) C x_ε ≤ ε₁ targetResidual f c t_ε x_ε`), `targetResidual f c t_ε x_ε
+≤ ε₀` (7.2.20), and either `f x_ε = t_ε`, `omega1 (Chapter06.PhiEll c 2) C x_ε ≤ ε₁ ‖c x_ε‖`,
+`‖c x_ε‖ > θ ε₀` (7.2.15), or `f x_ε > t_ε` and `IsApproxFirstOrderGC f c C ε₀ ε₁ x_ε y_ε` with the
+explicit multiplier `y_ε = -(f x_ε - t_ε)⁻¹ • c x_ε` (7.2.16), (7.2.22).
+'''
+deps = ["algorithm_7_2_1", "lemma_7_2_3", "IsApproxFirstOrderGC", "Constrained.fderiv_targetMerit", "Constrained.fderiv_targetMerit_eq_smul_lagrangian", "CartisGouldToint.Chapter06.PhiEll"]
+source = "Cartis–Gould–Toint, Lemma 7.2.1"
+
+[[node]]
+id = "lemma_7_2_2"
+kind = "theorem"
+desc = '''
+Lemma 7.2.2 (Phase 1 complexity). C.CNe, `AssumptionPhiDpLC c ℓ C p LΦ`, `ι₁(p,ℓ,i) ≥ 0`,
+`β' ∈ (0,1)` (the analysis constant of Theorem 6.3.1, not the infeasibility bound `β`). Phase 1
+reaches its first hit `k₁` (`‖c(x₁)‖ ≤ θε₀` or `ω_{Φ_ℓ,𝒞,1}(x₁) ≤ ε₁ ‖c(x₁)‖^{ℓ-1}`) with
+`funEvalCount k₁ ≤ #F_{ARpLE,1} := κ^A M / min((θε₀)^{1/2^i}, ε₁^{(p+1)/p}) + κ^C` (7.2.23) and
+`derivEvalCount k₁ ≤ κ^S M / min(…) + 2` (7.2.24 **corrected**: the printed bound lacks the `+2` of
+Theorem 6.3.1), `M = max(‖c(x₀)‖^{1/2^i}, ‖c(x₀)‖^{1-(ℓ-1)/p})`, constants of Theorem 6.3.1 (with
+`β'`). (Instance of `Chapter06.theorem_6_3_1` with `r = c`, `ε₀ ← θε₀ ∈ (0,1]`.)
+'''
+deps = ["algorithm_7_2_1", "CartisGouldToint.Chapter06.theorem_6_3_1"]
+source = "Cartis–Gould–Toint, Lemma 7.2.2"
+
+[[node]]
+id = "lemma_7_2_3"
+kind = "theorem"
+desc = '''
+Lemma 7.2.3. For a Phase-2 run (corrected algorithm; inner runs satisfy `Optimization.IsARRun` with
+model decrease, so `μ₂(·, t_k)` is nonincreasing along each inner run) and every outer `k ≥ 1` up to
+the stopping index: `t (k+1) < t k` whenever `t (k+1)` is defined (strictly decreasing);
+`f (X k) - t k ≥ 0` (7.2.26); `k ∈ 𝒦_a → targetResidual f c (t (k+1)) (X (k+1)) = ε₀` (7.2.27);
+`k ∈ 𝒦_b → targetResidual f c (t (k+1)) (X (k+1)) = targetResidual f c (t k) (X (k+1)) ≤ ε₀`
+(7.2.28); `‖c (X k)‖ ≤ ε₀` and `f (X k) - t k ≤ ε₀` (7.2.29); `k ∈ 𝒦_a → t k - t (k+1) ≥ (1-θ) ε₀`
+(7.2.30, via `neg_add_sqrt_sq_sub_sq_ge` with `u = f(x_{k+1}) - t_k`, `v = ‖c(x_{k+1})‖`,
+`ω = θε₀`). Under `AssumptionBFb f c C β flow fup` (and `ε₀ ≤ min 1 β`):
+`t k ∈ [flow - 1, fup]` (7.2.31).
+'''
+deps = ["algorithm_7_2_1", "AssumptionBFb", "Constrained.targetResidual", "_root_.neg_add_sqrt_sq_sub_sq_ge", "Optimization.IsARRun.sub_ge_of_succ"]
+source = "Cartis–Gould–Toint, Lemma 7.2.3"
+
+[[node]]
+id = "lemma_7_2_4"
+kind = "theorem"
+desc = '''
+Lemma 7.2.4. Under f.B.Fb, for every Phase-2 run and every outer index `K` up to termination:
+`|{k ∈ [1, K] | IsKa k}| ≤ (fup - flow + 1) / ((1 - θ) ε₀)` (telescoping (7.2.30) inside
+`[flow - 1, fup]`, `Optimization.card_mul_le_of_decrease`).
+'''
+deps = ["lemma_7_2_3", "Optimization.card_mul_le_of_decrease"]
+source = "Cartis–Gould–Toint, Lemma 7.2.4"
+
+[[node]]
+id = "lemma_7_2_5"
+kind = "theorem"
+desc = '''
+Lemma 7.2.5. Under `AssumptionMu2DpLC f c C p` (`p ≥ 1`) and f.B.Fb there is `Lμ ≥ 0` (namely
+`max L_{flow-1} L_{fup}`) with `Chapter06.AssumptionDpLC (targetMerit f c t) C p Lμ` for every
+`t ∈ [flow - 1, fup]` — by `Constrained.iteratedFDerivHolderOn_targetMerit_of_mem_Icc` (affine
+dependence on `t`; "continuous dependence" as argued in the book would not suffice). Consequently,
+with `σμmax := max σ₀ (γ₃ Lμ / (1 - η₂))`, every regularization parameter of every inner run of
+Phase 2 satisfies `σ_min ≤ σi k i ≤ σμmax` (Lemma 7.2.3 (7.2.31) and `Optimization.IsARRun.sigma_le`).
+(The hypothesis φℓ.DpL.C listed by the book is not needed.)
+'''
+deps = ["AssumptionMu2DpLC", "lemma_7_2_3", "Constrained.iteratedFDerivHolderOn_targetMerit_of_mem_Icc", "Optimization.IsARRun.sigma_le"]
+source = "Cartis–Gould–Toint, Lemma 7.2.5"
+
+[[node]]
+id = "lemma_7_2_6"
+kind = "theorem"
+desc = '''
+Lemma 7.2.6, **corrected** (see module description). C.CNe, μ₂.DpL.C, f.B.Fb, a Phase-2 run of the
+corrected algorithm, `Lμ`, `σμmax` of Lemma 7.2.5, `κ₁ = η₁σ_min/(p+1)! (p!/(Lμ + σμmax +
+θ₁p!))^{(p+1)/p}`, `κ^S_GC = κ₁⁻¹ θ^{-(p+2)/p}` (7.2.47), `G := κ^S_GC (1-θ) ε₀^{(p-1)/p}
+ε₁^{-(p+1)/p}`. Call inner iteration `(j, s)` (`s < e j`) *good* if it is successful, the third test
+of (7.2.10) fails at `xi j (s+1)` and `targetResidual f c (t j) (xi j (s+1)) > θε₀`. A *block* is a
+maximal interval of outer indices `[a+1, b]` with `a ∈ 𝒦_a ∪ {0}` and no element of `𝒦_a` in
+`[a+1, b)`. Then, before termination:
+(i) every successful `(j, s)` with `s + 1 < e j` is good, and so is the last successful iteration of
+a `𝒦_b` run unless that run is *bad* (its final iterate passes the third test of (7.2.10));
+(ii) per block, the number of good inner iterations is `≤ G` ((7.2.39) for good iterations; via
+(7.2.43) with Lemma 6.2.4 for `μ₂(·, t_j)` and telescoping of the residual from `ε₀` down to `θε₀`
+across the block, (7.2.41)–(7.2.42));
+(iii) per inner run, `e j ≤ (1 + |log γ₁|/log γ₂) · |{s < e j | successful}| + log(σμmax/σ₀)/log γ₂`
+(Lemma 2.4.1 per run; σ restarts at `σ₀`);
+(iv) per block, the number of outer iterations is `≤ G + 1 + (number of bad 𝒦_b iterations in it)`.
+As printed, (7.2.39) fails when `G < 1`, because `ℐ^s_k` contains the `i = 0` element of the run of
+the next `𝒦_a` iteration (with the proof's index range `[k+1 : k+ℓ(k)]`; with the printed range
+`[k+1 : k+ℓ(k))` that run is not counted at all).
+'''
+deps = ["lemma_7_2_3", "lemma_7_2_5", "CartisGouldToint.Chapter06.lemma_6_2_4", "Optimization.succ_le_of_arUpdate", "Optimization.card_mul_le_of_decrease"]
+source = "Cartis–Gould–Toint, Lemma 7.2.6"
+
+[[node]]
+id = "theorem_7_2_7"
+kind = "theorem"
+desc = '''
+Theorem 7.2.7, **corrected**. C.CNe, `AssumptionPhiDpLC c ℓ C p LΦ` with `ι₁(p,ℓ,i) ≥ 0`, μ₂.DpL.C,
+f.B.Fb, tolerances (7.2.8). Let `Na := (fup - flow + 1)/((1-θ)ε₀)`, `G` as in Lemma 7.2.6,
+`A₁ = 1 + |log γ₁|/log γ₂`, `C₁ = log(σμmax/σ₀)/log γ₂`. For every TPp-GC run:
+(i) Phase 1 terminates within the bounds of Lemma 7.2.2 (if it stops the algorithm, its output
+satisfies (7.2.14));
+(ii) in Phase 2, every outer index `k` reached satisfies `k ≤ (Na + 1)(G + 1) + nbad(k)`, `nbad(k)` the
+number of bad `𝒦_b` iterations before `k`; in particular, if the run has at most `M` bad `𝒦_b`
+iterations, Phase 2 terminates at some `kε ≤ (Na + 1)(G + 1) + M` with output satisfying (7.2.15)
+or (7.2.16) (Lemma 7.2.1);
+(iii) if Phase 2 terminates at `kε`: `phase2DerivEvals kε ≤ 1 + (Na + 1) G + kε` and
+`phase2FunEvals kε ≤ 1 + A₁ ((Na + 1) G + kε) + C₁ kε`; total evaluations of `(c, f)` are
+`≤ #F_{ARpLE,1} + phase2 bound`, of derivatives `≤ #D_{ARpLE,1} + 2 + phase2 bound`.
+With `M` bounded independently of `ε` (e.g. `M = 0`) both totals are
+`O(max[ε₀^{-1/2^i}, ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}])`, matching the order of (7.2.50); the book's
+(7.2.51) (no `ε₀^{-1}` term, `2^4` read `2^i`) and the unconditional termination claim are not
+established by the printed proof (module description).
+'''
+deps = ["lemma_7_2_1", "lemma_7_2_2", "lemma_7_2_4", "lemma_7_2_6", "algorithm_7_2_1"]
+source = "Cartis–Gould–Toint, Theorem 7.2.7"

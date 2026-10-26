@@ -1,0 +1,280 @@
+namespace = "CartisGouldToint.Chapter06"
+desc = '''
+§6.2 The ARp-CC algorithm, its complexity (Lemmas 6.2.1–6.2.2, Theorem 6.2.3), and the first-order
+variant ARp1-CC (Lemma 6.2.4, Theorem 6.2.5). Model `m_k(s) = Optimization.regularizedModel
+(ftaylorSeries ℝ f (x k)) p (σ k) s` (4.1.2); runs are `Optimization.IsARRun` with the step
+predicates below; the generic facts "Lemmas 4.1.1 and 4.1.2 continue to hold" are
+`Optimization.IsARRun.sigma_le` / `.sub_ge_of_succ`, and "the remainder of the proof is identical
+to Theorem 4.1.5" is `Optimization.IsARRun.exists_isFirstHit_of_decrease`.
+
+Model counterparts of the feasible sets ((6.2.1)–(6.2.2)) and measures ((6.2.3)–(6.2.5)) are
+`formCriticality`/`restrictedSteps` of `iteratedFDeriv ℝ j m_k (s k)` over
+`𝓜⁰_k(s) = feasibleSteps C (x k + s)`.
+
+Source corrections: (1) Lemma 6.2.1 (6.2.18)–(6.2.19) hold only for `‖d‖ ≤ 1` (the proof's
+(6.2.23) is ball-restricted); accordingly the inclusions `𝒞¹ ⊆ 𝓜¹`, `𝒞² ⊆ 𝓜²` in the proof of
+Theorem 6.2.3 are `∩ 𝓑` inclusions, which suffice. (2) Lemma 6.2.2: the prefactor of `κ_j^cc` is
+`η₁σ_min/(p+1)!`, not `/p!` (decrease `≥ η₁ σ_min ‖s‖^{p+1}/(p+1)!`); Theorem 6.2.3's `κ^S` already
+uses `(p+1)!`. (3) `q ≤ p` is needed (third order needs `p ≥ 3`). (4) Step 2 of ARp-CC may have no
+admissible step when `q ≥ 2` (`algorithm_6_2_1_not_exists_step`): the second-order measure uses
+directions with `|⟨d, ∇f⟩| ≤ τ₁ε₁`, including ascent directions, so even exact (strict) local
+minimizers can fail the second-order test; the complexity theorem holds for every run, but runs
+exist only under an extra hypothesis (for `q = 1` they always exist).
+'''
+
+[[node]]
+id = "AssumptionBbC"
+kind = "def"
+desc = '''
+f.bB.C: `AssumptionBbC f C flow : Prop := ∀ x ∈ C, flow ≤ f x`.
+'''
+source = "Cartis–Gould–Toint, assumption f.bB.C (Section 6.2.2)"
+
+[[node]]
+id = "AssumptionDpLC"
+kind = "def"
+desc = '''
+f.DpL.C: `AssumptionDpLC f C p L : Prop := 0 ≤ L ∧ ∃ D, IsOpen D ∧ C ⊆ D ∧ ContDiffOn ℝ p f D ∧
+IteratedFDerivHolderOn f p L 1 C` (Lipschitz `p`-th derivative on `C`, tensor norm = operator
+norm, (A.7)). (The book has `L_{f,p} ≥ 0`, not `≥ 1`; no constant needs `L ≥ 1` here.)
+'''
+deps = ["IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, assumption f.DpL.C (Section 6.2.2)"
+
+[[node]]
+id = "ARpCCParams"
+kind = "def"
+desc = '''
+Constants of ARp-CC (6.2.7): `Chapter02.ARParams` (`σ₀ > 0`, `σ_min ∈ (0, σ₀]`,
+`0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ < γ₃`) together with `θ₁ θ₂ θ₃ ∈ (0,1)`, `τ₁ τ₂ ∈ (0,1)`,
+`(1 + τ₁)/2 ≤ θ₁`, `(1 + τ₂)/2 ≤ θ₂`. Abbreviation (part of node):
+`sigmaMax P L := max P.σ₀ (P.γ₃ * L / (1 - P.η₂))` (4.1.19).
+'''
+deps = ["CartisGouldToint.Chapter02.ARParams"]
+source = "Cartis–Gould–Toint, (6.2.7), (4.1.19)"
+
+[[node]]
+id = "modelOmega"
+kind = "def"
+desc = '''
+Model sets and measures (6.2.1)–(6.2.5), for `m := regularizedModel (ftaylorSeries ℝ f x) p σ`:
+`modelSteps₀ f C x s := feasibleSteps C (x + s)` (`𝓜⁰`), `modelSteps₁ f C p θ₁ ε₁ x σ s :=
+restrictedSteps (iteratedFDeriv ℝ 1 m s) (θ₁ * ε₁) (modelSteps₀ …)` (`𝓜¹`), `modelSteps₂ … :=
+restrictedSteps (iteratedFDeriv ℝ 2 m s) (θ₂ * ε₂) (modelSteps₁ …)` (`𝓜²`), and
+`modelOmega j … := formCriticality (iteratedFDeriv ℝ j m s) 𝓜^{j-1}` for `j = 1, 2, 3`
+(`ω_{m_k,𝓜,j}(s)`, all `≥ 0` when `x + s ∈ C`).
+'''
+deps = ["Optimization.formCriticality", "Optimization.restrictedSteps", "Optimization.feasibleSteps", "Optimization.regularizedModel"]
+source = "Cartis–Gould–Toint, (6.2.1)–(6.2.5)"
+
+[[node]]
+id = "IsARpCCStep"
+kind = "def"
+desc = '''
+Step 2 of ARp-CC: `IsARpCCStep f C p P q ε₁ ε₂ ε₃ x σ s : Prop := x + s ∈ C ∧ m s < m 0 ∧
+modelOmega 1 … ≤ θ₁ ε₁ (6.2.10) ∧ (2 ≤ q → modelOmega 2 … ≤ θ₂ ε₂ (6.2.11)) ∧
+(3 ≤ q → modelOmega 3 … ≤ θ₃ ε₃ (6.2.12))`.
+'''
+deps = ["modelOmega", "ARpCCParams"]
+source = "Cartis–Gould–Toint, Algorithm 6.2.1, Step 2"
+
+[[node]]
+id = "algorithm_6_2_1"
+kind = "def"
+desc = '''
+Algorithm 6.2.1 (ARp-CC) as a run predicate: `IsARpCCRun f C p P q ε₁ ε₂ ε₃ x s σ : Prop :=
+x 0 ∈ C ∧ Optimization.IsARRun f p P.σ₀ P.σmin P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃
+(IsARpCCStep f C p P q ε₁ ε₂ ε₃) (IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃) x s σ`
+(`1 ≤ q ≤ 3`; the Step-3 ratio uses the Taylor decrement, the update is (2.4.4)).
+Existence (part of node): (a) `q = 1`, `C` closed convex, `x₀ ∈ C`, `f` `C^p` on an open
+`D ⊇ C`, `p ≥ 1`: a run exists from `x₀` (a global model minimizer over `𝒞(x_k)` is admissible,
+`Optimization.exists_isFirstOrderCCStep`, model measure `0 ≤ θ₁ε₁`); (b) any `q`: a run exists
+provided every feasible `x` failing the test admits, for every `σ ≥ σ_min`, some `s` with
+`IsARpCCStep` (`Optimization.exists_run_of_forall_exists`). Without that proviso existence fails
+(`algorithm_6_2_1_not_exists_step`).
+'''
+deps = ["IsARpCCStep", "IsApproxMinimizerCC", "Optimization.IsARRun", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 6.2.1"
+
+[[node]]
+id = "algorithm_6_2_1_not_exists_step"
+kind = "theorem"
+desc = '''
+Step 2 of ARp-CC can be infeasible for `q ≥ 2` (source issue; the book asserts the model measures
+"will all be small in the neighbourhood of any … global minimizer of `m_k`", but Step 2 also demands
+`m_k(s) < m_k(0)`). For every `P : ARpCCParams`, `ε₁ ε₂ ε₃ > 0`, `q ∈ {2, 3}`, `σ > 0`, on
+`E = EuclideanSpace ℝ (Fin 1)` with `C = {x | 0 ≤ x 0}`, `p = 3`, `g = τ₁ε₁`, `K = 2ε₂`,
+`c = K²/(8 g)`, `f x = g x₀ - K/2 x₀² + c x₀³`: f satisfies C.CNe, f.DpL.C (`L = 0`), f.bB.C;
+`x = 0` fails the test (`omega1 = 0`, `omega2 f C τ₁ 0 ε₁ = K > ε₂`) — although `0` is a strict
+global minimizer of `f` on `C`; and no `s` satisfies `IsARpCCStep` at `(0, σ)` because
+`m(s) - m(0) = s (g - K s/2 + c s²) + σ s⁴/24 > 0` for `s > 0`. Hence no ARp-CC run with
+`x₀ = 0` exists.
+'''
+deps = ["algorithm_6_2_1", "AssumptionCNe", "AssumptionDpLC", "AssumptionBbC"]
+source = "Cartis–Gould–Toint, Algorithm 6.2.1 (Step 2 well-posedness, corrected)"
+
+[[node]]
+id = "arpcc_sigma_le"
+kind = "theorem"
+desc = '''
+"Lemmas 4.1.1 and (under f.DpL.C) 4.1.2 continue to hold": for an ARp-CC run under C.CNe and
+`AssumptionDpLC f C p L`, for every `k` up to the first termination index: `x k ∈ C`,
+`σ_min ≤ σ k ≤ sigmaMax P L`, `T_{f,p}(x_k,0) - T_{f,p}(x_k,s_k) > σ_k/(p+1)! ‖s_k‖^{p+1}`, and on
+successful iterations `f(x_k) - f(x_{k+1}) ≥ η₁ σ_min/(p+1)! ‖s_k‖^{p+1}`. The same holds for
+ARp1-CC and ARpLE-CC runs (same proof; part of node).
+'''
+deps = ["algorithm_6_2_1", "AssumptionDpLC", "AssumptionCNe", "Optimization.IsARRun.sigma_le", "Optimization.IsARRun.sub_ge_of_succ"]
+source = "Cartis–Gould–Toint, Section 6.2.2 (Lemmas 4.1.1, 4.1.2 for ARp-CC)"
+
+[[node]]
+id = "omegaNext"
+kind = "def"
+desc = '''
+Mixed measures (6.2.14), (6.2.16): objective tensors at `x_{k+1} = x_k + s_k`, admissible sets from
+the model: `omegaNext2 … := formCriticality (iteratedFDeriv ℝ 2 f (x + s)) (modelSteps₁ f C p θ₁ ε₁
+x σ s)` (`ω_{k+1,2}`) and `omegaNext3 … := formCriticality (iteratedFDeriv ℝ 3 f (x + s))
+(modelSteps₂ …)` (`ω_{k+1,3}`).
+'''
+deps = ["modelOmega"]
+source = "Cartis–Gould–Toint, (6.2.14), (6.2.16)"
+
+[[node]]
+id = "lemma_6_2_1_i"
+kind = "theorem"
+desc = '''
+Lemma 6.2.1 (6.2.13). C.CNe, `AssumptionDpLC f C p L`, an ARp-CC run, `k` before termination and
+successful. If `omega1 f C (x (k+1)) > ε₁` then `‖s k‖ ^ p > p! (1 - θ₁) ε₁ / (L + sigmaMax P L)`.
+(Proof: `omega1 f C (x_{k+1}) ≤ (L + σ_k)/p! ‖s_k‖^p + modelOmega 1 ≤ … + θ₁ε₁`.)
+'''
+deps = ["arpcc_sigma_le", "Optimization.formCriticality_le_regularizedModel", "omega1"]
+source = "Cartis–Gould–Toint, Lemma 6.2.1, (6.2.13)"
+
+[[node]]
+id = "lemma_6_2_1_ii"
+kind = "theorem"
+desc = '''
+Lemma 6.2.1 (6.2.15). Same setting, `2 ≤ q ≤ p`. If `omegaNext2 … (x k) (σ k) (s k) > ε₂` then
+`‖s k‖ ^ (p-1) > (p-1)! (1 - θ₂) ε₂ / (L + sigmaMax P L)` (uses (6.2.11) and (6.2.23) with `j = 2`
+over `T = 𝓜¹_k(s_k)`).
+'''
+deps = ["arpcc_sigma_le", "Optimization.formCriticality_le_regularizedModel", "omegaNext"]
+source = "Cartis–Gould–Toint, Lemma 6.2.1, (6.2.15)"
+
+[[node]]
+id = "lemma_6_2_1_iii"
+kind = "theorem"
+desc = '''
+Lemma 6.2.1 (6.2.17). Same setting, `q = 3 ≤ p`. If `omegaNext3 … > ε₃` then
+`‖s k‖ ^ (p-2) > (p-2)! (1 - θ₃) ε₃ / (L + sigmaMax P L)` ((6.2.12), (6.2.23) with `j = 3`, which
+needs `p ≥ 3`).
+'''
+deps = ["arpcc_sigma_le", "Optimization.formCriticality_le_regularizedModel", "omegaNext"]
+source = "Cartis–Gould–Toint, Lemma 6.2.1, (6.2.17)"
+
+[[node]]
+id = "lemma_6_2_1_iv"
+kind = "theorem"
+desc = '''
+Lemma 6.2.1 (6.2.18)–(6.2.19), **corrected** (unit ball added). Same setting (successful `k`). For
+`d ∈ restrictedSteps₁ f C τ₁ ε₁ (x (k+1))` with `‖d‖ ≤ 1`:
+`|∇_s m_k(s_k)[d]| ≤ (L + σ_max)/p! ‖s_k‖^p + τ₁ ε₁`; if `2 ≤ q ≤ p`, for
+`d ∈ restrictedSteps₂ f C τ₁ τ₂ ε₁ ε₂ (x (k+1))` with `‖d‖ ≤ 1`:
+`|∇²_s m_k(s_k)[d]²| ≤ (L + σ_max)/(p-1)! ‖s_k‖^{p-1} + τ₂ ε₂`. As printed (any `d` in the
+restricted set) the bounds are unproved: the proof's (6.2.23) holds only for `d ∈ 𝓑`, and for
+`‖d‖ > 1` the error term scales as `‖d‖` (resp. `‖d‖²`).
+'''
+deps = ["arpcc_sigma_le", "Optimization.abs_iteratedFDeriv_sub_regularizedModel_le", "restrictedSteps₂"]
+source = "Cartis–Gould–Toint, Lemma 6.2.1, (6.2.18)–(6.2.19)"
+
+[[node]]
+id = "lemma_6_2_2"
+kind = "theorem"
+desc = '''
+Lemma 6.2.2, **constants corrected**. C.CNe, f.DpL.C, ARp-CC run, `k` successful before
+termination, `σ_max := sigmaMax P L`. With `κ_j^cc := η₁ σ_min/(p+1)! · ((p-j+1)! (1-θ_j) /
+(L + σ_max))^((p+1)/(p-j+1))` (book: `η₁σ_min/p!`, an overstatement by the factor `p+1`; the
+decrease is only `η₁ σ_min ‖s‖^{p+1}/(p+1)!`):
+(i) `omega1 f C (x (k+1)) > ε₁ → f (x k) - f (x (k+1)) > κ_1^cc ε₁^((p+1)/p)`;
+(ii) `2 ≤ q ≤ p`, `omegaNext2 … > ε₂ → … > κ_2^cc ε₂^((p+1)/(p-1))`;
+(iii) `q = 3 ≤ p`, `omegaNext3 … > ε₃ → … > κ_3^cc ε₃^((p+1)/(p-2))`.
+'''
+deps = ["lemma_6_2_1_i", "lemma_6_2_1_ii", "lemma_6_2_1_iii", "arpcc_sigma_le"]
+source = "Cartis–Gould–Toint, Lemma 6.2.2"
+
+[[node]]
+id = "arpcc_decrease_of_not_test"
+kind = "theorem"
+desc = '''
+The decrease used in the proof of Theorem 6.2.3 (its version of (4.1.44)): C.CNe, f.DpL.C,
+`q ≤ p`, ARp-CC run, `k` successful before termination, and the test fails at the new iterate
+(`¬ IsApproxMinimizerCC … (x (k+1))`). Then `f (x k) - f (x (k+1)) ≥ min_{j ≤ q} κ_j^cc ε_j^((p+1)/
+(p-j+1))`. Proof: if (6.2.27) (`‖s_k‖^p ≤ p!(1-θ₁)ε₁/(L+σ_max)`) or, for `q ≥ 2`, (6.2.28) fails,
+the step is long and the decrease follows from `arpcc_sigma_le`; otherwise `omega1 ≤ ε₁` (6.2.13),
+and `𝒞¹(x_{k+1},ε₁) ∩ 𝓑 ⊆ 𝓜¹_k(s_k)`, `𝒞²(x_{k+1},ε₁,ε₂) ∩ 𝓑 ⊆ 𝓜²_k(s_k)`
+(`lemma_6_2_1_iv`, `(1-θ_i+τ_i) ≤ θ_i` from (6.2.7), `inter_closedBall_restrictedSteps_subset`) give
+`omega2 ≤ omegaNext2`, `omega3 ≤ omegaNext3` (`formCriticality_mono`), so a failing second/third
+test triggers Lemma 6.2.2 (ii)/(iii).
+'''
+deps = ["lemma_6_2_2", "lemma_6_2_1_iv", "Optimization.formCriticality_mono", "Optimization.inter_closedBall_restrictedSteps_subset"]
+source = "Cartis–Gould–Toint, proof of Theorem 6.2.3"
+
+[[node]]
+id = "theorem_6_2_3"
+kind = "theorem"
+desc = '''
+Theorem 6.2.3. C.CNe, `AssumptionDpLC f C p L`, `AssumptionBbC f C flow`, `1 ≤ q ≤ min p 3`,
+`ε_j ∈ (0,1]`. For every ARp-CC run there is `kε` with `IsFirstHit (fun k =>
+IsApproxMinimizerCC f C τ₁ τ₂ q ε₁ ε₂ ε₃ (x k)) kε` and, with `m_ε := min_{j ≤ q}
+ε_j^((p+1)/(p-j+1))`:
+`funEvalCount kε ≤ κ^A (f(x₀) - flow)/m_ε + κ^C` and
+`derivEvalCount succ kε ≤ κ^S (f(x₀) - flow)/m_ε + 2`, where
+`κ^S = (p+1)!/(η₁σ_min) · max_{j ≤ q} ((L + σ_max)/((p-j+1)!(1-θ_j)))^((p+1)/(p-j+1))`
+(`= 1/min_j κ_j^cc`), `κ^A = κ^S (1 + |log γ₁|/log γ₂)`,
+`κ^C = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2`, `σ_max = sigmaMax P L` (book constants; the book
+states only `q = 3` with all three tolerances, the cases `q = 1, 2` being the `ε_j = ∞` versions).
+The `O(max_j ε_j^{-(p+1)/(p-j+1)})` form is a corollary.
+'''
+deps = ["arpcc_decrease_of_not_test", "arpcc_sigma_le", "AssumptionBbC", "Optimization.IsARRun.exists_isFirstHit_of_decrease"]
+source = "Cartis–Gould–Toint, Theorem 6.2.3"
+
+[[node]]
+id = "algorithm_6_2_2"
+kind = "def"
+desc = '''
+Algorithm 6.2.2 (ARp1-CC): ARp-CC with `ε₂ = ε₃ = ∞` and (6.2.10) replaced by (6.2.29):
+`IsARp1CCRun f C p P ε₁ x s σ : Prop := x 0 ∈ C ∧ Optimization.IsARRun f p P.σ₀ … P.γ₃
+(Optimization.IsFirstOrderCCStep f C p P.θ₁) (fun y => omega1 f C y ≤ ε₁) x s σ`. Existence (part
+of node): from any `x₀ ∈ C` under C.CNe and `f` `C^p` on an open `D ⊇ C`
+(`Optimization.exists_isFirstOrderCCStep`, `exists_run_of_forall_exists`). Only `θ₁` of
+`ARpCCParams` is used.
+'''
+deps = ["ARpCCParams", "omega1", "Optimization.IsARRun", "Optimization.IsFirstOrderCCStep", "Optimization.exists_isFirstOrderCCStep", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 6.2.2"
+
+[[node]]
+id = "lemma_6_2_4"
+kind = "theorem"
+desc = '''
+Lemma 6.2.4. C.CNe, `AssumptionDpLC f C p L`, an ARp1-CC run, `k` successful before termination:
+`f (x k) - f (x (k+1)) ≥ κ₁ * (omega1 f C (x (k+1))) ^ ((p+1)/p : ℝ)` with
+`κ₁ = η₁ σ_min/(p+1)! · (p!/(L + σ_max + θ₁ p!))^((p+1)/p)` (4.1.32), `σ_max = sigmaMax P L`.
+(No termination hypothesis needed: the bound is in terms of the measure itself.)
+'''
+deps = ["algorithm_6_2_2", "arpcc_sigma_le", "Optimization.IsFirstOrderCCStep.sub_ge"]
+source = "Cartis–Gould–Toint, Lemma 6.2.4"
+
+[[node]]
+id = "theorem_6_2_5"
+kind = "theorem"
+desc = '''
+Theorem 6.2.5. C.CNe, f.DpL.C, f.bB.C, `ε₁ ∈ (0,1]`, `p ≥ 1`. Every ARp1-CC run has a first
+termination index `kε` (`omega1 f C (x kε) ≤ ε₁`) with
+`funEvalCount kε ≤ κ^A (f(x₀) - flow)/ε₁^((p+1)/p) + κ^C_ARp` and
+`derivEvalCount succ kε ≤ κ^S (f(x₀) - flow)/ε₁^((p+1)/p) + 2`, where
+`κ^S = (p+1)!/(η₁σ_min) · ((L + σ_max + θ₁ p!)/p!)^((p+1)/p)` (`= 1/κ₁`),
+`κ^A = κ^S (1 + |log γ₁|/log γ₂)`, `κ^C_ARp = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2` (4.1.46).
+(Decrease `> κ₁ ε₁^((p+1)/p)` on successful iterations whose new iterate fails the test, by
+Lemma 6.2.4.)
+'''
+deps = ["lemma_6_2_4", "arpcc_sigma_le", "AssumptionBbC", "Optimization.IsARRun.exists_isFirstHit_of_decrease"]
+source = "Cartis–Gould–Toint, Theorem 6.2.5"
