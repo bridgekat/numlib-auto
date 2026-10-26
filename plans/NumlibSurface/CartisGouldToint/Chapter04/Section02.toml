@@ -19,7 +19,10 @@ kind = "def"
 desc = '''
 `functionClass Δ L p := Optimization.smoothClass Δ L p` — the book's `𝓕(Δ, p)` (§4.2.1.1):
 `C^∞` functions on `ℝⁿ` (any `n`) satisfying f.DpL with constant `L`, f.Bb with `f_low = inf f`, and
-`f(0) - f_low ≤ Δ`. Orthogonal invariance (footnote 30) is `Optimization.comp_adjoint_mem_smoothClass`.
+`f(0) - f_low ≤ Δ`. Orthogonal invariance (footnote 30) is `Optimization.comp_adjoint_mem_smoothClass`,
+which needs `0 ≤ L` (false for `L < 0`): the surface statements about `functionClass Δ L p` should
+assume `0 < L` (the book's `L_{f,p} > 0`). Members are `C^∞`, hence differentiable, as
+`Optimization.classComplexity_zeroRespecting_le` requires.
 '''
 deps = ["Optimization.smoothClass", "Optimization.comp_adjoint_mem_smoothClass"]
 source = "Cartis–Gould–Toint, Section 4.2.1.1"
@@ -138,12 +141,24 @@ source = "Cartis–Gould–Toint, Lemma 4.2.5 (iii)"
 id = "lemma_4_2_5_iv"
 kind = "theorem"
 desc = '''
-Lemma 4.2.5 (iv). There is `c₁ > 0` such that for every `p ≥ 1` and every `k̄`, `∇^p f^D` is
-Lipschitz with constant `L^D_p := Optimization.CarmonChain.lipschitzConst p` (independent of `k̄`)
-and `L^D_p ≤ exp(5/2 p log p + c₁ p)` (f.DpL holds with `max 1 L^D_p`).
+Lemma 4.2.5 (iv), uniform part. For every `p ≥ 1` and every `k̄`, `∇^p f^D` is Lipschitz with
+constant `L^D_p := Optimization.CarmonChain.lipschitzConst p > 0`, independent of `k̄`
+(`Optimization.CarmonChain.lipschitzOn_iteratedFDeriv_chain`). The explicit growth of `L^D_p` is
+`lemma_4_2_5_iv_growth`.
 '''
-deps = ["hardFunction", "Optimization.CarmonChain.lipschitzOn_iteratedFDeriv_chain", "Optimization.CarmonChain.lipschitzConst_le_exp"]
+deps = ["hardFunction", "Optimization.CarmonChain.lipschitzOn_iteratedFDeriv_chain"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv)"
+
+[[node]]
+id = "lemma_4_2_5_iv_growth"
+kind = "theorem"
+desc = '''
+Lemma 4.2.5 (iv), explicit growth: there is `c₁ > 0` with
+`L^D_p = Optimization.CarmonChain.lipschitzConst p ≤ exp(5/2 p log p + c₁ p)` for all `p ≥ 1`.
+Nothing else in the section depends on it.
+'''
+deps = ["lemma_4_2_5_iv", "Optimization.CarmonChain.lipschitzConst_le_exp"]
+source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv) (explicit growth)"
 
 [[node]]
 id = "theorem_4_2_6_i"
@@ -155,13 +170,15 @@ Theorem 4.2.6 (lower bound), **corrected**. Let `p ≥ 1`, `Δ, L, ε₁ > 0`, `
 ≥ ⌊Y / 12⌋₊`, hence `≥ c₀ Y` with `c₀ = 1/24` whenever `Y ≥ 12` (i.e. for `ε₁` small enough).
 Proof as in the book with `f(x) = μ^{p+1} (L/L^D_p) f^D(x/μ)`, `μ = (L^D_p ε₁ / L)^{1/p}`, `k̄ = ⌊Y/12⌋₊`,
 hard instance of dimension `k̄` for `𝓜_ZR(p)` and `2 k̄` for `𝓜(p)`
-(`Optimization.CarmonChain.le_classComplexity_smoothClass`). Corrections: the book concludes
+(`Optimization.CarmonChain.le_classComplexity_smoothClass_methodClass`; the first inequality is
+`Optimization.classComplexity_zeroRespecting_le (methodClass p)` with `comp_adjoint_mem_smoothClass`).
+Both classes are nonempty (`Optimization.zeroRespectingClass_nonempty`, `methodClass_nonempty`). Corrections: the book concludes
 `#_ε(𝓜(p),𝓕) ≥ 2 k̄` from Theorem 4.2.4 (ii), which only gives `≥ k̄`; the floor makes the
 `c₀`-form false for large `ε₁` (then `k̄ = 0`, and indeed for `Δ` small relative to
 `ε₁^{(p+1)/p} L^{-1/p}` every `f ∈ 𝓕` has `‖∇f(0)‖ ≤ ε₁`, so `#_ε = 0`); the OCR's `μ` and
 `(L_{f,p}/L_{f,p})^{1/p}` are garbled.
 '''
-deps = ["lemma_4_2_1", "lemma_4_2_3", "theorem_4_2_4_i", "theorem_4_2_4_ii", "lemma_4_2_5_i", "lemma_4_2_5_ii", "lemma_4_2_5_iii", "lemma_4_2_5_iv", "Optimization.CarmonChain.le_classComplexity_smoothClass"]
+deps = ["lemma_4_2_1", "lemma_4_2_3", "theorem_4_2_4_i", "theorem_4_2_4_ii", "lemma_4_2_5_i", "lemma_4_2_5_ii", "lemma_4_2_5_iii", "lemma_4_2_5_iv", "Optimization.CarmonChain.le_classComplexity_smoothClass_methodClass", "Optimization.classComplexity_zeroRespecting_le"]
 source = "Cartis–Gould–Toint, Theorem 4.2.6"
 
 [[node]]
