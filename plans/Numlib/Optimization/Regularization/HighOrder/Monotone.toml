@@ -1,0 +1,5 @@
+namespace = "HighOrderRegularization.ModelTrace"
+[[node]]
+id = "objective_succ_le"
+[[node]]
+id = "objective_le"

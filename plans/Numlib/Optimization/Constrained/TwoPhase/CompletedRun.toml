@@ -1,0 +1,30 @@
+namespace = "Constrained.TwoPhase"
+
+[[node]]
+id = "CompletedRadiusInputs"
+[[node]]
+id = "completedRadius"
+[[node]]
+id = "completedRadius_spec"
+[[node]]
+id = "completedInnerAccuracy"
+[[node]]
+id = "CompletedData"
+[[node]]
+id = "CompletedMeritTarget"
+[[node]]
+id = "CompletedStopAfter"
+[[node]]
+id = "CompletedRun"
+[[node]]
+id = "CompletedRun.restrict"
+[[node]]
+id = "CompletedRun.mem"
+[[node]]
+id = "CompletedRun.inner_residual_le"
+[[node]]
+id = "CompletedRun.invariants"
+[[node]]
+id = "CompletedRun.target_succ_le"
+[[node]]
+id = "CompletedRun.target_bounds"
