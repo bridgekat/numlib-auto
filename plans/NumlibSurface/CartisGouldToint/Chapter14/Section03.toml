@@ -71,3 +71,27 @@ source = "Cartis–Gould–Toint, Lemma 14.3.8 (proof in Appendix B)"
 [[node]]
 id = "theorem_14_3_9"
 source = "Cartis–Gould–Toint, Theorem 14.3.9"
+
+[[node]]
+id = "IsARqpSCOutput"
+source = "Cartis–Gould–Toint, §14.3.2.1, INNER(f, X, q, x^S, ε) (14.3.19) realized by ARqp-SC"
+
+[[node]]
+id = "exists_algorithm_14_3_1"
+source = "Cartis–Gould–Toint, Algorithm 14.3.1 (well-definedness)"
+
+[[node]]
+id = "IsARqpSCCall"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 of Phase 2 (INNER call realized by ARqp-SC)"
+
+[[node]]
+id = "exists_isTPqpGCPhase2"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Phase 2 (well-definedness), §14.3.2.2 after (14.3.36)"
+
+[[node]]
+id = "exists_algorithm_14_3_2"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2 (well-definedness)"
+
+[[node]]
+id = "theorem_14_2_4_sharp_arqp"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqp-SC row for q > 2, via Theorem 12.2.17)"
