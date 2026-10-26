@@ -65,10 +65,11 @@ desc = '''
 For data with `λ* > λₛ` (so `setL_reg` is nonempty), every `λ₀ ∈ setL_reg` and admissible
 parameters: the iteration of Algorithm 8.3.1 is well defined (the rightmost roots exist),
 all iterates lie in `setL_reg` and increase, they converge to `λ*` (at least Q-linearly and
-ultimately Q-superlinearly when `jMax ≥ 1`), and the exit test is met after finitely many
-iterations: there is a (unique) run with `λ 0 = λ₀`.
+ultimately Q-superlinearly when `jMax ≥ 1`, i.e. some Newton candidate is taken; convergence only,
+without a rate, when `jMax = 0` and only Taylor corrections are used), and the exit test is met
+after finitely many iterations: there is a (unique) run with `λ 0 = λ₀`.
 '''
-deps = ["algorithm_8_3_1", "setL_eq_Ioc", "Subproblem.taylorCorrection_mem", "Subproblem.newtonCorrection_mem", "Subproblem.tendsto_of_newtonCorrection_le", "Subproblem.tendsto_of_taylorCorrection_le"]
+deps = ["algorithm_8_3_1", "setL_eq_Ioc", "Subproblem.IsSecularTarget.taylorCorrection_mem", "Subproblem.regNewtonCorrection_mem", "Subproblem.tendsto_of_regNewtonCorrection_le", "Subproblem.IsSecularTarget.tendsto_of_taylorCorrection_le"]
 source = "Cartis–Gould–Toint, Algorithm 8.3.1, §8.3.1"
 
 [[node]]
@@ -90,7 +91,7 @@ As `algorithm_8_3_1_terminates` for Algorithm 8.3.2: from `λ₀ ∈ setL_tr` (r
 iterates stay in `setL_tr`, increase to `λ*` (Q-superlinearly), and the run exits after finitely
 many steps; a run exists for every such `λ₀`.
 '''
-deps = ["algorithm_8_3_2", "setL_eq_Ioc", "Subproblem.taylorCorrection_mem", "Subproblem.newtonCorrection_mem", "Subproblem.tendsto_of_newtonCorrection_le"]
+deps = ["algorithm_8_3_2", "setL_eq_Ioc", "Subproblem.IsSecularTarget.taylorCorrection_mem", "Subproblem.trNewtonCorrection_mem", "Subproblem.tendsto_of_trNewtonCorrection_le"]
 source = "Cartis–Gould–Toint, Algorithm 8.3.2, §8.3.2"
 
 [[node]]

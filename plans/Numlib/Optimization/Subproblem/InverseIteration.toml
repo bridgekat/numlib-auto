@@ -1,67 +1,21 @@
 namespace = "Subproblem"
-desc = '''
-Shifted inverse iteration with Rayleigh-quotient shift updates converging to the leftmost
-eigenvalue *from the positive-definite side*, with any prescribed Q-order (Gould–Robinson–Thorne
-2010, Lemma 5 and Theorem 7; Cartis–Gould–Toint Algorithm 9.3.1 and Theorem 9.3.1). Setting:
-`[FiniteDimensional ℝ E]`, nontrivial, `H` symmetric, `λ₁ = leftmost hH`, `E₁ = ker (H - λ₁ • 1)`.
-The pencil `(H, M)` of the book is the operator `M⁻¹H` in the `M`-inner product (`Matrix`), so the
-start condition `z₀ ∈ 𝒵₁` must be read in that inner product: `orthogonalProjection E₁ z₀ ≠ 0`
-(the book's Euclidean `⟨z, vᵢ⟩ ≠ 0` is the wrong condition for `M ≠ I`; with `M`-orthonormal
-generalized eigenvectors the right one is `⟨z, M vᵢ⟩ ≠ 0`).
-
-Run: shifts `ℓ k > -λ₁` (the book's `λᴳₖ`), unit vectors `z k`, counts `n k ≥ 1`, and parameters
-`ω k ∈ [ωL, ωU]`, `γ k ∈ [γL, 2 n k - γU]`;
-`z (k+1) = normalize (((H + ℓ k • 1)⁻¹) ^ (n k) (z k))` (normalizing after every inverse step,
-as in the book, gives the same vector), `ρ (k+1) = ⟪z (k+1), H z (k+1)⟫`,
-`ℓ (k+1) = -ρ (k+1) + ω k * (ℓ k + ρ (k+1)) ^ (γ k)`.
-
-Proof plan for the theorem (error `e k = ℓ k + λ₁ > 0`, tangent `t k = ‖(1 - P₁) z k‖ / ‖P₁ z k‖`):
-one inverse step multiplies each spectral component by `1/(λᵢ + ℓ)`, so
-`t (k+1) ≤ (e k / gap)^{n k} t k` with `gap = λ₂' - λ₁` the distance to the rest of the spectrum
-(`t ≡ 0` if `H = λ₁`); the Rayleigh quotient satisfies
-`0 ≤ ρ - λ₁ ≤ (λₙ - λ₁) t²` (second order for symmetric operators);
-hence with `d = ρ (k+1) - λ₁ ≤ C t₀² e_k^{2 n k}` one gets
-`e (k+1) = ω (e k + d)^γ - d`, which is positive and `≍ e k ^ γ` once `e k` is small because
-`2 n k - γ ≥ γU > 0`.
-'''
 
 [[node]]
 id = "IsInverseIterationRun"
-kind = "definition"
-desc = '''
-`IsInverseIterationRun hH (ωL ωU γL γU : ℝ) (nU : ℕ∞) (ℓ : ℕ → ℝ) (z : ℕ → E) (n : ℕ → ℕ) (ω γ : ℕ → ℝ) : Prop`:
-`‖z 0‖ = 1`, `-leftmost hH < ℓ 0`, and for every `k`: `1 ≤ n k`, `(n k : ℕ∞) ≤ nU`,
-`ω k ∈ Icc ωL ωU`, `γ k ∈ Icc γL (2 * n k - γU)`,
-`z (k+1) = ‖v‖⁻¹ • v` with `v = (Ring.inverse (H + ℓ k • 1)) ^ (n k) (z k)`, and
-`ℓ (k+1) = -⟪z (k+1), H (z (k+1))⟫ + ω k * (ℓ k + ⟪z (k+1), H (z (k+1))⟫) ^ (γ k)`.
-Constants: `0 < ωL ≤ ωU`, `0 < γU ≤ 1`, `1 < γL ≤ 2 - γU`, `1 ≤ nU`. (Only meaningful while
-`ℓ k > -λ₁`; the theorem shows this persists.)
-'''
-deps = ["leftmost"]
+source = "Cartis–Gould–Toint, Algorithm 9.3.1"
 
 [[node]]
 id = "rayleigh_sub_leftmost_le"
-kind = "theorem"
-desc = '''
-For a unit vector `z` with `P₁ z ≠ 0` (`P₁` the orthogonal projection on `E₁`):
-`0 ≤ ⟪z, H z⟫ - λ₁ ≤ (λₙ - λ₁) * ‖(1 - P₁) z‖² ` and `‖(1 - P₁) z‖² ≤ t²` with
-`t = ‖(1 - P₁) z‖ / ‖P₁ z‖`; and one shifted inverse step with shift `ℓ > -λ₁` maps the ratio `t` to
-at most `((ℓ + λ₁) / (ℓ + λ₂))  * t` where `λ₂ > λ₁` is the least eigenvalue `≠ λ₁` (no factor if
-there is none). Standard inverse-iteration facts in the generality of a multiple `λ₁`.
-'''
-deps = ["leftmost"]
+source = "Cartis–Gould–Toint, §9.3.4 (standard Rayleigh-quotient facts)"
+
+[[node]]
+id = "restWeight_div_leftmostWeight_inverse_pow_le"
+source = "Cartis–Gould–Toint, §9.3.4 (standard inverse-iteration facts)"
 
 [[node]]
 id = "IsInverseIterationRun.convergence"
-kind = "theorem"
-desc = '''
-Theorem 9.3.1 (backbone form, corrected). Let `z₀` be a unit vector with
-`orthogonalProjection E₁ z₀ ≠ 0`. There is `ε > 0` such that every run with `z 0 = z₀` and
-`ℓ 0 ∈ Ioo (-λ₁) (-λ₁ + ε)` satisfies: `-λ₁ < ℓ k` for all `k`; `ℓ` is antitone; `ℓ k → -λ₁`;
-`‖(1 - P₁) z k‖ → 0`; and if `γ k = γ̄` and `n k = n̄` for all large `k` then the error
-`e k = ℓ k + λ₁` has Q-order exactly `γ̄`: there are `0 < c ≤ C` with
-`c * e k ^ γ̄ ≤ e (k + 1) ≤ C * e k ^ γ̄` for all large `k`
-(in particular `ConvergesWithOrder ℓ (-λ₁) γ̄`). Independent of `g`; `ε` depends on `H`, `z₀` and
-the constants.
-'''
-deps = ["IsInverseIterationRun", "rayleigh_sub_leftmost_le"]
+source = "Cartis–Gould–Toint, Theorem 9.3.1"
+
+[[node]]
+id = "IsInverseIterationRun.convergence_of_eventually_const"
+source = "Cartis–Gould–Toint, Theorem 9.3.1"

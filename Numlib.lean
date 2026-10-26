@@ -665,9 +665,11 @@ import Numlib.Optimization.ModelBased.RegularizationUpdate
 import Numlib.Optimization.ModelBased.TrustRegionUpdate
 import Numlib.Optimization.QuasiNewton
 import Numlib.Optimization.Subproblem.Bracketing
+import Numlib.Optimization.Subproblem.InverseIteration
 import Numlib.Optimization.Subproblem.Model
 import Numlib.Optimization.Subproblem.Regularization
 import Numlib.Optimization.Subproblem.Secular
+import Numlib.Optimization.Subproblem.SecularIteration
 import Numlib.Optimization.Subproblem.SecularSum
 import Numlib.Optimization.Subproblem.TrustRegion
 import Numlib.Order.EReal
