@@ -1,63 +1,21 @@
 namespace = "Optimization"
-desc = '''
-Optimality conditions for minimizing a smooth `f` over a convex set `C` of a real normed space
-(Cartis–Gould–Toint Theorem 1.1.2), with feasible displacements `C(x) = {d | x + d ∈ C}` (1.1.7).
-First order is `Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn`. Second and third order follow from
-the ray lemma `IsLocalMinOn.iteratedDeriv_nonneg_of_ray` along the segment `t ↦ x + t d`,
-`t ∈ [0,1]`, which stays in `C` by convexity.
-
-**Source error (Theorem 1.1.2, converse).** The printed sufficient condition — (1.1.6) plus
-`⟨d, ∇²f(x*) d⟩ > 0` for all nonzero `d ∈ C(x*)` with `⟨d, ∇f(x*)⟩ = 0` — is false: for
-`C = {(u, v) | v ≥ u²}`, `f(u, v) = v - 2u²`, `x* = 0`, (1.1.6) holds (`∇f(0) = (0,1)`), no nonzero
-radial direction is orthogonal to `∇f(0)`, yet `f(u, u²) = -u² < 0`. The correct converse uses
-directions in the tangent cone `T_C(x*)` (closure of the cone of feasible directions);
-`isStrictLocalMinOn_of_tangentCone`.
-'''
 
 [[node]]
 id = "IsLocalMinOn.iteratedFDeriv_two_nonneg_of_convex"
-kind = "theorem"
-desc = '''
-`C` convex, `x ∈ C` a local minimizer of `f` on `C`, `ContDiffAt ℝ 2 f x`. Then for every `d` with
-`x + d ∈ C` and `fderiv ℝ f x d = 0`: `0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => d)` (book (1.1.8)).
-'''
-deps = ["IsLocalMinOn.iteratedDeriv_nonneg_of_ray"]
 source = "Cartis–Gould–Toint, Theorem 1.1.2, (1.1.8)"
 
 [[node]]
 id = "IsLocalMinOn.iteratedFDeriv_three_nonneg_of_convex"
-kind = "theorem"
-desc = '''
-`C` convex, `x ∈ C` local minimizer on `C`, `ContDiffAt ℝ 3 f x`. For every `d` with `x + d ∈ C`,
-`fderiv ℝ f x d = 0` and `iteratedFDeriv ℝ 2 f x (fun _ => d) = 0`:
-`0 ≤ iteratedFDeriv ℝ 3 f x (fun _ => d)` (book (1.1.9)).
-'''
-deps = ["IsLocalMinOn.iteratedDeriv_nonneg_of_ray"]
 source = "Cartis–Gould–Toint, Theorem 1.1.2, (1.1.9)"
 
 [[node]]
 id = "isStrictLocalMinOn_of_tangentCone"
-kind = "theorem"
-desc = '''
-Corrected converse of Theorem 1.1.2. `[FiniteDimensional ℝ E]`, `C` convex, `x ∈ C`,
-`ContDiffAt ℝ 2 f x`, `∀ y ∈ C, 0 ≤ fderiv ℝ f x (y - x)` (1.1.6), and
-`∀ d ∈ tangentConeAt ℝ C x, d ≠ 0 → fderiv ℝ f x d = 0 → 0 < iteratedFDeriv ℝ 2 f x (fun _ => d)`.
-Then `IsStrictLocalMinOn f C x`. Proof: a sequence `y_k ∈ C`, `y_k → x`,
-`y_k ≠ x`, `f y_k ≤ f x`; normalized directions cluster at a unit `d ∈ tangentConeAt`; first order
-gives `fderiv f x d = 0`; the second-order expansion (`isLittleO_taylor_two`) with
-`fderiv f x (y_k - x) ≥ 0` forces `D²f[d,d] ≤ 0`.
-'''
-deps = ["isLittleO_taylor_two", "Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn", "IsStrictLocalMinOn"]
 source = "Cartis–Gould–Toint, Theorem 1.1.2 (converse, corrected)"
 
 [[node]]
 id = "not_isLocalMinOn_parabola_counterexample"
-kind = "theorem"
-desc = '''
-Counterexample to the printed converse of Theorem 1.1.2, on `ℝ × ℝ` (or `EuclideanSpace ℝ (Fin 2)`):
-`C = {p | p.1 ^ 2 ≤ p.2}` (closed, convex), `f p = p.2 - 2 * p.1 ^ 2`, `x = 0`: (i) `∀ y ∈ C,
-0 ≤ fderiv ℝ f 0 (y - 0)`; (ii) every `d ≠ 0` with `0 + d ∈ C` has `fderiv ℝ f 0 d > 0` (so the
-printed radial second-order condition holds vacuously); (iii) `0` is not a local minimizer of `f`
-on `C` (`f (t, t²) = -t² < 0`).
-'''
 source = "Cartis–Gould–Toint, Theorem 1.1.2 (converse as printed is false)"
+
+[[node]]
+id = "IsLocalMinOn.fderiv_apply_nonneg_of_convex"
+source = "Cartis–Gould–Toint, Theorem 1.1.2, (1.1.6)"

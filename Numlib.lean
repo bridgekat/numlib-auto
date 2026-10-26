@@ -675,6 +675,7 @@ import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.Complexity.ZeroChain
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
+import Numlib.Optimization.Constrained.SecondOrder
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
 import Numlib.Optimization.LineSearch.Backtracking
@@ -684,6 +685,9 @@ import Numlib.Optimization.ModelBased.RatioTest
 import Numlib.Optimization.ModelBased.RegularizationUpdate
 import Numlib.Optimization.ModelBased.TRRun
 import Numlib.Optimization.ModelBased.TrustRegionUpdate
+import Numlib.Optimization.Optimality.Approximate
+import Numlib.Optimization.Optimality.ConvexSet
+import Numlib.Optimization.Optimality.Unconstrained
 import Numlib.Optimization.QuasiNewton
 import Numlib.Optimization.Subproblem.Bracketing
 import Numlib.Optimization.Subproblem.InverseIteration
