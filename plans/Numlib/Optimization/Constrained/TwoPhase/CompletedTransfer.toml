@@ -1,0 +1,19 @@
+namespace = "Constrained.TwoPhase"
+
+[[node]]
+id = "ViolationCertificate"
+
+[[node]]
+id = "ViolationIncrementCertificate"
+
+[[node]]
+id = "LagrangianTaylorCertificate"
+
+[[node]]
+id = "CorrectedTwoPhaseOutput"
+
+[[node]]
+id = "CompletedRun.corrected_return"
+
+[[node]]
+id = "CompletedFullRun.corrected_termination"

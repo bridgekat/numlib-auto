@@ -274,6 +274,7 @@ source = "Residual-increment correction of Cartis, Gould and Toint, Lemma14.3.5"
 
 [[node]]
 id = "lemma_14_3_5_corrected"
-kind = "theorem"
-desc = "Correct the complete outer return classification using genuine operational inner solves and computed updated-target checks. Retain the exact first-order multiplier guarantee; higher-order feasible and infeasible certificates explicitly include the residual-increment error, with zero error on common critical directions. This full outer statement remains open until its actual run and return derivation are supplied."
 source = "Residual-increment correction of Cartis, Gould and Toint, Lemma14.3.5"
+
+[[node]]
+id = "correctedTwoPhaseOutput"

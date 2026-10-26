@@ -1,3 +1,4 @@
+import Numlib.Optimization.Constrained.TwoPhase.CompletedTransfer
 import Numlib.Optimization.Constrained.TargetTransfer
 import Numlib.Optimization.Constrained.CurveJets
 import Numlib.Optimization.LeastNorm.PhaseOneBudget
@@ -444,5 +445,27 @@ three the actual squared-increment jets vanish on feasible directions in both
 first-derivative kernels, giving the original M-direction certificates. -/
 alias lemma_14_3_5_critical_directions :=
   Constrained.lagrangian_restricted_bound_of_merit_certificate
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- The actual corrected output alternatives for completed-inner two-phase runs.
+The two infeasibility cases distinguish an exact Phase1 violation certificate
+from the zero-gap certificate with an explicit higher-order increment error. -/
+abbrev correctedTwoPhaseOutput := @Constrained.TwoPhase.CorrectedTwoPhaseOutput
+
+/-- **Full corrected Lemma 14.3.5.** Complete each inner call at the fixed
+absolute tolerances beta*theta*epsilon0*epsilon_j and close the reset guard at
+residual equality. Require the explicit global merit regularity on the bounded
+actual target interval used by the repaired constrained solver. Every actual
+full stopping run returns its actual Phase1 or Phase2 point with legal radii
+and the full corrected output classification. Higher-order full feasible
+multiplier bounds retain the actual squared residual-increment Taylor error;
+zero-gap violation bounds retain the squared objective-increment error.
+The first-order multiplier/violation bounds and common critical-direction
+certificates through order three are exact. No division by a zero gap occurs. -/
+alias lemma_14_3_5_corrected :=
+  Constrained.TwoPhase.CompletedFullRun.corrected_termination
 
 end CartisGouldToint
