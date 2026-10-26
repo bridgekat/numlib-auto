@@ -1,0 +1,8 @@
+desc = '''
+Composite optimization `min w(x) = f(x) + h(c(x))` with smooth `f : E → ℝ`, `c : E → F` and a
+merely Lipschitz (possibly nonsmooth, nonconvex) `h : F → ℝ` (Cartis–Gould–Toint §14.1).
+`Composite.TaylorModel`: generalized Taylor models `T_{w,j} = T_{f,j} + h ∘ T_{c,j}`, the composite
+criticality measure `φ_{w,j}^δ`, first-order necessity for convex `h`, remainder bounds.
+`Composite.RegularizedModel`: the ARqpC model `m̂(s) = T_{w,p}(s) + σ/(p+1)! ‖s‖^{p+1}` and its
+one-iteration lemmas (Lemmas 14.1.2–14.1.7 of the book in general form).
+'''

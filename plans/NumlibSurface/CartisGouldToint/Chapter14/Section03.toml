@@ -1,0 +1,334 @@
+namespace = "CartisGouldToint.Chapter14"
+desc = '''
+§14.3 High-order criticality for nonconvex constraints: `min_{x ∈ X} f(x)` s.t. `c(x) = 0`
+(14.3.1), `E := EuclideanSpace ℝ (Fin n)`, `F := EuclideanSpace ℝ (Fin m)`, `c : E → F`,
+Lagrangian `ℒ(x, y) = f(x) - ⟪y, c(x)⟫` (book (1.1.1) sign; the existing `Optimization.lagrangian`
+uses `f + Σ λ h` and is not used here), `‖(1, yᵀ)‖ := √(1 + ‖y‖²)`. Measures of the Lagrangian:
+`Optimization.taylorMeasure (ftaylorSeries ℝ (fun z => f z - ⟪y, c z⟫) x) j δ V` with
+`V ⊆ X(x) := {d | x + d ∈ X}`; `T(x) := X(x) ∩ ker Dc(x)`, `M(x) := T(x) ∩ ker Df(x)` (14.3.45)
+(sets, not subspaces, for nonconvex `X`). Residual and merit: `Optimization.targetResidualNorm`,
+`Optimization.targetMerit` (`r(x,t) = (c(x), f(x) - t)`, `μ = ½‖r‖²`, `ν = ½‖c‖²`).
+
+Algorithms with a "nonspecific" inner solver INNER (§14.3.2.1) are run predicates in which every
+inner call is an abstract object constrained by a *contract*: its output condition (14.3.19)/(14.3.22)/
+(14.3.32) and, as hypotheses of the complexity theorems, either the total-cost bounds (14.3.20)–
+(14.3.21) (LENq-SC) or the per-iteration conclusions of Lemmas 14.2.2–14.2.3 (Phase 2 of
+TPqp-GC, as the book's proof of Lemma 14.3.8 uses). The algorithmic parameters `β`, `θ` and
+tolerances `ε : ℕ → ℝ` (`ε 0` = primal, `ε j` dual, `j ∈ Icc 1 q`) are explicit arguments; `q ≤ 3` for
+the optimality conclusions, general `q` for the complexity counts. The book ignores `O(log ε)` terms
+in (14.3.20) (footnote 114); the contract is taken as stated.
+'''
+
+[[node]]
+id = "theorem_14_3_1"
+kind = "theorem"
+desc = '''
+Theorem 14.3.1 (corrected; see `Optimization.curveCoeff_lagrangian_nonneg_of_isLocalMinOn` for the
+counterexample to the printed form). If `f` and the `c_i` are `C^q` on an open set containing `X`
+and `x⋆` is a local minimizer of (14.3.1) (`IsLocalMinOn f (X ∩ {x | c x = 0}) x⋆`), then
+`c x⋆ = 0`, and for every `y⋆ : F`, `j ∈ Icc 1 q` and `s : ℕ → E` such that
+`Optimization.IsFeasibleArc (X ∩ {x | c x = 0}) x⋆ j s` (the arc is feasible for *all* constraints)
+and the Lagrangian coefficients of orders `1..j-1` vanish (14.3.5):
+`0 ≤ Optimization.curveCoeff (ftaylorSeries ℝ (fun z => f z - ⟪y⋆, c z⟫) x⋆) s j` (14.3.4); moreover
+such arcs satisfy (14.3.3) (`Optimization.curveCoeff_eq_zero_of_isFeasibleArc`). X.CQ ("the set of
+nonzero tuples in 𝒟^j satisfying (14.3.3) is nonempty") is not needed for the statement (it only
+excludes vacuity) and is defined as `AssumptionXCQ` for reference.
+'''
+deps = ["Optimization.curveCoeff_lagrangian_nonneg_of_isLocalMinOn", "Optimization.curveCoeff_eq_zero_of_isFeasibleArc"]
+source = "Cartis–Gould–Toint, Theorem 14.3.1"
+
+[[node]]
+id = "AssumptionXCQ"
+kind = "def"
+desc = '''
+X.CQ at `x⋆ ∈ X` for orders `≤ q`: `∀ j ∈ Icc 1 q, ∃ s : ℕ → E, (∃ i ∈ Icc 1 j, s i ≠ 0) ∧
+Optimization.IsFeasibleArc X x⋆ j s ∧ ∀ i ∈ Icc 1 j, Optimization.curveCoeff (ftaylorSeries ℝ c x⋆) s i = 0`
+(as printed: `X`-feasible arcs satisfying (14.3.3)). Remark (part of node): implied by LICQ for
+`q = 1` when `X` is given by inequalities (book; via `Constrained.exists_contDiff_feasible_arc`).
+'''
+deps = ["Optimization.IsFeasibleArc", "Optimization.curveCoeff", "Constrained.exists_contDiff_feasible_arc"]
+source = "Cartis–Gould–Toint, assumption X.CQ"
+
+[[node]]
+id = "example_14_3_1"
+kind = "theorem"
+desc = '''
+Example 14.3.1 (`n = 3`, `m = 2`, `X = univ`): `f x = x₁ + x₂² + x₂³ - x₃`,
+`c x = (-x₁ - x₂² + x₁x₂ + x₃, x₁ + x₂² + x₁x₂ + x₃)`. Facts: (i) the arc `α ↦ (-α², α, α³)`
+(`s₁ = e₂, s₂ = -e₁, s₃ = e₃`) is feasible for all `α` and (14.3.7) holds; (ii) the feasible set is
+exactly `{(-t², t, t³) | t ∈ ℝ}` and `f` vanishes on it, so `0` is a (non-strict, global)
+minimizer — the book's "high-order saddle point" is wrong; (iii) with `y₀ = (-1, 0)` (the book's
+`(1, 0)ᵀ` corresponds to `ℒ = f + ⟨y, c⟩`) `∇ℒ(0, y₀) = 0`, `ker Dc(0) = span{e₂}`,
+`∇²ℒ(0, y₀) = [[0,1,0],[1,0,0],[0,0,0]]`, `∇³ℒ(0,y₀)` has the single nonzero entry `(2,2,2) = 6`;
+(iv) (14.3.5) holds for `i = 1, 2`, and `∇²ℒ(0,y₀)[s₁,s₂] = -1`, `∇³ℒ(0,y₀)[s₁]³ = 6`, so the
+third-order condition (14.3.6) `∇²ℒ[s₁,s₂] + (1/6)∇³ℒ[s₁]³ = 0` holds with both terms nonzero.
+'''
+deps = ["Optimization.curveCoeff"]
+source = "Cartis–Gould–Toint, Example 14.3.1"
+
+[[node]]
+id = "theorem_14_3_2"
+kind = "theorem"
+desc = '''
+Theorem 14.3.2. `X` closed nonempty, `x_ε ∈ X`, `j ∈ {1,2,3}`, `f`, `c` `C^j` near `x_ε` with
+`∇^j f`, `∇^j c` Lipschitz (constants `L_{f,j}`, `L_{c,j}`, the latter for the vector-valued
+derivative) on a ball of radius `δ_j > 0` around `x_ε` (book: "diameter"), `V ⊆ X(x_ε)` with
+`0 ∈ V`, `‖c x_ε‖ ≤ ε₀` (14.3.8), `y_ε : F`, `η ≥ 0` and `taylorMeasure (ftaylorSeries ℝ ℒ(·, y_ε) x_ε)
+j δ_j V ≤ ε_j √(1+‖y_ε‖²) δ_j^j/j! + η` (14.3.9). Then for all `d ∈ V` with `‖c(x_ε + d)‖ ≤ ε₀`
+and `‖d‖ ≤ δ_j`, `√2 max(L_{f,j}, L_{c,j}) ‖d‖ ≤ (j+1) ε_j` (14.3.11):
+`f(x_ε + d) ≥ f(x_ε) - 2 ε₀ ‖y_ε‖ - 2 ε_j √(1+‖y_ε‖²) δ_j^j/j! - η` (14.3.10), and without the
+`2 ε₀ ‖y_ε‖` term if `c(x_ε + d) = c(x_ε)` or (`c(x_ε + d) = 0` and `⟪y_ε, c x_ε⟫ ≤ 0`) (14.3.12).
+'''
+deps = ["Optimization.le_of_lagrangian_taylorMeasure_le"]
+source = "Cartis–Gould–Toint, Theorem 14.3.2"
+
+[[node]]
+id = "innerEvalBound"
+kind = "def"
+desc = '''
+The INNER cost contract (14.3.20)–(14.3.21): `innerEvalBound κ π q (gap : ℝ) (ε : ℕ → ℝ) : ℝ :=
+κ * gap * ⨆ j ∈ Icc 1 q, ε j ^ (-π j)` (`Finset.sup'`, `Real.rpow`), where `gap = f(x^S) - flow`;
+"INNER(f, X, q, x^S, ε) uses at most `innerEvalBound κ^F π q gap ε` evaluations of `f` and
+`innerEvalBound κ^D π q gap ε` of its derivatives to find `x_ε ∈ X`, `δ ∈ (0,1]^q` with
+`taylorMeasure (ftaylorSeries ℝ f x_ε) j δ_j X(x_ε) ≤ ε_j δ_j^j/j!` (14.3.19)". Here `π_j > 1` are
+the exponents of (14.2.12) for the chosen INNER method.
+'''
+source = "Cartis–Gould–Toint, (14.3.19)–(14.3.21)"
+
+[[node]]
+id = "algorithm_14_3_1"
+kind = "def"
+desc = '''
+Algorithm 14.3.1 (LENq-SC) as a run predicate `IsLENRun r X q ε β x δ nF nD : Prop` for a residual
+`r : E → F` (`Φ₂ = ½‖r‖²`, `Φ₁ = ‖r‖`), `x : ℕ → E`, radii `δ : ℕ → ℕ → ℝ`, per-call costs
+`nF nD : ℕ → ℕ`; with `stop k := ‖r (x k)‖ ≤ ε 0 ∨ ∀ j ∈ Icc 1 q, taylorMeasure (ftaylorSeries ℝ Φ₂
+(x k)) j (δ k j) X(x k) ≤ ε j * ‖r (x k)‖ * δ k j ^ j / j!` (14.3.23) (`k = 0`: only the first
+alternative, "if ‖r(x₀)‖ ≤ ε₀ stop"): `x 0 ∈ X`, `0 < β < 1` and `β * ‖r (x 0)‖ < 1` (book: `β < min(1, 1/‖r(x₀)‖)`, written multiplicatively so that `r(x₀) = 0` is allowed), `ε j ∈ (0,1)`; and for
+every `k ≥ 1` with `∀ i < k, ¬ stop i`: `x k ∈ X`, `δ k j ∈ (0,1]` and (14.3.22)
+`taylorMeasure (ftaylorSeries ℝ Φ₂ (x k)) j (δ k j) X(x k) ≤ β ‖r (x (k-1))‖ ε j δ k j ^ j / j!` for
+`j ∈ Icc 1 q` (output of `INNER(Φ₂, X, q, x_{k-1}, β ‖r(x_{k-1})‖ ε)`, whose costs are `nF k`,
+`nD k`). Existence (part of node): given an INNER that always returns, runs exist
+(`Optimization.exists_run_of_forall_exists`).
+'''
+deps = ["innerEvalBound", "Optimization.taylorMeasure", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 14.3.1"
+
+[[node]]
+id = "theorem_14_3_3"
+kind = "theorem"
+desc = '''
+Theorem 14.3.3 (with ceiling). Every LENq-SC run terminates at a point satisfying (14.3.18) at some
+`k_max ≤ max 0 ⌈log(ε₀/‖r(x₀)‖)/log β⌉₊` (`IsFirstHit stop k_max`); the book's real bound
+`max(0, log(ε₀/‖r(x₀)‖)/log β)` must be rounded up. Also `‖r(x_k)‖ < β ‖r(x_{k-1})‖` for every
+non-terminal `k ≥ 1`.
+'''
+deps = ["algorithm_14_3_1", "Optimization.le_ceil_log_of_contract", "Optimization.IsFirstHit"]
+source = "Cartis–Gould–Toint, Theorem 14.3.3"
+
+[[node]]
+id = "theorem_14_3_4"
+kind = "theorem"
+desc = '''
+Theorem 14.3.4 (corrected). Suppose Φ₂.D1qLaB.X (`AssumptionD1qLaBX Φ₂ X X₀ x₀ 1 q`, trust-region
+INNER) or Φ₂.D1pLaB.X (regularization INNER), `π_j > 1`, and every call satisfies the contract
+`nF k ≤ innerEvalBound κF π q (Φ₂(x_{k-1})) (β ‖r(x_{k-1})‖ ε)` (with `flow = 0`), likewise `nD`.
+Then a LENq-SC run terminating at `k_max` uses
+`∑_{k ∈ Icc 1 k_max} nF k ≤ ½ κF ‖r(x₀)‖ ∑_{j ∈ Icc 1 q} β^{1-2π_j}/(β^{1-π_j} - 1) ε₀^{1-π_j} ε_j^{-π_j}`
+evaluations of Φ₂ ((14.3.27) with `max_j` replaced by `∑_j`), and likewise for derivatives (14.3.28).
+Correction: the book's proof exchanges `∑_k max_j` for `max_j ∑_k`, which is invalid (the maximizing
+`j` depends on `‖r(x_{k-1})‖`); with `∑_j` (or `q · max_j`) the bound and its order are correct.
+Proof: (14.3.29) `‖r(x_{k-1})‖ > β^{k-k_max} ε₀`, `Optimization.sum_rpow_le_of_geometric_lower`
+per `j`.
+'''
+deps = ["theorem_14_3_3", "innerEvalBound", "AssumptionD1qLaBX", "Optimization.sum_rpow_le_of_geometric_lower"]
+source = "Cartis–Gould–Toint, Theorem 14.3.4"
+
+[[node]]
+id = "AssumptionD1pLBX"
+kind = "def"
+desc = '''
+f.D1pLB.X / c.D1pLB.X (and the `q` variants): `AssumptionD1pLBX (g : E → ℝ) (X X₀ : Set E) (p : ℕ)
+(L B : ℕ → ℝ) : Prop := IsOpen X₀ ∧ Convex ℝ X₀ ∧ X ⊆ X₀ ∧ ContDiffOn ℝ p g X₀ ∧ ∀ j ∈ Icc 1 p,
+IteratedFDerivLipschitzOn g j (L j) X₀ ∧ ∀ x ∈ X₀, ‖iteratedFDeriv ℝ j g x‖ ≤ B j`; c.D1pLB.X is
+`∀ i, AssumptionD1pLBX (fun x => c x i) X X₀ p (Lc i) (Bc i)`.
+'''
+deps = ["IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, assumptions f.D1pLB.X, c.D1pLB.X"
+
+[[node]]
+id = "AssumptionBFb"
+kind = "def"
+desc = '''
+f.B.Fb with `𝓕_β := {x ∈ X | ‖c x‖ ≤ β}`: `AssumptionBFb f c X β flow fup : Prop :=
+𝓕_β.Nonempty → ∀ x ∈ 𝓕_β, flow ≤ f x ∧ f x ≤ fup` (Chapter 7's assumption with `X` for `C`; the
+Chapter 6–7 planner's version should be reused if it takes a general set).
+'''
+source = "Cartis–Gould–Toint, assumption f.B.Fb (p. 198) with 𝓕_β redefined in §14.3.2.2"
+
+[[node]]
+id = "IsInnerPhaseRun"
+kind = "def"
+desc = '''
+Contract for the inner runs of Phase 2 (abstraction of Lemmas 14.2.2–14.2.3 for INNER applied to
+`μ(·, t_k)`, with constants independent of `t_k` by Lemma 14.3.6(ii)): for outer index `k`, inner
+iterates `xin k : ℕ → E` with `xin k 0 = x k`, `xin k (e k) = x (k+1)`, success flags
+`sin k : ℕ → Prop`, constants `κdecr κuns κunc > 0`, exponents `π`, and `β`:
+(mono) `targetMerit c f (t k)` is nonincreasing along `xin k i`, `i ≤ e k`, and unchanged at
+unsuccessful `i`; (count) `i + 1 ≤ κuns * |{i' ≤ i | sin k i'}| + κunc` for `i < e k`;
+(decrease) for successful `i < e k` such that the third test of (14.3.32) fails at
+`xin k (i+1)` (with target `t k`):
+`targetMerit (xin k i) - targetMerit (xin k (i+1)) ≥ κdecr * min_{l ∈ Icc 1 q}
+(β * targetResidualNorm c f (t k) (x k) * ε l) ^ π l` ((B.14.21); the book applies Lemma 14.2.2 "so
+long as the third termination test in (14.3.32) has not been satisfied").
+A 𝒦_b call whose final point passes the third test gets no decrease guarantee on its last iteration
+("bad" 𝒦_b call); the printed proof does not bound their number (same gap as Lemma 7.2.6, found
+independently by the Chapter 6–7 planner), so the corrected Lemma 14.3.8 / Theorem 14.3.9 carry
+their number `n_bad` explicitly.
+'''
+deps = ["Optimization.targetMerit"]
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 as used in the proof of Lemma 14.3.8"
+
+[[node]]
+id = "algorithm_14_3_2"
+kind = "def"
+desc = '''
+Algorithm 14.3.2 (TPqp-GC) as a run predicate `IsTPqpGCRun f c X q θ β₁ β ε x t δ …` with
+`ε j ∈ (0,1]`, `θ ∈ (0,1)`, `β ∈ (0, θ]`, `q ∈ {1,2,3}` for the conclusions:
+Phase 1: an `algorithm_14_3_1` run on `r = c` (Φ₂ = ν) from `x 0 ∈ X` with
+`β₁ ∈ (0,1)`, `β₁ ‖c(x 0)‖ < 1` and primal tolerance `θ ε₀`, whose terminal point is `x 1` with radii
+`δ 1` satisfying (14.3.31); if `‖c (x 1)‖ > θ ε₀` the run terminates (Phase-1 exit).
+Phase 2: `Optimization.IsTargetSequence c f θ ε₀ x t K` (Step 0, Step 2 (a)/(b) target updates);
+for each `k ∈ [1, K)` the call satisfies (14.3.32): `x (k+1) ∈ X`, `δ (k+1) ∈ (0,1]^q`, and
+`targetResidualNorm c f (t k) (x (k+1)) < θ ε₀ ∨ f (x (k+1)) < t k ∨ ∀ j ∈ Icc 1 q,
+taylorMeasure (ftaylorSeries ℝ (targetMerit c f (t k)) (x (k+1))) j (δ (k+1) j) X(x (k+1)) ≤
+ε j * targetResidualNorm c f (t k) (x (k+1)) * δ (k+1) j ^ j / j!` (and is produced by INNER with
+tolerance `β ‖r(x_k, t_k)‖ ε`, inner data as in `IsInnerPhaseRun`); termination at outer `K`:
+Step 2(a)/(b) with (14.3.34) at `(x K, t K)`, or Step 2(c) with `(x_ε, t_ε) = (x K, t (K-1))`.
+Existence (part of node) given INNER solvers for `ν` and `μ(·,t)` that always return.
+'''
+deps = ["algorithm_14_3_1", "IsInnerPhaseRun", "Optimization.IsTargetSequence", "Optimization.targetMerit"]
+source = "Cartis–Gould–Toint, Algorithm 14.3.2"
+
+[[node]]
+id = "lemma_14_3_5"
+kind = "theorem"
+desc = '''
+Lemma 14.3.5 (corrected). Under X.CNe, c.D1pLB.X, f.D1pLB.X, f.B.Fb, if a TPqp-GC run terminates
+with `(x_ε, t_ε)` and radii `δ := δ_{k_ε}`, then either (14.3.41): `‖c x_ε‖ > θ ε₀` (Phase-1 exit; only
+`‖c x_ε‖ ≥ θ ε₀` when Phase 2 ends with `f(x_ε) = t_ε`, since (14.3.52) is non-strict — the book's
+`>` is unjustified there) and
+`taylorMeasure (ftaylorSeries ℝ ν x_ε) j δ_j X(x_ε) ≤ ε_j ‖c x_ε‖ δ_j^j/j!` for `j ∈ Icc 1 q`; or
+(14.3.42): `‖c x_ε‖ ≤ ε₀` and, with `τ := f(x_ε) - t_ε > 0` and `y_ε := -τ⁻¹ c(x_ε)` (14.3.53),
+`φ^{δ₁}_{ℒ,X(x_ε),1}(x_ε, y_ε) ≤ ε₁ √(1+‖y_ε‖²) δ₁`; if `q ≥ 2`, (14.3.44)
+`φ^{δ₂}_{ℒ,M(x_ε),2} ≤ ½ ε₂ √(1+‖y_ε‖²) δ₂²` and the corrected (14.3.43)
+`φ^{δ₂}_{ℒ,T(x_ε),2} ≤ ½ ε₂ √(1+‖y_ε‖²) δ₂² + G₂²/(2τ)`, `G_δ := sup_{d ∈ T(x_ε), ‖d‖ ≤ δ} |Df(x_ε)[d]|
+≤ ‖∇f(x_ε)‖ δ`; if `q = 3`, (14.3.47) `φ^{δ₃}_{ℒ,M,3} ≤ (1/6) ε₃ √(1+‖y_ε‖²) δ₃³` and the corrected
+(14.3.46) `φ^{δ₃}_{ℒ,T,3} ≤ (1/6) ε₃ √(1+‖y_ε‖²) δ₃³ + (G₃ + H₃) G₃/(2τ)` with
+`H_δ := sup_{d ∈ T, ‖d‖ ≤ δ} |∇²f(x_ε)[d]²|`. Moreover `⟪y_ε, c x_ε⟫ ≤ 0`. (Termination analysis
+(14.3.48)–(14.3.52) via `Optimization.IsTargetSequence.props`; measure algebra via the backbone
+`taylorMeasure_lagrangian_*` lemmas.) The printed (14.3.43)/(14.3.46) are false:
+`lemma_14_3_5_counterexample`.
+'''
+deps = ["algorithm_14_3_2", "AssumptionD1pLBX", "AssumptionBFb", "Optimization.IsTargetSequence.props", "Optimization.taylorMeasure_lagrangian_one_eq", "Optimization.taylorMeasure_lagrangian_two_le", "Optimization.taylorMeasure_lagrangian_three_le"]
+source = "Cartis–Gould–Toint, Lemma 14.3.5"
+
+[[node]]
+id = "lemma_14_3_5_counterexample"
+kind = "theorem"
+desc = '''
+The printed bound (14.3.43) fails at a terminal point of TPqp-GC. Data: `n = m = 1`, `X = ℝ`,
+`c ≡ 0` (so `ℒ = f`, `y_ε = 0`, `T(x_ε) = ℝ`), `q = 2`, `ε₁ = ε₂ = 1`, `θ = β = ½`, `ε₀ = 1/100`,
+`f(x) = x/4 - (25/8) x²` (so `f'(0) = 1/4`, `f''(0) = -25/4 = -f'(0)²/ε₀`), `x₀ = x₁ = x₂ = 0`.
+Phase 1 exits with `‖c‖ = 0 ≤ θ ε₀`, `t₁ = f(0) - ε₀`; the first INNER call may return `x₂ = x₁`
+(its tolerance test holds: `μ'(0) = ε₀/4`, `μ''(0) = 0`, so `φ_{μ,1}^1 = ε₀/4 ≤ β ε₀ ε₁` and
+`φ_{μ,2}^1 = ε₀/4 ≤ β ε₀ ε₂/2`), Step 2(c) terminates with `(x_ε, t_ε) = (0, t₁)`, `τ = ε₀`. Then
+`φ^1_{f,2}(0) = max_{|d| ≤ 1} -(d/4 - (25/8) d²) = 27/8`, while the right-hand side of (14.3.43)
+is `½(ε₂ + φ^1_{f,1}(0) |f'(0)|) = ½(1 + 1/16) = 17/32`. The corrected bound holds:
+`½ + (1/4)²/(2 ε₀) = 29/8 ≥ 27/8`.
+'''
+deps = ["lemma_14_3_5"]
+source = "Cartis–Gould–Toint, Lemma 14.3.5, (14.3.43) (counterexample to the printed bound)"
+
+[[node]]
+id = "lemma_14_3_6_i"
+kind = "theorem"
+desc = '''
+Lemma 14.3.6(i). Under c.D1pLB.X (on `X₀`) there are constants `LA LB BA BB : ℕ → ℝ`, each `≥ 1`,
+depending only on the constants of c.D1pLB.X (not on `x₀`), such that for every `x₀ ∈ X`, `ν = ½‖c‖²`
+is `C^p` on `X₀` and for `j ∈ Icc 1 p`: `IteratedFDerivLipschitzAnchored ν j (LA j + LB j ‖c x₀‖)
+𝓛_ν(x₀) X₀` (14.3.60) and `‖∇^j ν(x)‖ ≤ BA j + BB j ‖c x₀‖` for `x ∈ 𝓛_ν(x₀) := {x ∈ X | ‖c x‖ ≤
+‖c x₀‖}` (14.3.61).
+'''
+deps = ["AssumptionD1pLBX", "IteratedFDerivLipschitzAnchored.mul", "Optimization.targetMerit"]
+source = "Cartis–Gould–Toint, Lemma 14.3.6 (i) (proof in Appendix B)"
+
+[[node]]
+id = "lemma_14_3_6_ii"
+kind = "theorem"
+desc = '''
+Lemma 14.3.6(ii). Under c.D1pLB.X and f.D1pLB.X there are `Lμ Bμ : ℕ → ℝ` (each `≥ 1`, independent of
+`t`) such that for every `t : ℝ`, `μ(·, t) = targetMerit c f t` is `C^p` on `X₀` and for
+`j ∈ Icc 1 p`: `IteratedFDerivLipschitzAnchored (targetMerit c f t) j (Lμ j) 𝓛_μ(t) X₀` (14.3.62) and
+`‖∇^j_x μ(x, t)‖ ≤ Bμ j` for `x ∈ 𝓛_μ(t) := {x ∈ X | targetResidualNorm c f t x ≤ 1}` (14.3.63;
+the book writes `∇^j_x ν(x)` there, a slip).
+'''
+deps = ["AssumptionD1pLBX", "IteratedFDerivLipschitzAnchored.mul", "Optimization.targetMerit"]
+source = "Cartis–Gould–Toint, Lemma 14.3.6 (ii) (proof in Appendix B)"
+
+[[node]]
+id = "lemma_14_3_7"
+kind = "theorem"
+desc = '''
+Lemma 14.3.7 (with the Theorem 14.3.4 correction). Under X.CNe, c.D1pLB.X, and the LEN cost
+contract for `ν` with constants `κF κD` (which by Lemma 14.3.6(i) may be chosen depending only on
+the c-constants and `‖c x₀‖`), Phase 1 terminates at `x 1` satisfying (14.3.64) with at most
+`½ κF ‖c x₀‖ ∑_{j ∈ Icc 1 q} β₁^{1-2π_j}/(β₁^{1-π_j} - 1) θ^{1-π_j} ε₀^{1-π_j} ε_j^{-π_j}` evaluations
+of `c` (14.3.65) and the same with `κD` for derivatives (14.3.66): Theorem 14.3.4 for `r = c` with
+primal tolerance `θ ε₀`.
+'''
+deps = ["theorem_14_3_4", "lemma_14_3_6_i", "algorithm_14_3_2"]
+source = "Cartis–Gould–Toint, Lemma 14.3.7"
+
+[[node]]
+id = "lemma_14_3_8"
+kind = "theorem"
+desc = '''
+Lemma 14.3.8 (corrected). Under X.CNe, c.D1pLB.X, f.D1pLB.X, f.B.Fb and the inner contract
+`IsInnerPhaseRun` (constants `κdecr, κuns, κunc`, exponents `π_l > 1`, `π_max = max π_l`), for each
+block of Phase 2 — the calls `k+1, …, k+ℓ(k)` between an index `k ∈ 𝒦_a ∪ {0}` (Phase-2 start
+treated as `𝒦_a`) and the next `𝒦_a` index or termination, *including* the call that ends in `𝒦_a` —
+the number of "good" successful inner iterations (decrease guaranteed and
+`‖r_{i+1}‖ ≥ θ‖r_i‖`) is at most `G := κ^S (1-θ) max_l ε₀^{2-π_l} ε_l^{-π_l}` (14.3.71), with
+`κ^S := κdecr⁻¹ β^{-π_max} θ^{1-2π_max}` (book: `(βθ)^{-π_max}`, see
+`Optimization.card_le_of_residual_block`); the block has at most `G + 1 + nb` calls and as many
+successful inner iterations, and at most `(κuns + κunc) (G + 1 + nb)` inner iterations (14.3.72),
+where `nb` is the number of bad 𝒦_b calls of the block (`IsInnerPhaseRun`). The `+1` is the
+call ending in `𝒦_a` (its last iteration breaks the ratio condition); `κunc` is paid per call
+because each INNER call is a fresh run (the book's single `κ^C_{INNER,2} = κ_unc` treats a block as
+one run); each good 𝒦_b call contains a good iteration, which bounds the number of calls.
+'''
+deps = ["algorithm_14_3_2", "lemma_14_3_6_ii", "Optimization.IsTargetSequence.props", "Optimization.card_le_of_residual_block"]
+source = "Cartis–Gould–Toint, Lemma 14.3.8 (proof in Appendix B)"
+
+[[node]]
+id = "theorem_14_3_9"
+kind = "theorem"
+desc = '''
+Theorem 14.3.9 (corrected constants; orders as in the book when `n_bad` is bounded independently of
+`ε`). Under the assumptions of Lemmas 14.3.5–14.3.8 (regularization-type INNER with c.D1pLB.X,
+f.D1pLB.X; or trust-region-type with the `q` versions), for `ε₀ ∈ (0,1]` and `ε j ∈ (0,1]`, every
+TPqp-GC run that terminates (conclusions of Lemma 14.3.5) uses at most `#F := #F₁ + #F₂`
+evaluations of `f` and `c` and `#D := #D₁ + #D₂` of their derivatives, where `#F₁, #D₁` are the
+Phase-1 bounds of Lemma 14.3.7, `N_a := (fup - flow + 1)/((1-θ) ε₀)` bounds `|𝒦_a|`
+(`Optimization.IsTargetSequence.card_Ka_le`; the book's `fup - flow - 1` is a sign slip), there are
+at most `N_a + 1` blocks, `n_bad` is the number of bad 𝒦_b calls of the run, `G` is as in Lemma
+14.3.8, and `#F₂ := (κuns + κunc) ((N_a + 1)(G + 1) + n_bad) + 1`,
+`#D₂ := (N_a + 1)(G + 1) + n_bad + 1`. Asymptotically (part of node, `ε₀, ε_l ≤ 1`, `n_bad`
+bounded): `#F = O(max(ε₀^{-1}, max_l ε₀^{1-π_l} ε_l^{-π_l}))` as in the book, and
+`#D = O(max(ε₀^{-1}, max_l ε₀^{1-π_l} ε_l^{-π_l}))` (the book's `O(max_l ε₀^{1-π_l} ε_l^{-π_l})`
+drops the `ε₀^{-1}` coming from at least one success per block; the book's explicit `#F₂` also omits
+the `1/(1-θ)` of its `κ^C ε₀^{-1}` term). Whether `n_bad` is bounded is not established by the book
+(see `IsInnerPhaseRun`); compare with the source paper [105] before formalizing.
+'''
+deps = ["lemma_14_3_5", "lemma_14_3_7", "lemma_14_3_8", "Optimization.IsTargetSequence.card_Ka_le", "AssumptionBFb"]
+source = "Cartis–Gould–Toint, Theorem 14.3.9"

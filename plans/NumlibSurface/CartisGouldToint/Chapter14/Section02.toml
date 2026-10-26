@@ -1,0 +1,203 @@
+namespace = "CartisGouldToint.Chapter14"
+desc = '''
+§14.2 Problems with simple constraints `min_{x ∈ X} f(x)` (14.2.1), `E := EuclideanSpace ℝ (Fin n)`.
+The constrained measure (14.2.2) is the core `Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ
+{d | x + d ∈ X}`; the model measure (14.2.4) is the same with the model's jets at `s` and
+`{d | x_k + s + d ∈ X}` (the book's `f(x)` in (14.2.4) should be `m_k(s)`/`T_{m_k,j}(s,0)`).
+
+"Simple constraints" (Key Definition after Theorem 14.2.1) is an oracle-cost convention (solving
+(14.2.2) and ensuring (14.2.5) uses no evaluation of `f`), not a mathematical property: in the
+relational formalization the feasible set enters the run predicates only through the measures and
+the requirement `x 0 ∈ X`, `x k + s k ∈ X`, and the evaluation counts never charge the
+subproblems, so the definition is reflected by the planned statements and has no node.
+
+**Interface assumed from Chapters 12–13 (plan-ch12 and the Chapter 13 planner)**: every run
+predicate of TRq, ARqp (Ch 12) and TRqIDA, TRqEDA, ARqpIDA, ARqpEDA (Ch 13) carries an explicit
+closed feasible set `X : Set E` — measures `taylorMeasure D j δ {d | x k + d ∈ X}` (and model
+measures likewise), steps with `x k + s k ∈ X`, `x 0 ∈ X`, unconstrained = `Set.univ` — and the
+decrease/count/complexity lemmas are proved for general `X` (the book's proofs never use
+`X = ℝ^n` except for the choice `δ_{k,2} = 1`, which needs Theorem 12.1.4 and hence `X = ℝ^n`, or
+`δ_{k,1} = 1`, which needs convex `X`). The -SC algorithms are then those predicates with general
+`X`; ARqpC-SC is `algorithm_14_1_1` with general `X` (planned here directly). If the Chapter 12/13
+plans do not take `X`, the consolidator should add the parameter there rather than duplicating seven
+run predicates in this module. The nodes below therefore cite those results in prose; their `deps`
+only list ids that exist on main.
+'''
+
+[[node]]
+id = "AssumptionXCNe"
+kind = "def"
+desc = '''
+X.CNe: `AssumptionXCNe (X : Set E) : Prop := IsClosed X ∧ X.Nonempty`.
+'''
+source = "Cartis–Gould–Toint, assumption X.CNe"
+
+[[node]]
+id = "AssumptionD1qLaBX"
+kind = "def"
+desc = '''
+f.D1qLaB.X family: `AssumptionD1qLaBX (f : E → ℝ) (X X₀ : Set E) (x₀ : E) (j₀ q : ℕ)
+(L B : ℕ → ℝ) : Prop := IsOpen X₀ ∧ Convex ℝ X₀ ∧ X ⊆ X₀ ∧ ContDiffOn ℝ q f X₀ ∧ ∀ j ∈ Icc j₀ q,
+1 ≤ L j ∧ 1 ≤ B j ∧ IteratedFDerivLipschitzAnchored f j (L j) (sublevel) X₀ ∧ ∀ x ∈ sublevel,
+‖iteratedFDeriv ℝ j f x‖ ≤ B j`, where `sublevel := {x ∈ X | f x ≤ f x₀}` (14.2.8) is `𝓛_f(x₀)`.
+`j₀ = 1`: f.D1qLaB.X (with `q`) and f.D1pLaB.X (with `p`); `j₀ = 0`: f.D0qLaB.X, f.D0pLaB.X.
+(Footnote 104: the bounds for `j ≥ 2` follow from the Lipschitz conditions; kept as in the book.)
+'''
+deps = ["IteratedFDerivLipschitzAnchored"]
+source = "Cartis–Gould–Toint, assumption f.D1qLaB.X, (14.2.8)–(14.2.10)"
+
+[[node]]
+id = "AssumptionBbX"
+kind = "def"
+desc = '''
+f.bB.X: `AssumptionBbX (f : E → ℝ) (X : Set E) (flow : ℝ) : Prop := ∀ x ∈ X, flow ≤ f x`.
+'''
+source = "Cartis–Gould–Toint, assumption f.bB.X"
+
+[[node]]
+id = "theorem_14_2_1"
+kind = "theorem"
+desc = '''
+Theorem 14.2.1. Let `X` be closed and nonempty, `j ≥ 1`, `f` `C^j`, `η ≥ 0`, `δ_j ∈ (0,1]`,
+`ε_j ∈ (0,1]`, `taylorMeasure (ftaylorSeries ℝ f x_ε) j δ_j {d | x_ε + d ∈ X} ≤ ε_j δ_j^j/j! + η`,
+and `∇^j f` Lipschitz with constant `L_{f,j}` on an open ball around `x_ε` of radius `> δ_j`. Then
+(14.2.6): if `L_{f,j} > 0`, `f(x_ε + d) ≥ f(x_ε) - 2 ε_j δ_j^j/j! - η` for all `d` with
+`x_ε + d ∈ X` and `‖d‖ ≤ min(δ_j, (j+1) ε_j / L_{f,j})` (book's `δ^j` is `δ_j^j`); (14.2.7): if
+`L_{f,j} = 0`, `f(x_ε + d) ≥ f(x_ε) - ε_j δ_j^j/j! - η` for all such `d` with `‖d‖ ≤ δ_j`.
+'''
+deps = ["AssumptionXCNe", "Optimization.le_of_taylorMeasure_le"]
+source = "Cartis–Gould–Toint, Theorem 14.2.1"
+
+[[node]]
+id = "lemma_14_2_2_trq"
+kind = "theorem"
+desc = '''
+Lemma 14.2.2 for TRq-SC: under f.D1qLaB.X, for a TRq run with feasible set `X` (Chapter 12
+interface), every successful `k` before termination has `f(x_k) - f(x_{k+1}) ≥ κ_decr
+min_{j ∈ Icc 1 q} ε_j^{j+1}` with the explicit `κ_decr` of Lemma 12.2.4 (anchored Lipschitz
+constants in place of global ones). Same statement (under f.D0qLaB.X) for TRqIDA-SC and
+TRqEDA-SC with Lemmas 13.1.5, 13.3.2. Proof: the proofs of those lemmas only evaluate Lipschitz
+inequalities between `x_k ∈ 𝓛_f(x₀)` and points of `X₀`.
+'''
+deps = ["AssumptionD1qLaBX", "AssumptionXCNe"]
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (TR rows of (14.2.12))"
+
+[[node]]
+id = "lemma_14_2_2_arqp"
+kind = "theorem"
+desc = '''
+Lemma 14.2.2 for ARqp-SC (and ARqpIDA-SC, ARqpEDA-SC under f.D0pLaB.X): under f.D1pLaB.X, for every
+successful `k` not followed by termination, `f(x_k) - f(x_{k+1}) ≥ κ_decr min_j ε_j^{π_j}` with
+`π_j = (p+1)/(p-j+1)` when the radius choice `δ_{k,j} = 1` is available (`q = 1` and `X` convex, or
+`q = 2` and `X = ℝ^n`) and `π_j = j(p+1)/p` otherwise, with `κ_decr` from Lemma 12.2.13 (resp. 13.1.18, 13.3.7) (the exponents of Theorem 14.2.4's table are used: the book's table (14.2.12) is garbled —
+it lists three ARqp-SC rows, one of them `j(p+1)/(p-j+1)`, and no "otherwise" row for ARqpC-SC).
+'''
+deps = ["AssumptionD1qLaBX", "AssumptionXCNe"]
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (AR rows of (14.2.12))"
+
+[[node]]
+id = "lemma_14_2_2_arqpc"
+kind = "theorem"
+desc = '''
+Lemma 14.2.2 for ARqpC-SC: for an `algorithm_14_1_1` run with closed `X` (under the composite
+assumptions of §14.1 restricted as in f.D1pLaB.X), every successful `k` not followed by termination
+has `w(x_k) - w(x_{k+1}) ≥ η₁ κ_{Δm} min_j ε_j^{π_j}`, `π_j = (p+1)/p` if `q = 1` and `h`, `X`
+convex, `π_j = j + 1` otherwise (Lemma 14.1.9 with general `X`; the book's row
+"`(p+1)/(p-j+1)` for `q = 1`" is the same number since `j = 1`).
+'''
+deps = ["lemma_14_1_9", "AssumptionXCNe"]
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqpC-SC row)"
+
+[[node]]
+id = "lemma_14_2_3"
+kind = "theorem"
+desc = '''
+Lemma 14.2.3. For the TRq-SC (f.D1qLaB.X) and ARqp-SC/ARqpC-SC (f.D1pLaB.X) runs there are
+`κ_uns, κ_unc > 0` (depending only on the algorithm parameters and Lipschitz constants) with
+`k ≤ κ_uns |𝒮_k| + κ_unc` for every `k` before termination (14.2.13) (`𝒮_k =
+Optimization.successSet succ k`). TR: Lemma 2.3.1 (`Optimization.le_of_trUpdate`, `Δ_k` bounded
+below as in Lemma 12.2.3); AR: Lemma 2.4.1 (`Optimization.succ_le_of_arUpdate` with the `σ_max` of the ARqp analysis,
+resp. Lemma 14.1.6). For the IDA/EDA variants (f.D0qLaB.X / f.D0pLaB.X) the inequality is the
+Chapter 13 bound on trial iterations `𝒯_k` (Lemmas 13.1.1, 13.1.9) plus the separate count of
+accuracy-improving iterations from the proofs of Theorems 13.1.8, 13.1.19, 13.3.4, 13.3.8
+(Chapter 13 interface); the planned statement keeps the two counts separate, since the book's
+"a bound of the form (14.2.13) also holds" hides an `ε`-dependent additive term.
+'''
+deps = ["AssumptionD1qLaBX", "Optimization.succ_le_of_trUpdate", "Optimization.succ_le_of_arUpdate", "lemma_14_1_6", "Optimization.successSet"]
+source = "Cartis–Gould–Toint, Lemma 14.2.3"
+
+[[node]]
+id = "theorem_14_2_4_trq"
+kind = "theorem"
+desc = '''
+Theorem 14.2.4, TR rows. Under X.CNe, f.bB.X, f.D0qLaB.X, every TRq-SC (and TRqIDA-SC,
+TRqEDA-SC) run terminates at some `k_ε` with `x_{k_ε} ∈ X`,
+`taylorMeasure (ftaylorSeries ℝ f x_{k_ε}) j δ_j {d | x_{k_ε} + d ∈ X} ≤ ε_j δ_j^j/j!` for
+`j ∈ Icc 1 q` (some admissible radii), and evaluation counts bounded by the explicit bounds of
+Theorems 12.2.5 / 13.1.8 / 13.3.4 with `(f(x₀) - flow)`, which are `O(max_j ε_j^{-(q+1)})`.
+'''
+deps = ["lemma_14_2_2_trq", "lemma_14_2_3", "AssumptionBbX", "AssumptionXCNe", "Optimization.exists_hit_le_of_counting"]
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRq-SC, TRqIDA-SC, TRqEDA-SC)"
+
+[[node]]
+id = "theorem_14_2_4_arqp"
+kind = "theorem"
+desc = '''
+Theorem 14.2.4, ARqp rows. Under X.CNe, f.bB.X, f.D0pLaB.X and the radius policy (`δ_{k,j} = 1`
+when `q = 1` and `X` convex or `q = 2` and `X = ℝ^n`, (12.2.51) otherwise), every ARqp-SC (and
+ARqpIDA-SC, ARqpEDA-SC) run terminates at an `(ε,δ)`-approximate `q`-th order minimizer over `X`
+within the explicit bounds of Theorems 12.2.14 / 13.1.19 / 13.3.8, of order
+`O(max_j ε_j^{-(p+1)/(p-j+1)})` in the first case and `O(max_j ε_j^{-j(p+1)/p})` otherwise.
+'''
+deps = ["lemma_14_2_2_arqp", "lemma_14_2_3", "AssumptionBbX", "AssumptionXCNe", "Optimization.exists_hit_le_of_counting"]
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqp-SC, ARqpIDA-SC, ARqpEDA-SC)"
+
+[[node]]
+id = "theorem_14_2_4_arqpc"
+kind = "theorem"
+desc = '''
+Theorem 14.2.4, ARqpC-SC row: Theorem 14.1.10 (both parts) holds verbatim for `algorithm_14_1_1`
+runs with a closed nonempty `X` (measures over `{d | x + d ∈ X}`, `w.Bb` on `X`), with `π_j =
+(p+1)/p` when `q = 1` and `h`, `X` convex and `π_j = j + 1` otherwise (table:
+`O(max_j ε_j^{-(p+1)/(p-j+1)})` resp. `O(max_j ε_j^{-(j+1)})`).
+'''
+deps = ["theorem_14_1_10_i", "theorem_14_1_10_ii", "lemma_14_2_2_arqpc", "AssumptionXCNe"]
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpC-SC)"
+
+[[node]]
+id = "theorem_14_2_4_sharp"
+kind = "theorem"
+desc = '''
+Theorem 14.2.4, sharpness: the orders in the table are attained, by the unconstrained slow examples
+(`X = univ` is simple): Theorems 12.2.6, 12.2.15/12.2.17 and Corollary 14.1.11 (and their Chapter
+13 counterparts) applied with `X = Set.univ`.
+'''
+deps = ["corollary_14_1_11"]
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (\"the orders … are sharp\")"
+
+[[node]]
+id = "sparseMeasure_eq"
+kind = "theorem"
+desc = '''
+(14.2.17)–(14.2.18) on `Fin n → ℝ` (sup norm): for `x ∈ Subproblem.sparseSet n nnz` and `f`
+differentiable at `x`, `Optimization.taylorMeasure (ftaylorSeries ℝ f x) 1 δ
+{d | x + d ∈ sparseSet n nnz} = -min_{‖d‖_∞ ≤ δ, ‖x+d‖₀ ≤ nnz} ⟨∇f(x), d⟩` (the book writes
+`max ℓ(d)`; it must be `min` — or `max -ℓ(d)`), and the minimizing displacement of Lemma 14.2.5 is
+an admissible TR1-SP step. (Bridge from `EuclideanSpace` gradients to `Fin n → ℝ` coordinates via
+`WithLp.equiv`.)
+'''
+deps = ["Subproblem.isMinOn_sparseLinearStep", "Optimization.taylorMeasure"]
+source = "Cartis–Gould–Toint, (14.2.17)–(14.2.19)"
+
+[[node]]
+id = "lemma_14_2_5"
+kind = "theorem"
+desc = '''
+Lemma 14.2.5. For `x` with `‖x‖₀ ≤ n_nz`, `g = ∇f(x)`, `δ ≥ 0` and `τ` solving the knapsack
+(14.2.21), the vector (14.2.20) `Subproblem.sparseLinearStep x g δ τ` solves the minimization
+version of (14.2.18): it is feasible (`‖d‖_∞ ≤ δ`, `‖x + d‖₀ ≤ n_nz`) and minimizes
+`d ↦ ⟨g, d⟩` there. (Statement of `Subproblem.isMinOn_sparseLinearStep`; the book's `max` in
+(14.2.18) is a slip for `min`.)
+'''
+deps = ["Subproblem.isMinOn_sparseLinearStep"]
+source = "Cartis–Gould–Toint, Lemma 14.2.5"

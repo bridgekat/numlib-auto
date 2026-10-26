@@ -1,0 +1,50 @@
+namespace = "Optimization"
+desc = '''
+Stability of approximate high-order minimizers: a small Taylor measure `φ^δ_{f,S,j}(x)` bounds the
+possible decrease of `f` on the feasible part of a neighbourhood (Cartis–Gould–Toint
+Theorem 12.1.8, its constrained/perturbed version Theorem 14.2.1, and the Lagrangian version
+Theorem 14.3.2). Stated with the core `taylorMeasure` on a feasible displacement set `S` and an
+additive slack `η ≥ 0`; radii conditions are written multiplicatively (`L * ‖d‖ ≤ (j+1) ε`) so that
+the degenerate case `L = 0` (book: "otherwise", footnote 111) needs no division. Planned by the
+Chapter 14 planner; Theorem 12.1.8 is the case `S = univ`, `η = 0`.
+
+Lipschitz hypotheses are local: `ContDiffOn ℝ j f D` on an open `D ⊇ closedBall x δ` and
+`IteratedFDerivLipschitzOn f j L (closedBall x δ)` (the book's "open neighbourhood of radius larger
+than δ_j"; Theorem 14.3.2's "neighbourhood of diameter δ_j" must be read as radius `δ_j`, otherwise
+displacements of norm `δ_j` leave it).
+'''
+
+[[node]]
+id = "le_of_taylorMeasure_le"
+kind = "theorem"
+desc = '''
+Let `j ≥ 1`, `δ > 0`, `ε ≥ 0`, `η ≥ 0`, `S : Set E` with `0 ∈ S`, `f` `C^j` on an open `D ⊇
+closedBall x δ`, `IteratedFDerivLipschitzOn f j L (closedBall x δ)`, and
+`taylorMeasure (ftaylorSeries ℝ f x) j δ S ≤ ε * δ ^ j / j! + η`. Then for every `d ∈ S` with
+`‖d‖ ≤ δ`: `f x - L / (j + 1)! * ‖d‖ * δ ^ j - ε * δ ^ j / j! - η ≤ f (x + d)` ((12.1.39) with `η`);
+hence `f x - 2 * ε * δ ^ j / j! - η ≤ f (x + d)` whenever moreover `L * ‖d‖ ≤ (j + 1) * ε` ((14.2.6),
+the book's `δ^j` meaning `δ_j^j`), and `f x - ε * δ ^ j / j! - η ≤ f (x + d)` when `L = 0` ((14.2.7)).
+'''
+deps = ["taylorMeasure_nonneg", "abs_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, Theorem 14.2.1 (and Theorem 12.1.8)"
+
+[[node]]
+id = "le_of_lagrangian_taylorMeasure_le"
+kind = "theorem"
+desc = '''
+Lagrangian version (Theorem 14.3.2). `F` a real inner product space, `f : E → ℝ`, `c : E → F`,
+`L(z) := f z - ⟪y, c z⟫`, `j ≥ 1`, `δ > 0`, `ε₀ ε ≥ 0`, `η ≥ 0`, `V ⊆ {d | x + d ∈ X}` with `0 ∈ V`;
+`f`, `c` `C^j` on an open `D ⊇ closedBall x δ` with `IteratedFDerivLipschitzOn f j Lf` and
+`IteratedFDerivLipschitzOn c j Lc` (vector constant, operator norm into `F`) on `closedBall x δ`;
+`‖c x‖ ≤ ε₀`; `taylorMeasure (ftaylorSeries ℝ L x) j δ V ≤ ε * √(1 + ‖y‖²) * δ ^ j / j! + η`.
+Then for every `d ∈ V` with `‖d‖ ≤ δ`, `‖c (x + d)‖ ≤ ε₀` and
+`√2 * max Lf Lc * ‖d‖ ≤ (j + 1) * ε` (14.3.11):
+`f x - 2 * ε₀ * ‖y‖ - 2 * ε * √(1 + ‖y‖²) * δ ^ j / j! - η ≤ f (x + d)` (14.3.10); and if moreover
+`c (x + d) = c x`, or `c (x + d) = 0 ∧ ⟪y, c x⟫ ≤ 0`, the `2 ε₀ ‖y‖` term can be dropped (14.3.12)
+(the book writes `s` for `d` there). Proof: `le_of_taylorMeasure_le` for `L` with Lipschitz constant
+`Lf + ‖y‖ Lc ≤ √2 max(Lf, Lc) √(1 + ‖y‖²)` (`(1 + a)/√2 ≤ √(1 + a²)`), then Cauchy–Schwarz.
+Here `‖(1, yᵀ)‖ = √(1 + ‖y‖²)`. (The book's componentwise `L_{c,j}` must be read as the constant of
+the vector-valued derivative; with componentwise constants an extra `√m` appears.)
+'''
+deps = ["le_of_taylorMeasure_le"]
+source = "Cartis–Gould–Toint, Theorem 14.3.2"

@@ -1,0 +1,35 @@
+desc = '''
+Cartis–Gould–Toint Chapter 14, "Composite and Constrained Problems": §14.1 composite problems
+`min f(x) + h(c(x))` and the ARqpC algorithm; §14.2 simple (inexpensive) constraints and the
+-SC variants of the high-order algorithms of Chapters 12–13, sparsity constraints (Lemma 14.2.5);
+§14.3 high-order necessary conditions for nonconvex constraints, the LENq-SC and TPqp-GC
+algorithms. Part III (Conclusions) has no numbered items; Appendix B's Chapter 14 part contains
+only proofs (no `Lemma B.14.x`), which are planned as backbone lemmas and cited by the chapter
+nodes.
+
+Source corrections (details in the node descriptions):
+* (14.1.6): minimization variable is `d` (book mixes `x_k`, `s`); h.S0 is on `ℝ^m`, not `ℝ`.
+* Lemma 14.1.3: the radius bound is needed for `j = 1` as well when `h` is nonconvex.
+* Lemmas 14.1.7–14.1.9 / Theorem 14.1.10: `(1 - θ)` must be `(ς - θ)` (Step 1 only certifies
+  `φ > ς ε δ^j/j!` at a non-terminal iterate) and `θ < ς` is required; the `‖s_k‖^{p+1}` term of
+  (14.1.30) has a factor `2`; the second case of (14.1.31) is missing `ε_j^{(j+1)/(p+1)}`;
+  Lemma 14.1.9 has `L_{f,p}` / `f` for `L_{w,p}` / `w`, holds only for successful `k` followed by a
+  non-terminal iterate, and needs all of f.D1pL, c.D1pL, h.L, h.S0.
+* Lemma 14.2.2's table (14.2.12) is garbled (duplicated ARqp-SC rows, missing ARqpC-SC
+  "otherwise" row); the exponents of Theorem 14.2.4's table are used.
+* (14.2.18)–(14.2.19): `max` must be `min` (Lemma 14.2.5 gives the minimizer).
+* Theorem 14.3.1: 𝒟^j must consist of arcs feasible for `X` *and* `c = 0`; as printed false
+  (counterexample in the node).
+* Example 14.3.1: the multiplier is `y₀ = (-1, 0)` for `ℒ = f - ⟨y, c⟩`; the origin is a
+  (non-strict) global minimizer — `f ≡ 0` on the feasible curve `(-t², t, t³)` — not a saddle.
+* Theorem 14.3.2: "diameter `δ_j`" must be radius `δ_j`; `s` in the last claim is `d`.
+* Theorem 14.3.3: the iteration bound needs a ceiling.
+* Theorem 14.3.4: `∑_k max_j ≤ max_j ∑_k` is used and is false; `max_j` becomes `∑_j`.
+* Lemma 14.3.5: (14.3.43) and (14.3.46) are false (counterexample); corrected with the factor
+  `1/(f(x_ε) - t_ε)` and `|∇f[d]|` sup; (14.3.44), (14.3.47) are correct.
+* Lemma 14.3.6: (14.3.63) bounds `∇^j_x μ`, not `∇^j_x ν`.
+* Lemma 14.3.8: constant `(βθ)^{-π_max}` must be `β^{-π_max} θ^{1-2π_max}`; the block of inner
+  iterations must include the call ending in `𝒦_a` (+1 per block).
+* Theorem 14.3.9: `f_up - f_low - 1` must be `f_up - f_low + 1`, the `κ^C` term needs `1/(1-θ)`,
+  and one more block (the first one) is counted; orders unchanged.
+'''
