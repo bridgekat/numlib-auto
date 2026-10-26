@@ -249,7 +249,7 @@ is `C^p` on `X₀` and for `j ∈ Icc 1 p`: `IteratedFDerivLipschitzAnchored ν 
 𝓛_ν(x₀) X₀` (14.3.60) and `‖∇^j ν(x)‖ ≤ BA j + BB j ‖c x₀‖` for `x ∈ 𝓛_ν(x₀) := {x ∈ X | ‖c x‖ ≤
 ‖c x₀‖}` (14.3.61).
 '''
-deps = ["AssumptionD1pLBX", "IteratedFDerivLipschitzAnchored.mul", "Constrained.targetResidual"]
+deps = ["AssumptionD1pLBX", "AnchoredJetBounds.lipschitzAnchored_half_norm_sq", "AnchoredJetBounds.norm_iteratedFDeriv_half_norm_sq_le", "IteratedFDerivLipschitzOn.anchored", "Constrained.targetResidual"]
 source = "Cartis–Gould–Toint, Lemma 14.3.6 (i) (proof in Appendix B)"
 
 [[node]]
@@ -262,7 +262,7 @@ Lemma 14.3.6(ii). Under c.D1pLB.X and f.D1pLB.X there are `Lμ Bμ : ℕ → ℝ
 `‖∇^j_x μ(x, t)‖ ≤ Bμ j` for `x ∈ 𝓛_μ(t) := {x ∈ X | targetResidual f c t x ≤ 1}` (14.3.63;
 the book writes `∇^j_x ν(x)` there, a slip).
 '''
-deps = ["AssumptionD1pLBX", "IteratedFDerivLipschitzAnchored.mul", "Constrained.targetResidual"]
+deps = ["AssumptionD1pLBX", "AnchoredJetBounds.lipschitzAnchored_half_norm_sq", "AnchoredJetBounds.norm_iteratedFDeriv_half_norm_sq_le", "AnchoredJetBounds.sub_const", "AnchoredJetBounds.lipschitzAnchored_half_sq", "AnchoredJetBounds.norm_iteratedFDeriv_half_sq_le", "IteratedFDerivLipschitzAnchored.add", "Constrained.targetResidual"]
 source = "Cartis–Gould–Toint, Lemma 14.3.6 (ii) (proof in Appendix B)"
 
 [[node]]

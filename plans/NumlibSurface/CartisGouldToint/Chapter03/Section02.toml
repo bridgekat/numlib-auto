@@ -43,7 +43,7 @@ condition (3.2.10): if `hessianMinEig f (x k) < 0` then there is a unit `u` with
 Existence (part of node): from any `x₀` for `C²` `f` (global model minimizer in the ball,
 `Optimization.exists_isMinOn_quadModel_ball`, eigenvectors `Optimization.exists_eq_minCurvature`).
 '''
-deps = ["CartisGouldToint.Chapter02.TR1Params", "IsApproxSecondOrderMinimizer", "Optimization.UntilHit", "Optimization.IsCauchyStep", "Optimization.hessianOperator", "Optimization.TRUpdate", "Optimization.reductionRatio", "Optimization.exists_isMinOn_quadModel_ball", "exists_eq_minCurvature", "Optimization.exists_run_of_forall_exists"]
+deps = ["CartisGouldToint.Chapter02.TR1Params", "IsApproxSecondOrderMinimizer", "Optimization.UntilHit", "Optimization.IsCauchyStep", "Optimization.hessianOperator", "Optimization.TRUpdate", "Optimization.reductionRatio", "Optimization.exists_isMinOn_quadModel_ball", "exists_eigenvector_minCurvature", "Optimization.exists_run_of_forall_exists"]
 source = "Cartis–Gould–Toint, Algorithm 3.2.1"
 
 [[node]]

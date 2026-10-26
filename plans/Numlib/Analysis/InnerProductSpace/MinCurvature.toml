@@ -1,109 +1,59 @@
-desc = '''
-The leftmost "eigenvalue" `λ_min` of a bilinear form on a real inner product space, written for the
-second derivative `iteratedFDeriv ℝ 2 f x : E [×2]→L[ℝ] ℝ` as it is used by second-order
-optimality conditions and algorithms (Cartis–Gould–Toint (1.1.5), (3.2.6), Section A.5):
-`minCurvature A = ⨅_{‖d‖ = 1} A[d, d]` (Rayleigh-quotient definition, dimension free). In finite
-dimension it is attained, and for a symmetric form it is the least eigenvalue of the associated
-self-adjoint operator (bridge to Mathlib's `ContinuousLinearMap.rayleighQuotient`,
-`IsSelfAdjoint.hasEigenvalue_iInf_of_finiteDimensional` and, on `EuclideanSpace`, to
-`Matrix.IsHermitian.eigenvalues`). `A[d, d]` abbreviates `A (fun _ => d)`.
-For the trivial space the infimum over the empty sphere is `0` (junk); statements needing a unit
-vector assume `[Nontrivial E]`.
-'''
-
 [[node]]
 id = "minCurvature"
-kind = "def"
-desc = '''
-`minCurvature (A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ) : ℝ :=
-⨅ d : Metric.sphere (0 : E) 1, A (fun _ => (d : E))`.
-'''
 source = "Cartis–Gould–Toint, Section A.5 (leftmost eigenvalue λ_min)"
 
 [[node]]
 id = "minCurvature_le_apply"
-kind = "theorem"
-desc = '''
-`‖d‖ = 1 → minCurvature A ≤ A (fun _ => d)` (the set is bounded below by `-‖A‖`), and the
-homogeneous form `minCurvature A * ‖d‖ ^ 2 ≤ A (fun _ => d)` for all `d`.
-'''
-deps = ["minCurvature"]
+source = "Cartis–Gould–Toint, (A.3)"
+
+[[node]]
+id = "minCurvature_mul_norm_sq_le"
 source = "Cartis–Gould–Toint, (A.3)"
 
 [[node]]
 id = "le_minCurvature_iff"
-kind = "theorem"
-desc = '''
-`[Nontrivial E]`: `c ≤ minCurvature A ↔ ∀ d, c * ‖d‖ ^ 2 ≤ A (fun _ => d)`; in particular
-`0 ≤ minCurvature A ↔` `A` is positive semidefinite, and `-ε ≤ minCurvature A` is the book's
-`λ_min[∇²f(x)] ≥ -ε`.
-'''
-deps = ["minCurvature_le_apply"]
 source = "Cartis–Gould–Toint, (3.2.6)"
 
 [[node]]
 id = "abs_minCurvature_le_norm"
-kind = "theorem"
-desc = '''
-(A.4) `[Nontrivial E]`: `-‖A‖ ≤ minCurvature A ≤ ‖A‖`, hence `|minCurvature A| ≤ ‖A‖`.
-'''
-deps = ["minCurvature_le_apply"]
 source = "Cartis–Gould–Toint, (A.4)"
 
 [[node]]
 id = "abs_minCurvature_sub_le"
-kind = "theorem"
-desc = '''
-(A.5) `[Nontrivial E]`: `|minCurvature A - minCurvature B| ≤ ‖A - B‖` (inf of `d ↦ A[d,d]` is
-1-Lipschitz in sup norm over the unit sphere).
-'''
-deps = ["minCurvature_le_apply", "le_minCurvature_iff"]
 source = "Cartis–Gould–Toint, (A.5)"
 
 [[node]]
+id = "innerForm"
+source = "Cartis–Gould–Toint, (3.4.33) (the identity `I`)"
+
+[[node]]
 id = "minCurvature_add_smul_inner"
-kind = "theorem"
-desc = '''
-`[Nontrivial E]`: for the form `A + λ ⟪·,·⟫` (i.e. `(A + λ • innerBilin) [d,d] = A[d,d] + λ‖d‖²`),
-`minCurvature (A + λ • B₀) = minCurvature A + λ` where `B₀ (fun _ => d) = ‖d‖²` is the inner-product
-form (packaged as `innerForm : E [×2]→L[ℝ] ℝ`, `innerForm v = ⟪v 0, v 1⟫`, defined in this node).
-Used for shifted Hessians `∇²f + λI` (TRε, iRN, class M).
-'''
-deps = ["le_minCurvature_iff"]
 source = "Cartis–Gould–Toint, (3.4.33)"
 
 [[node]]
 id = "exists_eq_minCurvature"
-kind = "theorem"
-desc = '''
-`[FiniteDimensional ℝ E] [Nontrivial E]`: there is `u` with `‖u‖ = 1` and `A[u,u] = minCurvature A`.
-If moreover `A` is symmetric (`A ![v, w] = A ![w, v]`), such a minimizer is an eigenvector:
-`∀ w, A ![u, w] = minCurvature A * ⟪u, w⟫`, and the sign of `u` can be chosen with `⟪u, g⟫ ≤ 0`
-for any given `g` (the book's (3.2.3)).
-'''
-deps = ["minCurvature_le_apply"]
+source = "Cartis–Gould–Toint, (3.2.3)"
+
+[[node]]
+id = "apply_eq_minCurvature_mul_inner"
+source = "Cartis–Gould–Toint, (3.2.3)"
+
+[[node]]
+id = "exists_eigenvector_minCurvature"
 source = "Cartis–Gould–Toint, (3.2.3)"
 
 [[node]]
 id = "minCurvature_eq_iInf_eigenvalues"
-kind = "theorem"
-desc = '''
-Bridge to spectral theory: on `E` finite dimensional, nontrivial, if `A ![v, w] = ⟪T v, w⟫` with
-`T : E →L[ℝ] E` symmetric (`T.IsSymmetric`), then `minCurvature A = ⨅ x ≠ 0, T.rayleighQuotient x`
-and it is an eigenvalue of `T` below all eigenvalues (Mathlib
-`IsSelfAdjoint.hasEigenvalue_iInf_of_finiteDimensional`); on `EuclideanSpace ℝ (Fin n)` with
-`T = Matrix.toEuclideanLin M`, `M` Hermitian, it equals the least of `M.IsHermitian.eigenvalues`.
-'''
-deps = ["minCurvature", "exists_eq_minCurvature"]
 source = "Cartis–Gould–Toint, Section A.5 (λ_min of a symmetric matrix)"
 
 [[node]]
-id = "minCurvature_eq_leftmost"
-kind = "theorem"
-desc = '''
-Bridge to the subproblem theory: `[FiniteDimensional ℝ E]`, `H : E →L[ℝ] E` symmetric (`hH`), and
-`A ![u, v] = ⟪u, H v⟫`: `minCurvature A = Subproblem.leftmost hH` (both are the least eigenvalue;
-for trivial `E` both are `0`).
-'''
-deps = ["minCurvature_eq_iInf_eigenvalues", "Subproblem.leftmost"]
-source = "Cartis–Gould–Toint, Section A.5"
+id = "minCurvature_eq_iInf_isHermitian_eigenvalues"
+source = "Cartis–Gould–Toint, Section A.5 (λ_min of a symmetric matrix)"
+
+[[node]]
+id = "minCurvature_eq_iInf_rayleigh"
+source = "Cartis–Gould–Toint, (A.2)–(A.3)"
+
+[[node]]
+id = "minCurvature_of_subsingleton"
+source = "Cartis–Gould–Toint, Section A.5 (degenerate case)"

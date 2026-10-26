@@ -8,6 +8,7 @@ import Numlib.Algebra.Polynomial.Roots
 import Numlib.Algebra.Polynomial.Taylor
 import Numlib.Analysis.Asymptotics.Pow
 import Numlib.Analysis.Calculus.AddTorsor.AffineMap
+import Numlib.Analysis.Calculus.AnchoredLipschitz
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.ContDiffOnClosure
@@ -27,7 +28,11 @@ import Numlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 import Numlib.Analysis.Calculus.LipschitzIteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.MultivariateTaylor.Basic
+import Numlib.Analysis.Calculus.MultivariateTaylor.DerivBound
+import Numlib.Analysis.Calculus.MultivariateTaylor.LinearComp
+import Numlib.Analysis.Calculus.MultivariateTaylor.Peano
 import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
+import Numlib.Analysis.Calculus.MultivariateTaylor.VectorRemainder
 import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.Calculus.Periodic
 import Numlib.Analysis.Calculus.ProdContDiff
@@ -200,6 +205,7 @@ import Numlib.Analysis.InnerProductSpace.GramDeterminant
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.InnerProductSpace.HilbertSum
 import Numlib.Analysis.InnerProductSpace.MaximalMonotone
+import Numlib.Analysis.InnerProductSpace.MinCurvature
 import Numlib.Analysis.InnerProductSpace.NormPow
 import Numlib.Analysis.InnerProductSpace.Normalize
 import Numlib.Analysis.InnerProductSpace.Orthonormal
@@ -667,6 +673,7 @@ import Numlib.Optimization.QuasiNewton
 import Numlib.Optimization.Subproblem.Bracketing
 import Numlib.Optimization.Subproblem.InverseIteration
 import Numlib.Optimization.Subproblem.Matrix
+import Numlib.Optimization.Subproblem.MinCurvature
 import Numlib.Optimization.Subproblem.Model
 import Numlib.Optimization.Subproblem.Multiplier
 import Numlib.Optimization.Subproblem.Regularization

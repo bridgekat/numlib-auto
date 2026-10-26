@@ -167,5 +167,5 @@ inner product space (the book's Hessian matrix `∇²f(x)` as an operator). Lemm
 operator is symmetric; hence `minCurvature (iteratedFDeriv ℝ 2 f x) =
 Subproblem.leftmost (symmetry proof)` in finite dimension (`minCurvature_eq_leftmost`).
 '''
-deps = ["minCurvature"]
+deps = ["minCurvature", "minCurvature_eq_leftmost"]
 source = "Cartis–Gould–Toint, Section 1.1.2.1 (Hessian matrix)"
