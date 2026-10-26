@@ -1,111 +1,29 @@
 namespace = "Optimization"
-desc = '''
-Inexact derivative data ("dynamic accuracy", Cartis–Gould–Toint §13.1.2, §13.3) and its effect on
-Taylor decrements and Taylor-decrement optimality measures. An inexact jet is just another
-`FormalMultilinearSeries ℝ E ℝ` (`Dbar i` plays the book's `\overline{∇^i_x f}(x)`); its distance to
-the exact jet `D = ftaylorSeries ℝ f x` is recorded order by order by `JetApprox`. All results are
-stated for arbitrary data `D Dbar` (no reference to `f`), so they serve exact-vs-inexact Taylor models
-(`D = ftaylorSeries ℝ f x`), model-vs-model comparisons and Chapter 14's composite models alike.
-
-The book's error model (13.1.2) is `‖Dbar i - D i‖ ≤ κ_{∇,i} h_{k,i}` with requested accuracies
-`h_{k,i}` and (implicit framework) unknown constants `κ_{∇,i}`; in the explicit framework (13.3.4)
-`κ_{∇,i} = 1`. Both are `JetApprox D Dbar p (fun i => κ i * h i)`. Function values: the inexact
-decrement `Dbar.taylorDecrement` does not involve `Dbar 0`, so exact/inexact function values enter
-only through `taylorSum` (13.1.4)/(13.1.7) and through the ratio tests (`ModelBased/InexactRatio`).
-
-Sum bounds (A.34)–(A.36) come from `Numlib/Analysis/SpecialFunctions/FactorialSum`
-(`∑_{i=1}^j t^i/i! ≤ 2t` on `[0,1]`, `≤ 2 t^j` for `t ≥ 1`).
-'''
 
 [[node]]
 id = "JetApprox"
-kind = "def"
-desc = '''
-`JetApprox (D Dbar : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (err : ℕ → ℝ) : Prop :=
-∀ i ∈ Finset.Icc 1 p, ‖Dbar i - D i‖ ≤ err i` — the derivatives of orders `1..p` of the inexact
-jet `Dbar` are within `err i` of those of `D` (book (13.1.2) with `err i = κ_{∇,i} h_{k,i}`, (13.3.4)
-with `err i = h_{k,i}`). API (part of node): monotonicity in `err` and `p`; `JetApprox D D p 0`;
-symmetry in `D, Dbar`; `JetApprox D Dbar p err → ∀ i ∈ Icc 1 p, 0 ≤ err i`.
-'''
 source = "Cartis–Gould–Toint, (13.1.2), (13.3.4)"
 
 [[node]]
 id = "norm_le_of_jetApprox"
-kind = "theorem"
-desc = '''
-If `JetApprox D Dbar p err` then `‖Dbar i‖ ≤ ‖D i‖ + err i` for `i ∈ Icc 1 p`. In particular
-(book (13.1.24), (13.1.63)): if `D = ftaylorSeries ℝ f x` where `iteratedFDeriv ℝ (i-1) f` is
-`L_{i-1}`-Lipschitz (so `‖D i‖ ≤ L_{i-1}` by `norm_iteratedFDeriv_succ_le_of_lipschitzOn`),
-`err i = κ i * h i`, `0 ≤ κ i ≤ κmax`, `0 ≤ h i ≤ κh`, then `‖Dbar i‖ ≤ L_{i-1} + κmax κh`.
-'''
-deps = ["JetApprox", "norm_iteratedFDeriv_succ_le_of_lipschitzOn"]
 source = "Cartis–Gould–Toint, (13.1.24), (13.1.63)"
 
 [[node]]
 id = "abs_taylorDecrement_sub_le_of_jetApprox"
-kind = "theorem"
-desc = '''
-(13.1.3) If `JetApprox D Dbar p err` and `j ≤ p` then for every `s`,
-`|Dbar.taylorDecrement j s - D.taylorDecrement j s| ≤ ∑ i ∈ Icc 1 j, err i * ‖s‖ ^ i / i!`.
-Corollary (part of node, (13.1.6) shape): if moreover `‖s‖ ≤ 1` and `err i ≤ e` for `i ∈ Icc 1 j`
-then the difference is `≤ 2 e ‖s‖ ≤ 2 e` (sum bound (A.34)).
-'''
-deps = ["JetApprox", "FormalMultilinearSeries.abs_taylorDecrement_sub_le", "sum_pow_div_factorial_le_two_mul_pow"]
 source = "Cartis–Gould–Toint, (13.1.3)"
 
 [[node]]
 id = "abs_taylorDecrement_sub_le_of_stepAccuracy"
-kind = "theorem"
-desc = '''
-Step-scaled accuracy (13.1.9)/(13.1.46) ⇒ (13.1.10)/(13.1.47). Let `r : ℕ` (the book's `q` for TR,
-`p` for AR), `κ κs : ℝ` nonnegative, `s : E`, and `JetApprox D Dbar r err` with
-`err i ≤ κ * κs * ‖s‖ ^ (r - i + 1)` for `i ∈ Icc 1 r`. Then for every `j ≤ r`:
-`|Dbar.taylorDecrement j s - D.taylorDecrement j s| ≤ 2 * κs * κ * ‖s‖ ^ (r + 1)`
-(the terms are `κ κs ‖s‖^{r+1}/i!` and `∑_{i=1}^j 1/i! ≤ e - 1 ≤ 2`).
-'''
-deps = ["abs_taylorDecrement_sub_le_of_jetApprox"]
 source = "Cartis–Gould–Toint, (13.1.10), (13.1.47)"
 
 [[node]]
 id = "abs_taylorSum_sub_le_of_jetApprox"
-kind = "theorem"
-desc = '''
-(13.1.4) If `JetApprox D Dbar p err` and `j ≤ p`, then for every `s`:
-`|Dbar.taylorSum j s - D.taylorSum j s| ≤ |Dbar.taylorSum j 0 - D.taylorSum j 0| +
-∑ i ∈ Icc 1 j, err i * ‖s‖^i / i!` (note `taylorSum j 0` is the zeroth term, the function value).
-Exact-value case (13.1.7)–(13.1.8) (part of node): if `Dbar.taylorSum j 0 = D.taylorSum j 0` then
-`Dbar.taylorSum j s - D.taylorSum j s = -(Dbar.taylorDecrement j s - D.taylorDecrement j s)`.
-Inexact-value case (13.3.11): with `|Dbar.taylorSum j 0 - D.taylorSum j 0| ≤ h₀` and the hypotheses of
-`abs_taylorDecrement_sub_le_of_stepAccuracy`, `|T̄ - T| ≤ h₀ + 2 κs κ ‖s‖^{r+1}`.
-'''
-deps = ["abs_taylorDecrement_sub_le_of_jetApprox", "abs_taylorDecrement_sub_le_of_stepAccuracy", "FormalMultilinearSeries.taylorDecrement"]
 source = "Cartis–Gould–Toint, (13.1.4), (13.1.7), (13.1.8), (13.3.11)"
 
 [[node]]
 id = "taylorMeasure_le_add_of_jetApprox"
-kind = "theorem"
-desc = '''
-(13.1.6) Let `JetApprox D Dbar q err`, `j ∈ Icc 1 q`, `δ ∈ [0,1]`, `0 ∈ S`. Then
-`taylorMeasure D j δ S ≤ taylorMeasure Dbar j δ S + ∑ i ∈ Icc 1 j, err i * δ ^ i / i!`, and if
-`err i ≤ e` for `i ∈ Icc 1 j` then `taylorMeasure D j δ S ≤ taylorMeasure Dbar j δ S + 2 e`.
-(The book writes this with `e = κ_{∇,max} h_{k,max}`; both directions hold by symmetry, which is
-`abs_taylorMeasure_sub_le`.)
-'''
-deps = ["JetApprox", "abs_taylorMeasure_sub_le", "sum_pow_div_factorial_le_two_mul_pow"]
 source = "Cartis–Gould–Toint, (13.1.6)"
 
 [[node]]
 id = "taylorMeasure_le_of_inexact_certificate"
-kind = "theorem"
-desc = '''
-Certification of approximate optimality from inexact data (the common core of Lemmas 13.1.7,
-13.1.15, 13.3.3(i), 13.3.6(i)). Let `JetApprox D Dbar q err`, `j ∈ Icc 1 q`, `δ ∈ (0,1]`,
-`ς ∈ (0,1]`, `ε ≥ 0`, `d ∈ closedBall 0 δ` with
-`ς * taylorMeasure Dbar j δ univ ≤ Dbar.taylorDecrement j d ≤ ς * ε * δ^j / j! / 2`
-(Step 1 of the algorithms found no significant inexact decrease at order `j`), and
-`∑ i ∈ Icc 1 j, err i * δ^i / i! ≤ ε * δ^j / j! / 2` (the data are accurate enough at that radius).
-Then `taylorMeasure D j δ univ ≤ ε * δ^j / j!` (exact optimality measure, book (12.1.25) at order
-`j`). Proof: `taylorMeasure_le_add_of_jetApprox` and `ς ≤ 1`.
-'''
-deps = ["taylorMeasure_le_add_of_jetApprox", "taylorMeasure"]
 source = "Cartis–Gould–Toint, proofs of Lemmas 13.1.7, 13.1.15, 13.3.3, 13.3.6"

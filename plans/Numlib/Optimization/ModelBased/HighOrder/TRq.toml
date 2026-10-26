@@ -69,7 +69,7 @@ there are `x s Δ jk d` with `x 0 = x₀` and `IsTRqRun f (fun k => J (x k)) (fu
 order, `s_k = d_k` (admissible since `δ_k ≤ Δ_k`, `pred_k > 0`); `Δ_{k+1} = Δ_k`, `γ₂Δ_k` or `γ₁Δ_k`
 according to `ρ_k`.
 '''
-deps = ["IsTRqRun", "exists_isApproxMeasureStep", "exists_run_of_forall_exists", "exists_lt_taylorDecrement_of_not_measureTestPasses"]
+deps = ["IsTRqRun", "exists_isApproxMeasureStep", "exists_run_of_forall_exists", "exists_lt_of_not_measureTestPasses"]
 source = "Cartis–Gould–Toint, Algorithm 12.2.1 (well-posedness)"
 
 [[node]]

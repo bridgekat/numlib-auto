@@ -673,14 +673,17 @@ import Numlib.Optimization.Complexity.SlowExample
 import Numlib.Optimization.Complexity.SlowExampleHighOrder
 import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.Complexity.ZeroChain
+import Numlib.Optimization.Composite.TaylorModel
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
 import Numlib.Optimization.Constrained.SecondOrder
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
 import Numlib.Optimization.LineSearch.Backtracking
+import Numlib.Optimization.ModelBased.HighOrder.MeasureTest
 import Numlib.Optimization.ModelBased.HighOrderStep
 import Numlib.Optimization.ModelBased.InexactRatio
+import Numlib.Optimization.ModelBased.InexactTaylor
 import Numlib.Optimization.ModelBased.RatioTest
 import Numlib.Optimization.ModelBased.RegularizationUpdate
 import Numlib.Optimization.ModelBased.TRRun
@@ -705,6 +708,7 @@ import Numlib.Optimization.Subproblem.Regularization
 import Numlib.Optimization.Subproblem.Secular
 import Numlib.Optimization.Subproblem.SecularIteration
 import Numlib.Optimization.Subproblem.SecularSum
+import Numlib.Optimization.Subproblem.SparseLinear
 import Numlib.Optimization.Subproblem.Stopping
 import Numlib.Optimization.Subproblem.TrustRegion
 import Numlib.Order.EReal

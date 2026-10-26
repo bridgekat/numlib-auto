@@ -1,88 +1,21 @@
 namespace = "Optimization"
-desc = '''
-Approximate evaluation of high-order criticality measures and the termination test built on it
-(Cartis–Gould–Toint §12.1.6, Step 1 of TRq/ARqp, Steps 2.4.x of Algorithms 12.2.3/14.1.2, Step 1 of
-ARqpC and of the Chapter 13 methods, §14.2 -SC variants).
-
-Stated for an **arbitrary decrement function** `Δ : E → ℝ` (consolidation: one interface for exact
-Taylor data `Δ = D.taylorDecrement j`, inexact data (Ch 13), model data at a trial step
-`Δ = (ftaylorSeries ℝ m s).taylorDecrement j` and composite models `Δ = compositeTaylorDecrement Df
-Dc h j` (Ch 14)), with the measure `decrementMeasure Δ δ S` (`taylorMeasure` is the Taylor case).
-
-An algorithm never computes `φ = decrementMeasure Δ δ S` (a global optimization problem); it
-computes a displacement `d ∈ B_δ ∩ S` with `ς φ ≤ Δ d` for a fixed `ς ∈ (0,1]` ("approximate
-optimality displacement", (12.1.32)) and compares `Δ d` with `ς ε_j δ_j^j / j!`. Passing the
-comparison for all `j ≤ q` certifies the `(ε,δ)`-approximate optimality (12.1.25) / (14.1.9);
-failing it at some `j` certifies `φ > ς ε_j δ_j^j/j!`, the "large decrement" used by the step
-computations. Strict/nonstrict convention: the test *passes* when `Δ_j(d_j) ≤ ς ε_j δ_j^j/j!` for all
-`j` (TRq (12.2.2) goes on when `>`; ARqp's printed Step 1 goes on when `≥`, normalized to `>` — see
-the Chapter 12 surface notes). Radii are a vector `δ : ℕ → ℝ` (TRq uses a constant vector).
-(Planned by plan-ch12; generalized to arbitrary decrements in the consolidation.)
-'''
 
 [[node]]
 id = "IsApproxMeasureStep"
-kind = "def"
-desc = '''
-`IsApproxMeasureStep (Δ : E → ℝ) (δ : ℝ) (S : Set E) (ς : ℝ) (d : E) : Prop :=
-d ∈ Metric.closedBall 0 δ ∩ S ∧ ς * decrementMeasure Δ δ S ≤ Δ d`
-(the book's `d_{k,j}` in (12.2.1), (12.2.26), (13.1.13), (13.1.52), (14.1.10); `d^m_{k,j}` in (12.2.29);
-`d_{μ,j}` in (12.2.35)). Typical use: `IsApproxMeasureStep ((D k).taylorDecrement j) (δ k j)
-{d | x k + d ∈ X} ς (d k j)`. Lemma (part of node): then `Δ d ≤ decrementMeasure Δ δ S` (under the
-boundedness of `le_decrementMeasure`).
-'''
-deps = ["decrementMeasure", "le_decrementMeasure"]
 source = "Cartis–Gould–Toint, (12.1.32), (12.2.1)"
 
 [[node]]
 id = "exists_isApproxMeasureStep"
-kind = "theorem"
-desc = '''
-Existence of approximate optimality displacements. `[FiniteDimensional ℝ E]`, `S` closed,
-`0 ∈ S`, `0 ≤ δ`, `ς ≤ 1`, `Δ` continuous with `Δ 0 = 0`: there is `d` with
-`IsApproxMeasureStep Δ δ S ς d` (an exact maximizer, `exists_decrementMeasure_eq`). Refinement
-(part of node, used by the sharpness examples): if `S` is star-shaped about `0` and `0 ≤ ς ≤ 1`,
-such a `d` with `Δ d = ς * decrementMeasure Δ δ S` exactly. Without finite dimension: existence
-holds for `ς < 1` when the measure is positive (approximate sup), or when it is `0` (take `d = 0`).
-Instances (part of node): Taylor decrements (polynomial, continuous) and composite decrements
-with continuous `h`.
-'''
-deps = ["IsApproxMeasureStep", "exists_decrementMeasure_eq"]
 source = "Cartis–Gould–Toint, Section 12.1.6 (approximate global minimization)"
 
 [[node]]
 id = "MeasureTestPasses"
-kind = "def"
-desc = '''
-`MeasureTestPasses (Δ : ℕ → E → ℝ) (q : ℕ) (ς : ℝ) (ε δ : ℕ → ℝ) (d : ℕ → E) : Prop :=
-∀ j ∈ Finset.Icc 1 q, Δ j (d j) ≤ ς * ε j * δ j ^ j / j !`
-(all orders pass the Step-1 comparison; the algorithm terminates). `Δ j` is the order-`j`
-decrement, e.g. `fun j => (D k).taylorDecrement j`. (Chapter 13's tests use `ς/2`, i.e.
-`MeasureTestPasses Δ q (ς/2) ε δ d`.)
-'''
 source = "Cartis–Gould–Toint, Algorithm 12.2.1 Step 1, Algorithm 12.2.2 Step 1, (14.1.10)"
 
 [[node]]
 id = "isEpsDeltaApprox_of_measureTestPasses"
-kind = "theorem"
-desc = '''
-Certification. If `0 < ς`, `∀ j ∈ Icc 1 q, IsApproxMeasureStep (Δ j) (δ j) S ς (d j)` and
-`MeasureTestPasses Δ q ς ε δ d`, then `∀ j ∈ Icc 1 q, decrementMeasure (Δ j) (δ j) S ≤
-ε j * δ j ^ j / j!` (divide `ς φ ≤ Δ_j(d_j) ≤ ς ε δ^j/j!` by `ς`). Corollaries (part of node):
-`IsEpsDeltaApprox D S q ε δ` for `Δ = fun j => D.taylorDecrement j`; the composite case
-`IsEpsDeltaApproxComposite` is stated in `Composite/TaylorModel`.
-'''
-deps = ["IsApproxMeasureStep", "MeasureTestPasses", "IsEpsDeltaApprox"]
 source = "Cartis–Gould–Toint, Section 12.1.6 (the two inequalities after (12.1.32))"
 
 [[node]]
-id = "exists_lt_taylorDecrement_of_not_measureTestPasses"
-kind = "theorem"
-desc = '''
-If `¬ MeasureTestPasses Δ q ς ε δ d` there is `j ∈ Icc 1 q` with `ς * ε j * δ j ^ j / j! < Δ j (d j)`;
-if moreover `d j ∈ closedBall 0 (δ j) ∩ S` (`0 ∈ S`, boundedness) then also
-`ς ε_j δ_j^j/j! < decrementMeasure (Δ j) (δ j) S`. Choosing the *least* such `j` gives the book's
-`j_k` (TRq) and the order at which ARqp's Step 1 jumps to Step 2.
-'''
-deps = ["MeasureTestPasses", "IsApproxMeasureStep"]
+id = "exists_lt_of_not_measureTestPasses"
 source = "Cartis–Gould–Toint, Algorithm 12.2.1 Step 1.2, Lemma 12.2.11 (first line of the proof)"
