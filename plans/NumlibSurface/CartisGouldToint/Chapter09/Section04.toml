@@ -1,7 +1,4 @@
 namespace = "CartisGouldToint.Chapter09"
-desc = '''
-§9.4: bounds on the trust-region multiplier (9.4.1) and on the optimal value (9.4.5)–(9.4.7).
-'''
 
 [[node]]
 id = "lambdaStar_bounds_9_4_1"

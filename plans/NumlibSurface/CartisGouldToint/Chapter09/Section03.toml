@@ -1,7 +1,4 @@
 namespace = "CartisGouldToint.Chapter09"
-desc = '''
-§9.3: bounds on the regularization multiplier, generalized Gershgorin, Algorithm 9.3.1 and Theorem 9.3.1, monotonicity of L in σ, early termination (Theorem 9.3.2, (9.3.16)).
-'''
 
 [[node]]
 id = "rightmostPencil"

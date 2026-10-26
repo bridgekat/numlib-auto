@@ -1,7 +1,4 @@
 namespace = "CartisGouldToint.Chapter08"
-desc = '''
-§8.3: the sets N, L, G, Algorithms 8.3.1/8.3.2 (run predicates and termination), minimum-norm solution, Corollaries 8.3.1/8.3.2.
-'''
 
 [[node]]
 id = "setN"

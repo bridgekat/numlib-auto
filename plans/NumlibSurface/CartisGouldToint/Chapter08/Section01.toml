@@ -1,7 +1,4 @@
 namespace = "CartisGouldToint.Chapter08"
-desc = '''
-§8.1: scaled norm, quadratic and regularized models, the two subproblems, bridge to the M-inner product space.
-'''
 
 [[node]]
 id = "mNorm"

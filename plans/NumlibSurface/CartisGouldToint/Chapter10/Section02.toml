@@ -1,5 +1,4 @@
 namespace = "CartisGouldToint.Chapter10"
-desc = '§10.2 Regularization on Krylov subspaces: optimality, Algorithms 10.2.1–10.2.2, Lemma 10.2.1, Theorem 10.2.2, Corollary 10.2.3.'
 
 [[node]]
 id = "subspace_optimality_10_2_2"

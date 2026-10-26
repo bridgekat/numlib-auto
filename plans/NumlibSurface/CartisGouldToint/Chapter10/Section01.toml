@@ -1,5 +1,4 @@
 namespace = "CartisGouldToint.Chapter10"
-desc = '§10.1 Krylov subspaces, subspace subproblems, the preconditioned Lanczos method (Algorithm 10.1.1) and the hard case.'
 
 [[node]]
 id = "krylovSpace"

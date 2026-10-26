@@ -1,7 +1,4 @@
 namespace = "CartisGouldToint.AppendixB"
-desc = '''
-Appendix B, appendix to Chapter 8: Lemmas B.8.1 and B.8.2.
-'''
 
 [[node]]
 id = "lemma_B_8_1"

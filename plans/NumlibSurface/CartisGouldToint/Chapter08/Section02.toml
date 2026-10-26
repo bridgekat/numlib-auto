@@ -1,7 +1,4 @@
 namespace = "CartisGouldToint.Chapter08"
-desc = '''
-§8.2: secular function, Lemma 8.2.1, Taylor bounds, transformed secular function, derivatives, global optimality (Theorems 8.2.7, 8.2.8).
-'''
 
 [[node]]
 id = "stepOf"

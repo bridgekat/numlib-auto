@@ -1,7 +1,0 @@
-desc = '''
-Cartis–Gould–Toint Appendix B, "Technical Results from Individual Chapters". Proofs of chapter
-results given in this appendix are part of the corresponding chapter nodes; only the separately
-numbered lemmas `Lemma B.x.y` are nodes, in modules `AppendixB.ChapterNN` (namespace
-`CartisGouldToint.AppendixB`). Where a chapter result needs an Appendix B lemma, the lemma's content
-is placed in the backbone and both specialize it (surface dependencies run forward).
-'''
