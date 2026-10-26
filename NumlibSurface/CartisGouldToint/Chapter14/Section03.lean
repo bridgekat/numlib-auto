@@ -1,3 +1,4 @@
+import Numlib.Optimization.Constrained.TargetTransfer
 import Numlib.Optimization.Constrained.CurveJets
 import Numlib.Optimization.LeastNorm.PhaseOneBudget
 import Numlib.Optimization.EvaluationComplexity.HighOrderExponents
@@ -426,5 +427,22 @@ theorem theorem_14_3_1_corrected {n m q : ℕ}
     (hf.contDiffAt (hS.mem_nhds (hXS hx)))
     (hc.contDiffAt (hS.mem_nhds (hXS hx))) hmin hcx hqual y hj hjq s hs hconstraint hzero
   rwa [TaylorModel.curveCoefficient_eq_sum_Icc hj] at hh
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- **Positive-gap analytic correction to Lemma 14.3.5.** The actual squared
+residual-increment Taylor error is retained on the full feasible displacement
+set at every finite order. This is the transfer step; the full outer return
+classification is stated separately. -/
+alias lemma_14_3_5_positive_gap_corrected :=
+  Constrained.lagrangian_bound_of_merit_certificate_with_increment
+
+/-- **Unchanged critical-direction clause of Lemma 14.3.5.** Through order
+three the actual squared-increment jets vanish on feasible directions in both
+first-derivative kernels, giving the original M-direction certificates. -/
+alias lemma_14_3_5_critical_directions :=
+  Constrained.lagrangian_restricted_bound_of_merit_certificate
 
 end CartisGouldToint

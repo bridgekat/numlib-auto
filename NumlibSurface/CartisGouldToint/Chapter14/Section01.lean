@@ -542,3 +542,110 @@ theorem lemma_14_1_8_counterexample :
     fun _ _ => rfl,radius_floor,printed_constants,step_floor_violated,
     factorial_step_floor_violated⟩
 end CartisGouldToint
+
+
+namespace CartisGouldToint
+open InexactTrustRegion
+variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [FiniteDimensional ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {p q : ℕ} {f : E → ℝ} {c : E → F} {h : F → ℝ}
+  {P : Composite.Settings p q} {ε : Fin q → ℝ} {D : Composite.ExecutionData E q} {N : ℕ}
+
+/-- **Corrected general Lemma 14.1.8.** The missing accuracy factor is retained.
+The parameter cap is derived from the actual model ratios and updates. The
+explicit positive step coefficient depends only on fixed settings and smoothness
+constants, before all accuracies. Require failure of the next true certificate;
+the first terminal success is charged separately in the full complexity theorem. -/
+theorem lemma_14_1_8_corrected_general (hr : Composite.Run f c h P ε D N)
+    (hf : ContDiff ℝ p f) (hc : ContDiff ℝ p c) {Lf Lc : ℝ} {K : NNReal}
+    (hLf : 1 ≤ Lf) (hLc : 0 ≤ Lc) (hh : LipschitzWith K h)
+    (hlipf : ∀ u v,
+      ‖iteratedFDeriv ℝ p f u - iteratedFDeriv ℝ p f v‖ ≤ Lf * ‖u - v‖)
+    (hlipc : ∀ u v,
+      ‖iteratedFDeriv ℝ p c u - iteratedFDeriv ℝ p c v‖ ≤ Lc * ‖u - v‖)
+    {k : ℕ} (hk : k < N) (haccepted : P.eta1 ≤ D.ratio k)
+    (hfloor : ‖D.step k‖ < 1 → ∀ a,
+      Composite.radiusCoefficient P (Lf + (K : ℝ) * Lc)
+        (HighOrderRegularization.parameterCap P (Lf + (K : ℝ) * Lc)) * ε a ≤
+          D.solvedRadius k a)
+    (hn : ¬Composite.TargetAt f c h P ε D (k + 1)) :
+    ∃ a : Fin q, Composite.stepCoefficient P (Lf + (K : ℝ) * Lc)
+        (HighOrderRegularization.parameterCap P (Lf + (K : ℝ) * Lc)) ^ (q + 1) *
+      ε a ^ (modelOrder a + 1) ≤ ‖D.step k‖ ^ (p + 1) := by
+  exact hr.exists_power_lower hf hc hLf hLc
+    (HighOrderRegularization.parameterCap_pos P (Lf + (K : ℝ) * Lc)).le hh
+    hlipf hlipc hk haccepted
+    (hr.parameter_le hf hc (zero_le_one.trans hLf) hLc hh hlipf hlipc hk.le)
+    hfloor hn
+
+/-- **Corrected unit-radius branch of Lemma 14.1.8.** A first-order unit-radius
+policy gives the sharper power p before the next true certificate. The cap is
+derived from the actual execution. Convexity of the outer function is unnecessary
+for this implication once the actual unit-radius solver policy is imposed. -/
+theorem lemma_14_1_8_corrected_convex (hr : Composite.Run f c h P ε D N) (hq : q = 1)
+    (hf : ContDiff ℝ p f) (hc : ContDiff ℝ p c) {Lf Lc : ℝ} {K : NNReal}
+    (hLf : 1 ≤ Lf) (hLc : 0 ≤ Lc) (hh : LipschitzWith K h)
+    (hlipf : ∀ u v,
+      ‖iteratedFDeriv ℝ p f u - iteratedFDeriv ℝ p f v‖ ≤ Lf * ‖u - v‖)
+    (hlipc : ∀ u v,
+      ‖iteratedFDeriv ℝ p c u - iteratedFDeriv ℝ p c v‖ ≤ Lc * ‖u - v‖)
+    {k : ℕ} (hk : k < N) (haccepted : P.eta1 ≤ D.ratio k)
+    (hunit : ∀ a, D.solvedRadius k a = 1)
+    (hn : ¬Composite.TargetAt f c h P ε D (k + 1)) :
+    ∃ a : Fin q, CompositeStep.coefficient P.theta
+      (Lf + (K : ℝ) * Lc + HighOrderRegularization.parameterCap P (Lf + (K : ℝ) * Lc))
+      (2 * (Lf + (K : ℝ) * Lc)) 1 * ε a ≤
+        ‖D.step k‖ ^ p := by
+  exact hr.exists_unit_power_lower hq hf hc hLf hLc
+    (HighOrderRegularization.parameterCap_pos P (Lf + (K : ℝ) * Lc)).le hh
+    hlipf hlipc hk haccepted
+    (hr.parameter_le hf hc (zero_le_one.trans hLf) hLc hh hlipf hlipc hk.le)
+    hunit hn
+
+/-- **Corrected general Lemma 14.1.9.** The decrease concerns the full objective
+w=f+h∘c, with the missing accuracy dependence and a coefficient fixed before
+accuracies. A next-iterate nontermination hypothesis excludes the terminal
+success, whose decrease can be arbitrarily small. -/
+theorem lemma_14_1_9_corrected_general (hr : Composite.Run f c h P ε D N)
+    (hf : ContDiff ℝ p f) (hc : ContDiff ℝ p c) {Lf Lc : ℝ} {K : NNReal}
+    (hLf : 1 ≤ Lf) (hLc : 0 ≤ Lc) (hh : LipschitzWith K h)
+    (hlipf : ∀ u v,
+      ‖iteratedFDeriv ℝ p f u - iteratedFDeriv ℝ p f v‖ ≤ Lf * ‖u - v‖)
+    (hlipc : ∀ u v,
+      ‖iteratedFDeriv ℝ p c u - iteratedFDeriv ℝ p c v‖ ≤ Lc * ‖u - v‖)
+    {k : ℕ} (hk : k < N) (haccepted : P.eta1 ≤ D.ratio k)
+    (hfloor : ‖D.step k‖ < 1 → ∀ a,
+      Composite.radiusCoefficient P (Lf + (K : ℝ) * Lc)
+        (HighOrderRegularization.parameterCap P (Lf + (K : ℝ) * Lc)) * ε a ≤ D.solvedRadius k a)
+    (hn : ¬Composite.TargetAt f c h P ε D (k + 1)) :
+    Composite.generalDecreaseCoefficient P (Lf + (K : ℝ) * Lc)
+        (HighOrderRegularization.parameterCap P (Lf + (K : ℝ) * Lc)) *
+          Composite.generalAccuracyFactor P ε ≤
+      f (D.point k) + h (c (D.point k)) -
+        (f (D.point (k + 1)) + h (c (D.point (k + 1)))) := by
+  exact hr.function_decrease_general hf hc hLf hLc hh hlipf hlipc
+    hk haccepted hfloor hn
+
+/-- **Corrected unit-radius branch of Lemma 14.1.9.** Actual first-order unit
+radii retain the sharp (p+1)/p accuracy power for the full composite objective.
+The fixed decrease coefficient and actual parameter cap precede accuracies.
+The next true certificate must still fail. -/
+theorem lemma_14_1_9_corrected_convex (hr : Composite.Run f c h P ε D N) (hq : q = 1)
+    (hf : ContDiff ℝ p f) (hc : ContDiff ℝ p c) {Lf Lc : ℝ} {K : NNReal}
+    (hLf : 1 ≤ Lf) (hLc : 0 ≤ Lc) (hh : LipschitzWith K h)
+    (hlipf : ∀ u v,
+      ‖iteratedFDeriv ℝ p f u - iteratedFDeriv ℝ p f v‖ ≤ Lf * ‖u - v‖)
+    (hlipc : ∀ u v,
+      ‖iteratedFDeriv ℝ p c u - iteratedFDeriv ℝ p c v‖ ≤ Lc * ‖u - v‖)
+    {k : ℕ} (hk : k < N) (haccepted : P.eta1 ≤ D.ratio k)
+    (hunit : ∀ a, D.solvedRadius k a = 1)
+    (hn : ¬Composite.TargetAt f c h P ε D (k + 1)) :
+    Composite.unitDecreaseCoefficient P (Lf + (K : ℝ) * Lc)
+        (HighOrderRegularization.parameterCap P (Lf + (K : ℝ) * Lc)) *
+          Composite.unitAccuracyFactor P ε ≤
+      f (D.point k) + h (c (D.point k)) -
+        (f (D.point (k + 1)) + h (c (D.point (k + 1)))) := by
+  exact hr.function_decrease_unit hq hf hc hLf hLc hh hlipf hlipc
+    hk haccepted hunit hn
+
+end CartisGouldToint

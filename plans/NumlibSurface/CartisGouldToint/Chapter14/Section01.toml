@@ -221,3 +221,19 @@ source = "Counterexample to literal Lemma14.1.9, Equation14.1.33: genuine accept
 [[node]]
 id = "lemma_14_1_8_counterexample"
 source = "Cartis, Gould and Toint, Lemma14.1.8, literal general-branch step floor without an accuracy factor"
+
+[[node]]
+id = "lemma_14_1_8_corrected_general"
+source = "Correction of Cartis, Gould and Toint, lemma 14 1 8"
+
+[[node]]
+id = "lemma_14_1_8_corrected_convex"
+source = "Correction of Cartis, Gould and Toint, lemma 14 1 8"
+
+[[node]]
+id = "lemma_14_1_9_corrected_general"
+source = "Correction of Cartis, Gould and Toint, lemma 14 1 9"
+
+[[node]]
+id = "lemma_14_1_9_corrected_convex"
+source = "Correction of Cartis, Gould and Toint, lemma 14 1 9"
