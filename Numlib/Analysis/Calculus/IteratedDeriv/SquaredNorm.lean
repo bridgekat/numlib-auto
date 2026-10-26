@@ -3,9 +3,11 @@ import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Tactic.IntervalCases
 
 /-!
-# SquaredNorm
+# Squared-norm jets at a stationary zero
 
-SquaredNorm
+The actual squared norm of a Hilbert-valued curve has vanishing derivatives
+through order three when both the curve value and its first derivative vanish.
+Finite chain rules derive this cancellation without assuming a higher tensor identity.
 -/
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]

@@ -1,0 +1,22 @@
+namespace = "Constrained"
+
+[[node]]
+id = "objectiveIncrementMerit"
+
+[[node]]
+id = "targetMerit_zero_gap_decomposition"
+
+[[node]]
+id = "contDiffAt_objectiveIncrementMerit"
+
+[[node]]
+id = "decrement_targetMerit_zero_gap"
+
+[[node]]
+id = "hasFDerivAt_objectiveIncrementMerit"
+
+[[node]]
+id = "violation_bound_of_zero_gap_merit_certificate"
+
+[[node]]
+id = "violation_first_order_of_zero_gap_merit_certificate"
