@@ -74,7 +74,8 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   order for fixed `q`).
 * **Lemma 14.3.5**: (14.3.43) and (14.3.46) are false as printed — the extra terms are not
   bounded by `φ_{ℒ,1} ‖∇f‖ δ`; for instance `c ≡ 0`, `X = [-1, 1]`, `f(x) = x/4 - 25x²/8`,
-  `ε₀ = 1/100` give `φ^1_{ℒ,T,2} = 27/8` against the printed `17/32`. They are replaced by
+  `ε₀ = 1/100` give `φ^1_{ℒ,T,2} = 27/8` against the printed `17/32`, for an actual TPqp-GC run
+  (`lemma_14_3_5_counterexample`, which also covers (14.3.46) with `q = 3`). They are replaced by
   `(‖∇f‖δ)²/(2τ)` and `(‖∇f‖δ + ‖∇²f‖δ²)‖∇f‖δ/(2τ)`, `τ = f(x_ε) - t_ε`. Second, when Phase 2
   ends with `f(x_ε) = t_ε`, only `‖c(x_ε)‖ ≥ θε₀` and the first-order part of (14.3.41) follow
   (the measures of `ν` and `μ` differ at orders `j ≥ 2`). (14.3.44) and (14.3.47) hold as printed.
@@ -92,7 +93,6 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Not formalized
 
-* An explicit counterexample declaration for (14.3.43) (it is described above).
 * The TRqIDA/EDA and ARqpIDA/EDA rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 (the Chapter 13
   run predicates carry no feasible set), the TR rows of Lemma 14.2.3, the sharpness of the
   ARqp-SC row for `q ≥ 3`, and the remark that only the anchored assumptions f.D1qLaB.X are used.
