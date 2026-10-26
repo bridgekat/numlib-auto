@@ -22,8 +22,11 @@ complexity of TRq and ARqp. This module imports the section modules and adds not
   `AssumptionD0qLOn`) and the `_feasible` versions of the results
 * §13.2, `Chapter13.Section02`: finite derivative-approximation schemes from low-degree oracles
   (`FiniteDerivativeApproxScheme`, with the forward-difference gradient and Hessian
-  `fdGradientScheme`, `fdHessianScheme`); Theorem 13.2.1 (`theorem_13_2_1_i` for TRqIDA,
-  `theorem_13_2_1_ii` for ARqpIDA)
+  `fdGradientScheme`, `fdHessianScheme`); the stencil formulas (13.2.1) for derivative tensors
+  (`eq_13_2_1`, `eq_13_2_1_ida`) and the corresponding scheme (`stencilScheme`); multivariate
+  interpolation (13.2.2)–(13.2.4) (`eq_13_2_2_card`, `eq_13_2_4`, `eq_13_2_4_scaled`,
+  `interpolationScheme`); Theorem 13.2.1 (`theorem_13_2_1_i` for TRqIDA, `theorem_13_2_1_ii` for
+  ARqpIDA)
 * §13.3, `Chapter13.Section03`: TRqEDA (Algorithm 13.3.1, `algorithm_13_3_1`), ARqpEDA
   (Algorithm 13.3.2, `algorithm_13_3_2`); Lemmas 13.3.1–13.3.3, Theorem 13.3.4, Lemmas
   13.3.5–13.3.7, Theorem 13.3.8 (`theorem_13_3_8_i`, `theorem_13_3_8_ii`); existence of runs;
@@ -71,6 +74,8 @@ contains only proofs for this chapter, so there is no `AppendixB.Chapter13`.
   `δ^{(0)}_k` and `δ^{(1)}_k`). The first-hit index is that of approximate optimality for *some*
   radii in `(0, 1]^q`; for `q ≤ 2` the radius-one conclusion follows
   (`isEpsDeltaApprox_one_of_le_two`).
+* (13.2.2): `d = ∑_{i=0}^p C(n+i-1, i)` is the number of interpolation points, not `d + 1`
+  (`eq_13_2_2_card`).
 * Theorem 13.2.1, (13.2.5)–(13.2.7): `O(min_j ε_j^{-…})` must be `O(max_j ε_j^{-…})`.
 * **ARqpEDA (Lemma 13.3.7, Theorem 13.3.8)**: the book reuses Lemmas 13.1.16–13.1.17, whose
   hypothesis "`x_{k+1}` is not approximately optimal" does not follow from non-termination of
@@ -81,6 +86,5 @@ contains only proofs for this chapter, so there is no `AppendixB.Chapter13`.
 
 ## Not formalized
 
-The general stencil claim (13.2.1) (unproved in the literature), the interpolation bound
-(13.2.4) and the derivative-free discussion of §13.2; the `O(·)` restatements.
+The derivative-free discussion of §13.2; the `O(·)` restatements.
 -/

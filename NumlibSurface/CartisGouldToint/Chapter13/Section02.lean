@@ -1,4 +1,6 @@
+import Numlib.Approximation.MvLagrange
 import Numlib.FiniteDifference.Gradient
+import Numlib.FiniteDifference.MixedPartial
 import NumlibSurface.CartisGouldToint.Chapter13.Section01
 
 /-!
@@ -23,13 +25,38 @@ forward-difference gradient (`o = 0`, `r = 1`, `n` function values) and Hessian 
 `r = 2`, `n` gradients) of `FiniteDifference` are schemes (`fdGradientScheme`,
 `fdHessianScheme`).
 
+## Stencils and interpolation
+
+* (13.2.1), stated without proof in the book (footnote 93), is `eq_13_2_1`: for `o < i ≤ p` and
+  directions `e_{j_1}, …, e_{j_i}`, a fixed stencil with integer points (in units of the step `h`)
+  and coefficients `c_k / h^{i-o}` approximates `∇^i f(x)[e_{j_1}, …, e_{j_i}]` from values of
+  `∇^o f[e_{j_1}, …, e_{j_o}]` with error `K L_{f,p} h^{p-i+1}`; `eq_13_2_1_ida` gives the IDA
+  form `K L_{f,p} h` for `h ≤ 1`. The stencil is a tensor product of one-dimensional derivative
+  weights (`FiniteDifference.isMixedStencil_tensor`), and the proof is Taylor's theorem for
+  `∇^o f` (`FiniteDifference.abs_sum_iteratedFDeriv_sub_le`).
+* Interpolation uses `Approximation.IsLagrangeBasis`: polynomial functions of total degree at most
+  `p` on `ℝⁿ` (`Approximation.polyFunLE`, from `MvPolynomial`) with `ℓ_i(y_j) = δ_ij` at poised
+  points. `eq_13_2_4` is (13.2.4), `eq_13_2_4_scaled` its scaled form with error
+  `L m/(p+1)! Λ_i δ^{p-i+1}`, and `interpolationScheme` packages it as a scheme from function values
+  (`o = 0`, `m` values per estimate, interpolation radius `δ = min_i h_i^{1/(p-i+1)}`).
+* `stencilScheme` packages (13.2.1) as a scheme: the derivative tensors of degrees `o < i ≤ r` are
+  assembled from their entries (`stencilTensor`, `eq_sum_coordProd`), with step
+  `h_i^{1/(p-i+1)}` (`accuracyStep`), and satisfy (13.1.2) in the tensor norm.
+
 ## Deviations from the book
 
 * (13.2.5)–(13.2.7) print `O(min_j ε_j^{-…})`; the bounds are `O(max_j ε_j^{-…})`, i.e.
   `O(ε_min^{-(q+1)})` for TRqIDA and `O(1/min_j ε_j^{π_j})` for ARqpIDA (with `π_j` as in
   Lemma 13.1.18), consistent with Theorems 13.1.8 and 13.1.19.
-* The general stencil claim (13.2.1) (unproved in the literature, footnote 93), the interpolation
-  bound (13.2.4) and the derivative-free discussion are not formalized.
+* (13.2.2) sets `d = ∑_{i=0}^p C(n+i-1, i)` and interpolates at `d + 1` points `y_0, …, y_d`;
+  the sum is the dimension `C(n+p, p)` of the polynomials of degree at most `p`, which is the
+  number of points (`eq_13_2_2_card`), so the points are `y_1, …, y_d`. The scaled bound after
+  (13.2.4) correspondingly has the factor `m = d` (written `d + 1` in the book).
+* (13.2.1) is proved for every step `h > 0` (the book takes `h ∈ (0, 1]`), with coefficients
+  `c_k / h^{i-o}` where the book's `c_{i,j}` absorb the power of `h`.
+* In the scaled interpolation bound only `‖∇^i ℓ̂_j(0)‖ ≤ Λ_i` is used (the book's `Λ_i` is a
+  maximum over the unit ball), and the points need only lie in the closed unit ball.
+* The derivative-free discussion is not formalized.
 -/
 
 open Set Finset Optimization
@@ -89,6 +116,345 @@ noncomputable def fdHessianScheme (f : ℝⁿ → ℝ) {L : ℝ} (hf : ContDiff 
   exact_low x h i hi := by
     rw [hessianJet_apply_of_ne _ _ (by omega)]
     rfl
+
+/-! ### Stencil formulas (13.2.1) -/
+
+section Stencil
+
+/-- The stencil points `∑_ℓ (h k_ℓ) e_ℓ` with integer coordinates `k_ℓ` (in units of `h`) are
+`h` times the tensor-product stencil points. -/
+private theorem sum_mul_int_smul_single {r K : ℕ} (h : ℝ) (j' : Fin r → Fin n)
+    (l : Fin r → Fin (K + 1)) :
+    ∑ m, (h * ((∑ t, if j' t = m then ((l t : ℕ) : ℤ) else 0 : ℤ) : ℝ)) •
+        EuclideanSpace.single m (1 : ℝ) =
+      h • FiniteDifference.tensorPoint (fun t => EuclideanSpace.single (j' t) (1 : ℝ)) l := by
+  ext q
+  simp only [FiniteDifference.tensorPoint, WithLp.ofLp_sum, WithLp.ofLp_smul, Finset.sum_apply,
+    Pi.smul_apply, smul_eq_mul, PiLp.single_apply, Int.cast_sum, Int.cast_ite, Int.cast_natCast,
+    Int.cast_zero]
+  simp_rw [mul_sum, sum_mul]
+  rw [sum_comm]
+  refine sum_congr rfl fun t _ => ?_
+  simp [mul_ite, eq_comm]
+
+/-- (13.2.1) with `i = o + r` and the stencil indexed by a finite type. -/
+private theorem eq_13_2_1_aux {p o r : ℕ} (hor : o + r ≤ p) (j : Fin (o + r) → Fin n) :
+    ∃ (ι : Type) (_ : Fintype ι) (c : ι → ℝ) (z : ι → Fin n → ℤ) (K : ℝ), 0 ≤ K ∧
+      ∀ (f : ℝⁿ → ℝ) (L h : ℝ) (C : Set ℝⁿ) (x : ℝⁿ), Convex ℝ C →
+        (∀ y ∈ C, ContDiffAt ℝ p f y) → IteratedFDerivLipschitzOn f p L C → x ∈ C → 0 < h →
+        (∀ k, x + ∑ ℓ, (h * z k ℓ) • EuclideanSpace.single ℓ (1 : ℝ) ∈ C) →
+        |∑ k, c k / h ^ r * iteratedFDeriv ℝ o f
+              (x + ∑ ℓ, (h * z k ℓ) • EuclideanSpace.single ℓ (1 : ℝ))
+              (fun t => EuclideanSpace.single (j (Fin.castAdd r t)) 1) -
+            iteratedFDeriv ℝ (o + r) f x (fun t => EuclideanSpace.single (j t) 1)| ≤
+          K * L * h ^ (p - (o + r) + 1) := by
+  let u : Fin r → ℝⁿ := fun t => EuclideanSpace.single (j (Fin.natAdd o t)) (1 : ℝ)
+  let v : Fin o → ℝⁿ := fun t => EuclideanSpace.single (j (Fin.castAdd r t)) (1 : ℝ)
+  refine ⟨Fin r → Fin (p - o + 1 - r + 1), inferInstance,
+    FiniteDifference.tensorWeight (p - o + 1 - r) r,
+    fun l ℓ => ∑ t, if j (Fin.natAdd o t) = ℓ then ((l t : ℕ) : ℤ) else 0,
+    (∑ l, |FiniteDifference.tensorWeight (p - o + 1 - r) r l| *
+      ‖FiniteDifference.tensorPoint u l‖ ^ (p - o + 1)) / ((p - o + 1)! : ℝ), by positivity, ?_⟩
+  intro f L h C x hC hf hL hx hh hz
+  simp only [sum_mul_int_smul_single] at hz ⊢
+  have hb := FiniteDifference.abs_sum_iteratedFDeriv_sub_le hC hf hL hx hor
+    (FiniteDifference.isMixedStencil_tensor (q := p - o) (by omega) u) v hh hz
+  have hdir : (fun t => EuclideanSpace.single (j t) (1 : ℝ)) = Fin.append v u :=
+    Fin.append_castAdd_natAdd.symm
+  have hv : ∏ t, ‖v t‖ = 1 := by simp [v]
+  rw [hv, mul_one, ← hdir] at hb
+  refine hb.trans (le_of_eq ?_)
+  ring
+
+/-- **Stencil formulas for derivative tensors** ([cartis2022evaluation], (13.2.1); the book could
+not find this result in the literature, footnote 93). Let `0 ≤ o < i ≤ p` and
+`j_1, …, j_i ∈ [1 : n]`. There are finitely many coefficients `c_k` and integer vectors `z_k`
+(independent of `h` and of `f`) and a constant `K ≥ 0` such that for every `f` that is `C^p` on a
+convex set `C` with `∇^p f` `L`-Lipschitz on `C`, every `x ∈ C` and every step `h > 0` with the
+stencil points `x + s_k`, `s_k = ∑_ℓ (h z_{k,ℓ}) e_ℓ`, in `C`,
+`|∑_k (c_k / h^{i-o}) ∇^o f(x + s_k)[e_{j_1}, …, e_{j_o}] - ∇^i f(x)[e_{j_1}, …, e_{j_i}]| ≤
+  K L h^{p-i+1}`.
+The book writes the coefficients as `c_{i,j}` (here `c_k / h^{i-o}`) and asks that each
+`h_{i,j,ℓ} = h z_{k,ℓ}` be an integer multiple of `h`; it states the error as `O(h^{p-i+1})` for
+`h ∈ (0, 1]`; the bound here holds for every `h > 0`. The stencil is the tensor product, over the
+`i - o` differentiated directions, of the one-dimensional weights on the nodes
+`0, 1, …, p - i + 1` exact on polynomials of degree `p - i + 1`
+(`FiniteDifference.isMixedStencil_tensor`); the error comes from Taylor's theorem for `∇^o f`
+(`FiniteDifference.abs_sum_iteratedFDeriv_sub_le`). -/
+theorem eq_13_2_1 {p o i : ℕ} (hoi : o < i) (hip : i ≤ p) (j : Fin i → Fin n) :
+    ∃ (N : ℕ) (c : Fin N → ℝ) (z : Fin N → Fin n → ℤ) (K : ℝ), 0 ≤ K ∧
+      ∀ (f : ℝⁿ → ℝ) (L h : ℝ) (C : Set ℝⁿ) (x : ℝⁿ), Convex ℝ C →
+        (∀ y ∈ C, ContDiffAt ℝ p f y) → IteratedFDerivLipschitzOn f p L C → x ∈ C → 0 < h →
+        (∀ k, x + ∑ ℓ, (h * z k ℓ) • EuclideanSpace.single ℓ (1 : ℝ) ∈ C) →
+        |∑ k, c k / h ^ (i - o) * iteratedFDeriv ℝ o f
+              (x + ∑ ℓ, (h * z k ℓ) • EuclideanSpace.single ℓ (1 : ℝ))
+              (fun t => EuclideanSpace.single (j (Fin.castLE hoi.le t)) 1) -
+            iteratedFDeriv ℝ i f x (fun t => EuclideanSpace.single (j t) 1)| ≤
+          K * L * h ^ (p - i + 1) := by
+  obtain ⟨r, rfl⟩ := Nat.exists_eq_add_of_le hoi.le
+  obtain ⟨ι, _, c, z, K, hK, H⟩ := eq_13_2_1_aux hip j
+  let F := Fintype.equivFin ι
+  refine ⟨Fintype.card ι, fun k => c (F.symm k), fun k => z (F.symm k), K, hK,
+    fun f L h C x hC hf hL hx hh hz => ?_⟩
+  have := H f L h C x hC hf hL hx hh fun k => by simpa using hz (F k)
+  rw [Nat.add_sub_cancel_left]
+  convert this using 3
+  exact F.symm.sum_comp (fun k => c k / h ^ r * iteratedFDeriv ℝ o f
+    (x + ∑ ℓ, (h * z k ℓ) • EuclideanSpace.single ℓ (1 : ℝ))
+    (fun t => EuclideanSpace.single (j (Fin.castAdd r t)) 1))
+
+/-- **(13.2.1) componentwise in the IDA form**: with the stencil of `eq_13_2_1`, for steps
+`h ∈ (0, 1]` and `L ≥ 0` the error in each entry is at most `K L h`, the componentwise analogue of
+(13.1.2) with identical accuracies `h_i = h`. The tensor-norm form is `stencilScheme`. -/
+theorem eq_13_2_1_ida {p o i : ℕ} (hoi : o < i) (hip : i ≤ p) (j : Fin i → Fin n) :
+    ∃ (N : ℕ) (c : Fin N → ℝ) (z : Fin N → Fin n → ℤ) (K : ℝ), 0 ≤ K ∧
+      ∀ (f : ℝⁿ → ℝ) (L h : ℝ) (C : Set ℝⁿ) (x : ℝⁿ), Convex ℝ C →
+        (∀ y ∈ C, ContDiffAt ℝ p f y) → IteratedFDerivLipschitzOn f p L C → 0 ≤ L → x ∈ C →
+        0 < h → h ≤ 1 → (∀ k, x + ∑ ℓ, (h * z k ℓ) • EuclideanSpace.single ℓ (1 : ℝ) ∈ C) →
+        |∑ k, c k / h ^ (i - o) * iteratedFDeriv ℝ o f
+              (x + ∑ ℓ, (h * z k ℓ) • EuclideanSpace.single ℓ (1 : ℝ))
+              (fun t => EuclideanSpace.single (j (Fin.castLE hoi.le t)) 1) -
+            iteratedFDeriv ℝ i f x (fun t => EuclideanSpace.single (j t) 1)| ≤ K * L * h := by
+  obtain ⟨N, c, z, K, hK, H⟩ := eq_13_2_1 (p := p) hoi hip j
+  refine ⟨N, c, z, K, hK, fun f L h C x hC hf hL hL0 hx hh hh1 hz => ?_⟩
+  refine (H f L h C x hC hf hL hx hh hz).trans ?_
+  exact mul_le_mul_of_nonneg_left (pow_le_of_le_one hh.le hh1 (by omega)) (by positivity)
+
+/-- The step `t^{1/(p-i+1)}`, whose `(p - i + 1)`-st power is `t`: the step (or interpolation
+radius) at which an error `O(step^{p-i+1})` becomes `O(t)`, the form (13.1.2) with accuracy `t`. -/
+noncomputable def accuracyStep (p i : ℕ) (t : ℝ) : ℝ :=
+  t ^ (((p - i + 1 : ℕ) : ℝ)⁻¹)
+
+/-- `(t^{1/(p-i+1)})^{p-i+1} = t` for `t ≥ 0`. -/
+theorem accuracyStep_pow (p i : ℕ) {t : ℝ} (ht : 0 ≤ t) :
+    accuracyStep p i t ^ (p - i + 1) = t :=
+  Real.rpow_inv_natCast_pow ht (by omega)
+
+/-- The step of a positive accuracy is positive. -/
+theorem accuracyStep_pos (p i : ℕ) {t : ℝ} (ht : 0 < t) : 0 < accuracyStep p i t :=
+  Real.rpow_pos_of_pos ht _
+
+/-- The coordinate form `v ↦ ∏_t [v_t]_{j_t}`, dual to `e_{j_1} ⊗ ⋯ ⊗ e_{j_i}`: a tensor is the sum
+of its entries `A[e_{j_1}, …, e_{j_i}]` times these forms (`eq_sum_coordProd`). -/
+noncomputable def coordProd {i : ℕ} (j : Fin i → Fin n) :
+    ContinuousMultilinearMap ℝ (fun _ : Fin i => ℝⁿ) ℝ :=
+  (ContinuousMultilinearMap.mkPiAlgebra ℝ (Fin i) ℝ).compContinuousLinearMap
+    fun t => EuclideanSpace.proj (j t)
+
+/-- Unfolding lemma for `coordProd`. -/
+theorem coordProd_apply {i : ℕ} (j : Fin i → Fin n) (v : Fin i → ℝⁿ) :
+    coordProd j v = ∏ t, v t (j t) := by
+  simp [coordProd]
+
+/-- The coordinate forms have norm at most one. -/
+theorem norm_coordProd_le {i : ℕ} (j : Fin i → Fin n) : ‖coordProd j‖ ≤ 1 := by
+  refine ContinuousMultilinearMap.opNorm_le_bound zero_le_one fun v => ?_
+  rw [coordProd_apply, one_mul, norm_prod]
+  gcongr with t
+  exact PiLp.norm_apply_le (v t) (j t)
+
+/-- A continuous multilinear form on `ℝⁿ` is determined by its entries:
+`A = ∑_j A[e_{j_1}, …, e_{j_i}] · coordProd j`. -/
+theorem eq_sum_coordProd {i : ℕ} (A : ContinuousMultilinearMap ℝ (fun _ : Fin i => ℝⁿ) ℝ) :
+    A = ∑ j : Fin i → Fin n, A (fun t => EuclideanSpace.single (j t) 1) • coordProd j := by
+  ext v
+  have hv : v = fun t => ∑ k, v t k • EuclideanSpace.single k (1 : ℝ) :=
+    funext fun t => (FiniteDifference.sum_smul_single (v t)).symm
+  conv_lhs => rw [hv, A.map_sum (fun t k => v t k • EuclideanSpace.single k (1 : ℝ))]
+  simp only [_root_.sum_apply, smul_apply, coordProd_apply, smul_eq_mul]
+  refine sum_congr rfl fun j _ => ?_
+  rw [show (fun t => v t (j t) • EuclideanSpace.single (j t) (1 : ℝ)) =
+    fun t => (fun t => v t (j t)) t • (fun t => EuclideanSpace.single (j t) (1 : ℝ)) t from rfl,
+    A.map_smul_univ, smul_eq_mul, mul_comm]
+
+/-- The number of points of the stencil of `eq_13_2_1` for the entry `j` (`0` unless
+`o < i ≤ p`). -/
+noncomputable def stencilSize (p o : ℕ) {i : ℕ} (j : Fin i → Fin n) : ℕ :=
+  if hij : o < i ∧ i ≤ p then (eq_13_2_1 hij.1 hij.2 j).choose else 0
+
+/-- The error constant `K` of the stencil of `eq_13_2_1` for the entry `j` (`0` unless
+`o < i ≤ p`). -/
+noncomputable def stencilConst (p o : ℕ) {i : ℕ} (j : Fin i → Fin n) : ℝ :=
+  if hij : o < i ∧ i ≤ p then
+    (eq_13_2_1 hij.1 hij.2 j).choose_spec.choose_spec.choose_spec.choose else 0
+
+/-- The stencil error constants are nonnegative. -/
+theorem stencilConst_nonneg (p o : ℕ) {i : ℕ} (j : Fin i → Fin n) : 0 ≤ stencilConst p o j := by
+  unfold stencilConst
+  split_ifs with hij
+  · exact (eq_13_2_1 hij.1 hij.2 j).choose_spec.choose_spec.choose_spec.choose_spec.1
+  · exact le_rfl
+
+/-- The stencil estimate (13.2.1) of the entry `∇^i f(x)[e_{j_1}, …, e_{j_i}]` with step `h`,
+computed from `stencilSize p o j` values of `∇^o f[e_{j_1}, …, e_{j_o}]` (`0` unless
+`o < i ≤ p`). -/
+noncomputable def stencilEntry (f : ℝⁿ → ℝ) (p o : ℕ) {i : ℕ} (j : Fin i → Fin n) (x : ℝⁿ)
+    (h : ℝ) : ℝ :=
+  if hij : o < i ∧ i ≤ p then
+    ∑ k, (eq_13_2_1 hij.1 hij.2 j).choose_spec.choose k / h ^ (i - o) * iteratedFDeriv ℝ o f
+      (x + ∑ ℓ, (h * (eq_13_2_1 hij.1 hij.2 j).choose_spec.choose_spec.choose k ℓ) •
+        EuclideanSpace.single ℓ (1 : ℝ))
+      (fun t => EuclideanSpace.single (j (Fin.castLE hij.1.le t)) 1)
+  else 0
+
+/-- The error of `stencilEntry` for `f` globally `C^p` with `∇^p f` `L`-Lipschitz. -/
+theorem abs_stencilEntry_sub_le {f : ℝⁿ → ℝ} {p o i : ℕ} {L h : ℝ} (hoi : o < i) (hip : i ≤ p)
+    (hf : ContDiff ℝ p f) (hL : IteratedFDerivLipschitzOn f p L univ) (j : Fin i → Fin n)
+    (x : ℝⁿ) (hh : 0 < h) :
+    |stencilEntry f p o j x h - iteratedFDeriv ℝ i f x (fun t => EuclideanSpace.single (j t) 1)| ≤
+      stencilConst p o j * L * h ^ (p - i + 1) := by
+  have hij : o < i ∧ i ≤ p := ⟨hoi, hip⟩
+  rw [stencilEntry, dite_eq_left hij, stencilConst, dite_eq_left hij]
+  exact (eq_13_2_1 hij.1 hij.2 j).choose_spec.choose_spec.choose_spec.choose_spec.2 f L h univ x
+    convex_univ (fun _ _ => hf.contDiffAt) hL (mem_univ x) hh fun _ => mem_univ _
+
+/-- The **stencil estimate of the derivative tensor** `∇^i f(x)`, assembled from its entries
+`stencilEntry`: `∑_j (estimate of the entry j) · coordProd j`. -/
+noncomputable def stencilTensor (f : ℝⁿ → ℝ) (p o i : ℕ) (x : ℝⁿ) (h : ℝ) :
+    ContinuousMultilinearMap ℝ (fun _ : Fin i => ℝⁿ) ℝ :=
+  ∑ j : Fin i → Fin n, stencilEntry f p o j x h • coordProd j
+
+/-- **Tensor-norm error of the stencil estimate**: `‖∇̄^i f(x) - ∇^i f(x)‖ ≤ K_i L h^{p-i+1}` with
+`K_i = ∑_j K_{i,j}` the sum of the entrywise constants. -/
+theorem norm_stencilTensor_sub_le {f : ℝⁿ → ℝ} {p o i : ℕ} {L h : ℝ} (hoi : o < i) (hip : i ≤ p)
+    (hf : ContDiff ℝ p f) (hL : IteratedFDerivLipschitzOn f p L univ) (x : ℝⁿ) (hh : 0 < h) :
+    ‖stencilTensor f p o i x h - iteratedFDeriv ℝ i f x‖ ≤
+      (∑ j : Fin i → Fin n, stencilConst p o j) * L * h ^ (p - i + 1) := by
+  have hA := eq_sum_coordProd (iteratedFDeriv ℝ i f x)
+  calc ‖stencilTensor f p o i x h - iteratedFDeriv ℝ i f x‖
+      = ‖∑ j : Fin i → Fin n, (stencilEntry f p o j x h -
+          iteratedFDeriv ℝ i f x (fun t => EuclideanSpace.single (j t) 1)) • coordProd j‖ := by
+        conv_lhs => rw [hA]
+        rw [stencilTensor, ← sum_sub_distrib]
+        simp_rw [sub_smul]
+    _ ≤ ∑ j : Fin i → Fin n, stencilConst p o j * L * h ^ (p - i + 1) := by
+        refine (norm_sum_le _ _).trans (sum_le_sum fun j _ => ?_)
+        rw [norm_smul, Real.norm_eq_abs]
+        calc _ ≤ |stencilEntry f p o j x h -
+              iteratedFDeriv ℝ i f x (fun t => EuclideanSpace.single (j t) 1)| * 1 :=
+              mul_le_mul_of_nonneg_left (norm_coordProd_le j) (abs_nonneg _)
+          _ ≤ _ := by rw [mul_one]; exact abs_stencilEntry_sub_le hoi hip hf hL j x hh
+    _ = _ := by rw [← sum_mul, ← sum_mul]
+
+/-- **Finite differences (13.2.1) form a finite derivative-approximation scheme**
+([cartis2022evaluation], §13.2): for `f` globally `C^p` with `∇^p f` `L`-Lipschitz (`L ≥ 0`) and
+`r ≤ p`, the derivative tensors of degrees `o < i ≤ r` estimated entrywise by the stencils of
+`eq_13_2_1`, with step `h_i^{1/(p-i+1)}` for the requested accuracy `h_i` (`accuracyStep`), and
+the exact derivatives of degrees `i ≤ o`, satisfy (13.1.2) in the tensor norm with
+`κ_{∇,i} = (∑_j K_{i,j}) L`; each estimate costs `∑_{o<i≤r} ∑_j (stencil size)` evaluations of
+derivatives of degree `o`. -/
+noncomputable def stencilScheme (f : ℝⁿ → ℝ) {p o r : ℕ} {L : ℝ} (hf : ContDiff ℝ p f)
+    (hL : IteratedFDerivLipschitzOn f p L univ) (hL0 : 0 ≤ L) (hrp : r ≤ p) :
+    FiniteDerivativeApproxScheme f o r
+      (fun i => (∑ j : Fin i → Fin n, stencilConst p o j) * L) where
+  est x h i := if o < i then stencilTensor f p o i x (accuracyStep p i (h i)) else
+    iteratedFDeriv ℝ i f x
+  cost := ∑ i ∈ Finset.Ioc o r, ∑ j : Fin i → Fin n, stencilSize p o j
+  approx x h hh i hi := by
+    obtain ⟨hi1, hir⟩ := Finset.mem_Icc.1 hi
+    have hK : 0 ≤ (∑ j : Fin i → Fin n, stencilConst p o j) * L :=
+      mul_nonneg (sum_nonneg fun j _ => stencilConst_nonneg p o j) hL0
+    by_cases hoi : o < i
+    · simp only [hoi, ↓reduceIte]
+      refine (norm_stencilTensor_sub_le hoi (by omega) hf hL x
+        (accuracyStep_pos p i (hh i hi))).trans (le_of_eq ?_)
+      rw [accuracyStep_pow p i (hh i hi).le]
+    · simp only [hoi, ↓reduceIte]
+      rw [show ftaylorSeries ℝ f x i = iteratedFDeriv ℝ i f x from rfl, sub_self, norm_zero]
+      exact mul_nonneg hK (hh i hi).le
+  exact_low x h i hi := by
+    simp [show ¬ o < i by omega]
+
+end Stencil
+
+/-! ### Multivariate interpolation (13.2.2)–(13.2.4) -/
+
+section Interpolation
+
+open Approximation
+
+/-- **The number of interpolation points in (13.2.2)**: if `ℓ_j` are the Lagrange polynomials of
+degree `p` of `m` poised points in `ℝⁿ`, then `m = d = ∑_{i=0}^p C(n+i-1, i)` (`= C(n+p, p)`, the
+dimension of the polynomials of degree at most `p`; the Lagrange polynomials form a basis). The
+book indexes the points as `y_0, …, y_d`, i.e. `d + 1` of them: the number of points is `d`
+(e.g. `n = p = 1` gives `d = 2`, yet linear interpolation on the line uses two points). -/
+theorem eq_13_2_2_card {p m : ℕ} {y : Fin m → ℝⁿ} {ℓ : Fin m → ℝⁿ → ℝ}
+    (hℓ : IsLagrangeBasis n p y ℓ) : m = ∑ i ∈ range (p + 1), (n + i - 1).choose i :=
+  hℓ.card_eq_sum_choose
+
+/-- **The interpolation error bound (13.2.4)** ([cartis2022evaluation]; there quoted from the
+literature): if `ℓ_j` are the Lagrange polynomials of degree `p` of the poised points `y_j`
+((13.2.2)), `w = ∑_j f(y_j) ℓ_j` is the interpolation model (13.2.3), and `f` is `C^p` on a
+convex set `C` containing `x` and the `y_j` with `∇^p f` `L_{f,p}`-Lipschitz on `C`, then for
+`i ∈ [0 : p]`, `‖∇^i w(x) - ∇^i f(x)‖ ≤ L_{f,p}/(p+1)! ∑_j ‖y_j - x‖^{p+1} ‖∇^i ℓ_j(x)‖`. -/
+theorem eq_13_2_4 {p m : ℕ} {y : Fin m → ℝⁿ} {ℓ : Fin m → ℝⁿ → ℝ}
+    (hℓ : IsLagrangeBasis n p y ℓ) {f : ℝⁿ → ℝ} {L : ℝ} {C : Set ℝⁿ} {x : ℝⁿ} (hC : Convex ℝ C)
+    (hf : ∀ z ∈ C, ContDiffAt ℝ p f z) (hL : IteratedFDerivLipschitzOn f p L C) (hx : x ∈ C)
+    (hy : ∀ j, y j ∈ C) {i : ℕ} (hi : i ≤ p) :
+    ‖iteratedFDeriv ℝ i (fun v => ∑ j, f (y j) * ℓ j v) x - iteratedFDeriv ℝ i f x‖ ≤
+      L / ((p + 1)! : ℝ) * ∑ j, ‖y j - x‖ ^ (p + 1) * ‖iteratedFDeriv ℝ i (ℓ j) x‖ :=
+  hℓ.norm_iteratedFDeriv_sub_le hC hf hL hx hy hi
+
+/-- **The interpolation error with scaled points has the IDA form** ([cartis2022evaluation], §13.2,
+the display after (13.2.4)): for Lagrange polynomials `ℓ̂_j` of `m` poised points `ŷ_j` in the
+unit ball with `‖∇^i ℓ̂_j(0)‖ ≤ Λ_i`, the model `w` interpolating `f` at `x + δ ŷ_j` (Lagrange
+polynomials `v ↦ ℓ̂_j((v - x)/δ)`) satisfies `‖∇^i w(x) - ∇^i f(x)‖ ≤ L m/(p+1)! Λ_i δ^{p-i+1}`,
+i.e. (13.1.2) with `κ_{∇,i} = L m Λ_i/(p+1)!` and `h_i = δ^{p-i+1}`. The book writes `d + 1`
+for the number `m` of points (see `eq_13_2_2_card`) and takes `Λ_i` as a maximum over the unit
+ball; only its value at the centre is used. -/
+theorem eq_13_2_4_scaled {p m : ℕ} {y : Fin m → ℝⁿ} {ℓ : Fin m → ℝⁿ → ℝ}
+    (hℓ : IsLagrangeBasis n p y ℓ) (hy1 : ∀ j, ‖y j‖ ≤ 1) {i : ℕ} (hi : i ≤ p) {Λ : ℝ}
+    (hΛ : ∀ j, ‖iteratedFDeriv ℝ i (ℓ j) 0‖ ≤ Λ) {f : ℝⁿ → ℝ} {L δ : ℝ} {C : Set ℝⁿ} {x : ℝⁿ}
+    (hδ : 0 < δ) (hC : Convex ℝ C) (hf : ∀ z ∈ C, ContDiffAt ℝ p f z)
+    (hL : IteratedFDerivLipschitzOn f p L C) (hL0 : 0 ≤ L) (hx : x ∈ C)
+    (hyC : ∀ j, x + δ • y j ∈ C) :
+    ‖iteratedFDeriv ℝ i (fun v => ∑ j, f (x + δ • y j) * ℓ j (δ⁻¹ • (v - x))) x -
+        iteratedFDeriv ℝ i f x‖ ≤ L * m / ((p + 1)! : ℝ) * Λ * δ ^ (p - i + 1) :=
+  hℓ.norm_iteratedFDeriv_sub_le_of_scaled hy1 hi hΛ hδ hC hf hL hL0 hx hyC
+
+/-- The interpolation radius `δ = min_{i ∈ [1, r]} h_i^{1/(p-i+1)}` used by
+`interpolationScheme`: the largest radius with `δ^{p-i+1} ≤ h_i` for all `i ∈ [1, r]`, as in the
+book's choice `h_i = δ^{p-i+1}` with one interpolation set for all degrees. -/
+noncomputable def interpRadius (p r : ℕ) (h : ℕ → ℝ) : ℝ :=
+  epsMin r fun i => accuracyStep p i (h i)
+
+/-- **Interpolation is a finite derivative-approximation scheme** ([cartis2022evaluation], §13.2):
+given Lagrange polynomials `ℓ̂_j` of degree `p` of `m` poised reference points `ŷ_j` in the unit
+ball with `‖∇^i ℓ̂_j(0)‖ ≤ Λ_i`, and `f` globally `C^p` with `∇^p f` `L`-Lipschitz, the derivatives
+`∇^i w(x)`, `1 ≤ i ≤ r ≤ p`, of the model interpolating `f` at `x + δ ŷ_j` with
+`δ = min_i h_i^{1/(p-i+1)}` (`interpRadius`) form a scheme from function values only (`o = 0`,
+`m` values per estimate) with `κ_{∇,i} = L m Λ_i/(p+1)!`: the error `κ_{∇,i} δ^{p-i+1}` is at
+most `κ_{∇,i} h_i`, with equality of `δ^{p-i+1}` and `h_i` for the degree attaining the minimum. -/
+noncomputable def interpolationScheme (f : ℝⁿ → ℝ) {p m r : ℕ} {L : ℝ} {y : Fin m → ℝⁿ}
+    {ℓ : Fin m → ℝⁿ → ℝ} {Λ : ℕ → ℝ} (hℓ : IsLagrangeBasis n p y ℓ) (hy1 : ∀ j, ‖y j‖ ≤ 1)
+    (hΛ : ∀ i j, ‖iteratedFDeriv ℝ i (ℓ j) 0‖ ≤ Λ i) (hf : ContDiff ℝ p f)
+    (hL : IteratedFDerivLipschitzOn f p L univ) (hL0 : 0 ≤ L) (hr : 1 ≤ r) (hrp : r ≤ p) :
+    FiniteDerivativeApproxScheme f 0 r (fun i => L * m / ((p + 1)! : ℝ) * Λ i) where
+  est x h i := if i = 0 then iteratedFDeriv ℝ i f x else
+    iteratedFDeriv ℝ i (fun v => ∑ j, f (x + interpRadius p r h • y j) *
+      ℓ j ((interpRadius p r h)⁻¹ • (v - x))) x
+  cost := m
+  approx x h hh i hi := by
+    obtain ⟨hi1, hir⟩ := Finset.mem_Icc.1 hi
+    have hδ : 0 < interpRadius p r h :=
+      epsMin_pos hr fun k hk => accuracyStep_pos p k (hh k hk)
+    have hδh : interpRadius p r h ≤ accuracyStep p i (h i) := epsMin_le hi
+    simp only [show i ≠ 0 by omega, ↓reduceIte]
+    refine (hℓ.norm_iteratedFDeriv_sub_le_of_scaled hy1 (by omega) (hΛ i) hδ convex_univ
+      (fun z _ => hf.contDiffAt) hL hL0 (mem_univ x) fun _ => mem_univ _).trans ?_
+    have hm : 0 < m := by
+      rw [hℓ.card_eq]
+      exact Nat.choose_pos (by omega)
+    have hΛ0 : 0 ≤ Λ i := (norm_nonneg _).trans (hΛ i ⟨0, hm⟩)
+    have hpow : interpRadius p r h ^ (p - i + 1) ≤ h i := by
+      rw [← accuracyStep_pow p i (hh i hi).le]
+      exact pow_le_pow_left₀ hδ.le hδh _
+    exact mul_le_mul_of_nonneg_left hpow (by positivity)
+  exact_low x h i hi := by
+    obtain rfl : i = 0 := Nat.le_zero.1 hi
+    simp
+
+end Interpolation
 
 /-- `|log t| ≤ 1/t` for `t ∈ (0, 1]`. -/
 theorem abs_log_le_inv {t : ℝ} (ht : 0 < t) (ht1 : t ≤ 1) : |Real.log t| ≤ 1 / t := by

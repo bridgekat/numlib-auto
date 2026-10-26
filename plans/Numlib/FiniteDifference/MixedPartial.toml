@@ -1,0 +1,71 @@
+namespace = "FiniteDifference"
+
+[[node]]
+id = "derivWeights"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1), one-dimensional weights"
+
+[[node]]
+id = "sum_derivWeights_mul_pow"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+[[node]]
+id = "apply_diag_sum_smul"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+
+
+
+
+
+[[node]]
+id = "prod_sum_derivWeights_mul_pow_card"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+[[node]]
+id = "tensorWeight"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1), stencil coefficients"
+
+[[node]]
+id = "tensorPoint"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1), stencil points"
+
+[[node]]
+id = "sum_tensorWeight_mul_apply_diag"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+[[node]]
+id = "sum_tensorWeight_mul_apply_diag_of_ne"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+[[node]]
+id = "sum_tensorWeight_mul_apply_diag_self"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+[[node]]
+id = "IsMixedStencil"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+[[node]]
+id = "isMixedStencil_tensor"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+[[node]]
+id = "fixFirst"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+[[node]]
+id = "fixFirst_apply"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+[[node]]
+id = "fixFirst_comp_perm"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1)"
+
+
+[[node]]
+id = "iteratedFDeriv_taylorPolynomial_apply_eq_sum"
+source = "Cartis–Gould–Toint, Section 13.2, (A.11)"
+
+[[node]]
+id = "abs_sum_iteratedFDeriv_sub_le"
+source = "Cartis–Gould–Toint, Section 13.2, (13.2.1), error bound"
