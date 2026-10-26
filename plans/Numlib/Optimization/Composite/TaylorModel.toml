@@ -31,3 +31,7 @@ source = "Cartis–Gould–Toint, Lemma 14.1.1"
 [[node]]
 id = "abs_sub_compositeTaylor_le_of_lipschitz"
 source = "Cartis–Gould–Toint, proof of Lemma 14.1.6 (Appendix B)"
+
+[[node]]
+id = "abs_sub_compositeTaylor_le_of_lipschitzAnchored"
+source = "Cartis–Gould–Toint, proof of Lemma 14.1.6, anchored"

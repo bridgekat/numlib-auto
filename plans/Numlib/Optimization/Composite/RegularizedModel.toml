@@ -51,3 +51,15 @@ source = "Cartis–Gould–Toint, Lemma 14.1.7, proof (B.14.1)–(B.14.6)"
 [[node]]
 id = "compositeTaylorMeasure_le_of_step"
 source = "Cartis–Gould–Toint, Lemma 14.1.7 (corrected)"
+
+[[node]]
+id = "taylorDecrement_le_add_of_regularizedModel_anchored"
+source = "Cartis–Gould–Toint, (12.2.53)–(12.2.56), anchored"
+
+[[node]]
+id = "compositeTaylorDecrement_le_of_step_anchored"
+source = "Cartis–Gould–Toint, (B.14.1)–(B.14.6), anchored"
+
+[[node]]
+id = "compositeTaylorMeasure_le_of_step_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.1.7, anchored"

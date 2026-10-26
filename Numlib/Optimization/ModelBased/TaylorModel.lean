@@ -316,18 +316,18 @@ theorem minCurvature_ge_of_regularizedModel (hC : Convex ℝ C)
       L / ((p - 1)! : ℝ) * ‖s‖ ^ (p - 1) + σ / ((p - 1)! : ℝ) * ‖s‖ ^ (p - 1) := by ring
   linarith
 
-/-- **Model-versus-function derivatives** ([cartis2022evaluation], (4.1.30), (6.2.20)–(6.2.23)):
-for `j ≤ p`, `σ ≥ 0` and `f` `C^p` on a convex `C ∋ x, x + s` with `L`-Lipschitz `∇^p f` there,
-`|∇^j f(x + s)[d]^j - ∇^j m(s)[d]^j| ≤ (L + σ)/(p - j + 1)! ‖s‖^{p-j+1} ‖d‖^j` for every `d`
-(using the diagonal bound of Lemma B.4.1 for `‖·‖^{p+1}`, which holds for natural exponents). -/
-theorem abs_iteratedFDeriv_apply_le_of_regularizedModel (hC : Convex ℝ C)
-    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C)
+/-- **Model-versus-function derivatives, anchored** ([cartis2022evaluation], (4.1.30)): as
+`abs_iteratedFDeriv_apply_le_of_regularizedModel`, with `∇^p f` only Lipschitz anchored at `x`:
+`‖∇^p f(y) - ∇^p f(x)‖ ≤ L ‖y - x‖` for `y ∈ C`. -/
+theorem abs_iteratedFDeriv_apply_le_of_regularizedModel_anchored (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
+    (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hj : j ≤ p) (d : E) :
     |iteratedFDeriv ℝ j f (x + s) (fun _ => d) -
         iteratedFDeriv ℝ j (regularizedModel (ftaylorSeries ℝ f x) p σ) s (fun _ => d)| ≤
       (L + σ) / ((p - j + 1)! : ℝ) * ‖s‖ ^ (p - j + 1) * ‖d‖ ^ j := by
   rw [iteratedFDeriv_regularizedModel (Or.inl hj)]
-  have hT := norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz hC hf hL hx hxs hj
+  have hT := norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitzAnchored hC hf hL hx hxs hj
   set A := iteratedFDeriv ℝ j f (x + s)
   set T := iteratedFDeriv ℝ j ((ftaylorSeries ℝ f x).taylorSum p) s
   set N := iteratedFDeriv ℝ j (fun y : E => ‖y‖ ^ (p + 1)) s
@@ -356,6 +356,19 @@ theorem abs_iteratedFDeriv_apply_le_of_regularizedModel (hC : Convex ℝ C)
           (mul_le_mul_of_nonneg_left hN hc)
     _ = (L + σ) / ((p - j + 1)! : ℝ) * ‖s‖ ^ (p - j + 1) * ‖d‖ ^ j := by
         field_simp
+
+/-- **Model-versus-function derivatives** ([cartis2022evaluation], (4.1.30), (6.2.20)–(6.2.23)):
+for `j ≤ p`, `σ ≥ 0` and `f` `C^p` on a convex `C ∋ x, x + s` with `L`-Lipschitz `∇^p f` there,
+`|∇^j f(x + s)[d]^j - ∇^j m(s)[d]^j| ≤ (L + σ)/(p - j + 1)! ‖s‖^{p-j+1} ‖d‖^j` for every `d`
+(using the diagonal bound of Lemma B.4.1 for `‖·‖^{p+1}`, which holds for natural exponents). -/
+theorem abs_iteratedFDeriv_apply_le_of_regularizedModel (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C)
+    (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hj : j ≤ p) (d : E) :
+    |iteratedFDeriv ℝ j f (x + s) (fun _ => d) -
+        iteratedFDeriv ℝ j (regularizedModel (ftaylorSeries ℝ f x) p σ) s (fun _ => d)| ≤
+      (L + σ) / ((p - j + 1)! : ℝ) * ‖s‖ ^ (p - j + 1) * ‖d‖ ^ j :=
+  abs_iteratedFDeriv_apply_le_of_regularizedModel_anchored hC hf
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy x hx) hx hxs hσ hj d
 
 end Estimates
 

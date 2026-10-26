@@ -545,13 +545,12 @@ private theorem sum_range_succ_eq_add_sum_Icc (g : ℕ → ℝ) (j : ℕ) :
     ← Finset.Ico_add_one_right_eq_Icc]
   rfl
 
-/-- **Smooth part of the one-step comparison** ([cartis2022evaluation], (12.2.53)–(12.2.56),
-(B.14.2), (B.14.6)): if `f` is `C^p` on a convex `C ∋ x, x + s` with `Lf`-Lipschitz `∇^p f`, the
-order-`j` Taylor decrement of `f` at `x + s` exceeds that of the regularized model
-`m = regularizedModel (ftaylorSeries ℝ f x) p σ` at `s` (`σ ≥ 0`, `j ≤ p`) by at most
-`(Lf + σ) ∑_{ℓ=1}^j ‖d‖^ℓ/ℓ! ‖s‖^{p-ℓ+1}/(p-ℓ+1)!`. -/
-theorem taylorDecrement_le_add_of_regularizedModel (hC : Convex ℝ C)
-    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hLf : IteratedFDerivLipschitzOn f p Lf C)
+/-- **Smooth part of the one-step comparison, anchored**: as
+`taylorDecrement_le_add_of_regularizedModel`, with `∇^p f` only Lipschitz anchored at `x`
+(`‖∇^p f(y) - ∇^p f(x)‖ ≤ L_f ‖y - x‖` for `y ∈ C`). -/
+theorem taylorDecrement_le_add_of_regularizedModel_anchored (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
+    (hLf : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ Lf * ‖y - x‖)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hjp : j ≤ p) (d : E) :
     (ftaylorSeries ℝ f (x + s)).taylorDecrement j d ≤
       (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) s).taylorDecrement j d +
@@ -566,7 +565,7 @@ theorem taylorDecrement_le_add_of_regularizedModel (hC : Convex ℝ C)
         (Lf + σ) * (‖d‖ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ))) := by
     refine sum_le_sum fun ℓ hℓ => ?_
     have hℓp : ℓ ≤ p := (Finset.mem_Icc.1 hℓ).2.trans hjp
-    have hb := abs_iteratedFDeriv_apply_le_of_regularizedModel hC hf hLf hx hxs hσ hℓp d
+    have hb := abs_iteratedFDeriv_apply_le_of_regularizedModel_anchored hC hf hLf hx hxs hσ hℓp d
     rw [abs_sub_comm] at hb
     have hfac : (0 : ℝ) ≤ (ℓ ! : ℝ)⁻¹ := by positivity
     calc (ℓ ! : ℝ)⁻¹ * ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) s ℓ
@@ -580,20 +579,28 @@ theorem taylorDecrement_le_add_of_regularizedModel (hC : Convex ℝ C)
   rw [sum_sub_distrib] at key
   linarith
 
-/-- **One-step comparison of composite decrements** (the content of Lemma 14.1.7 of
-[cartis2022evaluation], Appendix B (B.14.1)–(B.14.6), in corrected form). Let `f`, `c` be `C^p` on
-a convex `C ∋ x, x + s`, with `Lf`-Lipschitz `∇^p f` and `Lc`-Lipschitz `∇^p c` on `C`, `h` with
-Lipschitz constant `Lh`, `σ ≥ 0`, `j ≤ p`. Then the generalized Taylor decrement of `w = f + h ∘ c`
-at `x + s` is at most the decrement of the composite model `m̂` built at `x` (evaluated at the
-trial step `s`) plus
-`(Lf + Lh Lc + σ) ∑_{ℓ=1}^j ‖d‖^ℓ/ℓ! ‖s‖^{p-ℓ+1}/(p-ℓ+1)! + 2 Lh Lc/(p+1)! ‖s‖^{p+1}`.
+/-- **Smooth part of the one-step comparison** ([cartis2022evaluation], (12.2.53)–(12.2.56),
+(B.14.2), (B.14.6)): if `f` is `C^p` on a convex `C ∋ x, x + s` with `Lf`-Lipschitz `∇^p f`, the
+order-`j` Taylor decrement of `f` at `x + s` exceeds that of the regularized model
+`m = regularizedModel (ftaylorSeries ℝ f x) p σ` at `s` (`σ ≥ 0`, `j ≤ p`) by at most
+`(Lf + σ) ∑_{ℓ=1}^j ‖d‖^ℓ/ℓ! ‖s‖^{p-ℓ+1}/(p-ℓ+1)!`. -/
+theorem taylorDecrement_le_add_of_regularizedModel (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hLf : IteratedFDerivLipschitzOn f p Lf C)
+    (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hjp : j ≤ p) (d : E) :
+    (ftaylorSeries ℝ f (x + s)).taylorDecrement j d ≤
+      (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) s).taylorDecrement j d +
+        (Lf + σ) *
+          ∑ ℓ ∈ Finset.Icc 1 j, ‖d‖ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ)) :=
+  taylorDecrement_le_add_of_regularizedModel_anchored hC hf
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLf y hy x hx) hx hxs hσ hjp d
 
-The book's (14.1.30) has the factor `1` on the last term: (B.14.3) and the `ℓ = 0` term of
-(B.14.4) each contribute `Lh Lc ‖s‖^{p+1}/(p+1)!`. The book's exponent `p - j + 1` in (B.14.6)
-should read `p - ℓ + 1`. -/
-theorem compositeTaylorDecrement_le_of_step (hC : Convex ℝ C)
+/-- **One-step comparison of composite decrements, anchored**: as
+`compositeTaylorDecrement_le_of_step`, with `∇^p f` and `∇^p c` only Lipschitz anchored at `x`
+(between `x` and the points of `C`). -/
+theorem compositeTaylorDecrement_le_of_step_anchored (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)
-    (hLf : IteratedFDerivLipschitzOn f p Lf C) (hLc : IteratedFDerivLipschitzOn c p Lc C)
+    (hLf : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ Lf * ‖y - x‖)
+    (hLc : ∀ y ∈ C, ‖iteratedFDeriv ℝ p c y - iteratedFDeriv ℝ p c x‖ ≤ Lc * ‖y - x‖)
     (hLip : HasLipschitzConst h Lh) (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ}
     (hjp : j ≤ p) (d : E) :
     compositeTaylorDecrement (ftaylorSeries ℝ f (x + s)) (ftaylorSeries ℝ c (x + s)) h j d ≤
@@ -602,20 +609,20 @@ theorem compositeTaylorDecrement_le_of_step (hC : Convex ℝ C)
           ∑ ℓ ∈ Finset.Icc 1 j, ‖d‖ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ)) +
         2 * Lh * Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by
   have hLh := hLip.nonneg
-  have hsmooth := taylorDecrement_le_add_of_regularizedModel hC hf hLf hx hxs hσ hjp d
+  have hsmooth := taylorDecrement_le_add_of_regularizedModel_anchored hC hf hLf hx hxs hσ hjp d
   set Ssum := ∑ ℓ ∈ Finset.Icc 1 j, ‖d‖ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ))
   -- (B.14.3): the values of `c` and of its Taylor polynomial at `x + s`
   have h1 : h (c (x + s)) - h ((ftaylorSeries ℝ c x).taylorSum p s) ≤
       Lh * (Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1)) :=
     (le_abs_self _).trans ((hLip.abs_sub_le _ _).trans (mul_le_mul_of_nonneg_left
-      (norm_sub_taylorPolynomial_le_of_lipschitz hC hc hLc hx hxs) hLh))
+      (norm_sub_taylorPolynomial_le_of_lipschitzAnchored hC hc hLc hx hxs) hLh))
   -- (B.14.4): the Taylor polynomials of order `j` of `c` at `x + s` and of `T_{c,p}` at `s`
   set B := ftaylorSeries ℝ ((ftaylorSeries ℝ c x).taylorSum p) s
   set C' := ftaylorSeries ℝ c (x + s)
   have hdiff : ∀ i ≤ p, ‖B i - C' i‖ ≤ Lc / ((p - i + 1)! : ℝ) * ‖s‖ ^ (p - i + 1) :=
     fun i hi => by
       rw [norm_sub_rev]
-      exact norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz hC hc hLc hx hxs hi
+      exact norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitzAnchored hC hc hLc hx hxs hi
   have h2 : h (B.taylorSum j d) - h (C'.taylorSum j d) ≤
       Lh * (Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) + Lc * Ssum) := by
     have hn : ‖B.taylorSum j d - C'.taylorSum j d‖ ≤
@@ -642,6 +649,57 @@ theorem compositeTaylorDecrement_le_of_step (hC : Convex ℝ C)
       (Lf + Lh * Lc + σ) * Ssum + 2 * Lh * Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by ring
   linarith
 
+/-- **One-step comparison of composite decrements** (the content of Lemma 14.1.7 of
+[cartis2022evaluation], Appendix B (B.14.1)–(B.14.6), in corrected form). Let `f`, `c` be `C^p` on
+a convex `C ∋ x, x + s`, with `Lf`-Lipschitz `∇^p f` and `Lc`-Lipschitz `∇^p c` on `C`, `h` with
+Lipschitz constant `Lh`, `σ ≥ 0`, `j ≤ p`. Then the generalized Taylor decrement of `w = f + h ∘ c`
+at `x + s` is at most the decrement of the composite model `m̂` built at `x` (evaluated at the
+trial step `s`) plus
+`(Lf + Lh Lc + σ) ∑_{ℓ=1}^j ‖d‖^ℓ/ℓ! ‖s‖^{p-ℓ+1}/(p-ℓ+1)! + 2 Lh Lc/(p+1)! ‖s‖^{p+1}`.
+
+The book's (14.1.30) has the factor `1` on the last term: (B.14.3) and the `ℓ = 0` term of
+(B.14.4) each contribute `Lh Lc ‖s‖^{p+1}/(p+1)!`. The book's exponent `p - j + 1` in (B.14.6)
+should read `p - ℓ + 1`. -/
+theorem compositeTaylorDecrement_le_of_step (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)
+    (hLf : IteratedFDerivLipschitzOn f p Lf C) (hLc : IteratedFDerivLipschitzOn c p Lc C)
+    (hLip : HasLipschitzConst h Lh) (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ}
+    (hjp : j ≤ p) (d : E) :
+    compositeTaylorDecrement (ftaylorSeries ℝ f (x + s)) (ftaylorSeries ℝ c (x + s)) h j d ≤
+      compositeModelDecrement (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h p σ j s d +
+        (Lf + Lh * Lc + σ) *
+          ∑ ℓ ∈ Finset.Icc 1 j, ‖d‖ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ)) +
+        2 * Lh * Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) :=
+  compositeTaylorDecrement_le_of_step_anchored hC hf hc
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLf y hy x hx)
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLc y hy x hx) hLip hx hxs hσ hjp d
+
+/-- **One-step comparison of composite measures, anchored**: as
+`compositeTaylorMeasure_le_of_step`, with `∇^p f` and `∇^p c` only Lipschitz anchored at `x`. -/
+theorem compositeTaylorMeasure_le_of_step_anchored (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)
+    (hLf : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ Lf * ‖y - x‖)
+    (hLc : ∀ y ∈ C, ‖iteratedFDeriv ℝ p c y - iteratedFDeriv ℝ p c x‖ ≤ Lc * ‖y - x‖)
+    (hLip : HasLipschitzConst h Lh) (hLf0 : 0 ≤ Lf) (hLc0 : 0 ≤ Lc) (hx : x ∈ C)
+    (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hjp : j ≤ p) {S : Set E} (hS0 : (0 : E) ∈ S)
+    {δ : ℝ} (hδ : 0 ≤ δ) :
+    compositeTaylorMeasure (ftaylorSeries ℝ f (x + s)) (ftaylorSeries ℝ c (x + s)) h j δ S ≤
+      compositeTaylorMeasure
+          (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) s)
+          (ftaylorSeries ℝ ((ftaylorSeries ℝ c x).taylorSum p) s) h j δ S +
+        (Lf + Lh * Lc + σ) *
+          ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ)) +
+        2 * Lh * Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by
+  have hK : 0 ≤ Lf + Lh * Lc + σ := by have := hLip.nonneg; positivity
+  refine decrementMeasure_le ⟨0, mem_closedBall_self hδ, hS0⟩ fun d hd => ?_
+  have hdδ : ‖d‖ ≤ δ := mem_closedBall_zero_iff.1 hd.1
+  refine (compositeTaylorDecrement_le_of_step_anchored hC hf hc hLf hLc hLip hx hxs hσ hjp
+    d).trans ?_
+  refine add_le_add (add_le_add (compositeTaylorDecrement_le_compositeTaylorMeasure hLip hd) ?_)
+    le_rfl
+  refine mul_le_mul_of_nonneg_left (sum_le_sum fun ℓ _ => ?_) hK
+  gcongr
+
 /-- **One-step comparison of composite measures** (Lemma 14.1.7 of [cartis2022evaluation],
 corrected, before using the Step-2 condition (14.1.13)): under the hypotheses of
 `compositeTaylorDecrement_le_of_step`, with `Lf, Lc ≥ 0`, feasible displacements `S ∋ 0` and
@@ -660,15 +718,10 @@ theorem compositeTaylorMeasure_le_of_step (hC : Convex ℝ C)
           (ftaylorSeries ℝ ((ftaylorSeries ℝ c x).taylorSum p) s) h j δ S +
         (Lf + Lh * Lc + σ) *
           ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ)) +
-        2 * Lh * Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by
-  have hK : 0 ≤ Lf + Lh * Lc + σ := by have := hLip.nonneg; positivity
-  refine decrementMeasure_le ⟨0, mem_closedBall_self hδ, hS0⟩ fun d hd => ?_
-  have hdδ : ‖d‖ ≤ δ := mem_closedBall_zero_iff.1 hd.1
-  refine (compositeTaylorDecrement_le_of_step hC hf hc hLf hLc hLip hx hxs hσ hjp d).trans ?_
-  refine add_le_add (add_le_add (compositeTaylorDecrement_le_compositeTaylorMeasure hLip hd) ?_)
-    le_rfl
-  refine mul_le_mul_of_nonneg_left (sum_le_sum fun ℓ _ => ?_) hK
-  gcongr
+        2 * Lh * Lc / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) :=
+  compositeTaylorMeasure_le_of_step_anchored hC hf hc
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLf y hy x hx)
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLc y hy x hx) hLip hLf0 hLc0 hx hxs hσ hjp hS0 hδ
 
 end Step
 

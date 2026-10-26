@@ -2,6 +2,7 @@ import NumlibSurface.CartisGouldToint.Chapter14.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
 import NumlibSurface.CartisGouldToint.Chapter14.Section02Sharp
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
+import NumlibSurface.CartisGouldToint.Chapter14.Section03Anchored
 
 /-!
 # Cartis–Gould–Toint, Chapter 14: Composite and Constrained Problems
@@ -69,6 +70,11 @@ module imports the section modules and adds nothing of its own.
   (`exists_algorithm_14_3_1_complexity_unit`, `exists_algorithm_14_3_2_complexity_unit`); the
   multiplicative cost contract (14.3.20)–(14.3.21) is false for `q = 1`
   (`exists_algorithm_14_3_1_cost_contract_counterexample`)
+* §14.3, `Chapter14.Section03Anchored`: existence and complexity of the LENq-SC and TPqp-GC runs
+  with INNER = ARqp-SC under the book's anchored assumptions Φ₂.D1pLaB.X, resp. c.D1pLB.X,
+  f.D1pLB.X and f.B.Fb (`exists_algorithm_14_3_1_complexity_anchored`,
+  `exists_algorithm_14_3_2_complexity_anchored`), from the anchored ARqpC-SC analysis of §14.1
+  (`AnchoredCompositeBounds`, `theorem_14_1_10_ii_anchored`) and Lemma 14.3.6
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -150,12 +156,15 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 ## Not formalized
 
 * The remark of Theorem 14.2.4 that only the anchored assumptions f.D1qLaB.X (f.D0qLaB.X) are
-  used.
-* Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored assumptions
-  (they are proved under global Lipschitz assumptions, `exists_algorithm_14_3_1_complexity`,
-  `exists_algorithm_14_3_2_complexity`), the multiplicative Phase-1 cost contract when all
-  `π_j < 2` (false there; the additive form is proved), a bound on the bad outer iterations of
-  TPqp-GC in the order of the ARqp-SC exponents (INNER's certificate gives
+  used, except for the ARqpC-SC row (`theorem_14_2_4_arqpc_anchored`, from the anchored §14.1
+  analysis `theorem_14_1_10_ii_anchored`).
+* Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored assumptions are
+  proved (`Chapter14.Section03Anchored`) only with the ARqpC-SC exponents `j + 1`; the variants
+  with the ARqp-SC exponents (they go through the Chapter 12 analysis of ARqp-SC, which assumes
+  f.D1pL on an open convex `C ⊇ X`), the certified and strong-contract variants are proved under
+  global Lipschitz assumptions only. Also not formalized: the multiplicative Phase-1 cost contract
+  when all `π_j < 2` (false there; the additive form is proved), a bound on the bad outer
+  iterations of TPqp-GC in the order of the ARqp-SC exponents (INNER's certificate gives
   `O(max_j (ε₀ ε_j)^{-j})`, resp. `O(max_j (ε₀ ε_j)^{-1})` with unit radii), and the `O(·)`
   restatements.
 -/

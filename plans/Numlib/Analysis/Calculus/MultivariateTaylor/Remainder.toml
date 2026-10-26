@@ -61,3 +61,15 @@ source = "Cartis–Gould–Toint, Theorem A.8.3, (A.14), vector-valued"
 [[node]]
 id = "norm_sub_taylorPolynomial_le_of_lipschitz"
 source = "Cartis–Gould–Toint, Corollary A.8.4, (A.19), vector-valued"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holderAt"
+source = "Cartis–Gould–Toint, Theorem A.8.3, (A.15), Hölder condition anchored at the expansion point"
+
+[[node]]
+id = "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitzAnchored"
+source = "Cartis–Gould–Toint, Corollary A.8.4, (A.20), with (14.2.9) anchored at the expansion point"
+
+[[node]]
+id = "norm_sub_taylorPolynomial_le_of_lipschitzAnchored"
+source = "Cartis–Gould–Toint, Corollary A.8.4, (A.19), with (14.2.9) anchored at the expansion point"

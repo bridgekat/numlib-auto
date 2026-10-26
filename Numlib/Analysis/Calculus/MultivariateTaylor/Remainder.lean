@@ -37,6 +37,11 @@ Instead of requiring `f` to be `C^p` on an open set `D ⊇ C`, the results assum
   Theorem A.8.3, (A.14) and (A.15);
 * `norm_sub_taylorPolynomial_le_of_lipschitz`,
   `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`: Corollary A.8.4, (A.19)–(A.20);
+* `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holderAt`,
+  `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitzAnchored`,
+  `norm_sub_taylorPolynomial_le_of_lipschitzAnchored`: the same with the Hölder / Lipschitz
+  condition required only between the expansion point `x` and the points of `C` (anchored at `x`,
+  (14.2.9)); the global versions are their instances;
 * for real-valued `f`: `abs_sub_taylorPolynomial_le_of_holder`/`_of_lipschitz`, and
   `le_taylorPolynomial_add_of_lipschitz`, `taylorPolynomial_sub_le_of_lipschitz`: the regularized
   Taylor model over- and under-estimates `f`; `nonneg_of_abs_le_div_mul_rpow`/`_pow`: a remainder
@@ -401,17 +406,15 @@ section Remainder
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] {f : E → F} {p : ℕ} {H β L : ℝ} {C : Set E}
 
-/-- **Taylor's theorem with Hölder `p`-th derivative, derivative bounds** ([cartis2022evaluation],
-Theorem A.8.3, (A.15)). Let `C` be convex, `f` be `C^p` at every point of `C` (e.g. `C^p` on an
-open set containing `C`) and `∇^p f` be `(H, β)`-Hölder on `C`, `β ≥ 0`. Then for `x, x + s ∈ C`
-and `j ≤ p`,
-`‖∇^j f(x + s) - ∇^j_s T_{f,p}(x, s)‖ ≤ H / (p - j + β)! · ‖s‖^{p - j + β}`.
-(The book states it for `1 ≤ j ≤ p` and `β ∈ [0, 1]`; its proof displays the constant
-`(p-j+1)!/(p-j+β)!`, the bound being `1/(p-j+β)!` as stated in (A.15).) The case `j = 0` is
-`norm_sub_taylorPolynomial_le_of_holder`. -/
-theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder (hC : Convex ℝ C)
-    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hβ : 0 ≤ β) (hH : IteratedFDerivHolderOn f p H β C)
-    {x s : E} (hx : x ∈ C) (hxs : x + s ∈ C) {j : ℕ} (hj : j ≤ p) :
+/-- **Taylor's theorem with Hölder `p`-th derivative anchored at the expansion point**
+([cartis2022evaluation], Theorem A.8.3, (A.15)): as
+`norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder`, with the Hölder condition required only
+between `x` and the points of `C`: `‖∇^p f(y) - ∇^p f(x)‖ ≤ H ‖y - x‖^β` for `y ∈ C` (the proof
+uses it only on the segment `[x, x + s]`). -/
+theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holderAt (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hβ : 0 ≤ β) {x s : E}
+    (hH : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ H * ‖y - x‖ ^ β)
+    (hx : x ∈ C) (hxs : x + s ∈ C) {j : ℕ} (hj : j ≤ p) :
     ‖iteratedFDeriv ℝ j f (x + s) - iteratedFDeriv ℝ j (taylorPolynomial f p x) s‖ ≤
       H / holderFactorial (p - j) β * ‖s‖ ^ (((p - j : ℕ) : ℝ) + β) := by
   obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hj
@@ -424,7 +427,7 @@ theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder (hC : Convex ℝ C
   have hhF : 0 < holderFactorial m β := holderFactorial_pos m (by linarith)
   -- the Hölder constant times `‖s‖^β` is nonnegative
   have hHs : 0 ≤ H * ‖s‖ ^ β := by
-    have := hH (x + s) hxs x hx
+    have := hH (x + s) hxs
     rw [add_sub_cancel_left] at this
     exact (norm_nonneg _).trans this
   have hpow : ‖s‖ ^ ((m : ℝ) + β) = ‖s‖ ^ m * ‖s‖ ^ β := by
@@ -472,7 +475,7 @@ theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder (hC : Convex ℝ C
             ∏ k, ‖u m k‖ := ContinuousMultilinearMap.le_opNorm _ _
       _ ≤ (H * ‖t • s‖ ^ β) * ∏ k, ‖u m k‖ := by
           gcongr
-          simpa using hH _ (hseg t ht) x hx
+          simpa using hH _ (hseg t ht)
       _ = (H * ‖s‖ ^ β * ∏ k, ‖u m k‖) * t ^ β := by
           rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg ht.1, Real.mul_rpow ht.1 (norm_nonneg _)]
           ring
@@ -492,6 +495,22 @@ theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder (hC : Convex ℝ C
     _ = H / holderFactorial m β * ‖s‖ ^ ((m : ℝ) + β) * ∏ k, ‖v k‖ := by
         rw [hpow]; ring
 
+/-- **Taylor's theorem with Hölder `p`-th derivative, derivative bounds** ([cartis2022evaluation],
+Theorem A.8.3, (A.15)). Let `C` be convex, `f` be `C^p` at every point of `C` (e.g. `C^p` on an
+open set containing `C`) and `∇^p f` be `(H, β)`-Hölder on `C`, `β ≥ 0`. Then for `x, x + s ∈ C`
+and `j ≤ p`,
+`‖∇^j f(x + s) - ∇^j_s T_{f,p}(x, s)‖ ≤ H / (p - j + β)! · ‖s‖^{p - j + β}`.
+(The book states it for `1 ≤ j ≤ p` and `β ∈ [0, 1]`; its proof displays the constant
+`(p-j+1)!/(p-j+β)!`, the bound being `1/(p-j+β)!` as stated in (A.15).) The case `j = 0` is
+`norm_sub_taylorPolynomial_le_of_holder`. -/
+theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hβ : 0 ≤ β) (hH : IteratedFDerivHolderOn f p H β C)
+    {x s : E} (hx : x ∈ C) (hxs : x + s ∈ C) {j : ℕ} (hj : j ≤ p) :
+    ‖iteratedFDeriv ℝ j f (x + s) - iteratedFDeriv ℝ j (taylorPolynomial f p x) s‖ ≤
+      H / holderFactorial (p - j) β * ‖s‖ ^ (((p - j : ℕ) : ℝ) + β) :=
+  norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holderAt hC hf hβ (fun y hy => hH y hy x hx) hx
+    hxs hj
+
 /-- **Taylor's theorem with Hölder `p`-th derivative** ([cartis2022evaluation], Theorem A.8.3,
 (A.14)). Let `C` be convex, `f : E → F` be `C^p` at every point of `C` and `∇^p f` be
 `(H, β)`-Hölder on `C`, `β ≥ 0`. Then for `x, x + s ∈ C`,
@@ -507,6 +526,37 @@ theorem norm_sub_taylorPolynomial_le_of_holder (hC : Convex ℝ C)
     Function.comp_apply, ← map_sub, LinearIsometryEquiv.norm_map, Nat.sub_zero] at h
   exact h
 
+/-- **Derivative bounds with Lipschitz `p`-th derivative anchored at the expansion point**
+([cartis2022evaluation], Corollary A.8.4, (A.20)): if `f` is `C^p` at every point of the convex
+set `C ∋ x, x + s` and `‖∇^p f(y) - ∇^p f(x)‖ ≤ L ‖y - x‖` for `y ∈ C` (the condition (14.2.9) of
+f.D1qLaB.X with anchor `x`), then for `j ≤ p`,
+`‖∇^j f(x + s) - ∇^j_s T_{f,p}(x, s)‖ ≤ L / (p - j + 1)! · ‖s‖^{p-j+1}`. -/
+theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitzAnchored (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) {x s : E}
+    (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖)
+    (hx : x ∈ C) (hxs : x + s ∈ C) {j : ℕ} (hj : j ≤ p) :
+    ‖iteratedFDeriv ℝ j f (x + s) - iteratedFDeriv ℝ j (taylorPolynomial f p x) s‖ ≤
+      L / ((p - j + 1)! : ℝ) * ‖s‖ ^ (p - j + 1) := by
+  have h := norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holderAt hC hf zero_le_one
+    (fun y hy => by rw [Real.rpow_one]; exact hL y hy) hx hxs hj
+  rwa [holderFactorial_one_right,
+    show ((p - j : ℕ) : ℝ) + 1 = ((p - j + 1 : ℕ) : ℝ) by push_cast; ring, Real.rpow_natCast] at h
+
+/-- **Taylor's theorem with Lipschitz `p`-th derivative anchored at the expansion point**
+([cartis2022evaluation], Corollary A.8.4, (A.19)): under the hypotheses of
+`norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitzAnchored`,
+`‖f(x + s) - T_{f,p}(x, s)‖ ≤ L / (p + 1)! · ‖s‖^{p+1}`. -/
+theorem norm_sub_taylorPolynomial_le_of_lipschitzAnchored (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) {x s : E}
+    (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖)
+    (hx : x ∈ C) (hxs : x + s ∈ C) :
+    ‖f (x + s) - taylorPolynomial f p x s‖ ≤ L / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by
+  have h := norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitzAnchored hC hf hL hx hxs
+    (Nat.zero_le p)
+  rw [iteratedFDeriv_zero_eq_comp, iteratedFDeriv_zero_eq_comp, Function.comp_apply,
+    Function.comp_apply, ← map_sub, LinearIsometryEquiv.norm_map, Nat.sub_zero] at h
+  exact h
+
 /-- **Taylor's theorem with Lipschitz `p`-th derivative** ([cartis2022evaluation],
 Corollary A.8.4, (A.19)): if `f : E → F` is `C^p` at every point of the convex set `C` and
 `∇^p f` is `L`-Lipschitz on `C`, then for `x, x + s ∈ C`,
@@ -514,10 +564,9 @@ Corollary A.8.4, (A.19)): if `f : E → F` is `C^p` at every point of the convex
 theorem norm_sub_taylorPolynomial_le_of_lipschitz (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C)
     {x s : E} (hx : x ∈ C) (hxs : x + s ∈ C) :
-    ‖f (x + s) - taylorPolynomial f p x s‖ ≤ L / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by
-  have h := norm_sub_taylorPolynomial_le_of_holder hC hf zero_le_one hL.holderOn hx hxs
-  rwa [holderFactorial_one_right, show (p : ℝ) + 1 = ((p + 1 : ℕ) : ℝ) by push_cast; ring,
-    Real.rpow_natCast] at h
+    ‖f (x + s) - taylorPolynomial f p x s‖ ≤ L / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) :=
+  norm_sub_taylorPolynomial_le_of_lipschitzAnchored hC hf
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy x hx) hx hxs
 
 /-- **Derivative bounds with Lipschitz `p`-th derivative** ([cartis2022evaluation],
 Corollary A.8.4, (A.20)): under the hypotheses of `norm_sub_taylorPolynomial_le_of_lipschitz`,
@@ -527,11 +576,9 @@ theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz (hC : Convex �
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C)
     {x s : E} (hx : x ∈ C) (hxs : x + s ∈ C) {j : ℕ} (hj : j ≤ p) :
     ‖iteratedFDeriv ℝ j f (x + s) - iteratedFDeriv ℝ j (taylorPolynomial f p x) s‖ ≤
-      L / ((p - j + 1)! : ℝ) * ‖s‖ ^ (p - j + 1) := by
-  have h := norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder hC hf zero_le_one hL.holderOn
-    hx hxs hj
-  rwa [holderFactorial_one_right,
-    show ((p - j : ℕ) : ℝ) + 1 = ((p - j + 1 : ℕ) : ℝ) by push_cast; ring, Real.rpow_natCast] at h
+      L / ((p - j + 1)! : ℝ) * ‖s‖ ^ (p - j + 1) :=
+  norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitzAnchored hC hf
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy x hx) hx hxs hj
 
 /-- The first derivative is `L`-Lipschitz on `C` iff the first iterated derivative is. -/
 theorem iteratedFDerivLipschitzOn_one_iff :

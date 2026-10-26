@@ -63,3 +63,7 @@ source = "Cartis–Gould–Toint, Lemma 14.1.7 (corrected)"
 [[node]]
 id = "taylorDecrement_regularizedModel_zero"
 source = "Cartis–Gould–Toint, (12.2.49)"
+
+[[node]]
+id = "radius_inequality_of_compositeTaylorMeasure_gt_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.1.7 (14.1.30), anchored"

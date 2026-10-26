@@ -203,6 +203,7 @@ import NumlibSurface.CartisGouldToint.Chapter14.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
 import NumlibSurface.CartisGouldToint.Chapter14.Section02Sharp
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
+import NumlibSurface.CartisGouldToint.Chapter14.Section03Anchored
 import NumlibSurface.FongSaunders
 import NumlibSurface.FongSaunders.Section01
 import NumlibSurface.FongSaunders.Section02
