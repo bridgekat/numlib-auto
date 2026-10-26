@@ -509,6 +509,7 @@ import Numlib.Krylov.Decomposition
 import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Lanczos
+import Numlib.Krylov.LanczosTridiag
 import Numlib.Krylov.Monotonicity
 import Numlib.Krylov.NormalEquations
 import Numlib.Krylov.OrthogonalPolynomials
@@ -550,6 +551,7 @@ import Numlib.LinearAlgebra.Matrix.GeneralizedSchur
 import Numlib.LinearAlgebra.Matrix.Hamiltonian
 import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.InverseDecay
 import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.Kronecker
 import Numlib.LinearAlgebra.Matrix.Kronecker.Spectral
@@ -589,6 +591,7 @@ import Numlib.LinearAlgebra.Matrix.Symmetric
 import Numlib.LinearAlgebra.Matrix.SymmetricIndefinite
 import Numlib.LinearAlgebra.Matrix.Toeplitz
 import Numlib.LinearAlgebra.Matrix.Triangular
+import Numlib.LinearAlgebra.Matrix.TridiagonalLDL
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
@@ -633,6 +636,7 @@ import Numlib.Nonlinear.CompletelyContinuous
 import Numlib.Nonlinear.DennisMore
 import Numlib.Nonlinear.DifferenceJacobian
 import Numlib.Nonlinear.FixedPoint
+import Numlib.Nonlinear.MonotoneNewton
 import Numlib.Nonlinear.Nemytskii
 import Numlib.Nonlinear.Newton
 import Numlib.Nonlinear.Order
@@ -647,6 +651,7 @@ import Numlib.Optimization.Constrained
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
 import Numlib.Optimization.QuasiNewton
+import Numlib.Optimization.Subproblem.Bracketing
 import Numlib.Optimization.Subproblem.Model
 import Numlib.Optimization.Subproblem.Regularization
 import Numlib.Optimization.Subproblem.TrustRegion

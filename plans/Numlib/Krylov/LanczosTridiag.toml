@@ -1,0 +1,5 @@
+namespace = "Lanczos"
+
+[[node]]
+id = "tridiag_eq_symTridiag"
+source = "Cartis–Gould–Toint (10.1.7)"

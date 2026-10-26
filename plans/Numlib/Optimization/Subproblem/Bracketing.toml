@@ -1,76 +1,19 @@
 namespace = "Subproblem"
-desc = '''
-Safeguarded interval reduction locating a point of the middle piece of a partition
-`ℝ = Iic a ∪ Ioc a b ∪ Ioi b` (`a < b`), the abstract content of Algorithm 9.2.1 of
-Cartis–Gould–Toint (after Moré–Sorensen 1983, Conn–Gould–Toint §7.3.6). For the subproblems,
-`a = λₛ`, `b = λ*` and the pieces are `𝓝`, `𝓛`, `𝓖`; the run only ever *tests membership*, so it is
-stated for an arbitrary partition and the surface instantiates it via `Multiplier`.
-
-A run is a predicate on sequences `(lo k, hi k, c k)` (bracket and current estimate) with all the
-book's nondeterministic choices as existentials: `θ ∈ [θL, θU]`, `γ ∈ {0, 1}`, optional lower-bound
-improvements `e ≤ a` (the book's `-λ_E` with `λ_E ≥ λ₁`), and in the `G` branch any new estimate in
-the interval (9.2.2). The run stops (is constant) once `c k ∈ Ioc a b`.
-
-Width contraction: after the first step every step multiplies the bracket width by at most
-`ρ = max (1 - θL) (max θU (1/2)) < 1`. (The book's prose bound
-`max[1 - θ, θ, γ√λᵁ/(√λᴸ + √λᵁ)]` is also valid but not uniformly below `1`; the geometric-mean
-branch actually contracts by `√λᴸ/(√λᴸ + √λᵁ) ≤ 1/2` when it moves the upper end and by `≤ 1 - θ`
-when it moves the lower end.) Finite termination when `a < b` requires the initial lower bound to be
-`< b` (if `lo 0 = b = λ*` exactly, every later estimate exceeds `b` and the run never stops: a
-degenerate case the book's "finite convergence if 𝓛 is nonempty" overlooks).
-'''
 
 [[node]]
 id = "IsBracketRun"
-kind = "definition"
-desc = '''
-`IsBracketRun (a b θL θU : ℝ) (lo hi c : ℕ → ℝ) : Prop`: `0 ≤ lo 0 ≤ b ≤ hi 0` ((9.2.1)) and for
-every `k`:
-* if `c k ∈ Ioc a b`: `(lo, hi, c) (k + 1) = (lo, hi, c) k` (exit);
-* if `c k ≤ a`: `hi (k+1) = hi k`, `lo (k+1) = max (max (lo k) (c k)) e` for some `e ≤ a`
-  (or without `e`), and `c (k+1) = max (γ * √(lo (k+1) * hi (k+1))) (lo (k+1) + θ * (hi (k+1) - lo (k+1)))`
-  for some `θ ∈ Icc θL θU`, `γ ∈ {0, 1}`;
-* if `b < c k`: `hi (k+1) = min (hi k) (c k)`, `lo (k+1) = max (lo k) e` for some `e ≤ a` (or
-  without), and `c (k+1)` lies between `max (γ₁ √(lo hi)) (lo + θₗ (hi - lo))` and
-  `max (γ₂ √(lo hi)) (lo + θᵤ (hi - lo))` (at index `k+1`) for some `θₗ ≤ θᵤ` in `Icc θL θU`,
-  `γ₁ ≤ γ₂` in `{0, 1}` ((9.2.2)).
-Parameters `0 < θL ≤ θU < 1`.
-'''
+source = "Cartis–Gould–Toint, Algorithm 9.2.1"
 
 [[node]]
 id = "IsBracketRun.exists"
-kind = "theorem"
-desc = '''
-For any `a b θL θU` with `0 < θL ≤ θU < 1`, any `lo₀ hi₀ c₀` with `0 ≤ lo₀ ≤ b ≤ hi₀`, there is a
-run with these initial values (choose `θ = θL`, `γ = 0`, no estimates `e`).
-'''
-deps = ["IsBracketRun"]
 
 [[node]]
 id = "IsBracketRun.invariant"
-kind = "theorem"
-desc = '''
-For a run: `lo k ≤ b ≤ hi k`, `lo` monotone, `hi` antitone, `lo (k+1) ≤ c (k+1) ≤ hi (k+1)` for
-`k ≥ 0`, and if `lo 0 < b` then `lo k ≤ max (lo 0) a`.
-'''
-deps = ["IsBracketRun"]
 
 [[node]]
 id = "IsBracketRun.width_le"
-kind = "theorem"
-desc = '''
-For a run and `k ≥ 1` with `c k ∉ Ioc a b`:
-`hi (k+1) - lo (k+1) ≤ max (1 - θL) (max θU (1/2)) * (hi k - lo k)`.
-'''
-deps = ["IsBracketRun.invariant"]
+source = "Cartis–Gould–Toint, §9.2 (width ratio of Algorithm 9.2.1)"
 
 [[node]]
 id = "IsBracketRun.exists_mem"
-kind = "theorem"
-desc = '''
-Finite termination: if `a < b` and `lo 0 < b`, then there is `k` with `c k ∈ Ioc a b`, with the
-explicit bound `k ≤ 2 + ⌈log ((hi 1 - lo 1) / (b - max (lo 0) a)) / log (1/ρ)⌉₊`,
-`ρ = max (1 - θL) (max θU (1/2))` (the bracket keeps width `≥ b - max (lo 0) a` while not
-terminated).
-'''
-deps = ["IsBracketRun.width_le"]
+source = "Cartis–Gould–Toint, §9.2 (finite termination of Algorithm 9.2.1)"

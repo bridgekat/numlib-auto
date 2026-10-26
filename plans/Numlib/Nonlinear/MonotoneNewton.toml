@@ -1,73 +1,10 @@
 namespace = "Newton"
-desc = '''
-Global monotone convergence of Newton's method and of the secant method for a convex (resp.
-concave) strictly monotone `C¹` function of one real variable with a root, with explicit global
-Q-linear factor and ultimate Q-superlinear (Q-quadratic under a Lipschitz derivative) rate
-(Cartis–Gould–Toint, Lemma B.8.1, after Cartis–Gould–Toint 2009 Lemma A.1; Ortega–Rheinboldt
-Theorem 10.2.2; Fourier's condition).
-
-Builds on `Newton.scalarStep` (`Numlib/Nonlinear/ScalarNewton`) and `Secant.iterate`
-(`Numlib/Nonlinear/Secant`); `ConvergesWithOrder` of `Numlib/Nonlinear/Order` gives Q-order `p`.
-`Numlib/Nonlinear/ScalarNewton.tendsto_iterate_scalarStep_of_antitoneOn_deriv` is the
-decreasing-concave/started-on-the-right instance of the same picture; the convex-decreasing case
-here is its reflection `x ↦ -x` and the concave-increasing case is `-θ`, so the formalizer should
-prove one core lemma and derive the others by reflection.
-
-Corrections to the source statement: (1) the root must have `θ'(λ*) ≠ 0` (equivalently `λ*` is
-not the right end of the interval in the convex-decreasing case): `θ(x) = (1 - x)²` on `[0, 1]` is
-convex, strictly decreasing and `C¹`, but Newton from `0` is only linear with factor `1/2` and the
-book's `γᴺ = 1 - θ'(λ*)/θ'(λ₀) = 1`; (2) in the concave-increasing case the starting condition is
-`θ(λ₀) < 0` (not `> 0`): the reduction "consider `-θ`" flips the sign; (3) iterates that hit the
-root stay there, so "increase monotonically" means `Monotone`, strictly only before hitting it.
-
-A Q-superlinear predicate is introduced here (`ConvergesSuperlinearly`) since `Order` only has
-fixed-order convergence; the consolidation reviewer may move it to `Numlib/Nonlinear/Order`.
-'''
-
-[[node]]
-id = "ConvergesSuperlinearly"
-kind = "definition"
-desc = '''
-`ConvergesSuperlinearly (x : ℕ → ℝ) (α : ℝ) : Prop := ∃ c : ℕ → ℝ, Tendsto c atTop (𝓝 0) ∧ ∀ k, |x (k + 1) - α| ≤ c k * |x k - α|`
-(Q-superlinear convergence; implies `x → α` and covers sequences that hit `α`). Could be stated
-for a normed group.
-'''
 
 [[node]]
 id = "monotone_scalarStep_iterate_of_convexOn"
-kind = "theorem"
-desc = '''
-Newton, convex decreasing case (Lemma B.8.1(i), corrected). Let `I = Icc a b`, `θ : ℝ → ℝ`
-`ConvexOn ℝ I θ`, `StrictAntiOn θ I`, with `HasDerivAt θ (θ' x) x` and `θ'` continuous on `I`
-(one-sided at the ends is enough), `λ* ∈ I`, `θ λ* = 0`, `θ' λ* ≠ 0`, `λ₀ ∈ I`, `0 < θ λ₀`. Let
-`λ k = (Newton.scalarStep θ θ')^[k] λ₀`. Then `λ k ∈ Icc λ₀ λ*`, `Monotone λ`, `λ → λ*`, and
-`λ* - λ (k + 1) ≤ γ * (λ* - λ k)` for all `k` with `γ = 1 - θ' λ* / θ' λ₀ ∈ [0, 1)`;
-`ConvergesSuperlinearly λ λ*`; and if `θ'` is Lipschitz near `λ*`, `ConvergesWithOrder λ λ* 2`.
-Concave strictly increasing variant: same conclusions under `θ λ₀ < 0` (apply to `-θ`).
-'''
-deps = ["ConvergesSuperlinearly"]
 
 [[node]]
 id = "monotone_secant_iterate_of_convexOn"
-kind = "theorem"
-desc = '''
-Secant, convex decreasing case (Lemma B.8.1(ii), corrected). Same hypotheses on `θ`, `λ*` as
-`monotone_scalarStep_iterate_of_convexOn` (no derivative needed at the iterates beyond
-differentiability on `I` for the mean value theorem), and `λ₀ < λ₁` in `I` with `0 < θ λ₀`,
-`0 < θ λ₁`. The secant iterates `λ (j+1) = λ j - (λ j - λ (j-1)) θ(λ j) / (θ(λ j) - θ(λ (j-1)))`
-(`Secant.iterate θ λ₀ λ₁`) lie in `Icc λ₀ λ*`, are monotone, converge to `λ*` with
-`λ* - λ (j + 1) ≤ γ (λ* - λ j)` (`γ` as for Newton) and Q-superlinearly. Concave increasing
-variant with `θ λ₀, θ λ₁ < 0`.
-'''
-deps = ["ConvergesSuperlinearly", "monotone_scalarStep_iterate_of_convexOn"]
 
 [[node]]
 id = "scalarStep_le_of_convexOn"
-kind = "theorem"
-desc = '''
-One-step overshoot/undershoot facts used by the secular iterations (book §8.2.1, §9.2): for `θ`
-convex and strictly decreasing on an interval `I` with root `λ*` and `HasDerivAt θ (θ' x) x`,
-`θ' x < 0`: if `x ∈ I`, `θ x ≥ 0` then `x ≤ scalarStep θ θ' x ≤ λ*`; if `θ x < 0` (`x > λ*`) then
-`scalarStep θ θ' x ≤ λ*` (Newton from the right overshoots the root, possibly leaving `I`).
-Concave increasing mirror statements.
-'''
