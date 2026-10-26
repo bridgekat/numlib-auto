@@ -67,3 +67,15 @@ source = "Cartis–Gould–Toint, Section 1.1.2.1 (Hessian matrix)"
 [[node]]
 id = "IsEpsApprox"
 source = "Cartis–Gould–Toint, Key Definition with (12.1.25)"
+
+[[node]]
+id = "iteratedFDeriv_two_symm"
+source = "Cartis–Gould–Toint, (3.2.3)"
+
+[[node]]
+id = "norm_hessianOperator_le"
+source = "Cartis–Gould–Toint, (3.2.3)"
+
+[[node]]
+id = "exists_eigenvector_hessianOperator"
+source = "Cartis–Gould–Toint, (3.2.3)"

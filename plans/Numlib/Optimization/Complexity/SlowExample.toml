@@ -23,3 +23,15 @@ source = "Cartis–Gould–Toint, proof of Theorem 3.2.7"
 [[node]]
 id = "exists_contDiff_interpolating_separated_jets"
 source = "Cartis–Gould–Toint, proof of Theorem 3.1.1, (3.1.7)"
+
+[[node]]
+id = "secondOrderK"
+source = "Cartis–Gould–Toint, (3.5.11)–(3.5.12)"
+
+[[node]]
+id = "secondOrderF"
+source = "Cartis–Gould–Toint, (3.5.11)–(3.5.12)"
+
+[[node]]
+id = "ceil_rpow_facts"
+source = "Cartis–Gould–Toint, (3.5.11)–(3.5.12)"

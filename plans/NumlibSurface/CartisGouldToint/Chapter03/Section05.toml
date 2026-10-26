@@ -35,3 +35,19 @@ source = "Cartis–Gould–Toint, Corollary 3.5.5"
 [[node]]
 id = "corollary_3_5_5_iii"
 source = "Cartis–Gould–Toint, Corollary 3.5.5"
+
+[[node]]
+id = "IsMClassStepWith"
+source = "Cartis–Gould–Toint, §3.5"
+
+[[node]]
+id = "lemma_3_5_2_sqrt"
+source = "Cartis–Gould–Toint, §3.5"
+
+[[node]]
+id = "exists_slowSecondOrder_ridge"
+source = "Cartis–Gould–Toint, §3.5"
+
+[[node]]
+id = "isMClassStepWith_ridge"
+source = "Cartis–Gould–Toint, §3.5"

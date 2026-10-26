@@ -9,7 +9,7 @@ import NumlibSurface.CartisGouldToint.Chapter03.Section04
 
 Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
 Algorithms for Nonconvex Optimization* [cartis2022evaluation], §§3.5.1–3.5.2 and the
-corresponding proofs of Appendix B (Lemmas 3.5.1–3.5.3, Theorem 3.5.4), on
+corresponding proofs of Appendix B (Lemmas 3.5.1–3.5.3, Theorem 3.5.4), and Corollary 3.5.5, on
 `ℝⁿ = EuclideanSpace ℝ (Fin n)`.
 
 ## Main definitions
@@ -22,17 +22,21 @@ corresponding proofs of Appendix B (Lemmas 3.5.1–3.5.3, Theorem 3.5.4), on
   `f(x_i), ∇f(x_i), ∇²f(x_i)` at the previous iterates) is in the class `𝓜` on `f`: every step
   `s_k = x_{k+1} - x_k` (3.5.1) before the first `k` with `‖∇f(x_k)‖ ≤ ε` satisfies
   (3.5.2)–(3.5.4).
-* `secondOrderK`, `secondOrderF`, `secondOrderG`, `secondOrderH` — the data (3.5.11)–(3.5.12),
-  and `ridgeJet` — the second-order jet of a ridge function on `ℝ¹`.
+* `ridgeJet` — the second-order jet of a ridge function on `ℝ¹` (the data (3.5.11)–(3.5.12) are
+  `Optimization.secondOrderK`, `secondOrderF`, `secondOrderG`, `secondOrderH`).
 
 ## Main results
 
 * `lemma_3_5_1`, `lemma_3_5_2`, `lemma_3_5_2_sqrt`, `lemma_3_5_3` — Lemmas 3.5.1–3.5.3.
 * `exists_slowSecondOrder_ridge` — the one-dimensional function of the proof of Theorem 3.5.4,
   for arbitrary step factors `θ_k ∈ [a, b]` (also used for Corollary 3.5.5).
-* `theorem_3_5_4` — Theorem 3.5.4: for every method in `𝓜` there is a function satisfying f.Bb,
-  f.gL and f.HL (constants independent of `ε₁`) on which the method terminates exactly at
-  iteration `⌈ε₁^{-3/2}⌉`.
+* `theorem_3_5_4` — Theorem 3.5.4: for every method in `𝓜` (from any starting point) there is a
+  function satisfying f.Bb, f.gL and f.HL (constants independent of `ε₁`) on which the method
+  terminates exactly at iteration `⌈ε₁^{-3/2}⌉`.
+* `isMClassStepWith_ridge` — one-dimensional criterion for steps of class `𝓜` on ridge functions.
+* `corollary_3_5_5_i`, `corollary_3_5_5_ii`, `corollary_3_5_5_iii` — Corollary 3.5.5 for AR2, TRε
+  and iRN: runs whose steps are of class `𝓜` (constants independent of `ε₁`) terminating at
+  `⌈ε₁^{-3/2}⌉`, matching the upper bounds of Theorems 3.3.5, 3.4.5, 3.4.11.
 
 ## Fixes and deviations with respect to the book
 
@@ -53,6 +57,10 @@ corresponding proofs of Appendix B (Lemmas 3.5.1–3.5.3, Theorem 3.5.4), on
   index. Since the function depends on the method, the method's iterates on the data (3.5.12)
   are computed first (they depend only on the oracle answers), and the step factors are clipped
   to `[(1 - κ_rg)/κ_λ, 1 + κ_rg]`; for a method in `𝓜` the clipping is inactive.
+* **Corollary 3.5.5**: the AR2 example is that of Theorem 3.3.6 (data of Theorem 12.2.15 with
+  zero Hessians), not (3.5.12). For iRN the ratio (3.4.35) is not scale invariant and the data
+  (3.5.12) are rescaled to `c G(x/c)`, `c = min(1, (2η)^{-1/2})` (which keeps the gradients and the
+  termination index); the book's sketch omits this.
 * The powers `‖∇f(x)‖^{1/2}` are written `√‖∇f(x)‖`; the positive semidefiniteness in (3.5.3) is
   `∇²f(x)[d, d] + λ ‖d‖² ≥ 0` for all `d`.
 -/
@@ -197,16 +205,6 @@ private theorem norm_gradient_add_le_of_equation {L : ℝ} (hf : AssumptionHL f 
     (heq : IsMClassEquation f x s lam r) :
     ‖gradient f (x + s)‖ ≤ L / 2 * ‖s‖ ^ 2 + ‖r - lam • s‖ := by
   have hfx := hf.contDiffAt x
-  have hT := norm_fderiv_le_of_taylorPolynomial convex_univ (fun y _ => hf.contDiffAt y)
-    (by norm_num : 1 ≤ 2) hf.iteratedFDerivLipschitzOn (mem_univ x) (mem_univ (x + s))
-  have hTeq : taylorPolynomial f 2 x =
-      fun u => f x + Subproblem.quadModel (gradient f x) (hessianOperator f x) u :=
-    funext fun u => taylorPolynomial_two_eq_quadModel hfx u
-  have hder : fderiv ℝ (taylorPolynomial f 2 x) s =
-      innerSL ℝ (gradient f x + hessianOperator f x s) := by
-    rw [hTeq]
-    exact ((Subproblem.hasFDerivAt_quadModel (hessianOperator_isSymmetric hfx) s).const_add
-      (f x)).fderiv
   have hvec : gradient f x + hessianOperator f x s = r - lam • s := by
     refine ext_inner_right ℝ fun v => ?_
     have hsym := hessianOperator_isSymmetric hfx s v
@@ -216,10 +214,8 @@ private theorem norm_gradient_add_le_of_equation {L : ℝ} (hf : AssumptionHL f 
     rw [inner_add_left, hsym, inner_sub_left, inner_smul_left]
     simp only [conj_trivial]
     linarith
-  rw [hder, hvec, innerSL_apply_norm] at hT
-  rw [norm_gradient_eq]
-  norm_num [Nat.factorial] at hT ⊢
-  linarith
+  rw [← hvec]
+  exact norm_gradient_add_le hf
 
 /-- **Lemma 3.5.2** of [cartis2022evaluation], sharp form. Under f.HL, if `s, λ, r` satisfy
 (3.5.2) with `‖r‖ ≤ κ_rs ‖s‖²`, `0 ≤ λ ≤ κ̄_λ ‖s‖` (3.5.6), then with
@@ -316,62 +312,6 @@ end Lemmas
 
 /-! ### The data (3.5.12) and the one-dimensional example -/
 
-/-- `k_ε = ⌈ε^{-3/2}⌉` (3.5.11). -/
-noncomputable def secondOrderK (ε : ℝ) : ℕ := ⌈ε ^ (-(3 / 2 : ℝ))⌉₊
-
-/-- The function values `f_k = 1 - k ε^{3/2}/2` of (3.5.12). -/
-noncomputable def secondOrderF (ε : ℝ) (k : ℕ) : ℝ := 1 - k * ε ^ (3 / 2 : ℝ) / 2
-
-/-- The derivatives `g_k = -2 ε f_k` of (3.5.12). -/
-noncomputable def secondOrderG (ε : ℝ) (k : ℕ) : ℝ := -2 * ε * secondOrderF ε k
-
-/-- The second derivatives `H_k = 4 ε^{1/2} f_k²` of (3.5.12). -/
-noncomputable def secondOrderH (ε : ℝ) (k : ℕ) : ℝ := 4 * ε ^ (1 / 2 : ℝ) * secondOrderF ε k ^ 2
-
-section Data
-
-variable {ε : ℝ}
-
-private theorem rpow_three_halves_mul (hε : 0 < ε) :
-    ε ^ (-(3 / 2 : ℝ)) * ε ^ (3 / 2 : ℝ) = 1 := by
-  rw [← Real.rpow_add hε]; simp
-
-theorem secondOrderF_gt_half (hε : 0 < ε) {k : ℕ} (hk : k < secondOrderK ε) :
-    1 / 2 < secondOrderF ε k := by
-  have hp : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
-  have h1 : (k : ℝ) < ε ^ (-(3 / 2 : ℝ)) := Nat.lt_ceil.1 hk
-  have h2 : (k : ℝ) * ε ^ (3 / 2 : ℝ) < 1 := by
-    have := mul_lt_mul_of_pos_right h1 hp
-    rwa [rpow_three_halves_mul hε] at this
-  unfold secondOrderF; linarith
-
-theorem secondOrderF_le_one (hε : 0 < ε) (k : ℕ) : secondOrderF ε k ≤ 1 := by
-  have : 0 ≤ (k : ℝ) * ε ^ (3 / 2 : ℝ) / 2 := by
-    have := Real.rpow_pos_of_pos hε (3 / 2 : ℝ); positivity
-  unfold secondOrderF; linarith
-
-theorem secondOrderF_K_le_half (hε : 0 < ε) : secondOrderF ε (secondOrderK ε) ≤ 1 / 2 := by
-  have hp : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
-  have h1 : ε ^ (-(3 / 2 : ℝ)) ≤ (secondOrderK ε : ℝ) := Nat.le_ceil _
-  have h2 : 1 ≤ (secondOrderK ε : ℝ) * ε ^ (3 / 2 : ℝ) := by
-    have := mul_le_mul_of_nonneg_right h1 hp.le
-    rwa [rpow_three_halves_mul hε] at this
-  unfold secondOrderF; linarith
-
-theorem secondOrderF_pos (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ} (hk : k ≤ secondOrderK ε) :
-    0 < secondOrderF ε k := by
-  have hp : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
-  have hp1 : ε ^ (3 / 2 : ℝ) < 1 := Real.rpow_lt_one hε.le hε1 (by norm_num)
-  have h1 : (secondOrderK ε : ℝ) < ε ^ (-(3 / 2 : ℝ)) + 1 :=
-    Nat.ceil_lt_add_one (Real.rpow_pos_of_pos hε _).le
-  have h2 : (k : ℝ) * ε ^ (3 / 2 : ℝ) < 2 := by
-    have hk' : (k : ℝ) ≤ secondOrderK ε := by exact_mod_cast hk
-    have := mul_lt_mul_of_pos_right (hk'.trans_lt h1) hp
-    rw [add_mul, rpow_three_halves_mul hε, one_mul] at this
-    linarith
-  unfold secondOrderF; linarith
-
-end Data
 
 /-- The second-order jet `(c₀, c₁ ⟪e, ·⟫, c₂ ⟪e, ·⟫⟪e, ·⟫)` with coefficients `c : Fin 3 → ℝ` along
 `e` (the jets of a ridge function `x ↦ G ⟪e, x⟫`, `jetOracle_ridge`). -/
@@ -413,25 +353,7 @@ theorem exists_slowSecondOrder_ridge {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     fun ε θ x hε hε1 hθ hx => ?_⟩
   obtain ⟨G, hG, hGL, hGB, hGk⟩ := H ε θ x hε hε1 hθ (fun k hk => by
     rw [hx k hk]; rfl)
-  -- `G'` is `B`-Lipschitz
-  have hG'L : ∀ s t, |deriv G s - deriv G t| ≤ B * |s - t| := by
-    intro s t
-    have hd : Differentiable ℝ (deriv G) := by
-      have := hG.differentiable_iteratedDeriv 1 (by norm_num)
-      rwa [iteratedDeriv_one] at this
-    have hb : ∀ y ∈ (univ : Set ℝ), ‖deriv (deriv G) y‖ ≤ B := fun y _ => by
-      have := hGB 2 le_rfl y
-      rwa [iteratedDeriv_succ, iteratedDeriv_one, ← Real.norm_eq_abs] at this
-    have := convex_univ.norm_image_sub_le_of_norm_deriv_le (fun y _ => hd y) hb
-      (mem_univ t) (mem_univ s)
-    simpa [Real.norm_eq_abs] using this
-  obtain ⟨hb, hgl, -⟩ := Chapter02.ridge_assumptions (hG.of_le (by norm_num)) hG'L
-    (fun t => by simpa using hGB 0 (by norm_num) t)
-  have hhl : AssumptionHL (ridge G Chapter02.e₀) (max L 1) :=
-    assumptionHL_iff.2 ⟨contDiff_ridge hG, le_max_right _ _,
-      iteratedFDerivLipschitzOn_ridge hG le_rfl Chapter02.norm_e₀.le (by positivity)
-        fun s t => (hGL s t).trans (mul_le_mul_of_nonneg_right (le_max_left _ _)
-          (abs_nonneg _))⟩
+  obtain ⟨hb, hgl, -, hhl, -⟩ := ridge_assumptions_two hG hGL hGB
   refine ⟨G, hG, hb, hgl, hhl, fun y => by simpa [ridge_apply] using hGB 0 (by norm_num) _,
     fun k hk => ?_⟩
   obtain ⟨h0, h1, h2⟩ := hGk k hk
@@ -463,11 +385,11 @@ private noncomputable def clipFactor (a b : ℝ)
     (k : ℕ) : ℝ :=
   max a (min b (⟪Chapter02.e₀, dataIter M ε (k + 1) - dataIter M ε k⟫ / refStep ε k))
 
-/-- The interpolation abscissae `x_{k+1} = x_k + θ_k c_k`, `x_0 = 0`. -/
+/-- The interpolation abscissae `x_{k+1} = x_k + θ_k c_k`, `x_0 = ⟪e₀, M.x₀⟫`. -/
 private noncomputable def nodes (a b : ℝ)
     (M : OracleMethod (EuclideanSpace ℝ (Fin 1)) (Jet (EuclideanSpace ℝ (Fin 1)) 2)) (ε : ℝ)
     (k : ℕ) : ℝ :=
-  ∑ j ∈ range k, clipFactor a b M ε j * refStep ε j
+  ⟪Chapter02.e₀, M.x₀⟫ + ∑ j ∈ range k, clipFactor a b M ε j * refStep ε j
 
 /-- The step-factor bounds (3.5.19) for a step of class `𝓜` on the data (3.5.12): if at a point
 with derivatives `g < 0`, `H > 0` and `H ≥ |g|^{1/2}`, the step `t` satisfies
@@ -503,17 +425,17 @@ private theorem factor_mem {g H lam t ρ κrg κlam : ℝ} (hrg : κrg ≤ 1) (h
 
 /-- **Theorem 3.5.4** of [cartis2022evaluation] (a complexity lower bound for methods in `𝓜`).
 For all constants `κ_rg ∈ [0, 1)`, `κ_rs > 0`, `κ_λ > 1` there are `f_low`, `L₁ ≥ 1`, `L₂ ≥ 1` and
-`B` such that for every `ε₁ ∈ (0, 1)` and every second-order oracle method `M` on `ℝ¹` started at
-`x₀ = 0` there is `f : ℝ¹ → ℝ` satisfying f.Bb, f.gL and f.HL with these constants, `|f| ≤ B` and
-`f(0) = 1`, such that, if `M` is in the class `𝓜` on `f`, then the first iterate with
+`B` such that for every `ε₁ ∈ (0, 1)` and every second-order oracle method `M` on `ℝ¹` (with any
+starting point `x₀`) there is `f : ℝ¹ → ℝ` satisfying f.Bb, f.gL and f.HL with these constants,
+`|f| ≤ B` and `f(x₀) = 1`, such that, if `M` is in the class `𝓜` on `f`, then the first iterate with
 `‖∇f(x_k)‖ ≤ ε₁` is `x_{k_ε}`, `k_ε = ⌈ε₁^{-3/2}⌉`: the method needs `k_ε + 1` evaluations of `f`,
 `∇f` and `∇²f`. -/
 theorem theorem_3_5_4 {κrg κrs κlam : ℝ} (hrg0 : 0 ≤ κrg) (hrg1 : κrg < 1) (_hrs : 0 < κrs)
     (hlam1 : 1 < κlam) :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
       ∀ M : OracleMethod (EuclideanSpace ℝ (Fin 1)) (Jet (EuclideanSpace ℝ (Fin 1)) 2),
-        M.x₀ = 0 → ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧
-          Chapter02.AssumptionGL f L₁ ∧ AssumptionHL f L₂ ∧ (∀ y, |f y| ≤ B) ∧ f 0 = 1 ∧
+        ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧
+          Chapter02.AssumptionGL f L₁ ∧ AssumptionHL f L₂ ∧ (∀ y, |f y| ≤ B) ∧ f M.x₀ = 1 ∧
           (IsMClassMethod κrg κrs κlam M f ε →
             IsFirstHit (fun k => ‖gradient f (M.iterate (jetOracle f 2) k)‖ ≤ ε)
               ⌈ε ^ (-(3 / 2 : ℝ))⌉₊) := by
@@ -523,18 +445,20 @@ theorem theorem_3_5_4 {κrg κrs κlam : ℝ} (hrg0 : 0 ≤ κrg) (hrg1 : κrg <
   have hab : a ≤ b := by
     rw [div_le_iff₀ (by linarith)]; nlinarith
   obtain ⟨L₁, L₂, B, hL₁, hL₂, -, H⟩ := exists_slowSecondOrder_ridge ha hab
-  refine ⟨-B, L₁, L₂, B, hL₁, hL₂, fun ε hε hε1 M hM0 => ?_⟩
+  refine ⟨-B, L₁, L₂, B, hL₁, hL₂, fun ε hε hε1 M => ?_⟩
   set K := secondOrderK ε
   set xs := nodes a b M ε
   have hθ : ∀ k, clipFactor a b M ε k ∈ Icc a b := fun k =>
     ⟨le_max_left _ _, max_le hab (min_le_left _ _)⟩
   obtain ⟨G, hG, hb, hgl, hhl, hB, hGk⟩ := H ε (clipFactor a b M ε) xs hε hε1.le
-    (fun k _ => hθ k) (fun k _ => by simp [xs, nodes, sum_range_succ, refStep, mul_div_assoc])
+    (fun k _ => hθ k) (fun k _ => by
+      simp only [xs, nodes, sum_range_succ, refStep, mul_div_assoc]; ring)
   set f := ridge G Chapter02.e₀
-  have hxs0 : xs 0 = 0 := by simp [xs, nodes]
-  have hf0 : f 0 = 1 := by
+  have hxs0 : xs 0 = ⟪Chapter02.e₀, M.x₀⟫ := by simp [xs, nodes]
+  have hx0' : M.x₀ = xs 0 • Chapter02.e₀ := by rw [hxs0]; exact eq_inner_e₀_smul _
+  have hf0 : f M.x₀ = 1 := by
     have := (hGk 0 (Nat.zero_le _)).1
-    simp only [f, ridge_apply, inner_zero_right]
+    simp only [f, ridge_apply]
     rw [← hxs0, this]; simp [secondOrderF]
   refine ⟨f, hb, hgl, hhl, hB, hf0, fun hM => ?_⟩
   -- facts on the data
@@ -573,7 +497,7 @@ theorem theorem_3_5_4 {κrg κrs κlam : ℝ} (hrg0 : 0 ≤ κrg) (hrg1 : κrg <
   have hiter : ∀ k ≤ K, ∀ i ≤ k, M.iterate (jetOracle f 2) i = xs i • Chapter02.e₀ := by
     intro k
     induction k with
-    | zero => intro _ i hi; rw [Nat.le_zero.1 hi, M.iterate_zero, hM0, hxs0, zero_smul]
+    | zero => intro _ i hi; rw [Nat.le_zero.1 hi, M.iterate_zero, hx0']
     | succ k ih =>
       intro hk i hi
       have hx := ih (Nat.le_of_succ_le hk)
@@ -589,7 +513,7 @@ theorem theorem_3_5_4 {κrg κrs κlam : ℝ} (hrg0 : 0 ≤ κrg) (hrg1 : κrg <
         rw [hx i (Nat.lt_succ_iff.1 i.isLt), hjet i (by omega)]
       have hprev : dataIter M ε k = xs k • Chapter02.e₀ := by
         cases k with
-        | zero => simp [dataIter, hM0, hxs0]
+        | zero => simp [dataIter, hx0']
         | succ m =>
           rw [← hx (m + 1) le_rfl, M.iterate_succ]
           simp only [dataIter]
@@ -665,6 +589,7 @@ theorem theorem_3_5_4 {κrg κrs κlam : ℝ} (hrg0 : 0 ≤ κrg) (hrg1 : κrg <
       have hxs : xs (k + 1) = xs k + t := by
         simp only [xs, nodes, sum_range_succ]
         rw [hclip, div_mul_cancel₀ _ hrefpos.ne']
+        ring
       have hs' : t • Chapter02.e₀ = s := (eq_inner_e₀_smul s).symm
       rw [hxs, add_smul, hnext, hs']
       exact (add_sub_cancel p _).symm
@@ -679,46 +604,143 @@ end Theorem354
 
 /-! ### Corollary 3.5.5 -/
 
+section RidgeClass
+
+open Chapter02 (e₀ norm_e₀ inner_e₀_smul)
+
+/-- **Steps of class `𝓜` on a ridge function of `ℝ¹`.** At `x` with `a = ⟪e₀, x⟫`, a step
+`t e₀` (`t ≠ 0`) with multiplier `λ ≥ 0` and scalar residual `ρ` satisfies (3.5.2)–(3.5.4) as soon
+as the one-dimensional conditions hold: `(G''(a) + λ) t = -G'(a) + ρ`,
+`|ρ| ≤ min(κ_rg |G'(a)|, κ_rs t²)`, `G''(a) + λ ≥ 0` and
+`G''(a) + λ ≤ κ_λ max(|G''(a)|, |G'(a)|^{1/2})`. -/
+theorem isMClassStepWith_ridge {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G) (x : EuclideanSpace ℝ (Fin 1))
+    {t lam ρ κrg κrs κlam : ℝ} (ht : t ≠ 0) (hlam : 0 ≤ lam)
+    (heq : (iteratedDeriv 2 G ⟪e₀, x⟫ + lam) * t = -deriv G ⟪e₀, x⟫ + ρ)
+    (hres : |ρ| ≤ min (κrg * |deriv G ⟪e₀, x⟫|) (κrs * t ^ 2))
+    (hpsd : 0 ≤ iteratedDeriv 2 G ⟪e₀, x⟫ + lam)
+    (hbd : iteratedDeriv 2 G ⟪e₀, x⟫ + lam ≤
+      κlam * max |iteratedDeriv 2 G ⟪e₀, x⟫| √|deriv G ⟪e₀, x⟫|) :
+    IsMClassStepWith (ridge G e₀) κrg κrs κlam x (t • e₀) lam (ρ • e₀) := by
+  have hgrad : gradient (ridge G e₀) x = deriv G ⟪e₀, x⟫ • e₀ :=
+    gradient_ridge (hG.differentiable (by norm_num)) x
+  have hng : ‖gradient (ridge G e₀) x‖ = |deriv G ⟪e₀, x⟫| := by
+    rw [hgrad, norm_smul, norm_e₀, mul_one, Real.norm_eq_abs]
+  refine ⟨smul_ne_zero ht (by intro h; simpa [h] using norm_e₀), fun v => ?_, ?_, hlam,
+    fun d => ?_, ?_⟩
+  · rw [iteratedFDeriv_ridge_apply hG (by norm_num), hgrad]
+    simp only [Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one, inner_e₀_smul,
+      real_inner_smul_left]
+    linear_combination ⟪e₀, v⟫ * heq
+  · rw [hng, norm_smul, norm_smul, norm_e₀, mul_one, mul_one, Real.norm_eq_abs,
+      Real.norm_eq_abs, sq_abs]
+    exact hres
+  · rw [iteratedFDeriv_ridge_apply_diag hG (by norm_num), ← inner_e₀_sq d]
+    nlinarith [sq_nonneg ⟪e₀, d⟫]
+  · rw [hessianMinEig_ridge hG, hng]
+    exact hbd
+
+end RidgeClass
+
 /-- **Corollary 3.5.5** of [cartis2022evaluation] for **AR2** (optimal complexity in `𝓜`). For
-all AR2 constants there are `f_low`, `L_{f,1}, L_{f,2} ≥ 1` and `B` such that for every
+all AR2 constants there are `f_low`, `L_{f,1}, L_{f,2} ≥ 1`, `B` and `κ_λ > 1` such that for every
 `ε₁ ∈ (0, 1]` there are `f : ℝ¹ → ℝ` satisfying f.Bb, f.gL, f.HL and `|f| ≤ B` and an AR2 run with
-`ε₂ = +∞` from `x₀ = 0` which terminates exactly at iteration `k_ε = ⌈ε₁^{-3/2}⌉` (the lower bound
-of Theorem 3.5.4 is attained, Theorem 3.3.6), while the upper bound of Theorem 3.3.5 for this run,
+`ε₂ = +∞` from `x₀ = 0` which terminates exactly at iteration `k_ε = ⌈ε₁^{-3/2}⌉`, whose steps are
+of class `𝓜` (with `κ_rg = 0`, `κ_rs = 1`, `κ_λ`, `λ_k = σ₀ ‖s_k‖/2`), so the lower bound of
+Theorem 3.5.4 is attained by AR2, while the upper bound of Theorem 3.3.5 for this run,
 `κ^A (f(x₀) - f_low)/ε₁^{3/2} + κ^C` with `f(x₀) - f_low ≤ 2B`, is of the same order
-`ε₁^{-3/2}` with constants independent of `ε₁`. -/
+`ε₁^{-3/2}` with constants independent of `ε₁`. The example is that of Theorem 3.3.6 (the data of
+Theorem 12.2.15 with `p = 2`, `q = 1`: zero Hessians at the iterates and exact global model
+minimizers with `σ_k = σ₀`), not the data (3.5.12). -/
 theorem corollary_3_5_5_i (P : AR2Params) :
-    ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
+    ∃ flow L₁ L₂ B κlam : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ 1 < κlam ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧
         Chapter02.AssumptionGL f L₁ ∧ AssumptionHL f L₂ ∧ (∀ y, |f y| ≤ B) ∧
         ∃ x s σ, x 0 = 0 ∧ algorithm_3_3_1 f P ε none x s σ ∧
           IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε) ⌈ε ^ (-(3 / 2 : ℝ))⌉₊ ∧
+          (∀ k < ⌈ε ^ (-(3 / 2 : ℝ))⌉₊, IsMClassStep f 0 1 κlam (x k) (x (k + 1) - x k)) ∧
           f (x 0) - flow ≤ 2 * B ∧
           ((⌈ε ^ (-(3 / 2 : ℝ))⌉₊ + 1 : ℕ) : ℝ) ≤
             kappaSAR2 P L₂ * (1 + |Real.log P.γ₁| / Real.log P.γ₂) * (2 * B) /
               ε ^ (3 / 2 : ℝ) + kappaCAR2 P L₂ := by
-  obtain ⟨flow, L₁, L₂, B, hL₁, hL₂, H⟩ := theorem_3_3_6 P
-  -- `flow = -B` in the construction; we recover the bound from `|f| ≤ B`
-  refine ⟨-B, L₁, L₂, B, hL₁, hL₂, fun ε hε hε1 => ?_⟩
-  obtain ⟨f, -, hgl, hhl, hB, x, s, σ, hx0, hrun, -, -, hhit⟩ := H ε hε hε1
-  have hb : Chapter02.AssumptionBb f (-B) := fun y => by linarith [neg_abs_le (f y), hB y]
-  have hf0 : f (x 0) - -B ≤ 2 * B := by linarith [le_abs_self (f (x 0)), hB (x 0)]
-  refine ⟨f, hb, hgl, hhl, hB, x, s, σ, hx0, hrun, hhit, hf0, ?_⟩
-  obtain ⟨kε, hk, hF, -⟩ := theorem_3_3_5 hb hhl hrun
-  rw [hk.unique hhit, funEvalCount_eq] at hF
-  refine hF.trans ?_
-  have hA : 0 ≤ kappaSAR2 P L₂ * (1 + |Real.log P.γ₁| / Real.log P.γ₂) := by
-    have := kappaSAR2_pos (P := P) hhl.nonneg
-    have := P.ar.log_γ₂_pos
-    positivity
-  gcongr
+  obtain ⟨L₁, L₂, B, hL₁, hL₂, -, H⟩ := exists_ar2_slow_data P le_rfl (by norm_num : 1 ≤ 2)
+  have hσ₀ := P.σ₀_pos
+  set κlam := 1 + √(P.σ₀ / 2)
+  refine ⟨-B, L₁, L₂, B, κlam, hL₁, hL₂, by
+    have := Real.sqrt_pos.2 (half_pos hσ₀); simp only [κlam]; linarith, fun ε hε hε1 => ?_⟩
+  obtain ⟨G, xr, hG, hb, hgl, hhl, hB, hx0, hd, hx, hv⟩ := H ε hε hε1
+  have hK := ar2SlowK_pos (q := 1) hε
+  set K := ar2SlowK 1 ε
+  have htest : ∀ k ≤ K, (stopTest (ridge G Chapter02.e₀) ε none (xr k • Chapter02.e₀) ↔
+      K ≤ k) := fun k hk => by
+    rw [stopTest_none, gradient_ridge (hG.differentiable (by norm_num)),
+      Chapter02.inner_e₀_smul, ← iteratedDeriv_one, (hd k hk).1, norm_smul, Chapter02.norm_e₀,
+      mul_one, norm_neg, Real.norm_of_nonneg (ar2SlowAlpha_pos hε hK hk).le]
+    exact ar2SlowAlpha_le_iff hε hK hk
+  obtain ⟨x, s, σ, hx0', hrun, -, -, hhit, hxk⟩ := exists_ar2_ridge_run P hε hε1
+    (ε₂ := none) (fun _ h => absurd h (by simp)) le_rfl (by norm_num) hG
+    (fun k hk => ar2SlowAlpha_pos hε hK hk.le) (fun k hk => hd k hk.le) hx hv htest
+  have hhit' : IsFirstHit (fun k => ‖gradient (ridge G Chapter02.e₀) (x k)‖ ≤ ε) K := by
+    simpa only [stopTest_none] using hhit
+  have hf0 : ridge G Chapter02.e₀ (x 0) - -B ≤ 2 * B := by
+    linarith [le_abs_self (ridge G Chapter02.e₀ (x 0)), hB (x 0)]
+  rw [← ar2SlowK_one]
+  refine ⟨ridge G Chapter02.e₀, hb, hgl, hhl, hB, x, s, σ, by rw [hx0', hx0, zero_smul], hrun,
+    hhit', fun k hk => ?_, hf0, ?_⟩
+  · -- the step is of class `𝓜` with `λ = σ₀ t/2`, `r = 0`
+    set α := ar2SlowAlpha ε K k
+    have hα : 0 < α := ar2SlowAlpha_pos hε hK hk.le
+    set y := α / (P.σ₀ * ((1 - 1).factorial : ℝ) / ((2 : ℕ).factorial : ℝ))
+    have hy : y = 2 * α / P.σ₀ := by
+      simp only [y]; norm_num [Nat.factorial]; rw [div_div_eq_mul_div, mul_comm]
+    set t := xr (k + 1) - xr k
+    have ht : t = √y := by
+      simp only [t]; rw [hx k hk, Real.sqrt_eq_rpow]; simp only [y, α]; norm_num
+    have hy0 : 0 < y := by rw [hy]; positivity
+    have ht0 : 0 < t := by rw [ht]; exact Real.sqrt_pos.2 hy0
+    have ht2 : t ^ 2 = 2 * α / P.σ₀ := by rw [ht, Real.sq_sqrt hy0.le, hy]
+    have hstep : x (k + 1) - x k = t • Chapter02.e₀ := by rw [hxk, hxk, ← sub_smul]
+    have hxe : ⟪Chapter02.e₀, x k⟫ = xr k := by rw [hxk]; exact Chapter02.inner_e₀_smul _
+    obtain ⟨h1, h2⟩ := hd k hk.le
+    have hg : deriv G (xr k) = -α := by rw [← iteratedDeriv_one]; exact h1
+    have hH : iteratedDeriv 2 G (xr k) = 0 := h2 2 (by norm_num) le_rfl (by norm_num)
+    rw [hstep]
+    refine ⟨P.σ₀ * t / 2, (0 : ℝ) • Chapter02.e₀, isMClassStepWith_ridge hG (x k) ht0.ne'
+      (lam := P.σ₀ * t / 2) (ρ := 0) (by positivity) ?_ ?_ ?_ ?_⟩
+    · rw [hxe, hH, hg]
+      have : P.σ₀ * t / 2 * t = α := by
+        rw [show P.σ₀ * t / 2 * t = P.σ₀ / 2 * t ^ 2 by ring, ht2]; field_simp
+      linarith
+    · rw [abs_zero]; exact le_min (by simp) (by positivity)
+    · rw [hxe, hH]; positivity
+    · rw [hxe, hH, hg, abs_zero, abs_neg, abs_of_pos hα, zero_add,
+        max_eq_right (Real.sqrt_nonneg _)]
+      have hsq : P.σ₀ * t / 2 = √(P.σ₀ / 2) * √α := by
+        rw [← Real.sqrt_mul (by positivity)]
+        refine (Real.sqrt_eq_iff_mul_self_eq (by positivity) (by positivity)).2 ?_ |>.symm
+        rw [show P.σ₀ * t / 2 * (P.σ₀ * t / 2) = P.σ₀ ^ 2 / 4 * t ^ 2 by ring, ht2]
+        field_simp
+        ring
+      rw [hsq]
+      have := Real.sqrt_nonneg α
+      simp only [κlam]
+      nlinarith
+  · obtain ⟨kε, hk, hF, -⟩ := theorem_3_3_5 hb hhl hrun
+    rw [hk.unique hhit', funEvalCount_eq] at hF
+    refine hF.trans ?_
+    have hA : 0 ≤ kappaSAR2 P L₂ * (1 + |Real.log P.γ₁| / Real.log P.γ₂) := by
+      have := kappaSAR2_pos (P := P) hhl.nonneg
+      have := P.ar.log_γ₂_pos
+      positivity
+    gcongr
 
 /-- **Corollary 3.5.5** of [cartis2022evaluation] for **TRε** (optimal complexity in `𝓜`). There
 are `f_low`, `L_{f,1}, L_{f,2} ≥ 1` and `B` such that for all TRε constants and every
 `ε₁ ∈ (0, 1)` with `√ε₁ < Δ₀` (TRε requires `Δ₀ > ε_*`) there are `f : ℝ¹ → ℝ` satisfying f.Bb,
 f.gL, f.HL and `|f| ≤ B` and a TRε run with `ε_* = √ε₁`, `ε₂ = +∞` from `x₀ = 0` (interior steps,
-constant radius) which terminates exactly at iteration `k_ε = ⌈ε₁^{-3/2}⌉`, while the upper bound
-of Theorem 3.4.5 for this run is `κ^A 2B ε₁^{-3/2} + κ^B |log ε₁| + κ^C`, of the same order up to
-the logarithmic term. -/
+constant radius) which terminates exactly at iteration `k_ε = ⌈ε₁^{-3/2}⌉`, whose steps are of
+class `𝓜` (with `κ_rg = 0`, `κ_rs = 1`, `κ_λ = 2`, `λ_k = ε_*`), while the upper bound of
+Theorem 3.4.5 for this run is `κ^A 2B ε₁^{-3/2} + κ^B |log ε₁| + κ^C`, of the same order up to the
+logarithmic term. -/
 theorem corollary_3_5_5_ii :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ (P : TREpsParams) (ε : ℝ), 0 < ε → ε < 1 →
       √ε < P.Δ₀ → ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧
@@ -726,59 +748,122 @@ theorem corollary_3_5_5_ii :
         ∃ (x s : ℕ → EuclideanSpace ℝ (Fin 1)) (Δ : ℕ → ℝ), x 0 = 0 ∧
           algorithm_3_4_1 f P ε none (√ε) x s Δ ∧
           IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε) ⌈ε ^ (-(3 / 2 : ℝ))⌉₊ ∧
+          (∀ k < ⌈ε ^ (-(3 / 2 : ℝ))⌉₊, IsMClassStep f 0 1 2 (x k) (x (k + 1) - x k)) ∧
           ((⌈ε ^ (-(3 / 2 : ℝ))⌉₊ + 1 : ℕ) : ℝ) ≤
             kappaATREps P L₂ * (2 * B) / ε ^ (3 / 2 : ℝ) +
               1 / (2 * |Real.log P.γ₂|) * |Real.log ε| + kappaCTREps P L₂ := by
   obtain ⟨flow, L₁, L₂, B, hL₁, hL₂, H⟩ := tre_slow_example
   refine ⟨-B, L₁, L₂, B, hL₁, hL₂, fun P ε hε hε1 hΔ => ?_⟩
-  obtain ⟨f, -, hgl, hhl, hB, x, s, Δ, hx0, hrun, hhit⟩ := H P ε hε hε1 hΔ
+  obtain ⟨G, X, t, hG, -, hgl, hhl, hB, hdata, x, s, Δ, hx0, hxk, hrun, hhit⟩ :=
+    H P ε hε hε1 hΔ
+  set f := ridge G Chapter02.e₀
   have hb : Chapter02.AssumptionBb f (-B) := fun y => by linarith [neg_abs_le (f y), hB y]
-  refine ⟨f, hb, hgl, hhl, hB, x, s, Δ, hx0, hrun, hhit, ?_⟩
-  obtain ⟨kε, hk, hF, -⟩ := theorem_3_4_5 hb hhl hrun
-  rw [hk.unique hhit, funEvalCount_eq] at hF
-  refine hF.trans ?_
-  have hA : 0 ≤ kappaATREps P L₂ := by
-    have := kappaDeltaF_pos P hhl.pos
-    have := Real.log_nonneg P.one_le_γ₃
-    unfold kappaATREps kappaSTREps
-    positivity
-  have hf0 : f (x 0) - -B ≤ 2 * B := by linarith [le_abs_self (f (x 0)), hB (x 0)]
-  gcongr
+  refine ⟨f, hb, hgl, hhl, hB, x, s, Δ, hx0, hrun, hhit, fun k hk => ?_, ?_⟩
+  · obtain ⟨hXs, ht, hH, hstat⟩ := hdata k hk
+    have hxe : ⟪Chapter02.e₀, x k⟫ = X k := by rw [hxk]; exact Chapter02.inner_e₀_smul _
+    have hr := Real.sqrt_pos.2 hε
+    rw [show x (k + 1) - x k = t k • Chapter02.e₀ by
+      rw [hxk, hxk, hXs, add_smul, add_sub_cancel_left]]
+    refine ⟨√ε, (0 : ℝ) • Chapter02.e₀, isMClassStepWith_ridge hG (x k) ht.ne' (lam := √ε)
+      (ρ := 0) hr.le ?_ ?_ ?_ ?_⟩
+    · rw [hxe]; linarith
+    · rw [abs_zero]; exact le_min (by simp) (by positivity)
+    · rw [hxe]; linarith
+    · rw [hxe, abs_of_pos (hr.trans_le hH)]
+      have := le_max_left (iteratedDeriv 2 G (X k)) √|deriv G (X k)|
+      linarith
+  · obtain ⟨kε, hk, hF, -⟩ := theorem_3_4_5 hb hhl hrun
+    rw [hk.unique hhit, funEvalCount_eq] at hF
+    refine hF.trans ?_
+    have hA : 0 ≤ kappaATREps P L₂ := by
+      have := kappaDeltaF_pos P hhl.pos
+      have := Real.log_nonneg P.one_le_γ₃
+      unfold kappaATREps kappaSTREps
+      positivity
+    have hf0 : f (x 0) - -B ≤ 2 * B := by linarith [le_abs_self (f (x 0)), hB (x 0)]
+    gcongr
 
 /-- **Corollary 3.5.5** of [cartis2022evaluation] for **iRN** (optimal complexity in `𝓜`),
-**corrected**. For all iRN constants there are `f_low`, `L_{f,1}, L_{f,2} ≥ 1` and `B` such that
-for every `ε₁ ∈ (0, 1)` there are `f : ℝ¹ → ℝ` satisfying f.Bb, f.gL, f.HL and `|f| ≤ B` and an
-iRN run (`Q_k = I`, `ε₂ = +∞`) from `x₀ = 0` terminating at an iteration `k_ε ≥ ⌈ε₁^{-3/2}⌉`,
-while the upper bound of Theorem 3.4.11 for this run is `κ^A 2B ε₁^{-3/2} + κ^B`. (iRN's ratio
-(3.4.35) is not scale invariant: on the data (3.5.12) it is `4 f_k³/θ_k³`, which may be below `η`
-when `η > 1/2`; the example is then rescaled by `c = max(1, 2η)`, and `k_ε = ⌈(ε₁/c)^{-3/2}⌉`,
-still of order `ε₁^{-3/2}`. The book's sketch omits this.) -/
+**with a rescaled example**. For all iRN constants there are `f_low`, `L_{f,1}, L_{f,2} ≥ 1` and
+`B` such that for every `ε₁ ∈ (0, 1)` there are `f : ℝ¹ → ℝ` satisfying f.Bb, f.gL, f.HL and
+`|f| ≤ B` and an iRN run (`Q_k = I`, `ε₂ = +∞`, `λ_k = σ₀ᵁ ‖s_k‖`) from `x₀ = 0` terminating
+exactly at iteration `k_ε = ⌈ε₁^{-3/2}⌉`, whose steps are of class `𝓜` (with `κ_rg = 0`,
+`κ_rs = 1`, `κ_λ = 2 + σ₀ᵁ`), while the upper bound of Theorem 3.4.11 for this run is
+`κ^A 2B ε₁^{-3/2} + κ^B`. (iRN's ratio (3.4.35) is not scale invariant: on the data (3.5.12) it
+is `4 f_k³/θ_k³ ≥ 1/2`, which may be below `η` when `η > 1/2`; the example is therefore
+`f(x) = c G(x/c)` with `c = min(1, (2η)^{-1/2})`, which leaves the gradients at the iterates, and
+hence the termination index, unchanged and makes the ratio at least `1/(2c²) ≥ η`. The book's
+sketch omits this.) -/
 theorem corollary_3_5_5_iii (P : IRNParams) :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧
         Chapter02.AssumptionGL f L₁ ∧ AssumptionHL f L₂ ∧ (∀ y, |f y| ≤ B) ∧
-        ∃ (x s : ℕ → EuclideanSpace ℝ (Fin 1)) (lam σL σU : ℕ → ℝ) (kε : ℕ), x 0 = 0 ∧
+        ∃ (x s : ℕ → EuclideanSpace ℝ (Fin 1)) (lam σL σU : ℕ → ℝ), x 0 = 0 ∧
           algorithm_3_4_2 f P ε none x s lam σL σU (fun _ => ⊤) ∧
-          IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε) kε ∧ ⌈ε ^ (-(3 / 2 : ℝ))⌉₊ ≤ kε ∧
-          ((kε + 1 : ℕ) : ℝ) ≤ kappaAIRN P L₂ * (2 * B) / ε ^ (3 / 2 : ℝ) + kappaBIRN P L₂ := by
+          IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε) ⌈ε ^ (-(3 / 2 : ℝ))⌉₊ ∧
+          (∀ k < ⌈ε ^ (-(3 / 2 : ℝ))⌉₊,
+            IsMClassStep f 0 1 (2 + P.σU₀) (x k) (x (k + 1) - x k)) ∧
+          ((⌈ε ^ (-(3 / 2 : ℝ))⌉₊ + 1 : ℕ) : ℝ) ≤
+            kappaAIRN P L₂ * (2 * B) / ε ^ (3 / 2 : ℝ) + kappaBIRN P L₂ := by
   obtain ⟨flow, L₁, L₂, B, hL₁, hL₂, H⟩ := irn_slow_example P
   refine ⟨-B, L₁, L₂, B, hL₁, hL₂, fun ε hε hε1 => ?_⟩
-  obtain ⟨f, -, hgl, hhl, hB, x, s, lam, σL, σU, hx0, hrun, hhit, hle⟩ := H ε hε hε1
+  obtain ⟨G, X, t, hG, -, hgl, hhl, hB, hdata, x, s, lam, σL, σU, hx0, hxk, -, hrun, hhit⟩ :=
+    H ε hε hε1
+  set f := ridge G Chapter02.e₀
+  have hσ : 0 < P.σU₀ := P.σmin_pos.trans_le P.σmin_le_σU₀
   have hb : Chapter02.AssumptionBb f (-B) := fun y => by linarith [neg_abs_le (f y), hB y]
-  refine ⟨f, hb, hgl, hhl, hB, x, s, lam, σL, σU, _, hx0, hrun, hhit, hle, ?_⟩
-  obtain ⟨kε, hk, hF, -⟩ := theorem_3_4_11 hb hhl hrun
-  rw [hk.unique hhit, funEvalCount_eq] at hF
-  refine hF.trans ?_
-  have hA : 0 ≤ kappaAIRN P L₂ := by
-    have hC : 0 < L₂ + 4 * sigmaUMax P L₂ + 2 * P.κ₃ := by
-      linarith [hhl.nonneg, sigmaUMax_pos P L₂, P.κ₃_pos]
-    have := Real.rpow_pos_of_pos hC (3 / 2 : ℝ)
-    have := P.η_pos
-    have := one_le_irnUnsuccBound P L₂
-    unfold kappaAIRN kappaSIRN
-    have : 0 ≤ irnUnsuccBound P L₂ + 1 := by linarith
-    positivity
-  have hf0 : f (x 0) - -B ≤ 2 * B := by linarith [le_abs_self (f (x 0)), hB (x 0)]
-  gcongr
+  refine ⟨f, hb, hgl, hhl, hB, x, s, lam, σL, σU, hx0, hrun, hhit, fun k hk => ?_, ?_⟩
+  · obtain ⟨hXs, ht, hH, hstat⟩ := hdata k hk
+    have hxe : ⟪Chapter02.e₀, x k⟫ = X k := by rw [hxk]; exact Chapter02.inner_e₀_smul _
+    rw [show x (k + 1) - x k = t k • Chapter02.e₀ by
+      rw [hxk, hxk, hXs, add_smul, add_sub_cancel_left]]
+    refine ⟨P.σU₀ * t k, (0 : ℝ) • Chapter02.e₀, isMClassStepWith_ridge hG (x k) ht.ne'
+      (lam := P.σU₀ * t k) (ρ := 0) (by positivity) ?_ ?_ ?_ ?_⟩
+    · rw [hxe]; linarith
+    · rw [abs_zero]; exact le_min (by simp) (by positivity)
+    · rw [hxe]; nlinarith
+    · rw [hxe, abs_of_pos (ht.trans_le hH)]
+      have := le_max_left (iteratedDeriv 2 G (X k)) √|deriv G (X k)|
+      nlinarith [mul_le_mul_of_nonneg_left hH hσ.le]
+  · obtain ⟨kε, hk, hF, -⟩ := theorem_3_4_11 hb hhl hrun
+    rw [hk.unique hhit, funEvalCount_eq] at hF
+    refine hF.trans ?_
+    have hA : 0 ≤ kappaAIRN P L₂ := by
+      have hC : 0 < L₂ + 4 * sigmaUMax P L₂ + 2 * P.κ₃ := by
+        linarith [hhl.nonneg, sigmaUMax_pos P L₂, P.κ₃_pos]
+      have := Real.rpow_pos_of_pos hC (3 / 2 : ℝ)
+      have := P.η_pos
+      have := one_le_irnUnsuccBound P L₂
+      unfold kappaAIRN kappaSIRN
+      have : 0 ≤ irnUnsuccBound P L₂ + 1 := by linarith
+      positivity
+    have hf0 : f (x 0) - -B ≤ 2 * B := by linarith [le_abs_self (f (x 0)), hB (x 0)]
+    gcongr
+
+/-! ### Deprecated aliases (moved to the backbone) -/
+
+@[deprecated Optimization.secondOrderK (since := "2026-10-26")]
+alias secondOrderK := Optimization.secondOrderK
+
+@[deprecated Optimization.secondOrderF (since := "2026-10-26")]
+alias secondOrderF := Optimization.secondOrderF
+
+@[deprecated Optimization.secondOrderG (since := "2026-10-26")]
+alias secondOrderG := Optimization.secondOrderG
+
+@[deprecated Optimization.secondOrderH (since := "2026-10-26")]
+alias secondOrderH := Optimization.secondOrderH
+
+@[deprecated Optimization.secondOrderF_gt_half (since := "2026-10-26")]
+alias secondOrderF_gt_half := Optimization.secondOrderF_gt_half
+
+@[deprecated Optimization.secondOrderF_le_one (since := "2026-10-26")]
+alias secondOrderF_le_one := Optimization.secondOrderF_le_one
+
+@[deprecated Optimization.secondOrderF_K_le_half (since := "2026-10-26")]
+alias secondOrderF_K_le_half := Optimization.secondOrderF_K_le_half
+
+@[deprecated Optimization.secondOrderF_pos (since := "2026-10-26")]
+alias secondOrderF_pos := Optimization.secondOrderF_pos
 
 end CartisGouldToint.Chapter03

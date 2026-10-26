@@ -1,3 +1,7 @@
 [[node]]
 id = "neg_add_sqrt_sq_add_mul_ge"
 source = "Cartis–Gould–Toint, Lemma B.3.1"
+
+[[node]]
+id = "le_of_le_quadratic"
+source = "Cartis–Gould–Toint, proof of Lemma 3.4.3"

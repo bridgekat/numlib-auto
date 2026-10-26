@@ -20,6 +20,7 @@ under a Lipschitz condition on `∇^p f` on a convex set `C` containing `x` and 
   `Optimization.le_reductionRatio_of_lipschitz`: the ratio estimate behind Lemmas 2.4.2, 3.3.2,
   4.1.2, with a parameter `c` in the decrease `T_p(0) - T_p(s) ≥ c σ ‖s‖^{p+1}` (`c = 1/(p+1)!` from
   Lemma 4.1.1, `c = 1` for the exact AR1 step);
+* `Optimization.norm_gradient_add_le_of_lipschitz`: `‖∇f(x+s)‖ ≤ L/2 ‖s‖² + ‖∇f(x) + ∇²f(x) s‖`;
 * `Optimization.norm_fderiv_le_of_regularizedModel`,
   `Optimization.minCurvature_ge_of_regularizedModel`: the step bounds of Lemmas 3.3.3, 3.3.8 and
   4.1.3 ((4.1.24)–(4.1.29));
@@ -234,6 +235,29 @@ theorem norm_fderiv_le_of_taylorPolynomial (hC : Convex ℝ C)
   calc ‖fderiv ℝ f (x + s)‖ = ‖(fderiv ℝ f (x + s) - fderiv ℝ (taylorPolynomial f p x) s) +
         fderiv ℝ (taylorPolynomial f p x) s‖ := by rw [sub_add_cancel]
     _ ≤ _ := (norm_add_le _ _).trans (by gcongr)
+
+/-- The gradient at the trial point for `p = 2` in vector form: if `f` is `C²` on a convex
+`C ∋ x, x + s` with `L`-Lipschitz Hessian there, then
+`‖∇f(x + s)‖ ≤ L/2 ‖s‖² + ‖∇f(x) + ∇²f(x) s‖` (the step bounds behind Lemmas 3.4.3, 3.4.9 and
+3.5.2 of [cartis2022evaluation]). -/
+theorem norm_gradient_add_le_of_lipschitz [CompleteSpace E] (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ 2 f y) (hL : IteratedFDerivLipschitzOn f 2 L C) (hx : x ∈ C)
+    (hxs : x + s ∈ C) :
+    ‖gradient f (x + s)‖ ≤ L / 2 * ‖s‖ ^ 2 + ‖gradient f x + hessianOperator f x s‖ := by
+  have hfx := hf x hx
+  have h := norm_fderiv_le_of_taylorPolynomial hC hf (by norm_num : 1 ≤ 2) hL hx hxs
+  have hT : taylorPolynomial f 2 x =
+      fun s => f x + Subproblem.quadModel (gradient f x) (hessianOperator f x) s :=
+    funext fun s => taylorPolynomial_two_eq_quadModel hfx s
+  have hd : fderiv ℝ (taylorPolynomial f 2 x) s =
+      innerSL ℝ (gradient f x + hessianOperator f x s) := by
+    rw [hT]
+    exact ((Subproblem.hasFDerivAt_quadModel (hessianOperator_isSymmetric hfx) s).const_add
+      (f x)).fderiv
+  rw [hd, innerSL_apply_norm, ← norm_gradient_eq] at h
+  norm_num [Nat.factorial] at h
+  rw [norm_gradient_eq]
+  linarith [norm_gradient_eq f (x + s)]
 
 /-- **Step bound, first order** ([cartis2022evaluation], (4.1.24)–(4.1.26), Lemma 3.3.3): for
 `p ≥ 1`, `σ ≥ 0`, `f` `C^p` on a convex `C ∋ x, x + s` with `L`-Lipschitz `∇^p f` there, and

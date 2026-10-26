@@ -51,3 +51,9 @@ source = "Cartis–Gould–Toint, proofs of Theorems 2.3.7, 2.4.4 (derivative ev
 [[node]]
 id = "exists_isFirstHit_evalCount_le_of_counting"
 source = "Cartis–Gould–Toint, Section 2.2.2, proofs of Theorems 2.3.7, 2.4.4"
+
+[[node]]
+id = "exists_isFirstHit_of_sub_ge"
+
+[[node]]
+id = "card_successSet_le_two_mul_add_one"

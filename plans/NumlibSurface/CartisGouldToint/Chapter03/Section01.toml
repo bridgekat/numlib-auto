@@ -15,3 +15,11 @@ source = "Cartis–Gould–Toint, Algorithm 3.1.1"
 [[node]]
 id = "theorem_3_1_1"
 source = "Cartis–Gould–Toint, Theorem 3.1.1"
+
+[[node]]
+id = "isNewtonStep_iff_isMinOn"
+source = "Cartis–Gould–Toint, (3.1.2)–(3.1.7)"
+
+[[node]]
+id = "NewtonSlow.exists_example"
+source = "Cartis–Gould–Toint, (3.1.2)–(3.1.7)"
