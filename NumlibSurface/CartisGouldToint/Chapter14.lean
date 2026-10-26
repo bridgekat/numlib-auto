@@ -32,7 +32,8 @@ module imports the section modules and adds nothing of its own.
 * §14.3, `Chapter14.Section03`: the problem (14.3.1), assumption X.CQ (`AssumptionXCQ`);
   Theorems 14.3.1–14.3.2, Example 14.3.1; LENq-SC (Algorithm 14.3.1, `algorithm_14_3_1`),
   Theorems 14.3.3–14.3.4; TPqp-GC (Algorithm 14.3.2, `algorithm_14_3_2`), Lemmas 14.3.5–14.3.8
-  (`lemma_14_3_6_i`, `lemma_14_3_6_ii`), Theorem 14.3.9
+  (`lemma_14_3_6_i`, `lemma_14_3_6_ii`), Theorem 14.3.9; existence of LENq-SC and TPqp-GC runs
+  (`exists_algorithm_14_3_1`, `exists_algorithm_14_3_2`)
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -99,5 +100,7 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   ARqpIDA-SC/ARqpEDA-SC order `j(p+1)/p` for `q = 2`, `X ≠ ℝⁿ` (with (12.2.51) at every order;
   for `q ≤ 2` the rows assume `δ = 1`), and the remark that only the anchored assumptions
   f.D1qLaB.X (f.D0qLaB.X) are used.
-* The existence of LENq-SC and TPqp-GC runs, and the `O(·)` restatements.
+* Existence of LENq-SC and TPqp-GC runs under the book's anchored assumptions (it is proved under
+  global Lipschitz assumptions, `exists_algorithm_14_3_1`, `exists_algorithm_14_3_2`), the INNER
+  complexity contract for the constructed Phase-2 runs, and the `O(·)` restatements.
 -/

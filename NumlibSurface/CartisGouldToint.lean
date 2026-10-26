@@ -164,11 +164,11 @@ and on the declarations.
 
 ## Not formalized
 
-* The inexact (IDA/EDA) rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4, the TR rows of
-  Lemma 14.2.3; the existence of LENq-SC and TPqp-GC runs; the stencil claim (13.2.1) and the
-  interpolation bound (13.2.4).
-* The norm comparisons `‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)` quoted in §9.3.1, the heuristic
-  procedure of §9.3.7 and the tests (9.4.2)–(9.4.4).
+* The sharpness of the IDA/EDA rows of Theorem 14.2.4 and its ARqpIDA/EDA-SC order for `q = 2`,
+  `X ≠ ℝⁿ`; existence of LENq-SC and TPqp-GC runs under the book's anchored (rather than global)
+  Lipschitz assumptions; the stencil claim (13.2.1) and the interpolation bound (13.2.4).
+* The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
+  the Gertz–Gill criterion (9.4.8) quoted in §9.4.
 * Discussion without numbered results: the variants of §2.2.3, §4.1.3, §7.2.3, the qualitative parts
   of §§5.3.1, 12.1.6, 12.3, the `O(·)` restatements and Table 12.2.1, and the weak approximate
   minimizers (12.1.40) of the Notes.
