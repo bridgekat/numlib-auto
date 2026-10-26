@@ -254,15 +254,6 @@ theorem isARpStep_of_isMinOn {f : E → ℝ} {p q : ℕ} (P : ARpParams)
     have : 0 ≤ P.θ₂ * ‖s‖ ^ (p - 1) := mul_nonneg P.θ₂_pos.le (by positivity)
     linarith
 
-/-- An iteration with ratio `ρ ≥ 1` (very successful) may keep the regularization weight
-`σ ≥ σ_min`: Steps 3–4 hold with `x' = x + s` and `σ' = σ`. -/
-theorem arAcceptance_of_one_le {F : Type*} [Add F] (P : ARParams) {ρ : ℝ} (hρ : 1 ≤ ρ)
-    (x s : F) {σ : ℝ} (hσ : P.σmin ≤ σ) (hσ0 : 0 ≤ σ) : ARAcceptance P ρ x s (x + s) σ σ := by
-  have h1 : P.η₁ ≤ ρ := by linarith [P.η₁_le_η₂, P.η₂_lt_one]
-  have h2 : P.η₂ ≤ ρ := by linarith [P.η₂_lt_one]
-  refine ⟨by rw [ite_eq_left h1], fun _ => ⟨max_le hσ (mul_le_of_le_one_left hσ0 P.γ₁_le_one),
-    le_rfl⟩, fun _ h => absurd h (not_lt.2 h2), fun h => absurd h (not_lt.2 h1)⟩
-
 /-- **ARp runs on one-dimensional spike data** (the mechanism of Theorem 4.1.6). Let `G` be `C^p`
 with spike jets `G^{(q)}(x_k) = -α_k < 0` (other derivatives of orders `1, …, p` zero) at points
 `x_k` (`k < K`, `1 ≤ q ≤ p`), spaced by the global minimizers `t_k` of the one-dimensional models
