@@ -38,10 +38,10 @@ Appendix B's Lemma B.4.1 is in `AppendixB.Chapter04`.
   (`theorem_4_2_6_ii`).
 * Members of `𝓕(Δ, p)` are `C^∞` (the book's footnote), and zero-respecting methods are defined
   through null directions of the derivative tensors.
+* The growth `L^D_p ≤ exp(5/2 p log p + c₁ p)` of Lemma 4.2.5 (iv) is `lemma_4_2_5_iv_growth`,
+  with the explicit constant `c₁ = 20`.
 
 ## Not formalized
 
-The explicit growth `L^D_p ≤ exp(5/2 p log p + c₁ p)` of the constant of Lemma 4.2.5 (iv)
-(planned as `lemma_4_2_5_iv_growth`, open); the lemma itself is proved with an explicit constant
-independent of `k̄`. §4.1.3 ("A TRp algorithm?") contains no numbered statement.
+§4.1.3 ("A TRp algorithm?") contains no numbered statement.
 -/
