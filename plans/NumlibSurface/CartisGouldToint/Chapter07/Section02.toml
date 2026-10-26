@@ -230,7 +230,8 @@ kind = "theorem"
 desc = '''
 Lemma 7.2.6, **corrected** (see module description). C.CNe, μ₂.DpL.C, f.B.Fb, a Phase-2 run of the
 corrected algorithm, `Lμ`, `σμmax` of Lemma 7.2.5, `κ₁ = η₁σ_min/(p+1)! (p!/(Lμ + σμmax +
-θ₁p!))^{(p+1)/p}`, `κ^S_GC = κ₁⁻¹ θ^{-(p+2)/p}` (7.2.47), `G := κ^S_GC (1-θ) ε₀^{(p-1)/p}
+θ₁p!))^{(p+1)/p}`, `κ^S_GC = κ₁⁻¹ θ^{-(p+2)/p}` (7.2.47; `Constrained.card_le_of_residual_block` gives the sharper
+`κ₁⁻¹ θ^{-(p+1)/p}`, which implies it), `G := κ^S_GC (1-θ) ε₀^{(p-1)/p}
 ε₁^{-(p+1)/p}`. Call inner iteration `(j, s)` (`s < e j`) *good* if it is successful, the third test
 of (7.2.10) fails at `xi j (s+1)` and `targetResidual f c (t j) (xi j (s+1)) > θε₀`. A *block* is a
 maximal interval of outer indices `[a+1, b]` with `a ∈ 𝒦_a ∪ {0}` and no element of `𝒦_a` in

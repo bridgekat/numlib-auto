@@ -609,4 +609,40 @@ theorem IteratedFDerivLipschitzOn.continuousLinearMap_comp (A : F →L[ℝ] G)
   exact (A.norm_compContinuousMultilinearMap_le _).trans
     (mul_le_mul_of_nonneg_left (hf y hy z hz) (norm_nonneg A))
 
+/-- A larger constant is still a Hölder constant. -/
+theorem IteratedFDerivHolderOn.mono_const {G : Type*} [NormedAddCommGroup G]
+    [NormedSpace ℝ G] {g : E → G} {p : ℕ} {H H' β : ℝ} {C : Set E}
+    (h : IteratedFDerivHolderOn g p H β C) (hH : H ≤ H') : IteratedFDerivHolderOn g p H' β C :=
+  fun x hx y hy => (h x hx y hy).trans
+    (mul_le_mul_of_nonneg_right hH (Real.rpow_nonneg (norm_nonneg _) _))
+
+/-- Hölder constants of `p`-th derivatives (`p ≥ 1`) of `C^p` functions combine linearly under
+nonnegative combinations, and adding a constant does not change them: if `∇^p g₁`, `∇^p g₂` are
+`(H₁, β)`- and `(H₂, β)`-Hölder on `C`, then `∇^p (a g₁ + b g₂ + e)` is `(a H₁ + b H₂, β)`-Hölder
+for `a, b ≥ 0`. -/
+theorem IteratedFDerivHolderOn.smul_add_smul_add_const {G : Type*} [NormedAddCommGroup G]
+    [NormedSpace ℝ G] {g₁ g₂ : E → G} {p : ℕ} {H₁ H₂ β a b : ℝ} {C : Set E} (hp : p ≠ 0)
+    (hg₁ : ∀ x ∈ C, ContDiffAt ℝ p g₁ x) (hg₂ : ∀ x ∈ C, ContDiffAt ℝ p g₂ x)
+    (h₁ : IteratedFDerivHolderOn g₁ p H₁ β C) (h₂ : IteratedFDerivHolderOn g₂ p H₂ β C)
+    (ha : 0 ≤ a) (hb : 0 ≤ b) (e : G) :
+    IteratedFDerivHolderOn (fun x => a • g₁ x + b • g₂ x + e) p (a * H₁ + b * H₂) β C := by
+  have hD : ∀ x ∈ C, iteratedFDeriv ℝ p (fun x => a • g₁ x + b • g₂ x + e) x =
+      a • iteratedFDeriv ℝ p g₁ x + b • iteratedFDeriv ℝ p g₂ x := by
+    intro x hx
+    have k₁ : ContDiffAt ℝ p (a • g₁) x := (hg₁ x hx).const_smul a
+    have k₂ : ContDiffAt ℝ p (b • g₂) x := (hg₂ x hx).const_smul b
+    have k₃ : ContDiffAt ℝ p (a • g₁ + b • g₂) x := k₁.add k₂
+    have hfun : (fun x => a • g₁ x + b • g₂ x + e) = (a • g₁ + b • g₂) + fun _ => e := rfl
+    rw [hfun, iteratedFDeriv_add_apply k₃ contDiffAt_const,
+      iteratedFDeriv_add_apply k₁ k₂, iteratedFDeriv_const_smul_apply (hg₁ x hx),
+      iteratedFDeriv_const_smul_apply (hg₂ x hx), iteratedFDeriv_const_of_ne hp, Pi.zero_apply,
+      add_zero]
+  intro x hx y hy
+  rw [hD x hx, hD y hy, add_sub_add_comm, ← smul_sub, ← smul_sub, add_mul, mul_assoc, mul_assoc]
+  refine (norm_add_le _ _).trans (add_le_add ?_ ?_)
+  · rw [norm_smul, Real.norm_of_nonneg ha]
+    exact mul_le_mul_of_nonneg_left (h₁ x hx y hy) ha
+  · rw [norm_smul, Real.norm_of_nonneg hb]
+    exact mul_le_mul_of_nonneg_left (h₂ x hx y hy) hb
+
 end LipschitzAlgebra

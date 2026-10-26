@@ -226,15 +226,20 @@ source = "Cartis–Gould–Toint, Lemma 14.3.5"
 id = "lemma_14_3_5_counterexample"
 kind = "theorem"
 desc = '''
-The printed bound (14.3.43) fails at a terminal point of TPqp-GC. Data: `n = m = 1`, `X = ℝ`,
+The printed bound (14.3.43) fails at a terminal point of TPqp-GC. Data: `n = m = 1`, `X = [-1, 1]`
+(on `ℝ`, `f` below is unbounded below),
 `c ≡ 0` (so `ℒ = f`, `y_ε = 0`, `T(x_ε) = ℝ`), `q = 2`, `ε₁ = ε₂ = 1`, `θ = β = ½`, `ε₀ = 1/100`,
 `f(x) = x/4 - (25/8) x²` (so `f'(0) = 1/4`, `f''(0) = -25/4 = -f'(0)²/ε₀`), `x₀ = x₁ = x₂ = 0`.
 Phase 1 exits with `‖c‖ = 0 ≤ θ ε₀`, `t₁ = f(0) - ε₀`; the first INNER call may return `x₂ = x₁`
+(INNER is allowed to return its starting point unchanged when its tolerance test already holds there)
 (its tolerance test holds: `μ'(0) = ε₀/4`, `μ''(0) = 0`, so `φ_{μ,1}^1 = ε₀/4 ≤ β ε₀ ε₁` and
 `φ_{μ,2}^1 = ε₀/4 ≤ β ε₀ ε₂/2`), Step 2(c) terminates with `(x_ε, t_ε) = (0, t₁)`, `τ = ε₀`. Then
 `φ^1_{f,2}(0) = max_{|d| ≤ 1} -(d/4 - (25/8) d²) = 27/8`, while the right-hand side of (14.3.43)
 is `½(ε₂ + φ^1_{f,1}(0) |f'(0)|) = ½(1 + 1/16) = 17/32`. The corrected bound holds:
-`½ + (1/4)²/(2 ε₀) = 29/8 ≥ 27/8`.
+`½ + (1/4)²/(2 ε₀) = 29/8 ≥ 27/8`. Optional (part of node): the analogous `q = 3` instance for
+(14.3.46) (`f(x) = a x + f''(0) x²/2 + f⁽³⁾(0) x³/6` with `a = 1/12`, `ε₀ = 1/100`,
+`f''(0) = -25/36`, `f⁽³⁾(0) = 625/36`): `φ^1_{f,3}(0) ≥ 718/216` while the printed right-hand side is
+`43/216`.
 '''
 deps = ["lemma_14_3_5"]
 source = "Cartis–Gould–Toint, Lemma 14.3.5, (14.3.43) (counterexample to the printed bound)"
@@ -288,12 +293,13 @@ Lemma 14.3.8 (corrected). Under X.CNe, c.D1pLB.X, f.D1pLB.X, f.B.Fb and the inne
 block of Phase 2 — the calls `k+1, …, k+ℓ(k)` between an index `k ∈ 𝒦_a ∪ {0}` (Phase-2 start
 treated as `𝒦_a`) and the next `𝒦_a` index or termination, *including* the call that ends in `𝒦_a` —
 the number of "good" successful inner iterations (decrease guaranteed and
-`‖r_{i+1}‖ ≥ θ‖r_i‖`) is at most `G := κ^S (1-θ) max_l ε₀^{2-π_l} ε_l^{-π_l}` (14.3.71), with
-`κ^S := κdecr⁻¹ β^{-π_max} θ^{1-2π_max}` (book: `(βθ)^{-π_max}`, see
+`‖r_{i+1}‖ ≥ θε₀`) is at most `G := κ^S (1-θ) max_l ε₀^{2-π_l} ε_l^{-π_l}` (14.3.71), with
+`κ^S := κdecr⁻¹ (βθ)^{-π_max}` as in the book (the book's proof bounds `‖r‖^{π_l-1}` below by
+`ε₀^{π_l-1}`, which is invalid, but the constant holds via `ρ'^π/ρ ≥ (θε₀)^π/ε₀`; see
 `Constrained.card_le_of_residual_block`); the block has at most `G + 1 + nb` calls and as many
 successful inner iterations, and at most `(κuns + κunc) (G + 1 + nb)` inner iterations (14.3.72),
 where `nb` is the number of bad 𝒦_b calls of the block (`IsInnerPhaseRun`). The `+1` is the
-call ending in `𝒦_a` (its last iteration breaks the ratio condition); `κunc` is paid per call
+call ending in `𝒦_a` (its last iterate has residual below `θε₀`); `κunc` is paid per call
 because each INNER call is a fresh run (the book's single `κ^C_{INNER,2} = κ_unc` treats a block as
 one run); each good 𝒦_b call contains a good iteration, which bounds the number of calls.
 '''
