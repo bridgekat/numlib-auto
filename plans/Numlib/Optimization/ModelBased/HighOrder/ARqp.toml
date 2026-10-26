@@ -142,10 +142,10 @@ Existence of ARqp runs (exact data). `[FiniteDimensional ℝ E]`, `f` `ContDiff 
 (12.2.50): for every `k` before termination with `‖s k‖ < 1`, `δs k j = 1` (`j ≤ min q 2`) and
 `κδ (σ k) * ε j ≤ δs k j` (`j ∈ Icc 3 q`). Construction: `exists_run_of_forall_exists_of_invariant`
 (invariant `σ_k ≥ σmin`), Step-1 witnesses by `exists_isApproxMeasureStep`, Step 2 by
-`exists_arqp_step` (`ContDiffAt.isSymm_iteratedFDeriv` for symmetry), `σ_{k+1}` any point of the
+`exists_arqp_step` (`ContDiffAt.isSymm_ftaylorSeries` for symmetry), `σ_{k+1}` any point of the
 `ARUpdate` interval.
 '''
-deps = ["exists_arqp_step", "exists_isApproxMeasureStep", "exists_run_of_forall_exists", "ContDiffAt.isSymm_iteratedFDeriv", "IsARqpRun"]
+deps = ["exists_arqp_step", "exists_isApproxMeasureStep", "exists_run_of_forall_exists", "ContDiffAt.isSymm_ftaylorSeries", "IsARqpRun"]
 source = "Cartis–Gould–Toint, Lemmas 12.2.9–12.2.10 (the conceptual ARqp algorithm is well defined)"
 
 [[node]]

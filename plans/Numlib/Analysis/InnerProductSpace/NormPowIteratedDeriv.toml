@@ -98,5 +98,5 @@ form `A` on a real inner product space, `‖A‖ = sup_{‖v‖ ≤ 1} |A (fun _
 Mathlib and is a substantial theorem (polarization does not give constant 1). HIGH RISK; only
 `lemma_12_2_7` (as printed) depends on this node.
 '''
-deps = ["abs_iteratedFDeriv_norm_pow_apply_le", "ContDiffAt.isSymm_iteratedFDeriv", "iteratedFDerivLipschitzOn_of_norm_le"]
+deps = ["abs_iteratedFDeriv_norm_pow_apply_le", "ContDiffAt.isSymm_ftaylorSeries", "iteratedFDerivLipschitzOn_of_norm_le"]
 source = "Cartis–Gould–Toint, Lemma B.4.1 (β = 1), (B.4.1), (B.4.3); Section A.6 (tensor norms)"
