@@ -2318,20 +2318,21 @@ variable {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : ARqpIDAParams} {ε : ℕ 
   {D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ} {dd : ℕ → ℕ → ℝⁿ} {jk : ℕ → ℕ} {s : ℕ → ℝⁿ}
   {acc : ℕ → Prop} {L : ℕ → ℝ} {k : ℕ}
 
-/-- **Lemma 13.1.12** ([cartis2022evaluation]), parts on the outcomes of Step 2 of ARqpIDA under
-f.D0pL with `L̄_f = L_f + κ_{∇,max} κ_h` and the radii control (13.1.69)–(13.1.70) at every
-iteration. For `σ̄ ≥ σ_i` (`i ≤ k`; the book takes `σ̄ = σ_{k,max}`):
+/-- **Lemma 13.1.12** ([cartis2022evaluation]): the outcomes of Step 2 at iteration `k` of an
+ARqpIDA run. Assume f.D0pL, write `L̄_f = L_f + κ_{∇,max} κ_h`, assume the radii control
+(13.1.69)–(13.1.70) at the earlier iterations `i < k` (only these enter the radius bound at `k`),
+and let `σ̄` be any bound with `σ_i ≤ σ̄` for `i ≤ k` (the book takes `σ̄ = σ_{k,max}`). Then:
 * if Step 2 is performed at `k`, then (13.1.74)
   `Δm̄_k(s_k) ≥ ¼ ς ε_{j_k} (δ^{(1)}_{k,j_k})^{j_k}/j_k! > 0`, hence `s_k ≠ 0`;
 * (13.1.71) `δ^{(0)}_{k,j} ≥ δ^{(1)}_{k,j} ≥ κ^{(1)}_δ(σ̄) ε_j` for `j ∈ [1, q]`;
 * if Step 2 is performed at `k` and (13.1.73)
   `h_{k,i} ≤ κ_s (ς κ^{(1)}_δ(σ̄)^q/(12 q! max(L̄_f, σ̄)))^p ε_min^{p(q+1)}` for `i ∈ [1, p]`, then
-  `k ∈ 𝒯`.
+  `k ∈ 𝒯`, i.e. iteration `k` is not accuracy-improving (`¬ acc k`).
 (The well-definedness of Step 2, the first part of the printed lemma, concerns the existence of
 runs.) -/
 theorem lemma_13_1_12 (hf : AssumptionD0pL f P.p L)
     (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    (hrc : ∀ i < k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
     {σbar : ℝ} (hσ : ∀ i ≤ k, σ i ≤ σbar) :
     ((∃ j ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd k j) →
         0 < P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 ∧
@@ -2349,7 +2350,7 @@ theorem lemma_13_1_12 (hf : AssumptionD0pL f P.p L)
   have hLb := hrun.one_le_Lbar hf
   have hrad := arqp_radius_ge (fun i _ => hrun.step i) (hrun.step k).toARqpStep1 hrun.σ_zero
     hrun.δ_zero hrun.h_zero
-    hrun.eps_mem hrun.eps_le hLb (fun i _ ℓ hℓ => hrun.norm_D_le hf i hℓ) hσ (fun i _ => hrc i)
+    hrun.eps_mem hrun.eps_le hLb (fun i _ ℓ hℓ => hrun.norm_D_le hf i hℓ) hσ hrc
   refine ⟨fun hb => ?_, hrad, fun hb hh => ?_⟩
   · have h2 := (hrun.step k).step2 hb
     have hpos : 0 < P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 := by
@@ -2437,13 +2438,14 @@ theorem lemma_13_1_14 (hf : AssumptionD0pL f P.p L)
 /-! ### Lemmas 13.1.15 and 13.1.16 -/
 
 /-- **Lemma 13.1.15** ([cartis2022evaluation]): under f.D0pL and the radii control at every
-iteration, if Step 1 of ARqpIDA branches to Step 5 at iteration `k` ((13.1.53) at every order)
-and (13.1.78) `κ_{∇,max} h_{k,i} ≤ ς κ^{(1)}_δ(σ_max)^q/(4 q!) ε_min^{q+1}` for `i ∈ [1, p]`, then
+iteration before `k`, if Step 1 of ARqpIDA branches to Step 5 at iteration `k` ((13.1.53) at
+every order) and (13.1.78) `κ_{∇,max} h_{k,i} ≤ ς κ^{(1)}_δ(σ_max)^q/(4 q!) ε_min^{q+1}` for
+`i ∈ [1, p]`, then
 `x_k` is an `(ε, δ^{(1)}_k)`-approximate `q`-th order minimizer with `δ^{(1)}_k ∈ (0, 1]^q` (in
 particular `arTest k`). (The book writes `δ_k` for the radii `δ^{(1)}_k` at the end of Step 1.) -/
 theorem lemma_13_1_15 (hf : AssumptionD0pL f P.p L)
     (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    (hrc : ∀ i < k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
     (hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.p, ordMax P.p κg * h k i ≤
       P.ς * arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
@@ -2886,11 +2888,11 @@ theorem arqpIDA_complexity (hf : AssumptionD0pL f P.p L) {flow : ℝ}
         have hhi : ∀ i ∈ Finset.Icc 1 P.p, h j i ≤ κacc * em ^ (P.p * (P.q + 1)) :=
           fun i hi => (le_ordMax hi).trans hcon
         by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd j i
-        · refine (lemma_13_1_12 hf hrun hrc (k := j) (fun i _ => hσk i)).2.2 hfail
+        · refine (lemma_13_1_12 hf hrun (fun i _ => hrc i) (k := j) (fun i _ => hσk i)).2.2 hfail
             (fun i hi => (hhi i hi).trans ?_) ha
           exact mul_le_mul_of_nonneg_right arKappaAcc_le (by positivity)
         · push Not at hfail
-          refine hk j hj (lemma_13_1_15 hf hrun hrc hfail fun i hi => ?_).2.2
+          refine hk j hj (lemma_13_1_15 hf hrun (fun i _ => hrc i) hfail fun i hi => ?_).2.2
           calc κm * h j i ≤ κm * (κacc * em ^ (P.p * (P.q + 1))) :=
                 mul_le_mul_of_nonneg_left (hhi i hi) hκm
             _ = κm * κacc * em ^ (P.p * (P.q + 1)) := by ring

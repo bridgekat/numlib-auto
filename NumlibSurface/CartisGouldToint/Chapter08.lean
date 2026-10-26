@@ -36,9 +36,6 @@ operator backbone `Numlib.Optimization.Subproblem`. Appendix B's Lemmas B.8.1–
   minimizers (any generalized eigenvector `v` for `λ₁` is allowed); the minimum-norm solution is
   taken in the `M`-norm; in Corollary 8.3.2 the boundary form fails for interior solutions with
   `λ* = 0`.
-
-## Not formalized
-
-The starting values of Corollary 8.2.4 (the right limits of `π(λ; β)` at `λₛ`, possibly `+∞`);
-only monotonicity, convexity/concavity and the limits at `+∞` are stated.
+* Corollary 8.2.4: the starting values "`π(λₛ; β)`" are read as the right limits of `π(λ; β)` at
+  `λₛ`, possibly `+∞` (`corollary_8_2_4_tendsto_lambdaS`).
 -/

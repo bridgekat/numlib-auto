@@ -37,6 +37,9 @@ complexity bound with the book's constants (2.3.21)–(2.3.23)) and Theorem 2.3.
   the step, the decrease is `m_k(0) - m_k(s_k)`.
 * Lemma 2.3.4 is stated for every `k` up to (and including) termination, where the run is
   defined.
+* The relaxed Cauchy condition (2.3.8), `m_k(0) - m_k(s_k) ≥ κ (m_k(0) - m_k(s_k^C))` for some
+  `κ ∈ (0, 1]`, which the book mentions as an alternative to (2.3.4), is not formalized; TR1 runs
+  use (2.3.4) (`tr1Step`).
 * Theorem 2.3.8 (discussion before it): with `B_k = 2t⁻¹` the Cauchy step would be half the
   iterate step, violating (2.3.4). The example uses `B_k = t⁻¹ I` with `t = Δ₀/2`, a constant
   radius `Δ_k = Δ₀`, and then `ρ_k = 2` (not `1`); every iteration is very successful.
@@ -83,6 +86,13 @@ def tr1Step (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (Δ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
   ‖s‖ ≤ Δ ∧ ∃ t, IsCauchyStep (gradient f x) B Δ t ∧
     tr1Model f x B s ≤ tr1Model f x B (-(t • gradient f x))
+
+theorem tr1Step_iff {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {B : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)} {x : EuclideanSpace ℝ (Fin n)}
+    {Δ : ℝ} {s : EuclideanSpace ℝ (Fin n)} :
+    tr1Step f B x Δ s ↔ ‖s‖ ≤ Δ ∧ ∃ t, IsCauchyStep (gradient f x) B Δ t ∧
+      tr1Model f x B s ≤ tr1Model f x B (-(t • gradient f x)) :=
+  Iff.rfl
 
 /-- The ratio (2.3.6): `ρ = (f(x) - f(x + s)) / (m(0) - m(s))`. -/
 noncomputable def tr1Ratio (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
@@ -567,13 +577,13 @@ end Lemmas
 /-! ### Theorem 2.3.8 -/
 
 /-- **Theorem 2.3.8** of [cartis2022evaluation] (sharpness of TR1). For all TR1 constants there
-are `L ≥ 1`, `f_low` and `κ_B ≥ 0` such that for every `ε ∈ (0,1)` with `k_ε = ε⁻²` an integer
+are `L ≥ 1`, `f_low` and `κ_B ≥ 0` such that for every `ε ∈ (0,1]` with `k_ε = ε⁻²` an integer
 there are `f : ℝ¹ → ℝ` satisfying f.Bb and f.gL and a TR1 run from `x₀ = 0` satisfying m.HBa in
 which every iteration is successful and which terminates exactly at iteration `k_ε`, after
 `k_ε + 1` evaluations of `f` and of `∇f`. The run uses `B_k = t⁻¹ I` with `t = Δ₀/2` and
 `Δ_k = Δ₀`; its steps are the Cauchy steps `-t∇f(x_k)` and `ρ_k = 2`. -/
 theorem theorem_2_3_8 (P : TR1Params) :
-    ∃ L flow κB : ℝ, 1 ≤ L ∧ 0 ≤ κB ∧ ∀ (ε : ℝ) (kε : ℕ), 0 < ε → ε < 1 →
+    ∃ L flow κB : ℝ, 1 ≤ L ∧ 0 ≤ κB ∧ ∀ (ε : ℝ) (kε : ℕ), 0 < ε → ε ≤ 1 →
       (kε : ℝ) * ε ^ 2 = 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, AssumptionBb f flow ∧ AssumptionGL f L ∧
         ∃ (B : ℕ → EuclideanSpace ℝ (Fin 1) →L[ℝ] EuclideanSpace ℝ (Fin 1))
@@ -587,7 +597,7 @@ theorem theorem_2_3_8 (P : TR1Params) :
   have ht : 0 < t := half_pos P.Δ₀_pos
   obtain ⟨L, flow, hL, H⟩ := exists_slow_example ht
   refine ⟨L, flow, t⁻¹, hL, (inv_pos.2 ht).le, fun ε kε hε hε1 hkε => ?_⟩
-  obtain ⟨f, hb, hgl, hfk⟩ := H ε kε hε hε1.le hkε
+  obtain ⟨f, hb, hgl, hfk⟩ := H ε kε hε hε1 hkε
   set x : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => slowX t ε kε k • e₀
   set Bop : EuclideanSpace ℝ (Fin 1) →L[ℝ] EuclideanSpace ℝ (Fin 1) :=
     t⁻¹ • ContinuousLinearMap.id ℝ _

@@ -117,7 +117,8 @@ theorem lemma_B_2_1 (f₀ g₀ H₀ f₁ g₁ H₁ : ℝ) :
 `κ_h > 0` (namely `κ_h = 1000 κ_f`) such that, whenever the residuals (B.2.2) satisfy
 `|r_i| ≤ κ_f` (B.2.3) and the data at `0` satisfy `|f₀|, |g₀|, |H₀| ≤ κ_f`, the interpolant and
 its first two derivatives are bounded by `κ_h` on `[0, 1]`. (The bounds on the data at `0` are
-needed and implicit in the book.) -/
+needed and implicit in the book; they are the analogue of the hypothesis (A.31) of the general
+Hermite interpolation bound of Appendix A.) -/
 theorem lemma_B_2_1_bound {κf : ℝ} (hκ : 1 ≤ κf) :
     ∃ κh : ℝ, 0 < κh ∧ ∀ f₀ g₀ H₀ f₁ g₁ H₁ : ℝ,
       (∀ i, |hermiteResidual f₀ g₀ H₀ f₁ g₁ H₁ i| ≤ κf) → |f₀| ≤ κf → |g₀| ≤ κf → |H₀| ≤ κf →
@@ -173,13 +174,15 @@ theorem zigZagIterate_zero (ε : ℝ) (kε : ℕ) : zigZagIterate ε kε 0 = 0 :
 
 /-- **Lemma B.2.2** of [cartis2022evaluation]. Let `ε > 0` with `k_ε = ε⁻²` an integer
 (`k_ε ε² = 1`, so `ε ≤ 1`). For `f = f_SDEX` (`Optimization.zigZagFunction ε k_ε`) the gradient at
-the iterates is `‖∇f(x_k, y_k)‖ = ε + ω_k` for `k ≤ k_ε` ((B.2.25), `ω_k = ε (k_ε - k)/k_ε`), and
+the iterates is `∇f(x_k, y_k) = -((ε + ω_k)/√2) (1, (-1)^k)`, so `‖∇f(x_k, y_k)‖ = ε + ω_k`, for
+`k ≤ k_ε` ((B.2.25), `ω_k = ε (k_ε - k)/k_ε`), and
 steepest descent with the prescribed stepsize `√2` started at `(x₀, y₀) = 0` (any sequence with
 `z_{k+1} = z_k - √2 ∇f(z_k)` before termination) needs exactly `k_ε` iterations to produce an
 iterate with `‖∇f‖ ≤ ε`; its iterates are the zig-zag iterates `(x_k, y_k)`. -/
 theorem lemma_B_2_2 (hε : 0 < ε) (hkε : (kε : ℝ) * ε ^ 2 = 1) :
-    (∀ k ≤ kε, ‖gradient (zigZagFunction ε kε) (zigZagIterate ε kε k)‖ =
-      ε + ZigZag.omega ε kε k) ∧
+    (∀ k ≤ kε, gradient (zigZagFunction ε kε) (zigZagIterate ε kε k) =
+        -((ε + ZigZag.omega ε kε k) / √2) • !₂[1, (-1) ^ k] ∧
+      ‖gradient (zigZagFunction ε kε) (zigZagIterate ε kε k)‖ = ε + ZigZag.omega ε kε k) ∧
     ∀ z : ℕ → EuclideanSpace ℝ (Fin 2), z 0 = 0 →
       (∀ k, (∀ j ≤ k, ¬ ‖gradient (zigZagFunction ε kε) (z j)‖ ≤ ε) →
         z (k + 1) = z k - √2 • gradient (zigZagFunction ε kε) (z k)) →
@@ -191,7 +194,7 @@ theorem lemma_B_2_2 (hε : 0 < ε) (hkε : (kε : ℝ) * ε ^ 2 = 1) :
     fun k hk => (zigZag_gradient hadm hk).2.1
   have hgt : ∀ j < kε, ¬ ‖gradient f (zigZagIterate ε kε j)‖ ≤ ε := fun j hj => by
     rw [hnorm j hj.le, not_le]; linarith [hadm.omega_pos hj]
-  refine ⟨hnorm, fun z hz0 hz => ?_⟩
+  refine ⟨fun k hk => ⟨(zigZag_gradient hadm hk).1, hnorm k hk⟩, fun z hz0 hz => ?_⟩
   have heq : ∀ k ≤ kε, ∀ j ≤ k, z j = zigZagIterate ε kε j := by
     intro k
     induction k with

@@ -70,55 +70,23 @@ section Model
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
 
-/-- The derivative of the AR2 model (3.3.2): `∇m(s) = ∇f(x) + ∇²f(x) s + σ/2 ‖s‖ s`. -/
-theorem hasFDerivAt_ar2Model (hf : ContDiffAt ℝ 2 f x) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
-    HasFDerivAt (ar2Model f x σ)
-      (innerSL ℝ (gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s)) s := by
-  have heq : ar2Model f x σ =
-      fun s => f x + regModel (gradient f x) (hessianOperator f x) (σ / 2) 3 s := by
-    funext s
-    exact regularizedModel_two_eq_regModel hf σ s
-  rw [heq]
-  refine ((hasFDerivAt_regModel (g := gradient f x) (hessianOperator_isSymmetric hf) (σ / 2)
-    (by norm_num : (1 : ℝ) < 3) s).const_add (f x)).congr_fderiv ?_
-  norm_num
+@[deprecated Chapter03.hasFDerivAt_ar2Model (since := "2026-10-26")]
+alias hasFDerivAt_ar2Model := Chapter03.hasFDerivAt_ar2Model
 
-/-- The norm of the AR2 model gradient. -/
-theorem norm_fderiv_ar2Model (hf : ContDiffAt ℝ 2 f x) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
-    ‖fderiv ℝ (ar2Model f x σ) s‖ =
-      ‖gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s‖ := by
-  rw [(hasFDerivAt_ar2Model hf σ s).fderiv, innerSL_apply_norm]
+@[deprecated Chapter03.norm_fderiv_ar2Model (since := "2026-10-26")]
+alias norm_fderiv_ar2Model := Chapter03.norm_fderiv_ar2Model
 
-/-- The second-order Taylor decrement in inner-product form:
-`T_{f,2}(x, 0) - T_{f,2}(x, s) = -⟨∇f(x), s⟩ - ½ ⟨s, ∇²f(x) s⟩`. -/
-theorem taylorDecrement_two_eq (hf : ContDiffAt ℝ 2 f x) (s : EuclideanSpace ℝ (Fin n)) :
-    (ftaylorSeries ℝ f x).taylorDecrement 2 s =
-      -⟪gradient f x, s⟫ - 1 / 2 * ⟪s, hessianOperator f x s⟫ := by
-  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_zero_right, taylorPolynomial_two_eq_quadModel hf, quadModel_def]
-  ring
+@[deprecated Chapter03.taylorDecrement_two_eq (since := "2026-10-26")]
+alias taylorDecrement_two_eq := Chapter03.taylorDecrement_two_eq
 
-/-- `f(x) - (T_p(x, 0) - T_p(x, s)) = T_p(x, s)`. -/
-theorem sub_taylorDecrement_eq (p : ℕ) (s : EuclideanSpace ℝ (Fin n)) :
-    f x - (ftaylorSeries ℝ f x).taylorDecrement p s = taylorPolynomial f p x s := by
-  simp only [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_zero_right]
-  ring
+@[deprecated Chapter03.sub_taylorDecrement_eq (since := "2026-10-26")]
+alias sub_taylorDecrement_eq := Chapter03.sub_taylorDecrement_eq
 
-/-- The Rayleigh-quotient bound `λ_min[∇²f(x)] ‖s‖² ≤ ⟨s, ∇²f(x) s⟩`. -/
-theorem hessianMinEig_mul_le_inner (hf : ContDiffAt ℝ 2 f x) (s : EuclideanSpace ℝ (Fin n)) :
-    Chapter01.hessianMinEig f x * ‖s‖ ^ 2 ≤ ⟪s, hessianOperator f x s⟫ := by
-  rw [inner_hessianOperator_apply hf, show (![s, s] : Fin 2 → _) = fun _ => s by
-    funext i; fin_cases i <;> rfl]
-  exact minCurvature_mul_norm_sq_le (iteratedFDeriv ℝ 2 f x) s
+@[deprecated Chapter03.hessianMinEig_mul_le_inner (since := "2026-10-26")]
+alias hessianMinEig_mul_le_inner := Chapter03.hessianMinEig_mul_le_inner
 
-/-- `⟨∇m(s), s⟩ = ⟨∇f(x), s⟩ + ⟨s, ∇²f(x) s⟩ + σ/2 ‖s‖³`. -/
-theorem inner_ar2ModelGrad_self (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
-    ⟪gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s, s⟫ =
-      ⟪gradient f x, s⟫ + ⟪s, hessianOperator f x s⟫ + σ / 2 * ‖s‖ ^ 3 := by
-  rw [inner_add_left, inner_add_left, real_inner_smul_left, real_inner_self_eq_norm_sq,
-    real_inner_comm s (hessianOperator f x s)]
-  ring
+@[deprecated Chapter03.inner_ar2ModelGrad_self (since := "2026-10-26")]
+alias inner_ar2ModelGrad_self := Chapter03.inner_ar2ModelGrad_self
 
 /-- **The step bound (5.4.8), corrected** ([cartis2022evaluation], Lemma 5.4.2): if
 `λ_min[∇²f(x)] ≥ μ > 0`, `σ ≥ 0` and the step satisfies `‖∇m(s)‖ ≤ θ ‖∇f(x)‖` (part of (5.4.3)),
@@ -129,9 +97,9 @@ theorem norm_step_le_of_strict (hf : ContDiffAt ℝ 2 f x) {σ μ θ : ℝ} (hσ
     (hm : ‖fderiv ℝ (ar2Model f x σ) s‖ ≤ θ * ‖gradient f x‖) :
     ‖s‖ ≤ (1 + θ) / μ * ‖gradient f x‖ := by
   set v := gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s
-  rw [norm_fderiv_ar2Model hf] at hm
-  have hv := inner_ar2ModelGrad_self (f := f) (x := x) σ s
-  have hcurv := hessianMinEig_mul_le_inner hf s
+  rw [Chapter03.norm_fderiv_ar2Model hf] at hm
+  have hv := Chapter03.inner_ar2ModelGrad_self (f := f) (x := x) σ s
+  have hcurv := Chapter03.hessianMinEig_mul_le_inner hf s
   have h1 : ⟪v, s⟫ ≤ ‖v‖ * ‖s‖ := real_inner_le_norm _ _
   have h2 : -⟪gradient f x, s⟫ ≤ ‖gradient f x‖ * ‖s‖ := by
     have := abs_real_inner_le_norm (gradient f x) s
@@ -157,10 +125,10 @@ theorem taylorDecrement_ge_of_ar2Model (hf : ContDiffAt ℝ 2 f x) {σ μ θ : �
     (hm : ‖fderiv ℝ (ar2Model f x σ) s‖ ≤ θ / 2 * ‖s‖ ^ 2) :
     μ / 2 * ‖s‖ ^ 2 + (σ - θ) / 2 * ‖s‖ ^ 3 ≤ (ftaylorSeries ℝ f x).taylorDecrement 2 s := by
   set v := gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s
-  rw [norm_fderiv_ar2Model hf] at hm
-  rw [taylorDecrement_two_eq hf]
-  have hv := inner_ar2ModelGrad_self (f := f) (x := x) σ s
-  have hcurv := hessianMinEig_mul_le_inner hf s
+  rw [Chapter03.norm_fderiv_ar2Model hf] at hm
+  rw [Chapter03.taylorDecrement_two_eq hf]
+  have hv := Chapter03.inner_ar2ModelGrad_self (f := f) (x := x) σ s
+  have hcurv := Chapter03.hessianMinEig_mul_le_inner hf s
   have h1 : ⟪v, s⟫ ≤ ‖v‖ * ‖s‖ := real_inner_le_norm _ _
   have h2 : ‖v‖ * ‖s‖ ≤ θ / 2 * ‖s‖ ^ 2 * ‖s‖ := mul_le_mul_of_nonneg_right hm (norm_nonneg _)
   have h4 : μ * ‖s‖ ^ 2 ≤ Chapter01.hessianMinEig f x * ‖s‖ ^ 2 :=
@@ -240,7 +208,7 @@ theorem mul_norm_sub_le_norm_gradient (hf : AssumptionHL f L) {xs y : EuclideanS
     rw [sub_apply, innerSL_apply_apply] at h2
     linarith [neg_abs_le (fderiv ℝ f (xs + d) d - ⟪gradient f xs + hessianOperator f xs d, d⟫)]
   rw [hcrit, zero_add, real_inner_comm] at happ
-  have hcurv := hessianMinEig_mul_le_inner hc d
+  have hcurv := Chapter03.hessianMinEig_mul_le_inner hc d
   have hup : fderiv ℝ f (xs + d) d ≤ ‖gradient f y‖ * ‖d‖ := by
     rw [← hyd, norm_gradient_eq]
     exact (le_abs_self _).trans ((Real.norm_eq_abs _).symm ▸ (fderiv ℝ f y).le_opNorm d)
@@ -523,7 +491,8 @@ theorem succ_mem_quadRegion (hf : AssumptionHL f L) (h : IsAR2StrictRun f P ε�
   have hη := P.ar.one_sub_η₂_pos
   have hratio : P.η₂ ≤ taylorRatio f 2 x s k := by
     have hle : |f (x k + s k) - (f (x k) - Δ)| ≤ (1 - P.η₂) * Δ := by
-      rw [show f (x k) - Δ = taylorPolynomial f 2 (x k) (s k) from sub_taylorDecrement_eq 2 (s k)]
+      rw [show f (x k) - Δ = taylorPolynomial f 2 (x k) (s k) from
+        Chapter03.sub_taylorDecrement_eq 2 (s k)]
       calc |f (x k + s k) - taylorPolynomial f 2 (x k) (s k)| ≤ L / 6 * ‖s k‖ ^ 3 := hT
         _ = (L * ‖s k‖) / 6 * ‖s k‖ ^ 2 := by ring
         _ ≤ (3 * (1 - P.η₂) * lam / 4) / 6 * ‖s k‖ ^ 2 := by gcongr
@@ -671,112 +640,17 @@ end Lemma543
 
 section Theorem544
 
-/-- **Successful iterations between two iterates**: in an AR run without post-step test, the
-iterate does not change between successful iterations: if no iteration `i ≤ m < j` is successful
-and `j` is before termination, then `x_j = x_i`. -/
-theorem arRun_eq_of_forall_not_succ {E : Type*} [Add E] {P : Optimization.ARParams}
-    {stop₁ step : ℕ → Prop} {ρ : ℕ → ℝ} {x s : ℕ → E} {σ : ℕ → ℝ}
-    (h : IsARRun P stop₁ step (fun _ => False) ρ x s σ) {i j : ℕ} (hij : i ≤ j)
-    (hj : ∀ m < j, ¬ stop₁ m) (hns : ∀ m, i ≤ m → m < j → ρ m < P.η₁) : x j = x i := by
-  induction j, hij using Nat.le_induction with
-  | base => rfl
-  | succ j hij ih =>
-    rw [h.eq_of_not_succ (IsARRun.forall_le_not_stop_iff.2 fun m hm => hj m
-      (Nat.lt_succ_of_le hm)) (hns j hij j.lt_succ_self)]
-    exact ih (fun m hm => hj m (hm.trans j.lt_succ_self))
-      fun m hm1 hm2 => hns m hm1 (hm2.trans j.lt_succ_self)
+@[deprecated IsARRun.eq_of_forall_not_succ (since := "2026-10-26")]
+alias arRun_eq_of_forall_not_succ := IsARRun.eq_of_forall_not_succ
 
-/-- **Counting at the iterate versus after the step**: in an AR run without post-step test, for
-any property `Q` of iterates, the number of successful iterations `j ≤ k` with `Q(x_j)` exceeds
-the number of successful iterations `j ≤ k` with `Q(x_{j+1})` by at most one (the iterate `x_j`
-is `x_{i+1}` for the previous successful iteration `i`, except before the first success). -/
-theorem arRun_card_successSet_le_card_succ_add_one {E : Type*} [Add E]
-    {P : Optimization.ARParams} {stop₁ step : ℕ → Prop} {ρ : ℕ → ℝ} {x s : ℕ → E} {σ : ℕ → ℝ}
-    (h : IsARRun P stop₁ step (fun _ => False) ρ x s σ) (Q : E → Prop) {k : ℕ}
-    (hk : ∀ j ≤ k, ¬ stop₁ j) :
-    (successSet (fun j => P.η₁ ≤ ρ j ∧ Q (x j)) k).card ≤
-      (successSet (fun j => P.η₁ ≤ ρ j ∧ Q (x (j + 1))) k).card + 1 := by
-  classical
-  set T := successSet (fun j => P.η₁ ≤ ρ j ∧ Q (x j)) k
-  set T' := successSet (fun j => P.η₁ ≤ ρ j ∧ Q (x (j + 1))) k
-  set pr : ℕ → ℕ := fun j => Nat.findGreatest (fun i => P.η₁ ≤ ρ i) (j - 1)
-  have hsplit := Finset.card_filter_add_card_filter_not (s := T) (fun j => ∃ i < j, P.η₁ ≤ ρ i)
-  have h1 : (T.filter (fun j => ¬ ∃ i < j, P.η₁ ≤ ρ i)).card ≤ 1 := by
-    rw [Finset.card_le_one]
-    intro a ha b hb
-    simp only [Finset.mem_filter, T, mem_successSet] at ha hb
-    by_contra hab
-    rcases lt_or_gt_of_ne hab with hlt | hlt
-    · exact hb.2 ⟨a, hlt, ha.1.2.1⟩
-    · exact ha.2 ⟨b, hlt, hb.1.2.1⟩
-  have h0 : (T.filter (fun j => ∃ i < j, P.η₁ ≤ ρ i)).card ≤ T'.card := by
-    refine Finset.card_le_card_of_injOn pr (fun j hj => ?_) (fun a ha b hb hab => ?_)
-    · simp only [Finset.mem_coe, Finset.mem_filter, T, mem_successSet] at hj
-      obtain ⟨⟨hjk, -, hQ⟩, i, hij, hi⟩ := hj
-      have hspec : P.η₁ ≤ ρ (pr j) :=
-        Nat.findGreatest_spec (P := fun i => P.η₁ ≤ ρ i) (m := i) (n := j - 1) (by omega) hi
-      have hle : pr j ≤ j - 1 := Nat.findGreatest_le _
-      have hxeq : x j = x (pr j + 1) :=
-        arRun_eq_of_forall_not_succ h (i := pr j + 1) (j := j) (by omega)
-          (fun m hm => hk m (by omega)) fun m hm1 hm2 =>
-          not_le.1 (Nat.findGreatest_is_greatest (P := fun i => P.η₁ ≤ ρ i) (n := j - 1)
-            (show pr j < m by omega) (by omega))
-      simp only [Finset.mem_coe, T', mem_successSet]
-      exact ⟨by omega, hspec, hxeq ▸ hQ⟩
-    · simp only [Finset.mem_coe, Finset.mem_filter, T, mem_successSet] at ha hb
-      by_contra hne
-      rcases lt_or_gt_of_ne hne with hlt | hlt
-      · have h1 : a ≤ pr b := Nat.le_findGreatest (by omega) ha.1.2.1
-        have h2 : pr a ≤ a - 1 := Nat.findGreatest_le _
-        obtain ⟨i, hi, -⟩ := ha.2
-        have : pr a = pr b := hab
-        omega
-      · have h1 : b ≤ pr a := Nat.le_findGreatest (by omega) hb.1.2.1
-        have h2 : pr b ≤ b - 1 := Nat.findGreatest_le _
-        obtain ⟨i, hi, -⟩ := hb.2
-        have : pr a = pr b := hab
-        omega
-  omega
+@[deprecated IsARRun.card_successSet_le_card_succ_add_one (since := "2026-10-26")]
+alias arRun_card_successSet_le_card_succ_add_one := IsARRun.card_successSet_le_card_succ_add_one
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : AR2Params} {ε₁ L flow : ℝ} {ε₂ : Option ℝ}
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ} {xs : EuclideanSpace ℝ (Fin n)}
 
-/-- The decrease at a successful AR2 iteration `k` with `‖∇f(x_{k+1})‖ ≥ ζ`, for any tolerance
-`ζ > 0`: `f(x_k) - f(x_{k+1}) ≥ ζ^{3/2}/κ^S_AR2` (the argument of Lemma 3.3.4). -/
-theorem ar2_decrease_of_le (hf : AssumptionHL f L) (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ)
-    {k : ℕ} (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) (hs : P.η₁ ≤ taylorRatio f 2 x s k)
-    {ζ : ℝ} (hζ : 0 < ζ) (hg : ζ ≤ ‖gradient f (x (k + 1))‖) :
-    ζ ^ (3 / 2 : ℝ) / kappaSAR2 P L ≤ f (x k) - f (x (k + 1)) := by
-  set C := L + P.θ₁ + sigmaMaxAR2 P L
-  have hσmin := h.sigmaMin_le fun j hj => hk j hj.le
-  have hσ := h.sigma_pos fun j hj => hk j hj.le
-  have hC : 0 < C := by
-    have := hf.pos; have := P.θ₁_pos; have := arSigmaMax_pos P.ar L; simp only [C]; linarith
-  have hη := P.η₁_pos
-  have hsmin := P.σmin_pos
-  obtain ⟨-, hdec⟩ := h.run.sub_ge_of_succ_taylor (not_stop_le_iff.2 hk) (h.step hk).1 hs
-  norm_num [Nat.factorial] at hdec
-  have h3 := lemma_3_3_3 hf h hk hs
-  have hs2 : 2 * ζ / C ≤ ‖s k‖ ^ 2 :=
-    le_trans (by rw [div_mul_eq_mul_div]; gcongr) h3
-  have hs3 : (2 * ζ / C) ^ (3 / 2 : ℝ) ≤ ‖s k‖ ^ 3 := by
-    have : (‖s k‖ ^ 2) ^ (3 / 2 : ℝ) = ‖s k‖ ^ 3 := by
-      rw [← Real.rpow_natCast, ← Real.rpow_mul (norm_nonneg _)]; norm_num
-    rw [← this]
-    exact Real.rpow_le_rpow (by positivity) hs2 (by norm_num)
-  have hsplit : (2 * ζ / C) ^ (3 / 2 : ℝ) =
-      2 ^ (3 / 2 : ℝ) * ζ ^ (3 / 2 : ℝ) / C ^ (3 / 2 : ℝ) := by
-    rw [Real.div_rpow (by positivity) hC.le, Real.mul_rpow (by norm_num) hζ.le]
-  have key : ζ ^ (3 / 2 : ℝ) / kappaSAR2 P L =
-      P.η₁ * (P.σmin / 6 * (2 * ζ / C) ^ (3 / 2 : ℝ)) := by
-    rw [hsplit, kappaSAR2, show L + P.θ₁ + sigmaMaxAR2 P L = C from rfl]
-    have : 0 < C ^ (3 / 2 : ℝ) := by positivity
-    have : 0 < (2 : ℝ) ^ (3 / 2 : ℝ) := by positivity
-    field_simp
-  rw [key]
-  calc P.η₁ * (P.σmin / 6 * (2 * ζ / C) ^ (3 / 2 : ℝ)) ≤ P.η₁ * (σ k / 6 * ‖s k‖ ^ 3) := by
-        gcongr
-    _ ≤ _ := by linarith
+@[deprecated Chapter03.ar2_decrease_of_le (since := "2026-10-26")]
+alias ar2_decrease_of_le := Chapter03.ar2_decrease_of_le
 
 /-- **(5.4.16)** ([cartis2022evaluation], Theorem 5.4.4, first part) for any AR2 run (with
 `ε₂ = +∞`) under f.Bb and f.HL, and any `ζ > 0`: at every iteration `k` before termination, the
@@ -790,17 +664,19 @@ theorem card_succ_norm_gradient_gt_le (hb : Chapter02.AssumptionBb f flow)
   have hκ := kappaSAR2_pos (P := P) hf.nonneg
   set δ := ζ ^ (3 / 2 : ℝ) / kappaSAR2 P L
   have hδ : 0 < δ := by positivity
-  have hcard := arRun_card_successSet_le_card_succ_add_one h.run (fun y => ζ < ‖gradient f y‖) hk
+  have hcard := h.run.card_successSet_le_card_succ_add_one (fun y => ζ < ‖gradient f y‖) hk
   have hT' := card_mul_le_of_decrease (φ := fun j => f (x j)) (k := k) (c := δ)
     (T := successSet (fun j => P.η₁ ≤ taylorRatio f 2 x s j ∧ ζ < ‖gradient f (x (j + 1))‖) k)
     successSet_subset_range
-    (fun j hj => (h.run.accept j (not_stop_le_iff.2 fun i hi => hk i (hi.trans hj))).le
+    (fun j hj =>
+      (h.run.accept j (IsARRun.forall_le_not_stop_iff.2 fun i hi => hk i (hi.trans hj))).le
       (w := f) rfl (lt_of_le_of_lt (by
         have := h.sigma_pos (k := j) fun i hi => hk i (hi.le.trans hj)
         positivity) (lemma_3_3_1 h fun i hi => hk i (hi.trans hj))))
     (fun j hj => by
       rw [mem_successSet] at hj
-      exact ar2_decrease_of_le hf h (fun i hi => hk i (hi.trans hj.1)) hj.2.1 hζ hj.2.2.le)
+      exact Chapter03.ar2_decrease_of_le hf h (fun i hi => hk i (hi.trans hj.1)) hj.2.1 hζ
+        hj.2.2.le)
     (hb _)
   have hNδ : (f (x 0) - flow) / δ = kappaSAR2 P L * (f (x 0) - flow) / ζ ^ (3 / 2 : ℝ) := by
     simp only [δ]; field_simp

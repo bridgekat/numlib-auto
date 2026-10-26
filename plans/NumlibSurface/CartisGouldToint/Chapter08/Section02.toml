@@ -73,6 +73,10 @@ id = "corollary_8_2_4"
 source = "Cartis–Gould–Toint, Corollary 8.2.4"
 
 [[node]]
+id = "corollary_8_2_4_tendsto_lambdaS"
+source = "Cartis–Gould–Toint, Corollary 8.2.4 (starting values at λₛ)"
+
+[[node]]
 id = "theorem_8_2_5"
 source = "Cartis–Gould–Toint, Theorem 8.2.5"
 

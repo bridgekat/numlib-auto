@@ -1102,8 +1102,10 @@ theorem deltaEps_pos (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ) : 0 < deltaE
 (first index of the test at `x₀` or at a trial point), with an output `x_ε` (`x₀` if `k_ε = 0`
 and the test holds there, else the trial point `x_{k_ε} + s_{k_ε}`) satisfying the termination
 test, and
-* (5.5.52) the number `k_ε + 2` of evaluations of `f` and of its first (and second) derivatives
-  (at `x₀` and at every trial point) is at most
+* (5.5.52) `k_ε + 2` is at most the bound below; it bounds both the number of evaluations of
+  the first (and second) derivatives needed by the termination test (at `x₀` and at the trial
+  points of iterations `0, …, k_ε`, at most `k_ε + 2`) and the number of evaluations of `f` (at
+  `x₀` and at the trial points of iterations `0, …, k_ε - 1`, at most `k_ε + 1`):
   `κ^A (f(x₀) - f_low)/δ_ε + (κ^B₁ |log ε₁| + κ^B₂ |log ε₂|) + κ^C`, with
   `δ_ε = deltaEps` (`min[ε₁^{(p+β)/(p+β-1)}, ε₂^{(p+β)/(p+β-2)}]`), `κ^S = 1/κ_H`,
   `κ^A = κ^S (1 + |log γ₁|/log γ₂)`, `κ^B_j = (r-p-β)/((p+β-j) log γ₂)` (`epsLogTerm/log γ₂`) and

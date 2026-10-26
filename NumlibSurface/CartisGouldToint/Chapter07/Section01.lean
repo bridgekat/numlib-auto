@@ -99,7 +99,9 @@ theorem theorem_7_1_1 (hx : x ∈ S) (hmin : IsMinOn (fun z => lagrangianVec f c
 /-! ### First-order measures and minimizers -/
 
 /-- The first-order criticality measure of the Lagrangian ([cartis2022evaluation], (7.1.2) with
-`h = ℒ(·, y)`, (7.1.3)): `ω_{ℒ,𝒞,1}(x, y) = -min_{d ∈ 𝒞(x) ∩ 𝓑} ⟨d, ∇ₓℒ(x, y)⟩`. -/
+`h = ℒ(·, y)`, (7.1.3)): `ω_{ℒ,𝒞,1}(x, y) = -min_{d ∈ 𝒞(x) ∩ 𝓑} ⟨d, ∇ₓℒ(x, y)⟩`. It is only
+meaningful for `x ∈ 𝒞` (as in the book); for `x ∉ 𝒞` the value is an unspecified junk value
+(`omegaL_nonneg` needs `x ∈ 𝒞`). -/
 noncomputable def omegaL (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (C : Set ℝⁿ) (x : ℝⁿ) (y : ℝᵐ) : ℝ :=
   Chapter06.omega1 (fun z => lagrangianVec f c z y) C x
 

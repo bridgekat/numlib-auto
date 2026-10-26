@@ -22,6 +22,7 @@ constructive early-termination test (Theorem 9.3.2, (9.3.16)).
 
 * `lambdaStar_bounds_9_3_3` — (9.3.3)–(9.3.5).
 * `pencil_gershgorin_9_3_7` — (9.3.6)–(9.3.7) and the Rayleigh bound `λ₁ ≤ hᵢᵢ/mᵢᵢ`.
+* `abs_eigenvalue_le_frobenius` — `|λᵢ| ≤ ‖H‖_F` (§9.3.1, `M = I`).
 * `algorithm_9_3_1.isInverseIterationRun`, `theorem_9_3_1` — fast convergence in the hard case.
 * `setL_reg_mono` — §9.3.5.
 * `theorem_9_3_2`, `cubic_termination_9_3_16` — §9.3.6.
@@ -51,8 +52,8 @@ heuristically and are not separately formalized; their admissible choices are co
   `|h_kk - λ m_kk| ≤ o_kᴴ + |λ| o_kᴹ` is stated (`exists_abs_sub_le_of_eigen`, via
   `Matrix.exists_abs_sub_le_of_mulVec_eq`), which is what (9.3.7) uses.
 * §9.3.1, `M = I`: the comparisons `‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)` are standard facts quoted by the
-  book and are not formalized (nor is `|λᵢ| ≤ ‖H‖_F`); the bounds `|λᵢ| ≤ ‖H‖₂` and
-  `|λᵢ| ≤ ‖H‖_∞` are.
+  book and are not formalized; the eigenvalue bounds `|λᵢ| ≤ ‖H‖₂`, `|λᵢ| ≤ ‖H‖_∞`
+  (`pencil_gershgorin_9_3_7`) and `|λᵢ| ≤ ‖H‖_F` (`abs_eigenvalue_le_frobenius`) are.
 * §9.3.5: `𝓝 = (-∞, λₛ]` and `λₛ` depend only on `H` and `M`, not on `σ`, which is why `𝓝₊ = 𝓝`.
 -/
 
@@ -234,6 +235,34 @@ theorem pencil_gershgorin_9_3_7 [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) 
     have := abs_sub_abs_le_abs_sub μ (H k k)
     rw [abs_sub_comm] at this
     linarith
+
+section Frobenius
+
+attribute [local instance] Matrix.frobeniusNormedAddCommGroup
+
+/-- **§9.3.1 of [cartis2022evaluation], `M = I`**: every eigenvalue `μ` of `H` satisfies
+`|μ| ≤ ‖H‖_F = (∑ᵢⱼ hᵢⱼ²)^{1/2}` (via `‖H u‖ ≤ ‖H‖_F ‖u‖`). -/
+theorem abs_eigenvalue_le_frobenius {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
+    (h : toEuclideanLin H u = μ • u) : |μ| ≤ √(∑ i, ∑ j, H i j ^ 2) := by
+  have hF : ‖H‖ = √(∑ i, ∑ j, H i j ^ 2) := by
+    rw [frobenius_norm_def, Real.sqrt_eq_rpow]
+    congr 1
+    refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
+    rw [Real.norm_eq_abs, Real.rpow_two, sq_abs]
+  have hmul := frobenius_norm_mul H (replicateCol (Fin 1) (WithLp.ofLp u))
+  rw [← replicateCol_mulVec] at hmul
+  have hHu : H *ᵥ WithLp.ofLp u = μ • WithLp.ofLp u := by
+    have := congrArg WithLp.ofLp h
+    simpa [toEuclideanLin_apply] using this
+  have h1 : ‖replicateCol (Fin 1) (H *ᵥ WithLp.ofLp u)‖ =
+      ‖WithLp.toLp 2 (H *ᵥ WithLp.ofLp u)‖ :=
+    frobenius_norm_replicateCol _
+  have h2 : ‖replicateCol (Fin 1) (WithLp.ofLp u)‖ = ‖u‖ :=
+    frobenius_norm_replicateCol _
+  rw [h1, h2, hHu, WithLp.toLp_smul, WithLp.toLp_ofLp, norm_smul, Real.norm_eq_abs, hF] at hmul
+  exact le_of_mul_le_mul_right hmul (norm_pos_iff.2 hu)
+
+end Frobenius
 
 /-! ### Algorithm 9.3.1 and Theorem 9.3.1 -/
 

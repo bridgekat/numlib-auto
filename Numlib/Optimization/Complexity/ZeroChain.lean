@@ -472,10 +472,12 @@ starts at `x₀ = 0`, and if for every order `q ∈ [1 : p]` and every past iter
 the coordinate vector `e_j` is a null direction of `∇^q f(x_i)`, then `[x_{k+1}]_j = 0`.
 
 For `C^p` functions the derivative tensors are symmetric and the condition is the book's
-`∇^q f(x_i) e_j = 0` (`isNullDirection_iff_curryLeft_eq_zero`). In general, being a null
-direction is the stronger premise, so every method that is zero-respecting in the book's sense is
-zero-respecting here: `zeroRespectingClass p` contains the book's `𝓜_ZR(p)`, and lower bounds on
-`#_ε(zeroRespectingClass p, ·)` are at least as strong as the book's. -/
+`∇^q f(x_i) e_j = 0` (`isNullDirection_iff_curryLeft_eq_zero`). In general, "`e_j` is a null
+direction of `∇^q f(x_i)`" (the multilinear map vanishes whenever one argument is `e_j`) implies
+`∇^q f(x_i) e_j = 0`, so the premise here is stronger and the requirement on the method weaker:
+every method that is zero-respecting in the book's sense is zero-respecting here. Hence
+`zeroRespectingClass p` contains the book's `𝓜_ZR(p)`, and a lower bound on
+`#_ε(zeroRespectingClass p, ·)` implies the same lower bound for `𝓜_ZR(p)`. -/
 structure IsZeroRespectingFor
     (M : OracleMethod (EuclideanSpace ℝ (Fin n)) (Jet (EuclideanSpace ℝ (Fin n)) p))
     (f : EuclideanSpace ℝ (Fin n) → ℝ) : Prop where

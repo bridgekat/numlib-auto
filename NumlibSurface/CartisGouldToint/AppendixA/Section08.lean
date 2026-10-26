@@ -30,8 +30,11 @@ tensor norm (A.7) is the operator norm of multilinear maps, `T_{f,p}(x, s)` of (
 
 * Theorem A.8.5 assumes `L ≥ 0`. The book leaves the sign of the Lipschitz constant implicit; on
   `ℝ⁰` with `L < 0` the Lipschitz condition holds trivially while (A.21) fails.
-* Theorem A.8.2 assumes `h ≠ 0` (for `h = 0` there is nothing to prove) and gives `ξ` strictly
-  between `t` and `t + h`, for either sign of `h`.
+* Theorem A.8.1 is stated for `k ≥ 1` and `h ≥ 0` (the book leaves both implicit: the
+  remainder involves `(k-1)!` and the interval `[t, t + h]`).
+* Theorem A.8.2 gives `ξ` strictly between `t` and `t + h` (`uIoo`), for either sign of `h`;
+  this needs `h ≠ 0` (the open interval is empty when `h = 0`, where the identity holds with
+  `ξ = t`).
 -/
 
 open Set
@@ -73,7 +76,8 @@ theorem theorem_A_8_1 {ψ : ℝ → ℝ} {k : ℕ} {t h : ℝ} (hk : 1 ≤ k) (h
 /-- **Theorem A.8.2 (Univariate Taylor's theorem, Lagrange form)** of [cartis2022evaluation].
 If `ψ` is `k + 1` times continuously differentiable on the interval between `t` and `t + h`,
 `h ≠ 0`, then there is `ξ` strictly between `t` and `t + h` with
-`ψ(t + h) - τ_k(t, h) = ψ^{(k+1)}(ξ) h^{k+1}/(k+1)!`. -/
+`ψ(t + h) - τ_k(t, h) = ψ^{(k+1)}(ξ) h^{k+1}/(k+1)!`. (For `h = 0` both sides vanish with `ξ = t`;
+the hypothesis `h ≠ 0` is needed only for `ξ` to lie in the open interval.) -/
 theorem theorem_A_8_2 {ψ : ℝ → ℝ} {k : ℕ} {t h : ℝ} (hh : h ≠ 0)
     (hψ : ContDiffOn ℝ (k + 1) ψ (uIcc t (t + h))) :
     ∃ ξ ∈ uIoo t (t + h), ψ (t + h) - taylorApprox ψ (uIcc t (t + h)) k t h =

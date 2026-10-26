@@ -139,7 +139,8 @@ where one exists:
 * **Theorem 14.3.4** (and Lemma 14.3.7, Theorem 14.3.9): the proof uses
   `∑_k max_j ≤ max_j ∑_k`, which is false; the bounds hold with `∑_j` for `max_j`.
 * **Lemma 14.3.5**: (14.3.43) and (14.3.46) are false (e.g. `c ≡ 0`, `X = [-1, 1]`,
-  `f(x) = x/4 - 25x²/8`, `Chapter14.lemma_14_3_5_counterexample`); they are corrected with terms of order `(‖∇f‖δ)²/(f(x_ε) - t_ε)`.
+  `f(x) = x/4 - 25x²/8`, `Chapter14.lemma_14_3_5_counterexample`); they are corrected with terms
+  of order `(‖∇f‖δ)²/(f(x_ε) - t_ε)`.
   When Phase 2 ends with `f(x_ε) = t_ε`, only the first-order part of (14.3.41) follows.
 * **Lemma 14.3.8, Theorem 14.3.9**: TPqp-GC has the same counting gap as TPp-GC: the bad outer
   iterations are not bounded by the book's argument, and `Chapter14.theorem_14_3_9` carries
@@ -166,8 +167,7 @@ and on the declarations.
 * The inexact (IDA/EDA) rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4, the TR rows of
   Lemma 14.2.3; the existence of LENq-SC and TPqp-GC runs; the stencil claim (13.2.1) and the
   interpolation bound (13.2.4).
-* The starting values (right limits at `λₛ`) of Corollary 8.2.4.
-* The norm comparisons `‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)`, `|λᵢ| ≤ ‖H‖_F` quoted in §9.3.1, the heuristic
+* The norm comparisons `‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)` quoted in §9.3.1, the heuristic
   procedure of §9.3.7 and the tests (9.4.2)–(9.4.4).
 * Discussion without numbered results: the variants of §2.2.3, §4.1.3, §7.2.3, the qualitative parts
   of §§5.3.1, 12.1.6, 12.3, the `O(·)` restatements and Table 12.2.1, and the weak approximate
