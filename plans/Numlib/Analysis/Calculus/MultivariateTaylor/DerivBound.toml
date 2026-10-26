@@ -3,7 +3,7 @@ Norm bounds for the derivatives of the Taylor polynomial `s ↦ D.taylorSum p s`
 (not necessarily symmetric) data `D : FormalMultilinearSeries ℝ E ℝ`. The exact formula (A.11)
 (`FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply`) needs symmetric data; the *bound* does not:
 the `ℓ`-th derivative of `s ↦ A (fun _ => s)` (`A` an `i`-multilinear map) is a sum over the
-injections `Fin ℓ ↪ Fin i` (`ContinuousMultilinearMap.iteratedFDeriv_comp_diagonal`), whose norm is
+injections `Fin ℓ ↪ Fin i` (`ContinuousMultilinearMap.iteratedFDeriv_comp_diagonal_apply`, proved in `MultivariateTaylor/Basic`), whose norm is
 at most `i!/(i-ℓ)! ‖A‖ ‖s‖^{i-ℓ}`. This is what the inexact-model estimates of Cartis–Gould–Toint
 (13.1.48)–(13.1.50) and the model-derivative bound of Lemma 12.2.7 use, with `D` an inexact jet or a
 difference of jets (the derivative is linear in `D`).

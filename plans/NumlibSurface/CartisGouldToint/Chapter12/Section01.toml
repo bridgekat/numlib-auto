@@ -283,5 +283,5 @@ Theorem 12.1.8 (stability). Let `f` be `C^j` (`j ≥ 1`) and `∇^j f` `L`-Lipsc
 (12.1.35) (the printed `δ^j` means `δ_j^j`); if `L = 0`, `f (x + d) ≥ f x - ε_j δ_j^j/j!` for
 `‖d‖ ≤ δ_j` (12.1.36).
 '''
-deps = ["phiMeasure", "Optimization.le_add_of_taylorMeasure_le"]
+deps = ["phiMeasure", "Optimization.le_of_taylorMeasure_le"]
 source = "Cartis–Gould–Toint, Theorem 12.1.8"

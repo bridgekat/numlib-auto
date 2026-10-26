@@ -9,7 +9,9 @@ convexity.
 **Source error:** (B.4.3) is false for `β ∈ (0,1)` (counterexample `p = 1`, `β = 1/2`, `s = e₁` in
 `ℝ²`: the Hessian norm of `‖·‖^{3/2}` at `e₁` is `3/2`, not `3/4`); it is correct for `β = 1`, the only
 case the book uses (Chapters 4, 12, 14). The proof's claim that the maxima in (B.4.4) are attained at
-`v = s/‖s‖` is unjustified as written (mixed signs in (B.4.9)), though true for `j ≤ p`.
+`v = s/‖s‖` is unjustified as written (mixed signs in (B.4.9)), though true for `j ≤ p`; the backbone
+proves (B.4.1) (operator norm, all real `p + β ≥ j`) by an averaging identity and Hölder's inequality
+instead (see the module description of `NormPowIteratedFDeriv`).
 '''
 
 [[node]]
@@ -23,7 +25,7 @@ Also the diagonal form `|∇^j(‖s‖^{p+β})[v]^j| ≤ (p+β)!/(p-j+β)! ‖s�
 what Chapters 4, 6 use. (At `s = 0` and `j ≤ p`, `j < p + β`: the derivative is `0` for `j ≥ 1`,
 `contDiff_normRpow_of_lt`.)
 '''
-deps = ["norm_iteratedFDeriv_normRpow", "abs_iteratedFDeriv_normRpow_apply_le", "holderFactorial"]
+deps = ["norm_iteratedFDeriv_normRpow", "norm_iteratedFDeriv_normRpow_le", "contDiff_normRpow_of_lt", "holderFactorial"]
 source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.1)"
 
 [[node]]

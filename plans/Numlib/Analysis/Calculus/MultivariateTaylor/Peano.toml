@@ -21,11 +21,15 @@ Peano remainder. Let `f : E → ℝ`, `n : ℕ`, `ContDiffAt ℝ n f x`. Then
 `(fun h => f (x + h) - taylorPolynomial f n x h) =o[𝓝 0] (fun h => ‖h‖ ^ n)`.
 Quantitative form (part of the node, the one used downstream): for every `η > 0` there is `r > 0`
 such that `|f (x + h) - taylorPolynomial f n x h| ≤ η * ‖h‖ ^ n` whenever `‖h‖ < r`.
-Proof: `ContDiffAt` gives `ContDiffOn ℝ n f (ball x r₀)` and continuity of `iteratedFDeriv ℝ n f`
-at `x`; on a smaller ball `ball x r` the oscillation `‖D^n f y - D^n f z‖ ≤ η * n!` holds, i.e.
-`IteratedFDerivHolderOn f n (η * n!) 0 (ball x r)` (with `‖·‖ ^ (0:ℝ) = 1`), and
-`abs_sub_taylorPolynomial_le_of_holder` (`C = ball x r` convex, `D = ball x r₀` open) gives
-`|f(x+h) - T_n(x,h)| ≤ η n!/holderFactorial n 0 ‖h‖^n = η ‖h‖^n`.
+Proof: `ContDiffAt ℝ n f x` (finite `n`) gives `∀ᶠ y in 𝓝 x, ContDiffAt ℝ n f y`
+(`ContDiffAt.eventually`) and continuity of `iteratedFDeriv ℝ n f` at `x`. On a small ball
+`ball x r` the oscillation is `‖D^n f y - D^n f z‖ ≤ η * n!`, i.e.
+`IteratedFDerivHolderOn f n (η * n!) 0 (ball x r)` (with `‖·‖ ^ (0:ℝ) = 1`). Then
+`abs_sub_taylorPolynomial_le_of_holder` (core hypothesis shape: `C = ball x r` convex,
+`∀ y ∈ C, ContDiffAt ℝ n f y`, `β = 0`) gives
+`|f(x+h) - T_n(x,h)| ≤ η n!/holderFactorial n 0 ‖h‖^n = η ‖h‖^n` (`holderFactorial_zero_right`).
+Consumers (part of the design): `Optimality/HighOrder` (Theorems 12.1.4, 12.1.5) and
+`Optimality/CurveConditions` (arc expansions, Theorems 12.1.1, 14.3.1).
 '''
 deps = ["abs_sub_taylorPolynomial_le_of_holder", "holderFactorial", "taylorPolynomial", "IteratedFDerivHolderOn"]
 source = "Cartis–Gould–Toint, (A.12)"

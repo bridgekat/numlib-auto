@@ -1,51 +1,104 @@
 namespace = "Optimization"
 desc = '''
-Curve-based necessary optimality conditions of arbitrary order (Cartis–Gould–Toint Theorem 12.1.1,
-after Cartis, Gould, Toint [102, Thm 3.1]). Along a polynomial curve
-`x(α) = x + ∑_{i=1}^{q} α^i s_i` the Taylor expansion of `f(x(α))` in powers of `α` has, for
-`j ≤ q`, the coefficient
-`c_j = ∑_{k=1}^{j} (1/k!) ∑_{(ℓ_1,…,ℓ_k) ∈ P(j,k)} ∇^k f(x)[s_{ℓ_1},…,s_{ℓ_k}]` (12.1.6),
-where `P(j,k)` = ordered `k`-tuples of positive integers summing to `j` (12.1.5) = Mathlib's
-`Composition j` of length `k` (the same index set as in `FormalMultilinearSeries.comp`). So
-`curveCoeff` is the `j`-th coefficient of the composition of the Taylor series of `f` with the
-curve series; we define it directly with `Composition` and data `D` (exact: `ftaylorSeries ℝ f x`).
+Curve-based (arc) necessary optimality conditions of arbitrary order: Cartis–Gould–Toint
+Theorem 12.1.1 (unconstrained) and Theorem 14.3.1 (constrained, after Cartis, Gould and Toint
+[102, Thm 3.1]). This module consolidates the former `CurveConditions` (plan-ch12) and
+`CurveExpansion` (plan-ch14); all ids are kept.
 
-Proof route for the necessary condition (no Faà di Bruno needed): Peano remainder
-(`sub_taylorPolynomial_isLittleO`) at `h(α) = ∑ α^i s_i = O(α)`, plus the purely algebraic
-expansion of `D.taylorSum q (h α)` as a polynomial in `α` (multilinearity:
-`ContinuousMultilinearMap.map_sum` over `Fintype.piFinset`), whose coefficients up to `α^q` are the
-`curveCoeff`; if `c_1 = … = c_{j-1} = 0` and `c_j < 0`, then `f(x(α)) < f(x)` for small `α > 0`.
-The book's restriction to nonzero `s_i` is dropped (the statement for all `s` is stronger).
-Higher-order remainder terms `o(α^q)` of the book's curves (12.1.4) do not affect `c_j`, `j ≤ q`,
-and are omitted. (Planned by plan-ch12.)
+Coefficients. Along `x + ∑_{i=1}^{q} α^i s_i`, the Taylor expansion of `f` in powers of `α` has,
+for `j ≤ q`, the coefficient
+`c_j = ∑_{k=1}^{j} (1/k!) ∑_{(ℓ_1,…,ℓ_k) ∈ P(j,k)} ∇^k f(x)[s_{ℓ_1},…,s_{ℓ_k}]` (12.1.6).
+Here `P(j,k)` (12.1.5), the ordered `k`-tuples of positive integers summing to `j`, is Mathlib's
+`Composition j` of length `k`, the same index set as in `FormalMultilinearSeries.comp`.
+`curveCoeff` is defined directly with `Composition` for arbitrary data `D`; for exact data,
+`D = ftaylorSeries ℝ f x`.
+
+Proof route, no Faà di Bruno needed:
+1. Algebra (`taylorSum_polyCurve_eq`): `D.taylorSum q (∑ α^i s_i)` is a polynomial in `α` whose
+   coefficients up to `α^q` are the `curveCoeff`.
+2. Arcs (`isLittleO_comp_curve_sub_curveCoeff`): if `γ α = x + h α + e α` with polynomial `h`
+   and `e = o(α^j)`, then `g(γ α) - T_j(x, γ α - x) = o(α^j)` by Peano (`‖γ α - x‖ = O(α)`), and
+   `T_j(x, h + e) - T_j(x, h) = o(α^j)` because `T_j(x,·)` is a polynomial, Lipschitz near `0`.
+   Step 1 does the rest.
+3. Signs (`nonneg_of_isLittleO_poly_of_le`, real-valued): a one-dimensional test on the first nonvanishing
+   coefficient.
+
+Codomain: `curveCoeff`, the expansion and (14.3.3) are stated for data
+`FormalMultilinearSeries ℝ E F` with any normed codomain `F`, like the core `taylorSum`, so
+vector constraints `c : E → F` need no scalarization. Linearity gives
+`curveCoeff` of `z ↦ ⟪y, c z⟫` = `⟪y, curveCoeff of c⟫`, used for the Lagrangian.
+
+The book's restriction to nonzero `s_i` is dropped (stronger statements). Higher-order remainder
+terms of the book's arcs (12.1.4) are part of `IsFeasibleArc`.
 '''
 
 [[node]]
 id = "curveCoeff"
 kind = "def"
 desc = '''
-`curveCoeff (D : FormalMultilinearSeries ℝ E ℝ) (s : ℕ → E) (j : ℕ) : ℝ :=
-∑ c : Composition j, ((c.length)! : ℝ)⁻¹ * D c.length (fun m => s (c.blocksFun m))`
-(prototype elaborates in `drafts/cgt/plan-ch12/Proto.lean`). For `j = 0` the sum has the single
-empty composition and gives `D 0 ![]` (unused). Lemmas (part of node): `curveCoeff_one :
-curveCoeff D s 1 = D 1 ![s 1]`; `curveCoeff_two : curveCoeff D s 2 = D 1 ![s 2] + ½ D 2 ![s 1, s 1]`.
+`curveCoeff (D : FormalMultilinearSeries ℝ E F) (s : ℕ → E) (j : ℕ) : F :=
+∑ c : Composition j, ((c.length)! : ℝ)⁻¹ • D c.length (fun m => s (c.blocksFun m))`.
+The prototype elaborates (`drafts/cgt/plan-ch12/Proto.lean`). For `j = 0` the sum has the single
+empty composition and gives `D 0 ![]` (unused).
+Lemmas (part of node):
+- `curveCoeff_one : curveCoeff D s 1 = D 1 ![s 1]`;
+- `curveCoeff_two : curveCoeff D s 2 = D 1 ![s 2] + ½ D 2 ![s 1, s 1]`;
+- linearity in `D`: `curveCoeff (D + D') = curveCoeff D + curveCoeff D'` and `curveCoeff (a • D) = a • curveCoeff D`;
+- composition with a continuous linear map `ℓ : F →L[ℝ] G`: the coefficient of the composed data
+  is `ℓ (curveCoeff D s j)`.
 '''
-source = "Cartis–Gould–Toint, (12.1.5)–(12.1.6), Table 12.1.1"
+source = "Cartis–Gould–Toint, (12.1.5)–(12.1.6), Table 12.1.1, (14.3.3)"
 
 [[node]]
 id = "taylorSum_polyCurve_eq"
 kind = "theorem"
 desc = '''
-Algebraic expansion along a polynomial curve: for `D`, `q : ℕ`, `s : ℕ → E` there is a polynomial
-`P : ℝ[X]` such that for all `α : ℝ`,
+Algebraic expansion along a polynomial curve. For `D`, `q : ℕ` and `s : ℕ → E` there is
+`R : ℝ → F` such that for all `α : ℝ`:
 `D.taylorSum q (∑ i ∈ Finset.Icc 1 q, α ^ i • s i) = D 0 ![] + ∑ j ∈ Finset.Icc 1 q,
-curveCoeff D s j * α ^ j + α ^ (q + 1) * P.eval α`.
-Proof: expand each `D k (fun _ => ∑_i α^i s_i)` by multilinearity into a sum over
-`ℓ : Fin k → Icc 1 q` of `α^{∑ ℓ} D k (s ∘ ℓ)`, and regroup by `j = ∑ ℓ` (tuples with `∑ ℓ = j ≤ q`
-are exactly the compositions of `j` of length `k`, `k ≤ j`).
+α ^ j • curveCoeff D s j + α ^ (q + 1) • R α`, with `R : ℝ → F` a polynomial map
+(a finite sum `∑_k α^k • w_k`), hence bounded on bounded sets.
+Proof: expand each `D k (fun _ => ∑_i α^i s_i)` by multilinearity (`ContinuousMultilinearMap.map_sum`
+over `Fintype.piFinset`) into a sum over `ℓ : Fin k → Icc 1 q` of `α^{∑ ℓ} D k (s ∘ ℓ)`. Then
+regroup by `j = ∑ ℓ`: the tuples with `∑ ℓ = j ≤ q` are exactly the compositions of `j` of length
+`k`, with `k ≤ j`.
 '''
 deps = ["curveCoeff", "FormalMultilinearSeries.taylorSum"]
 source = "Cartis–Gould–Toint, Theorem 12.1.1 (interpretation of (12.1.6))"
+
+[[node]]
+id = "isLittleO_comp_curve_sub_curveCoeff"
+kind = "theorem"
+desc = '''
+Expansion along an arc. Let `g : E → F` with `ContDiffAt ℝ j g x`, `s : ℕ → E` and `γ : ℝ → E`
+with `(fun α => γ α - (x + ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ)) =o[𝓝[>] 0] (fun α => α ^ j)`. Then
+`(fun α => g (γ α) - ∑ i ∈ range (j + 1), α ^ i • curveCoeff (ftaylorSeries ℝ g x) s i)
+=o[𝓝[>] 0] (fun α => α ^ j)`, where the `i = 0` term is `g x`.
+Proof (module description, step 2):
+- `sub_taylorPolynomial_isLittleO` applied at `γ α - x = O(α)`;
+- local Lipschitz continuity of the polynomial `taylorPolynomial g j x`
+  (`contDiff_taylorPolynomial`) to absorb `e α = o(α^j)`;
+- `taylorSum_polyCurve_eq`, whose terms of order `> j` are `O(α^{j+1})`.
+'''
+deps = ["curveCoeff", "taylorSum_polyCurve_eq", "sub_taylorPolynomial_isLittleO"]
+source = "Cartis–Gould–Toint, Section 12.1.2 and (14.3.3) (\"collecting terms of equal degree in α\")"
+
+[[node]]
+id = "nonneg_of_isLittleO_poly_of_le"
+kind = "theorem"
+desc = '''
+One-dimensional first-nonvanishing-coefficient test. Hypotheses:
+- `φ : ℝ → ℝ`, `a : ℕ → ℝ`, `j ≥ 1`;
+- `(fun α => φ α - ∑ i ∈ range (j + 1), a i * α ^ i) =o[𝓝[>] 0] (fun α => α ^ j)`;
+- `∀ᶠ α in 𝓝[>] 0, a 0 ≤ φ α`;
+- `a i = 0` for `i ∈ Icc 1 (j - 1)`.
+
+Then `0 ≤ a j`.
+Uniqueness of asymptotic expansions (part of node): if `∑_{i ≤ j} a i α^i = o(α^j)` along
+`𝓝[>] 0`, then all `a i = 0` for `i ≤ j`.
+Elementary: divide by `α^j` and let `α → 0⁺`.
+'''
+source = "Cartis–Gould–Toint, proof idea of Theorems 12.1.1 and 14.3.1"
 
 [[node]]
 id = "IsCurveCritical"
@@ -53,11 +106,15 @@ kind = "def"
 desc = '''
 `IsCurveCritical (D : FormalMultilinearSeries ℝ E ℝ) (q : ℕ) : Prop :=
 ∀ j ∈ Finset.Icc 1 q, ∀ s : ℕ → E, (∀ i ∈ Finset.Ico 1 j, curveCoeff D s i = 0) →
-0 ≤ curveCoeff D s j` — the conclusion of Theorem 12.1.1 for all `j ≤ q`; for
-`D = ftaylorSeries ℝ f x` the book's "`x` is a `q`-th order minimizer". Lemmas (part of node):
-monotone in `q`; `IsCurveCritical D 1 ↔ D 1 = 0`; `IsCurveCritical D 2 ↔ D 1 = 0 ∧ ∀ d,
-0 ≤ D 2 ![d, d]` (for symmetric `D 2`); for `q = 3` additionally `D 3 (fun _ => d) = 0` whenever
-`D 2 ![d, d] = 0` (the book's discussion after Theorem 12.1.1, using `s_1 = ±d`).
+0 ≤ curveCoeff D s j`.
+This is the conclusion of Theorem 12.1.1 for all `j ≤ q`; for `D = ftaylorSeries ℝ f x` it is the
+book's "`x` is a `q`-th order minimizer".
+Lemmas (part of node):
+- monotone in `q`;
+- `IsCurveCritical D 1 ↔ D 1 = 0`;
+- `IsCurveCritical D 2 ↔ D 1 = 0 ∧ ∀ d, 0 ≤ D 2 ![d, d]` (for symmetric `D 2`);
+- for `q = 3`, additionally `D 3 (fun _ => d) = 0` whenever `D 2 ![d, d] = 0` (the book's
+  discussion after Theorem 12.1.1, using `s_1 = ±d`).
 '''
 deps = ["curveCoeff"]
 source = "Cartis–Gould–Toint, Section 12.1.2 (q-th order minimizer)"
@@ -66,12 +123,72 @@ source = "Cartis–Gould–Toint, Section 12.1.2 (q-th order minimizer)"
 id = "IsLocalMin.isCurveCritical"
 kind = "theorem"
 desc = '''
-Theorem 12.1.1 (backbone form). If `ContDiffAt ℝ q f x` and `IsLocalMin f x` then
-`IsCurveCritical (ftaylorSeries ℝ f x) q`. Proof: given `j ≤ q` and `s` with
-`curveCoeff … s i = 0` for `i < j`, suppose `curveCoeff … s j < 0`; with `h α = ∑_{i ≤ q} α^i s_i`
-(`‖h α‖ ≤ C α` for `α ∈ [0,1]`), `taylorSum_polyCurve_eq` and `sub_taylorPolynomial_isLittleO` give
-`f (x + h α) - f x = c_j α^j + o(α^j)` (the curve coefficients of order `j < i ≤ q` and the
-polynomial tail are `O(α^{j+1})`), negative for small `α > 0`, contradicting local minimality.
+Theorem 12.1.1 (backbone form). If `ContDiffAt ℝ q f x` and `IsLocalMin f x`, then
+`IsCurveCritical (ftaylorSeries ℝ f x) q`.
+Proof: given `j ≤ q` and `s`, take the polynomial curve `γ α = x + ∑_{i ≤ j} α^i s_i`. Apply
+`isLittleO_comp_curve_sub_curveCoeff` (with `e = 0`) and `nonneg_of_isLittleO_poly_of_le`, using
+`f x ≤ f (γ α)` for small `α`.
+This is also the case `X = univ`, `c = 0` of `curveCoeff_lagrangian_nonneg_of_isLocalMinOn`.
 '''
-deps = ["IsCurveCritical", "taylorSum_polyCurve_eq", "sub_taylorPolynomial_isLittleO", "taylorPolynomial"]
+deps = ["IsCurveCritical", "isLittleO_comp_curve_sub_curveCoeff", "nonneg_of_isLittleO_poly_of_le"]
 source = "Cartis–Gould–Toint, Theorem 12.1.1"
+
+[[node]]
+id = "IsFeasibleArc"
+kind = "def"
+desc = '''
+`IsFeasibleArc (K : Set E) (x : E) (j : ℕ) (s : ℕ → E) : Prop := ∃ γ : ℝ → E,
+((fun α => γ α - (x + ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ)) =o[𝓝[>] 0] (fun α => α ^ j)) ∧
+∀ᶠ α in 𝓝[>] 0, γ α ∈ K`.
+This is the book's `(s_1,…,s_j) ∈ 𝒟^j` for the feasible set `K`; for (14.3.1),
+`K = X ∩ {z | c z = 0}`.
+API (part of node):
+- monotone in `K`;
+- for `K = univ` every `s` qualifies (polynomial arc);
+- for convex `X` with `x ∈ X`, `IsFeasibleArc X x 1 s` holds whenever `x + t s ∈ X` for some `t > 0`.
+'''
+source = "Cartis–Gould–Toint, (14.3.2) and the descriptor set 𝒟^j_X"
+
+[[node]]
+id = "curveCoeff_eq_zero_of_isFeasibleArc"
+kind = "theorem"
+desc = '''
+(14.3.3). Let `c : E → F` with `ContDiffAt ℝ j c x`, `c x = 0` and
+`IsFeasibleArc (X ∩ {z | c z = 0}) x j s`. Then `curveCoeff (ftaylorSeries ℝ c x) s i = 0` for
+every `i ∈ Icc 1 j`.
+Proof: `isLittleO_comp_curve_sub_curveCoeff` for `c`, which vanishes along the arc, plus
+uniqueness of expansions (applied componentwise via continuous linear functionals, or with an
+`F`-valued version of the uniqueness lemma).
+'''
+deps = ["IsFeasibleArc", "isLittleO_comp_curve_sub_curveCoeff", "nonneg_of_isLittleO_poly_of_le"]
+source = "Cartis–Gould–Toint, (14.3.3)"
+
+[[node]]
+id = "curveCoeff_lagrangian_nonneg_of_isLocalMinOn"
+kind = "theorem"
+desc = '''
+Curve-based necessary conditions for a constrained minimum (Theorem 14.3.1, corrected form; with
+`X = univ` and `F = 0` it is Theorem 12.1.1).
+
+Hypotheses:
+- `f : E → ℝ` and `c : E → F` (`F` a real inner product space), `ContDiffAt ℝ q` at `x`;
+- `x ∈ X`, `c x = 0`, `IsLocalMinOn f (X ∩ {z | c z = 0}) x`;
+- `y : F`, `j ∈ Icc 1 q`, `s : ℕ → E` with `IsFeasibleArc (X ∩ {z | c z = 0}) x j s`;
+- `curveCoeff (ftaylorSeries ℝ (fun z => f z - ⟪y, c z⟫) x) s i = 0` for `i ∈ Icc 1 (j - 1)`.
+
+Conclusion: `0 ≤ curveCoeff (ftaylorSeries ℝ (fun z => f z - ⟪y, c z⟫) x) s j`.
+Proof: the Lagrangian equals `f` along the arc, then `isLittleO_comp_curve_sub_curveCoeff` and
+`nonneg_of_isLittleO_poly_of_le`.
+
+Correction: the book's `𝒟^j_X` only asks the arc to stay in `X` and imposes (14.3.3), i.e.
+first-order feasibility of `c` up to order `j`. That is false without a constraint qualification
+turning (14.3.3) into an actual feasible arc, which X.CQ does not provide.
+Counterexample: `X = ℝ²`, `c(x) = x₁² + x₂²`, `f(x) = -x₁`, `x⋆ = 0` (the only feasible point,
+hence a minimizer). (14.3.3) holds for every `s₁`, and X.CQ holds for `q = 1`, but (14.3.4) for
+`j = 1`, `s₁ = e₁` reads `-1 ≥ 0`.
+The corrected statement quantifies over arcs feasible for the whole constraint set, as the book's
+derivation intends (it substitutes the arc into `c(x⋆(α)) = 0`). (14.3.3) then follows
+(`curveCoeff_eq_zero_of_isFeasibleArc`), and X.CQ only serves non-vacuity.
+'''
+deps = ["isLittleO_comp_curve_sub_curveCoeff", "nonneg_of_isLittleO_poly_of_le", "IsFeasibleArc", "curveCoeff_eq_zero_of_isFeasibleArc"]
+source = "Cartis–Gould–Toint, Theorem 14.3.1 (and Theorem 12.1.1)"

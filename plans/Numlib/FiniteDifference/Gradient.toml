@@ -6,7 +6,7 @@ gradient values) on `EuclideanSpace ℝ (Fin n)`, with error bounds of the "dyna
 step), where `κ` depends on a Lipschitz constant of the next derivative. These are the concrete
 "finite derivative-approximation schemes" of §13.2 (oracles of degree `o = 0` resp. `o = 1`
 producing derivatives of degree `1` resp. `2` with `n` oracle calls), used to show that
-Theorem 13.2.1 is not vacuous. The multivariate one-dimensional forward differences of
+Theorem 13.2.1 is not vacuous. The one-dimensional forward differences of
 `FiniteDifference/Derivative` (on `ℝ → ℝ`) are the coordinate pieces.
 
 Error analysis: (A.19) for `p = 1` (gradient Lipschitz ⇒ `|f(x + h e_i) - f x - h ∂_i f(x)| ≤ L₁h²/2`),
