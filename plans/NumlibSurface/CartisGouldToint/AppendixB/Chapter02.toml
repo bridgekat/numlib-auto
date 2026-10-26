@@ -1,76 +1,29 @@
 namespace = "CartisGouldToint.AppendixB"
-desc = '''
-Appendix to Chapter 2: the two-dimensional example of slow convergence of steepest descent with
-exact line searches (proof of Theorem 2.2.5), Lemmas B.2.1–B.2.6. The construction is the backbone
-`Optimization.ZigZagExample`; these nodes restate its pieces in the book's form. Source issue: Lemma
-B.2.6 establishes a *first local* line minimizer, not the global one of (2.2.26) (see
-`Chapter02.theorem_2_2_5`); Lemma B.2.2's "steepest descent with prescribed stepsize" uses step
-`√2` and needs `ε⁻²` integral.
-'''
 
 [[node]]
 id = "lemma_B_2_1"
-kind = "theorem"
-desc = '''
-Lemma B.2.1. For reals `f₀, g₀, H₀, f₁, g₁, H₁` the quintic `p(t) = ∑_{i=0}^5 c_i t^i` with
-`c₀ = f₀`, `c₁ = g₀`, `c₂ = H₀/2`, `c₃ = 10r₀ - 4r₁ + r₂/2`, `c₄ = -15r₀ + 7r₁ - r₂`,
-`c₅ = 6r₀ - 3r₁ + r₂/2`, `r₀ = f₁ - f₀ - g₀ - H₀/2`, `r₁ = g₁ - g₀ - H₀`, `r₂ = H₁ - H₀`
-(B.2.1)–(B.2.2) satisfies `p(0) = f₀, p'(0) = g₀, p''(0) = H₀, p(1) = f₁, p'(1) = g₁, p''(1) = H₁`;
-if `|r_i| ≤ κ_f` (`κ_f ≥ 1`) and also `|f₀|, |g₀|, |H₀| ≤ κ_f` (needed; implicit in the book's appeal
-to Theorem A.9.1), then `|p^{(i)}(t)| ≤ κ_h(κ_f)` on `[0,1]` for `i ≤ 2` (indeed `i ≤ 3`).
-'''
-deps = ["Hermite.exists_twoPoint_interpolant"]
+source = "Cartis–Gould–Toint, Lemma B.2.1"
+
+[[node]]
+id = "lemma_B_2_1_bound"
 source = "Cartis–Gould–Toint, Lemma B.2.1"
 
 [[node]]
 id = "lemma_B_2_2"
-kind = "theorem"
-desc = '''
-Lemma B.2.2. For every `ε ∈ (0,1]` with `ε⁻² = k_ε ∈ ℕ` there are `f : EuclideanSpace ℝ (Fin 2) → ℝ`
-(`Optimization.zigZagFunction ε k_ε`) and `x₀ = 0` such that steepest descent with the prescribed
-stepsize `√2` (`x_{k+1} = x_k - √2 ∇f(x_k)`) satisfies `‖∇f(x_k)‖ = ε + ω_k` (B.2.25) and needs
-exactly `k_ε` iterations to reach `‖∇f(x_k)‖ ≤ ε`.
-'''
-deps = ["Optimization.zigZagFunction", "Optimization.zigZag_gradient", "Optimization.IsFirstHit"]
 source = "Cartis–Gould–Toint, Lemma B.2.2"
 
 [[node]]
 id = "lemma_B_2_3"
-kind = "theorem"
-desc = '''
-Lemma B.2.3. The function `f₂` of the construction and its first and second partial derivatives are
-bounded, uniformly in `ε` and `k`, for `x ≥ 0` and `y ∈ [y_low(x) - 1, y_low(x)] ∪
-[y_up(x), y_up(x) + 1]` (part of `Optimization.zigZag_bounds`).
-'''
-deps = ["Optimization.zigZag_bounds"]
 source = "Cartis–Gould–Toint, Lemma B.2.3"
 
 [[node]]
 id = "lemma_B_2_4"
-kind = "theorem"
-desc = '''
-Lemma B.2.4. `f_SDEX` is bounded below on `ℝ²` uniformly in `ε` (f.Bb).
-'''
-deps = ["Optimization.zigZag_bounds"]
 source = "Cartis–Gould–Toint, Lemma B.2.4"
 
 [[node]]
 id = "lemma_B_2_5"
-kind = "theorem"
-desc = '''
-Lemma B.2.5. `∇f_SDEX` is Lipschitz continuous on `ℝ²` with a constant independent of `ε` (f.gL).
-'''
-deps = ["Optimization.zigZag_bounds"]
 source = "Cartis–Gould–Toint, Lemma B.2.5"
 
 [[node]]
 id = "lemma_B_2_6"
-kind = "theorem"
-desc = '''
-Lemma B.2.6, **as proved**: `(x_{k+1}, y_{k+1})` is the *first local* minimizer of `f_SDEX` along
-the steepest-descent direction from `(x_k, y_k)` (slope negative on `[0, √2)`, zero at `√2`):
-`LineSearch.IsFirstLocalLineMin`. (The book calls it "the first minimizer"; it is not a global
-minimizer along the ray.)
-'''
-deps = ["Optimization.zigZag_isFirstLocalLineMin"]
 source = "Cartis–Gould–Toint, Lemma B.2.6"

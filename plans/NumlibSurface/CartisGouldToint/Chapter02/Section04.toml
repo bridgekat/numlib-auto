@@ -1,103 +1,41 @@
 namespace = "CartisGouldToint.Chapter02"
-desc = '''
-§2.4 The adaptive-regularization method AR1. Model `m_k(s) = T_{f,1}(x_k, s) + ½ σ_k ‖s‖²`
-(2.4.1) = `Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) 1 (σ k) s`; ratio (2.4.3) with
-the Taylor decrement `T_{f,1}(x_k,0) - T_{f,1}(x_k,s_k)`; update (2.4.4) =
-`Optimization.ARUpdate`. Section 2.5 contains no numbered results.
-'''
 
 [[node]]
 id = "ARParams"
-kind = "def"
-desc = '''
-Structure of adaptive-regularization constants (2.4.2), shared by AR1, AR2 (3.3.3) and later
-chapters' ARp: `σ₀ > 0`, `σ_min ∈ (0, σ₀]`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ < γ₃`.
-`structure ARParams extends Optimization.ARParams` adding `0 < σmin` and `γ₂ < γ₃` (the backbone
-structure allows `σmin = 0`, `γ₂ = γ₃`).
-'''
-deps = ["Optimization.ARParams"]
 source = "Cartis–Gould–Toint, (2.4.2)"
 
 [[node]]
+id = "ar1Model"
+source = "Cartis–Gould–Toint, (2.4.1)"
+
+[[node]]
 id = "algorithm_2_4_1"
-kind = "def"
-desc = '''
-Algorithm 2.4.1 (AR1) as a run predicate `IsAR1Run f P ε x s σ := Optimization.IsARRun
-P.toARParams (fun k => ‖∇f(x_k)‖ ≤ ε) (fun k => IsMinOn m_k univ (s k)) (fun _ => False)
-(Optimization.taylorRatio f 1 x s) x s σ`, i.e.: `σ 0 = P.σ₀` and before the first
-`k` with `‖∇f(x_k)‖ ≤ ε`: `s k` is a global minimizer of `m_k` (`IsMinOn m_k univ (s k)`, Step 2);
-`x (k+1) = if η₁ ≤ ρ_k then x k + s k else x k` with
-`ρ_k = Optimization.reductionRatio f (x k) (s k) ((ftaylorSeries ℝ f (x k)).taylorDecrement 1 (s k))`;
-`Optimization.ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σ_min ρ_k (σ k) (σ (k+1))`.
-Existence (part of node): from any `x₀`, `s_k = -σ_k⁻¹ ∇f(x_k)` and any admissible `σ_{k+1}`.
-'''
-deps = ["ARParams", "Optimization.IsARRun", "Optimization.taylorRatio", "Optimization.regularizedModel", "Optimization.ARUpdate", "Optimization.exists_isARRun"]
+source = "Cartis–Gould–Toint, Algorithm 2.4.1"
+
+[[node]]
+id = "exists_algorithm_2_4_1"
 source = "Cartis–Gould–Toint, Algorithm 2.4.1"
 
 [[node]]
 id = "ar1_step_eq"
-kind = "theorem"
-desc = '''
-(2.4.5)–(2.4.7): for `σ > 0` the unique global minimizer of `T_{f,1}(x, s) + ½ σ ‖s‖²` is
-`s = -σ⁻¹ • gradient f x`, its Taylor decrement is `‖∇f(x)‖²/σ` (`= σ ‖s‖²`), and
-`ρ = σ (f x - f (x + s)) / ‖∇f(x)‖²`.
-'''
-deps = ["algorithm_2_4_1", "Optimization.lt_taylorDecrement_of_regularizedModel_lt"]
 source = "Cartis–Gould–Toint, (2.4.5)–(2.4.7)"
 
 [[node]]
 id = "lemma_2_4_1"
-kind = "theorem"
-desc = '''
-Lemma 2.4.1. For an AR1 run, `σmax > 0` with `σ j ≤ σmax` for `j ≤ k + 1` and `k` before
-termination: `(k : ℝ) ≤ |successSet succ k| (1 + |log γ₁| / log γ₂) + log(σmax/σ₀) / log γ₂`
-(2.4.8). Depends only on (2.4.4) (holds verbatim for AR2, ARp).
-'''
-deps = ["algorithm_2_4_1", "Optimization.succ_le_of_arUpdate"]
 source = "Cartis–Gould–Toint, Lemma 2.4.1"
 
 [[node]]
 id = "lemma_2_4_2"
-kind = "theorem"
-desc = '''
-Lemma 2.4.2. Under `AssumptionGL f L`, for an AR1 run: `σ k ≤ σ_max := max σ₀ (γ₃ L / (2 (1 - η₂)))`
-for every `k` up to (and including) the first termination index (2.4.9).
-'''
-deps = ["ar1_step_eq", "AssumptionGL", "Optimization.abs_reductionRatio_sub_one_le_of_lipschitz", "Optimization.sigma_le_max_of_arUpdate"]
 source = "Cartis–Gould–Toint, Lemma 2.4.2"
 
 [[node]]
 id = "lemma_2_4_3"
-kind = "theorem"
-desc = '''
-Lemma 2.4.3. Under f.Bb, f.gL, for an AR1 run and `k` before termination:
-`|successSet succ k| ≤ κ^S_AR1 (f(x_0) - flow)/ε²` with `κ^S_AR1 = η₁⁻¹ max(σ₀, γ₃ L/(2(1-η₂)))`
-(2.4.11). (The book's proof assumes `‖∇f(x_j)‖ > ε` for `j ∈ [1:k]`; `[0:k]` is meant.)
-'''
-deps = ["lemma_2_4_2", "ar1_step_eq", "AssumptionBb", "Optimization.sum_successSet_sub_eq", "Optimization.card_mul_le_of_decrease"]
 source = "Cartis–Gould–Toint, Lemma 2.4.3"
 
 [[node]]
 id = "theorem_2_4_4"
-kind = "theorem"
-desc = '''
-Theorem 2.4.4. Under f.Bb, f.gL, for every AR1 run with `ε > 0` there is `k_ε` with
-`IsFirstHit (‖∇f(x_k)‖ ≤ ε) k_ε`, `funEvalCount k_ε ≤ κ^A (f(x_0)-flow)/ε² + κ^C` and
-`derivEvalCount succ k_ε ≤ κ^S (f(x_0)-flow)/ε² + 1`, with `κ^S` of (2.4.11),
-`κ^A = η₁⁻¹ max(σ₀, γ₃ L/(1-η₂)) (1 + |log γ₁|/log γ₂)`,
-`κ^C = log(max(1, γ₃ L/(σ₀ (1-η₂)))) / log γ₂ + 1`.
-'''
-deps = ["lemma_2_4_1", "lemma_2_4_2", "lemma_2_4_3", "Optimization.exists_hit_le_of_counting", "Optimization.funEvalCount"]
 source = "Cartis–Gould–Toint, Theorem 2.4.4"
 
 [[node]]
 id = "theorem_2_4_5"
-kind = "theorem"
-desc = '''
-Theorem 2.4.5 (sharpness). For all AR1 constants `P` there are `L ≥ 1`, `flow` (independent of `ε`)
-such that for every `ε ∈ (0,1)` with `ε⁻² = k_ε ∈ ℕ` there are `f : EuclideanSpace ℝ (Fin 1) → ℝ`
-with f.Bb, f.gL and an AR1 run from `x₀ = 0` with `σ_k = σ₀` for all `k`, `ρ_k = 1`, and
-`IsFirstHit (‖∇f(x_k)‖ ≤ ε) k_ε`. (Data of Theorem 2.2.3 with `t_ini = σ₀⁻¹`.)
-'''
-deps = ["algorithm_2_4_1", "ar1_step_eq", "Optimization.exists_slowFirstOrder_interpolant", "Optimization.ridge"]
 source = "Cartis–Gould–Toint, Theorem 2.4.5"
