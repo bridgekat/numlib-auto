@@ -1,0 +1,327 @@
+namespace = "CartisGouldToint.Chapter04"
+desc = '''
+§4.1 The ARp algorithm and its complexity. Model (4.1.2):
+`m_k(s) = Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k) s`, step conditions
+(4.1.10)–(4.1.14) on `fderiv`, `minCurvature (iteratedFDeriv ℝ 2 m_k (s k))` and
+`iteratedFDeriv ℝ 3 m_k (s k)`, ratio (4.1.15) with `(ftaylorSeries ℝ f (x k)).taylorDecrement p (s k)`,
+update `Optimization.ARUpdate` (4.1.16). Surface on `E = EuclideanSpace ℝ (Fin n)`.
+
+The one-iteration estimates are backbone (`Optimization.TaylorModel`): Lemmas 4.1.1–4.1.3 are
+instances; the third-order parts use `Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel`
+with the explicit third derivative of `‖s‖^{p+1}` (`abs_iteratedFDeriv_three_normRpow_apply_le`,
+Lemma B.4.1 with `j = 3`). Counting uses `Optimization.succ_le_of_arUpdate` (Lemma 2.4.1 in the
+form `k + 1 ≤ |𝒮_k|(1 + |log γ₁|/log γ₂) + log(σ_max/σ₀)/log γ₂`), which yields the book's
+constants (4.1.46) exactly.
+
+§4.1.3 ("A TRp algorithm?") contains no numbered statement: it argues informally that a
+trust-region method with a `p`-th degree model is still `O(ε^{-2})` on the example of Theorem 2.2.3;
+no TRp algorithm is defined, so nothing is planned (the corresponding formal content is the
+Chapter 2/3 sharpness results).
+'''
+
+[[node]]
+id = "ARpParams"
+kind = "def"
+desc = '''
+Constants of Algorithm 4.1.1, Step 0: `structure ARpParams extends Chapter02.ARParams` with
+`θ₁ θ₂ θ₃ ∈ (0, 1]` (`σ_min ∈ (0, σ₀]`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ < γ₃` from
+`ARParams`).
+'''
+deps = ["CartisGouldToint.Chapter02.ARParams"]
+source = "Cartis–Gould–Toint, Algorithm 4.1.1 (Step 0)"
+
+[[node]]
+id = "AssumptionDpL"
+kind = "def"
+desc = '''
+f.DpL: `AssumptionDpL f p L : Prop := ContDiff ℝ p f ∧ 1 ≤ L ∧
+IteratedFDerivLipschitzOn f p L univ` ((4.1.17), tensor norm = operator norm). For `p = 1`, `2` it
+is `Chapter02.AssumptionGL` / `Chapter03.AssumptionHL` (bridges part of node).
+'''
+deps = ["IteratedFDerivHolderOn", "CartisGouldToint.Chapter02.AssumptionGL", "CartisGouldToint.Chapter03.AssumptionHL"]
+source = "Cartis–Gould–Toint, Assumption f.DpL, (4.1.17)"
+
+[[node]]
+id = "IsApproxThirdOrderMinimizer"
+kind = "def"
+desc = '''
+(4.1.3)–(4.1.4): `smallCurvatureSet f x ε₂ : Set E := {d | ‖d‖ = 1 ∧ |iteratedFDeriv ℝ 2 f x (fun _ => d)| ≤ ε₂}`
+(the book's `𝒵_ε`) and `IsApproxThirdOrderMinimizer f x ε₁ ε₂ ε₃ : Prop :=
+Chapter03.IsApproxSecondOrderMinimizer f x ε₁ ε₂ ∧ ∀ d ∈ smallCurvatureSet f x ε₂,
+|iteratedFDeriv ℝ 3 f x (fun _ => d)| ≤ ε₃` (vacuous when `𝒵_ε = ∅`, which with (3.2.6) means
+`λ_min > ε₂`, the approximate strict local minimizer case). Also the relative version
+`IsApproxThirdOrderMinimizerOn f x ε₁ ε₂ ε₃ M` (the cubic condition only on `M ⊆ 𝒵_ε`), which is
+what ARp certifies.
+'''
+deps = ["CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer"]
+source = "Cartis–Gould–Toint, (4.1.3)–(4.1.4)"
+
+[[node]]
+id = "arpStopTest"
+kind = "def"
+desc = '''
+Step 1 of Algorithm 4.1.1. `arpStopTest f ε₁ ε₂ ε₃ (M : Set E) x : Prop :=
+‖gradient f x‖ ≤ ε₁ ∧ ∀ e₂ ∈ ε₂, (e₂ < λ_min(x) ∨ (-e₂ ≤ λ_min(x) ∧ ∀ e₃ ∈ ε₃, ∀ d ∈ M,
+|∇³f(x)[d]³| ≤ e₃ ∧ |∇²f(x)[d]²| ≤ e₂))`, `λ_min(x) = Chapter01.hessianMinEig f x`
+(prototype in `drafts/cgt/plan-ch04/Proto.lean`). The four branches (4.1.5); (4.1.5)+(4.1.6);
+(4.1.5)+(4.1.7) with `ε₃ = ∞`; (4.1.5)+(4.1.7)+(4.1.8)+(4.1.9) are the disjuncts.
+**Correction:** the book also requires `𝓜_k ≠ ∅` in the last branch; with that requirement a run
+can get stuck (e.g. `f(x) = x²` on `ℝ²` reached with `𝓜_k ∋ e₁`, or `𝓜_0 = ∅` with
+`λ_min ∈ [-ε₂, ε₂]`), and the proof of Theorem 4.1.5 uses the vacuous reading. Certificate
+(part of node): `arpStopTest f ε₁ (some e₂) (some e₃) M x → (e₂ < λ_min(x) ∨ (M ⊆ smallCurvatureSet f x e₂
+∧ IsApproxThirdOrderMinimizerOn f x ε₁ e₂ e₃ M))` and with `ε₃ = none` it is
+`Chapter03.stopTest f ε₁ ε₂ x`.
+'''
+deps = ["IsApproxThirdOrderMinimizer", "CartisGouldToint.Chapter01.hessianMinEig", "CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer"]
+source = "Cartis–Gould–Toint, Algorithm 4.1.1 (Step 1), (4.1.5)–(4.1.9)"
+
+[[node]]
+id = "algorithm_4_1_1"
+kind = "def"
+desc = '''
+Algorithm 4.1.1 (ARp) as a run predicate `IsARpRun f p P ε₁ ε₂ ε₃ x s σ` (`p ≥ 1`;
+`ε₂ = none → ε₃ = none`; `p ≥ 2` if `ε₂ ≠ none`, `p ≥ 3` if `ε₃ ≠ none`). With
+`m k := Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)`, the curvature sets
+`curvSet 0 := smallCurvatureSet f (x 0) e₂` and
+`curvSet (k+1) := {d | ‖d‖ = 1 ∧ |iteratedFDeriv ℝ 2 (m k) (s k) (fun _ => d)| ≤ θ₂ ‖s k‖^(p-1)}`
+((4.1.14); defined as functions of the run), and `test k := arpStopTest f ε₁ ε₂ ε₃ (curvSet k) (x k)`:
+`σ 0 = P.σ₀` and `Optimization.UntilHit test` of the rule at `k`:
+(4.1.10) `m k (s k) < m k 0`; (4.1.11) `‖fderiv ℝ (m k) (s k)‖ ≤ θ₁ ‖s k‖^p`; if `ε₂ ≠ none`,
+(4.1.12) `-θ₂ ‖s k‖^(p-1) ≤ minCurvature (iteratedFDeriv ℝ 2 (m k) (s k))`; if `ε₃ ≠ none`,
+(4.1.13) `∀ d ∈ curvSet (k+1), |iteratedFDeriv ℝ 3 (m k) (s k) (fun _ => d)| ≤ θ₃ ‖s k‖^(p-2)`;
+`ρ k = Optimization.reductionRatio f (x k) (s k) ((ftaylorSeries ℝ f (x k)).taylorDecrement p (s k))`
+(4.1.15); `x (k+1) = if η₁ ≤ ρ k then x k + s k else x k`; `Optimization.ARUpdate … (ρ k) (σ k) (σ (k+1))`
+(4.1.16). Success predicate `succ k := η₁ ≤ ρ k`. Counts: `Optimization.funEvalCount`,
+`Optimization.derivEvalCount` (derivatives of orders `1..p` recomputed after successful iterations).
+'''
+deps = ["ARpParams", "arpStopTest", "Optimization.UntilHit", "Optimization.regularizedModel", "Optimization.ARUpdate", "Optimization.reductionRatio", "Optimization.funEvalCount", "minCurvature", "FormalMultilinearSeries.taylorDecrement"]
+source = "Cartis–Gould–Toint, Algorithm 4.1.1"
+
+[[node]]
+id = "exists_isARpRun"
+kind = "theorem"
+desc = '''
+Well-posedness for `ε₃ = none`. If `f` is `C^p` (`p ≥ 1`; `p ≥ 2` when `ε₂ ≠ none`), `P : ARpParams`,
+`ε₁ > 0`, then from every `x₀` there is an ARp run (`IsARpRun … x s σ` with `x 0 = x₀`). Proof: when
+the test fails at `x_k`, a global minimizer `s*` of `m_k` (`Optimization.exists_isMinOn_regularizedModel`)
+satisfies (4.1.11)–(4.1.12) with `∇m_k(s*) = 0`, `∇²m_k(s*) ⪰ 0`, and `m_k(s*) < m_k(0)` because `0`
+is not a local minimizer of `m_k` (either `∇f(x_k) ≠ 0`, or `λ_min(∇²f(x_k)) < -ε₂ < 0` and
+`∇²m_k(0) = ∇²f(x_k)` as `∇²‖·‖^{p+1}(0) = 0` for `p ≥ 2`); `σ_{k+1} = σ_k` or `γ₂ σ_k` is
+admissible; `Optimization.exists_run_of_forall_exists`.
+'''
+deps = ["algorithm_4_1_1", "Optimization.exists_isMinOn_regularizedModel", "Optimization.exists_run_of_forall_exists", "iteratedFDeriv_two_norm_rpow_apply"]
+source = "Cartis–Gould–Toint, Algorithm 4.1.1 (well-posedness, implicit)"
+
+[[node]]
+id = "not_exists_isARpRun_third_order"
+kind = "theorem"
+desc = '''
+ARp's third-order mode is not always well posed (new; motivates the `wrong`-free reading of
+Theorem 4.1.5 (iii) as a statement about runs, which may not exist). For `p = 3`,
+`E = EuclideanSpace ℝ (Fin 1)`, any `P : ARpParams` and `e₂, e₃ ∈ (0, 1]` with
+`4 e₃² ≤ 3 e₂ σ₀`, the function `f x = e₂ x²/2 + e₃ x³/3 + x⁴` (f.Bb, f.DpL with `L = 24`) admits
+no ARp run with `ε₂ = some e₂`, `ε₃ = some e₃` from `x₀ = 0`: the test fails at `0`
+(`∇f(0) = 0`, `λ_min = e₂` not `> e₂`, `𝓜_0 = {±1}`, `|∇³f(0)[1]³| = 2 e₃ > e₃`), and
+`m_0(s) - m_0(0) = s² (e₂/2 + e₃ s/3 + σ₀ s²/24) ≥ 0` for all `s` (discriminant
+`e₃²/9 - e₂ σ₀/12 ≤ 0`), so (4.1.10) cannot hold.
+'''
+deps = ["algorithm_4_1_1"]
+source = "Cartis–Gould–Toint, Algorithm 4.1.1 (counterexample to well-posedness for ε₃ < ∞)"
+
+[[node]]
+id = "lemma_4_1_1"
+kind = "theorem"
+desc = '''
+Lemma 4.1.1. If `m_k(s) ≤ m_k(0)` (model (4.1.2)) then
+`T_{f,p}(x_k, 0) - T_{f,p}(x_k, s) ≥ σ_k/(p+1)! ‖s‖^{p+1}` (4.1.18); in an ARp run this holds (strictly,
+by (4.1.10)) at every iteration before termination.
+'''
+deps = ["algorithm_4_1_1", "Optimization.taylorDecrement_ge_of_regularizedModel_lt"]
+source = "Cartis–Gould–Toint, Lemma 4.1.1"
+
+[[node]]
+id = "lemma_4_1_2"
+kind = "theorem"
+desc = '''
+Lemma 4.1.2. Under `AssumptionDpL f p L`, every ARp run satisfies `σ k ≤ σ_max :=
+max σ₀ (γ₃ L / (1 - η₂))` (4.1.19) for every `k` such that the test fails at all `j < k`. (Ratio
+estimate `|ρ_k - 1| ≤ L/σ_k`: `Optimization.abs_reductionRatio_sub_one_le_of_lipschitz` with
+`c = 1/(p+1)!`, using (4.1.18) and `s_k ≠ 0`.)
+'''
+deps = ["lemma_4_1_1", "AssumptionDpL", "Optimization.abs_reductionRatio_sub_one_le_of_lipschitz", "Optimization.sigma_le_max_of_arUpdate"]
+source = "Cartis–Gould–Toint, Lemma 4.1.2"
+
+[[node]]
+id = "lemma_4_1_3_i"
+kind = "theorem"
+desc = '''
+Lemma 4.1.3 (4.1.20). Under f.DpL, for every successful iteration `k` before termination of an ARp run:
+`‖s_k‖^p ≥ p!/(L + σ_max + θ₁ p!) ‖∇f(x_{k+1})‖`.
+'''
+deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.norm_fderiv_le_of_regularizedModel"]
+source = "Cartis–Gould–Toint, Lemma 4.1.3 (4.1.20)"
+
+[[node]]
+id = "lemma_4_1_3_ii"
+kind = "theorem"
+desc = '''
+Lemma 4.1.3 (4.1.21). Under f.DpL, `ε₂ ≠ none` (so `p ≥ 2`), for every successful iteration `k`
+before termination: `‖s_k‖^{p-1} ≥ (p-1)!/(L + σ_max + θ₂ (p-1)!) · max(0, -λ_min[∇²f(x_{k+1})])`.
+'''
+deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.minCurvature_ge_of_regularizedModel"]
+source = "Cartis–Gould–Toint, Lemma 4.1.3 (4.1.21)"
+
+[[node]]
+id = "lemma_4_1_3_iii"
+kind = "theorem"
+desc = '''
+Lemma 4.1.3 (4.1.22). Under f.DpL, `ε₃ ≠ none` (so `p ≥ 3`), for every successful iteration `k`
+before termination and every `d ∈ curvSet (k+1)` ((4.1.14)):
+`‖s_k‖^{p-2} ≥ (p-2)!/(L + σ_max + θ₃ (p-2)!) |∇³f(x_{k+1})[d]³|` (from (4.1.30) with `j = 3` and
+(4.1.13)).
+'''
+deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel", "abs_iteratedFDeriv_three_normRpow_apply_le"]
+source = "Cartis–Gould–Toint, Lemma 4.1.3 (4.1.22)"
+
+[[node]]
+id = "lemma_4_1_3_iv"
+kind = "theorem"
+desc = '''
+Lemma 4.1.3 (4.1.23). Under f.DpL, `ε₂ ≠ none` (`p ≥ 2`), for every successful iteration `k` before
+termination and every `d ∈ curvSet (k+1)`: `|∇²f(x_{k+1})[d]²| ≤ κ_{s2}⁻¹ ‖s_k‖^{p-1}` with
+`κ_{s2} = (p-1)!/(L + σ_max + θ₂ (p-1)!)` (from (4.1.30) with `j = 2`, the bound
+`|∇²(‖·‖^{p+1})(s)[d]²| ≤ (p+1) p ‖s‖^{p-1}` and the definition (4.1.14) of the set).
+'''
+deps = ["algorithm_4_1_1", "lemma_4_1_2", "Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel", "iteratedFDeriv_two_norm_rpow_bounds"]
+source = "Cartis–Gould–Toint, Lemma 4.1.3 (4.1.23)"
+
+[[node]]
+id = "lemma_4_1_4_i"
+kind = "theorem"
+desc = '''
+Lemma 4.1.4 (4.1.31)–(4.1.32). Under f.DpL, for every successful iteration `k` before termination:
+`f(x_k) - f(x_{k+1}) ≥ η₁ σ_min/(p+1)! ‖s_k‖^{p+1}` (4.1.37) `≥ κ₁ ‖∇f(x_{k+1})‖^{(p+1)/p}` with
+`κ₁ = η₁ σ_min/(p+1)! (p!/(L + σ_max + θ₁ p!))^{(p+1)/p}`.
+'''
+deps = ["lemma_4_1_1", "lemma_4_1_3_i", "Optimization.sub_le_of_le_reductionRatio", "Optimization.le_sigma_of_arUpdate"]
+source = "Cartis–Gould–Toint, Lemma 4.1.4 (4.1.31)"
+
+[[node]]
+id = "lemma_4_1_4_ii"
+kind = "theorem"
+desc = '''
+Lemma 4.1.4 (4.1.33)–(4.1.34). If also `ε₂ ≠ none`: `f(x_k) - f(x_{k+1}) ≥
+κ₂ max(0, -λ_min[∇²f(x_{k+1})])^{(p+1)/(p-1)}` with
+`κ₂ = η₁ σ_min/(p+1)! ((p-1)!/(L + σ_max + θ₂ (p-1)!))^{(p+1)/(p-1)} = η₁ σ_min/(p+1)! κ_{s2}^{(p+1)/(p-1)}`.
+'''
+deps = ["lemma_4_1_4_i", "lemma_4_1_3_ii"]
+source = "Cartis–Gould–Toint, Lemma 4.1.4 (4.1.33)"
+
+[[node]]
+id = "lemma_4_1_4_iii"
+kind = "theorem"
+desc = '''
+Lemma 4.1.4 (4.1.35)–(4.1.36). If `ε₃ ≠ none`: for all `d ∈ curvSet (k+1)`,
+`f(x_k) - f(x_{k+1}) ≥ κ₃ |∇³f(x_{k+1})[d]³|^{(p+1)/(p-2)}` with
+`κ₃ = η₁ σ_min/(p+1)! ((p-2)!/(L + σ_max + θ₃ (p-2)!))^{(p+1)/(p-2)}`.
+'''
+deps = ["lemma_4_1_4_i", "lemma_4_1_3_iii"]
+source = "Cartis–Gould–Toint, Lemma 4.1.4 (4.1.35)"
+
+[[node]]
+id = "theorem_4_1_5_i"
+kind = "theorem"
+desc = '''
+Theorem 4.1.5, first-order mode (`ε₂ = ε₃ = none`, `p ≥ 1`). Under `Chapter02.AssumptionBb f flow`
+and `AssumptionDpL f p L`, for every ARp run with `ε₁ > 0` there is `k_ε` with
+`IsFirstHit test k_ε` (so `‖∇f(x_{k_ε})‖ ≤ ε₁`),
+`funEvalCount k_ε ≤ κ^A (f(x_0) - flow)/ε₁^{(p+1)/p} + κ^C` and
+`derivEvalCount succ k_ε ≤ κ^S (f(x_0) - flow)/ε₁^{(p+1)/p} + 2`, where
+`κ^S = (p+1)!/(η₁ σ_min) ((L + σ_max + θ₁ p!)/p!)^{(p+1)/p}`, `κ^A = κ^S (1 + |log γ₁|/log γ₂)`,
+`κ^C = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2`, `σ_max` of (4.1.19). (Successful iterations
+`j ≤ k_ε - 2` decrease `f` by `≥ κ₁ ε₁^{(p+1)/p}`, so `|𝒮_{k_ε - 2}| ≤ κ^S (f(x_0)-flow)/ε₁^{(p+1)/p}`;
+`derivEvalCount k_ε = |𝒮_{k_ε-1}| + 1`; `Optimization.succ_le_of_arUpdate` at `k_ε - 1`.)
+'''
+deps = ["lemma_4_1_4_i", "lemma_4_1_2", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.sum_successSet_sub_eq", "Optimization.card_mul_le_of_decrease", "Optimization.succ_le_of_arUpdate", "Optimization.exists_hit_le_of_counting", "Optimization.IsFirstHit"]
+source = "Cartis–Gould–Toint, Theorem 4.1.5"
+
+[[node]]
+id = "theorem_4_1_5_ii"
+kind = "theorem"
+desc = '''
+Theorem 4.1.5, second-order mode (`ε₂ = some e₂`, `ε₃ = none`, `p ≥ 2`, `ε₁, e₂ > 0`). As (i) with
+`IsFirstHit test k_ε` (`‖∇f‖ ≤ ε₁` and `λ_min ≥ -e₂` at `x_{k_ε}`), the denominator
+`min(ε₁^{(p+1)/p}, e₂^{(p+1)/(p-1)})`, and `κ^S = (p+1)!/(η₁ σ_min) max(((L + σ_max + θ₁ p!)/p!)^{(p+1)/p},
+((L + σ_max + θ₂ (p-1)!)/(p-1)!)^{(p+1)/(p-1)})`.
+'''
+deps = ["lemma_4_1_4_i", "lemma_4_1_4_ii", "theorem_4_1_5_i"]
+source = "Cartis–Gould–Toint, Theorem 4.1.5"
+
+[[node]]
+id = "theorem_4_1_5_iii"
+kind = "theorem"
+desc = '''
+Theorem 4.1.5, third-order mode (`ε₂ = some e₂`, `ε₃ = some e₃`, `p ≥ 3`, all tolerances `> 0`;
+the book assumes `(ε₁,ε₂,ε₃) ∈ (0,1]³`). For every ARp run there is `k_ε` with `IsFirstHit test k_ε`,
+the evaluation bounds of (i) with denominator `min(ε₁^{(p+1)/p}, e₂^{(p+1)/(p-1)}, e₃^{(p+1)/(p-2)})`
+and `κ^S` the full maximum (4.1.45); at `x_ε = x_{k_ε}` with `𝓜_ε = curvSet k_ε`:
+`‖∇f(x_ε)‖ ≤ ε₁`, `λ_min ≥ -e₂`, and either `λ_min > e₂` (strict local minimizer, `𝒵_ε = ∅`) or
+`𝓜_ε ⊆ 𝒵_ε` and `|∇³f(x_ε)[d]³| ≤ e₃` for all `d ∈ 𝓜_ε` (the book's conclusion; not the full
+(4.1.3), cf. §6.2.1). Proof: a successful `j` with non-terminal `x_{j+1}` has `‖∇f‖ > ε₁`, or
+`λ_min < -e₂`, or `‖s_j‖^{p-1} > κ_{s2} e₂` ((4.1.43), decrease `≥ κ₂ e₂^{(p+1)/(p-1)}` by
+(4.1.37)), or else all `d ∈ 𝓜_{j+1}` satisfy (4.1.9) (Lemma 4.1.3 (4.1.23)) and some
+`d ∈ 𝓜_{j+1}` violates (4.1.8). (The statement is about runs; by `not_exists_isARpRun_third_order`
+runs need not exist.)
+'''
+deps = ["lemma_4_1_4_i", "lemma_4_1_4_ii", "lemma_4_1_4_iii", "lemma_4_1_3_iv", "theorem_4_1_5_i", "IsApproxThirdOrderMinimizer"]
+source = "Cartis–Gould–Toint, Theorem 4.1.5"
+
+[[node]]
+id = "theorem_4_1_6_i"
+kind = "theorem"
+desc = '''
+Theorem 4.1.6, first order (sharpness; the book defers the proof to §12.2.2.4). For every `p ≥ 1`
+and `P : ARpParams` there are `flow`, `L ≥ 1` (independent of `ε₁`) such that for every
+`ε₁ ∈ (0, 1]` there are `f : EuclideanSpace ℝ (Fin 1) → ℝ` with `Chapter02.AssumptionBb f flow`,
+`AssumptionDpL f p L`, and an ARp run with `ε₂ = ε₃ = none` from `x₀ = 0` (`σ_k = σ₀`, `s_k` the
+global minimizer of `m_k`, every iteration very successful, `ρ_k = 1`) with
+`IsFirstHit test ⌈ε₁^{-(p+1)/p}⌉₊`; hence `⌈ε₁^{-(p+1)/p}⌉₊ + 1` evaluations of `f` and of its
+derivatives. Data: `Optimization.exists_slowTaylorOrder_interpolant` with `q = 1`,
+`c = p!/σ₀`, lifted by `Optimization.ridge`.
+'''
+deps = ["algorithm_4_1_1", "AssumptionDpL", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.exists_slowTaylorOrder_interpolant", "Optimization.ridge"]
+source = "Cartis–Gould–Toint, Theorem 4.1.6"
+
+[[node]]
+id = "theorem_4_1_6_ii"
+kind = "theorem"
+desc = '''
+Theorem 4.1.6, second order. For every `p ≥ 2` and `P` there are `flow`, `L` such that for all
+`ε₁, e₂ ∈ (0, 1]` there are `f : EuclideanSpace ℝ (Fin 1) → ℝ` (f.Bb, f.DpL) and an ARp run with
+`ε₂ = some e₂`, `ε₃ = none` from `0` whose first termination index is exactly
+`max ⌈ε₁^{-(p+1)/p}⌉₊ ⌈e₂^{-(p+1)/(p-1)}⌉₊`: the example of (i) if the first term dominates
+(`∇²f(x_k) = 0`, so `λ_min = 0 ≥ -e₂`), otherwise the `q = 2` data of
+`Optimization.exists_slowTaylorOrder_interpolant` (`∇f(x_k) = 0`, `λ_min = -(e₂ + ω_k)`; the book's
+"`λ_min = f_k^{(2)} = ε + ω_k`" has a sign slip), `c = p!/σ₀`.
+'''
+deps = ["theorem_4_1_6_i", "Optimization.exists_slowTaylorOrder_interpolant"]
+source = "Cartis–Gould–Toint, Theorem 4.1.6"
+
+[[node]]
+id = "theorem_4_1_6_iii"
+kind = "theorem"
+desc = '''
+Theorem 4.1.6, third order, **with a restriction on the constants**. For every `p ≥ 3` and `P` with
+`σ₀ ≤ (p-2)! min(θ₂, θ₃)` there are `flow`, `L` such that for all `ε₁, e₂, e₃ ∈ (0, 1]` there are
+`f : EuclideanSpace ℝ (Fin 1) → ℝ` (f.Bb, f.DpL) and an ARp run with `ε₂ = some e₂`,
+`ε₃ = some e₃` from `0` whose first termination index is exactly
+`max ⌈ε₁^{-(p+1)/p}⌉₊ ⌈e₂^{-(p+1)/(p-1)}⌉₊ ⌈e₃^{-(p+1)/(p-2)}⌉₊` (examples with `q = 1, 2, 3`,
+`c = p!/((q-1)! σ₀)`). Why the restriction: on the `q = 3` data the model curvature at the step
+along `±1` is `σ₀ (p-2)/p! ‖s‖^{p-1}`, so `±1 ∈ 𝓜_{k+1}` (needed to keep the third-order test
+failing) iff `σ₀ (p-2)/p! ≤ θ₂`; and (4.1.13) at the global model minimizer needs
+`σ₀ (p(p-1)-2)/p! ≤ θ₃` (`q = 3`), resp. `σ₀ ≤ θ₃ (p-2)!` (`q = 1, 2`, when `±1 ∈ 𝓜_{k+1}`). For other
+constants the book's claim is unproved (the global minimizer need not satisfy (4.1.13), and if
+`𝓜_{k+1} = ∅` the run terminates as soon as `‖∇f‖ ≤ ε₁` and `λ_min ≥ -e₂`).
+'''
+deps = ["theorem_4_1_6_ii", "Optimization.exists_slowTaylorOrder_interpolant"]
+source = "Cartis–Gould–Toint, Theorem 4.1.6"

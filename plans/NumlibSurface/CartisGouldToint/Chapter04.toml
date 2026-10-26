@@ -1,0 +1,29 @@
+desc = '''
+Cartis–Gould–Toint Chapter 4, "Methods Using Third Derivatives and Beyond": the adaptive
+regularization method ARp with `p`-th degree Taylor models and its complexity for first-, second-
+and third-order approximate minimizers (§4.1), and the lower complexity bound of Carmon, Duchi,
+Hinder and Sidford for all `p`-th order methods on functions of unbounded dimension (§4.2).
+Appendix B's Lemma B.4.1 is in `AppendixB.Chapter04`.
+
+Conventions: tolerances `ε₁ > 0`, `ε₂ ε₃ : Option ℝ` (`none` = `+∞`), with `ε₃ ≠ none → ε₂ ≠ none`
+(the third-order test and step conditions use `θ₂`-sets defined only in the second-order mode).
+Derivatives are `iteratedFDeriv ℝ j f x`, `λ_min` is `minCurvature (iteratedFDeriv ℝ 2 f x)`
+(`Chapter01.hessianMinEig`), gradients `gradient f x` / `fderiv`.
+
+Source corrections (details in nodes):
+* ARp Step 1 third-order test (4.1.8)–(4.1.9) requires `𝓜_k ≠ ∅`; read literally the method can
+  be stuck (no termination and no admissible step). The plan uses the vacuous reading (terminate if
+  the conditions hold for all `d ∈ 𝓜_k`, in particular if `𝓜_k = ∅`), which is what the proof of
+  Theorem 4.1.5 needs. Even so, with `ε₃ < ∞` admissible steps need not exist
+  (`not_exists_isARpRun_third_order`): ARp's third-order mode is not always well posed.
+* Theorem 4.1.5 is split by mode (`ε₂ = ε₃ = ∞`; `ε₃ = ∞`; all finite) with the constants of
+  (4.1.45)–(4.1.46) restricted to the active terms (`p ≥ 2`, resp. `p ≥ 3`, needed for the
+  exponents `(p+1)/(p-1)`, `(p+1)/(p-2)`).
+* Theorem 4.1.6 (proof deferred to §12.2.2.4): the third-order part needs a restriction on the
+  algorithm constants (`σ₀ ≤ (p-2)! min(θ₂, θ₃)`) for the slow example's steps to be admissible
+  and its directions to stay in `𝓜_k`.
+* (4.2.6): first term `-Ψ([x]_1)Φ([x]_1)` should be `-Ψ(1)Φ([x]_1)`; Lemma 4.2.3 cites (4.2.3) for
+  (4.2.2); Theorem 4.2.6's proof concludes `≥ 2 k̄` where only `≥ k̄` follows; the constant `c₀`
+  bound needs `ε` small enough (floor); the scale `μ = (L^D ε₁/L)^{1/p}` is garbled in the OCR.
+* Lemma B.4.1 (B.4.3) is false for `β < 1` (see `AppendixB.Chapter04`).
+'''

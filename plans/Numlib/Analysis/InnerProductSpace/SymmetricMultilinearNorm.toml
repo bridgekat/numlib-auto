@@ -1,0 +1,28 @@
+namespace = "ContinuousMultilinearMap"
+desc = '''
+Banach's theorem on symmetric multilinear forms on a real inner product space: the operator norm
+of a symmetric continuous `j`-linear form equals the supremum of `|A[v]^j|` over unit vectors. This
+is the identity hidden in the definition (A.7) of the tensor norm in Cartis–Gould–Toint (the book
+defines `‖T‖_{[p]}` as both suprema, which presupposes this theorem); the library uses Mathlib's
+operator norm and needs the theorem only to evaluate norms of specific symmetric tensors exactly
+(Lemma B.4.1, `norm_iteratedFDeriv_normRpow`). It is *not* needed for any Taylor estimate
+(see `Numlib/Analysis/Calculus/MultivariateTaylor/Remainder`).
+
+Proof route (Banach 1938; Harris, "Bounds for the derivatives of holomorphic functions of
+vectors", or Bochnak–Siciak): reduce to the finite-dimensional span of the arguments; maximize
+`|A[v_1,…,v_j]|` over unit vectors; at a maximizer with distinct `v_1, v_2`, replacing both by
+`(v_1 ± v_2)/‖v_1 ± v_2‖` does not decrease the value (a two-variable argument using symmetry and
+the parallelogram law), so a maximizer with all `v_i` equal exists. Expected 300–600 lines.
+**Risk: high relative to its use**; consumers needing only upper bounds should use diagonal bounds
+or direct multilinear estimates instead.
+'''
+
+[[node]]
+id = "norm_eq_iSup_norm_apply_diag_of_symm"
+kind = "theorem"
+desc = '''
+Let `E` be a real inner product space, `j : ℕ`, and `A : E [×j]→L[ℝ] ℝ` symmetric
+(`∀ (σ : Equiv.Perm (Fin j)) v, A (v ∘ σ) = A v`). If `|A (fun _ => v)| ≤ C * ‖v‖ ^ j` for all
+`v`, then `‖A‖ ≤ C`; consequently `‖A‖ = ⨆ v : {v : E // ‖v‖ ≤ 1}, |A (fun _ => v.1)|`.
+'''
+source = "Cartis–Gould–Toint, (A.7) (equality of the two suprema)"
