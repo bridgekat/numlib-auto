@@ -1,3 +1,4 @@
+import Numlib.Optimization.Constrained.CurveJets
 import Numlib.Optimization.LeastNorm.PhaseOneBudget
 import Numlib.Optimization.EvaluationComplexity.HighOrderExponents
 import Numlib.Optimization.Constrained.TargetCounterexample.TwoPhase
@@ -376,5 +377,54 @@ theorem lemma_14_3_7 {n m p q : ℕ} (hq : 0 < q) (hqp : q ≤ p)
   refine ⟨KF, hKF, KD, hKD, ?_⟩
   intro ε₀ hε₀ _ ε _ x δ nf nd hx hδ hprefix
   exact hb ε₀ hε₀ ε x δ nf nd hx hδ hprefix
+
+end CartisGouldToint
+
+
+namespace CartisGouldToint
+
+/-- A smooth feasible-curve jet matching the actual derivatives of its polynomial
+representative through the requested order. This explicit realization condition is
+stronger than merely listing formal Taylor-feasible coefficients. -/
+abbrev feasibleCurveJet {n : ℕ} (X : Set (EuclideanSpace ℝ (Fin n)))
+    (x : EuclideanSpace ℝ (Fin n)) (s : ℕ → EuclideanSpace ℝ (Fin n)) (j : ℕ) : Prop :=
+  Constrained.FeasibleCurveJet X x s j
+
+/-- The repaired equality qualification realizes every admissible jet in the actual
+intersection of the simple feasible set and the equality constraints. -/
+abbrev equalityJetRealizability {n m : ℕ} (X : Set (EuclideanSpace ℝ (Fin n)))
+    (c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m))
+    (x : EuclideanSpace ℝ (Fin n)) (q : ℕ) : Prop :=
+  Constrained.EqualityJetRealizable X c x q
+
+/-- **Corrected Theorem 14.3.1.** Replace the insufficient nonemptiness-only
+qualification by realization of every admissible equality-feasible curve jet.
+Every multiplier and order are retained, as are the actual ordered-composition
+sums, the lower-coefficient zero conditions, and equality Taylor feasibility.
+The feasible curves are explicitly C^j at the base point. -/
+theorem theorem_14_3_1_corrected {n m q : ℕ}
+    {X S : Set (EuclideanSpace ℝ (Fin n))} (hS : IsOpen S) (hXS : X ⊆ S)
+    {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {c : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {x : EuclideanSpace ℝ (Fin n)} (hx : x ∈ X) (hcx : c x = 0)
+    (hf : ContDiffOn ℝ q f S) (hc : ContDiffOn ℝ q c S)
+    (hmin : IsLocalMinOn f (X ∩ {z | c z = 0}) x)
+    (hqual : equalityJetRealizability X c x q) :
+    c x = 0 ∧ ∀ (y : EuclideanSpace ℝ (Fin m)) (j : ℕ), 0 < j → j ≤ q →
+      ∀ s : ℕ → EuclideanSpace ℝ (Fin n), feasibleCurveJet X x s j →
+        (∀ a i, 0 < i → i ≤ j →
+          TaylorModel.curveCoefficient (fun z => c z a) x s i = 0) →
+        (∀ i, 0 < i → i < j →
+          TaylorModel.curveCoefficient (Constrained.vectorLagrangian f c y) x s i = 0) →
+        0 ≤ ∑ k ∈ Finset.Icc 1 j, ((k.factorial : ℝ)⁻¹) *
+          ∑ l ∈ TaylorModel.orderedCompositions j k,
+            iteratedFDeriv ℝ k (Constrained.vectorLagrangian f c y) x
+              (fun a => s (l a)) := by
+  refine ⟨hcx, ?_⟩
+  intro y j hj hjq s hs hconstraint hzero
+  have hh := Constrained.curve_lagrangian_nonneg_of_realizable
+    (hf.contDiffAt (hS.mem_nhds (hXS hx)))
+    (hc.contDiffAt (hS.mem_nhds (hXS hx))) hmin hcx hqual y hj hjq s hs hconstraint hzero
+  rwa [TaylorModel.curveCoefficient_eq_sum_Icc hj] at hh
 
 end CartisGouldToint

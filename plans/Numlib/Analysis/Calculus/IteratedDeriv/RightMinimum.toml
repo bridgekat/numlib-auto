@@ -1,0 +1,4 @@
+namespace = "ScalarOptimality"
+
+[[node]]
+id = "iteratedDeriv_nonneg_of_right_min"

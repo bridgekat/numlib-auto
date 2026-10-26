@@ -1,0 +1,19 @@
+namespace = "Constrained"
+
+[[node]]
+id = "_root_.TaylorModel.iteratedDeriv_comp_eq_of_curve_jets"
+
+[[node]]
+id = "FeasibleCurveJet"
+
+[[node]]
+id = "curveCoefficient_nonneg_of_feasibleJet"
+
+[[node]]
+id = "EqualityJetRealizable"
+
+[[node]]
+id = "equalityJetRealizable_zero"
+
+[[node]]
+id = "curve_lagrangian_nonneg_of_realizable"
