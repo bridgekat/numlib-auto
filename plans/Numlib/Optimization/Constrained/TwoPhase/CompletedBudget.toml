@@ -1,0 +1,31 @@
+namespace = "Constrained.TwoPhase"
+[[node]]
+id = "completedDropTerm"
+[[node]]
+id = "completedDropFloor"
+[[node]]
+id = "completedDropFloor_pos"
+[[node]]
+id = "completedDropFloor_le"
+[[node]]
+id = "CompletedRun.continuing_drop"
+[[node]]
+id = "CompletedRun.outer_iterations_le"
+[[node]]
+id = "exists_completed_stop"
+[[node]]
+id = "completedInnerBudget"
+[[node]]
+id = "CompletedRun.inner_iterations_le"
+[[node]]
+id = "CompletedRun.total_inner_evaluations_le"
+[[node]]
+id = "CompletedRegularity"
+[[node]]
+id = "completedInnerBudget_pos"
+[[node]]
+id = "completedFunctionEvaluations"
+[[node]]
+id = "completedDerivativeEvaluations"
+[[node]]
+id = "completedDerivativeEvaluations_le_functions"
