@@ -204,11 +204,26 @@ theorem exists_arAcceptance (P : ARParams) (ρ : ℝ) (x s : E) {σ : ℝ} (hσ 
       exact ⟨le_rfl, mul_le_mul_of_nonneg_right P.γ₂_le_γ₃ hσ0⟩
   refine ⟨_, hacc, hacc.sigmaMin_le hσ, hacc.pos⟩
 
+/-- An iteration with ratio `ρ ≥ 1` (very successful) may keep the regularization parameter
+`σ ≥ σ_min`: Steps 3–4 hold with `x' = x + s` and `σ' = σ`. -/
+theorem arAcceptance_of_one_le (P : ARParams) {ρ : ℝ} (hρ : 1 ≤ ρ) (x s : E) {σ : ℝ}
+    (hσ : P.σmin ≤ σ) (hσ0 : 0 ≤ σ) : ARAcceptance P ρ x s (x + s) σ σ := by
+  have h1 : P.η₁ ≤ ρ := by linarith [P.η₁_le_η₂, P.η₂_lt_one]
+  have h2 : P.η₂ ≤ ρ := by linarith [P.η₂_lt_one]
+  refine ⟨by rw [ite_eq_left h1], fun _ => ⟨max_le hσ (mul_le_of_le_one_left hσ0 P.γ₁_le_one),
+    le_rfl⟩, fun _ h => absurd h (not_lt.2 h2), fun h => absurd h (not_lt.2 h1)⟩
+
 end Acceptance
 
 /-- The termination test of an AR run: the Step-1 test or the post-step test holds at iteration
 `k`. -/
 abbrev IsARRun.Stop (stop₁ stop₂ : ℕ → Prop) (k : ℕ) : Prop := stop₁ k ∨ stop₂ k
+
+/-- Without post-step test the termination test of an AR run is the Step-1 test. -/
+@[simp]
+theorem IsARRun.stop_false_iff {stop₁ : ℕ → Prop} {k : ℕ} :
+    IsARRun.Stop stop₁ (fun _ => False) k ↔ stop₁ k :=
+  (or_false _).to_iff
 
 /-- Without a post-step test, "no termination before `k`" is "the Step-1 test fails before `k`". -/
 theorem IsARRun.forall_lt_not_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
@@ -225,6 +240,15 @@ theorem IsARRun.forall_le_not_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
 theorem IsARRun.isFirstHit_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
     IsFirstHit (IsARRun.Stop stop₁ fun _ => False) k ↔ IsFirstHit stop₁ k := by
   simp [isFirstHit_iff, IsARRun.Stop]
+
+@[deprecated IsARRun.forall_lt_not_stop_iff (since := "2026-10-26")]
+alias IsARRun.forall_lt_not_stop_false_iff := IsARRun.forall_lt_not_stop_iff
+
+@[deprecated IsARRun.forall_le_not_stop_iff (since := "2026-10-26")]
+alias IsARRun.forall_le_not_stop_false_iff := IsARRun.forall_le_not_stop_iff
+
+@[deprecated IsARRun.isFirstHit_stop_iff (since := "2026-10-26")]
+alias IsARRun.isFirstHit_stop_false_iff := IsARRun.isFirstHit_stop_iff
 
 /-- A run of an adaptive-regularization method ([cartis2022evaluation], Algorithms 2.4.1, 3.3.1,
 4.1.1, 12.2.2, Steps 2–4). `stop₁ k` is the Step-1 termination test at iteration `k`, `stop₂ k` a

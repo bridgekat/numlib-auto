@@ -39,3 +39,27 @@ source = "Cartis–Gould–Toint, Theorem 3.2.6"
 [[node]]
 id = "theorem_3_2_7"
 source = "Cartis–Gould–Toint, Theorem 3.2.7"
+
+[[node]]
+id = "stopTest"
+source = "Cartis–Gould–Toint, §3.2"
+
+[[node]]
+id = "IsEigenpointStep"
+source = "Cartis–Gould–Toint, §3.2"
+
+[[node]]
+id = "exists_algorithm_3_2_1"
+source = "Cartis–Gould–Toint, §3.2"
+
+[[node]]
+id = "kappaFTR2"
+source = "Cartis–Gould–Toint, §3.2"
+
+[[node]]
+id = "kappaFTR2_le_book"
+source = "Cartis–Gould–Toint, §3.2"
+
+[[node]]
+id = "ridge_assumptions_two"
+source = "Cartis–Gould–Toint, §3.2"

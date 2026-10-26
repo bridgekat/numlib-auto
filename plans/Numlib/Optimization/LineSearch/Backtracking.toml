@@ -19,3 +19,11 @@ source = "Cartis–Gould–Toint, (2.2.26), Lemma B.2.6"
 [[node]]
 id = "decrease_ge_of_exactLineMin"
 source = "Cartis–Gould–Toint, proof of Theorem 2.2.4, (2.2.28)"
+
+[[node]]
+id = "IsExactLineMin.unique"
+source = "Cartis–Gould–Toint, (2.2.26)"
+
+[[node]]
+id = "exists_isExactLineMin"
+source = "Cartis–Gould–Toint, (2.2.26)"

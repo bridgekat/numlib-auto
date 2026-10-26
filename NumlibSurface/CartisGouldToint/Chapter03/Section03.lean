@@ -33,9 +33,10 @@ Lemmas 3.3.1–3.3.4, 3.3.7, 3.3.8, Theorems 3.3.5 and 3.3.9 (complexity) and Th
 
 * The Hessian of the model displayed after (3.3.2) has a spurious factor `2`; nothing depends
   on it (the curvature bounds use `Optimization.minCurvature_ge_of_regularizedModel`).
-* (3.3.30) has a stray `+ 2` after the `O(·)`; the derivative-evaluation bound of Theorem 3.3.9 is
-  `κ^T (f(x₀) - f_low)/min(ε₁^{3/2}, ε₂³) + 2` (the `+ 2` accounting for the initial evaluation and
-  the last successful iteration, as in Theorem 3.3.5).
+* (3.3.30) prints `κ^T (f(x₀) - f_low)/min(ε₁^{3/2}, ε₂³) + 1 = O(·) + 2`; the `+ 1` is false
+  (the decrease is only guaranteed at successful iterations followed by a non-terminal one) and the
+  correct bound, proved here, is `κ^T (f(x₀) - f_low)/min(ε₁^{3/2}, ε₂³) + 2` (the `+ 2`
+  accounting for the initial evaluation and the last successful iteration, as in (3.3.22)).
 * Step 1 also terminates at "strict local minimizers"; these satisfy (3.3.4), so the termination
   test is (3.3.4) alone (`stopTest`).
 * Theorems 3.3.6 and 3.3.10 are proved here (the book defers them to §12.2.2.4) on the
@@ -101,19 +102,6 @@ structure algorithm_3_3_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : AR2Param
   run : IsARRun P.ar (fun k => stopTest f ε₁ ε₂ (x k)) (fun k => ar2Step f P ε₂ (x k) (σ k) (s k))
     (fun _ => False) (taylorRatio f 2 x s) x s σ
 
-/-- The termination test of an AR run without post-step test. -/
-theorem not_stop_iff {test : ℕ → Prop} {k : ℕ} :
-    (∀ j < k, ¬ IsARRun.Stop test (fun _ => False) j) ↔ ∀ j < k, ¬ test j := by
-  simp [IsARRun.Stop]
-
-theorem not_stop_le_iff {test : ℕ → Prop} {k : ℕ} :
-    (∀ j ≤ k, ¬ IsARRun.Stop test (fun _ => False) j) ↔ ∀ j ≤ k, ¬ test j := by
-  simp [IsARRun.Stop]
-
-theorem isFirstHit_stop_iff {test : ℕ → Prop} {k : ℕ} :
-    IsFirstHit (IsARRun.Stop test fun _ => False) k ↔ IsFirstHit test k := by
-  simp [IsFirstHit, IsARRun.Stop]
-
 section Existence
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ}
@@ -132,6 +120,32 @@ theorem ar2Step_of_isMinOn {x : EuclideanSpace ℝ (Fin n)} (P : AR2Params) (ε�
   have : 0 ≤ P.θ₂ * ‖s‖ := by positivity
   linarith
 
+/-- Where the AR2 termination test fails, a global minimizer of the model (3.3.1) exists and
+decreases the model. -/
+theorem exists_isMinOn_ar2Model_lt (hf : ContDiff ℝ 2 f) {ε₁ : ℝ}
+    (hε₁ : 0 < ε₁) {ε₂ : Option ℝ} (hε₂ : ∀ e ∈ ε₂, 0 < e) {y : EuclideanSpace ℝ (Fin n)}
+    {σ : ℝ} (hσ : 0 < σ) (hnot : ¬ stopTest f ε₁ ε₂ y) :
+    ∃ s, IsMinOn (ar2Model f y σ) univ s ∧ ar2Model f y σ s < ar2Model f y σ 0 := by
+  obtain ⟨s, hmin, -, -, hlt⟩ := exists_isMinOn_regularizedModel
+    (D := ftaylorSeries ℝ f y) (p := 2) hσ (by norm_num)
+  have hdec : ar2Model f y σ s < ar2Model f y σ 0 := by
+    by_cases hg : gradient f y = 0
+    · -- the second-order part of the test fails
+      have hlam : minCurvature (iteratedFDeriv ℝ 2 (ar2Model f y σ) 0) < 0 := by
+        rw [ar2Model, iteratedFDeriv_two_regularizedModel_ftaylorSeries_zero
+          hf.contDiffAt le_rfl]
+        by_contra hnn
+        refine hnot ⟨by rw [hg, norm_zero]; exact hε₁.le, fun e he => ?_⟩
+        have := hε₂ e he
+        change -e ≤ minCurvature _
+        linarith [not_lt.1 hnn]
+      exact regularizedModel_lt_of_isMinOn_of_minCurvature_neg le_rfl hmin hlam
+    · refine regularizedModel_lt_of_isMinOn_of_fderiv_ne_zero hmin ?_
+      rw [fderiv_regularizedModel_ftaylorSeries_zero hf.contDiffAt (by norm_num)]
+      intro h0
+      exact hg (by rw [← norm_eq_zero, norm_gradient_eq, h0, norm_zero])
+  exact ⟨s, hmin, hdec⟩
+
 /-- **Existence of AR2 runs** ([cartis2022evaluation], Algorithm 3.3.1 is well defined): for a
 `C²` function, all constants and tolerances and every starting point there is an AR2 run (a
 global minimizer of the model (3.3.1), which exists since `σ_k > 0`, satisfies Step 2 whenever
@@ -143,26 +157,8 @@ theorem exists_algorithm_3_3_1 (hf : ContDiff ℝ 2 f) (P : AR2Params) {ε₁ : 
     (test := stopTest f ε₁ ε₂) (stepOK := fun y σ s => ar2Step f P ε₂ y σ s)
     (fun y _ t => reductionRatio f y t ((ftaylorSeries ℝ f y).taylorDecrement 2 t))
     (fun y σ _ _ hσ hnot => by
-      obtain ⟨s, hmin, -, -, hlt⟩ := exists_isMinOn_regularizedModel
-        (D := ftaylorSeries ℝ f y) (p := 2) hσ (by norm_num)
-      have hdec : ar2Model f y σ s < ar2Model f y σ 0 := by
-        by_cases hg : gradient f y = 0
-        · -- the second-order part of the test fails
-          have hlam : minCurvature (iteratedFDeriv ℝ 2 (ar2Model f y σ) 0) < 0 := by
-            rw [ar2Model, iteratedFDeriv_two_regularizedModel_ftaylorSeries_zero
-              hf.contDiffAt le_rfl]
-            by_contra hnn
-            refine hnot ⟨by rw [hg, norm_zero]; exact hε₁.le, fun e he => ?_⟩
-            have := hε₂ e he
-            change -e ≤ minCurvature _
-            linarith [not_lt.1 hnn]
-          exact regularizedModel_lt_of_isMinOn_of_minCurvature_neg le_rfl hmin hlam
-        · refine regularizedModel_lt_of_isMinOn_of_fderiv_ne_zero hmin ?_
-          rw [fderiv_regularizedModel_ftaylorSeries_zero hf.contDiffAt (by norm_num)]
-          intro h0
-          exact hg (by rw [← norm_eq_zero, norm_gradient_eq, h0, norm_zero])
-      exact ⟨s, ar2Step_of_isMinOn P ε₂ hmin hdec,
-        trivial⟩) trivial
+      obtain ⟨s, hmin, hdec⟩ := exists_isMinOn_ar2Model_lt hf hε₁ hε₂ hσ hnot
+      exact ⟨s, ar2Step_of_isMinOn P ε₂ hmin hdec, trivial⟩) trivial
   exact ⟨x, s, σ, hx0, hε₁, hε₁1, hε₂, hrun⟩
 
 end Existence
@@ -178,15 +174,15 @@ namespace algorithm_3_3_1
 
 theorem sigma_pos (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ) {k : ℕ}
     (hk : ∀ j < k, ¬ stopTest f ε₁ ε₂ (x j)) : 0 < σ k :=
-  h.run.sigma_pos (not_stop_iff.2 hk) k le_rfl
+  h.run.sigma_pos (IsARRun.forall_lt_not_stop_iff.2 hk) k le_rfl
 
 theorem sigmaMin_le (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ) {k : ℕ}
     (hk : ∀ j < k, ¬ stopTest f ε₁ ε₂ (x j)) : P.σmin ≤ σ k :=
-  h.run.sigmaMin_le (not_stop_iff.2 hk) k le_rfl
+  h.run.sigmaMin_le (IsARRun.forall_lt_not_stop_iff.2 hk) k le_rfl
 
 theorem step (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) : ar2Step f P ε₂ (x k) (σ k) (s k) :=
-  h.run.step_of_forall_le (not_stop_le_iff.2 hk)
+  h.run.step_of_forall_le (IsARRun.forall_le_not_stop_iff.2 hk)
 
 end algorithm_3_3_1
 
@@ -207,7 +203,8 @@ an AR2 run up to (and including) termination, `σ_k ≤ σ_max = max(σ₀, γ�
 theorem lemma_3_3_2 (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ) {k : ℕ}
     (hk : ∀ j < k, ¬ stopTest f ε₁ ε₂ (x j)) : σ k ≤ sigmaMaxAR2 P L₂ :=
   (h.run.sigma_le convex_univ (fun y _ => hf.contDiffAt y) hf.iteratedFDerivLipschitzOn
-    (mem_univ _) (fun _ _ hst => ⟨mem_univ _, hst.1⟩) k (not_stop_iff.2 hk)).2.2
+    (mem_univ _) (fun _ _ hst => ⟨mem_univ _, hst.1⟩) k
+    (IsARRun.forall_lt_not_stop_iff.2 hk)).2.2
 
 /-- **Lemma 3.3.3** of [cartis2022evaluation] ((3.3.15)). Under f.HL, if iteration `k` of an AR2
 run is successful (and before termination), then
@@ -221,7 +218,7 @@ theorem lemma_3_3_3 (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P ε₁ ε
   have hb := norm_fderiv_le_of_regularizedModel convex_univ (fun y _ => hf.contDiffAt y)
     (le_refl _ |>.trans (by norm_num : (1 : ℕ) ≤ 2)) hf.iteratedFDerivLipschitzOn (mem_univ (x k))
     (mem_univ (x k + s k)) hσ.le
-  rw [h.run.eq_add_of_succ (not_stop_le_iff.2 hk) hs, norm_gradient_eq]
+  rw [h.run.eq_add_of_succ (IsARRun.forall_le_not_stop_iff.2 hk) hs, norm_gradient_eq]
   change ‖fderiv ℝ f (x k + s k)‖ ≤ (L₂ + σ k) / (Nat.factorial 2 : ℝ) * ‖s k‖ ^ 2 +
     ‖fderiv ℝ (ar2Model f (x k) (σ k)) (s k)‖ at hb
   have hC : 0 < L₂ + P.θ₁ + sigmaMaxAR2 P L₂ := by
@@ -260,7 +257,7 @@ theorem ar2_decrease_first (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P �
   have hsmin := P.σmin_pos
   -- decrease from the model
   have hm := (h.step hk).1
-  obtain ⟨-, hdec⟩ := h.run.sub_ge_of_succ_taylor (not_stop_le_iff.2 hk) hm hs
+  obtain ⟨-, hdec⟩ := h.run.sub_ge_of_succ_taylor (IsARRun.forall_le_not_stop_iff.2 hk) hm hs
   norm_num [Nat.factorial] at hdec
   -- step length
   have h3 := lemma_3_3_3 hf h hk hs
@@ -316,7 +313,8 @@ theorem lemma_3_3_4 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f L�
     have hm : ∀ j ≤ m, ¬ stopTest f ε₁ none (x j) := fun j hj => hk j (hj.trans m.le_succ)
     have hcard := card_successSet_le_div_of_decrease (φ := fun j => f (x j)) (k := m) hδ
       (fun j hj hs => by
-        rw [h.run.eq_of_not_succ (not_stop_le_iff.2 fun i hi => hm i (hi.trans hj))
+        rw [h.run.eq_of_not_succ
+          (IsARRun.forall_le_not_stop_iff.2 fun i hi => hm i (hi.trans hj))
           (not_le.1 hs)])
       (fun j hj hs => ar2_decrease_first hf h (fun i hi => hm i (hi.trans hj)) hs
         (le_norm_gradient_of_not_stopTest (hk (j + 1) (Nat.succ_le_succ hj))))
@@ -360,18 +358,20 @@ theorem theorem_3_3_5 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f 
     simp only [δ]; field_simp
   obtain ⟨kε, hk, hF, hD⟩ := h.run.exists_isFirstHit_of_decrease (σmax := sigmaMaxAR2 P L₂)
     (V := fun k => f (x k)) (Vlow := flow)
-    (fun k hk => lemma_3_3_2 hf h (not_stop_iff.1 hk)) hδ
+    (fun k hk => lemma_3_3_2 hf h (IsARRun.forall_lt_not_stop_iff.1 hk)) hδ
     (fun k hk => (h.run.accept k hk).le (w := f) rfl
       ((lt_of_le_of_lt (by
-          have := h.sigma_pos (fun j hj => (not_stop_le_iff.1 hk) j hj.le)
-          positivity) (lemma_3_3_1 h (not_stop_le_iff.1 hk)))))
+          have := h.sigma_pos (fun j hj => (IsARRun.forall_le_not_stop_iff.1 hk) j hj.le)
+          positivity) (lemma_3_3_1 h (IsARRun.forall_le_not_stop_iff.1 hk)))))
     (fun k _ => hb (x k))
-    (fun k hk hs => ar2_decrease_first hf h (fun j hj => (not_stop_le_iff.1 hk) j
+    (fun k hk hs => ar2_decrease_first hf h
+      (fun j hj => (IsARRun.forall_le_not_stop_iff.1 hk) j
         (hj.trans k.le_succ)) hs
-      (le_norm_gradient_of_not_stopTest ((not_stop_le_iff.1 hk) (k + 1) le_rfl)))
+      (le_norm_gradient_of_not_stopTest
+        ((IsARRun.forall_le_not_stop_iff.1 hk) (k + 1) le_rfl)))
   rw [hNδ] at hF hD
   refine ⟨kε, ?_, ?_, hD⟩
-  · have := isFirstHit_stop_iff.1 hk
+  · have := IsARRun.isFirstHit_stop_iff.1 hk
     simpa only [stopTest_none] using this
   · rw [kappaCAR2, ← sigmaMaxAR2_div_eq]
     calc (funEvalCount kε : ℝ) ≤ _ := hF
@@ -410,12 +410,47 @@ section Modified
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : AR2Params} {ε₁ L₂ : ℝ} {ε₂ : Option ℝ}
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ}
 
+/-- A global minimizer of the AR2 model that decreases it satisfies the modified Step 2
+(3.3.23) when `θ₁ ≥ 1`: at a stationary point `∇_s T_{f,2}(x, s) = -σ/2 ‖s‖ s`. -/
+theorem ar2ModStep_of_isMinOn {x : EuclideanSpace ℝ (Fin n)} (P : AR2Params) (hθ : 1 ≤ P.θ₁)
+    (ε₂ : Option ℝ) {σ : ℝ} (hσ : 0 ≤ σ) {s : EuclideanSpace ℝ (Fin n)}
+    (hmin : IsMinOn (ar2Model f x σ) univ s) (hdec : ar2Model f x σ s < ar2Model f x σ 0) :
+    ar2ModStep f P ε₂ x σ s := by
+  obtain ⟨-, -, h3⟩ := ar2Step_of_isMinOn (f := f) P ε₂ hmin hdec
+  have hloc : IsLocalMin (ar2Model f x σ) s := hmin.isLocalMin Filter.univ_mem
+  have h0 := hloc.fderiv_eq_zero
+  rw [ar2Model, fderiv_regularizedModel (by norm_num)] at h0
+  have hT : fderiv ℝ (taylorPolynomial f 2 x) s =
+      -((σ / ((2 : ℕ).factorial : ℝ) * ‖s‖ ^ (2 - 1)) • innerSL ℝ s) := by
+    rw [taylorPolynomial_eq_taylorSum]; exact eq_neg_of_add_eq_zero_left h0
+  refine ⟨hdec, ?_, h3⟩
+  rw [hT, norm_neg, norm_smul, innerSL_apply_norm, Real.norm_of_nonneg (by positivity)]
+  norm_num [Nat.factorial]
+  have : 0 ≤ σ * ‖s‖ ^ 2 := by positivity
+  nlinarith
+
+/-- **Existence of modified AR2 runs** (§3.3.2): for a `C²` function, all constants with
+`θ₁ > 1`, tolerances and every starting point there is a run of the modified AR2 algorithm (a
+global minimizer of the model satisfies (3.3.23)). -/
+theorem exists_isModifiedAR2Run (hf : ContDiff ℝ 2 f) (P : AR2Params) (hθ : 1 < P.θ₁) {ε₁ : ℝ}
+    (hε₁ : 0 < ε₁) (hε₁1 : ε₁ ≤ 1) {ε₂ : Option ℝ} (hε₂ : ∀ e ∈ ε₂, 0 < e)
+    (x₀ : EuclideanSpace ℝ (Fin n)) :
+    ∃ x s σ, x 0 = x₀ ∧ IsModifiedAR2Run f P ε₁ ε₂ x s σ := by
+  obtain ⟨x, s, σ, hx0, hrun, -⟩ := exists_isARRun P.ar (Inv := fun _ => True)
+    (test := stopTest f ε₁ ε₂) (stepOK := fun y σ s => ar2ModStep f P ε₂ y σ s)
+    (fun y _ t => reductionRatio f y t ((ftaylorSeries ℝ f y).taylorDecrement 2 t))
+    (fun y σ _ _ hσ hnot => by
+      obtain ⟨s, hmin, hdec⟩ := exists_isMinOn_ar2Model_lt hf hε₁ hε₂ hσ hnot
+      exact ⟨s, ar2ModStep_of_isMinOn P hθ.le ε₂ hσ.le hmin hdec, trivial⟩) trivial
+  exact ⟨x, s, σ, hx0, hθ, hε₁, hε₁1, hε₂, hrun⟩
+
 /-- Lemma 3.3.2 for the modified AR2 algorithm: under f.HL, `σ_k ≤ σ_max` up to termination. -/
 theorem IsModifiedAR2Run.sigma_le (hf : AssumptionHL f L₂)
     (h : IsModifiedAR2Run f P ε₁ ε₂ x s σ) {k : ℕ} (hk : ∀ j < k, ¬ stopTest f ε₁ ε₂ (x j)) :
     σ k ≤ sigmaMaxAR2 P L₂ :=
   (h.run.sigma_le convex_univ (fun y _ => hf.contDiffAt y) hf.iteratedFDerivLipschitzOn
-    (mem_univ _) (fun _ _ hst => ⟨mem_univ _, hst.1⟩) k (not_stop_iff.2 hk)).2.2
+    (mem_univ _) (fun _ _ hst => ⟨mem_univ _, hst.1⟩) k
+    (IsARRun.forall_lt_not_stop_iff.2 hk)).2.2
 
 /-- **Lemma 3.3.7** of [cartis2022evaluation] ((3.3.24)). Under f.HL, if iteration `k` of the
 modified AR2 algorithm is successful (and before termination), then
@@ -424,10 +459,10 @@ theorem lemma_3_3_7 (hf : AssumptionHL f L₂) (h : IsModifiedAR2Run f P ε₁ �
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) (hs : P.η₁ ≤ taylorRatio f 2 x s k) :
     2 / (L₂ + P.θ₁ * sigmaMaxAR2 P L₂) * ‖gradient f (x (k + 1))‖ ≤ ‖s k‖ ^ 2 := by
   have hσmax := h.sigma_le hf fun j hj => hk j hj.le
-  have hstep := h.run.step_of_forall_le (not_stop_le_iff.2 hk)
+  have hstep := h.run.step_of_forall_le (IsARRun.forall_le_not_stop_iff.2 hk)
   have hb := norm_fderiv_le_of_taylorPolynomial convex_univ (fun y _ => hf.contDiffAt y)
     (by norm_num : 1 ≤ 2) hf.iteratedFDerivLipschitzOn (mem_univ (x k)) (mem_univ (x k + s k))
-  rw [h.run.eq_add_of_succ (not_stop_le_iff.2 hk) hs, norm_gradient_eq]
+  rw [h.run.eq_add_of_succ (IsARRun.forall_le_not_stop_iff.2 hk) hs, norm_gradient_eq]
   have hθ := P.θ₁_pos
   have hC : 0 < L₂ + P.θ₁ * sigmaMaxAR2 P L₂ := by
     have := hf.pos; have := arSigmaMax_pos P.ar L₂; positivity
@@ -461,7 +496,8 @@ theorem lemma_3_3_8 (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P ε₁ ε
     le_rfl hf.iteratedFDerivLipschitzOn (mem_univ (x k)) (mem_univ (x k + s k)) hσ.le
   have hC : 0 < L₂ + P.θ₂ + sigmaMaxAR2 P L₂ := by
     have := hf.pos; have := P.θ₂_pos; have := arSigmaMax_pos P.ar L₂; linarith
-  rw [Chapter01.hessianMinEig, h.run.eq_add_of_succ (not_stop_le_iff.2 hk) hs] at hneg ⊢
+  rw [Chapter01.hessianMinEig,
+    h.run.eq_add_of_succ (IsARRun.forall_le_not_stop_iff.2 hk) hs] at hneg ⊢
   rw [abs_of_neg hneg, div_le_iff₀ hC]
   norm_num [Nat.factorial] at hb
   change -(P.θ₂ * ‖s k‖) ≤ minCurvature (iteratedFDeriv ℝ 2
@@ -522,7 +558,8 @@ theorem ar2_decrease_second (hf : AssumptionHL f L₂)
       exact div_le_div₀ (by linarith) ((min_le_right _ _).trans (by linarith))
         (by linarith [P.θ₂_pos]) (by simp only [C]; linarith)
   -- the decrease
-  obtain ⟨-, hdec⟩ := h.run.sub_ge_of_succ_taylor (not_stop_le_iff.2 hk') (h.step hk').1 hs
+  obtain ⟨-, hdec⟩ := h.run.sub_ge_of_succ_taylor (IsARRun.forall_le_not_stop_iff.2 hk')
+    (h.step hk').1 hs
   norm_num [Nat.factorial] at hdec
   have hmin3 : min (ε₁ ^ (3 / 2 : ℝ)) (e ^ 3) = min (√ε₁) e ^ 3 := by
     have : ε₁ ^ (3 / 2 : ℝ) = √ε₁ ^ 3 := by
@@ -578,15 +615,15 @@ theorem theorem_3_3_9 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f 
     simp only [δ]; field_simp
   obtain ⟨kε, hk, hF, hD⟩ := h.run.exists_isFirstHit_of_decrease (σmax := sigmaMaxAR2 P L₂)
     (V := fun k => f (x k)) (Vlow := flow)
-    (fun k hk => lemma_3_3_2 hf h (not_stop_iff.1 hk)) hδ
+    (fun k hk => lemma_3_3_2 hf h (IsARRun.forall_lt_not_stop_iff.1 hk)) hδ
     (fun k hk => (h.run.accept k hk).le (w := f) rfl
       ((lt_of_le_of_lt (by
-          have := h.sigma_pos (fun j hj => (not_stop_le_iff.1 hk) j hj.le)
-          positivity) (lemma_3_3_1 h (not_stop_le_iff.1 hk)))))
+          have := h.sigma_pos (fun j hj => (IsARRun.forall_le_not_stop_iff.1 hk) j hj.le)
+          positivity) (lemma_3_3_1 h (IsARRun.forall_le_not_stop_iff.1 hk)))))
     (fun k _ => hb (x k))
-    (fun k hk hs => ar2_decrease_second hf h (not_stop_le_iff.1 hk) hs)
+    (fun k hk hs => ar2_decrease_second hf h (IsARRun.forall_le_not_stop_iff.1 hk) hs)
   rw [hNδ] at hF hD
-  refine ⟨kε, isFirstHit_stop_iff.1 hk, ?_, hD⟩
+  refine ⟨kε, IsARRun.isFirstHit_stop_iff.1 hk, ?_, hD⟩
   rw [kappaCAR2, ← sigmaMaxAR2_div_eq]
   calc (funEvalCount kε : ℝ) ≤ _ := hF
     _ = _ := by ring
@@ -652,16 +689,6 @@ theorem taylorDecrement_ridge_spike (hG : ContDiff ℝ 2 G) (hq : 1 ≤ q) (hq2 
 
 end Spike
 
-/-- An iteration with ratio `ρ ≥ 1` (very successful) may keep the regularization parameter
-`σ ≥ σ_min`: Steps 3–4 hold with `x' = x + s` and `σ' = σ`. -/
-theorem arAcceptance_of_one_le {E : Type*} [Add E] (P : Optimization.ARParams) {ρ : ℝ}
-    (hρ : 1 ≤ ρ) (x s : E) {σ : ℝ} (hσ : P.σmin ≤ σ) (hσ0 : 0 ≤ σ) :
-    ARAcceptance P ρ x s (x + s) σ σ := by
-  have h1 : P.η₁ ≤ ρ := by linarith [P.η₁_le_η₂, P.η₂_lt_one]
-  have h2 : P.η₂ ≤ ρ := by linarith [P.η₂_lt_one]
-  refine ⟨by rw [ite_eq_left h1], fun _ => ⟨max_le hσ (mul_le_of_le_one_left hσ0 P.γ₁_le_one),
-    le_rfl⟩, fun _ h => absurd h (not_lt.2 h2), fun h => absurd h (not_lt.2 h1)⟩
-
 /-- **AR2 runs on one-dimensional spike data** (the mechanism of Theorems 3.3.6 and 3.3.10). Let
 `G` be `C²` with spike jets `G^{(q)}(x_k) = -α_k < 0` (other derivatives of order `1, 2` zero) at
 points `x_k` (`k < K`, `q ∈ {1, 2}`), spaced by the global minimizers
@@ -669,7 +696,7 @@ points `x_k` (`k < K`, `q ∈ {1, 2}`), spaced by the global minimizers
 `-α_k t^q/q! + σ₀ |t|³/6`, with `G(x_{k+1}) = G(x_k) - α_k t_k^q/q!`. If the termination test
 holds at `x_k e₀` (`k ≤ K`) exactly when `k = K`, then the points `x_k e₀` form an AR2 run on
 `ridge G e₀` with `σ_k = σ₀`, steps `t_k e₀` that are global minimizers of the models, and
-`ρ_k = 1`, terminating exactly at iteration `K`. -/
+`ρ_k = 1`, terminating exactly at iteration `K`; the iterates are `x_k e₀`. -/
 theorem exists_ar2_ridge_run (P : AR2Params) {ε₁ : ℝ} (hε₁ : 0 < ε₁) (hε₁1 : ε₁ ≤ 1)
     {ε₂ : Option ℝ} (hε₂ : ∀ e ∈ ε₂, 0 < e) {q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) {G : ℝ → ℝ}
     (hG : ContDiff ℝ 2 G) {xr α : ℕ → ℝ} {K : ℕ} (hα : ∀ k < K, 0 < α k)
@@ -682,7 +709,7 @@ theorem exists_ar2_ridge_run (P : AR2Params) {ε₁ : ℝ} (hε₁ : 0 < ε₁) 
       algorithm_3_3_1 (ridge G e₀) P ε₁ ε₂ x s σ ∧ (∀ k, σ k = P.σ₀) ∧
       (∀ k < K, IsMinOn (ar2Model (ridge G e₀) (x k) (σ k)) univ (s k) ∧
         taylorRatio (ridge G e₀) 2 x s k = 1) ∧
-      IsFirstHit (fun k => stopTest (ridge G e₀) ε₁ ε₂ (x k)) K := by
+      IsFirstHit (fun k => stopTest (ridge G e₀) ε₁ ε₂ (x k)) K ∧ ∀ k, x k = xr k • e₀ := by
   set f := ridge G e₀
   set x : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => xr k • e₀
   set s : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => (xr (k + 1) - xr k) • e₀
@@ -734,9 +761,9 @@ theorem exists_ar2_ridge_run (P : AR2Params) {ε₁ : ℝ} (hε₁ : 0 < ε₁) 
     ⟨(htest K le_rfl).2 le_rfl, fun j hj h => absurd ((htest j hj.le).1 h) (not_le.2 hj)⟩
   have hbefore : ∀ k, (∀ j ≤ k, ¬ IsARRun.Stop (fun k => stopTest f ε₁ ε₂ (x k))
       (fun _ => False) j) → k < K := fun k hk =>
-    not_le.1 fun hle => (not_stop_le_iff.1 hk) K hle hhit.test
+    not_le.1 fun hle => (IsARRun.forall_le_not_stop_iff.1 hk) K hle hhit.test
   refine ⟨x, s, fun _ => P.σ₀, rfl, ⟨hε₁, hε₁1, hε₂, ⟨rfl, fun k hk h1 => ?_, fun k hk => ?_⟩⟩,
-    fun _ => rfl, fun k hk => ⟨hmin k hk, hratio k hk⟩, hhit⟩
+    fun _ => rfl, fun k hk => ⟨hmin k hk, hratio k hk⟩, hhit, fun _ => rfl⟩
   · have hk' : k < K := by
       by_contra hle
       rcases (not_lt.1 hle).eq_or_lt with heq | hlt
@@ -847,7 +874,7 @@ theorem theorem_3_3_6 (P : AR2Params) :
       ← iteratedDeriv_one, (hd k hk).1, norm_smul, norm_e₀, mul_one, norm_neg, Real.norm_of_nonneg
       (ar2SlowAlpha_pos hε hK hk).le]
     exact ar2SlowAlpha_le_iff hε hK hk
-  obtain ⟨x, s, σ, hx0', hrun, hσ, hmin, hhit⟩ := exists_ar2_ridge_run P hε hε1
+  obtain ⟨x, s, σ, hx0', hrun, hσ, hmin, hhit, -⟩ := exists_ar2_ridge_run P hε hε1
     (ε₂ := none) (fun _ h => absurd h (by simp)) le_rfl (by norm_num) hG
     (fun k hk => ar2SlowAlpha_pos hε hK hk.le) (fun k hk => hd k hk.le) hx hv htest
   refine ⟨ridge G e₀, hb, hgl, hhl, hB, x, s, σ, by rw [hx0', hx0, zero_smul], hrun, hσ, ?_, ?_⟩
@@ -884,7 +911,7 @@ theorem theorem_3_3_10 (P : AR2Params) :
           (hd k hk).1, norm_smul, norm_e₀, mul_one, norm_neg,
           Real.norm_of_nonneg (ar2SlowAlpha_pos hε₁ hK hk).le, ← ar2SlowAlpha_le_iff hε₁ hK hk]
         exact ⟨fun h => h.1, fun h => ⟨h, by linarith⟩⟩
-    obtain ⟨x, s, σ, hx0', hrun, hσ, -, hhit⟩ := exists_ar2_ridge_run P hε₁ hε₁1
+    obtain ⟨x, s, σ, hx0', hrun, hσ, -, hhit, -⟩ := exists_ar2_ridge_run P hε₁ hε₁1
       (ε₂ := some ε₂) (by simpa using hε₂) le_rfl (by norm_num) hG
       (fun k hk => ar2SlowAlpha_pos hε₁ hK hk.le) (fun k hk => hd k hk.le) hx hv htest
     refine ⟨ridge G e₀, fun y => (hb y).trans' (by linarith [le_max_left B B']),
@@ -903,7 +930,7 @@ theorem theorem_3_3_10 (P : AR2Params) :
           (hd k hk).1, gradient_ridge (hG.differentiable (by norm_num)), inner_e₀_smul, hg1,
           zero_smul, norm_zero, neg_le_neg_iff, ← ar2SlowAlpha_le_iff hε₂ hK hk]
         exact ⟨fun h => h.2, fun h => ⟨hε₁.le, h⟩⟩
-    obtain ⟨x, s, σ, hx0', hrun, hσ, -, hhit⟩ := exists_ar2_ridge_run P hε₁ hε₁1
+    obtain ⟨x, s, σ, hx0', hrun, hσ, -, hhit, -⟩ := exists_ar2_ridge_run P hε₁ hε₁1
       (ε₂ := some ε₂) (by simpa using hε₂) (by norm_num) le_rfl hG
       (fun k hk => ar2SlowAlpha_pos hε₂ hK hk.le) (fun k hk => hd k hk.le) hx hv htest
     refine ⟨ridge G e₀, fun y => (hb y).trans' (by linarith [le_max_right B B']),
@@ -911,5 +938,19 @@ theorem theorem_3_3_10 (P : AR2Params) :
     rw [← ar2SlowK_two]; exact hhit
 
 end Sharpness
+
+/-! ### Deprecated aliases (moved to the backbone) -/
+
+@[deprecated IsARRun.forall_lt_not_stop_iff (since := "2026-10-26")]
+alias not_stop_iff := IsARRun.forall_lt_not_stop_iff
+
+@[deprecated IsARRun.forall_le_not_stop_iff (since := "2026-10-26")]
+alias not_stop_le_iff := IsARRun.forall_le_not_stop_iff
+
+@[deprecated IsARRun.isFirstHit_stop_iff (since := "2026-10-26")]
+alias isFirstHit_stop_iff := IsARRun.isFirstHit_stop_iff
+
+@[deprecated Optimization.arAcceptance_of_one_le (since := "2026-10-26")]
+alias arAcceptance_of_one_le := Optimization.arAcceptance_of_one_le
 
 end CartisGouldToint.Chapter03

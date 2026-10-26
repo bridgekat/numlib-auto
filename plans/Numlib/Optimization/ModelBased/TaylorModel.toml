@@ -51,3 +51,6 @@ source = "Cartis–Gould–Toint, Lemmas 2.4.2, 3.3.2, 4.1.2"
 [[node]]
 id = "norm_fderiv_le_of_taylorPolynomial"
 source = "Cartis–Gould–Toint, Lemma 3.3.7"
+
+[[node]]
+id = "norm_gradient_add_le_of_lipschitz"

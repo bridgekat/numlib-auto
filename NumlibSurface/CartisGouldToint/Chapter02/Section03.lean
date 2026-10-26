@@ -225,6 +225,22 @@ theorem lemma_2_3_2_pred_pos (h : algorithm_2_3_1 f P ε B x s Δ) {k : ℕ}
   have : 0 < min (‖gradient f (x k)‖ / (1 + ‖B k‖)) (Δ k) := lt_min (by positivity) hΔ
   positivity
 
+/-- **Lemma 2.3.3 for one iteration**: under f.gL, if a step satisfies the TR1 conditions
+`tr1Step` for a model Hessian `B` with `‖B‖ ≤ κ_B`, `Δ > 0`, `∇f(x) ≠ 0` and
+`Δ < (1 - η) ‖∇f(x)‖ / (2(L + κ_B))` with `η ≥ 0`, then the ratio (2.3.6) is at least `η`. -/
+theorem tr1Ratio_ge_of_tr1Step (hf : AssumptionGL f L) {x s : EuclideanSpace ℝ (Fin n)}
+    {Bk : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)} {Δ η : ℝ}
+    (hstep : tr1Step f Bk x Δ s) (hBk : ‖Bk‖ ≤ κB) (hΔ : 0 < Δ) (hg : 0 < ‖gradient f x‖)
+    (hη : 0 ≤ η) (hΔk : Δ < (1 - η) * ‖gradient f x‖ / (2 * (L + κB))) :
+    η ≤ tr1Ratio f x Bk s := by
+  obtain ⟨hs, t, ht, hm⟩ := hstep
+  have hsC : quadModel (gradient f x) Bk s ≤ quadModel (gradient f x) Bk (-(t • gradient f x)) := by
+    rw [tr1Model_eq, tr1Model_eq] at hm; linarith
+  rw [tr1Ratio, tr1Model_zero_sub]
+  exact le_reductionRatio_trust_first_of_isCauchyStep convex_univ
+    (fun y _ => hf.contDiff.contDiffAt) hf.iteratedFDerivLipschitzOn hf.one_le (mem_univ _)
+    (mem_univ _) hBk ht hsC hs hΔ hg hη hΔk
+
 /-- **Lemma 2.3.3** of [cartis2022evaluation]. Under f.gL and m.HBa, if the TR1 run has not
 terminated at iteration `k` and `Δ_k < (1 - η₂) ‖∇f(x_k)‖ / (2(L + κ_B))` (2.3.15), then
 `ρ_k ≥ η₂`, iteration `k` is successful and `Δ_{k+1} ≥ Δ_k`. -/
@@ -233,17 +249,11 @@ theorem lemma_2_3_3 (hf : AssumptionGL f L) (hB : AssumptionMHBa B κB)
     (hΔk : Δ k < (1 - P.η₂) * ‖gradient f (x k)‖ / (2 * (L + κB))) :
     P.η₂ ≤ tr1Ratio f (x k) (B k) (s k) ∧ P.η₁ ≤ tr1Ratio f (x k) (B k) (s k) ∧
       Δ k ≤ Δ (k + 1) := by
-  obtain ⟨hs, t, ht, hm⟩ := h.run.step k hk
   have hg : 0 < ‖gradient f (x k)‖ := h.ε_pos.trans (not_le.1 (hk k le_rfl))
   have hΔ : 0 < Δ k := h.delta_pos fun j hj => hk j hj.le
-  have hsC : quadModel (gradient f (x k)) (B k) (s k) ≤
-      quadModel (gradient f (x k)) (B k) (-(t • gradient f (x k))) := by
-    rw [tr1Model_eq, tr1Model_eq] at hm; linarith
-  have h2 : P.η₂ ≤ tr1Ratio f (x k) (B k) (s k) := by
-    rw [tr1Ratio, tr1Model_zero_sub]
-    exact le_reductionRatio_trust_first_of_isCauchyStep convex_univ
-      (fun y _ => hf.contDiff.contDiffAt) hf.iteratedFDerivLipschitzOn hf.one_le (mem_univ _)
-      (mem_univ _) (hB.bound k) ht hsC hs hΔ hg (P.η₁_pos.trans_le P.η₁_le_η₂).le hΔk
+  have h2 : P.η₂ ≤ tr1Ratio f (x k) (B k) (s k) :=
+    tr1Ratio_ge_of_tr1Step hf (h.run.step k hk) (hB.bound k) hΔ hg
+      (P.η₁_pos.trans_le P.η₁_le_η₂).le hΔk
   exact ⟨h2, P.η₁_le_η₂.trans h2, (h.run.update hk).le_of_very_successful h2⟩
 
 /-- The constant `α = (1 - η₂)/(2(L + κ_B)) min(1, Δ₀/‖∇f(x₀)‖)` of the proof of Lemma 2.3.4

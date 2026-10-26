@@ -30,6 +30,9 @@ where the test holds (`Optimization.IsFirstHit`).
   with `k ≤ A N + B`, and `Optimization.exists_isFirstHit_evalCount_le_of_counting` bounds the
   evaluation counts at that index (`funEvalCount k ≤ A N + B + 1`, `derivEvalCount succ k ≤ N + 1`,
   via `Optimization.derivEvalCount_le_of_isFirstHit`).
+* `Optimization.card_successSet_le_two_mul_add_one`: if every successful iteration that is not
+  "good" is followed (at the next success) by a good one, then `|𝒮_k| ≤ 2 |𝒢_k| + 1` (the counting
+  of the corrected Theorems 3.4.6 and 3.4.12 of [cartis2022evaluation]).
 * `Optimization.exists_isFirstHit_of_sub_ge`: the counting skeleton of methods with a uniform
   decrease per iteration (no unsuccessful iterations): a potential bounded below by `φlow` that
   decreases by `c > 0` at every iteration before termination forces termination at some `k` with
@@ -457,5 +460,73 @@ theorem exists_isFirstHit_of_sub_ge (hc : 0 < c)
   exact ⟨k, hk, by linarith [key k fun j hj => hk.not_test_of_lt hj, hlow k]⟩
 
 end decrease
+
+/-! ### Successes with a good successor -/
+
+/-- **Counting successes with a good successor.** Let `good j` imply `succ j` for `j ≤ K`, and
+suppose that whenever a successful iteration `j` is not good, the next successful iteration
+`j' ≤ K` (no success strictly between) is good. Then `|𝒮_k| ≤ 2 |𝒢_k| + 1` for every `k ≤ K`,
+where `𝒢_k` are the good iterations in `[0, k]`. -/
+theorem card_successSet_le_two_mul_add_one {succ good : ℕ → Prop} {K : ℕ}
+    (hgood : ∀ j ≤ K, good j → succ j)
+    (hnext : ∀ j j', j < j' → j' ≤ K → succ j → ¬ good j → succ j' →
+      (∀ i, j < i → i < j' → ¬ succ i) → good j') :
+    ∀ k ≤ K, (successSet succ k).card ≤ 2 * (successSet good k).card + 1 := by
+  -- `b k`: some bad success `j ≤ k` has no success after it up to `k`
+  let b : ℕ → Prop := fun k => ∃ j ≤ k, succ j ∧ ¬ good j ∧ ∀ i, j < i → i ≤ k → ¬ succ i
+  have key : ∀ k ≤ K, (b k → (successSet succ k).card ≤ 2 * (successSet good k).card + 1) ∧
+      (¬ b k → (successSet succ k).card ≤ 2 * (successSet good k).card) := by
+    intro k
+    induction k with
+    | zero =>
+      intro _
+      by_cases hs : succ 0
+      · by_cases hg : good 0
+        · rw [successSet_zero_of_succ hs, successSet_zero_of_succ hg]
+          simp
+        · have hb : b 0 := ⟨0, le_rfl, hs, hg, fun i hi hi' => absurd hi' (by omega)⟩
+          rw [successSet_zero_of_succ hs]
+          exact ⟨fun _ => by simp, fun h => absurd hb h⟩
+      · rw [successSet_zero_of_not_succ hs]
+        simp
+    | succ k ih =>
+      intro hk
+      obtain ⟨ih1, ih2⟩ := ih (Nat.le_of_succ_le hk)
+      by_cases hs : succ (k + 1)
+      · rw [card_successSet_add_one_of_succ hs]
+        by_cases hg : good (k + 1)
+        · rw [card_successSet_add_one_of_succ hg]
+          have : (successSet succ k).card ≤ 2 * (successSet good k).card + 1 := by
+            by_cases hb : b k
+            · exact ih1 hb
+            · exact (ih2 hb).trans (Nat.le_succ _)
+          constructor <;> intro <;> omega
+        · rw [card_successSet_add_one_of_not_succ hg]
+          have hnb : ¬ b k := by
+            rintro ⟨j, hj, hsj, hgj, hnone⟩
+            exact hg (hnext j (k + 1) (by omega) hk hsj hgj hs fun i hi hi' =>
+              hnone i hi (by omega))
+          have := ih2 hnb
+          refine ⟨fun _ => by omega, fun hb => absurd ⟨k + 1, le_rfl, hs, hg,
+            fun i hi hi' => absurd hi' (by omega)⟩ hb⟩
+      · rw [card_successSet_add_one_of_not_succ hs,
+          card_successSet_add_one_of_not_succ fun hg => hs (hgood _ hk hg)]
+        have hbb : b (k + 1) ↔ b k := by
+          constructor
+          · rintro ⟨j, hj, hsj, hgj, hnone⟩
+            rcases Nat.lt_or_eq_of_le hj with hj | rfl
+            · exact ⟨j, Nat.lt_succ_iff.1 hj, hsj, hgj, fun i hi hi' => hnone i hi (by omega)⟩
+            · exact absurd hsj hs
+          · rintro ⟨j, hj, hsj, hgj, hnone⟩
+            refine ⟨j, hj.trans k.le_succ, hsj, hgj, fun i hi hi' => ?_⟩
+            rcases Nat.lt_or_eq_of_le hi' with hi' | rfl
+            · exact hnone i hi (Nat.lt_succ_iff.1 hi')
+            · exact hs
+        rw [hbb]
+        exact ⟨ih1, ih2⟩
+  intro k hk
+  by_cases hb : b k
+  · exact (key k hk).1 hb
+  · exact ((key k hk).2 hb).trans (Nat.le_succ _)
 
 end Optimization

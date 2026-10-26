@@ -63,3 +63,9 @@ source = "Cartis–Gould–Toint, Algorithm 4.1.1 (well-posedness)"
 [[node]]
 id = "IsARRun.exists_isFirstHit_of_decrease_of_le"
 source = "Cartis–Gould–Toint, proof of Theorem 2.4.4"
+
+[[node]]
+id = "IsARRun.stop_false_iff"
+
+[[node]]
+id = "arAcceptance_of_one_le"

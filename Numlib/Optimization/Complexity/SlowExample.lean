@@ -31,6 +31,8 @@ depend only on `a` and `b`. Thus a single lemma serves every method whose steps 
   and the first-order trust-region and regularization methods).
 * `Optimization.exists_slowNegCurvature_interpolant` — the data (3.2.24) of Theorem 3.2.7: slow
   convergence to second-order criticality.
+* `Optimization.secondOrderK`, `secondOrderF`, `secondOrderG`, `secondOrderH` — the data
+  (3.5.11)–(3.5.12) with their elementary bounds, and `Optimization.ceil_rpow_facts`.
 * `Optimization.exists_slowSecondOrder_interpolant` — the data (3.5.12) of Theorem 3.5.4: slow
   convergence to first-order criticality for second-order methods.
 * `Optimization.exists_contDiff_interpolating_separated_jets` — the multidimensional gluing behind
@@ -520,6 +522,84 @@ theorem exists_slowNegCurvature_interpolant {a b : ℝ} (ha : 0 < a) (hab : a �
   · have := hGj k hk 2 le_rfl
     simp only [F, OfNat.ofNat_ne_zero, h21, ↓reduceIte] at this
     rw [this, hc]
+
+/-! ### The data (3.5.12) -/
+
+/-- `k_ε = ⌈ε^{-3/2}⌉` (3.5.11). -/
+noncomputable def secondOrderK (ε : ℝ) : ℕ := ⌈ε ^ (-(3 / 2 : ℝ))⌉₊
+
+/-- The function values `f_k = 1 - k ε^{3/2}/2` of (3.5.12). -/
+noncomputable def secondOrderF (ε : ℝ) (k : ℕ) : ℝ := 1 - k * ε ^ (3 / 2 : ℝ) / 2
+
+/-- The derivatives `g_k = -2 ε f_k` of (3.5.12). -/
+noncomputable def secondOrderG (ε : ℝ) (k : ℕ) : ℝ := -2 * ε * secondOrderF ε k
+
+/-- The second derivatives `H_k = 4 ε^{1/2} f_k²` of (3.5.12). -/
+noncomputable def secondOrderH (ε : ℝ) (k : ℕ) : ℝ := 4 * ε ^ (1 / 2 : ℝ) * secondOrderF ε k ^ 2
+
+section Data
+
+variable {ε : ℝ}
+
+private theorem rpow_three_halves_mul (hε : 0 < ε) :
+    ε ^ (-(3 / 2 : ℝ)) * ε ^ (3 / 2 : ℝ) = 1 := by
+  rw [← Real.rpow_add hε]; simp
+
+theorem secondOrderF_gt_half (hε : 0 < ε) {k : ℕ} (hk : k < secondOrderK ε) :
+    1 / 2 < secondOrderF ε k := by
+  have hp : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
+  have h1 : (k : ℝ) < ε ^ (-(3 / 2 : ℝ)) := Nat.lt_ceil.1 hk
+  have h2 : (k : ℝ) * ε ^ (3 / 2 : ℝ) < 1 := by
+    have := mul_lt_mul_of_pos_right h1 hp
+    rwa [rpow_three_halves_mul hε] at this
+  unfold secondOrderF; linarith
+
+theorem secondOrderF_le_one (hε : 0 < ε) (k : ℕ) : secondOrderF ε k ≤ 1 := by
+  have : 0 ≤ (k : ℝ) * ε ^ (3 / 2 : ℝ) / 2 := by
+    have := Real.rpow_pos_of_pos hε (3 / 2 : ℝ); positivity
+  unfold secondOrderF; linarith
+
+theorem secondOrderF_K_le_half (hε : 0 < ε) : secondOrderF ε (secondOrderK ε) ≤ 1 / 2 := by
+  have hp : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
+  have h1 : ε ^ (-(3 / 2 : ℝ)) ≤ (secondOrderK ε : ℝ) := Nat.le_ceil _
+  have h2 : 1 ≤ (secondOrderK ε : ℝ) * ε ^ (3 / 2 : ℝ) := by
+    have := mul_le_mul_of_nonneg_right h1 hp.le
+    rwa [rpow_three_halves_mul hε] at this
+  unfold secondOrderF; linarith
+
+theorem secondOrderF_pos (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ} (hk : k ≤ secondOrderK ε) :
+    0 < secondOrderF ε k := by
+  have hp : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
+  have hp1 : ε ^ (3 / 2 : ℝ) < 1 := Real.rpow_lt_one hε.le hε1 (by norm_num)
+  have h1 : (secondOrderK ε : ℝ) < ε ^ (-(3 / 2 : ℝ)) + 1 :=
+    Nat.ceil_lt_add_one (Real.rpow_pos_of_pos hε _).le
+  have h2 : (k : ℝ) * ε ^ (3 / 2 : ℝ) < 2 := by
+    have hk' : (k : ℝ) ≤ secondOrderK ε := by exact_mod_cast hk
+    have := mul_lt_mul_of_pos_right (hk'.trans_lt h1) hp
+    rw [add_mul, rpow_three_halves_mul hε, one_mul] at this
+    linarith
+  unfold secondOrderF; linarith
+
+end Data
+
+/-- Facts on `k_ε = ⌈ε^{-3/2}⌉`: `k ε^{3/2} < 1` for `k < k_ε`, and `1 ≤ k_ε ε^{3/2} ≤ 2`. -/
+theorem ceil_rpow_facts {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) :
+    (∀ k < ⌈ε ^ (-(3 / 2 : ℝ))⌉₊, (k : ℝ) * ε ^ (3 / 2 : ℝ) < 1) ∧
+      1 ≤ (⌈ε ^ (-(3 / 2 : ℝ))⌉₊ : ℝ) * ε ^ (3 / 2 : ℝ) ∧
+      (⌈ε ^ (-(3 / 2 : ℝ))⌉₊ : ℝ) * ε ^ (3 / 2 : ℝ) ≤ 2 := by
+  have he : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
+  have he1 : ε ^ (3 / 2 : ℝ) ≤ 1 := Real.rpow_le_one hε.le hε1 (by norm_num)
+  have hneg : ε ^ (-(3 / 2 : ℝ)) = (ε ^ (3 / 2 : ℝ))⁻¹ := Real.rpow_neg hε.le _
+  rw [hneg]
+  refine ⟨fun k hk => ?_, ?_, ?_⟩
+  · have h2 := mul_lt_mul_of_pos_right (Nat.lt_ceil.1 hk) he
+    rwa [inv_mul_cancel₀ he.ne'] at h2
+  · have h2 := mul_le_mul_of_nonneg_right (Nat.le_ceil (ε ^ (3 / 2 : ℝ))⁻¹) he.le
+    rwa [inv_mul_cancel₀ he.ne'] at h2
+  · have := Nat.ceil_lt_add_one (inv_nonneg.2 he.le)
+    have h2 := mul_lt_mul_of_pos_right this he
+    rw [add_mul, inv_mul_cancel₀ he.ne'] at h2
+    linarith
 
 /-! ### Second-order data, slow to first-order criticality (Theorem 3.5.4) -/
 

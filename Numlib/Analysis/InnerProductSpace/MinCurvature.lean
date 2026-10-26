@@ -20,6 +20,8 @@ that need a unit vector assume `[Nontrivial E]`.
 ## Main definitions
 
 * `minCurvature A`: the infimum of `A[d, d]` over the unit sphere;
+* `minCurvatureOn A V`: the least curvature of `A` restricted to a subspace `V` (`λ_min[Qᵀ A Q]` for
+  a matrix `Q` with orthonormal columns spanning `V`, [cartis2022evaluation] (3.4.32));
 * `innerForm`: the bilinear form `(v, w) ↦ ⟪v, w⟫`, the "identity matrix".
 
 ## Main results
@@ -235,6 +237,60 @@ theorem minCurvature_ge_of_add_smul
     ring
   rw [hsplit]
   nlinarith
+
+/-! ### Least curvature on a subspace -/
+
+/-- The least curvature of a bilinear form `A` restricted to a subspace `V`:
+`λ_min[Qᵀ A Q]` for a matrix `Q` with orthonormal columns spanning `V` ([cartis2022evaluation],
+(3.4.32)); for `V = ⊤` (`Q = I`) it is `λ_min[A]` (`minCurvatureOn_top`). -/
+noncomputable def minCurvatureOn (A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ)
+    (V : Submodule ℝ E) : ℝ :=
+  minCurvature (A.compContinuousLinearMap fun _ => V.subtypeL)
+
+theorem minCurvatureOn_def (A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ)
+    (V : Submodule ℝ E) :
+    minCurvatureOn A V = minCurvature (A.compContinuousLinearMap fun _ => V.subtypeL) := rfl
+
+section MinCurvatureOn
+
+variable {V : Submodule ℝ E}
+
+/-- `λ_min[Qᵀ A Q] ‖d‖² ≤ A[d, d]` for `d ∈ V`. -/
+theorem minCurvatureOn_mul_norm_sq_le {d : E} (hd : d ∈ V) :
+    minCurvatureOn A V * ‖d‖ ^ 2 ≤ A (fun _ => d) := by
+  have := minCurvature_mul_norm_sq_le (A.compContinuousLinearMap fun _ => V.subtypeL)
+    (⟨d, hd⟩ : V)
+  rw [minCurvatureOn]
+  simpa using this
+
+/-- Characterization of `λ_min[Qᵀ A Q]` on a nonzero subspace:
+`c ≤ λ_min[Qᵀ A Q] ↔ c ‖d‖² ≤ A[d, d]` for all `d ∈ V`. -/
+theorem le_minCurvatureOn_iff [Nontrivial V] {c : ℝ} :
+    c ≤ minCurvatureOn A V ↔ ∀ d ∈ V, c * ‖d‖ ^ 2 ≤ A (fun _ => d) := by
+  refine ⟨fun hc d hd => (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans
+    (minCurvatureOn_mul_norm_sq_le hd), fun h => ?_⟩
+  refine le_minCurvature_iff.2 fun d => ?_
+  simpa using h d d.2
+
+/-- `c ≤ λ_min[Qᵀ A Q]` if `c ‖d‖² ≤ A[d, d]` on `V` and `c ≤ 0` (the latter for `V = 0`). -/
+theorem le_minCurvatureOn {c : ℝ} (hc : c ≤ 0) (h : ∀ d ∈ V, c * ‖d‖ ^ 2 ≤ A (fun _ => d)) :
+    c ≤ minCurvatureOn A V := by
+  rcases subsingleton_or_nontrivial V with hV | hV
+  · rw [minCurvatureOn, minCurvature_of_subsingleton]; exact hc
+  · exact le_minCurvatureOn_iff.2 h
+
+/-- On the whole space, `λ_min[Iᵀ A I] = λ_min[A]`. -/
+@[simp]
+theorem minCurvatureOn_top : minCurvatureOn A ⊤ = minCurvature A := by
+  rcases subsingleton_or_nontrivial E with hE | hE
+  · have : Subsingleton (⊤ : Submodule ℝ E) := inferInstance
+    rw [minCurvatureOn, minCurvature_of_subsingleton, minCurvature_of_subsingleton]
+  · have : Nontrivial (⊤ : Submodule ℝ E) := Submodule.topEquiv.toEquiv.nontrivial
+    refine le_antisymm (le_minCurvature_iff.2 fun d =>
+      minCurvatureOn_mul_norm_sq_le (Submodule.mem_top (x := d))) ?_
+    exact le_minCurvatureOn_iff.2 fun d _ => minCurvature_mul_norm_sq_le A d
+
+end MinCurvatureOn
 
 end Normed
 

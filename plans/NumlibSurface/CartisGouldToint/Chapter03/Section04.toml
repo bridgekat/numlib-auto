@@ -63,3 +63,47 @@ source = "Cartis–Gould–Toint, Theorem 3.4.11, Appendix B"
 [[node]]
 id = "theorem_3_4_12"
 source = "Cartis–Gould–Toint, Theorem 3.4.12, Appendix B"
+
+[[node]]
+id = "exists_algorithm_3_4_1"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "exists_algorithm_3_4_2"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "lemma_3_4_2_delta"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "lemma_3_4_9_curv"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "lemma_3_4_10_last"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "kappaBIRN"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "kappaDIRN"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "tre_slow_data"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "tre_ridge_run"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "irn_slow_data"
+source = "Cartis–Gould–Toint, §3.4"
+
+[[node]]
+id = "irn_ridge_run"
+source = "Cartis–Gould–Toint, §3.4"

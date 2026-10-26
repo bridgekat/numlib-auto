@@ -61,3 +61,15 @@ source = "Cartis–Gould–Toint, Section A.5 (degenerate case)"
 [[node]]
 id = "minCurvature_ge_of_add_smul"
 source = "Cartis–Gould–Toint, (4.1.27)–(4.1.29), (5.5.15)–(5.5.17)"
+
+[[node]]
+id = "minCurvatureOn"
+source = "Cartis–Gould–Toint, (3.4.32)"
+
+[[node]]
+id = "le_minCurvatureOn_iff"
+source = "Cartis–Gould–Toint, (3.4.32)"
+
+[[node]]
+id = "minCurvatureOn_top"
+source = "Cartis–Gould–Toint, (3.4.32)"

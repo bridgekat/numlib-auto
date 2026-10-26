@@ -427,6 +427,45 @@ theorem minCurvature_iteratedFDeriv_two_eq_leftmost [FiniteDimensional ℝ F]
       Subproblem.leftmost (hessianOperator_isSymmetric hf) :=
   minCurvature_eq_leftmost _ fun v w => (inner_hessianOperator_apply hf v w).symm
 
+/-- The Hessian form of a function `C²` at `x` is symmetric. -/
+theorem iteratedFDeriv_two_symm (hf : ContDiffAt ℝ 2 f x) (v w : F) :
+    iteratedFDeriv ℝ 2 f x ![v, w] = iteratedFDeriv ℝ 2 f x ![w, v] := by
+  rw [← inner_hessianOperator_apply hf, ← inner_hessianOperator_apply hf, real_inner_comm]
+  exact (hessianOperator_isSymmetric hf w v)
+
+/-- The Hessian operator is bounded by the Hessian form: `‖∇²f(x)‖_op ≤ ‖∇²f(x)‖`. -/
+theorem norm_hessianOperator_le (hf : ContDiffAt ℝ 2 f x) :
+    ‖hessianOperator f x‖ ≤ ‖iteratedFDeriv ℝ 2 f x‖ := by
+  refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v => ?_
+  set w := hessianOperator f x v
+  have h : ‖w‖ ^ 2 ≤ ‖iteratedFDeriv ℝ 2 f x‖ * ‖v‖ * ‖w‖ := by
+    rw [← real_inner_self_eq_norm_sq]
+    change ⟪w, hessianOperator f x v⟫ ≤ _
+    rw [inner_hessianOperator_apply hf]
+    have := (iteratedFDeriv ℝ 2 f x).le_opNorm ![w, v]
+    simp only [Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one] at this
+    refine (le_abs_self _).trans ((Real.norm_eq_abs _ ▸ this).trans_eq ?_)
+    ring
+  rcases (norm_nonneg w).eq_or_lt with h0 | h0
+  · rw [← h0]; positivity
+  · nlinarith
+
+/-- **Eigenvectors of the leftmost eigenvalue** ([cartis2022evaluation], (3.2.3)): in finite
+dimension, for `f` `C²` at `x` with `λ_min[∇²f(x)] < 0` there is a unit `u` with
+`∇²f(x) u = λ_min u` and `⟪u, ∇f(x)⟫ ≤ 0`. -/
+theorem exists_eigenvector_hessianOperator [FiniteDimensional ℝ F] (hf : ContDiffAt ℝ 2 f x)
+    (hlam : minCurvature (iteratedFDeriv ℝ 2 f x) < 0) :
+    ∃ u, ‖u‖ = 1 ∧ hessianOperator f x u = minCurvature (iteratedFDeriv ℝ 2 f x) • u ∧
+      ⟪u, gradient f x⟫ ≤ 0 := by
+  rcases subsingleton_or_nontrivial F with hE | hE
+  · rw [minCurvature_of_subsingleton] at hlam
+    exact absurd hlam (lt_irrefl _)
+  obtain ⟨u, hu, -, hev, hgu⟩ := exists_eigenvector_minCurvature (A := iteratedFDeriv ℝ 2 f x)
+    (iteratedFDeriv_two_symm hf) (gradient f x)
+  refine ⟨u, hu, ext_inner_left ℝ fun w => ?_, hgu⟩
+  rw [inner_hessianOperator_apply hf, iteratedFDeriv_two_symm hf, hev, inner_smul_right,
+    real_inner_comm]
+
 end Inner
 
 section Matrix

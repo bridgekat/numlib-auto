@@ -51,3 +51,19 @@ source = "Cartis–Gould–Toint, Theorem 3.3.9"
 [[node]]
 id = "theorem_3_3_10"
 source = "Cartis–Gould–Toint, Theorem 3.3.10"
+
+[[node]]
+id = "exists_algorithm_3_3_1"
+source = "Cartis–Gould–Toint, §3.3"
+
+[[node]]
+id = "exists_isModifiedAR2Run"
+source = "Cartis–Gould–Toint, §3.3"
+
+[[node]]
+id = "exists_ar2_ridge_run"
+source = "Cartis–Gould–Toint, §3.3"
+
+[[node]]
+id = "exists_ar2_slow_data"
+source = "Cartis–Gould–Toint, §3.3"

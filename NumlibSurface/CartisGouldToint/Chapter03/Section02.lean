@@ -41,9 +41,10 @@ of the generic trust-region run `Optimization.IsTRRun`.
   `k = k_ε`. The example prescribes `∇f(x_{k_ε}) = 0` and the run terminates exactly at
   `k_ε = ⌈ε₁⁻²⌉`, after `k_ε + 1` evaluations.
 * Lemma 3.2.5 is stated for every `k` up to (and including) termination.
-* Theorem 3.2.6: the printed `κ^F_TR2` lacks an absolute value and has `Δ₀` instead of `1` inside
-  the minimum; the correct constant is `κ^F = |log(κ_Δ/Δ₀)|/|log γ₂| + 1`. The bound holds for all
-  `ε₁ > 0` (the book's `ε₁ ≤ 1` is not used).
+* Theorem 3.2.6: the printed `κ^F_TR2 = min(γ₁(1-η₂)/(Δ₀ max(4κ_H, L_{f,2}/3)), Δ₀)/|log γ₂| + 1`
+  lacks the `|log ·|`; the proof gives `κ^F = |log(κ_Δ/Δ₀)|/|log γ₂| + 1` (`kappaFTR2`), which is
+  at most the book's constant with `|log ·|` inserted (`kappaFTR2_le_book`). The bound holds for
+  all `ε₁ > 0` (the book's `ε₁ ≤ 1` is not used).
 * Theorem 3.2.7: (3.2.25) `x_k = (k - 1) ε` is a typo for `x_k = k ε`; "`s₁ = ε`" means `s₀`.
 -/
 
@@ -66,23 +67,6 @@ structure AssumptionHBa (f : EuclideanSpace ℝ (Fin n) → ℝ) (κH : ℝ) : P
   one_le : 1 ≤ κH
   /-- The Hessian bound. -/
   bound : ∀ x, ‖iteratedFDeriv ℝ 2 f x‖ ≤ κH
-
-/-- The Hessian operator is bounded by the Hessian form: `‖∇²f(x)‖_op ≤ ‖∇²f(x)‖`. -/
-theorem norm_hessianOperator_le {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
-    (hf : ContDiffAt ℝ 2 f x) : ‖hessianOperator f x‖ ≤ ‖iteratedFDeriv ℝ 2 f x‖ := by
-  refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v => ?_
-  set w := hessianOperator f x v
-  have h : ‖w‖ ^ 2 ≤ ‖iteratedFDeriv ℝ 2 f x‖ * ‖v‖ * ‖w‖ := by
-    rw [← real_inner_self_eq_norm_sq]
-    change ⟪w, hessianOperator f x v⟫ ≤ _
-    rw [inner_hessianOperator_apply hf]
-    have := (iteratedFDeriv ℝ 2 f x).le_opNorm ![w, v]
-    simp only [Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one] at this
-    refine (le_abs_self _).trans ((Real.norm_eq_abs _ ▸ this).trans_eq ?_)
-    ring
-  rcases (norm_nonneg w).eq_or_lt with h0 | h0
-  · rw [← h0]; positivity
-  · nlinarith
 
 namespace AssumptionHBa
 
@@ -355,17 +339,10 @@ theorem tr2_ratio_ge_of_first {κH : ℝ} (hf : AssumptionHBa f κH)
     (h : algorithm_3_2_1 f P ε₁ ε₂ x s Δ) {k : ℕ} (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j))
     (hg : 0 < ‖gradient f (x k)‖) (hΔk : Δ k < (1 - P.η₂) * ‖gradient f (x k)‖ / (4 * κH)) :
     P.η₂ ≤ tr2Ratio f (x k) (s k) := by
-  obtain ⟨⟨hs, t, ht, hm⟩, -⟩ := h.run.step k hk
   have hΔ := h.delta_pos fun j hj => hk j hj.le
-  have hsC : quadModel (gradient f (x k)) (hessianOperator f (x k)) (s k) ≤
-      quadModel (gradient f (x k)) (hessianOperator f (x k)) (-(t • gradient f (x k))) := by
-    rw [Chapter02.tr1Model_eq, Chapter02.tr1Model_eq] at hm; linarith
-  rw [tr2Ratio_eq]
-  have hgl := hf.assumptionGL
-  exact le_reductionRatio_trust_first_of_isCauchyStep convex_univ
-    (fun y _ => hgl.contDiff.contDiffAt) hgl.iteratedFDerivLipschitzOn hf.one_le (mem_univ _)
-    (mem_univ _) ((hf.assumptionMHBa x).bound k) ht hsC hs hΔ hg
-    (P.η₁_pos.trans_le P.η₁_le_η₂).le (by rw [show 2 * (κH + κH) = 4 * κH by ring]; exact hΔk)
+  exact Chapter02.tr1Ratio_ge_of_tr1Step hf.assumptionGL (h.run.step k hk).1
+    ((hf.assumptionMHBa x).bound k) hΔ hg (P.η₁_pos.trans_le P.η₁_le_η₂).le
+    (by rw [show 2 * (κH + κH) = 4 * κH by ring]; exact hΔk)
 
 end Run
 
@@ -468,29 +445,14 @@ variable {f : EuclideanSpace ℝ (Fin n) → ℝ}
 
 /-! ### Existence of TR2 runs -/
 
-/-- The Hessian form of a `C²` function is symmetric. -/
-theorem iteratedFDeriv_two_symm {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
-    (hf : ContDiffAt ℝ 2 f x) (v w : EuclideanSpace ℝ (Fin n)) :
-    iteratedFDeriv ℝ 2 f x ![v, w] = iteratedFDeriv ℝ 2 f x ![w, v] := by
-  rw [← inner_hessianOperator_apply hf, ← inner_hessianOperator_apply hf, real_inner_comm]
-  exact (hessianOperator_isSymmetric hf w v)
-
 /-- **Eigenvectors of the leftmost eigenvalue** (3.2.3): for `f` `C²` at `x` with
 `λ_min[∇²f(x)] < 0` there is a unit `u` with `∇²f(x) u = λ_min u` and `⟪u, ∇f(x)⟫ ≤ 0`. -/
 theorem exists_eigenvector_hessianMinEig {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} (hf : ContDiffAt ℝ 2 f x)
     (hlam : Chapter01.hessianMinEig f x < 0) :
     ∃ u, ‖u‖ = 1 ∧ hessianOperator f x u = Chapter01.hessianMinEig f x • u ∧
-      ⟪u, gradient f x⟫ ≤ 0 := by
-  rcases subsingleton_or_nontrivial (EuclideanSpace ℝ (Fin n)) with hE | hE
-  · rw [Chapter01.hessianMinEig, minCurvature_of_subsingleton] at hlam
-    exact absurd hlam (lt_irrefl _)
-  obtain ⟨u, hu, -, hev, hgu⟩ := exists_eigenvector_minCurvature (A := iteratedFDeriv ℝ 2 f x)
-    (iteratedFDeriv_two_symm hf) (gradient f x)
-  refine ⟨u, hu, ext_inner_left ℝ fun w => ?_, hgu⟩
-  rw [inner_hessianOperator_apply hf, iteratedFDeriv_two_symm hf, hev, inner_smul_right,
-    real_inner_comm]
-  rfl
+      ⟪u, gradient f x⟫ ≤ 0 :=
+  exists_eigenvector_hessianOperator hf hlam
 
 /-- A global minimizer of the TR2 model in the trust region satisfies Step 2 of TR2. -/
 theorem tr2Step_of_isMinOn {x : EuclideanSpace ℝ (Fin n)} (hf : ContDiffAt ℝ 2 f x)
@@ -574,15 +536,6 @@ theorem theorem_3_2_1 {P : Chapter02.TR1Params} {ε₁ κH flow : ℝ}
     (h.toAlgorithm_2_3_1 hf.contDiff)
 
 /-! ### Theorem 3.2.2 -/
-
-/-- An iteration with ratio `ρ ≥ 1` (very successful) may keep the radius: Steps 3–4 hold with
-`x' = x + s` and `Δ' = Δ`. -/
-theorem trAcceptance_of_one_le {E : Type*} [Add E] (P : TRParams) {ρ : ℝ} (hρ : 1 ≤ ρ)
-    (x s : E) {Δ : ℝ} (hΔ : 0 ≤ Δ) : TRAcceptance P ρ x s (x + s) Δ Δ := by
-  have h1 : P.η₁ ≤ ρ := by linarith [P.η₁_le_η₂, P.η₂_lt_one]
-  have h2 : P.η₂ ≤ ρ := by linarith [P.η₂_lt_one]
-  refine ⟨by rw [ite_eq_left h1], fun _ => ⟨le_rfl, le_mul_of_one_le_left hΔ P.one_le_γ₃⟩,
-    fun _ h => absurd h (not_lt.2 h2), fun h => absurd h (not_lt.2 h1)⟩
 
 open NewtonSlow in
 /-- **Theorem 3.2.2** of [cartis2022evaluation] (slow first-order convergence of TR2). There are
@@ -832,10 +785,35 @@ noncomputable def kappaTTR2 (P : Chapter02.TR1Params) (κH L₂ : ℝ) : ℝ :=
   (1 / 2 * P.η₁ * min (1 / (1 + κH)) (kappaDeltaTR2 P κH L₂ ^ 2))⁻¹
 
 /-- The constant `κ^F_TR2 = |log(κ_Δ/Δ₀)|/|log γ₂| + 1` of Theorem 3.2.6 (**corrected**: the
-book prints `log(min(γ₁(1 - η₂)/(Δ₀ max(4κ_H, L_{f,2}/3)), Δ₀))/|log γ₂| + 1`, without absolute
-value and with `Δ₀` in place of `1` in the minimum). -/
+book (OCR l. 2902) prints `min(γ₁(1 - η₂)/(Δ₀ max(4κ_H, L_{f,2}/3)), Δ₀)/|log γ₂| + 1`, without
+the `|log ·|`; with it inserted, the book's constant is an upper bound, `kappaFTR2_le_book`). -/
 noncomputable def kappaFTR2 (P : Chapter02.TR1Params) (κH L₂ : ℝ) : ℝ :=
   |Real.log (kappaDeltaTR2 P κH L₂ / P.Δ₀)| / |Real.log P.γ₂| + 1
+
+/-- The proof's `κ^F_TR2` is at most the book's constant (with the missing `|log ·|` inserted):
+`|log min(u/Δ₀, Δ₀)|/|log γ₂| + 1`, `u = γ₁(1 - η₂)/max(4κ_H, L_{f,2}/3)`. -/
+theorem kappaFTR2_le_book {P : Chapter02.TR1Params} {κH L₂ : ℝ} (hκ : 1 ≤ κH) :
+    kappaFTR2 P κH L₂ ≤
+      |Real.log (min (P.γ₁ * (1 - P.η₂) / (P.Δ₀ * max (4 * κH) (L₂ / 3))) P.Δ₀)| /
+        |Real.log P.γ₂| + 1 := by
+  set a := P.γ₁ * (1 - P.η₂) / (P.Δ₀ * max (4 * κH) (L₂ / 3))
+  have hΔ := P.Δ₀_pos
+  have hM : 0 < max (4 * κH) (L₂ / 3) := lt_max_of_lt_left (by linarith)
+  have ha : 0 < a := by
+    have := P.γ₁_pos; have := sub_pos.2 P.η₂_lt_one; simp only [a]; positivity
+  have hk : kappaDeltaTR2 P κH L₂ / P.Δ₀ = min a 1 := by
+    rw [kappaDeltaTR2, ← min_div_div_right hΔ.le, div_self hΔ.ne']
+    congr 1
+    simp only [a]; field_simp
+  have key : |Real.log (min a 1)| ≤ |Real.log (min a P.Δ₀)| := by
+    rcases le_total 1 a with h | h
+    · rw [min_eq_right h, Real.log_one, abs_zero]; exact abs_nonneg _
+    · rw [min_eq_left h, abs_of_nonpos (Real.log_nonpos ha.le h),
+        abs_of_nonpos (Real.log_nonpos (lt_min ha hΔ).le ((min_le_left _ _).trans h))]
+      exact neg_le_neg (Real.log_le_log (lt_min ha hΔ) (min_le_left _ _))
+  rw [kappaFTR2, hk]
+  have := div_le_div_of_nonneg_right key (abs_nonneg (Real.log P.γ₂))
+  linarith
 
 /-- **Theorem 3.2.6** of [cartis2022evaluation] (second-order complexity of TR2). Under f.Bb,
 f.HBa and f.HL, for all `ε₁ > 0` and `ε₂ = e ∈ (0, 1]`, every TR2 run terminates at an
@@ -1031,5 +1009,16 @@ theorem theorem_3_2_7 :
 
 end Main
 
+
+/-! ### Deprecated aliases (moved to the backbone) -/
+
+@[deprecated Optimization.norm_hessianOperator_le (since := "2026-10-26")]
+alias norm_hessianOperator_le := Optimization.norm_hessianOperator_le
+
+@[deprecated Optimization.iteratedFDeriv_two_symm (since := "2026-10-26")]
+alias iteratedFDeriv_two_symm := Optimization.iteratedFDeriv_two_symm
+
+@[deprecated Optimization.trAcceptance_of_one_le (since := "2026-10-26")]
+alias trAcceptance_of_one_le := Optimization.trAcceptance_of_one_le
 
 end CartisGouldToint.Chapter03

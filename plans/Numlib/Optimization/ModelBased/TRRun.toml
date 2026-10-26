@@ -35,3 +35,9 @@ source = "Cartis–Gould–Toint, Lemma 2.3.1, (2.3.11)"
 [[node]]
 id = "IsTRRun.sub_ge_of_succ"
 source = "Cartis–Gould–Toint, proof of Lemma 2.3.6"
+
+[[node]]
+id = "exists_isTRRun"
+
+[[node]]
+id = "trAcceptance_of_one_le"

@@ -165,6 +165,15 @@ theorem exists_trAcceptance (P : TRParams) (ρ : ℝ) (x s : E) {Δ : ℝ} (hΔ 
     · exact mul_pos P.γ₂_pos hΔ'
     · exact hΔ'
 
+/-- An iteration with ratio `ρ ≥ 1` (very successful) may keep the radius: Steps 3–4 hold with
+`x' = x + s` and `Δ' = Δ`. -/
+theorem trAcceptance_of_one_le (P : TRParams) {ρ : ℝ} (hρ : 1 ≤ ρ) (x s : E) {Δ : ℝ}
+    (hΔ : 0 ≤ Δ) : TRAcceptance P ρ x s (x + s) Δ Δ := by
+  have h1 : P.η₁ ≤ ρ := by linarith [P.η₁_le_η₂, P.η₂_lt_one]
+  have h2 : P.η₂ ≤ ρ := by linarith [P.η₂_lt_one]
+  refine ⟨by rw [ite_eq_left h1], fun _ => ⟨le_rfl, le_mul_of_one_le_left hΔ P.one_le_γ₃⟩,
+    fun _ h => absurd h (not_lt.2 h2), fun h => absurd h (not_lt.2 h1)⟩
+
 end Acceptance
 
 /-- A run of a trust-region method ([cartis2022evaluation], Algorithms 2.3.1, 3.2.1, 3.4.1,
