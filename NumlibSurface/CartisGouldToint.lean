@@ -163,8 +163,6 @@ and on the declarations.
 
 ## Not formalized
 
-* Lemma 4.2.5 (iv), explicit growth `L^D_p ≤ exp(5/2 p log p + c₁ p)` of the hard function's
-  constant (the lemma itself is proved with an explicit constant).
 * Corollary 14.1.11 (sharpness of ARqpC): the book's proof does not check that the slow ARqp
   steps are admissible ARqpC steps for `|c|`.
 * An explicit counterexample declaration for (14.3.43) of Lemma 14.3.5 (the counterexample is
