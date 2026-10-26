@@ -115,6 +115,13 @@ theorem IsSubadditive.sub_le_mul_norm (hh : IsSubadditive h) (h0 : h 0 = 0)
     (hLip : HasLipschitzConst h Lh) (a b : F) : h (a + b) - h a ≤ Lh * ‖b‖ :=
   (hh.sub_le a b).trans ((le_abs_self _).trans (abs_le_of_lipschitz_of_map_zero h0 hLip b))
 
+/-- The zero function is subadditive. -/
+theorem isSubadditive_zero {G : Type*} [Add G] : IsSubadditive (0 : G → ℝ) := fun _ _ => by simp
+
+/-- The zero function has Lipschitz constant `0`. -/
+theorem hasLipschitzConst_zero : HasLipschitzConst (0 : F → ℝ) 0 :=
+  ⟨le_rfl, fun _ _ => by simp⟩
+
 end Subadditive
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]

@@ -371,6 +371,63 @@ theorem fderiv_taylorSum_apply (hD : D.IsSymm p) (s w : E) :
 
 end TaylorSum
 
+section TaylorSumTail
+
+variable (D : FormalMultilinearSeries ℝ E F)
+
+/-- The terms of orders `j + 1, …, p` of a Taylor sum:
+`T_p(s) - T_j(s) = ∑_{ℓ=j+1}^p (1/ℓ!) D_ℓ[s]^ℓ` for `j ≤ p`. -/
+theorem taylorSum_sub_taylorSum {j p : ℕ} (hjp : j ≤ p) (s : E) :
+    D.taylorSum p s - D.taylorSum j s =
+      ∑ ℓ ∈ Icc (j + 1) p, (ℓ ! : ℝ)⁻¹ • D ℓ (fun _ => s) := by
+  induction p, hjp using Nat.le_induction with
+  | base => simp
+  | succ p hjp ih =>
+    rw [taylorSum_succ, Finset.sum_Icc_succ_top (by omega), ← ih]
+    abel
+
+/-- `‖T_p(s) - T_j(s)‖ ≤ ∑_{ℓ=j+1}^p ‖D_ℓ‖ ‖s‖^ℓ / ℓ!` for `j ≤ p`. -/
+theorem norm_taylorSum_sub_taylorSum_le {j p : ℕ} (hjp : j ≤ p) (s : E) :
+    ‖D.taylorSum p s - D.taylorSum j s‖ ≤
+      ∑ ℓ ∈ Icc (j + 1) p, ‖D ℓ‖ * ‖s‖ ^ ℓ / ℓ ! := by
+  rw [D.taylorSum_sub_taylorSum hjp]
+  refine (norm_sum_le _ _).trans (sum_le_sum fun ℓ _ => ?_)
+  rw [norm_smul, norm_inv, Real.norm_natCast, inv_mul_eq_div]
+  gcongr
+  exact D.norm_apply_diagonal_le ℓ s
+
+/-- If `‖D_ℓ‖ ≤ K` for `ℓ = j + 1, …, p` and `‖s‖ ≤ δ`, then
+`‖T_p(s) - T_j(s)‖ ≤ K ∑_{ℓ=j+1}^p δ^ℓ / ℓ!`. -/
+theorem norm_taylorSum_sub_taylorSum_le_of_norm_le {j p : ℕ} (hjp : j ≤ p) {K δ : ℝ}
+    (hD : ∀ ℓ ∈ Icc (j + 1) p, ‖D ℓ‖ ≤ K) {s : E} (hs : ‖s‖ ≤ δ) :
+    ‖D.taylorSum p s - D.taylorSum j s‖ ≤ K * ∑ ℓ ∈ Icc (j + 1) p, δ ^ ℓ / ℓ ! := by
+  refine (D.norm_taylorSum_sub_taylorSum_le hjp s).trans ?_
+  rw [mul_sum]
+  refine sum_le_sum fun ℓ hℓ => ?_
+  have hK : 0 ≤ K := (norm_nonneg _).trans (hD ℓ hℓ)
+  rw [← mul_div_assoc]
+  gcongr
+  exact hD ℓ hℓ
+
+/-- `‖T_j(s)‖ ≤ ∑_{i=0}^j ‖D_i‖ ‖s‖^i / i!`. -/
+theorem norm_taylorSum_le (j : ℕ) (s : E) :
+    ‖D.taylorSum j s‖ ≤ ∑ i ∈ range (j + 1), ‖D i‖ * ‖s‖ ^ i / i ! := by
+  rw [taylorSum_def]
+  refine (norm_sum_le _ _).trans (sum_le_sum fun i _ => ?_)
+  rw [norm_smul, norm_inv, Real.norm_natCast, inv_mul_eq_div]
+  gcongr
+  exact D.norm_apply_diagonal_le i s
+
+
+/-- Taylor sums of order `j` only depend on the terms of order `≤ j`. -/
+theorem taylorSum_congr {D D' : FormalMultilinearSeries ℝ E F} {j : ℕ}
+    (h : ∀ i ≤ j, D i = D' i) : D.taylorSum j = D'.taylorSum j := by
+  funext d
+  simp only [taylorSum_def]
+  exact sum_congr rfl fun i hi => by rw [h i (Nat.lt_succ_iff.1 (mem_range.1 hi))]
+
+end TaylorSumTail
+
 section Decrement
 
 variable (D D' : FormalMultilinearSeries ℝ E ℝ) (p : ℕ)
@@ -450,11 +507,10 @@ theorem taylorDecrement_three (s : E) :
 theorem taylorDecrement_eq_sub_sum {j p : ℕ} (hjp : j ≤ p) (s : E) :
     D.taylorDecrement p s =
       D.taylorDecrement j s - ∑ ℓ ∈ Finset.Icc (j + 1) p, ((ℓ ! : ℝ))⁻¹ * D ℓ fun _ => s := by
-  induction p, hjp using Nat.le_induction with
-  | base => simp
-  | succ p hjp ih =>
-    rw [taylorDecrement_succ, ih, Finset.sum_Icc_succ_top (by omega)]
-    ring
+  have h := D.taylorSum_sub_taylorSum hjp s
+  simp only [smul_eq_mul] at h
+  rw [taylorDecrement, taylorDecrement, taylorSum_zero_right, taylorSum_zero_right, ← h]
+  ring
 
 /-- The Taylor decrement is continuous. -/
 theorem continuous_taylorDecrement : Continuous (D.taylorDecrement p) :=

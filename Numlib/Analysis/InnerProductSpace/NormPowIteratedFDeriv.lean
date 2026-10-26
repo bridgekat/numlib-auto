@@ -1059,6 +1059,19 @@ theorem abs_norm_pow_sub_taylorPolynomial_le {r : ℕ} (hr : 1 ≤ r) (s d : E) 
     (mem_univ s) (mem_univ (s + d))
   rwa [Nat.sub_add_cancel hr, div_self (by positivity), one_mul] at h
 
+/-- On the unit ball, `‖∇^ℓ ‖·‖^r (s)‖ ≤ r!` for `ℓ ≤ r` (and `s ≠ 0` or `ℓ < r`). -/
+theorem norm_iteratedFDeriv_norm_pow_le_factorial {r ℓ : ℕ} (hℓ : ℓ ≤ r) {s : E}
+    (hs0 : s ≠ 0 ∨ ℓ < r)
+    (hs : ‖s‖ ≤ 1) : ‖iteratedFDeriv ℝ ℓ (fun s : E ↦ ‖s‖ ^ r) s‖ ≤ r ! := by
+  refine (norm_iteratedFDeriv_norm_pow_le hℓ hs0).trans ?_
+  have h1 : ‖s‖ ^ (r - ℓ) ≤ 1 := pow_le_one₀ (norm_nonneg _) hs
+  have h2 : (r ! : ℝ) / (r - ℓ)! ≤ r ! :=
+    div_le_self (by positivity)
+      (by exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero _))
+  calc (r ! : ℝ) / (r - ℓ)! * ‖s‖ ^ (r - ℓ) ≤ (r ! : ℝ) / (r - ℓ)! * 1 := by gcongr
+    _ ≤ r ! := by rw [mul_one]; exact h2
+
+
 end NaturalPower
 
 /-! ### Counterexample to (B.4.3) for `β < 1`, and the convexity claims of Lemma B.4.1 -/

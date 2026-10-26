@@ -678,6 +678,7 @@ import Numlib.Optimization.Complexity.SlowExampleHighOrder
 import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.Complexity.ZeroChain
 import Numlib.Optimization.Complexity.ZigZagExample
+import Numlib.Optimization.Composite.RegularizedModel
 import Numlib.Optimization.Composite.TaylorModel
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
@@ -690,8 +691,10 @@ import Numlib.Optimization.LineSearch.Backtracking
 import Numlib.Optimization.ModelBased.ARRun
 import Numlib.Optimization.ModelBased.ARpRun
 import Numlib.Optimization.ModelBased.ConvexConstrained
+import Numlib.Optimization.ModelBased.HighOrder.ARqp
 import Numlib.Optimization.ModelBased.HighOrder.MeasureTest
 import Numlib.Optimization.ModelBased.HighOrder.TRq
+import Numlib.Optimization.ModelBased.HighOrderModel
 import Numlib.Optimization.ModelBased.HighOrderStep
 import Numlib.Optimization.ModelBased.InexactRatio
 import Numlib.Optimization.ModelBased.InexactTaylor

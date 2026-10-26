@@ -1,110 +1,45 @@
 namespace = "Optimization"
-desc = '''
-The high-order adaptive-regularization method ARqp (Cartis–Gould–Toint Algorithm 12.2.2) as a
-relational run predicate built on the generic `IsARRun` (`ModelBased/ARRun`), generic in
-* the **model data** used at each iteration, bundled in `ARqpData` (Step-1 decrements of the
-  objective's model at `x_k`, the regularized model `m_k`, its decrements at a trial step, and the
-  predicted decrease used in the ratio): exact ARqp uses `ARqpData.ofTaylor (ftaylorSeries ℝ f (x k))
-  p (σ k)`; inexact derivatives (Ch 13) `ARqpData.ofTaylor (D k) p (σ k)`; the composite method
-  ARqpC (Algorithm 14.1.1) `ARqpData.ofComposite …` (`Composite/RegularizedModel`) with objective
-  `w = f + h ∘ c`;
-* the **feasible set** `X` (Chapter 14 request, §14.2): Step-1 measures over `{d | x k + d ∈ X}`,
-  steps with `x k + s k ∈ X`, model measures over `{d | x k + s k + d ∈ X}`; unconstrained ARqp is
-  `X = univ`, ARqp-SC / ARqpC-SC general closed `X`.
-The one-iteration model lemmas (Lemmas 12.2.7–12.2.12, 13.1.10–13.1.17, 14.1.2–14.1.8) live in
-`ModelBased/HighOrderModel`, `ModelBased/HighOrderStep` and `Composite/RegularizedModel`, stated for
-arbitrary (possibly inexact, possibly composite) data; complexity theorems are assembled in the
-surface from these and the generic AR-run lemmas.
-
-Run conventions and normalizations (reported in `notes/cgt/reports/plan-ch12.md`):
-* Radii are vectors `δ k j`, `δs k j` (`j ∈ [1:q]`); successful iterations inherit `δ_{k+1} = δ_{s_k}`.
-* Termination: Step 1 (`MeasureTestPasses`, i.e. *strict* `>` for going on, as in TRq — the
-  printed `≥` in ARqp's Step 1.3 would prevent detection in the book's own sharpness examples;
-  this is `stop₁` of `IsARRun`) or Step 2 (`m_k(s_k) = m_k(0)`; `stop₂`).
-* Step 2 requires (12.2.27), and either the long-step branch `1 ≤ ‖s_k‖` with arbitrary radii in
-  `(0,1]` (covers the printed (12.2.28) `δ_{s_k} = δ_k` and Algorithm 12.2.3's Step 2.3, which
-  returns the initial radii `1` and tests `‖s_μ‖ ≥ 1`), or (12.2.29) with witnesses `dm k j`.
-* Added (from Algorithm 12.2.3, (12.2.34) with `μ > 0`): `m_k(s_k) = m_k(0)` only if `0` globally
-  minimizes `m_k` on the feasible steps. Without it Step-2 termination is unsound (a long step
-  `s ≠ 0` with `m(s) = m(0)` exists whenever `D 1 ≠ 0`), and Lemma 12.2.10 fails.
-* After an unsuccessful iteration the book skips Step 1; we carry `x`, `δ` and the Step-1
-  witnesses `d` over unchanged, so the test outcome is unchanged.
-(Planned by plan-ch12; data/feasible-set generalization by the consolidation.)
-'''
 
 [[node]]
 id = "ARqpParams"
-kind = "def"
-desc = '''
-`structure ARqpParams extends ARParams` (Algorithm 12.2.2, Step 0; also 14.1.1): the AR constants
-plus `θ ς : ℝ` with `0 < θ < 1`, `0 < ς ≤ 1`. (The complexity analysis additionally needs `θ < ς`,
-imposed where used; for `ς = 1` this is the printed `θ < 1`.)
-'''
-deps = ["ARParams"]
 source = "Cartis–Gould–Toint, Algorithm 12.2.2 (Step 0)"
 
 [[node]]
 id = "ARqpData"
-kind = "def"
-desc = '''
-`structure ARqpData (E : Type*)` — the model data of one high-order AR iteration: fields
-`dec : ℕ → E → ℝ` (order-`j` decrement `ΔT_{·,j}(x_k, d)` of the objective's (generalized) Taylor
-model at the current iterate, used in Step 1), `model : E → ℝ` (the regularized model `m_k`),
-`modelDec : ℕ → E → E → ℝ` (order-`j` decrement `ΔT_{m_k,j}(s, d)` of the model at a trial step `s`,
-used in Step 2), `pred : E → ℝ` (predicted decrease `ΔT_{·,p}(x_k, s)` in the ratio).
-Taylor instance (part of node): `ARqpData.ofTaylor (D : FormalMultilinearSeries ℝ E ℝ) (p : ℕ)
-(σ : ℝ) := ⟨fun j => D.taylorDecrement j, regularizedModel D p σ, fun j s =>
-(ftaylorSeries ℝ (regularizedModel D p σ) s).taylorDecrement j, D.taylorDecrement p⟩`
-((12.2.23), (12.2.26)–(12.2.30)). Composite instance: `ARqpData.ofComposite` in
-`Composite/RegularizedModel`.
-'''
-deps = ["regularizedModel", "FormalMultilinearSeries.taylorDecrement"]
 source = "Cartis–Gould–Toint, (12.2.23), (14.1.11)"
 
 [[node]]
+id = "ARqpData.ofTaylor"
+source = "Cartis–Gould–Toint, (12.2.23), (12.2.26)–(12.2.30)"
+
+[[node]]
+id = "ARqpData.ofComposite"
+source = "Cartis–Gould–Toint, (14.1.10)–(14.1.15)"
+
+[[node]]
+id = "ARqpStep"
+source = "Cartis–Gould–Toint, (12.2.27)–(12.2.29), (14.1.12)–(14.1.13)"
+
+[[node]]
 id = "IsARqpRun"
-kind = "def"
-desc = '''
-`structure IsARqpRun (w : E → ℝ) (X : Set E) (P : ARqpParams) (q : ℕ) (ε δ₀ : ℕ → ℝ)
-(M : ℕ → ARqpData E) (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) : Prop`.
-Writing `Xk k := {e | x k + e ∈ X}`, `Xs k := {e | x k + s k + e ∈ X}`, `m k := (M k).model`,
-`stop₁ k := MeasureTestPasses (M k).dec q P.ς ε (δ k) (d k)`, `stop₂ k := m k (s k) = m k 0`,
-`stop k := stop₁ k ∨ stop₂ k`, `ρ k := reductionRatio w (x k) (s k) ((M k).pred (s k))`,
-`succ k :↔ P.η₁ ≤ ρ k`, and the Step-2 condition
-`step k := x k + s k ∈ X ∧ m k (s k) ≤ m k 0` (12.2.27) `∧ (m k (s k) = m k 0 → IsMinOn (m k) (Xk k)
-0) ∧ (∀ j ∈ Icc 1 q, 0 < δs k j ∧ δs k j ≤ 1) ∧ (1 ≤ ‖s k‖ ∨ ∀ j ∈ Icc 1 q, IsApproxMeasureStep
-((M k).modelDec j (s k)) (δs k j) (Xs k) P.ς (dm k j) ∧ (M k).modelDec j (s k) (dm k j) ≤
-P.ς * P.θ * ε j * δs k j ^ j / j!)` ((12.2.28)/(12.2.29), (14.1.12)–(14.1.13)), the fields are:
-* `toIsARRun : IsARRun P.toARParams stop₁ step stop₂ ρ x s σ` (Steps 2–4);
-* `mem_zero : x 0 ∈ X`, `delta_zero : δ 0 = δ₀`;
-* `witness : ∀ k, (∀ i < k, ¬ stop i) → ∀ j ∈ Icc 1 q, IsApproxMeasureStep ((M k).dec j) (δ k j)
-  (Xk k) P.ς (d k j)` (Step 1, (12.2.26), (14.1.10); also at the terminating iteration);
-* `radii : UntilHit stop fun k => (succ k → δ (k+1) = δs k) ∧ (¬ succ k → δ (k+1) = δ k ∧
-  d (k+1) = d k)`.
-Iterates stay in `X` (part of node). Exact ARqp (`algorithm_12_2_2`): `w = f`, `X = univ`,
-`M k = ARqpData.ofTaylor (ftaylorSeries ℝ f (x k)) p (σ k)`; ARqp-SC: general `X`; ARqpC(-SC)
-(`algorithm_14_1_1`): `w = f + h ∘ c`, `M k = ARqpData.ofComposite …`, plus the detailed-Step-2
-output condition of Algorithm 14.1.2. Prototype elaborates (`drafts/cgt/cons-a/Runs.lean`).
-'''
-deps = ["ARqpParams", "ARqpData", "IsARRun", "IsApproxMeasureStep", "MeasureTestPasses", "UntilHit", "reductionRatio"]
 source = "Cartis–Gould–Toint, Algorithm 12.2.2"
 
 [[node]]
+id = "IsARqpRun.mem"
+source = "Cartis–Gould–Toint, Algorithm 12.2.2 (feasible iterates, §14.2)"
+
+[[node]]
+id = "IsARqpRun.model_lt"
+source = "Cartis–Gould–Toint, (12.2.27) and Step 2 of Algorithm 12.2.2"
+
+[[node]]
+id = "IsARqpRun.delta_mem"
+source = "Cartis–Gould–Toint, Algorithm 12.2.2 (radii in (0, 1])"
+
+[[node]]
+id = "exists_arqpStep_ofTaylor"
+source = "Cartis–Gould–Toint, Lemma 12.2.9"
+
+[[node]]
 id = "exists_isARqpRun"
-kind = "theorem"
-desc = '''
-Existence of ARqp runs (exact data, `X = univ`). `[FiniteDimensional ℝ E]`, `f` `ContDiff ℝ p`,
-`1 ≤ q ≤ p`, `P`, `ε j ∈ (0,1]`, `δ₀ j ∈ (0,1]`, `x₀`: there is a run of
-`IsARqpRun f univ P q ε δ₀ (fun k => ARqpData.ofTaylor (ftaylorSeries ℝ f (x k)) p (σ k)) …` with
-`x 0 = x₀`. If moreover `‖iteratedFDeriv ℝ i f y‖ ≤ L` for all `y` and `i ∈ Icc 2 p` (consequence of
-f.D1pL, (12.2.24)), the run can be chosen with the radii property (12.2.50): for every `k` before
-termination with `‖s k‖ < 1`, `δs k j = 1` (`j ≤ min q 2`) and
-`min 1 (P.ς * P.θ * ε j / (4 * (3 * L + σ k))) ≤ δs k j` (`j ∈ Icc 3 q`). Construction:
-`exists_run_of_forall_exists_of_invariant` (invariant `σ_k ≥ σmin`, `σ_k > 0`), Step-1 witnesses
-by `exists_isApproxMeasureStep`, Step 2 by `exists_highOrderStep` (a global model minimizer; any
-data has `‖D i‖ ≤ L` for some `L`, so existence needs no bound), `σ_{k+1}` any point of the
-`ARUpdate` interval. For general closed `X` and composite data, steps come from
-`exists_isDetailedStepOutput` (Lemma 14.1.3; see the Chapter 14 surface `exists_isARqpCRun`).
-'''
-deps = ["IsARqpRun", "exists_highOrderStep", "exists_isApproxMeasureStep", "exists_run_of_forall_exists_of_invariant", "ContDiffAt.isSymm_ftaylorSeries"]
 source = "Cartis–Gould–Toint, Lemmas 12.2.9–12.2.10 (the conceptual ARqp algorithm is well defined)"

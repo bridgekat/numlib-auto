@@ -10,7 +10,9 @@ Lemma A.10.1 and (A.34)–(A.35)). They all follow from `∑_{i < n} δ^i/i! ≤
 * `sum_pow_div_factorial_le_one_add_two_mul`: `∑_{ℓ=j}^p δ^{ℓ-j}/(ℓ-j)! ≤ 1 + 2δ`;
 * `sum_pow_div_factorial_Icc_succ_le`: `∑_{ℓ=j+1}^{p+1} δ^ℓ/ℓ! ≤ 2 δ^{j+1}/j!`;
 * `sum_pow_div_factorial_le_two_mul`: `∑_{ℓ=1}^j δ^ℓ/ℓ! ≤ 2δ` for `δ ∈ [0, 1]` (A.34);
-* `sum_pow_div_factorial_le_two_mul_pow`: `∑_{ℓ=1}^j δ^ℓ/ℓ! ≤ 2δ^j` for `δ ≥ 1` (A.35).
+* `sum_pow_div_factorial_le_two_mul_pow`: `∑_{ℓ=1}^j δ^ℓ/ℓ! ≤ 2δ^j` for `δ ≥ 1` (A.35);
+* `half_mul_pow_div_factorial_le`: the closing step of the model-decrease lemmas
+  (Lemmas 12.2.8, 13.1.10, 14.1.2).
 -/
 
 open Finset
@@ -92,3 +94,18 @@ theorem sum_pow_div_factorial_le_two_mul_pow {δ : ℝ} (h1 : 1 ≤ δ) (j : ℕ
         gcongr
         simpa using sum_pow_div_factorial_le_two_mul zero_le_one le_rfl j
     _ = 2 * δ ^ j := mul_comm _ _
+
+/-- **Half of a decrement survives a perturbation of order `δ^{j+1}`** (the closing step of
+[cartis2022evaluation], Lemmas 12.2.8, 13.1.10 and 14.1.2): if `δ ≥ 0`, `4 K δ ≤ α`,
+`a ≥ α δ^j/j!` and `b ≥ a - 2 K δ^{j+1}/j!`, then `b ≥ (α/2) δ^j/j!`. -/
+theorem half_mul_pow_div_factorial_le {K α δ a b : ℝ} {j : ℕ} (hδ : 0 ≤ δ)
+    (hKα : 4 * K * δ ≤ α) (ha : α * δ ^ j / j ! ≤ a)
+    (hb : a - 2 * K * δ ^ (j + 1) / j ! ≤ b) : α / 2 * δ ^ j / j ! ≤ b := by
+  have hf : (0 : ℝ) < (j ! : ℝ) := by positivity
+  have hpow : 0 ≤ δ ^ j := by positivity
+  have key : 2 * K * δ ^ (j + 1) / (j ! : ℝ) ≤ α / 2 * δ ^ j / j ! := by
+    rw [div_le_div_iff_of_pos_right hf, pow_succ]
+    nlinarith
+  have e : α / 2 * δ ^ j / (j ! : ℝ) = α * δ ^ j / (j ! : ℝ) - α / 2 * δ ^ j / (j ! : ℝ) := by
+    ring
+  linarith

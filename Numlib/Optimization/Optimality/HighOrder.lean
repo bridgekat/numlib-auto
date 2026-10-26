@@ -1,6 +1,5 @@
 import Numlib.Optimization.Optimality.Approximate
 import Numlib.Optimization.Optimality.CurveConditions
-import Numlib.Analysis.SpecialFunctions.FactorialSum
 
 /-!
 # High-order approximate optimality through the Taylor-decrement measure
@@ -22,8 +21,7 @@ optimality conditions of low order and to local minimizers.
 * `taylorMeasure_eq_zero_of_isLocalMin`, `exists_taylorMeasure_le_of_isLocalMin`,
   `tendsto_taylorMeasure_div_pow_of_isLocalMin`: local minimizers (Theorem 12.1.4);
 * `isStrictLocalMin_taylorPolynomial_succ_of_growth`,
-  `isStrictLocalMin_of_taylorPolynomial_growth`: corrected forms of Theorem 12.1.5;
-* `sub_ge_half_of_taylorDecrement_ge`: Taylor decrease implies function decrease (Lemma 12.2.8).
+  `isStrictLocalMin_of_taylorPolynomial_growth`: corrected forms of Theorem 12.1.5.
 
 ## Implementation notes
 
@@ -507,53 +505,5 @@ theorem isStrictLocalMin_of_taylorPolynomial_growth {f : E → ℝ} {x : E} {j :
   linarith
 
 end Sufficient
-
-/-! ### Taylor decrease implies function decrease -/
-
-/-- **Taylor decrease implies function decrease** (core of [cartis2022evaluation], Lemma 12.2.8,
-for any function `g`, e.g. the regularized model). Let `j ≤ p`, `0 < δ ≤ 1`, `‖d‖ ≤ δ`, `B ≥ 0`,
-with `|∇^ℓ g(s)[d]^ℓ| ≤ B ‖d‖^ℓ` for `ℓ ∈ [j+1, p]` and
-`|g(s + d) - T_{g,p}(s, d)| ≤ B ‖d‖^{p+1}/(p+1)!`. If `4 B δ ≤ α` and
-`ΔT_{g,j}(s, d) ≥ α δ^j/j!`, then `g(s) - g(s + d) ≥ (α/2) δ^j/j!`. -/
-theorem sub_ge_half_of_taylorDecrement_ge {g : E → ℝ} {j p : ℕ} (hjp : j ≤ p) {s d : E}
-    {δ B α : ℝ} (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) (hd : ‖d‖ ≤ δ) (hB : 0 ≤ B)
-    (hder : ∀ ℓ ∈ Icc (j + 1) p, |iteratedFDeriv ℝ ℓ g s (fun _ => d)| ≤ B * ‖d‖ ^ ℓ)
-    (hrem : |g (s + d) - taylorPolynomial g p s d| ≤ B * ‖d‖ ^ (p + 1) / (p + 1)!)
-    (hαB : 4 * B * δ ≤ α)
-    (hdec : α * δ ^ j / j ! ≤ (ftaylorSeries ℝ g s).taylorDecrement j d) :
-    α / 2 * δ ^ j / j ! ≤ g s - g (s + d) := by
-  have hTp : (ftaylorSeries ℝ g s).taylorDecrement p d = g s - taylorPolynomial g p s d := by
-    rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-      taylorPolynomial_zero_right]
-  -- the terms of order `j+1, …, p` and the remainder
-  have hsum : ∑ ℓ ∈ Icc (j + 1) p, ((ℓ ! : ℝ))⁻¹ * (ftaylorSeries ℝ g s ℓ fun _ => d) ≤
-      ∑ ℓ ∈ Icc (j + 1) p, B * δ ^ ℓ / ℓ ! := by
-    refine sum_le_sum fun ℓ hℓ => ?_
-    have h : (ftaylorSeries ℝ g s ℓ fun _ => d) ≤ B * ‖d‖ ^ ℓ := (le_abs_self _).trans (hder ℓ hℓ)
-    have hl : B * ‖d‖ ^ ℓ ≤ B * δ ^ ℓ := by gcongr
-    rw [div_eq_inv_mul]
-    exact mul_le_mul_of_nonneg_left (h.trans hl) (by positivity)
-  have hrem' : B * ‖d‖ ^ (p + 1) / (p + 1)! ≤ B * δ ^ (p + 1) / (p + 1)! := by gcongr
-  have htot : ∑ ℓ ∈ Icc (j + 1) (p + 1), B * δ ^ ℓ / ℓ ! ≤ 2 * B * δ ^ (j + 1) / j ! := by
-    have := sum_pow_div_factorial_Icc_succ_le hδ0.le hδ1 j p
-    calc ∑ ℓ ∈ Icc (j + 1) (p + 1), B * δ ^ ℓ / ℓ !
-          = B * ∑ ℓ ∈ Icc (j + 1) (p + 1), δ ^ ℓ / ℓ ! := by
-          rw [mul_sum]; simp_rw [mul_div_assoc]
-      _ ≤ B * (2 * δ ^ (j + 1) / j !) := by gcongr
-      _ = 2 * B * δ ^ (j + 1) / j ! := by ring
-  rw [sum_Icc_succ_top (by omega)] at htot
-  have hp := (ftaylorSeries ℝ g s).taylorDecrement_eq_sub_sum hjp d
-  have hr := (abs_le.1 hrem).2
-  have hf : (0 : ℝ) < (j ! : ℝ) := by positivity
-  have key : 2 * B * δ ^ (j + 1) / j ! ≤ α / 2 * δ ^ j / j ! := by
-    rw [div_le_div_iff_of_pos_right hf, pow_succ]
-    have : 0 ≤ δ ^ j := by positivity
-    nlinarith
-  have : g s - g (s + d) =
-      (ftaylorSeries ℝ g s).taylorDecrement p d + (taylorPolynomial g p s d - g (s + d)) := by
-    rw [hTp]; ring
-  have e : α / 2 * δ ^ j / j ! = α * δ ^ j / j ! / 2 := by ring
-  rw [this, hp]
-  linarith
 
 end Optimization
