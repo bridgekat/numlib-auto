@@ -666,6 +666,7 @@ import Numlib.Optimization.Complexity.CarmonChain
 import Numlib.Optimization.Complexity.DynamicAccuracy
 import Numlib.Optimization.Complexity.Existence
 import Numlib.Optimization.Complexity.GapRecurrence
+import Numlib.Optimization.Complexity.MeasureDominated
 import Numlib.Optimization.Complexity.OracleMethod
 import Numlib.Optimization.Complexity.ParameterCount
 import Numlib.Optimization.Complexity.ResistingOracle
@@ -686,6 +687,7 @@ import Numlib.Optimization.LineSearch
 import Numlib.Optimization.LineSearch.Backtracking
 import Numlib.Optimization.ModelBased.ARRun
 import Numlib.Optimization.ModelBased.ARpRun
+import Numlib.Optimization.ModelBased.ConvexConstrained
 import Numlib.Optimization.ModelBased.HighOrder.MeasureTest
 import Numlib.Optimization.ModelBased.HighOrderStep
 import Numlib.Optimization.ModelBased.InexactRatio
@@ -705,6 +707,7 @@ import Numlib.Optimization.Optimality.HighOrder
 import Numlib.Optimization.Optimality.TaylorStability
 import Numlib.Optimization.Optimality.Unconstrained
 import Numlib.Optimization.QuasiNewton
+import Numlib.Optimization.ResidualPower
 import Numlib.Optimization.Subproblem.Bracketing
 import Numlib.Optimization.Subproblem.InverseIteration
 import Numlib.Optimization.Subproblem.Krylov

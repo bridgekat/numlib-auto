@@ -25,6 +25,14 @@ id = "exists_isARpRun"
 source = "Cartis–Gould–Toint, Algorithm 4.1.1 (well-posedness)"
 
 [[node]]
+id = "IsARpRun.eq_of_not_succ"
+source = "Cartis–Gould–Toint, Algorithm 4.1.1, Step 3"
+
+[[node]]
+id = "IsARpRun.density"
+source = "Cartis–Gould–Toint, Lemma 2.4.1 with Lemma 4.1.2; (5.3.9)"
+
+[[node]]
 id = "IsARpRun.step_lower_bounds"
 source = "Cartis–Gould–Toint, Lemma 4.1.3, (5.1.18)"
 
