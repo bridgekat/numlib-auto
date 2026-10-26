@@ -1,0 +1,33 @@
+namespace = "CartisGouldToint.Chapter14"
+
+[[node]]
+id = "theorem_14_2_4_sharp"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (\"the orders … are sharp\")"
+
+[[node]]
+id = "theorem_14_2_4_sharp_arqp"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqp-SC row for q > 2, via Theorem 12.2.17)"
+
+[[node]]
+id = "theorem_14_2_4_sharp_trqida"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, TRqIDA-SC row); Theorem 12.2.6"
+
+[[node]]
+id = "theorem_14_2_4_sharp_trqeda"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, TRqEDA-SC row); Theorem 12.2.6"
+
+[[node]]
+id = "theorem_14_2_4_sharp_arqpida"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row, q ≤ 2); Theorem 12.2.15, Algorithm 13.1.2"
+
+[[node]]
+id = "theorem_14_2_4_sharp_arqpeda"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpEDA-SC row, q ≤ 2); Theorem 12.2.15, Algorithm 13.3.2"
+
+[[node]]
+id = "theorem_14_2_4_sharp_arqpeda_otherwise"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpEDA-SC row, \"otherwise\" order); Theorem 12.2.17, Algorithm 13.3.2"
+
+[[node]]
+id = "theorem_14_2_4_sharp_arqpida_otherwise"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row, \"otherwise\" order, q = p ≥ 3); Theorem 12.2.15, Algorithm 13.1.2"

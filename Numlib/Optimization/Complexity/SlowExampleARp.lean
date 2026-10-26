@@ -29,6 +29,12 @@ gives ARp runs with `σ_k = σ₀`, exact model minimization and `ρ_k = 1`.
 * `Optimization.iteratedDeriv_three_negMonomialRegModel_mem`,
   `Optimization.iteratedDeriv_two_negMonomialRegModel_mem`: the derivatives of the model at `t*`
   used by the third-order step condition (4.1.13) and the sets (4.1.14).
+* `Optimization.ridge_const_mul_slow_bounds`: scaled ridges of the slow interpolants satisfy the
+  Lipschitz and lower bounds of the function classes, with constants independent of `ε`.
+* `Optimization.taylorDecrement_regularizedModel_ridge_spike`: the model decrements at a spike
+  jet along the ridge are those of the one-dimensional monomial model.
+* `Optimization.taylorDecrement_regularizedModel_ridge_linear_nonpos`: at a gradient spike the
+  model decrements at its minimizer are nonpositive on small balls (Example 12.1.3).
 * `Optimization.isARpStep_of_isMinOn`: global model minimizers are admissible ARp steps.
 * `Optimization.arp_ridge_run`: the ARp run on spike data.
 -/
@@ -165,6 +171,45 @@ section Ridge
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {e : E}
 
+/-- **Bounds for scaled ridges of slow-example interpolants**: if `G` is `C^p` with
+`L`-Lipschitz `p`-th derivative and `|G^{(j)}| ≤ B` for `j ≤ p` (the output of the interpolation
+lemmas of `Optimization.SlowExampleHighOrder`), then for `λ ∈ (0, 1]` and `‖e‖ ≤ 1` the ridge
+`f = λ G(⟪e, ·⟫)` is `C^p`, bounded below by `-B`, and its derivatives of orders `0, …, p` are
+`max(1, L, B)`-Lipschitz. -/
+theorem ridge_const_mul_slow_bounds {G : ℝ → ℝ} {p : ℕ} (hG : ContDiff ℝ p G) {L B lam : ℝ}
+    (hB : 0 ≤ B)
+    (hGL : ∀ s t, |iteratedDeriv p G s - iteratedDeriv p G t| ≤ L * |s - t|)
+    (hGB : ∀ j ≤ p, ∀ t, |iteratedDeriv j G t| ≤ B) (hlam : 0 < lam) (hlam1 : lam ≤ 1)
+    (he : ‖e‖ ≤ 1) :
+    ContDiff ℝ p (ridge (fun t => lam * G t) e) ∧ (∀ y, -B ≤ ridge (fun t => lam * G t) e y) ∧
+      ∀ j ≤ p, IteratedFDerivLipschitzOn (ridge (fun t => lam * G t) e) j (max 1 (max L B))
+        univ := by
+  have hgc : ContDiff ℝ p (fun t => lam * G t) := contDiff_const.mul hG
+  have hgj : ∀ j t, iteratedDeriv j (fun t => lam * G t) t = lam * iteratedDeriv j G t :=
+    fun j t => iteratedDeriv_const_mul_field lam G
+  have hM0 : 0 ≤ max 1 (max L B) := zero_le_one.trans (le_max_left _ _)
+  have hlip : ∀ j ≤ p, ∀ s t, |iteratedDeriv j (fun t => lam * G t) s -
+      iteratedDeriv j (fun t => lam * G t) t| ≤ max 1 (max L B) * |s - t| := by
+    intro j hj s t
+    rcases hj.lt_or_eq with hjp | rfl
+    · refine (abs_iteratedDeriv_sub_le hgc hjp (B := B) (fun t => ?_) s t).trans
+        (mul_le_mul_of_nonneg_right ((le_max_right _ _).trans (le_max_right _ _)) (abs_nonneg _))
+      rw [hgj, abs_mul, abs_of_pos hlam]
+      exact (mul_le_of_le_one_left (abs_nonneg _) hlam1).trans (hGB (j + 1) hjp t)
+    · rw [hgj, hgj, ← mul_sub, abs_mul, abs_of_pos hlam]
+      calc lam * |iteratedDeriv j G s - iteratedDeriv j G t| ≤ 1 * (L * |s - t|) :=
+            mul_le_mul hlam1 (hGL s t) (abs_nonneg _) zero_le_one
+        _ ≤ max 1 (max L B) * |s - t| := by
+            rw [one_mul]
+            exact mul_le_mul_of_nonneg_right ((le_max_left _ _).trans (le_max_right _ _))
+              (abs_nonneg _)
+  refine ⟨contDiff_ridge hgc, fun y => ?_, fun j hj =>
+    iteratedFDerivLipschitzOn_ridge hgc (by exact_mod_cast hj) he hM0 (hlip j hj)⟩
+  have h0 := hGB 0 (Nat.zero_le p) ⟪e, y⟫
+  rw [iteratedDeriv_zero] at h0
+  rw [ridge_apply]
+  nlinarith [(abs_le.1 h0).1, (abs_le.1 h0).2]
+
 /-- The Taylor polynomial of a ridge function:
 `T_p(x, s) = ∑_{i ≤ p} G^{(i)}(⟪e, x⟫) ⟪e, s⟫^i / i!`. -/
 theorem taylorPolynomial_ridge {G : ℝ → ℝ} {p : ℕ} (hG : ContDiff ℝ p G) (e x s : E) :
@@ -244,6 +289,63 @@ theorem iteratedFDeriv_regularizedModel_ridge_spike (hspan : ∀ s : E, ‖s‖ 
   rw [regularizedModel_ridge_spike hspan hG hq hqp hd, iteratedFDeriv_ridge_apply_diag
     (contDiff_const.add (contDiff_negMonomialRegModel p q σ α)) (by exact_mod_cast hjp),
     iteratedDeriv_const_add (by omega)]
+
+/-- The Taylor decrements of the model at a spike jet, at a point `t e` along the ridge, are the
+one-dimensional Taylor decrements of `negMonomialRegModel p q σ α` at `t` along `⟪e, d⟫`
+(orders `ℓ ≤ p`). -/
+theorem taylorDecrement_regularizedModel_ridge_spike (he : ‖e‖ = 1)
+    (hspan : ∀ s : E, ‖s‖ = |⟪e, s⟫|) (hG : ContDiff ℝ p G) (hq : 1 ≤ q) (hqp : q ≤ p) {x : E}
+    {α σ : ℝ} (hd : IsSpikeJetOf p G q ⟪e, x⟫ α) {ℓ : ℕ} (hℓp : ℓ ≤ p) (t : ℝ) (d : E) :
+    (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ (ridge G e) x) p σ) (t • e)).taylorDecrement
+        ℓ d = (ftaylorSeries ℝ (negMonomialRegModel p q σ α) t).taylorDecrement ℓ ⟪e, d⟫ := by
+  have hee : ⟪e, t • e⟫ = t := by
+    rw [inner_smul_right, real_inner_self_eq_norm_sq, he]; ring
+  rw [FormalMultilinearSeries.taylorDecrement_eq, FormalMultilinearSeries.taylorDecrement_eq]
+  congr 1
+  refine Finset.sum_congr rfl fun i hi => ?_
+  obtain ⟨hi1, hiℓ⟩ := Finset.mem_Icc.1 hi
+  rw [ftaylorSeries_real_apply]
+  change (i ! : ℝ)⁻¹ * iteratedFDeriv ℝ i (regularizedModel (ftaylorSeries ℝ (ridge G e) x) p σ)
+    _ (fun _ => d) = _
+  rw [iteratedFDeriv_regularizedModel_ridge_spike hspan hG hq hqp hd σ hi1 (hiℓ.trans hℓp), hee]
+
+/-- **The model at a gradient spike is approximately critical at its minimizer** (Example 12.1.3
+along a ridge): if `G'(⟪e, x⟫) = -β < 0` and the derivatives of orders `2, …, p` vanish, then the
+Taylor decrements of order `ℓ ∈ [1, p]` of the model `m_x` of `ridge G e` (weight `σ > 0`) at
+the point `t* e`, `t* = (β p!/σ)^{1/p}` (the global minimizer of `m_x`,
+`Optimization.isMinOn_neg_monomial_add_regularization`), are
+nonpositive on the ball of radius `δ`, provided `ℓ ≤ 2` or `(p - 1) δ ≤ 3 t*`
+(`Optimization.taylorMeasure_linearRegModel_eq_zero`). -/
+theorem taylorDecrement_regularizedModel_ridge_linear_nonpos (he : ‖e‖ = 1)
+    (hspan : ∀ s : E, ‖s‖ = |⟪e, s⟫|) (hp : 1 ≤ p) (hG : ContDiff ℝ p G) {x : E} {β σ δ : ℝ}
+    (hβ : 0 < β) (hσ : 0 < σ) (hd : IsSpikeJetOf p G 1 ⟪e, x⟫ β) {ℓ : ℕ} (hℓ : ℓ ∈ Finset.Icc 1 p)
+    (hrad : ℓ ≤ 2 ∨ ((p : ℝ) - 1) * δ ≤ 3 * (β * p ! / σ) ^ (1 / (p : ℝ)))
+    {d : E} (hdδ : ‖d‖ ≤ δ) :
+    (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ (ridge G e) x) p σ)
+      (((β * p ! / σ) ^ (1 / (p : ℝ))) • e)).taylorDecrement ℓ d ≤ 0 := by
+  have hee : ∀ c : ℝ, ⟪e, c • e⟫ = c := fun c => by
+    rw [inner_smul_right, real_inner_self_eq_norm_sq, he]; ring
+  have hm : (fun t : ℝ => -β * t + σ * |t| ^ (p + 1) / (p + 1)!) =
+      negMonomialRegModel p 1 σ β := by
+    funext t; simp [negMonomialRegModel]
+  have h0 := taylorMeasure_linearRegModel_eq_zero (Finset.mem_Icc.1 hℓ) hβ hσ hrad
+  rw [hm] at h0
+  have hle := taylorDecrement_le_taylorMeasure
+    (ftaylorSeries ℝ (negMonomialRegModel p 1 σ β) ((β * p ! / σ) ^ (1 / (p : ℝ)))) ℓ
+    (S := univ) (δ := δ) (d := ⟪e, d⟫)
+    ⟨mem_closedBall_zero_iff.2 (show ‖⟪e, d⟫‖ ≤ δ by
+      rw [Real.norm_eq_abs, ← hspan]; exact hdδ), mem_univ _⟩
+  rw [h0] at hle
+  refine le_trans (le_of_eq ?_) hle
+  rw [FormalMultilinearSeries.taylorDecrement_eq, FormalMultilinearSeries.taylorDecrement_eq]
+  congr 1
+  refine Finset.sum_congr rfl fun i hi => ?_
+  obtain ⟨hi1, hip⟩ := Finset.mem_Icc.1 hi
+  rw [ftaylorSeries_real_apply]
+  change (i ! : ℝ)⁻¹ * iteratedFDeriv ℝ i (regularizedModel (ftaylorSeries ℝ (ridge G e) x) p σ)
+    _ (fun _ => d) = _
+  rw [iteratedFDeriv_regularizedModel_ridge_spike hspan hG le_rfl hp hd σ hi1
+    (hip.trans (Finset.mem_Icc.1 hℓ).2), hee]
 
 /-- **Global model minimizers are admissible steps** ([cartis2022evaluation], Step 2 of
 Algorithm 4.1.1): a global minimizer `s` of the model (4.1.2) with `m(s) < m(0)` satisfies (4.1.10),

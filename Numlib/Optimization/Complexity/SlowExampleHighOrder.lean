@@ -979,6 +979,98 @@ theorem taylorMeasure_linearRegModel_eq_zero {p j : ℕ} (hj : j ∈ Icc 1 p) {�
     exact mul_nonneg hA hkey
 
 
+/-- **The top-order monomial model is approximately critical at its minimizer**
+([cartis2022evaluation], (12.2.69)–(12.2.70) with `q = p`). For `p ≥ 1`, `a > 0` and
+`m t = -a t^p/p! + p |t|^{p+1}/(p+1)!` (weight `σ = p!/(p-1)! = p`), whose global minimizer is
+`t* = a`, the Taylor measures of `m` at `a` of every order `j ∈ [1, p]` vanish for radii `δ` with
+`(p - 1) δ ≤ a`: the derivatives are `m^{(i)}(a) = (i-1) a^{p+1-i}/(p+1-i)!`, and the terms of
+orders `2k, 2k+1` of the decrease have a nonnegative sum on `[-δ, δ]`. -/
+theorem taylorMeasure_topMonomialRegModel_eq_zero {p j : ℕ} (hj : j ∈ Icc 1 p) {a δ : ℝ}
+    (ha : 0 < a) (hδ : ((p : ℝ) - 1) * δ ≤ a) :
+    taylorMeasure (ftaylorSeries ℝ (negMonomialRegModel p p p a) a) j δ univ = 0 := by
+  obtain ⟨hj1, hjp⟩ := hj
+  have hp : 1 ≤ p := hj1.trans hjp
+  have hpσ : (0 : ℝ) < p := by exact_mod_cast hp
+  obtain ⟨hmin, -, hder⟩ :=
+    isMinOn_neg_monomial_add_regularization (p := p) (q := p) hp le_rfl hpσ ha
+  have hts : (a / ((p : ℝ) * (p - 1).factorial / p.factorial)) ^ (1 / ((p - p + 1 : ℕ) : ℝ)) =
+      a := by
+    have hf : (p : ℝ) * (p - 1).factorial = p.factorial := by
+      obtain ⟨n, rfl⟩ : ∃ n, p = n + 1 := ⟨p - 1, by omega⟩
+      push_cast [Nat.factorial_succ]; simp
+    rw [Nat.sub_self, zero_add, Nat.cast_one, div_one, Real.rpow_one, hf,
+      div_self (by positivity), div_one]
+  rw [hts] at hmin hder
+  set m := negMonomialRegModel p p p a
+  have hd1 : iteratedDeriv 1 m a = 0 := by
+    rw [iteratedDeriv_one]
+    exact (hmin.isLocalMin Filter.univ_mem).deriv_eq_zero
+  have hdi : ∀ N i, 2 ≤ i → p = N + i →
+      iteratedDeriv i m a = (i - 1 : ℝ) * a ^ (N + 1) / (N + 1).factorial := fun N i hi2 hpi => by
+    rw [hder, ite_eq_left (by omega), ite_eq_left (by omega),
+      show p - i = N by omega, show p + 1 - i = N + 1 by omega, hpi, Nat.factorial_succ N]
+    push_cast
+    have hN : (0 : ℝ) < N.factorial := by positivity
+    rw [pow_succ]
+    field_simp
+    ring
+  rcases lt_or_ge δ 0 with hneg | hδ0
+  · rw [taylorMeasure_eq_sSup, Metric.closedBall_eq_empty.2 hneg, empty_inter, image_empty,
+      Real.sSup_empty]
+  refine le_antisymm (decrementMeasure_le ⟨0, Metric.mem_closedBall_self hδ0, mem_univ _⟩
+    fun d hd => ?_) (taylorMeasure_nonneg _ _ (mem_univ _) hδ0)
+  have hdδ : |d| ≤ δ := by simpa [Real.norm_eq_abs] using hd.1
+  rw [FormalMultilinearSeries.taylorDecrement_eq, neg_nonpos]
+  set u : ℕ → ℝ := fun i => (i.factorial : ℝ)⁻¹ * (d ^ i * iteratedDeriv i m a) with hu
+  have hsum : ∀ i, (i.factorial : ℝ)⁻¹ * ftaylorSeries ℝ m a i (fun _ => d) = u i := fun i => by
+    simp only [hu, ftaylorSeries, iteratedFDeriv_apply_eq_iteratedDeriv_mul_prod,
+      Finset.prod_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
+  simp only [hsum]
+  refine sum_Icc_one_nonneg_of_pairs (by simp [hu, hd1]) j (fun i hi hi2 hev => ?_)
+    (fun k hk1 hk => ?_)
+  · obtain ⟨N, hN⟩ : ∃ N, p = N + i := ⟨p - i, by omega⟩
+    simp only [hu, hdi N i hi2 hN]
+    have := hev.pow_nonneg d
+    have : (0 : ℝ) ≤ (i : ℝ) - 1 := by
+      have : (2 : ℝ) ≤ i := by exact_mod_cast hi2
+      linarith
+    positivity
+  · obtain ⟨N, hN⟩ : ∃ N, p = N + 2 * k + 1 := ⟨p - 2 * k - 1, by omega⟩
+    simp only [hu, hdi (N + 1) (2 * k) (by omega) (by omega),
+      hdi N (2 * k + 1) (by omega) (by omega), Nat.factorial_succ (2 * k),
+      Nat.factorial_succ (N + 1)]
+    have hdδ' : -δ ≤ d := (abs_le.1 hdδ).1
+    have hK : (1 : ℝ) ≤ k := by exact_mod_cast hk1
+    have hN0 : (0 : ℝ) ≤ N := N.cast_nonneg
+    have hpN : ((p : ℝ) - 1) = N + 2 * k := by rw [hN]; push_cast; ring
+    rw [hpN] at hδ
+    have hkey : 0 ≤ a * ((2 * k - 1) * (2 * k + 1)) + 2 * k * (N + 2) * d := by
+      have h1 : -(2 * k * (N + 2) * δ) ≤ 2 * k * (N + 2) * d := by
+        have := mul_le_mul_of_nonneg_left hdδ' (by positivity : (0 : ℝ) ≤ 2 * k * (N + 2))
+        linarith
+      have h2 : 2 * k * (N + 2) * δ ≤ 2 * k * a := by
+        have h3 : (N + 2) * δ ≤ a := by nlinarith
+        nlinarith
+      have h5 : (0 : ℝ) ≤ (2 * k - 1) * (2 * k + 1) - 2 * k := by nlinarith
+      have h4 := mul_nonneg ha.le h5
+      nlinarith
+    have hA : 0 ≤ d ^ (2 * k) * a ^ (N + 1) /
+        (((2 * k).factorial : ℝ) * (N + 1).factorial * (2 * k + 1) * (N + 1 + 1)) := by
+      have := (even_two_mul k).pow_nonneg d
+      positivity
+    push_cast
+    have e : ((2 * k).factorial : ℝ)⁻¹ * (d ^ (2 * k) * ((2 * k - 1) * a ^ (N + 1 + 1) /
+          ((N + 1 + 1) * (N + 1).factorial))) +
+        (((2 * k + 1) * (2 * k).factorial : ℝ))⁻¹ * (d ^ (2 * k + 1) *
+          ((2 * k + 1 - 1) * a ^ (N + 1) / (N + 1).factorial)) =
+        d ^ (2 * k) * a ^ (N + 1) /
+          (((2 * k).factorial : ℝ) * (N + 1).factorial * (2 * k + 1) * (N + 1 + 1)) *
+          (a * ((2 * k - 1) * (2 * k + 1)) + 2 * k * (N + 2) * d) := by
+      field_simp
+      ring
+    rw [e]
+    exact mul_nonneg hA hkey
+
 /-! ### Taylor data of functions of one variable -/
 
 section OneDim
