@@ -1,0 +1,15 @@
+namespace = "Constrained.TwoPhase"
+desc = "Construct actual total completed-inner outer arrays. Admissible states contain a feasible point, nonnegative target gap and actual residual at most the primal tolerance; the band objective bounds derive the target interval. At each state, the proved constrained inner constructor supplies an actual first-target execution at fixed absolute beta*theta*epsilon0*epsilon accuracies. The actual endpoint and closed reset/reflection/fallback update preserve admissibility even after stopping. Recursion then gives every primitive CompletedRun rule on prefixes before the actual outer stopping check. No execution availability, certificate, radius floor, decrease or count conclusion is assumed."
+
+[[node]]
+id = "CompletedState"
+[[node]]
+id = "CompletedState.target_bounds"
+[[node]]
+id = "CompletedCall"
+[[node]]
+id = "exists_completedCall"
+[[node]]
+id = "advanceCompletedState"
+[[node]]
+id = "exists_completed_execution"
