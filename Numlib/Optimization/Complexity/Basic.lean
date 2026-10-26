@@ -30,6 +30,10 @@ where the test holds (`Optimization.IsFirstHit`).
   with `k ≤ A N + B`, and `Optimization.exists_isFirstHit_evalCount_le_of_counting` bounds the
   evaluation counts at that index (`funEvalCount k ≤ A N + B + 1`, `derivEvalCount succ k ≤ N + 1`,
   via `Optimization.derivEvalCount_le_of_isFirstHit`).
+* `Optimization.exists_isFirstHit_of_sub_ge`: the counting skeleton of methods with a uniform
+  decrease per iteration (no unsuccessful iterations): a potential bounded below by `φlow` that
+  decreases by `c > 0` at every iteration before termination forces termination at some `k` with
+  `k c ≤ φ 0 - φlow`.
 
 ## Implementation notes
 
@@ -412,5 +416,46 @@ theorem exists_isFirstHit_evalCount_le_of_counting (hA : 0 ≤ A) (hN : 0 ≤ N)
   linarith
 
 end counting
+
+/-! ### Uniform decrease -/
+
+section decrease
+
+variable {φ : ℕ → ℝ} {test : ℕ → Prop} {c φlow : ℝ}
+
+/-- A sequence decreasing by at least `c` at every index before termination decreases by `K c`
+over the first `K` indices. -/
+private theorem le_sub_mul_of_forall
+    (hdec : ∀ k, (∀ j ≤ k, ¬ test j) → c ≤ φ k - φ (k + 1)) :
+    ∀ K, (∀ j < K, ¬ test j) → φ K ≤ φ 0 - K * c := by
+  intro K
+  induction K with
+  | zero => intro _; simp
+  | succ K ih =>
+    intro hK
+    have h1 := ih fun j hj => hK j (hj.trans K.lt_succ_self)
+    have h2 := hdec K fun j hj => hK j (Nat.lt_succ_of_le hj)
+    push_cast
+    linarith
+
+/-- **Termination under a uniform decrease** (the counting of [cartis2022evaluation] Theorems
+2.2.2 and 2.2.4). If a quantity bounded below by `φlow` decreases by at least `c > 0` at every
+index before termination, then the test holds at some first index `k` with
+`k c ≤ φ 0 - φlow`. -/
+theorem exists_isFirstHit_of_sub_ge (hc : 0 < c)
+    (hdec : ∀ k, (∀ j ≤ k, ¬ test j) → c ≤ φ k - φ (k + 1)) (hlow : ∀ k, φlow ≤ φ k) :
+    ∃ k, IsFirstHit test k ∧ (k : ℝ) * c ≤ φ 0 - φlow := by
+  have key := le_sub_mul_of_forall hdec
+  have hex : ∃ k, test k := by
+    by_contra hne
+    push Not at hne
+    obtain ⟨K, hK⟩ := exists_nat_gt ((φ 0 - φlow) / c)
+    have := key K fun j _ => hne j
+    rw [div_lt_iff₀ hc] at hK
+    linarith [hlow K]
+  obtain ⟨k, hk⟩ := exists_isFirstHit hex
+  exact ⟨k, hk, by linarith [key k fun j hj => hk.not_test_of_lt hj, hlow k]⟩
+
+end decrease
 
 end Optimization

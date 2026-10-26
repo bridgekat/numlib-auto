@@ -23,6 +23,8 @@ space, as analysed in [cartis2022evaluation] §2.2, for an objective whose gradi
   of `t ↦ f (x - t ∇f(x))` on `t ≥ 0`) and `LineSearch.IsFirstLocalLineMin` (the first stationary
   point along the ray, the slope being negative before it). The second rule is the one realised by
   the book's sharpness example for the exact line search (Theorem 2.2.5, Lemma B.2.6).
+  `LineSearch.IsExactLineMin.unique` and `LineSearch.exists_isExactLineMin` (continuous `f`,
+  bounded sublevel set) show that the exact line search is well defined.
 * `LineSearch.decrease_ge_of_exactLineMin` — the core of Theorem 2.2.4: for any global line
   minimizer (`LineSearch.IsGlobalLineMin`) and for the first-local-minimizer rule, the step
   satisfies `t ≥ 1/L` and the decrease is at least `‖∇f(x)‖² / (2L)` ((2.2.28)).
@@ -195,6 +197,64 @@ def IsExactLineMin (f : E → ℝ) (x : E) (t : ℝ) : Prop :=
 theorem IsExactLineMin.isGlobalLineMin {x : E} {t : ℝ} (h : IsExactLineMin f x t) :
     IsGlobalLineMin f x t :=
   h.1
+
+/-- The exact line-search step (2.2.26) is unique: there is only one first global minimizer on
+the ray. -/
+theorem IsExactLineMin.unique {x : E} {t t' : ℝ} (h : IsExactLineMin f x t)
+    (h' : IsExactLineMin f x t') : t = t' := by
+  by_contra hne
+  rcases lt_or_gt_of_ne hne with hlt | hlt
+  · have := h'.2 t ⟨h.1.1, hlt⟩
+    linarith [h.1.2 t' h'.1.1]
+  · have := h.2 t' ⟨h'.1.1, hlt⟩
+    linarith [h'.1.2 t h.1.1]
+
+/-- **The exact line search (2.2.26) is well defined** when `f` is continuous and the sublevel
+set `{y | f y ≤ f x}` is bounded: the first global minimizer of `t ↦ f(x - t∇f(x))` on `t ≥ 0`
+exists. -/
+theorem exists_isExactLineMin (hf : Continuous f) {x : E}
+    (hbdd : Bornology.IsBounded {y | f y ≤ f x}) : ∃ t, IsExactLineMin f x t := by
+  set g := gradient f x
+  rcases eq_or_ne g 0 with hg | hg
+  · refine ⟨0, ⟨⟨le_rfl, fun τ _ => by simp [g, hg]⟩, fun τ hτ => ?_⟩⟩
+    exact absurd hτ.2 (not_lt.2 hτ.1)
+  have hgpos : 0 < ‖g‖ := norm_pos_iff.2 hg
+  set φ : ℝ → ℝ := fun t => f (x - t • g)
+  have hφ : Continuous φ := hf.comp (continuous_const.sub (continuous_id.smul continuous_const))
+  obtain ⟨R, hR⟩ := (Metric.isBounded_iff_subset_closedBall (0 : E)).1 hbdd
+  set T : Set ℝ := {t | 0 ≤ t ∧ φ t ≤ f x}
+  have hTsub : T ⊆ Icc 0 ((R + ‖x‖) / ‖g‖) := by
+    intro t ⟨ht0, ht⟩
+    refine ⟨ht0, ?_⟩
+    have hmem := hR (show x - t • g ∈ {y | f y ≤ f x} from ht)
+    rw [Metric.mem_closedBall, dist_zero_right] at hmem
+    rw [le_div_iff₀ hgpos]
+    have : ‖t • g‖ ≤ ‖x - t • g‖ + ‖x‖ := by
+      have := norm_sub_le x (x - t • g)
+      rw [sub_sub_cancel] at this
+      linarith
+    rw [norm_smul, Real.norm_of_nonneg ht0] at this
+    linarith
+  have hTclosed : IsClosed T := isClosed_Ici.inter (isClosed_le hφ continuous_const)
+  have hTcpt : IsCompact T := isCompact_Icc.of_isClosed_subset hTclosed hTsub
+  have h0T : (0 : ℝ) ∈ T := ⟨le_rfl, by simp [φ]⟩
+  obtain ⟨t₀, ht₀, hmin⟩ := hTcpt.exists_isMinOn ⟨0, h0T⟩ hφ.continuousOn
+  have hm0 : φ t₀ ≤ f x := by simpa [φ] using hmin h0T
+  set M : Set ℝ := {t | 0 ≤ t ∧ φ t ≤ φ t₀}
+  have hMsub : M ⊆ T := fun t ht => ⟨ht.1, ht.2.trans hm0⟩
+  have hMcpt : IsCompact M :=
+    hTcpt.of_isClosed_subset (isClosed_Ici.inter (isClosed_le hφ continuous_const)) hMsub
+  obtain ⟨t, htM, hleast⟩ := hMcpt.exists_isLeast ⟨t₀, ht₀.1, le_rfl⟩
+  have hglob : ∀ τ, 0 ≤ τ → φ t ≤ φ τ := fun τ hτ => by
+    by_cases hτT : τ ∈ T
+    · exact htM.2.trans (hmin hτT)
+    · have : f x < φ τ := not_le.1 fun h' => hτT ⟨hτ, h'⟩
+      linarith [htM.2]
+  refine ⟨t, ⟨htM.1, hglob⟩, fun τ hτ => lt_of_le_of_ne (hglob τ hτ.1) fun heq => ?_⟩
+  have : φ τ ≤ φ t₀ := by
+    have h2 : φ t = φ τ := heq
+    rw [← h2]; exact htM.2
+  exact absurd (hleast ⟨hτ.1, this⟩) (not_le.2 hτ.2)
 
 /-- The **first-local-minimizer line search**: `t > 0` is the first stationary point of
 `φ τ = f (x - τ ∇f(x))` on `[0, ∞)` and `φ` has negative slope `φ' τ = -⟪∇f(x - τ ∇f(x)), ∇f(x)⟫`

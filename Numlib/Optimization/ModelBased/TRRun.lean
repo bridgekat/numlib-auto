@@ -1,3 +1,4 @@
+import Numlib.Optimization.Complexity.Existence
 import Numlib.Optimization.ModelBased.TrustRegionUpdate
 import Numlib.Optimization.ModelBased.RatioTest
 
@@ -22,6 +23,9 @@ and the predicted decrease entering `ρ_k`.
   (`IsTRRun.delta_ge`, the mechanism of Lemmas 2.3.4, 3.2.5, 12.2.3), the count of all iterations
   in terms of the successful ones (`IsTRRun.succ_count`, Lemma 2.3.1) and the decrease on
   successful iterations (`IsTRRun.sub_ge_of_succ`).
+* `Optimization.exists_isTRRun`: existence of runs when an admissible step exists whenever the
+  test fails; the step conditions and the ratio may depend on the iteration counter (e.g. through
+  TR1's model Hessians `B_k`) as well as on the current iterate and radius.
 
 A cap `Δ_{k+1} ≤ Δ_max` (TRq) is an additional condition of the method-specific predicates; the
 canonical successor radius of `Optimization.exists_trAcceptance` never exceeds `Δ_k`, so it is
@@ -281,5 +285,62 @@ theorem objective_antitone {f : E → ℝ} {pred : ℕ → ℝ} {K : ℕ} (hK : 
       (ih hjK'.le)
 
 end IsTRRun
+
+section Existence
+
+variable {E : Type*} [Add E]
+
+/-- **Existence of TR runs** with a state-based termination test. Let `Inv` be a property of
+iterates (e.g. membership in a feasible set; `fun _ => True` if none is needed) and assume that at
+every iteration `k`, every iterate `y` with `Inv y` at which the test fails and every radius
+`Δ > 0` an admissible step `s` exists (`stepOK k y Δ s`) with `Inv (y + s)`. Then from every `x₀`
+with `Inv x₀` there is a run with ratio `ρ_k = R k (x k) (Δ k) (s k)` (any ratio function), along
+which `Inv` holds up to (and including) termination. The step conditions and the ratio may depend
+on the iteration counter `k` (e.g. through model Hessians `B_k` chosen in advance). The new radii
+are those of `Optimization.exists_trAcceptance` (`Δ_{k+1} ≤ Δ_k`). -/
+theorem exists_isTRRun (P : TRParams) {Inv : E → Prop} {test : E → Prop}
+    {stepOK : ℕ → E → ℝ → E → Prop} (R : ℕ → E → ℝ → E → ℝ)
+    (hstep : ∀ k y Δ, Inv y → 0 < Δ → ¬ test y → ∃ s, stepOK k y Δ s ∧ Inv (y + s))
+    {x₀ : E} (hx₀ : Inv x₀) :
+    ∃ (x s : ℕ → E) (Δ : ℕ → ℝ), x 0 = x₀ ∧
+      IsTRRun P (fun k => test (x k)) (fun k => stepOK k (x k) (Δ k) (s k))
+        (fun k => R k (x k) (Δ k) (s k)) x s Δ ∧
+      ∀ k, (∀ j < k, ¬ test (x j)) → Inv (x k) := by
+  classical
+  let good : ℕ → E → ℝ → E → Prop := fun k y Δ s => ¬ test y → stepOK k y Δ s ∧ Inv (y + s)
+  have hgood : ∀ k y Δ, Inv y → 0 < Δ → ∃ s, good k y Δ s := by
+    intro k y Δ hy hΔ
+    by_cases ht : test y
+    · exact ⟨y, fun h' => absurd ht h'⟩
+    · obtain ⟨s, hs⟩ := hstep k y Δ hy hΔ ht
+      exact ⟨s, fun _ => hs⟩
+  let S : ℕ → E → ℝ → E := fun k y Δ =>
+    if h : Inv y ∧ 0 < Δ then (hgood k y Δ h.1 h.2).choose else y
+  have hS : ∀ k y Δ, Inv y → 0 < Δ → good k y Δ (S k y Δ) := fun k y Δ hy hΔ => by
+    simp only [S, hy, hΔ, and_self, dite_true]
+    exact (hgood k y Δ hy hΔ).choose_spec
+  obtain ⟨r, hr0, hr⟩ := exists_run_of_forall_exists_of_invariant
+    (α := E × ℝ) (init := fun a => a = (x₀, P.Δ₀))
+    (inv := fun _ a => Inv a.1 ∧ 0 < a.2) (stop := fun _ a => test a.1)
+    (step := fun k a b =>
+      TRAcceptance P (R k a.1 a.2 (S k a.1 a.2)) a.1 (S k a.1 a.2) b.1 a.2 b.2 ∧
+        Inv b.1 ∧ 0 < b.2)
+    ⟨_, rfl⟩ (fun a ha => by subst ha; exact ⟨hx₀, P.Δ₀_pos⟩) (fun k a ha hnot => by
+      obtain ⟨Δ', hacc, -, hpos⟩ :=
+        exists_trAcceptance P (R k a.1 a.2 (S k a.1 a.2)) a.1 (S k a.1 a.2) ha.2.le
+      have hInv : Inv (if P.η₁ ≤ R k a.1 a.2 (S k a.1 a.2) then a.1 + S k a.1 a.2 else a.1) := by
+        split_ifs
+        · exact (hS k a.1 a.2 ha.1 ha.2 hnot).2
+        · exact ha.1
+      exact ⟨(_, Δ'), ⟨hInv, hpos ha.2⟩, hacc, hInv, hpos ha.2⟩)
+  refine ⟨fun k => (r k).1, fun k => S k (r k).1 (r k).2, fun k => (r k).2, by simp only [hr0],
+    ⟨by simp only [hr0], fun k hk => ?_, fun k hk => (hr k hk).2.1⟩, fun k hk => ?_⟩
+  · obtain ⟨⟨hInv, hpos⟩, -⟩ := hr k hk
+    exact (hS k _ _ hInv hpos (hk k le_rfl)).1
+  · cases k with
+    | zero => simpa [hr0] using hx₀
+    | succ k => exact (hr k fun j hj => hk j (Nat.lt_succ_of_le hj)).2.2.1
+
+end Existence
 
 end Optimization

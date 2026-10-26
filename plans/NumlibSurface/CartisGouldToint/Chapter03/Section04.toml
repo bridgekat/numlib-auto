@@ -1,220 +1,65 @@
 namespace = "CartisGouldToint.Chapter03"
-desc = '''
-§3.4 More algorithms with `O(ε^{-3/2})` complexity: TRε (Algorithm 3.4.1, trust region with a fixed
-quadratic regularization `ε_*`) and the inexact regularized Newton framework iRN (Algorithm 3.4.2).
-Both reuse the backbone ratio-test and update lemmas; iRN's predicted decrease is `‖s_k‖³` and its
-counting of unsuccessful iterations is its own (Lemma 3.4.10). The proofs of Theorems 3.4.11–3.4.12
-are in Appendix B (not separate nodes).
-'''
 
 [[node]]
 id = "TREpsParams"
-kind = "def"
-desc = '''
-TRε constants: `Chapter02.TR1Params` (with `Δ₀ > ε_*` checked per run) and `θ₁ > 0`.
-'''
-deps = ["CartisGouldToint.Chapter02.TR1Params"]
 source = "Cartis–Gould–Toint, Algorithm 3.4.1 Step 0"
 
 [[node]]
 id = "algorithm_3_4_1"
-kind = "def"
-desc = '''
-Algorithm 3.4.1 (TRε) as a run predicate `IsTREpsRun f P ε₁ ε₂ εs x s Δ` with `ε₁ ∈ (0,1]`,
-`εs ∈ (0,1]`, `Δ₀ > εs`, `ε₂ : Option ℝ` (`some e`, `e ∈ (0,1]`). Model
-`m_k(s) = T_{f,2}(x_k, s) + εs/2 ‖s‖²` (3.4.1). The book's Step 1 couples the tests to `εs`
-(`εs = √ε₁` if `ε₂ = ∞`, `εs = ε₂` otherwise); the run predicate takes `εs` as a parameter and the
-theorems impose the coupling. Before the first `k` with `stopTest f ε₁ ε₂ (x k)`: `‖s_k‖ ≤ Δ_k`,
-`m_k(s_k) < m_k(0)`, and if `‖s_k‖ < Δ_k` then `‖fderiv ℝ m_k (s_k)‖ ≤ θ₁/2 ‖s_k‖²` (3.4.5); if
-`ε₂ = some e` and `hessianMinEig f (x k) < -e` then `‖s_k‖ = Δ_k`; ratio (3.4.6) with the Taylor
-decrement `f(x_k) - T_{f,2}(x_k, s_k)`; acceptance; `TRUpdate`. Existence (part of node): the global
-minimizer of `m_k` over the ball is admissible (on the boundary when the model has negative
-curvature).
-'''
-deps = ["TREpsParams", "IsApproxSecondOrderMinimizer", "Optimization.UntilHit", "Optimization.TRUpdate", "Optimization.reductionRatio", "Optimization.exists_isMinOn_quadModel_ball", "Optimization.exists_run_of_forall_exists"]
 source = "Cartis–Gould–Toint, Algorithm 3.4.1"
 
 [[node]]
 id = "lemma_3_4_1"
-kind = "theorem"
-desc = '''
-Lemma 3.4.1. At every iteration (before termination) of a TRε run:
-`T_{f,2}(x_k, 0) - T_{f,2}(x_k, s_k) ≥ εs/2 ‖s_k‖²` (3.4.7).
-'''
-deps = ["algorithm_3_4_1"]
 source = "Cartis–Gould–Toint, Lemma 3.4.1"
 
 [[node]]
 id = "lemma_3_4_2"
-kind = "theorem"
-desc = '''
-Lemma 3.4.2. Under f.HL: if `Δ_k < 3(1-η₂) εs / L₂` (3.4.8) then `η₂ ≤ ρ_k`, iteration `k` is
-successful and `Δ_k ≤ Δ_{k+1}`; and for all `k` up to termination `Δ_k ≥ (1-η₂) γ₁ εs / L₂` (3.4.9)
-(uses `Δ₀ > εs` and `L₂ ≥ 1`). `Optimization.le_delta_of_trUpdate` / `le_delta_succ_of_trUpdate`
-(bound on `Δ_{k+1}`) with constant threshold.
-'''
-deps = ["lemma_3_4_1", "AssumptionHL", "abs_sub_taylorPolynomial_le_of_lipschitz", "Optimization.le_reductionRatio_of_abs_sub_le", "Optimization.le_delta_of_trUpdate"]
 source = "Cartis–Gould–Toint, Lemma 3.4.2"
 
 [[node]]
 id = "lemma_3_4_3"
-kind = "theorem"
-desc = '''
-Lemma 3.4.3, **corrected derivation**. Under f.HL, if iteration `k` is successful and
-`‖s_k‖ < Δ_k`, then `‖s_k‖ ≥ (1/√(1 + 2(L₂ + θ₁))) min(εs, ‖∇f(x_{k+1})‖/εs)` (3.4.10). (The book
-writes the quadratic inequality as `½L₂ + θ₁‖s‖² + …` and divides by `L₂` instead of `L₂ + θ₁` in
-(3.4.12); with the correct `½(L₂ + θ₁)‖s‖² + εs‖s‖ - ‖∇f(x_{k+1})‖ ≥ 0` the stated bound follows via
-Lemma B.3.1 — the final statement is right.)
-'''
-deps = ["algorithm_3_4_1", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "neg_add_sqrt_sq_add_mul_ge"]
 source = "Cartis–Gould–Toint, Lemma 3.4.3"
 
 [[node]]
 id = "lemma_3_4_4"
-kind = "theorem"
-desc = '''
-Lemma 3.4.4. Under f.HL, on each successful iteration `k`: `f(x_k) - f(x_{k+1}) ≥ κ_Δf
-min(εs³, ‖∇f(x_{k+1})‖² / εs)` if `‖s_k‖ < Δ_k` (3.4.13), and `≥ κ_Δf εs³` if `‖s_k‖ = Δ_k`
-(3.4.14), with `κ_Δf = η₁/2 min(γ₁²(1-η₂)²/L₂², 1/(1 + 2(L₂+θ₁)))` (3.4.15). (The proof's case
-labels "(3.4.13)"/"(3.4.14)" are swapped.)
-'''
-deps = ["lemma_3_4_1", "lemma_3_4_2", "lemma_3_4_3", "Optimization.sub_le_of_le_reductionRatio"]
 source = "Cartis–Gould–Toint, Lemma 3.4.4"
 
 [[node]]
 id = "theorem_3_4_5"
-kind = "theorem"
-desc = '''
-Theorem 3.4.5. Under f.Bb, f.HL, for every TRε run with `ε₁ ∈ (0,1]`, `εs = √ε₁`, `ε₂ = none`:
-there is `k_ε` with `IsFirstHit (‖∇f(x_k)‖ ≤ ε₁) k_ε`,
-`funEvalCount k_ε ≤ κ^A (f(x_0)-flow)/ε₁^{3/2} + κ^B |log ε₁| + κ^C`,
-`derivEvalCount succ k_ε ≤ κ^S (f(x_0)-flow)/ε₁^{3/2} + 2`, with `κ^S = κ_Δf⁻¹` (3.4.20),
-`κ^A = κ^S (1 + log γ₃/|log γ₂|)`, `κ^B = 1/(2|log γ₂|)`,
-`κ^C = (log γ₃ + |log((1-η₂)γ₁/(Δ₀ L₂))|)/|log γ₂| + 2` (3.4.21)–(3.4.22).
-'''
-deps = ["lemma_3_4_4", "lemma_3_4_2", "CartisGouldToint.Chapter02.lemma_2_3_1", "Optimization.exists_hit_le_of_counting", "Optimization.card_mul_le_of_decrease"]
 source = "Cartis–Gould–Toint, Theorem 3.4.5"
 
 [[node]]
 id = "theorem_3_4_6"
-kind = "theorem"
-desc = '''
-Theorem 3.4.6, **corrected constants**. Under f.Bb, f.HL, for every TRε run with
-`ε₁, e ∈ (0,1]`, `ε₂ = some e`, `εs = e`: there is `k_ε` with
-`IsFirstHit (stopTest f ε₁ (some e) ∘ x) k_ε`,
-`derivEvalCount succ k_ε ≤ 2 κ^S (f(x_0)-flow)/min(ε₁² e⁻¹, e³) + 3` and
-`funEvalCount k_ε ≤ 2 κ^A (f(x_0)-flow)/min(ε₁² e⁻¹, e³) + κ^D |log e| + κ^C + 1`
-(`κ^S, κ^A, κ^C` as in Theorem 3.4.5, `κ^D = 1/|log γ₂|`), i.e.
-`O(max(ε₁⁻² e, e⁻³))`. Correction: the book's proof claims that when
-`λ_min[∇²f(x_{j+1})] < -ε₂` the iterate `x_{j+1}` "is on the trust-region boundary"; in fact the
-boundary step is taken at the *next* successful iteration from `x_{j+1}`. Every successful iteration
-without the required decrease is followed by one with decrease `≥ κ_Δf e³`, whence the factor 2.
-'''
-deps = ["lemma_3_4_4", "lemma_3_4_2", "CartisGouldToint.Chapter02.lemma_2_3_1", "Optimization.exists_hit_le_of_counting", "Optimization.card_mul_le_of_decrease"]
 source = "Cartis–Gould–Toint, Theorem 3.4.6"
 
 [[node]]
 id = "IRNParams"
-kind = "def"
-desc = '''
-iRN constants: `0 < σ_min ≤ σ_max`, `0 < η < 1`, `1 < γ₁ ≤ γ₂`, `κ₁, κ₂, κ₃, κ₄ > 0`, and
-`σ₀ᵁ ∈ [σ_min, σ_max]`.
-'''
 source = "Cartis–Gould–Toint, Algorithm 3.4.2 Step 0, (3.4.29)–(3.4.32)"
 
 [[node]]
 id = "algorithm_3_4_2"
-kind = "def"
-desc = '''
-Algorithm 3.4.2 (iRN) as a run predicate `IsIRNRun f P ε₁ ε₂ x s lam σL σU Q` (`Q k` a linear
-isometry `F_k →ₗᵢ 𝔼` from some subspace, the book's matrix with orthonormal columns; `Q k = id`
-allowed): `σL 0 = 0`, `σU 0 = σ₀ᵁ`; with `m_k(s) = T_{f,2}(x_k,s) + λ_k/2 ‖s‖²` (3.4.27), before
-termination: (3.4.28) `σL_k ‖s_k‖ ≤ λ_k ≤ σU_k ‖s_k‖`; (3.4.29)
-`⟪s_k, ∇m_k(s_k)⟫ ≤ min(κ₁ ‖s_k‖², ½⟪s_k, (∇²f(x_k) + λ_k I) s_k⟫ + ½ κ₂ ‖s_k‖³)`; (3.4.30)
-`‖∇m_k(s_k)‖ ≤ λ_k ‖s_k‖ + κ₃ ‖s_k‖²`; if `ε₂ ≠ none`, (3.4.32)
-`minCurvature (Q_kᵀ (∇²f(x_k) + λ_k I) Q_k) ≥ -κ₄ ‖s_k‖`; termination test after Step 2 (Step 1 if
-`ε₂ = none`): `‖∇f(x_k)‖ ≤ ε₁ ∧ ∀ e ∈ ε₂, minCurvature(Q_kᵀ ∇²f(x_k) Q_k) ≥ -e`; ratio
-`ρ_k = (f(x_k) - f(x_k + s_k))/‖s_k‖³` (3.4.35); acceptance with `η`; update (Step 5):
-success: `σL_{k+1} = 0`, `σU_{k+1} = σU_k`; else if `λ_k < σ_min ‖s_k‖`: `σL_{k+1} ∈ [σ_min, σ_max]`,
-`σU_{k+1} ∈ [σL_{k+1}, σ_max]`; else (3.4.36) `σL_{k+1} = γ₁ λ_k/‖s_k‖`, `σU_{k+1} = γ₂ λ_k/‖s_k‖`.
-Existence (part of node): with `Q_k = id`, the global minimizer of the cubic model
-`T_{f,2} + σ/3 ‖s‖³` with `σ ∈ [max(σL_k, …), σU_k]` and `λ_k = σ‖s_k‖` is admissible
-(`Subproblem.isMinOn_regModel_iff`: `(∇²f + λI) s = -∇f`, `∇²f + λI ⪰ 0`).
-'''
-deps = ["IRNParams", "Optimization.UntilHit", "minCurvature", "Subproblem.isMinOn_regModel_iff", "Subproblem.exists_isMinOn_regModel", "Optimization.exists_run_of_forall_exists"]
 source = "Cartis–Gould–Toint, Algorithm 3.4.2"
 
 [[node]]
 id = "lemma_3_4_7"
-kind = "theorem"
-desc = '''
-Lemma 3.4.7. Under f.HL, if `λ_k ≥ (2η + κ₂ + L₂) ‖s_k‖` (3.4.37) at iteration `k` of an iRN run
-(before termination, `s_k ≠ 0`), then `ρ_k ≥ η` and the iteration is successful.
-'''
-deps = ["algorithm_3_4_2", "AssumptionHL", "abs_sub_taylorPolynomial_le_of_lipschitz"]
 source = "Cartis–Gould–Toint, Lemma 3.4.7"
 
 [[node]]
 id = "lemma_3_4_8"
-kind = "theorem"
-desc = '''
-Lemma 3.4.8. Under f.HL, every iRN run satisfies `σU_k ≤ σUmax := max(σ_max, γ₂(2η + κ₂ + L₂))`
-for all `k` up to termination (3.4.38).
-'''
-deps = ["lemma_3_4_7"]
 source = "Cartis–Gould–Toint, Lemma 3.4.8"
 
 [[node]]
 id = "lemma_3_4_9"
-kind = "theorem"
-desc = '''
-Lemma 3.4.9. Under f.HL, if iteration `k` of an iRN run is successful then
-`‖s_k‖² ≥ 2/(L₂ + 4 σUmax + 2κ₃) ‖∇f(x_{k+1})‖` (3.4.39), and if (3.4.32) holds,
-`‖s_k‖ ≥ -minCurvature(Q_kᵀ ∇²f(x_k) Q_k)/(κ₄ + σUmax)` (3.4.40).
-'''
-deps = ["lemma_3_4_8", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "minCurvature_add_smul_inner"]
 source = "Cartis–Gould–Toint, Lemma 3.4.9"
 
 [[node]]
 id = "lemma_3_4_10"
-kind = "theorem"
-desc = '''
-Lemma 3.4.10. In an iRN run (under f.HL), between two consecutive successful iterations
-`k_i < k_{i+1}` (and before the first one, from `k = 0`, and after the last one before
-termination) there are at most `log(σUmax/σ_min)/log γ₁ + 1` unsuccessful iterations (3.4.42).
-'''
-deps = ["lemma_3_4_8", "algorithm_3_4_2"]
 source = "Cartis–Gould–Toint, Lemma 3.4.10"
 
 [[node]]
 id = "theorem_3_4_11"
-kind = "theorem"
-desc = '''
-Theorem 3.4.11 (proof in Appendix B). Under f.Bb, f.HL, for every iRN run with `ε₂ = none`,
-`ε₁ ∈ (0,1]`: there is `k_ε` with `IsFirstHit (‖∇f(x_k)‖ ≤ ε₁) k_ε`,
-`funEvalCount k_ε ≤ κ^A (f(x_0)-flow)/ε₁^{3/2} + κ^B` and
-`derivEvalCount succ k_ε ≤ κ^S (f(x_0)-flow)/ε₁^{3/2} + 2`, with
-`κ^S = (L₂ + 4σUmax + 2κ₃)^{3/2}/(2√2 η)`, `κ^A = κ^S (log(σUmax/σ_min)/log γ₁ + 1)`,
-`κ^B = 2(log(σUmax/σ_min)/log γ₁ + 1)` (iteration count = (successes + 1) × (1 + bound of
-Lemma 3.4.10)).
-'''
-deps = ["lemma_3_4_9", "lemma_3_4_10", "Optimization.card_mul_le_of_decrease", "Optimization.sum_successSet_sub_eq"]
 source = "Cartis–Gould–Toint, Theorem 3.4.11, Appendix B"
 
 [[node]]
 id = "theorem_3_4_12"
-kind = "theorem"
-desc = '''
-Theorem 3.4.12 (proof in Appendix B), **corrected constants**. Under f.Bb, f.HL, for every iRN run
-with `ε₁, e ∈ (0,1]`, `ε₂ = some e`: there is `k_ε` (first index at which the Step 3 test holds) with
-`derivEvalCount succ k_ε ≤ 2 κ^T (f(x_0)-flow)/min(ε₁^{3/2}, e³) + 3` and
-`funEvalCount k_ε ≤ 2 κ^C (f(x_0)-flow)/min(ε₁^{3/2}, e³) + κ^D`, with
-`κ^T = η⁻¹ max((L₂ + 4σUmax + 2κ₃)^{3/2}/(2√2), (κ₄ + σUmax)³)`,
-`κ^C = κ^T (log(σUmax/σ_min)/log γ₁ + 1)`, `κ^D = 3(log(σUmax/σ_min)/log γ₁ + 1)`; at termination
-`λ_min[Q_εᵀ ∇²f(x_ε) Q_ε] ≥ -e`. Correction: the appendix proof's claim "`‖∇f(x_k)‖ ≤ ε₁` for all
-`k ≥ k₁`" is unjustified (the gradient may grow again); the argument that every successful
-iteration lacking the required decrease is followed by one with decrease `≥ κ₆ e³` gives the
-factor 2.
-'''
-deps = ["lemma_3_4_9", "lemma_3_4_10", "Optimization.card_mul_le_of_decrease"]
 source = "Cartis–Gould–Toint, Theorem 3.4.12, Appendix B"
