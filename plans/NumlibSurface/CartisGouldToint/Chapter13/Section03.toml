@@ -1,0 +1,253 @@
+namespace = "CartisGouldToint.Chapter13"
+desc = '''
+§13.3 Inexact algorithms using explicit dynamic accuracy (EDA): TRqEDA (Algorithm 13.3.1) and
+ARqpEDA (Algorithm 13.3.2). The derivative errors are enforceable and normalized, `κ_{∇,i} = 1`
+(13.3.3)–(13.3.4) (`JetApprox … (fun i => h k i)`), function values are inexact with requested accuracy
+`h_{k,0}` (13.3.1)–(13.3.2), and termination is certified (Steps 1.4.1/1.5.1).
+
+Design: the runs reuse the iteration predicates `TRqDAStep` / `ARqpDAStep` of §13.1 (Steps 1, 2, 4, 5
+are those of the IDA algorithms) under `Optimization.UntilHit stop`, plus the new Step 3:
+`0 < h₀ k ≤ κs ΔT̄` ((13.3.9)/(13.3.18)), values `fx k` (`f̄(x_k)`) and `fxs k` (`f̄(x_k+s_k)`) within
+`h₀ k` of `f`, and `ρ k = (fx k - fxs k) / ΔT̄` ((13.3.10)/(13.3.19)). `R k` records that `f̄(x_k)` was
+(re)computed in Step 3 (otherwise it is a previously computed trial value at the same point), so the
+function-value count is `edaFunEvalCount k = |(range k).filter T| + |(range k).filter (T ∧ R)| ≤ 2|T|`
+(no evaluation at Step 0). Lemmas of §13.1 stated for the step predicates apply unchanged
+(13.1.1, 13.1.2, 13.1.4 (with Lemma 13.3.1), 13.1.6, 13.1.9–13.1.13).
+
+Source issue (ARqpEDA). The book proves Theorem 13.3.8 "identically" to Theorem 13.1.19, i.e. via
+Lemmas 13.1.16–13.1.18, whose hypothesis is that `x_{k+1}` is *not approximately optimal*. For EDA the
+count runs up to termination, and non-termination at `k+1` does not imply non-optimality of `x_{k+1}`
+(the Step-1 test uses `ς ε/2` and inexact data). The corrected argument (`eda_radius_inequality`) uses
+what non-termination gives: either Step 1 at `k+1` fails the test (13.3.15) at the inherited radius
+`δ_{k+1} = δ_{s_k}` for some `j` — then `φ̄ > ς ε δ^j/(2 j!)` and, with the accuracies inherited from
+iteration `k` ((13.1.46) at `s_k`), the radius inequality holds with `ς/2 - θ` in place of `1 - θ` and
+`4κs` in place of `3κ_{∇,max}κs` — or Step 1 passes at all orders without halving and (13.3.17) fails,
+an accuracy-improving iteration with large `h`, of which there are `O(|log ε_min|)`. This needs
+`θ < ς/2` (an extra hypothesis of Lemma 13.3.7 and Theorem 13.3.8; the book only assumes
+`θ ∈ (0,1)`, `ς ∈ (0,1]`). TRqEDA is not affected (its decrease bound needs no optimality hypothesis).
+'''
+
+[[node]]
+id = "algorithm_13_3_1"
+kind = "def"
+desc = '''
+Algorithm 13.3.1 (TRqEDA) as a run predicate `IsTRqEDARun f P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R`
+with `P : TRqIDAParams` and (13.3.5) `P.κs ≤ min P.η₁ (1 - P.η₂) / 4`; `ε j ∈ Ioc 0 1`,
+`ε_min ≤ ϑ`; `x 0 = x₀`, `Δ 0 = Δ₀`, `h 0 = h₀`; oracle `∀ k, JetApprox (ftaylorSeries ℝ f (x k)) (D k)
+q (fun i => h k i)` ((13.3.4), `κ_∇ = 1`); termination test (Steps 1.4–1.4.1, (13.3.8))
+`edaStopTR k := (∀ j ∈ Icc 1 q, (D k).taylorDecrement j (dd k j) ≤ ς ε j δ_k^j / j! / 2) ∧
+∑ i ∈ Icc 1 q, h k i * δ_k^i / i! ≤ ς ε_min δ_k^q / q! / 2` (`δ_k = min (Δ k) ϑ`); and
+`UntilHit edaStopTR (fun k => TRqDAStep P ε x Δ h D dd jk s acc ρ k ∧ (¬ acc k → Step3 k))` where
+`Step3 k`: `0 < h₀ k ≤ κs * ΔT̄` (13.3.9) with `ΔT̄ = (D k).taylorDecrement (jk k) (s k)`,
+`|fxs k - f (x k + s k)| ≤ h₀ k` (13.3.2), `|fx k - f (x k)| ≤ h₀ k` (13.3.1),
+`¬ R k → ∃ i < k, ¬ acc i ∧ x i + s i = x k ∧ fx k = fxs i` (reuse of `f̄(x_{k-1}+s_{k-1})`), and
+`ρ k = (fx k - fxs k) / ΔT̄` (13.3.10). Output at termination: `x_ε = x k`, `δ_ε = δ_k`.
+Existence (part of node): for every `C^q` `f` and every oracle as in `algorithm_13_1_1` (with
+`κ∇ = 1`) and every value oracle with errors `≤` any requested `h₀ > 0` (e.g. exact values), a run
+exists (as for TRqIDA; `h₀ k := κs ΔT̄ > 0`).
+'''
+deps = ["TRqDAStep", "TRqIDAParams", "Optimization.UntilHit", "Optimization.JetApprox", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 13.3.1"
+
+[[node]]
+id = "lemma_13_3_1"
+kind = "theorem"
+desc = '''
+Lemma 13.3.1. Let `AssumptionD0qL f q L`, `L_f = Lmax L q`, and a TRqEDA run. If `k ∈ T` is before
+termination and (13.1.28) holds with `κ∇max = 1`: `Δ k ≤ min ϑ ((1 - η₂)/(L_f + 4 (q+1)! κs) φ̂ k)`,
+then `η₂ ≤ ρ k` and `Δ k ≤ Δ (k+1)`. Proof: (13.3.12) (implied by (13.1.28) since `j_k + 1 ≥ 2`),
+`Optimization.le_div_of_inexact_error_le` with value errors `≤ κs ΔT̄` each (absorbing
+`2κs ≤ (1-η₂)/2`), (A.19), (13.1.11) and (13.1.27).
+'''
+deps = ["algorithm_13_3_1", "AssumptionD0qL", "lemma_13_1_2", "Optimization.le_div_of_inexact_error_le", "Optimization.abs_taylorDecrement_sub_le_of_stepAccuracy", "abs_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, Lemma 13.3.1"
+
+[[node]]
+id = "lemma_13_3_2"
+kind = "theorem"
+desc = '''
+Lemma 13.3.2. Under f.D0qL, for a TRqEDA run and `k ∈ T` before termination, (13.1.34)
+`(D k).taylorDecrement (jk k) (s k) ≥ (ς κ_δ)^(q+1)/q! ε_min^(q+1)` holds (with `κ_δ` of Lemma 13.1.4
+for `κ∇max = 1`, via Lemma 13.1.4 for `TRqDAStep` sequences with the success condition of
+Lemma 13.3.1), and if `k ∈ S` then (13.1.35) `f (x k) - f (x (k+1)) ≥ η₁ (ς κ_δ)^(q+1)/(2 q!) ε_min^(q+1)`
+(from `Optimization.sub_ge_of_inexact_ratio`, `κs ≤ η₁/4`).
+'''
+deps = ["algorithm_13_3_1", "lemma_13_3_1", "lemma_13_1_4", "lemma_13_1_5", "Optimization.sub_ge_of_inexact_ratio"]
+source = "Cartis–Gould–Toint, Lemma 13.3.2"
+
+[[node]]
+id = "lemma_13_3_3_i"
+kind = "theorem"
+desc = '''
+Lemma 13.3.3 (i). If the Step-1 data at iteration `k` satisfy (13.3.6), Step 1 passes at all orders
+and (13.3.8) holds (i.e. `edaStopTR k`), with `JetApprox (ftaylorSeries ℝ f (x k)) (D k) q (h k)`,
+then `IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ q ε (fun _ => δ_k)`: `x_k` is an
+`(ε, δ_k)`-approximate `q`-th order minimizer. Proof: `∑_{i ≤ j} h_i δ^i/i! ≤ ς ε_min δ^q/(2 q!) ≤
+ς ε_j δ^j/(2 j!)` (`δ ≤ 1`), then `Optimization.taylorMeasure_le_of_inexact_certificate`.
+(Typo in the source proof: `δ_k^2` for `δ_k^j`.)
+'''
+deps = ["algorithm_13_3_1", "Optimization.taylorMeasure_le_of_inexact_certificate"]
+source = "Cartis–Gould–Toint, Lemma 13.3.3 (i)"
+
+[[node]]
+id = "lemma_13_3_3_ii"
+kind = "theorem"
+desc = '''
+Lemma 13.3.3 (ii). Under f.D0qL, for a TRqEDA run: if Step 1 passes at all orders at iteration `k`
+(before termination) and (13.1.37) holds with `κ∇max = 1`
+(`h k i ≤ ς^(q+1) κ_δ^q / (4 q!) ε_min^(q+1)`, `i ∈ Icc 1 q`), then (13.3.8) holds, i.e. the method
+terminates at `k` (Step 1.4.1) rather than branching to Step 5. Proof: (A.34), (13.1.32).
+'''
+deps = ["algorithm_13_3_1", "lemma_13_1_4", "sum_pow_div_factorial_le_two_mul_pow"]
+source = "Cartis–Gould–Toint, Lemma 13.3.3 (ii)"
+
+[[node]]
+id = "theorem_13_3_4"
+kind = "theorem"
+desc = '''
+Theorem 13.3.4 (TRqEDA complexity). Let `AssumptionD0qL f q L`, `AssumptionBb f flow`,
+`ε j ∈ Ioc 0 1`. For every TRqEDA run there is `kε` with `IsFirstHit edaStopTR kε`, `x kε` an
+`(ε, δ_kε)`-approximate `q`-th order minimizer (Lemma 13.3.3 (i)), and
+`edaFunEvalCount kε ≤ 2 κ^A (f x₀ - flow)/ε_min^(q+1) + 2 κ^B |log ε_min| + 2 κ^C`,
+`derivEvalCount (S ∨ A) kε ≤ κ^A (f x₀ - flow)/ε_min^(q+1) + κ^E |log ε_min| + κ^F + 2`,
+with the constants of Theorem 13.1.8 for `κ∇max = 1` (`κ_acc = min (ς^(q+1)κ_δ^q/(4 q!))
+(κs (ς^(q+1) κ_δ^q/(4 q! Lbar))^q)`, `Lbar = L_f + κh`). Bounds `O(ε_min^{-(q+1)})`; sharp in order
+by Theorem 12.2.6 (TRq with exact values is a TRqEDA run).
+Corrections: the OCR constants `κ^B_TRqEDA = 6!/(2!2!) · 2κ^B`, `κ^C = 6!/2 · 2κ^C` are garbled; the proof
+gives the factor 2 only (at most two value evaluations per trial iteration). Derivative count `+ 2` as
+in Theorem 13.1.8; conclusion `φ^{δ_ε}_{f,q}` is `φ^{δ_ε}_{f,j}`.
+Proof: as Theorem 13.1.8 with Lemmas 13.3.2, 13.1.1, 13.1.4, 13.1.6 and 13.3.3 (ii) (an
+accuracy-improving iteration before termination has large `h`).
+'''
+deps = ["lemma_13_3_2", "lemma_13_3_3_i", "lemma_13_3_3_ii", "lemma_13_1_1", "lemma_13_1_4", "lemma_13_1_6", "theorem_13_1_8", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.card_mul_le_of_decrease", "Optimization.card_accuracyImproving_le", "Optimization.exists_firstHit_le_of_dynamicAccuracy"]
+source = "Cartis–Gould–Toint, Theorem 13.3.4"
+
+[[node]]
+id = "algorithm_13_3_2"
+kind = "def"
+desc = '''
+Algorithm 13.3.2 (ARqpEDA) as a run predicate
+`IsARqpEDARun f P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R` with `P : ARqpIDAParams`,
+(13.3.13) `κs ≤ min η₁ (1 - η₂) / 4`, `ε j ∈ Ioc 0 1`, `ε j ≤ δ₀ j`; initial values as ARqpIDA; oracle
+`JetApprox (ftaylorSeries ℝ f (x k)) (D k) p (fun i => h k i)`; termination test (Step 1.5.1, (13.3.17))
+`edaStopAR k := (∀ j ∈ Icc 1 q, (D k).taylorDecrement j (dd k j) ≤ ς ε j (δ₁ k j)^j / j! / 2) ∧
+∀ j ∈ Icc 1 q, ∑ i ∈ Icc 1 j, h k i * (δ₁ k j)^i / i! ≤ ς ε j (δ₁ k j)^j / j! / 2`; and
+`UntilHit edaStopAR (fun k => ARqpDAStep … k ∧ (¬ acc k → Step3 k))` with `Step3` as in
+`algorithm_13_3_1` for `ΔT̄ = (D k).taylorDecrement p (s k)` ((13.3.18)–(13.3.19)). Output:
+`x_ε = x k`, `δ_ε = δ₁ k`. Existence (part of node): as for ARqpIDA (with `RadiiControl`).
+'''
+deps = ["ARqpDAStep", "ARqpIDAParams", "Optimization.UntilHit", "Optimization.JetApprox", "Optimization.exists_highOrderStep", "Optimization.exists_run_of_forall_exists"]
+source = "Cartis–Gould–Toint, Algorithm 13.3.2"
+
+[[node]]
+id = "lemma_13_3_5"
+kind = "theorem"
+desc = '''
+Lemma 13.3.5 (corrected constant). Under f.D0pL, every ARqpEDA run satisfies, for all `k` up to
+termination, `σ k ≤ σmax := max σ₀ (γ₃ (2 L p + 4 (p+1)! κs') / (1 - η₂))` with `κs' = max κs κh`
+((13.1.77) with `κ∇max = 1`; `κs'` for `κs` for the reason given in Lemma 13.1.14). Proof: if
+`σ_k ≥ (2L_{f,p} + 4(p+1)!κs')/(1-η₂)` then `|ρ_k - 1| ≤ 2κs + (2κs' + L_{f,p}/(p+1)!)(p+1)!/σ_k ≤ 1 - η₂`
+(`Optimization.le_div_of_inexact_error_le`, (13.3.20), Lemma 13.1.13); then
+`Optimization.sigma_le_max_of_arUpdate_of_neutral`.
+'''
+deps = ["algorithm_13_3_2", "AssumptionD0pL", "lemma_13_1_13", "Optimization.le_div_of_inexact_error_le", "Optimization.abs_taylorDecrement_sub_le_of_stepAccuracy", "abs_sub_taylorPolynomial_le_of_lipschitz", "Optimization.sigma_le_max_of_arUpdate_of_neutral"]
+source = "Cartis–Gould–Toint, Lemma 13.3.5"
+
+[[node]]
+id = "lemma_13_3_6_i"
+kind = "theorem"
+desc = '''
+Lemma 13.3.6 (i). If `edaStopAR k` (Step 1 data with (13.3.14), all orders pass (13.3.15), and
+(13.3.17)) and `JetApprox (ftaylorSeries ℝ f (x k)) (D k) p (h k)`, then
+`IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ q ε (δ₁ k)`. Proof:
+`Optimization.taylorMeasure_le_of_inexact_certificate` order by order.
+'''
+deps = ["algorithm_13_3_2", "Optimization.taylorMeasure_le_of_inexact_certificate"]
+source = "Cartis–Gould–Toint, Lemma 13.3.6 (i)"
+
+[[node]]
+id = "lemma_13_3_6_ii"
+kind = "theorem"
+desc = '''
+Lemma 13.3.6 (ii). Under f.D0pL, for an ARqpEDA run with `RadiiControl`: if Step 1 passes at all
+orders at iteration `k` (before termination) and (13.1.78) holds with `κ∇max = 1`
+(`h k i ≤ ς κ_δ1(σmax)^q/(4 q!) ε_min^(q+1)`, `i ∈ Icc 1 p`, `σmax` of Lemma 13.3.5), then (13.3.17)
+holds and the method terminates at `k`. Proof: (A.34), (13.1.71) (Lemma 13.1.12 for `ARqpDAStep`
+sequences), (13.1.77). (Typo in the source: last term `ς δ^j/2 ε_j` for `ς ε_j δ^j/(2 j!)`.)
+'''
+deps = ["algorithm_13_3_2", "lemma_13_1_12", "lemma_13_3_5", "sum_pow_div_factorial_le_two_mul_pow"]
+source = "Cartis–Gould–Toint, Lemma 13.3.6 (ii)"
+
+[[node]]
+id = "eda_radius_inequality"
+kind = "theorem"
+desc = '''
+EDA replacement for Lemmas 13.1.16–13.1.17 (not a numbered item; see the module description).
+Under f.D0pL, for an ARqpEDA run with `RadiiControl` and `θ < ς/2`, let `k ∈ S` with `‖s k‖ < 1` and
+`k + 1` before termination such that Step 1 at `k+1` does not pass at all orders with unchanged radii
+(i.e. not [branch (a) at `k+1` and `δ₁ (k+1) = δ (k+1)`]). Then there is `j ∈ Icc 1 q` with
+`(ς/2 - θ) ε j (δ (k+1) j)^j / j! ≤ (L p + σmax + 4 κs) ∑ ℓ ∈ Icc 1 j, (δ (k+1) j)^ℓ/ℓ! *
+‖s k‖^(p - ℓ + 1)`, `δ (k+1) = δs k`; consequently the step bounds (13.1.80) hold with `1 - θ`
+replaced by `ς/2 - θ` and `3κ_{∇,max}κs` by `4κs`.
+Proof: the first order `j` at which Step 1 at `k+1` halves or branches to Step 2 has a witness
+`d₀ ∈ B(δ_{k+1,j})` with `ΔT̄_j(x_{k+1},d₀) > ς ε_j δ^j/(2 j!)` (`ARqpDAStep`), so
+`φ̄^δ_j(x_{k+1}) > ς ε_j δ^j/(2 j!)`; `h_{k+1} = h_k` and (13.1.46) at `s_k` give
+`φ^δ_j(x_{k+1}) > ς ε_j δ^j/(2 j!) - κs ∑_ℓ δ^ℓ/ℓ! ‖s_k‖^{p-ℓ+1}`
+(`Optimization.taylorMeasure_le_add_of_jetApprox`); then
+`Optimization.radius_inequality_of_measure_gt` with `a = ς/2`, `κ = 1`, and
+`Optimization.norm_step_ge_of_radius_inequality`.
+'''
+deps = ["algorithm_13_3_2", "lemma_13_3_5", "Optimization.taylorMeasure_le_add_of_jetApprox", "Optimization.radius_inequality_of_measure_gt", "Optimization.norm_step_ge_of_radius_inequality"]
+source = "Cartis–Gould–Toint, Section 13.3.2 (Lemmas 13.1.16–13.1.17 \"continue to hold\")"
+
+[[node]]
+id = "lemma_13_3_7"
+kind = "theorem"
+desc = '''
+Lemma 13.3.7 (corrected hypotheses). Under f.D0pL, for an ARqpEDA run with `RadiiControl` and
+`θ < ς/2`, and `k ∈ S` before termination such that `‖s k‖ ≥ 1` or Step 1 at `k+1` does not pass at all
+orders with unchanged radii: `(D k).taylorDecrement p (s k) ≥ κ'_Δm * min_j ε j ^ π j` and
+`f (x k) - f (x (k+1)) ≥ η₁ κ'_Δm / 2 * min_j ε j ^ π j`, where `κ'_Δm` is `κ_Δm` of Lemma 13.1.18 with
+`ς/2 - θ` for `1 - θ`, `4 κs` for `3 κ∇max κs`, and `σmax` of Lemma 13.3.5. The remaining successful
+iterations are followed by an accuracy-improving iteration at which (13.3.17) fails, hence (Lemma
+13.3.6 (ii)) `h_{k+1,max} > ς κ_δ1(σmax)^q ε_min^{q+1}/(4 q!)`.
+Correction: the book asserts (13.1.82)–(13.1.83) for every `k ∈ T` before termination by referring to
+Lemma 13.1.18, whose proof needs `x_{k+1}` not approximately optimal (see the module description).
+Proof: `eda_radius_inequality`, Lemma 13.1.13, `Optimization.sub_ge_of_inexact_ratio` (`κs ≤ η₁/4`).
+'''
+deps = ["eda_radius_inequality", "lemma_13_1_13", "lemma_13_3_5", "lemma_13_3_6_ii", "Optimization.le_sigma_of_arUpdate", "Optimization.sub_ge_of_inexact_ratio"]
+source = "Cartis–Gould–Toint, Lemma 13.3.7"
+
+[[node]]
+id = "theorem_13_3_8_i"
+kind = "theorem"
+desc = '''
+Theorem 13.3.8, case `q ∈ {1,2}` (corrected). Let `AssumptionD0pL f p L`, `AssumptionBb f flow`,
+`ε j ∈ Ioc 0 1`, and `θ < ς/2`. For every ARqpEDA run with `RadiiControl` at every iteration there is
+`kε` with `IsFirstHit edaStopAR kε`, `x kε` an `(ε, δ₁ kε)`-approximate `q`-th order minimizer
+(Lemma 13.3.6 (i); the book's "`φ^1_{f,j}(x_ε) ≤ ε_j/j!`" is corrected to radii `δ₁ kε ∈ (0,1]^q` as in
+Theorem 13.1.19), and with `N = (f x₀ - flow) / (η₁ κ'_Δm / 2 · min_j ε j^((p+1)/(p-j+1)))`,
+`M = κ^E |log ε_min| + κ^F + 1` (bound on the accuracy-improving iterations, `κ_acc` of Theorem 13.1.19
+with `κ∇max = 1` and `σmax` of Lemma 13.3.5), `c = 1 + |log γ₁|/log γ₂`:
+`edaFunEvalCount kε ≤ 2 ((N + M + 1) c + log (σmax/σ₀)/log γ₂)` and
+`derivEvalCount (S ∨ A) kε ≤ N + 2 M + 2`. Both are `O(max_j ε_j^{-(p+1)/(p-j+1)})` (the `M` terms are
+`O(|log ε_min|)`), the order claimed by the book; the book's explicit constants
+(`κ^A_EDA = 2κ^A_IDA`, …) rest on the gap described in the module description.
+Proof: successes before `kε` are bounded by `N` (Lemma 13.3.7, telescoping) plus the number of
+accuracy-improving iterations (`≤ M`) plus one; trials by Lemma 13.1.9 with Lemma 13.3.5;
+`Optimization.card_accuracyImproving_le` (Lemmas 13.1.12 (4), 13.3.6 (ii));
+`Optimization.exists_firstHit_le_of_dynamicAccuracy`.
+'''
+deps = ["lemma_13_3_5", "lemma_13_3_6_i", "lemma_13_3_6_ii", "lemma_13_3_7", "lemma_13_1_9", "lemma_13_1_12", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.card_mul_le_of_decrease", "Optimization.card_accuracyImproving_le", "Optimization.exists_firstHit_le_of_dynamicAccuracy"]
+source = "Cartis–Gould–Toint, Theorem 13.3.8 (1)"
+
+[[node]]
+id = "theorem_13_3_8_ii"
+kind = "theorem"
+desc = '''
+Theorem 13.3.8, case `q > 2` (corrected): as `theorem_13_3_8_i` with `π j = j(p+1)/p` and the `q > 2`
+constant `κ'_Δm`; bounds `O(max_j ε_j^{-j(p+1)/p})`. (The OCR of the displayed bounds is damaged;
+restored from Lemma 13.1.18.)
+'''
+deps = ["lemma_13_3_5", "lemma_13_3_6_i", "lemma_13_3_6_ii", "lemma_13_3_7", "lemma_13_1_9", "lemma_13_1_12", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.card_mul_le_of_decrease", "Optimization.card_accuracyImproving_le", "Optimization.exists_firstHit_le_of_dynamicAccuracy"]
+source = "Cartis–Gould–Toint, Theorem 13.3.8 (2)"
