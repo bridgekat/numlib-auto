@@ -1,0 +1,249 @@
+namespace = "CartisGouldToint.Chapter05"
+desc = '''
+§5.3 Measure-dominated problems. Surface forms of the backbone `Optimization.MeasureDominated`
+(domination (5.3.1), classes `ARψ,ν`, `TRψ,ν`) and the gap/measure complexity results, all reduced
+to the scalar recurrences of `Optimization.GapRecurrence` with `c = κν/κψ^{ν/μ}`, `τ = ν/μ`,
+`α = τ - 1 = (ν-μ)/μ`, `Γ_k = f(x_k) - f_*`.
+
+Standing hypotheses of every result ("`f` is `ψ`-dominated of level `μ` and an `ARψ,ν`
+(resp. `TRψ,ν`) algorithm is applied"): `f ψ : EuclideanSpace ℝ (Fin n) → ℝ`, `ψ ≥ 0`, `μ ≥ 1`,
+`κψ > 0`, `Optimization.IsMeasureDominated f ψ fstar μ κψ (range x)` (domination is only needed at
+the iterates, as the book remarks), `IsARpsiNuRun f ψ κν ν κR κA x S` (resp. `IsTRpsiNuRun`) with
+`κν > 0`, `ν ≥ 1`, `κR ≥ 1`, `κA ≥ 0`.
+
+Formalization choices: rates are *upper* bounds along successful iterations (the inequalities do
+not exclude faster or finite convergence); "the algorithm needs at most `N` successful iterations
+(resp. iterations) to compute `x_ε` with `Γ_ε ≤ ε`" is "`Γ_k ≤ ε` for every `k` with
+`N ≤ |𝒮 ∩ [0, k)|` (resp. `N ≤ k`)" — gaps are nonincreasing, so this is the first-hit bound —
+and for `ψ(x_ε) ≤ ε`: "some `k ≤ N` has `ψ(x_k) ≤ ε`". Bounds of the form `log |log ε|` are stated
+with `log (max 1 |log ε|)` (the book's footnote to Theorem 5.3.10 assumes `|log ε| ≥ 1`), for all
+`ε ∈ (0, 1)`. The leading constants (`κ^E`, `κ^B`) are the book's; the additive ones (`κ^F`, `κ^C`)
+are the corrected values of the backbone counts (the book's Appendix B constants contain the slips
+listed in `Optimization.GapRecurrence`). The unnumbered examples of §5.3.1 other than full-rank
+least squares (convex functions on a ball, strongly convex functions, `‖x‖^{2i}` with the measure
+`φ^1_{f,2}`) are not formalized.
+'''
+
+[[node]]
+id = "IsDominated"
+kind = "def"
+desc = '''
+`IsDominated f ψ fstar μ κψ : Prop := Optimization.IsMeasureDominated f ψ fstar μ κψ univ` with
+`fstar = ⨅ x, f x` the global minimum value: `f` is `ψ`-dominated of level `μ` (5.3.1).
+'''
+deps = ["Optimization.IsMeasureDominated"]
+source = "Cartis–Gould–Toint, (5.3.1)"
+
+[[node]]
+id = "IsARpsiNuRun"
+kind = "def"
+desc = '''
+The class `ARψ,ν`: `IsARpsiNuRun f ψ κν ν κR κA x S := Optimization.IsARLikeRun f ψ κν ν κR κA x S`
+((5.3.5), (5.3.9); the book's "monotonic" is implied for `ψ ≥ 0`). Non-vacuity: ARp runs without
+termination (`Optimization.isARLikeRun_of_isARpRun`, cases (5.3.6)–(5.3.7)).
+'''
+deps = ["Optimization.IsARLikeRun", "Optimization.isARLikeRun_of_isARpRun"]
+source = "Cartis–Gould–Toint, Section 5.3.2 (class ARψ,ν)"
+
+[[node]]
+id = "IsTRpsiNuRun"
+kind = "def"
+desc = '''
+The class `TRψ,ν`: `IsTRpsiNuRun f ψ κν ν κR κA x S := Optimization.IsTRLikeRun f ψ κν ν κR κA x S`
+((5.3.28), (5.3.9)). (The book's claim that TR1/TR2 belong to the class with `ν = 2`,
+`κν = η₁ κ_decr` holds for the decrease (Lemma 2.3.5) but its density constant depends on a lower
+bound for the gradient along the run; see `Optimization.MeasureDominated`.)
+'''
+deps = ["Optimization.IsTRLikeRun"]
+source = "Cartis–Gould–Toint, Section 5.3.3 (class TRψ,ν)"
+
+[[node]]
+id = "lemma_5_3_1"
+kind = "theorem"
+desc = '''
+Lemma 5.3.1. Under the standing AR hypotheses, with `c = κν/κψ^(ν/μ)`:
+(5.3.10) `Γ_{k+1} ≤ Γ_k (1 + c Γ_{k+1}^((ν-μ)/μ))⁻¹` for every successful `k`; `Γ_k → 0`; and
+(i) `ν < μ`: `∀ η > 0, ∃ K, ∀ k ≥ K, S k → Γ_{k+1} ≤ η Γ_k` (superlinear);
+(ii) `ν = μ`: `Γ_{k+1} ≤ (1 + κν/κψ)⁻¹ Γ_k` for successful `k` (linear);
+(iii) `ν > μ`, `Γ₀ > 0`: `Γ_{k+1} ≤ (Γ₀^(-α) + c κdom |𝒮_k|)^(-1/α)` (sublinear rate
+`O(|𝒮_k|^{-μ/(ν-μ)})`, `κdom` of `Optimization.IsImplicitGapDecrease.rates`).
+'''
+deps = ["IsARpsiNuRun", "Optimization.isImplicitGapDecrease_of_isARLikeRun", "Optimization.IsImplicitGapDecrease.le_div", "Optimization.IsImplicitGapDecrease.rates"]
+source = "Cartis–Gould–Toint, Lemma 5.3.1"
+
+[[node]]
+id = "theorem_5_3_2"
+kind = "theorem"
+desc = '''
+Theorem 5.3.2. Under the standing AR hypotheses, let `N = Optimization.implicitGapHitIndex c (ν/μ)
+Γ₀ ε` (the book's `Υ_{κν/κψ^{ν/μ}, ν/μ}(Γ₀, ε)`, (5.3.12)–(5.3.13)), `ε > 0`. Then `Γ_k ≤ ε`
+whenever `N ≤ |𝒮 ∩ [0,k)|` (5.3.14), and whenever `κR N + κA + 1 ≤ k` (5.3.15) (the book cites
+"(5.3.94)" for (5.3.9) and omits the `+1`).
+'''
+deps = ["lemma_5_3_1", "Optimization.implicitGapSeq", "Optimization.IsImplicitGapDecrease.le_implicitGapSeq", "Optimization.le_card_of_density"]
+source = "Cartis–Gould–Toint, Theorem 5.3.2"
+
+[[node]]
+id = "theorem_5_3_3"
+kind = "theorem"
+desc = '''
+Theorem 5.3.3 (`1 ≤ ν < μ`). Under the standing AR hypotheses with `Γ₀ > 0` (if `Γ₀ = 0` all gaps
+vanish): the gaps converge superlinearly (Lemma 5.3.1 (i)) and, for every `ε ∈ (0,1)`,
+`Γ_k ≤ ε` whenever `κ^E log(max 1 |log ε|) + κ^F ≤ |𝒮 ∩ [0,k)|` (5.3.17) and whenever
+`κ^B log(max 1 |log ε|) + κ^C ≤ k` (5.3.16), with `κ^E = 1/(log μ - log ν)` (book's
+`κ^E_{AR,gap,1}`), `κ^F` the constant `F` of `Optimization.IsImplicitGapDecrease.le_of_superlinear_count`
+(`ω₀ = c^{μ/(ν-μ)} Γ₀`), `κ^B = κR κ^E`, `κ^C = κR κ^F + κA + 1`. Measure version ((5.3.18)–(5.3.19)):
+for every `ε ∈ (0,1)` with `κν ε^ν < 1` there is `k ≥ 1` with `ψ(x_k) ≤ ε`,
+`|𝒮 ∩ [0,k)| ≤ κ^E log(max 1 |log (κν ε^ν)|) + κ^F + 1` and
+`k ≤ κ^B log(max 1 |log(κν) + ν log ε|) + κ^C + κR` (via (B.5.11): a successful `k` with
+`Γ_k ≤ κν ε^ν` gives `ψ(x_{k+1}) ≤ ε`).
+'''
+deps = ["lemma_5_3_1", "Optimization.IsImplicitGapDecrease.le_of_superlinear_count", "Optimization.le_card_of_density"]
+source = "Cartis–Gould–Toint, Theorem 5.3.3 and its proof (Appendix B)"
+
+[[node]]
+id = "theorem_5_3_4"
+kind = "theorem"
+desc = '''
+Theorem 5.3.4 (`ν = μ`). Under the standing AR hypotheses, `Γ₀ > 0`: linear convergence with factor
+`(1 + κν/κψ)⁻¹` (Lemma 5.3.1 (ii)); for `ε ∈ (0,1)`, `Γ_k ≤ ε` whenever
+`κ^E |log ε| + κ^F ≤ |𝒮 ∩ [0,k)|` (5.3.21), `κ^E = 1/log(1 + κν/κψ)`,
+`κ^F = log Γ₀ / log(1 + κν/κψ) + 1`, and whenever `κR κ^E |log ε| + κR κ^F + κA + 1 ≤ k` (5.3.20);
+measure version (5.3.22)–(5.3.23): some `k ≥ 1` with `ψ(x_k) ≤ ε`, `|𝒮 ∩ [0,k)| ≤ ν κ^E |log ε| +
+κ^E |log κν| + κ^F + 1` and `k ≤ κR (that bound) + κA + 1`.
+'''
+deps = ["lemma_5_3_1", "Optimization.IsImplicitGapDecrease.le_of_linear_count", "Optimization.le_card_of_density"]
+source = "Cartis–Gould–Toint, Theorem 5.3.4 and its proof (Appendix B)"
+
+[[node]]
+id = "theorem_5_3_5"
+kind = "theorem"
+desc = '''
+Theorem 5.3.5 (`ν > μ`). Under the standing AR hypotheses, `Γ₀ > 0`: sublinear convergence
+(Lemma 5.3.1 (iii)); for `ε > 0`, `Γ_k ≤ ε` whenever `κ^E ε^(-(ν-μ)/μ) + κ^F ≤ |𝒮 ∩ [0,k)|`
+(5.3.25) and whenever `κR κ^E ε^(-(ν-μ)/μ) + κR κ^F + κA + 1 ≤ k` (5.3.24), with
+`κ^E = 1/min(Γ₀^(-α) (2^α - 1), min 1 α · c/2)` and `κ^F = -κ^E Γ₀^(-α)` (corrected: the book's
+`κ^E_{AR,gap,3}` has `κψ^{ν/μ}/κν` for `Γ₀^{-α}` and `α` for `min 1 α`, see
+`Optimization.GapRecurrence`). The measures `ψ(x_{k+1})`, `k ∈ 𝒮`, also go to zero, and there is a
+successful `k` with `ψ(x_{k+1}) ≤ ε`, `|𝒮_k| ≤ 2 M + 2`, `M = (c κdom)^(-μ/ν) κν^(-(ν-μ)/ν)
+ε^(-(ν-μ))` ((5.3.27), corrected factor 2), and `k ≤ κR (2M + 2) + κA` ((5.3.26)).
+'''
+deps = ["lemma_5_3_1", "Optimization.IsImplicitGapDecrease.le_of_sublinear_count", "Optimization.exists_le_of_halving", "Optimization.le_card_of_density"]
+source = "Cartis–Gould–Toint, Theorem 5.3.5 and its proof (Appendix B)"
+
+[[node]]
+id = "lemma_5_3_6"
+kind = "theorem"
+desc = '''
+Lemma 5.3.6. Under the standing TR hypotheses with `Γ₀ > 0`, let `Γ□ = (κψ^(ν/μ)/κν)^(μ/(ν-μ))`
+(for `ν ≠ μ`), `k₁` the first successful index (exists by density); (5.3.33):
+`0 ≤ Γ_{k+1} ≤ Γ_k (1 - c Γ_k^((ν-μ)/μ))` for successful `k`.
+(i) `ν = μ`: `κν ≤ κψ`; if `κν < κψ`, `Γ_{k+1} ≤ (1 - κν/κψ) Γ_k` for successful `k`; if `κν = κψ`,
+`Γ_{k₁+1} = 0`.
+(ii) `ν < μ`: `Γ₀ ≥ Γ□` (5.3.29); if equal, `Γ_{k₁+1} = 0`; every successful `k` has `Γ_k = 0` or
+`Γ_k ≥ Γ□` (5.3.31) and (5.3.30) holds; and `Γ_k = 0` for all large `k` (finite termination; the
+book's "final value `Γ_{k□} ≥ 1`" is `Γ_{k□} ≥ Γ□`, i.e. `ω ≥ 1` in the scaled gap).
+(iii) `ν > μ`: `Γ₀ ≤ Γ□` (5.3.32); if equal, `Γ_{k₁+1} = 0`; (5.3.30) holds and `Γ_k → 0` with
+`Γ_{k+1} ≤ (Γ₀^(-α) + α c |𝒮_k|)^(-1/α)` (sublinear).
+'''
+deps = ["IsTRpsiNuRun", "Optimization.isImplicitGapDecrease_of_isARLikeRun", "Optimization.IsImplicitGapDecrease.le_div", "Optimization.IsImplicitGapDecrease.le_of_linear_count", "Optimization.IsExplicitGapDecrease.eq_zero_of_lt_one", "Optimization.IsImplicitGapDecrease.le_of_sublinear_count"]
+source = "Cartis–Gould–Toint, Lemma 5.3.6"
+
+[[node]]
+id = "theorem_5_3_7"
+kind = "theorem"
+desc = '''
+Theorem 5.3.7 (`ν < μ`, TR). Under the standing TR hypotheses: with `ω₀ = Γ₀/Γ□` and
+`κ^F_{TR,1} = log ω₀ / |log (1 - ω₀^((ν-μ)/μ))| + 1` (if `Γ₀ > 0`; `0` if `Γ₀ = 0`):
+`Γ_k = 0` whenever `κ^F_{TR,1} ≤ |𝒮 ∩ [0,k)|` (5.3.36) and whenever
+`κ^C_{TR,1} := κR κ^F_{TR,1} + κA + 1 ≤ k` (5.3.35); and some `i ≤ κR (κ^F_{TR,1} + 1) + κA` has
+`ψ(x_i) = 0` ((5.3.37)–(5.3.38); from (5.3.28) at a successful `k` with `Γ_k = 0`, the minimizing
+`i ≤ k` — not necessarily `x_k` itself).
+'''
+deps = ["lemma_5_3_6", "Optimization.IsExplicitGapDecrease.eq_zero_of_lt_one", "Optimization.le_card_of_density"]
+source = "Cartis–Gould–Toint, Theorem 5.3.7 and its proof (Appendix B)"
+
+[[node]]
+id = "theorem_5_3_8"
+kind = "theorem"
+desc = '''
+Theorem 5.3.8 (`ν = μ`, TR). Under the standing TR hypotheses, `Γ₀ > 0`: either `κν = κψ` and
+`Γ_{k₁+1} = 0`, or linear convergence with factor `1 - κν/κψ`, and for `ε ∈ (0,1)`: `Γ_k ≤ ε`
+whenever `κ^E |log ε| + κ^F ≤ |𝒮 ∩ [0,k)|` (5.3.40), `κ^E = 1/|log(1 - κν/κψ)|`,
+`κ^F = log Γ₀ / |log(1 - κν/κψ)| + 1` (book omits the `+1` of the ceiling), and whenever
+`κR (κ^E |log ε| + κ^F) + κA + 1 ≤ k` (5.3.39); measure version (5.3.41)–(5.3.42): some `i` with
+`ψ(x_i) ≤ ε` and `i ≤ κR (ν κ^E |log ε| + κ^E |log κν| + κ^F + 1) + κA`.
+'''
+deps = ["lemma_5_3_6", "Optimization.IsImplicitGapDecrease.le_of_linear_count", "Optimization.le_card_of_density"]
+source = "Cartis–Gould–Toint, Theorem 5.3.8 and its proof (Appendix B)"
+
+[[node]]
+id = "theorem_5_3_9"
+kind = "theorem"
+desc = '''
+Theorem 5.3.9 (`ν > μ`, TR). Under the standing TR hypotheses, `Γ₀ > 0`: sublinear convergence and,
+for `ε > 0`, `Γ_k ≤ ε` whenever `κ^E ε^(-(ν-μ)/μ) + κ^F ≤ |𝒮 ∩ [0,k)|` (5.3.43), with
+`κ^E = μ κψ^(ν/μ)/((ν-μ) κν) = 1/(α c)` (printed exponent `μ/ν` is a typo) and
+`κ^F = -κ^E Γ₀^(-(ν-μ)/μ)` (printed `-κ^B …`), and whenever `κR κ^E ε^(-(ν-μ)/μ) + κR κ^F + κA + 1
+≤ k`; measures: some `i` with `ψ(x_i) ≤ ε` and `i ≤ κR (2M + 2) + κA`,
+`M = (α c)^(-μ/ν) κν^(-(ν-μ)/ν) ε^(-(ν-μ))` (halving argument with `φ_k = min_{i≤k} ψ(x_i)`).
+'''
+deps = ["lemma_5_3_6", "Optimization.IsImplicitGapDecrease.le_of_sublinear_count", "Optimization.exists_le_of_halving", "Optimization.le_card_of_density"]
+source = "Cartis–Gould–Toint, Theorem 5.3.9 and its proof (Appendix B)"
+
+[[node]]
+id = "Phi_isMeasureDominated"
+kind = "theorem"
+desc = '''
+§5.3.1 / §5.3.4, (5.3.2)–(5.3.3): if `ℓ > 1`, `ψmin > 0` and `psiOne r ℓ x ≥ ψmin` (5.1.62) at
+every point of `A`, then `Optimization.IsMeasureDominated (Phi r ℓ) (fun x => ‖gradient (Phi r ℓ) x‖)
+0 (ℓ/(ℓ-1)) (ψmin^(-(ℓ/(ℓ-1)))/ℓ) A` (level `μ = ℓ/(ℓ-1) ∈ (1, 2]` for `ℓ ≥ 2`, reference value
+`0 ≤ Φ_ℓ`; the book's "`min Φ_ℓ = 0`" is not needed — and does not follow from (5.1.62) at the
+iterates only).
+'''
+deps = ["Phi", "psiOne", "Optimization.residualPow_le_of_norm_fderiv_ge", "Optimization.IsMeasureDominated"]
+source = "Cartis–Gould–Toint, (5.3.2)–(5.3.3)"
+
+[[node]]
+id = "theorem_5_3_10"
+kind = "theorem"
+desc = '''
+Theorem 5.3.10. Let `ℓ ≤ p` be an even positive integer, `ψmin > 0`, and `x, S` an `ARψ,ν` run for
+`f = Phi r ℓ`, `ψ = ‖∇Φ_ℓ‖`, `ν = (p+1)/p` (constants `κν, κR, κA`), with `psiOne r ℓ (x k) ≥ ψmin`
+for all `k` (5.1.62). Then (`ν < μ = ℓ/(ℓ-1)` since `ℓ < p + 1`) `‖r(x_k)‖` converges superlinearly
+along `𝒮` (`∀ η > 0, ∃ K, ∀ k ≥ K, S k → ‖r(x_{k+1})‖ ≤ η ‖r(x_k)‖`), and for `ε₀ ∈ (0,1)`:
+`‖r(x_k)‖ ≤ ε₀` whenever `κ^E log(max 1 (|log ε₀| + log ℓ/ℓ)) + κ^F + κ^E log ℓ ≤ |𝒮 ∩ [0,k)|`
+(5.3.45) and whenever `κ^B log(max 1 (|log ε₀| + log ℓ/ℓ)) + κ^C + κ^B log ℓ ≤ k` (5.3.44), the
+constants being those of Theorem 5.3.3 with `μ = ℓ/(ℓ-1)`, `κψ = ψmin^{-ℓ/(ℓ-1)}/ℓ`, `f_* = 0`
+(apply it with `ε = ε₀^ℓ/ℓ` and `log(max 1 (ℓ y)) ≤ log ℓ + log(max 1 y)`).
+'''
+deps = ["theorem_5_3_3", "lemma_5_3_1", "Phi_isMeasureDominated"]
+source = "Cartis–Gould–Toint, Theorem 5.3.10"
+
+[[node]]
+id = "theorem_5_3_11"
+kind = "theorem"
+desc = '''
+Theorem 5.3.11. Let `ℓ > 2` be an even integer, `ψmin > 0`, and `x, S` a `TRψ,ν` run for
+`f = Phi r ℓ`, `ψ = ‖∇Φ_ℓ‖`, `ν = 2`, with (5.1.62) at all iterates. Then `‖r(x_k)‖ → 0` along `𝒮`
+with the sublinear rate of Lemma 5.3.6 (iii), and for `ε₀ ∈ (0,1)`: `‖r(x_k)‖ ≤ ε₀` whenever
+`ℓ^((ℓ-2)/ℓ) κ^E ε₀^(-(ℓ-2)) + κ^F ≤ |𝒮 ∩ [0,k)|` and whenever
+`κR (ℓ^((ℓ-2)/ℓ) κ^E ε₀^(-(ℓ-2)) + κ^F) + κA + 1 ≤ k`, with `κ^E, κ^F` of Theorem 5.3.9 for
+`μ = ℓ/(ℓ-1)`, `κψ = ψmin^{-ℓ/(ℓ-1)}/ℓ` (`(ν-μ)/μ = (ℓ-2)/ℓ`, `ε = ε₀^ℓ/ℓ`).
+'''
+deps = ["theorem_5_3_9", "lemma_5_3_6", "Phi_isMeasureDominated"]
+source = "Cartis–Gould–Toint, Theorem 5.3.11"
+
+[[node]]
+id = "theorem_5_3_12"
+kind = "theorem"
+desc = '''
+Theorem 5.3.12. Let `ψmin > 0` and `x, S` a `TRψ,ν` run for `f = Phi r 2`, `ψ = ‖∇Φ₂‖`, `ν = 2`,
+with (5.1.62) at all iterates (so `μ = ν = 2`). Then either `r(x_{k₁+1}) = 0` after the first
+successful iteration `k₁`, or `‖r(x_k)‖²` converges linearly along `𝒮` (factor `1 - κν/κψ`); for
+`ε₀ ∈ (0,1)`, `‖r(x_k)‖ ≤ ε₀` whenever `2 κ^E |log ε₀| + κ^E log 2 + κ^F ≤ |𝒮 ∩ [0,k)|` and whenever
+`κR (2 κ^E |log ε₀| + κ^E log 2 + κ^F) + κA + 1 ≤ k`, constants of Theorem 5.3.8 with
+`κψ = ψmin^{-2}/2` (`ε = ε₀²/2`). (The book's display mixes `κ^C_{TR1,FRLS}` and `κ^C_{TR,FRLS}`.)
+'''
+deps = ["theorem_5_3_8", "lemma_5_3_6", "Phi_isMeasureDominated"]
+source = "Cartis–Gould–Toint, Theorem 5.3.12"

@@ -1,0 +1,33 @@
+desc = '''
+Cartis–Gould–Toint Chapter 5, "Structured Problems": nonlinear least squares / least Euclidean norm
+with the ARpLE algorithm (§5.1), partially separable functions (§5.2), measure-dominated problems
+and classes of adaptive-regularization-like and trust-region-like methods (§5.3), phase complexity
+of AR2 under strict local convexity (§5.4), and the universal regularization method ARp-H for
+Hölder-continuous `p`-th derivatives (§5.5). Appendix B's Lemma B.5.1 is in
+`AppendixB.Chapter05`; the appendix proofs of Lemmas 5.1.3, 5.1.5 and Theorems 5.3.3–5.3.9 belong
+to those nodes.
+
+Conventions: namespace `CartisGouldToint.Chapter05` for all sections; points in
+`EuclideanSpace ℝ (Fin n)`, residuals `r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)`.
+ARp-type algorithms are instances of the backbone run predicate `Optimization.IsARpRun` (generic
+termination test; planned here because no general ARp run is in the core — to be deduplicated with
+the Chapter 4 plans), with the criticality order `q ∈ {1,2,3}` replacing the book's
+`ε₂ = ε₃ = ∞` conventions. The measure-dominated classes `ARψ,ν`, `TRψ,ν` are the backbone
+`Optimization.IsARLikeRun`, `Optimization.IsTRLikeRun`; rates ("converge superlinearly/linearly/
+sublinearly") are formalized as *upper* rate bounds; "needs at most `N` iterations" as "for every
+`k ≥ N`, `Γ_k ≤ ε`" (gaps are monotone) or "some `k ≤ N` has `ψ(x_k) ≤ ε`".
+
+Source corrections (details in nodes and in notes/cgt/reports/plan-ch05.md):
+Lemma 5.1.1 (`ℓ ≥ 2p` suffices); Algorithm 5.1.1 / Theorem 5.1.7 (the requirement `M_k ≠ ∅` in the
+third-order test is dropped — with it the counting argument fails when `M_{k+1} = ∅`; the
+exponents `2^4`, `2^s`, `2^*` and the `ε` in `1 - (ε-1)/p` are OCR for `2^i`, `ℓ`; the
+nontermination alternatives (5.1.51) are an "or"; the multiplier of `#F` is `κ^A`); third-order
+ARp/ARpLE runs need not exist (see `Optimization.ARpRun`); Theorem 5.3.2's "(5.3.94)" is (5.3.9);
+Lemma 5.3.6 (ii) "final value `Γ ≥ 1`" means `Γ ≥ Γ□`; several Appendix B constants for
+Theorems 5.3.3, 5.3.5, 5.3.9 (see `Optimization.GapRecurrence`); Lemma 5.4.2 (step bound (5.4.8)
+uses a wrong Rayleigh-quotient estimate: correct `κ_s = 2(1+θ₁)/λ_{min,*}`, and the term with
+`max(θ₁ - σmin, 0)` in the denominator is absent when `θ₁ ≤ σmin`); Lemma 5.4.3 (count is
+`⌈log₂ log₂(ζ_*/ε)⌉`, the printed `log₂ log₂(ζ/ε)` is off by one); Algorithm 5.5.1 Step 4 (third
+case is "`ρ_k < η₁` or (5.5.10) or (5.5.11) fails"); Lemma 5.5.4 proof (the printed `ε₁` in the last
+display of case (b) is `ε₂`); Theorem 5.5.7 evaluation counts (initial evaluation at `x₀`).
+'''

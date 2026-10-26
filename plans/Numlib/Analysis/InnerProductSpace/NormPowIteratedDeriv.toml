@@ -1,0 +1,28 @@
+desc = '''
+Higher derivatives of `s ↦ ‖s‖ ^ m` for a *natural* exponent `m` on a real inner product space:
+the norm bound of Cartis–Gould–Toint Lemma B.4.1 in the integer case `β = 1` (exponent `p + 1`),
+where it is correct. Needed for third-order step bounds of ARp-type methods ((4.1.30), used in
+§5.1 through `Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel`). The fractional case
+of B.4.1 is false as printed (core design §8) and is not claimed here; the order-≤ 2 real-exponent
+facts are in `NormPowHessian`. Planned by plan-ch05; to be deduplicated with the Chapter 4 /
+Appendix B.4 plans (plan-ch04), which must treat B.4.1 in general.
+
+Suggested proof: for even `m` the map is the polynomial `⟪s, s⟫^(m/2)`; in general use
+`iteratedFDeriv_normRpow_smul` / homogeneity (`Numlib/Analysis/InnerProductSpace/NormPow`) off the
+origin, and the explicit formula `D^j(‖·‖^m)(s)[d]^j` along the 2-plane spanned by `s, d`, which
+reduces to a one-variable computation (`iteratedFDeriv_normRpow_apply_unit`,
+`iteratedFDeriv_normRpow_apply_perp`); at the origin all derivatives of order `< m` vanish.
+'''
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_le"
+kind = "theorem"
+desc = '''
+For `m j : ℕ`, `j ≤ m`, and all `s : E`: `s ↦ ‖s‖ ^ m` is `ContDiff ℝ j` (indeed `C^∞` for even `m`,
+`C^{m-1}` with Lipschitz `(m-1)`-th derivative in general) and
+`‖iteratedFDeriv ℝ j (fun s : E => ‖s‖ ^ m) s‖ ≤ m ! / (m - j) ! * ‖s‖ ^ (m - j)`, with equality
+attained along `d = s/‖s‖` for `s ≠ 0`. (Requires `j ≤ m - 1` for the `ContDiff` claim when `m` is
+odd; the bound is used with `m = p + 1`, `j ≤ 3 ≤ p`.)
+'''
+deps = ["iteratedFDeriv_two_norm_rpow_bounds"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 (β = 1), (4.1.29)–(4.1.30)"

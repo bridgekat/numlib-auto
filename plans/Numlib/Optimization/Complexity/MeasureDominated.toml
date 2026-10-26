@@ -1,0 +1,85 @@
+namespace = "Optimization"
+desc = '''
+Measure-dominated objectives and abstract classes of monotone methods (Cartis–Gould–Toint §5.3).
+`f` is `ψ`-dominated of level `μ ≥ 1` (Polyak–Łojasiewicz / gradient domination when
+`ψ = ‖∇f‖`, `μ ∈ [1,2]`) if `f x - f_* ≤ κψ ψ(x)^μ`. A run `x : ℕ → E` with success predicate `S`
+is *AR-like* (class `ARψ,ν`) if successful iterations decrease `f` by `κν ψ(x_{k+1})^ν`,
+unsuccessful ones keep `x`, and successes are dense (`k ≤ κR |S_k| + κA`, (5.3.9)); *TR-like*
+(class `TRψ,ν`) if the decrease is `κν (min_{i ≤ k} ψ(x_i))^ν` (5.3.28).
+
+Runs are infinite sequences (the classes are about the behaviour of the gap, not a termination
+test); domination is only required at the iterates (as the book remarks after Lemma 5.3.1).
+The gap `Γ_k = f(x_k) - f_*` then satisfies the scalar recurrences of `GapRecurrence` with
+`c = κν/κψ^{ν/μ}`, `τ = ν/μ` (`isImplicitGapDecrease_of_isARLikeRun`,
+`isExplicitGapDecrease_of_isTRLikeRun`), and all complexity statements of §5.3 follow from the
+scalar counts and `le_card_of_density`.
+
+Non-vacuity: ARp runs without termination test are AR-like (`isARLikeRun_of_isARpRun`,
+the book's "these properties are obviously satisfied by the ARp algorithm"). No analogous bridge is
+planned for TR1/TR2: their density constant (Lemma 2.3.1) involves `log(Δ_min)` with
+`Δ_min ∝ ε` (a lower bound on `‖∇f‖` along the run), so it is not uniform unless the gradient is
+bounded away from zero — the book's claim that TR1/TR2 belong to `TRψ,ν` with uniform constants is
+not justified (reported).
+'''
+
+[[node]]
+id = "IsMeasureDominated"
+kind = "def"
+desc = '''
+`IsMeasureDominated (f ψ : E → ℝ) (fstar μ κψ : ℝ) (A : Set E) : Prop :=
+∀ x ∈ A, fstar ≤ f x ∧ f x - fstar ≤ κψ * ψ x ^ μ` ((5.3.1) on `A`; `A = univ` with
+`fstar = ⨅ x, f x` is the book's global notion; the theorems only need `A ⊇ range x`).
+'''
+source = "Cartis–Gould–Toint, (5.3.1)"
+
+[[node]]
+id = "IsARLikeRun"
+kind = "def"
+desc = '''
+`IsARLikeRun (f ψ : E → ℝ) (κν ν κR κA : ℝ) (x : ℕ → E) (S : ℕ → Prop) : Prop :=
+(∀ k, S k → κν * ψ (x (k+1)) ^ ν ≤ f (x k) - f (x (k+1))) ∧ (∀ k, ¬ S k → x (k+1) = x k) ∧
+∀ k, (k : ℝ) ≤ κR * |successSet S k| + κA` ((5.3.5), (5.3.9); with the standing assumptions
+`κν > 0`, `ν ≥ 1`, `κR ≥ 1`, `κA ≥ 0`, `ψ ≥ 0` as hypotheses of the theorems). Density implies
+that `S` is infinite.
+'''
+deps = ["successSet"]
+source = "Cartis–Gould–Toint, Section 5.3.2 (class ARψ,ν), (5.3.5), (5.3.9)"
+
+[[node]]
+id = "IsTRLikeRun"
+kind = "def"
+desc = '''
+`IsTRLikeRun f ψ κν ν κR κA x S :↔ (∀ k, S k → κν * ((range (k+1)).inf' _ (ψ ∘ x)) ^ ν ≤
+f (x k) - f (x (k+1))) ∧ (∀ k, ¬ S k → x (k+1) = x k) ∧ ∀ k, (k : ℝ) ≤ κR * |successSet S k| + κA`
+((5.3.28), (5.3.9)). (The book also stops the method when `ψ(x_k) = 0`; this is not needed: the
+decrease condition then only asks for a nonnegative decrease.)
+'''
+deps = ["successSet"]
+source = "Cartis–Gould–Toint, Section 5.3.3 (class TRψ,ν), (5.3.28)"
+
+[[node]]
+id = "isImplicitGapDecrease_of_isARLikeRun"
+kind = "theorem"
+desc = '''
+If `IsARLikeRun f ψ κν ν κR κA x S`, `ψ ≥ 0`, `κψ > 0`, `μ ≥ 1` and `f` is `ψ`-dominated of level
+`μ` with constant `κψ` and value `fstar` at all iterates, then the gap `Γ k = f (x k) - fstar`
+satisfies `IsImplicitGapDecrease Γ S (κν / κψ ^ (ν/μ)) (ν/μ)` ((5.3.11)). For TR-like runs,
+`isExplicitGapDecrease_of_isTRLikeRun` (part of node): `IsExplicitGapDecrease Γ S (κν/κψ^(ν/μ)) (ν/μ)`
+((5.3.33); uses domination at the minimizing earlier iterate and monotonicity of `Γ`).
+'''
+deps = ["IsARLikeRun", "IsTRLikeRun", "IsMeasureDominated", "IsImplicitGapDecrease"]
+source = "Cartis–Gould–Toint, proofs of Lemmas 5.3.1 and 5.3.6"
+
+[[node]]
+id = "isARLikeRun_of_isARpRun"
+kind = "theorem"
+desc = '''
+An ARp run without termination (`IsARpRun f p P q (fun _ => False) x s σ`) for `f` `C^p` with
+`IteratedFDerivLipschitzOn f p L univ` is AR-like for `ψ = ‖fderiv ℝ f ·‖` with `ν = (p+1)/p`,
+`κν = κ₁` (4.1.32), `κR = 1 + |log γ₁|/log γ₂`, `κA = log(σmax/σ₀)/log γ₂`; for `q ≥ 2` also for
+`ψ₂ = max 0 (-minCurvature (∇²f ·))`, `ν = (p+1)/(p-1)`, `κν = κ₂` ((5.3.6)–(5.3.7)).
+(The third-order measure (5.3.8) depends on the run through `M_{k+1}` and is not a function of the
+point; it is not covered.)
+'''
+deps = ["IsARLikeRun", "IsARpRun.decrease_ge", "IsARpRun.succ_count", "IsARpRun.sigma_le"]
+source = "Cartis–Gould–Toint, (5.3.6)–(5.3.9) (\"obviously satisfied by the ARp algorithm\")"
