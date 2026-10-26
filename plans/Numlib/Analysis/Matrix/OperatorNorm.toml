@@ -220,6 +220,14 @@ id = "l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
 
 [[node]]
+id = "IsHermitian.l2_opNorm_le_linfty_opNorm"
+source = "Cartis–Gould–Toint, §9.3.1"
+
+[[node]]
+id = "norm_le_lpOpNorm_of_mulVec_eq_smul"
+source = "Cartis–Gould–Toint, §9.3.1 (|λᵢ| ≤ ‖H‖)"
+
+[[node]]
 id = "sum_norm_le_lpOpNorm_top"
 
 [[node]]

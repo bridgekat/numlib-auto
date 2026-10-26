@@ -199,6 +199,14 @@ noncomputable def lpOpNorm (A : Matrix m n 𝕜) : ℝ := ‖lpCLM p A‖
 theorem lpOpNorm_zero : lpOpNorm p (0 : Matrix m n 𝕜) = 0 := by
   rw [lpOpNorm, lpCLM_zero, norm_zero]
 
+/-- An eigenvalue is bounded by every induced norm: `A x = μ x` with `x ≠ 0` gives
+`‖μ‖ ≤ ‖A‖_p`. -/
+theorem norm_le_lpOpNorm_of_mulVec_eq_smul {A : Matrix n n 𝕜} {μ : 𝕜} {x : n → 𝕜} (hx : x ≠ 0)
+    (h : A *ᵥ x = μ • x) : ‖μ‖ ≤ lpOpNorm p A := by
+  have hle := (lpCLM p A).le_opNorm (WithLp.toLp p x)
+  rw [lpCLM_apply, WithLp.ofLp_toLp, h, WithLp.toLp_smul, norm_smul] at hle
+  exact le_of_mul_le_mul_right hle (norm_pos_iff.2 (by simpa using hx))
+
 theorem lpOpNorm_nonneg (A : Matrix m n 𝕜) : 0 ≤ lpOpNorm p A := norm_nonneg _
 
 /-- The induced norms are absolutely homogeneous, `‖c A‖_p = |c| ‖A‖_p`. -/
@@ -1905,6 +1913,14 @@ theorem l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm (A : Matrix m n 𝕜) :
       _ = C * R * ∑ j, ‖v j‖ ^ 2 := by rw [← Finset.mul_sum]; ring
   calc lpOpNorm 2 A ^ 2 ≤ (√(C * R)) ^ 2 := pow_le_pow_left₀ (lpOpNorm_nonneg 2 A) key 2
     _ = C * R := Real.sq_sqrt (mul_nonneg hC0 hR0)
+
+/-- **`‖A‖₂ ≤ ‖A‖_∞` for a Hermitian matrix** ([cartis2022evaluation] §9.3.1): `‖A‖₁ = ‖A‖_∞`
+(`Matrix.IsHermitian.lpOpNorm_one_eq_linfty_opNorm`), so `‖A‖₂² ≤ ‖A‖₁ ‖A‖_∞ = ‖A‖_∞²`. -/
+theorem IsHermitian.l2_opNorm_le_linfty_opNorm {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    lpOpNorm 2 A ≤ lpOpNorm ⊤ A := by
+  have h := l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm A
+  rw [hA.lpOpNorm_one_eq_linfty_opNorm, ← lpOpNorm_top, ← sq] at h
+  exact (pow_le_pow_iff_left₀ (lpOpNorm_nonneg _ _) (lpOpNorm_nonneg _ _) two_ne_zero).1 h
 
 end OneInfty
 
