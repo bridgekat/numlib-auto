@@ -1,65 +1,13 @@
 namespace = "Hermite"
-desc = '''
-Piecewise two-point Hermite interpolation of degree `2p + 1` on the real line with *controlled
-derivative bounds*: the tool with which every "slow convergence" example of Cartis–Gould–Toint is
-built (Appendix A.9, Theorems A.9.1–A.9.2). Data: nodes `x_0 < … < x_K` and jets `F k j`
-(`j ≤ p`, the prescribed `j`-th derivative at `x_k`). The key hypothesis (A.32) is that the data
-are consistent, up to `κ s_k^{p-j+1}`, with the degree-`p` Taylor expansion of the data at the
-previous node (`s_k = x_{k+1} - x_k`): exactly the conclusion (A.20) of Taylor's theorem for a
-function with `κ`-Lipschitz `p`-th derivative.
-
-Proof route (suggested, avoiding the explicit matrix `A_p` of the book): on `[0, s]` write the
-interpolant as `T(τ) + s^{p+1} R(τ/s)`, `T` the Taylor polynomial of the left data and `R` the
-Hermite interpolant on `[0,1]` of zero left data and right data `D_j = r_j s^{j-(p+1)}`,
-`|D_j| ≤ κ`; `R` depends linearly on `D ∈ ℝ^{p+1}` (unisolvence: `Hermite.isUnisolvent` /
-`interpolateJet` of `Numlib/Approximation/Hermite`), so `‖R^{(i)}‖_∞ ≤ C_p ‖D‖_∞` on `[0,1]`, and
-`π^{(p+1)}(τ) = R^{(p+1)}(τ/s)` is bounded independently of `s`. Gluing the pieces gives a `C^p`
-function (one-sided derivatives match at nodes) whose `p`-th derivative is Lipschitz (piecewise
-`C^1` with bounded derivative and continuous). Outside `[x_0, x_K]` extend by Hermite pieces of
-length `1` to constants (for the bounded version) as in the book.
-'''
 
 [[node]]
 id = "exists_twoPoint_interpolant"
-kind = "theorem"
-desc = '''
-Theorem A.9.1. There is a constant `C p` (depending only on `p`) such that: for `s > 0`, `κ ≥ 0` and
-data `a b : ℕ → ℝ` (left/right jets) with `|b j - ∑ i ∈ Icc j p, a i * s^(i-j) / (i-j)!| ≤
-κ s^(p-j+1)` for `j ≤ p`, there is a polynomial `π : ℝ[X]` of degree `≤ 2p+1` with
-`π^{(j)}(0) = a j`, `π^{(j)}(s) = b j` (`j ≤ p`) and `|π^{(p+1)}(τ)| ≤ C p * κ` for `τ ∈ [0,s]` (so
-`π^{(p)}` is `C p * κ`-Lipschitz on `[0,s]`). If moreover `|a j| ≤ κ` (`j ≤ p`) and `s ≤ κ` then
-`|π^{(j)}(τ)| ≤ C' p κ` on `[0, s]` for `j ≤ p`, with `C' p κ = (p+1) max(1, κ^{p+1}) (1 + C p)`
-or similar explicit value.
-'''
-deps = ["isUnisolvent", "interpolate"]
 source = "Cartis–Gould–Toint, Theorem A.9.1"
 
 [[node]]
 id = "exists_contDiff_interpolating_jets"
-kind = "theorem"
-desc = '''
-Theorem A.9.2. For every `p ≥ 1` and `κ ≥ 0` there is `L` (depending only on `p, κ`) such that for
-every `K : ℕ`, nodes `x : ℕ → ℝ` with `x k < x (k+1)` for `k < K`, and jets `F : ℕ → ℕ → ℝ` with
-`|F (k+1) j - ∑ i ∈ Icc j p, F k i * (x (k+1) - x k)^(i-j)/(i-j)!| ≤ κ (x (k+1) - x k)^(p-j+1)`
-(`k < K`, `j ≤ p`), there is `g : ℝ → ℝ` with `ContDiff ℝ p g`, `iteratedDeriv p g` `L`-Lipschitz on
-`ℝ`, and `iteratedDeriv j g (x k) = F k j` for `k ≤ K`, `j ≤ p`.
-(The book indexes `s_k > 0` for `k ∈ [0:k_e]`; only `k < k_e` is meaningful. The case `κ = 0`
-requires the data to be a single polynomial of degree `p`; take `g` that polynomial.)
-'''
-deps = ["exists_twoPoint_interpolant"]
 source = "Cartis–Gould–Toint, Theorem A.9.2 (first part)"
 
 [[node]]
 id = "exists_contDiff_interpolating_jets_bounded"
-kind = "theorem"
-desc = '''
-Theorem A.9.2, bounded version. For every `p ≥ 1` and `κ ≥ 0` there are `L B` (depending only on
-`p, κ`) such that, under the hypotheses of `exists_contDiff_interpolating_jets` and additionally
-`|F k j| ≤ κ` and `x (k+1) - x k ≤ κ` (`k < K`, `j ≤ p`; also `|F K j| ≤ κ`), the interpolant `g`
-can be chosen with `|iteratedDeriv j g t| ≤ B` for all `t : ℝ`, `j ≤ p`, `iteratedDeriv p g`
-`L`-Lipschitz, and `g` constant (equal to `F 0 0`, resp. `F K 0`) outside `[x 0 - 1, x K + 1]`.
-Consequently `g` is bounded below (book's f.Bb) and all of its derivatives of orders `1..p` are
-Lipschitz (book's f.D1pL). (The book's "for all x ∈ ℝⁿ" is a typo for `ℝ`.)
-'''
-deps = ["exists_contDiff_interpolating_jets"]
 source = "Cartis–Gould–Toint, Theorem A.9.2 (second part)"
