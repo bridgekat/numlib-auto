@@ -15,22 +15,6 @@ Arcs are `γ : ℝ → E` with `γ α - (x + ∑_{ℓ=1}^j α^ℓ • s ℓ) =o[
 '''
 
 [[node]]
-id = "curveCoeff"
-kind = "def"
-desc = '''
-`curveCoeff (D : FormalMultilinearSeries ℝ E F) (s : ℕ → E) (i : ℕ) : F :=
-∑ c : Composition i, ((c.length)! : ℝ)⁻¹ • D c.length (fun m => s (c.blocksFun m))` — the book's
-`∑_{k=1}^i (1/k!) ∑_{(ℓ₁..ℓ_k) ∈ P(i,k)} D_k[s_{ℓ₁}, …, s_{ℓ_k}]` ((12.1.6), (14.3.3)–(14.3.5)); for
-`i = 0` it is `D 0 ![]`. API (part of node): additive and `ℝ`-linear in `D`; for
-`D = ftaylorSeries ℝ (fun z => f z - ⟪y, c z⟫) x` it equals `curveCoeff (ftaylorSeries ℝ f x) s i -
-⟪y, curveCoeff (ftaylorSeries ℝ c x) s i⟫` (Lagrangian coefficients, `c` `C^i` at `x`);
-`curveCoeff D s 1 = D 1 ![s 1]`, `curveCoeff D s 2 = D 1 ![s 2] + ½ D 2 ![s 1, s 1]`,
-`curveCoeff D s 3 = D 1 ![s 3] + D 2 ![s 1, s 2] + (1/6) D 3 ![s 1, s 1, s 1]` (symmetric `D`;
-Table 12.1.1, (14.3.6)–(14.3.7)).
-'''
-source = "Cartis–Gould–Toint, (12.1.5)–(12.1.7), Table 12.1.1, (14.3.3)"
-
-[[node]]
 id = "isLittleO_comp_curve_sub_curveCoeff"
 kind = "theorem"
 desc = '''
