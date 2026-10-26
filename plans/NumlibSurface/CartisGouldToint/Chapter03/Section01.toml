@@ -1,52 +1,17 @@
 namespace = "CartisGouldToint.Chapter03"
-desc = '''
-§3.1 Slow convergence of Newton's method. Assumptions f.C2, f.HL; Newton's method (Algorithm
-3.1.1) as a run predicate (the Hessian equation, no globalization); the two-dimensional example
-`f_SN` (3.1.7), built here with smooth bumps (`Optimization.exists_contDiff_interpolating_separated_jets`).
-'''
 
 [[node]]
 id = "AssumptionC2"
-kind = "def"
-desc = '''
-f.C2: `AssumptionC2 f : Prop := ContDiff ℝ 2 f`.
-'''
 source = "Cartis–Gould–Toint, Assumption f.C2"
 
 [[node]]
 id = "AssumptionHL"
-kind = "def"
-desc = '''
-f.HL: `AssumptionHL f L : Prop := ContDiff ℝ 2 f ∧ 1 ≤ L ∧ ∀ x y, ‖iteratedFDeriv ℝ 2 f x -
-iteratedFDeriv ℝ 2 f y‖ ≤ L * ‖x - y‖` (3.1.3), i.e. `IteratedFDerivLipschitzOn f 2 L univ`
-(bridge lemma part of node).
-'''
-deps = ["IteratedFDerivHolderOn"]
 source = "Cartis–Gould–Toint, Assumption f.HL, (3.1.3)"
 
 [[node]]
 id = "algorithm_3_1_1"
-kind = "def"
-desc = '''
-Algorithm 3.1.1 (Newton) as a run predicate `IsNewtonRun f ε₁ x s`: before the first `k` with
-`‖∇f(x_k)‖ ≤ ε₁`: `∀ v, iteratedFDeriv ℝ 2 f (x k) ![s k, v] = -⟪gradient f (x k), v⟫` (3.1.1,
-`∇²f(x_k) s_k = -∇f(x_k)`) and `x (k+1) = x k + s k`. (The book presumes the Hessians positive
-definite; then the run is unique and `s_k` minimizes `T_{f,2}(x_k, ·)` (3.1.2) — lemma part of node.)
-'''
-deps = ["Optimization.UntilHit", "taylorPolynomial"]
 source = "Cartis–Gould–Toint, Algorithm 3.1.1"
 
 [[node]]
 id = "theorem_3_1_1"
-kind = "theorem"
-desc = '''
-Theorem 3.1.1. There are `flow`, `L₁ ≥ 1`, `L₂ ≥ 1` such that for every `ε₁ ∈ (0,1)` there is
-`f : EuclideanSpace ℝ (Fin 2) → ℝ` with `Chapter02.AssumptionBb f flow`,
-`Chapter02.AssumptionGL f L₁`, `AssumptionHL f L₂`, and a Newton run from `x₀ = 0` along which the
-Hessians are positive definite and `‖∇f(x_k)‖ > ε₁` for all `k ≤ ⌈ε₁⁻²⌉₊ - 1`; hence the first
-termination index is `≥ ⌈ε₁⁻²⌉₊` and more than `⌈ε₁⁻²⌉₊` evaluations of `f`, `∇f`, `∇²f` are
-needed. Data (3.1.4)–(3.1.6): `f_k = 2 - k ε₁²`, `g_k = -(ε₁² f_k, ε₁ f_k)`,
-`H_k = diag(ε₁² f_k², f_k²)`, `s_k = f_k⁻¹ (1, ε₁)`; iterates are `≥ 1/2` apart.
-'''
-deps = ["algorithm_3_1_1", "AssumptionHL", "CartisGouldToint.Chapter02.AssumptionBb", "CartisGouldToint.Chapter02.AssumptionGL", "Optimization.exists_contDiff_interpolating_separated_jets"]
 source = "Cartis–Gould–Toint, Theorem 3.1.1"

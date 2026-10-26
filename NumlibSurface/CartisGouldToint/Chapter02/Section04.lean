@@ -207,12 +207,18 @@ theorem lemma_2_4_1 (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
       Real.log (σmax / P.σ₀) / Real.log P.γ₂ :=
   h.run.le_succ_count (not_stop_iff.2 hk) hσ
 
-/-- The bound `σ_max = max(σ₀, γ₃ L/(2(1 - η₂)))` of (2.4.9). -/
+/-- The bound `σ_max = max(σ₀, γ₃ L/(2(1 - η₂)))` of (2.4.9): the backbone's
+`Optimization.arSigmaMax` with Lipschitz constant `L/2` (`sigmaMaxAR1_eq`). -/
 noncomputable def sigmaMaxAR1 (P : ARParams) (L : ℝ) : ℝ :=
-  max P.σ₀ (P.γ₃ * L / (2 * (1 - P.η₂)))
+  arSigmaMax P.toARParams (L / 2)
+
+/-- The book's formula (2.4.9) for `sigmaMaxAR1`. -/
+theorem sigmaMaxAR1_eq (P : ARParams) (L : ℝ) :
+    sigmaMaxAR1 P L = max P.σ₀ (P.γ₃ * L / (2 * (1 - P.η₂))) := by
+  rw [sigmaMaxAR1, arSigmaMax_def, mul_div_assoc', div_div]
 
 theorem sigmaMaxAR1_pos (P : ARParams) (L : ℝ) : 0 < sigmaMaxAR1 P L :=
-  P.σ₀_pos.trans_le (le_max_left _ _)
+  arSigmaMax_pos _ _
 
 /-- **Lemma 2.4.2** of [cartis2022evaluation] ((2.4.9)). Under f.gL, for every iteration `k` of an
 AR1 run up to (and including) termination, `σ_k ≤ max(σ₀, γ₃ L/(2(1 - η₂)))`. -/
@@ -239,7 +245,7 @@ theorem lemma_2_4_2 (hf : AssumptionGL f L) (h : algorithm_2_4_1 f P ε x s σ) 
     norm_num [Nat.factorial]
     linarith
   have := (h.run.sigma_le_max hforce (not_stop_iff.2 hk) k le_rfl).2.2
-  rw [sigmaMaxAR1]
+  rw [sigmaMaxAR1_eq]
   convert this using 2
   ring
 
@@ -282,9 +288,15 @@ theorem lemma_2_4_3 (hb : AssumptionBb f flow) (hf : AssumptionGL f L)
   field_simp
 
 /-- The constant `κ^A_AR1 = η₁⁻¹ max(σ₀, γ₃ L/(1 - η₂)) (1 + |log γ₁|/log γ₂)` of
-Theorem 2.4.4. -/
+Theorem 2.4.4 (with `max(σ₀, γ₃ L/(1 - η₂)) = Optimization.arSigmaMax P L`). -/
 noncomputable def kappaAAR1 (P : ARParams) (L : ℝ) : ℝ :=
-  P.η₁⁻¹ * max P.σ₀ (P.γ₃ * L / (1 - P.η₂)) * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
+  P.η₁⁻¹ * arSigmaMax P.toARParams L * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
+
+/-- The book's formula for `kappaAAR1`. -/
+theorem kappaAAR1_eq (P : ARParams) (L : ℝ) :
+    kappaAAR1 P L =
+      P.η₁⁻¹ * max P.σ₀ (P.γ₃ * L / (1 - P.η₂)) * (1 + |Real.log P.γ₁| / Real.log P.γ₂) :=
+  rfl
 
 /-- The constant `κ^C_AR1 = log(max(1, γ₃ L/(σ₀(1 - η₂))))/log γ₂ + 1` of Theorem 2.4.4. -/
 noncomputable def kappaCAR1 (P : ARParams) (L : ℝ) : ℝ :=
@@ -328,7 +340,7 @@ theorem theorem_2_4_4 (hb : AssumptionBb f flow) (hf : AssumptionGL f L)
     nlinarith [P.γ₃_pos, mul_nonneg P.γ₃_pos.le hL0]
   have hA : kappaSAR1 P L * (f (x 0) - flow) / ε ^ 2 * (1 + |Real.log P.γ₁| / Real.log P.γ₂) ≤
       kappaAAR1 P L * (f (x 0) - flow) / ε ^ 2 := by
-    rw [kappaSAR1, kappaAAR1]
+    rw [kappaSAR1, kappaAAR1_eq]
     have : 0 ≤ 1 + |Real.log P.γ₁| / Real.log P.γ₂ := by positivity
     have : 0 ≤ (f (x 0) - flow) / ε ^ 2 := by positivity
     have key : P.η₁⁻¹ * σmax * ((f (x 0) - flow) / ε ^ 2) *

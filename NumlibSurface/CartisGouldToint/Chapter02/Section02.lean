@@ -245,37 +245,6 @@ theorem kappaSDBA_pos {L α tini : ℝ} (hL : 0 < L) (hα0 : 0 < α) (hα : α <
   have : 0 < min tini ((1 - α) / L) := lt_min htini (by positivity)
   positivity
 
-/-- A sequence decreasing by at least `c` at every index before termination decreases by `K c`
-over the first `K` indices. -/
-private theorem le_sub_mul_of_forall {φ : ℕ → ℝ} {test : ℕ → Prop} {c : ℝ}
-    (hdec : ∀ k, (∀ j ≤ k, ¬ test j) → c ≤ φ k - φ (k + 1)) :
-    ∀ K, (∀ j < K, ¬ test j) → φ K ≤ φ 0 - K * c := by
-  intro K
-  induction K with
-  | zero => intro _; simp
-  | succ K ih =>
-    intro hK
-    have h1 := ih fun j hj => hK j (hj.trans K.lt_succ_self)
-    have h2 := hdec K fun j hj => hK j (Nat.lt_succ_of_le hj)
-    push_cast
-    linarith
-
-/-- If a quantity bounded below by `φlow` decreases by at least `c > 0` at every index before
-termination, then the test holds at some first index `k` with `k c ≤ φ 0 - φlow`. -/
-theorem exists_isFirstHit_of_sub_ge {φ : ℕ → ℝ} {test : ℕ → Prop} {c φlow : ℝ} (hc : 0 < c)
-    (hdec : ∀ k, (∀ j ≤ k, ¬ test j) → c ≤ φ k - φ (k + 1)) (hlow : ∀ k, φlow ≤ φ k) :
-    ∃ k, IsFirstHit test k ∧ (k : ℝ) * c ≤ φ 0 - φlow := by
-  have key := le_sub_mul_of_forall hdec
-  have hex : ∃ k, test k := by
-    by_contra hne
-    push Not at hne
-    obtain ⟨K, hK⟩ := exists_nat_gt ((φ 0 - φlow) / c)
-    have := key K fun j _ => hne j
-    rw [div_lt_iff₀ hc] at hK
-    linarith [hlow K]
-  obtain ⟨k, hk⟩ := exists_isFirstHit hex
-  exact ⟨k, hk, by linarith [key k fun j hj => hk.not_test_of_lt hj, hlow k]⟩
-
 /-- **Theorem 2.2.2** of [cartis2022evaluation], **corrected**. Assume f.Bb and f.gL and let
 `x, i` be a run of SDBA (Algorithm 2.2.1). With `κ = kappaSDBA L α t_ini` (the book's
 `κ_SDBA = L/(α(1-α))` when `t_ini ≥ (1-α)/L`, `kappaSDBA_of_le`) and
@@ -479,63 +448,6 @@ section SDEX
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ}
 
-/-- The exact linesearch step (2.2.26) is unique: the first global minimizer on the ray. -/
-theorem isExactLineMin_unique {x : EuclideanSpace ℝ (Fin n)} {t t' : ℝ}
-    (h : IsExactLineMin f x t) (h' : IsExactLineMin f x t') : t = t' := by
-  by_contra hne
-  rcases lt_or_gt_of_ne hne with hlt | hlt
-  · have := h'.2 t ⟨h.1.1, hlt⟩
-    linarith [h.1.2 t' h'.1.1]
-  · have := h.2 t' ⟨h'.1.1, hlt⟩
-    linarith [h'.1.2 t h.1.1]
-
-/-- **The exact linesearch (2.2.26) is well defined** when `f` is continuous and the sublevel set
-`{y | f y ≤ f x}` is bounded: the first global minimizer of `t ↦ f(x - t∇f(x))` on `t ≥ 0`
-exists. -/
-theorem exists_isExactLineMin (hf : Continuous f) {x : EuclideanSpace ℝ (Fin n)}
-    (hbdd : Bornology.IsBounded {y | f y ≤ f x}) : ∃ t, IsExactLineMin f x t := by
-  set g := gradient f x
-  rcases eq_or_ne g 0 with hg | hg
-  · refine ⟨0, ⟨⟨le_rfl, fun τ _ => by simp [g, hg]⟩, fun τ hτ => ?_⟩⟩
-    exact absurd hτ.2 (not_lt.2 hτ.1)
-  have hgpos : 0 < ‖g‖ := norm_pos_iff.2 hg
-  set φ : ℝ → ℝ := fun t => f (x - t • g)
-  have hφ : Continuous φ := hf.comp (continuous_const.sub (continuous_id.smul continuous_const))
-  obtain ⟨R, hR⟩ := (Metric.isBounded_iff_subset_closedBall (0 : EuclideanSpace ℝ (Fin n))).1 hbdd
-  set T : Set ℝ := {t | 0 ≤ t ∧ φ t ≤ f x}
-  have hTsub : T ⊆ Icc 0 ((R + ‖x‖) / ‖g‖) := by
-    intro t ⟨ht0, ht⟩
-    refine ⟨ht0, ?_⟩
-    have hmem := hR (show x - t • g ∈ {y | f y ≤ f x} from ht)
-    rw [Metric.mem_closedBall, dist_zero_right] at hmem
-    rw [le_div_iff₀ hgpos]
-    have : ‖t • g‖ ≤ ‖x - t • g‖ + ‖x‖ := by
-      have := norm_sub_le x (x - t • g)
-      rw [sub_sub_cancel] at this
-      linarith
-    rw [norm_smul, Real.norm_of_nonneg ht0] at this
-    linarith
-  have hTclosed : IsClosed T := isClosed_Ici.inter (isClosed_le hφ continuous_const)
-  have hTcpt : IsCompact T := isCompact_Icc.of_isClosed_subset hTclosed hTsub
-  have h0T : (0 : ℝ) ∈ T := ⟨le_rfl, by simp [φ]⟩
-  obtain ⟨t₀, ht₀, hmin⟩ := hTcpt.exists_isMinOn ⟨0, h0T⟩ hφ.continuousOn
-  have hm0 : φ t₀ ≤ f x := by simpa [φ] using hmin h0T
-  set M : Set ℝ := {t | 0 ≤ t ∧ φ t ≤ φ t₀}
-  have hMsub : M ⊆ T := fun t ht => ⟨ht.1, ht.2.trans hm0⟩
-  have hMcpt : IsCompact M :=
-    hTcpt.of_isClosed_subset (isClosed_Ici.inter (isClosed_le hφ continuous_const)) hMsub
-  obtain ⟨t, htM, hleast⟩ := hMcpt.exists_isLeast ⟨t₀, ht₀.1, le_rfl⟩
-  have hglob : ∀ τ, 0 ≤ τ → φ t ≤ φ τ := fun τ hτ => by
-    by_cases hτT : τ ∈ T
-    · exact htM.2.trans (hmin hτT)
-    · have : f x < φ τ := not_le.1 fun h' => hτT ⟨hτ, h'⟩
-      linarith [htM.2]
-  refine ⟨t, ⟨htM.1, hglob⟩, fun τ hτ => lt_of_le_of_ne (hglob τ hτ.1) fun heq => ?_⟩
-  have : φ τ ≤ φ t₀ := by
-    have h2 : φ t = φ τ := heq
-    rw [← h2]; exact htM.2
-  exact absurd (hleast ⟨hτ.1, this⟩) (not_le.2 hτ.2)
-
 /-- The SDEX algorithm of [cartis2022evaluation] (§2.2.3.4, steepest descent with the exact
 linesearch (2.2.26)), as a run predicate: `ε > 0` and, at every iteration `k` before the
 termination test `‖∇f(x_k)‖ ≤ ε` first holds, `t_k` is the first global minimizer of
@@ -652,7 +564,7 @@ theorem theorem_2_2_5 :
       have htk : t k = √2 := by
         have h1 : IsExactLineMin f (x k) (t k) := h.exact k hstop
         rw [hx k le_rfl] at h1
-        exact isExactLineMin_unique h1 (zigZag_isExactLineMin hadm (by omega))
+        exact h1.unique (zigZag_isExactLineMin hadm (by omega))
       refine ⟨fun j hj => ?_, fun j hj => ?_⟩
       · rcases Nat.lt_or_eq_of_le hj with hj | rfl
         · exact hx j (Nat.lt_succ_iff.1 hj)

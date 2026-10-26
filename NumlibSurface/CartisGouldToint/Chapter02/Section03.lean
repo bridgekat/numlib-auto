@@ -1,4 +1,3 @@
-import Numlib.Optimization.Complexity.Existence
 import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.ModelBased.QuadraticModel
 import Numlib.Optimization.ModelBased.TRRun
@@ -116,27 +115,15 @@ theorem exists_algorithm_2_3_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : TR1
     (hB : ∀ k, (B k : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     (x₀ : EuclideanSpace ℝ (Fin n)) :
     ∃ x s Δ, x 0 = x₀ ∧ algorithm_2_3_1 f P ε B x s Δ := by
-  classical
-  let S : ℕ → EuclideanSpace ℝ (Fin n) → ℝ → EuclideanSpace ℝ (Fin n) := fun k y Δ =>
-    if h : 0 ≤ Δ then (exists_isMinOn_quadModel_ball (gradient f y) (B k) h).choose else 0
-  have hS : ∀ k y Δ, 0 ≤ Δ → tr1Step f (B k) y Δ (S k y Δ) := fun k y Δ h => by
-    simp only [S, h, dite_true]
-    obtain ⟨hs, -, hC, -⟩ := (exists_isMinOn_quadModel_ball (gradient f y) (B k) h).choose_spec
-    obtain ⟨t, ht⟩ := exists_isCauchyStep (gradient f y) (B k) h
-    refine ⟨hs, t, ht, ?_⟩
-    rw [tr1Model_eq, tr1Model_eq]
-    linarith [hC t ht]
-  let R : ℕ → EuclideanSpace ℝ (Fin n) × ℝ → ℝ := fun k a => tr1Ratio f a.1 (B k) (S k a.1 a.2)
-  obtain ⟨r, hr0, hr⟩ := exists_run_of_forall_exists_of_invariant
-    (α := EuclideanSpace ℝ (Fin n) × ℝ) (init := fun a => a = (x₀, P.Δ₀))
-    (inv := fun _ a => 0 < a.2) (stop := fun _ a => ‖gradient f a.1‖ ≤ ε)
-    (step := fun k a b => TRAcceptance P.toTRParams (R k a) a.1 (S k a.1 a.2) b.1 a.2 b.2)
-    ⟨_, rfl⟩ (fun a ha => by rw [ha]; exact P.Δ₀_pos) (fun k a ha _ => by
-      obtain ⟨Δ', hacc, -, hpos⟩ :=
-        exists_trAcceptance P.toTRParams (R k a) a.1 (S k a.1 a.2) ha.le
-      exact ⟨(_, Δ'), hpos ha, hacc⟩)
-  refine ⟨fun k => (r k).1, fun k => S k (r k).1 (r k).2, fun k => (r k).2, by simp only [hr0],
-    hε, hB, ⟨by simp only [hr0], fun k hk => hS k _ _ (hr k hk).1.le, fun k hk => (hr k hk).2⟩⟩
+  obtain ⟨x, s, Δ, hx0, hrun, -⟩ := exists_isTRRun P.toTRParams (Inv := fun _ => True)
+    (test := fun y => ‖gradient f y‖ ≤ ε) (stepOK := fun k y Δ s => tr1Step f (B k) y Δ s)
+    (fun k y _ s => tr1Ratio f y (B k) s) (fun k y Δ _ hΔ _ => by
+      obtain ⟨s, hs, -, hC, -⟩ := exists_isMinOn_quadModel_ball (gradient f y) (B k) hΔ.le
+      obtain ⟨t, ht⟩ := exists_isCauchyStep (gradient f y) (B k) hΔ.le
+      refine ⟨s, ⟨hs, t, ht, ?_⟩, trivial⟩
+      rw [tr1Model_eq, tr1Model_eq]
+      linarith [hC t ht]) trivial
+  exact ⟨x, s, Δ, hx0, hε, hB, hrun⟩
 
 /-- **Assumption m.HBa** of [cartis2022evaluation]: the model Hessians are uniformly bounded,
 `‖B_k‖ ≤ κ_B` for all `k`, with `κ_B ≥ 0`. -/

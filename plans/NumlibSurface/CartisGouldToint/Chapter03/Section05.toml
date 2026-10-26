@@ -1,127 +1,37 @@
 namespace = "CartisGouldToint.Chapter03"
-desc = '''
-§3.5 Optimal complexity for methods using second derivatives. The class `𝓜` (3.5.1)–(3.5.4) is a
-condition on each step `(x_k, s_k)` given `f`: there exist `λ_k ≥ 0` and a residual `r_k` with
-`(∇²f(x_k) + λ_k I) s_k = -∇f(x_k) + r_k`, `‖r_k‖ ≤ min(κ_rg ‖∇f(x_k)‖, κ_rs ‖s_k‖²)`,
-`∇²f(x_k) + λ_k I ⪰ 0`, `λ_min + λ_k ≤ κ_λ max(|λ_min|, ‖∇f(x_k)‖^{1/2})`, `s_k ≠ 0`. A *method in
-`𝓜`* is a deterministic second-order oracle method (`Optimization.OracleMethod` with the jet
-oracle of order 2) whose steps satisfy these conditions. Proofs of Lemmas 3.5.1–3.5.3 and of the
-construction in Theorem 3.5.4 are in Appendix B (not separate nodes).
-'''
 
 [[node]]
 id = "IsMClassStep"
-kind = "def"
-desc = '''
-`IsMClassStep f κrg κrs κλ x s : Prop := s ≠ 0 ∧ ∃ lam r, 0 ≤ lam ∧
-(∀ v, iteratedFDeriv ℝ 2 f x ![s, v] + lam * ⟪s, v⟫ = -⟪gradient f x, v⟫ + ⟪r, v⟫) ∧
-‖r‖ ≤ min (κrg * ‖gradient f x‖) (κrs * ‖s‖ ^ 2) ∧ 0 ≤ Chapter01.hessianMinEig f x + lam ∧
-Chapter01.hessianMinEig f x + lam ≤ κλ * max |Chapter01.hessianMinEig f x| (‖gradient f x‖ ^ (1/2 : ℝ))`
-with constants `κrg ∈ [0,1)`, `κrs > 0`, `κλ > 1` ((3.5.2)–(3.5.4)); variants with a given `lam`
-(`IsMClassStepWith … lam r`) are part of the node for Lemmas 3.5.1–3.5.3.
-'''
-deps = ["CartisGouldToint.Chapter01.hessianMinEig"]
 source = "Cartis–Gould–Toint, (3.5.1)–(3.5.4)"
 
 [[node]]
 id = "IsMClassMethod"
-kind = "def"
-desc = '''
-`IsMClassMethod (M : Optimization.OracleMethod 𝔼 (Fin 3 → …)) (f) (ε₁) : Prop` — along the
-iterates `x_k = M.iterate (Optimization.jetOracle f 2) k`, every step before the first `k` with
-`‖∇f(x_k)‖ ≤ ε₁` satisfies `IsMClassStep f κrg κrs κλ (x k) (x (k+1) - x k)` ((3.5.1): the next
-iterate is `x_k + s_k`).
-'''
-deps = ["IsMClassStep", "Optimization.OracleMethod", "Optimization.jetOracle", "Optimization.UntilHit"]
 source = "Cartis–Gould–Toint, Section 3.5.1 (class 𝓜)"
 
 [[node]]
 id = "lemma_3_5_1"
-kind = "theorem"
-desc = '''
-Lemma 3.5.1 (proof in Appendix B), **corrected constant**. If `s ≠ 0`, `λ ≥ 0`, `r` satisfy (3.5.2)
-with `κrg ∈ [0,1)` and (3.5.3), and `λ ≤ κ̄λ ‖s‖` with `κ̄λ > 1` (3.5.6), then (3.5.4) holds with
-`κλ = 2 √(κ̄λ (1 + κrg))` (printed as the self-referential `2√(κ_λ(1+κ_rg))`).
-'''
-deps = ["IsMClassStep"]
 source = "Cartis–Gould–Toint, Lemma 3.5.1"
 
 [[node]]
 id = "lemma_3_5_2"
-kind = "theorem"
-desc = '''
-Lemma 3.5.2 (proof in Appendix B). Under f.HL (f.Bb, f.gL not needed), if `x⁺ = x + s` with `s, λ, r`
-satisfying (3.5.2) and `λ ≤ κ̄λ ‖s‖` (3.5.6), then `‖s‖ ≥ κ̄s ‖∇f(x⁺)‖^{1/2}` with
-`κ̄s = (L₂/2 + κrs + κ̄λ)⁻¹` (3.5.7), as printed. (The proof gives
-`‖∇f(x⁺)‖ ≤ C ‖s‖²`, `C = L₂/2 + κrs + κ̄λ > 1`, hence the sharper `κ̄s = C^{-1/2}`; the printed
-constant follows since `C > 1`. Both are recorded.)
-'''
-deps = ["IsMClassStep", "AssumptionHL", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"]
 source = "Cartis–Gould–Toint, Lemma 3.5.2"
 
 [[node]]
 id = "lemma_3_5_3"
-kind = "theorem"
-desc = '''
-Lemma 3.5.3 (proof in Appendix B). Under f.gL with `L₁`, for a sequence with `x_{k+1} = x_k + s_k`,
-(3.5.2) with `κrg < 1`, `0 ≤ λ_k ≤ κ̄λ` (3.5.8) and the quadratic rate
-`‖∇f(x_{k+1})‖ ≤ κc ‖∇f(x_k)‖²` (3.5.9) for all `k`: `‖s_k‖ ≥ κ̄s ‖∇f(x_{k+1})‖^{1/2}` with
-`κ̄s = (1 - κrg)/((L₁ + κ̄λ) √κc)`.
-'''
-deps = ["IsMClassStep", "CartisGouldToint.Chapter02.AssumptionGL"]
 source = "Cartis–Gould–Toint, Lemma 3.5.3"
 
 [[node]]
 id = "theorem_3_5_4"
-kind = "theorem"
-desc = '''
-Theorem 3.5.4. For all constants `κrg ∈ [0,1)`, `κrs > 0`, `κλ > 1` there are `flow`, `L₁`, `L₂`,
-`B` such that for every `ε₁ ∈ (0,1)` and every second-order oracle method
-`M : Optimization.OracleMethod (EuclideanSpace ℝ (Fin 1)) _` started at `0` there is
-`f : EuclideanSpace ℝ (Fin 1) → ℝ` with f.Bb, f.gL, f.HL (constants above), `|f x| ≤ B` for
-`x ≥ 0`, such that: if `IsMClassMethod M f ε₁` then the first `k` with `‖∇f(x_k)‖ ≤ ε₁` is exactly
-`k_ε = ⌈ε₁^{-3/2}⌉₊`. Proof: data (3.5.12) fixed in advance; the method's steps on these data have
-`θ_k ∈ [(1-κrg)/κλ, 1+κrg]` (3.5.19) (the residual bound `|α_k| ≤ κrg` suffices; (3.5.17) has a sign
-typo); `Optimization.exists_slowSecondOrder_interpolant` and `Optimization.OracleMethod.iterate_congr`.
-If the method violates the class conditions at some step, the hypothesis fails and any `f` will do.
-'''
-deps = ["IsMClassMethod", "Optimization.exists_slowSecondOrder_interpolant", "Optimization.OracleMethod.iterate_congr", "CartisGouldToint.Chapter02.AssumptionBb", "CartisGouldToint.Chapter02.AssumptionGL", "AssumptionHL"]
 source = "Cartis–Gould–Toint, Theorem 3.5.4"
 
 [[node]]
 id = "corollary_3_5_5_i"
-kind = "theorem"
-desc = '''
-Corollary 3.5.5 (AR2). For all AR2 constants there are `flow`, `L₁`, `L₂`, `B` such that for every
-`ε₁ ∈ (0,1)` there are `f : EuclideanSpace ℝ (Fin 1) → ℝ` (f.Bb, f.gL, f.HL, `|f| ≤ B` on `x ≥ 0`)
-and an AR2 run (`ε₂ = none`) from `0` whose first termination index is exactly `⌈ε₁^{-3/2}⌉₊`;
-together with Theorem 3.3.5 (`k_ε ≤ κ^A (f(x_0)-flow) ε₁^{-3/2} + κ^C`, `f(x_0) - flow` bounded
-independently of `ε₁`) and Theorem 3.5.4 this is the optimality of AR2 in `𝓜` (ratio of upper to
-lower bound bounded independently of `ε₁`).
-'''
-deps = ["theorem_3_3_6", "theorem_3_3_5", "theorem_3_5_4"]
 source = "Cartis–Gould–Toint, Corollary 3.5.5"
 
 [[node]]
 id = "corollary_3_5_5_ii"
-kind = "theorem"
-desc = '''
-Corollary 3.5.5 (TRε). As (i) for TRε with `εs = √ε₁`, `ε₂ = none` and `Δ₀ ≥ 1` (steps are
-interior: `λ_k = εs`, step factors `θ_k = 4f_k²/(4f_k² + 1) ∈ [1/2, 4/5]`, `ρ_k ≥ 1`), with
-Theorem 3.4.5 as the upper bound.
-'''
-deps = ["algorithm_3_4_1", "theorem_3_4_5", "theorem_3_5_4", "Optimization.exists_slowSecondOrder_interpolant", "Optimization.ridge"]
 source = "Cartis–Gould–Toint, Corollary 3.5.5"
 
 [[node]]
 id = "corollary_3_5_5_iii"
-kind = "theorem"
-desc = '''
-Corollary 3.5.5 (iRN). As (i) for iRN with `ε₂ = none`, `λ_k = σ₀ᵁ ‖s_k‖` (exact cubic-model
-steps), with Theorem 3.4.11 as the upper bound. Correction: iRN's ratio (3.4.35) is not scale
-invariant; on the data (3.5.12) it equals `4f_k³/θ_k³ ≥ 1/2`, so for `η > 1/2` the example must be
-rescaled (`f ↦ c f`, `c = 2η`, which leaves the iterates unchanged); the book's sketch
-("addressed in [106, Sect. 5]") omits this.
-'''
-deps = ["algorithm_3_4_2", "theorem_3_4_11", "theorem_3_5_4", "Optimization.exists_slowSecondOrder_interpolant", "Optimization.ridge"]
 source = "Cartis–Gould–Toint, Corollary 3.5.5"
