@@ -34,5 +34,5 @@ the hypotheses of `theorem_12_2_14_i` / `theorem_12_2_14_ii` (with `ω = π_q`-t
 `(ε, δ)`-approximate optimality at `x_{k_ε}`, and the evaluation bounds of (12.2.63)–(12.2.66) with
 `κ_{Δm}` replaced by `min(κ_{Δm}, κdecr, σ_min κdecr/(p+1)!)`.
 '''
-deps = ["IsARqpSufficientDecreaseRun", "theorem_12_2_14_i", "theorem_12_2_14_ii", "Optimization.taylorDecrement_ge_of_regularizedModel_lt"]
+deps = ["IsARqpSufficientDecreaseRun", "theorem_12_2_14_i", "theorem_12_2_14_ii", "Optimization.lt_taylorDecrement_of_regularizedModel_lt"]
 source = "Cartis–Gould–Toint, Section 12.3 (discussion after (12.3.2)); Notes for Subsection 12.2.2"

@@ -39,7 +39,9 @@ Instead of requiring `f` to be `C^p` on an open set `D ⊇ C`, the results assum
   `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`: Corollary A.8.4, (A.19)–(A.20);
 * for real-valued `f`: `abs_sub_taylorPolynomial_le_of_holder`/`_of_lipschitz`, and
   `le_taylorPolynomial_add_of_lipschitz`, `taylorPolynomial_sub_le_of_lipschitz`: the regularized
-  Taylor model over- and under-estimates `f`.
+  Taylor model over- and under-estimates `f`; `nonneg_of_abs_le_div_mul_rpow`/`_pow`: a remainder
+  bound with a positive step forces a nonnegative constant;
+* `norm_iteratedFDeriv_one_sub`: first iterated derivatives versus `fderiv` in differences.
 
 ## Implementation notes
 
@@ -381,6 +383,17 @@ theorem ContDiffAt.iteratedFDeriv_cons_eq_snoc {g : E → F} {n : ℕ} {y : E}
   rw [Fin.snoc_eq_cons_rotate]
   exact (hg.iteratedFDeriv_comp_perm_of_le le_rfl (finRotate (n + 1)) _).symm
 
+/-- The norm of the difference of two first derivatives, written as first iterated derivatives,
+is the norm of the difference of the derivatives. -/
+theorem norm_iteratedFDeriv_one_sub (f g : E → F) (x y : E) :
+    ‖iteratedFDeriv ℝ 1 f x - iteratedFDeriv ℝ 1 g y‖ = ‖fderiv ℝ f x - fderiv ℝ g y‖ := by
+  have h : ∀ (h : E → F) (z : E),
+      iteratedFDeriv ℝ 1 h z = (continuousMultilinearCurryFin1 ℝ E F).symm (fderiv ℝ h z) := by
+    intro h z
+    ext m
+    simp [iteratedFDeriv_one_apply, continuousMultilinearCurryFin1_symm_apply]
+  rw [h, h, ← map_sub, LinearIsometryEquiv.norm_map]
+
 end Holder
 
 section Remainder
@@ -564,6 +577,18 @@ theorem taylorPolynomial_sub_le_of_lipschitz (hC : Convex ℝ C)
     (abs_sub_taylorPolynomial_le_of_lipschitz hC hf hL hx hxs))
   have : L / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) ≤ σ / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by gcongr
   linarith
+
+/-- A remainder bound `|a| ≤ H / c · t^e` with `c, t > 0` forces `H ≥ 0`. -/
+theorem nonneg_of_abs_le_div_mul_rpow {a c t e : ℝ} (hc : 0 < c) (ht : 0 < t)
+    (h : |a| ≤ H / c * t ^ e) : 0 ≤ H := by
+  have h' : 0 ≤ H / c * t ^ e := (abs_nonneg a).trans h
+  have : 0 ≤ H / c := nonneg_of_mul_nonneg_left h' (Real.rpow_pos_of_pos ht e)
+  exact (div_nonneg_iff.1 this).elim And.left fun h'' => absurd hc (not_lt.2 h''.2)
+
+/-- A remainder bound `|a| ≤ H / c · t^n` (natural power) with `c, t > 0` forces `H ≥ 0`. -/
+theorem nonneg_of_abs_le_div_mul_pow {a c t : ℝ} {n : ℕ} (hc : 0 < c) (ht : 0 < t)
+    (h : |a| ≤ H / c * t ^ n) : 0 ≤ H :=
+  nonneg_of_abs_le_div_mul_rpow (e := n) hc ht (by rwa [Real.rpow_natCast])
 
 end RealValued
 

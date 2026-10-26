@@ -29,6 +29,8 @@ that need a unit vector assume `[Nontrivial E]`.
   approximate second-order condition (3.2.6));
 * `abs_minCurvature_le_norm`, `abs_minCurvature_sub_le`: (A.4) and (A.5);
 * `minCurvature_add_smul_inner`: shifting by `λ I` shifts `λ_min` by `λ` ((3.4.33));
+* `minCurvature_ge_of_add_smul`: `λ_min[A] ≥ λ_min[T + c N] - ‖A - T‖ - c K` when `N[d, d] ≤ K ‖d‖²`
+  (the step bounds (4.1.27), (5.5.15));
 * `exists_eq_minCurvature`, `apply_eq_minCurvature_mul_inner`, `exists_eigenvector_minCurvature`:
   in finite dimension `λ_min` is attained at a unit vector, which for a symmetric form is an
   eigenvector and may be chosen with `⟪u, g⟫ ≤ 0` for a given `g` ((3.2.3));
@@ -209,6 +211,30 @@ theorem apply_vec_smul_right (c : ℝ) (x z : E) : A ![z, c • x] = c * A ![z, 
   simpa only [update_vec_one, smul_eq_mul] using A.map_update_smul ![z, x] 1 c x
 
 variable {A}
+
+/-- **Lower bound on the least curvature of a perturbed form.** If the bilinear form `M = T + c N`
+is a model of `A` (`c ≥ 0`, `N[d, d] ≤ K ‖d‖²` for all `d`, `K ≥ 0`), then
+`λ_min[A] ≥ λ_min[M] - ‖A - T‖ - c K`. (This is the computation (4.1.27)–(4.1.29), (5.5.15)–(5.5.17)
+of [cartis2022evaluation]: `min (a + b) ≥ min a + min b`.) -/
+theorem minCurvature_ge_of_add_smul
+    (A T N : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ) {c K : ℝ} (hc : 0 ≤ c)
+    (hK : 0 ≤ K) (hN : ∀ d, N (fun _ => d) ≤ K * ‖d‖ ^ 2) :
+    minCurvature (T + c • N) - ‖A - T‖ - c * K ≤ minCurvature A := by
+  rcases subsingleton_or_nontrivial E with hE | hE
+  · simp only [minCurvature_of_subsingleton]
+    have := norm_nonneg (A - T)
+    nlinarith [mul_nonneg hc hK]
+  refine le_minCurvature_iff.2 fun d => ?_
+  have h1 := minCurvature_mul_norm_sq_le (T + c • N) d
+  have h2 : -(‖A - T‖ * ‖d‖ ^ 2) ≤ (A - T) (fun _ => d) :=
+    neg_le_of_abs_le (abs_apply_diag_le (A - T) d)
+  have h3 : c * N (fun _ => d) ≤ c * (K * ‖d‖ ^ 2) := mul_le_mul_of_nonneg_left (hN d) hc
+  have hsplit : A (fun _ => d) = (A - T) (fun _ => d) + (T + c • N) (fun _ => d) -
+      c * N (fun _ => d) := by
+    simp only [sub_apply, add_apply, smul_apply, smul_eq_mul]
+    ring
+  rw [hsplit]
+  nlinarith
 
 end Normed
 

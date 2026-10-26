@@ -41,7 +41,7 @@ desc = '''
 Lemma 3.3.1. At every iteration `k` (before termination) of an AR2 run:
 `T_{f,2}(x_k, 0) - T_{f,2}(x_k, s_k) > σ_k/6 ‖s_k‖³` (3.3.13).
 '''
-deps = ["algorithm_3_3_1", "Optimization.taylorDecrement_ge_of_regularizedModel_lt"]
+deps = ["algorithm_3_3_1", "Optimization.lt_taylorDecrement_of_regularizedModel_lt"]
 source = "Cartis–Gould–Toint, Lemma 3.3.1"
 
 [[node]]

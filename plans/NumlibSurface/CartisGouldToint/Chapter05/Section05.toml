@@ -82,7 +82,7 @@ desc = '''
 Lemma 5.5.1. At every iteration `k` of an ARp-H run (before termination):
 `f(x_k) - T_p(x_k, s_k) ≥ σ_k/r! ‖s_k‖^r` (5.5.12) (`realFactorial r`; in fact strict).
 '''
-deps = ["algorithm_5_5_1", "Optimization.taylorDecrement_ge_of_powRegularizedModel_lt"]
+deps = ["algorithm_5_5_1", "Optimization.lt_taylorDecrement_of_powRegularizedModel_lt"]
 source = "Cartis–Gould–Toint, Lemma 5.5.1"
 
 [[node]]

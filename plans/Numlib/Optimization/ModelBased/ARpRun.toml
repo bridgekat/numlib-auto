@@ -1,149 +1,37 @@
 namespace = "Optimization"
-desc = '''
-The adaptive-regularization method with `p`-th order Taylor models (Cartis–Gould–Toint Algorithm
-4.1.1, ARp) as an instance of the generic `IsARRun` (`ModelBased/ARRun`) whose Step-1 termination
-test is a parameter. Rationale: the book applies "ARp with a different Step 1" several times —
-Chapter 4 itself (tests (4.1.5)–(4.1.9)), ARpLE (Algorithm 5.1.1: ARp on `Φ_ℓ = ‖r‖^ℓ/ℓ` with
-residual-scaled tests) and the measure-dominated analysis of §5.3 (no test, `fun _ => False`).
-The Step-2 conditions (4.1.10)–(4.1.14) and their one-iteration consequences (Lemmas 4.1.3–4.1.4)
-do not depend on the test and are proved once here; the parts shared by all AR methods (Lemma
-4.1.1, Lemma 4.1.2 = `IsARRun.sigma_le`, Lemma 2.4.1 = `IsARRun.succ_count`, the counting skeleton)
-live in `ARRun`. The Chapter 4 surface `algorithm_4_1_1` and Lemmas 4.1.1–4.1.4, the Chapter 5
-`algorithm_5_1_1` are specializations. (Merged from the Chapter 4 and Chapter 5 plans.)
-
-Conventions. `E` real inner product space (finite-dimensional where existence of model minimizers
-is needed). `q ∈ {1, 2, 3}` is the criticality order sought (book: `ε₂ = ε₃ = ∞` ↔ `q = 1`,
-`ε₂ < ∞ = ε₃` ↔ `q = 2`, both finite ↔ `q = 3`): the second-order step condition (4.1.12) is imposed
-iff `2 ≤ q`, the third-order one (4.1.13) iff `3 ≤ q`. The model is
-`m_k = regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)` (core `TaylorModel`), the ratio is
-`taylorRatio f p x s` (4.1.15), the update `ARUpdate` (4.1.16), via `ARAcceptance`.
-
-Source issue (affects Chapter 4 and ARpLE, reported): for `q = 3` an admissible step need not
-exist. Counterexample: `n = 1`, `p = 3`, `f(x) = a x²/2 + b x³/6 + x⁴` with `0 < a ≤ ε₂`,
-`|b| > ε₃`, `x₀ = 0`, `σ₀ ≥ b²/(3a)`: the test (4.1.5)–(4.1.9) fails at `x₀` (`M₀ = {±1}`,
-`|∇³f(0)| = |b| > ε₃`) but `m₀(s) = s²(a/2 + b s/6 + σ₀ s²/24) ≥ 0 = m₀(0)`, so (4.1.10) has no
-solution and no run exists. Hence existence is planned unconditionally only for `q ≤ 2`, and for
-`q = 3` under the hypothesis that admissible steps exist whenever the test fails.
-'''
 
 [[node]]
 id = "ARpParams"
-kind = "def"
-desc = '''
-`structure ARpParams extends ARParams` (Algorithm 4.1.1, Step 0): the AR constants plus
-`θ₁ θ₂ θ₃ : ℝ` with `θ₁ θ₂ θ₃ ∈ (0, 1]`. (Formerly `ARpConstants` of the Chapter 5 plan; the
-Chapter 4 surface `ARpParams` is this structure with `0 < σmin`.)
-'''
-deps = ["ARParams"]
 source = "Cartis–Gould–Toint, Algorithm 4.1.1 (Step 0)"
 
 [[node]]
 id = "smallCurvatureDirections"
-kind = "def"
-desc = '''
-`smallCurvatureDirections (A : E [×2]→L[ℝ] ℝ) (c : ℝ) : Set E := {d | ‖d‖ = 1 ∧ |A ![d, d]| ≤ c}`.
-Instances: `M_0 = smallCurvatureDirections (iteratedFDeriv ℝ 2 f x₀) ε₂` (Step 0 of Algorithm 4.1.1),
-`M_{k+1} = smallCurvatureDirections (iteratedFDeriv ℝ 2 m_k (s k)) (θ₂ ‖s k‖^(p-1))` (4.1.14),
-and the book's `𝒵_ε` ((4.1.4), (5.1.7)) with `A = ∇²f(x_ε)` (scaled by `‖r(x_ε)‖^{ℓ-1}` in §5.1).
-'''
 source = "Cartis–Gould–Toint, (4.1.14), (5.1.7)"
 
 [[node]]
 id = "IsARpStep"
-kind = "def"
-desc = '''
-Step conditions of one ARp iteration (Step 2 of Algorithm 4.1.1). For `f : E → ℝ`, `p q : ℕ`,
-`P : ARpParams`, point `x`, weight `σ` and step `s`, with `m := regularizedModel
-(ftaylorSeries ℝ f x) p σ`:
-`IsARpStep f p (P : ARpParams) q x σ s :↔ m s < m 0` (4.1.10) `∧ ‖fderiv ℝ m s‖ ≤ θ₁ ‖s‖^p` (4.1.11)
-`∧ (2 ≤ q → -θ₂ ‖s‖^(p-1) ≤ minCurvature (iteratedFDeriv ℝ 2 m s))` (4.1.12)
-`∧ (3 ≤ q → ∀ d ∈ smallCurvatureDirections (iteratedFDeriv ℝ 2 m s) (θ₂ ‖s‖^(p-1)),
-|iteratedFDeriv ℝ 3 m s ![d, d, d]| ≤ θ₃ ‖s‖^(p-2))` (4.1.13) (vacuous when the set is empty).
-'''
-deps = ["ARpParams", "smallCurvatureDirections", "regularizedModel", "minCurvature"]
 source = "Cartis–Gould–Toint, (4.1.10)–(4.1.14)"
 
 [[node]]
 id = "IsARpRun"
-kind = "def"
-desc = '''
-ARp run with a generic termination test. For `f : E → ℝ`, `p q : ℕ`, `P : ARpParams`,
-`test : ℕ → Prop` (the Step-1 test at iteration `k`; it may refer to the run, e.g. through
-`M_k`), and sequences `x s : ℕ → E`, `σ : ℕ → ℝ`:
-`IsARpRun f p P q test x s σ : Prop := IsARRun P.toARParams test (fun k => IsARpStep f p P q (x k)
-(σ k) (s k)) (fun _ => False) (taylorRatio f p x s) x s σ` (Steps 2–4 of Algorithm 4.1.1; (4.1.15)
-ratio, (4.1.16) update). Successful iterations: `succ k :↔ P.η₁ ≤ taylorRatio f p x s k`. All
-generic AR-run lemmas apply: `IsARRun.sigma_le` (Lemma 4.1.2 with `C = univ`; the step condition
-(4.1.10) gives the model decrease), `IsARRun.sub_ge_of_succ` (Lemma 4.1.1 and (4.1.37)),
-`IsARRun.succ_count` (Lemma 2.4.1), `IsARRun.exists_isFirstHit_of_decrease`.
-'''
-deps = ["IsARpStep", "IsARRun", "taylorRatio"]
 source = "Cartis–Gould–Toint, Algorithm 4.1.1, Algorithm 5.1.1"
 
 [[node]]
 id = "exists_isARpStep"
-kind = "theorem"
-desc = '''
-`[FiniteDimensional ℝ E]`, `ContDiff ℝ p f`, `p ≥ 1`, `σ > 0`, `q ≤ 2` (and `p ≥ 2` if `q = 2`).
-If `fderiv ℝ f x ≠ 0`, or `q = 2` and `minCurvature (iteratedFDeriv ℝ 2 f x) < 0`, then there is
-`s` with `IsARpStep f p P q x σ s`: any global minimizer of the model
-(`exists_isMinOn_regularizedModel`) works, since `0` is then not a second-order critical point of
-`m` (`∇m(0) = ∇f(x)`, `∇²m(0) = ∇²f(x)` for `p ≥ 2`, the regularization term having vanishing
-first and second derivatives at `0` when `p + 1 > 2`). For `q = 3` no such statement holds (see the
-module counterexample).
-'''
-deps = ["IsARpStep", "exists_isMinOn_regularizedModel", "fderiv_regularizedModel"]
 source = "Cartis–Gould–Toint, Section 4.1.1 (step computation)"
 
 [[node]]
 id = "exists_isARpRun"
-kind = "theorem"
-desc = '''
-Existence of runs. (a) `q ≤ 2` (and `p ≥ 2` if `q = 2`), `[FiniteDimensional ℝ E]`, `ContDiff ℝ p f`,
-and a state-based test `test : E → Prop` such that `¬ test y` implies `fderiv ℝ f y ≠ 0` or
-(`q = 2` and `minCurvature (iteratedFDeriv ℝ 2 f y) < 0`) — e.g. Chapter 4's (4.1.5)–(4.1.7) with
-`ε₁ > 0`, ARpLE's tests with `ε₀ > 0`: for every `x₀` there is a run with `x 0 = x₀` and
-`IsARpRun f p P q (fun k => test (x k)) x s σ` (`exists_isARRun` with `exists_isARpStep`).
-(b) Any `q` and any run-dependent test `test : (ℕ → E) → (ℕ → E) → (ℕ → ℝ) → ℕ → Prop` that depends
-on the run only through its values at indices `≤ k` (and `s, σ` at indices `< k`), provided an
-admissible step (`∃ s, IsARpStep f p P q (x k) (σ k) s`) exists whenever `test` fails at a reachable
-state: a run with `IsARpRun f p P q (test x s σ) x s σ` exists (`exists_run_of_forall_exists_hist`
-with states `(x_k, σ_k)` and history-dependent curvature sets `M_k`). For `q = 3` the proviso can
-fail (module counterexample).
-'''
-deps = ["IsARpRun", "exists_isARpStep", "exists_isARRun", "exists_run_of_forall_exists_hist"]
 source = "Cartis–Gould–Toint, Algorithm 4.1.1 (well-posedness)"
 
 [[node]]
 id = "IsARpRun.step_lower_bounds"
-kind = "theorem"
-desc = '''
-Lemma 4.1.3 for any test, under `ContDiff ℝ p f`, `IteratedFDerivLipschitzOn f p L univ`, for a
-successful iteration `k` before termination (so `x (k+1) = x k + s k`), with
-`σmax = arSigmaMax P.toARParams L` (`IsARRun.sigma_le`):
-(4.1.20) `‖s k‖^p ≥ p!/(L + σmax + θ₁ p!) * ‖fderiv ℝ f (x (k+1))‖`;
-(4.1.21) if `2 ≤ q`: `‖s k‖^(p-1) ≥ (p-1)!/(L + σmax + θ₂ (p-1)!) * max 0
-(-minCurvature (iteratedFDeriv ℝ 2 f (x (k+1))))`;
-(4.1.22) if `3 ≤ q`: for every `d ∈ M_{k+1}` (`smallCurvatureDirections (∇²m_k(s_k)) (θ₂‖s_k‖^{p-1})`),
-`‖s k‖^(p-2) ≥ (p-2)!/(L + σmax + θ₃ (p-2)!) * |iteratedFDeriv ℝ 3 f (x (k+1)) ![d,d,d]|`;
-(4.1.23) if `2 ≤ q`: for every `d ∈ M_{k+1}`, `|iteratedFDeriv ℝ 2 f (x (k+1)) ![d,d]| ≤
-‖s k‖^(p-1) / κs2` with `κs2 = (p-1)!/(L + σmax + θ₂ (p-1)!)`.
-'''
-deps = ["IsARpRun", "IsARRun.sigma_le", "norm_fderiv_le_of_regularizedModel", "minCurvature_ge_of_regularizedModel", "abs_iteratedFDeriv_apply_le_of_regularizedModel"]
 source = "Cartis–Gould–Toint, Lemma 4.1.3, (5.1.18)"
 
 [[node]]
 id = "IsARpRun.decrease_ge"
-kind = "theorem"
-desc = '''
-Lemma 4.1.4 for any test (successful `k` before termination, same hypotheses):
-(4.1.37) `f (x k) - f (x (k+1)) ≥ η₁ σmin/(p+1)! ‖s k‖^(p+1)`, and hence
-(4.1.31) `≥ κ₁ ‖fderiv ℝ f (x (k+1))‖^((p+1)/p)`,
-(4.1.33) (`2 ≤ q`) `≥ κ₂ (max 0 (-minCurvature (∇²f(x_{k+1}))))^((p+1)/(p-1))`,
-(4.1.35) (`3 ≤ q`) `≥ κ₃ |∇³f(x_{k+1})[d]³|^((p+1)/(p-2))` for all `d ∈ M_{k+1}`,
-with `κ_j = η₁ σmin/(p+1)! * ((p-j)!/(L + σmax + θ_j (p-j)!))^((p+1)/(p-j+1))` (j = 1, 2, 3, the
-book's (4.1.32), (4.1.34), (4.1.36)); real exponents (`Real.rpow`).
-'''
-deps = ["IsARpRun.step_lower_bounds", "IsARRun.sub_ge_of_succ"]
 source = "Cartis–Gould–Toint, Lemma 4.1.4, (5.1.15)–(5.1.17)"
 
+[[node]]
+id = "exists_isARpRun_prev"
+source = "Cartis–Gould–Toint, Algorithm 4.1.1 (well-posedness)"
