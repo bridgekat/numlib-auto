@@ -1,47 +1,16 @@
 namespace = "Subproblem"
-desc = '''
-Approximate-solution (early termination) criteria for the regularization subproblem and a
-constructive sufficient test in terms of a shift `λ` (Cartis–Gould–Toint §9.3.6, Theorem 9.3.2;
-the conditions are the model-decrease, first-order and second-order step requirements of the
-adaptive-regularization algorithms of the book's Chapter 3 at `p = 2`).
-
-In the operator setting the book's `‖·‖_{M⁻¹}` dual norm of the gradient and the generalized
-eigenvalue `λ_min[∇²m^R, M]` become the plain norm and the plain least Rayleigh quotient, which is
-the only reading under which (9.3.14c) follows from (9.3.15c) for `M ≠ I` (see the surface
-Theorem 9.3.2 note).
-'''
 
 [[node]]
 id = "RegStoppingRules"
-kind = "definition"
-desc = '''
-`RegStoppingRules g H σ r θ₁ θ₂ s : Prop :=`
-`regModel g H σ r s ≤ regModel g H σ r 0` ∧
-`‖g + H s + (σ * ‖s‖ ^ (r - 2)) • s‖ ≤ (1/2) * θ₁ * ‖s‖ ^ 2` ∧
-`∀ v, -(θ₂ * ‖s‖) * ‖v‖ ^ 2 ≤ ⟪v, regModelHessian H σ r s v⟫` (book (9.3.14a)–(9.3.14c)).
-'''
-deps = ["regModel", "regModelHessian"]
 
 [[node]]
-id = "regStoppingRules_step"
-kind = "theorem"
-desc = '''
-Theorem 9.3.2 (backbone form). Let `H` be symmetric, `0 < σ`, `2 < r`, `-leftmost hH < λc` (so
-`H + λc` is positive definite; positive semidefinite suffices for (a), (c) given the solve),
-`s = step g H λc`, `π = secular g H λc`. If
-(a) `π ≤ (r/2) ^ (2/(r-2)) * (λc/σ) ^ (2/(r-2))`,
-(b) `|π ^ ((r-2)/2) - λc/σ| ≤ θ₁/(2σ) * π ^ (1/2)`,
-(c) `π ^ ((r-2)/2) - λc/σ ≥ -(θ₂/σ) * π ^ (1/2)`,
-then `RegStoppingRules g H σ r θ₁ θ₂ s`. Proof by `regModel_eq_of_shifted_general` (value),
-`hasGradientAt_regModel_of_shifted` (gradient) and `inner_regModelHessian_ge`.
-'''
-deps = ["RegStoppingRules", "regModel_eq_of_shifted_general", "hasGradientAt_regModel_of_shifted", "inner_regModelHessian_ge", "step_spec", "secular"]
+id = "RegStoppingRules.iff_gradient"
+
+[[node]]
+id = "regStoppingRules_of_shifted"
 
 [[node]]
 id = "regStoppingRules_of_isMinOn"
-kind = "theorem"
-desc = '''
-A global minimizer `s*` of `regModel g H σ r` (`0 < σ`, `2 < r`) satisfies
-`RegStoppingRules g H σ r θ₁ θ₂ s*` for all `θ₁ θ₂ ≥ 0` (the remark after (9.3.14)).
-'''
-deps = ["RegStoppingRules", "isMinOn_regModel_iff", "inner_regModelHessian_ge"]
+
+[[node]]
+id = "regStoppingRules_step"

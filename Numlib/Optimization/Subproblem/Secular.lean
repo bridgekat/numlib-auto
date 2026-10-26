@@ -32,7 +32,8 @@ A scaling norm `‖·‖_M` of the book is not a parameter: it is the norm of th
 ## Main results
 
 * `isPositive_add_smul_iff`, `isSymmetricCoercive_add_smul_iff`: `H + λ` is positive
-  semidefinite iff `λ ≥ -λ₁` and positive definite iff `λ > -λ₁`.
+  semidefinite iff `λ ≥ -λ₁` and positive definite iff `λ > -λ₁`;
+  `isPositive_add_smul_of_le` and `shiftThreshold_le_of_isPositive` need no nontriviality.
 * `le_leftmost_iff`, `le_leftmost_iff_forall`, `le_leftmost_iff_isCoerciveWith`: `λ₁` is the
   greatest lower bound of the eigenvalues and the best constant in `c ‖v‖² ≤ ⟪v, H v⟫`.
 * `step_spec`, `step_eq_sum`, `secular_eq_secularSum`: on `λ > -λ₁`, `step` is the unique
@@ -222,6 +223,27 @@ theorem isPositive_add_smul_iff [Nontrivial E] (lam : ℝ) :
     rw [real_inner_comm]
     exact le_trans (mul_nonneg (by linarith) (sq_nonneg _))
       (add_leftmost_mul_norm_sq_le (hH := hH) lam v)
+
+/-- On the zero space the leftmost eigenvalue is `0` (an empty infimum). -/
+theorem leftmost_eq_zero_of_subsingleton [Subsingleton E] : leftmost hH = 0 := by
+  have : IsEmpty (Fin (Module.finrank ℝ E)) := by
+    rw [Module.finrank_zero_of_subsingleton]; infer_instance
+  exact Real.iInf_of_isEmpty _
+
+/-- `H + λ` is positive semidefinite for `λ ≥ -λ₁` (no nontriviality needed). -/
+theorem isPositive_add_smul_of_le {lam : ℝ} (hlam : -leftmost hH ≤ lam) :
+    ((H + lam • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive := by
+  rcases subsingleton_or_nontrivial E with hE | hE
+  · rw [ContinuousLinearMap.isPositive_add_smul_one_iff hH]
+    intro v; simp [Subsingleton.elim v 0]
+  · exact (isPositive_add_smul_iff (hH := hH) lam).2 hlam
+
+/-- A nonnegative shift making `H + μ` positive semidefinite is at least `λₛ`. -/
+theorem shiftThreshold_le_of_isPositive {μ : ℝ} (hμ : 0 ≤ μ)
+    (hpos : ((H + μ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive) : shiftThreshold hH ≤ μ := by
+  rcases subsingleton_or_nontrivial E with hE | hE
+  · rw [shiftThreshold, leftmost_eq_zero_of_subsingleton]; simpa using hμ
+  · exact max_le hμ ((isPositive_add_smul_iff (hH := hH) μ).1 hpos)
 
 /-- `H + λ` is positive definite (symmetric and coercive) iff `λ > -λ₁` (on a nonzero space). -/
 theorem isSymmetricCoercive_add_smul_iff [Nontrivial E] (lam : ℝ) :

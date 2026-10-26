@@ -618,6 +618,12 @@ theorem isGreatest_rayleighQuotient_orthogonal (i : Fin n) :
     exact hT.rayleighQuotient_le_of_mem_eigenvectorSpan_Ici hn i
       ((hT.mem_eigenvectorSpan_Ici_iff hn).mpr hxorth) hx0
 
+/-- The eigenvalues do not depend on the proof of the dimension count, up to the cast of the
+index. -/
+theorem eigenvalues_eq_cast (hn : Module.finrank 𝕜 E = n) (i : Fin n) :
+    hT.eigenvalues hn i = hT.eigenvalues rfl (Fin.cast hn.symm i) := by
+  subst hn; rfl
+
 end LinearMap.IsSymmetric
 
 namespace LinearMap.IsSymmetric
