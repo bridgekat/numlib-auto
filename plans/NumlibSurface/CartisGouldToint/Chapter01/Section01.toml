@@ -1,247 +1,101 @@
 namespace = "CartisGouldToint.Chapter01"
-desc = '''
-§1.1 Nonlinear optimization and optimality conditions. Objective `f : EuclideanSpace ℝ (Fin n) → ℝ`;
-constraints `c : Fin m → EuclideanSpace ℝ (Fin n) → ℝ` (the book's `c : ℝⁿ → ℝᵐ`, component
-functions), multipliers `y : Fin m → ℝ`, Lagrangian `ℒ(x,y) = f x - ∑ y_i c_i x` (1.1.1). Book's
-`f ∈ C^k` is `ContDiff ℝ k f`, `f ∈ C^k(𝒮)` is `ContDiffOn ℝ k f 𝒮` with `𝒮` open. Local minimizers
-are Mathlib's `IsLocalMin`/`IsLocalMinOn`; strict ones `Optimization.IsStrictLocalMinOn`.
-Constraint qualification: LICQ (`licq`), mapped to the backbone `Constrained.IsRegularPointIneq`
-with `g = -c`. Proofs specialize `Numlib/Optimization/{Descent,Constrained,Optimality}`.
-'''
 
 [[node]]
 id = "lagrangian"
-kind = "def"
-desc = '''
-`lagrangian f c x y = f x - ∑ i, y i * c i x` (1.1.1). Bridge lemma (part of node):
-`lagrangian f c x y = Constrained.lagrangian f c x (-y)` (the backbone's `f + ∑ λ_i h_i`).
-'''
-deps = ["Constrained.lagrangian"]
 source = "Cartis–Gould–Toint, (1.1.1)"
 
 [[node]]
 id = "activeSet"
-kind = "def"
-desc = '''
-`activeSet c x : Set (Fin m) := {i | c i x = 0}` (book `𝒜(x)`).
-'''
 source = "Cartis–Gould–Toint, Section 1.1.2.5"
 
 [[node]]
 id = "feasibleDirections"
-kind = "def"
-desc = '''
-`feasibleDirections C x : Set (EuclideanSpace ℝ (Fin n)) := {d | x + d ∈ C}` (book `𝒞(x)`, (1.1.7)).
-'''
 source = "Cartis–Gould–Toint, (1.1.7)"
 
 [[node]]
 id = "licq"
-kind = "def"
-desc = '''
-`licq c x : Prop := LinearIndependent ℝ (fun i : activeSet c x => gradient (c i) x)` (the
-constraint qualification assumed for Theorems 1.1.3–1.1.4; for equality constraints all indices are
-active). Bridge lemma: with `g = fun i => -c i`, `licq c x ∧ (∀ i, 0 ≤ c i x)` gives
-`Constrained.IsRegularPointIneq` (no equality block), and similarly `IsRegularPoint` for equalities.
-'''
-deps = ["activeSet", "Constrained.IsRegularPointIneq", "Constrained.IsRegularPoint"]
 source = "Cartis–Gould–Toint, Section 1.1.2.4 (constraint qualification)"
 
 [[node]]
 id = "hessianMinEig"
-kind = "def"
-desc = '''
-`hessianMinEig f x := minCurvature (iteratedFDeriv ℝ 2 f x)` — the book's
-`λ_min[∇²_x f(x)]`; bridge (part of node, from `minCurvature_eq_iInf_eigenvalues`): for `C²` `f`
-and `n ≥ 1` it is the least eigenvalue of the (symmetric) Hessian matrix.
-'''
-deps = ["minCurvature", "minCurvature_eq_iInf_isHermitian_eigenvalues"]
 source = "Cartis–Gould–Toint, (1.1.5), Section A.5"
 
 [[node]]
-id = "criticalityMeasures"
-kind = "def"
-desc = '''
-`omega₁ f x := ‖gradient f x‖` and `omega₂ f x := max 0 (-hessianMinEig f x)` (Section 1.1.2.6);
-lemma (part of node): for `C²` `f` and `n ≥ 1`, `omega₁ f x = 0 ∧ omega₂ f x = 0 ↔
-gradient f x = 0 ∧ ∀ d, 0 ≤ ⟪d, ∇²f(x) d⟫` (formulation (1.1.5) of the first two conditions of
-Theorem 1.1.1).
-'''
-deps = ["hessianMinEig", "Optimization.criticality₂"]
+id = "omega₁"
+source = "Cartis–Gould–Toint, (1.1.5), Section 1.1.2.6"
+
+[[node]]
+id = "omega₂"
+source = "Cartis–Gould–Toint, (1.1.5), Section 1.1.2.6"
+
+[[node]]
+id = "omega_eq_zero_iff"
 source = "Cartis–Gould–Toint, (1.1.5), Section 1.1.2.6"
 
 [[node]]
 id = "theorem_1_1_1_i"
-kind = "theorem"
-desc = '''
-Theorem 1.1.1 (first order). `f` `C¹` (`ContDiff ℝ 1 f`), `IsLocalMin f x` ⇒ `gradient f x = 0`
-(1.1.4). (Mathlib `IsLocalMin.fderiv_eq_zero`.)
-'''
 source = "Cartis–Gould–Toint, Theorem 1.1.1"
 
 [[node]]
 id = "theorem_1_1_1_ii"
-kind = "theorem"
-desc = '''
-Theorem 1.1.1 (second order). `ContDiff ℝ 2 f`, `IsLocalMin f x` ⇒ the Hessian is positive
-semidefinite: `∀ d, 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => d)` (equivalently `0 ≤ hessianMinEig f x`
-for `n ≥ 1`).
-'''
-deps = ["Optimization.IsLocalMin.iteratedFDeriv_two_nonneg", "hessianMinEig"]
 source = "Cartis–Gould–Toint, Theorem 1.1.1"
 
 [[node]]
 id = "theorem_1_1_1_iii"
-kind = "theorem"
-desc = '''
-Theorem 1.1.1 (third order). `ContDiff ℝ 3 f`, `IsLocalMin f x`, `d` with `∇²f(x) d = 0`
-(`∀ w, iteratedFDeriv ℝ 2 f x ![d, w] = 0`) ⇒ `iteratedFDeriv ℝ 3 f x (fun _ => d) = 0`.
-'''
-deps = ["Optimization.IsLocalMin.iteratedFDeriv_three_eq_zero"]
 source = "Cartis–Gould–Toint, Theorem 1.1.1"
 
 [[node]]
 id = "theorem_1_1_1_iv"
-kind = "theorem"
-desc = '''
-Theorem 1.1.1 (sufficient). `ContDiff ℝ 2 f`, `gradient f x = 0` and the Hessian positive definite
-(`∀ d ≠ 0, 0 < iteratedFDeriv ℝ 2 f x (fun _ => d)`) ⇒ `Optimization.IsStrictLocalMinOn f univ x`.
-'''
-deps = ["Optimization.isStrictLocalMin_of_fderiv_eq_zero_of_posDef"]
 source = "Cartis–Gould–Toint, Theorem 1.1.1"
 
 [[node]]
 id = "theorem_1_1_2_i"
-kind = "theorem"
-desc = '''
-Theorem 1.1.2 (first order, (1.1.6)). `C` nonempty, closed, convex; `𝒮 ⊇ C` open,
-`ContDiffOn ℝ 1 f 𝒮`; `x ∈ C`, `IsLocalMinOn f C x`. Then `∀ d ∈ feasibleDirections C x,
-0 ≤ ⟪d, gradient f x⟫`.
-'''
-deps = ["feasibleDirections", "Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn"]
 source = "Cartis–Gould–Toint, Theorem 1.1.2"
 
 [[node]]
 id = "theorem_1_1_2_ii"
-kind = "theorem"
-desc = '''
-Theorem 1.1.2 (second order, (1.1.8)). Same setting with `ContDiffOn ℝ 2 f 𝒮`:
-`∀ d ∈ feasibleDirections C x, ⟪d, gradient f x⟫ = 0 → 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => d)`.
-'''
-deps = ["feasibleDirections", "Optimization.IsLocalMinOn.iteratedFDeriv_two_nonneg_of_convex"]
 source = "Cartis–Gould–Toint, Theorem 1.1.2"
 
 [[node]]
 id = "theorem_1_1_2_iii"
-kind = "theorem"
-desc = '''
-Theorem 1.1.2 (third order, (1.1.9)). Same setting with `ContDiffOn ℝ 3 f 𝒮`: for
-`d ∈ feasibleDirections C x` with `⟪d, ∇f(x)⟫ = 0` and `∇²f(x)[d,d] = 0`,
-`0 ≤ iteratedFDeriv ℝ 3 f x (fun _ => d)`.
-'''
-deps = ["feasibleDirections", "Optimization.IsLocalMinOn.iteratedFDeriv_three_nonneg_of_convex"]
 source = "Cartis–Gould–Toint, Theorem 1.1.2"
 
 [[node]]
 id = "theorem_1_1_2_iv"
-kind = "theorem"
-desc = '''
-Theorem 1.1.2 (converse), **corrected**. As printed (strict second-order condition over nonzero
-`d ∈ 𝒞(x*)` with `⟪d, ∇f(x*)⟫ = 0`) the converse is false (`theorem_1_1_2_iv_counterexample`).
-Corrected statement: `C` nonempty closed convex, `𝒮 ⊇ C` open, `ContDiffOn ℝ 2 f 𝒮`, `x ∈ C`,
-(1.1.6) holds, and `0 < iteratedFDeriv ℝ 2 f x (fun _ => d)` for every nonzero `d` in the tangent
-cone `tangentConeAt ℝ C x` (closure of `ℝ₊ 𝒞(x)`) with `⟪d, ∇f(x)⟫ = 0`. Then
-`Optimization.IsStrictLocalMinOn f C x`. (When `C` is polyhedral the tangent cone equals the cone of
-feasible directions and the printed form is correct.)
-'''
-deps = ["feasibleDirections", "Optimization.isStrictLocalMinOn_of_tangentCone"]
 source = "Cartis–Gould–Toint, Theorem 1.1.2"
 
 [[node]]
 id = "theorem_1_1_2_iv_counterexample"
-kind = "theorem"
-desc = '''
-The printed converse of Theorem 1.1.2 fails: in `EuclideanSpace ℝ (Fin 2)`, `C = {x | x 0 ^ 2 ≤ x 1}`,
-`f x = x 1 - 2 * x 0 ^ 2`, `x* = 0` satisfy (1.1.6) and (vacuously) the printed strict
-second-order condition, but `x*` is not a local minimizer of `f` on `C`.
-'''
-deps = ["feasibleDirections", "Optimization.not_isLocalMinOn_parabola_counterexample"]
 source = "Cartis–Gould–Toint, Theorem 1.1.2 (counterexample to the converse as printed)"
 
 [[node]]
 id = "theorem_1_1_3_i"
-kind = "theorem"
-desc = '''
-Theorem 1.1.3 (first order). `𝒮` open containing `{x | ∀ i, c i x = 0}`, `f`, `c i` `C¹` on `𝒮`,
-`x*` a local minimizer of `f` on `{x | ∀ i, c i x = 0}`, `licq c x*` (all constraints active). Then
-`∃ y, gradient (fun x => lagrangian f c x y) x* = 0 ∧ ∀ i, c i x* = 0` (1.1.13) (multipliers unique).
-'''
-deps = ["lagrangian", "licq", "Constrained.existsUnique_multipliers_of_isLocalMinOn"]
 source = "Cartis–Gould–Toint, Theorem 1.1.3"
 
 [[node]]
 id = "theorem_1_1_3_ii"
-kind = "theorem"
-desc = '''
-Theorem 1.1.3 (second-order necessary, (1.1.14)). In addition `f, c i` `C²` on `𝒮`: with the
-multipliers `y*` of (i), `0 ≤ iteratedFDeriv ℝ 2 (fun x => lagrangian f c x y*) x* (fun _ => d)` for
-all `d` with `⟪gradient (c i) x*, d⟫ = 0` for all `i`.
-'''
-deps = ["theorem_1_1_3_i", "Constrained.secondOrder_necessary_ineq"]
 source = "Cartis–Gould–Toint, Theorem 1.1.3"
 
 [[node]]
 id = "theorem_1_1_3_iii"
-kind = "theorem"
-desc = '''
-Theorem 1.1.3 (sufficient, (1.1.15) **with `d ≠ 0`**). `f, c i` `C²` on `𝒮`, `x*` feasible,
-`gradient (fun x => lagrangian f c x y*) x* = 0`, and `0 < ∇²ℒ(x*, y*)[d,d]` for all `d ≠ 0` with
-`⟪∇c_i(x*), d⟫ = 0` (all `i`) ⇒ `Optimization.IsStrictLocalMinOn f {x | ∀ i, c i x = 0} x*`.
-(As printed, `d = 0` is not excluded and the hypothesis can never hold.)
-'''
-deps = ["lagrangian", "Constrained.isStrictLocalMinOn_of_secondOrder_sufficient"]
 source = "Cartis–Gould–Toint, Theorem 1.1.3"
 
 [[node]]
 id = "theorem_1_1_4_i"
-kind = "theorem"
-desc = '''
-Theorem 1.1.4 (KKT, (1.1.16)). `𝒮` open containing `{x | ∀ i, 0 ≤ c i x}`, `f, c i` `C¹` on `𝒮`,
-`x*` a local minimizer of `f` on the feasible set, `licq c x*`. Then `∃ y, gradient
-(fun x => lagrangian f c x y) x* = 0 ∧ (∀ i, 0 ≤ c i x*) ∧ (∀ i, 0 ≤ y i) ∧ ∑ i, y i * c i x* = 0`.
-'''
-deps = ["lagrangian", "licq", "Constrained.exists_kkt_of_isLocalMinOn"]
 source = "Cartis–Gould–Toint, Theorem 1.1.4"
 
 [[node]]
 id = "criticalConeN"
-kind = "def"
-desc = '''
-`criticalConeN c x y : Set _ := {d | ∀ i ∈ activeSet c x, (0 < y i → ⟪∇c_i(x), d⟫ = 0) ∧
-(y i = 0 → 0 ≤ ⟪∇c_i(x), d⟫)}` (the book's `𝒩₊` of (1.1.17)); equals the backbone
-`Constrained.criticalCone` for `g = -c`, `μ = y`.
-'''
-deps = ["activeSet", "Constrained.criticalCone"]
 source = "Cartis–Gould–Toint, Theorem 1.1.4 (𝒩₊)"
 
 [[node]]
 id = "theorem_1_1_4_ii"
-kind = "theorem"
-desc = '''
-Theorem 1.1.4 (second-order necessary, (1.1.17)). In addition `f, c i` `C²` on `𝒮`; with the
-multipliers `y*` of (i) (unique under LICQ): `∀ d ∈ criticalConeN c x* y*,
-0 ≤ iteratedFDeriv ℝ 2 (fun x => lagrangian f c x y*) x* (fun _ => d)`.
-'''
-deps = ["theorem_1_1_4_i", "criticalConeN", "Constrained.secondOrder_necessary_ineq"]
 source = "Cartis–Gould–Toint, Theorem 1.1.4"
 
 [[node]]
 id = "theorem_1_1_4_iii"
-kind = "theorem"
-desc = '''
-Theorem 1.1.4 (sufficient, (1.1.18) **with `d ≠ 0`**). `f, c i` `C²` on `𝒮`, `(x*, y*)` satisfying
-(1.1.16), and `0 < ∇²ℒ(x*, y*)[d,d]` for all nonzero `d ∈ criticalConeN c x* y*` ⇒
-`Optimization.IsStrictLocalMinOn f {x | ∀ i, 0 ≤ c i x} x*`.
-'''
-deps = ["criticalConeN", "lagrangian", "Constrained.isStrictLocalMinOn_of_secondOrder_sufficient"]
 source = "Cartis–Gould–Toint, Theorem 1.1.4"
+
+[[node]]
+id = "IsKKTPair"
+source = "Cartis–Gould–Toint, (1.1.16)"
