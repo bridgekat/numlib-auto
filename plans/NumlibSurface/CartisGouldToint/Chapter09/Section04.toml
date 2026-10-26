@@ -11,3 +11,67 @@ source = "Cartis–Gould–Toint, §9.4.2"
 [[node]]
 id = "optimalValue_bounds_9_4_6"
 source = "Cartis–Gould–Toint, (9.4.5)–(9.4.7)"
+
+[[node]]
+id = "trValue_of_posDef"
+source = "Cartis–Gould–Toint, §9.4.2 (H ≻ 0, ‖H⁻¹g‖_M ≤ Δ)"
+
+[[node]]
+id = "taylorMeasure_two_eq_neg_trValue"
+source = "Cartis–Gould–Toint, §9.4.2 (φ^Δ_{f,2} = -m_Δ)"
+
+[[node]]
+id = "test_9_4_2_iff"
+source = "Cartis–Gould–Toint, (9.4.2)–(9.4.4)"
+
+[[node]]
+id = "mNorm_div_smul_le"
+source = "Cartis–Gould–Toint, §9.4.2 (‖α⁺s_{Δ⁺}‖_M = Δ)"
+
+[[node]]
+id = "test_9_4_3_of_9_4_6"
+source = "Cartis–Gould–Toint, (9.4.3), (9.4.6)"
+
+[[node]]
+id = "test_9_4_4_of_9_4_6"
+source = "Cartis–Gould–Toint, (9.4.4), (9.4.6)"
+
+[[node]]
+id = "test_9_4_3_of_9_4_7"
+source = "Cartis–Gould–Toint, (9.4.3), (9.4.7)"
+
+[[node]]
+id = "tests_9_4_3_9_4_4_of_setL"
+source = "Cartis–Gould–Toint, (9.4.3)–(9.4.4), §9.4.2 (λ⁺ ∈ 𝓛)"
+
+[[node]]
+id = "test_9_4_3_of_setG"
+source = "Cartis–Gould–Toint, (9.4.3), §9.4.2 (λ⁻ ∈ 𝓖)"
+
+[[node]]
+id = "trValue_ge_of_setG"
+source = "Cartis–Gould–Toint, §9.4.2, footnote 65"
+
+[[node]]
+id = "exists_trValue_eq"
+source = "Cartis–Gould–Toint, §9.4.2 (s_Δ exists)"
+
+[[node]]
+id = "trValue_antitone"
+source = "Cartis–Gould–Toint, (9.4.5)"
+
+[[node]]
+id = "trValue_le_min"
+source = "Cartis–Gould–Toint, (9.4.7)"
+
+[[node]]
+id = "taylorPolynomial_two_eq_model"
+source = "Cartis–Gould–Toint, §9.4.2 (g = ∇f(x), H = ∇²f(x))"
+
+[[node]]
+id = "taylorMeasure_two_eq_neg_trValue_of_contDiffAt"
+source = "Cartis–Gould–Toint, §9.4.2 (φ^Δ_{f,2} = -m_Δ)"
+
+[[node]]
+id = "test_9_4_2_iff_of_contDiffAt"
+source = "Cartis–Gould–Toint, (9.4.2)–(9.4.4)"

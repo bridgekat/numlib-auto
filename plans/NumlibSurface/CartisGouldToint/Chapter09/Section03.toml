@@ -25,6 +25,27 @@ id = "abs_eigenvalue_le_frobenius"
 source = "Cartis–Gould–Toint, §9.3.1 (|λᵢ| ≤ ‖H‖_F)"
 
 [[node]]
+id = "abs_eigenvalue_le_lpOpNorm_two"
+source = "Cartis–Gould–Toint, §9.3.1 (|λᵢ| ≤ ‖H‖)"
+
+[[node]]
+id = "lpOpNorm_two_le_frobenius"
+source = "Cartis–Gould–Toint, §9.3.1 (‖H‖ ≤ ‖H‖_F)"
+
+[[node]]
+id = "lpOpNorm_top_le_iSup"
+source = "Cartis–Gould–Toint, §9.3.1 (‖H‖_∞ = max_k ∑_j |h_kj|)"
+
+[[node]]
+id = "opNorm_le_min_linfty_frobenius"
+source = "Cartis–Gould–Toint, §9.3.1 (‖H‖ ≤ min(‖H‖_∞, ‖H‖_F))"
+
+
+[[node]]
+id = "extremeEigenvalue_bounds_9_3_1"
+source = "Cartis–Gould–Toint, §9.3.1 (-min(‖H‖_∞, ‖H‖_F) ≤ λ₁ ≤ λₙ ≤ min(‖H‖_∞, ‖H‖_F))"
+
+[[node]]
 id = "invIterVec"
 source = "Cartis–Gould–Toint, Algorithm 9.3.1"
 

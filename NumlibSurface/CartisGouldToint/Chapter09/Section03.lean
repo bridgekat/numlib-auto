@@ -1,3 +1,4 @@
+import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Optimization.Subproblem.InverseIteration
 import NumlibSurface.CartisGouldToint.Chapter08.Section03
 
@@ -23,6 +24,12 @@ constructive early-termination test (Theorem 9.3.2, (9.3.16)).
 * `lambdaStar_bounds_9_3_3` — (9.3.3)–(9.3.5).
 * `pencil_gershgorin_9_3_7` — (9.3.6)–(9.3.7) and the Rayleigh bound `λ₁ ≤ hᵢᵢ/mᵢᵢ`.
 * `abs_eigenvalue_le_frobenius` — `|λᵢ| ≤ ‖H‖_F` (§9.3.1, `M = I`).
+* `opNorm_le_min_linfty_frobenius`, `extremeEigenvalue_bounds_9_3_1` — `‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)`
+  and `-min(‖H‖_∞, ‖H‖_F) ≤ -‖H‖₂ ≤ λ₁ ≤ λₙ ≤ ‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)` (§9.3.1, `M = I`).
+
+The spectral norm `‖H‖₂` is `Matrix.lpOpNorm 2 H`. The comparison `‖H‖₂ ≤ ‖H‖_∞` uses the
+symmetry of `H` (`Matrix.IsHermitian.l2_opNorm_le_linfty_opNorm`); for a general `H` only
+`‖H‖₂² ≤ ‖H‖₁ ‖H‖_∞` holds (`Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm`).
 * `algorithm_9_3_1.isInverseIterationRun`, `theorem_9_3_1` — fast convergence in the hard case.
 * `setL_reg_mono` — §9.3.5.
 * `theorem_9_3_2`, `cubic_termination_9_3_16` — §9.3.6.
@@ -51,9 +58,6 @@ heuristically and are not separately formalized; their admissible choices are co
   (`|uᵢ/u_k| ≤ 1`) and is not a valid bound as printed; only the outer inequality
   `|h_kk - λ m_kk| ≤ o_kᴴ + |λ| o_kᴹ` is stated (`exists_abs_sub_le_of_eigen`, via
   `Matrix.exists_abs_sub_le_of_mulVec_eq`), which is what (9.3.7) uses.
-* §9.3.1, `M = I`: the comparisons `‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)` are standard facts quoted by the
-  book and are not formalized; the eigenvalue bounds `|λᵢ| ≤ ‖H‖₂`, `|λᵢ| ≤ ‖H‖_∞`
-  (`pencil_gershgorin_9_3_7`) and `|λᵢ| ≤ ‖H‖_F` (`abs_eigenvalue_le_frobenius`) are.
 * §9.3.5: `𝓝 = (-∞, λₛ]` and `λₛ` depend only on `H` and `M`, not on `σ`, which is why `𝓝₊ = 𝓝`.
 -/
 
@@ -236,33 +240,86 @@ theorem pencil_gershgorin_9_3_7 [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) 
     rw [abs_sub_comm] at this
     linarith
 
+/-- An eigenpair `H u = μ u` of the Euclidean operator gives `H *ᵥ u = μ u` on coordinates. -/
+private theorem mulVec_eq_smul_of_eigen {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
+    (h : toEuclideanLin H u = μ • u) :
+    WithLp.ofLp u ≠ 0 ∧ H *ᵥ WithLp.ofLp u = μ • WithLp.ofLp u :=
+  ⟨fun h0 => hu (by simpa using congrArg (WithLp.toLp 2) h0), by
+    simpa only [toEuclideanLin_apply, WithLp.ofLp_smul] using congrArg WithLp.ofLp h⟩
+
+/-- Every eigenvalue `μ` of `H` satisfies `|μ| ≤ ‖H‖₂` (`Matrix.lpOpNorm 2 H`). -/
+theorem abs_eigenvalue_le_lpOpNorm_two {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
+    (h : toEuclideanLin H u = μ • u) : |μ| ≤ lpOpNorm 2 H := by
+  obtain ⟨h0, h1⟩ := mulVec_eq_smul_of_eigen hu h
+  simpa only [Real.norm_eq_abs] using norm_le_lpOpNorm_of_mulVec_eq_smul 2 h0 h1
+
 section Frobenius
 
 attribute [local instance] Matrix.frobeniusNormedAddCommGroup
 
-/-- **§9.3.1 of [cartis2022evaluation], `M = I`**: every eigenvalue `μ` of `H` satisfies
-`|μ| ≤ ‖H‖_F = (∑ᵢⱼ hᵢⱼ²)^{1/2}` (via `‖H u‖ ≤ ‖H‖_F ‖u‖`). -/
-theorem abs_eigenvalue_le_frobenius {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
-    (h : toEuclideanLin H u = μ • u) : |μ| ≤ √(∑ i, ∑ j, H i j ^ 2) := by
+/-- `‖H‖₂ ≤ ‖H‖_F = (∑ᵢⱼ hᵢⱼ²)^{1/2}` (`Matrix.l2_opNorm_le_frobenius_norm`, any square `H`). -/
+theorem lpOpNorm_two_le_frobenius : lpOpNorm 2 H ≤ √(∑ i, ∑ j, H i j ^ 2) := by
   have hF : ‖H‖ = √(∑ i, ∑ j, H i j ^ 2) := by
     rw [frobenius_norm_def, Real.sqrt_eq_rpow]
     congr 1
     refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
     rw [Real.norm_eq_abs, Real.rpow_two, sq_abs]
-  have hmul := frobenius_norm_mul H (replicateCol (Fin 1) (WithLp.ofLp u))
-  rw [← replicateCol_mulVec] at hmul
-  have hHu : H *ᵥ WithLp.ofLp u = μ • WithLp.ofLp u := by
-    have := congrArg WithLp.ofLp h
-    simpa [toEuclideanLin_apply] using this
-  have h1 : ‖replicateCol (Fin 1) (H *ᵥ WithLp.ofLp u)‖ =
-      ‖WithLp.toLp 2 (H *ᵥ WithLp.ofLp u)‖ :=
-    frobenius_norm_replicateCol _
-  have h2 : ‖replicateCol (Fin 1) (WithLp.ofLp u)‖ = ‖u‖ :=
-    frobenius_norm_replicateCol _
-  rw [h1, h2, hHu, WithLp.toLp_smul, WithLp.toLp_ofLp, norm_smul, Real.norm_eq_abs, hF] at hmul
-  exact le_of_mul_le_mul_right hmul (norm_pos_iff.2 hu)
+  exact hF ▸ l2_opNorm_le_frobenius_norm H
 
 end Frobenius
+
+/-- **§9.3.1 of [cartis2022evaluation], `M = I`**: every eigenvalue `μ` of `H` satisfies
+`|μ| ≤ ‖H‖_F = (∑ᵢⱼ hᵢⱼ²)^{1/2}` (via `|μ| ≤ ‖H‖₂ ≤ ‖H‖_F`). -/
+theorem abs_eigenvalue_le_frobenius {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
+    (h : toEuclideanLin H u = μ • u) : |μ| ≤ √(∑ i, ∑ j, H i j ^ 2) :=
+  (abs_eigenvalue_le_lpOpNorm_two hu h).trans lpOpNorm_two_le_frobenius
+
+/-! ### Norm comparisons of §9.3.1 -/
+
+/-- The `∞`-norm is the largest absolute row sum: `‖H‖_∞ ≤ max_k ∑_j |h_kj|` (with equality,
+`Matrix.sum_norm_le_lpOpNorm_top`). -/
+theorem lpOpNorm_top_le_iSup : lpOpNorm ⊤ H ≤ ⨆ k, ∑ j, |H k j| := by
+  have hR : 0 ≤ ⨆ k, ∑ j, |H k j| :=
+    Real.iSup_nonneg fun k => Finset.sum_nonneg fun j _ => abs_nonneg _
+  open scoped Matrix.Norms.Operator in
+  rw [lpOpNorm_top, linfty_opNorm_def, ← NNReal.coe_mk _ hR, NNReal.coe_le_coe,
+    Finset.sup_le_iff]
+  intro i _
+  rw [← NNReal.coe_le_coe, NNReal.coe_sum, NNReal.coe_mk]
+  simp only [coe_nnnorm, Real.norm_eq_abs]
+  exact le_ciSup (f := fun k => ∑ j, |H k j|) (Set.finite_range _).bddAbove i
+
+/-- **The norm comparisons of [cartis2022evaluation] §9.3.1** (`M = I`, symmetric `H`):
+`‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)`, with `‖H‖₂ = Matrix.lpOpNorm 2 H` the spectral norm,
+`‖H‖_∞ = max_k ∑_j |h_kj|` and `‖H‖_F = (∑ᵢⱼ hᵢⱼ²)^{1/2}`. -/
+theorem opNorm_le_min_linfty_frobenius (hH : H.IsHermitian) :
+    lpOpNorm 2 H ≤ min (⨆ k, ∑ j, |H k j|) (√(∑ i, ∑ j, H i j ^ 2)) :=
+  le_min (hH.l2_opNorm_le_linfty_opNorm.trans lpOpNorm_top_le_iSup) lpOpNorm_two_le_frobenius
+
+/-- **Outer bounds on the extreme eigenvalues for `M = I`** ([cartis2022evaluation] §9.3.1,
+`n ≥ 1`, symmetric `H`):
+`-min(‖H‖_∞, ‖H‖_F) ≤ -‖H‖₂ ≤ λ₁ ≤ λₙ ≤ ‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)`. -/
+theorem extremeEigenvalue_bounds_9_3_1 [NeZero n] (hH : H.IsHermitian) :
+    -min (⨆ k, ∑ j, |H k j|) (√(∑ i, ∑ j, H i j ^ 2)) ≤ -lpOpNorm 2 H ∧
+      -lpOpNorm 2 H ≤ leftmostPencil hH PosDef.one ∧
+      leftmostPencil hH PosDef.one ≤ rightmostPencil hH PosDef.one ∧
+      rightmostPencil hH PosDef.one ≤ lpOpNorm 2 H ∧
+      lpOpNorm 2 H ≤ min (⨆ k, ∑ j, |H k j|) (√(∑ i, ∑ j, H i j ^ 2)) := by
+  set hT := isSymmetric_scaledOp (hM := PosDef.one) hH
+  have hmin := opNorm_le_min_linfty_frobenius hH
+  have heig : ∀ i, |hT.eigenvalues rfl i| ≤ lpOpNorm 2 H := fun i => by
+    obtain ⟨u, hu, h⟩ := exists_eigen_of_eigenvalues (hM := PosDef.one) hH i
+    rw [toEuclideanLin_one_apply] at h
+    exact abs_eigenvalue_le_lpOpNorm_two hu h
+  obtain ⟨i, hi⟩ := exists_eigenvalues_eq_leftmost (hH := hT)
+  obtain ⟨k, hk⟩ := exists_eigenvalues_eq_rightmost (hH := hT)
+  refine ⟨neg_le_neg hmin, ?_, ?_, ?_, hmin⟩
+  · rw [leftmostPencil_eq, ← hi]
+    exact neg_le_of_abs_le (heig i)
+  · rw [leftmostPencil_eq, rightmostPencil_eq, ← hi, rightmost]
+    exact le_ciSup (Set.finite_range _).bddAbove i
+  · rw [rightmostPencil_eq, ← hk]
+    exact le_of_abs_le (heig k)
 
 /-! ### Algorithm 9.3.1 and Theorem 9.3.1 -/
 
