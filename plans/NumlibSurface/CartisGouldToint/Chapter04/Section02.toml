@@ -1,152 +1,63 @@
 namespace = "CartisGouldToint.Chapter04"
-desc = '''
-§4.2 A lower complexity bound for finding first-order stationary points (Carmon, Duchi, Hinder,
-Sidford [77]). All general content is in the backbone: `Optimization.ZeroChain` (method and function
-classes of variable dimension, `#_ε` (4.2.2), zero-respecting methods, zero chains, Lemmas
-4.2.1–4.2.3), `Optimization.ResistingOracle` (Theorem 4.2.4, the book cites [77] for the proof) and
-`Optimization.CarmonChain` (the hard function (4.2.6), Lemma 4.2.5, the lower bound). Surface nodes
-are specializations with the book's notation: `𝓕(Δ,p)` carries its Lipschitz constant `L`
-explicitly (the book's `L_{f,p}` "associated with functions in `𝓕(Δ,p)`").
-
-Formal reading of the book's notions: a method in `𝓜(p)` is a family over all dimensions of
-deterministic oracle methods with `x₀ = 0` receiving the `p`-jet at each iterate (`M^{(k)}` of
-§4.2.1.2; footnote 31: no measurability); `k_ε(M,f) ∈ ℕ∞` (`⊤` if never `ε`-stationary).
-'''
 
 [[node]]
 id = "functionClass"
-kind = "def"
-desc = '''
-`functionClass Δ L p := Optimization.smoothClass Δ L p` — the book's `𝓕(Δ, p)` (§4.2.1.1):
-`C^∞` functions on `ℝⁿ` (any `n`) satisfying f.DpL with constant `L`, f.Bb with `f_low = inf f`, and
-`f(0) - f_low ≤ Δ`. Orthogonal invariance (footnote 30) is `Optimization.comp_adjoint_mem_smoothClass`,
-which needs `0 ≤ L` (false for `L < 0`): the surface statements about `functionClass Δ L p` should
-assume `0 < L` (the book's `L_{f,p} > 0`). Members are `C^∞`, hence differentiable, as
-`Optimization.classComplexity_zeroRespecting_le` requires.
-'''
-deps = ["Optimization.smoothClass", "Optimization.comp_adjoint_mem_smoothClass"]
 source = "Cartis–Gould–Toint, Section 4.2.1.1"
 
 [[node]]
-id = "methodClasses"
-kind = "def"
-desc = '''
-`methodClassM p := Optimization.methodClass p` (`𝓜(p)`) and
-`methodClassZR p := Optimization.zeroRespectingClass p` (`𝓜_ZR(p)`, (4.2.1)), and the complexity
-`complexity 𝓜 𝓕 ε := Optimization.classComplexity 𝓜 𝓕 ε` (`#_ε(𝓜, 𝓕)`, (4.2.2)); the zero-chain
-property (4.2.4) is `Optimization.IsZeroChain f p`.
-'''
-deps = ["Optimization.JetMethod", "Optimization.IsZeroRespectingFor", "Optimization.classComplexity", "Optimization.IsZeroChain"]
-source = "Cartis–Gould–Toint, Sections 4.2.1.2–4.2.1.3, (4.2.1), (4.2.2), (4.2.4)"
+id = "comp_adjoint_mem_functionClass"
+source = "Cartis–Gould–Toint, Section 4.2.1.1, footnote 30"
+
+[[node]]
+id = "methodClassM"
+source = "Cartis–Gould–Toint, Section 4.2.1.2"
+
+[[node]]
+id = "methodClassZR"
+source = "Cartis–Gould–Toint, Section 4.2.1.2, (4.2.1)"
+
+[[node]]
+id = "complexity"
+source = "Cartis–Gould–Toint, Section 4.2.1.3, (4.2.2)"
 
 [[node]]
 id = "lemma_4_2_1"
-kind = "theorem"
-desc = '''
-Lemma 4.2.1. If `f : EuclideanSpace ℝ (Fin n) → ℝ` is a `p`-th order zero chain, `μ₁ : ℝ` and
-`μ₂ ≠ 0`, then `x ↦ μ₁ f(x/μ₂)` is a `p`-th order zero chain.
-'''
-deps = ["methodClasses", "Optimization.IsZeroChain.comp_smul"]
 source = "Cartis–Gould–Toint, Lemma 4.2.1"
 
 [[node]]
 id = "lemma_4_2_2"
-kind = "theorem"
-desc = '''
-Lemma 4.2.2. If `M ∈ methodClassZR p` and `⟨n, f⟩ ∈ functionClass Δ L p` is a `p`-th order zero chain
-(`p ≥ 1`), then the iterates `x_k` of `M n` on `f` satisfy `[x_k]_j = 0` for all `j ∈ [k+1 : n]`
-(1-based) and all `k ≤ n - 1`. (Only the zero-chain property and zero-respect for `f` are used.)
-'''
-deps = ["methodClasses", "functionClass", "Optimization.IsZeroRespectingFor.iterate_apply_eq_zero"]
 source = "Cartis–Gould–Toint, Lemma 4.2.2"
 
 [[node]]
 id = "lemma_4_2_3"
-kind = "theorem"
-desc = '''
-Lemma 4.2.3. Let `ε > 0`, `p ≥ 1` and `⟨n, f⟩ ∈ functionClass Δ L p` a `p`-th order zero chain with
-`‖∇f(x)‖ > ε` whenever `[x]_n = 0` (4.2.5). Then
-`complexity (methodClassZR p) (functionClass Δ L p) ε ≥ complexity (methodClassZR p) {⟨n,f⟩} ε ≥ n`
-(the book refers to "(4.2.3)" for the definition of `#_ε`; it is (4.2.2)).
-'''
-deps = ["methodClasses", "functionClass", "Optimization.le_firstStationaryIndex_of_isZeroChain"]
 source = "Cartis–Gould–Toint, Lemma 4.2.3"
 
 [[node]]
 id = "theorem_4_2_4_i"
-kind = "theorem"
-desc = '''
-Theorem 4.2.4 (first part). For every `ε > 0`:
-`complexity (methodClassM p) (functionClass Δ L p) ε ≥ complexity (methodClassZR p) (functionClass Δ L p) ε`.
-(The book cites [77, Props. 1, 2]; its displayed sketch exchanges inf and sup loosely; the planned
-proof uses a simulating zero-respecting method for each horizon `T`, see
-`Optimization.classComplexity_zeroRespecting_le`.)
-'''
-deps = ["methodClasses", "functionClass", "Optimization.classComplexity_zeroRespecting_le"]
 source = "Cartis–Gould–Toint, Theorem 4.2.4"
 
 [[node]]
 id = "theorem_4_2_4_ii"
-kind = "theorem"
-desc = '''
-Theorem 4.2.4 (second part). If `⟨n, f⟩ ∈ functionClass Δ L p` and
-`complexity (methodClassZR p) {⟨n, f⟩} ε ≥ k̄` (`k̄ : ℕ`), then with
-`𝓕_U = {⟨n + k̄, f ∘ Uᵀ⟩ | U : ℝⁿ →ₗᵢ[ℝ] ℝ^{n+k̄}}` (the book's `U ∈ O(n + k̄, n)`):
-`complexity (methodClassM p) (functionClass Δ L p) ε ≥ complexity (methodClassM p) 𝓕_U ε ≥ k̄`.
-'''
-deps = ["methodClasses", "functionClass", "Optimization.le_classComplexity_comp_adjoint", "Optimization.comp_adjoint_mem_smoothClass"]
 source = "Cartis–Gould–Toint, Theorem 4.2.4"
 
 [[node]]
 id = "hardFunction"
-kind = "def"
-desc = '''
-The difficult function (4.2.6): `hardFunction k̄ := Optimization.CarmonChain.chain k̄` on
-`EuclideanSpace ℝ (Fin k̄)`, with `Ψ`, `Φ` as in the book (`Optimization.CarmonChain.psi`).
-**Correction:** the first term is `-Ψ(1) Φ([x]_1)` (as in [77]), not the printed
-`-Ψ([x]_1) Φ([x]_1)`, with which `∇f^D(0) = 0` and Lemma 4.2.5 (ii) fails at `x = 0`.
-'''
-deps = ["Optimization.CarmonChain.chain"]
 source = "Cartis–Gould–Toint, (4.2.6)"
 
 [[node]]
 id = "lemma_4_2_5_i"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (i). For every `p ≥ 1`, `hardFunction k̄` is a `p`-th order zero chain.
-'''
-deps = ["hardFunction", "Optimization.CarmonChain.isZeroChain_chain"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (i)"
 
 [[node]]
 id = "lemma_4_2_5_ii"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (ii). If `|[x]_i| < 1` for some `i ≤ k̄`, there is `j ≤ i` with `|[x]_j| < 1` and
-`‖∇f^D(x)‖ ≥ |∂f^D/∂[x]_j (x)| > 1`.
-'''
-deps = ["hardFunction", "Optimization.CarmonChain.exists_abs_partial_chain_gt_one"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (ii)"
 
 [[node]]
 id = "lemma_4_2_5_iii"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (iii). `f^D` is bounded below and `f^D(0) - f^D_low ≤ 12 k̄` (`f^D_low = inf f^D`).
-'''
-deps = ["hardFunction", "Optimization.CarmonChain.chain_zero_sub_iInf_le"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (iii)"
 
 [[node]]
 id = "lemma_4_2_5_iv"
-kind = "theorem"
-desc = '''
-Lemma 4.2.5 (iv), uniform part. For every `p ≥ 1` and every `k̄`, `∇^p f^D` is Lipschitz with
-constant `L^D_p := Optimization.CarmonChain.lipschitzConst p > 0`, independent of `k̄`
-(`Optimization.CarmonChain.lipschitzOn_iteratedFDeriv_chain`). The explicit growth of `L^D_p` is
-`lemma_4_2_5_iv_growth`.
-'''
-deps = ["hardFunction", "Optimization.CarmonChain.lipschitzOn_iteratedFDeriv_chain"]
 source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv)"
 
 [[node]]
@@ -162,23 +73,6 @@ source = "Cartis–Gould–Toint, Lemma 4.2.5 (iv) (explicit growth)"
 
 [[node]]
 id = "theorem_4_2_6_i"
-kind = "theorem"
-desc = '''
-Theorem 4.2.6 (lower bound), **corrected**. Let `p ≥ 1`, `Δ, L, ε₁ > 0`, `L^D_p` as in Lemma 4.2.5 (iv),
-`Y := Δ (L / L^D_p)^{1/p} ε₁^{-(p+1)/p}`. Then
-`complexity (methodClassM p) (functionClass Δ L p) ε₁ ≥ complexity (methodClassZR p) (functionClass Δ L p) ε₁
-≥ ⌊Y / 12⌋₊`, hence `≥ c₀ Y` with `c₀ = 1/24` whenever `Y ≥ 12` (i.e. for `ε₁` small enough).
-Proof as in the book with `f(x) = μ^{p+1} (L/L^D_p) f^D(x/μ)`, `μ = (L^D_p ε₁ / L)^{1/p}`, `k̄ = ⌊Y/12⌋₊`,
-hard instance of dimension `k̄` for `𝓜_ZR(p)` and `2 k̄` for `𝓜(p)`
-(`Optimization.CarmonChain.le_classComplexity_smoothClass_methodClass`; the first inequality is
-`Optimization.classComplexity_zeroRespecting_le (methodClass p)` with `comp_adjoint_mem_smoothClass`).
-Both classes are nonempty (`Optimization.zeroRespectingClass_nonempty`, `methodClass_nonempty`). Corrections: the book concludes
-`#_ε(𝓜(p),𝓕) ≥ 2 k̄` from Theorem 4.2.4 (ii), which only gives `≥ k̄`; the floor makes the
-`c₀`-form false for large `ε₁` (then `k̄ = 0`, and indeed for `Δ` small relative to
-`ε₁^{(p+1)/p} L^{-1/p}` every `f ∈ 𝓕` has `‖∇f(0)‖ ≤ ε₁`, so `#_ε = 0`); the OCR's `μ` and
-`(L_{f,p}/L_{f,p})^{1/p}` are garbled.
-'''
-deps = ["lemma_4_2_1", "lemma_4_2_3", "theorem_4_2_4_i", "theorem_4_2_4_ii", "lemma_4_2_5_i", "lemma_4_2_5_ii", "lemma_4_2_5_iii", "lemma_4_2_5_iv", "Optimization.CarmonChain.le_classComplexity_smoothClass_methodClass", "Optimization.classComplexity_zeroRespecting_le"]
 source = "Cartis–Gould–Toint, Theorem 4.2.6"
 
 [[node]]

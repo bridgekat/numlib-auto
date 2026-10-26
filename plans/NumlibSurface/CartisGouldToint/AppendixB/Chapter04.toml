@@ -1,66 +1,33 @@
 namespace = "CartisGouldToint.AppendixB"
-desc = '''
-Appendix to Chapter 4: Lemma B.4.1, derivatives of the regularization term `‖s‖^{p+β}`
-(`β ∈ (0,1]`, `(k+β)! = holderFactorial k β`). Content in the backbone module
-`Numlib/Analysis/InnerProductSpace/NormPowIteratedFDeriv` (root namespace), on any real inner
-product space; surface on `EuclideanSpace ℝ (Fin n)`. Split into clauses (B.4.1), (B.4.2), (B.4.3),
-convexity.
-
-**Source error:** (B.4.3) is false for `β ∈ (0,1)` (counterexample `p = 1`, `β = 1/2`, `s = e₁` in
-`ℝ²`: the Hessian norm of `‖·‖^{3/2}` at `e₁` is `3/2`, not `3/4`); it is correct for `β = 1`, the only
-case the book uses (Chapters 4, 12, 14). The proof's claim that the maxima in (B.4.4) are attained at
-`v = s/‖s‖` is unjustified as written (mixed signs in (B.4.9)), though true for `j ≤ p`; the backbone
-proves (B.4.1) (operator norm, all real `p + β ≥ j`) by an averaging identity and Hölder's inequality
-instead (see the module description of `NormPowIteratedFDeriv`).
-'''
 
 [[node]]
 id = "lemma_B_4_1_i"
-kind = "theorem"
-desc = '''
-Lemma B.4.1 (B.4.1). For `p : ℕ`, `β ∈ (0,1]`, `j ≤ p` and `s ≠ 0` in `EuclideanSpace ℝ (Fin n)`
-(`n ≥ 1`): `‖iteratedFDeriv ℝ j (fun s => ‖s‖ ^ (p + β)) s‖ = holderFactorial p β /
-holderFactorial (p - j) β * ‖s‖ ^ (p - j + β)` (operator norm = the book's tensor norm (A.7)).
-Also the diagonal form `|∇^j(‖s‖^{p+β})[v]^j| ≤ (p+β)!/(p-j+β)! ‖s‖^{p-j+β} ‖v‖^j`, which is
-what Chapters 4, 6 use. (At `s = 0` and `j ≤ p`, `j < p + β`: the derivative is `0` for `j ≥ 1`,
-`contDiff_normRpow_of_lt`.)
-'''
-deps = ["norm_iteratedFDeriv_normRpow", "norm_iteratedFDeriv_normRpow_le", "contDiff_normRpow_of_lt", "holderFactorial"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.1)"
+
+[[node]]
+id = "lemma_B_4_1_i_apply_le"
 source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.1)"
 
 [[node]]
 id = "lemma_B_4_1_ii"
-kind = "theorem"
-desc = '''
-Lemma B.4.1 (B.4.2). For `j ≤ p` (indeed every `j`) and `s ≠ 0`:
-`iteratedFDeriv ℝ j (fun s => ‖s‖ ^ (p + β)) s (fun _ => s) =
-holderFactorial p β / holderFactorial (p - j) β * ‖s‖ ^ (p + β)`.
-'''
-deps = ["iteratedFDeriv_normRpow_apply_self", "holderFactorial"]
 source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.2)"
 
 [[node]]
 id = "lemma_B_4_1_iii"
-kind = "theorem"
-desc = '''
-Lemma B.4.1 (B.4.3), **corrected**. For `s ≠ 0`: (a) `β = 1`:
-`‖iteratedFDeriv ℝ (p+1) (fun s => ‖s‖ ^ (p + 1)) s‖ = (p + 1)!` (the book's (B.4.3) with
-`β (p+β)! = (p+1)!`); (b) any `β ∈ (0,1]`: the radial value is
-`iteratedFDeriv ℝ (p+1) (‖·‖^{p+β}) s (fun _ => s/‖s‖) = β * holderFactorial p β * ‖s‖ ^ (β - 1)` and the norm
-is `≤ C ‖s‖^{β-1}` for a constant `C = C(p, β, n)` (`exists_norm_iteratedFDeriv_normRpow_le`);
-(c) for `β < 1` the printed equality fails: on `ℝ²` with `p = 1`, `β = 1/2`, `s = e₁` the norm is
-`≥ 3/2 > 3/4` (`not_norm_iteratedFDeriv_normRpow_eq_radial`).
-'''
-deps = ["norm_iteratedFDeriv_normRpow", "iteratedFDeriv_normRpow_apply_self", "exists_norm_iteratedFDeriv_normRpow_le", "not_norm_iteratedFDeriv_normRpow_eq_radial"]
+source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.3)"
+
+[[node]]
+id = "lemma_B_4_1_iii_radial"
+source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.3)"
+
+[[node]]
+id = "lemma_B_4_1_iii_bound"
+source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.3)"
+
+[[node]]
+id = "lemma_B_4_1_iii_false"
 source = "Cartis–Gould–Toint, Lemma B.4.1 (B.4.3)"
 
 [[node]]
 id = "lemma_B_4_1_iv"
-kind = "theorem"
-desc = '''
-Lemma B.4.1 (convexity). For `s ≠ 0` and `j ≤ p + 1`: `d ↦ ∇^j(‖s‖^{p+β})[d]^j` is convex on the
-orthogonal complement of `s` (it is `c ‖d‖^j` with `c ≥ 0` for even `j`, `0` for odd `j`), and for even
-`j`, `t ↦ ∇^j(‖s‖^{p+β})[t s]^j` is convex on `ℝ`. (The book omits the range `j ≤ p + 1`.)
-'''
-deps = ["convexOn_iteratedFDeriv_normRpow"]
 source = "Cartis–Gould–Toint, Lemma B.4.1"
