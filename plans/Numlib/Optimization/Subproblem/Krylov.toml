@@ -1,95 +1,21 @@
 namespace = "Subproblem"
-desc = '''
-Subproblems restricted to the Krylov subspaces `𝒦ₖ = Krylov.subspace H g k` (book §10.1–10.3;
-Gould–Lucidi–Roma–Toint 1999 (GLTR), Cartis–Gould–Toint 2011, Lukšan–Matonoha–Vlček /
-Steihaug for the monotonicity). Setting: `[FiniteDimensional ℝ E]`, `H` symmetric, `g ≠ 0`,
-`1 ≤ k ≤ Krylov.grade H g`.
-
-Design. A restricted problem is the unrestricted problem for the compressed data on the subspace
-`K` (itself a finite-dimensional inner product space): gradient `orthogonalProjection K g` (`= g` on
-Krylov subspaces) and operator `compression H K` (`Numlib/Analysis/InnerProductSpace/Projection/Compression`).
-So all optimality, secular and stopping results apply verbatim on `K`. The Lanczos basis
-`Arnoldi.vec H g j`, `j < k`, is an orthonormal basis of `𝒦ₖ` in which the compression is the
-tridiagonal `Lanczos.tridiag H g k` and the gradient is `‖g‖ e₀` (`Numlib/Krylov/Lanczos`); this is
-the book's (10.1.3)–(10.1.6) with the `M`-scaling absorbed. The Lanczos relation
-`Lanczos.apply_sum` gives the residual identity of (B.10.1).
-
-Two structural facts replace the book's citations of [189]: (1) `g` is a cyclic vector of
-`compression H 𝒦ₖ` (its Krylov space of the compression is all of `𝒦ₖ` for `k ≤ grade`), so `g`
-has a nonzero component on every eigenvector of the compression and the hard case cannot occur:
-every restricted multiplier exceeds `-θ₁,ₖ` (the least Ritz value), i.e. `T_k + λₖ` is positive
-definite; (2) for a shift `λ` with `H + λ` positive definite on `𝒦ℓ`, the restricted solutions
-are the Galerkin (CG) iterates of `(H + λ) x = -g` (`Krylov.subspace_add_algebraMap`), whose norms
-increase with `k` (`Krylov.IsGalerkinIterate.norm_monotone`, Steihaug); with the secular
-characterization this yields the monotonicity Lemmas 10.2.1 and 10.3.1.
-'''
 
 [[node]]
 id = "isMinOn_subspace_iff_compression"
-kind = "theorem"
-desc = '''
-Restriction principle. For a submodule `K` (finite-dimensional ambient space) and `s ∈ K`:
-`IsMinOn (quadModel g H) (K ∩ closedBall 0 Δ) s ↔ IsMinOn (quadModel (orthogonalProjection K g) (compression H K)) (closedBall 0 Δ) ⟨s, hs⟩`
-and the same for `regModel` over `K`; the compression of a symmetric operator is symmetric. (So
-`isMinOn_closedBall_iff`, `isMinOn_regModel_iff` describe restricted minimizers with multipliers
-`λ` such that `(compression H K + λ) s = -P_K g` and `compression H K + λ ⪰ 0`.)
-'''
-deps = ["quadModel", "regModel"]
+source = "Cartis–Gould–Toint, (10.1.1)–(10.1.2)"
 
 [[node]]
 id = "krylov_no_hardCase"
-kind = "theorem"
-desc = '''
-Let `K = Krylov.subspace H g k`, `1 ≤ k ≤ grade H g`, `θ₁ = leftmost` of `compression H K`. Then
-(i) `g ∈ K` and `g` is cyclic for `compression H K` (`Krylov.subspace (compression H K) g k = ⊤`);
-(ii) every eigenvector `v` of `compression H K` has `⟪v, g⟫ ≠ 0` (equivalently: every eigenvector
-of the unreduced tridiagonal `T_k` has nonzero first component);
-(iii) consequently for every restricted trust-region minimizer (any `Δ > 0`) and every restricted
-regularization minimizer (`σ > 0`, `r > 2`) the multiplier `λₖ` satisfies `-θ₁ < λₖ`, the
-restricted minimizer is unique and equals `step` of the compressed data at `λₖ`.
-(Book §10.2.1, citing [189, Thms 5.3, 5.5].)
-'''
-deps = ["isMinOn_subspace_iff_compression", "multiplier_classification", "leftmost"]
+source = "Cartis–Gould–Toint, §10.2.1"
 
 [[node]]
 id = "krylov_lanczos_coordinates"
-kind = "theorem"
-desc = '''
-Lanczos coordinates (book (10.1.3)–(10.1.6), (10.2.1)). Let `q j = Arnoldi.vec H g j`,
-`T = Lanczos.tridiag H g k`, `β j = Lanczos.beta H g j` and `Q : EuclideanSpace ℝ (Fin k) ≃ₗᵢ K`,
-`y ↦ ∑ j, y j • q j` (for `k ≤ grade`). Then `Q⁻¹ ∘ compression H K ∘ Q = toEuclideanLin T`,
-`Q⁻¹ g = ‖g‖ • e₀`, the models correspond
-(`quadModel g H (Q y) = quadModel (‖g‖ • e₀) (toEuclideanLin T) y`, same for `regModel`), and for
-every `y` and `λ`: `g + (H + λ • 1) (Q y) = Q ((T + λ • 1) y + ‖g‖ • e₀) + (β (k-1) * y (k-1)) • q k`
-(Lanczos relation, `Lanczos.apply_sum`), so if `(T + λ) y = -‖g‖ e₀` then
-`‖g + (H + λ • 1) (Q y)‖ = β (k-1) * |y (k-1)|` ((B.10.1)).
-'''
-deps = ["quadModel", "regModel"]
+source = "Cartis–Gould–Toint, (10.1.3)–(10.1.6), (10.2.1), (B.10.1)"
 
 [[node]]
 id = "krylov_multiplier_mono_regularization"
-kind = "theorem"
-desc = '''
-Lemma 10.2.1 (backbone form). Let `0 < σ`, `2 < r`, `sₖ` a minimizer of `regModel g H σ r` over
-`Krylov.subspace H g k` with multiplier `λₖ = σ‖sₖ‖^{r-2}`, `s*` a global minimizer over `E` with
-`λ* = σ‖s*‖^{r-2}`. Then for `1 ≤ k ≤ ℓ ≤ grade H g`: `λₖ ≤ λℓ ≤ λ*` and
-`‖sₖ‖ ≤ ‖sℓ‖ ≤ ‖s*‖`. Proof: if `λₖ` is to the left of the threshold for `𝒦ℓ` there is nothing to
-show; otherwise the restricted step at `λₖ` on `𝒦ₖ` is the Galerkin iterate of the step on `𝒦ℓ`
-(resp. `E`), so its norm is smaller, and `le_secular_iff_of_regularization` on `𝒦ℓ` (resp. `E`,
-including the hard case) concludes; norms follow from `‖s‖ = (λ/σ)^{1/(r-2)}`.
-'''
-deps = ["krylov_no_hardCase", "le_secular_iff_of_regularization", "isMinOn_subspace_iff_compression"]
+source = "Cartis–Gould–Toint, Lemma 10.2.1"
 
 [[node]]
 id = "krylov_multiplier_mono_trustRegion"
-kind = "theorem"
-desc = '''
-Lemma 10.3.1 (backbone form). Let `0 < Δ`, `sₖ` a minimizer of `quadModel g H` over
-`Krylov.subspace H g k ∩ closedBall 0 Δ` with multiplier `λₖ`, `s*` a global trust-region
-minimizer with multiplier `λ*`. Then for `1 ≤ k ≤ ℓ ≤ grade H g`: `λₖ ≤ λℓ ≤ λ*` and
-`‖sₖ‖ ≤ ‖sℓ‖ ≤ ‖s*‖`. (Interior restricted solutions have `λ = 0` and are CG/Galerkin iterates of
-`H x = -g` with `H` positive definite on the subspace, whence the norm monotonicity; for `s*` with
-`λ* = 0` and singular `H` compare with `particular g H 0`, the minimum-norm solution, since
-`𝒦ℓ ⊆ range H`.)
-'''
-deps = ["krylov_no_hardCase", "le_secular_iff_of_trustRegion", "isMinOn_subspace_iff_compression", "particular_spec"]
+source = "Cartis–Gould–Toint, Lemma 10.3.1"

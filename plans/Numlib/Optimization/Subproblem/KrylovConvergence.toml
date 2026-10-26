@@ -1,67 +1,17 @@
 namespace = "Subproblem"
-desc = '''
-Convergence bounds for the Krylov-subspace subproblem solutions (book Theorems 10.2.2, 10.3.2,
-Corollaries 10.2.3, 10.3.3; Gould–Simoncini 2020 [198] for `M = I`). Setting of `Krylov`.
-
-`κₖ = (θₖ,ₖ + λₖ)/(θ₁,ₖ + λₖ)` is the spectral condition number of the positive-definite
-`T_k + λₖ` (well defined by `krylov_no_hardCase`), `qₖ = (√κₖ - 1)/(√κₖ + 1)`. The proofs combine
-the residual identity of `krylov_lanczos_coordinates`, the decay of the `(k, 1)` entry of
-`(T_k + λₖ)⁻¹` (`Matrix.abs_inv_apply_le_of_isTridiagonal`, Lemma B.10.1), the bound
-`‖g‖ = ‖(T_k + λₖ) ȳ‖ ≤ (θₖ,ₖ + λₖ) ‖ȳ‖`, and `βₖ ≤ ‖T_{k+1}‖ ≤ ‖H‖`. The norm `‖H‖` here is the
-operator norm in the inner product of `E` (= max |eigenvalue|); for scaled matrix data this is the
-largest `|λ|` of the pencil `(H, M)`, which is `≤` the Euclidean `‖M⁻¹H‖₂` used by the book — the
-book's (B.10.4) asserts equality via similarity, which is false (similarity preserves eigenvalues,
-not Euclidean norms), but the inequality suffices.
-
-Iteration counts: the book's ceilings are corrected to `⌈·⌉₊` (the logarithm may be negative,
-e.g. for large `θ₁` or small `H`), and the case `κ* = 1` (denominator `log((√κ*+1)/(√κ*-1))`
-undefined) is separated: then the bound holds at `k = min 2 grade`.
-'''
 
 [[node]]
 id = "krylov_gradient_bound_regularization"
-kind = "theorem"
-desc = '''
-Theorem 10.2.2 (backbone form). With `sₖ`, `λₖ` as in `krylov_multiplier_mono_regularization`
-(`1 ≤ k ≤ grade H g`):
-`‖g + H sₖ + λₖ • sₖ‖ ≤ 2 * ‖H‖ * κₖ * (λₖ/σ) ^ (1/(r-2)) * qₖ ^ (k - 1)`,
-and the left side equals `βₖ |ȳₖ|` (the last Lanczos coordinate times the next off-diagonal), which
-is `0` at `k = grade H g`.
-'''
-deps = ["krylov_lanczos_coordinates", "krylov_no_hardCase", "Matrix.abs_inv_apply_le_of_isTridiagonal"]
+source = "Cartis–Gould–Toint, Theorem 10.2.2"
 
 [[node]]
 id = "krylov_residual_bound_trustRegion"
-kind = "theorem"
-desc = '''
-Theorem 10.3.2 (backbone form). With `sₖ`, `λₖ` as in `krylov_multiplier_mono_trustRegion`:
-`‖g + (H + λₖ • 1) sₖ‖ ≤ 2 * ‖H‖ * κₖ * Δ * qₖ ^ (k - 1)` (using `‖ȳₖ‖ ≤ Δ`).
-'''
-deps = ["krylov_lanczos_coordinates", "krylov_no_hardCase", "Matrix.abs_inv_apply_le_of_isTridiagonal"]
+source = "Cartis–Gould–Toint, Theorem 10.3.2"
 
 [[node]]
 id = "krylov_iteration_bound_regularization"
-kind = "theorem"
-desc = '''
-Corollary 10.2.3 (backbone form, corrected). Let `κ* = max_{1 ≤ k ≤ grade} κₖ`, `q* = (√κ* - 1)/(√κ* + 1)`,
-`λmax` the largest eigenvalue of `H`, `λ*` the global multiplier, `θ₁ > 0`, and
-`A = (4 ‖H‖ κ* / θ₁) * (λ*/σ)^{1/(r-2)} * ((λmax + λ*)/‖g‖)²`. Then the second stopping rule
-`‖∇ regModel (sₖ)‖ ≤ ½ θ₁ ‖sₖ‖²` holds (i) at every `k ∈ [1, grade]` with `A * q*^(k-1) ≤ 1`,
-(ii) at `k = grade H g`; hence at some
-`k ≤ min (⌈Real.log A / Real.log (1/q*)⌉₊ + 1) (grade H g)` when `κ* > 1`, and at some
-`k ≤ min 2 (grade H g)` when `κ* = 1`. Uses `‖sₖ‖ ≥ ‖g‖/(λmax + λ*)` from
-`θₖ,ₖ ≤ λmax` (Rayleigh–Ritz/interlacing, `Numlib/Eigen/RayleighRitz`) and `λₖ ≤ λ*`.
-'''
-deps = ["krylov_gradient_bound_regularization", "krylov_multiplier_mono_regularization"]
+source = "Cartis–Gould–Toint, Corollary 10.2.3"
 
 [[node]]
 id = "krylov_iteration_bound_trustRegion"
-kind = "theorem"
-desc = '''
-Corollary 10.3.3 (backbone form, corrected). With `κ*`, `q*` as above and `ε > 0`, the residual
-test `‖g + (H + λₖ) sₖ‖ ≤ ε` holds at every `k ∈ [1, grade]` with
-`2 ‖H‖ κ* Δ q*^(k-1) ≤ ε`, and at `k = grade`; hence at some
-`k ≤ min (⌈Real.log (2 ‖H‖ κ* Δ / ε) / Real.log (1/q*)⌉₊ + 1) (grade H g)` when `κ* > 1`
-(`k ≤ min 2 grade` when `κ* = 1`).
-'''
-deps = ["krylov_residual_bound_trustRegion"]
+source = "Cartis–Gould–Toint, Corollary 10.3.3"
