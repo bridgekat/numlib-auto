@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Normed.Module.Normalize
 import Numlib.Nonlinear.Order
 import Numlib.Optimization.Subproblem.Secular
 
@@ -614,4 +615,23 @@ theorem IsInverseIterationRun.convergence_of_eventually_const {ωL ωU γL γU :
   exact ⟨ε, hε, fun _ ℓ z hr hz0 hℓ0 =>
     hconv ℓ z n ω γ { hr with count_le := fun k => by exact_mod_cast hN k } hz0 hℓ0⟩
 
+/-- **Normalizing after every step of a linear iteration is normalizing at the end**: if
+`wᵢ₊₁ = normalize (R wᵢ)` and `w₀ = z` then `wᵢ₊₁ = normalize (Rⁱ⁺¹ z)` (the inner loop of
+Algorithm 9.3.1 of [cartis2022evaluation]). -/
+theorem normalize_iterate {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] (R : F →L[ℝ] F)
+    {w : ℕ → F} {z : F} (h0 : w 0 = z) (hs : ∀ i, w (i + 1) = NormedSpace.normalize (R (w i)))
+    (i : ℕ) : w (i + 1) = NormedSpace.normalize ((R ^ (i + 1)) z) := by
+  induction i with
+  | zero => rw [hs, h0, zero_add, pow_one]
+  | succ i ih =>
+    have hRR : (R * R ^ (i + 1)) z = R ((R ^ (i + 1)) z) := rfl
+    have hRn : R (NormedSpace.normalize ((R ^ (i + 1)) z)) =
+        ‖(R ^ (i + 1)) z‖⁻¹ • R ((R ^ (i + 1)) z) := by
+      rw [NormedSpace.normalize, map_smul]
+    rw [hs, ih, pow_succ' R (i + 1), hRR, hRn]
+    rcases eq_or_ne ((R ^ (i + 1)) z) 0 with hv | hv
+    · simp [hv]
+    · exact NormedSpace.normalize_smul_of_pos (inv_pos.2 (norm_pos_iff.2 hv)) _
+
 end Subproblem
+

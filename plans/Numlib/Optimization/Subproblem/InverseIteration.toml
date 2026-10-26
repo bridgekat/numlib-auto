@@ -19,3 +19,7 @@ source = "Cartis–Gould–Toint, Theorem 9.3.1"
 [[node]]
 id = "IsInverseIterationRun.convergence_of_eventually_const"
 source = "Cartis–Gould–Toint, Theorem 9.3.1"
+
+[[node]]
+id = "normalize_iterate"
+source = "Cartis–Gould–Toint, Algorithm 9.3.1"

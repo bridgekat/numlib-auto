@@ -1,40 +1,16 @@
 namespace = "CartisGouldToint.AppendixB"
 desc = '''
-Appendix B, "Appendix to Chapter 8": the separately numbered Lemmas B.8.1 (Newton and secant for
-convex monotone scalar equations) and B.8.2 (monotonicity in `β` of the transformed secular Newton
-step). The appendix proofs of Chapter 8 results are not separate nodes (they are the proofs of the
-Chapter 8 surface theorems).
+Appendix B, appendix to Chapter 8: Lemmas B.8.1 and B.8.2.
 '''
 
 [[node]]
 id = "lemma_B_8_1"
-kind = "theorem"
-desc = '''
-Lemma B.8.1 (Convergence rates of one-dimensional Newton-like iteration), corrected. Let
-`θ : ℝ → ℝ` be convex and strictly decreasing (resp. concave and strictly increasing) and
-continuously differentiable on `I = [λmin, λmax]`, `λ* ∈ I` with `θ λ* = 0`, **and `θ'(λ*) ≠ 0`**.
-(i) If `θ λ₀ > 0` (resp. **`θ λ₀ < 0`** in the concave case — the printed `> 0` is wrong, as the
-proof's reduction to `-θ` shows), the Newton iterates (B.8.1) lie in `[λ₀, λ*]`, increase
-monotonically to `λ*`, satisfy `λ* - λⱼ₊₁ ≤ γᴺ (λ* - λⱼ)` with `γᴺ = 1 - θ'(λ*)/θ'(λ₀) < 1`, and
-converge Q-superlinearly (Q-quadratically if `θ'` is Lipschitz near `λ*`).
-(ii) If `λ₀ < λ₁` in `I` with `θ λ₀, θ λ₁ > 0` (resp. `< 0`), the secant iterates (B.8.2) lie in
-`[λ₀, λ*]`, increase monotonically to `λ*`, with the same factor `γᴺ` and Q-superlinear rate.
-Counterexample to the uncorrected statement: `θ(x) = (1-x)²` on `[0, 1]`, `λ₀ = 0`: Newton gives
-`λⱼ = 1 - 2⁻ʲ`, only linear, and `γᴺ = 1`. ("Increase monotonically" is non-strict once the root
-is hit.)
-'''
-deps = ["Newton.monotone_scalarStep_iterate_of_convexOn", "Newton.monotone_secant_iterate_of_convexOn"]
+source = "Cartis–Gould–Toint, Lemma B.8.1"
+
+[[node]]
+id = "lemma_B_8_1_concave"
 source = "Cartis–Gould–Toint, Lemma B.8.1"
 
 [[node]]
 id = "lemma_B_8_2"
-kind = "theorem"
-desc = '''
-Lemma B.8.2 (Monotonicity of transformed secular Newton step). Let `g ≠ 0`, `λc > λₛ` (`H + λc M`
-positive definite), `π` the secular function, `Ψ_β(λ) = π(λ)^β - Δ^{2β}`. For `β ≠ 0` the Newton
-step for `Ψ_β` from `λc` is `δ(β) = (-π(λc)/π⁽¹⁾(λc)) (1 - μ^β)/β` with `μ = Δ²/π(λc)` (B.8.7), and
-`δ` is antitone on `{β | β ≠ 0}` (indeed `β ↦ (1 - μ^β)/β`, extended by `-log μ` at `0`, is
-antitone on `ℝ`). (The hypothesis "where `λ*` is the root of `π = Δ²`" plays no role.)
-'''
-deps = ["Subproblem.newtonCorrection_eq", "Subproblem.antitone_newtonFactor", "CartisGouldToint.Chapter08.secularFn"]
 source = "Cartis–Gould–Toint, Lemma B.8.2"

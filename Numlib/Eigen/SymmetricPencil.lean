@@ -1,4 +1,5 @@
 import Mathlib.Analysis.LocallyConvex.Separation
+import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Mathlib.Analysis.SpecialFunctions.Complex.Arg
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 import Numlib.Analysis.Matrix.OperatorNorm
@@ -31,6 +32,8 @@ continuation, kept separate because it is where the *ordering* of the real eigen
   `D` with `ker C ≤ ker D`), through the simultaneous unitary diagonalization of commuting Hermitian
   matrices over any `RCLike` field, `Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute`
   (in `Numlib/Eigen/Normal`).
+* `Matrix.exists_abs_sub_le_of_mulVec_eq`, `Matrix.mem_gershgorin_interval`: Gershgorin regions
+  `|h_kk - μ m_kk| ≤ o_kᴴ + |μ| o_kᴹ` of a real pencil and the intervals they bound.
 * `Matrix.pencilEigenvalues hA hB`: the eigenvalues of the pencil, sorted decreasingly — those of
   `Wᴴ A W` for any `W` with `Wᴴ B W = 1` (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`); they are
   the pencil spectrum (`Matrix.pencilSpectrum_eq_range_pencilEigenvalues`) and satisfy the max–min
@@ -978,5 +981,56 @@ theorem exists_posDef_rotation_of_crawfordNumber_pos_complex {A B : Matrix n n �
   rw [show β / ‖w‖ * reQuadForm A x + α / ‖w‖ * reQuadForm B x =
     (α * reQuadForm B x + β * reQuadForm A x) / ‖w‖ by ring]
   exact div_pos hpos hnw
+
+/-! ### Gershgorin regions of a real pencil -/
+
+section Gershgorin
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι]
+
+/-- The off-diagonal absolute row sum `o_kᴬ = ∑_{i ≠ k} |a_{ki}|`. -/
+noncomputable def offDiagSum (A : Matrix ι ι ℝ) (k : ι) : ℝ :=
+  ∑ i ∈ Finset.univ.erase k, |A k i|
+
+theorem offDiagSum_nonneg (A : Matrix ι ι ℝ) (k : ι) : 0 ≤ offDiagSum A k :=
+  Finset.sum_nonneg fun _ _ => abs_nonneg _
+
+/-- **Gershgorin's theorem for a real pencil** (Cartis–Gould–Toint (9.3.6)–(9.3.7)): if
+`H u = μ M u` with `u ≠ 0`, then `|h_kk - μ m_kk| ≤ o_kᴴ + |μ| o_kᴹ` for some `k`. -/
+theorem exists_abs_sub_le_of_mulVec_eq {H M : Matrix ι ι ℝ} {μ : ℝ} {u : ι → ℝ} (hu : u ≠ 0)
+    (h : H *ᵥ u = μ • M *ᵥ u) :
+    ∃ k, |H k k - μ * M k k| ≤ offDiagSum H k + |μ| * offDiagSum M k := by
+  have hv : (H - μ • M) *ᵥ u = 0 := by rw [sub_mulVec, smul_mulVec, h, sub_self]
+  have heig : Module.End.HasEigenvalue (Matrix.toLin' (H - μ • M)) 0 :=
+    Module.End.hasEigenvalue_of_hasEigenvector
+      ⟨Module.End.mem_eigenspace_iff.2 (by rw [toLin'_apply, hv, zero_smul]), hu⟩
+  obtain ⟨k, hk⟩ := eigenvalue_mem_ball heig
+  refine ⟨k, ?_⟩
+  rw [Metric.mem_closedBall, dist_comm, Real.dist_eq, sub_zero] at hk
+  refine hk.trans ?_
+  simp only [Matrix.sub_apply, Matrix.smul_apply, smul_eq_mul, Real.norm_eq_abs, offDiagSum,
+    Finset.mul_sum, ← Finset.sum_add_distrib]
+  exact Finset.sum_le_sum fun i _ => (abs_sub _ _).trans (by rw [abs_mul])
+
+/-- The interval of a pencil Gershgorin region (Cartis–Gould–Toint §9.3.1): if
+`|h - μ m| ≤ o_H + |μ| o_M` with `0 ≤ o_M < m`, then `μ` lies between
+`min((h - o_H)/(m - o_M), (h - o_H)/(m + o_M))` and
+`max((h + o_H)/(m - o_M), (h + o_H)/(m + o_M))`. -/
+theorem mem_gershgorin_interval {h m oH oM μ : ℝ} (hoM : 0 ≤ oM) (hm : oM < m)
+    (hμ : |h - μ * m| ≤ oH + |μ| * oM) :
+    min ((h - oH) / (m - oM)) ((h - oH) / (m + oM)) ≤ μ ∧
+      μ ≤ max ((h + oH) / (m - oM)) ((h + oH) / (m + oM)) := by
+  have h1 : 0 < m - oM := by linarith
+  have h2 : 0 < m + oM := by linarith
+  obtain ⟨hlo, hhi⟩ := abs_le.1 hμ
+  rcases le_or_gt 0 μ with hμ0 | hμ0
+  · rw [abs_of_nonneg hμ0] at hlo hhi
+    exact ⟨(min_le_right _ _).trans ((div_le_iff₀ h2).2 (by nlinarith)),
+      le_max_of_le_left ((le_div_iff₀ h1).2 (by nlinarith))⟩
+  · rw [abs_of_neg hμ0] at hlo hhi
+    exact ⟨(min_le_left _ _).trans ((div_le_iff₀ h1).2 (by nlinarith)),
+      le_max_of_le_right ((le_div_iff₀ h2).2 (by nlinarith))⟩
+
+end Gershgorin
 
 end Matrix

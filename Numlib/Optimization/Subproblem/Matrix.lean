@@ -19,9 +19,13 @@ Every object of the book is the corresponding operator object: the model and the
 (`quadModel_scaled`, `regModel_scaled`), the `M`-norm and the `M⁻¹`-norm (`norm_toScaled`,
 `norm_scaledGrad_sq`), the gradient `g + H s + λ M s` (`scaledGrad_gradient`), positive
 (semi)definiteness of `H + λ M` (`posSemidef_add_smul_iff_isPositive`,
-`posDef_add_smul_iff_scaled`), the step `(H + λ M)⁻¹ (-g)` and the secular function
-(`toScaled_step`, `secular_scaled`), the eigenvalues of the pencil `(H, M)`
-(`eigenvalues_scaledOp`, `leftmost_scaledOp`) and its eigenvectors (`scaledOp_toScaled_of_eigen`),
+`posDef_add_smul_iff_scaled`), the step `(H + λ M)⁻¹ (-g)` and the secular function for every `λ`
+(`toScaled_step`, `secular_scaled`; more generally solves with `H + λ M`, `toScaled_inv_apply`,
+`toScaled_inv_mul_apply`, and invertibility both ways, `isUnit_add_smul_scaledOp`,
+`isUnit_of_isUnit_add_smul_scaledOp`), the eigenvalues of the pencil `(H, M)`
+(`eigenvalues_scaledOp`, `leftmost_scaledOp`, `rightmost_scaledOp`) and its eigenvectors
+(`scaledOp_toScaled_of_eigen`, `eigen_of_scaledOp_eq`, `eigen_of_mem_ker`,
+`exists_eigen_of_eigenvalues`, `exists_scaledOp_scaledGrad_eq_iff`),
 the norm `‖M⁻¹ H‖₂` (`norm_scaledOp_le`), the kernels of `H + λ M` and consistency of
 `(H + λ M) x = -g` (`toScaled_mem_ker_iff`, `scaledGrad_mem_orthogonal_iff`), the
 minimum-`M`-norm solution (`toScaled_eq_particular_iff`, `particular_scaled_spec`), the Hessian of
@@ -204,30 +208,65 @@ theorem isUnit_add_smul_scaledOp {lam : ℝ} (hu : IsUnit (H + lam • M)) :
       map_zero]
   rw [← toEuclideanLin_nonsing_inv_mul_apply hu x, h1, map_zero, map_zero]
 
-/-- **The step in the scaled setting** ([cartis2022evaluation] (8.2.2)): if `H + λ M` is
-invertible, the solution `(H + λ M)⁻¹ (-g)` is the operator step of `M⁻¹ g` and `M⁻¹ H`. -/
-theorem toScaled_step (g : EuclideanSpace ℝ ι) {lam : ℝ} (hu : IsUnit (H + lam • M)) :
+/-- If `M⁻¹ H + λ` is invertible then so is `H + λ M` (the converse of
+`isUnit_add_smul_scaledOp`). -/
+theorem isUnit_of_isUnit_add_smul_scaledOp {lam : ℝ}
+    (hu : IsUnit (scaledOp H hM + lam • (1 : ScaledSpace hM →L[ℝ] ScaledSpace hM))) :
+    IsUnit (H + lam • M) := by
+  rw [ContinuousLinearMap.isUnit_iff_isUnit_toLinearMap, LinearMap.isUnit_iff_ker_eq_bot] at hu
+  have hinj := LinearMap.ker_eq_bot.1 hu
+  rw [← mulVec_injective_iff_isUnit]
+  intro x y hxy
+  have h : toScaled hM (WithLp.toLp 2 x) = toScaled hM (WithLp.toLp 2 y) := by
+    apply hinj
+    simp only [ContinuousLinearMap.coe_coe, add_smul_scaledOp_toScaled, toEuclideanLin_toLp, hxy]
+  simpa using h
+
+/-- **Solves with `H + λ M` in the scaled setting**: for every `λ`,
+`(H + λ M)⁻¹ v` is, transported, `(M⁻¹ H + λ)⁻¹ (M⁻¹ v)` (both sides vanish when `H + λ M` is
+singular, by the conventions `A⁻¹ = 0` and `Ring.inverse = 0` for non-units). -/
+theorem toScaled_inv_apply (lam : ℝ) (v : EuclideanSpace ℝ ι) :
+    toScaled hM (toEuclideanLin (H + lam • M)⁻¹ v) =
+      Ring.inverse (scaledOp H hM + lam • (1 : ScaledSpace hM →L[ℝ] ScaledSpace hM))
+        (toScaled hM (toEuclideanLin M⁻¹ v)) := by
+  set T := scaledOp H hM + lam • (1 : ScaledSpace hM →L[ℝ] ScaledSpace hM) with hTdef
+  by_cases hu : IsUnit (H + lam • M)
+  · have hinv := congrArg (fun S : ScaledSpace hM →L[ℝ] ScaledSpace hM =>
+      S (toScaled hM (toEuclideanLin (H + lam • M)⁻¹ v)))
+      (Ring.inverse_mul_cancel _ (isUnit_add_smul_scaledOp (hM := hM) hu))
+    change Ring.inverse T (T _) = _ at hinv
+    rw [one_apply_eq_self, hTdef, add_smul_scaledOp_toScaled,
+      toEuclideanLin_mul_nonsing_inv_apply hu] at hinv
+    exact hinv.symm
+  · have h1 : (H + lam • M)⁻¹ = 0 :=
+      nonsing_inv_apply_not_isUnit _ (by rwa [← isUnit_iff_isUnit_det])
+    have h2 : ¬ IsUnit T := fun h => hu (isUnit_of_isUnit_add_smul_scaledOp h)
+    rw [h1, Ring.inverse_non_unit _ h2]
+    simp
+
+/-- `(H + λ M)⁻¹ M w` is, transported, `(M⁻¹ H + λ)⁻¹ w`, for every `λ`. -/
+theorem toScaled_inv_mul_apply (lam : ℝ) (w : EuclideanSpace ℝ ι) :
+    toScaled hM (toEuclideanLin (H + lam • M)⁻¹ (toEuclideanLin M w)) =
+      Ring.inverse (scaledOp H hM + lam • (1 : ScaledSpace hM →L[ℝ] ScaledSpace hM))
+        (toScaled hM w) := by
+  rw [toScaled_inv_apply, toEuclideanLin_nonsing_inv_mul_apply hM.isUnit]
+
+/-- **The step in the scaled setting** ([cartis2022evaluation] (8.2.2)): for every `λ`, the vector
+`(H + λ M)⁻¹ (-g)` is the operator step of `M⁻¹ g` and `M⁻¹ H` (both vanish when `H + λ M` is
+singular). -/
+theorem toScaled_step (g : EuclideanSpace ℝ ι) (lam : ℝ) :
     toScaled hM (toEuclideanLin (H + lam • M)⁻¹ (-g)) =
       step (scaledGrad hM g) (scaledOp H hM) lam := by
-  set T := scaledOp H hM + lam • (1 : ScaledSpace hM →L[ℝ] ScaledSpace hM)
-  have hT : T (toScaled hM (toEuclideanLin (H + lam • M)⁻¹ (-g))) = -scaledGrad hM g := by
-    rw [add_smul_scaledOp_toScaled, toEuclideanLin_mul_nonsing_inv_apply hu, scaledGrad, map_neg,
-      map_neg]
-  have hinv := congrArg (fun S : ScaledSpace hM →L[ℝ] ScaledSpace hM =>
-    S (toScaled hM (toEuclideanLin (H + lam • M)⁻¹ (-g))))
-    (Ring.inverse_mul_cancel _ (isUnit_add_smul_scaledOp (hM := hM) hu))
-  change Ring.inverse T (T _) = _ at hinv
-  rw [one_apply_eq_self] at hinv
-  rw [← hinv, hT, map_neg, step]
+  rw [toScaled_inv_apply, step, map_neg, map_neg, map_neg, scaledGrad]
 
-/-- **The secular function in the scaled setting** ([cartis2022evaluation] (8.2.4)): if `H + λ M`
-is invertible and `s = (H + λ M)⁻¹ (-g)`, then `π(λ) = ‖s‖_M² = ⟪M s, s⟫` is the secular function of
-`M⁻¹ g` and `M⁻¹ H`. -/
-theorem secular_scaled (g : EuclideanSpace ℝ ι) {lam : ℝ} (hu : IsUnit (H + lam • M)) :
+/-- **The secular function in the scaled setting** ([cartis2022evaluation] (8.2.4)): for every
+`λ`, with `s = (H + λ M)⁻¹ (-g)`, `π(λ) = ‖s‖_M² = ⟪M s, s⟫` is the secular function of `M⁻¹ g`
+and `M⁻¹ H`. -/
+theorem secular_scaled (g : EuclideanSpace ℝ ι) (lam : ℝ) :
     secular (scaledGrad hM g) (scaledOp H hM) lam =
       ⟪toEuclideanLin M (toEuclideanLin (H + lam • M)⁻¹ (-g)),
         toEuclideanLin (H + lam • M)⁻¹ (-g)⟫ := by
-  rw [secular, ← toScaled_step g hu, norm_toScaled_sq]
+  rw [secular, ← toScaled_step g lam, norm_toScaled_sq]
 
 /-! ### Kernels and the minimum-`M`-norm solution -/
 
@@ -480,5 +519,74 @@ theorem norm_scaledOp_le (hH : H.IsHermitian) :
       rw [← sq_abs]; exact pow_le_pow_left₀ (abs_nonneg _) (hμ i) 2
     nlinarith [sq_nonneg ⟪b i, u⟫]
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 hsq
+
+/-! ### Generalized eigenvectors and the scaled gradient -/
+
+/-- The scaled gradient vanishes only for `g = 0`. -/
+theorem scaledGrad_ne_zero {g : EuclideanSpace ℝ ι} (hg : g ≠ 0) : scaledGrad hM g ≠ 0 := by
+  intro h
+  apply hg
+  have h2 : toEuclideanLin M⁻¹ g = 0 := by
+    rw [scaledGrad, LinearEquiv.map_eq_zero_iff] at h; exact h
+  rw [← toEuclideanLin_mul_nonsing_inv_apply hM.isUnit g, h2, map_zero]
+
+@[simp]
+theorem scaledGrad_zero : scaledGrad hM (0 : EuclideanSpace ℝ ι) = 0 := by
+  simp [scaledGrad]
+
+/-- A vector with `M⁻¹ H u = c u` is a generalized eigenvector of the pencil: `H u = c M u` (the
+converse of `scaledOp_toScaled_of_eigen`). -/
+theorem eigen_of_scaledOp_eq {u : EuclideanSpace ℝ ι} {c : ℝ}
+    (h : scaledOp H hM (toScaled hM u) = c • toScaled hM u) :
+    toEuclideanLin H u = c • toEuclideanLin M u := by
+  rw [scaledOp_toScaled, ← map_smul, (toScaled hM).injective.eq_iff] at h
+  have := congrArg (toEuclideanLin M) h
+  rwa [toEuclideanLin_mul_nonsing_inv_apply hM.isUnit, map_smul] at this
+
+/-- A vector of `ker (M⁻¹ H + μ)` is, transported back, a generalized eigenvector of `(H, M)` for
+the eigenvalue `-μ`. -/
+theorem eigen_of_mem_ker {μ : ℝ} {w : ScaledSpace hM}
+    (hw : w ∈ LinearMap.ker ((scaledOp H hM + μ • 1 : ScaledSpace hM →L[ℝ] ScaledSpace hM) :
+      ScaledSpace hM →ₗ[ℝ] ScaledSpace hM)) :
+    toEuclideanLin H ((toScaled hM).symm w) = (-μ) • toEuclideanLin M ((toScaled hM).symm w) := by
+  rw [← (toScaled hM).apply_symm_apply w, toScaled_mem_ker_iff, LinearMap.mem_ker, map_add,
+    map_smul, LinearMap.add_apply, LinearMap.smul_apply] at hw
+  rw [neg_smul, eq_neg_iff_add_eq_zero]
+  exact hw
+
+/-- `M⁻¹ g` is an eigenvector of `M⁻¹ H` iff `g = M v` for a generalized eigenvector `v` of the
+pencil `(H, M)`. -/
+theorem exists_scaledOp_scaledGrad_eq_iff {g : EuclideanSpace ℝ ι} :
+    (∃ c : ℝ, scaledOp H hM (scaledGrad hM g) = c • scaledGrad hM g) ↔
+      ∃ (v : EuclideanSpace ℝ ι) (c : ℝ), toEuclideanLin M v = g ∧
+        toEuclideanLin H v = c • toEuclideanLin M v := by
+  constructor
+  · rintro ⟨c, hc⟩
+    refine ⟨toEuclideanLin M⁻¹ g, c, toEuclideanLin_mul_nonsing_inv_apply hM.isUnit g, ?_⟩
+    exact eigen_of_scaledOp_eq hc
+  · rintro ⟨v, c, rfl, hv⟩
+    refine ⟨c, ?_⟩
+    rw [scaledGrad, toEuclideanLin_nonsing_inv_mul_apply hM.isUnit]
+    exact scaledOp_toScaled_of_eigen hv
+
+/-- Every eigenvalue of the scaled operator is a generalized eigenvalue of `(H, M)`, with a nonzero
+eigenvector. -/
+theorem exists_eigen_of_eigenvalues (hH : H.IsHermitian)
+    (i : Fin (Module.finrank ℝ (ScaledSpace hM))) :
+    ∃ u : EuclideanSpace ℝ ι, u ≠ 0 ∧ toEuclideanLin H u =
+      (isSymmetric_scaledOp (hM := hM) hH).eigenvalues rfl i • toEuclideanLin M u := by
+  set hT := isSymmetric_scaledOp (hM := hM) hH
+  refine ⟨(toScaled hM).symm (hT.eigenvectorBasis rfl i), ?_, eigen_of_scaledOp_eq (hM := hM) ?_⟩
+  · simpa using (hT.eigenvectorBasis rfl).orthonormal.ne_zero i
+  · rw [LinearEquiv.apply_symm_apply]; exact apply_eigenvectorBasis' (hH := hT) i
+
+/-- **The rightmost eigenvalue of the scaled operator is the largest pencil eigenvalue** `λₙ` of
+`(H, M)`. -/
+theorem rightmost_scaledOp (hH : H.IsHermitian) :
+    rightmost (isSymmetric_scaledOp (hM := hM) hH) = ⨆ i, pencilEigenvalues hH hM i := by
+  rw [← eigenvalues_scaledOp hH, rightmost]
+  simp_rw [LinearMap.IsSymmetric.eigenvalues_eq_cast _ finrank_scaledSpace]
+  exact ((finCongr finrank_scaledSpace.symm).iSup_comp
+    (g := fun j => (isSymmetric_scaledOp (hM := hM) hH).eigenvalues rfl j)).symm
 
 end Subproblem

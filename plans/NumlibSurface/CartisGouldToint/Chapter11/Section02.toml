@@ -14,7 +14,7 @@ desc = '''
 small `Δ`: the solution is on the boundary and `λ(Δ) > λₛ`) satisfies `λ(Δ) · Δ → ‖g‖_{M⁻¹}`, i.e.
 `λ ≈ ‖g‖_{M⁻¹}/Δ` (printed `Δ/‖g‖_{M⁻¹}`).
 '''
-deps = ["CartisGouldToint.Chapter08.setL_eq_Ioc", "CartisGouldToint.Chapter08.secularFn_eq_sum"]
+deps = ["CartisGouldToint.Chapter08.setL_reg_eq_Ioc", "CartisGouldToint.Chapter08.setL_tr_eq_Ioc", "CartisGouldToint.Chapter08.secularFn_eq_sum"]
 source = "Cartis–Gould–Toint, (11.2.3)"
 
 [[node]]
@@ -24,7 +24,7 @@ desc = '''
 (11.2.4). For `g ≠ 0`, `r > 2` and `σ → ∞`, the regularization multiplier `λ(σ)` satisfies
 `λ(σ) / (σ^{1/(r-1)} ‖g‖_{M⁻¹}^{(r-2)/(r-1)}) → 1`.
 '''
-deps = ["CartisGouldToint.Chapter08.setL_eq_Ioc", "CartisGouldToint.Chapter08.secularFn_eq_sum"]
+deps = ["CartisGouldToint.Chapter08.setL_reg_eq_Ioc", "CartisGouldToint.Chapter08.setL_tr_eq_Ioc", "CartisGouldToint.Chapter08.secularFn_eq_sum"]
 source = "Cartis–Gould–Toint, (11.2.4)"
 
 [[node]]

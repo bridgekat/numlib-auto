@@ -338,6 +338,37 @@ theorem norm_add_smul_apply_le {lam : ℝ} (hlam : -leftmost hH ≤ lam) (v : E)
   have h0 : 0 ≤ lam + rightmost hH := by linarith [leftmost_le_rightmost (hH := hH)]
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 hsq
 
+/-- **Rayleigh-quotient bounds for a shifted operator** (the generalized Rayleigh-quotient
+inequality as used in [cartis2022evaluation] (9.3.1)): for `μ ≥ -λ₁`,
+`(μ + λ₁) ‖s‖ ≤ ‖(H + μ) s‖ ≤ (μ + λₙ) ‖s‖`, with `λ₁ = leftmost`, `λₙ = rightmost`. -/
+theorem norm_add_smul_apply_bounds {μ : ℝ} (hμ : -leftmost hH ≤ μ) (s : E) :
+    (μ + leftmost hH) * ‖s‖ ≤ ‖(H + μ • 1) s‖ ∧ ‖(H + μ • 1) s‖ ≤ (μ + rightmost hH) * ‖s‖ := by
+  have hsq' : ∀ x : E, ‖x‖ ^ 2 = ∑ i, ⟪hH.eigenvectorBasis rfl i, x⟫ ^ 2 := fun x => by
+    rw [← real_inner_self_eq_norm_sq, inner_eq_sum_eigenvectorBasis (hH := hH)]
+    exact Finset.sum_congr rfl fun i _ => (sq _).symm
+  have hsq : ‖(H + μ • 1) s‖ ^ 2 =
+      ∑ i, (μ + hH.eigenvalues rfl i) ^ 2 * ⟪hH.eigenvectorBasis rfl i, s⟫ ^ 2 := by
+    rw [hsq']
+    exact Finset.sum_congr rfl fun i _ => by rw [inner_eigenvectorBasis_add_smul, mul_pow]
+  have hs := hsq' s
+  have h1 : 0 ≤ μ + leftmost hH := by linarith
+  have hl : ∀ i, μ + leftmost hH ≤ μ + hH.eigenvalues rfl i := fun i => by
+    linarith [leftmost_le_eigenvalues (hH := hH) i]
+  have hr : ∀ i, μ + hH.eigenvalues rfl i ≤ μ + rightmost hH := fun i => by
+    linarith [eigenvalues_le_rightmost (hH := hH) i]
+  have hr0 : 0 ≤ μ + rightmost hH := by linarith [leftmost_le_rightmost (hH := hH)]
+  constructor
+  · refine (pow_le_pow_iff_left₀ (mul_nonneg h1 (norm_nonneg _)) (norm_nonneg _)
+      two_ne_zero).1 ?_
+    rw [hsq, mul_pow, hs, Finset.mul_sum]
+    exact Finset.sum_le_sum fun i _ =>
+      mul_le_mul_of_nonneg_right (pow_le_pow_left₀ h1 (hl i) 2) (sq_nonneg _)
+  · refine (pow_le_pow_iff_left₀ (norm_nonneg _) (mul_nonneg hr0 (norm_nonneg _))
+      two_ne_zero).1 ?_
+    rw [hsq, mul_pow, hs, Finset.mul_sum]
+    exact Finset.sum_le_sum fun i _ =>
+      mul_le_mul_of_nonneg_right (pow_le_pow_left₀ (h1.trans (hl i)) (hr i) 2) (sq_nonneg _)
+
 end Leftmost
 
 /-! ### The step and the secular function -/

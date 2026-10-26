@@ -50,3 +50,15 @@ id = "Matrix.isLeast_pencilEigenvalues"
 
 [[node]]
 id = "Matrix.exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le"
+
+[[node]]
+id = "Matrix.offDiagSum"
+source = "Cartis–Gould–Toint, (9.3.6)"
+
+[[node]]
+id = "Matrix.exists_abs_sub_le_of_mulVec_eq"
+source = "Cartis–Gould–Toint, (9.3.6)–(9.3.7)"
+
+[[node]]
+id = "Matrix.mem_gershgorin_interval"
+source = "Cartis–Gould–Toint, (9.3.7)"

@@ -50,3 +50,7 @@ id = "secular_taylor_bounds"
 
 [[node]]
 id = "secular_rpow_tangent"
+
+[[node]]
+id = "norm_add_smul_apply_bounds"
+source = "Cartis–Gould–Toint, (9.3.1), (9.4.1)"

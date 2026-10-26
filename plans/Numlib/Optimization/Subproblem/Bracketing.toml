@@ -17,3 +17,7 @@ source = "Cartis–Gould–Toint, §9.2 (width ratio of Algorithm 9.2.1)"
 [[node]]
 id = "IsBracketRun.exists_mem"
 source = "Cartis–Gould–Toint, §9.2 (finite termination of Algorithm 9.2.1)"
+
+[[node]]
+id = "IsLowerUpdate.mono"
+source = "Cartis–Gould–Toint, Algorithm 9.2.1"
