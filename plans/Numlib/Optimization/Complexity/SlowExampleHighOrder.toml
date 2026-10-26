@@ -23,3 +23,7 @@ source = "Cartis–Gould–Toint, proof of Theorem 12.2.17, (12.2.80)–(12.2.96
 [[node]]
 id = "abs_iteratedDeriv_sub_le"
 source = "Cartis–Gould–Toint, proof of Theorem 12.2.6 (Lipschitz derivatives of the slow example)"
+
+[[node]]
+id = "taylorMeasure_topMonomialRegModel_eq_zero"
+source = "Cartis–Gould–Toint, (12.2.69)–(12.2.70) with q = p; Theorem 14.2.4 (sharpness)"

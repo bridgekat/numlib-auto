@@ -1,5 +1,6 @@
 import NumlibSurface.CartisGouldToint.Chapter14.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
+import NumlibSurface.CartisGouldToint.Chapter14.Section02Sharp
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
 
 /-!
@@ -28,9 +29,15 @@ module imports the section modules and adds nothing of its own.
   `theorem_14_2_4_arqpc_convex`), the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows
   (`lemma_14_2_2_trqida`, …, `theorem_14_2_4_arqpeda`, from the Chapter 13 runs with a feasible
   set; the regularization rows in either radii mode, unit radii or (12.2.51) at every order,
-  `Chapter13.RadiiControlOf`) and sharpness of the TRq-SC, ARqp-SC, ARqpC-SC (`q = 1`, convex
-  `h`), TRqIDA-SC and TRqEDA-SC orders (`theorem_14_2_4_sharp`, `theorem_14_2_4_sharp_arqp`,
-  `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda`)
+  `Chapter13.RadiiControlOf`; on `ℝⁿ` with `q ≤ 2` every ARqpIDA-SC run attains the unit-radii
+  bound in either mode, `theorem_14_2_4_arqpida_le_two`)
+* §14.2, `Chapter14.Section02Sharp`: sharpness of the TRq-SC, ARqp-SC, ARqpC-SC (`q = 1`, convex
+  `h`), TRqIDA-SC and TRqEDA-SC orders, of the ARqpIDA-SC and ARqpEDA-SC orders of the
+  unit-radii mode (`q ≤ 2`), of the ARqpEDA-SC order of the lower-bound mode (every `q`) and of
+  the ARqpIDA-SC order of the lower-bound mode for `q = p ≥ 3` (`theorem_14_2_4_sharp`,
+  `theorem_14_2_4_sharp_arqp`, `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda`,
+  `theorem_14_2_4_sharp_arqpida`, `theorem_14_2_4_sharp_arqpeda`,
+  `theorem_14_2_4_sharp_arqpeda_otherwise`, `theorem_14_2_4_sharp_arqpida_otherwise`)
 * §14.3, `Chapter14.Section03`: the problem (14.3.1), assumption X.CQ (`AssumptionXCQ`);
   Theorems 14.3.1–14.3.2, Example 14.3.1; LENq-SC (Algorithm 14.3.1, `algorithm_14_3_1`),
   Theorems 14.3.3–14.3.4; TPqp-GC (Algorithm 14.3.2, `algorithm_14_3_2`), Lemmas 14.3.5–14.3.8
@@ -70,6 +77,11 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   run; part 1 needs `δ_{0,1} = 1`.
 * Theorem 14.2.1: the Lipschitz condition is on the closed ball of radius `δ_j`, and the printed
   `δ^j` of (14.2.6) is `δ_j^j`. (14.2.18)–(14.2.19) print `max ℓ(d)` for the minimum.
+* Theorem 14.2.4: the IDA/EDA regularization rows are stated by radii mode; on `ℝⁿ` with `q ≤ 2`
+  every ARqpIDA run attains the unit-radii bound in either mode (`theorem_14_2_4_arqpida_le_two`,
+  strengthening Theorem 13.1.19 (1)), so the mode-`False` bound is not sharp there for
+  `q = 2 < p`. The book's sharpness argument (reduction to `X = ℝⁿ`) does not reach the
+  "otherwise" entries with `q ≤ 2` (`q = 2`, `X ≠ ℝⁿ`).
 * **Theorem 14.3.1 is false as printed**: with arcs that only stay in `X` (and satisfy the
   expansion conditions (14.3.3) of `c`), `X = ℝ²`, `c(x) = x₁² + x₂²`, `f(x) = -x₁` and the only
   feasible point `x⋆ = 0` violate (14.3.4) for `s₁ = e₁`. The arcs must stay in `X ∩ {c = 0}`;
@@ -103,9 +115,12 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Not formalized
 
-* The sharpness of the ARqpIDA-SC and ARqpEDA-SC rows of Theorem 14.2.4 (the Chapter 12 slow
-  examples are not runs of the Chapter 13 regularization steps; see `Chapter14.Section02`), and
-  the remark that only the anchored assumptions f.D1qLaB.X (f.D0qLaB.X) are used.
+* The sharpness of the ARqpIDA-SC row of Theorem 14.2.4 in the lower-bound mode of the radii
+  control for `3 ≤ q < p` and for `q = 2 < p` on `X ≠ ℝⁿ` (with its criterion, approximate
+  optimality for some radii in `(0, 1]^q`; on `ℝⁿ` the mode-`False` bound is not attained for
+  `q = 2 < p`,
+  `theorem_14_2_4_arqpida_le_two`; see `Chapter14.Section02Sharp`), and the remark that only the
+  anchored assumptions f.D1qLaB.X (f.D0qLaB.X) are used.
 * Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored assumptions
   (they are proved under global Lipschitz assumptions, `exists_algorithm_14_3_1_complexity`,
   `exists_algorithm_14_3_2_complexity`), their complexity with the ARqp-SC exponents of (14.2.12)

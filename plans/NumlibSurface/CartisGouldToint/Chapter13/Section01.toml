@@ -283,3 +283,27 @@ source = "Cartis–Gould–Toint, Lemma 13.1.18, (13.1.82)"
 [[node]]
 id = "TRqDAStep.congr"
 source = "Cartis–Gould–Toint, Algorithm 13.1.1"
+
+[[node]]
+id = "ARqpDAStep.congr"
+source = "Cartis–Gould–Toint, Algorithm 13.1.2"
+
+[[node]]
+id = "RadiiControlOf.of_unit"
+source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70)"
+
+[[node]]
+id = "lemma_13_1_16_unit"
+source = "Cartis–Gould–Toint, Lemma 13.1.16, (13.1.79) with unit radii; §14.2 (Theorem 14.2.4, q ≤ 2)"
+
+[[node]]
+id = "arqpIDA_step_bound_unit"
+source = "Cartis–Gould–Toint, Lemma 13.1.17 (q ≤ 2) with unit radii"
+
+[[node]]
+id = "lemma_13_1_18_unit"
+source = "Cartis–Gould–Toint, Lemma 13.1.18 (q ≤ 2) with unit radii"
+
+[[node]]
+id = "exists_arqpDA_steps"
+source = "Cartis–Gould–Toint, Lemmas 13.1.11–13.1.12 (existence), Algorithm 13.1.2"

@@ -23,3 +23,15 @@ source = "Cartis–Gould–Toint, Theorem 4.1.6, proof of Theorem 12.2.15"
 [[node]]
 id = "taylorDecrement_ridge_of_lt"
 source = "Cartis–Gould–Toint, proof of Theorem 12.2.6 (Appendix B); Theorem 14.2.4 (sharpness)"
+
+[[node]]
+id = "taylorDecrement_regularizedModel_ridge_linear_nonpos"
+source = "Cartis–Gould–Toint, Example 12.1.3, proof of Theorem 12.2.17; Theorem 14.2.4 (sharpness)"
+
+[[node]]
+id = "ridge_const_mul_slow_bounds"
+source = "Cartis–Gould–Toint, proofs of Theorems 12.2.6, 12.2.15, 12.2.17 (function-class bounds of the slow examples)"
+
+[[node]]
+id = "taylorDecrement_regularizedModel_ridge_spike"
+source = "Cartis–Gould–Toint, (12.2.69)–(12.2.70) along a ridge; Theorem 14.2.4 (sharpness)"

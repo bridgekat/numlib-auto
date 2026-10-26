@@ -72,7 +72,12 @@ error model (13.1.2) is `Optimization.JetApprox (ftaylorSeries ℝ f (x k)) (D k
   (`exists_algorithm_13_1_1`, for every oracle satisfying (13.1.2)).
 * ARqpIDA: `lemma_13_1_9` – `lemma_13_1_18`, `theorem_13_1_19_i`, `theorem_13_1_19_ii` (through
   `arqpIDA_complexity`); runs with the radii control exist (`exists_algorithm_13_1_2`, with the
-  halving loop `exists_halving` and Step 2 from a global model minimizer).
+  halving loop `exists_halving` and Step 2 from a global model minimizer); one iteration only
+  involves the data at `k` and `k + 1` (`ARqpDAStep.congr`, for splicing runs), and iterations
+  exist from any admissible state (`exists_arqpDA_steps`); unit radii give the radii control in
+  either mode (`RadiiControlOf.of_unit`). For `q ≤ 2` without constraints the unit-radius step
+  argument applies in either mode (`lemma_13_1_16_unit`, `arqpIDA_step_bound_unit`,
+  `lemma_13_1_18_unit`), since `δ ↦ φ^δ_j/δ^j` is non-increasing for `j ≤ 2`.
 * With a feasible set (§14.2): `lemma_13_1_3_feasible` – `lemma_13_1_7_feasible`,
   `theorem_13_1_8_feasible`, `lemma_13_1_12_feasible`, `lemma_13_1_14_feasible` –
   `lemma_13_1_18_feasible`, `arqpIDA_complexity_feasible` (Lemmas 13.1.1–13.1.2, 13.1.9, 13.1.11
@@ -1908,7 +1913,7 @@ structure ARqpStep2 (X : Set ℝⁿ) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x :
 iteration `k` on the feasible set `X`, with radii `δ k = δ^{(0)}_k` at the start of Step 1
 (13.1.60) and `δ₁ k = δ^{(1)}_k` at its end (13.1.61). The halving loop (`δ_{k,j}` is halved while
 (13.1.53) and (13.1.54) both fail) is recorded by its effect:
-`0 < δ^{(1)}_{k,j} ≤ δ^{(0)}_{k,j}`, and after at least one halving,
+`0 < δ^{(1)}_{k,j} = δ^{(0)}_{k,j}/2^m ≤ δ^{(0)}_{k,j}`, and after at least one halving,
 `2 δ^{(1)}_{k,j} ≤ δ^{(0)}_{k,j}` with a witness of the last halving (both tests failed at
 radius `2 δ^{(1)}_{k,j}`) and of the
 first one ((13.1.53) failed at radius `δ^{(0)}_{k,j}`). The final displacements satisfy
@@ -1927,6 +1932,9 @@ structure ARqpStep1 (X : Set ℝⁿ) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x :
       arModelDec P D σ k d' < P.ς * ε j * (2 * δ₁ k j) ^ j / j ! / 4) ∧
     ∃ d₀, ‖d₀‖ ≤ δ k j ∧ x k + d₀ ∈ X ∧
       P.ς * ε j * δ k j ^ j / j ! / 2 < (D k).taylorDecrement j d₀
+  /-- The radii at the end of Step 1 are obtained by halving:
+  `δ^{(1)}_{k,j} = δ^{(0)}_{k,j}/2^m`. -/
+  dyadic : ∀ j ∈ Finset.Icc 1 P.q, ∃ m : ℕ, δ₁ k j = δ k j / 2 ^ m
   /-- (13.1.52). -/
   witness : ∀ j ∈ Finset.Icc 1 P.q, IsApproxMeasureStep ((D k).taylorDecrement j) (δ₁ k j)
     {e | x k + e ∈ X} P.ς (dd k j)
@@ -1997,6 +2005,27 @@ theorem radiiControl_iff {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ :
         (2 < P.q → ∀ j ∈ Finset.Icc 1 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j)) := by
   simp only [RadiiControl, RadiiControlOf, not_le]
 
+/-- Unit radii give the radii control in either mode: if `δ_{s_k,j} = 1` for all `j ∈ [1, q]`
+after a trial iteration with a short step, `ε_j ≤ 1` and `L̄ ≥ 1`, then `RadiiControlOf u` holds
+for every `u` (the lower bound `ς θ ε_j/(24 max(L̄, σ_k)) ≤ 1` is automatic). -/
+theorem RadiiControlOf.of_unit {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ : ℕ → ℝ}
+    {δs : ℕ → ℕ → ℝ} {s : ℕ → ℝⁿ} {acc : ℕ → Prop} {k : ℕ} {u : Prop} (hLb : 1 ≤ Lb)
+    (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ 1)
+    (h1 : ¬ acc k → ‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) :
+    RadiiControlOf u P ε Lb σ δs s acc k := by
+  intro hk hs1
+  refine ⟨fun _ => h1 hk hs1, fun _ j hj => ?_⟩
+  rw [h1 hk hs1 j hj]
+  have hM : 1 ≤ max Lb (σ k) := hLb.trans (le_max_left _ _)
+  have := P.ς_pos; have := P.ς_le_one; have := P.θ_pos; have := P.θ_lt_one
+  rw [div_le_one (by positivity)]
+  have h0 : P.ς * P.θ ≤ 1 := mul_le_one_of_le_one P.ς_le_one P.θ_pos.le P.θ_lt_one.le
+  rcases le_or_gt (ε j) 0 with hε0 | hε0
+  · have : P.ς * P.θ * ε j ≤ 0 := mul_nonpos_of_nonneg_of_nonpos (by positivity) hε0
+    linarith
+  · have : P.ς * P.θ * ε j ≤ 1 := by nlinarith [hε j hj]
+    linarith
+
 /-- The book's radii control (13.1.69)–(13.1.70) (`δ_{s_k,j} = 1` for `j ≤ min(2, q)`,
 `δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for `j ∈ [3, q]`) implies `RadiiControl` when
 `ε ∈ (0, 1]^q` and `L̄ ≥ 1`. -/
@@ -2056,6 +2085,51 @@ theorem mem_succ (hx : x k ∈ X) : x (k + 1) ∈ X := by
   by_cases hc : ¬ acc k ∧ P.η₁ ≤ ρ k
   · rw [hs.x_succ_eq_add hc.1 hc.2]; exact (hs.step2_of_not_acc hc.1).mem
   · rw [hs.x_succ_eq hc]; exact hx
+
+/-- One iteration only involves the data at iterations `k` and `k + 1`: the step predicate at `k`
+transfers to sequences whose iterates, weights, radii `δ^{(0)}`, accuracies and estimates at `k'`
+and `k' + 1`, and whose radii `δ^{(1)}`, `δ_s`, displacements, order, step, flag and ratio at
+`k'`, are those of iterations `k` and `k + 1` (used to splice runs). -/
+theorem congr {x' : ℕ → ℝⁿ} {σ' : ℕ → ℝ} {δ' δ₁' δs' : ℕ → ℕ → ℝ} {h' : ℕ → ℕ → ℝ}
+    {D' : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ} {dd' : ℕ → ℕ → ℝⁿ} {jk' : ℕ → ℕ} {s' : ℕ → ℝⁿ}
+    {acc' : ℕ → Prop} {ρ' : ℕ → ℝ} {k' : ℕ} (hx : x' k' = x k) (hx1 : x' (k' + 1) = x (k + 1))
+    (hσ : σ' k' = σ k) (hσ1 : σ' (k' + 1) = σ (k + 1)) (hδ : δ' k' = δ k)
+    (hδ1 : δ' (k' + 1) = δ (k + 1)) (hδ₁ : δ₁' k' = δ₁ k) (hδs : δs' k' = δs k)
+    (hh : h' k' = h k) (hh1 : h' (k' + 1) = h (k + 1)) (hD : D' k' = D k)
+    (hD1 : D' (k' + 1) = D (k + 1)) (hdd : dd' k' = dd k) (hjk : jk' k' = jk k)
+    (hs' : s' k' = s k) (hacc : acc' k' ↔ acc k) (hρ : ρ' k' = ρ k) :
+    ARqpDAStep X P ε x' σ' δ' δ₁' δs' h' D' dd' jk' s' acc' ρ' k' := by
+  obtain ⟨⟨hpos, hle, hhalf, hdy, hw⟩, hap, hst, hac, hrt, hht, hdu, hxa, hδa, hσa, hha⟩ := hs
+  have hP : ∀ j, arPass P ε D' δ₁' dd' k' j ↔ arPass P ε D δ₁ dd k j := fun j => by
+    simp only [arPass, hD, hδ₁, hdd]
+  have hM : ∀ v, arModelDec P D' σ' k' v = arModelDec P D σ k v := fun v => by
+    simp only [arModelDec, hD, hσ]
+  refine ⟨⟨fun j hj => ?_, fun j hj => ?_, fun j hj hlt => ?_, fun j hj => ?_, fun j hj => ?_⟩,
+    fun hp => hacc.2 (hap fun j hj => (hP j).1 (hp j hj)), fun ⟨j, hj, hf⟩ => ?_,
+    fun ha => ?_, fun ha => ?_, fun ha => ?_, fun ha hr => ?_, fun ha => ?_, fun ha => ?_,
+    fun ha => ?_, fun ha => ?_⟩
+  · rw [hδ₁]; exact hpos j hj
+  · rw [hδ₁, hδ]; exact hle j hj
+  · rw [hδ₁, hδ] at hlt ⊢
+    simp only [hx, hM, hD]
+    exact hhalf j hj hlt
+  · rw [hδ₁, hδ]; exact hdy j hj
+  · rw [hδ₁, hD, hx, hdd]; exact hw j hj
+  · obtain ⟨hjm, hnp, hpl, hrg, hmd, hmem, hdl, hrad, hai⟩ :=
+      hst ⟨j, hj, fun h' => hf ((hP j).2 h')⟩
+    refine ⟨hjk ▸ hjm, fun h' => hnp ((hP _).1 (hjk ▸ h')), fun i hi hlt => (hP i).2
+      (hpl i hi (hjk ▸ hlt)), fun i hi hlt => by rw [hδ₁, hδ]; exact hrg i hi (hjk ▸ hlt),
+      by rw [hM, hjk, hdd, hδ₁]; exact hmd, by rw [hx, hs']; exact hmem,
+      by rw [hM, hM, hjk, hdd, hs']; exact hdl, ?_, by rw [hacc, hs', hh]; exact hai⟩
+    rw [hs', hδs, hD, hσ, hx, hδ₁]; exact hrad
+  · rw [hρ, hx, hs', hx1, hσ, hσ1]; exact hac (fun h => ha (hacc.2 h))
+  · rw [hδ1, hρ, hs', hδs, hδ₁]; exact hrt (fun h => ha (hacc.2 h))
+  · rw [hh1, hh]; exact hht (fun h => ha (hacc.2 h))
+  · rw [hD1, hD]; exact hdu (fun h => ha (hacc.2 h)) (hρ ▸ hr)
+  · rw [hx1, hx]; exact hxa (hacc.1 ha)
+  · rw [hδ1, hδ]; exact hδa (hacc.1 ha)
+  · rw [hσ1, hσ]; exact hσa (hacc.1 ha)
+  · rw [hh1, hh]; exact hha (hacc.1 ha)
 
 end ARqpDAStep
 
@@ -3539,6 +3613,173 @@ theorem isEpsDeltaApprox_one_of_le_two {D : FormalMultilinearSeries ℝ ℝⁿ �
       _ = δ j ^ j * (ε j / j !) := by ring
   exact le_of_mul_le_mul_left this hpos
 
+/-- **Lemma 13.1.16 at unit radii** (`q ≤ 2`, no constraints): for an ARqpIDA run on `ℝⁿ`
+(`algorithm_13_1_2_feasible` with `X = univ`) under f.D0pL, a successful iteration `k` with
+`‖s_k‖ < 1` such that `x_{k+1}` is not approximately optimal with unit radii satisfies (13.1.79)
+with `δ = 1`, whatever the radii `δ_{s_k}` of Step 2: since `δ ↦ φ^δ_ℓ/δ^ℓ` is non-increasing for
+`ℓ ≤ 2` (`Optimization.pow_div_mul_taylorMeasure_le`), the bound (13.1.57) on the model at the
+radii `δ_{s_k}` gives the same bound at radius `1`. -/
+theorem lemma_13_1_16_unit (hf : AssumptionD0pLOn f univ P.p L) (hq2 : P.q ≤ 2)
+    (hrun : algorithm_13_1_2_feasible f univ κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hk : ¬ acc k) (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hs1 : ‖s k‖ < 1)
+    (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) univ P.q ε (fun _ => 1)) :
+    ∃ j ∈ Finset.Icc 1 P.q, (1 - P.θ) * ε j * 1 ^ j / j ! ≤
+      (L P.p + arSigmaMax P (L P.p) (ordMax P.p κg) + 3 * ordMax P.p κg * P.κs) *
+        ∑ ℓ ∈ Finset.Icc 1 j, 1 ^ ℓ / ℓ ! * ‖s k‖ ^ (P.p - ℓ + 1) := by
+  have hs := hrun.step k
+  have h2 := hs.step2_of_not_acc hk
+  have hx : x (k + 1) = x k + s k := hs.x_succ_eq_add hk hρ
+  unfold IsEpsDeltaApprox at hnot
+  push Not at hnot
+  obtain ⟨j, hj, hlt⟩ := hnot
+  refine ⟨j, hj, ?_⟩
+  obtain ⟨hδmem, dm, hdm, hdmle⟩ := h2.radii_of_lt hs1 j hj
+  rw [hx] at hlt
+  have hjp : j ≤ P.p := (Finset.mem_Icc.1 hj).2.trans P.q_le_p
+  have hj2 : j ≤ 2 := (Finset.mem_Icc.1 hj).2.trans hq2
+  have hfj : (0 : ℝ) < j ! := by positivity
+  have h₂δ : taylorMeasure (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)) j (δs k j)
+      univ ≤ P.θ * ε j * δs k j ^ j / j ! := by
+    have hw := hdm.2
+    have := hw.trans hdmle
+    have hς := P.ς_pos
+    rw [show P.ς * P.θ * ε j * δs k j ^ j / j ! = P.ς * (P.θ * ε j * δs k j ^ j / j !) by ring,
+      setOf_add_mem_univ] at this
+    exact le_of_mul_le_mul_left this hς
+  have h₂ : taylorMeasure (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)) j 1
+      univ ≤ P.θ * ε j * 1 ^ j / j ! := by
+    have hmono := pow_div_mul_taylorMeasure_le
+      (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)) hj2 hδmem.1 hδmem.2
+    rw [div_one] at hmono
+    have hpos : 0 < δs k j ^ j := pow_pos hδmem.1 j
+    rw [one_pow, mul_one]
+    have : δs k j ^ j * taylorMeasure
+        (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)) j 1 univ ≤
+        δs k j ^ j * (P.θ * ε j / j !) := by
+      calc _ ≤ P.θ * ε j * δs k j ^ j / j ! := hmono.trans h₂δ
+        _ = δs k j ^ j * (P.θ * ε j / j !) := by ring
+    exact le_of_mul_le_mul_left this hpos
+  have := radius_inequality_of_measure_gt hf.convex (fun y hy => hf.contDiffAt le_rfl hy)
+    (hf.lipschitz le_rfl) (zero_le_one.trans (hf.one_le le_rfl)) (mem_univ _) (mem_univ _)
+    (hrun.oracle k) hrun.kappaMax_nonneg P.κs_pos.le
+    (fun i hi => by
+      rw [mul_assoc]
+      exact mul_le_mul (le_ordMax hi) (h2.h_le_of_not_acc hk hs1 i hi)
+        ((hrun.invariants k).2.2 i hi).1 hrun.kappaMax_nonneg)
+    (hrun.sigma_pos k).le (lemma_13_1_14_feasible hf subset_rfl hrun k) hjp (mem_univ 0)
+    zero_le_one (a := 1) (e₀ := 0) (by rw [one_mul, sub_zero]; exact hlt) h₂
+  rw [add_zero] at this
+  exact this.le
+
+/-- **The step bound at unit radii** (`q ≤ 2`, no constraints): for an ARqpIDA run on `ℝⁿ` under
+f.D0pL and any radii, a successful iteration `k` such that `x_{k+1}` is not approximately optimal
+with unit radii has a long step or `(1-θ)/(2 j! A) ε_j ≤ ‖s_k‖^{p-j+1}` for some `j ∈ [1, q]`
+(the conclusion of `arqpIDA_step_bound_feasible` in the unit-radii mode). -/
+theorem arqpIDA_step_bound_unit (hf : AssumptionD0pLOn f univ P.p L) (hq2 : P.q ≤ 2)
+    (hrun : algorithm_13_1_2_feasible f univ κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hk : ¬ acc k) (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
+    (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) univ P.q ε (fun _ => 1)) :
+    ∃ j ∈ Finset.Icc 1 P.q, 1 ≤ ‖s k‖ ∨
+      ((True → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) * ε j ≤
+          ‖s k‖ ^ (P.p - j + 1)) ∧
+        (¬ True → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) *
+          arKappaHat P.q (1 - P.θ) (arConstA P L (ordMax P.p κg))
+            (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+              (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) * ε j ^ j ≤ ‖s k‖ ^ P.p)) := by
+  rcases le_or_gt 1 ‖s k‖ with hs1 | hs1
+  · exact ⟨1, P.one_mem_Icc, Or.inl hs1⟩
+  obtain ⟨j, hj, hineq⟩ := lemma_13_1_16_unit hf hq2 hrun hk hρ hs1 hnot
+  refine ⟨j, hj, Or.inr ?_⟩
+  have hs := hrun.step k
+  have hLb := hrun.one_le_Lbar hf
+  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
+  set κ := arKappaDelta1 P Lb (arSigmaMax P (L P.p) (ordMax P.p κg))
+  have hκ0 : 0 < κ := arKappaDelta1_pos (by linarith)
+  have hκ1 : κ ≤ 1 := arKappaDelta1_le_one hLb
+  have hεj := hrun.eps_mem j hj
+  have hκε : κ * ε j ≤ 1 := mul_le_one_of_le_one hκ1 hεj.1.le hεj.2
+  have ht : 0 < ‖s k‖ := by
+    have hpos := (lemma_13_1_13 hs hk (fun j hj => (hrun.eps_mem j hj).1)
+      (hrun.sigma_pos k).le).2
+    refine norm_pos_iff.2 fun h0 => ?_
+    rw [h0, FormalMultilinearSeries.taylorDecrement_zero_right] at hpos
+    exact lt_irrefl _ hpos
+  have hA : 0 < arConstA P L (ordMax P.p κg) := by
+    have := hf.one_le le_rfl
+    have : 0 ≤ arSigmaMax P (L P.p) (ordMax P.p κg) := (P.σ₀_pos.le).trans (le_max_left _ _)
+    have := hrun.kappaMax_nonneg; have := P.κs_pos
+    unfold arConstA; positivity
+  exact arqp_pow_ge_of_radius_ineq (u := True) (sub_pos.2 P.θ_lt_one) hA hεj.1 ht hs1 one_pos
+    hj P.q_le_p hκ0 hκε (fun _ => rfl) hineq
+
+/-- **Lemma 13.1.18 at unit radii** (`q ≤ 2`, no constraints): for an ARqpIDA run on `ℝⁿ` under
+f.D0pL and any radii, every successful iteration `k` such that `x_{k+1}` is not approximately
+optimal (`arTest_feasible`, some radii in `(0, 1]^q`) decreases `f` by at least
+`½ η₁ κ_{Δm} min_j ε_j^{(p+1)/(p-j+1)}`, the decrease of the unit-radii mode
+(`lemma_13_1_18_feasible` with `u = True`), whatever the radii control of the run. -/
+theorem lemma_13_1_18_unit (hf : AssumptionD0pLOn f univ P.p L) (hq2 : P.q ≤ 2)
+    (hrun : algorithm_13_1_2_feasible f univ κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hk : ¬ acc k) (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
+    (hnot : ¬ arTest_feasible f univ P ε x (k + 1)) :
+    P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf True P.q P.p (1 - P.θ)
+          (arConstA P L (ordMax P.p κg)) (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+            (arSigmaMax P (L P.p) (ordMax P.p κg)))) / 2 *
+        epsMin P.q (fun j => ε j ^ arPiOf True P.p j) ≤ f (x k) - f (x (k + 1)) := by
+  have hnot' : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) univ P.q ε (fun _ => 1) :=
+    fun hc => hnot ⟨fun _ => 1, fun _ _ => ⟨one_pos, le_rfl⟩, by rwa [setOf_add_mem_univ]⟩
+  obtain ⟨j, hj, hb⟩ := arqpIDA_step_bound_unit hf hq2 hrun hk hρ hnot'
+  have hs := hrun.step k
+  obtain ⟨hlow, hpos⟩ := lemma_13_1_13 hs hk (fun j hj => (hrun.eps_mem j hj).1)
+    (hrun.sigma_pos k).le
+  have hLb := hrun.one_le_Lbar hf
+  set A := arConstA P L (ordMax P.p κg)
+  have hA : 1 ≤ A := one_le_arConstA (hf.one_le le_rfl) hrun.kappaMax_nonneg
+  have ht : 0 < ‖s k‖ := by
+    refine norm_pos_iff.2 fun h0 => ?_
+    rw [h0, FormalMultilinearSeries.taylorDecrement_zero_right] at hpos
+    exact lt_irrefl _ hpos
+  have hεj := hrun.eps_mem j hj
+  have hC := arqp_pow_succ_ge (u := True) (sub_pos.2 P.θ_lt_one) (by linarith [P.θ_pos]) hA
+    hεj.1 hεj.2 ht (arKappaDelta1_pos (by linarith)) (arKappaDelta1_le_one hLb) hj P.q_le_p hb
+  set C := arStepConstOf True P.q P.p (1 - P.θ) A
+    (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+      (arSigmaMax P (L P.p) (ordMax P.p κg)))
+  have hC0 : 0 ≤ C := arStepConstOf_nonneg (by linarith [P.θ_lt_one]) (by linarith)
+    (arKappaDelta1_pos (by linarith)).le
+  have hfp : (0 : ℝ) < (P.p + 1)! := by positivity
+  have hmin : epsMin P.q (fun j => ε j ^ arPiOf True P.p j) ≤ ε j ^ arPiOf True P.p j :=
+    epsMin_le hj
+  have hσ := (hrun.invariants k).1
+  have h1 : P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf True P.p j) ≤
+      (D k).taylorDecrement P.p (s k) := by
+    calc P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf True P.p j)
+        ≤ P.σmin / ((P.p + 1)! : ℝ) * (C * ε j ^ arPiOf True P.p j) := by
+          rw [mul_assoc]
+          exact mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hmin hC0)
+            (div_nonneg P.σmin_pos.le hfp.le)
+      _ ≤ σ k / ((P.p + 1)! : ℝ) * ‖s k‖ ^ (P.p + 1) :=
+          mul_le_mul (div_le_div_of_nonneg_right hσ hfp.le) hC
+            (mul_nonneg hC0 (Real.rpow_nonneg hεj.1.le _))
+            (div_nonneg (P.σmin_pos.le.trans hσ) hfp.le)
+      _ ≤ _ := hlow
+  have h2 := (hs.accept hk).sub_ge (w := f) rfl hpos hρ
+  have hη := P.η₁_pos
+  have h0 : 0 ≤ P.σmin / ((P.p + 1)! : ℝ) * C *
+      epsMin P.q (fun j => ε j ^ arPiOf True P.p j) := by
+    have hm0 : 0 ≤ epsMin P.q (fun j => ε j ^ arPiOf True P.p j) :=
+      (Chapter13.epsMin_pos P.one_le_q fun j hj =>
+        Real.rpow_pos_of_pos (hrun.eps_mem j hj).1 _).le
+    have := P.σmin_pos; positivity
+  calc P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C) / 2 *
+        epsMin P.q (fun j => ε j ^ arPiOf True P.p j)
+      = P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C *
+          epsMin P.q (fun j => ε j ^ arPiOf True P.p j)) / 2 := by ring
+    _ ≤ P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C *
+          epsMin P.q (fun j => ε j ^ arPiOf True P.p j)) := by
+        have := mul_nonneg hη.le h0; linarith
+    _ ≤ P.η₁ * (D k).taylorDecrement P.p (s k) := mul_le_mul_of_nonneg_left h1 hη.le
+    _ ≤ f (x k) - f (x (k + 1)) := h2
+
 /-- **Theorem 13.1.19 (1)** ([cartis2022evaluation], `q ∈ {1, 2}`, corrected): under f.D0pL,
 f.Bb and the radii control (13.1.69)–(13.1.70) at every iteration, every ARqpIDA run
 reaches an iterate `x_{k_ε}` that is an `(ε, δ_ε)`-approximate `q`-th order minimizer for some
@@ -3704,7 +3945,8 @@ theorem exists_halving {D : FormalMultilinearSeries ℝ ℝⁿ ℝ} {p : ℕ} {�
       (δ₁ < δ → 2 * δ₁ ≤ δ ∧
         (∃ d', ‖d'‖ ≤ 2 * δ₁ ∧ ς * e * (2 * δ₁) ^ j / j ! / 2 < D.taylorDecrement j d' ∧
           regularizedModel D p σ 0 - regularizedModel D p σ d' < ς * e * (2 * δ₁) ^ j / j ! / 4) ∧
-        ∃ d₀, ‖d₀‖ ≤ δ ∧ ς * e * δ ^ j / j ! / 2 < D.taylorDecrement j d₀) := by
+        ∃ d₀, ‖d₀‖ ≤ δ ∧ ς * e * δ ^ j / j ! / 2 < D.taylorDecrement j d₀) ∧
+      ∃ m : ℕ, δ₁ = δ / 2 ^ m := by
   set r : ℕ → ℝ := fun m => δ / 2 ^ m with hr
   have hr0 : ∀ m, 0 < r m := fun m => by positivity
   have hrle : ∀ m, r m ≤ δ := fun m => div_le_self hδ.le (one_le_pow₀ one_le_two)
@@ -3737,7 +3979,7 @@ theorem exists_halving {D : FormalMultilinearSeries ℝ ℝⁿ ℝ} {p : ℕ} {�
     have : ς * e / 2 / 2 * r m ^ j / j ! = ς * e * r m ^ j / j ! / 4 := by ring
     rwa [this] at key
   set m := Nat.find hex
-  refine ⟨r m, d m, hr0 m, hrle m, hd m, Nat.find_spec hex, fun hlt => ?_⟩
+  refine ⟨r m, d m, hr0 m, hrle m, hd m, Nat.find_spec hex, fun hlt => ?_, m, rfl⟩
   obtain ⟨m', hm'⟩ : ∃ m', m = m' + 1 := by
     refine ⟨m - 1, ?_⟩
     rcases Nat.eq_zero_or_pos m with h0 | h0
@@ -3823,6 +4065,8 @@ private structure ARLocal (a : ARState n) : Prop where
     ∃ d₀, ‖d₀‖ ≤ a.δ j ∧ a.x + d₀ ∈ (univ : Set ℝⁿ) ∧
       P.ς * ε j * a.δ j ^ j / j ! / 2 < (O a.x a.h).taylorDecrement j d₀
   /-- See `ARqpDAStep` and `RadiiControl`. -/
+  dyadic : ∀ j ∈ Finset.Icc 1 P.q, ∃ m : ℕ, a.δ₁ j = a.δ j / 2 ^ m
+  /-- See `ARqpDAStep` and `RadiiControl`. -/
   witness : ∀ j ∈ Finset.Icc 1 P.q, IsApproxMeasureStep ((O a.x a.h).taylorDecrement j)
     (a.δ₁ j) {e | a.x + e ∈ (univ : Set ℝⁿ)} P.ς (a.dd j)
   /-- See `ARqpDAStep` and `RadiiControl`. -/
@@ -3855,7 +4099,8 @@ private theorem exists_arLocal (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.I
         (∃ d', ‖d'‖ ≤ 2 * δ₁ ∧ P.ς * ε j * (2 * δ₁) ^ j / j ! / 2 < D.taylorDecrement j d' ∧
           regularizedModel D P.p σ 0 - regularizedModel D P.p σ d' <
             P.ς * ε j * (2 * δ₁) ^ j / j ! / 4) ∧
-        ∃ d₀, ‖d₀‖ ≤ δ j ∧ P.ς * ε j * δ j ^ j / j ! / 2 < D.taylorDecrement j d₀) :=
+        ∃ d₀, ‖d₀‖ ≤ δ j ∧ P.ς * ε j * δ j ^ j / j ! / 2 < D.taylorDecrement j d₀) ∧
+      ∃ m : ℕ, δ₁ = δ j / 2 ^ m :=
     fun j hj => exists_halving hσ0.le hLb hD ((Finset.mem_Icc.1 hj).2.trans P.q_le_p) P.ς_pos
       P.ς_le_one (hε j hj).1 (hδ j hj).1 (hδ j hj).2
   choose! δ₁h ddh hH using H
@@ -3880,7 +4125,7 @@ private theorem exists_arLocal (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.I
     set δs : ℕ → ℝ := if 1 ≤ ‖s‖ then δ₁ else δs0
     refine ⟨δ₁, δs, dd, jk, s, ‖s‖ < 1 ∧ ∃ i ∈ Finset.Icc 1 P.p, P.κs * ‖s‖ ^ (P.p - i + 1) < h i,
       ⟨hσ, hδ, hh, fun j hj => ?_, fun j hj => ?_, fun j hj hlt => ?_, fun j hj => ?_,
-        fun hpass => ?_, fun _ => ?_, fun _ hs1 => ?_⟩⟩
+        fun j hj => ?_, fun hpass => ?_, fun _ => ?_, fun _ hs1 => ?_⟩⟩
     · dsimp only; simp only [δ₁]; split_ifs
       · exact (hδ j hj).1
       · exact (hH j hj).1
@@ -3891,8 +4136,11 @@ private theorem exists_arLocal (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.I
       simp only [δ₁] at hlt ⊢
       split_ifs at hlt ⊢ with hj'
       · exact absurd hlt (lt_irrefl _)
-      · obtain ⟨h1, ⟨d', hd'n, hd'T, hd'm⟩, d₀, hd₀n, hd₀⟩ := (hH j hj).2.2.2.2 hlt
+      · obtain ⟨h1, ⟨d', hd'n, hd'T, hd'm⟩, d₀, hd₀n, hd₀⟩ := (hH j hj).2.2.2.2.1 hlt
         exact ⟨h1, ⟨d', hd'n, mem_univ _, hd'T, hd'm⟩, d₀, hd₀n, mem_univ _, hd₀⟩
+    · dsimp only; simp only [δ₁]; split_ifs
+      · exact ⟨0, by rw [pow_zero, div_one]⟩
+      · exact (hH j hj).2.2.2.2.2
     · dsimp only
       rw [setOf_add_mem_univ]
       simp only [δ₁, dd]; split_ifs
@@ -3952,10 +4200,11 @@ private theorem exists_arLocal (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.I
         linarith
   · push Not at hex
     refine ⟨δ₁h, fun _ => 1, ddh, 1, 0, True, ⟨hσ, hδ, hh, fun j hj => (hH j hj).1,
-      fun j hj => (hH j hj).2.1, fun j hj hlt => ?_, fun j hj => ?_, fun _ => trivial,
+      fun j hj => (hH j hj).2.1, fun j hj hlt => ?_, fun j hj => (hH j hj).2.2.2.2.2,
+      fun j hj => ?_, fun _ => trivial,
       fun ⟨j, hj, hf⟩ => absurd (hex j hj) hf, fun h' => absurd trivial h'⟩⟩
     · dsimp only at hlt ⊢
-      obtain ⟨h1, ⟨d', hd'n, hd'T, hd'm⟩, d₀, hd₀n, hd₀⟩ := (hH j hj).2.2.2.2 hlt
+      obtain ⟨h1, ⟨d', hd'n, hd'T, hd'm⟩, d₀, hd₀n, hd₀⟩ := (hH j hj).2.2.2.2.1 hlt
       exact ⟨h1, ⟨d', hd'n, mem_univ _, hd'T, hd'm⟩, d₀, hd₀n, mem_univ _, hd₀⟩
     · dsimp only; rw [setOf_add_mem_univ]; exact (hH j hj).2.2.1
 
@@ -4007,10 +4256,11 @@ private theorem exists_arNext (f : ℝⁿ → ℝ) (hε : ∀ j ∈ Finset.Icc 1
     intro j; simp only [arPass, arPassS, hra]
   have hratio : arqpIDARatio f P (fun i => O (r i).x (r i).h) (fun i => (r i).x)
       (fun i => (r i).s) k = ρ := by simp only [arqpIDARatio, hra, hρ]
-  refine ⟨⟨⟨?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+  refine ⟨⟨⟨?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
   · simp only [hra]; exact ha.radius_pos
   · simp only [hra]; exact ha.radius_le
   · simp only [arModelDec, hra]; exact ha.halving
+  · simp only [hra]; exact ha.dyadic
   · simp only [hra]; exact ha.witness
   · intro hp; simp only [hra]; exact ha.acc_of_pass fun j hj => (hpass j).1 (hp j hj)
   · rintro ⟨j, hj, hf⟩
@@ -4051,6 +4301,56 @@ private theorem exists_arNext (f : ℝⁿ → ℝ) (hε : ∀ j ∈ Finset.Icc 1
 
 variable {P ε}
 
+/-- **ARqpIDA iterations exist from any admissible state** ([cartis2022evaluation], existence
+part of Lemmas 13.1.11 and 13.1.12): under f.D0pL, for tolerances `ε ∈ (0, 1]^q`, oracle
+constants `κ_{∇,i} ≥ 0`, every deterministic oracle `O` satisfying (13.1.2) for all accuracies
+`h ∈ (0, κ_h]^p`, and a starting state (`x₀`, a weight `σ' ≥ σ_min`, radii `δ' ∈ (0, 1]^q`,
+accuracies `h' ∈ (0, κ_h]^p`), there are sequences starting at that state all of whose iterations
+are ARqpIDA steps (`ARqpDAStep` on `X = univ`, with `D_k = O(x_k, h_k)`) satisfying the radii
+control (13.1.69)–(13.1.70). With the initial state of `P` this gives `exists_algorithm_13_1_2`;
+other states are used to continue runs. -/
+theorem exists_arqpDA_steps {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {L : ℕ → ℝ}
+    (hf : AssumptionD0pL f P.p L) (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1)
+    (hκg : ∀ i ∈ Finset.Icc 1 P.p, 0 ≤ κg i) (x₀ : ℝⁿ) {σ' : ℝ} (hσ' : P.σmin ≤ σ')
+    {δ' h' : ℕ → ℝ} (hδ' : ∀ j ∈ Finset.Icc 1 P.q, 0 < δ' j ∧ δ' j ≤ 1)
+    (hh' : ∀ i ∈ Finset.Icc 1 P.p, 0 < h' i ∧ h' i ≤ P.κh)
+    (hO : ∀ y h', (∀ i ∈ Finset.Icc 1 P.p, 0 < h' i ∧ h' i ≤ P.κh) →
+      JetApprox (ftaylorSeries ℝ f y) (O y h') P.p (fun i => κg i * h' i)) :
+    ∃ (x : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ) (h : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → ℝⁿ)
+      (jk : ℕ → ℕ) (s : ℕ → ℝⁿ) (acc : ℕ → Prop),
+      x 0 = x₀ ∧ σ 0 = σ' ∧ δ 0 = δ' ∧ h 0 = h' ∧
+        (∀ k, ∀ i ∈ Finset.Icc 1 P.p, 0 < h k i ∧ h k i ≤ P.κh) ∧
+        (∀ k, ARqpDAStep univ P ε x σ δ δ₁ δs h (fun i => O (x i) (h i)) dd jk s acc
+          (arqpIDARatio f P (fun i => O (x i) (h i)) x s) k) ∧
+        ∀ k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k := by
+  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
+  have hLb1 : 1 ≤ Lb := by
+    have := hf.one_le_lipMax; have := ordMax_nonneg hκg; have := P.κh_nonneg; nlinarith
+  have hO' : ∀ y h', (∀ i ∈ Finset.Icc 1 P.p, 0 < h' i ∧ h' i ≤ P.κh) →
+      ∀ ℓ ∈ Finset.Icc 1 P.p, ‖O y h' ℓ‖ ≤ Lb := fun y h' hh ℓ hℓ =>
+    hf.norm_le_of_jetApprox (hO y h' hh) hκg (fun i hi => (hh i hi).1.le)
+      (fun i hi => (hh i hi).2) hℓ
+  obtain ⟨δ₁₀, δs₀, dd₀, jk₀, s₀, acc₀, h₀⟩ := exists_arLocal P ε O Lb hε hLb1 hO' x₀
+    hσ' hδ' hh'
+  obtain ⟨r, hr0, hr⟩ := exists_run_of_forall_exists_of_invariant (α := ARState n)
+    (init := fun a => a = ⟨x₀, σ', δ', δ₁₀, δs₀, h', dd₀, jk₀, s₀, acc₀⟩)
+    (inv := fun _ a => ARLocal P ε O Lb a) (stop := fun _ _ => False)
+    (step := fun k a b => ∀ (r : ℕ → ARState n), r k = a → r (k + 1) = b →
+      ARqpDAStep univ P ε (fun i => (r i).x) (fun i => (r i).σ) (fun i => (r i).δ)
+        (fun i => (r i).δ₁) (fun i => (r i).δs) (fun i => (r i).h) (fun i => O (r i).x (r i).h)
+        (fun i => (r i).dd) (fun i => (r i).jk) (fun i => (r i).s) (fun i => (r i).acc)
+        (arqpIDARatio f P (fun i => O (r i).x (r i).h) (fun i => (r i).x) (fun i => (r i).s)) k ∧
+      RadiiControl P ε Lb (fun i => (r i).σ) (fun i => (r i).δs) (fun i => (r i).s)
+        (fun i => (r i).acc) k)
+    ⟨_, rfl⟩ (fun a ha => ha ▸ h₀) (fun k a ha _ => by
+      obtain ⟨b, hb, hs⟩ := exists_arNext P ε O Lb f hε hLb1 hO' a ha
+      exact ⟨b, hb, fun r => hs r k⟩)
+  exact ⟨fun i => (r i).x, fun i => (r i).σ, fun i => (r i).δ, fun i => (r i).δ₁,
+    fun i => (r i).δs, fun i => (r i).h, fun i => (r i).dd, fun i => (r i).jk, fun i => (r i).s,
+    fun i => (r i).acc, by simp only [hr0], by simp only [hr0], by simp only [hr0],
+    by simp only [hr0], fun k => (hr k fun _ _ h => h).1.h_mem,
+    fun k => ((hr k fun _ _ h => h).2 r rfl rfl).1, fun k => ((hr k fun _ _ h => h).2 r rfl rfl).2⟩
+
 /-- **Runs of Algorithm 13.1.2 exist** ([cartis2022evaluation], existence part of
 Lemmas 13.1.11 and 13.1.12): under f.D0pL, for constants `P`, tolerances `ε ∈ (0, 1]^q` with
 `ε ≤ δ₀`, oracle constants `κ_{∇,i} ≥ 0`, a starting point `x₀` and every deterministic
@@ -4069,35 +4369,12 @@ theorem exists_algorithm_13_1_2 {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {L : �
       (acc : ℕ → Prop), algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc ∧
         (∀ k, D k = O (x k) (h k)) ∧
         ∀ k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k := by
-  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
-  have hLb1 : 1 ≤ Lb := by
-    have := hf.one_le_lipMax; have := ordMax_nonneg hκg; have := P.κh_nonneg; nlinarith
-  have hO' : ∀ y h', (∀ i ∈ Finset.Icc 1 P.p, 0 < h' i ∧ h' i ≤ P.κh) →
-      ∀ ℓ ∈ Finset.Icc 1 P.p, ‖O y h' ℓ‖ ≤ Lb := fun y h' hh ℓ hℓ =>
-    hf.norm_le_of_jetApprox (hO y h' hh) hκg (fun i hi => (hh i hi).1.le)
-      (fun i hi => (hh i hi).2) hℓ
-  obtain ⟨δ₁₀, δs₀, dd₀, jk₀, s₀, acc₀, h₀⟩ := exists_arLocal P ε O Lb hε hLb1 hO' x₀
-    P.σmin_le_σ₀ (fun j hj => P.δ₀_mem j hj) (fun i hi => ⟨hh₀ i hi, P.h₀_le i hi⟩)
-  obtain ⟨r, hr0, hr⟩ := exists_run_of_forall_exists_of_invariant (α := ARState n)
-    (init := fun a => a = ⟨x₀, P.σ₀, P.δ₀, δ₁₀, δs₀, P.h₀, dd₀, jk₀, s₀, acc₀⟩)
-    (inv := fun _ a => ARLocal P ε O Lb a) (stop := fun _ _ => False)
-    (step := fun k a b => ∀ (r : ℕ → ARState n), r k = a → r (k + 1) = b →
-      ARqpDAStep univ P ε (fun i => (r i).x) (fun i => (r i).σ) (fun i => (r i).δ)
-        (fun i => (r i).δ₁) (fun i => (r i).δs) (fun i => (r i).h) (fun i => O (r i).x (r i).h)
-        (fun i => (r i).dd) (fun i => (r i).jk) (fun i => (r i).s) (fun i => (r i).acc)
-        (arqpIDARatio f P (fun i => O (r i).x (r i).h) (fun i => (r i).x) (fun i => (r i).s)) k ∧
-      RadiiControl P ε Lb (fun i => (r i).σ) (fun i => (r i).δs) (fun i => (r i).s)
-        (fun i => (r i).acc) k)
-    ⟨_, rfl⟩ (fun a ha => ha ▸ h₀) (fun k a ha _ => by
-      obtain ⟨b, hb, hs⟩ := exists_arNext P ε O Lb f hε hLb1 hO' a ha
-      exact ⟨b, hb, fun r => hs r k⟩)
-  refine ⟨fun i => (r i).x, fun i => (r i).σ, fun i => (r i).δ, fun i => (r i).δ₁,
-    fun i => (r i).δs, fun i => (r i).h, fun i => O (r i).x (r i).h, fun i => (r i).dd,
-    fun i => (r i).jk, fun i => (r i).s, fun i => (r i).acc,
-    ⟨hε, hεδ, hκg, by simp only [hr0], mem_univ _, by simp only [hr0], by simp only [hr0],
-      by simp only [hr0], fun k => hO _ _ (hr k fun _ _ h => h).1.h_mem,
-      fun k => ((hr k fun _ _ h => h).2 r rfl rfl).1⟩,
-    fun _ => rfl, fun k => ((hr k fun _ _ h => h).2 r rfl rfl).2⟩
+  obtain ⟨x, σ, δ, δ₁, δs, h, dd, jk, s, acc, hx0, hσ0, hδ0, hh0, hhm, hstep, hrc⟩ :=
+    exists_arqpDA_steps O hf hε hκg x₀ P.σmin_le_σ₀ (fun j hj => P.δ₀_mem j hj)
+      (fun i hi => ⟨hh₀ i hi, P.h₀_le i hi⟩) hO
+  exact ⟨x, σ, δ, δ₁, δs, h, fun i => O (x i) (h i), dd, jk, s, acc,
+    ⟨hε, hεδ, hκg, hx0, mem_univ _, hσ0, hδ0, hh0, fun k => hO _ _ (hhm k), hstep⟩,
+    fun _ => rfl, hrc⟩
 
 /-- The exact jet is an oracle for (13.1.2): **ARqpIDA runs with exact derivatives and the radii
 control exist** (instance of `exists_algorithm_13_1_2`). -/
