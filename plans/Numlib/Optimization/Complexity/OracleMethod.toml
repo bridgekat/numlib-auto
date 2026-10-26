@@ -15,3 +15,7 @@ source = "Cartis–Gould–Toint, Section 1.2.4 (p-th degree oracle)"
 [[node]]
 id = "OracleMethod.iterate_congr"
 source = "Cartis–Gould–Toint, proofs of Theorem 3.5.4 and Lemma 4.2.2"
+
+[[node]]
+id = "jetSeries"
+source = "Cartis–Gould–Toint, Section 4.2.1.2"

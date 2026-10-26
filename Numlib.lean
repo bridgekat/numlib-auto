@@ -674,6 +674,7 @@ import Numlib.Optimization.Complexity.ParameterCount
 import Numlib.Optimization.Complexity.ResistingOracle
 import Numlib.Optimization.Complexity.ScaledRestart
 import Numlib.Optimization.Complexity.SlowExample
+import Numlib.Optimization.Complexity.SlowExampleARp
 import Numlib.Optimization.Complexity.SlowExampleHighOrder
 import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.Complexity.ZeroChain

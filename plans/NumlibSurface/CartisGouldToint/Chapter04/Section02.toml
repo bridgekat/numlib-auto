@@ -77,35 +77,8 @@ source = "Cartis–Gould–Toint, Theorem 4.2.6"
 
 [[node]]
 id = "arpOracleMethod"
-kind = "def"
-desc = '''
-ARp (first-order mode) as a deterministic method in `𝓜(p)` (for (4.2.3) and the tightness claim of
-Theorem 4.2.6). For `P : ARpParams` and `ε₁`, `arpOracleMethod P ε₁ : Optimization.JetMethod p`:
-in dimension `n`, start at `0`; the state `(x_k, σ_k, jet at x_k)` is reconstructed from the answer
-history by recursion; the next query is the trial point `x_k + s_k`, `s_k` a (classically chosen)
-global minimizer of `m_k` (`Optimization.exists_isMinOn_regularizedModel`); acceptance by the ratio
-(4.1.15) using the answer's value; `σ_{k+1} = σ_k` if `ρ_k ≥ η₁`, `γ₂ σ_k` otherwise; after the
-Step-1 test holds, the method repeats `x_k`. Lemma (part of node): the reconstructed sequences form
-an ARp run (`algorithm_4_1_1`, `ε₂ = ε₃ = none`) whose queries are `y_0 = x_0`,
-`y_{k+1} = x_k + s_k`; every accepted iterate `x_k` is a query `y_j` with `j ≤ k`, so
-`Optimization.firstStationaryIndex` of the queries is at most the run's termination index.
-'''
-deps = ["algorithm_4_1_1", "exists_isARpRun", "Optimization.JetMethod", "Optimization.exists_isMinOn_regularizedModel"]
 source = "Cartis–Gould–Toint, (4.2.3)"
 
 [[node]]
 id = "theorem_4_2_6_ii"
-kind = "theorem"
-desc = '''
-Theorem 4.2.6 (tightness: "the bound (4.2.3) is tight, and ARp has the optimal order of evaluation
-complexity for methods in `𝓜(p)`"). For `p ≥ 1`, `P : ARpParams`, `Δ, L > 0`:
-(a) (4.2.3) `complexity (methodClassM p) (functionClass Δ L p) ε₁ ≤ κ^A Δ ε₁^{-(p+1)/p} + κ^C` for all
-`ε₁ > 0`, with `κ^A`, `κ^C` of Theorem 4.1.5 (i) for `L' = max 1 L` (via `arpOracleMethod` and
-`theorem_4_1_5_i`; uniform over the class since `f(0) - inf f ≤ Δ` and the constants do not depend
-on `n` or `f`); (b) with Theorem 4.2.6 (i): there are `c, C > 0` and `ε₀ > 0` (depending on
-`p, Δ, L, P`) with `c ε₁^{-(p+1)/p} ≤ complexity (methodClassM p) (functionClass Δ L p) ε₁ ≤ C ε₁^{-(p+1)/p}`
-for all `ε₁ ∈ (0, ε₀]`. (The book's `O(Δ L^{(p+1)/p} ε^{-(p+1)/p})` in (4.2.3) and the lower bound
-`Δ L^{1/p}` differ in their dependence on `L`; only the order in `ε₁` is tight.)
-'''
-deps = ["theorem_4_2_6_i", "arpOracleMethod", "theorem_4_1_5_i"]
 source = "Cartis–Gould–Toint, Theorem 4.2.6, (4.2.3)"

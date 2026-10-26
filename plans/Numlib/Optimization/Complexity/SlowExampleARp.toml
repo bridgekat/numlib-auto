@@ -1,0 +1,21 @@
+namespace = "Optimization"
+
+[[node]]
+id = "IsSpikeJetOf"
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.15, (12.2.67)–(12.2.68)"
+
+[[node]]
+id = "monomialMinimizer"
+source = "Cartis–Gould–Toint, (12.2.70) and the display after it"
+
+[[node]]
+id = "regularizedModel_ridge_spike"
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.15, (12.2.69)"
+
+[[node]]
+id = "isARpStep_of_isMinOn"
+source = "Cartis–Gould–Toint, Algorithm 4.1.1, Step 2"
+
+[[node]]
+id = "arp_ridge_run"
+source = "Cartis–Gould–Toint, Theorem 4.1.6, proof of Theorem 12.2.15"
