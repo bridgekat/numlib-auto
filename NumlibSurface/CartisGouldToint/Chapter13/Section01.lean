@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.DecreaseBounds
 import Numlib.Optimization.Regularization.Inexact.PassingCubic.PrintedConstants
 import Numlib.Optimization.Regularization.Inexact.GuardedCounterexample.PrintedConstants
 import Numlib.Optimization.TrustRegion.Inexact.Complexity
@@ -939,5 +940,75 @@ theorem arqpidaPassingCheckCounterexample :
     382 ∉ data.trials ∧ data.parameter 383 = data.parameter 382 ∧
     (∀ i, data.accuracy 383 i = (1 / 2) * data.accuracy 382 i) :=
   verified_counterexample
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- Corrected Lemma13.1.18: every actual candidate failing true criticality
+satisfies both sharp source rates for computed model decrease, including rejected
+trials. The genuine guarded parameter cap contains max(kappa_s,kappa_h); the
+safe radius coefficient is explicit in rootStepCoefficient. Accepted true
+function decrease is at least eta1 times the same fixed floor. -/
+theorem lemma_13_1_18_corrected {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.ExecutionData
+      (EuclideanSpace ℝ (Fin n)) q) {N k : ℕ} (h : InexactRegularization.Run f P ε D N)
+    (hk : k < N) (ht : k ∈ D.trials)
+    (hnot : ¬InexactRegularization.OptimalityAt f ε
+      (D.point k + D.step k) (D.solvedRadius k)) :
+    let S := InexactRegularization.executionParameterCap P L
+    let M := L + P.errorBound * P.initialCap
+    let c := InexactRegularization.commonDecreaseCoefficient P L M S / P.eta1
+    0 < c ∧ c * InexactRegularization.accuracyFactor P ε ≤
+      TaylorModel.jetDecrement (D.jet k) p (D.step k) ∧
+      (P.eta1 ≤ D.ratio k → P.eta1 * c * InexactRegularization.accuracyFactor P ε ≤
+        f (D.point k) - f (D.point (k + 1))) := by
+  have hM : 1 ≤ L + P.errorBound * P.initialCap := hL.trans
+    (le_add_of_nonneg_right (mul_nonneg P.errorBound_nonneg P.initialCap_nonneg))
+  have hp : ∀ i ≤ N, D.parameter i ≤ InexactRegularization.executionParameterCap P L :=
+    fun i hi => h.parameter_le hf (zero_le_one.trans hL) (hlip p le_rfl) hi
+  have hj : ∀ k ≤ N, ∀ i, 2 ≤ i → i ≤ p →
+      ‖D.jet k i‖ ≤ L + P.errorBound * P.initialCap :=
+    fun k hk i hi hip => h.tensor_norm_le (zero_le_one.trans hL)
+      (fun j hj => hlip j hj.le) hk (by omega : 1 ≤ i) hip
+  have hS := (h.updates.pos (show 0 ≤ N by omega)).le.trans (hp 0 (by omega))
+  have hc := div_pos (InexactRegularization.commonDecreaseCoefficient_pos P hL hM hS)
+    P.eta1_pos
+  have hm := h.model_decrease_uniform_candidate hf hL hM (hlip p le_rfl) hp hj hk ht hnot
+  refine ⟨hc, hm, fun ha => ?_⟩
+  have hh := mul_le_mul_of_nonneg_left hm P.eta1_pos.le
+  simpa only [mul_assoc] using hh.trans (h.function_decrease_ge_computed hk ht ha)
+
+/-- Corrected Lemma13.1.18 on accepted trials before the next true certificate.
+Both source rates are retained, with corrected parameter and radius constants
+fixed independently of all accuracies and execution arrays. -/
+theorem lemma_13_1_18_before_certificate {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.ExecutionData
+      (EuclideanSpace ℝ (Fin n)) q) {N k : ℕ} (h : InexactRegularization.Run f P ε D N)
+    (hk : k < N) (ht : k ∈ D.trials) (ha : P.eta1 ≤ D.ratio k)
+    (hnot : ¬InexactRegularization.OptimalityAt f ε (D.point (k + 1))
+      (D.startRadius (k + 1))) :
+    let S := InexactRegularization.executionParameterCap P L
+    let M := L + P.errorBound * P.initialCap
+    let c := InexactRegularization.commonDecreaseCoefficient P L M S / P.eta1
+    0 < c ∧ c * InexactRegularization.accuracyFactor P ε ≤
+      TaylorModel.jetDecrement (D.jet k) p (D.step k) ∧
+      P.eta1 * c * InexactRegularization.accuracyFactor P ε ≤
+        f (D.point k) - f (D.point (k + 1)) := by
+  have hM : 1 ≤ L + P.errorBound * P.initialCap := hL.trans
+    (le_add_of_nonneg_right (mul_nonneg P.errorBound_nonneg P.initialCap_nonneg))
+  exact h.model_function_decrease_before_certificate hf hL hM (hlip p le_rfl)
+    (fun k hk => h.parameter_le hf (zero_le_one.trans hL) (hlip p le_rfl) hk)
+    (fun k hk i hi hip => h.tensor_norm_le (zero_le_one.trans hL)
+      (fun j hj => hlip j hj.le) hk (by omega) hip) hk ht ha hnot
 
 end CartisGouldToint

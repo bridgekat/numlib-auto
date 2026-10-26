@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.HighOrder.DecreaseBounds
 import Numlib.Optimization.Regularization.HighOrder.Sharpness.GoodCaseWitness
 import Numlib.Optimization.Regularization.HighOrder.ZeroReturn
 import Numlib.Optimization.Regularization.HighOrder.ObstructionCounterexample
@@ -809,5 +810,56 @@ theorem theorem_12_2_15 {p q : ℕ} (hq : 0 < q) (hqp : q ≤ p) :
           ε ^ (-((p + 1 : ℕ) : ℝ) / (p - q + 1 : ℕ)) ≤
             (criticalityDerivativeEvaluations q j N : ℝ) :=
   HighOrderRegularization.Sharpness.exists_good_criticality_witness hq hqp
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- Corrected Lemma12.2.13: every actual trial whose candidate fails the true
+certificate has the two sharp source model-decrease rates. This explicit
+candidate guard replaces literal nontermination and also covers rejected trials.
+The detailed solver, genuine parameter cap and safe common radius coefficient
+are retained. On accepted trials the true drop is at least eta1 times this floor. -/
+theorem lemma_12_2_13_corrected {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : HighOrderRegularization.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, 1 ≤ i → i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : HighOrderRegularization.ExecutionData
+      (EuclideanSpace ℝ (Fin n)) q) {N k : ℕ} (h : arqpRun f P ε D N) (hk : k < N)
+    (hnot : ¬HighOrderRegularization.OptimalityAt f ε
+      (D.point k + D.step k) (D.solvedRadius k)) :
+    let c := HighOrderRegularization.commonDecreaseCoefficient P L
+      (HighOrderRegularization.parameterCap P L) / P.eta1
+    0 < c ∧ c * HighOrderRegularization.accuracyFactor P ε ≤
+      TaylorModel.decrement f p (D.point k) (D.step k) ∧
+      (P.eta1 ≤ D.ratio k → P.eta1 * c * HighOrderRegularization.accuracyFactor P ε ≤
+        f (D.point k) - f (D.point (k + 1))) := by
+  have hc := div_pos (HighOrderRegularization.commonDecreaseCoefficient_pos P hL
+    (HighOrderRegularization.parameterCap_pos P L).le) P.eta1_pos
+  have hm := h.model_decrease_uniform_candidate hf hL hlip hk hnot
+  refine ⟨hc, hm, fun ha => ?_⟩
+  have hh := mul_le_mul_of_nonneg_left hm P.eta1_pos.le
+  simpa only [mul_assoc] using hh.trans (h.function_decrease_ge_model hk ha)
+
+/-- Accepted-trial specialization of corrected Lemma12.2.13 before the next
+true certificate. Both model and actual function lower bounds are explicit;
+the original low-order and high-order exponents are those of accuracyFactor. -/
+theorem lemma_12_2_13_before_certificate {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : HighOrderRegularization.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, 1 ≤ i → i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : HighOrderRegularization.ExecutionData
+      (EuclideanSpace ℝ (Fin n)) q) {N k : ℕ} (h : arqpRun f P ε D N) (hk : k < N)
+    (ha : P.eta1 ≤ D.ratio k) (hnot : ¬HighOrderRegularization.TargetAt f P ε D (k + 1)) :
+    let c := HighOrderRegularization.commonDecreaseCoefficient P L
+      (HighOrderRegularization.parameterCap P L) / P.eta1
+    0 < c ∧ c * HighOrderRegularization.accuracyFactor P ε ≤
+      TaylorModel.decrement f p (D.point k) (D.step k) ∧
+      P.eta1 * c * HighOrderRegularization.accuracyFactor P ε ≤
+        f (D.point k) - f (D.point (k + 1)) :=
+  h.model_function_decrease_before_certificate hf hL hlip hk ha hnot
 
 end CartisGouldToint

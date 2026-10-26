@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.Explicit.DecreaseBounds
 import Numlib.Optimization.Regularization.Inexact.PassingCubic.PrintedConstants
 import Numlib.Optimization.TrustRegion.Inexact.Explicit.Complexity
 import Numlib.Optimization.TrustRegion.Inexact.Explicit.Run
@@ -559,5 +560,57 @@ theorem arqpedaPassingCheckCounterexample :
     382 ∉ data.trials ∧ data.parameter 383 = data.parameter 382 ∧
     (∀ i, data.accuracy 383 i = (1 / 2) * data.accuracy 382 i) :=
   verified_counterexample
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- Corrected Lemma13.3.7 with an effective stopping margin. Both sharp source
+rates hold for accepted trials before the next literal stopping test passes.
+The additional theta<zeta/2 hypothesis and corrected cap/radius coefficients are
+explicit. Both function-value errors leave eta1/2 times the computed model floor. -/
+theorem lemma_13_3_7_effective_margin {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Explicit.Settings p q)
+    (hf : ContDiff ℝ p f) (hmargin : P.theta < P.zeta / 2) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.Explicit.ExecutionData
+      (EuclideanSpace ℝ (Fin n)) q) {N k : ℕ} (h : arqpedaRun f P ε D N)
+    (hk : k < N) (ht : k ∈ D.trials) (ha : P.eta1 ≤ D.ratio k)
+    (hnot : ¬InexactRegularization.Explicit.StopsAt P ε D (k + 1)) :
+    let S := InexactRegularization.executionParameterCap P.toSettings L
+    let M := InexactRegularization.executionTensorCap P.toSettings L
+    let c := 2 * InexactRegularization.Explicit.commonDecreaseCoefficient P L M S / P.eta1
+    0 < c ∧ c * InexactRegularization.accuracyFactor P.toSettings ε ≤
+      TaylorModel.jetDecrement (D.jet k) p (D.step k) ∧
+      P.eta1 / 2 * c * InexactRegularization.accuracyFactor P.toSettings ε ≤
+        f (D.point k) - f (D.point (k + 1)) := by
+  obtain ⟨hp, hj⟩ := h.actual_caps hf hL hlip
+  exact h.model_function_decrease_effective_margin hf hmargin hL
+    (InexactRegularization.one_le_executionTensorCap P.toSettings hL) (hlip p le_rfl)
+    hp (fun k hk i hi hip => hj k hk i (by omega) hip) hk ht ha hnot
+
+/-- An unconditional all-trial correction to Lemma13.3.7. The rate is explicitly
+replaced by epsilon-min^(q+1), derived from the actual current failed check.
+No effective stopping margin or next-certificate assumption is needed. Every
+accepted trial has true decrease at least eta1/2 times this model floor. -/
+theorem lemma_13_3_7_current_check {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Explicit.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.Explicit.ExecutionData
+      (EuclideanSpace ℝ (Fin n)) q) {N k : ℕ} (h : arqpedaRun f P ε D N)
+    (hk : k < N) (ht : k ∈ D.trials) :
+    let M := InexactRegularization.executionTensorCap P.toSettings L
+    let S := InexactRegularization.executionParameterCap P.toSettings L
+    let c := InexactRegularization.Explicit.currentReferenceCoefficient P M S
+    0 < c ∧ c * (minimumAccuracy P.order_pos ε) ^ (q + 1) ≤
+      TaylorModel.jetDecrement (D.jet k) p (D.step k) ∧
+      (P.eta1 ≤ D.ratio k → P.eta1 / 2 * c *
+        (minimumAccuracy P.order_pos ε) ^ (q + 1) ≤
+          f (D.point k) - f (D.point (k + 1))) :=
+  h.model_function_decrease_current hf hL hlip hk ht
 
 end CartisGouldToint
