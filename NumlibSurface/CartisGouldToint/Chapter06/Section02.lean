@@ -284,16 +284,6 @@ theorem modelSteps₀_eq : modelSteps₀ C x s = feasibleSteps C (x + s) := rfl
 
 end Membership
 
-/-! ### Termination tests of runs without a post-step test -/
-
-private theorem not_stop_lt_iff {test : ℕ → Prop} {k : ℕ} :
-    (∀ j < k, ¬ IsARRun.Stop test (fun _ => False) j) ↔ ∀ j < k, ¬ test j := by
-  simp [IsARRun.Stop]
-
-private theorem not_stop_le_iff {test : ℕ → Prop} {k : ℕ} :
-    (∀ j ≤ k, ¬ IsARRun.Stop test (fun _ => False) j) ↔ ∀ j ≤ k, ¬ test j := by
-  simp [IsARRun.Stop]
-
 /-! ### Lemmas 4.1.1 and 4.1.2 for convexly constrained runs -/
 
 section Generic
@@ -314,7 +304,7 @@ theorem arpcc_sigma_le
     (k : ℕ) (hk : ∀ j < k, ¬ test j) :
     x k ∈ C ∧ P.σmin ≤ σ k ∧ σ k ≤ P.sigmaMax L :=
   h.sigma_le hC.convex hf.contDiffAt hf.lipschitz hx0 (fun k _ hs => hstep k hs) k
-    (not_stop_lt_iff.2 hk)
+    (IsARRun.forall_lt_not_stop_iff.2 hk)
 
 /-- **"Lemma 4.1.1 continues to hold"** ([cartis2022evaluation], §6.2.2) together with the
 decrease (4.1.37) on successful iterations: before termination,
@@ -330,7 +320,7 @@ theorem arpcc_sub_ge
         (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
       (P.η₁ ≤ taylorRatio f p x s k → x (k + 1) = x k + s k ∧
         P.η₁ * P.σmin / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) ≤ f (x k) - f (x (k + 1))) := by
-  have hk' := not_stop_le_iff.2 hk
+  have hk' := IsARRun.forall_le_not_stop_iff.2 hk
   have hm := hstep k (h.step_of_forall_le hk')
   refine ⟨lt_taylorDecrement_of_regularizedModel_lt hm, fun hs => ?_⟩
   obtain ⟨heq, hge⟩ := h.sub_ge_of_succ_taylor hk' hm hs
@@ -414,7 +404,7 @@ variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p q : ℕ} {L : ℝ} {P : ARpCCP
 theorem step (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ (x j)) :
     IsARpCCStep f C p P q ε₁ ε₂ ε₃ (x k) (σ k) (s k) :=
-  h.run.step_of_forall_le (not_stop_le_iff.2 hk)
+  h.run.step_of_forall_le (IsARRun.forall_le_not_stop_iff.2 hk)
 
 /-- "Lemma 4.1.2 continues to hold" for ARp-CC runs (`arpcc_sigma_le`). -/
 theorem sigma_le (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) (hC : AssumptionCNe C)
@@ -866,16 +856,16 @@ theorem _root_.CartisGouldToint.Chapter06.theorem_6_2_3
   have ht := tolMin_pos (p := p) (q := q) h.ε₁_pos h.ε₂_pos h.ε₃_pos
   obtain ⟨kε, hk, hF, hD⟩ := h.run.exists_isFirstHit_of_decrease (σmax := P.sigmaMax L)
     (V := fun k => f (x k)) (Vlow := flow) (δ := tolMin p q ε₁ ε₂ ε₃ / kappaSARpCC P L p q)
-    (fun k hk => (h.sigma_le hC hf k (not_stop_lt_iff.1 hk)).2.2) (div_pos ht hS)
+    (fun k hk => (h.sigma_le hC hf k (IsARRun.forall_lt_not_stop_iff.1 hk)).2.2) (div_pos ht hS)
     (fun k hk => (h.run.accept k hk).le (w := f) rfl
       (lt_of_le_of_lt (by
           have := P.σmin_nonneg.trans
-            (h.sigma_le hC hf k fun j hj => not_stop_le_iff.1 hk j hj.le).2.1
+            (h.sigma_le hC hf k fun j hj => IsARRun.forall_le_not_stop_iff.1 hk j hj.le).2.1
           positivity)
-        (arpcc_sub_ge h.run (fun _ hs => hs.decrease) (not_stop_le_iff.1 hk)).1))
-    (fun k hk => hb _ (h.sigma_le hC hf k (not_stop_lt_iff.1 hk)).1)
+        (arpcc_sub_ge h.run (fun _ hs => hs.decrease) (IsARRun.forall_le_not_stop_iff.1 hk)).1))
+    (fun k hk => hb _ (h.sigma_le hC hf k (IsARRun.forall_lt_not_stop_iff.1 hk)).1)
     (fun k hk hs => by
-      have hk' := not_stop_le_iff.1 hk
+      have hk' := IsARRun.forall_le_not_stop_iff.1 hk
       exact arpcc_decrease_of_not_test h hC hf hqp (fun j hj => hk' j (hj.trans k.le_succ)) hs
         (hk' (k + 1) le_rfl))
   have hN : (f (x 0) - flow) / (tolMin p q ε₁ ε₂ ε₃ / kappaSARpCC P L p q) =
@@ -1002,7 +992,7 @@ theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_4
     (hf : AssumptionDpLC f C p L) (hp : 1 ≤ p) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ omega1 f C (x j) ≤ ε₁) (hs : P.η₁ ≤ taylorRatio f p x s k) :
     kappa1CC P L p * omega1 f C (x (k + 1)) ^ (((p : ℝ) + 1) / p) ≤ f (x k) - f (x (k + 1)) := by
-  have hk' := not_stop_le_iff.2 hk
+  have hk' := IsARRun.forall_le_not_stop_iff.2 hk
   obtain ⟨hx, hmin, hmax⟩ := h.sigma_le hC hf k fun j hj => hk j hj.le
   have hstep : IsFirstOrderCCStep f C p P.θ₁ (x k) (σ k) (s k) := h.run.step_of_forall_le hk'
   rw [h.run.eq_add_of_succ hk' hs]
@@ -1033,16 +1023,16 @@ theorem _root_.CartisGouldToint.Chapter06.theorem_6_2_5
     positivity
   obtain ⟨kε, hk, hF, hD⟩ := h.run.exists_isFirstHit_of_decrease (σmax := P.sigmaMax L)
     (V := fun k => f (x k)) (Vlow := flow) (δ := kappa1CC P L p * ε₁ ^ (((p : ℝ) + 1) / p))
-    (fun k hk => (h.sigma_le hC hf k (not_stop_lt_iff.1 hk)).2.2) (by positivity)
+    (fun k hk => (h.sigma_le hC hf k (IsARRun.forall_lt_not_stop_iff.1 hk)).2.2) (by positivity)
     (fun k hk => (h.run.accept k hk).le (w := f) rfl
       (lt_of_le_of_lt (by
           have := P.σmin_nonneg.trans
-            (h.sigma_le hC hf k fun j hj => not_stop_le_iff.1 hk j hj.le).2.1
+            (h.sigma_le hC hf k fun j hj => IsARRun.forall_le_not_stop_iff.1 hk j hj.le).2.1
           positivity)
-        (arpcc_sub_ge h.run (fun _ hs => hs.decrease) (not_stop_le_iff.1 hk)).1))
-    (fun k hk => hb _ (h.sigma_le hC hf k (not_stop_lt_iff.1 hk)).1)
+        (arpcc_sub_ge h.run (fun _ hs => hs.decrease) (IsARRun.forall_le_not_stop_iff.1 hk)).1))
+    (fun k hk => hb _ (h.sigma_le hC hf k (IsARRun.forall_lt_not_stop_iff.1 hk)).1)
     (fun k hk hs => by
-      have hk' := not_stop_le_iff.1 hk
+      have hk' := IsARRun.forall_le_not_stop_iff.1 hk
       refine le_trans ?_ (lemma_6_2_4 h hC hf hp (fun j hj => hk' j (hj.trans k.le_succ)) hs)
       gcongr
       exact (lt_of_not_ge (hk' (k + 1) le_rfl)).le)

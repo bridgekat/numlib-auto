@@ -1,6 +1,6 @@
 import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
 import Numlib.Optimization.Constrained.TwoPhase
-import NumlibSurface.CartisGouldToint.Chapter06.Section02
+import NumlibSurface.CartisGouldToint.Chapter06.Section03
 import NumlibSurface.CartisGouldToint.Chapter07.Section01
 
 /-!
@@ -26,7 +26,8 @@ function `μ₂(x, t) = ½ ‖r(x, t)‖²` are `Constrained.targetResidual f c 
 * `Phase2Seq`, `IsTPpGCPhase2` — the sequences of Phase 2 and the run predicate; `Phase2Seq.IsKa`,
   `Phase2Seq.IsKb` — the sets `𝒦_a`, `𝒦_b` (7.2.25); `Phase2Seq.Stop`, `Phase2Seq.IsEnd` —
   termination; `Phase2Seq.funEvals`, `Phase2Seq.derivEvals` — the evaluation counts;
-  `Phase2Seq.IsGood`, `Phase2Seq.IsBad` — good inner iterations and bad outer iterations.
+  `Phase2Seq.IsGood`, `Phase2Seq.IsBad` — good inner iterations and bad outer iterations;
+* `algorithm_7_2_1` — a whole run of TPp-GC (Phase 1, an ARpLE-CC run on `c`, then Phase 2).
 
 ## Main results
 
@@ -34,7 +35,10 @@ function `μ₂(x, t) = ½ ‖r(x, t)‖²` are `Constrained.targetResidual f c 
 * `lemma_7_2_1_phase2` (with `IsTPpGCPhase2.output_spec`) — Lemma 7.2.1 for Phase 2;
 * `lemma_7_2_3`, `lemma_7_2_4`, `lemma_7_2_5` — Lemmas 7.2.3–7.2.5 (with
   `IsTPpGCPhase2.inner_sigma_le`);
-* `lemma_7_2_6`, `theorem_7_2_7_phase2` — the corrected Lemma 7.2.6 and Theorem 7.2.7 for Phase 2.
+* `lemma_7_2_6`, `theorem_7_2_7_phase2` — the corrected Lemma 7.2.6 and Theorem 7.2.7 for Phase 2,
+  with `lemma_7_2_6_of_mu2`, `theorem_7_2_7_phase2_of_mu2` under the book's μ₂.DpL.C and f.B.Fb;
+* `algorithm_7_2_1_exists`, `lemma_7_2_1`, `lemma_7_2_2`, `theorem_7_2_7` — existence of runs,
+  Lemma 7.2.1, Lemma 7.2.2 (Phase 1) and Theorem 7.2.7 for the whole algorithm.
 
 ## Deviations from the book
 
@@ -59,9 +63,13 @@ function `μ₂(x, t) = ½ ‖r(x, t)‖²` are `Constrained.targetResidual f c 
   that passes the third test ("bad" iterations): no decrease is guaranteed for these and the book
   gives no bound on their number. Theorem 7.2.7 is therefore stated with the number of bad
   iterations as a parameter; with it bounded independently of `ε`, the counts are of the order
-  `O(max(ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}))` of (7.2.50) (the derivative count acquires the
-  `ε₀^{-1}` term). The good iterations are counted by one telescoping over all outer iterations,
+  `O(max(ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}))` of (7.2.50). The derivative count acquires the
+  `ε₀^{-1}` term: it is part of the proven bound, since every iteration of `𝒦_a` needs a
+  successful inner iteration; whether the book's (7.2.53), which lacks it, holds is not
+  established. The good iterations are counted by one telescoping over all outer iterations,
   which gives the sharper constant `κ₁⁻¹ θ^{-(p+1)/p}` instead of (7.2.47)'s `θ^{-(p+2)/p}`.
+* Lemma 7.2.2: the printed derivative-evaluation bound (7.2.24) lacks the `+ 2` of
+  Theorem 6.3.1, which is restored.
 * Lemma 7.2.5's uniform Lipschitz constant uses that `μ₂` is affine in `t` up to a constant; the
   book's hypothesis φℓ.DpL.C is not needed.
 -/
@@ -341,14 +349,6 @@ theorem isKa_or_isKb_of_not_stop {k : ℕ} (h : ¬ D.Stop f c C P ε₀ ε₁ k)
 
 end Phase2Seq
 
-private theorem not_stop_lt {test : ℕ → Prop} {i : ℕ} :
-    (∀ j < i, ¬ IsARRun.Stop test (fun _ => False) j) ↔ ∀ j < i, ¬ test j := by
-  simp [IsARRun.Stop]
-
-private theorem not_stop_le {test : ℕ → Prop} {i : ℕ} :
-    (∀ j ≤ i, ¬ IsARRun.Stop test (fun _ => False) j) ↔ ∀ j ≤ i, ¬ test j := by
-  simp [IsARRun.Stop]
-
 namespace IsTPpGCPhase2
 
 variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {C : Set ℝⁿ} {p : ℕ} {P : TPpGCParams} {ε₀ ε₁ : ℝ}
@@ -370,17 +370,17 @@ theorem inner_step {i : ℕ} (hi : i < D.e k) :
     IsFirstOrderCCStep (Constrained.targetMerit f c (D.t k)) C p P.θ₁ (D.xi k i) (D.σi k i)
       (D.si k i) :=
   (h.inner_run k hk1 hk).step_of_forall_le
-    (not_stop_le.2 fun _ hj => h.inner_not_stop hk1 hk (hj.trans_lt hi))
+    (IsARRun.forall_le_not_stop_iff.2 fun _ hj => h.inner_not_stop hk1 hk (hj.trans_lt hi))
 
 /-- The inner regularization parameters are positive up to the end of the inner run. -/
 theorem inner_sigma_pos {i : ℕ} (hi : i ≤ D.e k) : 0 < D.σi k i :=
   (h.inner_run k hk1 hk).sigma_pos (K := D.e k)
-    (not_stop_lt.2 fun _ hj => h.inner_not_stop hk1 hk hj) i hi
+    (IsARRun.forall_lt_not_stop_iff.2 fun _ hj => h.inner_not_stop hk1 hk hj) i hi
 
 /-- The inner iterates stay in `𝒞` if `x_k ∈ 𝒞`. -/
 theorem inner_mem (hX : D.X k ∈ C) {i : ℕ} (hi : i ≤ D.e k) : D.xi k i ∈ C := by
   refine (h.inner_run k hk1 hk).mem (C := C) (by rw [h.inner_zero k hk1 hk]; exact hX)
-    (fun j hj _ _ => ?_) i (not_stop_lt.2 fun _ hj =>
+    (fun j hj _ _ => ?_) i (IsARRun.forall_lt_not_stop_iff.2 fun _ hj =>
       h.inner_not_stop hk1 hk (hj.trans_le hi))
   exact ((h.inner_run k hk1 hk).step_of_forall_le hj).mem
 
@@ -388,7 +388,7 @@ theorem inner_mem (hX : D.X k ∈ C) {i : ℕ} (hi : i ≤ D.e k) : D.xi k i ∈
 theorem inner_merit_antitone {i j : ℕ} (hij : i ≤ j) (hj : j ≤ D.e k) :
     Constrained.targetMerit f c (D.t k) (D.xi k j) ≤
       Constrained.targetMerit f c (D.t k) (D.xi k i) := by
-  have hK := not_stop_lt.2 fun _ hj => h.inner_not_stop hk1 hk hj
+  have hK := IsARRun.forall_lt_not_stop_iff.2 fun _ hj => h.inner_not_stop hk1 hk hj
   refine (h.inner_run k hk1 hk).objective_antitone
     (w := Constrained.targetMerit f c (D.t k))
     (pred := fun i => FormalMultilinearSeries.taylorDecrement
@@ -704,37 +704,6 @@ private theorem goodBound_eq {P : TPpGCParams} {Lμ ε₀ ε₁ : ℝ} (hL : 0 �
   have : 0 < P.θ ^ (((p : ℝ) + 1) / p) := by positivity
   field_simp
 
-/-- A sum of decreases over a set of iterations of a nonincreasing sequence telescopes:
-`|T| δ ≤ φ₀ - φ_N` if every iteration of `T ⊆ [0, N)` decreases `φ` by at least `δ`. -/
-private theorem card_mul_le_sub {g : ℕ → ℝ} {N : ℕ} {T : Finset ℕ} {δ : ℝ}
-    (hT : T ⊆ Finset.range N) (hmono : ∀ j < N, g (j + 1) ≤ g j)
-    (hdec : ∀ j ∈ T, δ ≤ g j - g (j + 1)) : (T.card : ℝ) * δ ≤ g 0 - g N := by
-  have h1 : ∑ _j ∈ T, δ ≤ ∑ j ∈ T, (g j - g (j + 1)) := Finset.sum_le_sum hdec
-  have h2 : ∑ j ∈ T, (g j - g (j + 1)) ≤ ∑ j ∈ Finset.range N, (g j - g (j + 1)) :=
-    Finset.sum_le_sum_of_subset_of_nonneg hT fun j hj _ =>
-      sub_nonneg.2 (hmono j (Finset.mem_range.1 hj))
-  rw [Finset.sum_range_sub', Finset.sum_const, nsmul_eq_mul] at *
-  linarith
-
-/-- In a run without post-step test, an iterate different from the starting point was reached by
-a successful iteration: the last successful iteration `i < N` has `x_{i+1} = x_N`. -/
-private theorem exists_last_succ {E : Type*} [Add E] {Q : ARParams} {test step : ℕ → Prop}
-    {ρ : ℕ → ℝ} {x s : ℕ → E} {σ : ℕ → ℝ} (h : IsARRun Q test step (fun _ => False) ρ x s σ) :
-    ∀ N, (∀ j < N, ¬ test j) → x N ≠ x 0 → ∃ i < N, Q.η₁ ≤ ρ i ∧ x (i + 1) = x N := by
-  intro N
-  induction N with
-  | zero => exact fun _ h0 => absurd rfl h0
-  | succ N ih =>
-    intro hN hne
-    have hle : ∀ j ≤ N, ¬ IsARRun.Stop test (fun _ => False) j := not_stop_le.2 fun j hj =>
-      hN j (Nat.lt_succ_of_le hj)
-    by_cases hs : Q.η₁ ≤ ρ N
-    · exact ⟨N, N.lt_succ_self, hs, rfl⟩
-    · have heq := h.eq_of_not_succ hle (not_le.1 hs)
-      obtain ⟨i, hi, hsi, hxi⟩ := ih (fun j hj => hN j (hj.trans N.lt_succ_self))
-        (heq ▸ hne)
-      exact ⟨i, hi.trans N.lt_succ_self, hsi, hxi.trans heq.symm⟩
-
 namespace IsTPpGCPhase2
 
 section Counting
@@ -777,7 +746,7 @@ private theorem good_decrease (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) {k
   have hσ := h.inner_sigma_le hB hL hC hk1 hk hi.le
   have hsucc : D.xi k (i + 1) = D.xi k i + D.si k i :=
     (h.inner_run k hk1 hk).eq_add_of_succ
-      (not_stop_le.2 fun _ hj => h.inner_not_stop hk1 hk (hj.trans_lt hi)) hs
+      (IsARRun.forall_le_not_stop_iff.2 fun _ hj => h.inner_not_stop hk1 hk (hj.trans_lt hi)) hs
   have hdec := (h.inner_step hk1 hk hi).sub_ge hC.convex hdpl.contDiffAt hdpl.lipschitz
     hdpl.nonneg hxi hp P.θ₁_pos.le P.σmin_nonneg hσ.1 hσ.2 P.η₁_pos hs
   rw [← hsucc] at hdec
@@ -814,9 +783,10 @@ private theorem goodCount_mul_le (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p)
       max (Constrained.targetResidual f c (D.t k) (D.X k)) (P.θ * ε₀) -
         max (Constrained.targetResidual f c (D.t k) (D.X (k + 1))) (P.θ * ε₀) := by
   classical
-  have := card_mul_le_sub (g := fun j => max (Constrained.targetResidual f c (D.t k) (D.xi k j))
-      (P.θ * ε₀)) (N := D.e k) (T := (Finset.range (D.e k)).filter (D.IsGood f c C p P ε₀ ε₁ k))
-    (δ := goodDecr P Lμ p ε₀ ε₁) (Finset.filter_subset _ _)
+  have := card_mul_le_sub_of_decrease
+    («φ» := fun j => max (Constrained.targetResidual f c (D.t k) (D.xi k j)) (P.θ * ε₀))
+    (N := D.e k) (T := (Finset.range (D.e k)).filter (D.IsGood f c C p P ε₀ ε₁ k))
+    (c := goodDecr P Lμ p ε₀ ε₁) (Finset.filter_subset _ _)
     (fun j hj => max_le_max (h.inner_resid_antitone hk1 hk j.le_succ hj) le_rfl)
     (fun j hj => by
       have hg := (Finset.mem_filter.1 hj).2
@@ -951,7 +921,7 @@ theorem one_le_goodCount {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ 
     have := hb.2
     rw [heq] at this
     linarith
-  obtain ⟨s, hs, hsucc, hxs⟩ := exists_last_succ (h.inner_run k hk1 hk) (D.e k)
+  obtain ⟨s, hs, hsucc, hxs⟩ := (h.inner_run k hk1 hk).exists_last_succ (D.e k)
     (fun j hj => h.inner_not_stop hk1 hk hj) hne
   rw [← h.X_succ k hk1 hk] at hxs
   have hg : D.IsGood f c C p P ε₀ ε₁ k s :=
@@ -1011,7 +981,7 @@ theorem e_le (hC : Chapter06.AssumptionCNe C) {k : ℕ} (hk1 : 1 ≤ k)
     linarith
   · have hle : ∀ j ≤ N, ¬ IsARRun.Stop
         (fun i => innerStop f c C P.θ ε₀ ε₁ (D.t k) (D.xi k i)) (fun _ => False) j :=
-      not_stop_le.2 fun j hj => h.inner_not_stop hk1 hk (by omega)
+      IsARRun.forall_le_not_stop_iff.2 fun j hj => h.inner_not_stop hk1 hk (by omega)
     have := (h.inner_run k hk1 hk).succ_count hle
       (h.inner_sigma_le hB hL hC hk1 hk (by omega)).2
     have hS : successSet (fun j => P.η₁ ≤
@@ -1079,7 +1049,7 @@ every Phase-2 run of TPp-GC:
 (i) every outer iteration `K ≥ 1` reached satisfies `K ≤ (N_a + 1)(G + 1) + n_bad(K)`, where
 `n_bad(K)` is the number of bad iterations (`Phase2Seq.IsBad`) in `[1, K)`;
 (ii) if the number of bad iterations is bounded by `M`, Phase 2 terminates, at an outer iteration
-`k_ε ≤ (N_a + 1)(G + 1) + M`, and its output satisfies Lemma 7.2.1;
+`k_ε ≤ (N_a + 1)(G + 1) + M` (its output then satisfies Lemma 7.2.1, `lemma_7_2_1_phase2`);
 (iii) if Phase 2 terminates at `k_ε`, it uses at most `1 + G (N_a + 1) + k_ε` evaluations of the
 derivatives and at most `1 + A₁ (G (N_a + 1) + k_ε) + C₁ k_ε` evaluations of `(f, c)`.
 With `M` independent of `ε` both counts are `O(max(ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}))`, the order
@@ -1231,7 +1201,7 @@ theorem exists_innerRun (hC : Chapter06.AssumptionCNe C) (hμ : AssumptionMu2DpL
   have hσ : ∀ k, (∀ j < k, ¬ IsARRun.Stop (fun i => innerStop f c C P.θ ε₀ ε₁ τ (xs i))
       (fun _ => False) j) → xs k ∈ C ∧ P.σmin ≤ σs k ∧ σs k ≤ P.toARpCCParams.sigmaMax L :=
     fun k hk => Chapter06.arpcc_sigma_le (P := P.toARpCCParams) hrun hC hdpl (hx0 ▸ hy)
-      (fun _ hs => ⟨hs.mem, hs.decrease⟩) k (not_stop_lt.1 hk)
+      (fun _ hs => ⟨hs.mem, hs.decrease⟩) k (IsARRun.forall_lt_not_stop_iff.1 hk)
   have hκ := kappa1CC_pos (P := P) hdpl.nonneg p
   have he : 0 < ((p : ℝ) + 1) / p := by
     have : (1 : ℝ) ≤ p := by exact_mod_cast hp
@@ -1325,5 +1295,211 @@ theorem exists_phase2 (hC : Chapter06.AssumptionCNe C) (hμ : AssumptionMu2DpLC 
 
 end Existence
 
+/-! ### The whole algorithm -/
+
+section Whole
+
+variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {C : Set ℝⁿ} {p ℓ : ℕ} {P : TPpGCParams} {ε₀ ε₁ : ℝ}
+  {x₀ : ℝⁿ} {y s : ℕ → ℝⁿ} {σ : ℕ → ℝ} {k₁ : ℕ} {D : Phase2Seq n}
+
+/-- **Algorithm 7.2.1** (TPp-GC) of [cartis2022evaluation], a whole run. Phase 1 is an ARpLE-CC
+run (Algorithm 6.3.1) on the constraint residual `c` from `x₀ ∈ 𝒞` with tolerances `(θε₀, ε₁)`,
+stopped at the first index `k₁` at which (7.2.9) holds; `x₁ = y_{k₁}`. If `‖c(x₁)‖ > θε₀` the
+algorithm terminates with `x_ε = x₁`; otherwise Phase 2 (`IsTPpGCPhase2`) is run from `x₁`. The
+evaluation counts of Phase 1 are `funEvalCount k₁` and `derivEvalCount` of its successful
+iterations, those of Phase 2 `Phase2Seq.funEvals` and `Phase2Seq.derivEvals`. -/
+structure algorithm_7_2_1 (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (C : Set ℝⁿ) (p ℓ : ℕ) (P : TPpGCParams)
+    (ε₀ ε₁ : ℝ) (x₀ : ℝⁿ) (y s : ℕ → ℝⁿ) (σ : ℕ → ℝ) (k₁ : ℕ) (D : Phase2Seq n) : Prop where
+  /-- The tolerances (7.2.8). -/
+  tol : TPpGCTol P ε₀ ε₁
+  /-- Phase 1 starts at `x₀`. -/
+  start : y 0 = x₀
+  /-- Phase 1: ARpLE-CC on `c` with the test (7.2.9). -/
+  phase1 : Chapter06.algorithm_6_3_1 c ℓ C p P.toARpCCParams (P.θ * ε₀) ε₁ y s σ
+  /-- Phase 1 stops at the first index at which (7.2.9) holds. -/
+  phase1_hit : IsFirstHit (fun k => Chapter06.stopLE c ℓ C (P.θ * ε₀) ε₁ (y k)) k₁
+  /-- Phase 2 is run from `x₁ = y_{k₁}` when `‖c(x₁)‖ ≤ θε₀`. -/
+  phase2 : ‖c (y k₁)‖ ≤ P.θ * ε₀ → IsTPpGCPhase2 f c C p P ε₀ ε₁ (y k₁) D
+
+/-- The output `x₁` of Phase 1 lies in `𝒞`. -/
+theorem algorithm_7_2_1.mem_phase1 (h : algorithm_7_2_1 f c C p ℓ P ε₀ ε₁ x₀ y s σ k₁ D) :
+    y k₁ ∈ C :=
+  h.phase1.mem h.phase1_hit.2
+
+/-- **Existence of TPp-GC runs** ([cartis2022evaluation], Algorithm 7.2.1): under C.CNe, Φℓ.DpL.C
+for `c` (with `p ≥ 1`, `ℓ ≥ 2` and `ι₁(p, ℓ, i) ≥ 0` for some `i`), μ₂.DpL.C and the tolerances
+(7.2.8), from every `x₀ ∈ 𝒞` there is a run: Phase 1 exists (`Chapter06.algorithm_6_3_1.exists_run`)
+and terminates (`Chapter06.theorem_6_3_1`), and Phase 2 exists (`exists_phase2`). -/
+theorem algorithm_7_2_1_exists (hC : Chapter06.AssumptionCNe C) (hx₀ : x₀ ∈ C) (hp : 1 ≤ p)
+    (hℓ : 2 ≤ ℓ) {i : ℕ} (hι : 0 ≤ ((2 : ℝ) ^ i - 1) / 2 ^ i - ((ℓ : ℝ) - 1) / p) {LΦ : ℝ}
+    (hΦ : Chapter06.AssumptionPhiDpLC c ℓ C p LΦ) (hμ : AssumptionMu2DpLC f c C p)
+    (htol : TPpGCTol P ε₀ ε₁) :
+    ∃ (y s : ℕ → ℝⁿ) (σ : ℕ → ℝ) (k₁ : ℕ) (D : Phase2Seq n),
+      algorithm_7_2_1 f c C p ℓ P ε₀ ε₁ x₀ y s σ k₁ D := by
+  obtain ⟨y, s, σ, hy0, hrun⟩ := Chapter06.algorithm_6_3_1.exists_run (r := c) (ℓ := ℓ)
+    (ε₀ := P.θ * ε₀) P.toARpCCParams hC hΦ.contDiffAt hp htol.ε₁_pos.le hx₀
+  obtain ⟨k₁, hk₁, -, -⟩ := Chapter06.theorem_6_3_1 hp hℓ hι (β := 1 / 2) (by norm_num)
+    (by norm_num) hC hΦ hrun (mul_pos P.θ_pos htol.ε₀_pos) htol.ε₁_pos
+  have hmem : y k₁ ∈ C := hrun.mem hk₁.2
+  by_cases hc : ‖c (y k₁)‖ ≤ P.θ * ε₀
+  · obtain ⟨D, hD⟩ := exists_phase2 hC hμ hp htol hmem hc
+    exact ⟨y, s, σ, k₁, D, htol, hy0, hrun, hk₁, fun _ => hD⟩
+  · exact ⟨y, s, σ, k₁, ⟨fun _ => 0, fun _ => 0, fun _ _ => 0, fun _ _ => 0, fun _ _ => 0,
+      fun _ => 0⟩, htol, hy0, hrun, hk₁, fun h' => absurd h' hc⟩
+
+/-- **Lemma 7.2.1** of [cartis2022evaluation] for the whole algorithm (`f`, `c` differentiable
+at the points of `𝒞`): if TPp-GC stops in Phase 1 (`‖c(x₁)‖ > θε₀`), then `x_ε = x₁ ∈ 𝒞`
+satisfies (7.2.14), `ω_{Φ_ℓ,𝒞,1}(x_ε) ≤ ε₁ ‖c(x_ε)‖^{ℓ-1}` and `‖c(x_ε)‖ > θε₀`; if it enters
+Phase 2 and Phase 2 stops at outer iteration `k_ε`, then `x_ε = x_{k_ε+1}` satisfies (7.2.15) or
+(7.2.16) (`lemma_7_2_1_phase2`, with `Φ₂ = ½ ‖c‖²`). -/
+theorem lemma_7_2_1 (h : algorithm_7_2_1 f c C p ℓ P ε₀ ε₁ x₀ y s σ k₁ D)
+    (hf : ∀ x ∈ C, DifferentiableAt ℝ f x) (hc : ∀ x ∈ C, DifferentiableAt ℝ c x) :
+    (P.θ * ε₀ < ‖c (y k₁)‖ → y k₁ ∈ C ∧
+      Chapter06.omega1 (Chapter06.PhiEll c ℓ) C (y k₁) ≤ ε₁ * ‖c (y k₁)‖ ^ (ℓ - 1)) ∧
+    (‖c (y k₁)‖ ≤ P.θ * ε₀ → ∀ kε, D.IsEnd f c C P ε₀ ε₁ kε →
+      (f (D.X (kε + 1)) = D.targetOut f c P ε₀ kε ∧
+          Chapter06.omega1 (fun z => ‖c z‖ ^ 2 / 2) C (D.X (kε + 1)) ≤
+            ε₁ * ‖c (D.X (kε + 1))‖ ∧
+          P.θ * ε₀ < ‖c (D.X (kε + 1))‖) ∨
+        (D.targetOut f c P ε₀ kε < f (D.X (kε + 1)) ∧
+          IsApproxFirstOrderGC f c C ε₀ ε₁ (D.X (kε + 1))
+            (Constrained.targetMultiplier f c (D.targetOut f c P ε₀ kε) (D.X (kε + 1))))) := by
+  refine ⟨fun hgt => ⟨h.mem_phase1, ?_⟩, fun hle kε hend =>
+    lemma_7_2_1_phase2 (h.phase2 hle) hf hc hend⟩
+  rcases h.phase1_hit.1 with h' | h'
+  · exact absurd h' (not_le.2 hgt)
+  · exact h'
+
+/-- **Lemma 7.2.2** of [cartis2022evaluation] (Phase 1): under C.CNe and Φℓ.DpL.C for `c`, with
+`p ≥ 1`, `ℓ ≥ 2`, `ι₁(p, ℓ, i) ≥ 0` and the analysis constant `β ∈ (0, 1)` of Theorem 6.3.1,
+Phase 1 stops at `x₁ = y_{k₁}` with `‖c(x₁)‖ ≤ θε₀` or `ω_{Φ_ℓ,𝒞,1}(x₁) ≤ ε₁ ‖c(x₁)‖^{ℓ-1}`
+(7.2.9) after at most
+`κ^A max[‖c(x₀)‖^{1/2^i}, ‖c(x₀)‖^{1-(ℓ-1)/p}] / min[(θε₀)^{1/2^i}, ε₁^{(p+1)/p}] + κ^C`
+evaluations of `c` (7.2.23) and `κ^S (same ratio) + 2` evaluations of its derivatives (7.2.24;
+the printed bound lacks the `+ 2` of Theorem 6.3.1), with the constants of Theorem 6.3.1. -/
+theorem lemma_7_2_2 (h : algorithm_7_2_1 f c C p ℓ P ε₀ ε₁ x₀ y s σ k₁ D)
+    (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) (hℓ : 2 ≤ ℓ) {i : ℕ}
+    (hι : 0 ≤ ((2 : ℝ) ^ i - 1) / 2 ^ i - ((ℓ : ℝ) - 1) / p) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1)
+    {LΦ : ℝ} (hΦ : Chapter06.AssumptionPhiDpLC c ℓ C p LΦ) :
+    (‖c (y k₁)‖ ≤ P.θ * ε₀ ∨
+      Chapter06.omega1 (Chapter06.PhiEll c ℓ) C (y k₁) ≤ ε₁ * ‖c (y k₁)‖ ^ (ℓ - 1)) ∧
+    (funEvalCount k₁ : ℝ) ≤
+        max (1 / (1 - β ^ (1 / 2 ^ i : ℝ)))
+            (2 ^ i / β ^ (((ℓ : ℝ) - 1) * (((p : ℝ) + 1) / p)) *
+              Chapter06.kappaSARp1CC P.toARpCCParams LΦ p) *
+          (1 + |Real.log P.γ₁| / Real.log P.γ₂) *
+          max (‖c (x₀)‖ ^ (1 / 2 ^ i : ℝ)) (‖c (x₀)‖ ^ (1 - ((ℓ : ℝ) - 1) / p)) /
+          min ((P.θ * ε₀) ^ (1 / 2 ^ i : ℝ)) (ε₁ ^ (((p : ℝ) + 1) / p)) +
+        ((|Real.log P.γ₁| + Real.log (P.toARpCCParams.sigmaMax LΦ / P.σ₀)) / Real.log P.γ₂ + 2) ∧
+    (derivEvalCount (fun k => P.η₁ ≤ taylorRatio (Chapter06.PhiEll c ℓ) p y s k) k₁ : ℝ) ≤
+        max (1 / (1 - β ^ (1 / 2 ^ i : ℝ)))
+            (2 ^ i / β ^ (((ℓ : ℝ) - 1) * (((p : ℝ) + 1) / p)) *
+              Chapter06.kappaSARp1CC P.toARpCCParams LΦ p) *
+          max (‖c (x₀)‖ ^ (1 / 2 ^ i : ℝ)) (‖c (x₀)‖ ^ (1 - ((ℓ : ℝ) - 1) / p)) /
+          min ((P.θ * ε₀) ^ (1 / 2 ^ i : ℝ)) (ε₁ ^ (((p : ℝ) + 1) / p)) + 2 := by
+  obtain ⟨kε, hkε, hF, hD⟩ := Chapter06.theorem_6_3_1 hp hℓ hι hβ0 hβ1 hC hΦ h.phase1
+    (mul_pos P.θ_pos h.tol.ε₀_pos) h.tol.ε₁_pos
+  rw [hkε.unique h.phase1_hit, h.start] at *
+  exact ⟨h.phase1_hit.1, hF, hD⟩
+
+end Whole
+
+/-! ### Theorem 7.2.7 under the book's hypotheses -/
+
+section BookHypotheses
+
+variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {C : Set ℝⁿ} {p : ℕ} {P : TPpGCParams} {ε₀ ε₁ : ℝ}
+  {x₁ : ℝⁿ} {D : Phase2Seq n} {flow fup : ℝ}
+
+/-- **Lemma 7.2.6** of [cartis2022evaluation] under the book's hypotheses μ₂.DpL.C and f.B.Fb
+(`p ≥ 1`): the uniform Lipschitz constant `L_μ` of `lemma_7_2_6` exists by Lemma 7.2.5 on
+`[f_low - 1, f_up]`. -/
+theorem lemma_7_2_6_of_mu2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
+    (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) (hB : AssumptionBFb f c C P.β flow fup)
+    (hμ : AssumptionMu2DpLC f c C p) :
+    ∃ Lμ, 0 ≤ Lμ ∧ ∀ {K : ℕ}, 1 ≤ K → D.Before f c C P ε₀ ε₁ K →
+      (∀ k, 1 ≤ k → k ≤ K →
+        D.succCount f c p P k ≤ D.goodCount f c C p P ε₀ ε₁ k + 1 ∧
+        (D.e k : ℝ) ≤ (1 + |Real.log P.γ₁| / Real.log P.γ₂) * D.succCount f c p P k +
+          Real.log (P.toARpCCParams.sigmaMax Lμ / P.σ₀) / Real.log P.γ₂) ∧
+      (∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k : ℝ) ≤
+        goodBound P Lμ p ε₀ ε₁ * (D.kaCount f c P ε₀ K + 1) ∧
+      K ≤ D.kaCount f c P ε₀ K + ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k +
+        D.badCount f c C P ε₀ ε₁ K + 1 := by
+  obtain ⟨Lμ, hL0, hL⟩ := lemma_7_2_5 hμ hp (flow - 1) fup
+  exact ⟨Lμ, hL0, fun hK1 hK => lemma_7_2_6 h hC hp hB hL hK1 hK⟩
+
+/-- **Theorem 7.2.7** of [cartis2022evaluation], Phase 2, under the book's hypotheses μ₂.DpL.C
+and f.B.Fb (`p ≥ 1`): the conclusions of `theorem_7_2_7_phase2` hold with the uniform Lipschitz
+constant `L_μ` given by Lemma 7.2.5 on `[f_low - 1, f_up]`. -/
+theorem theorem_7_2_7_phase2_of_mu2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
+    (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) (hB : AssumptionBFb f c C P.β flow fup)
+    (hμ : AssumptionMu2DpLC f c C p) :
+    ∃ Lμ, 0 ≤ Lμ ∧
+      (∀ K, 1 ≤ K → D.Before f c C P ε₀ ε₁ K →
+        (K : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
+          D.badCount f c C P ε₀ ε₁ K) ∧
+      (∀ M : ℝ, (∀ K, D.Before f c C P ε₀ ε₁ K → (D.badCount f c C P ε₀ ε₁ K : ℝ) ≤ M) →
+        ∃ kε, D.IsEnd f c C P ε₀ ε₁ kε ∧
+          (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
+            M) ∧
+      (∀ kε, D.IsEnd f c C P ε₀ ε₁ kε →
+        (D.derivEvals f c p P kε : ℝ) ≤
+          1 + goodBound P Lμ p ε₀ ε₁ * ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) + kε ∧
+        (D.funEvals kε : ℝ) ≤
+          1 + (1 + |Real.log P.γ₁| / Real.log P.γ₂) *
+            (goodBound P Lμ p ε₀ ε₁ * ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) + kε) +
+            Real.log (P.toARpCCParams.sigmaMax Lμ / P.σ₀) / Real.log P.γ₂ * kε) := by
+  obtain ⟨Lμ, hL0, hL⟩ := lemma_7_2_5 hμ hp (flow - 1) fup
+  exact ⟨Lμ, hL0, theorem_7_2_7_phase2 h hC hp hB hL⟩
+
+
+/-- **Theorem 7.2.7** of [cartis2022evaluation], whole algorithm, **corrected**. Under C.CNe,
+Φℓ.DpL.C for `c` (`p ≥ 1`, `ℓ ≥ 2`, `ι₁(p, ℓ, i) ≥ 0`, analysis constant `β ∈ (0, 1)`),
+μ₂.DpL.C and f.B.Fb: Phase 1 terminates within the bounds (7.2.23)–(7.2.24) of Lemma 7.2.2, with
+(7.2.14) if it stops the algorithm (`lemma_7_2_1`); if Phase 2 is entered, it satisfies the
+conclusions of `theorem_7_2_7_phase2` for the constant `L_μ` of Lemma 7.2.5 (its output satisfies
+Lemma 7.2.1 when it terminates). The total counts are the sums of the two phases. When the number
+of bad iterations of `𝒦_b` is bounded independently of `ε`, the totals are
+`O(max[ε₀^{-1/2^i}, ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}])`; the book's unconditional (7.2.50)–(7.2.51)
+rest on the gap of Lemma 7.2.6. -/
+theorem theorem_7_2_7 {ℓ : ℕ} {x₀ : ℝⁿ} {y s : ℕ → ℝⁿ} {σ : ℕ → ℝ} {k₁ : ℕ}
+    (h : algorithm_7_2_1 f c C p ℓ P ε₀ ε₁ x₀ y s σ k₁ D) (hC : Chapter06.AssumptionCNe C)
+    (hp : 1 ≤ p) (hℓ : 2 ≤ ℓ) {i : ℕ} (hι : 0 ≤ ((2 : ℝ) ^ i - 1) / 2 ^ i - ((ℓ : ℝ) - 1) / p)
+    {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1) {LΦ : ℝ} (hΦ : Chapter06.AssumptionPhiDpLC c ℓ C p LΦ)
+    (hμ : AssumptionMu2DpLC f c C p) {flow fup : ℝ} (hB : AssumptionBFb f c C P.β flow fup) :
+    ((funEvalCount k₁ : ℝ) ≤
+        max (1 / (1 - β ^ (1 / 2 ^ i : ℝ)))
+            (2 ^ i / β ^ (((ℓ : ℝ) - 1) * (((p : ℝ) + 1) / p)) *
+              Chapter06.kappaSARp1CC P.toARpCCParams LΦ p) *
+          (1 + |Real.log P.γ₁| / Real.log P.γ₂) *
+          max (‖c (x₀)‖ ^ (1 / 2 ^ i : ℝ)) (‖c (x₀)‖ ^ (1 - ((ℓ : ℝ) - 1) / p)) /
+          min ((P.θ * ε₀) ^ (1 / 2 ^ i : ℝ)) (ε₁ ^ (((p : ℝ) + 1) / p)) +
+        ((|Real.log P.γ₁| + Real.log (P.toARpCCParams.sigmaMax LΦ / P.σ₀)) / Real.log P.γ₂ + 2) ∧
+      (derivEvalCount (fun k => P.η₁ ≤ taylorRatio (Chapter06.PhiEll c ℓ) p y s k) k₁ : ℝ) ≤
+        max (1 / (1 - β ^ (1 / 2 ^ i : ℝ)))
+            (2 ^ i / β ^ (((ℓ : ℝ) - 1) * (((p : ℝ) + 1) / p)) *
+              Chapter06.kappaSARp1CC P.toARpCCParams LΦ p) *
+          max (‖c (x₀)‖ ^ (1 / 2 ^ i : ℝ)) (‖c (x₀)‖ ^ (1 - ((ℓ : ℝ) - 1) / p)) /
+          min ((P.θ * ε₀) ^ (1 / 2 ^ i : ℝ)) (ε₁ ^ (((p : ℝ) + 1) / p)) + 2) ∧
+    (‖c (y k₁)‖ ≤ P.θ * ε₀ → ∃ Lμ, 0 ≤ Lμ ∧
+      (∀ K, 1 ≤ K → D.Before f c C P ε₀ ε₁ K →
+        (K : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
+          D.badCount f c C P ε₀ ε₁ K) ∧
+      (∀ M : ℝ, (∀ K, D.Before f c C P ε₀ ε₁ K → (D.badCount f c C P ε₀ ε₁ K : ℝ) ≤ M) →
+        ∃ kε, D.IsEnd f c C P ε₀ ε₁ kε ∧
+          (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
+            M) ∧
+      (∀ kε, D.IsEnd f c C P ε₀ ε₁ kε →
+        (D.derivEvals f c p P kε : ℝ) ≤
+          1 + goodBound P Lμ p ε₀ ε₁ * ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) + kε ∧
+        (D.funEvals kε : ℝ) ≤
+          1 + (1 + |Real.log P.γ₁| / Real.log P.γ₂) *
+            (goodBound P Lμ p ε₀ ε₁ * ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) + kε) +
+            Real.log (P.toARpCCParams.sigmaMax Lμ / P.σ₀) / Real.log P.γ₂ * kε)) := by
+  obtain ⟨-, hF, hD⟩ := lemma_7_2_2 h hC hp hℓ hι hβ0 hβ1 hΦ
+  exact ⟨⟨hF, hD⟩, fun hle => theorem_7_2_7_phase2_of_mu2 (h.phase2 hle) hC hp hB hμ⟩
+
+end BookHypotheses
 
 end CartisGouldToint.Chapter07
