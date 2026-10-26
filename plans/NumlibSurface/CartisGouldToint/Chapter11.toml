@@ -1,0 +1,14 @@
+desc = '''
+Cartis–Gould–Toint, *Evaluation Complexity of Algorithms for Nonconvex Optimization*, Chapter 11,
+"Variable Scaling and Other Practicalities". The chapter has no numbered results; the planned
+nodes formalize its checkable displayed claims: the ideal (spectral, modified-absolute-value)
+scaling and the explicit solutions of the resulting diagonal subproblems (§11.1), the asymptotic
+correspondence between trust-region radii and regularization weights (§11.2), and the structure of
+least-squares subproblems (§11.3). Conventions as in Chapter 8.
+
+Source corrections (unnumbered displays): in §11.1.3 the regularization analogue of (11.1.14) has
+right-hand side `(λ*/σ)^{2/(r-2)}` (printed `(λ*²/σ²)^{2/(r-2)}`), its hard case occurs when
+`½‖gᴰ‖ ≤ σ^{-1/(r-2)}` (printed `≥`) and then `∑αᵢ² = σ^{-2/(r-2)} - ¼‖gᴰ‖²` (printed as a product);
+in §11.2, (11.2.3) should read `λ ≈ ‖g‖_{M⁻¹}/Δ` and (11.2.5) `σ ≈ ‖g‖_{M⁻¹}/Δ^{r-1}` (both printed
+inverted; the table's "fidelity" `σΔ²/‖g‖ → 1` and rule (11.2.6) agree with the corrected forms).
+'''

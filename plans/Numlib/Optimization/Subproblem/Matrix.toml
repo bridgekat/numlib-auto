@@ -1,0 +1,80 @@
+namespace = "Subproblem"
+desc = '''
+Transport of matrix subproblem data to the operator setting (book §8.1: `‖v‖_M = √⟪v, M v⟫` with
+`M` symmetric positive definite). Data: `H M : Matrix (Fin n) (Fin n) ℝ`, `hH : H.IsHermitian`,
+`hM : M.PosDef`, `g s : EuclideanSpace ℝ (Fin n)`. Via
+`Matrix.PosDef.isPreconditioner_toEuclideanLin` (`Numlib/Krylov/Preconditioned`) one gets the
+energy space `Eₘ = hM'.EnergySpace` (inner product `⟪x, y⟫_M = ⟪M x, y⟫`), the operator
+`scaledOp H M = energyEnd (M⁻¹ H)` and the vector `scaledGrad M g = toEnergy (M⁻¹ g)`.
+
+The bridge lemmas say that every object of the book is the corresponding operator object:
+the Euclidean model `⟪g, s⟫ + ½⟪s, H s⟫` is `quadModel (scaledGrad M g) (scaledOp H M) (toEnergy s)`;
+`‖s‖_M = ‖toEnergy s‖`; `‖g‖_{M⁻¹} = ‖scaledGrad M g‖`; the regularized model with `‖·‖_M`; the
+Euclidean gradient `g + H s + λ M s` is `M` times the energy gradient (so its `M⁻¹`-norm is the
+energy norm of the latter); `(H + λ M)⁻¹ g` is `step`; `H + λ M` is positive (semi)definite iff
+`scaledOp H M + λ` is; the eigenvalues of `scaledOp H M` are the pencil eigenvalues
+`Matrix.pencilEigenvalues hH hM` (`Numlib/Eigen/SymmetricPencil`), so `leftmost` is the book's
+`λ₁` of the pencil; `M`-orthonormal generalized eigenvectors are orthonormal eigenvectors in `Eₘ`;
+and the minimum-`M`-norm solution is `particular`. Surface modules use only these.
+'''
+
+[[node]]
+id = "scaledOp"
+kind = "definition"
+desc = '''
+For `H M : Matrix (Fin n) (Fin n) ℝ` and `hM : M.PosDef`: the operator `M⁻¹ H` on the energy space
+of `M` (a `ContinuousLinearMap` on `hM.isPreconditioner_toEuclideanLin.EnergySpace`, or on
+`WithEnergy (toEuclideanLin M) _`). Symmetric there when `H` is (`isSymmetric_scaledOp`).
+'''
+
+[[node]]
+id = "scaledGrad"
+kind = "definition"
+desc = '''
+`scaledGrad hM g`: the vector `M⁻¹ g` viewed in the energy space of `M`.
+'''
+
+[[node]]
+id = "isSymmetric_scaledOp"
+kind = "theorem"
+desc = '''
+If `H.IsHermitian` (real symmetric) and `M.PosDef` then `scaledOp H hM` is symmetric in the
+`M`-inner product (`Krylov.IsPreconditioner` transport, `inner_energyEnd_left/right`).
+'''
+deps = ["scaledOp"]
+
+[[node]]
+id = "quadModel_scaled"
+kind = "theorem"
+desc = '''
+For all `s`: `⟪g, s⟫ + (1/2) ⟪s, toEuclideanLin H s⟫ = quadModel (scaledGrad hM g) (scaledOp H hM) (toEnergy s)`,
+`‖toEnergy s‖ = √(s ⬝ᵥ M *ᵥ s)` (`‖s‖_M`), `‖scaledGrad hM g‖ = √(g ⬝ᵥ M⁻¹ *ᵥ g)` (`‖g‖_{M⁻¹}`),
+and for the gradient `v = g + H s + λ M s`: `toEnergy (M⁻¹ v) = scaledGrad hM g + (scaledOp H hM + λ • 1) (toEnergy s)`
+with `‖v‖_{M⁻¹} = ‖toEnergy (M⁻¹ v)‖`. Same statement for the regularized model with `σ/r ‖s‖_M^r`.
+'''
+deps = ["scaledOp", "scaledGrad", "quadModel", "regModel"]
+
+[[node]]
+id = "posDef_add_smul_iff_scaled"
+kind = "theorem"
+desc = '''
+`(H + λ • M).PosSemidef ↔ ((scaledOp H hM + λ • 1 : _ →L[ℝ] _) : _ →ₗ[ℝ] _).IsPositive` and
+`(H + λ • M).PosDef ↔ -leftmost (isSymmetric_scaledOp …) < λ`; for `H + λ M` invertible,
+`toEnergy ((H + λ • M)⁻¹ *ᵥ (-g)) = step (scaledGrad hM g) (scaledOp H hM) λ`, so the book's
+secular function `π(λ) = s(λ)ᵀ M s(λ)` is `secular (scaledGrad hM g) (scaledOp H hM) λ`.
+'''
+deps = ["isSymmetric_scaledOp", "isPositive_add_smul_iff", "step", "secular"]
+
+[[node]]
+id = "eigenvalues_scaledOp"
+kind = "theorem"
+desc = '''
+The eigenvalues of `scaledOp H hM` (as a symmetric operator on the `M`-space) are the pencil
+eigenvalues `Matrix.pencilEigenvalues hH hM` (same multiset; sorted the same way), so
+`leftmost (isSymmetric_scaledOp …)` is the least pencil eigenvalue `λ₁` and the largest is
+`λ_max[H, M]`; the `M`-orthonormal pencil eigenvectors (`HV = MVΛ`, `VᵀMV = I`, (8.2.5)) are
+orthonormal eigenvectors of `scaledOp`, and `γᵢ = (Vᵀg)ᵢ = ⟪vᵢ, scaledGrad hM g⟫_M`. Also
+`‖scaledOp H hM‖ ≤ ‖M⁻¹ H‖₂` (operator norm in `Eₘ` = spectral radius ≤ any operator norm),
+used for the book's `‖M⁻¹H‖` constants.
+'''
+deps = ["isSymmetric_scaledOp", "leftmost"]

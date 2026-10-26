@@ -1,0 +1,142 @@
+namespace = "CartisGouldToint.Chapter08"
+desc = '''
+§8.3 Subproblem solution: the sets `𝓝`, `𝓛`, `𝓖`, `𝓕` for the regularization and trust-region
+secular equations, Algorithms 8.3.1/8.3.2 (iterations from a point of `𝓛`), and the description of
+all global minimizers including the hard case (Corollaries 8.3.1/8.3.2). Algorithms are modelled as
+predicates on runs (sequences of estimates) with the book's free choices as existentials.
+Proofs: `Subproblem.Multiplier`, `Subproblem.SecularIteration`.
+'''
+
+[[node]]
+id = "setL_reg"
+kind = "definition"
+desc = '''
+Regularization sets (§8.3.1), for `σ > 0`, `r > 2`, `λ*` the multiplier of a global minimizer:
+`setN = Iic λₛ`, `setL_reg = Ioc λₛ λ*`, `setG_reg = Ioi λ*`, `setF_reg = setL_reg ∪ setG_reg`.
+Defined via a predicate not needing `λ*`: `λ ∈ setL_reg ↔ λₛ < λ ∧ (λ/σ)^{1/(r-2)} ≤ mNorm M (stepOf g H M λ)`
+and `λ ∈ setG_reg ↔ λₛ < λ ∧ mNorm M (stepOf …) < (λ/σ)^{1/(r-2)}` (the book's second descriptions).
+'''
+deps = ["secularFn", "leftmostPencil"]
+source = "Cartis–Gould–Toint, §8.3.1"
+
+[[node]]
+id = "setL_tr"
+kind = "definition"
+desc = '''
+Trust-region sets (§8.3.2): `λ ∈ setL_tr ↔ λₛ < λ ∧ Δ ≤ mNorm M (stepOf g H M λ)`,
+`λ ∈ setG_tr ↔ λₛ < λ ∧ mNorm M (stepOf g H M λ) < Δ`.
+'''
+deps = ["secularFn", "leftmostPencil"]
+source = "Cartis–Gould–Toint, §8.3.2"
+
+[[node]]
+id = "setL_eq_Ioc"
+kind = "theorem"
+desc = '''
+The two descriptions agree: with `λ*` the multiplier of any global minimizer of (8.1.3) (resp.
+(8.1.2)), `setL_reg = Ioc λₛ λ*` and `setG_reg = Ioi (max λₛ λ*)` (resp. `setL_tr`, `setG_tr`);
+`setL` is nonempty iff `λ* > λₛ` (easy case). Note `Iic λₛ` is not "`H + λM` not positive definite"
+when `λ₁ > 0` (then that set is `Iic (-λ₁)`); the interval form is used.
+'''
+deps = ["setL_reg", "setL_tr", "theorem_8_2_7", "theorem_8_2_8", "Subproblem.le_secular_iff_of_regularization", "Subproblem.le_secular_iff_of_trustRegion"]
+source = "Cartis–Gould–Toint, §8.3"
+
+[[node]]
+id = "algorithm_8_3_1"
+kind = "definition"
+desc = '''
+Algorithm 8.3.1 (Given `λc ∈ 𝓛`, estimate `λ*` of (8.1.3)) as a run predicate
+`IsRunAlgorithm831 g H M σ r iMax (β : Fin jMax → ℝ) ε (λ : ℕ → ℝ) (K : ℕ)`: parameters `iMax ≥ 1`,
+`jMax ≥ 0`, `ε > 0`, each `β j ∈ [-1/2, (r-2)/2]` with `β j ≠ 0` (the book allows any `β` in
+the interval, but `β = 0` makes (8.2.25) undefined); `λ 0 ∈ setL_reg`; for `k < K`:
+`λ (k+1) = max (max_{1 ≤ i ≤ iMax} (λ k + δᵀ_{2i-1}(λ k))) (max_j (λ k + δᴺ(λ k, β j)))`, where
+`δᵀ_k` is the rightmost real root of (8.2.15) (`Subproblem.taylorCorrection`) and `δᴺ` is
+(8.2.25) (`Subproblem.regNewtonCorrection`), with `|λ (k+1) - λ k| > ε` for `k + 1 < K` and
+`|λ K - λ (K-1)| ≤ ε` (exit with `λ* ← λ K`); `K = ⊤`-style non-termination is excluded by
+`algorithm_8_3_1_terminates`.
+'''
+deps = ["setL_reg", "Subproblem.taylorCorrection", "Subproblem.regNewtonCorrection"]
+source = "Cartis–Gould–Toint, Algorithm 8.3.1"
+
+[[node]]
+id = "algorithm_8_3_1_terminates"
+kind = "theorem"
+desc = '''
+For data with `λ* > λₛ` (so `setL_reg` is nonempty), every `λ₀ ∈ setL_reg` and admissible
+parameters: the iteration of Algorithm 8.3.1 is well defined (the rightmost roots exist),
+all iterates lie in `setL_reg` and increase, they converge to `λ*` (at least Q-linearly and
+ultimately Q-superlinearly when `jMax ≥ 1`), and the exit test is met after finitely many
+iterations: there is a (unique) run with `λ 0 = λ₀`.
+'''
+deps = ["algorithm_8_3_1", "setL_eq_Ioc", "Subproblem.taylorCorrection_mem", "Subproblem.newtonCorrection_mem", "Subproblem.tendsto_of_newtonCorrection_le", "Subproblem.tendsto_of_taylorCorrection_le"]
+source = "Cartis–Gould–Toint, Algorithm 8.3.1, §8.3.1"
+
+[[node]]
+id = "algorithm_8_3_2"
+kind = "definition"
+desc = '''
+Algorithm 8.3.2 (Given `λc ∈ 𝓛`, estimate `λ*` of (8.1.2)): identical to Algorithm 8.3.1 with
+`setL_tr`, target `Δ²` in (8.2.15), `jMax = 1` and the Newton candidate `λc + δᴺ` with `δᴺ` of
+(8.2.24) (`Subproblem.trNewtonCorrection`).
+'''
+deps = ["setL_tr", "Subproblem.taylorCorrection", "Subproblem.trNewtonCorrection"]
+source = "Cartis–Gould–Toint, Algorithm 8.3.2"
+
+[[node]]
+id = "algorithm_8_3_2_terminates"
+kind = "theorem"
+desc = '''
+As `algorithm_8_3_1_terminates` for Algorithm 8.3.2: from `λ₀ ∈ setL_tr` (requires `λ* > λₛ`) the
+iterates stay in `setL_tr`, increase to `λ*` (Q-superlinearly), and the run exits after finitely
+many steps; a run exists for every such `λ₀`.
+'''
+deps = ["algorithm_8_3_2", "setL_eq_Ioc", "Subproblem.taylorCorrection_mem", "Subproblem.newtonCorrection_mem", "Subproblem.tendsto_of_newtonCorrection_le"]
+source = "Cartis–Gould–Toint, Algorithm 8.3.2, §8.3.2"
+
+[[node]]
+id = "minNormSolution"
+kind = "definition"
+desc = '''
+`minNormSolution g H M λ`: the solution of `(H + λM) x = -g` of least `M`-norm (when `g` is in the
+range), i.e. `-(H + λM)⁺ g` with the pseudoinverse taken with respect to the `M`-inner product;
+transported from `Subproblem.particular`. (With the Euclidean Moore–Penrose inverse `Matrix.pinv`
+the vector differs by a kernel element when `M ≠ I`; Corollaries 8.3.1/8.3.2 hold with either
+since they allow an arbitrary kernel component, but the "limit of `s(λ)`" identification of §8.3
+needs the `M`-version.)
+'''
+deps = ["Subproblem.particular", "Subproblem.particular_spec"]
+source = "Cartis–Gould–Toint, (8.3.2)"
+
+[[node]]
+id = "corollary_8_3_1"
+kind = "theorem"
+desc = '''
+Corollary 8.3.1 (Global minimizers of the regularization subproblem). Let `r > 2`, `σ > 0`,
+`IsRegularizationSolution g H M σ r s*`, `λ* = σ mNorm M s* ^ (r-2)`, `sₛ = minNormSolution g H M λ*`
+(8.3.2), `λ₁ = leftmostPencil`. Then `λ* ≥ -λ₁` and (8.3.1): if `λ* > -λ₁` then `s* = sₛ`
+(and `s*` is the unique global minimizer); if `λ* = -λ₁` then `s* = sₛ + α v₁` for some
+generalized eigenvector `v₁` of `(H, M)` for `λ₁` (or `s* = sₛ`) and `α` a root of
+`mNorm M (sₛ + α v₁) = (λ*/σ)^{1/(r-2)}`. In all cases (8.3.3):
+`regModel g H M σ r s* = (1/2) (⟪g, sₛ⟫ - ((r-2)/r) λ* (λ*/σ)^{2/(r-2)})`.
+(Formally: `s* - sₛ ∈ ker (H + λ* M)`, which is the `λ₁`-eigenspace when `λ* = -λ₁`; a single fixed
+`v₁` does not parametrize all minimizers when `λ₁` is multiple, hence the existential `v₁`.)
+'''
+deps = ["theorem_8_2_8", "minNormSolution", "Subproblem.shiftThreshold_le_of_isTrustRegionMultiplier", "Subproblem.optimalValue_eq", "Subproblem.multiplier_classification"]
+source = "Cartis–Gould–Toint, Corollary 8.3.1"
+
+[[node]]
+id = "corollary_8_3_2"
+kind = "theorem"
+desc = '''
+Corollary 8.3.2 (Global minimizers of the trust-region subproblem), corrected. Let `Δ > 0`,
+`IsTrustRegionSolution g H M Δ s*` with multiplier `λ* ≥ 0`, `λ* (mNorm M s*² - Δ²) = 0`,
+`sₛ = minNormSolution g H M λ*`. Then `s* = sₛ` if `λ* > -λ₁`; if `λ* = -λ₁` then `s* = sₛ + α v₁`
+with `v₁` a generalized eigenvector for `λ₁` (or `s* = sₛ`), where `α` is a root of
+`mNorm M (sₛ + α v₁) = Δ` **when `λ* > 0`**, while when `λ* = 0` (`λ₁ = 0`, singular positive
+semidefinite `H`, interior solutions) `α` is any value with `mNorm M (sₛ + α v₁) ≤ Δ`. Always
+`model g H s* = (1/2) (⟪g, sₛ⟫ - λ* Δ²)` (8.3.5). The book's boundary-only description fails for
+`λ* = 0`: e.g. `n = 1`, `H = 0`, `g = 0`, `M = 1`, `Δ = 1`: `s* = 0` is a global minimizer, `λ* = 0 = -λ₁`,
+`sₛ = 0`, but no `α` with `|α v₁| = 1` gives `0`.
+'''
+deps = ["theorem_8_2_7", "minNormSolution", "Subproblem.shiftThreshold_le_of_isTrustRegionMultiplier", "Subproblem.optimalValue_eq", "Subproblem.multiplier_classification"]
+source = "Cartis–Gould–Toint, Corollary 8.3.2"

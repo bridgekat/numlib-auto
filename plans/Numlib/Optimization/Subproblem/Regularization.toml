@@ -1,0 +1,63 @@
+namespace = "Subproblem"
+desc = '''
+Global optimality for the regularization subproblem `min_s regModel g H σ r s` with `σ > 0`,
+`r > 2`, on a finite-dimensional real inner product space (Griewank 1981, Nesterov–Polyak 2006,
+Cartis–Gould–Toint 2011 for `r = 3`, Hsia–Sheu–Yuan 2017 general `r`; book Theorem 8.2.8).
+
+Proof architecture (shorter than the book's, which redoes the reflection argument):
+`isMinOn_closedBall_of_isMinOn_regModel` — a global minimizer `s` of the regularized model
+minimizes the quadratic model on `closedBall 0 ‖s‖`, because `m(u) ≥ m(s) + σ/r (‖s‖^r - ‖u‖^r)`
+there. Then `isMinOn_closedBall_iff` gives a trust-region multiplier `μ` with `(H + μ) s = -g`,
+`H + μ ⪰ 0`; the first-order condition `g + H s + σ‖s‖^{r-2} s = 0` identifies `μ = σ‖s‖^{r-2}` when
+`s ≠ 0`; when `s = 0`, `g = 0` and the scaling `t ↦ m^R(t v)` with `r > 2` gives `H ⪰ 0`.
+Sufficiency: by `quadModel_sub_eq_of_shifted`,
+`m^R(u) - m^R(s) ≥ φ(‖u‖) - φ(‖s‖)` with `φ(t) = σ/r t^r - λ/2 t²`, minimized at
+`t = (λ/σ)^{1/(r-2)} = ‖s‖`.
+'''
+
+[[node]]
+id = "isMinOn_closedBall_of_isMinOn_regModel"
+kind = "theorem"
+desc = '''
+If `σ ≥ 0`, `r > 0` and `IsMinOn (regModel g H σ r) univ s`, then
+`IsMinOn (quadModel g H) (closedBall 0 ‖s‖) s`.
+'''
+deps = ["regModel"]
+
+[[node]]
+id = "isMinOn_regModel_iff"
+kind = "theorem"
+desc = '''
+For symmetric `H`, `0 < σ`, `2 < r`, and any `s`, with `λ = σ * ‖s‖ ^ (r - 2)`:
+`IsMinOn (regModel g H σ r) univ s ↔ (H + λ • 1) s = -g ∧ ((H + λ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive`.
+'''
+deps = ["isMinOn_closedBall_of_isMinOn_regModel", "isMinOn_closedBall_iff", "hasGradientAt_regModel", "quadModel_sub_eq_of_shifted"]
+
+[[node]]
+id = "exists_isMinOn_regModel"
+kind = "theorem"
+desc = '''
+For `0 < σ`, `2 < r` (any `H`, `g`): there is a global minimizer of `regModel g H σ r`
+(continuity and coercivity, `regModel ≥ σ/r ‖s‖^r - ‖g‖‖s‖ - ‖H‖‖s‖²/2 → ∞`).
+'''
+deps = ["regModel"]
+
+[[node]]
+id = "eq_of_isMinOn_regModel_of_posDef"
+kind = "theorem"
+desc = '''
+Uniqueness: if `s` is a global minimizer of `regModel g H σ r` (`0 < σ`, `2 < r`) and
+`H + σ‖s‖^{r-2} • 1` is coercive (positive definite), then every global minimizer equals `s`.
+'''
+deps = ["isMinOn_regModel_iff"]
+
+[[node]]
+id = "norm_eq_of_isMinOn_regModel"
+kind = "theorem"
+desc = '''
+All global minimizers of `regModel g H σ r` (`0 < σ`, `2 < r`) have the same norm, hence the same
+multiplier `λ* = σ‖s‖^{r-2}` (from `isMinOn_regModel_iff` and the secular characterization, or
+directly: two minimizers `s, s'` give `φ(‖s'‖) ≤ φ(‖s‖)` and vice versa with `φ` strictly minimized
+at `(λ/σ)^{1/(r-2)}`).
+'''
+deps = ["isMinOn_regModel_iff"]

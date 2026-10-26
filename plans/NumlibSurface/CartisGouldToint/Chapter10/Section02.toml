@@ -1,0 +1,129 @@
+namespace = "CartisGouldToint.Chapter10"
+desc = '''
+§10.2 Computational details for regularization methods: optimality of the subspace solution
+(10.2.2)–(10.2.3) and absence of the hard case, the `LDLᵀ` factorization and solve for shifted
+Lanczos tridiagonals (Algorithms 10.2.1/10.2.2), monotonicity of the multipliers (Lemma 10.2.1),
+the starting problem (§10.2.3), and the gradient bound and iteration count (Theorem 10.2.2,
+Corollary 10.2.3). Throughout `g ≠ 0`, `σ > 0`, `r > 2`, `1 ≤ k ≤ gradeHM`,
+`sₖ = Qₖ s̄ₖ` with `s̄ₖ` a global minimizer of (10.1.6).
+'''
+
+[[node]]
+id = "subspace_optimality_10_2_2"
+kind = "theorem"
+desc = '''
+(10.2.2)–(10.2.3) and §10.2.1: `(Tₖ + λₖ Iₖ) s̄ₖ = -γ₁ e₁` with `λₖ = σ ‖sₖ‖_M^{r-2} = σ ‖s̄ₖ‖^{r-2}`,
+and `Tₖ + λₖ Iₖ` is positive definite (not merely semidefinite): the hard case cannot occur for the
+unreduced tridiagonal `Tₖ` ([189, Thms 5.3, 5.5]); hence `s̄ₖ` is unique.
+'''
+deps = ["CartisGouldToint.Chapter10.algorithm_10_1_1_spec", "Subproblem.krylov_no_hardCase"]
+source = "Cartis–Gould–Toint, (10.2.2)–(10.2.3)"
+
+[[node]]
+id = "algorithm_10_2_1"
+kind = "definition"
+desc = '''
+Algorithm 10.2.1 (Factorize the shifted Lanczos tridiagonal `Tₖ + λ Iₖ`): from `λ`, `ρ₁…ρₖ`,
+`γ₂…γₖ`: exit "not positive definite" unless `ρ₁ + λ > 0`, `r₁ = 1/(ρ₁ + λ)`; for `i = 2…k`:
+`lᵢ = γᵢ rᵢ₋₁`, exit unless `ρᵢ + λ > γᵢ lᵢ`, `rᵢ = 1/(ρᵢ + λ - γᵢ lᵢ)`. Output
+`Option ((Fin k → ℝ) × (Fin k → ℝ))` (the `l` and reciprocal-pivot `r` vectors). Defined from
+`Matrix.ldlPivot`.
+'''
+deps = ["Matrix.ldlPivot"]
+source = "Cartis–Gould–Toint, Algorithm 10.2.1"
+
+[[node]]
+id = "algorithm_10_2_1_spec"
+kind = "theorem"
+desc = '''
+Algorithm 10.2.1 returns `none` iff `Tₖ + λ Iₖ` is not positive definite; when it returns
+`(l, r)`, `Tₖ + λ Iₖ = Lₖ Dₖ Lₖᵀ` with `Lₖ` unit lower bidiagonal (subdiagonal `lᵢ`) and
+`Dₖ = diag(1/rᵢ)` with positive entries ((10.2.5)–(10.2.6)); and `Tₖ₊₁ + λ Iₖ₊₁` is positive definite
+iff additionally `ρₖ₊₁ + λ > γₖ₊₁² rₖ(λ)` (§10.2.1–10.2.2).
+'''
+deps = ["algorithm_10_2_1", "Matrix.posDef_symTridiag_add_iff"]
+source = "Cartis–Gould–Toint, (10.2.5)–(10.2.6), Algorithm 10.2.1"
+
+[[node]]
+id = "algorithm_10_2_2"
+kind = "definition"
+desc = '''
+Algorithm 10.2.2 (Solve `(Tₖ + λ Iₖ) x(λ) = b`) from the factors of Algorithm 10.2.1:
+`x₁ = b₁`, `xᵢ = bᵢ - lᵢ xᵢ₋₁` (`i = 2…k`), `xᵢ ← rᵢ xᵢ`, then `xᵢ₋₁ ← xᵢ₋₁ - lᵢ xᵢ`
+(`i = k…2`). Defined from `Matrix.tridiagSolve`.
+'''
+deps = ["algorithm_10_2_1", "Matrix.tridiagSolve"]
+source = "Cartis–Gould–Toint, Algorithm 10.2.2"
+
+[[node]]
+id = "algorithm_10_2_2_spec"
+kind = "theorem"
+desc = '''
+If Algorithm 10.2.1 succeeds, the output `x` of Algorithm 10.2.2 satisfies `(Tₖ + λ Iₖ) x = b`
+(10.2.4).
+'''
+deps = ["algorithm_10_2_2", "algorithm_10_2_1_spec", "Matrix.mulVec_tridiagSolve"]
+source = "Cartis–Gould–Toint, Algorithm 10.2.2"
+
+[[node]]
+id = "lemma_10_2_1"
+kind = "theorem"
+desc = '''
+Lemma 10.2.1 (Nested subspace solutions increase in norm). Let `sₖ = Qₖ s̄ₖ` with `s̄ₖ` solving
+(10.1.6), `λₖ` its multiplier (10.2.3), `s*` a global minimizer of (8.1.3) (the book writes
+"(8.1.4)"), `λ* = σ‖s*‖_M^{r-2}`. Then `λₖ ≤ λℓ ≤ λ*` and `‖sₖ‖_M ≤ ‖sℓ‖_M ≤ ‖s*‖_M` for
+`1 ≤ k ≤ ℓ ≤ gradeHM`. (Holds including the hard case of the full problem.)
+'''
+deps = ["subspace_optimality_10_2_2", "Subproblem.krylov_multiplier_mono_regularization"]
+source = "Cartis–Gould–Toint, Lemma 10.2.1"
+
+[[node]]
+id = "start_10_2_3"
+kind = "theorem"
+desc = '''
+§10.2.3: for `k = 1`, `s̄₁` minimizes `γ₁ s + ½ ρ₁ s² + (σ/r)|s|^r` over `ℝ`; it satisfies
+`γ₁ + (ρ₁ + λ₁) s̄₁ = 0` with `λ₁ = σ|s̄₁|^{r-2}` and `ρ₁ + λ₁ > 0` (10.2.7) (here `λ₁` is the
+multiplier, not an eigenvalue), and `λ₁` is the unique root on `λ > max(0, -ρ₁)` of
+`λ (ρ₁ + λ)^{r-2} = σ |γ₁|^{r-2}` (for `r = 3` the larger root of a quadratic, as the book says).
+'''
+deps = ["subspace_optimality_10_2_2"]
+source = "Cartis–Gould–Toint, (10.2.7), §10.2.3"
+
+[[node]]
+id = "conditionNumber_10_2_8"
+kind = "definition"
+desc = '''
+`κₖ = (θₖ,ₖ + λₖ)/(θ₁,ₖ + λₖ)` (10.2.8), the spectral condition number of `Tₖ + λₖ Iₖ`, with
+`θ₁,ₖ ≤ … ≤ θₖ,ₖ` the Ritz values (eigenvalues of `Tₖ`); and `κ* = max_{1 ≤ k ≤ gradeHM} κₖ`
+(10.2.10).
+'''
+deps = ["subspace_optimality_10_2_2"]
+source = "Cartis–Gould–Toint, (10.2.8), (10.2.10)"
+
+[[node]]
+id = "theorem_10_2_2"
+kind = "theorem"
+desc = '''
+Theorem 10.2.2 (Bound on the gradient at the subspace minimizer):
+`‖∇ₛ m^R(sₖ, σ, r)‖_{M⁻¹} ≤ 2 ‖M⁻¹H‖ κₖ (λₖ/σ)^{1/(r-2)} ((√κₖ - 1)/(√κₖ + 1))^{k-1}` (10.2.9), where
+`∇ₛ m^R(s) = g + H s + σ‖s‖_M^{r-2} M s` and `‖M⁻¹H‖` is the Euclidean (spectral) operator norm.
+(The proof's step (B.10.4) `‖M^{-T/2}HM^{-1/2}‖ = ‖M⁻¹H‖` is false in general; the correct
+`≤` suffices, `Subproblem.eigenvalues_scaledOp`.)
+'''
+deps = ["conditionNumber_10_2_8", "Subproblem.krylov_gradient_bound_regularization", "Subproblem.eigenvalues_scaledOp", "Matrix.abs_inv_apply_le_of_isTridiagonal"]
+source = "Cartis–Gould–Toint, Theorem 10.2.2"
+
+[[node]]
+id = "corollary_10_2_3"
+kind = "theorem"
+desc = '''
+Corollary 10.2.3 (Iteration bound for the subspace approximation), corrected. Let `θ₁ > 0`,
+`λ_max[H, M]` the largest pencil eigenvalue,
+`A = (4 ‖M⁻¹H‖ κ*/θ₁) (λ*/σ)^{1/(r-2)} ((λ_max[H,M] + λ*)/‖g‖_{M⁻¹})²`. Then (9.3.14b) holds at
+`sₖ` for some `k ≤ min(⌈log A / log((√κ* + 1)/(√κ* - 1))⌉₊ + 1, gradeHM)` when `κ* > 1`, and for
+some `k ≤ min(2, gradeHM)` when `κ* = 1`. (The printed `⌈·⌉` may be negative — e.g. large `θ₁` —
+making the printed bound `k ≤ (negative) + 1` unsatisfiable; and for `κ* = 1` the printed
+denominator `log(2/0)` is undefined.)
+'''
+deps = ["theorem_10_2_2", "lemma_10_2_1", "Subproblem.krylov_iteration_bound_regularization"]
+source = "Cartis–Gould–Toint, Corollary 10.2.3"

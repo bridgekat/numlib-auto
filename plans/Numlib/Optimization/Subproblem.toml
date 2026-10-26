@@ -1,0 +1,59 @@
+desc = '''
+Trust-region and regularization subproblems of a quadratic model, and the algorithms that solve
+them: the theory behind the step computation of trust-region and adaptive-regularization methods
+(Cartis–Gould–Toint, *Evaluation Complexity*, Chapters 8–11; Conn–Gould–Toint, *Trust-Region
+Methods*, Chapter 7; Moré–Sorensen 1983; Gould–Robinson–Thorne 2010).
+
+Everything is stated for a symmetric operator `H : E →L[ℝ] E` and a vector `g : E` on a
+finite-dimensional real inner product space `E` (namespace `Subproblem`). A scaling norm
+`‖s‖_M = √⟪s, M s⟫` of the source is *not* a parameter: it is the norm of the energy space
+`WithEnergy M` / `Krylov.IsPreconditioner.EnergySpace` of `Numlib/Analysis/InnerProductSpace/Energy`
+and `Numlib/Krylov/Preconditioned`, in which the book's matrix `H` becomes the `M`-symmetric
+operator `M⁻¹ H`, `g` becomes `M⁻¹ g`, the eigenvalues of the pencil `(H, M)` become ordinary
+eigenvalues and `‖g‖_{M⁻¹}` becomes `‖M⁻¹ g‖_M`. `Subproblem/Matrix` is the single bridge from the
+matrix data `(H, M, g)` to that setting; nothing else mentions `M`.
+
+Modules, in dependency order:
+
+* `Model`: the quadratic model `⟪g, s⟫ + ½⟪s, H s⟫` and the regularized model
+  `+ σ/r ‖s‖^r`, their gradients and Hessians, and the "shifted-system" identities.
+* `SecularSum`: real analysis of `x ↦ ∑ wᵢ / (x + μᵢ)²` (weights `wᵢ ≥ 0`) — derivatives,
+  monotonicity, convexity, Taylor bounds of every order, and the sign of the derivatives of its
+  powers (the transformed secular function); no operators.
+* `Secular`: the resolvent step `s(λ) = -(H + λ)⁻¹ g` and the secular function
+  `π(λ) = ‖s(λ)‖²`, its spectral expansion (`= secularSum`), its derivatives via the solves
+  `(H + λ) s⁽ᵏ⁺¹⁾ = -(k+1) s⁽ᵏ⁾`, the leftmost eigenvalue `λ₁` and threshold `λₛ = max 0 (-λ₁)`,
+  and the minimum-norm ("particular") solution at a singular shift.
+* `TrustRegion`, `Regularization`: global optimality characterizations (necessary and sufficient),
+  existence, uniqueness. The regularization theorem is *derived* from the trust-region one: a global
+  minimizer of the regularized model minimizes the quadratic model on the ball of its own radius.
+* `Multiplier`: the multiplier `λ*` versus the secular equation — `λ* ≥ λₛ`; for `λ > λₛ`,
+  `τ(λ) ≤ π(λ) ↔ λ ≤ λ*` (the sets `𝓛`, `𝓖`, `𝓝` of the book); the easy/hard case dichotomy;
+  minimizers as particular solution plus a kernel vector; optimal values; the unique root of
+  `π = τ` for general nondecreasing `τ`.
+* `SecularIteration`: Newton corrections of the transformed secular equations and Taylor-root
+  corrections; every correction from `λ ∈ 𝓛` stays in `𝓛`, and the "largest correction" iteration
+  increases monotonically to `λ*`.
+* `Bracketing`: safeguarded interval reduction to find a point of `𝓛` (abstract three-interval
+  partition of `ℝ`).
+* `InverseIteration`: shifted inverse iteration + Rayleigh quotient with the safeguarded shift
+  update of Gould–Robinson–Thorne, converging to `-λ₁` from above with any prescribed order.
+* `Stopping`: constructive early-termination tests from a shift `λ`.
+* `Krylov`, `KrylovConvergence`: subproblems restricted to Krylov subspaces `𝒦ₖ(H, g)`,
+  their tridiagonal (Lanczos) form, absence of the hard case there, monotonicity of the restricted
+  multipliers and norms, and the gradient/residual bounds and iteration counts.
+* `Matrix`: transport of matrix data `(H, M, g)` with `M` positive definite to the operator
+  setting.
+
+Supporting general theory placed elsewhere: `Numlib/Nonlinear/MonotoneNewton` (Newton and secant
+for convex monotone scalar functions, global Q-linear and superlinear rates),
+`Numlib/LinearAlgebra/Matrix/InverseDecay` (Demko–Moss–Smith decay of inverses of banded
+positive-definite matrices) and `Numlib/LinearAlgebra/Matrix/TridiagonalLDL` (LDLᵀ of a shifted
+symmetric tridiagonal matrix).
+
+Relation to the complexity core: the regularized model here is the quadratic case of the
+regularized Taylor model of the core design (`p = 2`, with `σ/r` absorbing the book's `1/(p+1)!`
+normalization, see the book's footnote 59). The core should state its step conditions so that
+`Subproblem.regModel` is definitionally (or by a one-line lemma) its `p = 2` model; this module
+does not depend on the core.
+'''

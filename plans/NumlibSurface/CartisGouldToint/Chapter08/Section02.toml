@@ -1,0 +1,181 @@
+namespace = "CartisGouldToint.Chapter08"
+desc = '''
+§8.2 A digression on all things secular: the secular function `π(λ) = ‖s(λ)‖²_M` with
+`(H + λM) s(λ) = -g`, its root (Lemma 8.2.1), Taylor bounds (Theorem 8.2.2), the transformed secular
+function `π(λ; β) = π(λ)^β` (Lemma 8.2.3, Corollary 8.2.4, Theorem 8.2.5), derivative formulas
+(Theorem 8.2.6) and global optimality of the two subproblems (Theorems 8.2.7, 8.2.8). Proofs:
+`Subproblem.Secular`, `SecularSum`, `TrustRegion`, `Regularization`, `Multiplier` through the
+bridge `Subproblem/Matrix`.
+'''
+
+[[node]]
+id = "stepOf"
+kind = "definition"
+desc = '''
+`stepOf g H M λ = (H + λ • M)⁻¹ *ᵥ (-g)`, the book's `s(λ)` solving (8.2.2) when `H + λM` is
+nonsingular.
+'''
+source = "Cartis–Gould–Toint, (8.2.2)"
+
+[[node]]
+id = "secularFn"
+kind = "definition"
+desc = '''
+`secularFn g H M λ = ⟪stepOf g H M λ, M *ᵥ stepOf g H M λ⟫ = mNorm M (stepOf g H M λ) ^ 2`, the
+secular function `π(λ)` (8.2.4). The transformed secular function `π(λ; β)` of (8.2.17) is
+`secularFn g H M λ ^ β`.
+'''
+deps = ["stepOf", "mNorm"]
+source = "Cartis–Gould–Toint, (8.2.4), (8.2.17)"
+
+[[node]]
+id = "leftmostPencil"
+kind = "definition"
+desc = '''
+`leftmostPencil hH hM = λ₁`, the least eigenvalue of the pencil `(H, M)` (the last entry of the
+decreasingly sorted `Matrix.pencilEigenvalues hH hM`, for `n ≥ 1`), and
+`lambdaS hH hM = max 0 (-λ₁)` (the book's `λₛ`, Lemma 8.2.1). Equal to `Subproblem.leftmost` /
+`Subproblem.shiftThreshold` of the scaled operator (`Subproblem.eigenvalues_scaledOp`).
+'''
+deps = ["Subproblem.eigenvalues_scaledOp", "Subproblem.shiftThreshold"]
+source = "Cartis–Gould–Toint, (8.2.5), Lemma 8.2.1"
+
+[[node]]
+id = "secularFn_eq_sum"
+kind = "theorem"
+desc = '''
+(8.2.6)–(8.2.7): for `M`-orthonormal generalized eigenvectors `V` (`HV = MVΛ`, `VᵀMV = I`) and
+`γ = Vᵀ g`: for `λ ≠ -λᵢ` for all `i`, `Vᵀ M s(λ) = -(Λ + λ I)⁻¹ γ` and
+`secularFn g H M λ = ∑ i, (γ i / (λ + λ i)) ^ 2`.
+'''
+deps = ["secularFn", "Subproblem.step_eq_sum", "Subproblem.posDef_add_smul_iff_scaled", "Subproblem.eigenvalues_scaledOp"]
+source = "Cartis–Gould–Toint, (8.2.7)"
+
+[[node]]
+id = "lemma_8_2_1"
+kind = "theorem"
+desc = '''
+Lemma 8.2.1 (Root of the secular equation). Let `n ≥ 1`, `λₛ = lambdaS hH hM`, `τ : ℝ → ℝ`
+nonnegative, monotone and continuous on `Ioi λₛ`, not identically zero there
+(`∃ λ > λₛ, τ λ ≠ 0`), and suppose `π(λₛ) > τ(λₛ) ≥ 0`, read as: `0 ≤ τ λₛ` and
+`∃ c > τ λₛ, ∀ᶠ λ in 𝓝[>] λₛ, c ≤ secularFn g H M λ` (`π(λₛ)` is the right limit of `π`, possibly
+`+∞`, since `λₛ` may be a pole; with `τ` right-continuous at `λₛ`), together with
+`ContinuousWithinAt τ (Ici λₛ) λₛ`. Then there is a unique `λ* > λₛ` with
+`secularFn g H M λ* = τ λ*`. (The book takes continuity only on the open interval but uses
+`τ(λₛ)`; right-continuity at `λₛ` is the needed reading.)
+'''
+deps = ["secularFn", "leftmostPencil", "Subproblem.existsUnique_secular_root", "Subproblem.posDef_add_smul_iff_scaled"]
+source = "Cartis–Gould–Toint, Lemma 8.2.1"
+
+[[node]]
+id = "tau_admissible_8_2_9"
+kind = "theorem"
+desc = '''
+The two targets (8.2.9) satisfy the hypotheses on `τ` of Lemma 8.2.1: `τ λ = Δ²` (`Δ > 0`) and
+`τ λ = (λ/σ)^{2/(r-2)}` (`σ > 0`, `r > 2`) are nonnegative, monotone, continuous on
+`Ici λₛ` and not identically zero on `Ioi λₛ`.
+'''
+source = "Cartis–Gould–Toint, (8.2.9)"
+
+[[node]]
+id = "theorem_8_2_2"
+kind = "theorem"
+desc = '''
+Theorem 8.2.2 (Lower and upper Taylor estimates of `π`). Let `λc > λₛ` and
+`t k δ = ∑ j ∈ range (k+1), iteratedDeriv j (secularFn g H M) λc / j! * δ ^ j` (8.2.12). Then
+(8.2.13): for `δ > 0`, `secularFn g H M (λc + δ) ≤ t k δ` for even `k > 0` and `≥ t k δ` for odd
+`k > 0`; (8.2.14): for `λₛ - λc < δ < 0`, `secularFn g H M (λc + δ) ≥ t (k+1) δ ≥ t k δ` for all
+`k > 0`. All inequalities are strict when `g ≠ 0`.
+'''
+deps = ["secularFn", "leftmostPencil", "Subproblem.secular_taylor_bounds", "Subproblem.posDef_add_smul_iff_scaled"]
+source = "Cartis–Gould–Toint, Theorem 8.2.2"
+
+[[node]]
+id = "lemma_8_2_3"
+kind = "theorem"
+desc = '''
+Lemma 8.2.3 (Derivatives of `π(λ; β)`), corrected strictness. Let `λ > λₛ`, `q β = fun λ => secularFn g H M λ ^ β`.
+(i) `deriv (q β) λ ≤ 0` for all `β > 0`, `≥ 0` for all `β < 0`;
+(ii) `deriv^[2] (q β) λ ≥ 0` for all `β > 0`, `≤ 0` for all `β ∈ [-1/2, 0)`.
+If `g ≠ 0` the inequalities in (i) and the `β > 0` part of (ii) are strict, and the `β ∈ [-1/2, 0)`
+part of (ii) is strict unless `β = -1/2` and `g = M v` for `v` in a single generalized eigenspace of
+`(H, M)` (then `q (-1/2)` is affine: e.g. `n = 1`, `H = 0`, `M = 1`, `g = 1` gives `q (-1/2) λ = λ`).
+The book's "strict whenever `g ≠ 0`" is false in that case.
+'''
+deps = ["secularFn", "leftmostPencil", "Subproblem.secular_rpow_tangent", "Subproblem.posDef_add_smul_iff_scaled"]
+source = "Cartis–Gould–Toint, Lemma 8.2.3"
+
+[[node]]
+id = "corollary_8_2_4"
+kind = "theorem"
+desc = '''
+Corollary 8.2.4 (Monotonicity of transformed secular function), with the implicit `g ≠ 0`. For
+`β > 0`, `λ ↦ secularFn g H M λ ^ β` is strictly decreasing and strictly convex on `Ioi λₛ` and
+tends to `0` at `+∞`; for `β ∈ [-1/2, 0)` it is strictly increasing and concave on `Ioi λₛ` and
+tends to `+∞`. (The phrase "from `π(λₛ; β)`" refers to the right limit at `λₛ`, possibly infinite;
+not formalized beyond `Subproblem.tendsto_step_threshold`. For `g = 0` the function is constant.)
+'''
+deps = ["lemma_8_2_3", "Subproblem.secular_shape"]
+source = "Cartis–Gould–Toint, Corollary 8.2.4"
+
+[[node]]
+id = "theorem_8_2_5"
+kind = "theorem"
+desc = '''
+Theorem 8.2.5 (Lower and upper first-order Taylor estimates of `π(λ; β)`). Let `λc > λₛ`,
+`δ > λₛ - λc`, `t₁ δ = π(λc; β) + π⁽¹⁾(λc; β) δ`. (i) For `β > 0`: `π(λc + δ; β) ≥ t₁ δ` (8.2.20);
+(ii) for `β ∈ [-1/2, 0)`: `π(λc + δ; β) ≤ t₁ δ` (8.2.21). Strict when `g ≠ 0` and `δ ≠ 0`, except
+for `β = -1/2` with `g` in a single generalized eigenspace (then equality); the book omits both
+qualifications (at `δ = 0` equality is trivial).
+'''
+deps = ["lemma_8_2_3", "Subproblem.secular_rpow_tangent"]
+source = "Cartis–Gould–Toint, Theorem 8.2.5"
+
+[[node]]
+id = "secularDerivVec"
+kind = "definition"
+desc = '''
+`secularDerivVec g H M λ : ℕ → EuclideanSpace ℝ (Fin n)`, `s⁽⁰⁾ = stepOf g H M λ`,
+`s⁽ᵏ⁺¹⁾ = (H + λ • M)⁻¹ *ᵥ (-(k + 1) • M *ᵥ s⁽ᵏ⁾)` ((8.2.29)), and `alphaCoeff : ℕ → ℝ`,
+`α₀ = 1`, `αₖ₊₁ = 2 (2k + 3)/(k + 1) αₖ` ((8.2.30)).
+'''
+deps = ["stepOf"]
+source = "Cartis–Gould–Toint, (8.2.29)–(8.2.30)"
+
+[[node]]
+id = "theorem_8_2_6"
+kind = "theorem"
+desc = '''
+Theorem 8.2.6 (Derivatives of the secular function). If `H + λM` is positive definite then for
+`k = 0, 1, …`, with `s⁽ʲ⁾ = secularDerivVec g H M λ j`:
+`iteratedDeriv (2k+1) (secularFn g H M) λ = 2 αₖ ⟪s⁽ᵏ⁾, M s⁽ᵏ⁺¹⁾⟫` (8.2.27) and
+`iteratedDeriv (2k+2) (secularFn g H M) λ = αₖ₊₁ ⟪s⁽ᵏ⁺¹⁾, M s⁽ᵏ⁺¹⁾⟫` (8.2.28).
+(`s⁽ᵏ⁾` is the `k`-th derivative of `s(λ)`.)
+'''
+deps = ["secularDerivVec", "secularFn", "Subproblem.iteratedDeriv_secular", "Subproblem.posDef_add_smul_iff_scaled"]
+source = "Cartis–Gould–Toint, Theorem 8.2.6"
+
+[[node]]
+id = "theorem_8_2_7"
+kind = "theorem"
+desc = '''
+Theorem 8.2.7 (Trust-region subproblem global optimality). Let `Δ > 0`, `M.PosDef`, `H`
+symmetric. If `IsTrustRegionSolution g H M Δ s*` then there is `λ* ≥ 0` with
+`(H + λ* M) s* = -g` (8.2.31), `(H + λ* M).PosSemidef` and
+`λ* * (mNorm M s* ^ 2 - Δ ^ 2) = 0` (8.2.32); if moreover `(H + λ* M).PosDef` then every
+`u` with `IsTrustRegionSolution g H M Δ u` equals `s*`. (The backbone also gives the converse.)
+'''
+deps = ["isTrustRegionSolution_iff_scaled", "Subproblem.isMinOn_closedBall_iff", "Subproblem.eq_of_isMinOn_closedBall_of_posDef", "Subproblem.posDef_add_smul_iff_scaled"]
+source = "Cartis–Gould–Toint, Theorem 8.2.7"
+
+[[node]]
+id = "theorem_8_2_8"
+kind = "theorem"
+desc = '''
+Theorem 8.2.8 (Regularization subproblem global optimality). Let `σ > 0`, `r > 2`. If
+`IsRegularizationSolution g H M σ r s*` then with `λ* = σ * mNorm M s* ^ (r - 2)` (8.2.33):
+`(H + λ* M) s* = -g` and `(H + λ* M).PosSemidef`; if `(H + λ* M).PosDef` then `s*` is the unique
+global minimizer. (The backbone also gives the converse and existence.)
+'''
+deps = ["isTrustRegionSolution_iff_scaled", "Subproblem.isMinOn_regModel_iff", "Subproblem.eq_of_isMinOn_regModel_of_posDef", "Subproblem.posDef_add_smul_iff_scaled"]
+source = "Cartis–Gould–Toint, Theorem 8.2.8"

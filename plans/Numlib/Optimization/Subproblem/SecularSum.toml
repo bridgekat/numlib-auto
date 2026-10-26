@@ -1,0 +1,132 @@
+namespace = "Subproblem"
+desc = '''
+Real-variable theory of the spectral form of a secular function,
+`secularSum μ w x = ∑ i, w i / (x + μ i) ^ 2` over a `Fintype ι`, with weights `w i ≥ 0`, on the
+half-line `D = {x | ∀ i, 0 < x + μ i}` (to the right of every pole). In `Secular`, `μ` is the
+family of eigenvalues of `H` and `w i = ⟪bᵢ, g⟫²` its spectral weights, but nothing here mentions
+operators, so the same lemmas serve the Lanczos tridiagonal problems of `Krylov` and the scaled
+problems of `Matrix`.
+
+Content: closed-form derivatives of every order (book (B.8.8)); positivity, strict decrease,
+strict convexity and the limit `0` at `+∞`; signed Taylor bounds of every order (Theorem 8.2.2);
+the derivatives of the powers `secularSum ^ β` (transformed secular function, (8.2.17)–(8.2.19)),
+whose second derivative has a sign for `β > 0` and `β ∈ [-1/2, 0)` by the Cauchy–Schwarz
+"curvature inequality" (Lemma 8.2.3), with the exact equality case (the reciprocal square root
+is affine when the positive weights sit at a single pole — this is where the book's strictness
+claim fails); the resulting monotonicity/convexity/first-order Taylor bounds (Corollary 8.2.4,
+Theorem 8.2.5); and the monotonicity in `β` of the Newton factor `(1 - μ^β)/β` (Lemma B.8.2).
+
+Taylor polynomials are Mathlib's `taylorWithinEval` (or an explicit finite sum of
+`iteratedDeriv j f x / j! * δ ^ j`; whichever is chosen, `Secular` reuses it).
+'''
+
+[[node]]
+id = "secularSum"
+kind = "definition"
+desc = '''
+`secularSum (μ w : ι → ℝ) (x : ℝ) : ℝ := ∑ i, w i / (x + μ i) ^ 2` for a `Fintype ι`.
+'''
+
+[[node]]
+id = "iteratedDeriv_secularSum"
+kind = "theorem"
+desc = '''
+If `∀ i, 0 < x + μ i` then for every `j : ℕ`,
+`iteratedDeriv j (secularSum μ w) x = (-1) ^ j * (j + 1)! * ∑ i, w i / (x + μ i) ^ (j + 2)`
+(book (B.8.8); the function is smooth on the open set `D`, and `iteratedDeriv` is local).
+Corollaries: odd derivatives are `≤ 0`, even derivatives `≥ 0` on `D` when `w ≥ 0`, strictly when
+some `w i > 0`.
+'''
+deps = ["secularSum"]
+
+[[node]]
+id = "secularSum_strictAntiOn"
+kind = "theorem"
+desc = '''
+Let `w ≥ 0` with some `w i > 0` and `D = {x | ∀ i, 0 < x + μ i}`. Then `secularSum μ w` is
+positive, continuous, `StrictAntiOn` and `StrictConvexOn ℝ` on `D`, and tends to `0` at
+`atTop`. (Without a positive weight it is identically `0`.)
+'''
+deps = ["iteratedDeriv_secularSum"]
+
+[[node]]
+id = "secularSum_taylor_bounds"
+kind = "theorem"
+desc = '''
+Signed Taylor bounds (Theorem 8.2.2 core). Let `w ≥ 0`, `x ∈ D`, `t k δ` the order-`k` Taylor
+polynomial of `secularSum μ w` at `x` evaluated at `x + δ`. Then
+(i) for `δ > 0`: `secularSum μ w (x + δ) ≤ t k δ` for even `k` and `≥` for odd `k`;
+(ii) for `δ < 0` with `x + δ ∈ D`: `t k δ ≤ t (k + 1) δ ≤ secularSum μ w (x + δ)` for all `k`.
+If some `w i > 0` (and `δ ≠ 0`) all these inequalities are strict. Proof: termwise Lagrange
+remainder `(1/(k+1)!) f^{(k+1)}(x + ξ) δ^{k+1}` with the sign of `iteratedDeriv_secularSum`, and
+`t (k+1) δ - t k δ = (k + 2) (-δ)^{k+1} ∑ w i / (x + μ i)^{k+3}`.
+'''
+deps = ["iteratedDeriv_secularSum"]
+
+[[node]]
+id = "secularSum_curvature"
+kind = "theorem"
+desc = '''
+Curvature inequality (proof of Lemma 8.2.3). Write `p = secularSum μ w`, `p' , p''` its first two
+derivatives at `x ∈ D` and `c = ∑ i, w i / (x + μ i) ^ 3`. Then for every real `β`,
+`(β - 1) * p' ^ 2 + p * p'' ≥ 4 * (β + 1/2) * c ^ 2`,
+with equality iff `β`-independent condition holds: all `x + μ i` with `w i > 0` are equal
+(Cauchy–Schwarz `c² ≤ p · ∑ wᵢ/(x+μᵢ)⁴` with its equality case).
+'''
+deps = ["iteratedDeriv_secularSum"]
+
+[[node]]
+id = "secularSum_rpow_deriv_sign"
+kind = "theorem"
+desc = '''
+Transformed secular function `q β = fun x => secularSum μ w x ^ β` (`Real.rpow`), assuming some
+`w i > 0` and `x ∈ D` (Lemma 8.2.3 core). Its first two derivatives are
+`q' = β p^{β-1} p'` and `q'' = β p^{β-1} p'' + β (β - 1) p^{β-2} p'^2` ((8.2.18)–(8.2.19)), and:
+(i) `q' < 0` for `β > 0`, `q' > 0` for `β < 0`;
+(ii) `q'' > 0` for `β > 0`; `q'' ≤ 0` for `β ∈ [-1/2, 0)`, strictly if `β > -1/2` or the positive
+weights are not concentrated at a single value of `μ`. At `β = -1/2` with a single pole carrying all
+positive weight, `q` is affine on `D` and `q'' = 0` (so the book's "strict whenever g ≠ 0" fails
+there).
+'''
+deps = ["secularSum_curvature"]
+
+[[node]]
+id = "secularSum_rpow_shape"
+kind = "theorem"
+desc = '''
+(Corollary 8.2.4 core.) With some `w i > 0`: for `β > 0`, `x ↦ secularSum μ w x ^ β` is
+`StrictAntiOn` and `StrictConvexOn` on `D` and tends to `0` at `atTop`; for `β ∈ [-1/2, 0)` it is
+`StrictMonoOn` and `ConcaveOn` on `D` and tends to `atTop` at `atTop`. (Strict concavity holds
+except in the single-pole case at `β = -1/2`.)
+'''
+deps = ["secularSum_rpow_deriv_sign", "secularSum_strictAntiOn"]
+
+[[node]]
+id = "secularSum_rpow_tangent"
+kind = "theorem"
+desc = '''
+(Theorem 8.2.5 core.) Let some `w i > 0`, `x ∈ D`, `x + δ ∈ D`, `q = secularSum μ w ^ β` and
+`t₁ δ = q x + q'(x) δ`. For `β > 0`: `q (x + δ) ≥ t₁ δ`; for `β ∈ [-1/2, 0)`: `q (x + δ) ≤ t₁ δ`.
+Both are strict when `δ ≠ 0`, except at `β = -1/2` in the single-pole case where equality holds.
+(The book's strictness clause additionally omits `δ ≠ 0`.)
+'''
+deps = ["secularSum_rpow_shape"]
+
+[[node]]
+id = "newtonFactor"
+kind = "definition"
+desc = '''
+`newtonFactor μ β = (1 - μ ^ β) / β` for `β ≠ 0` and `-Real.log μ` for `β = 0` (its continuous
+extension), for `μ > 0`; the `β`-dependent factor of the Newton step on the transformed secular
+equation (book (B.8.7), (8.2.26) with `ω = 0`).
+'''
+
+[[node]]
+id = "antitone_newtonFactor"
+kind = "theorem"
+desc = '''
+For `0 < μ`, `newtonFactor μ` is antitone on `ℝ` (Lemma B.8.2 core): `β ↦ (μ^β - 1)/β` is the
+slope of the convex function `β ↦ exp (β log μ)` between `0` and `β`, hence monotone
+(`ConvexOn.slope_mono`); equivalently the book's derivative computation with `1 - t ≤ exp (-t)`.
+'''
+deps = ["newtonFactor"]

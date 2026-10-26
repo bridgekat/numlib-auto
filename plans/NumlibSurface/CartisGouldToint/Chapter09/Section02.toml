@@ -1,0 +1,44 @@
+namespace = "CartisGouldToint.Chapter09"
+desc = '''
+§9.2 Finding a point in `𝓛`: Algorithm 9.2.1, safeguarded interval reduction, as a run predicate
+instantiating `Subproblem.IsBracketRun` with `a = λₛ`, `b = λ*` and the membership tests
+`λ ∈ 𝓝`, `𝓛`, `𝓖` of Chapter 8 (for either subproblem).
+'''
+
+[[node]]
+id = "algorithm_9_2_1"
+kind = "definition"
+desc = '''
+Algorithm 9.2.1 (Find `λ ∈ 𝓛`), for the regularization or trust-region subproblem with sets
+`𝓝 = Iic λₛ`, `𝓛`, `𝓖` (`CartisGouldToint.Chapter08.setL_reg` / `setL_tr`): runs
+`(λᴸ k, λᵁ k, λc k)` with `0 ≤ λᴸ 0 ≤ λ* ≤ λᵁ 0` ((9.2.1)), constants `0 < θL ≤ θU < 1`, exit when
+`λc k ∈ 𝓛`; if `λc k ∈ 𝓝`: `λᴸ ← max(λᴸ, λc)`, optionally `λᴸ ← max(λᴸ, -λ_E)` for some estimate
+`λ_E ≥ λ₁`, then `λc ← max(γ√(λᴸλᵁ), λᴸ + θ(λᵁ - λᴸ))`, `θ ∈ [θL, θU]`, `γ ∈ {0,1}`; if
+`λc ∈ 𝓖`: `λᵁ ← min(λᵁ, λc)`, optional `λᴸ ← max(λᴸ, -λ_E)`, and `λc` in the interval (9.2.2).
+Equal to `Subproblem.IsBracketRun λₛ λ* θL θU` (the estimates `-λ_E ≤ -λ₁ ≤ λₛ` are admissible
+`e ≤ a`).
+'''
+deps = ["Subproblem.IsBracketRun", "CartisGouldToint.Chapter08.setL_eq_Ioc"]
+source = "Cartis–Gould–Toint, Algorithm 9.2.1"
+
+[[node]]
+id = "algorithm_9_2_1_exists"
+kind = "theorem"
+desc = '''
+For any admissible initial data (9.2.1) and constants a run of Algorithm 9.2.1 exists.
+'''
+deps = ["algorithm_9_2_1", "Subproblem.IsBracketRun.exists"]
+source = "Cartis–Gould–Toint, Algorithm 9.2.1"
+
+[[node]]
+id = "algorithm_9_2_1_terminates"
+kind = "theorem"
+desc = '''
+The claims of §9.2: along a run, after the first step the bracket width contracts by at least
+`max(1 - θL, θU, 1/2)` per step (the book's displayed ratio `max[1-θ, θ, γ√λᵁ/(√λᴸ+√λᵁ)]` is also
+an upper bound, but not uniformly `< 1`); and if `𝓛` is nonempty (`λ* > λₛ`) and `λᴸ 0 < λ*`, some
+`λc k ∈ 𝓛` after at most `2 + ⌈log((λᵁ₁ - λᴸ₁)/(λ* - max(λᴸ₀, λₛ)))/log(1/ρ)⌉₊` steps.
+(If `λᴸ 0 = λ*` exactly the run may never stop; the book's claim needs `λᴸ 0 < λ*`.)
+'''
+deps = ["algorithm_9_2_1", "Subproblem.IsBracketRun.exists_mem", "Subproblem.IsBracketRun.width_le"]
+source = "Cartis–Gould–Toint, §9.2"
