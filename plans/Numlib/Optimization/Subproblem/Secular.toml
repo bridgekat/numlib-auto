@@ -1,204 +1,52 @@
 namespace = "Subproblem"
-desc = '''
-The resolvent step and the secular function of a symmetric operator. Setting:
-`[FiniteDimensional ℝ E]`, `H : E →L[ℝ] E` with `hH : (H : E →ₗ[ℝ] E).IsSymmetric`, `g : E`.
-
-* `leftmost hH` is the least eigenvalue `λ₁` (as `⨅ i, hH.eigenvalues rfl i`, which is `0` on the
-  zero space) and `shiftThreshold hH = max 0 (-λ₁)` is the book's `λₛ`. `H + λ` is positive
-  semidefinite iff `λ ≥ -λ₁`, positive definite (coercive) iff `λ > -λ₁` (Courant–Fischer, via
-  `LinearMap.IsSymmetric.isLeast_eigenvalues` / `rayleighQuotient` of `Numlib/Eigen/MinMax`).
-* `step g H λ = -(Ring.inverse (H + λ • 1)) g` is `s(λ)` of (8.2.2); `secular g H λ = ‖step g H λ‖²`
-  is `π(λ)` of (8.2.4). On `Ioi (-λ₁)` they have the spectral expansions
-  `step = -∑ ⟪bᵢ, g⟫ / (λ + λᵢ) • bᵢ` and `secular = secularSum λ (⟪bᵢ, g⟫²)` in the eigenvector
-  basis `bᵢ = hH.eigenvectorBasis rfl i` ((8.2.6)–(8.2.7)); all real-variable properties then come
-  from `SecularSum`.
-* `particular g H λ` is the minimum-norm solution of `(H + λ) x = -g` (the unique solution in
-  `(ker (H + λ))ᗮ` when one exists; spectrally `-∑_{λᵢ ≠ -λ} ⟪bᵢ, g⟫/(λ + λᵢ) • bᵢ`, i.e.
-  `-(H + λ)⁺ g`). It is the book's `sₛ`; in the scaled setting it is the `M`-minimum-norm
-  solution, NOT the Euclidean Moore–Penrose one (the two differ by a kernel vector; see
-  `Matrix`).
-* Derivatives: `stepDeriv g H k λ = (-1)^(k+1) k! (H + λ)^{-(k+1)} g` is the `k`-th derivative
-  of `step`, characterized by `(H + λ) s⁽ᵏ⁺¹⁾ = -(k+1) s⁽ᵏ⁾` (8.2.29), and the derivatives of
-  `secular` are `π⁽²ᵏ⁺¹⁾ = 2 αₖ ⟪s⁽ᵏ⁾, s⁽ᵏ⁺¹⁾⟫`, `π⁽²ᵏ⁺²⁾ = αₖ₊₁ ‖s⁽ᵏ⁺¹⁾‖²` with
-  `αₖ = (2k+1)!/(k!)²` (Theorem 8.2.6; the book's recursion (8.2.30) is
-  `αₖ₊₁ = 2(2k+3)/(k+1) αₖ`, `α₀ = 1`).
-'''
 
 [[node]]
 id = "leftmost"
-kind = "definition"
-desc = '''
-`leftmost hH : ℝ := ⨅ i, hH.eigenvalues rfl i`, the least eigenvalue `λ₁` of the symmetric `H`
-(`0` if `E` is trivial). Basic API: `⟪v, H v⟫ ≥ leftmost hH * ‖v‖²` for all `v`, attained at an
-eigenvector, and `leftmost hH` is an eigenvalue when `0 < finrank ℝ E`.
-'''
 
 [[node]]
 id = "shiftThreshold"
-kind = "definition"
-desc = '''
-`shiftThreshold hH = max 0 (-leftmost hH)`, the book's `λₛ` (Lemma 8.2.1).
-'''
-deps = ["leftmost"]
 
 [[node]]
 id = "isPositive_add_smul_iff"
-kind = "theorem"
-desc = '''
-`((H + λ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive ↔ -leftmost hH ≤ λ`, and
-`H + λ • 1` is coercive (`IsSymmetricCoercive`, equivalently positive definite / invertible with
-positive spectrum) `↔ -leftmost hH < λ` (for nontrivial `E`). Also
-`ker (H + λ • 1) ≠ ⊥ ∧ λ = -leftmost hH` when `λ = -leftmost hH` and `E` nontrivial.
-'''
-deps = ["leftmost"]
 
 [[node]]
 id = "step"
-kind = "definition"
-desc = '''
-`step g H λ : E := -(Ring.inverse (H + λ • 1)) g`, the solution `s(λ)` of `(H + λ) s = -g`
-whenever `H + λ` is invertible (book (8.2.2)).
-'''
 
 [[node]]
 id = "secular"
-kind = "definition"
-desc = '''
-`secular g H λ : ℝ := ‖step g H λ‖ ^ 2`, the secular function `π(λ)` (book (8.2.4)). The
-transformed secular function `π(λ; β)` of (8.2.17) is `secular g H λ ^ β` (`Real.rpow`) and is not
-given a separate name.
-'''
-deps = ["step"]
 
 [[node]]
 id = "step_spec"
-kind = "theorem"
-desc = '''
-For `-leftmost hH < λ`: `(H + λ • 1) (step g H λ) = -g`, and `step g H λ` is the unique such
-vector.
-'''
-deps = ["step", "isPositive_add_smul_iff"]
 
 [[node]]
 id = "step_eq_sum"
-kind = "theorem"
-desc = '''
-Spectral expansion ((8.2.6)). With `n = finrank ℝ E`, `b = hH.eigenvectorBasis rfl`,
-`μ = hH.eigenvalues rfl`: for `-leftmost hH < λ`,
-`step g H λ = -∑ i, (⟪b i, g⟫ / (λ + μ i)) • b i` and
-`secular g H λ = secularSum μ (fun i => ⟪b i, g⟫ ^ 2) λ` ((8.2.7)). The weights sum to `‖g‖²`,
-so some weight is positive iff `g ≠ 0`.
-'''
-deps = ["step_spec", "secularSum", "secular"]
 
 [[node]]
 id = "secular_shape"
-kind = "theorem"
-desc = '''
-For `g ≠ 0`, on `Ioi (-leftmost hH)`: `secular g H` is positive, continuous, `StrictAntiOn`,
-`StrictConvexOn` and tends to `0` at `atTop`; `fun λ => secular g H λ ^ β` is strictly
-decreasing and strictly convex for `β > 0`, strictly increasing, concave and tending to `atTop`
-for `β ∈ [-1/2, 0)` (Corollary 8.2.4 on the larger interval `Ioi (-λ₁) ⊇ Ioi λₛ`).
-'''
-deps = ["step_eq_sum", "secularSum_strictAntiOn", "secularSum_rpow_shape"]
 
 [[node]]
 id = "particular"
-kind = "definition"
-desc = '''
-`particular g H λ : E`, the minimum-norm solution of `(H + λ • 1) x = -g`: spectrally
-`-∑ i ∈ {i | μ i + λ ≠ 0}, (⟪b i, g⟫ / (λ + μ i)) • b i` (equivalently `-(T⁺ g)` for the
-pseudoinverse of the symmetric `T = H + λ • 1`, which is `T⁻¹` on `range T = (ker T)ᗮ` and `0` on
-`ker T`). The book's `sₛ` in (8.3.2) and Section 8.3.
-'''
-deps = ["step"]
 
 [[node]]
 id = "particular_spec"
-kind = "theorem"
-desc = '''
-(i) `particular g H λ ∈ (ker (H + λ • 1))ᗮ`;
-(ii) if `g ∈ (ker (H + λ • 1))ᗮ` (equivalently `g ∈ range (H + λ • 1)`), then
-`(H + λ • 1) (particular g H λ) = -g`, and the solutions of `(H + λ • 1) x = -g` are exactly
-`particular g H λ + w`, `w ∈ ker (H + λ • 1)`; then `‖particular‖ ≤ ‖x‖` for every solution `x`
-and `⟪g, w⟫ = 0` for such `w`;
-(iii) `particular g H λ = step g H λ` when `-leftmost hH < λ`.
-'''
-deps = ["particular", "step_spec"]
 
 [[node]]
 id = "tendsto_step_threshold"
-kind = "theorem"
-desc = '''
-Behaviour at the pole `λ → (-λ₁)⁺` (with `λ₁ = leftmost hH`, `E` nontrivial):
-(i) if `g ∈ (ker (H - λ₁ • 1))ᗮ` then `step g H λ → particular g H (-λ₁)` and
-`secular g H λ → ‖particular g H (-λ₁)‖²` as `λ → -λ₁` within `Ioi (-λ₁)` (the "trajectory vector"
-`sₛ = lim s(λ)` of Section 8.3);
-(ii) otherwise `secular g H λ → +∞` (`Tendsto … atTop`).
-Consequently `secular g H` extends continuously to `Ici (-λ₁)` with value
-`‖particular g H (-λ₁)‖²` in case (i), and is unbounded in case (ii); this is how the book's
-`π(λₛ)` is read.
-'''
-deps = ["particular_spec", "step_eq_sum"]
 
 [[node]]
 id = "stepDeriv"
-kind = "definition"
-desc = '''
-`stepDeriv g H k λ : E := ((-1) ^ (k + 1) * k !) • ((Ring.inverse (H + λ • 1)) ^ (k + 1)) g`,
-so `stepDeriv g H 0 λ = step g H λ`.
-'''
-deps = ["step"]
 
 [[node]]
 id = "iteratedDeriv_step"
-kind = "theorem"
-desc = '''
-For `-leftmost hH < λ` and all `k`: `iteratedDeriv k (step g H) λ = stepDeriv g H k λ`, and
-`(H + λ • 1) (stepDeriv g H (k + 1) λ) = -((k + 1 : ℝ) • stepDeriv g H k λ)` (book (8.2.29)).
-'''
-deps = ["stepDeriv", "step_spec"]
 
 [[node]]
 id = "secularCoeff"
-kind = "definition"
-desc = '''
-`secularCoeff k : ℝ := (2 k + 1)! / (k !) ^ 2`, the book's `αₖ`; `secularCoeff 0 = 1` and
-`secularCoeff (k + 1) = 2 * (2 k + 3) / (k + 1) * secularCoeff k` ((8.2.30)).
-'''
 
 [[node]]
 id = "iteratedDeriv_secular"
-kind = "theorem"
-desc = '''
-Theorem 8.2.6 (backbone form). For `-leftmost hH < λ` and every `k : ℕ`, writing
-`s⁽ʲ⁾ = stepDeriv g H j λ` and `αₖ = secularCoeff k`:
-`iteratedDeriv (2 k + 1) (secular g H) λ = 2 * αₖ * ⟪s⁽ᵏ⁾, s⁽ᵏ⁺¹⁾⟫` and
-`iteratedDeriv (2 k + 2) (secular g H) λ = αₖ₊₁ * ‖s⁽ᵏ⁺¹⁾‖²`.
-Also the closed form `iteratedDeriv j (secular g H) λ = (-1)^j (j+1)! ∑ i, ⟪b i, g⟫² / (λ + μ i)^(j+2)`.
-'''
-deps = ["iteratedDeriv_step", "secularCoeff", "secular", "iteratedDeriv_secularSum", "step_eq_sum"]
 
 [[node]]
 id = "secular_taylor_bounds"
-kind = "theorem"
-desc = '''
-Theorem 8.2.2 (backbone form, on the interval `Ioi (-λ₁) ⊇ Ioi λₛ`). Let `-leftmost hH < λc` and
-`t k δ` the order-`k` Taylor polynomial of `secular g H` at `λc`. Then for `δ > 0`:
-`secular g H (λc + δ) ≤ t k δ` for even `k`, `≥` for odd `k`; for `-leftmost hH - λc < δ < 0`:
-`t k δ ≤ t (k + 1) δ ≤ secular g H (λc + δ)` for all `k`. Strict when `g ≠ 0`.
-'''
-deps = ["step_eq_sum", "secularSum_taylor_bounds"]
 
 [[node]]
 id = "secular_rpow_tangent"
-kind = "theorem"
-desc = '''
-Theorem 8.2.5 (backbone form). Let `g ≠ 0`, `-leftmost hH < λc`, `-leftmost hH < λc + δ`,
-`q λ = secular g H λ ^ β`, `t₁ δ = q λc + deriv q λc * δ`. Then `q (λc + δ) ≥ t₁ δ` for `β > 0`
-and `q (λc + δ) ≤ t₁ δ` for `β ∈ [-1/2, 0)`; strict for `δ ≠ 0` except when `β = -1/2` and `g`
-lies in a single eigenspace of `H` (then `q` is affine and equality holds). Also the derivative
-sign statements of Lemma 8.2.3 for `q`, with the same exception for strictness of `q''` at
-`β = -1/2`.
-'''
-deps = ["step_eq_sum", "secularSum_rpow_tangent", "secularSum_rpow_deriv_sign"]

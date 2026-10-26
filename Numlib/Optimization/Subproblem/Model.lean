@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.InnerProductSpace.Positive
+import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.NormPow
 
 /-!
@@ -330,58 +331,7 @@ theorem sub_smul_eq_zero_of_shifted {μ μ' : ℝ} {s : E} (hs : (H + μ • (1 
   rw [sub_smul, sub_eq_zero]
   exact add_left_cancel h
 
-/-- For symmetric `H`, the shifted operator `H + μ I` is symmetric. -/
-theorem isSymmetric_add_smul_one (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (μ : ℝ) :
-    ((H + μ • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E).IsSymmetric := by
-  intro x y
-  simp only [ContinuousLinearMap.coe_coe, add_apply, smul_apply, one_apply_eq_self,
-    inner_add_left, inner_add_right, inner_smul_left, inner_smul_right, conj_trivial]
-  rw [inner_apply_comm_of_isSymmetric hH]
-
-/-- For symmetric `H`, positive semidefiniteness of `H + μ I` is nonnegativity of its quadratic
-form. -/
-theorem isPositive_add_smul_one_iff (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (μ : ℝ) :
-    ((H + μ • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive ↔
-      ∀ v, 0 ≤ ⟪v, (H + μ • (1 : E →L[ℝ] E)) v⟫ := by
-  refine ⟨fun h v => ?_, fun h => ⟨isSymmetric_add_smul_one hH μ, fun v => ?_⟩⟩
-  · rw [real_inner_comm]; exact h.inner_nonneg_left v
-  · simpa [real_inner_comm] using h v
-
-/-- The quadratic form of a positive semidefinite shifted operator is nonnegative. -/
-theorem inner_apply_nonneg_of_isPositive {μ : ℝ}
-    (h : ((H + μ • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive) (v : E) :
-    0 ≤ ⟪v, (H + μ • (1 : E →L[ℝ] E)) v⟫ := by
-  rw [real_inner_comm]; exact h.inner_nonneg_left v
-
 end Shifted
-
-/-- A positive semidefinite operator kills every vector on which its quadratic form vanishes:
-`⟪T d, d⟫ = 0 → T d = 0`. -/
-theorem apply_eq_zero_of_isPositive {T : E →ₗ[ℝ] E} (hT : T.IsPositive) {d : E}
-    (hd : ⟪T d, d⟫ = 0) : T d = 0 := by
-  have key : ∀ w : E, ∀ t : ℝ, 0 ≤ 2 * t * ⟪T d, w⟫ + t ^ 2 * ⟪T w, w⟫ := by
-    intro w t
-    have h := hT.inner_nonneg_left (d + t • w)
-    have hs : ⟪T w, d⟫ = ⟪T d, w⟫ := by rw [hT.isSymmetric w d, real_inner_comm]
-    simp only [map_add, map_smul, inner_add_left, inner_add_right, inner_smul_left,
-      inner_smul_right, conj_trivial, hd, hs] at h
-    nlinarith
-  have hw : ⟪T d, T d⟫ = 0 := by
-    set a := ⟪T d, T d⟫
-    set b := ⟪T (T d), T d⟫
-    have hb : 0 ≤ b := hT.inner_nonneg_left _
-    have ha : 0 ≤ a := real_inner_self_nonneg
-    by_contra hne
-    have hapos : 0 < a := lt_of_le_of_ne ha (Ne.symm hne)
-    have := key (T d) (-a / (b + 1))
-    have hb1 : 0 < b + 1 := by linarith
-    have e : 2 * (-a / (b + 1)) * a + (-a / (b + 1)) ^ 2 * b
-        = -a ^ 2 * (b + 2) / (b + 1) ^ 2 := by field_simp; ring
-    rw [e] at this
-    have : 0 < a ^ 2 * (b + 2) / (b + 1) ^ 2 := by positivity
-    linarith [show -a ^ 2 * (b + 2) / (b + 1) ^ 2
-      = -(a ^ 2 * (b + 2) / (b + 1) ^ 2) by ring]
-  exact inner_self_eq_zero.mp hw
 
 end Subproblem
 
