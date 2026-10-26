@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Inexact.Explicit.CandidateDecrease
 import Numlib.Optimization.Regularization.Inexact.Explicit.DecreaseBounds
 import Numlib.Optimization.Regularization.Inexact.PassingCubic.PrintedConstants
 import Numlib.Optimization.TrustRegion.Inexact.Explicit.Complexity
@@ -612,5 +613,44 @@ theorem lemma_13_3_7_current_check {n p q : ℕ}
         (minimumAccuracy P.order_pos ε) ^ (q + 1) ≤
           f (D.point k) - f (D.point (k + 1))) :=
   h.model_function_decrease_current hf hL hlip hk ht
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- Sharp all-trial correction to Lemma13.3.7: true candidate nonoptimality at
+the actual solved radii replaces mere literal nontermination. Both original
+regularization rates are retained for accepted and rejected trials with the
+genuine guarded cap and safe common radius coefficient. Accepted true function
+decrease is eta1/2 times the same fixed floor. No extra stopping margin is used. -/
+theorem lemma_13_3_7_corrected {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : InexactRegularization.Explicit.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (ε : Fin q → ℝ) (D : InexactRegularization.Explicit.ExecutionData
+      (EuclideanSpace ℝ (Fin n)) q) {N k : ℕ} (h : arqpedaRun f P ε D N)
+    (hk : k < N) (ht : k ∈ D.trials)
+    (hnot : ¬InexactRegularization.OptimalityAt f ε
+      (D.point k + D.step k) (D.solvedRadius k)) :
+    let S := InexactRegularization.executionParameterCap P.toSettings L
+    let M := InexactRegularization.executionTensorCap P.toSettings L
+    let c := InexactRegularization.commonDecreaseCoefficient P.toSettings L M S / P.eta1
+    0 < c ∧ c * InexactRegularization.accuracyFactor P.toSettings ε ≤
+      TaylorModel.jetDecrement (D.jet k) p (D.step k) ∧
+      (P.eta1 ≤ D.ratio k → P.eta1 / 2 * c *
+        InexactRegularization.accuracyFactor P.toSettings ε ≤
+          f (D.point k) - f (D.point (k + 1))) := by
+  obtain ⟨hp, hj⟩ := h.actual_caps hf hL hlip
+  have hM := InexactRegularization.one_le_executionTensorCap P.toSettings hL
+  have hS := (h.updates.pos (show 0 ≤ N by omega)).le.trans (hp 0 (by omega))
+  have hc := div_pos
+    (InexactRegularization.commonDecreaseCoefficient_pos P.toSettings hL hM hS) P.eta1_pos
+  have hm := h.model_decrease_uniform_candidate hf hL hM (hlip p le_rfl) hp
+    (fun k hk i hi hip => hj k hk i (by omega) hip) hk ht hnot
+  refine ⟨hc, hm, fun ha => ?_⟩
+  have hh := mul_le_mul_of_nonneg_left hm (half_pos P.eta1_pos).le
+  simpa only [mul_assoc] using hh.trans (h.function_decrease_ge_computed hk ht ha)
 
 end CartisGouldToint

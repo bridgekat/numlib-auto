@@ -1,0 +1,16 @@
+namespace = "InexactRegularization.Explicit"
+
+[[node]]
+id = "Run.short_tensor_error"
+
+[[node]]
+id = "Run.criticality_obstruction_candidate"
+
+[[node]]
+id = "Run.step_powers_candidate"
+
+[[node]]
+id = "Run.exists_root_step_lower_candidate"
+
+[[node]]
+id = "Run.model_decrease_uniform_candidate"

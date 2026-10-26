@@ -182,10 +182,9 @@ id = "arqpedaPassingCheckCounterexample"
 
 [[node]]
 id = "lemma_13_3_7_effective_margin"
-kind = "theorem"
-desc = "Corrected joint model/true function decrease, both source p-dependent rates, with explicit theta<zeta/2 and accepted trial whose next literal stopping test fails. Corrected cap includes max(kappa_s,kappa_h), safe radius coefficient, effective margin zeta/2-theta. Function floor is eta1/2 times model floor."
 
 [[node]]
 id = "lemma_13_3_7_current_check"
-kind = "theorem"
-desc = "Unconditional all-trial corrected model decrease using coarse epsilon_min^(q+1), derived current failed check, actual model comparison/radius floors and corrected cap. Accepted true decrease >=eta1/2 times model floor. No extra margin or next nonoptimality assumption. Explicitly a different rate from the sharper effective-margin fix."
+
+[[node]]
+id = "lemma_13_3_7_corrected"
