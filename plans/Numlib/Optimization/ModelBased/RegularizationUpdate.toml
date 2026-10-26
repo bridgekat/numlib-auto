@@ -19,3 +19,7 @@ source = "Cartis–Gould–Toint, Lemma 2.4.1"
 [[node]]
 id = "le_of_arUpdate"
 source = "Cartis–Gould–Toint, Lemma 2.4.1"
+
+[[node]]
+id = "sigma_le_max_of_arUpdate_of_neutral"
+source = "Cartis–Gould–Toint, Lemmas 13.1.14, 13.3.5 (mechanism)"

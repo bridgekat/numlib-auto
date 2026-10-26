@@ -477,10 +477,10 @@ Lemma 13.1.17. Under the hypotheses of Lemma 13.1.16 but allowing `‖s k‖ ≥
 `‖s k‖ ≥ ((1 - θ) κ_δmin^(j-1) / (2 j! (L p + σmax + 3 κ∇max κs)))^(1/p) * ε j^(j/p)` if `q > 2`
 (13.1.80), with `κ_δmin = ς θ / (24 max Lbar σmax)` (13.1.81) (real powers `Real.rpow`).
 Proof: trivial if `‖s_k‖ ≥ 1` (right-hand sides `≤ 1`); otherwise Lemma 13.1.16 and
-`Optimization.norm_step_ge_of_measure_ineq` (case (i), `B = 0`) with `δ (k+1) j = δs k j` (`= 1` for `j ≤ 2`,
+`Optimization.pow_ge_of_measure_ineq` and `Optimization.MeasureIneq.div_le_of_le` (`B = 0`) with `δ (k+1) j = δs k j` (`= 1` for `j ≤ 2`,
 `≥ κ_δmin ε_j` for `j ≥ 3` by `RadiiControl` and Lemma 13.1.14).
 '''
-deps = ["lemma_13_1_16", "lemma_13_1_14", "Optimization.norm_step_ge_of_measure_ineq"]
+deps = ["lemma_13_1_16", "lemma_13_1_14", "Optimization.pow_ge_of_measure_ineq", "Optimization.MeasureIneq.div_le_of_le"]
 source = "Cartis–Gould–Toint, Lemma 13.1.17"
 
 [[node]]

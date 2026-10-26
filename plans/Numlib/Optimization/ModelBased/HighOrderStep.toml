@@ -1,115 +1,37 @@
 namespace = "Optimization"
-desc = '''
-Step computation of the high-order adaptive-regularization methods ARqp (Algorithm 12.2.3) and
-ARqpC (Algorithm 14.1.2), stated once for an abstract model, and the step-length algebra shared by
-Lemmas 12.2.12 and 14.1.8. Planned by the Chapter 14 planner; consolidated: the Chapter 12
-surface Algorithm 12.2.3 instantiates `DetailedStepTrans` (`h = 0`, `J = {j | 3 ≤ j}`) and the
-step-length lemmas of Chapters 12–14 all use `norm_step_ge_of_measure_ineq`. The two procedures differ only in the set of
-orders where the radius may be halved: `j ≥ 3` for ARqp, `j ≥ 2 ∨ h nonconvex` for ARqpC, and
-"`j ≥ 2 ∨ X nonconvex`" for the simply constrained variants of §14.2. The abstract data
-`(m, T, Sd, ΔT)` are those of `ARqpData` (`model`, feasible steps, `modelDec`) in
-`HighOrder/ARqp`, so every output satisfies the Step-2 condition of `IsARqpRun`
-(`IsDetailedStepOutput.spec`).
-
-Abstract data of the "detailed Step 2" (all at a fixed outer iteration):
-`m : E → ℝ` (the model), `T : Set E` (feasible steps, `0 ∈ T`), `Sd : E → Set E` (feasible
-displacements at a trial step `s`, `{d | x + s + d ∈ X}`), `ΔT : ℕ → E → E → ℝ` (order-`j`
-decrement `ΔT j s d` of the model at `s`), `q`, `ς ∈ (0,1]`, `θ ∈ (0,1)`, `ε : ℕ → ℝ`, and
-`J : Set ℕ` (orders at which Step 2.4.3 may halve the radius). The measure at `s` with radius `δ`
-is `sSup (ΔT j s '' (closedBall 0 δ ∩ Sd s))`. The procedure is modelled faithfully as a
-nondeterministic transition system (its choices — the approximate global minimizer `s_μ` of Step
-2.2, the approximate maximizer `d_{μ,j}` of Step 2.4.1 — are existential), and its outputs are the
-states reachable from an initial state that are "returned".
-'''
 
 [[node]]
 id = "DetailedStepState"
-kind = "def"
-desc = '''
-Inductive type of states of the detailed Step 2 (Algorithm 12.2.3/14.1.2):
-`findStep (μ : ℝ) (δ : ℕ → ℝ)` (about to execute Step 2.2 with parameter `μ` and radii `δ`),
-`check (μ : ℝ) (s : E) (δ : ℕ → ℝ) (j : ℕ)` (in Step 2.4 at order `j` with trial step `s`),
-`done (s : E) (δ : ℕ → ℝ)` (returned pair `(s_k, δ_{s_k})`).
-'''
-source = "Cartis–Gould–Toint, Algorithm 12.2.3 and Algorithm 14.1.2"
+source = "Cartis–Gould–Toint, Algorithms 12.2.3, 14.1.2"
 
 [[node]]
 id = "DetailedStepTrans"
-kind = "def"
-desc = '''
-One-step relation `DetailedStepTrans m T Sd ΔT q ς θ ε J : DetailedStepState → DetailedStepState →
-Prop`, with `mstar := sInf (m '' T)` (the unknown global minimal value) and
-`φ j s δ := sSup (ΔT j s '' (closedBall 0 δ ∩ Sd s))`:
-* (Step 2.2/2.3) `findStep μ δ → done s δ` if `s ∈ T`, `μ * (m 0 - mstar) ≤ m 0 - m s`, `1 ≤ ‖s‖`;
-  `findStep μ δ → check μ s δ 1` if the same holds with `‖s‖ < 1`;
-* (Step 2.4.1–2.4.2) `check μ s δ j → (if j < q then check μ s δ (j+1) else done s δ)` if some
-  `d ∈ closedBall 0 (δ j) ∩ Sd s` has `ς * φ j s (δ j) ≤ ΔT j s d ≤ ς * θ * ε j * δ j ^ j / j!`;
-* (Step 2.4.3) `check μ s δ j → check μ s (Function.update δ j (δ j / 2)) j` if some such `d` with
-  `ς * φ j s (δ j) ≤ ΔT j s d` has `ς θ ε_j δ_j^j/j! < ΔT j s d`, `j ∈ J`, and
-  `m s - m (s + d) < ς * θ * ε j * δ j ^ j / (2 * j!)`;
-* (Step 2.4.4) `check μ s δ j → findStep ((1 + μ) / 2) δ` if some such `d` has
-  `ς θ ε_j δ_j^j/j! < ΔT j s d` and (`j ∉ J` or `m s - m (s + d) ≥ ς θ ε_j δ_j^j/(2 j!)`).
-`IsDetailedStepOutput … s δs : Prop := ∃ μ₀ ∈ Set.Ioc 0 1, Relation.ReflTransGen (DetailedStepTrans …)
-(findStep μ₀ 1) (done s δs)` (Step 2.1 initializes `δ_j = 1`).
-'''
-deps = ["DetailedStepState"]
-source = "Cartis–Gould–Toint, Algorithm 12.2.3 (Steps 2.1–2.5) and Algorithm 14.1.2"
+source = "Cartis–Gould–Toint, Algorithms 12.2.3, 14.1.2"
+
+[[node]]
+id = "IsDetailedStepOutput"
+source = "Cartis–Gould–Toint, Algorithms 12.2.3, 14.1.2 (Steps 2.1, 2.3, 2.5)"
 
 [[node]]
 id = "IsDetailedStepOutput.spec"
-kind = "theorem"
-desc = '''
-Every output `(s, δs)` of the detailed Step 2 (with `0 ∈ T`, `1 ≤ q`) satisfies: `s ∈ T`;
-`∃ μ ∈ Set.Ioc 0 1, μ * (m 0 - sInf (m '' T)) ≤ m 0 - m s` (hence `m s ≤ m 0` when `m` is bounded
-below on `T`, and `m s = m 0 → IsMinOn m T 0`); `δs j ∈ Set.Ioc 0 1` for `j ∈ Icc 1 q` and
-`δs j = 1` for `j ∉ J`; and either `1 ≤ ‖s‖` and `δs = 1`, or for every `j ∈ Icc 1 q` there is
-`d ∈ closedBall 0 (δs j) ∩ Sd s` with `ς * φ j s (δs j) ≤ ΔT j s d ≤ ς * θ * ε j * δs j ^ j / j!`
-(the book's (12.2.27)–(12.2.29) / (14.1.12)–(14.1.13)). Proof: invariant along `ReflTransGen`.
-'''
-deps = ["DetailedStepTrans"]
-source = "Cartis–Gould–Toint, Algorithm 14.1.2 (and 12.2.3): properties of the returned pair"
+source = "Cartis–Gould–Toint, (12.2.27)–(12.2.29), (14.1.12)–(14.1.13)"
 
 [[node]]
 id = "exists_isDetailedStepOutput"
-kind = "theorem"
-desc = '''
-Existence of an output with radius bounds (the content of Lemmas 12.2.9 / 14.1.3). Assume:
-`s⋆ ∈ T` with `IsMinOn m T s⋆` and `s⋆ + d ∈ T` for `d ∈ Sd s⋆`; for every `j ∈ Icc 1 q` and
-`δ ∈ (0,1]` the sup `φ j s⋆ δ` is attained on `closedBall 0 δ ∩ Sd s⋆` (finite dimension,
-continuity); for `j ∈ Icc 1 q \ J`, `φ j s⋆ 1 ≤ 0`; and for `j ∈ J ∩ Icc 1 q` there is
-`δ̄ j ∈ (0,1]` such that for all `δ ∈ (0, δ̄ j]` and `d ∈ closedBall 0 δ ∩ Sd s⋆`,
-`ς θ ε_j δ^j/j! ≤ ΔT j s⋆ d → m s⋆ - m (s⋆ + d) ≥ ς θ ε_j δ^j/(2 j!)` (the conclusion of
-`compositeRegularizedModel_sub_ge_of_decrement_ge` with `α = ς θ ε_j`, or for `h = 0`
-`sub_regularizedModel_ge_of_taylorDecrement_ge`). Then there is an output
-`(s⋆, δs)` (start with `μ₀ = 1`, never executing Step 2.4.4) with `δs j = 1` for `j ∉ J` and
-`δs j ≥ δ̄ j / 2` for `j ∈ J`. Positivity `ε j > 0`, `ς > 0`, `θ > 0` assumed.
-(The book proves the stronger fact that every run of the procedure terminates; that is not part of
-the numbered statements and is not planned.)
-'''
-deps = ["IsDetailedStepOutput.spec"]
-source = "Cartis–Gould–Toint, Lemma 14.1.3 (and Lemma 12.2.9)"
+source = "Cartis–Gould–Toint, Lemmas 12.2.9, 14.1.3"
+
+[[node]]
+id = "MeasureIneq"
+source = "Cartis–Gould–Toint, (12.2.52), (13.1.79), (14.1.30)"
+
+[[node]]
+id = "pow_ge_of_measure_ineq"
+source = "Cartis–Gould–Toint, Lemmas 12.2.12, 13.1.17 (corrected), Appendix B (B.14.7)–(B.14.8)"
 
 [[node]]
 id = "norm_step_ge_of_measure_ineq"
-kind = "theorem"
-desc = '''
-Step-length algebra of Lemmas 12.2.12, 13.1.17 and 14.1.8 (Appendix B (B.14.7)–(B.14.8)); the single
-real-variable node for all three (consolidated from the Chapter 12, 13, 14 plans). Notation
-`χ_j(u) = ∑_{ℓ=1}^j u^ℓ/ℓ!`. Let `1 ≤ j ≤ p`, `A > 0`, `B ≥ 0`, `a > 0`, `ε ∈ (0,1]`, `δ ∈ (0,1]`,
-`t ∈ (0,1]` (the step length `‖s_k‖`), with
-`a * ε * δ ^ j / j! ≤ A * ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / ℓ! * t ^ (p - ℓ + 1) + B * t ^ (p + 1)`
-(`= A t^{p+1} χ_j(δ/t) + B t^{p+1}`).
-(i) Raw cases with `B = 0` (Lemmas 12.2.12, 13.1.17): if `t ≤ δ` then `a ε / j! ≤ 2 A t^(p-j+1)`
-(`χ_j(u) ≤ 2u^j` for `u ≥ 1`, (A.35)); if `δ < t` then `a ε δ^(j-1) / j! ≤ 2 A t^p` (`χ_j(u) ≤ 2u` for
-`u ≤ 1`, (A.34)). Consequently, if `δ = 1`, or `κ ε ≤ δ` with `κ ∈ (0,1]`, then
-`t ≥ (a ε/(2 A j!))^{1/(p-j+1)}` resp. `t^p ≥ a κ^{j-1} ε^j/(2 A j!)`, and with `κ̂ := min κ (τ/2)`,
-`τ := a/(A j!)`: `(τ/2) κ̂^(j-1) ε^j ≤ t^p` in both cases (using `1/(p-j+1) ≤ j/p`, footnote 77).
-(ii) General `B` with `0 < a ≤ j! A`, `B ≤ A` (Lemma 14.1.8), `α := a/(j! A) ∈ (0,1]`: if `t ≤ δ` then
-`(α ε / 3) ^ (1 / (p - j + 1 : ℝ)) ≤ t`; if `κ ∈ (0,1]`, `κ ε ≤ δ`, then
-`(α κ ^ j / 3) ^ (1 / (p - j + 1 : ℝ)) * ε ^ ((j + 1 : ℝ) / (p + 1)) ≤ t`
-(uses `p - j + 1 ≥ (p+1)/(j+1)`; the printed second case of Lemma 14.1.8 omits `ε_j^{(j+1)/(p+1)}`).
-Instances: `A = L + σmax` (ARqp; `+ 3 κ κs` for ARqpIDA), `a = ς - θ` (corrected Lemma 12.2.11) or
-`ς/2 - θ` (EDA); `B = 2 Lh Lc/(p+1)!`, `A = L_{w,p} + σmax` (ARqpC).
-'''
-deps = ["sum_pow_div_factorial_le_two_mul_pow"]
-source = "Cartis–Gould–Toint, Lemmas 12.2.12, 13.1.17, 14.1.8 (Appendix B)"
+source = "Cartis–Gould–Toint, Lemma 14.1.8 (corrected), Appendix B (B.14.7)–(B.14.8)"
+
+[[node]]
+id = "MeasureIneq.div_le_of_le"
+source = "Cartis–Gould–Toint, proofs of Lemmas 12.2.12, 14.1.8 (case ‖s_k‖ ≤ δ)"

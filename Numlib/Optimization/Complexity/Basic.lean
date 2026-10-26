@@ -315,6 +315,19 @@ theorem derivEvalCount_le_funEvalCount : derivEvalCount succ k ≤ funEvalCount 
   rw [derivEvalCount_eq_count, funEvalCount_eq]
   exact Nat.succ_le_succ (Nat.count_le _)
 
+/-- Counting the iterations `j < k` with `p j ∨ q j` (e.g. the derivative evaluations of the
+dynamic-accuracy methods, once per successful or accuracy-improving iteration):
+`derivEvalCount (p ∨ q) k + 1 ≤ derivEvalCount p k + derivEvalCount q k`. -/
+theorem derivEvalCount_or_add_one_le (p q : ℕ → Prop) (k : ℕ) :
+    derivEvalCount (fun j => p j ∨ q j) k + 1 ≤ derivEvalCount p k + derivEvalCount q k := by
+  classical
+  simp only [derivEvalCount_eq_count]
+  have : Nat.count (fun j => p j ∨ q j) k ≤ Nat.count p k + Nat.count q k := by
+    simp only [Nat.count_eq_card_filter_range]
+    rw [filter_or]
+    exact card_union_le _ _
+  omega
+
 end evalCount
 
 /-! ### The counting skeleton -/

@@ -16,6 +16,9 @@ consequences shared by all chapters:
 * `Optimization.pos_of_arUpdate`, `Optimization.le_sigma_of_arUpdate`: `σ_k > 0`, `σ_k ≥ σ_min`;
 * `Optimization.sigma_le_max_of_arUpdate`: if `σ_k ≥ σ̄` forces a very successful iteration, then
   `σ_k ≤ max(σ_0, γ₃ σ̄)` (the mechanism of Lemmas 2.4.2, 3.3.2, 4.1.2);
+* `Optimization.pos_of_arUpdate_of_neutral`, `Optimization.sigma_le_max_of_arUpdate_of_neutral`:
+  the same when some iterations leave `σ` unchanged (accuracy-improving iterations of
+  Chapter 13); the core statements are their special cases;
 * `Optimization.succ_le_of_arUpdate`, `Optimization.le_of_arUpdate`: the number of iterations is
   bounded in terms of the number of successful ones (Lemma 2.4.1).
 
@@ -89,14 +92,25 @@ section sequence
 
 variable {η₁ η₂ γ₁ γ₂ γ₃ σmin σbar σmax : ℝ} {ρ σ : ℕ → ℝ} {k K : ℕ}
 
-/-- The regularization parameters stay positive. -/
-theorem pos_of_arUpdate (hγ₁ : 0 < γ₁) (hγ₂ : 0 < γ₂) (hσ0 : 0 < σ 0)
-    (h : ∀ k < K, ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σmin (ρ k) (σ k) (σ (k + 1))) :
+/-- Positivity of regularization parameters when some iterations leave the parameter
+unchanged. -/
+theorem pos_of_arUpdate_of_neutral (hγ₁ : 0 < γ₁) (hγ₂ : 0 < γ₂) (hσ0 : 0 < σ 0)
+    (h : ∀ k < K, σ (k + 1) = σ k ∨ ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σmin (ρ k) (σ k) (σ (k + 1))) :
     ∀ k ≤ K, 0 < σ k := by
   intro k
   induction k with
   | zero => exact fun _ => hσ0
-  | succ k ih => exact fun hk => (h k hk).pos hγ₁ hγ₂ (ih (Nat.le_of_succ_le hk))
+  | succ k ih =>
+    intro hk
+    rcases h k hk with he | hu
+    · rw [he]; exact ih (Nat.le_of_succ_le hk)
+    · exact hu.pos hγ₁ hγ₂ (ih (Nat.le_of_succ_le hk))
+
+/-- The regularization parameters stay positive. -/
+theorem pos_of_arUpdate (hγ₁ : 0 < γ₁) (hγ₂ : 0 < γ₂) (hσ0 : 0 < σ 0)
+    (h : ∀ k < K, ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σmin (ρ k) (σ k) (σ (k + 1))) :
+    ∀ k ≤ K, 0 < σ k :=
+  pos_of_arUpdate_of_neutral hγ₁ hγ₂ hσ0 fun k hk => Or.inr (h k hk)
 
 /-- The regularization parameters stay above `σmin` ([cartis2022evaluation], proof of
 Lemma 3.3.4). -/
@@ -108,6 +122,30 @@ theorem le_sigma_of_arUpdate (hmin : 0 ≤ σmin) (hγ₂ : 1 ≤ γ₂) (h0 : �
   | zero => exact fun _ => h0
   | succ k ih => exact fun hk => (h k hk).sigmaMin_le hmin hγ₂ (ih (Nat.le_of_succ_le hk))
 
+/-- **Upper bound on the regularization parameter with neutral iterations** (the mechanism of
+the bound on `σ_k` for ARqpIDA/ARqpEDA, [cartis2022evaluation], Lemmas 13.1.14, 13.3.5). If every
+iteration `k < K` either leaves `σ` unchanged, or satisfies the update rule (2.4.4) and is very
+successful whenever `σ_k ≥ σbar`, then `σ_k ≤ max(σ_0, γ₃ σbar)` for all `k ≤ K`. -/
+theorem sigma_le_max_of_arUpdate_of_neutral (hγ₁ : 0 < γ₁) (hγ₂ : 0 < γ₂) (hγ₂₃ : γ₂ ≤ γ₃)
+    (hγ₃ : 1 ≤ γ₃) (hσ0 : 0 < σ 0)
+    (h : ∀ k < K, σ (k + 1) = σ k ∨
+      (ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σmin (ρ k) (σ k) (σ (k + 1)) ∧ (σbar ≤ σ k → η₂ ≤ ρ k))) :
+    ∀ k ≤ K, σ k ≤ max (σ 0) (γ₃ * σbar) := by
+  have hpos := pos_of_arUpdate_of_neutral hγ₁ hγ₂ hσ0 fun k hk => (h k hk).imp id And.left
+  intro k
+  induction k with
+  | zero => exact fun _ => le_max_left _ _
+  | succ k ih =>
+    intro hk
+    have hkK : k < K := hk
+    rcases h k hkK with he | ⟨hu, hforce⟩
+    · rw [he]; exact ih hkK.le
+    by_cases hbar : σbar ≤ σ k
+    · exact (hu.le_of_very_successful (hforce hbar)).trans (ih hkK.le)
+    · calc σ (k + 1) ≤ γ₃ * σ k := hu.le_mul hγ₂₃ hγ₃ (hpos k hkK.le).le
+        _ ≤ γ₃ * σbar := mul_le_mul_of_nonneg_left (not_le.1 hbar).le (zero_le_one.trans hγ₃)
+        _ ≤ max (σ 0) (γ₃ * σbar) := le_max_right _ _
+
 /-- **Upper bound on the regularization parameter** (the mechanism of [cartis2022evaluation],
 Lemmas 2.4.2, 3.3.2, 4.1.2). If every iteration `k < K` with `σ_k ≥ σbar` is very successful,
 then `σ_k ≤ max(σ_0, γ₃ σbar)` for all `k ≤ K`. -/
@@ -115,19 +153,9 @@ theorem sigma_le_max_of_arUpdate (hγ₁ : 0 < γ₁) (hγ₂ : 0 < γ₂) (hγ�
     (hγ₃ : 1 ≤ γ₃) (hσ0 : 0 < σ 0)
     (h : ∀ k < K, ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σmin (ρ k) (σ k) (σ (k + 1)))
     (hforce : ∀ k < K, σbar ≤ σ k → η₂ ≤ ρ k) :
-    ∀ k ≤ K, σ k ≤ max (σ 0) (γ₃ * σbar) := by
-  have hpos := pos_of_arUpdate hγ₁ hγ₂ hσ0 h
-  intro k
-  induction k with
-  | zero => exact fun _ => le_max_left _ _
-  | succ k ih =>
-    intro hk
-    have hkK : k < K := hk
-    by_cases hbar : σbar ≤ σ k
-    · exact ((h k hkK).le_of_very_successful (hforce k hkK hbar)).trans (ih hkK.le)
-    · calc σ (k + 1) ≤ γ₃ * σ k := (h k hkK).le_mul hγ₂₃ hγ₃ (hpos k hkK.le).le
-        _ ≤ γ₃ * σbar := mul_le_mul_of_nonneg_left (not_le.1 hbar).le (zero_le_one.trans hγ₃)
-        _ ≤ max (σ 0) (γ₃ * σbar) := le_max_right _ _
+    ∀ k ≤ K, σ k ≤ max (σ 0) (γ₃ * σbar) :=
+  sigma_le_max_of_arUpdate_of_neutral hγ₁ hγ₂ hγ₂₃ hγ₃ hσ0 fun k hk =>
+    Or.inr ⟨h k hk, hforce k hk⟩
 
 /-- **Lemma 2.4.1** ([cartis2022evaluation]) for the update (2.4.4), with successful iterations
 `𝒮_k = {j ≤ k | η₁ ≤ ρ_j}`. If `σ_0 > 0`, `0 < γ₁ ≤ 1 < γ₂`, the update holds at every `j ≤ k`

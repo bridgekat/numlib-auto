@@ -19,3 +19,7 @@ source = "Cartis–Gould–Toint, Lemma 2.3.1"
 [[node]]
 id = "le_delta_succ_of_trUpdate"
 source = "Cartis–Gould–Toint, Lemma 2.3.4, proof of Theorem 2.3.7"
+
+[[node]]
+id = "le_delta_of_trUpdate_of_neutral"
+source = "Cartis–Gould–Toint, Lemma 13.1.4 (mechanism), proof in Appendix B"

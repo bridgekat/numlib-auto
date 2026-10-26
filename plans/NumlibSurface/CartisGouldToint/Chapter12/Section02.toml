@@ -339,9 +339,9 @@ if `q ∈ {1,2}`, `‖s_k‖ ≥ (τ_j ε_j / 2)^{1/(p-j+1)}`; if `q > 2`,
 Correction: the printed constant uses `κ_{δ,min}`; the step "the first case implies the second"
 needs `(τ_j/2)^{j-1} ≥ κ_{δ,min}^{j-1}`, false when `θ` is close to `1` (`τ_j → 0`), hence `κ̂`.
 Proof: `‖s_k‖ ≥ 1` trivial (bounds `≤ 1`); else Lemma 12.2.11 and
-`Optimization.norm_step_ge_of_measure_ineq` (case (i), `B = 0`).
+`Optimization.pow_ge_of_measure_ineq` and `Optimization.MeasureIneq.div_le_of_le` (`B = 0`).
 '''
-deps = ["lemma_12_2_11", "arqpKappaHat", "Optimization.norm_step_ge_of_measure_ineq"]
+deps = ["lemma_12_2_11", "arqpKappaHat", "Optimization.pow_ge_of_measure_ineq", "Optimization.MeasureIneq.div_le_of_le"]
 source = "Cartis–Gould–Toint, Lemma 12.2.12"
 
 [[node]]
