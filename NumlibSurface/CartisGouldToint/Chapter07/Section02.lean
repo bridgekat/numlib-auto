@@ -675,22 +675,16 @@ private noncomputable def goodDecr (P : TPpGCParams) (Lμ : ℝ) (p : ℕ) (ε�
   Chapter06.kappa1CC P.toARpCCParams Lμ p * P.θ ^ (((p : ℝ) + 1) / p) *
     (ε₀ ^ (((p : ℝ) + 1) / p - 1) * ε₁ ^ (((p : ℝ) + 1) / p))
 
-private theorem kappa1CC_pos {P : TPpGCParams} {Lμ : ℝ} (hL : 0 ≤ Lμ) (p : ℕ) :
-    0 < Chapter06.kappa1CC P.toARpCCParams Lμ p := by
-  have := P.η₁_pos; have := P.σmin_pos; have := P.toARpCCParams.sigmaMax_pos Lμ
-  have := P.θ₁_pos
-  unfold Chapter06.kappa1CC; positivity
-
 private theorem goodDecr_pos {P : TPpGCParams} {Lμ ε₀ ε₁ : ℝ} (hL : 0 ≤ Lμ) (p : ℕ)
     (hε₀ : 0 < ε₀) (hε₁ : 0 < ε₁) : 0 < goodDecr P Lμ p ε₀ ε₁ := by
-  have := kappa1CC_pos (P := P) hL p; have := P.θ_pos
+  have := Chapter06.kappa1CC_pos (P := P.toARpCCParams) (p := p) hL; have := P.θ_pos
   unfold goodDecr; positivity
 
 /-- `G = (1 - θ) ε₀ / δ`. -/
 private theorem goodBound_eq {P : TPpGCParams} {Lμ ε₀ ε₁ : ℝ} (hL : 0 ≤ Lμ) {p : ℕ}
     (hp : 1 ≤ p) (hε₀ : 0 < ε₀) (hε₁ : 0 < ε₁) :
     goodBound P Lμ p ε₀ ε₁ = (1 - P.θ) * ε₀ / goodDecr P Lμ p ε₀ ε₁ := by
-  have hκ := kappa1CC_pos (P := P) hL p
+  have hκ := Chapter06.kappa1CC_pos (P := P.toARpCCParams) (p := p) hL
   have hθ := P.θ_pos
   have h1 : ε₀ ^ (((p : ℝ) - 1) / p) = ε₀ ^ (1 : ℝ) / ε₀ ^ (((p : ℝ) + 1) / p - 1) := by
     rw [← Real.rpow_sub hε₀]
@@ -758,7 +752,7 @@ private theorem good_decrease (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) {k
   have hω : ε₁ * ρ' < Chapter06.omega1 (Constrained.targetMerit f c (D.t k)) C (D.xi k (i + 1)) :=
     lt_of_not_ge hncrit
   have hπ : 0 ≤ ((p : ℝ) + 1) / p := by positivity
-  have hκ := kappa1CC_pos (P := P) hdpl.nonneg p
+  have hκ := Chapter06.kappa1CC_pos (P := P.toARpCCParams) (p := p) hdpl.nonneg
   have key : Chapter06.kappa1CC P.toARpCCParams Lμ p * (ρ' * ε₁) ^ (((p : ℝ) + 1) / p) ≤
       ρ ^ 2 / 2 - ρ' ^ 2 / 2 := by
     rw [← Constrained.targetMerit_eq, ← Constrained.targetMerit_eq]
@@ -1202,7 +1196,7 @@ theorem exists_innerRun (hC : Chapter06.AssumptionCNe C) (hμ : AssumptionMu2DpL
       (fun _ => False) j) → xs k ∈ C ∧ P.σmin ≤ σs k ∧ σs k ≤ P.toARpCCParams.sigmaMax L :=
     fun k hk => Chapter06.arpcc_sigma_le (P := P.toARpCCParams) hrun hC hdpl (hx0 ▸ hy)
       (fun _ hs => ⟨hs.mem, hs.decrease⟩) k (IsARRun.forall_lt_not_stop_iff.1 hk)
-  have hκ := kappa1CC_pos (P := P) hdpl.nonneg p
+  have hκ := Chapter06.kappa1CC_pos (P := P.toARpCCParams) (p := p) hdpl.nonneg
   have he : 0 < ((p : ℝ) + 1) / p := by
     have : (1 : ℝ) ≤ p := by exact_mod_cast hp
     positivity
@@ -1316,7 +1310,8 @@ structure algorithm_7_2_1 (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (C : Set 
   start : y 0 = x₀
   /-- Phase 1: ARpLE-CC on `c` with the test (7.2.9). -/
   phase1 : Chapter06.algorithm_6_3_1 c ℓ C p P.toARpCCParams (P.θ * ε₀) ε₁ y s σ
-  /-- Phase 1 stops at the first index at which (7.2.9) holds. -/
+  /-- Phase 1 stops at `k₁`, the first index at which (7.2.9) holds, i.e. at which the
+  ARpLE-CC test `Chapter06.stopLE c ℓ C (θε₀) ε₁` holds; `x₁ = y_{k₁}`. -/
   phase1_hit : IsFirstHit (fun k => Chapter06.stopLE c ℓ C (P.θ * ε₀) ε₁ (y k)) k₁
   /-- Phase 2 is run from `x₁ = y_{k₁}` when `‖c(x₁)‖ ≤ θε₀`. -/
   phase2 : ‖c (y k₁)‖ ≤ P.θ * ε₀ → IsTPpGCPhase2 f c C p P ε₀ ε₁ (y k₁) D
@@ -1417,7 +1412,7 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {C : Set ℝⁿ} {p : ℕ}
 theorem lemma_7_2_6_of_mu2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
     (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) (hB : AssumptionBFb f c C P.β flow fup)
     (hμ : AssumptionMu2DpLC f c C p) :
-    ∃ Lμ, 0 ≤ Lμ ∧ ∀ {K : ℕ}, 1 ≤ K → D.Before f c C P ε₀ ε₁ K →
+    ∃ Lμ, 0 ≤ Lμ ∧ ∀ K, 1 ≤ K → D.Before f c C P ε₀ ε₁ K →
       (∀ k, 1 ≤ k → k ≤ K →
         D.succCount f c p P k ≤ D.goodCount f c C p P ε₀ ε₁ k + 1 ∧
         (D.e k : ℝ) ≤ (1 + |Real.log P.γ₁| / Real.log P.γ₂) * D.succCount f c p P k +
@@ -1427,7 +1422,7 @@ theorem lemma_7_2_6_of_mu2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
       K ≤ D.kaCount f c P ε₀ K + ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k +
         D.badCount f c C P ε₀ ε₁ K + 1 := by
   obtain ⟨Lμ, hL0, hL⟩ := lemma_7_2_5 hμ hp (flow - 1) fup
-  exact ⟨Lμ, hL0, fun hK1 hK => lemma_7_2_6 h hC hp hB hL hK1 hK⟩
+  exact ⟨Lμ, hL0, fun _ hK1 hK => lemma_7_2_6 h hC hp hB hL hK1 hK⟩
 
 /-- **Theorem 7.2.7** of [cartis2022evaluation], Phase 2, under the book's hypotheses μ₂.DpL.C
 and f.B.Fb (`p ≥ 1`): the conclusions of `theorem_7_2_7_phase2` hold with the uniform Lipschitz

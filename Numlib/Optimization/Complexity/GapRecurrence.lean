@@ -30,6 +30,13 @@ explicit `N`:
 The exact count of Theorem 5.3.2 is `Optimization.implicitGapHitIndex`, the hitting time of the
 sequence `Optimization.implicitGapSeq` defined by `κ t_{n+1}^τ + t_{n+1} = t_n` (5.3.12).
 Finally `Optimization.le_two_pow_two_pow_of_sq` is the doubly exponential count of Lemma 5.4.3.
+Helpers for the measure-dominated complexity theorems: `Optimization.frequently_of_density`
+(density forces infinitely many successes), `Optimization.exists_le_of_gap_count` and
+`Optimization.exists_le_of_gap_count_nat` (measure counts from gap counts, (B.5.11)),
+`Optimization.superlinearCountConst` (the additive constant of the superlinear count),
+`Optimization.IsImplicitGapDecrease.mul_kappaDom`, and the first-success facts
+`Optimization.IsExplicitGapDecrease.mul_rpow_le_one`,
+`Optimization.IsExplicitGapDecrease.eq_zero_of_one_le_mul_rpow`.
 
 ## Corrections to the book
 
@@ -1386,5 +1393,184 @@ theorem le_two_pow_two_pow_of_sq {u : ℕ → ℝ} {ζ : ℝ} (hζ : 0 < ζ) (hu
       rw [div_le_iff₀ (by positivity)]
       rw [div_le_iff₀ hε] at h3
       linarith
+
+/-! ### Helpers for measure-dominated complexity counts -/
+
+/-! ### Density and measure counts -/
+
+section Counting
+
+variable {Γ : ℕ → ℝ} {S : ℕ → Prop}
+
+
+/-- The density (5.3.9) forces infinitely many successful iterations. -/
+theorem frequently_of_density {κR κA : ℝ} (hκR : 0 ≤ κR)
+    (h : ∀ k : ℕ, (k : ℝ) ≤ κR * (successSet S k).card + κA) : ∀ N, ∃ k ≥ N, S k := by
+  intro N
+  by_contra hcon
+  push Not at hcon
+  have hcard : ∀ k, (successSet S k).card ≤ N := fun k => by
+    calc (successSet S k).card ≤ (Finset.range N).card := by
+          refine Finset.card_le_card fun j hj => ?_
+          rw [mem_successSet] at hj
+          exact Finset.mem_range.2 (lt_of_not_ge fun hjN => hcon j hjN hj.2)
+      _ = N := Finset.card_range N
+  obtain ⟨k, hk⟩ := exists_nat_gt (κR * N + κA)
+  have h1 := h k
+  have h2 : κR * ((successSet S k).card : ℝ) ≤ κR * N :=
+    mul_le_mul_of_nonneg_left (by exact_mod_cast hcard k) hκR
+  linarith
+
+/-- **Measure counts from gap counts** (the step (B.5.11) of [cartis2022evaluation], Appendix B):
+let `Γ ≥ 0` with infinitely many successful iterations, `Γ_{k+1} ≤ ε` whenever `N ≤ |𝒮_k|`, and
+`κν φ_k^ν ≤ Γ_k - Γ_{k+1}` at the successful `k`. Then some successful `k` has
+`κν φ_k^ν ≤ ε` and `|𝒮_k| ≤ max N 0 + 2`. -/
+theorem exists_le_of_gap_count {φ : ℕ → ℝ} {κν ν ε N : ℝ} (hΓ : ∀ k, 0 ≤ Γ k)
+    (hS : ∀ M, ∃ k ≥ M, S k) (hcount : ∀ k, N ≤ (successSet S k).card → Γ (k + 1) ≤ ε)
+    (hdec : ∀ k, S k → κν * φ k ^ ν ≤ Γ k - Γ (k + 1)) :
+    ∃ k, S k ∧ κν * φ k ^ ν ≤ ε ∧ ((successSet S k).card : ℝ) ≤ max N 0 + 2 := by
+  set n := max 2 (⌈N⌉₊ + 1) with hn
+  obtain ⟨k₀, hk₀⟩ := exists_le_card_successSet hS n
+  obtain ⟨a, -, hSa, hcard⟩ := exists_card_successSet_eq (by omega) hk₀
+  have ha : a ≠ 0 := by
+    rintro rfl
+    have : (successSet S 0).card ≤ 1 := card_successSet_le
+    omega
+  obtain ⟨b, rfl⟩ := Nat.exists_eq_succ_of_ne_zero ha
+  have hcb : (successSet S b).card + 1 = n := by
+    rw [← card_successSet_add_one_of_succ hSa, hcard]
+  have hNb : N ≤ (successSet S b).card := by
+    have h1 : N ≤ (⌈N⌉₊ : ℝ) := Nat.le_ceil N
+    have h2 : ⌈N⌉₊ ≤ (successSet S b).card := by omega
+    exact h1.trans (by exact_mod_cast h2)
+  refine ⟨b + 1, hSa, ?_, ?_⟩
+  · have := hdec _ hSa
+    have := hcount b hNb
+    have := hΓ (b + 1 + 1)
+    linarith
+  · rw [hcard]
+    rcases le_total 2 (⌈N⌉₊ + 1) with h | h
+    · rw [hn, max_eq_right h]
+      have := Nat.ceil_lt_add_one (le_max_right N 0)
+      have h3 : (⌈N⌉₊ : ℝ) ≤ ⌈max N 0⌉₊ := by exact_mod_cast Nat.ceil_mono (le_max_left _ _)
+      push_cast
+      linarith
+    · rw [hn, max_eq_left h]
+      have := le_max_right N 0
+      push_cast
+      linarith
+
+/-- **Measure counts from gap counts, integer form** (the step (B.5.11) of [cartis2022evaluation],
+Appendix B): let `Γ ≥ 0` with infinitely many successful iterations, `Γ_{k+1} ≤ ε` whenever
+`n ≤ |𝒮_k|` (`n` a natural number), and `κν φ_k^ν ≤ Γ_k - Γ_{k+1}` at the successful `k`. Then
+some successful `k` has `κν φ_k^ν ≤ ε` and `|𝒮_k| ≤ max n 1 + 1` (one successful iteration
+more than the gap count). -/
+theorem exists_le_of_gap_count_nat {φ : ℕ → ℝ} {κν ν ε : ℝ} {n : ℕ} (hΓ : ∀ k, 0 ≤ Γ k)
+    (hS : ∀ M, ∃ k ≥ M, S k) (hcount : ∀ k, n ≤ (successSet S k).card → Γ (k + 1) ≤ ε)
+    (hdec : ∀ k, S k → κν * φ k ^ ν ≤ Γ k - Γ (k + 1)) :
+    ∃ k, S k ∧ κν * φ k ^ ν ≤ ε ∧ (successSet S k).card ≤ max n 1 + 1 := by
+  obtain ⟨k₀, hk₀⟩ := exists_le_card_successSet hS (max n 1 + 1)
+  obtain ⟨a, -, hSa, hcard⟩ := exists_card_successSet_eq (by omega) hk₀
+  have ha : a ≠ 0 := by
+    rintro rfl
+    have : (successSet S 0).card ≤ 1 := card_successSet_le
+    omega
+  obtain ⟨b, rfl⟩ := Nat.exists_eq_succ_of_ne_zero ha
+  have hcb : (successSet S b).card + 1 = max n 1 + 1 := by
+    rw [← card_successSet_add_one_of_succ hSa, hcard]
+  refine ⟨b + 1, hSa, ?_, hcard.le⟩
+  have := hdec _ hSa
+  have := hcount b (by omega)
+  have := hΓ (b + 1 + 1)
+  linarith
+
+end Counting
+
+/-- The additive constant of the superlinear count (`superlinearGapCount_le`; `κ^F_{AR,gap,1}`
+of Theorem 5.3.3 of [cartis2022evaluation], corrected): with `α = τ - 1` and `ω_0 = c^{1/α} Γ_0`,
+`max(0, log ω_0)/log(1 + ω_0^α) + 2 + (log(1 + |log c|/|α|) + |log log(1 + ω_0^α)|)/log(1/τ)`
+`+ 1`. -/
+noncomputable def superlinearCountConst (c τ Γ0 : ℝ) : ℝ :=
+  max 0 (Real.log (c ^ (1 / (τ - 1)) * Γ0)) /
+      Real.log (1 + (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1)) + 2 +
+    (Real.log (1 + |Real.log c| / |τ - 1|) +
+        |Real.log (Real.log (1 + (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1)))|) /
+      Real.log (1 / τ) + 1
+
+theorem superlinearCountConst_nonneg {c τ Γ0 : ℝ} (hc : 0 ≤ c) (hτ0 : 0 < τ) (hτ1 : τ ≤ 1)
+    (hΓ0 : 0 ≤ Γ0) : 0 ≤ superlinearCountConst c τ Γ0 := by
+  have h1 : 0 ≤ (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1) :=
+    Real.rpow_nonneg (mul_nonneg (Real.rpow_nonneg hc _) hΓ0) _
+  have h2 : 0 ≤ Real.log (1 + (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1)) :=
+    Real.log_nonneg (by linarith)
+  have h3 : 0 ≤ Real.log (1 + |Real.log c| / |τ - 1|) := Real.log_nonneg (by
+    have : 0 ≤ |Real.log c| / |τ - 1| := by positivity
+    linarith)
+  have h4 : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ0]; linarith)
+  unfold superlinearCountConst
+  have := le_max_left 0 (Real.log (c ^ (1 / (τ - 1)) * Γ0))
+  positivity
+
+/-- `superlinearGapCount_le` with the constant `superlinearCountConst`. -/
+theorem superlinearGapCount_le_const {c τ Γ0 ε : ℝ} (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1)
+    (hΓ0 : 0 < Γ0) (hε : 0 < ε) :
+    (superlinearGapCount c τ Γ0 ε : ℝ) ≤
+      Real.log (max 1 |Real.log ε|) / Real.log (1 / τ) + superlinearCountConst c τ Γ0 := by
+  have := superlinearGapCount_le (Γ0 := Γ0) hc hτ0 hτ1 hΓ0 hε
+  rw [superlinearCountConst]; linarith
+
+/-- `c κdom = min(Γ_0^{-α} (2^α - 1), min(1, α) c / 2)` for `c > 0`. -/
+theorem IsImplicitGapDecrease.mul_kappaDom {c α Γ0 : ℝ} (hc : 0 < c) :
+    c * IsImplicitGapDecrease.kappaDom c α Γ0 =
+      min (Γ0 ^ (-α) * (2 ^ α - 1)) (min 1 α * c / 2) := by
+  rw [IsImplicitGapDecrease.kappaDom, mul_min_of_nonneg _ _ hc.le]
+  congr 1
+  · field_simp
+  · ring
+
+section ExplicitFirst
+
+variable {Γ : ℕ → ℝ} {S : ℕ → Prop} {c τ : ℝ}
+
+/-- Before the first successful iteration the gap is unchanged. -/
+theorem IsExplicitGapDecrease.eq_of_le_first (hg : IsExplicitGapDecrease Γ S c τ) {k₁ : ℕ}
+    (hfirst : ∀ j < k₁, ¬ S j) : ∀ j ≤ k₁, Γ j = Γ 0 := by
+  intro j
+  induction j with
+  | zero => exact fun _ => rfl
+  | succ j ih =>
+    intro hj
+    rw [hg.eq_of_not j (hfirst j (by omega)), ih (by omega)]
+
+/-- At the first successful iteration, `0 ≤ Γ_{k₁+1} ≤ Γ_0 (1 - c Γ_0^{τ-1})`; hence
+`c Γ_0^{τ-1} ≤ 1` when `Γ_0 > 0`. -/
+theorem IsExplicitGapDecrease.mul_rpow_le_one (hg : IsExplicitGapDecrease Γ S c τ) (hc : 0 ≤ c)
+    (hS : ∃ k, S k) (hΓ0 : 0 < Γ 0) : c * Γ 0 ^ (τ - 1) ≤ 1 := by
+  classical
+  have hk := Nat.find_spec hS
+  have h0 := hg.eq_of_le_first (fun j hj => Nat.find_min hS hj) _ le_rfl
+  have h1 := hg.le_mul hc hk
+  have h2 := hg.nonneg (Nat.find hS + 1)
+  rw [h0] at h1
+  by_contra hcon
+  push Not at hcon
+  nlinarith
+
+/-- If `c Γ_0^{τ-1} ≥ 1` (and `Γ_0 > 0`), the gap vanishes after every successful iteration. -/
+theorem IsExplicitGapDecrease.eq_zero_of_one_le_mul_rpow (hg : IsExplicitGapDecrease Γ S c τ) (hc : 0 ≤ c)
+    (hΓ0 : 0 < Γ 0) (h1 : 1 ≤ c * Γ 0 ^ (τ - 1)) : ∀ k, S k → Γ (k + 1) = 0 := by
+  classical
+  intro k hk
+  have hS : ∃ k, S k := ⟨k, hk⟩
+  set k₁ := Nat.find hS
+  have hk₁ : k₁ ≤ k := Nat.find_min' hS hk
+  have h0 := hg.eq_of_le_first (fun j hj => Nat.find_min hS hj) _ le_rfl
+  have hle := hg.le_mul hc (Nat.find_spec hS)
+  rw [h0] at hle
+  have hz : Γ (k₁ + 1) ≤ 0 := hle.trans (by nlinarith)
+  have hanti : Antitone Γ := antitone_nat_of_succ_le (hg.le_self hc)
+  exact le_antisymm ((hanti (by omega : k₁ + 1 ≤ k + 1)).trans hz) (hg.nonneg _)
+
+end ExplicitFirst
 
 end Optimization

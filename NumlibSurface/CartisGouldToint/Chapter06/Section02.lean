@@ -945,6 +945,11 @@ noncomputable def kappaSARp1CC (P : ARpCCParams) (L : ℝ) (p : ℕ) : ℝ :=
 noncomputable def kappaAARp1CC (P : ARpCCParams) (L : ℝ) (p : ℕ) : ℝ :=
   kappaSARp1CC P L p * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
 
+/-- The constant `κ₁` of (4.1.32) is positive. -/
+theorem kappa1CC_pos {P : ARpCCParams} {L : ℝ} {p : ℕ} (hL : 0 ≤ L) : 0 < kappa1CC P L p := by
+  have := P.η₁_pos; have := P.σmin_pos; have := P.sigmaMax_pos L; have := P.θ₁_pos
+  unfold kappa1CC; positivity
+
 theorem kappa1CC_mul_kappaSARp1CC {P : ARpCCParams} {L : ℝ} (hL : 0 ≤ L) (p : ℕ) :
     kappa1CC P L p * kappaSARp1CC P L p = 1 := by
   have := P.η₁_pos; have := P.σmin_pos; have := P.sigmaMax_pos L; have := P.θ₁_pos

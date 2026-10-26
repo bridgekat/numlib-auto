@@ -143,16 +143,10 @@ theorem toIsARRun (h : IsARpRun f p P q test x s σ) :
       (taylorRatio f p x s) x s σ :=
   h
 
-private theorem not_stop_iff {K : ℕ} :
-    (∀ j < K, ¬ (test j ∨ False)) ↔ ∀ j < K, ¬ test j := by simp
-
-private theorem not_stop_le_iff {K : ℕ} :
-    (∀ j ≤ K, ¬ (test j ∨ False)) ↔ ∀ j ≤ K, ¬ test j := by simp
-
 /-- The step conditions hold at every iteration before termination. -/
 theorem step_spec (h : IsARpRun f p P q test x s σ) {k : ℕ} (hk : ∀ j ≤ k, ¬ test j) :
     IsARpStep f p P q (x k) (σ k) (s k) :=
-  h.toIsARRun.step_of_forall_le (not_stop_le_iff.2 hk)
+  h.toIsARRun.step_of_forall_le (IsARRun.forall_le_not_stop_iff.2 hk)
 
 /-- **Lemma 4.1.2** ([cartis2022evaluation]): under f.DpL (`f` `C^p` with `L`-Lipschitz `∇^p f`),
 up to (and including) the first termination index, `σ_min ≤ σ_k ≤ σ_max = max(σ₀, γ₃ L/(1 - η₂))`
@@ -161,18 +155,18 @@ theorem sigma_le (h : IsARpRun f p P q test x s σ) {L : ℝ} (hf : ContDiff ℝ
     (hL : IteratedFDerivLipschitzOn f p L univ) {k : ℕ} (hk : ∀ j < k, ¬ test j) :
     P.σmin ≤ σ k ∧ σ k ≤ arSigmaMax P.toARParams L := by
   have := h.toIsARRun.sigma_le convex_univ (fun y _ => hf.contDiffAt) hL (mem_univ _)
-    (fun k _ hstep => ⟨mem_univ _, hstep.decrease⟩) k (not_stop_iff.2 hk)
+    (fun k _ hstep => ⟨mem_univ _, hstep.decrease⟩) k (IsARRun.forall_lt_not_stop_iff.2 hk)
   exact this.2
 
 /-- The weights are positive before termination. -/
 theorem sigma_pos (h : IsARpRun f p P q test x s σ) {k : ℕ} (hk : ∀ j < k, ¬ test j) :
     0 < σ k :=
-  h.toIsARRun.sigma_pos (not_stop_iff.2 hk) k le_rfl
+  h.toIsARRun.sigma_pos (IsARRun.forall_lt_not_stop_iff.2 hk) k le_rfl
 
 /-- An unsuccessful iteration before termination keeps the iterate. -/
 theorem eq_of_not_succ (h : IsARpRun f p P q test x s σ) {k : ℕ} (hk : ∀ j ≤ k, ¬ test j)
     (hs : ¬ P.η₁ ≤ taylorRatio f p x s k) : x (k + 1) = x k :=
-  h.toIsARRun.eq_of_not_succ (not_stop_le_iff.2 hk) (not_le.1 hs)
+  h.toIsARRun.eq_of_not_succ (IsARRun.forall_le_not_stop_iff.2 hk) (not_le.1 hs)
 
 /-- **Density of the successful iterations** ([cartis2022evaluation], Lemma 2.4.1 with
 `σ_k ≤ σ_max` from Lemma 4.1.2; the form (5.3.9)): if the run has not terminated before `k`, then
@@ -182,7 +176,7 @@ theorem density (h : IsARpRun f p P q test x s σ) {L : ℝ} (hf : ContDiff ℝ 
     (k : ℝ) ≤ (1 + |Real.log P.γ₁| / Real.log P.γ₂) *
         (successSet (fun j => P.η₁ ≤ taylorRatio f p x s j) k).card +
       Real.log (arSigmaMax P.toARParams L / P.σ₀) / Real.log P.γ₂ := by
-  have := h.toIsARRun.le_succ_count (k := k) (not_stop_iff.2 hk) (h.sigma_le hf hL hk).2
+  have := h.toIsARRun.le_succ_count (k := k) (IsARRun.forall_lt_not_stop_iff.2 hk) (h.sigma_le hf hL hk).2
   linarith
 
 variable {L : ℝ}
@@ -331,7 +325,7 @@ theorem step_lower_bounds (h : IsARpRun f p P q test x s σ) (hf : ContDiff ℝ 
       |iteratedFDeriv ℝ 2 f (x (k + 1)) (fun _ => d)| ≤
         (L + arSigmaMax P.toARParams L + P.θ₂ * (p - 1)!) / ((p - 1)! : ℝ) * ‖s k‖ ^ (p - 1)) := by
   have hx : x (k + 1) = x k + s k :=
-    h.toIsARRun.eq_add_of_succ (not_stop_le_iff.2 hk) hs
+    h.toIsARRun.eq_add_of_succ (IsARRun.forall_le_not_stop_iff.2 hk) hs
   have hK := constant_pos (P := P) hL0
   rw [hx]
   refine ⟨rfl, ?_, fun hq => ?_, fun hq d hd => ?_, fun hq d hd => ?_⟩
@@ -391,7 +385,7 @@ theorem decrease_ge (h : IsARpRun f p P q test x s σ) (hf : ContDiff ℝ p f)
         |iteratedFDeriv ℝ 3 f (x (k + 1)) (fun _ => d)| ^ (((p : ℝ) + 1) / ((p : ℝ) - 2)) ≤
           f (x k) - f (x (k + 1))) := by
   have hσ := h.sigma_le hf hL (k := k) fun j hj => hk j hj.le
-  obtain ⟨-, hdec⟩ := h.toIsARRun.sub_ge_of_succ_taylor (not_stop_le_iff.2 hk)
+  obtain ⟨-, hdec⟩ := h.toIsARRun.sub_ge_of_succ_taylor (IsARRun.forall_le_not_stop_iff.2 hk)
     (h.step_spec hk).decrease hs
   have h37 : P.η₁ * P.σmin / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) ≤ f (x k) - f (x (k + 1)) := by
     refine le_trans ?_ hdec

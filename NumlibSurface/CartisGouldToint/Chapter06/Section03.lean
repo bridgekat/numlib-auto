@@ -166,11 +166,6 @@ section Decrease
 variable {r : ℝⁿ → ℝᵐ} {ℓ : ℕ} {C : Set ℝⁿ} {p : ℕ} {P : ARpCCParams} {ε₀ ε₁ L : ℝ}
   {x s : ℕ → ℝⁿ} {σ : ℕ → ℝ}
 
-/-- The constant `κ₁` of (4.1.32) is positive. -/
-theorem kappa1CC_pos (hL : 0 ≤ L) : 0 < kappa1CC P L p := by
-  have := P.η₁_pos; have := P.σmin_pos; have := P.sigmaMax_pos L; have := P.θ₁_pos
-  unfold kappa1CC; positivity
-
 /-- **(6.3.3)** and the display before it ([cartis2022evaluation]): under C.CNe and Φℓ.DpL.C, on a
 successful iteration `k` of ARpLE-CC before termination (`p, ℓ ≥ 1`):
 `‖r(x_k)‖^ℓ - ‖r(x_{k+1})‖^ℓ ≥ κ₁ ℓ ω_{Φ_ℓ,𝒞,1}(x_{k+1})^{(p+1)/p}` (Lemma 6.2.4 for `f = Φ_ℓ`,

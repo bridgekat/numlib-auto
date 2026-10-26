@@ -44,9 +44,12 @@ telescoping the potential `‖r(x_k)‖^{1/2^i}`.
   hold for every run.
 * **Lemma 5.1.1** is proved for `ℓ > 2p` as stated (the backbone gives `ℓ ≥ 2p`).
 * **Lemma 5.1.5** needs `p ≠ 0` (the book writes `p ∈ ℕ`).
-* **Theorem 5.1.7.** The OCR exponents `2^4`, `2^s`, `2^*` are `2^i`; the multiplier in (5.1.44)
-  is `κ^A` (printed `κ^C`); in (5.1.51) the three conditions are alternatives ("or", printed
-  "and"). The theorem is proved in a general form (`theorem_5_1_7_of_iota_nonneg`, any order
+* **Theorem 5.1.7.** The OCR exponents `2^4`, `2^s`, `2^*` are `2^i`, and the OCR `ε` in
+  `1 - (ε-1)/p` is `ℓ`; the multiplier in (5.1.44) is `κ^A` (printed `κ^C`); in (5.1.51) the three
+  conditions are alternatives ("or", printed "and"), and the set `𝓜_{j+1}` there is that of
+  (4.1.14) (printed "(4.1.9)"). The run may also stop by the strict-local-minimizer test
+  (5.1.11), which is one of the termination branches of `ARpLEStop`. The theorem is proved in a
+general form (`theorem_5_1_7_of_iota_nonneg`, any order
   `q ≤ 3` and any `ℓ`, `i` with `ι_j ≥ 0` for `j ≤ q`), which also covers the first- and
   second-order variants mentioned after the book's proof. The book's hypothesis
   `(ε₀, …, ε₃) ∈ (0, 1]⁴` is only used as `ε_j > 0`.
@@ -85,8 +88,9 @@ theorem lemma_5_1_1 {r : ℝⁿ → ℝᵐ} {p : ℕ} {ℓ : ℝ} (hr : ContDiff
   contDiff_residualPow hr (hℓ.imp_right le_of_lt)
 
 /-- The scaled first-order measure `ψ_{ℓ,1}(x) = ‖∇Φ_ℓ(x)‖ / ‖r(x)‖^{ℓ-1}`
-([cartis2022evaluation], §5.1.1). (Where `r(x) = 0`, Lean's division gives `0`; this case is
-excluded by the test (5.1.9).) -/
+([cartis2022evaluation], §5.1.1). (Where `r(x) = 0` and `ℓ ≠ 1`, the denominator is `0` and
+Lean's division gives `0`; for `ℓ = 1` it is `0^0 = 1`. The case `r(x) = 0` is excluded by the
+test (5.1.9).) -/
 noncomputable def psiOne (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (x : ℝⁿ) : ℝ :=
   ‖gradient (Phi r ℓ) x‖ / ‖r x‖ ^ (ℓ - 1)
 
@@ -714,11 +718,12 @@ its proof): let `q ∈ {1, 2, 3}`, `q ≤ p`, `ℓ ≥ 1` and `i ≥ 0` integers
 `δ ≤ κ_{rj} ε_j^{(p+1)/(p-j+1)} / max(1, ‖r(x_0)‖^{ι_j})`
 for `j ∈ [1 : q]`, with `κ_{rj}` of Lemma 5.1.4. Then every ARpLE run terminates at some `k_ε`
 (the first index at which the test `ARpLEStop` holds) after at most
-`κ^A ‖r(x_0)‖^{1/2^i}/δ + κ^C` evaluations of `r` and `‖r(x_0)‖^{1/2^i}/δ + 2` evaluations of its
-derivatives, with `κ^A = 1 + |log γ₁|/log γ₂` and
+`A ‖r(x_0)‖^{1/2^i}/δ + κ^C` evaluations of `r` and `‖r(x_0)‖^{1/2^i}/δ + 2` evaluations of its
+derivatives, with `A = 1 + |log γ₁|/log γ₂` (so that `κ^A = κ^S A` in the book's notation) and
 `κ^C = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2`, `σ_max = max(σ₀, γ₃ L/(1 - η₂))` ((5.1.60),
 (5.1.61)). The book's choice `δ = min_j κ_{rj} · min_j ε_j^{…} / max(1, ‖r(x_0)‖^{ι₁}, …)` gives
-Theorem 5.1.7 (`theorem_5_1_7`); `q = 1, 2` are the first- and second-order variants. -/
+Theorem 5.1.7 (`theorem_5_1_7`); `q = 1, 2` are the first- and second-order variants. (A positive
+`δ` as above exists only if `σ_min > 0`: the `κ_{rj}` vanish when `σ_min = 0`.) -/
 theorem theorem_5_1_7_of_iota_nonneg {ℓ : ℕ} (hℓ : 1 ≤ ℓ) (hq1 : 1 ≤ q) (hq3 : q ≤ 3)
     (hp : 1 ≤ p) (hqp : q ≤ p) (h : algorithm_5_1_1 r ℓ p P q ε₀ ε₁ ε₂ ε₃ x s σ)
     (hΦ : AssumptionPhiDpL r ℓ p L) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1) (i : ℕ)
@@ -1285,6 +1290,37 @@ theorem algorithm_5_1_1.exists_run (P : ARpParams) {p : ℕ} (hΦ : ContDiff ℝ
   have heq : (fun k => ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ (mdir r ℓ p P ε₂ x s σ k) (x k)) =
       fun k => ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ ∅ (x k) :=
     funext fun k => propext (arpLEStop_congr_of_le_two hq _ _ _)
+  rw [algorithm_5_1_1, heq]
+  exact hrun
+
+/-- The direction set `𝓜_k` read from the previous iteration (as `Optimization.prevIterate`
+provides it): `𝓜_0` from `∇²Φ_ℓ(x_0)` and `ε₂`, `𝓜_{k+1}` from the model of iteration `k`. -/
+private noncomputable def mdirOfPrev (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (p : ℕ) (P : ARpParams) (ε₂ : ℝ) :
+    Option (ℝⁿ × ℝ × ℝⁿ) → ℝⁿ → Set ℝⁿ
+  | none, y => smallCurvatureDirections (iteratedFDeriv ℝ 2 (Phi r ℓ) y) ε₂
+  | some (x', σ', s'), _ => smallCurvatureDirections
+      (iteratedFDeriv ℝ 2 (regularizedModel (ftaylorSeries ℝ (Phi r ℓ) x') p σ') s')
+      (P.θ₂ * ‖s'‖ ^ (p - 1))
+
+/-- **Existence of ARpLE runs for any `q`, under an explicit hypothesis** ([cartis2022evaluation],
+Algorithm 5.1.1): if an admissible ARp step (4.1.10)–(4.1.13) exists at every point `y` and
+weight `σ ≥ σ_min`, `σ > 0`, at which the test fails for some direction set `M`, there is a run
+from every `x₀`. For `q = 3` the hypothesis can fail (see `Optimization.ARpRun`); for `q ≤ 2` it
+holds and `algorithm_5_1_1.exists_run` applies. -/
+theorem algorithm_5_1_1.exists_run_of_step (P : ARpParams) {p : ℕ}
+    (hstep : ∀ (M : Set ℝⁿ) (y : ℝⁿ) (σ : ℝ), P.σmin ≤ σ → 0 < σ →
+      ¬ ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ M y → ∃ s, IsARpStep (Phi r ℓ) p P q y σ s)
+    (x₀ : ℝⁿ) :
+    ∃ x s : ℕ → ℝⁿ, ∃ σ : ℕ → ℝ, x 0 = x₀ ∧ algorithm_5_1_1 r ℓ p P q ε₀ ε₁ ε₂ ε₃ x s σ := by
+  obtain ⟨x, s, σ, hx0, hrun⟩ := exists_isARpRun_prev (f := Phi r ℓ) (p := p) (q := q) P
+    (test := fun prev y _ => ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ (mdirOfPrev r ℓ p P ε₂ prev y) y)
+    (fun prev y σ hσ hσ0 ht => hstep _ y σ hσ hσ0 ht) x₀
+  refine ⟨x, s, σ, hx0, ?_⟩
+  have heq : (fun k => ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ (mdir r ℓ p P ε₂ x s σ k) (x k)) =
+      fun k => ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃
+        (mdirOfPrev r ℓ p P ε₂ (prevIterate x s σ k) (x k)) (x k) := by
+    funext k
+    cases k <;> rfl
   rw [algorithm_5_1_1, heq]
   exact hrun
 

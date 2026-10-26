@@ -14,8 +14,9 @@ unchanged at unsuccessful iterations (the iterate is not updated).
 * `Optimization.card_successSet_mul_le_of_decrease`: if every successful iteration decreases `φ`
   by at least `c`, then `c |𝒮_k| ≤ φ_0 - φ_low` (division form
   `Optimization.card_successSet_le_div_of_decrease`).
-* `Optimization.card_mul_le_of_decrease`: the same for any subset `T` of iterations of a
-  nonincreasing sequence (e.g. "good" successful iterations).
+* `Optimization.card_mul_le_sub_of_decrease`, `Optimization.card_mul_le_of_decrease`: the same
+  for any subset `T` of iterations of a nonincreasing sequence (e.g. "good" successful
+  iterations).
 -/
 
 open Finset
@@ -55,20 +56,7 @@ theorem card_successSet_le_div_of_decrease (hc : 0 < c)
   rw [le_div_iff₀ hc, mul_comm]
   exact card_successSet_mul_le_of_decrease h hdec hlow
 
-/-- If `φ` is nonincreasing on `[0, k + 1]`, decreases by at least `c` at every iteration of a
-set `T ⊆ [0, k]`, and `φlow ≤ φ_{k+1}`, then `c |T| ≤ φ_0 - φlow`. -/
-theorem card_mul_le_of_decrease {T : Finset ℕ} (hT : T ⊆ range (k + 1))
-    (hmono : ∀ j ≤ k, φ (j + 1) ≤ φ j) (hdec : ∀ j ∈ T, c ≤ φ j - φ (j + 1))
-    (hlow : φlow ≤ φ (k + 1)) :
-    c * T.card ≤ φ 0 - φlow := by
-  have h1 : ∑ _j ∈ T, c ≤ ∑ j ∈ T, (φ j - φ (j + 1)) := sum_le_sum hdec
-  have h2 : ∑ j ∈ T, (φ j - φ (j + 1)) ≤ ∑ j ∈ range (k + 1), (φ j - φ (j + 1)) :=
-    sum_le_sum_of_subset_of_nonneg hT fun j hj _ =>
-      sub_nonneg.2 (hmono j (Nat.lt_succ_iff.1 (mem_range.1 hj)))
-  rw [sum_range_sub', sum_const, nsmul_eq_mul] at *
-  linarith
-
-/-- The form of `Optimization.card_mul_le_of_decrease` over `[0, N)`: if `φ` is nonincreasing
+/-- If `φ` is nonincreasing
 on `[0, N]` and decreases by at least `c` at every iteration of `T ⊆ [0, N)`, then
 `|T| c ≤ φ_0 - φ_N`. -/
 theorem card_mul_le_sub_of_decrease {T : Finset ℕ} {N : ℕ} (hT : T ⊆ range N)
@@ -78,6 +66,15 @@ theorem card_mul_le_sub_of_decrease {T : Finset ℕ} {N : ℕ} (hT : T ⊆ range
   have h2 : ∑ j ∈ T, (φ j - φ (j + 1)) ≤ ∑ j ∈ range N, (φ j - φ (j + 1)) :=
     sum_le_sum_of_subset_of_nonneg hT fun j hj _ => sub_nonneg.2 (hmono j (mem_range.1 hj))
   rw [sum_range_sub', sum_const, nsmul_eq_mul] at *
+  linarith
+
+/-- If `φ` is nonincreasing on `[0, k + 1]`, decreases by at least `c` at every iteration of a
+set `T ⊆ [0, k]`, and `φlow ≤ φ_{k+1}`, then `c |T| ≤ φ_0 - φlow`. -/
+theorem card_mul_le_of_decrease {T : Finset ℕ} (hT : T ⊆ range (k + 1))
+    (hmono : ∀ j ≤ k, φ (j + 1) ≤ φ j) (hdec : ∀ j ∈ T, c ≤ φ j - φ (j + 1))
+    (hlow : φlow ≤ φ (k + 1)) :
+    c * T.card ≤ φ 0 - φlow := by
+  have := card_mul_le_sub_of_decrease hT (fun j hj => hmono j (Nat.lt_succ_iff.1 hj)) hdec
   linarith
 
 /-- Division form of `Optimization.card_mul_le_of_decrease`: `|T| ≤ (φ_0 - φlow) / c` for
