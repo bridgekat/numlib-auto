@@ -109,3 +109,11 @@ source = "Cartis, Gould and Toint, Lemma 14.2.3, equation (14.2.13), accuracy-in
 [[node]]
 id = "lemma_14_2_3_radius_floor"
 source = "Cartis, Gould and Toint, Lemma 14.2.3 and its reference to Lemma 2.3.1; explicit logarithmic radius-floor companion"
+
+[[node]]
+id = "lemma_14_2_2_ARqp_before_certificate"
+source = "Correction of Lemma 14.2.2, exact ARqp-SC branch: explicit global smoothness and positive-gap detailed solves; decrease only before a next true certificate"
+
+[[node]]
+id = "theorem_14_2_4_ARqp_detailed"
+source = "Correction of Theorem 14.2.4, exact ARqp-SC branch: recursively constructed detailed-solver executions, explicit global smoothness, all-order adaptive certificates with quantitative radii and initialized counts"

@@ -1,3 +1,5 @@
+import Numlib.Optimization.Regularization.Constrained.TerminalRadii
+import Numlib.Optimization.Regularization.Constrained.Complexity
 import Numlib.Optimization.TrustRegion.HighOrder.CountingCounterexample
 import Numlib.Optimization.Constrained.BoxZeroReturn
 import Numlib.Optimization.Regularization.HighOrder.VanishingSteps
@@ -253,5 +255,130 @@ theorem lemma_14_2_3_radius_floor {E : Type*} [NormedAddCommGroup E]
         (1 + Real.log P.gamma3 / |Real.log P.gamma2|) +
       |Real.log (δmin / Δ 0)| / |Real.log P.gamma2| :=
   h.iterations_le_of_radius_lower hδ hlow
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- Corrected exact ARqp-SC branch of Lemma 14.2.2. Restrict the decrease claim
+to successful steps before the next true certificate; literal nontermination
+alone is insufficient. The actual positive-global-gap detailed solver gives
+all-order adaptive radii. Replace local anchored regularity by global C^p and
+globally Lipschitz derivatives of orders one through p. The fixed coefficient precedes all
+accuracies and actual executions. The rate is j(p+1)/p, including q=1's
+(p+1)/p rate. Other algorithm variants are not asserted by this companion. -/
+theorem lemma_14_2_2_ARqp_before_certificate {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (X : Set (EuclideanSpace ℝ (Fin n)))
+    (hX : IsClosed X) (_hconv : Convex ℝ X) (P : ConstrainedRegularization.Settings p q)
+    (hf : ContDiff ℝ p f) {L : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, 1 ≤ i → i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖) :
+    ∃ κ > 0, ∀ (ε : Fin q → ℝ)
+      (D : ConstrainedRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+      (N : ℕ), ConstrainedRegularization.Run f X P ε D N → ∀ k < N,
+      P.eta1 ≤ D.ratio k → ¬ConstrainedRegularization.TargetAt f X P ε D (k + 1) →
+      κ * ConstrainedRegularization.accuracyFactor P ε ≤
+        f (D.point k) - f (D.point (k + 1)) ∧
+      κ * minimumAccuracy P.order_pos ε ^ ((q : ℝ) * (p + 1 : ℕ) / p) ≤
+        f (D.point k) - f (D.point (k + 1)) := by
+  let S := HighOrderRegularization.parameterCap P L
+  let κ := ConstrainedRegularization.commonDecreaseCoefficient P L S
+  have hκ : 0 < κ := ConstrainedRegularization.commonDecreaseCoefficient_pos P hL
+    (HighOrderRegularization.parameterCap_pos P L).le
+  refine ⟨κ, hκ, ?_⟩
+  intro ε D N h k hk ha hnot
+  have hd := h.function_decrease_uniform hX hf hL hlip hk ha hnot
+  refine ⟨hd, ?_⟩
+  exact (mul_le_mul_of_nonneg_left
+    (ConstrainedRegularization.accuracyFactor_lower_minimum P ε h.accuracy_pos
+      h.accuracy_le_one) hκ.le).trans hd
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+open InexactTrustRegion
+
+/-- Corrected exact ARqp-SC branch of Theorem 14.2.4. Replace the permissive
+outer zero-decrease return by the genuine feasible positive-global-gap detailed
+solver, with actual finite feasible Taylor halvings. Replace local anchored
+regularity by global `C^p` and globally Lipschitz derivatives of orders one
+through p; exact evaluation
+does not require zeroth-order Lipschitz continuity. The feasible set is closed
+and convex. Every actual execution array is constructed, with no prefix or
+model-step existence hypothesis.
+
+Positive constants precede all accuracies. The actual all-order constrained
+Taylor certificate has legal adaptive radii bounded below by a fixed positive
+coefficient times each accuracy, with first-order radius one.
+The initialized objective count is K+1 and every enabled derivative order has
+its initialized accepted-update count. The rate factor is the true finite
+minimum of epsilon_j^(j(p+1)/p), retaining (p+1)/p at q=1. No unit second-order
+radius, other algorithm variant or sharpness claim is asserted here. -/
+theorem theorem_14_2_4_ARqp_detailed {n p q : ℕ}
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (X : Set (EuclideanSpace ℝ (Fin n)))
+    (hX : IsClosed X) (hconv : Convex ℝ X) (P : ConstrainedRegularization.Settings p q)
+    (x₀ : EuclideanSpace ℝ (Fin n)) (hx₀ : x₀ ∈ X)
+    (hf : ContDiff ℝ p f) {L flow : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, 1 ≤ i → i ≤ p → ∀ x y,
+      ‖iteratedFDeriv ℝ i f x - iteratedFDeriv ℝ i f y‖ ≤ L * ‖x - y‖)
+    (hlow : ∀ x ∈ X, flow ≤ f x) :
+    ∃ κs > 0, ∃ κa > 0, ∃ κc > 0, ∀ ε : Fin q → ℝ,
+      (∀ a, 0 < ε a ∧ ε a ≤ 1) →
+      ∃ (D : ConstrainedRegularization.ExecutionData (EuclideanSpace ℝ (Fin n)) q)
+        (K : ℕ) (δ : Fin q → ℝ), D.point 0 = x₀ ∧ D.parameter 0 = P.sigmaInitial ∧
+        (∀ a, D.radius 0 a = 1) ∧ ConstrainedRegularization.Run f X P ε D K ∧
+        ConstrainedRegularization.TargetAt f X P ε D K ∧
+        (∀ k < K, ¬ConstrainedRegularization.TargetAt f X P ε D k) ∧
+        D.point K ∈ X ∧ (∀ a, 0 < δ a ∧ δ a ≤ 1) ∧
+        (∀ a, ConstrainedRegularization.radiusCoefficient P L
+          (HighOrderRegularization.parameterCap P L) * ε a ≤ δ a) ∧
+        (∀ a, highOrderConstrainedCriticality f (modelOrder a) X (D.point K) (δ a) ≤
+          ε a * δ a ^ modelOrder a / (modelOrder a).factorial) ∧
+        (∀ a, modelOrder a = 1 → δ a = 1) ∧
+        ((K + 1 : ℕ) : ℝ) ≤
+          κa * (f x₀ - flow) / ConstrainedRegularization.accuracyFactor P ε + κc ∧
+        (((EvaluationComplexity.successfulIterations {i | P.eta1 ≤ D.ratio i} K).card + 1 :
+          ℕ) : ℝ) ≤
+          κs * (f x₀ - flow) / ConstrainedRegularization.accuracyFactor P ε + 2 ∧
+        (∀ j, 1 ≤ j → j ≤ p →
+          (ConstrainedRegularization.derivativeEvaluationsForOrder P D K j : ℝ) ≤
+            κs * (f x₀ - flow) / ConstrainedRegularization.accuracyFactor P ε + 2) := by
+  classical
+  obtain ⟨κs, hs, κa, ha, κc, hc, hall⟩ :=
+    ConstrainedRegularization.certified_execution_with_radius_floor
+      f X hX hconv P x₀ hx₀ hf hL hlip hlow
+  refine ⟨κs, hs, κa, ha, κc, hc, ?_⟩
+  intro ε hε
+  obtain ⟨D, K, δ₀, hx, hσ, hinit, hr, ht, hfirst, hopt, hfloor, hunit, hF, hD⟩ :=
+    hall ε hε
+  let δ : Fin q → ℝ := fun a => if modelOrder a = 1 then 1 else δ₀ a
+  have hδ : ∀ a, 0 < δ a ∧ δ a ≤ 1 := by
+    intro a
+    by_cases hj : modelOrder a = 1
+    · simp only [δ, ite_eq_left hj]
+      exact ⟨zero_lt_one, le_rfl⟩
+    · simpa only [δ, ite_eq_right hj] using hopt.2.1 a
+  have hfloor' : ∀ a, ConstrainedRegularization.radiusCoefficient P L
+      (HighOrderRegularization.parameterCap P L) * ε a ≤ δ a := by
+    intro a
+    by_cases hj : modelOrder a = 1
+    · have hc := ConstrainedRegularization.radiusCoefficient_mem P hL
+        (HighOrderRegularization.parameterCap_pos P L).le
+      have hh := mul_le_mul hc.2 (hε a).2 (hε a).1.le zero_le_one
+      simpa only [δ, ite_eq_left hj, one_mul] using hh
+    · simpa only [δ, ite_eq_right hj] using hfloor a
+  have hb : ∀ a, highOrderConstrainedCriticality f (modelOrder a) X (D.point K) (δ a) ≤
+      ε a * δ a ^ modelOrder a / (modelOrder a).factorial := by
+    intro a
+    by_cases hj : modelOrder a = 1
+    · simpa only [δ, ite_eq_left hj, hj, pow_one, Nat.factorial_one, Nat.cast_one,
+        mul_one, div_one, highOrderConstrainedCriticality] using hunit a hj
+    · simpa only [δ, ite_eq_right hj, highOrderConstrainedCriticality] using hopt.2.2 a
+  refine ⟨D, K, δ, hx, hσ, hinit, hr, ht, hfirst, hopt.1, hδ, hfloor', hb,
+    fun a hj => ite_eq_left hj, hF, hD, ?_⟩
+  intro j hj hjp
+  rw [ConstrainedRegularization.derivativeEvaluationsForOrder_eq P D K hj hjp]
+  exact hD
 
 end CartisGouldToint
