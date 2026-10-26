@@ -138,14 +138,16 @@ theorem corrected_termination (h : CompletedFullRun f c X P₁ P₂ β θ ε₀ 
         ‖iteratedFDeriv ℝ i (targetMerit f c t) y -
           iteratedFDeriv ℝ i (targetMerit f c t) z‖ ≤ L * ‖y - z‖)
     (hs : CompletedFullStop f c X P₂ β θ ε₀ L ε D) :
-    (∃ δ, CorrectedTwoPhaseOutput P₂.order_pos f c X θ ε₀ ε δ
-      (D.phaseOne.point D.phaseOneLength)) ∨
-    (∃ δ, CorrectedTwoPhaseOutput P₂.order_pos f c X θ ε₀ ε δ
-      (D.phaseTwo.point D.phaseTwoLength)) := by
+    (θ * ε₀ < ‖c (D.phaseOne.point D.phaseOneLength)‖ ∧
+      ∃ δ, CorrectedTwoPhaseOutput P₂.order_pos f c X θ ε₀ ε δ
+        (D.phaseOne.point D.phaseOneLength)) ∨
+    (‖c (D.phaseOne.point D.phaseOneLength)‖ ≤ θ * ε₀ ∧ 0 < D.phaseTwoLength ∧
+      ∃ δ, CorrectedTwoPhaseOutput P₂.order_pos f c X θ ε₀ ε δ
+        (D.phaseTwo.point D.phaseTwoLength)) := by
   rcases hs with hi | ⟨hN, hs⟩
   · have hν : ContDiff ℝ p (LeastNorm.merit c) := (hc.norm_sq (𝕜 := ℝ)).div_const 2
     obtain ⟨δ, hx, hδ, hb⟩ := h.phaseOne_certificate hX hν hi
-    exact Or.inl ⟨δ, hx, hδ, Or.inl ⟨hi, hb⟩⟩
+    exact Or.inl ⟨hi, δ, hx, hδ, Or.inl ⟨hi, hb⟩⟩
   · have hentry : ‖c (D.phaseOne.point D.phaseOneLength)‖ ≤ θ * ε₀ := by
       by_contra hn
       have he := h.phaseOne_exit (lt_of_not_ge hn)
@@ -153,6 +155,6 @@ theorem corrected_termination (h : CompletedFullRun f c X P₁ P₂ β θ ε₀ 
     have hp := (h.phaseTwo_run hentry).corrected_return hX hconv hL hf hc hfband hreg
       (show D.phaseTwoLength - 1 < D.phaseTwoLength by omega) hs
     rw [show D.phaseTwoLength - 1 + 1 = D.phaseTwoLength by omega] at hp
-    exact Or.inr ⟨_, hp⟩
+    exact Or.inr ⟨hentry, hN, _, hp⟩
 end CompletedFullRun
 end Constrained.TwoPhase
