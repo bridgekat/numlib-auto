@@ -1,0 +1,38 @@
+namespace = "CartisGouldToint.Chapter12"
+desc = '''
+§12.3 Inexact global minimization in the ARqp algorithm (no numbered items), together with the
+"long step" variant of the Notes to §12.2.2. The discussion's formal content: the complexity
+argument of Theorem 12.2.14 only uses, at each successful iteration followed by a non-terminating
+one, a sufficient decrease `ΔT_{f,p}(x_k, s_k) ≥ κ_decr min_j ε_j^{ω}` (12.3.1); this is guaranteed
+either by (12.2.29) (Lemma 12.2.13) or by a long step `‖s_k‖ ≥ κ_decr^{1/(p+1)} ε_min^{ω/(p+1)}`
+(12.3.2) via Lemma 4.1.1. We plan one variant run predicate and the corresponding complexity bound;
+the qualitative remarks on premature termination of Algorithm 12.2.3 are not formalized.
+'''
+
+[[node]]
+id = "IsARqpSufficientDecreaseRun"
+kind = "def"
+desc = '''
+ARqp with relaxed Step 2 (§12.3, Notes to §12.2.2): `IsARqpSufficientDecreaseRun f P p q ε δ₀ κdecr ω
+x s σ δ δs d dm` := the fields of `algorithm_12_2_2` except that Step 2 accepts `s_k` with
+`m_k(s_k) ≤ m_k(0)` as soon as `ΔT_{f,p}(x_k, s_k) ≥ κdecr * min_{j ∈ [1:q]} ε_j ^ ω` (12.3.1) or
+`‖s_k‖ ≥ κdecr^{1/(p+1)} ε_min^{ω/(p+1)}` (12.3.2) (radii `δs k = δ k` then), and otherwise
+requires the original Step-2 conditions. Every ARqp run is one (with `ω` and `κdecr` of
+Lemma 12.2.13).
+'''
+deps = ["algorithm_12_2_2", "lemma_12_2_13"]
+source = "Cartis–Gould–Toint, Section 12.3, (12.3.1)–(12.3.2); Notes for Subsection 12.2.2"
+
+[[node]]
+id = "complexity_arqpSufficientDecrease"
+kind = "theorem"
+desc = '''
+The bounds of Theorem 12.2.14 persist for `IsARqpSufficientDecreaseRun` (§12.3, "it is possible to
+verify that this modification does not affect the conclusions of the complexity theorem"): under
+the hypotheses of `theorem_12_2_14_i` / `theorem_12_2_14_ii` (with `ω = π_q`-type exponent and
+`κdecr ≤ κ_{Δm}` w.l.o.g.), there is `k_ε` with `IsFirstHit` of the stopping test,
+`(ε, δ)`-approximate optimality at `x_{k_ε}`, and the evaluation bounds of (12.2.63)–(12.2.66) with
+`κ_{Δm}` replaced by `min(κ_{Δm}, κdecr, σ_min κdecr/(p+1)!)`.
+'''
+deps = ["IsARqpSufficientDecreaseRun", "theorem_12_2_14_i", "theorem_12_2_14_ii", "Optimization.taylorDecrement_ge_of_regularizedModel_lt"]
+source = "Cartis–Gould–Toint, Section 12.3 (discussion after (12.3.2)); Notes for Subsection 12.2.2"

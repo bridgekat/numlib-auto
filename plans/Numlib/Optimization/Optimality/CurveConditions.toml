@@ -1,0 +1,77 @@
+namespace = "Optimization"
+desc = '''
+Curve-based necessary optimality conditions of arbitrary order (Cartis–Gould–Toint Theorem 12.1.1,
+after Cartis, Gould, Toint [102, Thm 3.1]). Along a polynomial curve
+`x(α) = x + ∑_{i=1}^{q} α^i s_i` the Taylor expansion of `f(x(α))` in powers of `α` has, for
+`j ≤ q`, the coefficient
+`c_j = ∑_{k=1}^{j} (1/k!) ∑_{(ℓ_1,…,ℓ_k) ∈ P(j,k)} ∇^k f(x)[s_{ℓ_1},…,s_{ℓ_k}]` (12.1.6),
+where `P(j,k)` = ordered `k`-tuples of positive integers summing to `j` (12.1.5) = Mathlib's
+`Composition j` of length `k` (the same index set as in `FormalMultilinearSeries.comp`). So
+`curveCoeff` is the `j`-th coefficient of the composition of the Taylor series of `f` with the
+curve series; we define it directly with `Composition` and data `D` (exact: `ftaylorSeries ℝ f x`).
+
+Proof route for the necessary condition (no Faà di Bruno needed): Peano remainder
+(`sub_taylorPolynomial_isLittleO`) at `h(α) = ∑ α^i s_i = O(α)`, plus the purely algebraic
+expansion of `D.taylorSum q (h α)` as a polynomial in `α` (multilinearity:
+`ContinuousMultilinearMap.map_sum` over `Fintype.piFinset`), whose coefficients up to `α^q` are the
+`curveCoeff`; if `c_1 = … = c_{j-1} = 0` and `c_j < 0`, then `f(x(α)) < f(x)` for small `α > 0`.
+The book's restriction to nonzero `s_i` is dropped (the statement for all `s` is stronger).
+Higher-order remainder terms `o(α^q)` of the book's curves (12.1.4) do not affect `c_j`, `j ≤ q`,
+and are omitted. (Planned by plan-ch12.)
+'''
+
+[[node]]
+id = "curveCoeff"
+kind = "def"
+desc = '''
+`curveCoeff (D : FormalMultilinearSeries ℝ E ℝ) (s : ℕ → E) (j : ℕ) : ℝ :=
+∑ c : Composition j, ((c.length)! : ℝ)⁻¹ * D c.length (fun m => s (c.blocksFun m))`
+(prototype elaborates in `drafts/cgt/plan-ch12/Proto.lean`). For `j = 0` the sum has the single
+empty composition and gives `D 0 ![]` (unused). Lemmas (part of node): `curveCoeff_one :
+curveCoeff D s 1 = D 1 ![s 1]`; `curveCoeff_two : curveCoeff D s 2 = D 1 ![s 2] + ½ D 2 ![s 1, s 1]`.
+'''
+source = "Cartis–Gould–Toint, (12.1.5)–(12.1.6), Table 12.1.1"
+
+[[node]]
+id = "taylorSum_polyCurve_eq"
+kind = "theorem"
+desc = '''
+Algebraic expansion along a polynomial curve: for `D`, `q : ℕ`, `s : ℕ → E` there is a polynomial
+`P : ℝ[X]` such that for all `α : ℝ`,
+`D.taylorSum q (∑ i ∈ Finset.Icc 1 q, α ^ i • s i) = D 0 ![] + ∑ j ∈ Finset.Icc 1 q,
+curveCoeff D s j * α ^ j + α ^ (q + 1) * P.eval α`.
+Proof: expand each `D k (fun _ => ∑_i α^i s_i)` by multilinearity into a sum over
+`ℓ : Fin k → Icc 1 q` of `α^{∑ ℓ} D k (s ∘ ℓ)`, and regroup by `j = ∑ ℓ` (tuples with `∑ ℓ = j ≤ q`
+are exactly the compositions of `j` of length `k`, `k ≤ j`).
+'''
+deps = ["curveCoeff", "FormalMultilinearSeries.taylorSum"]
+source = "Cartis–Gould–Toint, Theorem 12.1.1 (interpretation of (12.1.6))"
+
+[[node]]
+id = "IsCurveCritical"
+kind = "def"
+desc = '''
+`IsCurveCritical (D : FormalMultilinearSeries ℝ E ℝ) (q : ℕ) : Prop :=
+∀ j ∈ Finset.Icc 1 q, ∀ s : ℕ → E, (∀ i ∈ Finset.Ico 1 j, curveCoeff D s i = 0) →
+0 ≤ curveCoeff D s j` — the conclusion of Theorem 12.1.1 for all `j ≤ q`; for
+`D = ftaylorSeries ℝ f x` the book's "`x` is a `q`-th order minimizer". Lemmas (part of node):
+monotone in `q`; `IsCurveCritical D 1 ↔ D 1 = 0`; `IsCurveCritical D 2 ↔ D 1 = 0 ∧ ∀ d,
+0 ≤ D 2 ![d, d]` (for symmetric `D 2`); for `q = 3` additionally `D 3 (fun _ => d) = 0` whenever
+`D 2 ![d, d] = 0` (the book's discussion after Theorem 12.1.1, using `s_1 = ±d`).
+'''
+deps = ["curveCoeff"]
+source = "Cartis–Gould–Toint, Section 12.1.2 (q-th order minimizer)"
+
+[[node]]
+id = "IsLocalMin.isCurveCritical"
+kind = "theorem"
+desc = '''
+Theorem 12.1.1 (backbone form). If `ContDiffAt ℝ q f x` and `IsLocalMin f x` then
+`IsCurveCritical (ftaylorSeries ℝ f x) q`. Proof: given `j ≤ q` and `s` with
+`curveCoeff … s i = 0` for `i < j`, suppose `curveCoeff … s j < 0`; with `h α = ∑_{i ≤ q} α^i s_i`
+(`‖h α‖ ≤ C α` for `α ∈ [0,1]`), `taylorSum_polyCurve_eq` and `sub_taylorPolynomial_isLittleO` give
+`f (x + h α) - f x = c_j α^j + o(α^j)` (the curve coefficients of order `j < i ≤ q` and the
+polynomial tail are `O(α^{j+1})`), negative for small `α > 0`, contradicting local minimality.
+'''
+deps = ["IsCurveCritical", "taylorSum_polyCurve_eq", "sub_taylorPolynomial_isLittleO", "taylorPolynomial"]
+source = "Cartis–Gould–Toint, Theorem 12.1.1"

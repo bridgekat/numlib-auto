@@ -1,0 +1,204 @@
+namespace = "Optimization"
+desc = '''
+High-order approximate optimality through the Taylor-decrement measure
+`taylorMeasure D j δ S = sup_{d ∈ B_δ ∩ S} ΔT_j(D, d)` (core `Optimality/Approximate`;
+Cartis–Gould–Toint (12.1.10), `φ^δ_{f,j}(x)` for `D = ftaylorSeries ℝ f x`, `S = univ`).
+
+Design: every statement that only involves the Taylor *data* is stated for an arbitrary
+`D : FormalMultilinearSeries ℝ E ℝ` (so it applies verbatim to the model's own jet
+`ftaylorSeries ℝ m_k s_k` in ARqp's Step 2, to inexact data in Chapter 13 and, with a feasible set
+`S`, to Chapters 6/14); statements needing `f` (local minimizers, stability, sufficiency) use
+`ftaylorSeries ℝ f x`. Low-order identifications (Theorems 12.1.3, 12.1.6) are proved directly from
+the definition by testing the sup at well-chosen displacements (`±d`, `t • d`), avoiding the
+trust-region multiplier `(H + λI)^+` of the book's proofs; the bound of Theorem 12.1.6(ii) becomes
+explicit: `‖∇f‖² ≤ δ² ε max(‖∇²f‖, ε)`.
+
+Contents: monotonicity in the radius; the cascade `φ_{j-1} ≤ φ_j + ‖D j‖ δ^j/j!` (Theorem 12.1.7);
+Lemma B.12.1 (`φ_3 = 0 ⇒ φ_2 = 0`); first/second/third-order readings of `φ_1, φ_2, φ_3`
+(Theorems 12.1.3, 12.1.6); local minimizers (Theorem 12.1.4, via the Peano remainder); stability
+(Theorem 12.1.8); the corrected sufficient condition (Theorem 12.1.5); the "Taylor decrease implies
+function decrease" lemma behind ARqp (Lemma 12.2.8). (Planned by plan-ch12.)
+'''
+
+[[node]]
+id = "taylorMeasure_mono"
+kind = "theorem"
+desc = '''
+Monotonicity: if `0 ∈ S`, `0 ≤ δ ≤ δ'` then `taylorMeasure D j δ S ≤ taylorMeasure D j δ' S`; and
+`S ⊆ S'` (both containing `0`) gives `taylorMeasure D j δ S ≤ taylorMeasure D j δ S'`.
+(Images bounded above by `taylorMeasure_nonneg`'s bound.)
+'''
+deps = ["taylorMeasure", "taylorMeasure_nonneg"]
+source = "Cartis–Gould–Toint, (12.1.10)"
+
+[[node]]
+id = "taylorMeasure_le_taylorMeasure_succ_add"
+kind = "theorem"
+desc = '''
+Cascade estimate. If `0 ∈ S` and `0 ≤ δ` then for every `j`,
+`taylorMeasure D j δ S ≤ taylorMeasure D (j + 1) δ S + ‖D (j + 1)‖ * δ ^ (j + 1) / (j + 1)!`
+(pointwise `ΔT_j(d) = ΔT_{j+1}(d) + D (j+1) [d]^{j+1}/(j+1)!` and `|D (j+1)[d]^{j+1}| ≤
+‖D (j+1)‖ ‖d‖^{j+1}`). Core of Theorem 12.1.7.
+'''
+deps = ["taylorMeasure_nonneg", "FormalMultilinearSeries.taylorDecrement_eq"]
+source = "Cartis–Gould–Toint, proof of Theorem 12.1.7 (Appendix B)"
+
+[[node]]
+id = "taylorMeasure_two_eq_zero_of_three"
+kind = "theorem"
+desc = '''
+Lemma B.12.1 (data form). If `0 ≤ δ` and `taylorMeasure D 3 δ univ = 0` then
+`taylorMeasure D 2 δ univ = 0`. Proof (book's): otherwise pick `s`, `‖s‖ ≤ δ`, with
+`ψ₂(s) := -ΔT_2(s) < 0`; `ψ₃ ≥ 0` on the ball at `s` and `-s` gives `D 3[s]^3 > 0` and
+`D 2[s,s] ≥ 0`; then at `α s`, `α = min(1, √(-3ψ₂(s)/D 3[s]^3))`, `ψ₃(α s)/α ≤ ψ₂(s)/2 < 0`,
+contradiction. Needs no symmetry assumption (only diagonal values occur).
+'''
+deps = ["taylorMeasure_nonneg", "FormalMultilinearSeries.taylorDecrement_eq"]
+source = "Cartis–Gould–Toint, Lemma B.12.1"
+
+[[node]]
+id = "taylorMeasure_one_eq_zero_iff"
+kind = "theorem"
+desc = '''
+For `δ > 0`: `taylorMeasure D 1 δ univ = 0 ↔ D 1 = 0` (from `taylorMeasure_one_eq`:
+`taylorMeasure D 1 δ univ = δ ‖D 1‖`).
+'''
+deps = ["taylorMeasure_one_eq"]
+source = "Cartis–Gould–Toint, Theorem 12.1.3 (i)"
+
+[[node]]
+id = "neg_le_minCurvature_of_taylorMeasure_two_le"
+kind = "theorem"
+desc = '''
+Second-order reading of `φ_2`. Let `E` be a real inner product space, `δ > 0`, `ε ≥ 0` and
+`taylorMeasure D 2 δ univ ≤ ε * δ ^ 2 / 2`. Then `-ε ≤ minCurvature (D 2)` (i.e.
+`D 2 ![d, d] ≥ -ε ‖d‖²` for all `d`). Proof: test `±δ d/‖d‖` and average:
+`-½ D 2[δu,δu] ≤ ε δ²/2`.
+'''
+deps = ["taylorMeasure_nonneg", "le_minCurvature_iff"]
+source = "Cartis–Gould–Toint, Theorem 12.1.6 (ii) (first part), Theorem 12.1.3 (ii)"
+
+[[node]]
+id = "norm_sq_le_of_taylorMeasure_two_le"
+kind = "theorem"
+desc = '''
+First-order reading of `φ_2` (explicit form of the book's `‖∇f‖ ≤ δ κ(x) √ε₂`). Under the
+hypotheses of `neg_le_minCurvature_of_taylorMeasure_two_le`:
+`‖D 1‖ ^ 2 ≤ δ ^ 2 * ε * max ‖D 2‖ ε`. Proof: for a unit `u` with `D 1 [u] = -‖D 1‖` (approximately,
+take a sup sequence or `ε'`-almost maximizer), test `t u` with `t = δ √(ε / max ‖D 2‖ ε) ≤ δ`:
+`t ‖D 1‖ ≤ ε δ²/2 + t² ‖D 2‖/2 ≤ ε δ²`. For `ε = 0` the conclusion is `D 1 = 0` (letting `t → 0`).
+Prototype statement elaborates (`drafts/cgt/plan-ch12/Proto.lean`).
+'''
+deps = ["taylorMeasure_nonneg", "FormalMultilinearSeries.taylorDecrement_eq"]
+source = "Cartis–Gould–Toint, Theorem 12.1.6 (ii) (second part), (12.1.27)–(12.1.29)"
+
+[[node]]
+id = "taylorMeasure_two_eq_zero_iff"
+kind = "theorem"
+desc = '''
+For `δ > 0` on a real inner product space: `taylorMeasure D 2 δ univ = 0 ↔ D 1 = 0 ∧
+0 ≤ minCurvature (D 2)` (⇒ from the two previous nodes with `ε = 0`; ⇐ since then
+`ΔT_2(d) = -½ D 2[d,d] ≤ 0`).
+'''
+deps = ["neg_le_minCurvature_of_taylorMeasure_two_le", "norm_sq_le_of_taylorMeasure_two_le", "le_minCurvature_iff"]
+source = "Cartis–Gould–Toint, Theorem 12.1.3 (ii), (12.1.14)"
+
+[[node]]
+id = "abs_apply_three_le_taylorMeasure"
+kind = "theorem"
+desc = '''
+Third-order reading of `φ_3` ((12.1.13), (12.1.15)). For `δ ≥ 0` and `d` with `‖d‖ ≤ 1`,
+`D 1 ![d] = 0` and `D 2 ![d, d] = 0`: `δ ^ 3 / 6 * |D 3 (fun _ => d)| ≤ taylorMeasure D 3 δ univ`
+(test `±δ d`: `ΔT_3(±δd) = ∓ δ³ D 3[d]^3/6`). With `M = ker D 1 ∩ {d | D 2[d,d] = 0}` (a subspace
+when `D 2` is positive semidefinite), this is the book's `‖P_M[∇³f(x)]‖ ≤ φ_3^δ(x)/(δ³/3!)`, the
+projected tensor norm being read as `sup_{d ∈ M, ‖d‖ ≤ 1} |∇³f(x)[d]^3|` (the diagonal form; for a
+symmetric tensor it equals the operator norm of the restriction by Banach's theorem, not needed).
+'''
+deps = ["taylorMeasure_nonneg", "FormalMultilinearSeries.taylorDecrement_eq"]
+source = "Cartis–Gould–Toint, Theorem 12.1.3 (iii), (12.1.13), (12.1.15)"
+
+[[node]]
+id = "taylorMeasure_eq_zero_of_isLocalMin"
+kind = "theorem"
+desc = '''
+(12.1.16). If `IsLocalMin f x` and `j ∈ {1, 2}` with `ContDiffAt ℝ j f x` (`E` a real inner product
+space), then `taylorMeasure (ftaylorSeries ℝ f x) j δ univ = 0` for every `δ ≥ 0`. (First-order
+condition `fderiv ℝ f x = 0`, second-order `IsLocalMin.iteratedFDeriv_two_nonneg`, then
+`taylorMeasure_one_eq_zero_iff` / `taylorMeasure_two_eq_zero_iff`.) Also for a global minimizer of
+a `C²` function on the whole space (used for the regularized model in ARqp, Lemmas 12.2.9/12.2.10).
+'''
+deps = ["taylorMeasure_one_eq_zero_iff", "taylorMeasure_two_eq_zero_iff", "IsLocalMin.iteratedFDeriv_two_nonneg"]
+source = "Cartis–Gould–Toint, Theorem 12.1.4, (12.1.16)"
+
+[[node]]
+id = "tendsto_taylorMeasure_div_pow_of_isLocalMin"
+kind = "theorem"
+desc = '''
+(12.1.17). If `IsLocalMin f x` and `ContDiffAt ℝ j f x` (`j ≥ 1`), then
+`Tendsto (fun δ => taylorMeasure (ftaylorSeries ℝ f x) j δ univ / δ ^ j) (𝓝[>] 0) (𝓝 0)`.
+Quantitative form (part of node): for every `η > 0` there is `δ₀ > 0` with
+`taylorMeasure (ftaylorSeries ℝ f x) j δ univ ≤ η δ^j` for `δ ∈ (0, δ₀]`. Proof:
+`0 ≤ ΔT_j(d) = f x - T_j(x,d) ≤ f(x+d) - T_j(x,d) ≤ η ‖d‖^j` for small `‖d‖`
+(`sub_taylorPolynomial_isLittleO`).
+'''
+deps = ["sub_taylorPolynomial_isLittleO", "taylorMeasure_nonneg", "taylorPolynomial"]
+source = "Cartis–Gould–Toint, Theorem 12.1.4, (12.1.17)"
+
+[[node]]
+id = "le_add_of_taylorMeasure_le"
+kind = "theorem"
+desc = '''
+Stability inequality (12.1.39). Let `j ≥ 1`, `0 < δ < r`, `ContDiffOn ℝ j f (ball x r)`,
+`IteratedFDerivHolderOn f j L 1 (ball x r)` (`L ≥ 0`, i.e. `∇^j f` is `L`-Lipschitz there) and
+`taylorMeasure (ftaylorSeries ℝ f x) j δ univ ≤ ε * δ ^ j / j!`. Then for all `d` with `‖d‖ ≤ δ`:
+`f x - L / (j + 1)! * ‖d‖ * δ ^ j - ε * δ ^ j / j! ≤ f (x + d)`.
+(Taylor polynomial lower bound from the measure, plus (A.19) `abs_sub_taylorPolynomial_le_of_lipschitz`
+on `C = closedBall x δ ⊆ ball x r`.)
+'''
+deps = ["taylorMeasure_nonneg", "abs_sub_taylorPolynomial_le_of_lipschitz", "IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, proof of Theorem 12.1.8, (12.1.37)–(12.1.39)"
+
+[[node]]
+id = "isStrictLocalMin_taylorPolynomial_succ_of_growth"
+kind = "theorem"
+desc = '''
+Corrected first conclusion of Theorem 12.1.5. Let `c > 0`, `r > 0`, `L ≥ 0`, data `D` with
+`‖D (j + 1)‖ ≤ L` and the uniform growth `c ‖s‖ ^ j ≤ D.taylorSum j s - D.taylorSum j 0` for
+`‖s‖ ≤ r`. Then `0` is a strict local minimizer of `D.taylorSum (j + 1)`:
+`D.taylorSum (j+1) s - D.taylorSum (j+1) 0 ≥ (c - L ‖s‖ / (j+1)!) ‖s‖^j > 0` for
+`0 < ‖s‖ < min r (c (j+1)!/L)` (read `c (j+1)!/L` as `∞` when `L = 0`, i.e. state the radius
+condition multiplicatively: `L ‖s‖ < c (j+1)!`).
+'''
+deps = ["FormalMultilinearSeries.taylorSum", "IsStrictLocalMinOn"]
+source = "Cartis–Gould–Toint, Theorem 12.1.5 (corrected)"
+
+[[node]]
+id = "isStrictLocalMin_of_taylorPolynomial_growth"
+kind = "theorem"
+desc = '''
+Corrected second conclusion of Theorem 12.1.5. If `ContDiffAt ℝ j f x` (`j ≥ 1`) and there are
+`c > 0`, `r > 0` with `c ‖s‖ ^ j ≤ taylorPolynomial f j x s - f x` for `‖s‖ ≤ r`, then
+`IsStrictLocalMinOn f univ x`; indeed `f (x + s) - f x ≥ c/2 ‖s‖^j` for small `s`
+(`sub_taylorPolynomial_isLittleO` with `η = c/2`). (The book's hypotheses "`s = 0` isolated
+minimizer of `T_{f,j}(x,·)` and `‖∇^{j+1} f(x)‖ ≤ L`" do not suffice, see
+`CartisGouldToint.Chapter12.theorem_12_1_5_counterexample`; growth of order `j` is the natural
+strengthening, which for `j = 2` is the usual positive-definiteness condition.)
+'''
+deps = ["sub_taylorPolynomial_isLittleO", "IsStrictLocalMinOn", "taylorPolynomial"]
+source = "Cartis–Gould–Toint, Theorem 12.1.5 (corrected)"
+
+[[node]]
+id = "sub_ge_half_of_taylorDecrement_ge"
+kind = "theorem"
+desc = '''
+Taylor decrease implies function decrease (core of Lemma 12.2.8, for any function `g`, used with
+the ARqp model `g = m_k`). Let `g : E → ℝ`, `1 ≤ j ≤ p`, `s d : E`, `0 < δ ≤ 1`, `‖d‖ ≤ δ`,
+`B ≥ 0` with
+(i) `|iteratedFDeriv ℝ ℓ g s (fun _ => d)| ≤ B * ‖d‖ ^ ℓ` for `ℓ ∈ Icc (j+1) p`, and
+(ii) `|g (s + d) - taylorPolynomial g p s d| ≤ B * ‖d‖ ^ (p + 1) / (p + 1)!`.
+If `α > 0`, `4 * B * δ ≤ α` and `α * δ ^ j / j! ≤ (ftaylorSeries ℝ g s).taylorDecrement j d`, then
+`α / 2 * δ ^ j / j! ≤ g s - g (s + d)`. Proof: `g s - g(s+d) ≥ ΔT_j - B ∑_{ℓ=j+1}^{p+1} δ^ℓ/ℓ!
+≥ ΔT_j - 2 B δ^{j+1}/j!` (`sum_pow_div_factorial_Icc_succ_le`, `δ ≤ 1`).
+'''
+deps = ["FormalMultilinearSeries.taylorDecrement_eq", "taylorPolynomial", "sum_pow_div_factorial_Icc_succ_le"]
+source = "Cartis–Gould–Toint, Lemma 12.2.8"
