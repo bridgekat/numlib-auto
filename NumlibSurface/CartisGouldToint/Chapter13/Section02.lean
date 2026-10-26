@@ -236,7 +236,7 @@ theorem theorem_13_2_1_ii (hf : AssumptionD0pL f P.p L) {flow : ℝ}
   have hε1 := hrun.epsMin_le_one
   have hm1 : m ≤ 1 := hmε.trans hε1
   have hA := one_le_arConstA (hf.one_le le_rfl) hrun.kappaMax_nonneg (P := P) (L := L)
-  have hLb := hrun.one_le_Lbar hf
+  have hLb := hrun.one_le_Lbar hf.on_univ
   have hκpos : 0 < κΔm := by
     have hk0 : 0 < arKappaHat P.q (1 - P.θ) (arConstA P L (ordMax P.p κg))
         (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)

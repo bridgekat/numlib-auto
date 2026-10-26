@@ -34,11 +34,11 @@ source = "Cartis–Gould–Toint, Lemma 14.2.3"
 
 [[node]]
 id = "theorem_14_2_4_trq"
-source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRq-SC, TRqIDA-SC, TRqEDA-SC)"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRq-SC)"
 
 [[node]]
 id = "theorem_14_2_4_arqp"
-source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqp-SC, ARqpIDA-SC, ARqpEDA-SC)"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqp-SC)"
 
 [[node]]
 id = "theorem_14_2_4_arqpc"
@@ -55,3 +55,59 @@ source = "Cartis–Gould–Toint, (14.2.17)–(14.2.19)"
 [[node]]
 id = "lemma_14_2_5"
 source = "Cartis–Gould–Toint, Lemma 14.2.5"
+
+[[node]]
+id = "lemma_14_2_3_trq"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRq-SC)"
+
+[[node]]
+id = "lemma_14_2_2_trqida"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (TRqIDA-SC)"
+
+[[node]]
+id = "lemma_14_2_3_trqida"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRqIDA-SC)"
+
+[[node]]
+id = "theorem_14_2_4_trqida"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRqIDA-SC)"
+
+[[node]]
+id = "lemma_14_2_2_trqeda"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (TRqEDA-SC)"
+
+[[node]]
+id = "lemma_14_2_3_trqeda"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRqEDA-SC)"
+
+[[node]]
+id = "theorem_14_2_4_trqeda"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRqEDA-SC)"
+
+[[node]]
+id = "lemma_14_2_2_arqpida"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqpIDA-SC)"
+
+[[node]]
+id = "lemma_14_2_3_arqpida"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpIDA-SC)"
+
+[[node]]
+id = "theorem_14_2_4_arqpida"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpIDA-SC)"
+
+[[node]]
+id = "lemma_14_2_2_arqpeda"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqpEDA-SC)"
+
+[[node]]
+id = "lemma_14_2_3_arqpeda"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpEDA-SC)"
+
+[[node]]
+id = "theorem_14_2_4_arqpeda"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpEDA-SC)"
+
+[[node]]
+id = "theorem_14_2_4_sharp_arqp"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqp-SC row for q > 2, via Theorem 12.2.17)"

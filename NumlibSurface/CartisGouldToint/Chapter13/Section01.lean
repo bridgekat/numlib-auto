@@ -31,8 +31,14 @@ error model (13.1.2) is `Optimization.JetApprox (ftaylorSeries ℝ f (x k)) (D k
   `algorithm_13_1_2` add the exact-value ratio (13.1.16), (13.1.58) and the oracle bounds. The
   explicit-dynamic-accuracy runs of §13.3 reuse the step predicates, so the lemmas not involving
   the formula of `ρ` are stated for the step predicates.
-* The step predicates take a feasible set `X` (displacements `{e | x_k + e ∈ X}`); the algorithms
-  of this chapter use `X = univ`.
+* The step predicates and the runs take a feasible set `X` (displacements `{e | x_k + e ∈ X}`,
+  feasible trial points and starting point): `algorithm_13_1_1_feasible` and
+  `algorithm_13_1_2_feasible` are TRqIDA-SC and ARqpIDA-SC of §14.2, and the algorithms of this
+  chapter, `algorithm_13_1_1` and `algorithm_13_1_2`, are the case `X = univ`. The results are
+  proved for the feasible runs under f.D0qL (f.D0pL) on an open convex `C ⊇ X`
+  (`AssumptionD0qLOn`), with approximate optimality on `X` (`trTest_feasible`,
+  `arTest_feasible`), in the `_feasible` declarations; the statements for Algorithms
+  13.1.1–13.1.2 are their `X = univ` instances.
 * An iteration is accuracy-improving (`𝒜`) when the Prop `acc k` holds, and a trial iteration
   (`𝒯 = 𝒮 ∪ 𝒰`) otherwise. After an unsuccessful iteration the jet is reused (`D (k+1) = D k`).
   Function evaluations up to iteration `k` are counted by `derivEvalCount (¬ acc ·) k` (the
@@ -53,9 +59,11 @@ error model (13.1.2) is `Optimization.JetApprox (ftaylorSeries ℝ f (x k)) (D k
 ## Main definitions
 
 * `AssumptionD0qL`, `AssumptionD0pL` (f.D0qL, f.D0pL), `epsMin`, `ordMax`, `lipMax`;
+  `AssumptionD0qLOn`, `AssumptionD0pLOn` (on an open convex set, for feasible sets);
 * `TRqIDAParams`, `TRqDAStep`, `algorithm_13_1_1` (TRqIDA), `trTest`, `phiHat`;
+  `algorithm_13_1_1_feasible`, `trTest_feasible` (TRqIDA-SC);
 * `ARqpIDAParams`, `ARqpStep1`, `ARqpStep2`, `ARqpDAStep`, `RadiiControl`, `algorithm_13_1_2`
-  (ARqpIDA), `arTest`.
+  (ARqpIDA), `arTest`; `algorithm_13_1_2_feasible`, `arTest_feasible` (ARqpIDA-SC).
 
 ## Main results
 
@@ -64,6 +72,11 @@ error model (13.1.2) is `Optimization.JetApprox (ftaylorSeries ℝ f (x k)) (D k
 * ARqpIDA: `lemma_13_1_9` – `lemma_13_1_18`, `theorem_13_1_19_i`, `theorem_13_1_19_ii` (through
   `arqpIDA_complexity`); runs with the radii control exist (`exists_algorithm_13_1_2`, with the
   halving loop `exists_halving` and Step 2 from a global model minimizer).
+* With a feasible set (§14.2): `lemma_13_1_3_feasible` – `lemma_13_1_7_feasible`,
+  `theorem_13_1_8_feasible`, `lemma_13_1_12_feasible`, `lemma_13_1_14_feasible` –
+  `lemma_13_1_18_feasible`, `arqpIDA_complexity_feasible` (Lemmas 13.1.1–13.1.2, 13.1.9, 13.1.11
+  and 13.1.13 are stated for the step predicates, which carry `X`); the counts of
+  accuracy-improving iterations `trqIDA_card_acc_le_feasible`, `arqpIDA_card_acc_le_feasible`.
 
 ## Deviations from the book
 
@@ -88,6 +101,10 @@ error model (13.1.2) is `Optimization.JetApprox (ftaylorSeries ℝ f (x k)) (D k
   proofs of Lemmas 13.1.14 and 13.1.16 concern `i ∈ [1, p]`, which `ARqpDAStep` uses. The test is
   also skipped for long steps `‖s_k‖ ≥ 1`, where Lemma 13.1.14 still uses (13.1.47); its constant
   `σ_max` is corrected with `max(κ_s, κ_h)` in place of `κ_s`.
+* **Radii control** (13.1.69)–(13.1.70): the results assume the weaker `RadiiControl`
+  (`δ_{s_k} = 1` if `q ≤ 2`; the lower bounds `ς θ ε_j/(24 max(L̄, σ_k))` at every order if
+  `q > 2`), which the book's condition implies (`RadiiControl.of_book`); for `q > 2` the proofs
+  do not use `δ = 1` at the orders `j ≤ 2`.
 * **Lemma 13.1.17** (`q > 2`): the printed constant `κ_{δ,min}^{j-1}` is replaced by
   `κ̂^{j-1}` with `κ̂ = min(κ_{δ,min}, (1-θ)/(2 q! (L_{f,p} + σ_max + 3κ_{∇,max}κ_s)))`; the
   book's derivation ("the first case implies the second") needs `κ_{δ,min}` below that bound.
@@ -270,6 +287,84 @@ theorem AssumptionD0qL.norm_le_of_jetApprox (hf : AssumptionD0qL f q L)
     (hh0 i hi) (hhκ i hi)
 
 end Assumption
+
+/-- **f.D0qL on an open convex set** `C` (the form of f.D0qL used with a feasible set `X ⊆ C`,
+[cartis2022evaluation] §14.2, for the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC
+algorithms): `C` is open and convex, `f` is `C^q` near every point of `C` and, for every
+`j ∈ [0, q]`, the `j`-th derivative is `L_{f,j}`-Lipschitz on `C` with `L_{f,j} ≥ 1`. With
+`C = univ` this is `AssumptionD0qL` (`AssumptionD0qL.on_univ`, `assumptionD0qLOn_univ_iff`). -/
+structure AssumptionD0qLOn (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (q : ℕ) (L : ℕ → ℝ) : Prop where
+  /-- `C` is open. -/
+  isOpen : IsOpen C
+  /-- `C` is convex. -/
+  convex : Convex ℝ C
+  /-- `f` is `C^q` near every point of `C`. -/
+  contDiffAt_q : ∀ y ∈ C, ContDiffAt ℝ q f y
+  /-- The constants are at least `1`. -/
+  one_le : ∀ {j : ℕ}, j ≤ q → 1 ≤ L j
+  /-- The `j`-th derivative is `L_{f,j}`-Lipschitz on `C`. -/
+  lipschitz : ∀ {j : ℕ}, j ≤ q → IteratedFDerivLipschitzOn f j (L j) C
+
+/-- **f.D0pL on an open convex set** `C`: `AssumptionD0qLOn` with order `p`. -/
+abbrev AssumptionD0pLOn (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (L : ℕ → ℝ) : Prop :=
+  AssumptionD0qLOn f C p L
+
+section AssumptionOn
+
+variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {q : ℕ} {L : ℕ → ℝ}
+
+/-- f.D0qL is f.D0qL on `univ`. -/
+theorem AssumptionD0qL.on_univ (hf : AssumptionD0qL f q L) : AssumptionD0qLOn f univ q L :=
+  ⟨isOpen_univ, convex_univ, fun _ _ => hf.1.contDiffAt, hf.one_le, hf.lipschitz⟩
+
+theorem assumptionD0qLOn_univ_iff : AssumptionD0qLOn f univ q L ↔ AssumptionD0qL f q L :=
+  ⟨fun h => ⟨contDiff_iff_contDiffAt.2 fun y => h.contDiffAt_q y (mem_univ y),
+    fun _ hj => ⟨h.one_le hj, h.lipschitz hj⟩⟩, AssumptionD0qL.on_univ⟩
+
+/-- The assumption of order `q` implies the assumption of every lower order. -/
+theorem AssumptionD0qLOn.mono (hf : AssumptionD0qLOn f C q L) {r : ℕ} (hr : r ≤ q) :
+    AssumptionD0qLOn f C r L :=
+  ⟨hf.isOpen, hf.convex, fun y hy => (hf.contDiffAt_q y hy).of_le (by exact_mod_cast hr),
+    fun hj => hf.one_le (hj.trans hr), fun hj => hf.lipschitz (hj.trans hr)⟩
+
+theorem AssumptionD0qLOn.one_le_lipMax (hf : AssumptionD0qLOn f C q L) : 1 ≤ lipMax L q :=
+  (hf.one_le (Nat.zero_le q)).trans (le_lipMax (Nat.zero_le q))
+
+theorem AssumptionD0qLOn.contDiffAt (hf : AssumptionD0qLOn f C q L) {j : ℕ} (hj : j ≤ q)
+    {y : ℝⁿ} (hy : y ∈ C) : ContDiffAt ℝ j f y :=
+  (hf.contDiffAt_q y hy).of_le (by exact_mod_cast hj)
+
+/-- **(A.19) under f.D0qL on `C`**: for `x, x + s ∈ C`,
+`|f(x + s) - T_{f,j}(x, s)| ≤ L_{f,j}/(j+1)! ‖s‖^{j+1}`. -/
+theorem AssumptionD0qLOn.abs_sub_le (hf : AssumptionD0qLOn f C q L) {j : ℕ} (hj : j ≤ q)
+    {x s : ℝⁿ} (hx : x ∈ C) (hxs : x + s ∈ C) :
+    |f (x + s) - (f x - (ftaylorSeries ℝ f x).taylorDecrement j s)| ≤
+      L j / ((j + 1)! : ℝ) * ‖s‖ ^ (j + 1) := by
+  rw [ftaylorSeries_taylorDecrement_eq, sub_sub_cancel]
+  exact abs_sub_taylorPolynomial_le_of_lipschitz hf.convex
+    (fun y hy => hf.contDiffAt hj hy) (hf.lipschitz hj) hx hxs
+
+/-- **(13.1.24) on `C`**: `‖∇^i f(x)‖ ≤ L_{f,i-1} ≤ L_f` for `i ∈ [1, q]` and `x ∈ C`. -/
+theorem AssumptionD0qLOn.norm_iteratedFDeriv_le (hf : AssumptionD0qLOn f C q L) {i : ℕ}
+    (hi : i ∈ Finset.Icc 1 q) {x : ℝⁿ} (hx : x ∈ C) : ‖iteratedFDeriv ℝ i f x‖ ≤ lipMax L q := by
+  obtain ⟨hi1, hiq⟩ := Finset.mem_Icc.1 hi
+  obtain ⟨m, rfl⟩ : ∃ m, i = m + 1 := ⟨i - 1, by omega⟩
+  have hm : m ≤ q := by omega
+  exact (norm_iteratedFDeriv_succ_le_of_lipschitzOn hf.isOpen
+    (zero_le_one.trans (hf.one_le hm)) (hf.lipschitz hm) hx).trans (le_lipMax hm)
+
+/-- **(13.1.24), (13.1.63) on `C`**: inexact derivatives at `x ∈ C` within `κ_{∇,i} h_i` of the
+exact ones, with `0 ≤ κ_{∇,i}`, `0 ≤ h_i ≤ κ_h`, satisfy `‖∇̄^i f(x)‖ ≤ L_f + κ_{∇,max} κ_h`. -/
+theorem AssumptionD0qLOn.norm_le_of_jetApprox (hf : AssumptionD0qLOn f C q L)
+    {D : FormalMultilinearSeries ℝ ℝⁿ ℝ} {κg hh : ℕ → ℝ} {κh : ℝ} {x : ℝⁿ} (hx : x ∈ C)
+    (hD : JetApprox (ftaylorSeries ℝ f x) D q (fun i => κg i * hh i))
+    (hκ : ∀ i ∈ Finset.Icc 1 q, 0 ≤ κg i) (hh0 : ∀ i ∈ Finset.Icc 1 q, 0 ≤ hh i)
+    (hhκ : ∀ i ∈ Finset.Icc 1 q, hh i ≤ κh) {i : ℕ} (hi : i ∈ Finset.Icc 1 q) :
+    ‖D i‖ ≤ lipMax L q + ordMax q κg * κh :=
+  norm_le_add_mul_of_jetApprox hD hi (hf.norm_iteratedFDeriv_le hi hx) (hκ i hi) (le_ordMax hi)
+    (hh0 i hi) (hhκ i hi)
+
+end AssumptionOn
 
 /-! ### Elementary bounds -/
 
@@ -482,7 +577,20 @@ theorem x_succ_eq (hk : ¬ (¬ acc k ∧ P.η₁ ≤ ρ k)) : x (k + 1) = x k :=
 theorem x_succ_eq_add (hk : ¬ acc k) (hρ : P.η₁ ≤ ρ k) : x (k + 1) = x k + s k :=
   (hs.accept hk).eq_add hρ
 
+/-- The iterates stay feasible: `x_k ∈ X` implies `x_{k+1} ∈ X`. -/
+theorem mem_succ (hx : x k ∈ X) : x (k + 1) ∈ X := by
+  by_cases hc : ¬ acc k ∧ P.η₁ ≤ ρ k
+  · rw [hs.x_succ_eq_add hc.1 hc.2]; exact (hs.step2_of_not_acc hc.1).mem
+  · rw [hs.x_succ_eq hc]; exact hx
+
 end TRqDAStep
+
+/-- The iterates of TRqIDA/TRqEDA sequences starting in `X` stay in `X`. -/
+theorem trq_mem (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s acc ρ i) (hx0 : x 0 ∈ X) :
+    x k ∈ X := by
+  induction k with
+  | zero => exact hx0
+  | succ k ih => exact (hstep k k.lt_succ_self).mem_succ (ih fun i hi => hstep i (by omega))
 
 /-- The radii of TRqIDA/TRqEDA sequences stay positive. -/
 theorem trq_delta_pos (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s acc ρ i)
@@ -784,16 +892,29 @@ def trTest (f : ℝⁿ → ℝ) (P : TRqIDAParams) (ε : ℕ → ℝ) (x : ℕ �
     Prop :=
   IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ P.q ε (fun _ => trRadius P Δ k)
 
-/-- **Algorithm 13.1.1** (TRqIDA) of [cartis2022evaluation] as a run predicate, for the objective
-`f`, the (unknown) oracle constants `κ_{∇,i}` (`κg i ≥ 0`), constants `P`, tolerances
-`ε ∈ (0, 1]^q` with `ε_min ≤ ϑ`, starting point `x₀`, and sequences of iterates `x`, radii `Δ`,
-requested accuracies `h`, inexact jets `D` satisfying (13.1.2), Step-1 displacements `dd`,
-orders `j_k`, steps `s` and accuracy-improving flags `acc`; every iteration satisfies
-`TRqDAStep` with the exact-value ratio (13.1.16) `ρ_k = (f(x_k) - f(x_k + s_k)) /
-\overline{ΔT}_{f,j_k}(x_k, s_k)` (`Optimization.trqRatio`). The method has no termination rule;
-see `trTest`. -/
-structure algorithm_13_1_1 (f : ℝⁿ → ℝ) (κg : ℕ → ℝ) (P : TRqIDAParams) (ε : ℕ → ℝ)
-    (x₀ : ℝⁿ) (x : ℕ → ℝⁿ) (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ)
+/-- The test of approximate optimality of TRqIDA-SC at iteration `k` ([cartis2022evaluation],
+§14.2, (14.2.2)): `x_k` is an `(ε, δ_k)`-approximate `q`-th order minimizer of `f` on the
+feasible set `X` (measures over the feasible displacements `{e | x_k + e ∈ X}`) with the radius
+`δ_k = min(Δ_k, ϑ)`. With `X = univ` this is `trTest` (`trTest_feasible_univ`). -/
+def trTest_feasible (f : ℝⁿ → ℝ) (X : Set ℝⁿ) (P : TRqIDAParams) (ε : ℕ → ℝ) (x : ℕ → ℝⁿ)
+    (Δ : ℕ → ℝ) (k : ℕ) : Prop :=
+  IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) {e | x k + e ∈ X} P.q ε (fun _ => trRadius P Δ k)
+
+theorem trTest_feasible_univ {f : ℝⁿ → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ} {x : ℕ → ℝⁿ}
+    {Δ : ℕ → ℝ} : trTest_feasible f univ P ε x Δ = trTest f P ε x Δ := by
+  funext k; simp only [trTest_feasible, trTest, setOf_add_mem_univ]
+
+/-- **Algorithm 13.1.1 with a feasible set** (TRqIDA-SC, [cartis2022evaluation] §14.2) as a run
+predicate, for the objective `f`, the closed feasible set `X` (closedness is not used by the
+analysis), the (unknown) oracle constants `κ_{∇,i}` (`κg i ≥ 0`), constants `P`, tolerances
+`ε ∈ (0, 1]^q` with `ε_min ≤ ϑ`, a feasible starting point `x₀ ∈ X`, and sequences of iterates `x`,
+radii `Δ`, requested accuracies `h`, inexact jets `D` satisfying (13.1.2), Step-1 displacements
+`dd`, orders `j_k`, steps `s` and accuracy-improving flags `acc`; every iteration satisfies
+`TRqDAStep` on `X` (feasible Step-1 displacements and trial points) with the exact-value ratio
+(13.1.16) `ρ_k = (f(x_k) - f(x_k + s_k)) / \overline{ΔT}_{f,j_k}(x_k, s_k)`
+(`Optimization.trqRatio`). With `X = univ` this is `algorithm_13_1_1`. -/
+structure algorithm_13_1_1_feasible (f : ℝⁿ → ℝ) (X : Set ℝⁿ) (κg : ℕ → ℝ) (P : TRqIDAParams)
+    (ε : ℕ → ℝ) (x₀ : ℝⁿ) (x : ℕ → ℝⁿ) (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ)
     (D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ) (dd : ℕ → ℕ → ℝⁿ) (jk : ℕ → ℕ) (s : ℕ → ℝⁿ)
     (acc : ℕ → Prop) : Prop where
   /-- `ε ∈ (0, 1]^q`. -/
@@ -804,6 +925,8 @@ structure algorithm_13_1_1 (f : ℝⁿ → ℝ) (κg : ℕ → ℝ) (P : TRqIDAP
   κg_nonneg : ∀ i ∈ Finset.Icc 1 P.q, 0 ≤ κg i
   /-- The starting point. -/
   x_zero : x 0 = x₀
+  /-- The starting point is feasible. -/
+  x₀_mem : x₀ ∈ X
   /-- The initial radius. -/
   Δ_zero : Δ 0 = P.Δ₀
   /-- The initial accuracies. -/
@@ -811,14 +934,28 @@ structure algorithm_13_1_1 (f : ℝⁿ → ℝ) (κg : ℕ → ℝ) (P : TRqIDAP
   /-- The error model (13.1.2). -/
   oracle : ∀ k, JetApprox (ftaylorSeries ℝ f (x k)) (D k) P.q (fun i => κg i * h k i)
   /-- Steps 1–5. -/
-  step : ∀ k, TRqDAStep univ P ε x Δ h D dd jk s acc (trqRatio f D x s jk) k
+  step : ∀ k, TRqDAStep X P ε x Δ h D dd jk s acc (trqRatio f D x s jk) k
 
-namespace algorithm_13_1_1
+/-- **Algorithm 13.1.1** (TRqIDA) of [cartis2022evaluation] as a run predicate, for the objective
+`f`, the (unknown) oracle constants `κ_{∇,i}` (`κg i ≥ 0`), constants `P`, tolerances
+`ε ∈ (0, 1]^q` with `ε_min ≤ ϑ`, starting point `x₀`, and sequences of iterates `x`, radii `Δ`,
+requested accuracies `h`, inexact jets `D` satisfying (13.1.2), Step-1 displacements `dd`,
+orders `j_k`, steps `s` and accuracy-improving flags `acc`; every iteration satisfies
+`TRqDAStep` with the exact-value ratio (13.1.16) `ρ_k = (f(x_k) - f(x_k + s_k)) /
+\overline{ΔT}_{f,j_k}(x_k, s_k)` (`Optimization.trqRatio`). The method has no termination rule;
+see `trTest`. This is `algorithm_13_1_1_feasible` with the feasible set `X = univ`. -/
+abbrev algorithm_13_1_1 (f : ℝⁿ → ℝ) (κg : ℕ → ℝ) (P : TRqIDAParams) (ε : ℕ → ℝ)
+    (x₀ : ℝⁿ) (x : ℕ → ℝⁿ) (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ)
+    (D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ) (dd : ℕ → ℕ → ℝⁿ) (jk : ℕ → ℕ) (s : ℕ → ℝⁿ)
+    (acc : ℕ → Prop) : Prop :=
+  algorithm_13_1_1_feasible f univ κg P ε x₀ x Δ h D dd jk s acc
 
-variable {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ} {x : ℕ → ℝⁿ}
-  {Δ : ℕ → ℝ} {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ} {dd : ℕ → ℕ → ℝⁿ}
-  {jk : ℕ → ℕ} {s : ℕ → ℝⁿ} {acc : ℕ → Prop}
-  (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc)
+namespace algorithm_13_1_1_feasible
+
+variable {f : ℝⁿ → ℝ} {X : Set ℝⁿ} {κg : ℕ → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ}
+  {x : ℕ → ℝⁿ} {Δ : ℕ → ℝ} {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ}
+  {dd : ℕ → ℕ → ℝⁿ} {jk : ℕ → ℕ} {s : ℕ → ℝⁿ} {acc : ℕ → Prop}
+  (hrun : algorithm_13_1_1_feasible f X κg P ε x₀ x Δ h D dd jk s acc)
 include hrun
 
 theorem delta_pos (k : ℕ) : 0 < Δ k :=
@@ -835,27 +972,32 @@ theorem epsMin_le_one : epsMin P.q ε ≤ 1 :=
 
 theorem kappaMax_nonneg : 0 ≤ ordMax P.q κg := ordMax_nonneg hrun.κg_nonneg
 
-/-- (13.1.24): `‖∇̄^i f(x_k)‖ ≤ L̄_f = L_f + κ_{∇,max} κ_h`. -/
-theorem norm_D_le {L : ℕ → ℝ} (hf : AssumptionD0qL f P.q L) (k : ℕ) {i : ℕ}
-    (hi : i ∈ Finset.Icc 1 P.q) : ‖D k i‖ ≤ lipMax L P.q + ordMax P.q κg * P.κh :=
-  hf.norm_le_of_jetApprox (hrun.oracle k) hrun.κg_nonneg (fun _ hi => (hrun.h_mem k hi).1.le)
-    (fun _ hi => (hrun.h_mem k hi).2) hi
+/-- The iterates are feasible. -/
+theorem mem (k : ℕ) : x k ∈ X :=
+  trq_mem (fun i _ => hrun.step i) (hrun.x_zero ▸ hrun.x₀_mem)
 
-end algorithm_13_1_1
+/-- (13.1.24): `‖∇̄^i f(x_k)‖ ≤ L̄_f = L_f + κ_{∇,max} κ_h` under f.D0qL on `C ⊇ X`. -/
+theorem norm_D_le {C : Set ℝⁿ} {L : ℕ → ℝ} (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (k : ℕ) {i : ℕ} (hi : i ∈ Finset.Icc 1 P.q) :
+    ‖D k i‖ ≤ lipMax L P.q + ordMax P.q κg * P.κh :=
+  hf.norm_le_of_jetApprox (hXC (hrun.mem k)) (hrun.oracle k) hrun.κg_nonneg
+    (fun _ hi => (hrun.h_mem k hi).1.le) (fun _ hi => (hrun.h_mem k hi).2) hi
+
+end algorithm_13_1_1_feasible
 
 section TRqIDA
 
-variable {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ} {x : ℕ → ℝⁿ}
-  {Δ : ℕ → ℝ} {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ} {dd : ℕ → ℕ → ℝⁿ}
-  {jk : ℕ → ℕ} {s : ℕ → ℝⁿ} {acc : ℕ → Prop} {L : ℕ → ℝ} {k : ℕ}
+variable {X C : Set ℝⁿ} {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ}
+  {x : ℕ → ℝⁿ} {Δ : ℕ → ℝ} {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ}
+  {dd : ℕ → ℕ → ℝⁿ} {jk : ℕ → ℕ} {s : ℕ → ℝⁿ} {acc : ℕ → Prop} {L : ℕ → ℝ} {k : ℕ}
 
 /-! ### Lemma 13.1.3 -/
 
-/-- **Lemma 13.1.3** ([cartis2022evaluation]): under f.D0qL, at a trial iteration `k ∈ 𝒯` of
-TRqIDA with (13.1.28) `Δ_k ≤ min(ϑ, (1 - η₂)/(L_f + 4 (q+1)! κ_s κ_{∇,max}) pĥ_{f,k})`, the
-iteration is very successful (`ρ_k ≥ η₂`) and `Δ_{k+1} ≥ Δ_k`. -/
-theorem lemma_13_1_3 (hf : AssumptionD0qL f P.q L)
-    (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) (hk : ¬ acc k)
+/-- **Lemma 13.1.3 with a feasible set** ([cartis2022evaluation] §14.2): the conclusion of
+`lemma_13_1_3` for a TRqIDA-SC run (`algorithm_13_1_1_feasible`) under f.D0qL on an open
+convex `C ⊇ X`. -/
+theorem lemma_13_1_3_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_1_feasible f X κg P ε x₀ x Δ h D dd jk s acc) (hk : ¬ acc k)
     (hΔ : Δ k ≤ min P.ϑ ((1 - P.η₂) /
       (lipMax L P.q + 4 * (P.q + 1)! * P.κs * ordMax P.q κg) * trPhiHat P Δ D dd jk k)) :
     P.η₂ ≤ trqRatio f D x s jk k ∧ Δ k ≤ Δ (k + 1) := by
@@ -892,7 +1034,7 @@ theorem lemma_13_1_3 (hf : AssumptionD0qL f P.q L)
     rw [mul_assoc]
     exact mul_le_mul (le_ordMax hi) hhi (hrun.h_mem k hi).1.le hκm
   have hE := abs_taylorDecrement_sub_le_of_stepAccuracy hκm hκs.le (hrun.oracle k) hacc hjq
-  have hR := hf.abs_sub_le hjq (x k) (s k)
+  have hR := hf.abs_sub_le hjq (hXC (hrun.mem k)) (hXC h2.mem)
   have hLj : L j ≤ Lf := le_lipMax hjq
   -- bounds by `δ^{j+1}`
   have hs0 := norm_nonneg (s k)
@@ -937,6 +1079,16 @@ theorem lemma_13_1_3 (hf : AssumptionD0qL f P.q L)
     exact le_div_of_inexact_error_le hΔTb0 herr
   exact ⟨hρ, (hs.update hk).le_of_very_successful hρ⟩
 
+/-- **Lemma 13.1.3** ([cartis2022evaluation]): under f.D0qL, at a trial iteration `k ∈ 𝒯` of
+TRqIDA with (13.1.28) `Δ_k ≤ min(ϑ, (1 - η₂)/(L_f + 4 (q+1)! κ_s κ_{∇,max}) pĥ_{f,k})`, the
+iteration is very successful (`ρ_k ≥ η₂`) and `Δ_{k+1} ≥ Δ_k`. -/
+theorem lemma_13_1_3 (hf : AssumptionD0qL f P.q L)
+    (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) (hk : ¬ acc k)
+    (hΔ : Δ k ≤ min P.ϑ ((1 - P.η₂) /
+      (lipMax L P.q + 4 * (P.q + 1)! * P.κs * ordMax P.q κg) * trPhiHat P Δ D dd jk k)) :
+    P.η₂ ≤ trqRatio f D x s jk k ∧ Δ k ≤ Δ (k + 1) :=
+  lemma_13_1_3_feasible hf.on_univ (subset_univ _) hrun hk hΔ
+
 /-! ### Lemma 13.1.4 -/
 
 /-- The constant `κ_Δ` of (13.1.31) ([cartis2022evaluation]):
@@ -980,13 +1132,10 @@ theorem trKappaDelta_spec {f : ℝⁿ → ℝ} {P : TRqIDAParams} {L κg : ℕ �
   · rw [← mul_div_assoc]
     exact (mul_le_of_le_one_right hA0.le hB1).trans (min_le_right _ _)
 
-/-- **Lemma 13.1.4** ([cartis2022evaluation]): under f.D0qL, along a TRqIDA run, for every
-`κ_Δ ∈ (0, 1]` with `κ_Δ ≤ γ₁ (1 - η₂)/(L_f + 4(q+1)! κ_s κ_{∇,max})` (e.g. the value (13.1.31),
-`trKappaDelta`) and every `k`: (13.1.30) `Δ_k ≥ min(γ₁ ϑ, κ_Δ min_{i ∈ 𝒯_k} φ̂_{f,i})` if
-`𝒯_k ≠ ∅` and `Δ_k ≥ γ₁ ϑ` otherwise, and (13.1.32) `δ_k ≥ ς κ_δ ε_min` with `κ_δ = κ_Δ/2`
-(13.1.33). -/
-theorem lemma_13_1_4 (hf : AssumptionD0qL f P.q L)
-    (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ} (hκΔ0 : 0 < κΔ)
+/-- **Lemma 13.1.4 with a feasible set** ([cartis2022evaluation] §14.2): the radius bounds of
+`lemma_13_1_4` for a TRqIDA-SC run under f.D0qL on an open convex `C ⊇ X`. -/
+theorem lemma_13_1_4_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_1_feasible f X κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ} (hκΔ0 : 0 < κΔ)
     (hκΔ1 : κΔ ≤ 1)
     (hκΔ : κΔ ≤ P.γ₁ * ((1 - P.η₂) / (lipMax L P.q + 4 * (P.q + 1)! * P.κs * ordMax P.q κg)))
     (k : ℕ) :
@@ -1006,7 +1155,7 @@ theorem lemma_13_1_4 (hf : AssumptionD0qL f P.q L)
     linarith [P.η₂_pos]
   have hsucc : ∀ i < k, ¬ acc i → Δ i ≤ min P.ϑ (a * trPhiHat P Δ D dd jk i) →
       P.η₂ ≤ trqRatio f D x s jk i :=
-    fun i _ hi hΔ => (lemma_13_1_3 hf hrun hi hΔ).1
+    fun i _ hi hΔ => (lemma_13_1_3_feasible hf hXC hrun hi hΔ).1
   have core := fun c (hc : ∀ i < k, ¬ acc i → c ≤ trPhiHat P Δ D dd jk i) =>
     trq_delta_ge (fun i _ => hrun.step i) hrun.Δ_zero ha0 hκΔ0.le hκΔ hsucc hc
   refine ⟨fun hne => core _ fun i hi hai => Finset.inf'_le _
@@ -1032,6 +1181,22 @@ theorem lemma_13_1_4 (hf : AssumptionD0qL f P.q L)
           exact mul_le_mul_of_nonneg_right this hεmin.le
       _ ≤ P.γ₁ * P.ϑ := mul_le_mul_of_nonneg_left hrun.epsMin_le_ϑ P.γ₁_pos.le
 
+/-- **Lemma 13.1.4** ([cartis2022evaluation]): under f.D0qL, along a TRqIDA run, for every
+`κ_Δ ∈ (0, 1]` with `κ_Δ ≤ γ₁ (1 - η₂)/(L_f + 4(q+1)! κ_s κ_{∇,max})` (e.g. the value (13.1.31),
+`trKappaDelta`) and every `k`: (13.1.30) `Δ_k ≥ min(γ₁ ϑ, κ_Δ min_{i ∈ 𝒯_k} φ̂_{f,i})` if
+`𝒯_k ≠ ∅` and `Δ_k ≥ γ₁ ϑ` otherwise, and (13.1.32) `δ_k ≥ ς κ_δ ε_min` with `κ_δ = κ_Δ/2`
+(13.1.33). -/
+theorem lemma_13_1_4 (hf : AssumptionD0qL f P.q L)
+    (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ} (hκΔ0 : 0 < κΔ)
+    (hκΔ1 : κΔ ≤ 1)
+    (hκΔ : κΔ ≤ P.γ₁ * ((1 - P.η₂) / (lipMax L P.q + 4 * (P.q + 1)! * P.κs * ordMax P.q κg)))
+    (k : ℕ) :
+    (∀ hne : (successSet (fun i => ¬ acc i) k).Nonempty, min (P.γ₁ * P.ϑ)
+        (κΔ * (successSet (fun i => ¬ acc i) k).inf' hne (trPhiHat P Δ D dd jk)) ≤ Δ k) ∧
+      (successSet (fun i => ¬ acc i) k = ∅ → P.γ₁ * P.ϑ ≤ Δ k) ∧
+      P.ς * (κΔ / 2) * epsMin P.q ε ≤ trRadius P Δ k :=
+  lemma_13_1_4_feasible hf.on_univ (subset_univ _) hrun hκΔ0 hκΔ1 hκΔ k
+
 /-- The admissible values of `κ_Δ` in Lemmas 13.1.4–13.1.7 and Theorem 13.1.8:
 `0 < κ_Δ ≤ 1` and `κ_Δ ≤ γ₁ (1 - η₂)/(L_f + 4(q+1)! κ_s κ_{∇,max})`. -/
 def IsTRKappaDelta (P : TRqIDAParams) (Lf κm κΔ : ℝ) : Prop :=
@@ -1039,13 +1204,11 @@ def IsTRKappaDelta (P : TRqIDAParams) (Lf κm κΔ : ℝ) : Prop :=
 
 /-! ### Lemma 13.1.5 -/
 
-/-- **Lemma 13.1.5** ([cartis2022evaluation]): under f.D0qL, for an admissible `κ_Δ` and
-`κ_δ = κ_Δ/2`, every trial iteration `k ∈ 𝒯` of a TRqIDA run satisfies (13.1.34)
-`\overline{ΔT}_{f,j_k}(x_k, s_k) ≥ (ς κ_δ)^{q+1}/q! ε_min^{q+1}`, and if moreover `k ∈ 𝒮` then
-(13.1.35) `f(x_k) - f(x_{k+1}) ≥ η₁ (ς κ_δ)^{q+1}/(2 q!) ε_min^{q+1}`. (No optimality hypothesis
-is needed.) -/
-theorem lemma_13_1_5 (hf : AssumptionD0qL f P.q L)
-    (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
+/-- **Lemma 13.1.5 with a feasible set** ([cartis2022evaluation] §14.2): for a TRqIDA-SC run under
+f.D0qL on an open convex `C ⊇ X` and an admissible `κ_Δ`, every trial iteration satisfies (13.1.34)
+and every successful one (13.1.35), as in `lemma_13_1_5`. -/
+theorem lemma_13_1_5_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_1_feasible f X κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) (hk : ¬ acc k) :
     (P.ς * (κΔ / 2)) ^ (P.q + 1) / P.q ! * epsMin P.q ε ^ (P.q + 1) ≤
         (D k).taylorDecrement (jk k) (s k) ∧
@@ -1055,7 +1218,7 @@ theorem lemma_13_1_5 (hf : AssumptionD0qL f P.q L)
   obtain ⟨hκΔ0, hκΔ1, hκΔ⟩ := hκΔ
   have h1 := (hrun.step k).taylorDecrement_ge hk (hrun.delta_pos k) (by positivity)
     (by linarith) hrun.epsMin_pos hrun.epsMin_le_one
-    (lemma_13_1_4 hf hrun hκΔ0 hκΔ1 hκΔ k).2.2
+    (lemma_13_1_4_feasible hf hXC hrun hκΔ0 hκΔ1 hκΔ k).2.2
   refine ⟨h1, fun hρ => ?_⟩
   have hpos : 0 < (D k).taylorDecrement (jk k) (s k) :=
     lt_of_lt_of_le (by have := P.ς_pos; have := hrun.epsMin_pos; positivity) h1
@@ -1071,7 +1234,39 @@ theorem lemma_13_1_5 (hf : AssumptionD0qL f P.q L)
     _ ≤ P.η₁ * (D k).taylorDecrement (jk k) (s k) := mul_le_mul_of_nonneg_left h1 hη.le
     _ ≤ f (x k) - f (x (k + 1)) := h2
 
+/-- **Lemma 13.1.5** ([cartis2022evaluation]): under f.D0qL, for an admissible `κ_Δ` and
+`κ_δ = κ_Δ/2`, every trial iteration `k ∈ 𝒯` of a TRqIDA run satisfies (13.1.34)
+`\overline{ΔT}_{f,j_k}(x_k, s_k) ≥ (ς κ_δ)^{q+1}/q! ε_min^{q+1}`, and if moreover `k ∈ 𝒮` then
+(13.1.35) `f(x_k) - f(x_{k+1}) ≥ η₁ (ς κ_δ)^{q+1}/(2 q!) ε_min^{q+1}`. (No optimality hypothesis
+is needed.) -/
+theorem lemma_13_1_5 (hf : AssumptionD0qL f P.q L)
+    (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) (hk : ¬ acc k) :
+    (P.ς * (κΔ / 2)) ^ (P.q + 1) / P.q ! * epsMin P.q ε ^ (P.q + 1) ≤
+        (D k).taylorDecrement (jk k) (s k) ∧
+      (P.η₁ ≤ trqRatio f D x s jk k →
+        P.η₁ * (P.ς * (κΔ / 2)) ^ (P.q + 1) / (2 * P.q !) * epsMin P.q ε ^ (P.q + 1) ≤
+          f (x k) - f (x (k + 1))) :=
+  lemma_13_1_5_feasible hf.on_univ (subset_univ _) hrun hκΔ hk
+
 /-! ### Lemmas 13.1.6 and 13.1.7 -/
+
+/-- **Lemma 13.1.6 with a feasible set** ([cartis2022evaluation] §14.2): the conclusion of
+`lemma_13_1_6` for a TRqIDA-SC run under f.D0qL on an open convex `C ⊇ X`. -/
+theorem lemma_13_1_6_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_1_feasible f X κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ)
+    (hb : ∃ j ∈ Finset.Icc 1 P.q, trFail P ε D Δ dd k j)
+    (hh : ∀ i ∈ Finset.Icc 1 P.q, h k i ≤ P.κs * (P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q /
+      (4 * P.q ! * (lipMax L P.q + ordMax P.q κg * P.κh))) ^ P.q *
+        epsMin P.q ε ^ (P.q * (P.q + 1))) :
+    ¬ acc k := by
+  obtain ⟨hκΔ0, hκΔ1, hκΔ'⟩ := hκΔ
+  have hLb : 1 ≤ lipMax L P.q + ordMax P.q κg * P.κh := by
+    have := hf.one_le_lipMax; have := hrun.kappaMax_nonneg; have := P.κh_pos; nlinarith
+  exact ((hrun.step k).step2 hb).not_acc_of_le (hrun.delta_pos k) hLb
+    (fun i hi => hrun.norm_D_le hf hXC k hi) (by positivity) (by linarith) hrun.eps_mem
+    (lemma_13_1_4_feasible hf hXC hrun hκΔ0 hκΔ1 hκΔ' k).2.2 hh
 
 /-- **Lemma 13.1.6** ([cartis2022evaluation]): under f.D0qL, with `L̄_f = L_f + κ_{∇,max} κ_h`
 ((13.1.24)) and an admissible `κ_Δ`, `κ_δ = κ_Δ/2`: if Step 1 of TRqIDA branches to Step 2 at
@@ -1085,28 +1280,21 @@ theorem lemma_13_1_6 (hf : AssumptionD0qL f P.q L)
     (hh : ∀ i ∈ Finset.Icc 1 P.q, h k i ≤ P.κs * (P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q /
       (4 * P.q ! * (lipMax L P.q + ordMax P.q κg * P.κh))) ^ P.q *
         epsMin P.q ε ^ (P.q * (P.q + 1))) :
-    ¬ acc k := by
-  obtain ⟨hκΔ0, hκΔ1, hκΔ'⟩ := hκΔ
-  have hLb : 1 ≤ lipMax L P.q + ordMax P.q κg * P.κh := by
-    have := hf.one_le_lipMax; have := hrun.kappaMax_nonneg; have := P.κh_pos; nlinarith
-  exact ((hrun.step k).step2 hb).not_acc_of_le (hrun.delta_pos k) hLb
-    (fun i hi => hrun.norm_D_le hf k hi) (by positivity) (by linarith) hrun.eps_mem
-    (lemma_13_1_4 hf hrun hκΔ0 hκΔ1 hκΔ' k).2.2 hh
+    ¬ acc k :=
+  lemma_13_1_6_feasible hf.on_univ (subset_univ _) hrun hκΔ hb hh
 
-/-- **Lemma 13.1.7** ([cartis2022evaluation]): under f.D0qL and for an admissible `κ_Δ`,
-`κ_δ = κ_Δ/2`: if Step 1 of TRqIDA branches to Step 5 at iteration `k` ((13.1.14) fails at every
-order) and (13.1.37) `κ_{∇,max} h_{k,i} ≤ ς^{q+1} κ_δ^q/(4 q!) ε_min^{q+1}` for `i ∈ [1, q]`
-(written without division, so that `κ_{∇,max} = 0` is allowed), then
-`φ^{δ_k}_{f,j}(x_k) ≤ ε_j δ_k^j/j!` for all `j ∈ [1, q]`. -/
-theorem lemma_13_1_7 (hf : AssumptionD0qL f P.q L)
-    (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
+/-- **Lemma 13.1.7 with a feasible set** ([cartis2022evaluation] §14.2): for a TRqIDA-SC run under
+f.D0qL on an open convex `C ⊇ X`, if Step 1 branches to Step 5 at iteration `k` and (13.1.37) holds,
+then `x_k` is an `(ε, δ_k)`-approximate minimizer on `X` (`trTest_feasible`). -/
+theorem lemma_13_1_7_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_1_feasible f X κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ)
     (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trFail P ε D Δ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.q, ordMax P.q κg * h k i ≤
       P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
-    trTest f P ε x Δ k := by
+    trTest_feasible f X P ε x Δ k := by
   obtain ⟨hκΔ0, hκΔ1, hκΔ'⟩ := hκΔ
-  have hδm := (lemma_13_1_4 hf hrun hκΔ0 hκΔ1 hκΔ' k).2.2
+  have hδm := (lemma_13_1_4_feasible hf hXC hrun hκΔ0 hκΔ1 hκΔ' k).2.2
   have hδ := trRadius_mem (P := P) (hrun.delta_pos k)
   have hεmin := hrun.epsMin_pos
   have hεmin1 := hrun.epsMin_le_one
@@ -1123,8 +1311,8 @@ theorem lemma_13_1_7 (hf : AssumptionD0qL f P.q L)
     calc m ≤ 1 * 1 := mul_le_mul this hεmin1 hεmin.le zero_le_one
       _ = 1 := one_mul 1
   have hw := ((hrun.step k).witness j hj).2
-  rw [setOf_add_mem_univ] at hw
-  refine taylorMeasure_le_of_inexact_certificate_uniform (hrun.oracle k) hj (mem_univ 0) hδ.1.le
+  refine taylorMeasure_le_of_inexact_certificate_uniform (hrun.oracle k) hj
+    (by simpa using hrun.mem k) hδ.1.le
     hδ.2 hς hw (not_lt.1 (hpass j hj))
     (e := P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * em ^ (P.q + 1))
     (fun i hi => ?_) ?_
@@ -1143,6 +1331,21 @@ theorem lemma_13_1_7 (hf : AssumptionD0qL f P.q L)
           gcongr
           exact mul_nonneg ((by positivity : (0 : ℝ) ≤ P.ς * em).trans hεj)
             (pow_nonneg hδ.1.le _)
+
+/-- **Lemma 13.1.7** ([cartis2022evaluation]): under f.D0qL and for an admissible `κ_Δ`,
+`κ_δ = κ_Δ/2`: if Step 1 of TRqIDA branches to Step 5 at iteration `k` ((13.1.14) fails at every
+order) and (13.1.37) `κ_{∇,max} h_{k,i} ≤ ς^{q+1} κ_δ^q/(4 q!) ε_min^{q+1}` for `i ∈ [1, q]`
+(written without division, so that `κ_{∇,max} = 0` is allowed), then
+`φ^{δ_k}_{f,j}(x_k) ≤ ε_j δ_k^j/j!` for all `j ∈ [1, q]`. -/
+theorem lemma_13_1_7 (hf : AssumptionD0qL f P.q L)
+    (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trFail P ε D Δ dd k j)
+    (hh : ∀ i ∈ Finset.Icc 1 P.q, ordMax P.q κg * h k i ≤
+      P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
+    trTest f P ε x Δ k := by
+  have := lemma_13_1_7_feasible hf.on_univ (subset_univ _) hrun hκΔ hpass hh
+  rwa [trTest_feasible_univ] at this
 
 /-! ### Theorem 13.1.8 -/
 
@@ -1186,6 +1389,172 @@ theorem mul_trKappaAcc_le {P : TRqIDAParams} {κΔ Lb κm : ℝ} (hκΔ : 0 < κ
           mul_le_mul_of_nonneg_left (min_le_left _ _) hκm
       _ = P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) := by field_simp
 
+/-- **The accuracy-improving iterations of TRqIDA-SC** (proof of Theorem 13.1.8,
+[cartis2022evaluation]): under f.D0qL on an open convex `C ⊇ X` and for an admissible `κ_Δ`, if
+no iterate `x_j`, `j ≤ k`, is approximately optimal on `X`, then
+`|𝒜_k| ≤ q(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
+theorem trqIDA_card_acc_le_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_1_feasible f X κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) {k : ℕ}
+    (hk : ∀ j ≤ k, ¬ trTest_feasible f X P ε x Δ j) :
+    ((successSet acc k).card : ℝ) ≤
+      P.q * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
+        |Real.log (trKappaAcc P κΔ (lipMax L P.q + ordMax P.q κg * P.κh) (ordMax P.q κg) /
+          P.κh)| / |Real.log P.γh| + 1 := by
+  have hκΔ'' := hκΔ
+  have hκΔ0 := hκΔ.1
+  have hq := P.one_le_q
+  set em := epsMin P.q ε with hem
+  have hεmin : 0 < em := hrun.epsMin_pos
+  have hεmin1 : em ≤ 1 := hrun.epsMin_le_one
+  have hς := P.ς_pos
+  set Lf := lipMax L P.q
+  set κm := ordMax P.q κg
+  have hκm : 0 ≤ κm := hrun.kappaMax_nonneg
+  set Lb := Lf + κm * P.κh
+  have hLb : 0 < Lb := by have := hf.one_le_lipMax; have := P.κh_pos; nlinarith
+  set κacc := trKappaAcc P κΔ Lb κm
+  have hκacc : 0 < κacc := trKappaAcc_pos hκΔ0 hLb hκm
+  have hlogh : 0 < |Real.log P.γh| := abs_pos.2 (Real.log_neg P.γh_pos P.γh_lt_one).ne
+  set NA := P.q * (P.q + 1) / |Real.log P.γh| * |Real.log em| +
+    |Real.log (κacc / P.κh)| / |Real.log P.γh| + 1 with hNA_def
+  have hNA0 : 0 ≤ NA := by positivity
+  have hpowq : em ^ (P.q * (P.q + 1)) ≤ em ^ (P.q + 1) :=
+    pow_le_pow_of_le_one hεmin.le hεmin1 (by nlinarith)
+  have h := card_accuracyImproving_le_of_pow (acc := acc) (hmax := fun j => ordMax P.q (h j))
+    (N := P.q * (P.q + 1)) (k := k) P.γh_pos P.γh_lt_one P.κh_pos hκacc hεmin
+    ((ordMax_le_iff hq).2 fun i hi => by rw [hrun.h_zero]; exact P.h₀_le i hi)
+    (fun j _ ha => by
+      rw [show h (j + 1) = fun i => P.γh * h j i from funext ((hrun.step j).h_acc ha),
+        ordMax_mul hq P.γh_pos.le])
+    (fun j _ ha => by rw [(hrun.step j).h_trial ha])
+    (fun j hj ha => by
+      by_contra hcon
+      push Not at hcon
+      have hhi : ∀ i ∈ Finset.Icc 1 P.q, h j i ≤ κacc * em ^ (P.q * (P.q + 1)) :=
+        fun i hi => (le_ordMax hi).trans hcon
+      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, trFail P ε D Δ dd j i
+      · refine lemma_13_1_6_feasible hf hXC hrun hκΔ'' hfail (fun i hi => (hhi i hi).trans ?_) ha
+        exact mul_le_mul_of_nonneg_right trKappaAcc_le (by positivity)
+      · push Not at hfail
+        refine hk j hj (lemma_13_1_7_feasible hf hXC hrun hκΔ'' hfail fun i hi => ?_)
+        calc κm * h j i ≤ κm * (κacc * em ^ (P.q * (P.q + 1))) :=
+              mul_le_mul_of_nonneg_left (hhi i hi) hκm
+          _ = κm * κacc * em ^ (P.q * (P.q + 1)) := by ring
+          _ ≤ P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * em ^ (P.q + 1) :=
+              mul_le_mul (mul_trKappaAcc_le hκΔ0 hκm) hpowq (by positivity) (by positivity))
+  calc ((successSet acc k).card : ℝ)
+      ≤ (((P.q * (P.q + 1) : ℕ) : ℝ) * |Real.log em| + |Real.log (κacc / P.κh)|) /
+          |Real.log P.γh| + 1 := h
+    _ = NA := by rw [hNA_def]; push_cast; ring
+
+/-- **Theorem 13.1.8 with a feasible set** ([cartis2022evaluation] §14.2): complexity of TRqIDA-SC
+(the TRqIDA-SC row of Theorem 14.2.4). Under f.D0qL on an open convex `C ⊇ X` and f.bB.X
+(`f ≥ f_low` on `X`), every TRqIDA-SC run has a first iterate `x_{k_ε}` that is an
+`(ε, δ_ε)`-approximate minimizer on `X` (`trTest_feasible`), before which at most the numbers of
+evaluations of `theorem_13_1_8` are made. -/
+theorem theorem_13_1_8_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C) {flow : ℝ}
+    (hb : ∀ y ∈ X, flow ≤ f y)
+    (hrun : algorithm_13_1_1_feasible f X κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) :
+    ∃ kε, IsFirstHit (trTest_feasible f X P ε x Δ) kε ∧ 0 < trRadius P Δ kε ∧ trRadius P Δ kε ≤ 1 ∧
+      (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
+        trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
+            epsMin P.q ε ^ (P.q + 1) +
+          1 / |Real.log P.γ₂| * |Real.log (epsMin P.q ε)| +
+          (|Real.log (P.ς * (κΔ / 2) / P.Δ₀)| / |Real.log P.γ₂| + 1) ∧
+      (derivEvalCount (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ trqRatio f D x s jk i)) kε : ℝ) ≤
+        trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
+            epsMin P.q ε ^ (P.q + 1) +
+          P.q * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
+          |Real.log (trKappaAcc P κΔ (lipMax L P.q + ordMax P.q κg * P.κh) (ordMax P.q κg) /
+            P.κh)| / |Real.log P.γh| + 2 := by
+  have hκΔ'' := hκΔ
+  obtain ⟨hκΔ0, hκΔ1, hκΔ'⟩ := hκΔ
+  have hq := P.one_le_q
+  set em := epsMin P.q ε with hem
+  have hεmin : 0 < em := hrun.epsMin_pos
+  have hεmin1 : em ≤ 1 := hrun.epsMin_le_one
+  have hς := P.ς_pos
+  have hη := P.η₁_pos
+  set Lf := lipMax L P.q
+  set κm := ordMax P.q κg
+  have hκm : 0 ≤ κm := hrun.kappaMax_nonneg
+  set Lb := Lf + κm * P.κh
+  have hLb : 0 < Lb := by have := hf.one_le_lipMax; have := P.κh_pos; nlinarith
+  have hf0 : 0 ≤ f x₀ - flow := sub_nonneg.2 (hb x₀ hrun.x₀_mem)
+  -- successful iterations
+  set c := P.η₁ * (P.ς * (κΔ / 2)) ^ (P.q + 1) / (2 * P.q !) * em ^ (P.q + 1) with hc_def
+  have hc : 0 < c := by positivity
+  set NS := trKappaS P κΔ * (f x₀ - flow) / em ^ (P.q + 1) with hNS_def
+  have hNS : NS = (f x₀ - flow) / c := by
+    rw [hNS_def, hc_def, trKappaS, eq_div_iff (by positivity)]
+    field_simp
+  have hNS0 : 0 ≤ NS := by rw [hNS]; positivity
+  have hSk : ∀ k, ((successSet (fun i => ¬ acc i ∧ P.η₁ ≤ trqRatio f D x s jk i) k).card : ℝ)
+      ≤ NS := by
+    intro k
+    rw [hNS, ← hrun.x_zero]
+    exact card_successSet_le_div_of_decrease («φ» := fun i => f (x i)) hc
+      (fun j _ hj => by rw [(hrun.step j).x_succ_eq hj])
+      (fun j _ hj => (lemma_13_1_5_feasible hf hXC hrun hκΔ'' hj.1).2 hj.2) (hb _ (hrun.mem _))
+  -- trial iterations
+  have hlog2 : 0 < |Real.log P.γ₂| := abs_pos.2 (Real.log_neg P.γ₂_pos P.γ₂_lt_one).ne
+  set A' := 1 + Real.log P.γ₃ / |Real.log P.γ₂| with hA'
+  have hA'1 : 1 ≤ A' := by
+    have := Real.log_nonneg P.one_le_γ₃; rw [hA']; have := div_nonneg this hlog2.le; linarith
+  set NT := trKappaS P κΔ * A' * (f x₀ - flow) / em ^ (P.q + 1) +
+    1 / |Real.log P.γ₂| * |Real.log em| + |Real.log (P.ς * (κΔ / 2) / P.Δ₀)| /
+      |Real.log P.γ₂| with hNT_def
+  have hNT0 : 0 ≤ NT := by
+    have : 0 ≤ trKappaS P κΔ := by unfold trKappaS; positivity
+    positivity
+  have hTk : ∀ k, ((successSet (fun i => ¬ acc i) k).card : ℝ) ≤ NT := by
+    intro k
+    have hΔmin : P.ς * (κΔ / 2) * em ≤ Δ (k + 1) :=
+      (lemma_13_1_4_feasible hf hXC hrun hκΔ0 hκΔ1 hκΔ' (k + 1)).2.2.trans (min_le_left _ _)
+    have h1 := lemma_13_1_1 (fun i _ => hrun.step i) hrun.Δ_zero (by positivity) hΔmin
+    have hlog : |Real.log (P.ς * (κΔ / 2) * em / P.Δ₀)| ≤
+        |Real.log em| + |Real.log (P.ς * (κΔ / 2) / P.Δ₀)| := by
+      have hpos : 0 < P.ς * (κΔ / 2) / P.Δ₀ := by have := P.Δ₀_pos; positivity
+      rw [show P.ς * (κΔ / 2) * em / P.Δ₀ = em * (P.ς * (κΔ / 2) / P.Δ₀) by ring,
+        Real.log_mul hεmin.ne' hpos.ne']
+      exact abs_add_le _ _
+    have h2 := mul_le_mul_of_nonneg_right (hSk k) (zero_le_one.trans hA'1)
+    calc ((successSet (fun i => ¬ acc i) k).card : ℝ)
+        ≤ _ := h1
+      _ ≤ NS * A' + (|Real.log em| + |Real.log (P.ς * (κΔ / 2) / P.Δ₀)|) /
+            |Real.log P.γ₂| := add_le_add h2 (div_le_div_of_nonneg_right hlog hlog2.le)
+      _ = NT := by rw [hNT_def, hNS_def]; ring
+  -- accuracy-improving iterations
+  set κacc := trKappaAcc P κΔ Lb κm
+  set NA := P.q * (P.q + 1) / |Real.log P.γh| * |Real.log em| +
+    |Real.log (κacc / P.κh)| / |Real.log P.γh| + 1 with hNA_def
+  have hNA0 : 0 ≤ NA := by positivity
+  have hAk : ∀ k, (∀ j ≤ k, ¬ trTest_feasible f X P ε x Δ j) →
+      ((successSet acc k).card : ℝ) ≤ NA :=
+    fun k hk => trqIDA_card_acc_le_feasible hf hXC hrun hκΔ'' hk
+  -- conclusion
+  obtain ⟨kε, hkε, -, hT, hA⟩ :=
+    exists_firstHit_le_of_dynamicAccuracy hNT0 hNA0 (fun k _ => hTk k) hAk
+  have hS := derivEvalCount_le_of_isFirstHit hNS0 hkε (fun k _ => hSk k)
+  have hor : (derivEvalCount (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ trqRatio f D x s jk i)) kε :
+      ℝ) + 1 ≤ derivEvalCount acc kε +
+        derivEvalCount (fun i => ¬ acc i ∧ P.η₁ ≤ trqRatio f D x s jk i) kε := by
+    exact_mod_cast derivEvalCount_or_add_one_le _ _ kε
+  have hNSA : NS ≤ trKappaS P κΔ * A' * (f x₀ - flow) / em ^ (P.q + 1) := by
+    have : trKappaS P κΔ * A' * (f x₀ - flow) / em ^ (P.q + 1) = A' * NS := by
+      rw [hNS_def]; ring
+    rw [this]
+    exact le_mul_of_one_le_left hNS0 hA'1
+  refine ⟨kε, hkε, (trRadius_mem (hrun.delta_pos kε)).1, (trRadius_mem (hrun.delta_pos kε)).2,
+    ?_, ?_⟩
+  · calc (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤ NT + 1 := hT
+      _ = _ := by rw [hNT_def]; ring
+  · calc _ ≤ (NA + 1) + (NS + 1) - 1 := by linarith
+      _ ≤ trKappaS P κΔ * A' * (f x₀ - flow) / em ^ (P.q + 1) + NA + 1 := by linarith
+      _ = _ := by rw [hNA_def]; ring
+
 /-- **Theorem 13.1.8** ([cartis2022evaluation]): complexity of TRqIDA. Let f.D0qL and f.Bb
 (`f ≥ f_low`) hold, `ε ∈ (0, 1]^q`, and `κ_Δ` be admissible (e.g. (13.1.31)), `κ_δ = κ_Δ/2`. For
 every TRqIDA run there is a first iteration `k_ε` at which `x_ε = x_{k_ε}` is an
@@ -1213,121 +1582,8 @@ theorem theorem_13_1_8 (hf : AssumptionD0qL f P.q L) {flow : ℝ}
           P.q * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
           |Real.log (trKappaAcc P κΔ (lipMax L P.q + ordMax P.q κg * P.κh) (ordMax P.q κg) /
             P.κh)| / |Real.log P.γh| + 2 := by
-  have hκΔ'' := hκΔ
-  obtain ⟨hκΔ0, hκΔ1, hκΔ'⟩ := hκΔ
-  have hq := P.one_le_q
-  set em := epsMin P.q ε with hem
-  have hεmin : 0 < em := hrun.epsMin_pos
-  have hεmin1 : em ≤ 1 := hrun.epsMin_le_one
-  have hς := P.ς_pos
-  have hη := P.η₁_pos
-  set Lf := lipMax L P.q
-  set κm := ordMax P.q κg
-  have hκm : 0 ≤ κm := hrun.kappaMax_nonneg
-  set Lb := Lf + κm * P.κh
-  have hLb : 0 < Lb := by have := hf.one_le_lipMax; have := P.κh_pos; nlinarith
-  have hf0 : 0 ≤ f x₀ - flow := sub_nonneg.2 (hb x₀)
-  -- successful iterations
-  set c := P.η₁ * (P.ς * (κΔ / 2)) ^ (P.q + 1) / (2 * P.q !) * em ^ (P.q + 1) with hc_def
-  have hc : 0 < c := by positivity
-  set NS := trKappaS P κΔ * (f x₀ - flow) / em ^ (P.q + 1) with hNS_def
-  have hNS : NS = (f x₀ - flow) / c := by
-    rw [hNS_def, hc_def, trKappaS, eq_div_iff (by positivity)]
-    field_simp
-  have hNS0 : 0 ≤ NS := by rw [hNS]; positivity
-  have hSk : ∀ k, ((successSet (fun i => ¬ acc i ∧ P.η₁ ≤ trqRatio f D x s jk i) k).card : ℝ)
-      ≤ NS := by
-    intro k
-    rw [hNS, ← hrun.x_zero]
-    exact card_successSet_le_div_of_decrease («φ» := fun i => f (x i)) hc
-      (fun j _ hj => by rw [(hrun.step j).x_succ_eq hj])
-      (fun j _ hj => (lemma_13_1_5 hf hrun hκΔ'' hj.1).2 hj.2) (hb _)
-  -- trial iterations
-  have hlog2 : 0 < |Real.log P.γ₂| := abs_pos.2 (Real.log_neg P.γ₂_pos P.γ₂_lt_one).ne
-  set A' := 1 + Real.log P.γ₃ / |Real.log P.γ₂| with hA'
-  have hA'1 : 1 ≤ A' := by
-    have := Real.log_nonneg P.one_le_γ₃; rw [hA']; have := div_nonneg this hlog2.le; linarith
-  set NT := trKappaS P κΔ * A' * (f x₀ - flow) / em ^ (P.q + 1) +
-    1 / |Real.log P.γ₂| * |Real.log em| + |Real.log (P.ς * (κΔ / 2) / P.Δ₀)| /
-      |Real.log P.γ₂| with hNT_def
-  have hNT0 : 0 ≤ NT := by
-    have : 0 ≤ trKappaS P κΔ := by unfold trKappaS; positivity
-    positivity
-  have hTk : ∀ k, ((successSet (fun i => ¬ acc i) k).card : ℝ) ≤ NT := by
-    intro k
-    have hΔmin : P.ς * (κΔ / 2) * em ≤ Δ (k + 1) :=
-      (lemma_13_1_4 hf hrun hκΔ0 hκΔ1 hκΔ' (k + 1)).2.2.trans (min_le_left _ _)
-    have h1 := lemma_13_1_1 (fun i _ => hrun.step i) hrun.Δ_zero (by positivity) hΔmin
-    have hlog : |Real.log (P.ς * (κΔ / 2) * em / P.Δ₀)| ≤
-        |Real.log em| + |Real.log (P.ς * (κΔ / 2) / P.Δ₀)| := by
-      have hpos : 0 < P.ς * (κΔ / 2) / P.Δ₀ := by have := P.Δ₀_pos; positivity
-      rw [show P.ς * (κΔ / 2) * em / P.Δ₀ = em * (P.ς * (κΔ / 2) / P.Δ₀) by ring,
-        Real.log_mul hεmin.ne' hpos.ne']
-      exact abs_add_le _ _
-    have h2 := mul_le_mul_of_nonneg_right (hSk k) (zero_le_one.trans hA'1)
-    calc ((successSet (fun i => ¬ acc i) k).card : ℝ)
-        ≤ _ := h1
-      _ ≤ NS * A' + (|Real.log em| + |Real.log (P.ς * (κΔ / 2) / P.Δ₀)|) /
-            |Real.log P.γ₂| := add_le_add h2 (div_le_div_of_nonneg_right hlog hlog2.le)
-      _ = NT := by rw [hNT_def, hNS_def]; ring
-  -- accuracy-improving iterations
-  set κacc := trKappaAcc P κΔ Lb κm
-  have hκacc : 0 < κacc := trKappaAcc_pos hκΔ0 hLb hκm
-  have hlogh : 0 < |Real.log P.γh| := abs_pos.2 (Real.log_neg P.γh_pos P.γh_lt_one).ne
-  set NA := P.q * (P.q + 1) / |Real.log P.γh| * |Real.log em| +
-    |Real.log (κacc / P.κh)| / |Real.log P.γh| + 1 with hNA_def
-  have hNA0 : 0 ≤ NA := by positivity
-  have hpowq : em ^ (P.q * (P.q + 1)) ≤ em ^ (P.q + 1) :=
-    pow_le_pow_of_le_one hεmin.le hεmin1 (by nlinarith)
-  have hAk : ∀ k, (∀ j ≤ k, ¬ trTest f P ε x Δ j) →
-      ((successSet acc k).card : ℝ) ≤ NA := by
-    intro k hk
-    have h := card_accuracyImproving_le_of_pow (acc := acc) (hmax := fun j => ordMax P.q (h j))
-      (N := P.q * (P.q + 1)) (k := k) P.γh_pos P.γh_lt_one P.κh_pos hκacc hεmin
-      ((ordMax_le_iff hq).2 fun i hi => by rw [hrun.h_zero]; exact P.h₀_le i hi)
-      (fun j _ ha => by
-        rw [show h (j + 1) = fun i => P.γh * h j i from funext ((hrun.step j).h_acc ha),
-          ordMax_mul hq P.γh_pos.le])
-      (fun j _ ha => by rw [(hrun.step j).h_trial ha])
-      (fun j hj ha => by
-        by_contra hcon
-        push Not at hcon
-        have hhi : ∀ i ∈ Finset.Icc 1 P.q, h j i ≤ κacc * em ^ (P.q * (P.q + 1)) :=
-          fun i hi => (le_ordMax hi).trans hcon
-        by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, trFail P ε D Δ dd j i
-        · refine lemma_13_1_6 hf hrun hκΔ'' hfail (fun i hi => (hhi i hi).trans ?_) ha
-          exact mul_le_mul_of_nonneg_right trKappaAcc_le (by positivity)
-        · push Not at hfail
-          refine hk j hj (lemma_13_1_7 hf hrun hκΔ'' hfail fun i hi => ?_)
-          calc κm * h j i ≤ κm * (κacc * em ^ (P.q * (P.q + 1))) :=
-                mul_le_mul_of_nonneg_left (hhi i hi) hκm
-            _ = κm * κacc * em ^ (P.q * (P.q + 1)) := by ring
-            _ ≤ P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * em ^ (P.q + 1) :=
-                mul_le_mul (mul_trKappaAcc_le hκΔ0 hκm) hpowq (by positivity) (by positivity))
-    calc ((successSet acc k).card : ℝ)
-        ≤ (((P.q * (P.q + 1) : ℕ) : ℝ) * |Real.log em| + |Real.log (κacc / P.κh)|) /
-            |Real.log P.γh| + 1 := h
-      _ = NA := by rw [hNA_def]; push_cast; ring
-  -- conclusion
-  obtain ⟨kε, hkε, -, hT, hA⟩ :=
-    exists_firstHit_le_of_dynamicAccuracy hNT0 hNA0 (fun k _ => hTk k) hAk
-  have hS := derivEvalCount_le_of_isFirstHit hNS0 hkε (fun k _ => hSk k)
-  have hor : (derivEvalCount (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ trqRatio f D x s jk i)) kε :
-      ℝ) + 1 ≤ derivEvalCount acc kε +
-        derivEvalCount (fun i => ¬ acc i ∧ P.η₁ ≤ trqRatio f D x s jk i) kε := by
-    exact_mod_cast derivEvalCount_or_add_one_le _ _ kε
-  have hNSA : NS ≤ trKappaS P κΔ * A' * (f x₀ - flow) / em ^ (P.q + 1) := by
-    have : trKappaS P κΔ * A' * (f x₀ - flow) / em ^ (P.q + 1) = A' * NS := by
-      rw [hNS_def]; ring
-    rw [this]
-    exact le_mul_of_one_le_left hNS0 hA'1
-  refine ⟨kε, hkε, (trRadius_mem (hrun.delta_pos kε)).1, (trRadius_mem (hrun.delta_pos kε)).2,
-    ?_, ?_⟩
-  · calc (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤ NT + 1 := hT
-      _ = _ := by rw [hNT_def]; ring
-  · calc _ ≤ (NA + 1) + (NS + 1) - 1 := by linarith
-      _ ≤ trKappaS P κΔ * A' * (f x₀ - flow) / em ^ (P.q + 1) + NA + 1 := by linarith
-      _ = _ := by rw [hNA_def]; ring
+  have := theorem_13_1_8_feasible hf.on_univ (subset_univ _) (fun y _ => hb y) hrun hκΔ
+  rwa [trTest_feasible_univ] at this
 
 end TRqIDA
 
@@ -1492,8 +1748,9 @@ theorem exists_algorithm_13_1_1 {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : TR
       (dd : ℕ → ℕ → ℝⁿ) (jk : ℕ → ℕ) (s : ℕ → ℝⁿ) (acc : ℕ → Prop),
       algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc ∧ ∀ k, D k = O (x k) (h k) := by
   obtain ⟨x, Δ, h, dd, jk, s, acc, hx, hΔ, hh, hstep⟩ := exists_trqDA_run f P ε O x₀
-  exact ⟨x, Δ, h, _, dd, jk, s, acc, ⟨hε, hϑ, hκg, hx, hΔ, hh, fun k => hO _ _ fun i hi =>
-    ((trq_invariants (k := k) (fun i _ => hstep i) hΔ hh).2 i hi).1, hstep⟩, fun _ => rfl⟩
+  exact ⟨x, Δ, h, _, dd, jk, s, acc, ⟨hε, hϑ, hκg, hx, mem_univ _, hΔ, hh,
+    fun k => hO _ _ fun i hi =>
+      ((trq_invariants (k := k) (fun i _ => hstep i) hΔ hh).2 i hi).1, hstep⟩, fun _ => rfl⟩
 
 /-- The exact jet is an oracle for (13.1.2): **TRqIDA runs with exact derivatives exist**
 (instance of `exists_algorithm_13_1_1`). -/
@@ -1674,14 +1931,44 @@ structure ARqpDAStep (X : Set ℝⁿ) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x 
   /-- Step 5 multiplies the accuracies by `γ_h`. -/
   h_acc : acc k → ∀ i, h (k + 1) i = P.γh * h k i
 
-/-- The radii control assumed in Theorem 13.1.19 ([cartis2022evaluation], (13.1.69)–(13.1.70),
-achievable by Algorithm 12.2.3 as Lemma 13.1.12 shows): after a trial iteration with a short
-step, `δ_{s_k,j} = 1` for `j ≤ min(2, q)` and `δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for
-`j ∈ [3, q]`. -/
+/-- The radii control assumed in Theorem 13.1.19 ([cartis2022evaluation], (13.1.69)–(13.1.70)),
+in the form used by the analysis: after a trial iteration with a short step, `δ_{s_k,j} = 1` for
+all `j ∈ [1, q]` if `q ≤ 2`, and `δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for all `j ∈ [1, q]` if
+`q > 2`. The book's (13.1.69)–(13.1.70) (`δ_{s_k,j} = 1` for `j ≤ min(2, q)` and the lower bound
+for `j ∈ [3, q]`, achievable by Algorithm 12.2.3 as Lemma 13.1.12 shows) imply it
+(`RadiiControl.of_book`); for `q > 2` it is the (12.2.51)-type control at every order, which is
+also available with a feasible set (§14.2), where `δ = 1` may not be. -/
 def RadiiControl (P : ARqpIDAParams) (ε : ℕ → ℝ) (Lb : ℝ) (σ : ℕ → ℝ) (δs : ℕ → ℕ → ℝ)
     (s : ℕ → ℝⁿ) (acc : ℕ → Prop) (k : ℕ) : Prop :=
-  ¬ acc k → ‖s k‖ < 1 → (∀ j ∈ Finset.Icc 1 (min 2 P.q), δs k j = 1) ∧
-    ∀ j ∈ Finset.Icc 3 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j
+  ¬ acc k → ‖s k‖ < 1 → (P.q ≤ 2 → ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) ∧
+    (2 < P.q → ∀ j ∈ Finset.Icc 1 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j)
+
+/-- The book's radii control (13.1.69)–(13.1.70) (`δ_{s_k,j} = 1` for `j ≤ min(2, q)`,
+`δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for `j ∈ [3, q]`) implies `RadiiControl` when
+`ε ∈ (0, 1]^q` and `L̄ ≥ 1`. -/
+theorem RadiiControl.of_book {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ : ℕ → ℝ}
+    {δs : ℕ → ℕ → ℝ} {s : ℕ → ℝⁿ} {acc : ℕ → Prop} {k : ℕ}
+    (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1) (hLb : 1 ≤ Lb)
+    (h : ¬ acc k → ‖s k‖ < 1 → (∀ j ∈ Finset.Icc 1 (min 2 P.q), δs k j = 1) ∧
+      ∀ j ∈ Finset.Icc 3 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j) :
+    RadiiControl P ε Lb σ δs s acc k := by
+  intro hk hs1
+  obtain ⟨h1, h2⟩ := h hk hs1
+  refine ⟨fun hq j hj => h1 j ?_, fun _ j hj => ?_⟩
+  · obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
+    exact Finset.mem_Icc.2 ⟨hj1, le_min (hjq.trans hq) hjq⟩
+  obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
+  rcases le_or_gt j 2 with hj2 | hj2
+  · rw [h1 j (Finset.mem_Icc.2 ⟨hj1, le_min hj2 hjq⟩)]
+    have hM : 1 ≤ max Lb (σ k) := hLb.trans (le_max_left _ _)
+    have := P.ς_pos; have := P.ς_le_one; have := P.θ_pos; have := P.θ_lt_one
+    have hεj := hε j hj
+    rw [div_le_one (by positivity)]
+    have : P.ς * P.θ * ε j ≤ 1 :=
+      mul_le_one_of_le_one (mul_le_one_of_le_one P.ς_le_one P.θ_pos.le P.θ_lt_one.le)
+        hεj.1.le hεj.2
+    linarith
+  · exact h2 j (Finset.mem_Icc.2 ⟨hj2, hjq⟩)
 
 namespace ARqpDAStep
 
@@ -1710,7 +1997,20 @@ theorem x_succ_eq (hk : ¬ (¬ acc k ∧ P.η₁ ≤ ρ k)) : x (k + 1) = x k :=
 theorem x_succ_eq_add (hk : ¬ acc k) (hρ : P.η₁ ≤ ρ k) : x (k + 1) = x k + s k :=
   (hs.accept hk).eq_add hρ
 
+/-- The iterates stay feasible: `x_k ∈ X` implies `x_{k+1} ∈ X`. -/
+theorem mem_succ (hx : x k ∈ X) : x (k + 1) ∈ X := by
+  by_cases hc : ¬ acc k ∧ P.η₁ ≤ ρ k
+  · rw [hs.x_succ_eq_add hc.1 hc.2]; exact (hs.step2_of_not_acc hc.1).mem
+  · rw [hs.x_succ_eq hc]; exact hx
+
 end ARqpDAStep
+
+/-- The iterates of ARqpIDA/ARqpEDA sequences starting in `X` stay in `X`. -/
+theorem arqp_mem (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ i)
+    (hx0 : x 0 ∈ X) : x k ∈ X := by
+  induction k with
+  | zero => exact hx0
+  | succ k ih => exact (hstep k k.lt_succ_self).mem_succ (ih fun i hi => hstep i (by omega))
 
 /-- A trial step with `‖s_k‖ < 1` satisfies (13.1.57). -/
 theorem ARqpStep2.radii_of_lt (h2 : ARqpStep2 X P ε x σ δ δ₁ δs h D dd jk s acc k)
@@ -1956,11 +2256,10 @@ theorem arqp_radius_ge (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs h
       rw [hsi.radii_trial hacc]
       split_ifs with hc
       · obtain ⟨hrc1, hrc2⟩ := hrc i (by omega) hacc hc.2
-        obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
-        rcases le_or_gt j 2 with hj2 | hj2
-        · rw [hrc1 j (Finset.mem_Icc.2 ⟨hj1, le_min hj2 hjq⟩)]
+        rcases le_or_gt P.q 2 with hq2 | hq2
+        · rw [hrc1 hq2 j hj]
           exact mul_le_one_of_le_one hκ1 (hε j hj).1.le (hε j hj).2
-        · refine le_trans ?_ (hrc2 j (Finset.mem_Icc.2 ⟨hj2, hjq⟩))
+        · refine le_trans ?_ (hrc2 hq2 j hj)
           have hεj := (hε j hj).1
           have hM : 0 < max Lb (σ i) := lt_max_of_lt_left hLb0
           rw [le_div_iff₀ (by positivity), hκdef, arKappaDelta1, div_mul_eq_mul_div,
@@ -2135,6 +2434,12 @@ theorem arStepConst_nonneg {q p : ℕ} {a A κ : ℝ} (ha : 0 ≤ a) (hA : 0 ≤
   have : 0 ≤ arKappaHat q a A κ := le_min hκ (by positivity)
   split_ifs <;> positivity
 
+theorem arStepConst_pos {q p : ℕ} {a A κ : ℝ} (ha : 0 < a) (hA : 0 < A) (hκ : 0 < κ) :
+    0 < arStepConst q p a A κ := by
+  unfold arStepConst
+  have : 0 < arKappaHat q a A κ := lt_min hκ (by positivity)
+  split_ifs <;> positivity
+
 theorem arPi_nonneg {q p j : ℕ} : 0 ≤ arPi q p j := by
   unfold arPi; split_ifs <;> positivity
 
@@ -2245,15 +2550,26 @@ def arTest (f : ℝⁿ → ℝ) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x : ℕ 
   ∃ δ' : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 P.q, δ' j ∈ Set.Ioc 0 1) ∧
     IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ P.q ε δ'
 
-/-- **Algorithm 13.1.2** (ARqpIDA) of [cartis2022evaluation] as a run predicate, for the
-objective `f`, the (unknown) oracle constants `κ_{∇,i} ≥ 0`, constants `P`, tolerances
-`ε ∈ (0, 1]^q` with `ε ≤ δ₀`, starting point `x₀`, and sequences of iterates `x`, regularization
-parameters `σ`, radii `δ, δ₁, δs` (`δ^{(0)}_k, δ^{(1)}_k, δ_{s_k}`), requested accuracies `h`,
-inexact jets `D` satisfying (13.1.2) up to order `p`, Step-1 displacements `dd`, orders `j_k`,
-steps `s` and accuracy-improving flags `acc`; every iteration satisfies `ARqpDAStep` with the
-exact-value ratio (13.1.58). The method has no termination rule; see `arTest`. -/
-structure algorithm_13_1_2 (f : ℝⁿ → ℝ) (κg : ℕ → ℝ) (P : ARqpIDAParams) (ε : ℕ → ℝ)
-    (x₀ : ℝⁿ) (x : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ) (h : ℕ → ℕ → ℝ)
+/-- The test of approximate optimality used for ARqpIDA-SC ([cartis2022evaluation], §14.2,
+(14.2.2)): `x_k` is an `(ε, δ)`-approximate `q`-th order minimizer of `f` on the feasible set `X`
+(measures over `{e | x_k + e ∈ X}`) for *some* radii `δ ∈ (0, 1]^q`. With `X = univ` this is
+`arTest` (`arTest_feasible_univ`). -/
+def arTest_feasible (f : ℝⁿ → ℝ) (X : Set ℝⁿ) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x : ℕ → ℝⁿ)
+    (k : ℕ) : Prop :=
+  ∃ δ' : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 P.q, δ' j ∈ Set.Ioc 0 1) ∧
+    IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) {e | x k + e ∈ X} P.q ε δ'
+
+theorem arTest_feasible_univ {f : ℝⁿ → ℝ} {P : ARqpIDAParams} {ε : ℕ → ℝ} {x : ℕ → ℝⁿ} :
+    arTest_feasible f univ P ε x = arTest f P ε x := by
+  funext k; simp only [arTest_feasible, arTest, setOf_add_mem_univ]
+
+/-- **Algorithm 13.1.2 with a feasible set** (ARqpIDA-SC, [cartis2022evaluation] §14.2) as a run
+predicate: as `algorithm_13_1_2`, for a feasible set `X` (closedness is not used by the analysis)
+and a feasible starting point `x₀ ∈ X`, every iteration satisfying `ARqpDAStep` on `X` (feasible
+Step-1 displacements, trial points and Step-2 displacements). With `X = univ` this is
+`algorithm_13_1_2`. -/
+structure algorithm_13_1_2_feasible (f : ℝⁿ → ℝ) (X : Set ℝⁿ) (κg : ℕ → ℝ) (P : ARqpIDAParams)
+    (ε : ℕ → ℝ) (x₀ : ℝⁿ) (x : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ) (h : ℕ → ℕ → ℝ)
     (D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ) (dd : ℕ → ℕ → ℝⁿ) (jk : ℕ → ℕ) (s : ℕ → ℝⁿ)
     (acc : ℕ → Prop) : Prop where
   /-- `ε ∈ (0, 1]^q`. -/
@@ -2264,6 +2580,8 @@ structure algorithm_13_1_2 (f : ℝⁿ → ℝ) (κg : ℕ → ℝ) (P : ARqpIDA
   κg_nonneg : ∀ i ∈ Finset.Icc 1 P.p, 0 ≤ κg i
   /-- The starting point. -/
   x_zero : x 0 = x₀
+  /-- The starting point is feasible. -/
+  x₀_mem : x₀ ∈ X
   /-- The initial regularization parameter. -/
   σ_zero : σ 0 = P.σ₀
   /-- The initial radii. -/
@@ -2273,15 +2591,29 @@ structure algorithm_13_1_2 (f : ℝⁿ → ℝ) (κg : ℕ → ℝ) (P : ARqpIDA
   /-- The error model (13.1.2) for `i ∈ [1, p]`. -/
   oracle : ∀ k, JetApprox (ftaylorSeries ℝ f (x k)) (D k) P.p (fun i => κg i * h k i)
   /-- Steps 1–5. -/
-  step : ∀ k, ARqpDAStep univ P ε x σ δ δ₁ δs h D dd jk s acc (arqpIDARatio f P D x s) k
+  step : ∀ k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc (arqpIDARatio f P D x s) k
 
-namespace algorithm_13_1_2
+/-- **Algorithm 13.1.2** (ARqpIDA) of [cartis2022evaluation] as a run predicate, for the
+objective `f`, the (unknown) oracle constants `κ_{∇,i} ≥ 0`, constants `P`, tolerances
+`ε ∈ (0, 1]^q` with `ε ≤ δ₀`, starting point `x₀`, and sequences of iterates `x`, regularization
+parameters `σ`, radii `δ, δ₁, δs` (`δ^{(0)}_k, δ^{(1)}_k, δ_{s_k}`), requested accuracies `h`,
+inexact jets `D` satisfying (13.1.2) up to order `p`, Step-1 displacements `dd`, orders `j_k`,
+steps `s` and accuracy-improving flags `acc`; every iteration satisfies `ARqpDAStep` with the
+exact-value ratio (13.1.58). The method has no termination rule; see `arTest`. This is
+`algorithm_13_1_2_feasible` with the feasible set `X = univ`. -/
+abbrev algorithm_13_1_2 (f : ℝⁿ → ℝ) (κg : ℕ → ℝ) (P : ARqpIDAParams) (ε : ℕ → ℝ)
+    (x₀ : ℝⁿ) (x : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ) (h : ℕ → ℕ → ℝ)
+    (D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ) (dd : ℕ → ℕ → ℝⁿ) (jk : ℕ → ℕ) (s : ℕ → ℝⁿ)
+    (acc : ℕ → Prop) : Prop :=
+  algorithm_13_1_2_feasible f univ κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc
 
-variable {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : ARqpIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ}
+namespace algorithm_13_1_2_feasible
+
+variable {f : ℝⁿ → ℝ} {X : Set ℝⁿ} {κg : ℕ → ℝ} {P : ARqpIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ}
   {x : ℕ → ℝⁿ} {σ : ℕ → ℝ} {δ δ₁ δs : ℕ → ℕ → ℝ} {h : ℕ → ℕ → ℝ}
   {D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ} {dd : ℕ → ℕ → ℝⁿ} {jk : ℕ → ℕ} {s : ℕ → ℝⁿ}
   {acc : ℕ → Prop}
-  (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+  (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
 include hrun
 
 theorem invariants (k : ℕ) :
@@ -2299,24 +2631,68 @@ theorem epsMin_le_one : epsMin P.q ε ≤ 1 :=
 
 theorem kappaMax_nonneg : 0 ≤ ordMax P.p κg := ordMax_nonneg hrun.κg_nonneg
 
-/-- (13.1.63): `‖∇̄^i f(x_k)‖ ≤ L̄_f = L_f + κ_{∇,max} κ_h` for `i ∈ [1, p]`. -/
-theorem norm_D_le {L : ℕ → ℝ} (hf : AssumptionD0pL f P.p L) (k : ℕ) {i : ℕ}
-    (hi : i ∈ Finset.Icc 1 P.p) : ‖D k i‖ ≤ lipMax L P.p + ordMax P.p κg * P.κh :=
-  hf.norm_le_of_jetApprox (hrun.oracle k) hrun.κg_nonneg
+/-- The iterates are feasible. -/
+theorem mem (k : ℕ) : x k ∈ X :=
+  arqp_mem (fun i _ => hrun.step i) (hrun.x_zero ▸ hrun.x₀_mem)
+
+/-- (13.1.63): `‖∇̄^i f(x_k)‖ ≤ L̄_f = L_f + κ_{∇,max} κ_h` for `i ∈ [1, p]`, under f.D0pL on
+`C ⊇ X`. -/
+theorem norm_D_le {C : Set ℝⁿ} {L : ℕ → ℝ} (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (k : ℕ) {i : ℕ} (hi : i ∈ Finset.Icc 1 P.p) :
+    ‖D k i‖ ≤ lipMax L P.p + ordMax P.p κg * P.κh :=
+  hf.norm_le_of_jetApprox (hXC (hrun.mem k)) (hrun.oracle k) hrun.κg_nonneg
     (fun i hi => ((hrun.invariants k).2.2 i hi).1) (fun i hi => ((hrun.invariants k).2.2 i hi).2) hi
 
-theorem one_le_Lbar {L : ℕ → ℝ} (hf : AssumptionD0pL f P.p L) :
+theorem one_le_Lbar {C : Set ℝⁿ} {L : ℕ → ℝ} (hf : AssumptionD0pLOn f C P.p L) :
     1 ≤ lipMax L P.p + ordMax P.p κg * P.κh := by
   have := hf.one_le_lipMax; have := hrun.kappaMax_nonneg; have := P.κh_nonneg; nlinarith
 
-end algorithm_13_1_2
+end algorithm_13_1_2_feasible
 
 section ARqpIDA
 
-variable {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : ARqpIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ}
+variable {X C : Set ℝⁿ} {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : ARqpIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ}
   {x : ℕ → ℝⁿ} {σ : ℕ → ℝ} {δ δ₁ δs : ℕ → ℕ → ℝ} {h : ℕ → ℕ → ℝ}
   {D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ} {dd : ℕ → ℕ → ℝⁿ} {jk : ℕ → ℕ} {s : ℕ → ℝⁿ}
   {acc : ℕ → Prop} {L : ℕ → ℝ} {k : ℕ}
+
+/-- **Lemma 13.1.12 with a feasible set** ([cartis2022evaluation] §14.2): the conclusions of
+`lemma_13_1_12` for an ARqpIDA-SC run (`algorithm_13_1_2_feasible`) under f.D0pL on an open convex
+`C ⊇ X`. -/
+theorem lemma_13_1_12_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hrc : ∀ i < k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    {σbar : ℝ} (hσ : ∀ i ≤ k, σ i ≤ σbar) :
+    ((∃ j ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd k j) →
+        0 < P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 ∧
+        P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 ≤ arModelDec P D σ k (s k) ∧
+        s k ≠ 0) ∧
+      (∀ j ∈ Finset.Icc 1 P.q,
+        arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh) σbar * ε j ≤ δ₁ k j ∧
+          δ₁ k j ≤ δ k j) ∧
+      ((∃ j ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd k j) →
+        (∀ i ∈ Finset.Icc 1 P.p, h k i ≤
+          P.κs * (P.ς * arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh) σbar ^ P.q /
+            (12 * P.q ! * max (lipMax L P.p + ordMax P.p κg * P.κh) σbar)) ^ P.p *
+            epsMin P.q ε ^ (P.p * (P.q + 1))) → ¬ acc k) := by
+  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
+  have hLb := hrun.one_le_Lbar hf
+  have hrad := arqp_radius_ge (fun i _ => hrun.step i) (hrun.step k).toARqpStep1 hrun.σ_zero
+    hrun.δ_zero hrun.h_zero
+    hrun.eps_mem hrun.eps_le hLb (fun i _ ℓ hℓ => hrun.norm_D_le hf hXC i hℓ) hσ hrc
+  refine ⟨fun hb => ?_, hrad, fun hb hh => ?_⟩
+  · have h2 := (hrun.step k).step2 hb
+    have hpos : 0 < P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 := by
+      have := P.ς_pos; have := (hrun.eps_mem _ h2.jk_mem).1
+      have := (hrun.step k).radius_pos _ h2.jk_mem; positivity
+    have hm := h2.model_dec.trans h2.dec_le
+    refine ⟨hpos, hm, fun h0 => ?_⟩
+    rw [h0, arModelDec, sub_self] at hm
+    linarith
+  · have h2 := (hrun.step k).step2 hb
+    exact h2.not_acc_of_le ((hrun.step k).radius_pos) hLb (fun i hi => hrun.norm_D_le hf hXC k hi)
+      (hrun.sigma_pos k).le (arKappaDelta1_pos (by linarith)).le
+      (arKappaDelta1_le_one hLb) hrun.eps_mem (fun j hj => (hrad j hj).1) hh
 
 /-- **Lemma 13.1.12** ([cartis2022evaluation]): the outcomes of Step 2 at iteration `k` of an
 ARqpIDA run. Assume f.D0pL, write `L̄_f = L_f + κ_{∇,max} κ_h`, assume the radii control
@@ -2345,25 +2721,8 @@ theorem lemma_13_1_12 (hf : AssumptionD0pL f P.p L)
         (∀ i ∈ Finset.Icc 1 P.p, h k i ≤
           P.κs * (P.ς * arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh) σbar ^ P.q /
             (12 * P.q ! * max (lipMax L P.p + ordMax P.p κg * P.κh) σbar)) ^ P.p *
-            epsMin P.q ε ^ (P.p * (P.q + 1))) → ¬ acc k) := by
-  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
-  have hLb := hrun.one_le_Lbar hf
-  have hrad := arqp_radius_ge (fun i _ => hrun.step i) (hrun.step k).toARqpStep1 hrun.σ_zero
-    hrun.δ_zero hrun.h_zero
-    hrun.eps_mem hrun.eps_le hLb (fun i _ ℓ hℓ => hrun.norm_D_le hf i hℓ) hσ hrc
-  refine ⟨fun hb => ?_, hrad, fun hb hh => ?_⟩
-  · have h2 := (hrun.step k).step2 hb
-    have hpos : 0 < P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 := by
-      have := P.ς_pos; have := (hrun.eps_mem _ h2.jk_mem).1
-      have := (hrun.step k).radius_pos _ h2.jk_mem; positivity
-    have hm := h2.model_dec.trans h2.dec_le
-    refine ⟨hpos, hm, fun h0 => ?_⟩
-    rw [h0, arModelDec, sub_self] at hm
-    linarith
-  · have h2 := (hrun.step k).step2 hb
-    exact h2.not_acc_of_le ((hrun.step k).radius_pos) hLb (fun i hi => hrun.norm_D_le hf k hi)
-      (hrun.sigma_pos k).le (arKappaDelta1_pos (by linarith)).le
-      (arKappaDelta1_le_one hLb) hrun.eps_mem (fun j hj => (hrad j hj).1) hh
+            epsMin P.q ε ^ (P.p * (P.q + 1))) → ¬ acc k) :=
+  lemma_13_1_12_feasible hf.on_univ (subset_univ _) hrun hrc hσ
 
 /-! ### Lemma 13.1.14 -/
 
@@ -2372,13 +2731,10 @@ with `κ_s' = max(κ_s, κ_h)` (corrected; the book has `κ_s`). -/
 noncomputable def arSigmaMax (P : ARqpIDAParams) (Lp κm : ℝ) : ℝ :=
   max P.σ₀ (P.γ₃ * ((2 * Lp + 4 * (P.p + 1)! * max P.κs P.κh * κm) / (1 - P.η₂)))
 
-/-- **Lemma 13.1.14** ([cartis2022evaluation], corrected constant): under f.D0pL, every
-ARqpIDA run satisfies `σ_k ≤ σ_max` (13.1.77) for all `k`, with `σ_max = arSigmaMax`. The book
-uses `κ_s` instead of `κ_s' = max(κ_s, κ_h)`: its proof applies (13.1.47) also to long steps
-`‖s_k‖ ≥ 1`, where the accuracy test (13.1.46) is not performed and only `h_{k,i} ≤ κ_h` is
-known. -/
-theorem lemma_13_1_14 (hf : AssumptionD0pL f P.p L)
-    (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) (k : ℕ) :
+/-- **Lemma 13.1.14 with a feasible set** ([cartis2022evaluation] §14.2): `σ_k ≤ σ_max` for an
+ARqpIDA-SC run under f.D0pL on an open convex `C ⊇ X`. -/
+theorem lemma_13_1_14_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) (k : ℕ) :
     σ k ≤ arSigmaMax P (L P.p) (ordMax P.p κg) := by
   set κm := ordMax P.p κg
   set κs' := max P.κs P.κh
@@ -2404,7 +2760,7 @@ theorem lemma_13_1_14 (hf : AssumptionD0pL f P.p L)
       rw [mul_assoc]
       exact mul_le_mul (le_ordMax hi) hhi ((hrun.invariants k).2.2 i hi).1 hκm
     have hE := abs_taylorDecrement_sub_le_of_stepAccuracy hκm hκs' (hrun.oracle k) hherr le_rfl
-    have hR := hf.abs_sub_le le_rfl (x k) (s k)
+    have hR := hf.abs_sub_le le_rfl (hXC (hrun.mem k)) (hXC h2.mem)
     have hfp : (0 : ℝ) < (P.p + 1)! := by positivity
     have hσbar : (2 * L P.p + 4 * (P.p + 1)! * κs' * κm) ≤ (1 - P.η₂) * σ k := by
       have := (div_le_iff₀' P.one_sub_η₂_pos).1 hσk
@@ -2435,7 +2791,73 @@ theorem lemma_13_1_14 (hf : AssumptionD0pL f P.p L)
       · exact Or.inr ⟨(hrun.step i).update ha, key i ha⟩) k le_rfl
   rwa [hrun.σ_zero] at h
 
+/-- **Lemma 13.1.14** ([cartis2022evaluation], corrected constant): under f.D0pL, every
+ARqpIDA run satisfies `σ_k ≤ σ_max` (13.1.77) for all `k`, with `σ_max = arSigmaMax`. The book
+uses `κ_s` instead of `κ_s' = max(κ_s, κ_h)`: its proof applies (13.1.47) also to long steps
+`‖s_k‖ ≥ 1`, where the accuracy test (13.1.46) is not performed and only `h_{k,i} ≤ κ_h` is
+known. -/
+theorem lemma_13_1_14 (hf : AssumptionD0pL f P.p L)
+    (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) (k : ℕ) :
+    σ k ≤ arSigmaMax P (L P.p) (ordMax P.p κg) :=
+  lemma_13_1_14_feasible hf.on_univ (subset_univ _) hrun k
+
 /-! ### Lemmas 13.1.15 and 13.1.16 -/
+
+/-- **Lemma 13.1.15 with a feasible set** ([cartis2022evaluation] §14.2): for an ARqpIDA-SC run
+under f.D0pL on an open convex `C ⊇ X`, the conclusion of `lemma_13_1_15` with the measures over the
+feasible displacements `{e | x_k + e ∈ X}`. -/
+theorem lemma_13_1_15_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hrc : ∀ i < k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j)
+    (hh : ∀ i ∈ Finset.Icc 1 P.p, ordMax P.p κg * h k i ≤
+      P.ς * arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+        (arSigmaMax P (L P.p) (ordMax P.p κg)) ^ P.q / (4 * P.q !) *
+        epsMin P.q ε ^ (P.q + 1)) :
+    (∀ j ∈ Finset.Icc 1 P.q, δ₁ k j ∈ Set.Ioc 0 1) ∧
+      IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) {e | x k + e ∈ X} P.q ε (δ₁ k) ∧
+        arTest_feasible f X P ε x k := by
+  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
+  have hLb := hrun.one_le_Lbar hf
+  set κ := arKappaDelta1 P Lb (arSigmaMax P (L P.p) (ordMax P.p κg))
+  have hκ0 : 0 < κ := arKappaDelta1_pos (by linarith)
+  have hκ1 : κ ≤ 1 := arKappaDelta1_le_one hLb
+  have hrad := (lemma_13_1_12_feasible hf hXC hrun hrc (k := k)
+    (fun i _ => lemma_13_1_14_feasible hf hXC hrun i)).2.1
+  have hmem : ∀ j ∈ Finset.Icc 1 P.q, δ₁ k j ∈ Set.Ioc 0 1 := fun j hj =>
+    ⟨(hrun.step k).radius_pos j hj, (hrad j hj).2.trans ((hrun.invariants k).2.1 j hj).2⟩
+  have hεmin := hrun.epsMin_pos
+  have hεmin1 := hrun.epsMin_le_one
+  have hς := P.ς_pos
+  have hς1 := P.ς_le_one
+  have happrox : IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) {e | x k + e ∈ X} P.q ε (δ₁ k) := by
+    intro j hj
+    obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
+    set em := epsMin P.q ε
+    have hw := ((hrun.step k).witness j hj).2
+    have hm0 : 0 ≤ κ * em := by positivity
+    have hm1 : κ * em ≤ 1 := mul_le_one_of_le_one hκ1 hεmin.le hεmin1
+    have hδj : (κ * em) ^ P.q ≤ δ₁ k j ^ j :=
+      (pow_le_pow_of_le_one hm0 hm1 hjq).trans (pow_le_pow_left₀ hm0
+        ((mul_le_mul_of_nonneg_left (epsMin_le hj) hκ0.le).trans (hrad j hj).1) j)
+    have hfact : (j ! : ℝ) ≤ P.q ! := by exact_mod_cast Nat.factorial_le hjq
+    have hεj : P.ς * em ≤ ε j := (mul_le_of_le_one_left hεmin.le hς1).trans (epsMin_le hj)
+    refine taylorMeasure_le_of_inexact_certificate_uniform ((hrun.oracle k).mono P.q_le_p) hj
+      (by simpa using hrun.mem k) (hmem j hj).1.le (hmem j hj).2 hς hw (hpass j hj)
+      (e := P.ς * κ ^ P.q / (4 * P.q !) * em ^ (P.q + 1)) (fun i hi => ?_) ?_
+    · have hip : i ∈ Finset.Icc 1 P.p :=
+        Finset.Icc_subset_Icc le_rfl (hjq.trans P.q_le_p) hi
+      exact (mul_le_mul_of_nonneg_right (le_ordMax hip) ((hrun.invariants k).2.2 i hip).1).trans
+        (hh i hip)
+    · calc P.ς * κ ^ P.q / (4 * P.q !) * em ^ (P.q + 1) =
+            P.ς * em * (κ * em) ^ P.q / (4 * P.q !) := by ring
+        _ ≤ ε j * δ₁ k j ^ j / (4 * P.q !) :=
+            div_le_div_of_nonneg_right (mul_le_mul hεj hδj (pow_nonneg hm0 _)
+              (hrun.eps_mem j hj).1.le) (by positivity)
+        _ ≤ ε j * δ₁ k j ^ j / (4 * j !) := by
+            gcongr
+            exact mul_nonneg (hrun.eps_mem j hj).1.le (pow_nonneg (hmem j hj).1.le _)
+  exact ⟨hmem, happrox, δ₁ k, hmem, happrox⟩
 
 /-- **Lemma 13.1.15** ([cartis2022evaluation]): under f.D0pL and the radii control at every
 iteration before `k`, if Step 1 of ARqpIDA branches to Step 5 at iteration `k` ((13.1.53) at
@@ -2453,57 +2875,18 @@ theorem lemma_13_1_15 (hf : AssumptionD0pL f P.p L)
         epsMin P.q ε ^ (P.q + 1)) :
     (∀ j ∈ Finset.Icc 1 P.q, δ₁ k j ∈ Set.Ioc 0 1) ∧
       IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ P.q ε (δ₁ k) ∧ arTest f P ε x k := by
-  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
-  have hLb := hrun.one_le_Lbar hf
-  set κ := arKappaDelta1 P Lb (arSigmaMax P (L P.p) (ordMax P.p κg))
-  have hκ0 : 0 < κ := arKappaDelta1_pos (by linarith)
-  have hκ1 : κ ≤ 1 := arKappaDelta1_le_one hLb
-  have hrad := (lemma_13_1_12 hf hrun hrc (k := k) (fun i _ => lemma_13_1_14 hf hrun i)).2.1
-  have hmem : ∀ j ∈ Finset.Icc 1 P.q, δ₁ k j ∈ Set.Ioc 0 1 := fun j hj =>
-    ⟨(hrun.step k).radius_pos j hj, (hrad j hj).2.trans ((hrun.invariants k).2.1 j hj).2⟩
-  have hεmin := hrun.epsMin_pos
-  have hεmin1 := hrun.epsMin_le_one
-  have hς := P.ς_pos
-  have hς1 := P.ς_le_one
-  have happrox : IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ P.q ε (δ₁ k) := by
-    intro j hj
-    obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
-    set em := epsMin P.q ε
-    have hw := ((hrun.step k).witness j hj).2
-    rw [setOf_add_mem_univ] at hw
-    have hm0 : 0 ≤ κ * em := by positivity
-    have hm1 : κ * em ≤ 1 := mul_le_one_of_le_one hκ1 hεmin.le hεmin1
-    have hδj : (κ * em) ^ P.q ≤ δ₁ k j ^ j :=
-      (pow_le_pow_of_le_one hm0 hm1 hjq).trans (pow_le_pow_left₀ hm0
-        ((mul_le_mul_of_nonneg_left (epsMin_le hj) hκ0.le).trans (hrad j hj).1) j)
-    have hfact : (j ! : ℝ) ≤ P.q ! := by exact_mod_cast Nat.factorial_le hjq
-    have hεj : P.ς * em ≤ ε j := (mul_le_of_le_one_left hεmin.le hς1).trans (epsMin_le hj)
-    refine taylorMeasure_le_of_inexact_certificate_uniform ((hrun.oracle k).mono P.q_le_p) hj
-      (mem_univ 0) (hmem j hj).1.le (hmem j hj).2 hς hw (hpass j hj)
-      (e := P.ς * κ ^ P.q / (4 * P.q !) * em ^ (P.q + 1)) (fun i hi => ?_) ?_
-    · have hip : i ∈ Finset.Icc 1 P.p :=
-        Finset.Icc_subset_Icc le_rfl (hjq.trans P.q_le_p) hi
-      exact (mul_le_mul_of_nonneg_right (le_ordMax hip) ((hrun.invariants k).2.2 i hip).1).trans
-        (hh i hip)
-    · calc P.ς * κ ^ P.q / (4 * P.q !) * em ^ (P.q + 1) =
-            P.ς * em * (κ * em) ^ P.q / (4 * P.q !) := by ring
-        _ ≤ ε j * δ₁ k j ^ j / (4 * P.q !) :=
-            div_le_div_of_nonneg_right (mul_le_mul hεj hδj (pow_nonneg hm0 _)
-              (hrun.eps_mem j hj).1.le) (by positivity)
-        _ ≤ ε j * δ₁ k j ^ j / (4 * j !) := by
-            gcongr
-            exact mul_nonneg (hrun.eps_mem j hj).1.le (pow_nonneg (hmem j hj).1.le _)
-  exact ⟨hmem, happrox, δ₁ k, hmem, happrox⟩
+  have := lemma_13_1_15_feasible hf.on_univ (subset_univ _) hrun hrc hpass hh
+  rwa [setOf_add_mem_univ, arTest_feasible_univ] at this
 
-/-- **Lemma 13.1.16** ([cartis2022evaluation]): under f.D0pL, let iteration `k` of ARqpIDA be
-successful with `‖s_k‖ < 1`, and let `x_{k+1}` not be approximately optimal for the radii
-`δ_{k+1} = δ^{(0)}_{k+1}` (`= δ_{s_k}`). Then for some `j ∈ [1, q]` (13.1.79)
-`(1 - θ) ε_j δ_{k+1,j}^j/j! ≤ (L_{f,p} + σ_max + 3 κ_{∇,max} κ_s) ∑_{ℓ=1}^j δ_{k+1,j}^ℓ/ℓ!
-‖s_k‖^{p-ℓ+1}`, with `σ_max` of Lemma 13.1.14. -/
-theorem lemma_13_1_16 (hf : AssumptionD0pL f P.p L)
-    (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) (hk : ¬ acc k)
+/-- **Lemma 13.1.16 with a feasible set** ([cartis2022evaluation] §14.2): for an ARqpIDA-SC run
+under f.D0pL on an open convex `C ⊇ X`, if iteration `k` is successful with `‖s_k‖ < 1` and
+`x_{k+1}` is not approximately optimal on `X` for the radii `δ_{k+1}`, then (13.1.79) holds for some
+`j ∈ [1, q]`. -/
+theorem lemma_13_1_16_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hs1 : ‖s k‖ < 1)
-    (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) univ P.q ε (δ (k + 1))) :
+    (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) {e | x (k + 1) + e ∈ X} P.q ε
+      (δ (k + 1))) :
     ∃ j ∈ Finset.Icc 1 P.q, (1 - P.θ) * ε j * δ (k + 1) j ^ j / j ! ≤
       (L P.p + arSigmaMax P (L P.p) (ordMax P.p κg) + 3 * ordMax P.p κg * P.κs) *
         ∑ ℓ ∈ Finset.Icc 1 j, δ (k + 1) j ^ ℓ / ℓ ! * ‖s k‖ ^ (P.p - ℓ + 1) := by
@@ -2520,25 +2903,39 @@ theorem lemma_13_1_16 (hf : AssumptionD0pL f P.p L)
   rw [hδ] at hlt ⊢
   have hjp : j ≤ P.p := (Finset.mem_Icc.1 hj).2.trans P.q_le_p
   have h₂ : taylorMeasure (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)) j (δs k j)
-      univ ≤ P.θ * ε j * δs k j ^ j / j ! := by
+      {e | x k + s k + e ∈ X} ≤ P.θ * ε j * δs k j ^ j / j ! := by
     have hw := hdm.2
-    rw [setOf_add_mem_univ] at hw
     have := hw.trans hdmle
     have hς := P.ς_pos
     rw [show P.ς * P.θ * ε j * δs k j ^ j / j ! = P.ς * (P.θ * ε j * δs k j ^ j / j !) by ring]
       at this
     exact le_of_mul_le_mul_left this hς
-  have := radius_inequality_of_measure_gt convex_univ (fun y _ => hf.contDiffAt le_rfl y)
-    (hf.lipschitz le_rfl) (zero_le_one.trans (hf.one_le le_rfl)) (mem_univ (x k))
-    (mem_univ (x k + s k)) (hrun.oracle k) hrun.kappaMax_nonneg P.κs_pos.le
+  have := radius_inequality_of_measure_gt hf.convex (fun y hy => hf.contDiffAt le_rfl hy)
+    (hf.lipschitz le_rfl) (zero_le_one.trans (hf.one_le le_rfl)) (hXC (hrun.mem k))
+    (hXC h2.mem) (hrun.oracle k) hrun.kappaMax_nonneg P.κs_pos.le
     (fun i hi => by
       rw [mul_assoc]
       exact mul_le_mul (le_ordMax hi) (h2.h_le_of_not_acc hk hs1 i hi)
         ((hrun.invariants k).2.2 i hi).1 hrun.kappaMax_nonneg)
-    (hrun.sigma_pos k).le (lemma_13_1_14 hf hrun k) hjp (mem_univ 0) hδmem.1.le
+    (hrun.sigma_pos k).le (lemma_13_1_14_feasible hf hXC hrun k) hjp (by simpa using h2.mem)
+    hδmem.1.le
     (a := 1) (e₀ := 0) (by rw [one_mul, sub_zero]; exact hlt) h₂
   rw [add_zero] at this
   exact this.le
+
+/-- **Lemma 13.1.16** ([cartis2022evaluation]): under f.D0pL, let iteration `k` of ARqpIDA be
+successful with `‖s_k‖ < 1`, and let `x_{k+1}` not be approximately optimal for the radii
+`δ_{k+1} = δ^{(0)}_{k+1}` (`= δ_{s_k}`). Then for some `j ∈ [1, q]` (13.1.79)
+`(1 - θ) ε_j δ_{k+1,j}^j/j! ≤ (L_{f,p} + σ_max + 3 κ_{∇,max} κ_s) ∑_{ℓ=1}^j δ_{k+1,j}^ℓ/ℓ!
+‖s_k‖^{p-ℓ+1}`, with `σ_max` of Lemma 13.1.14. -/
+theorem lemma_13_1_16 (hf : AssumptionD0pL f P.p L)
+    (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) (hk : ¬ acc k)
+    (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hs1 : ‖s k‖ < 1)
+    (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) univ P.q ε (δ (k + 1))) :
+    ∃ j ∈ Finset.Icc 1 P.q, (1 - P.θ) * ε j * δ (k + 1) j ^ j / j ! ≤
+      (L P.p + arSigmaMax P (L P.p) (ordMax P.p κg) + 3 * ordMax P.p κg * P.κs) *
+        ∑ ℓ ∈ Finset.Icc 1 j, δ (k + 1) j ^ ℓ / ℓ ! * ‖s k‖ ^ (P.p - ℓ + 1) :=
+  lemma_13_1_16_feasible hf.on_univ (subset_univ _) hrun hk hρ hs1 (by rwa [setOf_add_mem_univ])
 
 /-! ### Lemmas 13.1.17 and 13.1.18 -/
 
@@ -2561,15 +2958,13 @@ theorem arKappaDelta1_mul_le {P : ARqpIDAParams} {Lb σ σ' e : ℝ} (hLb : 0 < 
   rw [arKappaDelta1, div_mul_eq_mul_div]
   exact div_le_div_of_nonneg_left (by positivity) (by positivity) (by linarith)
 
-/-- The step-length bounds behind Lemmas 13.1.17 and 13.1.18 for ARqpIDA: at a successful
-iteration `k` with the radii control at `k` and `x_{k+1}` not approximately optimal for the radii
-`δ_{k+1}`, either `‖s_k‖ ≥ 1` or the conclusions of `arqp_pow_ge_of_radius_ineq` hold for some
-order `j` with `a = 1 - θ`, `A = L_{f,p} + σ_max + 3 κ_{∇,max} κ_s` and `κ = κ_{δ,min}`. -/
-theorem arqpIDA_step_bound (hf : AssumptionD0pL f P.p L)
-    (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+/-- `arqpIDA_step_bound` for an ARqpIDA-SC run under f.D0pL on an open convex `C ⊇ X`. -/
+theorem arqpIDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     (hrc : RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
-    (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) univ P.q ε (δ (k + 1))) :
+    (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) {e | x (k + 1) + e ∈ X} P.q ε
+      (δ (k + 1))) :
     ∃ j ∈ Finset.Icc 1 P.q, 1 ≤ ‖s k‖ ∨
       ((P.q ≤ 2 → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) * ε j ≤
           ‖s k‖ ^ (P.p - j + 1)) ∧
@@ -2579,7 +2974,7 @@ theorem arqpIDA_step_bound (hf : AssumptionD0pL f P.p L)
               (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) * ε j ^ j ≤ ‖s k‖ ^ P.p)) := by
   rcases le_or_gt 1 ‖s k‖ with hs1 | hs1
   · exact ⟨1, P.one_mem_Icc, Or.inl hs1⟩
-  obtain ⟨j, hj, hineq⟩ := lemma_13_1_16 hf hrun hk hρ hs1 hnot
+  obtain ⟨j, hj, hineq⟩ := lemma_13_1_16_feasible hf hXC hrun hk hρ hs1 hnot
   refine ⟨j, hj, Or.inr ?_⟩
   have hs := hrun.step k
   have h2 := hs.step2_of_not_acc hk
@@ -2595,13 +2990,12 @@ theorem arqpIDA_step_bound (hf : AssumptionD0pL f P.p L)
   have hεj := hrun.eps_mem j hj
   have hδpos := (h2.radii_of_lt hs1 j hj).1.1
   have hκε : κ * ε j ≤ δs k j := by
-    rcases le_or_gt j 2 with hj2 | hj2
-    · rw [hrc1 j (Finset.mem_Icc.2 ⟨hj1, le_min hj2 hjq⟩)]
+    rcases le_or_gt P.q 2 with hq2 | hq2
+    · rw [hrc1 hq2 j hj]
       exact mul_le_one_of_le_one hκ1 hεj.1.le hεj.2
-    · exact (arKappaDelta1_mul_le (by linarith) (lemma_13_1_14 hf hrun k) hεj.1.le).trans
-        (hrc2 j (Finset.mem_Icc.2 ⟨hj2, hjq⟩))
-  have hq2 : P.q ≤ 2 → δs k j = 1 := fun hq =>
-    hrc1 j (Finset.mem_Icc.2 ⟨hj1, le_min (hjq.trans hq) hjq⟩)
+    · exact (arKappaDelta1_mul_le (by linarith) (lemma_13_1_14_feasible hf hXC hrun k)
+        hεj.1.le).trans (hrc2 hq2 j hj)
+  have hq2 : P.q ≤ 2 → δs k j = 1 := fun hq => hrc1 hq j hj
   have ht : 0 < ‖s k‖ := by
     have hpos := (lemma_13_1_13 hs hk (fun j hj => (hrun.eps_mem j hj).1)
       (hrun.sigma_pos k).le).2
@@ -2616,19 +3010,34 @@ theorem arqpIDA_step_bound (hf : AssumptionD0pL f P.p L)
   exact arqp_pow_ge_of_radius_ineq (sub_pos.2 P.θ_lt_one) hA hεj.1 ht hs1 hδpos hj P.q_le_p
     hκ0 hκε hq2 hineq
 
-/-- **Lemma 13.1.17** ([cartis2022evaluation], corrected constant): under f.D0pL and the radii
-control at iteration `k`, if iteration `k` of ARqpIDA is successful and `x_{k+1}` is not
-approximately optimal for the radii `δ_{k+1}`, then for some `j ∈ [1, q]` (13.1.80):
-* if `q ≤ 2`, `‖s_k‖ ≥ ((1 - θ)/(2 j! A))^{1/(p-j+1)} ε_j^{1/(p-j+1)}`;
-* if `q > 2`, `‖s_k‖ ≥ ((1 - θ) κ̂^{j-1}/(2 j! A))^{1/p} ε_j^{j/p}`,
-where `A = L_{f,p} + σ_max + 3 κ_{∇,max} κ_s` and `κ̂ = min(κ_{δ,min}, (1-θ)/(2 q! A))` with
-`κ_{δ,min} = ς θ/(24 max(L̄_f, σ_max))` (13.1.81). The book has `κ_{δ,min}` in place of `κ̂`; its
-argument (that of Lemma 12.2.12) needs `κ_{δ,min} ≤ (1 - θ)/(2 j! A)`. -/
-theorem lemma_13_1_17 (hf : AssumptionD0pL f P.p L)
+/-- The step-length bounds behind Lemmas 13.1.17 and 13.1.18 for ARqpIDA: at a successful
+iteration `k` with the radii control at `k` and `x_{k+1}` not approximately optimal for the radii
+`δ_{k+1}`, either `‖s_k‖ ≥ 1` or the conclusions of `arqp_pow_ge_of_radius_ineq` hold for some
+order `j` with `a = 1 - θ`, `A = L_{f,p} + σ_max + 3 κ_{∇,max} κ_s` and `κ = κ_{δ,min}`. -/
+theorem arqpIDA_step_bound (hf : AssumptionD0pL f P.p L)
     (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     (hrc : RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
     (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) univ P.q ε (δ (k + 1))) :
+    ∃ j ∈ Finset.Icc 1 P.q, 1 ≤ ‖s k‖ ∨
+      ((P.q ≤ 2 → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) * ε j ≤
+          ‖s k‖ ^ (P.p - j + 1)) ∧
+        (2 < P.q → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) *
+          arKappaHat P.q (1 - P.θ) (arConstA P L (ordMax P.p κg))
+            (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+              (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) * ε j ^ j ≤ ‖s k‖ ^ P.p)) :=
+  arqpIDA_step_bound_feasible hf.on_univ (subset_univ _) hrun hrc hk hρ
+    (by rwa [setOf_add_mem_univ])
+
+/-- **Lemma 13.1.17 with a feasible set** ([cartis2022evaluation] §14.2): the step-length bounds
+(13.1.80) of `lemma_13_1_17` for an ARqpIDA-SC run under f.D0pL on an open convex `C ⊇ X`, when
+`x_{k+1}` is not approximately optimal on `X` for the radii `δ_{k+1}`. -/
+theorem lemma_13_1_17_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hrc : RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
+    (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
+    (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) {e | x (k + 1) + e ∈ X} P.q ε
+      (δ (k + 1))) :
     (P.q ≤ 2 → ∃ j ∈ Finset.Icc 1 P.q,
       ((1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg))) ^ (1 / ((P.p - j + 1 : ℕ) : ℝ)) *
         ε j ^ (1 / ((P.p - j + 1 : ℕ) : ℝ)) ≤ ‖s k‖) ∧
@@ -2638,7 +3047,7 @@ theorem lemma_13_1_17 (hf : AssumptionD0pL f P.p L)
             (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) /
           (2 * j ! * arConstA P L (ordMax P.p κg))) ^ (1 / (P.p : ℝ)) *
         ε j ^ ((j : ℝ) / P.p) ≤ ‖s k‖) := by
-  obtain ⟨j, hj, hb⟩ := arqpIDA_step_bound hf hrun hrc hk hρ hnot
+  obtain ⟨j, hj, hb⟩ := arqpIDA_step_bound_feasible hf hXC hrun hrc hk hρ hnot
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
   set A := arConstA P L (ordMax P.p κg)
   have hLb := hrun.one_le_Lbar hf
@@ -2683,20 +3092,38 @@ theorem lemma_13_1_17 (hf : AssumptionD0pL f P.p L)
           (1 - P.θ) / (2 * j ! * A) * κh ^ (j - 1) * ε j ^ j := by ring
       _ ≤ ‖s k‖ ^ P.p := hq3 hq
 
-/-- **Lemma 13.1.18** ([cartis2022evaluation], corrected scope and constant): under f.D0pL and
-the radii control at every iteration, if iteration `k` of ARqpIDA is successful and `x_{k+1}` is
-not approximately optimal (for any radii in `(0, 1]^q`), then (13.1.82)
-`\overline{ΔT}_{f,p}(x_k, s_k) ≥ κ_{Δm} min_{j ∈ [1,q]} ε_j^{π_j}` and (13.1.83)
-`f(x_k) - f(x_{k+1}) ≥ ½ η₁ κ_{Δm} min_j ε_j^{π_j}`, with `π_j = arPi q p j` and
-`κ_{Δm} = σ_min/(p+1)! · arStepConst q p (1 - θ) A κ_{δ,min}`: for `q ≤ 2`,
-`κ_{Δm} = σ_min/(p+1)! ((1-θ)/(2 q! A))^{(p+1)/(p-q+1)}`, for `q > 2`,
-`κ_{Δm} = σ_min/(p+1)! ((1-θ) κ̂^{q-1}/(2 q! A))^{q(p+1)/p}` (`κ̂` as in Lemma 13.1.17). The book
-states (13.1.82) for every trial iteration before approximate optimality; its proof covers the
-successful iterations followed by a non-optimal iterate. -/
-theorem lemma_13_1_18 (hf : AssumptionD0pL f P.p L)
+/-- **Lemma 13.1.17** ([cartis2022evaluation], corrected constant): under f.D0pL and the radii
+control at iteration `k`, if iteration `k` of ARqpIDA is successful and `x_{k+1}` is not
+approximately optimal for the radii `δ_{k+1}`, then for some `j ∈ [1, q]` (13.1.80):
+* if `q ≤ 2`, `‖s_k‖ ≥ ((1 - θ)/(2 j! A))^{1/(p-j+1)} ε_j^{1/(p-j+1)}`;
+* if `q > 2`, `‖s_k‖ ≥ ((1 - θ) κ̂^{j-1}/(2 j! A))^{1/p} ε_j^{j/p}`,
+where `A = L_{f,p} + σ_max + 3 κ_{∇,max} κ_s` and `κ̂ = min(κ_{δ,min}, (1-θ)/(2 q! A))` with
+`κ_{δ,min} = ς θ/(24 max(L̄_f, σ_max))` (13.1.81). The book has `κ_{δ,min}` in place of `κ̂`; its
+argument (that of Lemma 12.2.12) needs `κ_{δ,min} ≤ (1 - θ)/(2 j! A)`. -/
+theorem lemma_13_1_17 (hf : AssumptionD0pL f P.p L)
     (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     (hrc : RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
-    (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hnot : ¬ arTest f P ε x (k + 1)) :
+    (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
+    (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) univ P.q ε (δ (k + 1))) :
+    (P.q ≤ 2 → ∃ j ∈ Finset.Icc 1 P.q,
+      ((1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg))) ^ (1 / ((P.p - j + 1 : ℕ) : ℝ)) *
+        ε j ^ (1 / ((P.p - j + 1 : ℕ) : ℝ)) ≤ ‖s k‖) ∧
+    (2 < P.q → ∃ j ∈ Finset.Icc 1 P.q,
+      ((1 - P.θ) * arKappaHat P.q (1 - P.θ) (arConstA P L (ordMax P.p κg))
+          (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+            (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) /
+          (2 * j ! * arConstA P L (ordMax P.p κg))) ^ (1 / (P.p : ℝ)) *
+        ε j ^ ((j : ℝ) / P.p) ≤ ‖s k‖) :=
+  lemma_13_1_17_feasible hf.on_univ (subset_univ _) hrun hrc hk hρ (by rwa [setOf_add_mem_univ])
+
+/-- **Lemma 13.1.18 with a feasible set** ([cartis2022evaluation] §14.2): for an ARqpIDA-SC run
+under f.D0pL on an open convex `C ⊇ X` and the radii control at `k`, if iteration `k` is successful
+and `x_{k+1}` is not approximately optimal on `X` (`arTest_feasible`), then (13.1.82) and (13.1.83)
+hold, as in `lemma_13_1_18`. -/
+theorem lemma_13_1_18_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hrc : RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
+    (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hnot : ¬ arTest_feasible f X P ε x (k + 1)) :
     P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (1 - P.θ) (arConstA P L (ordMax P.p κg))
         (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
           (arSigmaMax P (L P.p) (ordMax P.p κg))) *
@@ -2705,9 +3132,10 @@ theorem lemma_13_1_18 (hf : AssumptionD0pL f P.p L)
           (arConstA P L (ordMax P.p κg)) (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
             (arSigmaMax P (L P.p) (ordMax P.p κg)))) / 2 *
         epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤ f (x k) - f (x (k + 1)) := by
-  have hnot' : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) univ P.q ε (δ (k + 1)) :=
+  have hnot' : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) {e | x (k + 1) + e ∈ X} P.q ε
+      (δ (k + 1)) :=
     fun hc => hnot ⟨δ (k + 1), fun j hj => (hrun.invariants (k + 1)).2.1 j hj, hc⟩
-  obtain ⟨j, hj, hb⟩ := arqpIDA_step_bound hf hrun hrc hk hρ hnot'
+  obtain ⟨j, hj, hb⟩ := arqpIDA_step_bound_feasible hf hXC hrun hrc hk hρ hnot'
   have hs := hrun.step k
   obtain ⟨hlow, hpos⟩ := lemma_13_1_13 hs hk (fun j hj => (hrun.eps_mem j hj).1)
     (hrun.sigma_pos k).le
@@ -2756,6 +3184,30 @@ theorem lemma_13_1_18 (hf : AssumptionD0pL f P.p L)
     _ ≤ P.η₁ * (D k).taylorDecrement P.p (s k) := mul_le_mul_of_nonneg_left h1 hη.le
     _ ≤ f (x k) - f (x (k + 1)) := h2
 
+/-- **Lemma 13.1.18** ([cartis2022evaluation], corrected scope and constant): under f.D0pL and
+the radii control at every iteration, if iteration `k` of ARqpIDA is successful and `x_{k+1}` is
+not approximately optimal (for any radii in `(0, 1]^q`), then (13.1.82)
+`\overline{ΔT}_{f,p}(x_k, s_k) ≥ κ_{Δm} min_{j ∈ [1,q]} ε_j^{π_j}` and (13.1.83)
+`f(x_k) - f(x_{k+1}) ≥ ½ η₁ κ_{Δm} min_j ε_j^{π_j}`, with `π_j = arPi q p j` and
+`κ_{Δm} = σ_min/(p+1)! · arStepConst q p (1 - θ) A κ_{δ,min}`: for `q ≤ 2`,
+`κ_{Δm} = σ_min/(p+1)! ((1-θ)/(2 q! A))^{(p+1)/(p-q+1)}`, for `q > 2`,
+`κ_{Δm} = σ_min/(p+1)! ((1-θ) κ̂^{q-1}/(2 q! A))^{q(p+1)/p}` (`κ̂` as in Lemma 13.1.17). The book
+states (13.1.82) for every trial iteration before approximate optimality; its proof covers the
+successful iterations followed by a non-optimal iterate. -/
+theorem lemma_13_1_18 (hf : AssumptionD0pL f P.p L)
+    (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hrc : RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
+    (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hnot : ¬ arTest f P ε x (k + 1)) :
+    P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (1 - P.θ) (arConstA P L (ordMax P.p κg))
+        (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+          (arSigmaMax P (L P.p) (ordMax P.p κg))) *
+        epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤ (D k).taylorDecrement P.p (s k) ∧
+      P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (1 - P.θ)
+          (arConstA P L (ordMax P.p κg)) (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+            (arSigmaMax P (L P.p) (ordMax P.p κg)))) / 2 *
+        epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤ f (x k) - f (x (k + 1)) :=
+  lemma_13_1_18_feasible hf.on_univ (subset_univ _) hrun hrc hk hρ (by rwa [arTest_feasible_univ])
+
 /-! ### Theorem 13.1.19 -/
 
 /-- The constant `κ_acc` of the proof of Theorem 13.1.19 ([cartis2022evaluation]):
@@ -2794,6 +3246,155 @@ theorem mul_arKappaAcc_le {P : ARqpIDAParams} {κ Lb σmax κm : ℝ} (hκ : 0 �
           mul_le_mul_of_nonneg_left (min_le_left _ _) hκm
       _ = P.ς * κ ^ P.q / (4 * P.q !) := by field_simp
 
+/-- **The accuracy-improving iterations of ARqpIDA-SC** (proof of Theorem 13.1.19,
+[cartis2022evaluation]): under f.D0pL on an open convex `C ⊇ X` and the radii control at every
+iteration, if no iterate `x_j`, `j ≤ k`, is approximately optimal on `X`, then
+`|𝒜_k| ≤ p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
+theorem arqpIDA_card_acc_le_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
+    (hk : ∀ j ≤ k, ¬ arTest_feasible f X P ε x j) :
+    ((successSet acc k).card : ℝ) ≤
+      P.p * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
+        |Real.log (arKappaAcc P (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+            (arSigmaMax P (L P.p) (ordMax P.p κg))) (lipMax L P.p + ordMax P.p κg * P.κh)
+            (arSigmaMax P (L P.p) (ordMax P.p κg)) (ordMax P.p κg) / P.κh)| /
+          |Real.log P.γh| + 1 := by
+  set em := epsMin P.q ε with hem
+  have hεmin : 0 < em := hrun.epsMin_pos
+  have hεmin1 : em ≤ 1 := hrun.epsMin_le_one
+  set κm := ordMax P.p κg
+  have hκm : 0 ≤ κm := hrun.kappaMax_nonneg
+  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
+  have hLb := hrun.one_le_Lbar hf
+  set σmax := arSigmaMax P (L P.p) κm
+  have hσk : ∀ k, σ k ≤ σmax := fun k => lemma_13_1_14_feasible hf hXC hrun k
+  set κ := arKappaDelta1 P Lb σmax
+  have hκ0 : 0 < κ := arKappaDelta1_pos (by linarith)
+  set κacc := arKappaAcc P κ Lb σmax κm
+  have hκacc : 0 < κacc := arKappaAcc_pos hκ0 (by linarith) hκm
+  have hlogh : 0 < |Real.log P.γh| := abs_pos.2 (Real.log_neg P.γh_pos P.γh_lt_one).ne
+  set NA := P.p * (P.q + 1) / |Real.log P.γh| * |Real.log em| +
+    |Real.log (κacc / P.κh)| / |Real.log P.γh| + 1 with hNA_def
+  have hNA0 : 0 ≤ NA := by positivity
+  have hpowq : em ^ (P.p * (P.q + 1)) ≤ em ^ (P.q + 1) :=
+    pow_le_pow_of_le_one hεmin.le hεmin1 (by nlinarith [P.one_le_p])
+  have hp := P.one_le_p
+  have h := card_accuracyImproving_le_of_pow_of_nonneg (acc := acc)
+    (hmax := fun j => ordMax P.p (h j))
+    (N := P.p * (P.q + 1)) (k := k) P.γh_pos P.γh_lt_one P.κh_nonneg hκacc hεmin
+    ((ordMax_le_iff hp).2 fun i hi => by rw [hrun.h_zero]; exact P.h₀_le i hi)
+    (fun j _ => (ordMax_le_iff hp).2 fun i hi => ((hrun.invariants j).2.2 i hi).2)
+    (fun j _ ha => by
+      rw [show h (j + 1) = fun i => P.γh * h j i from funext ((hrun.step j).h_acc ha),
+        ordMax_mul hp P.γh_pos.le])
+    (fun j _ ha => by rw [(hrun.step j).h_trial ha])
+    (fun j hj ha => by
+      by_contra hcon
+      push Not at hcon
+      have hhi : ∀ i ∈ Finset.Icc 1 P.p, h j i ≤ κacc * em ^ (P.p * (P.q + 1)) :=
+        fun i hi => (le_ordMax hi).trans hcon
+      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd j i
+      · refine (lemma_13_1_12_feasible hf hXC hrun (fun i _ => hrc i) (k := j)
+          (fun i _ => hσk i)).2.2 hfail
+          (fun i hi => (hhi i hi).trans ?_) ha
+        exact mul_le_mul_of_nonneg_right arKappaAcc_le (by positivity)
+      · push Not at hfail
+        refine hk j hj
+          (lemma_13_1_15_feasible hf hXC hrun (fun i _ => hrc i) hfail fun i hi => ?_).2.2
+        calc κm * h j i ≤ κm * (κacc * em ^ (P.p * (P.q + 1))) :=
+              mul_le_mul_of_nonneg_left (hhi i hi) hκm
+          _ = κm * κacc * em ^ (P.p * (P.q + 1)) := by ring
+          _ ≤ P.ς * κ ^ P.q / (4 * P.q !) * em ^ (P.q + 1) :=
+              mul_le_mul (mul_arKappaAcc_le hκ0.le hκm) hpowq (by positivity)
+                (by have := P.ς_pos; positivity))
+  calc ((successSet acc k).card : ℝ)
+      ≤ (((P.p * (P.q + 1) : ℕ) : ℝ) * |Real.log em| + |Real.log (κacc / P.κh)|) /
+          |Real.log P.γh| + 1 := h
+    _ = NA := by rw [hNA_def]; push_cast; ring
+
+/-- **The complexity argument of Theorem 13.1.19 with a feasible set** ([cartis2022evaluation]
+§14.2): `arqpIDA_complexity` for an ARqpIDA-SC run under f.D0pL on an open convex `C ⊇ X` and
+f.bB.X, with approximate optimality on `X` (`arTest_feasible`). -/
+theorem arqpIDA_complexity_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C) {flow : ℝ}
+    (hb : ∀ y ∈ X, flow ≤ f y)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
+    (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    {c : ℝ} (hc : 0 < c)
+    (hdec : ∀ k, ¬ acc k → P.η₁ ≤ arqpIDARatio f P D x s k → ¬ arTest_feasible f X P ε x (k + 1) →
+      c ≤ f (x k) - f (x (k + 1))) :
+    ∃ kε, IsFirstHit (arTest_feasible f X P ε x) kε ∧
+      (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
+        (1 + |Real.log P.γ₁| / Real.log P.γ₂) * ((f x₀ - flow) / c) +
+          (Real.log (arSigmaMax P (L P.p) (ordMax P.p κg) / P.σ₀) / Real.log P.γ₂ + 2 +
+            |Real.log P.γ₁| / Real.log P.γ₂) ∧
+      (derivEvalCount (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i)) kε : ℝ) ≤
+        (f x₀ - flow) / c + P.p * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
+          |Real.log (arKappaAcc P (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+              (arSigmaMax P (L P.p) (ordMax P.p κg))) (lipMax L P.p + ordMax P.p κg * P.κh)
+              (arSigmaMax P (L P.p) (ordMax P.p κg)) (ordMax P.p κg) / P.κh)| /
+            |Real.log P.γh| + 3 := by
+  have hq := P.one_le_q
+  set em := epsMin P.q ε with hem
+  have hεmin : 0 < em := hrun.epsMin_pos
+  have hεmin1 : em ≤ 1 := hrun.epsMin_le_one
+  set κm := ordMax P.p κg
+  have hκm : 0 ≤ κm := hrun.kappaMax_nonneg
+  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
+  have hLb := hrun.one_le_Lbar hf
+  set σmax := arSigmaMax P (L P.p) κm
+  have hσk : ∀ k, σ k ≤ σmax := fun k => lemma_13_1_14_feasible hf hXC hrun k
+  have hσ₀ : P.σ₀ ≤ σmax := le_max_left _ _
+  set κ := arKappaDelta1 P Lb σmax
+  have hκ0 : 0 < κ := arKappaDelta1_pos (by linarith)
+  have hf0 : 0 ≤ f x₀ - flow := sub_nonneg.2 (hb x₀ hrun.x₀_mem)
+  set N := (f x₀ - flow) / c with hN_def
+  have hN0 : 0 ≤ N := by positivity
+  -- successful iterations before termination
+  have hS : ∀ k, (∀ j ≤ k, ¬ arTest_feasible f X P ε x j) →
+      ((successSet (fun i => ¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i) k).card : ℝ) ≤ N + 1 := by
+    refine card_successSet_le_add_one_of_forall hN0 fun k hk => ?_
+    rw [hN_def, ← hrun.x_zero]
+    exact card_successSet_le_div_of_decrease («φ» := fun i => f (x i)) hc
+      (fun j _ hj => by rw [(hrun.step j).x_succ_eq hj])
+      (fun j hj hs => hdec j hs.1 hs.2 (hk (j + 1) (by omega))) (hb _ (hrun.mem _))
+  -- trial iterations
+  have hlog2 : 0 < Real.log P.γ₂ := P.log_γ₂_pos
+  set cT := 1 + |Real.log P.γ₁| / Real.log P.γ₂ with hcT
+  have hcT0 : 0 ≤ cT := by positivity
+  set NT := (N + 1) * cT + Real.log (σmax / P.σ₀) / Real.log P.γ₂ with hNT_def
+  have hNT0 : 0 ≤ NT := by
+    have : 0 ≤ Real.log (σmax / P.σ₀) :=
+      Real.log_nonneg ((one_le_div P.σ₀_pos).2 hσ₀)
+    positivity
+  have hT : ∀ k, (∀ j ≤ k, ¬ arTest_feasible f X P ε x j) →
+      ((successSet (fun i => ¬ acc i) k).card : ℝ) ≤ NT := by
+    intro k hk
+    have h1 := lemma_13_1_9 (fun i _ => hrun.step i) hrun.σ_zero hrun.δ_zero hrun.h_zero
+      (hσk (k + 1))
+    have h2 := mul_le_mul_of_nonneg_right (hS k hk) hcT0
+    linarith
+  -- accuracy-improving iterations
+  set κacc := arKappaAcc P κ Lb σmax κm
+  set NA := P.p * (P.q + 1) / |Real.log P.γh| * |Real.log em| +
+    |Real.log (κacc / P.κh)| / |Real.log P.γh| + 1 with hNA_def
+  have hNA0 : 0 ≤ NA := by positivity
+  have hp := P.one_le_p
+  have hA : ∀ k, (∀ j ≤ k, ¬ arTest_feasible f X P ε x j) → ((successSet acc k).card : ℝ) ≤ NA :=
+    fun k hk => arqpIDA_card_acc_le_feasible hf hXC hrun hrc hk
+  -- conclusion
+  obtain ⟨kε, hkε, -, hTk, hAk⟩ := exists_firstHit_le_of_dynamicAccuracy hNT0 hNA0 hT hA
+  have hSk := derivEvalCount_le_of_isFirstHit (by linarith) hkε hS
+  have hor : (derivEvalCount (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i)) kε :
+      ℝ) + 1 ≤ derivEvalCount acc kε +
+        derivEvalCount (fun i => ¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i) kε := by
+    exact_mod_cast derivEvalCount_or_add_one_le _ _ kε
+  refine ⟨kε, hkε, ?_, ?_⟩
+  · calc (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤ NT + 1 := hTk
+      _ = _ := by rw [hNT_def, hcT]; ring
+  · calc _ ≤ (NA + 1) + (N + 1 + 1) - 1 := by linarith
+      _ = _ := by rw [hNA_def]; ring
+
 /-- **The complexity argument of Theorem 13.1.19** ([cartis2022evaluation]), for any decrease
 constant: under f.D0pL, f.Bb and the radii control at every iteration, if every
 successful iteration `k` of an ARqpIDA run followed by an iterate `x_{k+1}` that is not
@@ -2821,100 +3422,9 @@ theorem arqpIDA_complexity (hf : AssumptionD0pL f P.p L) {flow : ℝ}
               (arSigmaMax P (L P.p) (ordMax P.p κg))) (lipMax L P.p + ordMax P.p κg * P.κh)
               (arSigmaMax P (L P.p) (ordMax P.p κg)) (ordMax P.p κg) / P.κh)| /
             |Real.log P.γh| + 3 := by
-  have hq := P.one_le_q
-  set em := epsMin P.q ε with hem
-  have hεmin : 0 < em := hrun.epsMin_pos
-  have hεmin1 : em ≤ 1 := hrun.epsMin_le_one
-  set κm := ordMax P.p κg
-  have hκm : 0 ≤ κm := hrun.kappaMax_nonneg
-  set Lb := lipMax L P.p + ordMax P.p κg * P.κh
-  have hLb := hrun.one_le_Lbar hf
-  set σmax := arSigmaMax P (L P.p) κm
-  have hσk : ∀ k, σ k ≤ σmax := fun k => lemma_13_1_14 hf hrun k
-  have hσ₀ : P.σ₀ ≤ σmax := le_max_left _ _
-  set κ := arKappaDelta1 P Lb σmax
-  have hκ0 : 0 < κ := arKappaDelta1_pos (by linarith)
-  have hf0 : 0 ≤ f x₀ - flow := sub_nonneg.2 (hb x₀)
-  set N := (f x₀ - flow) / c with hN_def
-  have hN0 : 0 ≤ N := by positivity
-  -- successful iterations before termination
-  have hS : ∀ k, (∀ j ≤ k, ¬ arTest f P ε x j) →
-      ((successSet (fun i => ¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i) k).card : ℝ) ≤ N + 1 := by
-    refine card_successSet_le_add_one_of_forall hN0 fun k hk => ?_
-    rw [hN_def, ← hrun.x_zero]
-    exact card_successSet_le_div_of_decrease («φ» := fun i => f (x i)) hc
-      (fun j _ hj => by rw [(hrun.step j).x_succ_eq hj])
-      (fun j hj hs => hdec j hs.1 hs.2 (hk (j + 1) (by omega))) (hb _)
-  -- trial iterations
-  have hlog2 : 0 < Real.log P.γ₂ := P.log_γ₂_pos
-  set cT := 1 + |Real.log P.γ₁| / Real.log P.γ₂ with hcT
-  have hcT0 : 0 ≤ cT := by positivity
-  set NT := (N + 1) * cT + Real.log (σmax / P.σ₀) / Real.log P.γ₂ with hNT_def
-  have hNT0 : 0 ≤ NT := by
-    have : 0 ≤ Real.log (σmax / P.σ₀) :=
-      Real.log_nonneg ((one_le_div P.σ₀_pos).2 hσ₀)
-    positivity
-  have hT : ∀ k, (∀ j ≤ k, ¬ arTest f P ε x j) →
-      ((successSet (fun i => ¬ acc i) k).card : ℝ) ≤ NT := by
-    intro k hk
-    have h1 := lemma_13_1_9 (fun i _ => hrun.step i) hrun.σ_zero hrun.δ_zero hrun.h_zero
-      (hσk (k + 1))
-    have h2 := mul_le_mul_of_nonneg_right (hS k hk) hcT0
-    linarith
-  -- accuracy-improving iterations
-  set κacc := arKappaAcc P κ Lb σmax κm
-  have hκacc : 0 < κacc := arKappaAcc_pos hκ0 (by linarith) hκm
-  have hlogh : 0 < |Real.log P.γh| := abs_pos.2 (Real.log_neg P.γh_pos P.γh_lt_one).ne
-  set NA := P.p * (P.q + 1) / |Real.log P.γh| * |Real.log em| +
-    |Real.log (κacc / P.κh)| / |Real.log P.γh| + 1 with hNA_def
-  have hNA0 : 0 ≤ NA := by positivity
-  have hpowq : em ^ (P.p * (P.q + 1)) ≤ em ^ (P.q + 1) :=
-    pow_le_pow_of_le_one hεmin.le hεmin1 (by nlinarith [P.one_le_p])
-  have hp := P.one_le_p
-  have hA : ∀ k, (∀ j ≤ k, ¬ arTest f P ε x j) → ((successSet acc k).card : ℝ) ≤ NA := by
-    intro k hk
-    have h := card_accuracyImproving_le_of_pow_of_nonneg (acc := acc)
-      (hmax := fun j => ordMax P.p (h j))
-      (N := P.p * (P.q + 1)) (k := k) P.γh_pos P.γh_lt_one P.κh_nonneg hκacc hεmin
-      ((ordMax_le_iff hp).2 fun i hi => by rw [hrun.h_zero]; exact P.h₀_le i hi)
-      (fun j _ => (ordMax_le_iff hp).2 fun i hi => ((hrun.invariants j).2.2 i hi).2)
-      (fun j _ ha => by
-        rw [show h (j + 1) = fun i => P.γh * h j i from funext ((hrun.step j).h_acc ha),
-          ordMax_mul hp P.γh_pos.le])
-      (fun j _ ha => by rw [(hrun.step j).h_trial ha])
-      (fun j hj ha => by
-        by_contra hcon
-        push Not at hcon
-        have hhi : ∀ i ∈ Finset.Icc 1 P.p, h j i ≤ κacc * em ^ (P.p * (P.q + 1)) :=
-          fun i hi => (le_ordMax hi).trans hcon
-        by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd j i
-        · refine (lemma_13_1_12 hf hrun (fun i _ => hrc i) (k := j) (fun i _ => hσk i)).2.2 hfail
-            (fun i hi => (hhi i hi).trans ?_) ha
-          exact mul_le_mul_of_nonneg_right arKappaAcc_le (by positivity)
-        · push Not at hfail
-          refine hk j hj (lemma_13_1_15 hf hrun (fun i _ => hrc i) hfail fun i hi => ?_).2.2
-          calc κm * h j i ≤ κm * (κacc * em ^ (P.p * (P.q + 1))) :=
-                mul_le_mul_of_nonneg_left (hhi i hi) hκm
-            _ = κm * κacc * em ^ (P.p * (P.q + 1)) := by ring
-            _ ≤ P.ς * κ ^ P.q / (4 * P.q !) * em ^ (P.q + 1) :=
-                mul_le_mul (mul_arKappaAcc_le hκ0.le hκm) hpowq (by positivity)
-                  (by have := P.ς_pos; positivity))
-    calc ((successSet acc k).card : ℝ)
-        ≤ (((P.p * (P.q + 1) : ℕ) : ℝ) * |Real.log em| + |Real.log (κacc / P.κh)|) /
-            |Real.log P.γh| + 1 := h
-      _ = NA := by rw [hNA_def]; push_cast; ring
-  -- conclusion
-  obtain ⟨kε, hkε, -, hTk, hAk⟩ := exists_firstHit_le_of_dynamicAccuracy hNT0 hNA0 hT hA
-  have hSk := derivEvalCount_le_of_isFirstHit (by linarith) hkε hS
-  have hor : (derivEvalCount (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i)) kε :
-      ℝ) + 1 ≤ derivEvalCount acc kε +
-        derivEvalCount (fun i => ¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i) kε := by
-    exact_mod_cast derivEvalCount_or_add_one_le _ _ kε
-  refine ⟨kε, hkε, ?_, ?_⟩
-  · calc (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤ NT + 1 := hTk
-      _ = _ := by rw [hNT_def, hcT]; ring
-  · calc _ ≤ (NA + 1) + (N + 1 + 1) - 1 := by linarith
-      _ = _ := by rw [hNA_def]; ring
+  have := arqpIDA_complexity_feasible hf.on_univ (subset_univ _) (fun y _ => hb y) hrun hrc hc
+    fun k hk hρ hnot => hdec k hk hρ (by rwa [arTest_feasible_univ] at hnot)
+  rwa [arTest_feasible_univ] at this
 
 /-- **Radius one for orders `≤ 2`** (used for Theorem 13.1.19 (1)): if `q ≤ 2` and `x` is an
 `(ε, δ)`-approximate `q`-th order minimizer for some radii `δ ∈ (0, 1]^q` (unconstrained), then
@@ -3055,7 +3565,7 @@ theorem theorem_13_1_19_ii (hf : AssumptionD0pL f P.p L) {flow : ℝ}
       (arConstA P L (ordMax P.p κg)) (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
         (arSigmaMax P (L P.p) (ordMax P.p κg))) = κΔm := by
     simp only [arStepConst, hq2', ↓reduceIte]; exact hκΔm.symm
-  have hLb := hrun.one_le_Lbar hf
+  have hLb := hrun.one_le_Lbar hf.on_univ
   have hA := one_le_arConstA (hf.one_le le_rfl) hrun.kappaMax_nonneg (P := P) (L := L)
   have hκpos : 0 < κΔm := by
     have := P.σmin_pos; have := P.θ_lt_one
@@ -3443,7 +3953,8 @@ private theorem exists_arNext (f : ℝⁿ → ℝ) (hε : ∀ j ∈ Finset.Icc 1
   · intro hk; simp only [hra] at hk; simp only [hra, hrb, δ', hk, ite_true]
   · intro hk; simp only [hra] at hk; simp only [hra, hrb, σ', hk, ite_true]
   · intro hk i; simp only [hra] at hk; simp only [hra, hrb, h', hk, ite_true]
-  · intro hk hs1; simp only [hra] at hk hs1 ⊢; exact ha.rc hk hs1
+  · exact RadiiControl.of_book hε hLb1 fun hk hs1 => by
+      simp only [hra] at hk hs1 ⊢; exact ha.rc hk hs1
 
 variable {P ε}
 
@@ -3490,7 +4001,7 @@ theorem exists_algorithm_13_1_2 {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {L : �
   refine ⟨fun i => (r i).x, fun i => (r i).σ, fun i => (r i).δ, fun i => (r i).δ₁,
     fun i => (r i).δs, fun i => (r i).h, fun i => O (r i).x (r i).h, fun i => (r i).dd,
     fun i => (r i).jk, fun i => (r i).s, fun i => (r i).acc,
-    ⟨hε, hεδ, hκg, by simp only [hr0], by simp only [hr0], by simp only [hr0],
+    ⟨hε, hεδ, hκg, by simp only [hr0], mem_univ _, by simp only [hr0], by simp only [hr0],
       by simp only [hr0], fun k => hO _ _ (hr k fun _ _ h => h).1.h_mem,
       fun k => ((hr k fun _ _ h => h).2 r rfl rfl).1⟩,
     fun _ => rfl, fun k => ((hr k fun _ _ h => h).2 r rfl rfl).2⟩

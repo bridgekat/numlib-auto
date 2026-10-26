@@ -23,10 +23,12 @@ module imports the section modules and adds nothing of its own.
 * §14.2, `Chapter14.Section02`: simple constraints; assumptions X.CNe, f.D1qLaB.X (and
   variants), f.bB.X; Theorem 14.2.1, Lemma 14.2.5 (sparse first-order measure); the ARqpC-SC,
   TRq-SC and ARqp-SC rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 (`lemma_14_2_2_arqpc`,
-  `lemma_14_2_2_trq`, `lemma_14_2_2_arqp`, `lemma_14_2_3`, `lemma_14_2_3_arqpc`,
-  `theorem_14_2_4_trq`, `theorem_14_2_4_arqp`, `theorem_14_2_4_arqpc`,
-  `theorem_14_2_4_arqpc_convex`) and sharpness of the TRq-SC, ARqp-SC (`q ≤ 2`) and ARqpC-SC
-  (`q = 1`, convex `h`) orders (`theorem_14_2_4_sharp`)
+  `lemma_14_2_2_trq`, `lemma_14_2_2_arqp`, `lemma_14_2_3`, `lemma_14_2_3_trq`,
+  `lemma_14_2_3_arqpc`, `theorem_14_2_4_trq`, `theorem_14_2_4_arqp`, `theorem_14_2_4_arqpc`,
+  `theorem_14_2_4_arqpc_convex`), the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows
+  (`lemma_14_2_2_trqida`, …, `theorem_14_2_4_arqpeda`, from the Chapter 13 runs with a feasible
+  set) and sharpness of the TRq-SC, ARqp-SC and ARqpC-SC (`q = 1`, convex `h`) orders
+  (`theorem_14_2_4_sharp`, `theorem_14_2_4_sharp_arqp`)
 * §14.3, `Chapter14.Section03`: the problem (14.3.1), assumption X.CQ (`AssumptionXCQ`);
   Theorems 14.3.1–14.3.2, Example 14.3.1; LENq-SC (Algorithm 14.3.1, `algorithm_14_3_1`),
   Theorems 14.3.3–14.3.4; TPqp-GC (Algorithm 14.3.2, `algorithm_14_3_2`), Lemmas 14.3.5–14.3.8
@@ -93,8 +95,9 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Not formalized
 
-* The TRqIDA/EDA and ARqpIDA/EDA rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 (the Chapter 13
-  run predicates carry no feasible set), the TR rows of Lemma 14.2.3, the sharpness of the
-  ARqp-SC row for `q ≥ 3`, and the remark that only the anchored assumptions f.D1qLaB.X are used.
+* The sharpness of the IDA/EDA rows of Theorem 14.2.4 (Chapter 13 has no slow examples), the
+  ARqpIDA-SC/ARqpEDA-SC order `j(p+1)/p` for `q = 2`, `X ≠ ℝⁿ` (with (12.2.51) at every order;
+  for `q ≤ 2` the rows assume `δ = 1`), and the remark that only the anchored assumptions
+  f.D1qLaB.X (f.D0qLaB.X) are used.
 * The existence of LENq-SC and TPqp-GC runs, and the `O(·)` restatements.
 -/

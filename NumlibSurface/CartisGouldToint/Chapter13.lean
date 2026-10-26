@@ -17,14 +17,18 @@ complexity of TRq and ARqp. This module imports the section modules and adds not
   (Algorithm 13.1.2, `algorithm_13_1_2`); assumptions f.D0qL, f.D0pL (`AssumptionD0qL`,
   `AssumptionD0pL`); Lemmas 13.1.1–13.1.7, Theorem 13.1.8, Lemmas 13.1.9–13.1.18, Theorem
   13.1.19 (`theorem_13_1_19_i`, `theorem_13_1_19_ii`); existence of runs
-  (`exists_algorithm_13_1_1`, `exists_algorithm_13_1_2`)
+  (`exists_algorithm_13_1_1`, `exists_algorithm_13_1_2`); the runs with a feasible set of §14.2
+  (`algorithm_13_1_1_feasible`, `algorithm_13_1_2_feasible`, f.D0qL on an open convex set
+  `AssumptionD0qLOn`) and the `_feasible` versions of the results
 * §13.2, `Chapter13.Section02`: finite derivative-approximation schemes from low-degree oracles
   (`FiniteDerivativeApproxScheme`, with the forward-difference gradient and Hessian
   `fdGradientScheme`, `fdHessianScheme`); Theorem 13.2.1 (`theorem_13_2_1_i` for TRqIDA,
   `theorem_13_2_1_ii` for ARqpIDA)
 * §13.3, `Chapter13.Section03`: TRqEDA (Algorithm 13.3.1, `algorithm_13_3_1`), ARqpEDA
   (Algorithm 13.3.2, `algorithm_13_3_2`); Lemmas 13.3.1–13.3.3, Theorem 13.3.4, Lemmas
-  13.3.5–13.3.7, Theorem 13.3.8 (`theorem_13_3_8_i`, `theorem_13_3_8_ii`); existence of runs
+  13.3.5–13.3.7, Theorem 13.3.8 (`theorem_13_3_8_i`, `theorem_13_3_8_ii`); existence of runs;
+  the runs with a feasible set (`algorithm_13_3_1_feasible`, `algorithm_13_3_2_feasible`) and the
+  `_feasible` versions of the results
 
 Inexact derivatives at iteration `k` form a jet `D k : FormalMultilinearSeries ℝ ℝⁿ ℝ`, with
 decrements `(D k).taylorDecrement j` and measures `Optimization.taylorMeasure (D k) j δ univ`
