@@ -1,0 +1,13 @@
+namespace = "Constrained.TwoPhase"
+
+[[node]]
+id = "targetTaylorBound_le_order_mul_radius"
+
+[[node]]
+id = "completedReflectionCoefficient"
+
+[[node]]
+id = "completedReflectionCoefficient_pos"
+
+[[node]]
+id = "completed_reflection_target_drop"
