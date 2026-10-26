@@ -1,96 +1,29 @@
 namespace = "CartisGouldToint.Chapter06"
-desc = '''
-§6.1 Problems with convex constraints: assumption C.CNe and the approximate optimality measures
-(6.1.2)–(6.1.10) for `minimize_{x ∈ 𝒞} f(x)` (6.1.1). Objects on `E := EuclideanSpace ℝ (Fin n)`,
-`f : E → ℝ`, `C : Set E`. All measures are instances of `Optimization.formCriticality` (sup of
-`-A[d]^j` over `d` in the unit ball and an admissible set), with
-`𝒞(x) = Optimization.feasibleSteps C x` (= `Chapter01.feasibleDirections C x`), `𝒞¹(x, α)` and
-`𝒞²(x, α₁, α₂)` built with `Optimization.restrictedSteps`.
-
-Source issues: (6.1.5) and (6.1.9) are printed as `min … ≥ 0` without the leading minus (the
-minus is meant; compare (6.2.3) and (6.2.5)); the introductory claim that C.CNe "ensures that
-(6.1.1) has a solution" is false without further assumptions (e.g. `𝒞 = ℝ`, `f = exp`) and is not
-planned. The text's remark on norms other than Euclidean is not formalized.
-'''
 
 [[node]]
 id = "AssumptionCNe"
-kind = "def"
-desc = '''
-C.CNe: `AssumptionCNe (C : Set E) : Prop := IsClosed C ∧ Convex ℝ C ∧ C.Nonempty`.
-'''
 source = "Cartis–Gould–Toint, assumption C.CNe (Section 6.1)"
 
 [[node]]
 id = "omega1"
-kind = "def"
-desc = '''
-First-order measure (6.1.5): `omega1 f C x := Optimization.formCriticality (iteratedFDeriv ℝ 1 f x)
-(Optimization.feasibleSteps C x)`, i.e. `ω_{f,𝒞,1}(x) = -min_{d ∈ 𝒞(x) ∩ 𝓑} ⟨d, ∇f(x)⟩`
-(sign corrected). Facts (part of node, from the backbone): `0 ≤ omega1 f C x` for `x ∈ C`; for
-`C = univ` it is `‖gradient f x‖`; for convex `C` and differentiable `f`, `omega1 f C x = 0` iff
-the first-order condition (1.1.6) of Theorem 1.1.2 holds; `x_ε` is an `ε₁`-approximate first-order
-minimizer (6.1.4) iff `omega1 f C x_ε ≤ ε₁`.
-'''
-deps = ["Optimization.formCriticality", "Optimization.feasibleSteps", "Optimization.formCriticality_nonneg", "Optimization.formCriticality_one_univ", "Optimization.formCriticality_fderiv_eq_zero_iff"]
 source = "Cartis–Gould–Toint, (6.1.2)–(6.1.5)"
 
 [[node]]
 id = "restrictedSteps₁"
-kind = "def"
-desc = '''
-First-order `α`-restricted feasible steps (6.1.8): `restrictedSteps₁ f C τ₁ α x :=
-Optimization.restrictedSteps (iteratedFDeriv ℝ 1 f x) (τ₁ * α) (Optimization.feasibleSteps C x)`
-`= {d ∈ 𝒞(x) | |⟨d, ∇f(x)⟩| ≤ τ₁ α}` (`τ₁ ∈ (0,1)` prespecified). (The OCR of (6.1.8) garbles the
-absolute value bars.)
-'''
-deps = ["Optimization.restrictedSteps", "Optimization.feasibleSteps"]
 source = "Cartis–Gould–Toint, (6.1.8)"
 
 [[node]]
 id = "omega2"
-kind = "def"
-desc = '''
-Second-order measure (6.1.7): `omega2 f C τ₁ x α := Optimization.formCriticality
-(iteratedFDeriv ℝ 2 f x) (restrictedSteps₁ f C τ₁ α x)` `= -min_{d ∈ 𝒞¹(x,α) ∩ 𝓑} ⟨d, ∇²f(x) d⟩`;
-nonnegative for `x ∈ C`. `x_ε` is an `(ε₁, ε₂)`-approximate second-order minimizer if
-`omega1 f C x_ε ≤ ε₁` and `omega2 f C τ₁ x_ε ε₁ ≤ ε₂` (6.1.6). (The book's remark that
-`ω_{f,𝒞,2}(x, 0)` can be discontinuous [309, Rem. 2.4] is not formalized.)
-'''
-deps = ["restrictedSteps₁", "omega1"]
 source = "Cartis–Gould–Toint, (6.1.6)–(6.1.7)"
 
 [[node]]
 id = "restrictedSteps₂"
-kind = "def"
-desc = '''
-Second-order `(α₁, α₂)`-restricted feasible steps (6.1.10): `restrictedSteps₂ f C τ₁ τ₂ α₁ α₂ x :=
-Optimization.restrictedSteps (iteratedFDeriv ℝ 2 f x) (τ₂ * α₂) (restrictedSteps₁ f C τ₁ α₁ x)`
-`= {d ∈ 𝒞¹(x, α₁) | |⟨d, ∇²f(x) d⟩| ≤ τ₂ α₂}`.
-'''
-deps = ["restrictedSteps₁"]
 source = "Cartis–Gould–Toint, (6.1.10)"
 
 [[node]]
 id = "omega3"
-kind = "def"
-desc = '''
-Third-order measure (6.1.9): `omega3 f C τ₁ τ₂ x α₁ α₂ := Optimization.formCriticality
-(iteratedFDeriv ℝ 3 f x) (restrictedSteps₂ f C τ₁ τ₂ α₁ α₂ x)` `= -min_{d ∈ 𝒞²(x,α₁,α₂) ∩ 𝓑}
-∇³f(x)[d]³` (sign corrected: printed without the minus).
-'''
-deps = ["restrictedSteps₂"]
 source = "Cartis–Gould–Toint, (6.1.9)"
 
 [[node]]
 id = "IsApproxMinimizerCC"
-kind = "def"
-desc = '''
-Approximate `q`-th order minimizer over `𝒞` for `q ∈ {1,2,3}` (Section 6.1.1 and the Step-1 tests
-of ARp-CC): `IsApproxMinimizerCC f C τ₁ τ₂ q ε₁ ε₂ ε₃ x : Prop := omega1 f C x ≤ ε₁ ∧
-(2 ≤ q → omega2 f C τ₁ x ε₁ ≤ ε₂) ∧ (3 ≤ q → omega3 f C τ₁ τ₂ x ε₁ ε₂ ≤ ε₃)` (the book's
-`ε₂ = ε₃ = ∞` is `q = 1`, `ε₃ = ∞` is `q = 2`; restricted sets use `α = α₁ = ε₁`, `α₂ = ε₂`).
-Consistency remark (part of node): for `C = univ`, `q = 1`, this is `‖∇f(x)‖ ≤ ε₁`.
-'''
-deps = ["omega1", "omega2", "omega3"]
 source = "Cartis–Gould–Toint, (6.1.4), (6.1.6), Section 6.1.1, Step 1 of Algorithm 6.2.1"
