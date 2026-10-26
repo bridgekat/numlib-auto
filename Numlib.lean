@@ -24,7 +24,10 @@ import Numlib.Analysis.Calculus.IteratedDeriv.Analytic
 import Numlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.LineDeriv.IntegrationByParts
+import Numlib.Analysis.Calculus.LipschitzIteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Calculus.MultivariateTaylor.Basic
+import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
 import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.Calculus.Periodic
 import Numlib.Analysis.Calculus.ProdContDiff
@@ -353,6 +356,7 @@ import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 import Numlib.Analysis.SpecialFunctions.Exp
+import Numlib.Analysis.SpecialFunctions.FactorialSum
 import Numlib.Analysis.SpecialFunctions.Integrals.Basic
 import Numlib.Analysis.SpecialFunctions.Integrals.Beta
 import Numlib.Analysis.SpecialFunctions.Integrals.LogTrigonometric
@@ -363,6 +367,7 @@ import Numlib.Analysis.SpecialFunctions.PolynomialExp
 import Numlib.Analysis.SpecialFunctions.Pow.Deriv
 import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Analysis.SpecialFunctions.Sqrt
+import Numlib.Analysis.SpecialFunctions.SqrtBound
 import Numlib.Analysis.SpecialFunctions.Tribonacci
 import Numlib.Analysis.SpecialFunctions.Trigonometric.CosSum
 import Numlib.Analysis.Wavelet.ContinuousTransform

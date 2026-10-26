@@ -1,31 +1,11 @@
-desc = '''
-Lipschitz continuity of the `p`-th derivative versus a bound on the `(p+1)`-st derivative
-(Cartis–Gould–Toint Theorem A.8.5), for `f : E → F` on an open convex subset of a real normed space.
-With Mathlib's operator norms the proof needs no symmetric-tensor norm identity: the forward
-direction is the mean value inequality applied to `iteratedFDeriv ℝ p f` (whose derivative is
-`iteratedFDeriv ℝ (p+1) f` curried, `ContinuousMultilinearMap.curryLeft` being an isometry,
-cf. `norm_fderiv_iteratedFDeriv`), the converse a limit of difference quotients.
-'''
-
 [[node]]
 id = "iteratedFDerivLipschitzOn_of_norm_le"
-kind = "theorem"
-desc = '''
-Let `C` be open and convex, `ContDiffOn ℝ (p + 1) f C`, and `∀ x ∈ C, ‖iteratedFDeriv ℝ (p + 1) f x‖
-≤ L`. Then `IteratedFDerivLipschitzOn f p L C`, i.e. `‖D^p f x - D^p f y‖ ≤ L ‖x - y‖` on `C`.
-'''
-deps = ["IteratedFDerivHolderOn"]
 source = "Cartis–Gould–Toint, Theorem A.8.5 (⇐)"
 
 [[node]]
 id = "norm_iteratedFDeriv_succ_le_of_lipschitzOn"
-kind = "theorem"
-desc = '''
-Let `C` be open, `ContDiffOn ℝ (p + 1) f C` and `IteratedFDerivLipschitzOn f p L C`. Then
-`∀ x ∈ C, ‖iteratedFDeriv ℝ (p + 1) f x‖ ≤ L`. (Theorem A.8.5 is the conjunction of this and
-`iteratedFDerivLipschitzOn_of_norm_le` for open convex `C`.) Corollary used throughout the book:
-`f.gL` with constant `L` gives `‖∇²f(x)‖ ≤ L` for `C²` functions, and conversely `f.HBa`
-(`‖∇²f‖ ≤ κ_H`) gives `f.gL` with `L = κ_H`.
-'''
-deps = ["IteratedFDerivHolderOn"]
 source = "Cartis–Gould–Toint, Theorem A.8.5 (⇒)"
+
+[[node]]
+id = "iteratedFDerivLipschitzOn_iff_norm_le"
+source = "Cartis–Gould–Toint, Theorem A.8.5"
