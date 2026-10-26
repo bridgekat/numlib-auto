@@ -1,0 +1,43 @@
+desc = '''
+Integer powers `s ↦ ‖s‖ ^ (p + 1)` of the norm of a real inner product space, everywhere including
+the origin: smoothness of order `p`, explicit bounds on all derivatives of order `≤ p + 1` and the
+Lipschitz constant of the `p`-th derivative. These are the regularization terms
+`σ/(p+1)! ‖s‖^{p+1}` of the high-order adaptive-regularization models (Cartis–Gould–Toint (4.1.2),
+(12.2.23), (13.1.45)); the bounds are the integer-exponent case of Lemma B.4.1 ((B.4.1), (B.4.3)).
+
+Planned here (plan-ch13) because the inexact ARqp analysis of Chapter 13 needs them with explicit
+constants; `Numlib/Analysis/InnerProductSpace/NormPow` only gives smoothness off `0` and existential
+constants (`exists_norm_iteratedFDeriv_normRpow_le`), `NormPowHessian` stops at order 2.
+Consolidation: merge with the Chapter 4 / Appendix B planner's Lemma B.4.1 nodes if they exist
+(keep the general real-exponent version there; these become corollaries).
+
+Proof hint: for `r = p + 1` write `‖s‖^r = (⟪s,s⟫)^{r/2}`; by induction the `ℓ`-th derivative at
+`s ≠ 0` is `∑` of terms `c · ‖s‖^{r - 2m} ⟪s,v_{i₁}⟫⋯ ⟪v_{j},v_{j'}⟫⋯`, whose operator norm is at
+most `r(r-1)⋯(r-ℓ+1) ‖s‖^{r-ℓ}`; at `s = 0` all derivatives of order `< r` vanish (for `r` even the
+function is a polynomial). An alternative avoiding the expansion: one-dimensional restriction
+`t ↦ ‖s + t v‖^r` and polarization is NOT enough for operator norms of non-symmetric bounds, so
+the direct expansion is recommended.
+'''
+
+[[node]]
+id = "contDiff_norm_pow_succ"
+kind = "theorem"
+desc = '''
+On a real inner product space `E`: `ContDiff ℝ p (fun s : E => ‖s‖ ^ (p + 1))` for every `p : ℕ`
+(and `ContDiff ℝ ⊤` when `p + 1` is even; `ContDiffAt ℝ ⊤` at every `s ≠ 0`).
+'''
+deps = ["contDiffOn_normRpow"]
+source = "Cartis–Gould–Toint, Lemma 12.2.7 (smoothness of the model), Lemma B.4.1"
+
+[[node]]
+id = "norm_iteratedFDeriv_norm_pow_succ_le"
+kind = "theorem"
+desc = '''
+For `ℓ ≤ p` and all `s : E`: `‖iteratedFDeriv ℝ ℓ (fun s => ‖s‖ ^ (p + 1)) s‖ ≤
+(p + 1)! / (p + 1 - ℓ)! * ‖s‖ ^ (p + 1 - ℓ)` (B.4.1, integer exponent). Moreover the `p`-th
+derivative is `(p+1)!`-Lipschitz: `IteratedFDerivLipschitzOn (fun s => ‖s‖ ^ (p + 1)) p (p + 1)! univ`
+(the content of (B.4.3), `‖∇^{p+1}‖s‖^{p+1}‖ = (p+1)!` off the origin, via Theorem A.8.5 on the
+segments avoiding `0` and continuity).
+'''
+deps = ["contDiff_norm_pow_succ", "IteratedFDerivHolderOn", "iteratedFDerivLipschitzOn_of_norm_le"]
+source = "Cartis–Gould–Toint, Lemma B.4.1, (B.4.1), (B.4.3)"

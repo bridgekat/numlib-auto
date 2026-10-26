@@ -1,0 +1,68 @@
+namespace = "CartisGouldToint.Chapter13"
+desc = '''
+§13.2 Fast convergence using low-degree oracles. Inexact derivatives of degrees `o+1..r` (`r = q`
+for TRqIDA, `p` for ARqpIDA) may be produced by a *finite derivative-approximation scheme* from
+oracles of degree `≤ o` (finite differences (13.2.1), multivariate interpolation (13.2.2)–(13.2.4)),
+with errors of the IDA form (13.1.2). Theorem 13.2.1 is then a corollary of Theorems 13.1.8 and
+13.1.19 once oracle calls are counted: each function value costs one oracle call and each
+derivative estimate at most `c` calls, so the number of oracle calls before the first approximately
+optimal iterate is at most `#F + c · #D`.
+
+Formalization: a scheme is a deterministic map from (point, requested accuracies) to an inexact jet
+satisfying `Optimization.JetApprox` with exact derivatives of orders `≤ o` and a declared per-estimate
+cost `c` (oracle calls of degree `≤ o`); the oracle-call semantics are a counting convention, as for
+all evaluation counts of the book. Concrete schemes (non-vacuity): forward-difference gradients
+(`o = 0`, `r = 1`, `c = n`) and Hessians from gradient differences (`o = 1`, `r = 2`, `c = n`), from
+`FiniteDifference/Gradient`. The general stencil claim (13.2.1) is acknowledged by the book as
+unproved in the literature (footnote 93) and the interpolation bound (13.2.4) is cited; neither is
+planned. The DFO discussion is not formalized.
+'''
+
+[[node]]
+id = "FiniteDerivativeApproxScheme"
+kind = "def"
+desc = '''
+`structure FiniteDerivativeApproxScheme (f : E → ℝ) (o r : ℕ) (κ∇ : ℕ → ℝ) where
+est : E → (ℕ → ℝ) → FormalMultilinearSeries ℝ E ℝ; cost : ℕ;
+approx : ∀ x h, (∀ i, 0 ≤ h i) → Optimization.JetApprox (ftaylorSeries ℝ f x) (est x h) r
+(fun i => κ∇ i * h i); exact_low : ∀ x h, ∀ i ≤ o, est x h i = iteratedFDeriv ℝ i f x`
+(degree-`≤ o` information is exact; `cost` = oracle calls of degree `≤ o` per estimate).
+Example instances (part of node): `FiniteDifference.fdGradient` gives a scheme with `o = 0`, `r = 1`,
+`κ∇ 1 = √n L₁/2`, `cost = n` under f.gL; `FiniteDifference.fdHessian` (of the gradient) a scheme with
+`o = 1`, `r = 2`, `κ∇ 2 = √n L₂/2`, `cost = n` under f.HL.
+'''
+deps = ["Optimization.JetApprox", "FiniteDifference.norm_fdGradient_sub_gradient_le", "FiniteDifference.norm_fdHessian_sub_le"]
+source = "Cartis–Gould–Toint, Section 13.2 (finite derivative-approximation scheme)"
+
+[[node]]
+id = "theorem_13_2_1_i"
+kind = "theorem"
+desc = '''
+Theorem 13.2.1, trust-region part. Let `AssumptionD0qL f q L`, `AssumptionBb f flow`,
+`o ∈ Icc 0 q`, and `S : FiniteDerivativeApproxScheme f o q κ∇`. For every TRqIDA run with
+`D k = S.est (x k) (h k)` for all `k` (such runs exist by `algorithm_13_1_1`), with `kε` the first hit
+of `trTest` (Theorem 13.1.8), the number of oracle calls
+`derivEvalCount (¬ acc ·) kε + S.cost * derivEvalCount (S ∨ A) kε` is at most
+`#F + S.cost * #D` with `#F, #D` the bounds of Theorem 13.1.8, hence `≤ C max_j ε_j^{-(q+1)}` for a
+constant `C` independent of `ε` (all `ε ∈ (0,1]^q`; the `|log ε_min|` terms are absorbed by
+`|log t| ≤ t⁻¹` on `(0,1]`).
+Correction: the book's (13.2.5) reads `O(min_j ε_j^{-(q+1)})`; the bound is `O(max_j ε_j^{-(q+1)}) =
+O(ε_min^{-(q+1)})` (consistent with (13.1.38)–(13.1.39)).
+'''
+deps = ["FiniteDerivativeApproxScheme", "theorem_13_1_8", "algorithm_13_1_1"]
+source = "Cartis–Gould–Toint, Theorem 13.2.1, (13.2.5)"
+
+[[node]]
+id = "theorem_13_2_1_ii"
+kind = "theorem"
+desc = '''
+Theorem 13.2.1, regularization part. Let `AssumptionD0pL f p L`, `AssumptionBb f flow`,
+`o ∈ Icc 0 q`, `S : FiniteDerivativeApproxScheme f o p κ∇`. For every ARqpIDA run with
+`D k = S.est (x k) (h k)` and `RadiiControl` at every iteration (such runs exist), with `kε` the first
+hit of `arTest` (Theorem 13.1.19), the number of oracle calls `#F + S.cost * #D` is
+`O(max_j ε_j^{-(p+1)/(p-q+1)})` if `q ≤ 2` and `O(max_j ε_j^{-q(p+1)/p})` if `q > 2` (explicit bounds
+from `theorem_13_1_19_i`/`_ii`). Correction: (13.2.6)–(13.2.7) print `min_j`, which should be
+`max_j ε_j^{-…}` (equivalently `ε_min^{-…}`, the exponent being largest for `j = q`).
+'''
+deps = ["FiniteDerivativeApproxScheme", "theorem_13_1_19_i", "theorem_13_1_19_ii", "algorithm_13_1_2"]
+source = "Cartis–Gould–Toint, Theorem 13.2.1, (13.2.6)–(13.2.7)"

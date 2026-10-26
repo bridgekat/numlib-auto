@@ -1,0 +1,54 @@
+namespace = "FiniteDifference"
+desc = '''
+Forward-difference approximations of gradients (from function values) and of Hessians (from
+gradient values) on `EuclideanSpace ℝ (Fin n)`, with error bounds of the "dynamic accuracy" form
+`‖approx - exact‖ ≤ κ h` (Cartis–Gould–Toint (13.1.2) with requested accuracy `h` = the difference
+step), where `κ` depends on a Lipschitz constant of the next derivative. These are the concrete
+"finite derivative-approximation schemes" of §13.2 (oracles of degree `o = 0` resp. `o = 1`
+producing derivatives of degree `1` resp. `2` with `n` oracle calls), used to show that
+Theorem 13.2.1 is not vacuous. The multivariate one-dimensional forward differences of
+`FiniteDifference/Derivative` (on `ℝ → ℝ`) are the coordinate pieces.
+
+Error analysis: (A.19) for `p = 1` (gradient Lipschitz ⇒ `|f(x + h e_i) - f x - h ∂_i f(x)| ≤ L₁h²/2`),
+and the same for the gradient map (Hessian Lipschitz ⇒ each column error `≤ L₂ h/2`); the operator norm
+is bounded by the Euclidean/Frobenius norm, giving the factor `√n`.
+General stencils (13.2.1) and interpolation models (13.2.2)–(13.2.4) are cited by the book from the
+literature (footnote 93: "we were unable to find precisely this result in the literature") and are
+not planned.
+'''
+
+[[node]]
+id = "fdGradient"
+kind = "def"
+desc = '''
+`fdGradient (f : EuclideanSpace ℝ (Fin n) → ℝ) (h : ℝ) (x) : EuclideanSpace ℝ (Fin n) :=
+fun i => (f (x + h • EuclideanSpace.single i 1) - f x) / h` (forward differences, book §13.2), and
+`fdHessian (g : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)) (h) (x) :
+EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)` the linear map whose `j`-th column is
+`(g (x + h • e_j) - g x) / h` (applied to `g = gradient f`).
+'''
+source = "Cartis–Gould–Toint, Section 13.2 (finite differences)"
+
+[[node]]
+id = "norm_fdGradient_sub_gradient_le"
+kind = "theorem"
+desc = '''
+If `f` is differentiable with `‖fderiv ℝ f x - fderiv ℝ f y‖ ≤ L₁ ‖x - y‖` (f.gL) and `h > 0`, then
+`‖fdGradient f h x - gradient f x‖ ≤ √n * L₁ / 2 * h`; hence the jet `(f x, fdGradient f h x)` (as
+`FormalMultilinearSeries`, order-1 term `innerSL ℝ (fdGradient f h x)`, other orders exact) satisfies
+`Optimization.JetApprox (ftaylorSeries ℝ f x) _ 1 (fun _ => √n L₁/2 * h)`.
+'''
+deps = ["fdGradient", "Optimization.JetApprox", "abs_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, Section 13.2, first display"
+
+[[node]]
+id = "norm_fdHessian_sub_le"
+kind = "theorem"
+desc = '''
+If `f` is `C²` with `‖∇²f(x) - ∇²f(y)‖ ≤ L₂ ‖x - y‖` (f.HL) and `h > 0`, then
+`‖fdHessian (gradient f) h x - Optimization.hessianOperator f x‖ ≤ √n * L₂ / 2 * h`; correspondingly
+the jet with exact orders `0, 1` and order-2 term built from `fdHessian` satisfies
+`Optimization.JetApprox (ftaylorSeries ℝ f x) _ 2 (fun i => if i = 2 then √n L₂/2 * h else 0)`.
+'''
+deps = ["fdGradient", "Optimization.JetApprox", "Optimization.hessianOperator", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"]
+source = "Cartis–Gould–Toint, Section 13.2, fourth display"

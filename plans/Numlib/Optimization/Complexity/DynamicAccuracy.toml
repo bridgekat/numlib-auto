@@ -1,0 +1,69 @@
+namespace = "Optimization"
+desc = '''
+Counting arguments for methods with *accuracy-improving* iterations (Cartis–Gould–Toint Chapter 13,
+"dynamic accuracy"; also useful for any method with "neutral" iterations that change neither the
+iterate nor the trust-region radius / regularization parameter). Iterations are partitioned into
+successful `S`, unsuccessful `U` (together the trial iterations `T = S ∪ U`, which cost one function
+evaluation) and accuracy-improving `A` (requested accuracies `h` multiplied by `γ_h ∈ (0,1)`, iterate
+and radius unchanged).
+
+The core lemmas `le_delta_of_trUpdate`, `sigma_le_max_of_arUpdate` assume the update rule at every
+iteration; the variants here allow neutral iterations (`Δ_{k+1} = Δ_k`, `σ_{k+1} = σ_k`).
+`card_fail_mul_log_le` (core) already allows neutral iterations, which gives Lemmas 13.1.1 and 13.1.9
+directly. Suggestion for consolidation: the neutral variants could replace the core lemmas (the core
+statements are the case "no neutral iteration").
+'''
+
+[[node]]
+id = "le_delta_of_trUpdate_of_neutral"
+kind = "theorem"
+desc = '''
+Variant of `le_delta_of_trUpdate` with neutral iterations. Let `θ : ℕ → ℝ` be antitone on `[0, K]`,
+`neutral : ℕ → Prop`, and for every `k < K`: either `neutral k ∧ Δ (k+1) = Δ k`, or
+`TRUpdate η₁ η₂ γ₁ γ₂ γ₃ (ρ k) (Δ k) (Δ (k+1))` together with `Δ k < θ k → η₂ ≤ ρ k`
+(`0 < γ₁ < 1`). Then `min (Δ 0) (γ₁ * θ k) ≤ Δ k` for all `k ≤ K`.
+(TRqIDA/TRqEDA Lemma 13.1.4 is the instance `θ_k = min ϑ (κ_Δ/γ₁ · min_{i ∈ T_k} φ̂_i)`.)
+'''
+deps = ["TRUpdate", "le_delta_of_trUpdate"]
+source = "Cartis–Gould–Toint, Lemma 13.1.4 (mechanism), proof in Appendix B"
+
+[[node]]
+id = "sigma_le_max_of_arUpdate_of_neutral"
+kind = "theorem"
+desc = '''
+Variant of `sigma_le_max_of_arUpdate` with neutral iterations: if for every `k < K` either
+`σ (k+1) = σ k`, or `ARUpdate η₁ η₂ γ₁ γ₂ γ₃ σmin (ρ k) (σ k) (σ (k+1))` together with
+`σbar ≤ σ k → η₂ ≤ ρ k`, then `σ k ≤ max (σ 0) (γ₃ * σbar)` for all `k ≤ K`.
+'''
+deps = ["ARUpdate", "sigma_le_max_of_arUpdate"]
+source = "Cartis–Gould–Toint, Lemmas 13.1.14, 13.3.5 (mechanism)"
+
+[[node]]
+id = "card_accuracyImproving_le"
+kind = "theorem"
+desc = '''
+Number of accuracy-improving iterations. Let `acc : ℕ → Prop`, `hmax : ℕ → ℝ` with
+`0 < hmax 0 ≤ κh`, `hmax (k+1) = γh * hmax k` if `acc k` and `hmax (k+1) = hmax k` otherwise
+(`γh ∈ (0,1)`), and `c > 0`. If every `k < K` with `acc k` has `c < hmax k`, then
+`|(range K).filter acc| ≤ Real.log (c / κh) / Real.log γh + 1`, hence
+`≤ (N_ε |log c'| + |log (κacc/κh)|)/|log γh| + 1` when `c = κacc * c'` (book: `c' = ε_min^{q(q+1)}`
+or `ε_min^{p(q+1)}`, `N_ε = q(q+1)` or `p(q+1)`). Proof: `hmax k = γh^{|A_{k-1}|} hmax 0`; at the last
+accuracy-improving iteration `k < K`, `c < γh^{|A|-1} κh`.
+'''
+source = "Cartis–Gould–Toint, proofs of Theorems 13.1.8, 13.1.19 (the root i_{h,ε})"
+
+[[node]]
+id = "exists_firstHit_le_of_dynamicAccuracy"
+kind = "theorem"
+desc = '''
+Complexity skeleton with accuracy-improving iterations. Let `test acc succ : ℕ → Prop` and write
+`T k := ¬ acc k`, `S k := ¬ acc k ∧ succ k`. Suppose there are reals `NT NA` such that for every
+`k` with `∀ j ≤ k, ¬ test j`: `|(range (k+1)).filter T| ≤ NT` and `|(range (k+1)).filter acc| ≤ NA`.
+Then there is `kε` with `IsFirstHit test kε` and `kε ≤ NT + NA`; moreover the counts before `kε`
+satisfy `|(range kε).filter T| ≤ NT` and `|(range kε).filter acc| ≤ NA` (the bounds at `kε - 1`,
+or trivial if `kε = 0`). Typical use: `NT` from Lemma 13.1.1/13.1.9 and the bound on `|S|`
+(decrease ⇒ `card_mul_le_of_decrease`), `NA` from `card_accuracyImproving_le`; evaluation counts are
+then `derivEvalCount T kε` (function values, IDA), `derivEvalCount (S ∨ acc) kε` (derivatives).
+'''
+deps = ["IsFirstHit", "successSet", "funEvalCount"]
+source = "Cartis–Gould–Toint, proofs of Theorems 13.1.8, 13.1.19, 13.3.4, 13.3.8"
