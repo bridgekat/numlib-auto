@@ -39,7 +39,8 @@ subproblems. It therefore has no declaration of its own.
 * `lemma_14_2_2_trq`, `lemma_14_2_3_trq`, `theorem_14_2_4_trq` — the TRq-SC rows (from
   Chapter 12's TRq with a feasible set; Lemma 14.2.3 through Lemma 12.2.3 with a feasible set);
   `lemma_14_2_2_arqp`, `lemma_14_2_3`, `theorem_14_2_4_arqp` — the ARqp-SC rows (from Chapter 12's
-  ARqp with a feasible set);
+  ARqp with a feasible set), in either radii mode `u` (unit radii, order `(p+1)/(p-j+1)`, or
+  (12.2.51) at every order, order `j(p+1)/p`; `Chapter12.arqpPiOf u`);
 * `lemma_14_2_2_trqida`, `lemma_14_2_3_trqida`, `theorem_14_2_4_trqida` (TRqIDA-SC),
   `lemma_14_2_2_trqeda`, `lemma_14_2_3_trqeda`, `theorem_14_2_4_trqeda` (TRqEDA-SC),
   `lemma_14_2_2_arqpida`, `lemma_14_2_3_arqpida`, `theorem_14_2_4_arqpida` (ARqpIDA-SC),
@@ -73,6 +74,10 @@ subproblems. It therefore has no declaration of its own.
   iterate. The ARqpIDA-SC row of Lemma 14.2.2 holds at successful iterations followed by an
   iterate that is not approximately optimal, and the ARqpEDA-SC row needs `θ < ς/2` and holds at
   the successful iterations of Lemma 13.3.7 (the corrections of Lemmas 13.1.18 and 13.3.7).
+* The ARqp-SC rows are stated by radii mode `u` (exponents `Chapter12.arqpPiOf u`), while the
+  table keys them by `(q, X)`: the mode `u = False` ((12.2.51) at every order) gives the
+  "otherwise" entries `j(p+1)/p` for every `q` and `X`, and the unit-radii entries
+  `(p+1)/(p-j+1)` hold under the hypothesis that the radii are `1`.
 * The IDA/EDA regularization rows are stated by radii mode (`Chapter13.RadiiControlOf u`), while
   the table keys them by `(q, X)`. On `ℝⁿ` with `q ≤ 2` every ARqpIDA run satisfies the
   unit-radii bound of the table in either mode (`theorem_14_2_4_arqpida_le_two`, a strengthening
@@ -470,25 +475,28 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {f : E →
 /-- **Lemma 14.2.2** of [cartis2022evaluation], ARqp-SC row (Lemma 12.2.13 with a feasible set):
 for an ARqp-SC run (`Chapter12.algorithm_12_2_2_feasible`, `X ⊆ C`) under f.D1pL on an open convex
 `C` and `θ < ς`, every successful iteration `k` not followed by termination decreases `f` by at
-least `η₁ κ_{Δm} min_j ε_j^{π_j}`, provided the radius policy holds (`δ_{k+1,j} = 1` if `q ≤ 2`,
-(12.2.51) otherwise), with `π_j = Chapter12.arqpPi p q j`. (The book's exponent table needs
-`δ_{k,2} = 1` only when `X = ℝⁿ` and `δ_{k,1} = 1` only for convex `X`; here this is the
-hypothesis on the radii.) -/
+least `η₁ κ_{Δm} min_j ε_j^{π_j}`, provided the radius policy holds in radii mode `u`: unit radii
+`δ_{k+1,j} = 1` (`u`, `π_j = (p+1)/(p-j+1)`), or a long step or the lower bound (12.2.51) at every
+order (`¬ u`, `π_j = j(p+1)/p`), with `π_j = Chapter12.arqpPiOf u p j` and
+`κ_{Δm} = Chapter12.arqpKappaDmOf u`. The mode `u = False` gives the "otherwise" entry
+`j(p+1)/p` of the table for every `q` and `X`; the unit-radii entries need `δ_{k,2} = 1` (the
+table's `X = ℝⁿ`, `q = 2`) and `δ_{k,1} = 1` (convex `X`), which here is the hypothesis `u` on the
+radii. The book's split is the mode `u = (q ≤ 2)` (`Chapter12.arqpPi`, `Chapter12.arqpKappaDm`). -/
 theorem lemma_14_2_2_arqp (hf : Chapter12.AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
     (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i)
     (hs : P.η₁ ≤ Chapter12.arqpRho f p x s σ k)
     (hk1 : ¬ Optimization.arqpStop₁ P q ε (Chapter12.arqpData f p x σ) δ d (k + 1))
-    (hrad : (q ≤ 2 → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
-      (2 < q → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+    {u : Prop} [Decidable u] (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
+      (¬ u → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
         Chapter12.arqpKappaDelta P (Chapter12.finMax 1 L p)
           (Optimization.arSigmaMax P.toARParams (L p)) * ε j ≤ δ (k + 1) j)) :
-    Chapter12.arqpKappaDm P L p q *
-        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPi p q j) q ≤
+    Chapter12.arqpKappaDmOf u P L p q *
+        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q ≤
         (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
-      P.η₁ * (Chapter12.arqpKappaDm P L p q *
-        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPi p q j) q) ≤
+      P.η₁ * (Chapter12.arqpKappaDmOf u P L p q *
+        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q) ≤
         f (x k) - f (x (k + 1)) :=
   Chapter12.lemma_12_2_13_feasible hf hXC hq hqp hθς hε h hk hs hk1 hrad
 
@@ -507,30 +515,33 @@ theorem lemma_14_2_3 (hf : Chapter12.AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], ARqp-SC row (Theorem 12.2.14 with a feasible
 set): under f.bB.X, f.D1pL on an open convex `C ⊇ X`, `σ_min > 0`, `θ < ς` and the radius policy
-(`δ = 1` when `q ≤ 2`, (12.2.51) otherwise), every ARqp-SC run terminates at some `k_ε` with
-`x_{k_ε} ∈ X` and an `(ε, δ_ε)`-approximate `q`-th order certificate over
-`{d | x_{k_ε} + d ∈ X}`, within the bounds of Theorem 12.2.14 (orders
-`O(max_j ε_j^{-π_j})`, `π_j = arqpPi p q j`). -/
+in radii mode `u` (`δ = 1` if `u`, (12.2.51) at every order if `¬ u`), every ARqp-SC run
+terminates at some `k_ε` with `x_{k_ε} ∈ X` and an `(ε, δ_ε)`-approximate `q`-th order
+certificate over `{d | x_{k_ε} + d ∈ X}`, within the bounds of Theorem 12.2.14 (orders
+`O(max_j ε_j^{-π_j})`, `π_j = Chapter12.arqpPiOf u p j`). The mode `u = False` gives the
+"otherwise" order `j(p+1)/p` of the table for every `q` and `X`; the book's split is the mode
+`u = (q ≤ 2)` (`Chapter12.arqpPi`). -/
 theorem theorem_14_2_4_arqp {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
     (hf : Chapter12.AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm)
-    (hrad : (q ≤ 2 → (∀ j ∈ Finset.Icc 1 q, δ₀ j = 1) ∧
+    {u : Prop} [Decidable u]
+    (hrad : (u → (∀ j ∈ Finset.Icc 1 q, δ₀ j = 1) ∧
         ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) →
           ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
-      (2 < q → ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
+      (¬ u → ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
         ∀ j ∈ Finset.Icc 1 q,
           Chapter12.arqpKappaDelta P (Chapter12.finMax 1 L p) (σ k) * ε j ≤ δs k j)) :
     ∃ kε, Optimization.IsFirstHit (Chapter12.arqpStop f P p q ε x s σ δ d) kε ∧ x kε ∈ X ∧
       (∃ δε : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, δε j ∈ Ioc 0 1) ∧
         Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε δε) ∧
-      (Optimization.funEvalCount kε : ℝ) ≤ Chapter12.kappaAARqp P L p q * (f (x 0) - flow) /
-        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPi p q j) q +
+      (Optimization.funEvalCount kε : ℝ) ≤ Chapter12.kappaAARqpOf u P L p q * (f (x 0) - flow) /
+        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q +
           Chapter12.kappaCARqp P L p ∧
       (Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.arqpRho f p x s σ k) kε : ℝ) ≤
-        Chapter12.kappaSARqp P L p q * (f (x 0) - flow) /
-          Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPi p q j) q + 2 :=
+        Chapter12.kappaSARqpOf u P L p q * (f (x 0) - flow) /
+          Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q + 2 :=
   Chapter12.theorem_12_2_14_feasible hb hf hXC hq hqp hσmin hθς hε hδ₀ h hrad
 
 end ARqpSC

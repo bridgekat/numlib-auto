@@ -36,7 +36,9 @@ derivatives and one per successful iteration before `k`).
 * `algorithm_12_2_1` (TRq), with its test `trqStop`;
 * `algorithm_12_2_2` (ARqp), with its test `arqpStop`; `algorithm_12_2_3`;
 * `arqpKappaDelta` (`κ_δ(σ)`), `arqpTau` (`τ_j`), `arqpKappaHat` (the corrected `κ̂`),
-  `arqpKappaDm` (`κ_{Δm}`), `arqpPi` (`π_j`);
+  `arqpKappaDm` (`κ_{Δm}`), `arqpPi` (`π_j`); per radii mode `u` (unit radii, or the lower bound
+  (12.2.51) at every order) `arqpKappaDmOf u`, `arqpPiOf u`, `kappaSARqpOf u`, `kappaAARqpOf u`
+  (the book's constants are the mode `u = (q ≤ 2)`);
 * `IsARqpGlobalStepRun` — the scenario of Theorem 12.2.15.
 
 ## Main results
@@ -49,7 +51,9 @@ derivatives and one per successful iteration before `k`).
 * Feasible sets (TRq-SC, ARqp-SC of §14.2): `AssumptionD1pLOn` (f.D1pL on an open convex
   `C ⊇ X`), `algorithm_12_2_1_feasible`, `algorithm_12_2_2_feasible` (`X = univ` is the
   unconstrained case), `lemma_12_2_4_feasible`, `lemma_12_2_13_feasible`,
-  `theorem_12_2_5_feasible`, `theorem_12_2_14_feasible`, `isEpsDeltaApprox_of_isMinOn_zero`;
+  `theorem_12_2_5_feasible`, `theorem_12_2_14_feasible`, `isEpsDeltaApprox_of_isMinOn_zero`
+  (the ARqp results with a feasible set are stated for either radii mode; the lower-bound mode
+  gives the order `j(p+1)/p` for every `q`);
 * Algorithm 12.2.3: `detailedStep_terminates`, `detailedStep_exists_trans` (every execution
   returns), `algorithm_12_2_2_exists_of_D1pL` (runs with the radii property (12.2.50)).
 
@@ -1739,8 +1743,10 @@ end Constants
 /-- The common core of Lemmas 12.2.12 and 12.2.13 for one iteration (local form): for a step `t`
 from `y` satisfying the Step-2 conditions with weight `0 ≤ σ_k ≤ σ_max` and strict model decrease,
 such that the Step-1 test at `y + t` with the radii `δs` fails, under the radii hypotheses of
-Lemma 12.2.12 some order `j ∈ [1:q]` satisfies `τ_j ε_j/2 ≤ ‖t‖^{p-j+1}` if `q ≤ 2` and
-`(τ_j/2) κ̂^{j-1} ε_j^j ≤ ‖t‖^p` if `q > 2`. -/
+Lemma 12.2.12 in radii mode `u` (unit radii `δ_j = 1` if `u`; a long step or the lower bound
+(12.2.51) `δ_j ≥ κ_{δ,min} ε_j` at every order if `¬ u`) some order `j ∈ [1:q]` satisfies
+`τ_j ε_j/2 ≤ ‖t‖^{p-j+1}` if `u` and `(τ_j/2) κ̂^{j-1} ε_j^j ≤ ‖t‖^p` if `¬ u`. The book uses the
+mode `u = (q ≤ 2)`; the lower-bound mode is valid for every `q`. -/
 theorem arqp_core_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
     (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) {y t : E}
     (hy : y ∈ X) {σk : ℝ}
@@ -1752,12 +1758,12 @@ theorem arqp_core_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 
       ((ftaylorSeries ℝ f (y + t)).taylorDecrement j) (δk j) {e | y + t + e ∈ X} P.ς (d' j))
     (hfail : ¬ MeasureTestPasses (fun j => (ftaylorSeries ℝ f (y + t)).taylorDecrement j) q P.ς
       ε δk d')
-    (hrad : (q ≤ 2 → ∀ j ∈ Finset.Icc 1 q, δk j = 1) ∧
-      (2 < q → 1 ≤ ‖t‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+    {u : Prop} (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δk j = 1) ∧
+      (¬ u → 1 ≤ ‖t‖ ∨ ∀ j ∈ Finset.Icc 1 q,
         arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) * ε j ≤ δk j)) :
     ∃ j ∈ Finset.Icc 1 q,
-      (q ≤ 2 → arqpTau P L p j * ε j / 2 ≤ ‖t‖ ^ (p - j + 1)) ∧
-      (2 < q → arqpTau P L p j / 2 * arqpKappaHat P L p q ^ (j - 1) * ε j ^ j ≤ ‖t‖ ^ p) := by
+      (u → arqpTau P L p j * ε j / 2 ≤ ‖t‖ ^ (p - j + 1)) ∧
+      (¬ u → arqpTau P L p j / 2 * arqpKappaHat P L p q ^ (j - 1) * ε j ^ j ≤ ‖t‖ ^ p) := by
   have hp : 1 ≤ p := hq.trans hqp
   have hLp : 1 ≤ L p := hf.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
   have ht : 0 < ‖t‖ := norm_pos_iff.2 (ne_zero_of_regularizedModel_lt hlt)
@@ -1834,9 +1840,11 @@ theorem arqp_step_core (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p
   have hσ := arqp_sigma_le hf.on_univ (subset_univ _) hp h k fun i hi => hk i hi.le
   have hstep := h.step (fun i hi => hk i hi.le) fun h1 => hk k le_rfl (Or.inl h1)
   rw [(arqp_succ h hk hs).2] at hrad
-  exact arqp_core_local hf.on_univ (subset_univ _) hq hqp hθς hε (mem_univ _)
+  obtain ⟨j, hj, h1, h2⟩ := arqp_core_local hf.on_univ (subset_univ _) hq hqp hθς hε (mem_univ _)
     (P.σmin_nonneg.trans hσ.1) hσ.2 hstep (h.model_lt hk)
-    (arqp_next_witness h hk hs) (arqp_next_fail h hk hs hk1) hrad
+    (arqp_next_witness h hk hs) (arqp_next_fail h hk hs hk1) (u := q ≤ 2)
+    ⟨hrad.1, fun h' => hrad.2 (not_le.1 h')⟩
+  exact ⟨j, hj, h1, fun h' => h2 (not_le.2 h')⟩
 
 /-- **Lemma 12.2.12** of [cartis2022evaluation] (corrected). Under f.D1pL with `1 ≤ q ≤ p` and
 `θ < ς`, let iteration `k` of an ARqp run be successful and before termination, and let the
@@ -1889,48 +1897,89 @@ theorem lemma_12_2_12 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
           ring
       _ ≤ ‖s k‖ := rpow_one_div_le_of_le_pow (by omega) (by positivity) (norm_nonneg _) (h2 hq2)
 
-/-- The exponents `π_j` of Lemma 12.2.13 ([cartis2022evaluation]): `(p+1)/(p-j+1)` if
-`q ∈ {1, 2}`, `j(p+1)/p` if `q > 2`. -/
-noncomputable def arqpPi (p q j : ℕ) : ℝ :=
-  if q ≤ 2 then ((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ) else (j : ℝ) * (p + 1) / p
+/-- The exponents `π_j` of Lemma 12.2.13 ([cartis2022evaluation]) in radii mode `u`:
+`(p+1)/(p-j+1)` for unit radii (`u`), `j(p+1)/p` under the lower bound (12.2.51) at every
+order (`¬ u`). -/
+noncomputable def arqpPiOf (u : Prop) [Decidable u] (p j : ℕ) : ℝ :=
+  if u then ((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ) else (j : ℝ) * (p + 1) / p
 
-/-- The constant `κ_{Δm}` of Lemma 12.2.13 ([cartis2022evaluation]):
-`σ_min/(p+1)! (τ_q/2)^{(p+1)/(p-q+1)}` if `q ∈ {1, 2}`, and
-`σ_min/(p+1)! ((τ_q/2) κ̂^{q-1})^{q(p+1)/p}` if `q > 2` (with the corrected `κ̂`). -/
-noncomputable def arqpKappaDm (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) : ℝ :=
-  if q ≤ 2 then
+/-- The exponents `π_j` of Lemma 12.2.13 ([cartis2022evaluation]): `(p+1)/(p-j+1)` if
+`q ∈ {1, 2}`, `j(p+1)/p` if `q > 2` (the radii mode `u = (q ≤ 2)` of `arqpPiOf`). -/
+noncomputable def arqpPi (p q j : ℕ) : ℝ := arqpPiOf (q ≤ 2) p j
+
+/-- The constant `κ_{Δm}` of Lemma 12.2.13 ([cartis2022evaluation]) in radii mode `u`:
+`σ_min/(p+1)! (τ_q/2)^{(p+1)/(p-q+1)}` for unit radii (`u`), and
+`σ_min/(p+1)! ((τ_q/2) κ̂^{q-1})^{q(p+1)/p}` under (12.2.51) (`¬ u`, with the corrected `κ̂`). -/
+noncomputable def arqpKappaDmOf (u : Prop) [Decidable u] (P : ARqpParams) (L : ℕ → ℝ)
+    (p q : ℕ) : ℝ :=
+  if u then
     P.σmin / ((p + 1)! : ℝ) * (arqpTau P L p q / 2) ^ (((p + 1 : ℕ) : ℝ) / ((p - q + 1 : ℕ) : ℝ))
   else
     P.σmin / ((p + 1)! : ℝ) * (arqpTau P L p q / 2 * arqpKappaHat P L p q ^ (q - 1)) ^
       ((q : ℝ) * (p + 1) / p)
 
+/-- The constant `κ_{Δm}` of Lemma 12.2.13 ([cartis2022evaluation]):
+`σ_min/(p+1)! (τ_q/2)^{(p+1)/(p-q+1)}` if `q ∈ {1, 2}`, and
+`σ_min/(p+1)! ((τ_q/2) κ̂^{q-1})^{q(p+1)/p}` if `q > 2` (with the corrected `κ̂`; the radii mode
+`u = (q ≤ 2)` of `arqpKappaDmOf`). -/
+noncomputable def arqpKappaDm (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) : ℝ :=
+  arqpKappaDmOf (q ≤ 2) P L p q
+
+theorem arqpPiOf_of_pos {u : Prop} [Decidable u] (hu : u) (p j : ℕ) :
+    arqpPiOf u p j = ((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ) := by
+  rw [arqpPiOf, ite_eq_left hu]
+
+theorem arqpPiOf_of_neg {u : Prop} [Decidable u] (hu : ¬ u) (p j : ℕ) :
+    arqpPiOf u p j = (j : ℝ) * (p + 1) / p := by
+  rw [arqpPiOf, ite_eq_right hu]
+
+theorem arqpPiOf_nonneg (u : Prop) [Decidable u] (p j : ℕ) : 0 ≤ arqpPiOf u p j := by
+  unfold arqpPiOf
+  split_ifs <;> positivity
+
+theorem arqpKappaDmOf_of_pos {u : Prop} [Decidable u] (hu : u) (P : ARqpParams) (L : ℕ → ℝ)
+    (p q : ℕ) : arqpKappaDmOf u P L p q = P.σmin / ((p + 1)! : ℝ) *
+      (arqpTau P L p q / 2) ^ (((p + 1 : ℕ) : ℝ) / ((p - q + 1 : ℕ) : ℝ)) := by
+  rw [arqpKappaDmOf, ite_eq_left hu]
+
+theorem arqpKappaDmOf_of_neg {u : Prop} [Decidable u] (hu : ¬ u) (P : ARqpParams) (L : ℕ → ℝ)
+    (p q : ℕ) : arqpKappaDmOf u P L p q = P.σmin / ((p + 1)! : ℝ) *
+      (arqpTau P L p q / 2 * arqpKappaHat P L p q ^ (q - 1)) ^ ((q : ℝ) * (p + 1) / p) := by
+  rw [arqpKappaDmOf, ite_eq_right hu]
+
 theorem arqpKappaDm_of_le_two {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hq : q ≤ 2) :
     arqpKappaDm P L p q = P.σmin / ((p + 1)! : ℝ) *
-      (arqpTau P L p q / 2) ^ (((p + 1 : ℕ) : ℝ) / ((p - q + 1 : ℕ) : ℝ)) := by
-  rw [arqpKappaDm, ite_eq_left hq]
+      (arqpTau P L p q / 2) ^ (((p + 1 : ℕ) : ℝ) / ((p - q + 1 : ℕ) : ℝ)) :=
+  arqpKappaDmOf_of_pos hq P L p q
 
 theorem arqpKappaDm_of_two_lt {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hq : 2 < q) :
     arqpKappaDm P L p q = P.σmin / ((p + 1)! : ℝ) *
-      (arqpTau P L p q / 2 * arqpKappaHat P L p q ^ (q - 1)) ^ ((q : ℝ) * (p + 1) / p) := by
-  rw [arqpKappaDm, ite_eq_right (by omega)]
+      (arqpTau P L p q / 2 * arqpKappaHat P L p q ^ (q - 1)) ^ ((q : ℝ) * (p + 1) / p) :=
+  arqpKappaDmOf_of_neg (by omega) P L p q
 
 theorem arqpPi_of_le_two {p q j : ℕ} (hq : q ≤ 2) :
-    arqpPi p q j = ((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ) := by
-  rw [arqpPi, ite_eq_left hq]
+    arqpPi p q j = ((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ) :=
+  arqpPiOf_of_pos hq p j
 
-theorem arqpPi_of_two_lt {p q j : ℕ} (hq : 2 < q) : arqpPi p q j = (j : ℝ) * (p + 1) / p := by
-  rw [arqpPi, ite_eq_right (by omega)]
+theorem arqpPi_of_two_lt {p q j : ℕ} (hq : 2 < q) : arqpPi p q j = (j : ℝ) * (p + 1) / p :=
+  arqpPiOf_of_neg (by omega) p j
 
-theorem arqpKappaDm_nonneg {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hθς : P.θ < P.ς)
-    (hL : 1 ≤ L p) : 0 ≤ arqpKappaDm P L p q := by
+theorem arqpKappaDmOf_nonneg {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (u : Prop) [Decidable u]
+    (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 ≤ arqpKappaDmOf u P L p q := by
   have := P.σmin_nonneg
   have hτ := arqpTau_pos P L hθς (zero_le_one.trans hL) q
   have hκ := arqpKappaHat_pos P L hθς hL q
-  unfold arqpKappaDm
+  unfold arqpKappaDmOf
   split_ifs <;> positivity
 
+theorem arqpKappaDm_nonneg {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hθς : P.θ < P.ς)
+    (hL : 1 ≤ L p) : 0 ≤ arqpKappaDm P L p q :=
+  arqpKappaDmOf_nonneg _ hθς hL
+
 /-- The model decrease of Lemma 12.2.13 for one iteration (local form): under the hypotheses of
-`arqp_core_local` and `σ_min ≤ σ_k`, `ΔT_{f,p}(y, t) ≥ κ_{Δm} min_{j ∈ [1:q]} ε_j^{π_j}`. -/
+`arqp_core_local` (in radii mode `u`) and `σ_min ≤ σ_k`,
+`ΔT_{f,p}(y, t) ≥ κ_{Δm} min_{j ∈ [1:q]} ε_j^{π_j}` with `κ_{Δm} = arqpKappaDmOf u` and
+`π_j = arqpPiOf u p j`. -/
 theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
     (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) {y t : E}
     (hy : y ∈ X) {σk : ℝ}
@@ -1943,17 +1992,17 @@ theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq 
       ((ftaylorSeries ℝ f (y + t)).taylorDecrement j) (δk j) {e | y + t + e ∈ X} P.ς (d' j))
     (hfail : ¬ MeasureTestPasses (fun j => (ftaylorSeries ℝ f (y + t)).taylorDecrement j) q P.ς
       ε δk d')
-    (hrad : (q ≤ 2 → ∀ j ∈ Finset.Icc 1 q, δk j = 1) ∧
-      (2 < q → 1 ≤ ‖t‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+    {u : Prop} [Decidable u] (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δk j = 1) ∧
+      (¬ u → 1 ≤ ‖t‖ ∨ ∀ j ∈ Finset.Icc 1 q,
         arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) * ε j ≤ δk j)) :
-    arqpKappaDm P L p q * finMin 1 (fun j => ε j ^ arqpPi p q j) q ≤
+    arqpKappaDmOf u P L p q * finMin 1 (fun j => ε j ^ arqpPiOf u p j) q ≤
       (ftaylorSeries ℝ f y).taylorDecrement p t := by
   have hσ0 : 0 ≤ σk := P.σmin_nonneg.trans hσmin
   have hp : 1 ≤ p := hq.trans hqp
   have hLp : 1 ≤ L p := hf.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
   have hT := lt_taylorDecrement_of_regularizedModel_lt hlt
   have ht : 0 < ‖t‖ := norm_pos_iff.2 (ne_zero_of_regularizedModel_lt hlt)
-  set m := finMin 1 (fun j => ε j ^ arqpPi p q j) q with hm_def
+  set m := finMin 1 (fun j => ε j ^ arqpPiOf u p j) q with hm_def
   have hm0 : 0 < m := finMin_pos one_pos fun j hj => Real.rpow_pos_of_pos (hε j hj).1 _
   have hfacp : (0 : ℝ) < (p + 1)! := by positivity
   have hσmin0 := P.σmin_nonneg
@@ -1973,15 +2022,15 @@ theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq 
   obtain ⟨hε0, hε1⟩ := hε j hj
   have hτj := arqpTau_pos P L hθς (zero_le_one.trans hLp) j
   have hτqj := arqpTau_anti P L hθς (zero_le_one.trans hLp) hjq
-  have hmj : m ≤ ε j ^ arqpPi p q j := finMin_le hj
+  have hmj : m ≤ ε j ^ arqpPiOf u p j := finMin_le hj
   -- the key bound `B m ≤ ‖s_k‖^{p+1}`, with `κ_{Δm} = σ_min/(p+1)! B`
-  have key : ∃ B, arqpKappaDm P L p q = P.σmin / ((p + 1)! : ℝ) * B ∧
+  have key : ∃ B, arqpKappaDmOf u P L p q = P.σmin / ((p + 1)! : ℝ) * B ∧
       B * m ≤ ‖t‖ ^ (p + 1) := by
-    by_cases hq2 : q ≤ 2
+    by_cases hq2 : u
     · refine ⟨(arqpTau P L p q / 2) ^ (((p + 1 : ℕ) : ℝ) / ((p - q + 1 : ℕ) : ℝ)),
-        by rw [arqpKappaDm, ite_eq_left hq2], ?_⟩
-      have hπ : arqpPi p q j = ((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ) := by
-        rw [arqpPi, ite_eq_left hq2]
+        arqpKappaDmOf_of_pos hq2 P L p q, ?_⟩
+      have hπ : arqpPiOf u p j = ((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ) :=
+        arqpPiOf_of_pos hq2 p j
       rw [hπ] at hmj
       have hexp : ((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ) ≤
           ((p + 1 : ℕ) : ℝ) / ((p - q + 1 : ℕ) : ℝ) := by
@@ -2000,11 +2049,11 @@ theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq 
         _ ≤ (‖t‖ ^ (p - j + 1)) ^ (((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ)) :=
             Real.rpow_le_rpow (by positivity) (h1 hq2) (by positivity)
         _ = ‖t‖ ^ (p + 1) := pow_rpow_div_natCast ht.le (by omega) _
-    · have hq2' : 2 < q := not_le.1 hq2
+    · have hq2' : ¬ u := hq2
       set bq := arqpTau P L p q / 2 * arqpKappaHat P L p q ^ (q - 1) with hbq
       set bj := arqpTau P L p j / 2 * arqpKappaHat P L p q ^ (j - 1) with hbj
-      refine ⟨bq ^ ((q : ℝ) * (p + 1) / p), by rw [arqpKappaDm, ite_eq_right hq2], ?_⟩
-      have hπ : arqpPi p q j = (j : ℝ) * (p + 1) / p := by rw [arqpPi, ite_eq_right hq2]
+      refine ⟨bq ^ ((q : ℝ) * (p + 1) / p), arqpKappaDmOf_of_neg hq2 P L p q, ?_⟩
+      have hπ : arqpPiOf u p j = (j : ℝ) * (p + 1) / p := arqpPiOf_of_neg hq2 p j
       rw [hπ] at hmj
       have hbq0 : 0 < bq := by positivity
       have hbq1 : bq ≤ 1 := by
@@ -2037,7 +2086,7 @@ theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq 
             Real.rpow_le_rpow (by positivity) (h2 hq2') (by positivity)
         _ = ‖t‖ ^ (p + 1) := pow_rpow_div_natCast ht.le (by omega) _
   obtain ⟨B, hκ, hBm⟩ := key
-  have hdec : arqpKappaDm P L p q * m ≤ (ftaylorSeries ℝ f y).taylorDecrement p t := by
+  have hdec : arqpKappaDmOf u P L p q * m ≤ (ftaylorSeries ℝ f y).taylorDecrement p t := by
     rw [hκ]
     calc P.σmin / ((p + 1)! : ℝ) * B * m = P.σmin / ((p + 1)! : ℝ) * (B * m) := by ring
       _ ≤ P.σmin / ((p + 1)! : ℝ) * ‖t‖ ^ (p + 1) := by gcongr
@@ -2046,19 +2095,23 @@ theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq 
 
 /-- **Lemma 12.2.13 with a feasible set** ([cartis2022evaluation], Lemma 12.2.13; Lemma 14.2.2):
 the decreases (12.2.61)–(12.2.62) for a feasible ARqp run under f.D1pL on an open convex
-`C ⊇ X`. -/
+`C ⊇ X`, in either radii mode `u`: unit radii `δ_{k+1,j} = 1` (`u`, exponents
+`π_j = (p+1)/(p-j+1)`), or a long step or the lower bound (12.2.51) at every order (`¬ u`,
+exponents `π_j = j(p+1)/p`), with `κ_{Δm} = arqpKappaDmOf u` and `π_j = arqpPiOf u p j`. The book
+uses the mode `u = (q ≤ 2)` (`arqpKappaDm`, `arqpPi`); the lower-bound mode holds for every `q` and
+`X` and gives the "otherwise" entries of the table (14.2.12). -/
 theorem lemma_12_2_13_feasible (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
     (hqp : q ≤ p)
     (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) (hs : P.η₁ ≤ arqpRho f p x s σ k)
     (hk1 : ¬ arqpStop₁ P q ε (arqpData f p x σ) δ d (k + 1))
-    (hrad : (q ≤ 2 → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
-      (2 < q → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+    {u : Prop} [Decidable u] (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
+      (¬ u → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
         arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) * ε j ≤ δ (k + 1) j)) :
-    arqpKappaDm P L p q * finMin 1 (fun j => ε j ^ arqpPi p q j) q ≤
+    arqpKappaDmOf u P L p q * finMin 1 (fun j => ε j ^ arqpPiOf u p j) q ≤
         (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
-      P.η₁ * (arqpKappaDm P L p q * finMin 1 (fun j => ε j ^ arqpPi p q j) q) ≤
+      P.η₁ * (arqpKappaDmOf u P L p q * finMin 1 (fun j => ε j ^ arqpPiOf u p j) q) ≤
         f (x k) - f (x (k + 1)) := by
   have hp : 1 ≤ p := hq.trans hqp
   have hσ := arqp_sigma_le hf hXC hp h k fun i hi => hk i hi.le
@@ -2096,7 +2149,8 @@ theorem lemma_12_2_13 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
         (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
       P.η₁ * (arqpKappaDm P L p q * finMin 1 (fun j => ε j ^ arqpPi p q j) q) ≤
         f (x k) - f (x (k + 1)) :=
-  lemma_12_2_13_feasible hf.on_univ (subset_univ _) hq hqp hθς hε h hk hs hk1 hrad
+  lemma_12_2_13_feasible hf.on_univ (subset_univ _) hq hqp hθς hε h hk hs hk1 (u := q ≤ 2)
+    ⟨hrad.1, fun h' => hrad.2 (not_le.1 h')⟩
 
 /-- The radii of an ARqp run stay equal to `1` at the orders `j ∈ [1:q]` if they start at `1`
 and every step returns radii `1` there (as Lemma 12.2.9 allows for `q ≤ 2`). -/
@@ -2115,59 +2169,81 @@ theorem arqp_delta_eq_one (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s 
     · rw [hs hρ]; exact hδs k hk' j hj
     · rw [(hu hρ).1]; exact ih (fun i hi => hk' i hi.le) j hj
 
+/-- The constant `κ^s = 1/(η₁ κ_{Δm})` of Theorem 12.2.14 in radii mode `u`
+(`κ_{Δm} = arqpKappaDmOf u`; `kappaSARqp` is the mode `u = (q ≤ 2)`). -/
+noncomputable def kappaSARqpOf (u : Prop) [Decidable u] (P : ARqpParams) (L : ℕ → ℝ)
+    (p q : ℕ) : ℝ :=
+  1 / (P.η₁ * arqpKappaDmOf u P L p q)
+
+/-- The constant `κ^a = κ^s (1 + |log γ₁|/log γ₂)` of Theorem 12.2.14 in radii mode `u`
+(`kappaAARqp` is the mode `u = (q ≤ 2)`). -/
+noncomputable def kappaAARqpOf (u : Prop) [Decidable u] (P : ARqpParams) (L : ℕ → ℝ)
+    (p q : ℕ) : ℝ :=
+  kappaSARqpOf u P L p q * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
+
 /-- The constant `κ^s_{ARqp} = 1/(η₁ κ_{Δm})` of Theorem 12.2.14 ([cartis2022evaluation]): for
 `q ∈ {1, 2}` it is `(p+1)!/(η₁ σ_min) (2 q!(L_{f,p} + σ_max)/(ς - θ))^{(p+1)/(p-q+1)}`
 (`κ^{s,1}`), for `q > 2` it is
 `(p+1)!/(η₁ σ_min) (2 q!(L_{f,p} + σ_max)/((ς - θ) κ̂^{q-1}))^{q(p+1)/p}` (`κ^{s,2}`, with the
-corrected `κ̂`). -/
+corrected `κ̂`); the radii mode `u = (q ≤ 2)` of `kappaSARqpOf`. -/
 noncomputable def kappaSARqp (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) : ℝ :=
-  1 / (P.η₁ * arqpKappaDm P L p q)
+  kappaSARqpOf (q ≤ 2) P L p q
 
-/-- The constant `κ^a_{ARqp} = κ^s_{ARqp} (1 + |log γ₁|/log γ₂)` of Theorem 12.2.14. -/
+/-- The constant `κ^a_{ARqp} = κ^s_{ARqp} (1 + |log γ₁|/log γ₂)` of Theorem 12.2.14 (the radii mode
+`u = (q ≤ 2)` of `kappaAARqpOf`). -/
 noncomputable def kappaAARqp (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) : ℝ :=
-  kappaSARqp P L p q * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
+  kappaAARqpOf (q ≤ 2) P L p q
 
 /-- The constant `κ^c_{ARqp} = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2` of Theorem 12.2.14. -/
 noncomputable def kappaCARqp (P : ARqpParams) (L : ℕ → ℝ) (p : ℕ) : ℝ :=
   (|Real.log P.γ₁| + Real.log (arSigmaMax P.toARParams (L p) / P.σ₀)) / Real.log P.γ₂ + 2
 
-theorem arqpKappaDm_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hσmin : 0 < P.σmin)
-    (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < arqpKappaDm P L p q := by
+theorem arqpKappaDmOf_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (u : Prop) [Decidable u]
+    (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < arqpKappaDmOf u P L p q := by
   have hτ := arqpTau_pos P L hθς (zero_le_one.trans hL) q
   have hκ := arqpKappaHat_pos P L hθς hL q
-  unfold arqpKappaDm
+  unfold arqpKappaDmOf
   split_ifs <;> positivity
 
-theorem kappaSARqp_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hσmin : 0 < P.σmin)
-    (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < kappaSARqp P L p q := by
-  have := arqpKappaDm_pos (q := q) hσmin hθς hL
+theorem arqpKappaDm_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hσmin : 0 < P.σmin)
+    (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < arqpKappaDm P L p q :=
+  arqpKappaDmOf_pos _ hσmin hθς hL
+
+theorem kappaSARqpOf_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (u : Prop) [Decidable u]
+    (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < kappaSARqpOf u P L p q := by
+  have := arqpKappaDmOf_pos (q := q) u hσmin hθς hL
   have := P.η₁_pos
-  unfold kappaSARqp; positivity
+  unfold kappaSARqpOf; positivity
+
+theorem kappaSARqp_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hσmin : 0 < P.σmin)
+    (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < kappaSARqp P L p q :=
+  kappaSARqpOf_pos _ hσmin hθς hL
 
 /-- The common end of the proofs of Theorem 12.2.14 (1) and (2): with the decrease of
-Lemma 12.2.13 at every successful iteration followed by a non-terminating one, an ARqp run
-terminates within the stated numbers of evaluations. -/
+Lemma 12.2.13 (in radii mode `u`) at every successful iteration followed by a non-terminating
+one, an ARqp run terminates within the stated numbers of evaluations. -/
 theorem arqp_complexity {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y) (hf : AssumptionD1pLOn f C p L)
     (hXC : X ⊆ C) (hq : 1 ≤ q) (hqp : q ≤ p) (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm)
-    (hrad : ∀ k, (∀ i ≤ k + 1, ¬ arqpStop f P p q ε x s σ δ d i) →
+    {u : Prop} [Decidable u] (hrad : ∀ k, (∀ i ≤ k + 1, ¬ arqpStop f P p q ε x s σ δ d i) →
       P.η₁ ≤ arqpRho f p x s σ k →
-      (q ≤ 2 → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
-      (2 < q → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+      (u → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
+      (¬ u → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
         arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) * ε j ≤ δ (k + 1) j)) :
     ∃ kε, IsFirstHit (arqpStop f P p q ε x s σ δ d) kε ∧
-      (funEvalCount kε : ℝ) ≤ kappaAARqp P L p q * (f (x 0) - flow) /
-        finMin 1 (fun j => ε j ^ arqpPi p q j) q + kappaCARqp P L p ∧
+      (funEvalCount kε : ℝ) ≤ kappaAARqpOf u P L p q * (f (x 0) - flow) /
+        finMin 1 (fun j => ε j ^ arqpPiOf u p j) q + kappaCARqp P L p ∧
       (derivEvalCount (fun k => P.η₁ ≤ arqpRho f p x s σ k) kε : ℝ) ≤
-        kappaSARqp P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPi p q j) q + 2 := by
+        kappaSARqpOf u P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPiOf u p j) q +
+          2 := by
   have hp : 1 ≤ p := hq.trans hqp
   have hLp : 1 ≤ L p := hf.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
-  set m := finMin 1 (fun j => ε j ^ arqpPi p q j) q with hm_def
+  set m := finMin 1 (fun j => ε j ^ arqpPiOf u p j) q with hm_def
   have hm0 : 0 < m := finMin_pos one_pos fun j hj => Real.rpow_pos_of_pos (hε j hj).1 _
-  have hκ := arqpKappaDm_pos (q := q) hσmin hθς hLp
+  have hκ := arqpKappaDmOf_pos (q := q) u hσmin hθς hLp
   have hη := P.η₁_pos
-  have hδ : 0 < P.η₁ * (arqpKappaDm P L p q * m) := by positivity
+  have hδ : 0 < P.η₁ * (arqpKappaDmOf u P L p q * m) := by positivity
   obtain ⟨kε, hk, hF, hD⟩ := h.toIsARRun.exists_isFirstHit_of_decrease
     (σmax := arSigmaMax P.toARParams (L p)) (fun k hk => (arqp_sigma_le hf hXC hp h k hk).2)
     (V := fun k => f (x k)) (Vlow := flow) hδ (fun k hk => arqp_objective_le h hk)
@@ -2176,9 +2252,9 @@ theorem arqp_complexity {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y) (hf : Assu
       (fun h1 => hk (k + 1) le_rfl (Or.inl h1)) (hrad k hk hs)).2)
   have hlog := P.toARParams.log_γ₂_pos
   refine ⟨kε, hk, hF.trans_eq ?_, hD.trans_eq ?_⟩
-  · rw [kappaAARqp, kappaSARqp, kappaCARqp]
+  · rw [kappaAARqpOf, kappaSARqpOf, kappaCARqp]
     field_simp
-  · rw [kappaSARqp]
+  · rw [kappaSARqpOf]
     field_simp
 
 /-- **Certification at a model minimizer `0` with a feasible set** (the content of
@@ -2282,31 +2358,37 @@ theorem lemma_12_2_10 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
 /-- **Theorem 12.2.14 with a feasible set** ([cartis2022evaluation], Theorem 12.2.14; the ARqp-SC
 row of Theorem 14.2.4). Let `X ⊆ C` with `C` open and convex, f.D1pL on `C`, `f ≥ f_low` on `X`,
 `1 ≤ q ≤ p`, `ε ∈ (0, 1]^q`, `δ₀ ∈ (0, 1]^q`, `σ_min > 0`, `θ < ς`, and a feasible ARqp run with
-the radius policy of Theorem 12.2.14: if `q ≤ 2`, `δ₀ = 1` and all returned radii are `1` (as
-allowed for `X = ℝⁿ`; for general `X` this is a hypothesis); if `q > 2`, the radii property
+a radius policy in radii mode `u`: if `u`, `δ₀ = 1` and all returned radii are `1` (as allowed
+for `X = ℝⁿ` and `q ≤ 2`; for general `X` this is a hypothesis); if `¬ u`, the radii property
 (12.2.50). Then the run terminates at some `k_ε` with `x_{k_ε} ∈ X`, where the constrained
 measures satisfy (12.1.25) for some radii `δ_ε ∈ (0, 1]^q`, after at most
 `κ^a (f(x₀) - f_low)/min_j ε_j^{π_j} + κ^c` evaluations of `f` and
-`κ^s (f(x₀) - f_low)/min_j ε_j^{π_j} + 2` evaluations of the derivatives. -/
+`κ^s (f(x₀) - f_low)/min_j ε_j^{π_j} + 2` evaluations of the derivatives, with
+`π_j = arqpPiOf u p j` (`(p+1)/(p-j+1)` if `u`, `j(p+1)/p` if `¬ u`), `κ^a = kappaAARqpOf u`,
+`κ^s = kappaSARqpOf u`. The book's policy is the mode `u = (q ≤ 2)`; the mode `u = False`
+((12.2.50) at every order) gives the order `O(max_j ε_j^{-j(p+1)/p})` for every `q` and `X`. -/
 theorem theorem_12_2_14_feasible {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
     (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
     (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm)
-    (hrad : (q ≤ 2 → (∀ j ∈ Finset.Icc 1 q, δ₀ j = 1) ∧
+    {u : Prop} [Decidable u]
+    (hrad : (u → (∀ j ∈ Finset.Icc 1 q, δ₀ j = 1) ∧
         ∀ k, (∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) → ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
-      (2 < q → ∀ k, (∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
+      (¬ u → ∀ k, (∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
         ∀ j ∈ Finset.Icc 1 q, arqpKappaDelta P (finMax 1 L p) (σ k) * ε j ≤ δs k j)) :
     ∃ kε, IsFirstHit (arqpStop f P p q ε x s σ δ d) kε ∧ x kε ∈ X ∧
       (∃ δε : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, δε j ∈ Ioc 0 1) ∧
         IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε δε) ∧
-      (funEvalCount kε : ℝ) ≤ kappaAARqp P L p q * (f (x 0) - flow) /
-        finMin 1 (fun j => ε j ^ arqpPi p q j) q + kappaCARqp P L p ∧
+      (funEvalCount kε : ℝ) ≤ kappaAARqpOf u P L p q * (f (x 0) - flow) /
+        finMin 1 (fun j => ε j ^ arqpPiOf u p j) q + kappaCARqp P L p ∧
       (derivEvalCount (fun k => P.η₁ ≤ arqpRho f p x s σ k) kε : ℝ) ≤
-        kappaSARqp P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPi p q j) q + 2 := by
+        kappaSARqpOf u P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPiOf u p j) q +
+          2 := by
   have hp : 1 ≤ p := hq.trans hqp
   have hL1 : 1 ≤ finMax 1 L p := one_le_finMax
-  obtain ⟨kε, hk, hF, hD⟩ := arqp_complexity hb hf hXC hq hqp hσmin hθς hε h fun k hk hs => by
+  obtain ⟨kε, hk, hF, hD⟩ := arqp_complexity hb hf hXC hq hqp hσmin hθς hε h (u := u)
+    fun k hk hs => by
     have hk' : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i := fun i hi => hk i (by omega)
     refine ⟨fun hq2 => ?_, fun hq2 => ?_⟩
     · exact arqp_delta_eq_one h (hrad.1 hq2).1 (hrad.1 hq2).2 (k + 1) fun i hi => hk i (by omega)
@@ -2358,7 +2440,7 @@ theorem theorem_12_2_14_i (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionD
         kappaSARqp P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPi p q j) q + 2 := by
   have hone := arqp_delta_eq_one h hδ₀ hδs
   obtain ⟨kε, hk, hF, hD⟩ := arqp_complexity (fun y _ => hb y) hf.on_univ (subset_univ _) hq hqp
-    hσmin hθς hε h
+    hσmin hθς hε h (u := q ≤ 2)
     fun k hk _ => ⟨fun _ => hone (k + 1) fun i hi => hk i hi.le,
       fun h' => absurd h' (by omega)⟩
   have hδ₀' : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1 := fun j hj => by
@@ -2401,7 +2483,7 @@ theorem theorem_12_2_14_ii (hb : Chapter02.AssumptionBb f flow) (hf : Assumption
   have hp : 1 ≤ p := hq1.trans hqp
   have hL1 : 1 ≤ finMax 1 L p := one_le_finMax
   obtain ⟨kε, hk, hF, hD⟩ := arqp_complexity (fun y _ => hb y) hf.on_univ (subset_univ _) hq1 hqp
-    hσmin hθς hε h fun k hk hs => by
+    hσmin hθς hε h (u := q ≤ 2) fun k hk hs => by
     refine ⟨fun h' => absurd h' (by omega), fun _ => ?_⟩
     by_cases hlong : 1 ≤ ‖s k‖
     · exact Or.inl hlong

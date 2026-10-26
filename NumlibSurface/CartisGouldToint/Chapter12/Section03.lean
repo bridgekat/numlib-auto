@@ -155,7 +155,7 @@ end IsARqpSufficientDecreaseRun
 /-- `π_j` is nondecreasing in `j ≤ p`. -/
 theorem arqpPi_mono {p q j j' : ℕ} (hjj' : j ≤ j') (hj' : j' ≤ p) :
     arqpPi p q j ≤ arqpPi p q j' := by
-  unfold arqpPi
+  unfold arqpPi arqpPiOf
   split_ifs
   · apply div_le_div_of_nonneg_left (by positivity) (by positivity)
     exact_mod_cast (show p - j' + 1 ≤ p - j + 1 by omega)
@@ -207,7 +207,7 @@ theorem complexity_arqpSufficientDecrease {n : ℕ} {f : EuclideanSpace ℝ (Fin
   have hκDm := arqpKappaDm_pos (q := q) hσmin hθς hLp
   have hκ'0 : 0 < κ' := lt_min hκDm (lt_min hκ (by positivity))
   have hη := P.η₁_pos
-  have hπ0 : ∀ j, 0 ≤ arqpPi p q j := fun j => by unfold arqpPi; split_ifs <;> positivity
+  have hπ0 : ∀ j, 0 ≤ arqpPi p q j := fun j => arqpPiOf_nonneg _ p j
   have hω0 : 0 ≤ ω := (hπ0 q).trans hω
   -- `ε_min^ω ≤ min_j ε_j^{π_j}`
   have hXm : X ≤ finMin 1 (fun j => ε j ^ arqpPi p q j) q := by
@@ -252,7 +252,8 @@ theorem complexity_arqpSufficientDecrease {n : ℕ} {f : EuclideanSpace ℝ (Fin
         have hU : {e : EuclideanSpace ℝ (Fin n) | x k + s k + e ∈ (univ : Set _)} = univ := by
           ext; simp
         have := arqp_decrease_local hf.on_univ (subset_univ _) hq hqp hθς hε (mem_univ _) hσ.1
-          hσ.2 hst hlt (by rw [hU]; exact hw) hfail hrad'
+          hσ.2 hst hlt (by rw [hU]; exact hw) hfail (u := q ≤ 2)
+          ⟨hrad'.1, fun h' => hrad'.2 (not_le.1 h')⟩
         calc κ' * X ≤ arqpKappaDm P L p q * finMin 1 (fun j => ε j ^ arqpPi p q j) q :=
               mul_le_mul (min_le_left _ _) hXm hX0.le hκDm.le
           _ ≤ _ := this

@@ -26,7 +26,8 @@ module imports the section modules and adds nothing of its own.
   TRq-SC and ARqp-SC rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 (`lemma_14_2_2_arqpc`,
   `lemma_14_2_2_trq`, `lemma_14_2_2_arqp`, `lemma_14_2_3`, `lemma_14_2_3_trq`,
   `lemma_14_2_3_arqpc`, `theorem_14_2_4_trq`, `theorem_14_2_4_arqp`, `theorem_14_2_4_arqpc`,
-  `theorem_14_2_4_arqpc_convex`), the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows
+  `theorem_14_2_4_arqpc_convex`; the ARqp-SC rows in either radii mode, unit radii or (12.2.51)
+  at every order, `Chapter12.arqpPiOf`), the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows
   (`lemma_14_2_2_trqida`, …, `theorem_14_2_4_arqpeda`, from the Chapter 13 runs with a feasible
   set; the regularization rows in either radii mode, unit radii or (12.2.51) at every order,
   `Chapter13.RadiiControlOf`; on `ℝⁿ` with `q ≤ 2` every ARqpIDA-SC run attains the unit-radii
@@ -37,7 +38,8 @@ module imports the section modules and adds nothing of its own.
   the ARqpIDA-SC order of the lower-bound mode for `q = p ≥ 3` (`theorem_14_2_4_sharp`,
   `theorem_14_2_4_sharp_arqp`, `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda`,
   `theorem_14_2_4_sharp_arqpida`, `theorem_14_2_4_sharp_arqpeda`,
-  `theorem_14_2_4_sharp_arqpeda_otherwise`, `theorem_14_2_4_sharp_arqpida_otherwise`)
+  `theorem_14_2_4_sharp_arqpeda_otherwise`, `theorem_14_2_4_sharp_arqpida_otherwise`,
+  `theorem_14_2_4_sharp_arqpida_otherwise_constrained`)
 * §14.3, `Chapter14.Section03`: the problem (14.3.1), assumption X.CQ (`AssumptionXCQ`);
   Theorems 14.3.1–14.3.2, Example 14.3.1; LENq-SC (Algorithm 14.3.1, `algorithm_14_3_1`),
   Theorems 14.3.3–14.3.4; TPqp-GC (Algorithm 14.3.2, `algorithm_14_3_2`), Lemmas 14.3.5–14.3.8
@@ -47,7 +49,13 @@ module imports the section modules and adds nothing of its own.
   hence Theorems 14.3.4 and 14.3.9 (`exists_algorithm_14_3_1_complexity`,
   `exists_algorithm_14_3_2_complexity` with the ARqpC-SC exponents `j + 1`;
   `exists_algorithm_14_3_1_complexity_arqp`, `exists_algorithm_14_3_2_complexity_arqp` with the
-  ARqp-SC exponents `j(p+1)/p` for `q > 2`)
+  ARqp-SC exponents `j(p+1)/p` for `q ≥ 2`; `exists_algorithm_14_3_1_complexity_arqp_add`,
+  `exists_algorithm_14_3_2_complexity_arqp_add` for every `q`, with the additive constants of
+  Theorem 14.2.4 kept in Phase 1); the bad outer iterations of TPqp-GC are bounded under
+  INNER's certificate
+  (`IsTPqpGCPhase2.kbCount_le`, `IsTPqpGCPhase2.complexity_of_certified`), which the constructed
+  runs carry, so that for `β < θ` Theorem 14.3.9 holds for them without the bad-iteration
+  parameter (`exists_algorithm_14_3_2_complexity_certified`)
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -108,8 +116,11 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   INNER call guarantees no decrease, is not bounded by the book's argument:
   `theorem_14_3_9` carries it as a parameter. When it is bounded independently of `ε`, the
   counts are `O(max(ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}))`; the derivative count acquires an
-  `ε₀^{-1}` term. The book's `f_up - f_low - 1` is `f_up - f_low + 1`, and its `#F₂` misses the
-  `1/(1 - θ)` of the `κ^C ε₀^{-1}` term.
+  `ε₀^{-1}` term. INNER's certificate for the tolerances `β ‖r(x_k, t_k)‖ ε_j`, with `β < θ` (the
+  book allows `β = θ`) and bounded derivatives of `f`, bounds it by `O(max_j (ε₀ ε_j)^{-j})`
+  (`IsTPqpGCPhase2.kbCount_le`), within the order for the exponents `j + 1`. The book's
+  `f_up - f_low - 1` is `f_up - f_low + 1`, and its `#F₂` misses the `1/(1 - θ)` of the
+  `κ^C ε₀^{-1}` term.
 * Algorithm 14.3.2: the INNER calls of Phase 2 are described by their iterates; `μ(·, t_k)` does
   not increase along a call, and a call stops as soon as `‖r‖ < θε₀`.
 
@@ -123,8 +134,11 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   anchored assumptions f.D1qLaB.X (f.D0qLaB.X) are used.
 * Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored assumptions
   (they are proved under global Lipschitz assumptions, `exists_algorithm_14_3_1_complexity`,
-  `exists_algorithm_14_3_2_complexity`), their complexity with the ARqp-SC exponents of (14.2.12)
-  for `q ≤ 2` (proved for `q > 2`, `exists_algorithm_14_3_2_complexity_arqp`; for every `q` with
-  the weaker ARqpC-SC exponents `j + 1`), a bound on the number of bad outer iterations of
-  TPqp-GC, and the `O(·)` restatements.
+  `exists_algorithm_14_3_2_complexity`), their complexity with the ARqp-SC unit-radii exponents
+  for `q = 2` on `ℝⁿ` (the "otherwise" exponents `j(p+1)/p` are proved for every `q`; for `q = 1`
+  only with the additive Phase-1 constants), a bound on the bad outer iterations
+  of TPqp-GC in the order of the ARqp-SC exponents, for `β = θ`, or for calls cut by the second or
+  third test of (14.3.32) (`IsInnerCertified` needs INNER to be interrupted only by the first),
+  and the
+  `O(·)` restatements.
 -/
