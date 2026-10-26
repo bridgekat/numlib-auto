@@ -130,20 +130,6 @@ deps = ["IsARpRun", "abs_reductionRatio_sub_one_le_of_lipschitz", "sigma_le_max_
 source = "Cartis–Gould–Toint, Lemma 4.1.2, (5.1.60)"
 
 [[node]]
-id = "abs_iteratedFDeriv_apply_le_of_regularizedModel"
-kind = "theorem"
-desc = '''
-One-iteration third-order bound (book (4.1.30)). `p ≥ j`, `j ∈ {2, 3}`, `f` `C^p` with
-`IteratedFDerivLipschitzOn f p L univ`, `m = regularizedModel (ftaylorSeries ℝ f x) p σ`,
-`0 ≤ σ ≤ σmax`, `‖d‖ = 1`: `|iteratedFDeriv ℝ j f (x + s) ![d,…,d]| ≤ (L + σmax) / (p - j + 1)! *
-‖s‖ ^ (p - j + 1) + |iteratedFDeriv ℝ j m s ![d,…,d]|`. Uses (A.20)
-(`norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`) and
-`norm_iteratedFDeriv_norm_pow_le` (Lemma B.4.1 for the integer power `p + 1`, where it is true).
-'''
-deps = ["regularizedModel", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "norm_iteratedFDeriv_norm_pow_le"]
-source = "Cartis–Gould–Toint, (4.1.30)"
-
-[[node]]
 id = "IsARpRun.step_lower_bounds"
 kind = "theorem"
 desc = '''
