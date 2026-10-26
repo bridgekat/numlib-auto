@@ -1,0 +1,137 @@
+namespace = "Optimization"
+desc = '''
+Generalized Taylor models and criticality measures for composite functions `w = f + h ∘ c`
+(Cartis–Gould–Toint (14.1.5)–(14.1.6), Lemma 14.1.1). Setting: `E`, `F` real normed spaces
+(`F = EuclideanSpace ℝ (Fin m)` on the surface), `f : E → ℝ`, `c : E → F`, `h : F → ℝ`.
+
+Design.
+* Data-based, like the core `taylorMeasure`: the model is built from two jets
+  `Df : FormalMultilinearSeries ℝ E ℝ`, `Dc : FormalMultilinearSeries ℝ E F`, so the same
+  definitions serve the function (`Df = ftaylorSeries ℝ f x`, `Dc = ftaylorSeries ℝ c x`) and the
+  ARqpC model at a trial step `s` (`Df` = Taylor series at `s` of the regularized polynomial,
+  `Dc` = Taylor series at `s` of `T_{c,p}`, book (14.1.14)). `h` is kept exactly (not expanded):
+  `T_{w,j}` is *not* a Taylor polynomial of `w`.
+* **Interface request to the core**: `FormalMultilinearSeries.taylorSum` (core
+  `MultivariateTaylor/Basic`, planned for `ℝ`-valued data with `*`) must be stated for an arbitrary
+  normed codomain `F` (`∑ i ∈ range (p+1), (i ! : ℝ)⁻¹ • D i (fun _ => s)`; identical for `F = ℝ`),
+  and `IteratedFDerivHolderOn`/`IteratedFDerivLipschitzOn` for `F`-valued maps. Vector-valued
+  remainder bounds are planned in `MultivariateTaylor/VectorRemainder` (proved from the real ones by
+  duality).
+* Feasible displacement sets `S : Set E` as in the core (`S = {d | x + d ∈ X}`; `Set.univ`
+  unconstrained), so §14.2's ARqpC-SC needs nothing new.
+* Lipschitz constants of `h` are real (`∀ a b, |h a - h b| ≤ Lh * ‖a - b‖`), they enter explicit
+  bounds. Subadditivity is the new structural hypothesis (book h.S0), Mathlib's `Subadditive` being
+  about sequences only.
+'''
+
+[[node]]
+id = "IsSubadditive"
+kind = "def"
+desc = '''
+`IsSubadditive (h : F → ℝ) : Prop := ∀ a b, h (a + b) ≤ h a + h b` (book h.S0, which also asks
+`h 0 = 0`). API (part of node): `IsSubadditive.add`, norms and seminorms are subadditive, odd
+subadditive maps are additive; `abs_le_of_lipschitz_of_map_zero`: if `h 0 = 0` and
+`|h a - h b| ≤ Lh ‖a - b‖` then `|h a| ≤ Lh ‖a‖` (14.1.4); `sub_le_of_subadditive`:
+`h (a + b) - h a ≤ h b ≤ Lh ‖b‖`.
+'''
+source = "Cartis–Gould–Toint, assumption h.S0 and (14.1.4)"
+
+[[node]]
+id = "compositeTaylorDecrement"
+kind = "def"
+desc = '''
+For `Df : FormalMultilinearSeries ℝ E ℝ`, `Dc : FormalMultilinearSeries ℝ E F`, `h : F → ℝ`,
+`j : ℕ`, `d : E`:
+`compositeTaylorDecrement Df Dc h j d := (Df.taylorSum j 0 + h (Dc.taylorSum j 0)) -
+(Df.taylorSum j d + h (Dc.taylorSum j d))`, the book's `ΔT_{w,j}(x, d) = T_{w,j}(x,0) - T_{w,j}(x,d)`
+with `T_{w,j}(x,s) = T_{f,j}(x,s) + h(T_{c,j}(x,s))` (14.1.5). Simp lemma (part of node): with
+`h = 0` it is `Df.taylorDecrement j d`; `compositeTaylorDecrement Df Dc h j 0 = 0`.
+'''
+deps = ["FormalMultilinearSeries.taylorSum", "FormalMultilinearSeries.taylorDecrement"]
+source = "Cartis–Gould–Toint, (14.1.5) and the decrement after (14.1.10)"
+
+[[node]]
+id = "compositeTaylorMeasure"
+kind = "def"
+desc = '''
+`compositeTaylorMeasure Df Dc h j δ S : ℝ := sSup (compositeTaylorDecrement Df Dc h j ''
+(Metric.closedBall 0 δ ∩ S))`: the book's `φ^δ_{w,j}(x) = w(x) - min_{‖d‖≤δ} T_{w,j}(x,d)` (14.1.6)
+(with the book's `x_k`/`s` variable slips corrected: the minimization variable is `d`), its
+constrained variant for §14.2, and, with the model's jets at `s`, `φ^δ_{m̂_k,j}(s)` (14.1.14).
+Lemma (part of node): `compositeTaylorMeasure Df Dc 0 j δ S = taylorMeasure Df j δ S`.
+'''
+deps = ["compositeTaylorDecrement", "taylorMeasure"]
+source = "Cartis–Gould–Toint, (14.1.6), (14.1.14)"
+
+[[node]]
+id = "abs_compositeTaylorDecrement_le"
+kind = "theorem"
+desc = '''
+If `|h a - h b| ≤ Lh ‖a - b‖` for all `a b`, then
+`|compositeTaylorDecrement Df Dc h j d| ≤ ∑ i ∈ Icc 1 j, (‖Df i‖ + Lh ‖Dc i‖) ‖d‖^i / i!`; hence for
+`0 ≤ δ` and `0 ∈ S`: `0 ≤ compositeTaylorMeasure Df Dc h j δ S` and every
+`d ∈ closedBall 0 δ ∩ S` has `compositeTaylorDecrement … d ≤ compositeTaylorMeasure …` (the image
+is bounded above). Monotone in `δ` and in `S`.
+'''
+deps = ["compositeTaylorMeasure", "FormalMultilinearSeries.abs_taylorDecrement_sub_le"]
+source = "Cartis–Gould–Toint, (14.1.6) (well-definedness of the measure)"
+
+[[node]]
+id = "exists_compositeTaylorMeasure_eq"
+kind = "theorem"
+desc = '''
+`[FiniteDimensional ℝ E]`, `h` continuous (e.g. Lipschitz), `S` closed, `0 ∈ S`, `0 ≤ δ`: the sup is
+attained, `∃ d ∈ closedBall 0 δ ∩ S, compositeTaylorDecrement Df Dc h j d =
+compositeTaylorMeasure Df Dc h j δ S` (an optimality displacement; used for existence of runs and
+in the proof of Lemma 14.1.7). Also: `δ ↦ compositeTaylorMeasure …` and, for jets depending
+continuously on a parameter `s`, `s ↦ compositeTaylorMeasure (D s) …` are continuous when `S` is
+fixed (compact-ball argument; used in the book's proof of Lemma 12.2.9/14.1.3 — not needed for the
+global-minimizer proof planned here).
+'''
+deps = ["abs_compositeTaylorDecrement_le"]
+source = "Cartis–Gould–Toint, Section 14.1.2.1"
+
+[[node]]
+id = "IsEpsDeltaApproxComposite"
+kind = "def"
+desc = '''
+`IsEpsDeltaApproxComposite Df Dc h S q ε δ : Prop := ∀ j ∈ Finset.Icc 1 q,
+compositeTaylorMeasure Df Dc h j (δ j) S ≤ ε j * δ j ^ j / j !` (`ε δ : ℕ → ℝ`): `x` is an
+`(ε, δ)`-approximate `q`-th order minimizer of `w` (14.1.9) when `Df = ftaylorSeries ℝ f x`,
+`Dc = ftaylorSeries ℝ c x`. With `h = 0` it is the core `IsEpsDeltaApprox Df S q ε δ`.
+'''
+deps = ["compositeTaylorMeasure", "IsEpsDeltaApprox"]
+source = "Cartis–Gould–Toint, (14.1.9)"
+
+[[node]]
+id = "compositeTaylorDecrement_one_nonpos_of_isLocalMinOn"
+kind = "theorem"
+desc = '''
+Convex-composite first-order necessity (Lemma 14.1.1, generalized). Let `X ⊆ E` be convex,
+`x ∈ X`, `f` and `c` differentiable at `x`, `h` convex with `|h a - h b| ≤ Lh ‖a - b‖`, and
+`IsLocalMinOn (fun z => f z + h (c z)) X x`. Then for every `s` with `x + s ∈ X`,
+`compositeTaylorDecrement (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h 1 s ≤ 0`, i.e. `0` is a
+global minimizer of `T_{w,1}(x, ·)` over `X - x`; consequently
+`compositeTaylorMeasure (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h 1 δ {d | x + d ∈ X} = 0` for
+every `δ ≥ 0`. Proof as in the book along `α ↦ x + α s`, `α ∈ [0,1]`: `T_{w,1}(x,·)` is convex,
+`f(x + αs) = T_{f,1}(x,αs) + o(α)`, `h(c(x+αs)) ≤ h(T_{c,1}(x,αs)) + Lh ‖o(α)‖` (Lipschitz alone
+suffices; subadditivity and `h 0 = 0` are not needed, and local minimality suffices where the book
+assumes a global minimizer).
+'''
+deps = ["compositeTaylorMeasure", "abs_compositeTaylorDecrement_le"]
+source = "Cartis–Gould–Toint, Lemma 14.1.1"
+
+[[node]]
+id = "abs_sub_compositeTaylor_le_of_lipschitz"
+kind = "theorem"
+desc = '''
+Value remainder of the composite model. On a convex `C` inside an open `D` on which `f`, `c` are
+`C^p`, with `IteratedFDerivLipschitzOn f p Lf C`, `IteratedFDerivLipschitzOn c p Lc C` (vector
+version) and `|h a - h b| ≤ Lh ‖a - b‖`: for `x, x + s ∈ C`,
+`|(f (x + s) + h (c (x + s))) - (taylorPolynomial f p x s + h ((ftaylorSeries ℝ c x).taylorSum p s))|
+≤ (Lf + Lh * Lc) / (p + 1)! * ‖s‖ ^ (p + 1)` (book's proof of Lemma 14.1.6 with `L_{w,p}`
+(14.1.27); the `√m` of the book comes from converting componentwise constants, see
+`ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean`).
+'''
+deps = ["abs_sub_taylorPolynomial_le_of_lipschitz", "norm_sub_taylorSum_le_of_lipschitz_vec"]
+source = "Cartis–Gould–Toint, proof of Lemma 14.1.6 (Appendix B)"

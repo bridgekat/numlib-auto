@@ -1,0 +1,100 @@
+namespace = "Optimization"
+desc = '''
+Curve-based (arc) necessary optimality conditions of arbitrary order (Cartis–Gould–Toint
+Theorem 12.1.1 unconstrained, Theorem 14.3.1 constrained). Planned by the Chapter 14 planner in the
+generality of Theorem 14.3.1 (feasible set `X`, equality constraints `c = 0`); Theorem 12.1.1 is the
+case `X = univ`, no constraints, and the Chapter 12 planner should specialize it.
+
+The coefficient of `α^i` in `g(x + ∑_{ℓ=1}^j α^ℓ s_ℓ)` is the truncated Faà di Bruno sum
+`∑_{k=1}^i (1/k!) ∑_{(ℓ₁..ℓ_k) ∈ P(i,k)} ∇^k g(x)[s_{ℓ₁},…,s_{ℓ_k}]`, where `P(i,k)` (12.1.5) is the
+set of ordered `k`-tuples of positive integers summing to `i`, i.e. Mathlib's `Composition i` of
+length `k` (`c.blocksFun`). This matches `FormalMultilinearSeries.comp`'s indexing, which the proof
+of the expansion lemma can reuse (`HasFTaylorSeriesUpToOn.comp`/Faà di Bruno in Mathlib,
+`FormalMultilinearSeries.taylor_comp`) or prove by induction via little-o algebra.
+Arcs are `γ : ℝ → E` with `γ α - (x + ∑_{ℓ=1}^j α^ℓ • s ℓ) =o[𝓝[>] 0] (α ↦ α^j)`.
+'''
+
+[[node]]
+id = "curveCoeff"
+kind = "def"
+desc = '''
+`curveCoeff (D : FormalMultilinearSeries ℝ E F) (s : ℕ → E) (i : ℕ) : F :=
+∑ c : Composition i, ((c.length)! : ℝ)⁻¹ • D c.length (fun m => s (c.blocksFun m))` — the book's
+`∑_{k=1}^i (1/k!) ∑_{(ℓ₁..ℓ_k) ∈ P(i,k)} D_k[s_{ℓ₁}, …, s_{ℓ_k}]` ((12.1.6), (14.3.3)–(14.3.5)); for
+`i = 0` it is `D 0 ![]`. API (part of node): additive and `ℝ`-linear in `D`; for
+`D = ftaylorSeries ℝ (fun z => f z - ⟪y, c z⟫) x` it equals `curveCoeff (ftaylorSeries ℝ f x) s i -
+⟪y, curveCoeff (ftaylorSeries ℝ c x) s i⟫` (Lagrangian coefficients, `c` `C^i` at `x`);
+`curveCoeff D s 1 = D 1 ![s 1]`, `curveCoeff D s 2 = D 1 ![s 2] + ½ D 2 ![s 1, s 1]`,
+`curveCoeff D s 3 = D 1 ![s 3] + D 2 ![s 1, s 2] + (1/6) D 3 ![s 1, s 1, s 1]` (symmetric `D`;
+Table 12.1.1, (14.3.6)–(14.3.7)).
+'''
+source = "Cartis–Gould–Toint, (12.1.5)–(12.1.7), Table 12.1.1, (14.3.3)"
+
+[[node]]
+id = "isLittleO_comp_curve_sub_curveCoeff"
+kind = "theorem"
+desc = '''
+Expansion along an arc. If `g : E → F` is `C^j` on a neighbourhood of `x` and
+`γ α - (x + ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ) =o[𝓝[>] 0] (fun α => α ^ j)`, then
+`(fun α => g (γ α) - ∑ i ∈ range (j + 1), α ^ i • curveCoeff (ftaylorSeries ℝ g x) s i)
+=o[𝓝[>] 0] (fun α => α ^ j)`.
+'''
+deps = ["curveCoeff"]
+source = "Cartis–Gould–Toint, Section 12.1.2 and (14.3.3) (\"collecting terms of equal degree in α\")"
+
+[[node]]
+id = "nonneg_of_isLittleO_poly_of_le"
+kind = "theorem"
+desc = '''
+One-dimensional first-nonvanishing-coefficient test. If `φ : ℝ → ℝ`, `a : ℕ → ℝ`,
+`φ α - ∑ i ∈ range (j + 1), a i * α ^ i =o[𝓝[>] 0] (α ↦ α ^ j)`, `φ 0 = a 0` (or just
+`φ α - a 0 = O(α)`), `∀ᶠ α in 𝓝[>] 0, φ 0 ≤ φ α`, and `a i = 0` for `i ∈ Icc 1 (j - 1)`, then
+`0 ≤ a j`. Likewise, if `φ α = o(α^j)` along `𝓝[>] 0` identically zero data, all `a i = 0`
+(`i ≤ j`) — uniqueness of asymptotic expansions (part of node). Relates to the core ray lemma
+`IsLocalMinOn.iteratedDeriv_nonneg_of_ray`.
+'''
+deps = ["IsLocalMinOn.iteratedDeriv_nonneg_of_ray"]
+source = "Cartis–Gould–Toint, proof idea of Theorems 12.1.1 and 14.3.1"
+
+[[node]]
+id = "IsFeasibleArc"
+kind = "def"
+desc = '''
+`IsFeasibleArc (K : Set E) (x : E) (j : ℕ) (s : ℕ → E) : Prop := ∃ γ : ℝ → E,
+(γ α - (x + ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ) =o[𝓝[>] 0] (α ↦ α ^ j)) ∧ ∀ᶠ α in 𝓝[>] 0, γ α ∈ K` — the
+book's `(s_1,…,s_j) ∈ 𝒟^j` for the feasible set `K` (for (14.3.1): `K = X ∩ {z | c z = 0}`).
+'''
+source = "Cartis–Gould–Toint, (14.3.2) and the descriptor set 𝒟^j_X"
+
+[[node]]
+id = "curveCoeff_eq_zero_of_isFeasibleArc"
+kind = "theorem"
+desc = '''
+If `c : E → F` is `C^j` near `x`, `c x = 0` and `IsFeasibleArc (X ∩ {z | c z = 0}) x j s`, then
+`curveCoeff (ftaylorSeries ℝ c x) s i = 0` for all `i ∈ Icc 1 j` (the book's (14.3.3)).
+'''
+deps = ["IsFeasibleArc", "isLittleO_comp_curve_sub_curveCoeff", "nonneg_of_isLittleO_poly_of_le"]
+source = "Cartis–Gould–Toint, (14.3.3)"
+
+[[node]]
+id = "curveCoeff_lagrangian_nonneg_of_isLocalMinOn"
+kind = "theorem"
+desc = '''
+Curve-based necessary conditions for a constrained minimum (Theorem 14.3.1, corrected form; with
+`X = univ` and `F = 0`: Theorem 12.1.1). Let `f : E → ℝ`, `c : E → F` (`F` real inner product
+space) be `C^q` on an open set containing `X`, `x ∈ X`, `c x = 0`,
+`IsLocalMinOn f (X ∩ {z | c z = 0}) x`. Then for every `y : F`, `j ∈ Icc 1 q` and `s : ℕ → E` with
+`IsFeasibleArc (X ∩ {z | c z = 0}) x j s` and
+`curveCoeff (ftaylorSeries ℝ (fun z => f z - ⟪y, c z⟫) x) s i = 0` for `i ∈ Icc 1 (j - 1)`:
+`0 ≤ curveCoeff (ftaylorSeries ℝ (fun z => f z - ⟪y, c z⟫) x) s j`.
+Correction: the book's 𝒟^j_X only asks the arc to stay in `X` and imposes (14.3.3) (first-order
+feasibility of `c` up to order `j`); that is false without a constraint qualification turning
+(14.3.3) into an actual feasible arc, which X.CQ does not provide. Counterexample: `X = ℝ²`,
+`c(x) = x₁² + x₂²`, `f(x) = -x₁`, `x⋆ = 0` (the only feasible point, hence a minimizer): (14.3.3)
+holds for every `s₁`, X.CQ holds for `q = 1`, but (14.3.4) for `j = 1`, `s₁ = e₁` reads `-1 ≥ 0`.
+The corrected statement quantifies over arcs feasible for the whole constraint set (as the book's
+derivation, which substitutes the arc into `c(x⋆(α)) = 0`, intends); (14.3.3) then follows
+(`curveCoeff_eq_zero_of_isFeasibleArc`) and X.CQ only serves non-vacuity.
+'''
+deps = ["isLittleO_comp_curve_sub_curveCoeff", "nonneg_of_isLittleO_poly_of_le", "IsFeasibleArc", "curveCoeff_eq_zero_of_isFeasibleArc"]
+source = "Cartis–Gould–Toint, Theorem 14.3.1 (and Theorem 12.1.1)"

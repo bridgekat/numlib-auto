@@ -1,0 +1,41 @@
+desc = '''
+"Anchored" Lipschitz continuity of iterated derivatives (Cartis–Gould–Toint assumptions
+f.D1qLaB.X, Φ₂.D1qLaB.X (14.2.9)–(14.2.10), (14.3.26)): `‖∇^j f(x) - ∇^j f(y)‖ ≤ L ‖x - y‖` only
+for `x` in an anchor set `A` (a sublevel set) and `y` in a larger open convex set `D`, plus bounds on
+`‖∇^j f‖`. The point of the notion is Lemma 14.3.6: the squared residuals `½‖c‖²`,
+`½‖c‖² + ½(f - t)²` inherit such bounds from bounded-and-Lipschitz `c`, `f` with constants that are
+affine in the size of the order-zero factors on the anchor set (hence independent of the target
+`t`). With `A = D` it is the core `IteratedFDerivLipschitzOn`.
+'''
+
+[[node]]
+id = "IteratedFDerivLipschitzAnchored"
+kind = "def"
+desc = '''
+`IteratedFDerivLipschitzAnchored (f : E → F) (j : ℕ) (L : ℝ) (A D : Set E) : Prop :=
+∀ x ∈ A, ∀ y ∈ D, ‖iteratedFDeriv ℝ j f x - iteratedFDeriv ℝ j f y‖ ≤ L * ‖x - y‖`.
+API (part of node): monotone in `A`, `D`, `L`; `IteratedFDerivLipschitzOn f j L D → A ⊆ D →
+IteratedFDerivLipschitzAnchored f j L A D`; closed under addition and constant multiples.
+'''
+deps = ["IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, assumption f.D1qLaB.X, (14.2.9)"
+
+[[node]]
+id = "IteratedFDerivLipschitzAnchored.mul"
+kind = "theorem"
+desc = '''
+Products. Let `u v : E → ℝ` be `C^p` on an open convex `D ⊇ A`, with, for `i ∈ Icc 1 p`,
+`IteratedFDerivLipschitzAnchored u i (Lu i) A D`, `IteratedFDerivLipschitzAnchored v i (Lv i) A D`,
+`‖iteratedFDeriv ℝ i u y‖ ≤ Bu i`, `‖iteratedFDeriv ℝ i v y‖ ≤ Bv i` for `y ∈ D`, and
+`|u x| ≤ U`, `|v x| ≤ V` for `x ∈ A`. Then for `j ∈ Icc 1 p`,
+`IteratedFDerivLipschitzAnchored (u * v) j (K₀ + K₁ * (U + V)) A D` and
+`‖iteratedFDeriv ℝ j (u * v) x‖ ≤ K₂ + K₃ * (U + V)` for `x ∈ A`, where `K₀ … K₃ ≥ 0` are explicit
+binomial combinations of `Lu i, Lv i, Bu i, Bv i` (`i ∈ Icc 1 p`) only (Leibniz rule
+`norm_iteratedFDeriv_mul_le`/`iteratedFDeriv_mul` in Mathlib; each difference of a product split so
+that order-0 factors are evaluated at the anchor `x ∈ A` and their increments bounded by the mean
+value theorem with `Bu 1`, `Bv 1`, as in (B.14.10)–(B.14.12), (B.14.16)–(B.14.17)).
+Corollary (part of node): for `c : E → EuclideanSpace ℝ (Fin m)` and `f : E → ℝ`, the same holds for
+`½‖c‖² = ½ ∑ c_i²` and `½(f - t)²` with `U = V = sup_A ‖c‖`, resp. `sup_A |f - t|`.
+'''
+deps = ["IteratedFDerivLipschitzAnchored"]
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.6 (Appendix B, (B.14.9)–(B.14.18))"

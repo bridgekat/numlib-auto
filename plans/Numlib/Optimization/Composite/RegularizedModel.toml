@@ -1,0 +1,127 @@
+namespace = "Optimization"
+desc = '''
+The regularized composite model of the ARqpC algorithm (Cartis–Gould–Toint (14.1.11)) and the
+one-iteration lemmas behind Lemmas 14.1.2, 14.1.4, 14.1.5, 14.1.7, stated for general jets
+`Df : FormalMultilinearSeries ℝ E ℝ`, `Dc : FormalMultilinearSeries ℝ E F` (symmetric up to order
+`p`, `FormalMultilinearSeries.IsSymm`), Lipschitz `h` with `h 0 = 0` and `IsSubadditive h`, and a
+feasible displacement set (for §14.2). With `h = 0` these are exactly the ARqp lemmas of
+Chapter 12 (12.2.8, 12.2.10, 12.2.11): the Chapter 12 planner should specialize these rather than
+re-prove them.
+
+Derivatives of the model at a trial step `s` are those of `s ↦ regularizedModel Df p σ s` and
+`s ↦ Dc.taylorSum p s` (Mathlib `ftaylorSeries` at `s`); the needed facts are the core (A.11)
+`FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply` and the bounds on the derivatives of
+`‖s‖^{p+1}` from Lemma B.4.1 ((B.4.1): `‖∇^ℓ_s ‖s‖^{p+1}‖ ≤ (p+1)!/(p-ℓ+1)! ‖s‖^{p-ℓ+1}`,
+(B.4.3): `∇^p_s ‖s‖^{p+1}` is `(p+1)!`-Lipschitz), which belong to the Chapter 4 planner's
+`Analysis/InnerProductSpace` module (extension of `NormPowHessian`); they are referenced in prose
+here because that module is not on main yet.
+'''
+
+[[node]]
+id = "compositeRegularizedModel"
+kind = "def"
+desc = '''
+`compositeRegularizedModel Df Dc h p σ s : ℝ := regularizedModel Df p σ s + h (Dc.taylorSum p s)`
+`= T_{f,p}(x,s) + h(T_{c,p}(x,s)) + σ/(p+1)! ‖s‖^{p+1}`, the book's `m̂_k(s)` (14.1.11). API (part
+of node): value at `0` is `Df 0 ![] + h (Dc 0 ![])` (`= w(x)` for exact jets); continuity;
+`compositeRegularizedModel Df Dc 0 p σ = regularizedModel Df p σ`.
+'''
+deps = ["regularizedModel", "FormalMultilinearSeries.taylorSum"]
+source = "Cartis–Gould–Toint, (14.1.11)"
+
+[[node]]
+id = "compositeModelDecrement"
+kind = "def"
+desc = '''
+`compositeModelDecrement Df Dc h p σ j s d := compositeTaylorDecrement
+(ftaylorSeries ℝ (regularizedModel Df p σ) s) (ftaylorSeries ℝ (Dc.taylorSum p) s) h j d`, the
+book's `ΔT_{m̂_k,j}(s, d)`; its `sSup` over `closedBall 0 δ ∩ S` is `φ^δ_{m̂_k,j}(s)` (14.1.14).
+Expansion lemma (part of node, from (A.11) and symmetry): for `j ≤ p`,
+`compositeModelDecrement … j s d = -∑_{ℓ=1}^j (1/ℓ!) ∇^ℓ_s T_{f,p}(s)[d]^ℓ + h(T_{c,p}(s))
+- h(∑_{ℓ=0}^j (1/ℓ!) ∇^ℓ_s T_{c,p}(s)[d]^ℓ) - σ/(p+1)! ∑_{ℓ=1}^j (1/ℓ!) ∇^ℓ_s ‖s‖^{p+1}[d]^ℓ`
+(the displayed formula (14.1.14)).
+'''
+deps = ["compositeTaylorDecrement", "regularizedModel", "FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply"]
+source = "Cartis–Gould–Toint, (14.1.14)"
+
+[[node]]
+id = "le_compositeTaylorDecrement_of_compositeRegularizedModel_le"
+kind = "theorem"
+desc = '''
+If `compositeRegularizedModel Df Dc h p σ s ≤ compositeRegularizedModel Df Dc h p σ 0` then
+`σ / (p + 1)! * ‖s‖ ^ (p + 1) ≤ compositeTaylorDecrement Df Dc h p s` (Lemma 14.1.5; immediate
+from the definitions). Strict version: `<` gives `<`.
+'''
+deps = ["compositeRegularizedModel", "compositeTaylorDecrement"]
+source = "Cartis–Gould–Toint, Lemma 14.1.5"
+
+[[node]]
+id = "compositeRegularizedModel_sub_ge_of_decrement_ge"
+kind = "theorem"
+desc = '''
+Model decrease from a large model decrement (Lemma 14.1.2 in general form; `h = 0` gives Lemma
+12.2.8). Hypotheses: `Df.IsSymm p`, `Dc.IsSymm p`; `‖Df i‖ ≤ Lf` and `‖Dc i‖ ≤ Lc` for
+`i ∈ Icc 2 p`; `|h a - h b| ≤ Lh ‖a - b‖`, `h 0 = 0`, `IsSubadditive h`; `0 ≤ σ`; `‖s‖ ≤ 1`;
+`1 ≤ j ≤ p`; `α > 0`; `0 < δ ≤ min 1 (α / (4 * (3 * (Lf + Lh * Lc) + σ)))`; `‖d‖ ≤ δ`;
+`α * δ ^ j / j! ≤ compositeModelDecrement Df Dc h p σ j s d`. Conclusion:
+`compositeRegularizedModel Df Dc h p σ s - compositeRegularizedModel Df Dc h p σ (s + d) ≥
+α / 2 * δ ^ j / j!`. Proof: exact Taylor expansion of the polynomial parts at `s`, subadditivity
+of `h` to split orders `≤ j` and `> j`, `(A.33)` (`sum_pow_div_factorial_Icc_succ_le`,
+`sum_pow_div_factorial_le_one_add_two_mul` bound `‖∇^ℓ_s T_p(s)‖ ≤ 3 L` for `ℓ ≥ 2`, `‖s‖ ≤ 1`),
+and the remainder of `‖·‖^{p+1}` from (B.4.3). (With `Lw = Lf + Lh Lc` this is the book's
+`3 L_w + σ_k`; on the surface `Lc = √m L_c`.)
+'''
+deps = ["compositeRegularizedModel", "compositeModelDecrement", "IsSubadditive", "sum_pow_div_factorial_Icc_succ_le", "sum_pow_div_factorial_le_one_add_two_mul", "FormalMultilinearSeries.iteratedFDeriv_taylorSum_apply"]
+source = "Cartis–Gould–Toint, Lemma 14.1.2 (and Lemma 12.2.8 for h = 0)"
+
+[[node]]
+id = "exists_isMinOn_compositeRegularizedModel"
+kind = "theorem"
+desc = '''
+`[FiniteDimensional ℝ E]`, `σ > 0`, `h` continuous with `|h a| ≤ Lh ‖a‖ + |h 0|`, `T ⊆ E` closed
+with `0 ∈ T`: `∃ s ∈ T, IsMinOn (compositeRegularizedModel Df Dc h p σ) T s` (the model is
+continuous and coercive: `T_{f,p} + h ∘ T_{c,p}` grows at most like `‖s‖^p`, dominated by
+`σ ‖s‖^{p+1}/(p+1)!`; book's remark after (14.1.14)). Also: the sublevel set
+`{s ∈ T | m̂ s ≤ m̂ 0}` is bounded.
+'''
+deps = ["compositeRegularizedModel"]
+source = "Cartis–Gould–Toint, remark after (14.1.14)"
+
+[[node]]
+id = "exists_radius_of_isMinOn_compositeRegularizedModel_zero"
+kind = "theorem"
+desc = '''
+Termination in Step 2 (core of Lemma 14.1.4; `h = 0` gives Lemma 12.2.10). Let `T = {d | x + d ∈ X}`
+and suppose `0` is a global minimizer of `compositeRegularizedModel Df Dc h p σ` on `T`, with
+`h 0 = 0`, `IsSubadditive h`, `h` Lipschitz with constant `Lh`, `σ ≥ 0`. Then for every
+`j ∈ Icc 1 p` and `ε > 0` there is `δ ∈ (0, 1]` with `compositeTaylorMeasure Df Dc h j δ T ≤
+ε * δ ^ j / j!`. (Proof of Appendix B: for `d ∈ T`, `0 ≤ m̂(d) - m̂(0)` and subadditivity give
+`compositeTaylorDecrement Df Dc h j d ≤ ∑_{ℓ=j+1}^p ‖Df ℓ‖ ‖d‖^ℓ/ℓ! + Lh ∑_{ℓ=j+1}^p ‖Dc ℓ‖ ‖d‖^ℓ/ℓ!
++ σ ‖d‖^{p+1}/(p+1)! = O(‖d‖^{j+1})`.) If moreover `h` is convex, `X` convex, `j = 1`, the
+measure vanishes for every `δ` (by `compositeTaylorDecrement_one_nonpos_of_isLocalMinOn` applied to
+the model, whose jets at `0` agree with `Df`, `Dc` up to order `p`).
+'''
+deps = ["compositeRegularizedModel", "compositeTaylorMeasure", "IsSubadditive", "compositeTaylorDecrement_one_nonpos_of_isLocalMinOn", "abs_compositeTaylorDecrement_le"]
+source = "Cartis–Gould–Toint, Lemma 14.1.4 (proof in Appendix B)"
+
+[[node]]
+id = "compositeTaylorDecrement_le_of_step"
+kind = "theorem"
+desc = '''
+One-step comparison of measures (the content of Lemma 14.1.7, Appendix B (B.14.1)–(B.14.6), in
+corrected form). Let `f`, `c` be `C^p` on an open `D` containing the convex `C ∋ x, x + s`, with
+`IteratedFDerivLipschitzOn f p Lf C`, `IteratedFDerivLipschitzOn c p Lc C`, `h` Lipschitz with
+constant `Lh`; `Df = ftaylorSeries ℝ f x`, `Dc = ftaylorSeries ℝ c x`; `1 ≤ j ≤ p`, `0 ≤ σ`,
+`0 < δ`, `‖d‖ ≤ δ`. Then
+`compositeTaylorDecrement (ftaylorSeries ℝ f (x + s)) (ftaylorSeries ℝ c (x + s)) h j d ≤
+compositeModelDecrement Df Dc h p σ j s d
++ (Lf + Lh * Lc + σ) * ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / ℓ! * ‖s‖ ^ (p - ℓ + 1)
++ 2 * Lh * Lc / (p + 1)! * ‖s‖ ^ (p + 1)`.
+Correction: the book's (14.1.30) has `1 ×` the last term; (B.14.3) and the `ℓ = 0` term of (B.14.4)
+each contribute `L_{h,0} √m L_{c,p} ‖s‖^{p+1}/(p+1)!`, so the factor is `2` (harmless downstream:
+`2√m L_{h,0} L_{c,p}/((p+1)! (L_{w,p}+σ_max)) < 1` still holds in Lemma 14.1.8). The book's
+exponent `p - j + 1` in (B.14.6) should read `p - ℓ + 1`. Uses `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`
+for `f`, its vector version for `c`, and (B.4.1) for `‖·‖^{p+1}`.
+'''
+deps = ["compositeModelDecrement", "norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "norm_iteratedFDeriv_sub_taylorSum_le_of_lipschitz_vec", "norm_sub_taylorSum_le_of_lipschitz_vec"]
+source = "Cartis–Gould–Toint, Lemma 14.1.7, proof (B.14.1)–(B.14.6)"
