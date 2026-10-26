@@ -62,8 +62,9 @@ error model (13.1.2) is `Optimization.JetApprox (ftaylorSeries ℝ f (x k)) (D k
   `AssumptionD0qLOn`, `AssumptionD0pLOn` (on an open convex set, for feasible sets);
 * `TRqIDAParams`, `TRqDAStep`, `algorithm_13_1_1` (TRqIDA), `trTest`, `phiHat`;
   `algorithm_13_1_1_feasible`, `trTest_feasible` (TRqIDA-SC);
-* `ARqpIDAParams`, `ARqpStep1`, `ARqpStep2`, `ARqpDAStep`, `RadiiControl`, `algorithm_13_1_2`
-  (ARqpIDA), `arTest`; `algorithm_13_1_2_feasible`, `arTest_feasible` (ARqpIDA-SC).
+* `ARqpIDAParams`, `ARqpStep1`, `ARqpStep2`, `ARqpDAStep`, `RadiiControlOf`, `RadiiControl`,
+  `algorithm_13_1_2` (ARqpIDA), `arTest`; `algorithm_13_1_2_feasible`, `arTest_feasible`
+  (ARqpIDA-SC); `arPiOf`, `arPi`, `arStepConstOf`, `arStepConst` (exponents and constants).
 
 ## Main results
 
@@ -104,7 +105,10 @@ error model (13.1.2) is `Optimization.JetApprox (ftaylorSeries ℝ f (x k)) (D k
 * **Radii control** (13.1.69)–(13.1.70): the results assume the weaker `RadiiControl`
   (`δ_{s_k} = 1` if `q ≤ 2`; the lower bounds `ς θ ε_j/(24 max(L̄, σ_k))` at every order if
   `q > 2`), which the book's condition implies (`RadiiControl.of_book`); for `q > 2` the proofs
-  do not use `δ = 1` at the orders `j ≤ 2`.
+  do not use `δ = 1` at the orders `j ≤ 2`. The `_feasible` analysis takes the mode as a
+  parameter (`RadiiControlOf u`: unit radii if `u`, the lower bounds at every order if `¬ u`,
+  with exponents `arPiOf u`), so that the lower-bound mode also covers `q ≤ 2` when unit radii
+  are not available (§14.2); `RadiiControl` is the mode `u = (q ≤ 2)`.
 * **Lemma 13.1.17** (`q > 2`): the printed constant `κ_{δ,min}^{j-1}` is replaced by
   `κ̂^{j-1}` with `κ̂ = min(κ_{δ,min}, (1-θ)/(2 q! (L_{f,p} + σ_max + 3κ_{∇,max}κ_s)))`; the
   book's derivation ("the first case implies the second") needs `κ_{δ,min}` below that bound.
@@ -582,6 +586,37 @@ theorem mem_succ (hx : x k ∈ X) : x (k + 1) ∈ X := by
   by_cases hc : ¬ acc k ∧ P.η₁ ≤ ρ k
   · rw [hs.x_succ_eq_add hc.1 hc.2]; exact (hs.step2_of_not_acc hc.1).mem
   · rw [hs.x_succ_eq hc]; exact hx
+
+/-- One iteration only involves the data at iterations `k` and `k + 1`: the step predicate at `k`
+transfers to sequences whose iterates, radii, accuracies and estimates at `k'` and `k' + 1`, and
+whose displacements, order, step, flag and ratio at `k'`, are those of iterations `k` and `k + 1`
+(used to splice runs). -/
+theorem congr {x' : ℕ → ℝⁿ} {Δ' : ℕ → ℝ} {h' : ℕ → ℕ → ℝ}
+    {D' : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ} {dd' : ℕ → ℕ → ℝⁿ} {jk' : ℕ → ℕ} {s' : ℕ → ℝⁿ}
+    {acc' : ℕ → Prop} {ρ' : ℕ → ℝ} {k' : ℕ} (hx : x' k' = x k) (hx1 : x' (k' + 1) = x (k + 1))
+    (hΔ : Δ' k' = Δ k) (hΔ1 : Δ' (k' + 1) = Δ (k + 1)) (hh : h' k' = h k)
+    (hh1 : h' (k' + 1) = h (k + 1)) (hD : D' k' = D k) (hD1 : D' (k' + 1) = D (k + 1))
+    (hdd : dd' k' = dd k) (hjk : jk' k' = jk k) (hs' : s' k' = s k) (hacc : acc' k' ↔ acc k)
+    (hρ : ρ' k' = ρ k) :
+    TRqDAStep X P ε x' Δ' h' D' dd' jk' s' acc' ρ' k' := by
+  obtain ⟨hw, hap, hst, hac, hle, hht, hdu, hxa, hΔa, hha⟩ := hs
+  have hF : ∀ j, trFail P ε D' Δ' dd' k' j ↔ trFail P ε D Δ dd k j := fun j => by
+    simp only [trFail, trRadius, hD, hΔ, hdd]
+  refine ⟨fun j hj => ?_, fun hp => hacc.2 (hap fun j hj hf => hp j hj ((hF j).2 hf)),
+    fun ⟨j, hj, hf⟩ => ?_, fun ha => ?_, fun ha => ?_, fun ha => ?_, fun ha hr => ?_,
+    fun ha => ?_, fun ha => ?_, fun ha => ?_⟩
+  · simpa only [trRadius, hD, hΔ, hx, hdd] using hw j hj
+  · obtain ⟨hjm, hfl, hpl, hmem, hnl, hdl, hai⟩ := hst ⟨j, hj, (hF j).1 hf⟩
+    refine ⟨hjk ▸ hjm, (hF _).2 (hjk ▸ hfl), fun i hi hlt hfi => hpl i hi (hjk ▸ hlt)
+      ((hF i).1 hfi), by rw [hx, hs']; exact hmem, by rw [hs', hΔ]; exact hnl,
+      by rw [hD, hjk, hdd, hs']; exact hdl, by rw [hacc, hs', hh]; exact hai⟩
+  · rw [hρ, hx, hs', hx1, hΔ, hΔ1]; exact hac (fun h => ha (hacc.2 h))
+  · rw [hΔ1]; exact hle (fun h => ha (hacc.2 h))
+  · rw [hh1, hh]; exact hht (fun h => ha (hacc.2 h))
+  · rw [hD1, hD]; exact hdu (fun h => ha (hacc.2 h)) (hρ ▸ hr)
+  · rw [hx1, hx]; exact hxa (hacc.1 ha)
+  · rw [hΔ1, hΔ]; exact hΔa (hacc.1 ha)
+  · rw [hh1, hh]; exact hha (hacc.1 ha)
 
 end TRqDAStep
 
@@ -1931,17 +1966,36 @@ structure ARqpDAStep (X : Set ℝⁿ) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x 
   /-- Step 5 multiplies the accuracies by `γ_h`. -/
   h_acc : acc k → ∀ i, h (k + 1) i = P.γh * h k i
 
+/-- The radii control of ARqpIDA / ARqpEDA in one of two modes, selected by the proposition `u`
+([cartis2022evaluation], (13.1.69)–(13.1.70) and §14.2): after a trial iteration with a short
+step `‖s_k‖ < 1`, if `u` holds then `δ_{s_k,j} = 1` for all `j ∈ [1, q]` (unit radii), and if `u`
+fails then `δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for all `j ∈ [1, q]` (the (12.2.51)-type lower
+bound at every order). Unit radii are what Algorithm 12.2.3 delivers for `q ≤ 2` without
+constraints (or for `q = 1` on a convex feasible set); the lower bound is available in every
+case, in particular for `q > 2` or with a general feasible set. The complexity orders depend on
+the mode (`arPiOf u`). -/
+def RadiiControlOf (u : Prop) (P : ARqpIDAParams) (ε : ℕ → ℝ) (Lb : ℝ) (σ : ℕ → ℝ)
+    (δs : ℕ → ℕ → ℝ) (s : ℕ → ℝⁿ) (acc : ℕ → Prop) (k : ℕ) : Prop :=
+  ¬ acc k → ‖s k‖ < 1 → (u → ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) ∧
+    (¬ u → ∀ j ∈ Finset.Icc 1 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j)
+
 /-- The radii control assumed in Theorem 13.1.19 ([cartis2022evaluation], (13.1.69)–(13.1.70)),
-in the form used by the analysis: after a trial iteration with a short step, `δ_{s_k,j} = 1` for
-all `j ∈ [1, q]` if `q ≤ 2`, and `δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for all `j ∈ [1, q]` if
-`q > 2`. The book's (13.1.69)–(13.1.70) (`δ_{s_k,j} = 1` for `j ≤ min(2, q)` and the lower bound
-for `j ∈ [3, q]`, achievable by Algorithm 12.2.3 as Lemma 13.1.12 shows) imply it
-(`RadiiControl.of_book`); for `q > 2` it is the (12.2.51)-type control at every order, which is
-also available with a feasible set (§14.2), where `δ = 1` may not be. -/
+in the form used by the analysis: `RadiiControlOf` with unit radii exactly when `q ≤ 2`, i.e.
+after a trial iteration with a short step, `δ_{s_k,j} = 1` for all `j ∈ [1, q]` if `q ≤ 2`, and
+`δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for all `j ∈ [1, q]` if `q > 2`. The book's
+(13.1.69)–(13.1.70) (`δ_{s_k,j} = 1` for `j ≤ min(2, q)` and the lower bound for `j ∈ [3, q]`,
+achievable by Algorithm 12.2.3 as Lemma 13.1.12 shows) imply it (`RadiiControl.of_book`). -/
 def RadiiControl (P : ARqpIDAParams) (ε : ℕ → ℝ) (Lb : ℝ) (σ : ℕ → ℝ) (δs : ℕ → ℕ → ℝ)
     (s : ℕ → ℝⁿ) (acc : ℕ → Prop) (k : ℕ) : Prop :=
-  ¬ acc k → ‖s k‖ < 1 → (P.q ≤ 2 → ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) ∧
-    (2 < P.q → ∀ j ∈ Finset.Icc 1 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j)
+  RadiiControlOf (P.q ≤ 2) P ε Lb σ δs s acc k
+
+/-- `RadiiControl` in the printed form, with the case `2 < q` for the lower bounds. -/
+theorem radiiControl_iff {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ : ℕ → ℝ}
+    {δs : ℕ → ℕ → ℝ} {s : ℕ → ℝⁿ} {acc : ℕ → Prop} {k : ℕ} :
+    RadiiControl P ε Lb σ δs s acc k ↔
+      (¬ acc k → ‖s k‖ < 1 → (P.q ≤ 2 → ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) ∧
+        (2 < P.q → ∀ j ∈ Finset.Icc 1 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j)) := by
+  simp only [RadiiControl, RadiiControlOf, not_le]
 
 /-- The book's radii control (13.1.69)–(13.1.70) (`δ_{s_k,j} = 1` for `j ≤ min(2, q)`,
 `δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for `j ∈ [3, q]`) implies `RadiiControl` when
@@ -2197,18 +2251,43 @@ theorem arKappaDelta1_le_one {P : ARqpIDAParams} {Lb σ : ℝ} (hLb : 1 ≤ Lb) 
   rw [arKappaDelta1, div_le_one (by positivity)]
   nlinarith
 
+/-- Either mode of the radii control gives the lower bound `κ^{(1)}_δ(σ̄) ε_j ≤ δ_{s_k,j}` after
+a trial iteration with a short step, when `ε ∈ (0, 1]^q`, `L̄ ≥ 1` and `σ_k ≤ σ̄`. -/
+theorem RadiiControlOf.kappa_mul_le {u : Prop} {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ}
+    {σ : ℕ → ℝ} {δs : ℕ → ℕ → ℝ} {s : ℕ → ℝⁿ} {acc : ℕ → Prop} {k : ℕ}
+    (hrc : RadiiControlOf u P ε Lb σ δs s acc k) (hk : ¬ acc k) (hs : ‖s k‖ < 1)
+    (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1) (hLb : 1 ≤ Lb) {σbar : ℝ}
+    (hσ : σ k ≤ σbar) {j : ℕ} (hj : j ∈ Finset.Icc 1 P.q) :
+    arKappaDelta1 P Lb σbar * ε j ≤ δs k j := by
+  obtain ⟨h1, h2⟩ := hrc hk hs
+  have hεj := hε j hj
+  have := P.ς_pos; have := P.ς_le_one; have := P.θ_pos; have := P.θ_lt_one
+  have hM : 1 ≤ max Lb σbar := hLb.trans (le_max_left _ _)
+  have hM' : 1 ≤ max Lb (σ k) := hLb.trans (le_max_left _ _)
+  by_cases hu : u
+  · rw [h1 hu j hj, arKappaDelta1, div_mul_eq_mul_div, div_le_one (by positivity)]
+    have : P.ς * P.θ * ε j ≤ 1 :=
+      mul_le_one_of_le_one (mul_le_one_of_le_one P.ς_le_one P.θ_pos.le P.θ_lt_one.le)
+        hεj.1.le hεj.2
+    nlinarith
+  · refine le_trans ?_ (h2 hu j hj)
+    rw [arKappaDelta1, div_mul_eq_mul_div]
+    exact div_le_div_of_nonneg_left (by have := hεj.1; positivity) (by positivity)
+      (by have := max_le_max (le_refl Lb) hσ; linarith)
+
 /-- **The radius bound (13.1.71) of Lemma 13.1.12** ([cartis2022evaluation]), for sequences
 satisfying the ARqpIDA step predicate at every iteration `i < k` and Step 1 at `k`, with
-`ε ∈ (0, 1]^q`,
-`ε ≤ δ₀`, `‖∇̄^ℓ f(x_i)‖ ≤ L̄` (`L̄ ≥ 1`), `σ_i ≤ σ̄` for `i ≤ k` and the radii control
-(13.1.69)–(13.1.70) at every `i < k`: `δ^{(0)}_{k,j} ≥ δ^{(1)}_{k,j} ≥ κ^{(1)}_δ(σ̄) ε_j` for
-`j ∈ [1, q]`. (The book takes `σ̄ = σ_{k,max} = max_{i ≤ k} σ_i`.) -/
+`ε ∈ (0, 1]^q`, `ε ≤ δ₀`, `‖∇̄^ℓ f(x_i)‖ ≤ L̄` (`L̄ ≥ 1`), `σ_i ≤ σ̄` for `i ≤ k` and the radii
+control (`RadiiControlOf`, either mode) at every `i < k`:
+`δ^{(0)}_{k,j} ≥ δ^{(1)}_{k,j} ≥ κ^{(1)}_δ(σ̄) ε_j` for `j ∈ [1, q]`. (The book takes
+`σ̄ = σ_{k,max} = max_{i ≤ k} σ_i`.) -/
 theorem arqp_radius_ge (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ i)
     (hstep1 : ARqpStep1 X P ε x σ δ δ₁ D dd k) (hσ0 : σ 0 = P.σ₀) (hδ0 : δ 0 = P.δ₀)
     (hh0 : h 0 = P.h₀)
     (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1) (hεδ : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ P.δ₀ j)
     {Lb σbar : ℝ} (hLb : 1 ≤ Lb) (hD : ∀ i ≤ k, ∀ ℓ ∈ Finset.Icc 1 P.p, ‖D i ℓ‖ ≤ Lb)
-    (hσ : ∀ i ≤ k, σ i ≤ σbar) (hrc : ∀ i < k, RadiiControl P ε Lb σ δs s acc i) :
+    (hσ : ∀ i ≤ k, σ i ≤ σbar) {u : Prop}
+    (hrc : ∀ i < k, RadiiControlOf u P ε Lb σ δs s acc i) :
     ∀ j ∈ Finset.Icc 1 P.q, arKappaDelta1 P Lb σbar * ε j ≤ δ₁ k j ∧ δ₁ k j ≤ δ k j := by
   have hLb0 : 0 < Lb := zero_lt_one.trans_le hLb
   set κ := arKappaDelta1 P Lb σbar with hκdef
@@ -2255,20 +2334,7 @@ theorem arqp_radius_ge (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs h
       · rw [hsi.δ_acc hacc]; exact ih hik j hj
       rw [hsi.radii_trial hacc]
       split_ifs with hc
-      · obtain ⟨hrc1, hrc2⟩ := hrc i (by omega) hacc hc.2
-        rcases le_or_gt P.q 2 with hq2 | hq2
-        · rw [hrc1 hq2 j hj]
-          exact mul_le_one_of_le_one hκ1 (hε j hj).1.le (hε j hj).2
-        · refine le_trans ?_ (hrc2 hq2 j hj)
-          have hεj := (hε j hj).1
-          have hM : 0 < max Lb (σ i) := lt_max_of_lt_left hLb0
-          rw [le_div_iff₀ (by positivity), hκdef, arKappaDelta1, div_mul_eq_mul_div,
-            div_mul_eq_mul_div,
-            div_le_iff₀ (by have : 0 < max Lb σbar := lt_max_of_lt_left hLb0; positivity)]
-          have := hMle i hik
-          have : P.ς * P.θ * ε j * (24 * max Lb (σ i)) ≤ P.ς * P.θ * ε j * (24 * max Lb σbar) := by
-            gcongr
-          linarith
+      · exact (hrc i (by omega)).kappa_mul_le hacc hc.2 hε hLb (hσ i hik) hj
       · exact hδ₁
   intro j hj
   have hδ1k : ∀ j ∈ Finset.Icc 1 P.q, δ k j ≤ 1 := fun j hj =>
@@ -2386,23 +2452,25 @@ theorem pow_rpow_div {t : ℝ} {m : ℕ} (hm : m ≠ 0) (ht : 0 ≤ t) (r : ℝ)
 noncomputable def arKappaHat (q : ℕ) (a A κ : ℝ) : ℝ := min κ (a / (2 * q ! * A))
 
 /-- **The step-length bound of Lemma 13.1.17** ([cartis2022evaluation], via Lemma 12.2.12),
-from the radius inequality (13.1.79): let `a, A > 0`, `ε > 0`, `t ∈ (0, 1)`, `δ > 0`,
-`j ∈ [1, q]`, `q ≤ p`, `κ > 0` with `κ ε ≤ δ`, and `δ = 1` if `q ≤ 2`. If
-`a ε δ^j/j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1}`, then `a/(2 j! A) ε ≤ t^{p-j+1}` if `q ≤ 2`, and
-`a/(2 j! A) κ̂^{j-1} ε^j ≤ t^p` with `κ̂ = min(κ, a/(2 q! A))` if `q > 2`. -/
-theorem arqp_pow_ge_of_radius_ineq {a A t ε δ κ : ℝ} {j p q : ℕ} (ha : 0 < a) (hA : 0 < A)
-    (hε : 0 < ε) (ht : 0 < t) (ht1 : t < 1) (hδ : 0 < δ) (hj : j ∈ Finset.Icc 1 q)
-    (hqp : q ≤ p) (hκ : 0 < κ) (hκε : κ * ε ≤ δ) (hq2 : q ≤ 2 → δ = 1)
+from the radius inequality (13.1.79), in the unit-radius mode (`u`, where `δ = 1`) or the
+lower-bound mode (`¬ u`): let `a, A > 0`, `ε > 0`, `t ∈ (0, 1)`, `δ > 0`, `j ∈ [1, q]`, `q ≤ p`,
+`κ > 0` with `κ ε ≤ δ`, and `δ = 1` if `u`. If
+`a ε δ^j/j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1}`, then `a/(2 j! A) ε ≤ t^{p-j+1}` if `u`, and
+`a/(2 j! A) κ̂^{j-1} ε^j ≤ t^p` with `κ̂ = min(κ, a/(2 q! A))` if `¬ u`. (The book's cases are
+`u = (q ≤ 2)`.) -/
+theorem arqp_pow_ge_of_radius_ineq {a A t ε δ κ : ℝ} {j p q : ℕ} {u : Prop} (ha : 0 < a)
+    (hA : 0 < A) (hε : 0 < ε) (ht : 0 < t) (ht1 : t < 1) (hδ : 0 < δ) (hj : j ∈ Finset.Icc 1 q)
+    (hqp : q ≤ p) (hκ : 0 < κ) (hκε : κ * ε ≤ δ) (hu : u → δ = 1)
     (hineq : a * ε * δ ^ j / j ! ≤ A * ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * t ^ (p - ℓ + 1)) :
-    (q ≤ 2 → a / (2 * j ! * A) * ε ≤ t ^ (p - j + 1)) ∧
-      (2 < q → a / (2 * j ! * A) * arKappaHat q a A κ ^ (j - 1) * ε ^ j ≤ t ^ p) := by
+    (u → a / (2 * j ! * A) * ε ≤ t ^ (p - j + 1)) ∧
+      (¬ u → a / (2 * j ! * A) * arKappaHat q a A κ ^ (j - 1) * ε ^ j ≤ t ^ p) := by
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
   have hjp : j ≤ p := hjq.trans hqp
   have hM : MeasureIneq A 0 a ε δ t j p := by
     rw [measureIneq_iff, zero_mul, add_zero]; exact hineq
   have hfj : (0 : ℝ) < j ! := by positivity
   refine ⟨fun hq => ?_, fun _ => ?_⟩
-  · have h1 := hM.div_le_of_le hA.le le_rfl ht (by rw [hq2 hq]; exact ht1.le) hjp
+  · have h1 := hM.div_le_of_le hA.le le_rfl ht (by rw [hu hq]; exact ht1.le) hjp
     rw [add_zero] at h1
     calc a / (2 * j ! * A) * ε = a * ε / j ! / (2 * A) := by field_simp
       _ ≤ t ^ (p - j + 1) := by rw [div_le_iff₀ (by positivity)]; linarith
@@ -2418,41 +2486,60 @@ theorem arqp_pow_ge_of_radius_ineq {a A t ε δ κ : ℝ} {j p q : ℕ} (ha : 0 
     rw [this]
     gcongr
 
+/-- The exponent `π_j` of Lemma 13.1.18 in the radii mode `u` (`RadiiControlOf`):
+`(p+1)/(p-j+1)` with unit radii (`u`) and `j(p+1)/p` with the lower-bound radii (`¬ u`). -/
+noncomputable def arPiOf (u : Prop) [Decidable u] (p j : ℕ) : ℝ :=
+  if u then ((p : ℝ) + 1) / ((p - j + 1 : ℕ) : ℝ) else (j : ℝ) * ((p : ℝ) + 1) / p
+
 /-- The exponent `π_j` of Lemma 13.1.18: `(p+1)/(p-j+1)` if `q ≤ 2`, `j(p+1)/p` if `q > 2`. -/
-noncomputable def arPi (q p j : ℕ) : ℝ :=
-  if q ≤ 2 then ((p : ℝ) + 1) / ((p - j + 1 : ℕ) : ℝ) else (j : ℝ) * ((p : ℝ) + 1) / p
+noncomputable def arPi (q p j : ℕ) : ℝ := arPiOf (q ≤ 2) p j
+
+/-- The step-length constant of Lemma 13.1.18 in the radii mode `u`:
+`(a/(2 q! A))^{(p+1)/(p-q+1)}` with unit radii (`u`), and `(a κ̂^{q-1}/(2 q! A))^{q(p+1)/p}` with
+`κ̂ = arKappaHat q a A κ` with the lower-bound radii (`¬ u`). -/
+noncomputable def arStepConstOf (u : Prop) [Decidable u] (q p : ℕ) (a A κ : ℝ) : ℝ :=
+  if u then (a / (2 * q ! * A)) ^ (((p : ℝ) + 1) / ((p - q + 1 : ℕ) : ℝ))
+  else (a * arKappaHat q a A κ ^ (q - 1) / (2 * q ! * A)) ^ ((q : ℝ) * ((p : ℝ) + 1) / p)
 
 /-- The step-length constant of Lemma 13.1.18: `(a/(2 q! A))^{(p+1)/(p-q+1)}` if `q ≤ 2`, and
 `(a κ̂^{q-1}/(2 q! A))^{q(p+1)/p}` with `κ̂ = arKappaHat q a A κ` if `q > 2`. -/
-noncomputable def arStepConst (q p : ℕ) (a A κ : ℝ) : ℝ :=
-  if q ≤ 2 then (a / (2 * q ! * A)) ^ (((p : ℝ) + 1) / ((p - q + 1 : ℕ) : ℝ))
-  else (a * arKappaHat q a A κ ^ (q - 1) / (2 * q ! * A)) ^ ((q : ℝ) * ((p : ℝ) + 1) / p)
+noncomputable def arStepConst (q p : ℕ) (a A κ : ℝ) : ℝ := arStepConstOf (q ≤ 2) q p a A κ
 
-theorem arStepConst_nonneg {q p : ℕ} {a A κ : ℝ} (ha : 0 ≤ a) (hA : 0 ≤ A) (hκ : 0 ≤ κ) :
-    0 ≤ arStepConst q p a A κ := by
-  unfold arStepConst
+theorem arStepConstOf_nonneg {u : Prop} [Decidable u] {q p : ℕ} {a A κ : ℝ} (ha : 0 ≤ a)
+    (hA : 0 ≤ A) (hκ : 0 ≤ κ) : 0 ≤ arStepConstOf u q p a A κ := by
+  unfold arStepConstOf
   have : 0 ≤ arKappaHat q a A κ := le_min hκ (by positivity)
   split_ifs <;> positivity
 
-theorem arStepConst_pos {q p : ℕ} {a A κ : ℝ} (ha : 0 < a) (hA : 0 < A) (hκ : 0 < κ) :
-    0 < arStepConst q p a A κ := by
-  unfold arStepConst
+theorem arStepConstOf_pos {u : Prop} [Decidable u] {q p : ℕ} {a A κ : ℝ} (ha : 0 < a)
+    (hA : 0 < A) (hκ : 0 < κ) : 0 < arStepConstOf u q p a A κ := by
+  unfold arStepConstOf
   have : 0 < arKappaHat q a A κ := lt_min hκ (by positivity)
   split_ifs <;> positivity
 
-theorem arPi_nonneg {q p j : ℕ} : 0 ≤ arPi q p j := by
-  unfold arPi; split_ifs <;> positivity
+theorem arPiOf_nonneg {u : Prop} [Decidable u] {p j : ℕ} : 0 ≤ arPiOf u p j := by
+  unfold arPiOf; split_ifs <;> positivity
+
+theorem arStepConst_nonneg {q p : ℕ} {a A κ : ℝ} (ha : 0 ≤ a) (hA : 0 ≤ A) (hκ : 0 ≤ κ) :
+    0 ≤ arStepConst q p a A κ :=
+  arStepConstOf_nonneg ha hA hκ
+
+theorem arStepConst_pos {q p : ℕ} {a A κ : ℝ} (ha : 0 < a) (hA : 0 < A) (hκ : 0 < κ) :
+    0 < arStepConst q p a A κ :=
+  arStepConstOf_pos ha hA hκ
+
+theorem arPi_nonneg {q p j : ℕ} : 0 ≤ arPi q p j := arPiOf_nonneg
 
 /-- **From step lengths to decrements** ([cartis2022evaluation], proof of Lemma 13.1.18): with
 `0 < a ≤ 1`, `A ≥ 1`, `0 < κ ≤ 1`, `ε ∈ (0, 1]`, `j ∈ [1, q]`, `q ≤ p`, `t > 0`, if either
-`t ≥ 1` or the bounds of `arqp_pow_ge_of_radius_ineq` hold, then
-`arStepConst q p a A κ · ε^{π_j} ≤ t^{p+1}`. -/
-theorem arqp_pow_succ_ge {a A t ε κ : ℝ} {j p q : ℕ} (ha : 0 < a) (ha1 : a ≤ 1) (hA : 1 ≤ A)
-    (hε : 0 < ε) (hε1 : ε ≤ 1) (ht : 0 < t) (hκ : 0 < κ) (hκ1 : κ ≤ 1)
-    (hj : j ∈ Finset.Icc 1 q) (hqp : q ≤ p)
-    (hb : 1 ≤ t ∨ ((q ≤ 2 → a / (2 * j ! * A) * ε ≤ t ^ (p - j + 1)) ∧
-      (2 < q → a / (2 * j ! * A) * arKappaHat q a A κ ^ (j - 1) * ε ^ j ≤ t ^ p))) :
-    arStepConst q p a A κ * ε ^ arPi q p j ≤ t ^ (p + 1) := by
+`t ≥ 1` or the bounds of `arqp_pow_ge_of_radius_ineq` (in the radii mode `u`) hold, then
+`arStepConstOf u q p a A κ · ε^{π_j} ≤ t^{p+1}` with `π_j = arPiOf u p j`. -/
+theorem arqp_pow_succ_ge {a A t ε κ : ℝ} {j p q : ℕ} {u : Prop} [Decidable u] (ha : 0 < a)
+    (ha1 : a ≤ 1) (hA : 1 ≤ A) (hε : 0 < ε) (hε1 : ε ≤ 1) (ht : 0 < t) (hκ : 0 < κ)
+    (hκ1 : κ ≤ 1) (hj : j ∈ Finset.Icc 1 q) (hqp : q ≤ p)
+    (hb : 1 ≤ t ∨ ((u → a / (2 * j ! * A) * ε ≤ t ^ (p - j + 1)) ∧
+      (¬ u → a / (2 * j ! * A) * arKappaHat q a A κ ^ (j - 1) * ε ^ j ≤ t ^ p))) :
+    arStepConstOf u q p a A κ * ε ^ arPiOf u p j ≤ t ^ (p + 1) := by
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
   have hA0 : 0 < A := zero_lt_one.trans_le hA
   have hfj : (1 : ℝ) ≤ j ! := by exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero _)
@@ -2467,11 +2554,11 @@ theorem arqp_pow_succ_ge {a A t ε κ : ℝ} {j p q : ℕ} (ha : 0 < a) (ha1 : a
     rw [div_le_one (by positivity)]
     nlinarith
   have hbq1 : a / (2 * q ! * A) ≤ 1 := hbqj.trans hbj1
-  have hπ := arPi_nonneg (q := q) (p := p) (j := j)
-  have hC0 := arStepConst_nonneg (q := q) (p := p) ha.le hA0.le hκ.le
-  have hepi : ε ^ arPi q p j ≤ 1 := Real.rpow_le_one hε.le hε1 hπ
-  have hC1 : arStepConst q p a A κ ≤ 1 := by
-    unfold arStepConst
+  have hπ := arPiOf_nonneg (u := u) (p := p) (j := j)
+  have hC0 := arStepConstOf_nonneg (u := u) (q := q) (p := p) ha.le hA0.le hκ.le
+  have hepi : ε ^ arPiOf u p j ≤ 1 := Real.rpow_le_one hε.le hε1 hπ
+  have hC1 : arStepConstOf u q p a A κ ≤ 1 := by
+    unfold arStepConstOf
     split_ifs
     · exact Real.rpow_le_one hbq0.le hbq1 (by positivity)
     · refine Real.rpow_le_one (by positivity) ?_ (by positivity)
@@ -2479,9 +2566,9 @@ theorem arqp_pow_succ_ge {a A t ε κ : ℝ} {j p q : ℕ} (ha : 0 < a) (ha1 : a
       exact mul_le_one_of_le_one hbq1 (by positivity) (pow_le_one₀ hκh0.le hκh1)
   rcases hb with ht1 | ⟨hq2, hq3⟩
   · exact (mul_le_one_of_le_one hC1 (by positivity) hepi).trans (one_le_pow₀ ht1)
-  by_cases hq : q ≤ 2
+  by_cases hq : u
   · have hX := hq2 hq
-    simp only [arStepConst, arPi, hq, ↓reduceIte]
+    simp only [arStepConstOf, arPiOf, hq, ↓reduceIte]
     set m := p - j + 1 with hm
     have hm0 : m ≠ 0 := by omega
     set π := ((p : ℝ) + 1) / (m : ℝ)
@@ -2501,9 +2588,8 @@ theorem arqp_pow_succ_ge {a A t ε κ : ℝ} {j p q : ℕ} (ha : 0 < a) (ha1 : a
       _ ≤ (t ^ m) ^ π := Real.rpow_le_rpow (by positivity) hX hπ0
       _ = t ^ ((p : ℝ) + 1) := pow_rpow_div hm0 ht.le _
       _ = t ^ (p + 1) := by rw [← Real.rpow_natCast]; push_cast; ring_nf
-  · push Not at hq
-    have hX := hq3 hq
-    simp only [arStepConst, arPi, show ¬ q ≤ 2 from not_le.2 hq, ↓reduceIte]
+  · have hX := hq3 hq
+    simp only [arStepConstOf, arPiOf, hq, ↓reduceIte]
     have hp0 : p ≠ 0 := by omega
     have hp : (0 : ℝ) < p := by exact_mod_cast Nat.pos_of_ne_zero hp0
     set B := a / (2 * j ! * A) * κh ^ (j - 1)
@@ -2658,10 +2744,10 @@ variable {X C : Set ℝⁿ} {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : ARqpID
 
 /-- **Lemma 13.1.12 with a feasible set** ([cartis2022evaluation] §14.2): the conclusions of
 `lemma_13_1_12` for an ARqpIDA-SC run (`algorithm_13_1_2_feasible`) under f.D0pL on an open convex
-`C ⊇ X`. -/
+`C ⊇ X`, for either mode `u` of the radii control (`RadiiControlOf`). -/
 theorem lemma_13_1_12_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
-    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i < k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
+    (hrc : ∀ i < k, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
     {σbar : ℝ} (hσ : ∀ i ≤ k, σ i ≤ σbar) :
     ((∃ j ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd k j) →
         0 < P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 ∧
@@ -2805,10 +2891,11 @@ theorem lemma_13_1_14 (hf : AssumptionD0pL f P.p L)
 
 /-- **Lemma 13.1.15 with a feasible set** ([cartis2022evaluation] §14.2): for an ARqpIDA-SC run
 under f.D0pL on an open convex `C ⊇ X`, the conclusion of `lemma_13_1_15` with the measures over the
-feasible displacements `{e | x_k + e ∈ X}`. -/
+feasible displacements `{e | x_k + e ∈ X}`, for either mode `u` of the radii control
+(`RadiiControlOf`). -/
 theorem lemma_13_1_15_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
-    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i < k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
+    (hrc : ∀ i < k, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
     (hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.p, ordMax P.p κg * h k i ≤
       P.ς * arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
@@ -2958,17 +3045,19 @@ theorem arKappaDelta1_mul_le {P : ARqpIDAParams} {Lb σ σ' e : ℝ} (hLb : 0 < 
   rw [arKappaDelta1, div_mul_eq_mul_div]
   exact div_le_div_of_nonneg_left (by positivity) (by positivity) (by linarith)
 
-/-- `arqpIDA_step_bound` for an ARqpIDA-SC run under f.D0pL on an open convex `C ⊇ X`. -/
+/-- `arqpIDA_step_bound` for an ARqpIDA-SC run under f.D0pL on an open convex `C ⊇ X`, for
+either mode `u` of the radii control (`RadiiControlOf`): the case `q ≤ 2` of `arqpIDA_step_bound`
+becomes the unit-radius mode `u`, the case `q > 2` the lower-bound mode `¬ u`. -/
 theorem arqpIDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
-    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
+    (hrc : RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
     (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) {e | x (k + 1) + e ∈ X} P.q ε
       (δ (k + 1))) :
     ∃ j ∈ Finset.Icc 1 P.q, 1 ≤ ‖s k‖ ∨
-      ((P.q ≤ 2 → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) * ε j ≤
+      ((u → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) * ε j ≤
           ‖s k‖ ^ (P.p - j + 1)) ∧
-        (2 < P.q → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) *
+        (¬ u → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) *
           arKappaHat P.q (1 - P.θ) (arConstA P L (ordMax P.p κg))
             (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
               (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) * ε j ^ j ≤ ‖s k‖ ^ P.p)) := by
@@ -2980,7 +3069,6 @@ theorem arqpIDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
   have h2 := hs.step2_of_not_acc hk
   have hδ : δ (k + 1) = δs k := by rw [hs.radii_trial hk, ite_eq_left ⟨hρ, hs1⟩]
   rw [hδ] at hineq
-  obtain ⟨hrc1, hrc2⟩ := hrc hk hs1
   have hLb := hrun.one_le_Lbar hf
   set Lb := lipMax L P.p + ordMax P.p κg * P.κh
   set κ := arKappaDelta1 P Lb (arSigmaMax P (L P.p) (ordMax P.p κg))
@@ -2989,13 +3077,9 @@ theorem arqpIDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
   have hεj := hrun.eps_mem j hj
   have hδpos := (h2.radii_of_lt hs1 j hj).1.1
-  have hκε : κ * ε j ≤ δs k j := by
-    rcases le_or_gt P.q 2 with hq2 | hq2
-    · rw [hrc1 hq2 j hj]
-      exact mul_le_one_of_le_one hκ1 hεj.1.le hεj.2
-    · exact (arKappaDelta1_mul_le (by linarith) (lemma_13_1_14_feasible hf hXC hrun k)
-        hεj.1.le).trans (hrc2 hq2 j hj)
-  have hq2 : P.q ≤ 2 → δs k j = 1 := fun hq => hrc1 hq j hj
+  have hκε : κ * ε j ≤ δs k j :=
+    hrc.kappa_mul_le hk hs1 hrun.eps_mem hLb (lemma_13_1_14_feasible hf hXC hrun k) hj
+  have hq2 : u → δs k j = 1 := fun hu => (hrc hk hs1).1 hu j hj
   have ht : 0 < ‖s k‖ := by
     have hpos := (lemma_13_1_13 hs hk (fun j hj => (hrun.eps_mem j hj).1)
       (hrun.sigma_pos k).le).2
@@ -3025,23 +3109,25 @@ theorem arqpIDA_step_bound (hf : AssumptionD0pL f P.p L)
         (2 < P.q → (1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg)) *
           arKappaHat P.q (1 - P.θ) (arConstA P L (ordMax P.p κg))
             (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
-              (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) * ε j ^ j ≤ ‖s k‖ ^ P.p)) :=
-  arqpIDA_step_bound_feasible hf.on_univ (subset_univ _) hrun hrc hk hρ
+              (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) * ε j ^ j ≤ ‖s k‖ ^ P.p)) := by
+  obtain ⟨j, hj, h⟩ := arqpIDA_step_bound_feasible hf.on_univ (subset_univ _) hrun hrc hk hρ
     (by rwa [setOf_add_mem_univ])
+  exact ⟨j, hj, h.imp_right fun h => ⟨h.1, fun hq => h.2 (not_le.2 hq)⟩⟩
 
 /-- **Lemma 13.1.17 with a feasible set** ([cartis2022evaluation] §14.2): the step-length bounds
 (13.1.80) of `lemma_13_1_17` for an ARqpIDA-SC run under f.D0pL on an open convex `C ⊇ X`, when
-`x_{k+1}` is not approximately optimal on `X` for the radii `δ_{k+1}`. -/
+`x_{k+1}` is not approximately optimal on `X` for the radii `δ_{k+1}`, for either mode `u` of the
+radii control (`RadiiControlOf`; the cases `q ≤ 2` and `q > 2` become `u` and `¬ u`). -/
 theorem lemma_13_1_17_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
-    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
+    (hrc : RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
     (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) {e | x (k + 1) + e ∈ X} P.q ε
       (δ (k + 1))) :
-    (P.q ≤ 2 → ∃ j ∈ Finset.Icc 1 P.q,
+    (u → ∃ j ∈ Finset.Icc 1 P.q,
       ((1 - P.θ) / (2 * j ! * arConstA P L (ordMax P.p κg))) ^ (1 / ((P.p - j + 1 : ℕ) : ℝ)) *
         ε j ^ (1 / ((P.p - j + 1 : ℕ) : ℝ)) ≤ ‖s k‖) ∧
-    (2 < P.q → ∃ j ∈ Finset.Icc 1 P.q,
+    (¬ u → ∃ j ∈ Finset.Icc 1 P.q,
       ((1 - P.θ) * arKappaHat P.q (1 - P.θ) (arConstA P L (ordMax P.p κg))
           (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
             (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) /
@@ -3113,25 +3199,29 @@ theorem lemma_13_1_17 (hf : AssumptionD0pL f P.p L)
           (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
             (arSigmaMax P (L P.p) (ordMax P.p κg))) ^ (j - 1) /
           (2 * j ! * arConstA P L (ordMax P.p κg))) ^ (1 / (P.p : ℝ)) *
-        ε j ^ ((j : ℝ) / P.p) ≤ ‖s k‖) :=
-  lemma_13_1_17_feasible hf.on_univ (subset_univ _) hrun hrc hk hρ (by rwa [setOf_add_mem_univ])
+        ε j ^ ((j : ℝ) / P.p) ≤ ‖s k‖) := by
+  have h := lemma_13_1_17_feasible hf.on_univ (subset_univ _) hrun hrc hk hρ
+    (by rwa [setOf_add_mem_univ])
+  exact ⟨h.1, fun hq => h.2 (not_le.2 hq)⟩
 
 /-- **Lemma 13.1.18 with a feasible set** ([cartis2022evaluation] §14.2): for an ARqpIDA-SC run
 under f.D0pL on an open convex `C ⊇ X` and the radii control at `k`, if iteration `k` is successful
 and `x_{k+1}` is not approximately optimal on `X` (`arTest_feasible`), then (13.1.82) and (13.1.83)
-hold, as in `lemma_13_1_18`. -/
+hold, as in `lemma_13_1_18`, for either mode `u` of the radii control (`RadiiControlOf`), with
+`π_j = arPiOf u p j` and `κ_{Δm} = σ_min/(p+1)! · arStepConstOf u q p (1 - θ) A κ_{δ,min}`. -/
 theorem lemma_13_1_18_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
-    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
+    [Decidable u]
+    (hrc : RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hnot : ¬ arTest_feasible f X P ε x (k + 1)) :
-    P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (1 - P.θ) (arConstA P L (ordMax P.p κg))
+    P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (1 - P.θ) (arConstA P L (ordMax P.p κg))
         (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
           (arSigmaMax P (L P.p) (ordMax P.p κg))) *
-        epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤ (D k).taylorDecrement P.p (s k) ∧
-      P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (1 - P.θ)
+        epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ (D k).taylorDecrement P.p (s k) ∧
+      P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (1 - P.θ)
           (arConstA P L (ordMax P.p κg)) (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
             (arSigmaMax P (L P.p) (ordMax P.p κg)))) / 2 *
-        epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤ f (x k) - f (x (k + 1)) := by
+        epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ f (x k) - f (x (k + 1)) := by
   have hnot' : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) {e | x (k + 1) + e ∈ X} P.q ε
       (δ (k + 1)) :=
     fun hc => hnot ⟨δ (k + 1), fun j hj => (hrun.invariants (k + 1)).2.1 j hj, hc⟩
@@ -3149,20 +3239,21 @@ theorem lemma_13_1_18_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
   have hεj := hrun.eps_mem j hj
   have hC := arqp_pow_succ_ge (sub_pos.2 P.θ_lt_one) (by linarith [P.θ_pos]) hA hεj.1 hεj.2 ht
     (arKappaDelta1_pos (by linarith)) (arKappaDelta1_le_one hLb) hj P.q_le_p hb
-  set C := arStepConst P.q P.p (1 - P.θ) A (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
-    (arSigmaMax P (L P.p) (ordMax P.p κg)))
-  have hC0 : 0 ≤ C := arStepConst_nonneg (by linarith [P.θ_lt_one]) (by linarith)
+  set C := arStepConstOf u P.q P.p (1 - P.θ) A
+    (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
+      (arSigmaMax P (L P.p) (ordMax P.p κg)))
+  have hC0 : 0 ≤ C := arStepConstOf_nonneg (by linarith [P.θ_lt_one]) (by linarith)
     (arKappaDelta1_pos (by linarith)).le
   have hfp : (0 : ℝ) < (P.p + 1)! := by positivity
-  have hmin : epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤ ε j ^ arPi P.q P.p j := epsMin_le hj
-  have hmin0 : 0 ≤ epsMin P.q (fun j => ε j ^ arPi P.q P.p j) :=
+  have hmin : epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ ε j ^ arPiOf u P.p j := epsMin_le hj
+  have hmin0 : 0 ≤ epsMin P.q (fun j => ε j ^ arPiOf u P.p j) :=
     (Chapter13.epsMin_pos P.one_le_q fun j hj =>
       Real.rpow_pos_of_pos (hrun.eps_mem j hj).1 _).le
   have hσ := (hrun.invariants k).1
-  have h1 : P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤
+  have h1 : P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤
       (D k).taylorDecrement P.p (s k) := by
-    calc P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPi P.q P.p j)
-        ≤ P.σmin / ((P.p + 1)! : ℝ) * (C * ε j ^ arPi P.q P.p j) := by
+    calc P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf u P.p j)
+        ≤ P.σmin / ((P.p + 1)! : ℝ) * (C * ε j ^ arPiOf u P.p j) := by
           rw [mul_assoc]
           exact mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hmin hC0)
             (div_nonneg P.σmin_pos.le hfp.le)
@@ -3174,12 +3265,12 @@ theorem lemma_13_1_18_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
   refine ⟨h1, ?_⟩
   have h2 := (hs.accept hk).sub_ge (w := f) rfl hpos hρ
   have hη := P.η₁_pos
-  have h0 : 0 ≤ P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPi P.q P.p j) := by
+  have h0 : 0 ≤ P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf u P.p j) := by
     have := P.σmin_pos; positivity
-  calc P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C) / 2 * epsMin P.q (fun j => ε j ^ arPi P.q P.p j)
-      = P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPi P.q P.p j)) /
+  calc P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C) / 2 * epsMin P.q (fun j => ε j ^ arPiOf u P.p j)
+      = P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf u P.p j)) /
           2 := by ring
-    _ ≤ P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPi P.q P.p j)) := by
+    _ ≤ P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf u P.p j)) := by
         have := mul_nonneg hη.le h0; linarith
     _ ≤ P.η₁ * (D k).taylorDecrement P.p (s k) := mul_le_mul_of_nonneg_left h1 hη.le
     _ ≤ f (x k) - f (x (k + 1)) := h2
@@ -3249,10 +3340,11 @@ theorem mul_arKappaAcc_le {P : ARqpIDAParams} {κ Lb σmax κm : ℝ} (hκ : 0 �
 /-- **The accuracy-improving iterations of ARqpIDA-SC** (proof of Theorem 13.1.19,
 [cartis2022evaluation]): under f.D0pL on an open convex `C ⊇ X` and the radii control at every
 iteration, if no iterate `x_j`, `j ≤ k`, is approximately optimal on `X`, then
-`|𝒜_k| ≤ p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
+`|𝒜_k| ≤ p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1` (either mode of the
+radii control, `RadiiControlOf`). -/
 theorem arqpIDA_card_acc_le_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
-    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
+    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ arTest_feasible f X P ε x j) :
     ((successSet acc k).card : ℝ) ≤
       P.p * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
@@ -3315,11 +3407,12 @@ theorem arqpIDA_card_acc_le_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X 
 
 /-- **The complexity argument of Theorem 13.1.19 with a feasible set** ([cartis2022evaluation]
 §14.2): `arqpIDA_complexity` for an ARqpIDA-SC run under f.D0pL on an open convex `C ⊇ X` and
-f.bB.X, with approximate optimality on `X` (`arTest_feasible`). -/
+f.bB.X, with approximate optimality on `X` (`arTest_feasible`) and either mode of the radii
+control (`RadiiControlOf`). -/
 theorem arqpIDA_complexity_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
-    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    (hrun : algorithm_13_1_2_feasible f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
+    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
     {c : ℝ} (hc : 0 < c)
     (hdec : ∀ k, ¬ acc k → P.η₁ ≤ arqpIDARatio f P D x s k → ¬ arTest_feasible f X P ε x (k + 1) →
       c ≤ f (x k) - f (x (k + 1))) :
@@ -3492,11 +3585,11 @@ theorem theorem_13_1_19_i (hf : AssumptionD0pL f P.p L) {flow : ℝ}
       (((P.p : ℝ) + 1) / ((P.p - P.q + 1 : ℕ) : ℝ)) with hκΔm
   set m := epsMin P.q (fun j => ε j ^ (((P.p : ℝ) + 1) / ((P.p - j + 1 : ℕ) : ℝ))) with hm
   have hm' : epsMin P.q (fun j => ε j ^ arPi P.q P.p j) = m := by
-    simp only [arPi, hq2, ↓reduceIte]; exact hm.symm
+    simp only [arPi, arPiOf, hq2, ↓reduceIte]; exact hm.symm
   have hκ' : P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (1 - P.θ)
       (arConstA P L (ordMax P.p κg)) (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
         (arSigmaMax P (L P.p) (ordMax P.p κg))) = κΔm := by
-    simp only [arStepConst, hq2, ↓reduceIte]; exact hκΔm.symm
+    simp only [arStepConst, arStepConstOf, hq2, ↓reduceIte]; exact hκΔm.symm
   have hA := one_le_arConstA (hf.one_le le_rfl) hrun.kappaMax_nonneg (P := P) (L := L)
   have hκpos : 0 < κΔm := by
     have := P.σmin_pos; have := P.θ_lt_one
@@ -3560,11 +3653,11 @@ theorem theorem_13_1_19_ii (hf : AssumptionD0pL f P.p L) {flow : ℝ}
     with hκΔm
   set m := epsMin P.q (fun j => ε j ^ ((j : ℝ) * ((P.p : ℝ) + 1) / P.p)) with hm
   have hm' : epsMin P.q (fun j => ε j ^ arPi P.q P.p j) = m := by
-    simp only [arPi, hq2', ↓reduceIte]; exact hm.symm
+    simp only [arPi, arPiOf, hq2', ↓reduceIte]; exact hm.symm
   have hκ' : P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (1 - P.θ)
       (arConstA P L (ordMax P.p κg)) (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
         (arSigmaMax P (L P.p) (ordMax P.p κg))) = κΔm := by
-    simp only [arStepConst, hq2', ↓reduceIte]; exact hκΔm.symm
+    simp only [arStepConst, arStepConstOf, hq2', ↓reduceIte]; exact hκΔm.symm
   have hLb := hrun.one_le_Lbar hf.on_univ
   have hA := one_le_arConstA (hf.one_le le_rfl) hrun.kappaMax_nonneg (P := P) (L := L)
   have hκpos : 0 < κΔm := by

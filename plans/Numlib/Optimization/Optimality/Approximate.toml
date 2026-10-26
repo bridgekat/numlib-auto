@@ -87,3 +87,7 @@ source = "Cartis–Gould–Toint, Theorem 13.1.19 (1)"
 [[node]]
 id = "pow_div_mul_taylorMeasure_le"
 source = "Cartis–Gould–Toint, Theorem 13.1.19 (1)"
+
+[[node]]
+id = "decrementMeasure_mul_inner_pow"
+source = "Cartis–Gould–Toint, (12.1.18); proof of Theorem 12.2.6"

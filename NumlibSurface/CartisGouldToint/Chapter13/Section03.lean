@@ -1011,7 +1011,7 @@ theorem lemma_13_3_6_i (hrun : algorithm_13_3_2 f P ε x₀ x σ δ δ₁ δs h 
 `lemma_13_3_6_ii` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X`. -/
 theorem lemma_13_3_6_ii_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + P.κh) σ δs s acc i)
+    {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i)
     (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j)
     (hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.p, h k i ≤ P.ς * arKappaDelta1 P (lipMax L P.p + P.κh)
@@ -1201,17 +1201,19 @@ def edaPassUnchanged (P : ARqpIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalM
     (δ δ₁ : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → ℝⁿ) (i : ℕ) : Prop :=
   (∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd i j) ∧ ∀ j ∈ Finset.Icc 1 P.q, δ₁ i j = δ i j
 
-/-- `arqpEDA_step_bound` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X`. -/
+/-- `arqpEDA_step_bound` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X`, for
+either mode `u` of the radii control (`RadiiControlOf`; the cases `q ≤ 2` and `q > 2` of
+`arqpEDA_step_bound` become `u` and `¬ u`). -/
 theorem arqpEDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    (hrc : RadiiControl P ε (lipMax L P.p + P.κh) σ δs s acc k) (hθ : P.θ < P.ς / 2)
+    {u : Prop} (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k) (hθ : P.θ < P.ς / 2)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
     (hgood : 1 ≤ ‖s k‖ ∨ ¬ edaPassUnchanged P ε D δ δ₁ dd (k + 1)) :
     ∃ j ∈ Finset.Icc 1 P.q, 1 ≤ ‖s k‖ ∨
-      ((P.q ≤ 2 → (P.ς / 2 - P.θ) / (2 * j ! * arEDAConstA P L) * ε j ≤
+      ((u → (P.ς / 2 - P.θ) / (2 * j ! * arEDAConstA P L) * ε j ≤
           ‖s k‖ ^ (P.p - j + 1)) ∧
-        (2 < P.q → (P.ς / 2 - P.θ) / (2 * j ! * arEDAConstA P L) *
+        (¬ u → (P.ς / 2 - P.θ) / (2 * j ! * arEDAConstA P L) *
           arKappaHat P.q (P.ς / 2 - P.θ) (arEDAConstA P L)
             (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)) ^ (j - 1) *
             ε j ^ j ≤ ‖s k‖ ^ P.p)) := by
@@ -1225,7 +1227,6 @@ theorem arqpEDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
   have h2 := hs.step2_of_not_acc ha
   have hδ : δ (k + 1) = δs k := by rw [hs.radii_trial ha, ite_eq_left ⟨hρ, hs1⟩]
   rw [hδ] at hineq
-  obtain ⟨hrc1, hrc2⟩ := hrc ha hs1
   have hLb : 1 ≤ lipMax L P.p + P.κh := by
     have := hf.one_le_lipMax; have := P.κh_nonneg; linarith
   set κ := arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)
@@ -1234,13 +1235,9 @@ theorem arqpEDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
   have hεj := hrun.eps_mem j hj
   have hδpos := (h2.radii_of_lt hs1 j hj).1.1
-  have hκε : κ * ε j ≤ δs k j := by
-    rcases le_or_gt P.q 2 with hq2 | hq2
-    · rw [hrc1 hq2 j hj]
-      exact mul_le_one_of_le_one hκ1 hεj.1.le hεj.2
-    · exact (arKappaDelta1_mul_le (by linarith) (lemma_13_3_5_feasible hf hXC hrun hklt)
-        hεj.1.le).trans (hrc2 hq2 j hj)
-  have hq2 : P.q ≤ 2 → δs k j = 1 := fun hq => hrc1 hq j hj
+  have hκε : κ * ε j ≤ δs k j :=
+    hrc.kappa_mul_le ha hs1 hrun.eps_mem hLb (lemma_13_3_5_feasible hf hXC hrun hklt) hj
+  have hq2 : u → δs k j = 1 := fun hu => (hrc ha hs1).1 hu j hj
   have ht : 0 < ‖s k‖ := by
     have hpos := (lemma_13_1_13 hs ha (fun j hj => (hrun.eps_mem j hj).1)
       (hrun.sigma_pos hklt).le).2
@@ -1268,23 +1265,27 @@ theorem arqpEDA_step_bound (hf : AssumptionD0pL f P.p L)
         (2 < P.q → (P.ς / 2 - P.θ) / (2 * j ! * arEDAConstA P L) *
           arKappaHat P.q (P.ς / 2 - P.θ) (arEDAConstA P L)
             (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)) ^ (j - 1) *
-            ε j ^ j ≤ ‖s k‖ ^ P.p)) :=
-  arqpEDA_step_bound_feasible hf.on_univ (subset_univ _) hrun hrc hθ hk ha hρ hgood
+            ε j ^ j ≤ ‖s k‖ ^ P.p)) := by
+  obtain ⟨j, hj, h⟩ := arqpEDA_step_bound_feasible hf.on_univ (subset_univ _) hrun hrc hθ hk ha hρ
+    hgood
+  exact ⟨j, hj, h.imp_right fun h => ⟨h.1, fun hq => h.2 (not_le.2 hq)⟩⟩
 
 /-- **Lemma 13.3.7 with a feasible set** ([cartis2022evaluation] §14.2): for an ARqpEDA-SC run under
-f.D0pL on an open convex `C ⊇ X`, the decreases of `lemma_13_3_7`. -/
+f.D0pL on an open convex `C ⊇ X`, the decreases of `lemma_13_3_7`, for either mode `u` of the radii
+control (`RadiiControlOf`), with `π_j = arPiOf u p j` and the constant `arStepConstOf u`. -/
 theorem lemma_13_3_7_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    (hrc : RadiiControl P ε (lipMax L P.p + P.κh) σ δs s acc k) (hθ : P.θ < P.ς / 2)
+    {u : Prop} [Decidable u] (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k)
+    (hθ : P.θ < P.ς / 2)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
     (hgood : 1 ≤ ‖s k‖ ∨ ¬ edaPassUnchanged P ε D δ δ₁ dd (k + 1)) :
-    P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (P.ς / 2 - P.θ) (arEDAConstA P L)
+    P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (P.ς / 2 - P.θ) (arEDAConstA P L)
         (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)) *
-        epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤ (D k).taylorDecrement P.p (s k) ∧
-      P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (P.ς / 2 - P.θ)
+        epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ (D k).taylorDecrement P.p (s k) ∧
+      P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (P.ς / 2 - P.θ)
           (arEDAConstA P L) (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1))) /
-          2 * epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤ f (x k) - f (x (k + 1)) := by
+          2 * epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ f (x k) - f (x (k + 1)) := by
   obtain ⟨j, hj, hb⟩ := arqpEDA_step_bound_feasible hf hXC hrun hrc hθ hk ha hρ hgood
   have hklt : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j := fun j hj => hk j hj.le
   have hs := hrun.step hk
@@ -1302,20 +1303,20 @@ theorem lemma_13_3_7_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
   have ha1 : P.ς / 2 - P.θ ≤ 1 := by linarith [P.ς_le_one, P.θ_pos]
   have hC := arqp_pow_succ_ge ha0 ha1 hA hεj.1 hεj.2 ht
     (arKappaDelta1_pos (by linarith)) (arKappaDelta1_le_one hLb) hj P.q_le_p hb
-  set C := arStepConst P.q P.p (P.ς / 2 - P.θ) (arEDAConstA P L)
+  set C := arStepConstOf u P.q P.p (P.ς / 2 - P.θ) (arEDAConstA P L)
     (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1))
-  have hC0 : 0 ≤ C := arStepConst_nonneg ha0.le (by linarith)
+  have hC0 : 0 ≤ C := arStepConstOf_nonneg ha0.le (by linarith)
     (arKappaDelta1_pos (by linarith)).le
   have hfp : (0 : ℝ) < (P.p + 1)! := by positivity
-  have hmin : epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤ ε j ^ arPi P.q P.p j := epsMin_le hj
-  have hmin0 : 0 ≤ epsMin P.q (fun j => ε j ^ arPi P.q P.p j) :=
+  have hmin : epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ ε j ^ arPiOf u P.p j := epsMin_le hj
+  have hmin0 : 0 ≤ epsMin P.q (fun j => ε j ^ arPiOf u P.p j) :=
     (Chapter13.epsMin_pos P.one_le_q fun j hj =>
       Real.rpow_pos_of_pos (hrun.eps_mem j hj).1 _).le
   have hσ := (hrun.invariants hklt).1
-  have h1 : P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPi P.q P.p j) ≤
+  have h1 : P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤
       (D k).taylorDecrement P.p (s k) := by
-    calc P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPi P.q P.p j)
-        ≤ P.σmin / ((P.p + 1)! : ℝ) * (C * ε j ^ arPi P.q P.p j) := by
+    calc P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf u P.p j)
+        ≤ P.σmin / ((P.p + 1)! : ℝ) * (C * ε j ^ arPiOf u P.p j) := by
           rw [mul_assoc]
           exact mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hmin hC0)
             (div_nonneg P.σmin_pos.le hfp.le)
@@ -1330,11 +1331,11 @@ theorem lemma_13_3_7_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (h3.fxs_err.trans h3.h₀_le) hρ hrun.κs_le_η₁
   rw [(hs.accept ha).eq_add hρ]
   have hη := P.η₁_pos
-  have h0 : 0 ≤ P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPi P.q P.p j) := by
+  have h0 : 0 ≤ P.σmin / ((P.p + 1)! : ℝ) * C * epsMin P.q (fun j => ε j ^ arPiOf u P.p j) := by
     have := P.σmin_pos; positivity
-  calc P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C) / 2 * epsMin P.q (fun j => ε j ^ arPi P.q P.p j)
+  calc P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * C) / 2 * epsMin P.q (fun j => ε j ^ arPiOf u P.p j)
       = P.η₁ / 2 * (P.σmin / ((P.p + 1)! : ℝ) * C *
-          epsMin P.q (fun j => ε j ^ arPi P.q P.p j)) := by ring
+          epsMin P.q (fun j => ε j ^ arPiOf u P.p j)) := by ring
     _ ≤ P.η₁ / 2 * (D k).taylorDecrement P.p (s k) := by gcongr
     _ ≤ f (x k) - f (x k + s k) := h2
 
@@ -1367,7 +1368,7 @@ iteration, if the run has not terminated at any `j ≤ k`, then
 `|𝒜_k| ≤ p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
 theorem arqpEDA_card_acc_le_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
+    {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) :
     ((successSet acc k).card : ℝ) ≤
       P.p * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
@@ -1440,7 +1441,7 @@ f.bB.X, with approximate optimality on `X` at termination. -/
 theorem arqpEDA_complexity_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + P.κh) σ δs s acc i) {c : ℝ}
+    {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {c : ℝ}
     (hc : 0 < c)
     (hdec : ∀ k, (∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) → ¬ acc k →
       P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k →
@@ -1674,10 +1675,10 @@ theorem theorem_13_3_8_i (hf : AssumptionD0pL f P.p L) {flow : ℝ}
               (((P.p : ℝ) + 1) / ((P.p - P.q + 1 : ℕ) : ℝ))) with hκΔm
   set m := epsMin P.q (fun j => ε j ^ (((P.p : ℝ) + 1) / ((P.p - j + 1 : ℕ) : ℝ))) with hm
   have hm' : epsMin P.q (fun j => ε j ^ arPi P.q P.p j) = m := by
-    simp only [arPi, hq2', ↓reduceIte]; exact hm.symm
+    simp only [arPi, arPiOf, hq2', ↓reduceIte]; exact hm.symm
   have hκ' : P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (P.ς / 2 - P.θ) (arEDAConstA P L)
       (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)) = κΔm := by
-    simp only [arStepConst, hq2', ↓reduceIte]; exact hκΔm.symm
+    simp only [arStepConst, arStepConstOf, hq2', ↓reduceIte]; exact hκΔm.symm
   have hLb : 1 ≤ lipMax L P.p + P.κh := by
     have := hf.one_le_lipMax; have := P.κh_nonneg; linarith
   have hA := one_le_arEDAConstA (P := P) (hf.one_le le_rfl)
@@ -1689,7 +1690,7 @@ theorem theorem_13_3_8_i (hf : AssumptionD0pL f P.p L) {flow : ℝ}
       have hk0 : 0 < arKappaHat P.q (P.ς / 2 - P.θ) (arEDAConstA P L)
           (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)) :=
         lt_min (arKappaDelta1_pos (by linarith)) (by positivity)
-      unfold arStepConst
+      unfold arStepConst arStepConstOf
       split_ifs
       positivity
     have := P.σmin_pos
@@ -1750,10 +1751,10 @@ theorem theorem_13_3_8_ii (hf : AssumptionD0pL f P.p L) {flow : ℝ}
               (2 * P.q ! * arEDAConstA P L)) ^ ((P.q : ℝ) * ((P.p : ℝ) + 1) / P.p)) with hκΔm
   set m := epsMin P.q (fun j => ε j ^ ((j : ℝ) * ((P.p : ℝ) + 1) / P.p)) with hm
   have hm' : epsMin P.q (fun j => ε j ^ arPi P.q P.p j) = m := by
-    simp only [arPi, hq2', ↓reduceIte]; exact hm.symm
+    simp only [arPi, arPiOf, hq2', ↓reduceIte]; exact hm.symm
   have hκ' : P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (P.ς / 2 - P.θ) (arEDAConstA P L)
       (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)) = κΔm := by
-    simp only [arStepConst, hq2', ↓reduceIte]; exact hκΔm.symm
+    simp only [arStepConst, arStepConstOf, hq2', ↓reduceIte]; exact hκΔm.symm
   have hLb : 1 ≤ lipMax L P.p + P.κh := by
     have := hf.one_le_lipMax; have := P.κh_nonneg; linarith
   have hA := one_le_arEDAConstA (P := P) (hf.one_le le_rfl)
@@ -1765,7 +1766,7 @@ theorem theorem_13_3_8_ii (hf : AssumptionD0pL f P.p L) {flow : ℝ}
       have hk0 : 0 < arKappaHat P.q (P.ς / 2 - P.θ) (arEDAConstA P L)
           (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)) :=
         lt_min (arKappaDelta1_pos (by linarith)) (by positivity)
-      unfold arStepConst
+      unfold arStepConst arStepConstOf
       split_ifs
       positivity
     have := P.σmin_pos

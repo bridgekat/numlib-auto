@@ -57,3 +57,11 @@ id = "exists_isFirstHit_of_sub_ge"
 
 [[node]]
 id = "card_successSet_le_two_mul_add_one"
+
+[[node]]
+id = "card_filter_range_of_forall"
+source = "Cartis–Gould–Toint, evaluation counts (§2.1)"
+
+[[node]]
+id = "derivEvalCount_of_forall"
+source = "Cartis–Gould–Toint, evaluation counts (§2.1)"

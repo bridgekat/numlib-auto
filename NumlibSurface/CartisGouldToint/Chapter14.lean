@@ -27,8 +27,10 @@ module imports the section modules and adds nothing of its own.
   `lemma_14_2_3_arqpc`, `theorem_14_2_4_trq`, `theorem_14_2_4_arqp`, `theorem_14_2_4_arqpc`,
   `theorem_14_2_4_arqpc_convex`), the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows
   (`lemma_14_2_2_trqida`, …, `theorem_14_2_4_arqpeda`, from the Chapter 13 runs with a feasible
-  set) and sharpness of the TRq-SC, ARqp-SC and ARqpC-SC (`q = 1`, convex `h`) orders
-  (`theorem_14_2_4_sharp`, `theorem_14_2_4_sharp_arqp`)
+  set; the regularization rows in either radii mode, unit radii or (12.2.51) at every order,
+  `Chapter13.RadiiControlOf`) and sharpness of the TRq-SC, ARqp-SC, ARqpC-SC (`q = 1`, convex
+  `h`), TRqIDA-SC and TRqEDA-SC orders (`theorem_14_2_4_sharp`, `theorem_14_2_4_sharp_arqp`,
+  `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda`)
 * §14.3, `Chapter14.Section03`: the problem (14.3.1), assumption X.CQ (`AssumptionXCQ`);
   Theorems 14.3.1–14.3.2, Example 14.3.1; LENq-SC (Algorithm 14.3.1, `algorithm_14_3_1`),
   Theorems 14.3.3–14.3.4; TPqp-GC (Algorithm 14.3.2, `algorithm_14_3_2`), Lemmas 14.3.5–14.3.8
@@ -96,10 +98,9 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Not formalized
 
-* The sharpness of the IDA/EDA rows of Theorem 14.2.4 (Chapter 13 has no slow examples), the
-  ARqpIDA-SC/ARqpEDA-SC order `j(p+1)/p` for `q = 2`, `X ≠ ℝⁿ` (with (12.2.51) at every order;
-  for `q ≤ 2` the rows assume `δ = 1`), and the remark that only the anchored assumptions
-  f.D1qLaB.X (f.D0qLaB.X) are used.
+* The sharpness of the ARqpIDA-SC and ARqpEDA-SC rows of Theorem 14.2.4 (the Chapter 12 slow
+  examples are not runs of the Chapter 13 regularization steps; see `Chapter14.Section02`), and
+  the remark that only the anchored assumptions f.D1qLaB.X (f.D0qLaB.X) are used.
 * Existence of LENq-SC and TPqp-GC runs under the book's anchored assumptions (it is proved under
   global Lipschitz assumptions, `exists_algorithm_14_3_1`, `exists_algorithm_14_3_2`), the INNER
   complexity contract for the constructed Phase-2 runs, and the `O(·)` restatements.

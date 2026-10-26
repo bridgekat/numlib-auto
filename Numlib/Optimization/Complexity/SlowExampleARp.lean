@@ -211,6 +211,22 @@ theorem taylorDecrement_ridge_spike (hG : ContDiff ℝ p G) (hq : 1 ≤ q) (hqp 
   rw [zero_pow (by omega)]
   ring
 
+/-- Below the order `q` of a spike jet (`G^{(i)}(⟪e, x⟫) = 0` for `1 ≤ i < q`) the Taylor
+decrements of the ridge function `ridge G e` at `x` vanish. -/
+theorem taylorDecrement_ridge_of_lt {j : ℕ} (hG : ContDiff ℝ q G) (hjq : j < q)
+    (hd : IsSpikeJetOf q G q ⟪e, x⟫ α) (s : E) :
+    (ftaylorSeries ℝ (ridge G e) x).taylorDecrement j s = 0 := by
+  have hGj : ContDiff ℝ j G := hG.of_le (by exact_mod_cast hjq.le)
+  have hT : ∀ t : E, taylorPolynomial (ridge G e) j x t = G ⟪e, x⟫ := fun t => by
+    rw [taylorPolynomial_ridge hGj, Finset.sum_eq_single 0]
+    · simp
+    · intro i hi hi0
+      have hij : i ≤ j := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+      rw [hd.2 i (Nat.one_le_iff_ne_zero.2 hi0) (by omega) (by omega)]
+      simp
+    · simp
+  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum, hT, hT, sub_self]
+
 end Spike
 
 section Run

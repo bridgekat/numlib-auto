@@ -335,6 +335,16 @@ theorem derivEvalCount_or_add_one_le (p q : ℕ → Prop) (k : ℕ) :
     exact card_union_le _ _
   omega
 
+/-- If `p` holds at every `j < k`, then `p` holds at all `k` indices of `range k`. (The
+instance is implicit so that the lemma rewrites filters built with any decidability instance.) -/
+theorem card_filter_range_of_forall {p : ℕ → Prop} {_ : DecidablePred p} {k : ℕ}
+    (hp : ∀ j < k, p j) : ((range k).filter p).card = k := by
+  rw [filter_true_of_mem fun j hj => hp j (mem_range.1 hj), card_range]
+
+/-- `derivEvalCount p k = k + 1` when `p` holds at every `j < k`. -/
+theorem derivEvalCount_of_forall (hp : ∀ j < k, succ j) : derivEvalCount succ k = k + 1 := by
+  rw [derivEvalCount, card_filter_range_of_forall hp]
+
 end evalCount
 
 /-! ### The counting skeleton -/

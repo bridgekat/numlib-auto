@@ -1042,6 +1042,19 @@ theorem norm_iteratedFDeriv_sub_real (G : ℝ → ℝ) (i : ℕ) (s t : ℝ) :
   rw [iteratedFDeriv_eq_equiv_comp, Function.comp_apply, Function.comp_apply, ← map_sub,
     LinearIsometryEquiv.norm_map, Real.norm_eq_abs]
 
+/-- A derivative of order `j < q` of a `C^q` function of one variable whose next derivative is
+bounded by `B` is `B`-Lipschitz (the mean value inequality
+`Convex.norm_image_sub_le_of_norm_deriv_le` for `iteratedDeriv j g`). -/
+theorem abs_iteratedDeriv_sub_le {g : ℝ → ℝ} {q j : ℕ} (hg : ContDiff ℝ q g)
+    (hjq : j < q) {B : ℝ} (hB : ∀ t, |iteratedDeriv (j + 1) g t| ≤ B) (s t : ℝ) :
+    |iteratedDeriv j g s - iteratedDeriv j g t| ≤ B * |s - t| := by
+  have hd : Differentiable ℝ (iteratedDeriv j g) :=
+    hg.differentiable_iteratedDeriv j (by exact_mod_cast hjq)
+  have := Convex.norm_image_sub_le_of_norm_deriv_le (fun y _ => hd y) (fun y _ => by
+      rw [← iteratedDeriv_succ, Real.norm_eq_abs]; exact hB y) convex_univ (mem_univ t)
+    (mem_univ s)
+  simpa only [Real.norm_eq_abs] using this
+
 /-- A function of one variable with `|G| ≤ B` is bounded below by `-B`. -/
 theorem neg_le_of_abs_iteratedDeriv_zero_le {G : ℝ → ℝ} {B : ℝ}
     (hB : ∀ t, |iteratedDeriv 0 G t| ≤ B) (t : ℝ) : -B ≤ G t := by

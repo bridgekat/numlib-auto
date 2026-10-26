@@ -19,3 +19,7 @@ source = "Cartis–Gould–Toint, Appendix B, proof of Theorem 12.2.6, (B.12.4)�
 [[node]]
 id = "exists_slowARqpSmooth_interpolant"
 source = "Cartis–Gould–Toint, proof of Theorem 12.2.17, (12.2.80)–(12.2.96)"
+
+[[node]]
+id = "abs_iteratedDeriv_sub_le"
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.6 (Lipschitz derivatives of the slow example)"
