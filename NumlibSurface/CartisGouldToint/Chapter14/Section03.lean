@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.AnchoredLipschitz
+import Numlib.Analysis.InnerProductSpace.EuclideanProd
 import Numlib.Optimization.Complexity.ScaledRestart
 import Numlib.Optimization.Constrained.TwoPhase
 import Numlib.Optimization.Optimality.CurveConditions
@@ -37,7 +38,8 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
 
 * `theorem_14_3_1` (corrected), `example_14_3_1` (corrected), `theorem_14_3_2`;
 * `theorem_14_3_3` (with an integer ceiling), `theorem_14_3_4` (with `∑_j` for `max_j`);
-* `lemma_14_3_5` (corrected), `lemma_14_3_6_i`, `lemma_14_3_6_ii`, `lemma_14_3_7`,
+* `lemma_14_3_5` (corrected) and `lemma_14_3_5_counterexample` (TPqp-GC runs violating the printed
+  (14.3.43) and (14.3.46)), `lemma_14_3_6_i`, `lemma_14_3_6_ii`, `lemma_14_3_7`,
   `lemma_14_3_8` and `theorem_14_3_9` (corrected, with the number of bad outer iterations as a
   parameter).
 
@@ -69,10 +71,10 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   strict test `‖r(x_{k+1}, t_k)‖ < θε₀`.
 * Lemma 14.3.5: (14.3.43), (14.3.46) are false as printed (the extra terms are not bounded by
   `φ_{ℒ,1} ‖∇f‖ δ`; e.g. `c ≡ 0`, `X = [-1, 1]`, `f(x) = x/4 - 25x²/8`, `ε₀ = 1/100` gives
-  `φ^1_{ℒ,T,2} = 27/8` against `17/32`); they are replaced by `(‖∇f‖δ)²/(2τ)` and
-  `(‖∇f‖δ + ‖∇²f‖δ²)‖∇f‖δ/(2τ)`. When Phase 2 ends with `f(x_ε) = t_ε`, only `‖c(x_ε)‖ ≥ θε₀`
-  follows and only the first-order part of (14.3.41) (the measures of `ν` and `μ` differ at
-  order `j ≥ 2`).
+  `φ^1_{ℒ,T,2} ≥ 27/8` against `17/32`; `lemma_14_3_5_counterexample`); they are replaced by
+  `(‖∇f‖δ)²/(2τ)` and `(‖∇f‖δ + ‖∇²f‖δ²)‖∇f‖δ/(2τ)`. When Phase 2 ends with
+  `f(x_ε) = t_ε`, only `‖c(x_ε)‖ ≥ θε₀` follows and only the first-order part of (14.3.41) (the
+  measures of `ν` and `μ` differ at order `j ≥ 2`).
 * Lemmas 14.3.7–14.3.8 and Theorem 14.3.9: `∑_j` replaces `max_j` as in Theorem 14.3.4; the good
   inner iterations (successful and not followed by the end of their INNER call) are counted per
   block by `G = κ^S (1 - θ) M`; the `i = 0` entries and the last iterations of the calls are
@@ -83,12 +85,12 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
 
 ## Not formalized
 
-The explicit counterexample to (14.3.43) (only described above), the existence of LENq-SC and
-TPqp-GC runs, and the asymptotic `O(·)` restatements.
+The existence of LENq-SC and TPqp-GC runs in general (only the explicit runs of
+`lemma_14_3_5_counterexample` are constructed), and the asymptotic `O(·)` restatements.
 -/
 
 open Set Metric
-open scoped Nat RealInnerProductSpace
+open scoped Nat RealInnerProductSpace ContDiff
 open Constrained (lagrangianFn)
 
 namespace CartisGouldToint.Chapter14
@@ -417,6 +419,27 @@ theorem AssumptionCD1pLBX.contDiffOn {c : ℝⁿ → ℝᵐ} {X X₀ : Set ℝ�
     (hc : AssumptionCD1pLBX c X X₀ p L B) : ContDiffOn ℝ p c X₀ :=
   contDiffOn_piLp' 2 fun i => (hc.component i).contDiffOn
 
+/-- A `C^∞` function satisfies f.D1pLB.X on any ball containing `X`, with some
+constants (Lipschitz and bounded derivative tensors on the compact closure). -/
+theorem exists_assumptionD1pLBX_ball {g : ℝⁿ → ℝ} (hg : ContDiff ℝ ∞ g) {X : Set ℝⁿ} {R : ℝ}
+    (hX : X ⊆ ball 0 R) (p : ℕ) : ∃ L B : ℕ → ℝ, AssumptionD1pLBX g X (ball 0 R) p L B := by
+  have hK : ∀ j : ℕ, ∃ K M : ℝ,
+      (∀ x ∈ closedBall (0 : ℝⁿ) R, ∀ y ∈ closedBall (0 : ℝⁿ) R,
+        ‖iteratedFDeriv ℝ j g x - iteratedFDeriv ℝ j g y‖ ≤ K * ‖x - y‖) ∧
+      ∀ x ∈ closedBall (0 : ℝⁿ) R, ‖iteratedFDeriv ℝ j g x‖ ≤ M := by
+    intro j
+    have hj : ContDiff ℝ 1 (iteratedFDeriv ℝ j g) :=
+      hg.iteratedFDeriv_right (by exact_mod_cast le_top)
+    obtain ⟨K, hK⟩ := hj.locallyLipschitz.locallyLipschitzOn.exists_lipschitzOnWith_of_compact
+      (isCompact_closedBall (0 : ℝⁿ) R)
+    obtain ⟨M, hM⟩ := (isCompact_closedBall (0 : ℝⁿ) R).exists_bound_of_continuousOn
+      hj.continuous.continuousOn
+    exact ⟨K, M, fun x hx y hy => by simpa [dist_eq_norm] using hK.dist_le_mul x hx y hy, hM⟩
+  choose L B hL hB using hK
+  refine ⟨L, B, isOpen_ball, convex_ball 0 R, hX, (hg.of_le (by exact_mod_cast le_top)).contDiffOn,
+    fun j _ x hx y hy => ?_, fun j _ x hx => hB j x (ball_subset_closedBall hx)⟩
+  simpa [Real.rpow_one] using hL j x (ball_subset_closedBall hx) y (ball_subset_closedBall hy)
+
 /-- The sublevel set `𝓛_ν(x₀) = {x ∈ X | ‖c(x)‖ ≤ ‖c(x₀)‖}` of Lemma 14.3.6(i) of
 [cartis2022evaluation]. -/
 def nuSublevel (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (x₀ : ℝⁿ) : Set ℝⁿ := {x ∈ X | ‖c x‖ ≤ ‖c x₀‖}
@@ -561,6 +584,16 @@ def meritCrit (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q :
   ∀ j ∈ Finset.Icc 1 q,
     Optimization.taylorMeasure (ftaylorSeries ℝ (Constrained.targetMerit f c t) y) j (δ j)
       {d | y + d ∈ X} ≤ ε j * Constrained.targetResidual f c t y * δ j ^ j / j !
+
+/-- `meritCrit` is monotone in the tolerances. -/
+theorem meritCrit_of_le {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {ε ε' : ℕ → ℝ} {t : ℝ}
+    {y : ℝⁿ} {δ : ℕ → ℝ} (h : meritCrit f c X q ε' t y δ) (hε : ∀ j ∈ Finset.Icc 1 q, ε' j ≤ ε j)
+    (hδ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ δ j) : meritCrit f c X q ε t y δ := fun j hj =>
+  (h j hj).trans (by
+    have := hδ j hj
+    have := Constrained.targetResidual_nonneg (f := f) (c := c) (t := t) (x := y)
+    gcongr
+    exact hε j hj)
 
 /-- The sequences generated by Phase 2 of TPqp-GC ([cartis2022evaluation], Algorithm 14.3.2),
 indexed by the outer iteration `k ≥ 1` (values at `k = 0` are unused): outer iterates `x k`,
@@ -1011,8 +1044,8 @@ private theorem inv_mul_le_of_le {x : ℝⁿ} {t a ε δ : ℝ} {j : ℕ} (ht : 
 
 Here `T(x) = X(x) ∩ ker ∇c(x)`, `M(x) = T(x) ∩ ker ∇f(x)` (14.3.45) and
 `‖(1, y)‖ = √(1 + ‖y‖²)`. Corrections: the printed (14.3.43), (14.3.46) bound the extra terms by
-`φ_{ℒ,1} ‖∇f‖ δ`, which is invalid (on `T(x_ε)`, `∇ℒ[d] = ∇f[d]`, not `∇f[d]/τ`; a
-counterexample is described in the module documentation); when `f(x_ε) = t_ε`, Phase 2 only
+`φ_{ℒ,1} ‖∇f‖ δ`, which is invalid (on `T(x_ε)`, `∇ℒ[d] = ∇f[d]`, not `∇f[d]/τ`; see
+`lemma_14_3_5_counterexample`); when `f(x_ε) = t_ε`, Phase 2 only
 gives `‖c(x_ε)‖ ≥ θε₀`, and the measures of `ν` and `μ` agree only at first order: for
 `j = 2, 3` they agree on `X(x_ε) ∩ ker ∇f(x_ε)`, and on `X(x_ε)` they differ by the terms
 `(‖∇f‖δ)²/2` and `‖∇f‖δ ‖∇²f‖δ²/2` (`taylorMeasure_phi2_two_le_of_eq`,
@@ -1878,5 +1911,402 @@ theorem example_14_3_1 :
     exact Asymptotics.isLittleO_zero _ _
 
 end Example1431
+
+
+/-! ### Lemma 14.3.5: counterexamples to the printed (14.3.43) and (14.3.46) -/
+
+section Counterexample1435
+
+local notation "ℝ¹" => EuclideanSpace ℝ (Fin 1)
+
+namespace Lemma1435Cex
+
+/-- The simple constraint set `X = [-1, 1]` of the counterexample. -/
+def cexX : Set ℝ¹ := {x | |x 0| ≤ 1}
+
+/-- The (absent) equality constraint `c ≡ 0` of the counterexample. -/
+def cexC : ℝ¹ → ℝ¹ := fun _ => 0
+
+/-- The TPqp-GC sequences of the counterexample: every iterate is `0`, every target `-ε₀`,
+every radius `1`, and INNER returns its starting point without iterating. -/
+noncomputable def cexRun (ε₀ : ℝ) : TPqpSeq 1 :=
+  ⟨fun _ => 0, fun _ => -ε₀, fun _ _ => 1, fun _ _ => 0, fun _ => 0, fun _ _ => False⟩
+
+private theorem cex_targetResidual {g : ℝ¹ → ℝ} (hg0 : g 0 = 0) {ε₀ : ℝ} (hε₀ : 0 ≤ ε₀) :
+    Constrained.targetResidual g cexC (-ε₀) 0 = ε₀ := by
+  simp [Constrained.targetResidual_def, cexC, hg0, Real.sqrt_sq hε₀]
+
+/-- A TPqp-GC run with `c ≡ 0`, `X = [-1, 1]`, `θ = β₁ = β = ½`, `x₀ = 0` and `f(0) = 0`:
+Phase 1 stops at once, Phase 2 starts with `t₁ = -ε₀`, the first INNER call returns `x₂ = x₁ = 0`
+(allowed as soon as the approximate-criticality test (14.3.34) holds at `0`), and Phase 2
+terminates at `k_ε = 1` in case (c), with output target `t_ε = -ε₀`. -/
+theorem cex_run {g : ℝ¹ → ℝ} (hg0 : g 0 = 0) {q : ℕ} {ε : ℕ → ℝ}
+    (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j) (hε1 : ∀ j ∈ Finset.range (q + 1), ε j ≤ 1)
+    (hcrit : meritCrit g cexC cexX q ε (-ε 0) 0 (fun _ => 1)) :
+    algorithm_14_3_2 g cexC cexX q (1 / 2) (1 / 2) (1 / 2) ε 0 (fun _ => 0) (fun _ _ => 1) 0
+        (cexRun (ε 0)) ∧
+      (cexRun (ε 0)).IsEnd g cexC cexX q (1 / 2) ε 1 ∧
+      (cexRun (ε 0)).targetOut g cexC (1 / 2) ε 1 = -ε 0 ∧
+      ∀ κdecr π, IsInnerPhaseRun g cexC cexX q (1 / 2) (1 / 2) ε (cexRun (ε 0)) κdecr 1 1 π := by
+  classical
+  have hε0 : 0 < ε 0 := hε 0 (by simp)
+  have hres := cex_targetResidual hg0 hε0.le
+  have hna : ∀ k, ¬ (cexRun (ε 0)).IsKa g cexC (1 / 2) ε k := fun k h => by
+    simp only [TPqpSeq.IsKa, cexRun] at h
+    rw [hres] at h
+    linarith
+  have hnb : ∀ k, ¬ (cexRun (ε 0)).IsKb g cexC (1 / 2) ε k := fun k h => by
+    simp only [TPqpSeq.IsKb, cexRun, hg0] at h
+    linarith [h.2]
+  have hstop : ∀ k, (cexRun (ε 0)).Stop g cexC cexX q (1 / 2) ε k :=
+    fun k => Or.inl ⟨hna k, hnb k⟩
+  have hmem0 : (0 : ℝ¹) ∈ cexX := by simp [cexX]
+  have hlen0 : lenStop cexC cexX q (phase1Tol (1 / 2) ε) (fun _ => 0) (fun _ _ => 1) 0 :=
+    Or.inl (by simp only [cexC, norm_zero, phase1Tol_zero]; positivity)
+  have hph1 : algorithm_14_3_1 cexC cexX q (phase1Tol (1 / 2) ε) (1 / 2) (fun _ => 0)
+      (fun _ _ => 1) := by
+    refine ⟨hmem0, fun j hj => ?_, fun j hj => ?_, by norm_num, by norm_num, by simp [cexC],
+      fun k hk h => absurd hlen0 (h 0 (by omega)), fun k hk h => absurd hlen0 (h 0 (by omega)),
+      fun k hk h => absurd hlen0 (h 0 (by omega))⟩
+    · unfold phase1Tol; split_ifs
+      · subst_vars; positivity
+      · exact hε j hj
+    · unfold phase1Tol; split_ifs
+      · subst_vars; linarith [hε1 0 (by simp)]
+      · exact hε1 j hj
+  have hph2 : IsTPqpGCPhase2 g cexC cexX q (1 / 2) (1 / 2) ε 0 (cexRun (ε 0)) := by
+    refine ⟨by norm_num, by norm_num, by norm_num, le_rfl, hε, hε1, hmem0,
+      by simp only [cexC, norm_zero]; positivity, rfl, ?_, fun _ _ _ => hmem0,
+      fun _ _ _ _ _ => ⟨one_pos, le_rfl⟩, fun _ _ _ => Or.inr (Or.inr hcrit),
+      fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ i hi => absurd hi (Nat.not_lt_zero _),
+      fun _ _ _ i hi => absurd hi (Nat.not_lt_zero _), fun k _ _ h => absurd h (hna k),
+      fun k _ _ h => absurd h (hnb k)⟩
+    simp [cexRun, cexC, hg0, Real.sqrt_sq hε0.le]
+  refine ⟨⟨rfl, hph1, ⟨hlen0, fun j hj => absurd hj (Nat.not_lt_zero _)⟩, fun _ => hph2⟩,
+    ⟨le_rfl, hstop 1, fun j h1 hj => absurd hj (by omega)⟩, ?_, fun κdecr π => ?_⟩
+  · simp only [TPqpSeq.targetOut, hna 1, hnb 1, or_self, ite_false]
+    rfl
+  · refine ⟨fun k _ _ => by simp only [cexRun, Nat.cast_zero, one_mul]; positivity,
+      fun k _ _ i hi => absurd hi (Nat.not_lt_zero _),
+      fun k _ _ i hi => absurd hi (Nat.not_lt_zero _)⟩
+
+
+private theorem cex_lagrangian (g : ℝ¹ → ℝ) (y : ℝ¹) : lagrangianFn g cexC y = g := by
+  funext x; simp [cexC]
+
+private theorem cex_targetMultiplier (g : ℝ¹ → ℝ) (t : ℝ) :
+    Constrained.targetMultiplier g cexC t 0 = 0 := by
+  simp [Constrained.targetMultiplier_def, cexC]
+
+private theorem cex_fderiv_c : fderiv ℝ cexC 0 = 0 := by
+  unfold cexC; simp
+
+private theorem contDiff_coord : ContDiff ℝ ⊤ (fun x : ℝ¹ => x 0) := contDiff_piLp_apply (p := 2)
+
+private theorem cex_mem_closedBall {d : ℝ¹} (hd : d ∈ closedBall (0 : ℝ¹) 1) : |d 0| ≤ 1 := by
+  rw [← EuclideanSpace.norm_eq_abs_fin_one]; exact mem_closedBall_zero_iff.1 hd
+
+/-- The first-order measure at `0` on `X = [-1, 1]` with radius `1` is at most `|A|` when
+`∇g(0)[d] = A d₀`. -/
+private theorem cex_phi1_le {g : ℝ¹ → ℝ} {A : ℝ} (hA : ∀ d, fderiv ℝ g 0 d = A * d 0) :
+    Optimization.taylorMeasure (ftaylorSeries ℝ g 0) 1 1 {d | 0 + d ∈ cexX} ≤ |A| := by
+  rw [Optimization.taylorMeasure]
+  refine Optimization.decrementMeasure_le ⟨0, mem_closedBall_self zero_le_one, by simp [cexX]⟩
+    fun d hd => ?_
+  rw [FormalMultilinearSeries.taylorDecrement_one_apply]
+  simp only [ftaylorSeries, iteratedFDeriv_one_apply, hA]
+  have := cex_mem_closedBall hd.1
+  calc -(A * d 0) ≤ |A * d 0| := neg_le_abs _
+    _ = |A| * |d 0| := abs_mul _ _
+    _ ≤ |A| * 1 := mul_le_mul_of_nonneg_left this (abs_nonneg _)
+    _ = |A| := mul_one _
+
+private theorem cex_norm_fderiv_le {g : ℝ¹ → ℝ} {A : ℝ} (hA : ∀ d, fderiv ℝ g 0 d = A * d 0) :
+    ‖fderiv ℝ g 0‖ ≤ |A| := by
+  refine (EuclideanSpace.norm_clm_fin_one_le _).trans ?_
+  simp [hA]
+
+/-! #### The `q = 2` instance -/
+
+/-- The objective `f(x) = x/4 - (25/8) x²` of the `q = 2` counterexample. -/
+noncomputable def cexF2 : ℝ¹ → ℝ := fun x => x 0 / 4 - 25 / 8 * x 0 ^ 2
+
+/-- The tolerances `ε₀ = 1/100`, `ε_j = 1` (`j ≥ 1`). -/
+noncomputable def cexEps : ℕ → ℝ := fun j => if j = 0 then 1 / 100 else 1
+
+private theorem cexEps_zero : cexEps 0 = 1 / 100 := rfl
+
+private theorem cexEps_of_ne {j : ℕ} (hj : j ≠ 0) : cexEps j = 1 := by simp [cexEps, hj]
+
+private theorem cexEps_pos (j : ℕ) : 0 < cexEps j := by unfold cexEps; split_ifs <;> norm_num
+
+private theorem cexEps_le_one (j : ℕ) : cexEps j ≤ 1 := by unfold cexEps; split_ifs <;> norm_num
+
+private theorem contDiff_cexF2 : ContDiff ℝ ⊤ cexF2 :=
+  (contDiff_coord.div_const 4).sub (contDiff_const.mul (contDiff_coord.pow 2))
+
+private theorem cexF2_ray (d : ℝ¹) (s : ℝ) :
+    cexF2 (0 + s • d) = cexF2 0 + ∑ i ∈ Finset.Icc 1 2,
+      s ^ i * (if i = 1 then d 0 / 4 else -(25 / 8) * d 0 ^ 2) := by
+  simp [cexF2, Finset.sum_Icc_succ_top]
+  ring
+
+private theorem cexF2_fderiv (d : ℝ¹) : fderiv ℝ cexF2 0 d = 1 / 4 * d 0 := by
+  have := Optimization.iteratedFDeriv_apply_diag_eq_of_poly (N := 2)
+    (contDiff_cexF2.contDiffAt.of_le le_top) (Filter.Eventually.of_forall (cexF2_ray d)) 1
+    (by simp)
+  rw [iteratedFDeriv_one_apply] at this
+  rw [this]; simp; ring
+
+private theorem cex2_innerTest :
+    meritCrit cexF2 cexC cexX 2 (fun j => cexEps j * (1 / 2)) (-cexEps 0) 0 (fun _ => 1) := by
+  intro j hj
+  have hjj := Finset.mem_Icc.1 hj
+  have he : Constrained.targetMerit cexF2 cexC (-cexEps 0) =
+      fun x => (cexF2 x + 1 / 100) ^ 2 / 2 := by
+    funext x; simp [Constrained.targetMerit_def, cexC, cexEps_zero]
+  have hsm : ContDiffAt ℝ (4 : ℕ) (Constrained.targetMerit cexF2 cexC (-cexEps 0)) 0 := by
+    rw [he]
+    exact (((contDiff_cexF2.add contDiff_const).pow 2).div_const 2).contDiffAt.of_le le_top
+  rw [Optimization.taylorMeasure]
+  refine Optimization.decrementMeasure_le ⟨0, mem_closedBall_self zero_le_one, by simp [cexX]⟩
+    fun d hd => ?_
+  have hd0 := cex_mem_closedBall hd.1
+  rw [Optimization.taylorDecrement_eq_of_poly (N := 4) (a := fun i => if i = 1 then d 0 / 400 else
+      if i = 2 then 0 else if i = 3 then -(25 / 32) * d 0 ^ 3 else 625 / 128 * d 0 ^ 4) hsm
+      (fun s => ?_) (by omega),
+    cex_targetResidual (by simp [cexF2]) (cexEps_pos 0).le]
+  · rw [abs_le] at hd0
+    obtain ⟨h1, h2⟩ := hjj
+    interval_cases j <;> simp [Finset.sum_Icc_succ_top, cexEps] <;> linarith
+  · rw [he]
+    simp [cexF2, Finset.sum_Icc_succ_top]
+    ring
+
+private theorem cex_neg_e_mem :
+    -EuclideanSpace.single (0 : Fin 1) (1 : ℝ) ∈
+      closedBall (0 : ℝ¹) 1 ∩ ({d | 0 + d ∈ cexX} ∩ {d | fderiv ℝ cexC 0 d = 0}) := by
+  refine ⟨mem_closedBall_zero_iff.2 (by simp), by simp [cexX],
+    by simp [cex_fderiv_c]⟩
+
+private theorem cex_phi1_nonneg (g : ℝ¹ → ℝ) :
+    0 ≤ Optimization.taylorMeasure (ftaylorSeries ℝ g 0) 1 1 {d | 0 + d ∈ cexX} :=
+  Optimization.taylorMeasure_nonneg _ 1 (by simp [cexX]) zero_le_one
+
+private theorem cex2_lhs : 27 / 8 ≤ Optimization.taylorMeasure (ftaylorSeries ℝ cexF2 0) 2 1
+    ({d | 0 + d ∈ cexX} ∩ {d | fderiv ℝ cexC 0 d = 0}) := by
+  refine le_trans ?_ (Optimization.taylorDecrement_le_taylorMeasure _ 2 cex_neg_e_mem)
+  rw [Optimization.taylorDecrement_eq_of_poly (N := 2) (contDiff_cexF2.contDiffAt.of_le le_top)
+    (cexF2_ray _) le_rfl]
+  simp [Finset.sum_Icc_succ_top]
+  norm_num
+
+/-! #### The `q = 3` instance -/
+
+/-- The objective `f(x) = x/12 - (25/72) x² + (625/216) x³` of the `q = 3` counterexample
+(`∇f(0) = 1/12`, `∇²f(0) = -25/36`, `∇³f(0) = 625/36`). -/
+noncomputable def cexF3 : ℝ¹ → ℝ := fun x => x 0 / 12 - 25 / 72 * x 0 ^ 2 + 625 / 216 * x 0 ^ 3
+
+private theorem contDiff_cexF3 : ContDiff ℝ ⊤ cexF3 :=
+  ((contDiff_coord.div_const 12).sub (contDiff_const.mul (contDiff_coord.pow 2))).add
+    (contDiff_const.mul (contDiff_coord.pow 3))
+
+private theorem cexF3_ray (d : ℝ¹) (s : ℝ) :
+    cexF3 (0 + s • d) = cexF3 0 + ∑ i ∈ Finset.Icc 1 3,
+      s ^ i * (if i = 1 then d 0 / 12 else if i = 2 then -(25 / 72) * d 0 ^ 2
+        else 625 / 216 * d 0 ^ 3) := by
+  simp [cexF3, Finset.sum_Icc_succ_top]
+  ring
+
+private theorem cexF3_fderiv (d : ℝ¹) : fderiv ℝ cexF3 0 d = 1 / 12 * d 0 := by
+  have := Optimization.iteratedFDeriv_apply_diag_eq_of_poly (N := 3)
+    (contDiff_cexF3.contDiffAt.of_le le_top) (Filter.Eventually.of_forall (cexF3_ray d)) 1
+    (by simp)
+  rw [iteratedFDeriv_one_apply] at this
+  rw [this]; simp; ring
+
+private theorem cexF3_norm_hessian_le : ‖iteratedFDeriv ℝ 2 cexF3 0‖ ≤ 25 / 36 := by
+  refine (EuclideanSpace.norm_multilinear_fin_one_le _).trans ?_
+  rw [Optimization.iteratedFDeriv_apply_diag_eq_of_poly (N := 3)
+    (contDiff_cexF3.contDiffAt.of_le le_top) (Filter.Eventually.of_forall (cexF3_ray _)) 2
+    (by simp)]
+  simp [Nat.factorial]
+  norm_num
+
+private theorem cex3_innerTest :
+    meritCrit cexF3 cexC cexX 3 (fun j => cexEps j * (1 / 2)) (-cexEps 0) 0 (fun _ => 1) := by
+  intro j hj
+  have hjj := Finset.mem_Icc.1 hj
+  have he : Constrained.targetMerit cexF3 cexC (-cexEps 0) =
+      fun x => (cexF3 x + 1 / 100) ^ 2 / 2 := by
+    funext x; simp [Constrained.targetMerit_def, cexC, cexEps_zero]
+  have hsm : ContDiffAt ℝ (6 : ℕ) (Constrained.targetMerit cexF3 cexC (-cexEps 0)) 0 := by
+    rw [he]
+    exact (((contDiff_cexF3.add contDiff_const).pow 2).div_const 2).contDiffAt.of_le le_top
+  rw [Optimization.taylorMeasure]
+  refine Optimization.decrementMeasure_le ⟨0, mem_closedBall_self zero_le_one, by simp [cexX]⟩
+    fun d hd => ?_
+  have hd0 := cex_mem_closedBall hd.1
+  rw [Optimization.taylorDecrement_eq_of_poly (N := 6) (a := fun i => if i = 1 then d 0 / 1200 else
+      if i = 2 then 0 else if i = 3 then 0 else if i = 4 then 3125 / 10368 * d 0 ^ 4 else
+      if i = 5 then -(15625 / 15552) * d 0 ^ 5 else 390625 / 93312 * d 0 ^ 6) hsm
+      (fun s => ?_) (by omega),
+    cex_targetResidual (by simp [cexF3]) (cexEps_pos 0).le]
+  · rw [abs_le] at hd0
+    obtain ⟨h1, h2⟩ := hjj
+    interval_cases j <;> simp [Finset.sum_Icc_succ_top, cexEps, Nat.factorial] <;> linarith
+  · rw [he]
+    simp [cexF3, Finset.sum_Icc_succ_top]
+    ring
+
+private theorem cex3_lhs : 718 / 216 ≤ Optimization.taylorMeasure (ftaylorSeries ℝ cexF3 0) 3 1
+    ({d | 0 + d ∈ cexX} ∩ {d | fderiv ℝ cexC 0 d = 0}) := by
+  refine le_trans ?_ (Optimization.taylorDecrement_le_taylorMeasure _ 3 cex_neg_e_mem)
+  rw [Optimization.taylorDecrement_eq_of_poly (N := 3) (contDiff_cexF3.contDiffAt.of_le le_top)
+    (cexF3_ray _) le_rfl]
+  simp [Finset.sum_Icc_succ_top]
+  norm_num
+
+private theorem cex_subset_ball : cexX ⊆ ball (0 : ℝ¹) 2 := fun x hx => by
+  rw [mem_ball_zero_iff, EuclideanSpace.norm_eq_abs_fin_one]
+  exact lt_of_le_of_lt hx (by norm_num)
+
+private theorem cex_assumptionC (p : ℕ) :
+    ∃ L B : ℕ → ℝ, AssumptionCD1pLBX cexC cexX (ball 0 2) p L B := by
+  obtain ⟨L, B, h⟩ := exists_assumptionD1pLBX_ball (g := fun _ : ℝ¹ => (0 : ℝ)) contDiff_const
+    cex_subset_ball p
+  refine ⟨L, B, isOpen_ball, convex_ball 0 2, cex_subset_ball, fun i => ?_⟩
+  have e : (fun x => cexC x i) = fun _ => (0 : ℝ) := by funext x; simp [cexC]
+  rw [e]; exact h
+
+end Lemma1435Cex
+
+open Lemma1435Cex in
+/-- **Lemma 14.3.5** of [cartis2022evaluation]: **the printed bounds (14.3.43) and (14.3.46) are
+false.** There are TPqp-GC runs (`algorithm_14_3_2`) satisfying every hypothesis of Lemma 14.3.5
+(c.D1pLB.X and f.D1pLB.X on `X₀ = B(0, 2)` with `q ≤ p`) whose Phase 2 terminates at `k_ε` with
+`f(x_ε) > t_ε` and violates the printed bound:
+
+* (`q = 2`, (14.3.43)) `φ^{δ_2}_{ℒ,T(x_ε),2}(x_ε, y_ε) >
+  ½ [ε_2 ‖(1, y_ε)‖ δ_2² + φ^{δ_2}_{ℒ,X(x_ε),1}(x_ε, y_ε) ‖∇f(x_ε)‖ δ_2]`;
+* (`q = 3`, (14.3.46)) `φ^{δ_3}_{ℒ,T(x_ε),3}(x_ε, y_ε) > ⅙ [ε_3 ‖(1, y_ε)‖ δ_3³ +
+  3 φ^{δ_3}_{ℒ,X(x_ε),1}(x_ε, y_ε) (‖∇f(x_ε)‖ δ_3 + ‖∇²f(x_ε)‖ δ_3²)]`,
+
+with `y_ε = -c(x_ε)/(f(x_ε) - t_ε)` (14.3.53) and `T(x) = X(x) ∩ ker ∇c(x)`. Moreover, the
+INNER call of the terminating iteration returns its starting point (`x_{k_ε+1} = x_{k_ε}`), which
+INNER may do, as its own termination test `φ^{δ_j}_{μ,X,j}(x_{k_ε+1}, t_{k_ε}) ≤
+ε_j β ‖r(x_{k_ε}, t_{k_ε})‖ δ_j^j/j!` already holds there. The other standing assumptions of
+§14.3.2 hold as well (not stated): X.CNe (`X = [-1, 1]` is closed and nonempty), f.B.Fb (`f` is
+continuous, hence bounded, on the compact `ℱ_{β_F} ⊆ X`), and the INNER contract
+`IsInnerPhaseRun` (with `κ_uns = κ_unc = 1` and any `κ_decr`, `π`: INNER makes no iterations;
+`Lemma1435Cex.cex_run`).
+
+The data (`n = m = 1`): `X = [-1, 1]`, `c ≡ 0` (so `ℒ = f`, `y_ε = 0`, `T(x_ε) = X(x_ε)`),
+`θ = β₁ = β = ½`, `ε₀ = 1/100`, `ε_j = 1` (`j ≥ 1`), `x₀ = 0`; Phase 1 stops at once, Phase 2
+starts at `x₁ = 0` with `t₁ = -ε₀` and terminates at `k_ε = 1` in case (c) with
+`(x_ε, t_ε) = (0, -ε₀)`, radii `1` and `τ = f(x_ε) - t_ε = ε₀` (`Lemma1435Cex.cex_run`).
+For `q = 2`, `f(x) = x/4 - (25/8) x²`: `∇²μ(0) = ∇f(0)² + ε₀ ∇²f(0) = 0`, so the tests hold,
+and `φ^1_{f,2}(0) ≥ 27/8` while the printed right-hand side is at most `½ (1 + 1/16) = 17/32`.
+For `q = 3`, `f(x) = x/12 - (25/72) x² + (625/216) x³`: `∇²μ(0) = ∇³μ(0) = 0`, and
+`φ^1_{f,3}(0) ≥ 718/216` while the printed right-hand side is at most `43/216`.
+The corrected bounds of `lemma_14_3_5` (with `(‖∇f‖δ)²/(2τ)` and
+`(‖∇f‖δ + ‖∇²f‖δ²)‖∇f‖δ/(2τ)`) hold, e.g. `½ + (1/4)²/(2ε₀) = 29/8 ≥ 27/8`. -/
+theorem lemma_14_3_5_counterexample :
+    (∃ (f : ℝ¹ → ℝ) (c : ℝ¹ → ℝ¹) (X X₀ : Set ℝ¹) (q p : ℕ) (θ β₁ β : ℝ) (ε : ℕ → ℝ)
+      (x₀ : ℝ¹) (xP : ℕ → ℝ¹) (δP : ℕ → ℕ → ℝ) (k₁ : ℕ) (D : TPqpSeq 1)
+      (Lc Bc Lf Bf : ℕ → ℝ) (kε : ℕ),
+      algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D ∧
+      AssumptionCD1pLBX c X X₀ p Lc Bc ∧ AssumptionD1pLBX f X X₀ p Lf Bf ∧ q ≤ p ∧ q = 2 ∧
+      ‖c (xP k₁)‖ ≤ θ * ε 0 ∧ D.IsEnd f c X q θ ε kε ∧
+      D.targetOut f c θ ε kε < f (D.x (kε + 1)) ∧ D.x (kε + 1) = D.x kε ∧
+      (∀ j ∈ Finset.Icc 1 q, Optimization.taylorMeasure
+          (ftaylorSeries ℝ (Constrained.targetMerit f c (D.t kε)) (D.x (kε + 1))) j
+          (D.δ (kε + 1) j) {d | D.x (kε + 1) + d ∈ X} ≤
+        ε j * β * Constrained.targetResidual f c (D.t kε) (D.x kε) * D.δ (kε + 1) j ^ j / j !) ∧
+      (ε 2 * √(1 + ‖Constrained.targetMultiplier f c (D.targetOut f c θ ε kε)
+            (D.x (kε + 1))‖ ^ 2) * D.δ (kε + 1) 2 ^ 2 +
+          Optimization.taylorMeasure (ftaylorSeries ℝ (lagrangianFn f c
+              (Constrained.targetMultiplier f c (D.targetOut f c θ ε kε) (D.x (kε + 1))))
+              (D.x (kε + 1))) 1 (D.δ (kε + 1) 2) {d | D.x (kε + 1) + d ∈ X} *
+            ‖fderiv ℝ f (D.x (kε + 1))‖ * D.δ (kε + 1) 2) / 2 <
+        Optimization.taylorMeasure (ftaylorSeries ℝ (lagrangianFn f c
+            (Constrained.targetMultiplier f c (D.targetOut f c θ ε kε) (D.x (kε + 1))))
+            (D.x (kε + 1))) 2 (D.δ (kε + 1) 2)
+          ({d | D.x (kε + 1) + d ∈ X} ∩ {d | fderiv ℝ c (D.x (kε + 1)) d = 0})) ∧
+    (∃ (f : ℝ¹ → ℝ) (c : ℝ¹ → ℝ¹) (X X₀ : Set ℝ¹) (q p : ℕ) (θ β₁ β : ℝ) (ε : ℕ → ℝ)
+      (x₀ : ℝ¹) (xP : ℕ → ℝ¹) (δP : ℕ → ℕ → ℝ) (k₁ : ℕ) (D : TPqpSeq 1)
+      (Lc Bc Lf Bf : ℕ → ℝ) (kε : ℕ),
+      algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D ∧
+      AssumptionCD1pLBX c X X₀ p Lc Bc ∧ AssumptionD1pLBX f X X₀ p Lf Bf ∧ q ≤ p ∧ q = 3 ∧
+      ‖c (xP k₁)‖ ≤ θ * ε 0 ∧ D.IsEnd f c X q θ ε kε ∧
+      D.targetOut f c θ ε kε < f (D.x (kε + 1)) ∧ D.x (kε + 1) = D.x kε ∧
+      (∀ j ∈ Finset.Icc 1 q, Optimization.taylorMeasure
+          (ftaylorSeries ℝ (Constrained.targetMerit f c (D.t kε)) (D.x (kε + 1))) j
+          (D.δ (kε + 1) j) {d | D.x (kε + 1) + d ∈ X} ≤
+        ε j * β * Constrained.targetResidual f c (D.t kε) (D.x kε) * D.δ (kε + 1) j ^ j / j !) ∧
+      (ε 3 * √(1 + ‖Constrained.targetMultiplier f c (D.targetOut f c θ ε kε)
+            (D.x (kε + 1))‖ ^ 2) * D.δ (kε + 1) 3 ^ 3 +
+          3 * Optimization.taylorMeasure (ftaylorSeries ℝ (lagrangianFn f c
+              (Constrained.targetMultiplier f c (D.targetOut f c θ ε kε) (D.x (kε + 1))))
+              (D.x (kε + 1))) 1 (D.δ (kε + 1) 3) {d | D.x (kε + 1) + d ∈ X} *
+            (‖fderiv ℝ f (D.x (kε + 1))‖ * D.δ (kε + 1) 3 +
+              ‖iteratedFDeriv ℝ 2 f (D.x (kε + 1))‖ * D.δ (kε + 1) 3 ^ 2)) / 6 <
+        Optimization.taylorMeasure (ftaylorSeries ℝ (lagrangianFn f c
+            (Constrained.targetMultiplier f c (D.targetOut f c θ ε kε) (D.x (kε + 1))))
+            (D.x (kε + 1))) 3 (D.δ (kε + 1) 3)
+          ({d | D.x (kε + 1) + d ∈ X} ∩ {d | fderiv ℝ c (D.x (kε + 1)) d = 0})) := by
+  constructor
+  · obtain ⟨hrun, hend, hout, -⟩ := cex_run (by simp [cexF2]) (fun j _ => cexEps_pos j)
+      (fun j _ => cexEps_le_one j)
+      (meritCrit_of_le cex2_innerTest (fun j _ => by linarith [cexEps_pos j])
+        fun _ _ => zero_le_one)
+    obtain ⟨Lc, Bc, hc⟩ := cex_assumptionC 2
+    obtain ⟨Lf, Bf, hf⟩ :=
+      exists_assumptionD1pLBX_ball (contDiff_cexF2.of_le le_top) cex_subset_ball 2
+    refine ⟨cexF2, cexC, cexX, ball 0 2, 2, 2, 1 / 2, 1 / 2, 1 / 2, cexEps, 0, fun _ => 0,
+      fun _ _ => 1, 0, cexRun (cexEps 0), Lc, Bc, Lf, Bf, 1, hrun, hc, hf, le_rfl, rfl,
+      by simp [cexC]; norm_num [cexEps], hend, ?_, rfl, cex2_innerTest, ?_⟩
+    · rw [hout]; simp [cexRun, cexF2, cexEps]
+    · rw [hout]
+      simp only [cexRun, cex_targetMultiplier, cex_lagrangian, norm_zero]
+      have h1 := cex_phi1_le cexF2_fderiv
+      have h2 := cex_norm_fderiv_le cexF2_fderiv
+      have h0 := cex_phi1_nonneg cexF2
+      have hl := cex2_lhs
+      rw [abs_of_pos (by norm_num)] at h1 h2
+      have : Optimization.taylorMeasure (ftaylorSeries ℝ cexF2 0) 1 1 {d | 0 + d ∈ cexX} *
+          ‖fderiv ℝ cexF2 0‖ ≤ 1 / 4 * (1 / 4) := mul_le_mul h1 h2 (norm_nonneg _) (by norm_num)
+      rw [cexEps_of_ne (by norm_num)]
+      simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, add_zero, Real.sqrt_one,
+        one_pow, mul_one]
+      linarith
+  · obtain ⟨hrun, hend, hout, -⟩ := cex_run (by simp [cexF3]) (fun j _ => cexEps_pos j)
+      (fun j _ => cexEps_le_one j)
+      (meritCrit_of_le cex3_innerTest (fun j _ => by linarith [cexEps_pos j])
+        fun _ _ => zero_le_one)
+    obtain ⟨Lc, Bc, hc⟩ := cex_assumptionC 3
+    obtain ⟨Lf, Bf, hf⟩ :=
+      exists_assumptionD1pLBX_ball (contDiff_cexF3.of_le le_top) cex_subset_ball 3
+    refine ⟨cexF3, cexC, cexX, ball 0 2, 3, 3, 1 / 2, 1 / 2, 1 / 2, cexEps, 0, fun _ => 0,
+      fun _ _ => 1, 0, cexRun (cexEps 0), Lc, Bc, Lf, Bf, 1, hrun, hc, hf, le_rfl, rfl,
+      by simp [cexC]; norm_num [cexEps], hend, ?_, rfl, cex3_innerTest, ?_⟩
+    · rw [hout]; simp [cexRun, cexF3, cexEps]
+    · rw [hout]
+      simp only [cexRun, cex_targetMultiplier, cex_lagrangian, norm_zero]
+      have h1 := cex_phi1_le cexF3_fderiv
+      have h2 := cex_norm_fderiv_le cexF3_fderiv
+      have h3 := cexF3_norm_hessian_le
+      have h0 := cex_phi1_nonneg cexF3
+      have hl := cex3_lhs
+      rw [abs_of_pos (by norm_num)] at h1 h2
+      have : Optimization.taylorMeasure (ftaylorSeries ℝ cexF3 0) 1 1 {d | 0 + d ∈ cexX} *
+          (‖fderiv ℝ cexF3 0‖ + ‖iteratedFDeriv ℝ 2 cexF3 0‖) ≤ 1 / 12 * (1 / 12 + 25 / 36) :=
+        mul_le_mul h1 (by linarith) (by positivity) (by norm_num)
+      rw [cexEps_of_ne (by norm_num)]
+      simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, add_zero, Real.sqrt_one,
+        one_pow, mul_one]
+      linarith
+
+end Counterexample1435
 
 end CartisGouldToint.Chapter14

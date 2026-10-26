@@ -50,25 +50,7 @@ source = "Cartis–Gould–Toint, Lemma 14.3.5"
 
 [[node]]
 id = "lemma_14_3_5_counterexample"
-kind = "theorem"
-desc = '''
-The printed bound (14.3.43) fails at a terminal point of TPqp-GC. Data: `n = m = 1`, `X = [-1, 1]`
-(on `ℝ`, `f` below is unbounded below),
-`c ≡ 0` (so `ℒ = f`, `y_ε = 0`, `T(x_ε) = ℝ`), `q = 2`, `ε₁ = ε₂ = 1`, `θ = β = ½`, `ε₀ = 1/100`,
-`f(x) = x/4 - (25/8) x²` (so `f'(0) = 1/4`, `f''(0) = -25/4 = -f'(0)²/ε₀`), `x₀ = x₁ = x₂ = 0`.
-Phase 1 exits with `‖c‖ = 0 ≤ θ ε₀`, `t₁ = f(0) - ε₀`; the first INNER call may return `x₂ = x₁`
-(INNER is allowed to return its starting point unchanged when its tolerance test already holds there)
-(its tolerance test holds: `μ'(0) = ε₀/4`, `μ''(0) = 0`, so `φ_{μ,1}^1 = ε₀/4 ≤ β ε₀ ε₁` and
-`φ_{μ,2}^1 = ε₀/4 ≤ β ε₀ ε₂/2`), Step 2(c) terminates with `(x_ε, t_ε) = (0, t₁)`, `τ = ε₀`. Then
-`φ^1_{f,2}(0) = max_{|d| ≤ 1} -(d/4 - (25/8) d²) = 27/8`, while the right-hand side of (14.3.43)
-is `½(ε₂ + φ^1_{f,1}(0) |f'(0)|) = ½(1 + 1/16) = 17/32`. The corrected bound holds:
-`½ + (1/4)²/(2 ε₀) = 29/8 ≥ 27/8`. Optional (part of node): the analogous `q = 3` instance for
-(14.3.46) (`f(x) = a x + f''(0) x²/2 + f⁽³⁾(0) x³/6` with `a = 1/12`, `ε₀ = 1/100`,
-`f''(0) = -25/36`, `f⁽³⁾(0) = 625/36`): `φ^1_{f,3}(0) ≥ 718/216` while the printed right-hand side is
-`43/216`.
-'''
-deps = ["lemma_14_3_5"]
-source = "Cartis–Gould–Toint, Lemma 14.3.5, (14.3.43) (counterexample to the printed bound)"
+source = "Cartis–Gould–Toint, Lemma 14.3.5, (14.3.43) and (14.3.46) (counterexamples to the printed bounds)"
 
 [[node]]
 id = "lemma_14_3_6_i"
