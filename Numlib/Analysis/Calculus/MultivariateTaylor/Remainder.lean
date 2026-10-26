@@ -533,6 +533,24 @@ theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz (hC : Convex �
   rwa [holderFactorial_one_right,
     show ((p - j : ℕ) : ℝ) + 1 = ((p - j + 1 : ℕ) : ℝ) by push_cast; ring, Real.rpow_natCast] at h
 
+/-- The first derivative is `L`-Lipschitz on `C` iff the first iterated derivative is. -/
+theorem iteratedFDerivLipschitzOn_one_iff :
+    IteratedFDerivLipschitzOn f 1 L C ↔
+      ∀ y ∈ C, ∀ z ∈ C, ‖fderiv ℝ f y - fderiv ℝ f z‖ ≤ L * ‖y - z‖ := by
+  simp only [iteratedFDerivLipschitzOn_iff, norm_iteratedFDeriv_one_sub]
+
+/-- **First-order Taylor bound** ((A.19) with `p = 1`): if `f` is `C¹` at every point of the convex
+set `C` and `f'` is `L`-Lipschitz on `C`, then `‖f(x + v) - f(x) - f'(x) v‖ ≤ L ‖v‖² / 2` for
+`x, x + v ∈ C`. -/
+theorem norm_sub_sub_fderiv_le_of_lipschitz (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ 1 f y)
+    (hL : IteratedFDerivLipschitzOn f 1 L C) {x v : E} (hx : x ∈ C) (hxv : x + v ∈ C) :
+    ‖f (x + v) - f x - fderiv ℝ f x v‖ ≤ L / 2 * ‖v‖ ^ 2 := by
+  have h := norm_sub_taylorPolynomial_le_of_lipschitz (p := 1) hC hf hL hx hxv
+  have ht : taylorPolynomial f 1 x v = f x + fderiv ℝ f x v := by
+    simp [taylorPolynomial_apply, Finset.sum_range_succ]
+  rw [ht, ← sub_sub] at h
+  simpa using h
+
 end Remainder
 
 section RealValued

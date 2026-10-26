@@ -73,6 +73,12 @@ theorem γ₁_le_one : P.γ₁ ≤ 1 := P.γ₁_le_γ₂.trans P.γ₂_lt_one.le
 
 theorem γ₃_pos : 0 < P.γ₃ := one_pos.trans_le P.one_le_γ₃
 
+theorem η₂_pos : 0 < P.η₂ := P.η₁_pos.trans_le P.η₁_le_η₂
+
+theorem one_sub_η₂_pos : 0 < 1 - P.η₂ := sub_pos.2 P.η₂_lt_one
+
+theorem γ₁_lt_one : P.γ₁ < 1 := P.γ₁_le_γ₂.trans_lt P.γ₂_lt_one
+
 end TRParams
 
 section Acceptance

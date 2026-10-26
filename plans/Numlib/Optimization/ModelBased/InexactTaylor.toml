@@ -27,3 +27,11 @@ source = "Cartis–Gould–Toint, (13.1.6)"
 [[node]]
 id = "taylorMeasure_le_of_inexact_certificate"
 source = "Cartis–Gould–Toint, proofs of Lemmas 13.1.7, 13.1.15, 13.3.3, 13.3.6"
+
+[[node]]
+id = "jetApprox_gradientJet"
+source = "Cartis–Gould–Toint, Section 13.2 (inexact gradients)"
+
+[[node]]
+id = "jetApprox_hessianJet"
+source = "Cartis–Gould–Toint, Section 13.2 (inexact Hessians)"

@@ -32,6 +32,9 @@ along every arc staying in the feasible set (Theorems 12.1.1 and 14.3.1).
 * `Optimization.IsLocalMin.isCurveCritical`: Theorem 12.1.1.
 * `Optimization.curveCoeff_eq_zero_of_isFeasibleArc`: the constraint expansion (14.3.3).
 * `Optimization.curveCoeff_lagrangian_nonneg_of_isLocalMinOn`: Theorem 14.3.1 (corrected).
+* `Optimization.curveCoeff_eq_of_isLittleO`, `Optimization.iteratedFDeriv_apply_diag_eq_of_poly`,
+  `Optimization.taylorPolynomial_eq_of_poly`: coefficients, diagonal derivatives and Taylor
+  polynomials read off an explicit expansion along a curve or a ray.
 
 ## Implementation notes
 
@@ -621,5 +624,134 @@ theorem curveCoeff_lagrangian_nonneg_of_isLocalMinOn {F : Type*} [NormedAddCommG
   simpa [hcx, hz0] using hz
 
 end Necessary
+
+/-! ### Coefficients from explicit expansions
+
+The curve coefficients (12.1.6), the diagonal derivatives and the Taylor polynomials of a function
+can be read off an explicit expansion of the function along a polynomial curve or a ray (used for
+the polynomial examples of [cartis2022evaluation], §12.1). -/
+
+section Expansion
+
+/-- A function of the form `α^{q+1} P(α)` with `P` continuous at `0` is `o(α^q)`. -/
+theorem isLittleO_of_eq_pow_succ_mul {r P : ℝ → ℝ} {q : ℕ} (hP : ContinuousAt P 0)
+    (h : ∀ α, r α = α ^ (q + 1) * P α) : r =o[𝓝[>] 0] fun α => α ^ q := by
+  have hP1 : P =O[𝓝 0] fun _ => (1 : ℝ) := hP.tendsto.isBigO_one ℝ
+  have : (fun α : ℝ => α ^ (q + 1) * P α) =o[𝓝 0] fun α => α ^ q := by
+    have := (Asymptotics.isBigO_refl (fun α : ℝ => α ^ (q + 1)) (𝓝 0)).mul hP1
+    simp only [mul_one] at this
+    exact this.trans_isLittleO (Asymptotics.isLittleO_pow_pow (Nat.lt_succ_self q))
+  exact (this.mono nhdsWithin_le_nhds).congr_left fun α => (h α).symm
+
+/-- **Curve coefficients from an expansion.** If `f` is `C^q` at `x` and
+`f(x + ∑_{ℓ=1}^q α^ℓ s_ℓ) = f(x) + ∑_{i=1}^q a_i α^i + o(α^q)` as `α → 0⁺`, then the
+coefficients (12.1.6) are `c_i = a_i` for `i ∈ [1, q]`. -/
+theorem curveCoeff_eq_of_isLittleO {f : E → ℝ} {x : E} {q : ℕ} {s : ℕ → E} {a : ℕ → ℝ}
+    (hf : ContDiffAt ℝ q f x)
+    (h : (fun α => f (x + ∑ ℓ ∈ Finset.Icc 1 q, α ^ ℓ • s ℓ) - f x -
+      ∑ i ∈ Finset.Icc 1 q, α ^ i * a i) =o[𝓝[>] 0] fun α => α ^ q) :
+    ∀ i ∈ Finset.Icc 1 q, curveCoeff (ftaylorSeries ℝ f x) s i = a i := by
+  have hE := isLittleO_comp_curve_sub_curveCoeff hf
+    (γ := fun α => x + ∑ ℓ ∈ Finset.Icc 1 q, α ^ ℓ • s ℓ) (s := s)
+    (by simp)
+  have := eq_zero_of_isLittleO_sum_pow
+    (v := fun i => curveCoeff (ftaylorSeries ℝ f x) s i - a i)
+    ((h.sub hE).congr_left fun α => by
+      simp only [smul_eq_mul, mul_sub, Finset.sum_sub_distrib]
+      ring)
+  exact fun i hi => sub_eq_zero.1 (this i hi)
+
+/-- **Diagonal derivatives from an expansion along a ray.** If `f` is `C^N` at `x` and
+`f(x + t d) = f(x) + ∑_{i=1}^N a_i t^i + o(t^N)` as `t → 0⁺`, then `∇^i f(x)[d]^i = i! a_i` for
+`i ∈ [1, N]`. -/
+theorem iteratedFDeriv_apply_diag_eq_of_isLittleO {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
+    (hf : ContDiffAt ℝ N f x)
+    (h : (fun t => f (x + t • d) - f x - ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) =o[𝓝[>] 0]
+      fun t => t ^ N) :
+    ∀ i ∈ Finset.Icc 1 N, iteratedFDeriv ℝ i f x (fun _ => d) = i ! * a i := by
+  intro i hi
+  have hN : 1 ≤ N := (Finset.mem_Icc.1 hi).1.trans (Finset.mem_Icc.1 hi).2
+  set s : ℕ → E := fun ℓ => if ℓ = 1 then d else 0
+  have hs : ∀ ℓ, 2 ≤ ℓ → s ℓ = 0 := fun ℓ hℓ => ite_eq_right_iff.2 fun h => by omega
+  have hcurve : ∀ α : ℝ, ∑ ℓ ∈ Finset.Icc 1 N, α ^ ℓ • s ℓ = α • d := fun α => by
+    rw [Finset.sum_eq_single_of_mem 1 (Finset.mem_Icc.2 ⟨le_rfl, hN⟩)]
+    · simp [s]
+    · intro ℓ _ hℓ
+      simp [s, hℓ]
+  have hc := curveCoeff_eq_of_isLittleO (s := s) (a := a) hf
+    (h.congr_left fun α => by rw [hcurve]) i hi
+  rw [curveCoeff_of_ray _ s (Finset.mem_Icc.1 hi).1 hs] at hc
+  have hfac : (i ! : ℝ) ≠ 0 := by positivity
+  simp only [s, ite_true, smul_eq_mul] at hc
+  change iteratedFDeriv ℝ i f x (fun _ => d) = _
+  rw [← hc]
+  change _ = (i ! : ℝ) * ((i ! : ℝ)⁻¹ * iteratedFDeriv ℝ i f x fun _ => d)
+  field_simp
+
+/-- **Diagonal derivatives from a polynomial along a ray.** If `f` is `C^N` at `x` and
+`f(x + t d) = f(x) + ∑_{i=1}^N a_i t^i` for all small `t > 0`, then `∇^i f(x)[d]^i = i! a_i` for
+`i ∈ [1, N]`. -/
+theorem iteratedFDeriv_apply_diag_eq_of_poly {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
+    (hf : ContDiffAt ℝ N f x)
+    (h : ∀ᶠ t in 𝓝[>] (0 : ℝ), f (x + t • d) = f x + ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) :
+    ∀ i ∈ Finset.Icc 1 N, iteratedFDeriv ℝ i f x (fun _ => d) = i ! * a i :=
+  iteratedFDeriv_apply_diag_eq_of_isLittleO hf <|
+    (Asymptotics.isLittleO_zero (fun α : ℝ => α ^ N) (𝓝[>] 0)).congr' (by
+      filter_upwards [h] with α hα
+      rw [hα]
+      ring) EventuallyEq.rfl
+
+/-- **Taylor polynomials from an expansion along a ray.** If `f` is `C^N` at `x` and
+`f(x + t d) = f(x) + ∑_{i=1}^N a_i t^i + o(t^N)` as `t → 0⁺`, then for `p ≤ N`,
+`T_{f,p}(x, d) = f(x) + ∑_{i=1}^p a_i`. -/
+theorem taylorPolynomial_eq_of_isLittleO {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
+    (hf : ContDiffAt ℝ N f x)
+    (h : (fun t => f (x + t • d) - f x - ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) =o[𝓝[>] 0]
+      fun t => t ^ N) {p : ℕ}
+    (hp : p ≤ N) : taylorPolynomial f p x d = f x + ∑ i ∈ Finset.Icc 1 p, a i := by
+  have hD := iteratedFDeriv_apply_diag_eq_of_isLittleO hf h
+  rw [taylorPolynomial_apply, Finset.range_eq_Ico, Finset.sum_eq_sum_Ico_succ_bot
+    (Nat.succ_pos p)]
+  simp only [Nat.factorial_zero, Nat.cast_one, inv_one, iteratedFDeriv_zero_apply, one_smul]
+  congr 1
+  rw [show Finset.Ico (0 + 1) (p + 1) = Finset.Icc 1 p by rfl]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hi' := Finset.mem_Icc.1 hi
+  rw [hD i (Finset.mem_Icc.2 ⟨hi'.1, hi'.2.trans hp⟩), smul_eq_mul]
+  have hfac : (i ! : ℝ) ≠ 0 := by positivity
+  field_simp
+
+/-- **Taylor polynomials of polynomials along a ray.** If `f` is `C^N` at `x` and
+`f(x + t d) = f(x) + ∑_{i=1}^N a_i t^i` for all small `t > 0`, then for `p ≤ N`,
+`T_{f,p}(x, d) = f(x) + ∑_{i=1}^p a_i`. -/
+theorem taylorPolynomial_eq_of_poly {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
+    (hf : ContDiffAt ℝ N f x)
+    (h : ∀ᶠ t in 𝓝[>] (0 : ℝ), f (x + t • d) = f x + ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) {p : ℕ}
+    (hp : p ≤ N) : taylorPolynomial f p x d = f x + ∑ i ∈ Finset.Icc 1 p, a i :=
+  taylorPolynomial_eq_of_isLittleO hf
+    ((Asymptotics.isLittleO_zero (fun α : ℝ => α ^ N) (𝓝[>] 0)).congr' (by
+      filter_upwards [h] with α hα
+      rw [hα]
+      ring) EventuallyEq.rfl) hp
+
+/-- If `f(x + t d)` is a polynomial of degree at most `N` in `t` and `f` is `C^N` at `x`, then
+`T_{f,N}(x, d) = f(x + d)`. -/
+theorem taylorPolynomial_eq_self_of_poly {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
+    (hf : ContDiffAt ℝ N f x)
+    (h : ∀ t : ℝ, f (x + t • d) = f x + ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) :
+    taylorPolynomial f N x d = f (x + d) := by
+  rw [taylorPolynomial_eq_of_poly hf (Eventually.of_forall h) le_rfl, ← one_smul ℝ d, h 1]
+  simp
+
+omit [NormedSpace ℝ E] in
+/-- A point is not a local minimizer if `f` is smaller along a curve (or a sequence) tending to
+it. -/
+theorem not_isLocalMin_of_curve {ι : Type*} {l : Filter ι} [l.NeBot] {f : E → ℝ} {x : E}
+    {γ : ι → E} (hγ : Tendsto γ l (𝓝 x)) (hneg : ∀ᶠ t in l, f (γ t) < f x) :
+    ¬ IsLocalMin f x := fun hmin => by
+  obtain ⟨t, h1, h2⟩ := ((hγ.eventually hmin).and hneg).exists
+  exact (lt_irrefl _ (h2.trans_le h1))
+
+end Expansion
 
 end Optimization

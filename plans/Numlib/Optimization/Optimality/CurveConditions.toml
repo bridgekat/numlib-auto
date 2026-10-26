@@ -47,3 +47,15 @@ source = "Cartis–Gould–Toint, (14.3.3) (uniqueness of expansions)"
 [[node]]
 id = "curveCoeff_nonneg_of_isLocalMinOn"
 source = "Cartis–Gould–Toint, proof of Theorems 12.1.1 and 14.3.1"
+
+[[node]]
+id = "curveCoeff_eq_of_isLittleO"
+source = "Cartis–Gould–Toint, Section 12.1.2 (coefficients of explicit expansions, Example 12.1.2)"
+
+[[node]]
+id = "iteratedFDeriv_apply_diag_eq_of_isLittleO"
+source = "Cartis–Gould–Toint, Section 12.1 (derivatives along a ray)"
+
+[[node]]
+id = "taylorPolynomial_eq_of_isLittleO"
+source = "Cartis–Gould–Toint, Section 12.1 (Taylor polynomials along a ray)"

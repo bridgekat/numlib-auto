@@ -1,4 +1,5 @@
 import Numlib.Optimization.Optimality.Approximate
+import Numlib.Analysis.Calculus.Gradient
 import Numlib.Analysis.Calculus.LipschitzIteratedFDeriv
 import Numlib.Analysis.SpecialFunctions.FactorialSum
 
@@ -290,5 +291,114 @@ theorem taylorMeasure_le_of_inexact_certificate_uniform {q : ℕ} {ς ε e : ℝ
     _ = ε * δ ^ j / j ! / 2 := by field_simp; ring
 
 end Bounds
+
+/-! ### Jets with a replaced first- or second-order term -/
+
+section Jets
+
+variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+
+open scoped RealInnerProductSpace
+
+/-- The jet `D` with its first-order term replaced by the linear form `⟪v, ·⟫` (an approximate
+gradient `v`). -/
+noncomputable def gradientJet (D : FormalMultilinearSeries ℝ V ℝ) (v : V) :
+    FormalMultilinearSeries ℝ V ℝ :=
+  fun i => match i with
+  | 1 => (continuousMultilinearCurryFin1 ℝ V ℝ).symm (innerSL ℝ v)
+  | i => D i
+
+@[simp]
+theorem gradientJet_apply_one (D : FormalMultilinearSeries ℝ V ℝ) (v : V) (m : Fin 1 → V) :
+    gradientJet D v 1 m = ⟪v, m 0⟫ := by
+  simp [gradientJet]
+
+theorem gradientJet_apply_of_ne (D : FormalMultilinearSeries ℝ V ℝ) (v : V) {i : ℕ}
+    (hi : i ≠ 1) : gradientJet D v i = D i := by
+  match i, hi with
+  | 0, _ => rfl
+  | _ + 2, _ => rfl
+
+/-- The bilinear form `(u, w) ↦ ⟪u, A w⟫` of an operator `A`, as a continuous multilinear map. -/
+noncomputable def bilinearOfOperator (A : V →L[ℝ] V) : V [×2]→L[ℝ] ℝ :=
+  (continuousMultilinearCurryLeftEquiv ℝ (fun _ : Fin 2 => V) ℝ).symm
+    ((↑(continuousMultilinearCurryFin1 ℝ V ℝ).symm : (V →L[ℝ] ℝ) →L[ℝ] V [×1]→L[ℝ] ℝ).comp
+      ((ContinuousLinearMap.compL ℝ V V ℝ).flip A ∘L innerSL ℝ))
+
+@[simp]
+theorem bilinearOfOperator_apply (A : V →L[ℝ] V) (m : Fin 2 → V) :
+    bilinearOfOperator A m = ⟪m 0, A (m 1)⟫ := by
+  simp [bilinearOfOperator]
+  rfl
+
+/-- `‖(u, w) ↦ ⟪u, A w⟫‖ ≤ ‖A‖`. -/
+theorem norm_bilinearOfOperator_le (A : V →L[ℝ] V) : ‖bilinearOfOperator A‖ ≤ ‖A‖ := by
+  refine ContinuousMultilinearMap.opNorm_le_bound (norm_nonneg _) fun m => ?_
+  rw [bilinearOfOperator_apply, Real.norm_eq_abs, Fin.prod_univ_two]
+  calc |⟪m 0, A (m 1)⟫| ≤ ‖m 0‖ * ‖A (m 1)‖ := abs_real_inner_le_norm _ _
+    _ ≤ ‖m 0‖ * (‖A‖ * ‖m 1‖) := by gcongr; exact A.le_opNorm _
+    _ = ‖A‖ * (‖m 0‖ * ‖m 1‖) := by ring
+
+/-- The jet `D` with its second-order term replaced by the bilinear form of an operator `A` (an
+approximate Hessian). -/
+noncomputable def hessianJet (D : FormalMultilinearSeries ℝ V ℝ) (A : V →L[ℝ] V) :
+    FormalMultilinearSeries ℝ V ℝ :=
+  fun i => match i with
+  | 2 => bilinearOfOperator A
+  | i => D i
+
+@[simp]
+theorem hessianJet_apply_two (D : FormalMultilinearSeries ℝ V ℝ) (A : V →L[ℝ] V)
+    (m : Fin 2 → V) : hessianJet D A 2 m = ⟪m 0, A (m 1)⟫ := by
+  simp [hessianJet]
+
+theorem hessianJet_apply_of_ne (D : FormalMultilinearSeries ℝ V ℝ) (A : V →L[ℝ] V) {i : ℕ}
+    (hi : i ≠ 2) : hessianJet D A i = D i := by
+  match i, hi with
+  | 0, _ => rfl
+  | 1, _ => rfl
+  | _ + 3, _ => rfl
+
+variable [CompleteSpace V]
+
+/-- An approximate gradient within `c` of `∇f(x)` gives a jet approximating the Taylor jet of `f`
+at `x` to order `1` with error `c` ((13.1.2)). -/
+theorem jetApprox_gradientJet {f : V → ℝ} {x v : V} {c : ℝ} (hv : ‖v - gradient f x‖ ≤ c) :
+    JetApprox (ftaylorSeries ℝ f x) (gradientJet (ftaylorSeries ℝ f x) v) 1
+      (fun _ => c) := by
+  intro i hi
+  obtain rfl : i = 1 := by simpa using hi
+  have : gradientJet (ftaylorSeries ℝ f x) v 1 - ftaylorSeries ℝ f x 1 =
+      (continuousMultilinearCurryFin1 ℝ V ℝ).symm (innerSL ℝ (v - gradient f x)) := by
+    change (continuousMultilinearCurryFin1 ℝ V ℝ).symm (innerSL ℝ v) - iteratedFDeriv ℝ 1 f x = _
+    ext m
+    rw [sub_apply, iteratedFDeriv_one_apply, fderiv_eq_innerSL_gradient]
+    simp
+  rw [this, LinearIsometryEquiv.norm_map, innerSL_apply_norm]
+  exact hv
+
+/-- An approximate Hessian within `c` of `∇²f(x)` (for `f` `C²` at `x`) gives a jet approximating
+the Taylor jet of `f` at `x` to order `2` with errors `0` at order `1` and `c` at order `2`. -/
+theorem jetApprox_hessianJet {f : V → ℝ} {x : V} (hf : ContDiffAt ℝ 2 f x) {A : V →L[ℝ] V}
+    {c : ℝ} (hA : ‖A - hessianOperator f x‖ ≤ c) :
+    JetApprox (ftaylorSeries ℝ f x) (hessianJet (ftaylorSeries ℝ f x) A) 2
+      (fun i => if i = 2 then c else 0) := by
+  intro i hi
+  obtain ⟨h1, h2⟩ := Finset.mem_Icc.1 hi
+  rcases (show i = 1 ∨ i = 2 by omega) with rfl | rfl
+  · rw [hessianJet_apply_of_ne _ _ (by norm_num), sub_self, norm_zero]
+    simp
+  · have : hessianJet (ftaylorSeries ℝ f x) A 2 - ftaylorSeries ℝ f x 2 =
+        bilinearOfOperator (A - hessianOperator f x) := by
+      ext m
+      have hm : m = ![m 0, m 1] := by ext j; fin_cases j <;> rfl
+      simp only [sub_apply, hessianJet_apply_two,
+        bilinearOfOperator_apply, inner_sub_right, ftaylorSeries]
+      rw [hm, ← inner_hessianOperator_apply hf]
+      rfl
+    rw [this]
+    simpa using (norm_bilinearOfOperator_le _).trans hA
+
+end Jets
 
 end Optimization

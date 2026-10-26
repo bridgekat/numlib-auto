@@ -485,6 +485,13 @@ theorem taylorPolynomial_zero_right (f : E → F) (p : ℕ) (x : E) :
     taylorPolynomial f p x 0 = f x := by
   simp [taylorPolynomial_eq_taylorSum, ftaylorSeries, iteratedFDeriv_zero_apply]
 
+/-- The Taylor decrement of exact data is `ΔT_{f,p}(x, s) = f(x) - T_{f,p}(x, s)`
+([cartis2022evaluation], (12.1.11)). -/
+theorem ftaylorSeries_taylorDecrement_eq (f : E → ℝ) (p : ℕ) (x s : E) :
+    (ftaylorSeries ℝ f x).taylorDecrement p s = f x - taylorPolynomial f p x s := by
+  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
+    taylorPolynomial_zero_right]
+
 /-- The Taylor polynomial is smooth in the increment. -/
 theorem contDiff_taylorPolynomial (f : E → F) (p : ℕ) (x : E) {n : WithTop ℕ∞} :
     ContDiff ℝ n (taylorPolynomial f p x) :=
