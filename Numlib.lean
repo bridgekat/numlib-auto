@@ -395,6 +395,7 @@ import Numlib.Approximation.Extrapolation
 import Numlib.Approximation.GaussLobatto
 import Numlib.Approximation.GradedMesh
 import Numlib.Approximation.Hermite
+import Numlib.Approximation.HermiteSpline
 import Numlib.Approximation.Hyperinterpolation
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Jackson
@@ -668,12 +669,15 @@ import Numlib.Optimization.Complexity.OracleMethod
 import Numlib.Optimization.Complexity.ParameterCount
 import Numlib.Optimization.Complexity.ResistingOracle
 import Numlib.Optimization.Complexity.ScaledRestart
+import Numlib.Optimization.Complexity.SlowExample
+import Numlib.Optimization.Complexity.SlowExampleHighOrder
 import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.Complexity.ZeroChain
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
+import Numlib.Optimization.LineSearch.Backtracking
 import Numlib.Optimization.ModelBased.HighOrderStep
 import Numlib.Optimization.ModelBased.InexactRatio
 import Numlib.Optimization.ModelBased.RatioTest
