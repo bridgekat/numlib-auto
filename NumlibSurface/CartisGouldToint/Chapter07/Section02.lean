@@ -59,10 +59,11 @@ function `μ₂(x, t) = ½ ‖r(x, t)‖²` are `Constrained.targetResidual f c 
   iterations whose new iterate fails the third test of (7.2.10) ("good" iterations). It omits the
   restart of `σ` at `σ₀` in every inner run (Lemma 2.4.1 is applied per run here), the `i = 0`
   elements of `𝓘^s_k` (so (7.2.39) fails as printed when its right-hand side is `< 1`), and the
-  outer iterations of `𝒦_b` whose inner run ends with a successful iteration landing on a point
-  that passes the third test ("bad" iterations): no decrease is guaranteed for these and the book
-  gives no bound on their number. Theorem 7.2.7 is therefore stated with the number of bad
-  iterations as a parameter; with it bounded independently of `ε`, the counts are of the order
+  outer iterations of `𝒦_b` whose inner run contains no good iteration ("bad" iterations; their
+  last successful iteration lands on a point that passes the third test): no decrease is
+  guaranteed for these and the book gives no bound on their number. Theorem 7.2.7 is therefore
+  stated with the number of bad iterations as a parameter; with it bounded independently of `ε`,
+  the counts are of the order
   `O(max(ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}))` of (7.2.50). The derivative count acquires the
   `ε₀^{-1}` term: it is part of the proven bound, since every iteration of `𝒦_a` needs a
   successful inner iteration; whether the book's (7.2.53), which lacks it, holds is not
@@ -270,11 +271,6 @@ of (7.2.10) with residual `> θε₀`. The decrease of these iterations is contr
 def IsGood (k i : ℕ) : Prop :=
   i < D.e k ∧ D.InnerSucc f c p P k i ∧ ¬ targetCrit f c C ε₁ (D.t k) (D.xi k (i + 1)) ∧
     P.θ * ε₀ < Constrained.targetResidual f c (D.t k) (D.xi k (i + 1))
-
-/-- A *bad* outer iteration: `k ∈ 𝒦_b` and the new iterate passes the third test of (7.2.10) for
-the old target, `ω_{μ₂,𝒞,1}(x_{k+1}, t_k) ≤ ε₁ ‖r(x_{k+1}, t_k)‖`. Its inner run need not contain
-a good iteration, and the book gives no bound on the number of such iterations. -/
-def IsBad (k : ℕ) : Prop := D.IsKb f c P ε₀ k ∧ targetCrit f c C ε₁ (D.t k) (D.X (k + 1))
 
 end Phase2Seq
 
@@ -651,10 +647,16 @@ open Classical in
 /-- The number of outer iterations in `𝒦_a` among `[1, K)`. -/
 noncomputable def kaCount (K : ℕ) : ℕ := ((Finset.Ico 1 K).filter (D.IsKa f c P ε₀)).card
 
+/-- A *bad* outer iteration: `k ∈ 𝒦_b` and its inner run contains no good iteration. For Phase-2
+runs, the new iterate then passes the third test of (7.2.10) for the old target,
+`ω_{μ₂,𝒞,1}(x_{k+1}, t_k) ≤ ε₁ ‖r(x_{k+1}, t_k)‖` (`IsTPpGCPhase2.isBad_targetCrit`); the book
+gives no bound on the number of such iterations. -/
+def IsBad (k : ℕ) : Prop := D.IsKb f c P ε₀ k ∧ D.goodCount f c C p P ε₀ ε₁ k = 0
+
 open Classical in
 /-- The number of bad outer iterations (`Phase2Seq.IsBad`) among `[1, K)`. -/
 noncomputable def badCount (K : ℕ) : ℕ :=
-  ((Finset.Ico 1 K).filter (D.IsBad f c C P ε₀ ε₁)).card
+  ((Finset.Ico 1 K).filter (D.IsBad f c C p P ε₀ ε₁)).card
 
 end Phase2Seq
 
@@ -856,10 +858,12 @@ theorem succCount_le {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε�
   · left; omega
 
 include h in
-/-- An outer iteration of `𝒦_b` that is not bad contains a good inner iteration: its inner run
-moved (`f(x_{k+1}) < t_k ≤ f(x_k)`), and its last successful iteration is good. -/
-theorem one_le_goodCount {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ k)
-    (hb : D.IsKb f c P ε₀ k) (hnb : ¬ D.IsBad f c C P ε₀ ε₁ k) :
+/-- An outer iteration of `𝒦_b` whose new iterate fails the third test of (7.2.10) for the old
+target contains a good inner iteration: its inner run moved (`f(x_{k+1}) < t_k ≤ f(x_k)`), and its
+last successful iteration is good. -/
+theorem one_le_goodCount_of_not_targetCrit {k : ℕ} (hk1 : 1 ≤ k)
+    (hk : D.Before f c C P ε₀ ε₁ k) (hb : D.IsKb f c P ε₀ k)
+    (hnc : ¬ targetCrit f c C ε₁ (D.t k) (D.X (k + 1))) :
     1 ≤ D.goodCount f c C p P ε₀ ε₁ k := by
   classical
   have hle : D.t k ≤ f (D.X k) := by
@@ -875,25 +879,35 @@ theorem one_le_goodCount {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ 
     (fun j hj => h.inner_not_stop hk1 hk hj) hne
   rw [← h.X_succ k hk1 hk] at hxs
   have hg : D.IsGood f c C p P ε₀ ε₁ k s :=
-    ⟨hs, hsucc, by rw [hxs]; exact fun hc => hnb ⟨hb, hc⟩, by rw [hxs]; exact hb.1⟩
+    ⟨hs, hsucc, by rw [hxs]; exact hnc, by rw [hxs]; exact hb.1⟩
   unfold Phase2Seq.goodCount
   exact Finset.card_pos.2 ⟨s, Finset.mem_filter.2 ⟨Finset.mem_range.2 hs, hg⟩⟩
 
 include h in
+/-- The new iterate of a bad outer iteration passes the third test of (7.2.10) for the old
+target. -/
+theorem isBad_targetCrit {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ k)
+    (hbad : D.IsBad f c C p P ε₀ ε₁ k) : targetCrit f c C ε₁ (D.t k) (D.X (k + 1)) := by
+  by_contra hnc
+  have := h.one_le_goodCount_of_not_targetCrit hk1 hk hbad.1 hnc
+  rw [hbad.2] at this
+  exact absurd this (by norm_num)
+
+omit h in
 /-- The outer iterations: each `k ∈ [1, K)` is in `𝒦_a`, or bad, or contains a good inner
 iteration, so `K ≤ |𝒦_a ∩ [1, K)| + |good iterations of [1, K]| + |bad ∩ [1, K)| + 1`. -/
 theorem le_counts {K : ℕ} (hK : D.Before f c C P ε₀ ε₁ K) :
     K ≤ D.kaCount f c P ε₀ K + ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k +
-      D.badCount f c C P ε₀ ε₁ K + 1 := by
+      D.badCount f c C p P ε₀ ε₁ K + 1 := by
   classical
-  have := Constrained.le_card_add_sum_of_cover (D.IsKa f c P ε₀) (D.IsBad f c C P ε₀ ε₁)
+  have := Constrained.le_card_add_sum_of_cover (D.IsKa f c P ε₀) (D.IsBad f c C p P ε₀ ε₁)
     (D.goodCount f c C p P ε₀ ε₁) (K := K) fun k hk => by
       have hk' := Finset.mem_Ico.1 hk
       rcases Phase2Seq.isKa_or_isKb_of_not_stop (hK.not_stop hk'.1 hk'.2) with ha | hb
       · exact Or.inl ha
-      · by_cases hbad : D.IsBad f c C P ε₀ ε₁ k
+      · by_cases hbad : D.IsBad f c C p P ε₀ ε₁ k
         · exact Or.inr (Or.inl hbad)
-        · exact Or.inr (Or.inr (h.one_le_goodCount hk'.1 (hK.mono hk'.2.le) hb hbad))
+        · exact Or.inr (Or.inr (Nat.one_le_iff_ne_zero.2 fun h0 => hbad ⟨hb, h0⟩))
   unfold Phase2Seq.kaCount Phase2Seq.badCount
   convert this
 
@@ -964,9 +978,9 @@ theorem lemma_7_2_6 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D) (hC : Chapt
     (∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k : ℝ) ≤
       goodBound P Lμ p ε₀ ε₁ * (D.kaCount f c P ε₀ K + 1) ∧
     K ≤ D.kaCount f c P ε₀ K + ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k +
-      D.badCount f c C P ε₀ ε₁ K + 1 :=
+      D.badCount f c C p P ε₀ ε₁ K + 1 :=
   ⟨fun _ hk1 hkK => ⟨h.succCount_le hk1 (hK.mono hkK), h.e_le hB hL hC hk1 (hK.mono hkK)⟩,
-    h.sum_goodCount_le hB hL hC hp hK1 hK, h.le_counts hK⟩
+    h.sum_goodCount_le hB hL hC hp hK1 hK, IsTPpGCPhase2.le_counts (p := p) hK⟩
 
 private theorem goodBound_nonneg {P : TPpGCParams} {Lμ ε₀ ε₁ : ℝ} (hL : 0 ≤ Lμ) {p : ℕ}
     (hp : 1 ≤ p) (hε₀ : 0 < ε₀) (hε₁ : 0 < ε₁) : 0 ≤ goodBound P Lμ p ε₀ ε₁ := by
@@ -994,8 +1008,8 @@ theorem theorem_7_2_7_phase2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
       Chapter06.AssumptionDpLC (Constrained.targetMerit f c t) C p Lμ) :
     (∀ K, 1 ≤ K → D.Before f c C P ε₀ ε₁ K →
       (K : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
-        D.badCount f c C P ε₀ ε₁ K) ∧
-    (∀ M : ℝ, (∀ K, D.Before f c C P ε₀ ε₁ K → (D.badCount f c C P ε₀ ε₁ K : ℝ) ≤ M) →
+        D.badCount f c C p P ε₀ ε₁ K) ∧
+    (∀ M : ℝ, (∀ K, D.Before f c C P ε₀ ε₁ K → (D.badCount f c C p P ε₀ ε₁ K : ℝ) ≤ M) →
       ∃ kε, D.IsEnd f c C P ε₀ ε₁ kε ∧
         (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
           M) ∧
@@ -1023,11 +1037,11 @@ theorem theorem_7_2_7_phase2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
       convert this
     exact h1.trans (by gcongr)
   have hi : ∀ K, 1 ≤ K → D.Before f c C P ε₀ ε₁ K →
-      (K : ℝ) ≤ (Na + 1) * (G + 1) + D.badCount f c C P ε₀ ε₁ K := by
+      (K : ℝ) ≤ (Na + 1) * (G + 1) + D.badCount f c C p P ε₀ ε₁ K := by
     intro K hK1 hK
     have h1 : (K : ℝ) ≤ D.kaCount f c P ε₀ K +
         (∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k : ℝ) +
-        D.badCount f c C P ε₀ ε₁ K + 1 := by exact_mod_cast h.le_counts hK
+        D.badCount f c C p P ε₀ ε₁ K + 1 := by exact_mod_cast IsTPpGCPhase2.le_counts (p := p) hK
     have h2 : (D.kaCount f c P ε₀ K : ℝ) ≤ Na := by
       have := lemma_7_2_4 h hB hK1 hK
       unfold Phase2Seq.kaCount
@@ -1360,7 +1374,7 @@ theorem lemma_7_2_6_of_mu2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
       (∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k : ℝ) ≤
         goodBound P Lμ p ε₀ ε₁ * (D.kaCount f c P ε₀ K + 1) ∧
       K ≤ D.kaCount f c P ε₀ K + ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k +
-        D.badCount f c C P ε₀ ε₁ K + 1 := by
+        D.badCount f c C p P ε₀ ε₁ K + 1 := by
   obtain ⟨Lμ, hL0, hL⟩ := lemma_7_2_5 hμ hp (flow - 1) fup
   exact ⟨Lμ, hL0, fun _ hK1 hK => lemma_7_2_6 h hC hp hB hL hK1 hK⟩
 
@@ -1373,8 +1387,8 @@ theorem theorem_7_2_7_phase2_of_mu2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x�
     ∃ Lμ, 0 ≤ Lμ ∧
       (∀ K, 1 ≤ K → D.Before f c C P ε₀ ε₁ K →
         (K : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
-          D.badCount f c C P ε₀ ε₁ K) ∧
-      (∀ M : ℝ, (∀ K, D.Before f c C P ε₀ ε₁ K → (D.badCount f c C P ε₀ ε₁ K : ℝ) ≤ M) →
+          D.badCount f c C p P ε₀ ε₁ K) ∧
+      (∀ M : ℝ, (∀ K, D.Before f c C P ε₀ ε₁ K → (D.badCount f c C p P ε₀ ε₁ K : ℝ) ≤ M) →
         ∃ kε, D.IsEnd f c C P ε₀ ε₁ kε ∧
           (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
             M) ∧
@@ -1420,8 +1434,8 @@ theorem theorem_7_2_7 {ℓ : ℕ} {x₀ : ℝⁿ} {y s : ℕ → ℝⁿ} {σ : �
     (‖c (y k₁)‖ ≤ P.θ * ε₀ → ∃ Lμ, 0 ≤ Lμ ∧
       (∀ K, 1 ≤ K → D.Before f c C P ε₀ ε₁ K →
         (K : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
-          D.badCount f c C P ε₀ ε₁ K) ∧
-      (∀ M : ℝ, (∀ K, D.Before f c C P ε₀ ε₁ K → (D.badCount f c C P ε₀ ε₁ K : ℝ) ≤ M) →
+          D.badCount f c C p P ε₀ ε₁ K) ∧
+      (∀ M : ℝ, (∀ K, D.Before f c C P ε₀ ε₁ K → (D.badCount f c C p P ε₀ ε₁ K : ℝ) ≤ M) →
         ∃ kε, D.IsEnd f c C P ε₀ ε₁ kε ∧
           (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - P.θ) * ε₀) + 1) * (goodBound P Lμ p ε₀ ε₁ + 1) +
             M) ∧

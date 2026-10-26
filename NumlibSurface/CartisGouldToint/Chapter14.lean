@@ -35,7 +35,12 @@ module imports the section modules and adds nothing of its own.
   Theorems 14.3.1–14.3.2, Example 14.3.1; LENq-SC (Algorithm 14.3.1, `algorithm_14_3_1`),
   Theorems 14.3.3–14.3.4; TPqp-GC (Algorithm 14.3.2, `algorithm_14_3_2`), Lemmas 14.3.5–14.3.8
   (`lemma_14_3_6_i`, `lemma_14_3_6_ii`), Theorem 14.3.9; existence of LENq-SC and TPqp-GC runs
-  (`exists_algorithm_14_3_1`, `exists_algorithm_14_3_2`)
+  (`exists_algorithm_14_3_1`, `exists_algorithm_14_3_2`) with INNER = ARqp-SC, which satisfy the
+  INNER contracts (`IsARqpSCOutputCost.cost_le`, `exists_isTPqpGCPhase2_isInnerPhaseRun`) and
+  hence Theorems 14.3.4 and 14.3.9 (`exists_algorithm_14_3_1_complexity`,
+  `exists_algorithm_14_3_2_complexity` with the ARqpC-SC exponents `j + 1`;
+  `exists_algorithm_14_3_1_complexity_arqp`, `exists_algorithm_14_3_2_complexity_arqp` with the
+  ARqp-SC exponents `j(p+1)/p` for `q > 2`)
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -101,7 +106,10 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 * The sharpness of the ARqpIDA-SC and ARqpEDA-SC rows of Theorem 14.2.4 (the Chapter 12 slow
   examples are not runs of the Chapter 13 regularization steps; see `Chapter14.Section02`), and
   the remark that only the anchored assumptions f.D1qLaB.X (f.D0qLaB.X) are used.
-* Existence of LENq-SC and TPqp-GC runs under the book's anchored assumptions (it is proved under
-  global Lipschitz assumptions, `exists_algorithm_14_3_1`, `exists_algorithm_14_3_2`), the INNER
-  complexity contract for the constructed Phase-2 runs, and the `O(·)` restatements.
+* Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored assumptions
+  (they are proved under global Lipschitz assumptions, `exists_algorithm_14_3_1_complexity`,
+  `exists_algorithm_14_3_2_complexity`), their complexity with the ARqp-SC exponents of (14.2.12)
+  for `q ≤ 2` (proved for `q > 2`, `exists_algorithm_14_3_2_complexity_arqp`; for every `q` with
+  the weaker ARqpC-SC exponents `j + 1`), a bound on the number of bad outer iterations of
+  TPqp-GC, and the `O(·)` restatements.
 -/
