@@ -1,328 +1,87 @@
 namespace = "CartisGouldToint.Chapter14"
-desc = '''
-§14.1 Composite optimization problems `min_x w(x) = f(x) + h(c(x))` (14.1.1) and the ARqpC
-algorithm. Spaces: `E := EuclideanSpace ℝ (Fin n)`, `F := EuclideanSpace ℝ (Fin m)`,
-`f : E → ℝ`, `c : E → F`, `h : F → ℝ`. Vectors indexed by orders `j ∈ [1:q]` (`ε`, radii `δ`) are
-functions `ℕ → ℝ` read on `Finset.Icc 1 q`, as in the core `Optimization.IsEpsDeltaApprox`.
-
-Notation used below for a run: `Dfk := ftaylorSeries ℝ f (x k)`, `Dck := ftaylorSeries ℝ c (x k)`,
-`Xk := {d | x k + d ∈ X}`; the measure `φ^δ_{w,X,j}(x_k) = Optimization.compositeTaylorMeasure Dfk
-Dck h j δ Xk`; the model `m̂_k := Optimization.compositeRegularizedModel Dfk Dck h p (σ k)`; its
-order-`j` decrement at `s`: `Optimization.compositeModelDecrement Dfk Dck h p (σ k) j s d`. The
-algorithm is the backbone `Optimization.IsARqpRun` with composite model data
-(`Optimization.ARqpData.ofComposite`) and a feasible set `X` (closed, `x 0 ∈ X`): `X = univ` is ARqpC,
-general `X` is ARqpC-SC of §14.2 (the only changes are (14.2.2)–(14.2.5)).
-
-Interfaces from Chapter 12 (now on main; the planned statements below may cite them): f.D1pL is
-`CartisGouldToint.Chapter12.AssumptionD1pL f p Lf` (the earlier name `AssumptionFD1pL` in some
-descriptions means this node); ARqp is `algorithm_12_2_2` (= `Optimization.IsARqpRun` with
-`ARqpData.ofTaylor`), Algorithm 12.2.3 is `Chapter12.algorithm_12_2_3` (the `h = 0`,
-`J = {j | 3 ≤ j}` instance of `Optimization.DetailedStepTrans`), Lemmas 12.2.8–12.2.13 and
-Theorems 12.2.14, 12.2.15 (the slow example used by Corollary 14.1.11).
-'''
 
 [[node]]
 id = "AssumptionCD1pL"
-kind = "def"
-desc = '''
-c.D1pL: `AssumptionCD1pL (c : E → F) (p : ℕ) (Lc : ℕ → ℝ) : Prop := ContDiff ℝ p c ∧ ∀ i : Fin m,
-∀ j ∈ Finset.Icc 1 p, 0 ≤ Lc j ∧ IteratedFDerivLipschitzOn (fun x => c x i) j (Lc j) Set.univ`
-(componentwise constants, as printed). Consequence (part of node, via
-`ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean`): `IteratedFDerivLipschitzOn c j
-(√m * Lc j) univ`, and by Theorem A.8.5 `‖∇^j c(x)‖ ≤ √m L_{c,j-1}` for `j ∈ [2:p]` ((14.1.2), the
-book's version drops the `√m`).
-'''
-deps = ["IteratedFDerivHolderOn", "ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean", "iteratedFDerivLipschitzOn_of_norm_le"]
 source = "Cartis–Gould–Toint, assumption c.D1pL and (14.1.2)"
 
 [[node]]
 id = "AssumptionHLip"
-kind = "def"
-desc = '''
-h.L: `AssumptionHLip (h : F → ℝ) (Lh : ℝ) : Prop := 0 ≤ Lh ∧ ∀ a b, |h a - h b| ≤ Lh * ‖a - b‖`
-(the book's `L_{0,h}` = `L_{h,0}`).
-'''
 source = "Cartis–Gould–Toint, assumption h.L"
 
 [[node]]
 id = "AssumptionHS0"
-kind = "def"
-desc = '''
-h.S0: `AssumptionHS0 (h : F → ℝ) : Prop := Optimization.IsSubadditive h ∧ h 0 = 0` (book: "in ℝ",
-meaning `ℝ^m`). With h.L it gives `|h a| ≤ Lh ‖a‖` (14.1.4) (part of `Optimization.IsSubadditive`).
-'''
-deps = ["Optimization.IsSubadditive"]
 source = "Cartis–Gould–Toint, assumption h.S0 and (14.1.4)"
 
 [[node]]
 id = "AssumptionWBb"
-kind = "def"
-desc = '''
-w.Bb: `AssumptionWBb f c h wlow : Prop := ∀ x, wlow ≤ f x + h (c x)` (with a feasible set `X`
-of §14.2: `∀ x ∈ X`).
-'''
 source = "Cartis–Gould–Toint, assumption w.Bb"
 
 [[node]]
 id = "compositeLipschitzW"
-kind = "def"
-desc = '''
-The constants (14.1.3) and (14.1.27): for `Lf Lc : ℕ → ℝ`, `Lh`, `p`, `m`:
-`compositeLipschitzW Lf Lc Lh p m := (⨆ j ∈ Icc 1 p, Lf j) + √m * Lh * (⨆ j ∈ Icc 1 p, Lc j)`
-(`L_w`, written with `Finset.sup'`) and `compositeLipschitzWp Lf Lc Lh p m := Lf p + √m * Lh * Lc p`
-(`L_{w,p}`). `L_{w,p} ≤ L_w`.
-'''
 source = "Cartis–Gould–Toint, (14.1.3), (14.1.27)"
 
 [[node]]
 id = "lemma_14_1_1"
-kind = "theorem"
-desc = '''
-Lemma 14.1.1. If `f`, `c` are `C^1`, h.L, h.S0, `h` convex (`ConvexOn ℝ univ h`) and `x⋆` is a
-global minimizer of `w` (`∀ x, w x⋆ ≤ w x`), then `0` is a global minimizer of
-`s ↦ T_{w,1}(x⋆, s) = T_{f,1}(x⋆,s) + h(T_{c,1}(x⋆,s))` and `compositeTaylorMeasure
-(ftaylorSeries ℝ f x⋆) (ftaylorSeries ℝ c x⋆) h 1 δ univ = 0` for all `δ > 0`. (The backbone version
-needs only local minimality, Lipschitz `h` and differentiability at `x⋆`, and covers convex
-feasible sets.)
-'''
-deps = ["AssumptionHLip", "AssumptionHS0", "Optimization.compositeTaylorDecrement_one_nonpos_of_isLocalMinOn"]
 source = "Cartis–Gould–Toint, Lemma 14.1.1"
 
 [[node]]
 id = "example_14_1_1"
-kind = "theorem"
-desc = '''
-Example 14.1.1 (`n = m = 1`, as functions on `ℝ` or `EuclideanSpace ℝ (Fin 1)`): `f x = -(2/5) x`,
-`c x = x - x² + 2x³`, `h = |·|` (convex, h.L with `Lh = 1`, h.S0). Then (i) `0` is a global
-minimizer of `w x = -(2/5)x + |x - x² + 2x³|` (`w ≥ 0 = w 0`: `1 - x + 2x² > 0` and
-`3/5 - x + 2x² > 0`); (ii) `T_{w,2}(0, s) = -(2/5) s + |s - s²|`, whose global minimum over `ℝ` is
-`-2/5`, attained at `s = 1`; (iii) `φ^1_{w,2}(0) = 2/5 > 0`; (iv) `φ^δ_{w,2}(0) = 0` for every
-`δ ∈ (0, 3/5]` (the book says "smaller than ½, say"). So Lemma 14.1.1 does not extend to `q = 2`.
-'''
-deps = ["Optimization.compositeTaylorMeasure"]
 source = "Cartis–Gould–Toint, Example 14.1.1"
 
 [[node]]
 id = "ARqpCParams"
-kind = "def"
-desc = '''
-Constants of Algorithm 14.1.1 (and 12.2.2): `q ≥ 1`, `p ≥ q`, `toARqpParams : Optimization.ARqpParams`
-(σ₀, σ_min ∈ (0,σ₀] (`0 < σmin` as a field), 0 < η₁ ≤ η₂ < 1, 0 < γ₁ < 1 < γ₂ ≤ γ₃, `θ ∈ (0,1)`, `ς ∈ (0,1]`), and the extra
-condition `θ < ς` (not in the book; needed for Lemma 14.1.7 when `ς < 1`, automatic if `ς = 1`),
-initial radii `δ₀ : ℕ → ℝ` with `δ₀ j ∈ (0,1]`, accuracies `ε : ℕ → ℝ` with `ε j ∈ (0,1]` for
-`j ∈ Icc 1 q` (book: `(0,1)^q`).
-'''
-deps = ["Optimization.ARqpParams"]
 source = "Cartis–Gould–Toint, Algorithm 14.1.1, Step 0"
 
 [[node]]
 id = "algorithm_14_1_2"
-kind = "def"
-desc = '''
-Algorithm 14.1.2 (detailed Step 2 of ARqpC) as the output predicate
-`IsARqpCStep f c h X P σ x δs s : Prop := Optimization.IsDetailedStepOutput m T Sd ΔT q ς θ ε J s δs`
-with `m := compositeRegularizedModel (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h p σ`,
-`T := {s | x + s ∈ X}`, `Sd s := {d | x + s + d ∈ X}`,
-`ΔT j s d := compositeModelDecrement (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h p σ j s d`, and
-halving set `J := {j | 2 ≤ j ∨ ¬ (ConvexOn ℝ univ h ∧ Convex ℝ X)}` (book: "`j ≥ 2` or `h`
-nonconvex", for `X = univ`; the convexity of `X` is the §14.2 caveat). (ARqp's Algorithm 12.2.3 is
-`h = 0`, `J = {j | 3 ≤ j}`.)
-'''
-deps = ["ARqpCParams", "Optimization.DetailedStepTrans", "Optimization.compositeRegularizedModel", "Optimization.compositeModelDecrement"]
 source = "Cartis–Gould–Toint, Algorithm 14.1.2"
 
 [[node]]
 id = "algorithm_14_1_1"
-kind = "def"
-desc = '''
-Algorithm 14.1.1 (ARqpC; ARqpC-SC for general closed `X`) as a run predicate
-`IsARqpCRun f c h X P x δ d s δs σ dm : Prop` on `x s : ℕ → E`, `δ δs : ℕ → ℕ → ℝ`,
-`d dm : ℕ → ℕ → E` (optimality displacements `d_{k,j}`, model witnesses), `σ : ℕ → ℝ`:
-`Optimization.IsARqpRun w X P.toARqpParams q ε δ₀ (fun k => Optimization.ARqpData.ofComposite Dfk Dck
-h p (σ k)) x s σ δ δs d dm` (with `w = f + h ∘ c`) `∧ ∀ k, (∀ i < k, ¬ stop i) → ¬ stop₁ k →
-IsARqpCStep f c h X P (σ k) (x k) (δs k) (s k)` (Step 2 is computed by Algorithm 14.1.2, whose
-outputs satisfy the generic Step-2 condition of `IsARqpRun` by
-`Optimization.IsDetailedStepOutput.spec`). Unfolded: `stop₁ k := ∀ j ∈ Icc 1 q,
-compositeTaylorDecrement Dfk Dck h j (d k j) ≤ ς ε_j δ_{k,j}^j / j!` (Step 1, (14.1.10) with the book's
-`δ_j` read as `δ_{k,j}`), `stop₂ k := m̂_k (s k) = m̂_k 0` (Step 2 termination),
-`ρ k := Optimization.reductionRatio w (x k) (s k) (compositeTaylorDecrement Dfk Dck h p (s k))`
-(14.1.15), `succ k := η₁ ≤ ρ k`; (init) `x 0 ∈ X`, `δ 0 = δ₀`, `σ 0 = σ₀`; (Step 1) Step-1
-witnesses `Optimization.IsApproxMeasureStep (compositeTaylorDecrement Dfk Dck h j) (δ k j) Xk ς (d k j)`;
-(Steps 3–4) `Optimization.ARAcceptance` ((14.1.16) = (2.4.4)), `δ (k+1) = if succ k then δs k else δ k`
-(and `d (k+1) = d k` after a failure, harmless: the book recomputes the same quantities).
-`X = univ` is ARqpC; general `X` is ARqpC-SC (§14.2).
-Derivative evaluations: orders `1..q` at Step 1, `q+1..p` only if Step 2 is reached; counted with
-the core convention (all orders, once per successful iteration plus initial).
-'''
-deps = ["ARqpCParams", "algorithm_14_1_2", "Optimization.IsARqpRun", "Optimization.ARqpData.ofComposite", "Optimization.IsDetailedStepOutput.spec", "Optimization.compositeTaylorMeasure"]
 source = "Cartis–Gould–Toint, Algorithm 14.1.1"
 
 [[node]]
 id = "lemma_14_1_2"
-kind = "theorem"
-desc = '''
-Lemma 14.1.2. Under f.D1pL (constants `Lf`), `AssumptionCD1pL c p Lc`, `AssumptionHLip h Lh`,
-`AssumptionHS0 h`, for any `x`, `σ ≥ 0`, `s` with `‖s‖ ≤ 1`, `j ∈ Icc 1 q`, `α > 0`,
-`δ ∈ (0, min 1 (α / (4 * (3 * compositeLipschitzW Lf Lc Lh p m + σ)))]` and `d` with `‖d‖ ≤ δ` and
-`compositeModelDecrement (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h p σ j s d ≥ α δ^j / j!`
-(14.1.18): `m̂(s) - m̂(s + d) ≥ α/2 * δ^j/j!` (14.1.19).
-'''
-deps = ["AssumptionCD1pL", "AssumptionHLip", "AssumptionHS0", "compositeLipschitzW", "Optimization.compositeRegularizedModel_sub_ge_of_decrement_ge", "norm_iteratedFDeriv_succ_le_of_lipschitzOn"]
 source = "Cartis–Gould–Toint, Lemma 14.1.2"
 
 [[node]]
 id = "lemma_14_1_3"
-kind = "theorem"
-desc = '''
-Lemma 14.1.3 (corrected index range). Under f.D1pL, c.D1pL, h.L, h.S0, for every `x ∈ X` (`X`
-closed), `σ > 0` and `ε`: there is a pair `(s, δs)` with `IsARqpCStep f c h X P σ x δs s` (so
-(14.1.12) and `‖s‖ ≥ 1` or (14.1.13) hold), such that `δs 1 = 1` when `h` is convex (and `X`
-convex), and, when `‖s‖ < 1`, `δs j ≥ κ_δ(σ) ε_j` for every `j ∈ Icc 1 q` with `j ≥ 2` or `h`
-(or `X`) nonconvex, where `κ_δ(σ) := ς θ / (8 (3 L_w + σ))` (14.1.24). (The book lists only
-`j ∈ [2:q]`, omitting `j = 1` for nonconvex `h`, which (14.1.28) and Lemma 14.1.8 need.)
-Proof: `Optimization.exists_isDetailedStepOutput` at a global minimizer of `m̂` over `X - x`
-(`Optimization.exists_isMinOn_compositeRegularizedModel`), with `δ̄_j = min(1, ςθε_j/(4(3L_w+σ)))`
-from Lemma 14.1.2 and, for `j = 1` with `h`, `X` convex, Lemma 14.1.1 applied to the model.
-'''
-deps = ["algorithm_14_1_2", "lemma_14_1_2", "Optimization.exists_isDetailedStepOutput", "Optimization.exists_isMinOn_compositeRegularizedModel", "Optimization.compositeTaylorDecrement_one_nonpos_of_isLocalMinOn", "Optimization.exists_compositeTaylorMeasure_eq"]
 source = "Cartis–Gould–Toint, Lemma 14.1.3"
 
 [[node]]
 id = "exists_isARqpCRun"
-kind = "theorem"
-desc = '''
-Existence of ARqpC(-SC) runs: under f.D1pL, c.D1pL, h.L, h.S0, for closed `X`, `x₀ ∈ X` and
-admissible `P`, there are sequences with `IsARqpCRun f c h X P x δ d s δs σ` and `x 0 = x₀`
-(displacements `d_{k,j}` from `Optimization.exists_compositeTaylorMeasure_eq`, steps from
-Lemma 14.1.3, `σ_{k+1}` any admissible value; dependent choice via
-`Optimization.exists_run_of_forall_exists`).
-'''
-deps = ["algorithm_14_1_1", "lemma_14_1_3", "Optimization.exists_compositeTaylorMeasure_eq", "Optimization.exists_run_of_forall_exists"]
 source = "Cartis–Gould–Toint, Algorithm 14.1.1 (well-definedness, after Lemma 14.1.4)"
 
 [[node]]
 id = "lemma_14_1_4"
-kind = "theorem"
-desc = '''
-Lemma 14.1.4. For an ARqpC(-SC) run under h.L, h.S0: (i) if `q = 1` and `h` (and `X`) are convex,
-termination never happens in Step 2: for `k` with `¬ stopTest k`, `m̂_k (s k) < m̂_k 0`;
-(ii) otherwise, if `¬ stopTest k` and `m̂_k (s k) = m̂_k 0`, there is `δ'` with `δ' j ∈ (0,1]`
-and `Optimization.IsEpsDeltaApproxComposite Dfk Dck h Xk q ε δ'` ((14.1.9) at `x_ε = x k`).
-Proof: `IsDetailedStepOutput.spec` gives that `0` minimizes `m̂_k` over `Xk`; then
-`Optimization.exists_radius_of_isMinOn_compositeRegularizedModel_zero`.
-'''
-deps = ["algorithm_14_1_1", "Optimization.IsDetailedStepOutput.spec", "Optimization.exists_radius_of_isMinOn_compositeRegularizedModel_zero", "Optimization.IsEpsDeltaApproxComposite"]
 source = "Cartis–Gould–Toint, Lemma 14.1.4 (proof in Appendix B)"
 
 [[node]]
 id = "lemma_14_1_5"
-kind = "theorem"
-desc = '''
-Lemma 14.1.5. For an ARqpC run and every `k` at which Step 2 is executed:
-`compositeTaylorDecrement Dfk Dck h p (s k) ≥ σ k / (p + 1)! * ‖s k‖ ^ (p + 1)` (14.1.25), and the
-decrement is positive unless Step 2 terminates.
-'''
-deps = ["algorithm_14_1_1", "Optimization.IsDetailedStepOutput.spec", "Optimization.le_compositeTaylorDecrement_of_compositeRegularizedModel_le"]
 source = "Cartis–Gould–Toint, Lemma 14.1.5"
 
 [[node]]
 id = "lemma_14_1_6"
-kind = "theorem"
-desc = '''
-Lemma 14.1.6. Under f.DpL (`IteratedFDerivLipschitzOn f p (Lf p) univ`), c.DpL (componentwise
-`Lc p`), h.L: for an ARqpC run, `σ k ≤ σ_max := max σ₀ (γ₃ L_{w,p} / (1 - η₂))` (14.1.26) for every
-`k` up to the first termination index, `L_{w,p} = compositeLipschitzWp Lf Lc Lh p m` (14.1.27).
-Proof: `|ρ_k - 1| ≤ L_{w,p}/σ_k` from `Optimization.abs_sub_compositeTaylor_le_of_lipschitz` and
-Lemma 14.1.5, then `Optimization.sigma_le_max_of_arUpdate`.
-'''
-deps = ["lemma_14_1_5", "compositeLipschitzW", "AssumptionCD1pL", "AssumptionHLip", "Optimization.abs_sub_compositeTaylor_le_of_lipschitz", "Optimization.le_reductionRatio_of_abs_sub_le", "Optimization.sigma_le_max_of_arUpdate"]
 source = "Cartis–Gould–Toint, Lemma 14.1.6 (proof in Appendix B)"
 
 [[node]]
 id = "lemma_14_1_7"
-kind = "theorem"
-desc = '''
-Lemma 14.1.7 (corrected). Under f.D1pL, c.D1pL, h.L, h.S0, for an ARqpC run with `θ < ς`, if `k`
-is successful and the run does not terminate at `k + 1` (`¬ stopTest (k+1)`), there is
-`j ∈ Icc 1 q` with
-`(ς - θ) ε_j δ_{k+1,j}^j / j! ≤ (L_{w,p} + σ_max) ∑ ℓ ∈ Icc 1 j, δ_{k+1,j}^ℓ / ℓ! ‖s_k‖^{p-ℓ+1}
-+ 2 √m L_{h,0} L_{c,p} / (p+1)! ‖s_k‖^{p+1}`.
-Corrections: the book's `(1 - θ)` presumes that non-termination certifies
-`φ_{w,j}(x_{k+1}) > ε_j δ^j/j!`, while Step 1 only certifies `> ς ε_j δ^j/j!` (equal when `ς = 1`);
-the factor `2` on the last term (see `Optimization.compositeTaylorDecrement_le_of_step`).
-Proof: apply that backbone lemma to `d = d_{k+1,j}` with the model test (14.1.13)
-(`δs k = δ (k+1)` on success) and `σ_k ≤ σ_max` (Lemma 14.1.6).
-'''
-deps = ["lemma_14_1_6", "Optimization.compositeTaylorDecrement_le_of_step", "Optimization.IsDetailedStepOutput.spec"]
 source = "Cartis–Gould–Toint, Lemma 14.1.7 (proof in Appendix B)"
 
 [[node]]
 id = "lemma_14_1_8"
-kind = "theorem"
-desc = '''
-Lemma 14.1.8 (corrected). Under the hypotheses of Lemma 14.1.7, if the run ensures `δ_{s_k,1} = 1`
-when `q = 1` and `h` (and `X`) convex, and otherwise (14.1.28) — `‖s_k‖ > 1 ∨ δ_{s_k,j} ≥
-κ_{δ,min} ε_j` for all `j ∈ Icc 1 q`, `κ_{δ,min} := ς θ / (8 (3 L_w + σ_max))` (14.1.29) — then there
-is `j ∈ Icc 1 q` with `‖s_k‖ ≥ ((ς - θ) ε_j / (3 j! (L_{w,p} + σ_max)))^{1/p}` in the first case and
-`‖s_k‖ ≥ ((ς - θ) κ_{δ,min}^j / (3 j! (L_{w,p} + σ_max)))^{1/(p-j+1)} ε_j^{(j+1)/(p+1)}` otherwise
-((14.1.31); the printed second case omits `ε_j^{(j+1)/(p+1)}`, which Appendix B derives). Proof:
-`Optimization.norm_step_ge_of_measure_ineq` with `A = L_{w,p} + σ_max`,
-`B = 2√m L_{h,0} L_{c,p}/(p+1)! ≤ A` (uses `1 ≤ L_{f,p}`), `a = ς - θ`, after disposing of
-`‖s_k‖ ≥ 1`.
-'''
-deps = ["lemma_14_1_7", "lemma_14_1_3", "Optimization.norm_step_ge_of_measure_ineq"]
 source = "Cartis–Gould–Toint, Lemma 14.1.8 (proof in Appendix B)"
 
 [[node]]
 id = "lemma_14_1_9"
-kind = "theorem"
-desc = '''
-Lemma 14.1.9 (corrected). Under f.D1pL, c.D1pL, h.L, h.S0 and the radius policy of Lemma 14.1.8,
-for every successful `k` of an ARqpC run that does not terminate at `k + 1`:
-`compositeTaylorDecrement Dfk Dck h p (s k) ≥ κ_{Δm} min_{j ∈ Icc 1 q} ε_j^{π_j}` (14.1.32) and
-`w(x_k) - w(x_{k+1}) ≥ η₁ κ_{Δm} min_j ε_j^{π_j}` (14.1.33), with `π_j = (p+1)/p` if `q = 1` and `h`
-(and `X`) convex, `π_j = j + 1` otherwise, and
-`κ_{Δm} = σ_min/(p+1)! ((ς-θ)/(3 q! (L_{w,p} + σ_max)))^{(p+1)/p}`, resp.
-`σ_min/(p+1)! ((ς-θ) κ_{δ,min}^q/(3 q! (L_{w,p} + σ_max)))^{(p+1)/(p-q+1)}` (uniform in `j` since
-the base is `≤ 1`). Corrections: the book writes `L_{f,p}` and `f` for `L_{w,p}` and `w`, assumes
-only f.D1qL, and claims (14.1.32) "for every iteration before termination".
-'''
-deps = ["lemma_14_1_8", "lemma_14_1_5", "Optimization.le_sigma_of_arUpdate", "Optimization.sub_le_of_le_reductionRatio"]
 source = "Cartis–Gould–Toint, Lemma 14.1.9"
 
 [[node]]
 id = "theorem_14_1_10_i"
-kind = "theorem"
-desc = '''
-Theorem 14.1.10, part 1 (`q = 1`, `h` convex; `X = univ` or convex for -SC). Under f.D1pL,
-c.D1pL, h.L, h.S0, w.Bb (`wlow`), with `δ_{s_k,1} = 1` (and `δ₀ 1 = 1`), for every ARqpC run and
-`ε₁ ∈ (0,1]` there is `k_ε` with `IsFirstHit test k_ε`, `stopTest k_ε` (no Step-2 termination),
-`compositeTaylorMeasure Dfk_ε Dck_ε h 1 1 Xk_ε ≤ ε₁`,
-`funEvalCount k_ε ≤ κ^{a,1} (w(x₀) - wlow) ε₁^{-(p+1)/p} + κ^c` (14.1.34) and
-`derivEvalCount succ k_ε ≤ κ^{s,1} (w(x₀) - wlow) ε₁^{-(p+1)/p} + 2` (14.1.35), where
-`κ^{s,1} = (p+1)!/(η₁ σ_min) (3 (L_{w,p} + σ_max)/(ς - θ))^{(p+1)/p}`,
-`κ^{a,1} = κ^{s,1} (1 + |log γ₁|/log γ₂)`, `κ^c = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2`
-(book's constants with `(1-θ)` replaced by `(ς-θ)`; `j! = 1`). Asymptotic form
-`O(ε₁^{-(p+1)/p})` as a corollary (part of node).
-'''
-deps = ["lemma_14_1_9", "lemma_14_1_6", "lemma_14_1_4", "Optimization.IsFirstHit", "Optimization.funEvalCount", "Optimization.exists_hit_le_of_counting", "Optimization.succ_le_of_arUpdate", "Optimization.card_mul_le_of_decrease", "AssumptionWBb"]
 source = "Cartis–Gould–Toint, Theorem 14.1.10, item 1"
 
 [[node]]
 id = "theorem_14_1_10_ii"
-kind = "theorem"
-desc = '''
-Theorem 14.1.10, part 2 (`h` nonconvex or `q > 1`). Under the same assumptions and (14.1.28) for
-all `j ∈ Icc 1 q`, for every ARqpC run and `ε` with `ε j ∈ (0,1]`, there is `k_ε` with
-`IsFirstHit test k_ε`, some `δ_ε` with `δ_ε j ∈ (0,1]` and
-`Optimization.IsEpsDeltaApproxComposite Dfk_ε Dck_ε h Xk_ε q ε δ_ε`, and
-`funEvalCount k_ε ≤ κ^{a,2} (w(x₀) - wlow) / min_j ε_j^{j+1} + κ^c` (14.1.36),
-`derivEvalCount succ k_ε ≤ κ^{s,2} (w(x₀) - wlow) / min_j ε_j^{j+1} + 2` (14.1.37), where
-`κ^{s,2} = (p+1)!/(η₁ σ_min) (3 q! (L_{w,p} + σ_max)/((ς - θ) κ_{δ,min}^q))^{(p+1)/(p-q+1)}`
-(book: `3j!`, read `3q!`), `κ^{a,2} = κ^{s,2} (1 + |log γ₁|/log γ₂)`, `κ^c` as in part 1.
-(`δ_ε = δ_{k_ε}` when Step 1 terminates, from Lemma 14.1.4 when Step 2 terminates.)
-'''
-deps = ["lemma_14_1_9", "lemma_14_1_6", "lemma_14_1_4", "Optimization.IsFirstHit", "Optimization.funEvalCount", "Optimization.exists_hit_le_of_counting", "Optimization.succ_le_of_arUpdate", "Optimization.card_mul_le_of_decrease", "AssumptionWBb"]
 source = "Cartis–Gould–Toint, Theorem 14.1.10, item 2"
 
 [[node]]
