@@ -1,0 +1,16 @@
+namespace = "ModelSolve"
+
+[[node]]
+id = "FeasibleRadiusReductions"
+
+[[node]]
+id = "CriticalHalvingRun.toFeasibleRadiusReductions"
+
+[[node]]
+id = "criticalityPasses_of_radius_le_on"
+
+[[node]]
+id = "exists_constrained_criticalHalvingRun"
+
+[[node]]
+id = "exists_attaining_constrained_criticalHalvingRun"
