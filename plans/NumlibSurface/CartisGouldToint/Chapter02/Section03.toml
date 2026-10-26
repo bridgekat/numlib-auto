@@ -83,9 +83,10 @@ desc = '''
 Lemma 2.3.4. Under f.gL, m.HBa, for a TR1 run and `k` before termination (so `∇f(x_0) ≠ 0`):
 `Δ k ≥ γ₁ (1 - η₂) / (2 (L + κB)) * min 1 (Δ₀ / ‖∇f(x_0)‖) * min_{i ≤ k} ‖∇f(x_i)‖` (2.3.17).
 (From `Optimization.le_delta_of_trUpdate` with `θ_k = (1-η₂)/(2(L+κB)) min_{i≤k} ‖∇f(x_i)‖`, using
-`γ₁ (1-η₂)/(2(L+κB)) ≤ 1`.)
+`γ₁ (1-η₂)/(2(L+κB)) ≤ 1`; `Optimization.le_delta_succ_of_trUpdate` gives the bound on the next
+radius `Δ_{k+1} ≥ min(Δ₀, γ₁ θ_k)`.)
 '''
-deps = ["lemma_2_3_3", "Optimization.le_delta_of_trUpdate"]
+deps = ["lemma_2_3_3", "Optimization.le_delta_of_trUpdate", "Optimization.le_delta_succ_of_trUpdate"]
 source = "Cartis–Gould–Toint, Lemma 2.3.4"
 
 [[node]]
@@ -121,8 +122,12 @@ Theorem 2.3.7. Under f.Bb, f.gL, m.HBa, for every TR1 run with `ε > 0` there is
 `derivEvalCount succ k_ε ≤ κ^S (f(x_0) - flow)/ε² + 1`, with `κ^S` of (2.3.21),
 `κ^A = κ^S (1 + log γ₃ / |log γ₂|)`, `κ^B = 1/|log γ₂|` (2.3.22),
 `κ^C = |log(γ₁ (1-η₂)/(2 Δ₀ (L+κB)) min(1, Δ₀/‖∇f(x_0)‖))| / |log γ₂| + 1` (2.3.23).
+(Counting: for `k` before termination, `Optimization.le_delta_succ_of_trUpdate` bounds `Δ_{k+1}`
+below by `min(Δ₀, γ₁ θ_k)` with `min_{i≤k} ‖∇f(x_i)‖ > ε`; feed this `Δmin` to
+`Optimization.succ_le_of_trUpdate`, then apply
+`Optimization.exists_isFirstHit_evalCount_le_of_counting`.)
 '''
-deps = ["lemma_2_3_1", "lemma_2_3_4", "lemma_2_3_6", "Optimization.exists_hit_le_of_counting", "Optimization.funEvalCount"]
+deps = ["lemma_2_3_1", "lemma_2_3_4", "lemma_2_3_6", "Optimization.le_delta_succ_of_trUpdate", "Optimization.succ_le_of_trUpdate", "Optimization.exists_isFirstHit_evalCount_le_of_counting", "Optimization.funEvalCount"]
 source = "Cartis–Gould–Toint, Theorem 2.3.7"
 
 [[node]]

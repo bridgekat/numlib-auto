@@ -106,7 +106,8 @@ desc = '''
 Lemma 3.2.5. Under f.HBa, f.HL, for a TR2 run with `ε₂ = some e`, `e ∈ (0,1]`, and `k` before
 termination: `Δ k ≥ κ_Δ min ε₁ e` (3.2.17) with
 `κ_Δ = min (γ₁ (1-η₂) / max(4 κH, L₂/3)) Δ₀ ∈ (0,1)` (the first term is `< 1` as `κH ≥ 1`).
-(`Optimization.le_delta_of_trUpdate` with constant threshold, from Lemmas 2.3.3 and 3.2.4.)
+(`Optimization.le_delta_of_trUpdate` with constant threshold, from Lemmas 2.3.3 and 3.2.4;
+`Optimization.le_delta_succ_of_trUpdate` bounds `Δ_{k+1}` for the counting of Theorem 3.2.6.)
 '''
 deps = ["lemma_3_2_4", "CartisGouldToint.Chapter02.lemma_2_3_3", "AssumptionHBa", "Optimization.le_delta_of_trUpdate"]
 source = "Cartis–Gould–Toint, Lemma 3.2.5"

@@ -1,54 +1,21 @@
 namespace = "Optimization"
-desc = '''
-The adaptive-regularization parameter update (Cartis–Gould–Toint (2.4.4), identical in AR1, AR2,
-ARp (4.1.16), ARqp and many later variants): with `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ < γ₃`,
-`σ_min > 0`:
-`σ⁺ ∈ [max(σ_min, γ₁ σ), σ]` if `ρ ≥ η₂`; `σ⁺ ∈ [σ, γ₂ σ]` if `ρ ∈ [η₁, η₂)`;
-`σ⁺ ∈ [γ₂ σ, γ₃ σ]` if `ρ < η₁`.
-(The "reasonable values" printed after (2.4.4), `γ₁ = 2`, `γ₂ = γ₃ = 0.5`, contradict (2.4.2);
-presumably `γ₁ = 0.5`, `γ₂ = 2`, `γ₃ = …`.)
-'''
 
 [[node]]
 id = "ARUpdate"
-kind = "def"
-desc = '''
-`ARUpdate (η₁ η₂ γ₁ γ₂ γ₃ σmin ρ σ σ' : ℝ) : Prop :=
-(η₂ ≤ ρ → max σmin (γ₁ * σ) ≤ σ' ∧ σ' ≤ σ) ∧ (η₁ ≤ ρ → ρ < η₂ → σ ≤ σ' ∧ σ' ≤ γ₂ * σ) ∧
-(ρ < η₁ → γ₂ * σ ≤ σ' ∧ σ' ≤ γ₃ * σ)`. (Prototyped in `drafts/cgt/plan-core/Core.lean`.)
-Elementary API (part of the node): positivity propagation, `η₁ ≤ ρ → γ₁ σ ≤ σ'`,
-`ρ < η₁ → γ₂ σ ≤ σ'`, `η₂ ≤ ρ → σ' ≤ σ`, and `σ' ≤ γ₃ σ` always.
-'''
 source = "Cartis–Gould–Toint, (2.4.4), (3.3.8), (4.1.16)"
 
 [[node]]
 id = "le_sigma_of_arUpdate"
-kind = "theorem"
-desc = '''
-If `σmin ≤ σ 0` and `ARUpdate … (ρ k) (σ k) (σ (k+1))` holds for `k < K` (with `0 < γ₁ < 1 < γ₂`),
-then `σmin ≤ σ k` for all `k ≤ K`.
-'''
-deps = ["ARUpdate"]
 source = "Cartis–Gould–Toint, proof of Lemma 3.3.4 (σ_k ≥ σ_min)"
 
 [[node]]
 id = "sigma_le_max_of_arUpdate"
-kind = "theorem"
-desc = '''
-Generic upper bound on the regularization parameter (Lemmas 2.4.2, 3.3.2, 4.1.2 and later analogues).
-Assume `ARUpdate … (ρ k) (σ k) (σ (k+1))` for `k < K` and that, for `k < K`, `σbar ≤ σ k → η₂ ≤ ρ k`.
-Then `σ k ≤ max (σ 0) (γ₃ * σbar)` for all `k ≤ K`.
-'''
-deps = ["ARUpdate"]
 source = "Cartis–Gould–Toint, Lemma 2.4.2 (mechanism)"
 
 [[node]]
 id = "succ_le_of_arUpdate"
-kind = "theorem"
-desc = '''
-Lemma 2.4.1 for the rule (2.4.4): if `ARUpdate` holds for `j ≤ k`, `0 < σ 0`, success means
-`η₁ ≤ ρ j`, and `σ (k+1) ≤ σmax`, then `(k+1 : ℝ) ≤ |successSet (η₁ ≤ ρ ·) k| *
-(1 + |log γ₁| / log γ₂) + log (σmax / σ 0) / log γ₂`.
-'''
-deps = ["ARUpdate", "succ_le_card_successSet_of_lower_ratio"]
+source = "Cartis–Gould–Toint, Lemma 2.4.1"
+
+[[node]]
+id = "le_of_arUpdate"
 source = "Cartis–Gould–Toint, Lemma 2.4.1"

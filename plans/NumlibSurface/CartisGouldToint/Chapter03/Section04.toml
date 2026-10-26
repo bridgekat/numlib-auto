@@ -50,7 +50,8 @@ kind = "theorem"
 desc = '''
 Lemma 3.4.2. Under f.HL: if `Δ_k < 3(1-η₂) εs / L₂` (3.4.8) then `η₂ ≤ ρ_k`, iteration `k` is
 successful and `Δ_k ≤ Δ_{k+1}`; and for all `k` up to termination `Δ_k ≥ (1-η₂) γ₁ εs / L₂` (3.4.9)
-(uses `Δ₀ > εs` and `L₂ ≥ 1`).
+(uses `Δ₀ > εs` and `L₂ ≥ 1`). `Optimization.le_delta_of_trUpdate` / `le_delta_succ_of_trUpdate`
+(bound on `Δ_{k+1}`) with constant threshold.
 '''
 deps = ["lemma_3_4_1", "AssumptionHL", "abs_sub_taylorPolynomial_le_of_lipschitz", "Optimization.le_reductionRatio_of_abs_sub_le", "Optimization.le_delta_of_trUpdate"]
 source = "Cartis–Gould–Toint, Lemma 3.4.2"

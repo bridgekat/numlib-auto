@@ -1,29 +1,17 @@
 namespace = "Optimization"
-desc = '''
-Telescoping-sum arguments: the total decrease of the objective over successful iterations is at
-most `f(x_0) - f_low` (Cartis–Gould–Toint (2.2.12) and every "Bound on the number of successful
-iterations" lemma). Stated for real sequences `φ k = f (x k)` with `φ (k+1) = φ k` on unsuccessful
-iterations (iterate unchanged).
-'''
 
 [[node]]
 id = "sum_successSet_sub_eq"
-kind = "theorem"
-desc = '''
-If `φ (j + 1) = φ j` whenever `¬ succ j` (`j ≤ k`), then
-`∑ j ∈ successSet succ k, (φ j - φ (j + 1)) = φ 0 - φ (k + 1)`.
-'''
-deps = ["successSet"]
 source = "Cartis–Gould–Toint, proof of Lemma 2.3.6"
 
 [[node]]
+id = "card_successSet_mul_le_of_decrease"
+source = "Cartis–Gould–Toint, (2.2.12)–(2.2.13), proofs of Lemmas 2.3.6, 2.4.3"
+
+[[node]]
 id = "card_mul_le_of_decrease"
-kind = "theorem"
-desc = '''
-Let `φ : ℕ → ℝ`, `T ⊆ range (k+1)` (a `Finset ℕ`), `c > 0`, with `φ (j+1) ≤ φ j` for `j ≤ k`,
-`c ≤ φ j - φ (j+1)` for `j ∈ T`, and `φlow ≤ φ (k+1)`. Then `c * T.card ≤ φ 0 - φlow`, i.e.
-`(T.card : ℝ) ≤ (φ 0 - φlow) / c`. Used with `T = successSet succ k` or with a subset of
-"good" successful iterations.
-'''
-deps = ["successSet"]
 source = "Cartis–Gould–Toint, (2.2.12)–(2.2.13)"
+
+[[node]]
+id = "card_successSet_le_div_of_decrease"
+source = "Cartis–Gould–Toint, (2.2.12)–(2.2.13), proofs of Lemmas 2.3.6, 2.4.3"
