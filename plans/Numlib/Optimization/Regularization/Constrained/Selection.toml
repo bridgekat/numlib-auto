@@ -1,0 +1,5 @@
+namespace = "ConstrainedRegularization"
+desc = "Existence of actual attaining feasible Taylor directions and ordered first-failing objective checks on closed finite-dimensional sets. No selected outcome is assumed."
+
+[[node]]
+id = "exists_optimalityCheck"

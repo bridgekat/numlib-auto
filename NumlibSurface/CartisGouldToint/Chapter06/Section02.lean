@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Constrained.Execution
 import Numlib.Optimization.Regularization.Convex.CorrectedDecrease
 import Numlib.Optimization.Regularization.Convex.TargetObstruction
 import Numlib.Optimization.Regularization.Convex.DerivativeComplexity
@@ -327,5 +328,66 @@ theorem lemma_6_2_2_corrected
   h.successful_decrease_of_model_endpoint_failure hS hCS hC hf hL hlip hi hs j hj hfail
 
 end CorrectedDerivativeDecrease
+
+end CartisGouldToint
+
+namespace CartisGouldToint
+
+/-- Fixed legal settings for the repaired constrained Taylor-criticality algorithm. -/
+abbrev arpConvexTaylorSettings := ConstrainedRegularization.Settings
+
+/-- Actual arrays of the repaired algorithm, including feasible directions and finite solves. -/
+abbrev arpConvexTaylorData := ConstrainedRegularization.ExecutionData
+
+/-- Actual feasible Taylor-check, finite-solver, ratio and update rules of the repair. -/
+abbrev arpConvexTaylorRun := @ConstrainedRegularization.Run
+
+/-- **Corrected Theorem 6.2.3.** Replace the possibly empty independent
+third-derivative-band target by true constrained Taylor criticalities at positive
+adaptive radii. The model uses the same Taylor tests, a positive fraction of the
+actual feasible global model gap, and finite halving; a zero model gap returns
+a proved true certificate. Strengthen regularity explicitly to global `C^p`
+and globally Lipschitz derivatives of every positive order through `p`.
+Actual execution arrays are constructed, with no step or prefix existence
+assumption. Fixed constants precede all independent accuracies. The rate becomes
+`min_j epsilon_j^(j*(p+1)/p)`; all first-, second- and third-order enabled modes
+are included. The first-order output also holds at unit radius by convexity.
+Initialized function and every derivative-order schedule are bounded. -/
+theorem theorem_6_2_3_corrected {n p : ℕ} (mode : Fin 3)
+    (f : EuclideanSpace ℝ (Fin n) → ℝ) (X : Set (EuclideanSpace ℝ (Fin n)))
+    (hX : IsClosed X) (hconv : Convex ℝ X)
+    (P : arpConvexTaylorSettings p (mode.val + 1))
+    (x₀ : EuclideanSpace ℝ (Fin n)) (hx₀ : x₀ ∈ X)
+    (hf : ContDiff ℝ p f) {L flow : ℝ} (hL : 1 ≤ L)
+    (hlip : ∀ i, 1 ≤ i → i ≤ p → ∀ y z,
+      ‖iteratedFDeriv ℝ i f y - iteratedFDeriv ℝ i f z‖ ≤ L * ‖y - z‖)
+    (hlow : ∀ x ∈ X, flow ≤ f x) :
+    ∃ κS > 0, ∃ κA > 0, ∃ κC > 0,
+      ∀ (ε : Fin (mode.val + 1) → ℝ), (∀ a, 0 < ε a ∧ ε a ≤ 1) →
+      ∃ (D : arpConvexTaylorData (EuclideanSpace ℝ (Fin n)) (mode.val + 1))
+        (K : ℕ) (δ : Fin (mode.val + 1) → ℝ),
+        D.point 0 = x₀ ∧ D.parameter 0 = P.sigmaInitial ∧ (∀ a, D.radius 0 a = 1) ∧
+        arpConvexTaylorRun f X P ε D K ∧ ConstrainedRegularization.TargetAt f X P ε D K ∧
+        (∀ k < K, ¬ConstrainedRegularization.TargetAt f X P ε D k) ∧
+        ConstrainedRegularization.OptimalityAt f X ε (D.point K) δ ∧
+        (∀ a, InexactTrustRegion.modelOrder a = 1 →
+          TaylorModel.constrainedCriticality f 1 X (D.point K) 1 ≤ ε a) ∧
+        ((K + 1 : ℕ) : ℝ) ≤ κA * (f x₀ - flow) /
+          ConstrainedRegularization.accuracyFactor P ε + κC ∧
+        (((EvaluationComplexity.successfulIterations {i | P.eta1 ≤ D.ratio i} K).card + 1 :
+          ℕ) : ℝ) ≤ κS * (f x₀ - flow) / ConstrainedRegularization.accuracyFactor P ε + 2 ∧
+        ∀ j : ℕ, 1 ≤ j → j ≤ p →
+          (ConstrainedRegularization.derivativeEvaluationsForOrder P D K j : ℝ) ≤
+            κS * (f x₀ - flow) / ConstrainedRegularization.accuracyFactor P ε + 2 := by
+  obtain ⟨κS, hS, κA, hA, κC, hC, hall⟩ :=
+    ConstrainedRegularization.exists_certified_execution f X hX hconv P x₀ hx₀ hf hL hlip hlow
+  refine ⟨κS, hS, κA, hA, κC, hC, ?_⟩
+  intro ε hε
+  obtain ⟨D, K, δ, hx, hσ, hδ, hr, ht, hfirst, hopt, hunit, hF, hD⟩ :=
+    hall ε hε
+  refine ⟨D, K, δ, hx, hσ, hδ, hr, ht, hfirst, hopt, hunit, hF, hD, ?_⟩
+  intro j hj hjp
+  rw [ConstrainedRegularization.derivativeEvaluationsForOrder_eq P D K hj hjp]
+  exact hD
 
 end CartisGouldToint
