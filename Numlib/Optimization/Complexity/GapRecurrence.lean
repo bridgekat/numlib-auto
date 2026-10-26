@@ -151,11 +151,11 @@ theorem iterate_nonneg {F : ℝ → ℝ} (hF0 : ∀ x, 0 ≤ x → 0 ≤ F x) (n
   | succ n ih => rw [Function.iterate_succ_apply]; exact ih (hF0 x hx)
 
 
-/-- Monotone bounds propagate along the successful iterations: if `F` is monotone and
-nonnegative on `[0, ∞)`, `Γ ≥ 0`, `Γ_{k+1} = Γ_k` at unsuccessful and `Γ_{k+1} ≤ F Γ_k` at
+/-- Monotone bounds propagate along the successful iterations: if `F` is monotone on
+`[0, ∞)`, `Γ ≥ 0`, `Γ_{k+1} = Γ_k` at unsuccessful and `Γ_{k+1} ≤ F Γ_k` at
 successful iterations, then `Γ_{k+1} ≤ F^{|𝒮_k|} Γ_0`. -/
 theorem le_iterate_of_successSet {F : ℝ → ℝ} (hF : ∀ x y, 0 ≤ x → x ≤ y → F x ≤ F y)
-    (hF0 : ∀ x, 0 ≤ x → 0 ≤ F x) (hΓ : ∀ k, 0 ≤ Γ k) (heq : ∀ k, ¬ S k → Γ (k + 1) = Γ k)
+    (hΓ : ∀ k, 0 ≤ Γ k) (heq : ∀ k, ¬ S k → Γ (k + 1) = Γ k)
     (hS : ∀ k, S k → Γ (k + 1) ≤ F (Γ k)) (k : ℕ) :
     Γ (k + 1) ≤ F^[(successSet S k).card] (Γ 0) := by
   induction k with
@@ -284,8 +284,7 @@ theorem le_of_linear_count (hτ : τ = 1) (hc : 0 < c) {ε : ℝ} (hε : 0 < ε)
   have hq1 : q < 1 := inv_lt_one_of_one_lt₀ (by linarith)
   have hbound := le_iterate_of_successSet (F := fun x => q * x)
     (fun x y _ hxy => mul_le_mul_of_nonneg_left hxy hq0.le)
-    (fun x hx => mul_nonneg hq0.le hx) h.nonneg h.eq_of_not
-    (fun k hk => h.linear hτ hc.le hk) k
+    h.nonneg h.eq_of_not (fun k hk => h.linear hτ hc.le hk) k
   rw [iterate_mul_left_apply] at hbound
   set n := (successSet S k).card
   refine hbound.trans ?_
@@ -347,7 +346,7 @@ theorem le_of_linear_count (hτ : τ = 1) (hc : 0 < c) (hc1 : c < 1) {ε : ℝ} 
     exact this
   have hbound := le_iterate_of_successSet (F := fun x => q * x)
     (fun x y _ hxy => mul_le_mul_of_nonneg_left hxy hq0.le)
-    (fun x hx => mul_nonneg hq0.le hx) h.nonneg h.eq_of_not hstep k
+    h.nonneg h.eq_of_not hstep k
   rw [iterate_mul_left_apply] at hbound
   set n := (successSet S k).card
   refine hbound.trans ?_
@@ -733,7 +732,7 @@ theorem le_of_superlinear_count (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1) (h�
     le_min (mul_nonneg hq0.le hx) (Real.rpow_nonneg hx _)
   have hFself : ∀ x, 0 ≤ x → F x ≤ x := fun x hx =>
     (min_le_left _ _).trans (mul_le_of_le_one_left hx hq1.le)
-  have hbound := le_iterate_of_successSet hF hF0 hω.nonneg hω.eq_of_not
+  have hbound := le_iterate_of_successSet hF hω.nonneg hω.eq_of_not
     (fun k hk => le_min (hstep1 k hk) (hstep2 k hk)) k
   -- the two phases
   set N₁ := ⌈Real.log ω0 / Real.log B⌉₊ + 1
@@ -987,8 +986,7 @@ theorem eq_zero_of_lt_one (hc : 0 < c) (hτ : τ < 1) :
       linarith [h.nonneg (j + 1)]
   have hgeo : ∀ i, Γ (i + 1) ≤ r ^ (successSet S i).card * Γ 0 := fun i => by
     have := le_iterate_of_successSet (F := fun x => r * x)
-      (fun x y _ hxy => mul_le_mul_of_nonneg_left hxy hr0) (fun x hx => mul_nonneg hr0 hx)
-      h.nonneg h.eq_of_not hstep i
+      (fun x y _ hxy => mul_le_mul_of_nonneg_left hxy hr0) h.nonneg h.eq_of_not hstep i
     rwa [iterate_mul_left_apply] at this
   -- the value at a successful iteration
   have hatS : ∀ j, S j → Γ j ≤ r ^ ((successSet S j).card - 1) * Γ 0 := by
@@ -1341,7 +1339,7 @@ theorem IsImplicitGapDecrease.le_implicitGapSeq (h : IsImplicitGapDecrease Γ S 
     intro k
     rw [implicitGapSeq_eq_iterate]
     refine le_iterate_of_successSet (fun x y hx hxy => implicitGapStep_mono hc.le hτ hx hxy)
-      (fun x _ => implicitGapStep_nonneg _ _ x) h.nonneg h.eq_of_not (fun k hk => ?_) k
+      h.nonneg h.eq_of_not (fun k hk => ?_) k
     exact le_implicitGapStep hc.le hτ (h.nonneg _) (by have := h.decrease k hk; linarith)
   refine ⟨hmain, fun ε hε k hk => (hmain k).trans ?_⟩
   exact (implicitGapSeq_antitone hc.le hτ (h.nonneg 0) hk).trans
@@ -1557,8 +1555,8 @@ theorem IsExplicitGapDecrease.mul_rpow_le_one (hg : IsExplicitGapDecrease Γ S c
   nlinarith
 
 /-- If `c Γ_0^{τ-1} ≥ 1` (and `Γ_0 > 0`), the gap vanishes after every successful iteration. -/
-theorem IsExplicitGapDecrease.eq_zero_of_one_le_mul_rpow (hg : IsExplicitGapDecrease Γ S c τ) (hc : 0 ≤ c)
-    (hΓ0 : 0 < Γ 0) (h1 : 1 ≤ c * Γ 0 ^ (τ - 1)) : ∀ k, S k → Γ (k + 1) = 0 := by
+theorem IsExplicitGapDecrease.eq_zero_of_one_le_mul_rpow (hg : IsExplicitGapDecrease Γ S c τ)
+    (hc : 0 ≤ c) (hΓ0 : 0 < Γ 0) (h1 : 1 ≤ c * Γ 0 ^ (τ - 1)) : ∀ k, S k → Γ (k + 1) = 0 := by
   classical
   intro k hk
   have hS : ∃ k, S k := ⟨k, hk⟩

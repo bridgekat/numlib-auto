@@ -795,6 +795,14 @@ theorem holderFactorial_div_holderFactorial_sub {p j : ℕ} (hj : j ≤ p) {β :
       exact mul_pos ih (by linarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)])
   rw [holderFactorial_eq_prod_range_mul hj β, mul_div_cancel_right₀ _ hpos.ne']
 
+/-- `∏_{i ≤ p} (p + β - i) = β (p+β)!`, with `(k+β)! = holderFactorial k β`. -/
+theorem prod_fin_succ_eq_mul_holderFactorial (p : ℕ) (β : ℝ) :
+    ∏ i : Fin (p + 1), ((p : ℝ) + β - i) = β * holderFactorial p β := by
+  rw [Fin.prod_univ_eq_prod_range (fun i ↦ (p : ℝ) + β - i), Finset.prod_range_succ,
+    holderFactorial_eq_prod_range_mul (le_refl p) β, Nat.sub_self, holderFactorial_zero,
+    mul_one]
+  ring
+
 namespace NormPowIteratedFDeriv
 
 end NormPowIteratedFDeriv

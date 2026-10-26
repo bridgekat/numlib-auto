@@ -55,10 +55,12 @@ structure AssumptionGL (f : EuclideanSpace ℝ (Fin n) → ℝ) (L : ℝ) : Prop
   /-- The gradient is `L`-Lipschitz (2.1.5). -/
   lipschitz : ∀ x y, ‖gradient f x - gradient f y‖ ≤ L * ‖x - y‖
 
+/-- f.Bb unfolded: `f` is bounded below by `f_low` everywhere. -/
 theorem assumptionBb_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {flow : ℝ} :
     AssumptionBb f flow ↔ ∀ x, flow ≤ f x :=
   Iff.rfl
 
+/-- f.C1 unfolded: `f` is continuously differentiable. -/
 theorem assumptionC1_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} :
     AssumptionC1 f ↔ ContDiff ℝ 1 f :=
   Iff.rfl
@@ -88,8 +90,17 @@ variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ}
 theorem assumptionC1 (h : AssumptionGL f L) : AssumptionC1 f :=
   h.contDiff
 
+/-- A function satisfying f.gL is differentiable. -/
+theorem differentiable (h : AssumptionGL f L) : Differentiable ℝ f :=
+  h.contDiff.differentiable one_ne_zero
+
+/-- The Lipschitz constant of f.gL is positive. -/
+theorem pos (h : AssumptionGL f L) : 0 < L :=
+  zero_lt_one.trans_le h.one_le
+
+/-- The Lipschitz constant of f.gL is nonnegative. -/
 theorem nonneg (h : AssumptionGL f L) : 0 ≤ L :=
-  zero_le_one.trans h.one_le
+  h.pos.le
 
 /-- **Bridge to the backbone.** Under f.gL, `∇¹f` is `L`-Lipschitz on `ℝⁿ` as a multilinear map:
 `IteratedFDerivLipschitzOn f 1 L univ`. -/

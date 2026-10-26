@@ -11,6 +11,7 @@ Lemma A.10.1 and (A.34)–(A.35)). They all follow from `∑_{i < n} δ^i/i! ≤
 * `sum_pow_div_factorial_Icc_succ_le`: `∑_{ℓ=j+1}^{p+1} δ^ℓ/ℓ! ≤ 2 δ^{j+1}/j!`;
 * `sum_pow_div_factorial_le_two_mul`: `∑_{ℓ=1}^j δ^ℓ/ℓ! ≤ 2δ` for `δ ∈ [0, 1]` (A.34);
 * `sum_pow_div_factorial_le_two_mul_pow`: `∑_{ℓ=1}^j δ^ℓ/ℓ! ≤ 2δ^j` for `δ ≥ 1` (A.35);
+* `sum_inv_factorial_sub_le_exp_one`: `∑_{ℓ=j}^p 1/(ℓ-j)! ≤ e` (towards (A.36));
 * `half_mul_pow_div_factorial_le`: the closing step of the model-decrease lemmas
   (Lemmas 12.2.8, 13.1.10, 14.1.2).
 -/
@@ -94,6 +95,15 @@ theorem sum_pow_div_factorial_le_two_mul_pow {δ : ℝ} (h1 : 1 ≤ δ) (j : ℕ
         gcongr
         simpa using sum_pow_div_factorial_le_two_mul zero_le_one le_rfl j
     _ = 2 * δ ^ j := mul_comm _ _
+
+/-- `∑_{ℓ=j}^p 1/(ℓ-j)! ≤ e`: a partial sum of the exponential series at `1`. -/
+theorem sum_inv_factorial_sub_le_exp_one (j p : ℕ) :
+    ∑ ℓ ∈ Icc j p, 1 / ((ℓ - j)! : ℝ) ≤ Real.exp 1 := by
+  have e : ∑ ℓ ∈ Icc j p, 1 / ((ℓ - j)! : ℝ) = ∑ i ∈ range (p + 1 - j), 1 ^ i / (i ! : ℝ) := by
+    rw [← Ico_add_one_right_eq_Icc, sum_Ico_eq_sum_range]
+    simp
+  rw [e]
+  exact Real.sum_le_exp_of_nonneg zero_le_one _
 
 /-- **Half of a decrement survives a perturbation of order `δ^{j+1}`** (the closing step of
 [cartis2022evaluation], Lemmas 12.2.8, 13.1.10 and 14.1.2): if `δ ≥ 0`, `4 K δ ≤ α`,

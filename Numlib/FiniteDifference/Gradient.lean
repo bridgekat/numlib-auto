@@ -1,7 +1,7 @@
-import Mathlib.Algebra.Order.Chebyshev
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.Calculus.Gradient
 import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
+import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.Optimization.ModelBased.InexactTaylor
 import Numlib.Optimization.Optimality.Approximate
 
@@ -53,31 +53,25 @@ variable {n : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
-/-- A vector whose coordinates are bounded by `c` has norm at most `√n c`. -/
+/-- A vector whose coordinates are bounded by `c` has norm at most `√n c`
+(`PiLp.norm_toLp_two_le_sqrt_card_mul_norm_toLp_top`). -/
 theorem norm_le_sqrt_card_mul_of_forall_abs_le {w : 𝔼} {c : ℝ} (h : ∀ i, |w i| ≤ c) :
     ‖w‖ ≤ √n * c := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · simp [Subsingleton.elim w 0]
-  have hc : 0 ≤ c := (abs_nonneg _).trans (h ⟨0, hn⟩)
-  rw [EuclideanSpace.norm_eq]
-  calc √(∑ i, ‖w i‖ ^ 2) ≤ √(∑ _i : Fin n, c ^ 2) := by
-        gcongr with i
-        rw [Real.norm_eq_abs]
-        exact h i
-    _ = √n * c := by
-        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul,
-          Real.sqrt_mul (Nat.cast_nonneg n), Real.sqrt_sq hc]
+  have := PiLp.norm_toLp_two_le_sqrt_card_mul_norm_toLp_top (β := fun _ : Fin n => ℝ)
+    (WithLp.ofLp w)
+  simp only [WithLp.toLp_ofLp, Fintype.card_fin] at this
+  refine this.trans (mul_le_mul_of_nonneg_left ?_ (Real.sqrt_nonneg _))
+  rw [PiLp.norm_eq_ciSup]
+  have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
+  exact ciSup_le fun i => by simpa using h i
 
-/-- `∑ᵢ |vᵢ| ≤ √n ‖v‖`. -/
+/-- `∑ᵢ |vᵢ| ≤ √n ‖v‖` (`PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two`). -/
 theorem sum_abs_le_sqrt_card_mul_norm (v : 𝔼) : ∑ i, |v i| ≤ √n * ‖v‖ := by
-  have h := sq_sum_le_card_mul_sum_sq (s := (Finset.univ : Finset (Fin n))) (f := fun i => |v i|)
-  rw [Finset.card_univ, Fintype.card_fin] at h
-  have hn : ‖v‖ ^ 2 = ∑ i, |v i| ^ 2 := by
-    rw [EuclideanSpace.norm_eq, Real.sq_sqrt (by positivity)]
-    simp
-  rw [← hn] at h
-  rw [← Real.sqrt_sq (norm_nonneg v), ← Real.sqrt_mul (Nat.cast_nonneg n)]
-  exact Real.le_sqrt_of_sq_le h
+  have := PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two (β := fun _ : Fin n => ℝ)
+    (WithLp.ofLp v)
+  simpa [PiLp.norm_eq_of_L1, Real.norm_eq_abs] using this
 
 /-- A vector is the sum of its coordinates times the unit vectors. -/
 theorem sum_smul_single (v : 𝔼) : ∑ j, v j • EuclideanSpace.single j (1 : ℝ) = v := by

@@ -39,8 +39,9 @@ the regularization weight is updated by (2.4.4) (`Optimization.ARUpdate`). Metho
 * `Optimization.IsARRun.exists_isFirstHit_of_decrease`: the counting skeleton of the complexity
   theorems (Theorems 2.4.4, 3.3.5, 4.1.5, …), with the book's constants (4.1.46);
 * `Optimization.IsARRun.forall_lt_not_stop_iff`, `Optimization.IsARRun.forall_le_not_stop_iff`,
-  `Optimization.IsARRun.isFirstHit_stop_iff`, `Optimization.IsARRun.exists_last_succ`: runs without a
-  post-step test;
+  `Optimization.IsARRun.isFirstHit_stop_iff`, `Optimization.IsARRun.exists_last_succ`,
+  `Optimization.IsARRun.eq_of_forall_not_succ`,
+  `Optimization.IsARRun.card_successSet_le_card_succ_add_one`: runs without a post-step test;
 * `Optimization.exists_isARRun_prev`, `Optimization.exists_isARRun`: existence of runs when an
   admissible step exists whenever the test fails (the test may read the previous iteration, as
   ARp's third-order test does through `𝓜_k`).
@@ -540,6 +541,78 @@ theorem exists_last_succ (h : IsARRun P stop₁ step (fun _ => False) ρ x s σ)
       exact ⟨i, hi.trans N.lt_succ_self, hsi, hxi.trans heq.symm⟩
 
 end General
+
+section NoPostStepTest
+
+variable {E : Type*} [Add E] {P : ARParams} {stop₁ step : ℕ → Prop} {ρ : ℕ → ℝ}
+  {x s : ℕ → E} {σ : ℕ → ℝ}
+
+/-- **Successful iterations between two iterates**: in an AR run without post-step test, the
+iterate does not change between successful iterations: if no iteration `i ≤ m < j` is successful
+and `j` is before termination, then `x_j = x_i`. -/
+theorem eq_of_forall_not_succ
+    (h : IsARRun P stop₁ step (fun _ => False) ρ x s σ) {i j : ℕ} (hij : i ≤ j)
+    (hj : ∀ m < j, ¬ stop₁ m) (hns : ∀ m, i ≤ m → m < j → ρ m < P.η₁) : x j = x i := by
+  induction j, hij using Nat.le_induction with
+  | base => rfl
+  | succ j hij ih =>
+    rw [h.eq_of_not_succ (IsARRun.forall_le_not_stop_iff.2 fun m hm => hj m
+      (Nat.lt_succ_of_le hm)) (hns j hij j.lt_succ_self)]
+    exact ih (fun m hm => hj m (hm.trans j.lt_succ_self))
+      fun m hm1 hm2 => hns m hm1 (hm2.trans j.lt_succ_self)
+
+/-- **Counting at the iterate versus after the step**: in an AR run without post-step test, for
+any property `Q` of iterates, the number of successful iterations `j ≤ k` with `Q(x_j)` exceeds
+the number of successful iterations `j ≤ k` with `Q(x_{j+1})` by at most one (the iterate `x_j`
+is `x_{i+1}` for the previous successful iteration `i`, except before the first success). -/
+theorem card_successSet_le_card_succ_add_one
+    (h : IsARRun P stop₁ step (fun _ => False) ρ x s σ) (Q : E → Prop) {k : ℕ}
+    (hk : ∀ j ≤ k, ¬ stop₁ j) :
+    (successSet (fun j => P.η₁ ≤ ρ j ∧ Q (x j)) k).card ≤
+      (successSet (fun j => P.η₁ ≤ ρ j ∧ Q (x (j + 1))) k).card + 1 := by
+  classical
+  set T := successSet (fun j => P.η₁ ≤ ρ j ∧ Q (x j)) k
+  set T' := successSet (fun j => P.η₁ ≤ ρ j ∧ Q (x (j + 1))) k
+  set pr : ℕ → ℕ := fun j => Nat.findGreatest (fun i => P.η₁ ≤ ρ i) (j - 1)
+  have hsplit := Finset.card_filter_add_card_filter_not (s := T) (fun j => ∃ i < j, P.η₁ ≤ ρ i)
+  have h1 : (T.filter (fun j => ¬ ∃ i < j, P.η₁ ≤ ρ i)).card ≤ 1 := by
+    rw [Finset.card_le_one]
+    intro a ha b hb
+    simp only [Finset.mem_filter, T, mem_successSet] at ha hb
+    by_contra hab
+    rcases lt_or_gt_of_ne hab with hlt | hlt
+    · exact hb.2 ⟨a, hlt, ha.1.2.1⟩
+    · exact ha.2 ⟨b, hlt, hb.1.2.1⟩
+  have h0 : (T.filter (fun j => ∃ i < j, P.η₁ ≤ ρ i)).card ≤ T'.card := by
+    refine Finset.card_le_card_of_injOn pr (fun j hj => ?_) (fun a ha b hb hab => ?_)
+    · simp only [Finset.mem_coe, Finset.mem_filter, T, mem_successSet] at hj
+      obtain ⟨⟨hjk, -, hQ⟩, i, hij, hi⟩ := hj
+      have hspec : P.η₁ ≤ ρ (pr j) :=
+        Nat.findGreatest_spec (P := fun i => P.η₁ ≤ ρ i) (m := i) (n := j - 1) (by omega) hi
+      have hle : pr j ≤ j - 1 := Nat.findGreatest_le _
+      have hxeq : x j = x (pr j + 1) :=
+        h.eq_of_forall_not_succ (i := pr j + 1) (j := j) (by omega)
+          (fun m hm => hk m (by omega)) fun m hm1 hm2 =>
+          not_le.1 (Nat.findGreatest_is_greatest (P := fun i => P.η₁ ≤ ρ i) (n := j - 1)
+            (show pr j < m by omega) (by omega))
+      simp only [Finset.mem_coe, T', mem_successSet]
+      exact ⟨by omega, hspec, hxeq ▸ hQ⟩
+    · simp only [Finset.mem_coe, Finset.mem_filter, T, mem_successSet] at ha hb
+      by_contra hne
+      rcases lt_or_gt_of_ne hne with hlt | hlt
+      · have h1 : a ≤ pr b := Nat.le_findGreatest (by omega) ha.1.2.1
+        have h2 : pr a ≤ a - 1 := Nat.findGreatest_le _
+        obtain ⟨i, hi, -⟩ := ha.2
+        have : pr a = pr b := hab
+        omega
+      · have h1 : b ≤ pr a := Nat.le_findGreatest (by omega) hb.1.2.1
+        have h2 : pr b ≤ b - 1 := Nat.findGreatest_le _
+        obtain ⟨i, hi, -⟩ := hb.2
+        have : pr a = pr b := hab
+        omega
+  omega
+
+end NoPostStepTest
 
 section Taylor
 

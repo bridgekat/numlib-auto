@@ -122,7 +122,8 @@ Algorithm 6.2.1), for `q ∈ {1, 2, 3}`: `x ∈ 𝒞` is an `ε₁`-approximate 
 `ω_{f,𝒞,1}(x) ≤ ε₁` (6.1.4); an `(ε₁, ε₂)`-approximate second-order minimizer if moreover
 `ω_{f,𝒞,2}(x, ε₁) ≤ ε₂` (6.1.6); and an `(ε₁, ε₂, ε₃)`-approximate third-order minimizer if
 moreover `ω_{f,𝒞,3}(x, ε₁, ε₂) ≤ ε₃`. The book's `ε₂ = ε₃ = ∞` is `q = 1` and `ε₃ = ∞` is
-`q = 2`. -/
+`q = 2`. Other values of `q` are not used: `q = 0` gives the first-order notion and `q > 3` the
+third-order one. -/
 def IsApproxMinimizerCC (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ : ℝ) (q : ℕ) (ε₁ ε₂ ε₃ : ℝ)
     (x : ℝⁿ) : Prop :=
   x ∈ C ∧ omega1 f C x ≤ ε₁ ∧ (2 ≤ q → omega2 f C τ₁ x ε₁ ≤ ε₂) ∧

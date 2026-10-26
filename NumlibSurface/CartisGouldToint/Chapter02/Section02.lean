@@ -63,18 +63,6 @@ namespace CartisGouldToint.Chapter02
 
 variable {n : ℕ}
 
-namespace AssumptionGL
-
-variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ}
-
-theorem differentiable (h : AssumptionGL f L) : Differentiable ℝ f :=
-  h.contDiff.differentiable one_ne_zero
-
-theorem pos (h : AssumptionGL f L) : 0 < L :=
-  zero_lt_one.trans_le h.one_le
-
-end AssumptionGL
-
 /-! ### Lemma 2.2.1 -/
 
 section Lemma221
@@ -399,12 +387,12 @@ theorem isFirstHit_slow {f : EuclideanSpace ℝ (Fin 1) → ℝ} {θ ε : ℝ} {
 
 /-- **Theorem 2.2.3** of [cartis2022evaluation] (sharpness of SDBA). For every `t_ini > 0` there
 are `L ≥ 1` and `f_low` (depending only on `t_ini`) such that for all `α ∈ (0,1)` and every
-`ε ∈ (0,1)` with `k_ε = ε⁻²` an integer, there is `f : ℝ¹ → ℝ` satisfying f.Bb and f.gL for which
+`ε ∈ (0,1]` with `k_ε = ε⁻²` an integer, there is `f : ℝ¹ → ℝ` satisfying f.Bb and f.gL for which
 SDBA from `x₀ = 0` runs (a run exists) and every run never backtracks before iteration `k_ε`,
 terminates exactly at `k_ε`, and so uses `k_ε + 1` evaluations of `f` and of `∇f`. (The book's
 hypothesis `t_ini ≥ α` is not needed.) -/
 theorem theorem_2_2_3 {tini : ℝ} (htini : 0 < tini) :
-    ∃ L flow : ℝ, 1 ≤ L ∧ ∀ α : ℝ, 0 < α → α < 1 → ∀ (ε : ℝ) (kε : ℕ), 0 < ε → ε < 1 →
+    ∃ L flow : ℝ, 1 ≤ L ∧ ∀ α : ℝ, 0 < α → α < 1 → ∀ (ε : ℝ) (kε : ℕ), 0 < ε → ε ≤ 1 →
       (kε : ℝ) * ε ^ 2 = 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, AssumptionBb f flow ∧ AssumptionGL f L ∧
         (∃ x i, x 0 = 0 ∧ algorithm_2_2_1 f α tini ε x i) ∧
@@ -413,7 +401,7 @@ theorem theorem_2_2_3 {tini : ℝ} (htini : 0 < tini) :
             sdbaFunEvalCount i kε = kε + 1 := by
   obtain ⟨L, flow, hL, H⟩ := exists_slow_example htini
   refine ⟨L, flow, hL, fun α hα0 hα1 ε kε hε hε1 hkε => ?_⟩
-  obtain ⟨f, hb, hgl, hfk⟩ := H ε kε hε hε1.le hkε
+  obtain ⟨f, hb, hgl, hfk⟩ := H ε kε hε hε1 hkε
   set x : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => slowX tini ε kε k • e₀
   have hhit : IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε) kε :=
     isFirstHit_slow hε (fun _ _ => rfl) fun k hk => (hfk k hk).2

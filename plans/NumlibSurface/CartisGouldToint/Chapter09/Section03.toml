@@ -21,6 +21,10 @@ id = "pencil_gershgorin_9_3_7"
 source = "Cartis–Gould–Toint, (9.3.6)–(9.3.7), §9.3.1"
 
 [[node]]
+id = "abs_eigenvalue_le_frobenius"
+source = "Cartis–Gould–Toint, §9.3.1 (|λᵢ| ≤ ‖H‖_F)"
+
+[[node]]
 id = "invIterVec"
 source = "Cartis–Gould–Toint, Algorithm 9.3.1"
 

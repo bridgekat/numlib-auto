@@ -176,7 +176,8 @@ theorem density (h : IsARpRun f p P q test x s σ) {L : ℝ} (hf : ContDiff ℝ 
     (k : ℝ) ≤ (1 + |Real.log P.γ₁| / Real.log P.γ₂) *
         (successSet (fun j => P.η₁ ≤ taylorRatio f p x s j) k).card +
       Real.log (arSigmaMax P.toARParams L / P.σ₀) / Real.log P.γ₂ := by
-  have := h.toIsARRun.le_succ_count (k := k) (IsARRun.forall_lt_not_stop_iff.2 hk) (h.sigma_le hf hL hk).2
+  have := h.toIsARRun.le_succ_count (k := k) (IsARRun.forall_lt_not_stop_iff.2 hk)
+    (h.sigma_le hf hL hk).2
   linarith
 
 variable {L : ℝ}

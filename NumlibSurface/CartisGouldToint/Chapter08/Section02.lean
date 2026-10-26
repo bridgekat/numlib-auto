@@ -27,7 +27,8 @@ Surface file for [cartis2022evaluation] §8.2: the secular function of the subpr
   `tau_admissible_8_2_9` — the targets (8.2.9) are admissible.
 * `theorem_8_2_2`, `theorem_8_2_2_strict` — Taylor bounds (8.2.13)–(8.2.14).
 * `lemma_8_2_3`, `lemma_8_2_3_strict` — signs of the derivatives of `π(λ; β)`.
-* `corollary_8_2_4` — monotonicity and convexity of `π(λ; β)`.
+* `corollary_8_2_4` — monotonicity and convexity of `π(λ; β)`; `corollary_8_2_4_tendsto_lambdaS` —
+  its right limit at `λₛ`.
 * `theorem_8_2_5`, `theorem_8_2_5_strict` — first-order Taylor bounds (8.2.20)–(8.2.21).
 * `theorem_8_2_6` — derivatives of the secular function (8.2.27)–(8.2.30).
 * `theorem_8_2_7`, `theorem_8_2_8` — global optimality of the two subproblems.
@@ -45,8 +46,8 @@ space `Subproblem.ScaledSpace hM`: the secular function is the operator secular 
   exactly when `g = M v` for a generalized eigenvector `v` of `(H, M)` (then `π(λ; -1/2)` is
   affine: `n = 1`, `H = 0`, `M = 1`, `g = 1` gives `π(λ; -1/2) = λ`); Theorem 8.2.5 also needs
   `δ ≠ 0` for strictness. Corollary 8.2.4 needs `g ≠ 0` (for `g = 0` the function is constant).
-* Corollary 8.2.4: the starting values "from `π(λₛ; β)`" (right limits at `λₛ`, possibly `+∞`) are
-  not formalized; only monotonicity, convexity/concavity and the limits at `+∞` are.
+* Corollary 8.2.4: the starting value "`π(λₛ; β)`" is read as the right limit at `λₛ`
+  (`corollary_8_2_4_tendsto_lambdaS`), which may be `+∞` for `β > 0` when `λₛ = -λ₁` is a pole.
 * Theorem 8.2.2: the book states it for `k > 0`; it holds for every `k`.
 -/
 
@@ -384,8 +385,7 @@ function)**, for `g ≠ 0`. On `(λₛ, ∞)`, `π(λ; β)` is strictly decreasi
 tends to `0` at `+∞` when `β > 0`, and strictly increasing, concave and tends to `+∞` when
 `β ∈ [-1/2, 0)`. (For `g = 0` it is constant.) The book's "from `π(λₛ; β)`" refers to the right
 limit at `λₛ`, which may be infinite (a pole) and need not be `π(λₛ)^β` (the value of `π` at a
-pole is a junk value); this limit statement is not formalized here (see
-`Subproblem.tendsto_secular_rpow_threshold` for the limit at `-λ₁`). -/
+pole is a junk value); it is `corollary_8_2_4_tendsto_lambdaS`. -/
 theorem corollary_8_2_4 (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) (β : ℝ) :
     (0 < β → StrictAntiOn (fun t => secularFn g H M t ^ β) (Ioi (lambdaS hH hM)) ∧
       StrictConvexOn ℝ (Ioi (lambdaS hH hM)) (fun t => secularFn g H M t ^ β) ∧
@@ -402,6 +402,56 @@ theorem corollary_8_2_4 (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) (β 
     exact ⟨h1.mono hsub, h2.subset hsub (convex_Ioi _), h3⟩
   · obtain ⟨h1, h2, h3⟩ := hneg hβ
     exact ⟨h1.mono hsub, h2.subset hsub (convex_Ioi _), h3⟩
+
+/-- **Corollary 8.2.4 of [cartis2022evaluation], the starting values** (for `g ≠ 0`): the value
+"`π(λₛ; β)`" from which `π(λ; β)` decreases (`β > 0`) or increases (`β < 0`) on `(λₛ, ∞)` is its
+right limit at `λₛ`, identified as follows.
+* If `λₛ > -λ₁` (that is, `λ₁ > 0` and `λₛ = 0`), `π` is continuous at `λₛ` and the limit is
+  `π(λₛ)^β`.
+* Either `π(λ)` has a finite positive right limit `L` at `λₛ` and then `π(λ; β) → L^β` for every
+  `β` (always the case when `λₛ > -λ₁`; when `λₛ = -λ₁` this happens exactly when
+  `g ⊥ ker(H + λₛ M)`, i.e. `(H + λₛ M) s = -g` is consistent, and `L` is then the squared
+  `M`-norm of its minimum-`M`-norm solution; see `Subproblem.tendsto_secular_rpow_threshold`),
+* or `λₛ = -λ₁` is a pole: `π(λ) → +∞`, so `π(λ; β) → +∞` for `β > 0` and `π(λ; β) → 0` for
+  `β < 0`.
+When `λₛ = -λ₁` the value `π(λₛ)` itself is a junk value (`H + λₛ M` is singular), so only the
+limit is meaningful there. -/
+theorem corollary_8_2_4_tendsto_lambdaS (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) :
+    (∀ β : ℝ, -leftmostPencil hH hM < lambdaS hH hM →
+      Tendsto (fun t => secularFn g H M t ^ β) (𝓝[>] (lambdaS hH hM))
+        (𝓝 (secularFn g H M (lambdaS hH hM) ^ β))) ∧
+    ((∃ L, 0 < L ∧ Tendsto (secularFn g H M) (𝓝[>] (lambdaS hH hM)) (𝓝 L) ∧
+        ∀ β : ℝ, Tendsto (fun t => secularFn g H M t ^ β) (𝓝[>] (lambdaS hH hM)) (𝓝 (L ^ β))) ∨
+      (lambdaS hH hM = -leftmostPencil hH hM ∧
+        Tendsto (secularFn g H M) (𝓝[>] (lambdaS hH hM)) atTop ∧
+        ∀ β : ℝ, (0 < β → Tendsto (fun t => secularFn g H M t ^ β) (𝓝[>] (lambdaS hH hM)) atTop) ∧
+          (β < 0 → Tendsto (fun t => secularFn g H M t ^ β) (𝓝[>] (lambdaS hH hM)) (𝓝 0)))) := by
+  rw [secularFn_eq_secular hM, lambdaS_eq, leftmostPencil_eq]
+  set hT := isSymmetric_scaledOp (hM := hM) hH
+  have hg' := scaledGrad_ne_zero (hM := hM) hg
+  have hcont : -leftmost hT < shiftThreshold hT → ∀ β : ℝ,
+      Tendsto (fun t => secular (scaledGrad hM g) (scaledOp H hM) t ^ β)
+        (𝓝[>] (shiftThreshold hT))
+        (𝓝 (secular (scaledGrad hM g) (scaledOp H hM) (shiftThreshold hT) ^ β)) := fun h β =>
+    (((Real.continuousAt_rpow_const _ β (Or.inl (secular_pos (hH := hT) hg' h).ne')).comp
+      (hasDerivAt_secular (hH := hT) h).continuousAt).tendsto).mono_left nhdsWithin_le_nhds
+  refine ⟨fun β h => hcont h β, ?_⟩
+  rcases (neg_leftmost_le_shiftThreshold (hH := hT)).lt_or_eq with hlt | heq
+  · exact Or.inl ⟨_, secular_pos (hH := hT) hg' hlt,
+      ((hasDerivAt_secular (hH := hT) hlt).continuousAt.tendsto).mono_left nhdsWithin_le_nhds,
+      hcont hlt⟩
+  rw [← heq]
+  by_cases hK : scaledGrad hM g ∈ (LinearMap.ker ((scaledOp H hM + (-leftmost hT) • 1 :
+      ScaledSpace hM →L[ℝ] ScaledSpace hM) : ScaledSpace hM →ₗ[ℝ] ScaledSpace hM))ᗮ
+  · have hp : particular hT (scaledGrad hM g) (-leftmost hT) ≠ 0 := fun h0 => hg' (by
+      have := ((particular_spec (hH := hT) (g := scaledGrad hM g) _).2.1 hK).1
+      rw [h0, map_zero, eq_comm, neg_eq_zero] at this
+      exact this)
+    exact Or.inl ⟨_, pow_pos (norm_pos_iff.2 hp) 2,
+      ((tendsto_step_threshold (hH := hT) (g := scaledGrad hM g)).1 hK).2,
+      fun β => (tendsto_secular_rpow_threshold (hH := hT) β).1 hK (Or.inl hp)⟩
+  · exact Or.inr ⟨rfl, (tendsto_step_threshold (hH := hT) (g := scaledGrad hM g)).2 hK,
+      fun β => (tendsto_secular_rpow_threshold (hH := hT) β).2 hK⟩
 
 /-- **Theorem 8.2.5 of [cartis2022evaluation] (Lower and upper first-order Taylor estimates of
 `π(λ; β)`).** Let `λc > λₛ`, `δ > λₛ - λc` and `t₁(δ; β) = π(λc; β) + π⁽¹⁾(λc; β) δ`. Then

@@ -36,6 +36,7 @@ The proofs are in the backbone modules `Bracketing`, `InverseIteration`, `Stoppi
 
 The safeguarded update (9.3.10)–(9.3.12) and the overall procedure of §9.3.7 (heuristics, whose
 admissible choices are covered by `algorithm_9_2_1`); the standard norm comparisons
-`‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)` and `|λᵢ| ≤ ‖H‖_F` quoted in §9.3.1; the tests (9.4.2)–(9.4.4) and the
+`‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)` quoted in §9.3.1 (the eigenvalue bound `|λᵢ| ≤ ‖H‖_F` is
+`abs_eigenvalue_le_frobenius`); the tests (9.4.2)–(9.4.4) and the
 Gertz–Gill criterion (9.4.8) of the Notes.
 -/

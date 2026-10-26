@@ -49,16 +49,15 @@ theorem IsPartiallySeparable.eq {f : EuclideanSpace ℝ (Fin n) → ℝ}
 
 /-- **(5.2.2)** of [cartis2022evaluation]: the Taylor model of a partially separable function is
 the sum of the Taylor models of its element functions,
-`T_{f,p}(x, s) = ∑ᵢ T_{fᵢ,p}(Uᵢ x, Uᵢ s)`, provided every element function is `p` times
-continuously differentiable. -/
+`T_{f,p}(x, s) = ∑ᵢ T_{fᵢ,p}(Uᵢ x, Uᵢ s)`, provided every element function `fᵢ` is `p` times
+continuously differentiable at `Uᵢ x`. -/
 theorem taylorPolynomial_partiallySeparable {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {fᵢ : (i : Fin m) → EuclideanSpace ℝ (Fin (d i)) → ℝ}
     {U : (i : Fin m) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin (d i))}
-    (h : IsPartiallySeparable f fᵢ U) {p : ℕ} (hf : ∀ i, ContDiff ℝ p (fᵢ i))
-    (x s : EuclideanSpace ℝ (Fin n)) :
+    (h : IsPartiallySeparable f fᵢ U) {p : ℕ} {x : EuclideanSpace ℝ (Fin n)}
+    (hf : ∀ i, ContDiffAt ℝ p (fᵢ i) (U i x)) (s : EuclideanSpace ℝ (Fin n)) :
     taylorPolynomial f p x s = ∑ i, taylorPolynomial (fᵢ i) p (U i x) (U i s) := by
   rw [h.eq]
-  exact taylorPolynomial_finset_sum_comp_continuousLinearMap U
-    (fun i _ => (hf i).contDiffAt) s
+  exact taylorPolynomial_finset_sum_comp_continuousLinearMap U (fun i _ => hf i) s
 
 end CartisGouldToint.Chapter05

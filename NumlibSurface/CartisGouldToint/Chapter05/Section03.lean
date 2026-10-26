@@ -57,6 +57,8 @@ successful iterations `S`, unchanged iterates otherwise, and the density (5.3.9)
 * Lemma 5.3.6 (ii): "a final value `Γ_{k□} ≥ 1`" is `Γ_{k□} ≥ Γ□` (`ω ≥ 1` for the scaled gap
   `ω = Γ/Γ□`). In the equality cases the gap vanishes after every successful iteration (in
   particular after the first one, as stated in the book).
+* Theorems 5.3.3–5.3.5 do not assume `Γ_0 > 0` (the book does): when `Γ_0 = 0` every gap
+  vanishes and the bounds hold with the junk values `log 0 = 0`, `0^{-α} = 0`.
 * Theorem 5.3.12's display mixes `κ^C_{TR1,FRLS}` and `κ^C_{TR,FRLS}`; one constant is meant.
 * The unnumbered examples of §5.3.1 other than full-rank least squares (convex functions on a
   ball, strongly convex functions, `‖x‖^{2i}`) and the claim that TR1/TR2 belong to `TRψ,ν` with
@@ -250,6 +252,27 @@ theorem exists_measure_le_nat {ε : ℝ} {n : ℕ} (hε : 0 ≤ ε)
       mul_le_mul_of_nonneg_left (by exact_mod_cast hcard) (by linarith [h.one_le_kappaR])
     linarith
 
+/-- If the initial gap vanishes, every gap vanishes. -/
+theorem gap_eq_zero (h0 : f (x 0) - fstar = 0) (k : ℕ) : f (x k) - fstar = 0 :=
+  le_antisymm (h0 ▸ h.gap.antitone h.c_pos.le (Nat.zero_le k)) (h.gap.nonneg k)
+
+/-- If the initial gap vanishes, the first successful iteration `k` has `ψ(x_{k+1}) ≤ ε`, with
+`|𝒮_k| ≤ 1` and `k ≤ κR + κA`. -/
+theorem exists_measure_le_of_gap_zero (h0 : f (x 0) - fstar = 0) {ε : ℝ} (hε : 0 ≤ ε) :
+    ∃ k, S k ∧ ψ (x (k + 1)) ≤ ε ∧ (successSet S k).card ≤ 1 ∧ (k : ℝ) ≤ κR + κA := by
+  classical
+  have hex : ∃ k, S k := let ⟨k, _, hk⟩ := h.frequently 0; ⟨k, hk⟩
+  have hk : S (Nat.find hex) := Nat.find_spec hex
+  have hcard : (successSet S (Nat.find hex)).card ≤ 1 := Finset.card_le_one.2 fun a ha b hb => by
+    rw [mem_successSet] at ha hb
+    have := Nat.find_min' hex ha.2; have := Nat.find_min' hex hb.2; omega
+  refine ⟨Nat.find hex, hk, h.measure_le hk hε ?_, hcard, ?_⟩
+  · rw [h.gap_eq_zero h0]; exact mul_nonneg h.kappaNu_pos.le (Real.rpow_nonneg hε _)
+  · have := h.run.density (Nat.find hex)
+    have : κR * ((successSet S (Nat.find hex)).card : ℝ) ≤ κR * 1 :=
+      mul_le_mul_of_nonneg_left (by exact_mod_cast hcard) (by linarith [h.one_le_kappaR])
+    linarith
+
 end ARSetting
 
 private theorem sub_div_self_eq {μ ν : ℝ} (hμ : μ ≠ 0) : ν / μ - 1 = (ν - μ) / μ := by
@@ -306,15 +329,16 @@ theorem theorem_5_3_2 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) {ε
 
 
 /-- **Theorem 5.3.3** ([cartis2022evaluation], `1 ≤ ν < μ`): under the standing hypotheses of
-§5.3.2 with `Γ_0 > 0`, the gaps converge superlinearly, and for every `ε > 0`, `Γ_{k+1} ≤ ε`
+§5.3.2, the gaps converge superlinearly, and for every `ε > 0`, `Γ_{k+1} ≤ ε`
 after `κ^E log(max(1, |log ε|)) + κ^F` successful iterations (5.3.17) and after
 `κ^B log(max(1, |log ε|)) + κ^C` iterations (5.3.16), with `κ^E = 1/(log μ - log ν)`,
 `κ^F = superlinearCountConst c (ν/μ) Γ_0`, `κ^B = κR κ^E`, `κ^C = κR κ^F + κA`. Moreover
 (5.3.18)–(5.3.19)
 some successful `k` has `ψ(x_{k+1}) ≤ ε` with
-`|𝒮_k| ≤ κ^E log(max(1, |log(κν ε^ν)|)) + κ^F + 1` and `k ≤ κR (that bound) + κA`. -/
-theorem theorem_5_3_3 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν < μ)
-    (hΓ0 : 0 < f (x 0) - fstar) :
+`|𝒮_k| ≤ κ^E log(max(1, |log(κν ε^ν)|)) + κ^F + 1` and `k ≤ κR (that bound) + κA`. (The book
+assumes `Γ_0 > 0`; when `Γ_0 = 0` every gap vanishes and the first successful iteration
+satisfies the measure bound.) -/
+theorem theorem_5_3_3 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν < μ) :
     (∀ η, 0 < η → ∃ K, ∀ k ≥ K, S k → f (x (k + 1)) - fstar ≤ η * (f (x k) - fstar)) ∧
     (∀ ε, 0 < ε → ∀ k, 1 / (Real.log μ - Real.log ν) * Real.log (max 1 |Real.log ε|) +
         superlinearCountConst (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) ≤
@@ -333,6 +357,21 @@ theorem theorem_5_3_3 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
   have hν := h.nu_pos
   have hτ0 : 0 < ν / μ := div_pos hν hμ
   have hτ1 : ν / μ < 1 := (div_lt_one hμ).2 hνμ
+  rcases (h.gap.nonneg 0).lt_or_eq with hΓ0 | hΓ0
+  swap
+  · -- the degenerate case `Γ_0 = 0`
+    have hz := h.gap_eq_zero hΓ0.symm
+    refine ⟨(lemma_5_3_1 h).2.2.1 hνμ, fun ε hε k _ => by rw [hz]; exact hε.le,
+      fun ε hε k _ => by rw [hz]; exact hε.le, fun ε hε => ?_⟩
+    obtain ⟨k, hk, hψ, hcard, hkle⟩ := h.exists_measure_le_of_gap_zero hΓ0.symm hε.le
+    have hB : 0 ≤ 1 / (Real.log μ - Real.log ν) * Real.log (max 1 |Real.log (κν * ε ^ ν)|) +
+        superlinearCountConst (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) :=
+      add_nonneg (mul_nonneg (div_nonneg zero_le_one (sub_nonneg.2
+        (Real.log_le_log hν hνμ.le))) (Real.log_nonneg (le_max_left _ _)))
+        (superlinearCountConst_nonneg h.c_pos.le hτ0 hτ1.le (h.gap.nonneg 0))
+    have hc : ((successSet S k).card : ℝ) ≤ 1 := by exact_mod_cast hcard
+    refine ⟨k, hk, hψ, by linarith, hkle.trans ?_⟩
+    nlinarith [h.one_le_kappaR]
   set c := κν / κψ ^ (ν / μ) with hc_def
   set Γ0 := f (x 0) - fstar with hΓ0_def
   set κF := superlinearCountConst c (ν / μ) Γ0 with hκF
@@ -376,15 +415,16 @@ theorem theorem_5_3_3 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
   have := mul_le_mul_of_nonneg_left hb (by linarith [h.one_le_kappaR] : (0 : ℝ) ≤ κR)
   linarith
 
-/-- **Theorem 5.3.4** ([cartis2022evaluation], `ν = μ`): under the standing hypotheses of §5.3.2
-with `Γ_0 > 0`, the gaps converge linearly with factor `(1 + κν/κψ)^{-1}` along the successful
+/-- **Theorem 5.3.4** ([cartis2022evaluation], `ν = μ`): under the standing hypotheses of §5.3.2,
+the gaps converge linearly with factor `(1 + κν/κψ)^{-1}` along the successful
 iterations, and for every `ε > 0`, `Γ_{k+1} ≤ ε` after `κ^E |log ε| + κ^F` successful iterations
 (5.3.21) and after `κR κ^E |log ε| + κR κ^F + κA` iterations (5.3.20), with
 `κ^E = 1/log(1 + κν/κψ)` and `κ^F = log Γ_0 / log(1 + κν/κψ) + 1`. Moreover (5.3.22)–(5.3.23)
 some successful `k` has `ψ(x_{k+1}) ≤ ε` with
-`|𝒮_k| ≤ max(ν κ^E |log ε| + κ^E |log κν| + κ^F, 1) + 1` and `k ≤ κR (that bound) + κA`. -/
-theorem theorem_5_3_4 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν = μ)
-    (hΓ0 : 0 < f (x 0) - fstar) :
+`|𝒮_k| ≤ max(ν κ^E |log ε| + κ^E |log κν| + κ^F, 1) + 1` and `k ≤ κR (that bound) + κA`.
+(The book assumes `Γ_0 > 0`; when `Γ_0 = 0` every gap vanishes, the bounds hold with the
+convention `log 0 = 0`, and the first successful iteration satisfies the measure bound.) -/
+theorem theorem_5_3_4 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν = μ) :
     (∀ k, S k → f (x (k + 1)) - fstar ≤ (1 + κν / κψ)⁻¹ * (f (x k) - fstar)) ∧
     (∀ ε, 0 < ε → ∀ k, 1 / Real.log (1 + κν / κψ) * |Real.log ε| +
         (Real.log (f (x 0) - fstar) / Real.log (1 + κν / κψ) + 1) ≤ (successSet S k).card →
@@ -400,6 +440,19 @@ theorem theorem_5_3_4 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
           (1 / Real.log (1 + κν / κψ) * |Real.log κν| +
             (Real.log (f (x 0) - fstar) / Real.log (1 + κν / κψ) + 1))) 1 + 1) + κA) := by
   have hμ := h.mu_pos
+  rcases (h.gap.nonneg 0).lt_or_eq with hΓ0 | hΓ0
+  swap
+  · -- the degenerate case `Γ_0 = 0`
+    have hz := h.gap_eq_zero hΓ0.symm
+    refine ⟨(lemma_5_3_1 h).2.2.2.1 hνμ, fun ε hε k _ => by rw [hz]; exact hε.le,
+      fun ε hε k _ => by rw [hz]; exact hε.le, fun ε hε => ?_⟩
+    obtain ⟨k, hk, hψ, hcard, hkle⟩ := h.exists_measure_le_of_gap_zero hΓ0.symm hε.le
+    have hc : ((successSet S k).card : ℝ) ≤ 1 := by exact_mod_cast hcard
+    have hm := le_max_right (ν * (1 / Real.log (1 + κν / κψ)) * |Real.log ε| +
+      (1 / Real.log (1 + κν / κψ) * |Real.log κν| +
+        (Real.log (f (x 0) - fstar) / Real.log (1 + κν / κψ) + 1))) 1
+    refine ⟨k, hk, hψ, by linarith, hkle.trans ?_⟩
+    nlinarith [h.one_le_kappaR]
   have hτ : ν / μ = 1 := by rw [hνμ, div_self hμ.ne']
   have hc : κν / κψ ^ (ν / μ) = κν / κψ := by rw [hτ, Real.rpow_one]
   have hcpos : 0 < κν / κψ := hc ▸ h.c_pos
@@ -465,17 +518,18 @@ theorem theorem_5_3_4 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
   linarith
 
 
-/-- **Theorem 5.3.5** ([cartis2022evaluation], `ν > μ`): under the standing hypotheses of §5.3.2
-with `Γ_0 > 0`, with `α = (ν - μ)/μ`, `c = κν/κψ^{ν/μ}` and
+/-- **Theorem 5.3.5** ([cartis2022evaluation], `ν > μ`): under the standing hypotheses of §5.3.2,
+with `α = (ν - μ)/μ`, `c = κν/κψ^{ν/μ}` and
 `D = min(Γ_0^{-α} (2^α - 1), min(1, α) c/2)` (corrected (B.5.15) with `β = 1/2`, `D = c κdom`):
 the gaps converge sublinearly, `Γ_{k+1} ≤ (Γ_0^{-α} + D |𝒮_k|)^{-1/α}`; for every `ε > 0`,
 `Γ_{k+1} ≤ ε` after `κ^E ε^{-α} + κ^F` successful iterations (5.3.25) and after
 `κR κ^E ε^{-α} + κR κ^F + κA` iterations (5.3.24), with `κ^E = 1/D` and `κ^F = -κ^E Γ_0^{-α}`;
 the measures `ψ(x_{k+1})`, `k ∈ 𝒮`, converge to zero; and (5.3.26)–(5.3.27) some successful `k`
 has `ψ(x_{k+1}) ≤ ε` with `|𝒮_k| ≤ 2M + 2` and `k ≤ κR (2M + 2) + κA`,
-`M = D^{-μ/ν} κν^{-(ν-μ)/ν} ε^{-(ν-μ)}` (corrected halving argument). -/
-theorem theorem_5_3_5 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : μ < ν)
-    (hΓ0 : 0 < f (x 0) - fstar) :
+`M = D^{-μ/ν} κν^{-(ν-μ)/ν} ε^{-(ν-μ)}` (corrected halving argument). (The book assumes
+`Γ_0 > 0`; when `Γ_0 = 0` every gap vanishes, the bounds hold with the convention `0^{-α} = 0`
+(so `D = 0`), and the first successful iteration satisfies the measure bound.) -/
+theorem theorem_5_3_5 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : μ < ν) :
     (∀ k, f (x (k + 1)) - fstar ≤ ((f (x 0) - fstar) ^ (-((ν - μ) / μ)) +
       min ((f (x 0) - fstar) ^ (-((ν - μ) / μ)) * (2 ^ ((ν - μ) / μ) - 1))
         (min 1 ((ν - μ) / μ) * (κν / κψ ^ (ν / μ)) / 2) * (successSet S k).card) ^
@@ -505,6 +559,32 @@ theorem theorem_5_3_5 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (h�
   have hα := sub_div_self_eq (ν := ν) hμ.ne'
   have hαpos : 0 < (ν - μ) / μ := div_pos (by linarith) hμ
   have hτ : 1 < ν / μ := (one_lt_div hμ).2 hνμ
+  rcases (h.gap.nonneg 0).lt_or_eq with hΓ0 | hΓ0
+  swap
+  · -- the degenerate case `Γ_0 = 0`
+    have hz := h.gap_eq_zero hΓ0.symm
+    have hD : 0 ≤ min ((f (x 0) - fstar) ^ (-((ν - μ) / μ)) * (2 ^ ((ν - μ) / μ) - 1))
+        (min 1 ((ν - μ) / μ) * (κν / κψ ^ (ν / μ)) / 2) := by
+      rw [← hΓ0, Real.zero_rpow (neg_ne_zero.2 hαpos.ne'), zero_mul]
+      exact le_min le_rfl (div_nonneg (mul_nonneg (le_min zero_le_one hαpos.le) h.c_pos.le)
+        zero_le_two)
+    refine ⟨fun k => ?_, fun ε hε k _ => by rw [hz]; exact hε.le,
+      fun ε hε k _ => by rw [hz]; exact hε.le, fun ε hε => ?_, fun ε hε => ?_⟩
+    · rw [hz]
+      refine Real.rpow_nonneg (add_nonneg ?_ (mul_nonneg hD (Nat.cast_nonneg _))) _
+      rw [← hΓ0, Real.zero_rpow (neg_ne_zero.2 hαpos.ne')]
+    · have hεν : 0 < κν * ε ^ ν := mul_pos h.kappaNu_pos (Real.rpow_pos_of_pos hε _)
+      obtain ⟨K, hK⟩ := eventually_atTop.1 ((tendsto_order.1 (lemma_5_3_1 h).2.1).2 _ hεν)
+      exact ⟨K, fun k hk hSk => h.measure_le hSk hε.le (hK k hk).le⟩
+    · obtain ⟨k, hk, hψ, hcard, hkle⟩ := h.exists_measure_le_of_gap_zero hΓ0.symm hε.le
+      have hc : ((successSet S k).card : ℝ) ≤ 1 := by exact_mod_cast hcard
+      have hM : 0 ≤ min ((f (x 0) - fstar) ^ (-((ν - μ) / μ)) * (2 ^ ((ν - μ) / μ) - 1))
+          (min 1 ((ν - μ) / μ) * (κν / κψ ^ (ν / μ)) / 2) ^ (-μ / ν) *
+            κν ^ (-(ν - μ) / ν) * ε ^ (-(ν - μ)) :=
+        mul_nonneg (mul_nonneg (Real.rpow_nonneg hD _) (Real.rpow_nonneg h.kappaNu_pos.le _))
+          (Real.rpow_nonneg hε.le _)
+      refine ⟨k, hk, hψ, by linarith, hkle.trans ?_⟩
+      nlinarith [h.one_le_kappaR]
   set α := (ν - μ) / μ with hαdef
   set c := κν / κψ ^ (ν / μ) with hcdef
   set Γ0 := f (x 0) - fstar with hΓ0def
@@ -1111,7 +1191,7 @@ theorem theorem_5_3_10 {ℓ p : ℕ} (hℓ2 : 2 ≤ ℓ) (hℓp : ℓ ≤ p)
   set κE := 1 / (Real.log ((ℓ : ℝ) / (ℓ - 1)) - Real.log (((p : ℝ) + 1) / p))
   have hκE : 0 < κE := one_div_pos.2 (sub_pos.2 (Real.log_lt_log (by positivity) hνμ))
   rcases (h.gap.nonneg 0).lt_or_eq with hΓ0 | hΓ0
-  · obtain ⟨hsup, hcount, -, -⟩ := theorem_5_3_3 h hνμ hΓ0
+  · obtain ⟨hsup, hcount, -, -⟩ := theorem_5_3_3 h hνμ
     rw [sub_zero] at hcount
     -- the counts for `‖r‖`
     have hcount' : ∀ ε₀, 0 < ε₀ → ε₀ < 1 → ∀ k,

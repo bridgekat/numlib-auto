@@ -216,9 +216,10 @@ private theorem rpow_mul_rpow_le {R a b : ℝ} (hR : 0 ≤ R) (ha : 0 < a) :
   · rw [Real.rpow_add hR]
   · rw [← hR, Real.zero_rpow ha.ne', zero_mul]; exact Real.rpow_nonneg le_rfl _
 
-/-- `1/κ_{r1} = 2^i/β^{(ℓ-1)(p+1)/p} κ^S_{ARp1CC}`, the book's form of the second entry of
+/-- `1/κ_{r1} = 2^i/β^{(ℓ-1)(p+1)/p} κ^S_{ARp1CC}` with `κ_{r1} = κ_{1,CC} β^{(ℓ-1)(p+1)/p}/2^i`,
+the book's form of the second entry of
 `κ^S_{ARpLE,1}`. -/
-theorem one_div_kappaR1 (hL : 0 ≤ L) {β : ℝ} (hβ : 0 < β) (i : ℕ) :
+theorem one_div_kappa1CC_mul_rpow_div_two_pow (hL : 0 ≤ L) {β : ℝ} (hβ : 0 < β) (i : ℕ) :
     1 / (kappa1CC P L p * β ^ (((ℓ : ℝ) - 1) * (((p : ℝ) + 1) / p)) / 2 ^ i) =
       2 ^ i / β ^ (((ℓ : ℝ) - 1) * (((p : ℝ) + 1) / p)) * kappaSARp1CC P L p := by
   have h1 := kappa1CC_mul_kappaSARp1CC (P := P) hL p
@@ -228,6 +229,9 @@ theorem one_div_kappaR1 (hL : 0 ≤ L) {β : ℝ} (hβ : 0 < β) (i : ℕ) :
     rw [eq_div_iff this.ne', mul_comm]; exact h1
   rw [hS]
   field_simp
+
+@[deprecated one_div_kappa1CC_mul_rpow_div_two_pow (since := "2026-10-26")]
+alias one_div_kappaR1 := one_div_kappa1CC_mul_rpow_div_two_pow
 
 /-- **Theorem 6.3.1** ([cartis2022evaluation]): let `p ≥ 1`, `ℓ ≥ 2` and `i ≥ 0` be integers with
 `ι₁ = (2^i - 1)/2^i - (ℓ - 1)/p ≥ 0` (which holds under (5.1.38) or (5.1.39)), `β ∈ (0, 1)`,
@@ -257,7 +261,7 @@ theorem theorem_6_3_1 {i : ℕ} (hp : 1 ≤ p) (hℓ : 2 ≤ ℓ)
           max (‖r (x 0)‖ ^ (1 / 2 ^ i : ℝ)) (‖r (x 0)‖ ^ (1 - ((ℓ : ℝ) - 1) / p)) /
           min (ε₀ ^ (1 / 2 ^ i : ℝ)) (ε₁ ^ (((p : ℝ) + 1) / p)) + 2 := by
   have hL := hΦ.nonneg
-  rw [← one_div_kappaR1 (ℓ := ℓ) hL hβ0 i]
+  rw [← one_div_kappa1CC_mul_rpow_div_two_pow (ℓ := ℓ) hL hβ0 i]
   set α : ℝ := 1 / 2 ^ i with hαdef
   have hα : 0 < α := by positivity
   set R := ‖r (x 0)‖ with hRdef

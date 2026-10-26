@@ -41,21 +41,15 @@ theorem eq_A_35 {δ : ℝ} (h1 : 1 ≤ δ) (j : ℕ) :
     ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) ≤ 2 * δ ^ j :=
   sum_pow_div_factorial_le_two_mul_pow h1 j
 
-/-- `∑_{ℓ=j}^p 1/(ℓ-j)! ≤ e`: a partial sum of the exponential series at `1`. -/
-theorem sum_inv_factorial_sub_le_exp_one (j p : ℕ) :
-    ∑ ℓ ∈ Icc j p, 1 / ((ℓ - j)! : ℝ) ≤ Real.exp 1 := by
-  have e : ∑ ℓ ∈ Icc j p, 1 / ((ℓ - j)! : ℝ) = ∑ i ∈ range (p + 1 - j), 1 ^ i / (i ! : ℝ) := by
-    rw [← Ico_add_one_right_eq_Icc, sum_Ico_eq_sum_range]
-    simp
-  rw [e]
-  exact Real.sum_le_exp_of_nonneg zero_le_one _
+@[deprecated _root_.sum_inv_factorial_sub_le_exp_one (since := "2026-10-26")]
+alias sum_inv_factorial_sub_le_exp_one := _root_.sum_inv_factorial_sub_le_exp_one
 
 /-- **(A.36)** of [cartis2022evaluation] (the case `δ = 1`): for `j ≤ p`,
 `∑_{ℓ=1}^j 1/ℓ! ≤ 2`, `∑_{ℓ=j}^p 1/(ℓ-j)! < 3` and `∑_{ℓ=j+1}^{p+1} 1/ℓ! ≤ 2/j!`. -/
 theorem eq_A_36 {j p : ℕ} (_hjp : j ≤ p) :
     ∑ ℓ ∈ Icc 1 j, 1 / (ℓ ! : ℝ) ≤ 2 ∧ ∑ ℓ ∈ Icc j p, 1 / ((ℓ - j)! : ℝ) < 3 ∧
       ∑ ℓ ∈ Icc (j + 1) (p + 1), 1 / (ℓ ! : ℝ) ≤ 2 / (j ! : ℝ) := by
-  refine ⟨?_, (sum_inv_factorial_sub_le_exp_one j p).trans_lt ?_, ?_⟩
+  refine ⟨?_, (_root_.sum_inv_factorial_sub_le_exp_one j p).trans_lt ?_, ?_⟩
   · simpa using sum_pow_div_factorial_le_two_mul zero_le_one le_rfl j
   · exact Real.exp_one_lt_d9.trans (by norm_num)
   · simpa using sum_pow_div_factorial_Icc_succ_le zero_le_one le_rfl j p

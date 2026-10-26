@@ -17,7 +17,7 @@ is a pair `⟨n, f⟩ : Σ n, ℝⁿ → ℝ`. Coordinates are `0`-based: the bo
 `x ⟨j - 1, _⟩`, and `e_j` is `EuclideanSpace.single j 1`.
 
 * `functionClass Δ L p` — the class `𝓕(Δ, p)` (§4.2.1.1), with the Lipschitz constant `L` of
-  `∇^p f` explicit.
+  `∇^p f` explicit; its members are `C^∞`, as in the book (footnote 29).
 * `methodClassM p`, `methodClassZR p` — the classes `𝓜(p)` and `𝓜_ZR(p)` (§4.2.1.2, (4.2.1)) of
   deterministic `p`-th order methods starting at `x₀ = 0` (one method in every dimension, whose
   iterates are functions of `f(x_i), ∇f(x_i), …, ∇^p f(x_i)` at the previous iterates).
@@ -53,11 +53,10 @@ is a pair `⟨n, f⟩ : Σ n, ℝⁿ → ℝ`. Coordinates are `0`-based: the bo
   `L_{f,p} = max(1, L)` and is stated with an integer part. The upper bound scales like
   `Δ L^{(p+1)/p}` and the lower bound (4.2.7) like `Δ L^{1/p}`, so only the order in `ε` is
   tight; this is what `theorem_4_2_6_ii` states.
-* Members of `𝓕(Δ, p)` are assumed `C^∞` (footnote 29), and Theorem 4.2.4 and the orthogonal
-  invariance of `𝓕(Δ, p)` (footnote 30) assume `L ≥ 0`. A zero-respecting method is required to
-  keep `[x_{k+1}]_j = 0` when `e_j` is a null direction of all `∇^q f(x_i)` (the multilinear map
-  vanishes whenever one argument is `e_j`); for the symmetric derivatives of `C^p` functions this
-  is the book's `∇^q f(x_i) e_j = 0`.
+* Theorem 4.2.4 and the orthogonal invariance of `𝓕(Δ, p)` (footnote 30) assume `L ≥ 0`.
+* A zero-respecting method is required to keep `[x_{k+1}]_j = 0` when `e_j` is a null direction
+  of all `∇^q f(x_i)` (the multilinear map vanishes whenever one argument is `e_j`); for the
+  symmetric derivatives of `C^p` functions this is the book's `∇^q f(x_i) e_j = 0`.
 * Lemmas 4.2.2, 4.2.3 and Theorem 4.2.4 are stated without the unused hypotheses `ε > 0`,
   `p ≥ 1` and (for Lemma 4.2.2) `f ∈ 𝓕(Δ, p)`. Lemma 4.2.3 cites (4.2.3) for `#_ε`; it is
   (4.2.2).

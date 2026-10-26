@@ -363,12 +363,12 @@ end Lemmas
 /-! ### Theorem 2.4.5 -/
 
 /-- **Theorem 2.4.5** of [cartis2022evaluation] (sharpness of AR1). For all AR1 constants there are
-`L ≥ 1` and `f_low` such that for every `ε ∈ (0,1)` with `k_ε = ε⁻²` an integer there are
+`L ≥ 1` and `f_low` such that for every `ε ∈ (0,1]` with `k_ε = ε⁻²` an integer there are
 `f : ℝ¹ → ℝ` satisfying f.Bb and f.gL and an AR1 run from `x₀ = 0` with `σ_k = σ₀` for all `k`
 and `ρ_k = 1` before termination, which terminates exactly at iteration `k_ε`, after `k_ε + 1`
 evaluations of `f` and of `∇f`. (The data of Theorem 2.2.3 with `t_ini = σ₀⁻¹`.) -/
 theorem theorem_2_4_5 (P : ARParams) :
-    ∃ L flow : ℝ, 1 ≤ L ∧ ∀ (ε : ℝ) (kε : ℕ), 0 < ε → ε < 1 → (kε : ℝ) * ε ^ 2 = 1 →
+    ∃ L flow : ℝ, 1 ≤ L ∧ ∀ (ε : ℝ) (kε : ℕ), 0 < ε → ε ≤ 1 → (kε : ℝ) * ε ^ 2 = 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, AssumptionBb f flow ∧ AssumptionGL f L ∧
         ∃ (x s : ℕ → EuclideanSpace ℝ (Fin 1)) (σ : ℕ → ℝ), x 0 = 0 ∧
           algorithm_2_4_1 f P ε x s σ ∧ (∀ k, σ k = P.σ₀) ∧
@@ -380,7 +380,7 @@ theorem theorem_2_4_5 (P : ARParams) :
   have ht : 0 < t := inv_pos.2 P.σ₀_pos
   obtain ⟨L, flow, hL, H⟩ := exists_slow_example ht
   refine ⟨L, flow, hL, fun ε kε hε hε1 hkε => ?_⟩
-  obtain ⟨f, hb, hgl, hfk⟩ := H ε kε hε hε1.le hkε
+  obtain ⟨f, hb, hgl, hfk⟩ := H ε kε hε hε1 hkε
   set x : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => slowX t ε kε k • e₀
   set s : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => -(P.σ₀⁻¹ • gradient f (x k))
   have hhit : IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε) kε :=

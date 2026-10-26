@@ -12,6 +12,17 @@ The inequality behind the lemma is the backbone `neg_add_sqrt_sq_sub_sq_ge`, whi
 the boundary cases `ω = 0` and `ω = ε` needed in the proof of Lemma 7.2.3 (where `ω ∈ [0, ε₀]`);
 the lemma as printed assumes `0 < ω < ε`. The book's KKT-based proof is replaced by an elementary
 monotonicity argument.
+
+## Main results
+
+* `psiB71` — the objective of (B.7.1);
+* `eq_of_neg_add_sqrt_sq_sub_sq_eq` — the minimum value is attained only at `(ω, 0)`;
+* `lemma_B_7_1` — Lemma B.7.1.
+
+## Deviations from the book
+
+* The book speaks of "the" global minimizer without proving uniqueness; `lemma_B_7_1` also
+  states and proves that `(ω, 0)` is the only minimizer.
 -/
 
 namespace CartisGouldToint.AppendixB

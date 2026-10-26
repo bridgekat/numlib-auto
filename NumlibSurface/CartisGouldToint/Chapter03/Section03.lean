@@ -78,6 +78,62 @@ theorem ar2Model_apply (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSp
   rw [ar2Model, regularizedModel_def, ← taylorPolynomial_eq_taylorSum]
   norm_num [Nat.factorial]
 
+section AR2Model
+
+variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
+
+/-- The derivative of the AR2 model (3.3.2): `∇m(s) = ∇f(x) + ∇²f(x) s + σ/2 ‖s‖ s`. -/
+theorem hasFDerivAt_ar2Model (hf : ContDiffAt ℝ 2 f x) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
+    HasFDerivAt (ar2Model f x σ)
+      (innerSL ℝ (gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s)) s := by
+  have heq : ar2Model f x σ =
+      fun s => f x + regModel (gradient f x) (hessianOperator f x) (σ / 2) 3 s := by
+    funext s
+    exact regularizedModel_two_eq_regModel hf σ s
+  rw [heq]
+  refine ((hasFDerivAt_regModel (g := gradient f x) (hessianOperator_isSymmetric hf) (σ / 2)
+    (by norm_num : (1 : ℝ) < 3) s).const_add (f x)).congr_fderiv ?_
+  norm_num
+
+/-- The norm of the AR2 model gradient. -/
+theorem norm_fderiv_ar2Model (hf : ContDiffAt ℝ 2 f x) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
+    ‖fderiv ℝ (ar2Model f x σ) s‖ =
+      ‖gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s‖ := by
+  rw [(hasFDerivAt_ar2Model hf σ s).fderiv, innerSL_apply_norm]
+
+/-- The second-order Taylor decrement in inner-product form:
+`T_{f,2}(x, 0) - T_{f,2}(x, s) = -⟨∇f(x), s⟩ - ½ ⟨s, ∇²f(x) s⟩`. -/
+theorem taylorDecrement_two_eq (hf : ContDiffAt ℝ 2 f x) (s : EuclideanSpace ℝ (Fin n)) :
+    (ftaylorSeries ℝ f x).taylorDecrement 2 s =
+      -⟪gradient f x, s⟫ - 1 / 2 * ⟪s, hessianOperator f x s⟫ := by
+  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
+    taylorPolynomial_zero_right, taylorPolynomial_two_eq_quadModel hf, quadModel_def]
+  ring
+
+/-- `f(x) - (T_p(x, 0) - T_p(x, s)) = T_p(x, s)`. -/
+theorem sub_taylorDecrement_eq (p : ℕ) (s : EuclideanSpace ℝ (Fin n)) :
+    f x - (ftaylorSeries ℝ f x).taylorDecrement p s = taylorPolynomial f p x s := by
+  simp only [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
+    taylorPolynomial_zero_right]
+  ring
+
+/-- The Rayleigh-quotient bound `λ_min[∇²f(x)] ‖s‖² ≤ ⟨s, ∇²f(x) s⟩`. -/
+theorem hessianMinEig_mul_le_inner (hf : ContDiffAt ℝ 2 f x) (s : EuclideanSpace ℝ (Fin n)) :
+    Chapter01.hessianMinEig f x * ‖s‖ ^ 2 ≤ ⟪s, hessianOperator f x s⟫ := by
+  rw [inner_hessianOperator_apply hf, show (![s, s] : Fin 2 → _) = fun _ => s by
+    funext i; fin_cases i <;> rfl]
+  exact minCurvature_mul_norm_sq_le (iteratedFDeriv ℝ 2 f x) s
+
+/-- `⟨∇m(s), s⟩ = ⟨∇f(x), s⟩ + ⟨s, ∇²f(x) s⟩ + σ/2 ‖s‖³`. -/
+theorem inner_ar2ModelGrad_self (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
+    ⟪gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s, s⟫ =
+      ⟪gradient f x, s⟫ + ⟪s, hessianOperator f x s⟫ + σ / 2 * ‖s‖ ^ 3 := by
+  rw [inner_add_left, inner_add_left, real_inner_smul_left, real_inner_self_eq_norm_sq,
+    real_inner_comm s (hessianOperator f x s)]
+  ring
+
+end AR2Model
+
 /-- Step 2 of Algorithm 3.3.1: the step decreases the model, `m(s) < m(0)`, satisfies the
 first-order accuracy (3.3.5) `‖∇m(s)‖ ≤ θ₁/2 ‖s‖²` and, if `ε₂ < ∞`, the second-order accuracy
 (3.3.6) `λ_min[∇²m(s)] ≥ -θ₂ ‖s‖`. -/
@@ -241,47 +297,53 @@ theorem kappaSAR2_pos {P : AR2Params} {L : ℝ} (hL : 0 ≤ L) : 0 < kappaSAR2 P
   have : 0 < L + P.θ₁ + sigmaMaxAR2 P L := by linarith
   positivity
 
-/-- The decrease at a successful AR2 iteration `k` with `‖∇f(x_{k+1})‖ ≥ ε₁`:
-`f(x_k) - f(x_{k+1}) ≥ ε₁^{3/2}/κ^S_AR2`. -/
-theorem ar2_decrease_first (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ)
+/-- The decrease at a successful AR2 iteration `k` with `‖∇f(x_{k+1})‖ ≥ ζ`, for any tolerance
+`ζ > 0`: `f(x_k) - f(x_{k+1}) ≥ ζ^{3/2}/κ^S_AR2` (the argument of Lemma 3.3.4). -/
+theorem ar2_decrease_of_le (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ)
     {k : ℕ} (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) (hs : P.η₁ ≤ taylorRatio f 2 x s k)
-    (hg : ε₁ ≤ ‖gradient f (x (k + 1))‖) :
-    ε₁ ^ (3 / 2 : ℝ) / kappaSAR2 P L₂ ≤ f (x k) - f (x (k + 1)) := by
+    {ζ : ℝ} (hζ : 0 < ζ) (hg : ζ ≤ ‖gradient f (x (k + 1))‖) :
+    ζ ^ (3 / 2 : ℝ) / kappaSAR2 P L₂ ≤ f (x k) - f (x (k + 1)) := by
   set C := L₂ + P.θ₁ + sigmaMaxAR2 P L₂
-  have hσ := h.sigma_pos fun j hj => hk j hj.le
   have hσmin := h.sigmaMin_le fun j hj => hk j hj.le
+  have hσ := h.sigma_pos fun j hj => hk j hj.le
   have hC : 0 < C := by
     have := hf.pos; have := P.θ₁_pos; have := arSigmaMax_pos P.ar L₂; simp only [C]; linarith
-  have hε := h.ε₁_pos
   have hη := P.η₁_pos
   have hsmin := P.σmin_pos
-  -- decrease from the model
-  have hm := (h.step hk).1
-  obtain ⟨-, hdec⟩ := h.run.sub_ge_of_succ_taylor (IsARRun.forall_le_not_stop_iff.2 hk) hm hs
+  obtain ⟨-, hdec⟩ :=
+    h.run.sub_ge_of_succ_taylor (IsARRun.forall_le_not_stop_iff.2 hk) (h.step hk).1 hs
   norm_num [Nat.factorial] at hdec
-  -- step length
   have h3 := lemma_3_3_3 hf h hk hs
-  have hs2 : 2 * ε₁ / C ≤ ‖s k‖ ^ 2 :=
+  have hs2 : 2 * ζ / C ≤ ‖s k‖ ^ 2 :=
     le_trans (by rw [div_mul_eq_mul_div]; gcongr) h3
-  have hs3 : (2 * ε₁ / C) ^ (3 / 2 : ℝ) ≤ ‖s k‖ ^ 3 := by
+  have hs3 : (2 * ζ / C) ^ (3 / 2 : ℝ) ≤ ‖s k‖ ^ 3 := by
     have : (‖s k‖ ^ 2) ^ (3 / 2 : ℝ) = ‖s k‖ ^ 3 := by
       rw [← Real.rpow_natCast, ← Real.rpow_mul (norm_nonneg _)]; norm_num
     rw [← this]
     exact Real.rpow_le_rpow (by positivity) hs2 (by norm_num)
-  have hsplit : (2 * ε₁ / C) ^ (3 / 2 : ℝ) =
-      2 ^ (3 / 2 : ℝ) * ε₁ ^ (3 / 2 : ℝ) / C ^ (3 / 2 : ℝ) := by
-    rw [Real.div_rpow (by positivity) hC.le, Real.mul_rpow (by norm_num) hε.le]
-  have key : ε₁ ^ (3 / 2 : ℝ) / kappaSAR2 P L₂ =
-      P.η₁ * (P.σmin / 6 * (2 * ε₁ / C) ^ (3 / 2 : ℝ)) := by
+  have hsplit : (2 * ζ / C) ^ (3 / 2 : ℝ) =
+      2 ^ (3 / 2 : ℝ) * ζ ^ (3 / 2 : ℝ) / C ^ (3 / 2 : ℝ) := by
+    rw [Real.div_rpow (by positivity) hC.le, Real.mul_rpow (by norm_num) hζ.le]
+  have key : ζ ^ (3 / 2 : ℝ) / kappaSAR2 P L₂ =
+      P.η₁ * (P.σmin / 6 * (2 * ζ / C) ^ (3 / 2 : ℝ)) := by
     rw [hsplit, kappaSAR2, show L₂ + P.θ₁ + sigmaMaxAR2 P L₂ = C from rfl]
     have : 0 < C ^ (3 / 2 : ℝ) := by positivity
     have : 0 < (2 : ℝ) ^ (3 / 2 : ℝ) := by positivity
     field_simp
   rw [key]
-  calc P.η₁ * (P.σmin / 6 * (2 * ε₁ / C) ^ (3 / 2 : ℝ)) ≤ P.η₁ * (σ k / 6 * ‖s k‖ ^ 3) := by
+  calc P.η₁ * (P.σmin / 6 * (2 * ζ / C) ^ (3 / 2 : ℝ)) ≤ P.η₁ * (σ k / 6 * ‖s k‖ ^ 3) := by
         gcongr
     _ ≤ _ := by linarith
 
+/-- The decrease at a successful AR2 iteration `k` with `‖∇f(x_{k+1})‖ ≥ ε₁`:
+`f(x_k) - f(x_{k+1}) ≥ ε₁^{3/2}/κ^S_AR2`. -/
+theorem ar2_decrease_first (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ)
+    {k : ℕ} (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) (hs : P.η₁ ≤ taylorRatio f 2 x s k)
+    (hg : ε₁ ≤ ‖gradient f (x (k + 1))‖) :
+    ε₁ ^ (3 / 2 : ℝ) / kappaSAR2 P L₂ ≤ f (x k) - f (x (k + 1)) :=
+  ar2_decrease_of_le hf h hk hs h.ε₁_pos hg
+
+/-- Before termination of AR2 with `ε₂ = ∞`, the gradient norm is at least `ε₁`. -/
 theorem le_norm_gradient_of_not_stopTest {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {y : EuclideanSpace ℝ (Fin n)} (h : ¬ stopTest f ε₁ none y) : ε₁ ≤ ‖gradient f y‖ := by
   rw [stopTest_none, not_le] at h

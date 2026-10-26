@@ -28,7 +28,8 @@ multilinear maps, `∇^j_s(‖s‖^{p+β})` is `iteratedFDeriv ℝ j (fun s ↦ 
   (`lemma_B_4_1_iii_false`): the derivative is larger in directions orthogonal to `s`. The book's
   value is the radial value and a lower bound (`lemma_B_4_1_iii_radial`), and the norm is
   `O(‖s‖^{β-1})` (`lemma_B_4_1_iii_bound`). For `β = 1`, the only case used in the book, (B.4.3)
-  holds (`lemma_B_4_1_iii`).
+  holds (`lemma_B_4_1_iii`). The counterexample needs `n ≥ 2`: for `n = 1` there is no direction
+  orthogonal to `s` and the radial value is the norm (this case is not formalized separately).
 * (B.4.1) and (B.4.2) hold for every `s`, including `s = 0`, as the book states. The convexity
   claims are proved for `s ≠ 0` (for `s = 0` only for `j ≤ p`, where the derivative vanishes) and
   for derivative orders `j ≤ p + 1`, a range the book leaves implicit.
@@ -89,26 +90,21 @@ theorem lemma_B_4_1_ii (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j ≤ p)
     rfl
   · exact iteratedFDeriv_normRpow_apply_self _ j hs
 
-/-- `∏_{i ≤ p} (p + β - i) = β (p+β)!`. -/
-theorem prod_fin_succ_eq_mul_holderFactorial (p : ℕ) (β : ℝ) :
-    ∏ i : Fin (p + 1), ((p : ℝ) + β - i) = β * holderFactorial p β := by
-  rw [Fin.prod_univ_eq_prod_range (fun i ↦ (p : ℝ) + β - i), Finset.prod_range_succ,
-    holderFactorial_eq_prod_range_mul (le_refl p) β, Nat.sub_self, holderFactorial_zero,
-    mul_one]
-  ring
+@[deprecated _root_.prod_fin_succ_eq_mul_holderFactorial (since := "2026-10-26")]
+alias prod_fin_succ_eq_mul_holderFactorial := _root_.prod_fin_succ_eq_mul_holderFactorial
 
 /-- **Lemma B.4.1, (B.4.3)** of [cartis2022evaluation], for `β = 1`: for `s ≠ 0`,
-`‖∇^{p+1}_s(‖s‖^{p+β})‖ = β (p+β)! ‖s‖^{β-1}`, that is, `‖∇^{p+1}_s ‖s‖^{p+1}‖ = (p+1)!`. For
-`β ∈ (0, 1)` the equality is false (`lemma_B_4_1_iii_false`). -/
-theorem lemma_B_4_1_iii (hβ : β = 1) {s : EuclideanSpace ℝ (Fin n)} (hs : s ≠ 0) :
-    ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s‖ =
-        β * holderFactorial p β * ‖s‖ ^ (β - 1) ∧
-      ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s‖ =
+`‖∇^{p+1}_s(‖s‖^{p+β})‖ = β (p+β)! ‖s‖^{β-1}` with `β = 1`, that is,
+`‖∇^{p+1}_s ‖s‖^{p+1}‖ = (p+1)!`. For `β ∈ (0, 1)` the equality is false
+(`lemma_B_4_1_iii_false`). -/
+theorem lemma_B_4_1_iii {s : EuclideanSpace ℝ (Fin n)} (hs : s ≠ 0) :
+    ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + 1)) s‖ =
+        1 * holderFactorial p 1 * ‖s‖ ^ ((1 : ℝ) - 1) ∧
+      ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + 1)) s‖ =
         ((p + 1)! : ℝ) := by
-  subst hβ
   have h := norm_iteratedFDeriv_normRpow (lam := (p : ℝ) + 1) (j := p + 1) (by push_cast; rfl) hs
   rw [← Fin.prod_univ_eq_prod_range (fun i ↦ (p : ℝ) + 1 - i),
-    prod_fin_succ_eq_mul_holderFactorial] at h
+    _root_.prod_fin_succ_eq_mul_holderFactorial] at h
   have he : (p : ℝ) + 1 - ((p + 1 : ℕ) : ℝ) = 1 - 1 := by push_cast; ring
   rw [he] at h
   refine ⟨h, ?_⟩
@@ -125,7 +121,7 @@ theorem lemma_B_4_1_iii_radial (β : ℝ) {s : EuclideanSpace ℝ (Fin n)} (hs :
         ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s‖ := by
   have h := iteratedFDeriv_normRpow_apply_unit ((p : ℝ) + β) (p + 1) hs
   have he : (p : ℝ) + β - ((p + 1 : ℕ) : ℝ) = β - 1 := by push_cast; ring
-  rw [prod_fin_succ_eq_mul_holderFactorial, he] at h
+  rw [_root_.prod_fin_succ_eq_mul_holderFactorial, he] at h
   refine ⟨h, ?_⟩
   rw [← h]
   refine (le_abs_self _).trans ?_
