@@ -135,6 +135,33 @@ theorem inner_euclideanOne (a b : ℝ) :
     (inner ℝ (euclideanOne a) (euclideanOne b) : ℝ) = a * b := by
   simp [PiLp.inner_apply, mul_comm]
 
+/-- On `ℝ¹`, `‖d‖ = |d₀|`. -/
+theorem EuclideanSpace.norm_eq_abs_fin_one (d : EuclideanSpace ℝ (Fin 1)) : ‖d‖ = |d 0| := by
+  rw [EuclideanSpace.norm_eq]
+  simp [Real.sqrt_sq_eq_abs]
+
+/-- On `ℝ¹`, a `k`-linear form has norm at most `|A[e]^k|`, `e = (1)`. -/
+theorem EuclideanSpace.norm_multilinear_fin_one_le {k : ℕ}
+    (A : ContinuousMultilinearMap ℝ (fun _ : Fin k => EuclideanSpace ℝ (Fin 1)) ℝ) :
+    ‖A‖ ≤ |A (fun _ => EuclideanSpace.single 0 1)| := by
+  refine ContinuousMultilinearMap.opNorm_le_bound (abs_nonneg _) fun v => ?_
+  have hv : v = fun i => v i 0 • EuclideanSpace.single (0 : Fin 1) (1 : ℝ) := by
+    funext i; ext l; fin_cases l; simp
+  rw [hv, A.map_smul_univ]
+  simp only [smul_eq_mul, norm_mul, Real.norm_eq_abs, Finset.abs_prod,
+    EuclideanSpace.norm_eq_abs_fin_one]
+  simp [mul_comm]
+
+/-- On `ℝ¹`, a linear form has norm at most `|L e|`, `e = (1)`. -/
+theorem EuclideanSpace.norm_clm_fin_one_le (L : EuclideanSpace ℝ (Fin 1) →L[ℝ] ℝ) :
+    ‖L‖ ≤ |L (EuclideanSpace.single 0 1)| := by
+  refine ContinuousLinearMap.opNorm_le_bound _ (abs_nonneg _) fun v => ?_
+  have hv : v = v 0 • EuclideanSpace.single (0 : Fin 1) (1 : ℝ) := by
+    ext l; fin_cases l; simp
+  rw [hv, L.map_smul]
+  simp only [smul_eq_mul, norm_mul, Real.norm_eq_abs, EuclideanSpace.norm_eq_abs_fin_one]
+  simp [mul_comm]
+
 variable (n : ℕ)
 
 /-- **Concatenation of `ℝ × ℝⁿ × ℝ` into `ℝⁿ⁺²`**: `(λ, x, μ) ↦ (λ, x₁, …, xₙ, μ)`, a linear

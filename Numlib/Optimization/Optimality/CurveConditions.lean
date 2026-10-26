@@ -701,6 +701,24 @@ theorem iteratedFDeriv_apply_diag_eq_of_poly {f : E → ℝ} {x d : E} {N : ℕ}
       rw [hα]
       ring) EventuallyEq.rfl
 
+/-- **Taylor decrements of a polynomial along a ray.** If `f` is `C^N` at `x` and
+`f(x + s d) = f(x) + ∑_{i=1}^N a_i s^i` for all `s`, then `ΔT_j(x, d) = -∑_{i=1}^j a_i` for
+`j ≤ N`. -/
+theorem taylorDecrement_eq_of_poly {g : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
+    (hg : ContDiffAt ℝ N g x)
+    (h : ∀ s : ℝ, g (x + s • d) = g x + ∑ i ∈ Finset.Icc 1 N, s ^ i * a i) {j : ℕ}
+    (hj : j ≤ N) :
+    (ftaylorSeries ℝ g x).taylorDecrement j d = -∑ i ∈ Finset.Icc 1 j, a i := by
+  rw [FormalMultilinearSeries.taylorDecrement_eq]
+  congr 1
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hi' := Finset.mem_Icc.1 hi
+  have := iteratedFDeriv_apply_diag_eq_of_poly hg (Filter.Eventually.of_forall h) i
+    (Finset.mem_Icc.2 ⟨hi'.1, hi'.2.trans hj⟩)
+  simp only [ftaylorSeries]
+  rw [this]
+  field_simp
+
 /-- **Taylor polynomials from an expansion along a ray.** If `f` is `C^N` at `x` and
 `f(x + t d) = f(x) + ∑_{i=1}^N a_i t^i + o(t^N)` as `t → 0⁺`, then for `p ≤ N`,
 `T_{f,p}(x, d) = f(x) + ∑_{i=1}^p a_i`. -/
