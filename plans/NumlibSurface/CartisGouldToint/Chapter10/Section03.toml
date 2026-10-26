@@ -1,53 +1,18 @@
 namespace = "CartisGouldToint.Chapter10"
-desc = '''
-§10.3 The trust-region case: monotonicity of the subspace solutions (Lemma 10.3.1), the residual
-bound (Theorem 10.3.2) and iteration count (Corollary 10.3.3), and the one-dimensional start.
-Throughout `g ≠ 0`, `Δ > 0`, `1 ≤ k ≤ gradeHM`, `sₖ = Qₖ s̄ₖ` with `s̄ₖ` a global minimizer of
-(10.1.5) and `λₖ` its multiplier.
-'''
+desc = '§10.3 Trust region on Krylov subspaces: Lemma 10.3.1, Theorem 10.3.2, Corollary 10.3.3.'
 
 [[node]]
 id = "lemma_10_3_1"
-kind = "theorem"
-desc = '''
-Lemma 10.3.1 (Nested subspace trust-region solutions norm increase). With `s*` a global solution
-of (8.1.2) and `λ*` its multiplier: `λₖ ≤ λℓ ≤ λ*` and `‖sₖ‖_M ≤ ‖sℓ‖_M ≤ ‖s*‖_M` for
-`1 ≤ k ≤ ℓ ≤ gradeHM`. Moreover `Tₖ + λₖ Iₖ` is positive definite (no hard case in the subspace),
-so `s̄ₖ` and `λₖ` are unique.
-'''
-deps = ["CartisGouldToint.Chapter10.algorithm_10_1_1_spec", "Subproblem.krylov_multiplier_mono_trustRegion", "Subproblem.krylov_no_hardCase"]
 source = "Cartis–Gould–Toint, Lemma 10.3.1"
 
 [[node]]
 id = "theorem_10_3_2"
-kind = "theorem"
-desc = '''
-Theorem 10.3.2 (Bound on the residual at the subspace minimizer). With `rₖ = g + (H + λₖ M) sₖ`
-(10.3.1): `‖rₖ‖_{M⁻¹} ≤ 2 ‖M⁻¹H‖ κₖ Δ ((√κₖ - 1)/(√κₖ + 1))^{k-1}`, `κₖ` from (10.2.8) for the
-trust-region multipliers.
-'''
-deps = ["lemma_10_3_1", "CartisGouldToint.Chapter10.conditionNumber_10_2_8", "Subproblem.krylov_residual_bound_trustRegion", "Subproblem.eigenvalues_scaledOp"]
 source = "Cartis–Gould–Toint, Theorem 10.3.2"
 
 [[node]]
 id = "corollary_10_3_3"
-kind = "theorem"
-desc = '''
-Corollary 10.3.3 (Iteration bound for the trust-region subspace approximation), corrected: for
-`ε > 0` the test (10.3.2) `‖rₖ‖_{M⁻¹} ≤ ε` holds for some
-`k ≤ min(⌈log(2‖M⁻¹H‖κ*Δ/ε) / log((√κ* + 1)/(√κ* - 1))⌉₊ + 1, gradeHM)` when `κ* > 1`, and some
-`k ≤ min(2, gradeHM)` when `κ* = 1` (`⌈·⌉₊` because the logarithm is negative when `ε` is large).
-'''
-deps = ["theorem_10_3_2", "Subproblem.krylov_iteration_bound_trustRegion"]
 source = "Cartis–Gould–Toint, Corollary 10.3.3"
 
 [[node]]
 id = "start_10_3"
-kind = "theorem"
-desc = '''
-End of §10.3: the one-dimensional trust-region problem `min {γ₁ s + ½ ρ₁ s² : |s| ≤ Δ}` (`γ₁ ≠ 0`)
-has solution `s̄₁ = -γ₁/ρ₁`, `λ₁ = 0` if `ρ₁ > 0` and `|γ₁/ρ₁| ≤ Δ`, and otherwise
-`s̄₁ = -(γ₁/|γ₁|) Δ`, `λ₁ = -ρ₁ + |γ₁|/Δ` (multiplier, not eigenvalue).
-'''
-deps = ["Subproblem.isMinOn_closedBall_iff"]
 source = "Cartis–Gould–Toint, §10.3"

@@ -137,4 +137,10 @@ theorem isRegularizationSolution_iff_scaled (hM : M.PosDef) {σ r : ℝ} :
   obtain ⟨u, rfl⟩ := (toScaled hM).surjective x
   exact h u
 
+/-- The scaled norm for `M = I` is the Euclidean norm. -/
+@[simp]
+theorem mNorm_one (x : EuclideanSpace ℝ (Fin n)) : mNorm 1 x = ‖x‖ := by
+  rw [mNorm, toEuclideanLin_one, LinearMap.id_apply, real_inner_self_eq_norm_sq,
+    Real.sqrt_sq (norm_nonneg _)]
+
 end CartisGouldToint.Chapter08
