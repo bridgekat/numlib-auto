@@ -1,3 +1,4 @@
+import Numlib.Optimization.Regularization.Convex.CorrectedDecrease
 import Numlib.Optimization.Regularization.Convex.TargetObstruction
 import Numlib.Optimization.Regularization.Convex.DerivativeComplexity
 import NumlibSurface.CartisGouldToint.Chapter06.Section01
@@ -299,5 +300,32 @@ theorem theorem_6_2_3_counterexample :
   exact euclidean_no_target hx
 
 end ThirdOrderTargetObstruction
+
+section CorrectedDerivativeDecrease
+open ConvexRegularization TaylorModel
+
+/-- **Corrected Lemma 6.2.2.** Every enabled first-, second- or third-order
+endpoint failure on the source model-restricted set gives the strict displayed
+decrease with the true penalty coefficient `eta1*sigmaMin/(p+1)!`. The remaining
+factor, exponent, actual model tests and endpoint sets are unchanged. Explicit
+enabled orders cover first-order `p=1` and second-order `p=2` modes as well. -/
+theorem lemma_6_2_2_corrected
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    {p : ℕ} {q : Fin 3} {f : E → ℝ} {C S : Set E} {P : DerivativeSettings p q}
+    {ε : Fin 3 → ℝ} {D : Data E} {N i : ℕ}
+    (h : DerivativeRun f C P ε D N)
+    (hS : IsOpen S) (hCS : C ⊆ S) (hC : Convex ℝ C) (hf : ContDiffOn ℝ p f S)
+    {L : ℝ} (hL : 0 ≤ L)
+    (hlip : ∀ y ∈ C, ∀ z ∈ C,
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f z‖ ≤ L * ‖y - z‖)
+    (hi : i < N) (hs : P.eta1 ≤ D.ratio i) (j : Fin 3) (hj : j ≤ q)
+    (hfail : ε j < tensorCriticality (iteratedFDeriv ℝ (j.val + 1) f (D.point (i + 1)))
+      (modelRestrictedDirections f p C (D.point i) (D.parameter i) (D.step i)
+        (P.fractions 0 * ε 0) (P.fractions 1 * ε 1) j)) :
+    derivativeDecreaseCoefficient P L j * ε j ^ (((p + 1 : ℕ) : ℝ) / (p - j.val : ℕ)) <
+      f (D.point i) - f (D.point (i + 1)) :=
+  h.successful_decrease_of_model_endpoint_failure hS hCS hC hf hL hlip hi hs j hj hfail
+
+end CorrectedDerivativeDecrease
 
 end CartisGouldToint

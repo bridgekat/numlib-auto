@@ -315,3 +315,13 @@ source = "Cartis, Gould and Toint, Theorem6.2.3 actual consistent-execution comp
 [[node]]
 id = "theorem_6_2_3_counterexample"
 source = "Cartis, Gould and Toint, Theorem6.2.3 literal independent constrained third-order output target and Algorithm6.2.1 Step2"
+
+[[node]]
+id = "lemma_6_2_2_corrected"
+source = "Full correction of Cartis–Gould–Toint Lemma6.2.2: true (p+1)! penalty coefficient at every enabled derivative order"
+
+[[node]]
+id = "theorem_6_2_3_corrected"
+kind = "theorem"
+desc = """A genuine repair must replace the infeasible independently-toleranced derivative-band third target and its model test, not merely assume consistent prefixes. Proposed robust target: true constrained Taylor criticalities through order3 with explicitly adaptive positive radii; corresponding model Taylor tests and feasible global model solves give attainable targets. Requires new full constrained all-order run/complexity plus step availability; exact-kernel-only replacement alone is insufficient because model/objective kernel transfer is discontinuous. OPEN until a full operational theorem is proved; theorem_6_2_3_execution is not this fix."""
+source = "Correction of Cartis–Gould–Toint theorem_6_2_3; changed hypotheses/formulas/algorithm are explicit in this specification"

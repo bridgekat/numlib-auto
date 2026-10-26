@@ -14,8 +14,8 @@ namespace ConvexRegularization
 open Set TaylorModel HighOrderRegularization EvaluationComplexity
 
 /-- The true decrease coefficient at each constrained derivative order. -/
-noncomputable def derivativeDecreaseCoefficient {p : ℕ}
-    (P : DerivativeSettings p 2) (L : ℝ) (j : Fin 3) : ℝ :=
+noncomputable def derivativeDecreaseCoefficient {p : ℕ} {q : Fin 3}
+    (P : DerivativeSettings p q) (L : ℝ) (j : Fin 3) : ℝ :=
   P.eta1 * P.sigmaMin / (p + 1).factorial * derivativeStepThreshold P L j ^
     (((p + 1 : ℕ) : ℝ) / (p - j.val : ℕ))
 
@@ -36,8 +36,8 @@ theorem derivativeStepThreshold_pos {p : ℕ} {q : Fin 3}
     (add_pos_of_nonneg_of_pos hL hc)
 
 /-- Each true factorial-normalized decrease coefficient is positive. -/
-theorem derivativeDecreaseCoefficient_pos {p : ℕ}
-    (P : DerivativeSettings p 2) {L : ℝ} (hL : 0 ≤ L) (j : Fin 3) :
+theorem derivativeDecreaseCoefficient_pos {p : ℕ} {q : Fin 3}
+    (P : DerivativeSettings p q) {L : ℝ} (hL : 0 ≤ L) (j : Fin 3) :
     0 < derivativeDecreaseCoefficient P L j :=
   mul_pos (div_pos (mul_pos P.eta1_pos P.sigmaMin_pos) (by positivity))
     (Real.rpow_pos_of_pos (derivativeStepThreshold_pos P hL j) _)
