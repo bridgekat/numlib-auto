@@ -587,4 +587,45 @@ theorem theorem_8_2_8 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0
   exact (toScaled hM).injective (eq_of_isMinOn_regModel_of_posDef hT hσ hr hmin hc
     ((isRegularizationSolution_iff_scaled hM).1 hu))
 
+/-! ### Sufficiency of the optimality conditions -/
+
+section Sufficiency
+
+/-- **Sufficiency of the multiplier conditions** for (8.1.2): a feasible step `s` with a multiplier
+`λ` (`IsTrustRegionKKT`) is a global minimizer of the trust-region subproblem. -/
+theorem isTrustRegionSolution_of_kkt (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam : ℝ}
+    (hΔ : 0 < Δ) {s : EuclideanSpace ℝ (Fin n)} (h : IsTrustRegionKKT g H M Δ s lam)
+    (hs : mNorm M s ≤ Δ) : IsTrustRegionSolution g H M Δ s := by
+  rw [isTrustRegionSolution_iff_scaled hM]
+  rw [mNorm_eq_norm_toScaled hM] at hs
+  exact ⟨hs, ((isTrustRegionKKT_iff_scaled hM hΔ).1 h).isMinOn (isSymmetric_scaledOp hH)⟩
+
+/-- **Sufficiency of the optimality conditions** for (8.1.3): if `(H + λ M) s = -g` with
+`λ = σ ‖s‖_M^{r-2}` and `H + λ M ⪰ 0`, then `s` is a global minimizer of the regularization
+subproblem. -/
+theorem isRegularizationSolution_of_shifted (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ}
+    (hσ : 0 < σ) (hr : 2 < r) {s : EuclideanSpace ℝ (Fin n)}
+    (h1 : toEuclideanLin (H + (σ * mNorm M s ^ (r - 2)) • M) s = -g)
+    (h2 : (H + (σ * mNorm M s ^ (r - 2)) • M).PosSemidef) :
+    IsRegularizationSolution g H M σ r s := by
+  rw [isRegularizationSolution_iff_scaled hM, isMinOn_regModel_iff (isSymmetric_scaledOp hH) hσ hr]
+  rw [mNorm_eq_norm_toScaled hM] at h1 h2
+  exact ⟨(add_smul_scaledOp_toScaled_eq_neg_iff _ g s).2 h1,
+    (posSemidef_add_smul_iff_isPositive _).1 h2⟩
+
+/-- A step with a multiplier `λ` for which `H + λ M` is positive definite is the unique global
+minimizer of the trust-region subproblem (8.1.2). -/
+theorem eq_of_isTrustRegionKKT_of_posDef (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam : ℝ}
+    (hΔ : 0 < Δ) {s : EuclideanSpace ℝ (Fin n)} (h : IsTrustRegionKKT g H M Δ s lam)
+    (hs : mNorm M s ≤ Δ) (hpd : (H + lam • M).PosDef) {u : EuclideanSpace ℝ (Fin n)}
+    (hu : IsTrustRegionSolution g H M Δ u) : u = s := by
+  have hT := isSymmetric_scaledOp (hM := hM) hH
+  obtain ⟨hun, humin⟩ := (isTrustRegionSolution_iff_scaled hM).1 hu
+  have hc := ((posDef_add_smul_iff_isSymmetricCoercive (hM := hM) lam).1 hpd).isCoercive
+  rw [mNorm_eq_norm_toScaled hM] at hs
+  exact (toScaled hM).injective (eq_of_isMinOn_closedBall_of_posDef hT
+    ((isTrustRegionKKT_iff_scaled hM hΔ).1 h) hs hc hun humin)
+
+end Sufficiency
+
 end CartisGouldToint.Chapter08

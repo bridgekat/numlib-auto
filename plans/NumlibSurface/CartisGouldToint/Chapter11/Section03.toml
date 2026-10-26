@@ -1,28 +1,10 @@
 namespace = "CartisGouldToint.Chapter11"
-desc = '''
-§11.3 Least-squares models `m(s) = ½‖r + J s‖²` (11.3.1), i.e. `g = Jᵀr`, `H = JᵀJ`: no hard case,
-`λₛ = 0`, and the augmented system (11.3.3). (The Krylov/LSQR remarks are not formalized.)
-'''
+desc = '§11.3 Least-squares models (11.3.1)–(11.3.3).'
 
 [[node]]
 id = "leastSquares_structure"
-kind = "theorem"
-desc = '''
-For `J : Matrix (Fin m) (Fin n) ℝ`, `r`, `M.PosDef`: (i) `m(s) = ½⟪r, r⟫ + ⟪Jᵀ r, s⟫ + ½⟪s, JᵀJ s⟫`
-(11.3.1); (ii) `JᵀJ + λM` is positive semidefinite for `λ ≥ 0`, so `λ₁ ≥ 0` and `λₛ = 0`; (iii)
-`Jᵀ r ∈ range (JᵀJ)`, so the hard case of Chapter 8 cannot occur (`multiplier_classification`
-case (b) is excluded), the trust-region solution is either interior (`λ* = 0`) or the unique root
-`λ* > 0` of the secular equation, and the regularization multiplier is the unique root in `(0, ∞)`
-when `Jᵀ r ≠ 0`.
-'''
-deps = ["CartisGouldToint.Chapter08.corollary_8_3_1", "CartisGouldToint.Chapter08.corollary_8_3_2", "Subproblem.multiplier_classification"]
 source = "Cartis–Gould–Toint, (11.3.1)–(11.3.2), §11.3"
 
 [[node]]
 id = "augmentedSystem_iff"
-kind = "theorem"
-desc = '''
-(11.3.3): for `λ` and `s`, `(JᵀJ + λM) s = -Jᵀ r` iff there is `z` with
-`[[λM, Jᵀ], [J, -I]] [s; z] = -[0; r]` (namely `z = J s + r`).
-'''
 source = "Cartis–Gould–Toint, (11.3.3)"
