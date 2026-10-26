@@ -34,12 +34,18 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
 * `IsInnerPhaseRun` — the INNER contract of Phase 2 (Lemmas 14.2.2–14.2.3 for `μ(·, t)`);
   `IsInnerCertified` — the case-(b) calls end with INNER's certificate (14.3.19), radii bounded
   below;
+* `TPqpSeq.InnerTest`, `IsInnerPhaseRunStrong` — INNER's own test (14.3.19) at the end of a call,
+  and the INNER contract with the decrease of Lemma 14.2.2 required unless that test holds;
 * `TPqpSeq.goodCount`, `IsBad`, `badCount`, `kbCount`, `funEvals`, `derivEvals`, `goodBound`;
 * `IsARqpSCOutput`, `IsARqpSCOutputCost`, `IsARqpSCCall` — INNER realized by ARqp-SC (with its
   evaluation counts); `arqpSCKappaDecr`, `arqpSCKappaUns`, `arqpSCKappaUnc`, `arqpSCKappaF`,
   `arqpSCKappaD`, `arqpSCPhase2M`, `arqpSCKappaRad`, `arqpSCKbDrop` — the explicit constants of
   its contracts; `arqpRowKappaDecr u`, `arqpRowKappaF u`, `arqpRowKappaD u`, `arqpRowPhase2M u` —
-  those of the ARqp-SC row of (14.2.12) in a radii mode `u`.
+  those of the ARqp-SC row of (14.2.12) in a radii mode `u`;
+* `IsARqpUnitOutputCost`, `IsARqpUnitCall` — INNER realized on `X = ℝⁿ` by an ARqp run of
+  Chapter 12 (`Chapter12.algorithm_12_2_2`) with unit radii (`q ≤ 2`), with the constants
+  `arqpUnitKappaUnc`, `unitKbDrop`;
+* `kbMargin` — the margin `θ(1 - θ)ε₀/(1 + θ)` of the case-(b) iterations when `β = θ`.
 
 ## Main results
 
@@ -50,10 +56,28 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   `lemma_14_3_8` and `theorem_14_3_9` (corrected, with the number of bad outer iterations as a
   parameter; its Phase-2 part is `IsTPqpGCPhase2.complexity`); `theorem_14_3_4_add` (additive
   per-call constants).
-* Bad outer iterations: under INNER's certificate (`IsInnerCertified`) and `β < θ`, every `𝒦_b`
-  iteration decreases the target by a fixed amount (`IsTPqpGCPhase2.target_drop_of_isKb`), so
-  `|𝒦_b| ≤ (f_up - f_low + 1)/τ` (`IsTPqpGCPhase2.kbCount_le`) and Theorem 14.3.9 holds without
-  the parameter (`IsTPqpGCPhase2.complexity_of_certified`).
+* Bad outer iterations: the INNER contract `IsInnerPhaseRun` (the decreases used by the book's
+  proof of Lemma 14.3.8) does not bound them: a sequence satisfying `IsTPqpGCPhase2`, f.B.Fb and
+  `IsInnerPhaseRun` (all hypotheses of the library's `theorem_14_3_9`) never terminates and all
+  its outer iterations are bad (`lemma_14_3_8_proof_gap_counterexample`, for every `β ≤ θ`); its
+  INNER calls are not ARqp-SC runs, so the book's Theorem 14.3.9 is not refuted. With the contract
+  keyed on INNER's own test (14.3.19), as Lemma 14.2.2 states it (`IsInnerPhaseRunStrong`; calls
+  may be cut by any test of (14.3.32)), Phase 2 terminates within an explicit bound without the
+  parameter for every `β ≤ θ` (`IsTPqpGCPhase2.complexity_of_strong`; the extra term is
+  `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})`, `ρ` the INNER radii, within the book's order for
+  the exponents `j + 1` but not in general for the ARqp-SC row, see Not formalized), and the
+  constructed runs satisfy it
+  (`exists_isTPqpGCPhase2_isInnerPhaseRunStrong`, `exists_isTPqpGCPhase2_isInnerCertified_unit`,
+  `exists_algorithm_14_3_2_complexity_strong`). Under INNER's certificate
+  (`IsInnerCertified`) and `β < θ`, every `𝒦_b` iteration decreases the target by a fixed amount
+  (`IsTPqpGCPhase2.target_drop_of_isKb`), so `|𝒦_b| ≤ (f_up - f_low + 1)/τ`
+  (`IsTPqpGCPhase2.kbCount_le`) and Theorem 14.3.9 holds without the parameter
+  (`IsTPqpGCPhase2.complexity_of_certified`); for `β ≤ θ` (including the book's `β = θ`) at most
+  one `𝒦_b` iteration between consecutive elements of `𝒦_a` has a margin below
+  `η = θ(1 - θ)ε₀/(1 + θ)` (`IsTPqpGCPhase2.target_drop_of_isKb_margin`,
+  `IsTPqpGCPhase2.kbCount_le_of_le`, `IsTPqpGCPhase2.complexity_of_certified_le`).
+* The multiplicative cost contract (14.3.20)–(14.3.21) fails for `q = 1`, `p ≥ 2` with the ARqp-SC
+  exponent `(p+1)/p` (`exists_algorithm_14_3_1_cost_contract_counterexample`).
 * `exists_algorithm_14_3_1`, `exists_isTPqpGCPhase2`, `exists_algorithm_14_3_2`: LENq-SC and
   TPqp-GC runs exist for every admissible choice of constants and every `x₀ ∈ X`, with INNER
   realized by ARqp-SC (ARqpC-SC with `c = 0`, `h = 0`, `IsARqpSCOutput`, `IsARqpSCCall`; such
@@ -77,6 +101,14 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   (`q ≥ 2`), `exists_algorithm_14_3_1_complexity_arqp_add`,
   `exists_algorithm_14_3_2_complexity_arqp_add` (every `q`, additive Phase-1 constants;
   `theorem_14_3_4_add`, `lemma_14_3_7_add`).
+* On `X = ℝⁿ` with `q ≤ 2`, INNER realized by ARqp runs of Chapter 12 with unit radii
+  (Algorithm 12.2.3 never halves the orders `j ≤ 2`, Lemma 12.2.9; `exists_isARqpUnitOutputCost`)
+  gives the unit-radius exponents `(p+1)/(p-j+1)` of the ARqp-SC row of (14.2.12):
+  `IsARqpUnitOutputCost.cost_le_add`, `exists_algorithm_14_3_1_complexity_unit` (LENq-SC, additive
+  constants), `exists_isTPqpGCPhase2_isInnerCertified_unit` (the Phase-2 contract with these
+  exponents and INNER's certificate with radii `1`) and `exists_algorithm_14_3_2_complexity_unit`
+  (TPqp-GC terminates within the bounds of Theorem 14.3.9 with these exponents, without the
+  bad-iteration parameter, for every `β ≤ θ`).
 
 ## Deviations from the book
 
@@ -114,13 +146,23 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   inner iterations (successful and not followed by the end of their INNER call) are counted per
   block by `G = κ^S (1 - θ) M`; the `i = 0` entries and the last iterations of the calls are
   counted separately, `κ_unc` is paid per call, and the number of *bad* calls of `𝒦_b`
-  (`TPqpSeq.IsBad`: calls without a good iteration, whose only successful iteration is their
-  last one) is not bounded by the book and appears as a parameter of `theorem_14_3_9`. It is
+  (`TPqpSeq.IsBad`: calls without a good iteration, whose only successful iteration is their last
+  one) is not bounded by the book and appears as a parameter of `theorem_14_3_9`: the decreases the
+  book's proof uses (`IsInnerPhaseRun`, exempting a step after which the third test of (14.3.32)
+  holds) do not bound it (`lemma_14_3_8_proof_gap_counterexample`: calls cut by that test right
+  after their only successful iteration, the target sliding down by summable amounts while `‖c‖`
+  carries the residual; such calls are not ARqp-SC runs, whose Lemma 14.2.2 decrease is exempted
+  only where INNER's own test holds). With the decrease keyed on INNER's own test
+  (`IsInnerPhaseRunStrong`), a case-(b) call either ends at a point passing INNER's test (bounded by
+  the margin argument below) or carries a decreasing step, and Phase 2 terminates within an
+  explicit bound without the parameter (`IsTPqpGCPhase2.complexity_of_strong`; for the order of
+  the extra term see Not formalized). The number of case-(b) iterations is also
   bounded (`IsTPqpGCPhase2.kbCount_le`) when the case-(b) calls end with INNER's certificate for
   the tolerances `β ‖r(x_k, t_k)‖ ε_j` (`IsInnerCertified`: INNER is interrupted only by the
   first test of (14.3.32), as in the constructed runs; `IsTPqpGCPhase2` also admits calls cut by
   the second or third test, for which it need not hold), the
-  radii are bounded below, `β < θ` (the book allows `β = θ`), `f`, `c` are `C^q` and the
+  radii are bounded below, `β < θ` (for the book's `β = θ`, `IsTPqpGCPhase2.kbCount_le_of_le`:
+  one more `𝒦_b` iteration per block), `f`, `c` are `C^q` and the
   derivatives of `f` are bounded (as in f.D1pLB.X): (14.3.34) fails at `t_{k+1}` while INNER's test
   holds at `t_k` with the margin `(θ - β) ε₀ ε_j δ^j/j!`, and `μ(·, t_{k+1}) - μ(·, t_k)` is
   `(t_k - t_{k+1})(f - f(x_{k+1}))`, so the target drops by `τ ∼ min_j ε₀ ε_j δ_j^{j-1}`. The
@@ -149,20 +191,25 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   `q = 1`, `p ≥ 2`, `π_1 = (p+1)/p < 2` and the contract fails for calls from points with small
   residual (one evaluation against `½ ‖r‖^{2-π_1} (β ε_1)^{-π_1} → 0`); the additive constants are
   then kept (`exists_algorithm_14_3_1_complexity_arqp_add`, an extra `κ_C k_max` with
-  `k_max = O(|log ε₀|)`, the terms footnote 114 of the book ignores).
+  `k_max = O(|log ε₀|)`, the terms footnote 114 of the book ignores), and the printed contract is
+  refuted (`exists_algorithm_14_3_1_cost_contract_counterexample`). On `X = ℝⁿ` with `q ≤ 2` the
+  INNER runs can instead be Chapter-12 ARqp runs (Algorithm 12.2.3 for Step 2), whose radii stay
+  `1`: these give the unit-radius exponents `(p+1)/(p-j+1)`, again with additive Phase-1 constants
+  (all `π_j < 2` for `q = 1`, `p ≥ 2` and for `q = 2`, `p ≥ 4`).
 
 ## Not formalized
 
-The asymptotic `O(·)` restatements. For the constructed runs: the ARqp-SC unit-radii exponents
-`(p+1)/(p-j+1)` for `q = 2` on `ℝⁿ` (Algorithm 14.1.2 may halve the radii the unit-radii row needs
-equal to `1`); for `q = 1` the ARqp-SC-exponent corollaries only in additive form
-(`exists_algorithm_14_3_2_complexity_arqp_add`); the bad-iteration bound in the order of the
-ARqp-SC exponents (`IsTPqpGCPhase2.kbCount_le` gives `O(max_j (ε₀ ε_j)^{-j})`, within the order of
-the exponents `j + 1` but not of `j(p+1)/p` for `j < p`, so
-`exists_algorithm_14_3_2_complexity_arqp` keeps the parameter); and a bound for `β = θ` or for
-abstract runs satisfying only (14.3.32) and `IsInnerPhaseRun`, whose case-(b) calls may be cut by
-the second or third test of (14.3.32) before INNER's own test holds (the margin between the
-tests at `t_k` and (14.3.34) at `t_{k+1}` then vanishes).
+The asymptotic `O(·)` restatements. For the constructed runs: the multiplicative Phase-1 contract
+when every `π_j < 2` (`q = 1`, and the unit-radius exponents on `ℝⁿ` for `p ≥ 4`; it is false
+there, and the additive form is proved); and the bad-iteration bound in the order of the ARqp-SC
+exponents: INNER's certificate gives `N_b = O(max_j (ε₀ ε_j)^{-j})` for the ARqpC-SC runs
+(`IsTPqpGCPhase2.kbCount_le`, within the order of the exponents `j + 1` but not of `j(p+1)/p` for
+`j < p`, so `exists_algorithm_14_3_2_complexity_arqp` keeps the parameter) and
+`N_b = O(max_j (ε₀ ε_j)^{-1})` for the unit-radius runs on `ℝⁿ`
+(`exists_algorithm_14_3_2_complexity_unit`; with `ε_j = ε₀ = ε` within the order `ε^{1-2π_q}`
+iff `π_q ≥ 3/2`, i.e. `p ≤ 2` for `q = 1` and `p ≤ 5` for `q = 2`). For sequences satisfying only
+(14.3.32) and `IsInnerPhaseRun` there is no bound (`lemma_14_3_8_proof_gap_counterexample`); this
+does not concern genuine INNER runs (`IsInnerPhaseRunStrong`).
 Existence and complexity of runs under the book's anchored assumptions (Φ₂.D1pLaB.X, f.D1pLB.X,
 c.D1pLB.X on an open convex `X₀ ⊇ X`) rather than global ones. The latter needs the ARqpC-SC
 analysis of §14.1 (`lemma_14_1_6`–`theorem_14_1_10_ii`, `exists_isARqpCRun`), which is stated
@@ -388,6 +435,21 @@ theorem innerEvalBound_le_sum {κ gap : ℝ} (hκ : 0 ≤ κ) (hgap : 0 ≤ gap)
     (Real.rpow_pos_of_pos (hε i hi) _).le)
   exact Finset.single_le_sum (f := fun i => ε i ^ (-π i))
     (fun i hi => (Real.rpow_pos_of_pos (hε i hi) _).le) j.2
+
+/-- For `q = 1` the cost contract (14.3.20)–(14.3.21) has a single term:
+`κ gap ε_1^{-π_1}`. -/
+theorem innerEvalBound_one (κ : ℝ) (π : ℕ → ℝ) (gap : ℝ) (ε : ℕ → ℝ) :
+    innerEvalBound κ π 1 gap ε = κ * gap * ε 1 ^ (-π 1) := by
+  unfold innerEvalBound
+  congr 1
+  have h1 : (1 : ℕ) ∈ Finset.Icc 1 1 := by simp
+  have hbdd : BddAbove (Set.range fun j : Finset.Icc 1 1 => ε j ^ (-π j)) :=
+    (Set.finite_range _).bddAbove
+  have : Nonempty (Finset.Icc 1 1) := ⟨⟨1, h1⟩⟩
+  refine le_antisymm (ciSup_le fun j => ?_) (le_ciSup_of_le hbdd ⟨1, h1⟩ le_rfl)
+  obtain ⟨j, hj⟩ := j
+  obtain rfl : j = 1 := by simpa using hj
+  exact le_rfl
 
 /-- **Theorem 14.3.4** of [cartis2022evaluation] (evaluation complexity of LENq-SC),
 **corrected**. Let a LENq-SC run terminate at `k_max`, let `π_j > 1`, and let the cost `n_k` of
@@ -1464,7 +1526,11 @@ iterate has residual `‖r(x_{k,i+1}, t_k)‖ ≥ θε₀`, decreases `μ(·, t_
 `β ‖r(x_k, t_k)‖ ε_l`; "so long as the third termination test in (14.3.32) has not been
 satisfied", (B.14.21)). The residual condition is automatic for `i + 1 < e_k` (the call is
 stopped as soon as `‖r‖ < θε₀`); it excludes the last iteration of a call ending by the first test
-of (14.3.32), whose decrease is not needed (such an outer iteration is in `𝒦_a`). -/
+of (14.3.32), whose decrease is not needed (such an outer iteration is in `𝒦_a`). The exemption
+of a step after which the third test of (14.3.32) holds follows the proof of Lemma 14.3.8; it is
+weaker than what genuine INNER runs satisfy (Lemma 14.2.2 exempts only steps after which INNER's
+own test (14.3.19) holds, `IsInnerPhaseRunStrong`), and too weak to bound the bad outer iterations
+(`lemma_14_3_8_proof_gap_counterexample`). -/
 structure IsInnerPhaseRun (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (θ β : ℝ)
     (ε : ℕ → ℝ) (D : TPqpSeq n) (κdecr κuns κunc : ℝ) (π : ℕ → ℝ) : Prop where
   count : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → (D.e k : ℝ) ≤ κuns * D.succCount k + κunc
@@ -1478,6 +1544,46 @@ structure IsInnerPhaseRun (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set 
         Constrained.targetMerit f c (D.t k) (D.xi k i) -
           Constrained.targetMerit f c (D.t k) (D.xi k (i + 1))
 
+/-- **INNER's own termination test** (14.3.19) at the end of the `k`-th call of Phase 2
+([cartis2022evaluation], Algorithm 14.3.2, Step 1:
+`INNER(μ(·, t_k), X, q, x_k, β ‖r(x_k, t_k)‖ ε)`):
+`φ^{δ_{k+1,j}}_{μ,X(x_{k+1}),j}(x_{k+1}, t_k) ≤ β ‖r(x_k, t_k)‖ ε_j δ_{k+1,j}^j/j!` for
+`j ∈ [1 : q]`. Its tolerance `β ‖r(x_k, t_k)‖ ε_j` is at most that of the third test of (14.3.32)
+when `β ≤ θ` and `‖r(x_{k+1}, t_k)‖ ≥ θε₀`. -/
+def TPqpSeq.InnerTest (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (β : ℝ) (ε : ℕ → ℝ)
+    (D : TPqpSeq n) (k : ℕ) : Prop :=
+  ∀ j ∈ Finset.Icc 1 q,
+    Optimization.taylorMeasure
+        (ftaylorSeries ℝ (Constrained.targetMerit f c (D.t k)) (D.x (k + 1))) j
+        (D.δ (k + 1) j) {d | D.x (k + 1) + d ∈ X} ≤
+      β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j * D.δ (k + 1) j ^ j / j !
+
+/-- **The INNER contract of Phase 2 keyed on INNER's own test** ([cartis2022evaluation],
+Lemmas 14.2.2–14.2.3 as stated, for INNER on `μ(·, t_k)`), with radii bounded below by `ρ`: as
+`IsInnerPhaseRun`, except that the decrease is required for every successful inner iteration `i`
+whose new iterate has residual `‖r(x_{k,i+1}, t_k)‖ ≥ θε₀` and which is not followed by the
+termination of INNER: `i + 1 < e_k`, or the call ends (by any test of (14.3.32)) at a point
+failing INNER's own test (14.3.19) (`TPqpSeq.InnerTest`) — Lemma 14.2.2 needs only that INNER
+does not terminate at `x_{k,i+1}`. Moreover, a case-(b) call ending at a point passing INNER's
+test has radii `δ_{k+1,j} ≥ ρ_j`. The calls may be cut by any test of (14.3.32). For Phase-2
+runs it implies `IsInnerPhaseRun` (`IsInnerPhaseRunStrong.toIsInnerPhaseRun`), whose exemption
+(the third test of (14.3.32) at `x_{k+1}`) follows
+the proof of Lemma 14.3.8 and is weaker than what genuine INNER runs satisfy. -/
+structure IsInnerPhaseRunStrong (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (θ β : ℝ)
+    (ε : ℕ → ℝ) (D : TPqpSeq n) (κdecr κuns κunc : ℝ) (π ρ : ℕ → ℝ) : Prop where
+  count : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → (D.e k : ℝ) ≤ κuns * D.succCount k + κunc
+  stay : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → ∀ i < D.e k, ¬ D.succ k i →
+    D.xi k (i + 1) = D.xi k i
+  decrease : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → ∀ i < D.e k, D.succ k i →
+    (i + 1 < D.e k ∨ ¬ D.InnerTest f c X q β ε k) →
+    θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.xi k (i + 1)) →
+    ∃ l ∈ Finset.Icc 1 q,
+      κdecr * (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε l) ^ π l ≤
+        Constrained.targetMerit f c (D.t k) (D.xi k i) -
+          Constrained.targetMerit f c (D.t k) (D.xi k (i + 1))
+  radius_ge : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k →
+    D.InnerTest f c X q β ε k → ∀ j ∈ Finset.Icc 1 q, ρ j ≤ D.δ (k + 1) j
+
 /-- **The INNER certificate of the case-(b) calls of Phase 2** ([cartis2022evaluation],
 Algorithm 14.3.2, Step 1: `x_{k+1}` is computed by `INNER(μ(·, t_k), X, q, x_k, β ‖r(x_k, t_k)‖ ε)`,
 whose output satisfies (14.3.19)), with radii bounded below by `ρ`: at every outer iteration
@@ -1487,7 +1593,7 @@ whose output satisfies (14.3.19)), with radii bounded below by `ρ`: at every ou
 the constructed runs (`exists_isTPqpGCPhase2_isInnerCertified`): a call ending in `𝒦_b` has
 `‖r(x_{k+1}, t_k)‖ ≥ θε₀`, so INNER has terminated. `IsTPqpGCPhase2` also admits calls stopped by
 the second or third test of (14.3.32), as the proof of Lemma 14.3.8 contemplates; for those the
-certificate need not hold. -/
+certificate need not hold; `IsInnerPhaseRunStrong` covers them. -/
 structure IsInnerCertified (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (θ β : ℝ)
     (ε : ℕ → ℝ) (D : TPqpSeq n) (ρ : ℕ → ℝ) : Prop where
   radius_ge : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k →
@@ -1514,18 +1620,20 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ}
 private noncomputable def goodDecr (κdecr β θ πmax M ε₀ : ℝ) : ℝ :=
   κdecr * (β * θ) ^ πmax * ε₀ / M
 
-/-- A good inner iteration decreases the residual `‖r(·, t_k)‖` by at least `goodDecr`. -/
-private theorem resid_drop (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
-    (hin : IsInnerPhaseRun f c X q θ β ε D κdecr κuns κunc π) (hκ : 0 < κdecr)
+/-- An inner iteration with the decrease of the INNER contract decreases the residual
+`‖r(·, t_k)‖` by at least `goodDecr`. -/
+private theorem resid_drop (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D) (hκ : 0 < κdecr)
     (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
     (hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - π l) * ε l ^ (-π l) ≤ M)
-    {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) {i : ℕ}
-    (hi : D.IsGood f c X q θ ε k i) :
+    {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) {i : ℕ} (hie : i < D.e k)
+    (hdecr : ∃ l ∈ Finset.Icc 1 q,
+      κdecr * (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε l) ^ π l ≤
+        Constrained.targetMerit f c (D.t k) (D.xi k i) -
+          Constrained.targetMerit f c (D.t k) (D.xi k (i + 1))) :
     goodDecr κdecr β θ πmax M (ε 0) ≤
       Constrained.targetResidual f c (D.t k) (D.xi k i) -
         Constrained.targetResidual f c (D.t k) (D.xi k (i + 1)) := by
-  obtain ⟨hie, hsucc, hcont, hρj_ge⟩ := hi
-  obtain ⟨l, hl, hdec⟩ := hin.decrease k hk1 hk i hie hsucc hcont hρj_ge
+  obtain ⟨l, hl, hdec⟩ := hdecr
   have hε₀ := h.ε₀_pos
   have hεl := h.ε_pos' hl
   have hθ := h.θ_pos
@@ -1598,33 +1706,79 @@ section Counting2
 variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {θ β : ℝ} {ε : ℕ → ℝ} {x₁ : ℝⁿ}
   {D : TPqpSeq n} {κdecr κuns κunc πmax M : ℝ} {π : ℕ → ℝ}
 
-/-- The good iterations of one INNER call telescope:
-`|good_k| δ ≤ max(‖r(x_k, t_k)‖, θε₀) - max(‖r(x_{k+1}, t_k)‖, θε₀)`. -/
-private theorem goodCount_mul_le (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
-    (hin : IsInnerPhaseRun f c X q θ β ε D κdecr κuns κunc π) (hκ : 0 < κdecr)
+open Classical in
+/-- The inner iterations of one INNER call in a set `G k` telescope, if each has the decrease
+of the INNER contract and a new residual at least `θε₀`:
+`|G_k| δ ≤ max(‖r(x_k, t_k)‖, θε₀) - max(‖r(x_{k+1}, t_k)‖, θε₀)`. -/
+private theorem count_mul_le (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D) (hκ : 0 < κdecr)
     (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
-    (hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - π l) * ε l ^ (-π l) ≤ M)
-    {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) :
-    (D.goodCount f c X q θ ε k : ℝ) * goodDecr κdecr β θ πmax M (ε 0) ≤
+    (hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - π l) * ε l ^ (-π l) ≤ M) (G : ℕ → ℕ → Prop)
+    {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k)
+    (hG : ∀ i, G k i → i < D.e k ∧
+      θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.xi k (i + 1)) ∧
+      ∃ l ∈ Finset.Icc 1 q,
+        κdecr * (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε l) ^ π l ≤
+          Constrained.targetMerit f c (D.t k) (D.xi k i) -
+            Constrained.targetMerit f c (D.t k) (D.xi k (i + 1))) :
+    (((Finset.range (D.e k)).filter (G k)).card : ℝ) * goodDecr κdecr β θ πmax M (ε 0) ≤
       max (Constrained.targetResidual f c (D.t k) (D.x k)) (θ * ε 0) -
         max (Constrained.targetResidual f c (D.t k) (D.x (k + 1))) (θ * ε 0) := by
-  classical
   have := Optimization.card_mul_le_sub_of_decrease
     («φ» := fun j => max (Constrained.targetResidual f c (D.t k) (D.xi k j)) (θ * ε 0))
-    (N := D.e k) (T := (Finset.range (D.e k)).filter (D.IsGood f c X q θ ε k))
+    (N := D.e k) (T := (Finset.range (D.e k)).filter (G k))
     (c := goodDecr κdecr β θ πmax M (ε 0)) (Finset.filter_subset _ _)
     (fun j hj => max_le_max (h.inner_resid_antitone hk1 hk j.le_succ hj) le_rfl)
     (fun j hj => by
-      have hg := (Finset.mem_filter.1 hj).2
-      have hd := resid_drop h hin hκ hπ hM0 hM hk1 hk hg
-      have h1 := hg.2.2.2
-      have h2 := h.inner_resid_antitone hk1 hk j.le_succ hg.1
+      obtain ⟨hje, h1, hdec⟩ := hG j (Finset.mem_filter.1 hj).2
+      have hd := resid_drop h hκ hπ hM0 hM hk1 hk hje hdec
+      have h2 := h.inner_resid_antitone hk1 hk j.le_succ hje
       rw [max_eq_left h1, max_eq_left (h1.trans h2)]
       exact hd)
   rw [h.inner_zero k hk1 hk, h.inner_end k hk1 hk] at this
-  convert this using 2
-  unfold TPqpSeq.goodCount
-  congr
+  exact this
+
+open Classical in
+/-- **Counting inner iterations with a guaranteed decrease** (the block argument of the proof of
+Lemma 14.3.8, [cartis2022evaluation]): if at every outer iteration `k ≥ 1` reached the inner
+iterations of a set `G k` have the decrease of the INNER contract and a new residual at least
+`θε₀`, then their total number over `[1, K]` is at most `G (|𝒦_a ∩ [1, K)| + 1)`,
+`G = goodBound`. -/
+theorem sum_card_le_of_decrease (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D) (hκ : 0 < κdecr)
+    (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
+    (hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - π l) * ε l ^ (-π l) ≤ M) (G : ℕ → ℕ → Prop)
+    (hG : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → ∀ i, G k i → i < D.e k ∧
+      θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.xi k (i + 1)) ∧
+      ∃ l ∈ Finset.Icc 1 q,
+        κdecr * (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε l) ^ π l ≤
+          Constrained.targetMerit f c (D.t k) (D.xi k i) -
+            Constrained.targetMerit f c (D.t k) (D.xi k (i + 1)))
+    {K : ℕ} (hK1 : 1 ≤ K) (hK : D.Before f c X q θ ε K) :
+    (∑ k ∈ Finset.Icc 1 K, (((Finset.range (D.e k)).filter (G k)).card : ℝ)) ≤
+      goodBound κdecr β θ πmax M * (D.kaCount f c θ ε K + 1) := by
+  have hε₀ := h.ε₀_pos
+  have hθ := h.θ_pos
+  have hβ := h.β_pos
+  have hδ : 0 < goodDecr κdecr β θ πmax M (ε 0) := by unfold goodDecr; positivity
+  have hsum := (h.isTargetSequence hK).sum_max_sub_le hθ.le h.θ_lt_one.le hε₀.le hK1
+  have h1 : ∑ k ∈ Finset.Icc 1 K,
+      (((Finset.range (D.e k)).filter (G k)).card : ℝ) * goodDecr κdecr β θ πmax M (ε 0) ≤
+      ∑ k ∈ Finset.Icc 1 K,
+        (max (Constrained.targetResidual f c (D.t k) (D.x k)) (θ * ε 0) -
+          max (Constrained.targetResidual f c (D.t k) (D.x (k + 1))) (θ * ε 0)) :=
+    Finset.sum_le_sum fun k hk => by
+      rw [Finset.mem_Icc] at hk
+      exact count_mul_le h hκ hπ hM0 hM G hk.1 (before_mono hK hk.2)
+        (hG k hk.1 (before_mono hK hk.2))
+  rw [← Finset.sum_mul] at h1
+  have hG' : goodBound κdecr β θ πmax M = (1 - θ) * ε 0 / goodDecr κdecr β θ πmax M (ε 0) := by
+    unfold goodBound goodDecr
+    rw [Real.rpow_neg (by positivity)]
+    have : 0 < (β * θ) ^ πmax := by positivity
+    field_simp
+  have hka : (D.kaCount f c θ ε K : ℝ) = ((Finset.Ico 1 K).filter (D.IsKa f c θ ε)).card := by
+    unfold TPqpSeq.kaCount; congr
+  rw [hG', div_mul_eq_mul_div, le_div_iff₀ hδ, hka]
+  linarith
 
 /-- The good inner iterations of the outer iterations `[1, K]` number at most
 `G (|𝒦_a ∩ [1, K)| + 1)`, `G = goodBound` (the corrected (14.3.71), summed over the blocks of
@@ -1637,29 +1791,12 @@ theorem sum_goodCount_le (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
     (∑ k ∈ Finset.Icc 1 K, D.goodCount f c X q θ ε k : ℝ) ≤
       goodBound κdecr β θ πmax M * (D.kaCount f c θ ε K + 1) := by
   classical
-  have hε₀ := h.ε₀_pos
-  have hθ := h.θ_pos
-  have hβ := h.β_pos
-  have hδ : 0 < goodDecr κdecr β θ πmax M (ε 0) := by unfold goodDecr; positivity
-  have hsum := (h.isTargetSequence hK).sum_max_sub_le hθ.le h.θ_lt_one.le hε₀.le hK1
-  have h1 : ∑ k ∈ Finset.Icc 1 K,
-      (D.goodCount f c X q θ ε k : ℝ) * goodDecr κdecr β θ πmax M (ε 0) ≤
-      ∑ k ∈ Finset.Icc 1 K,
-        (max (Constrained.targetResidual f c (D.t k) (D.x k)) (θ * ε 0) -
-          max (Constrained.targetResidual f c (D.t k) (D.x (k + 1))) (θ * ε 0)) :=
-    Finset.sum_le_sum fun k hk => by
-      rw [Finset.mem_Icc] at hk
-      exact goodCount_mul_le h hin hκ hπ hM0 hM hk.1 (before_mono hK hk.2)
-  rw [← Finset.sum_mul] at h1
-  have hG : goodBound κdecr β θ πmax M = (1 - θ) * ε 0 / goodDecr κdecr β θ πmax M (ε 0) := by
-    unfold goodBound goodDecr
-    rw [Real.rpow_neg (by positivity)]
-    have : 0 < (β * θ) ^ πmax := by positivity
-    field_simp
-  have hka : (D.kaCount f c θ ε K : ℝ) = ((Finset.Ico 1 K).filter (D.IsKa f c θ ε)).card := by
-    unfold TPqpSeq.kaCount; congr
-  rw [hG, div_mul_eq_mul_div, le_div_iff₀ hδ, hka]
-  linarith
+  have := h.sum_card_le_of_decrease hκ hπ hM0 hM (D.IsGood f c X q θ ε)
+    (fun k hk1 hk i hi => ⟨hi.1, hi.2.2.2,
+      hin.decrease k hk1 hk i hi.1 hi.2.1 hi.2.2.1 hi.2.2.2⟩) hK1 hK
+  convert this using 3 with k
+  unfold TPqpSeq.goodCount
+  congr
 
 /-- Every successful inner iteration except possibly the last one of its call is good:
 `|𝒮_k| ≤ |good_k| + 1`. -/
@@ -1939,8 +2076,11 @@ With `n_bad` bounded independently of `ε`, the totals are
 `O(max(ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}))` for both function and derivative evaluations (the
 book's derivative bound omits the `ε₀^{-1}` coming from at least one successful iteration per
 outer iteration, and its `#F₂` omits the `1/(1 - θ)` of the `κ^C ε₀^{-1}` term); the book's
-unconditional claim rests on the gap of Lemma 14.3.8, closed by INNER's certificate in
-`IsTPqpGCPhase2.complexity_of_certified`. -/
+unconditional claim rests on a gap in the proof of Lemma 14.3.8 (the decreases it uses do not
+bound `n_bad`: `lemma_14_3_8_proof_gap_counterexample`); with the INNER contract as Lemma 14.2.2
+states it (`IsInnerPhaseRunStrong`) Phase 2 terminates within an explicit bound without the
+parameter (`IsTPqpGCPhase2.complexity_of_strong`), as it does under INNER's certificate
+(`IsTPqpGCPhase2.complexity_of_certified`, `IsTPqpGCPhase2.complexity_of_certified_le`). -/
 theorem theorem_14_3_9 {β₁ : ℝ} {x₀ : ℝⁿ} {xP : ℕ → ℝⁿ} {δP : ℕ → ℕ → ℝ} {k₁ : ℕ}
     (h : algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D) (hθ : 0 < θ)
     (hπ1 : ∀ j ∈ Finset.Icc 1 q, 1 < π j) {κF₁ κD₁ : ℝ} (hκF₁ : 0 ≤ κF₁) (hκD₁ : 0 ≤ κD₁)
@@ -1999,21 +2139,26 @@ theorem jetApprox_targetMerit {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {x : 
     ← sub_smul, norm_smul, Real.norm_eq_abs, abs_sub_comm]
   exact mul_le_mul_of_nonneg_left (hB i hi) (abs_nonneg _)
 
-/-- **A case-(b) outer iteration decreases the target** under the INNER certificate. Let
-`k ∈ 𝒦_b` be an outer iteration of Phase 2 that does not terminate, whose INNER output satisfies
-INNER's test (14.3.19) with radii `δ_{k+1,j} ≥ ρ_j ≥ 0` (`IsInnerCertified`), with `f`, `c` of
-class `C^q` and `‖∇^i f‖ ≤ B_f` (`i ∈ [1 : q]`) on the points of `X` with `‖c‖ ≤ ε₀`. Since
-(14.3.34) fails at `(x_{k+1}, t_{k+1})` while INNER's test, with the smaller tolerance
-`β ‖r(x_k, t_k)‖ ε_j ≤ βε₀ε_j`, holds at `(x_{k+1}, t_k)`, and `μ(·, t_{k+1}) - μ(·, t_k)` is
-`(t_k - t_{k+1})(f - f(x_{k+1}))`, some order `j ∈ [1 : q]` has
-`(θ - β) ε₀ ε_j ρ_j^{j-1}/j! < 2 B_f (t_k - t_{k+1})`. -/
-theorem IsTPqpGCPhase2.target_drop_of_isKb (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
-    {ρ : ℕ → ℝ} (hcert : IsInnerCertified f c X q θ β ε D ρ)
-    (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j) (hf : ContDiff ℝ q f) (hc : ContDiff ℝ q c) {Bf : ℝ}
+/-- **A case-(b) outer iteration decreases the target, with an explicit margin**, when its call
+ends at a point passing INNER's test. Let `k ∈ 𝒦_b` be an outer iteration of Phase 2 that does
+not terminate, whose new iterate passes INNER's test (14.3.19) (`TPqpSeq.InnerTest` at `k`) with
+radii `δ_{k+1,j} ≥ ρ_j ≥ 0`, with `f`, `c` of class `C^q` and `‖∇^i f‖ ≤ B_f` (`i ∈ [1 : q]`) on
+the points
+of `X` with `‖c‖ ≤ ε₀`. If `0 ≤ m ≤ ‖r(x_{k+1}, t_k)‖ - β ‖r(x_k, t_k)‖` (the gap between the
+tolerance `ε_j ‖r(x_{k+1}, t_{k+1})‖` of (14.3.34), which fails at the new target, and INNER's
+tolerance `β ‖r(x_k, t_k)‖ ε_j`, which holds at the old one), then some order `j ∈ [1 : q]` has
+`m ε_j ρ_j^{j-1}/j! < 2 B_f (t_k - t_{k+1})`. -/
+theorem IsTPqpGCPhase2.target_drop_of_isKb_margin (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    {ρ : ℕ → ℝ} (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j) (hf : ContDiff ℝ q f) (hc : ContDiff ℝ q c)
+    {Bf : ℝ}
     (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
-    {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε (k + 1)) (hb : D.IsKb f c θ ε k) :
+    {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε (k + 1)) (hb : D.IsKb f c θ ε k)
+    (hcert : D.InnerTest f c X q β ε k) (hrad : ∀ j ∈ Finset.Icc 1 q, ρ j ≤ D.δ (k + 1) j)
+    {μm : ℝ} (hμ0 : 0 ≤ μm)
+    (hμ : μm ≤ Constrained.targetResidual f c (D.t k) (D.x (k + 1)) -
+      β * Constrained.targetResidual f c (D.t k) (D.x k)) :
     ∃ j ∈ Finset.Icc 1 q,
-      (θ - β) * ε 0 * ε j * ρ j ^ (j - 1) / j ! < 2 * Bf * (D.t k - D.t (k + 1)) := by
+      μm * ε j * ρ j ^ (j - 1) / j ! < 2 * Bf * (D.t k - D.t (k + 1)) := by
   have hkB : D.Before f c X q θ ε k := IsTPqpGCPhase2.before_mono hk k.le_succ
   have hns : ¬ D.Stop f c X q θ ε k := hk k hk1 k.lt_succ_self
   have hncrit : ¬ meritCrit f c X q ε (D.t (k + 1)) (D.x (k + 1)) (D.δ (k + 1)) :=
@@ -2049,24 +2194,21 @@ theorem IsTPqpGCPhase2.target_drop_of_isKb (h : IsTPqpGCPhase2 f c X q θ β ε 
     exact hy
   have hpert := Optimization.taylorMeasure_le_add_two_mul_of_jetApprox hjet hjq h0 hδ0.le hδ1
     (fun _ _ => le_rfl) (mul_nonneg (abs_nonneg _) hBf0)
-  have hold := hcert.cert k hk1 hkB hb j hj
+  have hold := hcert j hj
   rw [abs_of_pos (sub_pos.2 hdrop)] at hpert
   have hfac : (0 : ℝ) < j ! := by positivity
-  have hθβ : 0 ≤ θ - β := sub_nonneg.2 h.β_le_θ
-  have hβ := h.β_pos
   set δj := D.δ (k + 1) j
-  -- `(θ - β) ε₀ ε_j δ^j/j! < 2 B_f (t_k - t_{k+1}) δ`
-  have key : (θ - β) * ε 0 * ε j * δj ^ j / j ! <
-      2 * Bf * (D.t k - D.t (k + 1)) * δj := by
-    have e1 : ε j * (θ * ε 0) * δj ^ j / j ! ≤
-        ε j * Constrained.targetResidual f c (D.t (k + 1)) (D.x (k + 1)) * δj ^ j / j ! := by
+  -- `μm ε_j δ^j/j! < 2 B_f (t_k - t_{k+1}) δ`
+  have key : μm * ε j * δj ^ j / j ! < 2 * Bf * (D.t k - D.t (k + 1)) * δj := by
+    have e1 : μm * ε j * δj ^ j / j ! ≤
+        (ε j * Constrained.targetResidual f c (D.t (k + 1)) (D.x (k + 1)) * δj ^ j / j !) -
+          (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j * δj ^ j / j !) := by
       rw [hr']
-      gcongr
-      exact hb.1
-    have e2 : β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j * δj ^ j / j ! ≤
-        β * ε 0 * ε j * δj ^ j / j ! := by gcongr
-    have e3 : (θ - β) * ε 0 * ε j * δj ^ j / j ! =
-        (ε j * (θ * ε 0) * δj ^ j / j !) - (β * ε 0 * ε j * δj ^ j / j !) := by ring
+      have : μm * ε j * δj ^ j / j ! ≤ (Constrained.targetResidual f c (D.t k) (D.x (k + 1)) -
+          β * Constrained.targetResidual f c (D.t k) (D.x k)) * ε j * δj ^ j / j ! := by
+        gcongr
+      refine this.trans (le_of_eq ?_)
+      ring
     have e4 : 2 * ((D.t k - D.t (k + 1)) * Bf) * δj = 2 * Bf * (D.t k - D.t (k + 1)) * δj := by
       ring
     linarith
@@ -2074,18 +2216,73 @@ theorem IsTPqpGCPhase2.target_drop_of_isKb (h : IsTPqpGCPhase2 f c X q θ β ε 
     rw [← pow_succ]
     congr 1
     omega
-  have key2 : (θ - β) * ε 0 * ε j * δj ^ (j - 1) / j ! < 2 * Bf * (D.t k - D.t (k + 1)) := by
+  have key2 : μm * ε j * δj ^ (j - 1) / j ! < 2 * Bf * (D.t k - D.t (k + 1)) := by
     refine lt_of_mul_lt_mul_right ?_ hδ0.le
-    calc (θ - β) * ε 0 * ε j * δj ^ (j - 1) / j ! * δj
-        = (θ - β) * ε 0 * ε j * δj ^ j / j ! := by rw [hpow]; ring
+    calc μm * ε j * δj ^ (j - 1) / j ! * δj
+        = μm * ε j * δj ^ j / j ! := by rw [hpow]; ring
       _ < _ := key
   have hρδ : ρ j ^ (j - 1) ≤ δj ^ (j - 1) :=
-    pow_le_pow_left₀ (hρ j hj) (hcert.radius_ge k hk1 hkB hb j hj) _
-  have hA : 0 ≤ (θ - β) * ε 0 * ε j := by positivity
-  calc (θ - β) * ε 0 * ε j * ρ j ^ (j - 1) / j !
-      ≤ (θ - β) * ε 0 * ε j * δj ^ (j - 1) / j ! := by
+    pow_le_pow_left₀ (hρ j hj) (hrad j hj) _
+  calc μm * ε j * ρ j ^ (j - 1) / j !
+      ≤ μm * ε j * δj ^ (j - 1) / j ! := by
         gcongr
     _ < _ := key2
+
+/-- **A case-(b) outer iteration decreases the target** under the INNER certificate. Let
+`k ∈ 𝒦_b` be an outer iteration of Phase 2 that does not terminate, whose INNER output satisfies
+INNER's test (14.3.19) with radii `δ_{k+1,j} ≥ ρ_j ≥ 0` (`IsInnerCertified`), with `f`, `c` of
+class `C^q` and `‖∇^i f‖ ≤ B_f` (`i ∈ [1 : q]`) on the points of `X` with `‖c‖ ≤ ε₀`. Since
+(14.3.34) fails at `(x_{k+1}, t_{k+1})` while INNER's test, with the smaller tolerance
+`β ‖r(x_k, t_k)‖ ε_j ≤ βε₀ε_j`, holds at `(x_{k+1}, t_k)`, and `μ(·, t_{k+1}) - μ(·, t_k)` is
+`(t_k - t_{k+1})(f - f(x_{k+1}))`, some order `j ∈ [1 : q]` has
+`(θ - β) ε₀ ε_j ρ_j^{j-1}/j! < 2 B_f (t_k - t_{k+1})`. -/
+theorem IsTPqpGCPhase2.target_drop_of_isKb (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    {ρ : ℕ → ℝ} (hcert : IsInnerCertified f c X q θ β ε D ρ)
+    (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j) (hf : ContDiff ℝ q f) (hc : ContDiff ℝ q c) {Bf : ℝ}
+    (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+    {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε (k + 1)) (hb : D.IsKb f c θ ε k) :
+    ∃ j ∈ Finset.Icc 1 q,
+      (θ - β) * ε 0 * ε j * ρ j ^ (j - 1) / j ! < 2 * Bf * (D.t k - D.t (k + 1)) := by
+  have hrk : Constrained.targetResidual f c (D.t k) (D.x k) ≤ ε 0 :=
+    (h.isTargetSequence hk).residual_le h.θ_lt_one.le h.ε₀_pos.le hk1 k.le_succ
+  have hβ := h.β_pos
+  have hm : (θ - β) * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.x (k + 1)) -
+      β * Constrained.targetResidual f c (D.t k) (D.x k) := by
+    have := hb.1
+    nlinarith
+  have hkB : D.Before f c X q θ ε k := IsTPqpGCPhase2.before_mono hk k.le_succ
+  exact h.target_drop_of_isKb_margin hρ hf hc hBf hk1 hk hb (hcert.cert k hk1 hkB hb)
+    (hcert.radius_ge k hk1 hkB hb) (mul_nonneg (sub_nonneg.2 h.β_le_θ) h.ε₀_pos.le) hm
+
+/-- **Telescoping the targets of Phase 2**: if every outer iteration of a set
+`S ⊆ [1, K)` reached decreases the target by at least `τ`, then `|S| τ ≤ f_up - f_low + 1`
+(under f.B.Fb on `ℱ_{β_F}` with `ε₀ ≤ β_F`, the targets stay in `[f_low - 1, f_up]` and do not
+increase). -/
+theorem IsTPqpGCPhase2.card_mul_le_of_target_drop (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF)
+    {K : ℕ} (hK1 : 1 ≤ K) (hK : D.Before f c X q θ ε K) {S : Finset ℕ}
+    (hS : S ⊆ Finset.Ico 1 K) {τ : ℝ} (hτ : ∀ k ∈ S, τ ≤ D.t k - D.t (k + 1)) :
+    S.card * τ ≤ fup - flow + 1 := by
+  have hts := h.isTargetSequence hK
+  have hε₀ := h.ε₀_pos
+  have h1 : ∑ _k ∈ S, τ ≤ ∑ k ∈ S, (D.t k - D.t (k + 1)) := Finset.sum_le_sum hτ
+  have h2 : ∑ k ∈ S, (D.t k - D.t (k + 1)) ≤ ∑ k ∈ Finset.Ico 1 K, (D.t k - D.t (k + 1)) :=
+    Finset.sum_le_sum_of_subset_of_nonneg hS fun k hk _ => by
+      rw [Finset.mem_Ico] at hk
+      exact sub_nonneg.2 (hts.target_succ_lt h.θ_pos.le h.θ_lt_one hε₀ hk.1 hk.2).le
+  have htel : ∑ k ∈ Finset.Ico 1 K, (D.t k - D.t (k + 1)) = D.t 1 - D.t K := by
+    have := Finset.sum_Ico_sub (f := D.t) hK1
+    rw [← neg_sub (D.t K), ← this, ← Finset.sum_neg_distrib]
+    simp
+  rw [Finset.sum_const, nsmul_eq_mul] at h1
+  rw [htel] at h2
+  have hxX : ∀ k, 1 ≤ k → k ≤ K → D.x k ∈ X := fun k hk1 hkK =>
+    h.x_mem k hk1 (IsTPqpGCPhase2.before_mono hK hkK)
+  have hB' : ∀ z ∈ X, ‖c z‖ ≤ ε 0 → flow ≤ f z ∧ f z ≤ fup := fun z hz hcz =>
+    hB z ⟨hz, hcz.trans hεβ⟩
+  have ht1 := hts.target_mem_Icc h.θ_lt_one.le hε₀.le (h.ε_le_one 0 (by simp)) hxX hB' le_rfl hK1
+  have htK := hts.target_mem_Icc h.θ_lt_one.le hε₀.le (h.ε_le_one 0 (by simp)) hxX hB' hK1 le_rfl
+  linarith [ht1.2, htK.1]
 
 /-- **The number of case-(b) outer iterations is bounded** under the INNER certificate
 (`IsInnerCertified` with radii `ρ_j ≥ 0`), for `f`, `c` of class `C^q` with
@@ -2106,48 +2303,24 @@ theorem IsTPqpGCPhase2.kbCount_le (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D) {
   classical
   have hts := h.isTargetSequence hK
   have hε₀ := h.ε₀_pos
-  have hθβ : 0 ≤ θ - β := sub_nonneg.2 h.β_le_θ
-  have hdrop : ∀ k ∈ (Finset.Ico 1 K).filter (D.IsKb f c θ ε), τ ≤ D.t k - D.t (k + 1) := by
-    intro k hk
-    rw [Finset.mem_filter, Finset.mem_Ico] at hk
-    obtain ⟨j, hj, hlt⟩ := h.target_drop_of_isKb hcert hρ hf hc hBf hk.1.1
-      (IsTPqpGCPhase2.before_mono hK hk.1.2) hk.2
-    have hd : 0 < D.t k - D.t (k + 1) :=
-      sub_pos.2 (hts.target_succ_lt h.θ_pos.le h.θ_lt_one hε₀ hk.1.1 hk.1.2)
-    have hfac : (0 : ℝ) < j ! := by positivity
-    have hA : 0 ≤ (θ - β) * ε 0 * ε j * ρ j ^ (j - 1) / j ! := by
-      have := h.ε_pos' hj
-      have := hρ j hj
-      positivity
-    have hBf : 0 < 2 * Bf := by
-      by_contra hneg
-      push Not at hneg
-      nlinarith
-    exact (lt_of_mul_lt_mul_left ((hτ j hj).trans_lt hlt) hBf.le).le
-  have hc : 0 < τ := hτ0
-  rw [le_div_iff₀ hc, mul_comm]
-  have h1 : ∑ _k ∈ (Finset.Ico 1 K).filter (D.IsKb f c θ ε), τ ≤
-      ∑ k ∈ (Finset.Ico 1 K).filter (D.IsKb f c θ ε), (D.t k - D.t (k + 1)) :=
-    Finset.sum_le_sum hdrop
-  have h2 : ∑ k ∈ (Finset.Ico 1 K).filter (D.IsKb f c θ ε), (D.t k - D.t (k + 1)) ≤
-      ∑ k ∈ Finset.Ico 1 K, (D.t k - D.t (k + 1)) :=
-    Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _) fun k hk _ => by
-      rw [Finset.mem_Ico] at hk
-      exact sub_nonneg.2 (hts.target_succ_lt h.θ_pos.le h.θ_lt_one hε₀ hk.1 hk.2).le
-  have htel : ∑ k ∈ Finset.Ico 1 K, (D.t k - D.t (k + 1)) = D.t 1 - D.t K := by
-    have := Finset.sum_Ico_sub (f := D.t) hK1
-    rw [← neg_sub (D.t K), ← this, ← Finset.sum_neg_distrib]
-    simp
-  rw [Finset.sum_const, nsmul_eq_mul] at h1
-  rw [htel] at h2
-  have hxX : ∀ k, 1 ≤ k → k ≤ K → D.x k ∈ X := fun k hk1 hkK =>
-    h.x_mem k hk1 (IsTPqpGCPhase2.before_mono hK hkK)
-  have hB' : ∀ z ∈ X, ‖c z‖ ≤ ε 0 → flow ≤ f z ∧ f z ≤ fup := fun z hz hcz =>
-    hB z ⟨hz, hcz.trans hεβ⟩
-  have ht1 := hts.target_mem_Icc h.θ_lt_one.le hε₀.le (h.ε_le_one 0 (by simp)) hxX hB' le_rfl hK1
-  have htK := hts.target_mem_Icc h.θ_lt_one.le hε₀.le (h.ε_le_one 0 (by simp)) hxX hB' hK1 le_rfl
-  unfold TPqpSeq.kbCount
-  linarith [ht1.2, htK.1]
+  rw [le_div_iff₀ hτ0]
+  refine h.card_mul_le_of_target_drop hB hεβ hK1 hK (Finset.filter_subset _ _) fun k hk => ?_
+  rw [Finset.mem_filter, Finset.mem_Ico] at hk
+  obtain ⟨j, hj, hlt⟩ := h.target_drop_of_isKb hcert hρ hf hc hBf hk.1.1
+    (IsTPqpGCPhase2.before_mono hK hk.1.2) hk.2
+  have hd : 0 < D.t k - D.t (k + 1) :=
+    sub_pos.2 (hts.target_succ_lt h.θ_pos.le h.θ_lt_one hε₀ hk.1.1 hk.1.2)
+  have hfac : (0 : ℝ) < j ! := by positivity
+  have hA : 0 ≤ (θ - β) * ε 0 * ε j * ρ j ^ (j - 1) / j ! := by
+    have := h.ε_pos' hj
+    have := hρ j hj
+    have := sub_nonneg.2 h.β_le_θ
+    positivity
+  have hBf' : 0 < 2 * Bf := by
+    by_contra hneg
+    push Not at hneg
+    nlinarith
+  exact (lt_of_mul_lt_mul_left ((hτ j hj).trans_lt hlt) hBf'.le).le
 
 /-- A bad outer iteration is in `𝒦_b`: `n_bad(K) ≤ |𝒦_b ∩ [1, K)|`. -/
 theorem TPqpSeq.badCount_le_kbCount (K : ℕ) :
@@ -2206,6 +2379,468 @@ theorem IsTPqpGCPhase2.complexity_of_certified (h2 : IsTPqpGCPhase2 f c X q θ �
       exact hNb
     · exact hbad K hK1 hK
   exact ⟨kε, hend, hkε, hiii kε hend⟩
+
+/-- **The residual does not increase along a run of case-(b) iterations**: if every outer
+iteration of `[k, k')` is in `𝒦_b`, then `‖r(x_{k'}, t_{k'})‖ ≤ ‖r(x_k, t_k)‖` (INNER does not
+increase `‖r(·, t_j)‖`, and (14.3.35) preserves it, (B.14.19)). -/
+theorem IsTPqpGCPhase2.resid_le_of_isKb (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D) {k k' : ℕ}
+    (hk1 : 1 ≤ k) (hkk' : k ≤ k') (hK : D.Before f c X q θ ε k')
+    (hb : ∀ j, k ≤ j → j < k' → D.IsKb f c θ ε j) :
+    Constrained.targetResidual f c (D.t k') (D.x k') ≤
+      Constrained.targetResidual f c (D.t k) (D.x k) := by
+  induction k', hkk' using Nat.le_induction with
+  | base => exact le_rfl
+  | succ j hkj ih =>
+    have hjB : D.Before f c X q θ ε j := IsTPqpGCPhase2.before_mono hK j.le_succ
+    have hbj := hb j hkj j.lt_succ_self
+    rw [h.t_succ_b j (hk1.trans hkj) hjB hbj, Constrained.targetResidual_two_mul_sub]
+    exact (h.resid_succ_le (hk1.trans hkj) hjB).trans
+      (ih hjB fun i hi hij => hb i hi (hij.trans j.lt_succ_self))
+
+/-- The margin `η = θ(1 - θ)ε₀/(1 + θ)` of the bound on the case-(b) outer iterations of
+TPqp-GC when `β = θ` is allowed (`IsTPqpGCPhase2.kbCount_le_of_le`). -/
+noncomputable def kbMargin (θ ε₀ : ℝ) : ℝ := θ * (1 - θ) * ε₀ / (1 + θ)
+
+open Classical in
+/-- **The case-(b) outer iterations ending at a point passing INNER's test are bounded for every
+`β ≤ θ`** (including the book's `β = θ`), when those calls have radii `δ_{k+1,j} ≥ ρ_j ≥ 0`, for
+`f`, `c` of class `C^q` with `‖∇^i f‖ ≤ B_f` (`i ∈ [1 : q]`) on the points of `X` with
+`‖c‖ ≤ ε₀`, and f.B.Fb on `ℱ_{β_F}` with `ε₀ ≤ β_F`. Write `η = θ(1 - θ)ε₀/(1 + θ)` (`kbMargin`)
+and let `τ > 0` satisfy `2 B_f τ ≤ η ε_j ρ_j^{j-1}/j!` for `j ∈ [1 : q]`. Then their number in
+`[1, K)` is at most `|𝒦_a ∩ [1, K)| + 1 + (f_up - f_low + 1)/τ`. The iterations whose margin
+`‖r(x_{k+1}, t_k)‖ - β ‖r(x_k, t_k)‖` is at least `η` lower the target by more than `τ`
+(`IsTPqpGCPhase2.target_drop_of_isKb_margin`); between two consecutive elements of `𝒦_a` there is
+at most one other one: if `k < k'` both have margin `< η` with no `𝒦_a` iteration in between,
+then `‖r(x_{k+1}, t_k)‖ < θε₀ + η`, the residual does not increase from `k + 1` to `k'`
+(`IsTPqpGCPhase2.resid_le_of_isKb`), and the margin at `k'` is at least
+`θε₀ - θ(θε₀ + η) = η`. -/
+theorem IsTPqpGCPhase2.card_isKb_innerTest_le (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    {ρ : ℕ → ℝ} (hrad : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k →
+      D.InnerTest f c X q β ε k → ∀ j ∈ Finset.Icc 1 q, ρ j ≤ D.δ (k + 1) j)
+    (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j)
+    (hf : ContDiff ℝ q f) (hc : ContDiff ℝ q c) {Bf : ℝ}
+    (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+    {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : ∀ j ∈ Finset.Icc 1 q, 2 * Bf * τ ≤ kbMargin θ (ε 0) * ε j * ρ j ^ (j - 1) / j !)
+    {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF)
+    {K : ℕ} (hK1 : 1 ≤ K) (hK : D.Before f c X q θ ε K) :
+    ((((Finset.Ico 1 K).filter
+        (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k)).card : ℕ) : ℝ) ≤
+      D.kaCount f c θ ε K + 1 + (fup - flow + 1) / τ := by
+  classical
+  have hts := h.isTargetSequence hK
+  have hε₀ := h.ε₀_pos
+  have hθ0 := h.θ_pos
+  have hθ1 := h.θ_lt_one
+  set η := kbMargin θ (ε 0) with hη
+  have hη0 : 0 ≤ η := by
+    rw [hη, kbMargin]; have : 0 ≤ 1 - θ := by linarith
+    positivity
+  have hηeq : η * (1 + θ) = θ * (1 - θ) * ε 0 := by
+    rw [hη, kbMargin]; field_simp
+  -- the margin of a case-(b) iteration
+  set mg : ℕ → ℝ := fun k => Constrained.targetResidual f c (D.t k) (D.x (k + 1)) -
+    β * Constrained.targetResidual f c (D.t k) (D.x k) with hmg
+  set Kb := (Finset.Ico 1 K).filter (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k)
+  set Sm := Kb.filter (fun k => mg k < η)
+  set Bg := Kb.filter (fun k => ¬ mg k < η)
+  have hsplit : Kb.card = Sm.card + Bg.card :=
+    (Finset.card_filter_add_card_filter_not _).symm
+  -- the iterations with a large margin decrease the target by more than `τ`
+  have hBg : (Bg.card : ℝ) ≤ (fup - flow + 1) / τ := by
+    rw [le_div_iff₀ hτ0]
+    refine h.card_mul_le_of_target_drop hB hεβ hK1 hK
+      ((Finset.filter_subset _ _).trans (Finset.filter_subset _ _)) fun k hk => ?_
+    simp only [Finset.mem_filter, Finset.mem_Ico, not_lt] at hk
+    obtain ⟨⟨⟨hk1, hkK⟩, hb, htest⟩, hm⟩ := hk
+    obtain ⟨j, hj, hlt⟩ := h.target_drop_of_isKb_margin hρ hf hc hBf hk1
+      (IsTPqpGCPhase2.before_mono hK hkK) hb htest
+      (hrad k hk1 (IsTPqpGCPhase2.before_mono hK hkK.le) hb htest) hη0 hm
+    have hd : 0 < D.t k - D.t (k + 1) :=
+      sub_pos.2 (hts.target_succ_lt h.θ_pos.le h.θ_lt_one hε₀ hk1 hkK)
+    have hfac : (0 : ℝ) < j ! := by positivity
+    have hA : 0 ≤ η * ε j * ρ j ^ (j - 1) / j ! := by
+      have := h.ε_pos' hj
+      have := hρ j hj
+      positivity
+    have hBf' : 0 < 2 * Bf := by
+      by_contra hneg
+      push Not at hneg
+      nlinarith
+    exact (lt_of_mul_lt_mul_left ((hτ j hj).trans_lt hlt) hBf'.le).le
+  -- at most one iteration with a small margin between consecutive elements of `𝒦_a`
+  set g : ℕ → ℕ := fun k => Nat.findGreatest (fun j => 1 ≤ j ∧ D.IsKa f c θ ε j) (k - 1)
+  have hkey : ∀ k ∈ Sm, ∀ k' ∈ Sm, k < k' → g k ≠ g k' := by
+    intro k hk k' hk' hlt hg
+    simp only [Sm, Kb, Finset.mem_filter, Finset.mem_Ico] at hk hk'
+    obtain ⟨⟨⟨hk1, hkK⟩, hb, -⟩, hm⟩ := hk
+    obtain ⟨⟨⟨hk1', hkK'⟩, hb', -⟩, hm'⟩ := hk'
+    have hnoKa : ∀ j, k ≤ j → j < k' → D.IsKb f c θ ε j := by
+      intro j hkj hjk'
+      refine (IsTPqpGCPhase2.isKa_or_isKb_of_not_stop (hK j (hk1.trans hkj)
+        (hjk'.trans hkK'))).resolve_left fun hKa => ?_
+      have h1 : j ≤ g k' := Nat.le_findGreatest (by omega) ⟨hk1.trans hkj, hKa⟩
+      have h2 : g k ≤ k - 1 := Nat.findGreatest_le _
+      omega
+    have hkB : D.Before f c X q θ ε k := IsTPqpGCPhase2.before_mono hK hkK.le
+    have hchain := h.resid_le_of_isKb (k := k + 1) (k' := k') (by omega) hlt
+      (IsTPqpGCPhase2.before_mono hK hkK'.le) fun j hj hj' => hnoKa j (by omega) hj'
+    rw [h.t_succ_b k hk1 hkB hb, Constrained.targetResidual_two_mul_sub] at hchain
+    have hrk : Constrained.targetResidual f c (D.t k) (D.x k) ≤ ε 0 :=
+      hts.residual_le h.θ_lt_one.le hε₀.le hk1 hkK.le
+    have hr0 := Constrained.targetResidual_nonneg (f := f) (c := c) (t := D.t k) (x := D.x k)
+    have hr0' := Constrained.targetResidual_nonneg (f := f) (c := c) (t := D.t k)
+      (x := D.x (k + 1))
+    have hβθ := h.β_le_θ
+    have hβ := h.β_pos
+    simp only [hmg] at hm hm'
+    have h1 : β * Constrained.targetResidual f c (D.t k) (D.x k) ≤ θ * ε 0 := by
+      calc β * Constrained.targetResidual f c (D.t k) (D.x k) ≤
+          θ * Constrained.targetResidual f c (D.t k) (D.x k) := by gcongr
+        _ ≤ θ * ε 0 := by gcongr
+    have h2 : β * Constrained.targetResidual f c (D.t k') (D.x k') ≤
+        θ * Constrained.targetResidual f c (D.t k) (D.x (k + 1)) := by
+      calc β * Constrained.targetResidual f c (D.t k') (D.x k') ≤
+          θ * Constrained.targetResidual f c (D.t k') (D.x k') := by
+            gcongr; exact Constrained.targetResidual_nonneg
+        _ ≤ _ := by gcongr
+    have h3 := hb'.1
+    nlinarith
+  have hSm : Sm.card ≤ D.kaCount f c θ ε K + 1 := by
+    refine (Finset.card_le_card_of_injOn g (t := insert 0
+      ((Finset.Ico 1 K).filter (D.IsKa f c θ ε))) (fun k hk => ?_) (fun k hk k' hk' hg => ?_)).trans
+      (Finset.card_insert_le _ _)
+    · have hk' : k ∈ Sm := hk
+      simp only [Sm, Kb, Finset.mem_filter, Finset.mem_Ico] at hk'
+      rw [Finset.coe_insert, Finset.coe_filter]
+      by_cases h0 : g k = 0
+      · exact Or.inl h0
+      · right
+        have hP := Nat.findGreatest_of_ne_zero rfl h0
+        have hle : g k ≤ k - 1 := Nat.findGreatest_le _
+        exact ⟨Finset.mem_Ico.2 ⟨hP.1, by omega⟩, hP.2⟩
+    · rcases lt_trichotomy k k' with hlt | heq | hgt
+      · exact absurd hg (hkey k hk k' hk' hlt)
+      · exact heq
+      · exact absurd hg.symm (hkey k' hk' k hk hgt)
+  rw [hsplit]
+  push_cast
+  have : (Sm.card : ℝ) ≤ D.kaCount f c θ ε K + 1 := by exact_mod_cast hSm
+  linarith
+
+/-- **The number of case-(b) outer iterations is bounded for every `β ≤ θ`** (including the
+book's `β = θ`) under the INNER certificate (`IsInnerCertified` with radii `ρ_j ≥ 0`), for `f`,
+`c` of class `C^q` with `‖∇^i f‖ ≤ B_f` (`i ∈ [1 : q]`) on the points of `X` with `‖c‖ ≤ ε₀`, and
+f.B.Fb on `ℱ_{β_F}` with `ε₀ ≤ β_F`. Write `η = θ(1 - θ)ε₀/(1 + θ)` (`kbMargin`) and let `τ > 0`
+satisfy `2 B_f τ ≤ η ε_j ρ_j^{j-1}/j!` for `j ∈ [1 : q]`. Then
+`|𝒦_b ∩ [1, K)| ≤ |𝒦_a ∩ [1, K)| + 1 + (f_up - f_low + 1)/τ`.
+(`IsTPqpGCPhase2.card_isKb_innerTest_le`: under the certificate every case-(b) call passes
+INNER's test.) -/
+theorem IsTPqpGCPhase2.kbCount_le_of_le (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D) {ρ : ℕ → ℝ}
+    (hcert : IsInnerCertified f c X q θ β ε D ρ) (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j)
+    (hf : ContDiff ℝ q f) (hc : ContDiff ℝ q c) {Bf : ℝ}
+    (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+    {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : ∀ j ∈ Finset.Icc 1 q, 2 * Bf * τ ≤ kbMargin θ (ε 0) * ε j * ρ j ^ (j - 1) / j !)
+    {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF)
+    {K : ℕ} (hK1 : 1 ≤ K) (hK : D.Before f c X q θ ε K) :
+    (D.kbCount f c θ ε K : ℝ) ≤ D.kaCount f c θ ε K + 1 + (fup - flow + 1) / τ := by
+  classical
+  have := h.card_isKb_innerTest_le (fun k hk1 hk hb _ => hcert.radius_ge k hk1 hk hb) hρ hf hc
+    hBf hτ0 hτ hB hεβ hK1 hK
+  refine le_trans (le_of_eq ?_) this
+  unfold TPqpSeq.kbCount
+  have e : (Finset.Ico 1 K).filter (D.IsKb f c θ ε) = (Finset.Ico 1 K).filter
+      (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k) := by
+    refine Finset.filter_congr fun k hk => ⟨fun hb => ⟨hb, ?_⟩, fun h' => h'.1⟩
+    rw [Finset.mem_Ico] at hk
+    exact hcert.cert k hk.1 (IsTPqpGCPhase2.before_mono hK hk.2.le) hb
+  rw [e]
+
+/-- **Theorem 14.3.9 without the bad-iteration parameter for every `β ≤ θ`**, for Phase-2 runs
+whose case-(b) calls carry INNER's certificate (`IsInnerCertified`, radii `δ_{k+1,j} ≥ ρ_j ≥ 0`).
+Under the assumptions of `IsTPqpGCPhase2.complexity_of_certified`, with `τ > 0` satisfying
+`2 B_f τ ≤ η ε_j ρ_j^{j-1}/j!` (`η = kbMargin θ ε₀ = θ(1 - θ)ε₀/(1 + θ)`, `j ∈ [1 : q]`) in place
+of the margin `(θ - β)ε₀` (so `β = θ` is allowed), write
+`N_b = N_a + 1 + (f_up - f_low + 1)/τ` (`IsTPqpGCPhase2.kbCount_le_of_le` and
+`IsTPqpGCPhase2.kaCount_le`): every outer iteration `K ≥ 1` reached satisfies
+`K ≤ (N_a + 1)(G + 1) + N_b`, Phase 2 terminates at some `k_ε ≤ (N_a + 1)(G + 1) + N_b`, using at
+most `1 + G (N_a + 1) + k_ε` derivative evaluations and `1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε`
+evaluations of `(f, c)`. -/
+theorem IsTPqpGCPhase2.complexity_of_certified_le (h2 : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    (hin : IsInnerPhaseRun f c X q θ β ε D κdecr κuns κunc π) (hκ : 0 < κdecr)
+    (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
+    (hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - π l) * ε l ^ (-π l) ≤ M) {βF flow fup : ℝ}
+    (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF) {ρ : ℕ → ℝ}
+    (hcert : IsInnerCertified f c X q θ β ε D ρ) (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j)
+    (hf : ContDiff ℝ q f) (hc : ContDiff ℝ q c) {Bf : ℝ}
+    (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+    {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : ∀ j ∈ Finset.Icc 1 q, 2 * Bf * τ ≤ kbMargin θ (ε 0) * ε j * ρ j ^ (j - 1) / j !) :
+    (∀ K, 1 ≤ K → D.Before f c X q θ ε K →
+      (K : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
+        (goodBound κdecr β θ πmax M + 1) +
+          ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / τ)) ∧
+    ∃ kε, D.IsEnd f c X q θ ε kε ∧
+      (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
+        (goodBound κdecr β θ πmax M + 1) +
+          ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / τ) ∧
+      (D.derivEvals kε : ℝ) ≤
+        1 + goodBound κdecr β θ πmax M * ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) + kε ∧
+      (D.funEvals kε : ℝ) ≤
+        1 + κuns * (goodBound κdecr β θ πmax M * ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) +
+          kε) + κunc * kε := by
+  obtain ⟨hi, hii, hiii⟩ := h2.complexity hin hκ hκuns hπ hM0 hM hB hεβ
+  set Nb := (fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / τ
+  have hbad : ∀ K, 1 ≤ K → D.Before f c X q θ ε K → (D.badCount f c X q θ ε K : ℝ) ≤ Nb :=
+    fun K hK1 hK => (Nat.cast_le.2 (D.badCount_le_kbCount K)).trans
+      ((h2.kbCount_le_of_le hcert hρ hf hc hBf hτ0 hτ hB hεβ hK1 hK).trans
+        (by linarith [h2.kaCount_le hB hεβ hK1 hK]))
+  have hx₁ : flow ≤ f x₁ ∧ f x₁ ≤ fup :=
+    hB x₁ ⟨h2.mem_one, h2.norm_one_le.trans ((mul_le_of_le_one_left h2.ε₀_pos.le
+      h2.θ_lt_one.le).trans hεβ)⟩
+  have hNb : 0 ≤ Nb := by
+    have : 0 < (1 - θ) * ε 0 := mul_pos (by linarith [h2.θ_lt_one]) h2.ε₀_pos
+    have : 0 ≤ (fup - flow + 1) / ((1 - θ) * ε 0) := div_nonneg (by linarith) this.le
+    have : 0 ≤ (fup - flow + 1) / τ := div_nonneg (by linarith) hτ0.le
+    linarith
+  refine ⟨fun K hK1 hK => (hi K hK1 hK).trans (by linarith [hbad K hK1 hK]), ?_⟩
+  obtain ⟨kε, hend, hkε⟩ := hii _ fun K hK => by
+    rcases Nat.eq_zero_or_pos K with rfl | hK1
+    · simp only [TPqpSeq.badCount, Finset.Ico_eq_empty_of_le zero_le_one, Finset.filter_empty,
+        Finset.card_empty, Nat.cast_zero]
+      exact hNb
+    · exact hbad K hK1 hK
+  exact ⟨kε, hend, hkε, hiii kε hend⟩
+
+/-- **From the contract of `IsInnerPhaseRun` to the one keyed on INNER's test**: if the INNER
+calls satisfy `IsInnerPhaseRun` and every call ending with `‖r(x_{k+1}, t_k)‖ ≥ θε₀` ends at a point
+passing INNER's own test (14.3.19) with radii `δ_{k+1,j} ≥ ρ_j` (calls are interrupted only by the
+first test of (14.3.32), as for the constructed runs), they satisfy `IsInnerPhaseRunStrong`. -/
+theorem IsInnerPhaseRun.toStrong (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    (hin : IsInnerPhaseRun f c X q θ β ε D κdecr κuns κunc π) {ρ : ℕ → ℝ}
+    (hcert : ∀ k, 1 ≤ k → D.Before f c X q θ ε k →
+      θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.x (k + 1)) →
+      D.InnerTest f c X q β ε k ∧ ∀ j ∈ Finset.Icc 1 q, ρ j ≤ D.δ (k + 1) j) :
+    IsInnerPhaseRunStrong f c X q θ β ε D κdecr κuns κunc π ρ where
+  count := hin.count
+  stay := hin.stay
+  decrease k hk1 hk i hi hs hcont hge := by
+    by_cases hlt : i + 1 < D.e k
+    · exact hin.decrease k hk1 hk i hi hs (Or.inl hlt) hge
+    · have hie : i + 1 = D.e k := by omega
+      rcases hcont with h' | h'
+      · exact absurd h' hlt
+      · have hge' : θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.x (k + 1)) := by
+          rw [← h.inner_end k hk1 hk, ← hie]; exact hge
+        exact absurd (hcert k hk1 hk hge').1 h'
+  radius_ge k hk1 hk hb _ := (hcert k hk1 hk hb.1).2
+
+/-- **The contract keyed on INNER's own test implies the contract of the proof of
+Lemma 14.3.8** for Phase-2 runs: since `β ≤ θ` and `‖r(x_k, t_k)‖ ≤ ε₀`, INNER's test at a point
+with `‖r(x_{k+1}, t_k)‖ ≥ θε₀` implies the third test of (14.3.32) there, so every step exempted by
+`IsInnerPhaseRun` is exempted by `IsInnerPhaseRunStrong` (the converse of
+`IsInnerPhaseRun.toStrong`). -/
+theorem IsInnerPhaseRunStrong.toIsInnerPhaseRun (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    {ρ : ℕ → ℝ} (hin : IsInnerPhaseRunStrong f c X q θ β ε D κdecr κuns κunc π ρ) :
+    IsInnerPhaseRun f c X q θ β ε D κdecr κuns κunc π where
+  count := hin.count
+  stay := hin.stay
+  decrease k hk1 hk i hi hs hcont hge := by
+    refine hin.decrease k hk1 hk i hi hs ?_ hge
+    rcases hcont with h' | h'
+    · exact Or.inl h'
+    · by_cases hlt : i + 1 < D.e k
+      · exact Or.inl hlt
+      refine Or.inr fun htest => h' fun j hj => (htest j hj).trans ?_
+      have hie : i + 1 = D.e k := by omega
+      have hge' : θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.x (k + 1)) := by
+        rw [← h.inner_end k hk1 hk, ← hie]; exact hge
+      have hrk : Constrained.targetResidual f c (D.t k) (D.x k) ≤ ε 0 :=
+        (h.isTargetSequence hk).residual_le h.θ_lt_one.le h.ε₀_pos.le hk1 le_rfl
+      have hβ := h.β_pos
+      have hβθ := h.β_le_θ
+      have hεj := h.ε_pos' hj
+      have hδ := (h.radius_mem k hk1 hk j hj).1
+      have hb : β * Constrained.targetResidual f c (D.t k) (D.x k) ≤
+          Constrained.targetResidual f c (D.t k) (D.x (k + 1)) := by
+        have : β * Constrained.targetResidual f c (D.t k) (D.x k) ≤ θ * ε 0 := by
+          calc _ ≤ θ * Constrained.targetResidual f c (D.t k) (D.x k) := by
+                gcongr; exact Constrained.targetResidual_nonneg
+            _ ≤ θ * ε 0 := by gcongr; exact h.θ_pos.le
+        linarith
+      have : β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j ≤
+          ε j * Constrained.targetResidual f c (D.t k) (D.x (k + 1)) := by nlinarith
+      gcongr
+
+open Classical in
+/-- **Theorem 14.3.9 (Phase 2): termination within an explicit bound without the bad-iteration
+parameter, for every run satisfying the
+INNER contract keyed on INNER's own test** (`IsInnerPhaseRunStrong`, the form in which
+Lemmas 14.2.2–14.2.3 of [cartis2022evaluation] hold for genuine INNER runs; the calls may be cut
+by any test of (14.3.32)), for every `β ≤ θ`. Assume `κ_decr > 0`, `κ_uns ≥ 0`, `0 ≤ π_l ≤ π_max`,
+`M` as in Lemma 14.3.8, f.B.Fb on `ℱ_{β_F}` with `ε₀ ≤ β_F`, radii `ρ_j ≥ 0`, `f`, `c` of class
+`C^q` with `‖∇^i f‖ ≤ B_f` (`i ∈ [1 : q]`) on the points of `X` with `‖c‖ ≤ ε₀`, and `τ > 0` with
+`2 B_f τ ≤ η ε_j ρ_j^{j-1}/j!` (`η = kbMargin θ ε₀`). Write `N_a = (f_up - f_low + 1)/((1 - θ)ε₀)`,
+`G = goodBound κ_decr β θ π_max M` and `N_b = N_a + 1 + (f_up - f_low + 1)/τ`. Every case-(b)
+iteration either ends at a point passing INNER's test (at most `N_b` of them,
+`IsTPqpGCPhase2.card_isKb_innerTest_le`) or its call has a successful iteration with the
+guaranteed decrease (its last one; these number at most `G (N_a + 1)` in total,
+`IsTPqpGCPhase2.sum_card_le_of_decrease`). Hence every outer iteration `K ≥ 1` reached satisfies
+`K ≤ (N_a + 1)(G + 1) + N_b`, Phase 2 terminates at some `k_ε ≤ (N_a + 1)(G + 1) + N_b`, using at
+most `1 + G (N_a + 1) + k_ε` derivative evaluations and `1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε`
+evaluations of `(f, c)`. The extra term `N_b` is
+`O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})`, whose order depends on the INNER radii `ρ`: it is
+within the book's order for the ARqpC-SC exponents `j + 1` (`ρ_j ∼ ε₀ ε_j`), but not in general
+for the ARqp-SC row (see Not formalized). -/
+theorem IsTPqpGCPhase2.complexity_of_strong (h2 : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    {ρ : ℕ → ℝ} (hin : IsInnerPhaseRunStrong f c X q θ β ε D κdecr κuns κunc π ρ)
+    (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax)
+    (hM0 : 0 < M) (hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - π l) * ε l ^ (-π l) ≤ M)
+    {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF)
+    (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j) (hf : ContDiff ℝ q f) (hc : ContDiff ℝ q c) {Bf : ℝ}
+    (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+    {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : ∀ j ∈ Finset.Icc 1 q, 2 * Bf * τ ≤ kbMargin θ (ε 0) * ε j * ρ j ^ (j - 1) / j !) :
+    (∀ K, 1 ≤ K → D.Before f c X q θ ε K →
+      (K : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
+        (goodBound κdecr β θ πmax M + 1) +
+          ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / τ)) ∧
+    ∃ kε, D.IsEnd f c X q θ ε kε ∧
+      (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
+        (goodBound κdecr β θ πmax M + 1) +
+          ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / τ) ∧
+      (D.derivEvals kε : ℝ) ≤
+        1 + goodBound κdecr β θ πmax M * ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) + kε ∧
+      (D.funEvals kε : ℝ) ≤
+        1 + κuns * (goodBound κdecr β θ πmax M * ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) +
+          kε) + κunc * kε := by
+  have hθ := h2.θ_pos
+  set Na := (fup - flow + 1) / ((1 - θ) * ε 0)
+  set G := goodBound κdecr β θ πmax M
+  set Nb := Na + 1 + (fup - flow + 1) / τ
+  have hε₀ := h2.ε₀_pos
+  have hG : 0 ≤ G := by
+    unfold G goodBound
+    have := h2.θ_lt_one; have := h2.β_pos
+    have : 0 ≤ 1 - θ := by linarith
+    positivity
+  set Gd : ℕ → ℕ → Prop := fun k i => i < D.e k ∧ D.succ k i ∧
+    (i + 1 < D.e k ∨ ¬ D.InnerTest f c X q β ε k) ∧
+    θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.xi k (i + 1))
+  set sg : ℕ → ℕ := fun k => ((Finset.range (D.e k)).filter (Gd k)).card
+  have hsg : ∀ K, 1 ≤ K → D.Before f c X q θ ε K →
+      (∑ k ∈ Finset.Icc 1 K, (sg k : ℝ)) ≤ G * (Na + 1) := by
+    intro K hK1 hK
+    have h1 := h2.sum_card_le_of_decrease hκ hπ hM0 hM Gd
+      (fun k hk1 hk i hi => ⟨hi.1, hi.2.2.2,
+        hin.decrease k hk1 hk i hi.1 hi.2.1 hi.2.2.1 hi.2.2.2⟩) hK1 hK
+    have h3 : (D.kaCount f c θ ε K : ℝ) ≤ Na := h2.kaCount_le hB hεβ hK1 hK
+    convert h1.trans (mul_le_mul_of_nonneg_left (add_le_add_left h3 1) hG) using 3
+    simp only [sg]
+    congr
+  have hcov : ∀ K, D.Before f c X q θ ε K → ∀ k ∈ Finset.Ico 1 K, D.IsKa f c θ ε k ∨
+      (D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k) ∨ 1 ≤ sg k := by
+    intro K hK k hk
+    have hk' := Finset.mem_Ico.1 hk
+    have hkB : D.Before f c X q θ ε k := IsTPqpGCPhase2.before_mono hK hk'.2.le
+    rcases IsTPqpGCPhase2.isKa_or_isKb_of_not_stop (hK k hk'.1 hk'.2) with ha | hb
+    · exact Or.inl ha
+    · by_cases ht : D.InnerTest f c X q β ε k
+      · exact Or.inr (Or.inl ⟨hb, ht⟩)
+      · refine Or.inr (Or.inr ?_)
+        have hle : D.t k ≤ f (D.x k) := by
+          have := (h2.isTargetSequence hkB).sub_target_nonneg hk'.1 le_rfl
+          linarith
+        have hne : D.xi k (D.e k) ≠ D.xi k 0 := by
+          rw [h2.inner_end k hk'.1 hkB, h2.inner_zero k hk'.1 hkB]
+          intro heq
+          have := hb.2
+          rw [heq] at this
+          linarith
+        obtain ⟨i, hi, hsucc, hxi⟩ := IsTPqpGCPhase2.exists_last_succ (succ := D.succ k)
+          (D.e k) (hin.stay k hk'.1 hkB) hne
+        rw [h2.inner_end k hk'.1 hkB] at hxi
+        have hg : Gd k i := ⟨hi, hsucc, Or.inr ht, by rw [hxi]; exact hb.1⟩
+        exact Finset.card_pos.2 ⟨i, Finset.mem_filter.2 ⟨Finset.mem_range.2 hi, hg⟩⟩
+  have hi : ∀ K, 1 ≤ K → D.Before f c X q θ ε K → (K : ℝ) ≤ (Na + 1) * (G + 1) + Nb := by
+    intro K hK1 hK
+    have h1 : (K : ℝ) ≤ D.kaCount f c θ ε K + (∑ k ∈ Finset.Icc 1 K, (sg k : ℝ)) +
+        (((Finset.Ico 1 K).filter
+          (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k)).card : ℝ) + 1 := by
+      have := Constrained.le_card_add_sum_of_cover (D.IsKa f c θ ε)
+        (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k) sg (hcov K hK)
+      unfold TPqpSeq.kaCount
+      exact_mod_cast this
+    have h3 : (D.kaCount f c θ ε K : ℝ) ≤ Na := h2.kaCount_le hB hεβ hK1 hK
+    have h4 := hsg K hK1 hK
+    have h5 : (((Finset.Ico 1 K).filter
+        (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k)).card : ℝ) ≤
+        D.kaCount f c θ ε K + 1 + (fup - flow + 1) / τ :=
+      h2.card_isKb_innerTest_le hin.radius_ge hρ hf hc hBf hτ0 hτ hB hεβ hK1 hK
+    have e : (Na + 1) * (G + 1) + Nb = Na + G * (Na + 1) + (Na + 1 + (fup - flow + 1) / τ) + 1 := by
+      simp only [Nb]; ring
+    rw [e]
+    linarith
+  refine ⟨hi, ?_⟩
+  have hend : ∃ kε, D.IsEnd f c X q θ ε kε ∧ (kε : ℝ) ≤ (Na + 1) * (G + 1) + Nb := by
+    by_contra hno
+    have hall : ∀ K, D.Before f c X q θ ε K := by
+      intro K
+      induction K with
+      | zero => exact fun _ _ hj => absurd hj (Nat.not_lt_zero _)
+      | succ K ih =>
+        intro j hj1 hj
+        rcases Nat.lt_succ_iff_lt_or_eq.1 hj with hj | rfl
+        · exact ih j hj1 hj
+        · intro hstop
+          exact hno ⟨j, ⟨hj1, hstop, ih⟩, hi j hj1 ih⟩
+    set K := ⌈(Na + 1) * (G + 1) + Nb⌉₊ + 1
+    have h1 := hi K (by omega) (hall K)
+    have h3 : (Na + 1) * (G + 1) + Nb < K := by
+      have := Nat.le_ceil ((Na + 1) * (G + 1) + Nb)
+      push_cast [K]
+      linarith
+    linarith
+  obtain ⟨kε, hendε, hkε⟩ := hend
+  refine ⟨kε, hendε, hkε, ?_⟩
+  obtain ⟨hk1, -, hbef⟩ := hendε
+  have hgood' := hsg kε hk1 hbef
+  have hsucc : (∑ k ∈ Finset.Icc 1 kε, D.succCount k : ℝ) ≤
+      ∑ k ∈ Finset.Icc 1 kε, (sg k : ℝ) + kε := by
+    have : ∑ k ∈ Finset.Icc 1 kε, D.succCount k ≤ ∑ k ∈ Finset.Icc 1 kε, (sg k + 1) := by
+      refine Finset.sum_le_sum fun k hk => ?_
+      have hk1' := (Finset.mem_Icc.1 hk).1
+      have hkB := IsTPqpGCPhase2.before_mono hbef (Finset.mem_Icc.1 hk).2
+      unfold TPqpSeq.succCount
+      refine (Finset.card_le_card (t := insert (D.e k - 1)
+        ((Finset.range (D.e k)).filter (Gd k))) ?_).trans (Finset.card_insert_le _ _)
+      intro i hi
+      rw [Finset.mem_filter, Finset.mem_range] at hi
+      rw [Finset.mem_insert, Finset.mem_filter, Finset.mem_range]
+      by_cases hi1 : i + 1 < D.e k
+      · exact Or.inr ⟨hi.1, hi.1, hi.2, Or.inl hi1, h2.inner_residual_ge k hk1' hkB (i + 1) hi1⟩
+      · left; omega
+    rw [Finset.sum_add_distrib, Finset.sum_const, Nat.card_Icc, smul_eq_mul, mul_one,
+      Nat.add_sub_cancel] at this
+    exact_mod_cast this
+  have hD : (D.derivEvals kε : ℝ) = 1 + ∑ k ∈ Finset.Icc 1 kε, (D.succCount k : ℝ) := by
+    unfold TPqpSeq.derivEvals
+    push_cast
+    rfl
+  have hF : (D.funEvals kε : ℝ) ≤ 1 + ∑ k ∈ Finset.Icc 1 kε,
+      (κuns * D.succCount k + κunc) := by
+    unfold TPqpSeq.funEvals
+    push_cast
+    gcongr with k hk
+    rw [Finset.mem_Icc] at hk
+    exact hin.count k hk.1 (IsTPqpGCPhase2.before_mono hbef hk.2)
+  rw [Finset.sum_add_distrib, ← Finset.mul_sum, Finset.sum_const, Nat.card_Icc,
+    Nat.add_sub_cancel, nsmul_eq_mul] at hF
+  refine ⟨by rw [hD]; linarith, hF.trans ?_⟩
+  have : κuns * ∑ k ∈ Finset.Icc 1 kε, (D.succCount k : ℝ) ≤ κuns * (G * (Na + 1) + kε) :=
+    mul_le_mul_of_nonneg_left (hsucc.trans (by linarith)) hκuns
+  linarith
 
 end Complexity
 
@@ -2752,6 +3387,389 @@ theorem lemma_14_3_5_counterexample :
       linarith
 
 end Counterexample1435
+
+/-! ### Lemma 14.3.8: the decreases of its proof do not bound the bad outer iterations -/
+
+section Counterexample1439
+
+local notation "ℝ²" => EuclideanSpace ℝ (Fin 2)
+
+local notation "ℝ¹" => EuclideanSpace ℝ (Fin 1)
+
+namespace Theorem1439Cex
+
+/-- The simple constraint set `X = {x ∈ ℝ² | |x₁| ≤ 3}` of the counterexample. -/
+def cexX : Set ℝ² := {x | |x 0| ≤ 3}
+
+/-- The objective `f(x) = x₂ - x₁`. -/
+noncomputable def cexF : ℝ² → ℝ := fun x => x 1 - x 0
+
+/-- The unit vector of `ℝ¹`. -/
+noncomputable def cexE : ℝ¹ := EuclideanSpace.single 0 1
+
+/-- The constraint `c(x) = 3/5 + x₂`. -/
+noncomputable def cexC : ℝ² → ℝ¹ := fun x => (3 / 5 + x 1) • cexE
+
+/-- The outer iterates `x_k = (-(24/5) 2^{-k}, 0)`. -/
+noncomputable def cexPt (k : ℕ) : ℝ² := EuclideanSpace.single 0 (-(24 / 5) * (1 / 2) ^ k)
+
+/-- The Phase-2 sequences of the counterexample: iterates `x_k = cexPt k`, targets
+`t_k = (16/5) 2^{-k}`, radii `1`, and the `k`-th INNER call makes one successful iteration from
+`x_k` to `x_{k+1}`. -/
+noncomputable def cexRun : TPqpSeq 2 :=
+  ⟨cexPt, fun k => 16 / 5 * (1 / 2) ^ k, fun _ _ => 1,
+    fun k i => if i = 0 then cexPt k else cexPt (k + 1), fun _ => 1, fun _ _ => True⟩
+
+/-- The second coordinate of `x_k` vanishes. -/
+theorem cexPt_one (k : ℕ) : cexPt k 1 = 0 := by simp [cexPt]
+
+/-- The first coordinate of `x_k`. -/
+theorem cexPt_zero (k : ℕ) : cexPt k 0 = -(24 / 5) * (1 / 2) ^ k := by simp [cexPt]
+
+/-- `f(x_k) = (24/5) 2^{-k}`. -/
+theorem cexF_pt (k : ℕ) : cexF (cexPt k) = 24 / 5 * (1 / 2) ^ k := by
+  simp only [cexF, cexPt_one, cexPt_zero]; ring
+
+/-- `‖e‖ = 1`. -/
+theorem norm_cexE : ‖cexE‖ = 1 := by simp [cexE]
+
+/-- `‖c(y)‖ = |3/5 + y₂|`. -/
+theorem norm_cexC (y : ℝ²) : ‖cexC y‖ = |3 / 5 + y 1| := by
+  simp [cexC, norm_smul, norm_cexE]
+
+/-- The derivative of a coordinate. -/
+theorem hasFDerivAt_coord (i : Fin 2) (y : ℝ²) :
+    HasFDerivAt (fun x : ℝ² => x i) (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ) y :=
+  (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).hasFDerivAt
+
+/-- The derivative of `f`. -/
+theorem hasFDerivAt_cexF (y : ℝ²) :
+    HasFDerivAt cexF (EuclideanSpace.proj (1 : Fin 2) - EuclideanSpace.proj (0 : Fin 2) :
+      ℝ² →L[ℝ] ℝ) y :=
+  (hasFDerivAt_coord 1 y).sub (hasFDerivAt_coord 0 y)
+
+/-- The derivative of `c`. -/
+theorem hasFDerivAt_cexC (y : ℝ²) :
+    HasFDerivAt cexC ((EuclideanSpace.proj (1 : Fin 2) : ℝ² →L[ℝ] ℝ).smulRight cexE) y := by
+  have := ((hasFDerivAt_const (3 / 5 : ℝ) y).add (hasFDerivAt_coord 1 y)).smul_const cexE
+  exact this.congr_fderiv (ContinuousLinearMap.ext fun d => by simp)
+
+/-- The first-order Taylor decrement of `μ(·, t)` at a point `y` with `y₂ = 0`:
+`-∇μ(y, t)[d] = (f(y) - t) d₁ - (f(y) - t + 3/5) d₂`. -/
+theorem cex_decr {y : ℝ²} (hy : y 1 = 0) (t : ℝ) (d : ℝ²) :
+    (ftaylorSeries ℝ (Constrained.targetMerit cexF cexC t) y).taylorDecrement 1 d =
+      (cexF y - t) * d 0 - (cexF y - t + 3 / 5) * d 1 := by
+  rw [FormalMultilinearSeries.taylorDecrement_one_apply]
+  simp only [ftaylorSeries, iteratedFDeriv_one_apply]
+  rw [(Constrained.hasFDerivAt_targetMerit (t := t) (hasFDerivAt_cexF y)
+    (hasFDerivAt_cexC y)).fderiv]
+  simp [cexC, hy, norm_cexE]
+  ring
+
+/-- An upper bound on the first-order measure (Cauchy–Schwarz). -/
+theorem cex_measure_le {y : ℝ²} (hy : y 1 = 0) (t : ℝ) {S : Set ℝ²} (h0 : (0 : ℝ²) ∈ S) :
+    Optimization.taylorMeasure (ftaylorSeries ℝ (Constrained.targetMerit cexF cexC t) y) 1 1 S ≤
+      √((cexF y - t) ^ 2 + (cexF y - t + 3 / 5) ^ 2) := by
+  refine Optimization.decrementMeasure_le ⟨0, mem_closedBall_self zero_le_one, h0⟩
+    fun d hd => ?_
+  rw [cex_decr hy]
+  have hd1 : ‖d‖ ^ 2 ≤ 1 := by
+    have := mem_closedBall_zero_iff.1 hd.1
+    nlinarith [norm_nonneg d]
+  rw [EuclideanSpace.norm_sq_eq, Fin.sum_univ_two, Real.norm_eq_abs, Real.norm_eq_abs, sq_abs,
+    sq_abs] at hd1
+  set a := cexF y - t
+  refine (le_abs_self _).trans (Real.abs_le_sqrt ?_)
+  nlinarith [sq_nonneg (a * d 1 + (a + 3 / 5) * d 0), sq_nonneg a, sq_nonneg (a + 3 / 5)]
+
+/-- A lower bound on the first-order measure, along `d = -e₂`. -/
+theorem cex_le_measure {y : ℝ²} (hy : y 1 = 0) (t : ℝ) {S : Set ℝ²}
+    (hS : EuclideanSpace.single 1 (-1) ∈ S) :
+    cexF y - t + 3 / 5 ≤
+      Optimization.taylorMeasure (ftaylorSeries ℝ (Constrained.targetMerit cexF cexC t) y) 1 1
+        S := by
+  have := Optimization.taylorDecrement_le_taylorMeasure
+    (ftaylorSeries ℝ (Constrained.targetMerit cexF cexC t) y) 1 (δ := 1)
+    (d := EuclideanSpace.single 1 (-1)) ⟨by simp, hS⟩
+  rw [cex_decr hy] at this
+  simpa using this
+
+/-- `‖r(y, t)‖ = √((3/5)² + (f(y) - t)²)` when `y₂ = 0`. -/
+theorem cex_resid {y : ℝ²} (hy : y 1 = 0) (t : ℝ) :
+    Constrained.targetResidual cexF cexC t y = √((3 / 5) ^ 2 + (cexF y - t) ^ 2) := by
+  rw [Constrained.targetResidual_def, norm_cexC, hy, add_zero, abs_of_pos (by norm_num)]
+
+/-- The test (14.3.34) for `q = 1`, `ε₁ = 1` and radius `1`: `φ^1_{μ,X(y),1}(y, t) ≤ ‖r(y, t)‖`. -/
+theorem cex_meritCrit_iff {y : ℝ²} {t : ℝ} :
+    meritCrit cexF cexC cexX 1 (fun _ => 1) t y (fun _ => 1) ↔
+      Optimization.taylorMeasure (ftaylorSeries ℝ (Constrained.targetMerit cexF cexC t) y) 1 1
+        {d | y + d ∈ cexX} ≤ Constrained.targetResidual cexF cexC t y := by
+  simp [meritCrit]
+
+/-- The new iterate `x_{k+1}` passes the third test of (14.3.32) for the old target `t_k`. -/
+theorem cex_meritCrit_old (k : ℕ) :
+    meritCrit cexF cexC cexX 1 (fun _ => 1) (16 / 5 * (1 / 2) ^ k) (cexPt (k + 1))
+      (fun _ => 1) := by
+  rw [cex_meritCrit_iff]
+  have h0 : (0 : ℝ²) ∈ {d | cexPt (k + 1) + d ∈ cexX} := by
+    simp only [mem_ofPred_eq, add_zero, cexX, cexPt_zero]
+    rw [abs_le]; constructor <;> nlinarith [pow_pos (by norm_num : (0 : ℝ) < 1 / 2) k,
+      pow_le_one₀ (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num : (1 / 2 : ℝ) ≤ 1) (n := k),
+      pow_succ (1 / 2 : ℝ) k]
+  refine (cex_measure_le (cexPt_one _) _ h0).trans ?_
+  rw [cex_resid (cexPt_one _), cexF_pt]
+  refine Real.sqrt_le_sqrt ?_
+  have hw := pow_pos (by norm_num : (0 : ℝ) < 1 / 2) k
+  have hw1 := pow_le_one₀ (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num : (1 / 2 : ℝ) ≤ 1) (n := k)
+  have e : (1 / 2 : ℝ) ^ (k + 1) = (1 / 2) ^ k / 2 := by rw [pow_succ]; ring
+  rw [e]
+  nlinarith
+
+/-- The new iterate `x_{k+1}` fails (14.3.34) for the new target `t_{k+1}`. -/
+theorem cex_not_meritCrit_new (k : ℕ) :
+    ¬ meritCrit cexF cexC cexX 1 (fun _ => 1) (16 / 5 * (1 / 2) ^ (k + 1)) (cexPt (k + 1))
+      (fun _ => 1) := by
+  rw [cex_meritCrit_iff, not_le]
+  have hS : EuclideanSpace.single 1 (-1) ∈ {d | cexPt (k + 1) + d ∈ cexX} := by
+    have e : (EuclideanSpace.single (1 : Fin 2) (-1 : ℝ)) 0 = 0 := by simp
+    simp only [mem_ofPred_eq, cexX, PiLp.add_apply, cexPt_zero, e, add_zero]
+    rw [abs_le]; constructor <;> nlinarith [pow_pos (by norm_num : (0 : ℝ) < 1 / 2) k,
+      pow_le_one₀ (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num : (1 / 2 : ℝ) ≤ 1) (n := k),
+      pow_succ (1 / 2 : ℝ) k]
+  refine lt_of_lt_of_le ?_ (cex_le_measure (cexPt_one _) _ hS)
+  rw [cex_resid (cexPt_one _), cexF_pt]
+  have hw := pow_pos (by norm_num : (0 : ℝ) < 1 / 2) (k + 1)
+  rw [Real.sqrt_lt' (by nlinarith)]
+  nlinarith
+
+/-- `‖r(y, t)‖ ≥ 3/5 = θε₀` when `y₂ = 0`. -/
+theorem cex_resid_ge {y : ℝ²} (hy : y 1 = 0) (t : ℝ) :
+    3 / 5 ≤ Constrained.targetResidual cexF cexC t y := by
+  rw [cex_resid hy]
+  calc (3 / 5 : ℝ) = √((3 / 5) ^ 2) := (Real.sqrt_sq (by norm_num)).symm
+    _ ≤ _ := Real.sqrt_le_sqrt (by nlinarith [sq_nonneg (cexF y - t)])
+
+/-- No outer iteration is in `𝒦_a`. -/
+theorem cex_not_isKa (k : ℕ) : ¬ cexRun.IsKa cexF cexC (3 / 5) (fun _ => 1) k := by
+  unfold TPqpSeq.IsKa
+  rw [mul_one, not_lt]
+  exact cex_resid_ge (cexPt_one _) _
+
+/-- Every outer iteration is in `𝒦_b`. -/
+theorem cex_isKb (k : ℕ) : cexRun.IsKb cexF cexC (3 / 5) (fun _ => 1) k := by
+  refine ⟨by rw [mul_one]; exact cex_resid_ge (cexPt_one _) _, ?_⟩
+  change cexF (cexPt (k + 1)) < 16 / 5 * (1 / 2) ^ k
+  rw [cexF_pt, pow_succ]
+  nlinarith [pow_pos (by norm_num : (0 : ℝ) < 1 / 2) k]
+
+/-- Phase 2 never terminates. -/
+theorem cex_not_stop (k : ℕ) : ¬ cexRun.Stop cexF cexC cexX 1 (3 / 5) (fun _ => 1) k := by
+  rintro (⟨-, hb⟩ | ⟨-, hm⟩)
+  · exact hb (cex_isKb k)
+  · exact cex_not_meritCrit_new k hm
+
+/-- Every outer iteration is reached. -/
+theorem cex_before (K : ℕ) : cexRun.Before cexF cexC cexX 1 (3 / 5) (fun _ => 1) K :=
+  fun k _ _ => cex_not_stop k
+
+/-- No INNER call contains a good iteration. -/
+theorem cex_goodCount (k : ℕ) : cexRun.goodCount cexF cexC cexX 1 (3 / 5) (fun _ => 1) k = 0 := by
+  classical
+  unfold TPqpSeq.goodCount
+  rw [Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+  rintro i - ⟨hi, -, h | h, -⟩
+  · exact absurd h (by change ¬ i + 1 < 1; omega)
+  · exact h (cex_meritCrit_old k)
+
+/-- The iterates `x_k`, `k ≥ 1`, lie in `X`. -/
+theorem cex_mem {k : ℕ} (hk : 1 ≤ k) : cexPt k ∈ cexX := by
+  simp only [cexX, mem_ofPred_eq, cexPt_zero]
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le' hk
+  rw [abs_le]; constructor <;> nlinarith [pow_pos (by norm_num : (0 : ℝ) < 1 / 2) k,
+    pow_le_one₀ (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num : (1 / 2 : ℝ) ≤ 1) (n := k),
+    pow_succ (1 / 2 : ℝ) k]
+
+/-- The data are smooth: `f` is `C^∞`. -/
+theorem cex_contDiffF : ContDiff ℝ ⊤ cexF :=
+  (contDiff_piLp_apply (p := 2)).sub (contDiff_piLp_apply (p := 2))
+
+/-- The data are smooth: `c` is `C^∞`. -/
+theorem cex_contDiffC : ContDiff ℝ ⊤ cexC := by
+  have h1 : ContDiff ℝ ⊤ (fun x : ℝ² => 3 / 5 + x 1) :=
+    contDiff_const.add (contDiff_piLp_apply (p := 2))
+  exact h1.smul contDiff_const
+
+/-- `‖∇f‖ ≤ 2`. -/
+theorem cex_deriv_le (y : ℝ²) : ∀ i ∈ Finset.Icc 1 1, ‖iteratedFDeriv ℝ i cexF y‖ ≤ 2 := by
+  intro i hi
+  obtain rfl : i = 1 := by simpa using hi
+  rw [norm_iteratedFDeriv_one, (hasFDerivAt_cexF y).fderiv]
+  refine (norm_sub_le _ _).trans ?_
+  have h : ∀ j : Fin 2, ‖(EuclideanSpace.proj j : ℝ² →L[ℝ] ℝ)‖ ≤ 1 := fun j =>
+    ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun x => by
+      simpa using PiLp.norm_apply_le x j
+  linarith [h 0, h 1]
+
+/-- f.B.Fb on `ℱ_1`. -/
+theorem cex_assumptionBFb : Chapter07.AssumptionBFb cexF cexC cexX 1 (-5) 4 := by
+  intro x hx
+  obtain ⟨hxX, hcx⟩ := hx
+  rw [norm_cexC] at hcx
+  have h0 := abs_le.1 (show |x 0| ≤ 3 from hxX)
+  have h1 := abs_le.1 hcx
+  simp only [cexF]
+  constructor <;> linarith
+
+/-- The sequences form a Phase-2 run of TPqp-GC for every `β ∈ (0, 3/5]`. -/
+theorem cex_isTPqpGCPhase2 {β : ℝ} (hβ : 0 < β) (hβθ : β ≤ 3 / 5) :
+    IsTPqpGCPhase2 cexF cexC cexX 1 (3 / 5) β (fun _ => 1) (cexPt 1) cexRun := by
+  have hmem1 : cexPt 1 ∈ cexX := cex_mem le_rfl
+  have hc1 : ‖cexC (cexPt 1)‖ = 3 / 5 := by
+    rw [norm_cexC, cexPt_one, add_zero, abs_of_pos (by norm_num)]
+  have hsq : √((1 : ℝ) ^ 2 - (3 / 5) ^ 2) = 4 / 5 := by
+    rw [show (1 : ℝ) ^ 2 - (3 / 5) ^ 2 = (4 / 5) ^ 2 by norm_num]
+    exact Real.sqrt_sq (by norm_num)
+  refine ⟨by norm_num, by norm_num, hβ, hβθ, fun _ _ => one_pos, fun _ _ => le_rfl, hmem1,
+    by rw [hc1]; norm_num, rfl, ?_, fun k _ _ => cex_mem (by omega),
+    fun _ _ _ _ _ => ⟨one_pos, le_rfl⟩, fun k _ _ => Or.inr (Or.inl (cex_isKb k).2),
+    fun k _ _ => by simp [cexRun], fun k _ _ => by simp [cexRun], fun k _ _ i hi => ?_,
+    fun k _ _ i hi => ?_, fun k _ _ ha => absurd ha (cex_not_isKa k), fun k _ _ _ => ?_⟩
+  · change (16 / 5 : ℝ) * (1 / 2) ^ 1 = cexF (cexPt 1) - √(1 ^ 2 - ‖cexC (cexPt 1)‖ ^ 2)
+    rw [hc1, cexF_pt, hsq]
+    norm_num
+  · change i < 1 at hi
+    obtain rfl : i = 0 := by omega
+    have e1 : cexRun.xi k (0 + 1) = cexPt (k + 1) := by simp [cexRun]
+    have e0 : cexRun.xi k 0 = cexPt k := by simp [cexRun]
+    rw [e1, e0]
+    change Constrained.targetMerit cexF cexC (16 / 5 * (1 / 2) ^ k) (cexPt (k + 1)) ≤
+      Constrained.targetMerit cexF cexC (16 / 5 * (1 / 2) ^ k) (cexPt k)
+    rw [Constrained.targetMerit_def, Constrained.targetMerit_def, norm_cexC, norm_cexC,
+      cexPt_one, cexPt_one, cexF_pt, cexF_pt]
+    have e : (1 / 2 : ℝ) ^ (k + 1) = (1 / 2) ^ k / 2 := by rw [pow_succ]; ring
+    rw [e]
+    have hw := pow_pos (by norm_num : (0 : ℝ) < 1 / 2) k
+    nlinarith
+  · change i < 1 at hi
+    obtain rfl : i = 0 := by omega
+    have e0 : cexRun.xi k 0 = cexPt k := by simp [cexRun]
+    rw [e0, mul_one]
+    exact cex_resid_ge (cexPt_one _) _
+  · change (16 / 5 : ℝ) * (1 / 2) ^ (k + 1) = 2 * cexF (cexPt (k + 1)) - 16 / 5 * (1 / 2) ^ k
+    rw [cexF_pt, pow_succ]
+    ring
+
+end Theorem1439Cex
+
+open Theorem1439Cex in
+/-- **The decreases used in the proof of Lemma 14.3.8** ([cartis2022evaluation]) **do not bound
+the bad outer iterations.** There are TPqp-GC sequences (`algorithm_14_3_2`, with Phase 2 in the
+sense of `IsTPqpGCPhase2`) satisfying every hypothesis of the library's `theorem_14_3_9` for
+Phase 2 — whose INNER hypothesis is the contract `IsInnerPhaseRun` (here for every `κ_decr`, `π`
+and every `κ_uns`, `κ_unc` with `κ_uns + κ_unc ≥ 1`) — and f.B.Fb on `ℱ_1` with `ε₀ = 1 ≤ β_F = 1`,
+for every `β ∈ (0, θ]` and every Phase-1 constant `β₁ ∈ (0, 1)`, with smooth data (`f`, `c`
+affine, `X` closed, `‖∇f‖ ≤ 2`), whose Phase 2 never terminates: every outer iteration is reached
+and is bad (`TPqpSeq.IsBad`), so `n_bad(K) = K - 1` is unbounded. The INNER calls are not runs of
+a regularization method: INNER's own test (14.3.19) fails at `x_{k+1}` for large `k` (the
+gradient of `μ(·, t_k)` tends to `θ` while INNER's tolerance tends to `βθ ≤ θ²`), where Lemma 14.2.2
+would guarantee a decrease bounded below, whereas the decreases here tend to `0`. So this refutes
+the argument of Lemma 14.3.8 (and the contract `IsInnerPhaseRun`), not the book's Theorem 14.3.9;
+with the contract keyed on INNER's test (`IsInnerPhaseRunStrong`) the bad iterations are bounded
+(`IsTPqpGCPhase2.complexity_of_strong`).
+
+The data (`n = 2`, `m = 1`, `q = 1`): `X = {|x₁| ≤ 3}`, `f(x) = x₂ - x₁`, `c(x) = 3/5 + x₂`,
+`θ = 3/5`, `ε₀ = ε₁ = 1`, `x₀ = x₁ = (-12/5, 0)` (`‖c(x₀)‖ = θε₀`, so Phase 1 stops at once);
+Phase 2 has iterates `x_k = (-(24/5) 2^{-k}, 0)`, targets `t_k = (16/5) 2^{-k}` and radii `1`, and
+the `k`-th INNER call makes one successful iteration from `x_k` to `x_{k+1}`. Then
+`f(x_{k+1}) = t_k - a_k` with `a_k = (4/5) 2^{-k}`, so `k ∈ 𝒦_b` (`‖r(x_{k+1}, t_k)‖² =
+θ² + a_k² ≥ θ²ε₀²`) and `t_{k+1} = t_k - 2 a_k` (14.3.35). The call is stopped by the third test of
+(14.3.32), which holds at `x_{k+1}` for `t_k` (`‖∇μ(x_{k+1}, t_k)‖² = θ² + 2a_k² - 2θa_k ≤
+θ² + a_k²`), so its only successful iteration is exempt from the decrease of `IsInnerPhaseRun`
+and is not good; and (14.3.34) fails at `x_{k+1}` for `t_{k+1}` (along `d = -e₂` the decrease is
+`θ + a_k > √(θ² + a_k²)`), so Phase 2 does not stop. The decrease of `μ` along the calls and the
+target drops `2a_k` are summable: the sequence converges to `((0, 0), 0)` without terminating. -/
+theorem lemma_14_3_8_proof_gap_counterexample :
+    ∃ (f : ℝ² → ℝ) (c : ℝ² → ℝ¹) (X : Set ℝ²) (θ : ℝ) (ε : ℕ → ℝ) (x₀ : ℝ²) (xP : ℕ → ℝ²)
+      (δP : ℕ → ℕ → ℝ) (D : TPqpSeq 2),
+      IsClosed X ∧ ContDiff ℝ ⊤ f ∧ ContDiff ℝ ⊤ c ∧
+      (∀ y, ∀ i ∈ Finset.Icc 1 1, ‖iteratedFDeriv ℝ i f y‖ ≤ 2) ∧
+      Chapter07.AssumptionBFb f c X 1 (-5) 4 ∧ ε 0 = 1 ∧
+      (∀ β₁ β : ℝ, 0 < β₁ → β₁ < 1 → 0 < β → β ≤ θ →
+        algorithm_14_3_2 f c X 1 θ β₁ β ε x₀ xP δP 0 D ∧ ‖c (xP 0)‖ ≤ θ * ε 0 ∧
+        ∀ (κdecr κuns κunc : ℝ) (π : ℕ → ℝ), 1 ≤ κuns + κunc →
+          IsInnerPhaseRun f c X 1 θ β ε D κdecr κuns κunc π) ∧
+      (∀ K, D.Before f c X 1 θ ε K) ∧ (∀ K, D.badCount f c X 1 θ ε K = K - 1) ∧
+      ¬ ∃ kε, D.IsEnd f c X 1 θ ε kε := by
+  classical
+  have hX : IsClosed cexX :=
+    isClosed_le (continuous_abs.comp (EuclideanSpace.proj (0 : Fin 2)).continuous)
+      continuous_const
+  have hmem1 : cexPt 1 ∈ cexX := cex_mem le_rfl
+  have hc1 : ‖cexC (cexPt 1)‖ = 3 / 5 := by
+    rw [norm_cexC, cexPt_one, add_zero, abs_of_pos (by norm_num)]
+  have hlen0 : lenStop cexC cexX 1 (phase1Tol (3 / 5) (fun _ => 1)) (fun _ => cexPt 1)
+      (fun _ _ => 1) 0 := Or.inl (by rw [hc1, phase1Tol_zero, mul_one])
+  refine ⟨cexF, cexC, cexX, 3 / 5, fun _ => 1, cexPt 1, fun _ => cexPt 1, fun _ _ => 1, cexRun,
+    hX, ?_, ?_, ?_, ?_, rfl, fun β₁ β hβ₁ hβ₁1 hβ hβθ => ?_, cex_before, fun K => ?_,
+    fun ⟨kε, hend⟩ => cex_not_stop kε hend.2.1⟩
+  · exact cex_contDiffF
+  · exact cex_contDiffC
+  · exact cex_deriv_le
+  · exact cex_assumptionBFb
+  · have hph1 : algorithm_14_3_1 cexC cexX 1 (phase1Tol (3 / 5) (fun _ => 1)) β₁
+        (fun _ => cexPt 1) (fun _ _ => 1) := by
+      refine ⟨hmem1, fun j _ => ?_, fun j _ => ?_, hβ₁, hβ₁1, by rw [hc1]; nlinarith,
+        fun k _ h => absurd hlen0 (h 0 (by omega)), fun k _ h => absurd hlen0 (h 0 (by omega)),
+        fun k _ h => absurd hlen0 (h 0 (by omega))⟩
+      · unfold phase1Tol; split_ifs <;> norm_num
+      · unfold phase1Tol; split_ifs <;> norm_num
+    have hsq : √((1 : ℝ) ^ 2 - (3 / 5) ^ 2) = 4 / 5 := by
+      rw [show (1 : ℝ) ^ 2 - (3 / 5) ^ 2 = (4 / 5) ^ 2 by norm_num]
+      exact Real.sqrt_sq (by norm_num)
+    have hph2 := cex_isTPqpGCPhase2 hβ hβθ
+    refine ⟨⟨rfl, hph1, ⟨hlen0, fun j hj => absurd hj (Nat.not_lt_zero _)⟩, fun _ => hph2⟩,
+      by rw [hc1]; norm_num, fun κdecr κuns κunc π hκ => ⟨fun k _ _ => ?_,
+        fun k _ _ i _ hs => absurd trivial hs, fun k _ _ i hi _ hcont _ => ?_⟩⟩
+    · have : cexRun.succCount k = 1 := by
+        unfold TPqpSeq.succCount
+        simp [cexRun]
+      rw [this]
+      change ((1 : ℕ) : ℝ) ≤ κuns * ((1 : ℕ) : ℝ) + κunc
+      push_cast
+      linarith
+    · change i < 1 at hi
+      obtain rfl : i = 0 := by omega
+      rcases hcont with h | h
+      · exact absurd h (by change ¬ 0 + 1 < 1; omega)
+      · exact absurd (cex_meritCrit_old k) h
+  · unfold TPqpSeq.badCount
+    rw [Finset.filter_true_of_mem fun k _ => ⟨cex_isKb k, cex_goodCount k⟩, Nat.card_Ico]
+
+
+
+open Theorem1439Cex in
+/-- **The sequences of `lemma_14_3_8_proof_gap_counterexample` violate the INNER contract keyed on
+INNER's own test** (`IsInnerPhaseRunStrong`) for every `κ_decr > 0`, every `κ_uns ≥ 0`, `κ_unc`,
+exponents `π_1 ≥ 0` and radii `ρ_1 ≥ 0`, and every `β ∈ (0, θ]`: otherwise Phase 2 would terminate
+by `IsTPqpGCPhase2.complexity_of_strong` (with `B_f = 2`, `τ = η/4`), which it does not. So their
+INNER calls are not genuine INNER runs, consistently with `IsTPqpGCPhase2.complexity_of_strong`. -/
+theorem lemma_14_3_8_proof_gap_counterexample_not_strong {β : ℝ} (hβ : 0 < β)
+    (hβθ : β ≤ 3 / 5) {κdecr κuns κunc : ℝ} {π ρ : ℕ → ℝ} (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns)
+    (hπ : 0 ≤ π 1) (hρ : 0 ≤ ρ 1) :
+    ¬ IsInnerPhaseRunStrong cexF cexC cexX 1 (3 / 5) β (fun _ => 1) cexRun κdecr κuns κunc π ρ := by
+  intro hs
+  have hI : ∀ {j : ℕ}, j ∈ Finset.Icc 1 1 → j = 1 := fun hj => by simpa using hj
+  have hη : 0 < kbMargin (3 / 5) 1 := by unfold kbMargin; norm_num
+  obtain ⟨-, kε, hend, -⟩ := (cex_isTPqpGCPhase2 hβ hβθ).complexity_of_strong hs hκ hκuns
+    (πmax := π 1) (M := 1) (fun l hl => by obtain rfl := hI hl; exact ⟨hπ, le_rfl⟩) one_pos
+    (fun l hl => by obtain rfl := hI hl; simp) cex_assumptionBFb le_rfl
+    (fun j hj => by obtain rfl := hI hj; exact hρ) (cex_contDiffF.of_le le_top)
+    (cex_contDiffC.of_le le_top) (fun y _ _ => cex_deriv_le y)
+    (div_pos hη (by norm_num : (0 : ℝ) < 4))
+    (fun j hj => by obtain rfl := hI hj; simp; linarith)
+  exact cex_not_stop kε hend.2.1
+
+end Counterexample1439
 
 /-! ### Existence of LENq-SC and TPqp-GC runs -/
 
@@ -3432,6 +4450,161 @@ theorem IsARqpSCOutputCost.ε_mem {xS y : ℝⁿ} {δ' : ℕ → ℝ} {nF nD : �
   obtain ⟨⟨x, s, σ, δ, δs, d, dm, kε, hr, -⟩, -⟩ := h
   exact hr.ε_mem
 
+/-- An ARqp-SC call evaluates `F` and its derivatives at least once. -/
+theorem IsARqpSCOutputCost.one_le {xS y : ℝⁿ} {δ' : ℕ → ℝ} {nF nD : ℕ}
+    (h : IsARqpSCOutputCost F X p q P ε xS y δ' nF nD) : 1 ≤ nF ∧ 1 ≤ nD := by
+  obtain ⟨⟨x, s, σ, δ, δs, d, dm, kε, -, -, -, -, rfl, rfl⟩, -, -⟩ := h
+  simp [Optimization.derivEvalCount]
+
+/-- **ARqp runs on `ℝⁿ` with unit radii terminate** ([cartis2022evaluation], Lemma 12.2.9 and
+Theorem 12.2.14 (1), the ARqp-SC row of (14.2.12) for `X = ℝⁿ`, `q ≤ 2`). Under F.D1pL with
+`F ≥ f_low`, `1 ≤ q ≤ min(2, p)`, `θ < ς` and `ε ∈ (0, 1]^q`, from every `x^S` there is an ARqp
+run (`Chapter12.algorithm_12_2_2`, Step 2 by Algorithm 12.2.3) with initial radii `1` whose Step-2
+radii are `1` at every iteration before termination (Lemma 12.2.9: Algorithm 12.2.3 never halves
+the orders `j ≤ 2`); it terminates at its first hit `k_ε` in Step 1 (Lemma 12.2.10), with the
+certificate (14.3.19) for the radii `1`, and `F` does not increase along it. -/
+private theorem unit_core {L : ℕ → ℝ} (hF : Chapter12.AssumptionD1pL F p L) {flow : ℝ}
+    (hb : ∀ y, flow ≤ F y) (P : ARqpCParams) (hθς : P.θ < P.ς) (hq : 1 ≤ q) (hq2 : q ≤ 2)
+    (hqp : q ≤ p) (xS : ℝⁿ) (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1) :
+    ∃ (x s : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δr δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → ℝⁿ) (kε : ℕ),
+      Chapter12.algorithm_12_2_2 F P.toARqpParams p q ε (fun _ => 1) x s σ δr δs d dm ∧
+      (∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop F P.toARqpParams p q ε x s σ δr d i) →
+        ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
+      Optimization.IsFirstHit (Chapter12.arqpStop F P.toARqpParams p q ε x s σ δr d) kε ∧
+      x 0 = xS ∧ (∀ i j, i ≤ j → j ≤ kε → F (x j) ≤ F (x i)) ∧
+      Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ F (x kε))
+        {e | x kε + e ∈ (univ : Set ℝⁿ)} q ε (fun _ => 1) := by
+  have hp : 1 ≤ p := hq.trans hqp
+  have hε' : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1 := fun j hj => hε j hj
+  have hδ₀ : ∀ j ∈ Finset.Icc 1 q, (0 : ℝ) < (fun _ => (1 : ℝ)) j ∧ (fun _ => (1 : ℝ)) j ≤ 1 :=
+    fun _ _ => ⟨one_pos, le_rfl⟩
+  obtain ⟨x, s, σ, δr, δs, d, dm, h0, h, hrad⟩ := Chapter12.algorithm_12_2_2_exists F
+    P.toARqpParams hp hqp (fun j hj => (hε j hj).1) hδ₀ xS
+  have hδs : ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop F P.toARqpParams p q ε x s σ δr d i) →
+      ∀ j ∈ Finset.Icc 1 q, δs k j = 1 := fun k hk j hj =>
+    hrad k (fun i hi => hk i hi.le) j hj ((Finset.mem_Icc.1 hj).2.trans hq2)
+  obtain ⟨kε, hhit, -, -, -, -⟩ := Chapter12.theorem_12_2_14_feasible (X := univ) (C := univ)
+    (fun y _ => hb y) hF.on_univ (subset_univ _) hq hqp P.σmin_pos hθς hε' hδ₀ h (u := True)
+    ⟨fun _ => ⟨fun _ _ => rfl, hδs⟩, fun h' => absurd trivial h'⟩
+  have h1 : Optimization.arqpStop₁ P.toARqpParams q ε (Chapter12.arqpData F p x σ) δr d kε := by
+    by_contra h1
+    exact (Chapter12.lemma_12_2_10 hF hqp hε' hδ₀ h hhit h1).1 hq2
+  have hone := Chapter12.arqp_delta_eq_one h (fun _ _ => rfl) hδs kε hhit.2
+  have hcert := Optimization.MeasureTestPasses.isEpsDeltaApprox P.ς_pos (h.witness kε hhit.2) h1
+  refine ⟨x, s, σ, δr, δs, d, dm, kε, h, hδs, hhit, h0, ?_, fun j hj => ?_⟩
+  · intro i j hij hj
+    induction j, hij using Nat.le_induction with
+    | base => exact le_rfl
+    | succ j hij ih =>
+      exact (Chapter12.arqp_objective_le h fun l hl => hhit.2 l (by omega)).trans (ih (by omega))
+  · have := hcert j hj
+    rwa [hone j hj] at this
+
+/-- `(y, δ)` is the output of a call `INNER(F, ℝⁿ, q, x^S, ε)` realized by ARqp on `ℝⁿ` with unit
+radii (the ARqp-SC row of (14.2.12) for `X = ℝⁿ`, `q ≤ 2`), using `nF` evaluations of `F` and `nD`
+of its derivatives: `y` is the first termination iterate of an ARqp run
+(`Chapter12.algorithm_12_2_2`) on `F` from `x^S` with initial radii `1` whose Step-2 radii are `1`
+before termination, and the radii `δ = 1` certify (14.3.19) at `y`. -/
+def IsARqpUnitOutputCost (F : ℝⁿ → ℝ) (p q : ℕ) (P : ARqpCParams) (ε : ℕ → ℝ) (xS y : ℝⁿ)
+    (δ : ℕ → ℝ) (nF nD : ℕ) : Prop :=
+  (∃ (x s : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δr δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → ℝⁿ) (kε : ℕ),
+    Chapter12.algorithm_12_2_2 F P.toARqpParams p q ε (fun _ => 1) x s σ δr δs d dm ∧
+    (∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop F P.toARqpParams p q ε x s σ δr d i) →
+      ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
+    Optimization.IsFirstHit (Chapter12.arqpStop F P.toARqpParams p q ε x s σ δr d) kε ∧
+    x 0 = xS ∧ x kε = y ∧ nF = Optimization.funEvalCount kε ∧
+    nD = Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.arqpRho F p x s σ k) kε) ∧
+  (∀ j ∈ Finset.Icc 1 q, δ j = 1) ∧
+  Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ F y) {e | y + e ∈ (univ : Set ℝⁿ)} q ε δ
+
+/-- One INNER call by ARqp on `ℝⁿ` with unit radii, with its evaluation counts: it exists from
+every `x^S` under F.D1pL with `F` bounded below, `1 ≤ q ≤ min(2, p)`, `θ < ς`, `ε ∈ (0, 1]^q`. -/
+theorem exists_isARqpUnitOutputCost {L : ℕ → ℝ} (hF : Chapter12.AssumptionD1pL F p L)
+    {flow : ℝ} (hb : ∀ y, flow ≤ F y) (P : ARqpCParams) (hθς : P.θ < P.ς) (hq : 1 ≤ q)
+    (hq2 : q ≤ 2) (hqp : q ≤ p) (xS : ℝⁿ) (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1) :
+    ∃ (y : ℝⁿ) (nF nD : ℕ), IsARqpUnitOutputCost F p q P ε xS y (fun _ => 1) nF nD := by
+  obtain ⟨x, s, σ, δr, δs, d, dm, kε, h, hδs, hhit, h0, -, hcert⟩ :=
+    unit_core hF hb P hθς hq hq2 hqp xS hε
+  exact ⟨x kε, _, _, ⟨x, s, σ, δr, δs, d, dm, kε, h, hδs, hhit, h0, rfl, rfl, rfl⟩,
+    fun _ _ => rfl, hcert⟩
+
+namespace IsARqpUnitOutputCost
+
+variable {xS y : ℝⁿ} {δ' : ℕ → ℝ} {nF nD : ℕ}
+
+/-- INNER does not increase `F`. -/
+theorem le (h : IsARqpUnitOutputCost F p q P ε xS y δ' nF nD) : F y ≤ F xS := by
+  obtain ⟨⟨x, s, σ, δr, δs, d, dm, kε, hr, -, hhit, rfl, rfl, -, -⟩, -⟩ := h
+  have : ∀ j ≤ kε, F (x j) ≤ F (x 0) := by
+    intro j hj
+    induction j with
+    | zero => exact le_rfl
+    | succ j ih =>
+      exact (Chapter12.arqp_objective_le hr fun l hl => hhit.2 l (by omega)).trans (ih (by omega))
+  exact this kε le_rfl
+
+/-- The cost contract (14.3.20)–(14.3.21) of an ARqp call on `ℝⁿ` with unit radii, **additive
+form** ([cartis2022evaluation], Theorem 12.2.14 (1), the ARqp-SC row of (14.2.12) for
+`X = ℝⁿ`, `q ≤ 2`). Let `F ≥ 0` satisfy F.D1pL with constants `L`, `θ < ς`, `1 ≤ q ≤ p` and
+`ε ∈ (0, 1]^q`. The call uses at most `κ^a F(x^S) max_j ε_j^{-π_j} + κ^c` evaluations of `F` and
+`κ^s F(x^S) max_j ε_j^{-π_j} + 2` evaluations of its derivatives, with the unit-radius exponents
+`π_j = (p+1)/(p-j+1)` (`Chapter12.arqpPiOf True p j`), `κ^a = Chapter12.kappaAARqpOf True`,
+`κ^s = Chapter12.kappaSARqpOf True`, `κ^c = Chapter12.kappaCARqp`. -/
+theorem cost_le_add {L : ℕ → ℝ} (hF : Chapter12.AssumptionD1pL F p L) (hb : ∀ y, 0 ≤ F y)
+    (hθς : P.θ < P.ς) (hq : 1 ≤ q) (hqp : q ≤ p) (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1)
+    (h : IsARqpUnitOutputCost F p q P ε xS y δ' nF nD) :
+    (nF : ℝ) ≤ innerEvalBound (Chapter12.kappaAARqpOf True P.toARqpParams L p q)
+        (Chapter12.arqpPiOf True p) q (F xS) ε + Chapter12.kappaCARqp P.toARqpParams L p ∧
+    (nD : ℝ) ≤ innerEvalBound (Chapter12.kappaSARqpOf True P.toARqpParams L p q)
+        (Chapter12.arqpPiOf True p) q (F xS) ε + 2 := by
+  obtain ⟨⟨x, s, σ, δr, δs, d, dm, kε, hr, hδs, hhit, hx0, -, rfl, rfl⟩, -, -⟩ := h
+  have hp : 1 ≤ p := hq.trans hqp
+  have hε' : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1 := fun j hj => hε j hj
+  have hδ₀ : ∀ j ∈ Finset.Icc 1 q, (0 : ℝ) < (fun _ => (1 : ℝ)) j ∧ (fun _ => (1 : ℝ)) j ≤ 1 :=
+    fun _ _ => ⟨one_pos, le_rfl⟩
+  obtain ⟨kε', hhit', -, -, hF', hD'⟩ := Chapter12.theorem_12_2_14_feasible (X := univ)
+    (C := univ) (fun y _ => hb y) hF.on_univ (subset_univ _) hq hqp P.σmin_pos hθς hε' hδ₀ hr
+    (u := True) ⟨fun _ => ⟨fun _ _ => rfl, hδs⟩, fun h' => absurd trivial h'⟩
+  obtain rfl := hhit'.unique hhit
+  rw [hx0, sub_zero] at hF' hD'
+  set mε := Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf True p j) q
+  obtain ⟨j₀, hj₀, hmin⟩ := Chapter12.exists_finMin_eq hq
+    (u := fun j => ε j ^ Chapter12.arqpPiOf True p j) (b := 1) fun j hj =>
+      Real.rpow_le_one (hε j hj).1.le (hε j hj).2 (Chapter12.arqpPiOf_nonneg True p j)
+  have hmε0 : 0 < mε := by
+    change 0 < Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf True p j) q
+    rw [hmin]; exact Real.rpow_pos_of_pos (hε j₀ hj₀).1 _
+  set S := ⨆ j : Finset.Icc 1 q, ε j ^ (-Chapter12.arqpPiOf True p j)
+  have hbdd : BddAbove (Set.range fun j : Finset.Icc 1 q =>
+      ε j ^ (-Chapter12.arqpPiOf True p j)) := (Set.finite_range _).bddAbove
+  have hinv : mε⁻¹ ≤ S := by
+    change (Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf True p j) q)⁻¹ ≤ S
+    rw [hmin, ← Real.rpow_neg (hε j₀ hj₀).1.le]
+    exact le_ciSup hbdd ⟨j₀, hj₀⟩
+  have hFx : 0 ≤ F xS := hb xS
+  have hLp : 1 ≤ L p := hF.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
+  have hκs := Chapter12.kappaSARqpOf_pos (q := q) True P.σmin_pos hθς hLp
+  have hκa : 0 ≤ Chapter12.kappaAARqpOf True P.toARqpParams L p q := by
+    unfold Chapter12.kappaAARqpOf
+    have := P.log_γ₂_pos
+    positivity
+  have hFS : F xS / mε ≤ F xS * S := by
+    rw [div_eq_mul_inv]; exact mul_le_mul_of_nonneg_left hinv hFx
+  unfold innerEvalBound
+  constructor
+  · refine hF'.trans ?_
+    have : Chapter12.kappaAARqpOf True P.toARqpParams L p q * F xS / mε ≤
+        Chapter12.kappaAARqpOf True P.toARqpParams L p q * F xS * S := by
+      rw [mul_div_assoc, mul_assoc]; exact mul_le_mul_of_nonneg_left hFS hκa
+    linarith
+  · refine hD'.trans ?_
+    have : Chapter12.kappaSARqpOf True P.toARqpParams L p q * F xS / mε ≤
+        Chapter12.kappaSARqpOf True P.toARqpParams L p q * F xS * S := by
+      rw [mul_div_assoc, mul_assoc]; exact mul_le_mul_of_nonneg_left hFS hκs.le
+    linarith
+
+end IsARqpUnitOutputCost
+
 end InnerCall
 
 section LENq
@@ -3442,39 +4615,32 @@ private theorem norm_le_of_phi2_le {r : ℝⁿ → ℝᵐ} {x y : ℝⁿ} (h : p
   rw [phi2_apply, phi2_apply, div_le_div_iff_of_pos_right two_pos] at h
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 h
 
-/-- The construction of LENq-SC runs with INNER = ARqp-SC, recording the evaluation counts
-`nF k`, `nD k` of the `k`-th INNER call. -/
-private theorem lenq_core {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} (hX : IsClosed X) {p q : ℕ}
-    (hq : 1 ≤ q) (hqp : q ≤ p) {L : ℕ → ℝ} (hΦ : Chapter12.AssumptionD1pL (phi2 r) p L)
-    (P : ARqpCParams) (hθς : P.θ < P.ς) {ε : ℕ → ℝ}
+/-- The construction of LENq-SC runs from an INNER oracle: if from every `y ∈ X` with
+`0 < ‖r(y)‖` and `β ‖r(y)‖ ≤ 1` some output `o = (x', δ', nF, nD)` satisfies (14.3.22), does not
+increase `‖r‖` and has the property `Good y o`, there is a LENq-SC run whose `k`-th call output
+has the property `Good x_{k-1}`. -/
+private theorem lenq_core_of {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {ε : ℕ → ℝ}
     (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1)
-    {x₀ : ℝⁿ} (hx₀ : x₀ ∈ X) (hβr : β * ‖r x₀‖ < 1) :
+    {x₀ : ℝⁿ} (hx₀ : x₀ ∈ X) (hβr : β * ‖r x₀‖ < 1)
+    (Good : ℝⁿ → ℝⁿ × (ℕ → ℝ) × ℕ × ℕ → Prop)
+    (hgood : ∀ y : ℝⁿ, y ∈ X → 0 < ‖r y‖ → β * ‖r y‖ ≤ 1 → ∃ o : ℝⁿ × (ℕ → ℝ) × ℕ × ℕ,
+      o.1 ∈ X ∧ ‖r o.1‖ ≤ ‖r y‖ ∧ (∀ j ∈ Finset.Icc 1 q, 0 < o.2.1 j ∧ o.2.1 j ≤ 1) ∧
+      (∀ j ∈ Finset.Icc 1 q, Optimization.taylorMeasure (ftaylorSeries ℝ (phi2 r) o.1) j
+        (o.2.1 j) {d | o.1 + d ∈ X} ≤ β * ‖r y‖ * ε j * o.2.1 j ^ j / j !) ∧ Good y o) :
     ∃ (x : ℕ → ℝⁿ) (δ : ℕ → ℕ → ℝ) (nF nD : ℕ → ℕ), x 0 = x₀ ∧
       algorithm_14_3_1 r X q ε β x δ ∧
       ∀ k, 1 ≤ k → (∀ i < k, ¬ lenStop r X q ε x δ i) →
-        IsARqpSCOutputCost (phi2 r) X p q P (fun j => β * ‖r (x (k - 1))‖ * ε j) (x (k - 1))
-          (x k) (δ k) (nF k) (nD k) := by
+        Good (x (k - 1)) (x k, δ k, nF k, nD k) := by
   classical
-  have hεI : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1 := fun j hj =>
-    hε j (Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.mem_Icc.1 hj).2))
   -- one INNER call from every admissible point
   have hcall : ∀ y : ℝⁿ, ∃ o : ℝⁿ × (ℕ → ℝ) × ℕ × ℕ, y ∈ X → 0 < ‖r y‖ → β * ‖r y‖ ≤ 1 →
       o.1 ∈ X ∧ ‖r o.1‖ ≤ ‖r y‖ ∧ (∀ j ∈ Finset.Icc 1 q, 0 < o.2.1 j ∧ o.2.1 j ≤ 1) ∧
       (∀ j ∈ Finset.Icc 1 q, Optimization.taylorMeasure (ftaylorSeries ℝ (phi2 r) o.1) j
-        (o.2.1 j) {d | o.1 + d ∈ X} ≤ β * ‖r y‖ * ε j * o.2.1 j ^ j / j !) ∧
-      IsARqpSCOutputCost (phi2 r) X p q P (fun j => β * ‖r y‖ * ε j) y o.1 o.2.1 o.2.2.1
-        o.2.2.2 := by
+        (o.2.1 j) {d | o.1 + d ∈ X} ≤ β * ‖r y‖ * ε j * o.2.1 j ^ j / j !) ∧ Good y o := by
     intro y
     by_cases hy : y ∈ X ∧ 0 < ‖r y‖ ∧ β * ‖r y‖ ≤ 1
-    · obtain ⟨hyX, hry, hβy⟩ := hy
-      have hε' : ∀ j ∈ Finset.Icc 1 q, 0 < β * ‖r y‖ * ε j ∧ β * ‖r y‖ * ε j ≤ 1 := fun j hj =>
-        ⟨by have := (hεI j hj).1; positivity,
-          by nlinarith [(hεI j hj).1, (hεI j hj).2, mul_pos hβ0 hry]⟩
-      obtain ⟨z, δz, nF, nD, hout⟩ := exists_isARqpSCOutputCost hΦ (flow := 0)
-        (fun _ _ => by rw [phi2_apply]; positivity) P hθς hq hqp hX hyX hε'
-      exact ⟨(z, δz, nF, nD), fun _ _ _ => ⟨hout.isARqpSCOutput.mem,
-        norm_le_of_phi2_le hout.isARqpSCOutput.le, hout.isARqpSCOutput.radius_mem,
-        hout.isARqpSCOutput.isEpsDeltaApprox, hout⟩⟩
+    · obtain ⟨o, ho⟩ := hgood y hy.1 hy.2.1 hy.2.2
+      exact ⟨o, fun _ _ _ => ho⟩
     · exact ⟨(y, 1, 0, 0), fun h1 h2 h3 => absurd ⟨h1, h2, h3⟩ hy⟩
   choose call hcall using hcall
   let seq : ℕ → ℝⁿ × (ℕ → ℝ) × ℕ × ℕ := fun k =>
@@ -3501,8 +4667,7 @@ private theorem lenq_core {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} (hX : IsClose
       x (k + 1) ∈ X ∧ (∀ j ∈ Finset.Icc 1 q, 0 < δ (k + 1) j ∧ δ (k + 1) j ≤ 1) ∧
       (∀ j ∈ Finset.Icc 1 q, Optimization.taylorMeasure (ftaylorSeries ℝ (phi2 r) (x (k + 1))) j
         (δ (k + 1) j) {d | x (k + 1) + d ∈ X} ≤ β * ‖r (x k)‖ * ε j * δ (k + 1) j ^ j / j !) ∧
-      IsARqpSCOutputCost (phi2 r) X p q P (fun j => β * ‖r (x k)‖ * ε j) (x k) (x (k + 1))
-        (δ (k + 1)) (seq (k + 1)).2.2.1 (seq (k + 1)).2.2.2 := by
+      Good (x k) (seq (k + 1)) := by
     intro k hk
     obtain ⟨hxk, hrk⟩ := hinv k fun i hi => hk i (hi.trans k.lt_succ_self)
     have hpos : 0 < ‖r (x k)‖ :=
@@ -3524,6 +4689,30 @@ private theorem lenq_core {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} (hX : IsClose
   · intro k hk1 hk
     obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le' hk1
     exact (hstep k hk).2.2.2
+
+/-- The construction of LENq-SC runs with INNER = ARqp-SC, recording the evaluation counts
+`nF k`, `nD k` of the `k`-th INNER call. -/
+private theorem lenq_core {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} (hX : IsClosed X) {p q : ℕ}
+    (hq : 1 ≤ q) (hqp : q ≤ p) {L : ℕ → ℝ} (hΦ : Chapter12.AssumptionD1pL (phi2 r) p L)
+    (P : ARqpCParams) (hθς : P.θ < P.ς) {ε : ℕ → ℝ}
+    (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1)
+    {x₀ : ℝⁿ} (hx₀ : x₀ ∈ X) (hβr : β * ‖r x₀‖ < 1) :
+    ∃ (x : ℕ → ℝⁿ) (δ : ℕ → ℕ → ℝ) (nF nD : ℕ → ℕ), x 0 = x₀ ∧
+      algorithm_14_3_1 r X q ε β x δ ∧
+      ∀ k, 1 ≤ k → (∀ i < k, ¬ lenStop r X q ε x δ i) →
+        IsARqpSCOutputCost (phi2 r) X p q P (fun j => β * ‖r (x (k - 1))‖ * ε j) (x (k - 1))
+          (x k) (δ k) (nF k) (nD k) := by
+  have hεI : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1 := fun j hj =>
+    hε j (Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.mem_Icc.1 hj).2))
+  refine lenq_core_of hε hβ0 hβ1 hx₀ hβr (fun y o => IsARqpSCOutputCost (phi2 r) X p q P
+    (fun j => β * ‖r y‖ * ε j) y o.1 o.2.1 o.2.2.1 o.2.2.2) fun y hyX hry hβy => ?_
+  have hε' : ∀ j ∈ Finset.Icc 1 q, 0 < β * ‖r y‖ * ε j ∧ β * ‖r y‖ * ε j ≤ 1 := fun j hj =>
+    ⟨by have := (hεI j hj).1; positivity,
+      by nlinarith [(hεI j hj).1, (hεI j hj).2, mul_pos hβ0 hry]⟩
+  obtain ⟨z, δz, nF, nD, hout⟩ := exists_isARqpSCOutputCost hΦ (flow := 0)
+    (fun _ _ => by rw [phi2_apply]; positivity) P hθς hq hqp hX hyX hε'
+  exact ⟨(z, δz, nF, nD), hout.isARqpSCOutput.mem, norm_le_of_phi2_le hout.isARqpSCOutput.le,
+    hout.isARqpSCOutput.radius_mem, hout.isARqpSCOutput.isEpsDeltaApprox, hout⟩
 
 /-- **Existence of LENq-SC runs** ([cartis2022evaluation], Algorithm 14.3.1 is well defined, with
 INNER = ARqp-SC). Let `X` be closed, `1 ≤ q ≤ p`, `Φ₂ = ½ ‖r‖²` satisfy Φ₂.D1pL (on `ℝⁿ`), and
@@ -3815,6 +5004,234 @@ theorem exists_algorithm_14_3_1_complexity_arqp_add {r : ℝⁿ → ℝᵐ} {X :
   · nlinarith
   · nlinarith
 
+/-- The unit-radius exponents `π_j = (p+1)/(p-j+1)` of the ARqp-SC row of (14.2.12) satisfy
+`1 < π_j ≤ π_q` for `j ∈ [1 : q]`, `q ≤ p`. -/
+private theorem arqpPiOf_true_mem {p q j : ℕ} (hqp : q ≤ p) (hj : j ∈ Finset.Icc 1 q) :
+    1 < Chapter12.arqpPiOf True p j ∧
+      Chapter12.arqpPiOf True p j ≤ Chapter12.arqpPiOf True p q := by
+  rw [Chapter12.arqpPiOf_of_pos trivial, Chapter12.arqpPiOf_of_pos trivial]
+  obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
+  have h0 : (0 : ℝ) < ((p - j + 1 : ℕ) : ℝ) := by positivity
+  have h0' : (0 : ℝ) < ((p - q + 1 : ℕ) : ℝ) := by positivity
+  have h1 : ((p - j + 1 : ℕ) : ℝ) < ((p + 1 : ℕ) : ℝ) := by exact_mod_cast (by omega)
+  have h2 : ((p - q + 1 : ℕ) : ℝ) ≤ ((p - j + 1 : ℕ) : ℝ) := by exact_mod_cast (by omega)
+  exact ⟨(one_lt_div h0).2 h1, div_le_div_of_nonneg_left (by positivity) h0' h2⟩
+
+/-- **Complexity of LENq-SC with the unit-radius ARqp-SC exponents on `ℝⁿ`, additive form**
+([cartis2022evaluation], Theorem 14.3.4 with INNER = ARqp-SC on `X = ℝⁿ`, `q ≤ 2`, the exponents
+`π_j = (p+1)/(p-j+1)` of its row of (14.2.12), and the additive constants of Theorem 12.2.14 kept,
+as footnote 114 allows). Let `1 ≤ q ≤ min(2, p)`, `Φ₂ = ½ ‖r‖²` satisfy Φ₂.D1pL with constants
+`L`, `θ < ς`, `ε_j ∈ (0, 1]` and `β ∈ (0, 1)` with `β ‖r(x₀)‖ < 1`. There is a LENq-SC run on
+`X = ℝⁿ` from `x₀`, terminating at its first hit `k_max ≤ ⌈log(ε₀/‖r(x₀)‖)/log β⌉₊`, whose `k`-th
+INNER call is an ARqp run on `Φ₂` with unit radii (`IsARqpUnitOutputCost`, Algorithm 12.2.3 never
+halving the orders `j ≤ 2`), and whose calls use in total at most
+`½ κ^a ‖r(x₀)‖ ∑_j β^{1-2π_j}/(β^{1-π_j} - 1) ε₀^{1-π_j} ε_j^{-π_j} + κ^c k_max` evaluations of `Φ₂`
+and the same bound with `κ^s` and `2 k_max` for its derivatives
+(`κ^a = Chapter12.kappaAARqpOf True`, `κ^s = Chapter12.kappaSARqpOf True`,
+`κ^c = Chapter12.kappaCARqp`). (The additive constants cannot be absorbed: for `q = 1` and
+`p ≥ 2`, or `q = 2` and `p ≥ 4`, every `π_j < 2`; see
+`exists_algorithm_14_3_1_cost_contract_counterexample`.) -/
+theorem exists_algorithm_14_3_1_complexity_unit {r : ℝⁿ → ℝᵐ} {p q : ℕ} (hq : 1 ≤ q)
+    (hq2 : q ≤ 2) (hqp : q ≤ p) {L : ℕ → ℝ} (hΦ : Chapter12.AssumptionD1pL (phi2 r) p L)
+    (P : ARqpCParams) (hθς : P.θ < P.ς) {ε : ℕ → ℝ}
+    (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1)
+    (x₀ : ℝⁿ) (hβr : β * ‖r x₀‖ < 1) :
+    ∃ (x : ℕ → ℝⁿ) (δ : ℕ → ℕ → ℝ) (nF nD : ℕ → ℕ) (kmax : ℕ), x 0 = x₀ ∧
+      algorithm_14_3_1 r univ q ε β x δ ∧ Optimization.IsFirstHit (lenStop r univ q ε x δ) kmax ∧
+      kmax ≤ ⌈Real.log (ε 0 / ‖r x₀‖) / Real.log β⌉₊ ∧
+      (∀ k, 1 ≤ k → k ≤ kmax →
+        IsARqpUnitOutputCost (phi2 r) p q P (fun j => β * ‖r (x (k - 1))‖ * ε j) (x (k - 1))
+          (x k) (δ k) (nF k) (nD k)) ∧
+      (∑ k ∈ Finset.Icc 1 kmax, (nF k : ℝ) ≤
+        1 / 2 * Chapter12.kappaAARqpOf True P.toARqpParams L p q * ‖r x₀‖ *
+          ∑ j ∈ Finset.Icc 1 q, β ^ (1 - 2 * Chapter12.arqpPiOf True p j) /
+            (β ^ (1 - Chapter12.arqpPiOf True p j) - 1) *
+              ε 0 ^ (1 - Chapter12.arqpPiOf True p j) * ε j ^ (-Chapter12.arqpPiOf True p j) +
+        Chapter12.kappaCARqp P.toARqpParams L p * ⌈Real.log (ε 0 / ‖r x₀‖) / Real.log β⌉₊) ∧
+      (∑ k ∈ Finset.Icc 1 kmax, (nD k : ℝ) ≤
+        1 / 2 * Chapter12.kappaSARqpOf True P.toARqpParams L p q * ‖r x₀‖ *
+          ∑ j ∈ Finset.Icc 1 q, β ^ (1 - 2 * Chapter12.arqpPiOf True p j) /
+            (β ^ (1 - Chapter12.arqpPiOf True p j) - 1) *
+              ε 0 ^ (1 - Chapter12.arqpPiOf True p j) * ε j ^ (-Chapter12.arqpPiOf True p j) +
+        2 * ⌈Real.log (ε 0 / ‖r x₀‖) / Real.log β⌉₊) := by
+  have hεI : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1 := fun j hj =>
+    hε j (Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.mem_Icc.1 hj).2))
+  obtain ⟨x, δ, nF, nD, hx0, hrun, hcalls⟩ := lenq_core_of (X := univ) hε hβ0 hβ1 (mem_univ x₀)
+    hβr (fun y o => IsARqpUnitOutputCost (phi2 r) p q P (fun j => β * ‖r y‖ * ε j) y o.1 o.2.1
+      o.2.2.1 o.2.2.2) fun y _ hry hβy => by
+    have hε' : ∀ j ∈ Finset.Icc 1 q, 0 < β * ‖r y‖ * ε j ∧ β * ‖r y‖ * ε j ≤ 1 := fun j hj =>
+      ⟨by have := (hεI j hj).1; positivity,
+        by nlinarith [(hεI j hj).1, (hεI j hj).2, mul_pos hβ0 hry]⟩
+    obtain ⟨z, nF, nD, hout⟩ := exists_isARqpUnitOutputCost hΦ (flow := 0)
+      (fun _ => by rw [phi2_apply]; positivity) P hθς hq hq2 hqp y hε'
+    refine ⟨(z, fun _ => 1, nF, nD), mem_univ _, norm_le_of_phi2_le hout.le,
+      fun _ _ => ⟨one_pos, le_rfl⟩, fun j hj => ?_, hout⟩
+    have := hout.2.2 j hj
+    simpa using this
+  obtain ⟨⟨kmax, hhit, hkmax, -⟩, -⟩ := theorem_14_3_3 hrun
+  have hp : 1 ≤ p := hq.trans hqp
+  have hLp : 1 ≤ L p := hΦ.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
+  have hκs := Chapter12.kappaSARqpOf_pos (q := q) True P.σmin_pos hθς hLp
+  have hκa : 0 ≤ Chapter12.kappaAARqpOf True P.toARqpParams L p q := by
+    unfold Chapter12.kappaAARqpOf
+    have := P.log_γ₂_pos
+    positivity
+  have hπ1 : ∀ l ∈ Finset.Icc 1 q, 1 < Chapter12.arqpPiOf True p l := fun l hl =>
+    (arqpPiOf_true_mem hqp hl).1
+  have hκC : 0 ≤ Chapter12.kappaCARqp P.toARqpParams L p := by
+    unfold Chapter12.kappaCARqp
+    have := P.log_γ₂_pos
+    have : 0 ≤ Real.log (Optimization.arSigmaMax P.toARParams (L p) / P.σ₀) :=
+      Real.log_nonneg ((one_le_div P.σ₀_pos).2 (Optimization.σ₀_le_arSigmaMax _ _))
+    positivity
+  have hcalls' : ∀ k, 1 ≤ k → k ≤ kmax →
+      IsARqpUnitOutputCost (phi2 r) p q P (fun j => β * ‖r (x (k - 1))‖ * ε j) (x (k - 1))
+        (x k) (δ k) (nF k) (nD k) :=
+    fun k hk1 hk => hcalls k hk1 fun i hi => hhit.2 i (hi.trans_le hk)
+  have hcost : ∀ k ∈ Finset.Icc 1 kmax,
+      (nF k : ℝ) ≤ innerEvalBound (Chapter12.kappaAARqpOf True P.toARqpParams L p q)
+        (Chapter12.arqpPiOf True p) q (phi2 r (x (k - 1)))
+        (fun j => β * ‖r (x (k - 1))‖ * ε j) + Chapter12.kappaCARqp P.toARqpParams L p ∧
+      (nD k : ℝ) ≤ innerEvalBound (Chapter12.kappaSARqpOf True P.toARqpParams L p q)
+        (Chapter12.arqpPiOf True p) q (phi2 r (x (k - 1)))
+        (fun j => β * ‖r (x (k - 1))‖ * ε j) + 2 := by
+    intro k hk
+    obtain ⟨hk1, hkk⟩ := Finset.mem_Icc.1 hk
+    have hpos : 0 < ‖r (x (k - 1))‖ := (hε 0 (by simp)).1.trans
+      (not_le.1 fun h' => hhit.2 (k - 1) (by omega) (Or.inl h'))
+    have hβk : β * ‖r (x (k - 1))‖ ≤ 1 := by
+      have h0 : ‖r (x (k - 1))‖ ≤ ‖r x₀‖ := by
+        have := hrun.norm_le_pow_mul (Nat.zero_le (k - 1))
+          (fun l hl => hhit.2 l (by omega))
+        rw [hx0] at this
+        have hp1 : β ^ (k - 1 - 0) ≤ 1 := pow_le_one₀ hβ0.le hβ1.le
+        nlinarith [norm_nonneg (r x₀)]
+      nlinarith
+    refine (hcalls' k hk1 hkk).cost_le_add hΦ (fun y => by rw [phi2_apply]; positivity) hθς hq
+      hqp fun j hj => ⟨by have := (hεI j hj).1; positivity,
+        by nlinarith [(hεI j hj).1, (hεI j hj).2, mul_pos hβ0 hpos]⟩
+  have hF := theorem_14_3_4_add hrun hhit hπ1 hκa fun k hk => (hcost k hk).1
+  have hD := theorem_14_3_4_add hrun hhit hπ1 hκs.le fun k hk => (hcost k hk).2
+  rw [hx0] at hF hD
+  have hk : (kmax : ℝ) ≤ ⌈Real.log (ε 0 / ‖r x₀‖) / Real.log β⌉₊ := by
+    rw [← hx0]; exact_mod_cast hkmax
+  refine ⟨x, δ, nF, nD, kmax, hx0, hrun, hhit, hx0 ▸ hkmax, hcalls', ?_, ?_⟩
+  · nlinarith
+  · nlinarith
+
+/-- The first ARqp-SC exponent is `π_1 = (p+1)/p` in both radii modes. -/
+theorem arqpPiOf_one (u : Prop) [Decidable u] {p : ℕ} (hp : 1 ≤ p) :
+    Chapter12.arqpPiOf u p 1 = ((p : ℝ) + 1) / p := by
+  unfold Chapter12.arqpPiOf
+  split_ifs
+  · rw [Nat.sub_add_cancel hp]; push_cast; ring
+  · ring
+
+/-- **The cost contract (14.3.20)–(14.3.21) fails for `q = 1`** ([cartis2022evaluation],
+§14.3.2.1, with INNER = ARqp-SC and the exponent `π_1 = (p+1)/p` of its row of (14.2.12), in
+either radii mode, `p ≥ 2`). For every constant `κ` (in particular for any choice independent of
+`x^S` and `ε`, as the book's `κ_INNER`), every ARqpC constants `P` with `θ < ς` and every
+`β ∈ (0, 1)`, there is a LENq-SC run (`algorithm_14_3_1`, on `X = ℝ` with `Φ₂ = ½ ‖r‖²`
+satisfying Φ₂.D1pL with constants `1`, tolerances in `(0, 1]` and `β ‖r(x₀)‖ < 1`) which does not
+terminate at `k = 0` and whose first INNER call, an ARqp-SC call from `x^S = x₀` with tolerance
+`β ‖r(x₀)‖ ε_1` (`IsARqpSCOutputCost`, constructed as in `exists_algorithm_14_3_1`), uses more
+evaluations of `Φ₂`, and more of its derivatives, than the printed bound
+`κ Φ₂(x^S) (β ‖r(x^S)‖ ε_1)^{-π_1}`. Every call uses at least one evaluation of each kind
+(`IsARqpSCOutputCost.one_le`), while the bound is `(κ/2) β^{-π_1} ‖r(x^S)‖^{2-π_1} ε_1^{-π_1}`,
+which tends to `0` with `‖r(x^S)‖` since `π_1 < 2`; the run uses `r ≡ R` constant with `R`
+small and `ε₀ = R/2`. (The count of a call includes its initial evaluations at `x^S`, the
+per-run convention of Theorems 12.2.14 and 14.2.4; a constant multiple `κ ‖r(x₀)‖` of the bound,
+as the book allows for `ν`, still tends to `0`, since `x^S = x₀`.) The additive form
+`IsARqpSCOutputCost.cost_le_arqp_add` (and `exists_algorithm_14_3_1_complexity_arqp_add`) is the
+corrected statement. -/
+theorem exists_algorithm_14_3_1_cost_contract_counterexample {p : ℕ} (hp : 2 ≤ p)
+    (u : Prop) [Decidable u] (P : ARqpCParams) (hθς : P.θ < P.ς) {β : ℝ} (hβ0 : 0 < β)
+    (hβ1 : β < 1) (κ : ℝ) :
+    ∃ (r : EuclideanSpace ℝ (Fin 1) → EuclideanSpace ℝ (Fin 1)) (ε : ℕ → ℝ)
+      (x : ℕ → EuclideanSpace ℝ (Fin 1)) (δ : ℕ → ℕ → ℝ) (nF nD : ℕ → ℕ) (kmax : ℕ),
+      Chapter12.AssumptionD1pL (phi2 r) p (fun _ => 1) ∧
+      (∀ j ∈ Finset.range 2, 0 < ε j ∧ ε j ≤ 1) ∧ β * ‖r (x 0)‖ < 1 ∧
+      algorithm_14_3_1 r univ 1 ε β x δ ∧
+      Optimization.IsFirstHit (lenStop r univ 1 ε x δ) kmax ∧ 1 ≤ kmax ∧
+      IsARqpSCOutputCost (phi2 r) univ p 1 P (fun j => β * ‖r (x 0)‖ * ε j) (x 0) (x 1) (δ 1)
+        (nF 1) (nD 1) ∧
+      innerEvalBound κ (Chapter12.arqpPiOf u p) 1 (phi2 r (x 0))
+          (fun j => β * ‖r (x 0)‖ * ε j) < nF 1 ∧
+      innerEvalBound κ (Chapter12.arqpPiOf u p) 1 (phi2 r (x 0))
+          (fun j => β * ‖r (x 0)‖ * ε j) < nD 1 := by
+  have hp1 : 1 ≤ p := by omega
+  set π := Chapter12.arqpPiOf u p 1 with hπ
+  have hπe : π = ((p : ℝ) + 1) / p := arqpPiOf_one u hp1
+  have hpR : (2 : ℝ) ≤ p := by exact_mod_cast hp
+  have hπ2 : π < 2 := by rw [hπe, div_lt_iff₀ (by linarith)]; linarith
+  have hπ0 : 0 < π := by rw [hπe]; positivity
+  set κ' := max κ 0
+  set b := β ^ π / (κ' + 1) with hb
+  have hκ' : 0 ≤ κ' := le_max_right _ _
+  have hb0 : 0 < b := by positivity
+  have hb1 : b ≤ 1 := by
+    rw [hb, div_le_one (by linarith)]
+    have : β ^ π ≤ 1 := Real.rpow_le_one hβ0.le hβ1.le hπ0.le
+    linarith
+  set R := b ^ (2 - π)⁻¹ with hR
+  have hs : 0 < 2 - π := by linarith
+  have hR0 : 0 < R := Real.rpow_pos_of_pos hb0 _
+  have hR1 : R ≤ 1 := Real.rpow_le_one hb0.le hb1 (inv_nonneg.2 hs.le)
+  have hRs : R ^ (2 - π) = b := Real.rpow_inv_rpow hb0.le hs.ne'
+  set r : EuclideanSpace ℝ (Fin 1) → EuclideanSpace ℝ (Fin 1) :=
+    fun _ => EuclideanSpace.single 0 R
+  have hr : ∀ y, ‖r y‖ = R := fun y => by simp [r, abs_of_pos hR0]
+  have hΦ : Chapter12.AssumptionD1pL (phi2 r) p (fun _ => 1) := by
+    have e : phi2 r = fun _ => R ^ 2 / 2 := funext fun y => by rw [phi2_apply, hr y]
+    rw [e]
+    refine ⟨contDiff_const, fun _ _ => le_rfl, fun j hj => (iteratedFDerivLipschitzOn_iff).2
+      fun a _ b _ => ?_⟩
+    have hj0 : j ≠ 0 := by have := (Finset.mem_Icc.1 hj).1; omega
+    simp [iteratedFDeriv_const_of_ne hj0]
+  set ε : ℕ → ℝ := fun j => if j = 0 then R / 2 else 1
+  have hε : ∀ j ∈ Finset.range (1 + 1), 0 < ε j ∧ ε j ≤ 1 := fun j _ => by
+    simp only [ε]; split_ifs
+    · exact ⟨by positivity, by linarith⟩
+    · exact ⟨one_pos, le_rfl⟩
+  have hβr : β * ‖r 0‖ < 1 := by rw [hr 0]; nlinarith
+  obtain ⟨x, δ, nF, nD, kmax, hx0, hrun, hhit, -, hcalls, -⟩ :=
+    exists_algorithm_14_3_1_complexity_arqp_add (X := univ) isClosed_univ le_rfl hp1 hΦ P hθς hε
+      hβ0 hβ1 (mem_univ 0) hβr
+  have hk1 : 1 ≤ kmax := by
+    by_contra h0
+    have h0 : kmax = 0 := by omega
+    rcases h0 ▸ hhit.1 with h | ⟨h, -⟩
+    · rw [hr (x 0)] at h
+      simp only [ε, ite_eq_left] at h
+      linarith
+    · omega
+  have hcall := hcalls 1 le_rfl hk1
+  have hbound : innerEvalBound κ (Chapter12.arqpPiOf u p) 1 (phi2 r (x 0))
+      (fun j => β * ‖r (x 0)‖ * ε j) < 1 := by
+    rw [innerEvalBound_one, phi2_apply, hr (x 0)]
+    simp only [ε, one_ne_zero, ite_false, mul_one]
+    rw [← hπ]
+    have e1 : R ^ 2 / 2 * (β * R) ^ (-π) = β ^ (-π) * R ^ (2 - π) / 2 := by
+      rw [Real.mul_rpow hβ0.le hR0.le, Real.rpow_sub hR0, Real.rpow_neg hR0.le,
+        Real.rpow_two]
+      field_simp
+    have e2 : β ^ (-π) * b = 1 / (κ' + 1) := by
+      rw [hb, Real.rpow_neg hβ0.le]
+      have : 0 < β ^ π := Real.rpow_pos_of_pos hβ0 _
+      field_simp
+    have hpos : 0 ≤ R ^ 2 / 2 * (β * R) ^ (-π) := by positivity
+    calc κ * (R ^ 2 / 2) * (β * R) ^ (-π) = κ * (R ^ 2 / 2 * (β * R) ^ (-π)) := by ring
+      _ ≤ κ' * (R ^ 2 / 2 * (β * R) ^ (-π)) :=
+          mul_le_mul_of_nonneg_right (le_max_left _ _) hpos
+      _ = κ' * (β ^ (-π) * b) / 2 := by rw [e1, hRs]; ring
+      _ = κ' / (κ' + 1) / 2 := by rw [e2]; ring
+      _ < 1 := by
+          rw [div_div, div_lt_one (by positivity)]
+          linarith
+  obtain ⟨h1, h2⟩ := hcall.one_le
+  refine ⟨r, ε, x, δ, nF, nD, kmax, hΦ, hε, by rw [hr (x 0)]; nlinarith, hrun, hhit, hk1, hcall,
+    hbound.trans_le (by exact_mod_cast h1), hbound.trans_le (by exact_mod_cast h2)⟩
+
 end LENq
 
 section TPqp
@@ -4041,47 +5458,199 @@ private theorem exists_phase2_call {t : ℝ} {L : ℕ → ℝ}
     rw [← hek] at h1
     exact ⟨h2, h1⟩
 
+/-- The iterates `x_{k,0}, …, x_{k,e}` and successful iterations of one INNER call of Phase 2 of
+TPqp-GC on `X = ℝⁿ`, realized by ARqp with unit radii on `F` with tolerances `ε`: they are the
+first `e + 1` iterates of an ARqp run (`Chapter12.algorithm_12_2_2`, initial radii `1`, Step-2
+radii `1` before termination) on `F` whose first termination index is at least `e`, and the
+successful iterations are those of the run. -/
+def IsARqpUnitCall (F : ℝⁿ → ℝ) (p q : ℕ) (P : ARqpCParams) (ε : ℕ → ℝ) (xi : ℕ → ℝⁿ)
+    (e : ℕ) (succ : ℕ → Prop) : Prop :=
+  ∃ (x s : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δr δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → ℝⁿ) (kε : ℕ),
+    Chapter12.algorithm_12_2_2 F P.toARqpParams p q ε (fun _ => 1) x s σ δr δs d dm ∧
+    (∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop F P.toARqpParams p q ε x s σ δr d i) →
+      ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
+    Optimization.IsFirstHit (Chapter12.arqpStop F P.toARqpParams p q ε x s σ δr d) kε ∧
+    e ≤ kε ∧ (∀ i ≤ e, xi i = x i) ∧
+    ∀ i < e, (succ i ↔ P.η₁ ≤ Chapter12.arqpRho F p x s σ i)
+
+/-- The constant `κ_unc = κ_uns + log(σ_max/σ₀)/log γ₂` of Lemma 14.2.3 for ARqp runs on an
+objective with Lipschitz constants `L` (`σ_max = arSigmaMax P (L p)`), paid per INNER call (with
+the extra `κ_uns` for the last iteration of a call). -/
+noncomputable def arqpUnitKappaUnc (P : ARqpCParams) (L : ℕ → ℝ) (p : ℕ) : ℝ :=
+  arqpSCKappaUns P + Real.log (Optimization.arSigmaMax P.toARParams (L p) / P.σ₀) /
+    Real.log P.γ₂
+
 open Classical in
-/-- The construction of Phase 2 of TPqp-GC with INNER = ARqp-SC: the targets stay in a set `T`
-containing every `t ≤ f(z)` with `z ∈ X`, `‖r(z, t)‖ ≤ ε₀`, on which `μ(·, t)` satisfies
-μ.D1pL with constants `Lt t`. Every call satisfies the conclusions of `exists_phase2_call`. -/
-private theorem phase2_core (hX : IsClosed X) (hq : 1 ≤ q) (hqp : q ≤ p) {T : Set ℝ}
-    {Lt : ℝ → ℕ → ℝ}
-    (hμ : ∀ t ∈ T, Chapter12.AssumptionD1pL (Constrained.targetMerit f c t) p (Lt t))
-    (hT : ∀ z ∈ X, ∀ t, t ≤ f z → Constrained.targetResidual f c t z ≤ ε 0 → t ∈ T)
-    (P : ARqpCParams) (hθς : P.θ < P.ς) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β)
-    (hβθ : β ≤ θ) (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x₁ : ℝⁿ}
-    (hx₁ : x₁ ∈ X) (hc₁ : ‖c x₁‖ ≤ θ * ε 0) :
+/-- One INNER call of Phase 2 on `X = ℝⁿ` from `(x, t)` with `θε₀ ≤ ‖r(x, t)‖ ≤ ε₀`, for
+`1 ≤ q ≤ min(2, p)`: ARqp with unit radii on `μ(·, t)` with tolerances `β ‖r(x, t)‖ ε`, stopped
+at its termination or as soon as `‖r(·, t)‖ < θε₀`. Its unsuccessful iterations do not move, its
+length is bounded by Lemma 14.2.3, and its successful iterations decrease `μ(·, t)` by
+Lemma 12.2.13 with the unit-radius exponents `(p+1)/(p-j+1)` (with the Lipschitz constants `L`
+of `μ(·, t)`); if it ends with `‖r‖ ≥ θε₀`, INNER has terminated, and its output satisfies
+INNER's test (14.3.19) for the tolerances `β ‖r(x, t)‖ ε_j` with radii `1`. -/
+private theorem exists_phase2_call_unit {t : ℝ} {L : ℕ → ℝ}
+    (hμ : Chapter12.AssumptionD1pL (Constrained.targetMerit f c t) p L) (P : ARqpCParams)
+    (hθς : P.θ < P.ς) (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p) (hθ0 : 0 < θ)
+    (hβ0 : 0 < β) (hβθ : β ≤ θ)
+    (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x : ℝⁿ}
+    (hlo : θ * ε 0 ≤ Constrained.targetResidual f c t x)
+    (hhi : Constrained.targetResidual f c t x ≤ ε 0) :
+    ∃ o : CallOut n, o.xi 0 = x ∧ o.xi o.e ∈ (univ : Set ℝⁿ) ∧
+      (∀ j ∈ Finset.Icc 1 q, 0 < o.δ j ∧ o.δ j ≤ 1) ∧
+      (Constrained.targetResidual f c t (o.xi o.e) < θ * ε 0 ∨
+        meritCrit f c univ q ε t (o.xi o.e) o.δ) ∧
+      (∀ i < o.e, Constrained.targetMerit f c t (o.xi (i + 1)) ≤
+        Constrained.targetMerit f c t (o.xi i)) ∧
+      (∀ i < o.e, θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi i)) ∧
+      Constrained.targetResidual f c t (o.xi o.e) ≤ Constrained.targetResidual f c t x ∧
+      IsARqpUnitCall (Constrained.targetMerit f c t) p q P
+        (fun j => β * Constrained.targetResidual f c t x * ε j) o.xi o.e o.succ ∧
+      (∀ i < o.e, ¬ o.succ i → o.xi (i + 1) = o.xi i) ∧
+      (o.e : ℝ) ≤ arqpSCKappaUns P * ((Finset.range o.e).filter o.succ).card +
+        arqpUnitKappaUnc P L p ∧
+      (∀ i < o.e, o.succ i → (i + 1 < o.e ∨ ¬ meritCrit f c univ q ε t (o.xi o.e) o.δ) →
+        θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi (i + 1)) →
+        ∃ l ∈ Finset.Icc 1 q, arqpRowKappaDecr True P L p q *
+            (β * Constrained.targetResidual f c t x * ε l) ^ Chapter12.arqpPiOf True p l ≤
+          Constrained.targetMerit f c t (o.xi i) -
+            Constrained.targetMerit f c t (o.xi (i + 1))) ∧
+      (θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi o.e) → ∀ j ∈ Finset.Icc 1 q,
+        o.δ j = 1 ∧
+        Optimization.taylorMeasure (ftaylorSeries ℝ (Constrained.targetMerit f c t) (o.xi o.e)) j
+          (o.δ j) {d | o.xi o.e + d ∈ (univ : Set ℝⁿ)} ≤
+          β * Constrained.targetResidual f c t x * ε j * o.δ j ^ j / j !) := by
+  set ρ := Constrained.targetResidual f c t x with hρ
+  have hp : 1 ≤ p := hq.trans hqp
+  have hεI : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1 := fun j hj =>
+    hε j (Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.mem_Icc.1 hj).2))
+  have hε₀ := hε 0 (by simp)
+  have hρ0 : 0 < ρ := lt_of_lt_of_le (mul_pos hθ0 hε₀.1) hlo
+  have hε' : ∀ j ∈ Finset.Icc 1 q, 0 < β * ρ * ε j ∧ β * ρ * ε j ≤ 1 := by
+    intro j hj
+    obtain ⟨h1, h2⟩ := hεI j hj
+    refine ⟨by positivity, ?_⟩
+    have : β * ρ ≤ 1 := by nlinarith
+    nlinarith
+  obtain ⟨xr, s, σ, δr, δs, d, dm, kε, hr, hδs, hhit, hx0, hmono, hcert⟩ :=
+    unit_core hμ (flow := 0) (fun _ => Constrained.targetMerit_nonneg) P hθς hq hq2 hqp x hε'
+  have hone := Chapter12.arqp_delta_eq_one hr (fun _ _ => rfl) hδs
+  have hex : ∃ i, i = kε ∨ Constrained.targetResidual f c t (xr i) < θ * ε 0 := ⟨kε, Or.inl rfl⟩
+  set e := Nat.find hex with he
+  have he_le : e ≤ kε := Nat.find_min' hex (Or.inl rfl)
+  have hres : ∀ i ≤ kε, Constrained.targetResidual f c t (xr i) ≤ ρ := fun i hi => by
+    have := hmono 0 i (Nat.zero_le _) hi
+    rw [hx0] at this
+    exact Constrained.targetMerit_le_targetMerit_iff.1 this
+  -- at the termination of INNER with residual at least `θε₀`, the certificate gives (14.3.34)
+  have hcrit : e = kε → θ * ε 0 ≤ Constrained.targetResidual f c t (xr e) →
+      meritCrit f c univ q ε t (xr e) (fun _ => 1) := by
+    intro hek hge j hj
+    have h1 := hcert j hj
+    rw [← hek] at h1
+    refine h1.trans ?_
+    have hεj := (hεI j hj).1
+    have : β * ρ ≤ Constrained.targetResidual f c t (xr e) := by nlinarith
+    have : β * ρ * ε j ≤ ε j * Constrained.targetResidual f c t (xr e) := by nlinarith
+    change β * ρ * ε j * 1 ^ j / (j ! : ℝ) ≤
+      ε j * Constrained.targetResidual f c t (xr e) * 1 ^ j / (j ! : ℝ)
+    gcongr
+  have hnext : ∀ i < e, (i + 1 < e ∨ ¬ meritCrit f c univ q ε t (xr e) (fun _ => 1)) →
+      θ * ε 0 ≤ Constrained.targetResidual f c t (xr (i + 1)) → i + 1 < kε := by
+    intro i hi hcont hge
+    rcases hcont with h' | h'
+    · omega
+    · by_contra hk
+      have hek : e = kε := by omega
+      have hie : i + 1 = e := by omega
+      exact h' (hcrit hek (hie ▸ hge))
+  refine ⟨⟨xr, e, fun i => P.η₁ ≤ Chapter12.arqpRho (Constrained.targetMerit f c t) p xr s σ i,
+    fun _ => 1⟩, hx0, mem_univ _, fun _ _ => ⟨one_pos, le_rfl⟩, ?_,
+    fun i (hi : i < e) => hmono i (i + 1) (by omega) (by omega), fun i (hi : i < e) => ?_,
+    hres e he_le, ⟨xr, s, σ, δr, δs, d, dm, kε, hr, hδs, hhit, he_le,
+    fun _ _ => rfl, fun _ _ => Iff.rfl⟩, fun i (hi : i < e) hs => ?_, ?_,
+    fun i (hi : i < e) hs
+      (hcont : i + 1 < e ∨ ¬ meritCrit f c univ q ε t (xr e) (fun _ => 1)) hge => ?_, ?_⟩
+  · rcases Nat.find_spec hex with hek | hlt
+    · by_cases hlt : Constrained.targetResidual f c t (xr e) < θ * ε 0
+      · exact Or.inl hlt
+      · exact Or.inr (hcrit hek (not_lt.1 hlt))
+    · exact Or.inl hlt
+  · have := Nat.find_min hex hi
+    push Not at this
+    exact this.2
+  · -- unsuccessful iterations do not move
+    exact hr.toIsARRun.eq_of_not_succ (fun j hj => hhit.2 j (by omega)) (not_le.1 hs)
+  · -- Lemma 14.2.3
+    have h3 := lemma_14_2_3 hμ.on_univ (subset_univ _) hp hr (k := e)
+      (fun j hj => hhit.2 j (by omega))
+    set S := (Finset.range e).filter (fun i => P.η₁ ≤
+      Chapter12.arqpRho (Constrained.targetMerit f c t) p xr s σ i)
+    have hcard : (Optimization.successSet (fun i => P.η₁ ≤
+        Chapter12.arqpRho (Constrained.targetMerit f c t) p xr s σ i) e).card ≤ S.card + 1 := by
+      unfold Optimization.successSet
+      rw [Finset.range_add_one, Finset.filter_insert]
+      split_ifs
+      · exact Finset.card_insert_le _ _
+      · exact Nat.le_succ _
+    have hcard' : ((Optimization.successSet (fun i => P.η₁ ≤
+        Chapter12.arqpRho (Constrained.targetMerit f c t) p xr s σ i) e).card : ℝ) ≤
+        S.card + 1 := by exact_mod_cast hcard
+    have hκ := arqpSCKappaUns_nonneg P
+    unfold arqpUnitKappaUnc
+    unfold arqpSCKappaUns at hκ ⊢
+    nlinarith
+  · -- Lemma 12.2.13, unit radii
+    have hik := hnext i hi hcont hge
+    have hdec := (Chapter12.lemma_12_2_13_feasible hμ.on_univ (subset_univ _) hq hqp hθς
+      (fun j hj => hε' j hj) hr (k := i) (fun j hj => hhit.2 j (by omega)) hs
+      (fun h' => hhit.2 (i + 1) hik (Or.inl h')) (u := True)
+      ⟨fun _ => hone (i + 1) fun l hl => hhit.2 l (by omega), fun h' => absurd trivial h'⟩).2
+    obtain ⟨l, hl, hmin⟩ := Chapter12.exists_finMin_eq hq
+      (u := fun j => (β * ρ * ε j) ^ Chapter12.arqpPiOf True p j) (b := 1) fun j hj =>
+        Real.rpow_le_one (hε' j hj).1.le (hε' j hj).2 (Chapter12.arqpPiOf_nonneg True p j)
+    refine ⟨l, hl, ?_⟩
+    have e1 : Chapter12.finMin 1
+        (fun j => (fun j => β * ρ * ε j) j ^ Chapter12.arqpPiOf True p j) q =
+        (β * ρ * ε l) ^ Chapter12.arqpPiOf True p l := hmin
+    rw [e1] at hdec
+    unfold arqpRowKappaDecr
+    rw [mul_assoc]
+    exact hdec
+  · -- the INNER certificate of a call ending with `‖r‖ ≥ θε₀`, with radii `1`
+    intro hge j hj
+    have hek : e = kε := by
+      rcases Nat.find_spec hex with h' | h'
+      · exact h'
+      · exact absurd h' (not_lt.2 hge)
+    refine ⟨rfl, ?_⟩
+    have h1 := hcert j hj
+    rw [← hek] at h1
+    exact h1
+
+open Classical in
+/-- The construction of Phase 2 of TPqp-GC from an INNER oracle: if from every `(x, t)` with
+`x ∈ X`, `θε₀ ≤ ‖r(x, t)‖ ≤ ε₀` and `t ≤ f(x)` some call `o` (iterates from `x` not increasing
+`μ(·, t)`, stopped as soon as `‖r(·, t)‖ < θε₀`, ending at a point of `X` with radii in
+`(0, 1]` where the first or the third test of (14.3.32) holds) has the property `Good x t o`,
+there is a Phase-2 run whose `k`-th call has the property `Good x_k t_k`. -/
+private theorem phase2_core_of (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
+    (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x₁ : ℝⁿ} (hx₁ : x₁ ∈ X)
+    (hc₁ : ‖c x₁‖ ≤ θ * ε 0) (Good : ℝⁿ → ℝ → CallOut n → Prop)
+    (hgood : ∀ x t, x ∈ X → θ * ε 0 ≤ Constrained.targetResidual f c t x →
+      Constrained.targetResidual f c t x ≤ ε 0 → t ≤ f x → ∃ o : CallOut n,
+        o.xi 0 = x ∧ o.xi o.e ∈ X ∧ (∀ j ∈ Finset.Icc 1 q, 0 < o.δ j ∧ o.δ j ≤ 1) ∧
+        (Constrained.targetResidual f c t (o.xi o.e) < θ * ε 0 ∨
+          meritCrit f c X q ε t (o.xi o.e) o.δ) ∧
+        (∀ i < o.e, Constrained.targetMerit f c t (o.xi (i + 1)) ≤
+          Constrained.targetMerit f c t (o.xi i)) ∧
+        (∀ i < o.e, θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi i)) ∧
+        Constrained.targetResidual f c t (o.xi o.e) ≤ Constrained.targetResidual f c t x ∧
+        Good x t o) :
     ∃ D : TPqpSeq n, IsTPqpGCPhase2 f c X q θ β ε x₁ D ∧
-      ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.t k ∈ T ∧
-        IsARqpSCCall (Constrained.targetMerit f c (D.t k)) X p q P
-          (fun j => β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j)
-          (D.xi k) (D.e k) (D.succ k) ∧
-        (∀ i < D.e k, ¬ D.succ k i → D.xi k (i + 1) = D.xi k i) ∧
-        (D.e k : ℝ) ≤ arqpSCKappaUns P * D.succCount k + arqpSCKappaUnc P (Lt (D.t k)) p ∧
-        (∀ i < D.e k, D.succ k i →
-          (i + 1 < D.e k ∨ ¬ meritCrit f c X q ε (D.t k) (D.x (k + 1)) (D.δ (k + 1))) →
-          θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.xi k (i + 1)) →
-          ∃ l ∈ Finset.Icc 1 q, arqpSCKappaDecr P (Lt (D.t k)) p q *
-              (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε l) ^ (l + 1) ≤
-            Constrained.targetMerit f c (D.t k) (D.xi k i) -
-              Constrained.targetMerit f c (D.t k) (D.xi k (i + 1))) ∧
-        (∀ (u : Prop) [Decidable u], (u → q = 1 ∧ Convex ℝ X) → ∀ i < D.e k, D.succ k i →
-          (i + 1 < D.e k ∨ ¬ meritCrit f c X q ε (D.t k) (D.x (k + 1)) (D.δ (k + 1))) →
-          θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.xi k (i + 1)) →
-          ∃ l ∈ Finset.Icc 1 q, P.η₁ * Chapter12.arqpKappaDmOf u P.toARqpParams (Lt (D.t k)) p q *
-              (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε l) ^
-                Chapter12.arqpPiOf u p l ≤
-            Constrained.targetMerit f c (D.t k) (D.xi k i) -
-              Constrained.targetMerit f c (D.t k) (D.xi k (i + 1))) ∧
-        (θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.x (k + 1)) → ∀ j ∈ Finset.Icc 1 q,
-          arqpSCKappaRad P (Lt (D.t k)) p *
-              (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j) ≤ D.δ (k + 1) j ∧
-          Optimization.taylorMeasure
-              (ftaylorSeries ℝ (Constrained.targetMerit f c (D.t k)) (D.x (k + 1))) j
-              (D.δ (k + 1) j) {d | D.x (k + 1) + d ∈ X} ≤
-            β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j * D.δ (k + 1) j ^ j /
-              j !) := by
+      ∀ k, 1 ≤ k → D.Before f c X q θ ε k →
+        (D.x k ∈ X ∧ θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.x k) ∧
+          Constrained.targetResidual f c (D.t k) (D.x k) ≤ ε 0 ∧ D.t k ≤ f (D.x k)) ∧
+        Good (D.x k) (D.t k) ⟨D.xi k, D.e k, D.succ k, D.δ (k + 1)⟩ := by
   have hε₀ := hε 0 (by simp)
   let Valid : ℝⁿ × ℝ → Prop := fun a => a.1 ∈ X ∧
     θ * ε 0 ≤ Constrained.targetResidual f c a.2 a.1 ∧
@@ -4094,34 +5663,10 @@ private theorem phase2_core (hX : IsClosed X) (hq : 1 ≤ q) (hqp : q ≤ p) {T 
         Constrained.targetMerit f c a.2 (o.xi i)) ∧
       (∀ i < o.e, θ * ε 0 ≤ Constrained.targetResidual f c a.2 (o.xi i)) ∧
       Constrained.targetResidual f c a.2 (o.xi o.e) ≤ Constrained.targetResidual f c a.2 a.1 ∧
-      IsARqpSCCall (Constrained.targetMerit f c a.2) X p q P
-        (fun j => β * Constrained.targetResidual f c a.2 a.1 * ε j) o.xi o.e o.succ ∧
-      (∀ i < o.e, ¬ o.succ i → o.xi (i + 1) = o.xi i) ∧
-      (o.e : ℝ) ≤ arqpSCKappaUns P * ((Finset.range o.e).filter o.succ).card +
-        arqpSCKappaUnc P (Lt a.2) p ∧
-      (∀ i < o.e, o.succ i → (i + 1 < o.e ∨ ¬ meritCrit f c X q ε a.2 (o.xi o.e) o.δ) →
-        θ * ε 0 ≤ Constrained.targetResidual f c a.2 (o.xi (i + 1)) →
-        ∃ l ∈ Finset.Icc 1 q, arqpSCKappaDecr P (Lt a.2) p q *
-            (β * Constrained.targetResidual f c a.2 a.1 * ε l) ^ (l + 1) ≤
-          Constrained.targetMerit f c a.2 (o.xi i) -
-            Constrained.targetMerit f c a.2 (o.xi (i + 1))) ∧
-      (∀ (u : Prop) [Decidable u], (u → q = 1 ∧ Convex ℝ X) →
-        ∀ i < o.e, o.succ i → (i + 1 < o.e ∨ ¬ meritCrit f c X q ε a.2 (o.xi o.e) o.δ) →
-        θ * ε 0 ≤ Constrained.targetResidual f c a.2 (o.xi (i + 1)) →
-        ∃ l ∈ Finset.Icc 1 q, P.η₁ * Chapter12.arqpKappaDmOf u P.toARqpParams (Lt a.2) p q *
-            (β * Constrained.targetResidual f c a.2 a.1 * ε l) ^ Chapter12.arqpPiOf u p l ≤
-          Constrained.targetMerit f c a.2 (o.xi i) -
-            Constrained.targetMerit f c a.2 (o.xi (i + 1))) ∧
-      (θ * ε 0 ≤ Constrained.targetResidual f c a.2 (o.xi o.e) → ∀ j ∈ Finset.Icc 1 q,
-        arqpSCKappaRad P (Lt a.2) p * (β * Constrained.targetResidual f c a.2 a.1 * ε j) ≤
-          o.δ j ∧
-        Optimization.taylorMeasure (ftaylorSeries ℝ (Constrained.targetMerit f c a.2) (o.xi o.e))
-          j (o.δ j) {d | o.xi o.e + d ∈ X} ≤
-          β * Constrained.targetResidual f c a.2 a.1 * ε j * o.δ j ^ j / j !) := by
+      Good a.1 a.2 o := by
     intro a
     by_cases ha : Valid a
-    · obtain ⟨o, ho⟩ := exists_phase2_call (hμ a.2 (hT a.1 ha.1 a.2 ha.2.2.2 ha.2.2.1)) P hθς hq
-        hqp hX hθ0 hθ1 hβ0 hβθ hε ha.1 ha.2.1 ha.2.2.1
+    · obtain ⟨o, ho⟩ := hgood a.1 a.2 ha.1 ha.2.1 ha.2.2.1 ha.2.2.2
       exact ⟨o, fun _ => ho⟩
     · exact ⟨⟨fun _ => a.1, 0, fun _ => False, fun _ => 1⟩, fun h' => absurd h' ha⟩
   choose call hcall using hcall
@@ -4228,8 +5773,83 @@ private theorem phase2_core (hX : IsClosed X) (hq : 1 ≤ q) (hqp : q ≤ p) {T 
     exact (ite_eq_right (not_lt.2 hge)).trans (ite_eq_left hlt)
   · intro k hk1 hk
     obtain ⟨j, rfl, hv⟩ := hspec k hk1 hk
-    obtain ⟨-, -, -, -, -, -, -, hc, hstay, hcount, hdec, hdec', hcert⟩ := hcall _ hv
-    exact ⟨hT _ hv.1 _ hv.2.2.2 hv.2.2.1, hc, hstay, hcount, hdec, hdec', hcert⟩
+    exact ⟨hv, (hcall _ hv).2.2.2.2.2.2.2⟩
+
+open Classical in
+/-- The construction of Phase 2 of TPqp-GC with INNER = ARqp-SC: the targets stay in a set `T`
+containing every `t ≤ f(z)` with `z ∈ X`, `‖r(z, t)‖ ≤ ε₀`, on which `μ(·, t)` satisfies
+μ.D1pL with constants `Lt t`. Every call satisfies the conclusions of `exists_phase2_call`. -/
+private theorem phase2_core (hX : IsClosed X) (hq : 1 ≤ q) (hqp : q ≤ p) {T : Set ℝ}
+    {Lt : ℝ → ℕ → ℝ}
+    (hμ : ∀ t ∈ T, Chapter12.AssumptionD1pL (Constrained.targetMerit f c t) p (Lt t))
+    (hT : ∀ z ∈ X, ∀ t, t ≤ f z → Constrained.targetResidual f c t z ≤ ε 0 → t ∈ T)
+    (P : ARqpCParams) (hθς : P.θ < P.ς) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β)
+    (hβθ : β ≤ θ) (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x₁ : ℝⁿ}
+    (hx₁ : x₁ ∈ X) (hc₁ : ‖c x₁‖ ≤ θ * ε 0) :
+    ∃ D : TPqpSeq n, IsTPqpGCPhase2 f c X q θ β ε x₁ D ∧
+      ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.t k ∈ T ∧
+        IsARqpSCCall (Constrained.targetMerit f c (D.t k)) X p q P
+          (fun j => β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j)
+          (D.xi k) (D.e k) (D.succ k) ∧
+        (∀ i < D.e k, ¬ D.succ k i → D.xi k (i + 1) = D.xi k i) ∧
+        (D.e k : ℝ) ≤ arqpSCKappaUns P * D.succCount k + arqpSCKappaUnc P (Lt (D.t k)) p ∧
+        (∀ i < D.e k, D.succ k i →
+          (i + 1 < D.e k ∨ ¬ meritCrit f c X q ε (D.t k) (D.x (k + 1)) (D.δ (k + 1))) →
+          θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.xi k (i + 1)) →
+          ∃ l ∈ Finset.Icc 1 q, arqpSCKappaDecr P (Lt (D.t k)) p q *
+              (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε l) ^ (l + 1) ≤
+            Constrained.targetMerit f c (D.t k) (D.xi k i) -
+              Constrained.targetMerit f c (D.t k) (D.xi k (i + 1))) ∧
+        (∀ (u : Prop) [Decidable u], (u → q = 1 ∧ Convex ℝ X) → ∀ i < D.e k, D.succ k i →
+          (i + 1 < D.e k ∨ ¬ meritCrit f c X q ε (D.t k) (D.x (k + 1)) (D.δ (k + 1))) →
+          θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.xi k (i + 1)) →
+          ∃ l ∈ Finset.Icc 1 q, P.η₁ * Chapter12.arqpKappaDmOf u P.toARqpParams (Lt (D.t k)) p q *
+              (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε l) ^
+                Chapter12.arqpPiOf u p l ≤
+            Constrained.targetMerit f c (D.t k) (D.xi k i) -
+              Constrained.targetMerit f c (D.t k) (D.xi k (i + 1))) ∧
+        (θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.x (k + 1)) → ∀ j ∈ Finset.Icc 1 q,
+          arqpSCKappaRad P (Lt (D.t k)) p *
+              (β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j) ≤ D.δ (k + 1) j ∧
+          Optimization.taylorMeasure
+              (ftaylorSeries ℝ (Constrained.targetMerit f c (D.t k)) (D.x (k + 1))) j
+              (D.δ (k + 1) j) {d | D.x (k + 1) + d ∈ X} ≤
+            β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j * D.δ (k + 1) j ^ j /
+              j !) := by
+  obtain ⟨D, hD, hcalls⟩ := phase2_core_of hθ0 hθ1 hβ0 hβθ hε hx₁ hc₁ (fun x t o =>
+      IsARqpSCCall (Constrained.targetMerit f c t) X p q P
+        (fun j => β * Constrained.targetResidual f c t x * ε j) o.xi o.e o.succ ∧
+      (∀ i < o.e, ¬ o.succ i → o.xi (i + 1) = o.xi i) ∧
+      (o.e : ℝ) ≤ arqpSCKappaUns P * ((Finset.range o.e).filter o.succ).card +
+        arqpSCKappaUnc P (Lt t) p ∧
+      (∀ i < o.e, o.succ i → (i + 1 < o.e ∨ ¬ meritCrit f c X q ε t (o.xi o.e) o.δ) →
+        θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi (i + 1)) →
+        ∃ l ∈ Finset.Icc 1 q, arqpSCKappaDecr P (Lt t) p q *
+            (β * Constrained.targetResidual f c t x * ε l) ^ (l + 1) ≤
+          Constrained.targetMerit f c t (o.xi i) -
+            Constrained.targetMerit f c t (o.xi (i + 1))) ∧
+      (∀ (u : Prop) [Decidable u], (u → q = 1 ∧ Convex ℝ X) →
+        ∀ i < o.e, o.succ i → (i + 1 < o.e ∨ ¬ meritCrit f c X q ε t (o.xi o.e) o.δ) →
+        θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi (i + 1)) →
+        ∃ l ∈ Finset.Icc 1 q, P.η₁ * Chapter12.arqpKappaDmOf u P.toARqpParams (Lt t) p q *
+            (β * Constrained.targetResidual f c t x * ε l) ^ Chapter12.arqpPiOf u p l ≤
+          Constrained.targetMerit f c t (o.xi i) -
+            Constrained.targetMerit f c t (o.xi (i + 1))) ∧
+      (θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi o.e) → ∀ j ∈ Finset.Icc 1 q,
+        arqpSCKappaRad P (Lt t) p * (β * Constrained.targetResidual f c t x * ε j) ≤ o.δ j ∧
+        Optimization.taylorMeasure (ftaylorSeries ℝ (Constrained.targetMerit f c t) (o.xi o.e))
+          j (o.δ j) {d | o.xi o.e + d ∈ X} ≤
+          β * Constrained.targetResidual f c t x * ε j * o.δ j ^ j / j !))
+    fun x t hx hlo hhi hft => by
+      obtain ⟨o, ho⟩ := exists_phase2_call (hμ t (hT x hx t hft hhi)) P hθς hq hqp hX hθ0 hθ1
+        hβ0 hβθ hε hx hlo hhi
+      obtain ⟨h0, h1, h2, h3, h4, h5, h6, h7⟩ := ho
+      exact ⟨o, h0, h1, h2, h3, h4, h5, h6, h7⟩
+  refine ⟨D, hD, fun k hk1 hk => ?_⟩
+  obtain ⟨⟨hxk, hlo, hhi, hft⟩, hgood⟩ := hcalls k hk1 hk
+  have hend : D.xi k (D.e k) = D.x (k + 1) := hD.inner_end k hk1 hk
+  simp only [hend] at hgood
+  exact ⟨hT _ hxk _ hft hhi, hgood⟩
 
 /-- **Existence of Phase-2 runs of TPqp-GC** ([cartis2022evaluation], Algorithm 14.3.2, Phase 2
 is well defined, with INNER = ARqp-SC). Let `X` be closed, `1 ≤ q ≤ p`, `μ(·, t)` satisfy
@@ -4324,6 +5944,55 @@ theorem exists_isTPqpGCPhase2_isInnerCertified (hX : IsClosed X) (hq : 1 ≤ q) 
   rw [e, Real.rpow_natCast]
   exact hdec
 
+/-- **The constructed Phase-2 runs satisfy the INNER contract keyed on INNER's own test**
+(`IsInnerPhaseRunStrong`, [cartis2022evaluation], Lemmas 14.2.2–14.2.3 as stated, with INNER =
+ARqp-SC): under the assumptions of `exists_isTPqpGCPhase2_isInnerPhaseRun`, the Phase-2 run
+constructed there satisfies `IsInnerPhaseRunStrong` with the constants of
+`exists_isTPqpGCPhase2_isInnerPhaseRun` (`π_l = l + 1`) and radii `ρ_j = κ_ρ βθ ε₀ ε_j`: a call
+ending with `‖r‖ ≥ θε₀` ends at the termination of its ARqp-SC run, whose certificate is INNER's
+test
+(`IsInnerPhaseRun.toStrong`). -/
+theorem exists_isTPqpGCPhase2_isInnerPhaseRunStrong (hX : IsClosed X) (hq : 1 ≤ q)
+    (hqp : q ≤ p) {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup)
+    (hεβ : ε 0 ≤ βF) {L : ℕ → ℝ}
+    (hμ : ∀ t ∈ Icc (flow - 1) fup,
+      Chapter12.AssumptionD1pL (Constrained.targetMerit f c t) p L)
+    (P : ARqpCParams) (hθς : P.θ < P.ς) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β)
+    (hβθ : β ≤ θ) (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x₁ : ℝⁿ}
+    (hx₁ : x₁ ∈ X) (hc₁ : ‖c x₁‖ ≤ θ * ε 0) :
+    ∃ D : TPqpSeq n, IsTPqpGCPhase2 f c X q θ β ε x₁ D ∧
+      (∀ k, 1 ≤ k → D.Before f c X q θ ε k →
+        IsARqpSCCall (Constrained.targetMerit f c (D.t k)) X p q P
+          (fun j => β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j)
+          (D.xi k) (D.e k) (D.succ k)) ∧
+      0 < arqpSCKappaDecr P L p q ∧
+      IsInnerPhaseRunStrong f c X q θ β ε D (arqpSCKappaDecr P L p q) (arqpSCKappaUns P)
+        (arqpSCKappaUnc P L p) (fun l => (l : ℝ) + 1)
+        (fun j => arqpSCKappaRad P L p * β * θ * ε 0 * ε j) := by
+  obtain ⟨D, hD, hcalls⟩ := phase2_core hX hq hqp (Lt := fun _ => L) hμ
+    (mem_Icc_of_targetResidual_le hB hεβ (hε 0 (by simp)).2) P hθς hθ0 hθ1 hβ0 hβθ hε hx₁ hc₁
+  have hin : IsInnerPhaseRun f c X q θ β ε D (arqpSCKappaDecr P L p q) (arqpSCKappaUns P)
+      (arqpSCKappaUnc P L p) (fun l => (l : ℝ) + 1) :=
+    ⟨fun k hk1 hk => (hcalls k hk1 hk).2.2.2.1, fun k hk1 hk => (hcalls k hk1 hk).2.2.1,
+      fun k hk1 hk i hi hs hcont hge => by
+        obtain ⟨l, hl, hdec⟩ := (hcalls k hk1 hk).2.2.2.2.1 i hi hs hcont hge
+        refine ⟨l, hl, ?_⟩
+        have e : ((l : ℝ) + 1) = ((l + 1 : ℕ) : ℝ) := by push_cast; ring
+        rw [e, Real.rpow_natCast]
+        exact hdec⟩
+  refine ⟨D, hD, fun k hk1 hk => (hcalls k hk1 hk).2.1,
+    arqpSCKappaDecr_pos (hμ _ (target_one_mem_Icc hB hεβ hε hθ1 hx₁ hc₁)) (hq.trans hqp) hθς,
+    hin.toStrong hD fun k hk1 hk hge => ⟨fun j hj => ((hcalls k hk1 hk).2.2.2.2.2.2 hge j hj).2,
+      fun j hj => ?_⟩⟩
+  refine le_trans ?_ ((hcalls k hk1 hk).2.2.2.2.2.2 hge j hj).1
+  have hrk : θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.x k) :=
+    hge.trans (hD.resid_succ_le hk1 hk)
+  have hκ := arqpSCKappaRad_pos P L p
+  have hεj := hD.ε_pos' hj
+  calc arqpSCKappaRad P L p * β * θ * ε 0 * ε j =
+      arqpSCKappaRad P L p * (β * (θ * ε 0) * ε j) := by ring
+    _ ≤ _ := by gcongr
+
 /-- **The constructed Phase-2 runs satisfy the INNER contract** ([cartis2022evaluation],
 Lemmas 14.2.2–14.2.3 for INNER on `μ(·, t_k)`, with constants independent of `t_k` as in
 Lemma 14.3.6 (ii)). Let `X` be closed, `1 ≤ q ≤ p`, f.B.Fb hold on `ℱ_{β_F}`
@@ -4365,7 +6034,8 @@ assumptions of `exists_isTPqpGCPhase2_isInnerPhaseRun`, the constructed Phase-2 
 for the runs (`algorithm_14_1_1.zero_decrease_arqp`): the lower-bound mode `u = False` gives the
 "otherwise" exponents `j(p+1)/p` for every `q` and `X`; the unit-radii mode needs `q = 1` and `X`
 convex (for `q = 2` Algorithm 14.1.2 may halve the radii that the unit-radii row needs equal to
-`1`), and then gives the same exponent `(p+1)/p`. -/
+`1`), and then gives the same exponent `(p+1)/p`. (On `X = ℝⁿ` with `q ≤ 2`, INNER runs with
+Algorithm 12.2.3 as Step 2 keep unit radii: `exists_isTPqpGCPhase2_isInnerCertified_unit`.) -/
 theorem exists_isTPqpGCPhase2_isInnerPhaseRun_arqp (hX : IsClosed X) (hq : 1 ≤ q)
     (hqp : q ≤ p) {u : Prop} [Decidable u] (hu : u → q = 1 ∧ Convex ℝ X)
     {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF)
@@ -4391,6 +6061,81 @@ theorem exists_isTPqpGCPhase2_isInnerPhaseRun_arqp (hX : IsClosed X) (hq : 1 ≤
     mul_pos P.η₁_pos (Chapter12.arqpKappaDmOf_pos u P.σmin_pos hθς hLp),
     ⟨fun k hk1 hk => (hcalls k hk1 hk).2.2.2.1, fun k hk1 hk => (hcalls k hk1 hk).2.2.1,
     fun k hk1 hk => (hcalls k hk1 hk).2.2.2.2.2.1 u hu⟩⟩
+
+open Classical in
+/-- **The constructed Phase-2 runs on `ℝⁿ` with INNER = ARqp with unit radii satisfy the INNER
+contract with the unit-radius exponents** ([cartis2022evaluation], Lemmas 14.2.2–14.2.3, ARqp-SC
+row of (14.2.12) for `X = ℝⁿ`, `q ≤ 2`, for INNER on `μ(·, t_k)`). Let `X = ℝⁿ`,
+`1 ≤ q ≤ min(2, p)`, f.B.Fb hold on `ℱ_{β_F}` with `ε₀ ≤ β_F`, and `μ(·, t)` satisfy μ.D1pL with
+constants `L` independent of `t ∈ [f_low - 1, f_up]`. Then for every admissible `θ`, `β ∈ (0, θ]`,
+`ε` and `x₁` with `‖c(x₁)‖ ≤ θε₀` there is a Phase-2 run from `x₁` whose INNER calls are ARqp
+calls with unit radii on `μ(·, t_k)` (`IsARqpUnitCall`; Algorithm 12.2.3 never halves the orders
+`j ≤ 2`) and which satisfies `IsInnerPhaseRun` with `κ_decr = η₁ κ_{Δm} > 0`
+(`arqpRowKappaDecr True`), `κ_uns = arqpSCKappaUns P`, `κ_unc = arqpUnitKappaUnc P L p` and the
+unit-radius exponents `π_j = (p+1)/(p-j+1)` (`Chapter12.arqpPiOf True p j`), together with
+INNER's certificate `IsInnerCertified` with radii `ρ_j = 1`, and the contract keyed on INNER's
+test `IsInnerPhaseRunStrong` with radii `1`. -/
+theorem exists_isTPqpGCPhase2_isInnerCertified_unit (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p)
+    {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c univ βF flow fup) (hεβ : ε 0 ≤ βF)
+    {L : ℕ → ℝ}
+    (hμ : ∀ t ∈ Icc (flow - 1) fup,
+      Chapter12.AssumptionD1pL (Constrained.targetMerit f c t) p L)
+    (P : ARqpCParams) (hθς : P.θ < P.ς) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β)
+    (hβθ : β ≤ θ) (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x₁ : ℝⁿ}
+    (hc₁ : ‖c x₁‖ ≤ θ * ε 0) :
+    ∃ D : TPqpSeq n, IsTPqpGCPhase2 f c univ q θ β ε x₁ D ∧
+      (∀ k, 1 ≤ k → D.Before f c univ q θ ε k →
+        IsARqpUnitCall (Constrained.targetMerit f c (D.t k)) p q P
+          (fun j => β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j)
+          (D.xi k) (D.e k) (D.succ k)) ∧
+      0 < arqpRowKappaDecr True P L p q ∧
+      IsInnerPhaseRun f c univ q θ β ε D (arqpRowKappaDecr True P L p q) (arqpSCKappaUns P)
+        (arqpUnitKappaUnc P L p) (Chapter12.arqpPiOf True p) ∧
+      IsInnerCertified f c univ q θ β ε D (fun _ => 1) ∧
+      IsInnerPhaseRunStrong f c univ q θ β ε D (arqpRowKappaDecr True P L p q)
+        (arqpSCKappaUns P) (arqpUnitKappaUnc P L p) (Chapter12.arqpPiOf True p)
+        (fun _ => 1) := by
+  have hT := mem_Icc_of_targetResidual_le hB hεβ (hε 0 (by simp)).2
+  obtain ⟨D, hD, hcalls⟩ := phase2_core_of (X := univ) hθ0 hθ1 hβ0 hβθ hε (mem_univ x₁) hc₁
+    (fun x t o =>
+      IsARqpUnitCall (Constrained.targetMerit f c t) p q P
+        (fun j => β * Constrained.targetResidual f c t x * ε j) o.xi o.e o.succ ∧
+      (∀ i < o.e, ¬ o.succ i → o.xi (i + 1) = o.xi i) ∧
+      (o.e : ℝ) ≤ arqpSCKappaUns P * ((Finset.range o.e).filter o.succ).card +
+        arqpUnitKappaUnc P L p ∧
+      (∀ i < o.e, o.succ i → (i + 1 < o.e ∨ ¬ meritCrit f c univ q ε t (o.xi o.e) o.δ) →
+        θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi (i + 1)) →
+        ∃ l ∈ Finset.Icc 1 q, arqpRowKappaDecr True P L p q *
+            (β * Constrained.targetResidual f c t x * ε l) ^ Chapter12.arqpPiOf True p l ≤
+          Constrained.targetMerit f c t (o.xi i) -
+            Constrained.targetMerit f c t (o.xi (i + 1))) ∧
+      (θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi o.e) → ∀ j ∈ Finset.Icc 1 q,
+        o.δ j = 1 ∧
+        Optimization.taylorMeasure (ftaylorSeries ℝ (Constrained.targetMerit f c t) (o.xi o.e)) j
+          (o.δ j) {d | o.xi o.e + d ∈ (univ : Set ℝⁿ)} ≤
+          β * Constrained.targetResidual f c t x * ε j * o.δ j ^ j / j !))
+    fun x t hx hlo hhi hft => by
+      obtain ⟨o, ho⟩ := exists_phase2_call_unit (hμ t (hT x hx t hft hhi)) P hθς hq hq2 hqp hθ0
+        hβ0 hβθ hε hlo hhi
+      obtain ⟨h0, h1, h2, h3, h4, h5, h6, h7⟩ := ho
+      exact ⟨o, h0, h1, h2, h3, h4, h5, h6, h7⟩
+  have hLp : 1 ≤ L p := (hμ _ (target_one_mem_Icc hB hεβ hε hθ1 (mem_univ x₁) hc₁)).one_le p
+    (Finset.mem_Icc.2 ⟨hq.trans hqp, le_rfl⟩)
+  have hcalls' : ∀ k, 1 ≤ k → D.Before f c univ q θ ε k → _ := fun k hk1 hk => by
+    obtain ⟨-, hgood⟩ := hcalls k hk1 hk
+    have hend : D.xi k (D.e k) = D.x (k + 1) := hD.inner_end k hk1 hk
+    simp only [hend] at hgood
+    exact hgood
+  have hin : IsInnerPhaseRun f c univ q θ β ε D (arqpRowKappaDecr True P L p q)
+      (arqpSCKappaUns P) (arqpUnitKappaUnc P L p) (Chapter12.arqpPiOf True p) :=
+    ⟨fun k hk1 hk => (hcalls' k hk1 hk).2.2.1, fun k hk1 hk => (hcalls' k hk1 hk).2.1,
+      fun k hk1 hk => (hcalls' k hk1 hk).2.2.2.1⟩
+  refine ⟨D, hD, fun k hk1 hk => (hcalls' k hk1 hk).1,
+    mul_pos P.η₁_pos (Chapter12.arqpKappaDmOf_pos True P.σmin_pos hθς hLp), hin,
+    ⟨fun k hk1 hk hb j hj => ((hcalls' k hk1 hk).2.2.2.2 hb.1 j hj).1.ge,
+      fun k hk1 hk hb j hj => ((hcalls' k hk1 hk).2.2.2.2 hb.1 j hj).2⟩,
+    hin.toStrong hD fun k hk1 hk hge => ⟨fun j hj => ((hcalls' k hk1 hk).2.2.2.2 hge j hj).2,
+      fun j hj => ((hcalls' k hk1 hk).2.2.2.2 hge j hj).1.ge⟩⟩
 
 /-- TPqp-GC runs from Phase-2 runs: Phase 1 is a LENq-SC run with INNER = ARqp-SC on `ν`
 (`exists_algorithm_14_3_1`), and Phase 2 is any run with a property `Q` provided by `hphase2`. -/
@@ -4681,7 +6426,9 @@ with `τ = arqpSCKbDrop P L p q θ β B_f ε` bounds the number of case-(b) oute
 (`IsTPqpGCPhase2.kbCount_le`): every such iteration decreases the target by more than `τ`, since
 (14.3.34) fails at the new target while INNER's stronger test holds at the old one. As
 `τ⁻¹ = O(max_j (ε₀ ε_j)^{-j})` and `G N_a = O(max_j ε₀^{-j} ε_j^{-(j+1)})`, the order of
-Theorem 14.3.9 with the exponents `π_j = j + 1` is unchanged. -/
+Theorem 14.3.9 with the exponents `π_j = j + 1` is unchanged.
+(`exists_algorithm_14_3_2_complexity_strong` covers every `β ≤ θ`, with the margin
+`kbMargin θ ε₀` in place of `(θ - β)ε₀`.) -/
 theorem exists_algorithm_14_3_2_complexity_certified (hX : IsClosed X) (hq : 1 ≤ q)
     (hqp : q ≤ p) {Lν : ℕ → ℝ} (hν : Chapter12.AssumptionD1pL (phi2 c) p Lν) {βF flow fup : ℝ}
     (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF) {L : ℕ → ℝ}
@@ -4778,6 +6525,150 @@ theorem exists_algorithm_14_3_2_complexity_certified (hX : IsClosed X) (hq : 1 �
     (fun y hy hcy => hBf y hy (hcy.trans hεβ))
     (arqpSCKbDrop_pos hθ0 hβ0 hβθ hBf0 fun j hj => (hε j hj).1)
     fun j hj => two_mul_arqpSCKbDrop_le hBf0 hj
+  exact ⟨kε, hend, hkε, hD, hF⟩
+
+/-- The target decrease `τ = min(1, min_{j ∈ [1 : q]} η ε_j ρ_j^{j-1}/(2 B_f j!))`,
+`η = kbMargin θ ε₀`, `ρ_j = κ_ρ βθ ε₀ ε_j` (`arqpSCKappaRad`), of the case-(b) iterations of the
+constructed Phase-2 runs ending at a point passing INNER's test, for every `β ≤ θ`
+(`IsTPqpGCPhase2.card_isKb_innerTest_le`). -/
+noncomputable def arqpSCKbDropLe (P : ARqpCParams) (L : ℕ → ℝ) (p q : ℕ) (θ β Bf : ℝ)
+    (ε : ℕ → ℝ) : ℝ :=
+  Chapter12.finMin 1 (fun j => kbMargin θ (ε 0) * ε j *
+    (arqpSCKappaRad P L p * β * θ * ε 0 * ε j) ^ (j - 1) / (2 * Bf * j !)) q
+
+/-- `τ > 0`. -/
+theorem arqpSCKbDropLe_pos {L : ℕ → ℝ} {Bf : ℝ} (hθ : 0 < θ) (hθ1 : θ < 1) (hβ : 0 < β)
+    (hBf : 0 < Bf) (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j) :
+    0 < arqpSCKbDropLe P L p q θ β Bf ε := by
+  refine Chapter12.finMin_pos one_pos fun j hj => ?_
+  have := hε 0 (by simp)
+  have := hε j (Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.mem_Icc.1 hj).2))
+  have := arqpSCKappaRad_pos P L p
+  have : 0 < kbMargin θ (ε 0) := by
+    unfold kbMargin; have : 0 < 1 - θ := by linarith
+    positivity
+  positivity
+
+/-- `2 B_f τ ≤ η ε_j ρ_j^{j-1}/j!` for every `j ∈ [1 : q]`. -/
+theorem two_mul_arqpSCKbDropLe_le {L : ℕ → ℝ} {Bf : ℝ} (hBf : 0 < Bf) {j : ℕ}
+    (hj : j ∈ Finset.Icc 1 q) :
+    2 * Bf * arqpSCKbDropLe P L p q θ β Bf ε ≤
+      kbMargin θ (ε 0) * ε j * (arqpSCKappaRad P L p * β * θ * ε 0 * ε j) ^ (j - 1) / j ! := by
+  have h1 := Chapter12.finMin_le (b := 1) hj (u := fun j => kbMargin θ (ε 0) * ε j *
+    (arqpSCKappaRad P L p * β * θ * ε 0 * ε j) ^ (j - 1) / (2 * Bf * j !))
+  have hfac : (0 : ℝ) < j ! := by positivity
+  calc 2 * Bf * arqpSCKbDropLe P L p q θ β Bf ε
+      ≤ 2 * Bf * (kbMargin θ (ε 0) * ε j *
+          (arqpSCKappaRad P L p * β * θ * ε 0 * ε j) ^ (j - 1) / (2 * Bf * j !)) := by
+        unfold arqpSCKbDropLe
+        gcongr
+    _ = _ := by field_simp
+
+/-- **Complexity of the constructed TPqp-GC runs without the bad-iteration parameter, for every
+`β ≤ θ`** ([cartis2022evaluation], Theorem 14.3.9 with INNER = ARqp-SC in both phases, including
+the book's `β = θ`). Under the assumptions of `exists_algorithm_14_3_2_complexity_certified` with
+`β ≤ θ` in place of `β < θ`, the same conclusions hold with
+`N_b = N_a + 1 + (f_up - f_low + 1)/τ`, `τ = arqpSCKbDropLe P L p q θ β B_f ε`: the constructed
+Phase-2 runs satisfy the contract keyed on INNER's own test
+(`exists_isTPqpGCPhase2_isInnerPhaseRunStrong`), and `IsTPqpGCPhase2.complexity_of_strong`
+applies. -/
+theorem exists_algorithm_14_3_2_complexity_strong (hX : IsClosed X) (hq : 1 ≤ q)
+    (hqp : q ≤ p) {Lν : ℕ → ℝ} (hν : Chapter12.AssumptionD1pL (phi2 c) p Lν) {βF flow fup : ℝ}
+    (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF) {L : ℕ → ℝ}
+    (hμ : ∀ t ∈ Icc (flow - 1) fup,
+      Chapter12.AssumptionD1pL (Constrained.targetMerit f c t) p L)
+    (hf : ContDiff ℝ q f) (hc : ContDiff ℝ q c) {Bf : ℝ} (hBf0 : 0 < Bf)
+    (hBf : ∀ y ∈ X, ‖c y‖ ≤ βF → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+    (P : ARqpCParams) (hθς : P.θ < P.ς) (hθ0 : 0 < θ) (hθ1 : θ < 1)
+    (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
+    {β₁ : ℝ} (hβ₁0 : 0 < β₁) (hβ₁1 : β₁ < 1) {x₀ : ℝⁿ} (hx₀ : x₀ ∈ X)
+    (hβ₁c : β₁ * ‖c x₀‖ < 1) :
+    ∃ (xP : ℕ → ℝⁿ) (δP : ℕ → ℕ → ℝ) (k₁ : ℕ) (D : TPqpSeq n) (nF₁ nD₁ : ℕ → ℕ),
+      algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D ∧
+      (∀ k, 1 ≤ k → k ≤ k₁ → IsARqpSCOutputCost (phi2 c) X p q P
+        (fun j => β₁ * ‖c (xP (k - 1))‖ * phase1Tol θ ε j) (xP (k - 1)) (xP k) (δP k) (nF₁ k)
+          (nD₁ k)) ∧
+      (∑ k ∈ Finset.Icc 1 k₁, (nF₁ k : ℝ) ≤ 1 / 2 * arqpSCKappaF P Lν p q * ‖c x₀‖ *
+        ∑ j ∈ Finset.Icc 1 q, β₁ ^ (1 - 2 * ((j : ℝ) + 1)) / (β₁ ^ (1 - ((j : ℝ) + 1)) - 1) *
+          θ ^ (1 - ((j : ℝ) + 1)) * ε 0 ^ (1 - ((j : ℝ) + 1)) * ε j ^ (-((j : ℝ) + 1))) ∧
+      (∑ k ∈ Finset.Icc 1 k₁, (nD₁ k : ℝ) ≤ 1 / 2 * arqpSCKappaD P Lν p q * ‖c x₀‖ *
+        ∑ j ∈ Finset.Icc 1 q, β₁ ^ (1 - 2 * ((j : ℝ) + 1)) / (β₁ ^ (1 - ((j : ℝ) + 1)) - 1) *
+          θ ^ (1 - ((j : ℝ) + 1)) * ε 0 ^ (1 - ((j : ℝ) + 1)) * ε j ^ (-((j : ℝ) + 1))) ∧
+      (‖c (xP k₁)‖ ≤ θ * ε 0 →
+        (∀ k, 1 ≤ k → D.Before f c X q θ ε k →
+          IsARqpSCCall (Constrained.targetMerit f c (D.t k)) X p q P
+            (fun j => β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j)
+            (D.xi k) (D.e k) (D.succ k)) ∧
+        ∃ kε, D.IsEnd f c X q θ ε kε ∧
+          (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
+            (goodBound (arqpSCKappaDecr P L p q) β θ ((q : ℝ) + 1) (arqpSCPhase2M q ε) + 1) +
+              ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 +
+                (fup - flow + 1) / arqpSCKbDropLe P L p q θ β Bf ε) ∧
+          (D.derivEvals kε : ℝ) ≤
+            1 + goodBound (arqpSCKappaDecr P L p q) β θ ((q : ℝ) + 1) (arqpSCPhase2M q ε) *
+              ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) + kε ∧
+          (D.funEvals kε : ℝ) ≤
+            1 + arqpSCKappaUns P *
+              (goodBound (arqpSCKappaDecr P L p q) β θ ((q : ℝ) + 1) (arqpSCPhase2M q ε) *
+                ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) + kε) +
+              arqpSCKappaUnc P L p * kε) := by
+  obtain ⟨xP, δP, k₁, D, nF₁, nD₁, h, hcalls, hQ⟩ := exists_algorithm_14_3_2_of_phase2 hX hq hqp
+    hν P hθς hθ0 hθ1 hε hβ₁0 hβ₁1 hx₀ hβ₁c (β := β) (Q := fun D =>
+      (∀ k, 1 ≤ k → D.Before f c X q θ ε k →
+        IsARqpSCCall (Constrained.targetMerit f c (D.t k)) X p q P
+          (fun j => β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j)
+          (D.xi k) (D.e k) (D.succ k)) ∧
+      0 < arqpSCKappaDecr P L p q ∧
+      IsInnerPhaseRunStrong f c X q θ β ε D (arqpSCKappaDecr P L p q) (arqpSCKappaUns P)
+        (arqpSCKappaUnc P L p) (fun l => (l : ℝ) + 1)
+        (fun j => arqpSCKappaRad P L p * β * θ * ε 0 * ε j))
+    fun _ hx₁ hc₁ => exists_isTPqpGCPhase2_isInnerPhaseRunStrong hX hq hqp hB hεβ hμ P hθς hθ0
+      hθ1 hβ0 hβθ hε hx₁ hc₁
+  have hp : 1 ≤ p := hq.trans hqp
+  have hεI : ∀ l ∈ Finset.Icc 1 q, 0 < ε l ∧ ε l ≤ 1 := fun l hl =>
+    hε l (Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.mem_Icc.1 hl).2))
+  have hε₀ : 0 < ε 0 := (hε 0 (by simp)).1
+  have hπ1 : ∀ l ∈ Finset.Icc 1 q, 1 < (fun l : ℕ => (l : ℝ) + 1) l := fun l hl => by
+    have : (1 : ℝ) ≤ l := by exact_mod_cast (Finset.mem_Icc.1 hl).1
+    change 1 < (l : ℝ) + 1
+    linarith
+  have hκF : 0 ≤ arqpSCKappaF P Lν p q := by
+    unfold arqpSCKappaF
+    have := arqpSCKappaDecr_pos (q := q) hν hp hθς
+    have := arqpSCKappaUns_nonneg P
+    have := arqpSCKappaC_nonneg P Lν p
+    positivity
+  have hκD : 0 ≤ arqpSCKappaD P Lν p q := by
+    unfold arqpSCKappaD
+    have := arqpSCKappaDecr_pos (q := q) hν hp hθς
+    positivity
+  have hcost := phase1_cost_le h hq hν hθς hε hcalls
+  refine ⟨xP, δP, k₁, D, nF₁, nD₁, h, hcalls,
+    (lemma_14_3_7 h hθ0 hπ1 hκF fun k hk => (hcost k hk).1).2,
+    (lemma_14_3_7 h hθ0 hπ1 hκD fun k hk => (hcost k hk).2).2,
+    fun hc1 => ⟨(hQ hc1).1, ?_⟩⟩
+  obtain ⟨-, hκ, hin⟩ := hQ hc1
+  have hterm : ∀ l ∈ Finset.Icc 1 q, 0 < ε 0 ^ (2 - ((l : ℝ) + 1)) * ε l ^ (-((l : ℝ) + 1)) :=
+    fun l hl => mul_pos (Real.rpow_pos_of_pos hε₀ _) (Real.rpow_pos_of_pos (hεI l hl).1 _)
+  have hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ (fun l : ℕ => (l : ℝ) + 1) l ∧
+      (fun l : ℕ => (l : ℝ) + 1) l ≤ (q : ℝ) + 1 := fun l hl => by
+    have : (l : ℝ) ≤ q := by exact_mod_cast (Finset.mem_Icc.1 hl).2
+    exact ⟨by positivity, by linarith⟩
+  have hM0 : 0 < arqpSCPhase2M q ε :=
+    Finset.sum_pos hterm ⟨1, Finset.mem_Icc.2 ⟨le_rfl, hq⟩⟩
+  have hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - (fun l : ℕ => (l : ℝ) + 1) l) *
+      ε l ^ (-(fun l : ℕ => (l : ℝ) + 1) l) ≤ arqpSCPhase2M q ε := fun l hl =>
+    Finset.single_le_sum (f := fun l : ℕ => ε 0 ^ (2 - ((l : ℝ) + 1)) * ε l ^ (-((l : ℝ) + 1)))
+      (fun i hi => (hterm i hi).le) hl
+  have hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ arqpSCKappaRad P L p * β * θ * ε 0 * ε j := fun j hj => by
+    have := arqpSCKappaRad_pos P L p
+    have := (hεI j hj).1
+    positivity
+  obtain ⟨-, kε, hend, hkε, hD, hF⟩ := (h.phase2 hc1).complexity_of_strong hin hκ
+    (arqpSCKappaUns_nonneg P) hπ hM0 hM hB hεβ hρ hf hc
+    (fun y hy hcy => hBf y hy (hcy.trans hεβ))
+    (arqpSCKbDropLe_pos hθ0 hθ1 hβ0 hBf0 fun j hj => (hε j hj).1)
+    fun j hj => two_mul_arqpSCKbDropLe_le hBf0 hj
   exact ⟨kε, hend, hkε, hD, hF⟩
 
 
@@ -5057,6 +6948,169 @@ theorem exists_algorithm_14_3_2_complexity_arqp_add (hX : IsClosed X) (hq : 1 �
       (fun i hi => (hterm i hi).le) hl
   exact (h.phase2 hc1).complexity (hQ hc1).2.2 (hQ hc1).2.1 (arqpSCKappaUns_nonneg P) hπ hM0 hM
     hB hεβ
+
+/-- The target decrease `τ = min(1, min_{j ∈ [1 : q]} η ε_j/(2 B_f j!))`, `η = kbMargin θ ε₀`,
+of the case-(b) outer iterations of Phase-2 runs certified with radii `1`
+(`IsTPqpGCPhase2.kbCount_le_of_le` with `ρ = 1`). -/
+noncomputable def unitKbDrop (q : ℕ) (θ Bf : ℝ) (ε : ℕ → ℝ) : ℝ :=
+  Chapter12.finMin 1 (fun j => kbMargin θ (ε 0) * ε j / (2 * Bf * j !)) q
+
+/-- `τ > 0` for `θ ∈ (0, 1)`, `B_f > 0` and positive tolerances. -/
+theorem unitKbDrop_pos {q : ℕ} {θ Bf : ℝ} {ε : ℕ → ℝ} (hθ0 : 0 < θ) (hθ1 : θ < 1)
+    (hBf : 0 < Bf) (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j) : 0 < unitKbDrop q θ Bf ε := by
+  refine Chapter12.finMin_pos one_pos fun j hj => ?_
+  have := hε 0 (by simp)
+  have := hε j (Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.mem_Icc.1 hj).2))
+  have : 0 < kbMargin θ (ε 0) := by
+    unfold kbMargin; have : 0 < 1 - θ := by linarith
+    positivity
+  positivity
+
+/-- `2 B_f τ ≤ η ε_j 1^{j-1}/j!` for every `j ∈ [1 : q]` (the hypothesis of
+`IsTPqpGCPhase2.complexity_of_certified_le` with radii `1`). -/
+theorem two_mul_unitKbDrop_le {q : ℕ} {θ Bf : ℝ} {ε : ℕ → ℝ} (hBf : 0 < Bf) {j : ℕ}
+    (hj : j ∈ Finset.Icc 1 q) :
+    2 * Bf * unitKbDrop q θ Bf ε ≤
+      kbMargin θ (ε 0) * ε j * (fun _ => (1 : ℝ)) j ^ (j - 1) / j ! := by
+  have h1 := Chapter12.finMin_le (b := 1) hj
+    (u := fun j => kbMargin θ (ε 0) * ε j / (2 * Bf * j !))
+  have hfac : (0 : ℝ) < j ! := by positivity
+  calc 2 * Bf * unitKbDrop q θ Bf ε
+      ≤ 2 * Bf * (kbMargin θ (ε 0) * ε j / (2 * Bf * j !)) := by
+        unfold unitKbDrop
+        gcongr
+    _ = _ := by simp only [one_pow, mul_one]; field_simp
+
+/-- **Complexity of TPqp-GC on `ℝⁿ` with the unit-radius ARqp-SC exponents**
+([cartis2022evaluation], Theorem 14.3.9 for TPqp-GC with `X = ℝⁿ`, `q ≤ 2` and INNER = ARqp-SC
+with unit radii in both phases, the exponents `π_j = (p+1)/(p-j+1)` of its row of (14.2.12)).
+Let `X = ℝⁿ`, `1 ≤ q ≤ min(2, p)`, `ν = ½ ‖c‖²` satisfy ν.D1pL with constants `L_ν`, f.B.Fb hold on
+`ℱ_{β_F}` with `ε₀ ≤ β_F`, `μ(·, t)` satisfy μ.D1pL with constants `L` common to all
+`t ∈ [f_low - 1, f_up]`, `f`, `c` be of class `C^q` with `‖∇^i f‖ ≤ B_f` (`B_f > 0`,
+`i ∈ [1 : q]`) on `ℱ_{β_F}`, `θ < ς`, `θ ∈ (0, 1)`, `ε_j ∈ (0, 1]`, `β ∈ (0, θ]` (the book's
+`β = θ` included), `β₁ ∈ (0, 1)` with `β₁ ‖c(x₀)‖ < 1`. There is a TPqp-GC run from `x₀` with INNER
+= ARqp with unit radii in both phases (Algorithm 12.2.3 never halves the orders `j ≤ 2`) such
+that: (Phase 1) LENq-SC terminates at `k₁ ≤ ⌈log(θε₀/‖c(x₀)‖)/log β₁⌉₊` and its INNER calls
+(`IsARqpUnitOutputCost`) use in total at most
+`½ κ^a ‖c(x₀)‖ ∑_j β₁^{1-2π_j}/(β₁^{1-π_j} - 1) (θε₀)^{1-π_j} ε_j^{-π_j} + κ^c ⌈…⌉₊` evaluations of
+`ν` and the same with `κ^s` and `2 ⌈…⌉₊` for its derivatives (Theorem 12.2.14 (1) and the additive
+form of Lemma 14.3.7; `κ^a`, `κ^s` from `Chapter12.kappaAARqpOf True`,
+`Chapter12.kappaSARqpOf True`, `κ^c = Chapter12.kappaCARqp`); (Phase 2) if Phase 2 is entered,
+its calls are ARqp calls with unit radii (`IsARqpUnitCall`) and it terminates at some
+`k_ε ≤ (N_a + 1)(G + 1) + N_b` after at most `1 + G (N_a + 1) + k_ε` derivative evaluations and
+`1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε` evaluations of `(f, c)`, where
+`N_a = (f_up - f_low + 1)/((1 - θ)ε₀)`, `G = goodBound κ_decr β θ π_q M` with
+`κ_decr = arqpRowKappaDecr True P L p q`, `M = arqpRowPhase2M True p q ε`
+(`M ≥ max_j ε₀^{2-π_j} ε_j^{-π_j}`), `κ_uns = arqpSCKappaUns P`, `κ_unc = arqpUnitKappaUnc P L p`,
+and `N_b = N_a + 1 + (f_up - f_low + 1)/τ`, `τ = unitKbDrop q θ B_f ε`, bounds the number of
+case-(b) outer iterations (INNER's certificate with radii `1`,
+`IsTPqpGCPhase2.complexity_of_certified_le`). Here `τ⁻¹ = O(max_j (ε₀ ε_j)^{-1})`; with
+`ε_j = ε₀ = ε`, `N_b` is within the order `ε^{1-2π_q}` of the book's Theorem 14.3.9 iff
+`π_q ≥ 3/2` (`p ≤ 2` for `q = 1`, `p ≤ 5` for `q = 2`). -/
+theorem exists_algorithm_14_3_2_complexity_unit (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p)
+    {Lν : ℕ → ℝ} (hν : Chapter12.AssumptionD1pL (phi2 c) p Lν) {βF flow fup : ℝ}
+    (hB : Chapter07.AssumptionBFb f c univ βF flow fup) (hεβ : ε 0 ≤ βF) {L : ℕ → ℝ}
+    (hμ : ∀ t ∈ Icc (flow - 1) fup,
+      Chapter12.AssumptionD1pL (Constrained.targetMerit f c t) p L)
+    (hf : ContDiff ℝ q f) (hc : ContDiff ℝ q c) {Bf : ℝ} (hBf0 : 0 < Bf)
+    (hBf : ∀ y, ‖c y‖ ≤ βF → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+    (P : ARqpCParams) (hθς : P.θ < P.ς) (hθ0 : 0 < θ) (hθ1 : θ < 1)
+    (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
+    {β₁ : ℝ} (hβ₁0 : 0 < β₁) (hβ₁1 : β₁ < 1) (x₀ : ℝⁿ) (hβ₁c : β₁ * ‖c x₀‖ < 1) :
+    ∃ (xP : ℕ → ℝⁿ) (δP : ℕ → ℕ → ℝ) (k₁ : ℕ) (D : TPqpSeq n) (nF₁ nD₁ : ℕ → ℕ),
+      algorithm_14_3_2 f c univ q θ β₁ β ε x₀ xP δP k₁ D ∧
+      k₁ ≤ ⌈Real.log (θ * ε 0 / ‖c x₀‖) / Real.log β₁⌉₊ ∧
+      (∀ k, 1 ≤ k → k ≤ k₁ → IsARqpUnitOutputCost (phi2 c) p q P
+        (fun j => β₁ * ‖c (xP (k - 1))‖ * phase1Tol θ ε j) (xP (k - 1)) (xP k) (δP k) (nF₁ k)
+          (nD₁ k)) ∧
+      (∑ k ∈ Finset.Icc 1 k₁, (nF₁ k : ℝ) ≤
+        1 / 2 * Chapter12.kappaAARqpOf True P.toARqpParams Lν p q * ‖c x₀‖ *
+          ∑ j ∈ Finset.Icc 1 q, β₁ ^ (1 - 2 * Chapter12.arqpPiOf True p j) /
+            (β₁ ^ (1 - Chapter12.arqpPiOf True p j) - 1) *
+              (θ * ε 0) ^ (1 - Chapter12.arqpPiOf True p j) *
+                ε j ^ (-Chapter12.arqpPiOf True p j) +
+        Chapter12.kappaCARqp P.toARqpParams Lν p *
+          ⌈Real.log (θ * ε 0 / ‖c x₀‖) / Real.log β₁⌉₊) ∧
+      (∑ k ∈ Finset.Icc 1 k₁, (nD₁ k : ℝ) ≤
+        1 / 2 * Chapter12.kappaSARqpOf True P.toARqpParams Lν p q * ‖c x₀‖ *
+          ∑ j ∈ Finset.Icc 1 q, β₁ ^ (1 - 2 * Chapter12.arqpPiOf True p j) /
+            (β₁ ^ (1 - Chapter12.arqpPiOf True p j) - 1) *
+              (θ * ε 0) ^ (1 - Chapter12.arqpPiOf True p j) *
+                ε j ^ (-Chapter12.arqpPiOf True p j) +
+        2 * ⌈Real.log (θ * ε 0 / ‖c x₀‖) / Real.log β₁⌉₊) ∧
+      (‖c (xP k₁)‖ ≤ θ * ε 0 →
+        (∀ k, 1 ≤ k → D.Before f c univ q θ ε k →
+          IsARqpUnitCall (Constrained.targetMerit f c (D.t k)) p q P
+            (fun j => β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j)
+            (D.xi k) (D.e k) (D.succ k)) ∧
+        ∃ kε, D.IsEnd f c univ q θ ε kε ∧
+          (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
+            (goodBound (arqpRowKappaDecr True P L p q) β θ (Chapter12.arqpPiOf True p q)
+              (arqpRowPhase2M True p q ε) + 1) +
+            ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / unitKbDrop q θ Bf ε) ∧
+          (D.derivEvals kε : ℝ) ≤
+            1 + goodBound (arqpRowKappaDecr True P L p q) β θ (Chapter12.arqpPiOf True p q)
+              (arqpRowPhase2M True p q ε) * ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) + kε ∧
+          (D.funEvals kε : ℝ) ≤
+            1 + arqpSCKappaUns P *
+              (goodBound (arqpRowKappaDecr True P L p q) β θ (Chapter12.arqpPiOf True p q)
+                (arqpRowPhase2M True p q ε) * ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) + kε) +
+              arqpUnitKappaUnc P L p * kε) := by
+  classical
+  have hεI : ∀ l ∈ Finset.Icc 1 q, 0 < ε l ∧ ε l ≤ 1 := fun l hl =>
+    hε l (Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.mem_Icc.1 hl).2))
+  have hε₀ : 0 < ε 0 := (hε 0 (by simp)).1
+  have hε₁ : ∀ j ∈ Finset.range (q + 1), 0 < phase1Tol θ ε j ∧ phase1Tol θ ε j ≤ 1 := by
+    intro j hj
+    by_cases h0 : j = 0
+    · subst h0
+      obtain ⟨h1, h2⟩ := hε 0 hj
+      simp only [phase1Tol_zero]
+      exact ⟨mul_pos hθ0 h1, by nlinarith⟩
+    · rw [phase1Tol_of_ne θ ε h0]
+      exact hε j hj
+  obtain ⟨xP, δP, nF₁, nD₁, k₁, hxP0, hrun, hhit, hk₁, hcalls, hF₁, hD₁⟩ :=
+    exists_algorithm_14_3_1_complexity_unit hq hq2 hqp hν P hθς hε₁ hβ₁0 hβ₁1 x₀ hβ₁c
+  rw [phase1Tol_zero] at hk₁ hF₁ hD₁
+  have hS : ∑ j ∈ Finset.Icc 1 q, β₁ ^ (1 - 2 * Chapter12.arqpPiOf True p j) /
+      (β₁ ^ (1 - Chapter12.arqpPiOf True p j) - 1) *
+        (θ * ε 0) ^ (1 - Chapter12.arqpPiOf True p j) *
+          phase1Tol θ ε j ^ (-Chapter12.arqpPiOf True p j) =
+      ∑ j ∈ Finset.Icc 1 q, β₁ ^ (1 - 2 * Chapter12.arqpPiOf True p j) /
+      (β₁ ^ (1 - Chapter12.arqpPiOf True p j) - 1) *
+        (θ * ε 0) ^ (1 - Chapter12.arqpPiOf True p j) *
+          ε j ^ (-Chapter12.arqpPiOf True p j) :=
+    Finset.sum_congr rfl fun j hj => by
+      rw [phase1Tol_of_ne θ ε (by have := (Finset.mem_Icc.1 hj).1; omega)]
+  rw [hS] at hF₁ hD₁
+  -- Phase 2
+  by_cases hc1 : ‖c (xP k₁)‖ ≤ θ * ε 0
+  · obtain ⟨D, hD, hcallsD, hκ, hin, hcert, -⟩ := exists_isTPqpGCPhase2_isInnerCertified_unit hq hq2
+      hqp hB hεβ hμ P hθς hθ0 hθ1 hβ0 hβθ hε hc1
+    have hp : 1 ≤ p := hq.trans hqp
+    have hterm : ∀ l ∈ Finset.Icc 1 q,
+        0 < ε 0 ^ (2 - Chapter12.arqpPiOf True p l) * ε l ^ (-Chapter12.arqpPiOf True p l) :=
+      fun l hl => mul_pos (Real.rpow_pos_of_pos hε₀ _) (Real.rpow_pos_of_pos (hεI l hl).1 _)
+    have hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ Chapter12.arqpPiOf True p l ∧
+        Chapter12.arqpPiOf True p l ≤ Chapter12.arqpPiOf True p q := fun l hl =>
+      ⟨Chapter12.arqpPiOf_nonneg True p l, (arqpPiOf_true_mem hqp hl).2⟩
+    have hM0 : 0 < arqpRowPhase2M True p q ε :=
+      Finset.sum_pos hterm ⟨1, Finset.mem_Icc.2 ⟨le_rfl, hq⟩⟩
+    have hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - Chapter12.arqpPiOf True p l) *
+        ε l ^ (-Chapter12.arqpPiOf True p l) ≤ arqpRowPhase2M True p q ε := fun l hl =>
+      Finset.single_le_sum (f := fun l : ℕ =>
+        ε 0 ^ (2 - Chapter12.arqpPiOf True p l) * ε l ^ (-Chapter12.arqpPiOf True p l))
+        (fun i hi => (hterm i hi).le) hl
+    obtain ⟨-, kε, hend, hkε, hDe, hFe⟩ := hD.complexity_of_certified_le hin hκ
+      (arqpSCKappaUns_nonneg P) hπ hM0 hM hB hεβ hcert (fun _ _ => zero_le_one) hf hc
+      (fun y _ hcy => hBf y (hcy.trans hεβ))
+      (unitKbDrop_pos hθ0 hθ1 hBf0 fun j hj => (hε j hj).1)
+      fun j hj => two_mul_unitKbDrop_le hBf0 hj
+    exact ⟨xP, δP, k₁, D, nF₁, nD₁, ⟨hxP0, hrun, hhit, fun _ => hD⟩, hk₁, hcalls, hF₁, hD₁,
+      fun _ => ⟨hcallsD, kε, hend, hkε, hDe, hFe⟩⟩
+  · exact ⟨xP, δP, k₁, ⟨fun _ => x₀, fun _ => 0, fun _ _ => 0, fun _ _ => x₀, fun _ => 0,
+      fun _ _ => False⟩, nF₁, nD₁, ⟨hxP0, hrun, hhit, fun h => absurd h hc1⟩, hk₁, hcalls, hF₁,
+      hD₁, fun h => absurd h hc1⟩
 
 end TPqp
 

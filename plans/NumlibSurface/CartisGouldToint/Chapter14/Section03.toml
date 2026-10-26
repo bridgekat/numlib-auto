@@ -243,3 +243,147 @@ source = "Cartis–Gould–Toint, Lemma 14.3.7 with the additive per-call consta
 [[node]]
 id = "exists_algorithm_14_3_2_complexity_arqp_add"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 for the TPqp-GC runs with INNER = ARqp-SC (ARqp-SC exponents j(p+1)/p, every q, additive Phase-1 constants of footnote 114)"
+
+[[node]]
+id = "innerEvalBound_one"
+source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) for q = 1"
+
+[[node]]
+id = "IsARqpSCOutputCost.one_le"
+source = "Cartis–Gould–Toint, §14.3.2.1: every INNER call evaluates the function and its derivatives at least once"
+
+[[node]]
+id = "arqpPiOf_one"
+source = "Cartis–Gould–Toint, (14.2.12), the exponent π_1 = (p+1)/p of the ARqp-SC row"
+
+[[node]]
+id = "exists_algorithm_14_3_1_cost_contract_counterexample"
+source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) with INNER = ARqp-SC for q = 1, p ≥ 2 (counterexample to the multiplicative cost contract)"
+
+[[node]]
+id = "lemma_14_3_8_proof_gap_counterexample"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 (counterexample: its decreases do not bound the bad outer iterations)"
+
+[[node]]
+id = "IsTPqpGCPhase2.target_drop_of_isKb_margin"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 (the target update (14.3.35) of a case-(b) iteration, with an explicit margin)"
+
+[[node]]
+id = "IsTPqpGCPhase2.card_mul_le_of_target_drop"
+source = "Cartis–Gould–Toint, (7.2.31) and Lemma 7.2.4 (telescoping the targets of Phase 2)"
+
+[[node]]
+id = "IsTPqpGCPhase2.resid_le_of_isKb"
+source = "Cartis–Gould–Toint, (B.14.19), proof of Lemma 14.3.8"
+
+[[node]]
+id = "kbMargin"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2 with β = θ (the margin of the case-(b) iterations)"
+
+[[node]]
+id = "IsTPqpGCPhase2.kbCount_le_of_le"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 (number of case-(b) outer iterations for β ≤ θ)"
+
+[[node]]
+id = "IsTPqpGCPhase2.complexity_of_certified_le"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (Phase 2, without the bad-iteration parameter, β ≤ θ)"
+
+[[node]]
+id = "IsARqpUnitOutputCost"
+source = "Cartis–Gould–Toint, §14.3.2.1 and Lemma 12.2.9: INNER = ARqp on ℝⁿ with unit radii (q ≤ 2)"
+
+[[node]]
+id = "exists_isARqpUnitOutputCost"
+source = "Cartis–Gould–Toint, Lemma 12.2.9 and Theorem 12.2.14 (1)"
+
+[[node]]
+id = "IsARqpUnitOutputCost.le"
+source = "Cartis–Gould–Toint, Algorithm 12.2.2 (monotonicity)"
+
+[[node]]
+id = "IsARqpUnitOutputCost.cost_le_add"
+source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) from Theorem 12.2.14 (1) (ARqp-SC row of (14.2.12) for X = ℝⁿ, additive form)"
+
+[[node]]
+id = "exists_algorithm_14_3_1_complexity_unit"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 with INNER = ARqp-SC on ℝⁿ, q ≤ 2, exponents (p+1)/(p-j+1) (additive form, footnote 114)"
+
+[[node]]
+id = "IsARqpUnitCall"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 with INNER = ARqp on ℝⁿ with unit radii"
+
+[[node]]
+id = "arqpUnitKappaUnc"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (κ_unc of ARqp)"
+
+[[node]]
+id = "exists_isTPqpGCPhase2_isInnerCertified_unit"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 (ARqp-SC row of (14.2.12) for X = ℝⁿ, q ≤ 2) for the constructed Phase-2 runs"
+
+[[node]]
+id = "unitKbDrop"
+source = "Cartis–Gould–Toint, (14.3.35), the target decrease of a case-(b) iteration of runs certified with unit radii"
+
+[[node]]
+id = "unitKbDrop_pos"
+source = "Cartis–Gould–Toint, (14.3.35)"
+
+[[node]]
+id = "two_mul_unitKbDrop_le"
+source = "Cartis–Gould–Toint, (14.3.35)"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_unit"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for TPqp-GC on ℝⁿ, q ≤ 2, with INNER = ARqp-SC with unit radii (exponents (p+1)/(p-j+1))"
+
+[[node]]
+id = "TPqpSeq.InnerTest"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (INNER's own test (14.3.19) at the end of a call)"
+
+[[node]]
+id = "IsInnerPhaseRunStrong"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 for INNER on μ(·, t_k), exemption keyed on INNER's own test"
+
+[[node]]
+id = "IsInnerPhaseRun.toStrong"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 and Algorithm 14.3.2, Step 1"
+
+[[node]]
+id = "IsTPqpGCPhase2.sum_card_le_of_decrease"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 (block argument)"
+
+[[node]]
+id = "IsTPqpGCPhase2.card_isKb_innerTest_le"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 (case-(b) iterations ending at INNER's termination, β ≤ θ)"
+
+[[node]]
+id = "IsTPqpGCPhase2.complexity_of_strong"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (Phase 2, without the bad-iteration parameter, for INNER as in Lemma 14.2.2)"
+
+[[node]]
+id = "exists_isTPqpGCPhase2_isInnerPhaseRunStrong"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 for the constructed Phase-2 runs with INNER = ARqp-SC"
+
+[[node]]
+id = "arqpSCKbDropLe"
+source = "Cartis–Gould–Toint, (14.3.35), target decrease of the certified case-(b) iterations, β ≤ θ"
+
+[[node]]
+id = "arqpSCKbDropLe_pos"
+source = "Cartis–Gould–Toint, (14.3.35)"
+
+[[node]]
+id = "two_mul_arqpSCKbDropLe_le"
+source = "Cartis–Gould–Toint, (14.3.35)"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_strong"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for the TPqp-GC runs with INNER = ARqp-SC, β ≤ θ, without the bad-iteration parameter"
+
+[[node]]
+id = "IsInnerPhaseRunStrong.toIsInnerPhaseRun"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 and (14.3.32) (the strong INNER contract implies the one of the proof of Lemma 14.3.8)"
+
+[[node]]
+id = "lemma_14_3_8_proof_gap_counterexample_not_strong"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 and Theorem 14.3.9 (the proof-gap counterexample violates the strong INNER contract)"

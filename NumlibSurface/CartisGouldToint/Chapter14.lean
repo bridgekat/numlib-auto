@@ -58,7 +58,17 @@ module imports the section modules and adds nothing of its own.
   INNER's certificate
   (`IsTPqpGCPhase2.kbCount_le`, `IsTPqpGCPhase2.complexity_of_certified`), which the constructed
   runs carry, so that for `β < θ` Theorem 14.3.9 holds for them without the bad-iteration
-  parameter (`exists_algorithm_14_3_2_complexity_certified`)
+  parameter (`exists_algorithm_14_3_2_complexity_certified`), and for every `β ≤ θ` under the
+  certificate (`IsTPqpGCPhase2.kbCount_le_of_le`, `IsTPqpGCPhase2.complexity_of_certified_le`);
+  with the INNER contract keyed on INNER's own test (14.3.19), as Lemma 14.2.2 states it, for
+  every run (`IsInnerPhaseRunStrong`, `IsTPqpGCPhase2.complexity_of_strong`,
+  `exists_algorithm_14_3_2_complexity_strong`), while the decreases used by the book's proof of
+  Lemma 14.3.8 do not bound them (`lemma_14_3_8_proof_gap_counterexample`); on `X = ℝⁿ` with
+  `q ≤ 2`,
+  INNER runs of Chapter 12 with unit radii give the unit-radius exponents `(p+1)/(p-j+1)`
+  (`exists_algorithm_14_3_1_complexity_unit`, `exists_algorithm_14_3_2_complexity_unit`); the
+  multiplicative cost contract (14.3.20)–(14.3.21) is false for `q = 1`
+  (`exists_algorithm_14_3_1_cost_contract_counterexample`)
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -117,11 +127,21 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   iterations also counts the `i = 0` entries and the last iteration of each INNER call (counted
   separately here, with `κ_unc` paid per call), and the number of *bad* outer iterations, whose
   INNER call guarantees no decrease, is not bounded by the book's argument:
-  `theorem_14_3_9` carries it as a parameter. When it is bounded independently of `ε`, the
+  `theorem_14_3_9` (with the INNER contract `IsInnerPhaseRun` of the proof, which exempts a step
+  after which the third test of (14.3.32) holds) carries it as a parameter; that contract does
+  not bound it (`lemma_14_3_8_proof_gap_counterexample`, whose INNER calls are not ARqp-SC runs).
+  With the exemption keyed on INNER's own test, as in Lemma 14.2.2 (`IsInnerPhaseRunStrong`,
+  satisfied by the constructed runs), Phase 2 terminates within an explicit bound without the
+  parameter for every `β ≤ θ` (`IsTPqpGCPhase2.complexity_of_strong`; the extra term
+  `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})`, `ρ` the INNER radii, is within the book's order
+  for the exponents `j + 1` but not in general for the ARqp-SC row). When the number of bad
+  iterations is bounded independently of `ε`, the
   counts are `O(max(ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}))`; the derivative count acquires an
-  `ε₀^{-1}` term. INNER's certificate for the tolerances `β ‖r(x_k, t_k)‖ ε_j`, with `β < θ` (the
-  book allows `β = θ`) and bounded derivatives of `f`, bounds it by `O(max_j (ε₀ ε_j)^{-j})`
-  (`IsTPqpGCPhase2.kbCount_le`), within the order for the exponents `j + 1`. The book's
+  `ε₀^{-1}` term. INNER's certificate for the tolerances `β ‖r(x_k, t_k)‖ ε_j`, with bounded
+  derivatives of `f`, bounds it: by `O(max_j (ε₀ ε_j)^{-j})` for the ARqpC-SC runs
+  (`IsTPqpGCPhase2.kbCount_le`, `β < θ`; within the order for the exponents `j + 1`), for every
+  `β ≤ θ` (`IsTPqpGCPhase2.kbCount_le_of_le`), and by `O(max_j (ε₀ ε_j)^{-1})` for the
+  unit-radius runs on `ℝⁿ`. The book's
   `f_up - f_low - 1` is `f_up - f_low + 1`, and its `#F₂` misses the `1/(1 - θ)` of the
   `κ^C ε₀^{-1}` term.
 * Algorithm 14.3.2: the INNER calls of Phase 2 are described by their iterates; `μ(·, t_k)` does
@@ -133,11 +153,9 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   used.
 * Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored assumptions
   (they are proved under global Lipschitz assumptions, `exists_algorithm_14_3_1_complexity`,
-  `exists_algorithm_14_3_2_complexity`), their complexity with the ARqp-SC unit-radii exponents
-  for `q = 2` on `ℝⁿ` (the "otherwise" exponents `j(p+1)/p` are proved for every `q`; for `q = 1`
-  only with the additive Phase-1 constants), a bound on the bad outer iterations
-  of TPqp-GC in the order of the ARqp-SC exponents, for `β = θ`, or for calls cut by the second or
-  third test of (14.3.32) (`IsInnerCertified` needs INNER to be interrupted only by the first),
-  and the
-  `O(·)` restatements.
+  `exists_algorithm_14_3_2_complexity`), the multiplicative Phase-1 cost contract when all
+  `π_j < 2` (false there; the additive form is proved), a bound on the bad outer iterations of
+  TPqp-GC in the order of the ARqp-SC exponents (INNER's certificate gives
+  `O(max_j (ε₀ ε_j)^{-j})`, resp. `O(max_j (ε₀ ε_j)^{-1})` with unit radii), and the `O(·)`
+  restatements.
 -/
