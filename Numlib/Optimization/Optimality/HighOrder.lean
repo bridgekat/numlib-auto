@@ -506,4 +506,29 @@ theorem isStrictLocalMin_of_taylorPolynomial_growth {f : E → ℝ} {x : E} {j :
 
 end Sufficient
 
+section Continuity
+
+/-- **Continuity of the Taylor measure in the base point**: for `f` of class `C^n`, `j ≤ n` and
+`δ ≥ 0`, `s ↦ φ^δ_{f,j}(s) = taylorMeasure (ftaylorSeries ℝ f s) j δ univ` is continuous (by
+`abs_taylorMeasure_sub_le` and continuity of the derivatives). -/
+theorem continuous_taylorMeasure_ftaylorSeries {f : E → ℝ} {n j : ℕ} (hf : ContDiff ℝ n f)
+    (hj : j ≤ n) {δ : ℝ} (hδ : 0 ≤ δ) :
+    Continuous fun s => taylorMeasure (ftaylorSeries ℝ f s) j δ Set.univ := by
+  rw [continuous_iff_continuousAt]
+  intro s
+  have hg : Continuous fun t => ∑ i ∈ Finset.Icc 1 j,
+      ‖iteratedFDeriv ℝ i f t - iteratedFDeriv ℝ i f s‖ * δ ^ i / i ! := by
+    refine continuous_finsetSum _ fun i hi => ?_
+    have := hf.continuous_iteratedFDeriv (m := i)
+      (by exact_mod_cast (Finset.mem_Icc.1 hi).2.trans hj)
+    exact ((this.sub continuous_const).norm.mul continuous_const).div_const _
+  have h0 := hg.tendsto s
+  simp only [sub_self, norm_zero, zero_mul, zero_div, Finset.sum_const_zero] at h0
+  rw [ContinuousAt, tendsto_iff_norm_sub_tendsto_zero]
+  refine squeeze_zero (fun t => norm_nonneg _) (fun t => ?_) h0
+  rw [Real.norm_eq_abs]
+  exact abs_taylorMeasure_sub_le _ _ j (Set.mem_univ 0) hδ
+
+end Continuity
+
 end Optimization

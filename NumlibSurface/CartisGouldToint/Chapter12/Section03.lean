@@ -9,11 +9,11 @@ together with the relaxed Step 2 of the Notes to §12.2.2.
 
 The purpose of Step 2 of ARqp is a sufficient decrease of the Taylor model at successful
 iterations. §12.3 observes that a step may be accepted (with (12.2.27)) without checking the
-approximate model optimality (12.2.29) as soon as it achieves the sufficient decrease
-`ΔT_{f,p}(x_k, s_k) ≥ κ_decr ε_min^ω` (12.3.1), or is long,
-`‖s_k‖ ≥ κ_decr^{1/(p+1)} ε_min^{ω/(p+1)}` (12.3.2) (sufficient decrease then follows from
-Lemma 4.1.1), and states that this "does not affect the conclusions of the complexity theorem".
-Here this is made precise: `IsARqpSufficientDecreaseRun` is the ARqp run with this relaxed Step 2
+approximate model optimality (12.2.29) as soon as it achieves the sufficient decrease (12.3.1),
+or is long, `‖s_k‖ ≥ κ_decr^{1/(p+1)} ε_min^{ω/(p+1)}` (12.3.2) (sufficient decrease then follows
+from Lemma 4.1.1); the Notes to §12.2.2 propose the same relaxation for long steps and state that
+"this modification does not affect the conclusions of the complexity theorem". Here this is made
+precise: `IsARqpSufficientDecreaseRun` is the ARqp run with this relaxed Step 2
 (every ARqp run is one), and `complexity_arqpSufficientDecrease` shows that the bounds of
 Theorem 12.2.14 persist for `ω ≥ π_q` with `κ_{Δm}` replaced by
 `min(κ_{Δm}, κ_decr, σ_min κ_decr/(p+1)!)` and `min_j ε_j^{π_j}` by `ε_min^ω`.
@@ -27,6 +27,14 @@ Theorem 12.2.14 persist for `ω ≥ π_q` with `κ_{Δm}` replaced by
 
 * `IsARqpSufficientDecreaseRun.of_algorithm_12_2_2` — every ARqp run is such a run;
 * `complexity_arqpSufficientDecrease` — the complexity bounds of Theorem 12.2.14.
+
+## Deviations from the book
+
+* (12.3.1) is printed as `ΔT_{f,j}(x_k, s_k) ≥ κ_decr ε_j^ω` "for some `j`"; it is read with the
+  decrease `ΔT_{f,p}(x_k, s_k)` that the ratio and the complexity analysis use, and with
+  `ε_min^ω` (as in (12.3.2)).
+* The complexity bound is stated for every `ω ≥ π_q` (the book's choice is `ω = π_q`, the exponent
+  of Theorem 12.2.14), in terms of `ε_min^ω` instead of `min_j ε_j^{π_j}`.
 
 ## Not formalized
 
@@ -157,10 +165,11 @@ theorem arqpPi_mono {p q j j' : ℕ} (hjj' : j ≤ j') (hj' : j' ≤ p) :
 §12.2.2: "this modification does not affect the conclusions of the complexity theorem"). Assume
 f.Bb and f.D1pL, `1 ≤ q ≤ p`, `ε ∈ (0, 1]^q`, `δ₀ ∈ (0, 1]^q`, `σ_min > 0`, `θ < ς`, `κ_decr > 0`
 and `ω ≥ π_q` (`ω = π_q` is the book's choice), and the radii hypotheses of Theorem 12.2.14 for the
-steps of the original type: if `q ≤ 2`, `δ₀ = 1` and all radii returned are `1`; if `q > 2`, short
-steps come with `δ_{s_k,j} ≥ κ_δ(σ_k) ε_j` ((12.2.50)). Then a run with the relaxed Step 2
-terminates at some `k_ε` where `x_{k_ε}` is an `(ε, δ_ε)`-approximate `q`-th order minimizer for
-some `δ_ε ∈ (0, 1]^q`, after at most `κ^a (f(x₀) - f_low)/ε_min^ω + κ^c` evaluations of `f` and
+steps of the original type (those satisfying the Step-2 conditions of ARqp): if `q ≤ 2`, their
+radii are `1`; if `q > 2`, short ones come with `δ_{s_k,j} ≥ κ_δ(σ_k) ε_j` ((12.2.50)). Then a
+run with the relaxed Step 2 terminates at some `k_ε` where `x_{k_ε}` is an
+`(ε, δ_ε)`-approximate `q`-th order minimizer for some `δ_ε ∈ (0, 1]^q`, after at most
+`κ^a (f(x₀) - f_low)/ε_min^ω + κ^c` evaluations of `f` and
 `κ^s (f(x₀) - f_low)/ε_min^ω + 2` evaluations of the derivatives, where
 `κ^s = 1/(η₁ κ')`, `κ^a = κ^s (1 + |log γ₁|/log γ₂)`, `κ^c` is that of Theorem 12.2.14 and
 `κ' = min(κ_{Δm}, κ_decr, σ_min κ_decr/(p+1)!)`. -/
@@ -171,8 +180,10 @@ theorem complexity_arqpSufficientDecrease {n : ℕ} {f : EuclideanSpace ℝ (Fin
     (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1) (hκ : 0 < κdecr) (hω : arqpPi p q q ≤ ω)
     (h : IsARqpSufficientDecreaseRun f P p q ε δ₀ κdecr ω x s σ δ δs d dm)
     (hrad : (q ≤ 2 → ∀ k, (∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) →
+        ARqpStep univ P q ε (arqpData f p x σ k) (x k) (s k) (δs k) (dm k) →
         ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
-      (2 < q → ∀ k, (∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
+      (2 < q → ∀ k, (∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) →
+        ARqpStep univ P q ε (arqpData f p x σ k) (x k) (s k) (δs k) (dm k) → ‖s k‖ < 1 →
         ∀ j ∈ Finset.Icc 1 q, arqpKappaDelta P (finMax 1 L p) (σ k) * ε j ≤ δs k j)) :
     ∃ kε, IsFirstHit (arqpStop f P p q ε x s σ δ d) kε ∧
       (∃ δε : ℕ → ℝ, IsEpsDeltaApproxMinimizer f q ε δε (x kε)) ∧
@@ -185,7 +196,7 @@ theorem complexity_arqpSufficientDecrease {n : ℕ} {f : EuclideanSpace ℝ (Fin
           (f (x 0) - flow) / finMin 1 ε q ^ ω + 2 := by
   have hp : 1 ≤ p := hq.trans hqp
   have hLp : 1 ≤ L p := hf.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
-  have hL1 : 1 ≤ finMax 1 L p := AssumptionD1pL.one_le_finMax
+  have hL1 : 1 ≤ finMax 1 L p := one_le_finMax
   set εm := finMin 1 ε q with hεm_def
   have hεm : 0 < εm := finMin_pos one_pos fun j hj => (hε j hj).1
   have hεm1 : εm ≤ 1 := finMin_le_left
@@ -232,13 +243,16 @@ theorem complexity_arqpSufficientDecrease {n : ℕ} {f : EuclideanSpace ℝ (Fin
             (2 < q → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
               arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) * ε j ≤
                 δs k j) := by
-          refine ⟨fun hq2 => hrad.1 hq2 k hk', fun hq2 => ?_⟩
+          refine ⟨fun hq2 => hrad.1 hq2 k hk' hst, fun hq2 => ?_⟩
           by_cases hlong : 1 ≤ ‖s k‖
           · exact Or.inl hlong
-          refine Or.inr fun j hj => le_trans ?_ (hrad.2 hq2 k hk' (not_le.1 hlong) j hj)
+          refine Or.inr fun j hj => le_trans ?_ (hrad.2 hq2 k hk' hst (not_le.1 hlong) j hj)
           exact mul_le_mul_of_nonneg_right (arqpKappaDelta_anti P hL1 hσ0 hσ.2)
             (hε j hj).1.le
-        have := arqp_decrease_local hf hq hqp hθς hε hσ.1 hσ.2 hst hlt hw hfail hrad'
+        have hU : {e : EuclideanSpace ℝ (Fin n) | x k + s k + e ∈ (univ : Set _)} = univ := by
+          ext; simp
+        have := arqp_decrease_local hf.on_univ (subset_univ _) hq hqp hθς hε (mem_univ _) hσ.1
+          hσ.2 hst hlt (by rw [hU]; exact hw) hfail hrad'
         calc κ' * X ≤ arqpKappaDm P L p q * finMin 1 (fun j => ε j ^ arqpPi p q j) q :=
               mul_le_mul (min_le_left _ _) hXm hX0.le hκDm.le
           _ ≤ _ := this

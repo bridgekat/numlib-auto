@@ -55,3 +55,7 @@ source = "Cartis–Gould–Toint, Theorem 12.1.5 (corrected)"
 [[node]]
 id = "exists_growth_taylorSum_succ_of_growth"
 source = "Cartis–Gould–Toint, remark after Theorem 12.1.5 (corrected)"
+
+[[node]]
+id = "continuous_taylorMeasure_ftaylorSeries"
+source = "Cartis–Gould–Toint, proof of Lemma 12.2.9"
