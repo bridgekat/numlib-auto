@@ -1,30 +1,9 @@
 namespace = "Optimization"
-desc = '''
-Counting for "scaled restart" outer loops, in which each outer iteration calls an inner solver with
-a tolerance proportional to the current residual and the residual contracts geometrically until it
-falls below `ε₀` (Cartis–Gould–Toint LENq-SC, Algorithm 14.3.1, Theorems 14.3.3–14.3.4). Pure real
-analysis on a residual sequence `r : ℕ → ℝ` and per-call costs; no optimization structure.
-'''
 
 [[node]]
 id = "le_ceil_log_of_contract"
-kind = "theorem"
-desc = '''
-Let `0 < β < 1`, `0 < ε₀ < r 0`, and suppose that for every `k ≥ 1` with `ε₀ < r j` for all
-`j ∈ [0, k]` one has `r k < β * r (k - 1)`. Then `r k < β ^ k * r 0` for such `k`, and the first
-`k` with `r k ≤ ε₀` exists and satisfies `k ≤ ⌈Real.log (ε₀ / r 0) / Real.log β⌉₊`. (The book's
-Theorem 14.3.3 states the real number `log(ε₀/‖r(x₀)‖)/log β` as the bound; the integer ceiling is
-needed — e.g. for the value `2.5` termination may happen at iteration `3`.)
-'''
-source = "Cartis–Gould–Toint, Theorem 14.3.3 (proof)"
+source = "Cartis–Gould–Toint, Theorem 14.3.3 (corrected: integer ceiling)"
 
 [[node]]
 id = "sum_rpow_le_of_geometric_lower"
-kind = "theorem"
-desc = '''
-Geometric cost sum. Let `0 < β < 1`, `ε₀ > 0`, `π > 1`, `K ≥ 1`, and `r (k - 1) ≥ β ^ (k - K) * ε₀`
-(`zpow`) for `k ∈ Icc 1 K`. Then `∑ k ∈ Icc 1 K, r (k - 1) ^ (1 - π) ≤ ε₀ ^ (1 - π) * β ^ (1 - π) /
-(β ^ (1 - π) - 1)` (`Real.rpow`; the denominator is positive). This is the series bound of the proof
-of Theorem 14.3.4 for a single exponent `π`.
-'''
 source = "Cartis–Gould–Toint, proof of Theorem 14.3.4"

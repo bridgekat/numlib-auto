@@ -18,6 +18,9 @@ shared by all chapters:
   nonincreasing threshold `θ`, then `Δ_k ≥ min(Δ_0, γ₁ θ_k)` (the mechanism of Lemmas 2.3.4,
   3.2.5, 3.4.2), and `Optimization.le_delta_succ_of_trUpdate`: `Δ_{k+1} ≥ min(Δ_0, γ₁ θ_k)`
   (used for the exact constants of Theorem 2.3.7);
+* `Optimization.pos_of_trUpdate_of_neutral`, `Optimization.le_delta_of_trUpdate_of_neutral`:
+  the same when some iterations leave the radius unchanged (accuracy-improving iterations of
+  Chapter 13, Lemma 13.1.4); the core statements are their special cases;
 * `Optimization.succ_le_of_trUpdate`, `Optimization.le_of_trUpdate`: the number of iterations is
   bounded in terms of the number of successful ones while `Δ_k ≥ Δ_min > 0` (Lemma 2.3.1).
 
@@ -81,23 +84,37 @@ section sequence
 
 variable {η₁ η₂ γ₁ γ₂ γ₃ Δmin : ℝ} {ρ Δ θ : ℕ → ℝ} {k K : ℕ}
 
-/-- The trust-region radii stay positive. -/
-theorem pos_of_trUpdate (hγ₁ : 0 < γ₁) (hγ₁₂ : γ₁ ≤ γ₂) (hγ₁1 : γ₁ ≤ 1) (hΔ0 : 0 < Δ 0)
-    (h : ∀ k < K, TRUpdate η₁ η₂ γ₁ γ₂ γ₃ (ρ k) (Δ k) (Δ (k + 1))) :
+/-- Positivity of trust-region radii when some iterations leave the radius unchanged. -/
+theorem pos_of_trUpdate_of_neutral (hγ₁ : 0 < γ₁) (hγ₁₂ : γ₁ ≤ γ₂) (hγ₁1 : γ₁ ≤ 1)
+    (hΔ0 : 0 < Δ 0)
+    (h : ∀ k < K, Δ (k + 1) = Δ k ∨ TRUpdate η₁ η₂ γ₁ γ₂ γ₃ (ρ k) (Δ k) (Δ (k + 1))) :
     ∀ k ≤ K, 0 < Δ k := by
   intro k
   induction k with
   | zero => exact fun _ => hΔ0
-  | succ k ih => exact fun hk => (h k hk).pos hγ₁ hγ₁₂ hγ₁1 (ih (Nat.le_of_succ_le hk))
+  | succ k ih =>
+    intro hk
+    rcases h k hk with he | hu
+    · rw [he]; exact ih (Nat.le_of_succ_le hk)
+    · exact hu.pos hγ₁ hγ₁₂ hγ₁1 (ih (Nat.le_of_succ_le hk))
 
-/-- **Lower bound on the trust-region radius** (the mechanism of [cartis2022evaluation],
-Lemmas 2.3.4, 3.2.5, 3.4.2). Let `θ` be nonincreasing on `[0, K]`. If every iteration `k < K`
-with `Δ_k < θ_k` is very successful, then `Δ_k ≥ min(Δ_0, γ₁ θ_k)` for all `k ≤ K`. -/
-theorem le_delta_of_trUpdate (hγ₁ : 0 < γ₁) (hγ₁₂ : γ₁ ≤ γ₂) (hγ₁1 : γ₁ ≤ 1) (hΔ0 : 0 < Δ 0)
-    (h : ∀ k < K, TRUpdate η₁ η₂ γ₁ γ₂ γ₃ (ρ k) (Δ k) (Δ (k + 1)))
-    (hθ : ∀ k < K, θ (k + 1) ≤ θ k) (hforce : ∀ k < K, Δ k < θ k → η₂ ≤ ρ k) :
+/-- The trust-region radii stay positive. -/
+theorem pos_of_trUpdate (hγ₁ : 0 < γ₁) (hγ₁₂ : γ₁ ≤ γ₂) (hγ₁1 : γ₁ ≤ 1) (hΔ0 : 0 < Δ 0)
+    (h : ∀ k < K, TRUpdate η₁ η₂ γ₁ γ₂ γ₃ (ρ k) (Δ k) (Δ (k + 1))) :
+    ∀ k ≤ K, 0 < Δ k :=
+  pos_of_trUpdate_of_neutral hγ₁ hγ₁₂ hγ₁1 hΔ0 fun k hk => Or.inr (h k hk)
+
+/-- **Lower bound on the trust-region radius with neutral iterations** (the mechanism of
+[cartis2022evaluation], Lemma 13.1.4). Let `θ` be nonincreasing on `[0, K]` and suppose that
+every iteration `k < K` either leaves the radius unchanged, or satisfies the update rule (2.3.7)
+and is very successful whenever `Δ_k < θ_k`. Then `Δ_k ≥ min(Δ_0, γ₁ θ_k)` for all `k ≤ K`. -/
+theorem le_delta_of_trUpdate_of_neutral (hγ₁ : 0 < γ₁) (hγ₁₂ : γ₁ ≤ γ₂) (hγ₁1 : γ₁ ≤ 1)
+    (hΔ0 : 0 < Δ 0) (hθ : ∀ k < K, θ (k + 1) ≤ θ k)
+    (h : ∀ k < K, Δ (k + 1) = Δ k ∨
+      (TRUpdate η₁ η₂ γ₁ γ₂ γ₃ (ρ k) (Δ k) (Δ (k + 1)) ∧ (Δ k < θ k → η₂ ≤ ρ k))) :
     ∀ k ≤ K, min (Δ 0) (γ₁ * θ k) ≤ Δ k := by
-  have hpos := pos_of_trUpdate hγ₁ hγ₁₂ hγ₁1 hΔ0 h
+  have hpos := pos_of_trUpdate_of_neutral hγ₁ hγ₁₂ hγ₁1 hΔ0 (ρ := ρ) (η₁ := η₁) (η₂ := η₂)
+    (γ₃ := γ₃) fun k hk => (h k hk).imp id And.left
   intro k
   induction k with
   | zero => exact fun _ => min_le_left _ _
@@ -105,13 +122,24 @@ theorem le_delta_of_trUpdate (hγ₁ : 0 < γ₁) (hγ₁₂ : γ₁ ≤ γ₂) 
     intro hk
     have hkK : k < K := hk
     have hγθ : γ₁ * θ (k + 1) ≤ γ₁ * θ k := mul_le_mul_of_nonneg_left (hθ k hkK) hγ₁.le
+    have hmono : min (Δ 0) (γ₁ * θ (k + 1)) ≤ Δ k :=
+      (min_le_min le_rfl hγθ).trans (ih hkK.le)
+    rcases h k hkK with he | ⟨hu, hforce⟩
+    · rwa [he]
     by_cases hsmall : Δ k < θ k
-    · calc min (Δ 0) (γ₁ * θ (k + 1)) ≤ min (Δ 0) (γ₁ * θ k) := min_le_min le_rfl hγθ
-        _ ≤ Δ k := ih hkK.le
-        _ ≤ Δ (k + 1) := (h k hkK).le_of_very_successful (hforce k hkK hsmall)
+    · exact hmono.trans (hu.le_of_very_successful (hforce hsmall))
     · calc min (Δ 0) (γ₁ * θ (k + 1)) ≤ γ₁ * θ k := (min_le_right _ _).trans hγθ
         _ ≤ γ₁ * Δ k := mul_le_mul_of_nonneg_left (not_lt.1 hsmall) hγ₁.le
-        _ ≤ Δ (k + 1) := (h k hkK).mul_le hγ₁₂ hγ₁1 (hpos k hkK.le).le
+        _ ≤ Δ (k + 1) := hu.mul_le hγ₁₂ hγ₁1 (hpos k hkK.le).le
+
+/-- **Lower bound on the trust-region radius** (the mechanism of [cartis2022evaluation],
+Lemmas 2.3.4, 3.2.5, 3.4.2). Let `θ` be nonincreasing on `[0, K]`. If every iteration `k < K`
+with `Δ_k < θ_k` is very successful, then `Δ_k ≥ min(Δ_0, γ₁ θ_k)` for all `k ≤ K`. -/
+theorem le_delta_of_trUpdate (hγ₁ : 0 < γ₁) (hγ₁₂ : γ₁ ≤ γ₂) (hγ₁1 : γ₁ ≤ 1) (hΔ0 : 0 < Δ 0)
+    (h : ∀ k < K, TRUpdate η₁ η₂ γ₁ γ₂ γ₃ (ρ k) (Δ k) (Δ (k + 1)))
+    (hθ : ∀ k < K, θ (k + 1) ≤ θ k) (hforce : ∀ k < K, Δ k < θ k → η₂ ≤ ρ k) :
+    ∀ k ≤ K, min (Δ 0) (γ₁ * θ k) ≤ Δ k :=
+  le_delta_of_trUpdate_of_neutral hγ₁ hγ₁₂ hγ₁1 hΔ0 hθ fun k hk => Or.inr ⟨h k hk, hforce k hk⟩
 
 /-- **Lower bound on the next radius.** Under the hypotheses of
 `Optimization.le_delta_of_trUpdate`, `Δ_{k+1} ≥ min(Δ_0, γ₁ θ_k)` for all `k < K` (with the

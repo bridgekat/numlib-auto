@@ -17,7 +17,8 @@ global minimizer of the model, which avoids the limiting argument of Algorithm 1
 transfer from the model to the function (Lemma 12.2.11), the exact-versus-inexact model measure
 perturbation ((13.1.48)–(13.1.50)), and the radius inequality with error budget (Lemmas 12.2.11,
 13.1.16 and the EDA variant). The step-length algebra (Lemmas 12.2.12, 13.1.17, 14.1.8) is
-`norm_step_ge_of_measure_ineq` in `ModelBased/HighOrderStep`; Theorem 12.1.4 (orders 1, 2) is
+`pow_ge_of_measure_ineq` (Lemmas 12.2.12, 13.1.17) and `norm_step_ge_of_measure_ineq`
+(Lemma 14.1.8) in `ModelBased/HighOrderStep`; Theorem 12.1.4 (orders 1, 2) is
 `taylorMeasure_eq_zero_of_isLocalMin` in `Optimality/HighOrder`.
 
 Derivatives of `‖s‖^{p+1}` come from `Analysis/InnerProductSpace/NormPowIteratedFDeriv`

@@ -1,90 +1,37 @@
 namespace = "Optimization"
-desc = '''
-Generic run interface of trust-region (TR) methods, symmetric to `ModelBased/ARRun` (Cartis–Gould–
-Toint Algorithms 2.3.1 TR1, 3.2.1 TR2, 3.4.1 TRε, 12.2.1 TRq and its -SC variant of §14.2; per
-iteration also 13.1.1 TRqIDA and 13.3.1 TRqEDA). Steps 3–4 of every TR method: accept the trial
-point iff `η₁ ≤ ρ_k`, update the radius by (2.3.7) (`TRUpdate`); TRq additionally caps
-`Δ_{k+1} ≤ Δ_max` (12.2.5), which the method-specific predicate adds as an extra field. Methods
-differ in the Step-1 test `stop k`, the Step-2 conditions `step k` (Cauchy decrease, eigenpoint
-decrease, `φ`-measure decrement, feasibility) and the ratio `ρ k` (the predicted decrease is the
-model decrease `m_k(0) - m_k(s_k)` or a Taylor decrement of the order selected in Step 1).
-Consolidation note: the surface TR1/TR2/TRε run predicates (Chapters 2–3) are instances; they were
-planned before this module and still spell the fields out (`acceptStep`/`TRUpdate`), which is the
-same predicate.
-'''
 
 [[node]]
 id = "TRParams"
-kind = "def"
-desc = '''
-`structure TRParams` of trust-region constants ((2.3.3), Step 0 of Algorithms 12.2.1, 13.1.1):
-fields `Δ₀ η₁ η₂ γ₁ γ₂ γ₃ : ℝ` and proof fields `0 < Δ₀`, `0 < η₁`, `η₁ ≤ η₂`, `η₂ < 1`,
-`0 < γ₁`, `γ₁ ≤ γ₂`, `γ₂ < 1`, `1 ≤ γ₃`. Method-specific structures `extends TRParams` (backbone
-`TRqParams`; surface `Chapter02.TR1Params`, `Chapter13.TRqIDAParams`).
-'''
 source = "Cartis–Gould–Toint, (2.3.3)"
 
 [[node]]
 id = "TRAcceptance"
-kind = "def"
-desc = '''
-Steps 3–4 of every TR method for one iteration, given the ratio value `ρ`:
-`TRAcceptance (P : TRParams) (ρ : ℝ) (x s x' : E) (Δ Δ' : ℝ) : Prop :=
-x' = (if P.η₁ ≤ ρ then x + s else x) ∧ TRUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ ρ Δ Δ'`
-((2.3.6)–(2.3.7), (12.2.4)–(12.2.5), (13.1.16)–(13.1.17)). API (part of node) as for
-`ARAcceptance`: acceptance/rejection equalities, decrease `η₁ pred ≤ f x - f x'` on success for
-`ρ = reductionRatio f x s pred`, `pred > 0`; existence of `Δ'` (e.g. `Δ' = Δ`, `γ₂ Δ` according to
-`ρ`), also under a cap `Δ' ≤ Δmax` when `Δ ≤ Δmax`.
-'''
-deps = ["TRParams", "TRUpdate", "reductionRatio", "sub_le_of_le_reductionRatio"]
 source = "Cartis–Gould–Toint, (2.3.6)–(2.3.7)"
 
 [[node]]
+id = "exists_trAcceptance"
+source = "Cartis–Gould–Toint, (2.3.7) (existence of the next radius)"
+
+[[node]]
 id = "IsTRRun"
-kind = "def"
-desc = '''
-`structure IsTRRun (P : TRParams) (stop step : ℕ → Prop) (ρ : ℕ → ℝ) (x s : ℕ → E) (Δ : ℕ → ℝ) :
-Prop` with fields `delta_zero : Δ 0 = P.Δ₀`, `step : UntilHit stop step` (Step 2 conditions,
-which include `‖s k‖ ≤ Δ k` or the method's own trust-region constraint), and
-`accept : UntilHit stop fun k => TRAcceptance P (ρ k) (x k) (s k) (x (k+1)) (Δ k) (Δ (k+1))`.
-Successful iterations `succ k :↔ P.η₁ ≤ ρ k`.
-'''
-deps = ["TRAcceptance", "UntilHit"]
 source = "Cartis–Gould–Toint, Algorithms 2.3.1, 12.2.1 (Steps 3–4)"
 
 [[node]]
 id = "IsTRRun.delta_ge"
-kind = "theorem"
-desc = '''
-Radius lower bound for any TR run (mechanism of Lemmas 2.3.4, 3.2.5, 12.2.3): if
-`IsTRRun P stop step ρ x s Δ`, `θ : ℕ → ℝ` is antitone, and for every `k` before termination
-`Δ k < θ k → P.η₂ ≤ ρ k`, then `min P.Δ₀ (P.γ₁ * θ k) ≤ Δ k` for every `k` up to and including the
-first termination index, and `min P.Δ₀ (P.γ₁ * θ k) ≤ Δ (k+1)` for `k` before termination;
-`0 < Δ k` throughout. Proof: `le_delta_of_trUpdate`, `le_delta_succ_of_trUpdate` on the prefix.
-'''
-deps = ["IsTRRun", "le_delta_of_trUpdate", "le_delta_succ_of_trUpdate"]
 source = "Cartis–Gould–Toint, Lemma 2.3.4 (mechanism), Lemma 12.2.3"
 
 [[node]]
+id = "IsTRRun.delta_succ_ge"
+source = "Cartis–Gould–Toint, Lemma 2.3.4 (mechanism), proof of Theorem 2.3.7"
+
+[[node]]
 id = "IsTRRun.succ_count"
-kind = "theorem"
-desc = '''
-Lemma 2.3.1 for any TR run: if `k` is before termination and `Δmin ≤ Δ (k+1)` (`0 < Δmin`),
-then `(k + 1 : ℝ) ≤ |successSet succ k| * (1 + log P.γ₃ / |log P.γ₂|) +
-|log (Δmin / P.Δ₀)| / |log P.γ₂|`; book indexing as a second clause. Direct from
-`succ_le_of_trUpdate` / `le_of_trUpdate`.
-'''
-deps = ["IsTRRun", "succ_le_of_trUpdate", "le_of_trUpdate", "successSet"]
 source = "Cartis–Gould–Toint, Lemma 2.3.1"
 
 [[node]]
+id = "IsTRRun.le_succ_count"
+source = "Cartis–Gould–Toint, Lemma 2.3.1, (2.3.11)"
+
+[[node]]
 id = "IsTRRun.sub_ge_of_succ"
-kind = "theorem"
-desc = '''
-Decrease on successful TR iterations: if `ρ k = reductionRatio f (x k) (s k) (pred k)` with
-`0 < pred k` and `P.η₁ ≤ ρ k` for `k` before termination, then `x (k+1) = x k + s k` and
-`P.η₁ * pred k ≤ f (x k) - f (x (k+1))`; unsuccessful iterations keep `x`; `f ∘ x` is antitone up
-to the first termination index.
-'''
-deps = ["IsTRRun", "sub_le_of_le_reductionRatio"]
 source = "Cartis–Gould–Toint, proof of Lemma 2.3.6"
