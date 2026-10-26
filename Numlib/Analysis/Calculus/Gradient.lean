@@ -5,6 +5,7 @@ Natural home: `Mathlib.Analysis.Calculus.Gradient.Basic`, beside `gradient` and 
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.Calculus.ContDiff.Basic
+import Mathlib.Analysis.Calculus.ContDiff.Comp
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.InnerProductSpace.Dual
@@ -21,7 +22,11 @@ modules of `Numlib/Analysis/Sobolev/Boundary/` use:
   derivatives), `EuclideanSpace.inner_gradient_eq_fderiv`, `EuclideanSpace.inner_gradient_eq_sum`,
   `EuclideanSpace.norm_gradient_eq`, `EuclideanSpace.norm_fderiv_eq` (the operator norm of `Du(x)`
   is the Euclidean norm of the tuple of partial derivatives) and
-  `EuclideanSpace.continuous_gradient` for a `C¹` function.
+  `EuclideanSpace.continuous_gradient` for a `C¹` function, and the coordinate bounds
+  `EuclideanSpace.abs_apply_sub_le` (`|x i - y i| ≤ ‖x - y‖`) and
+  `EuclideanSpace.norm_toLp_two_le` (`‖(a, b)‖ ≤ |a| + |b|`);
+* second derivatives from the gradient: `norm_iteratedFDeriv_two_le_of_gradient` (a `C`-Lipschitz
+  gradient bounds the second derivative by `C`) and `contDiff_two_of_gradient`.
 -/
 
 open scoped InnerProductSpace
@@ -114,4 +119,47 @@ theorem norm_fderiv_eq (u : EuclideanSpace ℝ (Fin d) → ℝ) (x : EuclideanSp
     rw [h2, InnerProductSpace.toDual_symm_apply]
   rw [← h, gradient, LinearIsometryEquiv.norm_map]
 
+/-- A coordinate difference is at most the Euclidean distance. -/
+theorem abs_apply_sub_le {ι : Type*} [Fintype ι] (x y : EuclideanSpace ℝ ι) (i : ι) :
+    |x i - y i| ≤ ‖x - y‖ := by
+  have := PiLp.norm_apply_le (x - y) i
+  rwa [PiLp.sub_apply, Real.norm_eq_abs] at this
+
+/-- The Euclidean norm of `(a, b)` is at most `|a| + |b|`. -/
+theorem norm_toLp_two_le (a b : ℝ) : ‖!₂[a, b]‖ ≤ |a| + |b| := by
+  rw [EuclideanSpace.norm_eq, Fin.sum_univ_two]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Real.norm_eq_abs, sq_abs]
+  rw [Real.sqrt_le_left (by positivity)]
+  nlinarith [abs_nonneg a, abs_nonneg b, sq_abs a, sq_abs b]
+
 end EuclideanSpace
+
+/-! ### Second derivatives from the gradient -/
+
+section SecondDerivative
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
+  {F : E → ℝ} {G : E → E}
+
+/-- A function with a `C`-Lipschitz gradient has second derivative bounded by `C`. -/
+theorem norm_iteratedFDeriv_two_le_of_gradient {C : ℝ} (hC : 0 ≤ C)
+    (hG : ∀ z, HasGradientAt F (G z) z) (hL : ∀ z z', ‖G z - G z'‖ ≤ C * ‖z - z'‖) (z : E) :
+    ‖iteratedFDeriv ℝ 2 F z‖ ≤ C := by
+  have hfd : fderiv ℝ F = fun z => InnerProductSpace.toDual ℝ E (G z) :=
+    funext fun z => ((hasGradientAt_iff_hasFDerivAt).1 (hG z)).fderiv
+  rw [← norm_iteratedFDeriv_fderiv, norm_iteratedFDeriv_one]
+  refine norm_fderiv_le_of_lip' ℝ hC (Filter.Eventually.of_forall fun x => ?_)
+  rw [hfd, ← map_sub, LinearIsometryEquiv.norm_map]
+  exact hL x z
+
+/-- A function whose gradient is `C¹` is `C²`. -/
+theorem contDiff_two_of_gradient (hG : ∀ z, HasGradientAt F (G z) z) (hGc : ContDiff ℝ 1 G) :
+    ContDiff ℝ 2 F := by
+  have hfd : fderiv ℝ F = fun z => InnerProductSpace.toDual ℝ E (G z) :=
+    funext fun z => ((hasGradientAt_iff_hasFDerivAt).1 (hG z)).fderiv
+  rw [show (2 : WithTop ℕ∞) = 1 + 1 by norm_num, contDiff_succ_iff_fderiv]
+  refine ⟨fun z => (hG z).differentiableAt, by simp, ?_⟩
+  rw [hfd]
+  exact ((InnerProductSpace.toDual ℝ E).contDiff (n := 1)).comp hGc
+
+end SecondDerivative

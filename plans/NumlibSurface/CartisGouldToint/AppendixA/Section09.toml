@@ -1,30 +1,9 @@
 namespace = "CartisGouldToint.AppendixA"
-desc = '''
-§A.9 Polynomial Hermite interpolation: restatements of `Numlib/Approximation/HermiteSpline`.
-'''
 
 [[node]]
 id = "theorem_A_9_1"
-kind = "theorem"
-desc = '''
-Theorem A.9.1. Given `p`, `s > 0`, data `f₀^{(j)}, f₁^{(j)}` (`j ∈ [0:p]`) and `κ_f ≥ 0` with
-`|f₁^{(j)} - T^{(j)}_{f,p}(0,s)| ≤ κ_f s^{p-j+1}` (A.30), the Hermite interpolant `π` of degree
-`2p+1` on `[0,s]` (A.23)–(A.24) has a Lipschitz `p`-th derivative on `[0,s]` with constant depending
-only on `p, κ_f`; if moreover `|f₀^{(j)}| ≤ κ_f` and `s ≤ κ_f` (A.31), `|π^{(j)}| ≤ C(p, κ_f)` on
-`[0,s]` for `j ∈ [0:p]`.
-'''
-deps = ["Hermite.exists_twoPoint_interpolant"]
 source = "Cartis–Gould–Toint, Theorem A.9.1"
 
 [[node]]
 id = "theorem_A_9_2"
-kind = "theorem"
-desc = '''
-Theorem A.9.2. Given `k_e > 0`, `p > 0`, nodes `x_0 < … < x_{k_e}` and data `f_k^{(j)}` satisfying
-(A.32) with `κ_f ≥ 0` for `k ∈ [0 : k_e - 1]`, there is a `C^p` function `f : ℝ → ℝ` with Lipschitz
-`p`-th derivative (constant depending only on `p, κ_f`) and `f^{(j)}(x_k) = f_k^{(j)}`; if also
-`|f_k^{(j)}| ≤ κ_f` and `s_k ≤ κ_f`, then `|f^{(j)}(x)| ≤ C(p, κ_f)` for all `x ∈ ℝ`, `j ≤ p`
-(so f.Bb and f.D1pL hold).
-'''
-deps = ["Hermite.exists_contDiff_interpolating_jets", "Hermite.exists_contDiff_interpolating_jets_bounded"]
 source = "Cartis–Gould–Toint, Theorem A.9.2"

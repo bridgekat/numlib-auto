@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Calculus.ContDiff.Deriv
 import Mathlib.Analysis.Calculus.Deriv.Pow
 import Mathlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.RootMultiplicity
@@ -11,6 +12,12 @@ the first-order inequality with the derivative frozen at a third point, the seco
 inequality with the sharp constant, and two local statements saying that a difference quotient of
 a `C¹` function is uniformly close to the derivative near a point, and a second divided difference
 of a `C²` function uniformly close to half the second derivative.
+
+## Real functions on the whole line
+
+`abs_sub_le_of_hasDerivAt`: a function `ℝ → ℝ` with derivative bounded by `C` everywhere is
+`C`-Lipschitz, in the `|g x - g y| ≤ C |x - y|` form; `contDiff_one_of_hasDerivAt`: a function with
+a continuous derivative everywhere is `C¹`.
 
 ## The inequality with the derivative frozen at a third point
 
@@ -279,3 +286,26 @@ theorem exists_ball_abs_newton_three_sub_le {f : ℝ → ℝ} {a : ℝ} (hf : Co
   rw [hv, show iteratedDeriv 2 f ξ / 2 - iteratedDeriv 2 f a / 2
     = (iteratedDeriv 2 f ξ - iteratedDeriv 2 f a) / 2 by ring, abs_div, abs_two]
   linarith
+
+/-! ### Real functions on the whole line -/
+
+section Line
+
+open Set
+
+/-- **Mean value bound on the line**: a function with derivative bounded by `C` on `ℝ` is
+`C`-Lipschitz. -/
+theorem abs_sub_le_of_hasDerivAt {g g' : ℝ → ℝ} {C : ℝ} (hg : ∀ x, HasDerivAt g (g' x) x)
+    (hC : ∀ x, |g' x| ≤ C) (x y : ℝ) : |g x - g y| ≤ C * |x - y| := by
+  have := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le (f := g) (f' := g') (s := univ)
+    (fun x _ => (hg x).hasDerivWithinAt) (fun x _ => hC x) convex_univ (mem_univ y) (mem_univ x)
+  simpa [Real.norm_eq_abs] using this
+
+/-- A function with a continuous derivative everywhere is `C¹`. -/
+theorem contDiff_one_of_hasDerivAt {g g' : ℝ → ℝ} (hg : ∀ x, HasDerivAt g (g' x) x)
+    (hc : Continuous g') : ContDiff ℝ 1 g := by
+  rw [contDiff_one_iff_deriv]
+  refine ⟨fun x => (hg x).differentiableAt, ?_⟩
+  rwa [show deriv g = g' from funext fun x => (hg x).deriv]
+
+end Line

@@ -33,7 +33,8 @@ and multiplicities `m i`, the Hermite interpolant is the polynomial of degree le
   the case of simple zeros, and it is the only real work of the module.
 * `Hermite.isUnisolvent` is unique solvability of the Hermite problem, the instance of
   `Hermite.existsUnique_isJetInterpolant` (the Chinese remainder theorem in `ℝ[X]`) at the multiset
-  of nodes.
+  of nodes; `Hermite.eq_of_twoPoint_jets` is its two-point case (polynomials of degree at most
+  `2p + 1` with the same `p`-jets at two points coincide).
 * `Hermite.exists_sub_interpolate_eq` is the error formula `f(t) - p(t) = f^{(N+1)}(ξ)/(N+1)! ∏ (t -
   x i)^{m i + 1}`, proved from the Rolle theorem exactly as the Lagrange error formula is proved
   from the simple one.
@@ -560,5 +561,28 @@ theorem exists_sub_interpolate_eq {N n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
       rw [hc]
       field_simp
     rw [hres, hceq, hW, eval_nodal]
+
+/-! ### Two-point Hermite interpolation -/
+
+/-- **Uniqueness of two-point Hermite interpolation.** Two polynomials of degree at most `2p + 1`
+with the same `p`-jets at two distinct points coincide. -/
+theorem eq_of_twoPoint_jets {p : ℕ} {s : ℝ} (hs : s ≠ 0) {π π' : ℝ[X]}
+    (hπ : π.natDegree ≤ 2 * p + 1) (hπ' : π'.natDegree ≤ 2 * p + 1)
+    (h0 : ∀ j ≤ p, (Polynomial.derivative^[j] π).eval 0 = (Polynomial.derivative^[j] π').eval 0)
+    (h1 : ∀ j ≤ p, (Polynomial.derivative^[j] π).eval s = (Polynomial.derivative^[j] π').eval s) :
+    π = π' := by
+  have hx : Function.Injective (![0, s] : Fin 2 → ℝ) := by
+    intro i j hij
+    fin_cases i <;> fin_cases j <;> simp_all [eq_comm]
+  have hM : ∑ i : Fin 2, ((![p, p] : Fin 2 → ℕ) i + 1) = 2 * p + 2 := by
+    simp [Fin.sum_univ_two]; ring
+  have hdeg : ∀ q : ℝ[X], q.natDegree ≤ 2 * p + 1 → q.degree < ((2 * p + 2 : ℕ) : WithBot ℕ) :=
+    fun q hq => (Polynomial.degree_le_of_natDegree_le hq).trans_lt
+      (by exact_mod_cast Nat.lt_succ_self _)
+  refine (isUnisolvent hx hM (fun i j => (Polynomial.derivative^[j] π').eval (![0, s] i))).unique
+    ⟨hdeg π hπ, fun i j hj => ?_⟩ ⟨hdeg π' hπ', fun i j _ => rfl⟩
+  fin_cases i
+  · exact h0 j hj
+  · exact h1 j hj
 
 end Hermite

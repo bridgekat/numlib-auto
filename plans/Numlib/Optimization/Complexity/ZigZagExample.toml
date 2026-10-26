@@ -1,70 +1,29 @@
 namespace = "Optimization"
-desc = '''
-A two-dimensional function with Lipschitz-continuous gradient on which steepest descent with a
-"first local minimizer" line search follows a prescribed zig-zag path with prescribed gradient
-norms (Cartis–Gould–Toint Theorem 2.2.5 and Appendix B Lemmas B.2.1–B.2.6, after
-Cartis–Gould–Toint [92]). Placed in the backbone so that the Chapter 2 surface theorem and the
-Appendix B surface lemmas both specialize it (surface dependencies must run forward).
-
-Data: `ε ∈ (0,1]` with `k_ε = ε⁻²` a natural number, `ω_k = ε (k_ε - k)/k_ε`, iterates
-`(x_0, y_0) = 0`, `(x_{k+1}, y_{k+1}) = (x_k, y_k) + (ε + ω_k)(1, (-1)^k)`. The function is
-`f = (f₁(x) + f₂(x, y))/√2` for `x ≥ 0` (linear continuation in `x` for `x < 0`), `f₁` the quintic
-Hermite interpolant of (B.2.6) and `f₂` the "corridor" function (B.2.19) built from quintic Hermite
-boundaries `y_low`, `y_up` (B.2.13)–(B.2.14) and quintic transitions (B.2.20). For `x` beyond the
-last node `f₁` and the corridor are continued constantly (the book leaves this implicit).
-
-**Source issue.** Lemma B.2.6 proves only that `x_{k+1}` is the *first local minimizer* of `f`
-along `-∇f(x_k)`; it is in general not a global minimizer on the ray (along the ray `f₁` keeps
-decreasing by `O(1)` while `f₂ ≤ 8δ² = O(ε²)` outside the corridor). Hence the construction proves
-Theorem 2.2.5 for the first-local-minimizer line search (`LineSearch.IsFirstLocalLineMin`), not
-for the global argmin (2.2.26).
-'''
 
 [[node]]
 id = "zigZagFunction"
-kind = "def"
-desc = '''
-`zigZagFunction (ε : ℝ) (K : ℕ) : EuclideanSpace ℝ (Fin 2) → ℝ` (with `K = k_ε`) together with
-the iterate sequence `zigZagIterate ε K : ℕ → EuclideanSpace ℝ (Fin 2)` as described in the module
-docstring; the auxiliary `f₁`, `y_low`, `y_up`, `δ = y_up - y_low`, `y_mid`, `f₂` are part of the
-definition (private or namespaced helpers), each a piecewise quintic Hermite interpolant
-(`Hermite.exists_twoPoint_interpolant` with `p = 2`, or the explicit formulas (B.2.1)–(B.2.2)).
-'''
-deps = ["Hermite.exists_twoPoint_interpolant"]
 source = "Cartis–Gould–Toint, Appendix B (Proof of Theorem 2.2.5), (B.2.4)–(B.2.24)"
 
 [[node]]
+id = "zigZagIterate"
+source = "Cartis–Gould–Toint, Appendix B, (B.2.5)"
+
+[[node]]
 id = "zigZag_gradient"
-kind = "theorem"
-desc = '''
-For `ε ∈ (0,1]`, `K = ε⁻²` and `k ≤ K`: `zigZagFunction ε K` is differentiable at the iterate and
-`gradient (zigZagFunction ε K) (zigZagIterate ε K k) = -((ε + ω_k)/√2) • ![1, (-1)^k]`, so its norm
-is `ε + ω_k` (`> ε` for `k < K`, `= ε` at `k = K`), and
-`zigZagIterate ε K (k+1) = zigZagIterate ε K k - √2 • gradient …` (steepest descent with step `√2`).
-(B.2.25)
-'''
-deps = ["zigZagFunction"]
 source = "Cartis–Gould–Toint, Lemma B.2.2, (B.2.21)–(B.2.25)"
 
 [[node]]
 id = "zigZag_bounds"
-kind = "theorem"
-desc = '''
-There are `M, L` independent of `ε ∈ (0,1]` (and of `K = ε⁻²`) such that `zigZagFunction ε K` is
-`C¹`, bounded below by `-M` (bounded on `x ≥ 0`, increasing linearly as `x → -∞`), and has an
-`L`-Lipschitz gradient on `ℝ²` (all second derivatives of `f₁`, `f₂` bounded: (B.2.10), (B.2.26),
-(B.2.31) and Lemma B.2.3). (Lemmas B.2.3–B.2.5.)
-'''
-deps = ["zigZagFunction", "Hermite.exists_twoPoint_interpolant"]
-source = "Cartis–Gould–Toint, Lemmas B.2.3–B.2.5"
+source = "Cartis–Gould–Toint, Lemmas B.2.4–B.2.5"
 
 [[node]]
 id = "zigZag_isFirstLocalLineMin"
-kind = "theorem"
-desc = '''
-For `k < K`, the step `t = √2` is a first local minimizer of `t ↦ f(z_k - t ∇f(z_k))`:
-`LineSearch.IsFirstLocalLineMin (zigZagFunction ε K) (zigZagIterate ε K k) √2`, i.e. the slope
-(B.2.32) is negative on `[0, √2)` and zero at `√2`. (Lemma B.2.6.)
-'''
-deps = ["zigZagFunction", "zigZag_gradient", "LineSearch.IsFirstLocalLineMin"]
 source = "Cartis–Gould–Toint, Lemma B.2.6"
+
+[[node]]
+id = "zigZag_isExactLineMin"
+source = "Cartis–Gould–Toint, Lemma B.2.6, (2.2.26)"
+
+[[node]]
+id = "zigZag_hessian_bounds"
+source = "Cartis–Gould–Toint, Lemmas B.2.3, B.2.5"

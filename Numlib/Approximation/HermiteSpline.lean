@@ -39,7 +39,8 @@ The two-point interpolant is written as `T(τ) + s^{p+1} R(τ/s)` with `T` the T
 the left jet and `R = ∑_l D_l H_l` a combination of fixed Hermite basis polynomials on `[0, 1]`
 (zero jet at `0`, unit jets at `1`), with weights `D_j = r_j / s^{p+1-j}` bounded by `κ`. This
 avoids the explicit matrix `A_p` of the book. Pieces are glued with `Hermite.glue`, the function
-equal to `u` on `(-∞, a]` and to `v` on `(a, ∞)`: when the `p`-jets of `u` and `v` agree at `a` the
+equal to `u` on `(-∞, a]` and to `v` on `(a, ∞)` (and `Hermite.glue3` glues three functions at
+`0` and `1`): when the `p`-jets of `u` and `v` agree at `a` the
 glued function is again `C^p` (`Hermite.contDiff_glue`). In the bounded version the outer pieces
 are Hermite pieces of length `1` towards constant jets, as in the book, with the consistency
 constant `(p + 2) κ`.
@@ -418,6 +419,57 @@ theorem abs_glue_sub_le {s : Set ℝ} (hs : s.OrdConnected) {L : ℝ}
     _ = L * -(x - y) := by ring
 
 end Glue
+
+/-! ### Gluing three functions at `0` and `1` -/
+
+/-- The function equal to `l` on `(-∞, 0]`, to `m` on `(0, 1]` and to `r` on `(1, ∞)`. -/
+noncomputable def glue3 (l m r : ℝ → ℝ) (t : ℝ) : ℝ :=
+  glue 0 l (glue 1 m r) t
+
+section Glue3
+
+variable {l m r l' m' r' : ℝ → ℝ} {t : ℝ}
+
+theorem glue3_of_nonpos (ht : t ≤ 0) : glue3 l m r t = l t :=
+  glue_of_le ht
+
+theorem glue3_of_mem_Icc (h0 : l 0 = m 0) (ht : t ∈ Set.Icc (0 : ℝ) 1) : glue3 l m r t = m t := by
+  rcases ht.1.lt_or_eq with h | rfl
+  · rw [glue3, glue_of_lt h, glue_of_le ht.2]
+  · rw [glue3_of_nonpos le_rfl, h0]
+
+theorem glue3_of_one_le (h1 : m 1 = r 1) (ht : 1 ≤ t) : glue3 l m r t = r t := by
+  rw [glue3, glue_of_lt (by linarith), glue_of_ge h1 ht]
+
+/-- A three-piece function whose pieces have matching values and derivatives at `0` and `1` is
+differentiable, with the three-piece derivative. -/
+theorem hasDerivAt_glue3 (hl : ∀ t, HasDerivAt l (l' t) t) (hm : ∀ t, HasDerivAt m (m' t) t)
+    (hr : ∀ t, HasDerivAt r (r' t) t) (h0 : l 0 = m 0) (h0' : l' 0 = m' 0) (h1 : m 1 = r 1)
+    (h1' : m' 1 = r' 1) (t : ℝ) : HasDerivAt (glue3 l m r) (glue3 l' m' r' t) t := by
+  have hin : ∀ t, HasDerivAt (glue 1 m r) (glue 1 m' r' t) t :=
+    hasDerivAt_glue hm hr h1 h1'
+  have := hasDerivAt_glue (a := 0) hl hin
+    (by rw [glue_of_le zero_le_one, h0])
+    (by rw [glue_of_le zero_le_one, h0']) t
+  exact this
+
+/-- Bound on a three-piece function by bounds on its pieces. -/
+theorem abs_glue3_le {B : ℝ} (hl : ∀ t ≤ 0, |l t| ≤ B) (hm : ∀ t ∈ Set.Icc (0 : ℝ) 1, |m t| ≤ B)
+    (hr : ∀ t, 1 ≤ t → |r t| ≤ B) (t : ℝ) : |glue3 l m r t| ≤ B := by
+  rcases le_or_gt t 0 with h | h
+  · rw [glue3_of_nonpos h]; exact hl t h
+  rw [glue3, glue_of_lt h]
+  rcases le_or_gt t 1 with h' | h'
+  · rw [glue_of_le h']; exact hm t ⟨h.le, h'⟩
+  · rw [glue_of_lt h']; exact hr t h'.le
+
+/-- A three-piece function of continuous pieces matching at `0` and `1` is continuous. -/
+theorem continuous_glue3 {l m r : ℝ → ℝ} (hl : Continuous l) (hm : Continuous m)
+    (hr : Continuous r) (h0 : l 0 = m 0) (h1 : m 1 = r 1) : Continuous (glue3 l m r) :=
+  continuous_glue hl (continuous_glue hm hr h1)
+    (by rw [glue_of_le zero_le_one, h0])
+
+end Glue3
 
 /-! ### Piecewise Hermite interpolation -/
 

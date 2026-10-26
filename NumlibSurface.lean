@@ -131,6 +131,7 @@ import NumlibSurface.Brezis.Chapter11.Section02
 import NumlibSurface.Brezis.Chapter11.Section03
 import NumlibSurface.Brezis.Chapter11.Section04
 import NumlibSurface.CartisGouldToint.AppendixA.Section08
+import NumlibSurface.CartisGouldToint.AppendixA.Section09
 import NumlibSurface.CartisGouldToint.AppendixA.Section10
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter03
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter04
