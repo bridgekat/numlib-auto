@@ -683,6 +683,8 @@ import Numlib.Optimization.ModelBased.TrustRegionUpdate
 import Numlib.Optimization.QuasiNewton
 import Numlib.Optimization.Subproblem.Bracketing
 import Numlib.Optimization.Subproblem.InverseIteration
+import Numlib.Optimization.Subproblem.Krylov
+import Numlib.Optimization.Subproblem.KrylovConvergence
 import Numlib.Optimization.Subproblem.Matrix
 import Numlib.Optimization.Subproblem.MinCurvature
 import Numlib.Optimization.Subproblem.Model

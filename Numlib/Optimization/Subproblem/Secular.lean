@@ -35,7 +35,9 @@ A scaling norm `‖·‖_M` of the book is not a parameter: it is the norm of th
   semidefinite iff `λ ≥ -λ₁` and positive definite iff `λ > -λ₁`;
   `isPositive_add_smul_of_le` and `shiftThreshold_le_of_isPositive` need no nontriviality.
 * `le_leftmost_iff`, `le_leftmost_iff_forall`, `le_leftmost_iff_isCoerciveWith`: `λ₁` is the
-  greatest lower bound of the eigenvalues and the best constant in `c ‖v‖² ≤ ⟪v, H v⟫`.
+  greatest lower bound of the eigenvalues and the best constant in `c ‖v‖² ≤ ⟪v, H v⟫`;
+  `inner_le_rightmost_mul_norm_sq`, `rightmost_le_of_forall` are the same for `λₙ`, and
+  `norm_add_smul_apply_le` bounds `‖(H + λ) v‖ ≤ (λ + λₙ) ‖v‖` for `λ ≥ -λ₁`.
 * `step_spec`, `step_eq_sum`, `secular_eq_secularSum`: on `λ > -λ₁`, `step` is the unique
   solution of `(H + λ) s = -g`, with the spectral expansions (8.2.6)–(8.2.7) in an orthonormal
   eigenbasis `bᵢ`: `s(λ) = -∑ ⟪bᵢ, g⟫ / (λ + λᵢ) bᵢ` and `π(λ) = ∑ ⟪bᵢ, g⟫² / (λ + λᵢ)²`. All
@@ -286,6 +288,55 @@ theorem isUnit_add_smul {lam : ℝ} (hlam : -leftmost hH < lam) : IsUnit (H + la
     have := leftmost_le_eigenvalues (hH := hH) i; linarith
   rw [inner_zero_right]
   exact (mul_eq_zero.1 h.symm).resolve_left hpos.ne'
+
+/-- The Rayleigh upper bound `⟪(H + λ) v, v⟫ ≤ (λ + λₙ) ‖v‖²`, `λₙ` the rightmost eigenvalue. -/
+theorem inner_add_smul_le_add_rightmost (lam : ℝ) (v : E) :
+    ⟪(H + lam • 1) v, v⟫ ≤ (lam + rightmost hH) * ‖v‖ ^ 2 := by
+  rw [← real_inner_self_eq_norm_sq, real_inner_comm, inner_eq_sum_eigenvectorBasis (hH := hH),
+    inner_eq_sum_eigenvectorBasis (hH := hH), Finset.mul_sum]
+  refine Finset.sum_le_sum fun i _ => ?_
+  rw [inner_eigenvectorBasis_add_smul]
+  have := eigenvalues_le_rightmost (hH := hH) i
+  nlinarith [mul_self_nonneg ⟪hH.eigenvectorBasis rfl i, v⟫]
+
+/-- The Rayleigh upper bound `⟪v, H v⟫ ≤ λₙ ‖v‖²`. -/
+theorem inner_le_rightmost_mul_norm_sq (v : E) : ⟪v, H v⟫ ≤ rightmost hH * ‖v‖ ^ 2 := by
+  simpa [real_inner_comm, inner_add_left, real_inner_self_eq_norm_sq] using
+    inner_add_smul_le_add_rightmost (hH := hH) 0 v
+
+/-- The rightmost eigenvalue is an eigenvalue (on a nonzero space). -/
+theorem exists_eigenvalues_eq_rightmost [Nontrivial E] :
+    ∃ i, hH.eigenvalues rfl i = rightmost hH := by
+  have : Nonempty (Fin (Module.finrank ℝ E)) := ⟨⟨0, Module.finrank_pos⟩⟩
+  exact exists_eq_ciSup_of_finite
+
+/-- `λₙ` is the least constant in the Rayleigh bound `⟪v, H v⟫ ≤ c ‖v‖²` (on a nonzero space). -/
+theorem rightmost_le_of_forall [Nontrivial E] {c : ℝ} (h : ∀ v, ⟪v, H v⟫ ≤ c * ‖v‖ ^ 2) :
+    rightmost hH ≤ c := by
+  obtain ⟨i, hi⟩ := exists_eigenvalues_eq_rightmost (hH := hH)
+  have h' := h (hH.eigenvectorBasis rfl i)
+  rw [apply_eigenvectorBasis', real_inner_smul_right, real_inner_self_eq_norm_sq,
+    (hH.eigenvectorBasis rfl).norm_eq_one, hi] at h'
+  simpa using h'
+
+/-- **Norm bound for a positive semidefinite shift**: for `λ ≥ -λ₁`,
+`‖(H + λ) v‖ ≤ (λ + λₙ) ‖v‖`. -/
+theorem norm_add_smul_apply_le {lam : ℝ} (hlam : -leftmost hH ≤ lam) (v : E) :
+    ‖(H + lam • 1) v‖ ≤ (lam + rightmost hH) * ‖v‖ := by
+  have hsq : ‖(H + lam • 1) v‖ ^ 2 ≤ ((lam + rightmost hH) * ‖v‖) ^ 2 := by
+    rw [mul_pow, ← real_inner_self_eq_norm_sq, ← real_inner_self_eq_norm_sq,
+      inner_eq_sum_eigenvectorBasis (hH := hH), inner_eq_sum_eigenvectorBasis (hH := hH) v v,
+      Finset.mul_sum]
+    refine Finset.sum_le_sum fun i _ => ?_
+    rw [inner_eigenvectorBasis_add_smul]
+    have h1 := leftmost_le_eigenvalues (hH := hH) i
+    have h2 := eigenvalues_le_rightmost (hH := hH) i
+    have h3 : 0 ≤ lam + hH.eigenvalues rfl i := by linarith
+    have h4 : (lam + hH.eigenvalues rfl i) ^ 2 ≤ (lam + rightmost hH) ^ 2 :=
+      pow_le_pow_left₀ h3 (by linarith) 2
+    nlinarith [mul_self_nonneg ⟪hH.eigenvectorBasis rfl i, v⟫]
+  have h0 : 0 ≤ lam + rightmost hH := by linarith [leftmost_le_rightmost (hH := hH)]
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 hsq
 
 end Leftmost
 
