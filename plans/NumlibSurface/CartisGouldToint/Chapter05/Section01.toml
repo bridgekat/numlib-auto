@@ -1,0 +1,249 @@
+namespace = "CartisGouldToint.Chapter05"
+desc = '''
+§5.1 Nonlinear least squares and least Euclidean norms. `Φ_ℓ(x) = ‖r(x)‖^ℓ/ℓ`
+(`Optimization.residualPow`), residual-scaled criticality measures `ψ_{ℓ,j}` ((5.1.6)–(5.1.7)),
+the ARpLE algorithm (Algorithm 5.1.1 = ARp applied to `Φ_ℓ` with the tests (5.1.9)–(5.1.14), an
+instance of `Optimization.IsARpRun`), the residual-decrease bounds (Lemmas 5.1.2–5.1.4), the
+choice of `ℓ` and `i` making the exponents `ι_j(p, ℓ, i)` nonnegative (Lemmas 5.1.5–5.1.6) and the
+complexity Theorem 5.1.7. The full-rank condition (5.1.62) of §5.1.5 is used in §5.3.4.
+
+Design: one exponent function `iota j p ℓ i = (2^i - 1)/2^i - j (ℓ - 1)/(p - j + 1)` covers
+(5.1.21), (5.1.23), (5.1.25) (`j = 1, 2, 3`). Theorem 5.1.7 is proved in the general form
+`theorem_5_1_7_of_iota_nonneg` (any order `q ≤ 3`, any `ℓ, i` with `ι_j ≥ 0` for `j ≤ q`), which
+also gives the first-/second-order variants mentioned after the proof; the book's statement
+(hypotheses (5.1.42) or (5.1.43)) follows with Lemma 5.1.6.
+'''
+
+[[node]]
+id = "Phi"
+kind = "def"
+desc = '''
+`Phi (r : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)) (ℓ : ℝ) := Optimization.residualPow r ℓ`,
+i.e. `Φ_ℓ(x) = ‖r(x)‖^ℓ/ℓ` (5.1.3); `Φ_1 = ‖r‖` (5.1.1), `Φ_2` the least-squares objective (5.1.2).
+'''
+deps = ["Optimization.residualPow"]
+source = "Cartis–Gould–Toint, (5.1.1)–(5.1.3)"
+
+[[node]]
+id = "lemma_5_1_1"
+kind = "theorem"
+desc = '''
+Lemma 5.1.1. If `ContDiff ℝ p r` then `ContDiff ℝ p (Phi r ℓ)` whenever `ℓ` is an even natural
+number or a real with `ℓ > 2p` (the proof gives `ℓ ≥ 2p`, which is what the backbone states).
+'''
+deps = ["Phi", "Optimization.contDiff_residualPow"]
+source = "Cartis–Gould–Toint, Lemma 5.1.1"
+
+[[node]]
+id = "psiOne"
+kind = "def"
+desc = '''
+Residual-scaled measures ((5.1.6)–(5.1.7)), all with `Phi r ℓ` and the scaling `‖r x‖^(ℓ-1)`
+(Lean division: the value is `0` when `r x = 0`, a case excluded by the test (5.1.9)):
+`psiOne r ℓ x = ‖gradient (Phi r ℓ) x‖ / ‖r x‖^(ℓ-1)`;
+`psiTwo r ℓ x = Chapter01.hessianMinEig (Phi r ℓ) x / ‖r x‖^(ℓ-1)` (book `ψ_{ℓ,2}(x)`);
+`psiTwoDir r ℓ x d = |iteratedFDeriv ℝ 2 (Phi r ℓ) x ![d,d]| / ‖r x‖^(ℓ-1)` (`ψ_{ℓ,2}(x,d)`);
+`psiThree r ℓ x d = |iteratedFDeriv ℝ 3 (Phi r ℓ) x ![d,d,d]| / ‖r x‖^(ℓ-1)` (`ψ_{ℓ,3}(x,d)`).
+(All four are defined in this node; the motivation (5.1.4)–(5.1.5), derivatives of `Φ₁` at
+critical points, is not formalized.)
+'''
+deps = ["Phi", "CartisGouldToint.Chapter01.hessianMinEig"]
+source = "Cartis–Gould–Toint, (5.1.6)–(5.1.7)"
+
+[[node]]
+id = "zSet"
+kind = "def"
+desc = '''
+`zSet r ℓ ε₂ x := {d | ‖d‖ = 1 ∧ psiTwoDir r ℓ x d ≤ ε₂}` (the book's `𝒵_ε` (5.1.7)); equals
+`Optimization.smallCurvatureDirections (iteratedFDeriv ℝ 2 (Phi r ℓ) x) (ε₂ ‖r x‖^(ℓ-1))` when
+`r x ≠ 0` (part of node).
+'''
+deps = ["psiOne", "Optimization.smallCurvatureDirections"]
+source = "Cartis–Gould–Toint, (5.1.7)"
+
+[[node]]
+id = "AssumptionPhiDpL"
+kind = "def"
+desc = '''
+Assumption Φ_ℓ.DpL: `AssumptionPhiDpL r ℓ p L : Prop := ContDiff ℝ p (Phi r ℓ) ∧ 0 ≤ L ∧
+IteratedFDerivLipschitzOn (Phi r ℓ) p L univ` (the book allows `L_{Φ_ℓ,p} ≥ 0`, unlike f.DpL's
+`L ≥ 1`).
+'''
+deps = ["Phi", "IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, Assumption Φℓ.DpL (Section 5.1.2)"
+
+[[node]]
+id = "ARpLEStop"
+kind = "def"
+desc = '''
+Step-1 test of ARpLE at a point `x` with direction set `M` (= `M_k`), order `q ∈ {1,2,3}`,
+tolerances `ε₀ ε₁ ε₂ ε₃ > 0` (those with index `> q` unused, the book's `∞`):
+`ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ M x :↔ ‖r x‖ ≤ ε₀` (5.1.9)
+`∨ (q = 1 ∧ psiOne r ℓ x ≤ ε₁)` (5.1.10)
+`∨ (2 ≤ q ∧ psiOne r ℓ x ≤ ε₁ ∧ ε₂ < psiTwo r ℓ x)` (5.1.11, strict local minimizer)
+`∨ (q = 2 ∧ psiOne r ℓ x ≤ ε₁ ∧ -ε₂ ≤ psiTwo r ℓ x)` (5.1.12)
+`∨ (q = 3 ∧ psiOne r ℓ x ≤ ε₁ ∧ -ε₂ ≤ psiTwo r ℓ x ∧ ∀ d ∈ M, psiThree r ℓ x d ≤ ε₃ ∧
+psiTwoDir r ℓ x d ≤ ε₂)` (5.1.13)–(5.1.14).
+Correction: the book also requires `M_k ≠ ∅` in the last branch. With that requirement the proof
+of Theorem 5.1.7 breaks down when `M_{k+1} = ∅` (then neither (5.1.48)–(5.1.49) nor any of
+(5.1.51)–(5.1.52) need hold, so there is no guaranteed decrease); with the vacuous reading the
+conclusion "for all `d ∈ M_ε`" is unchanged in content.
+'''
+deps = ["psiOne"]
+source = "Cartis–Gould–Toint, Algorithm 5.1.1 (Step 1), (5.1.9)–(5.1.14)"
+
+[[node]]
+id = "algorithm_5_1_1"
+kind = "def"
+desc = '''
+Algorithm 5.1.1 (ARpLE) as a run predicate `IsARpLERun r ℓ p P q ε₀ ε₁ ε₂ ε₃ x s σ`
+(`P : Optimization.ARpConstants`, natural `ℓ ≥ 2`, `p ≥ q`):
+`Optimization.IsARpRun (Phi r ℓ) p P q (fun k => ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ (Mdir k) (x k)) x s σ`,
+where `Mdir 0 = Optimization.smallCurvatureDirections (iteratedFDeriv ℝ 2 (Phi r ℓ) (x 0)) ε₂`
+(Algorithm 4.1.1, Step 0) and `Mdir (k+1) = Optimization.smallCurvatureDirections
+(iteratedFDeriv ℝ 2 m_k (s k)) (θ₂ ‖s k‖^(p-1))` (4.1.14), `m_k` the regularized model (5.1.8).
+Existence (part of node): for `q ≤ 2`, `ContDiff ℝ p (Phi r ℓ)`, any `x₀` there is a run
+(`Optimization.exists_isARpRun`, since a failing test forces `∇Φ_ℓ ≠ 0` or negative curvature);
+for `q = 3` only under the hypothesis that admissible steps exist (see `Optimization.ARpRun`).
+'''
+deps = ["ARpLEStop", "Phi", "Optimization.IsARpRun", "Optimization.exists_isARpRun", "Optimization.smallCurvatureDirections"]
+source = "Cartis–Gould–Toint, Algorithm 5.1.1"
+
+[[node]]
+id = "lemma_5_1_2"
+kind = "theorem"
+desc = '''
+Lemma 5.1.2. Under `AssumptionPhiDpL r ℓ p L`, for an ARpLE run and a successful iteration `k`
+before termination, with `κ₁ κ₂ κ₃`, `σmax = max(σ₀, γ₃ L/(1-η₂))` and `κs2` of
+`Optimization.IsARpRun.decrease_ge`/`step_lower_bounds` (with `L = L_{Φ_ℓ,p}`):
+(5.1.15) `‖r(x_k)‖^ℓ - ‖r(x_{k+1})‖^ℓ ≥ κ₁ ℓ psiOne(x_{k+1})^((p+1)/p) ‖r(x_{k+1})‖^((ℓ-1)(p+1)/p)`;
+(5.1.16) if `q ≥ 2`: `≥ κ₂ ℓ (max 0 (-psiTwo(x_{k+1})))^((p+1)/(p-1)) ‖r(x_{k+1})‖^((ℓ-1)(p+1)/(p-1))`;
+(5.1.17) if `q = 3`: `≥ κ₃ ℓ psiThree(x_{k+1}, d)^((p+1)/(p-2)) ‖r(x_{k+1})‖^((ℓ-1)(p+1)/(p-2))`
+for all `d ∈ Mdir (k+1)`; and (5.1.18) for such `d`:
+`psiTwoDir(x_{k+1}, d) ‖r(x_{k+1})‖^(ℓ-1) ≤ ‖s_k‖^(p-1) / κs2`.
+'''
+deps = ["algorithm_5_1_1", "AssumptionPhiDpL", "Optimization.IsARpRun.decrease_ge", "Optimization.IsARpRun.step_lower_bounds"]
+source = "Cartis–Gould–Toint, Lemma 5.1.2"
+
+[[node]]
+id = "lemma_5_1_3"
+kind = "theorem"
+desc = '''
+Lemma 5.1.3. For `a ≥ b ≥ 0` and integers `i ≥ 0`, `ℓ ≥ 1`:
+`a^(1/2^i) - b^(1/2^i) ≥ (a^ℓ - b^ℓ) / (2^i ℓ a^((2^i-1)/2^i + ℓ - 1))` (for `a > 0`; both sides are
+`0` when `a = 0`).
+'''
+deps = ["Optimization.rpow_inv_two_pow_sub_ge"]
+source = "Cartis–Gould–Toint, Lemma 5.1.3"
+
+[[node]]
+id = "iota"
+kind = "def"
+desc = '''
+`iota (j p : ℕ) (ℓ : ℝ) (i : ℕ) : ℝ := (2^i - 1)/2^i - j * (ℓ - 1)/(p - j + 1)`; `iota 1`, `iota 2`,
+`iota 3` are the book's `ι₁, ι₂, ι₃` ((5.1.21), (5.1.23), (5.1.25)). Identities (part of node):
+(5.1.34) `ι₁ = ι₂ + (ℓ-1)(p+1)/(p(p-1))`, (5.1.36) `ι₁ = ι₃ + 2(ℓ-1)(p+1)/(p(p-2))`,
+(5.1.37) `ι₂ = ι₃ + (ℓ-1)(p+1)/((p-1)(p-2))` (for `p > 2`, resp. `p > 1`).
+'''
+source = "Cartis–Gould–Toint, (5.1.21), (5.1.23), (5.1.25), (5.1.34), (5.1.36)–(5.1.37)"
+
+[[node]]
+id = "lemma_5_1_4"
+kind = "theorem"
+desc = '''
+Lemma 5.1.4. Under Φ_ℓ.DpL, for an ARpLE run, a successful iteration `k` before termination,
+`β ∈ (0,1)` and `i : ℕ`, with `a = ‖r(x_k)‖`, `b = ‖r(x_{k+1})‖` (so `b ≤ a`):
+if `b > β a` then (5.1.20) `a^(1/2^i) - b^(1/2^i) ≥ κ_{r1} psiOne(x_{k+1})^((p+1)/p) / a^(iota 1 p ℓ i)`,
+(5.1.22) (`q ≥ 2`) `≥ κ_{r2} (max 0 (-psiTwo(x_{k+1})))^((p+1)/(p-1)) / a^(iota 2 p ℓ i)`,
+(5.1.24) (`q = 3`) `≥ κ_{r3} psiThree(x_{k+1}, d)^((p+1)/(p-2)) / a^(iota 3 p ℓ i)` for
+`d ∈ Mdir (k+1)`, with `κ_{rj} = κ_j β^((ℓ-1)(p+1)/(p-j+1)) / 2^i` ((5.1.21), (5.1.23), (5.1.25));
+if `b ≤ β a` then (5.1.27) `a^(1/2^i) - b^(1/2^i) ≥ κ_{r0} a^(1/2^i) ≥ κ_{r0} b^(1/2^i)` with
+`κ_{r0} = 1 - β^(1/2^i)` (5.1.28).
+'''
+deps = ["lemma_5_1_2", "lemma_5_1_3", "iota"]
+source = "Cartis–Gould–Toint, Lemma 5.1.4"
+
+[[node]]
+id = "lemma_5_1_5"
+kind = "theorem"
+desc = '''
+Lemma 5.1.5. Every `p : ℕ`, `p ≠ 0`, is uniquely `p = o * 2^i` with `o` odd: `∃! oi : ℕ × ℕ,
+Odd oi.1 ∧ p = oi.1 * 2 ^ oi.2` (existence: Mathlib `Nat.exists_eq_two_pow_mul_odd`; uniqueness
+from `Nat.factorization`/`padicValNat 2`). (The book writes `p ∈ ℕ`; `p = 0` must be excluded.)
+'''
+source = "Cartis–Gould–Toint, Lemma 5.1.5"
+
+[[node]]
+id = "lemma_5_1_6"
+kind = "theorem"
+desc = '''
+Lemma 5.1.6 (good exponents), `p ≥ 1`, all exponents `iota j p ℓ i`:
+(5.1.38) `ℓ = p`, `p < 2^i` (book `i > log₂ p`) ⇒ `0 < iota 1`;
+(5.1.39) `p` even, `p = o 2^i`, `o` odd, `ℓ = 1 + o(2^i - 1)` ⇒ `iota 1 = 0` and `ℓ > 1`;
+(5.1.40) `p` even, `ℓ = p/2`, `p - 1 < 2^i` ⇒ `0 < iota 1` and `0 < iota 2`;
+(5.1.41) `4 ∣ p - 1`, `p - 1 = o₂ 2^(i+1)`, `o₂` odd, `ℓ = 1 + o₂(2^i - 1)` ⇒ `iota 2 = 0`,
+`0 < iota 1`, `ℓ > 1`;
+(5.1.42) `3 ∣ p`, `ℓ = p/3`, `p - 2 < 2^i` ⇒ `0 < iota 1, iota 2, iota 3`;
+(5.1.43) `p - 2 = o₃ 2^i`, `o₃` odd, `i ≥ 2` even, `j = i/2`, `ℓ = 1 + o₃ ∑_{k<j} 4^k` ⇒
+`iota 3 = 0`, `0 < iota 1, iota 2`, `ℓ > 1` (and `ℓ` is even).
+(Pure arithmetic with (5.1.34)–(5.1.37); the strict positivity in (5.1.40) for `ℓ = 1` (`p = 2`)
+holds since `ι₁ = ι₂` then.)
+'''
+deps = ["iota", "lemma_5_1_5"]
+source = "Cartis–Gould–Toint, Lemma 5.1.6"
+
+[[node]]
+id = "theorem_5_1_7_of_iota_nonneg"
+kind = "theorem"
+desc = '''
+General form of Theorem 5.1.7. Let `q ∈ {1,2,3}`, `p ≥ q`, natural `ℓ ≥ 2`, `i : ℕ`, `β ∈ (0,1)`,
+with `0 ≤ iota j p ℓ i` for `j ∈ [1:q]`, `AssumptionPhiDpL r ℓ p L`, tolerances `ε₀, …, ε_q ∈ (0,1]`.
+For every ARpLE run there is `k_ε` with `IsFirstHit (fun k => ARpLEStop … (Mdir k) (x k)) k_ε`,
+`funEvalCount k_ε ≤ κ^A ρ₀/ε_min + κ^C` and `derivEvalCount succ k_ε ≤ κ^S ρ₀/ε_min + 2`, where
+`ρ₀ = max_{j ∈ {0} ∪ [1:q]} ‖r(x₀)‖^(1/2^i + ι_j)` (`ι₀ := 0`; book's numerator
+`max[‖r₀‖^{1/2^i}, ‖r₀‖^{1-(ℓ-1)/p}, ‖r₀‖^{1-2(ℓ-1)/(p-1)}, ‖r₀‖^{1-3(ℓ-1)/(p-2)}]`),
+`ε_min = min(ε₀^(1/2^i), min_{j ≤ q} ε_j^((p+1)/(p-j+1)))`, `κ^S = max_{0 ≤ j ≤ q} 1/κ_{rj}`
+(Lemma 5.1.4), `κ^A = κ^S (1 + |log γ₁|/log γ₂)`, `κ^C = (|log γ₁| + log(σmax/σ₀))/log γ₂ + 2`,
+`σmax = max(σ₀, γ₃ L/(1-η₂))` (5.1.60)–(5.1.61). Moreover at `x_ε = x k_ε`: `‖r(x_ε)‖ ≤ ε₀`, or
+`psiOne ≤ ε₁`, (`q ≥ 2`) `psiTwo ≥ -ε₂`, and (`q = 3`) `psiThree(x_ε, d) ≤ ε₃` for all
+`d ∈ Mdir k_ε ∩ zSet r ℓ ε₂ x_ε` with `Mdir k_ε ⊆ zSet` unless the strict-local branch (5.1.11)
+fired (in which case `zSet = ∅`).
+Proof (book): telescoping of `‖r‖^{1/2^i}` over `𝒮_{k-1}` (5.1.46); for successful `j` before
+termination, either `‖r_{j+1}‖ ≤ β‖r_j‖` ((5.1.27), decrease `> κ_{r0} ε₀^{1/2^i}` by (5.1.50))
+or one of (5.1.54)–(5.1.56) holds — nontermination at `x_{j+1}` gives `‖r_{j+1}‖ > ε₀` and
+(OR, not AND as printed in (5.1.51)) `ψ₁ > ε₁`, `ψ₂ < -ε₂`, `ψ₃(·, d) > ε₃` for some `d ∈ M_{j+1}`,
+or (5.1.52) `‖s_j‖^{p-1} > κs2 ‖r_{j+1}‖^{ℓ-1} ε₂` (handled by (4.1.37) as in (5.1.57)); `ι_j ≥ 0`
+and `‖r_j‖ ≤ ‖r₀‖`; then `Optimization.IsARpRun.succ_count` and
+`Optimization.card_successSet_le_add_one_of_forall`/`exists_hit_le_of_counting`.
+'''
+deps = ["lemma_5_1_4", "algorithm_5_1_1", "zSet", "Optimization.IsARpRun.succ_count", "Optimization.IsARpRun.sigma_le", "Optimization.sum_successSet_sub_eq", "Optimization.exists_hit_le_of_counting", "Optimization.funEvalCount"]
+source = "Cartis–Gould–Toint, Theorem 5.1.7 and the remark after its proof"
+
+[[node]]
+id = "theorem_5_1_7"
+kind = "theorem"
+desc = '''
+Theorem 5.1.7 (as stated: `q = 3`). Suppose `i ≥ 0`, `ℓ > 1` satisfy (5.1.42) or (5.1.43) for `p`,
+Φ_ℓ.DpL holds and `β ∈ (0,1)`. Then for all `(ε₀, ε₁, ε₂, ε₃) ∈ (0,1]^4` every ARpLE run (`q = 3`)
+terminates at some `k_ε` with at most
+`κ^A max[‖r₀‖^(1/2^i), ‖r₀‖^(1-(ℓ-1)/p), ‖r₀‖^(1-2(ℓ-1)/(p-1)), ‖r₀‖^(1-3(ℓ-1)/(p-2))] /
+min[ε₀^(1/2^i), ε₁^((p+1)/p), ε₂^((p+1)/(p-1)), ε₃^((p+1)/(p-2))] + κ^C` evaluations of `r`
+(5.1.44) and `κ^S (same ratio) + 2` evaluations of its derivatives (5.1.45), constants as in
+`theorem_5_1_7_of_iota_nonneg` (book: `κ^S_{ARpLE,3}`, `κ^A_{ARpLE,3}`, `κ^C_{ARpLE}`), and the
+termination guarantees listed there. OCR: the exponents printed `2^4`, `2^s`, `2^*` are `2^i`, the
+`ε` in `1 - (ε-1)/p` is `ℓ`, and the multiplier in (5.1.44) is `κ^A` (printed `κ^C`).
+'''
+deps = ["theorem_5_1_7_of_iota_nonneg", "lemma_5_1_6"]
+source = "Cartis–Gould–Toint, Theorem 5.1.7"
+
+[[node]]
+id = "psiOne_ge_of_jacobian"
+kind = "theorem"
+desc = '''
+§5.1.5, (5.1.63)–(5.1.64): for `r` differentiable at `x` with `r x ≠ 0` and `ℓ ≥ 2`,
+`psiOne r ℓ x = ‖(fderiv ℝ r x)† (r x)‖ / ‖r x‖` (independent of `ℓ`), hence `psiOne r ℓ x ≥ s₀`
+whenever `s₀ ‖v‖ ≤ ‖(fderiv ℝ r x)† v‖` for all `v` (smallest singular value of the Jacobian
+bounded away from zero, (5.1.62)).
+'''
+deps = ["psiOne", "Optimization.gradient_residualPow", "Optimization.norm_fderiv_residualPow_ge"]
+source = "Cartis–Gould–Toint, (5.1.62)–(5.1.64)"

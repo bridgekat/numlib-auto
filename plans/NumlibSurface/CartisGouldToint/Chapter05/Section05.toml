@@ -1,0 +1,173 @@
+namespace = "CartisGouldToint.Chapter05"
+desc = '''
+§5.5 Universal regularization: ARp-H (Algorithm 5.5.1) with model `T_p(x_k, s) + σ_k/r! ‖s‖^r`
+(`Optimization.powRegularizedModel`, real `r > p`, generalized factorial
+`Optimization.realFactorial`) for objectives with a Hölder-continuous `p`-th derivative (f.DpH),
+the Hölder exponent `β_p` being unknown to the algorithm. One-iteration estimates come from the
+backbone `Optimization.PowRegularizedModel`; the parameter update reuses `Optimization.ARUpdate`
+with `σmin = 0` and the *modified ratio* `ρ̃_k = if lengthTest k then ρ_k else 0`, which encodes
+Step 4 exactly (so the core lemmas `sigma_le_max_of_arUpdate`, `succ_le_of_arUpdate` apply).
+
+Differences from ARp that the run predicate must reflect: termination is tested at the *trial*
+point `x_k + s_k` (and initially at `x₀`), before the acceptance step; gradients (and Hessians when
+`ε₂ ≠ none`) are evaluated at every trial point; no `σmin`. Termination indices are therefore
+indices of the sequence `t 0 = stop(x₀)`, `t (k+1) = stop(x_k + s_k)`.
+
+Corrections: Step 4, third case, reads "`ρ_k < η₁` and (5.5.10) or (5.5.11) fails"; it must be the
+complement of success: "`ρ_k < η₁`, or (5.5.10) fails, or (5.5.11) fails". In the proof of Lemma
+5.5.4 (b) the last display should read `σ_k < κ_{β,2} ε₂^{(p+β-r)/(p+β-2)}` (printed `ε₁`) and the
+conclusion "(5.5.18) must hold" is (5.5.20) in case (ii). Theorem 5.5.7's counts: `f` and the
+low-order derivatives are evaluated once at `x₀` and once per trial point, so the iteration bound
+from Lemma 2.4.1 needs `+2` in `κ^C`.
+'''
+
+[[node]]
+id = "AssumptionDpH"
+kind = "def"
+desc = '''
+f.DpH: `AssumptionDpH f p H β : Prop := ContDiff ℝ p f ∧ 0 ≤ H ∧ β ∈ Set.Icc 0 1 ∧ (p = 1 → 0 < β) ∧
+IteratedFDerivHolderOn f p H β univ` (5.5.3) (`β = 1` is f.DpL; `β > 1` excluded as in the book).
+'''
+deps = ["IteratedFDerivHolderOn"]
+source = "Cartis–Gould–Toint, Assumption f.DpH, (5.5.3)"
+
+[[node]]
+id = "ARpHParams"
+kind = "def"
+desc = '''
+Constants of Algorithm 5.5.1 for given `p : ℕ`, real `r > p`: `σ₀ > 0`, `0 < η₁ ≤ η₂ < 1`,
+`0 < γ₁ < 1 < γ₂ < γ₃`, `θ₁, θ₂ ∈ (0,1]`, `α₁ ∈ (0, min 1 (realFactorial (r-1)) / 3]`,
+`α₂ ∈ (0, min 1 (realFactorial (r-2)) / 3]` (the latter used only when `ε₂ ≠ none`, then `p ≥ 2`).
+'''
+deps = ["Optimization.realFactorial"]
+source = "Cartis–Gould–Toint, Algorithm 5.5.1 (Step 0)"
+
+[[node]]
+id = "algorithm_5_5_1"
+kind = "def"
+desc = '''
+Algorithm 5.5.1 (ARp-H) as a run predicate `IsARpHRun f p r P ε₁ ε₂ x s σ`
+(`ε₁ ∈ (0,1]`, `ε₂ : Option ℝ` with values in `(0,1]`, `p ≥ 2` if `ε₂ ≠ none`), with
+`stop y := Chapter03.stopTest f ε₁ ε₂ y` (the strict-local-minimizer branch (5.5.8) is subsumed),
+`m_k = Optimization.powRegularizedModel (ftaylorSeries ℝ f (x k)) p (σ k) r`,
+`ρ_k = Optimization.reductionRatio f (x k) (s k) ((ftaylorSeries ℝ f (x k)).taylorDecrement p (s k))`
+(5.5.9), `lengthTest k :↔ α₁ ‖∇f(x_k + s_k)‖ ≤ σ_k ‖s_k‖^(r-1)` (5.5.10) `∧ (ε₂ ≠ none →
+-α₂ hessianMinEig f (x_k + s_k) ≤ σ_k ‖s_k‖^(r-2))` (5.5.11), `succ k :↔ η₁ ≤ ρ_k ∧ lengthTest k`:
+`σ 0 = P.σ₀` and for every `k` with `¬ stop (x 0)` and `∀ j < k, ¬ stop (x j + s j)`:
+(Step 1) `m_k (s k) < m_k 0` (5.5.4), `‖fderiv ℝ m_k (s k)‖ ≤ θ₁ ‖s k‖^(r-1)` (5.5.5), and if
+`ε₂ ≠ none`, `-θ₂ ‖s k‖^(r-2) ≤ minCurvature (iteratedFDeriv ℝ 2 m_k (s k))` (5.5.6); and if
+moreover `¬ stop (x k + s k)` (Step 2 passed): (Step 3) `x (k+1) = if succ k then x k + s k else x k`
+and (Step 4, corrected) `Optimization.ARUpdate η₁ η₂ γ₁ γ₂ γ₃ 0 (if lengthTest k then ρ_k else 0)
+(σ k) (σ (k+1))`.
+Termination sequence (part of node): `ARpHTest 0 = stop (x 0)`, `ARpHTest (k+1) = stop (x k + s k)`;
+output `x 0` if the first hit is `0`, else `x (K-1) + s (K-1)`.
+Existence (part of node): finite-dimensional, `ContDiff ℝ p f`: from every `x₀` a run exists
+(`Optimization.exists_isMinOn_powRegularizedModel`: the current iterate fails `stop`, so a global
+model minimizer decreases the model; `Optimization.exists_run_of_forall_exists`).
+'''
+deps = ["ARpHParams", "AssumptionDpH", "Optimization.powRegularizedModel", "Optimization.reductionRatio", "Optimization.ARUpdate", "CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer", "Optimization.exists_isMinOn_powRegularizedModel", "Optimization.exists_run_of_forall_exists", "minCurvature"]
+source = "Cartis–Gould–Toint, Algorithm 5.5.1"
+
+[[node]]
+id = "lemma_5_5_1"
+kind = "theorem"
+desc = '''
+Lemma 5.5.1. At every iteration `k` of an ARp-H run (before termination):
+`f(x_k) - T_p(x_k, s_k) ≥ σ_k/r! ‖s_k‖^r` (5.5.12) (`realFactorial r`; in fact strict).
+'''
+deps = ["algorithm_5_5_1", "Optimization.taylorDecrement_ge_of_powRegularizedModel_lt"]
+source = "Cartis–Gould–Toint, Lemma 5.5.1"
+
+[[node]]
+id = "lemma_5_5_2"
+kind = "theorem"
+desc = '''
+Lemma 5.5.2. Under `AssumptionDpH f p H β`, at every iteration `k` before termination:
+(5.5.13) `‖∇f(x_k + s_k)‖ ≤ H/(p+β-1)! ‖s_k‖^(p+β-1) + σ_k/(r-1)! ‖s_k‖^(r-1) + θ₁ ‖s_k‖^(r-1)`;
+(5.5.14) if `ε₂ ≠ none`: `-hessianMinEig f (x_k + s_k) ≤ H/(p+β-2)! ‖s_k‖^(p+β-2) +
+σ_k/(r-2)! ‖s_k‖^(r-2) + θ₂ ‖s_k‖^(r-2)`, where `(p+β-j)! = holderFactorial (p-j) β` and
+`(r-j)! = realFactorial (r-j)`.
+'''
+deps = ["algorithm_5_5_1", "Optimization.norm_fderiv_le_of_powRegularizedModel", "Optimization.minCurvature_ge_of_powRegularizedModel"]
+source = "Cartis–Gould–Toint, Lemma 5.5.2"
+
+[[node]]
+id = "lemma_5_5_3"
+kind = "theorem"
+desc = '''
+Lemma 5.5.3. Assume `r ≥ p + β`, `p + β > 1`, `AssumptionDpH f p H β`, and let
+`κ_β = r! H/((p+β-1)! (1-η₂))` (5.5.19). At an iteration `k` before termination:
+(i) if `ε₂ = none` and `σ_k ≥ max (θ₁ (r-1)!) (κ_β ‖s_k‖^(p+β-r))` (5.5.18) then `ρ_k ≥ η₂` and
+(5.5.10) holds (iteration very successful);
+(ii) if `ε₂ ≠ none` (`p + β ≥ 2`) and `σ_k ≥ max (θ₁ (r-1)!) (max (θ₂ (r-2)!) (κ_β ‖s_k‖^(p+β-r)))`
+(5.5.20) then additionally (5.5.11) holds.
+'''
+deps = ["lemma_5_5_1", "lemma_5_5_2", "Optimization.abs_reductionRatio_sub_one_le_of_holder", "Optimization.le_reductionRatio_of_abs_sub_le"]
+source = "Cartis–Gould–Toint, Lemma 5.5.3"
+
+[[node]]
+id = "lemma_5_5_4"
+kind = "theorem"
+desc = '''
+Lemma 5.5.4. Assume `r ≥ p + β`, `p + β > 1`, f.DpH, and iteration `k` with `¬ stop(x_k + s_k)`
+(not terminated). With `κ_{β,1} = ((r-1)!/3)^((p+β-r)/(p+β-1)) κ_β^((r-1)/(p+β-1))` (5.5.28) and
+`κ_{β,2} = ((r-2)!/3)^((p+β-r)/(p+β-2)) κ_β^((r-2)/(p+β-2))` (5.5.30):
+(i) `ε₂ = none` and `σ_k ≥ max (θ₁ (r-1)!) (κ_{β,1} ε₁^((p+β-r)/(p+β-1)))` (5.5.27) ⇒ (5.5.18), so
+iteration `k` is very successful;
+(ii) `ε₂ = some e` (`p + β > 2`) and `σ_k ≥ max[θ₁ (r-1)!, θ₂ (r-2)!, κ_{β,1} ε₁^((p+β-r)/(p+β-1)),
+κ_{β,2} e^((p+β-r)/(p+β-2))]` (5.5.29) ⇒ (5.5.20), very successful.
+'''
+deps = ["lemma_5_5_3"]
+source = "Cartis–Gould–Toint, Lemma 5.5.4"
+
+[[node]]
+id = "lemma_5_5_5"
+kind = "theorem"
+desc = '''
+Lemma 5.5.5. Assume f.DpH, `r ≥ p + β`, `p + β > 1` (`> 2` if `ε₂ ≠ none`). For every `k` at which
+the run has not terminated (`¬ ARpHTest j` for `j ≤ k`):
+(5.5.39) `ε₂ = none`: `σ_k ≤ max[σ₀, γ₃ θ₁ (r-1)!, γ₃ κ_{β,1} ε₁^((p+β-r)/(p+β-1))]`;
+(5.5.40) `ε₂ = some e`: `σ_k ≤ max[σ₀, γ₃θ₁(r-1)!, γ₃θ₂(r-2)!, γ₃κ_{β,1} ε₁^(…), γ₃κ_{β,2} e^(…)]`;
+(5.5.41) hence (`ε₁, e ∈ (0,1]`) `σ_k ≤ σ_H max[ε₁^((p+β-r)/(p+β-1)), e^((p+β-r)/(p+β-2))]` with
+`σ_H = max[σ₀, γ₃θ₁(r-1)!, γ₃θ₂(r-2)!, γ₃κ_{β,1}, γ₃κ_{β,2}]` (5.5.42); for `ε₂ = none`,
+`σ_k ≤ σ_{H,1} ε₁^((p+β-r)/(p+β-1))`, `σ_{H,1} = max[σ₀, γ₃θ₁(r-1)!, γ₃κ_{β,1}]`.
+'''
+deps = ["lemma_5_5_4", "Optimization.sigma_le_max_of_arUpdate"]
+source = "Cartis–Gould–Toint, Lemma 5.5.5"
+
+[[node]]
+id = "lemma_5_5_6"
+kind = "theorem"
+desc = '''
+Lemma 5.5.6. Assume f.DpH. On every successful iteration `k` before termination (trial point not
+terminating):
+(i) `ε₂ = none`, `r ≥ p + β > 1`: `f(x_k) - f(x_{k+1}) ≥ κ_{H,1} ε₁^((p+β)/(p+β-1))`,
+`κ_{H,1} = η₁/r! (α₁^r/σ_{H,1})^(1/(r-1))`;
+(ii) `ε₂ = some e`, `r ≥ p + β > 2`: `f(x_k) - f(x_{k+1}) ≥ κ_{H,2} min[ε₁^((p+β)/(p+β-1)),
+e^((p+β)/(p+β-2))]` (5.5.44), `κ_{H,2} = η₁/r! min[(α₁^r/σ_H)^(1/(r-1)), (α₂^r/σ_H²)^(1/(r-2))]`
+(5.5.45). (Proof: (5.5.46)–(5.5.51); nontermination at the trial point gives
+`‖∇f(x_k+s_k)‖ > ε₁` or `hessianMinEig f (x_k+s_k) < -e`.)
+'''
+deps = ["lemma_5_5_1", "lemma_5_5_5", "Optimization.sub_le_of_le_reductionRatio"]
+source = "Cartis–Gould–Toint, Lemma 5.5.6"
+
+[[node]]
+id = "theorem_5_5_7"
+kind = "theorem"
+desc = '''
+Theorem 5.5.7. Assume `Chapter02.AssumptionBb f flow`, `AssumptionDpH f p H β`, `r ≥ p + β`,
+`p + β > 1` (`> 2` if `ε₂ ≠ none`). For every ARp-H run there is `K` with
+`IsFirstHit ARpHTest K` (so the output `x_ε` satisfies `‖∇f(x_ε)‖ ≤ ε₁` and, if `ε₂ = some e`,
+`hessianMinEig f x_ε ≥ -e`) such that, with `δ_ε = min[ε₁^((p+β)/(p+β-1)), e^((p+β)/(p+β-2))]`
+(`ε₁^((p+β)/(p+β-1))` alone if `ε₂ = none`, constants of Lemma 5.5.6 (i) then):
+(5.5.52) `K + 1` (evaluations of `f` and of the first/second derivatives) `≤ κ^A (f(x₀) - flow)/δ_ε
++ κ^B₁ |log ε₁| + κ^B₂ |log e| + κ^C`;
+(#D) `|{k < K - 1 | succ k}| + 1` (evaluations of the derivatives of orders up to `p`)
+`≤ κ^S (f(x₀) - flow)/δ_ε + 1`;
+where `κ^S = 1/κ_{H,2}`, `κ^A = κ^S (1 + |log γ₁|/log γ₂)`,
+`κ^B_j = (r - p - β)/((p+β-j) log γ₂)`, `κ^C = (|log γ₁| + log(σ_H/σ₀))/log γ₂ + 2` (book: no `+2`;
+`σ_H` as in (5.5.55) = (5.5.42)). Proof: telescoping over successful iterations (5.5.53)–(5.5.54),
+`Optimization.succ_le_of_arUpdate` with `σmax` from (5.5.41).
+'''
+deps = ["lemma_5_5_6", "lemma_5_5_5", "CartisGouldToint.Chapter02.AssumptionBb", "Optimization.succ_le_of_arUpdate", "Optimization.sum_successSet_sub_eq", "Optimization.IsFirstHit"]
+source = "Cartis–Gould–Toint, Theorem 5.5.7"

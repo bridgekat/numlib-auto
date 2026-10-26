@@ -1,0 +1,21 @@
+namespace = "CartisGouldToint.AppendixB"
+desc = '''
+Appendix to Chapter 5: Lemma B.5.1 (positivity of the residual exponents). It is the set of
+clauses (5.1.38), (5.1.40), (5.1.42) of `Chapter05.lemma_5_1_6`, which is proved directly (pure
+arithmetic), so this node specializes it. The appendix proofs of Lemmas 5.1.3, 5.1.5 and of
+Theorems 5.3.3–5.3.9 belong to those Chapter 5 nodes (and to `Optimization.GapRecurrence`).
+OCR/source: the statement lists `ι₁, ι₂, ι₁` (the third is `ι₃`), and the proof writes `ι₁` for
+`ι₂`, `ι₃` in its second and third parts.
+'''
+
+[[node]]
+id = "lemma_B_5_1"
+kind = "theorem"
+desc = '''
+Lemma B.5.1. With `Chapter05.iota`: `0 < iota 1 p p i` when `p ≥ 1` and `p < 2^i` (book
+`i > log₂ p`); `0 < iota 2 p (p/2) i` when `p` is a positive multiple of 2 and `p - 1 < 2^i`;
+`0 < iota 3 p (p/3) i` when `p` is a positive multiple of 3 and `p - 2 < 2^i`. (Equivalences:
+`ι₁(p,p,i) > 0 ⟺ p < 2^i`, etc.)
+'''
+deps = ["CartisGouldToint.Chapter05.lemma_5_1_6"]
+source = "Cartis–Gould–Toint, Lemma B.5.1"

@@ -1,0 +1,205 @@
+namespace = "Optimization"
+desc = '''
+Scalar recurrences for objective gaps `Γ_k ≥ 0` that decrease only on "successful" indices
+`S : ℕ → Prop` (`Γ (k+1) = Γ k` for `¬ S k`), with power-type guaranteed decreases:
+* implicit (adaptive-regularization-like, Cartis–Gould–Toint (5.3.11)):
+  `c Γ_{k+1}^τ ≤ Γ_k - Γ_{k+1}` for `S k`;
+* explicit (trust-region-like, (5.3.33)): `c Γ_k^τ ≤ Γ_k - Γ_{k+1}` for `S k`;
+with `c > 0`, `τ = ν/μ > 0`. They give the rates and evaluation counts of §5.3 (Lemma 5.3.1,
+Theorems 5.3.2–5.3.9 and their Appendix-B proofs), stated as "after `N` successes, `Γ ≤ ε`"
+(robust to `N ≤ 0`, i.e. to the trivial case `Γ₀ ≤ ε`). Also the doubly-exponential count of
+§5.4 (Lemma 5.4.3). All counts are explicit functions of `(c, τ, Γ₀, ε)`; the scaled gap
+`ω = c^{1/(τ-1)} Γ` of the book is used in proofs only.
+
+Corrections to the book's Appendix B (Chapter 5), all recorded in the plan-ch05 report:
+* (B.5.12) `(1-t)^α ≤ 1 - α t` and `1 - t^α ≥ α (1 - t)` hold only for `α ∈ (0, 1]` (false for
+  `α = 2, t = 1/2`); the proofs of Theorems 5.3.5/5.3.9 use them with `α = (ν-μ)/μ`, which may
+  exceed 1. Correct replacement: `1 - t^α ≥ min 1 α * (1 - t)` (`one_sub_rpow_ge`), or the mean
+  value theorem for `t ↦ t^{-α}` (TR case, constant `α` remains valid).
+* Proof of Theorem 5.3.3: the target of the second phase is `ω ≤ c^{1/α} ε`, not `ω ≤ ε`;
+  constants change by `log(1 + |log c|/|α|)`; ceilings add `+1`/`+2`.
+* (B.5.15): the first term of the minimum is `Γ₀^{-α} (β^{-α} - 1)`, not
+  `(κψ^{ν/μ}/κν)(β^{-α} - 1)`.
+* Proof of Theorem 5.3.5 (dom part): the halving argument is applied to "the first `2m` successful
+  iterations, all with `ψ(x_{k+1}) > ε`", giving `≤ 2M + 2` successes (the printed `κ^E` lacks the
+  factor 2).
+* Proof of Theorem 5.3.9: `κ^E_{TR,gap,3} = μ κψ^{ν/μ}/((ν - μ) κν)` (printed exponent `μ/ν`) and
+  `κ^F = -κ^E Γ₀^{-α}` (printed `κ^B`).
+'''
+
+[[node]]
+id = "one_sub_rpow_ge"
+kind = "theorem"
+desc = '''
+For `t ∈ [0, 1]` and `α > 0`: `1 - t ^ α ≥ min 1 α * (1 - t)`; for `α ∈ (0, 1]` also
+`(1 - t) ^ α ≤ 1 - α t` and `1 - t ^ α ≥ α (1 - t)` (the book's (B.5.12), valid only in this range;
+counterexample for `α = 2`, `t = 1/2`). Also the mean-value form: for `0 < b ≤ a`, `α > 0`,
+`b ^ (-α) - a ^ (-α) ≥ α a ^ (-α - 1) (a - b)`.
+'''
+source = "Cartis–Gould–Toint, (B.5.12) (corrected)"
+
+[[node]]
+id = "IsImplicitGapDecrease"
+kind = "def"
+desc = '''
+`IsImplicitGapDecrease (Γ : ℕ → ℝ) (S : ℕ → Prop) (c τ : ℝ) : Prop := (∀ k, 0 ≤ Γ k) ∧
+(∀ k, ¬ S k → Γ (k+1) = Γ k) ∧ ∀ k, S k → c * Γ (k+1) ^ τ ≤ Γ k - Γ (k+1)` (real power), and the
+explicit variant `IsExplicitGapDecrease` with `c * Γ k ^ τ` (both defined in this node). API: `Γ`
+antitone (for `c ≥ 0`); `Γ (k+1) = Γ 0 - ∑_{j ∈ S, j ≤ k} (Γ j - Γ (j+1))` (`sum_successSet_sub_eq`).
+'''
+deps = ["sum_successSet_sub_eq"]
+source = "Cartis–Gould–Toint, (5.3.11), (5.3.33)"
+
+[[node]]
+id = "IsImplicitGapDecrease.le_div"
+kind = "theorem"
+desc = '''
+(5.3.10) If `IsImplicitGapDecrease Γ S c τ` and `S k` then
+`Γ (k+1) ≤ Γ k / (1 + c * Γ (k+1) ^ (τ - 1))` (with Lean's `0 ^ x = 0` for `x ≠ 0` the inequality
+also holds when `Γ (k+1) = 0`). Explicit variant: `Γ (k+1) ≤ Γ k * (1 - c * Γ k ^ (τ - 1))` (5.3.30).
+'''
+deps = ["IsImplicitGapDecrease"]
+source = "Cartis–Gould–Toint, (5.3.10), (5.3.30)"
+
+[[node]]
+id = "IsImplicitGapDecrease.tendsto_zero"
+kind = "theorem"
+desc = '''
+If `IsImplicitGapDecrease Γ S c τ` (or the explicit variant), `c > 0`, `τ > 0` and `S` is infinite
+(`∀ N, ∃ k ≥ N, S k`), then `Tendsto Γ atTop (𝓝 0)` (summability of the decreases, monotonicity).
+'''
+deps = ["IsImplicitGapDecrease"]
+source = "Cartis–Gould–Toint, Lemma 5.3.1 (convergence of the gaps)"
+
+[[node]]
+id = "IsImplicitGapDecrease.rates"
+kind = "theorem"
+desc = '''
+Upper rate bounds along successful indices (formalizing "converge superlinearly / linearly /
+sublinearly" of Lemma 5.3.1 as *upper* bounds — the recurrences do not exclude faster or finite
+convergence): assume `IsImplicitGapDecrease Γ S c τ`, `c > 0`, `S` infinite.
+(i) `τ < 1`: `∀ η > 0, ∃ K, ∀ k ≥ K, S k → Γ (k+1) ≤ η * Γ k` (superlinear);
+(ii) `τ = 1`: `∀ k, S k → Γ (k+1) ≤ (1 + c)⁻¹ * Γ k` (linear, factor `(1 + κν/κψ)⁻¹`);
+(iii) `τ > 1`, `Γ 0 > 0`: `∀ k, Γ (k+1) ≤ (Γ 0 ^ (-α) + c * κdom * |successSet S k|) ^ (-1/α)`
+with `α = τ - 1`, `κdom = min (Γ 0 ^ (-α) c⁻¹ (2^α - 1)) (min 1 α / 2)` (i.e. `O(|S_k|^{-1/α})`,
+sublinear), cf. (B.5.14) with the corrected constant.
+'''
+deps = ["IsImplicitGapDecrease.le_div", "IsImplicitGapDecrease.tendsto_zero", "one_sub_rpow_ge"]
+source = "Cartis–Gould–Toint, Lemma 5.3.1 (i)–(iii), (B.5.14)"
+
+[[node]]
+id = "implicitGapSeq"
+kind = "def"
+desc = '''
+For `κ > 0`, `τ > 0`, `t₀ ≥ 0`: `implicitGapSeq κ τ t₀ : ℕ → ℝ`, `t 0 = t₀`, `t (n+1)` = the
+unique `t ≥ 0` with `κ t ^ τ + t = t n` ((5.3.12); `g(t) = κ t^τ + t` is a strictly increasing
+continuous bijection of `[0, ∞)`, inverse via `StrictMonoOn.orderIsoOfSurjOn` or IVT). API: `t`
+antitone, positive if `t₀ > 0`, `Tendsto t atTop (𝓝 0)`. And
+`implicitGapHitIndex κ τ t₀ ε : ℕ := Nat.find (∃ n, t n ≤ ε)` for `ε > 0` (the book's
+`Υ_{κ,τ}(t₀, ε)`, (5.3.13)).
+'''
+source = "Cartis–Gould–Toint, (5.3.12)–(5.3.13)"
+
+[[node]]
+id = "IsImplicitGapDecrease.le_implicitGapSeq"
+kind = "theorem"
+desc = '''
+Comparison: if `IsImplicitGapDecrease Γ S c τ`, `c > 0`, `τ > 0`, then for all `k`,
+`Γ (k+1) ≤ implicitGapSeq c τ (Γ 0) |successSet S k|`; hence `Γ k ≤ ε` whenever
+`implicitGapHitIndex c τ (Γ 0) ε ≤ |(range k).filter S|` (monotonicity of `g⁻¹`).
+'''
+deps = ["IsImplicitGapDecrease", "implicitGapSeq"]
+source = "Cartis–Gould–Toint, proof of Theorem 5.3.2"
+
+[[node]]
+id = "IsImplicitGapDecrease.le_of_superlinear_count"
+kind = "theorem"
+desc = '''
+`τ < 1` (two-phase count, proof of Theorem 5.3.3, corrected). Let `α = τ - 1 < 0`,
+`ω₀ = c^{1/α} Γ₀ > 0`, `q = (1 + ω₀^α)⁻¹ ∈ (0, 1)`, `ε > 0`, `ε' = c^{1/α} ε`, and
+`N₁ = ⌈log ω₀ / log (1/q)⌉₊ + 1`, `N₂ = if ε' < 1 then ⌈(log (log (1/ε')) - log (log (1/q))) /
+log (1/τ)⌉₊ else 0`. If `IsImplicitGapDecrease Γ S c τ` then `Γ k ≤ ε` whenever
+`N₁ + N₂ ≤ |(range k).filter S|` (phase 1: `ω_{k+1} ≤ q ω_k`; phase 2: `ω_{k+1} ≤ ω_k^{1/τ}`). Moreover
+`N₁ + N₂ ≤ log (max 1 |log ε|) / log (1/τ) + F` with
+`F = max 0 (log ω₀) / log (1 + ω₀^α) + 2 + (log (1 + |log c| / |α|) + |log (log (1 + ω₀^α))|) / log (1/τ) + 1`.
+'''
+deps = ["IsImplicitGapDecrease.le_div"]
+source = "Cartis–Gould–Toint, proof of Theorem 5.3.3 ((B.5.1)–(B.5.10))"
+
+[[node]]
+id = "IsImplicitGapDecrease.le_of_linear_count"
+kind = "theorem"
+desc = '''
+`τ = 1`: if `IsImplicitGapDecrease Γ S c 1`, `ε > 0`, then `Γ k ≤ ε` whenever
+`(log (Γ 0) - log ε) / log (1 + c) ≤ |(range k).filter S|` (for `Γ 0 > 0`; trivially when
+`Γ 0 ≤ ε`). Explicit variant (`IsExplicitGapDecrease Γ S c 1`, `0 < c < 1`): the same with
+`|log (1 - c)|`; if `c = 1`, `Γ (k+1) = 0` after the first successful `k`, and `c > 1` forces
+`Γ k = 0` at every successful `k` (so `c ≤ 1` as soon as some successful `k` has `Γ k > 0`).
+'''
+deps = ["IsImplicitGapDecrease.le_div"]
+source = "Cartis–Gould–Toint, proofs of Theorems 5.3.4, 5.3.8; Lemma 5.3.6 (i)"
+
+[[node]]
+id = "IsImplicitGapDecrease.le_of_sublinear_count"
+kind = "theorem"
+desc = '''
+`τ > 1`, `α = τ - 1`, `Γ 0 > 0`, `ε > 0`. Implicit: with `κdom` as in
+`IsImplicitGapDecrease.rates` (iii), `Γ k ≤ ε` whenever
+`(ε^(-α) - Γ 0^(-α)) / (c * κdom) ≤ |(range k).filter S|`. Explicit (`IsExplicitGapDecrease`): the
+same with `κdom` replaced by `α` (mean value theorem: `ω_{k+1}^{-α} - ω_k^{-α} ≥ α`), i.e. after
+`(ε^(-α) - Γ 0^(-α)) / (α c)` successes.
+'''
+deps = ["IsImplicitGapDecrease.rates", "one_sub_rpow_ge"]
+source = "Cartis–Gould–Toint, proofs of Theorems 5.3.5, 5.3.9 ((B.5.13)–(B.5.15))"
+
+[[node]]
+id = "IsExplicitGapDecrease.eq_zero_of_lt_one"
+kind = "theorem"
+desc = '''
+Explicit recurrence with `τ < 1` (trust-region case `ν < μ`, Lemma 5.3.6 (ii), Theorem 5.3.7).
+Let `α = τ - 1 < 0`, `Γ□ = c^{-1/α}`. If `IsExplicitGapDecrease Γ S c τ`, `c > 0`, then every
+successful `k` has `Γ k = 0` or `Γ k ≥ Γ□` (else `Γ (k+1) < 0`); in particular `Γ 0 > 0` and some
+successful index imply `Γ 0 ≥ Γ□` (5.3.29). With `ω₀ = Γ 0 / Γ□ ≥ 1`,
+`N = ⌊log ω₀ / |log (1 - ω₀^α)|⌋₊ + 1` (`N = 1` if `ω₀ = 1`): if `S` is infinite, `Γ k = 0`
+whenever `N ≤ |(range k).filter S|` (geometric decrease `ω_{k+1} ≤ (1 - ω₀^α) ω_k` while
+`Γ ≥ Γ□`; once `Γ < Γ□` the next successful index forces `Γ = 0`, and `Γ` is constant in between). (The book's "final value `Γ_{k□} ≥ 1`" means `ω ≥ 1`, i.e. `Γ ≥ Γ□`.)
+'''
+deps = ["IsImplicitGapDecrease.le_div"]
+source = "Cartis–Gould–Toint, Lemma 5.3.6 (ii), proof of Theorem 5.3.7 ((B.5.18))"
+
+[[node]]
+id = "exists_le_of_halving"
+kind = "theorem"
+desc = '''
+Measure counts from gap rates (the halving argument of the proof of Theorem 5.3.5, corrected).
+Let `Γ ≥ 0` with `Γ (k+1) = Γ k` for `¬ S k` satisfy `Γ (k+1) ≤ (A * |successSet S k|) ^ (-1/α)`
+for all `k` (`A > 0`, `α > 0`), and let
+`φ : ℕ → ℝ` with `κν φ k ^ ν ≤ Γ k - Γ (k+1)` for every successful `k` (`κν > 0`, `ν > 0`, `φ ≥ 0`).
+Then for `ε > 0`, among the first `2 ⌊M⌋₊ + 2` successful indices some `k` has `φ k ≤ ε`, where
+`M = A^(-1/(α+1)) κν^(-α/(α+1)) ε^(-ν α/(α+1))` (with `α = (ν-μ)/μ`, `ν α/(α+1) = ν - μ`).
+Applied with `φ k = ψ(x_{k+1})` (AR class) or `φ k = min_{i ≤ k} ψ(x_i)` (TR class).
+'''
+deps = ["successSet"]
+source = "Cartis–Gould–Toint, proof of Theorem 5.3.5 ((B.5.16)–(B.5.17)), Theorem 5.3.9"
+
+[[node]]
+id = "le_card_of_density"
+kind = "theorem"
+desc = '''
+Iterations from successes: if `(k : ℝ) ≤ κR * |successSet S k| + κA` for all `k` (`κR > 0`), then
+for every `N : ℝ` and `k : ℕ` with `κR * N + κA + 1 ≤ k`: `N ≤ |(range k).filter S|`. (Hence "after
+`N` successes" statements become "after `κR N + κA + 1` iterations"; the book's (5.3.15) omits the
+`+1` coming from `x_{k+1}` being produced at iteration `k`.)
+'''
+deps = ["successSet"]
+source = "Cartis–Gould–Toint, (5.3.9), (5.3.15)"
+
+[[node]]
+id = "le_two_pow_two_pow_of_sq"
+kind = "theorem"
+desc = '''
+Doubly-exponential count (Lemma 5.4.3, corrected). Let `u : ℕ → ℝ`, `ζ > 0`, `0 ≤ u (k+1) ≤ u k ^ 2 / ζ`
+for all `k`, and `u 0 ≤ ζ / 2`. Then `u n ≤ ζ * 2 ^ (-(2 ^ n : ℝ))`, hence `u n ≤ ε` (`ε > 0`) for
+every `n ≥ ⌈logb 2 (logb 2 (ζ / ε))⌉₊` when `ε < ζ` (and for all `n` when `ζ / 2 ≤ ε`).
+'''
+source = "Cartis–Gould–Toint, proof of Lemma 5.4.3 ((5.4.15))"

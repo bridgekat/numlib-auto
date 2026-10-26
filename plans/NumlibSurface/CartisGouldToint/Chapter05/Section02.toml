@@ -1,0 +1,29 @@
+namespace = "CartisGouldToint.Chapter05"
+desc = '''
+§5.2 Partially separable problems. No numbered results; the section's one mathematical claim is the
+decomposition (5.2.2) of the Taylor model of a partially separable function, planned here (the
+remark that such models may be used in TR/AR methods "without modification, so that complexity
+bounds are unchanged" is a statement about the algorithms' inputs and needs no node; the structured
+trust regions and element-wise regularizations of the Notes are not formalized).
+'''
+
+[[node]]
+id = "IsPartiallySeparable"
+kind = "def"
+desc = '''
+`IsPartiallySeparable (f : EuclideanSpace ℝ (Fin n) → ℝ) (m : ℕ) (d : Fin m → ℕ)
+(fᵢ : (i : Fin m) → EuclideanSpace ℝ (Fin (d i)) → ℝ)
+(U : (i : Fin m) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin (d i))) : Prop :=
+∀ x, f x = ∑ i, fᵢ i (U i x)` (5.2.1) (the `U_i` are the book's `n_i × n` matrices).
+'''
+source = "Cartis–Gould–Toint, (5.2.1)"
+
+[[node]]
+id = "taylorPolynomial_partiallySeparable"
+kind = "theorem"
+desc = '''
+(5.2.2) If `f = ∑ i, fᵢ i ∘ U i` with every `fᵢ i` `C^p`, then for all `x s`:
+`taylorPolynomial f p x s = ∑ i, taylorPolynomial (fᵢ i) p (U i x) (U i s)`.
+'''
+deps = ["IsPartiallySeparable", "taylorPolynomial_comp_continuousLinearMap", "taylorPolynomial_finset_sum"]
+source = "Cartis–Gould–Toint, (5.2.2)"

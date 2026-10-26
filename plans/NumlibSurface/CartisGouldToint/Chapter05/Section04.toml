@@ -1,0 +1,104 @@
+namespace = "CartisGouldToint.Chapter05"
+desc = '''
+§5.4 Phase complexity under strict local convexity. AR2 (`Chapter03.algorithm_3_3_1`) with the
+stronger model-termination test (5.4.3) converges Q-quadratically once an iterate enters a
+neighbourhood `𝒬_*¹` of a nondegenerate local minimizer `x_*` (Lemmas 5.4.1–5.4.2), giving a
+`log₂ log₂` local count (Lemma 5.4.3) and an additive global bound (Theorem 5.4.4).
+
+Notation: `λ_* = Chapter01.hessianMinEig f x_* > 0`, `L = L_{f,2}` (`Chapter03.AssumptionHL f L`),
+`q_* = λ_*/(4L)`, `𝒬_* = closedBall x_* q_*`, `σmax` of Lemma 3.3.2. Runs use `ε₂ = none`
+(first-order AR2) and the run tolerance `ε₁` (the book's `ε`).
+
+Corrections (Lemma 5.4.2): the step bound (5.4.8) `‖s_k‖ ≤ κ_s ‖∇f(x_k)‖` is proved with
+`(λ_* + σmin/2) ‖s‖² ≤ ⟨s, (∇²f(x_k) + σ_k/2 I) s⟩`, which uses `λ_min[∇²f(x_k)] ≥ λ_*` (only
+`λ_*/2` is available, (5.4.7)) and drops the factor `‖s_k‖` of the regularization Hessian term
+(the model gradient is `g + Hs + σ/2 ‖s‖ s`, (3.3.2)). Correct: `κ_s = 2(1 + θ₁)/λ_*`; the printed
+`κ_s = (1+θ₁)/(λ_* + σmin/2)` fails e.g. for `θ₁ < 1`, `σmin → 0`, `∇²f(x_k) = (λ_*/2) I` and an
+exact model minimizer (then `‖s_k‖ ≈ 2‖g_k‖/λ_*`). Accordingly every factor
+`(λ_* + σmin/2)/(1 + θ₁)` in (5.4.5) becomes `1/κ_s = λ_*/(2(1+θ₁))`. The last term of (5.4.5),
+`λ_*/(4 max(θ₁ - σmin, 0)) · …`, is absent (`+∞`) when `θ₁ ≤ σmin`.
+'''
+
+[[node]]
+id = "lemma_5_4_1"
+kind = "theorem"
+desc = '''
+Lemma 5.4.1. Let `x_*` be a local minimizer of `f`, `AssumptionHL f L`, `λ_* > 0`. Then for all
+`x` with `‖x - x_*‖ ≤ q_* = λ_*/(4L)`: `hessianMinEig f x ≥ λ_*/2` (indeed `≥ 3λ_*/4`).
+(Uses `abs_minCurvature_sub_le` (A.5) and f.HL.)
+'''
+deps = ["CartisGouldToint.Chapter03.AssumptionHL", "CartisGouldToint.Chapter01.hessianMinEig", "abs_minCurvature_sub_le"]
+source = "Cartis–Gould–Toint, Lemma 5.4.1"
+
+[[node]]
+id = "IsAR2StrictRun"
+kind = "def"
+desc = '''
+AR2 with the model-termination test (5.4.3): `IsAR2StrictRun f P ε₁ x s σ :↔
+Chapter03.IsAR2Run f P ε₁ none x s σ ∧ ∀ k, (∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε₁) →
+‖fderiv ℝ m_k (s k)‖ ≤ P.θ₁ * ‖gradient f (x k)‖` (with (3.3.5) this is
+`‖∇m_k(s_k)‖ ≤ θ₁ min(‖∇f(x_k)‖, ½‖s_k‖²)`). Existence (part of node): an exact global model
+minimizer satisfies (5.4.3), so runs exist for `C²` `f` (as for `Chapter03.algorithm_3_3_1`).
+'''
+deps = ["CartisGouldToint.Chapter03.algorithm_3_3_1"]
+source = "Cartis–Gould–Toint, (5.4.3)"
+
+[[node]]
+id = "zetaStar"
+kind = "def"
+desc = '''
+`zetaStar L θ₁ σmin σmax η₂ λ_* : ℝ` — the radius (5.4.5), corrected: with `K = λ_*/(2(1+θ₁))`,
+`zetaStar = min [2/(L + θ₁ + σmax) K², λ_*/(4L) K, λ_*²/(16 L), 3(1-η₂)λ_*/(4L) K]`, further
+`min`-ed with `λ_*/(4(θ₁ - σmin)) K` when `σmin < θ₁`. (Book: `K = (λ_* + σmin/2)/(1+θ₁)`.) Also
+`𝒬_*¹ = {x | ‖x - x_*‖ ≤ q_* ∧ ‖gradient f x‖ ≤ zetaStar …}` (5.4.6).
+'''
+source = "Cartis–Gould–Toint, (5.4.5)–(5.4.6)"
+
+[[node]]
+id = "lemma_5_4_2"
+kind = "theorem"
+desc = '''
+Lemma 5.4.2. Assume `AssumptionHL f L`, `x_*` a local minimizer with `λ_* > 0`, and an
+`IsAR2StrictRun` with constants `P` (`σmin, θ₁, η₂`), `ζ_* = zetaStar …`.
+(i) If `k` is before termination, `‖x_k - x_*‖ ≤ q_*` and `k` is successful, then
+`‖∇f(x_{k+1})‖ ≤ ‖∇f(x_k)‖²/ζ_*` (5.4.4) (via (5.4.8) with the corrected `κ_s = 2(1+θ₁)/λ_*` and
+Lemma 3.3.3).
+(ii) If `x_{k₀} ∈ 𝒬_*¹` then for every `k ≥ k₀` before termination: `x_k ∈ 𝒬_*¹`, iteration `k` is
+(very) successful (`ρ_k ≥ η₂`, from (5.4.9)–(5.4.12)), and (5.4.4) holds.
+'''
+deps = ["lemma_5_4_1", "IsAR2StrictRun", "zetaStar", "CartisGouldToint.Chapter03.lemma_3_3_2", "CartisGouldToint.Chapter03.lemma_3_3_3", "abs_sub_taylorPolynomial_le_of_lipschitz", "Optimization.le_reductionRatio_of_abs_sub_le"]
+source = "Cartis–Gould–Toint, Lemma 5.4.2"
+
+[[node]]
+id = "lemma_5_4_3"
+kind = "theorem"
+desc = '''
+Lemma 5.4.3 (corrected count). Same hypotheses; if `‖x_{k₀} - x_*‖ ≤ q_*` and
+`‖∇f(x_{k₀})‖ ≤ ζ ≤ ζ_*/2` (5.4.13), then the run terminates (`‖∇f(x_j)‖ ≤ ε₁`) at some
+`j ≤ k₀ + N`, all iterations `k₀ ≤ k < j` being successful, with
+`N = if ε₁ < ζ_* then ⌈logb 2 (logb 2 (ζ_*/ε₁))⌉₊ else 0`. (Printed: `log₂(log₂(ζ/ε))`, which is
+too small by one in the worst case `‖∇f(x_{k₀})‖ = ζ = ζ_*/2`, `‖∇f(x_{k+1})‖ = ‖∇f(x_k)‖²/ζ_*`,
+`ε₁ = ζ 2^{-2^m}`: the gradient first drops below `ε₁` after `m + 1` steps; also a ceiling is
+needed and the expression is undefined for `ε₁ ≥ ζ`.)
+'''
+deps = ["lemma_5_4_2", "Optimization.le_two_pow_two_pow_of_sq"]
+source = "Cartis–Gould–Toint, Lemma 5.4.3"
+
+[[node]]
+id = "theorem_5_4_4"
+kind = "theorem"
+desc = '''
+Theorem 5.4.4. Assume `Chapter02.AssumptionBb f flow`, `AssumptionHL f L`, `x_*` a local minimizer
+with `λ_* > 0`, an `IsAR2StrictRun` with tolerance `ε₁ ∈ (0,1]`, and `0 < ζ ≤ ζ_*/2`.
+(i) The number of successful `k` before termination with `‖∇f(x_k)‖ > ζ` is at most
+`κ^S_{AR2} (f(x₀) - flow)/ζ^(3/2) + 1` (5.4.16) (`κ^S_{AR2}` of Lemma 3.3.4, whose counting
+argument (decrease `≥ η₁σmin/6 (2ζ/(L+θ₁+σmax))^{3/2}` at successful `k` with
+`‖∇f(x_{k+1})‖ > ζ`) is reused with the tolerance `ζ` in place of `ε₁`; the `+1` accounts for
+the shift from `x_{k+1}` to `x_k`).
+(ii) If no iterate before termination has `‖x_k - x_*‖ > q_*` and `ε₁ < ‖∇f(x_k)‖ ≤ ζ` (5.4.18),
+the total number of successful iterations before termination is at most
+`κ^S_{AR2} (f(x₀) - flow)/ζ^(3/2) + N + 1` with `N` of Lemma 5.4.3 (book (5.4.17), with the
+corrected local count).
+'''
+deps = ["lemma_5_4_3", "CartisGouldToint.Chapter02.AssumptionBb", "CartisGouldToint.Chapter03.lemma_3_3_3", "CartisGouldToint.Chapter03.lemma_3_3_4", "Optimization.card_mul_le_of_decrease"]
+source = "Cartis–Gould–Toint, Theorem 5.4.4"
