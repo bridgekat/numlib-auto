@@ -1,37 +1,37 @@
 desc = '''
-Taylor remainder bounds for vector-valued maps `c : E → F` (Cartis–Gould–Toint use them for the
-constraint/inner functions of Chapters 7 and 14: "Corollary A.8.4 applied to `c`"). The core
-`MultivariateTaylor/Remainder` is stated for real-valued `f`; the vector versions follow by duality
-(`‖v‖ = sup_{‖ℓ‖ ≤ 1} ℓ v`, `exists_dual_vector`, and `ℓ ∘ c` has the same Lipschitz constant for
-its derivatives because `iteratedFDeriv ℝ j (ℓ ∘ c) = ℓ.compContinuousMultilinearMap (iteratedFDeriv
-ℝ j c)`), so no second remainder proof is needed. Also the conversion of componentwise constants
-(book c.D1pL: each `c_i` has `L_{c,j}`) into a constant for `c : E → EuclideanSpace ℝ (Fin m)`,
-which produces the book's `√m`.
+Vector-valued remainder bounds for maps `c : E → F` (Cartis–Gould–Toint apply "Corollary A.8.4 to
+`c`" for the constraint and inner functions of Chapters 7 and 14). The core
+`MultivariateTaylor/Remainder` is already `F`-valued:
+- (A.19) is `norm_sub_taylorPolynomial_le_of_lipschitz`;
+- (A.20) is `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`.
+Both use `taylorPolynomial c p x = (ftaylorSeries ℝ c x).taylorSum p`, and `taylorSum` is defined
+for `FormalMultilinearSeries ℝ E F`. So this module only adds the conversion of componentwise
+constants (book c.D1pL: each `c_i` has its own `L_{c,j}`) into a constant for
+`c : E → EuclideanSpace ℝ (Fin m)`, which is where the book's `√m` comes from.
 
-Requires the core `FormalMultilinearSeries.taylorSum` / `IteratedFDerivHolderOn` to be generalized to
-an `F`-valued codomain (see `Optimization/Composite/TaylorModel`).
+The two `…_vec` nodes are **transitional** aliases of the core theorems. They are still named by
+`Optimization/Composite/{TaylorModel,RegularizedModel}`, which another reviewer owns. Delete them
+once those dependencies point at the core ids.
 '''
 
 [[node]]
 id = "norm_sub_taylorSum_le_of_lipschitz_vec"
 kind = "theorem"
 desc = '''
-(A.19) for `c : E → F`: if `c` is `C^p` on an open `D ⊇ C`, `C` convex,
-`IteratedFDerivLipschitzOn c p L C`, and `x, x + s ∈ C`, then
-`‖c (x + s) - (ftaylorSeries ℝ c x).taylorSum p s‖ ≤ L / (p + 1)! * ‖s‖ ^ (p + 1)`.
+**Transitional.** This is the core (A.19) `norm_sub_taylorPolynomial_le_of_lipschitz` for
+`c : E → F`. Do not prove it separately: delete it once its dependents are repointed.
 '''
-deps = ["abs_sub_taylorPolynomial_le_of_lipschitz"]
+deps = ["norm_sub_taylorPolynomial_le_of_lipschitz"]
 source = "Cartis–Gould–Toint, Corollary A.8.4 (A.19), vector-valued use in (B.14.3)"
 
 [[node]]
 id = "norm_iteratedFDeriv_sub_taylorSum_le_of_lipschitz_vec"
 kind = "theorem"
 desc = '''
-(A.20) for `c : E → F`: under the hypotheses above, for `1 ≤ j ≤ p` (and also `j = 0`, which is
-the previous node), `‖iteratedFDeriv ℝ j c (x + s) - iteratedFDeriv ℝ j
-((ftaylorSeries ℝ c x).taylorSum p) s‖ ≤ L / (p - j + 1)! * ‖s‖ ^ (p - j + 1)`.
+**Transitional.** This is the core (A.20) `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz`
+for `c : E → F`. Do not prove it separately: delete it once its dependents are repointed.
 '''
-deps = ["norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz", "norm_sub_taylorSum_le_of_lipschitz_vec"]
+deps = ["norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz"]
 source = "Cartis–Gould–Toint, Corollary A.8.4 (A.20), vector-valued use in (B.14.4)"
 
 [[node]]

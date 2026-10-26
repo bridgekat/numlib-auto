@@ -11,8 +11,9 @@ The complexity proof is the first-order case of Theorem 5.1.7 with Lemma 6.2.4 i
 4.1.4: decrease of the potential `‖r(x_k)‖^{1/2^i}` (`Optimization.rpow_inv_two_pow_sub_ge_min`)
 fed to `Optimization.IsARRun.exists_isFirstHit_of_decrease`. `ℓ` is a natural number `≥ 2`
 (conditions (5.1.38)/(5.1.39) produce naturals; the smoothness of `Φ_ℓ` is part of the assumption
-Φℓ.DpL.C, as in the book). Consolidation: `PhiEll` duplicates the Chapter 5 definition of `Φ_ℓ`;
-alias it to the Chapter 5 node when merged.
+Φℓ.DpL.C, as in the book). `PhiEll` is an abbreviation of the backbone `Optimization.residualPow`,
+like Chapter 5's `Phi` (same object), and `AssumptionPhiDpLC` is implied by Chapter 5's
+`AssumptionPhiDpL` when `C = univ`.
 
 Source issues: Theorem 6.3.1 reads "(5.1.38) for (5.1.39)" (meant: "or"); the exponents printed
 `2^*` (and `2^4` in (5.1.44)) are `2^i`. Only `ι₁(p,ℓ,i) ≥ 0` is used, so the theorem is stated
@@ -23,18 +24,25 @@ under that weaker hypothesis.
 id = "PhiEll"
 kind = "def"
 desc = '''
-`PhiEll (r : E → EuclideanSpace ℝ (Fin m)) (ℓ : ℕ) (x : E) : ℝ := ‖r x‖ ^ ℓ / ℓ` (5.1.3) (same as
-Chapter 5's `Φ_ℓ`).
+`PhiEll (r : E → EuclideanSpace ℝ (Fin m)) (ℓ : ℕ) : E → ℝ := Optimization.residualPow r ℓ`
+(an abbreviation, `ℓ` cast to `ℝ`), i.e. `Φ_ℓ(x) = ‖r x‖ ^ ℓ / ℓ` (5.1.3). It is the same object as
+Chapter 5's `CartisGouldToint.Chapter05.Phi r ℓ`, which is also an abbreviation of
+`Optimization.residualPow`; `PhiEll r ℓ = Chapter05.Phi r ℓ` holds by `rfl` on
+`E = EuclideanSpace ℝ (Fin n)` (part of node). The natural-power form `‖r x‖ ^ ℓ / ℓ` is the
+`residualPow` simp lemma for natural exponents.
 '''
+deps = ["Optimization.residualPow", "CartisGouldToint.Chapter05.Phi"]
 source = "Cartis–Gould–Toint, (5.1.3)"
 
 [[node]]
 id = "AssumptionPhiDpLC"
 kind = "def"
 desc = '''
-Φℓ.DpL.C: `AssumptionPhiDpLC r ℓ C p L : Prop := AssumptionDpLC (PhiEll r ℓ) C p L`.
+Φℓ.DpL.C: `AssumptionPhiDpLC r ℓ C p L : Prop := AssumptionDpLC (PhiEll r ℓ) C p L`. Bridge
+(part of node): with `C = univ`, it is implied by Chapter 5's Φℓ.DpL,
+`CartisGouldToint.Chapter05.AssumptionPhiDpL r ℓ p L` (same function by `PhiEll` = `Chapter05.Phi`).
 '''
-deps = ["PhiEll", "AssumptionDpLC"]
+deps = ["PhiEll", "AssumptionDpLC", "CartisGouldToint.Chapter05.AssumptionPhiDpL"]
 source = "Cartis–Gould–Toint, assumption Φℓ.DpL.C (Section 6.3)"
 
 [[node]]

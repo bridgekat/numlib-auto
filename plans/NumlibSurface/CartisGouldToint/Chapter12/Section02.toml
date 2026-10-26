@@ -207,11 +207,12 @@ desc = '''
 Lemma 12.2.7 (as printed, operator norms). Under `AssumptionD1pL f p L`, the model
 `m_k = regularizedModel (ftaylorSeries ℝ f (x_k)) p σ_k` is `ContDiff ℝ p`, `∇^p m_k` is
 `σ_k`-Lipschitz, and `‖iteratedFDeriv ℝ ℓ m_k s‖ ≤ 3 L_f + σ_k` for `‖s‖ ≤ 1`, `ℓ ∈ [2:p]` (12.2.38).
-The operator-norm claims about `‖·‖^{p+1}` need `norm_iteratedFDeriv_norm_pow_le` (Banach's
-symmetric-tensor norm theorem; high risk). All later results use only the diagonal form
-`Optimization.abs_iteratedFDeriv_regularizedModel_apply_le`, which is risk-free modulo Lemma B.4.1.
+The operator-norm claims about `‖·‖^{p+1}` are `norm_iteratedFDeriv_norm_pow_le` (sharp operator
+norm, no Banach theorem needed), `iteratedFDerivLipschitzOn_norm_pow` (`∇^p ‖s‖^{p+1}` is
+`(p+1)!`-Lipschitz) and `contDiff_norm_pow`. Later results use the diagonal form
+`Optimization.abs_iteratedFDeriv_regularizedModel_apply_le`.
 '''
-deps = ["AssumptionD1pL", "Optimization.abs_iteratedFDeriv_regularizedModel_apply_le", "norm_iteratedFDeriv_norm_pow_le", "iteratedFDerivLipschitzOn_of_norm_le"]
+deps = ["AssumptionD1pL", "Optimization.abs_iteratedFDeriv_regularizedModel_apply_le", "norm_iteratedFDeriv_norm_pow_le", "iteratedFDerivLipschitzOn_norm_pow", "contDiff_norm_pow", "iteratedFDerivLipschitzOn_of_norm_le"]
 source = "Cartis–Gould–Toint, Lemma 12.2.7"
 
 [[node]]
@@ -426,12 +427,12 @@ on `p, q`) such that for every `ε ∈ (0, 1/2]` (all `ε_j = ε`) and ARqp cons
 `AssumptionBb f flow`, `AssumptionD1pL f p (fun _ => L)`, and an `IsARqpGlobalStepRun` from
 `x₀ = 0` with `σ_k = σ₀`, `ρ_k = 1`, whose first stop is at `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉₊`, where
 `phiMeasure f j 1 (x k_ε) ≤ ε/j!` (and `> ε/q!` at order `q` before). Data:
-`Optimization.exists_slowARqp_interpolant`; witnesses: maximizer `d = 1` at order `q` before `k_ε`, a
+`Optimization.exists_slowTaylorOrder_interpolant` with scale `c = 1`; witnesses: maximizer `d = 1` at order `q` before `k_ε`, a
 witness with `ΔT = ς φ` at `k_ε`. Note: for `q ≥ 3` the hypothesis of the printed theorem fails
 for this very example (`theorem_12_2_15_counterexample`), so only the global-step formulation is
 meaningful there; for `q ≤ 2` see `corollary_12_2_16`.
 '''
-deps = ["IsARqpGlobalStepRun", "AssumptionD1pL", "Optimization.exists_slowARqp_interpolant", "Optimization.isMinOn_neg_monomial_add_regularization", "Optimization.exists_isApproxMeasureStep", "CartisGouldToint.Chapter02.AssumptionBb", "phiMeasure", "Optimization.IsFirstHit"]
+deps = ["IsARqpGlobalStepRun", "AssumptionD1pL", "Optimization.exists_slowTaylorOrder_interpolant", "Optimization.isMinOn_neg_monomial_add_regularization", "Optimization.exists_isApproxMeasureStep", "CartisGouldToint.Chapter02.AssumptionBb", "phiMeasure", "Optimization.IsFirstHit"]
 source = "Cartis–Gould–Toint, Theorem 12.2.15"
 
 [[node]]
