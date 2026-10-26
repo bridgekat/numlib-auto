@@ -1,5 +1,4 @@
 namespace = "EvaluationComplexity"
-desc = """General nonnegative quadratic recurrences and safe local iteration counts. If g(n+1)<=c*g(n)^2 and g0<=zeta with c*zeta<=1/2, then g n<=zeta*2^{-(2^n-1)}. Use N=ceil(logb2(1+max(0,logb2(zeta/epsilon)))) for epsilon>0, with N=0 when epsilon>=zeta. Include strict target via epsilon/2 for the full global theorem. The missing +1 inside the inner exponent/logarithm corrects the zero and negative counts in the source."""
 
 [[node]]
 id = "quadratic_recurrence_bound"

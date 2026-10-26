@@ -272,10 +272,6 @@ id = "arqpidaPassingCheckCounterexample"
 
 [[node]]
 id = "lemma_13_1_18_corrected"
-kind = "theorem"
-desc = "Full all-trial corrected model floor under explicit actual candidate nonoptimality at solved radii; actual guarded tensor requests, corrected max(kappa_s,kappa_h) parameter cap and safe common radius coefficient. Both source rates retained; accepted true function drop >=eta1/2 times this floor (indeed eta1 for IDA). Original wrong payload preserved."
 
 [[node]]
 id = "lemma_13_1_18_before_certificate"
-kind = "theorem"
-desc = "Accepted-trial next-true-certificate-failure corollary, joint model/function floors with genuine corrected cap and both source rates. No arbitrary actual parameter cap or tensor bound is assumed."

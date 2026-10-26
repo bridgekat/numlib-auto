@@ -1,17 +1,10 @@
 namespace = "InexactRegularization.Explicit"
-desc = "Corrected EDA model and true function decrease bounds. Every literal trial has an unconditional current-check bound with epsilon_min^(q+1). The sharper two source rates require theta<zeta/2 and next literal nonstopping; actual approximate function errors leave eta1/2 of computed decrease. Both alternatives state changed rates/guards explicitly and derive analytic caps from operational data."
 
 [[node]]
 id = "Run.computed_decrement_uniform_effective_margin"
-kind = "theorem"
-desc = "With theta<zeta/2, C^p and pth derivative L-Lipschitz, actual parameter/tensor caps, accepted trial and next nonstopping, prove computed Taylor decrement >= (2*commonDecreaseCoefficient/eta1)*accuracyFactor for both q branches."
 
 [[node]]
 id = "Run.model_function_decrease_effective_margin"
-kind = "theorem"
-desc = "Joint computed model and true objective bounds from the effective-margin companion; true drop >= eta1/2 times corrected model coefficient."
 
 [[node]]
 id = "Run.model_function_decrease_current"
-kind = "theorem"
-desc = "For every actual trial, without theta/zeta margin or candidate nonoptimality, derive computed decrement >= currentReferenceCoefficient*epsilon_min^(q+1), and if accepted true decrease >=eta1/2 times the same floor. Uniform actual caps are derived from global D0pL conditions."

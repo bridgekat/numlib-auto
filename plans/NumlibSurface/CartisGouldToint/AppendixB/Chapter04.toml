@@ -1,14 +1,10 @@
 namespace = "CartisGouldToint"
 
-desc = '''
-Appendix B, Chapter 4: radial norm-power differentiation. Reuse Mathlib norm/rpow derivative machinery and continuous symmetric multilinear forms. The numbered lemma bundles valid and false claims. Preserve the source claim and mark it wrong until repaired; downstream uses should depend on separately proved valid radial contractions or correct dimension-independent bounds, never the false (B.4.3) equality.
-'''
-
 [[node]]
 id = "lemma_B_4_1"
 kind = "theorem"
 desc = '''
-Source statement: for p:natural, beta in (0,1], F(s)=norm(s)^(p+beta), and 0<=j<=p, norm(D^j F(s)) = shiftedFactorial p beta/shiftedFactorial (p-j) beta * norm(s)^(p-j+beta), and D^j F(s)[s]^j equals the same coefficient times norm(s)^(p+beta), equations (B.4.1),(B.4.2). For s!=0 it further claims norm(D^(p+1) F(s))=beta*shiftedFactorial p beta*norm(s)^(beta-1), equation (B.4.3), and asserts convexity of d->D^j F(s)[d]^j on the hyperplane orthogonal to s and on span(s) when j is even. Orthogonal convexity is valid throughout j<=p+1 off the origin, since the actual even tangential coefficient is a product of positive factors; unrestricted orders require an explicit range. The corrected companion preserves radial identities and convexity, replacing the norm equalities with true common homogeneous upper bounds.
+Source statement: for p:natural, beta in (0,1], F(s)=norm(s)^(p+beta), and 0<=j<=p, norm(D^j F(s)) = shiftedFactorial p beta/shiftedFactorial (p-j) beta * norm(s)^(p-j+beta), and D^j F(s)[s]^j equals the same coefficient times norm(s)^(p+beta), equations (B.4.1),(B.4.2). For s!=0 it further claims norm(D^(p+1) F(s))=beta*shiftedFactorial p beta*norm(s)^(beta-1), equation (B.4.3), and asserts convexity of d->D^j F(s)[d]^j on the hyperplane orthogonal to s and on span(s) when j is even. The all-j orthogonal convexity also needs auditing at j=p+1 because tangential even derivatives can have negative coefficients. Prove valid clauses separately before replacing this bundled node with a corrected statement.
 '''
 source = "Cartis, Gould, Toint, Evaluation Complexity of Algorithms for Nonconvex Optimization, Lemma B.4.1, equations (B.4.1)--(B.4.3)"
 deps = ["shiftedFactorial"]

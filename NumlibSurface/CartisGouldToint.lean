@@ -3,6 +3,7 @@ import NumlibSurface.CartisGouldToint.AppendixA.Section09
 import NumlibSurface.CartisGouldToint.AppendixA.Section10
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter02
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter03
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter04
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter05
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter07
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter08
@@ -44,6 +45,7 @@ import NumlibSurface.CartisGouldToint.Chapter13.Section03
 import NumlibSurface.CartisGouldToint.Chapter14.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
+
 /-!
 # Cartis–Gould–Toint, *Evaluation Complexity of Algorithms for Nonconvex Optimization*
 
@@ -80,7 +82,7 @@ recorded on the relevant plan nodes. In particular:
 * The converse of Theorem 1.1.2 is false for arbitrary closed convex sets when
   critical directions are restricted to actual feasible displacements. Its
   necessary conditions and a corrected tangent-cone sufficiency statement are
-  planned separately.
+  proved separately.
 * Strict second-order sufficiency in (1.1.15) and (1.1.18) requires nonzero
   directions. Bounds in Theorem 2.2.2 need to account for small initial steps and
   the first function trial.
@@ -98,6 +100,8 @@ recorded on the relevant plan nodes. In particular:
   and Lemma 6.2.2 uses an incorrect factorial coefficient. Corrected bounds are
   proved separately. The independent third-order tolerances in Theorem 6.2.3
   can yield an empty output target even for a bounded-below smooth quartic.
+  Its repaired algorithm constructs actual executions with attainable Taylor
+  criticalities at adaptive radii under explicit stronger global regularity.
 * The second-order accuracy powers in Lemmas 5.5.4–5 and their subsequent use
   require `p+β>2`; their printed denominator vanishes at `p=2, β=0`.
 * The residual-only uniform bound in Lemma B.2.1 fails for constant polynomials
@@ -131,7 +135,7 @@ recorded on the relevant plan nodes. In particular:
   The printed Euclidean projection permits an actual two-dimensional run whose
   shifts square and fail to converge, however close the initial shift is to
   the target. The printed statement is marked incorrect; its metric-projection
-  companion remains a separate target.
+  companion proves convergence and eventual two-sided order.
 * The final similarity equality in (B.10.4) need only be an inequality.
   Similarity does not preserve the ordinary operator norm. The proved bound
   on the self-adjoint metric operator gives the exact coefficient required
@@ -224,7 +228,8 @@ recorded on the relevant plan nodes. In particular:
 * Lemmas 13.1.16–13.1.18 and 13.3.7 use fixed coefficients that fail on a
   complete sine-objective IDA/EDA execution. Its actual parameter grows beyond
   the printed cap, and an accepted short step violates the stated floors
-  while true criticality still fails. Corrected companions remain separate.
+  while true criticality still fails. Corrected companions use the genuine caps
+  and safe radius coefficients.
 
 * Theorem 7.2.7's literal output guarantee fails on the full two-phase
   boundary run: neither the infeasibility certificate nor any multiplier's

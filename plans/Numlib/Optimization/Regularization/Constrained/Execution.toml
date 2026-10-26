@@ -1,6 +1,4 @@
 namespace = "ConstrainedRegularization"
-desc = "Construct a total actual execution recursively from initial feasible state and fixed legal settings. Each state has feasible point, positive parameter above sigmaMin and legal radii. Choose actual first-failing directions and genuine finite feasible global model solves. Use actual objective ratio, accepted/rejected points/radii and legal piecewise parameter updates. Before the first true target, selected-none and zero-model exits are impossible, deriving strict model improvement. No termination or prefix existence is assumed. Combine with proved uniform complexity to produce an actual finite certified run, initialized per-order evaluations and unit first-order radius."
-
 [[node]]
 id = "State"
 [[node]]

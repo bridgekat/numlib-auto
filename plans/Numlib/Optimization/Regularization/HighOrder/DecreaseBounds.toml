@@ -1,22 +1,13 @@
 namespace = "HighOrderRegularization"
-desc = "Corrected exact regularization model and function decreases. A candidate-failure guard, stronger and more precise than literal nontermination, supplies the two source accuracy rates on all trials, accepted or rejected. The detailed solver and safe common radius coefficient are explicit; constants are fixed before accuracies."
 
 [[node]]
 id = "Run.exists_root_step_lower_candidate"
-kind = "theorem"
-desc = "For an actual detailed Run, C^p objective with every derivative1..p globally L-Lipschitz, L>=1, and k<N, if the true all-order epsilon certificate fails at actual candidate point x_k+s_k with actual solved radii, derive some order rootStepCoefficient(P,L,parameterCap,j)*epsilon_j^rootStepExponent <= norm(s_k), both q<=2 and q>2. No acceptance assumption."
 
 [[node]]
 id = "Run.model_decrease_uniform_candidate"
-kind = "theorem"
-desc = "Under the same actual candidate-failure guard, show [commonDecreaseCoefficient(P,L,parameterCap)/eta1]*accuracyFactor <= actual Taylor decrement. This repairs the all-trial source12.2.13 scope, including rejected trials."
 
 [[node]]
 id = "Run.model_function_decrease_before_certificate"
-kind = "theorem"
-desc = "For an accepted actual trial whose next TargetAt fails, jointly derive the corrected model floor and eta1 times that floor for actual objective drop, using actual point/radius updates."
 
 [[node]]
 id = "Run.function_decrease_ge_model"
-kind = "theorem"
-desc = "The actual true-objective ratio and accepted point update give eta1 times actual Taylor decrement as a true objective decrease, with no analytic assumptions."

@@ -293,10 +293,6 @@ source = "Counterexample to literal Algorithm12.2.2 zero-decrease termination in
 
 [[node]]
 id = "lemma_12_2_13_corrected"
-kind = "theorem"
-desc = "Full corrected all-trial model-decrease bound under explicit failure of the true certificate at the actual candidate x+s and solved radii. Requires detailed solver; genuine parameter cap and safe min radius coefficient. Both original rates retained. If accepted, true objective drop >=eta1 times the same floor. This changes literal nontermination to candidate nonoptimality, and constants are independent of requested accuracies."
 
 [[node]]
 id = "lemma_12_2_13_before_certificate"
-kind = "theorem"
-desc = "Accepted-trial corollary before next true certificate, with both model and actual objective lower bounds and both source rates. It is explicitly narrower than the candidate-based all-trial correction."

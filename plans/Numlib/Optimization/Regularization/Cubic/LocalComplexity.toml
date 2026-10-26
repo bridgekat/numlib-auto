@@ -1,5 +1,4 @@
 namespace = "CubicRegularization"
-desc = """Repaired local phase counts. Reuse LocalConvergence and QuadraticLocal. The initial local count is the safe Nat.ceil budget for g0<=zeta<=localThreshold, and all local iterations are very successful. For the global bound retain actual source no-small-gradient-outside-region condition, use the existing initialized cubic successful decrease budget for the large-gradient phase, and add the positive local budget and one transition trial. All constants fixed before epsilon and runs. Count actual successes and all function/derivative schedules through the operational updates."""
 
 [[node]]
 id = "exists_local_target_count"

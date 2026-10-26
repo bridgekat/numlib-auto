@@ -136,6 +136,7 @@ import NumlibSurface.CartisGouldToint.AppendixA.Section09
 import NumlibSurface.CartisGouldToint.AppendixA.Section10
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter02
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter03
+import NumlibSurface.CartisGouldToint.AppendixB.Chapter04
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter05
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter07
 import NumlibSurface.CartisGouldToint.AppendixB.Chapter08

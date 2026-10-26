@@ -1,6 +1,4 @@
 namespace = "ConstrainedRegularization"
-desc = "Quantitative actual terminal Taylor certificates, including zero model returns. A positive global-gap zero return gives genuine model global minimality at zero. Construct finite feasible model halvings centered at zero with theta=zeta=1; actual model-origin jets transfer their true certificates to f. Uniform sharp model derivative bounds yield radii at least epsilon_j/[8(3L+sigma)]. Inherited actual radii from initial ones have the ordinary solver floor under accepted/rejected updates. The explicit fixed radiusCoefficient P L cap is below both floors. No certificate/radius conclusion is an execution assumption."
-
 [[node]]
 id = "zero_step_optimality_with_radius_floor"
 [[node]]

@@ -1,5 +1,4 @@
 namespace = "CubicRegularization"
-desc = "Full corrected local/global AR2 counts at every positive accuracy. Actual model tests imply monotonicity and endpoint-gradient decreases at any positive threshold. Rejected-point preservation transfers endpoint to current counts with one initialization. A first small-gradient point enters the corrected local region under the stated exclusion, and actual quadratic recurrence bounds its remaining trials. Obtain actual first termination, large/current and total successful counts, total trials and initialized function/first/second derivative schedules. All coefficients are fixed independently of epsilon. A strict final target is ensured by internal epsilon/2 and the corresponding exclusion condition, explicitly documented in the source wrapper."
 
 [[node]]
 id = "TightenedRun.successful_decrease"

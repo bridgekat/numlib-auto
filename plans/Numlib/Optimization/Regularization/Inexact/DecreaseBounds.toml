@@ -1,32 +1,19 @@
 namespace = "InexactRegularization"
-desc = "Corrected IDA regularization model and function decreases. All-trial bounds use explicit true candidate nonoptimality at actual solved radii, guarded relative oracle errors, the genuine corrected parameter cap and the safe common radius coefficient. Successful next-iterate certificate failure is an operational corollary, rather than an assumed step/decrease floor."
 
 [[node]]
 id = "Run.criticality_obstruction_candidate"
-kind = "theorem"
-desc = "Actual short trial, C^p and pth derivative L-Lipschitz, true certificate failure at x+s with solved radii implies weighted obstruction (1-theta)*epsilon*delta^j/j! <= (L+S+3*K*kappa_s)*weightedStepSum. Derived all-degree oracle errors and genuine parameter cap; no acceptance assumption."
 
 [[node]]
 id = "Run.exists_root_step_lower_candidate"
-kind = "theorem"
-desc = "From actual candidate obstruction, actual solver-derived radius floors, actual unit radii at orders1/2 and a safe min coefficient, derive the source low/high fractional step rates for every actual candidate failing true criticality, accepted or rejected."
 
 [[node]]
 id = "Run.model_decrease_uniform_candidate"
-kind = "theorem"
-desc = "Both source accuracy rates bound the actual computed Taylor decrement on every candidate-failing trial by commonDecreaseCoefficient/eta1; coefficients precede epsilon."
 
 [[node]]
 id = "Run.model_function_decrease_before_certificate"
-kind = "theorem"
-desc = "An accepted actual trial whose next true certificate fails obeys both model floor and actual objective floor at least eta1 times the corrected model coefficient."
 
 [[node]]
 id = "Run.step_powers_candidate"
-kind = "theorem"
-desc = "Before converting to real roots, derive the low-order power p-j+1 or high-order power p from the genuine candidate obstruction and solver-derived radius floors. Both branches include large trials."
 
 [[node]]
 id = "Run.function_decrease_ge_computed"
-kind = "theorem"
-desc = "The actual IDA true-objective ratio and accepted point update give eta1 times actual computed Taylor decrement as true decrease, independent of oracle accuracy."
