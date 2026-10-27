@@ -202,6 +202,29 @@ theorem finMin_pos (hb : 0 < b) (hu : ∀ j ∈ Finset.Icc 1 q, 0 < u j) : 0 < f
   · obtain ⟨j, hj, hj'⟩ := Finset.mem_image.1 h
     rw [← hj']; exact hu j hj
 
+/-- A strict upper bound for `finMax`. -/
+theorem finMax_lt (hb : b < c) (hu : ∀ j ∈ Finset.Icc 1 q, u j < c) : finMax b u q < c := by
+  unfold finMax
+  refine (Finset.max'_lt_iff _ _).2 fun y hy => ?_
+  rcases Finset.mem_insert.1 hy with rfl | hy
+  · exact hb
+  · obtain ⟨j, hj, rfl⟩ := Finset.mem_image.1 hy
+    exact hu j hj
+
+/-- `1/min(1, min_j u_j) ≤ 1 + ∑_j 1/u_j` for positive `u_j`. -/
+theorem inv_finMin_one_le (hu : ∀ j ∈ Finset.Icc 1 q, 0 < u j) :
+    (finMin 1 u q)⁻¹ ≤ 1 + ∑ j ∈ Finset.Icc 1 q, (u j)⁻¹ := by
+  have hy := Finset.min'_mem _ (Finset.insert_nonempty (1 : ℝ) ((Finset.Icc 1 q).image u))
+  have hnn : 0 ≤ ∑ j ∈ Finset.Icc 1 q, (u j)⁻¹ :=
+    Finset.sum_nonneg fun j hj => (inv_pos.2 (hu j hj)).le
+  rw [finMin]
+  rcases Finset.mem_insert.1 hy with h | h
+  · rw [h, inv_one]; linarith
+  · obtain ⟨j, hj, hj'⟩ := Finset.mem_image.1 h
+    rw [← hj']
+    have := Finset.single_le_sum (f := fun j => (u j)⁻¹) (fun i hi => (inv_pos.2 (hu i hi)).le) hj
+    linarith
+
 end FinMinMax
 
 /-! ### Assumptions f.D1qL, f.D1pL, f.D1rL -/

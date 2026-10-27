@@ -82,8 +82,8 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   may be cut by any test of (14.3.32)), Phase 2 terminates within an explicit bound without the
   parameter for every `β ≤ θ` (`IsTPqpGCPhase2.complexity_of_strong`; the extra term is
   `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})`, `ρ` the INNER radii, within the book's order for
-  the exponents `j + 1` but not in general for the ARqp-SC row, see Not formalized), and the
-  constructed runs satisfy it
+  the exponents `j + 1`, and for the ARqp-SC exponents exactly when `q = p`,
+  `Chapter14.Section03Genuine`), and the constructed runs satisfy it
   (`exists_isTPqpGCPhase2_isInnerPhaseRunStrong`, `exists_isTPqpGCPhase2_isInnerCertified_unit`,
   `exists_algorithm_14_3_2_complexity_strong`). Under INNER's certificate
   (`IsInnerCertified`) and `β < θ`, every `𝒦_b` iteration decreases the target by a fixed amount
@@ -182,7 +182,14 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   their constants). Read uniformly over all admissible inputs, the cost hypothesis
   (14.3.20)–(14.3.21) cannot be met by any INNER on that problem for `π₁ < 2`
   (`theorem_14_3_9_cost_hypothesis_unsatisfiable`), so the printed theorem is vacuous under that
-  reading. Whether runs of ARqp-SC itself attain the printed order (per-call reading) is open.
+  reading. For every run whose INNER calls are genuine ARqp-SC runs (run as ARqpC-SC with
+  `c = 0`, `h = 0`; `Chapter14.Section03Genuine`) it holds in the printed order for the exponents
+  `j + 1` (`theorem_14_3_9_arqpc`; the ARqpC-SC entry of (14.2.12) for `q ≥ 2` or `X` nonconvex)
+  and for the ARqp-SC exponents `j(p+1)/p` when `q = p` (`theorem_14_3_9_arqp`; unit radii on
+  `ℝⁿ`, `theorem_14_3_9_arqp_unit`). For `q < p` with the ARqp-SC exponents (which include the
+  ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`) the proved bound
+  (`theorem_14_3_9_arqp_corrected`) has an extra term outside the printed order
+  (`exists_tpqpOrderF_lt_arqp`), and whether these runs attain the printed order is open.
   The number of case-(b) iterations is also
   bounded (`IsTPqpGCPhase2.kbCount_le`) when the case-(b) calls end with INNER's certificate for
   the tolerances `β ‖r(x_k, t_k)‖ ε_j` (`IsInnerCertified`: INNER is interrupted only by the
@@ -240,20 +247,22 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   `q = 1`, `p ≥ 2`, `π_1 = (p+1)/p < 2` and the contract fails for calls from points with small
   residual (one evaluation against `½ ‖r‖^{2-π_1} (β ε_1)^{-π_1} → 0`); the additive constants are
   then kept (`exists_algorithm_14_3_1_complexity_arqp_add`, an extra `κ_C k_max` with
-  `k_max = O(|log ε₀|)`, the terms footnote 114 of the book ignores), and the printed contract is
-  refuted (`exists_algorithm_14_3_1_cost_contract_counterexample`). On `X = ℝⁿ` with `q ≤ 2` the
-  INNER runs can instead be Chapter-12 ARqp runs (Algorithm 12.2.3 for Step 2), whose radii stay
-  `1`: these give the unit-radius exponents `(p+1)/(p-j+1)`, again with additive Phase-1 constants
-  (all `π_j < 2` for `q = 1`, `p ≥ 2` and for `q = 2`, `p ≥ 4`).
+  `k_max = O(|log ε₀|)`, the terms footnote 114 of the book ignores; they lie within the order of
+  Theorem 14.3.9, `exists_const_order_arqp` in `Chapter14.Section03Genuine`), and the printed
+  contract is refuted (`exists_algorithm_14_3_1_cost_contract_counterexample`). On `X = ℝⁿ` with
+  `q ≤ 2` the INNER runs can instead be Chapter-12 ARqp runs (Algorithm 12.2.3 for Step 2), whose
+  radii stay `1`: these give the unit-radius exponents `(p+1)/(p-j+1)`, again with additive
+  Phase-1 constants (all `π_j < 2` for `q = 1`, `p ≥ 2` and for `q = 2`, `p ≥ 4`).
 
 ## Not formalized
 
-The asymptotic `O(·)` restatements. For the constructed runs: the multiplicative Phase-1 contract
-when every `π_j < 2` (`q = 1`, and the unit-radius exponents on `ℝⁿ` for `p ≥ 4`; it is false
-there, and the additive form is proved); and the bad-iteration bound in the order of the ARqp-SC
-exponents: INNER's certificate gives `N_b = O(max_j (ε₀ ε_j)^{-j})` for the ARqpC-SC runs
-(`IsTPqpGCPhase2.kbCount_le`, within the order of the exponents `j + 1` but not of `j(p+1)/p` for
-`j < p`, so `exists_algorithm_14_3_2_complexity_arqp` keeps the parameter) and
+The asymptotic `O(·)` restatement of Theorem 14.3.4 (Theorem 14.3.9 with constants chosen before
+`ε` is in `Chapter14.Section03Genuine`). For the constructed runs of this module, the
+bad-iteration bound in the order of the ARqp-SC exponents (proved for every genuine run when
+`q = p` in `Chapter14.Section03Genuine`): INNER's certificate gives
+`N_b = O(max_j (ε₀ ε_j)^{-j})` for the ARqpC-SC runs
+(`IsTPqpGCPhase2.kbCount_le`, within the order of the exponents `j + 1`, and of `j(p+1)/p` only
+when `q = p`, so `exists_algorithm_14_3_2_complexity_arqp` keeps the parameter) and
 `N_b = O(max_j (ε₀ ε_j)^{-1})` for the unit-radius runs on `ℝⁿ`
 (`exists_algorithm_14_3_2_complexity_unit`; with `ε_j = ε₀ = ε` within the order `ε^{1-2π_q}`
 iff `π_q ≥ 3/2`, i.e. `p ≤ 2` for `q = 1` and `p ≤ 5` for `q = 2`). For sequences satisfying only
@@ -3019,8 +3028,9 @@ guaranteed decrease (its last one; these number at most `G (N_a + 1)` in total,
 most `1 + G (N_a + 1) + k_ε` derivative evaluations and `1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε`
 evaluations of `(f, c)`. The extra term `N_b` is
 `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})`, whose order depends on the INNER radii `ρ`: it is
-within the book's order for the ARqpC-SC exponents `j + 1` (`ρ_j ∼ ε₀ ε_j`), but not in general
-for the ARqp-SC row (see Not formalized). -/
+within the book's order for the exponents `j + 1` (`ρ_j ∼ ε₀ ε_j`), and for the ARqp-SC
+exponents exactly when `q = p` (`theorem_14_3_9_arqpc`, `theorem_14_3_9_arqp`,
+`exists_tpqpOrderF_lt_arqp` in `Chapter14.Section03Genuine`). -/
 theorem IsTPqpGCPhase2.complexity_of_strong (h2 : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
     {ρ : ℕ → ℝ} (hin : IsInnerPhaseRunStrong f c X q θ β ε D κdecr κuns κunc π ρ)
     (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax)
@@ -4903,7 +4913,7 @@ theorem IsARqpSCOutputCost.one_le {xS y : ℝⁿ} {δ' : ℕ → ℝ} {nF nD : �
 /-- **ARqp runs on `ℝⁿ` with unit radii terminate, under anchored bounds**: as `unit_core`, with
 `F` satisfying the anchored bounds of the ARqp analysis on a set `S` containing the sublevel set
 `{y | F(y) ≤ F(x^S)}` (with `X₀ = ℝⁿ`) in place of F.D1pL. -/
-private theorem unit_core_anchored {L : ℕ → ℝ} {S : Set ℝⁿ}
+theorem unit_core_anchored {L : ℕ → ℝ} {S : Set ℝⁿ}
     (hF : AnchoredCompositeBounds F (zeroCon n) univ S p L (fun _ => 0)) {flow : ℝ}
     (hb : ∀ y, flow ≤ F y) (P : ARqpCParams) (hθς : P.θ < P.ς) (hq : 1 ≤ q) (hq2 : q ≤ 2)
     (hqp : q ≤ p) (xS : ℝⁿ) (hS : ∀ y, F y ≤ F xS → y ∈ S)
@@ -5906,10 +5916,14 @@ theorem mono (h : IsARqpSCCall F X p q P ε xi e succ) : ∀ i < e, F (xi (i + 1
 end IsARqpSCCall
 
 /-- The data of one INNER call of Phase 2: iterates, length, successful iterations, radii. -/
-private structure CallOut (n : ℕ) where
+structure CallOut (n : ℕ) where
+  /-- The iterates of the call. -/
   xi : ℕ → EuclideanSpace ℝ (Fin n)
+  /-- The number of iterations of the call. -/
   e : ℕ
+  /-- The successful iterations. -/
   succ : ℕ → Prop
+  /-- The returned radii. -/
   δ : ℕ → ℝ
 
 variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {p q : ℕ} {P : ARqpCParams} {ε : ℕ → ℝ}
@@ -6277,7 +6291,7 @@ open Classical in
 `μ(·, t)`, stopped as soon as `‖r(·, t)‖ < θε₀`, ending at a point of `X` with radii in
 `(0, 1]` where the first or the third test of (14.3.32) holds) has the property `Good x t o`,
 there is a Phase-2 run whose `k`-th call has the property `Good x_k t_k`. -/
-private theorem phase2_core_of (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
+theorem phase2_core_of (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
     (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x₁ : ℝⁿ} (hx₁ : x₁ ∈ X)
     (hc₁ : ‖c x₁‖ ≤ θ * ε 0) (Good : ℝⁿ → ℝ → CallOut n → Prop)
     (hgood : ∀ x t, x ∈ X → θ * ε 0 ≤ Constrained.targetResidual f c t x →
