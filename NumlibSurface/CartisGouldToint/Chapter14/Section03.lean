@@ -172,8 +172,18 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   only where INNER's own test holds). With the decrease keyed on INNER's own test
   (`IsInnerPhaseRunStrong`), a case-(b) call either ends at a point passing INNER's test (bounded by
   the margin argument below) or carries a decreasing step, and Phase 2 terminates within an
-  explicit bound without the parameter (`IsTPqpGCPhase2.complexity_of_strong`; for the order of
-  the extra term see Not formalized). The number of case-(b) iterations is also
+  explicit bound without the parameter (`IsTPqpGCPhase2.complexity_of_strong`, the formalized
+  replacement of Theorem 14.3.9). Its extra term `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})` is
+  needed: **Theorem 14.3.9 fails for a nonspecific INNER under the per-call reading** of its
+  INNER hypotheses (`theorem_14_3_9_false`, `Chapter14.Section03BadIter`: for `q = 1` and
+  `π₁ ∈ [4/3, 3/2]`, INNER calls satisfying on the run (14.3.19), (14.3.20)–(14.3.21) and
+  (14.2.11), (14.2.13) with `t`-independent constants, not produced by a regularization algorithm
+  of (14.2.12), and `≍ (ε₀ ε₁)^{-1}` evaluations, more than the printed bounds for every choice of
+  their constants). Read uniformly over all admissible inputs, the cost hypothesis
+  (14.3.20)–(14.3.21) cannot be met by any INNER on that problem for `π₁ < 2`
+  (`theorem_14_3_9_cost_hypothesis_unsatisfiable`), so the printed theorem is vacuous under that
+  reading. Whether runs of ARqp-SC itself attain the printed order (per-call reading) is open.
+  The number of case-(b) iterations is also
   bounded (`IsTPqpGCPhase2.kbCount_le`) when the case-(b) calls end with INNER's certificate for
   the tolerances `β ‖r(x_k, t_k)‖ ε_j` (`IsInnerCertified`: INNER is interrupted only by the
   first test of (14.3.32), as in the constructed runs; `IsTPqpGCPhase2` also admits calls cut by
