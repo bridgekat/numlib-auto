@@ -175,7 +175,15 @@ where one exists:
   ARqp-SC exponents (including the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`)
   the proved bound (`Chapter14.theorem_14_3_9_arqp_corrected`) has an extra term outside the
   printed order (`Chapter14.exists_tpqpOrderF_lt_arqp`), and whether these runs attain the
-  printed order is open.
+  printed order is open. With INNER of trust-region type (genuine TRq-SC runs) it holds with the
+  exponents `π_j = q + 1` of Lemma 12.2.4 (the printed TRq-SC entry `j + 1` of (14.2.12) only for
+  `q = 1`) and a factor `1 + |log(ε₀ ε_min)|` on the evaluations of `(f, c)`, from the restarts of
+  the trust-region radius (`Chapter14.theorem_14_3_9_trq`, `Chapter14.theorem_14_3_9_trq_one`).
+  The factor is needed for `q = 1` (`Chapter14.theorem_14_3_9_trq_log_necessary`), and the
+  TRq-SC row `j + 1` of (14.2.12), which contradicts the book's own Theorem 14.2.4 table, is
+  false as a per-iteration decrease for `q = 2` with `κ_decr` depending only on the algorithm
+  parameters and the f.D1qLaB.X constants, as in (12.2.14)
+  (`Chapter14.lemma_14_2_2_trq_printed_false_uniform`; a single fixed `f` is not formalized).
 * **(14.3.20)–(14.3.21)**: the multiplicative INNER cost contract is false when every `π_j < 2`
   (`q = 1`, `p ≥ 2` with INNER = ARqp-SC;
   `Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`: a call costs at least one
@@ -209,7 +217,9 @@ and on the declarations.
   `q = p`; the open case includes the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex; for
   `q < p` the proved bound has an extra term outside the printed order; the theorem fails for a
   nonspecific INNER under that reading and is vacuous under the literal uniform one for `π₁ < 2`,
-  see above), and Theorem 14.3.9 with INNER of trust-region type.
+  see above), and, for INNER of trust-region type with `q ≥ 2`, whether genuine runs attain the
+  whole-run order with the exponents `j + 1` and whether the factor `1 + |log(ε₀ ε_min)|` is
+  needed (for `q = 1` it is).
 * The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
   the Gertz–Gill criterion (9.4.8) quoted in §9.4.
 * Discussion without numbered results: the variants of §2.2.3, §4.1.3, §7.2.3, the qualitative parts
