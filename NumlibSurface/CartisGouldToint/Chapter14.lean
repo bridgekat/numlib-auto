@@ -5,6 +5,7 @@ import NumlibSurface.CartisGouldToint.Chapter14.Section03
 import NumlibSurface.CartisGouldToint.Chapter14.Section03BadIter
 import NumlibSurface.CartisGouldToint.Chapter14.Section03Anchored
 import NumlibSurface.CartisGouldToint.Chapter14.Section03Genuine
+import NumlibSurface.CartisGouldToint.Chapter14.Section03GenuineSharp
 import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegion
 import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegionSharp
 
@@ -108,10 +109,18 @@ module imports the section modules and adds nothing of its own.
   `theorem_14_3_9_arqp_unit`); for `q < p` with the extra bad-iteration term
   (`theorem_14_3_9_arqp_corrected`, `theorem_14_3_9_arqp_unit_corrected`), which is not within
   the printed order (`exists_tpqpOrderF_lt_arqp`, `exists_tpqpOrderF_lt_arqp_unit`; this covers
-  the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`, left open); every such run
+  the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`); every such run
   satisfies the INNER contract keyed on INNER's own test
   (`IsARqpSCPhase2Calls.isInnerPhaseRunStrong`), and both run classes are non-empty
   (`exists_isTPqpGCARqpSCRun`, `exists_isTPqpGCARqpUnitRun` for `q ≤ 2`)
+* §14.3, `Chapter14.Section03GenuineSharp`: for `q = 1`, `p ≥ 4` and for `q = 2`, `p ≥ 5` the
+  extra term is attained by genuine ARqp-SC runs, and the printed Theorem 14.3.9 with INNER =
+  ARqp-SC (`π_j = j(p+1)/p`; for `q = 1` also the ARqpC-SC entry for convex `X`) is false
+  (`theorem_14_3_9_arqp_counterexample`,
+  `theorem_14_3_9_arqp_printed_false`: a problem satisfying its assumptions and runs of
+  `IsTPqpGCARqpSCRun` with `≥ (ε₀ ε₁)^{-1}/128` evaluations, more than any multiple of the
+  printed order; the steps use the freedom of Step 2.1 of Algorithm 14.1.2 to start with any
+  `μ ∈ (0, 1]`)
 * §14.3, `Chapter14.Section03TrustRegion`: Theorem 14.3.9 for every TPqp-GC run whose INNER calls
   are genuine TRq-SC runs in both phases (`IsTPqpGCTRqSCRun`), under X.CNe, c.D1qLB.X, f.D1qLB.X
   and f.B.Fb, with constants chosen before `ε` (`theorem_14_3_9_trq`), with the exponents
@@ -212,7 +221,10 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   with the ARqp-SC exponents (including the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex,
   `p ≥ 2`) it holds with the extra term `∑_j (ε₀ ε_j)^{-j}` (resp. `∑_j (ε₀ ε_j)^{-1}` with unit
   radii), which exceeds the printed order (`theorem_14_3_9_arqp_corrected`,
-  `exists_tpqpOrderF_lt_arqp`; whether these runs attain the printed order is open). With INNER
+  `exists_tpqpOrderF_lt_arqp`). For `q = 1`, `p ≥ 4` and `q = 2`, `p ≥ 5` genuine ARqp-SC runs
+  attain that term and the printed order fails (`theorem_14_3_9_arqp_counterexample`,
+  `theorem_14_3_9_arqp_printed_false`); for `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p` it
+  is open. With INNER
   of trust-region type (genuine TRq-SC runs, `Chapter14.Section03TrustRegion`) the theorem holds
   with the exponents `π_j = q + 1` that Lemma 12.2.4 gives (the printed `j + 1` for `q = 1`) and
   a factor `1 + |log(ε₀ ε_min)|` on the evaluations of `(f, c)` (every call restarts from the
@@ -255,7 +267,10 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   false), whether (14.2.11) with `j + 1` fails for a single fixed `f` (`q ≥ 3`), and whether the
   factor `1 + |log(ε₀ ε_min)|` is needed for `q ≥ 2` (it is for `q = 1`); TRqIDA-SC and TRqEDA-SC
   as INNER.
-* Whether runs of ARqp-SC with `q < p` attain the printed order of Theorem 14.3.9 (open: the
-  proved bound has an extra term outside that order; under the literal uniform reading of the
-  INNER hypotheses the theorem is vacuous for them when `π₁ < 2`).
+* Whether runs of ARqp-SC attain the printed order of Theorem 14.3.9 for `q = 1 < p ≤ 3`,
+  `q = 2 < p ≤ 4` and `3 ≤ q < p`,
+  and with unit radii on `ℝⁿ` for `q < p` (the proved bounds have an extra term outside that
+  order; for `q = 1`, `p ≥ 4` and `q = 2`, `p ≥ 5` genuine runs on a box exceed the printed
+  order, `theorem_14_3_9_arqp_counterexample`; under the literal uniform reading of the INNER
+  hypotheses the theorem is vacuous for them when `π₁ < 2`).
 -/

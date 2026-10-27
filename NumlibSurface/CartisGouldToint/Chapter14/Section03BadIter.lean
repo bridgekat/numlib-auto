@@ -32,9 +32,12 @@ The corrected statement for INNER of regularization type is `IsTPqpGCPhase2.comp
 INNERs (ARqp-SC run as ARqpC-SC with `c = 0`, `h = 0`), `Chapter14.Section03Genuine` proves
 Theorem 14.3.9 in the printed order for every run with the exponents `j + 1`
 (`theorem_14_3_9_arqpc`; the ARqpC-SC entry of (14.2.12) for `q ≥ 2` or `X` nonconvex) and with
-the ARqp-SC exponents when `q = p` (`theorem_14_3_9_arqp`); the case of this module, `q = 1 < p`
-with `π₁ = (p+1)/p` (the ARqp-SC entry, and the ARqpC-SC entry for convex `X`), is the open range
-there.
+the ARqp-SC exponents when `q = p` (`theorem_14_3_9_arqp`). In the case of this module,
+`q = 1 < p` with `π₁ = (p+1)/p` (the ARqp-SC entry, and the ARqpC-SC entry for convex `X`), genuine
+ARqp-SC runs also exceed the printed order when `p ≥ 4` (and for `q = 2` when `p ≥ 5`;
+`Chapter14.Section03GenuineSharp`,
+`theorem_14_3_9_arqp_counterexample`, with a tilted objective `f(x) = x₁ - x₂/16`); for
+`p ∈ {2, 3}` this is open.
 
 ## Main results
 
@@ -99,22 +102,14 @@ read uniformly over all admissible inputs it is unsatisfiable on this problem fo
 `ε₁ ∼ ε₀^{(a-1)/a}`), which is not formalized. The calls are not runs of ARqp-SC: for `p = 2`
 the model minimizer of `μ(·, t_k)` at `x_k` (Hessian `[[1 + 3u²/2, -1], [-1, 1]]`, gradient
 `(u³/2 + E, -E)`) cuts `x₁` by about `u/3`, and the pure-`x₂` step violates the step-termination
-rule `‖∇m(s)‖ ≤ θ‖s‖^p` (`u³/2` against `u^{3p}`). Whether genuine ARqp-SC runs with `q = 1 < p`
-attain the printed order under the per-call reading is open (for them the proved bound,
-`theorem_14_3_9_arqp_corrected`, has the extra term `(ε₀ ε₁)^{-1}`, outside the printed order,
-`exists_tpqpOrderF_lt_arqp`); under the literal reading the theorem is vacuous for them when
-`π₁ < 2`. What blocks either answer:
-
-* A genuine counterexample needs a geometry where approximate regularized-model minimizers
-  overshoot the target by `∼ ε₀ ε₁` while keeping `‖c‖ ≳ θε₀`; in the geometry here they reduce
-  `‖c‖`, which leads to case (a). Verifying explicit Chapter 12 runs (`algorithm_12_2_2_feasible`:
-  model step conditions, ratio test, `σ` updates) on `μ(·, t_k)` for `∼ m³` calls is also far
-  beyond explicit-data checks.
-* A proof of the book's order needs a sharper INNER contract for the terminal step. The ARqp-SC
-  step properties (decrease `≥ c σ_min ‖s‖^{p+1}` on a successful step, `‖∇μ(x_{k+1})‖ ≲ ‖s‖^p`)
-  together with the failure of (14.3.34) at `x_k` give only `‖s‖ ≳ ε₀ ε₁` and a terminal decrease
-  `≳ (ε₀ ε₁)^{p+1}`, which bounds the bad iterations by `O((ε₀ε₁)^{-(p+1)})`, worse than the
-  target-drop bound `O((ε₀ ε₁)^{-1})`; no argument reaching the book's order was found.
+rule `‖∇m(s)‖ ≤ θ‖s‖^p` (`u³/2` against `u^{3p}`). Genuine ARqp-SC runs with `q = 1 < p` do
+exceed the printed order under the per-call reading when `p ≥ 4`
+(`Chapter14.Section03GenuineSharp`, `theorem_14_3_9_arqp_counterexample`): there the objective is
+tilted (`f(x) = x₁ - x₂/16`) so that at the landing points only a gradient `≲ u³/32` remains and
+the ARqp-SC model criticality (12.2.29) holds, the Taylor models of degree `p ≥ 4` of the quartic
+`μ(·, t_k)` are exact, and each step is an approximate critical point of the model (Algorithm
+14.1.2 started with a small `μ` at Step 2.1). For `p ∈ {2, 3}` this is open; under the literal
+reading the theorem is vacuous for these runs when `π₁ < 2`.
 -/
 
 open Set Metric
@@ -1187,9 +1182,10 @@ through decreases that Lemma 14.2.2 exempts at a step after which INNER's test h
 corrected statement is `IsTPqpGCPhase2.complexity_of_strong` (and the end-to-end
 `exists_algorithm_14_3_2_complexity_strong`): the bound holds with an extra term
 `O(ε₀^{-1} + (ε₀ ε₁)^{-1})`. The INNER calls are not runs of ARqp-SC (see the module doc):
-they are not produced by a regularization algorithm of (14.2.12), and whether runs of
-ARqp-SC itself attain the printed order with `π₁ = (p+1)/p` (per-call reading) is open for
-`q = 1 < p` (for `q = p`, and with the exponents `j + 1`, they do: `theorem_14_3_9_arqp`,
+they are not produced by a regularization algorithm of (14.2.12). Runs of ARqp-SC itself
+exceed the printed order with `π₁ = (p+1)/p` (per-call reading) for `q = 1` and `p ≥ 4`
+(`theorem_14_3_9_arqp_counterexample`, on a different problem); for `p ∈ {2, 3}` this is open (for
+`q = p`, and with the exponents `j + 1`, they attain it: `theorem_14_3_9_arqp`,
 `theorem_14_3_9_arqpc`).
 
 The construction needs `π₁ ≥ 4/3` for the cost bound: a call costs at least one evaluation while

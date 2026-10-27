@@ -75,11 +75,13 @@ Which rows of (14.2.12) are proved in the printed order, for the runs above:
 * ARqpC-SC row, entry `j + 1` (`q ≥ 2`, or `q = 1` with `X` nonconvex): proved for every `q ≤ p`
   (`theorem_14_3_9_arqpc`).
 * ARqpC-SC row, entry `(p+1)/p` (`q = 1`, `h = 0`, `X` convex): this is the ARqp-SC exponent of
-  order `1`; proved for `p = 1` (`π_1 = 2`, `theorem_14_3_9_arqp` and `theorem_14_3_9_arqpc`), open
-  for `p ≥ 2` (the proved bound, `theorem_14_3_9_arqp_corrected`, has the extra term
+  order `1`; proved for `p = 1` (`π_1 = 2`, `theorem_14_3_9_arqp` and `theorem_14_3_9_arqpc`),
+  false for `p ≥ 4` (`theorem_14_3_9_arqp_counterexample`, `Chapter14.Section03GenuineSharp`),
+  open for `p ∈ {2, 3}` (the proved bound, `theorem_14_3_9_arqp_corrected`, has the extra term
   `(ε₀ ε_1)^{-1}`, outside the printed order by `exists_tpqpOrderF_lt_arqp`).
 * ARqp-SC row, "otherwise" `j(p+1)/p` (every `X`): proved for `q = p` (`theorem_14_3_9_arqp`);
-  open for `q < p`.
+  false for `q = 1`, `p ≥ 4` and for `q = 2`, `p ≥ 5` (`theorem_14_3_9_arqp_counterexample`, on
+  a box `X`); open for `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p`.
 * ARqp unit radii on `ℝⁿ`, `(p+1)/(p-j+1)`: proved for `q = p ≤ 2`
   (`theorem_14_3_9_arqp_unit`, where the exponents coincide with `j(p+1)/p`); open for
   `q < p`, `q ≤ 2`.
@@ -88,10 +90,16 @@ For `q < p` the term of order `1`, `(ε₀ ε_1)^{-1}`, exceeds
 `C max[ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}]` for every `C` along `ε_1 = ε₀^a`, `ε_i = 1`
 (`i ≥ 2`), with `max(0, max_i π_i - 2) < a < p - 1` (and the same computation with `ε_j = ε₀^a`
 applies to the term of every order `j ≤ q`). There the corrected statements
-(`theorem_14_3_9_arqp_corrected`, `theorem_14_3_9_arqp_unit_corrected`) are proved; whether
-genuine runs attain the printed order is open: the bound counts case-(b) iterations whose target
-decreases by `2 (t_k - f(x_{k+1})) ≳ ε₀ ε_j ρ_j^{j-1}`, and neither a sharper lower bound on this
-decrease from the ARqp-SC step properties nor a genuine run attaining it was obtained.
+(`theorem_14_3_9_arqp_corrected`, `theorem_14_3_9_arqp_unit_corrected`) are proved. The extra
+term counts case-(b) iterations whose target decreases by `2 (t_k - f(x_{k+1})) ≳ ε₀ ε_j
+ρ_j^{j-1}`; for `q = 1`, `p ≥ 4` and for `q = 2`, `p ≥ 5` genuine runs attain it:
+`Chapter14.Section03GenuineSharp` gives runs of `IsTPqpGCARqpSCRun` with at least
+`(ε₀ ε₁)^{-1}/128` evaluations, more than any multiple of the printed order
+(`theorem_14_3_9_arqp_counterexample`, `theorem_14_3_9_arqp_printed_false`); their steps are
+approximate critical points of the model with a tiny model decrease (Algorithm 14.1.2 started with
+a small `μ` at Step 2.1, as the book allows; `Optimization.IsDetailedStepOutput.of_short_step`). For
+`q = 1 < p ≤ 3`, `q = 2 < p ≤ 4`, `3 ≤ q < p`, and for the unit-radius class with `q < p`, it is
+open whether genuine runs attain the printed order.
 
 ## Deviations from the book
 
@@ -221,6 +229,15 @@ theorem IsARqpSCCallOut.not_stop₁ (h : IsARqpSCCallOut F X p q P ε xi e succ 
       exact happ j hj
     · exact hn h1
     · exact hn h1
+
+/-- **The objective does not increase along an ARqp-SC call** (ARqpC-SC with `c = 0`, `h = 0`,
+`algorithm_14_1_1.zero_antitone`): `F (x_{k,i+1}) ≤ F (x_{k,i})` for `i < e`. -/
+theorem IsARqpSCCallOut.antitone (h : IsARqpSCCallOut F X p q P ε xi e succ δo) :
+    ∀ i < e, F (xi (i + 1)) ≤ F (xi i) := by
+  obtain ⟨x, s, σ, δ, δs, d, dm, kε, hr, hhit, he, hxi, -, -⟩ := h
+  intro i hi
+  rw [hxi i (by omega), hxi (i + 1) (by omega)]
+  exact hr.zero_antitone hhit i (i + 1) (by omega) (by omega)
 
 /-- The anchored bounds of `F` on a set `S` containing its sublevel set at the start of the call
 give the anchored bounds on the sublevel set of the run's objective at its starting point. -/
@@ -577,25 +594,21 @@ theorem IsInnerPhaseRunStrong.mono_radius {ε : ℕ → ℝ} {D : TPqpSeq n} {κ
     (hρ j hj).trans (h.radius_ge k hk1 hk hb ht j hj)⟩
 
 open Classical in
-/-- **Phase 2 of TPqp-GC within an order bound, for every run satisfying the INNER contract keyed
-on INNER's own test** (`IsInnerPhaseRunStrong`, [cartis2022evaluation], Theorem 14.3.9, Phase 2).
-For constants `κ_decr > 0`, `κ_uns, κ_unc ≥ 0`, `κ_ρ > 0`, `π_max`, `B_f > 0`, `A ≥ 0`, `b ≥ 0`
-and `θ ∈ (0, 1)`, `β > 0`, there are constants `C_F`, `C_D` such that for all tolerances `ε` and
-every Phase-2 run satisfying `IsInnerPhaseRunStrong` with these constants, exponents
-`0 ≤ π_l ≤ π_max` and radii `ρ_j = κ_ρ ρ'_j` (`ρ'_j > 0`), under f.B.Fb on `ℱ_{β_F}` (`ε₀ ≤ β_F`,
-`f_up - f_low + 1 ≤ A`), `f`, `c` of class `C^q` near `X` with `‖∇^i f‖ ≤ B_f` on
-`{x ∈ X | ‖c(x)‖ ≤ ε₀}`, and for every `O` with `ε₀^{-1} ≤ O`, `ε₀^{1-π_l} ε_l^{-π_l} ≤ O` and
-`(ε₀ ε_j ρ'_j^{j-1})^{-1} ≤ b O` (the order of the bad outer iterations; `ρ'_j = ε₀ ε_j` for the
-ARqp-SC radius policy, `ρ'_j = 1` for unit radii), Phase 2 terminates at some `k_ε`
-using at most `C_F O` evaluations of `(f, c)` and `C_D O` derivative evaluations
-(`IsTPqpGCPhase2.complexity_of_strong_on`). -/
-theorem IsTPqpGCPhase2.exists_const_order_of_strong (hq : 1 ≤ q)
-    {κdecr κuns κunc κρ πmax Bf A b : ℝ}
-    (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hκunc : 0 ≤ κunc) (hκρ : 0 < κρ) (hBf0 : 0 < Bf)
+/-- **Phase 2 of TPqp-GC within an order bound, with a count constant chosen after the
+tolerances** (as `IsTPqpGCPhase2.exists_const_order_of_strong`, [cartis2022evaluation],
+Lemma 14.3.8 and Theorem 14.3.9, Phase 2, with `κ_unc` allowed to depend on `ε`): there are
+constants `C_F, C_U, C_D ≥ 0` such that for every `κ_unc ≥ 0` and every Phase-2 run satisfying
+`IsInnerPhaseRunStrong` with the constants `κ_decr`, `κ_uns`, `κ_unc`, Phase 2 terminates using at
+most `(C_F + C_U κ_unc) O` evaluations of `(f, c)` and `C_D O` derivative evaluations. The
+trust-region INNER calls restart from the radius `Δ₀`, so their `κ_unc` contains
+`|log(ε₀ ε_min)|`. -/
+theorem IsTPqpGCPhase2.exists_const_order_of_strong_unc (hq : 1 ≤ q)
+    {κdecr κuns κρ πmax Bf A b : ℝ}
+    (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hκρ : 0 < κρ) (hBf0 : 0 < Bf)
     (hA : 0 ≤ A) (hb : 0 ≤ b) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) :
-    ∃ CF CD : ℝ, 0 ≤ CF ∧ 0 ≤ CD ∧
-      ∀ {ε : ℕ → ℝ} {x₁ : ℝⁿ} {D : TPqpSeq n} {π ρ' : ℕ → ℝ} {βF flow fup O : ℝ},
-      IsTPqpGCPhase2 f c X q θ β ε x₁ D →
+    ∃ CF CU CD : ℝ, 0 ≤ CF ∧ 0 ≤ CU ∧ 0 ≤ CD ∧
+      ∀ {ε : ℕ → ℝ} {x₁ : ℝⁿ} {D : TPqpSeq n} {π ρ' : ℕ → ℝ} {βF flow fup O κunc : ℝ},
+      0 ≤ κunc → IsTPqpGCPhase2 f c X q θ β ε x₁ D →
       IsInnerPhaseRunStrong f c X q θ β ε D κdecr κuns κunc π (fun j => κρ * ρ' j) →
       (∀ j ∈ Finset.Icc 1 q, 0 < ρ' j) →
       (∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) →
@@ -604,7 +617,7 @@ theorem IsTPqpGCPhase2.exists_const_order_of_strong (hq : 1 ≤ q)
       (∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf) →
       (ε 0)⁻¹ ≤ O → (∀ l ∈ Finset.Icc 1 q, ε 0 ^ (1 - π l) * ε l ^ (-π l) ≤ O) →
       (∀ j ∈ Finset.Icc 1 q, (ε 0 * ε j * ρ' j ^ (j - 1))⁻¹ ≤ b * O) →
-      ∃ kε, D.IsEnd f c X q θ ε kε ∧ (D.funEvals kε : ℝ) ≤ CF * O ∧
+      ∃ kε, D.IsEnd f c X q θ ε kε ∧ (D.funEvals kε : ℝ) ≤ (CF + CU * κunc) * O ∧
         (D.derivEvals kε : ℝ) ≤ CD * O := by
   obtain ⟨a, ha_def⟩ : ∃ a, a = A / (1 - θ) := ⟨_, rfl⟩
   obtain ⟨g, hg_def⟩ : ∃ g, g = κdecr⁻¹ * (β * θ) ^ (-πmax) * (1 - θ) := ⟨_, rfl⟩
@@ -626,9 +639,10 @@ theorem IsTPqpGCPhase2.exists_const_order_of_strong (hq : 1 ≤ q)
     positivity
   have hagq : 0 ≤ a * g * q := by positivity
   have hgq0 : 0 ≤ g * q := by positivity
-  refine ⟨1 + κuns * (a * g * q + g * q + K) + κunc * K, 1 + a * g * q + g * q + K,
-    by positivity, by positivity,
-    fun {ε x₁ D π ρ' βF flow fup O} h2 hin hρ' hπ hB hεβ hAf hf hc hBf hO0 hOT hOB => ?_⟩
+  refine ⟨1 + κuns * (a * g * q + g * q + K), K, 1 + a * g * q + g * q + K,
+    by positivity, hK0, by positivity,
+    fun {ε x₁ D π ρ' βF flow fup O κunc} hκunc h2 hin hρ' hπ hB hεβ hAf hf hc hBf hO0 hOT hOB =>
+      ?_⟩
   have hε₀ := h2.ε₀_pos
   have hε₀1 : ε 0 ≤ 1 := h2.ε_le_one 0 (by simp)
   have hO1 : 1 ≤ O := ((one_le_inv₀ hε₀).2 hε₀1).trans hO0
@@ -737,6 +751,43 @@ theorem IsTPqpGCPhase2.exists_const_order_of_strong (hq : 1 ≤ q)
       _ ≤ O + (a * g * q + g * q) * O + K * O := by gcongr
       _ = _ := by ring
 
+open Classical in
+/-- **Phase 2 of TPqp-GC within an order bound, for every run satisfying the INNER contract keyed
+on INNER's own test** (`IsInnerPhaseRunStrong`, [cartis2022evaluation], Theorem 14.3.9, Phase 2).
+For constants `κ_decr > 0`, `κ_uns, κ_unc ≥ 0`, `κ_ρ > 0`, `π_max`, `B_f > 0`, `A ≥ 0`, `b ≥ 0`
+and `θ ∈ (0, 1)`, `β > 0`, there are constants `C_F`, `C_D` such that for all tolerances `ε` and
+every Phase-2 run satisfying `IsInnerPhaseRunStrong` with these constants, exponents
+`0 ≤ π_l ≤ π_max` and radii `ρ_j = κ_ρ ρ'_j` (`ρ'_j > 0`), under f.B.Fb on `ℱ_{β_F}` (`ε₀ ≤ β_F`,
+`f_up - f_low + 1 ≤ A`), `f`, `c` of class `C^q` near `X` with `‖∇^i f‖ ≤ B_f` on
+`{x ∈ X | ‖c(x)‖ ≤ ε₀}`, and for every `O` with `ε₀^{-1} ≤ O`, `ε₀^{1-π_l} ε_l^{-π_l} ≤ O` and
+`(ε₀ ε_j ρ'_j^{j-1})^{-1} ≤ b O` (the order of the bad outer iterations; `ρ'_j = ε₀ ε_j` for the
+ARqp-SC radius policy, `ρ'_j = 1` for unit radii), Phase 2 terminates at some `k_ε`
+using at most `C_F O` evaluations of `(f, c)` and `C_D O` derivative evaluations
+(`IsTPqpGCPhase2.complexity_of_strong_on`). -/
+theorem IsTPqpGCPhase2.exists_const_order_of_strong (hq : 1 ≤ q)
+    {κdecr κuns κunc κρ πmax Bf A b : ℝ}
+    (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hκunc : 0 ≤ κunc) (hκρ : 0 < κρ) (hBf0 : 0 < Bf)
+    (hA : 0 ≤ A) (hb : 0 ≤ b) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) :
+    ∃ CF CD : ℝ, 0 ≤ CF ∧ 0 ≤ CD ∧
+      ∀ {ε : ℕ → ℝ} {x₁ : ℝⁿ} {D : TPqpSeq n} {π ρ' : ℕ → ℝ} {βF flow fup O : ℝ},
+      IsTPqpGCPhase2 f c X q θ β ε x₁ D →
+      IsInnerPhaseRunStrong f c X q θ β ε D κdecr κuns κunc π (fun j => κρ * ρ' j) →
+      (∀ j ∈ Finset.Icc 1 q, 0 < ρ' j) →
+      (∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) →
+      Chapter07.AssumptionBFb f c X βF flow fup → ε 0 ≤ βF → fup - flow + 1 ≤ A →
+      (∀ y ∈ X, ContDiffAt ℝ q f y) → (∀ y ∈ X, ContDiffAt ℝ q c y) →
+      (∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf) →
+      (ε 0)⁻¹ ≤ O → (∀ l ∈ Finset.Icc 1 q, ε 0 ^ (1 - π l) * ε l ^ (-π l) ≤ O) →
+      (∀ j ∈ Finset.Icc 1 q, (ε 0 * ε j * ρ' j ^ (j - 1))⁻¹ ≤ b * O) →
+      ∃ kε, D.IsEnd f c X q θ ε kε ∧ (D.funEvals kε : ℝ) ≤ CF * O ∧
+        (D.derivEvals kε : ℝ) ≤ CD * O := by
+  obtain ⟨CF, CU, CD, hCF, hCU, hCD, h⟩ :=
+    IsTPqpGCPhase2.exists_const_order_of_strong_unc (f := f) (c := c) (X := X) (θ := θ)
+      (β := β) hq hκ hκuns hκρ hBf0 hA hb hθ0 hθ1 hβ0 (πmax := πmax)
+  refine ⟨CF + CU * κunc, CD, by positivity, hCD, fun hP hR hρ hπ hB hεβ hAf hf hc hBf hO hOl
+    hOb => ?_⟩
+  exact h hκunc hP hR hρ hπ hB hεβ hAf hf hc hBf hO hOl hOb
+
 end Phase2Order
 
 /-! ### TPqp-GC runs with INNER = ARqp-SC in both phases -/
@@ -812,7 +863,8 @@ by Algorithm 14.1.2), under the book's assumptions c.D1pLB.X and f.D1pLB.X (on a
 `X₀ ⊇ X`) and f.B.Fb on `ℱ_{β_F}`, with `1 ≤ q ≤ p`. This is the printed order of the ARqpC-SC
 row of (14.2.12) exactly where that row's entry is `j + 1`: `q ≥ 2`, or `q = 1` with `X`
 nonconvex; for `q = 1` with `X` convex the entry is `(p+1)/p` (`h = 0` is convex), which is
-proved only for `p = 1` (`theorem_14_3_9_arqp`) and is otherwise open. For ARqpC constants with
+proved for `p = 1` (`theorem_14_3_9_arqp`), false for `p ≥ 4`
+(`theorem_14_3_9_arqp_counterexample`) and open for `p ∈ {2, 3}`. For ARqpC constants with
 `θ < ς`, `θ ∈ (0, 1)`, `β > 0` (the runs have `β ≤ θ`, the book's `β = θ` included), `β₁` and a
 starting point `x₀`, there are constants `κ_F`, `κ_D` such that for all tolerances
 `ε ∈ (0, 1]^{q+1}` with `ε₀ ≤ β_F` and every TPqp-GC run whose INNER calls are ARqp-SC runs
