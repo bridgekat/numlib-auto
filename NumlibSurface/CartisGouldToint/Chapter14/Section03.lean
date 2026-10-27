@@ -190,6 +190,10 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`) the proved bound
   (`theorem_14_3_9_arqp_corrected`) has an extra term outside the printed order
   (`exists_tpqpOrderF_lt_arqp`), and whether these runs attain the printed order is open.
+  For genuine TRq-SC runs (INNER of trust-region type, `Chapter14.Section03TrustRegion`) it holds
+  with the exponents `q + 1` of Lemma 12.2.4 and a factor `1 + |log(ε₀ ε_min)|` on the
+  evaluations of `(f, c)` (`theorem_14_3_9_trq`); the factor is needed for `q = 1`
+  (`theorem_14_3_9_trq_log_necessary`, `Chapter14.Section03TrustRegionSharp`).
   The number of case-(b) iterations is also
   bounded (`IsTPqpGCPhase2.kbCount_le`) when the case-(b) calls end with INNER's certificate for
   the tolerances `β ‖r(x_k, t_k)‖ ε_j` (`IsInnerCertified`: INNER is interrupted only by the
@@ -5121,7 +5125,7 @@ theorem norm_le_of_phi2_le {r : ℝⁿ → ℝᵐ} {x y : ℝⁿ} (h : phi2 r y 
 satisfies (14.3.22), does not
 increase `‖r‖` and has the property `Good y o`, there is a LENq-SC run whose `k`-th call output
 has the property `Good x_{k-1}`. -/
-private theorem lenq_core_of {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {ε : ℕ → ℝ}
+theorem lenq_core_of {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {ε : ℕ → ℝ}
     (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1)
     {x₀ : ℝⁿ} (hx₀ : x₀ ∈ X) (hβr : β * ‖r x₀‖ < 1)
     (Good : ℝⁿ → ℝⁿ × (ℕ → ℝ) × ℕ × ℕ → Prop)

@@ -118,8 +118,9 @@ decrease from the ARqp-SC step properties nor a genuine run attaining it was obt
 
 ## Not formalized
 
-The trust-region alternative of Theorem 14.3.9 (INNER of trust-region type under c.D1qLB.X and
-f.D1qLB.Fb). The printed order in the open cases listed above.
+The trust-region alternative of Theorem 14.3.9 in the printed order (it is proved with corrected
+exponents and a logarithmic factor in `Chapter14.Section03TrustRegion`). The printed order in the
+open cases listed above.
 -/
 
 open Set Metric

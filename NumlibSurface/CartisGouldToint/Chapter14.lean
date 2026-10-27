@@ -5,6 +5,8 @@ import NumlibSurface.CartisGouldToint.Chapter14.Section03
 import NumlibSurface.CartisGouldToint.Chapter14.Section03BadIter
 import NumlibSurface.CartisGouldToint.Chapter14.Section03Anchored
 import NumlibSurface.CartisGouldToint.Chapter14.Section03Genuine
+import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegion
+import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegionSharp
 
 /-!
 # Cartis–Gould–Toint, Chapter 14: Composite and Constrained Problems
@@ -110,6 +112,20 @@ module imports the section modules and adds nothing of its own.
   satisfies the INNER contract keyed on INNER's own test
   (`IsARqpSCPhase2Calls.isInnerPhaseRunStrong`), and both run classes are non-empty
   (`exists_isTPqpGCARqpSCRun`, `exists_isTPqpGCARqpUnitRun` for `q ≤ 2`)
+* §14.3, `Chapter14.Section03TrustRegion`: Theorem 14.3.9 for every TPqp-GC run whose INNER calls
+  are genuine TRq-SC runs in both phases (`IsTPqpGCTRqSCRun`), under X.CNe, c.D1qLB.X, f.D1qLB.X
+  and f.B.Fb, with constants chosen before `ε` (`theorem_14_3_9_trq`), with the exponents
+  `π_j = q + 1` of Lemma 12.2.4 and a factor `1 + |log(ε₀ ε_min)|` on the evaluations of `(f, c)`;
+  for `q = 1` this is the printed exponent (`theorem_14_3_9_trq_one`); every such run satisfies
+  the INNER contract keyed on INNER's test (`IsTRqSCPhase2Calls.isInnerPhaseRunStrong`), and the
+  run class is non-empty (`exists_isTPqpGCTRqSCRun`)
+* §14.2–§14.3, `Chapter14.Section03TrustRegionSharp`: the logarithmic factor of
+  `theorem_14_3_9_trq` is needed for `q = 1` (`theorem_14_3_9_trq_log_necessary`: on an example
+  satisfying all hypotheses, no `κ_F` bounds the `(f, c)` evaluations of every run with TRq-SC
+  calls by `κ_F max[ε₀^{-1}, ε₀^{-1} ε_1^{-2}]`), and the TRq-SC row `j + 1` of (14.2.12) is false
+  as a per-iteration decrease for `q = 2` with `κ_decr` depending only on the algorithm parameters
+  and the f.D1qLaB.X constants, as in (12.2.14) (`lemma_14_2_2_trq_printed_false_uniform`; a
+  single fixed `f` is not formalized)
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -196,7 +212,16 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   with the ARqp-SC exponents (including the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex,
   `p ≥ 2`) it holds with the extra term `∑_j (ε₀ ε_j)^{-j}` (resp. `∑_j (ε₀ ε_j)^{-1}` with unit
   radii), which exceeds the printed order (`theorem_14_3_9_arqp_corrected`,
-  `exists_tpqpOrderF_lt_arqp`; whether these runs attain the printed order is open). When the
+  `exists_tpqpOrderF_lt_arqp`; whether these runs attain the printed order is open). With INNER
+  of trust-region type (genuine TRq-SC runs, `Chapter14.Section03TrustRegion`) the theorem holds
+  with the exponents `π_j = q + 1` that Lemma 12.2.4 gives (the printed `j + 1` for `q = 1`) and
+  a factor `1 + |log(ε₀ ε_min)|` on the evaluations of `(f, c)` (every call restarts from the
+  radius `Δ₀`; `theorem_14_3_9_trq`, `theorem_14_3_9_trq_one`). The factor is needed for `q = 1`
+  (`theorem_14_3_9_trq_log_necessary`), and the row `j + 1` of (14.2.12) contradicts the book's own
+  Theorem 14.2.4 table (TRq-SC: `O(max_j ε_j^{-(q+1)})`) and is false per iteration for `q = 2`
+  with `κ_decr` depending only on the algorithm parameters and the f.D1qLaB.X constants
+  (`lemma_14_2_2_trq_printed_false_uniform`). The book's f.D1qLB.Fb is not defined in the book,
+  f.D1qLB.X is used. When the
   number of bad iterations is bounded independently of `ε`, the counts are
   `O(max(ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}))`; the derivative count acquires an `ε₀^{-1}`
   term. INNER's certificate for the tolerances `β ‖r(x_k, t_k)‖ ε_j`, with bounded derivatives of
@@ -225,7 +250,11 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 * The `O(·)` restatement of Theorem 14.3.4 (Theorem 14.3.9 is stated with constants chosen
   before `ε` in `Chapter14.Section03Genuine`).
-* Theorem 14.3.9 with INNER of trust-region type (c.D1qLB.X, f.D1qLB.Fb).
+* Theorem 14.3.9 with INNER of trust-region type: whether genuine runs attain the whole-run order
+  with the exponents `j + 1` for `q ≥ 2` (the per-iteration decrease with uniform constants is
+  false), whether (14.2.11) with `j + 1` fails for a single fixed `f` (`q ≥ 3`), and whether the
+  factor `1 + |log(ε₀ ε_min)|` is needed for `q ≥ 2` (it is for `q = 1`); TRqIDA-SC and TRqEDA-SC
+  as INNER.
 * Whether runs of ARqp-SC with `q < p` attain the printed order of Theorem 14.3.9 (open: the
   proved bound has an extra term outside that order; under the literal uniform reading of the
   INNER hypotheses the theorem is vacuous for them when `π₁ < 2`).
