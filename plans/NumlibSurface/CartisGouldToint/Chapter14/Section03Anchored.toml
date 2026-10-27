@@ -39,3 +39,55 @@ source = "Cartis–Gould–Toint, remark after (14.2.10): the parts of f.D1pLaB.
 [[node]]
 id = "exists_anchoredCompositeBounds_nu_mu"
 source = "Cartis–Gould–Toint, Lemma 14.3.6 (anchored bounds for ν and μ)"
+
+[[node]]
+id = "mem_sublevel_phi2_of_norm_le"
+source = "Cartis–Gould–Toint, (14.2.8) for Φ₂ = ½ ‖r‖²"
+
+[[node]]
+id = "exists_algorithm_14_3_1_complexity_arqp_book"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 with INNER = ARqp-SC and its (14.2.12) exponents under Φ₂.D1pLaB.X"
+
+[[node]]
+id = "exists_algorithm_14_3_1_complexity_arqp_add_book"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 with INNER = ARqp-SC, its (14.2.12) exponents and footnote 114, under Φ₂.D1pLaB.X"
+
+[[node]]
+id = "exists_algorithm_14_3_1_complexity_unit_book"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 with INNER = ARqp-SC on ℝⁿ with the unit-radius exponents of (14.2.12), under Φ₂.D1pLaB.X"
+
+[[node]]
+id = "AssumptionD1pLBX.contDiffAt_of_le"
+source = "Cartis–Gould–Toint, assumption f.D1pLB.X (§14.3.2.2)"
+
+[[node]]
+id = "AssumptionCD1pLBX.contDiffAt_of_le"
+source = "Cartis–Gould–Toint, assumption c.D1pLB.X (§14.3.2.2)"
+
+[[node]]
+id = "AssumptionD1pLBX.norm_iteratedFDeriv_le_finMax"
+source = "Cartis–Gould–Toint, assumption f.D1pLB.X (§14.3.2.2), derivative bounds"
+
+[[node]]
+id = "finMax_one_pos"
+source = "Cartis–Gould–Toint, §14.3.2.2 (bound on the derivatives of f used in Theorem 14.3.9)"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_certified_book"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for TPqp-GC with INNER = ARqp-SC (certified contract, β < θ) under X.CNe, c.D1pLB.X, f.D1pLB.X, f.B.Fb"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_strong_book"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for TPqp-GC with INNER = ARqp-SC (strong contract, β ≤ θ) under X.CNe, c.D1pLB.X, f.D1pLB.X, f.B.Fb"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_arqp_book"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 with INNER = ARqp-SC and its (14.2.12) exponents under X.CNe, c.D1pLB.X, f.D1pLB.X, f.B.Fb"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_arqp_add_book"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 with INNER = ARqp-SC, its (14.2.12) exponents and footnote 114, under X.CNe, c.D1pLB.X, f.D1pLB.X, f.B.Fb"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_unit_book"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 for TPqp-GC on ℝⁿ with INNER = ARqp-SC with unit radii, under c.D1pLB.X, f.D1pLB.X, f.B.Fb"

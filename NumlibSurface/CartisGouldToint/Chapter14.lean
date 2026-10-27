@@ -84,9 +84,16 @@ module imports the section modules and adds nothing of its own.
   `exists_algorithm_14_3_2_complexity_anchored`), from the anchored ARqpC-SC analysis of §14.1
   (`AnchoredCompositeBounds`, `theorem_14_1_10_ii_anchored`) and Lemma 14.3.6
   (`exists_anchoredCompositeBounds_nu_mu`); the certified, strong-contract, ARqp-SC-exponent and
-  unit-radius variants under anchored bounds are in `Chapter14.Section03`
-  (`exists_algorithm_14_3_2_complexity_certified_anchored`, …,
-  `exists_algorithm_14_3_2_complexity_unit_anchored`)
+  unit-radius variants under the book's assumptions
+  (`exists_algorithm_14_3_1_complexity_arqp_book`,
+  `exists_algorithm_14_3_1_complexity_arqp_add_book`,
+  `exists_algorithm_14_3_1_complexity_unit_book`,
+  `exists_algorithm_14_3_2_complexity_certified_book`,
+  `exists_algorithm_14_3_2_complexity_strong_book`,
+  `exists_algorithm_14_3_2_complexity_arqp_book`,
+  `exists_algorithm_14_3_2_complexity_arqp_add_book`,
+  `exists_algorithm_14_3_2_complexity_unit_book`), from their versions under anchored bounds in
+  `Chapter14.Section03` (`exists_algorithm_14_3_2_complexity_certified_anchored`, …)
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -167,13 +174,8 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Not formalized
 
-* The end-to-end §14.3 variants under the book's assumptions are stated under anchored bounds
-  (`AnchoredCompositeBounds`), which the book's assumptions give through
-  `AssumptionD1qLaBX.anchoredCompositeBounds` and `exists_anchoredCompositeBounds_nu_mu`; only
-  `exists_algorithm_14_3_1_complexity_anchored` and `exists_algorithm_14_3_2_complexity_anchored`
-  are restated under the book's assumptions. Also not formalized: the multiplicative Phase-1 cost
-  contract when all `π_j < 2` (false there; the additive form is proved), and the `O(·)`
-  restatements.
+* The multiplicative Phase-1 cost contract when all `π_j < 2` (false there; the additive form
+  is proved), and the `O(·)` restatements of §14.3.
 * The bad outer iterations of TPqp-GC are not bounded in the order of the ARqp-SC exponents by
   the INNER contract: `theorem_14_3_9_order_counterexample` (`Chapter14.Section03BadIter`) gives
   runs satisfying `IsInnerPhaseRunStrong` for all exponents `π` (`q = 1`, `π₁ = (p+1)/p`, `p ≥ 2`)

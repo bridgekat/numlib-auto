@@ -205,7 +205,8 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   `exists_algorithm_14_3_1_complexity_arqp_anchored`,
   `exists_algorithm_14_3_2_complexity_arqp_anchored`
   and their `_add` forms, `exists_algorithm_14_3_1_complexity_unit_anchored`,
-  `exists_algorithm_14_3_2_complexity_unit_anchored` with `X₀ = ℝⁿ`), through the anchored radius
+  `exists_algorithm_14_3_2_complexity_unit_anchored` with `X₀ = ℝⁿ`; restated under the book's
+  assumptions as the `_book` theorems of `Chapter14.Section03Anchored`), through the anchored radius
   bound and certificate (`algorithm_14_1_1.zero_radius_ge_anchored`,
   `algorithm_14_1_1.zero_exists_cert_anchored`) and the anchored Chapter 12 ARqp analysis
   (`algorithm_14_1_1.zero_decrease_arqp_anchored`, `Chapter12.theorem_12_2_14_anchored`); the
