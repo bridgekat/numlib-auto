@@ -67,3 +67,11 @@ source = "Cartis–Gould–Toint, (12.2.49)"
 [[node]]
 id = "radius_inequality_of_compositeTaylorMeasure_gt_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.1.7 (14.1.30), anchored"
+
+[[node]]
+id = "taylorMeasure_le_of_regularizedModel_anchored"
+source = "Cartis–Gould–Toint, (12.2.53)–(12.2.56) under (14.2.9) anchored at the iterates"
+
+[[node]]
+id = "radius_inequality_of_measure_gt_anchored"
+source = "Cartis–Gould–Toint, Lemma 12.2.11 under (14.2.9) anchored at the iterates"

@@ -435,3 +435,119 @@ source = "Cartis–Gould–Toint, Algorithm 14.3.2 (Phase 1 under anchored bound
 [[node]]
 id = "phase1_cost_le_anchored"
 source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) for the Phase-1 calls under anchored bounds"
+
+[[node]]
+id = "AnchoredCompositeBounds.toTop"
+source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), anchored ARqpC bounds give the anchored ARqp assumption"
+
+[[node]]
+id = "mem_compositeSublevel_zero"
+source = "Cartis–Gould–Toint, (14.2.8) for INNER"
+
+[[node]]
+id = "algorithm_14_1_1.zero_decrease_arqp_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqp-SC row) under the anchored assumptions"
+
+[[node]]
+id = "algorithm_14_1_1.zero_radius_ge_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.1.3 for INNER under the anchored assumptions"
+
+[[node]]
+id = "algorithm_14_1_1.zero_exists_cert_anchored"
+source = "Cartis–Gould–Toint, (14.3.19) for INNER under the anchored assumptions"
+
+[[node]]
+id = "IsARqpSCOutputCost.cost_le_arqp_add_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqp-SC row) under the anchored assumptions"
+
+[[node]]
+id = "IsARqpSCOutputCost.cost_le_arqp_anchored"
+source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21), ARqp-SC row, under the anchored assumptions"
+
+[[node]]
+id = "exists_isARqpUnitOutputCost_anchored"
+source = "Cartis–Gould–Toint, (14.3.19), INNER = ARqp with unit radii, under the anchored assumptions"
+
+[[node]]
+id = "IsARqpUnitOutputCost.cost_le_add_anchored"
+source = "Cartis–Gould–Toint, Theorem 12.2.14 (1) under the anchored assumptions"
+
+[[node]]
+id = "exists_algorithm_14_3_1_complexity_arqp_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 (ARqp-SC exponents) under the anchored assumptions"
+
+[[node]]
+id = "exists_algorithm_14_3_1_complexity_arqp_add_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 (ARqp-SC exponents, additive) under the anchored assumptions"
+
+[[node]]
+id = "exists_algorithm_14_3_1_complexity_unit_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.4 (unit radii) under the anchored assumptions"
+
+[[node]]
+id = "exists_isTPqpGCPhase2_isInnerCertified_anchored"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, INNER certificate, under the anchored assumptions"
+
+[[node]]
+id = "exists_isTPqpGCPhase2_isInnerPhaseRunStrong_anchored"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 (INNER test) under the anchored assumptions"
+
+[[node]]
+id = "exists_isTPqpGCPhase2_isInnerPhaseRun_arqp_anchored"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 (ARqp-SC row) under the anchored assumptions"
+
+[[node]]
+id = "exists_isTPqpGCPhase2_isInnerCertified_unit_anchored"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 (unit radii) under the anchored assumptions"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_certified_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER certificate) under the anchored assumptions"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_strong_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER test) under the anchored assumptions"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_arqp_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (ARqp-SC exponents) under the anchored assumptions"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_arqp_add_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (ARqp-SC exponents, additive) under the anchored assumptions"
+
+[[node]]
+id = "exists_algorithm_14_3_2_complexity_unit_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (unit radii) under the anchored assumptions"
+
+[[node]]
+id = "IsTPqpGCPhase2.target_drop_of_isKb_margin_on"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 (case-(b) target drop, margin), f and c smooth near X"
+
+[[node]]
+id = "IsTPqpGCPhase2.target_drop_of_isKb_on"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 (case-(b) target drop), f and c smooth near X"
+
+[[node]]
+id = "IsTPqpGCPhase2.kbCount_le_on"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 (case-(b) count), f and c smooth near X"
+
+[[node]]
+id = "IsTPqpGCPhase2.complexity_of_certified_on"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER certificate), f and c smooth near X"
+
+[[node]]
+id = "IsTPqpGCPhase2.card_isKb_innerTest_le_on"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 (case-(b) count, β ≤ θ), f and c smooth near X"
+
+[[node]]
+id = "IsTPqpGCPhase2.kbCount_le_of_le_on"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 (case-(b) count, β ≤ θ), f and c smooth near X"
+
+[[node]]
+id = "IsTPqpGCPhase2.complexity_of_certified_le_on"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER certificate, β ≤ θ), f and c smooth near X"
+
+[[node]]
+id = "IsTPqpGCPhase2.complexity_of_strong_on"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER test), f and c smooth near X"

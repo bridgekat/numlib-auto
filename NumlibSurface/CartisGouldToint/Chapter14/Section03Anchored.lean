@@ -33,6 +33,9 @@ point with `‖r(x, t)‖ ≤ ε₀ ≤ 1`), so its sublevel set lies in that se
   set;
 * `exists_algorithm_14_3_1_complexity_anchored`: Theorem 14.3.4 for constructed LENq-SC runs
   under Φ₂.D1pLaB.X;
+* `exists_anchoredCompositeBounds_nu_mu`: c.D1pLB.X and f.D1pLB.X give, through Lemma 14.3.6, the
+  anchored bounds of `ν` on `𝓛_ν(x₀)` and of `μ(·, t)` on `𝓛_μ(t)` (constants independent of `t`)
+  assumed by the anchored TPqp-GC theorems of `Chapter14.Section03`;
 * `exists_algorithm_14_3_2_complexity_anchored'` (explicit anchored bounds for `ν` and `μ`) and
   `exists_algorithm_14_3_2_complexity_anchored` (from c.D1pLB.X and f.D1pLB.X through
   Lemma 14.3.6, with constants depending only on the data and `‖c(x₀)‖`): Theorem 14.3.9 for
@@ -43,9 +46,15 @@ The constructions and INNER contracts used here are proved in `Chapter14.Section
 `lenq_core_anchored`, `exists_isTPqpGCPhase2_isInnerPhaseRun_anchored`,
 `exists_algorithm_14_3_2_of_phase2_anchored`, `phase1_cost_le_anchored`); the global versions of
 that module are their instances. The certified, strong-contract, ARqp-SC-exponent and
-unit-radius variants of Section03 have no anchored version (they go through
-`algorithm_14_1_1.zero_exists_cert` or the Chapter 12 ARqp analysis, proved under f.D1pL on an
-open convex set).
+unit-radius variants are proved there under anchored bounds as well
+(`exists_algorithm_14_3_2_complexity_certified_anchored`,
+`exists_algorithm_14_3_2_complexity_strong_anchored`,
+`exists_algorithm_14_3_1_complexity_arqp_anchored`,
+`exists_algorithm_14_3_2_complexity_arqp_anchored`
+and their `_add` forms, `exists_algorithm_14_3_1_complexity_unit_anchored`,
+`exists_algorithm_14_3_2_complexity_unit_anchored`); their hypotheses follow from the book's
+assumptions by `AssumptionD1qLaBX.anchoredCompositeBounds` (LENq-SC) and
+`exists_anchoredCompositeBounds_nu_mu` (TPqp-GC).
 
 ## Deviations from the book
 
@@ -359,6 +368,40 @@ the anchored bounds of `ν = ½ ‖c‖²` on `𝓛_ν(x₀)` given by Lemma 14.
 noncomputable def nuAnchoredConst (LA LB BA BB : ℕ → ℝ) (r : ℝ) : ℕ → ℝ :=
   anchoredConst (fun j => LA j + LB j * r) (fun j => BA j + BB j * r)
 
+/-- **Anchored bounds for `ν` and `μ(·, t)` from the book's assumptions** ([cartis2022evaluation],
+Lemma 14.3.6): under c.D1pLB.X and f.D1pLB.X (on an open convex `X₀ ⊇ X`) there are constants
+`L^A_j, L^B_j, B^A_j, B^B_j, L_{μ,j}, B_{μ,j} ≥ 1`, depending only on `m` and the constants of these
+assumptions, such that for every `x₀` the function `ν = ½ ‖c‖²` satisfies the anchored bounds of the
+ARqpC analysis on `𝓛_ν(x₀)` with the constants `nuAnchoredConst L^A L^B B^A B^B ‖c(x₀)‖`, and every
+`μ(·, t)` satisfies them on `𝓛_μ(t)` with the constants `anchoredConst L_μ B_μ`. These are the
+hypotheses `hν`, `hμ` (with `hXX₀ = hc.subset`) of the TPqp-GC theorems of `Chapter14.Section03`
+stated under anchored bounds (`exists_algorithm_14_3_2_complexity_anchored'`,
+`exists_algorithm_14_3_2_complexity_certified_anchored`,
+`exists_algorithm_14_3_2_complexity_strong_anchored`,
+`exists_algorithm_14_3_2_complexity_arqp_anchored`,
+`exists_algorithm_14_3_2_complexity_arqp_add_anchored`, and, on `X = X₀ = ℝⁿ`,
+`exists_algorithm_14_3_2_complexity_unit_anchored`). -/
+theorem exists_anchoredCompositeBounds_nu_mu (hp : 1 ≤ p) {X₀ : Set ℝⁿ} {Lc Bc Lf Bf : ℕ → ℝ}
+    (hc : AssumptionCD1pLBX c X X₀ p Lc Bc) (hf : AssumptionD1pLBX f X X₀ p Lf Bf) :
+    ∃ LA LB BA BB Lμ Bμ : ℕ → ℝ,
+      (∀ j, 1 ≤ LA j ∧ 1 ≤ LB j ∧ 1 ≤ BA j ∧ 1 ≤ BB j ∧ 1 ≤ Lμ j ∧ 1 ≤ Bμ j) ∧
+      (∀ x₀ : ℝⁿ, AnchoredCompositeBounds (phi2 c) (zeroCon n) X₀ (nuSublevel c X x₀) p
+        (nuAnchoredConst LA LB BA BB ‖c x₀‖) (fun _ => 0)) ∧
+      ∀ t, AnchoredCompositeBounds (Constrained.targetMerit f c t) (zeroCon n) X₀
+        (muSublevel f c X t) p (anchoredConst Lμ Bμ) (fun _ => 0) := by
+  obtain ⟨LA, LB, BA, BB, h1, hν⟩ := lemma_14_3_6_i hc
+  obtain ⟨Lμ, Bμ, h2, hμ⟩ := lemma_14_3_6_ii hc hf
+  refine ⟨LA, LB, BA, BB, Lμ, Bμ, fun j => ⟨(h1 j).1, (h1 j).2.1, (h1 j).2.2.1, (h1 j).2.2.2,
+    (h2 j).1, (h2 j).2⟩, fun x₀ => ?_, fun t => ?_⟩
+  · refine anchoredCompositeBounds_zeroCon hc.isOpen hc.convex (fun x hx => hc.subset hx.1)
+      (hν x₀).1 hp ?_ (hν x₀).2
+    have := (h1 p).1
+    have := (h1 p).2.1
+    have := norm_nonneg (c x₀)
+    nlinarith
+  · exact anchoredCompositeBounds_zeroCon hc.isOpen hc.convex (fun x hx => hc.subset hx.1)
+      (hμ t).1 hp (h2 p).1 (hμ t).2
+
 /-- **Theorem 14.3.9 of [cartis2022evaluation] for the constructed TPqp-GC runs, under the book's
 assumptions** X.CNe (`X` closed), c.D1pLB.X, f.D1pLB.X (on an open convex `X₀ ⊇ X`) and f.B.Fb,
 with INNER = ARqp-SC in both phases. There are constants `L^A_j, L^B_j, B^A_j, B^B_j ≥ 1` (for
@@ -424,25 +467,11 @@ theorem exists_algorithm_14_3_2_complexity_anchored (hX : IsClosed X) (hq : 1 �
                   (goodBound (arqpSCKappaDecr P L p q) β θ ((q : ℝ) + 1) (arqpSCPhase2M q ε) *
                     ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) + kε) +
                   arqpSCKappaUnc P L p * kε)) := by
-  have hp : 1 ≤ p := hq.trans hqp
-  obtain ⟨LA, LB, BA, BB, h1, hν⟩ := lemma_14_3_6_i hc
-  obtain ⟨Lμ, Bμ, h2, hμ⟩ := lemma_14_3_6_ii hc hf
-  refine ⟨LA, LB, BA, BB, Lμ, Bμ, fun j => ⟨(h1 j).1, (h1 j).2.1, (h1 j).2.2.1, (h1 j).2.2.2,
-    (h2 j).1, (h2 j).2⟩, ?_⟩
+  obtain ⟨LA, LB, BA, BB, Lμ, Bμ, h1, hνA, hμA⟩ :=
+    exists_anchoredCompositeBounds_nu_mu (hq.trans hqp) hc hf
+  refine ⟨LA, LB, BA, BB, Lμ, Bμ, h1, ?_⟩
   intro P θ β β₁ ε x₀ βF flow fup hB hεβ hθς hθ0 hθ1 hε hβ0 hβθ hβ₁0 hβ₁1 hx₀ hβ₁c
-  have hνA : AnchoredCompositeBounds (phi2 c) (zeroCon n) X₀ (nuSublevel c X x₀) p
-      (nuAnchoredConst LA LB BA BB ‖c x₀‖) (fun _ => 0) := by
-    refine anchoredCompositeBounds_zeroCon hc.isOpen hc.convex (fun x hx => hc.subset hx.1)
-      (hν x₀).1 hp ?_ (hν x₀).2
-    have := (h1 p).1
-    have := (h1 p).2.1
-    have := norm_nonneg (c x₀)
-    nlinarith
-  have hμA : ∀ t, AnchoredCompositeBounds (Constrained.targetMerit f c t) (zeroCon n) X₀
-      (muSublevel f c X t) p (anchoredConst Lμ Bμ) (fun _ => 0) := fun t =>
-    anchoredCompositeBounds_zeroCon hc.isOpen hc.convex (fun x hx => hc.subset hx.1) (hμ t).1 hp
-      (h2 p).1 (hμ t).2
-  exact exists_algorithm_14_3_2_complexity_anchored' hX hq hqp hνA hB hεβ hμA hc.subset P hθς
+  exact exists_algorithm_14_3_2_complexity_anchored' hX hq hqp (hνA x₀) hB hεβ hμA hc.subset P hθς
     hθ0 hθ1 hε hβ0 hβθ hβ₁0 hβ₁1 hx₀ hβ₁c
 
 end TPqp

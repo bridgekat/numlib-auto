@@ -638,6 +638,37 @@ theorem sub_ge_of_succ_taylor (h : IsARRun P stop₁ step stop₂ (taylorRatio f
     (pred := fun k => (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k)) hk rfl hpos hs
   exact ⟨heq, (mul_le_mul_of_nonneg_left hdec.le P.η₁_pos.le).trans hge⟩
 
+/-- **Lemma 4.1.2, anchored**: as `IsARRun.sigma_le`, with `∇^p f` only Lipschitz anchored at the
+iterates before termination, `‖∇^p f(y) - ∇^p f(x_k)‖ ≤ L ‖y - x_k‖` for `y ∈ C` (the condition
+(14.2.9) of [cartis2022evaluation] when the iterates lie in the anchor set). -/
+theorem sigma_le_anchored (h : IsARRun P stop₁ step stop₂ (taylorRatio f p x s) x s σ)
+    {C : Set E} {L : ℝ} (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
+    (hL : ∀ k, (∀ j ≤ k, ¬ Stop stop₁ stop₂ j) → ∀ y ∈ C,
+      ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f (x k)‖ ≤ L * ‖y - x k‖) (hx0 : x 0 ∈ C)
+    (hstep : ∀ k, (∀ j ≤ k, ¬ Stop stop₁ stop₂ j) → step k →
+      x k + s k ∈ C ∧ regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k) (s k) <
+        regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k) 0) :
+    ∀ k, (∀ j < k, ¬ Stop stop₁ stop₂ j) → x k ∈ C ∧ P.σmin ≤ σ k ∧ σ k ≤ arSigmaMax P L := by
+  have hmem := h.mem (C := C) hx0 fun k hk _ _ => (hstep k hk (h.step_of_forall_le hk)).1
+  have hforce : ∀ k, (∀ j ≤ k, ¬ Stop stop₁ stop₂ j) → L / (1 - P.η₂) ≤ σ k →
+      P.η₂ ≤ taylorRatio f p x s k := by
+    intro k hk hσk
+    obtain ⟨hxs, hm⟩ := hstep k hk (h.step_of_forall_le hk)
+    have hσpos : 0 < σ k := h.sigma_pos (K := k) (fun j hj => hk j hj.le) k le_rfl
+    have hdec := (lt_taylorDecrement_of_regularizedModel_lt hm).le
+    have hfac : (0 : ℝ) < (p + 1)! := by positivity
+    refine le_reductionRatio_of_lipschitzAnchored hC hf (hL k hk) (hmem k fun j hj => hk j hj.le)
+      hxs
+      (ne_zero_of_regularizedModel_lt hm) (c := 1 / ((p + 1)! : ℝ)) (by positivity) hσpos
+      (by rw [one_div_mul_eq_div]; exact hdec) ?_
+    rw [div_le_iff₀ P.one_sub_η₂_pos] at hσk
+    rw [mul_one_div_cancel hfac.ne', one_mul]
+    exact hσk
+  intro k hk
+  obtain ⟨hmin, -, hmax⟩ := h.sigma_le_max hforce hk k le_rfl
+  refine ⟨hmem k hk, hmin, hmax.trans_eq ?_⟩
+  rw [arSigmaMax_def, mul_div_assoc]
+
 /-- **Lemma 4.1.2** ([cartis2022evaluation], (4.1.19)) for every AR method with exact Taylor
 models, also on a convex feasible set (Section 6.2.2: "Lemmas 4.1.1 and 4.1.2 continue to hold").
 Let `f` be `C^p` on a convex set `C ∋ x₀` with `L`-Lipschitz `∇^p f` there, and let every step
@@ -653,23 +684,8 @@ theorem sigma_le (h : IsARRun P stop₁ step stop₂ (taylorRatio f p x s) x s �
         regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k) 0) :
     ∀ k, (∀ j < k, ¬ Stop stop₁ stop₂ j) → x k ∈ C ∧ P.σmin ≤ σ k ∧ σ k ≤ arSigmaMax P L := by
   have hmem := h.mem (C := C) hx0 fun k hk _ _ => (hstep k hk (h.step_of_forall_le hk)).1
-  have hforce : ∀ k, (∀ j ≤ k, ¬ Stop stop₁ stop₂ j) → L / (1 - P.η₂) ≤ σ k →
-      P.η₂ ≤ taylorRatio f p x s k := by
-    intro k hk hσk
-    obtain ⟨hxs, hm⟩ := hstep k hk (h.step_of_forall_le hk)
-    have hσpos : 0 < σ k := h.sigma_pos (K := k) (fun j hj => hk j hj.le) k le_rfl
-    have hdec := (lt_taylorDecrement_of_regularizedModel_lt hm).le
-    have hfac : (0 : ℝ) < (p + 1)! := by positivity
-    refine le_reductionRatio_of_lipschitz hC hf hL (hmem k fun j hj => hk j hj.le) hxs
-      (ne_zero_of_regularizedModel_lt hm) (c := 1 / ((p + 1)! : ℝ)) (by positivity) hσpos
-      (by rw [one_div_mul_eq_div]; exact hdec) ?_
-    rw [div_le_iff₀ P.one_sub_η₂_pos] at hσk
-    rw [mul_one_div_cancel hfac.ne', one_mul]
-    exact hσk
-  intro k hk
-  obtain ⟨hmin, -, hmax⟩ := h.sigma_le_max hforce hk k le_rfl
-  refine ⟨hmem k hk, hmin, hmax.trans_eq ?_⟩
-  rw [arSigmaMax_def, mul_div_assoc]
+  exact h.sigma_le_anchored hC hf (fun k hk y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy (x k)
+    (hmem k fun j hj => hk j hj.le)) hx0 hstep
 
 end Taylor
 

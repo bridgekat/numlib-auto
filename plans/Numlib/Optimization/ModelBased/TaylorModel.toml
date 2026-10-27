@@ -58,3 +58,11 @@ id = "norm_gradient_add_le_of_lipschitz"
 [[node]]
 id = "abs_iteratedFDeriv_apply_le_of_regularizedModel_anchored"
 source = "Cartis–Gould–Toint, (4.1.30), anchored"
+
+[[node]]
+id = "abs_reductionRatio_sub_one_le_of_lipschitzAnchored"
+source = "Cartis–Gould–Toint, Lemmas 2.4.2, 3.3.2, 4.1.2 under (14.2.9) anchored at the iterates"
+
+[[node]]
+id = "le_reductionRatio_of_lipschitzAnchored"
+source = "Cartis–Gould–Toint, Lemmas 2.4.2, 3.3.2, 4.1.2 under (14.2.9) anchored at the iterates"

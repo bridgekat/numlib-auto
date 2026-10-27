@@ -35,3 +35,7 @@ source = "Cartis–Gould–Toint, Theorem 14.3.9 for the TPqp-GC runs with INNER
 [[node]]
 id = "anchoredCompositeBounds_zeroCon_of"
 source = "Cartis–Gould–Toint, remark after (14.2.10): the parts of f.D1pLaB.X used by the analysis"
+
+[[node]]
+id = "exists_anchoredCompositeBounds_nu_mu"
+source = "Cartis–Gould–Toint, Lemma 14.3.6 (anchored bounds for ν and μ)"

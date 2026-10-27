@@ -33,7 +33,9 @@ module imports the section modules and adds nothing of its own.
   (`lemma_14_2_2_trqida`, …, `theorem_14_2_4_arqpeda`, from the Chapter 13 runs with a feasible
   set; the regularization rows in either radii mode, unit radii or (12.2.51) at every order,
   `Chapter13.RadiiControlOf`; on `ℝⁿ` with `q ≤ 2` every ARqpIDA-SC run attains the unit-radii
-  bound in either mode, `theorem_14_2_4_arqpida_le_two`)
+  bound in either mode, `theorem_14_2_4_arqpida_le_two`); the TRq-SC and ARqp-SC rows also under
+  the anchored f.D1qLaB.X / f.D1pLaB.X (`lemma_14_2_2_trq_anchored`, …,
+  `theorem_14_2_4_arqp_anchored`, from the anchored Chapter 12 analysis)
 * §14.2, `Chapter14.Section02Sharp`: sharpness of the TRq-SC, ARqp-SC, ARqpC-SC (`q = 1`, convex
   `h`), TRqIDA-SC and TRqEDA-SC orders, of the ARqp-SC order of the lower-bound mode for every `q`
   on a closed nonconvex `X ⊂ ℝ` (the "otherwise" entries for `q ≤ 2`), of the ARqpIDA-SC and
@@ -78,6 +80,10 @@ module imports the section modules and adds nothing of its own.
   f.D1pLB.X and f.B.Fb (`exists_algorithm_14_3_1_complexity_anchored`,
   `exists_algorithm_14_3_2_complexity_anchored`), from the anchored ARqpC-SC analysis of §14.1
   (`AnchoredCompositeBounds`, `theorem_14_1_10_ii_anchored`) and Lemma 14.3.6
+  (`exists_anchoredCompositeBounds_nu_mu`); the certified, strong-contract, ARqp-SC-exponent and
+  unit-radius variants under anchored bounds are in `Chapter14.Section03`
+  (`exists_algorithm_14_3_2_complexity_certified_anchored`, …,
+  `exists_algorithm_14_3_2_complexity_unit_anchored`)
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -158,16 +164,18 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Not formalized
 
-* The remark of Theorem 14.2.4 that only the anchored assumptions f.D1qLaB.X (f.D0qLaB.X) are
-  used, except for the ARqpC-SC row (`theorem_14_2_4_arqpc_anchored`, from the anchored §14.1
-  analysis `theorem_14_1_10_ii_anchored`).
-* Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored assumptions are
-  proved (`Chapter14.Section03Anchored`) only with the ARqpC-SC exponents `j + 1`; the variants
-  with the ARqp-SC exponents (they go through the Chapter 12 analysis of ARqp-SC, which assumes
-  f.D1pL on an open convex `C ⊇ X`), the certified and strong-contract variants are proved under
-  global Lipschitz assumptions only. Also not formalized: the multiplicative Phase-1 cost contract
-  when all `π_j < 2` (false there; the additive form is proved), and the `O(·)` restatements.
-  The bad outer iterations of TPqp-GC are not bounded in the order of the ARqp-SC exponents by
+* The remark of Theorem 14.2.4 for the dynamic-accuracy rows (TRqIDA-SC, TRqEDA-SC,
+  ARqpIDA-SC, ARqpEDA-SC): they assume f.D0qL (f.D0pL) on an open convex `C ⊇ X`, not the
+  anchored f.D0qLaB.X (the ARqpC-SC, TRq-SC and ARqp-SC rows are proved under the anchored
+  assumptions).
+* The end-to-end §14.3 variants under the book's assumptions are stated under anchored bounds
+  (`AnchoredCompositeBounds`), which the book's assumptions give through
+  `AssumptionD1qLaBX.anchoredCompositeBounds` and `exists_anchoredCompositeBounds_nu_mu`; only
+  `exists_algorithm_14_3_1_complexity_anchored` and `exists_algorithm_14_3_2_complexity_anchored`
+  are restated under the book's assumptions. Also not formalized: the multiplicative Phase-1 cost
+  contract when all `π_j < 2` (false there; the additive form is proved), and the `O(·)`
+  restatements.
+* The bad outer iterations of TPqp-GC are not bounded in the order of the ARqp-SC exponents by
   the INNER contract: `theorem_14_3_9_order_counterexample` (`Chapter14.Section03BadIter`) gives
   runs satisfying `IsInnerPhaseRunStrong` for all exponents `π` (`q = 1`, `π₁ = (p+1)/p`, `p ≥ 2`)
   with `≍ (ε₀ ε₁)^{-1}` such iterations, more than `C max(ε₀^{-1}, ε₀^{1-π₁} ε₁^{-π₁})` for every

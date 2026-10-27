@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.AnchoredLipschitz
 import Numlib.Optimization.Complexity.Existence
 import Numlib.Optimization.Complexity.SlowExampleHighOrder
 import Numlib.Optimization.ModelBased.HighOrder.ARqp
@@ -31,8 +32,10 @@ derivatives and one per successful iteration before `k`).
 
 ## Main definitions
 
-* `AssumptionD1pL f p L` — f.D1qL, f.D1pL, f.D1rL; `finMax`, `finMin` — `max`/`min` over the
-  orders `[1:q]` (the book's `L_f`, `ε_min`, `max_i ‖∇^i f(x₀)‖`, `min_j ε_j^{π_j}`);
+* `AssumptionD1pL f p L` — f.D1qL, f.D1pL, f.D1rL; `AssumptionD1pLOn`, `AssumptionD1pLAnchored`,
+  `AssumptionD1pLAnchoredTop` — the forms on an open convex set and anchored; `finMax`,
+  `finMin` — `max`/`min` over the orders `[1:q]` (the book's `L_f`, `ε_min`,
+  `max_i ‖∇^i f(x₀)‖`, `min_j ε_j^{π_j}`);
 * `algorithm_12_2_1` (TRq), with its test `trqStop`;
 * `algorithm_12_2_2` (ARqp), with its test `arqpStop`; `algorithm_12_2_3`;
 * `arqpKappaDelta` (`κ_δ(σ)`), `arqpTau` (`τ_j`), `arqpKappaHat` (the corrected `κ̂`),
@@ -54,6 +57,17 @@ derivatives and one per successful iteration before `k`).
   `theorem_12_2_5_feasible`, `theorem_12_2_14_feasible`, `isEpsDeltaApprox_of_isMinOn_zero`
   (the ARqp results with a feasible set are stated for either radii mode; the lower-bound mode
   gives the order `j(p+1)/p` for every `q`);
+* Anchored assumptions (f.D1qLaB.X, f.D1pLaB.X of §14.2.1, the remark after (14.2.10)):
+  `AssumptionD1pLAnchored` (the Lipschitz conditions anchored at the points of a set `A ⊆ C`
+  containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`), `AssumptionD1pLAnchoredTop` (the anchored
+  condition at the top order with the jet bounds at the anchors, all the ARqp analysis uses);
+  the iterates stay in the sublevel set (`trq_mem_sublevel`, `arqp_mem_sublevel`), so the models
+  are built at anchors and the trial points are related to them by Taylor's theorem anchored at
+  the iterate: `lemma_12_2_3_anchored`, `lemma_12_2_4_anchored`, `theorem_12_2_5_anchored`,
+  `arqp_sigma_le_anchored`, `lemma_12_2_13_anchored`, `theorem_12_2_14_anchored`,
+  `isEpsDeltaApprox_of_isMinOn_zero_of_jet`, `lemma_12_2_10_le_two`,
+  `algorithm_12_2_2_exists_anchored` (runs with the radii property; the feasible-set results are
+  instances with `A = C`);
 * Algorithm 12.2.3: `detailedStep_terminates`, `detailedStep_exists_trans` (every execution
   returns), `algorithm_12_2_2_exists_of_D1pL` (runs with the radii property (12.2.50)).
 
@@ -291,6 +305,145 @@ theorem norm_iteratedFDeriv_le_finMax (h : AssumptionD1pLOn f C p L) {j : ℕ}
 
 end AssumptionD1pLOn
 
+/-- **f.D1pL anchored on a set** (the form of f.D1qLaB.X / f.D1pLaB.X, [cartis2022evaluation]
+§14.2.1, (14.2.9), used by the analysis with a feasible set): `C` is open and convex, `A ⊆ C`, `f`
+is `C^p` near every point of `C` and, for every `j ∈ [1:p]`,
+`‖∇^j f(x) - ∇^j f(y)‖ ≤ L_{f,j} ‖x - y‖` for `x ∈ A` and `y ∈ C`, with `L_{f,j} ≥ 1`. The anchor
+set is (a superset of) the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` that contains the iterates: the
+models are built at iterates, and the trial points are related to them by Taylor's theorem anchored
+at the iterate (the remark after (14.2.10)). f.D1pL on `C` gives it for every `A ⊆ C`
+(`AssumptionD1pLOn.anchored`). -/
+structure AssumptionD1pLAnchored (f : E → ℝ) (C A : Set E) (p : ℕ) (L : ℕ → ℝ) : Prop where
+  /-- `C` is open. -/
+  isOpen : IsOpen C
+  /-- `C` is convex. -/
+  convex : Convex ℝ C
+  /-- The anchors lie in `C`. -/
+  subset : A ⊆ C
+  /-- `f` is `C^p` near every point of `C`. -/
+  contDiffAt : ∀ y ∈ C, ContDiffAt ℝ p f y
+  /-- The constants are at least `1`. -/
+  one_le : ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j
+  /-- The `j`-th derivative is `L_{f,j}`-Lipschitz anchored in `A` with respect to `C`
+  ((14.2.9)). -/
+  lipschitzAnchored : ∀ j ∈ Finset.Icc 1 p, IteratedFDerivLipschitzAnchored f j (L j) A C
+
+/-- f.D1pL on `C` is f.D1pL anchored on every `A ⊆ C`. -/
+theorem AssumptionD1pLOn.anchored {C A : Set E} (h : AssumptionD1pLOn f C p L) (hA : A ⊆ C) :
+    AssumptionD1pLAnchored f C A p L :=
+  ⟨h.isOpen, h.convex, hA, h.contDiffAt, h.one_le, fun j hj => (h.lipschitz j hj).anchored hA⟩
+
+namespace AssumptionD1pLAnchored
+
+variable {C A A' : Set E}
+
+/-- Shrinking the anchor set. -/
+theorem mono_left (h : AssumptionD1pLAnchored f C A p L) (hA : A' ⊆ A) :
+    AssumptionD1pLAnchored f C A' p L :=
+  ⟨h.isOpen, h.convex, hA.trans h.subset, h.contDiffAt, h.one_le,
+    fun j hj => (h.lipschitzAnchored j hj).mono_left hA⟩
+
+/-- The assumption of order `p` implies the assumption of every lower order. -/
+theorem mono (h : AssumptionD1pLAnchored f C A p L) {q : ℕ} (hq : q ≤ p) :
+    AssumptionD1pLAnchored f C A q L :=
+  ⟨h.isOpen, h.convex, h.subset, fun y hy => (h.contDiffAt y hy).of_le (by exact_mod_cast hq),
+    fun j hj => h.one_le j (Finset.Icc_subset_Icc_right hq hj),
+    fun j hj => h.lipschitzAnchored j (Finset.Icc_subset_Icc_right hq hj)⟩
+
+/-- The anchored condition at an anchor `x ∈ A`:
+`‖∇^j f(y) - ∇^j f(x)‖ ≤ L_{f,j} ‖y - x‖` for `y ∈ C`. -/
+theorem lipschitzAt (h : AssumptionD1pLAnchored f C A p L) {j : ℕ} (hj : j ∈ Finset.Icc 1 p)
+    {x : E} (hx : x ∈ A) :
+    ∀ y ∈ C, ‖iteratedFDeriv ℝ j f y - iteratedFDeriv ℝ j f x‖ ≤ L j * ‖y - x‖ :=
+  (h.lipschitzAnchored j hj).lipschitzAt hx
+
+/-- The anchored condition at an anchor `x ∈ A` with the constant `L_f`. -/
+theorem lipschitzAt_finMax (h : AssumptionD1pLAnchored f C A p L) {j : ℕ}
+    (hj : j ∈ Finset.Icc 1 p) {x : E} (hx : x ∈ A) :
+    ∀ y ∈ C, ‖iteratedFDeriv ℝ j f y - iteratedFDeriv ℝ j f x‖ ≤ finMax 1 L p * ‖y - x‖ :=
+  ((h.lipschitzAnchored j hj).mono_const (le_finMax hj)).lipschitzAt hx
+
+/-- (12.2.24) at the anchors: `‖∇^j f(x)‖ ≤ L_{f,j-1}` for `j ∈ [2:p]` and `x ∈ A` (the anchored
+condition of order `j - 1` at the interior point `x` bounds the derivative there). -/
+theorem norm_iteratedFDeriv_le (h : AssumptionD1pLAnchored f C A p L) {j : ℕ}
+    (hj : j ∈ Finset.Icc 2 p) {x : E} (hx : x ∈ A) : ‖iteratedFDeriv ℝ j f x‖ ≤ L (j - 1) := by
+  obtain ⟨hj2, hjp⟩ := Finset.mem_Icc.1 hj
+  obtain ⟨i, rfl⟩ : ∃ i, j = i + 1 := ⟨j - 1, by omega⟩
+  have hi : i ∈ Finset.Icc 1 p := Finset.mem_Icc.2 ⟨by omega, by omega⟩
+  rw [Nat.add_sub_cancel, ← norm_fderiv_iteratedFDeriv]
+  refine norm_fderiv_le_of_lip' ℝ (zero_le_one.trans (h.one_le i hi)) ?_
+  filter_upwards [h.isOpen.mem_nhds (h.subset hx)] with y hy
+  exact h.lipschitzAt hi hx y hy
+
+/-- `‖∇^j f(x)‖ ≤ L_f` for `j ∈ [2:p]` and `x ∈ A`. -/
+theorem norm_iteratedFDeriv_le_finMax (h : AssumptionD1pLAnchored f C A p L) {j : ℕ}
+    (hj : j ∈ Finset.Icc 2 p) {x : E} (hx : x ∈ A) : ‖iteratedFDeriv ℝ j f x‖ ≤ finMax 1 L p := by
+  refine (h.norm_iteratedFDeriv_le hj hx).trans (le_finMax ?_)
+  obtain ⟨hj2, hjp⟩ := Finset.mem_Icc.1 hj
+  exact Finset.mem_Icc.2 ⟨by omega, by omega⟩
+
+end AssumptionD1pLAnchored
+
+/-- **f.D1pL anchored at the top order** (what the ARqp analysis uses of f.D1pLaB.X,
+[cartis2022evaluation] §14.2.1): `C` is open and convex, `A ⊆ C`, `f` is `C^p` near every point of
+`C`, `‖∇^p f(x) - ∇^p f(y)‖ ≤ L_{f,p} ‖x - y‖` for `x ∈ A` and `y ∈ C` ((14.2.9) at the order `p`)
+with `L_{f,p} ≥ 1`, and the jets at the anchors are bounded, `‖∇^j f(x)‖ ≤ L_{f,j-1}` for
+`j ∈ [2:p]` and `x ∈ A` ((12.2.24) at the anchors, the role of (14.2.10)). It follows from the
+anchored condition at every order (`AssumptionD1pLAnchored.toTop`) and from f.D1pL on `C`
+(`AssumptionD1pLOn.anchoredTop`). -/
+structure AssumptionD1pLAnchoredTop (f : E → ℝ) (C A : Set E) (p : ℕ) (L : ℕ → ℝ) : Prop where
+  /-- `C` is open. -/
+  isOpen : IsOpen C
+  /-- `C` is convex. -/
+  convex : Convex ℝ C
+  /-- The anchors lie in `C`. -/
+  subset : A ⊆ C
+  /-- `f` is `C^p` near every point of `C`. -/
+  contDiffAt : ∀ y ∈ C, ContDiffAt ℝ p f y
+  /-- The top-order constant is at least `1`. -/
+  one_le : 1 ≤ L p
+  /-- The `p`-th derivative is `L_{f,p}`-Lipschitz anchored in `A` with respect to `C`. -/
+  lipschitzAnchored : IteratedFDerivLipschitzAnchored f p (L p) A C
+  /-- The jet bounds at the anchors. -/
+  norm_le : ∀ j ∈ Finset.Icc 2 p, ∀ x ∈ A, ‖iteratedFDeriv ℝ j f x‖ ≤ L (j - 1)
+
+/-- The anchored condition at every order gives it at the top order with the jet bounds. -/
+theorem AssumptionD1pLAnchored.toTop {C A : Set E} (h : AssumptionD1pLAnchored f C A p L)
+    (hp : 1 ≤ p) : AssumptionD1pLAnchoredTop f C A p L :=
+  ⟨h.isOpen, h.convex, h.subset, h.contDiffAt, h.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩),
+    h.lipschitzAnchored p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩), fun _ hj _ hx =>
+      h.norm_iteratedFDeriv_le hj hx⟩
+
+/-- f.D1pL on `C` gives the top-order anchored condition for every `A ⊆ C`. -/
+theorem AssumptionD1pLOn.anchoredTop {C A : Set E} (h : AssumptionD1pLOn f C p L) (hA : A ⊆ C)
+    (hp : 1 ≤ p) : AssumptionD1pLAnchoredTop f C A p L :=
+  (h.anchored hA).toTop hp
+
+namespace AssumptionD1pLAnchoredTop
+
+variable {C A A' : Set E}
+
+/-- Shrinking the anchor set. -/
+theorem mono_left (h : AssumptionD1pLAnchoredTop f C A p L) (hA : A' ⊆ A) :
+    AssumptionD1pLAnchoredTop f C A' p L :=
+  ⟨h.isOpen, h.convex, hA.trans h.subset, h.contDiffAt, h.one_le,
+    h.lipschitzAnchored.mono_left hA, fun j hj x hx => h.norm_le j hj x (hA hx)⟩
+
+/-- The anchored condition at an anchor `x ∈ A`:
+`‖∇^p f(y) - ∇^p f(x)‖ ≤ L_{f,p} ‖y - x‖` for `y ∈ C`. -/
+theorem lipschitzAt (h : AssumptionD1pLAnchoredTop f C A p L) {x : E} (hx : x ∈ A) :
+    ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L p * ‖y - x‖ :=
+  h.lipschitzAnchored.lipschitzAt hx
+
+/-- `‖∇^j f(x)‖ ≤ L_f` for `j ∈ [2:p]` and `x ∈ A`. -/
+theorem norm_iteratedFDeriv_le_finMax (h : AssumptionD1pLAnchoredTop f C A p L) {j : ℕ}
+    (hj : j ∈ Finset.Icc 2 p) {x : E} (hx : x ∈ A) : ‖iteratedFDeriv ℝ j f x‖ ≤ finMax 1 L p := by
+  refine (h.norm_le j hj x hx).trans (le_finMax ?_)
+  obtain ⟨hj2, hjp⟩ := Finset.mem_Icc.1 hj
+  exact Finset.mem_Icc.2 ⟨by omega, by omega⟩
+
+end AssumptionD1pLAnchoredTop
+
 end Assumption
 
 /-! ### The TRq algorithm (§12.2.1) -/
@@ -455,6 +608,45 @@ theorem trq_mem {X : Set E} (h : algorithm_12_2_1_feasible f X P q ε ϑ x s Δ 
     · rw [hacc.eq_self (not_le.1 hs)]
       exact ih fun i hi => hk' i hi.le
 
+/-- The iterates of a feasible TRq run with `ε ≥ 0` and `ϑ ≥ 0` stay in the sublevel set
+`{y ∈ X | f(y) ≤ f(x₀)}` up to termination: a step has a positive Taylor decrease, so an accepted
+step does not increase `f`. -/
+theorem trq_mem_sublevel {X : Set E} (h : algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
+    (hx0 : x 0 ∈ X) (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) (hϑ : 0 ≤ ϑ) :
+    ∀ k, (∀ i < k, ¬ trqStop f P q ε ϑ x Δ d i) → x k ∈ X ∧ f (x k) ≤ f (x 0) := by
+  intro k
+  induction k with
+  | zero => exact fun _ => ⟨hx0, le_rfl⟩
+  | succ k ih =>
+    intro hk
+    have hk' : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i := fun i hi => hk i (Nat.lt_succ_of_le hi)
+    have hst := h.isTRqStep hk'
+    have hδ : 0 ≤ min (Δ k) ϑ := le_min (h.delta_pos' fun i hi => hk' i hi.le).le hϑ
+    have hpos : 0 < (ftaylorSeries ℝ f (x k)).taylorDecrement (jk k) (s k) := by
+      refine lt_of_le_of_lt ?_ (hst.lt_taylorDecrement.trans_le hst.taylorDecrement_le)
+      exact div_nonneg (mul_nonneg (mul_nonneg P.ς_pos.le (hε _ hst.order_mem))
+        (pow_nonneg hδ _)) (Nat.cast_nonneg _)
+    exact ⟨trq_mem h hx0 (k + 1) hk,
+      ((h.accept k hk').le trqRatio_eq hpos).trans (ih fun i hi => hk' i hi.le).2⟩
+
+/-- Model fidelity of a feasible TRq run under f.D1qL anchored on a set `A ⊆ C` containing the
+sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` ((A.19) anchored at the iterate, which lies in `A`). -/
+theorem trq_fidelity_anchored {X C A : Set E}
+    (h : algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d) (hf : AssumptionD1pLAnchored f C A q L)
+    (hXC : X ⊆ C) (hA : ∀ y ∈ X, f y ≤ f (x 0) → y ∈ A) (hx0 : x 0 ∈ X)
+    (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) (hϑ : 0 ≤ ϑ) :
+    ∀ k, (∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) →
+      |f (x k + s k) - (f (x k) - (ftaylorSeries ℝ f (x k)).taylorDecrement (jk k) (s k))| ≤
+        finMax 1 L q / (jk k + 1)! * ‖s k‖ ^ (jk k + 1) := by
+  intro k hk
+  have hst := h.isTRqStep hk
+  have hj := hst.order_mem
+  obtain ⟨hxk, hfk⟩ := trq_mem_sublevel h hx0 hε hϑ k fun i hi => hk i hi.le
+  rw [ftaylorSeries_taylorDecrement_eq, sub_sub_cancel, ← Real.norm_eq_abs]
+  exact norm_sub_taylorPolynomial_le_of_lipschitzAnchored hf.convex
+    (fun y hy => (hf.contDiffAt y hy).of_le (by exact_mod_cast (Finset.mem_Icc.1 hj).2))
+    (hf.lipschitzAt_finMax hj (hA _ hxk hfk)) (hXC hxk) (hXC hst.mem.2)
+
 /-- Model fidelity of a feasible TRq run under f.D1qL on an open convex `C ⊇ X` (from (A.19)). -/
 theorem trq_fidelity_feasible {X C : Set E} (h : algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
     (hf : AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X) :
@@ -469,6 +661,26 @@ theorem trq_fidelity_feasible {X C : Set E} (h : algorithm_12_2_1_feasible f X P
     (fun y hy => (hf.contDiffAt y hy).of_le (by exact_mod_cast (Finset.mem_Icc.1 hj).2))
     (hf.lipschitz_finMax hj) (hXC (trq_mem h hx0 k fun i hi => hk i hi.le)) (hXC hst.mem.2)
 
+/-- **Lemma 12.2.3 with a feasible set, anchored** ([cartis2022evaluation], Lemma 12.2.3; Lemma
+14.2.3): as `lemma_12_2_3_feasible`, under f.D1qL anchored on a set `A ⊆ C` containing the sublevel
+set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD1pLAnchored`; f.D1qLaB.X, the remark after (14.2.10)) in
+place of f.D1qL on `C`. -/
+theorem lemma_12_2_3_anchored {X C A : Set E}
+    (h : algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d) (hf : AssumptionD1pLAnchored f C A q L)
+    (hXC : X ⊆ C) (hA : ∀ y ∈ X, f y ≤ f (x 0) → y ∈ A) (hx0 : x 0 ∈ X) (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1)
+    (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) {k : ℕ} (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) :
+    (0 < trqKappaDelta f P q L ϑ (x 0) ∧ trqKappaDelta f P q L ϑ (x 0) < 1) ∧
+      min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
+        Δ k ∧
+      min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
+        Δ (k + 1) := by
+  have hL : 1 ≤ finMax 1 L q := one_le_finMax
+  have hM := IsTRqRun.pos_of_not_trqTest_zero h hε hϑ.le
+    (norm_ftaylorSeries_le_derivMax (x 0)) (hk 0 (Nat.zero_le k))
+  refine ⟨⟨trqKappa_pos (by linarith) hϑ hM, trqKappa_lt_one hL hϑ1⟩, ?_⟩
+  exact IsTRqRun.radius_ge h hL hϑ hϑ1 hε
+    (norm_ftaylorSeries_le_derivMax (x 0)) (trq_fidelity_anchored h hf hXC hA hx0 hε hϑ.le) hk
+
 /-- **Lemma 12.2.3 with a feasible set** ([cartis2022evaluation], Lemma 12.2.3; used in
 Lemma 14.2.3): under f.D1qL on an open convex `C ⊇ X`, `x₀ ∈ X`, `0 < ϑ ≤ 1` and `ε_j ≥ 0`, at
 every iteration `k` before termination of a feasible TRq run,
@@ -482,13 +694,8 @@ theorem lemma_12_2_3_feasible {X C : Set E}
       min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
         Δ k ∧
       min (P.γ₁ * ϑ) (trqKappaDelta f P q L ϑ (x 0) * prefixMin (trqGapSeq f ϑ x Δ jk d) k) ≤
-        Δ (k + 1) := by
-  have hL : 1 ≤ finMax 1 L q := one_le_finMax
-  have hM := IsTRqRun.pos_of_not_trqTest_zero h hε hϑ.le
-    (norm_ftaylorSeries_le_derivMax (x 0)) (hk 0 (Nat.zero_le k))
-  refine ⟨⟨trqKappa_pos (by linarith) hϑ hM, trqKappa_lt_one hL hϑ1⟩, ?_⟩
-  exact IsTRqRun.radius_ge h hL hϑ hϑ1 hε
-    (norm_ftaylorSeries_le_derivMax (x 0)) (trq_fidelity_feasible h hf hXC hx0) hk
+        Δ (k + 1) :=
+  lemma_12_2_3_anchored h (hf.anchored hXC) hXC (fun _ hy _ => hy) hx0 hϑ hϑ1 hε hk
 
 /-- **Lemma 12.2.3** of [cartis2022evaluation]: under f.D1qL and `0 < ϑ ≤ 1`, `ε_j ≥ 0`, at every
 iteration `k` before termination, `Δ_k ≥ min(γ₁ ϑ, κ_Δ min_{i ∈ [0:k]} φ̂_i)` (12.2.13), and
@@ -504,6 +711,26 @@ theorem lemma_12_2_3 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hf : Assump
   lemma_12_2_3_feasible (X := univ) (C := univ) (algorithm_12_2_1_iff_feasible.1 h)
     hf.on_univ (subset_univ _) (mem_univ _) hϑ hϑ1 hε hk
 
+/-- **Lemma 12.2.4 with a feasible set, anchored** ([cartis2022evaluation], Lemma 12.2.4; Lemma
+14.2.2): as `lemma_12_2_4_feasible`, under f.D1qL anchored on a set `A ⊆ C` containing the sublevel
+set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD1pLAnchored`; f.D1qLaB.X, the remark after (14.2.10)) in
+place of f.D1qL on `C`. -/
+theorem lemma_12_2_4_anchored {X C A : Set E} (h : algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
+    (hf : AssumptionD1pLAnchored f C A q L) (hXC : X ⊆ C)
+    (hA : ∀ y ∈ X, f y ≤ f (x 0) → y ∈ A) (hx0 : x 0 ∈ X)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1) {k : ℕ}
+    (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) :
+    (P.ς * trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! * finMin 1 ε q ^ (q + 1) ≤
+        (ftaylorSeries ℝ f (x k)).taylorDecrement (jk k) (s k) ∧
+      (P.η₁ ≤ trqRho f x s jk k →
+        P.η₁ * ((P.ς * trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
+          finMin 1 ε q ^ (q + 1)) ≤ f (x k) - f (x (k + 1))) :=
+  IsTRqRun.taylorDecrement_ge h one_le_finMax hϑ1
+    (finMin_pos one_pos fun j hj => (hε j hj).1) hϑ (fun _ hj => finMin_le hj)
+      (norm_ftaylorSeries_le_derivMax (x 0))
+    (trq_fidelity_anchored h hf hXC hA hx0 (fun j hj => (hε j hj).1.le)
+      ((finMin_pos one_pos fun j hj => (hε j hj).1).le.trans hϑ)) hk
+
 /-- **Lemma 12.2.4 with a feasible set** ([cartis2022evaluation], Lemma 12.2.4; used in
 Lemma 14.2.2): under f.D1qL on an open convex `C ⊇ X`, `x₀ ∈ X`, `ε ∈ (0, 1]^q`, `ϑ ∈ [ε_min, 1]`,
 the model decrease (12.2.18) and the function decrease (12.2.19) hold for a feasible TRq run. -/
@@ -516,19 +743,15 @@ theorem lemma_12_2_4_feasible {X C : Set E} (h : algorithm_12_2_1_feasible f X P
       (P.η₁ ≤ trqRho f x s jk k →
         P.η₁ * ((P.ς * trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
           finMin 1 ε q ^ (q + 1)) ≤ f (x k) - f (x (k + 1))) :=
-  IsTRqRun.taylorDecrement_ge h one_le_finMax hϑ1
-    (finMin_pos one_pos fun j hj => (hε j hj).1) hϑ (fun _ hj => finMin_le hj)
-      (norm_ftaylorSeries_le_derivMax (x 0))
-    (trq_fidelity_feasible h hf hXC hx0) hk
+  lemma_12_2_4_anchored h (hf.anchored hXC) hXC (fun _ hy _ => hy) hx0 hε hϑ hϑ1 hk
 
-/-- **Theorem 12.2.5 with a feasible set** ([cartis2022evaluation], Theorem 12.2.5; the TRq-SC row
-of Theorem 14.2.4). Let `X ⊆ C` with `C` open and convex, f.D1qL on `C`, `f ≥ f_low` on `X`,
-`x₀ ∈ X`, `ε ∈ (0, 1]^q` and `ϑ ∈ [ε_min, 1]`. Every feasible TRq run terminates at some `k_ε` with
-`x_{k_ε} ∈ X` and the constrained certificate
-`φ^{δ_ε}_{f,j}(x_{k_ε}) ≤ ε_j δ_ε^j/j!` over `{d | x_{k_ε} + d ∈ X}` for `δ_ε = min(Δ_{k_ε}, ϑ)`,
-within the evaluation bounds of Theorem 12.2.5. -/
-theorem theorem_12_2_5_feasible {X C : Set E} {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
-    (hf : AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
+/-- **Theorem 12.2.5 with a feasible set, anchored** ([cartis2022evaluation], Theorem 12.2.5; the
+TRq-SC row of Theorem 14.2.4 under f.D1qLaB.X): as `theorem_12_2_5_feasible`, under f.D1qL anchored
+on a set `A ⊆ C` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD1pLAnchored`;
+f.D1qLaB.X, the remark after (14.2.10)) in place of f.D1qL on `C`. -/
+theorem theorem_12_2_5_anchored {X C A : Set E} {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
+    (hf : AssumptionD1pLAnchored f C A q L) (hXC : X ⊆ C)
+    (hA : ∀ y ∈ X, f y ≤ f (x 0) → y ∈ A) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     (h : algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d) :
     ∃ kε, IsFirstHit (trqStop f P q ε ϑ x Δ d) kε ∧ x kε ∈ X ∧
@@ -543,6 +766,7 @@ theorem theorem_12_2_5_feasible {X C : Set E} {flow : ℝ} (hb : ∀ y ∈ X, fl
   set εm := finMin 1 ε q with hεm_def
   have hεm : 0 < εm := finMin_pos one_pos fun j hj => (hε j hj).1
   have hϑ0 : 0 < ϑ := hεm.trans_le hϑ
+  have hfid := trq_fidelity_anchored h hf hXC hA hx0 (fun j hj => (hε j hj).1.le) hϑ0.le
   set κ := trqKappaDelta f P q L ϑ (x 0) with hκ_def
   have hκ0 : 0 ≤ κ := trqKappaDelta_nonneg hϑ0.le _
   have hlog2 : 0 < |Real.log P.γ₂| := abs_pos.2 (Real.log_neg P.γ₂_pos P.γ₂_lt_one).ne
@@ -578,7 +802,7 @@ theorem theorem_12_2_5_feasible {X C : Set E} {flow : ℝ} (hb : ∀ y ∈ X, fl
     have hdec := fun k (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) =>
       IsTRqRun.taylorDecrement_ge h one_le_finMax hϑ1 hεm hϑ hεle
         (norm_ftaylorSeries_le_derivMax (x 0))
-        (trq_fidelity_feasible h hf hXC hx0) hk
+        hfid hk
     have hsucc : ∀ k, (∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) →
         ((successSet (fun k => P.η₁ ≤ trqRho f x s jk k) k).card : ℝ) ≤
           kappaSTRq f P q L ϑ (x 0) * X := by
@@ -605,7 +829,7 @@ theorem theorem_12_2_5_feasible {X C : Set E} {flow : ℝ} (hb : ∀ y ∈ X, fl
           (|Real.log (P.ς * κ / P.Δ₀)| + |Real.log εm|) / |Real.log P.γ₂| := by
       intro k hk
       have hΔ := IsTRqRun.mul_le_delta h one_le_finMax hϑ1 hεm hϑ hεle
-        (norm_ftaylorSeries_le_derivMax (x 0)) h0 (trq_fidelity_feasible h hf hXC hx0) (k := k + 1)
+        (norm_ftaylorSeries_le_derivMax (x 0)) h0 hfid (k := k + 1)
         fun i hi => hk i (Nat.lt_succ_iff.1 hi)
       have hpos : 0 < P.ς * κ * εm := by have := P.ς_pos; positivity
       have hcnt := h.toIsTRRun.succ_count hk hpos hΔ
@@ -635,6 +859,26 @@ theorem theorem_12_2_5_feasible {X C : Set E} {flow : ℝ} (hb : ∀ y ∈ X, fl
     ring
   · rw [hX_def, mul_div_assoc]
 
+/-- **Theorem 12.2.5 with a feasible set** ([cartis2022evaluation], Theorem 12.2.5; the TRq-SC row
+of Theorem 14.2.4). Let `X ⊆ C` with `C` open and convex, f.D1qL on `C`, `f ≥ f_low` on `X`,
+`x₀ ∈ X`, `ε ∈ (0, 1]^q` and `ϑ ∈ [ε_min, 1]`. Every feasible TRq run terminates at some `k_ε` with
+`x_{k_ε} ∈ X` and the constrained certificate
+`φ^{δ_ε}_{f,j}(x_{k_ε}) ≤ ε_j δ_ε^j/j!` over `{d | x_{k_ε} + d ∈ X}` for `δ_ε = min(Δ_{k_ε}, ϑ)`,
+within the evaluation bounds of Theorem 12.2.5. -/
+theorem theorem_12_2_5_feasible {X C : Set E} {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
+    (hf : AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    (h : algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d) :
+    ∃ kε, IsFirstHit (trqStop f P q ε ϑ x Δ d) kε ∧ x kε ∈ X ∧
+      min (Δ kε) ϑ ∈ Ioc 0 1 ∧
+      IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε
+        (fun _ => min (Δ kε) ϑ) ∧
+      (funEvalCount kε : ℝ) ≤
+        kappaATRq f P q L ϑ (x 0) * (f (x 0) - flow) / finMin 1 ε q ^ (q + 1) +
+          kappaBTRq P * |Real.log (finMin 1 ε q)| + kappaCTRq f P q L ϑ (x 0) ∧
+      (derivEvalCount (fun k => P.η₁ ≤ trqRho f x s jk k) kε : ℝ) ≤
+        kappaSTRq f P q L ϑ (x 0) * (f (x 0) - flow) / finMin 1 ε q ^ (q + 1) + 1 :=
+  theorem_12_2_5_anchored hb (hf.anchored hXC) hXC (fun _ hy _ => hy) hx0 hε hϑ hϑ1 h
 
 end TRq
 
@@ -1563,20 +1807,7 @@ theorem lemma_12_2_9_algorithm [FiniteDimensional ℝ E] (hf : AssumptionD1pL f 
   · rw [arqpKappaDelta]; ring
 
 variable {P : ARqpParams} {ε δ₀ : ℕ → ℝ} {x s : ℕ → E} {σ : ℕ → ℝ} {δ δs : ℕ → ℕ → ℝ}
-  {d dm : ℕ → ℕ → E} {X C : Set E}
-
-/-- **Lemma 4.1.2 for ARqp** ([cartis2022evaluation], §12.2.2.2, (4.1.19)): under f.D1pL with
-`p ≥ 1` on an open convex `C ⊇ X`, up to (and including) termination
-`σ_min ≤ σ_k ≤ σ_max = max(σ₀, γ₃ L_{f,p}/(1 - η₂))`. -/
-theorem arqp_sigma_le (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hp : 1 ≤ p)
-    (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) :
-    ∀ k, (∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i) →
-      P.σmin ≤ σ k ∧ σ k ≤ arSigmaMax P.toARParams (L p) := by
-  intro k hk
-  have := IsARRun.sigma_le (f := f) (p := p) (x := x) (s := s) h.toIsARRun (C := C)
-    hf.convex hf.contDiffAt (hf.lipschitz p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩))
-    (hXC h.mem_zero) (fun k hk hst => ⟨hXC hst.mem, h.model_lt hk⟩) k hk
-  exact ⟨this.2.1, this.2.2⟩
+  {d dm : ℕ → ℕ → E} {X C A : Set E}
 
 /-- At a successful iteration before termination, `x_{k+1} = x_k + s_k` and
 `δ_{k+1} = δ_{s_k}`. -/
@@ -1602,12 +1833,111 @@ theorem arqp_objective_le (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s 
   have hdec := (arqp_taylorDecrement_gt h hk).2
   exact (h.toIsARRun.accept k hk).le (w := f) rfl (lt_of_le_of_lt (by positivity) hdec)
 
-/-- The radius inequality of Lemma 12.2.11 for one iteration (local form): if the step `t` from
-`y` satisfies the Step-2 conditions with weight `0 ≤ σ_k ≤ σ_max`, is short (`‖t‖ < 1`, so that
-(12.2.29) holds), and the Step-1 test at `y + t` with the radii `δs` and displacements `d'` fails,
-then (12.2.52) holds (with `ς - θ`) for some `j ∈ [1:q]`. -/
-theorem arqp_radius_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
-    (hqp : q ≤ p) {y t : E} (hy : y ∈ X)
+/-- The iterates of a feasible ARqp run stay in the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` up to
+termination. -/
+theorem arqp_mem_sublevel (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) :
+    ∀ k, (∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i) → x k ∈ X ∧ f (x k) ≤ f (x 0) := by
+  intro k
+  induction k with
+  | zero => exact fun _ => ⟨h.mem_zero, le_rfl⟩
+  | succ k ih =>
+    intro hk
+    exact ⟨h.mem (k + 1) hk, (arqp_objective_le h fun i hi => hk i (Nat.lt_succ_of_le hi)).trans
+      (ih fun i hi => hk i (Nat.lt_succ_of_lt hi)).2⟩
+
+/-- **Lemma 4.1.2 for ARqp, anchored** (§12.2.2.2, (4.1.19); §14.2.1): under f.D1pL anchored on a
+set `A ⊆ C` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` and `X ⊆ C`, up to
+(and including) termination `σ_min ≤ σ_k ≤ σ_max = max(σ₀, γ₃ L_{f,p}/(1 - η₂))`. -/
+theorem arqp_sigma_le_anchored (hf : AssumptionD1pLAnchoredTop f C A p L) (hXC : X ⊆ C)
+    (hA : ∀ y ∈ X, f y ≤ f (x 0) → y ∈ A)
+    (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) :
+    ∀ k, (∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i) →
+      P.σmin ≤ σ k ∧ σ k ≤ arSigmaMax P.toARParams (L p) := by
+  intro k hk
+  have := IsARRun.sigma_le_anchored (f := f) (p := p) (x := x) (s := s) h.toIsARRun (C := C)
+    hf.convex hf.contDiffAt (fun k hk => by
+      obtain ⟨hxk, hfk⟩ := arqp_mem_sublevel h k fun i hi => hk i hi.le
+      exact hf.lipschitzAt (hA _ hxk hfk))
+    (hXC h.mem_zero) (fun k hk hst => ⟨hXC hst.mem, h.model_lt hk⟩) k hk
+  exact ⟨this.2.1, this.2.2⟩
+
+/-- **Lemma 4.1.2 for ARqp** ([cartis2022evaluation], §12.2.2.2, (4.1.19)): under f.D1pL with
+`p ≥ 1` on an open convex `C ⊇ X`, up to (and including) termination
+`σ_min ≤ σ_k ≤ σ_max = max(σ₀, γ₃ L_{f,p}/(1 - η₂))`. -/
+theorem arqp_sigma_le (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hp : 1 ≤ p)
+    (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) :
+    ∀ k, (∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i) →
+      P.σmin ≤ σ k ∧ σ k ≤ arSigmaMax P.toARParams (L p) :=
+  arqp_sigma_le_anchored (hf.anchoredTop hXC hp) hXC (fun _ hy _ => hy) h
+
+/-- **Runs with the radii property (12.2.50), anchored** ([cartis2022evaluation], Lemmas 12.2.9,
+12.2.10, §14.2.1): as `algorithm_12_2_2_exists_of_D1pL`, in finite dimension, with f.D1pL replaced
+by the top-order anchored assumption on `C = E` with an anchor set `A` containing the sublevel set
+`{y | f(y) ≤ f(x₀)}` (`AssumptionD1pLAnchoredTop`; f.D1pLaB.X with `X = X₀ = E`). The radii of
+Lemma 12.2.9 are computed from the jet at the iterate, which lies in `A`. -/
+theorem algorithm_12_2_2_exists_anchored [FiniteDimensional ℝ E]
+    (hf : AssumptionD1pLAnchoredTop f univ A p L) (P : ARqpParams) (hq : 1 ≤ q) (hqp : q ≤ p)
+    {ε δ₀ : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+    (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1) (x₀ : E) (hA : ∀ y, f y ≤ f x₀ → y ∈ A) :
+    ∃ (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E), x 0 = x₀ ∧
+      algorithm_12_2_2 f P p q ε δ₀ x s σ δ δs d dm ∧
+      (∀ k, (∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i) →
+        ∀ j ∈ Finset.Icc 1 q, j ≤ 2 → δs k j = 1) ∧
+      ∀ k, (∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) →
+        ∀ j ∈ Finset.Icc 1 q, arqpKappaDelta P (finMax 1 L p) (σ k) * ε j ≤ δs k j := by
+  classical
+  have hp : 1 ≤ p := hq.trans hqp
+  have hL1 : 1 ≤ finMax 1 L p := one_le_finMax
+  -- the jet bound `L_f` at the anchors, and any bound elsewhere
+  let M : E → ℝ := fun y => if y ∈ A then finMax 1 L p else
+    max (finMax 1 L p) (∑ i ∈ Finset.Icc 2 p, ‖iteratedFDeriv ℝ i f y‖)
+  have hM0 : ∀ y, 0 ≤ M y := fun y => by
+    simp only [M]
+    split_ifs
+    · linarith
+    · exact le_max_of_le_left (by linarith)
+  have hM : ∀ y, ∀ i ∈ Finset.Icc 2 p, ‖iteratedFDeriv ℝ i f y‖ ≤ M y := fun y i hi => by
+    simp only [M]
+    split_ifs with hy
+    · exact hf.norm_iteratedFDeriv_le_finMax hi hy
+    · exact le_max_of_le_right (Finset.single_le_sum
+        (f := fun i => ‖iteratedFDeriv ℝ i f y‖) (fun _ _ => norm_nonneg _) hi)
+  obtain ⟨x, s, σ, δ, δs, d, dm, h0, h, hrad⟩ := exists_isARqpRun f P hp hqp
+    (fun j hj => (hε j hj).1) hδ₀ M hM0 hM x₀
+  refine ⟨x, s, σ, δ, δs, d, dm, h0, h, fun k hk => (hrad k hk).1, fun k hk j hj => ?_⟩
+  have hk' : ∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i := fun i hi => hk i hi.le
+  have hσ : 0 < σ k := h.toIsARRun.sigma_pos hk' k le_rfl
+  have hxA : x k ∈ A := by
+    have := (arqp_mem_sublevel (X := univ) h k hk').2
+    rw [h0] at this
+    exact hA _ this
+  have hMk : M (x k) = finMax 1 L p := ite_eq_left hxA
+  obtain ⟨hεj, hεj1⟩ := hε j hj
+  have hκ1 := (arqpKappaDelta_lt_one P hL1 hσ.le).le
+  by_cases hj2 : j ≤ 2
+  · rw [(hrad k hk').1 j hj hj2]
+    calc arqpKappaDelta P (finMax 1 L p) (σ k) * ε j ≤ 1 * 1 :=
+          mul_le_mul hκ1 hεj1 hεj.le zero_le_one
+      _ = 1 := one_mul 1
+  · rw [(hrad k hk').2 j (Finset.mem_Icc.2 ⟨by omega, (Finset.mem_Icc.1 hj).2⟩), hMk]
+    have hK : 0 < 3 * finMax 1 L p + σ k := by linarith
+    have := P.ς_pos; have := P.θ_pos
+    refine le_min ?_ ?_
+    · calc arqpKappaDelta P (finMax 1 L p) (σ k) * ε j ≤ 1 * 1 :=
+            mul_le_mul hκ1 hεj1 hεj.le zero_le_one
+        _ = 1 := one_mul 1
+    · rw [arqpKappaDelta]
+      calc P.ς * P.θ / (8 * (3 * finMax 1 L p + σ k)) * ε j =
+          P.ς * P.θ * ε j / (8 * (3 * finMax 1 L p + σ k)) := by ring
+        _ ≤ P.ς * P.θ * ε j / (4 * (3 * finMax 1 L p + σ k)) :=
+          div_le_div_of_nonneg_left (by positivity) (by positivity) (by linarith)
+
+/-- The radius inequality of Lemma 12.2.11 for one iteration (local form, anchored): as
+`arqp_radius_local`, under f.D1pL anchored at the top order on a set `A ⊆ C`
+(`AssumptionD1pLAnchoredTop`; f.D1pLaB.X) in place of f.D1pL on `C`, with the iterate `y ∈ A`. -/
+theorem arqp_radius_local_anchored (hf : AssumptionD1pLAnchoredTop f C A p L) (hXC : X ⊆ C)
+    (hq : 1 ≤ q)
+    (hqp : q ≤ p) {y t : E} (hy : y ∈ A)
     {σk : ℝ} (hσ0 : 0 ≤ σk) (hσmax : σk ≤ arSigmaMax P.toARParams (L p)) {δk : ℕ → ℝ}
     {dmk : ℕ → E}
     (hstep : ARqpStep X P q ε (ARqpData.ofTaylor (ftaylorSeries ℝ f y) p σk) y t δk dmk)
@@ -1636,13 +1966,32 @@ theorem arqp_radius_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 
     exact le_of_mul_le_mul_left h2 P.ς_pos
   have hS0 : (0 : E) ∈ {e | y + t + e ∈ X} := by
     change y + t + 0 ∈ X; rw [add_zero]; exact hstep.mem
-  have := radius_inequality_of_measure_gt hf.convex hf.contDiffAt
-    (hf.lipschitz p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)) (zero_le_one.trans (hf.one_le p
-      (Finset.mem_Icc.2 ⟨hp, le_rfl⟩))) (hXC hy) (hXC hstep.mem)
+  have := radius_inequality_of_measure_gt_anchored hf.convex hf.contDiffAt
+    (hf.lipschitzAt hy) (zero_le_one.trans hf.one_le) (hf.subset hy) (hXC hstep.mem)
     (jetApprox_self (ftaylorSeries ℝ f y) p) le_rfl le_rfl
     (fun i _ => by simp) hσ0 hσmax hjp hS0 hδ0 h₁ h₂
   refine ⟨j, hj, this.trans_eq ?_⟩
   ring
+
+/-- The radius inequality of Lemma 12.2.11 for one iteration (local form): if the step `t` from
+`y` satisfies the Step-2 conditions with weight `0 ≤ σ_k ≤ σ_max`, is short (`‖t‖ < 1`, so that
+(12.2.29) holds), and the Step-1 test at `y + t` with the radii `δs` and displacements `d'` fails,
+then (12.2.52) holds (with `ς - θ`) for some `j ∈ [1:q]`. -/
+theorem arqp_radius_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
+    (hqp : q ≤ p) {y t : E} (hy : y ∈ X)
+    {σk : ℝ} (hσ0 : 0 ≤ σk) (hσmax : σk ≤ arSigmaMax P.toARParams (L p)) {δk : ℕ → ℝ}
+    {dmk : ℕ → E}
+    (hstep : ARqpStep X P q ε (ARqpData.ofTaylor (ftaylorSeries ℝ f y) p σk) y t δk dmk)
+    (hshort : ‖t‖ < 1) {d' : ℕ → E}
+    (hw : ∀ j ∈ Finset.Icc 1 q, IsApproxMeasureStep
+      ((ftaylorSeries ℝ f (y + t)).taylorDecrement j) (δk j) {e | y + t + e ∈ X} P.ς (d' j))
+    (hfail : ¬ MeasureTestPasses (fun j => (ftaylorSeries ℝ f (y + t)).taylorDecrement j) q P.ς
+      ε δk d') :
+    ∃ j ∈ Finset.Icc 1 q, (P.ς - P.θ) * ε j * δk j ^ j / j ! <
+      (L p + arSigmaMax P.toARParams (L p)) *
+        ∑ ℓ ∈ Finset.Icc 1 j, δk j ^ ℓ / ℓ ! * ‖t‖ ^ (p - ℓ + 1) :=
+  arqp_radius_local_anchored (hf.anchoredTop hXC (hq.trans hqp)) hXC hq hqp hy hσ0 hσmax hstep
+    hshort hw hfail
 
 /-- The successor data of a successful ARqp iteration `k` before termination, in the form used
 by the local lemmas: the Step-1 witnesses at `x_{k+1} = x_k + s_k` with radii `δs_k`. -/
@@ -1740,16 +2089,13 @@ theorem arqpKappaHat_le_one (q : ℕ) : arqpKappaHat P L p q ≤ 1 :=
 
 end Constants
 
-/-- The common core of Lemmas 12.2.12 and 12.2.13 for one iteration (local form): for a step `t`
-from `y` satisfying the Step-2 conditions with weight `0 ≤ σ_k ≤ σ_max` and strict model decrease,
-such that the Step-1 test at `y + t` with the radii `δs` fails, under the radii hypotheses of
-Lemma 12.2.12 in radii mode `u` (unit radii `δ_j = 1` if `u`; a long step or the lower bound
-(12.2.51) `δ_j ≥ κ_{δ,min} ε_j` at every order if `¬ u`) some order `j ∈ [1:q]` satisfies
-`τ_j ε_j/2 ≤ ‖t‖^{p-j+1}` if `u` and `(τ_j/2) κ̂^{j-1} ε_j^j ≤ ‖t‖^p` if `¬ u`. The book uses the
-mode `u = (q ≤ 2)`; the lower-bound mode is valid for every `q`. -/
-theorem arqp_core_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
+/-- The common core of Lemmas 12.2.12 and 12.2.13 for one iteration (local form, anchored): as
+`arqp_core_local`, under f.D1pL anchored at the top order on a set `A ⊆ C`
+(`AssumptionD1pLAnchoredTop`; f.D1pLaB.X) in place of f.D1pL on `C`, with the iterate `y ∈ A`. -/
+theorem arqp_core_local_anchored (hf : AssumptionD1pLAnchoredTop f C A p L) (hXC : X ⊆ C)
+    (hq : 1 ≤ q)
     (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) {y t : E}
-    (hy : y ∈ X) {σk : ℝ}
+    (hy : y ∈ A) {σk : ℝ}
     (hσ0 : 0 ≤ σk) (hσmax : σk ≤ arSigmaMax P.toARParams (L p)) {δk : ℕ → ℝ} {dmk : ℕ → E}
     (hstep : ARqpStep X P q ε (ARqpData.ofTaylor (ftaylorSeries ℝ f y) p σk) y t δk dmk)
     (hlt : regularizedModel (ftaylorSeries ℝ f y) p σk t <
@@ -1765,7 +2111,7 @@ theorem arqp_core_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 
       (u → arqpTau P L p j * ε j / 2 ≤ ‖t‖ ^ (p - j + 1)) ∧
       (¬ u → arqpTau P L p j / 2 * arqpKappaHat P L p q ^ (j - 1) * ε j ^ j ≤ ‖t‖ ^ p) := by
   have hp : 1 ≤ p := hq.trans hqp
-  have hLp : 1 ≤ L p := hf.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
+  have hLp : 1 ≤ L p := hf.one_le
   have ht : 0 < ‖t‖ := norm_pos_iff.2 (ne_zero_of_regularizedModel_lt hlt)
   set A := L p + arSigmaMax P.toARParams (L p) with hA_def
   have hA : 0 < A := by have := arSigmaMax_pos P.toARParams (L p); linarith
@@ -1786,7 +2132,8 @@ theorem arqp_core_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 
         _ ≤ 1 := by norm_num
         _ ≤ ‖t‖ ^ p := one_le_pow₀ hlong
   have hshort : ‖t‖ < 1 := not_le.1 hlong
-  obtain ⟨j, hj, hineq⟩ := arqp_radius_local hf hXC hq hqp hy hσ0 hσmax hstep hshort hw hfail
+  obtain ⟨j, hj, hineq⟩ := arqp_radius_local_anchored hf hXC hq hqp hy hσ0 hσmax hstep hshort hw
+    hfail
   have hjp : j ≤ p := (Finset.mem_Icc.1 hj).2.trans hqp
   have hj1 : 1 ≤ j := (Finset.mem_Icc.1 hj).1
   obtain ⟨hε0, hε1⟩ := hε j hj
@@ -1820,6 +2167,32 @@ theorem arqp_core_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 
     have hτj := arqpTau_pos P L hθς (zero_le_one.trans hLp) j
     gcongr
 
+/-- The common core of Lemmas 12.2.12 and 12.2.13 for one iteration (local form): for a step `t`
+from `y` satisfying the Step-2 conditions with weight `0 ≤ σ_k ≤ σ_max` and strict model decrease,
+such that the Step-1 test at `y + t` with the radii `δs` fails, under the radii hypotheses of
+Lemma 12.2.12 in radii mode `u` (unit radii `δ_j = 1` if `u`; a long step or the lower bound
+(12.2.51) `δ_j ≥ κ_{δ,min} ε_j` at every order if `¬ u`) some order `j ∈ [1:q]` satisfies
+`τ_j ε_j/2 ≤ ‖t‖^{p-j+1}` if `u` and `(τ_j/2) κ̂^{j-1} ε_j^j ≤ ‖t‖^p` if `¬ u`. The book uses the
+mode `u = (q ≤ 2)`; the lower-bound mode is valid for every `q`. -/
+theorem arqp_core_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
+    (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) {y t : E}
+    (hy : y ∈ X) {σk : ℝ}
+    (hσ0 : 0 ≤ σk) (hσmax : σk ≤ arSigmaMax P.toARParams (L p)) {δk : ℕ → ℝ} {dmk : ℕ → E}
+    (hstep : ARqpStep X P q ε (ARqpData.ofTaylor (ftaylorSeries ℝ f y) p σk) y t δk dmk)
+    (hlt : regularizedModel (ftaylorSeries ℝ f y) p σk t <
+      regularizedModel (ftaylorSeries ℝ f y) p σk 0) {d' : ℕ → E}
+    (hw : ∀ j ∈ Finset.Icc 1 q, IsApproxMeasureStep
+      ((ftaylorSeries ℝ f (y + t)).taylorDecrement j) (δk j) {e | y + t + e ∈ X} P.ς (d' j))
+    (hfail : ¬ MeasureTestPasses (fun j => (ftaylorSeries ℝ f (y + t)).taylorDecrement j) q P.ς
+      ε δk d')
+    {u : Prop} (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δk j = 1) ∧
+      (¬ u → 1 ≤ ‖t‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+        arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) * ε j ≤ δk j)) :
+    ∃ j ∈ Finset.Icc 1 q,
+      (u → arqpTau P L p j * ε j / 2 ≤ ‖t‖ ^ (p - j + 1)) ∧
+      (¬ u → arqpTau P L p j / 2 * arqpKappaHat P L p q ^ (j - 1) * ε j ^ j ≤ ‖t‖ ^ p) :=
+  arqp_core_local_anchored (hf.anchoredTop hXC (hq.trans hqp)) hXC hq hqp hθς hε hy hσ0 hσmax hstep
+    hlt hw hfail hrad
 
 /-- The common core of Lemmas 12.2.12 and 12.2.13 for an ARqp run: at a successful iteration `k`
 before termination after which the Step-1 test fails, under the radii hypotheses of
@@ -1976,13 +2349,13 @@ theorem arqpKappaDm_nonneg {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hθς
     (hL : 1 ≤ L p) : 0 ≤ arqpKappaDm P L p q :=
   arqpKappaDmOf_nonneg _ hθς hL
 
-/-- The model decrease of Lemma 12.2.13 for one iteration (local form): under the hypotheses of
-`arqp_core_local` (in radii mode `u`) and `σ_min ≤ σ_k`,
-`ΔT_{f,p}(y, t) ≥ κ_{Δm} min_{j ∈ [1:q]} ε_j^{π_j}` with `κ_{Δm} = arqpKappaDmOf u` and
-`π_j = arqpPiOf u p j`. -/
-theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
+/-- The model decrease of Lemma 12.2.13 for one iteration (local form, anchored): as
+`arqp_decrease_local`, under f.D1pL anchored at the top order on a set `A ⊆ C`
+(`AssumptionD1pLAnchoredTop`; f.D1pLaB.X) in place of f.D1pL on `C`, with the iterate `y ∈ A`. -/
+theorem arqp_decrease_local_anchored (hf : AssumptionD1pLAnchoredTop f C A p L) (hXC : X ⊆ C)
+    (hq : 1 ≤ q)
     (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) {y t : E}
-    (hy : y ∈ X) {σk : ℝ}
+    (hy : y ∈ A) {σk : ℝ}
     (hσmin : P.σmin ≤ σk) (hσmax : σk ≤ arSigmaMax P.toARParams (L p)) {δk : ℕ → ℝ}
     {dmk : ℕ → E}
     (hstep : ARqpStep X P q ε (ARqpData.ofTaylor (ftaylorSeries ℝ f y) p σk) y t δk dmk)
@@ -1999,7 +2372,7 @@ theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq 
       (ftaylorSeries ℝ f y).taylorDecrement p t := by
   have hσ0 : 0 ≤ σk := P.σmin_nonneg.trans hσmin
   have hp : 1 ≤ p := hq.trans hqp
-  have hLp : 1 ≤ L p := hf.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
+  have hLp : 1 ≤ L p := hf.one_le
   have hT := lt_taylorDecrement_of_regularizedModel_lt hlt
   have ht : 0 < ‖t‖ := norm_pos_iff.2 (ne_zero_of_regularizedModel_lt hlt)
   set m := finMin 1 (fun j => ε j ^ arqpPiOf u p j) q with hm_def
@@ -2016,7 +2389,7 @@ theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq 
   have hτq := arqpTau_pos P L hθς (zero_le_one.trans hLp) q
   have hτq1 := arqpTau_le_one P L hLp q
   obtain ⟨j, hj, h1, h2⟩ :=
-    arqp_core_local hf hXC hq hqp hθς hε hy hσ0 hσmax hstep hlt hw hfail hrad
+    arqp_core_local_anchored hf hXC hq hqp hθς hε hy hσ0 hσmax hstep hlt hw hfail hrad
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
   have hjp : j ≤ p := hjq.trans hqp
   obtain ⟨hε0, hε1⟩ := hε j hj
@@ -2093,6 +2466,66 @@ theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq 
       _ ≤ _ := hlow
   exact hdec
 
+/-- The model decrease of Lemma 12.2.13 for one iteration (local form): under the hypotheses of
+`arqp_core_local` (in radii mode `u`) and `σ_min ≤ σ_k`,
+`ΔT_{f,p}(y, t) ≥ κ_{Δm} min_{j ∈ [1:q]} ε_j^{π_j}` with `κ_{Δm} = arqpKappaDmOf u` and
+`π_j = arqpPiOf u p j`. -/
+theorem arqp_decrease_local (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
+    (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) {y t : E}
+    (hy : y ∈ X) {σk : ℝ}
+    (hσmin : P.σmin ≤ σk) (hσmax : σk ≤ arSigmaMax P.toARParams (L p)) {δk : ℕ → ℝ}
+    {dmk : ℕ → E}
+    (hstep : ARqpStep X P q ε (ARqpData.ofTaylor (ftaylorSeries ℝ f y) p σk) y t δk dmk)
+    (hlt : regularizedModel (ftaylorSeries ℝ f y) p σk t <
+      regularizedModel (ftaylorSeries ℝ f y) p σk 0) {d' : ℕ → E}
+    (hw : ∀ j ∈ Finset.Icc 1 q, IsApproxMeasureStep
+      ((ftaylorSeries ℝ f (y + t)).taylorDecrement j) (δk j) {e | y + t + e ∈ X} P.ς (d' j))
+    (hfail : ¬ MeasureTestPasses (fun j => (ftaylorSeries ℝ f (y + t)).taylorDecrement j) q P.ς
+      ε δk d')
+    {u : Prop} [Decidable u] (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δk j = 1) ∧
+      (¬ u → 1 ≤ ‖t‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+        arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) * ε j ≤ δk j)) :
+    arqpKappaDmOf u P L p q * finMin 1 (fun j => ε j ^ arqpPiOf u p j) q ≤
+      (ftaylorSeries ℝ f y).taylorDecrement p t :=
+  arqp_decrease_local_anchored (hf.anchoredTop hXC (hq.trans hqp)) hXC hq hqp hθς hε hy hσmin hσmax
+    hstep hlt hw hfail hrad
+
+/-- **Lemma 12.2.13 with a feasible set, anchored** ([cartis2022evaluation], Lemma 12.2.13; Lemma
+14.2.2 under f.D1pLaB.X): as `lemma_12_2_13_feasible`, under f.D1pL anchored at the top order on a
+set `A ⊆ C` (`AssumptionD1pLAnchoredTop`; f.D1pLaB.X) in place of f.D1pL on `C`, containing the
+sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+theorem lemma_12_2_13_anchored (hf : AssumptionD1pLAnchoredTop f C A p L) (hXC : X ⊆ C)
+    (hA : ∀ y ∈ X, f y ≤ f (x 0) → y ∈ A) (hq : 1 ≤ q)
+    (hqp : q ≤ p)
+    (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+    (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
+    (hk : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) (hs : P.η₁ ≤ arqpRho f p x s σ k)
+    (hk1 : ¬ arqpStop₁ P q ε (arqpData f p x σ) δ d (k + 1))
+    {u : Prop} [Decidable u] (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
+      (¬ u → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+        arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) * ε j ≤ δ (k + 1) j)) :
+    arqpKappaDmOf u P L p q * finMin 1 (fun j => ε j ^ arqpPiOf u p j) q ≤
+        (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
+      P.η₁ * (arqpKappaDmOf u P L p q * finMin 1 (fun j => ε j ^ arqpPiOf u p j) q) ≤
+        f (x k) - f (x (k + 1)) := by
+  have hp : 1 ≤ p := hq.trans hqp
+  have hσ := arqp_sigma_le_anchored hf hXC hA h k fun i hi => hk i hi.le
+  obtain ⟨hxk, hfk⟩ := arqp_mem_sublevel h k fun i hi => hk i hi.le
+  have hstep := h.step (fun i hi => hk i hi.le) fun h1 => hk k le_rfl (Or.inl h1)
+  rw [(arqp_succ h hk hs).2] at hrad
+  have hdec := arqp_decrease_local_anchored hf hXC hq hqp hθς hε (hA _ hxk hfk) hσ.1
+    hσ.2 hstep
+    (h.model_lt hk)
+    (arqp_next_witness h hk hs) (arqp_next_fail h hk hs hk1) hrad
+  refine ⟨hdec, ?_⟩
+  have hT := (arqp_taylorDecrement_gt h hk).2
+  have hpos : 0 < (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) := by
+    have hσ0 := h.toIsARRun.sigma_pos (K := k) (fun i hi => hk i hi.le) k le_rfl
+    exact lt_of_le_of_lt (by positivity) hT
+  have := (h.toIsARRun.sub_ge_of_succ (w := f)
+    (pred := fun k => (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k)) hk rfl hpos hs).2
+  exact (mul_le_mul_of_nonneg_left hdec P.η₁_pos.le).trans this
+
 /-- **Lemma 12.2.13 with a feasible set** ([cartis2022evaluation], Lemma 12.2.13; Lemma 14.2.2):
 the decreases (12.2.61)–(12.2.62) for a feasible ARqp run under f.D1pL on an open convex
 `C ⊇ X`, in either radii mode `u`: unit radii `δ_{k+1,j} = 1` (`u`, exponents
@@ -2112,23 +2545,9 @@ theorem lemma_12_2_13_feasible (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (
     arqpKappaDmOf u P L p q * finMin 1 (fun j => ε j ^ arqpPiOf u p j) q ≤
         (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
       P.η₁ * (arqpKappaDmOf u P L p q * finMin 1 (fun j => ε j ^ arqpPiOf u p j) q) ≤
-        f (x k) - f (x (k + 1)) := by
-  have hp : 1 ≤ p := hq.trans hqp
-  have hσ := arqp_sigma_le hf hXC hp h k fun i hi => hk i hi.le
-  have hstep := h.step (fun i hi => hk i hi.le) fun h1 => hk k le_rfl (Or.inl h1)
-  rw [(arqp_succ h hk hs).2] at hrad
-  have hdec := arqp_decrease_local hf hXC hq hqp hθς hε (h.mem k fun i hi => hk i hi.le) hσ.1
-    hσ.2 hstep
-    (h.model_lt hk)
-    (arqp_next_witness h hk hs) (arqp_next_fail h hk hs hk1) hrad
-  refine ⟨hdec, ?_⟩
-  have hT := (arqp_taylorDecrement_gt h hk).2
-  have hpos : 0 < (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) := by
-    have hσ0 := h.toIsARRun.sigma_pos (K := k) (fun i hi => hk i hi.le) k le_rfl
-    exact lt_of_le_of_lt (by positivity) hT
-  have := (h.toIsARRun.sub_ge_of_succ (w := f)
-    (pred := fun k => (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k)) hk rfl hpos hs).2
-  exact (mul_le_mul_of_nonneg_left hdec P.η₁_pos.le).trans this
+        f (x k) - f (x (k + 1)) :=
+  lemma_12_2_13_anchored (hf.anchoredTop hXC (hq.trans hqp)) hXC (fun _ hy _ => hy) hq hqp hθς hε h
+    hk hs hk1 hrad
 
 /-- **Lemma 12.2.13** of [cartis2022evaluation] (corrected). Under f.D1pL with `1 ≤ q ≤ p`,
 `θ < ς` and `ε ∈ (0, 1]^q`, let iteration `k` of an ARqp run be successful and before
@@ -2219,6 +2638,47 @@ theorem kappaSARqp_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hσmin : 
     (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < kappaSARqp P L p q :=
   kappaSARqpOf_pos _ hσmin hθς hL
 
+/-- The common end of the proofs of Theorem 12.2.14, anchored: as `arqp_complexity`, under f.D1pL
+anchored at the top order on a set `A ⊆ C` (`AssumptionD1pLAnchoredTop`; f.D1pLaB.X) in place of
+f.D1pL on `C`, containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+theorem arqp_complexity_anchored {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
+    (hf : AssumptionD1pLAnchoredTop f C A p L) (hXC : X ⊆ C) (hA : ∀ y ∈ X, f y ≤ f (x 0) → y ∈ A)
+    (hq : 1 ≤ q) (hqp : q ≤ p) (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+    (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm)
+    {u : Prop} [Decidable u] (hrad : ∀ k, (∀ i ≤ k + 1, ¬ arqpStop f P p q ε x s σ δ d i) →
+      P.η₁ ≤ arqpRho f p x s σ k →
+      (u → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
+      (¬ u → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+        arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) * ε j ≤ δ (k + 1) j)) :
+    ∃ kε, IsFirstHit (arqpStop f P p q ε x s σ δ d) kε ∧
+      (funEvalCount kε : ℝ) ≤ kappaAARqpOf u P L p q * (f (x 0) - flow) /
+        finMin 1 (fun j => ε j ^ arqpPiOf u p j) q + kappaCARqp P L p ∧
+      (derivEvalCount (fun k => P.η₁ ≤ arqpRho f p x s σ k) kε : ℝ) ≤
+        kappaSARqpOf u P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPiOf u p j) q +
+          2 := by
+  have hp : 1 ≤ p := hq.trans hqp
+  have hLp : 1 ≤ L p := hf.one_le
+  set m := finMin 1 (fun j => ε j ^ arqpPiOf u p j) q with hm_def
+  have hm0 : 0 < m := finMin_pos one_pos fun j hj => Real.rpow_pos_of_pos (hε j hj).1 _
+  have hκ := arqpKappaDmOf_pos (q := q) u hσmin hθς hLp
+  have hη := P.η₁_pos
+  have hδ : 0 < P.η₁ * (arqpKappaDmOf u P L p q * m) := by positivity
+  obtain ⟨kε, hk, hF, hD⟩ := h.toIsARRun.exists_isFirstHit_of_decrease
+    (σmax := arSigmaMax P.toARParams (L p))
+    (fun k hk => (arqp_sigma_le_anchored hf hXC hA h k hk).2)
+    (V := fun k => f (x k)) (Vlow := flow) hδ (fun k hk => arqp_objective_le h hk)
+    (fun k hk => hb _ (h.mem k hk))
+    (fun k hk hs => (lemma_12_2_13_anchored hf hXC hA hq hqp hθς hε h (fun i hi => hk i (by omega))
+      hs
+      (fun h1 => hk (k + 1) le_rfl (Or.inl h1)) (hrad k hk hs)).2)
+  have hlog := P.toARParams.log_γ₂_pos
+  refine ⟨kε, hk, hF.trans_eq ?_, hD.trans_eq ?_⟩
+  · rw [kappaAARqpOf, kappaSARqpOf, kappaCARqp]
+    field_simp
+  · rw [kappaSARqpOf]
+    field_simp
+
 /-- The common end of the proofs of Theorem 12.2.14 (1) and (2): with the decrease of
 Lemma 12.2.13 (in radii mode `u`) at every successful iteration followed by a non-terminating
 one, an ARqp run terminates within the stated numbers of evaluations. -/
@@ -2236,35 +2696,17 @@ theorem arqp_complexity {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y) (hf : Assu
         finMin 1 (fun j => ε j ^ arqpPiOf u p j) q + kappaCARqp P L p ∧
       (derivEvalCount (fun k => P.η₁ ≤ arqpRho f p x s σ k) kε : ℝ) ≤
         kappaSARqpOf u P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPiOf u p j) q +
-          2 := by
-  have hp : 1 ≤ p := hq.trans hqp
-  have hLp : 1 ≤ L p := hf.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
-  set m := finMin 1 (fun j => ε j ^ arqpPiOf u p j) q with hm_def
-  have hm0 : 0 < m := finMin_pos one_pos fun j hj => Real.rpow_pos_of_pos (hε j hj).1 _
-  have hκ := arqpKappaDmOf_pos (q := q) u hσmin hθς hLp
-  have hη := P.η₁_pos
-  have hδ : 0 < P.η₁ * (arqpKappaDmOf u P L p q * m) := by positivity
-  obtain ⟨kε, hk, hF, hD⟩ := h.toIsARRun.exists_isFirstHit_of_decrease
-    (σmax := arSigmaMax P.toARParams (L p)) (fun k hk => (arqp_sigma_le hf hXC hp h k hk).2)
-    (V := fun k => f (x k)) (Vlow := flow) hδ (fun k hk => arqp_objective_le h hk)
-    (fun k hk => hb _ (h.mem k hk))
-    (fun k hk hs => (lemma_12_2_13_feasible hf hXC hq hqp hθς hε h (fun i hi => hk i (by omega)) hs
-      (fun h1 => hk (k + 1) le_rfl (Or.inl h1)) (hrad k hk hs)).2)
-  have hlog := P.toARParams.log_γ₂_pos
-  refine ⟨kε, hk, hF.trans_eq ?_, hD.trans_eq ?_⟩
-  · rw [kappaAARqpOf, kappaSARqpOf, kappaCARqp]
-    field_simp
-  · rw [kappaSARqpOf]
-    field_simp
+          2 :=
+  arqp_complexity_anchored hb (hf.anchoredTop hXC (hq.trans hqp)) hXC (fun _ hy _ => hy) hq hqp
+    hσmin hθς hε h hrad
 
-/-- **Certification at a model minimizer `0` with a feasible set** (the content of
-Lemma 12.2.10, [cartis2022evaluation]; §14.2): under f.D1pL on an open convex `C ⊇ X`, with
-`y ∈ X`, `q ≤ p`, `ε ∈ (0, 1]^q` and `σ > 0`, if `0` minimizes the model
-`regularizedModel (ftaylorSeries ℝ f y) p σ` over the feasible steps `{e | y + e ∈ X}`, then the
-constrained measures at `y` satisfy (12.1.25) for the radii
-`δ_j = min(1, ε_j/(4 (3 L_f + σ))) ∈ (0, 1]`. -/
-theorem isEpsDeltaApprox_of_isMinOn_zero (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C)
-    {y : E} (hy : y ∈ X) {σk : ℝ} (hqp : q ≤ p) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+/-- **Certification at a model minimizer `0`, from the jet at `y`** (Lemma 12.2.10; §14.2): as
+`isEpsDeltaApprox_of_isMinOn_zero`, with only `f` `C^p` at `y` and the jet bounds `‖∇^i f(y)‖ ≤
+L_f`, `i ∈ [2:p]`, at `y` (as given at the iterates by the anchored assumptions). -/
+theorem isEpsDeltaApprox_of_isMinOn_zero_of_jet {y : E} (hy : y ∈ X)
+    (hy0 : ContDiffAt ℝ p f y)
+    (hjet : ∀ i ∈ Finset.Icc 2 p, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p) {σk : ℝ} (hqp : q ≤ p)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (hσ : 0 < σk)
     (hmin : IsMinOn (regularizedModel (ftaylorSeries ℝ f y) p σk) {e | y + e ∈ X} 0) :
     (∀ j ∈ Finset.Icc 1 q, min 1 (ε j / (4 * (3 * finMax 1 L p + σk))) ∈ Ioc 0 1) ∧
@@ -2286,12 +2728,28 @@ theorem isEpsDeltaApprox_of_isMinOn_zero (hf : AssumptionD1pLOn f C p L) (hXC : 
         _ = ε j := by field_simp
     have := taylorMeasure_regularizedModel_le_of_isMinOn (D := ftaylorSeries ℝ f y)
       (zero_le_one.trans hL1)
-      (fun i hi => hf.norm_iteratedFDeriv_le_finMax hi (hXC hy)) hσ.le
+      hjet hσ.le
       (Finset.mem_Icc.2 ⟨(Finset.mem_Icc.1 hj).1, hjp⟩) (by rw [norm_zero]; exact zero_le_one)
       hS0 (fun e he => by rw [zero_add]; exact hmin he) hεj
       (lt_min one_pos (by positivity)) (min_le_left _ _) hδα
-    rw [taylorMeasure_regularizedModel_zero (hf.contDiffAt y (hXC hy)) σk hjp] at this
+    rw [taylorMeasure_regularizedModel_zero hy0 σk hjp] at this
     exact this
+
+/-- **Certification at a model minimizer `0` with a feasible set** (the content of
+Lemma 12.2.10, [cartis2022evaluation]; §14.2): under f.D1pL on an open convex `C ⊇ X`, with
+`y ∈ X`, `q ≤ p`, `ε ∈ (0, 1]^q` and `σ > 0`, if `0` minimizes the model
+`regularizedModel (ftaylorSeries ℝ f y) p σ` over the feasible steps `{e | y + e ∈ X}`, then the
+constrained measures at `y` satisfy (12.1.25) for the radii
+`δ_j = min(1, ε_j/(4 (3 L_f + σ))) ∈ (0, 1]`. -/
+theorem isEpsDeltaApprox_of_isMinOn_zero (hf : AssumptionD1pLOn f C p L) (hXC : X ⊆ C)
+    {y : E} (hy : y ∈ X) {σk : ℝ} (hqp : q ≤ p) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+    (hσ : 0 < σk)
+    (hmin : IsMinOn (regularizedModel (ftaylorSeries ℝ f y) p σk) {e | y + e ∈ X} 0) :
+    (∀ j ∈ Finset.Icc 1 q, min 1 (ε j / (4 * (3 * finMax 1 L p + σk))) ∈ Ioc 0 1) ∧
+      IsEpsDeltaApprox (ftaylorSeries ℝ f y) {e | y + e ∈ X} q ε
+        (fun j => min 1 (ε j / (4 * (3 * finMax 1 L p + σk)))) :=
+  isEpsDeltaApprox_of_isMinOn_zero_of_jet hy (hf.contDiffAt y (hXC hy)) (fun _
+    hi => hf.norm_iteratedFDeriv_le_finMax hi (hXC hy)) hqp hε hσ hmin
 
 /-- **Certification at a model minimizer `0`** (the content of Lemma 12.2.10,
 [cartis2022evaluation]): under f.D1pL with `q ≤ p`, `ε ∈ (0, 1]^q` and `σ > 0`, if `0` globally
@@ -2307,6 +2765,45 @@ theorem isEpsDeltaApproxMinimizer_of_isMinOn_zero {n : ℕ} {f : EuclideanSpace 
     hqp hε hσ (hU ▸ hmin)
   rw [hU] at h2
   exact ⟨fun j hj => ⟨hε j hj, h1 j hj⟩, h2⟩
+
+/-- **Lemma 12.2.10, first part** ([cartis2022evaluation]): for `q ≤ 2`, an ARqp run does not
+terminate in Step 2. If `k` is the termination index and the Step-1 test fails at `k`, then
+`0` minimizes the model, so the model measures of orders `j ≤ 2` vanish at `0`, contradicting the
+failed test. Only the smoothness of `f` at `x_k` is used (as under the anchored assumptions). -/
+theorem lemma_12_2_10_le_two {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x s : ℕ → EuclideanSpace ℝ (Fin n)} {d dm : ℕ → ℕ → EuclideanSpace ℝ (Fin n)} {k : ℕ}
+    (hfk : ContDiffAt ℝ p f (x k)) (hqp : q ≤ p)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
+    (h : algorithm_12_2_2 f P p q ε δ₀ x s σ δ δs d dm)
+    (hk : IsFirstHit (arqpStop f P p q ε x s σ δ d) k)
+    (h1 : ¬ arqpStop₁ P q ε (arqpData f p x σ) δ d k) (hq2 : q ≤ 2) : False := by
+  have hstep := h.step hk.2 h1
+  have h2 : arqpStop₂ (arqpData f p x σ) s k := hk.1.resolve_left h1
+  have hU : ∀ y : EuclideanSpace ℝ (Fin n),
+      {e : EuclideanSpace ℝ (Fin n) | y + e ∈ (univ : Set _)} = univ := fun y => by ext; simp
+  have hmin := hstep.isMinOn_of_eq h2
+  rw [hU] at hmin
+  set m := regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)
+  obtain ⟨j, hj, hlt, -⟩ := exists_lt_of_not_measureTestPasses h1
+  have hjp : j ≤ p := (Finset.mem_Icc.1 hj).2.trans hqp
+  have hw := h.witness k hk.2 j hj
+  rw [hU] at hw
+  have hδk := h.delta_mem hδ₀ k hk.2 j hj
+  have hcd : ContDiffAt ℝ j m 0 :=
+    (contDiff_regularizedModel (D := ftaylorSeries ℝ f (x k))).contDiffAt.of_le
+      (by exact_mod_cast hjp)
+  have hφ := taylorMeasure_eq_zero_of_isLocalMin hcd (hmin.isLocalMin univ_mem)
+    (Finset.mem_Icc.2 ⟨(Finset.mem_Icc.1 hj).1, (Finset.mem_Icc.1 hj).2.trans hq2⟩)
+    hδk.1.le
+  rw [taylorMeasure_regularizedModel_zero hfk (σ k) hjp] at hφ
+  have := taylorDecrement_le_taylorMeasure (ftaylorSeries ℝ f (x k)) j hw.1
+  rw [hφ] at this
+  have := P.ς_pos
+  have := (hε j hj).1
+  have : 0 ≤ P.ς * ε j * δ k j ^ j / j ! := by have := hδk.1; positivity
+  change P.ς * ε j * δ k j ^ j / j ! <
+    (ftaylorSeries ℝ f (x k)).taylorDecrement j (d k j) at hlt
+  linarith
 
 /-- **Lemma 12.2.10** of [cartis2022evaluation] (termination in Step 2). Under f.D1pL with
 `q ≤ p`, `ε ∈ (0, 1]^q` and `δ₀ ∈ (0, 1]^q`, let `k` be the termination index of an ARqp run, with
@@ -2325,35 +2822,68 @@ theorem lemma_12_2_10 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     (q ≤ 2 → False) ∧
       IsEpsDeltaApproxMinimizer f q ε (fun j => min 1 (ε j / (4 * (3 * finMax 1 L p + σ k))))
         (x k) := by
+  have hσ : 0 < σ k := h.toIsARRun.sigma_pos hk.2 k le_rfl
   have hstep := h.step hk.2 h1
   have h2 : arqpStop₂ (arqpData f p x σ) s k := hk.1.resolve_left h1
   have hU : ∀ y : EuclideanSpace ℝ (Fin n),
       {e : EuclideanSpace ℝ (Fin n) | y + e ∈ (univ : Set _)} = univ := fun y => by ext; simp
   have hmin := hstep.isMinOn_of_eq h2
   rw [hU] at hmin
-  set m := regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)
-  have hσ : 0 < σ k := h.toIsARRun.sigma_pos hk.2 k le_rfl
-  refine ⟨fun hq2 => ?_, isEpsDeltaApproxMinimizer_of_isMinOn_zero hf hqp hε hσ hmin⟩
-  · obtain ⟨j, hj, hlt, -⟩ := exists_lt_of_not_measureTestPasses h1
-    have hjp : j ≤ p := (Finset.mem_Icc.1 hj).2.trans hqp
-    have hw := h.witness k hk.2 j hj
-    rw [hU] at hw
-    have hδk := h.delta_mem hδ₀ k hk.2 j hj
-    have hcd : ContDiffAt ℝ j m 0 :=
-      (contDiff_regularizedModel (D := ftaylorSeries ℝ f (x k))).contDiffAt.of_le
-        (by exact_mod_cast hjp)
-    have hφ := taylorMeasure_eq_zero_of_isLocalMin hcd (hmin.isLocalMin univ_mem)
-      (Finset.mem_Icc.2 ⟨(Finset.mem_Icc.1 hj).1, (Finset.mem_Icc.1 hj).2.trans hq2⟩)
-      hδk.1.le
-    rw [taylorMeasure_regularizedModel_zero hf.contDiff.contDiffAt (σ k) hjp] at hφ
-    have := taylorDecrement_le_taylorMeasure (ftaylorSeries ℝ f (x k)) j hw.1
-    rw [hφ] at this
-    have := P.ς_pos
-    have := (hε j hj).1
-    have : 0 ≤ P.ς * ε j * δ k j ^ j / j ! := by have := hδk.1; positivity
-    change P.ς * ε j * δ k j ^ j / j ! <
-      (ftaylorSeries ℝ f (x k)).taylorDecrement j (d k j) at hlt
-    linarith
+  exact ⟨lemma_12_2_10_le_two hf.contDiff.contDiffAt hqp hε hδ₀ h hk h1,
+    isEpsDeltaApproxMinimizer_of_isMinOn_zero hf hqp hε hσ hmin⟩
+
+/-- **Theorem 12.2.14 with a feasible set, anchored** ([cartis2022evaluation], Theorem 12.2.14; the
+ARqp-SC row of Theorem 14.2.4 under f.D1pLaB.X): as `theorem_12_2_14_feasible`, under f.D1pL
+anchored at the top order on a set `A ⊆ C` (`AssumptionD1pLAnchoredTop`; f.D1pLaB.X) in place of
+f.D1pL on `C`, containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+theorem theorem_12_2_14_anchored {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
+    (hf : AssumptionD1pLAnchoredTop f C A p L) (hXC : X ⊆ C) (hA : ∀ y ∈ X, f y ≤ f (x 0) → y ∈ A)
+    (hq : 1 ≤ q) (hqp : q ≤ p)
+    (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+    (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
+    (h : algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm)
+    {u : Prop} [Decidable u]
+    (hrad : (u → (∀ j ∈ Finset.Icc 1 q, δ₀ j = 1) ∧
+        ∀ k, (∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) → ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
+      (¬ u → ∀ k, (∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
+        ∀ j ∈ Finset.Icc 1 q, arqpKappaDelta P (finMax 1 L p) (σ k) * ε j ≤ δs k j)) :
+    ∃ kε, IsFirstHit (arqpStop f P p q ε x s σ δ d) kε ∧ x kε ∈ X ∧
+      (∃ δε : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, δε j ∈ Ioc 0 1) ∧
+        IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε δε) ∧
+      (funEvalCount kε : ℝ) ≤ kappaAARqpOf u P L p q * (f (x 0) - flow) /
+        finMin 1 (fun j => ε j ^ arqpPiOf u p j) q + kappaCARqp P L p ∧
+      (derivEvalCount (fun k => P.η₁ ≤ arqpRho f p x s σ k) kε : ℝ) ≤
+        kappaSARqpOf u P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPiOf u p j) q +
+          2 := by
+  have hp : 1 ≤ p := hq.trans hqp
+  have hL1 : 1 ≤ finMax 1 L p := one_le_finMax
+  obtain ⟨kε, hk, hF, hD⟩ := arqp_complexity_anchored hb hf hXC hA hq hqp hσmin hθς hε h (u := u)
+    fun k hk hs => by
+    have hk' : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i := fun i hi => hk i (by omega)
+    refine ⟨fun hq2 => ?_, fun hq2 => ?_⟩
+    · exact arqp_delta_eq_one h (hrad.1 hq2).1 (hrad.1 hq2).2 (k + 1) fun i hi => hk i (by omega)
+    · by_cases hlong : 1 ≤ ‖s k‖
+      · exact Or.inl hlong
+      refine Or.inr fun j hj => ?_
+      rw [(arqp_succ h hk' hs).2]
+      have hσ := arqp_sigma_le_anchored hf hXC hA h k fun i hi => hk' i hi.le
+      have hσ0 : 0 ≤ σ k := P.σmin_nonneg.trans hσ.1
+      refine le_trans ?_ (hrad.2 hq2 k hk' (not_le.1 hlong) j hj)
+      exact mul_le_mul_of_nonneg_right (arqpKappaDelta_anti P hL1 hσ0 hσ.2) (hε j hj).1.le
+  have hxk := h.mem kε hk.2
+  have hxA := hA _ hxk (arqp_mem_sublevel h kε hk.2).2
+  refine ⟨kε, hk, hxk, ?_, hF, hD⟩
+  by_cases h1 : arqpStop₁ P q ε (arqpData f p x σ) δ d kε
+  · exact ⟨δ kε, fun j hj => h.delta_mem hδ₀ kε hk.2 j hj,
+      MeasureTestPasses.isEpsDeltaApprox P.ς_pos (h.witness kε hk.2) h1⟩
+  · have hstep := h.step hk.2 h1
+    have h2 : arqpStop₂ (arqpData f p x σ) s kε := hk.1.resolve_left h1
+    have hσ : 0 < σ kε := h.toIsARRun.sigma_pos hk.2 kε le_rfl
+    obtain ⟨hδ, hcert⟩ := isEpsDeltaApprox_of_isMinOn_zero_of_jet hxk
+      (hf.contDiffAt _ (hf.subset hxA))
+      (fun _ hi => hf.norm_iteratedFDeriv_le_finMax hi hxA) hqp hε hσ
+      (hstep.isMinOn_of_eq h2)
+    exact ⟨_, hδ, hcert⟩
 
 /-- **Theorem 12.2.14 with a feasible set** ([cartis2022evaluation], Theorem 12.2.14; the ARqp-SC
 row of Theorem 14.2.4). Let `X ⊆ C` with `C` open and convex, f.D1pL on `C`, `f ≥ f_low` on `X`,
@@ -2384,33 +2914,9 @@ theorem theorem_12_2_14_feasible {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
         finMin 1 (fun j => ε j ^ arqpPiOf u p j) q + kappaCARqp P L p ∧
       (derivEvalCount (fun k => P.η₁ ≤ arqpRho f p x s σ k) kε : ℝ) ≤
         kappaSARqpOf u P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPiOf u p j) q +
-          2 := by
-  have hp : 1 ≤ p := hq.trans hqp
-  have hL1 : 1 ≤ finMax 1 L p := one_le_finMax
-  obtain ⟨kε, hk, hF, hD⟩ := arqp_complexity hb hf hXC hq hqp hσmin hθς hε h (u := u)
-    fun k hk hs => by
-    have hk' : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i := fun i hi => hk i (by omega)
-    refine ⟨fun hq2 => ?_, fun hq2 => ?_⟩
-    · exact arqp_delta_eq_one h (hrad.1 hq2).1 (hrad.1 hq2).2 (k + 1) fun i hi => hk i (by omega)
-    · by_cases hlong : 1 ≤ ‖s k‖
-      · exact Or.inl hlong
-      refine Or.inr fun j hj => ?_
-      rw [(arqp_succ h hk' hs).2]
-      have hσ := arqp_sigma_le hf hXC hp h k fun i hi => hk' i hi.le
-      have hσ0 : 0 ≤ σ k := P.σmin_nonneg.trans hσ.1
-      refine le_trans ?_ (hrad.2 hq2 k hk' (not_le.1 hlong) j hj)
-      exact mul_le_mul_of_nonneg_right (arqpKappaDelta_anti P hL1 hσ0 hσ.2) (hε j hj).1.le
-  have hxk := h.mem kε hk.2
-  refine ⟨kε, hk, hxk, ?_, hF, hD⟩
-  by_cases h1 : arqpStop₁ P q ε (arqpData f p x σ) δ d kε
-  · exact ⟨δ kε, fun j hj => h.delta_mem hδ₀ kε hk.2 j hj,
-      MeasureTestPasses.isEpsDeltaApprox P.ς_pos (h.witness kε hk.2) h1⟩
-  · have hstep := h.step hk.2 h1
-    have h2 : arqpStop₂ (arqpData f p x σ) s kε := hk.1.resolve_left h1
-    have hσ : 0 < σ kε := h.toIsARRun.sigma_pos hk.2 kε le_rfl
-    obtain ⟨hδ, hcert⟩ := isEpsDeltaApprox_of_isMinOn_zero hf hXC hxk hqp hε hσ
-      (hstep.isMinOn_of_eq h2)
-    exact ⟨_, hδ, hcert⟩
+          2 :=
+  theorem_12_2_14_anchored hb (hf.anchoredTop hXC (hq.trans hqp)) hXC (fun _ hy _ => hy) hq hqp
+    hσmin hθς hε hδ₀ h hrad
 
 section ARqpComplexity
 

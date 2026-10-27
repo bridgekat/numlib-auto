@@ -414,6 +414,26 @@ section Transfer
 
 variable {f : E → ℝ} {p : ℕ} {σ L : ℝ} {C : Set E} {x s : E}
 
+/-- **Measure transfer from the model to the function, anchored**: as
+`taylorMeasure_le_of_regularizedModel`, with `∇^p f` only Lipschitz anchored at `x`,
+`‖∇^p f(y) - ∇^p f(x)‖ ≤ L ‖y - x‖` for `y ∈ C` (the condition (14.2.9) of
+[cartis2022evaluation]). -/
+theorem taylorMeasure_le_of_regularizedModel_anchored (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
+    (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖)
+    (hL0 : 0 ≤ L) (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hjp : j ≤ p) {S : Set E}
+    (hS0 : (0 : E) ∈ S) {δ : ℝ} (hδ : 0 ≤ δ) :
+    taylorMeasure (ftaylorSeries ℝ f (x + s)) j δ S ≤
+      taylorMeasure (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) s) j δ S +
+        (L + σ) *
+          ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ)) := by
+  refine decrementMeasure_le ⟨0, mem_closedBall_self hδ, hS0⟩ fun d hd => ?_
+  have hdδ : ‖d‖ ≤ δ := mem_closedBall_zero_iff.1 hd.1
+  refine (taylorDecrement_le_add_of_regularizedModel_anchored hC hf hL hx hxs hσ hjp d).trans
+    (add_le_add (taylorDecrement_le_taylorMeasure _ j hd) ?_)
+  refine mul_le_mul_of_nonneg_left (sum_le_sum fun ℓ _ => ?_) (by positivity)
+  gcongr
+
 /-- **Measure transfer from the model to the function** ([cartis2022evaluation],
 (12.2.53)–(12.2.56), exact data; the case `h = 0` of `compositeTaylorMeasure_le_of_step`). Let
 `f` be `C^p` on a convex `C ∋ x, x + s` with `L`-Lipschitz `∇^p f` there (`L ≥ 0`), `σ ≥ 0`,
@@ -428,13 +448,9 @@ theorem taylorMeasure_le_of_regularizedModel (hC : Convex ℝ C)
     taylorMeasure (ftaylorSeries ℝ f (x + s)) j δ S ≤
       taylorMeasure (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) s) j δ S +
         (L + σ) *
-          ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ)) := by
-  refine decrementMeasure_le ⟨0, mem_closedBall_self hδ, hS0⟩ fun d hd => ?_
-  have hdδ : ‖d‖ ≤ δ := mem_closedBall_zero_iff.1 hd.1
-  refine (taylorDecrement_le_add_of_regularizedModel hC hf hL hx hxs hσ hjp d).trans
-    (add_le_add (taylorDecrement_le_taylorMeasure _ j hd) ?_)
-  refine mul_le_mul_of_nonneg_left (sum_le_sum fun ℓ _ => ?_) (by positivity)
-  gcongr
+          ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * (‖s‖ ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ)) :=
+  taylorMeasure_le_of_regularizedModel_anchored hC hf
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy x hx) hL0 hx hxs hσ hjp hS0 hδ
 
 /-- **The radius inequality, abstract form** (the common step of [cartis2022evaluation],
 Lemmas 12.2.11, 13.1.16 and 14.1.7): if the measure `Φ` at the new iterate is not small,
@@ -464,6 +480,32 @@ private theorem mul_sum_le_mul_sum_of_factorial {A A' δ t : ℝ} {j p : ℕ} (h
           (by exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero _))
     _ ≤ A' * ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * t ^ (p - ℓ + 1) := by gcongr
 
+/-- **The radius inequality, anchored**: as `radius_inequality_of_measure_gt`, with `∇^p f` only
+Lipschitz anchored at `x`, `‖∇^p f(y) - ∇^p f(x)‖ ≤ Lp ‖y - x‖` for `y ∈ C` (the condition
+(14.2.9) of [cartis2022evaluation]). -/
+theorem radius_inequality_of_measure_gt_anchored (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) {Lp : ℝ}
+    (hLp : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ Lp * ‖y - x‖)
+    (hLp0 : 0 ≤ Lp) (hx : x ∈ C)
+    (hxs : x + s ∈ C) {Dbar : FormalMultilinearSeries ℝ E ℝ} {err : ℕ → ℝ}
+    (happrox : JetApprox (ftaylorSeries ℝ f x) Dbar p err) {κ κs : ℝ} (hκ : 0 ≤ κ)
+    (hκs : 0 ≤ κs) (herr : ∀ i ∈ Finset.Icc 1 p, err i ≤ κ * κs * ‖s‖ ^ (p - i + 1))
+    {σmax : ℝ} (hσ : 0 ≤ σ) (hσmax : σ ≤ σmax) {j : ℕ} (hjp : j ≤ p) {S : Set E}
+    (hS0 : (0 : E) ∈ S) {δ : ℝ} (hδ : 0 ≤ δ) {ε a θ e₀ : ℝ}
+    (h₁ : a * ε * δ ^ j / (j ! : ℝ) - e₀ < taylorMeasure (ftaylorSeries ℝ f (x + s)) j δ S)
+    (h₂ : taylorMeasure (ftaylorSeries ℝ (regularizedModel Dbar p σ) s) j δ S ≤
+      θ * ε * δ ^ j / j !) :
+    (a - θ) * ε * δ ^ j / j ! <
+      (Lp + σmax + 3 * κ * κs) * ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * ‖s‖ ^ (p - ℓ + 1) + e₀ := by
+  have h3 := taylorMeasure_le_of_regularizedModel_anchored hC hf hLp hLp0 hx hxs hσ hjp hS0 hδ
+  have h4 := taylorMeasure_regularizedModel_le_add_of_stepAccuracy (σ := σ) happrox hκ hκs herr
+    hjp hS0 hδ
+  have h5 := mul_sum_le_mul_sum_of_factorial (j := j) (p := p) (A' := Lp + σmax)
+    (add_nonneg hLp0 hσ)
+    (by linarith) hδ (norm_nonneg s)
+  refine sub_mul_lt_of_measure_comparison h₁ ?_ h₂
+  linarith
+
 /-- **The radius inequality** ([cartis2022evaluation], Lemmas 12.2.11 and 13.1.16, with an
 explicit error budget, corrected). Let `f` be `C^p` on a convex `C ∋ x, x + s` with
 `Lp`-Lipschitz `∇^p f` there (`Lp ≥ 0`), `Dbar` approximate the jet of `f` at `x` with errors
@@ -489,15 +531,10 @@ theorem radius_inequality_of_measure_gt (hC : Convex ℝ C) (hf : ∀ y ∈ C, C
     (h₂ : taylorMeasure (ftaylorSeries ℝ (regularizedModel Dbar p σ) s) j δ S ≤
       θ * ε * δ ^ j / j !) :
     (a - θ) * ε * δ ^ j / j ! <
-      (Lp + σmax + 3 * κ * κs) * ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * ‖s‖ ^ (p - ℓ + 1) + e₀ := by
-  have h3 := taylorMeasure_le_of_regularizedModel hC hf hLp hLp0 hx hxs hσ hjp hS0 hδ
-  have h4 := taylorMeasure_regularizedModel_le_add_of_stepAccuracy (σ := σ) happrox hκ hκs herr
-    hjp hS0 hδ
-  have h5 := mul_sum_le_mul_sum_of_factorial (j := j) (p := p) (A' := Lp + σmax)
-    (add_nonneg hLp0 hσ)
-    (by linarith) hδ (norm_nonneg s)
-  refine sub_mul_lt_of_measure_comparison h₁ ?_ h₂
-  linarith
+      (Lp + σmax + 3 * κ * κs) * ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * ‖s‖ ^ (p - ℓ + 1) + e₀ :=
+  radius_inequality_of_measure_gt_anchored hC hf
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLp y hy x hx) hLp0 hx hxs happrox hκ hκs herr hσ
+    hσmax hjp hS0 hδ h₁ h₂
 
 /-- **The radius inequality for composite problems, anchored** ([cartis2022evaluation],
 Lemma 14.1.7, corrected): as `radius_inequality_of_compositeTaylorMeasure_gt`, with `∇^p f` and
