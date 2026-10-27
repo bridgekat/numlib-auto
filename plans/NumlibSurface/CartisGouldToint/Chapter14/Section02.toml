@@ -107,3 +107,35 @@ source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpEDA-SC)"
 [[node]]
 id = "theorem_14_2_4_arqpida_le_two"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpIDA-SC row, X = ℝⁿ, q ≤ 2, either radii mode)"
+
+[[node]]
+id = "AssumptionD1qLaBX.toAnchored"
+source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), f.D1qLaB.X gives the anchored Chapter 12 assumption"
+
+[[node]]
+id = "lemma_14_2_2_trq_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (TRq-SC row) under f.D1qLaB.X"
+
+[[node]]
+id = "lemma_14_2_3_trq_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRq-SC row) under f.D1qLaB.X"
+
+[[node]]
+id = "lemma_14_2_3_trq_of_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRq-SC row), anchored form"
+
+[[node]]
+id = "theorem_14_2_4_trq_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRq-SC row) under f.D1qLaB.X"
+
+[[node]]
+id = "lemma_14_2_2_arqp_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqp-SC row) under f.D1pLaB.X"
+
+[[node]]
+id = "lemma_14_2_3_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqp-SC row) under f.D1pLaB.X"
+
+[[node]]
+id = "theorem_14_2_4_arqp_anchored"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqp-SC row) under f.D1pLaB.X"

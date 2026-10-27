@@ -51,6 +51,12 @@ subproblems. It therefore has no declaration of its own.
   radii, order `(p+1)/(p-j+1)`, or (12.2.51) at every order, order `j(p+1)/p`);
   `theorem_14_2_4_arqpida_le_two` — on `X = ℝⁿ` with `q ≤ 2`, every ARqpIDA run satisfies the
   bound of the unit-radii mode whatever its radii mode;
+* under the anchored assumptions f.D1qLaB.X (TRq-SC) and f.D1pLaB.X (ARqp-SC), the remark after
+  (14.2.10): `lemma_14_2_2_trq_anchored`, `lemma_14_2_3_trq_anchored`,
+  `theorem_14_2_4_trq_anchored`,
+  `lemma_14_2_2_arqp_anchored`, `lemma_14_2_3_anchored`, `theorem_14_2_4_arqp_anchored` (from the
+  anchored Chapter 12 analysis, `AssumptionD1qLaBX.toAnchored`); the ARqpC-SC row under anchored
+  bounds is `theorem_14_2_4_arqpc_anchored` (`Chapter14.Section03`);
 * bridges: `AssumptionD1qLaBX.of_lipschitzOn`, `AssumptionD1qLaBX.assumptionD1pLOn`,
   `assumptionBbX_iff_assumptionWBb`.
 
@@ -92,11 +98,16 @@ subproblems. It therefore has no declaration of its own.
 
 ## Not formalized here
 
-* The anchored assumptions f.D1qLaB.X (f.D0qLaB.X): the rows formalized here assume f.D1pL (or
-  f.D1qL, f.D0qL, f.D0pL) on an open convex superset `C` of `X` (`Chapter12.AssumptionD1pLOn`,
-  `Chapter13.AssumptionD0qLOn`; for ARqpC-SC on `ℝⁿ`), which `AssumptionD1qLaBX.assumptionD1pLOn`
-  yields when the anchor set is all of `X₀`; the book's remark that only anchored conditions are
-  used by the proofs is not formalized.
+* The anchored assumption f.D0qLaB.X (f.D0pLaB.X) for the dynamic-accuracy rows: these assume
+  f.D0qL (f.D0pL) on an open convex superset `C` of `X` (`Chapter13.AssumptionD0qLOn`). The
+  TRq-SC and ARqp-SC rows are also stated under f.D1qLaB.X / f.D1pLaB.X (`…_anchored`), and the
+  ARqpC-SC row under anchored bounds in `Chapter14.Section03`. Runs satisfying the radius policy
+  of the ARqp-SC rows under the anchored assumptions exist on `X = ℝⁿ`
+  (`Chapter12.algorithm_12_2_2_exists_anchored`); for a general closed `X` they are the ARqpC-SC
+  runs with `c = 0`, `h = 0` of `Chapter14.Section03` (`exists_isARqpCRun_of_hLip`,
+  `algorithm_14_1_1.zero_algorithm_12_2_2_feasible`), whose radii satisfy (12.2.51) by
+  `algorithm_14_1_1.kappaDeltaMin_mul_le_radius_anchored`; the `¬ u` radius hypothesis of
+  `theorem_14_2_4_arqp_anchored` is not discharged for them in this module.
 -/
 
 open Set Metric
@@ -290,11 +301,11 @@ end Sparse
 
 /-! ### Complexity of the -SC algorithms (§14.2.1)
 
-The rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 for ARqpC-SC and TRq-SC are stated here
-under global smoothness assumptions (f.D1pL and c.D1pL of §14.1 on `ℝⁿ` for ARqpC-SC; f.D1qL on
-an open convex `C ⊇ X`, `Chapter12.AssumptionD1pLOn`, for TRq-SC) rather than the anchored
-f.D1qLaB.X; `AssumptionD1qLaBX.assumptionD1pLOn` gives the latter's Lipschitz part when the
-anchor set is the whole of `X₀`. -/
+The rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 for ARqpC-SC, TRq-SC and ARqp-SC are stated
+here under smoothness on all of `ℝⁿ` (f.D1pL and c.D1pL of §14.1 for ARqpC-SC) or on an open
+convex `C ⊇ X` (`Chapter12.AssumptionD1pLOn`, for TRq-SC and ARqp-SC); the TRq-SC and ARqp-SC rows
+under the anchored f.D1qLaB.X / f.D1pLaB.X follow in the section on anchored assumptions, the
+ARqpC-SC row under anchored bounds is in `Chapter14.Section03`. -/
 
 section ARqpCSC
 
@@ -429,14 +440,13 @@ theorem theorem_14_2_4_trq {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
           Chapter12.finMin 1 ε q ^ (q + 1) + 1 :=
   Chapter12.theorem_12_2_5_feasible hb hf hXC hx0 hε hϑ hϑ1 h
 
-/-- **Lemma 14.2.3** of [cartis2022evaluation], TRq-SC row (Lemma 2.3.1 with the radius lower
-bound of Lemma 12.2.3 with a feasible set, `Chapter12.lemma_12_2_3_feasible`): for a TRq-SC run
-under f.D1qL on an open convex `C ⊇ X`, `x₀ ∈ X`, `ε ∈ (0, 1]^q` and `ϑ ∈ [ε_min, 1]`, every
-iteration `k` reached (up to and including termination) satisfies `k ≤ κ_uns |𝒮_k| + κ_unc`
-(14.2.13) with `κ_uns = 1 + log γ₃/|log γ₂|` and
-`κ_unc = |log(min(γ₁ ϑ, κ_Δ ς ε_min)/Δ₀)|/|log γ₂|` (`κ_Δ` of (12.2.14)). -/
-theorem lemma_14_2_3_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
-    (hf : Chapter12.AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
+/-- **Lemma 14.2.3**, TRq-SC row, under f.D1qL anchored on a set `A ⊆ C` containing the sublevel set
+`{y ∈ X | f(y) ≤ f(x₀)}` (`Chapter12.AssumptionD1pLAnchored`): as `lemma_14_2_3_trq`, through
+`Chapter12.lemma_12_2_3_anchored`. -/
+theorem lemma_14_2_3_trq_of_anchored {A : Set E}
+    (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
+    (hf : Chapter12.AssumptionD1pLAnchored f C A q L) (hXC : X ⊆ C)
+    (hA : ∀ y ∈ X, f y ≤ f (x 0) → y ∈ A) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     {k : ℕ} (hk : ∀ i < k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
     (k : ℝ) ≤
@@ -453,7 +463,7 @@ theorem lemma_14_2_3_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ 
     hk i (Nat.lt_succ_of_le hi)
   have hεm : 0 < Chapter12.finMin 1 ε q := Chapter12.finMin_pos one_pos fun j hj => (hε j hj).1
   have hϑ0 : 0 < ϑ := hεm.trans_le hϑ
-  obtain ⟨⟨hκ0, -⟩, -, hΔ⟩ := Chapter12.lemma_12_2_3_feasible h hf hXC hx0 hϑ0 hϑ1
+  obtain ⟨⟨hκ0, -⟩, -, hΔ⟩ := Chapter12.lemma_12_2_3_anchored h hf hXC hA hx0 hϑ0 hϑ1
     (fun j hj => (hε j hj).1.le) hk'
   have hgap : P.ς * Chapter12.finMin 1 ε q ≤
       Optimization.prefixMin (Chapter12.trqGapSeq f ϑ x Δ jk d) k :=
@@ -463,6 +473,23 @@ theorem lemma_14_2_3_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ 
     lt_min (mul_pos P.γ₁_pos hϑ0) (mul_pos hκ0 (mul_pos P.ς_pos hεm))
   exact h.toIsTRRun.le_succ_count hk hmin
     ((min_le_min le_rfl (mul_le_mul_of_nonneg_left hgap hκ0.le)).trans hΔ)
+
+/-- **Lemma 14.2.3** of [cartis2022evaluation], TRq-SC row (Lemma 2.3.1 with the radius lower
+bound of Lemma 12.2.3 with a feasible set, `Chapter12.lemma_12_2_3_feasible`): for a TRq-SC run
+under f.D1qL on an open convex `C ⊇ X`, `x₀ ∈ X`, `ε ∈ (0, 1]^q` and `ϑ ∈ [ε_min, 1]`, every
+iteration `k` reached (up to and including termination) satisfies `k ≤ κ_uns |𝒮_k| + κ_unc`
+(14.2.13) with `κ_uns = 1 + log γ₃/|log γ₂|` and
+`κ_unc = |log(min(γ₁ ϑ, κ_Δ ς ε_min)/Δ₀)|/|log γ₂|` (`κ_Δ` of (12.2.14)). -/
+theorem lemma_14_2_3_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
+    (hf : Chapter12.AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    {k : ℕ} (hk : ∀ i < k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
+    (k : ℝ) ≤
+      (Optimization.successSet (fun j => P.η₁ ≤ Chapter12.trqRho f x s jk j) k).card *
+          (1 + Real.log P.γ₃ / |Real.log P.γ₂|) +
+        |Real.log (min (P.γ₁ * ϑ) (Chapter12.trqKappaDelta f P q L ϑ (x 0) *
+          (P.ς * Chapter12.finMin 1 ε q)) / P.Δ₀)| / |Real.log P.γ₂| :=
+  lemma_14_2_3_trq_of_anchored h (hf.anchored hXC) hXC (fun _ hy _ => hy) hx0 hε hϑ hϑ1 hk
 
 end TRqSC
 
@@ -545,6 +572,158 @@ theorem theorem_14_2_4_arqp {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
   Chapter12.theorem_12_2_14_feasible hb hf hXC hq hqp hσmin hθς hε hδ₀ h hrad
 
 end ARqpSC
+
+/-! ### The TRq-SC and ARqp-SC rows under the anchored assumptions
+
+The remark after (14.2.10) of [cartis2022evaluation]: the rows of Lemmas 14.2.2–14.2.3 and
+Theorem 14.2.4 only use the anchored assumption f.D1qLaB.X (TRq-SC) or f.D1pLaB.X (ARqp-SC) with
+the starting point `x₀ = x 0`. The iterates lie in the sublevel set `𝓛_f(x₀)` (the objective does
+not increase along the runs), the models are built at iterates, and the trial points (in
+`X ⊆ X₀`) are related to them by Taylor's theorem anchored at the iterate. The bound (14.2.10) is
+not used: the jet bounds at the anchors follow from (14.2.9) at the interior points of `X₀`
+(`Chapter12.AssumptionD1pLAnchored.norm_iteratedFDeriv_le`), and the constants are those of the
+rows above with the anchored Lipschitz constants `L_{f,j}`. -/
+
+section Anchored
+
+variable {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {L B : ℕ → ℝ}
+
+/-- f.D1qLaB.X (orders `[1:q]`) with anchor point `x₀` gives the anchored assumption of Chapter 12
+on `X₀` with the anchor set `𝓛_f(x₀)` (`Chapter12.AssumptionD1pLAnchored`). -/
+theorem AssumptionD1qLaBX.toAnchored {x₀ : ℝⁿ} {q : ℕ} (h : AssumptionD1qLaBX f X X₀ x₀ 1 q L B) :
+    Chapter12.AssumptionD1pLAnchored f X₀ (sublevel f X x₀) q L where
+  isOpen := h.isOpen
+  convex := h.convex
+  subset := sublevel_subset.trans h.subset
+  contDiffAt _ hy := h.contDiffOn.contDiffAt (h.isOpen.mem_nhds hy)
+  one_le := h.one_le_lip
+  lipschitzAnchored := h.lipschitzAnchored
+
+section TRq
+
+variable {P : Optimization.TRqParams} {q : ℕ} {ε : ℕ → ℝ} {ϑ : ℝ} {x s : ℕ → ℝⁿ} {Δ : ℕ → ℝ}
+  {jk : ℕ → ℕ} {d : ℕ → ℕ → ℝⁿ}
+
+/-- **Lemma 14.2.2** of [cartis2022evaluation], TRq-SC row under f.D1qLaB.X (with the anchor point
+`x₀ = x 0`; the remark after (14.2.10)): the decreases of `lemma_14_2_2_trq`. -/
+theorem lemma_14_2_2_trq_anchored (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
+    (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 q L B) (hx0 : x 0 ∈ X)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    {k : ℕ} (hk : ∀ i ≤ k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
+    (P.ς * Chapter12.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
+        Chapter12.finMin 1 ε q ^ (q + 1) ≤
+        (ftaylorSeries ℝ f (x k)).taylorDecrement (jk k) (s k) ∧
+      (P.η₁ ≤ Chapter12.trqRho f x s jk k →
+        P.η₁ * ((P.ς * Chapter12.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
+          Chapter12.finMin 1 ε q ^ (q + 1)) ≤ f (x k) - f (x (k + 1))) :=
+  Chapter12.lemma_12_2_4_anchored h hf.toAnchored hf.subset (fun _ hy hfy => ⟨hy, hfy⟩) hx0 hε hϑ
+    hϑ1 hk
+
+/-- **Lemma 14.2.3** of [cartis2022evaluation], TRq-SC row under f.D1qLaB.X (with the anchor point
+`x₀ = x 0`): the bound (14.2.13) of `lemma_14_2_3_trq`. -/
+theorem lemma_14_2_3_trq_anchored (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
+    (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 q L B) (hx0 : x 0 ∈ X)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    {k : ℕ} (hk : ∀ i < k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
+    (k : ℝ) ≤
+      (Optimization.successSet (fun j => P.η₁ ≤ Chapter12.trqRho f x s jk j) k).card *
+          (1 + Real.log P.γ₃ / |Real.log P.γ₂|) +
+        |Real.log (min (P.γ₁ * ϑ) (Chapter12.trqKappaDelta f P q L ϑ (x 0) *
+          (P.ς * Chapter12.finMin 1 ε q)) / P.Δ₀)| / |Real.log P.γ₂| :=
+  lemma_14_2_3_trq_of_anchored h hf.toAnchored hf.subset (fun _ hy hfy => ⟨hy, hfy⟩) hx0 hε hϑ
+    hϑ1 hk
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], TRq-SC row under f.bB.X and f.D1qLaB.X (with the
+anchor point `x₀ = x 0`; the remark after (14.2.10)): the conclusion of `theorem_14_2_4_trq`. -/
+theorem theorem_14_2_4_trq_anchored {flow : ℝ} (hb : AssumptionBbX f X flow)
+    (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 q L B) (hx0 : x 0 ∈ X)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d) :
+    ∃ kε, Optimization.IsFirstHit (Chapter12.trqStop f P q ε ϑ x Δ d) kε ∧ x kε ∈ X ∧
+      min (Δ kε) ϑ ∈ Ioc 0 1 ∧
+      Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε
+        (fun _ => min (Δ kε) ϑ) ∧
+      (Optimization.funEvalCount kε : ℝ) ≤
+        Chapter12.kappaATRq f P q L ϑ (x 0) * (f (x 0) - flow) /
+            Chapter12.finMin 1 ε q ^ (q + 1) +
+          Chapter12.kappaBTRq P * |Real.log (Chapter12.finMin 1 ε q)| +
+          Chapter12.kappaCTRq f P q L ϑ (x 0) ∧
+      (Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.trqRho f x s jk k) kε : ℝ) ≤
+        Chapter12.kappaSTRq f P q L ϑ (x 0) * (f (x 0) - flow) /
+          Chapter12.finMin 1 ε q ^ (q + 1) + 1 :=
+  Chapter12.theorem_12_2_5_anchored hb hf.toAnchored hf.subset (fun _ hy hfy => ⟨hy, hfy⟩) hx0 hε
+    hϑ hϑ1 h
+
+end TRq
+
+section ARqp
+
+variable {P : Optimization.ARqpParams} {p q : ℕ} {ε δ₀ : ℕ → ℝ} {x s : ℕ → ℝⁿ} {σ : ℕ → ℝ}
+  {δ δs : ℕ → ℕ → ℝ} {d dm : ℕ → ℕ → ℝⁿ}
+
+/-- **Lemma 14.2.2** of [cartis2022evaluation], ARqp-SC row under f.D1pLaB.X (with the anchor
+point `x₀ = x 0`; the remark after (14.2.10)): the decreases of `lemma_14_2_2_arqp`, in either
+radii mode `u`. -/
+theorem lemma_14_2_2_arqp_anchored (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 p L B) (hq : 1 ≤ q)
+    (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+    (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
+    (hk : ∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i)
+    (hs : P.η₁ ≤ Chapter12.arqpRho f p x s σ k)
+    (hk1 : ¬ Optimization.arqpStop₁ P q ε (Chapter12.arqpData f p x σ) δ d (k + 1))
+    {u : Prop} [Decidable u] (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
+      (¬ u → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
+        Chapter12.arqpKappaDelta P (Chapter12.finMax 1 L p)
+          (Optimization.arSigmaMax P.toARParams (L p)) * ε j ≤ δ (k + 1) j)) :
+    Chapter12.arqpKappaDmOf u P L p q *
+        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q ≤
+        (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
+      P.η₁ * (Chapter12.arqpKappaDmOf u P L p q *
+        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q) ≤
+        f (x k) - f (x (k + 1)) :=
+  Chapter12.lemma_12_2_13_anchored (hf.toAnchored.toTop (hq.trans hqp)) hf.subset
+    (fun _ hy hfy => ⟨hy, hfy⟩) hq hqp hθς hε h hk hs hk1 hrad
+
+/-- **Lemma 14.2.3** of [cartis2022evaluation], ARqp-SC row under f.D1pLaB.X (with the anchor
+point `x₀ = x 0`): the bound (14.2.13) of `lemma_14_2_3`. -/
+theorem lemma_14_2_3_anchored (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 p L B) (hp : 1 ≤ p)
+    (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
+    (hk : ∀ i < k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) :
+    (k : ℝ) ≤ (Optimization.successSet (fun j => P.η₁ ≤ Chapter12.arqpRho f p x s σ j) k).card *
+        (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
+      Real.log (Optimization.arSigmaMax P.toARParams (L p) / P.σ₀) / Real.log P.γ₂ :=
+  h.toIsARRun.le_succ_count hk (Chapter12.arqp_sigma_le_anchored (hf.toAnchored.toTop hp)
+    hf.subset (fun _ hy hfy => ⟨hy, hfy⟩) h k hk).2
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], ARqp-SC row under f.bB.X and f.D1pLaB.X (with
+the anchor point `x₀ = x 0`; the remark after (14.2.10)): the conclusion of `theorem_14_2_4_arqp`,
+in either radii mode `u`. -/
+theorem theorem_14_2_4_arqp_anchored {flow : ℝ} (hb : AssumptionBbX f X flow)
+    (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 p L B) (hq : 1 ≤ q) (hqp : q ≤ p)
+    (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+    (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
+    (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm)
+    {u : Prop} [Decidable u]
+    (hrad : (u → (∀ j ∈ Finset.Icc 1 q, δ₀ j = 1) ∧
+        ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) →
+          ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
+      (¬ u → ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
+        ∀ j ∈ Finset.Icc 1 q,
+          Chapter12.arqpKappaDelta P (Chapter12.finMax 1 L p) (σ k) * ε j ≤ δs k j)) :
+    ∃ kε, Optimization.IsFirstHit (Chapter12.arqpStop f P p q ε x s σ δ d) kε ∧ x kε ∈ X ∧
+      (∃ δε : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, δε j ∈ Ioc 0 1) ∧
+        Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε δε) ∧
+      (Optimization.funEvalCount kε : ℝ) ≤ Chapter12.kappaAARqpOf u P L p q * (f (x 0) - flow) /
+        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q +
+          Chapter12.kappaCARqp P L p ∧
+      (Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.arqpRho f p x s σ k) kε : ℝ) ≤
+        Chapter12.kappaSARqpOf u P L p q * (f (x 0) - flow) /
+          Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q + 2 :=
+  Chapter12.theorem_12_2_14_anchored hb (hf.toAnchored.toTop (hq.trans hqp)) hf.subset
+    (fun _ hy hfy => ⟨hy, hfy⟩) hq hqp hσmin hθς hε hδ₀ h hrad
+
+end ARqp
+
+end Anchored
 
 /-! ### The dynamic-accuracy algorithms with simple constraints
 

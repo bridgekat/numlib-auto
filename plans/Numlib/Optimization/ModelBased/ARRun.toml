@@ -69,3 +69,7 @@ id = "IsARRun.stop_false_iff"
 
 [[node]]
 id = "arAcceptance_of_one_le"
+
+[[node]]
+id = "IsARRun.sigma_le_anchored"
+source = "Cartis–Gould–Toint, Lemma 4.1.2 under (14.2.9) anchored at the iterates"

@@ -181,17 +181,22 @@ and on the declarations.
 
 ## Not formalized
 
-* Existence and complexity of LENq-SC and TPqp-GC runs under the book's anchored Lipschitz
-  assumptions are proved with the ARqpC-SC exponents `j + 1`
-  (`Chapter14.exists_algorithm_14_3_1_complexity_anchored`,
-  `Chapter14.exists_algorithm_14_3_2_complexity_anchored`); the variants with the ARqp-SC
-  exponents, the certified and strong-contract variants remain under global Lipschitz assumptions.
-  The bad outer iterations of TPqp-GC are not bounded in the order of the ARqp-SC exponents by
-  the INNER contract (`Chapter14.theorem_14_3_9_order_counterexample`: for `q = 1`,
-  `π₁ = (p+1)/p`, `p ≥ 2`, runs satisfying `Chapter14.IsInnerPhaseRunStrong` with
-  `≍ (ε₀ ε₁)^{-1}` of them, exceeding the order of Theorem 14.3.9); whether runs of ARqp-SC
-  itself attain the book's order is not settled (the ARqp-SC exponents themselves are proved:
-  "otherwise" for every `q`, unit-radius on `ℝⁿ` for `q ≤ 2`, with the additive Phase-1
+* The anchored assumption f.D0qLaB.X of the dynamic-accuracy rows of Theorem 14.2.4 (they are
+  proved under f.D0qL on an open convex superset of `X`); the other rows, and the existence and
+  complexity of LENq-SC and TPqp-GC runs in all variants (exponents `j + 1`, ARqp-SC "otherwise"
+  and unit-radius exponents, certified and strong-contract INNER contracts), are proved under
+  anchored bounds (`Chapter14.theorem_14_2_4_trq_anchored`,
+  `Chapter14.theorem_14_2_4_arqp_anchored`,
+  `Chapter14.exists_algorithm_14_3_2_complexity_certified_anchored`, …), which the book's
+  anchored assumptions give through `Chapter14.AssumptionD1qLaBX.anchoredCompositeBounds` and
+  `Chapter14.exists_anchoredCompositeBounds_nu_mu` (the `j + 1` variants are also restated under
+  the book's assumptions: `Chapter14.exists_algorithm_14_3_2_complexity_anchored`).
+* The order of the bad outer iterations of TPqp-GC claimed by Theorem 14.3.9 with the ARqp-SC
+  exponents for runs of ARqp-SC itself: it does not follow from the INNER contract
+  (`Chapter14.theorem_14_3_9_order_counterexample`: for `q = 1`, `π₁ = (p+1)/p`, `p ≥ 2`, runs
+  satisfying `Chapter14.IsInnerPhaseRunStrong` with `≍ (ε₀ ε₁)^{-1}` of them, exceeding the
+  book's order), and is not settled for ARqp-SC runs (the ARqp-SC exponents themselves are
+  proved: "otherwise" for every `q`, unit-radius on `ℝⁿ` for `q ≤ 2`, with the additive Phase-1
   constants of footnote 114 where the multiplicative contract fails).
 * The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
   the Gertz–Gill criterion (9.4.8) quoted in §9.4.

@@ -180,14 +180,12 @@ section Estimates
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   {f : E → ℝ} {p : ℕ} {L σ : ℝ} {C : Set E} {x s : E}
 
-/-- **The ratio estimate** behind Lemmas 2.4.2, 3.3.2 and 4.1.2 ([cartis2022evaluation]): let
-`f` be `C^p` on a convex set `C ∋ x, x + s` with `L`-Lipschitz `p`-th derivative there, `c, σ > 0`,
-`s ≠ 0`, and let the Taylor decrement satisfy `T_p(x, 0) - T_p(x, s) ≥ c σ ‖s‖^{p+1}`. Then the
-ratio `ρ = (f(x) - f(x + s)) / (T_p(x, 0) - T_p(x, s))` satisfies
-`|ρ - 1| ≤ L / ((p+1)! c σ)`. Lemma 4.1.1 gives `c = 1/(p+1)!` (so `|ρ - 1| ≤ L/σ`); the exact AR1
-step gives `c = 1`. -/
-theorem abs_reductionRatio_sub_one_le_of_lipschitz (hC : Convex ℝ C)
-    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hx : x ∈ C)
+/-- **The ratio estimate, anchored**: as `abs_reductionRatio_sub_one_le_of_lipschitz`, with
+`∇^p f` only Lipschitz anchored at `x`, `‖∇^p f(y) - ∇^p f(x)‖ ≤ L ‖y - x‖` for `y ∈ C` (the
+condition (14.2.9) of [cartis2022evaluation]). -/
+theorem abs_reductionRatio_sub_one_le_of_lipschitzAnchored (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
+    (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖) (hx : x ∈ C)
     (hxs : x + s ∈ C) (hs : s ≠ 0) {c : ℝ} (hc : 0 < c) (hσ : 0 < σ)
     (hdec : c * σ * ‖s‖ ^ (p + 1) ≤ (ftaylorSeries ℝ f x).taylorDecrement p s) :
     |reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) - 1| ≤
@@ -195,7 +193,9 @@ theorem abs_reductionRatio_sub_one_le_of_lipschitz (hC : Convex ℝ C)
   set Δ := (ftaylorSeries ℝ f x).taylorDecrement p s
   have hspos : 0 < ‖s‖ := norm_pos_iff.2 hs
   have hΔ : 0 < Δ := lt_of_lt_of_le (by positivity) hdec
-  have hT := abs_sub_taylorPolynomial_le_of_lipschitz hC hf hL hx hxs
+  have hT : |f (x + s) - taylorPolynomial f p x s| ≤ L / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by
+    rw [← Real.norm_eq_abs]
+    exact norm_sub_taylorPolynomial_le_of_lipschitzAnchored hC hf hL hx hxs
   have hL0 : 0 ≤ L := nonneg_of_abs_le_div_mul_pow (by positivity) hspos hT
   refine abs_reductionRatio_sub_one_le hΔ ?_
   have heq : f (x + s) - (f x - Δ) = f (x + s) - taylorPolynomial f p x s := by
@@ -208,6 +208,36 @@ theorem abs_reductionRatio_sub_one_le_of_lipschitz (hC : Convex ℝ C)
         field_simp
     _ ≤ L / ((p + 1)! * c * σ) * Δ := by gcongr
 
+/-- **The ratio estimate** behind Lemmas 2.4.2, 3.3.2 and 4.1.2 ([cartis2022evaluation]): let
+`f` be `C^p` on a convex set `C ∋ x, x + s` with `L`-Lipschitz `p`-th derivative there, `c, σ > 0`,
+`s ≠ 0`, and let the Taylor decrement satisfy `T_p(x, 0) - T_p(x, s) ≥ c σ ‖s‖^{p+1}`. Then the
+ratio `ρ = (f(x) - f(x + s)) / (T_p(x, 0) - T_p(x, s))` satisfies
+`|ρ - 1| ≤ L / ((p+1)! c σ)`. Lemma 4.1.1 gives `c = 1/(p+1)!` (so `|ρ - 1| ≤ L/σ`); the exact AR1
+step gives `c = 1`. -/
+theorem abs_reductionRatio_sub_one_le_of_lipschitz (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hx : x ∈ C)
+    (hxs : x + s ∈ C) (hs : s ≠ 0) {c : ℝ} (hc : 0 < c) (hσ : 0 < σ)
+    (hdec : c * σ * ‖s‖ ^ (p + 1) ≤ (ftaylorSeries ℝ f x).taylorDecrement p s) :
+    |reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) - 1| ≤
+      L / ((p + 1)! * c * σ) :=
+  abs_reductionRatio_sub_one_le_of_lipschitzAnchored hC hf
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy x hx) hx hxs hs hc hσ hdec
+
+/-- **Very successful iterations, anchored**: as `le_reductionRatio_of_lipschitz`, with `∇^p f`
+only Lipschitz anchored at `x` (the condition (14.2.9) of [cartis2022evaluation]). -/
+theorem le_reductionRatio_of_lipschitzAnchored (hC : Convex ℝ C)
+    (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
+    (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖) (hx : x ∈ C)
+    (hxs : x + s ∈ C) (hs : s ≠ 0) {c : ℝ} (hc : 0 < c) (hσ : 0 < σ)
+    (hdec : c * σ * ‖s‖ ^ (p + 1) ≤ (ftaylorSeries ℝ f x).taylorDecrement p s) {η : ℝ}
+    (hη : L ≤ (p + 1)! * c * σ * (1 - η)) :
+    η ≤ reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) := by
+  have h := abs_reductionRatio_sub_one_le_of_lipschitzAnchored hC hf hL hx hxs hs hc hσ hdec
+  have hpos : (0 : ℝ) < (p + 1)! * c * σ := by positivity
+  have : L / ((p + 1)! * c * σ) ≤ 1 - η := by
+    rw [div_le_iff₀ hpos]; linarith
+  linarith [neg_abs_le (reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) - 1)]
+
 /-- **Very successful iterations** (the forcing step of Lemmas 2.4.2, 3.3.2, 4.1.2,
 [cartis2022evaluation]): under the hypotheses of
 `Optimization.abs_reductionRatio_sub_one_le_of_lipschitz`, `L ≤ (p+1)! c σ (1 - η)` gives
@@ -217,12 +247,9 @@ theorem le_reductionRatio_of_lipschitz (hC : Convex ℝ C)
     (hxs : x + s ∈ C) (hs : s ≠ 0) {c : ℝ} (hc : 0 < c) (hσ : 0 < σ)
     (hdec : c * σ * ‖s‖ ^ (p + 1) ≤ (ftaylorSeries ℝ f x).taylorDecrement p s) {η : ℝ}
     (hη : L ≤ (p + 1)! * c * σ * (1 - η)) :
-    η ≤ reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) := by
-  have h := abs_reductionRatio_sub_one_le_of_lipschitz hC hf hL hx hxs hs hc hσ hdec
-  have hpos : (0 : ℝ) < (p + 1)! * c * σ := by positivity
-  have : L / ((p + 1)! * c * σ) ≤ 1 - η := by
-    rw [div_le_iff₀ hpos]; linarith
-  linarith [neg_abs_le (reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) - 1)]
+    η ≤ reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) :=
+  le_reductionRatio_of_lipschitzAnchored hC hf
+    (fun y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy x hx) hx hxs hs hc hσ hdec hη
 
 /-- The model gradient of the Taylor part (Lemma 3.3.7, [cartis2022evaluation], with the step
 condition (3.3.23) on `∇T_p` rather than `∇m`): `‖∇f(x + s)‖ ≤ L/p! ‖s‖^p + ‖∇_s T_p(x, s)‖`. -/
