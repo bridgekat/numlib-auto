@@ -28,8 +28,14 @@ accuracy `h_{k,0}` ((13.3.1)–(13.3.2)), and termination is certified.
   `algorithm_13_3_2` are the case `X = univ`. The results are proved for the feasible runs under
   f.D0qL (f.D0pL) on an open convex `C ⊇ X` (`AssumptionD0qLOn`), with approximate optimality on
   `X`, in the `_feasible` declarations; the statements for Algorithms 13.3.1–13.3.2 are their
-  `X = univ` instances. `trqEDA_card_acc_le_feasible` and `arqpEDA_card_acc_le_feasible` bound the
-  accuracy-improving iterations before termination.
+  `X = univ` instances. The `_feasible` results are instances of `_anchored` ones, under f.D0qL
+  anchored on a set containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`
+  (`AssumptionD0qLAnchored`, f.D0qLaB.X of §14.2). With inexact values the iterates reached still
+  stay in the sublevel set (`algorithm_13_3_1_feasible.f_le`, `algorithm_13_3_2_feasible.f_le`):
+  on a successful iteration the values are within `h_{k,0} ≤ κ_s \overline{ΔT}_k` of `f`, and
+  `κ_s ≤ η₁/4` ((13.3.5), (13.3.13)) gives `f(x_k) - f(x_{k+1}) ≥ η₁/2 \overline{ΔT}_k > 0`.
+  `trqEDA_card_acc_le_feasible` and `arqpEDA_card_acc_le_feasible` bound the accuracy-improving
+  iterations before termination.
 
 ## Deviations from the book
 
@@ -211,29 +217,64 @@ theorem κs_le_η₂ : P.κs ≤ (1 - P.η₂) / 4 :=
 theorem mem {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) : x k ∈ X :=
   trq_mem (hrun.steps_lt hk) (hrun.x_zero ▸ hrun.x₀_mem)
 
+/-- The objective does not increase along a TRqEDA-SC run before termination:
+`f(x_k) ≤ f(x₀)`. On a successful iteration the inexact values are within
+`h_{k,0} ≤ κ_s \overline{ΔT}_k ≤ η₁/4 \overline{ΔT}_k` of `f` ((13.3.5), (13.3.9)), so
+`f(x_k) - f(x_{k+1}) ≥ η₁/2 \overline{ΔT}_k > 0`. -/
+theorem f_le {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) : f (x k) ≤ f x₀ := by
+  rw [← hrun.x_zero]
+  refine le_zero_of_succ_le (u := fun i => f (x i)) fun i hi => ?_
+  have hki : ∀ j ≤ i, ¬ edaStopTR P ε D Δ h dd j := fun j hj => hk j (hj.trans_lt hi)
+  have hs := hrun.step hki
+  by_cases hc : ¬ acc i ∧
+      P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement (jk i) (s i)) i
+  · have h3 := hrun.step3 hki hc.1
+    have hpos := hs.taylorDecrement_pos hc.1
+      (hrun.invariants fun j hj => hk j (hj.trans hi)).1.1 hrun.epsMin_pos
+    have hdec := sub_ge_of_inexact_ratio hpos (h3.fx_err.trans h3.h₀_le)
+      (h3.fxs_err.trans h3.h₀_le) hc.2 hrun.κs_le_η₁
+    have := mul_pos (half_pos P.η₁_pos) hpos
+    rw [hs.x_succ_eq_add hc.1 hc.2]
+    linarith
+  · rw [hs.x_succ_eq hc]
+
+/-- The iterates reached lie in every set `A` containing the sublevel set
+`{y ∈ X | f(y) ≤ f(x₀)}`. -/
+theorem mem_anchor {A : Set ℝⁿ} (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {k : ℕ}
+    (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) : x k ∈ A :=
+  hAX _ (hrun.mem hk) (hrun.f_le hk)
+
+/-- (13.1.24) with `κ_{∇,max} = 1`: `‖∇̄^i f(x_k)‖ ≤ L_f + κ_h`, under f.D0qL anchored on a set
+`A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+theorem norm_D_le_anchored {C A : Set ℝⁿ} {L : ℕ → ℝ} (hf : AssumptionD0qLAnchored f C A P.q L)
+    (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j)
+    {i : ℕ} (hi : i ∈ Finset.Icc 1 P.q) : ‖D k i‖ ≤ lipMax L P.q + P.κh := by
+  have h' : ‖D k i‖ ≤ ‖iteratedFDeriv ℝ i f (x k)‖ + h k i :=
+    norm_le_of_jetApprox (hrun.oracle k hk) hi
+  have := hf.norm_iteratedFDeriv_le hi (hrun.mem_anchor hAX hk)
+  have := ((hrun.invariants hk).2 i hi).2
+  linarith
+
 /-- (13.1.24) with `κ_{∇,max} = 1`: `‖∇̄^i f(x_k)‖ ≤ L_f + κ_h`, under f.D0qL on `C ⊇ X`. -/
 theorem norm_D_le {C : Set ℝⁿ} {L : ℕ → ℝ} (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
     {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) {i : ℕ} (hi : i ∈ Finset.Icc 1 P.q) :
-    ‖D k i‖ ≤ lipMax L P.q + P.κh := by
-  have h' : ‖D k i‖ ≤ ‖iteratedFDeriv ℝ i f (x k)‖ + h k i :=
-    norm_le_of_jetApprox (hrun.oracle k hk) hi
-  have := hf.norm_iteratedFDeriv_le hi (hXC (hrun.mem hk))
-  have := ((hrun.invariants hk).2 i hi).2
-  linarith
+    ‖D k i‖ ≤ lipMax L P.q + P.κh :=
+  hrun.norm_D_le_anchored (hf.anchored hXC) (fun _ hy _ => hy) hk hi
 
 end algorithm_13_3_1_feasible
 
 section TRqEDA
 
-variable {X C : Set ℝⁿ} {f : ℝⁿ → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ} {x : ℕ → ℝⁿ}
+variable {X C A : Set ℝⁿ} {f : ℝⁿ → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ} {x : ℕ → ℝⁿ}
   {Δ : ℕ → ℝ}
   {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ} {dd : ℕ → ℕ → ℝⁿ} {jk : ℕ → ℕ}
   {s : ℕ → ℝⁿ} {acc : ℕ → Prop} {fx fxs h₀ : ℕ → ℝ} {R : ℕ → Prop} {L : ℕ → ℝ} {k : ℕ}
 
-/-- **Lemma 13.3.1 with a feasible set** ([cartis2022evaluation] §14.2): the conclusion of
-`lemma_13_3_1` for a TRqEDA-SC run (`algorithm_13_3_1_feasible`) under f.D0qL on an open
-convex `C ⊇ X`. -/
-theorem lemma_13_3_1_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+/-- **Lemma 13.3.1 under the anchored assumption** ([cartis2022evaluation] §14.2): the conclusion of
+`lemma_13_3_1` for a TRqEDA-SC run (`algorithm_13_3_1_feasible`) under f.D0qL anchored on a set `A`
+containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0qLAnchored`). -/
+theorem lemma_13_3_1_anchored (hf : AssumptionD0qLAnchored f C A P.q L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
     (hk : ∀ j ≤ k, ¬ edaStopTR P ε D Δ h dd j) (ha : ¬ acc k)
     (hΔ : Δ k ≤ min P.ϑ ((1 - P.η₂) / (lipMax L P.q + 4 * (P.q + 1)! * P.κs) *
@@ -271,7 +312,7 @@ theorem lemma_13_3_1_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
     exact ha (h2.acc_iff.2 ⟨i, hi, not_le.1 hc⟩)
   have hE := abs_taylorDecrement_sub_le_of_stepAccuracy zero_le_one hκs.le (hrun.oracle k hklt)
     hacc hjq
-  have hR := hf.abs_sub_le hjq (hXC (hrun.mem hklt)) (hXC h2.mem)
+  have hR := hf.abs_sub_le hjq (hrun.mem_anchor hAX hklt) (hXC h2.mem)
   have hLj : L j ≤ Lf := le_lipMax hjq
   have hs0 := norm_nonneg (s k)
   have hpow1 : ‖s k‖ ^ (j + 1) ≤ δ ^ (j + 1) := pow_le_pow_left₀ hs0 hsδ _
@@ -322,6 +363,18 @@ theorem lemma_13_3_1_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
     exact le_div_of_inexact_error_le hΔTb0 herr
   exact ⟨hρ, (hs.update ha).le_of_very_successful hρ⟩
 
+/-- **Lemma 13.3.1 with a feasible set** ([cartis2022evaluation] §14.2): the conclusion of
+`lemma_13_3_1` for a TRqEDA-SC run (`algorithm_13_3_1_feasible`) under f.D0qL on an open
+convex `C ⊇ X`. -/
+theorem lemma_13_3_1_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
+    (hk : ∀ j ≤ k, ¬ edaStopTR P ε D Δ h dd j) (ha : ¬ acc k)
+    (hΔ : Δ k ≤ min P.ϑ ((1 - P.η₂) / (lipMax L P.q + 4 * (P.q + 1)! * P.κs) *
+      trPhiHat P Δ D dd jk k)) :
+    P.η₂ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement (jk i) (s i)) k ∧
+      Δ k ≤ Δ (k + 1) :=
+  lemma_13_3_1_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hk ha hΔ
+
 /-- **Lemma 13.3.1** ([cartis2022evaluation]): under f.D0qL, at a trial iteration `k ∈ 𝒯` of
 TRqEDA before termination with (13.1.28) for `κ_{∇,max} = 1`,
 `Δ_k ≤ min(ϑ, (1 - η₂)/(L_f + 4 (q+1)! κ_s) φ̂_{f,k})`, the iteration is very successful
@@ -335,8 +388,10 @@ theorem lemma_13_3_1 (hf : AssumptionD0qL f P.q L)
       Δ k ≤ Δ (k + 1) :=
   lemma_13_3_1_feasible hf.on_univ (subset_univ _) hrun hk ha hΔ
 
-/-- `trEDA_radius_ge` for a TRqEDA-SC run under f.D0qL on an open convex `C ⊇ X`. -/
-theorem trEDA_radius_ge_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+/-- `trEDA_radius_ge` for a TRqEDA-SC run under f.D0qL anchored on a set `A` containing the sublevel
+set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0qLAnchored`). -/
+theorem trEDA_radius_ge_anchored (hf : AssumptionD0qLAnchored f C A P.q L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) :
@@ -354,7 +409,8 @@ theorem trEDA_radius_ge_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ 
   have hεmin := hrun.epsMin_pos
   have hc := trq_delta_ge (hrun.steps_lt hk) hrun.Δ_zero ha0 hκΔ0.le hκΔ'
     (c := P.ς * epsMin P.q ε / 2)
-    (fun i hi hai hΔ => (lemma_13_3_1_feasible hf hXC hrun (fun j hj => hk j (by omega)) hai hΔ).1)
+    (fun i hi hai hΔ =>
+      (lemma_13_3_1_anchored hf hXC hAX hrun (fun j hj => hk j (by omega)) hai hΔ).1)
     (fun i hi hai => (lemma_13_1_2 (hrun.steps_lt hk i hi) hai
       (hrun.invariants fun j hj => hk j (hj.trans hi)).1.1).1)
   have hκγ : κΔ ≤ P.γ₁ := hκΔ'.trans (mul_le_of_le_one_right P.γ₁_pos.le ha1)
@@ -370,6 +426,14 @@ theorem trEDA_radius_ge_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ 
         exact mul_le_mul_of_nonneg_right this hεmin.le
     _ ≤ P.γ₁ * P.ϑ := mul_le_mul_of_nonneg_left hrun.epsMin_le_ϑ P.γ₁_pos.le
 
+/-- `trEDA_radius_ge` for a TRqEDA-SC run under f.D0qL on an open convex `C ⊇ X`. -/
+theorem trEDA_radius_ge_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
+    (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) :
+    P.ς * (κΔ / 2) * epsMin P.q ε ≤ trRadius P Δ k :=
+  trEDA_radius_ge_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hκΔ hk
+
 /-- **Lemma 13.1.4 for TRqEDA** ([cartis2022evaluation], §13.3.1: "Lemma 13.1.4 — with a
 simplified value of `κ_δ` — follows"): under f.D0qL, for an admissible `κ_Δ` with
 `κ_{∇,max} = 1`, at every iteration `k` reached by TRqEDA, `δ_k ≥ ς κ_δ ε_min` with
@@ -381,10 +445,12 @@ theorem trEDA_radius_ge (hf : AssumptionD0qL f P.q L)
     P.ς * (κΔ / 2) * epsMin P.q ε ≤ trRadius P Δ k :=
   trEDA_radius_ge_feasible hf.on_univ (subset_univ _) hrun hκΔ hk
 
-/-- **Lemma 13.3.2 with a feasible set** ([cartis2022evaluation] §14.2): for a TRqEDA-SC run under
-f.D0qL on an open convex `C ⊇ X` and an admissible `κ_Δ`, every trial iteration before termination
+/-- **Lemma 13.3.2 under the anchored assumption** ([cartis2022evaluation] §14.2): for a TRqEDA-SC
+run under f.D0qL anchored on a set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`
+(`AssumptionD0qLAnchored`) and an admissible `κ_Δ`, every trial iteration before termination
 satisfies (13.1.34) and every successful one (13.1.35), as in `lemma_13_3_2`. -/
-theorem lemma_13_3_2_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+theorem lemma_13_3_2_anchored (hf : AssumptionD0qLAnchored f C A P.q L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
     (hk : ∀ j ≤ k, ¬ edaStopTR P ε D Δ h dd j) (ha : ¬ acc k) :
@@ -397,7 +463,7 @@ theorem lemma_13_3_2_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
   have hκΔ0 := hκΔ.1
   have h1 := (hrun.step hk).taylorDecrement_ge ha (hrun.invariants hklt).1.1 (by positivity)
     (by linarith [hκΔ.2.1]) hrun.epsMin_pos hrun.epsMin_le_one
-    (trEDA_radius_ge_feasible hf hXC hrun hκΔ hklt)
+    (trEDA_radius_ge_anchored hf hXC hAX hrun hκΔ hklt)
   refine ⟨h1, fun hρ => ?_⟩
   have h3 := hrun.step3 hk ha
   have hpos : 0 < (D k).taylorDecrement (jk k) (s k) :=
@@ -411,6 +477,20 @@ theorem lemma_13_3_2_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
         field_simp
     _ ≤ P.η₁ / 2 * (D k).taylorDecrement (jk k) (s k) := by gcongr
     _ ≤ f (x k) - f (x k + s k) := h2
+
+/-- **Lemma 13.3.2 with a feasible set** ([cartis2022evaluation] §14.2): for a TRqEDA-SC run under
+f.D0qL on an open convex `C ⊇ X` and an admissible `κ_Δ`, every trial iteration before termination
+satisfies (13.1.34) and every successful one (13.1.35), as in `lemma_13_3_2`. -/
+theorem lemma_13_3_2_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
+    (hk : ∀ j ≤ k, ¬ edaStopTR P ε D Δ h dd j) (ha : ¬ acc k) :
+    (P.ς * (κΔ / 2)) ^ (P.q + 1) / P.q ! * epsMin P.q ε ^ (P.q + 1) ≤
+        (D k).taylorDecrement (jk k) (s k) ∧
+      (P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement (jk i) (s i)) k →
+        P.η₁ * (P.ς * (κΔ / 2)) ^ (P.q + 1) / (2 * P.q !) * epsMin P.q ε ^ (P.q + 1) ≤
+          f (x k) - f (x (k + 1))) :=
+  lemma_13_3_2_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hκΔ hk ha
 
 /-- **Lemma 13.3.2** ([cartis2022evaluation]): under f.D0qL, for an admissible `κ_Δ`
 (`κ_{∇,max} = 1`) and `κ_δ = κ_Δ/2`, every trial iteration `k ∈ 𝒯` of TRqEDA before termination
@@ -471,9 +551,11 @@ theorem lemma_13_3_3_i (hrun : algorithm_13_3_1 f P ε x₀ x Δ h D dd jk s acc
   have := lemma_13_3_3_i_feasible hrun hk hstop
   rwa [setOf_add_mem_univ] at this
 
-/-- **Lemma 13.3.3 (ii) with a feasible set** ([cartis2022evaluation] §14.2): the conclusion of
-`lemma_13_3_3_ii` for a TRqEDA-SC run under f.D0qL on an open convex `C ⊇ X`. -/
-theorem lemma_13_3_3_ii_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+/-- **Lemma 13.3.3 (ii) under the anchored assumption** ([cartis2022evaluation] §14.2): the
+conclusion of `lemma_13_3_3_ii` for a TRqEDA-SC run under f.D0qL anchored on a set `A` containing
+the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0qLAnchored`). -/
+theorem lemma_13_3_3_ii_anchored (hf : AssumptionD0qLAnchored f C A P.q L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j)
@@ -484,7 +566,7 @@ theorem lemma_13_3_3_ii_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ 
   refine ⟨hpass, ?_⟩
   have hΔ := (hrun.invariants hk).1.1
   obtain ⟨hδ0, hδ1⟩ := trRadius_mem (P := P) hΔ
-  have hδm := trEDA_radius_ge_feasible hf hXC hrun hκΔ hk
+  have hδm := trEDA_radius_ge_anchored hf hXC hAX hrun hκΔ hk
   set δ := trRadius P Δ k
   set em := epsMin P.q ε
   have hεmin := hrun.epsMin_pos
@@ -508,6 +590,18 @@ theorem lemma_13_3_3_ii_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ 
     _ ≤ P.ς * em * δ ^ P.q / (2 * P.q !) := by gcongr
     _ = P.ς * em * δ ^ P.q / P.q ! / 2 := by ring
 
+/-- **Lemma 13.3.3 (ii) with a feasible set** ([cartis2022evaluation] §14.2): the conclusion of
+`lemma_13_3_3_ii` for a TRqEDA-SC run under f.D0qL on an open convex `C ⊇ X`. -/
+theorem lemma_13_3_3_ii_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
+    (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trFail P ε D Δ dd k j)
+    (hh : ∀ i ∈ Finset.Icc 1 P.q, h k i ≤
+      P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
+    edaStopTR P ε D Δ h dd k :=
+  lemma_13_3_3_ii_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hκΔ hk hpass hh
+
 /-- **Lemma 13.3.3 (ii)** ([cartis2022evaluation]): under f.D0qL and for an admissible `κ_Δ`
 (`κ_{∇,max} = 1`), `κ_δ = κ_Δ/2`: if (13.3.7) fails at every order at an iteration `k` reached by
 TRqEDA and (13.1.37) `h_{k,i} ≤ ς^{q+1} κ_δ^q/(4 q!) ε_min^{q+1}` for `i ∈ [1, q]`, then (13.3.8)
@@ -523,10 +617,12 @@ theorem lemma_13_3_3_ii (hf : AssumptionD0qL f P.q L)
   lemma_13_3_3_ii_feasible hf.on_univ (subset_univ _) hrun hκΔ hk hpass hh
 
 /-- **The accuracy-improving iterations of TRqEDA-SC** (proof of Theorem 13.3.4,
-[cartis2022evaluation]): under f.D0qL on an open convex `C ⊇ X` and for an admissible `κ_Δ`
-(`κ_{∇,max} = 1`), if the run has not terminated at any `j ≤ k`, then
+[cartis2022evaluation]): under f.D0qL anchored on a set `A` containing the sublevel set
+`{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0qLAnchored`) and for an admissible `κ_Δ` (`κ_{∇,max} = 1`),
+if the run has not terminated at any `j ≤ k`, then
 `|𝒜_k| ≤ q(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
-theorem trqEDA_card_acc_le_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+theorem trqEDA_card_acc_le_anchored (hf : AssumptionD0qLAnchored f C A P.q L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ edaStopTR P ε D Δ h dd j) :
@@ -571,13 +667,14 @@ theorem trqEDA_card_acc_le_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X �
         fun i hi => (le_ordMax hi).trans hcon
       by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, trFail P ε D Δ dd j i
       · refine (((hrun.step hjs).step2 hfail).not_acc_of_le (Lb := Lb)
-          (hrun.invariants hjlt).1.1 hLb1 (fun i hi => hrun.norm_D_le hf hXC hjlt hi)
+          (hrun.invariants hjlt).1.1 hLb1 (fun i hi => hrun.norm_D_le_anchored hf hAX hjlt hi)
           (by positivity) (by linarith) hrun.eps_mem
-          (trEDA_radius_ge_feasible hf hXC hrun hκΔ'' hjlt)
+          (trEDA_radius_ge_anchored hf hXC hAX hrun hκΔ'' hjlt)
           fun i hi => (hhi i hi).trans ?_) ha
         exact mul_le_mul_of_nonneg_right trKappaAcc_le (by positivity)
       · push Not at hfail
-        refine hjs j le_rfl (lemma_13_3_3_ii_feasible hf hXC hrun hκΔ'' hjlt hfail fun i hi => ?_)
+        refine hjs j le_rfl
+          (lemma_13_3_3_ii_anchored hf hXC hAX hrun hκΔ'' hjlt hfail fun i hi => ?_)
         calc h j i ≤ κacc * em ^ (P.q * (P.q + 1)) := hhi i hi
           _ = 1 * κacc * em ^ (P.q * (P.q + 1)) := by ring
           _ ≤ P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * em ^ (P.q + 1) :=
@@ -588,11 +685,26 @@ theorem trqEDA_card_acc_le_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X �
           |Real.log P.γh| + 1 := h
     _ = NA := by rw [hNA_def]; push_cast; ring
 
-/-- **Theorem 13.3.4 with a feasible set** ([cartis2022evaluation] §14.2): complexity of TRqEDA-SC
-(the TRqEDA-SC row of Theorem 14.2.4). Under f.D0qL on an open convex `C ⊇ X` and f.bB.X
-(`f ≥ f_low` on `X`), every TRqEDA-SC run terminates at some `k_ε` with `x_{k_ε}` an
-`(ε, δ_ε)`-approximate minimizer on `X`, within the evaluation bounds of `theorem_13_3_4`. -/
-theorem theorem_13_3_4_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C) {flow : ℝ}
+/-- **The accuracy-improving iterations of TRqEDA-SC** (proof of Theorem 13.3.4,
+[cartis2022evaluation]): under f.D0qL on an open convex `C ⊇ X` and for an admissible `κ_Δ`
+(`κ_{∇,max} = 1`), if the run has not terminated at any `j ≤ k`, then
+`|𝒜_k| ≤ q(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
+theorem trqEDA_card_acc_le_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) {k : ℕ}
+    (hk : ∀ j ≤ k, ¬ edaStopTR P ε D Δ h dd j) :
+    ((successSet acc k).card : ℝ) ≤
+      P.q * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
+        |Real.log (trKappaAcc P κΔ (lipMax L P.q + P.κh) 1 / P.κh)| / |Real.log P.γh| + 1 :=
+  trqEDA_card_acc_le_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hκΔ hk
+
+/-- **Theorem 13.3.4 under the anchored assumption** ([cartis2022evaluation] §14.2): complexity of
+TRqEDA-SC (the TRqEDA-SC row of Theorem 14.2.4). Under f.D0qL anchored on a set `A` containing the
+sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0qLAnchored`) and f.bB.X (`f ≥ f_low` on `X`),
+every TRqEDA-SC run terminates at some `k_ε` with `x_{k_ε}` an `(ε, δ_ε)`-approximate minimizer on
+`X`, within the evaluation bounds of `theorem_13_3_4`. -/
+theorem theorem_13_3_4_anchored (hf : AssumptionD0qLAnchored f C A P.q L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) :
@@ -642,7 +754,7 @@ theorem theorem_13_3_4_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C
     exact card_successSet_le_div_of_decrease («φ» := fun i => f (x i)) hc
       (fun j hj hs => by rw [(hrun.step fun i hi => hk i (hi.trans hj)).x_succ_eq hs])
       (fun j hj hs =>
-        (lemma_13_3_2_feasible hf hXC hrun hκΔ'' (fun i hi => hk i (hi.trans hj)) hs.1).2 hs.2)
+        (lemma_13_3_2_anchored hf hXC hAX hrun hκΔ'' (fun i hi => hk i (hi.trans hj)) hs.1).2 hs.2)
       (hb _ (hrun.mem fun j hj => hk j (Nat.lt_succ_iff.1 hj)))
   -- trial iterations
   have hlog2 : 0 < |Real.log P.γ₂| := abs_pos.2 (Real.log_neg P.γ₂_pos P.γ₂_lt_one).ne
@@ -658,7 +770,7 @@ theorem theorem_13_3_4_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C
   have hTk : ∀ k, (∀ j ≤ k, ¬ stop j) → ((successSet (fun i => ¬ acc i) k).card : ℝ) ≤ NT := by
     intro k hk
     have hΔmin : P.ς * (κΔ / 2) * em ≤ Δ (k + 1) :=
-      (trEDA_radius_ge_feasible hf hXC hrun hκΔ'' fun j hj => hk j (Nat.lt_succ_iff.1 hj)).trans
+      (trEDA_radius_ge_anchored hf hXC hAX hrun hκΔ'' fun j hj => hk j (Nat.lt_succ_iff.1 hj)).trans
         (min_le_left _ _)
     have h1 := lemma_13_1_1 (fun i hi => hrun.step fun j hj => hk j (hj.trans hi))
       hrun.Δ_zero (by positivity) hΔmin
@@ -680,7 +792,7 @@ theorem theorem_13_3_4_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C
     |Real.log (κacc / P.κh)| / |Real.log P.γh| + 1 with hNA_def
   have hNA0 : 0 ≤ NA := by positivity
   have hAk : ∀ k, (∀ j ≤ k, ¬ stop j) → ((successSet acc k).card : ℝ) ≤ NA :=
-    fun k hk => trqEDA_card_acc_le_feasible hf hXC hrun hκΔ'' hk
+    fun k hk => trqEDA_card_acc_le_anchored hf hXC hAX hrun hκΔ'' hk
   -- conclusion
   obtain ⟨kε, hkε, -, hT, hA⟩ := exists_firstHit_le_of_dynamicAccuracy hNT0 hNA0 hTk hAk
   have hS := derivEvalCount_le_of_isFirstHit hNS0 hkε hSk
@@ -705,6 +817,32 @@ theorem theorem_13_3_4_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C
   · calc _ ≤ (NA + 1) + (NS + 1) - 1 := by linarith
       _ ≤ trKappaS P κΔ * A' * (f x₀ - flow) / em ^ (P.q + 1) + NA + 1 := by linarith
       _ = _ := by rw [hNA_def]; ring
+
+/-- **Theorem 13.3.4 with a feasible set** ([cartis2022evaluation] §14.2): complexity of TRqEDA-SC
+(the TRqEDA-SC row of Theorem 14.2.4). Under f.D0qL on an open convex `C ⊇ X` and f.bB.X
+(`f ≥ f_low` on `X`), every TRqEDA-SC run terminates at some `k_ε` with `x_{k_ε}` an
+`(ε, δ_ε)`-approximate minimizer on `X`, within the evaluation bounds of `theorem_13_3_4`. -/
+theorem theorem_13_3_4_feasible (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C) {flow : ℝ}
+    (hb : ∀ y ∈ X, flow ≤ f y)
+    (hrun : algorithm_13_3_1_feasible f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
+    (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) :
+    ∃ kε, IsFirstHit (edaStopTR P ε D Δ h dd) kε ∧
+      IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} P.q ε
+        (fun _ => trRadius P Δ kε) ∧
+      0 < trRadius P Δ kε ∧ trRadius P Δ kε ≤ 1 ∧
+      (edaFunEvalCount acc R kε : ℝ) ≤
+        2 * (trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
+            epsMin P.q ε ^ (P.q + 1)) +
+          2 * (1 / |Real.log P.γ₂| * |Real.log (epsMin P.q ε)|) +
+          2 * (|Real.log (P.ς * (κΔ / 2) / P.Δ₀)| / |Real.log P.γ₂| + 1) ∧
+      (derivEvalCount (fun i => acc i ∨ (¬ acc i ∧
+          P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement (jk i) (s i)) i)) kε : ℝ) ≤
+        trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
+            epsMin P.q ε ^ (P.q + 1) +
+          P.q * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
+          |Real.log (trKappaAcc P κΔ (lipMax L P.q + P.κh) 1 / P.κh)| /
+            |Real.log P.γh| + 2 :=
+  theorem_13_3_4_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hb hrun hκΔ
 
 /-- **Theorem 13.3.4** ([cartis2022evaluation]): complexity of TRqEDA. Let f.D0qL and f.Bb hold,
 `ε ∈ (0, 1]^q`, and `κ_Δ` be admissible with `κ_{∇,max} = 1`, `κ_δ = κ_Δ/2`. Every TRqEDA run
@@ -878,16 +1016,49 @@ theorem κs_le_η₂ : P.κs ≤ (1 - P.η₂) / 4 :=
 theorem mem {k : ℕ} (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) : x k ∈ X :=
   arqp_mem (hrun.steps_lt hk) (hrun.x_zero ▸ hrun.x₀_mem)
 
+/-- The objective does not increase along an ARqpEDA-SC run before termination:
+`f(x_k) ≤ f(x₀)`. On a successful iteration the inexact values are within
+`h_{k,0} ≤ κ_s \overline{ΔT}_k ≤ η₁/4 \overline{ΔT}_k` of `f` ((13.3.13), (13.3.18)), so
+`f(x_k) - f(x_{k+1}) ≥ η₁/2 \overline{ΔT}_k > 0` (Lemma 13.1.13). -/
+theorem f_le {k : ℕ} (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) : f (x k) ≤ f x₀ := by
+  rw [← hrun.x_zero]
+  refine le_zero_of_succ_le (u := fun i => f (x i)) fun i hi => ?_
+  have hki : ∀ j ≤ i, ¬ edaStopAR P ε D δ₁ h dd j := fun j hj => hk j (hj.trans_lt hi)
+  have hs := hrun.step hki
+  by_cases hc : ¬ acc i ∧ P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) i
+  · have h3 := hrun.step3 hki hc.1
+    have hpos := (lemma_13_1_13 hs hc.1 (fun j hj => (hrun.eps_mem j hj).1)
+      (hrun.sigma_pos fun j hj => hk j (hj.trans hi)).le).2
+    have hdec := sub_ge_of_inexact_ratio hpos (h3.fx_err.trans h3.h₀_le)
+      (h3.fxs_err.trans h3.h₀_le) hc.2 hrun.κs_le_η₁
+    have := mul_pos (half_pos P.η₁_pos) hpos
+    rw [hs.x_succ_eq_add hc.1 hc.2]
+    linarith
+  · rw [hs.x_succ_eq hc]
+
+/-- The iterates reached lie in every set `A` containing the sublevel set
+`{y ∈ X | f(y) ≤ f(x₀)}`. -/
+theorem mem_anchor {A : Set ℝⁿ} (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {k : ℕ}
+    (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) : x k ∈ A :=
+  hAX _ (hrun.mem hk) (hrun.f_le hk)
+
+/-- (13.1.63) with `κ_{∇,max} = 1`: `‖∇̄^i f(x_k)‖ ≤ L_f + κ_h` for `i ∈ [1, p]`, under f.D0pL
+anchored on a set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+theorem norm_D_le_anchored {C A : Set ℝⁿ} {L : ℕ → ℝ} (hf : AssumptionD0pLAnchored f C A P.p L)
+    (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {k : ℕ} (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j)
+    {i : ℕ} (hi : i ∈ Finset.Icc 1 P.p) : ‖D k i‖ ≤ lipMax L P.p + P.κh := by
+  have h' : ‖D k i‖ ≤ ‖iteratedFDeriv ℝ i f (x k)‖ + h k i :=
+    norm_le_of_jetApprox (hrun.oracle k hk) hi
+  have := hf.norm_iteratedFDeriv_le hi (hrun.mem_anchor hAX hk)
+  have := ((hrun.invariants hk).2.2 i hi).2
+  linarith
+
 /-- (13.1.63) with `κ_{∇,max} = 1`: `‖∇̄^i f(x_k)‖ ≤ L_f + κ_h` for `i ∈ [1, p]`, under f.D0pL
 on `C ⊇ X`. -/
 theorem norm_D_le {C : Set ℝⁿ} {L : ℕ → ℝ} (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     {k : ℕ} (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) {i : ℕ} (hi : i ∈ Finset.Icc 1 P.p) :
-    ‖D k i‖ ≤ lipMax L P.p + P.κh := by
-  have h' : ‖D k i‖ ≤ ‖iteratedFDeriv ℝ i f (x k)‖ + h k i :=
-    norm_le_of_jetApprox (hrun.oracle k hk) hi
-  have := hf.norm_iteratedFDeriv_le hi (hXC (hrun.mem hk))
-  have := ((hrun.invariants hk).2.2 i hi).2
-  linarith
+    ‖D k i‖ ≤ lipMax L P.p + P.κh :=
+  hrun.norm_D_le_anchored (hf.anchored hXC) (fun _ hy _ => hy) hk hi
 
 /-- The radii `δ^{(1)}_k` lie in `(0, 1]^q` at every iteration reached. -/
 theorem delta₁_mem {k : ℕ} (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) :
@@ -899,16 +1070,17 @@ end algorithm_13_3_2_feasible
 
 section ARqpEDA
 
-variable {X C : Set ℝⁿ} {f : ℝⁿ → ℝ} {P : ARqpIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ} {x : ℕ → ℝⁿ}
+variable {X C A : Set ℝⁿ} {f : ℝⁿ → ℝ} {P : ARqpIDAParams} {ε : ℕ → ℝ} {x₀ : ℝⁿ} {x : ℕ → ℝⁿ}
   {σ : ℕ → ℝ}
   {δ δ₁ δs : ℕ → ℕ → ℝ} {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ}
   {dd : ℕ → ℕ → ℝⁿ} {jk : ℕ → ℕ} {s : ℕ → ℝⁿ} {acc : ℕ → Prop} {fx fxs h₀ : ℕ → ℝ}
   {R : ℕ → Prop} {L : ℕ → ℝ} {k : ℕ}
 
-/-- **Lemma 13.3.5 with a feasible set** ([cartis2022evaluation] §14.2): `σ_k ≤ σ_max` at every
-iteration reached by an ARqpEDA-SC run (`algorithm_13_3_2_feasible`) under f.D0pL on an open convex
-`C ⊇ X`. -/
-theorem lemma_13_3_5_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+/-- **Lemma 13.3.5 under the anchored assumption** ([cartis2022evaluation] §14.2): `σ_k ≤ σ_max` at
+every iteration reached by an ARqpEDA-SC run (`algorithm_13_3_2_feasible`) under f.D0pL anchored on
+a set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0pLAnchored`). -/
+theorem lemma_13_3_5_anchored (hf : AssumptionD0pLAnchored f C A P.p L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) : σ k ≤ arSigmaMax P (L P.p) 1 := by
   set κs' := max P.κs P.κh
@@ -935,7 +1107,7 @@ theorem lemma_13_3_5_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
           (le_mul_of_one_le_right hκs' (one_le_pow₀ ht))
     have hE := abs_taylorDecrement_sub_le_of_stepAccuracy zero_le_one hκs' (hrun.oracle i hilt)
       hherr le_rfl
-    have hR := hf.abs_sub_le le_rfl (hXC (hrun.mem hilt)) (hXC h2.mem)
+    have hR := hf.abs_sub_le le_rfl (hrun.mem_anchor hAX hilt) (hXC h2.mem)
     have hfp : (0 : ℝ) < (P.p + 1)! := by positivity
     have hσbar : (2 * L P.p + 4 * (P.p + 1)! * κs' * 1) ≤ (1 - P.η₂) * σ i := by
       have := (div_le_iff₀' P.one_sub_η₂_pos).1 hσi
@@ -966,6 +1138,14 @@ theorem lemma_13_3_5_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
       · exact Or.inr ⟨(hrun.step his).update ha, key i hi ha⟩) k le_rfl
   rw [hrun.σ_zero] at h
   exact h
+
+/-- **Lemma 13.3.5 with a feasible set** ([cartis2022evaluation] §14.2): `σ_k ≤ σ_max` at every
+iteration reached by an ARqpEDA-SC run (`algorithm_13_3_2_feasible`) under f.D0pL on an open convex
+`C ⊇ X`. -/
+theorem lemma_13_3_5_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
+    (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) : σ k ≤ arSigmaMax P (L P.p) 1 :=
+  lemma_13_3_5_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hk
 
 /-- **Lemma 13.3.5** ([cartis2022evaluation], corrected constant): under f.D0pL, every iteration
 `k` reached by ARqpEDA has `σ_k ≤ σ_max` with `σ_max = arSigmaMax P L_{f,p} 1`
@@ -1007,9 +1187,11 @@ theorem lemma_13_3_6_i (hrun : algorithm_13_3_2 f P ε x₀ x σ δ δ₁ δs h 
   have := lemma_13_3_6_i_feasible hrun hk hstop
   rwa [setOf_add_mem_univ] at this
 
-/-- **Lemma 13.3.6 (ii) with a feasible set** ([cartis2022evaluation] §14.2): the conclusion of
-`lemma_13_3_6_ii` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X`. -/
-theorem lemma_13_3_6_ii_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+/-- **Lemma 13.3.6 (ii) under the anchored assumption** ([cartis2022evaluation] §14.2): the
+conclusion of `lemma_13_3_6_ii` for an ARqpEDA-SC run under f.D0pL anchored on a set `A` containing
+the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0pLAnchored`). -/
+theorem lemma_13_3_6_ii_anchored (hf : AssumptionD0pLAnchored f C A P.p L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i)
     (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j)
@@ -1025,8 +1207,8 @@ theorem lemma_13_3_6_ii_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ 
   have hκ1 : κ ≤ 1 := arKappaDelta1_le_one hLb
   have hrad := arqp_radius_ge (hrun.steps_lt hk) (hrun.step1 k hk) hrun.σ_zero hrun.δ_zero
     hrun.h_zero hrun.eps_mem hrun.eps_le hLb
-    (fun i hi ℓ hℓ => hrun.norm_D_le hf hXC (fun l hl => hk l (hl.trans_le hi)) hℓ)
-    (fun i hi => lemma_13_3_5_feasible hf hXC hrun fun l hl => hk l (hl.trans_le hi))
+    (fun i hi ℓ hℓ => hrun.norm_D_le_anchored hf hAX (fun l hl => hk l (hl.trans_le hi)) hℓ)
+    (fun i hi => lemma_13_3_5_anchored hf hXC hAX hrun fun l hl => hk l (hl.trans_le hi))
     (fun i _ => hrc i)
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
   have hmem := hrun.delta₁_mem hk j hj
@@ -1062,6 +1244,18 @@ theorem lemma_13_3_6_ii_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ 
         exact mul_nonneg (mul_nonneg hς.le hεj.1.le) (pow_nonneg hmem.1.le _)
     _ = P.ς * ε j * δ ^ j / j ! / 2 := by ring
 
+/-- **Lemma 13.3.6 (ii) with a feasible set** ([cartis2022evaluation] §14.2): the conclusion of
+`lemma_13_3_6_ii` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X`. -/
+theorem lemma_13_3_6_ii_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
+    {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i)
+    (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j)
+    (hh : ∀ i ∈ Finset.Icc 1 P.p, h k i ≤ P.ς * arKappaDelta1 P (lipMax L P.p + P.κh)
+      (arSigmaMax P (L P.p) 1) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
+    edaStopAR P ε D δ₁ h dd k :=
+  lemma_13_3_6_ii_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hrc hk hpass hh
+
 /-- **Lemma 13.3.6 (ii)** ([cartis2022evaluation]): under f.D0pL and the radii control at every
 iteration, if (13.3.15) holds at every order at an iteration `k` reached by ARqpEDA and (13.1.78)
 holds with `κ_{∇,max} = 1`, `h_{k,i} ≤ ς κ^{(1)}_δ(σ_max)^q/(4 q!) ε_min^{q+1}` for `i ∈ [1, p]`
@@ -1077,8 +1271,10 @@ theorem lemma_13_3_6_ii (hf : AssumptionD0pL f P.p L)
     edaStopAR P ε D δ₁ h dd k :=
   lemma_13_3_6_ii_feasible hf.on_univ (subset_univ _) hrun hrc hk hpass hh
 
-/-- `eda_radius_inequality` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X`. -/
-theorem eda_radius_inequality_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+/-- `eda_radius_inequality` for an ARqpEDA-SC run under f.D0pL anchored on a set `A` containing the
+sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0pLAnchored`). -/
+theorem eda_radius_inequality_anchored (hf : AssumptionD0pLAnchored f C A P.p L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
@@ -1150,11 +1346,14 @@ theorem eda_radius_inequality_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : 
     rw [show P.ς * P.θ * ε j * δs k j ^ j / j ! = P.ς * (P.θ * ε j * δs k j ^ j / j !) by ring]
       at this
     exact le_of_mul_le_mul_left this hς
-  have := radius_inequality_of_measure_gt hf.convex (fun y hy => hf.contDiffAt le_rfl hy)
-    (hf.lipschitz le_rfl) (zero_le_one.trans (hf.one_le le_rfl)) (hXC (hrun.mem hklt))
+  have hxA := hrun.mem_anchor hAX hklt
+  have := radius_inequality_of_measure_gt_anchored hf.convex
+    (fun y hy => hf.contDiffAt le_rfl hy) (hf.lipschitzAt le_rfl hxA)
+    (zero_le_one.trans (hf.one_le le_rfl)) (hf.subset hxA)
     (hXC h2.mem) (hrun.oracle k hklt) zero_le_one P.κs_pos.le
     (fun i hi => by rw [one_mul]; exact hacc i hi)
-    (hrun.sigma_pos hklt).le (lemma_13_3_5_feasible hf hXC hrun hklt) hjp (by simpa using h2.mem)
+    (hrun.sigma_pos hklt).le (lemma_13_3_5_anchored hf hXC hAX hrun hklt) hjp
+    (by simpa using h2.mem)
     hδv0 h₁ h₂
   have e : (L P.p + arSigmaMax P (L P.p) 1 + 3 * 1 * P.κs) *
       ∑ ℓ ∈ Finset.Icc 1 j, δv ^ ℓ / ℓ ! * ‖s k‖ ^ (P.p - ℓ + 1) + e₀ =
@@ -1162,6 +1361,19 @@ theorem eda_radius_inequality_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : 
         ∑ ℓ ∈ Finset.Icc 1 j, δv ^ ℓ / ℓ ! * ‖s k‖ ^ (P.p - ℓ + 1) := by ring
   rw [e] at this
   exact this.le
+
+/-- `eda_radius_inequality` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X`. -/
+theorem eda_radius_inequality_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
+    (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
+    (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
+    (hs1 : ‖s k‖ < 1)
+    (hnot : ¬ ((∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd (k + 1) j) ∧
+      ∀ j ∈ Finset.Icc 1 P.q, δ₁ (k + 1) j = δ (k + 1) j)) :
+    ∃ j ∈ Finset.Icc 1 P.q, (P.ς / 2 - P.θ) * ε j * δ (k + 1) j ^ j / j ! ≤
+      (L P.p + arSigmaMax P (L P.p) 1 + 4 * P.κs) *
+        ∑ ℓ ∈ Finset.Icc 1 j, δ (k + 1) j ^ ℓ / ℓ ! * ‖s k‖ ^ (P.p - ℓ + 1) :=
+  eda_radius_inequality_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hk ha hρ hs1 hnot
 
 /-- **The radius inequality for ARqpEDA** (the corrected replacement of Lemmas 13.1.16–13.1.17 in
 §13.3.2 of [cartis2022evaluation]). Under f.D0pL, let iteration `k` of ARqpEDA (reached, not
@@ -1201,10 +1413,12 @@ def edaPassUnchanged (P : ARqpIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalM
     (δ δ₁ : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → ℝⁿ) (i : ℕ) : Prop :=
   (∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd i j) ∧ ∀ j ∈ Finset.Icc 1 P.q, δ₁ i j = δ i j
 
-/-- `arqpEDA_step_bound` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X`, for
-either mode `u` of the radii control (`RadiiControlOf`; the cases `q ≤ 2` and `q > 2` of
-`arqpEDA_step_bound` become `u` and `¬ u`). -/
-theorem arqpEDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+/-- `arqpEDA_step_bound` for an ARqpEDA-SC run under f.D0pL anchored on a set `A` containing the
+sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0pLAnchored`), for either mode `u` of the radii
+control (`RadiiControlOf`; the cases `q ≤ 2` and `q > 2` of `arqpEDA_step_bound` become `u` and
+`¬ u`). -/
+theorem arqpEDA_step_bound_anchored (hf : AssumptionD0pLAnchored f C A P.p L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     {u : Prop} (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k) (hθ : P.θ < P.ς / 2)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
@@ -1220,7 +1434,7 @@ theorem arqpEDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
   rcases le_or_gt 1 ‖s k‖ with hs1 | hs1
   · exact ⟨1, P.one_mem_Icc, Or.inl hs1⟩
   have hnot := hgood.resolve_left (not_le.2 hs1)
-  obtain ⟨j, hj, hineq⟩ := eda_radius_inequality_feasible hf hXC hrun hk ha hρ hs1 hnot
+  obtain ⟨j, hj, hineq⟩ := eda_radius_inequality_anchored hf hXC hAX hrun hk ha hρ hs1 hnot
   refine ⟨j, hj, Or.inr ?_⟩
   have hs := hrun.step hk
   have hklt : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j := fun j hj => hk j hj.le
@@ -1236,7 +1450,7 @@ theorem arqpEDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
   have hεj := hrun.eps_mem j hj
   have hδpos := (h2.radii_of_lt hs1 j hj).1.1
   have hκε : κ * ε j ≤ δs k j :=
-    hrc.kappa_mul_le ha hs1 hrun.eps_mem hLb (lemma_13_3_5_feasible hf hXC hrun hklt) hj
+    hrc.kappa_mul_le ha hs1 hrun.eps_mem hLb (lemma_13_3_5_anchored hf hXC hAX hrun hklt) hj
   have hq2 : u → δs k j = 1 := fun hu => (hrc ha hs1).1 hu j hj
   have ht : 0 < ‖s k‖ := by
     have hpos := (lemma_13_1_13 hs ha (fun j hj => (hrun.eps_mem j hj).1)
@@ -1247,6 +1461,24 @@ theorem arqpEDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
   have hA : 0 < arEDAConstA P L := zero_lt_one.trans_le (one_le_arEDAConstA (hf.one_le le_rfl))
   exact arqp_pow_ge_of_radius_ineq (by linarith) hA hεj.1 ht hs1 hδpos hj P.q_le_p
     hκ0 hκε hq2 hineq
+
+/-- `arqpEDA_step_bound` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X`, for
+either mode `u` of the radii control (`RadiiControlOf`; the cases `q ≤ 2` and `q > 2` of
+`arqpEDA_step_bound` become `u` and `¬ u`). -/
+theorem arqpEDA_step_bound_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
+    {u : Prop} (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k) (hθ : P.θ < P.ς / 2)
+    (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
+    (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
+    (hgood : 1 ≤ ‖s k‖ ∨ ¬ edaPassUnchanged P ε D δ δ₁ dd (k + 1)) :
+    ∃ j ∈ Finset.Icc 1 P.q, 1 ≤ ‖s k‖ ∨
+      ((u → (P.ς / 2 - P.θ) / (2 * j ! * arEDAConstA P L) * ε j ≤
+          ‖s k‖ ^ (P.p - j + 1)) ∧
+        (¬ u → (P.ς / 2 - P.θ) / (2 * j ! * arEDAConstA P L) *
+          arKappaHat P.q (P.ς / 2 - P.θ) (arEDAConstA P L)
+            (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)) ^ (j - 1) *
+            ε j ^ j ≤ ‖s k‖ ^ P.p)) :=
+  arqpEDA_step_bound_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hrc hθ hk ha hρ hgood
 
 /-- The step-length bounds of ARqpEDA (as `arqpIDA_step_bound`): at a successful iteration `k`
 reached by ARqpEDA with the radii control at `k`, such that `‖s_k‖ ≥ 1` or Step 1 at `k + 1` does
@@ -1270,10 +1502,12 @@ theorem arqpEDA_step_bound (hf : AssumptionD0pL f P.p L)
     hgood
   exact ⟨j, hj, h.imp_right fun h => ⟨h.1, fun hq => h.2 (not_le.2 hq)⟩⟩
 
-/-- **Lemma 13.3.7 with a feasible set** ([cartis2022evaluation] §14.2): for an ARqpEDA-SC run under
-f.D0pL on an open convex `C ⊇ X`, the decreases of `lemma_13_3_7`, for either mode `u` of the radii
+/-- **Lemma 13.3.7 under the anchored assumption** ([cartis2022evaluation] §14.2): for an ARqpEDA-SC
+run under f.D0pL anchored on a set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`
+(`AssumptionD0pLAnchored`), the decreases of `lemma_13_3_7`, for either mode `u` of the radii
 control (`RadiiControlOf`), with `π_j = arPiOf u p j` and the constant `arStepConstOf u`. -/
-theorem lemma_13_3_7_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+theorem lemma_13_3_7_anchored (hf : AssumptionD0pLAnchored f C A P.p L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     {u : Prop} [Decidable u] (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k)
     (hθ : P.θ < P.ς / 2)
@@ -1286,7 +1520,7 @@ theorem lemma_13_3_7_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
       P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (P.ς / 2 - P.θ)
           (arEDAConstA P L) (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1))) /
           2 * epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ f (x k) - f (x (k + 1)) := by
-  obtain ⟨j, hj, hb⟩ := arqpEDA_step_bound_feasible hf hXC hrun hrc hθ hk ha hρ hgood
+  obtain ⟨j, hj, hb⟩ := arqpEDA_step_bound_anchored hf hXC hAX hrun hrc hθ hk ha hρ hgood
   have hklt : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j := fun j hj => hk j hj.le
   have hs := hrun.step hk
   obtain ⟨hlow, hpos⟩ := lemma_13_1_13 hs ha (fun j hj => (hrun.eps_mem j hj).1)
@@ -1339,6 +1573,24 @@ theorem lemma_13_3_7_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     _ ≤ P.η₁ / 2 * (D k).taylorDecrement P.p (s k) := by gcongr
     _ ≤ f (x k) - f (x k + s k) := h2
 
+/-- **Lemma 13.3.7 with a feasible set** ([cartis2022evaluation] §14.2): for an ARqpEDA-SC run under
+f.D0pL on an open convex `C ⊇ X`, the decreases of `lemma_13_3_7`, for either mode `u` of the radii
+control (`RadiiControlOf`), with `π_j = arPiOf u p j` and the constant `arStepConstOf u`. -/
+theorem lemma_13_3_7_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
+    {u : Prop} [Decidable u] (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k)
+    (hθ : P.θ < P.ς / 2)
+    (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
+    (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
+    (hgood : 1 ≤ ‖s k‖ ∨ ¬ edaPassUnchanged P ε D δ δ₁ dd (k + 1)) :
+    P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (P.ς / 2 - P.θ) (arEDAConstA P L)
+        (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1)) *
+        epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ (D k).taylorDecrement P.p (s k) ∧
+      P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (P.ς / 2 - P.θ)
+          (arEDAConstA P L) (arKappaDelta1 P (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1))) /
+          2 * epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ f (x k) - f (x (k + 1)) :=
+  lemma_13_3_7_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hrc hθ hk ha hρ hgood
+
 /-- **Lemma 13.3.7** ([cartis2022evaluation], corrected hypotheses): under f.D0pL, the radii
 control at `k` and `θ < ς/2`, let iteration `k` of ARqpEDA (before termination) be successful,
 and let `‖s_k‖ ≥ 1` or Step 1 at `k + 1` not pass with unchanged radii. Then
@@ -1363,10 +1615,12 @@ theorem lemma_13_3_7 (hf : AssumptionD0pL f P.p L)
   lemma_13_3_7_feasible hf.on_univ (subset_univ _) hrun hrc hθ hk ha hρ hgood
 
 /-- **The accuracy-improving iterations of ARqpEDA-SC** (proof of Theorem 13.3.8,
-[cartis2022evaluation]): under f.D0pL on an open convex `C ⊇ X` and the radii control at every
-iteration, if the run has not terminated at any `j ≤ k`, then
+[cartis2022evaluation]): under f.D0pL anchored on a set `A` containing the sublevel set
+`{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0pLAnchored`) and the radii control at every iteration, if the
+run has not terminated at any `j ≤ k`, then
 `|𝒜_k| ≤ p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
-theorem arqpEDA_card_acc_le_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+theorem arqpEDA_card_acc_le_anchored (hf : AssumptionD0pLAnchored f C A P.p L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) :
@@ -1415,16 +1669,16 @@ theorem arqpEDA_card_acc_le_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X 
       by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd j i
       · have hrad := arqp_radius_ge (hrun.steps_lt hjlt) (hrun.step1 j hjlt) hrun.σ_zero
           hrun.δ_zero hrun.h_zero hrun.eps_mem hrun.eps_le hLb
-          (fun i hi ℓ hℓ => hrun.norm_D_le hf hXC (fun l hl => hjlt l (hl.trans_le hi)) hℓ)
-          (fun i hi => lemma_13_3_5_feasible hf hXC hrun fun l hl => hjlt l (hl.trans_le hi))
+          (fun i hi ℓ hℓ => hrun.norm_D_le_anchored hf hAX (fun l hl => hjlt l (hl.trans_le hi)) hℓ)
+          (fun i hi => lemma_13_3_5_anchored hf hXC hAX hrun fun l hl => hjlt l (hl.trans_le hi))
           (fun i _ => hrc i)
         refine (((hrun.step hjs).step2 hfail).not_acc_of_le (σbar := σmax)
-          (hrun.step1 j hjlt).radius_pos hLb (fun i hi => hrun.norm_D_le hf hXC hjlt hi)
+          (hrun.step1 j hjlt).radius_pos hLb (fun i hi => hrun.norm_D_le_anchored hf hAX hjlt hi)
           (hrun.sigma_pos hjlt).le hκ0.le (arKappaDelta1_le_one hLb) hrun.eps_mem
           (fun l hl => (hrad l hl).1) fun i hi => (hhi i hi).trans ?_) ha
         exact mul_le_mul_of_nonneg_right arKappaAcc_le (by positivity)
       · push Not at hfail
-        refine hjs j le_rfl (lemma_13_3_6_ii_feasible hf hXC hrun hrc hjlt hfail fun i hi => ?_)
+        refine hjs j le_rfl (lemma_13_3_6_ii_anchored hf hXC hAX hrun hrc hjlt hfail fun i hi => ?_)
         calc h j i ≤ κacc * em ^ (P.p * (P.q + 1)) := hhi i hi
           _ = 1 * κacc * em ^ (P.p * (P.q + 1)) := by ring
           _ ≤ P.ς * κ ^ P.q / (4 * P.q !) * em ^ (P.q + 1) :=
@@ -1435,10 +1689,27 @@ theorem arqpEDA_card_acc_le_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X 
           |Real.log P.γh| + 1 := h
     _ = NA := by rw [hNA_def]; push_cast; ring
 
-/-- **The complexity argument of Theorem 13.3.8 with a feasible set** ([cartis2022evaluation]
-§14.2): `arqpEDA_complexity` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X` and
+/-- **The accuracy-improving iterations of ARqpEDA-SC** (proof of Theorem 13.3.8,
+[cartis2022evaluation]): under f.D0pL on an open convex `C ⊇ X` and the radii control at every
+iteration, if the run has not terminated at any `j ≤ k`, then
+`|𝒜_k| ≤ p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
+theorem arqpEDA_card_acc_le_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+    (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
+    {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
+    (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) :
+    ((successSet acc k).card : ℝ) ≤
+      P.p * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
+        |Real.log (arKappaAcc P (arKappaDelta1 P (lipMax L P.p + P.κh)
+          (arSigmaMax P (L P.p) 1)) (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1) 1 /
+          P.κh)| / |Real.log P.γh| + 1 :=
+  arqpEDA_card_acc_le_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hrun hrc hk
+
+/-- **The complexity argument of Theorem 13.3.8 under the anchored assumption**
+([cartis2022evaluation] §14.2): `arqpEDA_complexity` for an ARqpEDA-SC run under f.D0pL anchored on
+a set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}` (`AssumptionD0pLAnchored`) and
 f.bB.X, with approximate optimality on `X` at termination. -/
-theorem arqpEDA_complexity_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C) {flow : ℝ}
+theorem arqpEDA_complexity_anchored (hf : AssumptionD0pLAnchored f C A P.p L)
+    (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {c : ℝ}
@@ -1484,7 +1755,7 @@ theorem arqpEDA_complexity_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
     |Real.log (κacc / P.κh)| / |Real.log P.γh| + 1 with hNA_def
   have hNA0 : 0 ≤ NA := by positivity
   have hA : ∀ k, (∀ j ≤ k, ¬ stop j) → ((successSet acc k).card : ℝ) ≤ NA :=
-    fun k hk => arqpEDA_card_acc_le_feasible hf hXC hrun hrc hk
+    fun k hk => arqpEDA_card_acc_le_anchored hf hXC hAX hrun hrc hk
   -- the objective does not increase before termination
   have hmono : ∀ j, (∀ i ≤ j, ¬ stop i) → f (x (j + 1)) ≤ f (x j) := by
     intro j hj
@@ -1568,7 +1839,7 @@ theorem arqpEDA_complexity_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
     intro k hk
     have h1 := lemma_13_1_9 (fun i hi => hrun.step fun j hj => hk j (hj.trans hi))
       hrun.σ_zero hrun.δ_zero hrun.h_zero
-      (lemma_13_3_5_feasible hf hXC hrun fun j hj => hk j (Nat.lt_succ_iff.1 hj))
+      (lemma_13_3_5_anchored hf hXC hAX hrun fun j hj => hk j (Nat.lt_succ_iff.1 hj))
     have h2 := mul_le_mul_of_nonneg_right (hS k hk) hcT0
     linarith
   -- conclusion
@@ -1587,6 +1858,35 @@ theorem arqpEDA_complexity_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X �
       _ = _ := by rw [hNT_def, hN_def, hNA_def]
   · calc _ ≤ (NA + 1) + (N + NA + 1 + 1) - 1 := by linarith
       _ = _ := by rw [hNA_def, hN_def]; ring
+
+/-- **The complexity argument of Theorem 13.3.8 with a feasible set** ([cartis2022evaluation]
+§14.2): `arqpEDA_complexity` for an ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X` and
+f.bB.X, with approximate optimality on `X` at termination. -/
+theorem arqpEDA_complexity_feasible (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C) {flow : ℝ}
+    (hb : ∀ y ∈ X, flow ≤ f y)
+    (hrun : algorithm_13_3_2_feasible f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
+    {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {c : ℝ}
+    (hc : 0 < c)
+    (hdec : ∀ k, (∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) → ¬ acc k →
+      P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k →
+      (1 ≤ ‖s k‖ ∨ ¬ edaPassUnchanged P ε D δ δ₁ dd (k + 1)) → c ≤ f (x k) - f (x (k + 1))) :
+    ∃ kε, IsFirstHit (edaStopAR P ε D δ₁ h dd) kε ∧
+      (∀ j ∈ Finset.Icc 1 P.q, δ₁ kε j ∈ Set.Ioc 0 1) ∧
+      IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} P.q ε (δ₁ kε) ∧
+      (edaFunEvalCount acc R kε : ℝ) ≤
+        2 * (((f x₀ - flow) / c + (P.p * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
+            |Real.log (arKappaAcc P (arKappaDelta1 P (lipMax L P.p + P.κh)
+              (arSigmaMax P (L P.p) 1)) (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1) 1 /
+              P.κh)| / |Real.log P.γh| + 1) + 1) *
+            (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
+          Real.log (arSigmaMax P (L P.p) 1 / P.σ₀) / Real.log P.γ₂) ∧
+      (derivEvalCount (fun i => acc i ∨ (¬ acc i ∧
+          P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) i)) kε : ℝ) ≤
+        (f x₀ - flow) / c + 2 * (P.p * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
+          |Real.log (arKappaAcc P (arKappaDelta1 P (lipMax L P.p + P.κh)
+            (arSigmaMax P (L P.p) 1)) (lipMax L P.p + P.κh) (arSigmaMax P (L P.p) 1) 1 /
+            P.κh)| / |Real.log P.γh| + 1) + 2 :=
+  arqpEDA_complexity_anchored (hf.anchored hXC) hXC (fun _ hy _ => hy) hb hrun hrc hc hdec
 
 /-- **The complexity argument of Theorem 13.3.8** ([cartis2022evaluation], corrected), for any
 decrease constant: under f.D0pL, f.Bb, the radii control at every iteration, if every

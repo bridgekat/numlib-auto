@@ -19,7 +19,10 @@ complexity of TRq and ARqp. This module imports the section modules and adds not
   13.1.19 (`theorem_13_1_19_i`, `theorem_13_1_19_ii`); existence of runs
   (`exists_algorithm_13_1_1`, `exists_algorithm_13_1_2`); the runs with a feasible set of §14.2
   (`algorithm_13_1_1_feasible`, `algorithm_13_1_2_feasible`, f.D0qL on an open convex set
-  `AssumptionD0qLOn`) and the `_feasible` versions of the results
+  `AssumptionD0qLOn`) and the `_feasible` versions of the results; the `_anchored` versions under
+  f.D0qL anchored on a set containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`
+  (`AssumptionD0qLAnchored`, the form f.D0qLaB.X of §14.2), which contains the iterates
+  (`algorithm_13_1_1_feasible.f_le`, `algorithm_13_1_2_feasible.f_le`)
 * §13.2, `Chapter13.Section02`: finite derivative-approximation schemes from low-degree oracles
   (`FiniteDerivativeApproxScheme`, with the forward-difference gradient and Hessian
   `fdGradientScheme`, `fdHessianScheme`); the stencil formulas (13.2.1) for derivative tensors
@@ -31,7 +34,9 @@ complexity of TRq and ARqp. This module imports the section modules and adds not
   (Algorithm 13.3.2, `algorithm_13_3_2`); Lemmas 13.3.1–13.3.3, Theorem 13.3.4, Lemmas
   13.3.5–13.3.7, Theorem 13.3.8 (`theorem_13_3_8_i`, `theorem_13_3_8_ii`); existence of runs;
   the runs with a feasible set (`algorithm_13_3_1_feasible`, `algorithm_13_3_2_feasible`) and the
-  `_feasible` versions of the results
+  `_feasible` versions of the results; the `_anchored` versions under `AssumptionD0qLAnchored`
+  (the iterates reached stay in the sublevel set also with inexact values,
+  `algorithm_13_3_1_feasible.f_le`, `algorithm_13_3_2_feasible.f_le`)
 
 Inexact derivatives at iteration `k` form a jet `D k : FormalMultilinearSeries ℝ ℝⁿ ℝ`, with
 decrements `(D k).taylorDecrement j` and measures `Optimization.taylorMeasure (D k) j δ univ`

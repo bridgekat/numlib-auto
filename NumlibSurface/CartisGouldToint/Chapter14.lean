@@ -35,7 +35,10 @@ module imports the section modules and adds nothing of its own.
   `Chapter13.RadiiControlOf`; on `ℝⁿ` with `q ≤ 2` every ARqpIDA-SC run attains the unit-radii
   bound in either mode, `theorem_14_2_4_arqpida_le_two`); the TRq-SC and ARqp-SC rows also under
   the anchored f.D1qLaB.X / f.D1pLaB.X (`lemma_14_2_2_trq_anchored`, …,
-  `theorem_14_2_4_arqp_anchored`, from the anchored Chapter 12 analysis)
+  `theorem_14_2_4_arqp_anchored`, from the anchored Chapter 12 analysis), and the
+  dynamic-accuracy rows also under the anchored f.D0qLaB.X / f.D0pLaB.X
+  (`lemma_14_2_2_trqida_anchored`, …, `theorem_14_2_4_arqpeda_anchored`, from the anchored
+  Chapter 13 analysis; the iterates of all four methods stay in the sublevel set `𝓛_f(x₀)`)
 * §14.2, `Chapter14.Section02Sharp`: sharpness of the TRq-SC, ARqp-SC, ARqpC-SC (`q = 1`, convex
   `h`), TRqIDA-SC and TRqEDA-SC orders, of the ARqp-SC order of the lower-bound mode for every `q`
   on a closed nonconvex `X ⊂ ℝ` (the "otherwise" entries for `q ≤ 2`), of the ARqpIDA-SC and
@@ -164,10 +167,6 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Not formalized
 
-* The remark of Theorem 14.2.4 for the dynamic-accuracy rows (TRqIDA-SC, TRqEDA-SC,
-  ARqpIDA-SC, ARqpEDA-SC): they assume f.D0qL (f.D0pL) on an open convex `C ⊇ X`, not the
-  anchored f.D0qLaB.X (the ARqpC-SC, TRq-SC and ARqp-SC rows are proved under the anchored
-  assumptions).
 * The end-to-end §14.3 variants under the book's assumptions are stated under anchored bounds
   (`AnchoredCompositeBounds`), which the book's assumptions give through
   `AssumptionD1qLaBX.anchoredCompositeBounds` and `exists_anchoredCompositeBounds_nu_mu`; only
