@@ -174,8 +174,10 @@ where one exists:
   (`Chapter14.theorem_14_3_9_arqp`, `Chapter14.theorem_14_3_9_arqp_unit`); for `q < p` with the
   ARqp-SC exponents (including the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`)
   the proved bound (`Chapter14.theorem_14_3_9_arqp_corrected`) has an extra term outside the
-  printed order (`Chapter14.exists_tpqpOrderF_lt_arqp`), and whether these runs attain the
-  printed order is open. With INNER of trust-region type (genuine TRq-SC runs) it holds with the
+  printed order (`Chapter14.exists_tpqpOrderF_lt_arqp`); for `q = 1`, `p ≥ 4` and `q = 2`,
+  `p ≥ 5` genuine runs attain it and the printed theorem is false for INNER = ARqp-SC
+  (`Chapter14.theorem_14_3_9_arqp_counterexample`, `Chapter14.theorem_14_3_9_arqp_printed_false`).
+  With INNER of trust-region type (genuine TRq-SC runs) it holds with the
   exponents `π_j = q + 1` of Lemma 12.2.4 (the printed TRq-SC entry `j + 1` of (14.2.12) only for
   `q = 1`) and a factor `1 + |log(ε₀ ε_min)|` on the evaluations of `(f, c)`, from the restarts of
   the trust-region radius (`Chapter14.theorem_14_3_9_trq`, `Chapter14.theorem_14_3_9_trq_one`).
@@ -212,11 +214,13 @@ and on the declarations.
 
 ## Not formalized
 
-* Whether runs of ARqp-SC with `q < p` attain the printed order of Theorem 14.3.9 under the
-  per-call reading (it holds for the exponents `j + 1` and for the ARqp-SC exponents with
-  `q = p`; the open case includes the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex; for
-  `q < p` the proved bound has an extra term outside the printed order; the theorem fails for a
-  nonspecific INNER under that reading and is vacuous under the literal uniform one for `π₁ < 2`,
+* Whether runs of ARqp-SC attain the printed order of Theorem 14.3.9 under the per-call reading
+  for `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p` (including the ARqpC-SC entry `(p+1)/p`
+  for `q = 1`, `X` convex, `p ≤ 3`), and with unit radii on `ℝⁿ` (it holds for the exponents
+  `j + 1` and for the ARqp-SC exponents with `q = p`, and fails for `q = 1`, `p ≥ 4` and
+  `q = 2`, `p ≥ 5`; for `q < p` the proved bound has an extra term outside the printed order;
+  the theorem fails for a nonspecific INNER under that reading and is vacuous under the literal
+  uniform one for `π₁ < 2`,
   see above), and, for INNER of trust-region type with `q ≥ 2`, whether genuine runs attain the
   whole-run order with the exponents `j + 1` and whether the factor `1 + |log(ε₀ ε_min)|` is
   needed (for `q = 1` it is).

@@ -470,6 +470,44 @@ theorem exists_isDetailedStepOutput {sstar : E} {δbar : ℕ → ℝ} (hq : 1 �
     exact ⟨δs, ⟨1, ⟨one_pos, le_rfl⟩, Relation.ReflTransGen.head
       (DetailedStepTrans.start hs hdec hshort) hrun⟩, hfin δs hRs, fun j hj hjJ => hlows j hjJ hj⟩
 
+/-- **Any short step decreasing the model is an output of the detailed Step 2**
+([cartis2022evaluation], Algorithms 12.2.3, 14.1.2) with unit radii, when it is approximately
+critical for the model at every order `j ∈ [1 : q]`: if `s ∈ T`, the model is bounded below on
+`T` (so `m* = sInf (m '' T)` is finite), `m(s) < m(0)`, `‖s‖ < 1`, and every `dm j` is a
+`ς`-approximate optimality displacement of the model at `s` with radius `1` and decrease at most
+`ς θ ε_j/j!`, then `(s, 1)` is an output. The step is reached by initializing
+`μ = (m(0) - m(s))/(m(0) - m*) ∈ (0, 1]` at Step 2.1 ("Initialize `μ ∈ (0, 1]`", OCR l. 12588,
+15758; `μ` is chosen afresh at every Step 2 and is not a constant of the outer algorithm), then
+Steps 2.2, 2.4.1–2.4.2 for `j = 1, …, q` and 2.5: every approximately critical point of the model
+with `m(s) < m(0)` is an output, however small its decrease relative to `m(0) - m*` (the book notes
+that global minimization is not required, OCR l. 12760). -/
+theorem IsDetailedStepOutput.of_short_step {s : E} {dm : ℕ → E} (hq : 1 ≤ q) (hs : s ∈ T)
+    (hbdd : BddBelow (m '' T)) (hlt : m s < m 0) (hs1 : ‖s‖ < 1)
+    (hdm : ∀ j ∈ Icc 1 q, dm j ∈ closedBall 0 1 ∩ Sd s ∧
+      ς * sSup (ΔT j s '' (closedBall 0 1 ∩ Sd s)) ≤ ΔT j s (dm j) ∧
+      ΔT j s (dm j) ≤ ς * θ * ε j / j !) :
+    IsDetailedStepOutput m T Sd ΔT q ς θ ε J s (fun _ => 1) := by
+  have hinf : sInf (m '' T) ≤ m s := csInf_le hbdd ⟨s, hs, rfl⟩
+  have hpos : 0 < m 0 - sInf (m '' T) := by linarith
+  set μ₀ := (m 0 - m s) / (m 0 - sInf (m '' T))
+  have hchain : ∀ k j, j + k = q → 1 ≤ j → Relation.ReflTransGen
+      (DetailedStepTrans m T Sd ΔT q ς θ ε J) (check μ₀ s (fun _ => 1) j) (done s fun _ => 1) := by
+    intro k
+    induction k with
+    | zero =>
+      intro j hj hj1
+      obtain ⟨h1, h2, h3⟩ := hdm j (mem_Icc.2 ⟨hj1, by omega⟩)
+      exact Relation.ReflTransGen.single
+        (DetailedStepTrans.finish h1 h2 (by simpa using h3) (by omega))
+    | succ k ih =>
+      intro j hj hj1
+      obtain ⟨h1, h2, h3⟩ := hdm j (mem_Icc.2 ⟨hj1, by omega⟩)
+      exact Relation.ReflTransGen.head (DetailedStepTrans.next h1 h2 (by simpa using h3) (by omega))
+        (ih (j + 1) (by omega) (by omega))
+  refine ⟨μ₀, ⟨div_pos (by linarith) hpos, (div_le_one hpos).2 (by linarith)⟩, ?_⟩
+  exact Relation.ReflTransGen.head (DetailedStepTrans.start hs
+    (le_of_eq (div_mul_cancel₀ _ hpos.ne')) hs1) (hchain (q - 1) 1 (by omega) le_rfl)
+
 end DetailedStep
 
 /-! ### Termination and progress of the detailed Step 2 -/

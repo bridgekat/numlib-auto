@@ -51,3 +51,7 @@ source = "Cartis–Gould–Toint, (12.2.45)"
 [[node]]
 id = "rpow_one_div_le_of_le_pow"
 source = "Cartis–Gould–Toint, Lemma 12.2.12"
+
+[[node]]
+id = "IsDetailedStepOutput.of_short_step"
+source = "Cartis–Gould–Toint, Algorithms 12.2.3, 14.1.2, Steps 2.1–2.5 (any short approximately critical step is an output)"

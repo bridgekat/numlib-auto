@@ -189,7 +189,10 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   `ℝⁿ`, `theorem_14_3_9_arqp_unit`). For `q < p` with the ARqp-SC exponents (which include the
   ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`) the proved bound
   (`theorem_14_3_9_arqp_corrected`) has an extra term outside the printed order
-  (`exists_tpqpOrderF_lt_arqp`), and whether these runs attain the printed order is open.
+  (`exists_tpqpOrderF_lt_arqp`); for `q = 1`, `p ≥ 4` and `q = 2`, `p ≥ 5` genuine runs attain it
+  and the printed order fails (`theorem_14_3_9_arqp_counterexample`,
+  `Chapter14.Section03GenuineSharp`); for `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p` it
+  is open.
   For genuine TRq-SC runs (INNER of trust-region type, `Chapter14.Section03TrustRegion`) it holds
   with the exponents `q + 1` of Lemma 12.2.4 and a factor `1 + |log(ε₀ ε_min)|` on the
   evaluations of `(f, c)` (`theorem_14_3_9_trq`); the factor is needed for `q = 1`
