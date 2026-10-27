@@ -2,6 +2,7 @@ import NumlibSurface.CartisGouldToint.Chapter14.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
 import NumlibSurface.CartisGouldToint.Chapter14.Section02Sharp
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
+import NumlibSurface.CartisGouldToint.Chapter14.Section03BadIter
 import NumlibSurface.CartisGouldToint.Chapter14.Section03Anchored
 
 /-!
@@ -70,6 +71,8 @@ module imports the section modules and adds nothing of its own.
   (`exists_algorithm_14_3_1_complexity_unit`, `exists_algorithm_14_3_2_complexity_unit`); the
   multiplicative cost contract (14.3.20)–(14.3.21) is false for `q = 1`
   (`exists_algorithm_14_3_1_cost_contract_counterexample`)
+* §14.3, `Chapter14.Section03BadIter`: the order of the bad outer iterations of TPqp-GC is not
+  implied by the INNER contract (`theorem_14_3_9_order_counterexample`, `arqpPiOf_one_le`)
 * §14.3, `Chapter14.Section03Anchored`: existence and complexity of the LENq-SC and TPqp-GC runs
   with INNER = ARqp-SC under the book's anchored assumptions Φ₂.D1pLaB.X, resp. c.D1pLB.X,
   f.D1pLB.X and f.B.Fb (`exists_algorithm_14_3_1_complexity_anchored`,
@@ -163,8 +166,11 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   with the ARqp-SC exponents (they go through the Chapter 12 analysis of ARqp-SC, which assumes
   f.D1pL on an open convex `C ⊇ X`), the certified and strong-contract variants are proved under
   global Lipschitz assumptions only. Also not formalized: the multiplicative Phase-1 cost contract
-  when all `π_j < 2` (false there; the additive form is proved), a bound on the bad outer
-  iterations of TPqp-GC in the order of the ARqp-SC exponents (INNER's certificate gives
-  `O(max_j (ε₀ ε_j)^{-j})`, resp. `O(max_j (ε₀ ε_j)^{-1})` with unit radii), and the `O(·)`
-  restatements.
+  when all `π_j < 2` (false there; the additive form is proved), and the `O(·)` restatements.
+  The bad outer iterations of TPqp-GC are not bounded in the order of the ARqp-SC exponents by
+  the INNER contract: `theorem_14_3_9_order_counterexample` (`Chapter14.Section03BadIter`) gives
+  runs satisfying `IsInnerPhaseRunStrong` for all exponents `π` (`q = 1`, `π₁ = (p+1)/p`, `p ≥ 2`)
+  with `≍ (ε₀ ε₁)^{-1}` such iterations, more than `C max(ε₀^{-1}, ε₀^{1-π₁} ε₁^{-π₁})` for every
+  `C`, so the term of `IsTPqpGCPhase2.complexity_of_strong` is attained in order; whether runs of
+  ARqp-SC itself satisfy the book's order is not settled.
 -/

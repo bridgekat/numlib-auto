@@ -1,0 +1,9 @@
+namespace = "CartisGouldToint.Chapter14"
+
+[[node]]
+id = "theorem_14_3_9_order_counterexample"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (order of the bad outer iterations)"
+
+[[node]]
+id = "arqpPiOf_one_le"
+source = "Cartis–Gould–Toint, (14.2.12) (ARqp-SC exponent of order 1)"
