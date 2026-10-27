@@ -1,0 +1,117 @@
+namespace = "CartisGouldToint.Chapter14"
+
+[[node]]
+id = "jetBound"
+source = "Cartis–Gould–Toint, Algorithm 14.1.1, Step 2 (radii returned at a Step-2 termination)"
+
+[[node]]
+id = "IsARqpSCCallOut"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (INNER = ARqp-SC on μ(·, t_k), (14.3.32))"
+
+[[node]]
+id = "IsARqpSCCallOut.contract"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 and the radius policy (14.1.28), ARqp-SC calls"
+
+[[node]]
+id = "IsARqpSCPhase2Calls"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 with INNER = ARqp-SC"
+
+[[node]]
+id = "IsARqpSCPhase2Calls.isInnerPhaseRunStrong"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 for μ(·, t_k), ARqpC-SC row of (14.2.12)"
+
+[[node]]
+id = "IsARqpSCPhase2Calls.isInnerPhaseRunStrong_arqp"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 for μ(·, t_k), ARqp-SC row of (14.2.12)"
+
+[[node]]
+id = "tpqpOrderF"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (order of the evaluations of f and c)"
+
+[[node]]
+id = "tpqpOrderD"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (order of the derivative evaluations)"
+
+[[node]]
+id = "IsTPqpGCPhase2.exists_const_order_of_strong"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 and Theorem 14.3.9 (Phase 2)"
+
+[[node]]
+id = "IsTPqpGCARqpSCRun"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2 with INNER = ARqp-SC in both phases"
+
+[[node]]
+id = "theorem_14_3_9_arqpc"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER = ARqpC-SC, exponents j + 1)"
+
+[[node]]
+id = "exists_const_order_arqp"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER = ARqp-SC, exponents j(p+1)/p)"
+
+[[node]]
+id = "theorem_14_3_9_arqp_corrected"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER = ARqp-SC, exponents j(p+1)/p, every q ≤ p)"
+
+[[node]]
+id = "theorem_14_3_9_arqp"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER = ARqp-SC, exponents j(p+1)/p, q = p)"
+
+[[node]]
+id = "exists_callData"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (existence of an ARqp-SC call)"
+
+[[node]]
+id = "exists_isTPqpGCARqpSCRun"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2 with INNER = ARqp-SC (existence of runs)"
+
+[[node]]
+id = "IsARqpUnitCallOut"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 with INNER = ARqp, unit radii (Lemma 12.2.9)"
+
+[[node]]
+id = "IsARqpUnitCallOut.contract"
+source = "Cartis–Gould–Toint, Lemmas 12.2.13 and 14.2.3 with unit radii"
+
+[[node]]
+id = "IsARqpUnitPhase2Calls"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 with INNER = ARqp, unit radii, X = ℝⁿ"
+
+[[node]]
+id = "IsARqpUnitPhase2Calls.isInnerPhaseRunStrong"
+source = "Cartis–Gould–Toint, Lemmas 12.2.13 and 14.2.3 for μ(·, t_k), unit radii"
+
+[[node]]
+id = "IsTPqpGCARqpUnitRun"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2 on ℝⁿ with INNER = ARqp with unit radii"
+
+[[node]]
+id = "exists_const_order_arqp_unit"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER = ARqp, unit radii, exponents (p+1)/(p-j+1))"
+
+[[node]]
+id = "theorem_14_3_9_arqp_unit_corrected"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER = ARqp, unit radii, every q ≤ p)"
+
+[[node]]
+id = "theorem_14_3_9_arqp_unit"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER = ARqp, unit radii, q = p ≤ 2)"
+
+[[node]]
+id = "exists_tpqpOrderF_lt"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (order of the bad outer iterations)"
+
+[[node]]
+id = "exists_tpqpOrderF_lt_arqp"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 with the ARqp-SC exponents, q < p"
+
+[[node]]
+id = "exists_tpqpOrderF_lt_arqp_unit"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 with the unit-radius exponents, q < p"
+
+[[node]]
+id = "exists_unitCallOut"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (existence of an ARqp call with unit radii)"
+
+[[node]]
+id = "exists_isTPqpGCARqpUnitRun"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2 on ℝⁿ with INNER = ARqp with unit radii (existence)"

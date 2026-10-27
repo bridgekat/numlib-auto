@@ -4,6 +4,7 @@ import NumlibSurface.CartisGouldToint.Chapter14.Section02Sharp
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
 import NumlibSurface.CartisGouldToint.Chapter14.Section03BadIter
 import NumlibSurface.CartisGouldToint.Chapter14.Section03Anchored
+import NumlibSurface.CartisGouldToint.Chapter14.Section03Genuine
 
 /-!
 # Cartis–Gould–Toint, Chapter 14: Composite and Constrained Problems
@@ -96,6 +97,19 @@ module imports the section modules and adds nothing of its own.
   `exists_algorithm_14_3_2_complexity_arqp_add_book`,
   `exists_algorithm_14_3_2_complexity_unit_book`), from their versions under anchored bounds in
   `Chapter14.Section03` (`exists_algorithm_14_3_2_complexity_certified_anchored`, …)
+* §14.3, `Chapter14.Section03Genuine`: Theorem 14.3.9 for every TPqp-GC run whose INNER calls are
+  genuine regularization runs (`IsTPqpGCARqpSCRun`, `IsTPqpGCARqpUnitRun`), under c.D1pLB.X,
+  f.D1pLB.X and f.B.Fb, with constants chosen before `ε` (INNER = ARqp-SC run as ARqpC-SC with
+  `c = 0`, `h = 0`, resp. ARqp with unit radii on `ℝⁿ`): in the printed order for the exponents
+  `j + 1` (every `q ≤ p`, `theorem_14_3_9_arqpc`; the ARqpC-SC entry of (14.2.12) for `q ≥ 2` or
+  `X` nonconvex) and for the ARqp-SC exponents when `q = p` (`theorem_14_3_9_arqp`;
+  `theorem_14_3_9_arqp_unit`); for `q < p` with the extra bad-iteration term
+  (`theorem_14_3_9_arqp_corrected`, `theorem_14_3_9_arqp_unit_corrected`), which is not within
+  the printed order (`exists_tpqpOrderF_lt_arqp`, `exists_tpqpOrderF_lt_arqp_unit`; this covers
+  the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`, left open); every such run
+  satisfies the INNER contract keyed on INNER's own test
+  (`IsARqpSCPhase2Calls.isInnerPhaseRunStrong`), and both run classes are non-empty
+  (`exists_isTPqpGCARqpSCRun`, `exists_isTPqpGCARqpUnitRun` for `q ≤ 2`)
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -174,24 +188,45 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   produced by a regularization algorithm of (14.2.12). Read uniformly over all admissible inputs,
   the cost hypothesis cannot be met by any INNER (ARqp-SC included) on that problem for `π₁ < 2`
   (`theorem_14_3_9_cost_hypothesis_unsatisfiable`), so the printed theorem is vacuous under that
-  reading. When the number of bad
-  iterations is bounded independently of `ε`, the
-  counts are `O(max(ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}))`; the derivative count acquires an
-  `ε₀^{-1}` term. INNER's certificate for the tolerances `β ‖r(x_k, t_k)‖ ε_j`, with bounded
-  derivatives of `f`, bounds it: by `O(max_j (ε₀ ε_j)^{-j})` for the ARqpC-SC runs
+  reading. For every run whose INNER calls are genuine ARqp-SC runs (run as ARqpC-SC with
+  `c = 0`, `h = 0`; `Chapter14.Section03Genuine`) the theorem holds in the printed order for the
+  exponents `j + 1` (every `q ≤ p`, `theorem_14_3_9_arqpc`; this is the ARqpC-SC entry of
+  (14.2.12) only for `q ≥ 2` or `X` nonconvex) and for the ARqp-SC exponents `j(p+1)/p` when
+  `q = p` (`theorem_14_3_9_arqp`; unit radii on `ℝⁿ`, `theorem_14_3_9_arqp_unit`); for `q < p`
+  with the ARqp-SC exponents (including the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex,
+  `p ≥ 2`) it holds with the extra term `∑_j (ε₀ ε_j)^{-j}` (resp. `∑_j (ε₀ ε_j)^{-1}` with unit
+  radii), which exceeds the printed order (`theorem_14_3_9_arqp_corrected`,
+  `exists_tpqpOrderF_lt_arqp`; whether these runs attain the printed order is open). When the
+  number of bad iterations is bounded independently of `ε`, the counts are
+  `O(max(ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}))`; the derivative count acquires an `ε₀^{-1}`
+  term. INNER's certificate for the tolerances `β ‖r(x_k, t_k)‖ ε_j`, with bounded derivatives of
+  `f`, bounds it: by `O(max_j (ε₀ ε_j)^{-j})` for the ARqpC-SC runs
   (`IsTPqpGCPhase2.kbCount_le`, `β < θ`; within the order for the exponents `j + 1`), for every
   `β ≤ θ` (`IsTPqpGCPhase2.kbCount_le_of_le`), and by `O(max_j (ε₀ ε_j)^{-1})` for the
   unit-radius runs on `ℝⁿ`. The book's
   `f_up - f_low - 1` is `f_up - f_low + 1`, and its `#F₂` misses the `1/(1 - θ)` of the
   `κ^C ε₀^{-1}` term.
 * Algorithm 14.3.2: the INNER calls of Phase 2 are described by their iterates; `μ(·, t_k)` does
-  not increase along a call, and a call stops as soon as `‖r‖ < θε₀`.
+  not increase along a call, and a call stops as soon as `‖r‖ < θε₀`. With INNER = ARqp-SC, the
+  radii returned at a Step-2 termination may be `min(1, ε_j/(4(3 J + σ)))` (`J` a jet bound at
+  the output) instead of the book's `δ_{s_k}`, which need not certify (14.3.19)
+  (`IsARqpSCCallOut`).
+* (14.3.20)–(14.3.21): the multiplicative Phase-1 cost contract is false when every `π_j < 2`
+  (`q = 1` with the ARqp-SC exponent `(p+1)/p`, `p ≥ 2`; the unit-radius exponents for `q = 2`,
+  `p ≥ 4`): a call from a point with small residual costs one evaluation against a bound that
+  tends to `0` (`exists_algorithm_14_3_1_cost_contract_counterexample`). The additive form,
+  keeping the constants of Theorem 14.2.4 (footnote 114's `O(log)` terms), is proved
+  (`IsARqpSCOutputCost.cost_le_arqp_add`, `theorem_14_3_4_add`, `lemma_14_3_7_add`,
+  `exists_algorithm_14_3_1_complexity_arqp_add`, `exists_algorithm_14_3_1_complexity_unit`); its
+  extra Phase-1 cost `O(|log ε₀|)` lies within the order of Theorem 14.3.9
+  (`exists_const_order_arqp`, `exists_const_order_arqp_unit`).
 
 ## Not formalized
 
-* The multiplicative Phase-1 cost contract when all `π_j < 2` (false there; the additive form
-  is proved), and the `O(·)` restatements of §14.3.
-* Whether runs of ARqp-SC itself attain the printed order of Theorem 14.3.9 under the per-call
-  reading of the INNER hypotheses (open; under the literal uniform reading the theorem is vacuous
-  for them when `π₁ < 2`).
+* The `O(·)` restatement of Theorem 14.3.4 (Theorem 14.3.9 is stated with constants chosen
+  before `ε` in `Chapter14.Section03Genuine`).
+* Theorem 14.3.9 with INNER of trust-region type (c.D1qLB.X, f.D1qLB.Fb).
+* Whether runs of ARqp-SC with `q < p` attain the printed order of Theorem 14.3.9 (open: the
+  proved bound has an extra term outside that order; under the literal uniform reading of the
+  INNER hypotheses the theorem is vacuous for them when `π₁ < 2`).
 -/

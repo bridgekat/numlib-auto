@@ -149,7 +149,8 @@ where one exists:
   runs). With the INNER contract as Lemma 14.2.2 states it (decrease unless INNER's own test
   holds, `Chapter14.IsInnerPhaseRunStrong`) Phase 2 terminates within an explicit bound without
   the parameter for every `β ≤ θ` (`Chapter14.IsTPqpGCPhase2.complexity_of_strong`; the extra
-  term's order depends on INNER's radii and is that of the book only for the exponents `j + 1`).
+  term's order depends on INNER's radii; it is within the book's order for the exponents `j + 1`,
+  and for the ARqp-SC exponents exactly when `q = p`).
   INNER's
   certificate closes the gap when the derivatives of `f` are bounded: for `β < θ` every case-(b)
   iteration lowers the target by a fixed amount (`Chapter14.IsTPqpGCPhase2.kbCount_le`), for
@@ -166,12 +167,23 @@ where one exists:
   (14.2.12) — exceed the printed bounds for every choice of their constants). Read uniformly over
   all admissible inputs, the cost hypothesis cannot be met by any INNER on that problem for
   `π₁ < 2` (`Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`), and the theorem is vacuous
-  under that reading. Whether ARqp-SC runs attain the printed order (per-call reading) is open.
-* **(14.3.20)–(14.3.21)**: the multiplicative INNER cost contract is false for `q = 1`, `p ≥ 2`
-  with INNER = ARqp-SC (`Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`: a call
-  costs at least one evaluation while the bound tends to `0` with `‖r(x^S)‖`); the additive
-  constants of footnote 114 must be kept. The contract can hold on the calls of a given run (as in
-  `Chapter14.theorem_14_3_9_false`) but not uniformly in `ε`
+  under that reading. For every run whose INNER calls are genuine ARqp-SC runs (run as ARqpC-SC
+  with `c = 0`, `h = 0`) the theorem holds in the printed order for the exponents `j + 1`
+  (`Chapter14.theorem_14_3_9_arqpc`; the ARqpC-SC entry of (14.2.12) for `q ≥ 2` or `X`
+  nonconvex) and for the ARqp-SC exponents `j(p+1)/p` when `q = p`
+  (`Chapter14.theorem_14_3_9_arqp`, `Chapter14.theorem_14_3_9_arqp_unit`); for `q < p` with the
+  ARqp-SC exponents (including the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`)
+  the proved bound (`Chapter14.theorem_14_3_9_arqp_corrected`) has an extra term outside the
+  printed order (`Chapter14.exists_tpqpOrderF_lt_arqp`), and whether these runs attain the
+  printed order is open.
+* **(14.3.20)–(14.3.21)**: the multiplicative INNER cost contract is false when every `π_j < 2`
+  (`q = 1`, `p ≥ 2` with INNER = ARqp-SC;
+  `Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`: a call costs at least one
+  evaluation while the bound tends to `0` with `‖r(x^S)‖`); the additive constants of footnote 114
+  must be kept, and the additive form is proved (`Chapter14.theorem_14_3_4_add`,
+  `Chapter14.lemma_14_3_7_add`); its extra `O(|log ε₀|)` lies within the order of
+  Theorem 14.3.9 (`Chapter14.exists_const_order_arqp`). The contract can hold on the calls of a
+  given run (as in `Chapter14.theorem_14_3_9_false`) but not uniformly in `ε`
   (`Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`).
 * **Lemma B.4.1 (B.4.3)**: false for `β < 1` (`AppendixB.lemma_B_4_1_iii_false`); true for `β = 1`,
   the case the book uses.
@@ -192,11 +204,12 @@ and on the declarations.
 
 ## Not formalized
 
-* Whether runs of ARqp-SC itself attain the printed order of Theorem 14.3.9 under the per-call
-  reading (the theorem fails for a nonspecific INNER under that reading and is vacuous under the
-  literal uniform one for `π₁ < 2`, see above; the ARqp-SC exponents themselves are proved:
-  "otherwise" for every `q`, unit-radius on `ℝⁿ` for `q ≤ 2`, with the additive Phase-1
-  constants of footnote 114 where the multiplicative contract fails).
+* Whether runs of ARqp-SC with `q < p` attain the printed order of Theorem 14.3.9 under the
+  per-call reading (it holds for the exponents `j + 1` and for the ARqp-SC exponents with
+  `q = p`; the open case includes the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex; for
+  `q < p` the proved bound has an extra term outside the printed order; the theorem fails for a
+  nonspecific INNER under that reading and is vacuous under the literal uniform one for `π₁ < 2`,
+  see above), and Theorem 14.3.9 with INNER of trust-region type.
 * The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
   the Gertz–Gill criterion (9.4.8) quoted in §9.4.
 * Discussion without numbered results: the variants of §2.2.3, §4.1.3, §7.2.3, the qualitative parts
