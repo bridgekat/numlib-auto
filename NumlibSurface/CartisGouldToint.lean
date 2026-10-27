@@ -181,16 +181,13 @@ and on the declarations.
 
 ## Not formalized
 
-* The anchored assumption f.D0qLaB.X of the dynamic-accuracy rows of Theorem 14.2.4 (they are
-  proved under f.D0qL on an open convex superset of `X`); the other rows, and the existence and
-  complexity of LENq-SC and TPqp-GC runs in all variants (exponents `j + 1`, ARqp-SC "otherwise"
-  and unit-radius exponents, certified and strong-contract INNER contracts), are proved under
-  anchored bounds (`Chapter14.theorem_14_2_4_trq_anchored`,
-  `Chapter14.theorem_14_2_4_arqp_anchored`,
-  `Chapter14.exists_algorithm_14_3_2_complexity_certified_anchored`, …), which the book's
+* Restatements of the §14.3 variants under the book's assumptions: the existence and complexity
+  of LENq-SC and TPqp-GC runs in all variants (exponents `j + 1`, ARqp-SC "otherwise" and
+  unit-radius exponents, certified and strong-contract INNER contracts) are proved under anchored
+  bounds (`Chapter14.exists_algorithm_14_3_2_complexity_certified_anchored`, …), which the book's
   anchored assumptions give through `Chapter14.AssumptionD1qLaBX.anchoredCompositeBounds` and
-  `Chapter14.exists_anchoredCompositeBounds_nu_mu` (the `j + 1` variants are also restated under
-  the book's assumptions: `Chapter14.exists_algorithm_14_3_2_complexity_anchored`).
+  `Chapter14.exists_anchoredCompositeBounds_nu_mu`; only the `j + 1` variants are restated under
+  the book's assumptions (`Chapter14.exists_algorithm_14_3_2_complexity_anchored`).
 * The order of the bad outer iterations of TPqp-GC claimed by Theorem 14.3.9 with the ARqp-SC
   exponents for runs of ARqp-SC itself: it does not follow from the INNER contract
   (`Chapter14.theorem_14_3_9_order_counterexample`: for `q = 1`, `π₁ = (p+1)/p`, `p ≥ 2`, runs

@@ -143,3 +143,63 @@ source = "Cartis–Gould–Toint, proof of Theorem 13.3.8 (accuracy-improving it
 [[node]]
 id = "arqpEDA_complexity_feasible"
 source = "Cartis–Gould–Toint, proof of Theorem 13.3.8; Theorem 14.2.4 (ARqpEDA-SC)"
+
+[[node]]
+id = "algorithm_13_3_1_feasible.f_le"
+source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), (13.3.5), (13.3.9): the TRqEDA-SC iterates lie in the sublevel set (14.2.8)"
+
+[[node]]
+id = "algorithm_13_3_2_feasible.f_le"
+source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), (13.3.13), (13.3.18): the ARqpEDA-SC iterates lie in the sublevel set (14.2.8)"
+
+[[node]]
+id = "lemma_13_3_1_anchored"
+source = "Cartis–Gould–Toint, Lemma 13.3.1 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "trEDA_radius_ge_anchored"
+source = "Cartis–Gould–Toint, Lemma 13.3.3 (13.1.32 for TRqEDA) under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "lemma_13_3_2_anchored"
+source = "Cartis–Gould–Toint, Lemma 13.3.2 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "lemma_13_3_3_ii_anchored"
+source = "Cartis–Gould–Toint, Lemma 13.3.3 (ii) under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "trqEDA_card_acc_le_anchored"
+source = "Cartis–Gould–Toint, proof of Theorem 13.3.4 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "theorem_13_3_4_anchored"
+source = "Cartis–Gould–Toint, Theorem 13.3.4 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "lemma_13_3_5_anchored"
+source = "Cartis–Gould–Toint, Lemma 13.3.5 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "lemma_13_3_6_ii_anchored"
+source = "Cartis–Gould–Toint, Lemma 13.3.6 (ii) under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "eda_radius_inequality_anchored"
+source = "Cartis–Gould–Toint, Lemma 13.3.7 (proof) under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "arqpEDA_step_bound_anchored"
+source = "Cartis–Gould–Toint, Lemma 13.3.7 (proof) under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "lemma_13_3_7_anchored"
+source = "Cartis–Gould–Toint, Lemma 13.3.7 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "arqpEDA_card_acc_le_anchored"
+source = "Cartis–Gould–Toint, proof of Theorem 13.3.8 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "arqpEDA_complexity_anchored"
+source = "Cartis–Gould–Toint, proof of Theorem 13.3.8 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
