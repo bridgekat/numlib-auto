@@ -158,10 +158,21 @@ where one exists:
   (`Chapter14.exists_algorithm_14_3_2_complexity_certified`,
   `Chapter14.exists_algorithm_14_3_2_complexity_strong`,
   `Chapter14.exists_algorithm_14_3_2_complexity_unit`).
+  **Theorem 14.3.9 fails for a nonspecific INNER under the per-call reading** of its INNER
+  hypotheses; the bound holds with the extra term of
+  `Chapter14.IsTPqpGCPhase2.complexity_of_strong` (`Chapter14.theorem_14_3_9_false`: for `q = 1`,
+  `π₁ ∈ [4/3, 3/2]`, runs whose INNER calls satisfy on the run (14.3.19), (14.3.20)–(14.3.21) and
+  (14.2.11), (14.2.13) with `t`-independent constants — not a regularization algorithm of
+  (14.2.12) — exceed the printed bounds for every choice of their constants). Read uniformly over
+  all admissible inputs, the cost hypothesis cannot be met by any INNER on that problem for
+  `π₁ < 2` (`Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`), and the theorem is vacuous
+  under that reading. Whether ARqp-SC runs attain the printed order (per-call reading) is open.
 * **(14.3.20)–(14.3.21)**: the multiplicative INNER cost contract is false for `q = 1`, `p ≥ 2`
   with INNER = ARqp-SC (`Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`: a call
   costs at least one evaluation while the bound tends to `0` with `‖r(x^S)‖`); the additive
-  constants of footnote 114 must be kept.
+  constants of footnote 114 must be kept. The contract can hold on the calls of a given run (as in
+  `Chapter14.theorem_14_3_9_false`) but not uniformly in `ε`
+  (`Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`).
 * **Lemma B.4.1 (B.4.3)**: false for `β < 1` (`AppendixB.lemma_B_4_1_iii_false`); true for `β = 1`,
   the case the book uses.
 * **Theorem 9.3.2** is false with the Euclidean `λ_min` when `M ≠ I`, and **Theorem 9.3.1** omits
@@ -181,12 +192,10 @@ and on the declarations.
 
 ## Not formalized
 
-* The order of the bad outer iterations of TPqp-GC claimed by Theorem 14.3.9 with the ARqp-SC
-  exponents for runs of ARqp-SC itself: it does not follow from the INNER contract
-  (`Chapter14.theorem_14_3_9_order_counterexample`: for `q = 1`, `π₁ = (p+1)/p`, `p ≥ 2`, runs
-  satisfying `Chapter14.IsInnerPhaseRunStrong` with `≍ (ε₀ ε₁)^{-1}` of them, exceeding the
-  book's order), and is not settled for ARqp-SC runs (the ARqp-SC exponents themselves are
-  proved: "otherwise" for every `q`, unit-radius on `ℝⁿ` for `q ≤ 2`, with the additive Phase-1
+* Whether runs of ARqp-SC itself attain the printed order of Theorem 14.3.9 under the per-call
+  reading (the theorem fails for a nonspecific INNER under that reading and is vacuous under the
+  literal uniform one for `π₁ < 2`, see above; the ARqp-SC exponents themselves are proved:
+  "otherwise" for every `q`, unit-radius on `ℝⁿ` for `q ≤ 2`, with the additive Phase-1
   constants of footnote 114 where the multiplicative contract fails).
 * The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
   the Gertz–Gill criterion (9.4.8) quoted in §9.4.

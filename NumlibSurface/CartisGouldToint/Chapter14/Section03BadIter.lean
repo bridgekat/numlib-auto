@@ -1,7 +1,7 @@
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
 
 /-!
-# Cartis–Gould–Toint §14.3: the order of the bad outer iterations of TPqp-GC
+# Cartis–Gould–Toint §14.3: Theorem 14.3.9 fails for a nonspecific INNER
 
 Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
 Algorithms for Nonconvex Optimization* [cartis2022evaluation], Theorem 14.3.9: the order of the
@@ -13,11 +13,39 @@ own test (`IsInnerPhaseRunStrong`), `IsTPqpGCPhase2.complexity_of_strong` bounds
 extra term `(f_up - f_low + 1)/τ`, `τ ∼ min_j ε₀ ε_j ρ_j^{j-1}`, for those iterations; for
 `q = 1` it is `O((ε₀ ε₁)^{-1})`. With the ARqp-SC exponent `π₁ = (p+1)/p` (`p ≥ 2`) this
 exceeds the order `O(max(ε₀^{-1}, ε₀^{1-π₁} ε₁^{-π₁}))` claimed by Theorem 14.3.9 when
-`ε₁ = ε₀^s` with `0 < s < p - 1`. This module shows that the extra term is attained: the
-book's order does not follow from the INNER contract.
+`ε₁ = ε₀^s` with `0 < s < p - 1`. This module shows that the extra term is attained and settles
+the printed Theorem 14.3.9 for a nonspecific INNER, according to how its INNER hypotheses are read:
+
+* **Per-call reading** (the hypotheses checked on the INNER calls of the run, as the library states
+  its own theorems): the theorem is false for `π₁ ∈ [4/3, 3/2]` (the ARqp-SC exponent `(p+1)/p`
+  for `p ∈ {2, 3}`): the INNER calls of the counterexample satisfy the output test (14.3.19), the
+  cost bounds (14.3.20)–(14.3.21) with `ε`-independent constants and `f_low = 0`, and (14.2.11),
+  (14.2.13) with `t`-independent constants, and the evaluation counts exceed the printed bounds for
+  every choice of the theorem's constants (`theorem_14_3_9_false`).
+* **Literal, uniform reading** ((14.3.20)–(14.3.21) bound every call of the algorithm for all
+  admissible inputs with one `ε`-independent `κ_INNER`): on the same problem no INNER, ARqp-SC
+  included, satisfies it for `π₁ < 2` (`theorem_14_3_9_cost_hypothesis_unsatisfiable`), so the
+  printed theorem is vacuous there.
+
+The corrected statement for INNER of regularization type is `IsTPqpGCPhase2.complexity_of_strong`
+(the bound with an extra term `O(ε₀^{-1} + (ε₀ ε₁)^{-1})` for `q = 1`).
 
 ## Main results
 
+* `theorem_14_3_9_false`: Theorem 14.3.9 fails for a nonspecific INNER under the per-call reading
+  of its INNER hypotheses. One problem
+  satisfying the book's assumptions (as below, with `f_low = -2`, `f_up = 2`) such that for all
+  `π₁ ∈ [4/3, 3/2]`, `β ∈ [2/3, θ]`, `β₁ ∈ (0, 1)` and every choice of the constants
+  `κ^A_{INNER,2}`, `κ^C_{INNER,2}`, `κ^S_{INNER,2}`, `κ^{F,ν}_INNER`, `κ^{D,ν}_INNER`, there is a
+  TPqp-GC run whose INNER calls satisfy (14.3.19) (`TPqpSeq.InnerTest`, output in `X`, radius
+  `1`), (14.3.20)–(14.3.21) with `κ^F_INNER = κ^D_INNER = κ` for every `κ ≥ 8` and `f_low = 0`,
+  and (14.2.11), (14.2.13) with `t`-independent constants (`IsInnerPhaseRunStrong`); Phase 1 makes
+  no INNER call. Its numbers of evaluations of `(f, c)` and of their derivatives exceed the printed
+  `#^F_INNER,1 + #^F_INNER,2` and `#^D_INNER,1 + #^D_INNER,2`.
+* `theorem_14_3_9_cost_hypothesis_unsatisfiable`: on the same problem, for `π₁ < 2`, `β ∈ (0, 1)`
+  and every `κ`, the first Phase-2 call for suitable admissible tolerances starts at a point
+  failing INNER's test for every radius while its bound (14.3.20)–(14.3.21) is below `1`: the
+  literal uniform reading of the cost hypothesis cannot be met by any INNER.
 * `theorem_14_3_9_order_counterexample`: one problem (`n = 2`, `m = 1`, `q = 1`, `X = [-1, 1]²`,
   `f(x) = x₁ - x₂`, `c(x) = x₁²/2`, satisfying X.CNe (`AssumptionXCNe`), f.D1pLB.X and
   c.D1pLB.X for every `p`, f.B.Fb; `X` also convex) such that for every `C` there are
@@ -29,7 +57,11 @@ book's order does not follow from the INNER contract.
   `k_ε > C max(ε₀^{-1}, ε₀^{1-π} ε₁^{-π})` for every `π ≤ 3/2`.
 * `Theorem1439OrderCex.not_innerTest_start`: INNER's test fails at the start of every call, so
   a genuine INNER must move;
-* `arqpPiOf_one_le`: the ARqp-SC exponent of order `1` is at most `3/2` for `p ≥ 2`.
+* `Theorem1439OrderCex.two_le_innerEvalBound`: the cost bound (14.3.20)–(14.3.21) of every call is
+  at least `2` for `κ ≥ 8` and `π₁ ≥ 4/3` (a call costs one evaluation, two counting the one at
+  its starting point);
+* `arqpPiOf_one_le`, `four_thirds_le_arqpPiOf_one`: the ARqp-SC exponent of order `1` is at most
+  `3/2` for `p ≥ 2` and at least `4/3` for `p ≤ 3`.
 
 The helpers (the data, the run and its properties) are in the namespace `Theorem1439OrderCex`.
 
@@ -44,13 +76,26 @@ doubles and (14.3.34) fails. Each such iteration lowers the target by `2E ∼ ε
 
 ## Scope
 
-The INNER calls are described by their iterates, as the contract `IsInnerPhaseRunStrong`
-describes them (that is all the book's proof of Lemma 14.3.8 and Theorem 14.3.9 uses about
-INNER). They are not runs of ARqp-SC: for `p = 2` the model minimizer of `μ(·, t_k)` at `x_k`
-(Hessian `[[1 + 3u²/2, -1], [-1, 1]]`, gradient `(u³/2 + E, -E)`) cuts `x₁` by about `u/3`, and
-the pure-`x₂` step violates the step-termination rule `‖∇m(s)‖ ≤ θ‖s‖^p` (`u³/2` against
-`u^{3p}`). Whether genuine ARqp-SC runs satisfy the book's order is not settled. What blocks
-either answer:
+The INNER calls are described by their iterates. The book's INNER is nonspecific (§14.3,
+OCR ≈ 16893–16919): it is assumed to return a point of `X` with radii in `(0, 1]` satisfying
+(14.3.19), within (14.3.20)–(14.3.21) evaluations, and (for Phase 2, OCR ≈ 17477, 21203–21295) to
+satisfy (14.2.11), (14.2.13) with `t`-independent constants. Theorem 14.3.9 further assumes that
+"the INNER algorithm is of regularization type" with the exponents `π_j` of (14.2.12), a table of
+specific algorithms (ARqp-SC, ARqpC-SC, …); its proof uses about INNER only the properties just
+listed, so "regularization type" is taken here to mean that contract with those exponents. The
+calls here satisfy all of these properties on the run (`theorem_14_3_9_false`), but they are not
+produced by a regularization algorithm of (14.2.12). The cost hypothesis is checked per call:
+read uniformly over all admissible inputs it is unsatisfiable on this problem for `π₁ < 2`
+(`theorem_14_3_9_cost_hypothesis_unsatisfiable`, the mechanism of
+`exists_algorithm_14_3_1_cost_contract_counterexample`). The cost bound on the run needs
+`π₁ ≥ 4/3`: a call costs one evaluation while its bound is `∼ κ u^{4 - 3π₁}` (`‖r‖ ∼ u²`,
+`ε₁ ∼ u`); exponents in `(1, 4/3)` would need a flatter constraint (e.g. `c(x) = x₁^a/a`, giving
+`ε₁ ∼ ε₀^{(a-1)/a}`), which is not formalized. The calls are not runs of ARqp-SC: for `p = 2`
+the model minimizer of `μ(·, t_k)` at `x_k` (Hessian `[[1 + 3u²/2, -1], [-1, 1]]`, gradient
+`(u³/2 + E, -E)`) cuts `x₁` by about `u/3`, and the pure-`x₂` step violates the step-termination
+rule `‖∇m(s)‖ ≤ θ‖s‖^p` (`u³/2` against `u^{3p}`). Whether genuine ARqp-SC runs attain the
+printed order under the per-call reading is open (not settled here); under the literal reading the
+theorem is vacuous for them when `π₁ < 2`. What blocks either answer:
 
 * A genuine counterexample needs a geometry where approximate regularized-model minimizers
   overshoot the target by `∼ ε₀ ε₁` while keeping `‖c‖ ≳ θε₀`; in the geometry here they reduce
@@ -729,19 +774,82 @@ theorem not_innerTest_start {β : ℝ} (hβ : β ≤ 3 / 4) {k : ℕ} (hk1 : 1 �
         9 / 16 * u ^ 3 + 9 / 16 * u ^ 4 := by ring
     linarith
 
+/-- `‖r(x_k, t_k)‖ ≤ u²/2 + u³/2 = ε₀` for `k ∈ [1, N]`. -/
+theorem resid_cur_le {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
+    Constrained.targetResidual objF conC (tgt u N k) (xs u N k) ≤ u ^ 2 / 2 + u ^ 3 / 2 := by
+  obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
+  rcases Nat.eq_zero_or_pos j with rfl | hj
+  · rw [Constrained.targetResidual_def, xs_one, norm_conC, tgt_one, objF_pt]
+    simp only [pt_zero]
+    rw [show ((0 : ℝ) ^ 2 / 2) ^ 2 + (0 - -1 - (1 - (u ^ 2 / 2 + u ^ 3 / 2))) ^ 2 =
+      (u ^ 2 / 2 + u ^ 3 / 2) ^ 2 by ring, Real.sqrt_sq (by positivity)]
+  · have hjN : j < N := by omega
+    have hov := le_ov hu (N := N) (j := j + 1) (by omega)
+    have hov1 := ov_le hu (N := N) (j + 1)
+    have hsq := resid_new (u := u) hj hjN
+    have hR0 := Constrained.targetResidual_nonneg (f := objF) (c := conC)
+      (t := tgt u N (j + 1)) (x := xs u N (j + 1))
+    have : 0 ≤ ov u N (j + 1) := (by positivity : (0 : ℝ) ≤ 3 / 4 * (u ^ 3 / 2)).trans hov
+    nlinarith [sq_nonneg (Constrained.targetResidual objF conC (tgt u N (j + 1))
+      (xs u N (j + 1)) - (u ^ 2 / 2 + u ^ 3 / 2)), pow_pos hu 2, pow_pos hu 3]
+
+include hu7 in
+/-- **The cost bounds (14.3.20)–(14.3.21) hold for every call** `k ∈ [1, N]`: for `β ∈ (0, 3/4]`,
+`κ ≥ 8` and `π₁ ≥ 4/3`, the bound `κ (μ(x_k, t_k) - 0) (β ‖r(x_k, t_k)‖ ε₁)^{-π₁}` of a call of
+INNER on `μ(·, t_k)` from `x^S = x_k` with tolerance `β ‖r(x_k, t_k)‖ ε₁` (and `f_low = 0`, the
+lower bound of `μ`) is at least `2`. With `R = ‖r(x_k, t_k)‖ ≥ u²/2` and `w = β R ε₁`, one has
+`w ≤ 1` and `w⁴ ≤ (2R²)³`, so `w^{π₁} ≤ w^{4/3} ≤ 2R²` and the bound is `≥ κ/4`. -/
+theorem two_le_innerEvalBound {β : ℝ} (hβ : 0 < β) (hβθ : β ≤ 3 / 4) {κ : ℝ} (hκ : 8 ≤ κ)
+    {π : ℕ → ℝ} (hπ : 4 / 3 ≤ π 1) {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
+    2 ≤ innerEvalBound κ π 1 (Constrained.targetMerit objF conC (tgt u N k) (xs u N k))
+      (fun j => β * Constrained.targetResidual objF conC (tgt u N k) (xs u N k) * eps u j) := by
+  rw [innerEvalBound_one]
+  simp only [Constrained.targetMerit_eq, eps_one]
+  set R := Constrained.targetResidual objF conC (tgt u N k) (xs u N k) with hR_def
+  have hRlo := resid_cur_ge hu hk1 hkN
+  have hRhi := resid_cur_le hu hk1 hkN
+  have hR : 0 < R := lt_of_lt_of_le (by positivity) hRlo
+  have hu2 : u ^ 2 ≤ 2 * R := by linarith
+  set w := β * R * (3 * u / 2) with hw_def
+  have hw0 : 0 < w := by positivity
+  have hwle : w ≤ 9 / 8 * R * u := by
+    rw [hw_def]
+    have : β * R ≤ 3 / 4 * R := by gcongr
+    nlinarith
+  have hw1 : w ≤ 1 := by
+    have : R ≤ 1 := by nlinarith [pow_pos hu 2, pow_pos hu 3]
+    nlinarith
+  have hw4 : w ^ 4 ≤ (2 * R ^ 2) ^ 3 := by
+    calc w ^ 4 ≤ (9 / 8 * R * u) ^ 4 := by gcongr
+      _ = (9 / 8) ^ 4 * R ^ 4 * (u ^ 2) ^ 2 := by ring
+      _ ≤ (9 / 8) ^ 4 * R ^ 4 * (2 * R) ^ 2 := by gcongr
+      _ ≤ (2 * R ^ 2) ^ 3 := by nlinarith [pow_pos hR 6]
+  have hw43 : w ^ (4 / 3 : ℝ) ≤ 2 * R ^ 2 := by
+    have e : w ^ (4 / 3 : ℝ) = (w ^ (4 : ℕ)) ^ (((3 : ℕ) : ℝ)⁻¹) := by
+      rw [← Real.rpow_natCast, ← Real.rpow_mul hw0.le]; norm_num
+    rw [e, ← Real.pow_rpow_inv_natCast (by positivity : (0 : ℝ) ≤ 2 * R ^ 2) (by norm_num : 3 ≠ 0)]
+    exact Real.rpow_le_rpow (by positivity) hw4 (by positivity)
+  have hwπ : w ^ π 1 ≤ 2 * R ^ 2 := (Real.rpow_le_rpow_of_exponent_ge hw0 hw1 hπ).trans hw43
+  have hwπ0 : 0 < w ^ π 1 := Real.rpow_pos_of_pos hw0 _
+  rw [Real.rpow_neg hw0.le, ← div_eq_mul_inv, le_div_iff₀ hwπ0]
+  nlinarith [sq_nonneg R]
+
 end Run2
+
+/-- Every INNER call makes one successful iteration. -/
+theorem succCount_run (u : ℝ) (N j : ℕ) : (run u N).succCount j = 1 := by
+  classical
+  unfold TPqpSeq.succCount
+  rw [Finset.card_eq_one]
+  refine ⟨0, Finset.eq_singleton_iff_unique_mem.2
+    ⟨Finset.mem_filter.2 ⟨by simp [run], trivial⟩, fun x hx => ?_⟩⟩
+  have := (Finset.mem_filter.1 hx).1
+  simpa [run] using this
 
 /-- Every INNER call makes one (successful) iteration: `#F(k) = #D(k) = k + 1`. -/
 theorem funEvals_run (u : ℝ) (N k : ℕ) : (run u N).funEvals k = k + 1 ∧
     (run u N).derivEvals k = k + 1 := by
-  classical
-  have hs : ∀ j, (run u N).succCount j = 1 := fun j => by
-    unfold TPqpSeq.succCount
-    rw [Finset.card_eq_one]
-    refine ⟨0, Finset.eq_singleton_iff_unique_mem.2
-      ⟨Finset.mem_filter.2 ⟨by simp [run], trivial⟩, fun x hx => ?_⟩⟩
-    have := (Finset.mem_filter.1 hx).1
-    simpa [run] using this
+  have hs : ∀ j, (run u N).succCount j = 1 := succCount_run u N
   constructor
   · unfold TPqpSeq.funEvals
     simp [run, add_comm]
@@ -917,6 +1025,35 @@ theorem algorithm_14_3_2_run {u : ℝ} {N : ℕ} (hu : 0 < u) (hu7 : u ≤ 1 / 7
     · nlinarith [eps_le_one hu hu7 0, eps_pos hu 0]
     · exact eps_le_one hu hu7 j
 
+/-- **The parameters for a constant `C`**: `u = 1/m`, `N = m³` with `m = ⌈4C²⌉ + 7`, so that
+the tolerances vanish as `C` grows and `N > C max(ε₀^{-1}, ε₀^{1-π} ε₁^{-π})` for `π ≤ 3/2`. -/
+theorem exists_params (C : ℝ) : ∃ (u : ℝ) (N : ℕ), 0 < u ∧ u ≤ 1 / 7 ∧ u ^ 3 * N ≤ 1 ∧ 1 ≤ N ∧
+    (1 ≤ C → eps u 0 ≤ C⁻¹ ∧ eps u 1 ≤ C⁻¹) ∧
+    ∀ π : ℝ, π ≤ 3 / 2 → C * max (eps u 0)⁻¹ (eps u 0 ^ (1 - π) * eps u 1 ^ (-π)) < N := by
+  set m : ℕ := ⌈4 * C ^ 2⌉₊ + 7 with hm_def
+  have hm : 7 ≤ m := by omega
+  have hm7 : (7 : ℝ) ≤ m := by exact_mod_cast hm
+  have hmR : (0 : ℝ) < m := by linarith
+  have hC : 4 * C ^ 2 < m := by
+    have := Nat.le_ceil (4 * C ^ 2)
+    rw [hm_def]; push_cast; linarith
+  set u : ℝ := 1 / m with hu_def
+  have hu : 0 < u := by positivity
+  have hu7 : u ≤ 1 / 7 := by rw [hu_def, div_le_div_iff₀ hmR (by norm_num)]; linarith
+  refine ⟨u, m ^ 3, hu, hu7, ?_, Nat.one_le_pow _ _ (by omega), fun hC1 => ?_, fun π hπ => ?_⟩
+  · rw [hu_def]; push_cast; field_simp; exact le_rfl
+  · have hmC : 2 * C ≤ m := by nlinarith
+    have hε1 : eps u 1 ≤ C⁻¹ := by
+      rw [eps_one, hu_def, le_inv_comm₀ (by positivity) (by linarith)]
+      rw [show (3 * (1 / (m : ℝ)) / 2)⁻¹ = 2 * m / 3 by field_simp]
+      linarith
+    refine ⟨le_trans ?_ hε1, hε1⟩
+    rw [eps_zero, eps_one]
+    nlinarith [pow_pos hu 2, pow_pos hu 3]
+  · have hx0 : 0 ≤ max (eps u 0)⁻¹ (eps u 0 ^ (1 - π) * eps u 1 ^ (-π)) :=
+      (inv_pos.2 (eps_pos hu 0)).le.trans (le_max_left _ _)
+    exact lt_cube hm hC hx0 (order_le hm hπ)
+
 end Theorem1439OrderCex
 
 open Theorem1439OrderCex in
@@ -987,43 +1124,249 @@ theorem theorem_14_3_9_order_counterexample :
                 {d | D.x k + d ∈ X} := by
   refine ⟨objF, conC, boxX, ⟨isClosed_boxX, ⟨pt 0 (-1), by simp [boxX]⟩⟩, convex_boxX,
     contDiff_objF, contDiff_conC, assumptionD1pLBX, deriv_objF_le, assumptionBFb, fun C => ?_⟩
-  set m : ℕ := ⌈4 * C ^ 2⌉₊ + 7 with hm_def
-  have hm : 7 ≤ m := by omega
-  have hm7 : (7 : ℝ) ≤ m := by exact_mod_cast hm
-  have hmR : (0 : ℝ) < m := by linarith
-  have hC : 4 * C ^ 2 < m := by
-    have := Nat.le_ceil (4 * C ^ 2)
-    rw [hm_def]; push_cast; linarith
-  set u : ℝ := 1 / m with hu_def
-  have hu : 0 < u := by positivity
-  have hu7 : u ≤ 1 / 7 := by rw [hu_def, div_le_div_iff₀ hmR (by norm_num)]; linarith
-  have hNu : u ^ 3 * ((m ^ 3 : ℕ) : ℝ) ≤ 1 := by
-    rw [hu_def]; push_cast; field_simp; exact le_rfl
-  have hN : 1 ≤ m ^ 3 := Nat.one_le_pow _ _ (by omega)
+  obtain ⟨u, N, hu, hu7, hNu, hN, hCε, hord⟩ := exists_params C
   have hc0 : ‖conC (pt 0 (-1))‖ = 0 := by rw [norm_conC]; simp
-  refine ⟨eps u, pt 0 (-1), fun _ => pt 0 (-1), fun _ _ => 1, run u (m ^ 3), m ^ 3,
-    fun j => ⟨eps_pos hu j, eps_le_one hu hu7 j⟩, fun hC1 => ?_, hc0, fun _ _ => rfl,
+  refine ⟨eps u, pt 0 (-1), fun _ => pt 0 (-1), fun _ _ => 1, run u N, N,
+    fun j => ⟨eps_pos hu j, eps_le_one hu hu7 j⟩, hCε, hc0, fun _ _ => rfl,
     isEnd hu hu7 hNu hN, (funEvals_run u _ _).1, (funEvals_run u _ _).2,
-    fun k hk => merit_lt hu (Finset.mem_Icc.1 hk).1 (Finset.mem_Icc.1 hk).2, fun π hπ => ?_,
+    fun k hk => merit_lt hu (Finset.mem_Icc.1 hk).1 (Finset.mem_Icc.1 hk).2, hord,
     fun β₁ β hβ₁ hβ₁1 hβ hβθ => ⟨algorithm_14_3_2_run hu hu7 hNu hN hβ₁ hβ₁1
       (by linarith) hβθ, fun κdecr κuns κunc π ρ hκ hρ =>
         isInnerPhaseRunStrong hu hu7 hNu hN hβ hκ hρ, fun k hk => ?_, fun k hk =>
         not_innerTest_start hu hu7 hNu hβθ (Finset.mem_Icc.1 hk).1 (Finset.mem_Icc.1 hk).2⟩⟩
-  · -- the tolerances vanish as `C → ∞`
-    have hmC : 2 * C ≤ m := by nlinarith
-    have hε1 : eps u 1 ≤ C⁻¹ := by
-      rw [eps_one, hu_def, le_inv_comm₀ (by positivity) (by linarith)]
-      rw [show (3 * (1 / (m : ℝ)) / 2)⁻¹ = 2 * m / 3 by field_simp]
-      linarith
-    refine ⟨le_trans ?_ hε1, hε1⟩
-    rw [eps_zero, eps_one]
-    have : u ≤ 1 / 7 := hu7
-    nlinarith [pow_pos hu 2, pow_pos hu 3]
-  · have hx0 : 0 ≤ max (eps u 0)⁻¹ (eps u 0 ^ (1 - π) * eps u 1 ^ (-π)) :=
-      (inv_pos.2 (eps_pos hu 0)).le.trans (le_max_left _ _)
-    exact lt_cube hm hC hx0 (order_le hm hπ)
-  · obtain ⟨hk1, hkN⟩ := Finset.mem_Ico.1 hk
-    exact ⟨isKb hu hu7 hk1 hkN, innerTest hu hu7 hNu hβ hk1 hkN.le⟩
+  obtain ⟨hk1, hkN⟩ := Finset.mem_Ico.1 hk
+  exact ⟨isKb hu hu7 hk1 hkN, innerTest hu hu7 hNu hβ hk1 hkN.le⟩
+
+open Theorem1439OrderCex in
+/-- **Theorem 14.3.9 of [cartis2022evaluation] fails for a nonspecific INNER under the per-call
+reading of its INNER hypotheses** (they are checked on the INNER calls of the run; read uniformly
+over all admissible inputs, the cost hypothesis cannot be met here for `π₁ < 2`, see
+`theorem_14_3_9_cost_hypothesis_unsatisfiable`, and the theorem is vacuous under that reading).
+There is a problem (`n = 2`, `m = 1`, `q = 1`, `X = [-1, 1]²`, `f(x) = x₁ - x₂`,
+`c(x) = x₁²/2`) satisfying the book's assumptions of the theorem — X.CNe (`AssumptionXCNe`, `X`
+also convex), f.D1pLB.X and c.D1pLB.X on `X₀ = B(0, 2)` for every `p`, and f.B.Fb on `ℱ_1` with
+`f_low = -2`, `f_up = 2` — such that for all exponents `π₁ ∈ [4/3, 3/2]` (which contains the
+ARqp-SC exponent `(p+1)/p` of (14.2.12) for `p ∈ {2, 3}`, `arqpPiOf_one_le`,
+`four_thirds_le_arqpPiOf_one`), `θ = 3/4`, every
+`β ∈ [2/3, θ]`, every Phase-1 constant `β₁ ∈ (0, 1)` and every choice of the constants
+`κ^A_{INNER,2}`, `κ^C_{INNER,2}`, `κ^S_{INNER,2}`, `κ^{F,ν}_INNER`, `κ^{D,ν}_INNER` of the theorem,
+there are tolerances `ε₀, ε₁ ∈ (0, 1]` and a TPqp-GC run (`algorithm_14_3_2`, Phase 2 entered at
+the feasible `x₀`) terminating at `k_ε` (`TPqpSeq.IsEnd`) whose INNER calls satisfy every
+hypothesis the book places on its nonspecific INNER:
+
+* (14.3.19): each Phase-2 call `INNER(μ(·, t_k), X, 1, x_k, β ‖r(x_k, t_k)‖ ε)` returns
+  `x_{k+1} ∈ X` with radius `δ = 1` passing INNER's own test (`TPqpSeq.InnerTest`);
+* (14.3.20)–(14.3.21): its numbers of evaluations of `μ` (`e_k`) and of its derivatives
+  (`succCount k`), even counting one more evaluation at `x^S = x_k`, are at most
+  `κ_INNER (μ(x_k, t_k) - f_low) (β ‖r(x_k, t_k)‖ ε₁)^{-π₁}` with `f_low = 0` (the lower bound of
+  `μ` the book suggests) and the `ε`-independent constants `κ^F_INNER = κ^D_INNER = κ` for every
+  `κ ≥ 8`;
+* (14.2.11) and (14.2.13) with constants independent of `t` (`IsInnerPhaseRunStrong`, the form of
+  Lemmas 14.2.2–14.2.3 keyed on INNER's own test, for every `κ_decr`, `κ_uns + κ_unc ≥ 1`, radii
+  `ρ₁ ≤ 1`);
+* Phase 1 (LENq-SC) stops at `k₁ = 0` (`‖c(x₀)‖ = 0`) and makes no INNER call, so its INNER
+  hypotheses hold vacuously;
+
+and whose numbers of evaluations of `(f, c)` and of their derivatives exceed the printed bounds
+`#^F_INNER,1 + #^F_INNER,2` and `#^D_INNER,1 + #^D_INNER,2`, with (14.3.65)–(14.3.66) for
+Phase 1 (here `0`, as `‖c(x₀)‖ = 0`) and
+`#^F_INNER,2 = (f_up - f_low - 1)(κ^A ε₀^{1-π₁} ε₁^{-π₁} + κ^C ε₀^{-1}) + 1`,
+`#^D_INNER,2 = κ^S (f_up - f_low - 1) ε₀^{1-π₁} ε₁^{-π₁} + 1`.
+
+The run is that of `theorem_14_3_9_order_counterexample`: its `k_ε ∼ (ε₀ ε₁)^{-1}` bad case-(b)
+iterations each cost one evaluation, and the book's proof of Lemma 14.3.8 bounds them only
+through decreases that Lemma 14.2.2 exempts at a step after which INNER's test holds. The
+corrected statement is `IsTPqpGCPhase2.complexity_of_strong` (and the end-to-end
+`exists_algorithm_14_3_2_complexity_strong`): the bound holds with an extra term
+`O(ε₀^{-1} + (ε₀ ε₁)^{-1})`. The INNER calls are not runs of ARqp-SC (see the module doc):
+they are not produced by a regularization algorithm of (14.2.12), and whether runs of
+ARqp-SC itself attain the printed order (per-call reading) is open.
+
+The construction needs `π₁ ≥ 4/3` for the cost bound: a call costs at least one evaluation while
+`(μ(x_k, t_k)) (β ‖r‖ ε₁)^{-π₁} ∼ u^{4 - 3π₁}` (`‖r‖ ∼ u²`, `ε₁ ∼ u`), which tends to `0` for
+`π₁ < 4/3`. The cost bound holds on the run for every `π₁ ≥ 4/3`; the upper limit `3/2` comes
+only from the order comparison (`order_le`). -/
+theorem theorem_14_3_9_false :
+    ∃ (f : ℝ² → ℝ) (c : ℝ² → ℝ¹) (X : Set ℝ²) (flow fup : ℝ),
+      AssumptionXCNe X ∧ Convex ℝ X ∧ ContDiff ℝ ⊤ f ∧ ContDiff ℝ ⊤ c ∧
+      (∀ p : ℕ, (∃ L B : ℕ → ℝ, AssumptionD1pLBX f X (ball 0 2) p L B) ∧
+        ∃ L B : ℕ → ℝ, AssumptionCD1pLBX c X (ball 0 2) p L B) ∧
+      Chapter07.AssumptionBFb f c X 1 flow fup ∧
+      ∀ (π : ℕ → ℝ), 4 / 3 ≤ π 1 → π 1 ≤ 3 / 2 →
+      ∀ β₁ β : ℝ, 0 < β₁ → β₁ < 1 → 2 / 3 ≤ β → β ≤ 3 / 4 →
+      ∀ κA κC κS κF₁ κD₁ : ℝ,
+      ∃ (ε : ℕ → ℝ) (x₀ : ℝ²) (xP : ℕ → ℝ²) (δP : ℕ → ℕ → ℝ) (D : TPqpSeq 2) (kε : ℕ),
+        (∀ j, 0 < ε j ∧ ε j ≤ 1) ∧
+        algorithm_14_3_2 f c X 1 (3 / 4) β₁ β ε x₀ xP δP 0 D ∧ ‖c x₀‖ = 0 ∧
+        D.IsEnd f c X 1 (3 / 4) ε kε ∧
+        -- (14.3.19) at the output of every Phase-2 call, radii `1`
+        (∀ k ∈ Finset.Icc 1 kε, D.x (k + 1) ∈ X ∧ D.δ (k + 1) 1 = 1 ∧
+          D.InnerTest f c X 1 β ε k) ∧
+        -- (14.3.20)–(14.3.21) for every call, `f_low = 0`
+        (∀ κ : ℝ, 8 ≤ κ → ∀ k ∈ Finset.Icc 1 kε,
+          (D.e k : ℝ) + 1 ≤ innerEvalBound κ π 1 (Constrained.targetMerit f c (D.t k) (D.x k))
+            (fun j => β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j) ∧
+          (D.succCount k : ℝ) + 1 ≤
+            innerEvalBound κ π 1 (Constrained.targetMerit f c (D.t k) (D.x k))
+              (fun j => β * Constrained.targetResidual f c (D.t k) (D.x k) * ε j)) ∧
+        -- (14.2.11), (14.2.13) with `t`-independent constants
+        (∀ (κdecr κuns κunc : ℝ) (ρ : ℕ → ℝ), 1 ≤ κuns + κunc → ρ 1 ≤ 1 →
+          IsInnerPhaseRunStrong f c X 1 (3 / 4) β ε D κdecr κuns κunc π ρ) ∧
+        -- the printed bounds fail
+        1 / 2 * κF₁ * ‖c x₀‖ * (β₁ ^ (1 - 2 * π 1) / (β₁ ^ (1 - π 1) - 1)) *
+            (3 / 4 : ℝ) ^ (1 - π 1) * (ε 0 ^ (1 - π 1) * ε 1 ^ (-π 1)) +
+          ((fup - flow - 1) * (κA * (ε 0 ^ (1 - π 1) * ε 1 ^ (-π 1)) + κC * (ε 0)⁻¹) + 1) <
+            D.funEvals kε ∧
+        1 / 2 * κD₁ * ‖c x₀‖ * (β₁ ^ (1 - 2 * π 1) / (β₁ ^ (1 - π 1) - 1)) *
+            (3 / 4 : ℝ) ^ (1 - π 1) * (ε 0 ^ (1 - π 1) * ε 1 ^ (-π 1)) +
+          (κS * (fup - flow - 1) * (ε 0 ^ (1 - π 1) * ε 1 ^ (-π 1)) + 1) <
+            D.derivEvals kε := by
+  refine ⟨objF, conC, boxX, -2, 2, ⟨isClosed_boxX, ⟨pt 0 (-1), by simp [boxX]⟩⟩, convex_boxX,
+    contDiff_objF, contDiff_conC, assumptionD1pLBX, assumptionBFb,
+    fun π hπ1 hπ2 β₁ β hβ₁ hβ₁1 hβ hβθ κA κC κS κF₁ κD₁ => ?_⟩
+  obtain ⟨u, N, hu, hu7, hNu, hN, -, hord⟩ := exists_params (3 * (|κA| + |κC| + |κS|))
+  have hc0 : ‖conC (pt 0 (-1))‖ = 0 := by rw [norm_conC]; simp
+  have hβ0 : 0 < β := by linarith
+  have hB := hord (π 1) hπ2
+  set M := eps u 0 ^ (1 - π 1) * eps u 1 ^ (-π 1) with hM_def
+  set E := (eps u 0)⁻¹ with hE_def
+  have hM0 : 0 ≤ M := by have := eps_pos hu 0; have := eps_pos hu 1; positivity
+  have hE0 : 0 ≤ E := (inv_pos.2 (eps_pos hu 0)).le
+  have hMB : M ≤ max E M := le_max_right _ _
+  have hEB : E ≤ max E M := le_max_left _ _
+  have hA : κA * M ≤ |κA| * max E M :=
+    (mul_le_mul_of_nonneg_right (le_abs_self _) hM0).trans
+      (mul_le_mul_of_nonneg_left hMB (abs_nonneg _))
+  have hC : κC * E ≤ |κC| * max E M :=
+    (mul_le_mul_of_nonneg_right (le_abs_self _) hE0).trans
+      (mul_le_mul_of_nonneg_left hEB (abs_nonneg _))
+  have hS : κS * M ≤ |κS| * max E M :=
+    (mul_le_mul_of_nonneg_right (le_abs_self _) hM0).trans
+      (mul_le_mul_of_nonneg_left hMB (abs_nonneg _))
+  have hB0 : 0 ≤ max E M := hE0.trans hEB
+  have hAa := abs_nonneg κA
+  have hCa := abs_nonneg κC
+  have hSa := abs_nonneg κS
+  refine ⟨eps u, pt 0 (-1), fun _ => pt 0 (-1), fun _ _ => 1, run u N, N,
+    fun j => ⟨eps_pos hu j, eps_le_one hu hu7 j⟩,
+    algorithm_14_3_2_run hu hu7 hNu hN hβ₁ hβ₁1 hβ0 hβθ, hc0, isEnd hu hu7 hNu hN,
+    fun k hk => ?_, fun κ hκ k hk => ?_,
+    fun κdecr κuns κunc ρ hκ hρ => isInnerPhaseRunStrong hu hu7 hNu hN hβ hκ hρ, ?_, ?_⟩
+  · obtain ⟨hk1, hkN⟩ := Finset.mem_Icc.1 hk
+    exact ⟨xs_mem hu hu7 hNu (k := k + 1) (by omega) (by omega), rfl,
+      innerTest hu hu7 hNu hβ hk1 hkN⟩
+  · obtain ⟨hk1, hkN⟩ := Finset.mem_Icc.1 hk
+    have h2 := two_le_innerEvalBound hu hu7 hβ0 hβθ hκ hπ1 hk1 hkN (N := N)
+    have he : ((run u N).e k : ℝ) = 1 := by simp [run]
+    have hs : ((run u N).succCount k : ℝ) = 1 := by rw [succCount_run]; norm_num
+    rw [he, hs]
+    exact ⟨by norm_num; exact h2, by norm_num; exact h2⟩
+  · rw [(funEvals_run u N N).1, hc0]
+    push_cast
+    nlinarith
+  · rw [(funEvals_run u N N).2, hc0]
+    push_cast
+    nlinarith
+
+open Theorem1439OrderCex in
+/-- **The literal, uniform reading of the cost hypothesis (14.3.20)–(14.3.21) cannot be met on
+the problem of `theorem_14_3_9_false` when `π₁ < 2`** ([cartis2022evaluation], §14.3,
+(14.3.20)–(14.3.21) read as a bound, with one `ε`-independent `κ_INNER`, on the cost of every call
+`INNER(μ(·, t), X, 1, x^S, β ‖r(x^S, t)‖ ε)` for all admissible tolerances). For every
+`π₁ < 2`, `β ∈ (0, 1)` and `κ` there are admissible tolerances (`ε₁ = 1`, `ε₀ ∈ (0, 1]` small)
+such that the first Phase-2 call (from `x^S = x₁ = (0, -1) ∈ X`, feasible, with the Step-0 target
+`t₁ = f(x₁) - √(ε₀² - ‖c(x₁)‖²)`) starts at a point failing INNER's test (14.3.19) for every
+radius `δ ∈ (0, 1]` (the decrease along `-δ e₁` is `ε₀ δ > β ε₀ ε₁ δ`), so any INNER spends at
+least one evaluation on it, while its bound `κ μ(x₁, t₁) (β ‖r(x₁, t₁)‖ ε₁)^{-π₁}
+= (κ/2) β^{-π₁} ε₀^{2-π₁}` is below `1`. Under that reading no INNER (ARqp-SC included, compare
+`exists_algorithm_14_3_1_cost_contract_counterexample`) satisfies the hypotheses of
+Theorem 14.3.9 on this problem for `π₁ < 2`, and the printed theorem is vacuous there; under the
+per-call reading (the hypotheses checked on the calls of the run) it is false for
+`π₁ ∈ [4/3, 3/2]` (`theorem_14_3_9_false`). -/
+theorem theorem_14_3_9_cost_hypothesis_unsatisfiable (π : ℕ → ℝ) (hπ : π 1 < 2) {β : ℝ}
+    (hβ : 0 < β) (hβ1 : β < 1) (κ : ℝ) :
+    ∃ ε : ℕ → ℝ, (∀ j, 0 < ε j ∧ ε j ≤ 1) ∧ pt 0 (-1) ∈ boxX ∧ ‖conC (pt 0 (-1))‖ = 0 ∧
+      (∀ δ : ℝ, 0 < δ → δ ≤ 1 →
+        β * Constrained.targetResidual objF conC
+            (objF (pt 0 (-1)) - √(ε 0 ^ 2 - ‖conC (pt 0 (-1))‖ ^ 2)) (pt 0 (-1)) *
+            ε 1 * δ ^ 1 / (1 : ℕ)! <
+          Optimization.taylorMeasure
+            (ftaylorSeries ℝ (Constrained.targetMerit objF conC
+              (objF (pt 0 (-1)) - √(ε 0 ^ 2 - ‖conC (pt 0 (-1))‖ ^ 2))) (pt 0 (-1))) 1 δ
+            {d | pt 0 (-1) + d ∈ boxX}) ∧
+      innerEvalBound κ π 1
+          (Constrained.targetMerit objF conC
+            (objF (pt 0 (-1)) - √(ε 0 ^ 2 - ‖conC (pt 0 (-1))‖ ^ 2)) (pt 0 (-1)))
+          (fun j => β * Constrained.targetResidual objF conC
+            (objF (pt 0 (-1)) - √(ε 0 ^ 2 - ‖conC (pt 0 (-1))‖ ^ 2)) (pt 0 (-1)) * ε j) < 1 := by
+  have hc0 : ‖conC (pt 0 (-1))‖ = 0 := by rw [norm_conC]; simp
+  set a : ℝ := 2 - π 1 with ha_def
+  have ha : 0 < a := by rw [ha_def]; linarith
+  set K : ℝ := |κ| / 2 * β ^ (-π 1) + 1 with hK_def
+  have hK : 0 < K := by rw [hK_def]; positivity
+  set e : ℝ := min 1 ((2 * K) ^ (-1 / a)) with he_def
+  have he0 : 0 < e := lt_min one_pos (Real.rpow_pos_of_pos (by positivity) _)
+  have he1 : e ≤ 1 := min_le_left _ _
+  have hea : e ^ a ≤ (2 * K)⁻¹ := by
+    calc e ^ a ≤ ((2 * K) ^ (-1 / a)) ^ a :=
+          Real.rpow_le_rpow he0.le (min_le_right _ _) ha.le
+      _ = (2 * K)⁻¹ := by
+          rw [← Real.rpow_mul (by positivity), show -1 / a * a = -1 by field_simp,
+            Real.rpow_neg_one]
+  refine ⟨fun j => if j = 0 then e else 1, fun j => ?_, by simp [boxX], hc0, ?_⟩
+  · dsimp only
+    split_ifs
+    · exact ⟨he0, he1⟩
+    · exact ⟨one_pos, le_rfl⟩
+  simp only [↓reduceIte, one_ne_zero, hc0]
+  have ht : objF (pt 0 (-1)) - √(e ^ 2 - 0 ^ 2) = objF (pt 0 (-1)) - e := by
+    rw [show e ^ 2 - (0 : ℝ) ^ 2 = e ^ 2 by ring, Real.sqrt_sq he0.le]
+  rw [ht]
+  have hR : Constrained.targetResidual objF conC (objF (pt 0 (-1)) - e) (pt 0 (-1)) = e := by
+    rw [Constrained.targetResidual_def, hc0,
+      show (0 : ℝ) ^ 2 + (objF (pt 0 (-1)) - (objF (pt 0 (-1)) - e)) ^ 2 = e ^ 2 by ring,
+      Real.sqrt_sq he0.le]
+  refine ⟨fun δ hδ hδ1 => ?_, ?_⟩
+  · rw [hR]
+    have hmem : EuclideanSpace.single (0 : Fin 2) (-δ) ∈
+        closedBall (0 : ℝ²) δ ∩ {d | pt 0 (-1) + d ∈ boxX} := by
+      refine ⟨by simp [abs_of_pos hδ], ?_⟩
+      simp only [boxX, mem_ofPred_eq, PiLp.add_apply, pt_zero, pt_one]
+      have e0 : (EuclideanSpace.single (0 : Fin 2) (-δ : ℝ)) 0 = -δ := by simp
+      have e1 : (EuclideanSpace.single (0 : Fin 2) (-δ : ℝ)) 1 = 0 := by simp
+      rw [e0, e1]
+      exact ⟨by rw [abs_le]; constructor <;> linarith, by norm_num⟩
+    have h := Optimization.taylorDecrement_le_taylorMeasure
+      (ftaylorSeries ℝ (Constrained.targetMerit objF conC (objF (pt 0 (-1)) - e)) (pt 0 (-1))) 1
+      hmem
+    rw [decr] at h
+    simp only [pt_zero] at h
+    have e0 : (EuclideanSpace.single (0 : Fin 2) (-δ : ℝ)) 0 = -δ := by simp
+    have e1 : (EuclideanSpace.single (0 : Fin 2) (-δ : ℝ)) 1 = 0 := by simp
+    rw [e0, e1] at h
+    refine lt_of_lt_of_le ?_ h
+    simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one, mul_one]
+    have : β * e * δ < e * δ := by
+      have := mul_pos he0 hδ
+      nlinarith
+    nlinarith
+  · rw [innerEvalBound_one, Constrained.targetMerit_eq, hR]
+    simp only [one_ne_zero, ↓reduceIte, mul_one]
+    rw [Real.mul_rpow hβ.le he0.le]
+    have hsplit : e ^ 2 / 2 * (β ^ (-π 1) * e ^ (-π 1)) = β ^ (-π 1) / 2 * e ^ a := by
+      rw [ha_def, show 2 - π 1 = (2 : ℝ) + -π 1 by ring, Real.rpow_add he0,
+        show ((2 : ℝ)) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast]
+      ring
+    rw [mul_assoc, hsplit]
+    have hb : 0 ≤ β ^ (-π 1) := (Real.rpow_pos_of_pos hβ _).le
+    have hea0 : 0 ≤ e ^ a := (Real.rpow_pos_of_pos he0 _).le
+    have h1 : κ * (β ^ (-π 1) / 2 * e ^ a) ≤ K * e ^ a := by
+      rw [hK_def]
+      have := le_abs_self κ
+      nlinarith [mul_nonneg hb hea0, abs_nonneg κ]
+    have h2 : K * e ^ a ≤ K * (2 * K)⁻¹ := mul_le_mul_of_nonneg_left hea hK.le
+    have h3 : K * (2 * K)⁻¹ = 1 / 2 := by field_simp
+    linarith
 
 /-- The ARqp-SC exponent of order `1` ((14.2.12), either radii mode) is `(p+1)/p ≤ 3/2` for
 `p ≥ 2`, so `theorem_14_3_9_order_counterexample` applies to it. -/
@@ -1032,6 +1375,17 @@ theorem arqpPiOf_one_le (unit : Prop) [Decidable unit] {p : ℕ} (hp : 2 ≤ p) 
   rw [arqpPiOf_one unit (by omega)]
   have : (2 : ℝ) ≤ p := by exact_mod_cast hp
   rw [div_le_iff₀ (by linarith)]
+  linarith
+
+/-- The ARqp-SC exponent of order `1` ((14.2.12), either radii mode) is `(p+1)/p ≥ 4/3` for
+`1 ≤ p ≤ 3`; with `arqpPiOf_one_le` it lies in `[4/3, 3/2]` for `p ∈ {2, 3}`, the range of
+`theorem_14_3_9_false`. -/
+theorem four_thirds_le_arqpPiOf_one (unit : Prop) [Decidable unit] {p : ℕ} (hp1 : 1 ≤ p)
+    (hp : p ≤ 3) : 4 / 3 ≤ Chapter12.arqpPiOf unit p 1 := by
+  rw [arqpPiOf_one unit hp1]
+  have h3 : (p : ℝ) ≤ 3 := by exact_mod_cast hp
+  have h1 : (1 : ℝ) ≤ p := by exact_mod_cast hp1
+  rw [le_div_iff₀ (by linarith)]
   linarith
 
 end CartisGouldToint.Chapter14

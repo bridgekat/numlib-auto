@@ -7,3 +7,15 @@ source = "Cartis–Gould–Toint, Theorem 14.3.9 (order of the bad outer iterati
 [[node]]
 id = "arqpPiOf_one_le"
 source = "Cartis–Gould–Toint, (14.2.12) (ARqp-SC exponent of order 1)"
+
+[[node]]
+id = "theorem_14_3_9_false"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 with the INNER hypotheses (14.3.19)–(14.3.21), (14.2.11), (14.2.13)"
+
+[[node]]
+id = "four_thirds_le_arqpPiOf_one"
+source = "Cartis–Gould–Toint, (14.2.12) (ARqp-SC exponent of order 1)"
+
+[[node]]
+id = "theorem_14_3_9_cost_hypothesis_unsatisfiable"
+source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) read uniformly, on the problem of Theorem 14.3.9's counterexample"

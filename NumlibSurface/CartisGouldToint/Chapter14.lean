@@ -76,8 +76,10 @@ module imports the section modules and adds nothing of its own.
   (`exists_algorithm_14_3_1_complexity_unit`, `exists_algorithm_14_3_2_complexity_unit`); the
   multiplicative cost contract (14.3.20)–(14.3.21) is false for `q = 1`
   (`exists_algorithm_14_3_1_cost_contract_counterexample`)
-* §14.3, `Chapter14.Section03BadIter`: the order of the bad outer iterations of TPqp-GC is not
-  implied by the INNER contract (`theorem_14_3_9_order_counterexample`, `arqpPiOf_one_le`)
+* §14.3, `Chapter14.Section03BadIter`: Theorem 14.3.9 fails for a nonspecific INNER under the
+  per-call reading of its INNER hypotheses and is vacuous under the literal uniform reading for
+  `π₁ < 2` (`theorem_14_3_9_false`, `theorem_14_3_9_cost_hypothesis_unsatisfiable`,
+  `theorem_14_3_9_order_counterexample`, `arqpPiOf_one_le`, `four_thirds_le_arqpPiOf_one`)
 * §14.3, `Chapter14.Section03Anchored`: existence and complexity of the LENq-SC and TPqp-GC runs
   with INNER = ARqp-SC under the book's anchored assumptions Φ₂.D1pLaB.X, resp. c.D1pLB.X,
   f.D1pLB.X and f.B.Fb (`exists_algorithm_14_3_1_complexity_anchored`,
@@ -159,7 +161,20 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   satisfied by the constructed runs), Phase 2 terminates within an explicit bound without the
   parameter for every `β ≤ θ` (`IsTPqpGCPhase2.complexity_of_strong`; the extra term
   `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})`, `ρ` the INNER radii, is within the book's order
-  for the exponents `j + 1` but not in general for the ARqp-SC row). When the number of bad
+  for the exponents `j + 1` but not in general for the ARqp-SC row). **Theorem 14.3.9
+  fails for a nonspecific INNER under the per-call reading** of its INNER hypotheses; the bound
+  holds with the extra term of `IsTPqpGCPhase2.complexity_of_strong`, the corrected statement for
+  INNER of regularization type (read as the INNER contract with the exponents of (14.2.12)).
+  `theorem_14_3_9_false` (`Chapter14.Section03BadIter`) gives, for `q = 1` and
+  `π₁ ∈ [4/3, 3/2]` (the ARqp-SC exponent `(p+1)/p` for `p ∈ {2, 3}`; the upper limit comes from
+  the order comparison), TPqp-GC runs whose INNER calls satisfy on the run every hypothesis the
+  book places on INNER — (14.3.19), (14.3.20)–(14.3.21) with `ε`-independent constants and
+  `f_low = 0`, (14.2.11) and (14.2.13) with `t`-independent constants — with `≍ (ε₀ ε₁)^{-1}`
+  evaluations, more than the printed bounds for every choice of their constants; the calls are not
+  produced by a regularization algorithm of (14.2.12). Read uniformly over all admissible inputs,
+  the cost hypothesis cannot be met by any INNER (ARqp-SC included) on that problem for `π₁ < 2`
+  (`theorem_14_3_9_cost_hypothesis_unsatisfiable`), so the printed theorem is vacuous under that
+  reading. When the number of bad
   iterations is bounded independently of `ε`, the
   counts are `O(max(ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}))`; the derivative count acquires an
   `ε₀^{-1}` term. INNER's certificate for the tolerances `β ‖r(x_k, t_k)‖ ε_j`, with bounded
@@ -176,10 +191,7 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 * The multiplicative Phase-1 cost contract when all `π_j < 2` (false there; the additive form
   is proved), and the `O(·)` restatements of §14.3.
-* The bad outer iterations of TPqp-GC are not bounded in the order of the ARqp-SC exponents by
-  the INNER contract: `theorem_14_3_9_order_counterexample` (`Chapter14.Section03BadIter`) gives
-  runs satisfying `IsInnerPhaseRunStrong` for all exponents `π` (`q = 1`, `π₁ = (p+1)/p`, `p ≥ 2`)
-  with `≍ (ε₀ ε₁)^{-1}` such iterations, more than `C max(ε₀^{-1}, ε₀^{1-π₁} ε₁^{-π₁})` for every
-  `C`, so the term of `IsTPqpGCPhase2.complexity_of_strong` is attained in order; whether runs of
-  ARqp-SC itself satisfy the book's order is not settled.
+* Whether runs of ARqp-SC itself attain the printed order of Theorem 14.3.9 under the per-call
+  reading of the INNER hypotheses (open; under the literal uniform reading the theorem is vacuous
+  for them when `π₁ < 2`).
 -/
