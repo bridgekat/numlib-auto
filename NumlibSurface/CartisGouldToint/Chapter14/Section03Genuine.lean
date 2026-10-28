@@ -126,8 +126,7 @@ a small `μ` at Step 2.1, as the book allows; `Optimization.IsDetailedStepOutput
 
 The trust-region alternative of Theorem 14.3.9 in the printed order (it is proved with corrected
 exponents and a logarithmic factor in `Chapter14.Section03TrustRegion`). The printed order, or its
-failure, in the cases of the parameter range above not settled here (archived at commit 8c2b1518
-on branch `claude/cartis-gould-toint-formalization`).
+failure, in the cases of the parameter range above not settled here.
 -/
 
 open Set Metric

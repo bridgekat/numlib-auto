@@ -218,11 +218,6 @@ and on the declarations.
 
 ## Not formalized
 
-* Investigations beyond the book (Łojasiewicz and constraint-qualification thresholds and their
-  sharpness, further ARqp-SC counterexamples including `3 ≤ q < p`, the mixed trust-region order
-  and the necessity and tightness of its logarithmic factor across regimes, fixed-problem TRq-SC
-  refutations) are not in the library; they are archived at commit 8c2b1518 on branch
-  `claude/cartis-gould-toint-formalization`.
 * The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
   the Gertz–Gill criterion (9.4.8) quoted in §9.4.
 * Discussion without numbered results: the variants of §2.2.3, §4.1.3, §7.2.3, the qualitative parts

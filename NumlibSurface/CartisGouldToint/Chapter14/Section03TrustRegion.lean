@@ -95,8 +95,7 @@ Phase 2. Phase 1 uses the additive cost contract from Theorem 12.2.5 (`lemma_14_
 
 The failure of (14.2.11) with the exponents `j + 1` for a single fixed `f`; whether the factor
 `1 + |log(ε₀ ε_min)|` is needed for `q ≥ 2`; orders between the printed and the proved ones, and
-lower bounds attaining the proved order (archived at commit 8c2b1518 on branch
-`claude/cartis-gould-toint-formalization`). The TRqIDA-SC and TRqEDA-SC INNER variants.
+lower bounds attaining the proved order. The TRqIDA-SC and TRqEDA-SC INNER variants.
 -/
 
 open Set Metric
