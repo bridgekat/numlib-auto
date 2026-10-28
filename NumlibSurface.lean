@@ -208,6 +208,7 @@ import NumlibSurface.CartisGouldToint.Chapter14.Section03BadIter
 import NumlibSurface.CartisGouldToint.Chapter14.Section03Genuine
 import NumlibSurface.CartisGouldToint.Chapter14.Section03GenuineSharp
 import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegion
+import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegionPrinted
 import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegionSharp
 import NumlibSurface.FongSaunders
 import NumlibSurface.FongSaunders.Section01
