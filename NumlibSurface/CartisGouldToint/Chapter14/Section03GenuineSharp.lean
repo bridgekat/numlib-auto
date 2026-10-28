@@ -97,12 +97,15 @@ these steps are not admissible, and whether the printed order then holds is not 
 
 * `p ≥ 4` is used for the exactness of the Taylor models of the quartic `μ(·, t)`, so that a
   single step can raise `x₁` from `0` to `u`; for `p ≤ 3` the Taylor model is not exact and this
-  construction does not apply. For `q = 2` the printed order-`2` term `ε₀^{1-π₂} ∼ u^{-2-4/p}` is
-  at least of the order of the count `∼ u^{-3}` when `p ≤ 4`, and for `q ≥ 3` the term
+  construction does not apply (`Chapter14.Section03GenuineSharp2` covers every `p > q`, `q ≤ 2`,
+  with `c(x) = x₁⁴` and a walk in short steps). For `q = 2` the printed order-`2` term
+  `ε₀^{1-π₂} ∼ u^{-2-4/p}` is at least of the order of the count `∼ u^{-3}` when `p ≤ 4`, and
+  for `q ≥ 3` the term
   `ε₀^{1-π₃} ∼ u^{-4-6/p}` always is; with this degenerate constraint (`ε₁ ∼ ε₀^{1/2}`) the
-  cases `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p` are not settled.
+  cases `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p` are not settled here.
 * The run uses a box `X`; the unit-radius class on `ℝⁿ` (`IsTPqpGCARqpUnitRun`, where f.B.Fb
-  fails for this `f`) is not treated.
+  fails for this `f`) is treated in `Chapter14.Section03GenuineSharp2` with a saturated
+  constraint.
 -/
 
 open Set Metric
@@ -130,7 +133,8 @@ theorem objG_pt (a b : ℝ) : objG (pt a b) = a - b / 16 := by simp [objG]
 theorem hasFDerivAt_objG (y : ℝ²) :
     HasFDerivAt objG (EuclideanSpace.proj (0 : Fin 2) -
       (1 / 16 : ℝ) • EuclideanSpace.proj (1 : Fin 2) : ℝ² →L[ℝ] ℝ) y := by
-  have := (hasFDerivAt_coord 0 y).sub ((hasFDerivAt_coord 1 y).const_mul (1 / 16 : ℝ))
+  have := (PiLp.hasFDerivAt_apply (𝕜 := ℝ) 2 y 0).sub
+    ((PiLp.hasFDerivAt_apply (𝕜 := ℝ) 2 y 1).const_mul (1 / 16 : ℝ))
   convert this using 1
   funext x; simp [objG]; ring
 
@@ -411,11 +415,6 @@ noncomputable def cexP : ARqpCParams where
 /-- The iterates `x, x + s, x + s, …` of a one-step INNER call. -/
 noncomputable def stepX {n : ℕ} (x s : EuclideanSpace ℝ (Fin n)) : ℕ → EuclideanSpace ℝ (Fin n) :=
   fun i => if i = 0 then x else x + s
-
-@[simp] theorem stepX_zero {n : ℕ} (x s : EuclideanSpace ℝ (Fin n)) : stepX x s 0 = x := rfl
-
-theorem stepX_succ {n : ℕ} (x s : EuclideanSpace ℝ (Fin n)) (i : ℕ) :
-    stepX x s (i + 1) = x + s := rfl
 
 /-- **A one-step ARqp-SC call** (ARqpC-SC with `c = 0`, `h = 0`, `1 ≤ q ≤ p`, all radii `1`) on
 an objective `F` bounded below on `X` whose Taylor model of degree `p` at `x` is exact: INNER's

@@ -61,12 +61,17 @@ Phase 2. Phase 1 uses the additive cost contract from Theorem 12.2.5 (`lemma_14_
   decrease for `q = 2` with `κ_decr` depending only on the algorithm parameters, `ϑ` and the
   f.D1qLaB.X constants, as in (12.2.14) (`lemma_14_2_2_trq_printed_false_uniform`,
   `Chapter14.Section03TrustRegionSharp`: the radius is shared by the orders and is driven down by
-  first-order failures); whether it fails for a single fixed `f` (which needs `q ≥ 3`) is not
-  formalized. The theorem is
+  first-order failures), and for `q = 2` and `q = 3` on a single fixed problem with a fixed
+  starting point (`lemma_14_2_2_trq_printed_false_fixed_two`,
+  `lemma_14_2_2_trq_printed_false_fixed`, `Chapter14.Section03TrustRegionSharp2`). The theorem is
   proved with `π_j = q + 1`; the printed exponents agree for `q = 1` (`theorem_14_3_9_trq_one`).
   For `q ≥ 2` the printed order `max_j ε₀^{-j} ε_j^{-(j+1)}` would be smaller than the proved
   `max_j ε₀^{-q} ε_j^{-(q+1)}` (by an unbounded factor as `ε_1 → 0` with the other tolerances
-  equal to `1`).
+  equal to `1`). `Chapter14.Section03TrustRegionMixed` proves the theorem in the intermediate
+  mixed order `max_j ε₀^{-j} ε_j^{-1} ε_min^{-j}` (`theorem_14_3_9_trq_mixed`). The printed
+  order is false for whole runs for every `q ≥ 2`, even with the factor `1 + |log(ε₀ ε_min)|`,
+  for runs ending in Phase 1 and in Phase 2 (`theorem_14_3_9_trq_printed_false`,
+  `theorem_14_3_9_trq_printed_false_phase2`, `Chapter14.Section03TrustRegionPrinted`).
 * The factor `1 + |log(ε₀ ε_min)|` on the function evaluations: every INNER call restarts from the
   radius `Δ₀` (the book's INNER interface returns no trust-region radius), so the unsuccessful
   iterations of a call are bounded only by `log(Δ₀/(κ_ρ ε'_min))` (the TRq-SC `κ_unc` of
@@ -74,10 +79,21 @@ Phase 2. Phase 1 uses the additive cost contract from Theorem 12.2.5 (`lemma_14_
   the number of outer iterations. The book treats `κ_unc` as a constant. The derivative count has
   no such factor. For `q = 1` the factor is needed: on an example satisfying all hypotheses,
   every run uses `≳ ε₀^{-1} log(1/ε₀)` evaluations for `ε_1 = 1/2`
-  (`theorem_14_3_9_trq_log_necessary`, `Chapter14.Section03TrustRegionSharp`). In the proof the
+  (`theorem_14_3_9_trq_log_necessary`, `Chapter14.Section03TrustRegionSharp`). The example works for
+  every `q` (`theorem_14_3_9_trq_log_necessary_inv`: no bound `κ_F ε₀^{-1}` at fixed dual
+  tolerances), but for `q ≥ 2` it does not show that the factor is needed: the printed order and
+  the proved one are then at least `ε₀^{-2}` (`inv_sq_le_tpqpOrderF_trqLogTol`). In the proof the
   factor multiplies the whole order; the case-(a) iterations and Phase 1 contribute only
   `Λ ε₀^{-1}` (within the printed order for `q ≥ 2`, since `|log u| ≤ 1/u`), and the rest comes
-  from the case-(b) calls, whose number is only bounded by the order itself.
+  from the case-(b) calls, whose number is only bounded by the order itself. For `q ∈ {1, 2}`
+  the factor is needed also in the mixed order of `theorem_14_3_9_trq_mixed`, at `ε₀ = 1`, and
+  no power `a < 1` of it suffices (`theorem_14_3_9_trq_mixed_log_sharp`,
+  `Chapter14.Section03TrustRegionLog`): about `O/Λ^{o(1)}` case-(b) calls (`O` the mixed order),
+  each cut as soon as `f < t_k`, each paying `≈ Λ` unsuccessful iterations, so the evaluations
+  are `≈ O Λ^{1-o(1)}`. The same holds for every `q ≥ 2`
+  (`theorem_14_3_9_trq_mixed_log_sharp_two_le`, `Chapter14.Section03TrustRegionLog3`), with calls
+  of order `2⌊q/2⌋` against an odd power `9/25 - v_3^{2⌊q/2⌋+1}`. So the mixed order is attained
+  for every `q ≥ 1` (`theorem_14_3_9_trq_mixed_tight`).
 * The book's f.D1qLB.Fb is not defined in the book (only f.D1pLB.X is, OCR l. 17195); f.D1qLB.X
   (`AssumptionD1pLBX` with `q`) is used. c.D1qLB.X is `AssumptionCD1pLBX` with `q`.
 * The INNER threshold `ϑ ∈ (0, 1]` is fixed for all calls and must dominate the tolerances of the
@@ -89,11 +105,24 @@ Phase 2. Phase 1 uses the additive cost contract from Theorem 12.2.5 (`lemma_14_
 
 ## Not formalized
 
-Whether genuine runs attain the whole-run order with the exponents `j + 1` for `q ≥ 2` (the
-per-iteration decrease with uniform constants is false, `lemma_14_2_2_trq_printed_false_uniform`,
-but a run sustaining such iterations was not constructed), whether (14.2.11) with `j + 1` fails
-for a single fixed `f` (`q ≥ 3`), and whether the factor `1 + |log(ε₀ ε_min)|` is needed for
-`q ≥ 2` (it is for `q = 1`, `theorem_14_3_9_trq_log_necessary`). The TRqIDA-SC and TRqEDA-SC INNER
+Lower bounds attaining the mixed order `ε₀^{-q} ε_q^{-1} ε_min^{-q}` of `theorem_14_3_9_trq_mixed`
+(`trqMixOrder_eq`) outside the covered regimes. Covered, with `ε₀ = 1`: `ε_q = ε_min` (every
+`q ≥ 1`) and `ε_q = 1` (every `q ≥ 2`) with `ε_min` attained at one order `m ∈ {q - 1, q}` and
+all other `ε_j = 1` (`theorem_14_3_9_trq_mixed_tight_order_regime`), and `ε_q = G(ε_min)` for
+every rule `G` within a constant factor of a continuous one (`G = id` for `q = m`) with `ε_min`
+attained at any order `m ≤ q` and arbitrary `ε_j ∈ [ε_min, 1]` at the other orders
+(`theorem_14_3_9_trq_mixed_tight_low_regime`, `theorem_14_3_9_trq_mixed_tight_one_regime`, the
+latter on a non-convex `X`); for `q = 1` also `ε₀ → 0` at `ε_1 = 1/2`
+(`theorem_14_3_9_trq_log_necessary_inv`); for `q = 2` on a convex `X` the factor `Λ` improves to
+`ε₀ Λ` (`theorem_14_3_9_trq_two_convex`, `Chapter14.Section03TrustRegionRegimes3`);
+for `q = 1` the bound is attained up to a constant factor for all `ε₀ ∈ (0, 1]`,
+`ε_1 ∈ (0, 1/128]`, for the TRq parameters `trqFanParams` (`ς = 1/100`), `ϑ = 1`, `θ = β = 1/4`
+(`theorem_14_3_9_trq_one_tight`, `Chapter14.Section03TrustRegionRegimes4Run`).
+Open: `ε₀ → 0` otherwise (`q ≥ 3`, `q = 2` on a non-convex `X`, whether `O` is
+attained for `q = 2`, and whether the factor `ε₀ Λ` is attained when `ε₀ Λ → ∞`), other TRq
+parameters, and rules `G`
+not within a constant factor of any continuous rule (classification in
+`Chapter14.Section03TrustRegionRegimes`, "Not formalized"). The TRqIDA-SC and TRqEDA-SC INNER
 variants.
 -/
 
@@ -944,16 +973,18 @@ proved in `Chapter14.Section02`), `O_F = max[ε₀^{-1}, max_j ε₀^{-q} ε_j^{
 `Λ = |log(ε₀ ε_min)|` (`trqSCLogTerm`).
 
 Deviations from the printed statement: (14.2.12) prints `π_j = j + 1` for TRq-SC; the decrease
-proved for TRq (Lemma 12.2.4) is `κ ε_min^{q+1}`, which gives `π_j = q + 1`, the order of the
-TRq-SC row of the book's Theorem 14.2.4 (the row `j + 1` is false per iteration for `q = 2` with
-`κ_decr` depending only on the algorithm parameters and the f.D1qLaB.X constants,
-`lemma_14_2_2_trq_printed_false_uniform`); the two agree for `q = 1` (`theorem_14_3_9_trq_one`). The
-function-evaluation bound carries the factor `1 + Λ`, which is needed for `q = 1`
-(`theorem_14_3_9_trq_log_necessary`):
-every INNER call restarts from the radius `Δ₀`, and its unsuccessful iterations are bounded only by
-`log(Δ₀/(κ_ρ ε'_min))` (Lemma 2.3.1 with Lemma 12.2.3), `ε'_min ≥ βθ ε₀ ε_min`, which the counting
-of Lemma 14.3.8 multiplies by the number of outer iterations; the derivative bound has no such
-factor. The book's f.D1qLB.Fb is not defined in the book; f.D1qLB.X (f.D1pLB.X with `q`) is used.
+proved for TRq (Lemma 12.2.4) is `κ ε_min^{q+1}`, which gives `π_j = q + 1`, the order of the TRq-SC
+row of the book's Theorem 14.2.4 (the row `j + 1` is false per iteration for `q = 2` with `κ_decr`
+depending only on the algorithm parameters and the f.D1qLaB.X constants,
+`lemma_14_2_2_trq_printed_false_uniform`, and for `q = 2`, `3` on a fixed problem,
+`lemma_14_2_2_trq_printed_false_fixed_two`, `lemma_14_2_2_trq_printed_false_fixed`, and for whole
+runs for every `q ≥ 2`, `theorem_14_3_9_trq_printed_false`); the two agree for `q = 1`
+(`theorem_14_3_9_trq_one`). The function-evaluation bound carries the factor `1 + Λ`,
+which is needed for `q = 1` (`theorem_14_3_9_trq_log_necessary`): every INNER call restarts from the
+radius `Δ₀`, and its unsuccessful iterations are bounded only by `log(Δ₀/(κ_ρ ε'_min))` (Lemma 2.3.1
+with Lemma 12.2.3), `ε'_min ≥ βθ ε₀ ε_min`, which the counting of Lemma 14.3.8 multiplies by the
+number of outer iterations; the derivative bound has no such factor. The book's f.D1qLB.Fb is not
+defined in the book; f.D1qLB.X (f.D1pLB.X with `q`) is used.
 -/
 theorem theorem_14_3_9_trq (hq : 1 ≤ q) {X₀ : Set ℝⁿ} {Lc Bc Lf Bf : ℕ → ℝ}
     (hc : AssumptionCD1pLBX c X X₀ q Lc Bc) (hf : AssumptionD1pLBX f X X₀ q Lf Bf)

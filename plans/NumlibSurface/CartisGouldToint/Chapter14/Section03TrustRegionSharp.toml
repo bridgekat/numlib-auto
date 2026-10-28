@@ -61,6 +61,10 @@ id = "trqLog_not_meritCrit"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
 
 [[node]]
+id = "trqLog_measure_gt"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type: the logarithmic factor)"
+
+[[node]]
 id = "trqLog_call_stuck"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
 
@@ -121,8 +125,16 @@ id = "tpqpOrderF_trqLogTol_le"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
 
 [[node]]
+id = "theorem_14_3_9_trq_log_necessary_inv"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, every q ≥ 1: no bound of order ε₀^{-1} at fixed dual tolerances)"
+
+[[node]]
 id = "theorem_14_3_9_trq_log_necessary"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
+
+[[node]]
+id = "inv_sq_le_tpqpOrderF_trqLogTol"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q ≥ 2: the printed order at the example tolerances)"
 
 [[node]]
 id = "trqSadSq"
@@ -146,10 +158,6 @@ source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC ro
 
 [[node]]
 id = "contDiff_trqSadSq"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_norm_proj_le"
 source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
 
 [[node]]
@@ -210,10 +218,6 @@ source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC ro
 
 [[node]]
 id = "trqSadX_subset_ball"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_abs_coord_le"
 source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
 
 [[node]]

@@ -551,3 +551,19 @@ source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER certificate, β ≤ θ),
 [[node]]
 id = "IsTPqpGCPhase2.complexity_of_strong_on"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER test), f and c smooth near X"
+
+[[node]]
+id = "IsTPqpGCPhase2.exists_last_succ"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 (the last successful inner iteration of a call that moved)"
+
+[[node]]
+id = "IsTPqpGCPhase2.card_isKb_innerTest_le_of_drop"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 (the case-(b) iterations passing INNER's test, given a target decrease)"
+
+[[node]]
+id = "IsTPqpGCPhase2.complexity_of_strong_card"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 and Theorem 14.3.9, Phase 2 (counting with a bound on the case-(b) iterations passing INNER's test)"
+
+[[node]]
+id = "phase2_core_of_cut"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Phase 2 (construction from an INNER oracle; calls may stop by any test of (14.3.32))"

@@ -123,3 +123,7 @@ source = "Cartis–Gould–Toint, Algorithm 14.1.1 with c = 0, h = 0 (the object
 [[node]]
 id = "IsTPqpGCPhase2.exists_const_order_of_strong_unc"
 source = "Cartis–Gould–Toint, Lemma 14.3.8 and Theorem 14.3.9 (Phase 2, ε-dependent κ_unc)"
+
+[[node]]
+id = "IsTPqpGCPhase2.exists_const_order_of_strong_calls"
+source = "Cartis–Gould–Toint, Lemma 14.3.8 and Theorem 14.3.9, Phase 2 (count constant per outer iteration)"
