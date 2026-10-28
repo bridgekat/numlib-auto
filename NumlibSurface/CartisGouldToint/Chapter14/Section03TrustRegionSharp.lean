@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.MultivariateTaylor.Coord
 import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegion
 
 /-!
@@ -14,14 +15,19 @@ every INNER call, so a step of length `> 2‖r‖` increases `μ`. Every call re
 `Δ₀` and spends `≈ log(1/ε₀)` unsuccessful iterations before a step can succeed (a call that does
 not move fails every test of (14.3.32), since `x_1 ≥ 1` keeps the measure of (14.3.34) at
 `≥ ‖r‖ δ/√2`). The targets decrease by at most `2ε₀` per outer iteration, so Phase 2 has at least
-`⌊1/(4ε₀)⌋` outer iterations with `x_1 ≥ 1`.
+`⌊1/(4ε₀)⌋` outer iterations with `x_1 ≥ 1`. The example works for every `q ≥ 1` with
+`ε_j = 1/2` (`j ≥ 1`): the first-order test fails at the start of every call, so the steps have
+order `1`, and the runs use `≳ ε₀^{-1} log(1/ε₀)` evaluations, more than any `κ_F ε₀^{-1}`. For
+`q ≥ 2` this does not show that the factor is needed: at these tolerances the printed order (and
+the proved one) is at least `ε₀^{-2}`.
 
 The per-iteration decrease (14.2.11) with the printed TRq-SC exponents `π_j = j + 1` of (14.2.12)
 is false for `q = 2` with `κ_decr` depending only on the algorithm parameters, `ϑ` and the
 constants of f.D1qLaB.X, as the book's explicit `κ_decr` of Lemma 12.2.4 / (12.2.14) does
 (`lemma_14_2_2_trq_printed_false`, `lemma_14_2_2_trq_printed_false_uniform`). The example is a
-family `f_a`, `a → 0`, with uniform constants; whether (14.2.11) with `j + 1` fails for a single
-fixed `f` (which needs `q ≥ 3`) is not formalized. The trust-region radius is shared by all
+family `f_a`, `a → 0`, with uniform constants; for a single fixed `f` this mechanism (a
+stationary point of constant curvature) needs `q ≥ 3`, but a non-stationary point works for
+`q = 2` (`Chapter14.Section03TrustRegionSharp2`). The trust-region radius is shared by all
 orders and is driven down to `≈ ε_min` by unsuccessful first-order iterations; a second-order step
 at that radius then decreases `f` by `≈ ε_2 ε_min²`, which can be much smaller than
 `min_j ε_j^{j+1}`. Example: `X = [-1, 1]²`, `f_a(x) = x_1²/2 - a x_2²/2` (f.D1qLaB.X with constants
@@ -34,10 +40,14 @@ and with the exponent `q + 1` of Lemma 12.2.4 used in `Chapter14.Section03TrustR
 
 * `trqLog_assumptions`: the example satisfies X.CNe, c.D1qLB.X, f.D1qLB.X and f.B.Fb;
 * `trqLog_call_stuck`, `trqLog_call_long`: every early INNER call has more than `L` iterations
-  when `4ε₀/(ςβ) ≤ γ₁^L min(Δ₀, ϑ)`;
-* `trqLog_funEvals_ge`: Phase 2 uses at least `⌊1/(4ε₀)⌋ (L + 1)` evaluations;
+  when `4ε₀/(ςβ) ≤ γ₁^L min(Δ₀, ϑ)` (any `q ≥ 1`);
+* `trqLog_funEvals_ge`: Phase 2 uses at least `⌊1/(4ε₀)⌋ (L + 1)` evaluations (any `q ≥ 1`);
+* `theorem_14_3_9_trq_log_necessary_inv`: for every `q ≥ 1`, no `κ_F` bounds the `(f, c)`
+  evaluations of every run with TRq-SC calls by `κ_F ε₀^{-1}` when `ε_j = 1/2` (`j ≥ 1`);
 * `theorem_14_3_9_trq_log_necessary`: no constant `κ_F` bounds the `(f, c)` evaluations of every
-  run with TRq-SC calls by `κ_F max[ε₀^{-1}, ε₀^{-1} ε_1^{-2}]`, the printed order for `q = 1`.
+  run with TRq-SC calls by `κ_F max[ε₀^{-1}, ε₀^{-1} ε_1^{-2}]`, the printed order for `q = 1`;
+* `inv_sq_le_tpqpOrderF_trqLogTol`: for `q ≥ 2` the printed order at these tolerances is at least
+  `ε₀^{-2}`, so the example is not a counterexample there.
 * `lemma_14_2_2_trq_printed_false`: for every `κ > 0` a TRq-SC run (`q = 2`, objective `f_a`
   with f.D1qLaB.X constants independent of `a`) has a successful iteration before termination
   decreasing `f_a` by less than `κ min_j ε_j^{j+1}`; `lemma_14_2_2_trq_printed_false_uniform`: no
@@ -188,12 +198,13 @@ theorem trqLog_measure_ge {t δ : ℝ} {v : ℝ²} (hv : v ∈ trqLogX) (hδ0 : 
       linarith
 
 /-- (14.3.34) fails at every `v ∈ X` with `t ≤ v₀`, positive residual and radius
-`δ ≤ min(v₀, 1)`, for `ε₁ = 1/2`. -/
-theorem trqLog_not_meritCrit {t : ℝ} {v : ℝ²} {ε δo : ℕ → ℝ} (hε1 : ε 1 = 1 / 2) (hv : v ∈ trqLogX)
+`δ ≤ min(v₀, 1)`, for `ε₁ = 1/2` and every `q ≥ 1` (its first-order part fails). -/
+theorem trqLog_not_meritCrit {q : ℕ} (hq : 1 ≤ q) {t : ℝ} {v : ℝ²} {ε δo : ℕ → ℝ}
+    (hε1 : ε 1 = 1 / 2) (hv : v ∈ trqLogX)
     (ht : t ≤ v 0) (hρ : 0 < Constrained.targetResidual trqLogF trqLogC t v) (hδ0 : 0 < δo 1)
-    (hδv : δo 1 ≤ v 0) (hδ1 : δo 1 ≤ 1) : ¬ meritCrit trqLogF trqLogC trqLogX 1 ε t v δo := by
+    (hδv : δo 1 ≤ v 0) (hδ1 : δo 1 ≤ 1) : ¬ meritCrit trqLogF trqLogC trqLogX q ε t v δo := by
   intro hm
-  have h := hm 1 (by simp)
+  have h := hm 1 (Finset.mem_Icc.2 ⟨le_rfl, hq⟩)
   obtain ⟨ha, hb⟩ := trqLog_measure_ge (t := t) hv hδ0.le hδv hδ1
   rw [hε1] at h
   simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one] at h
@@ -208,17 +219,51 @@ theorem trqLog_not_meritCrit {t : ℝ} {v : ℝ²} {ε δo : ℕ → ℝ} (hε1 
   nlinarith
 
 
-/-- **A TRq-SC call on `μ(·, t)` stays at its start for `L` iterations**: if the residual
-`ρ₀ = ‖r(x_{k,0}, t)‖ ∈ (0, ε₀]`, the tolerance is `ε'_1 = β ρ₀/2` and
-`4 ε₀/(ς β) ≤ γ₁^L min(Δ₀, ϑ)`, then every iteration `i < min(e, L)` is unsuccessful: the radius
-is at least `4 ρ₀/(ς β)`, so the step has length `> 2 ρ₀` and increases `μ(·, t)` (`μ` is
-quadratic with unit Hessian). Hence a call of length `e ≤ L` ends where it started. -/
-theorem trqLog_call_stuck {P : Optimization.TRqParams} {ϑ β ε₀ t : ℝ} {xi : ℕ → ℝ²} {e : ℕ}
-    {succ : ℕ → Prop} {δo ε' : ℕ → ℝ}
-    (h : IsTRqSCCallOut (Constrained.targetMerit trqLogF trqLogC t) trqLogX 1 P ϑ ε' xi e succ δo)
+/-- At `v ∈ X` with `t ≤ v₁` and `v₁ ≥ 1`, positive residual `ρ`, radius `δ ∈ (0, 1]` and
+`β ≤ 1`, the first-order measure of `μ(·, t)` exceeds `β ρ δ/2`: it is at least
+`max(v₁ - t, |v₂|) δ ≥ ρ δ/√2` (`trqLog_measure_ge`). -/
+theorem trqLog_measure_gt {t δ β : ℝ} {v : ℝ²} (hv : v ∈ trqLogX) (ht : t ≤ v 0) (hx1 : 1 ≤ v 0)
+    (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) (hβ1 : β ≤ 1)
+    (hρ : 0 < Constrained.targetResidual trqLogF trqLogC t v) :
+    β * Constrained.targetResidual trqLogF trqLogC t v * (1 / 2) * δ <
+      Optimization.taylorMeasure (ftaylorSeries ℝ (Constrained.targetMerit trqLogF trqLogC t) v) 1
+        δ {d | v + d ∈ trqLogX} := by
+  obtain ⟨ha, hb⟩ := trqLog_measure_ge (t := t) hv hδ0.le (hδ1.trans hx1) hδ1
+  set M := Optimization.taylorMeasure
+    (ftaylorSeries ℝ (Constrained.targetMerit trqLogF trqLogC t) v) 1 δ {d | v + d ∈ trqLogX}
+  set ρ := Constrained.targetResidual trqLogF trqLogC t v with hρdef
+  have hsq : ρ ^ 2 = (v 1) ^ 2 + (v 0 - t) ^ 2 := by
+    rw [hρdef, trqLogResid_eq, Real.sq_sqrt (by positivity)]
+  by_contra hc
+  push Not at hc
+  have hρδ : 0 < ρ * δ := mul_pos hρ hδ0
+  have hM : M ≤ ρ * δ / 2 := by nlinarith
+  have h1 : (v 0 - t) * δ ≤ ρ * δ / 2 := ha.trans hM
+  have h2 : |v 1| * δ ≤ ρ * δ / 2 := hb.trans hM
+  have h3 : ((v 0 - t) * δ) ^ 2 ≤ (ρ * δ / 2) ^ 2 :=
+    pow_le_pow_left₀ (mul_nonneg (by linarith) hδ0.le) h1 2
+  have h4 : (|v 1| * δ) ^ 2 ≤ (ρ * δ / 2) ^ 2 :=
+    pow_le_pow_left₀ (mul_nonneg (abs_nonneg _) hδ0.le) h2 2
+  have h5 : (|v 1| * δ) ^ 2 = (v 1) ^ 2 * δ ^ 2 := by rw [mul_pow, sq_abs]
+  have h6 : ((v 0 - t) * δ) ^ 2 = (v 0 - t) ^ 2 * δ ^ 2 := by rw [mul_pow]
+  have h7 : (ρ * δ) ^ 2 = ((v 1) ^ 2 + (v 0 - t) ^ 2) * δ ^ 2 := by rw [mul_pow, hsq]
+  nlinarith
+
+/-- **A TRq-SC call on `μ(·, t)` stays at its start for `L` iterations** (any `q ≥ 1`): if the
+call starts at `x_{k,0} ∈ X` with `t ≤ (x_{k,0})_1` and `(x_{k,0})_1 ≥ 1`, the residual
+`ρ₀ = ‖r(x_{k,0}, t)‖ ∈ (0, ε₀]`, the tolerance is `ε'_1 = β ρ₀/2` with `β ≤ 1`, `ϑ ≤ 1` and
+`4 ε₀/(ς β) ≤ γ₁^L min(Δ₀, ϑ)`, then every iteration `i < min(e, L)` is unsuccessful: the
+first-order test fails at `x_{k,0}` (its measure is at least `ρ₀ δ/√2 > ε'_1 δ`), so the step has
+order `1`; the radius is at least `4 ρ₀/(ς β)`, so the step has length `> 2 ρ₀` and increases
+`μ(·, t)` (`μ` is quadratic with unit Hessian). Hence a call of length `e ≤ L` ends where it
+started. -/
+theorem trqLog_call_stuck {q : ℕ} (hq : 1 ≤ q) {P : Optimization.TRqParams} {ϑ β ε₀ t : ℝ}
+    {xi : ℕ → ℝ²} {e : ℕ} {succ : ℕ → Prop} {δo ε' : ℕ → ℝ}
+    (h : IsTRqSCCallOut (Constrained.targetMerit trqLogF trqLogC t) trqLogX q P ϑ ε' xi e succ δo)
     (hε' : ε' 1 = β * Constrained.targetResidual trqLogF trqLogC t (xi 0) * (1 / 2))
     (hρ : 0 < Constrained.targetResidual trqLogF trqLogC t (xi 0))
-    (hρε : Constrained.targetResidual trqLogF trqLogC t (xi 0) ≤ ε₀) (hβ : 0 < β) (hϑ : 0 ≤ ϑ)
+    (hρε : Constrained.targetResidual trqLogF trqLogC t (xi 0) ≤ ε₀) (hβ : 0 < β) (hβ1 : β ≤ 1)
+    (hϑ : 0 ≤ ϑ) (hϑ1 : ϑ ≤ 1) (hX : xi 0 ∈ trqLogX) (ht : t ≤ (xi 0) 0) (hx1 : 1 ≤ (xi 0) 0)
     {L : ℕ} (hL : 4 * ε₀ / (P.ς * β) ≤ P.γ₁ ^ L * min P.Δ₀ ϑ) (he : e ≤ L) : xi e = xi 0 := by
   obtain ⟨x, s, Δ, jk, d, kε, hr, hhit, hek, hxi, -, -⟩ := h
   set F := Constrained.targetMerit trqLogF trqLogC t with hF
@@ -233,11 +278,37 @@ theorem trqLog_call_stuck {P : Optimization.TRqParams} {ϑ β ε₀ t : ℝ} {xi
     | succ i ih =>
       intro hi
       obtain ⟨hxi0, hΔi⟩ := ih (by omega)
-      have hk : ∀ l ≤ i, ¬ Chapter12.trqStop F P 1 ε' ϑ x Δ d l :=
+      have hk : ∀ l ≤ i, ¬ Chapter12.trqStop F P q ε' ϑ x Δ d l :=
         fun l hl => hhit.2 l (by omega)
       have hst := Optimization.IsTRqRun.isTRqStep hr hk
+      have hx0 : x 0 = xi 0 := (hxi 0 (Nat.zero_le _)).symm
+      have hΔpos : 0 < Δ i := lt_of_lt_of_le (mul_pos (pow_pos P.γ₁_pos i) P.Δ₀_pos) hΔi
       have hj : jk i = 1 := by
-        have := Finset.mem_Icc.1 hst.order_mem; omega
+        have hmem := Finset.mem_Icc.1 hst.order_mem
+        by_contra hne
+        have h1q : (1 : ℕ) ∈ Finset.Icc 1 q := Finset.mem_Icc.2 ⟨le_rfl, hq⟩
+        have hle1 := hst.taylorDecrement_le_of_lt 1 h1q (by omega)
+        have hw := (hr.witness i (fun l hl => hk l hl.le) 1 h1q).2
+        rw [hxi0, hx0] at hle1 hw
+        rw [hε'] at hle1
+        simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one] at hle1
+        set δ := min (Δ i) ϑ with hδ
+        have hδpos : 0 < δ := lt_min hΔpos (by
+          rcases hϑ.lt_or_eq with h' | h'
+          · exact h'
+          · exfalso
+            have : min P.Δ₀ ϑ = 0 := by rw [← h']; exact min_eq_right P.Δ₀_pos.le
+            rw [this, mul_zero] at hL
+            have : 0 < 4 * ε₀ / (P.ς * β) := by
+              have : 0 < ε₀ := hρ.trans_le hρε
+              have := P.ς_pos
+              positivity
+            linarith)
+        have hgt := trqLog_measure_gt hX ht hx1 hδpos ((min_le_right _ _).trans hϑ1) hβ1 hρ
+        have hw' : P.ς * Optimization.taylorMeasure (ftaylorSeries ℝ F (xi 0)) 1 δ
+            {d | xi 0 + d ∈ trqLogX} ≤ P.ς * (β * ρ₀ * (1 / 2) * δ) :=
+          (hw.trans hle1).trans_eq (by ring)
+        exact absurd (le_of_mul_le_mul_left hw' P.ς_pos) (not_le.2 hgt)
       have hlt := hst.lt_taylorDecrement
       have hle := hst.taylorDecrement_le
       rw [hj] at hlt hle
@@ -297,12 +368,12 @@ theorem trqLog_call_stuck {P : Optimization.TRqParams} {ϑ β ε₀ t : ℝ} {xi
 
 section Run
 
-variable {θ β : ℝ} {ε : ℕ → ℝ} {x₁ : ℝ²} {D : TPqpSeq 2}
+variable {θ β : ℝ} {ε : ℕ → ℝ} {x₁ : ℝ²} {D : TPqpSeq 2} {q : ℕ}
 
 /-- `f(x_{k+1}) ≥ t_k - ε₀` along Phase 2. -/
-theorem trqLog_f_succ_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε x₁ D) {k : ℕ}
+theorem trqLog_f_succ_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX q θ β ε x₁ D) {k : ℕ}
     (hk1 : 1 ≤ k)
-    (hk : D.Before trqLogF trqLogC trqLogX 1 θ ε k) : D.t k - ε 0 ≤ trqLogF (D.x (k + 1)) := by
+    (hk : D.Before trqLogF trqLogC trqLogX q θ ε k) : D.t k - ε 0 ≤ trqLogF (D.x (k + 1)) := by
   have h1 := (Constrained.abs_sub_le_targetResidual (f := trqLogF) (c := trqLogC) (t := D.t k)
     (x := D.x (k + 1)))
   have h2' := h2.resid_succ_le hk1 hk
@@ -312,8 +383,8 @@ theorem trqLog_f_succ_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε
 
 /-- **The targets decrease by at most `2 ε₀` per outer iteration**: starting from
 `x₁ = (2, 0)`, `t_k ≥ 2 - (2k - 1) ε₀` for every outer iteration `k ≥ 1` reached. -/
-theorem trqLog_target_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε trqLogX₀ D) :
-    ∀ k, 1 ≤ k → D.Before trqLogF trqLogC trqLogX 1 θ ε k → 2 - (2 * k - 1) * ε 0 ≤ D.t k := by
+theorem trqLog_target_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX q θ β ε trqLogX₀ D) :
+    ∀ k, 1 ≤ k → D.Before trqLogF trqLogC trqLogX q θ ε k → 2 - (2 * k - 1) * ε 0 ≤ D.t k := by
   have hε₀ := h2.ε₀_pos
   intro k hk1
   induction k, hk1 using Nat.le_induction with
@@ -328,7 +399,7 @@ theorem trqLog_target_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε
     intro hK
     have hk := IsTPqpGCPhase2.before_mono hK k.le_succ
     have ihk := ih hk
-    have hs : ¬ D.Stop trqLogF trqLogC trqLogX 1 θ ε k := hK k hk1 (Nat.lt_succ_self k)
+    have hs : ¬ D.Stop trqLogF trqLogC trqLogX q θ ε k := hK k hk1 (Nat.lt_succ_self k)
     have hf := trqLog_f_succ_ge h2 hk1 hk
     push_cast
     rcases IsTPqpGCPhase2.isKa_or_isKb_of_not_stop hs with ha | hb
@@ -344,10 +415,10 @@ theorem trqLog_target_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε
 /-- **Phase 2 cannot stop early**: at an outer iteration `k ≥ 1` reached with
 `(2k + 1) ε₀ ≤ 1`, the iterate `x_{k+1}` has `f ≥ 1`, so (14.3.34) fails there for every
 target that Step 2 can produce, and the Step-1 output condition (14.3.32) excludes case (c). -/
-theorem trqLog_not_stop (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε trqLogX₀ D)
-    (hε1 : ε 1 = 1 / 2)
-    {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before trqLogF trqLogC trqLogX 1 θ ε k)
-    (hkε : (2 * k + 1) * ε 0 ≤ 1) : ¬ D.Stop trqLogF trqLogC trqLogX 1 θ ε k := by
+theorem trqLog_not_stop (hq : 1 ≤ q)
+    (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX q θ β ε trqLogX₀ D) (hε1 : ε 1 = 1 / 2)
+    {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before trqLogF trqLogC trqLogX q θ ε k)
+    (hkε : (2 * k + 1) * ε 0 ≤ 1) : ¬ D.Stop trqLogF trqLogC trqLogX q θ ε k := by
   have hε₀ := h2.ε₀_pos
   have hθ := h2.θ_pos
   have ht := trqLog_target_ge h2 k hk1 hk
@@ -355,7 +426,7 @@ theorem trqLog_not_stop (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε 
   have hy1 : 1 ≤ (D.x (k + 1)) 0 := by
     change 1 ≤ trqLogF (D.x (k + 1)); nlinarith
   have hyX := h2.mem_succ k hk1 hk
-  obtain ⟨hδ0, hδ1⟩ := h2.radius_mem k hk1 hk 1 (by simp)
+  obtain ⟨hδ0, hδ1⟩ := h2.radius_mem k hk1 hk 1 (Finset.mem_Icc.2 ⟨le_rfl, hq⟩)
   have hδy : D.δ (k + 1) 1 ≤ (D.x (k + 1)) 0 := hδ1.trans hy1
   have hθε : 0 < θ * ε 0 := mul_pos hθ hε₀
   rintro (⟨hna, hnb⟩ | ⟨hab, hm⟩)
@@ -366,18 +437,18 @@ theorem trqLog_not_stop (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε 
     rcases h2.output k hk1 hk with h | h | h
     · exact hna h
     · exact hnb ⟨hge, h⟩
-    · exact trqLog_not_meritCrit hε1 hyX hft (hθε.trans_le hge) hδ0 hδy hδ1 h
+    · exact trqLog_not_meritCrit hq hε1 hyX hft (hθε.trans_le hge) hδ0 hδy hδ1 h
   · rcases hab with ha | hb
     · rw [h2.t_succ_a k hk1 hk ha] at hm
       have hc : ‖trqLogC (D.x (k + 1))‖ ≤ ε 0 :=
         Constrained.norm_le_targetResidual.trans (ha.le.trans
           (mul_le_of_le_one_left hε₀.le h2.θ_lt_one.le))
-      refine trqLog_not_meritCrit hε1 hyX ?_ ?_ hδ0 hδy hδ1 hm
+      refine trqLog_not_meritCrit hq hε1 hyX ?_ ?_ hδ0 hδy hδ1 hm
       · change _ ≤ trqLogF (D.x (k + 1)); linarith [Real.sqrt_nonneg
           (ε 0 ^ 2 - ‖trqLogC (D.x (k + 1))‖ ^ 2)]
       · rw [Constrained.targetResidual_sub_sqrt hε₀.le hc]; exact hε₀
     · rw [h2.t_succ_b k hk1 hk hb] at hm
-      refine trqLog_not_meritCrit hε1 hyX ?_ ?_ hδ0 hδy hδ1 hm
+      refine trqLog_not_meritCrit hq hε1 hyX ?_ ?_ hδ0 hδy hδ1 hm
       · change _ ≤ trqLogF (D.x (k + 1)); linarith [hb.2]
       · rw [Constrained.targetResidual_two_mul_sub]; exact hθε.trans_le hb.1
 
@@ -387,16 +458,16 @@ end Run
 section Count
 
 variable {P : Optimization.TRqParams} {ϑ θ β β₁ : ℝ} {ε : ℕ → ℝ} {xP : ℕ → ℝ²}
-  {δP : ℕ → ℕ → ℝ} {k₁ : ℕ} {D : TPqpSeq 2} {nF₁ nD₁ : ℕ → ℕ}
+  {δP : ℕ → ℕ → ℝ} {k₁ : ℕ} {D : TPqpSeq 2} {q : ℕ} {nF₁ nD₁ : ℕ → ℕ}
 
 /-- Phase 1 stops at once: `c(x₀) = 0`. -/
-theorem trqLog_phase1 (h : algorithm_14_3_2 trqLogF trqLogC trqLogX 1 θ β₁ β ε trqLogX₀ xP δP k₁ D)
+theorem trqLog_phase1 (h : algorithm_14_3_2 trqLogF trqLogC trqLogX q θ β₁ β ε trqLogX₀ xP δP k₁ D)
     (hθ : 0 < θ) : k₁ = 0 ∧ xP k₁ = trqLogX₀ := by
   have hε₀ : 0 < ε 0 := by
     have := h.phase1.ε_pos 0 (by simp)
     rw [phase1Tol_zero] at this
     exact pos_of_mul_pos_right this hθ.le
-  have hstop : lenStop trqLogC trqLogX 1 (phase1Tol θ ε) xP δP 0 := by
+  have hstop : lenStop trqLogC trqLogX q (phase1Tol θ ε) xP δP 0 := by
     left
     rw [h.start, phase1Tol_zero]
     simp only [norm_trqLogC, trqLogX₀]
@@ -412,10 +483,11 @@ theorem trqLog_phase1 (h : algorithm_14_3_2 trqLogF trqLogC trqLogX 1 θ β₁ �
 with `(2k - 1) ε₀ ≤ 1`, a TRq-SC call has more than `L` iterations when
 `4 ε₀/(ς β) ≤ γ₁^L min(Δ₀, ϑ)`: otherwise it returns `x_{k+1} = x_k`, where no test of
 (14.3.32) holds. -/
-theorem trqLog_call_long (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε trqLogX₀ D)
-    (hcalls : IsTRqSCPhase2Calls trqLogF trqLogC trqLogX 1 P ϑ θ β ε D) (hε1 : ε 1 = 1 / 2)
-    (hϑ : 0 ≤ ϑ) {L : ℕ} (hL : 4 * ε 0 / (P.ς * β) ≤ P.γ₁ ^ L * min P.Δ₀ ϑ) {k : ℕ}
-    (hk1 : 1 ≤ k) (hk : D.Before trqLogF trqLogC trqLogX 1 θ ε k) (hkε : (2 * k - 1) * ε 0 ≤ 1) :
+theorem trqLog_call_long (hq : 1 ≤ q)
+    (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX q θ β ε trqLogX₀ D)
+    (hcalls : IsTRqSCPhase2Calls trqLogF trqLogC trqLogX q P ϑ θ β ε D) (hε1 : ε 1 = 1 / 2)
+    (hϑ : 0 ≤ ϑ) (hϑ1 : ϑ ≤ 1) {L : ℕ} (hL : 4 * ε 0 / (P.ς * β) ≤ P.γ₁ ^ L * min P.Δ₀ ϑ) {k : ℕ}
+    (hk1 : 1 ≤ k) (hk : D.Before trqLogF trqLogC trqLogX q θ ε k) (hkε : (2 * k - 1) * ε 0 ≤ 1) :
     L < D.e k := by
   by_contra hle
   push Not at hle
@@ -424,28 +496,31 @@ theorem trqLog_call_long (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε
   have hlo := h2.le_targetResidual k hk1 hk
   have hhi := (h2.isTargetSequence hk).residual_le h2.θ_lt_one.le hε₀.le hk1 le_rfl
   have h0 := h2.inner_zero k hk1 hk
-  have hstuck := trqLog_call_stuck (hcalls k hk1 hk) (by rw [h0, hε1]) (by rw [h0]; linarith)
-    (by rw [h0]; exact hhi) h2.β_pos hϑ hL hle
-  have hx : D.x (k + 1) = D.x k := by rw [← h2.inner_end k hk1 hk, hstuck, h0]
   have ht := trqLog_target_ge h2 k hk1 hk
   have hft : D.t k ≤ trqLogF (D.x k) := by
     have := (h2.isTargetSequence hk).sub_target_nonneg hk1 le_rfl; linarith
   have hx1 : 1 ≤ (D.x k) 0 := by change 1 ≤ trqLogF (D.x k); linarith
-  obtain ⟨hδ0, hδ1⟩ := h2.radius_mem k hk1 hk 1 (by simp)
+  have hβ1 : β ≤ 1 := h2.β_le_θ.trans h2.θ_lt_one.le
+  have hstuck := trqLog_call_stuck hq (hcalls k hk1 hk) (by rw [h0, hε1])
+    (by rw [h0]; linarith) (by rw [h0]; exact hhi) h2.β_pos hβ1 hϑ hϑ1
+    (by rw [h0]; exact h2.x_mem k hk1 hk) (by rw [h0]; exact hft) (by rw [h0]; exact hx1) hL hle
+  have hx : D.x (k + 1) = D.x k := by rw [← h2.inner_end k hk1 hk, hstuck, h0]
+  obtain ⟨hδ0, hδ1⟩ := h2.radius_mem k hk1 hk 1 (Finset.mem_Icc.2 ⟨le_rfl, hq⟩)
   rcases h2.output k hk1 hk with h | h | h
   · rw [hx] at h; linarith
   · rw [hx] at h; linarith
   · rw [hx] at h
-    exact trqLog_not_meritCrit hε1 (h2.x_mem k hk1 hk) hft (hθε.trans_le hlo) hδ0
+    exact trqLog_not_meritCrit hq hε1 (h2.x_mem k hk1 hk) hft (hθε.trans_le hlo) hδ0
       (hδ1.trans hx1) hδ1 h
 
 /-- **The evaluation count of Phase 2 is at least `⌊1/(4ε₀)⌋ (L + 1)`** for every TPqp-GC run
 with TRq-SC calls on this example, when `ε₀ ≤ 1/2` and `4 ε₀/(ς β) ≤ γ₁^L min(Δ₀, ϑ)`. -/
-theorem trqLog_funEvals_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β ε trqLogX₀ D)
-    (hcalls : IsTRqSCPhase2Calls trqLogF trqLogC trqLogX 1 P ϑ θ β ε D) (hε1 : ε 1 = 1 / 2)
-    (hε₀2 : ε 0 ≤ 1 / 2) (hϑ : 0 ≤ ϑ) {L : ℕ}
+theorem trqLog_funEvals_ge (hq : 1 ≤ q)
+    (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX q θ β ε trqLogX₀ D)
+    (hcalls : IsTRqSCPhase2Calls trqLogF trqLogC trqLogX q P ϑ θ β ε D) (hε1 : ε 1 = 1 / 2)
+    (hε₀2 : ε 0 ≤ 1 / 2) (hϑ : 0 ≤ ϑ) (hϑ1 : ϑ ≤ 1) {L : ℕ}
     (hL : 4 * ε 0 / (P.ς * β) ≤ P.γ₁ ^ L * min P.Δ₀ ϑ) {kε : ℕ}
-    (hend : D.IsEnd trqLogF trqLogC trqLogX 1 θ ε kε) :
+    (hend : D.IsEnd trqLogF trqLogC trqLogX q θ ε kε) :
     (⌊1 / (4 * ε 0)⌋₊ : ℝ) * (L + 1) ≤ D.funEvals kε := by
   have hε₀ := h2.ε₀_pos
   obtain ⟨hkε1, hstop, hbef⟩ := hend
@@ -455,7 +530,7 @@ theorem trqLog_funEvals_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β 
   have hbig : 1 < (2 * kε + 1) * ε 0 := by
     by_contra hc
     push Not at hc
-    exact trqLog_not_stop h2 hε1 hkε1 hbef hc hstop
+    exact trqLog_not_stop hq h2 hε1 hkε1 hbef hc hstop
   have hNk : N ≤ kε := by
     have : (N : ℝ) ≤ kε := by
       have h1 : 1 / (4 * ε 0) ≤ (kε : ℝ) := by
@@ -465,7 +540,7 @@ theorem trqLog_funEvals_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β 
     exact_mod_cast this
   have hcount : ∀ k ∈ Finset.Icc 1 N, L + 1 ≤ D.e k := fun k hk => by
     obtain ⟨hk1, hkN⟩ := Finset.mem_Icc.1 hk
-    have hkb : D.Before trqLogF trqLogC trqLogX 1 θ ε k :=
+    have hkb : D.Before trqLogF trqLogC trqLogX q θ ε k :=
       IsTPqpGCPhase2.before_mono hbef (hkN.trans hNk)
     have hkε : (2 * k - 1) * ε 0 ≤ 1 := by
       have : (k : ℝ) ≤ N := by exact_mod_cast hkN
@@ -473,7 +548,7 @@ theorem trqLog_funEvals_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX 1 θ β 
         calc (k : ℝ) * ε 0 ≤ (1 / (4 * ε 0)) * ε 0 := by gcongr; linarith
           _ = 1 / 4 := by field_simp
       nlinarith
-    exact trqLog_call_long h2 hcalls hε1 hϑ hL hk1 hkb hkε
+    exact trqLog_call_long hq h2 hcalls hε1 hϑ hϑ1 hL hk1 hkb hkε
   have hsum : N * (L + 1) ≤ ∑ j ∈ Finset.Icc 1 kε, D.e j := by
     calc N * (L + 1) = ∑ _j ∈ Finset.Icc 1 N, (L + 1) := by simp
       _ ≤ ∑ j ∈ Finset.Icc 1 N, D.e j := Finset.sum_le_sum hcount
@@ -525,15 +600,15 @@ theorem trqLogX_subset_ball : trqLogX ⊆ ball (0 : ℝ²) 3 := by
   exact lt_of_pow_lt_pow_left₀ 2 (by norm_num) this
 
 /-- **The example satisfies the hypotheses of Theorem 14.3.9 with a trust-region INNER** (of the
-printed statement, and of `theorem_14_3_9_trq_one`): `X` is closed, c.D1qLB.X and f.D1qLB.X hold
-on the ball of radius `3` (with some constants), and f.B.Fb holds for every `β_F` with
-`f_low = 0`, `f_up = 2`. -/
-theorem trqLog_assumptions : IsClosed trqLogX ∧ trqLogX₀ ∈ trqLogX ∧
-    (∃ Lc Bc : ℕ → ℝ, AssumptionCD1pLBX trqLogC trqLogX (ball 0 3) 1 Lc Bc) ∧
-    (∃ Lf Bf : ℕ → ℝ, AssumptionD1pLBX trqLogF trqLogX (ball 0 3) 1 Lf Bf) ∧
+printed statement, and of `theorem_14_3_9_trq_one`), for every `q`: `X` is closed, c.D1qLB.X
+and f.D1qLB.X hold on the ball of radius `3` (with some constants), and f.B.Fb holds for every
+`β_F` with `f_low = 0`, `f_up = 2`. -/
+theorem trqLog_assumptions (q : ℕ) : IsClosed trqLogX ∧ trqLogX₀ ∈ trqLogX ∧
+    (∃ Lc Bc : ℕ → ℝ, AssumptionCD1pLBX trqLogC trqLogX (ball 0 3) q Lc Bc) ∧
+    (∃ Lf Bf : ℕ → ℝ, AssumptionD1pLBX trqLogF trqLogX (ball 0 3) q Lf Bf) ∧
     ∀ βF, Chapter07.AssumptionBFb trqLogF trqLogC trqLogX βF 0 2 := by
   refine ⟨isClosed_trqLogX, trqLogX₀_mem, ?_, ?_, fun βF x hx => ⟨hx.1.1, hx.1.2.1⟩⟩
-  · obtain ⟨L, B, h⟩ := exists_assumptionD1pLBX_ball (trqLog_contDiff_coord 1) trqLogX_subset_ball 1
+  · obtain ⟨L, B, h⟩ := exists_assumptionD1pLBX_ball (trqLog_contDiff_coord 1) trqLogX_subset_ball q
     refine ⟨L, B, ⟨isOpen_ball, convex_ball 0 3, trqLogX_subset_ball, fun i => ?_⟩⟩
     have : (fun x => trqLogC x i) = fun v : ℝ² => v 1 := by
       funext x
@@ -541,12 +616,12 @@ theorem trqLog_assumptions : IsClosed trqLogX ∧ trqLogX₀ ∈ trqLogX ∧
       simp [trqLogC]
     rw [this]
     exact h
-  · exact exists_assumptionD1pLBX_ball (trqLog_contDiff_coord 0) trqLogX_subset_ball 1
+  · exact exists_assumptionD1pLBX_ball (trqLog_contDiff_coord 0) trqLogX_subset_ball q
 
 end Data
 
 
-/-- The tolerances `ε₀` and `ε_1 = 1/2` of the example. -/
+/-- The tolerances `ε₀` and `ε_j = 1/2` (`j ≥ 1`) of the example. -/
 noncomputable def trqLogTol (ε₀ : ℝ) : ℕ → ℝ := fun j => if j = 0 then ε₀ else 1 / 2
 
 /-- The printed order of the `(f, c)` evaluations for `q = 1`, `π_1 = 2`, `ε_1 = 1/2` is at most
@@ -564,6 +639,89 @@ theorem tpqpOrderF_trqLogTol_le {ε₀ : ℝ} (h0 : 0 < ε₀) :
     norm_num
     rw [Real.rpow_neg_one, div_eq_mul_inv, mul_comm]
 
+/-- **Every bound of the form `κ_F ε₀^{-1}` on the `(f, c)` evaluations fails for genuine runs
+with TRq-SC calls, for every `q ≥ 1`** ([cartis2022evaluation], Theorem 14.3.9 with INNER of
+trust-region type). On the example `n = 2`, `m = 1`, `X = [0, 2] × [-1, 1]`, `f(x) = x_1`,
+`c(x) = x_2`, `x₀ = (2, 0)` (`trqLog_assumptions`), with the dual tolerances fixed at
+`ε_j = 1/2` (`trqLogTol`), for all TRq parameters `P`, `0 < β ≤ θ < 1`, `β ≤ ϑ ≤ 1`,
+`β₁ ∈ (0, 1)` and `β_F > 0`, there is no `κ_F` such that every run of `IsTPqpGCTRqSCRun`
+entering Phase 2 terminates within `κ_F/ε₀` evaluations of `(f, c)` for all `ε₀ ∈ (0, 1]` with
+`ε₀ ≤ β_F`: every call of the first `⌊1/(4ε₀)⌋` outer iterations restarts from `Δ₀` and needs
+`≳ log(1/ε₀)` unsuccessful first-order iterations (`trqLog_call_long`, `trqLog_funEvals_ge`).
+
+For `q = 1` this is the printed order (`theorem_14_3_9_trq_log_necessary`). For `q ≥ 2` it does
+not contradict the printed order, nor the order with the exponents `q + 1`: at these tolerances
+both are at least `ε₀^{-2}` (`inv_sq_le_tpqpOrderF_trqLogTol`), while the lower bound this
+example gives is only of order `ε₀^{-1} log(1/ε₀)`. -/
+theorem theorem_14_3_9_trq_log_necessary_inv {q : ℕ} (hq : 1 ≤ q) (P : Optimization.TRqParams)
+    {ϑ θ β β₁ βF : ℝ} (hϑ1 : ϑ ≤ 1) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
+    (hβϑ : β ≤ ϑ) (hβ₁0 : 0 < β₁) (hβ₁1 : β₁ < 1) (hβF : 0 < βF) :
+    ¬ ∃ κF : ℝ, ∀ ε₀ : ℝ, 0 < ε₀ → ε₀ ≤ 1 → ε₀ ≤ βF →
+      ∀ (xP : ℕ → ℝ²) (δP : ℕ → ℕ → ℝ) (k₁ : ℕ) (D : TPqpSeq 2) (nF₁ nD₁ : ℕ → ℕ),
+        IsTPqpGCTRqSCRun trqLogF trqLogC trqLogX q P ϑ θ β₁ β (trqLogTol ε₀) trqLogX₀ xP δP k₁ D
+          nF₁ nD₁ →
+        ‖trqLogC (xP k₁)‖ ≤ θ * ε₀ →
+        ∃ kε, D.IsEnd trqLogF trqLogC trqLogX q θ (trqLogTol ε₀) kε ∧
+          ∑ k ∈ Finset.Icc 1 k₁, (nF₁ k : ℝ) + D.funEvals kε ≤ κF / ε₀ := by
+  rintro ⟨κF, hκ⟩
+  have hϑ0 : 0 < ϑ := hβ0.trans_le hβϑ
+  obtain ⟨L, hL⟩ : ∃ L : ℕ, L = ⌈8 * |κF|⌉₊ := ⟨_, rfl⟩
+  have hL8 : 8 * |κF| ≤ L := hL ▸ Nat.le_ceil _
+  obtain ⟨ε₀, hε₀def⟩ : ∃ ε₀ : ℝ,
+      ε₀ = min (min (1 / 8) βF) (P.γ₁ ^ L * min P.Δ₀ ϑ * P.ς * β / 4) := ⟨_, rfl⟩
+  have hε₀ : 0 < ε₀ := by
+    rw [hε₀def]
+    have := P.ς_pos
+    have := pow_pos P.γ₁_pos L
+    have := lt_min P.Δ₀_pos hϑ0
+    exact lt_min (lt_min (by norm_num) hβF) (by positivity)
+  have hε₀8 : ε₀ ≤ 1 / 8 := hε₀def ▸ (min_le_left _ _).trans (min_le_left _ _)
+  have hε₀F : ε₀ ≤ βF := hε₀def ▸ (min_le_left _ _).trans (min_le_right _ _)
+  have hε₀L : ε₀ ≤ P.γ₁ ^ L * min P.Δ₀ ϑ * P.ς * β / 4 := hε₀def ▸ min_le_right _ _
+  have hLcond : 4 * trqLogTol ε₀ 0 / (P.ς * β) ≤ P.γ₁ ^ L * min P.Δ₀ ϑ := by
+    simp only [trqLogTol, ↓reduceIte]
+    have := P.ς_pos
+    rw [div_le_iff₀ (by positivity)]
+    nlinarith
+  have hε : ∀ j ∈ Finset.range (q + 1), 0 < trqLogTol ε₀ j ∧ trqLogTol ε₀ j ≤ 1 := by
+    intro j _
+    by_cases hj : j = 0
+    · simp only [trqLogTol, hj, ↓reduceIte]; exact ⟨hε₀, by linarith⟩
+    · simp only [trqLogTol, hj, ↓reduceIte]; norm_num
+  obtain ⟨-, -, ⟨Lc, Bc, hc⟩, ⟨Lf, Bf, hf⟩, -⟩ := trqLog_assumptions q
+  have hc0 : ‖trqLogC trqLogX₀‖ = 0 := by simp [norm_trqLogC, trqLogX₀]
+  obtain ⟨xP, δP, k₁, D, nF₁, nD₁, hR⟩ := exists_isTPqpGCTRqSCRun isClosed_trqLogX hq hc hf P
+    hθ0 hθ1 hβ0 hβθ hβϑ hϑ1 hε hβ₁0 hβ₁1 trqLogX₀_mem (by rw [hc0]; linarith)
+    (by rw [hc0]; linarith)
+  obtain ⟨hk₁, hx₁⟩ := trqLog_phase1 hR.run hθ0
+  have hc1 : ‖trqLogC (xP k₁)‖ ≤ θ * ε₀ := by
+    rw [hx₁, hc0]; positivity
+  obtain ⟨kε, hend, hbound⟩ := hκ ε₀ hε₀ (by linarith) hε₀F xP δP k₁ D nF₁ nD₁ hR hc1
+  rw [hk₁] at hbound
+  simp only [Finset.Icc_eq_empty (by norm_num : ¬ (1 : ℕ) ≤ 0),
+    Finset.sum_empty, zero_add] at hbound
+  have hc1' : ‖trqLogC (xP k₁)‖ ≤ θ * trqLogTol ε₀ 0 := by simpa [trqLogTol] using hc1
+  have h2 := hR.run.phase2 hc1'
+  rw [hx₁] at h2
+  have hlow := trqLog_funEvals_ge hq h2 (hR.phase2 hc1') (by simp [trqLogTol])
+    (by simp only [trqLogTol, ↓reduceIte]; linarith) hϑ0.le hϑ1 hLcond hend
+  simp only [trqLogTol, ↓reduceIte] at hlow
+  -- the lower bound `⌊1/(4ε₀)⌋ (L + 1) ≥ (L + 1)/(8 ε₀)`
+  have hN : 1 / (8 * ε₀) ≤ (⌊1 / (4 * ε₀)⌋₊ : ℝ) := by
+    have h1 := Nat.lt_floor_add_one (1 / (4 * ε₀))
+    have h2 : 1 / (8 * ε₀) + 1 ≤ 1 / (4 * ε₀) := by
+      rw [div_add_one (by positivity), div_le_div_iff₀ (by positivity) (by positivity)]
+      nlinarith
+    linarith
+  have hfin : (L + 1 : ℝ) / (8 * ε₀) ≤ D.funEvals kε := by
+    calc (L + 1 : ℝ) / (8 * ε₀) = 1 / (8 * ε₀) * (L + 1) := by ring
+      _ ≤ (⌊1 / (4 * ε₀)⌋₊ : ℝ) * (L + 1) := by gcongr
+      _ ≤ _ := hlow
+  have hcontra : κF / ε₀ < (L + 1 : ℝ) / (8 * ε₀) := by
+    rw [div_lt_div_iff₀ hε₀ (by positivity)]
+    nlinarith [le_abs_self κF, abs_nonneg κF]
+  linarith
+
 /-- **Theorem 14.3.9 with a trust-region INNER fails in the printed order without the
 logarithmic factor (`q = 1`).** On the example `n = 2`, `m = 1`, `X = [0, 2] × [-1, 1]`,
 `f(x) = x_1`, `c(x) = x_2`, `x₀ = (2, 0)` (which satisfies X.CNe, c.D1qLB.X, f.D1qLB.X and f.B.Fb,
@@ -573,8 +731,9 @@ logarithmic factor (`q = 1`).** On the example `n = 2`, `m = 1`, `X = [0, 2] × 
 within `κ_F max[ε₀^{-1}, ε₀^{-1} ε_1^{-2}]` evaluations of `(f, c)` for all `ε ∈ (0, 1]²` with
 `ε₀ ≤ β_F`. With `ε_1 = 1/2`: every call of the first `⌊1/(4ε₀)⌋` outer iterations restarts from
 `Δ₀` and needs more than `L` unsuccessful iterations whenever `4ε₀/(ςβ) ≤ γ₁^L min(Δ₀, ϑ)`
-(`trqLog_call_long`), so Phase 2 uses `≳ ε₀^{-1} log(1/ε₀)` evaluations (`trqLog_funEvals_ge`). The
-bound of `theorem_14_3_9_trq_one`, with the factor `1 + |log(ε₀ ε_1)|`, holds on this example. -/
+(`trqLog_call_long`), so Phase 2 uses `≳ ε₀^{-1} log(1/ε₀)` evaluations (`trqLog_funEvals_ge`,
+`theorem_14_3_9_trq_log_necessary_inv`). The bound of `theorem_14_3_9_trq_one`, with the factor
+`1 + |log(ε₀ ε_1)|`, holds on this example. -/
 theorem theorem_14_3_9_trq_log_necessary (P : Optimization.TRqParams) {ϑ θ β β₁ βF : ℝ}
     (hϑ1 : ϑ ≤ 1) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ) (hβϑ : β ≤ ϑ)
     (hβ₁0 : 0 < β₁) (hβ₁1 : β₁ < 1) (hβF : 0 < βF) :
@@ -586,72 +745,39 @@ theorem theorem_14_3_9_trq_log_necessary (P : Optimization.TRqParams) {ϑ θ β 
           ∑ k ∈ Finset.Icc 1 k₁, (nF₁ k : ℝ) + D.funEvals kε ≤
             κF * tpqpOrderF (fun j => (j : ℝ) + 1) 1 ε := by
   rintro ⟨κF, hκ⟩
-  have hϑ0 : 0 < ϑ := hβ0.trans_le hβϑ
-  have hm₀ : 0 < min P.Δ₀ ϑ := lt_min P.Δ₀_pos hϑ0
-  obtain ⟨L, hL⟩ : ∃ L : ℕ, L = ⌈32 * |κF|⌉₊ := ⟨_, rfl⟩
-  have hL32 : 32 * |κF| ≤ L := hL ▸ Nat.le_ceil _
-  have hγL : 0 < P.γ₁ ^ L := pow_pos P.γ₁_pos L
-  obtain ⟨ε₀, hε₀def⟩ : ∃ ε₀ : ℝ,
-      ε₀ = min (min (1 / 8) βF) (P.γ₁ ^ L * min P.Δ₀ ϑ * P.ς * β / 4) := ⟨_, rfl⟩
-  have hε₀ : 0 < ε₀ := by
-    rw [hε₀def]
-    have := P.ς_pos
-    exact lt_min (lt_min (by norm_num) hβF) (by positivity)
-  have hε₀8 : ε₀ ≤ 1 / 8 := hε₀def ▸ (min_le_left _ _).trans (min_le_left _ _)
-  have hε₀F : ε₀ ≤ βF := hε₀def ▸ (min_le_left _ _).trans (min_le_right _ _)
-  have hε₀L : ε₀ ≤ P.γ₁ ^ L * min P.Δ₀ ϑ * P.ς * β / 4 := hε₀def ▸ min_le_right _ _
-  have hLcond : 4 * trqLogTol ε₀ 0 / (P.ς * β) ≤ P.γ₁ ^ L * min P.Δ₀ ϑ := by
-    simp only [trqLogTol, ↓reduceIte]
-    have := P.ς_pos
-    rw [div_le_iff₀ (by positivity)]
-    nlinarith
+  refine theorem_14_3_9_trq_log_necessary_inv le_rfl P hϑ1 hθ0 hθ1 hβ0 hβθ hβϑ hβ₁0 hβ₁1 hβF
+    ⟨|κF| * 4, fun ε₀ hε₀ hε₀1 hε₀F xP δP k₁ D nF₁ nD₁ hR hc1 => ?_⟩
   have hε : ∀ j ∈ Finset.range 2, 0 < trqLogTol ε₀ j ∧ trqLogTol ε₀ j ≤ 1 := by
     intro j _
     by_cases hj : j = 0
-    · simp only [trqLogTol, hj, ↓reduceIte]; exact ⟨hε₀, by linarith⟩
+    · simp only [trqLogTol, hj, ↓reduceIte]; exact ⟨hε₀, hε₀1⟩
     · simp only [trqLogTol, hj, ↓reduceIte]; norm_num
-  obtain ⟨-, -, ⟨Lc, Bc, hc⟩, ⟨Lf, Bf, hf⟩, -⟩ := trqLog_assumptions
-  have hc0 : ‖trqLogC trqLogX₀‖ = 0 := by simp [norm_trqLogC, trqLogX₀]
-  obtain ⟨xP, δP, k₁, D, nF₁, nD₁, hR⟩ := exists_isTPqpGCTRqSCRun isClosed_trqLogX le_rfl hc hf P
-    hθ0 hθ1 hβ0 hβθ hβϑ hϑ1 hε hβ₁0 hβ₁1 trqLogX₀_mem (by rw [hc0]; linarith)
-    (by rw [hc0]; linarith)
-  obtain ⟨hk₁, hx₁⟩ := trqLog_phase1 hR.run hθ0
-  have hc1 : ‖trqLogC (xP k₁)‖ ≤ θ * trqLogTol ε₀ 0 := by
-    rw [hx₁, hc0]; simp only [trqLogTol, ↓reduceIte]; positivity
-  obtain ⟨kε, hend, hbound⟩ := hκ (trqLogTol ε₀) hε
-    (by simp only [trqLogTol, ↓reduceIte]; exact hε₀F)
-    xP δP k₁ D nF₁ nD₁ hR hc1
-  rw [hk₁] at hbound
-  simp only [Finset.Icc_eq_empty (by norm_num : ¬ (1 : ℕ) ≤ 0),
-    Finset.sum_empty, zero_add] at hbound
-  have h2 := hR.run.phase2 hc1
-  rw [hx₁] at h2
-  have hlow := trqLog_funEvals_ge h2 (hR.phase2 hc1) (by simp [trqLogTol])
-    (by simp only [trqLogTol, ↓reduceIte]; linarith) hϑ0.le hLcond hend
-  simp only [trqLogTol, ↓reduceIte] at hlow
+  have e0 : trqLogTol ε₀ 0 = ε₀ := by simp [trqLogTol]
+  obtain ⟨kε, hend, hbound⟩ := hκ (trqLogTol ε₀) hε (by rw [e0]; exact hε₀F) xP δP k₁ D nF₁ nD₁
+    hR (by rw [e0]; exact hc1)
+  refine ⟨kε, hend, hbound.trans ?_⟩
   have hO := tpqpOrderF_trqLogTol_le hε₀
   have hO0 : 0 ≤ tpqpOrderF (fun j => (j : ℝ) + 1) 1 (trqLogTol ε₀) := by
     have h1 := inv_le_tpqpOrderF (π := fun j : ℕ => (j : ℝ) + 1) (q := 1) (ε := trqLogTol ε₀)
-    have e : trqLogTol ε₀ 0 = ε₀ := by simp [trqLogTol]
-    rw [e] at h1
+    rw [e0] at h1
     exact (inv_nonneg.2 hε₀.le).trans h1
-  -- the lower bound `⌊1/(4ε₀)⌋ (L + 1) ≥ (L + 1)/(8 ε₀)`
-  have hN : 1 / (8 * ε₀) ≤ (⌊1 / (4 * ε₀)⌋₊ : ℝ) := by
-    have h1 := Nat.lt_floor_add_one (1 / (4 * ε₀))
-    have h2 : 1 / (8 * ε₀) + 1 ≤ 1 / (4 * ε₀) := by
-      rw [div_add_one (by positivity), div_le_div_iff₀ (by positivity) (by positivity)]
-      nlinarith
-    linarith
-  have hκO : κF * tpqpOrderF (fun j => (j : ℝ) + 1) 1 (trqLogTol ε₀) ≤ |κF| * (4 / ε₀) :=
-    (mul_le_mul_of_nonneg_right (le_abs_self κF) hO0).trans
-      (mul_le_mul_of_nonneg_left hO (abs_nonneg _))
-  have hfin : (L + 1 : ℝ) / (8 * ε₀) ≤ D.funEvals kε := by
-    calc (L + 1 : ℝ) / (8 * ε₀) = 1 / (8 * ε₀) * (L + 1) := by ring
-      _ ≤ (⌊1 / (4 * ε₀)⌋₊ : ℝ) * (L + 1) := by gcongr
-      _ ≤ _ := hlow
-  have hcontra : |κF| * (4 / ε₀) < (L + 1 : ℝ) / (8 * ε₀) := by
-    rw [mul_div_assoc', div_lt_div_iff₀ hε₀ (by positivity)]
-    nlinarith [abs_nonneg κF]
+  calc κF * tpqpOrderF (fun j => (j : ℝ) + 1) 1 (trqLogTol ε₀)
+      ≤ |κF| * (4 / ε₀) :=
+        (mul_le_mul_of_nonneg_right (le_abs_self κF) hO0).trans
+          (mul_le_mul_of_nonneg_left hO (abs_nonneg _))
+    _ = |κF| * 4 / ε₀ := by ring
+
+/-- **Why the example does not refute the printed order for `q ≥ 2`**: with `ε_j = 1/2`
+(`j ≥ 1`) the printed order `max[ε₀^{-1}, max_j ε₀^{-j} ε_j^{-(j+1)}]` of Theorem 14.3.9 with the
+TRq-SC exponents `π_j = j + 1` is at least `ε₀^{-2}` (its term `j = 2`), which exceeds the lower
+bound of order `ε₀^{-1} log(1/ε₀)` that the example gives. -/
+theorem inv_sq_le_tpqpOrderF_trqLogTol {q : ℕ} (hq : 2 ≤ q) {ε₀ : ℝ} (h0 : 0 < ε₀) :
+    (ε₀ ^ 2)⁻¹ ≤ tpqpOrderF (fun j => (j : ℝ) + 1) q (trqLogTol ε₀) := by
+  refine le_trans ?_ (term_le_tpqpOrderF (π := fun j => (j : ℝ) + 1) (ε := trqLogTol ε₀)
+    (Finset.mem_Icc.2 ⟨by norm_num, hq⟩ : (2 : ℕ) ∈ Finset.Icc 1 q))
+  simp only [trqLogTol, ↓reduceIte, OfNat.ofNat_ne_zero]
+  norm_num
+  have : 0 < (ε₀ ^ 2)⁻¹ := by positivity
   linarith
 
 /-! ### The TRq-SC row `j + 1` of (14.2.12) fails per iteration with uniform constants (`q = 2`) -/
@@ -688,23 +814,11 @@ theorem iteratedDeriv_trqSadSq_three (t : ℝ) : iteratedDeriv 3 trqSadSq t = 0 
 theorem contDiff_trqSadSq : ContDiff ℝ ∞ trqSadSq := by
   unfold trqSadSq; fun_prop
 
-/-- The coordinate projections of `ℝ²` have norm at most `1`. -/
-theorem trqSad_norm_proj_le (i : Fin 2) : ‖(EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ)‖ ≤ 1 := by
-  refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun v => ?_
-  rw [one_mul]
-  simpa using PiLp.norm_apply_le v i
-
 /-- `‖∇ⁿ (w ↦ w_i²/2)(v)‖ ≤ |(t²/2)^{(n)}(v_i)|`. -/
 theorem norm_iteratedFDeriv_trqSadSq_comp (i : Fin 2) (n : ℕ) (v : ℝ²) :
-    ‖iteratedFDeriv ℝ n (fun w : ℝ² => trqSadSq (w i)) v‖ ≤ |iteratedDeriv n trqSadSq (v i)| := by
-  have h := (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).iteratedFDeriv_comp_right contDiff_trqSadSq v
-    (i := n) (by exact_mod_cast le_top)
-  have e : (fun w : ℝ² => trqSadSq (w i)) = trqSadSq ∘ (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ) := rfl
-  rw [e, h]
-  refine (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans ?_
-  rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin,
-    norm_iteratedFDeriv_eq_norm_iteratedDeriv, Real.norm_eq_abs]
-  exact mul_le_of_le_one_right (abs_nonneg _) (pow_le_one₀ (norm_nonneg _) (trqSad_norm_proj_le i))
+    ‖iteratedFDeriv ℝ n (fun w : ℝ² => trqSadSq (w i)) v‖ ≤ |iteratedDeriv n trqSadSq (v i)| :=
+  ContDiffAt.norm_iteratedFDeriv_comp_coord_le i
+    (contDiff_trqSadSq.contDiffAt.of_le (by exact_mod_cast le_top))
 
 
 /-- `w ↦ w_i²/2` is smooth. -/
@@ -813,10 +927,6 @@ theorem trqSadX_subset_ball : trqSadX ⊆ ball (0 : ℝ²) 2 := by
   have : ‖v‖ ^ 2 < 2 ^ 2 := by nlinarith
   exact lt_of_pow_lt_pow_left₀ 2 (by norm_num) this
 
-/-- `|v_i| ≤ ‖v‖`. -/
-theorem trqSad_abs_coord_le (v : ℝ²) (i : Fin 2) : |v i| ≤ ‖v‖ := by
-  simpa using PiLp.norm_apply_le v i
-
 /-- f.D1qLaB.X (`q = 2`) for `f_a` with `a ∈ [0, 1]`, on `X₀` the ball of radius `2`, with the
 constants `L_j = B_j = 4` independent of `a` and of the anchor. -/
 theorem trqSadF_assumption {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a ≤ 1) (x₀ : ℝ²) :
@@ -839,8 +949,8 @@ theorem trqSadF_assumption {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a ≤ 1) (x₀ : ℝ
     rcases hj' with rfl | rfl
     · rw [iteratedDeriv_trqSadSq_one, iteratedDeriv_trqSadSq_one]
       have hx' : ‖x‖ < 2 := mem_ball_zero_iff.1 hx
-      have h0 := (trqSad_abs_coord_le x 0).trans hx'.le
-      have h1 := (trqSad_abs_coord_le x 1).trans hx'.le
+      have h0 := (EuclideanSpace.abs_apply_le_norm x 0).trans hx'.le
+      have h1 := (EuclideanSpace.abs_apply_le_norm x 1).trans hx'.le
       nlinarith [abs_nonneg (x 1)]
     · rw [iteratedDeriv_trqSadSq_two, iteratedDeriv_trqSadSq_two]; norm_num; linarith
 
@@ -931,7 +1041,7 @@ theorem trqSad_witness_p (hb0 : 0 ≤ b) (hb1 : b ≤ 1) (hΔ0 : 0 ≤ Δ) (hΔ1
       change b • trqSadE 0 + 0 ∈ trqSadX
       rw [add_zero]; exact trqSad_smul_e0_mem hb0 hb1⟩ fun d hd => ?_
     rw [trqSad_ΔT1_p]
-    have h1 := trqSad_abs_coord_le d 0
+    have h1 := EuclideanSpace.abs_apply_le_norm d 0
     have h2 := mem_closedBall_zero_iff.1 hd.1
     have h3 := mul_le_mul_of_nonneg_left (neg_le_abs (d 0)) hb0
     have h4 := mul_le_mul_of_nonneg_left (h1.trans h2) hb0
@@ -1036,7 +1146,7 @@ theorem trqSad_witness_zero (ha : 0 ≤ a) (hb0 : 0 ≤ b) (hb1 : b ≤ 1) :
       change (0 : ℝ²) + 0 ∈ trqSadX
       simp only [add_zero, trqSadX_mem, PiLp.zero_apply]; norm_num⟩ fun d hd => ?_
     rw [trqSad_ΔT2_zero ha]
-    have h1 := trqSad_abs_coord_le d 1
+    have h1 := EuclideanSpace.abs_apply_le_norm d 1
     have h2 := mem_closedBall_zero_iff.1 hd.1
     have h3 : (d 1) ^ 2 ≤ b ^ 2 := by
       rw [← sq_abs]; exact pow_le_pow_left₀ (abs_nonneg _) (h1.trans h2) 2
@@ -1114,20 +1224,20 @@ end Prefix
 
 
 open Classical in
-/-- **(14.2.11) with the printed TRq-SC exponents `π_j = j + 1` is false for `q = 2` with
-`κ_decr` depending only on the algorithm parameters, `ϑ` and the f.D1qLaB.X constants**
-([cartis2022evaluation], Lemma 14.2.2, (14.2.12); the dependence of the explicit `κ_decr` of
-Lemma 12.2.4 / (12.2.14)). The objective varies with `κ` within a family with uniform constants;
-a single fixed `f` (which needs `q ≥ 3`) is not formalized. For the TRq parameters `trqSadP`, the
-threshold `ϑ = 1`, the box `X = [-1, 1]²` and every `κ > 0` there are `a ∈ (0, 1]` (the objective
-`f_a(x) = x_1²/2 - a x_2²/2`, which satisfies f.D1qLaB.X with constants `4` independent of `a`),
-tolerances `ε ∈ (0, 1]²` and a TRq-SC run with a successful iteration `k` before termination that
-decreases `f_a` by less than `κ min_j ε_j^{j+1}`. With `r = 2^{-N}`, `ε_1 = r²`, `ε_2 = a = r`: `N`
-unsuccessful first-order iterations at `(r², 0)` shrink the radius from `1` to `r²`, a successful
-step reaches `0`, where the gradient vanishes and the second-order test fails, and the second-order
-step `r² e_2` decreases `f_a` by `r⁵/2`, against `κ min(ε_1², ε_2³) = κ r⁴`. The radius is shared
-across the orders and is driven down by the first-order failures; the decrease proved in Lemma
-12.2.4 is `κ ε_min^{q+1}` (`Chapter14.lemma_14_2_2_trq`). -/
+/-- **(14.2.11) with the printed TRq-SC exponents `π_j = j + 1` is false for `q = 2` with `κ_decr`
+depending only on the algorithm parameters, `ϑ` and the f.D1qLaB.X constants**
+([cartis2022evaluation], Lemma 14.2.2, (14.2.12); the dependence of the explicit `κ_decr` of Lemma
+12.2.4 / (12.2.14)). The objective varies with `κ` within a family with uniform constants; a single
+fixed `f` is `lemma_14_2_2_trq_printed_false_fixed_two`. For the TRq parameters `trqSadP`,
+the threshold `ϑ = 1`, the box `X = [-1, 1]²` and every `κ > 0` there are `a ∈ (0, 1]` (the
+objective `f_a(x) = x_1²/2 - a x_2²/2`, which satisfies f.D1qLaB.X with constants `4` independent of
+`a`), tolerances `ε ∈ (0, 1]²` and a TRq-SC run with a successful iteration `k` before termination
+that decreases `f_a` by less than `κ min_j ε_j^{j+1}`. With `r = 2^{-N}`, `ε_1 = r²`, `ε_2 = a = r`:
+`N` unsuccessful first-order iterations at `(r², 0)` shrink the radius from `1` to `r²`, a
+successful step reaches `0`, where the gradient vanishes and the second-order test fails, and the
+second-order step `r² e_2` decreases `f_a` by `r⁵/2`, against `κ min(ε_1², ε_2³) = κ r⁴`. The radius
+is shared across the orders and is driven down by the first-order failures; the decrease proved in
+Lemma 12.2.4 is `κ ε_min^{q+1}` (`Chapter14.lemma_14_2_2_trq`). -/
 theorem lemma_14_2_2_trq_printed_false {κ : ℝ} (hκ : 0 < κ) :
     ∃ (a : ℝ) (ε : ℕ → ℝ) (x s : ℕ → ℝ²) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → ℝ²) (k : ℕ),
       0 < a ∧ a ≤ 1 ∧ (∀ j ∈ Finset.Icc 1 2, ε j ∈ Ioc 0 1) ∧ x 0 ∈ trqSadX ∧

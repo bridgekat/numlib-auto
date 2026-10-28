@@ -189,10 +189,10 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   `ℝⁿ`, `theorem_14_3_9_arqp_unit`). For `q < p` with the ARqp-SC exponents (which include the
   ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`) the proved bound
   (`theorem_14_3_9_arqp_corrected`) has an extra term outside the printed order
-  (`exists_tpqpOrderF_lt_arqp`); for `q = 1`, `p ≥ 4` and `q = 2`, `p ≥ 5` genuine runs attain it
-  and the printed order fails (`theorem_14_3_9_arqp_counterexample`,
-  `Chapter14.Section03GenuineSharp`); for `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p` it
-  is open.
+  (`exists_tpqpOrderF_lt_arqp`); for `q ∈ {1, 2}` and every `p > q` genuine runs attain it and
+  the printed order fails (`Chapter14.Section03GenuineSharp`,
+  `Chapter14.Section03GenuineSharp2`); for `3 ≤ q < p` it fails as well
+  (`theorem_14_3_9_arqp_printed_false_bowl`, `Chapter14.Section03GenuineSharp4`).
   For genuine TRq-SC runs (INNER of trust-region type, `Chapter14.Section03TrustRegion`) it holds
   with the exponents `q + 1` of Lemma 12.2.4 and a factor `1 + |log(ε₀ ε_min)|` on the
   evaluations of `(f, c)` (`theorem_14_3_9_trq`); the factor is needed for `q = 1`
@@ -1871,7 +1871,7 @@ theorem succCount_le (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D) {k : ℕ} (hk1
 
 /-- In a sequence whose unsuccessful steps do not move, a final point different from the first
 was reached by a successful step: some successful `i < N` has `y_{i+1} = y_N`. -/
-private theorem exists_last_succ {y : ℕ → ℝⁿ} {succ : ℕ → Prop} :
+theorem exists_last_succ {y : ℕ → ℝⁿ} {succ : ℕ → Prop} :
     ∀ N, (∀ i < N, ¬ succ i → y (i + 1) = y i) → y N ≠ y 0 →
       ∃ i < N, succ i ∧ y (i + 1) = y N := by
   intro N
@@ -2529,17 +2529,19 @@ TPqp-GC when `β = θ` is allowed (`IsTPqpGCPhase2.kbCount_le_of_le`). -/
 noncomputable def kbMargin (θ ε₀ : ℝ) : ℝ := θ * (1 - θ) * ε₀ / (1 + θ)
 
 open Classical in
-/-- As `IsTPqpGCPhase2.card_isKb_innerTest_le`, with `f` and `c` of class `C^q` only near the points
-of `X` (the argument evaluates their jets only at feasible iterates). -/
-theorem IsTPqpGCPhase2.card_isKb_innerTest_le_on (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
-    {ρ : ℕ → ℝ} (hrad : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k →
-      D.InnerTest f c X q β ε k → ∀ j ∈ Finset.Icc 1 q, ρ j ≤ D.δ (k + 1) j)
-    (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j)
-    (hf : ∀ y ∈ X, ContDiffAt ℝ q f y)
-    (hc : ∀ y ∈ X, ContDiffAt ℝ q c y) {Bf : ℝ}
-    (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+/-- **The case-(b) iterations passing INNER's test, given a target decrease `τ` at those whose
+margin `‖r(x_{k+1}, t_k)‖ - β ‖r(x_k, t_k)‖` is at least `kbMargin θ ε₀`**: their number in
+`[1, K)` is at most `|𝒦_a ∩ [1, K)| + 1 + (f_up - f_low + 1)/τ`: between consecutive elements
+of `𝒦_a` at most one of them has a smaller margin (if `k < k'` both have margin `< η` with no
+`𝒦_a` iteration in between, the residual does not increase from `k + 1` to `k'`,
+`IsTPqpGCPhase2.resid_le_of_isKb`, and the margin at `k'` is at least `η`). -/
+theorem IsTPqpGCPhase2.card_isKb_innerTest_le_of_drop (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
     {τ : ℝ} (hτ0 : 0 < τ)
-    (hτ : ∀ j ∈ Finset.Icc 1 q, 2 * Bf * τ ≤ kbMargin θ (ε 0) * ε j * ρ j ^ (j - 1) / j !)
+    (hdrop : ∀ k, 1 ≤ k → D.Before f c X q θ ε (k + 1) → D.IsKb f c θ ε k →
+      D.InnerTest f c X q β ε k →
+      kbMargin θ (ε 0) ≤ Constrained.targetResidual f c (D.t k) (D.x (k + 1)) -
+        β * Constrained.targetResidual f c (D.t k) (D.x k) →
+      τ ≤ D.t k - D.t (k + 1))
     {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF)
     {K : ℕ} (hK1 : 1 ≤ K) (hK : D.Before f c X q θ ε K) :
     ((((Finset.Ico 1 K).filter
@@ -2571,21 +2573,7 @@ theorem IsTPqpGCPhase2.card_isKb_innerTest_le_on (h : IsTPqpGCPhase2 f c X q θ 
       ((Finset.filter_subset _ _).trans (Finset.filter_subset _ _)) fun k hk => ?_
     simp only [Finset.mem_filter, Finset.mem_Ico, not_lt] at hk
     obtain ⟨⟨⟨hk1, hkK⟩, hb, htest⟩, hm⟩ := hk
-    obtain ⟨j, hj, hlt⟩ := h.target_drop_of_isKb_margin_on hρ hf hc hBf hk1
-      (IsTPqpGCPhase2.before_mono hK hkK) hb htest
-      (hrad k hk1 (IsTPqpGCPhase2.before_mono hK hkK.le) hb htest) hη0 hm
-    have hd : 0 < D.t k - D.t (k + 1) :=
-      sub_pos.2 (hts.target_succ_lt h.θ_pos.le h.θ_lt_one hε₀ hk1 hkK)
-    have hfac : (0 : ℝ) < j ! := by positivity
-    have hA : 0 ≤ η * ε j * ρ j ^ (j - 1) / j ! := by
-      have := h.ε_pos' hj
-      have := hρ j hj
-      positivity
-    have hBf' : 0 < 2 * Bf := by
-      by_contra hneg
-      push Not at hneg
-      nlinarith
-    exact (lt_of_mul_lt_mul_left ((hτ j hj).trans_lt hlt) hBf'.le).le
+    exact hdrop k hk1 (IsTPqpGCPhase2.before_mono hK hkK) hb htest hm
   -- at most one iteration with a small margin between consecutive elements of `𝒦_a`
   set g : ℕ → ℕ := fun k => Nat.findGreatest (fun j => 1 ≤ j ∧ D.IsKa f c θ ε j) (k - 1)
   have hkey : ∀ k ∈ Sm, ∀ k' ∈ Sm, k < k' → g k ≠ g k' := by
@@ -2645,6 +2633,43 @@ theorem IsTPqpGCPhase2.card_isKb_innerTest_le_on (h : IsTPqpGCPhase2 f c X q θ 
   push_cast
   have : (Sm.card : ℝ) ≤ D.kaCount f c θ ε K + 1 := by exact_mod_cast hSm
   linarith
+
+open Classical in
+/-- As `IsTPqpGCPhase2.card_isKb_innerTest_le`, with `f` and `c` of class `C^q` only near the points
+of `X` (the argument evaluates their jets only at feasible iterates). -/
+theorem IsTPqpGCPhase2.card_isKb_innerTest_le_on (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    {ρ : ℕ → ℝ} (hrad : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k →
+      D.InnerTest f c X q β ε k → ∀ j ∈ Finset.Icc 1 q, ρ j ≤ D.δ (k + 1) j)
+    (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j)
+    (hf : ∀ y ∈ X, ContDiffAt ℝ q f y)
+    (hc : ∀ y ∈ X, ContDiffAt ℝ q c y) {Bf : ℝ}
+    (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+    {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : ∀ j ∈ Finset.Icc 1 q, 2 * Bf * τ ≤ kbMargin θ (ε 0) * ε j * ρ j ^ (j - 1) / j !)
+    {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF)
+    {K : ℕ} (hK1 : 1 ≤ K) (hK : D.Before f c X q θ ε K) :
+    ((((Finset.Ico 1 K).filter
+        (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k)).card : ℕ) : ℝ) ≤
+      D.kaCount f c θ ε K + 1 + (fup - flow + 1) / τ := by
+  have hη0 : 0 ≤ kbMargin θ (ε 0) := by
+    have := h.θ_pos; have : 0 ≤ 1 - θ := by linarith [h.θ_lt_one]
+    unfold kbMargin; have := h.ε₀_pos; positivity
+  refine h.card_isKb_innerTest_le_of_drop hτ0 (fun k hk1 hk hb htest hm => ?_) hB hεβ hK1 hK
+  have hts := h.isTargetSequence hk
+  obtain ⟨j, hj, hlt⟩ := h.target_drop_of_isKb_margin_on hρ hf hc hBf hk1 hk hb htest
+    (hrad k hk1 (IsTPqpGCPhase2.before_mono hk k.le_succ) hb htest) hη0 hm
+  have hd : 0 < D.t k - D.t (k + 1) :=
+    sub_pos.2 (hts.target_succ_lt h.θ_pos.le h.θ_lt_one h.ε₀_pos hk1 k.lt_succ_self)
+  have hfac : (0 : ℝ) < j ! := by positivity
+  have hA : 0 ≤ kbMargin θ (ε 0) * ε j * ρ j ^ (j - 1) / j ! := by
+    have := h.ε_pos' hj
+    have := hρ j hj
+    positivity
+  have hBf' : 0 < 2 * Bf := by
+    by_contra hneg
+    push Not at hneg
+    nlinarith
+  exact (lt_of_mul_lt_mul_left ((hτ j hj).trans_lt hlt) hBf'.le).le
 
 open Classical in
 /-- **The case-(b) outer iterations ending at a point passing INNER's test are bounded for every
@@ -2865,26 +2890,29 @@ theorem IsInnerPhaseRunStrong.toIsInnerPhaseRun (h : IsTPqpGCPhase2 f c X q θ �
       gcongr
 
 open Classical in
-/-- As `IsTPqpGCPhase2.complexity_of_strong`, with `f` and `c` of class `C^q` only near the points
-of `X` (the argument evaluates their jets only at feasible iterates). -/
-theorem IsTPqpGCPhase2.complexity_of_strong_on (h2 : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+/-- **Phase 2 of TPqp-GC terminates within an explicit bound, given a bound `N_b` on the case-(b)
+iterations passing INNER's test** (the argument of `IsTPqpGCPhase2.complexity_of_strong_on`, with
+its bound `N_a + 1 + (f_up - f_low + 1)/τ` on those iterations replaced by any `N_b`): for every
+Phase-2 run satisfying the INNER contract keyed on INNER's own test (`IsInnerPhaseRunStrong`),
+with `N_a = (f_up - f_low + 1)/((1 - θ)ε₀)` and `G = goodBound κ_decr β θ π_max M`, every outer
+iteration `K ≥ 1` reached has `K ≤ (N_a + 1)(G + 1) + N_b`, and Phase 2 terminates at some
+`k_ε ≤ (N_a + 1)(G + 1) + N_b`, using at most `1 + G (N_a + 1) + k_ε` derivative evaluations
+and `1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε` evaluations of
+`(f, c)`. -/
+theorem IsTPqpGCPhase2.complexity_of_strong_card (h2 : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
     {ρ : ℕ → ℝ} (hin : IsInnerPhaseRunStrong f c X q θ β ε D κdecr κuns κunc π ρ)
     (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax)
     (hM0 : 0 < M) (hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - π l) * ε l ^ (-π l) ≤ M)
     {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF)
-    (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j) (hf : ∀ y ∈ X, ContDiffAt ℝ q f y)
-    (hc : ∀ y ∈ X, ContDiffAt ℝ q c y) {Bf : ℝ}
-    (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
-    {τ : ℝ} (hτ0 : 0 < τ)
-    (hτ : ∀ j ∈ Finset.Icc 1 q, 2 * Bf * τ ≤ kbMargin θ (ε 0) * ε j * ρ j ^ (j - 1) / j !) :
+    {Nb : ℝ} (hNb : ∀ K, 1 ≤ K → D.Before f c X q θ ε K →
+      ((((Finset.Ico 1 K).filter
+        (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k)).card : ℕ) : ℝ) ≤ Nb) :
     (∀ K, 1 ≤ K → D.Before f c X q θ ε K →
       (K : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
-        (goodBound κdecr β θ πmax M + 1) +
-          ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / τ)) ∧
+        (goodBound κdecr β θ πmax M + 1) + Nb) ∧
     ∃ kε, D.IsEnd f c X q θ ε kε ∧
       (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
-        (goodBound κdecr β θ πmax M + 1) +
-          ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / τ) ∧
+        (goodBound κdecr β θ πmax M + 1) + Nb ∧
       (D.derivEvals kε : ℝ) ≤
         1 + goodBound κdecr β θ πmax M * ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) + kε ∧
       (D.funEvals kε : ℝ) ≤
@@ -2893,8 +2921,6 @@ theorem IsTPqpGCPhase2.complexity_of_strong_on (h2 : IsTPqpGCPhase2 f c X q θ �
   have hθ := h2.θ_pos
   set Na := (fup - flow + 1) / ((1 - θ) * ε 0)
   set G := goodBound κdecr β θ πmax M
-  set Nb := Na + 1 + (fup - flow + 1) / τ
-  have hε₀ := h2.ε₀_pos
   have hG : 0 ≤ G := by
     unfold G goodBound
     have := h2.θ_lt_one; have := h2.β_pos
@@ -2949,12 +2975,8 @@ theorem IsTPqpGCPhase2.complexity_of_strong_on (h2 : IsTPqpGCPhase2 f c X q θ �
       exact_mod_cast this
     have h3 : (D.kaCount f c θ ε K : ℝ) ≤ Na := h2.kaCount_le hB hεβ hK1 hK
     have h4 := hsg K hK1 hK
-    have h5 : (((Finset.Ico 1 K).filter
-        (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k)).card : ℝ) ≤
-        D.kaCount f c θ ε K + 1 + (fup - flow + 1) / τ :=
-      h2.card_isKb_innerTest_le_on hin.radius_ge hρ hf hc hBf hτ0 hτ hB hεβ hK1 hK
-    have e : (Na + 1) * (G + 1) + Nb = Na + G * (Na + 1) + (Na + 1 + (fup - flow + 1) / τ) + 1 := by
-      simp only [Nb]; ring
+    have h5 := hNb K hK1 hK
+    have e : (Na + 1) * (G + 1) + Nb = Na + G * (Na + 1) + Nb + 1 := by ring
     rw [e]
     linarith
   refine ⟨hi, ?_⟩
@@ -3016,6 +3038,36 @@ theorem IsTPqpGCPhase2.complexity_of_strong_on (h2 : IsTPqpGCPhase2 f c X q θ �
   have : κuns * ∑ k ∈ Finset.Icc 1 kε, (D.succCount k : ℝ) ≤ κuns * (G * (Na + 1) + kε) :=
     mul_le_mul_of_nonneg_left (hsucc.trans (by linarith)) hκuns
   linarith
+
+open Classical in
+/-- As `IsTPqpGCPhase2.complexity_of_strong`, with `f` and `c` of class `C^q` only near the points
+of `X` (the argument evaluates their jets only at feasible iterates). -/
+theorem IsTPqpGCPhase2.complexity_of_strong_on (h2 : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
+    {ρ : ℕ → ℝ} (hin : IsInnerPhaseRunStrong f c X q θ β ε D κdecr κuns κunc π ρ)
+    (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax)
+    (hM0 : 0 < M) (hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - π l) * ε l ^ (-π l) ≤ M)
+    {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (hεβ : ε 0 ≤ βF)
+    (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j) (hf : ∀ y ∈ X, ContDiffAt ℝ q f y)
+    (hc : ∀ y ∈ X, ContDiffAt ℝ q c y) {Bf : ℝ}
+    (hBf : ∀ y ∈ X, ‖c y‖ ≤ ε 0 → ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f y‖ ≤ Bf)
+    {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : ∀ j ∈ Finset.Icc 1 q, 2 * Bf * τ ≤ kbMargin θ (ε 0) * ε j * ρ j ^ (j - 1) / j !) :
+    (∀ K, 1 ≤ K → D.Before f c X q θ ε K →
+      (K : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
+        (goodBound κdecr β θ πmax M + 1) +
+          ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / τ)) ∧
+    ∃ kε, D.IsEnd f c X q θ ε kε ∧
+      (kε : ℝ) ≤ ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) *
+        (goodBound κdecr β θ πmax M + 1) +
+          ((fup - flow + 1) / ((1 - θ) * ε 0) + 1 + (fup - flow + 1) / τ) ∧
+      (D.derivEvals kε : ℝ) ≤
+        1 + goodBound κdecr β θ πmax M * ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) + kε ∧
+      (D.funEvals kε : ℝ) ≤
+        1 + κuns * (goodBound κdecr β θ πmax M * ((fup - flow + 1) / ((1 - θ) * ε 0) + 1) +
+          kε) + κunc * kε := by
+  exact h2.complexity_of_strong_card hin hκ hκuns hπ hM0 hM hB hεβ fun K hK1 hK =>
+    (h2.card_isKb_innerTest_le_on hin.radius_ge hρ hf hc hBf hτ0 hτ hB hεβ hK1 hK).trans
+      (by linarith [h2.kaCount_le hB hεβ hK1 hK])
 
 open Classical in
 /-- **Theorem 14.3.9 (Phase 2): termination within an explicit bound without the bad-iteration
@@ -3658,21 +3710,18 @@ theorem norm_cexE : ‖cexE‖ = 1 := by simp [cexE]
 theorem norm_cexC (y : ℝ²) : ‖cexC y‖ = |3 / 5 + y 1| := by
   simp [cexC, norm_smul, norm_cexE]
 
-/-- The derivative of a coordinate. -/
-theorem hasFDerivAt_coord (i : Fin 2) (y : ℝ²) :
-    HasFDerivAt (fun x : ℝ² => x i) (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ) y :=
-  (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).hasFDerivAt
-
 /-- The derivative of `f`. -/
 theorem hasFDerivAt_cexF (y : ℝ²) :
     HasFDerivAt cexF (EuclideanSpace.proj (1 : Fin 2) - EuclideanSpace.proj (0 : Fin 2) :
       ℝ² →L[ℝ] ℝ) y :=
-  (hasFDerivAt_coord 1 y).sub (hasFDerivAt_coord 0 y)
+  (PiLp.hasFDerivAt_apply (𝕜 := ℝ) 2 y 1).sub
+    (PiLp.hasFDerivAt_apply (𝕜 := ℝ) 2 y 0)
 
 /-- The derivative of `c`. -/
 theorem hasFDerivAt_cexC (y : ℝ²) :
     HasFDerivAt cexC ((EuclideanSpace.proj (1 : Fin 2) : ℝ² →L[ℝ] ℝ).smulRight cexE) y := by
-  have := ((hasFDerivAt_const (3 / 5 : ℝ) y).add (hasFDerivAt_coord 1 y)).smul_const cexE
+  have := ((hasFDerivAt_const (3 / 5 : ℝ) y).add
+    (PiLp.hasFDerivAt_apply (𝕜 := ℝ) 2 y 1)).smul_const cexE
   exact this.congr_fderiv (ContinuousLinearMap.ext fun d => by simp)
 
 /-- The first-order Taylor decrement of `μ(·, t)` at a point `y` with `y₂ = 0`:
@@ -6293,18 +6342,19 @@ private theorem exists_phase2_call_unit {t : ℝ} {L : ℕ → ℝ}
     exact h1
 
 open Classical in
-/-- The construction of Phase 2 of TPqp-GC from an INNER oracle: if from every `(x, t)` with
+/-- The construction of Phase 2 of TPqp-GC from an INNER oracle whose calls may also stop at
+`f < t_k` (the second test of (14.3.32)): if from every `(x, t)` with
 `x ∈ X`, `θε₀ ≤ ‖r(x, t)‖ ≤ ε₀` and `t ≤ f(x)` some call `o` (iterates from `x` not increasing
 `μ(·, t)`, stopped as soon as `‖r(·, t)‖ < θε₀`, ending at a point of `X` with radii in
-`(0, 1]` where the first or the third test of (14.3.32) holds) has the property `Good x t o`,
+`(0, 1]` where one of the three tests of (14.3.32) holds) has the property `Good x t o`,
 there is a Phase-2 run whose `k`-th call has the property `Good x_k t_k`. -/
-theorem phase2_core_of (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
+theorem phase2_core_of_cut (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
     (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x₁ : ℝⁿ} (hx₁ : x₁ ∈ X)
     (hc₁ : ‖c x₁‖ ≤ θ * ε 0) (Good : ℝⁿ → ℝ → CallOut n → Prop)
     (hgood : ∀ x t, x ∈ X → θ * ε 0 ≤ Constrained.targetResidual f c t x →
       Constrained.targetResidual f c t x ≤ ε 0 → t ≤ f x → ∃ o : CallOut n,
         o.xi 0 = x ∧ o.xi o.e ∈ X ∧ (∀ j ∈ Finset.Icc 1 q, 0 < o.δ j ∧ o.δ j ≤ 1) ∧
-        (Constrained.targetResidual f c t (o.xi o.e) < θ * ε 0 ∨
+        (Constrained.targetResidual f c t (o.xi o.e) < θ * ε 0 ∨ f (o.xi o.e) < t ∨
           meritCrit f c X q ε t (o.xi o.e) o.δ) ∧
         (∀ i < o.e, Constrained.targetMerit f c t (o.xi (i + 1)) ≤
           Constrained.targetMerit f c t (o.xi i)) ∧
@@ -6322,7 +6372,7 @@ theorem phase2_core_of (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : 
       Constrained.targetResidual f c a.2 a.1 ≤ ε 0 ∧ a.2 ≤ f a.1
   have hcall : ∀ a : ℝⁿ × ℝ, ∃ o : CallOut n, Valid a → o.xi 0 = a.1 ∧ o.xi o.e ∈ X ∧
       (∀ j ∈ Finset.Icc 1 q, 0 < o.δ j ∧ o.δ j ≤ 1) ∧
-      (Constrained.targetResidual f c a.2 (o.xi o.e) < θ * ε 0 ∨
+      (Constrained.targetResidual f c a.2 (o.xi o.e) < θ * ε 0 ∨ f (o.xi o.e) < a.2 ∨
         meritCrit f c X q ε a.2 (o.xi o.e) o.δ) ∧
       (∀ i < o.e, Constrained.targetMerit f c a.2 (o.xi (i + 1)) ≤
         Constrained.targetMerit f c a.2 (o.xi i)) ∧
@@ -6414,9 +6464,7 @@ theorem phase2_core_of (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : 
     exact (hcall _ hv).2.2.1
   · intro k hk1 hk
     obtain ⟨j, rfl, hv⟩ := hspec k hk1 hk
-    rcases (hcall _ hv).2.2.2.1 with h | h
-    · exact Or.inl h
-    · exact Or.inr (Or.inr h)
+    exact (hcall _ hv).2.2.2.1
   · intro k hk1 hk
     obtain ⟨j, rfl, hv⟩ := hspec k hk1 hk
     exact (hcall _ hv).1
@@ -6439,6 +6487,35 @@ theorem phase2_core_of (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : 
   · intro k hk1 hk
     obtain ⟨j, rfl, hv⟩ := hspec k hk1 hk
     exact ⟨hv, (hcall _ hv).2.2.2.2.2.2.2⟩
+
+open Classical in
+/-- The construction of Phase 2 of TPqp-GC from an INNER oracle: if from every `(x, t)` with
+`x ∈ X`, `θε₀ ≤ ‖r(x, t)‖ ≤ ε₀` and `t ≤ f(x)` some call `o` (iterates from `x` not increasing
+`μ(·, t)`, stopped as soon as `‖r(·, t)‖ < θε₀`, ending at a point of `X` with radii in
+`(0, 1]` where the first or the third test of (14.3.32) holds) has the property `Good x t o`,
+there is a Phase-2 run whose `k`-th call has the property `Good x_k t_k`
+(`phase2_core_of_cut` without its second test). -/
+theorem phase2_core_of (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
+    (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x₁ : ℝⁿ} (hx₁ : x₁ ∈ X)
+    (hc₁ : ‖c x₁‖ ≤ θ * ε 0) (Good : ℝⁿ → ℝ → CallOut n → Prop)
+    (hgood : ∀ x t, x ∈ X → θ * ε 0 ≤ Constrained.targetResidual f c t x →
+      Constrained.targetResidual f c t x ≤ ε 0 → t ≤ f x → ∃ o : CallOut n,
+        o.xi 0 = x ∧ o.xi o.e ∈ X ∧ (∀ j ∈ Finset.Icc 1 q, 0 < o.δ j ∧ o.δ j ≤ 1) ∧
+        (Constrained.targetResidual f c t (o.xi o.e) < θ * ε 0 ∨
+          meritCrit f c X q ε t (o.xi o.e) o.δ) ∧
+        (∀ i < o.e, Constrained.targetMerit f c t (o.xi (i + 1)) ≤
+          Constrained.targetMerit f c t (o.xi i)) ∧
+        (∀ i < o.e, θ * ε 0 ≤ Constrained.targetResidual f c t (o.xi i)) ∧
+        Constrained.targetResidual f c t (o.xi o.e) ≤ Constrained.targetResidual f c t x ∧
+        Good x t o) :
+    ∃ D : TPqpSeq n, IsTPqpGCPhase2 f c X q θ β ε x₁ D ∧
+      ∀ k, 1 ≤ k → D.Before f c X q θ ε k →
+        (D.x k ∈ X ∧ θ * ε 0 ≤ Constrained.targetResidual f c (D.t k) (D.x k) ∧
+          Constrained.targetResidual f c (D.t k) (D.x k) ≤ ε 0 ∧ D.t k ≤ f (D.x k)) ∧
+        Good (D.x k) (D.t k) ⟨D.xi k, D.e k, D.succ k, D.δ (k + 1)⟩ :=
+  phase2_core_of_cut hθ0 hθ1 hβ0 hβθ hε hx₁ hc₁ Good fun x t hx hlo hhi hft =>
+    (hgood x t hx hlo hhi hft).imp fun _ ⟨h0, h1, h2, h3, h4⟩ =>
+      ⟨h0, h1, h2, h3.imp_right Or.inr, h4⟩
 
 open Classical in
 /-- The construction of Phase 2 of TPqp-GC with INNER = ARqp-SC: the targets stay in a set `T`
