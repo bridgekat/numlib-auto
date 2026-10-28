@@ -34,9 +34,9 @@ Theorem 14.3.9 in the printed order for every run with the exponents `j + 1`
 (`theorem_14_3_9_arqpc`; the ARqpC-SC entry of (14.2.12) for `q ≥ 2` or `X` nonconvex) and with
 the ARqp-SC exponents when `q = p` (`theorem_14_3_9_arqp`). In the case of this module,
 `q = 1 < p` with `π₁ = (p+1)/p` (the ARqp-SC entry, and the ARqpC-SC entry for convex `X`), genuine
-ARqp-SC runs also exceed the printed order when `p ≥ 4` (`Chapter14.Section03GenuineSharp`,
-`theorem_14_3_9_arqp_counterexample`, with a tilted objective `f(x) = x₁ - x₂/16`), and for
-every `p ≥ 2` (`Chapter14.Section03GenuineSharp2`, `theorem_14_3_9_arqp_counterexample_walk`).
+ARqp-SC runs also exceed the printed order when `p ≥ 4` (and for `q = 2` when `p ≥ 5`;
+`Chapter14.Section03GenuineSharp`, `theorem_14_3_9_arqp_counterexample`, with a tilted objective
+`f(x) = x₁ - x₂/16`).
 
 ## Main results
 
@@ -107,9 +107,8 @@ exceed the printed order under the per-call reading when `p ≥ 4`
 tilted (`f(x) = x₁ - x₂/16`) so that at the landing points only a gradient `≲ u³/32` remains and
 the ARqp-SC model criticality (12.2.29) holds, the Taylor models of degree `p ≥ 4` of the quartic
 `μ(·, t_k)` are exact, and each step is an approximate critical point of the model (Algorithm
-14.1.2 started with a small `μ` at Step 2.1). For `p ∈ {2, 3}` they exceed it too
-(`Chapter14.Section03GenuineSharp2`, with `c(x) = x₁⁴` and inexact Taylor models); under the
-literal reading the theorem is vacuous for these runs when `π₁ < 2`.
+14.1.2 started with a small `μ` at Step 2.1). Under the literal reading the theorem is vacuous
+for these runs when `π₁ < 2`.
 -/
 
 open Set Metric
@@ -1179,10 +1178,8 @@ corrected statement is `IsTPqpGCPhase2.complexity_of_strong` (and the end-to-end
 `O(ε₀^{-1} + (ε₀ ε₁)^{-1})`. The INNER calls are not runs of ARqp-SC (see the module doc):
 they are not produced by a regularization algorithm of (14.2.12). Runs of ARqp-SC itself
 exceed the printed order with `π₁ = (p+1)/p` (per-call reading) for `q = 1` and `p ≥ 4`
-(`theorem_14_3_9_arqp_counterexample`, on a different problem) and for every `p ≥ 2`
-(`theorem_14_3_9_arqp_counterexample_walk`) (for
-`q = p`, and with the exponents `j + 1`, they attain it: `theorem_14_3_9_arqp`,
-`theorem_14_3_9_arqpc`).
+(`theorem_14_3_9_arqp_counterexample`, on a different problem); for `q = p`, and with the
+exponents `j + 1`, they attain it (`theorem_14_3_9_arqp`, `theorem_14_3_9_arqpc`).
 
 The construction needs `π₁ ≥ 4/3` for the cost bound: a call costs at least one evaluation while
 `(μ(x_k, t_k)) (β ‖r‖ ε₁)^{-π₁} ∼ u^{4 - 3π₁}` (`‖r‖ ∼ u²`, `ε₁ ∼ u`), which tends to `0` for

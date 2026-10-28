@@ -97,15 +97,12 @@ these steps are not admissible, and whether the printed order then holds is not 
 
 * `p ≥ 4` is used for the exactness of the Taylor models of the quartic `μ(·, t)`, so that a
   single step can raise `x₁` from `0` to `u`; for `p ≤ 3` the Taylor model is not exact and this
-  construction does not apply (`Chapter14.Section03GenuineSharp2` covers every `p > q`, `q ≤ 2`,
-  with `c(x) = x₁⁴` and a walk in short steps). For `q = 2` the printed order-`2` term
-  `ε₀^{1-π₂} ∼ u^{-2-4/p}` is at least of the order of the count `∼ u^{-3}` when `p ≤ 4`, and
-  for `q ≥ 3` the term
+  construction does not apply. For `q = 2` the printed order-`2` term `ε₀^{1-π₂} ∼ u^{-2-4/p}` is
+  at least of the order of the count `∼ u^{-3}` when `p ≤ 4`, and for `q ≥ 3` the term
   `ε₀^{1-π₃} ∼ u^{-4-6/p}` always is; with this degenerate constraint (`ε₁ ∼ ε₀^{1/2}`) the
   cases `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p` are not settled here.
 * The run uses a box `X`; the unit-radius class on `ℝⁿ` (`IsTPqpGCARqpUnitRun`, where f.B.Fb
-  fails for this `f`) is treated in `Chapter14.Section03GenuineSharp2` with a saturated
-  constraint.
+  fails for this `f`) is not treated here.
 -/
 
 open Set Metric

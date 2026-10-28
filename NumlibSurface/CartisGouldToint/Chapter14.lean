@@ -8,6 +8,7 @@ import NumlibSurface.CartisGouldToint.Chapter14.Section03Genuine
 import NumlibSurface.CartisGouldToint.Chapter14.Section03GenuineSharp
 import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegion
 import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegionSharp
+import NumlibSurface.CartisGouldToint.Chapter14.Section03TrustRegionPrinted
 
 /-!
 # Cartis–Gould–Toint, Chapter 14: Composite and Constrained Problems
@@ -131,10 +132,23 @@ module imports the section modules and adds nothing of its own.
 * §14.2–§14.3, `Chapter14.Section03TrustRegionSharp`: the logarithmic factor of
   `theorem_14_3_9_trq` is needed for `q = 1` (`theorem_14_3_9_trq_log_necessary`: on an example
   satisfying all hypotheses, no `κ_F` bounds the `(f, c)` evaluations of every run with TRq-SC
-  calls by `κ_F max[ε₀^{-1}, ε₀^{-1} ε_1^{-2}]`), and the TRq-SC row `j + 1` of (14.2.12) is false
-  as a per-iteration decrease for `q = 2` with `κ_decr` depending only on the algorithm parameters
-  and the f.D1qLaB.X constants, as in (12.2.14) (`lemma_14_2_2_trq_printed_false_uniform`; a
-  single fixed `f` is not formalized)
+  calls by `κ_F max[ε₀^{-1}, ε₀^{-1} ε_1^{-2}]`); for every `q ≥ 1` the same example admits no
+  bound `κ_F ε₀^{-1}` at fixed dual tolerances (`theorem_14_3_9_trq_log_necessary_inv`), which for
+  `q ≥ 2` is not a counterexample, since the printed order is then at least `ε₀^{-2}`
+  (`inv_sq_le_tpqpOrderF_trqLogTol`); the TRq-SC row `j + 1` of (14.2.12) is false as a
+  per-iteration decrease for `q = 2` with `κ_decr` depending only on the algorithm parameters and
+  the f.D1qLaB.X constants, as in (12.2.14) (`lemma_14_2_2_trq_printed_false_uniform`)
+* §14.3, `Chapter14.Section03TrustRegionPrinted`: Theorem 14.3.9 with TRq-SC calls is false in
+  the printed order (exponents `j + 1`) for every `q ≥ 2`, even with the factor
+  `1 + |log(ε₀ ε_min)|` and for the derivative evaluations alone, on fixed problems satisfying
+  all its hypotheses (`f = 0`, `c(v) = (1, v_1^{-1/8}, v_2)` or `(v_1^{-1/8}, v_2)`,
+  `X = {v_1 ≥ 1}`) with fixed parameters, for runs ending in Phase 1
+  (`theorem_14_3_9_trq_printed_false`, `theorem_14_3_9_trq_printed_false_conclusion`) and in
+  Phase 2 (`theorem_14_3_9_trq_printed_false_phase2`,
+  `theorem_14_3_9_trq_printed_false_conclusion_phase2`): after first-order failures drive the
+  radius to the scale of `ε_1`, about `2^{22M}` second-order steps along a long direction of
+  slope between `ε_2 ε_1` and `ε_1` (`ε_1 = 2^{-10M}`, `ε_2 = 2^{-5M}`) against the printed
+  order `2^{20M}`; splicing explicit TRq-SC prefixes with runs (`trq_splice`)
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
@@ -223,8 +237,7 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   radii), which exceeds the printed order (`theorem_14_3_9_arqp_corrected`,
   `exists_tpqpOrderF_lt_arqp`). For `q = 1`, `p ≥ 4` and `q = 2`, `p ≥ 5` genuine ARqp-SC runs
   attain that term and the printed order fails (`theorem_14_3_9_arqp_counterexample`,
-  `theorem_14_3_9_arqp_printed_false`); for `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p` it
-  is open. With INNER
+  `theorem_14_3_9_arqp_printed_false`). With INNER
   of trust-region type (genuine TRq-SC runs, `Chapter14.Section03TrustRegion`) the theorem holds
   with the exponents `π_j = q + 1` that Lemma 12.2.4 gives (the printed `j + 1` for `q = 1`) and
   a factor `1 + |log(ε₀ ε_min)|` on the evaluations of `(f, c)` (every call restarts from the
@@ -232,7 +245,9 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   (`theorem_14_3_9_trq_log_necessary`), and the row `j + 1` of (14.2.12) contradicts the book's own
   Theorem 14.2.4 table (TRq-SC: `O(max_j ε_j^{-(q+1)})`) and is false per iteration for `q = 2`
   with `κ_decr` depending only on the algorithm parameters and the f.D1qLaB.X constants
-  (`lemma_14_2_2_trq_printed_false_uniform`). The book's f.D1qLB.Fb is not defined in the book,
+  (`lemma_14_2_2_trq_printed_false_uniform`); for whole runs the printed order is false for every
+  `q ≥ 2`, even with the factor (`theorem_14_3_9_trq_printed_false`,
+  `theorem_14_3_9_trq_printed_false_phase2`). The book's f.D1qLB.Fb is not defined in the book,
   f.D1qLB.X is used. When the
   number of bad iterations is bounded independently of `ε`, the counts are
   `O(max(ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}))`; the derivative count acquires an `ε₀^{-1}`
@@ -262,15 +277,15 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 * The `O(·)` restatement of Theorem 14.3.4 (Theorem 14.3.9 is stated with constants chosen
   before `ε` in `Chapter14.Section03Genuine`).
-* Theorem 14.3.9 with INNER of trust-region type: whether genuine runs attain the whole-run order
-  with the exponents `j + 1` for `q ≥ 2` (the per-iteration decrease with uniform constants is
-  false), whether (14.2.11) with `j + 1` fails for a single fixed `f` (`q ≥ 3`), and whether the
-  factor `1 + |log(ε₀ ε_min)|` is needed for `q ≥ 2` (it is for `q = 1`); TRqIDA-SC and TRqEDA-SC
-  as INNER.
-* Whether runs of ARqp-SC attain the printed order of Theorem 14.3.9 for `q = 1 < p ≤ 3`,
-  `q = 2 < p ≤ 4` and `3 ≤ q < p`,
-  and with unit radii on `ℝⁿ` for `q < p` (the proved bounds have an extra term outside that
-  order; for `q = 1`, `p ≥ 4` and `q = 2`, `p ≥ 5` genuine runs on a box exceed the printed
-  order, `theorem_14_3_9_arqp_counterexample`; under the literal uniform reading of the INNER
-  hypotheses the theorem is vacuous for them when `π₁ < 2`).
+* Theorem 14.3.9 with INNER of trust-region type: the failure of (14.2.11) with the exponents
+  `j + 1` for a single fixed `f`, whether the factor `1 + |log(ε₀ ε_min)|` is needed for `q ≥ 2`,
+  orders between the printed and the proved ones and lower bounds for the proved one; TRqIDA-SC
+  and TRqEDA-SC as INNER.
+* Theorem 14.3.9 with INNER = ARqp-SC: the printed order for `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4`
+  and `3 ≤ q < p`, and with unit radii on `ℝⁿ` for `q < p`, is neither proved nor refuted here
+  (the proved bounds have an extra term outside that order; under the literal uniform reading of
+  the INNER hypotheses the theorem is vacuous for these runs when `π₁ < 2`).
+* Investigations beyond the book (for Theorem 14.3.9: Łojasiewicz and constraint-qualification
+  conditions, further ARqp-SC counterexamples, the mixed trust-region order, fixed-problem TRq-SC
+  refutations) are archived at commit 8c2b1518 on branch `claude/cartis-gould-toint-formalization`.
 -/

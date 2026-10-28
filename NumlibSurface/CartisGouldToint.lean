@@ -185,7 +185,11 @@ where one exists:
   TRq-SC row `j + 1` of (14.2.12), which contradicts the book's own Theorem 14.2.4 table, is
   false as a per-iteration decrease for `q = 2` with `κ_decr` depending only on the algorithm
   parameters and the f.D1qLaB.X constants, as in (12.2.14)
-  (`Chapter14.lemma_14_2_2_trq_printed_false_uniform`; a single fixed `f` is not formalized).
+  (`Chapter14.lemma_14_2_2_trq_printed_false_uniform`). For whole runs the printed TRq-SC order is
+  false for every `q ≥ 2`, even with the factor `1 + |log(ε₀ ε_min)|`, for runs ending in Phase 1
+  and in Phase 2, on fixed problems satisfying all hypotheses
+  (`Chapter14.theorem_14_3_9_trq_printed_false`,
+  `Chapter14.theorem_14_3_9_trq_printed_false_phase2`).
 * **(14.3.20)–(14.3.21)**: the multiplicative INNER cost contract is false when every `π_j < 2`
   (`q = 1`, `p ≥ 2` with INNER = ARqp-SC;
   `Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`: a call costs at least one
@@ -214,16 +218,11 @@ and on the declarations.
 
 ## Not formalized
 
-* Whether runs of ARqp-SC attain the printed order of Theorem 14.3.9 under the per-call reading
-  for `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4` and `3 ≤ q < p` (including the ARqpC-SC entry `(p+1)/p`
-  for `q = 1`, `X` convex, `p ≤ 3`), and with unit radii on `ℝⁿ` (it holds for the exponents
-  `j + 1` and for the ARqp-SC exponents with `q = p`, and fails for `q = 1`, `p ≥ 4` and
-  `q = 2`, `p ≥ 5`; for `q < p` the proved bound has an extra term outside the printed order;
-  the theorem fails for a nonspecific INNER under that reading and is vacuous under the literal
-  uniform one for `π₁ < 2`,
-  see above), and, for INNER of trust-region type with `q ≥ 2`, whether genuine runs attain the
-  whole-run order with the exponents `j + 1` and whether the factor `1 + |log(ε₀ ε_min)|` is
-  needed (for `q = 1` it is).
+* Investigations beyond the book (Łojasiewicz and constraint-qualification thresholds and their
+  sharpness, further ARqp-SC counterexamples including `3 ≤ q < p`, the mixed trust-region order
+  and the necessity and tightness of its logarithmic factor across regimes, fixed-problem TRq-SC
+  refutations) are not in the library; they are archived at commit 8c2b1518 on branch
+  `claude/cartis-gould-toint-formalization`.
 * The heuristic procedure of §9.3.7, the stopping advice built on the tests (9.4.3)–(9.4.4), and
   the Gertz–Gill criterion (9.4.8) quoted in §9.4.
 * Discussion without numbered results: the variants of §2.2.3, §4.1.3, §7.2.3, the qualitative parts

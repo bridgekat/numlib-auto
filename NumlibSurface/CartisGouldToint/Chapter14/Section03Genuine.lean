@@ -65,10 +65,6 @@ passing INNER's test; `ρ_j ∼ ε₀ ε_j` (radius policy) or `ρ_j = 1` (unit 
 * `exists_tpqpOrderF_lt_arqp`, `exists_tpqpOrderF_lt_arqp_unit`: for `q < p` these extra terms are
   not dominated by the printed order (tolerances `ε₀ = δ`, `ε_1 = δ^a`, `ε_i = 1`;
   `exists_tpqpOrderF_lt`);
-* `IsTPqpGCPhase2.abs_sub_succ_le`, `IsInnerPhaseRunStrong.x_succ_eq`,
-  `IsTPqpGCPhase2.sub_le_succCount`, `IsTPqpGCPhase2.end_crit`: every outer iteration moves `f` by
-  at most `2ε₀` and only with a successful inner iteration, and at termination (14.3.34) holds for
-  a target below `f` (used for the lower bound of `theorem_14_3_9_arqp_cq_one_printed_false`);
 * `exists_isTPqpGCARqpSCRun`, `exists_isTPqpGCARqpUnitRun`: both run classes are non-empty
   (`X` closed and `x₀ ∈ X`, resp. `X = ℝⁿ` and `q ≤ 2`, every admissible choice of constants).
 
@@ -80,25 +76,15 @@ Which rows of (14.2.12) are proved in the printed order, for the runs above:
   (`theorem_14_3_9_arqpc`).
 * ARqpC-SC row, entry `(p+1)/p` (`q = 1`, `h = 0`, `X` convex): this is the ARqp-SC exponent of
   order `1`; proved for `p = 1` (`π_1 = 2`, `theorem_14_3_9_arqp` and `theorem_14_3_9_arqpc`),
-  false for every `p ≥ 2` (`theorem_14_3_9_arqp_counterexample` for `p ≥ 4`,
-  `theorem_14_3_9_arqp_counterexample_walk` for every `p ≥ 2`; the proved bound,
-  `theorem_14_3_9_arqp_corrected`, has the extra term `(ε₀ ε_1)^{-1}`, outside the printed order
-  by `exists_tpqpOrderF_lt_arqp`).
+  false for `p ≥ 4` (`theorem_14_3_9_arqp_counterexample`, `Chapter14.Section03GenuineSharp`); for
+  `p ∈ {2, 3}` the proved bound, `theorem_14_3_9_arqp_corrected`, has the extra term
+  `(ε₀ ε_1)^{-1}`, outside the printed order by `exists_tpqpOrderF_lt_arqp`.
 * ARqp-SC row, "otherwise" `j(p+1)/p` (every `X`): proved for `q = p` (`theorem_14_3_9_arqp`);
-  false for `q ∈ {1, 2}` and every `p > q` on data with degenerate constraints
-  (`theorem_14_3_9_arqp_counterexample` for
-  `p ≥ q + 3`, `theorem_14_3_9_arqp_counterexample_walk` for every `p > q`, on a box `X`); for
-  `3 ≤ q < p` proved for every run and any `X` under a constraint qualification
-  (`theorem_14_3_9_arqp_cq`) or a constrained Łojasiewicz inequality with `2γ + 1 ≤ q`
-  (`theorem_14_3_9_arqp_lojasiewicz_any_radius_of_le`), for runs with radii bounded below under a
-  constrained Łojasiewicz inequality with `γ ≤ π_q - 1` (`theorem_14_3_9_arqp_lojasiewicz`,
-  which covers the data of the counterexamples, `theorem_14_3_9_arqp_walk_data_three`), and
-  false in general: for every
-  `q < p` with `p ≥ 4` on a box with a smooth constraint violating every such inequality, for
-  runs with radii `1` (`theorem_14_3_9_arqp_counterexample_bowl`).
+  false for `q = 1`, `p ≥ 4` and for `q = 2`, `p ≥ 5` (`theorem_14_3_9_arqp_counterexample`, on
+  a box `X`); for the other `q < p`, the corrected bound `theorem_14_3_9_arqp_corrected`.
 * ARqp unit radii on `ℝⁿ`, `(p+1)/(p-j+1)`: proved for `q = p ≤ 2`
-  (`theorem_14_3_9_arqp_unit`, where the exponents coincide with `j(p+1)/p`); false for every
-  `q < p`, `q ≤ 2` (`theorem_14_3_9_arqp_unit_counterexample`, on `ℝ²`).
+  (`theorem_14_3_9_arqp_unit`, where the exponents coincide with `j(p+1)/p`); for `q < p`,
+  `q ≤ 2`, the corrected bound `theorem_14_3_9_arqp_unit_corrected`.
 
 For `q < p` the term of order `1`, `(ε₀ ε_1)^{-1}`, exceeds
 `C max[ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}]` for every `C` along `ε_1 = ε₀^a`, `ε_i = 1`
@@ -106,22 +92,12 @@ For `q < p` the term of order `1`, `(ε₀ ε_1)^{-1}`, exceeds
 applies to the term of every order `j ≤ q`). There the corrected statements
 (`theorem_14_3_9_arqp_corrected`, `theorem_14_3_9_arqp_unit_corrected`) are proved. The extra
 term counts case-(b) iterations whose target decreases by `2 (t_k - f(x_{k+1})) ≳ ε₀ ε_j
-ρ_j^{j-1}`; for `q ∈ {1, 2}` and every `p > q` genuine runs attain it:
-`Chapter14.Section03GenuineSharp` (for `p ≥ q + 3`) gives runs of `IsTPqpGCARqpSCRun` with at least
+ρ_j^{j-1}`; for `q = 1`, `p ≥ 4` and for `q = 2`, `p ≥ 5` genuine runs attain it:
+`Chapter14.Section03GenuineSharp` gives runs of `IsTPqpGCARqpSCRun` with at least
 `(ε₀ ε₁)^{-1}/128` evaluations, more than any multiple of the printed order
 (`theorem_14_3_9_arqp_counterexample`, `theorem_14_3_9_arqp_printed_false`); their steps are
 approximate critical points of the model with a tiny model decrease (Algorithm 14.1.2 started with
-a small `μ` at Step 2.1, as the book allows; `Optimization.IsDetailedStepOutput.of_short_step`);
-`Chapter14.Section03GenuineSharp2` does the same for every `p > q` with inexact Taylor models
-(`theorem_14_3_9_arqp_counterexample_walk`) and for the unit-radius class
-(`theorem_14_3_9_arqp_unit_counterexample`). For `3 ≤ q < p` the printed order holds under extra
-hypotheses (`Chapter14.Section03GenuineSharp3`: `theorem_14_3_9_arqp_lojasiewicz`,
-`theorem_14_3_9_arqp_walk_data_three`; `Chapter14.Section03GenuineSharp5`:
-`theorem_14_3_9_arqp_cq`, `theorem_14_3_9_arqp_lojasiewicz_any_radius`), and fails without
-them: `Chapter14.Section03GenuineSharp4` gives, for every `q < p` with `p ≥ 4`, smooth data on a
-box violating every constrained Łojasiewicz inequality and runs with radii `1` that exceed the
-printed order (`theorem_14_3_9_arqp_counterexample_bowl`, `theorem_14_3_9_arqp_printed_false_bowl`;
-Phase-2 steps again from a small `μ` at Step 2.1).
+a small `μ` at Step 2.1, as the book allows; `Optimization.IsDetailedStepOutput.of_short_step`).
 
 ## Deviations from the book
 
@@ -134,8 +110,7 @@ Phase-2 steps again from a small `μ` at Step 2.1).
 * The book's `f_up - f_low - 1` is `f_up - f_low + 1`; `max_j` is kept (`tpqpOrderF`,
   `tpqpOrderD`); the constants depend on the data, on `P`, `θ`, `β`, `β₁`, `f_up - f_low` and
   `‖c(x₀)‖` (Lemma 14.3.6 (i)), and are chosen before `ε`. f.B.Fb is on `ℱ_{β_F}` with `ε₀ ≤ β_F`.
-* The derivative count acquires the term `ε₀^{-1}` (necessary for `q = 1 < p`,
-  `theorem_14_3_9_arqp_cq_one_printed_false`; one successful iteration per outer iteration
+* The derivative count acquires the term `ε₀^{-1}` (one successful iteration per outer iteration
   that moves); it is absorbed in the printed `max_j ε₀^{1-π_j} ε_j^{-π_j}` whenever some `π_j ≥ 2`
   (`tpqpOrderF_le_tpqpOrderD`), which holds in every case proved in the printed order.
 * Phase 1 with the ARqp-SC exponents uses the additive cost contract (the multiplicative contract
@@ -150,34 +125,9 @@ Phase-2 steps again from a small `μ` at Step 2.1).
 ## Not formalized
 
 The trust-region alternative of Theorem 14.3.9 in the printed order (it is proved with corrected
-exponents and a logarithmic factor in `Chapter14.Section03TrustRegion`). For ARqp-SC with
-`2 ≤ q < p`: whether the printed order holds for every genuine run, whatever its returned radii
-(possibly tending to `0`), under a constrained Łojasiewicz inequality whose exponent violates the
-conditions of `theorem_14_3_9_arqp_lojasiewicz_mono` (`Chapter14.Section03GenuineSharp7`; for
-convex `X`, of `theorem_14_3_9_arqp_lojasiewicz_convex_le` and
-`theorem_14_3_9_arqp_lojasiewicz_convex_floor`), within `γ ≤ π_q - 1`. For
-nonconvex `X` this is settled for every `2 ≤ q ≤ p - 2` (the printed order fails for every
-`γ > π_q/2`, `theorem_14_3_9_arqp_lojasiewicz_printed_false_nonconvex_of_le`) and, for
-`q = p - 1`, for every `γ > p/2` (`theorem_14_3_9_arqp_lojasiewicz_printed_false_nonconvex_last`;
-Phase-2 steps from a small `μ` at Step 2.1), and for odd `q = p - 1 ≥ 3` for every `γ > π_q/2`
-(`theorem_14_3_9_arqp_lojasiewicz_printed_false_nonconvex_odd`,
-`Chapter14.Section03GenuineSharp12f`), and for even `q = p - 1 ≥ 4` for every `γ > π_q/2`
-(`theorem_14_3_9_arqp_lojasiewicz_printed_false_nonconvex_even`,
-`Chapter14.Section03GenuineSharp13g`); it is open only for `q = 2`, `p = 3` and
-`π_q/2 = 4/3 < γ ≤ 3/2`. For convex `X` it is
-settled for `q = 2` (every `γ ≤ π₂ - 1 = 1 + 2/p`) and for every `2 ≤ q ≤ p ≤ 2q` (every
-`γ ≤ π_q - 1`, `theorem_14_3_9_arqp_lojasiewicz_convex_floor_le`,
-`Chapter14.Section03GenuineSharp11a`); for `p > 2q` the printed order holds when
-`γ ≤ 1/2 + q(π_q - 3/2)/(2(q - 1))` (`theorem_14_3_9_arqp_lojasiewicz_convex_le`,
-`Chapter14.Section03GenuineSharp10b`), and it is open above for every `q ≥ 3`, `p > 2q`,
-`1/2 + q(π_q - 3/2)/(2(q - 1)) < γ ≤ π_q - 1` (e.g. `q = 3`, `p ≥ 7`: `13/8 + 9/(4p) < γ ≤ 2 + 3/p`,
-on the walk data `p ≥ 19`; `q = 4`, `p ≥ 9`: `13/6 + 8/(3p) < γ ≤ 3 + 4/p`). (The inequality
-with `β_F ≤ 1` implies it for every larger `γ`, so the walk data, `constrainedLojasiewicz_conW`,
-refute the printed order for every `γ ≥ 7/4` when `q ∈ {1, 2} < p`.) Under the constraint
-qualification `q ≤ 2` is settled: the printed order holds for `q = 2`
-(`theorem_14_3_9_arqp_cq_two_all`); for `q = 1 < p` the function-evaluation order holds
-(`theorem_14_3_9_arqp_cq_one`) and the derivative order fails
-(`theorem_14_3_9_arqp_cq_one_printed_false`).
+exponents and a logarithmic factor in `Chapter14.Section03TrustRegion`). The printed order, or its
+failure, in the cases of the parameter range above not settled here (archived at commit 8c2b1518
+on branch `claude/cartis-gould-toint-formalization`).
 -/
 
 open Set Metric
@@ -990,10 +940,10 @@ by Algorithm 14.1.2), under the book's assumptions c.D1pLB.X and f.D1pLB.X (on a
 `X₀ ⊇ X`) and f.B.Fb on `ℱ_{β_F}`, with `1 ≤ q ≤ p`. This is the printed order of the ARqpC-SC
 row of (14.2.12) exactly where that row's entry is `j + 1`: `q ≥ 2`, or `q = 1` with `X`
 nonconvex; for `q = 1` with `X` convex the entry is `(p+1)/p` (`h = 0` is convex), which is
-proved for `p = 1` (`theorem_14_3_9_arqp`) and false for `p ≥ 2`
-(`theorem_14_3_9_arqp_counterexample`, `theorem_14_3_9_arqp_counterexample_walk`). For ARqpC
-constants with `θ < ς`, `θ ∈ (0, 1)`, `β > 0` (the runs have `β ≤ θ`, the book's `β = θ`
-included), `β₁` and a starting point `x₀`, there are constants `κ_F`, `κ_D` such that for all
+proved for `p = 1` (`theorem_14_3_9_arqp`) and false for `p ≥ 4`
+(`theorem_14_3_9_arqp_counterexample`). For ARqpC constants with `θ < ς`, `θ ∈ (0, 1)`,
+`β > 0` (the runs have `β ≤ θ`, the book's `β = θ` included), `β₁` and a starting point `x₀`,
+there are constants `κ_F`, `κ_D` such that for all
 tolerances `ε ∈ (0, 1]^{q+1}` with `ε₀ ≤ β_F` and every TPqp-GC run whose INNER calls are ARqp-SC
 runs (ARqpC-SC with `c = 0`, `h = 0`, `IsTPqpGCARqpSCRun`; Phase-2 calls may be cut by any test of
 (14.3.32); such runs exist, `exists_isTPqpGCARqpSCRun`):
