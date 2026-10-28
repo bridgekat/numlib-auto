@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.MultivariateTaylor.Coord
 import Numlib.Optimization.ModelBased.ConvexConstrained
 import NumlibSurface.CartisGouldToint.Chapter02.Section04
 import NumlibSurface.CartisGouldToint.Chapter06.Section01
@@ -1092,17 +1093,6 @@ private theorem iteratedDeriv_cubic (a b c t : ℝ) :
   · rw [iteratedDeriv_succ, iteratedDeriv_one, h1, h2]
   · rw [iteratedDeriv_succ, iteratedDeriv_succ, iteratedDeriv_one, h1, h2, h3]
 
-/-- Derivative tensors of a function of the coordinate of `ℝ¹`. -/
-private theorem iteratedFDeriv_comp_coord {h : ℝ → ℝ} (hh : ContDiff ℝ ⊤ h) (k : ℕ)
-    (x : EuclideanSpace ℝ (Fin 1)) (m : Fin k → EuclideanSpace ℝ (Fin 1)) :
-    iteratedFDeriv ℝ k (fun y : EuclideanSpace ℝ (Fin 1) => h (y 0)) x m =
-      (∏ i, m i 0) * iteratedDeriv k h (x 0) := by
-  have e : (fun y : EuclideanSpace ℝ (Fin 1) => h (y 0)) =
-      h ∘ (EuclideanSpace.proj (0 : Fin 1) : EuclideanSpace ℝ (Fin 1) →L[ℝ] ℝ) := by
-    funext y; simp
-  rw [e, ContinuousLinearMap.iteratedFDeriv_comp_right _ hh _ (by exact_mod_cast le_top)]
-  simp [iteratedFDeriv_apply_eq_iteratedDeriv_mul_prod]
-
 /-- **Step 2 of ARp-CC can be infeasible for `q ≥ 2`** (a gap in [cartis2022evaluation],
 §6.2.1: the book asserts that the model measures (6.2.3)–(6.2.5) "will all be small in the
 neighbourhood of any … global minimizer of `m_k`", but Step 2 also demands
@@ -1145,7 +1135,8 @@ theorem algorithm_6_2_1_not_exists_step (P : ARpCCParams) {ε₁ ε₂ ε₃ : �
   have hfnn : ∀ y ∈ C, 0 ≤ f y := fun y hy => by
     rw [hfval]; exact mul_nonneg hy (by linarith [hquad (y 0)])
   have hdiag : ∀ k x d, iteratedFDeriv ℝ k f x (fun _ => d) = d 0 ^ k * iteratedDeriv k h (x 0) :=
-    fun k x d => by rw [iteratedFDeriv_comp_coord hh]; simp
+    fun k x d => by
+      rw [(hh.contDiffAt.of_le le_top).iteratedFDeriv_comp_coord_apply 0]; simp [mul_comm]
   -- the assumptions
   have hCNe : AssumptionCNe C := by
     refine ⟨isClosed_le continuous_const (by fun_prop), ?_, ⟨0, by simp [hC_def]⟩⟩
@@ -1163,7 +1154,8 @@ theorem algorithm_6_2_1_not_exists_step (P : ARpCCParams) {ε₁ ε₂ ε₃ : �
     intro x _ y _
     have : iteratedFDeriv ℝ 3 f x = iteratedFDeriv ℝ 3 f y := by
       ext m
-      rw [iteratedFDeriv_comp_coord hh, iteratedFDeriv_comp_coord hh, (hD (x 0)).2.2,
+      rw [(hh.contDiffAt.of_le le_top).iteratedFDeriv_comp_coord_apply 0,
+        (hh.contDiffAt.of_le le_top).iteratedFDeriv_comp_coord_apply 0, (hD (x 0)).2.2,
         (hD (y 0)).2.2]
     simp [this]
   -- the strict minimizer

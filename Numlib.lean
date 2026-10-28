@@ -28,6 +28,7 @@ import Numlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 import Numlib.Analysis.Calculus.LipschitzIteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.MultivariateTaylor.Basic
+import Numlib.Analysis.Calculus.MultivariateTaylor.Coord
 import Numlib.Analysis.Calculus.MultivariateTaylor.DerivBound
 import Numlib.Analysis.Calculus.MultivariateTaylor.LinearComp
 import Numlib.Analysis.Calculus.MultivariateTaylor.Peano
