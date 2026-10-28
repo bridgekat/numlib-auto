@@ -26,11 +26,10 @@ is false for `q = 2` with `κ_decr` depending only on the algorithm parameters, 
 constants of f.D1qLaB.X, as the book's explicit `κ_decr` of Lemma 12.2.4 / (12.2.14) does
 (`lemma_14_2_2_trq_printed_false`, `lemma_14_2_2_trq_printed_false_uniform`). The example is a
 family `f_a`, `a → 0`, with uniform constants; for a single fixed `f` this mechanism (a
-stationary point of constant curvature) needs `q ≥ 3`, and a single fixed `f` is not treated here
-(archived at commit 8c2b1518 on branch `claude/cartis-gould-toint-formalization`). The
-trust-region radius is shared by all orders and is driven down to `≈ ε_min` by unsuccessful
-first-order iterations; a second-order step at that radius then decreases `f` by `≈ ε_2 ε_min²`,
-which can be much smaller than `min_j ε_j^{j+1}`. Example: `X = [-1, 1]²`,
+stationary point of constant curvature) needs `q ≥ 3`, and a single fixed `f` is not treated
+here. The trust-region radius is shared by all orders and is driven down to `≈ ε_min` by
+unsuccessful first-order iterations; a second-order step at that radius then decreases `f` by
+`≈ ε_2 ε_min²`, which can be much smaller than `min_j ε_j^{j+1}`. Example: `X = [-1, 1]²`,
 `f_a(x) = x_1²/2 - a x_2²/2` (f.D1qLaB.X with constants `4` for every `a ∈ (0, 1]`), `ϑ = 1`,
 fixed TRq parameters `trqSadP`, `ε_1 = r²`, `ε_2 = a = r`: the decrease is `r⁵/2`, against
 `κ min(ε_1², ε_2³) = κ r⁴`. This agrees with the book's own Theorem 14.2.4, whose table lists

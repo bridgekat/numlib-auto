@@ -285,7 +285,4 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
   and `3 ≤ q < p`, and with unit radii on `ℝⁿ` for `q < p`, is neither proved nor refuted here
   (the proved bounds have an extra term outside that order; under the literal uniform reading of
   the INNER hypotheses the theorem is vacuous for these runs when `π₁ < 2`).
-* Investigations beyond the book (for Theorem 14.3.9: Łojasiewicz and constraint-qualification
-  conditions, further ARqp-SC counterexamples, the mixed trust-region order, fixed-problem TRq-SC
-  refutations) are archived at commit 8c2b1518 on branch `claude/cartis-gould-toint-formalization`.
 -/

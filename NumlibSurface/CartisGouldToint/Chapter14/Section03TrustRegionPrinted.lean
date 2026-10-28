@@ -78,8 +78,7 @@ row `j + 1` of (14.2.12), not in the counting of Theorem 14.3.9.
 ## Not formalized
 
 Variants of the counterexample for other TRq parameters and thresholds `ϑ`. Corrected orders
-for TRq-SC INNER runs other than `theorem_14_3_9_trq` and `theorem_14_3_9_trq_one` (archived at
-commit 8c2b1518 on branch `claude/cartis-gould-toint-formalization`).
+for TRq-SC INNER runs other than `theorem_14_3_9_trq` and `theorem_14_3_9_trq_one`.
 -/
 
 open Set Metric
