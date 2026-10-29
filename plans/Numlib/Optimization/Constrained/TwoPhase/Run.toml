@@ -1,0 +1,35 @@
+namespace = "Constrained"
+
+[[node]]
+id = "TargetFollowingSeq"
+source = "Cartis–Gould–Toint, Algorithms 7.2.1 and 14.3.2 (Phase 2)"
+
+[[node]]
+id = "TargetFollowingSeq.Stop"
+
+[[node]]
+id = "TargetFollowingSeq.Before"
+
+[[node]]
+id = "TargetFollowingSeq.IsEnd"
+
+[[node]]
+id = "TargetFollowingSeq.targetOut"
+
+[[node]]
+id = "TargetFollowingSeq.exists_isEnd_of_forall_le"
+
+[[node]]
+id = "IsTargetFollowingRun"
+source = "Cartis–Gould–Toint, Algorithms 7.2.1 and 14.3.2 (Phase 2)"
+
+[[node]]
+id = "IsTargetFollowingRun.isTargetSequence"
+
+[[node]]
+id = "IsTargetFollowingRun.output_spec"
+source = "Cartis–Gould–Toint, (7.2.17), (7.2.20), (14.3.48)–(14.3.52)"
+
+[[node]]
+id = "IsTargetFollowingRun.residual_le_of_forall_kb"
+source = "Cartis–Gould–Toint, (B.14.19)"

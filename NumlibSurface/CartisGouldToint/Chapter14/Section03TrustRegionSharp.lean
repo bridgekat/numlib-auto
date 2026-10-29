@@ -397,12 +397,12 @@ theorem trqLog_target_ge (h2 : IsTPqpGCPhase2 trqLogF trqLogC trqLogX q θ β ε
     push_cast; linarith
   | succ k hk1 ih =>
     intro hK
-    have hk := IsTPqpGCPhase2.before_mono hK k.le_succ
+    have hk := hK.mono k.le_succ
     have ihk := ih hk
     have hs : ¬ D.Stop trqLogF trqLogC trqLogX q θ ε k := hK k hk1 (Nat.lt_succ_self k)
     have hf := trqLog_f_succ_ge h2 hk1 hk
     push_cast
-    rcases IsTPqpGCPhase2.isKa_or_isKb_of_not_stop hs with ha | hb
+    rcases Constrained.TargetFollowingSeq.ka_or_kb_of_not_stop hs with ha | hb
     · rw [h2.t_succ_a k hk1 hk ha]
       have : √(ε 0 ^ 2 - ‖trqLogC (D.x (k + 1))‖ ^ 2) ≤ ε 0 := by
         calc √(ε 0 ^ 2 - ‖trqLogC (D.x (k + 1))‖ ^ 2) ≤ √(ε 0 ^ 2) :=
@@ -438,7 +438,8 @@ theorem trqLog_not_stop (hq : 1 ≤ q)
     · exact hna h
     · exact hnb ⟨hge, h⟩
     · exact trqLog_not_meritCrit hq hε1 hyX hft (hθε.trans_le hge) hδ0 hδy hδ1 h
-  · rcases hab with ha | hb
+  · change meritCrit trqLogF trqLogC trqLogX q ε (D.t (k + 1)) (D.x (k + 1)) (D.δ (k + 1)) at hm
+    rcases hab with ha | hb
     · rw [h2.t_succ_a k hk1 hk ha] at hm
       have hc : ‖trqLogC (D.x (k + 1))‖ ≤ ε 0 :=
         Constrained.norm_le_targetResidual.trans (ha.le.trans
@@ -541,7 +542,7 @@ theorem trqLog_funEvals_ge (hq : 1 ≤ q)
   have hcount : ∀ k ∈ Finset.Icc 1 N, L + 1 ≤ D.e k := fun k hk => by
     obtain ⟨hk1, hkN⟩ := Finset.mem_Icc.1 hk
     have hkb : D.Before trqLogF trqLogC trqLogX q θ ε k :=
-      IsTPqpGCPhase2.before_mono hbef (hkN.trans hNk)
+      hbef.mono (hkN.trans hNk)
     have hkε : (2 * k - 1) * ε 0 ≤ 1 := by
       have : (k : ℝ) ≤ N := by exact_mod_cast hkN
       have : (k : ℝ) * ε 0 ≤ 1 / 4 := by

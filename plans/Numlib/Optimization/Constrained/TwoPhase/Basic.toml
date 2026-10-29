@@ -9,9 +9,17 @@ id = "IsTargetSequence.props"
 source = "Cartis–Gould–Toint, Lemma 7.2.3 (used for Algorithm 14.3.2)"
 
 [[node]]
+id = "IsTargetSequence.card_mul_le_of_target_drop"
+source = "Cartis–Gould–Toint, proof of Lemma 7.2.4"
+
+[[node]]
 id = "IsTargetSequence.card_Ka_le"
 source = "Cartis–Gould–Toint, Lemma 7.2.4 (used in (14.3.69)–(14.3.70))"
 
 [[node]]
 id = "card_le_of_residual_block"
 source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 (Appendix B) and Lemma 7.2.6"
+
+[[node]]
+id = "sub_ge_of_merit_decrease"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8, (B.14.20)–(B.14.21)"

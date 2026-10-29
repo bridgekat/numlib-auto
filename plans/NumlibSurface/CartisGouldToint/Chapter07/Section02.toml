@@ -139,3 +139,40 @@ source = "Cartis–Gould–Toint, Lemma 7.2.6 (with Lemma 7.2.5)"
 [[node]]
 id = "theorem_7_2_7_phase2_of_mu2"
 source = "Cartis–Gould–Toint, Theorem 7.2.7 (Phase 2, with Lemma 7.2.5)"
+
+[[node]]
+id = "Phase2Seq.toTargetFollowingSeq"
+source = "Cartis–Gould–Toint, Algorithm 7.2.1 (Phase 2 as a target-following outer loop)"
+
+[[node]]
+id = "IsTPpGCPhase2.toRun"
+source = "Cartis–Gould–Toint, Algorithm 7.2.1 (Phase 2 as a target-following outer loop)"
+
+[[node]]
+id = "IsTPpGCPhase2.toContract"
+source = "Cartis–Gould–Toint, Lemmas 2.4.1, 6.2.4 and proof of Lemma 7.2.6 (the inner contract)"
+
+[[node]]
+id = "omega1_targetMerit_le_add"
+source = "Cartis–Gould–Toint, (7.2.12) (dependence of the criticality measure on the target)"
+
+[[node]]
+id = "theorem_7_2_7_phase2_of_gradient_le"
+source = "Cartis–Gould–Toint, Theorem 7.2.7 (Phase 2, without the bad-iteration parameter)"
+
+[[node]]
+id = "theorem_7_2_7_of_gradient_le"
+source = "Cartis–Gould–Toint, Theorem 7.2.7 (without the bad-iteration parameter)"
+
+[[node]]
+id = "Phase2Seq.Exempt"
+source = "Cartis–Gould–Toint, proof of Lemma 7.2.6 (runs whose last step has no guaranteed decrease)"
+
+[[node]]
+id = "IsTPpGCPhase2.isGood_iff"
+source = "Cartis–Gould–Toint, proof of Lemma 7.2.6 (good iterations)"
+
+[[node]]
+id = "gradient_hyps_of_D1pLC"
+source = "Cartis–Gould–Toint, assumptions f.D1pL.C and c.D1pL.C (Section 7.2.2.1)"
+

@@ -15,7 +15,9 @@ module imports the section modules and adds nothing of its own.
 
 The target residual and merit function are the backbone `Constrained.targetResidual`,
 `Constrained.targetMerit`; Phase 1 is an ARpLE-CC run (§6.3) on `c`, Phase 2 the run predicate
-`IsTPpGCPhase2`. Appendix B's Lemma B.7.1 is in `AppendixB.Chapter07`.
+`IsTPpGCPhase2`, an instance of the backbone's target-following outer loop
+(`Constrained.IsTargetFollowingRun`), from whose complexity theorem Lemma 7.2.6 and Theorem 7.2.7
+are derived (shared with TPqp-GC, Chapter 14). Appendix B's Lemma B.7.1 is in `AppendixB.Chapter07`.
 
 ## Deviations from the book
 
@@ -29,8 +31,12 @@ The target residual and merit function are the backbone `Constrained.targetResid
   passing the third test of (7.2.10): no decrease is guaranteed for these and the book gives no
   bound on their number. `theorem_7_2_7` carries the number of bad iterations as a parameter; when
   it is bounded independently of `ε`, the counts have the order
-  `O(max(ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}))` of (7.2.50). The derivative count acquires an
-  `ε₀^{-1}` term absent from (7.2.53); whether (7.2.53) holds is not established.
+  `O(max(ε₀^{-1}, ε₀^{-1/p} ε₁^{-(p+1)/p}))` of (7.2.50). Under bounded gradients (`f`, `c` of
+  class `C¹`, `‖∇f‖ ≤ B_f` near feasibility) `theorem_7_2_7_of_gradient_le` closes the gap, with
+  an extra `N_b = O(ε₀⁻¹ε₁⁻¹)` outer iterations, within the order of (7.2.50) (for `ε₀ = ε₁`) iff
+  `p ≤ 2`.
+  The derivative count acquires an `ε₀^{-1}` term absent from (7.2.53); whether (7.2.53) holds is
+  not established.
 * Lemma 7.2.2's derivative-evaluation bound (7.2.24) misses `+ 2`.
 * The convex set `𝒞` need not be bounded (nor, in Theorem 7.1.1, `𝒮` closed or inside `𝒞`).
 

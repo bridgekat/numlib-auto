@@ -110,9 +110,11 @@ where one exists:
 * **Theorem 2.2.2**: the SDBA evaluation bound (2.2.8) vanishes for small `t_ini`; corrected.
 * **Lemma 5.4.2**: the step bound (5.4.8) is false; the constant `κ_s = 2(1 + θ₁)/λ_*` replaces it.
 * **Theorems 3.4.6, 3.4.12, Lemma 7.2.6, Theorem 7.2.7**: counting arguments that do not count
-  every iteration. For TRε and iRN the bounds hold with a factor `2`. For TPp-GC the gap is not
-  closed: the "bad" outer iterations, at which no decrease is guaranteed, are unbounded by the
-  book's argument, and `Chapter07.theorem_7_2_7` carries their number as a parameter.
+  every iteration. For TRε and iRN the bounds hold with a factor `2`. For TPp-GC the "bad" outer
+  iterations, at which no decrease is guaranteed, are unbounded by the book's argument, and
+  `Chapter07.theorem_7_2_7` carries their number as a parameter; under bounded gradients
+  `Chapter07.theorem_7_2_7_of_gradient_le` closes the gap, with an extra `N_b = O(ε₀⁻¹ε₁⁻¹)`
+  outer iterations, within the order of (7.2.50) (for `ε₀ = ε₁`) iff `p ≤ 2`.
 * **Third-order ARp and the convexly constrained ARp-CC are not always well posed**: admissible
   steps need not exist (`Chapter04.not_exists_algorithm_4_1_1_third_order`,
   `Chapter06.algorithm_6_2_1_not_exists_step`); the complexity theorems are statements about runs.

@@ -689,6 +689,9 @@ import Numlib.Optimization.Constrained
 import Numlib.Optimization.Constrained.SecondOrder
 import Numlib.Optimization.Constrained.TargetResidual
 import Numlib.Optimization.Constrained.TwoPhase
+import Numlib.Optimization.Constrained.TwoPhase.Basic
+import Numlib.Optimization.Constrained.TwoPhase.Complexity
+import Numlib.Optimization.Constrained.TwoPhase.Run
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
 import Numlib.Optimization.LineSearch.Backtracking

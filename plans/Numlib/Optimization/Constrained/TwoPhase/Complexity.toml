@@ -1,0 +1,69 @@
+namespace = "Constrained"
+
+[[node]]
+id = "TargetFollowingSeq.succCount"
+
+[[node]]
+id = "TargetFollowingSeq.funEvals"
+
+[[node]]
+id = "TargetFollowingSeq.derivEvals"
+
+[[node]]
+id = "TargetFollowingSeq.kaCount"
+
+[[node]]
+id = "TargetFollowingSeq.kbCount"
+
+[[node]]
+id = "TargetFollowingSeq.IsGood"
+source = "Cartis–Gould–Toint, proofs of Lemmas 7.2.6 and 14.3.8"
+
+[[node]]
+id = "TargetFollowingSeq.goodCount"
+
+[[node]]
+id = "TargetFollowingSeq.IsBad"
+
+[[node]]
+id = "TargetFollowingSeq.badCount"
+
+[[node]]
+id = "TargetFollowingSeq.IsInnerContract"
+source = "Cartis–Gould–Toint, Lemmas 2.4.1, 6.2.4, 14.2.2–14.2.3"
+
+[[node]]
+id = "IsTargetFollowingRun.succCount_le"
+
+[[node]]
+id = "TargetFollowingSeq.IsInnerContract.sum_goodCount_le"
+source = "Cartis–Gould–Toint, (7.2.39), (14.3.71)"
+
+[[node]]
+id = "IsTargetFollowingRun.exempt_of_isBad"
+
+[[node]]
+id = "TargetFollowingSeq.le_counts"
+
+[[node]]
+id = "IsTargetFollowingRun.kaCount_le"
+
+[[node]]
+id = "TargetFollowingSeq.IsInnerContract.complexity"
+source = "Cartis–Gould–Toint, Theorems 7.2.7 and 14.3.9"
+
+[[node]]
+id = "TargetFollowingSeq.IsInnerContract.complexity_of_badCount_le"
+
+[[node]]
+id = "IsTargetFollowingRun.kbCount_le_of_drop"
+
+[[node]]
+id = "kbMargin"
+
+[[node]]
+id = "IsTargetFollowingRun.card_kb_le_of_margin"
+
+[[node]]
+id = "IsTargetFollowingRun.card_kb_le_of_drop"
+
