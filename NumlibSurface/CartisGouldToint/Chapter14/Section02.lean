@@ -1,3 +1,6 @@
+import Numlib.Analysis.Calculus.MultivariateTaylor.Coord
+import Numlib.Optimization.Complexity.SlowExample.TRq
+import Numlib.Optimization.ModelBased.HighOrder.TRqCall
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.Calculus.AnchoredLipschitz
 import Numlib.Optimization.Optimality.TaylorStability
@@ -58,7 +61,8 @@ subproblems. It therefore has no declaration of its own.
   `theorem_14_2_4_trq_anchored`,
   `lemma_14_2_2_arqp_anchored`, `lemma_14_2_3_anchored`, `theorem_14_2_4_arqp_anchored` (from the
   anchored Chapter 12 analysis, `AssumptionD1qLaBX.toAnchored`); the ARqpC-SC row under anchored
-  bounds is `theorem_14_2_4_arqpc_anchored` (`Chapter14.Section03`);
+  bounds is `lemma_14_2_2_arqpc_anchored`, `lemma_14_2_3_arqpc_anchored`,
+  `theorem_14_2_4_arqpc_anchored`;
 * under the anchored assumptions f.D0qLaB.X (TRqIDA-SC, TRqEDA-SC) and f.D0pLaB.X (ARqpIDA-SC,
   ARqpEDA-SC), the remark of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4:
   `lemma_14_2_2_trqida_anchored`, …, `theorem_14_2_4_arqpeda_anchored` (one `…_anchored` per
@@ -85,7 +89,10 @@ subproblems. It therefore has no declaration of its own.
 * (14.2.12) prints `π_j = j + 1` for TRq-SC, which is stronger than what Lemmas 12.2.4, 13.1.5
   and 13.3.2 give and inconsistent with the order `O(max_j ε_j^{-(q+1)})` of Theorem 14.2.4; the
   TR rows of Lemma 14.2.2 (`lemma_14_2_2_trq`, `lemma_14_2_2_trqida`, `lemma_14_2_2_trqeda`) use
-  `π_j = q + 1` (the decrease is a multiple of `ε_min^{q+1}`).
+  `π_j = q + 1` (the decrease is a multiple of `ε_min^{q+1}`). The printed row is false per
+  iteration for `q = 2` with `κ_decr` depending only on the algorithm parameters and the
+  f.D1qLaB.X constants (`lemma_14_2_2_trq_printed_false`,
+  `lemma_14_2_2_trq_printed_false_uniform`).
 * Lemma 14.2.3 is stated with explicit constants: `κ_unc` contains `|log ε_min|` terms (the
   radius lower bound of the TR methods is proportional to `ε_min`, and the number of
   accuracy-improving iterations of the IDA/EDA methods is logarithmic in `ε_min`); for the IDA
@@ -309,8 +316,8 @@ end Sparse
 The rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 for ARqpC-SC, TRq-SC and ARqp-SC are stated
 here under smoothness on all of `ℝⁿ` (f.D1pL and c.D1pL of §14.1 for ARqpC-SC) or on an open
 convex `C ⊇ X` (`Chapter12.AssumptionD1pLOn`, for TRq-SC and ARqp-SC); the TRq-SC and ARqp-SC rows
-under the anchored f.D1qLaB.X / f.D1pLaB.X follow in the section on anchored assumptions, the
-ARqpC-SC row under anchored bounds is in `Chapter14.Section03`. -/
+under the anchored f.D1qLaB.X / f.D1pLaB.X follow in the section on anchored assumptions; the
+ARqpC-SC row is also stated under anchored bounds (`lemma_14_2_2_arqpc_anchored`, …). -/
 
 section ARqpCSC
 
@@ -397,6 +404,63 @@ theorem theorem_14_2_4_arqpc_convex (hr : algorithm_14_1_1 f c h X p q P ε δ�
           (P.η₁ * (kappaDm1 P Lf Lc Lh p m * ε 1 ^ (((p : ℝ) + 1) / p))) + 2 := by
   obtain ⟨kε, hhit, h2, h3, h4⟩ :=
     theorem_14_1_10_i hr hθς hf hc hL hw hq hconv hXc hδ₀
+  exact ⟨kε, hhit, hr.mem hhit.2, h2, h3, h4⟩
+
+variable {X₀ : Set ℝⁿ}
+
+/-- **Lemma 14.2.2** of [cartis2022evaluation], ARqpC-SC row, under the anchored assumptions
+(`AnchoredCompositeBounds` on the sublevel set of `w` at `x₀`, the book's f.D1pLaB.X, with an
+open convex `X₀ ⊇ X`) and `θ < ς`: every successful iteration `k` not followed by termination
+decreases `w` by at least `η₁ κ_{Δm} ε_j^{j+1}` for some `j ∈ [1 : q]`. -/
+theorem lemma_14_2_2_arqpc_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
+    (hθς : P.θ < P.ς)
+    (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
+    (hX : X ⊆ X₀) (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {k : ℕ}
+    (hk : ∀ i ≤ k, ¬ arqpcStop f c h p q P ε x s σ δ d i)
+    (hsucc : P.η₁ ≤ Optimization.arqpRatio (fun y => f y + h (c y))
+      (fun k => arqpcData f c h p (x k) (σ k)) x s k)
+    (h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d (k + 1)) :
+    ∃ j ∈ Finset.Icc 1 q, P.η₁ * (kappaDm2 P Lf Lc Lh p q m * ε j ^ (j + 1)) ≤
+      (f (x k) + h (c (x k))) - (f (x (k + 1)) + h (c (x (k + 1)))) := by
+  have hpol := hr.kappaDeltaMin_mul_le_radius_anchored hA hX hL hS (fun i hi => hk i hi.le)
+    (fun h' => hk k le_rfl (Or.inl h'))
+  rw [← (hr.run.radii k hk).1 hsucc] at hpol
+  obtain ⟨j, hj, -, hdec⟩ := (lemma_14_1_9_anchored hr hθς hA hX hL hk hsucc h1).2 (Or.inr hpol)
+  exact ⟨j, hj, hdec⟩
+
+/-- **Lemma 14.2.3** of [cartis2022evaluation], ARqpC-SC row, under the anchored assumptions:
+for every iteration `k` reached, `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13). -/
+theorem lemma_14_2_3_arqpc_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
+    (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
+    (hX : X ⊆ X₀) (hL : AssumptionHLip h Lh) {k : ℕ}
+    (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i) :
+    (k : ℝ) ≤ (Optimization.successSet (fun j => P.η₁ ≤ Optimization.arqpRatio
+        (fun y => f y + h (c y)) (fun k => arqpcData f c h p (x k) (σ k)) x s j) k).card *
+        (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
+      Real.log (arqpcSigmaMax P Lf Lc Lh p m / P.σ₀) / Real.log P.γ₂ :=
+  hr.run.toIsARRun.le_succ_count hk (sigma_le_arqpcSigmaMax_anchored hr hA hX hL hk k le_rfl)
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], ARqpC-SC row, under the anchored assumptions
+(`theorem_14_1_10_ii_anchored` for ARqpC-SC runs), with moreover `x_{k_ε} ∈ X`. -/
+theorem theorem_14_2_4_arqpc_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
+    (hθς : P.θ < P.ς)
+    (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
+    (hX : X ⊆ X₀) (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {wlow : ℝ}
+    (hw : AssumptionWBb f c h X wlow) {mε : ℝ} (hmε0 : 0 < mε)
+    (hmε : ∀ j ∈ Finset.Icc 1 q, mε ≤ ε j ^ (j + 1)) :
+    ∃ kε, Optimization.IsFirstHit (arqpcStop f c h p q P ε x s σ δ d) kε ∧ x kε ∈ X ∧
+      (∃ δε : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, 0 < δε j ∧ δε j ≤ 1) ∧
+        Optimization.IsEpsDeltaApproxComposite (ftaylorSeries ℝ f (x kε))
+          (ftaylorSeries ℝ c (x kε)) h {e | x kε + e ∈ X} q ε δε) ∧
+      (Optimization.funEvalCount kε : ℝ) ≤
+        (1 + |Real.log P.γ₁| / Real.log P.γ₂) *
+          ((f (x 0) + h (c (x 0)) - wlow) / (P.η₁ * (kappaDm2 P Lf Lc Lh p q m * mε))) +
+        ((|Real.log P.γ₁| + Real.log (arqpcSigmaMax P Lf Lc Lh p m / P.σ₀)) /
+          Real.log P.γ₂ + 2) ∧
+      (Optimization.derivEvalCount (fun k => P.η₁ ≤ Optimization.arqpRatio
+          (fun y => f y + h (c y)) (fun k => arqpcData f c h p (x k) (σ k)) x s k) kε : ℝ) ≤
+        (f (x 0) + h (c (x 0)) - wlow) / (P.η₁ * (kappaDm2 P Lf Lc Lh p q m * mε)) + 2 := by
+  obtain ⟨kε, hhit, h2, h3, h4⟩ := theorem_14_1_10_ii_anchored hr hθς hA hX hL hS hw hmε0 hmε
   exact ⟨kε, hhit, hr.mem hhit.2, h2, h3, h4⟩
 
 end ARqpCSC
@@ -1441,5 +1505,648 @@ theorem theorem_14_2_4_arqpeda_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.
     hrc hθ
 
 end ARqpEDASC
+
+section TRqPrintedFalse
+
+open scoped ContDiff
+
+set_option hygiene false in
+local notation "ℝ²" => EuclideanSpace ℝ (Fin 2)
+
+/-- `‖s‖² = s₁² + s₂²` on `ℝ²`. -/
+theorem trqLog_norm_sq (s : ℝ²) : ‖s‖ ^ 2 = (s 0) ^ 2 + (s 1) ^ 2 := by
+  rw [EuclideanSpace.norm_sq_eq, Fin.sum_univ_two]
+  simp [sq_abs]
+
+/-- The coordinates are continuous. -/
+theorem trqLog_continuous_coord (i : Fin 2) : Continuous (fun v : ℝ² => v i) :=
+  (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).continuous
+
+/-! ### The TRq-SC row `j + 1` of (14.2.12) fails per iteration with uniform constants (`q = 2`) -/
+
+section Decrease
+
+/-- `t ↦ t²/2`. -/
+noncomputable def trqSadSq : ℝ → ℝ := fun t => t ^ 2 / 2
+
+/-- `(t²/2)' = t`. -/
+theorem iteratedDeriv_trqSadSq_one (t : ℝ) : iteratedDeriv 1 trqSadSq t = t := by
+  rw [iteratedDeriv_one]
+  unfold trqSadSq
+  have := ((hasDerivAt_pow 2 t).div_const 2)
+  rw [this.deriv]; ring
+
+/-- `(t²/2)' = t`. -/
+theorem deriv_trqSadSq : deriv trqSadSq = fun t => t := by
+  funext t
+  unfold trqSadSq
+  have := ((hasDerivAt_pow 2 t).div_const 2)
+  rw [this.deriv]; ring
+
+/-- `(t²/2)'' = 1`. -/
+theorem iteratedDeriv_trqSadSq_two (t : ℝ) : iteratedDeriv 2 trqSadSq t = 1 := by
+  rw [iteratedDeriv_succ, iteratedDeriv_one, deriv_trqSadSq, deriv_id'']
+
+/-- `(t²/2)''' = 0`. -/
+theorem iteratedDeriv_trqSadSq_three (t : ℝ) : iteratedDeriv 3 trqSadSq t = 0 := by
+  rw [iteratedDeriv_succ, iteratedDeriv_succ, iteratedDeriv_one, deriv_trqSadSq, deriv_id'']
+  simp
+
+/-- `t ↦ t²/2` is smooth. -/
+theorem contDiff_trqSadSq : ContDiff ℝ ∞ trqSadSq := by
+  unfold trqSadSq; fun_prop
+
+/-- `‖∇ⁿ (w ↦ w_i²/2)(v)‖ ≤ |(t²/2)^{(n)}(v_i)|`. -/
+theorem norm_iteratedFDeriv_trqSadSq_comp (i : Fin 2) (n : ℕ) (v : ℝ²) :
+    ‖iteratedFDeriv ℝ n (fun w : ℝ² => trqSadSq (w i)) v‖ ≤ |iteratedDeriv n trqSadSq (v i)| :=
+  ContDiffAt.norm_iteratedFDeriv_comp_coord_le i
+    (contDiff_trqSadSq.contDiffAt.of_le (by exact_mod_cast le_top))
+
+
+/-- `w ↦ w_i²/2` is smooth. -/
+theorem trqSad_contDiff_coordSq (i : Fin 2) : ContDiff ℝ ∞ (fun w : ℝ² => trqSadSq (w i)) :=
+  contDiff_trqSadSq.comp (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).contDiff
+
+/-- The objective `f_a(x) = x_1²/2 - a x_2²/2` of the example
+(`x_1 = v 0`, `x_2 = v 1`). -/
+noncomputable def trqSadF (a : ℝ) : ℝ² → ℝ := fun v => trqSadSq (v 0) - a * trqSadSq (v 1)
+
+/-- `f_a` as a difference of coordinate squares. -/
+theorem trqSadF_eq (a : ℝ) :
+    trqSadF a = (fun w : ℝ² => trqSadSq (w 0)) - a • (fun w : ℝ² => trqSadSq (w 1)) := by
+  funext v; simp [trqSadF]
+
+/-- `f_a` is smooth. -/
+theorem contDiff_trqSadF (a : ℝ) : ContDiff ℝ ∞ (trqSadF a) := by
+  rw [trqSadF_eq]; exact (trqSad_contDiff_coordSq 0).sub ((trqSad_contDiff_coordSq 1).const_smul a)
+
+/-- `f_a` is `C^n` everywhere. -/
+theorem contDiffAt_trqSadF (a : ℝ) (n : ℕ) (y : ℝ²) : ContDiffAt ℝ n (trqSadF a) y :=
+  ((contDiff_trqSadF a).of_le (by exact_mod_cast le_top : (n : ℕ∞ω) ≤ ∞)).contDiffAt
+
+/-- `‖∇ⁿ f_a(v)‖ ≤ |(t²/2)^{(n)}(v_1)| + a |(t²/2)^{(n)}(v_2)|` for `a ≥ 0`. -/
+theorem norm_iteratedFDeriv_trqSadF_le {a : ℝ} (ha : 0 ≤ a) (n : ℕ) (v : ℝ²) :
+    ‖iteratedFDeriv ℝ n (trqSadF a) v‖ ≤
+      |iteratedDeriv n trqSadSq (v 0)| + a * |iteratedDeriv n trqSadSq (v 1)| := by
+  have h0 := ((trqSad_contDiff_coordSq 0).of_le (by exact_mod_cast le_top : (n : ℕ∞ω) ≤
+      ∞)).contDiffAt
+    (x := v)
+  have h1 := ((trqSad_contDiff_coordSq 1).of_le (by exact_mod_cast le_top : (n : ℕ∞ω) ≤
+      ∞)).contDiffAt
+    (x := v)
+  have h1' : ContDiffAt ℝ n (a • fun w : ℝ² => trqSadSq (w 1)) v := h1.const_smul a
+  rw [trqSadF_eq, iteratedFDeriv_sub_apply h0 h1', iteratedFDeriv_const_smul_apply h1]
+  refine (norm_sub_le _ _).trans (add_le_add (norm_iteratedFDeriv_trqSadSq_comp 0 n v) ?_)
+  rw [norm_smul, Real.norm_of_nonneg ha]
+  exact mul_le_mul_of_nonneg_left (norm_iteratedFDeriv_trqSadSq_comp 1 n v) ha
+
+/-- `∇² f_a` is constant (`0`-Lipschitz) for `a ≥ 0`. -/
+theorem iteratedFDerivLipschitzOn_trqSadF_two {a : ℝ} (ha : 0 ≤ a) (C : Set ℝ²)
+    (hC : Convex ℝ C) : IteratedFDerivLipschitzOn (trqSadF a) 2 0 C :=
+  iteratedFDerivLipschitzOn_of_norm_le hC
+    (fun y _ => contDiffAt_trqSadF a _ y)
+    fun x _ => (norm_iteratedFDeriv_trqSadF_le ha 3 x).trans (by
+      rw [iteratedDeriv_trqSadSq_three, iteratedDeriv_trqSadSq_three]; simp)
+
+/-- `f_a` is quadratic: `ΔT_2(x, s) = f_a(x) - f_a(x + s)`. -/
+theorem taylorDecrement_two_trqSadF {a : ℝ} (ha : 0 ≤ a) (x s : ℝ²) :
+    (ftaylorSeries ℝ (trqSadF a) x).taylorDecrement 2 s = trqSadF a x - trqSadF a (x + s) := by
+  rw [ftaylorSeries_taylorDecrement_eq]
+  have := norm_sub_taylorPolynomial_le_of_lipschitz convex_univ
+    (fun y _ => contDiffAt_trqSadF a _ y)
+    (iteratedFDerivLipschitzOn_trqSadF_two ha univ convex_univ) (mem_univ x) (mem_univ (x + s))
+  simp only [zero_div, zero_mul] at this
+  have h := norm_le_zero_iff.1 this
+  rw [sub_eq_zero] at h
+  rw [h]
+
+/-- The derivative of `f_a`: `s ↦ x_1 s_1 - a x_2 s_2`. -/
+theorem hasFDerivAt_trqSadF (a : ℝ) (v : ℝ²) :
+    HasFDerivAt (trqSadF a)
+      ((v 0) • (EuclideanSpace.proj 0 : ℝ² →L[ℝ] ℝ) - (a * v 1) • EuclideanSpace.proj 1) v := by
+  have h1 : HasFDerivAt (fun w : ℝ² => w 1) (EuclideanSpace.proj 1 : ℝ² →L[ℝ] ℝ) v :=
+    (EuclideanSpace.proj 1 : ℝ² →L[ℝ] ℝ).hasFDerivAt
+  have h0 : HasFDerivAt (fun w : ℝ² => w 0) (EuclideanSpace.proj 0 : ℝ² →L[ℝ] ℝ) v :=
+    (EuclideanSpace.proj 0 : ℝ² →L[ℝ] ℝ).hasFDerivAt
+  have := ((h0.pow 2).mul_const (1 / 2 : ℝ)).sub (((h1.pow 2).mul_const (1 / 2 : ℝ)).const_mul a)
+  convert this using 1
+  · funext w; simp only [trqSadF, trqSadSq, Pi.sub_apply]; ring
+  · ext s; simp; ring
+
+/-- `ΔT_1(x, s) = -(x_1 s_1 - a x_2 s_2)`. -/
+theorem taylorDecrement_one_trqSadF (a : ℝ) (x s : ℝ²) :
+    (ftaylorSeries ℝ (trqSadF a) x).taylorDecrement 1 s = -(x 0 * s 0 - a * x 1 * s 1) := by
+  rw [FormalMultilinearSeries.taylorDecrement_one_apply]
+  change -(iteratedFDeriv ℝ 1 _ x (fun _ => s)) = _
+  rw [iteratedFDeriv_one_apply, (hasFDerivAt_trqSadF a x).fderiv]
+  simp
+
+
+/-- The box `[-1, 1]²`. -/
+def trqSadX : Set ℝ² := {v | -1 ≤ v 0 ∧ v 0 ≤ 1 ∧ -1 ≤ v 1 ∧ v 1 ≤ 1}
+
+/-- Membership in the box. -/
+theorem trqSadX_mem {v : ℝ²} : v ∈ trqSadX ↔ -1 ≤ v 0 ∧ v 0 ≤ 1 ∧ -1 ≤ v 1 ∧ v 1 ≤ 1 := Iff.rfl
+
+/-- The box is closed. -/
+theorem isClosed_trqSadX : IsClosed trqSadX := by
+  have hc : ∀ a : ℝ, Continuous fun _ : ℝ² => a := fun a => continuous_const
+  have h := ((isClosed_le (hc (-1)) (trqLog_continuous_coord 0)).inter
+    (isClosed_le (trqLog_continuous_coord 0) (hc 1))).inter
+    ((isClosed_le (hc (-1)) (trqLog_continuous_coord 1)).inter
+    (isClosed_le (trqLog_continuous_coord 1) (hc 1)))
+  convert h using 1
+  ext v
+  simp only [trqSadX, Set.mem_ofPred_eq, Set.mem_inter_iff]
+  tauto
+
+/-- The box lies in the ball of radius `2`. -/
+theorem trqSadX_subset_ball : trqSadX ⊆ ball (0 : ℝ²) 2 := by
+  intro v hv
+  obtain ⟨h0, h2, h3, h4⟩ := hv
+  rw [mem_ball_zero_iff]
+  have hs := trqLog_norm_sq v
+  have : ‖v‖ ^ 2 < 2 ^ 2 := by nlinarith
+  exact lt_of_pow_lt_pow_left₀ 2 (by norm_num) this
+
+/-- f.D1qLaB.X (`q = 2`) for `f_a` with `a ∈ [0, 1]`, on `X₀` the ball of radius `2`, with the
+constants `L_j = B_j = 4` independent of `a` and of the anchor. -/
+theorem trqSadF_assumption {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a ≤ 1) (x₀ : ℝ²) :
+    AssumptionD1qLaBX (trqSadF a) trqSadX (ball 0 2) x₀ 1 2 (fun _ => 4) (fun _ => 4) := by
+  have hd : ∀ n, ∀ v, ‖iteratedFDeriv ℝ n (trqSadF a) v‖ ≤
+      |iteratedDeriv n trqSadSq (v 0)| + a * |iteratedDeriv n trqSadSq (v 1)| :=
+    fun n v => norm_iteratedFDeriv_trqSadF_le ha0 n v
+  refine AssumptionD1qLaBX.of_lipschitzOn isOpen_ball (convex_ball 0 2) trqSadX_subset_ball
+    (fun y _ => (contDiffAt_trqSadF a 2 y).contDiffWithinAt)
+    (fun _ _ => by norm_num) (fun _ _ => by norm_num)
+    (fun j hj => ?_) (fun j hj x hx => ?_)
+  · have hj' : j = 1 ∨ j = 2 := by have := Finset.mem_Icc.1 hj; omega
+    refine iteratedFDerivLipschitzOn_of_norm_le (convex_ball 0 2)
+      (fun y _ => contDiffAt_trqSadF a _ y) fun x _ => (hd _ x).trans ?_
+    rcases hj' with rfl | rfl
+    · rw [iteratedDeriv_trqSadSq_two, iteratedDeriv_trqSadSq_two]; norm_num; linarith
+    · rw [iteratedDeriv_trqSadSq_three, iteratedDeriv_trqSadSq_three]; norm_num
+  · have hj' : j = 1 ∨ j = 2 := by have := Finset.mem_Icc.1 hj; omega
+    refine (hd _ x).trans ?_
+    rcases hj' with rfl | rfl
+    · rw [iteratedDeriv_trqSadSq_one, iteratedDeriv_trqSadSq_one]
+      have hx' : ‖x‖ < 2 := mem_ball_zero_iff.1 hx
+      have h0 := (EuclideanSpace.abs_apply_le_norm x 0).trans hx'.le
+      have h1 := (EuclideanSpace.abs_apply_le_norm x 1).trans hx'.le
+      nlinarith [abs_nonneg (x 1)]
+    · rw [iteratedDeriv_trqSadSq_two, iteratedDeriv_trqSadSq_two]; norm_num; linarith
+
+
+/-- The trust-region parameters of the example: `Δ₀ = Δ_max = 1`, `η₁ = 1/4`, `η₂ = 3/4`,
+`γ₁ = 1/4`, `γ₂ = 1/2`, `γ₃ = 2`, `ς = 1/2`. -/
+noncomputable def trqSadP : Optimization.TRqParams where
+  Δ₀ := 1
+  η₁ := 1 / 4
+  η₂ := 3 / 4
+  γ₁ := 1 / 4
+  γ₂ := 1 / 2
+  γ₃ := 2
+  Δ₀_pos := one_pos
+  η₁_pos := by norm_num
+  η₁_le_η₂ := by norm_num
+  η₂_lt_one := by norm_num
+  γ₁_pos := by norm_num
+  γ₁_le_γ₂ := by norm_num
+  γ₂_lt_one := by norm_num
+  one_le_γ₃ := by norm_num
+  Δmax := 1
+  ς := 1 / 2
+  Δ₀_le_Δmax := le_rfl
+  ς_pos := by norm_num
+  ς_le_one := by norm_num
+
+/-- The unit vector `e_i` of `ℝ²`. -/
+noncomputable def trqSadE (i : Fin 2) : ℝ² := EuclideanSpace.single i 1
+
+@[simp] theorem trqSadE_apply (i j : Fin 2) : trqSadE i j = if j = i then 1 else 0 := by
+  simp [trqSadE, PiLp.single_apply]
+
+/-- `‖c e_i‖ = |c|`. -/
+theorem norm_smul_trqSadE (c : ℝ) (i : Fin 2) : ‖c • trqSadE i‖ = |c| := by
+  rw [norm_smul]; simp [trqSadE]
+
+/-- Unfolding `f_a`. -/
+theorem trqSadF_apply (a : ℝ) (v : ℝ²) : trqSadF a v = (v 0) ^ 2 / 2 - a * ((v 1) ^ 2 / 2) := rfl
+
+/-- At `p = b e_0`, `ΔT_1(d) = -b d_0`. -/
+theorem trqSad_ΔT1_p (a b : ℝ) (d : ℝ²) :
+    (ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 d = -(b * d 0) := by
+  rw [taylorDecrement_one_trqSadF]; simp
+
+/-- At `0`, `ΔT_1 = 0`. -/
+theorem trqSad_ΔT1_zero (a : ℝ) (d : ℝ²) :
+    (ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 1 d = 0 := by
+  rw [taylorDecrement_one_trqSadF]; simp
+
+/-- At `0`, `ΔT_2(d) = -d_0²/2 + a d_1²/2`. -/
+theorem trqSad_ΔT2_zero {a : ℝ} (ha : 0 ≤ a) (d : ℝ²) :
+    (ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2 d = -((d 0) ^ 2 / 2) + a * ((d 1) ^ 2 / 2)
+        := by
+  rw [taylorDecrement_two_trqSadF ha, zero_add, trqSadF_apply, trqSadF_apply]; simp; ring
+
+
+section Prefix
+
+variable {a b Δ : ℝ} {ε : ℕ → ℝ}
+
+/-- `b e_1 ∈ X` for `b ∈ [0, 1]` (`e_1 = trqSadE 0`, the first unit vector). -/
+theorem trqSad_smul_e0_mem {b : ℝ} (hb0 : 0 ≤ b) (hb1 : b ≤ 1) : b • trqSadE 0 ∈ trqSadX := by
+  simp only [trqSadX_mem, PiLp.smul_apply, trqSadE_apply]
+  norm_num
+  exact ⟨by linarith, hb1⟩
+
+/-- `b e_1 - Δ e_1 ∈ X` for `b, Δ ∈ [0, 1]`. -/
+theorem trqSadE0_mem {b Δ : ℝ} (hb0 : 0 ≤ b) (hb1 : b ≤ 1) (hΔ0 : 0 ≤ Δ) (hΔ1 : Δ ≤ 1) :
+    (-Δ) • trqSadE 0 ∈ {e | b • trqSadE 0 + e ∈ trqSadX} := by
+  simp only [Set.mem_ofPred_eq, trqSadX_mem, PiLp.add_apply, PiLp.smul_apply, trqSadE_apply]
+  norm_num
+  refine ⟨by linarith, by linarith⟩
+
+/-- The first-order Step 1 at `p = b e_0` with radius `Δ ≤ 1`: the displacement `-Δ e_0`
+achieves the first-order measure `b Δ`. -/
+theorem trqSad_witness_p (hb0 : 0 ≤ b) (hb1 : b ≤ 1) (hΔ0 : 0 ≤ Δ) (hΔ1 : Δ ≤ 1) :
+    Optimization.IsApproxMeasureStep ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE
+        0)).taylorDecrement 1)
+      (min Δ 1) {e | b • trqSadE 0 + e ∈ trqSadX} trqSadP.ς ((-Δ) • trqSadE 0) := by
+  rw [min_eq_left hΔ1]
+  refine ⟨⟨mem_closedBall_zero_iff.2 (by rw [norm_smul_trqSadE, abs_neg, abs_of_nonneg hΔ0]),
+    trqSadE0_mem hb0 hb1 hΔ0 hΔ1⟩, ?_⟩
+  have hm : Optimization.decrementMeasure
+      ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1) Δ
+      {e | b • trqSadE 0 + e ∈ trqSadX} ≤ b * Δ := by
+    refine Optimization.decrementMeasure_le ⟨0, mem_closedBall_self hΔ0, by
+      change b • trqSadE 0 + 0 ∈ trqSadX
+      rw [add_zero]; exact trqSad_smul_e0_mem hb0 hb1⟩ fun d hd => ?_
+    rw [trqSad_ΔT1_p]
+    have h1 := EuclideanSpace.abs_apply_le_norm d 0
+    have h2 := mem_closedBall_zero_iff.1 hd.1
+    have h3 := mul_le_mul_of_nonneg_left (neg_le_abs (d 0)) hb0
+    have h4 := mul_le_mul_of_nonneg_left (h1.trans h2) hb0
+    linarith
+  rw [trqSad_ΔT1_p]
+  simp only [PiLp.smul_apply, trqSadE_apply, ↓reduceIte, smul_eq_mul, mul_one]
+  have hς : trqSadP.ς = 1 / 2 := rfl
+  rw [hς]
+  linarith [mul_nonneg hb0 hΔ0]
+
+
+/-- The first-order step at `p = b e_0` with radius `Δ ≤ 1` (`ε_1 = b`): order `1` fails, the
+step is the Step-1 displacement `-Δ e_0`. -/
+theorem trqSad_step_p (hb : 0 < b) (hb1 : b ≤ 1) (hΔ0 : 0 < Δ) (hΔ1 : Δ ≤ 1) (hε1 : ε 1 = b)
+    (W : ℕ → ℝ²) :
+    Optimization.IsTRqStep (ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)) {e | b • trqSadE 0 + e ∈
+        trqSadX}
+      trqSadP.ς 2 ε (min Δ 1) Δ (fun j => if j = 1 then (-Δ) • trqSadE 0 else W j) 1
+      ((-Δ) • trqSadE 0) where
+  order_mem := by simp
+  lt_taylorDecrement := by
+    simp only [↓reduceIte, trqSad_ΔT1_p, PiLp.smul_apply, trqSadE_apply, smul_eq_mul, mul_one,
+      min_eq_left hΔ1, pow_one, Nat.factorial_one, Nat.cast_one, div_one, hε1]
+    have hς : trqSadP.ς = 1 / 2 := rfl
+    rw [hς]; nlinarith [mul_pos hb hΔ0]
+  taylorDecrement_le_of_lt := fun i hi hlt => absurd hlt (by have := (Finset.mem_Icc.1 hi).1; omega)
+  mem := ⟨mem_closedBall_zero_iff.2 (by rw [norm_smul_trqSadE, abs_neg, abs_of_pos hΔ0]),
+    trqSadE0_mem hb.le hb1 hΔ0.le hΔ1⟩
+  taylorDecrement_le := le_of_eq (by simp)
+
+/-- `f_a(b e_1) = b²/2`. -/
+theorem trqSadF_p (a b : ℝ) : trqSadF a (b • trqSadE 0) = b ^ 2 / 2 := by
+  rw [trqSadF_apply]; simp
+
+/-- `f_a(b e_1 - Δ e_1) = (b - Δ)²/2`. -/
+theorem trqSadF_p_step (a b Δ : ℝ) : trqSadF a (b • trqSadE 0 + (-Δ) • trqSadE 0) = (b - Δ) ^ 2 /
+    2 := by
+  rw [trqSadF_apply]; simp; ring
+
+/-- An unsuccessful first-order iteration at `p` with radius `Δ ≥ 4b`: the ratio is
+`1 - Δ/(2b) ≤ -1`, the iterate stays and the radius is divided by `4`. -/
+theorem trqSad_accept_p_unsucc (hb : 0 < b) (h4 : 4 * b ≤ Δ) :
+    Optimization.TRAcceptance trqSadP.toTRParams
+      (Optimization.reductionRatio (trqSadF a) (b • trqSadE 0) ((-Δ) • trqSadE 0)
+        ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 ((-Δ) • trqSadE 0)))
+      (b • trqSadE 0) ((-Δ) • trqSadE 0) (b • trqSadE 0) Δ (Δ / 4) := by
+  have hΔ : 0 < Δ := by linarith
+  have hρ : Optimization.reductionRatio (trqSadF a) (b • trqSadE 0) ((-Δ) • trqSadE 0)
+      ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 ((-Δ) • trqSadE 0)) < 1 /
+          4 := by
+    rw [Optimization.reductionRatio_def, trqSadF_p, trqSadF_p_step, trqSad_ΔT1_p]
+    simp only [PiLp.smul_apply, trqSadE_apply, ↓reduceIte, smul_eq_mul, mul_one]
+    rw [div_lt_iff₀ (by nlinarith)]
+    nlinarith
+  refine ⟨?_, ⟨fun h => absurd h (not_le.2 (hρ.trans (by norm_num : (1 : ℝ) / 4 < 3 / 4))),
+    fun h => absurd h (not_le.2 hρ), fun _ => ⟨by change 1 / 4 * Δ ≤ Δ / 4; linarith,
+      by change Δ / 4 ≤ 1 / 2 * Δ; linarith⟩⟩⟩
+  exact (ite_eq_right (not_le.2 hρ)).symm
+
+/-- The successful first-order iteration at `p` with radius `b`: the ratio is `1/2`, the step
+lands at `0` and the radius stays `b`. -/
+theorem trqSad_accept_p_succ (hb : 0 < b) :
+    Optimization.TRAcceptance trqSadP.toTRParams
+      (Optimization.reductionRatio (trqSadF a) (b • trqSadE 0) ((-b) • trqSadE 0)
+        ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 ((-b) • trqSadE 0)))
+      (b • trqSadE 0) ((-b) • trqSadE 0) 0 b b := by
+  have hρ : Optimization.reductionRatio (trqSadF a) (b • trqSadE 0) ((-b) • trqSadE 0)
+      ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 ((-b) • trqSadE 0)) = 1 /
+          2 := by
+    rw [Optimization.reductionRatio_def, trqSadF_p, trqSadF_p_step, trqSad_ΔT1_p]
+    simp only [PiLp.smul_apply, trqSadE_apply, ↓reduceIte, smul_eq_mul, mul_one]
+    field_simp; ring
+  rw [hρ]
+  refine ⟨?_, ⟨fun h => absurd h (by change ¬ (3 / 4 : ℝ) ≤ 1 / 2; norm_num),
+    fun _ _ => ⟨by change 1 / 2 * b ≤ b; linarith, le_rfl⟩,
+    fun h => absurd h (by change ¬ (1 / 2 : ℝ) < 1 / 4; norm_num)⟩⟩
+  rw [ite_eq_left (show trqSadP.η₁ ≤ (1 / 2 : ℝ) by change (1 / 4 : ℝ) ≤ 1 / 2; norm_num),
+    ← add_smul, add_neg_cancel, zero_smul]
+
+/-- The second-order Step 1 at `0` with radius `b ≤ 1`: `b e_2` achieves the measure
+`a b²/2`. -/
+theorem trqSad_witness_zero (ha : 0 ≤ a) (hb0 : 0 ≤ b) (hb1 : b ≤ 1) :
+    Optimization.IsApproxMeasureStep ((ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2)
+      (min b 1) {e | (0 : ℝ²) + e ∈ trqSadX} trqSadP.ς (b • trqSadE 1) := by
+  rw [min_eq_left hb1]
+  have hmem : b • trqSadE 1 ∈ {e | (0 : ℝ²) + e ∈ trqSadX} := by
+    simp only [Set.mem_ofPred_eq, zero_add, trqSadX_mem, PiLp.smul_apply, trqSadE_apply]
+    norm_num; exact ⟨by linarith, hb1⟩
+  refine ⟨⟨mem_closedBall_zero_iff.2 (by rw [norm_smul_trqSadE, abs_of_nonneg hb0]), hmem⟩, ?_⟩
+  have hm : Optimization.decrementMeasure ((ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2) b
+      {e | (0 : ℝ²) + e ∈ trqSadX} ≤ a * (b ^ 2 / 2) := by
+    refine Optimization.decrementMeasure_le ⟨0, mem_closedBall_self hb0, by
+      change (0 : ℝ²) + 0 ∈ trqSadX
+      simp only [add_zero, trqSadX_mem, PiLp.zero_apply]; norm_num⟩ fun d hd => ?_
+    rw [trqSad_ΔT2_zero ha]
+    have h1 := EuclideanSpace.abs_apply_le_norm d 1
+    have h2 := mem_closedBall_zero_iff.1 hd.1
+    have h3 : (d 1) ^ 2 ≤ b ^ 2 := by
+      rw [← sq_abs]; exact pow_le_pow_left₀ (abs_nonneg _) (h1.trans h2) 2
+    nlinarith [sq_nonneg (d 0)]
+  have hval : (ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2 (b • trqSadE 1) = a * (b ^ 2 / 2)
+      := by
+    rw [trqSad_ΔT2_zero ha]; simp
+  rw [hval]
+  have hς : trqSadP.ς = 1 / 2 := rfl
+  rw [hς]
+  linarith [mul_nonneg ha (sq_nonneg b)]
+
+/-- The second-order step at `0` with radius `b ≤ 1` (`ε_2 = a`): order `1` passes
+(`∇f(0) = 0`), order `2` fails, the step is the Step-1 displacement `b e_2`. -/
+theorem trqSad_step_zero (ha : 0 < a) (hb : 0 < b) (hb1 : b ≤ 1) (hε1 : 0 ≤ ε 1) (hε2 : ε 2 = a)
+    (W : ℕ → ℝ²) :
+    Optimization.IsTRqStep (ftaylorSeries ℝ (trqSadF a) 0) {e | (0 : ℝ²) + e ∈ trqSadX}
+      trqSadP.ς 2 ε (min b 1) b (fun j => if j = 2 then b • trqSadE 1 else W j) 2 (b • trqSadE 1)
+          where
+  order_mem := by simp
+  lt_taylorDecrement := by
+    simp only [↓reduceIte, trqSad_ΔT2_zero ha.le, PiLp.smul_apply, trqSadE_apply, smul_eq_mul,
+      min_eq_left hb1, hε2]
+    norm_num
+    have hς : trqSadP.ς = 1 / 2 := rfl
+    rw [hς]; nlinarith [mul_pos ha (pow_pos hb 2)]
+  taylorDecrement_le_of_lt := fun i hi hlt => by
+    have hi1 : i = 1 := by have := (Finset.mem_Icc.1 hi).1; omega
+    subst hi1
+    simp only [trqSad_ΔT1_zero, show ¬ ((1 : ℕ) = 2) by decide, ↓reduceIte]
+    have := trqSadP.ς_pos
+    have : 0 ≤ min b 1 := le_min hb.le zero_le_one
+    positivity
+  mem := ⟨mem_closedBall_zero_iff.2 (by rw [norm_smul_trqSadE, abs_of_pos hb]), by
+    simp only [Set.mem_ofPred_eq, zero_add, trqSadX_mem, PiLp.smul_apply, trqSadE_apply]
+    norm_num; exact ⟨by linarith, hb1⟩⟩
+  taylorDecrement_le := le_of_eq (by simp)
+
+/-- The very successful second-order iteration at `0` with radius `b`: the ratio is `1`, the
+step lands at `b e_2` and the radius stays `b`. -/
+theorem trqSad_ratio_zero (ha : 0 < a) (hb : 0 < b) :
+    Optimization.reductionRatio (trqSadF a) 0 (b • trqSadE 1)
+      ((ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2 (b • trqSadE 1)) = 1 := by
+  have h : trqSadF a 0 - trqSadF a (0 + b • trqSadE 1) = a * (b ^ 2 / 2) := by
+    rw [zero_add, trqSadF_apply, trqSadF_apply]; simp
+  rw [Optimization.reductionRatio_def, taylorDecrement_two_trqSadF ha.le, h, div_self]
+  positivity
+
+/-- The very successful second-order iteration at `0` with radius `b`: the step lands at
+`b e_2` and the radius stays `b`. -/
+theorem trqSad_accept_zero (ha : 0 < a) (hb : 0 < b) :
+    Optimization.TRAcceptance trqSadP.toTRParams
+      (Optimization.reductionRatio (trqSadF a) 0 (b • trqSadE 1)
+        ((ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2 (b • trqSadE 1)))
+      0 (b • trqSadE 1) (b • trqSadE 1) b b := by
+  rw [trqSad_ratio_zero ha hb]
+  refine ⟨?_, ⟨fun _ => ⟨le_rfl, by change b ≤ 2 * b; linarith⟩,
+    fun _ h => absurd h (by change ¬ (1 : ℝ) < 3 / 4; norm_num),
+    fun h => absurd h (by change ¬ (1 : ℝ) < 1 / 4; norm_num)⟩⟩
+  rw [ite_eq_left (show trqSadP.η₁ ≤ (1 : ℝ) by change (1 / 4 : ℝ) ≤ 1; norm_num), zero_add]
+
+end Prefix
+
+
+open Classical in
+/-- **(14.2.11) with the printed TRq-SC exponents `π_j = j + 1` is false for `q = 2` with `κ_decr`
+depending only on the algorithm parameters, `ϑ` and the f.D1qLaB.X constants**
+([cartis2022evaluation], Lemma 14.2.2, (14.2.12); the dependence of the explicit `κ_decr` of Lemma
+12.2.4 / (12.2.14)). The objective varies with `κ` within a family with uniform constants; a single
+fixed `f` is not treated here. For the TRq parameters `trqSadP`,
+the threshold `ϑ = 1`, the box `X = [-1, 1]²` and every `κ > 0` there are `a ∈ (0, 1]` (the
+objective `f_a(x) = x_1²/2 - a x_2²/2`, which satisfies f.D1qLaB.X with constants `4` independent of
+`a`), tolerances `ε ∈ (0, 1]²` and a TRq-SC run with a successful iteration `k` before termination
+that decreases `f_a` by less than `κ min_j ε_j^{j+1}`. With `r = 2^{-N}`, `ε_1 = r²`, `ε_2 = a = r`:
+`N` unsuccessful first-order iterations at `(r², 0)` shrink the radius from `1` to `r²`, a
+successful step reaches `0`, where the gradient vanishes and the second-order test fails, and the
+second-order step `r² e_2` decreases `f_a` by `r⁵/2`, against `κ min(ε_1², ε_2³) = κ r⁴`. The radius
+is shared across the orders and is driven down by the first-order failures; the decrease proved in
+Lemma 12.2.4 is `κ ε_min^{q+1}` (`Chapter14.lemma_14_2_2_trq`). -/
+theorem lemma_14_2_2_trq_printed_false {κ : ℝ} (hκ : 0 < κ) :
+    ∃ (a : ℝ) (ε : ℕ → ℝ) (x s : ℕ → ℝ²) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → ℝ²) (k : ℕ),
+      0 < a ∧ a ≤ 1 ∧ (∀ j ∈ Finset.Icc 1 2, ε j ∈ Ioc 0 1) ∧ x 0 ∈ trqSadX ∧
+      AssumptionD1qLaBX (trqSadF a) trqSadX (ball 0 2) (x 0) 1 2 (fun _ => 4) (fun _ => 4) ∧
+      Chapter12.algorithm_12_2_1_feasible (trqSadF a) trqSadX trqSadP 2 ε 1 x s Δ jk d ∧
+      (∀ i ≤ k, ¬ Chapter12.trqStop (trqSadF a) trqSadP 2 ε 1 x Δ d i) ∧
+      trqSadP.η₁ ≤ Chapter12.trqRho (trqSadF a) x s jk k ∧
+      trqSadF a (x k) - trqSadF a (x (k + 1)) < κ * Optimization.finMin 1 (fun j => ε j ^ (j + 1)) 2
+          := by
+  obtain ⟨N, hN⟩ := exists_pow_lt_of_lt_one (mul_pos two_pos hκ) (by norm_num : (1 / 2 : ℝ) < 1)
+  obtain ⟨r, hr⟩ : ∃ r : ℝ, r = (1 / 2) ^ N := ⟨_, rfl⟩
+  have hr0 : 0 < r := hr ▸ by positivity
+  have hr1 : r ≤ 1 := hr ▸ pow_le_one₀ (by norm_num) (by norm_num)
+  obtain ⟨b, hbdef⟩ : ∃ b : ℝ, b = r ^ 2 := ⟨_, rfl⟩
+  have hb : 0 < b := hbdef ▸ by positivity
+  have hb1 : b ≤ 1 := hbdef ▸ pow_le_one₀ hr0.le hr1
+  have hpowN : ((1 : ℝ) / 4) ^ N = b := by
+    rw [hbdef, hr, ← pow_mul, mul_comm, pow_mul]; norm_num
+  have hq0 : ∀ k : ℕ, 0 < ((1 : ℝ) / 4) ^ k := fun k => by positivity
+  have hq1 : ∀ k : ℕ, ((1 : ℝ) / 4) ^ k ≤ 1 := fun k => pow_le_one₀ (by norm_num) (by norm_num)
+  obtain ⟨ε, hεdef⟩ : ∃ ε : ℕ → ℝ, ε = fun j => if j = 1 then b else r := ⟨_, rfl⟩
+  have hε1 : ε 1 = b := by simp [hεdef]
+  have hε2 : ε 2 = r := by simp [hεdef]
+  -- the Step-1 displacements of the orders not used
+  have hW : ∀ (y : ℝ²) (δ : ℝ) (j : ℕ), ∃ w : ℝ², y ∈ trqSadX → 0 ≤ δ →
+      Optimization.IsApproxMeasureStep ((ftaylorSeries ℝ (trqSadF r) y).taylorDecrement j) δ
+        {e | y + e ∈ trqSadX} trqSadP.ς w := by
+    intro y δ j
+    by_cases h : y ∈ trqSadX ∧ 0 ≤ δ
+    · obtain ⟨w, hw⟩ := Optimization.exists_isApproxMeasureStep_taylorDecrement
+        (ftaylorSeries ℝ (trqSadF r) y) j
+        (isClosed_trqSadX.preimage (continuous_const.add continuous_id))
+        (by change y + 0 ∈ trqSadX; rw [add_zero]; exact h.1) h.2 trqSadP.ς_le_one
+      exact ⟨w, fun _ _ => hw⟩
+    · exact ⟨0, fun h1 h2 => absurd ⟨h1, h2⟩ h⟩
+  choose W hW using hW
+  -- the continuation: any TRq-SC run from `b e_2` with initial radius `b`
+  have hbmax : b ≤ trqSadP.Δmax := hb1
+  have hq₀ : b • trqSadE 1 ∈ trqSadX := by
+    simp only [trqSadX_mem, PiLp.smul_apply, trqSadE_apply]; norm_num; exact ⟨by linarith, hb1⟩
+  obtain ⟨y, sy, Δy, jy, dy, hy0, hyr⟩ := Optimization.exists_isTRqRun_feasible isClosed_trqSadX
+    (trqSadF r) (trqSadP.withΔ₀ b hb hbmax) 2 ε zero_le_one hq₀
+  -- the explicit prefix: `N` unsuccessful first-order iterations at `b e_1`, a successful one to
+  -- `0`, and the successful second-order iteration from `0` to `b e_2`
+  obtain ⟨xp, hxp⟩ : ∃ xp : ℕ → ℝ², ∀ k, xp k =
+      if k ≤ N then b • trqSadE 0 else if k = N + 1 then 0 else b • trqSadE 1 :=
+    ⟨_, fun _ => rfl⟩
+  obtain ⟨Δp, hΔp⟩ : ∃ Δp : ℕ → ℝ, ∀ k, Δp k = if k ≤ N then ((1 : ℝ) / 4) ^ k else b :=
+    ⟨_, fun _ => rfl⟩
+  obtain ⟨sp, hsp⟩ : ∃ sp : ℕ → ℝ², ∀ k, sp k =
+      if k ≤ N then (-((1 : ℝ) / 4) ^ k) • trqSadE 0 else b • trqSadE 1 :=
+    ⟨_, fun _ => rfl⟩
+  obtain ⟨jp, hjp⟩ : ∃ jp : ℕ → ℕ, ∀ k, jp k = if k ≤ N then 1 else 2 := ⟨_, fun _ => rfl⟩
+  obtain ⟨dp, hdp⟩ : ∃ dp : ℕ → ℕ → ℝ², ∀ k, dp k =
+      if k ≤ N then (fun j => if j = 1 then (-((1 : ℝ) / 4) ^ k) • trqSadE 0
+        else W (b • trqSadE 0) (min (((1 : ℝ) / 4) ^ k) 1) j)
+      else (fun j => if j = 2 then b • trqSadE 1 else W 0 (min b 1) j) :=
+    ⟨_, fun _ => rfl⟩
+  have hxl : ∀ k ≤ N, xp k = b • trqSadE 0 := fun k hk => by rw [hxp, ite_eq_left hk]
+  have hΔl : ∀ k ≤ N, Δp k = ((1 : ℝ) / 4) ^ k := fun k hk => by rw [hΔp, ite_eq_left hk]
+  have hsl : ∀ k ≤ N, sp k = (-((1 : ℝ) / 4) ^ k) • trqSadE 0 := fun k hk => by
+    rw [hsp, ite_eq_left hk]
+  have hjl : ∀ k ≤ N, jp k = 1 := fun k hk => by rw [hjp, ite_eq_left hk]
+  have hdl : ∀ k ≤ N, dp k = (fun j => if j = 1 then (-((1 : ℝ) / 4) ^ k) • trqSadE 0
+      else W (b • trqSadE 0) (min (((1 : ℝ) / 4) ^ k) 1) j) := fun k hk => by
+    rw [hdp, ite_eq_left hk]
+  have hxN : xp (N + 1) = 0 := by rw [hxp, ite_eq_right (by omega), ite_eq_left rfl]
+  have hxN2 : xp (N + 1 + 1) = b • trqSadE 1 := by
+    rw [hxp, ite_eq_right (by omega), ite_eq_right (by omega)]
+  have hΔN : ∀ k, N < k → Δp k = b := fun k hk => by rw [hΔp, ite_eq_right (by omega)]
+  have hsN : sp (N + 1) = b • trqSadE 1 := by rw [hsp, ite_eq_right (by omega)]
+  have hjN : jp (N + 1) = 2 := by rw [hjp, ite_eq_right (by omega)]
+  have hdN : dp (N + 1) = (fun j => if j = 2 then b • trqSadE 1 else W 0 (min b 1) j) := by
+    rw [hdp, ite_eq_right (by omega)]
+  have hcases : ∀ k < N + 2, k ≤ N ∨ k = N + 1 := fun k hk => by omega
+  have hstep : ∀ k < N + 2, Optimization.IsTRqStep (ftaylorSeries ℝ (trqSadF r) (xp k))
+      {e | xp k + e ∈ trqSadX} trqSadP.ς 2 ε (min (Δp k) 1) (Δp k) (dp k) (jp k) (sp k) :=
+    fun k hk => by
+    rcases hcases k hk with h | rfl
+    · rw [hxl k h, hΔl k h, hdl k h, hjl k h, hsl k h]
+      exact trqSad_step_p hb hb1 (hq0 k) (hq1 k) hε1 _
+    · rw [hxN, hΔN _ (by omega), hdN, hjN, hsN]
+      exact trqSad_step_zero hr0 hb hb1 (hε1 ▸ hb.le) hε2 _
+  have hacc : ∀ k < N + 2, Optimization.TRAcceptance trqSadP.toTRParams
+      (Optimization.reductionRatio (trqSadF r) (xp k) (sp k)
+        ((ftaylorSeries ℝ (trqSadF r) (xp k)).taylorDecrement (jp k) (sp k)))
+      (xp k) (sp k) (xp (k + 1)) (Δp k) (Δp (k + 1)) := fun k hk => by
+    rcases hcases k hk with h | rfl
+    · rcases Nat.lt_or_ge k N with hkN | hkN
+      · rw [hxl k h, hxl (k + 1) hkN, hsl k h, hΔl k h, hΔl (k + 1) hkN, hjl k h]
+        have h4 : 4 * b ≤ ((1 : ℝ) / 4) ^ k := by
+          rw [← hpowN]
+          have := pow_le_pow_of_le_one (by norm_num : (0 : ℝ) ≤ 1 / 4) (by norm_num)
+            (show k + 1 ≤ N by omega)
+          rw [pow_succ] at this
+          linarith
+        have e : ((1 : ℝ) / 4) ^ (k + 1) = ((1 : ℝ) / 4) ^ k / 4 := by rw [pow_succ]; ring
+        rw [e]
+        exact trqSad_accept_p_unsucc hb h4
+      · obtain rfl : k = N := le_antisymm h hkN
+        rw [hxl k h, hxN, hsl k h, hΔl k h, hΔN _ (by omega), hjl k h, hpowN]
+        exact trqSad_accept_p_succ hb
+    · rw [hxN, hxN2, hΔN _ (by omega), hΔN _ (by omega), hsN, hjN]
+      exact trqSad_accept_zero hr0 hb
+  have hwit : ∀ k < N + 2, ∀ j ∈ Finset.Icc 1 2, Optimization.IsApproxMeasureStep
+      ((ftaylorSeries ℝ (trqSadF r) (xp k)).taylorDecrement j) (min (Δp k) 1)
+      {e | xp k + e ∈ trqSadX} trqSadP.ς (dp k j) := fun k hk j _ => by
+    rcases hcases k hk with h | rfl
+    · rw [hxl k h, hΔl k h, hdl k h]
+      by_cases hj1 : j = 1
+      · subst hj1
+        simp only [↓reduceIte]
+        exact trqSad_witness_p hb.le hb1 (hq0 k).le (hq1 k)
+      · simp only [hj1, ↓reduceIte]
+        exact hW _ _ _ (trqSad_smul_e0_mem hb.le hb1) (le_min (hq0 k).le zero_le_one)
+    · rw [hxN, hΔN _ (by omega), hdN]
+      by_cases hj2 : j = 2
+      · subst hj2
+        simp only [↓reduceIte]
+        exact trqSad_witness_zero hr0.le hb.le hb1
+      · simp only [hj2, ↓reduceIte]
+        exact hW _ _ _ (by simp [trqSadX_mem]) (le_min hb.le zero_le_one)
+  have hcap : ∀ k < N + 2, Δp (k + 1) ≤ trqSadP.Δmax := fun k _ => by
+    change Δp (k + 1) ≤ 1
+    rcases Nat.lt_or_ge k N with hkN | hkN
+    · rw [hΔl (k + 1) hkN]; exact hq1 _
+    · rw [hΔN _ (by omega)]; exact hb1
+  -- the run
+  obtain ⟨x, s, Δ, jk, d, hx0, hrun, hns, -, hpre, hpre'⟩ := Optimization.exists_isTRqRun_append
+    (T := N + 2) (T' := 0) (c := 0) (f := trqSadF r) (D := ftaylorSeries ℝ (trqSadF r))
+    (S := fun y => {e | y + e ∈ trqSadX}) (P := trqSadP) (q := 2) (ε := ε) (ϑ := 1) (xp := xp)
+    (sp := sp) (Δp := Δp) (jp := jp) (dp := dp) (by rw [hΔl 0 (Nat.zero_le _), pow_zero]; rfl)
+    (hΔN _ (by omega)) hb hbmax hstep hacc hwit hcap (by rw [hy0, ← hxN2]) hyr
+    (fun _ h => absurd h (Nat.not_lt_zero _)) (Nat.zero_le _)
+  have hxN' : x (N + 1) = 0 := (hpre (N + 1) (by omega)).1.trans hxN
+  refine ⟨r, ε, x, s, Δ, jk, d, N + 1, hr0, hr1, fun j hj => ?_, ?_,
+    trqSadF_assumption hr0.le hr1 (x 0), hrun, fun i hi => hns i (by omega), ?_, ?_⟩
+  · have : j = 1 ∨ j = 2 := by have := Finset.mem_Icc.1 hj; omega
+    rcases this with rfl | rfl
+    · rw [hε1]; exact ⟨hb, hb1⟩
+    · rw [hε2]; exact ⟨hr0, hr1⟩
+  · rw [hx0, hxl 0 (Nat.zero_le _)]; exact trqSad_smul_e0_mem hb.le hb1
+  · obtain ⟨hsk, hjk, -⟩ := hpre' (N + 1) (by omega)
+    change trqSadP.η₁ ≤ Optimization.trqRatio (trqSadF r)
+      (fun k => ftaylorSeries ℝ (trqSadF r) (x k)) x s jk (N + 1)
+    rw [Optimization.trqRatio_eq, hxN', hsk, hjk, hsN, hjN, trqSad_ratio_zero hr0 hb]
+    change (1 / 4 : ℝ) ≤ 1; norm_num
+  · -- the decrease `r⁵/2` against `κ min_j ε_j^{j+1} ≥ κ r⁴`
+    rw [(hpre (N + 1 + 1) (by omega)).1, hxN2, hxN']
+    have hdec : trqSadF r 0 - trqSadF r (b • trqSadE 1) = r * (b ^ 2 / 2) := by
+      rw [trqSadF_apply, trqSadF_apply]; simp
+    rw [hdec]
+    have hmin : b ^ 2 ≤ Optimization.finMin 1 (fun j => ε j ^ (j + 1)) 2 := by
+      refine Optimization.le_finMin (pow_le_one₀ hb.le hb1) fun j hj => ?_
+      have : j = 1 ∨ j = 2 := by have := Finset.mem_Icc.1 hj; omega
+      rcases this with rfl | rfl
+      · rw [hε1]
+      · rw [hε2, hbdef]
+        have : r ^ 4 ≤ r ^ 3 := pow_le_pow_of_le_one hr0.le hr1 (by norm_num)
+        calc (r ^ 2) ^ 2 = r ^ 4 := by ring
+          _ ≤ r ^ 3 := this
+    have hrN : r < 2 * κ := hr ▸ hN
+    have hb2 : 0 < b ^ 2 := by positivity
+    calc r * (b ^ 2 / 2) < κ * b ^ 2 := by nlinarith
+      _ ≤ κ * Optimization.finMin 1 (fun j => ε j ^ (j + 1)) 2 :=
+          mul_le_mul_of_nonneg_left hmin hκ.le
+
+/-- **No uniform `κ_decr` for the TRq-SC row `j + 1`** ([cartis2022evaluation], (14.2.11)–(14.2.12),
+`q = 2`): there is no `κ > 0` such that, for every `a ∈ (0, 1]`, every TRq-SC run (parameters
+`trqSadP`, `ϑ = 1`, `X = [-1, 1]²`) on `f_a` satisfying f.D1qLaB.X with the constants `4`, every
+`ε ∈ (0, 1]²` and every successful iteration `k` before termination,
+`f_a(x_k) - f_a(x_{k+1}) ≥ κ min_j ε_j^{j+1}` (`lemma_14_2_2_trq_printed_false`). -/
+theorem lemma_14_2_2_trq_printed_false_uniform :
+    ¬ ∃ κ : ℝ, 0 < κ ∧ ∀ (a : ℝ) (ε : ℕ → ℝ) (x s : ℕ → ℝ²) (Δ : ℕ → ℝ) (jk : ℕ → ℕ)
+      (d : ℕ → ℕ → ℝ²) (k : ℕ), 0 < a → a ≤ 1 → (∀ j ∈ Finset.Icc 1 2, ε j ∈ Ioc 0 1) →
+      AssumptionD1qLaBX (trqSadF a) trqSadX (ball 0 2) (x 0) 1 2 (fun _ => 4) (fun _ => 4) →
+      Chapter12.algorithm_12_2_1_feasible (trqSadF a) trqSadX trqSadP 2 ε 1 x s Δ jk d →
+      (∀ i ≤ k, ¬ Chapter12.trqStop (trqSadF a) trqSadP 2 ε 1 x Δ d i) →
+      trqSadP.η₁ ≤ Chapter12.trqRho (trqSadF a) x s jk k →
+      κ * Optimization.finMin 1 (fun j => ε j ^ (j + 1)) 2 ≤
+        trqSadF a (x k) - trqSadF a (x (k + 1)) := by
+  rintro ⟨κ, hκ, H⟩
+  obtain ⟨a, ε, x, s, Δ, jk, d, k, ha0, ha1, hε, -, hA, hrun, hns, hsucc, hlt⟩ :=
+    lemma_14_2_2_trq_printed_false hκ
+  exact absurd (H a ε x s Δ jk d k ha0 ha1 hε hA hrun hns hsucc) (not_le.2 hlt)
+
+end Decrease
+
+end TRqPrintedFalse
 
 end CartisGouldToint.Chapter14

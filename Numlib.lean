@@ -689,6 +689,7 @@ import Numlib.Optimization.Complexity.SlowExample.HighOrder
 import Numlib.Optimization.Complexity.SlowExample.Ridge
 import Numlib.Optimization.Complexity.SlowExample.SeparatedJets
 import Numlib.Optimization.Complexity.SlowExample.Slit
+import Numlib.Optimization.Complexity.SlowExample.TRq
 import Numlib.Optimization.Complexity.SlowExample.ZigZag
 import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.Complexity.ZeroChain
@@ -701,6 +702,8 @@ import Numlib.Optimization.Constrained.TargetResidual
 import Numlib.Optimization.Constrained.TwoPhase
 import Numlib.Optimization.Constrained.TwoPhase.Basic
 import Numlib.Optimization.Constrained.TwoPhase.Complexity
+import Numlib.Optimization.Constrained.TwoPhase.HighOrder.Basic
+import Numlib.Optimization.Constrained.TwoPhase.HighOrder.Complexity
 import Numlib.Optimization.Constrained.TwoPhase.Run
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
@@ -723,6 +726,7 @@ import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.TRqIDA
 import Numlib.Optimization.ModelBased.HighOrder.MeasureTest
 import Numlib.Optimization.ModelBased.HighOrder.Orders
 import Numlib.Optimization.ModelBased.HighOrder.TRq
+import Numlib.Optimization.ModelBased.HighOrder.TRqCall
 import Numlib.Optimization.ModelBased.HighOrder.TRqComplexity
 import Numlib.Optimization.ModelBased.HighOrderModel
 import Numlib.Optimization.ModelBased.HighOrderStep

@@ -1,0 +1,80 @@
+namespace = "Optimization"
+
+[[node]]
+id = "card_successSet_le_card_filter_add_one"
+
+[[node]]
+id = "trqKappa_anti"
+
+[[node]]
+id = "trqCallKappaDelta"
+source = "Cartis–Gould–Toint, (12.2.14) with a bound on the derivatives at the start"
+
+[[node]]
+id = "trqCallKappaRad"
+source = "Cartis–Gould–Toint, Lemma 12.2.3 and (12.2.9)"
+
+[[node]]
+id = "trqCallKappaDecr"
+source = "Cartis–Gould–Toint, Lemma 12.2.4"
+
+[[node]]
+id = "trqKappaUns"
+source = "Cartis–Gould–Toint, Lemma 2.3.1"
+
+[[node]]
+id = "trqCallKappaS"
+source = "Cartis–Gould–Toint, Theorem 12.2.5"
+
+[[node]]
+id = "trqCallKappaA"
+source = "Cartis–Gould–Toint, Theorem 12.2.5"
+
+[[node]]
+id = "trqCallKappaC"
+source = "Cartis–Gould–Toint, Theorem 12.2.5"
+
+[[node]]
+id = "trqCallKappaDelta_le_trqKappaDelta"
+source = "Cartis–Gould–Toint, (12.2.14)"
+
+[[node]]
+id = "IsTRqRun.trqCallKappaRad_mul_le"
+source = "Cartis–Gould–Toint, Lemma 12.2.3 with (12.2.9)"
+
+[[node]]
+id = "IsTRqRun.apply_succ_le"
+
+[[node]]
+id = "exists_isTRqRun_feasible"
+source = "Cartis–Gould–Toint, Algorithm 12.2.1 with a feasible set (§14.2)"
+
+[[node]]
+id = "IsTRqCallOut"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (INNER of trust-region type)"
+
+[[node]]
+id = "IsTRqCallOut.eq_of_not_succ"
+
+[[node]]
+id = "IsTRqCallOut.le_count"
+source = "Cartis–Gould–Toint, Lemma 2.3.1 with Lemma 12.2.3 (TRq-SC row of Lemma 14.2.3)"
+
+[[node]]
+id = "IsTRqCallOut.decrease"
+source = "Cartis–Gould–Toint, Lemma 12.2.4 (TRq-SC row of Lemma 14.2.2)"
+
+[[node]]
+id = "IsTRqCallOut.radius_ge"
+source = "Cartis–Gould–Toint, Lemma 12.2.3 with (12.2.9)"
+
+[[node]]
+id = "exists_isTRqCallOut_of_stop"
+
+[[node]]
+id = "IsTRqOutputCost"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Phase 1 (14.3.23) with INNER = TRq-SC"
+
+[[node]]
+id = "IsTRqOutputCost.cost_le"
+source = "Cartis–Gould–Toint, Theorem 12.2.5 with a feasible set (TRq-SC row of Theorem 14.2.4)"

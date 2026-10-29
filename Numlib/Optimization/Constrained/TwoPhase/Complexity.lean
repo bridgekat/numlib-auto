@@ -58,6 +58,8 @@ variable {E F : Type*} [NormedAddCommGroup F]
 (`Constrained.IsTargetFollowingRun.card_kb_le_of_margin`). -/
 noncomputable def kbMargin (θ ε₀ : ℝ) : ℝ := θ * (1 - θ) * ε₀ / (1 + θ)
 
+theorem kbMargin_def (θ ε₀ : ℝ) : kbMargin θ ε₀ = θ * (1 - θ) * ε₀ / (1 + θ) := rfl
+
 theorem kbMargin_nonneg {θ ε₀ : ℝ} (hθ0 : 0 ≤ θ) (hθ1 : θ ≤ 1) (hε₀ : 0 ≤ ε₀) :
     0 ≤ kbMargin θ ε₀ := by
   unfold kbMargin

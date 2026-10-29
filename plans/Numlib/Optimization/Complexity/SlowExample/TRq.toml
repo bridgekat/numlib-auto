@@ -1,0 +1,16 @@
+namespace = "Optimization"
+
+[[node]]
+id = "TRqParams.withΔ₀"
+
+[[node]]
+id = "IsTRqStep.not_measureTestPasses"
+
+[[node]]
+id = "IsTRqStep.of_taylorDecrement_eq"
+
+[[node]]
+id = "exists_isTRqRun_append"
+
+[[node]]
+id = "IsTRqRun.congr_of_taylorDecrement_eq"

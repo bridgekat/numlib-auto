@@ -125,22 +125,6 @@ open scoped Nat
 
 namespace CartisGouldToint.Chapter12
 
-/-! ### Library names
-
-The extrema over the orders (`Optimization.finMax`, `Optimization.finMin`), the exact ARqp data,
-test and ratio (`Optimization.arqpData`, `arqpStop`, `arqpRho`), and the constants of the TRq and
-ARqp analyses (`Optimization.trqKappaDelta`, `kappaSTRq`, …, `arqpKappaDelta`, `arqpPiOf`, …) are
-those of the library; they are re-exported here under the book's chapter. -/
-
-export Optimization (finMax finMin le_finMax_left le_finMax finMax_le exists_finMax_eq
-  finMin_le_left finMin_le le_finMin exists_finMin_eq finMin_pos finMax_lt inv_finMin_one_le
-  one_le_finMax
-  trqKappaDelta trqKappaDelta_nonneg kappaSTRq kappaATRq kappaBTRq kappaCTRq
-  arqpData arqpModel arqpStop arqpRho arqpKappaDelta arqpKappaDelta_pos arqpKappaDelta_lt_one
-  arqpKappaDelta_anti arqpTau arqpKappaHat arqpPiOf arqpPiOf_of_pos arqpPiOf_of_neg
-  arqpPiOf_nonneg arqpKappaDmOf arqpKappaDmOf_pos kappaSARqpOf kappaSARqpOf_pos kappaAARqpOf
-  kappaCARqp isEpsDeltaApprox_of_isMinOn_zero_of_jet)
-
 section Assumption
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]

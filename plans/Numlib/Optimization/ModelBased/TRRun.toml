@@ -41,3 +41,6 @@ id = "exists_isTRRun"
 
 [[node]]
 id = "trAcceptance_of_one_le"
+
+[[node]]
+id = "IsTRRun.eq_zero_of_unsucc"

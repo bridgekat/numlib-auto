@@ -531,6 +531,14 @@ section InnerMonomial
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
+/-- **Cauchy–Schwarz for the decrement measure**: the measure of the linear decrement
+`d ↦ ⟪v, d⟫` over the feasible displacements of length at most `δ` is at most `δ ‖v‖`. -/
+theorem decrementMeasure_inner_le {v : F} {δ : ℝ} {S : Set F}
+    (hne : (closedBall 0 δ ∩ S).Nonempty) : decrementMeasure (fun d => ⟪v, d⟫) δ S ≤ δ * ‖v‖ :=
+  decrementMeasure_le hne fun d hd => (real_inner_le_norm v d).trans (by
+    rw [mul_comm]
+    exact mul_le_mul_of_nonneg_right (mem_closedBall_zero_iff.1 hd.1) (norm_nonneg v))
+
 /-- The measure of the decrement `d ↦ a ⟪e, d⟫^m` (`a ≥ 0`, `‖e‖ = 1`) over the ball of radius
 `δ ≥ 0` is `a δ^m` (attained at `d = δ e`). -/
 theorem decrementMeasure_mul_inner_pow {e : F} (he : ‖e‖ = 1) {a δ : ℝ} {m : ℕ}

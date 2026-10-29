@@ -26,6 +26,8 @@ structure they need:
 * `HighOrder` — data of arbitrary order with jets having one nonzero derivative (Chapter 12);
 * `ARp` — Taylor models of ridge functions at such jets and runs of the ARp method on them;
 * `Slit` — the constrained example on a hyperplane with a parallel half-space (§14.2);
+* `TRq` — explicit prefixes of runs of the trust-region method TRq continued by arbitrary runs,
+  and transfer of runs between objectives (§14.2–§14.3);
 * `ZigZag` — the two-dimensional zig-zag example of Theorem 2.2.5.
 
 Each file states interpolation data as properties of a function of one variable (values,
